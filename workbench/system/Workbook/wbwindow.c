@@ -46,11 +46,6 @@ static const struct NewMenu WBWindow_menu[] =  {
 	{   NM_END, NULL,          0, 0, 0, 0, },
 };
 
-static const struct TagItem icon2window[] = {
-    { GA_ID, WBWA_ActiveIconID },
-    { TAG_END }
-};
-
 static IPTR wbIgnoreInfo_Hook(struct Hook *hook, struct ExAllData *ead, LONG *type)
 {
     int i;
@@ -99,8 +94,7 @@ static void wbAddFiles(Class *cl, Object *obj, CONST_STRPTR path)
     		    	AddPart(text, tmp->ed_Name, size);
     			Object *iobj = NewObject(WBIcon, NULL,
     					   WBIA_File, text,
-    					   ICA_TARGET, obj,
-    					   ICA_MAP, icon2window,
+    					   WBIA_Label, tmp->ed_Name,
     					   TAG_END);
     			if (iobj != NULL)
     			    DoMethod(my->Set, OM_ADDMEMBER, iobj);
@@ -139,6 +133,7 @@ static void wbAddVolumeIcons(Class *cl, Object *obj)
     	    
     	    iobj = NewObject(WBIcon, NULL,
     	    	    WBIA_File, text,
+    	    	    WBIA_Label, AROS_BSTR_ADDR(tdl->dol_Name),
     	    	    TAG_END);
     	    D(bug("Volume: %s => %p\n", text, iobj));
     	    if (iobj)

@@ -29,4 +29,26 @@ struct WorkbookBase {
 #define WorkbenchBase wb->wb_WorkbenchBase
 #define GfxBase       wb->wb_GfxBase
 
+#include <string.h>
+#include <proto/exec.h>
+
+static inline STRPTR StrDup(CONST_STRPTR str)
+{
+    STRPTR cp;
+    int len;
+   
+    if (str == NULL)
+    	return NULL;
+
+    len = strlen(str) + 1;
+
+    cp = AllocVec(len, MEMF_ANY);
+    if (cp == NULL)
+    	return NULL;
+
+    CopyMem(str, cp, len);
+
+    return cp;
+}
+
 #endif /* WORKBOOK_H */

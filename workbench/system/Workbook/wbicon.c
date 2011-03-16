@@ -21,7 +21,7 @@
 struct wbIcon {
     STRPTR             File;
     struct DiskObject *Icon;
-    CONST_STRPTR       Label;
+    STRPTR             Label;
 };
 
 void wbIcon_Update(Class *cl, Object *obj)
@@ -57,7 +57,7 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbIcon *my;
-    CONST_STRPTR file;
+    CONST_STRPTR file, label = "???";
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)ops);
     if (obj == NULL)
@@ -69,17 +69,14 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
     my->Icon = (struct DiskObject *)GetTagData(WBIA_Icon, (IPTR)NULL, ops->ops_AttrList);
     if (my->Icon != NULL) {
     	if (my->Icon->do_Gadget.GadgetText != NULL &&
-    	    my->Icon->do_Gadget.GadgetText->IText != NULL) {
-    		my->Label = my->Icon->do_Gadget.GadgetText->IText;
-    	} else {
-    	    my->Label = "???";
-    	}
+    	    my->Icon->do_Gadget.GadgetText->IText != NULL)
+    	    label = my->Icon->do_Gadget.GadgetText->IText;
     } else {
 	file = (CONST_STRPTR)GetTagData(WBIA_File, (IPTR)NULL, ops->ops_AttrList);
 	if (file == NULL)
 	    goto error;
 
-	my->File = AllocVec(strlen(file)+1, MEMF_ANY);
+	my->File = StrDup(file);
 	if (my->File == NULL)
 	    goto error;
 
@@ -89,21 +86,12 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
 	if (my->Icon == NULL)
 	    goto error;
 
-	my->Label = NULL;
-	if (my->Icon->do_Gadget.GadgetText)
-	    my->Label = my->Icon->do_Gadget.GadgetText->IText;
-
-	if (my->Label == NULL) {
-	    switch (my->Icon->do_Type) {
-	    case WBDISK:
-	    	my->Label = my->File;
-	    	break;
-	    default:
-	    	my->Label = FilePart(my->File);
-	    	break;
-	    }
-	}
+	label = FilePart(my->File);
     }
+
+    my->Label = StrDup((CONST_STRPTR)GetTagData(WBIA_Label, label, ops->ops_AttrList));
+    if (my->Label == NULL)
+    	goto error;
 
     wbIcon_Update(cl, obj);
 
@@ -139,6 +127,9 @@ static IPTR wbIconDispose(Class *cl, Object *obj, Msg msg)
 	if (my->Icon)
 	    FreeDiskObject(my->Icon);
     }
+
+    if (my->Label)
+    	FreeVec(my->Label);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -178,7 +169,6 @@ static IPTR wbIconRender(Class *cl, Object *obj, struct gpRender *gpr)
     x = gadget->LeftEdge;
     y = gadget->TopEdge;
 
-    D(bug("Selected: %s\n", (gadget->Flags & GFLG_SELECTED) ? "TRUE" : "FALSE"));
     EraseRect(rp, 
     	    gadget->LeftEdge, gadget->TopEdge,
     	    gadget->LeftEdge + gadget->Width - 1,
