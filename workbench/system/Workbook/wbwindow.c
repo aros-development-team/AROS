@@ -42,7 +42,8 @@ struct wbWindow {
 
 static const struct NewMenu WBWindow_menu[] =  {
 	{ NM_TITLE, "Workbook",   0, 0, 0, 0, },
-	{  NM_ITEM, "Quit...",   "Q", 0, 0, 0, },
+	{  NM_ITEM, "Shell...",  "W", 0, 0, },
+	{  NM_ITEM, "Quit...",   "Q", 0, 0, },
 	{   NM_END, NULL,          0, 0, 0, 0, },
 };
 
@@ -257,7 +258,7 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
     		TAG_END);
 
     if (my->Path == NULL) {
-    	idcmp = IDCMP_CLOSEWINDOW;
+    	idcmp = IDCMP_MENUPICK;
     	my->Window = OpenWindowTags(NULL,
     			WA_IDCMP, 0,
     			WA_Backdrop,    TRUE,
@@ -284,7 +285,7 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
     	    D(bug("%s: NewWindow %p\n", __func__, nwin));
     	}
 
-    	idcmp = IDCMP_NEWSIZE | IDCMP_CLOSEWINDOW;
+    	idcmp = IDCMP_NEWSIZE | IDCMP_CLOSEWINDOW | IDCMP_MENUPICK;
     	my->Window = OpenWindowTags(nwin,
     			WA_IDCMP, 0,
     			WA_MinWidth, 100,

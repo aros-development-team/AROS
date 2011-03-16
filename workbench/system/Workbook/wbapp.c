@@ -170,14 +170,54 @@ static void wbCloseWindow(Class *cl, Object *obj, struct Window *win)
     }
 }
 
+static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNumber)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    Object *owin;
+    struct MenuItem *item;
+    BOOL quit = FALSE;
+
+    owin = wbLookupWindow(cl, obj, win);
+
+    D(bug("Menu: %x\n", menuNumber));
+    while (menuNumber != MENUNULL) {
+    	item = ItemAddress(win->MenuStrip, menuNumber);
+    	struct TagItem notags[] = { {  TAG_END }};
+
+    	if (MENUNUM(menuNumber) == 0) {
+    	    D(bug("Menu Command: %c\n", item->Command));
+    	    switch (item->Command) {
+    	    case 'Q':
+    	    	quit = TRUE;
+    	    	break;
+    	    case 'W':
+    	    	D(bug("Open, dammit!\n"));
+    	    	OpenWorkbenchObjectA("C:Shell", notags);
+    	    	break;
+    	    default:
+    	    	break;
+    	    }
+    	} else {
+    	    D(bug("Menu passed to: %p\n", owin));
+    	    if (owin)
+    	    	DoMethod(owin, WBWM_MENUPICK, item, menuNumber);
+    	}
+
+    	menuNumber = item->NextSelect;
+    }
+
+    return quit;
+}
+
 // WBAM_WORKBENCH - Register and handle all workbench events
 static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbApp *my = INST_DATA(cl, obj);
+    BOOL done = FALSE;
 
     if (RegisterWorkbench(my->AppPort)) {
-    	for (;;) {
+    	while (!done) {
     	    ULONG mask;
 
     	    mask = Wait(my->AppMask | my->WinMask);
@@ -207,8 +247,9 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
     	    if (mask & my->WinMask) {
     	    	struct IntuiMessage *im;
 
-    	    	im = (struct IntuiMessage *)GetMsg(my->WinPort);
+    	    	im = GT_GetIMsg(my->WinPort);
 
+    	    	D(bug("im=%p, Class=%d, Code=%d\n", im, im->Class, im->Code));
     	    	switch (im->Class) {
     	    	case IDCMP_CLOSEWINDOW:
     	    	    /* Dispose the window */
@@ -218,9 +259,12 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
     	    	    /* call WBWM_NEWSIZE on the window */
     	    	    wbNewSizeWindow(cl, obj, im->IDCMPWindow);
     	    	    break;
+    	    	case IDCMP_MENUPICK:
+    	    	    done = wbMenuPick(cl, obj, im->IDCMPWindow, im->Code);
+    	    	    break;
     	    	}
 
-    	    	ReplyMsg((APTR)im);
+    	    	GT_ReplyIMsg(im);
     	    }
     	}
 
