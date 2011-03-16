@@ -421,7 +421,7 @@ int main(void)
     if ((_WandererIntern_AppObj = NewObject(Wanderer_CLASS->mcc_Class, NULL, TAG_DONE)) != NULL)
     {
         D(bug("[Wanderer] %s: Launching WBStartup items .. \n", __PRETTY_FUNCTION__));
-        OpenWorkbenchObject("Wanderer:Tools/ExecuteStartup", 0, 0);
+        OpenWorkbenchObject("Wanderer:Tools/ExecuteStartup", TAG_DONE);
 
         D(bug("[Wanderer] %s: Handing control over to Zune .. \n", __PRETTY_FUNCTION__));
         retval = DoMethod(_WandererIntern_AppObj, MUIM_Application_Execute);
