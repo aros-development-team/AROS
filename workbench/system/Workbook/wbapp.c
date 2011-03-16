@@ -180,22 +180,12 @@ static void wbCloseWindow(Class *cl, Object *obj, struct Window *win)
 
 static void NewCLI(struct WorkbookBase *wb)
 {
-    BPTR cis;
+    struct TagItem tags[] = {
+        { SYS_Asynch,      TRUE       }, /* 0 */
+        { NP_Name,         (IPTR)"Workbook Shell" },
+        { TAG_END } };
 
-    cis = Open("CON:20/20///Workbook Shell/AUTO", MODE_OLDFILE);
-    if (cis)
-    {
-        struct TagItem tags[] =
-            {
-                { SYS_Asynch,      TRUE       }, /* 0 */
-                { SYS_Background,  FALSE      }, /* 1 */
-                { SYS_Input,       (IPTR)cis  }, /* 2 */
-                { SYS_Output,      (IPTR)NULL }, /* 3 */
-                { SYS_Error,       (IPTR)NULL }, /* 4 */
-		{ TAG_END } };
-
-	SystemTags("", tags);
-    }
+    SystemTags("NewCLI \"CON:20/20/480/80/Workbook Shell/CLOSE\"", tags);
 }
 
 static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNumber)
