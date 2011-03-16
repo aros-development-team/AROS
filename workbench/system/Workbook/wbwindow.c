@@ -266,6 +266,7 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
     			WA_ScreenTitle, "Workbook 1.0",
     			WA_NoCareRefresh, TRUE,
     			TAG_MORE, ops->ops_AttrList );
+    	my->Window->BorderTop = my->Window->WScreen->BarHeight+1;
     } else {
     	struct DiskObject *icon;
     	struct NewWindow *nwin = NULL;
