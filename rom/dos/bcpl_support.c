@@ -1,6 +1,6 @@
 /*
-    Copyright Â© 2011, The AROS Development Team. All rights reserved.
-    $Id: bcpl_support.c 36685 2011-01-21 17:57:06Z twilen $
+    Copyright © 2011, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: BCPL support (backward compatibility routines for non-m68k architectures)
     Lang: english
@@ -46,5 +46,5 @@ void BCPL_Cleanup(struct Process *me)
     IPTR *SegArray = BADDR(me->pr_SegList);
     
     if (SegArray)
-	FreeMem(SegArray, sizeof(IPTR) * SEGARRAY_LENGTH);
+	FreeVec(SegArray);
 }
