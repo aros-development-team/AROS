@@ -63,6 +63,8 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
 APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct ExecBase *SysBase);
 void stdDealloc(struct MemHeader *freeList, APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase);
 
+APTR InternalAllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase);
+void InternalFreeMem(APTR location, IPTR byteSize, struct ExecBase *SysBase);
 APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase);
 void FreeMemHeader(APTR addr, struct ExecBase *SysBase);
 

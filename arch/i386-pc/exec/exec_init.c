@@ -812,16 +812,16 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
         LibGetTagData(KRN_KernelHighest, (ULONG)&_end, tags);
     IPTR kernel_lowest =
         LibGetTagData(KRN_KernelLowest, (ULONG)&_end - 0x000a0000, tags);
-    AllocAbs(kernel_highest - kernel_lowest, (APTR)kernel_lowest);
+    InternalAllocAbs((APTR)kernel_lowest, kernel_highest - kernel_lowest, SysBase);
 
     /* Protect bootup stack from being allocated */
-    AllocAbs(0x3000,0x90000);
+    InternalAllocAbs(0x90000, 0x3000, SysBase);
 
     /* Protect ACPI & other spaces returned by GRUB loader  */
 
     /* Protect the RSD PTR which is always in the first MB for later use */
     if(arosmb->acpirsdp)
-        AllocAbs(arosmb->acpilength, arosmb->acpirsdp);
+        InternalAllocAbs(arosmb->acpirsdp, arosmb->acpilength);
 
 /*
     // tcheko : GRUB returns end of uppermem (fastmem) always lower than ACPI table data
@@ -835,17 +835,17 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
         if(mmap->type == MMAP_TYPE_ACPIDATA)
         {
             rkprintf("Protecting ACPI DATA memory space (%x:%lu)\n", mmap->addr_low, mmap->len_low);
-            AllocAbs(mmap->len_low, mmap->addr_low);
+            InternalAllocAbs(mmap->addr_low, mmap->len_low);
         }         
         if(mmap->type == MMAP_TYPE_ACPINVS)
         {
             rkprintf("Protecting ACPI NVS memory space (%x:%lu)\n", mmap->addr_low, mmap->len_low);
-            AllocAbs(mmap->len_low, mmap->addr_low);
+            InternalAllocAbs(mmap->addr_low, mmap->len_low);
         }
         if(mmap->type == MMAP_TYPE_RESERVED)
         {
             rkprintf("Protecting reserved memory space (%x:%lu)\n", mmap->addr_low, mmap->len_low);
-            AllocAbs(mmap->len_low, mmap->addr_low);
+            InternalAllocAbs(mmap->addr_low, mmap->len_low);
         }
     }
 */

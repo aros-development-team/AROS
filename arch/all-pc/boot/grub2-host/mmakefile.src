@@ -34,9 +34,13 @@ export CFLAGS		:= $(filter-out -s --strip-all,$(HOST_CFLAGS))
 export TARGET_CFLAGS	:= $(CFLAGS)
 
 ifeq ($(AROS_TARGET_VARIANT),efi)
-    GRUB2_PLATFORM := efi
+    GRUB_ARCH := efi
+    GRUB_CPU  := $(AROS_TARGET_CPU)
+    ARCH_MODS := hfsplus normal chain boot configfile
 else
-    GRUB2_PLATFORM := $(AROS_TARGET_ARCH)
+    GRUB_ARCH := pc
+    GRUB_CPU  := i386 # fix that some day, just needed now on x64 + x86
+    ARCH_MODS := biosdisk
 endif
 
 # See verbose comments in ranlib-helper for explanation of this
@@ -47,7 +51,7 @@ endif
 DESTDIR     :=	$(HOSTGENDIR)/$(CURDIR)/host_binaries
 CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
                 --host=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)       \
-                --with-platform=$(GRUB2_PLATFORM)               \
+                --with-platform=$(GRUB_ARCH)		        \
                 --datarootdir=$(DESTDIR)/share                  \
                 --sysconfdir=$(DESTDIR)/etc                     \
                 --disable-grub-mkfont                           \
@@ -59,11 +63,8 @@ CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
         extraoptions="$(CONFIG_OPTS)"					\
         install_target=
 
-GRUB2_MODS  :=	biosdisk fshelp part_msdos part_amiga affs sfs iso9660 minicmd
+GRUB2_MODS  :=	$(ARCH_MODS) fshelp part_msdos part_amiga part_gpt affs sfs iso9660 minicmd
 LST_FILES   :=	command fs moddep
-GRUB_ARCH   :=	$(AROS_HOST_ARCH)
-GRUB_CPU    :=	i386# fix that some day, just needed now on x64 + x86
-GRUB_ARCH   :=	pc
 MKIMG_OPTS  :=	-O $(GRUB_CPU)-$(GRUB_ARCH) -p /boot/grub
 
 #MM
@@ -74,3 +75,11 @@ grub2-iso-setup: $(BOOT_GRUB)
 	$(CP) *.mod $(BOOT_GRUB)                                        && \
 	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)               && \
 	$(CAT) cdboot.img core.img > $(BOOT_GRUB)/grub2_eltorito
+
+#MM
+grub2-efi-iso-setup-quick: $(BOOT_GRUB)
+	@cd $(HOSTGENDIR)/$(CURDIR)/grub-core                           && \
+	../grub-mkimage $(MKIMG_OPTS) -d . -o grub.efi $(GRUB2_MODS)    && \
+	$(CP) *.efi $(BOOT_GRUB)                                        && \
+	$(CP) *.mod $(BOOT_GRUB)                                        && \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)
