@@ -115,7 +115,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
                 if (addr < 0x80000000ULL)
                 {
                 	/*
-                	 * Now, check whether the topost address exceeds the 2GB border. If yes,
+                	 * Now, check whether the topmost address exceeds the 2GB border. If yes,
                 	 * trim it now.
                 	 */
 

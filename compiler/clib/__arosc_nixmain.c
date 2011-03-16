@@ -199,7 +199,7 @@ static void update_PATH(void)
 
     #define PE(x) ((PathEntry *)(BADDR(x)))
 
-    UBYTE aname[PATH_MAX]; /* PATH_MAX Ought to enough, it would be too complicated
+    UBYTE aname[PATH_MAX]; /* PATH_MAX ought to be enough; it would be too complicated
                               handling aname dynamically (thanks to our sucky dos.library).  */
     char *PATH = NULL;
     size_t PATH_len = 0;

@@ -662,7 +662,7 @@ void *const functable[] =
 /*
     Most languages do not need most of this data. If your languages
     uses the same codeset as english (ISO-8859-1/ECMA Latin 1), then
-    my allowing the english code to do all the work (see Mask() function)
+    by allowing the English code to do all the work (see Mask() function)
     you can reduce this file to just the strings.
 
     ----------------------------------------------------------------------

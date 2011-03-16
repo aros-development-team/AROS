@@ -608,7 +608,7 @@ BPTR InternalLoadSeg_ELF
             }
         }
         else
-        /* Load the section in memory if needed, and make an hunk out of it */
+        /* Load the section in memory if needed, and make a hunk out of it */
         if (sh[i].flags & SHF_ALLOC)
         {
 	    if (sh[i].size)
