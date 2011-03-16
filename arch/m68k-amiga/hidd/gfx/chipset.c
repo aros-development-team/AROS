@@ -463,6 +463,13 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
 {
     UWORD x, y, *p;
 
+    /* Clip width and height */
+    if (width > 16)
+    	width = 16;
+
+    if (height > 32)
+    	height = 32;
+
     if (width != data->sprite_width || height != data->sprite_height) {
     	resetsprite(data);
     	data->sprite = AllocVec(2 + 2 + (width + 15) / 8 * height * 2 + (2 + 2) * 2, MEMF_CHIP | MEMF_CLEAR);
@@ -480,18 +487,9 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
     	    pix2 <<= 1;
     	    pix1 |= (c & 1) ? 1 : 0;
     	    pix2 |= (c & 2) ? 1 : 0;
-    	    /* When we fill a word, place it. */
-    	    if ((x & 0xf)==0xf) {
-    	    	*p++ = pix1;
-    	    	*p++ = pix2;
-    	    }
     	}
-    	/* Place the word at the end of the
-    	 * row, if not already placed */
-    	if ((x & 0xf) != 0) {
-	    *p++ = pix1;
-	    *p++ = pix2;
-	}
+    	*p++ = pix1;
+    	*p++ = pix2;
     }
     setspritepos(data, data->spritex, data->spritey);
     setspritevisible(data, data->cursorvisible);
