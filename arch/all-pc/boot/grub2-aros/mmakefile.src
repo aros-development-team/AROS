@@ -21,12 +21,17 @@ CFLAGS2 := $(filter-out -s --strip-all $(EXCL_FLAGS),$(CFLAGS))
 export DEBUG         := yes
 
 # trick make.tmpl %build_with_configure compiler=host (what a hack)
-export KERNEL_CC     := $(HOST_CC)	# grub target cc
 export TARGET_CFLAGS := $(CFLAGS1)	# grub target cflags
 export HOST_CC       := $(TARGET_CC)	# aros target cc
 export CFLAGS        := $(CFLAGS2)	# aros target cflags
 export KERNEL_CFLAGS :=			# undef
 export HOST_CFLAGS   :=			# undef
+
+ifeq ($(AROS_TARGET_VARIANT),efi)
+    GRUB_ARCH := efi
+else
+    GRUB_ARCH := pc
+endif
 
 # override %(mmake)-install_opts in make.tmpl
 # because if compiler=host, nix_dir_layout can't be used
@@ -34,7 +39,7 @@ DESTDIR     :=	$(AROS_CONTRIB)/GNU
 INSTALL_ENV := 	bindir=$(DESTDIR)/bin sbindir=$(DESTDIR)/sbin
 CONFIG_OPTS := 	--build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) 	\
     		--host=$(AROS_TARGET_CPU)-aros			\
-		--with-platform=$(AROS_TARGET_ARCH)		\
+		--with-platform=$(GRUB_ARCH)			\
 		--datarootdir=$(DESTDIR)/share			\
 		--sysconfdir=$(DESTDIR)/etc			\
 		--disable-grub-mkfont				\
