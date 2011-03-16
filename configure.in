@@ -126,9 +126,13 @@ esac
 aros_kernel_cc_includes=""
 aros_target_cc_includes=""
 
-# Override this to "default" in order to force a specific build to use real AROS crosscompiler
+# ----------------------------------------------------------------------------------------
+# Host-specific defaults
+#
+# Override this to "yes" in order to force a specific build to use real AROS crosscompiler
 # instead of a wrapper script.
 # Useful for non-ELF hosts (like Windows and Darwin).
+# Can also be overriden in target section below
 use_aros_gcc="no"
 
 # This is the main host configuration section. It is where the host
@@ -721,9 +725,20 @@ else
 fi
 AC_MSG_RESULT($enableval)
 
+#-----------------------------------------------------------------------------
+# Target-specific defaults. You can override then on a per-target basis.
+#
+# Bootloader name. Currently used by PC target.
 target_bootloader="none"
 
+# Prefix for toolchain used to build bootstrap. For hosted ports, this should be a toolchain for target host OS.
+# (i. e. when building mingw32-i386 port this should be set to "i386-mingw32-").
+# For native ports this toolchain is used to build a bootloader and second-level bootstrap (if present).
+target_tool_prefix=${target_cpu}-elf-
+
 #-----------------------------------------------------------------------------
+# Additional options for some specific targets
+
 case "$aros_target_variant" in
 ios)
     AC_MSG_CHECKING([XCode path])
@@ -852,16 +867,7 @@ case "$target_os" in
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
 		dnl Android gcc and AROS gcc use different enums size, so we use AROS gcc
-		aros_target_cc="arm-aros-gcc"
-		aros_target_cxx="arm-aros-g++"
-		aros_target_ld="arm-aros-ld"
-		aros_target_as="arm-aros-as"
-		aros_target_ar="arm-aros-ar"
-		aros_target_ranlib="arm-aros-ranlib"
-		aros_target_nm="arm-aros-nm"
-		aros_target_strip="arm-aros-strip"
-		aros_target_objcopy="arm-aros-objcopy"
-		aros_target_objdump="arm-aros-objdump"
+		use_aros_gcc="yes"
 		if test "$aros_android_ndk" = ""; then
 		    aros_kernel_cflags="-mandroid"
 		    aros_kernel_ldflags="-mandroid"
@@ -1435,9 +1441,6 @@ fi
 # Set prefix for target compiler etc. if we're cross-compiling
 # (should possibly be earlier but needs to be after AC_PROG_CC)
 if test "$cross_compiling" = "yes" ; then
-    if test "$target_tool_prefix" = ""; then
-	target_tool_prefix=${target_cpu}-elf-
-    fi
     CC=${target_tool_prefix}gcc
     dnl CPP is needed for AC_CHECK_HEADER to work correctly
     CPP=${target_tool_prefix}cpp
@@ -1484,20 +1487,31 @@ aros_target_incl_def="$aros_host_incl"
 aros_kernel_cc="$CC"
 
 # The default tools executables to be linked to.
-if test "$aros_target_cc" != ""; then
-    AC_PATH_PROG(aros_target_cc,$aros_target_cc)
-    AROS_REQUIRED(gcc,$aros_target_cc)
-fi
-if test "$aros_target_ld" != ""; then
-    AC_PATH_PROG(aros_target_ld,$aros_target_ld)
-    AROS_REQUIRED(ld,$aros_target_ld)
+if test "$rescomp" != ""; then
+    if test "$cross_compiling" = "yes" ; then
+	rescomp=${target_tool_prefix}${rescomp}
+    fi
+    AC_PATH_PROG(aros_kernel_rescomp,$rescomp)
+    AROS_REQUIRED($rescomp,$aros_kernel_rescomp)
 fi
 
 if test "$crosstools" != "yes"; then
-    AROS_TOOL_TARGET(aros_target_as_ln,as,$aros_target_as)
-    AROS_REQUIRED(as,$aros_target_as_ln)
     AROS_TOOL_TARGET(aros_kernel_ld,ld,$aros_kernel_ld)
     AROS_REQUIRED(ld,$aros_kernel_ld)
+
+    dnl For non-ELF hosts we additionally have to look up ELF toolchain for AROS binaries
+    dnl It can be either AROS toolchain selected earlier or generic ELF toolchain we select here.
+    if test "$target_tool_prefix" != "${target_cpu}-elf-" ; then
+	target_tool_prefix=${target_cpu}-elf-
+	if test "$aros_target_cc" == ""; then
+	   aros_target_cc="$target_tool_prefix-gcc"
+	fi
+	if test "$aros_target_ld" == ""; then
+	   aros_target_ld="$target_tool_prefix-ld"
+	fi
+    fi
+    AROS_TOOL_TARGET(aros_target_as_ln,as,$aros_target_as)
+    AROS_REQUIRED(as,$aros_target_as_ln)
     AROS_TOOL_TARGET(aros_target_ar_ln,ar,$aros_target_ar)
     AROS_REQUIRED(ar,$aros_target_ar_ln)
     AROS_TOOL_TARGET(aros_target_nm_ln,nm,$aros_target_nm)
@@ -1512,25 +1526,30 @@ if test "$crosstools" != "yes"; then
     AROS_REQUIRED(strip,$aros_target_strip_ln)
     if test "$aros_target_cxx" != ""; then
 	AC_PATH_PROG(aros_target_cxx,$aros_target_cxx)
-# Temporarily disabled in order to let Mingw32-hosted nightly build to work
-#	AROS_REQUIRED(c++,$aros_target_cxx)
+	AROS_REQUIRED(c++,$aros_target_cxx)
     fi
 else
-# Cancel preinstalled C++ compiler because it will be built as part of crosstools
+    dnl Cancel preinstalled C++ compiler because it will be built as part of crosstools
     aros_target_cxx=""
+fi
+
+orig_target_cc=$aros_kernel_cc
+orig_target_ld=$aros_kernel_ld
+
+if test "$aros_target_cc" != ""; then
+    AC_PATH_PROG(aros_target_cc,$aros_target_cc)
+    AROS_REQUIRED(gcc,$aros_target_cc)
+    orig_target_cc=$aros_target_cc
+fi
+if test "$aros_target_ld" != ""; then
+    AC_PATH_PROG(aros_target_ld,$aros_target_ld)
+    AROS_REQUIRED(ld,$aros_target_ld)
+    orig_target_ld=$aros_target_ld
 fi
 
 # Build crosstools if we have no C++ - temporary thing 
 if test "$aros_target_cxx" = ""; then
     crosstools_target=tools-crosstools
-fi
-
-if test "$rescomp" != ""; then
-    if test "$cross_compiling" = "yes" ; then
-	rescomp=${target_tool_prefix}${rescomp}
-    fi
-    AC_PATH_PROG(aros_kernel_rescomp,$rescomp)
-    AROS_REQUIRED($rescomp,$aros_kernel_rescomp)
 fi
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
@@ -1568,16 +1587,6 @@ AC_SUBST(aros_target_detach_ldflags,-detach)
 AC_SUBST(aros_target_nostdlib_ldflags,-nostdlib)
 
 # Target tools
-if test "$aros_target_cc" = ""; then
-    orig_target_cc=$aros_kernel_cc
-else
-    orig_target_cc=$aros_target_cc
-fi
-if test "$aros_target_ld" = ""; then
-    orig_target_ld=$aros_kernel_ld
-else
-    orig_target_ld=$aros_target_ld
-fi
 if test "$GCC" = "yes"; then
     aros_target_cc_path=`$orig_target_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
 fi
