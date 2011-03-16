@@ -293,10 +293,25 @@ void stdDealloc(struct MemHeader *freeList, APTR memoryBlock, IPTR byteSize, str
 
 /* 
  * TODO:
- * During transition period two routines below use nommu allocator.
+ * During transition period four routines below use nommu allocator.
  * When transition is complete they should use them only if MMU
  * is inactive. Otherwise they should use KrnAllocPages()/KrnFreePages().
  */
+
+/* Non-mungwalled AllocAbs(). Does not destroy sideways regions. */
+APTR InternalAllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
+{
+    return nommu_AllocAbs(location, byteSize, SysBase);
+}
+
+/*
+ * Use this if you want to free region allocated by InternalAllocAbs().
+ * Otherwise you hit mungwall problem (FreeMem() expects header).
+ */
+void InternalFreeMem(APTR location, IPTR byteSize, struct ExecBase *SysBase)
+{
+    nommu_FreeMem(location, byteSize, SysBase);
+}
 
 /* Allocate a region managed by own header */
 APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase)

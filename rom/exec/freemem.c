@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by AllocMem()
@@ -83,7 +83,7 @@
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
         byteSize += MUNGWALL_TOTAL_SIZE;
 
-    nommu_FreeMem(memoryBlock, byteSize, SysBase);
+    InternalFreeMem(memoryBlock, byteSize, SysBase);
 
     ReturnVoid ("FreeMem");
 
