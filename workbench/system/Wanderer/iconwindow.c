@@ -814,7 +814,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
         case MUIA_ShowMe:
             D(bug("[Wanderer:IconWindow] %s: MUIA_ShowMe [%x]\n", __PRETTY_FUNCTION__, tag->ti_Data));
-            if ((BOOL)tag->ti_Data == TRUE)
+            if (tag->ti_Data)
             {
                 struct Screen *__Wanderer__Screen = NULL;
                 GET(_app(self), MUIA_Wanderer_Screen, &__Wanderer__Screen);
@@ -855,7 +855,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
         case MUIA_Window_Open:
             D(bug("[Wanderer:IconWindow] %s: MUIA_Window_Open [%ld]\n", __PRETTY_FUNCTION__, tag->ti_Data));
-            if ((BOOL)tag->ti_Data == TRUE)
+            if (tag->ti_Data)
             {
                 DoMethod(data->iwd_IconListObj, MUIM_IconList_Clear);
 
@@ -1003,7 +1003,7 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
         ForeachNode(&iconwindow_Extensions, iw_Extension)
         {
             D(bug("[Wanderer:IconWindow] %s: Checking '%s'\n", __PRETTY_FUNCTION__, iw_Extension->iwe_Node.ln_Name));
-            if ((rv = iw_Extension->iwe_Get(CLASS, self, message)) == TRUE)
+            if ((rv = iw_Extension->iwe_Get(CLASS, self, message)))
                 break;
         }
     }
@@ -1393,7 +1393,7 @@ IPTR IconWindow__MUIM_IconWindow_BackFill_ProcessBackground
     retVal = (iconwindow_BackFill_Active->bfd_MUIM_IconWindow_BackFill_ProcessBackground)(CLASS, self, message);
   }
   
-  if ((retVal == (IPTR)FALSE) && (data->iwd_RootViewObj != NULL))
+  if (!retVal && (data->iwd_RootViewObj != NULL))
   {
     Object                *IconWindowPB_PrefsObj = NULL;
 
