@@ -96,6 +96,11 @@
     	textTop += extent.te_Height;
     }
 
+    if (label != NULL) {
+    	Move(rp, leftEdge + textLeft, topEdge + textTop);
+    	Text(rp, label, strlen(label));
+    }
+
 #ifndef FORCE_LUT_ICONS
     if (nativeicon && GfxBase && CyberGfxBase)
     {
@@ -123,7 +128,6 @@
                 nativeicon->iconPNG.height,
                 0
             );
-	    goto draw_label;
 	}
 
         if (nativeicon->icon35.img1.imagedata)
@@ -181,8 +185,6 @@
         
 			    FreeBitMap(bm);
                             FreeVecPooled(POOL, cgfxcoltab);
-
-			    goto draw_label;
 			} /* if (bm) */ 
 		    } /* if (img->mask) */
 
@@ -198,9 +200,6 @@
                     );
 
 		    FreeVecPooled(POOL, cgfxcoltab);
-
-                    goto draw_label;
-
 		} /* if (cgfxcoltab != NULL) */
 
 	    } /* if (bmdepth >= 15) */
@@ -225,12 +224,6 @@
                 leftEdge + wDelta, topEdge
             );
 	    }
-    }
-
-draw_label:
-    if (label != NULL) {
-    	Move(rp, leftEdge + textLeft, topEdge + textTop);
-    	Text(rp, label, strlen(label));
     }
 
     AROS_LIBFUNC_EXIT
