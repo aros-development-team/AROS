@@ -1,3 +1,11 @@
+/*
+    Copyright © 2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Workbook Icon Set Class
+    Lang: english
+*/
+
 #define DEBUG 0
 #include <aros/debug.h>
 

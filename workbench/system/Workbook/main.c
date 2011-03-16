@@ -2,7 +2,7 @@
     Copyright © 2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Workbench replacement
+    Desc: Workbook wrapper for CLI
     Lang: english
 */
 

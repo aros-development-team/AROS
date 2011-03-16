@@ -2,9 +2,10 @@
     Copyright © 2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Workbench replacement
+    Desc: Workbook Main
     Lang: english
 */
+
 #include <stdio.h>
 
 #include <proto/dos.h>
