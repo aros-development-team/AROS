@@ -46,6 +46,7 @@ Class *WBApp_MakeClass(struct WorkbookBase *wb);
 /* Methods */
 #define WBWM_Dummy               (TAG_USER | 0x40410100)
 #define WBWM_NEWSIZE             (WBWM_Dummy+1)  /* N/A */
+#define WBWM_MENUPICK            (WBWM_Dummy+2)  /* struct MenuItem *, UWORD MenuNumber */
 
 Class *WBWindow_MakeClass(struct WorkbookBase *wb);
 
