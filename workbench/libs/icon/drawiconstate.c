@@ -94,10 +94,8 @@
 
     	/* textTop is adjusted downwards by the size of the font */
     	textTop += extent.te_Height;
-    }
 
-    if (label != NULL) {
-    	Move(rp, leftEdge + textLeft, topEdge + textTop);
+	Move(rp, leftEdge + textLeft, topEdge + textTop);
     	Text(rp, label, strlen(label));
     }
 
@@ -128,6 +126,7 @@
                 nativeicon->iconPNG.height,
                 0
             );
+	    return;
 	}
 
         if (nativeicon->icon35.img1.imagedata)
@@ -185,6 +184,7 @@
         
 			    FreeBitMap(bm);
                             FreeVecPooled(POOL, cgfxcoltab);
+			    return;
 			} /* if (bm) */ 
 		    } /* if (img->mask) */
 
@@ -200,6 +200,7 @@
                     );
 
 		    FreeVecPooled(POOL, cgfxcoltab);
+		    return;
 		} /* if (cgfxcoltab != NULL) */
 
 	    } /* if (bmdepth >= 15) */
