@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "memory.h"
 
 #if AROS_SERIAL_DEBUG
 #define PRINT_LIST
@@ -180,7 +181,10 @@ void InitKickTags(void)
     	UWORD i;
     	for (i = 0; i < ml->ml_NumEntries; i++) {
     	    D(bug("KickMem at %x len %d\n", ml->ml_ME[i].me_Un.meu_Addr, ml->ml_ME[i].me_Length));
-    	    if (!AllocAbs(ml->ml_ME[i].me_Length, ml->ml_ME[i].me_Un.meu_Addr)) {
+    	    /* Use the non-Munwalling AllocAbs, since the regions
+    	     * may be consecutive.
+    	     */
+    	    if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase)) {
 		D(bug("KickMem allocation failed\n"));
 		/* Should we free already allocated KickMem lists? */
  	    	return;
