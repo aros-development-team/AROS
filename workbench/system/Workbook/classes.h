@@ -1,4 +1,10 @@
+/*
+    Copyright © 2011, The AROS Development Team. All rights reserved.
+    $Id$
 
+    Desc: Workbook classes
+    Lang: english
+*/
 #ifndef WORKBOOK_CLASSES_H
 #define WORKBOOK_CLASSES_H
 

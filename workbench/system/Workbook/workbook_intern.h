@@ -1,3 +1,11 @@
+/*
+    Copyright © 2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Workbook headers
+    Lang: english
+*/
+
 #ifndef WORKBOOK_H
 #define WORKBOOK_H
 
