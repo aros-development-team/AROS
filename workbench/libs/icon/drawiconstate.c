@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <workbench/icon.h>
@@ -69,34 +69,34 @@
     textLeft = 0;
 
     if (label != NULL) {
-    	struct TextExtent extent;
+        struct TextExtent extent;
 
-    	if (nativeicon && nativeicon->icon35.img1.imagedata) {
-    	    wDelta = nativeicon->icon35.width;
-    	    textTop = nativeicon->icon35.height;
-    	} else {
-    	    wDelta = icon->do_Gadget.Width;
-    	    textTop = icon->do_Gadget.Height;
-    	}
+        if (nativeicon && nativeicon->icon35.img1.imagedata) {
+            wDelta = nativeicon->icon35.width;
+            textTop = nativeicon->icon35.height;
+        } else {
+            wDelta = icon->do_Gadget.Width;
+            textTop = icon->do_Gadget.Height;
+        }
 
-    	TextExtent(rp, label, strlen(label), &extent);
+        TextExtent(rp, label, strlen(label), &extent);
 
-    	/* wDelta will be the centering offset for the icon */
-    	/* textLeft is the horiz offset for the text */
+        /* wDelta will be the centering offset for the icon */
+        /* textLeft is the horiz offset for the text */
 
-    	if (extent.te_Width > wDelta) {
-    	    wDelta = (extent.te_Width - wDelta) / 2;
-    	    textLeft = 0;
-    	} else {
-    	    textLeft = (wDelta - extent.te_Width) / 2;
-    	    wDelta = 0;
-    	}
+        if (extent.te_Width > wDelta) {
+            wDelta = (extent.te_Width - wDelta) / 2;
+            textLeft = 0;
+        } else {
+            textLeft = (wDelta - extent.te_Width) / 2;
+            wDelta = 0;
+        }
 
-    	/* textTop is adjusted downwards by the size of the font */
-    	textTop += extent.te_Height;
+        /* textTop is adjusted downwards by the size of the font */
+        textTop += extent.te_Height;
 
-	Move(rp, leftEdge + textLeft, topEdge + textTop);
-    	Text(rp, label, strlen(label));
+        Move(rp, leftEdge + textLeft, topEdge + textTop);
+        Text(rp, label, strlen(label));
     }
 
 #ifndef FORCE_LUT_ICONS
@@ -209,7 +209,7 @@
 #endif
     if (state == IDS_SELECTED && icon->do_Gadget.SelectRender)
     {
-	    DrawImage
+        DrawImage
         (
             rp, (struct Image *)icon->do_Gadget.SelectRender,
             leftEdge + wDelta, topEdge
@@ -217,14 +217,14 @@
     }
     else if (icon->do_Gadget.GadgetRender)
     {
-	    if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
-	    {
-	        DrawImage
+        if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
+        {
+            DrawImage
             (
                 rp, (struct Image *) icon->do_Gadget.GadgetRender,
                 leftEdge + wDelta, topEdge
             );
-	    }
+        }
     }
 
     AROS_LIBFUNC_EXIT
