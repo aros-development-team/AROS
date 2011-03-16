@@ -170,6 +170,26 @@ static void wbCloseWindow(Class *cl, Object *obj, struct Window *win)
     }
 }
 
+static void NewCLI(struct WorkbookBase *wb)
+{
+    BPTR cis;
+
+    cis = Open("CON:20/20///Workbook Shell/AUTO", MODE_OLDFILE);
+    if (cis)
+    {
+        struct TagItem tags[] =
+            {
+                { SYS_Asynch,      TRUE       }, /* 0 */
+                { SYS_Background,  FALSE      }, /* 1 */
+                { SYS_Input,       (IPTR)cis  }, /* 2 */
+                { SYS_Output,      (IPTR)NULL }, /* 3 */
+                { SYS_Error,       (IPTR)NULL }, /* 4 */
+		{ TAG_END } };
+
+	SystemTags("", tags);
+    }
+}
+
 static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNumber)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -182,7 +202,6 @@ static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNum
     D(bug("Menu: %x\n", menuNumber));
     while (menuNumber != MENUNULL) {
     	item = ItemAddress(win->MenuStrip, menuNumber);
-    	struct TagItem notags[] = { {  TAG_END }};
 
     	if (MENUNUM(menuNumber) == 0) {
     	    D(bug("Menu Command: %c\n", item->Command));
@@ -191,8 +210,7 @@ static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNum
     	    	quit = TRUE;
     	    	break;
     	    case 'W':
-    	    	D(bug("Open, dammit!\n"));
-    	    	OpenWorkbenchObjectA("C:Shell", notags);
+    	    	NewCLI(wb);
     	    	break;
     	    default:
     	    	break;
