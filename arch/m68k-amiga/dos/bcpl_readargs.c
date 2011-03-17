@@ -27,7 +27,7 @@ AROS_UFH4(ULONG, BCPL_ReadArgs,
 	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 
 /*  LOCATION
-        BCPL Vector offset 138
+        BCPL Vector offset 0x138
 
     FUNCTION
 	Parses the commandline, a given string or Input() and fills

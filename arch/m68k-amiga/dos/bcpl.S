@@ -1080,7 +1080,7 @@ sicmp0:
 	movem.l	%sp@+,%d1-%d3/%a0-%a1
     BRTS
 
-BCPL rdargs         /* 138, BOOL, @template, array, array_size */
+BCPL rdargs         /* 138, ULONG, @template, array, array_size */
     /* BCPL rdargs and DOS/ReadArgs() don't match up
      *      very nicely. We'll need to call a BCPL/ReadArgs
      *      routine that works the way this expects
