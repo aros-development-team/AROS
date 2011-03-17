@@ -45,7 +45,7 @@ endif
 
 # See verbose comments in ranlib-helper for explanation of this
 ifeq ($(AROS_HOST_ARCH),darwin)
-    RANLIB := $(SRCDIR)/$(CURDIR)/ranlib-helper
+    export RANLIB := $(SRCDIR)/$(CURDIR)/ranlib-helper
 endif
 
 DESTDIR     :=	$(HOSTGENDIR)/$(CURDIR)/host_binaries
