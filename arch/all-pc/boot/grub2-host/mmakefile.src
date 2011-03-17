@@ -39,7 +39,7 @@ ifeq ($(AROS_TARGET_VARIANT),efi)
     ARCH_MODS := hfsplus normal chain boot configfile
 else
     GRUB_ARCH := pc
-    GRUB_CPU  := i386 # fix that some day, just needed now on x64 + x86
+    GRUB_CPU  := i386
     ARCH_MODS := biosdisk
 endif
 
