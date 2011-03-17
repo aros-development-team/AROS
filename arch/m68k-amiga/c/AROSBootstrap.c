@@ -30,15 +30,28 @@ struct DosLibrary *DOSBase;
 
 /* Define these here for zlib so that we don't
  * pull in arosc.library.
+ *
+ * We can't use AllocVec, since it's only
+ * been around since KS v46
  */
 void *malloc(int size)
 {
-    return AllocVec(size, MEMF_ANY);
+    ULONG *vec;
+
+    size += sizeof(ULONG);
+
+    vec = AllocMem(size, MEMF_ANY);
+    if (vec == NULL)
+    	return NULL;
+
+    vec[0] = (ULONG)size;
+    return &vec[1];
 }
 
 void free(void *ptr)
 {
-    FreeVec(ptr);
+    ULONG *vec = ptr - sizeof(ULONG);
+    FreeMem(vec, vec[0]);
 }
 
 int open(const char *name, int mode)
