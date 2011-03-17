@@ -2223,15 +2223,15 @@ endif
 #
 # Arguments:
 #
-#     - mmake    = mmaketarget
-#     - archbase = archive base name
-#     - suffixes = a list of suffixes to append to the the package name plus the
-#                  version. Each one of them is tried until a matching archive is
-#                  found.
-#     - portdir  = the directory to unpack the archive to.
-#     - excludes = diff patterns to exclude files or directories from the patch
+#     - mmake       = mmaketarget
+#     - archivea    = archive base name
+#     - suffixes    = a list of suffixes to append to the the package name plus the
+#                     version. Each one of them is tried until a matching archive is
+#                     found.
+#     - destination = the directory to unpack the archive to.
+#     - excludes    = diff patterns to exclude files or directories from the patch
 
-%define create_patch mmake=/A archbase=/A suffixes="tar.bz2 tar.gz" portdir=/A excludes=
+%define create_patch mmake=/A archive=/A suffixes="tar.bz2 tar.gz" destination=/A excludes=
 
 .PHONY: %(mmake)
 
@@ -2241,18 +2241,18 @@ endif
 
 #MM
 %(mmake):
-	@$(FETCH) -a %(archbase) -s "%(suffixes)" -l $(PORTSSOURCEDIR) -d %(portdir)/tmp ; \
-	$(MV) %(portdir)/%(archbase) %(portdir)/tmp/%(archbase).aros ; \
-	cd %(portdir)/tmp ; \
+	@$(FETCH) -a %(archive) -s "%(suffixes)" -l $(PORTSSOURCEDIR) -d %(destination)/tmp ; \
+	$(MV) %(destination)/%(archive) %(destination)/tmp/%(archive).aros ; \
+	cd %(destination)/tmp ; \
 	$(FOR) f in %(excludes) ; do \
 	    $(ECHO) $$f >> ./exclude.patterns ; \
 	done ; \
 	diff -ruN $(%(mmake)-exclude) \
-	    %(archbase) \
-	    %(archbase).aros \
-	    >$(SRCDIR)/$(CURDIR)/%(archbase)-aros-new.diff ; \
-	$(MV) %(portdir)/tmp/%(archbase).aros %(portdir)/%(archbase) ; \
-	$(RM) %(portdir)/tmp
+	    %(archive) \
+	    %(archive).aros \
+	    >$(SRCDIR)/$(CURDIR)/%(archive)-aros-new.diff ; \
+	$(MV) %(destination)/tmp/%(archive).aros %(destination)/%(archive) ; \
+	$(RM) %(destination)/tmp
 %end
 #------------------------------------------------------------------------------
 
@@ -2347,7 +2347,7 @@ endif
     patches_specs="$(%(mmake)-%(subpackage)-patches_specs)" patches_origins="$(SRCDIR)/$(CURDIR) %(patch_repo)"
 
 %create_patch mmake=%(mmake)-%(subpackage)-create-patch \
-    archbase=%(mmake)-%(subpackage)-archbase suffixes="%(suffixes)" portdir=%(mmake)-portdir
+    archive=$(%(mmake)-%(subpackage)-archbase) suffixes="%(suffixes)" destination=$(%(mmake)-portdir)
 
 #MM- %(mmake) : %(mmake)-%(subpackage)
 
