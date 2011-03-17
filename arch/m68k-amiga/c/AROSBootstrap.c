@@ -414,6 +414,8 @@ void BootROM(BPTR romlist)
     Supervisor(supercode);
 }
 
+ULONG BCPL_Stack[1500];
+
 ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4)
 {
     struct Process *pr = (APTR)FindTask(NULL);
@@ -431,7 +433,7 @@ ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4)
     	    AROS_UFCA(ULONG, d3, D3),
     	    AROS_UFCA(ULONG, d4, D4),
     	    AROS_UFCA(ULONG, 0,  A0),    /* System memory base */
-    	    AROS_UFCA(ULONG *, pr->pr_Task.tc_SPLower, A1),
+    	    AROS_UFCA(ULONG *, &BCPL_Stack[0], A1),
     	    AROS_UFCA(APTR, gv, A2),
     	    AROS_UFCA(APTR, func, A4),
     	    AROS_UFCA(APTR, DOSBase->dl_A5, A5),
