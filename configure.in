@@ -1244,6 +1244,15 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
+
+		dnl Temporary hack, needed to get nightly build working
+		aros_target_ar="i386-aros-ar"
+		aros_target_ranlib="i386-aros-ranlib"
+    		aros_target_nm="i386-aros-nm"
+    		aros_target_strip="i386-aros-strip"
+    		aros_target_objcopy="i386-aros-objcopy"
+    		aros_target_objdump="i386-objdump"
+
 		target_tool_prefix="i386-mingw32-"
 		;;
 	    *x86_64*)
@@ -1504,10 +1513,10 @@ if test "$crosstools" != "yes"; then
     if test "$target_tool_prefix" != "${target_cpu}-elf-" ; then
 	target_tool_prefix=${target_cpu}-elf-
 	if test "$aros_target_cc" == ""; then
-	   aros_target_cc="$target_tool_prefix-gcc"
+	   aros_target_cc="${target_tool_prefix}gcc"
 	fi
 	if test "$aros_target_ld" == ""; then
-	   aros_target_ld="$target_tool_prefix-ld"
+	   aros_target_ld="${target_tool_prefix}ld"
 	fi
     fi
     AROS_TOOL_TARGET(aros_target_as_ln,as,$aros_target_as)
