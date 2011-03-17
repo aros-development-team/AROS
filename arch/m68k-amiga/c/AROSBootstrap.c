@@ -401,12 +401,64 @@ void BootROM(BPTR romlist)
     Supervisor(supercode);
 }
 
+ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4)
+{
+    struct Process *pr = (APTR)FindTask(NULL);
+    APTR  bcpl_jsr = (APTR)DOSBase->dl_A5;
+    APTR  func;
+    ULONG *gv = pr->pr_GlobVec;
+    ULONG ret;
+
+    func = (APTR)gv[index];
+
+    ret = AROS_UFC11(ULONG, bcpl_jsr, 
+    	    AROS_UFCA(ULONG, 0, D0),  /* BCPL frame usage */
+    	    AROS_UFCA(ULONG, d1, D1),
+    	    AROS_UFCA(ULONG, d2, D2),
+    	    AROS_UFCA(ULONG, d3, D3),
+    	    AROS_UFCA(ULONG, d4, D4),
+    	    AROS_UFCA(ULONG, 0,  A0),    /* System memory base */
+    	    AROS_UFCA(ULONG *, pr->pr_Task.tc_SPLower, A1),
+    	    AROS_UFCA(APTR, gv, A2),
+    	    AROS_UFCA(APTR, func, A4),
+    	    AROS_UFCA(APTR, DOSBase->dl_A5, A5),
+    	    AROS_UFCA(APTR, DOSBase->dl_A6, A6));
+
+    return ret;
+}
+
+
+/* For KS < 2.0, we need to call the BCPL ReadArgs,
+ * since DOS/ReadArgs doesn't exist.
+ */
+ULONG bcplReadArgs(CONST_STRPTR format, ULONG *args, ULONG max_arg)
+{
+    int len;
+    BYTE *fmtmem;
+    ULONG ret;
+
+    len = strlen(format);
+    if (len > 255)
+    	return 0;
+
+    fmtmem = AllocMem(len + 1, MEMF_ANY);
+    if (fmtmem == NULL)
+    	return 0;
+
+    CopyMem(format, fmtmem + 1, len);
+    fmtmem[0] = len;
+
+    ret = doBCPL(78, MKBADDR(fmtmem), MKBADDR(args), max_arg, 0);
+
+    FreeMem(fmtmem, len + 1);
+
+    return ret;
+}
+
 int __nocommandline;
 
 int main(void)
 {
-    int err = 1;
-
     /* See if we're already running on AROS.
      */
     struct Library *sbl = (APTR)SysBase;
@@ -416,14 +468,13 @@ int main(void)
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
-    	IPTR args[1] = {
-    	    (IPTR)"aros.elf.gz",
+    	ULONG args[512] = {
+    	    MKBADDR("\013aros.elf.gz")
     	};
-    	struct RDArgs *rda;
 
-    	if ((rda = ReadArgs("FILE", args, NULL)) != NULL) {
-
-    	    ROMSegList = ROMLoad((const char *)args[0]);
+    	bcplReadArgs("FILE", args, 512);
+    	if (!IoErr()) {
+    	    ROMSegList = ROMLoad(AROS_BSTR_ADDR(args[0]));
     	    if (ROMSegList != BNULL) {
     	    	Printf("Successfully loaded ROM\n");
 
@@ -433,7 +484,6 @@ int main(void)
     	    } else {
     	    	Printf("Can't load ROM ELF file\n");
     	    }
-    	    FreeArgs(rda);
     	} else {
     	    Printf("Can't parse arguments\n");
     	}
@@ -441,5 +491,5 @@ int main(void)
 
     	CloseLibrary((APTR)DOSBase);
     }
-    return err;
+    return RETURN_OK;
 }
