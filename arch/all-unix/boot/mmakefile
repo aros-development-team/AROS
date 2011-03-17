@@ -6,8 +6,24 @@ else
     BSP := $(AROS_TARGET_VARIANT)
 endif
 
-#MM- kernel-unix: kernel-bootstrap-hosted kernel-boot-unix \
-#MM	kernel-link-base kernel-link-hosted kernel-timer
+# -------- Bootstrap part --------
+
+#MM boot-unix: kernel-bootstrap-hosted
+
+#MM
+boot-unix: $(BINDIR)/boot/AROSBootstrap.conf
+
+$(BINDIR)/boot/AROSBootstrap.conf: mkbootconf.sh $(BINDIR)/boot AROSBootstrap.conf
+	@$(ECHO) Writing $@...
+	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(SRCDIR)/$(CURDIR) $(BSP) >$@
+
+$(BINDIR)/boot:
+	@$(ECHO) Making $@...
+	@mkdir -p $(BINDIR)/boot
+
+# -------- Kickstart part --------
+
+#MM- kernel-unix: kernel-link-base kernel-link-hosted kernel-timer
 
 #MM- kernel-link-unix : \
 #MM	kernel-kernel-kobj			\
@@ -56,17 +72,6 @@ DEP_LIBS := \
 
 LIBS :=	-larossupport -lhiddgraphicsstubs -lhiddstubs -lamiga -lautoinit -llibinit -lrom -lm
 
-$(BINDIR)/boot:
-	@$(ECHO) Making $@...
-	@mkdir -p $(BINDIR)/boot
-
 $(BINDIR)/boot/aros-bsp-$(BSP): $(DEP_LIBS) $(KOBJS) $(BINDIR)/boot
 	@$(ECHO) Linking $@...
 	@$(TARGET_CC) $(KOBJS) $(LIBS) -o $@ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS)
-
-#MM
-kernel-boot-unix: $(BINDIR)/boot/AROSBootstrap.conf
-
-$(BINDIR)/boot/AROSBootstrap.conf: mkbootconf.sh $(BINDIR)/boot AROSBootstrap.conf
-	@$(ECHO) Writing $@...
-	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(SRCDIR)/$(CURDIR) $(BSP) >$@

@@ -174,7 +174,7 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/confi
 # targets which do not generate files or for which a file/directory exists
 .PHONY: default all makedirs tools docs clean arch-clean dist-clean install \
 	$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts test \
-	kernel workbench rom compiler contrib sdk mmake
+	kernel boot workbench rom compiler contrib sdk mmake
 
 # Workaround for bug in make v3.81 (should normally be handled by .DEFAULT)
 test kernel workbench rom compiler contrib :

@@ -8,5 +8,4 @@ include $(TOP)/config/make.cfg
 #MM- linklibs: \
 #MM	workbench-libs-oss-unix-module-linklib
 
-#MM- workbench-unix : workbench-hidd-unix $(OSS_LIBRARY_TARGET) \
-#MM	workbench-hosted arch-common-boot-generatebootsig
+#MM- workbench-unix : workbench-hidd-unix $(OSS_LIBRARY_TARGET) workbench-hosted
