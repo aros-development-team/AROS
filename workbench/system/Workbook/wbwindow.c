@@ -27,6 +27,7 @@
 #include <libraries/gadtools.h>
 
 #include "workbook_intern.h"
+#include "workbook_menu.h"
 #include "classes.h"
 
 static inline WORD max(WORD a, WORD b)
@@ -36,6 +37,7 @@ static inline WORD max(WORD a, WORD b)
 
 struct wbWindow {
     STRPTR         Path;
+    BPTR           Lock;
     struct Window *Window;
     struct Menu   *Menu;
     Object        *ScrollH;
@@ -44,16 +46,102 @@ struct wbWindow {
     Object        *Set;       /* Set of icons */
 
     ULONG          Flags;
+
+    /* Temporary path buffer */
+    TEXT           PathBuffer[PATH_MAX];
 };
 
 #define WBWF_USERPORT   (1 << 0)    /* Window has a custom port */
 
+#define Broken NM_ITEMDISABLED |
+
 static const struct NewMenu WBWindow_menu[] =  {
-	{ NM_TITLE, "Workbook",   0, 0, 0, 0, },
-	{  NM_ITEM, "Shell...",  "W", 0, 0, },
-	{  NM_ITEM, "Quit...",   "Q", 0, 0, },
-	{   NM_END, NULL,          0, 0, 0, 0, },
+    WBMENU_TITLE(WBMENU_WB),
+        WBMENU_ITEM(WBMENU_WB_BACKDROP),
+        WBMENU_ITEM(WBMENU_WB_EXECUTE),
+        WBMENU_ITEM(WBMENU_WB_SHELL),
+        WBMENU_ITEM(WBMENU_WB_ABOUT),
+        WBMENU_BAR,
+        WBMENU_ITEM(WBMENU_WB_QUIT),
+        WBMENU_ITEM(WBMENU_WB_SHUTDOWN),
+    WBMENU_TITLE(WBMENU_WN),
+        WBMENU_ITEM(WBMENU_WN_NEW_DRAWER),
+        WBMENU_ITEM(WBMENU_WN_OPEN_PARENT),
+        WBMENU_ITEM(WBMENU_WN_UPDATE),
+        WBMENU_ITEM(WBMENU_WN_SELECT_ALL),
+        WBMENU_ITEM(WBMENU_WN_SELECT_NONE),
+        WBMENU_SUBTITLE(WBMENU_WN__SNAP),
+            WBMENU_SUBITEM(WBMENU_WN__SNAP_WINDOW),
+            WBMENU_SUBITEM(WBMENU_WN__SNAP_ALL),
+        WBMENU_SUBTITLE(WBMENU_WN__SHOW),
+            WBMENU_SUBITEM(WBMENU_WN__SHOW_ICONS),
+            WBMENU_SUBITEM(WBMENU_WN__SHOW_ALL),
+        WBMENU_SUBTITLE(WBMENU_WN__VIEW),
+            WBMENU_SUBITEM(WBMENU_WN__VIEW_ICON),
+            WBMENU_SUBITEM(WBMENU_WN__VIEW_DETAILS),
+    WBMENU_TITLE(WBMENU_IC),
+        WBMENU_ITEM(WBMENU_IC_OPEN),
+        WBMENU_ITEM(WBMENU_IC_COPY),
+        WBMENU_ITEM(WBMENU_IC_RENAME),
+        WBMENU_ITEM(WBMENU_IC_INFO),
+        WBMENU_BAR,
+        WBMENU_ITEM(WBMENU_IC_SNAPSHOT),
+        WBMENU_ITEM(WBMENU_IC_UNSNAPSHOT),
+        WBMENU_ITEM(WBMENU_IC_LEAVE_OUT),
+        WBMENU_ITEM(WBMENU_IC_PUT_AWAY),
+        WBMENU_BAR,
+        WBMENU_ITEM(WBMENU_IC_DELETE),
+        WBMENU_ITEM(WBMENU_IC_FORMAT),
+        WBMENU_ITEM(WBMENU_IC_EMPTY_TRASH),
+    { NM_END },
 };
+
+static BOOL wbMenuEnable(Class *cl, Object *obj, int id, BOOL onoff)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
+    int i, menu = -1, item = -1, sub = -1;
+    UWORD MenuNumber = MENUNULL;
+    BOOL rc = FALSE;
+
+    for (i = 0; WBWindow_menu[i].nm_Type != NM_END; i++) {
+    	const struct NewMenu *nm = &WBWindow_menu[i];
+
+    	switch (nm->nm_Type) {
+    	case NM_TITLE:
+    	    menu++;
+    	    item = -1;
+    	    sub = -1;
+    	    break;
+    	case IM_ITEM:
+    	case NM_ITEM:
+    	    item++;
+    	    sub = -1;
+    	    break;
+    	case IM_SUB:
+    	case NM_SUB:
+    	    sub++;
+    	    break;
+    	}
+
+    	if (nm->nm_UserData == (APTR)id) {
+    	    MenuNumber = FULLMENUNUM(menu, item, sub);
+    	    break;
+    	}
+    }
+
+    if (MenuNumber != MENUNULL) {
+    	if (onoff)
+    	    OnMenu(my->Window, MenuNumber);
+    	else
+    	    OffMenu(my->Window, MenuNumber);
+
+    	rc = TRUE;
+    }
+
+    return rc;
+}
+
 
 static IPTR wbIgnoreInfo_Hook(struct Hook *hook, struct ExAllData *ead, LONG *type)
 {
@@ -78,8 +166,8 @@ static void wbAddFiles(Class *cl, Object *obj, CONST_STRPTR path)
     lock = Lock(path, SHARED_LOCK);
     if (lock != BNULL) {
     	STRPTR text,cp;
-    	ULONG size = strlen(path) + NAME_MAX + 1;
-    	text = AllocVec(size, MEMF_ANY);
+    	ULONG size = sizeof(my->PathBuffer);
+    	text = &my->PathBuffer[0];
     	cp = stpcpy(text, path);
 
     	ead = AllocVec(eadSize, MEMF_CLEAR);
@@ -113,7 +201,6 @@ static void wbAddFiles(Class *cl, Object *obj, CONST_STRPTR path)
     	    }
     	    FreeVec(ead);
     	}
-    	FreeVec(text);
     	UnLock(lock);
     } else {
     	D(bug("Can't lock %s\n", path));
@@ -249,14 +336,18 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 
     path = (CONST_STRPTR)GetTagData(WBWA_Path, (IPTR)NULL, ops->ops_AttrList);
     if (path == NULL) {
+    	my->Lock = BNULL;
     	my->Path = NULL;
     } else {
-	my->Path = AllocVec(strlen(path)+1, MEMF_ANY);
-	if (my->Path == NULL) {
-	    DoSuperMethod(cl, obj, OM_DISPOSE, 0);
-	    return 0;
-	}
-	strcpy(my->Path, path);
+    	my->Lock = Lock(path, SHARED_LOCK);
+    	if (my->Lock == BNULL)
+    	    goto error;
+
+    	my->Path = AllocVec(strlen(path)+1, MEMF_ANY);
+    	if (my->Path == NULL)
+    	    goto error;
+    	
+    	strcpy(my->Path, path);
     }
 D(bug("%s: Path='%s'\n", __func__, my->Path));
     /* Create icon set */
@@ -283,12 +374,8 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
     	struct NewWindow *nwin = NULL;
 
     	icon = GetDiskObjectNew(my->Path);
-    	if (icon == NULL) {
-    	    DisposeObject(my->Set);
-    	    FreeVec(my->Path);
-    	    DoSuperMethod(cl, obj, OM_DISPOSE);
-    	    return 0;
-    	}
+    	if (icon == NULL)
+    	    goto error;
 
     	if (icon->do_DrawerData) {
     	    nwin = &icon->do_DrawerData->dd_NewWindow;
@@ -319,12 +406,8 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
     	FreeDiskObject(icon);
     }
 
-    if (!my->Window) {
-    	FreeVec(my->Path);
-    	DisposeObject(my->Set);
-    	DoSuperMethod(cl, obj, OM_DISPOSE, 0);
-    	return 0;
-    }
+    if (!my->Window)
+    	goto error;
 
     /* If we want a shared port, do it. */
     userport = (struct MsgPort *)GetTagData(WBWA_UserPort, (IPTR)NULL, ops->ops_AttrList);
@@ -374,12 +457,8 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
     wbRedimension(cl, obj);
 
     my->Menu = CreateMenusA((struct NewMenu *)WBWindow_menu, NULL);
-    if (my->Menu == NULL) {
-    	CloseWindow(my->Window);
-    	FreeVec(my->Path);
-    	DoSuperMethod(cl, obj, OM_DISPOSE, 0);
-    	return 0;
-    }
+    if (my->Menu == NULL)
+    	goto error;
 
     vis = GetVisualInfo(my->Window->WScreen, TAG_END);
     LayoutMenus(my->Menu, vis, TAG_END);
@@ -387,9 +466,39 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
 
     SetMenuStrip(my->Window, my->Menu);
 
+    /* Disable opening the parent for root window
+     * and disk paths.
+     */
+    if (my->Lock == BNULL) {
+    	wbMenuEnable(cl, obj, WBMENU_ID(WBMENU_WN_OPEN_PARENT), FALSE);
+    } else {
+    	BPTR lock = ParentDir(my->Lock);
+    	if (lock == BNULL) {
+    	    wbMenuEnable(cl, obj, WBMENU_ID(WBMENU_WN_OPEN_PARENT), FALSE);
+    	} else {
+    	    UnLock(lock);
+    	}
+    }
+
     RefreshGadgets(my->Window->FirstGadget, my->Window, NULL);
 
     return rc;
+
+error:
+    if (my->Set)
+    	DisposeObject(my->Set);
+
+    if (my->Window)
+    	CloseWindow(my->Window);
+
+    if (my->Path)
+    	FreeVec(my->Path);
+
+    if (my->Lock == BNULL)
+    	UnLock(my->Lock);
+
+    DoSuperMethod(cl, obj, OM_DISPOSE, 0);
+    return 0;
 }
 
 static IPTR WBWindowDispose(Class *cl, Object *obj, Msg msg)
@@ -431,6 +540,12 @@ static IPTR WBWindowDispose(Class *cl, Object *obj, Msg msg)
 
     /* .. except for my->Set */
     DisposeObject(my->Set);
+
+    if (my->Path)
+    	FreeVec(my->Path);
+
+    if (my->Lock)
+    	UnLock(my->Lock);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -497,7 +612,6 @@ static IPTR WBWindowUpdate(Class *cl, Object *obj, struct opUpdate *opu)
     return rc;
 }
 
-
 // WBWM_NEWSIZE
 static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
 {
@@ -511,6 +625,32 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
     return 0;
 }
 
+// WBWM_MENUPICK
+static IPTR WBWindowMenuPick(Class *cl, Object *obj, struct wbwm_MenuPick *wbwmp)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
+    struct MenuItem *item = wbwmp->wbwmp_MenuItem;
+    BPTR lock;
+    BOOL rc = TRUE;
+
+    switch (WBMENU_ITEM_ID(item)) {
+    case WBMENU_ID(WBMENU_WN_OPEN_PARENT):
+    	lock = ParentDir(my->Lock);
+    	if (NameFromLock(lock, my->PathBuffer, sizeof(my->PathBuffer))) {
+    	    OpenWorkbenchObject(my->PathBuffer, TAG_END);
+    	}
+    	UnLock(lock);
+    	break;
+    default:
+    	rc = FALSE;
+    	break;
+    }
+
+    return rc;
+}
+
+
 static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
 {
     IPTR rc = 0;
@@ -521,6 +661,7 @@ static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
     case OM_GET:       rc = WBWindowGet(cl, obj, (APTR)msg); break;
     case OM_UPDATE:    rc = WBWindowUpdate(cl, obj, (APTR)msg); break;
     case WBWM_NEWSIZE: rc = WBWindowNewSize(cl, obj, (APTR)msg); break;
+    case WBWM_MENUPICK: rc = WBWindowMenuPick(cl, obj, (APTR)msg); break;
     default:           rc = DoSuperMethodA(cl, obj, msg); break;
     }
 

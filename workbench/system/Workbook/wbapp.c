@@ -25,6 +25,7 @@
 #include <workbench/handler.h>
 
 #include "workbook_intern.h"
+#include "workbook_menu.h"
 #include "classes.h"
 
 struct wbApp {
@@ -199,24 +200,23 @@ static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNum
 
     D(bug("Menu: %x\n", menuNumber));
     while (menuNumber != MENUNULL) {
+    	BOOL handled = FALSE;
+
     	item = ItemAddress(win->MenuStrip, menuNumber);
 
-    	if (MENUNUM(menuNumber) == 0) {
-    	    D(bug("Menu Command: %c\n", item->Command));
-    	    switch (item->Command) {
-    	    case 'Q':
+    	/* Let the window have first opportunity */
+    	if (owin)
+    	    handled = DoMethod(owin, WBWM_MENUPICK, item, menuNumber);
+
+    	if (!handled) {
+    	    switch (WBMENU_ITEM_ID(item)) {
+    	    case WBMENU_ID(WBMENU_WB_QUIT):
     	    	quit = TRUE;
     	    	break;
-    	    case 'W':
+    	    case WBMENU_ID(WBMENU_WB_SHELL):
     	    	NewCLI(wb);
     	    	break;
-    	    default:
-    	    	break;
     	    }
-    	} else {
-    	    D(bug("Menu passed to: %p\n", owin));
-    	    if (owin)
-    	    	DoMethod(owin, WBWM_MENUPICK, item, menuNumber);
     	}
 
     	menuNumber = item->NextSelect;
@@ -231,6 +231,8 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbApp *my = INST_DATA(cl, obj);
     BOOL done = FALSE;
+
+    CurrentDir(BNULL);
 
     if (RegisterWorkbench(my->AppPort)) {
     	while (!done) {
