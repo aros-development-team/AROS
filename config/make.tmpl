@@ -2114,7 +2114,7 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(HOST_CC) $(HOST_CFLAGS)" \
 	    TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
-	    TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" RANLIB="$(RANLIB)" \
+	    TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
 	    $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) \
 	    --target=$(AROS_TARGET_CPU)-aros && \
 	    $(TOUCH) $@
