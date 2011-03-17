@@ -1,6 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- boot-pc-x86_64: bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-x86_64
+
+#MM- kernel-link-pc-x86_64: kernel-package-x86_64
+
 #MM kernel-package-pc-x86_64: \
 #MM	linklibs-clib \
 #MM	kernel-aros \

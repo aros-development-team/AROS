@@ -1,11 +1,21 @@
-# Copyright © 2004, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2011, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
 
+#MM- bootdisk : bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- bootdisk-quick : bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+#MM- systemdisk : systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- systemdisk-quick : systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM- bootiso : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT) bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- bootiso-quick : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)-quick bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM boot : boot-$(ARCH)-$(CPU) boot-$(ARCH) boot-$(FAMILY)
+
 AROSBOOTSIGFILE := AROS.boot
 
 #MM
-arch-common-boot-generatebootsig:
-	@echo "$(ARCH)-$(CPU)" > $(AROSDIR)/$(AROSBOOTSIGFILE)
-
+boot:
+	@$(ECHO) Writing $@...
+	@$(ECHO) "$(ARCH)-$(CPU)" > $(AROSDIR)/$(AROSBOOTSIGFILE)

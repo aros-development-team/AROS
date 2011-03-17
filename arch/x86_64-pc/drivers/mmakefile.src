@@ -25,7 +25,7 @@ include $(TOP)/config/make.cfg
 # These are not needed as part of the kernel - and so get created seperately
 #
 
-#MM- AROS-pc-x86_64-drivers : \
+#MM- workbench-pc-x86_64 : \
 #MM    hidd-vmwaresvga \
 #MM    hidd-nvidia \
 #MM    hidd-radeon
