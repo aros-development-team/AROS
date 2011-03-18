@@ -81,6 +81,21 @@ AROS_UFH3S(void, ResetHandler,
 /**********************
 **  ForwardEvents()  **
 **********************/
+
+#ifdef __mc68000
+struct InputEvent *is_Code_Wrapper(void) {
+    struct InputEvent *ret;
+    asm volatile (
+       "movem.l %%d2-%%d4/%%a2,%%sp@-\n"
+       "jsr (%%a2)\n"
+       "movem.l %%sp@+,%%d2-%%d4/%%a2\n"
+       "move.l %%d0,%0\n"
+       : "=g" (ret)
+    );
+    return ret;
+}
+#endif
+
 /* Forwards a chain of events to the inputhandlers */
 VOID ForwardQueuedEvents(struct inputbase *InputDevice)
 {
@@ -95,10 +110,21 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
 	    D(bug("ipe: calling inputhandler %s at %p\n",
 	    		ihiterator->is_Node.ln_Name, ihiterator->is_Code));
 		
+#ifdef __mc68000
+           /* There are many m68k applications that expect to be able
+            * to clobber a number of registers in their code.
+            *
+            * We need the wrapper to save/restore those registers.
+            */
+            ie_chain = AROS_UFC3(struct InputEvent *, is_Code_Wrapper,
+                   AROS_UFCA(struct InputEvent *,  ie_chain,               A0),
+                   AROS_UFCA(APTR,                 ihiterator->is_Data,    A1),
+                   AROS_UFCA(APTR,                 ihiterator->is_Code,    A2))
+#else
             ie_chain = AROS_UFC2(struct InputEvent *, ihiterator->is_Code,
 		    AROS_UFCA(struct InputEvent *,  ie_chain,          	    A0),
 		    AROS_UFCA(APTR,                 ihiterator->is_Data,    A1));
-
+#endif
 	    D(bug("ipe: returned from inputhandler\n"));
 
 	} /* for each input handler */
