@@ -1251,7 +1251,7 @@ case "$target_os" in
     		aros_target_nm="i386-aros-nm"
     		aros_target_strip="i386-aros-strip"
     		aros_target_objcopy="i386-aros-objcopy"
-    		aros_target_objdump="i386-objdump"
+    		aros_target_objdump="i386-aros-objdump"
 
 		target_tool_prefix="i386-mingw32-"
 		;;
