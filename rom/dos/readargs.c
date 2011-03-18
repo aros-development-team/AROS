@@ -179,7 +179,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     {
         cs = &rdargs->RDA_Source;
     }
-    else
+    else if (Cli())
     {
     	D(bug("[ReadArgs] Input: 0x%p\n", Input()));
 	/*
@@ -201,6 +201,13 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         lcs.CS_CurChr = 0;
 
         cs = &lcs;
+    }
+    else
+    {
+	/* We were called from Wanderer */
+	D(bug("[ReadArgs] No Cli\n"));
+	error = 0;
+	goto end;
     }
 
     /* Check for optional reprompting */
