@@ -7,6 +7,7 @@
 
 #include "dos_intern.h"
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************
@@ -149,7 +150,7 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     /* Must be always buffered or EndCLI won't work */
     if (vbuf_alloc(fhinput, NULL, size + 1) && IsInteractive(fh))
     {
-    	D(bug("[vbuf] Handle 0x%p, injecting string: %s\n", fh, argptr));
+    	D(bug("[vbuf_inject] Handle 0x%p, injecting string: %s, size: %u\n", fh, argptr, size));
 
 	/* ugly hack */
 

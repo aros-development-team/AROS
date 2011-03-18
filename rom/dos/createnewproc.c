@@ -32,6 +32,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 /* Temporary macro */
@@ -137,7 +138,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	{
     	    LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 
-	    D(bug("Parent stack: %u (0x%08X)\n", parentstack, parentstack));
+	    D(bug("[createnewproc] Parent stack: %u (0x%08X)\n", parentstack, parentstack));
 	    if (parentstack > AROS_STACKSIZE)
 	    {
 	        defaults[9].ti_Data = parentstack;
@@ -381,8 +382,8 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_Task.tc_SPLower = stack;
     process->pr_Task.tc_SPUpper = stack + process->pr_StackSize;
 
-    D(bug("Starting process %s\n", name));
-    D(bug("Stack: 0x%p - 0x%p\n", process->pr_Task.tc_SPLower, process->pr_Task.tc_SPUpper));
+    D(bug("[createnewproc] Starting process %s\n", name));
+    D(bug("[createnewproc] Stack: 0x%p - 0x%p\n", process->pr_Task.tc_SPLower, process->pr_Task.tc_SPUpper));
 
 /*  process->pr_ReturnAddr; */
     NEWLIST(&process->pr_Task.tc_MemEntry);
@@ -420,7 +421,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     /* Set the name of this program */
     internal_SetProgramName(cli, name, DOSBase);
-    D(bug("Calling internal_SetProgramName() with name = %s\n", name));
+    D(bug("[createnewproc] Calling internal_SetProgramName() with name = %s\n", name));
 
     process->pr_PktWait = NULL;
     process->pr_WindowPtr = (struct Window *)defaults[17].ti_Data;
@@ -464,7 +465,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
      * This fixes for example AmigaOS' C:Execute.
      * CHECKME: is this correct? May be this applies only to CLI processes?
      */
-    D(bug("argsize: %u argstr: %s\n", argsize, argptr));
+    D(bug("[createnewproc] argsize: %u argstr: %s\n", argsize, argptr));
     vbuf_inject(process->pr_CIS, argptr, argsize, DOSBase);
 
     tasktags[0].ti_Data = (IPTR)argptr;
