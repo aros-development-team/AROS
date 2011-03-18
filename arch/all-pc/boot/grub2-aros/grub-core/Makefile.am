@@ -8,6 +8,15 @@ CC=$(TARGET_CC)
 CPP=$(TARGET_CC)
 CCAS=$(TARGET_CC)
 
+# AROS FIX
+# This allows to build GRUB2 under 64-bit MacOS X using x86_64-elf cross-compiler
+# for building core binaries (./configure --target=x86_64-elf).
+# Without this MacOS X ranlib is used for indexing libgnulib.a which contains ELF objects,
+# breaking the build.
+# ar could also be overriden here, but this seems to be not a problem because it's just an
+# archiver.
+RANLIB=$(TARGET_RANLIB)
+
 if COND_GRUB_MKFONT
 if COND_HAVE_FONT_SOURCE
 TARGET_CFLAGS += -DUSE_ASCII_FAILBACK=1 -DHAVE_UNIFONT_WIDTHSPEC=1

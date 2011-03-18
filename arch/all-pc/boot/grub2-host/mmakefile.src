@@ -43,11 +43,6 @@ else
     ARCH_MODS := biosdisk
 endif
 
-# See verbose comments in ranlib-helper for explanation of this
-ifeq ($(AROS_HOST_ARCH),darwin)
-    export RANLIB := $(SRCDIR)/$(CURDIR)/ranlib-helper
-endif
-
 DESTDIR     :=	$(HOSTGENDIR)/$(CURDIR)/host_binaries
 CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
                 --host=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)       \

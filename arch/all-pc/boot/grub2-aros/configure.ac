@@ -331,6 +331,7 @@ if test "x$target_alias" != x && test "x$host_alias" != "x$target_alias"; then
   AC_CHECK_TOOL(OBJCOPY, objcopy)
   AC_CHECK_TOOL(STRIP, strip)
   AC_CHECK_TOOL(NM, nm)
+  AC_CHECK_TOOL(TARGET_RANLIB, ranlib)
 
   ac_tool_prefix="$tmp_ac_tool_prefix"
 else
@@ -344,6 +345,7 @@ fi
 AC_SUBST(HOST_CC)
 AC_SUBST(BUILD_CC)
 AC_SUBST(TARGET_CC)
+AC_SUBST(TARGET_RANLIB)
 
 # Test the C compiler for the target environment.
 tmp_CC="$CC"

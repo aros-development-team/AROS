@@ -1,8 +1,9 @@
-This is /home/agreppin/aros/src/arch/common/boot/grub2/docs/grub.info,
-produced by makeinfo version 4.13 from
-/home/agreppin/aros/src/arch/common/boot/grub2/docs/grub.texi.
+This is
+/Users/pavel.fedin/Projects/AROS/arch/all-pc/boot/grub2-aros/docs/grub.info,
+produced by makeinfo version 4.8 from
+/Users/pavel.fedin/Projects/AROS/arch/all-pc/boot/grub2-aros/docs/grub.texi.
 
-This manual is for GNU GRUB (version 1.99~beta0, 8 January 2011).
+   This manual is for GNU GRUB (version 1.99~beta0, 4 March 2011).
 
    Copyright (C) 1999,2000,2001,2002,2004,2006,2008,2009,2010 Free
 Software Foundation, Inc.
@@ -32,7 +33,7 @@ architectures.
 
    This edition documents version 1.99~beta0.
 
-   This manual is for GNU GRUB (version 1.99~beta0, 8 January 2011).
+   This manual is for GNU GRUB (version 1.99~beta0, 4 March 2011).
 
    Copyright (C) 1999,2000,2001,2002,2004,2006,2008,2009,2010 Free
 Software Foundation, Inc.
@@ -242,7 +243,7 @@ File: grub.info,  Node: Features,  Next: Role of a boot loader,  Prev: Changes f
 =================
 
 The primary requirement for GRUB is that it be compliant with the
-"Multiboot Specification", which is described in *note Multiboot
+"Multiboot Specification", which is described in *Note Multiboot
 Specification: (multiboot)Top.
 
    The other goals, listed in approximate order of importance, are:
@@ -284,7 +285,7 @@ Load a configuration file
      and embed a preset configuration file in a GRUB image file. The
      list of commands (*note Commands::) are a superset of those
      supported on the command-line. An example configuration file is
-     provided in *note Configuration::.
+     provided in *Note Configuration::.
 
 Provide a menu interface
      A menu interface listing preset boot commands, with a programmable
@@ -580,7 +581,7 @@ like this:
    By the way, as noted above, it is quite difficult to guess BIOS
 drives correctly under a UNIX-like OS. Thus, `grub-install' will prompt
 you to check if it could really guess the correct mappings, after the
-installation. The format is defined in *note Device map::. Please be
+installation. The format is defined in *Note Device map::. Please be
 quite careful. If the output is wrong, it is unlikely that your
 computer will be able to boot with no problem.
 
@@ -774,6 +775,7 @@ up.  It is normally also necessary to load some GRUB modules and set the
 appropriate root device.  Putting this together, we get something like
 this, for a Windows system on the first partition of the first hard
 disk:
+
 
 menuentry "Windows" {
 	insmod chain
@@ -1123,10 +1125,10 @@ then it must be quoted.  For example:
 `GRUB_INIT_TUNE'
      Play a tune on the speaker when GRUB starts.  This is particularly
      useful for users unable to see the screen.  The value of this
-     option is passed directly to *note play::.
+     option is passed directly to *Note play::.
 
 `GRUB_BADRAM'
-     If this option is set, GRUB will issue a *note badram:: command to
+     If this option is set, GRUB will issue a *Note badram:: command to
      filter out specified regions of RAM.
 
 
@@ -1938,7 +1940,7 @@ simple.  Here is an example:
    The command `serial' initializes the serial unit 0 with the speed
 9600bps. The serial unit 0 is usually called `COM1', so, if you want to
 use COM2, you must specify `--unit=1' instead. This command accepts
-many other options, so please refer to *note serial::, for more details.
+many other options, so please refer to *Note serial::, for more details.
 
    The commands `terminal_input' (*note terminal_input::) and
 `terminal_output' (*note terminal_output::) choose which type of
@@ -2477,7 +2479,7 @@ File: grub.info,  Node: serial,  Next: terminal_input,  Up: General commands
      `terminal_input' or `terminal_output' command is used (*note
      terminal_input::, *note terminal_output::).
 
-     See also *note Serial terminal::.
+     See also *Note Serial terminal::.
 
 
 File: grub.info,  Node: terminal_input,  Next: terminal_output,  Prev: serial,  Up: General commands
@@ -2909,7 +2911,7 @@ File: grub.info,  Node: initrd,  Next: initrd16,  Prev: help,  Up: Command-line 
      Load an initial ramdisk for a Linux kernel image, and set the
      appropriate parameters in the Linux setup area in memory.  This
      may only be used after the `linux' command (*note linux::) has
-     been run.  See also *note GNU/Linux::.
+     been run.  See also *Note GNU/Linux::.
 
 
 File: grub.info,  Node: initrd16,  Next: insmod,  Prev: initrd,  Up: Command-line and menu entry commands
@@ -2921,7 +2923,7 @@ File: grub.info,  Node: initrd16,  Next: insmod,  Prev: initrd,  Up: Command-lin
      Load an initial ramdisk for a Linux kernel image to be booted in
      16-bit mode, and set the appropriate parameters in the Linux setup
      area in memory.  This may only be used after the `linux16' command
-     (*note linux16::) has been run.  See also *note GNU/Linux::.
+     (*note linux16::) has been run.  See also *Note GNU/Linux::.
 
      This command is only available on x86 systems.
 
@@ -2984,7 +2986,7 @@ File: grub.info,  Node: linux16,  Next: ls,  Prev: linux,  Up: Command-line and 
 
      The kernel will be booted using the traditional 16-bit boot
      protocol.  As well as bypassing problems with `vga=' described in
-     *note linux::, this permits booting some other programs that
+     *Note linux::, this permits booting some other programs that
      implement the Linux boot protocol for the sake of convenience.
 
      This command is only available on x86 systems.
@@ -3042,7 +3044,7 @@ File: grub.info,  Node: parttool,  Next: password,  Prev: ls,  Up: Command-line 
           the "hidden" bit in its partition type code; when disabled,
           unhides the selected partition by clearing this bit.  This is
           useful only when booting DOS or Wwindows and multiple primary
-          FAT partitions exist in one disk.  See also *note
+          FAT partitions exist in one disk.  See also *Note
           DOS/Windows::.
 
 
@@ -4376,119 +4378,119 @@ Index
 
 
 Tag Table:
-Node: Top923
-Node: Introduction3188
-Node: Overview3632
-Node: Overview-Footnotes5616
-Ref: Overview-Footnote-15677
-Node: History5838
-Node: Changes from GRUB Legacy7926
-Node: Features10536
-Node: Features-Footnotes16527
-Ref: Features-Footnote-116588
-Ref: Features-Footnote-216734
-Node: Role of a boot loader16879
-Node: Role of a boot loader-Footnotes18217
-Ref: Role of a boot loader-Footnote-118304
-Node: Naming convention18383
-Node: Installation21258
-Node: Installing GRUB using grub-install22673
-Node: Making a GRUB bootable CD-ROM26319
-Node: Making a GRUB bootable CD-ROM-Footnotes28383
-Ref: Making a GRUB bootable CD-ROM-Footnote-128486
-Node: Device map28561
-Node: Booting30712
-Node: General boot methods31104
-Node: Loading an operating system directly31845
-Node: Chain-loading32576
-Node: OS-specific notes33547
-Node: GNU/Hurd33829
-Node: GNU/Linux34946
-Node: DOS/Windows36569
-Node: Configuration38342
-Node: Simple configuration38884
-Node: Shell-like scripting47212
-Node: Shell-like scripting-Footnotes55045
-Ref: Shell-like scripting-Footnote-155130
-Node: Embedded configuration55257
-Node: Theme file format58073
-Ref: Pixmap-styled progress bar59496
-Ref: Plain progress bar59508
-Ref: An example of the slices (in red) used for a terminal window. This drawing was created and sliced in Inkscape_62937
-Node: Network77159
-Node: Serial terminal79562
-Node: Vendor power-on keys81783
-Node: Images82744
-Node: Filesystem88821
-Node: Device syntax89508
-Node: File name syntax91000
-Node: Block list syntax91754
-Node: Interface92487
-Node: Command-line interface93306
-Node: Command-line interface-Footnotes95247
-Ref: Command-line interface-Footnote-195336
-Node: Menu interface95431
-Node: Menu entry editor96441
-Node: Commands97179
-Node: Menu-specific commands97906
-Node: menuentry98864
-Node: General commands99855
-Node: serial100351
-Node: terminal_input101396
-Node: terminal_output102062
-Node: terminfo102729
-Node: Command-line and menu entry commands103864
-Node: acpi106291
-Node: badram107330
-Node: blocklist108372
-Node: boot108606
-Node: cat108927
-Node: chainloader109562
-Node: cmp110184
-Node: configfile110735
-Node: cpuid111035
-Node: crc111500
-Node: date111690
-Node: drivemap112229
-Node: echo113032
-Node: export113969
-Node: gettext114281
-Node: gptsync114688
-Node: halt115633
-Node: help115959
-Node: initrd116422
-Node: initrd16116834
-Node: insmod117339
-Node: keystatus117561
-Node: linux118199
-Node: linux16119102
-Node: ls119810
-Node: parttool120356
-Node: password121852
-Node: password_pbkdf2122134
-Node: play122542
-Node: pxe_unload123294
-Node: reboot123575
-Node: search123764
-Node: sendkey124540
-Node: set130814
-Node: unset131113
-Node: uppermem131318
-Node: Security131519
-Node: Supported kernels134207
-Node: Troubleshooting141695
-Node: GRUB only offers a rescue shell141921
-Node: Invoking grub-install144776
-Node: Invoking grub-mkconfig145980
-Node: Invoking grub-mkpasswd-pbkdf2146617
-Node: Obtaining and Building GRUB147280
-Node: Reporting bugs148561
-Node: Future151365
-Node: Internals151855
-Node: Getting the source code152060
-Node: Finding your way around152934
-Node: Copying This Manual155485
-Node: GNU Free Documentation License155716
-Node: Index178124
+Node: Top951
+Node: Introduction3214
+Node: Overview3658
+Node: Overview-Footnotes5642
+Ref: Overview-Footnote-15703
+Node: History5864
+Node: Changes from GRUB Legacy7952
+Node: Features10562
+Node: Features-Footnotes16553
+Ref: Features-Footnote-116614
+Ref: Features-Footnote-216760
+Node: Role of a boot loader16905
+Node: Role of a boot loader-Footnotes18243
+Ref: Role of a boot loader-Footnote-118330
+Node: Naming convention18409
+Node: Installation21284
+Node: Installing GRUB using grub-install22699
+Node: Making a GRUB bootable CD-ROM26345
+Node: Making a GRUB bootable CD-ROM-Footnotes28409
+Ref: Making a GRUB bootable CD-ROM-Footnote-128512
+Node: Device map28587
+Node: Booting30738
+Node: General boot methods31130
+Node: Loading an operating system directly31871
+Node: Chain-loading32602
+Node: OS-specific notes33574
+Node: GNU/Hurd33856
+Node: GNU/Linux34973
+Node: DOS/Windows36596
+Node: Configuration38369
+Node: Simple configuration38911
+Node: Shell-like scripting47239
+Node: Shell-like scripting-Footnotes55072
+Ref: Shell-like scripting-Footnote-155157
+Node: Embedded configuration55284
+Node: Theme file format58100
+Ref: Pixmap-styled progress bar59523
+Ref: Plain progress bar59535
+Ref: An example of the slices (in red) used for a terminal window. This drawing was created and sliced in Inkscape_62964
+Node: Network77186
+Node: Serial terminal79589
+Node: Vendor power-on keys81810
+Node: Images82771
+Node: Filesystem88848
+Node: Device syntax89535
+Node: File name syntax91027
+Node: Block list syntax91781
+Node: Interface92514
+Node: Command-line interface93333
+Node: Command-line interface-Footnotes95274
+Ref: Command-line interface-Footnote-195363
+Node: Menu interface95458
+Node: Menu entry editor96468
+Node: Commands97206
+Node: Menu-specific commands97933
+Node: menuentry98891
+Node: General commands99882
+Node: serial100378
+Node: terminal_input101423
+Node: terminal_output102089
+Node: terminfo102756
+Node: Command-line and menu entry commands103891
+Node: acpi106318
+Node: badram107357
+Node: blocklist108399
+Node: boot108633
+Node: cat108954
+Node: chainloader109589
+Node: cmp110211
+Node: configfile110762
+Node: cpuid111062
+Node: crc111527
+Node: date111717
+Node: drivemap112256
+Node: echo113059
+Node: export113996
+Node: gettext114308
+Node: gptsync114715
+Node: halt115660
+Node: help115986
+Node: initrd116449
+Node: initrd16116861
+Node: insmod117366
+Node: keystatus117588
+Node: linux118226
+Node: linux16119129
+Node: ls119837
+Node: parttool120383
+Node: password121879
+Node: password_pbkdf2122161
+Node: play122569
+Node: pxe_unload123321
+Node: reboot123602
+Node: search123791
+Node: sendkey124567
+Node: set130841
+Node: unset131140
+Node: uppermem131345
+Node: Security131546
+Node: Supported kernels134234
+Node: Troubleshooting141722
+Node: GRUB only offers a rescue shell141948
+Node: Invoking grub-install144803
+Node: Invoking grub-mkconfig146007
+Node: Invoking grub-mkpasswd-pbkdf2146644
+Node: Obtaining and Building GRUB147307
+Node: Reporting bugs148588
+Node: Future151392
+Node: Internals151882
+Node: Getting the source code152087
+Node: Finding your way around152961
+Node: Copying This Manual155512
+Node: GNU Free Documentation License155743
+Node: Index178151
 
 End Tag Table
