@@ -2054,13 +2054,47 @@ else
 	oldincludedir=$(AROS_INCLUDES) %(install_env)
 endif
 
+ifneq ($(DEBUG),yes)
+    %(mmake)-s_flag = -s
+endif
+
+# Set up build environment, and options for configure script
+ifeq (%(compiler),host)
+    COMPILER_ENV := \
+        CC="$(HOST_CC) $(HOST_CFLAGS)" \
+        TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
+        TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"
+    %(mmake)-config_opts += --target=$(AROS_TARGET_CPU)-aros
+endif
+ifeq (%(compiler),target)
+    COMPILER_ENV := \
+        CC="$(TARGET_CC) $(TARGET_CFLAGS) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
+        AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"\
+        TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
+        TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"
+    %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
+        --host=$(AROS_TARGET_CPU)-aros\
+        --target=$(AROS_TARGET_CPU)-aros\
+        --disable-nls\
+        --without-x --without-pic --disable-shared
+endif
+ifeq (%(compiler),kernel)
+    COMPILER_ENV := \
+        CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
+        AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"
+    %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
+        --host=$(AROS_TARGET_CPU)-aros\
+        --target=$(AROS_TARGET_CPU)-aros --disable-nls\
+        --without-x --without-pic --disable-shared
+endif
+
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
 #MM- %(mmake) : setup includes linklibs-core %(mmake)-quick
 
 # Using -j1 in install_command may result in a warning but finally
-# it does its job. make install for gcc does not work reliable for -jN
+# it does its job. make install for gcc does not work reliably for -jN
 # where N > 1.
 ifneq (%(install_target),)
     %(mmake)-install_command = \
@@ -2069,8 +2103,8 @@ ifneq (%(install_target),)
 
     %(mmake)-uninstall_command = \
     $(RM) $(%(mmake)-installflag) && \
-    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
-    -C $(%(mmake)-pkgdir) uninstall
+    $(MAKE) $(COMPILER_ENV) PROGDIR="$(%(mmake)-PROGDIR)/" \
+    $(%(mmake)-install_opts) -C $(%(mmake)-pkgdir) uninstall
 else
     %(mmake)-install_command   := true
     %(mmake)-uninstall_command := true
@@ -2084,7 +2118,8 @@ endif
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
 	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q -C $(%(mmake)-pkgdir); then \
             $(RM)  $(%(mmake)-installflag) && \
-	    $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -C $(%(mmake)-pkgdir) && \
+	    $(MAKE) $(COMPILER_ENV) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)"\
+	     -C $(%(mmake)-pkgdir) && \
 	    $(%(mmake)-install_command) && \
 	    $(TOUCH) $@ -r $^; \
         fi
@@ -2098,59 +2133,19 @@ $(%(mmake)-pkgdir)/.files-touched:
 %(mmake)-uninstall :
 	$(%(mmake)-uninstall_command)
 
-ifneq ($(DEBUG),yes)
-    %(mmake)-s_flag = -s
-endif
-
 #MM
 %(mmake)-configure : $(%(mmake)-configflag)
 
 $(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo %(srcdir) | sed 's/^\(.\):\//\/\1\//')
-ifeq (%(compiler),host)
-$(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
-	$(RM) $@ 
-	%mkdirs_q $(%(mmake)-pkgdir)
-	cd $(%(mmake)-pkgdir) && \
-	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(HOST_CC) $(HOST_CFLAGS)" \
-	    TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
-	    TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
-	    $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) \
-	    --target=$(AROS_TARGET_CPU)-aros && \
-	    $(TOUCH) $@
-endif
-ifeq (%(compiler),target)
 $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(TARGET_CC) $(TARGET_CFLAGS) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
-	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
-	    $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) \
-	    --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) \
-	    --host=$(AROS_TARGET_CPU)-aros \
-	    --target=$(AROS_TARGET_CPU)-aros \
-	    --disable-nls \
-	    --without-x --without-pic --disable-shared && \
-	    $(TOUCH) $@
-endif
-ifeq (%(compiler),kernel)
-$(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
-	$(RM) $@
-	%mkdirs_q $(%(mmake)-pkgdir)
-	cd $(%(mmake)-pkgdir) && \
-	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
-	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
-	    $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) \
-	    --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) \
-	    --host=$(AROS_TARGET_CPU)-aros \
-	    --target=$(AROS_TARGET_CPU)-aros --disable-nls \
-	    --without-x --without-pic --disable-shared && \
-	    $(TOUCH) $@
-endif
-	
+	$(COMPILER_ENV) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) \
+	    %(extraoptions) && \
+	$(TOUCH) $@
+
 #MM
 %(mmake)-clean : %(mmake)-uninstall
 	@$(RM) $(%(mmake)-pkgdir)
