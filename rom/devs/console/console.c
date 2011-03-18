@@ -181,8 +181,9 @@ static int GM_UNIQUENAME(Open)
     	D(bug("Opening CONU_LIBRARY unit\n"));
     	ioreq->io_Device = (struct Device *)ConsoleDevice;
 	
-	/* Set io_Unit to NULL, so that CloseDevice knows this is a CONU_LIBRARY unit */
-	ioreq->io_Unit = NULL;
+	/* Set io_Unit so that CloseDevice knows this is a CONU_LIBRARY unit */
+	/* WB1.3 Setmap sets io_Unit to CONU_LIBRARY (-1) before closing console.device */
+	ioreq->io_Unit = (struct Unit*)CONU_LIBRARY;
 	success = TRUE;
     }
     else
@@ -266,7 +267,7 @@ static int GM_UNIQUENAME(Close)
     struct IORequest *ioreq
 )
 {
-    if (ioreq->io_Unit)
+    if (ioreq->io_Unit && ioreq->io_Unit != (struct Unit*)CONU_LIBRARY)
     {
     	ULONG mid = OM_REMOVE;
 
@@ -377,8 +378,25 @@ AROS_LH1(void, beginio,
 
 	    break;
 
+	case CD_ASKKEYMAP:
+	    D(bug("CD_ASKKEYMAP\n"));
+	    error = IOERR_NOCMD;
+	    break;
+	case CD_SETKEYMAP:
+	    D(bug("CD_SETKEYMAP\n"));
+	    error = IOERR_NOCMD;
+	    break;
+	case CD_ASKDEFAULTKEYMAP:
+	    D(bug("CD_ASKDEFAULTKEYMAP\n"));
+	    error = IOERR_NOCMD;
+	    break;
+	case CD_SETDEFAULTKEYMAP:
+	    D(bug("CD_SETDEFAULTKEYMAP\n"));
+	    error = IOERR_NOCMD;
+	    break;
+
 	default:
-	  D(bug("IOERR_NOCMD\n"));
+	    D(bug("IOERR_NOCMD %d\n", ioreq->io_Command));
 	    error = IOERR_NOCMD;
 	    break;
 
