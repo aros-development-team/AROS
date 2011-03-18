@@ -2103,7 +2103,7 @@ ifneq (%(install_target),)
 
     %(mmake)-uninstall_command = \
     $(RM) $(%(mmake)-installflag) && \
-    $(MAKE) $(COMPILER_ENV) PROGDIR="$(%(mmake)-PROGDIR)/" \
+    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" \
     $(%(mmake)-install_opts) -C $(%(mmake)-pkgdir) uninstall
 else
     %(mmake)-install_command   := true
@@ -2118,7 +2118,7 @@ endif
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
 	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q -C $(%(mmake)-pkgdir); then \
             $(RM)  $(%(mmake)-installflag) && \
-	    $(MAKE) $(COMPILER_ENV) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)"\
+	    $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)"\
 	     -C $(%(mmake)-pkgdir) && \
 	    $(%(mmake)-install_command) && \
 	    $(TOUCH) $@ -r $^; \
