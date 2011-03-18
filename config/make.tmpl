@@ -2063,7 +2063,8 @@ ifeq (%(compiler),host)
     COMPILER_ENV := \
         CC="$(HOST_CC) $(HOST_CFLAGS)" \
         TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
-        TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"
+        TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
+        TARGET_RANLIB="$(RANLIB)"
     %(mmake)-config_opts += --target=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (%(compiler),target)
@@ -2071,7 +2072,8 @@ ifeq (%(compiler),target)
         CC="$(TARGET_CC) $(TARGET_CFLAGS) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
         AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"\
         TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
-        TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"
+        TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"\
+        TARGET_RANLIB="$(RANLIB)"
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros\
         --target=$(AROS_TARGET_CPU)-aros\
@@ -2081,7 +2083,8 @@ endif
 ifeq (%(compiler),kernel)
     COMPILER_ENV := \
         CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
-        AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"
+        AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"\
+        TARGET_RANLIB="$(RANLIB)"
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros\
         --target=$(AROS_TARGET_CPU)-aros --disable-nls\
