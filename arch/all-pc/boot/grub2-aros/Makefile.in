@@ -52,8 +52,7 @@ DIST_COMMON = README $(am__configure_deps) \
 	build-aux/compile build-aux/config.guess \
 	build-aux/config.rpath build-aux/config.sub build-aux/depcomp \
 	build-aux/install-sh build-aux/mdate-sh build-aux/missing \
-	build-aux/texinfo.tex config.guess config.sub install-sh \
-	mkinstalldirs
+	build-aux/texinfo.tex config.guess config.sub install-sh
 
 # Platform specific options
 @COND_i386_pc_TRUE@am__append_1 = -mrtd -mregparm=3
@@ -7378,6 +7377,7 @@ TARGET_IMG_LDSCRIPT = @TARGET_IMG_LDSCRIPT@
 TARGET_LDFLAGS = @TARGET_LDFLAGS@
 TARGET_MODULE_FORMAT = @TARGET_MODULE_FORMAT@
 TARGET_OBJ2ELF = @TARGET_OBJ2ELF@
+TARGET_RANLIB = @TARGET_RANLIB@
 UNDEFINE_STRTOK_R = @UNDEFINE_STRTOK_R@
 UNISTD_H_HAVE_WINSOCK2_H = @UNISTD_H_HAVE_WINSOCK2_H@
 UNISTD_H_HAVE_WINSOCK2_H_AND_USE_SOCKETS = @UNISTD_H_HAVE_WINSOCK2_H_AND_USE_SOCKETS@
