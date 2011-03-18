@@ -54,10 +54,14 @@ MODULES := \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS)))
 
-kernel-package-pc-x86_64:
-	$(RM) $(BINDIR)/.pkg
+kernel-package-pc-x86_64: $(BINDIR)/boot
+	@$(ECHO) Creating $@...
+	@$(RM) $(BINDIR)/.pkg
 	%mkdirs_q $(BINDIR)/.pkg
-	$(CP) $(MODULES) $(BINDIR)/.pkg/
-	$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel-pc-x86_64.pkg $(BINDIR)/.pkg  
-	$(RM) $(BINDIR)/.pkg
+	@$(CP) $(MODULES) $(BINDIR)/.pkg/
+	@$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel-pc-x86_64.pkg $(BINDIR)/.pkg  
+	@$(RM) $(BINDIR)/.pkg
 
+$(BINDIR)/boot:
+	@$(ECHO) Creating $@...
+	%mkdirs_q $@
