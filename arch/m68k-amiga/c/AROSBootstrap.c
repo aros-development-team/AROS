@@ -500,6 +500,9 @@ int main(void)
 	    bcplReadArgs(format, MKBADDR(args), 100);
 	    if (!IoErr()) {
 	    	/* Load ROM image */
+	    	if (args[0] == BNULL)
+	    	    args[0] = name;
+
 		ROMSegList = ROMLoad(AROS_BSTR_ADDR(args[0]));
 		if (ROMSegList != BNULL) {
 		    Printf("Successfully loaded ROM\n");
