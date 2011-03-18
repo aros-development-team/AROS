@@ -79,11 +79,14 @@ static void __startup_stdiowin(void)
         return;
     }
 
-    D(bug("[__startup_stdiowin] Settign standard file handles\n"));
+    D(bug("[__startup_stdiowin] Setting standard file handles\n"));
+    D(bug("[__startup_stdiowin]     in %p out %p err %p\n", __iowinr, __iowinw, __iowine));
 
     __old_in = SelectInput(__iowinr);
     __old_out = SelectOutput(__iowinw);
     __old_err = SelectError(__iowine);
+
+    D(bug("[__startup_stdiowin] old in %p out %p err %p\n", __old_in, __old_out, __old_err));
 
     __startup_entries_next();
 
