@@ -41,7 +41,9 @@ void SendPPP_Packet(struct packet *);
 void EscapePacket(struct packet *);
 
 void AddChkSum(struct packet * );
-void AddByte(struct packet *p,const UBYTE b);
+
+void AddBytes(struct packet *p,const BYTE *data,const ULONG len);
+void AddByte(struct packet *p,const BYTE b);
 
 void LCP_packet(struct packet *);
 void SendConfReq();
@@ -302,16 +304,27 @@ void printpacket(struct packet * p){
 	bug("\n");
 }
 
-void inline AddByte(struct packet *p,const UBYTE b){
+void AddBytes(struct packet *p,const BYTE *data,const ULONG len){
+
+	if( p->packetsize + len >= MAXPSIZE ){
+		bug("\nPPP ERROR:AddBytes MAXPSIZE\n");
+		return;
+	}
+
+	memcpy( &p->data[ p->packetsize ] , data , len);
+	p->packetsize += len;
+
+}
+
+void AddByte(struct packet *p,const BYTE b){
 
 	if( p->packetsize >= MAXPSIZE ){
-		bug("\nERROR:AddByte maxpsize\n");
+		bug("\nPPP ERROR:AddByte MAXPSIZE\n");
 		return;
 	}
 	p->data[p->packetsize] = b;
 	p->packetsize ++;
 }
-
 
 void  bytes_received( UBYTE *bytes,ULONG len ){
 	UBYTE c;
@@ -840,10 +853,10 @@ void SendEchoRequest(){
 	p.packetsize=0;
 	AddByte( &p , 0xc0 );//LPC
 	AddByte( &p , 0x21 );
-	AddByte( &p , ECHO_REQUEST ); 
+	AddByte( &p , ECHO_REQUEST );
 	AddByte( &p , ++number ); // number
 	AddByte( &p , 0x00 ); // size
-	AddByte( &p , 0x00 ); 
+	AddByte( &p , 0x00 );
 	p.data[5] = p.packetsize - 2; // size
 	printpacket(&p);
 	AddChkSum(&p);
@@ -920,9 +933,8 @@ void SendTerminateReq(){
 
 
 void send_IP_packet( BYTE *data ,ULONG len ){
-	BYTE *ptr = data;
+
 	struct packet p;
-	ULONG lenT = len;
 // bug( "Send IP packet:%d bytes\n" , len );
 
 	p.packetsize=0;
@@ -935,9 +947,7 @@ void send_IP_packet( BYTE *data ,ULONG len ){
 	AddByte( &p , 0x00 ); // IP
 	AddByte( &p , 0x21 );
 
-	while(lenT--){
-		AddByte( &p , *ptr++ );
-	}
+	AddBytes( &p , data , len );
 
 	AddChkSum(&p);
 	EscapePacket(&p);
@@ -957,6 +967,12 @@ void EscapePacket(struct packet * p){
 	dummy.packetsize=p->packetsize;
 
 	for(j=0,i=0;i<dummy.packetsize;i++,j++){
+
+		if( j >= MAXPSIZE-1 ){
+			bug( "PPP ERROR: EscapePacket MAXPSIZE\n" );
+			p->packetsize = 0;
+			return;
+		}
 
 		if( dummy.data[i]  < 32   ){
 			if( async_map & ( 1L << dummy.data[i] ) ){
