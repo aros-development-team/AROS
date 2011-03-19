@@ -22,7 +22,7 @@
 
     INPUTS
 	buffer   --  the buffer to fill
-	format   --  the format string, see the RawDoFmt() documentation for
+	format   --  the format string, see the VNewRawDoFmt() documentation for
 		     information on which formatting commands there are
 
     RESULT
@@ -34,7 +34,7 @@
     BUGS
 
     SEE ALSO
-	exec.library/RawDoFmt()
+	exec.library/VNewRawDoFmt()
 
     INTERNALS
 
