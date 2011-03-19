@@ -696,10 +696,10 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 			DEBUGPUTS(("68040"));
 		else
 			DEBUGPUTS(("-"));
-	} else if (SysBase->AttnFlags & AFF_68881)
-		DEBUGPUTS(("68881"));
-	else if (SysBase->AttnFlags & AFF_68882)
+	} else if (SysBase->AttnFlags & AFF_68882)
 		DEBUGPUTS(("68882"));
+	else if (SysBase->AttnFlags & AFF_68881)
+		DEBUGPUTS(("68881"));
 	else
 		DEBUGPUTS(("-"));
 	DEBUGPUTS(("\n"));
