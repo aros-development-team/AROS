@@ -276,7 +276,8 @@ static ULONG cpu_detect(void)
 	old_trap11 = trap[11];
 	trap[11] = cpu_detect_trap_f;
 	asm volatile (
-		"move.w	%%sr,%%d0\n"
+		"moveq #0,%%d0\n"
+		"move.w	%%sr,%%d1\n"
 		"move.w	%%d0,%0\n"
 		: "=m" (cpuret) : : "%d0" );
 	trap[4] = cpu_detect_trap_fpu;
