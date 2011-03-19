@@ -55,7 +55,7 @@ VOID PPP_Process(VOID){
 	struct IOSana2Req *ios2;
 	struct EasyTimer *timer=0;
 	ULONG waitmask,signals;
-	UBYTE signalbit;
+	BYTE signalbit;
 	LIBBASETYPEPTR LIBBASE;
 	struct MsgPort *CtrlPort=0;
 	struct PPPcontrolMsg *CtrlMsg=0;
