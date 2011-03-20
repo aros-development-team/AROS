@@ -206,10 +206,19 @@ VOID AmigaVideoBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
     struct planarbm_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    DB2(bug("AmigaVideoBM__Root__Get\n"));
-    if (IS_BITMAP_ATTR(msg->attrID, idx)) {
- 	DB2(bug("=%d\n", idx));
-	switch (idx) {
+    DB2(bug("AmigaVideoBM__Root__Get %d, Attr=%d AmigaVideoBitmap=%d\n", msg->attrID, __IHidd_Attr, __IHidd_AmigaVideoBitmap));
+    if (IS_AmigaVideoBM_ATTR(msg->attrID, idx)) {
+ 	DB2(bug("AVBM=%d\n", idx));
+	switch (idx)
+	{
+	case aoHidd_AmigaVideoBitMap_Drawable:
+	    *msg->storage = TRUE;
+	    return;
+	}
+    } else if (IS_BITMAP_ATTR(msg->attrID, idx)) {
+ 	DB2(bug("BM=%d\n", idx));
+	switch (idx)
+	{
 	case aoHidd_BitMap_LeftEdge:
 	    *msg->storage = data->leftedge;
 	    return;

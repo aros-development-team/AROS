@@ -134,6 +134,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 		ADDTAG(aHidd_Sync_HMax,		16384);
 		ADDTAG(aHidd_Sync_VMax,		16384);
 		ADDTAG(aHidd_Sync_Description,	(IPTR)"MODE: %hx%v");
+#if 1
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[0]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[1]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[2]);
@@ -141,7 +142,9 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[4]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[5]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[6]);
+#endif
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[7]);
+
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_200);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_256);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_512);
@@ -271,7 +274,6 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, stru
     HIDDT_ModeID		modeid;
     struct pHidd_Gfx_NewBitMap   newbitmap;
     OOP_Object			*newbm;
-    HIDDT_StdPixFmt		 stdpf;
     struct gfx_data 	*data = OOP_INST_DATA(cl, o);
     struct TagItem tags[2];
    
@@ -386,11 +388,18 @@ VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
-    struct planarbm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
-    struct planarbm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
-
-    if (!blit_copybox(csd, sdata, ddata, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode))
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    IPTR src, dst;
+    BOOL ok = FALSE;
+ 
+    OOP_GetAttr(msg->src,  aHidd_AmigaVideoBitMap_Drawable, &src);
+    OOP_GetAttr(msg->dest, aHidd_AmigaVideoBitMap_Drawable, &dst);
+    if (src && dst) {
+        struct planarbm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+    	struct planarbm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+    	ok = blit_copybox(csd, sdata, ddata, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode);
+    }
+    if (!ok)
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);   
 }
 
 BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
@@ -406,10 +415,9 @@ BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, st
                              
 BOOL AmigaVideoCl__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, ULONG Type, ULONG *Width, ULONG *Height)
 {
-    if (Type != vHidd_SpriteType_3Plus1)
-	return FALSE;
-    *Width = 16;
-    *Height = 32;
+    struct amigavideo_staticdata *csd = CSD(cl);
+    *Width = csd->aga ? 64 : 16;
+    *Height = *Width * 2;
     return TRUE;
 }
 BOOL AmigaVideoCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
