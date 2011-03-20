@@ -29,6 +29,65 @@
 
 struct DosLibrary *DOSBase;
 
+/* KS 1.3 (and earlier) don't have a dos.library with
+ * niceties such as VFPrintf nor ReadArgs.
+ *
+ * We need to use the BCPL routines to be able
+ * to do these types of operations.
+ */
+#define BCPL_WriteS 73
+#define BCPL_WriteF 74
+#define BCPL_RdArgs 78
+
+#undef  Printf
+#define Printf    __Printf_NOT_AVAILABLE_UNDER_KS1_3
+#undef  ReadArgs
+#define ReadArgs  __ReadArgs_NOT_AVAILABLE_UNDER_KS1_3
+
+/* BCPL can trash D5-D7 and A3, evidently.
+ */
+static void bcplWrapper(void)
+{
+    asm volatile (
+    	"movem.l %d5-%d7/%a3,%sp@-\n"
+    	"jsr (%a5)\n"
+    	"movem.l %sp@+,%d5-%d7/%a3\n"
+    );
+}
+
+ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4, const IPTR *arg, int args)
+{
+    struct Process *pr = (APTR)FindTask(NULL);
+    APTR  func;
+    ULONG *gv = pr->pr_GlobVec;
+    ULONG ret;
+    ULONG *BCPL_frame = AllocMem(1500, MEMF_ANY);
+    if (BCPL_frame == NULL)
+    	return 0;
+
+    func = (APTR)gv[index];
+
+    if (args != 0)
+    	CopyMem(arg, &BCPL_frame[3 + 4], args * sizeof(ULONG));
+
+    ret = AROS_UFC11(ULONG, bcplWrapper,
+    	    AROS_UFCA(ULONG, 0, D0),  /* BCPL frame usage (args-3)*/
+    	    AROS_UFCA(ULONG, d1, D1),
+    	    AROS_UFCA(ULONG, d2, D2),
+    	    AROS_UFCA(ULONG, d3, D3),
+    	    AROS_UFCA(ULONG, d4, D4),
+    	    AROS_UFCA(ULONG, 0,  A0),    /* System memory base */
+    	    AROS_UFCA(ULONG *, &BCPL_frame[3], A1),
+    	    AROS_UFCA(APTR, gv, A2),
+    	    AROS_UFCA(APTR, func, A4),
+    	    AROS_UFCA(APTR, DOSBase->dl_A5, A5),
+    	    AROS_UFCA(APTR, DOSBase->dl_A6, A6));
+
+    FreeMem(BCPL_frame, 1500);
+
+    return ret;
+}
+
 static BSTR AllocBSTR(const char *name)
 {
     UBYTE *bs;
@@ -54,6 +113,26 @@ static void FreeBSTR(BSTR bstr)
 }
 
 
+
+void WriteF(const char *fmt, ...)
+{
+   IPTR *args = (IPTR *)&fmt;
+   BSTR bfmt = AllocBSTR(fmt);
+
+   doBCPL(BCPL_WriteF, bfmt, args[1], args[2], args[3], &args[4], 26-3);
+
+   FreeBSTR(bfmt);
+}
+
+/* For KS < 2.0, we need to call the BCPL ReadArgs,
+ * since DOS/ReadArgs doesn't exist.
+ */
+ULONG RdArgs(BSTR format, BPTR args, ULONG max_arg)
+{
+    return doBCPL(BCPL_RdArgs, format, args, max_arg, 0, NULL, 0);
+}
+
+
 /* Define these here for zlib so that we don't
  * pull in arosc.library.
  *
@@ -67,8 +146,10 @@ void *malloc(int size)
     size += sizeof(ULONG);
 
     vec = AllocMem(size, MEMF_ANY);
-    if (vec == NULL)
+    if (vec == NULL) {
+    	WriteF("libz: Failed to allocate %N bytes of type %X8\n", size, MEMF_ANY);
     	return NULL;
+    }
 
     vec[0] = (ULONG)size;
     return &vec[1];
@@ -165,6 +246,7 @@ static AROS_UFH3(APTR, elfAlloc,
 	AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
+    APTR ret;
 
     /* Clear bits 15-0, we're setting memory class explicitly */
     flags &= ~0x7fff;
@@ -175,7 +257,11 @@ static AROS_UFH3(APTR, elfAlloc,
     	flags |= MEMF_CHIP;
     }
 
-    return AllocMem(size, flags);
+    ret = AllocMem(size, flags);
+    if (ret == NULL)
+    	WriteF("ELF: Failed to allocate %N bytes of type %X4\n", size, flags);
+
+    return ret;
 
     AROS_USERFUNC_EXIT
 }
@@ -192,7 +278,7 @@ static AROS_UFH3(void, elfFree,
     AROS_USERFUNC_EXIT
 }
 
-static BPTR ROMLoad(const char *filename)
+static BPTR ROMLoad(BSTR filename)
 {
     gzFile gzf;
     BPTR rom = BNULL;
@@ -203,17 +289,18 @@ static BPTR ROMLoad(const char *filename)
     	(SIPTR)elfSeek,
     };
 
-    if ((gzf = gzopen(filename, "rb"))) {
+    if ((gzf = gzopen(AROS_BSTR_ADDR(filename), "rb"))) {
     	gzbuffer(gzf, 65536);
 
+    	WriteF("Loading %S into RAM...\n", filename);
     	rom = InternalLoadSeg_ELF((BPTR)gzf, BNULL, funcarray, NULL, DOSBase);
     	if (rom == BNULL) {
-    	    Printf("%s: Can't parse\n", filename);
+    	    WriteF("%S: Can't parse\n", filename);
     	}
 
     	gzclose_r(gzf);
     } else {
-    	Printf("%s: Can't open\n", filename);
+    	WriteF("%S: Can't open\n", filename);
     }
 
     return rom;
@@ -427,7 +514,7 @@ void BootROM(BPTR romlist)
 {
     APTR GfxBase;
 
-    if (0 && (GfxBase = OpenLibrary("graphics.library", 0))) {
+    if ((GfxBase = OpenLibrary("graphics.library", 0))) {
     	LoadView(NULL);
     	LoadView(NULL);
     	CloseLibrary(GfxBase);
@@ -441,49 +528,13 @@ void BootROM(BPTR romlist)
     Supervisor(supercode);
 }
 
-ULONG BCPL_Stack[1500];
-
-ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4)
+__startup static AROS_ENTRY(int, startup,
+	  AROS_UFHA(char *, argstr, A0),
+	  AROS_UFHA(ULONG, argsize, D0),
+	  struct ExecBase *, SysBase)
 {
-    struct Process *pr = (APTR)FindTask(NULL);
-    APTR  bcpl_jsr = (APTR)DOSBase->dl_A5;
-    APTR  func;
-    ULONG *gv = pr->pr_GlobVec;
-    ULONG ret;
+    AROS_USERFUNC_INIT
 
-    func = (APTR)gv[index];
-
-    ret = AROS_UFC11(ULONG, bcpl_jsr, 
-    	    AROS_UFCA(ULONG, 0, D0),  /* BCPL frame usage */
-    	    AROS_UFCA(ULONG, d1, D1),
-    	    AROS_UFCA(ULONG, d2, D2),
-    	    AROS_UFCA(ULONG, d3, D3),
-    	    AROS_UFCA(ULONG, d4, D4),
-    	    AROS_UFCA(ULONG, 0,  A0),    /* System memory base */
-    	    AROS_UFCA(ULONG *, &BCPL_Stack[0], A1),
-    	    AROS_UFCA(APTR, gv, A2),
-    	    AROS_UFCA(APTR, func, A4),
-    	    AROS_UFCA(APTR, DOSBase->dl_A5, A5),
-    	    AROS_UFCA(APTR, DOSBase->dl_A6, A6));
-
-    return ret;
-}
-
-
-/* For KS < 2.0, we need to call the BCPL ReadArgs,
- * since DOS/ReadArgs doesn't exist.
- */
-ULONG bcplReadArgs(BSTR format, BPTR args, ULONG max_arg)
-{
-    return doBCPL(78, format, args, max_arg, 0);
-}
-
-int __nocommandline;
-
-{
-
-int main(void)
-{
     /* See if we're already running on AROS.
      */
     struct Library *sbl = (APTR)SysBase;
@@ -502,24 +553,24 @@ int main(void)
     	    (args = AllocMem(sizeof(ULONG) * 100, MEMF_ANY))) {
 	    args[0] = name;
 
-	    bcplReadArgs(format, MKBADDR(args), 100);
+	    RdArgs(format, MKBADDR(args), 50);
 	    if (!IoErr()) {
 	    	/* Load ROM image */
 	    	if (args[0] == BNULL)
 	    	    args[0] = name;
 
-		ROMSegList = ROMLoad(AROS_BSTR_ADDR(args[0]));
+		ROMSegList = ROMLoad(args[0]);
 		if (ROMSegList != BNULL) {
-		    Printf("Successfully loaded ROM\n");
+		    WriteF("Successfully loaded ROM\n");
 
 		    BootROM(ROMSegList);
 
 		    UnLoadSeg(ROMSegList);
 		} else {
-		    Printf("Can't load ROM ELF file %b\n", args[0]);
+		    WriteF("Can't load ROM ELF file %S\n", args[0]);
 		}
 	    } else {
-		Printf("Can't parse arguments\n");
+		WriteF("Can't parse arguments\n");
 	    }
 	}
 
@@ -531,5 +582,10 @@ int main(void)
     	    FreeMem(args, sizeof(ULONG) * 100);
     	CloseLibrary((APTR)DOSBase);
     }
+
     return RETURN_OK;
+
+    AROS_USERFUNC_EXIT
 }
+
+
