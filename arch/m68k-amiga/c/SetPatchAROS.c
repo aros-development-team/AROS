@@ -80,6 +80,8 @@ static AROS_UFH5(APTR, myRawDoFmt,
 
 /*************  DosLibrary Patches ******************/
 
+#define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
+#define NO_SYSBASE_REMAP
 #include <rom/dos/internalloadseg_elf.c>
 
 static AROS_UFH4(LONG, ReadFunc,
