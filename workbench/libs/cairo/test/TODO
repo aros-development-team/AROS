@@ -1,1 +1,0 @@
-ickle: if you give gs -sOutputFile=foo-%05d.ext it will do one-page-per-file
