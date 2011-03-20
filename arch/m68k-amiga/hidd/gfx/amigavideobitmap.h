@@ -8,7 +8,17 @@
 
 #define IID_Hidd_AmigaVideoBitMap "hidd.bitmap.amigavideobitmap"
 
-#define HiddAmigaVideoBitMapAB __abHidd_AmigaVideoBitMap
+enum
+{
+    aoHidd_AmigaVideoBitMap_Drawable,
+    num_Hidd_AmigaVideoBitMap_Attrs
+};
+
+#define aHidd_AmigaVideoBitMap_Drawable	(__IHidd_AmigaVideoBitmap + aoHidd_AmigaVideoBitMap_Drawable)
+
+#define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - __IHidd_Attr) < num_Hidd_BitMap_Attrs)
+#define IS_AmigaVideoBM_ATTR(attr, idx) ( ( (idx) = (attr) - __IHidd_AmigaVideoBitmap) < num_Hidd_AmigaVideoBitMap_Attrs)
+
 
 /* This structure is used as instance data for the bitmap class.
 */
