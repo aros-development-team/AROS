@@ -68,9 +68,9 @@
             {
             case(GCIT_SupportsFPU):
                 *((BOOL *)passedTag->ti_Data) = (BOOL)(
-                    (processor->FPUModel == FPUTYPE_68881) || 
-                    (processor->FPUModel == FPUTYPE_68882) ||
-                    (processor->FPUModel == FPUTYPE_INTERNAL)); 
+                    (processor->FPUModel == FPUMODEL_68881) || 
+                    (processor->FPUModel == FPUMODEL_68882) ||
+                    (processor->FPUModel == FPUMODEL_INTERNAL)); 
                 break;
             default: 
                 *((BOOL *)passedTag->ti_Data) = FALSE; break;
@@ -84,10 +84,10 @@
             *((ULONG *)passedTag->ti_Data) = 1;
             break;
         case(GCIT_ModelString):
-            *((CONST_STRPTR *)passedTag->ti_Data) = processor->BrandString;
+            *((CONST_STRPTR *)passedTag->ti_Data) = processor->ModelString;
             break;
         case(GCIT_Family):
-            *((ULONG *)passedTag->ti_Data) = CPUFAMILY_MOTORALA_68000;
+            *((ULONG *)passedTag->ti_Data) = CPUFAMILY_MOTOROLA_68000;
             break;
         case(GCIT_VectorUnit):
             *((ULONG *)passedTag->ti_Data) = VECTORTYPE_NONE;

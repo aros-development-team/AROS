@@ -10,8 +10,8 @@
 
 struct M68KProcessorInformation
 {
-    TEXT    BrandStringBuffer[48];
-    STRPTR  BrandString;
+    TEXT    ModelStringBuffer[16];
+    STRPTR  ModelString;
     ULONG   CPUModel;
     ULONG   FPUModel;
 
@@ -28,10 +28,19 @@ struct SystemProcessors
     struct M68KProcessorInformation processor;
 };
 
-#define FPUTYPE_UNKNOWN     0
-#define FPUTYPE_NONE        1
-#define FPUTYPE_68881       2
-#define FPUTYPE_68882       3
-#define FPUTYPE_INTERNAL    4
+#define FPUMODEL_UNKNOWN    0
+#define FPUMODEL_NONE       1
+#define FPUMODEL_68881      2
+#define FPUMODEL_68882      3
+#define FPUMODEL_INTERNAL   4
+
+#define CPUMODEL_UNKNOWN    0
+#define CPUMODEL_68000      1
+#define CPUMODEL_68010      2
+#define CPUMODEL_68020      3
+#define CPUMODEL_68030      4
+#define CPUMODEL_68040      5
+#define CPUMODEL_68060      6
+
 
 #endif /* PROCESSOR_ARCH_INTERN_H */
