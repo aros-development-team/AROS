@@ -23,6 +23,7 @@
 
 #include <zlib.h>
 
+#define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
 #define NO_SYSBASE_REMAP
 #include <rom/dos/internalloadseg_elf.c>
 
