@@ -1,0 +1,14 @@
+# $Id$
+#
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -I$(SRCDIR)/rom/processor
+
+FILES := \
+    getcpuinfo \
+    processor_init \
+
+#MM- kernel-processor-m68k : includes
+
+%build_archspecific mainmmake=kernel-processor maindir=rom/processor \
+    arch=m68k files=$(FILES)
