@@ -2,7 +2,7 @@
 #define DEVICES_TIMER_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer device
@@ -31,7 +31,7 @@
 #define TR_GETSYSTIME (CMD_NONSTD+1)
 #define TR_SETSYSTIME (CMD_NONSTD+2)
 
-#include <aros/_timeval.h> /* get struct timeval */
+#include <aros/types/timeval_s.h> /* get struct timeval */
 
 struct EClockVal
 {
