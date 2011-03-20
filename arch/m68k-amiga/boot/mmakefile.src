@@ -118,6 +118,7 @@ $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.
 	$(Q)$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
 		-Wl,--defsym -Wl,SysBase=0x4 \
+		-m68000 \
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros.ld \
 		-L$(LIBDIR) $(LIBS) -lgcc
 
