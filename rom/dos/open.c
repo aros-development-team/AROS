@@ -76,7 +76,9 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 
     if(ret != NULL)
     {
-	if(InternalOpen(name, accessMode, ret, MAX_SOFT_LINK_NESTING, DOSBase))
+	LONG ok = InternalOpen(name, accessMode, ret, MAX_SOFT_LINK_NESTING, DOSBase);
+	D(bug("[Open] = %d Error = %d\n", ok, IoErr()));
+	if (ok)
 	{
 	    return MKBADDR(ret);	    
 	}
@@ -107,7 +109,7 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     LONG error2 = 0;
     BPTR con, ast;
 
-    D(bug("[Open] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\", \n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name));
+    D(bug("[Open] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\" FH: 0x%p\n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name, handle));
 
     if(soft_nesting == 0)
     {
