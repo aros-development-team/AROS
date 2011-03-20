@@ -3,6 +3,45 @@ include $(TOP)/config/make.cfg
 
 .PHONY: $(DISTDIR)/system-amiga-m68k.img
 
+#MM bootdisk-amiga-m68k : \
+#MM           kernel-link-amiga-m68k \
+#MM           workbench-c-m68k
+#MM bootdisk-amiga-m68k-quick : bootdisk-setup-amiga-m68k-quick bootdisk-amiga-m68k-quick
+
+
+BOOT_FILES := \
+	boot/AROSBootstrap \
+	boot/aros.elf.gz
+
+BOOT_SRC_DIR  := $(AROSDIR)
+BOOT_DEST_DIR := $(OSGENDIR)/boot/bootdisk
+
+BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
+
+#MM
+bootdisk-setup-amiga-m68k-quick :
+	-$(RM) -rf $(BOOT_DEST_DIR)
+	%mkdirs_q $(BOOT_DEST_DIR)
+	%mkdirs_q $(BOOT_DEST_DIR)/S
+	%mkdirs_q $(BOOT_DEST_DIR)/boot
+
+#MM
+bootdisk-amiga-m68k-quick: $(DISTDIR)/bootdisk-amiga-m68k.adf
+	
+$(DISTDIR)/bootdisk-amiga-m68k.adf: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) \
+ $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
+	@$(MKDIR) -p "$(DISTDIR)"
+	$(RM) $@
+	$(COPYTOAFS) $@ --type OFS --name "AROS Boot Floppy" --size 1760 $(BOOT_DEST_DIR)
+	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
+
+$(BOOT_DEST_DIR)/S/Startup-Sequence:
+	@$(CP) $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot $@
+
+$(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
+	@$(CP) $< $@
+
+
 #MM systemdisk-amiga-m68k : AROS		\
 #MM			systemdisk-setup-amiga-m68k
 
@@ -25,8 +64,6 @@ SYSTEM_FILES := \
     C/Run \
     C/SetClock \
     C/Touch \
-    Devs/DataTypes/ELF \
-    Devs/DataTypes/ELF_EXE \
     Devs/DataTypes/FTXT \
     Devs/DataTypes/ILBM \
     Devs/DOSDrivers/PIPEFS \
@@ -76,7 +113,7 @@ $(DISTDIR)/systemdisk-amiga-m68k.img: $(SYSTEM_DEST_FILES) $(SYSTEM_EXTRA_FILES)
  $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	@$(MKDIR) -p "$(DISTDIR)"
 	$(RM) $@
-	$(COPYTOAFS) $@ --name "AROS Boot Floppy" --size 1760 $(SYSTEM_DEST_DIR)
+	$(COPYTOAFS) $@ --type OFS --name "AROS System Floppy" --size 1760 $(SYSTEM_DEST_DIR)
 	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
 
 #$(SYSTEM_DEST_DIR)/S/Startup-Sequence:
