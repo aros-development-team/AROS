@@ -184,9 +184,9 @@ static void FloppyBootNode(
 
     if (devnode) {
     	struct FileSysEntry *fse = MatchFileSystemResourceHandler(type);
-	/* NULL dn_Handler is ok, rn_FileHandlerSegment is supported now */
+	/* NULL dn_SegList is ok, rn_FileHandlerSegment is supported now */
     	if (fse && (fse->fse_PatchFlags & FSEF_SEGLIST))
-    	    devnode->dn_Handler = fse->fse_SegList;
+    	    devnode->dn_SegList = fse->fse_SegList;
    	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
     }
 }
