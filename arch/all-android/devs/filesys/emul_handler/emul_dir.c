@@ -3,7 +3,7 @@
 #include <sys/statfs.h>
 
 /* This prevents redefinition of struct timeval */
-#define _AROS_TIMEVAL_H_
+#define _AROS_TYPES_TIMEVAL_S_H_
 
 #include <aros/debug.h>
 

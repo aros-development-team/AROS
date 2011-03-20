@@ -5,6 +5,7 @@ INCSUBDIRS :=	aros \
 		aros/preprocessor \
 		aros/preprocessor/facilities \
 		aros/preprocessor/variadic \
+		aros/types \
         bluetooth \
 	        c++ \
 		c++/exec \

@@ -46,7 +46,7 @@
 #pragma pack()
 
 /* This prevents redefinition of struct timeval */
-#define _AROS_TIMEVAL_H_
+#define _AROS_TYPES_TIMEVAL_S_H_
 
 #define DEBUG 0
 #define DASYNC(x)

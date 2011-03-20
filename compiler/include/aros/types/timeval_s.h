@@ -1,5 +1,5 @@
-#ifndef _AROS_TIMEVAL_H_
-#define _AROS_TIMEVAL_H_
+#ifndef _AROS_TYPES_TIMEVAL_S_H_
+#define _AROS_TYPES_TIMEVAL_S_H_
 
 #include <aros/cpu.h>
 
@@ -23,4 +23,4 @@ __extension__ struct timeval
     };
 };
 
-#endif /* ! _SYS__TIMEVAL_H_ */
+#endif /* ! _AROS_TYPES_TIMEVAL_S_H_ */
