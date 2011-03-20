@@ -2359,17 +2359,14 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 	}
 
 	cli->cli_Result2 = IoErr();
-	if (cli->cli_ReturnCode > 0 && cli->cli_ReturnCode >= cli->cli_FailLevel) {
-	    D(bug("Err %d >= FailLevel %d\n", cli->cli_ReturnCode, cli->cli_FailLevel));
-	    error = RETURN_FAIL;
-	}
     }
     else
     {
+	ULONG err = IoErr(); /* save original error */
 	/* Implicit cd? */
         /* SFS returns ERROR_INVALID_COMPONENT_NAME if you try to open "" */
 	if(!(rd->haveInRD || rd->haveOutRD || rd->haveAppRD) &&
-           (IoErr() == ERROR_OBJECT_WRONG_TYPE || IoErr() == ERROR_OBJECT_NOT_FOUND || IoErr() == ERROR_INVALID_COMPONENT_NAME))
+           (err == ERROR_OBJECT_WRONG_TYPE || err == ERROR_OBJECT_NOT_FOUND || err == ERROR_INVALID_COMPONENT_NAME))
         {
 	    BPTR lock = Lock(command, SHARED_LOCK);
 
@@ -2385,9 +2382,10 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 			{
 			    setPath(lock, is);
 			    lock = CurrentDir(lock);
+			    err = 0;
 			}
 			else
-			    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+			    err = ERROR_OBJECT_WRONG_TYPE;
 		    }
 
 		    FreeDosObject(DOS_FIB, fib);
@@ -2398,13 +2396,20 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 	    }
 	}
 
-        if(IoErr())
+        SetIoErr(err);
+        if(err)
         {
-	    cli->cli_Result2 = IoErr();
+	    cli->cli_Result2 = err;
+	    cli->cli_ReturnCode = RETURN_ERROR;
 	    PrintFault(IoErr(), command);
         }
     }
 
+    if (cli->cli_ReturnCode > 0 && cli->cli_ReturnCode >= cli->cli_FailLevel) {
+	D(bug("Err %d >= FailLevel %d\n", cli->cli_ReturnCode, cli->cli_FailLevel));
+	error = RETURN_FAIL;
+    }
+ 
     D(bug("Done with the command... error=%d\n", error));
 
     return error;
