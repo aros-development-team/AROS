@@ -90,6 +90,7 @@
 #define CPUFAMILY_INTEL_PENTIUM     107
 #define CPUFAMILY_INTEL_PENTIUM_PRO 108
 #define CPUFAMILY_INTEL_PENTIUM4    109
+#define CPUFAMILY_MOTORALA_68000    110
 
 /* Vector unit type */
 #define VECTORTYPE_NONE               0
