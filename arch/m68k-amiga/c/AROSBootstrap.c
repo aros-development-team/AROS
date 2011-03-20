@@ -360,7 +360,8 @@ static void supercode(void)
     ULONG *traps = 0;
     ULONG len;
 
-    setcpu();
+    if ((SysBase->AttnFlags & 0xff) != 0)
+    	setcpu();
     fakesys = (ULONG*)FAKEBASE;
     coldcapture = (ULONG*)COLDCAPTURE;
     coldcapture[-1] = (ULONG)entry;
