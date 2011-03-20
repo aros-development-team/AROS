@@ -279,7 +279,7 @@ static ULONG cpu_detect(void)
 		"moveq #0,%%d0\n"
 		"move.w	%%sr,%%d1\n"
 		"move.w	%%d0,%0\n"
-		: "=m" (cpuret) : : "%d0" );
+		: "=m" (cpuret) : : "%d0", "%d1" );
 	trap[4] = cpu_detect_trap_fpu;
 	asm volatile (
 		"illegal\n" /* supervisor mode */
