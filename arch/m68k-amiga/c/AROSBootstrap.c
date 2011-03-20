@@ -29,6 +29,31 @@
 
 struct DosLibrary *DOSBase;
 
+static BSTR AllocBSTR(const char *name)
+{
+    UBYTE *bs;
+    int len = strlen(name);
+
+    if (len > 255)
+    	return BNULL;
+
+
+    bs = AllocMem(256+1, MEMF_ANY);
+    if (bs == NULL)
+    	return BNULL;
+
+    bs[0] = len;
+    bs[len+1] = 0;
+    CopyMem(name, &bs[1], len);
+    return MKBADDR(bs);
+}
+
+static void FreeBSTR(BSTR bstr)
+{
+    FreeMem(BADDR(bstr), 256+1);
+}
+
+
 /* Define these here for zlib so that we don't
  * pull in arosc.library.
  *
@@ -455,29 +480,7 @@ ULONG bcplReadArgs(BSTR format, BPTR args, ULONG max_arg)
 
 int __nocommandline;
 
-static BSTR AllocBSTR(const char *name)
 {
-    UBYTE *bs;
-    int len = strlen(name);
-
-    if (len > 255)
-    	return BNULL;
-
-
-    bs = AllocMem(256+1, MEMF_ANY);
-    if (bs == NULL)
-    	return BNULL;
-
-    bs[0] = len;
-    bs[len+1] = 0;
-    CopyMem(name, &bs[1], len);
-    return MKBADDR(bs);
-}
-
-static void FreeBSTR(BSTR bstr)
-{
-    FreeMem(BADDR(bstr), 256+1);
-}
 
 int main(void)
 {
