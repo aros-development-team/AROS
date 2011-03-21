@@ -7,9 +7,12 @@
 #include <proto/exec.h>
 #include <intuition/iprefs.h>
 #include <intuition/pointerclass.h>
+#include <prefs/palette.h>
+
+#include <proto/intuition.h>
+#include <proto/graphics.h>
 
 #include "intuition_intern.h"
-#include <proto/intuition.h>
 
 /*****************************************************************************
 
@@ -55,8 +58,8 @@
 
     switch (type)
     {
-	case IPREFS_TYPE_ICONTROL:
-            DEBUG_SETIPREFS(bug("SetIPrefs: IPREFS_TYPE_ICONTROL\n"));
+	case IPREFS_TYPE_ICONTROL_V37:
+            DEBUG_SETIPREFS(bug("SetIPrefs: IP_ICONTROL_V37\n"));
             if (length > sizeof(struct IIControlPrefs))
         	length = sizeof(struct IIControlPrefs);
             CopyMem(data, &GetPrivIBase(IntuitionBase)->IControlPrefs, length);
@@ -65,11 +68,11 @@
 
             break;
         
-	case IPREFS_TYPE_SCREENMODE:
+	case IPREFS_TYPE_SCREENMODE_V37:
 	{
 	    struct IScreenModePrefs old_prefs;
 	    
-            DEBUG_SETIPREFS(bug("SetIPrefs: IP_SCREENMODE\n"));
+            DEBUG_SETIPREFS(bug("SetIPrefs: IP_SCREENMODE_V37\n"));
             if (length > sizeof(struct IScreenModePrefs))
                 length = sizeof(struct IScreenModePrefs);
 	    
@@ -79,7 +82,7 @@
 	    
 	    old_prefs = GetPrivIBase(IntuitionBase)->ScreenModePrefs;
 	    GetPrivIBase(IntuitionBase)->ScreenModePrefs = *(struct IScreenModePrefs *)data;
-	    
+
 	    if (GetPrivIBase(IntuitionBase)->WorkBench)
 	    {
 	        BOOL try = TRUE, closed;
@@ -122,8 +125,8 @@
             break;
 	}
 
-	case IPREFS_TYPE_POINTER:
-        DEBUG_SETIPREFS(bug("SetIPrefs: IP_POINTER\n"));
+	case IPREFS_TYPE_POINTER_V39:
+        DEBUG_SETIPREFS(bug("SetIPrefs: IP_POINTER_V39\n"));
         {
             struct IPointerPrefs *fp = data;
             struct TagItem pointertags[] = {
@@ -143,11 +146,21 @@
                       &GetPrivIBase(IntuitionBase)->DefaultPointer;
 
             InstallPointer(IntuitionBase, fp->Which, oldptr, pointer);
+	    /* return -1 so that WB3.x C:IPrefs is happy */
+            Result = -1;
         }
         break;
 
-        case IPREFS_TYPE_OLD_PALETTE:
-        DEBUG_SETIPREFS(bug("SetIPrefs: IP_OLDPALETTE\n"));
+	case IPREFS_TYPE_POINTER_V37:
+        DEBUG_SETIPREFS(bug("SetIPrefs: IP_POINTER_V37\n"));
+        {
+ 	    /* return -1 so that WB2.x C:IPrefs is happy */
+           Result = -1;
+        }
+        break;
+
+        case IPREFS_TYPE_PALETTE_V39:
+        DEBUG_SETIPREFS(bug("SetIPrefs: IP_PALETTE_V39 %p %d\n", data, length));
         {
             struct ColorSpec *pp = data;
             struct Color32 *p = GetPrivIBase(IntuitionBase)->Colors;
@@ -199,10 +212,91 @@
 	    }
         }
         break;
+
+	case IPREFS_TYPE_PALETTE_V37:
+        DEBUG_SETIPREFS(bug("SetIPrefs: IP_PALETTE_V37\n"));
+        {
+        }
+        break;
 	
+	case IPREFS_TYPE_PENS_V39:
+        DEBUG_SETIPREFS(bug("SetIPrefs: IP_PENS_V39\n"));
+        {
+            struct IOldPenPrefs *fp = data;
+            UWORD *dataptr;
+            int i;
+            DEBUG_SETIPREFS(bug("SetIPrefs: Count %ld Type %ld\n",
+                        (LONG) fp->Count,
+                        (LONG) fp->Type));
+
+            if (fp->Type==0)
+            {
+                dataptr = &GetPrivIBase(IntuitionBase)->DriPens4[0];
+                DEBUG_SETIPREFS(bug("SetIPrefs: Pens4[]\n"));
+            }
+            else
+            {
+                dataptr = &GetPrivIBase(IntuitionBase)->DriPens8[0];
+                DEBUG_SETIPREFS(bug("SetIPrefs: Pens8[]\n"));
+            }
+            for (i=0;i<NUMDRIPENS;i++)
+            {
+                if (fp->PenTable[i]==(UWORD)~0UL)
+                {
+                    /*
+                     * end of the array
+                     */
+                    DEBUG_SETIPREFS(bug("SetIPrefs: PenTable end at entry %ld\n", (LONG) i));
+                    break;
+                }
+                else
+                {
+                    DEBUG_SETIPREFS(bug("SetIPrefs: Pens[%ld] %ld\n",
+                                (LONG) i,
+                                (LONG) fp->PenTable[i]));
+                    dataptr[i] = fp->PenTable[i];
+                }
+            }
+        }
+        break;
+
+
 	case IPREFS_TYPE_POINTER_ALPHA:
+	    DEBUG_SETIPREFS(bug("[SetIPrefs]: IP_POINTER_ALPHA\n"));
 	    GetPrivIBase(IntuitionBase)->PointerAlpha = *(UWORD *)data;
 	break;
+
+	case IPREFS_TYPE_OVERSCAN_V37:
+	    DEBUG_SETIPREFS(bug("[SetIPrefs]: IP_OVERSCAN_V37\n"));
+	break;
+
+	case IPREFS_TYPE_FONT_V37:
+        DEBUG_SETIPREFS(bug("SetIPrefs: IP_FONT_V37\n"));
+        {
+            struct IFontPrefs *fp = data;
+            struct TextFont *font = OpenFont(&fp->fp_TextAttr);
+            struct TextFont **fontptr;
+
+            DEBUG_SETIPREFS(bug("SetIPrefs: Type %d Name <%s> Size %d Font %p\n", fp->fp_ScrFont, fp->fp_Name, fp->fp_TextAttr.ta_YSize, font));
+
+            if (font)
+            {
+                if (fp->fp_ScrFont==0)
+                {
+                    /*
+                     * We can't free graphics defaultfont..it`s shared
+                     */
+                    fontptr = &GfxBase->DefaultFont;
+                }
+                else
+                {
+                    fontptr = &GetPrivIBase(IntuitionBase)->ScreenFont;
+                    CloseFont(*fontptr);
+                }
+                *fontptr = font;
+            }
+        }
+        break;
 
 	default:
             DEBUG_SETIPREFS(bug("SetIPrefs: Unknown Prefs Type\n"));
