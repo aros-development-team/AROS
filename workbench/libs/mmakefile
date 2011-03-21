@@ -42,7 +42,8 @@
 #MM     workbench-libs-thread \
 #MM     workbench-libs-muiscreen \
 #MM     workbench-libs-openurl \
-#MM     workbench-libs-popupmenu
+#MM     workbench-libs-popupmenu \
+#MM     workbench-libs-version
 
 #MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
