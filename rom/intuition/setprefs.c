@@ -183,6 +183,8 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
                 InstallPointer(IntuitionBase, WBP_NORMAL, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
             }
         }
+        if (size > offsetof(struct Preferences, color3))
+	    SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences->color0, 0, 4, IntuitionBase);
 
         /*
         ** If inform == TRUE then notify all windows that want to know about
