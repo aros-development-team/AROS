@@ -96,7 +96,7 @@
     /* All done. */
     Permit();
 
-    D(bug("OpenLibrary end (\"%s\", %d)\n", libName, version));
+    D(bug("OpenLibrary end (\"%s\", %d) = %p\n", libName, version, library));
 
     return library;
     AROS_LIBFUNC_EXIT
