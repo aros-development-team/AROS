@@ -36,10 +36,13 @@ struct unit
     ULONG			usecount;
     struct MsgPort 		port;
     file_t 			file;
-    BOOL			writable;
+    UBYTE			flags;
     ULONG			changecount;
     struct MinList 		changeints;
 };
+
+/* Unit flags */
+#define UNIT_READONLY 0x01
 
 ULONG Host_Open(struct unit *Unit);
 void Host_Close(struct unit *Unit);

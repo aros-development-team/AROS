@@ -17,7 +17,6 @@
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -314,7 +313,7 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     LONG 	size, subsize;
     ULONG	ioerr;
 
-    if(!unit->writable)
+    if (unit->flags & UNIT_READONLY)
 	return TDERR_WriteProt;
 #if 0
     if(iotd->iotd_SecLabel)
@@ -499,7 +498,7 @@ AROS_UFH3(LONG, unitentry,
 		    err = 0;
 		    break;
 		case TD_PROTSTATUS:
-		    iotd->iotd_Req.io_Actual = !unit->writable;
+		    iotd->iotd_Req.io_Actual = (unit->flags & UNIT_READONLY) ? TRUE : FALSE;
 		    err = 0;
 		    break;
 		    

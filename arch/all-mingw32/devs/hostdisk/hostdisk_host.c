@@ -1,5 +1,3 @@
-#define DEBUG 1
-
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <devices/trackdisk.h>
@@ -31,6 +29,7 @@ ULONG Host_Open(struct unit *Unit)
 {
     ULONG attrs;
 
+    
     Forbid();
     attrs = Unit->hdskBase->iface->GetFileAttributes(Unit->filename);
     Unit->file = Unit->hdskBase->iface->CreateFile(Unit->filename, GENERIC_READ, FILE_SHARE_VALID_FLAGS, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -39,8 +38,11 @@ ULONG Host_Open(struct unit *Unit)
     if (Unit->file == (APTR)-1)
 	return TDERR_NotSpecified;
 
-    Unit->writable = !(attrs & FILE_ATTRIBUTE_READONLY);
+    Unit->flags = (attrs & FILE_ATTRIBUTE_READONLY) ? UNIT_READONLY : 0;
+    if (attrs & FILE_ATTRIBUTE_DEVICE)
+	Unit->flags |= UNIT_DEVICE;
 
+    D(bug("hostdisk: Unit flags 0x%02X\n", Unit->flags));
     return 0;
 }
 
@@ -104,34 +106,59 @@ ULONG Host_Seek(struct unit *Unit, ULONG pos)
 ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 {
     ULONG len, err;
+    DISK_GEOMETRY geom;
+    ULONG ret;
 
-    Forbid();
-    len = Unit->hdskBase->iface->GetFileSize(Unit->file, NULL);
-    err = Unit->hdskBase->iface->GetLastError();
-    Permit();
-
-    if (len == -1)
+    if (Unit->flags & UNIT_DEVICE)
     {
-	D(bug("hostdisk: Host_GetGeometry(): Windows error %u\n", err));
-	return error(err);
+	Forbid();
+	len = Unit->hdskBase->iface->DeviceIoControl(Unit->file, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0,
+						     &geom, sizeof(geom), &ret, NULL);
+	err = Unit->hdskBase->iface->GetLastError();
+	Permit();
+
+	D(bug("hostdisk: IOCTL_DISK_GET_DRIVE_GEOMETRY result: %d\n", len));
+	if (len)
+	{
+	    dg->dg_SectorSize   = geom.BytesPerSector;
+	    dg->dg_Heads        = geom.TracksPerCylinder;
+	    dg->dg_TrackSectors = geom.SectorsPerTrack;
+	    dg->dg_Cylinders    = geom.Cylinders;
+	    dg->dg_CylSectors   = dg->dg_TrackSectors * dg->dg_Heads;
+	    dg->dg_TotalSectors = dg->dg_CylSectors * dg->dg_Cylinders;
+	    dg->dg_BufMemType   = MEMF_PUBLIC;
+	    dg->dg_DeviceType   = DG_DIRECT_ACCESS;
+	    dg->dg_Flags        = 0; //DGF_REMOVABLE;
+ 
+	    return 0;
+        }
+    }
+    else
+    {
+	Forbid();
+	len = Unit->hdskBase->iface->GetFileSize(Unit->file, NULL);
+	err = Unit->hdskBase->iface->GetLastError();
+	Permit();
+
+	D(bug("hostdisk: Image file length: %d\n", len));
+	if (len != -1)
+	{
+	    dg->dg_SectorSize   = 512;
+	    dg->dg_Heads        = 16;
+	    dg->dg_TrackSectors = 63;
+	    dg->dg_TotalSectors = len / dg->dg_SectorSize;
+	    dg->dg_Cylinders    = dg->dg_TotalSectors / (dg->dg_Heads * dg->dg_TrackSectors);
+	    dg->dg_CylSectors   = dg->dg_Heads * dg->dg_TrackSectors;
+	    dg->dg_BufMemType   = MEMF_PUBLIC;
+	    dg->dg_DeviceType   = DG_DIRECT_ACCESS;
+	    dg->dg_Flags        = 0; //DGF_REMOVABLE;
+
+	    return 0;
+	}
     }
 
-    D(bug("hostdisk: Drive length: %d\n", len));
-
-    dg->dg_SectorSize = 512;
-    dg->dg_Heads = 16;
-    dg->dg_TrackSectors = 63;
-    dg->dg_TotalSectors = len / dg->dg_SectorSize;
-    /* in case of links or block devices with emul_handler we get the wrong size */
-    if (dg->dg_TotalSectors == 0)
-	dg->dg_TotalSectors = dg->dg_Heads*dg->dg_TrackSectors*5004;
-    dg->dg_Cylinders = dg->dg_TotalSectors / (dg->dg_Heads * dg->dg_TrackSectors);
-    dg->dg_CylSectors = dg->dg_Heads * dg->dg_TrackSectors;
-    dg->dg_BufMemType = MEMF_PUBLIC;
-    dg->dg_DeviceType = DG_DIRECT_ACCESS;
-    dg->dg_Flags = 0; //DGF_REMOVABLE;
-
-    return 0;
+    D(bug("hostdisk: Host_GetGeometry(): Windows error %u\n", err));
+    return error(err);
 }
 
 static const char *KernelSymbols[] = {
