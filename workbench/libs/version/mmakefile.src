@@ -1,0 +1,10 @@
+#   $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-version : includes linklibs
+
+%build_module mmake=workbench-libs-version modname=version \
+  modtype=library files="" uselibs="amiga rom"
+
+%common
