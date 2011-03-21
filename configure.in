@@ -1246,6 +1246,7 @@ case "$target_os" in
 		gcc_target_cpu="i386"
 
 		dnl Temporary hack, needed to get nightly build working
+		aros_target_as="i386-aros-as"
 		aros_target_ar="i386-aros-ar"
 		aros_target_ranlib="i386-aros-ranlib"
     		aros_target_nm="i386-aros-nm"
