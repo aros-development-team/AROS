@@ -7,6 +7,8 @@
 
 #include <aros/multiboot.h>
 
+#include <stdarg.h>
+
 #include "screen.h"
 #include "support.h"
 
@@ -44,14 +46,26 @@ void initScreen(struct multiboot *mb)
 
     if (mb->flags & MB_FLAGS_FB)
     {
-	/* Framebuffer was given, use it */
+    	/* Framebuffer was given, use it */
 	fb    = (void *)(unsigned long)mb->framebuffer_addr;
 	pitch = mb->framebuffer_pitch;
-        wc    = mb->framebuffer_width  / fontWidth;
-	hc    = mb->framebuffer_height / fontHeight;
-    	bpp   = mb->framebuffer_bpp >> 3;
+	bpp   = mb->framebuffer_bpp >> 3;
 
-    	type = SCR_GFX;
+    	switch (mb->framebuffer_type)
+    	{
+    	case MB_FRAMEBUFFER_TEXT:
+    	   /* Text framebuffer, size in characters */
+	   wc   = mb->framebuffer_width;
+	   hc   = mb->framebuffer_height;
+	   type = SCR_TEXT;
+	   break;
+
+	default:
+	   /* Graphical framebuffer, size in pixels */
+	   wc   = mb->framebuffer_width  / fontWidth;
+	   hc   = mb->framebuffer_height / fontHeight;
+	   type = SCR_GFX;
+	}
     }
     /* TODO: detect VESA modes (both text and graphics) */
     else
@@ -105,67 +119,114 @@ void Putc(char c)
     }
 }
 
-/* Convert the integer D to a string and save the string in BUF. If
-   BASE is equal to 'd', interpret that D is decimal, and if BASE is
-   equal to 'x', interpret that D is hexadecimal. */
-static void __itoa (char *buf, int base, int d)
+unsigned int format_int (char *buf, char base, int d)
 {
     char *p = buf;
-    char *p1, *p2;
-    unsigned long ud = d;
-    int divisor = 10;
+    char minus = 0;
+    int ud = d;
 
-    /* If %d is specified and D is minus, put `-' in the head. */
-    if (base == 'd' && d < 0)
+    switch (base)
     {
-        *p++ = '-';
-        buf++;
-        ud = -d;
-    }
-    else if (base == 'x')
-        divisor = 16;
-    else if (base == 'p')
-    {
-	int i;
-	for (i=0; i<8; i++)
-	{
-	    char v = (d >> (28-i*4)) & 0xf;
+    case 'p':
+    case 'x':
+    	do
+    	{
+	    char v = d & 0xf;
+
 	    *p++ = (v < 10) ? v + '0' : v + 'A' - 10;
-	}
-	*p=0;
-	return;
+	    d >>= 4;
+	} while (d);
+    	break;
+
+    case 'd':
+    	/* If %d is specified and D is minus, put `-' in the head. */
+        if (d < 0)
+    	{
+            Putc('-');
+	    ud = -d;
+    	}
+
+    case 'u':
+	/* Divide UD by 10 until UD == 0 */
+    	do
+    	{
+            int remainder = ud % 10;
+
+            *p++ = (remainder < 10) ? remainder + '0' : remainder + 'a' - 10;
+    	}
+    	while (ud /= 10);
+    	break;
     }
 
-    /* Divide UD by DIVISOR until UD == 0. */
-    do
-    {
-        int remainder = ud % divisor;
+    if (minus)
+    	*p++ = '-';
 
-        *p++ = (remainder < 10) ? remainder + '0' : remainder + 'a' - 10;
-    }
-    while (ud /= divisor);
-
-    /* Terminate BUF. */
-    *p = 0;
-
-    /* Reverse BUF. */
-    p1 = buf;
-    p2 = p - 1;
-    while (p1 < p2)
-    {
-        char tmp = *p1;
-        *p1 = *p2;
-        *p2 = tmp;
-        p1++;
-        p2--;
-    }
+    return p - buf;
 }
+
+unsigned int format_longlong (char *buf, char base, long long d)
+{
+    char *p = buf;
+    char minus = 0;
+    unsigned long long ud = d;
+
+    switch (base)
+    {
+    case 'p':
+    case 'x':
+    	do
+    	{
+	    char v = d & 0xf;
+
+	    *p++ = (v < 10) ? v + '0' : v + 'A' - 10;
+	    d >>= 4;
+	} while (d);
+    	break;
+
+    case 'd':
+    	/* If %d is specified and D is minus, put `-' in the head. */
+        if (d < 0)
+    	{
+            minus = 1;
+	    ud = -d;
+    	}
+
+    case 'u':
+	/*
+	 * Divide UD by 10 until UD == 0
+	 * FIXME: implement these division routines.
+	 * Otherwise this causes linking with 32-bit libgcc
+	 * which 64-bit compiler doesn't have.
+	 * Until implemented, %lld will not work.
+	 *
+    	do
+    	{
+            int remainder = ud % 10;
+
+            *p++ = (remainder < 10) ? remainder + '0' : remainder + 'a' - 10;
+    	}
+    	while (ud /= 10);*/
+    	break;
+    }
+
+    if (minus)
+    	*p++ = '-';
+
+    return p - buf;
+}
+
+#ifdef __x86_64__
+#define format_long format_longlong
+#else
+#define format_long format_int
+#endif
 
 void kprintf(const char *format, ...)
 {
-    unsigned long *ptr = (unsigned long *)&format + 1;
-    int c;
-    char buf[20];
+    va_list ap;
+    char c;
+
+    va_start(ap, format);
 
     while ((c = *format++) != 0)
     {
@@ -173,34 +234,82 @@ void kprintf(const char *format, ...)
              Putc(c);
         else
         {
+            char buf[21];	/* This buffer is enough to hold -1ULL in decimal form */
             char *p;
+            char fill = ' ';
+            unsigned char size = 0;
+            unsigned int ptrlen = sizeof(int) * 2;
+            unsigned int len = 0;
+            unsigned int l;
 
             c = *format++;
+            if (c == '0')
+            {
+            	fill = c;
+            	c = *format++;
+            }
+            /* TODO: support explicit length specification */
+            if (c == 'l')
+            {
+            	size++;
+            	c = *format++;
+            	ptrlen = sizeof(long) * 2;
+            }
+            if (c == 'l')
+            {
+            	size++;
+            	c = *format++;
+            	ptrlen = sizeof(long long) * 2;
+            }
             switch (c)
             {
-                case 'd':
-                case 'u':
-                case 'x':
-                case 'p':
-                    __itoa (buf, c, (int)*ptr++);
-                    p = buf;
-                    goto string;
+            case 'p':
+                fill = '0';
+                if (len < ptrlen)
+            	    len = ptrlen;
+            case 'u':
+            case 'x':
+            case 'd':
+                switch (size)
+                {
+                case 2:
+                    l = format_longlong(buf, c, va_arg(ap, long long));
                     break;
 
-                case 's':
-                    p = (char*)*ptr++;
-                    if (! p)
-                        p = "(null)";
-
-                string:
-                    while (*p)
-                        Putc(*p++);
-                        break;
-
-                default:
-                    Putc((char)*ptr++);
+                case 1:
+                    l = format_long(buf, c, va_arg(ap, long));
                     break;
+
+		default:
+                    l = format_int(buf, c, va_arg(ap, int));
+                    break;
+                }
+
+		/* Print padding if needed */
+                while (len > l)
+                {
+                    Putc(fill);
+                    len--;
+                }
+                /* Now print our buffer in reverse order */
+                while (l)
+                    Putc(buf[--l]);
+
+                break;
+
+            case 's':
+                p = va_arg(ap, char *);
+                if (!p)
+                    p = "(null)";
+		while (*p)
+                    Putc(*p++);
+                break;
+
+            default:
+                Putc(va_arg(ap, int));
             }
         }
     }
+    
+    va_end(ap);
 }

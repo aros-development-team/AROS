@@ -41,10 +41,10 @@ clean ::
 	-$(RM) $(TESTS)
 
 $(TARGETDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
+	%compile_q opt="-m32 $(CFLAGS) -fomit-frame-pointer -nostdlib"
 
 $(TARGETDIR)/%.o : %.S
-	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
+	%compile_q opt="-m32 $(CFLAGS) -fomit-frame-pointer -nostdinc -nostdlib"
 
 $(TARGETDIR)/%.d : %.c
 	%mkdepend_q

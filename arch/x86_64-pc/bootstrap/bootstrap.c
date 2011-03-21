@@ -6,7 +6,8 @@
     Lang: English
 */
 
-#define DEBUG
+//#define DEBUG
+//#define DEBUG_MEM
 #define BOOTSTRAP
 
 #include <aros/kernel.h>
@@ -90,8 +91,8 @@ static struct PML4E PML4[512] __attribute__((used,aligned(4096),section(".bss.ar
 static struct PDPE PDP[512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
 static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
 
-static struct vbe_mode VBEModeInfo = {0, };
-static struct vbe_controller VBEControllerInfo = {0, };
+static struct vbe_mode VBEModeInfo = {0};
+static struct vbe_controller VBEControllerInfo = {{0},0};
 
 struct TagItem km[KRN__TAGCOUNT * 4] __attribute__((used, section(".bss.aros.tables")));
 
@@ -373,9 +374,11 @@ static int find_modules(struct multiboot *mb, const struct module *m)
     return count;
 }
 
-void setupVESA(unsigned long vesa_base, char *vesa)
+static void setupVESA(unsigned long vesa_base, char *vesa)
 {
-    if ((vesa_base) && (vesa))
+    D(kprintf("[BOOT] VESA Trampoline @ %p\n", vesa_base));
+
+    if (vesa_base && vesa)
     {
         long x=0, y=0, d=0;
         long mode;
@@ -415,20 +418,22 @@ void setupVESA(unsigned long vesa_base, char *vesa)
         getControllerInfo();
         __bs_memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
 
-        if (VBEModeInfo.mode_attributes & 0x80)
-            mode |= 0x4000;
+	/* Activate linear framebuffer is supported by the mode */
+        if (VBEModeInfo.mode_attributes & VM_LINEAR_FB)
+            mode |= VBE_MODE_LINEAR_FB;
 
         kprintf("%x\n",mode);
-        if (setVbeMode(mode) == 0x004f)
+        if (setVbeMode(mode) == VBE_RC_SUPPORTED)
         {
             unsigned char palwidth = 0;
 
-	    /* TODO: re-initialise onscreen debug output */
-
-            if (VBEControllerInfo.capabilities & 0x01)
+	    /* Try to switch palette width to 8 bits if possible */
+            if (VBEControllerInfo.capabilities & VC_PALETTE_WIDTH)
                 paletteWidth(0x0800, &palwidth);
             else
                 palwidth = 6;
+
+	    /* TODO: re-initialise onscreen debug output here */
 
             tag->ti_Tag = KRN_VBEModeInfo;
             tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
@@ -447,6 +452,74 @@ void setupVESA(unsigned long vesa_base, char *vesa)
             tag++;
         }
         kprintf("[BOOT] setupVESA: VESA setup complete\n");
+    }
+}
+
+static void setupFB(struct multiboot *mb)
+{
+    if (mb->flags & MB_FLAGS_GFX)
+    {
+    	kprintf("[BOOT] Got VESA display mode 0x%x from the bootstrap\n", mb->vbe_mode);
+    	/*
+	 * We are already running in VESA mode set by the bootloader.
+	 * Pass on the mode information to AROS.
+	 */
+	tag->ti_Tag = KRN_VBEModeInfo;
+        tag->ti_Data = KERNEL_OFFSET | mb->vbe_mode_info;
+        tag++;
+
+        tag->ti_Tag = KRN_VBEControllerInfo;
+        tag->ti_Data = KERNEL_OFFSET | mb->vbe_control_info;
+        tag++;
+
+        tag->ti_Tag = KRN_VBEMode;
+        tag->ti_Data = mb->vbe_mode;
+        tag++;
+
+        return;
+    }
+
+    if (mb->flags & MB_FLAGS_FB)
+    {
+    	kprintf("[BOOT] Got framebuffer display type %d, %dx%dx%d from the bootstrap\n",
+    		mb->framebuffer_type, mb->framebuffer_width, mb->framebuffer_height, mb->framebuffer_bpp);
+
+	/*
+	 * AROS VESA driver supports only RGB framebuffer because we are
+	 * unlikely to have VGA palette registers in other cases
+	 */
+    	if (mb->framebuffer_type != MB_FRAMEBUFFER_RGB)
+    	    return;
+
+	/*
+    	 * We have a framebuffer but no VBE information.
+    	 * Looks like we are running on EFI machine with no VBE support (Mac).
+    	 * Convert framebuffer data to VBEModeInfo and hand it to AROS.
+    	 */
+    	VBEModeInfo.mode_attributes		= VM_SUPPORTED|VM_COLOR|VM_GRAPHICS|VM_NO_VGA_HW|VM_NO_VGA_MEM|VM_LINEAR_FB;
+    	VBEModeInfo.bytes_per_scanline		= mb->framebuffer_pitch;
+    	VBEModeInfo.x_resolution		= mb->framebuffer_width;
+    	VBEModeInfo.y_resolution		= mb->framebuffer_height;
+    	VBEModeInfo.bits_per_pixel		= mb->framebuffer_bpp;
+    	VBEModeInfo.memory_model		= VMEM_RGB;
+    	VBEModeInfo.red_mask_size		= mb->framebuffer_red_mask_size;
+    	VBEModeInfo.red_field_position	        = mb->framebuffer_red_field_position;
+    	VBEModeInfo.green_mask_size		= mb->framebuffer_green_mask_size;
+    	VBEModeInfo.green_field_position	= mb->framebuffer_green_field_position;
+    	VBEModeInfo.blue_mask_size		= mb->framebuffer_blue_mask_size;
+    	VBEModeInfo.blue_field_position		= mb->framebuffer_blue_field_position;
+	VBEModeInfo.phys_base			= mb->framebuffer_addr;
+	VBEModeInfo.linear_bytes_per_scanline   = mb->framebuffer_pitch;
+	VBEModeInfo.linear_red_mask_size	= mb->framebuffer_red_mask_size;
+	VBEModeInfo.linear_red_field_position   = mb->framebuffer_red_field_position;
+	VBEModeInfo.linear_green_mask_size	= mb->framebuffer_green_mask_size;
+	VBEModeInfo.linear_green_field_position = mb->framebuffer_green_field_position;
+	VBEModeInfo.linear_blue_mask_size	= mb->framebuffer_blue_mask_size;
+	VBEModeInfo.linear_blue_field_position  = mb->framebuffer_blue_field_position;
+
+	tag->ti_Tag = KRN_VBEModeInfo;
+        tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
+        tag++;
     }
 }
 
@@ -581,18 +654,30 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 
     if ((mb->mmap_addr) && (mb->mmap_length))
     {
+    	unsigned long len = mb->mmap_length;
+    	struct mb_mmap *mmap = (struct mb_mmap *)mb->mmap_addr;
+
+#ifdef DEBUG_MEM
+        while (len >= sizeof(struct mb_mmap))
+        {
+            kprintf("[BOOT] Type %d addr %llp len %llp\n", mmap->type, mmap->addr, mmap->len);
+
+            len -= mmap->size+4;
+            mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
+        }
+
+    	len = mb->mmap_length;
+    	mmap = (struct mb_mmap *)mb->mmap_addr;
+#endif
+
         tag->ti_Tag = KRN_MMAPLength;
-        tag->ti_Data = mb->mmap_length;
+        tag->ti_Data = len;
         tag++;
         tag->ti_Tag = KRN_MMAPAddress;
-        tag->ti_Data = KERNEL_OFFSET | mb->mmap_addr;
+        tag->ti_Data = KERNEL_OFFSET | (unsigned long)mmap;
         tag++;
-        tag->ti_Tag = TAG_DONE;
 
         /* Quickly locate a suitable region to use for lowpage memory */
-        unsigned long len = mb->mmap_length;
-        struct mb_mmap *mmap = (struct mb_mmap *)(KERNEL_OFFSET | mb->mmap_addr);
-
         while (len >= sizeof(struct mb_mmap))
         {
             if (mmap->type == MMAP_TYPE_RAM)
@@ -615,11 +700,12 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
             len -= mmap->size+4;
             mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
         }
-
-        tag->ti_Tag = TAG_DONE;
     }
     else
     {
+        D(kprintf("[BOOT] No memory map supplied by the bootstrap, using defaults\n"));
+    	D(kprintf("[BOOT] Low memory %u KB, upper memory %u kb\n", mb->mem_lower, mb->mem_upper));
+
         tag->ti_Tag = KRN_MEMLower;
         vesa_base = (mb->mem_lower - vesa_size) & ~PAGE_MASK;
         tag->ti_Data = ((vesa_base - 1)/1024);
@@ -627,14 +713,18 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
         tag->ti_Tag = KRN_MEMUpper;
         tag->ti_Data = mb->mem_upper;
         tag++;
-        tag->ti_Tag = TAG_DONE;     
     }
 
+    tag->ti_Tag = TAG_DONE;
+
+    /*
+     * If vesa= option was given, set up the specified video mode explicitly.
+     * Otherwise specify to AROS what has been passed to us by the bootloader.
+     */
     if (vesa)
-    {
-        kprintf("[BOOT] VESA Trampoline @ %p\n", vesa_base);
         setupVESA(vesa_base, vesa);
-    }
+    else
+    	setupFB(mb);
 
     /* Setup stage - prepare 64-bit environment */
     setup_tables();

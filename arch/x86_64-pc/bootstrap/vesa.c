@@ -24,17 +24,20 @@ short getControllerInfo(void)
     return retval;
 }
 
-/* In VBE 1.1 information about standard modes was optional,
-   so we use a hardcoded table here (we rely on this information) */
-struct vesa11Info vesa11Modes[] = {
-    {640,  400,  8, 4},
-    {640,  480,  8, 4},
-    {800,  600,  4, 3},
-    {800,  600,  8, 4},
-    {1024, 768,  4, 3},
-    {1024, 768,  8, 4},
-    {1280, 1024, 4, 3},
-    {1280, 1024, 8, 4}
+/*
+ * In VBE 1.1 information about standard modes was optional,
+ * so we use a hardcoded table here (we rely on this information)
+ */
+struct vesa11Info vesa11Modes[] =
+{
+    {640,  400,  8, VMEM_PACKED},
+    {640,  480,  8, VMEM_PACKED},
+    {800,  600,  4, VMEM_PLANAR},
+    {800,  600,  8, VMEM_PACKED},
+    {1024, 768,  4, VMEM_PLANAR},
+    {1024, 768,  8, VMEM_PACKED},
+    {1280, 1024, 4, VMEM_PLANAR},
+    {1280, 1024, 8, VMEM_PACKED}
 };
 
 short getModeInfo(long mode)
@@ -42,19 +45,28 @@ short getModeInfo(long mode)
     short retval;
     long i;
     char *ptr = (char *)&modeinfo;
+
     for (i = 0; i < sizeof(modeinfo); i++)
 	*ptr++ = 0;
+
     asm volatile("call go16 \n\t.code16 \n\t"
                 "movw $0x4f01, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
                 "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"c"(mode),"D"(&modeinfo):"eax","cc");
-    if ((controllerinfo.version < 0x0102) && (mode > 0x0FF) && (mode < 0x108)) {
-	i = mode - 0x100;
-	modeinfo.x_resolution = vesa11Modes[i].x_resolution;
-	modeinfo.y_resolution = vesa11Modes[i].y_resolution;
+
+    /*
+     * VBE 1.1 does not provide resolution data for display modes.
+     * In this case we patch the structure using hardcoded table.
+     */
+    if ((controllerinfo.version < 0x0102) && (mode > 0x0FF) && (mode < 0x108))
+    {
+	i = mode - VBE_MODE_STANDARD;
+
+	modeinfo.x_resolution   = vesa11Modes[i].x_resolution;
+	modeinfo.y_resolution   = vesa11Modes[i].y_resolution;
 	modeinfo.bits_per_pixel = vesa11Modes[i].bits_per_pixel;
-	modeinfo.memory_model = vesa11Modes[i].memory_model;
+	modeinfo.memory_model   = vesa11Modes[i].memory_model;
     }
     return retval;
 }
@@ -92,25 +104,31 @@ short findMode(int x, int y, int d)
     unsigned short bestmode = 0x110;
     unsigned short mode_attrs;
 
-    if (getControllerInfo() == 0x4f)
+    if (getControllerInfo() == VBE_RC_SUPPORTED)
     {
-        unsigned short *modes = (unsigned short *)
-            (((controllerinfo.video_mode & 0xffff0000) >> 12) + (controllerinfo.video_mode & 0xffff));
-
+        unsigned short *modes = GET_FAR_PTR(controllerinfo.video_mode);
         int i;
-	
+
+	/*
+	 * For VBE 2.0+ we can have linear framebuffer support, so we
+	 * will look only for modes that support it.
+	 */
 	if (controllerinfo.version < 0x0200)
-	    mode_attrs = 0x11;
+	    mode_attrs = VM_GRAPHICS|VM_SUPPORTED;
 	else
-	    mode_attrs = 0x91;
+	    mode_attrs = VM_GRAPHICS|VM_SUPPORTED|VM_LINEAR_FB;
 
 	for (i=0; modes[i] != 0xffff; ++i)
         {
-            if (getModeInfo(modes[i])!= 0x4f) continue;
+            /* Skip all not supported modes */
+            if (getModeInfo(modes[i])!= VBE_RC_SUPPORTED) continue;
+            /* Skip all modes that do not have requested attributes */
             if ((modeinfo.mode_attributes & mode_attrs) != mode_attrs) continue;
-            if ((modeinfo.memory_model != 6) && (modeinfo.memory_model != 4))
+            /* We support only LUT or RGB modes */
+            if ((modeinfo.memory_model != VMEM_RGB) && (modeinfo.memory_model != VMEM_PACKED))
 		continue;
-	    if ((modeinfo.memory_model == 4) && (modeinfo.mode_attributes & 0x20))
+	    /* LUT modes must have VGA registers available, for palette changing */
+	    if ((modeinfo.memory_model == VMEM_PACKED) && (modeinfo.mode_attributes & VM_NO_VGA_HW))
 		continue;
 
             if (modeinfo.x_resolution == x &&
