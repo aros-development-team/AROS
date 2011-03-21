@@ -7709,7 +7709,8 @@ case "$target_os" in
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
 
-				aros_target_ar="i386-aros-ar"
+				aros_target_as="i386-aros-as"
+		aros_target_ar="i386-aros-ar"
 		aros_target_ranlib="i386-aros-ranlib"
     		aros_target_nm="i386-aros-nm"
     		aros_target_strip="i386-aros-strip"
