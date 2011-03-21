@@ -89,6 +89,7 @@
 #include <aros/asmcall.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <libraries/expansionbase.h>
 
 #include <aros/debug.h>
 
@@ -170,6 +171,7 @@ struct ShellBase {
 struct InterpreterState
 {
     BOOL   isBootShell;
+    BOOL   isBannerDone;
     LONG   cliNumber;
     LONG   argcount;
     TEXT   argname[MAXARGS][MAXARGLEN];
@@ -189,7 +191,17 @@ struct InterpreterState
     struct ShellBase *sb;
 };
 
-
+static void PrintBanner(struct DosLibrary *DOSBase)
+{
+    PutStr
+    (
+	"AROS - The AROS Research Operating System\n"
+	"Copyright © 1995-2011, The AROS Development Team. All rights reserved.\n"
+	"AROS is licensed under the terms of the AROS Public License (APL),\n"
+	"a copy of which you should have received with this distribution.\n"
+	"Visit http://www.aros.org/ for more information.\n"
+    );
+}
 
 /* Prototypes */
 
@@ -573,8 +585,16 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 
     initDefaultInterpreterState(&is);
 
-    if (is.isBootShell)
+    if (is.isBootShell) {
+    	struct ExpansionBase *ExpansionBase;
         SetPrompt("%N> ");
+        ExpansionBase = (struct ExpansionBase*)OpenLibrary("expansion.library", 0);
+	if (ExpansionBase && !(ExpansionBase->Flags & EBF_SILENTSTART)) {
+	    PrintBanner(DOSBase);
+	    is.isBannerDone = TRUE;
+	}
+	CloseLibrary(ExpansionBase);
+    }
 
     if(SHArg(COMMAND) && SHArg(COMMAND)[0])
     {
@@ -625,14 +645,9 @@ LONG interact(struct InterpreterState *is)
 	SetVBuf(Output(), NULL, BUF_FULL, -1);
 	if (is->isBootShell)
 	{
-	    PutStr
-	    (
-	    	"AROS - The AROS Research Operating System\n"
-		"Copyright © 1995-2011, The AROS Development Team. All rights reserved.\n"
-		"AROS is licensed under the terms of the AROS Public License (APL),\n"
-		"a copy of which you should have received with this distribution.\n"
-		"Visit http://www.aros.org/ for more information.\n"
-	    );
+	    if (!is->isBannerDone)
+	        PrintBanner(DOSBase);
+	    is->isBannerDone = TRUE;
 	}
 	else
 	{
