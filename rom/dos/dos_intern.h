@@ -312,7 +312,7 @@ LONG InternalOpen(CONST_STRPTR name, LONG action,
 #define ASSERT_VALID_FILELOCK(lock) do { \
     	struct FileLock *fl = BADDR(lock); \
     	if (fl && fl->fl_Access != SHARED_LOCK && fl->fl_Access != EXCLUSIVE_LOCK) { \
-    	    bug("Current() called with a bogus FileLock! B=%x FL=%x %s/%s/%d\n", lock, fl, __FILE__,__FUNCTION__,__LINE__); \
+    	    bug("%s() called with a bogus FileLock! B=%x FL=%x %s/%s/%d\n", __FUNCTION__, lock, fl, __FILE__,__FUNCTION__,__LINE__); \
     	} \
     } while (0);
 
