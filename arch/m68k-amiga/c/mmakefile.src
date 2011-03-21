@@ -32,7 +32,8 @@ FILES := gdbstub gdbstop
 
 %build_progs mmake=workbench-c-m68k-apps \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga rom"
+    uselibs="arossupport amiga rom" \
+    detach=yes
 
 CFILES := SetPatchAROS
 AFILES := newstackswap

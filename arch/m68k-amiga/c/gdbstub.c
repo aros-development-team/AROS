@@ -569,6 +569,7 @@ void gdbstub()
 
 /**************** end of gdbstub.c, rest is AROS interface ***********/
 
+#include <aros/detach.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <exec/execbase.h>
@@ -687,24 +688,56 @@ AROS_UFH4(APTR, myAddTask,
 {
     AROS_USERFUNC_INIT
 
-    /* Set us up as the trap handler */
-    task->tc_TrapCode = trapHandler;
+    APTR ret;
 
-    return AROS_UFC4(APTR, oldAddTask,
+    ret = AROS_UFC4(APTR, oldAddTask,
 	AROS_UFCA(struct Task *,     task,      A1),
 	AROS_UFCA(APTR,              initialPC, A2),
 	AROS_UFCA(APTR,              finalPC,   A3),
 	AROS_UFCA(struct ExecBase *, SysBase,   A6));
 
+    /* Set us up as the trap handler */
+    task->tc_TrapCode = trapHandler;
+
+    return ret;
+
     AROS_USERFUNC_EXIT
 }
+
+static APTR UpdateTrapCode(APTR newHandler)
+{
+    APTR oldHandler;
+    struct Task *task;
+
+    /* Update SysBase default */
+    oldHandler = SysBase->TaskTrapCode;
+    SysBase->TaskTrapCode = newHandler;
+
+    /* And ourselves. */
+    task = FindTask(NULL);
+    task->tc_TrapCode = newHandler;
+
+    /* And any other tasks in the system.
+     */
+    ForeachNode(&SysBase->TaskReady, task) {
+	if (task->tc_TrapCode == oldHandler)
+	    task->tc_TrapCode = newHandler;
+    }
+    ForeachNode(&SysBase->TaskWait, task) {
+	if (task->tc_TrapCode == oldHandler)
+	    task->tc_TrapCode = newHandler;
+    }
+
+    return oldHandler;
+}
+
 
 int main(int argc, char **argv)
 {
     APTR DOSBase;
+    APTR oldTaskTrapCode;
 
     if ((DOSBase = OpenLibrary("dos.library", 0))) {
-    	struct Task *task;
     	/* We need to patch AddTask() to set
     	 * us up as the default stub for tc_TrapCode.
     	 *
@@ -715,37 +748,23 @@ int main(int argc, char **argv)
     	 * So instead of modifying SysBase->TrapCode,
     	 * we have to inject this into the Exec Library.
     	 */
-    	Disable();
-    	oldAddTask  = SetFunction(SysBase, -47 * LIB_VECTSIZE, myAddTask);
-    	/* And set up all ready/waiting tasks to use us.
-    	 *
-    	 * We're the running task, so we won't be patched.
+    	/* Set up new handler
     	 */
-    	for (task = (APTR)GetHead(&SysBase->TaskReady); task; task = (APTR)GetSucc(task)) {
-    	    task->tc_TrapCode = trapHandler;
-    	}
-    	for (task = (APTR)GetHead(&SysBase->TaskWait); task; task = (APTR)GetSucc(task)) {
-    	    task->tc_TrapCode = trapHandler;
-    	}
+    	Disable();
+    	oldTaskTrapCode = UpdateTrapCode(trapHandler);
+    	oldAddTask  = SetFunction(SysBase, -47 * LIB_VECTSIZE, myAddTask);
     	Enable();
 
     	gdbstub();
     	PutStr("GDB trapping enabled on the serial port\n");
+    	Detach();
     	Wait(SIGBREAKF_CTRL_C);
 
-    	/* Restore traps. Not really safe, but better than nothing */
-    	Disable();
-    	/* And set up all ready/waiting tasks to use the default.
-    	 *
-    	 * We're the running task, so we won't be patched.
+    	/* Restore traps. Not really safe, but better than nothing
     	 */
-    	for (task = (APTR)GetHead(&SysBase->TaskReady); task; task = (APTR)GetSucc(task)) {
-    	    task->tc_TrapCode = SysBase->TaskTrapCode;
-    	}
-    	for (task = (APTR)GetHead(&SysBase->TaskWait); task; task = (APTR)GetSucc(task)) {
-    	    task->tc_TrapCode = SysBase->TaskTrapCode;
-    	}
+    	Disable();
     	SetFunction(SysBase, -47 * LIB_VECTSIZE, oldAddTask);
+    	UpdateTrapCode(oldTaskTrapCode);
     	Enable();
 
     	CloseLibrary(DOSBase);
