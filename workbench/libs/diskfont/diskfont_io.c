@@ -73,7 +73,7 @@ SKIPPTR(ptr);
 /****************************************************************************************/
 
 struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname, BOOL doextend,
-    	    	    	      struct DiskfontBase_intern *DiskfontBase)
+    	    	    	      struct DiskfontBase *DiskfontBase)
 {
     UWORD count, numchars;
     register int i;
@@ -96,7 +96,7 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname, BOOL do
 	    charkern_ptr 	= NULL,
 	    taglist_ptr 	= NULL,
 	    prevsegment     	= NULL;
-    BPTR    fontsegment = NULL;
+    BPTR    fontsegment = BNULL;
     BOOL    fontextended = FALSE;
     
     CONST_STRPTR filepart;
@@ -448,7 +448,7 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname, BOOL do
 	}
 	else
 	{
-	    dfh->dfh_TagList = taglist;
+	    dfh->dfh_TagList = (BPTR)taglist;
 	}
     }
     else if (doextend)
@@ -484,7 +484,7 @@ failure:
 }
 
 void DisposeConvDiskFont(struct DiskFontHeader *dfh,
-			 struct DiskfontBase_intern *DiskfontBase)
+			 struct DiskfontBase *DiskfontBase)
 {
     if (dfh!=NULL)
     {
@@ -504,7 +504,7 @@ void DisposeConvDiskFont(struct DiskFontHeader *dfh,
 struct TextFont *ReadDiskFont(
 	struct TTextAttr *reqattr,
 	CONST_STRPTR realfontname,
-	struct DiskfontBase_intern *DiskfontBase)
+	struct DiskfontBase *DiskfontBase)
 {	
     struct DiskFontHeader *dfh = NULL;
     STRPTR  	     filename;

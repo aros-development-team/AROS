@@ -34,7 +34,7 @@
 
 /****************************************************************************************/
 
-STRPTR OTAG_MakeFileName(CONST_STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
+STRPTR OTAG_MakeFileName(CONST_STRPTR filename, struct DiskfontBase *DiskfontBase)
 {
     STRPTR  retval;
     LONG    l;
@@ -54,7 +54,7 @@ STRPTR OTAG_MakeFileName(CONST_STRPTR filename, struct DiskfontBase_intern *Disk
 
 /****************************************************************************************/
 
-struct OTagList *OTAG_GetFile(CONST_STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
+struct OTagList *OTAG_GetFile(CONST_STRPTR filename, struct DiskfontBase *DiskfontBase)
 {
     struct FileInfoBlock    *fib;
     struct OTagList	    *otaglist;
@@ -185,7 +185,7 @@ struct OTagList *OTAG_GetFile(CONST_STRPTR filename, struct DiskfontBase_intern 
 
 /****************************************************************************************/
 
-VOID OTAG_KillFile(struct OTagList *otaglist, struct DiskfontBase_intern *DiskfontBase)
+VOID OTAG_KillFile(struct OTagList *otaglist, struct DiskfontBase *DiskfontBase)
 {
     if (otaglist)
     {
@@ -203,7 +203,7 @@ VOID OTAG_KillFile(struct OTagList *otaglist, struct DiskfontBase_intern *Diskfo
 
 /****************************************************************************************/
 
-UBYTE OTAG_GetFontStyle(struct OTagList *otaglist, struct DiskfontBase_intern *DiskfontBase)
+UBYTE OTAG_GetFontStyle(struct OTagList *otaglist, struct DiskfontBase *DiskfontBase)
 {
     UBYTE style = 0;
 
@@ -234,7 +234,7 @@ UBYTE OTAG_GetFontStyle(struct OTagList *otaglist, struct DiskfontBase_intern *D
 /****************************************************************************************/
 
 UBYTE OTAG_GetSupportedStyles(struct OTagList *otaglist,
-			      struct DiskfontBase_intern *DiskfontBase)
+			      struct DiskfontBase *DiskfontBase)
 {
     UBYTE inhibit, supported;
 
@@ -255,7 +255,7 @@ UBYTE OTAG_GetSupportedStyles(struct OTagList *otaglist,
 
 /****************************************************************************************/
 
-UBYTE OTAG_GetFontFlags(struct OTagList *otaglist, struct DiskfontBase_intern *DiskfontBase)
+UBYTE OTAG_GetFontFlags(struct OTagList *otaglist, struct DiskfontBase *DiskfontBase)
 {
     UBYTE flags;
 
@@ -277,7 +277,7 @@ static BOOL OTAG_SetupFontEngine(struct TTextAttr *ta,
 				 LONG	*xdpi_ptr,
 				 LONG	*ydpi_ptr,
 				 struct Library *BulletBase,
-				 struct DiskfontBase_intern *DiskfontBase)
+				 struct DiskfontBase *DiskfontBase)
 {
     struct TagItem maintags[] =
     {
@@ -350,7 +350,7 @@ static BOOL OTAG_SetupFontEngine(struct TTextAttr *ta,
 static VOID OTAG_FreeAAGlyphMaps(struct GlyphEngine *ge,
 				 struct GlyphMap **gm,
 				 struct Library *BulletBase,
-				 struct DiskfontBase_intern *DiskfontBase)
+				 struct DiskfontBase *DiskfontBase)
 {
     UWORD i;
 
@@ -376,7 +376,7 @@ static VOID OTAG_FreeAAGlyphMaps(struct GlyphEngine *ge,
 static VOID OTAG_FreeGlyphMaps(struct GlyphEngine *ge,
 			       struct GlyphMap **gm,
 			       struct Library *BulletBase,
-			       struct DiskfontBase_intern *DiskfontBase)
+			       struct DiskfontBase *DiskfontBase)
 {
     UWORD i;
 
@@ -407,7 +407,7 @@ static BOOL OTAG_GetGlyphMaps(struct GlyphEngine *ge,
 			      WORD *baseline,
 			      LONG *gfxwidth,
 			      struct Library *BulletBase,
-			      struct DiskfontBase_intern *DiskfontBase)
+			      struct DiskfontBase *DiskfontBase)
 {
     UWORD i;
 
@@ -460,7 +460,7 @@ static BOOL OTAG_GetGlyphMaps(struct GlyphEngine *ge,
 static BOOL OTAG_GetAAGlyphMaps(struct GlyphEngine *ge,
 				struct GlyphMap **gm,
 				struct Library *BulletBase,
-				struct DiskfontBase_intern *DiskfontBase)
+				struct DiskfontBase *DiskfontBase)
 {
     UWORD i;
 
@@ -492,7 +492,7 @@ static BOOL OTAG_GetAAGlyphMaps(struct GlyphEngine *ge,
 /****************************************************************************************/
 
 struct AADiskFontHeader *OTAG_AllocFontStruct(STRPTR name, UWORD numchars, LONG gfxwidth,
-					      LONG fontheight, struct DiskfontBase_intern *DiskfontBase)
+					      LONG fontheight, struct DiskfontBase *DiskfontBase)
 {
     struct AADiskFontHeader *dfh;
     APTR                     charkern;
@@ -582,7 +582,7 @@ struct AADiskFontHeader *OTAG_AllocFontStruct(STRPTR name, UWORD numchars, LONG 
 /****************************************************************************************/
 
 static LONG OTAG_AllocAAData(struct ColorTextFont *ctf,
-			     struct DiskfontBase_intern *DiskfontBase)
+			     struct DiskfontBase *DiskfontBase)
 {
     UBYTE *aadata;
     int k;
@@ -665,7 +665,7 @@ static VOID OTAG_CalcMetrics(struct GlyphMap **gm, struct TextFont *tf)
 /****************************************************************************************/
 
 static VOID OTAG_BlitGlyph(struct GlyphMap *gm, struct TextFont *tf, LONG xpos,
-			   LONG ypos, struct DiskfontBase_intern *DiskfontBase)
+			   LONG ypos, struct DiskfontBase *DiskfontBase)
 {
     UBYTE *src, *dest;
     LONG x, y, width, height;
@@ -679,7 +679,7 @@ static VOID OTAG_BlitGlyph(struct GlyphMap *gm, struct TextFont *tf, LONG xpos,
 
     if ((width < 1) || (height < 1)) return;
 
-    #warning whats the best thing to do here
+    /* FIXME:  whats the best thing to do here? */
 
     /* Check if glyph is bigger/elsewhere than expected,
        ie. extends outside the bounding box vertically:
@@ -784,7 +784,7 @@ static VOID OTAG_BlitGlyph(struct GlyphMap *gm, struct TextFont *tf, LONG xpos,
 /****************************************************************************************/
 
 static VOID OTAG_MakeCharData(struct GlyphMap **gm, struct TextFont *tf,
-			      struct DiskfontBase_intern *DiskfontBase)
+			      struct DiskfontBase *DiskfontBase)
 {
     ULONG *charloc = (ULONG *)tf->tf_CharLoc;
     LONG   xpos = 0;
@@ -817,7 +817,7 @@ static VOID OTAG_MakeCharData(struct GlyphMap **gm, struct TextFont *tf,
 /****************************************************************************************/
 
 static VOID OTAG_BlitAAGlyph(struct GlyphMap *gm, struct ColorTextFont *tf, LONG xpos,
-			     LONG ypos, struct DiskfontBase_intern *DiskfontBase)
+			     LONG ypos, struct DiskfontBase *DiskfontBase)
 {
     UBYTE *src, *dest;
     LONG x, y, width, height;
@@ -865,7 +865,7 @@ static VOID OTAG_BlitAAGlyph(struct GlyphMap *gm, struct ColorTextFont *tf, LONG
 /****************************************************************************************/
 
 static VOID OTAG_MakeAAData(struct GlyphMap **gm, struct ColorTextFont *tf,
-			    struct DiskfontBase_intern *DiskfontBase)
+			    struct DiskfontBase *DiskfontBase)
 {
     //ULONG *charloc = (ULONG *)tf->ctf_TF.tf_CharLoc;
     LONG   xpos = 0;
@@ -897,7 +897,7 @@ static VOID OTAG_MakeAAData(struct GlyphMap **gm, struct ColorTextFont *tf,
 /****************************************************************************************/
 
 struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *reqattr,
-				      struct OTagList *otag, struct DiskfontBase_intern *DiskfontBase)
+				      struct OTagList *otag, struct DiskfontBase *DiskfontBase)
 {
     struct Library	    *BulletBase;
     struct GlyphEngine      *ge;
@@ -1020,7 +1020,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
 	   2540            250
     */
 
-    #warning maybe should do 64 bit calculations (long long)
+    /* FIXME: maybe should do 64 bit calculations (long long)? */
     spacewidth = spacewidth * reqattr->tta_YSize / 250 * xdpi / 2540;
 
     dfh->dfh_TF.ctf_TF.tf_Style    = fontstyle;

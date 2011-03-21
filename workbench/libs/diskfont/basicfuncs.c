@@ -21,7 +21,7 @@
 APTR AllocSegment
 (
     BPTR *prevsegment, ULONG segmentsize, ULONG memflags,
-    struct DiskfontBase_intern *DiskfontBase
+    struct DiskfontBase *DiskfontBase
 )
 {
     ULONG *mem;
@@ -33,7 +33,7 @@ APTR AllocSegment
     	*mem++ = segmentsize + sizeof(ULONG) + sizeof(BPTR);
         if (prevsegment) prevsegment[-1] = MKBADDR(mem);
         membptr = (BPTR *) mem;
-        *membptr++ = NULL;
+        *membptr++ = BNULL;
     	mem = (ULONG *)membptr;
     }
     
@@ -48,7 +48,7 @@ APTR AllocSegment
 
 /****************************************************************************************/
 
-struct TagItem *ReadTags(BPTR fh, ULONG numtags, struct DiskfontBase_intern *DiskfontBase)
+struct TagItem *ReadTags(BPTR fh, ULONG numtags, struct DiskfontBase *DiskfontBase)
 {
     struct TagItem  *taglist,
                     *tagptr;
@@ -100,7 +100,7 @@ rt_failure:
 
 /****************************************************************************************/
 
-struct TagItem *ReadTagsNum(BPTR fh, ULONG *numtagsptr, struct DiskfontBase_intern *DiskfontBase)
+struct TagItem *ReadTagsNum(BPTR fh, ULONG *numtagsptr, struct DiskfontBase *DiskfontBase)
 {
     struct TagItem  *taglist;
     ULONG            numtags;
@@ -137,7 +137,7 @@ rt_failure:
 
 /****************************************************************************************/
 
-BOOL WriteTagsNum(BPTR fh, const struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
+BOOL WriteTagsNum(BPTR fh, const struct TagItem *taglist, struct DiskfontBase *DiskfontBase)
 {
     struct TagItem *tag;
     ULONG num;
@@ -174,7 +174,7 @@ wt_failure:
 
 /****************************************************************************************/
 
-ULONG NumTags(const struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
+ULONG NumTags(const struct TagItem *taglist, struct DiskfontBase *DiskfontBase)
 /* Counts the number of tags in at taglist including TAG_DONE */
 
 {
@@ -202,7 +202,7 @@ ULONG CopyTagItems
 (
     struct TagItem *desttaglist, 
     const struct TagItem *sourcetaglist, 
-    struct DiskfontBase_intern *DiskfontBase
+    struct DiskfontBase *DiskfontBase
 )
 /* Copies tags from a taglist to another memory location, returning
   the number of tags copied */

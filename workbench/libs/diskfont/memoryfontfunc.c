@@ -34,7 +34,7 @@ struct MFData
 
 /****************************************************************************************/
 
-APTR MF_IteratorInit(struct DiskfontBase_intern *DiskfontBase)
+APTR MF_IteratorInit(struct DiskfontBase *DiskfontBase)
 {
     struct MFData *mfdata;
 
@@ -59,7 +59,7 @@ APTR MF_IteratorInit(struct DiskfontBase_intern *DiskfontBase)
 
 /****************************************************************************************/
 
-struct TTextAttr *MF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
+struct TTextAttr *MF_IteratorGetNext(APTR iterator, struct DiskfontBase *DiskfontBase)
 {
     struct MFData *mfdata = (struct MFData *)iterator;
     struct TextFont *currfont;
@@ -95,7 +95,7 @@ struct TTextAttr *MF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
 
 /****************************************************************************************/
 
-VOID MF_IteratorFree(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
+VOID MF_IteratorFree(APTR iterator, struct DiskfontBase *DiskfontBase)
 {
     struct MFData *mfdata = (struct MFData *)iterator;
     
