@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006 The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2011 The AROS Development Team. All rights reserved.
     $Id$
     
     Desc: ELF64 loader extracted from our internal_load_seg_elf in dos.library.
@@ -9,7 +9,8 @@
 //#define DEBUG
 #define BOOTSTRAP
 
-#include "../include/aros/kernel.h"
+#include <aros/kernel.h>
+
 #include "elfloader.h"
 #include "screen.h"
 #include "bootstrap.h"
@@ -122,10 +123,10 @@ static int load_hunk(void *file, struct sheader *sh)
     else
     {
         __bs_bzero(ptr, sh->size);
-        bss_tracker->addr = KERNEL_OFFSET | (unsigned long long)ptr;
+        bss_tracker->addr = KERNEL_OFFSET | (unsigned long)ptr;
         bss_tracker->len = sh->size;
         bss_tracker++;
-        bss_tracker->addr = NULL;
+        bss_tracker->addr = 0;
         bss_tracker->len = 0;
     }
     

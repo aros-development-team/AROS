@@ -1,5 +1,7 @@
 #define DEBUG 1
+
 #include <aros/debug.h>
+#include <aros/multiboot.h>
 #include <asm/cpu.h>
 #include <asm/io.h>
 #include <asm/segments.h>
@@ -16,7 +18,6 @@
 #include <stdlib.h>
 
 #include "kernel_intern.h"
-#include "../bootstrap/multiboot.h"
 #include LC_LIBDEFS_FILE
 
 #define CONFIG_LAPICS

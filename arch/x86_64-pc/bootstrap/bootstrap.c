@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2009 The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2011 The AROS Development Team. All rights reserved.
     $Id$
     
     Desc: 32-bit bootstrap code used to boot the 64-bit AROS kernel.
@@ -9,10 +9,10 @@
 #define DEBUG
 #define BOOTSTRAP
 
-#include "../include/aros/kernel.h"
+#include <aros/kernel.h>
+#include <aros/multiboot.h>
 
 #include "bootstrap.h"
-#include "multiboot.h"
 #include "cpu.h"
 #include "screen.h"
 #include "elfloader.h"
@@ -26,8 +26,23 @@
     therefore it will be packed into the .aros.startup section. I hope, that turning debug on
     will not shift it into some distinct location.
 */
-static const multiboot_header __header __attribute__((used,section(".aros.startup"))) = {
-    MB_MAGIC, MB_FLAGS, -(MB_MAGIC+MB_FLAGS)    
+
+#define MB_FLAGS (MB_PAGE_ALIGN|MB_MEMORY_INFO|MB_VIDEO_MODE)
+
+static const struct multiboot_header __header __attribute__((used,section(".aros.startup"))) =
+{
+    MB_MAGIC,
+    MB_FLAGS,
+    -(MB_MAGIC + MB_FLAGS),
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,	/* We prefer text mode, but will accept also framebuffer */
+    640,
+    200,
+    32,
 };
 
 /*
@@ -332,7 +347,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                  */
                 void *file = p + 8;
 
-                D(kprintf("[BOOT] * package %s @ %p:\n", __bs_remove_path((char *)mod->string), mod->mod_start));
+                D(kprintf("[BOOT] * package %s @ %p:\n", __bs_remove_path((char *)mod->cmdline), mod->mod_start));
 
                 while (file < (void*)mod->mod_end)
                 {
@@ -414,11 +429,11 @@ void setupVESA(unsigned long vesa_base, char *vesa)
                 palwidth = 6;
 
             tag->ti_Tag = KRN_VBEModeInfo;
-            tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEModeInfo;
+            tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
             tag++;
 
             tag->ti_Tag = KRN_VBEControllerInfo;
-            tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEControllerInfo;
+            tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEControllerInfo;
             tag++;
 
             tag->ti_Tag = KRN_VBEMode;
@@ -476,15 +491,15 @@ void prepare_message(struct multiboot *mb)
     /*km.GRUBData.low = mb; */
 
     tag->ti_Tag = KRN_GDT;
-    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&GDT;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long)&GDT;
     tag++;
 
     tag->ti_Tag = KRN_PL4;
-    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&PML4;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long)&PML4;
     tag++;
 
     tag->ti_Tag = KRN_KernelBase;
-    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)KernelTarget.off;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long)KernelTarget.off;
     tag++;
 
     tag->ti_Tag = KRN_KernelLowest;
@@ -496,15 +511,15 @@ void prepare_message(struct multiboot *mb)
     tag++;
 
     tag->ti_Tag = KRN_KernelBss;
-    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)__bss_track;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long)__bss_track;
     tag++;
 
     tag->ti_Tag = KRN_ProtAreaStart;
-    tag->ti_Data = &_prot_lo;
+    tag->ti_Data = (unsigned long)&_prot_lo;
     tag++;
 
     tag->ti_Tag = KRN_ProtAreaEnd;
-    tag->ti_Data = &_prot_hi;
+    tag->ti_Data = (unsigned long)&_prot_hi;
     tag++;
 
     tag->ti_Tag = TAG_DONE;
@@ -526,26 +541,32 @@ void prepare_message(struct multiboot *mb)
     be skipped.
 */
 static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int addr)
-{  
+{
     struct multiboot *mb = (struct multiboot *)addr;/* Multiboot structure from GRUB */
     struct module *mod = (struct module *)__stack;  /* The list of modules at the bottom of stack */
-    char *vesa = __bs_strstr(mb->cmdline, "vesa=");
+    char *vesa;
     int module_count = 0;
     unsigned long vesa_size = 0;
     unsigned long vesa_base = 0;
     struct module *m;
+    const char *cmdline = NULL;
 
-    clr();
-//    kprintf("[BOOT] Entered AROS Bootstrap @ %p [asm stub @ %p].\n", __bootstrap, kernel_bootstrap);
+    initScreen(mb);
+
     kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
-    D(kprintf("[BOOT] Multiboot structure @ %p\n", mb));
-    D(kprintf("[BOOT] Command line '%s' @ %p\n", mb->cmdline, mb->cmdline));
-
     D(kprintf("[BOOT] Stack @ %p, [%d bytes]\n", __stack, sizeof(__stack)));
+    D(kprintf("[BOOT] Multiboot structure @ %p\n", mb));
+
+    if (mb->flags & MB_FLAGS_CMDLINE)
+    {
+    	cmdline = (const char *)mb->cmdline;
+    	D(kprintf("[BOOT] Command line @ %p : '%s'\n", mb->cmdline, cmdline));
+    }
 
     set_base_address((void *)KERNEL_TARGET_ADDRESS, __bss_track);
-    change_kernel_address(mb->cmdline);
+    change_kernel_address(cmdline);
 
+    vesa = __bs_strstr((const char *)mb->cmdline, "vesa=");
     if (vesa)
     {
         vesa_size = (unsigned long)&_binary_vesa_size;
@@ -572,10 +593,10 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 
         while (len >= sizeof(struct mb_mmap))
         {
-            if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE)
+            if (mmap->type == MMAP_TYPE_RAM)
             {
-                multiboot_uint64_t addr = mmap->addr;
-                multiboot_uint64_t size = mmap->len;
+                unsigned long addr = mmap->addr;
+                unsigned long size = mmap->len;
 
                 if (addr < 0x00100000 && addr + size <= 0x00100000)
                 {

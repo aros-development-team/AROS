@@ -3,7 +3,10 @@ include $(TOP)/config/make.cfg
 
 TARGETDIR 	:= $(GENDIR)/$(CURDIR)
 KOBJS 		:=
-FILES		:= bootstrap screen elfloader support
+FONT            := font8x14
+FILES		:= bootstrap screen screen_serial screen_text screen_fb elfloader support $(FONT)
+
+USER_CFLAGS := -isystem $(GENINCDIR) -DMULTIBOOT_64BIT
 
 #MM kernel-bootstrap-x86_64: kernel-kernel-pc-x86_64-kobj kernel-exec-kobj kernel-utility-kobj kernel-expansion-kobj kernel-oop-kobj kernel-hidd-kobj kernel-bootstrap-pc-x86_64-drivers
 kernel-bootstrap-x86_64: $(BINDIR)/boot/kernel-pc-x86_64 $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-pc-x86_64
