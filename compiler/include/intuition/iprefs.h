@@ -47,6 +47,13 @@
 #define IPREFS_TYPE_PALETTE_V39    3
 #define IPREFS_TYPE_POINTER_ALPHA  4
 
+/* dummy entries */
+#define IPREFS_TYPE_FONT_V37       10
+#define IPREFS_TYPE_OVERSCAN_V37   11
+#define IPREFS_TYPE_POINTER_V37    12
+#define IPREFS_TYPE_PALETTE_V37    13
+#define IPREFS_TYPE_PENS_V39       14
+
 #endif
 
 /* backwards compatibility */
