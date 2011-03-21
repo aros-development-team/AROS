@@ -153,7 +153,7 @@ struct InitTable {
 
 static void FloppyBootNode(
         struct ExpansionBase *ExpansionBase,
-        CONST_STRPTR driver, int unit, ULONG type, BOOL hddisk, BOOL bootable)
+        CONST_STRPTR driver, UBYTE unit, ULONG type, BOOL hddisk, BOOL bootable)
 {
     TEXT dosdevname[4] = "DF0";
     IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
@@ -202,6 +202,9 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
        WORD bootdrive = -1;
        LONG retval = -1;
        void (*init)(void) = NULL;
+       struct BootNode *bn = (struct BootNode*)ExpansionBase->MountList.lh_Head;
+	/* only execute bootblock if drive is highest priority bootable device */
+       BOOL canboot = bn->bn_Node.ln_Succ == NULL || bn->bn_Node.ln_Pri < 5;
 
        /* memf_chip not required but more compatible with old bootblocks */
        UBYTE *buffer = AllocMem(BOOTBLOCK_SIZE, MEMF_CHIP);
@@ -228,7 +231,8 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                                DoIO((struct IORequest*)io);
                                if (io->iotd_Req.io_Error == 0) {
                                    D(bug("bootblock read ok\n"));
-                                   if (BootBlockChecksum(buffer)) {
+                               	   dostype = *(ULONG *)buffer;
+                                   if (canboot && BootBlockChecksum(buffer)) {
                                	       APTR bootcode = buffer + 12;
                                	       ExpansionBase->Flags &= ~EBF_SILENTSTART;
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
@@ -247,7 +251,6 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                                	       		       "m" (bootcode)
                                	       		     : "%d0", "%d1", "%a0", "%a1");
                                	       D(bug("bootblock: D0=0x%08x A0=%p\n", retval, init));
-                               	       dostype = *(ULONG *)buffer;
                                	       if (retval == 0)
                                	       	   bootdrive = i;
                                        else
@@ -641,11 +644,6 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     ConfigChain(NULL);
     ExpansionBase->Flags |= EBF_SILENTSTART;
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
-    /* Try to get a boot-block from the trackdisk.device */
-    BootBlock(ExpansionBase);
-#endif
-
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
     /* Try to open bootloader.resource */
     if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
@@ -699,6 +697,11 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     /* check boot nodes for partition tables */
     while ((bootNode = (struct BootNode *)RemHead(&list)))
         CheckPartitions(ExpansionBase, SysBase, bootNode);
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+    /* Try to get a boot-block from the trackdisk.device */
+    BootBlock(ExpansionBase);
+#endif
 
     CloseLibrary((struct Library *)ExpansionBase);
 
