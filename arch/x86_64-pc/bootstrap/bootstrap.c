@@ -423,6 +423,8 @@ void setupVESA(unsigned long vesa_base, char *vesa)
         {
             unsigned char palwidth = 0;
 
+	    /* TODO: re-initialise onscreen debug output */
+
             if (VBEControllerInfo.capabilities & 0x01)
                 paletteWidth(0x0800, &palwidth);
             else
