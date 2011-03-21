@@ -27,7 +27,7 @@
 
 /****************************************************************************************/
 
-struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
+struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase *DiskfontBase)
 {
     struct FontDescrHeader  *fdh = 0;
     struct TTextAttr 	    *tattr;
@@ -92,7 +92,8 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase
 	{
 	    D(bug("ReadFontDescr: No OTagList for outlined font\n"));
 
-	    #warning "stegerg: CHECKME!! Prevent OTAG_ functions from being called on NULL/non existing otag / taglist"
+	    /* TODO: stegerg: CHECKME!! Prevent OTAG_ functions from being called on NULL/non existing otag / taglist
+	     */
 	    fdh->ContentsID = TFCH_ID;
 	}
     }
@@ -280,7 +281,7 @@ failure:
 
 /****************************************************************************************/
 
-VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *DiskfontBase)
+VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase *DiskfontBase)
 {
     struct TTextAttr *tattr;
 

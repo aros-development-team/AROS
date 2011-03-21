@@ -92,7 +92,7 @@ struct DF_Data
 
 /****************************************************************************************/
 
-STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBase_intern *DiskfontBase)
+STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBase *DiskfontBase)
 {
     struct FontDescrHeader *fdh;
     struct FileEntry       *retval = NULL;
@@ -178,7 +178,7 @@ STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBas
 
 /****************************************************************************************/
 
-STATIC VOID FreeFileEntry(struct FileEntry *feptr, struct DiskfontBase_intern *DiskfontBase)
+STATIC VOID FreeFileEntry(struct FileEntry *feptr, struct DiskfontBase *DiskfontBase)
 {
     FreeVec(feptr);
 }
@@ -191,7 +191,7 @@ STATIC VOID FreeFileEntry(struct FileEntry *feptr, struct DiskfontBase_intern *D
 
 /****************************************************************************************/
 
-STATIC VOID FreeFileList(struct MinList *filelist, struct DiskfontBase_intern *DiskfontBase)
+STATIC VOID FreeFileList(struct MinList *filelist, struct DiskfontBase *DiskfontBase)
 {
     struct FileEntry *feptr, *nextfeptr;
 
@@ -215,7 +215,7 @@ STATIC VOID FreeFileList(struct MinList *filelist, struct DiskfontBase_intern *D
 /****************************************************************************************/
 
 /* Build the list of .font file names using Examine() */
-STATIC BOOL GetFileList(struct DirEntry *direntry, struct DiskfontBase_intern *DiskfontBase)
+STATIC BOOL GetFileList(struct DirEntry *direntry, struct DiskfontBase *DiskfontBase)
 {
     struct MinList       newlist; 
     struct FileEntry 	*fe, *nextfe;
@@ -349,7 +349,7 @@ STATIC BOOL GetFileList(struct DirEntry *direntry, struct DiskfontBase_intern *D
 
 /****************************************************************************************/
 
-STATIC BOOL StreamOutFileList(struct MinList *filelist, BPTR fh, struct DiskfontBase_intern *DiskfontBase)
+STATIC BOOL StreamOutFileList(struct MinList *filelist, BPTR fh, struct DiskfontBase *DiskfontBase)
 {
     struct FileEntry *fe;
     ULONG i;
@@ -358,28 +358,28 @@ STATIC BOOL StreamOutFileList(struct MinList *filelist, BPTR fh, struct Diskfont
     ForeachNode(filelist, fe)
     {
 	D(bug("StreamOutFileList: Writing file %s\n", fe->FileName));
-	ok = ok && WriteString(&DiskfontBase->dsh, fe->FileName, fh);
+	ok = ok && WriteString(&DiskfontBase->dsh, fe->FileName, (APTR)fh);
 	D(bug("StreamOutFileList: Write days: %d minute: %d, tick: %d\n",
 	      fe->FileChanged.ds_Days, fe->FileChanged.ds_Minute,
 	      fe->FileChanged.ds_Tick));
-	ok = ok && WriteLong(&DiskfontBase->dsh, fe->FileChanged.ds_Days, fh);
-	ok = ok && WriteLong(&DiskfontBase->dsh, fe->FileChanged.ds_Minute, fh);
-	ok = ok && WriteLong(&DiskfontBase->dsh, fe->FileChanged.ds_Tick, fh);
-        ok = ok && WriteWord(&DiskfontBase->dsh, fe->ContentsID, fh);
-        ok = ok && WriteByte(&DiskfontBase->dsh, fe->SupportedStyles, fh);
-        ok = ok && WriteByte(&DiskfontBase->dsh, fe->FontStyle, fh);
+	ok = ok && WriteLong(&DiskfontBase->dsh, fe->FileChanged.ds_Days, (APTR)fh);
+	ok = ok && WriteLong(&DiskfontBase->dsh, fe->FileChanged.ds_Minute, (APTR)fh);
+	ok = ok && WriteLong(&DiskfontBase->dsh, fe->FileChanged.ds_Tick, (APTR)fh);
+        ok = ok && WriteWord(&DiskfontBase->dsh, fe->ContentsID, (APTR)fh);
+        ok = ok && WriteByte(&DiskfontBase->dsh, fe->SupportedStyles, (APTR)fh);
+        ok = ok && WriteByte(&DiskfontBase->dsh, fe->FontStyle, (APTR)fh);
 	D(bug("StreamOutFileList: Write numentries=%d\n", fe->Numentries));
-	ok = ok && WriteLong(&DiskfontBase->dsh, fe->Numentries, fh);
+	ok = ok && WriteLong(&DiskfontBase->dsh, fe->Numentries, (APTR)fh);
 	
 	for (i=0; ok && i<fe->Numentries; i++)
 	{
-	    ok = ok && WriteWord(&DiskfontBase->dsh, fe->Attrs[i].tta_YSize, fh);
-	    ok = ok && WriteByte(&DiskfontBase->dsh, fe->Attrs[i].tta_Style, fh);
-	    ok = ok && WriteByte(&DiskfontBase->dsh, fe->Attrs[i].tta_Flags, fh);
+	    ok = ok && WriteWord(&DiskfontBase->dsh, fe->Attrs[i].tta_YSize, (APTR)fh);
+	    ok = ok && WriteByte(&DiskfontBase->dsh, fe->Attrs[i].tta_Style, (APTR)fh);
+	    ok = ok && WriteByte(&DiskfontBase->dsh, fe->Attrs[i].tta_Flags, (APTR)fh);
 	    ok = ok && WriteTagsNum(fh, fe->Attrs[i].tta_Tags, DiskfontBase);
 	}
     }
-    ok = ok && WriteString(&DiskfontBase->dsh, "", fh);
+    ok = ok && WriteString(&DiskfontBase->dsh, "", (APTR)fh);
     
     return ok;
 }
@@ -392,7 +392,7 @@ STATIC BOOL StreamOutFileList(struct MinList *filelist, BPTR fh, struct Diskfont
 
 /****************************************************************************************/
 
-STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct DiskfontBase_intern *DiskfontBase)
+STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct DiskfontBase *DiskfontBase)
 {
     struct FileEntry *fe, fe2;
     ULONG i, numtags, totnumtags;
@@ -400,22 +400,22 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct Diskfont
     struct TTextAttr *attrs;
     struct TagItem *tagptr;
     
-    for (ok = ReadString(&DiskfontBase->dsh, &fe2.FileName, fh);
+    for (ok = ReadString(&DiskfontBase->dsh, &fe2.FileName, (APTR)fh);
 	 ok && strlen(fe2.FileName)>0;
-	 ok = ok && ReadString(&DiskfontBase->dsh, &fe2.FileName, fh))
+	 ok = ok && ReadString(&DiskfontBase->dsh, &fe2.FileName, (APTR)fh))
     {
 	D(bug("StreamInFileList: reading data for \"%s\"\n", fe2.FileName));
 	
-	ok = ok && ReadLong(&DiskfontBase->dsh, &fe2.FileChanged.ds_Days, fh);
-	ok = ok && ReadLong(&DiskfontBase->dsh, &fe2.FileChanged.ds_Minute, fh);
-	ok = ok && ReadLong(&DiskfontBase->dsh, &fe2.FileChanged.ds_Tick, fh);
+	ok = ok && ReadLong(&DiskfontBase->dsh, &fe2.FileChanged.ds_Days, (APTR)fh);
+	ok = ok && ReadLong(&DiskfontBase->dsh, &fe2.FileChanged.ds_Minute, (APTR)fh);
+	ok = ok && ReadLong(&DiskfontBase->dsh, &fe2.FileChanged.ds_Tick, (APTR)fh);
 	D(bug("StreamInFileList: read days: %d minute: %d tick: %d\n",
 	      fe2.FileChanged.ds_Days, fe2.FileChanged.ds_Minute,
 	      fe2.FileChanged.ds_Tick));
-        ok = ok && ReadWord(&DiskfontBase->dsh, &fe2.ContentsID, fh);
-        ok = ok && ReadByte(&DiskfontBase->dsh, &fe2.SupportedStyles, fh);
-        ok = ok && ReadByte(&DiskfontBase->dsh, &fe2.FontStyle, fh);
-	ok = ok && ReadLong(&DiskfontBase->dsh, &fe2.Numentries, fh);
+        ok = ok && ReadWord(&DiskfontBase->dsh, &fe2.ContentsID, (APTR)fh);
+        ok = ok && ReadByte(&DiskfontBase->dsh, &fe2.SupportedStyles, (APTR)fh);
+        ok = ok && ReadByte(&DiskfontBase->dsh, &fe2.FontStyle, (APTR)fh);
+	ok = ok && ReadLong(&DiskfontBase->dsh, &fe2.Numentries, (APTR)fh);
 
 	if (ok)
 	{
@@ -429,9 +429,9 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct Diskfont
 
 	    for (i = 0, totnumtags = 0; ok && i < fe2.Numentries; i++)
 	    {
-		ok = ok && ReadWord(&DiskfontBase->dsh, &attrs[i].tta_YSize, fh);
-		ok = ok && ReadByte(&DiskfontBase->dsh, &attrs[i].tta_Style, fh);
-		ok = ok && ReadByte(&DiskfontBase->dsh, &attrs[i].tta_Flags, fh);
+		ok = ok && ReadWord(&DiskfontBase->dsh, &attrs[i].tta_YSize, (APTR)fh);
+		ok = ok && ReadByte(&DiskfontBase->dsh, &attrs[i].tta_Style, (APTR)fh);
+		ok = ok && ReadByte(&DiskfontBase->dsh, &attrs[i].tta_Flags, (APTR)fh);
 		if (ok)
 		{
 		    attrs[i].tta_Tags = ReadTagsNum(fh, &numtags, DiskfontBase);
@@ -514,7 +514,7 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct Diskfont
 
 /****************************************************************************************/
 
-STATIC VOID FreeDirEntry(struct DirEntry *direntry, struct DiskfontBase_intern *DiskfontBase)
+STATIC VOID FreeDirEntry(struct DirEntry *direntry, struct DiskfontBase *DiskfontBase)
 {
     if (direntry!=NULL)
     {
@@ -532,7 +532,7 @@ STATIC VOID FreeDirEntry(struct DirEntry *direntry, struct DiskfontBase_intern *
 
 /****************************************************************************************/
 
-STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, struct DiskfontBase_intern *DiskfontBase)
+STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, struct DiskfontBase *DiskfontBase)
 {
     struct Process *Self;
     APTR oldwinptr;
@@ -576,20 +576,20 @@ STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, st
 
 	/* Try to read the direntry from the file */
 	fh = Open(CACHE_FILE, MODE_OLDFILE);
-	if (fh != NULL)
+	if (fh != BNULL)
 	{
 	    BOOL ok;
 	    
-	    ok = ReadLong(&DiskfontBase->dsh, &direntry->DirChanged.ds_Days, fh);
-	    ok = ok && ReadLong(&DiskfontBase->dsh, &direntry->DirChanged.ds_Minute, fh);
-	    ok = ok && ReadLong(&DiskfontBase->dsh, &direntry->DirChanged.ds_Tick, fh);
+	    ok = ReadLong(&DiskfontBase->dsh, &direntry->DirChanged.ds_Days, (APTR)fh);
+	    ok = ok && ReadLong(&DiskfontBase->dsh, &direntry->DirChanged.ds_Minute, (APTR)fh);
+	    ok = ok && ReadLong(&DiskfontBase->dsh, &direntry->DirChanged.ds_Tick, (APTR)fh);
 
 	    if (ok)
 		ok = StreamInFileList(direntry, fh, DiskfontBase);
 
 	    Close(fh);
 
-#warning CHECKME
+	/* TODO: */
 #if 0
 	    /* This part is disabled because in emul_handler on UNIX the date
 	     * of a parent directory is changed only when a file is added or
@@ -637,13 +637,13 @@ STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, st
 
     /* If everything went OK Write the cache file */
     fh = Open(CACHE_FILE, MODE_NEWFILE);
-    if (fh != NULL)
+    if (fh != BNULL)
     {
 	BOOL ok;
 	
-	ok = WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Days, fh);
-	ok = ok && WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Minute, fh);
-	ok = ok && WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Tick, fh);
+	ok = WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Days, (APTR)fh);
+	ok = ok && WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Minute, (APTR)fh);
+	ok = ok && WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Tick, (APTR)fh);
 	
 	if (ok)
 	    ok = StreamOutFileList(&direntry->FileList, fh, DiskfontBase);
@@ -655,12 +655,12 @@ STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, st
 	    Examine(direntry->DirLock, fib);
 	    direntry->DirChanged = fib->fib_Date;
 	    fh = Open(CACHE_FILE, MODE_OLDFILE);
-	    if (fh != NULL)
+	    if (fh != BNULL)
 	    {
 		Seek(fh, 0, OFFSET_BEGINNING);
-		ok = WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Days, fh);
-		ok = ok && WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Minute, fh);
-		ok = ok && WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Tick, fh);
+		ok = WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Days, (APTR)fh);
+		ok = ok && WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Minute, (APTR)fh);
+		ok = ok && WriteLong(&DiskfontBase->dsh, fib->fib_Date.ds_Tick, (APTR)fh);
 		Close(fh);
 	    }
 	}
@@ -684,7 +684,7 @@ STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, st
 
 /****************************************************************************************/
 
-STATIC VOID FreeResources(struct DF_Data *df_data, struct DiskfontBase_intern *DiskfontBase)
+STATIC VOID FreeResources(struct DF_Data *df_data, struct DiskfontBase *DiskfontBase)
 {
     D(bug("FreeResources(df_data=%p)\n", df_data));
 
@@ -717,7 +717,7 @@ STATIC VOID FreeResources(struct DF_Data *df_data, struct DiskfontBase_intern *D
 
 /****************************************************************************************/
 
-VOID CleanUpFontsDirEntryList(struct DiskfontBase_intern *DiskfontBase)
+VOID CleanUpFontsDirEntryList(struct DiskfontBase *DiskfontBase)
 {
     struct DirEntry *direntry, *direntry2;
     
@@ -735,7 +735,7 @@ VOID CleanUpFontsDirEntryList(struct DiskfontBase_intern *DiskfontBase)
 
 /****************************************************************************************/
 
-STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct DiskfontBase_intern *DiskfontBase)
+STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct DiskfontBase *DiskfontBase)
 {
     struct DF_Data *df_data;
     
@@ -792,7 +792,7 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 		D(bug("AllocResources: FONTS: lock = 0x%lx\n", dp->dvp_Lock));
 	    
 		lock = DupLock(dp->dvp_Lock);
-		if (lock==NULL)
+		if (lock==BNULL)
 		{
 		    D(bug("AllocResources: Could not duplicate lock\n"));
 		    continue;
@@ -893,7 +893,7 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 
 /****************************************************************************************/
 
-APTR DF_IteratorInit(struct TTextAttr *reqattr, struct DiskfontBase_intern *DiskfontBase)
+APTR DF_IteratorInit(struct TTextAttr *reqattr, struct DiskfontBase *DiskfontBase)
 {
     struct DF_Data *df_data;
 
@@ -964,7 +964,7 @@ APTR DF_IteratorInit(struct TTextAttr *reqattr, struct DiskfontBase_intern *Disk
 
 /****************************************************************************************/
 
-struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
+struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase *DiskfontBase)
 {
     struct TTextAttr *retval = NULL;
     struct DF_Data *df_data = (struct DF_Data *)iterator;
@@ -1104,7 +1104,7 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
 
 /****************************************************************************************/
 
-VOID DF_IteratorRemember(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
+VOID DF_IteratorRemember(APTR iterator, struct DiskfontBase *DiskfontBase)
 {
     struct DF_Data *df_data = (struct DF_Data *)iterator;
 
@@ -1152,7 +1152,7 @@ VOID DF_IteratorRemember(APTR iterator, struct DiskfontBase_intern *DiskfontBase
 
 /****************************************************************************************/
 
-struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
+struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase *DiskfontBase)
 {
     struct DF_Data *df_data = (struct DF_Data *)iterator;
     struct FontDescrHeader *fdh = NULL;
@@ -1191,7 +1191,7 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_inte
 	
 	RememberAttr = NULL;
 	lock = Lock(df_data->ReqAttr->tta_Name, ACCESS_READ);
-	if (lock == NULL)
+	if (lock == BNULL)
 	{
 	    D(bug("DF_IteratorRememberOpen: Could not lock file\n"));
 	    break;
@@ -1199,7 +1199,7 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_inte
 	
 	dirlock = ParentDir(lock);
 	UnLock(lock);
-	if (dirlock == NULL)
+	if (dirlock == BNULL)
 	{
 	    D(bug("DF_IteratorRememberOpen: Could not get ParentDir\n"));
 	    break;
@@ -1303,7 +1303,7 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_inte
 
 /****************************************************************************************/
 
-VOID DF_IteratorFree(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
+VOID DF_IteratorFree(APTR iterator, struct DiskfontBase *DiskfontBase)
 {    
     struct DF_Data *df_data = (struct DF_Data *)iterator;
 
@@ -1318,7 +1318,7 @@ VOID DF_IteratorFree(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
 
 /****************************************************************************************/
 
-struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_intern *DiskfontBase)
+struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase *DiskfontBase)
 {
     struct TextFont *tf = NULL;
     struct FontDescrHeader *fdh;
@@ -1327,7 +1327,7 @@ struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_i
     D(bug("DF_OpenFontPath(reqattr=0x%lx)\n", reqattr));
     
     lock = Lock(reqattr->ta_Name, ACCESS_READ);
-    if (lock == NULL)
+    if (lock == BNULL)
     {
 	D(bug("DF_OpenFontPath: Could not lock file\n"));
 	return NULL;
@@ -1335,7 +1335,7 @@ struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_i
     
     dirlock = ParentDir(lock);
     UnLock(lock);
-    if (dirlock == NULL)
+    if (dirlock == BNULL)
     {
 	D(bug("DF_OpenFontPath: Could not get ParentDir\n"));
 	return NULL;

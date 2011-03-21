@@ -26,9 +26,9 @@ struct BufferInfo
 };
 
 
-STATIC struct BufferInfo *BufferInfoCreate(STRPTR buffer, LONG bufBytes, BOOL tagged, struct DiskfontBase_intern *DiskfontBase);
-STATIC VOID BufferInfoAdd(struct BufferInfo *bi, UWORD type, struct TTextAttr *tattr, BOOL tagged, struct DiskfontBase_intern *DiskfontBase);
-STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase_intern *DiskfontBase);
+STATIC struct BufferInfo *BufferInfoCreate(STRPTR buffer, LONG bufBytes, BOOL tagged, struct DiskfontBase *DiskfontBase);
+STATIC VOID BufferInfoAdd(struct BufferInfo *bi, UWORD type, struct TTextAttr *tattr, BOOL tagged, struct DiskfontBase *DiskfontBase);
+STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase *DiskfontBase);
 
 /*****************************************************************************
 
@@ -107,7 +107,7 @@ STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase_intern *Di
 	    if ((!IS_SCALED_FONT(attr) || (flags & AFF_SCALED))
 		&& !(IS_OUTLINE_FONT(attr) && (flags & AFF_BITMAP)))
 	    {
-#warning CHECKME
+	    /* TODO: CHECKME */
 		     	    
 		/* taf_Type only ever seems to contain one of AFF_MEMORY/AFF_DISK/AFF_SCALED,
 		 but not a combination of these. */
@@ -127,7 +127,7 @@ STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase_intern *Di
 	    if ((!IS_SCALED_FONT(attr) || (flags & AFF_SCALED))
 		&& !(IS_OUTLINE_FONT(attr) && (flags & AFF_BITMAP)))
 	    {
-#warning CHECKME
+	    /* TODO: CHECKME */
 		/* For disk fonts the type is always AFF_DISK ??? */
 		BufferInfoAdd(bi, AFF_DISK, attr, tagged, DFB(DiskfontBase));
 	    }
@@ -148,7 +148,7 @@ STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase_intern *Di
 
 /*****************************************************************************/
 
-STATIC struct BufferInfo *BufferInfoCreate(STRPTR buffer, LONG bufBytes, BOOL tagged, struct DiskfontBase_intern *DiskfontBase)
+STATIC struct BufferInfo *BufferInfoCreate(STRPTR buffer, LONG bufBytes, BOOL tagged, struct DiskfontBase *DiskfontBase)
 {
     struct BufferInfo *retval;
     
@@ -169,7 +169,7 @@ STATIC struct BufferInfo *BufferInfoCreate(STRPTR buffer, LONG bufBytes, BOOL ta
 }
 
 
-STATIC VOID BufferInfoAdd(struct BufferInfo *bi, UWORD type, struct TTextAttr *tattr, BOOL tagged, struct DiskfontBase_intern *DiskfontBase)
+STATIC VOID BufferInfoAdd(struct BufferInfo *bi, UWORD type, struct TTextAttr *tattr, BOOL tagged, struct DiskfontBase *DiskfontBase)
 {
     if (tagged && tattr->tta_Tags!=NULL)
 	bi->space -= sizeof(struct TAvailFonts) + strlen(tattr->tta_Name)+1 + NumTags(tattr->tta_Tags, DiskfontBase)*sizeof(struct TagItem);
@@ -219,7 +219,7 @@ STATIC VOID BufferInfoAdd(struct BufferInfo *bi, UWORD type, struct TTextAttr *t
 }
 
 
-STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase_intern *DiskfontBase)
+STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase *DiskfontBase)
 {
     FreeMem(bi, sizeof(struct BufferInfo));
 }

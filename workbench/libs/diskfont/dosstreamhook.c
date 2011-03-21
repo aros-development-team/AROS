@@ -13,6 +13,8 @@
 #include <aros/asmcall.h>
 #include <aros/bigendianio.h>
 
+#undef DOSBase
+
 /****************************************************************************************/
 	
 AROS_UFH3(LONG, dosstreamhook,
@@ -22,6 +24,8 @@ AROS_UFH3(LONG, dosstreamhook,
 )
 {
     AROS_USERFUNC_INIT
+
+    APTR DOSBase = hook->h_Data;
 
     LONG rc = 0;
 

@@ -112,34 +112,34 @@ struct AADiskFontHeader
 /* Prototypes */
 /**************/
 
-struct DiskfontBase_intern; /* prerefrence */
+struct DiskfontBase; /* prerefrence */
 
 /* memoryfontfunc.c */
 
-APTR MF_IteratorInit(struct DiskfontBase_intern *);
-struct TTextAttr *MF_IteratorGetNext(APTR, struct DiskfontBase_intern *);
-VOID MF_IteratorFree(APTR, struct DiskfontBase_intern *);
+APTR MF_IteratorInit(struct DiskfontBase *);
+struct TTextAttr *MF_IteratorGetNext(APTR, struct DiskfontBase *);
+VOID MF_IteratorFree(APTR, struct DiskfontBase *);
 
 /* diskfontfunc.c */
 
-VOID CleanUpFontsDirEntryList(struct DiskfontBase_intern *);
-APTR DF_IteratorInit(struct TTextAttr *, struct DiskfontBase_intern *);
-struct TTextAttr *DF_IteratorGetNext(APTR, struct DiskfontBase_intern *);
-VOID DF_IteratorRemember(APTR, struct DiskfontBase_intern *);
-struct TextFont *DF_IteratorRememberOpen(APTR, struct DiskfontBase_intern *);
-VOID DF_IteratorFree(APTR, struct DiskfontBase_intern *);
-struct TextFont *DF_OpenFontPath(struct TextAttr *, struct DiskfontBase_intern *);
+VOID CleanUpFontsDirEntryList(struct DiskfontBase *);
+APTR DF_IteratorInit(struct TTextAttr *, struct DiskfontBase *);
+struct TTextAttr *DF_IteratorGetNext(APTR, struct DiskfontBase *);
+VOID DF_IteratorRemember(APTR, struct DiskfontBase *);
+struct TextFont *DF_IteratorRememberOpen(APTR, struct DiskfontBase *);
+VOID DF_IteratorFree(APTR, struct DiskfontBase *);
+struct TextFont *DF_OpenFontPath(struct TextAttr *, struct DiskfontBase *);
 
 /* diskfont_io.c */
 
-struct DiskFontHeader *ConvDiskFont(BPTR, CONST_STRPTR, BOOL, struct DiskfontBase_intern *);
-void DisposeConvDiskFont(struct DiskFontHeader *, struct DiskfontBase_intern *);
-struct TextFont *ReadDiskFont(struct TTextAttr *, CONST_STRPTR, struct DiskfontBase_intern *);
+struct DiskFontHeader *ConvDiskFont(BPTR, CONST_STRPTR, BOOL, struct DiskfontBase *);
+void DisposeConvDiskFont(struct DiskFontHeader *, struct DiskfontBase *);
+struct TextFont *ReadDiskFont(struct TTextAttr *, CONST_STRPTR, struct DiskfontBase *);
 
 /* af_fontdescr_io.c */
 
-struct FontDescrHeader *ReadFontDescr(CONST_STRPTR, struct DiskfontBase_intern *);
-VOID FreeFontDescr(struct FontDescrHeader *, struct DiskfontBase_intern *);
+struct FontDescrHeader *ReadFontDescr(CONST_STRPTR, struct DiskfontBase *);
+VOID FreeFontDescr(struct FontDescrHeader *, struct DiskfontBase *);
 
 /* dosstreamhook.c */
 
@@ -151,26 +151,26 @@ AROS_UFP3(LONG, dosstreamhook,
 
 /* bullet.c */
 
-STRPTR OTAG_MakeFileName(CONST_STRPTR, struct DiskfontBase_intern *);
-VOID OTAG_FreeFileName(STRPTR, struct DiskfontBase_intern *);
-struct OTagList *OTAG_GetFile(CONST_STRPTR, struct DiskfontBase_intern *);
-VOID OTAG_KillFile(struct OTagList *, struct DiskfontBase_intern *);
-UBYTE OTAG_GetFontStyle(struct OTagList *, struct DiskfontBase_intern *);
-UBYTE OTAG_GetSupportedStyles(struct OTagList *, struct DiskfontBase_intern *);
-UBYTE OTAG_GetFontFlags(struct OTagList *, struct DiskfontBase_intern *);
-struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *, struct TTextAttr *, struct OTagList *, struct DiskfontBase_intern *);
+STRPTR OTAG_MakeFileName(CONST_STRPTR, struct DiskfontBase *);
+VOID OTAG_FreeFileName(STRPTR, struct DiskfontBase *);
+struct OTagList *OTAG_GetFile(CONST_STRPTR, struct DiskfontBase *);
+VOID OTAG_KillFile(struct OTagList *, struct DiskfontBase *);
+UBYTE OTAG_GetFontStyle(struct OTagList *, struct DiskfontBase *);
+UBYTE OTAG_GetSupportedStyles(struct OTagList *, struct DiskfontBase *);
+UBYTE OTAG_GetFontFlags(struct OTagList *, struct DiskfontBase *);
+struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *, struct TTextAttr *, struct OTagList *, struct DiskfontBase *);
 
 /* basicfuncs.c */
 
 #define MAKE_REAL_SEGMENT(x) (MKBADDR(((IPTR)(x)) - sizeof(BPTR)))
 
-APTR AllocSegment(BPTR *, ULONG, ULONG, struct DiskfontBase_intern *);
-struct TagItem *ReadTags(BPTR, ULONG, struct DiskfontBase_intern *);
-struct TagItem *ReadTagsNum(BPTR, ULONG *, struct DiskfontBase_intern *);
-/*BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);*/
-BOOL WriteTagsNum(BPTR, const struct TagItem *, struct DiskfontBase_intern *);
-ULONG NumTags(const struct TagItem *, struct DiskfontBase_intern *);
-ULONG CopyTagItems(struct TagItem *, const struct TagItem *, struct DiskfontBase_intern *);
+APTR AllocSegment(BPTR *, ULONG, ULONG, struct DiskfontBase *);
+struct TagItem *ReadTags(BPTR, ULONG, struct DiskfontBase *);
+struct TagItem *ReadTagsNum(BPTR, ULONG *, struct DiskfontBase *);
+/*BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase *);*/
+BOOL WriteTagsNum(BPTR, const struct TagItem *, struct DiskfontBase *);
+ULONG NumTags(const struct TagItem *, struct DiskfontBase *);
+ULONG CopyTagItems(struct TagItem *, const struct TagItem *, struct DiskfontBase *);
 
 
 /********************/
@@ -199,8 +199,7 @@ ULONG CopyTagItems(struct TagItem *, const struct TagItem *, struct DiskfontBase
 
 /* Internal prototypes */
 
-
-struct DiskfontBase_intern
+struct DiskfontBase
 {
     struct Library	   lib;
 
@@ -215,6 +214,6 @@ struct DiskfontBase_intern
     struct Interrupt       memint;
 };
 
-#define DFB(dfb)        ((struct DiskfontBase_intern *)dfb)
+#define DFB(dfb)        ((struct DiskfontBase *)dfb)
 
 #endif /* diskfont_intern.h */

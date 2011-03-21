@@ -95,7 +95,7 @@ struct contentsBuffer
     AROS_LIBFUNC_INIT
 
     BPTR   oldDir;
-    BPTR   lock, otLock = NULL;
+    BPTR   lock, otLock = BNULL;
     STRPTR suffix;
     char   name[MAXFONTNAME];
     struct List contentsList;
@@ -156,11 +156,11 @@ struct contentsBuffer
 
 	    fontSeg = LoadSeg(fib->fib_FileName);
 
-	    if(fontSeg == NULL)
+	    if(fontSeg == BNULL)
 		continue;
 
 	    /* Skip NextSegment and ReturnCode */
-	    dfh = ConvDiskFont(fontSeg, "test", FALSE, (struct DiskfontBase_intern *)DiskfontBase);
+	    dfh = ConvDiskFont(fontSeg, "test", FALSE, (struct DiskfontBase *)DiskfontBase);
 	    UnLoadSeg(fontSeg);
 	    
 	    if(dfh == NULL)
@@ -192,7 +192,7 @@ struct contentsBuffer
 	    strcat(cNode->fc.fc_FileName, fib->fib_FileName);
 
 	    /* Embedded tags? */
-	    if((dfh->dfh_TF.tf_Style & FSF_TAGGED) && (dfh->dfh_TagList != NULL))
+	    if((dfh->dfh_TF.tf_Style & FSF_TAGGED) && (dfh->dfh_TagList != 0))
 	    {
 		const struct TagItem *ti = (struct TagItem *)(dfh->dfh_TagList); /* dfh_TagList */
 		struct TagItem *tPtr;
@@ -248,7 +248,7 @@ struct contentsBuffer
 	    if(ret != NULL)
 	    {
 		ret->fch_NumEntries = fch.fch_NumEntries;
-		ret->fch_FileID = otLock == NULL ? fch.fch_FileID : OFCH_ID;
+		ret->fch_FileID = (otLock == BNULL ? fch.fch_FileID : OFCH_ID);
 		
 		CopyContents((struct List *)&contentsList, 
 			     ((UBYTE *)ret + sizeof(struct FontContentsHeader)));
