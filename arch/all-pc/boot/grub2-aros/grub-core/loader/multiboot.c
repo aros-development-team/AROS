@@ -203,7 +203,33 @@ grub_multiboot_set_console (int console_type, int accepted_consoles,
       grub_free (buf);
     }
  else
+
+/*
+ * AROS FIX
+ * Our kernel (secondary level bootstrap) supports both framebuffer and text.
+ * Its preferred mode is text (otherwise we will always run in VESA mode and
+ * will not be able to use VGA one.
+ * Intelmac (being a EFI machine) is considered to have no text mode at all
+ * (GRUB_MACHINE_HAS_VGA_TEXT == 0). Setting "text" here seems to actually
+ * leave GRUB in graphics mode whatever it is, but trick it into thinking that
+ * it's a real text mode (video.c line 561 is reached, grub_set_video_mode("text; auto", 0, 0)
+ * is called). As a result no framebuffer information is provided to the kernel
+ * (grub_video_get_driver_id() returns GRUB_VIDEO_DRIVER_NONE, actually leaving
+ * it with no display.
+ * An alternative is to teach GRUB to really switch EFI to text mode using
+ * grub_efi_set_text_mode(1) in such a case.
+ * Plain "auto" would be more logical here, but it does not work on my Mac.
+ * Perhaps GOP driver does not accept width == height == 0 as a signal to
+ * auto-select best available mode. I have to set some resolution manually,
+ * and the driver selects best match (1280x1024, which is the only available
+ * mode on my machine). I choose to set "640x200" here as graphical representation
+ * of 80x25 VGA text mode.
+ */
+#if GRUB_MACHINE_HAS_VGA_TEXT
    grub_env_set ("gfxpayload", "text");
+#else
+   grub_env_set ("gfxpayload", "640x200,auto");
+#endif
 
   accepts_video = !!(accepted_consoles & GRUB_MULTIBOOT_CONSOLE_FRAMEBUFFER);
   accepts_ega_text = !!(accepted_consoles & GRUB_MULTIBOOT_CONSOLE_EGA_TEXT);
