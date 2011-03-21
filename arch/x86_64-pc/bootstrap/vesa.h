@@ -1,7 +1,7 @@
 #ifndef VESA_H_
 #define VESA_H_
 
-#include "multiboot.h"
+#include <hardware/vbe.h>
 
 #ifndef _IMPLEMENTATION_
 

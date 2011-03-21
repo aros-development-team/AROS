@@ -35,6 +35,7 @@ void txtPutc(char chr);
 void gfxClear(void);
 void gfxPutc(char chr);
 
+void initSerial(char *opts);
 int serPutC(unsigned char data);
 
 void scr_RawPutChars(char *, int);

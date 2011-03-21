@@ -8,6 +8,7 @@
 #include <aros/multiboot.h>
 
 #include "screen.h"
+#include "support.h"
 
 static unsigned char type = SCR_UNKNOWN;
 
@@ -30,6 +31,17 @@ unsigned char use_serial = 0;
 
 void initScreen(struct multiboot *mb)
 {
+    if (mb->flags & MB_FLAGS_CMDLINE)
+    {
+        char *debug = __bs_strstr((const char *)mb->cmdline, "debug=serial");
+        
+        if (debug)
+        {
+            use_serial = 1;
+            initSerial(&debug[12]);
+        }
+    }
+
     if (mb->flags & MB_FLAGS_FB)
     {
 	/* Framebuffer was given, use it */
