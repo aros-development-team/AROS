@@ -1,115 +1,96 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: screen support functions ripped from the 32-bit native target.
+    Desc: screen output functions.
 */
 
-//#define BOOTSTRAP_SERIAL_DEBUG
+#include <aros/multiboot.h>
 
-#undef __save_flags
-#undef __restore_flags
-#undef __cli
-#undef __sti
+#include "screen.h"
 
-#define __save_flags(x)		__asm__ __volatile__("pushfl ; popl %0":"=g" (x): /* no input */)
-#define __restore_flags(x) 	__asm__ __volatile__("pushl %0 ; popfl": /* no output */ :"g" (x):"memory", "cc")
-#define __cli() 		__asm__ __volatile__("cli": : :"memory")
-#define __sti()			__asm__ __volatile__("sti": : :"memory")
+static unsigned char type = SCR_UNKNOWN;
 
-static int x,y, dead;
+/* Display buffer parameters */
+void         *fb = 0;		/* VRAM address			*/
+unsigned int  wc = 0;		/* Display width in characters	*/
+unsigned int  hc = 0;		/* Display height in characters	*/
+unsigned int  pitch = 0;	/* Bytes per line		*/
+unsigned int  bpp = 0;		/* Bytes per pixel		*/
 
-struct scr
+/* Current output position (in characters) */
+unsigned int x = 0;
+unsigned int y = 0;
+
+/*
+ * Change this to 1 to enable serial output.
+ * TODO: set in runtime according to command line arguments.
+ */
+unsigned char use_serial = 0;
+
+void initScreen(struct multiboot *mb)
 {
-    unsigned char sign;
-    unsigned char attr;
-};
+    if (mb->flags & MB_FLAGS_FB)
+    {
+	/* Framebuffer was given, use it */
+	fb    = (void *)(unsigned long)mb->framebuffer_addr;
+	pitch = mb->framebuffer_pitch;
+        wc    = mb->framebuffer_width  / fontWidth;
+	hc    = mb->framebuffer_height / fontHeight;
+    	bpp   = mb->framebuffer_bpp >> 3;
 
-static struct scr *view = (struct scr *)0xb8000;
+    	type = SCR_GFX;
+    }
+    /* TODO: detect VESA modes (both text and graphics) */
+    else
+    {
+    	/* Fallback to default, VGA text mode */
+    	fb = (void *)0xb8000;
+    	wc = 80;
+    	hc = 25;
+
+    	type = SCR_TEXT;
+    }
+
+    clr();
+}
 
 void clr()
 {
-    unsigned long flags;
-    int i;
-    
-    __save_flags(flags);
-    __cli();
-	
-    if (!dead) for (i=0; i<80*25; i++)
+    x = 0;
+    y = 0;
+
+    switch (type)
     {
-        view[i].sign = ' ';
-        view[i].attr = 7;
-    }
-    x=0;
-    y=0;
+    case SCR_TEXT:
+    	txtClear();
+    	break;
     
-    __restore_flags(flags);
+    case SCR_GFX:
+    	gfxClear();
+    	break;
+    }
 }
 
-#if defined(BOOTSTRAP_SERIAL_DEBUG)
-unsigned char __inb(addr)
+void Putc(char c)
 {
-    unsigned char tmp;    
-    asm volatile ("inb %w1,%b0":"=r"(tmp):"Nd"(addr):"memory");
-    return tmp;
-}
-
-static int __serPutC(unsigned char data) 
-{
-    while (!(__inb(0x3F8 + 0x05) & 0x40));
-    asm volatile ("outb %b0,%w1"::"a"(data),"Nd"(0x3F8));
-    return __inb(0x3F8 + 0x05) & (0x02|0x04|0x08|0x10);
-}
-#endif
-
-void Putc(char chr)
-{
-    unsigned long flags;
-    
-    __save_flags(flags);
-    __cli();
-    if (chr == 3) /* die / CTRL-C / "signal" */
+    if (use_serial)
     {
-    	dead = 1;
+    	if (c == '\n')
+	    serPutC('\r');
+	serPutC(c);
     }
-    else if (!dead)
+
+    switch (type)
     {
-#if defined(BOOTSTRAP_SERIAL_DEBUG)
-        if (chr == 0x0A)
-            __serPutC(0x0D);
-        __serPutC(chr);
-#endif
-        if (chr)
-        {
-            if (chr == 10)
-            {
-                x = 0;
-                y++;
-            }
-            else
-            {
-                int i = 80*y+x;
-                view[i].sign = chr;
-                x++;
-                if (x == 80)
-                {
-                    x = 0;
-                    y++;
-                }
-            }
-        }
-        if (y>24)
-        {
-            int i;
-            y=24;
-        
-            for (i=0; i<80*24; i++)
-        	view[i].sign = view[i+80].sign;
-            for (i=80*24; i<80*25; i++)
-        	view[i].sign = ' ';
-        }
+    case SCR_TEXT:
+    	txtPutc(c);
+    	break;
+
+    case SCR_GFX:
+    	gfxPutc(c);
+    	break;
     }
-    __restore_flags(flags);
 }
 
 /* Convert the integer D to a string and save the string in BUF. If
@@ -211,4 +192,3 @@ void kprintf(const char *format, ...)
         }
     }
 }
-

@@ -10,6 +10,7 @@
 #include <aros/config.h>
 #include <aros/arossupportbase.h>
 #include <aros/libcall.h>
+#include <aros/multiboot.h>
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/kernel.h>
@@ -26,7 +27,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "../bootstrap/multiboot.h"
 #include "../kernel/kernel_intern.h"
 
 #include "etask.h"
@@ -278,7 +278,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
 	while (len >= sizeof(struct mb_mmap))
 	{
-	    if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE)
+	    if (mmap->type == MMAP_TYPE_RAM)
 	    {
 		uintptr_t lower = mmap->addr;
 		uintptr_t upper = lower + mmap->len - 1;

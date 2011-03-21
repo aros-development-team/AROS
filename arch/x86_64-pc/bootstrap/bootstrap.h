@@ -33,18 +33,6 @@ struct KernelMessage {
 #endif
 
 
-/*
- * Multiboot stuff
- */
-typedef struct {
-    unsigned int   magic;
-    unsigned int   flags;
-    unsigned int   chksum;
-} multiboot_header;
-
-#define MB_MAGIC    0x1BADB002
-#define MB_FLAGS    0x00000003
-
 struct module {
     const char *name;
     void *address;

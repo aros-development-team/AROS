@@ -37,7 +37,7 @@ void *__bs_bzero(void *ptr, long len)
     return __bs_memset(ptr, 0, len);
 }
 
-void __bs_memcpy(void *dest, const void *src, long len)
+void *__bs_memcpy(void *dest, const void *src, long len)
 {
     while (len >= 4)
     {
@@ -55,8 +55,12 @@ void __bs_memcpy(void *dest, const void *src, long len)
     }
     if (len == 1)
     {
-        *(unsigned char *)dest = *(unsigned char *)src;      
+        *(unsigned char *)dest = *(unsigned char *)src;
+        dest += 1;
     }
+
+    /* Return next byte in the destination, useful in some cases */
+    return dest;
 }
 
 int __bs_strncmp(const char *s1, const char*s2, long length)
