@@ -487,7 +487,9 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
         /* Late binding ENVARC: assign, only if used */
         AssignLate("ENVARC", "SYS:Prefs/env-archive");
-
+#if mc68000
+        load_system_configuration(DOSBase);
+#endif
         /*
             Attempt to mount filesystems marked for retry. If it fails again,
             remove the BootNode from the list.
