@@ -1,7 +1,7 @@
 #ifndef AROS_CPU_H
 #define AROS_CPU_H
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     CPU independent version of the <aros/cpu.h> header. This is the one
@@ -19,6 +19,13 @@
 #define AROS_CPU_X8664              9
 #define AROS_CPU_ARM				10
 
+/* Fix up __powerpc__ definition if missing */
+#ifdef __ppc__
+#ifndef __powerpc__
+#define __powerpc__
+#endif
+#endif
+
 /*
     Firstly, include the sub-include file for a particular CPU.
 */
@@ -31,8 +38,6 @@
 #elif defined __MORPHOS__
 #   include <aros/morphos/cpu.h>
 #elif defined __powerpc__
-#   include <aros/ppc/cpu.h>
-#elif defined __ppc__
 #   include <aros/ppc/cpu.h>
 #elif defined __arm__
 #	include <aros/arm/cpu.h>
