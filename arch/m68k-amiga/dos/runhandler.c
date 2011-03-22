@@ -14,13 +14,22 @@
 #include <string.h>
 #include <stdio.h>
 
-struct Process *RunPacketHandler(struct DeviceNode *dn, const char *path, struct DosLibrary *DOSBase)
+AROS_LH2(struct MsgPort *, RunHandler,
+	 AROS_LHA(struct DeviceNode *, deviceNode, A0),
+	 AROS_LHA(const char *, path, A1),
+	 struct DosLibrary *, DOSBase, 27, Dos)
 {
+	AROS_LIBFUNC_INIT
+
 	struct FileSysStartupMsg *fssm;
 	struct DosPacket *dp;
 	struct MsgPort *reply_port;
 	struct Process *process = NULL;
 	UBYTE *bpath;
+
+	/* First check if already started */
+	if (dn->dn_Task)
+	    return dn->dn_Task;
 
 	if (dn->dn_SegList == BNULL) {
 	    struct Segment *seg = NULL;
@@ -102,5 +111,7 @@ struct Process *RunPacketHandler(struct DeviceNode *dn, const char *path, struct
 
         FreeDosObject(DOS_STDPKT, dp);
 
-	return process;
+	return process ? &process->pr_MsgPort : NULL;
+
+	AROS_LIBFUNC_EXIT
 }

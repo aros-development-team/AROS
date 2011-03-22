@@ -56,6 +56,4 @@ void CloseBootScreen(struct Screen *scr, struct DOSBootBase *DOSBootBase);
 #undef IntuitionBase
 #define IntuitionBase DOSBootBase->bm_IntuitionBase
 
-void load_system_configuration(struct DosLibrary *DOSBase);
-
 #endif /* DOSBOOT_INTERN_H */

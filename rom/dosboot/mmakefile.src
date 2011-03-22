@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := dosboot_init inithidds boot menu gadgets bootscreen bootconfig prefs
+FILES := dosboot_init inithidds boot menu gadgets bootscreen bootconfig
 
 #MM- kernel-dosboot-includes : kernel-bootloader-includes
 #MM- kernel-dosboot : includes linklibs kernel-bootloader-includes

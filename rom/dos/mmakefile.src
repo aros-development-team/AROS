@@ -38,7 +38,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     setprompt setprotection setvar setvbuf splitname startnotify \
 	     strtodate strtolong systemtaglist ungetc unloadseg unlock \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
-	     vprintf waitforchar waitpkt write writechars
+	     vprintf waitforchar waitpkt write writechars runhandler
 
 #MM kernel-dos-linklib : linklibs-clib kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
 #MM kernel-dos-kobj : linklibs-clib kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)

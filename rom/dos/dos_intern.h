@@ -97,7 +97,6 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 
 extern APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase);
 extern void BCPL_Cleanup(struct Process *me);
-BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase);
 ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me);
 
 /* Cli dependent SetProgramName() for use in CreateNewProc() */
@@ -281,7 +280,6 @@ BOOL CMPNICBSTR(CONST_STRPTR, BSTR, UBYTE);
 
 #ifdef AROS_DOS_PACKETS
 
-struct Process *RunPacketHandler(struct DeviceNode *dn, const char *name, struct DosLibrary *DOSBase);
 BSTR C2BSTR(CONST_STRPTR);
 char *BSTR2C(BSTR);
 BOOL CMPCBSTR(CONST_STRPTR, BSTR);

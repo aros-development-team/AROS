@@ -298,15 +298,17 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     }
 
     /* devices and volumes are easy */
-    if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME) {
-    	struct Process *newhandler = NULL;
+    if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME)
+    {
+    	struct MsgPort *newhandler = NULL;
+
 	res = TRUE;
-	if (dl->dol_Type == DLT_DEVICE) {
-	    if (!dl->dol_Task && ((struct DeviceNode *)dl)->dn_SegList) {
-		D(bug("Accessing offline device '%b', path='%s'\n", dl->dol_Name, origname));
-		newhandler = RunPacketHandler((struct DeviceNode *)dl, origname, DOSBase);
-		res = newhandler ? TRUE : FALSE;
-	    }
+	if (dl->dol_Type == DLT_DEVICE)
+	{
+	    D(bug("Accessing device '%b', path='%s'\n", dl->dol_Name, origname));
+
+	    newhandler = RunHandler((struct DeviceNode *)dl, origname);
+	    res = newhandler ? TRUE : FALSE;
 	} else {
 	    while (res && !dl->dol_Task) {
 	    	D(bug("Accessing offline volume '%b'\n", dl->dol_Name));
@@ -319,7 +321,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
             SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
             return NULL;
 	}
-        dp->dvp_Port = dl->dol_Task || !newhandler ? dl->dol_Task : &newhandler->pr_MsgPort;
+        dp->dvp_Port = newhandler ? newhandler : dl->dol_Task;
         dp->dvp_Lock = BNULL;
         dp->dvp_Flags = 0;
         dp->dvp_DevNode = dl;
