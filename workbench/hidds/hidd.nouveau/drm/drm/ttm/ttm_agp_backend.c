@@ -71,7 +71,6 @@ static int ttm_agp_populate(struct ttm_backend *backend,
 		mem->pages[mem->page_count++] = page;
 	}
 	agp_be->mem = mem;
-
 	return 0;
 }
 

@@ -482,7 +482,9 @@ enum drm_connector_force {
  */
 struct drm_connector {
 	struct drm_device *dev;
-//FIXME	struct device kdev;
+#if !defined(__AROS__)
+	struct device kdev;
+#endif
 	struct device_attribute *attr;
 	struct list_head head;
 
