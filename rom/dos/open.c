@@ -163,13 +163,21 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 	if (!filename)
 	{
 	    /* No ':', pathname relative to current dir */
-            BPTR cur;
+            BPTR cur = me->pr_CurrentDir;
 
-	    cur = me->pr_CurrentDir;
             if (!cur)
             	cur = DOSBase->dl_SYSLock;
 
-	    error = fs_Open(handle, REF_LOCK, cur, accessMode, name, DOSBase);
+	    if (cur)
+	    	error = fs_Open(handle, REF_LOCK, cur, accessMode, name, DOSBase);
+	    else
+	    	/*
+	    	 * This can be reached if we attempt to load disk-based library or
+	    	 * device before dl_SYSLock is assigned. This can happen, for example,
+	    	 * when attempting to mount a handler at boottime which is missing
+	    	 * from the kickstart.
+	    	 */
+	    	error = ERROR_OBJECT_NOT_FOUND;
 	}
     	else 
     	{
