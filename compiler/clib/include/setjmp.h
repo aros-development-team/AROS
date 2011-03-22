@@ -2,7 +2,7 @@
 #define _SETJMP_H_
 
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file setjmp.h
@@ -17,7 +17,7 @@
 #   define _JMPLEN 7
 #elif __x86_64__
 #   define _JMPLEN 15
-#elif __powerpc__ || __ppc__
+#elif __powerpc__
 #   define _JMPLEN 58
 #elif __arm__
 #   define _JMPLEN 63
