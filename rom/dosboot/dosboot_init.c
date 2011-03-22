@@ -10,7 +10,7 @@
 #ifdef __mc68000
 /*
  * Load DEVS:system-configuration only on m68k.
- * Is it really still needed ?
+ * Setup pre-2.0 boot disk colors and mouse cursors (for example)
  */
 #define USE_SYSTEM_CONFIGURATION
 #endif
@@ -41,14 +41,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#include LC_LIBDEFS_FILE
-
-#include "menu.h"
-#include "dosboot_intern.h"
-
-#define BNF_MOUNTED 0x8000 /* Private flag for the BootNode */
-
 #ifdef USE_SYSTEM_CONFIGURATION
+
+#include <proto/intuition.h>
 
 static void load_system_configuration(struct DosLibrary *DOSBase)
 {
@@ -75,6 +70,13 @@ static void load_system_configuration(struct DosLibrary *DOSBase)
 #define load_system_configuration(DOSBase)
 
 #endif
+
+#include LC_LIBDEFS_FILE
+
+#define BNF_MOUNTED 0x8000 /* Private flag for the BootNode */
+
+#include "menu.h"
+#include "dosboot_intern.h"
 
 /*
  * This functions differs from normal DOS mount sequence in
