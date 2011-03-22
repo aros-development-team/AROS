@@ -27,9 +27,11 @@
 
 #undef KernelBase
 
-int exec_main(struct TagItem *msg, void *entry);
-extern const APTR Exec_FuncTable[];
-extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
+D(extern void debugmem(void));
+
+void exec_main(struct TagItem *msg, void *entry);
+extern CONST_APTR Exec_FuncTable[];
+extern ULONG Exec_MakeFunctions(APTR, CONST_APTR, CONST_APTR, struct ExecBase *);
 void exec_DefaultTaskExit();
 IPTR **exec_RomTagScanner(struct TagItem *msg, struct ExecBase *);
 extern struct Library * PrepareAROSSupportBase (struct ExecBase *);
@@ -71,12 +73,11 @@ const char exec_fastname[] = "System Memory";
 const short exec_Version = 41;
 const short exec_Revision = 11;
 
-
 const struct __attribute__((section(".text"))) Resident Exec_resident =
 {
         RTC_MATCHWORD,          /* Magic value used to find resident */
         &Exec_resident,         /* Points to Resident itself */
-        &Exec_resident+1,       /* Where could we find next Resident? */
+        (APTR)&Exec_resident+1, /* Where could we find next Resident? */
         0,                      /* There are no flags!! */
         41,                     /* Version */
         NT_LIBRARY,             /* Type */
@@ -86,7 +87,7 @@ const struct __attribute__((section(".text"))) Resident Exec_resident =
         exec_main               /* Library initializer (for exec this value is irrelevant since we've jumped there at the begining to bring the system up */
 };
 
-int exec_main(struct TagItem *msg, void *entry)
+void exec_main(struct TagItem *msg, void *entry)
 {
     struct ExecBase *SysBase = NULL;
     uintptr_t lowmem = 0;
@@ -98,8 +99,8 @@ int exec_main(struct TagItem *msg, void *entry)
 
     /* Prepare the exec base */
 
-    ULONG   negsize = LIB_VECTSIZE;             /* size of vector table */
-    void  **fp      = Exec_FuncTable; //LIBFUNCTABLE;  /* pointer to a function in the table */
+    ULONG   negsize = LIB_VECTSIZE;   /* size of vector table */
+    CONST_APTR *fp  = Exec_FuncTable; /* pointer to a function in the table */
 
     D(bug("[exec] Preparing the ExecBase...\n"));
 
@@ -215,7 +216,7 @@ int exec_main(struct TagItem *msg, void *entry)
      */
     PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
 #endif
-    
+
     /* Build the jumptable */
     SysBase->LibNode.lib_NegSize =
         Exec_MakeFunctions(SysBase, Exec_FuncTable, NULL, SysBase);
@@ -239,6 +240,16 @@ int exec_main(struct TagItem *msg, void *entry)
 
     SysBase->DebugAROSBase = PrepareAROSSupportBase(SysBase);
 
+    /* Scan for valid RomTags */
+    SysBase->ResModules = exec_RomTagScanner(msg, SysBase);
+
+    D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
+    InitCode(RTF_SINGLETASK, 0);
+
+    PrivExecBase(SysBase)->KernelBase = OpenResource("kernel.resource");
+    PrivExecBase(SysBase)->PageSize   = MEMCHUNK_TOTAL;
+
+    /* Install the interrupt servers */
     for (i=0; i<16; i++)
     {
         if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
@@ -288,10 +299,6 @@ int exec_main(struct TagItem *msg, void *entry)
         }
     }
 
-    /* Set int disable level to -1 */
-    SysBase->TDNestCnt = -1;
-    SysBase->IDNestCnt = -1;
-
     /* Now it's time to calculate exec checksum. It will be used
      * in future to distinguish whether we'd had proper execBase
      * before restart */
@@ -339,7 +346,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
         AddHead(&t->tc_MemEntry,&ml->ml_Node);
 
-        t->tc_Node.ln_Name = exec_name;
+        t->tc_Node.ln_Name = (char *)exec_name;
         t->tc_Node.ln_Pri = 0;
         t->tc_Node.ln_Type = NT_TASK;
         t->tc_State = TS_RUN;
@@ -379,18 +386,11 @@ int exec_main(struct TagItem *msg, void *entry)
 
     D(bug("[exec] Done. SysBase->ThisTask = %08p\n", SysBase->ThisTask));
 
-    SysBase->TDNestCnt++;
-
-    /* Scan for valid RomTags */
-    SysBase->ResModules = exec_RomTagScanner(msg, SysBase);
-
-    D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
-    InitCode(RTF_SINGLETASK, 0);
-
-    PrivExecBase(SysBase)->KernelBase = OpenResource("kernel.resource");
-    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
-
+    /* We now start up the interrupts */
     Permit();
+    Enable();
+
+    D(debugmem());
 
     D(bug("[exec] InitCode(RTF_COLDSTART)\n"));
     InitCode(RTF_COLDSTART, 0);
@@ -480,7 +480,7 @@ IPTR **exec_RomTagScanner(struct TagItem *msg, struct ExecBase *SysBase)
 
                     if (node)
                     {
-                        node->node.ln_Name  = res->rt_Name;
+                        node->node.ln_Name  = (char *)res->rt_Name;
                         node->node.ln_Pri   = res->rt_Pri;
                         node->module        = res;
 
