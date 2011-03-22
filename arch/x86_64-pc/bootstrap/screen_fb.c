@@ -24,6 +24,7 @@ static void RenderChar(unsigned char c, unsigned char *ptr)
 
 void gfxClear(void)
 {
+    /* Just clear the whole framebuffer and don't care */
     __bs_bzero(fb, pitch * hc * fontHeight);
 }
 
@@ -51,9 +52,32 @@ void gfxPutc(char chr)
     }
     if (y >= hc)
     {
+    	unsigned int i;
+    	void *dest = fb;
+    	void *src = fb + pitch * fontHeight;
+    	unsigned int len = bpp * wc * fontWidth;
+
         y = hc - 1;
 
-	ptr = __bs_memcpy(fb, fb + pitch * fontHeight, pitch * y * fontHeight);
-	__bs_bzero(ptr, pitch * fontHeight);
+	/*
+	 * Scroll the screen line-by-line.
+	 * We don't do it in one memcpy() call (however we could)
+	 * because on some hardware (Mac) lines include huge padding
+	 * (pitch == 8192 for 1280x1024x32 framebuffer).
+	 * Copying those empty regions slows down the operation significantly.
+	 */
+	for (i = 0; i < y * fontHeight; i++)
+	{
+	    __bs_memcpy(dest, src, len);
+	    src  += pitch;
+	    dest += pitch;
+	}
+	
+	/* Clear the bottom line, again line-by-line */
+	for (i = 0; i < fontHeight; i++)
+	{
+	    __bs_bzero(dest, len);
+	    dest += pitch;
+	}
     }
 }
