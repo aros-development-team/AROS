@@ -115,7 +115,7 @@ void exec_main(struct TagItem *msg, void *entry)
     uintptr_t lowmem = 0;
     uint32_t mem;
     int i;
-    
+
     D(bug("[exec] AROS for Sam440 - The AROS Research OS\n"));
 
     /* Prepare the exec base */
@@ -127,20 +127,20 @@ void exec_main(struct TagItem *msg, void *entry)
 
     /* Calculate the size of the vector table */
     while (*fp++ != (APTR) -1) negsize += LIB_VECTSIZE;
-    
+
     /* Align the offset for SysBase to the cache line */
     negsize = (negsize + 31) & ~31;
-    
+
     /* Get the lowest usable memory location */
     lowmem = (krnGetTagData(KRN_KernelHighest, 0, msg) + 0xffff) & 0xffff0000;
-    
+
     /* And now let's have the SysBase */
     SysBase = (struct ExecBase *)(lowmem + negsize);
     wrspr(SPRG5, SysBase);
     lowmem = (lowmem + negsize + sizeof(struct IntExecBase) + 4095) & ~4095;
-    
+
     D(bug("[exec] ExecBase at %08x\n", SysBase));
-    
+
     D(bug("[exec] Clearing ExecBase\n"));
 
     /* How about clearing most of ExecBase structure? */
@@ -149,7 +149,7 @@ void exec_main(struct TagItem *msg, void *entry)
     SysBase->KickMemPtr = NULL;
     SysBase->KickTagPtr = NULL;
     SysBase->KickCheckSum = NULL;
-    
+
     /*
      * Now everything is prepared to store ExecBase at the location 4UL and set
      * it complement in ExecBase structure
@@ -158,7 +158,7 @@ void exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] Initializing library...\n"));
 
     SysBase->ChkBase = ~(ULONG)SysBase;
-    
+
     /* Store memory configuration */
     SysBase->MaxLocMem = (IPTR)0; //locmem;
     SysBase->MaxExtMem = (APTR)0; //extmem;
@@ -267,8 +267,8 @@ void exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
     InitCode(RTF_SINGLETASK, 0);
 
-    PrivExecBase(SysBase)->KernelBase = getKernelBase();
-    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
+    PrivExecBase(SysBase)->KernelBase = OpenResource("kernel.resource");
+    PrivExecBase(SysBase)->PageSize   = MEMCHUNK_TOTAL;
 
     /* Install the interrupt servers */
     for (i=0; i<16; i++)
@@ -404,9 +404,9 @@ void exec_main(struct TagItem *msg, void *entry)
 
         SysBase->ThisTask = t;
     }
-    
+
     D(bug("[exec] Done. SysBase->ThisTask = %08p\n", SysBase->ThisTask));
-    
+
     /* We now start up the interrupts */
     Permit();
     Enable();
@@ -415,7 +415,7 @@ void exec_main(struct TagItem *msg, void *entry)
 
     D(bug("[exec] InitCode(RTF_COLDSTART)\n"));
     InitCode(RTF_COLDSTART, 0);
-            
+
     D(bug("[exec] I should never get here...\n"));
 }
 
@@ -641,7 +641,7 @@ static int __rkprintf(const STRPTR mainSystem, const STRPTR subSystem, int level
 
 struct Library * PrepareAROSSupportBase(void)
 {
-    struct ExecBase *SysBase = getSysBase(); //*(struct ExecBase **)4UL;
+    struct ExecBase *SysBase = getSysBase();
 
     struct AROSSupportBase *AROSSupportBase =
         AllocMem(sizeof(struct AROSSupportBase), MEMF_CLEAR);
