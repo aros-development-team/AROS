@@ -2,7 +2,7 @@
 #define EXEC_INTERRUPTS_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Interrupt structures
@@ -24,8 +24,6 @@
 #elif defined __mc68000__
 #include <aros/m68k/cpucontext.h>
 #elif defined __powerpc__
-#include <aros/ppc/cpucontext.h>
-#elif defined __ppc__
 #include <aros/ppc/cpucontext.h>
 #elif defined __arm__
 #include <aros/arm/cpucontext.h>

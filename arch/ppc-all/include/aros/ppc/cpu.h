@@ -10,6 +10,17 @@
     Lang: english
 */
 
+/*
+ * Some compilers may not provide these legacy defines
+ * but many code out there relies on them
+ */
+#ifndef __ppc__
+#define __ppc__
+#endif
+#ifndef __PPC__
+#define __PPC__
+#endif
+
 /* Information about size and alignment,
  * the defines have to be numeric constants */
 #define AROS_STACK_GROWS_DOWNWARDS 1 /* Stack direction */

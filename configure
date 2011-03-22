@@ -7286,7 +7286,6 @@ case "$target_os" in
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
 		aros_config_cflags="$aros_config_cflags -mno-red-zone -fno-omit-frame-pointer"
 		aros_default_wbdepth=8
-		gcc_target_cpu="x86_64"
 		pci_hidd_target="hidd-pci-linux"
 		;;
 	    *powerpc*)
@@ -7389,7 +7388,6 @@ case "$target_os" in
                 aros_kernel_ldflags=""
                 aros_default_wbwidth=640
                 aros_default_wbheight=480
-                gcc_target_cpu="x86_64"
                 ;;
             *)
 		as_fn_error $? "\"Unknown native CPU -- $target_cpu\"" "$LINENO" 5
@@ -7449,7 +7447,6 @@ case "$target_os" in
                 aros_kernel_ldflags="-m64"
                 aros_target_cflags="-mcmodel=large"
 		aros_default_wbdepth=8
-		gcc_target_cpu="x86_64"
 		aros_kernel_ld="ld"
 		target_tool_prefix="i686-apple-darwin10-"
 		;;
@@ -7725,7 +7722,6 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
 		aros_default_wbdepth=8
-		gcc_target_cpu="x86_64"
 		target_tool_prefix="x86_64-w64-mingw32-"
 		;;
 	    *arm*)
@@ -7859,6 +7855,11 @@ if test "$aros_gcc_version" != "none"; then
     aros_target_objdump="$aros_target_cpu-aros-objdump"
 fi
 
+# Some compilers (ppc-elf-gcc is known to) have CPU defines in specs
+# Since we override specs, we may need to put these defines there
+if test "$gcc_target_cpu" != ""; then
+    gcc_target_cpu="-D__${gcc_target_cpu}__"
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Where to download sourcecode for external ports" >&5
 $as_echo_n "checking Where to download sourcecode for external ports... " >&6; }
