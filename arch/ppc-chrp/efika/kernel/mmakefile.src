@@ -10,7 +10,7 @@ kernel-chrp-ppc-efika: $(BINDIR)/boot/aros-efika
 $(BINDIR)/boot/aros-efika: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/rtas_resource.o
 	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds \
         -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/rtas_resource.o \
-        -L$(LIBDIR) -lrom -larosm -lamiga -lautoinit -llibinit
+        -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit
 	$(STRIP) --strip-unneeded $@
 
 #MM kernel-kernel-chrp-ppc-efika : includes includes-copy-chrp-ppc-efika linklibs 
