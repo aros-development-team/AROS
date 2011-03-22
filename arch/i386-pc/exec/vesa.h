@@ -1,5 +1,5 @@
 /*
-    Copyright © 2007-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VBE-related definitions.
@@ -10,6 +10,7 @@
 #define VESA_H_
 
 #include <aros/multiboot.h>
+#include <exec/types.h>
 
 #ifndef _IMPLEMENTATION_
 
