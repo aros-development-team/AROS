@@ -27,6 +27,11 @@
 #include "drmP.h"
 #include "drm.h"
 
+#if !defined(__AROS__)
+#include <linux/ktime.h>
+#include <linux/hrtimer.h>
+#endif
+
 #include "nouveau_drv.h"
 #include "nouveau_ramht.h"
 #include "nouveau_dma.h"
@@ -237,7 +242,8 @@ __nouveau_fence_wait(void *sync_obj, void *sync_arg, bool lazy, bool intr)
 {
 #if !defined(__AROS__)
 	unsigned long timeout = jiffies + (3 * DRM_HZ);
-	unsigned long sleep_time = jiffies + 1;
+	unsigned long sleep_time = NSEC_PER_MSEC / 1000;
+	ktime_t t;
 	int ret = 0;
 
 	while (1) {
@@ -251,8 +257,13 @@ __nouveau_fence_wait(void *sync_obj, void *sync_arg, bool lazy, bool intr)
 
 		__set_current_state(intr ? TASK_INTERRUPTIBLE
 			: TASK_UNINTERRUPTIBLE);
-		if (lazy && time_after_eq(jiffies, sleep_time))
-			schedule_timeout(1);
+		if (lazy) {
+			t = ktime_set(0, sleep_time);
+			schedule_hrtimeout(&t, HRTIMER_MODE_REL);
+			sleep_time *= 2;
+			if (sleep_time > NSEC_PER_MSEC)
+				sleep_time = NSEC_PER_MSEC;
+		}
 
 		if (intr && signal_pending(current)) {
 			ret = -ERESTARTSYS;
@@ -606,7 +617,7 @@ nouveau_fence_init(struct drm_device *dev)
 	/* Create a shared VRAM heap for cross-channel sync. */
 	if (USE_SEMA(dev)) {
 		ret = nouveau_bo_new(dev, NULL, size, 0, TTM_PL_FLAG_VRAM,
-				     0, 0, false, true, &dev_priv->fence.bo);
+				     0, 0, &dev_priv->fence.bo);
 		if (ret)
 			return ret;
 

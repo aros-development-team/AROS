@@ -67,7 +67,7 @@ struct nouveau_fpriv {
 #include "nouveau_util.h"
 
 struct nouveau_grctx;
-struct nouveau_vram;
+struct nouveau_mem;
 #include "nouveau_vm.h"
 
 #define MAX_NUM_DCB_ENTRIES 16
@@ -75,13 +75,16 @@ struct nouveau_vram;
 #define NOUVEAU_MAX_CHANNEL_NR 128
 #define NOUVEAU_MAX_TILE_NR 15
 
-struct nouveau_vram {
+struct nouveau_mem {
 	struct drm_device *dev;
 
 	struct nouveau_vma bar_vma;
+	struct nouveau_vma tmp_vma;
 	u8  page_shift;
 
+	struct drm_mm_node *tag;
 	struct list_head regions;
+	dma_addr_t *pages;
 	u32 memtype;
 	u64 offset;
 	u64 size;
@@ -100,6 +103,7 @@ struct nouveau_tile_reg {
 struct nouveau_bo {
 	struct ttm_buffer_object bo;
 	struct ttm_placement placement;
+	u32 valid_domains;
 	u32 placements[3];
 	u32 busy_placements[3];
 	struct ttm_bo_kmap_obj kmap;
@@ -114,8 +118,6 @@ struct nouveau_bo {
 	struct nouveau_channel *channel;
 
 	struct nouveau_vma vma;
-	bool mappable;
-	bool no_vm;
 
 	uint32_t tile_mode;
 	uint32_t tile_flags;
@@ -520,8 +522,8 @@ struct nouveau_crypt_engine {
 struct nouveau_vram_engine {
 	int  (*init)(struct drm_device *);
 	int  (*get)(struct drm_device *, u64, u32 align, u32 size_nc,
-		    u32 type, struct nouveau_vram **);
-	void (*put)(struct drm_device *, struct nouveau_vram **);
+		    u32 type, struct nouveau_mem **);
+	void (*put)(struct drm_device *, struct nouveau_mem **);
 
 	bool (*flags_valid)(struct drm_device *, u32 tile_flags);
 };
@@ -716,7 +718,6 @@ struct drm_nouveau_private {
 		} dummy;
 
 		struct nouveau_gpuobj *sg_ctxdma;
-		struct nouveau_vma vma;
 	} gart_info;
 
 	/* nv10-nv40 tiling regions */
@@ -858,12 +859,14 @@ extern void nv10_mem_put_tile_region(struct drm_device *dev,
 				     struct nouveau_tile_reg *tile,
 				     struct nouveau_fence *fence);
 extern const struct ttm_mem_type_manager_func nouveau_vram_manager;
+extern const struct ttm_mem_type_manager_func nouveau_gart_manager;
 
 /* nouveau_notifier.c */
 extern int  nouveau_notifier_init_channel(struct nouveau_channel *);
 extern void nouveau_notifier_takedown_channel(struct nouveau_channel *);
 extern int  nouveau_notifier_alloc(struct nouveau_channel *, uint32_t handle,
-				   int cout, uint32_t *offset);
+				   int cout, uint32_t start, uint32_t end,
+				   uint32_t *offset);
 extern int  nouveau_notifier_offset(struct nouveau_gpuobj *, uint32_t *);
 extern int  nouveau_ioctl_notifier_alloc(struct drm_device *, void *data,
 					 struct drm_file *);
@@ -1086,7 +1089,7 @@ extern void nv40_fb_set_tile_region(struct drm_device *dev, int i);
 /* nv50_fb.c */
 extern int  nv50_fb_init(struct drm_device *);
 extern void nv50_fb_takedown(struct drm_device *);
-extern void nv50_fb_vm_trap(struct drm_device *, int display, const char *);
+extern void nv50_fb_vm_trap(struct drm_device *, int display);
 
 /* nvc0_fb.c */
 extern int  nvc0_fb_init(struct drm_device *);
@@ -1305,7 +1308,7 @@ extern struct ttm_bo_driver nouveau_bo_driver;
 extern int nouveau_bo_new(struct drm_device *, struct nouveau_channel *,
 			  int size, int align, uint32_t flags,
 			  uint32_t tile_mode, uint32_t tile_flags,
-			  bool no_vm, bool mappable, struct nouveau_bo **);
+			  struct nouveau_bo **);
 extern int nouveau_bo_pin(struct nouveau_bo *, uint32_t flags);
 extern int nouveau_bo_unpin(struct nouveau_bo *);
 extern int nouveau_bo_map(struct nouveau_bo *);
@@ -1366,9 +1369,9 @@ static inline struct nouveau_fence *nouveau_fence_ref(struct nouveau_fence *obj)
 
 /* nouveau_gem.c */
 extern int nouveau_gem_new(struct drm_device *, struct nouveau_channel *,
-			   int size, int align, uint32_t flags,
+			   int size, int align, uint32_t domain,
 			   uint32_t tile_mode, uint32_t tile_flags,
-			   bool no_vm, bool mappable, struct nouveau_bo **);
+			   struct nouveau_bo **);
 extern int nouveau_gem_object_new(struct drm_gem_object *);
 extern void nouveau_gem_object_del(struct drm_gem_object *);
 extern int nouveau_gem_ioctl_new(struct drm_device *, void *,

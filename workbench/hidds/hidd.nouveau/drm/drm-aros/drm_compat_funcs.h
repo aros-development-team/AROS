@@ -28,6 +28,7 @@
 #define vfree(objp)                     FreeVec(objp)
 #define capable(p)                      TRUE
 #define roundup(x, y)                   ((((x) + ((y) - 1)) / (y)) * (y))
+#define round_up(x, y)                  roundup(x, y)
 #define lower_32_bits(n)                ((u32)(n))
 #define upper_32_bits(n)                ((u32)(((n) >> 16) >> 16))
 #define mutex_lock(x)                   ObtainSemaphore(x.semaphore)
@@ -387,5 +388,6 @@ n = ((unsigned long) n) / (unsigned) base; \
 __res; })
 
 unsigned int hweight32(unsigned int number);
+unsigned int hweight8(unsigned int number);
 
 #endif /* _DRM_COMPAT_FUNCS_ */

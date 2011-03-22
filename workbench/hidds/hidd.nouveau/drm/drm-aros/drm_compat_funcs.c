@@ -897,3 +897,17 @@ unsigned int hweight32(unsigned int number)
     
     return result;
 }
+
+unsigned int hweight8(unsigned int number)
+{
+    unsigned int result = 0;
+    int i = 0;
+    
+    for (i = 0; i < 8; i++)
+    {
+        if (number & 0x1) result++;
+        number >>= 1;
+    }
+    
+    return result;
+}
