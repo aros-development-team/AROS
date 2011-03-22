@@ -28,11 +28,12 @@ void InitIOFS(struct IOFileSys *iofs, ULONG type,
 {
     struct Process *me = (struct Process *)FindTask(NULL);
 
+    memset(iofs, 0, sizeof(struct IOFileSys));
+
     iofs->IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
     iofs->IOFS.io_Message.mn_ReplyPort    = &me->pr_MsgPort;
     iofs->IOFS.io_Message.mn_Length       = sizeof(struct IOFileSys);
     iofs->IOFS.io_Command                 = type;
-    iofs->IOFS.io_Flags                   = 0;
 }
 
 LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
