@@ -36,7 +36,7 @@ export TARGET_CFLAGS	:= $(CFLAGS)
 ifeq ($(AROS_TARGET_VARIANT),efi)
     GRUB_ARCH := efi
     GRUB_CPU  := $(AROS_TARGET_CPU)
-    ARCH_MODS := hfsplus normal chain boot configfile
+    ARCH_MODS :=
 else
     GRUB_ARCH := pc
     GRUB_CPU  := i386
@@ -58,7 +58,7 @@ CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
         extraoptions="$(CONFIG_OPTS)"					\
         install_target=
 
-GRUB2_MODS  :=	$(ARCH_MODS) fshelp part_msdos part_amiga part_gpt affs sfs iso9660 minicmd
+GRUB2_MODS  :=	$(ARCH_MODS) fshelp part_msdos part_amiga part_gpt affs sfs ext2 hfsplus iso9660 minicmd
 LST_FILES   :=	command fs moddep
 MKIMG_OPTS  :=	-O $(GRUB_CPU)-$(GRUB_ARCH) -p /boot/grub
 
