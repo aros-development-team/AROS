@@ -86,6 +86,7 @@ static BOOL IsCompatible(UWORD product_id)
         || product_id == 0x27a2
         || product_id == 0x27a6
         || product_id == 0x27ae
+        || product_id == 0x2a02
         || product_id == 0x2a42;
 }
 
@@ -364,12 +365,12 @@ AROS_UFH3(void, Enumerator,
 
     	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *)&driver);
 
-        if (RevisionID >= 7)
+        if (ProductID >= 0x2800)
         {
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &mmio_base);
-            mmio_size -= 2 * MBYTES;
+            mmio_size /= 2;
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &window_base);
-            gatt_base = mmio_base + 2 * MBYTES;
+            gatt_base = mmio_base + mmio_size;
 
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &mmio_size);
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &window_size);
@@ -526,7 +527,7 @@ AROS_UFH3(void, Enumerator,
 
     	/* Reserve some memory for HW cursor */
     	sd->CursorImage =  ((intptr_t)Allocate(&sd->CardMem, 64*64*4)) - (intptr_t)sd->Card.Framebuffer;
-        if (RevisionID >= 7)
+        if (ProductID >= 0x2800)
             sd->CursorBase = sd->CursorImage;
         else
             sd->CursorBase = G45_VirtualToPhysical(sd, sd->CursorImage);
