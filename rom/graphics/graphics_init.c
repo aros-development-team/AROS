@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics library
@@ -48,10 +48,6 @@ AROS_UFP4(ULONG, TOF_VBlank,
 
 BOOL InitROMFont(struct GfxBase *);
 
-#if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-void InitCustom(struct GfxBase *);
-#endif
-
 static int GfxInit(struct GfxBase *LIBBASE)
 {
     WORD i;
@@ -65,10 +61,6 @@ static int GfxInit(struct GfxBase *LIBBASE)
         CloseLibrary((APTR)OOPBase);
         return FALSE;
     }
-
-#if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    InitCustom(GfxBase);
-#endif
 
     NEWLIST(&LIBBASE->BlitWaitQ);
     NEWLIST(&LIBBASE->TextFonts);
