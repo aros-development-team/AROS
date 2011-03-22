@@ -65,6 +65,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
 
     struct Process *pr = (struct Process *)FindTask(NULL);
     struct DosList *dl = NULL;
+    CONST_STRPTR origname = name;
     char vol[32];
     LONG len;
     char buf[256];
@@ -330,11 +331,10 @@ static BOOL VolumeIsOffline(struct DosList *dl);
     /* devices and volumes are easy */
     if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME) {
 	res = TRUE;
-	if (dl->dol_Type == DLT_DEVICE) {
-	    if (!dl->dol_Ext.dol_AROS.dol_Device) {
-		D(bug("Accessing offline device %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
-		res = RunHandler((struct DeviceNode *)dl, DOSBase);
-	    }
+	if (dl->dol_Type == DLT_DEVICE)
+	{
+	    D(bug("Accessing device %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
+	    res = RunHandler((struct DeviceNode *)dl, origname) ? TRUE : FALSE;
 	} else {
 	    while (res && VolumeIsOffline(dl)) {
 	    	D(bug("Accessing offline volume %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
@@ -424,68 +424,6 @@ static BOOL VolumeIsOffline(struct DosList *dl);
 
     AROS_LIBFUNC_EXIT
 } /* GetDeviceProc */
-
-/* Attempt to start a handler for the DeviceNode */
-BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
-{
-    struct MsgPort *mp;
-    struct IOFileSys *iofs;
-    BOOL ok = FALSE;
-
-    mp = CreateMsgPort();
-
-    if (mp != NULL)
-    {
-        iofs = (struct IOFileSys *)CreateIORequest(mp, sizeof(struct IOFileSys));
-
-        if (iofs != NULL)
-        {
-	    STRPTR handler;
-	    struct FileSysStartupMsg *fssm;
-	    ULONG fssmFlags = 0;
-
-	    if (deviceNode->dn_Handler == BNULL)
-	    {
-		handler = "afs.handler";
-	    }
-	    else
-	    {
-		handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
-	    }
-
-	    /* FIXME: this assumes that dol_Startup points to struct FileSysStartupMsg.
-	       This is not true for plain handlers, dol_Startup is a BSTR in this case.
-	       In order to make use of this we should implement direct support for
-	       packet-style handlers in dos.library */
-	    fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);
-	    if (fssm != NULL)
-	    {
-		iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
-		iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
-		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
-		fssmFlags = fssm->fssm_Flags;
-	    }
-	    iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_Ext.dn_AROS.dn_DevName;
-	    iofs->io_Union.io_OpenDevice.io_DeviceNode = deviceNode;
-
-	    D(bug("Starting up %s\n", handler));
-	    if (!OpenDevice(handler, 0, &iofs->IOFS, fssmFlags) ||
-        	!OpenDevice("packet.handler", 0, &iofs->IOFS, fssmFlags))
-	    {
-		/* Ok, this means that the handler was able to open. */
-		D(bug("Handler started\n"));
-		deviceNode->dn_Ext.dn_AROS.dn_Device = iofs->IOFS.io_Device;
-		deviceNode->dn_Ext.dn_AROS.dn_Unit = iofs->IOFS.io_Unit;
-		ok = TRUE;
-	    }
-
-	    DeleteIORequest(&iofs->IOFS);
-	}
-
-	DeleteMsgPort(mp);
-    }
-    return ok;
-}
 
 static BOOL VolumeIsOffline(struct DosList *dl)
 {
