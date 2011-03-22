@@ -28,25 +28,25 @@ AROS_LH2(struct MsgPort *, RunHandler,
 	UBYTE *bpath;
 
 	/* First check if already started */
-	if (dn->dn_Task)
-	    return dn->dn_Task;
+	if (deviceNode->dn_Task)
+	    return deviceNode->dn_Task;
 
-	if (dn->dn_SegList == BNULL) {
+	if (deviceNode->dn_SegList == BNULL) {
 	    struct Segment *seg = NULL;
 	    CONST_STRPTR cp;
 
-	    if (dn->dn_Handler != BNULL) {
-	    	cp = AROS_BSTR_ADDR(dn->dn_Handler);
+	    if (deviceNode->dn_Handler != BNULL) {
+	    	cp = AROS_BSTR_ADDR(deviceNode->dn_Handler);
 
 	    	/* Try to find in the Resident Segment list */
 	    	Forbid();
 	    	seg = FindSegment(cp, NULL, TRUE);
 	    	Permit();
 	    }
-	    dn->dn_SegList = seg ? seg->seg_Seg : DOSBase->dl_Root->rn_FileHandlerSegment;
+	    deviceNode->dn_SegList = seg ? seg->seg_Seg : DOSBase->dl_Root->rn_FileHandlerSegment;
 	}
-	if (dn->dn_SegList == BNULL) {
-		D(bug("[packet] name '%b' seglist=NULL?\n", dn->dn_Name));
+	if (deviceNode->dn_SegList == BNULL) {
+		D(bug("[packet] name '%b' seglist=NULL?\n", deviceNode->dn_Name));
 		return NULL;
 	}
 
@@ -54,32 +54,32 @@ AROS_LH2(struct MsgPort *, RunHandler,
 		bpath = AllocVec(strlen(path) + 2, MEMF_PUBLIC);
 		strcpy (bpath + 1, path);
 	} else {
-		bpath = AllocVec(strlen(AROS_DOSDEVNAME(dn)) + 3, MEMF_PUBLIC);
-		strcpy (bpath + 1, AROS_DOSDEVNAME(dn));
+		bpath = AllocVec(strlen(AROS_DOSDEVNAME(deviceNode)) + 3, MEMF_PUBLIC);
+		strcpy (bpath + 1, AROS_DOSDEVNAME(deviceNode));
 		strcat (bpath + 1, ":");
 	}
 	bpath[0] = strlen(bpath + 1);
 
 	D(bug("[packet] in open by Task '%s'\n", FindTask(NULL)->tc_Node.ln_Name));
 
-	fssm = (struct FileSysStartupMsg *)BADDR(dn->dn_Startup);
+	fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);
 
    	D(bug("[packet] devicenode=%08lx path='%s' devicename '%b' unit %d dosname '%b' handler=%x seg=%08lx startup=%08lx\n",
-            dn,
+            deviceNode,
             bpath + 1,
             fssm->fssm_Device,
             fssm->fssm_Unit,
-            dn->dn_Name,
-            dn->dn_Handler,
-            dn->dn_SegList,
-            dn->dn_Startup));
+            deviceNode->dn_Name,
+            deviceNode->dn_Handler,
+            deviceNode->dn_SegList,
+            deviceNode->dn_Startup));
 
         /* start it up */
         process = CreateNewProcTags(
-        	NP_Entry,     (IPTR) BADDR(dn->dn_SegList + 1),
-		NP_Name,      (char*)BADDR(dn->dn_Name) + 1, /* GB: always NUL terminated */
-		NP_StackSize, dn->dn_StackSize,
-		NP_Priority,  dn->dn_Priority,
+        	NP_Entry,     (IPTR) BADDR(deviceNode->dn_SegList + 1),
+		NP_Name,      (char*)BADDR(deviceNode->dn_Name) + 1, /* GB: always NUL terminated */
+		NP_StackSize, deviceNode->dn_StackSize,
+		NP_Priority,  deviceNode->dn_Priority,
 		TAG_DONE);
   
         D(bug("[packet] started, process structure is 0x%08x\n", process));
@@ -88,8 +88,8 @@ AROS_LH2(struct MsgPort *, RunHandler,
         /* build the startup packet */
         dp = (struct DosPacket *) AllocDosObject(DOS_STDPKT, NULL);
         dp->dp_Arg1 = (SIPTR)MKBADDR(bpath);
-        dp->dp_Arg2 = (SIPTR)dn->dn_Startup;
-        dp->dp_Arg3 = (SIPTR)MKBADDR(dn);
+        dp->dp_Arg2 = (SIPTR)deviceNode->dn_Startup;
+        dp->dp_Arg3 = (SIPTR)MKBADDR(deviceNode);
         dp->dp_Port = reply_port;
 
         /* A handler can add volumes during startup, so we have to be fully functional before it
@@ -106,7 +106,7 @@ AROS_LH2(struct MsgPort *, RunHandler,
             D(bug("[packet] handler failed startup [%d]\n", dp->dp_Res2));
             process = NULL;
         } else {
-            D(bug("[packet] '%b' now online\n", dn->dn_Name));
+            D(bug("[packet] '%b' now online\n", deviceNode->dn_Name));
         }
 
         FreeDosObject(DOS_STDPKT, dp);
