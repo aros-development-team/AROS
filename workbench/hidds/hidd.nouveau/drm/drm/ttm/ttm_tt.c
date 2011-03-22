@@ -252,7 +252,6 @@ static inline int ttm_tt_set_page_caching(struct page *p,
  * for range of pages in a ttm.
  */
 
-
 static int ttm_tt_set_caching(struct ttm_tt *ttm,
 			      enum ttm_caching_state c_state)
 {
@@ -454,7 +453,6 @@ struct ttm_tt *ttm_tt_create(struct ttm_bo_device *bdev, unsigned long size,
 
 	ttm->glob = bdev->glob;
 	ttm->num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-
 	ttm->first_himem_page = ttm->num_pages;
 	ttm->last_lomem_page = -1;
 	ttm->caching_state = tt_cached;
@@ -468,7 +466,6 @@ struct ttm_tt *ttm_tt_create(struct ttm_bo_device *bdev, unsigned long size,
 		printk(KERN_ERR TTM_PFX "Failed allocating page table\n");
 		return NULL;
 	}
-    
 	ttm->be = bo_driver->create_ttm_backend_entry(bdev);
 	if (!ttm->be) {
 		ttm_tt_destroy(ttm);

@@ -1,6 +1,6 @@
 diff -ur drm-orig/drm_agpsupport.c drm/drm_agpsupport.c
 --- drm-orig/drm_agpsupport.c	2011-02-13 19:09:47.000000000 +0100
-+++ drm/drm_agpsupport.c	2011-02-14 20:19:11.000000000 +0100
++++ drm/drm_agpsupport.c	2011-03-22 18:56:57.000000000 +0100
 @@ -32,12 +32,16 @@
   */
  
@@ -18,29 +18,27 @@ diff -ur drm-orig/drm_agpsupport.c drm/drm_agpsupport.c
  
  /**
   * Get AGP information.
-@@ -59,15 +63,15 @@
+@@ -59,15 +63,19 @@
  		return -EINVAL;
  
  	kern = &dev->agp->agp_info;
--	info->agp_version_major = kern->version.major;
--	info->agp_version_minor = kern->version.minor;
-+//FIXME	info->agp_version_major = kern->version.major;
-+//FIXME	info->agp_version_minor = kern->version.minor;
++#if !defined(__AROS__)
+ 	info->agp_version_major = kern->version.major;
+ 	info->agp_version_minor = kern->version.minor;
++#endif
  	info->mode = kern->mode;
  	info->aperture_base = kern->aper_base;
  	info->aperture_size = kern->aper_size * 1024 * 1024;
--	info->memory_allowed = kern->max_memory << PAGE_SHIFT;
--	info->memory_used = kern->current_memory << PAGE_SHIFT;
--	info->id_vendor = kern->device->vendor;
--	info->id_device = kern->device->device;
-+//FIXME	info->memory_allowed = kern->max_memory << PAGE_SHIFT;
-+//FIXME	info->memory_used = kern->current_memory << PAGE_SHIFT;
-+//FIXME	info->id_vendor = kern->device->vendor;
-+//FIXME	info->id_device = kern->device->device;
++#if !defined(__AROS__)
+ 	info->memory_allowed = kern->max_memory << PAGE_SHIFT;
+ 	info->memory_used = kern->current_memory << PAGE_SHIFT;
+ 	info->id_vendor = kern->device->vendor;
+ 	info->id_device = kern->device->device;
++#endif
  
  	return 0;
  }
-@@ -110,6 +114,7 @@
+@@ -110,6 +118,7 @@
  
  EXPORT_SYMBOL(drm_agp_acquire);
  
@@ -48,7 +46,7 @@ diff -ur drm-orig/drm_agpsupport.c drm/drm_agpsupport.c
  /**
   * Acquire the AGP device (ioctl).
   *
-@@ -127,6 +132,7 @@
+@@ -127,6 +136,7 @@
  {
  	return drm_agp_acquire((struct drm_device *) file_priv->minor->dev);
  }
@@ -56,7 +54,7 @@ diff -ur drm-orig/drm_agpsupport.c drm/drm_agpsupport.c
  
  /**
   * Release the AGP device.
-@@ -183,6 +189,7 @@
+@@ -183,6 +193,7 @@
  	return drm_agp_enable(dev, *mode);
  }
  
@@ -64,7 +62,7 @@ diff -ur drm-orig/drm_agpsupport.c drm/drm_agpsupport.c
  /**
   * Allocate AGP memory.
   *
-@@ -384,6 +391,7 @@
+@@ -384,6 +395,7 @@
  
  	return drm_agp_free(dev, request);
  }
@@ -72,12 +70,6 @@ diff -ur drm-orig/drm_agpsupport.c drm/drm_agpsupport.c
  
  /**
   * Initialize the AGP resources.
-@@ -466,4 +474,5 @@
- }
- EXPORT_SYMBOL(drm_agp_bind_pages);
- 
-+
- #endif /* __OS_HAS_AGP */
 diff -ur drm-orig/drm_cache.c drm/drm_cache.c
 --- drm-orig/drm_cache.c	2011-02-13 19:09:47.000000000 +0100
 +++ drm/drm_cache.c	2011-02-13 20:27:36.000000000 +0100
@@ -284,7 +276,7 @@ diff -ur drm-orig/drm_crtc.c drm/drm_crtc.c
 +#endif
 diff -ur drm-orig/drm_crtc.h drm/drm_crtc.h
 --- drm-orig/drm_crtc.h	2011-02-13 19:09:51.000000000 +0100
-+++ drm/drm_crtc.h	2011-02-14 20:19:11.000000000 +0100
++++ drm/drm_crtc.h	2011-03-22 18:57:54.000000000 +0100
 @@ -25,12 +25,16 @@
  #ifndef __DRM_CRTC_H__
  #define __DRM_CRTC_H__
@@ -302,16 +294,17 @@ diff -ur drm-orig/drm_crtc.h drm/drm_crtc.h
  
  struct drm_device;
  struct drm_mode_set;
-@@ -478,7 +482,7 @@
+@@ -478,7 +482,9 @@
   */
  struct drm_connector {
  	struct drm_device *dev;
--	struct device kdev;
-+//FIXME	struct device kdev;
++#if !defined(__AROS__)
+ 	struct device kdev;
++#endif
  	struct device_attribute *attr;
  	struct list_head head;
  
-@@ -585,7 +589,9 @@
+@@ -585,7 +591,9 @@
  
  	/* output poll support */
  	bool poll_enabled;
@@ -1432,7 +1425,7 @@ diff -ur drm-orig/nouveau/nouveau_dp.c drm/nouveau/nouveau_dp.c
 +#endif
 diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
 --- drm-orig/nouveau/nouveau_drv.h	2011-02-13 19:09:48.000000000 +0100
-+++ drm/nouveau/nouveau_drv.h	2011-02-14 20:19:11.000000000 +0100
++++ drm/nouveau/nouveau_drv.h	2011-02-27 09:05:29.000000000 +0100
 @@ -39,10 +39,20 @@
  #define NOUVEAU_FAMILY   0x0000FFFF
  #define NOUVEAU_FLAGS    0xFFFF0000
@@ -1821,7 +1814,7 @@ diff -ur drm-orig/nouveau/nouveau_irq.c drm/nouveau/nouveau_irq.c
  void
 diff -ur drm-orig/nouveau/nouveau_mem.c drm/nouveau/nouveau_mem.c
 --- drm-orig/nouveau/nouveau_mem.c	2011-02-13 19:09:48.000000000 +0100
-+++ drm/nouveau/nouveau_mem.c	2011-02-14 20:19:11.000000000 +0100
++++ drm/nouveau/nouveau_mem.c	2011-03-09 19:06:23.000000000 +0100
 @@ -39,6 +39,10 @@
  #include "nouveau_mm.h"
  #include "nouveau_vm.h"
@@ -1833,26 +1826,25 @@ diff -ur drm-orig/nouveau/nouveau_mem.c drm/nouveau/nouveau_mem.c
  /*
   * NV10-NV40 tiling helpers
   */
-@@ -245,7 +249,7 @@
+@@ -245,7 +249,6 @@
  nouveau_mem_detect(struct drm_device *dev)
  {
  	struct drm_nouveau_private *dev_priv = dev->dev_private;
 -
-+#if !defined(HOSTED_BUILD)
  	if (dev_priv->card_type == NV_04) {
  		dev_priv->vram_size = nouveau_mem_detect_nv04(dev);
  	} else
-@@ -256,6 +260,9 @@
+@@ -256,6 +259,9 @@
  		dev_priv->vram_size  = nv_rd32(dev, NV04_PFB_FIFO_DATA);
  		dev_priv->vram_size &= NV10_PFB_FIFO_DATA_RAM_AMOUNT_MB_MASK;
  	}
-+#else
-+    dev_priv->vram_size = 128 << 20;
++#if defined(HOSTED_BUILD)
++    dev_priv->vram_size = HOSTED_BUILD_VRAM_SIZE;
 +#endif
  
  	if (dev_priv->vram_size)
  		return 0;
-@@ -394,6 +401,7 @@
+@@ -394,6 +400,7 @@
  	int ret, dma_bits;
  
  	dma_bits = 32;
@@ -1860,7 +1852,7 @@ diff -ur drm-orig/nouveau/nouveau_mem.c drm/nouveau/nouveau_mem.c
  	if (dev_priv->card_type >= NV_50) {
  		if (pci_dma_supported(dev->pdev, DMA_BIT_MASK(40)))
  			dma_bits = 40;
-@@ -408,6 +416,7 @@
+@@ -408,6 +415,7 @@
  	ret = pci_set_dma_mask(dev->pdev, DMA_BIT_MASK(dma_bits));
  	if (ret)
  		return ret;
@@ -1895,7 +1887,7 @@ diff -ur drm-orig/nouveau/nouveau_sgdma.c drm/nouveau/nouveau_sgdma.c
  
 diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
 --- drm-orig/nouveau/nouveau_state.c	2011-02-13 19:09:48.000000000 +0100
-+++ drm/nouveau/nouveau_state.c	2011-02-14 20:19:11.000000000 +0100
++++ drm/nouveau/nouveau_state.c	2011-03-09 19:06:22.000000000 +0100
 @@ -23,18 +23,24 @@
   * DEALINGS IN THE SOFTWARE.
   */
@@ -2009,14 +2001,12 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	engine->display.destroy(dev);
  out_fifo:
  	if (!nouveau_noaccel)
-@@ -779,12 +799,18 @@
+@@ -779,12 +799,16 @@
  out_vram:
  	nouveau_mem_vram_fini(dev);
  out_bios:
 +#if !defined(__AROS__)
  	nouveau_pm_fini(dev);
-+#else
-+IMPLEMENT("Calling nouveau_pm_fini(dev);\n");
 +#endif
  	nouveau_bios_takedown(dev);
  out_display_early:
@@ -2028,7 +2018,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	return ret;
  }
  
-@@ -822,12 +848,18 @@
+@@ -822,12 +846,18 @@
  	nouveau_mem_vram_fini(dev);
  
  	nouveau_irq_fini(dev);
@@ -2047,7 +2037,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  }
  
  /* here a client dies, release the stuff that was allocated for its
-@@ -867,6 +899,7 @@
+@@ -867,6 +897,7 @@
  #endif
  }
  
@@ -2055,7 +2045,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  static struct apertures_struct *nouveau_get_apertures(struct drm_device *dev)
  {
  	struct pci_dev *pdev = dev->pdev;
-@@ -904,10 +937,11 @@
+@@ -904,10 +935,11 @@
  #ifdef CONFIG_X86
  	primary = dev->pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW;
  #endif
@@ -2068,7 +2058,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  
  int nouveau_load(struct drm_device *dev, unsigned long flags)
  {
-@@ -926,8 +960,13 @@
+@@ -926,8 +958,13 @@
  
  	dev_priv->flags = flags & NOUVEAU_FLAGS;
  
@@ -2082,7 +2072,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  
  	/* resource 0 is mmio regs */
  	/* resource 1 is linear FB */
-@@ -970,6 +1009,10 @@
+@@ -970,6 +1007,10 @@
  	} else
  		dev_priv->chipset = 0xff;
  
@@ -2093,7 +2083,17 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	switch (dev_priv->chipset & 0xf0) {
  	case 0x00:
  	case 0x10:
-@@ -995,13 +1038,15 @@
+@@ -989,19 +1030,25 @@
+ 		break;
+ 	case 0xc0:
+ 		dev_priv->card_type = NV_C0;
++#if defined(__AROS__)
++        /* TODO:NVC0: Implement acceleration */
++        nouveau_noaccel = 1; /* FORCE UNTIL FIRMWARE CAN BE LOADED */
++#endif
+ 		break;
+ 	default:
+ 		NV_INFO(dev, "Unsupported chipset 0x%08x\n", reg0);
  		ret = -EINVAL;
  		goto err_mmio;
  	}
@@ -2110,7 +2110,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  
  	/* Map PRAMIN BAR, or on older cards, the aperture withing BAR0 */
  	if (dev_priv->card_type >= NV_40) {
-@@ -1057,7 +1102,9 @@
+@@ -1057,7 +1104,9 @@
  
  void nouveau_lastclose(struct drm_device *dev)
  {
@@ -2120,7 +2120,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  }
  
  int nouveau_unload(struct drm_device *dev)
-@@ -1065,16 +1112,21 @@
+@@ -1065,16 +1114,21 @@
  	struct drm_nouveau_private *dev_priv = dev->dev_private;
  	struct nouveau_engine *engine = &dev_priv->engine;
  
@@ -2147,7 +2147,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	return 0;
  }
  
-@@ -1157,6 +1209,7 @@
+@@ -1157,6 +1211,7 @@
  nouveau_wait_eq(struct drm_device *dev, uint64_t timeout,
  		uint32_t reg, uint32_t mask, uint32_t val)
  {
@@ -2155,7 +2155,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	struct drm_nouveau_private *dev_priv = dev->dev_private;
  	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
  	uint64_t start = ptimer->read(dev);
-@@ -1167,6 +1220,9 @@
+@@ -1167,6 +1222,9 @@
  	} while (ptimer->read(dev) - start < timeout);
  
  	return false;
@@ -2165,7 +2165,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  }
  
  /* Wait until (value(reg) & mask) != val, up until timeout has hit */
-@@ -1174,6 +1230,7 @@
+@@ -1174,6 +1232,7 @@
  nouveau_wait_ne(struct drm_device *dev, uint64_t timeout,
  		uint32_t reg, uint32_t mask, uint32_t val)
  {
@@ -2173,7 +2173,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	struct drm_nouveau_private *dev_priv = dev->dev_private;
  	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
  	uint64_t start = ptimer->read(dev);
-@@ -1184,6 +1241,9 @@
+@@ -1184,6 +1243,9 @@
  	} while (ptimer->read(dev) - start < timeout);
  
  	return false;
@@ -2183,7 +2183,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  }
  
  /* Waits for PGRAPH to go completely idle */
-@@ -1203,4 +1263,3 @@
+@@ -1203,4 +1265,3 @@
  
  	return true;
  }
@@ -2741,24 +2741,22 @@ diff -ur drm-orig/nouveau/nv50_graph.c drm/nouveau/nv50_graph.c
  	return 0;
  }
  
-diff -ur drm-orig/nouveau/nvc0_fifo.c drm/nouveau/nvc0_fifo.c
---- drm-orig/nouveau/nvc0_fifo.c	2011-02-13 19:09:48.000000000 +0100
-+++ drm/nouveau/nvc0_fifo.c	2011-02-14 20:19:11.000000000 +0100
-@@ -325,7 +325,11 @@
- 	nv_wr32(dev, 0x000204, 0xffffffff);
- 	nv_wr32(dev, 0x002204, 0xffffffff);
- 
-+#if !defined(__AROS__)
- 	priv->spoon_nr = hweight32(nv_rd32(dev, 0x002204));
-+#else
-+IMPLEMENT("calling hweight32\n");
+diff -ur drm-orig/nouveau/nv50_vram.c drm/nouveau/nv50_vram.c
+--- drm-orig/nouveau/nv50_vram.c	2011-02-13 19:09:48.000000000 +0100
++++ drm/nouveau/nv50_vram.c	2011-03-09 19:06:23.000000000 +0100
+@@ -173,6 +173,9 @@
+ 	dev_priv->vram_size  = nv_rd32(dev, 0x10020c);
+ 	dev_priv->vram_size |= (dev_priv->vram_size & 0xff) << 32;
+ 	dev_priv->vram_size &= 0xffffffff00ULL;
++#if defined(HOSTED_BUILD)
++    dev_priv->vram_size = HOSTED_BUILD_VRAM_SIZE;
 +#endif
- 	NV_DEBUG(dev, "PFIFO: %d subfifo(s)\n", priv->spoon_nr);
  
- 	/* assign engines to subfifos */
+ 	switch (dev_priv->chipset) {
+ 	case 0xaa:
 diff -ur drm-orig/nouveau/nvc0_graph.c drm/nouveau/nvc0_graph.c
 --- drm-orig/nouveau/nvc0_graph.c	2011-02-13 19:09:48.000000000 +0100
-+++ drm/nouveau/nvc0_graph.c	2011-02-15 19:51:03.000000000 +0100
++++ drm/nouveau/nvc0_graph.c	2011-02-27 09:18:14.000000000 +0100
 @@ -22,7 +22,9 @@
   * Authors: Ben Skeggs
   */
@@ -2779,28 +2777,30 @@ diff -ur drm-orig/nouveau/nvc0_graph.c drm/nouveau/nvc0_graph.c
  	return 0;
  }
  
-@@ -551,6 +555,7 @@
- nvc0_fuc_load_fw(struct drm_device *dev, u32 fuc_base,
- 		 const char *code_fw, const char *data_fw)
- {
-+#if !defined(__AROS__)
- 	const struct firmware *fw;
- 	char name[32];
- 	int ret, i;
-@@ -581,7 +586,9 @@
+@@ -581,7 +585,6 @@
  		nv_wr32(dev, fuc_base + 0x0184, ((u32 *)fw->data)[i]);
  	}
  	release_firmware(fw);
 -
-+#else
-+IMPLEMENT("\n");
-+#endif
  	return 0;
  }
  
+diff -ur drm-orig/nouveau/nvc0_vram.c drm/nouveau/nvc0_vram.c
+--- drm-orig/nouveau/nvc0_vram.c	2011-02-13 19:09:48.000000000 +0100
++++ drm/nouveau/nvc0_vram.c	2011-03-09 19:06:23.000000000 +0100
+@@ -94,6 +94,9 @@
+ 
+ 	dev_priv->vram_size  = nv_rd32(dev, 0x10f20c) << 20;
+ 	dev_priv->vram_size *= nv_rd32(dev, 0x121c74);
++#if defined(HOSTED_BUILD)
++    dev_priv->vram_size = HOSTED_BUILD_VRAM_SIZE;
++#endif
+ 	dev_priv->vram_rblock_size = 4096;
+ 	return 0;
+ }
 diff -ur drm-orig/ttm/ttm_agp_backend.c drm/ttm/ttm_agp_backend.c
 --- drm-orig/ttm/ttm_agp_backend.c	2011-02-13 19:09:48.000000000 +0100
-+++ drm/ttm/ttm_agp_backend.c	2011-02-13 20:27:36.000000000 +0100
++++ drm/ttm/ttm_agp_backend.c	2011-03-22 19:02:13.000000000 +0100
 @@ -33,11 +33,15 @@
  #include "ttm/ttm_bo_driver.h"
  #ifdef TTM_HAS_AGP
@@ -2817,14 +2817,6 @@ diff -ur drm-orig/ttm/ttm_agp_backend.c drm/ttm/ttm_agp_backend.c
  
  struct ttm_agp_backend {
  	struct ttm_backend backend;
-@@ -67,6 +71,7 @@
- 		mem->pages[mem->page_count++] = page;
- 	}
- 	agp_be->mem = mem;
-+
- 	return 0;
- }
- 
 diff -ur drm-orig/ttm/ttm_bo_api.h drm/ttm/ttm_bo_api.h
 --- drm-orig/ttm/ttm_bo_api.h	2011-02-13 19:09:51.000000000 +0100
 +++ drm/ttm/ttm_bo_api.h	2011-02-14 20:19:11.000000000 +0100
@@ -2875,7 +2867,7 @@ diff -ur drm-orig/ttm/ttm_bo_api.h drm/ttm/ttm_bo_api.h
  
 diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
 --- drm-orig/ttm/ttm_bo.c	2011-02-13 19:09:48.000000000 +0100
-+++ drm/ttm/ttm_bo.c	2011-02-15 20:25:43.000000000 +0100
++++ drm/ttm/ttm_bo.c	2011-03-22 19:04:27.000000000 +0100
 @@ -31,6 +31,7 @@
  #include "ttm/ttm_module.h"
  #include "ttm/ttm_bo_driver.h"
@@ -2956,15 +2948,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  		if (unlikely(ret != 0))
  			ttm_tt_destroy(bo->ttm);
  		break;
-@@ -456,6 +470,7 @@
- 	return ret;
- }
- 
-+
- /**
-  * Call bo::reserved.
-  * Will release GPU memory type usage on destruction.
-@@ -475,13 +490,19 @@
+@@ -475,13 +489,19 @@
  
  	atomic_set(&bo->reserved, 0);
  
@@ -2984,7 +2968,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)
  {
  	struct ttm_bo_device *bdev = bo->bdev;
-@@ -535,8 +556,18 @@
+@@ -535,8 +555,18 @@
  		driver->sync_obj_flush(sync_obj, sync_obj_arg);
  		driver->sync_obj_unref(&sync_obj);
  	}
@@ -3003,7 +2987,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  }
  
  /**
-@@ -653,6 +684,7 @@
+@@ -653,6 +683,7 @@
  	return ret;
  }
  
@@ -3011,7 +2995,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  static void ttm_bo_delayed_workqueue(struct work_struct *work)
  {
  	struct ttm_bo_device *bdev =
-@@ -663,6 +695,7 @@
+@@ -663,6 +694,7 @@
  				      ((HZ / 100) < 1) ? 1 : HZ / 100);
  	}
  }
@@ -3019,7 +3003,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  static void ttm_bo_release(struct kref *kref)
  {
-@@ -672,7 +705,9 @@
+@@ -672,7 +704,9 @@
  	struct ttm_mem_type_manager *man = &bdev->man[bo->mem.mem_type];
  
  	if (likely(bo->vm_node != NULL)) {
@@ -3029,7 +3013,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  		drm_mm_put_block(bo->vm_node);
  		bo->vm_node = NULL;
  	}
-@@ -697,6 +732,7 @@
+@@ -697,6 +731,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_unref);
  
@@ -3037,7 +3021,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  int ttm_bo_lock_delayed_workqueue(struct ttm_bo_device *bdev)
  {
  	return cancel_delayed_work_sync(&bdev->wq);
-@@ -710,6 +746,7 @@
+@@ -710,6 +745,7 @@
  				      ((HZ / 100) < 1) ? 1 : HZ / 100);
  }
  EXPORT_SYMBOL(ttm_bo_unlock_delayed_workqueue);
@@ -3045,7 +3029,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
  			bool no_wait_reserve, bool no_wait_gpu)
-@@ -1243,6 +1280,7 @@
+@@ -1243,6 +1279,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_init);
  
@@ -3053,7 +3037,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  static inline size_t ttm_bo_size(struct ttm_bo_global *glob,
  				 unsigned long num_pages)
  {
-@@ -1287,6 +1325,7 @@
+@@ -1287,6 +1324,7 @@
  
  	return ret;
  }
@@ -3061,7 +3045,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  static int ttm_bo_force_list_clean(struct ttm_bo_device *bdev,
  					unsigned mem_type, bool allow_errors)
-@@ -1348,6 +1387,7 @@
+@@ -1348,6 +1386,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_clean_mm);
  
@@ -3069,7 +3053,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  int ttm_bo_evict_mm(struct ttm_bo_device *bdev, unsigned mem_type)
  {
  	struct ttm_mem_type_manager *man = &bdev->man[mem_type];
-@@ -1369,6 +1409,7 @@
+@@ -1369,6 +1408,7 @@
  	return ttm_bo_force_list_clean(bdev, mem_type, true);
  }
  EXPORT_SYMBOL(ttm_bo_evict_mm);
@@ -3077,7 +3061,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  int ttm_bo_init_mm(struct ttm_bo_device *bdev, unsigned type,
  			unsigned long p_size)
-@@ -1405,6 +1446,7 @@
+@@ -1405,6 +1445,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_init_mm);
  
@@ -3085,7 +3069,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  static void ttm_bo_global_kobj_release(struct kobject *kobj)
  {
  	struct ttm_bo_global *glob =
-@@ -1414,27 +1456,53 @@
+@@ -1414,27 +1455,53 @@
  	__free_page(glob->dummy_read_page);
  	kfree(glob);
  }
@@ -3143,7 +3127,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  	if (unlikely(glob->dummy_read_page == NULL)) {
  		ret = -ENOMEM;
-@@ -1444,6 +1512,7 @@
+@@ -1444,6 +1511,7 @@
  	INIT_LIST_HEAD(&glob->swap_lru);
  	INIT_LIST_HEAD(&glob->device_list);
  
@@ -3151,7 +3135,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  	ttm_mem_init_shrink(&glob->shrink, ttm_bo_swapout);
  	ret = ttm_mem_register_shrink(glob->mem_glob, &glob->shrink);
  	if (unlikely(ret != 0)) {
-@@ -1451,6 +1520,7 @@
+@@ -1451,6 +1519,7 @@
  		       "Could not register buffer object swapout.\n");
  		goto out_no_shrink;
  	}
@@ -3159,7 +3143,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  	glob->ttm_bo_extra_size =
  		ttm_round_pot(sizeof(struct ttm_tt)) +
-@@ -1461,13 +1531,16 @@
+@@ -1461,13 +1530,16 @@
  
  	atomic_set(&glob->bo_count, 0);
  
@@ -3180,7 +3164,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  out_no_drp:
  	kfree(glob);
  	return ret;
-@@ -1500,7 +1573,9 @@
+@@ -1500,7 +1572,9 @@
  	list_del(&bdev->device_list);
  	mutex_unlock(&glob->device_list_mutex);
  
@@ -3190,7 +3174,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  	while (ttm_bo_delayed_delete(bdev, true))
  		;
-@@ -1543,12 +1618,16 @@
+@@ -1543,12 +1617,16 @@
  	if (unlikely(ret != 0))
  		goto out_no_sys;
  
@@ -3207,7 +3191,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  	bdev->nice_mode = true;
  	INIT_LIST_HEAD(&bdev->ddestroy);
  	bdev->dev_mapping = NULL;
-@@ -1592,12 +1671,16 @@
+@@ -1592,12 +1670,16 @@
  void ttm_bo_unmap_virtual_locked(struct ttm_buffer_object *bo)
  {
  	struct ttm_bo_device *bdev = bo->bdev;
@@ -3224,7 +3208,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  	ttm_mem_io_free_vm(bo);
  }
  
-@@ -1614,6 +1697,7 @@
+@@ -1614,6 +1696,7 @@
  
  EXPORT_SYMBOL(ttm_bo_unmap_virtual);
  
@@ -3232,7 +3216,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  static void ttm_bo_vm_insert_rb(struct ttm_buffer_object *bo)
  {
  	struct ttm_bo_device *bdev = bo->bdev;
-@@ -1638,6 +1722,7 @@
+@@ -1638,6 +1721,7 @@
  	rb_link_node(&bo->vm_rb, parent, cur);
  	rb_insert_color(&bo->vm_rb, &bdev->addr_space_rb);
  }
@@ -3240,7 +3224,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  /**
   * ttm_bo_setup_vm:
-@@ -1677,7 +1762,9 @@
+@@ -1677,7 +1761,9 @@
  		goto retry_pre_get;
  	}
  
@@ -3250,14 +3234,6 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  	write_unlock(&bdev->vm_lock);
  	bo->addr_space_offset = ((uint64_t) bo->vm_node->start) << PAGE_SHIFT;
  
-@@ -1700,7 +1787,6 @@
- 		return 0;
- 
- 	while (bo->sync_obj) {
--
- 		if (driver->sync_obj_signaled(bo->sync_obj, bo->sync_obj_arg)) {
- 			void *tmp_obj = bo->sync_obj;
- 			bo->sync_obj = NULL;
 @@ -1774,6 +1860,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_synccpu_write_release);
@@ -3581,7 +3557,7 @@ diff -ur drm-orig/ttm/ttm_module.h drm/ttm/ttm_module.h
  extern struct kobject *ttm_get_kobj(void);
 diff -ur drm-orig/ttm/ttm_tt.c drm/ttm/ttm_tt.c
 --- drm-orig/ttm/ttm_tt.c	2011-02-13 19:09:48.000000000 +0100
-+++ drm/ttm/ttm_tt.c	2011-02-13 20:27:36.000000000 +0100
++++ drm/ttm/ttm_tt.c	2011-03-22 19:06:00.000000000 +0100
 @@ -28,20 +28,26 @@
   * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
   */
@@ -3712,15 +3688,7 @@ diff -ur drm-orig/ttm/ttm_tt.c drm/ttm/ttm_tt.c
  
  	be = ttm->be;
  
-@@ -210,6 +252,7 @@
-  * for range of pages in a ttm.
-  */
- 
-+
- static int ttm_tt_set_caching(struct ttm_tt *ttm,
- 			      enum ttm_caching_state c_state)
- {
-@@ -273,6 +316,7 @@
+@@ -273,6 +315,7 @@
  
  static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
  {
@@ -3728,7 +3696,7 @@ diff -ur drm-orig/ttm/ttm_tt.c drm/ttm/ttm_tt.c
  	int i;
  	unsigned count = 0;
  	struct list_head h;
-@@ -302,6 +346,25 @@
+@@ -302,6 +345,25 @@
  	ttm->state = tt_unpopulated;
  	ttm->first_himem_page = ttm->num_pages;
  	ttm->last_lomem_page = -1;
@@ -3754,7 +3722,7 @@ diff -ur drm-orig/ttm/ttm_tt.c drm/ttm/ttm_tt.c
  }
  
  void ttm_tt_destroy(struct ttm_tt *ttm)
-@@ -326,13 +389,16 @@
+@@ -326,13 +388,16 @@
  		ttm_tt_free_page_directory(ttm);
  	}
  
@@ -3771,7 +3739,7 @@ diff -ur drm-orig/ttm/ttm_tt.c drm/ttm/ttm_tt.c
  int ttm_tt_set_user(struct ttm_tt *ttm,
  		    struct task_struct *tsk,
  		    unsigned long start, unsigned long num_pages)
-@@ -371,6 +437,7 @@
+@@ -371,6 +436,7 @@
  
  	return 0;
  }
@@ -3779,23 +3747,7 @@ diff -ur drm-orig/ttm/ttm_tt.c drm/ttm/ttm_tt.c
  
  struct ttm_tt *ttm_tt_create(struct ttm_bo_device *bdev, unsigned long size,
  			     uint32_t page_flags, struct page *dummy_read_page)
-@@ -387,6 +454,7 @@
- 
- 	ttm->glob = bdev->glob;
- 	ttm->num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+
- 	ttm->first_himem_page = ttm->num_pages;
- 	ttm->last_lomem_page = -1;
- 	ttm->caching_state = tt_cached;
-@@ -400,6 +468,7 @@
- 		printk(KERN_ERR TTM_PFX "Failed allocating page table\n");
- 		return NULL;
- 	}
-+    
- 	ttm->be = bo_driver->create_ttm_backend_entry(bdev);
- 	if (!ttm->be) {
- 		ttm_tt_destroy(ttm);
-@@ -451,6 +520,7 @@
+@@ -451,6 +517,7 @@
  }
  EXPORT_SYMBOL(ttm_tt_bind);
  
@@ -3803,7 +3755,7 @@ diff -ur drm-orig/ttm/ttm_tt.c drm/ttm/ttm_tt.c
  static int ttm_tt_swapin(struct ttm_tt *ttm)
  {
  	struct address_space *swap_space;
-@@ -581,3 +651,4 @@
+@@ -581,3 +648,4 @@
  
  	return ret;
  }

@@ -470,7 +470,6 @@ out_err:
 	return ret;
 }
 
-
 /**
  * Call bo::reserved.
  * Will release GPU memory type usage on destruction.
@@ -1787,6 +1786,7 @@ int ttm_bo_wait(struct ttm_buffer_object *bo,
 		return 0;
 
 	while (bo->sync_obj) {
+
 		if (driver->sync_obj_signaled(bo->sync_obj, bo->sync_obj_arg)) {
 			void *tmp_obj = bo->sync_obj;
 			bo->sync_obj = NULL;

@@ -63,15 +63,19 @@ int drm_agp_info(struct drm_device *dev, struct drm_agp_info *info)
 		return -EINVAL;
 
 	kern = &dev->agp->agp_info;
-//FIXME	info->agp_version_major = kern->version.major;
-//FIXME	info->agp_version_minor = kern->version.minor;
+#if !defined(__AROS__)
+	info->agp_version_major = kern->version.major;
+	info->agp_version_minor = kern->version.minor;
+#endif
 	info->mode = kern->mode;
 	info->aperture_base = kern->aper_base;
 	info->aperture_size = kern->aper_size * 1024 * 1024;
-//FIXME	info->memory_allowed = kern->max_memory << PAGE_SHIFT;
-//FIXME	info->memory_used = kern->current_memory << PAGE_SHIFT;
-//FIXME	info->id_vendor = kern->device->vendor;
-//FIXME	info->id_device = kern->device->device;
+#if !defined(__AROS__)
+	info->memory_allowed = kern->max_memory << PAGE_SHIFT;
+	info->memory_used = kern->current_memory << PAGE_SHIFT;
+	info->id_vendor = kern->device->vendor;
+	info->id_device = kern->device->device;
+#endif
 
 	return 0;
 }
@@ -473,6 +477,5 @@ drm_agp_bind_pages(struct drm_device *dev,
 	return mem;
 }
 EXPORT_SYMBOL(drm_agp_bind_pages);
-
 
 #endif /* __OS_HAS_AGP */
