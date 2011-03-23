@@ -31,7 +31,7 @@
 #define WBMENU_WB_SHELL		2, "Shell",     "W", 0, 0
 #define WBMENU_WB_ABOUT		3, "About...",    0, Broken 0, 0
 #define WBMENU_WB_QUIT		4, "Quit",      "Q", 0, 0
-#define WBMENU_WB_SHUTDOWN	5, "Shutdown",    0, Broken 0, 0
+#define WBMENU_WB_SHUTDOWN	5, "Shutdown",    0, 0, 0
 
 /* Window Menu */
 #define WBMENU_WN               "Window"
