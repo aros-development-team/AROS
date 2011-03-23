@@ -368,12 +368,13 @@ AROS_UFH3(void, Enumerator,
         if (ProductID >= 0x2800)
         {
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &mmio_base);
-            mmio_size /= 2;
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &window_base);
-            gatt_base = mmio_base + mmio_size;
 
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &mmio_size);
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &window_size);
+
+            mmio_size /= 2;
+            gatt_base = mmio_base + mmio_size;
             gatt_size = GetGATTSize(intelg45base);
         }
         else
