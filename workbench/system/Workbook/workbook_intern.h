@@ -12,6 +12,7 @@
 #define WB_VERSION	1
 #define WB_REVISION	0
 
+#include <dos/bptr.h>
 #include <intuition/classes.h>
 
 struct WorkbookBase {
@@ -31,6 +32,11 @@ struct WorkbookBase {
     Class  *wb_WBSet;
 
     Object *wb_App;
+
+    /* Create a new task that simply OpenWorkbenchObject()'s
+     * it's argment.
+     */
+    BPTR wb_OpenerSegList;
 };
 
 #define IntuitionBase wb->wb_IntuitionBase
