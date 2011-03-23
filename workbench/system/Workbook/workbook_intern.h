@@ -22,6 +22,7 @@ struct WorkbookBase {
     APTR wb_IconBase;
     APTR wb_WorkbenchBase;
     APTR wb_GfxBase;
+    APTR wb_LayersBase;
 
     Class  *wb_WBApp;
     Class  *wb_WBWindow;
@@ -39,6 +40,9 @@ struct WorkbookBase {
 #define IconBase      wb->wb_IconBase
 #define WorkbenchBase wb->wb_WorkbenchBase
 #define GfxBase       wb->wb_GfxBase
+#define LayersBase    wb->wb_LayersBase
+
+extern struct ExecBase *SysBase;
 
 #include <string.h>
 #include <proto/exec.h>
