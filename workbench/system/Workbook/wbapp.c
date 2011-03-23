@@ -203,6 +203,9 @@ static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNum
     	    case WBMENU_ID(WBMENU_WB_QUIT):
     	    	quit = TRUE;
     	    	break;
+    	    case WBMENU_ID(WBMENU_WB_SHUTDOWN):
+    	    	/* TODO: Ask if the user wants a shutdown or reboot */
+    	    	ShutdownA(SD_ACTION_POWEROFF);
     	    	break;
     	    }
     	}
