@@ -172,8 +172,8 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    if (csd->hardwaresprite && depth <= 8) {
 		    	UWORD i;
     			UBYTE *clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
-		    	for (i = csd->spritecolors; i < csd->spritecolors + 4; i++)
-		            SetSpriteColor(csd, i - csd->spritecolors,  clut[i * 3 + 0],  clut[i * 3 + 1],  clut[i * 3 + 2]);
+		    	for (i = csd->spritecolors + 1; i < csd->spritecolors + 4; i++)
+		            SetSpriteColor(csd, i - (csd->spritecolors + 1),  clut[i * 3 + 0],  clut[i * 3 + 1],  clut[i * 3 + 2]);
 		    }
  
 		    SetDAC(csd);
