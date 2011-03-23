@@ -32,8 +32,8 @@ struct copper2data
 
 struct amigavideo_staticdata
 {
-    OOP_Class 	    	    *gfxclass;
-    OOP_Class 	    	    *bmclass;
+    OOP_Class 	    	    *amigagfxclass;
+    OOP_Class 	    	    *amigabmclass;
 
 	OOP_AttrBase hiddBitMapAttrBase;  
 	OOP_AttrBase hiddPlanarBitMapAttrBase;
@@ -47,7 +47,7 @@ struct amigavideo_staticdata
 	
 	struct GfxBase *gfxbase;
 
-	struct planarbm_data *disp;
+	struct amigabm_data *disp;
 	struct Interrupt inter;
 	volatile UWORD framecounter;
 	volatile UWORD mode;
@@ -96,7 +96,7 @@ struct amigavideoclbase
 #define CSD(cl)     	(&((struct amigavideoclbase *)cl->UserData)->csd)
 
 /* Private instance data for Gfx hidd class */
-struct gfx_data
+struct amigagfx_data
 {
     struct MinList bitmaps;		/* Currently shown bitmap objects       */
 };

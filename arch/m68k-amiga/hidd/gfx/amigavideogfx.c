@@ -243,7 +243,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL != o)
     {
-	struct gfx_data *data = OOP_INST_DATA(cl, o);
+	struct amigagfx_data *data = OOP_INST_DATA(cl, o);
 	D(bug("AGFX::New(): Got object from super\n"));
 	NewList((struct List *)&data->bitmaps);
 	csd->initialized = 1;
@@ -255,7 +255,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 /********** GfxHidd::Dispose()  ******************************/
 VOID AmigaVideoCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct gfx_data *data;
+    struct amigagfx_data *data;
     
     EnterFunc(bug("AGFX::Dispose(o=%p)\n", o));
     
@@ -273,8 +273,6 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, stru
     struct amigavideo_staticdata *csd = CSD(cl);
     HIDDT_ModeID		modeid;
     struct pHidd_Gfx_NewBitMap   newbitmap;
-    OOP_Object			*newbm;
-    struct gfx_data 	*data = OOP_INST_DATA(cl, o);
     struct TagItem tags[2];
    
     EnterFunc(bug("AGFX::NewBitMap()\n"));
@@ -283,7 +281,7 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, stru
     D(bug("modeid=%08x\n", modeid));
     if (modeid != vHidd_ModeID_Invalid) {
 	tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
-	tags[0].ti_Data = (IPTR)CSD(cl)->bmclass;
+	tags[0].ti_Data = (IPTR)CSD(cl)->amigabmclass;
 	tags[1].ti_Tag = TAG_MORE;
 	tags[1].ti_Data = (IPTR)msg->attrList;
 	newbitmap.mID = msg->mID;
@@ -326,11 +324,11 @@ VOID AmigaVideoCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
 VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
+#if 0
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct gfx_data *data = OOP_INST_DATA(cl, obj);
+    struct amigagfx_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  	    *tag;
     const struct TagItem    *tstate;
-#if 0
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {
@@ -347,7 +345,6 @@ VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *m
 OOP_Object *AmigaVideoCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct gfx_data *data = OOP_INST_DATA(cl, o);
 
     D(bug("SHOW %x\n", msg->bitMap));
 
@@ -370,19 +367,6 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pH
     }
     return msg->bitMap;
 }
-#if 0
-ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, struct HIDD_ViewPortData *data)
-{
-    struct amigavideo_staticdata *csd = CSD(cl);
-    D(bug("ShowViewPorts %x, bm=%x\n", data, data->Bitmap));
-    if (data && data->Bitmap) {
-	setmode(csd, (struct planarbm_data*)data->Bitmap);
-    } else {
-	resetmode(csd);
-    }
-    return TRUE;
-}
-#endif
 
 VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
@@ -394,8 +378,8 @@ VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_
     OOP_GetAttr(msg->src,  aHidd_AmigaVideoBitMap_Drawable, &src);
     OOP_GetAttr(msg->dest, aHidd_AmigaVideoBitMap_Drawable, &dst);
     if (src && dst) {
-        struct planarbm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
-    	struct planarbm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+        struct amigabm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+    	struct amigabm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
     	ok = blit_copybox(csd, sdata, ddata, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode);
     }
     if (!ok)

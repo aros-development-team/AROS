@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 %build_module mmake=kernel-amiga-m68k-amigavideo \
     modname=amigavideo modtype=hidd \
     files="startup amigavideogfx amigavideobitmap chipset blitter" uselibs="rom oop hiddstubs"
