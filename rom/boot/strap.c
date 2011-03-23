@@ -453,6 +453,11 @@ static VOID AddPartitionVolume
         pp[4 + DE_LOWCYL] += i;
         pp[4 + DE_HIGHCYL] += i;
 
+#ifndef __mc68000
+	/* Do not check for handlers because m68k-amiga does not
+	 * have them if filesystem in DosType[] has been loaded from RDB
+	 * by 3rd party boot ROM. MatchFileSystemResourceHandler does the job.
+	 */
 	D(bug("[Boot] Looking up handler for 0x%08lX\n", pp[4+DE_DOSTYPE]));
         handler = MatchHandler(pp[4 + DE_DOSTYPE]);
 
@@ -482,7 +487,7 @@ static VOID AddPartitionVolume
                 }
             }
         }
-
+#endif
 	fse = MatchFileSystemResourceHandler(pp[4 + DE_DOSTYPE]);
 	if (fse != NULL)
 	{
