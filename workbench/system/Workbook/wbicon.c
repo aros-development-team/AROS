@@ -212,13 +212,18 @@ static IPTR wbIconGoInactive(Class *cl, Object *obj, struct gpGoInactive *gpgi)
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbIcon *my = INST_DATA(cl, obj);
     struct Gadget *gadget = (struct Gadget *)obj;
+    struct TagItem tags[] = {
+	{ NP_Seglist,     (IPTR)wb->wb_OpenerSegList },
+	{ NP_Arguments,   (IPTR)my->File },
+	{ NP_FreeSeglist, FALSE },
+	{ TAG_END, 0 },
+    };
 
     gadget->Flags &= ~GFLG_SELECTED;
 
     DoMethod(obj, GM_RENDER, gpgi->gpgi_GInfo, gpgi->gpgi_GInfo->gi_RastPort,GREDRAW_TOGGLE);
 
-    D(bug("OpenWorkbenchObject: %s\n", my->File));
-    OpenWorkbenchObject(my->File, TAG_END);
+    CreateNewProc(tags);
 
     return GMR_NOREUSE;
 }
