@@ -679,6 +679,18 @@ asm (
 	"	rte\n"                     /* Done! */
 );
 
+static APTR oldAlert;
+AROS_UFH2(void, myAlert,
+	AROS_UFHA(ULONG, alertNum, D7),
+	AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    breakpoint();
+
+    AROS_USERFUNC_EXIT
+}
+
 static APTR oldAddTask;
 AROS_UFH4(APTR, myAddTask,
 	AROS_UFHA(struct Task *,     task,      A1),
@@ -753,6 +765,8 @@ int main(int argc, char **argv)
     	Disable();
     	oldTaskTrapCode = UpdateTrapCode(trapHandler);
     	oldAddTask  = SetFunction(SysBase, -47 * LIB_VECTSIZE, myAddTask);
+    	/* Patch Alert() to generate a breakpoint */
+    	oldAlert = SetFunction(SysBase, -18 * LIB_VECTSIZE, myAlert);
     	Enable();
 
     	gdbstub();
@@ -764,6 +778,7 @@ int main(int argc, char **argv)
     	 */
     	Disable();
     	SetFunction(SysBase, -47 * LIB_VECTSIZE, oldAddTask);
+    	SetFunction(SysBase, -18 * LIB_VECTSIZE, oldAlert);
     	UpdateTrapCode(oldTaskTrapCode);
     	Enable();
 
