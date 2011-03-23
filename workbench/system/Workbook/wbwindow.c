@@ -634,6 +634,17 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
     return 0;
 }
 
+static void NewCLI(struct WorkbookBase *wb, BPTR lock)
+{
+    BPTR cd = DupLock(lock);
+    IPTR rc;
+
+    D(bug("Lock=%p\n", BADDR(cd)));
+    rc = SystemTags("NewShell", NP_CurrentDir, (IPTR)cd, TAG_DONE);
+    if (rc == -1)
+    	UnLock(cd);
+}
+
 // WBWM_MENUPICK
 static IPTR WBWindowMenuPick(Class *cl, Object *obj, struct wbwm_MenuPick *wbwmp)
 {
@@ -650,6 +661,9 @@ static IPTR WBWindowMenuPick(Class *cl, Object *obj, struct wbwm_MenuPick *wbwmp
     	    OpenWorkbenchObject(my->PathBuffer, TAG_END);
     	}
     	UnLock(lock);
+    	break;
+    case WBMENU_ID(WBMENU_WB_SHELL):
+    	NewCLI(wb, my->Lock);
     	break;
     default:
     	rc = FALSE;
