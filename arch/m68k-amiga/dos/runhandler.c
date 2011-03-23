@@ -42,6 +42,10 @@ AROS_LH2(struct MsgPort *, RunHandler,
 	    	Forbid();
 	    	seg = FindSegment(cp, NULL, TRUE);
 	    	Permit();
+	    	if (seg == NULL) {
+		    D(bug("[packet] handler '%s' not found\n", cp));
+		    return NULL;
+		}
 	    }
 	    deviceNode->dn_SegList = seg ? seg->seg_Seg : DOSBase->dl_Root->rn_FileHandlerSegment;
 	}
