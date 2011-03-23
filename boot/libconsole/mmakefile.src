@@ -1,0 +1,21 @@
+#   $Id: mmakefile.src 37337 2011-03-04 11:40:10Z sonic $
+#
+#   Generate the amiga.lib library (normally called libamiga.a).
+#
+include $(TOP)/config/make.cfg
+
+FONT   := font8x14
+SERIAL := serial_16450
+
+FILES := common multiboot screen_text screen_fb $(FONT) $(SERIAL)
+
+USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
+
+%build_linklib mmake=linklibs-console libname=console files="$(FILES)" libdir=$(GENDIR)/lib
+
+USER_CFLAGS := -m32
+
+%build_linklib mmake=linklibs-console32 libname=console files="$(FILES)" \
+	       objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
+
+%common
