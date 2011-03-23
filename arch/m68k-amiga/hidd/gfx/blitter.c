@@ -61,7 +61,7 @@ static const UBYTE copy_minterm[] = { 0xff, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 
 // 14:
 // 15: one (->fillrect)
 
-BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcbm, struct planarbm_data *dstbm,
+BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm, struct amigabm_data *dstbm,
     WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -199,7 +199,7 @@ static const UBYTE fill_minterm[] = { 0xca, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 
 // C     = source
 // D     = destination
 
-BOOL blit_fillrect(struct amigavideo_staticdata *data, struct planarbm_data *bm, WORD x1,WORD y1,WORD x2,WORD y2, HIDDT_Pixel pixel,HIDDT_DrawMode mode)
+BOOL blit_fillrect(struct amigavideo_staticdata *data, struct amigabm_data *bm, WORD x1,WORD y1,WORD x2,WORD y2, HIDDT_Pixel pixel,HIDDT_DrawMode mode)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = data->gfxbase;
@@ -275,13 +275,11 @@ static const UBYTE tmpl_minterm[] = { 0, 0, 0, 0, 0, 0 };
 // 3 = COMPLEMENT | INVERSIVD:	/AC + A/B/C
 // 4 = JAM2:			/AC + (FG=0: A/B) (FG=1: AB) + (BG=0: A
 // 5 = JAM2 | INVERSVID:	/AC
-BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct planarbm_data *bm, struct pHidd_BitMap_PutTemplate *tmpl)
+BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct pHidd_BitMap_PutTemplate *tmpl)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = data->gfxbase;
     OOP_Object *gc = tmpl->gc;
-    HIDDT_Pixel	fg = GC_FG(tmpl->gc);
-    HIDDT_Pixel bg = GC_BG(tmpl->gc);
 
     UBYTE type, i;
     BYTE shift;

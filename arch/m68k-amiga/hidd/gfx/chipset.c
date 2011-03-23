@@ -206,7 +206,7 @@ void resetmode(struct amigavideo_staticdata *data)
     data->depth = 0;
 }
 
-static void setcopperscroll2(struct amigavideo_staticdata *data, struct planarbm_data *bm, struct copper2data *c2d)
+static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct copper2data *c2d)
 {
     UWORD *copptr = c2d->copper2_scroll, *copbpl;
     WORD scroll, yscroll;
@@ -261,7 +261,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct planarbm
     
 }
 
-static void setcopperscroll(struct amigavideo_staticdata *data, struct planarbm_data *bm)
+static void setcopperscroll(struct amigavideo_staticdata *data, struct amigabm_data *bm)
 {
     setcopperscroll2(data, bm, &data->copper2);
     if (data->interlace)
@@ -280,7 +280,7 @@ static UWORD get_copper_list_length(UBYTE aga, UBYTE depth)
     return v * 2;
 }
 
-static void createcopperlist(struct amigavideo_staticdata *data, struct planarbm_data *bm, struct copper2data *c2d, BOOL lace)
+static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct copper2data *c2d, BOOL lace)
 {
     UWORD *c;
     UWORD i;
@@ -409,7 +409,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct planarbm
 
 }
 
-BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
+BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
 {
     UWORD ddfstrt, ddfstop;
     UBYTE fetchunit, fetchstart, maxplanes;
@@ -581,7 +581,7 @@ BOOL setcolors(struct amigavideo_staticdata *data, struct pHidd_BitMap_SetColors
 	setcoppercolors(data);
     return TRUE;
 }
-void setscroll(struct amigavideo_staticdata *data, struct planarbm_data *bm)
+void setscroll(struct amigavideo_staticdata *data, struct amigabm_data *bm)
 {
     setcopperscroll(data, bm);
 }

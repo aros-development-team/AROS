@@ -23,7 +23,7 @@ enum
 /* This structure is used as instance data for the bitmap class.
 */
 
-struct planarbm_data
+struct amigabm_data
 {
     struct MinNode node;
     UBYTE **planes; // bitmap pointers (aligned to 8-byte if AGA)

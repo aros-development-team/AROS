@@ -52,7 +52,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     struct amigavideo_staticdata *csd = CSD(cl);
     IPTR width, height, depth;
     BOOL  ok = TRUE;      
-    struct planarbm_data *data;
+    struct amigabm_data *data;
     OOP_Object      	 *pf;
     APTR		 p_pf = &pf;
     ULONG		 align, bmadd;
@@ -126,7 +126,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
 VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct planarbm_data    *data;
+    struct amigabm_data    *data;
     UBYTE   	    	    i;
     
     data = OOP_INST_DATA(cl, o);
@@ -159,7 +159,7 @@ VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    struct amigabm_data *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
     BOOL moved = FALSE;
@@ -203,7 +203,7 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 VOID AmigaVideoBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    struct amigabm_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
     DB2(bug("AmigaVideoBM__Root__Get %d, Attr=%d AmigaVideoBitmap=%d\n", msg->attrID, __IHidd_Attr, __IHidd_AmigaVideoBitmap));
@@ -262,7 +262,7 @@ ADD2EXPUNGELIB(AmigaVideoBM_Expunge, 0);
 
 BOOL AmigaVideoBM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
-    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    struct amigabm_data *data = OOP_INST_DATA(cl, o);
     struct amigavideo_staticdata *csd = CSD(cl);
 
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
@@ -274,7 +274,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutPixel *msg)
 {
     UBYTE   	    	    **plane;
-    struct planarbm_data    *data;
+    struct amigabm_data    *data;
     ULONG   	    	    offset;
     ULONG   	    	    mask;
     UBYTE   	    	    pixel, notpixel;
@@ -311,7 +311,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 ULONG AmigaVideoBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_GetPixel *msg)
 {
-    struct planarbm_data    *data;
+    struct amigabm_data    *data;
     UBYTE   	    	    **plane;
     ULONG   	    	    offset;
     ULONG   	    	    i;
@@ -352,7 +352,7 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
     HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
     if (msg->x1 == msg->x2 || msg->y1 == msg->y2) {
     	WORD x1 = msg->x1, x2 = msg->x2;
@@ -376,21 +376,6 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID AmigaVideoBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
-{
-    WORD    	    	    x, y, d;
-    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
-    UBYTE   	    	    **plane;
-    ULONG   	    	    planeoffset;
-    struct planarbm_data    *data;  
-
-    data = OOP_INST_DATA(cl, o);
-
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-/****************************************************************************************/
-
 VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutImage *msg)
 {
@@ -398,7 +383,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
     UBYTE   	    	    **plane;
     ULONG   	    	    planeoffset;
-    struct planarbm_data    *data = OOP_INST_DATA(cl, o);
+    struct amigabm_data    *data = OOP_INST_DATA(cl, o);
 
     if ((msg->pixFmt != vHidd_StdPixFmt_Native) &&
     	(msg->pixFmt != vHidd_StdPixFmt_Native32))
@@ -519,40 +504,12 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID AmigaVideoBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
-				   struct pHidd_BitMap_PutImageLUT *msg)
-{
-    WORD    	    	    x, y, d;
-    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
-    UBYTE   	    	    **plane;
-    ULONG   	    	    planeoffset;
-    struct planarbm_data   *data = OOP_INST_DATA(cl, o);
-
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-/****************************************************************************************/
-
-VOID AmigaVideoBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
-				   struct pHidd_BitMap_GetImageLUT *msg)
-{
-    WORD    	    	    x, y, d;
-    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
-    UBYTE   	    	    **plane;
-    ULONG   	    	    planeoffset;
-    struct planarbm_data    *data = OOP_INST_DATA(cl, o);
-    
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-/****************************************************************************************/
-
 VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
     if (!blit_fillrect(csd, data, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode))
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -563,7 +520,7 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 VOID AmigaVideoBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
     D(bug("puttemplate: %x x=%d y=%d w=%d h=%d srcx=%d modulo=%d invert=%d\n",
     	msg->Template, msg->x, msg->y, msg->width, msg->height, msg->srcx, msg->inverttemplate));
