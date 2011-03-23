@@ -24,7 +24,6 @@ void con_InitMultiboot(struct multiboot *mb)
 	   scr_Width  = mb->framebuffer_width;
 	   scr_Height = mb->framebuffer_height;
 	   scr_Type   = SCR_TEXT;
-	   scr_Mirror = boot_AllocMem(scr_Width * scr_Height);
 	   break;
 
 	default:
@@ -32,6 +31,7 @@ void con_InitMultiboot(struct multiboot *mb)
 	   scr_Width  = mb->framebuffer_width  / fontWidth;
 	   scr_Height = mb->framebuffer_height / fontHeight;
 	   scr_Type   = SCR_GFX;
+	   scr_Mirror = boot_AllocMem(scr_Width * scr_Height);
 	}
     }
 /*
