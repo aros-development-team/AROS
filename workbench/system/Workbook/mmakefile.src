@@ -3,6 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := -D__NOLIBBASE__
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 FILES := workbook \

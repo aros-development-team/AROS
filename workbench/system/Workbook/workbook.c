@@ -71,7 +71,7 @@ ULONG WorkbookMain(void)
 
     wb = NULL;
 
-    wb = AllocVec(sizeof(*wb), MEMF_CLEAR);
+    wb = AllocVec(sizeof(*wb), MEMF_ANY | MEMF_CLEAR);
     if (!wb)
     	goto error;
 
@@ -105,10 +105,17 @@ ULONG WorkbookMain(void)
     if (GfxBase == NULL)
         goto error;
 
+    LayersBase = OpenLibrary("layers.library", 0);
+    if (LayersBase == NULL)
+    	goto error;
+
     rc = WB_Main(wb);
 
 error:
     if (wb) {
+        if (LayersBase)
+            CloseLibrary(LayersBase);
+
         if (GfxBase)
             CloseLibrary(GfxBase);
 
