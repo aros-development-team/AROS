@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     GetBootInfo() function.
@@ -7,7 +7,7 @@
 #include "bootloader_intern.h"
 #include <proto/bootloader.h>
 #include <proto/utility.h>
-#include "../bootstrap/multiboot.h"
+#include <aros/multiboot.h>
 #include <aros/debug.h>
 
 /*****************************************************************************
