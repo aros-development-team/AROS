@@ -179,16 +179,6 @@ static void wbCloseWindow(Class *cl, Object *obj, struct Window *win)
     }
 }
 
-static void NewCLI(struct WorkbookBase *wb)
-{
-    struct TagItem tags[] = {
-        { SYS_Asynch,      TRUE       }, /* 0 */
-        { NP_Name,         (IPTR)"Workbook Shell" },
-        { TAG_END } };
-
-    SystemTags("NewCLI \"CON:20/20/480/80/Workbook Shell/CLOSE\"", tags);
-}
-
 static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNumber)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -213,8 +203,6 @@ static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNum
     	    case WBMENU_ID(WBMENU_WB_QUIT):
     	    	quit = TRUE;
     	    	break;
-    	    case WBMENU_ID(WBMENU_WB_SHELL):
-    	    	NewCLI(wb);
     	    	break;
     	    }
     	}
