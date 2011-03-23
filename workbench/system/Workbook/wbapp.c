@@ -225,6 +225,16 @@ static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNum
     return quit;
 }
 
+static void wbIntuiTick(Class *cl, Object *obj, struct Window *win)
+{
+    Object *owin;
+
+    if ((owin = wbLookupWindow(cl, obj, win))) {
+    	DoMethod(owin, WBWM_INTUITICK);
+    }
+}
+
+
 // WBAM_WORKBENCH - Register and handle all workbench events
 static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
 {
@@ -279,6 +289,9 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
     	    	    break;
     	    	case IDCMP_MENUPICK:
     	    	    done = wbMenuPick(cl, obj, im->IDCMPWindow, im->Code);
+    	    	    break;
+    	    	case IDCMP_INTUITICKS:
+    	    	    wbIntuiTick(cl, obj, im->IDCMPWindow);
     	    	    break;
     	    	}
 

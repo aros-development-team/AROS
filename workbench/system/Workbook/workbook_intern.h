@@ -9,6 +9,9 @@
 #ifndef WORKBOOK_H
 #define WORKBOOK_H
 
+#define WB_VERSION	1
+#define WB_REVISION	0
+
 #include <intuition/classes.h>
 
 struct WorkbookBase {
