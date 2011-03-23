@@ -25,6 +25,8 @@
 
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
+#include <exec/rawfmt.h>
+
 
 #include "workbook_intern.h"
 #include "workbook_menu.h"
@@ -46,9 +48,11 @@ struct wbWindow {
     Object        *Set;       /* Set of icons */
 
     ULONG          Flags;
+    IPTR           Tick;
 
     /* Temporary path buffer */
     TEXT           PathBuffer[PATH_MAX];
+    TEXT           ScreenTitle[256];
 };
 
 #define WBWF_USERPORT   (1 << 0)    /* Window has a custom port */
@@ -349,23 +353,21 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     	
     	strcpy(my->Path, path);
     }
-D(bug("%s: Path='%s'\n", __func__, my->Path));
+
     /* Create icon set */
     my->Set = NewObject(WBSet, NULL,
     		ICA_TARGET, (IPTR)obj,
     		ICA_MAP, (IPTR)set2window,
     		TAG_END);
 
+    idcmp = IDCMP_MENUPICK | IDCMP_INTUITICKS;
     if (my->Path == NULL) {
-    	idcmp = IDCMP_MENUPICK;
     	my->Window = OpenWindowTags(NULL,
     			WA_IDCMP, 0,
     			WA_Backdrop,    TRUE,
     			WA_WBenchWindow, TRUE,
     			WA_Borderless,  TRUE,
     			WA_Activate,    TRUE,
-    			WA_Title,       "Workbook",
-    			WA_ScreenTitle, "Workbook 1.0",
     			WA_NoCareRefresh, TRUE,
     			TAG_MORE, ops->ops_AttrList );
     	my->Window->BorderTop = my->Window->WScreen->BarHeight+1;
@@ -382,7 +384,7 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
     	    D(bug("%s: NewWindow %p\n", __func__, nwin));
     	}
 
-    	idcmp = IDCMP_NEWSIZE | IDCMP_CLOSEWINDOW | IDCMP_MENUPICK;
+    	idcmp |= IDCMP_NEWSIZE | IDCMP_CLOSEWINDOW;
     	my->Window = OpenWindowTags(nwin,
     			WA_IDCMP, 0,
     			WA_MinWidth, 100,
@@ -448,11 +450,18 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
     		PGA_Top, 0,
     		TAG_END)), 0);
 
+    /* Send first intuitick */
+    DoMethod(obj, WBWM_INTUITICK);
+
+    D(bug("BUSY....\n"));
+    SetWindowPointer(my->Window, WA_BusyPointer, TRUE, TAG_END);
     if (my->Path == NULL) {
     	wbAddVolumeIcons(cl, obj);
     	wbAddAppIcons(cl, obj);
     } else
     	wbAddFiles(cl, obj, my->Path);
+    SetWindowPointer(my->Window, WA_BusyPointer, FALSE, TAG_END);
+    D(bug("Not BUSY....\n"));
 
     wbRedimension(cl, obj);
 
@@ -650,19 +659,49 @@ static IPTR WBWindowMenuPick(Class *cl, Object *obj, struct wbwm_MenuPick *wbwmp
     return rc;
 }
 
+// WBWM_INTUITICK
+static IPTR WBWindowIntuiTick(Class *cl, Object *obj, Msg msg)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
+    IPTR rc = FALSE;
+
+    if (my->Tick == 0) {
+	IPTR val[5];
+
+	val[0] = WB_VERSION;
+	val[1] = WB_REVISION;
+	val[2] = AvailMem(MEMF_CHIP) / 1024;
+	val[3] = AvailMem(MEMF_FAST) / 1024;
+	val[4] = AvailMem(MEMF_ANY) / 1024;
+
+	/* Update the window's title */
+	RawDoFmt("Workbook %ld.%ld  Chip: %ldk, Fast: %ldk, Any: %ldk", val, 
+		 RAWFMTFUNC_STRING, my->ScreenTitle);
+
+	SetWindowTitles(my->Window, (CONST_STRPTR)-1, my->ScreenTitle);
+	rc = TRUE;
+    }
+
+    /* Approx 10 IntuiTicks per second */
+    my->Tick = (my->Tick + 1) % 10;
+
+    return rc;
+}
 
 static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
 {
     IPTR rc = 0;
 
     switch (msg->MethodID) {
-    case OM_NEW:       rc = WBWindowNew(cl, obj, (APTR)msg); break;
-    case OM_DISPOSE:   rc = WBWindowDispose(cl, obj, (APTR)msg); break;
-    case OM_GET:       rc = WBWindowGet(cl, obj, (APTR)msg); break;
-    case OM_UPDATE:    rc = WBWindowUpdate(cl, obj, (APTR)msg); break;
-    case WBWM_NEWSIZE: rc = WBWindowNewSize(cl, obj, (APTR)msg); break;
-    case WBWM_MENUPICK: rc = WBWindowMenuPick(cl, obj, (APTR)msg); break;
-    default:           rc = DoSuperMethodA(cl, obj, msg); break;
+    case OM_NEW:         rc = WBWindowNew(cl, obj, (APTR)msg); break;
+    case OM_DISPOSE:     rc = WBWindowDispose(cl, obj, (APTR)msg); break;
+    case OM_GET:         rc = WBWindowGet(cl, obj, (APTR)msg); break;
+    case OM_UPDATE:      rc = WBWindowUpdate(cl, obj, (APTR)msg); break;
+    case WBWM_NEWSIZE:   rc = WBWindowNewSize(cl, obj, (APTR)msg); break;
+    case WBWM_MENUPICK:  rc = WBWindowMenuPick(cl, obj, (APTR)msg); break;
+    case WBWM_INTUITICK: rc = WBWindowIntuiTick(cl, obj, (APTR)msg); break;
+    default:             rc = DoSuperMethodA(cl, obj, msg); break;
     }
 
     return rc;
