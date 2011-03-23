@@ -153,8 +153,8 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 	}
 
 	/* WB1.x backwards compatibility hack, do not allow
-	 * override of built-in resident command */
-	if (!stricmp(name, "resident")) {
+	 * override of built-in resident or to add l:shell-seg (CLI) */
+	if (!stricmp(name, "resident") || !stricmp(name, "cli")) {
 	    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
 	    UnLoadSeg(seglist);
 	    return 1; /* yes, return code = 1 in this special case */
