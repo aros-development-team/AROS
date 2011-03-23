@@ -83,6 +83,15 @@ struct IIControlPrefs
     UWORD ic_VDragModes[2];
 };
 
+struct IPointerPrefsV37
+{
+    UWORD	*data;
+    UWORD	YSize;	
+    WORD	XOffset;
+    WORD	YOffset;
+    ULONG   unk[5];
+};
+
 struct IPointerPrefs
 {
     struct BitMap *BitMap;

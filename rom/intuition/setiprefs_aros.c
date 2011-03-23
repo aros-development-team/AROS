@@ -7,6 +7,7 @@
 #include <proto/exec.h>
 #include <intuition/iprefs.h>
 #include <intuition/pointerclass.h>
+#include <prefs/pointer.h>
 #include <prefs/palette.h>
 
 #include <proto/intuition.h>
@@ -154,13 +155,29 @@
 	case IPREFS_TYPE_POINTER_V37:
         DEBUG_SETIPREFS(bug("SetIPrefs: IP_POINTER_V37\n"));
         {
+	    struct Preferences *ActivePrefs = GetPrivIBase(IntuitionBase)->ActivePreferences;
+            struct IPointerPrefsV37 *fp = data;
+            UWORD size = fp->YSize * 2;
+            Object *pointer;
+
+	    if (size > POINTERSIZE)
+	    	size = POINTERSIZE;
+	    memset(ActivePrefs->PointerMatrix, 0, POINTERSIZE * sizeof (UWORD));
+            CopyMem(fp->data, ActivePrefs->PointerMatrix, size * sizeof (UWORD));
+            ActivePrefs->XOffset = fp->XOffset;
+            ActivePrefs->YOffset = fp->YOffset;
+
+	    pointer = MakePointerFromPrefs(IntuitionBase, ActivePrefs);
+            if (pointer)
+                 InstallPointer(IntuitionBase, WBP_NORMAL, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
  	    /* return -1 so that WB2.x C:IPrefs is happy */
-           Result = -1;
+            Result = -1;
         }
         break;
 
         case IPREFS_TYPE_PALETTE_V39:
-        DEBUG_SETIPREFS(bug("SetIPrefs: IP_PALETTE_V39 %p %d\n", data, length));
+	case IPREFS_TYPE_PALETTE_V37:
+        DEBUG_SETIPREFS(bug("SetIPrefs: IP_PALETTE_V%d %p %d\n", type == IPREFS_TYPE_PALETTE_V39 ? 39 : 37, data, length));
         {
             struct ColorSpec *pp = data;
             struct Color32 *p = GetPrivIBase(IntuitionBase)->Colors;
@@ -171,13 +188,39 @@
 
             while (pp->ColorIndex != -1)
             {
-                DEBUG_SETIPREFS(bug("SetIPrefs: Index %ld Red 0x%04lX Green 0x%04lX Blue 0x%04lX\n",
-                                    pp->ColorIndex, pp->Red, pp->Green, pp->Blue));
-                if (pp->ColorIndex < COLORTABLEENTRIES)
+                WORD idx;
+                    
+                idx = pp->ColorIndex;
+                DEBUG_SETIPREFS(bug("SetIPrefs: Index %ld R 0x%04lX G 0x%04lX B 0x%04lX\n",
+                                    idx, pp->Red, pp->Green, pp->Blue));
+                if (type == IPREFS_TYPE_PALETTE_V37) {
+                    /* v37 cursor colors are 17 to 19 */
+                    if (idx >= 17)
+                    	idx = idx - 17 + 8;
+                    else if (idx >= 8)
+                    	idx = -1;
+                }
+                if (idx >= 0 && idx < COLORTABLEENTRIES)
                 {
-                    p[pp->ColorIndex].red   = (pp->Red<<16)|pp->Red;
-                    p[pp->ColorIndex].green = (pp->Green<<16)|pp->Green;
-                    p[pp->ColorIndex].blue  = (pp->Blue<<16)|pp->Blue;
+                    UWORD red, green, blue;
+                    if (type == IPREFS_TYPE_PALETTE_V37) {
+                    	/* 4-bit color components */
+                    	red = (pp->Red << 4) | pp->Red;
+                    	green = (pp->Green << 4) | pp->Green;
+                    	blue = (pp->Blue << 4) | pp->Blue;
+                    	red = (red << 8) | red;
+                    	green = (green << 8) | green;
+                    	blue = (blue << 8) | blue;
+                    } else {
+                    	/* 8-bit color components */
+                     	red = pp->Red;
+                    	green = pp->Green;
+                    	blue = pp->Blue;
+                    }
+                   
+                    p[idx].red   = (red << 16) | red;
+                    p[idx].green = (green << 16) | green;
+                    p[idx].blue  = (blue << 16) | blue;
 
                     /* Update oldstyle preferences */
                     if (ActivePrefs)
@@ -185,23 +228,23 @@
 		        UWORD *cols = NULL;
 			UWORD baseindex;
 			
-			if (pp->ColorIndex < 4) {
+			if (idx < 4) {
 			    baseindex = 0;
 			    cols = &ActivePrefs->color0;
-                        } else if (pp->ColorIndex >= 8 && pp->ColorIndex <= 10) {
+                        } else if (idx >= 8 && idx <= 10) {
 			    baseindex = 8;
                             cols=&ActivePrefs->color17;
 			    update_pointer = TRUE;
                         }
 			
 			if (cols)
-			    cols[pp->ColorIndex - baseindex] = ((pp->Red >> 4) & 0xf00) | ((pp->Green >> 8) & 0x0f0) | (pp->Blue >> 12);
+			    cols[idx - baseindex] = ((red >> 4) & 0xf00) | ((green >> 8) & 0x0f0) | ((blue >> 12));
                     }
-                    DEBUG_SETIPREFS(bug("SetIPrefs: Set Color32 %ld Red 0x%lx Green 0x%lx Blue 0x%lx\n",
-                                (LONG) pp->ColorIndex,
-                                p[pp->ColorIndex].red,
-                                p[pp->ColorIndex].green,
-                                p[pp->ColorIndex].blue));
+                    DEBUG_SETIPREFS(bug("SetIPrefs: Set Color32 %ld R 0x%08lx G 0x%08lx B 0x%08lx\n",
+                                (LONG) idx,
+                                p[idx].red,
+                                p[idx].green,
+                                p[idx].blue));
                 }
                 pp++;
             }
@@ -213,12 +256,6 @@
         }
         break;
 
-	case IPREFS_TYPE_PALETTE_V37:
-        DEBUG_SETIPREFS(bug("SetIPrefs: IP_PALETTE_V37\n"));
-        {
-        }
-        break;
-	
 	case IPREFS_TYPE_PENS_V39:
         DEBUG_SETIPREFS(bug("SetIPrefs: IP_PENS_V39\n"));
         {
