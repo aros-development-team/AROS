@@ -1,11 +1,14 @@
 /*
- * This code probes Amiga hardware timings.
+ * This code probes Amiga hardware timings, and
+ * configures SysBase with those settings.
  *
  * On Amiga(tm) we have hardware VBlank interrupt, so we have no emulation code.
  */
 
 #include <aros/symbolsets.h>
 #include <exec/execbase.h>
+#include <proto/exec.h>
+
 #include <hardware/cia.h>
 
 static int Timer_Init(APTR KernelBase)
