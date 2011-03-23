@@ -56,7 +56,7 @@
     AROS_LIBFUNC_INIT
 
     /* If there is no memory free nothing */
-    if(!byteSize)
+    if(!byteSize || !memoryBlock)
 	return;
 
 #if !defined(NO_CONSISTENCY_CHECKS)
