@@ -36,7 +36,7 @@
 #define IPREFS_TYPE_POINTER_V39    7
 #define IPREFS_TYPE_PALETTE_V39    8
 #define IPREFS_TYPE_PENS_V39       9
-/* need to reserve space if OS3.5+ introduced new types? */
+
 #define IPREFS_TYPE_POINTER_ALPHA 10
 
 #else
