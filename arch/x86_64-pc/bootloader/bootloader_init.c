@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Bootloader information initialisation.
@@ -21,7 +21,8 @@
 #include <aros/symbolsets.h>
 #include <aros/bootloader.h>
 #include <aros/kernel.h>
-#include "../bootstrap/multiboot.h"
+#include <aros/multiboot.h>
+
 #include "bootloader_intern.h"
 #include LC_LIBDEFS_FILE
 
