@@ -29,6 +29,9 @@ SHARED_LIB  :=	$(AROS_LIB)/libarosc.a
 #   Currently the main difference is that it includes a different __assert()
 #   function to handle asserts in the kernel.
 ROM_LIB	    :=	$(AROS_LIB)/librom.a
+ROM_LIB32   :=  $(GENDIR)/lib32/librom.a
+OBJDIR32    :=  $(OBJDIR)/32bit
+CFLAGS32    := -m32
 
 # All of the above
 LIB	    := $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
@@ -498,6 +501,12 @@ ROM_OBJ	   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR)/rom/$(f).o) \
 		$(foreach f,$(ROM_COMMON_ARCH),$(OBJDIR)/arch/$(f).o) \
 		$(foreach f,$(ROM_STATIC),$(OBJDIR)/static/$(f).o)
 
+# 32-bit version built on 64-bit machines is very trimmed down,
+# it does not include arch-specific files (for simplicity).
+ROM_OBJ32   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR32)/rom/$(f).o) \
+		$(foreach f,$(ROM_COMMON),$(OBJDIR32)/$(f).o) \
+		$(foreach f,$(ROM_STATIC),$(OBJDIR32)/static/$(f).o)
+
 # These are added to the link step of arosc.library
 LIBS := $(ARCH_LIBS) -L$(AROS_LIB) -larosm -lautoinit 
 DEP_LIBS := arosm autoinit
@@ -507,10 +516,17 @@ DEP_LIBS := arosm autoinit
 #MM linklibs-clib : setup-clib includes linklibs-mlib linklibs-autoinit \
 #MM			clib-stubs linklibs-amiga linklibs-arossupport
 
+#MM linklibs-clib32 : includes
+
 #MM
 linklibs-clib-quick : linklibs-clib
 
+#MM
+linklibs-clib32-quick : linklibs-clib32
+
 linklibs-clib : setup-clib $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
+
+linklibs-clib32 : setup-clib32 $(ROM_LIB32)
 
 $(OBJDIR)/libarosccommon.a: $(COMMON_OBJ)
 	%mklib_q from=$^
@@ -519,6 +535,9 @@ $(SHARED_LIB) : $(SHARED_OBJ)
 	%mklib_q from=$^
 
 $(ROM_LIB) : $(ROM_OBJ)
+	%mklib_q from=$^
+
+$(ROM_LIB32) : $(ROM_OBJ32)
 	%mklib_q from=$^
 
 $(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ) $(OBJDIR)/libarosccommon.a
@@ -540,6 +559,15 @@ $(OBJDIR)/rom/%.o : %.c
 $(OBJDIR)/%.o : %.c
 	%compile_q opt="$(CFLAGS)"
 
+$(OBJDIR32)/static/%.o : %.c
+	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_STATIC"
+
+$(OBJDIR32)/rom/%.o : %.c
+	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_ROM"
+
+$(OBJDIR32)/%.o : %.c
+	%compile_q opt="$(CFLAGS32) $(CFLAGS)"
+
 # Need to copy these files in from the machine dependant build.
 $(OBJDIR)/shared/%jmp.o : $(OBJDIR)/%jmp.o
 	@$(CP) $< $@
@@ -557,11 +585,26 @@ $(OBJDIR)/rom/%.d : %.c
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q flags=$(CFLAGS)
 
+$(OBJDIR32)/static/%.d : %.c
+	%mkdepend_q flags=$(CFLAGS)
+
+$(OBJDIR32)/rom/%.d : %.c
+	%mkdepend_q flags=$(CFLAGS)
+
+$(OBJDIR32)/%.d : %.c
+	%mkdepend_q flags=$(CFLAGS)
+
 #MM
 setup-clib :
 	%mkdirs_q $(AROS_INCLUDES)/sys $(OBJDIR)
 	%mkdirs_q $(OBJDIR)/static $(OBJDIR)/shared $(OBJDIR)/rom
 	%mkdirs_q $(AROS_LIB) $(AROS_LIBS)
+
+#MM
+setup-clib32 :
+	%mkdirs_q $(AROS_INCLUDES)/sys $(OBJDIR32)
+	%mkdirs_q $(OBJDIR32)/static $(OBJDIR32)/rom
+	%mkdirs_q $(GENDIR)/lib32
 
 #MM
 check : $(TESTDIR)/snprintf
