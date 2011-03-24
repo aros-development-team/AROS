@@ -10,6 +10,12 @@ bootloader-grub2-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg
 
 bootloader-grub2gfx-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg
 
-$(BINDIR)/boot/grub/grub.cfg: grub.cfg
-		$(CP) $< $(BINDIR)/boot/grub/
+ifeq ($(AROS_TARGET_VARIANT),efi)
+    HEAD := grub-efi.cfg.head
+else
+    HEAD := grum.cfg.head
+endif
 
+$(BINDIR)/boot/grub/grub.cfg: $(HEAD) grub.cfg.tail
+	@$(ECHO) Writing $@...
+	@$(CAT) $^ >$@
