@@ -15,7 +15,7 @@
 #ifdef AROS_MODULES_DEBUG
 /* Provided for GdbStub debugging */
 struct MinList *Debug_ModList;
-dbg_seg_t *Debug_KickList; /* Not unused */
+struct ELF_ModuleInfo *Debug_KickList; /* Not unused */
 
 typedef ULONG size_t;
 /* 'malloc' and 'free' are needed for GDB's strcmp(), which is
