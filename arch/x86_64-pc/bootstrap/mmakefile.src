@@ -3,14 +3,14 @@ include $(TOP)/config/make.cfg
 
 TARGETDIR   := $(GENDIR)/$(CURDIR)
 KOBJS	    :=
-FILES	    := bootstrap screen elfloader support
+FILES	    := bootstrap elfloader support
 BOOT_LIBDIR := $(GENDIR)/lib32
 
 USER_CFLAGS  := -isystem $(SRCDIR)/boot/libconsole/include -DMULTIBOOT_64BIT
 BOOT_LDFLAGS := -L$(BOOT_LIBDIR)
-BOOT_LIBS    := -lconsole
+BOOT_LIBS    := -lconsole -lrom
 
-#MM kernel-bootstrap-x86_64: linklibs-console32 kernel-kernel-pc-x86_64-kobj kernel-exec-kobj kernel-utility-kobj kernel-expansion-kobj kernel-oop-kobj kernel-hidd-kobj kernel-bootstrap-pc-x86_64-drivers
+#MM kernel-bootstrap-x86_64: linklibs-clib32 linklibs-console32 kernel-kernel-pc-x86_64-kobj kernel-exec-kobj kernel-utility-kobj kernel-expansion-kobj kernel-oop-kobj kernel-hidd-kobj kernel-bootstrap-pc-x86_64-drivers
 kernel-bootstrap-x86_64: $(BINDIR)/boot/kernel-pc-x86_64 $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-pc-x86_64
 
 #MM
@@ -19,7 +19,7 @@ kernel-bootstrap-x86_64-quick: $(BINDIR)/boot/aros-pc-x86_64
 setup-pc-x86_64 :
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
 
-$(BINDIR)/boot/aros-pc-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o $(BOOT_LIBDIR)/libconsole.a
+$(BINDIR)/boot/aros-pc-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o $(BOOT_LIBDIR)/libconsole.a $(BOOT_LIBDIR)/librom.a
 	@$(ECHO) Linking $@...
 	@$(KERNEL_LD) $(BOOT_LDFLAGS) -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $< $(KOBJS) $(BOOT_LIBS)
 	#@strip --strip-unneeded -R .note -R .comment $@
