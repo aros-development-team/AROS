@@ -2,7 +2,7 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: text mode screen output functions.
+    Desc: Hardware text mode (IBM-compatible) screen console.
 */
 
 #include <bootconsole.h>
@@ -15,10 +15,18 @@ struct scr
     unsigned char attr;
 };
 
-void txtClear()
+/*
+ * There's no init function for text mode console.
+ * Just set scr_Framebuffer, scr_Width and scr_Height and you are ready to go.
+ */
+
+void txt_Clear()
 {
     struct scr *view = scr_FrameBuffer;
     unsigned int i;
+
+    scr_XPos = 0;
+    scr_YPos = 0;
 
     for (i = 0; i < scr_Width * scr_Height; i++)
     {
@@ -27,7 +35,7 @@ void txtClear()
     }
 }
 
-void txtPutc(char chr)
+void txt_Putc(char chr)
 {
     struct scr *view = scr_FrameBuffer;
 

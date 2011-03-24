@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 FONT   := font8x14
 SERIAL := serial_16450
 
-FILES := common multiboot screen_text screen_fb $(FONT) $(SERIAL)
+FILES := common multiboot screen_text screen_fb vars $(FONT) $(SERIAL)
 
 USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 
