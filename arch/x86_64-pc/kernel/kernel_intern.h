@@ -102,6 +102,7 @@ void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tag
 /* Debug support .. */
 extern void Exec_SerialRawIOInit();
 extern void scr_RawPutChars(char *, int);
+void vesa_init(int width, int height, int depth, void *base);
 extern ULONG            __serial_rawio_speed;
 extern UBYTE            __serial_rawio_databits;
 extern UBYTE            __serial_rawio_parity;

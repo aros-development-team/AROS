@@ -53,7 +53,7 @@ typedef enum
 #define KRN_MEMUpper          	(KRN_Dummy + 18)
 #define KRN_OpenFirmwareTree	(KRN_Dummy + 19)
 #define KRN_HostInterface	(KRN_Dummy + 20)
-#define KRN_DebugInfo		(KRN_Dummy + 21) /* (dbg_seg_t *) */
+#define KRN_DebugInfo		(KRN_Dummy + 21) /* (struct ELF_ModuleInfo *) */
 #define KRN_BootLoader          (KRN_Dummy + 22)
 
 /* Magic value passed by the bootstrap as second parameter */
@@ -66,33 +66,18 @@ struct KernelBSS
     IPTR len;
 };
 
-/* Kernel debug info structures. Must be placed in kernel memory! */
-typedef struct
+struct ELF_ModuleInfo
 {
-    char *s_name;	/* Symbol name			*/
-    void *s_lowest;	/* Start address	     	*/
-    void *s_highest;	/* End address		     	*/
-} dbg_sym_t;
-
-typedef struct
-{
-    dbg_sym_t     *m_symbols;	/* Array of associated symbols    */
-    unsigned long  m_symcnt;	/* Number of symbols in the array */
-    char	   m_name[1];	/* Module name, variable length	  */
-} dbg_mod_t;
-
-typedef struct debug_seginfo
-{
-    struct debug_seginfo *s_next;	/* Next segment			*/
-    void 	 	 *s_lowest;	/* Start address	     	*/
-    void 		 *s_highest;	/* End address		     	*/
-    dbg_mod_t		 *s_module;	/* To what module it belongs	*/
-    char		 *s_name;	/* Segment name			*/
-    unsigned int	  s_num;	/* Segment number		*/
-} dbg_seg_t;
+    struct ELF_ModuleInfo *Next; /* Pointer to next module in list */
+    const char		  *Name; /* Pointer to module name	   */
+    unsigned short	   Type; /* DEBUG_ELF, for convenience	   */
+    struct elfheader	  *eh;	 /* ELF file header		   */
+    struct sheader	  *sh;	 /* ELF section header		   */
+};
 
 /* Known debug info types */
-#define DEBUG_ELF 1
+#define DEBUG_NONE 0
+#define DEBUG_ELF  1
 
 /* ELF debug info */
 struct ELF_DebugInfo

@@ -40,7 +40,7 @@ static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR val
 	sym->s_highest = NULL;
 
     /* We count symbols here because not all of them can be added */
-    mod->mod.m_symcnt++;
+    mod->m_symcnt++;
 }
 
 /*****************************************************************************
@@ -116,7 +116,7 @@ AROS_LH4(void, KrnRegisterModule,
 	    D(bug("[KRN] %d sections at 0x%p\n", int_shnum, sections));
 	    shstr = SHINDEX(int_shstrndx);
 
-	    strcpy(mod->mod.m_name, name);
+	    strcpy(mod->m_name, name);
 	    if (sections[shstr].type == SHT_STRTAB)
 		mod->m_shstr = getstrtab(&sections[shstr]);
 
@@ -186,7 +186,7 @@ AROS_LH4(void, KrnRegisterModule,
 		    dbg_sym_t *sym = AllocVec(sizeof(dbg_sym_t) * symcnt, MEMF_PUBLIC);
 		    unsigned int j;
 
-		    mod->mod.m_symbols = sym;
+		    mod->m_symbols = sym;
 
 		    if (sym) {
 			for (j=0; j < symcnt; j++)

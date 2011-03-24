@@ -124,6 +124,12 @@ void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS **b
     return addr + sh->size;
 }
 
+static void *copy_data(void *src, void *addr, unsigned long len)
+{
+    memcpy(addr, src, len);
+    return addr + len;
+}
+
 /* Perform relocations of given section */
 static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, uintptr_t virt)
 {
@@ -416,8 +422,16 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
 	    return 0;
 	}
 
-	/* Module descriptor for the debug info */
-	ksize += (sizeof(dbg_mod_t) + strlen(n->NamePtr));
+	/*
+	 * Debug data for the module includes:
+	 * - Module descriptor (struct ELF_ModuleInfo)
+	 * - ELF file header
+	 * - ELF section header
+	 * - File name
+	 * - One empty pointer for alignment
+	 */
+	ksize += (sizeof(struct ELF_ModuleInfo) + sizeof(struct elfheader) + n->eh.shnum * n->eh.shentsize  +
+		  strlen(n->NamePtr) + sizeof(void *));
 
 	/* Go through all sections and calculate kernel size */
 	for(i = 0; i < n->eh.shnum; i++)
@@ -426,8 +440,13 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
 	    if (!n->sh[i].size)
 	    	continue;
 	
-	    /* We include also string tables for debug info */
-	    if ((n->sh[i].flags & SHF_ALLOC) || (n->sh[i].type == SHT_STRTAB))
+	    /*
+	     * We will load:
+	     * - Actual code and data (allocated sections)
+	     * - String tables (for debug data)
+	     * - Symbol tables (for debug data)
+	     */
+	    if ((n->sh[i].flags & SHF_ALLOC) || (n->sh[i].type == SHT_STRTAB) || (n->sh[i].type == SHT_SYMTAB))
 	    {
 		/* Add maximum space for alignment */
 		size_t s = n->sh[i].size + n->sh[i].addralign - 1;
@@ -437,14 +456,6 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
 		else
 		    ksize += s;
 	    }
-
-	    /* Every loadable section gets segment descriptor in the debug info */
-	    if (n->sh[i].flags & SHF_ALLOC)
-		ksize += sizeof(dbg_seg_t);
-
-	    /* Debug info also includes symbols array */
-	    if (n->sh[i].type == SHT_SYMTAB)
-		ksize += (n->sh[i].size / sizeof(struct symbol) * sizeof(dbg_sym_t));
 	}
     }
 
@@ -454,13 +465,15 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
     return 1;
 }
 
-int LoadKernel(volatile void *ptr_ro, volatile void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, dbg_seg_t **kernel_debug)
+int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug)
 {
     struct ELFNode *n;
     FILE *file;
     unsigned int i;
-    volatile dbg_mod_t *mod;
-    volatile dbg_seg_t *seg = NULL;
+    unsigned char need_entry = 1;
+    struct ELF_ModuleInfo *mod;
+    /* Address of the first module descriptor will automatically go where we need it */
+    struct ELF_ModuleInfo *prev_mod = (struct ELF_ModuleInfo *)kernel_debug;
 
     D(fprintf(stderr, "[ELF Loader] Loading kernel...\n"));
 
@@ -481,13 +494,8 @@ int LoadKernel(volatile void *ptr_ro, volatile void *ptr_rw, struct KernelBSS *t
 	    struct sheader *sh = n->sh;
 
 	    D(fprintf(stderr, "[ELF Loader] Section %u... ", i));
-            /* Load symbol tables */
-	    if (sh[i].type == SHT_SYMTAB)
-	    {
-		D(fprintf(stderr, "Symbol table\n"));
-		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
-	    }
-	    else if ((sh[i].flags & SHF_ALLOC) || (sh[i].type == SHT_STRTAB))
+
+	    if ((sh[i].flags & SHF_ALLOC) || (sh[i].type == SHT_STRTAB) || (sh[i].type == SHT_SYMTAB))
 	    {
 		/* Does the section require memory allcation? */
 		D(fprintf(stderr, "Allocated section\n"));
@@ -510,19 +518,20 @@ int LoadKernel(volatile void *ptr_ro, volatile void *ptr_rw, struct KernelBSS *t
 			return 0;
 		    }
 		}
+
+		/* Remember address of the first code section, this is our entry point */
+		if ((sh[i].flags & SHF_EXECINSTR) && need_entry)
+		{
+		    *kernel_entry = sh[i].addr;
+		    need_entry = 0;
+		}
 	    }
 		D(else fprintf(stderr, "Ignored\n");)
 	    D(fprintf(stderr, "[ELF Loader] Section address: %p, size: %lu\n", sh[i].addr, sh[i].size));
 	}
 
-	D(fprintf(stderr, "[ELF Loader] Adding module debug information...\n"));
-	mod = (dbg_mod_t *)ptr_ro;
-	ptr_ro += (sizeof(dbg_mod_t) + strlen(n->NamePtr));
-
-	strcpy((char *)mod->m_name, n->NamePtr);
-
-	/* For every loaded section perform relocations and add debug info */
-	D(fprintf(stderr, "[ELF Loader] Relocating and adding section debug information...\n"));
+	/* For every loaded section perform relocations */
+	D(fprintf(stderr, "[ELF Loader] Relocating...\n"));
 	for (i=0; i < n->eh.shnum; i++)
 	{
 	    struct sheader *sh = n->sh;
@@ -530,6 +539,7 @@ int LoadKernel(volatile void *ptr_ro, volatile void *ptr_rw, struct KernelBSS *t
 	    if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
 	    {
 		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
+
 		if (!sh[i].addr || !relocate(&n->eh, sh, i, 0))
 		{
 		    DisplayError("%s: Relocation error in hunk %u!\n", n->Name, i);
@@ -537,84 +547,39 @@ int LoadKernel(volatile void *ptr_ro, volatile void *ptr_rw, struct KernelBSS *t
 		}
 
 		free(sh[i].addr);
-	    }
-
-	    if ((sh[i].flags & SHF_ALLOC) && sh[i].size)
-	    {
-		/* Link new segment descriptor with the previous one */
-		if (seg)
-		    seg->s_next = (dbg_seg_t *)ptr_ro;
-		else {
-		    /* Remember start of code and debug info for the first segment */
-		    *kernel_entry = sh[i].addr;
-		    *kernel_debug = (dbg_seg_t *)ptr_ro;
-		}
-
-		seg = (dbg_seg_t *)ptr_ro;
-		ptr_ro += sizeof(dbg_seg_t);
-
-		seg->s_next    = NULL;
-		seg->s_lowest  = sh[i].addr;
-		seg->s_highest = sh[i].addr + sh[i].size - 1;
-		seg->s_module  = (dbg_mod_t *)mod;
-		seg->s_name    = sh[n->eh.shstrndx].addr + sh[i].name;
-		seg->s_num     = i;
-		
-		D(fprintf(stderr, "[ELF Loader] Listed section %u (%s, %p - %p)\n", seg->s_num, seg->s_name, seg->s_lowest, seg->s_highest));
+		sh[i].addr = NULL;
 	    }
 	}
 
-	/* Copy symbols to the debug info and free symbol tables */
-	for (i = 0; i < n->eh.shnum; i++)
-	{
-	    struct sheader *sh = n->sh;
+	D(fprintf(stderr, "[ELF Loader] Adding module debug information...\n"));
 
-	    if (sh[i].type == SHT_SYMTAB)
-	    {
-		struct symbol *st = (struct symbol *)sh[i].addr;
-		unsigned int syms = sh[i].size / sizeof(struct symbol);
-		unsigned int j;
+	/* Align our pointer */
+	ptr_ro = (void *)(((unsigned long)ptr_ro + sizeof(void *)) & ~(sizeof(void *) - 1));
 
-		DSYM(fprintf(stderr, "[ELF Loader] Listing symbols (total of %u) from section %u at %p\n", syms, i, st));
+	/* Allocate module descriptor */
+	mod = ptr_ro;
+	ptr_ro += sizeof(struct ELF_ModuleInfo);
+	mod->Next = NULL;
+	mod->Type = DEBUG_ELF;
 
-		mod->m_symbols = (dbg_sym_t *)ptr_ro;
-		mod->m_symcnt  = syms;
+	/* Copy ELF header */
+	mod->eh  = ptr_ro;
+	ptr_ro = copy_data(&n->eh, ptr_ro, sizeof(struct elfheader));
 
-		for (j=0; j < syms; j++)
-		{
-		    unsigned long idx = st[j].shindex;
+	/* Copy section header */
+	mod->sh = ptr_ro;
+	ptr_ro = copy_data(n->sh, ptr_ro, n->eh.shnum * n->eh.shentsize);
 
-		    DSYM(fprintf(stderr, "[ELF Loader] Symbol %u index: %lu\n", j, idx));
-		    if (idx == SHN_XINDEX)
-			continue;
+	/* Copy module name */
+	mod->Name = ptr_ro;
+	ptr_ro = copy_data(n->NamePtr, ptr_ro, strlen(n->NamePtr) + 1);
 
-		    if ((idx == SHN_ABS) || (sh[idx].flags & SHF_ALLOC))
-		    {
-			dbg_sym_t *sym = (dbg_sym_t *)ptr_ro;
-
-			ptr_ro += sizeof(dbg_sym_t);
-
-			sym->s_name    = n->sh[n->sh[i].link].addr + st[j].name;
-
-			if (idx == SHN_ABS)
-			    sym->s_lowest = (void *)st[j].value;
-			else
-			    sym->s_lowest  = n->sh[idx].addr + st[j].value;
-
-			if (st[j].size)
-			    sym->s_highest = sym->s_lowest + st[j].size - 1;
-			else
-			    sym->s_highest = NULL;
-
-			DSYM(fprintf(stderr, "[ELF Loader] Listed symbol %s (%p - %p)\n", sym->s_name, sym->s_lowest, sym->s_highest));
-		    }
-		}
-
-		free(sh[i].addr);
-	    }
-	}
+	/* Link the module descriptor with previous one */
+	prev_mod->Next = mod;
+	prev_mod = mod;
 
 	free(n->sh);
     }
+
     return 1;
 }

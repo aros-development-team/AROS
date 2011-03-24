@@ -1,27 +1,13 @@
 #ifndef AROS_KERNEL_H
 #define AROS_KERNEL_H
 
-#ifndef BOOTSTRAP
-
-#include <inttypes.h>
 #include <utility/tagitem.h>
 
-struct KernelBSS {
-    uint64_t    addr;
-    uint64_t    len;
+struct KernelBSS
+{
+    unsigned long long addr;
+    unsigned long long len;
 };
-
-#else
-
-struct TagItem{
-    unsigned long long ti_Tag;
-    unsigned long long ti_Data;
-};
-
-#define TAG_DONE        0x00000000ULL
-#define TAG_USER        0x80000000ULL
-
-#endif
 
 typedef enum {
     SCHED_RR = 1
@@ -91,17 +77,5 @@ case 8: asm volatile("movq %0,%%gs:%P1"::"r"(__set),"n"(TLS_OFFSET(name)):"memor
 #define KRN_MEMLower         (KRN_Dummy + 17)
 #define KRN_MEMUpper          (KRN_Dummy + 18)
 #define KRN__TAGCOUNT         (18)
-/*
- * The target base address of 64-bit kernel
- */
-
-#define KERNEL_TARGET_ADDRESS   0x01000000
-//#define KERNEL_HIGH_OFFSET      0x1ffULL
-//#define KERNEL_HIGH_OFFSET      0x1ffULL
-//#define KERNEL_HIGH_OFFSET      31ULL
-//#define KERNEL_OFFSET           0x01000000
-#define KERNEL_OFFSET           0
-//#define KERNEL_OFFSET           0xfffffffff8000000ULL
-//#define KERNEL_OFFSET           0x0000000000000000ULL
 
 #endif /*AROS_  KERNEL_H*/

@@ -70,12 +70,12 @@ AROS_LH1(void, KrnUnregisterModule,
 		   module information */
 		if (--mod->m_segcnt == 0)
 		{
-		    D(bug("[KRN] Removing module %s\n", mod->mod.m_name));
+		    D(bug("[KRN] Removing module %s\n", mod->m_name));
 
 		    /* Free associated symbols */
-		    if (mod->mod.m_symbols) {
-			D(bug("[KRN] Removing symbol table 0x%p\n", mod->mod.m_symbols));
-			FreeVec(mod->mod.m_symbols);
+		    if (mod->m_symbols) {
+			D(bug("[KRN] Removing symbol table 0x%p\n", mod->m_symbols));
+			FreeVec(mod->m_symbols);
 		    }
 
 		    /* Free associated string tables */
