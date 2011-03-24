@@ -147,11 +147,21 @@ define modlist
 
     printf "---------------------------------------------------------------------\n"
     set $kicknode = Debug_KickList
-        
-    while ($kicknode != 0)
-        printf "%p %12s %2u %32s\n", $kicknode->s_lowest, $kicknode->s_name, $kicknode->s_num, $kicknode->s_module.m_name
 
-        set $kicknode = $kicknode->s_next
+    while ($kicknode != 0)
+        set $eh = $kicknode->eh
+        set $sh = $kicknode->sh
+        set $shnum = $eh->shnum
+
+        set $i = 0
+        while ($i < $shnum)
+            if ($sh->addr != 0) && ($sh->size != 0)
+		printf "%p %12s %2u %32s\n", $sh->addr, $i, $kicknode->Name
+	    end
+	    $sh++
+	    $i++
+	end
+        set $kicknode = $kicknode->Next
     end
 end
 document modlist
@@ -181,13 +191,26 @@ define findaddr
     	set $kicknode = Debug_KickList
         
 	while ($kicknode != 0) && $cont
+            set $eh = $kicknode->eh
+            set $sh = $kicknode->sh
+            set $shnum = $eh->shnum
 
-	    if $arg0 >= $kicknode->s_lowest && $arg0 <= $kicknode->s_highest
-                printf "Address found in %s.\nIf this is an executable, its .text section starts at %p.\n", $kicknode->s_module.m_name, $kicknode->s_lowest
+            set $i = 0
+            while ($i < $shnum) && $cont
+            	if ($sh->addr != 0) && (sh->size != 0)
+		    set $lowest  = $sh->addr
+		    set $highest = $sh->addr + $sh->size - 1
 
-                set $cont = 0
-            end
-            set $kicknode = $kicknode->s_next
+		    if $arg0 >= $lowest && $arg0 <= $highest
+		    	printf "Address found in %s in section number %d starting at %p.\n", $kicknode->Name, $i, $lowest
+                    	set $cont = 0
+                    end
+                end
+
+		$sh++
+		$i++
+	    end
+            set $kicknode = $kicknode->Next
         end
     end
 
@@ -318,35 +341,52 @@ define loadseg
   end
   if $step < 2
     set $kicknode = Debug_KickList
-        
+
     while ($kicknode != 0) && $step == 1
-      if $arg0 >= $kicknode->s_lowest && $arg0 <= $kicknode->s_highest
-        log_to_file segname.tmp on
-        printf "%s", $kicknode->s_module.m_name
-        end_log
-        shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
-        log_to_file loadseg.tmp on
-        printf "add-symbol-file "
-        end_log
-        shell head -n1 segname.tmp >>loadseg.tmp
-        log_to_file loadseg.tmp off
-        printf " %p", $kicknode->s_lowest
-        if $kicknode->s_next != 0
-          set $kicknode = $kicknode->s_next
-          while ($kicknode != 0) && $step < 5
-            if strcmp($kicknode->s_name, ".text") == 0
-              loop_break
+	set $eh = $kicknode->eh
+        set $sh = $kicknode->sh
+        set $shnum = $eh->shnum
+
+        set $i = 0
+        while ($i < $shnum) && $cont
+            if ($sh->addr != 0) && (sh->size != 0)
+		set $lowest  = $sh->addr
+		set $highest = $sh->addr + $sh->size - 1
+
+		if $arg0 >= $lowest && $arg0 <= $highest
+		    log_to_file segname.tmp on
+		    printf "%s", $kicknode->s_module.m_name
+		    end_log
+		    shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
+		    log_to_file loadseg.tmp on
+		    printf "add-symbol-file "
+		    end_log
+		    shell head -n1 segname.tmp >>loadseg.tmp
+		    log_to_file loadseg.tmp off
+		    printf " %p", $s_lowest
+
+# FIXME!!! This won't work, format changed.
+#        if $kicknode->s_next != 0
+#          set $kicknode = $kicknode->s_next
+#          while ($kicknode != 0) && $step < 5
+#            if strcmp($kicknode->s_name, ".text") == 0
+#              loop_break
+#            end
+#            printf " -s %s %p", $kicknode->s_name, $kicknode->s_lowest
+#            set $step = $step + 1
+#            set $kicknode = $kicknode->s_next
+#          end
+#        end
+		    end_log
+		    source loadseg.tmp
+		    loop_break
+                end
             end
-            printf " -s %s %p", $kicknode->s_name, $kicknode->s_lowest
-            set $step = $step + 1
-            set $kicknode = $kicknode->s_next
-          end
-        end
-        end_log
-        source loadseg.tmp
-        loop_break
-      end
-      set $kicknode = $kicknode->s_next
+
+	    $sh++
+	    $i++
+	end
+        set $kicknode = $kicknode->Next
     end
   end
   if $step < 2

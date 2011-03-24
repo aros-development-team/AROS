@@ -12,6 +12,6 @@ typedef int (*kernel_entry_fun_t)(struct TagItem *, ULONG);
 int AddKernelFile(char *name);
 void FreeKernelList(void);
 int GetKernelSize(size_t *ro_size, size_t *rw_size);
-int LoadKernel(volatile void *ptr_ro, volatile void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, dbg_seg_t **kernel_debug);
+int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug);
 
 #endif /*ELFLOADER_H_*/

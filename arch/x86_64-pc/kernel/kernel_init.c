@@ -133,14 +133,22 @@ static intptr_t len;
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
-    IPTR lowpages = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
+    IPTR lowpages;
     struct TagItem *tag;
+    struct vbe_mode *vbemode;
     IPTR _APICBase;
     UBYTE _APICID;
     UBYTE _EnableDebug = 0;
 
     /* Enable fxsave/fxrstor */ 
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
+
+    /* Initialize graphical output if present */
+    vbemode = (struct vbe_mode *)krnGetTagData(KRN_VBEModeInfo, 0, msg);
+    if (vbemode)
+    	vesa_init(vbemode->x_resolution, vbemode->y_resolution, vbemode->bits_per_pixel, (void *)vbemode->phys_base);
+
+    lowpages = krnGetTagData(KRN_MEMLower, 0, msg) * 1024;
 
     if ((__KernBootPrivate == NULL) && (lowpages > 0x2000) && ((lowpages - 0x2000) > PAGE_SIZE))
     {

@@ -71,7 +71,7 @@ static struct mb_mmap MemoryMap = {
 static struct KernelBSS __bss_track[256];
 
 /* gdb can pick up kickstart segments from here */
-static dbg_seg_t *Debug_KickList = NULL;
+static struct ELF_ModuleInfo *Debug_KickList = NULL;
 
 /* Kernel message */
 static struct TagItem km[] = {

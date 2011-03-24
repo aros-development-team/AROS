@@ -1,9 +1,18 @@
 typedef struct
 {
-    char	 *m_shstr;   /* Section headers table */
-    char	 *m_str;     /* Symbol names table    */
-    unsigned int  m_segcnt;  /* Count of segments     */
-    dbg_mod_t	  mod;
+    char *s_name;	/* Symbol name			*/
+    void *s_lowest;	/* Start address	     	*/
+    void *s_highest;	/* End address		     	*/
+} dbg_sym_t;
+
+typedef struct
+{
+    char	  *m_shstr;   /* Section headers table		*/
+    char	  *m_str;     /* Symbol names table		*/
+    unsigned int   m_segcnt;  /* Count of segments		*/
+    dbg_sym_t     *m_symbols; /* Array of associated symbols    */
+    unsigned long  m_symcnt;  /* Number of symbols in the array */
+    char	   m_name[1]; /* Module name, variable length	*/
 } module_t;
 
 struct segment
