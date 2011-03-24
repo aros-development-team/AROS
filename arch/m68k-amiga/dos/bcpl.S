@@ -112,7 +112,7 @@ BCPL_\name:
     jmp     (%a6)
     .endm
 
-#ifdef DEBUG
+#if DEBUG
 #define BCPL BCPLd
 #define BRTS BRTSd
 #else
@@ -370,7 +370,7 @@ BCPLd packlw         /*  20, ?? */
 BCPLd unpacklw       /*  24, ?? */
     BRTS
 
-BCPLd Res2           /*  28, LONG, is_set_flag, result_code */
+BCPL Res2           /*  28, LONG, is_set_flag, result_code */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     tst.l	%d1
@@ -617,7 +617,7 @@ BCPL readinput      /* a0, bytelength , &buf, bytelength */
 
     /* Wait on the process's pr_MsgPort for a packet.
      */
-BCPLd taskwait       /* a4, DosPacket @,  */
+BCPL taskwait       /* a4, DosPacket @,  */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     jsr		%a6@(42 * -6)	/* Dos/WaitPkt() */
@@ -629,7 +629,7 @@ BCPLd taskwait       /* a4, DosPacket @,  */
      * an allocated, but empty, memory location. 
      * Sent to the port of the current directory's handler.
      */
-BCPLd putPkt         /* a8, void, @DosPacket */
+BCPL putPkt         /* a8, void, @DosPacket */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     jsr		Dos_BCPL_putpkt
@@ -881,7 +881,7 @@ BCPL Output         /* 108, FileHandle @,  */
 BCPLd readn          /* 10c, void,  */
     BRTS
 
-BCPLnd newline        /* 110, void,  */
+BCPL newline        /* 110, void,  */
     moveq.l	#'\n',%d1
     jmp		BCPL_wrch
 
@@ -985,7 +985,7 @@ BCPL writen         /* 118, void, number */
     movem.l	%sp@+,%d2-%d4
     BRTS
 
-BCPLd writehex       /* 11c, void, number, width */
+BCPL writehex       /* 11c, void, number, width */
     movem.l	%d3-%d4,%sp@-
 
     move.l	#(3*4 + 2*4), %d0
@@ -997,7 +997,7 @@ BCPLd writehex       /* 11c, void, number, width */
     movem.l	%sp@+,%d3-%d4
     BRTS
 
-BCPLd writeoct       /* 120, void, number, width */
+BCPL writeoct       /* 120, void, number, width */
     movem.l	%d3-%d4,%sp@-
 
     move.l	#(3*4 + 2*4), %d0
@@ -1537,7 +1537,7 @@ BCPLd settime        /* 200, void, @timeval */
 
 /*      214 - contains CLI command */
 
-BCPLd findCLI        /* 218, CommandLineInterpreter ^,  */
+BCPL findCLI        /* 218, CommandLineInterpreter ^,  */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     jsr		%a6@(82 * -6)	/* DOS/Cli() */
