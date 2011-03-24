@@ -184,6 +184,12 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         /* something real, work out what it's relative to */
     	if (Strnicmp(name, "PROGDIR:", 8) == 0) {
     	    lock = pr->pr_HomeDir;
+    	    /* I am not sure if these are correct but AOS does return
+    	     * non-NULL PROGDIR: handle even if pr_HomeDir is cleared */
+    	    if (!lock)
+    	    	lock = pr->pr_CurrentDir;
+    	    if (!lock)
+    	    	lock = DOSBase->dl_SYSLock;
     	    fl = BADDR(lock);
             dp->dvp_Port = fl->fl_Task;
             dp->dvp_Lock = lock;
