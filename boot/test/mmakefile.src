@@ -1,0 +1,20 @@
+#   $Id:$
+#
+#   Makefile to make test boot module.
+
+include $(TOP)/config/make.cfg
+
+FILES  := testboot
+EXEDIR := $(BINDIR)/boot
+
+USER_CFLAGS  := -isystem $(SRCDIR)/boot/libconsole/include
+USER_LDFLAGS := -L $(GENDIR)/lib
+
+#MM boot-test : linklibs-console
+
+%build_prog mmake=boot-test \
+    progname=testboot targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="console rom" \
+    usestartup=no
+
+%common

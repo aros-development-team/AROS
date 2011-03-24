@@ -13,6 +13,7 @@ extern char *fb_Mirror;
 
 /* Common initialization */
 void con_InitMultiboot(struct multiboot *mb);
+void con_InitTagList(const struct TagItem *tags);
 void con_InitVESA(unsigned short version, struct vbe_mode *mode);
 void con_InitVGA(void);
 void con_InitSerial(char *cmdline);
