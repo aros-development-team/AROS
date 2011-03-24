@@ -58,6 +58,22 @@ static int KeymapInit(LIBBASETYPEPTR LIBBASE)
      */
     AddTail( &(LIBBASE->KeymapResource.kr_List), &(LIBBASE->DefKeymapNode->kn_Node));
 
+#ifdef __mc68000
+    /* Add ROM built-in usa and usa1 keymaps, keeps WB3.0 C:IPrefs quiet
+     * TODO: add correct keymaps instead of using default keymap
+     */
+    int i;
+    for(i = 0; i < 2; i++) {
+	struct KeyMapNode *kmn = AllocMem(sizeof(struct KeyMapNode), MEMF_CLEAR | MEMF_PUBLIC);
+	if (kmn) {
+	    kmn->kn_Node.ln_Name = i == 0 ? "usa" : "usa1";
+	    CopyMem(&def_km, &kmn->kn_KeyMap, sizeof (struct KeyMap));
+	    AddTail(&(LIBBASE->KeymapResource.kr_List), &kmn->kn_Node);
+	}
+    }
+#endif
+
+
     /* You would return NULL if the init failed */
     return TRUE;
 }
