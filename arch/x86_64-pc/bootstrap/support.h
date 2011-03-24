@@ -9,5 +9,6 @@ char *__bs_strstr (const char * str, const char * search);
 void *__bs_bzero(void *ptr, long len);
 void *__bs_memset(void *ptr, int c, long len);
 
+void kprintf(const char *, ...);
 
 #endif /*SUPPORT_H_*/

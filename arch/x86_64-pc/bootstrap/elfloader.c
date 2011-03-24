@@ -12,7 +12,6 @@
 #include <aros/kernel.h>
 
 #include "elfloader.h"
-#include "screen.h"
 #include "bootstrap.h"
 #include "support.h"
 

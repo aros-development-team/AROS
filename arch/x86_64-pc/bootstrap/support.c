@@ -6,9 +6,11 @@
     Lang: English
 */
 
+#include <string.h>
+
 #include "support.h"
 
-void *__bs_memset(void *ptr, int c, long len)
+void *memset(void *ptr, int c, size_t len)
 {
     void *p = ptr;
     long c32 = c | (c << 8) | (c << 16) | (c << 24);
@@ -34,7 +36,7 @@ void *__bs_memset(void *ptr, int c, long len)
 
 void *__bs_bzero(void *ptr, long len)
 {
-    return __bs_memset(ptr, 0, len);
+    return memset(ptr, 0, len);
 }
 
 void *__bs_memcpy(void *dest, const void *src, long len)
@@ -90,7 +92,7 @@ const char *__bs_remove_path(const char *in)
     return p;
 }
 
-char *__bs_strstr (const char * str, const char * search)
+char *strstr (const char * str, const char * search)
 {
     long done;
     long len_s = __bs_strlen(search);
@@ -125,4 +127,3 @@ char *__bs_strstr (const char * str, const char * search)
 
     return(0);
 }
-
