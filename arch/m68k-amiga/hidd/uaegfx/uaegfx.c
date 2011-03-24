@@ -388,9 +388,9 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
     OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, &cm);
     if (cm) {
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < 3; i++) {
 	    HIDDT_Color c;
-	    HIDD_CM_GetColor(cm, i, &c);
+	    HIDD_CM_GetColor(cm, i + 1, &c);
 	    SetSpriteColor(csd, i, c.red, c.green, c.blue);
 	}
     }
