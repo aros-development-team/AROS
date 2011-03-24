@@ -1,4 +1,9 @@
-/* Serial debug output for 16450 UART */
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: 16450 serial UART serial console.
+*/
 
 #include <bootconsole.h>
 

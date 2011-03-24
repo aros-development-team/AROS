@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: common.c 37743 2011-03-23 13:53:43Z sonic $
+    $Id$
 
     Desc: Graphical framebuffer console.
 */
@@ -27,7 +27,7 @@ static unsigned int fb_BytesPerPix  = 0; /* Bytes per pixel */
  */
 static unsigned int lineLen(const char *s)
 {
-    int len;
+    unsigned int len;
 
     for (len = 0; len < scr_Width; len++)
     {
