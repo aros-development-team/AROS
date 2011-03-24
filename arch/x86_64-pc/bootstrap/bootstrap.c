@@ -8,14 +8,16 @@
 
 //#define DEBUG
 //#define DEBUG_MEM
-#define BOOTSTRAP
+//#define DEBUG_MEM_TYPE MMAP_TYPE_RAM
 
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 
+#include <bootconsole.h>
+#include <string.h>
+
 #include "bootstrap.h"
 #include "cpu.h"
-#include "screen.h"
 #include "elfloader.h"
 #include "support.h"
 #include "vesa.h"
@@ -94,9 +96,9 @@ static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.
 static struct vbe_mode VBEModeInfo = {0};
 static struct vbe_controller VBEControllerInfo = {{0},0};
 
-struct TagItem km[KRN__TAGCOUNT * 4] __attribute__((used, section(".bss.aros.tables")));
+struct TagItem64 km[KRN__TAGCOUNT * 4] __attribute__((used, section(".bss.aros.tables")));
 
-struct TagItem *tag = &km[0];
+struct TagItem64 *tag = &km[0];
 
 static struct {
     void *off;
@@ -433,7 +435,8 @@ static void setupVESA(unsigned long vesa_base, char *vesa)
             else
                 palwidth = 6;
 
-	    /* TODO: re-initialise onscreen debug output here */
+	    /* Reinitialize our console */
+	    con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
 
             tag->ti_Tag = KRN_VBEModeInfo;
             tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
@@ -487,7 +490,10 @@ static void setupFB(struct multiboot *mb)
 
 	/*
 	 * AROS VESA driver supports only RGB framebuffer because we are
-	 * unlikely to have VGA palette registers for other cases
+	 * unlikely to have VGA palette registers for other cases.
+	 * FIXME: we have some pointer to palette registers. We just need to
+	 * pass it to the bootstrap and handle it there (how? Is it I/O port
+	 * address or memory-mapped I/O address?)
 	 */
     	if (mb->framebuffer_type != MB_FRAMEBUFFER_RGB)
     	    return;
@@ -526,7 +532,7 @@ static void setupFB(struct multiboot *mb)
 
 void change_kernel_address(const char *str)
 {
-    char *kern = __bs_strstr(str, "base_address=");
+    char *kern = strstr(str, "base_address=");
     if (kern)
     {
         unsigned long addr=0;
@@ -564,6 +570,7 @@ void change_kernel_address(const char *str)
 
 void prepare_message(struct multiboot *mb)
 {
+    D(kprintf("[BOOT] Kickstart 0x%p - 0x%p, protection 0x%p - 0x%p\n", kernel_lowest(), kernel_highest(), &_prot_lo, &_prot_hi));
     /*km.GRUBData.low = mb; */
 
     tag->ti_Tag = KRN_GDT;
@@ -620,14 +627,20 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 {
     struct multiboot *mb = (struct multiboot *)addr;/* Multiboot structure from GRUB */
     struct module *mod = (struct module *)__stack;  /* The list of modules at the bottom of stack */
-    char *vesa;
+    char *vesa = NULL;
     int module_count = 0;
     unsigned long vesa_size = 0;
     unsigned long vesa_base = 0;
     struct module *m;
     const char *cmdline = NULL;
 
-    initScreen(mb);
+    /*
+     * We are loaded at 0x200000, so we can use one megabyte at 0x100000
+     * as our working area. Let's put console mirror there.
+     * I hope every PC has memory at this address.
+     */
+    fb_Mirror = (char *)0x100000;
+    con_InitMultiboot(mb);
 
     kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
     D(kprintf("[BOOT] Stack @ %p, [%d bytes]\n", __stack, sizeof(__stack)));
@@ -640,18 +653,21 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     }
 
     set_base_address((void *)KERNEL_TARGET_ADDRESS, __bss_track);
-    change_kernel_address(cmdline);
-
-    vesa = __bs_strstr((const char *)mb->cmdline, "vesa=");
-    if (vesa)
+    
+    if (cmdline)
     {
-        vesa_size = (unsigned long)&_binary_vesa_size;
-    }
+    	change_kernel_address(cmdline);
 
-    tag->ti_Tag = KRN_CmdLine;
-    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)(mb->cmdline);
-    tag++;
-    tag->ti_Tag = TAG_DONE;
+    	vesa = strstr(cmdline, "vesa=");
+    	if (vesa)
+            vesa_size = (unsigned long)&_binary_vesa_size;
+
+	tag->ti_Tag = KRN_CmdLine;
+    	tag->ti_Data = KERNEL_OFFSET | (unsigned long)cmdline;
+
+    	tag++;
+    	tag->ti_Tag = TAG_DONE;
+    }
 
     if ((mb->mmap_addr) && (mb->mmap_length))
     {
@@ -661,7 +677,10 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 #ifdef DEBUG_MEM
         while (len >= sizeof(struct mb_mmap))
         {
-            kprintf("[BOOT] Type %d addr %llp len %llp\n", mmap->type, mmap->addr, mmap->len);
+#ifdef DEBUG_MEM_TYPE
+            if (mmap->type == DEBUG_MEM_TYPE)
+#endif
+		kprintf("[BOOT] Type %d addr %llp len %llp\n", mmap->type, mmap->addr, mmap->len);
 
             len -= mmap->size+4;
             mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
