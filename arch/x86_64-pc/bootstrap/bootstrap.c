@@ -295,7 +295,7 @@ static struct module *module_prepare(const char *s, const struct module *m, int 
         /* Module exists? Break here to allow overriding it */
 #if 0
 // FIXME: we do not know the names of ELF modules
-        if (__bs_strncmp(s, mo->name, __bs_strlen(s)) == 0)
+        if (strcmp(s, mo->name) == 0)
             break;
 #endif
         
@@ -406,19 +406,19 @@ static void setupVESA(unsigned long vesa_base, char *vesa)
 
         kprintf("[BOOT] setupVESA: vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size);
 #warning "TODO: Fix vesa.bin.o to support relocation (ouch)"
-        __bs_memcpy((void *)0x1000, vesa_start, vesa_size);
+        memcpy((void *)0x1000, vesa_start, vesa_size);
         kprintf("[BOOT] setupVESA: Module copied to 0x1000\n");
 
-        __bs_memcpy((void *)vesa_base, vesa_start, vesa_size);
+        memcpy((void *)vesa_base, vesa_start, vesa_size);
         kprintf("[BOOT] setupVESA: vesa.bin relocated to trampoline @ %p\n", vesa_base);
 
         kprintf("[BOOT] setupVESA: BestModeMatch for %dx%dx%d = ",x,y,d);
         mode = findMode(x,y,d);
 
         getModeInfo(mode);
-        __bs_memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
+        memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
         getControllerInfo();
-        __bs_memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
+        memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
 
 	/* Activate linear framebuffer is supported by the mode */
         if (VBEModeInfo.mode_attributes & VM_LINEAR_FB)

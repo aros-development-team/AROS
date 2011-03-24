@@ -7,9 +7,10 @@
 */
 
 //#define DEBUG
-#define BOOTSTRAP
 
 #include <aros/kernel.h>
+
+#include <string.h>
 
 #include "elfloader.h"
 #include "bootstrap.h"
@@ -49,7 +50,7 @@ void set_base_address(void *ptr, void *tracker)
  */
 static int read_block(void *file, long offset, void *dest, long length)
 {
-    __bs_memcpy(dest, (void *)((long)file + offset), length);
+    memcpy(dest, (void *)((long)file + offset), length);
     return 1;
 }
 
@@ -121,7 +122,7 @@ static int load_hunk(void *file, struct sheader *sh)
         return read_block(file, sh->offset, (void *)((unsigned long)sh->addr), sh->size);
     else
     {
-        __bs_bzero(ptr, sh->size);
+        memset(ptr, 0, sh->size);
         bss_tracker->addr = KERNEL_OFFSET | (unsigned long)ptr;
         bss_tracker->len = sh->size;
         bss_tracker++;
@@ -175,7 +176,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
             case SHN_ABS:
                 if (SysBase_sym == (void*)0)
                 {
-                    if (__bs_strncmp((char *)((unsigned long)sh[shsymtab->link].addr) + sym->name, "SysBase", 8) == 0)
+                    if (strcmp((char *)((unsigned long)sh[shsymtab->link].addr) + sym->name, "SysBase") == 0)
                     {
                         SysBase_sym = sym;
                         goto SysBase_yes;
