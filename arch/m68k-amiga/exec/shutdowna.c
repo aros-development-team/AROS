@@ -50,20 +50,11 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    extern void Early_ScreenCode(ULONG color_code);
-
-    /* TODO: On valid actions, we should probably
-     *       flush disk buffers and some other things.
-     *       Maybe Exec_DoResetCallbacks() takes care of that?
-     */
 
     switch (action) {
     case SD_ACTION_POWEROFF:
-    	Exec_DoResetCallbacks((struct IntExecBase *)SysBase);
-    	/* TODO: Actually power off. For now, just loop forever.
+    	/* No stock Amiga hardware is known to support this
     	 */
-    	Alert(AT_DeadEnd | AO_Workbench);
-    	for (;;);
     	break;
     case SD_ACTION_COLDREBOOT:
     	ColdReboot();
