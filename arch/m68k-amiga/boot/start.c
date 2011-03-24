@@ -755,6 +755,12 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	/* Seal up SysBase's critical variables */
 	SetSysBaseChkSum();
 
+	/* Set privilege violation trap - we
+	 * need this to support the Exec/Supervisor call
+	 * that we'll be using in doColdCapture.
+	 */
+	trap[8] = Exec_Supervisor_Trap;
+
 	/* Now that we have a valid SysBase,
 	 * we can call ColdCapture
 	 */
@@ -821,8 +827,8 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	/* Initialize IRQ subsystem */
 	AmigaIRQInit(SysBase);
 
-	/* Set privilege violation trap - we
-	 * need this to support the Exec/Supervisor call
+	/* Set privilege violation trap again.
+	 * AmigaIRQInit may have blown it away.
 	 */
 	trap[8] = Exec_Supervisor_Trap;
 
