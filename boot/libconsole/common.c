@@ -78,20 +78,6 @@ void con_InitSerial(char *cmdline)
     	use_serial = 0;
 }
 
-void con_Clear()
-{
-    switch (scr_Type)
-    {
-    case SCR_TEXT:
-    	txtClear();
-    	break;
-    
-    case SCR_GFX:
-    	gfxClear();
-    	break;
-    }
-}
-
 void con_Putc(char c)
 {
     if (use_serial)
@@ -104,11 +90,11 @@ void con_Putc(char c)
     switch (scr_Type)
     {
     case SCR_TEXT:
-    	txtPutc(c);
+    	txt_Putc(c);
     	break;
 
     case SCR_GFX:
-    	gfxPutc(c);
+    	fb_Putc(c);
     	break;
     }
 }

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: common.c 37743 2011-03-23 13:53:43Z sonic $
+    $Id$
 
     Desc: Parse multiboot data and init console.
 */
