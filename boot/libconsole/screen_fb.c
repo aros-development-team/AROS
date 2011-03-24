@@ -1,19 +1,28 @@
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id: common.c 37743 2011-03-23 13:53:43Z sonic $
+
+    Desc: Graphical framebuffer console.
+*/
+
+#include <bootconsole.h>
 #include <string.h>
 
 #include "console.h"
 
 /*
- * Framebuffer access can be extremely slow, so we use a scr_Mirror buffer.
- * Our scr_Mirror is a monochrome text-mode representation of the screen.
+ * Framebuffer access can be extremely slow, so we use a mirror buffer.
+ * Our mirror is a monochrome text-mode representation of the screen.
  * Unused positions are filled with zero bytes, this helps to determine
  * line lengths for faster scrolling.
- * We hope that machine's memory upper memory really starts after 1MB.
- * We are loaded at 2MB (see ldscript.lds).
  */
-char *scr_Mirror = NULL;
+char *fb_Mirror;
+
+static unsigned int fb_BytesPerLine = 0; /* Bytes per line  */
+static unsigned int fb_BytesPerPix  = 0; /* Bytes per pixel */
 
 /*
- * Calculate length of current line in the scr_Mirror buffer.
+ * Calculate length of current line in the fb_Mirror buffer.
  * Similar to strlen() but takes into account maximum line length.
  */
 static unsigned int lineLen(const char *s)
@@ -34,11 +43,10 @@ static void RenderChar(unsigned char c, unsigned int xc, unsigned int yc)
 {
     unsigned int x, y;
     const unsigned char *font = &fontData[c * fontHeight];
-    void *ptr = scr_FrameBuffer + scr_BytesPerLine * yc * fontHeight + scr_BytesPerPix * xc * fontWidth;
+    void *ptr = scr_FrameBuffer + fb_BytesPerLine * yc * fontHeight + fb_BytesPerPix * xc * fontWidth;
 
-    /* Store our character in the scr_Mirror buffer */
-    if (scr_Mirror)
-	scr_Mirror[scr_Width * yc + xc] = c;
+    /* Store our character in the mirror buffer */
+    fb_Mirror[scr_Width * yc + xc] = c;
 
     /* Render zero bytes as spaces (do not depend on particular font) */
     if (c == '\0')
@@ -56,7 +64,7 @@ static void RenderChar(unsigned char c, unsigned int xc, unsigned int yc)
             int val = (in & 0x80) ? -1 : 0;
 
 	    /* Draw the pixel. Do it in a single VRAM access, again to speed up */
-	    switch (scr_BytesPerPix)
+	    switch (fb_BytesPerPix)
 	    {
 	    case 4:
 	    	*((int *)p) = val;
@@ -71,40 +79,45 @@ static void RenderChar(unsigned char c, unsigned int xc, unsigned int yc)
 	    	break;
 	    }
 
-	    p += scr_BytesPerPix;
+	    p += fb_BytesPerPix;
 	    in <<= 1;
         }
-        ptr += scr_BytesPerLine;
+        ptr += fb_BytesPerLine;
     }
 }
 
-void gfxClear(void)
+void fb_Init(unsigned int width, unsigned int height, unsigned int depth, unsigned int pitch)
+{
+    scr_Width       = width / fontWidth;
+    scr_Height      = height / fontHeight;
+    fb_BytesPerPix  = depth >> 3;
+    fb_BytesPerLine = pitch;
+
+    fb_Clear();
+}
+
+void fb_Clear(void)
 {
     void *ptr = scr_FrameBuffer;
     unsigned int i;
 
+    /* Reset current position */
+    scr_XPos = 0;
+    scr_YPos = 0;
+
     /* Clear the framebuffer, line by line */
     for (i = 0; i < scr_Height * fontHeight; i++)
     {
-    	memset(ptr, 0, scr_BytesPerPix * scr_Width * fontWidth);
-    	ptr += scr_BytesPerLine;
+    	memset(ptr, 0, fb_BytesPerPix * scr_Width * fontWidth);
+    	ptr += fb_BytesPerLine;
     }
 
-    /* Clear scr_Mirror buffer */
-    memset(scr_Mirror, 0, scr_Width * scr_Height);
+    /* Clear mirror buffer */
+    memset(fb_Mirror, 0, scr_Width * scr_Height);
 }
 
-void gfxPutc(char chr)
+void fb_Putc(char chr)
 {
-    /*
-     * If the output went past the last line, do nothing.
-     * This means that we stop printing when we have no mirror buffer
-     * and the whole screen if filled up.
-     * This is good for displaying alerts.
-     */
-    if (scr_YPos >= scr_Height)
-    	return;
-
     if (chr == '\n')
     {
     	scr_XPos = 0;
@@ -114,7 +127,7 @@ void gfxPutc(char chr)
     {
     	/*
     	 * Replace zero characters with '?', since zero bytes mark
-    	 * unused space in the scr_Mirror buffer, and they would screw us up.
+    	 * unused space in the fb_Mirror buffer, and they would screw us up.
     	 */
     	if (chr == '\0')
     	    chr = '?';
@@ -131,19 +144,20 @@ void gfxPutc(char chr)
             scr_YPos++;
     	}
     }
-    if ((scr_YPos >= scr_Height) && scr_Mirror)
+
+    if (scr_YPos >= scr_Height)
     {
         /* destLen contains length of line being erased */
-    	unsigned int destLen = lineLen(scr_Mirror);
+    	unsigned int destLen = lineLen(fb_Mirror);
     	/* ptr contains address of line being scrolled */
-    	char *ptr = scr_Mirror + scr_Width;
+    	char *ptr = fb_Mirror + scr_Width;
     	unsigned int xc, yc;
 
 	/* Reset line number */
 	scr_YPos = scr_Height - 1;
 
 	/*
-	 * Reprint the whole scr_Mirror (starting from the second line) at (0, 0).
+	 * Reprint the whole fb_Mirror (starting from the second line) at (0, 0).
 	 * Update only used parts in order to speed up the scrolling.
 	 */
         for (yc = 0; yc < scr_YPos; yc++)
@@ -163,7 +177,7 @@ void gfxPutc(char chr)
             for (xc = 0; xc < destLen; xc++)
             	RenderChar(ptr[xc], xc, yc);
 
-	    /* Go to the next line in scr_Mirror buffer */
+	    /* Go to the next line in fb_Mirror buffer */
 	    ptr += scr_Width;
             /* Source becomes destination */
             destLen = srcLen;

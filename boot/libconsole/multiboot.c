@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id: common.c 37743 2011-03-23 13:53:43Z sonic $
+
+    Desc: Parse multiboot data and init console.
+*/
+
 #include <aros/multiboot.h>
 #include <hardware/vbe.h>
 
@@ -13,9 +20,7 @@ void con_InitMultiboot(struct multiboot *mb)
     if (mb->flags & MB_FLAGS_FB)
     {
     	/* Framebuffer was given, use it */
-	scr_FrameBuffer  = (void *)(unsigned long)mb->framebuffer_addr;
-	scr_BytesPerLine = mb->framebuffer_pitch;
-	scr_BytesPerPix  = mb->framebuffer_bpp >> 3;
+	scr_FrameBuffer = (void *)(unsigned long)mb->framebuffer_addr;
 
     	switch (mb->framebuffer_type)
     	{
@@ -24,14 +29,13 @@ void con_InitMultiboot(struct multiboot *mb)
 	   scr_Width  = mb->framebuffer_width;
 	   scr_Height = mb->framebuffer_height;
 	   scr_Type   = SCR_TEXT;
+	   txt_Clear();
 	   break;
 
 	default:
 	   /* Graphical framebuffer, size in pixels */
-	   scr_Width  = mb->framebuffer_width  / fontWidth;
-	   scr_Height = mb->framebuffer_height / fontHeight;
-	   scr_Type   = SCR_GFX;
-	   scr_Mirror = boot_AllocMem(scr_Width * scr_Height);
+	   scr_Type = SCR_GFX;
+	   fb_Init(mb->framebuffer_width, mb->framebuffer_height, mb->framebuffer_bpp, mb->framebuffer_pitch);
 	}
     }
 /*
@@ -49,6 +53,4 @@ void con_InitMultiboot(struct multiboot *mb)
     else
         /* Fallback to default, VGA text mode */
     	con_InitVGA();
-
-    con_Clear();
 }
