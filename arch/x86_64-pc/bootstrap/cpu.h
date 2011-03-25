@@ -2,7 +2,7 @@
 #define CPU_H_
 
 /*
-    Copyright (C) 2006 The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2011 The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Nice macros for low-level assembly support in C/C++ languages
@@ -98,11 +98,15 @@ struct int_gate_64bit {
     unsigned int       __pad1;
 } __attribute__((packed));
 
-struct segment_desc {
-    unsigned short       limit_low;
-    unsigned short       base_low;
-    unsigned    base_mid:8, type:5, dpl:2, p:1;
-    unsigned    limit_high:4, avl:1, l:1, d:1, g:1, base_high:8;
+/* Segment descriptor in the GDT */
+struct segment_desc
+{
+    unsigned short limit_low;
+    unsigned short base_low;
+    unsigned char  base_mid;
+    unsigned       type:5, dpl:2, p:1;			/* Access byte     */
+    unsigned       limit_high:4, avl:1, l:1, d:1, g:1;	/* Limit and flags */
+    unsigned char  base_high;
 } __attribute__((packed));
 
 struct segment_ext {
@@ -129,8 +133,9 @@ struct tss_64bit {
     unsigned int       bmp[];
 } __attribute__((packed));
 
-struct PML4E {
-    unsigned p:1,rw:1,us:1,pwt:1,pcd:1,a:1,__pad0:1,mbz:2,avl:3,base_low:20;
+struct PML4E
+{
+    unsigned p:1,rw:1,us:1,pwt:1,pcd:1,a:1,mbz:3,avl:3,base_low:20;
     unsigned base_high:20,avail:11,nx:1;
 } __attribute__((packed));
 
