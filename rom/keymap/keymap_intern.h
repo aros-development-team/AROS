@@ -73,7 +73,6 @@ struct KeymapBase
 {
     struct Library 		 LibNode;
     struct KeyMap		*DefaultKeymap;
-    struct KeyMapNode		*DefKeymapNode;
     struct KeyMapResource	 KeymapResource;
 };
 
