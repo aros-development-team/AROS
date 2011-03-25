@@ -126,6 +126,7 @@ AROS_LH2(int, KrnDecodeLocationA,
     struct TagItem *tag;
     void *symaddr = NULL;
     int ret = 0;
+    int super;
 
     D(bug("[KRN] KrnDecodeLocationA(0x%p)\n", addr));
 
@@ -175,7 +176,8 @@ AROS_LH2(int, KrnDecodeLocationA,
     }
 
     /* We can be called in supervisor mode. No semaphores in the case! */
-    if (!KrnIsSuper())
+    super = KrnIsSuper();
+    if (!super)
 	ObtainSemaphoreShared(&KernelBase->kb_ModSem);
 
     ForeachNode(&KernelBase->kb_Modules, seg)
@@ -203,7 +205,7 @@ AROS_LH2(int, KrnDecodeLocationA,
 	}
     }
 
-    if (!KrnIsSuper())
+    if (!super)
 	ReleaseSemaphore(&KernelBase->kb_ModSem);
 
     /* Try to search kernel debug information if found nothing */
