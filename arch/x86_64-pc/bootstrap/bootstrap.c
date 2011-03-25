@@ -312,7 +312,7 @@ static void setupFB(struct multiboot *mb)
     {
     	kprintf("[BOOT] Got framebuffer display %dx%dx%d from the bootstrap\n",
     		mb->framebuffer_width, mb->framebuffer_height, mb->framebuffer_bpp);
-	D(kprintf("[BOOT] Type %d, %d bytes per line\n", mb->framebuffer_type, mb->framebuffer_pitch));
+	D(kprintf("[BOOT] Address 0x%llp, type %d, %d bytes per line\n", mb->framebuffer_addr, mb->framebuffer_type, mb->framebuffer_pitch));
 
 	/*
 	 * AROS VESA driver supports only RGB framebuffer because we are
