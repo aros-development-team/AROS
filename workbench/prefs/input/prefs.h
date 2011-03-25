@@ -34,7 +34,8 @@
 #define WORD_TO_ARRAY(x,y)  (y)[0] = (UBYTE)(ULONG)((x) >>  8UL); \
                             (y)[1] = (UBYTE)(ULONG)((x));
 
-#define DEFAULT_KEYMAP "amiga_usa0"
+/* Name of default keymap, the same as on AmigaOS, for compatibility */
+#define DEFAULT_KEYMAP "usa"
 
 /*********************************************************************************************/
 
