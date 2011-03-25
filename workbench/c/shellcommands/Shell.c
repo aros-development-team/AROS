@@ -2202,7 +2202,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss, struct InterpreterSt
         #endif
 	{
 	    struct FileInfoBlock fib;
-	    if (Examine(file, &fib) && fib.fib_Protection & FIBF_SCRIPT)
+	    if (ExamineFH(file, &fib) && fib.fib_Protection & FIBF_SCRIPT)
 	    {
         	commandSeg = LoadSeg("C:Execute");
 		if (commandSeg)
