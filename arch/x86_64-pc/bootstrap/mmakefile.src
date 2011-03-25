@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 TARGETDIR   := $(GENDIR)/$(CURDIR)
 KOBJS	    :=
-FILES	    := bootstrap elfloader support
+FILES	    := bootstrap elfloader cpu support
 BOOT_LIBDIR := $(GENDIR)/lib32
 
 USER_CFLAGS  := -isystem $(SRCDIR)/boot/libconsole/include -DMULTIBOOT_64BIT
