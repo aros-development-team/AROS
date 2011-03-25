@@ -57,6 +57,7 @@ struct WorkbenchBase
     struct SignalSemaphore  wb_BaseSemaphore;           /* Arbitrates library base access */
     
     BOOL                    wb_Initialized;             /* Has the library been intialized in libOpen? */
+    BOOL                    wb_WBStarted;               /* StartWorkbench() started WB? */
 };
 
 #define LB(lb)          ((struct WorkbenchBase *) (lb))
