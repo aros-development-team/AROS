@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Library header for keymap
@@ -26,6 +26,25 @@ struct KeymapBase *DebugKeymapBase;
 
 /****************************************************************************************/
 
+static struct KeyMapNode *AddKeymap(char *name, struct KeyMap *data, struct KeymapBase *LIBBASE)
+{
+    struct KeyMapNode *kmn = AllocMem(sizeof(struct KeyMapNode), MEMF_CLEAR | MEMF_PUBLIC);
+
+    if (kmn)
+    {
+	kmn->kn_Node.ln_Name = name;
+	CopyMem(data, &kmn->kn_KeyMap, sizeof(struct KeyMap));
+
+	/*
+	 * We are being called under Forbid(), so I don't have to arbitrate
+	 * That notwithstanding, if keymap resource or exec library loading
+	 * ever become semaphore based, there may be some problems.
+	 */
+	AddTail(&(LIBBASE->KeymapResource.kr_List), &kmn->kn_Node);
+    }
+    return kmn;
+}
+
 static int KeymapInit(LIBBASETYPEPTR LIBBASE)
 {
 #if DEBUG
@@ -34,47 +53,23 @@ static int KeymapInit(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->DefaultKeymap = &def_km;
 
-    /* Initialize and add the keymap.resource */
-    
-    LIBBASE->DefKeymapNode = AllocMem(sizeof (struct KeyMapNode), MEMF_PUBLIC);
-    if (!LIBBASE->DefKeymapNode)
-    	return (NULL);
-
-    /* Initialise the keymap.resource */
+    /* Initialize and add the keymap.resource */    
     LIBBASE->KeymapResource.kr_Node.ln_Type = NT_RESOURCE;
     LIBBASE->KeymapResource.kr_Node.ln_Name = "keymap.resource";
     NEWLIST( &(LIBBASE->KeymapResource.kr_List) );
     AddResource(&LIBBASE->KeymapResource);
-    	
-    /* Copy default keymap into DefKeymapNode */
-    CopyMem(&def_km, &(LIBBASE->DefKeymapNode->kn_KeyMap), sizeof (struct KeyMap));
-    
-    LIBBASE->DefKeymapNode->kn_Node.ln_Name = "default keymap";
 
-    /*
-	We are being called under Forbid(), so I don't have to arbitrate
-	That notwithstanding, if keymap resource or exec library loading
-	ever become semaphore based, there may be some problems.
-     */
-    AddTail( &(LIBBASE->KeymapResource.kr_List), &(LIBBASE->DefKeymapNode->kn_Node));
+    /* AmigaOS default built-in keymap has "usa" name */
+    if (!AddKeymap("usa", &def_km, LIBBASE))
+    	return FALSE;
 
 #ifdef __mc68000
-    /* Add ROM built-in usa and usa1 keymaps, keeps WB3.0 C:IPrefs quiet
-     * TODO: add correct keymaps instead of using default keymap
+    /* Add ROM built-in usa1 keymap, keeps WB3.0 C:IPrefs quiet
+     * TODO: add correct keymap instead of using default keymap
      */
-    int i;
-    for(i = 0; i < 2; i++) {
-	struct KeyMapNode *kmn = AllocMem(sizeof(struct KeyMapNode), MEMF_CLEAR | MEMF_PUBLIC);
-	if (kmn) {
-	    kmn->kn_Node.ln_Name = i == 0 ? "usa" : "usa1";
-	    CopyMem(&def_km, &kmn->kn_KeyMap, sizeof (struct KeyMap));
-	    AddTail(&(LIBBASE->KeymapResource.kr_List), &kmn->kn_Node);
-	}
-    }
+    AddKeymap(&def_km, "usa1", LIBBASE);
 #endif
 
-
-    /* You would return NULL if the init failed */
     return TRUE;
 }
 
