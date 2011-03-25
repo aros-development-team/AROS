@@ -9,6 +9,7 @@
 #include <bootconsole.h>
 #include <stdarg.h>
 
+#include "cpu.h"
 #include "support.h"
 
 const char *__bs_remove_path(const char *in)
@@ -21,6 +22,15 @@ const char *__bs_remove_path(const char *in)
     while (p > in && p[-1] != '/' && p[-1] != ':') p--;
 
     return p;
+}
+
+void panic(const char *str)
+{
+    kprintf("[BOOT] PANIC! %s\n", str);
+    kprintf("HALT!\n");
+
+    for(;;)
+    	HALT;
 }
 
 static unsigned int format_int (char *buf, char base, int d)

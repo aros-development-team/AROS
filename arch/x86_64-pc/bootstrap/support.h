@@ -2,6 +2,7 @@
 #define SUPPORT_H_
 
 const char *__bs_remove_path(const char *in);
+void panic(const char *);
 void kprintf(const char *, ...);
 
 #endif /*SUPPORT_H_*/

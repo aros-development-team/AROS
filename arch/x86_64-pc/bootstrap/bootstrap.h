@@ -47,6 +47,9 @@ struct TagItem64
     unsigned long long ti_Data;
 };
 
+/* A pointer used for building boot taglist */
+extern struct TagItem64 *tag;
+
 /* The target base address of 64-bit kernel */
 #define KERNEL_TARGET_ADDRESS   0x01000000
 
@@ -61,6 +64,9 @@ struct TagItem64
 //extern void *_binary_aros_o_start;
 extern void *_binary_vesa_start;
 extern unsigned long _binary_vesa_size;
+
+void setup_mmu(void *kick_base);
+void kick(struct TagItem64 *km);
 
 #if defined(__i386__) || defined(__x86_64__)
     #define LONG2BE(v)  ({ unsigned int __v32; asm volatile("bswap %0":"=a"(__v32):"0"((v))); __v32; })

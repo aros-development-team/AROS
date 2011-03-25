@@ -87,6 +87,8 @@
 #define _EFER_NXE   (1 << _EFER_NXE_B)
 #define _EFER_FFXSR (1 << _EFER_FFXSR_B)
 
+#define HALT asm volatile("hlt")
+
 struct int_gate_64bit {
     unsigned short       offset_low;
     unsigned short       selector;
