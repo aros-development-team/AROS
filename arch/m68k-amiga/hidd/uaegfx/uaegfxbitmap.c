@@ -117,11 +117,9 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     DB2(bug("UAEGFXBitmap__Root__Dispose %x bm=%x\n", o, data));
     if (data->disp)
     	DB2(bug("removing displayed bitmap?!\n"));
-   
-    if (data->palette)
-    	FreeVec(data->palette);
-    if (data->VideoData)
-    	Deallocate(csd->vmem, data->VideoData, data->bytesperline * data->height);
+    
+    FreeVec(data->palette);
+    Deallocate(csd->vmem, data->VideoData, data->bytesperline * data->height);
     
     OOP_DoSuperMethod(cl, o, msg);
     
