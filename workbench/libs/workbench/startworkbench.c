@@ -55,15 +55,14 @@
   
     /* Start Workbook, if we have it. */
     D(bug("StartWorkbench: ptr = %p\n", ptr));
-    if ((DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS))) {
+    Forbid();
+    if (!WorkbenchBase->wb_WBStarted && (DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS))) {
     	struct Segment *seg;
     	BPTR wbseg = 0;
 
-    	Forbid();
     	seg = FindSegment("Workbook", NULL, TRUE);
     	if (seg != NULL)
     	    wbseg = seg->seg_Seg;
-    	Permit();
     	D(bug("StartWorkbench: DOSBase = %p, Segment = %p\n", DOSBase, BADDR(wbseg)));
     	if (wbseg) {
 	    struct TagItem tags[] =
@@ -76,11 +75,14 @@
 		{ NP_Priority, 1 },
 		{ TAG_END , 0 }
 	    };
-     	    if (CreateNewProc((struct TagItem *)tags))
+     	    if (CreateNewProc((struct TagItem *)tags)) {
      	    	rc = TRUE;
+     	    	WorkbenchBase->wb_WBStarted = TRUE;
+     	    }
     	}
+    	CloseLibrary(DOSBase);
     }
-
+    Permit();
     return rc;
         
     AROS_LIBFUNC_EXIT
