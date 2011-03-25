@@ -131,7 +131,7 @@ static void *copy_data(void *src, void *addr, unsigned long len)
 }
 
 /* Perform relocations of given section */
-static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, uintptr_t virt)
+static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
 {
   struct sheader *shrel    = &sh[shrel_idx];
   struct sheader *shsymtab = &sh[shrel->link];
@@ -146,7 +146,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, ui
   
   struct symbol *SysBase_sym = NULL;
   
-  DREL(fprintf(stderr, "[ELF Loader] performing %d relocations, virtual address %p\n", numrel, virt));
+  DREL(fprintf(stderr, "[ELF Loader] performing %d relocations\n", numrel));
   
   for (i=0; i<numrel; i++, rel++)
   {
@@ -177,28 +177,32 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, ui
 	    return 0;
 
 	case SHN_ABS:
-	    if (SysBase_sym == NULL) {
-	        if (strncmp(name, "SysBase", 8) == 0) {
+	    if (SysBase_sym == NULL)
+	    {
+	        if (strncmp(name, "SysBase", 8) == 0)
+	        {
 		    DREL(fprintf(stderr, "[ELF Loader] got SysBase\n"));
-			SysBase_sym = sym;
-			goto SysBase_yes;
-		} else
+		    SysBase_sym = sym;
+		    goto SysBase_yes;
+		}
+		else
 		    goto SysBase_no;
-	    } else if (SysBase_sym == sym) {
+	    }
+	    else if (SysBase_sym == sym)
+	    {
 SysBase_yes:    s = (uintptr_t)&SysBase;
-	    } else
+	    }
+	    else
+	    {
 SysBase_no:     s = sym->value;
+	    }
 	    break;
 		
 	default:
 	    s = (uintptr_t)sh[sym->shindex].addr + sym->value;
 	}
 
-	s += virt;
-
-        DREL(fprintf(stderr, "[ELF Loader] Relocating symbol "));
-        DREL(if (sym->name) fprintf(stderr, "%s", name); else fprintf(stderr, "<unknown>"));
-        DREL(fprintf(stderr, " type "));
+        DREL(fprintf(stderr, "[ELF Loader] Relocating symbol %s type ", sym->name ? name : "<unknown>"));
 	switch (ELF_R_TYPE(rel->info))
 	{
 #ifdef __i386__
@@ -540,7 +544,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 	    {
 		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
 
-		if (!sh[i].addr || !relocate(&n->eh, sh, i, 0))
+		if (!sh[i].addr || !relocate(&n->eh, sh, i))
 		{
 		    DisplayError("%s: Relocation error in hunk %u!\n", n->Name, i);
 		    return 0;
