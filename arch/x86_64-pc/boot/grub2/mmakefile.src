@@ -13,7 +13,7 @@ bootloader-grub2gfx-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg
 ifeq ($(AROS_TARGET_VARIANT),efi)
     HEAD := grub-efi.cfg.head
 else
-    HEAD := grum.cfg.head
+    HEAD := grub.cfg.head
 endif
 
 $(BINDIR)/boot/grub/grub.cfg: $(HEAD) grub.cfg.tail
