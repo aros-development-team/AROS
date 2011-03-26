@@ -58,5 +58,7 @@ int main(int argc, char **argv)
     bug("====================================\n");
     bug("Summary: ok %d warn %d error %d fail %d\n", okcnt, warncnt, errorcnt, failcnt);
 
+    Close(scripthandle);
+
     return 0;
 }
