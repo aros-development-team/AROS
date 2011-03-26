@@ -146,16 +146,23 @@ static BOOL wbMenuEnable(Class *cl, Object *obj, int id, BOOL onoff)
     return rc;
 }
 
-
-static IPTR wbIgnoreInfo_Hook(struct Hook *hook, struct ExAllData *ead, LONG *type)
+AROS_UFH3(ULONG, wbIgnoreInfo_Hook,
+    AROS_UFHA(struct Hook*, hook, A0),
+    AROS_UFHA(struct ExAllData*, ead, A1),
+    AROS_UFHA(LONG *, type, A2))
 {
     int i;
 
-    i = strlen(ead->ed_Name);
-    if (i >= 5 && strcmp(&ead->ed_Name[i-5],".info")==0)
-    	return FALSE;
+    AROS_USERFUNC_INIT
 
+    i = strlen(ead->ed_Name);
+    if (i >= 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0)
+    	return FALSE;
+    if (stricmp(ead->ed_Name, ".backdrop") == 0)
+    	return FALSE;
     return TRUE;
+    
+    AROS_USERFUNC_EXIT
 }
 
 static void wbAddFiles(Class *cl, Object *obj, CONST_STRPTR path)
