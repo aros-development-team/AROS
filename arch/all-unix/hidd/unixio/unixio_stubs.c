@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -10,7 +10,6 @@
 #include <hidd/unixio.h>
 #include <oop/oop.h>
 #include <proto/oop.h>
-#include <aros/debug.h>
 
 /************
 **  Stubs  **
