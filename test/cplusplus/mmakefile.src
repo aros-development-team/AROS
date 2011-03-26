@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 
 # Select target C++ compiler
 ifeq ($(TARGET_CXX),)
-  TARGET_CXX := $(TOOLDIR)/$(AROS_TARGET_CPU)-aros-g++
+  TARGET_CXX := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-g++
 else
   TARGET_CXX := $(TARGET_CXX) -specs=$(GENDIR)/config/specs
 endif

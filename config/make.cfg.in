@@ -1,4 +1,4 @@
-# Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+# Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Static makefile rule file for AROS.
@@ -13,12 +13,12 @@ endif
 HOSTDIR     := $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 TOOLDIR     := $(HOSTDIR)/tools
 
-HOSTGENDIR      := $(HOSTDIR)/gen
+HOSTGENDIR  := $(HOSTDIR)/gen
 
 # All files corresponding to a specific target go here.
 TARGETDIR   := $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)
 
-GENDIR               := $(TARGETDIR)/gen
+GENDIR      := $(TARGETDIR)/gen
 
 -include $(GENDIR)/config/make.defaults
 -include $(GENDIR)/config/make.opts
@@ -27,15 +27,18 @@ GENDIR               := $(TARGETDIR)/gen
 include $(GENDIR)/config/target.cfg
 include $(HOSTGENDIR)/config/host.cfg
 
+# Cross tools installation directory.
+CROSSTOOLSDIR        := $(TOOLDIR)/crosstools
+
 # Files downloaded from the net are put here
-PORTSSOURCEDIR    := @AROS_PORTSSRCDIR@
-PORTSDIR    := $(TARGETDIR)/Ports
+PORTSSOURCEDIR       := @AROS_PORTSSRCDIR@
+PORTSDIR             := $(TARGETDIR)/Ports
 
 # Distributable Files we generate are put here
-DISTDIR    := @AROS_BUILDDIR_UNIX@/distfiles
+DISTDIR              := @AROS_BUILDDIR_UNIX@/distfiles
 
 # File for AROS gcc cross compiler spec file
-SPECS       := $(GENDIR)/config/specs
+SPECS                := $(GENDIR)/config/specs
 
 # This is the directory structure for an AROS system.
 AROSDIR	             := $(TARGETDIR)/AROS
@@ -119,9 +122,9 @@ AROS_CC         := $(TARGET_CC)
 AROS_AS         := $(TARGET_AS)
 AROS_LD         := $(TARGET_LD)
 
-STRIP       := $(TARGET_STRIP)
+STRIP           := $(TARGET_STRIP)
 
-CALL		:= env AROS_HOST_ARCH=$(AROS_HOST_ARCH) AROS_HOST_CPU=$(AROS_HOST_CPU) AROS_TARGET_ARCH=$(AROS_TARGET_ARCH) AROS_TARGET_CPU=$(AROS_TARGET_CPU) AROS_TARGET_VARIANT=$(AROS_TARGET_VARIANT)
+CALL            := env AROS_HOST_ARCH=$(AROS_HOST_ARCH) AROS_HOST_CPU=$(AROS_HOST_CPU) AROS_TARGET_ARCH=$(AROS_TARGET_ARCH) AROS_TARGET_CPU=$(AROS_TARGET_CPU) AROS_TARGET_VARIANT=$(AROS_TARGET_VARIANT)
 
 # At the moment we have two copies of the includes...
 # This is the AROS includes, minus clib/mlib.
@@ -169,8 +172,9 @@ KOBJSDIR        :=      $(GENDIR)/kobjs
 # the build system needs to have some tools in the PATH
 
 ifeq ($(AROS_PATH_SET),)
-    TMP_TOOLDIR := $(shell echo $(TOOLDIR) | sed 's/^\(.\):\//\/\1\//')
-    PATH := $(TMP_TOOLDIR):$(TMP_TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX):$(PATH)
+    TMP_TOOLDIR       := $(shell echo $(TOOLDIR) | sed 's/^\(.\):\//\/\1\//')
+    TMP_CROSSTOOLSDIR := $(shell echo $(CROSSTOOLSDIR) | sed 's/^\(.\):\//\/\1\//')
+    PATH := $(TMP_CROSSTOOLSDIR):$(TMP_TOOLDIR):$(TMP_TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX):$(PATH)
     AROS_PATH_SET := yes
     export PATH AROS_PATH_SET
 endif

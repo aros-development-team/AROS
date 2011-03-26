@@ -19,13 +19,13 @@ GNU_REPOSITORY := gnu://
 %fetch_and_build mmake=tools-crosstools-binutils package=binutils version=$(BINUTILS_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/binutils" \
 	patch=yes \
-	prefix="$(TOOLDIR)" \
-	extraoptions="--target=$(AROS_TARGET_CPU)-aros --bindir=$(TOOLDIR) --disable-werror"
+	prefix="$(CROSSTOOLSDIR)" \
+	extraoptions="--target=$(AROS_TARGET_CPU)-aros -bindir=$(CROSSTOOLSDIR) --disable-werror"
 
 HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
 %fetch_and_build mmake=tools-crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION)" \
 	patch=yes \
-	prefix="$(TOOLDIR)" \
-	extraoptions="--target=$(AROS_TARGET_CPU)-aros --bindir=$(TOOLDIR) --enable-languages=$(GCC_LANGUAGES) --enable-long-long --enable-version-specific-runtime-libs $(GCC_EXTRA_FLAGS) --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib"
+	prefix="$(CROSSTOOLSDIR)" \
+	extraoptions="--target=$(AROS_TARGET_CPU)-aros -bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) --enable-long-long --enable-version-specific-runtime-libs $(GCC_EXTRA_FLAGS) --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib"
