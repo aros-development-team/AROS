@@ -2,14 +2,14 @@
 #define	_UTIME_H_
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file utime.h
     Lang: english
 */
 
-#include <sys/types/time_t.h>
+#include <aros/types/time_t.h>
 
 struct utimbuf {
 	time_t actime;		/* Access time */

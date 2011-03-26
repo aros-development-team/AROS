@@ -28,6 +28,7 @@
 #include LC_LIBDEFS_FILE
 
 #include <string.h>
+#include <stddef.h>
 
 #undef SysBase
 

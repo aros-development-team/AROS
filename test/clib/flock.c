@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <exec/types.h>
 #include <proto/dos.h>
 #include <dos/dos.h>

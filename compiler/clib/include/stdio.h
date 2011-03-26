@@ -2,22 +2,20 @@
 #define _STDIO_H_
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file stdio.h
     Lang: english
 */
-#include <sys/_types.h>
 #include <sys/cdefs.h>
 #include <sys/arosc.h>
 
-#define __need_size_t
-#define __need_NULL 
-#include <stddef.h>
-#include <sys/types/off_t.h>
+#include <aros/types/null.h>
+#include <aros/types/size_t.h>
+#include <aros/types/off_t.h>
 
-typedef __off_t fpos_t;
+typedef off_t fpos_t;
 
 /*
     We are supposed to declare it, without including the file.
@@ -70,9 +68,7 @@ typedef __off_t fpos_t;
 #   define _STDIO_APPEND 0x0010L
 #endif
 
-#define SEEK_SET    0
-#define SEEK_CUR    1
-#define SEEK_END    2
+#include <aros/types/seek.h>            /* SEEK_SET, SEEK_CUR and SEEK_END */
 
 #define stdin  (__get_arosc_userdata()->acud_stdin)
 #define stdout (__get_arosc_userdata()->acud_stdout)

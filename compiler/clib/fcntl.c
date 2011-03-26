@@ -1,13 +1,13 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <proto/dos.h>
 
-#include <fcntl.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <unistd.h>
 
 #include "__errno.h"
 #include "__fdesc.h"
@@ -15,6 +15,8 @@
 /*****************************************************************************
 
     NAME */
+#include <fcntl.h>
+
 	int fcntl(
 
 /*  SYNOPSIS */

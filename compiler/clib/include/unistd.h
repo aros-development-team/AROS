@@ -2,7 +2,7 @@
 #define _UNISTD_H_
 
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX header file unistd.h
@@ -111,17 +111,15 @@
 #define _XOPEN_UNIX                         -1
 #endif
 
-#define __need_NULL
-#define __need_size_t
-#include <stddef.h>
-
-#include <sys/types/gid_t.h>
-#include <sys/types/intptr_t.h>
-#include <sys/types/off_t.h>
-#include <sys/types/pid_t.h>
-#include <sys/types/ssize_t.h>
-#include <sys/types/uid_t.h>
-#include <sys/types/useconds_t.h>
+#include <aros/types/null.h>
+#include <aros/types/size_t.h>
+#include <aros/types/gid_t.h>
+#include <aros/types/intptr_t.h>
+#include <aros/types/off_t.h>
+#include <aros/types/pid_t.h>
+#include <aros/types/ssize_t.h>
+#include <aros/types/uid_t.h>
+#include <aros/types/useconds_t.h>
 
 /*
     Values for the second argument to access.
@@ -136,9 +134,7 @@
     XXX Arguments for confstr()
 */
 
-#define SEEK_SET    0           /* standard input file descriptor */
-#define SEEK_CUR    1           /* standard output file descriptor */
-#define SEEK_END    2           /* standard error file descriptor */
+#include <aros/types/seek.h>
 
 #if __XSI_VISIBLE || __POSIX_VISIBLE >= 200112
 #define F_LOCK      0

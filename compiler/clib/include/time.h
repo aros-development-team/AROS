@@ -2,7 +2,7 @@
 #define _TIME_H_
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file time.h
@@ -11,12 +11,10 @@
 #include <sys/cdefs.h>
 #include <sys/arosc.h>
 
-#include <sys/types/time_t.h>
-#include <sys/types/clock_t.h>
-
-#define __need_size_t
-#define __need_NULL
-#include <stddef.h>
+#include <aros/types/time_t.h>
+#include <aros/types/clock_t.h>
+#include <aros/types/size_t.h>
+#include <aros/types/null.h>
 
 /* XXX: This is supposed to be 1000000 on SUSv2 platforms apparently */
 #define CLOCKS_PER_SEC 50
@@ -40,20 +38,10 @@ struct tm
 
 #if !defined(_ANSI_SOURCE) && defined(_P1003_1B_VISIBLE)
 
-#include <sys/types/timer_t.h>
-#include <sys/types/clockid_t.h>
-
-struct timespec
-{
-    time_t		tv_sec;		/* seconds */
-    long		tv_nsec;	/* nanoseconds */
-};
-
-struct itimerspec
-{
-    struct timespec	it_interval;	/* timer period */
-    struct timespec	it_value;	/* timer expiration */
-};
+#include <aros/types/timer_t.h>
+#include <aros/types/clockid_t.h>
+#include <aros/types/timespec_s.h>
+#include <aros/types/itimerspec_s.h>
 
 #define CLOCK_REALTIME		0
 #define TIMER_ABSTIME		1

@@ -1,7 +1,7 @@
 #ifndef _WCHAR_H_
 #define _WCHAR_H_
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Standard C Library: Extended multibyte and wide character utilities.
@@ -9,24 +9,16 @@
 
 #include <sys/cdefs.h>
 
-#define __need_size_t
-#define __need_wchar_t
-#define __need_NULL
-#include <stddef.h>
-#include <stdarg.h>
+#include <aros/types/wchar_t.h>
+#include <aros/types/size_t.h>
+#include <aros/types/mbstate_t.h>
+#include <aros/types/wint_t.h>
+#include <aros/types/null.h>
 
+#include <stdarg.h>
 #include <stdint.h>
 
-#include <sys/types/wint_t.h>
-
 __BEGIN_DECLS
-
-/* Users are not allowed to access this type. */
-typedef union
-{
-    char    _mbs[32];
-    int64_t _mbs_align;
-} mbstate_t;
 
 struct tm;
 

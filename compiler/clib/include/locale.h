@@ -1,7 +1,7 @@
 #ifndef _LOCALE_H_
 #define _LOCALE_H_
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     C Standard Library: locale.h
@@ -42,9 +42,7 @@ struct lconv
     char int_n_sign_posn;		/* CHAR_MAX */
 };
 
-#ifndef NULL
-#   define NULL	    0
-#endif
+#include <aros/types/null.h>
 
 #define LC_ALL		    0
 #define LC_COLLATE	    1

@@ -42,13 +42,9 @@
 #define	_REGEX_H_
 
 #include <sys/cdefs.h>
-#include <sys/_types.h>
 
-/* types */
-typedef	__off_t		regoff_t;
-
-#define __need_size_t
-#include <stddef.h>
+#include <aros/types/regoff_t.h>
+#include <aros/types/size_t.h>
 
 typedef struct {
 	int re_magic;

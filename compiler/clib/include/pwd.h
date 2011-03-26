@@ -2,11 +2,10 @@
 #define	_PWD_H_
 
 /*
-    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <sys/_types.h>
 #include <sys/cdefs.h>
 
 /*
@@ -14,8 +13,8 @@
     You do not need to define size_t in this file. (POSIX)
 */
 
-#include <sys/types/gid_t.h>
-#include <sys/types/uid_t.h>
+#include <aros/types/gid_t.h>
+#include <aros/types/uid_t.h>
 
 struct passwd
 {

@@ -30,23 +30,23 @@
 #define	_FENV_H_
 
 #include <sys/cdefs.h>
-#include <sys/_types.h>
+#include <aros/types/int_t.h>
 
 typedef struct {
 	struct {
-		__uint32_t	__control;
-		__uint32_t	__status;
-		__uint32_t	__tag;
+		uint32_t	__control;
+		uint32_t	__status;
+		uint32_t	__tag;
 		char		__other[16];
 	} __x87;
-	__uint32_t		__mxcsr;
+	uint32_t		__mxcsr;
 } fenv_t;
 
 #define __INITIAL_FPUCW__       0x037F
 #define __INITIAL_MXCSR__       0x1F80
 #define __INITIAL_MXCSR_MASK__  0xFFBF
  
-typedef	__uint16_t	fexcept_t;
+typedef	uint16_t	fexcept_t;
 
 /* Exception flags */
 #define	FE_INVALID	0x01

@@ -30,6 +30,8 @@ FILES := \
 
 %copy_includes
 
+USER_CFLAGS := -DHAVE_UNISTD_H
+
 %build_linklib mmake=linklibs-arosz libname=arosz files=$(FILES)
 
 $(AROS_LIB)/libz.a : arosz-setup-link

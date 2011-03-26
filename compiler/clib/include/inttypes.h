@@ -2,13 +2,12 @@
 #define _INTTYPES_H_
 
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Standard fixed sized integral types.
 */
 
-#include <sys/_types.h>
 #include <sys/cdefs.h>
 #include <stdint.h>
 
@@ -239,8 +238,7 @@
 
 #endif	/* C++ && format macros */
 
-#define __need_wchar_t
-#include <stddef.h>
+#include <aros/types/wchar_t.h>
 
 __BEGIN_DECLS
 

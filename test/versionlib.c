@@ -4,6 +4,8 @@
 #include <proto/version.h>
 #include <proto/exec.h>
 
+#include <stdlib.h>
+
 int main(int argc, char **argv)
 {
     LONG retval = RETURN_ERROR;

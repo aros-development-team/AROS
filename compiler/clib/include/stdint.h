@@ -2,16 +2,16 @@
 #define _STDINT_H_
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Standard fixed sized integral types.
 */
 
-#include <sys/types/int_t.h>
+#include <aros/types/int_t.h>
 
-#include <sys/types/intptr_t.h>
-#include <sys/types/uintptr_t.h>
+#include <aros/types/intptr_t.h>
+#include <aros/types/uintptr_t.h>
 
 
 #if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)

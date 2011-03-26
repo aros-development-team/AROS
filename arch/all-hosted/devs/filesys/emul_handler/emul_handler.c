@@ -1,5 +1,5 @@
 /*
- Copyright  1995-2010, The AROS Development Team. All rights reserved.
+ Copyright  1995-2011, The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: Filesystem that accesses an underlying host OS filesystem.
@@ -35,6 +35,7 @@
 
 #include <limits.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "emul_intern.h"
 

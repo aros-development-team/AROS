@@ -2,7 +2,7 @@
 #define _DIRENT_H_
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: header file dirent.h
@@ -11,8 +11,8 @@
 
 #include <sys/cdefs.h>
 
-#include <sys/types/ino_t.h>
-#include <sys/types/off_t.h>
+#include <aros/types/ino_t.h>
+#include <aros/types/off_t.h>
 
 #ifndef NAME_MAX
 #define NAME_MAX 255
@@ -66,7 +66,7 @@ long telldir(DIR *dir);
 
 #if __BSD_VISIBLE
 
-#include <sys/types/ssize_t.h>
+#include <aros/types/ssize_t.h>
 
 /* NOTIMPL int scandir (const char *dir, struct dirent ***namelist,
               int (*select)(const struct dirent *),
