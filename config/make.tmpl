@@ -1973,7 +1973,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 
 
 %define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) prefix= \
-    aros_prefix= extraoptions= nix_dir_layout= nix=no compiler=target \
+    aros_prefix= extraoptions= extracflags= nix_dir_layout= nix=no compiler=target \
     install_target=install preconfigure= postconfigure= postinstall= \
     install_env=
 
@@ -2069,7 +2069,7 @@ ifeq (%(compiler),host)
 endif
 ifeq (%(compiler),target)
     COMPILER_ENV := \
-        CC="$(TARGET_CC) $(TARGET_CFLAGS) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
+        CC="$(TARGET_CC) $(TARGET_CFLAGS) %(extracflags) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
         AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"\
         TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"\
@@ -2082,7 +2082,7 @@ ifeq (%(compiler),target)
 endif
 ifeq (%(compiler),kernel)
     COMPILER_ENV := \
-        CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
+        CC="$(KERNEL_CC) $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag)"\
         AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"\
         TARGET_RANLIB="$(RANLIB)"
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
@@ -2295,11 +2295,12 @@ endif
 #    - aros_prefix  = same meaning as the one for the %build_with_configure macro. Defaults to
 #                     /GNU.
 #    - extraoptions = same meaning as the one for the %build_with_configure macro.
+#    - extracflags  = same meaning as the one for the %build_with_configure macro.
 #    - postinstall  = same meaning as the one for the %build_with_configure macro.
 #    - create_pkg   = create a distributable package of the compiled sources, defaults to no
 
 %define fetch_and_build mmake=/A package=/A subpackage= compiler=target version=/A suffixes="tar.bz2 tar.gz" \
-    srcdir= package_repo= patch=no patch_repo= prefix= aros_prefix= extraoptions= \
+    srcdir= package_repo= patch=no patch_repo= prefix= aros_prefix= extraoptions= extracflags= \
     preconfigure= postconfigure= postinstall= nix=no nix_dir_layout= create_pkg=no
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
@@ -2362,7 +2363,7 @@ endif
      srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-srcdir) \
      nix=%(nix) nix_dir_layout=%(nix_dir_layout) prefix="$(%(mmake)-prefix)" \
      aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
-     %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)"
+     %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)" extracflags="%(extracflags)"
 
 .PHONY : %(mmake)-%(subpackage)-make-package %(mmake)-%(subpackage)-create-patch
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
@@ -2392,7 +2393,7 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
 #------------------------------------------------------------------------------
 %define fetch_and_build_gnu mmake=/A package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
     srcdir= package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
-    aros_prefix=/GNU extraoptions= preconfigure= postconfigure= postinstall= 
+    aros_prefix=/GNU extraoptions= extracflags= preconfigure= postconfigure= postinstall= 
 
 GNU_REPOSITORY := gnu://
 
@@ -2400,7 +2401,7 @@ GNU_REPOSITORY := gnu://
     suffixes="%(suffixes)" srcdir="%(srcdir)" \
     package_repo="%(package_repo) $(GNU_REPOSITORY)%(package)" \
     patch="%(patch)" patch_repo="%(patch_repo)" \
-    prefix="%(prefix)" aros_prefix="%(aros_prefix)" extraoptions="%(extraoptions)" \
+    prefix="%(prefix)" aros_prefix="%(aros_prefix)" extraoptions="%(extraoptions)" extracflags="%(extracflags)" \
     preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall)" nix=yes
 
 %end
@@ -2420,7 +2421,7 @@ GNU_REPOSITORY := gnu://
 
 %define fetch_and_build_gnu_development package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
     srcdir= package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPMENT) \
-    aros_prefix=/Development preconfigure= postconfigure= postinstall=  extraoptions= 
+    aros_prefix=/Development preconfigure= postconfigure= postinstall=  extraoptions= extracflags=
 
 #MM- development : development-%(package)
 
@@ -2429,7 +2430,7 @@ GNU_REPOSITORY := gnu://
    version=%(version) suffixes="%(suffixes)" srcdir="%(srcdir)"  \
    package_repo="%(package_repo)" patch="%(patch)" patch_repo="%(patch_repo)" prefix=%(prefix) \
    aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall)" \
-   extraoptions="%(extraoptions)"
+   extraoptions="%(extraoptions)" extracflags="%(extracflags)"
     
 %end
 #------------------------------------------------------------------------------
