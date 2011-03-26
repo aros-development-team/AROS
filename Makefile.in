@@ -161,23 +161,17 @@ docs : tools
 all-docs : tools
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.all-docs
 
-sdk : tools
-	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.sdk
-
-install : tools
-	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.install
-
 # Don't try to generate $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts
 $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts:
 	@$(NOP)
 
 # targets which do not generate files or for which a file/directory exists
 .PHONY: default all makedirs tools docs clean arch-clean dist-clean install \
-	$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts test \
-	kernel boot workbench compiler contrib sdk mmake
+	$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts \
+	test kernel boot workbench compiler contrib sdk mmake
 
 # Workaround for bug in make v3.81 (should normally be handled by .DEFAULT)
-test kernel workbench compiler contrib : tools
+install test kernel workbench compiler contrib sdk : tools
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
 # Map MetaTargets to make targets : Call mmake with AROS.target
@@ -185,6 +179,6 @@ test kernel workbench compiler contrib : tools
 # Calling standard main targets, but is usable as a shortcut for MetaMake
 # if it was not installed globally
 .DEFAULT :
-	$(MAKE) tools
+	@$(MAKE) $(MKARGS) tools
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
