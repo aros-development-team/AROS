@@ -18,7 +18,7 @@
 #define _POSIX2_VERSION             200112L
 #define _XOPEN_VERSION              600
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 /*
    POSIX options and option groups:
@@ -54,10 +54,10 @@
 #define _POSIX_READER_WRITER_LOCKS          -1
 #define _POSIX_REALTIME_SIGNALS             -1
 #define _POSIX_REGEXP                       0
-#define _POSIX_SAVED_IDS                    1       /* XXX: MUST IMPLEMENT */
+#define _POSIX_SAVED_IDS                    1       /* FIXME: MUST IMPLEMENT */
 #define _POSIX_SEMAPHORES                   -1
 #define _POSIX_SHARED_MEMORY_OBJECTS        -1
-#define _POSIX_SHELL                        1       /* XXX: MUST IMPLEMENT */
+#define _POSIX_SHELL                        1       /* FIXME: MUST IMPLEMENT */
 #define _POSIX_SPAWN                        -1
 #define _POSIX_SPIN_LOCKS                   -1
 #define _POSIX_SPORADIC_SERVER              -1
@@ -92,7 +92,7 @@
 #define _POSIX2_PBS_LOCATE                  -1
 #define _POSIX2_PBS_MESSAGE                 -1
 #define _POSIX2_PBS_TRACK                   -1
-#define _POSIX2_SW_DEV                      -1          /* XXX */
+#define _POSIX2_SW_DEV                      -1          /* FIXME */
 #define _POSIX2_UPE                         200112L
 
 #define _V6_ILP32_OFF32                     0
@@ -100,7 +100,6 @@
 #define _V6_LP64_OFF64                      -1
 #define _V6_LPBIG_OFFBIG                    -1
 
-#if __XSI_VISIBLE
 #define _XOPEN_CRYPT                        -1
 #define _XOPEN_ENH_I18N                     -1
 #define _XOPEN_LEGACY                       -1
@@ -109,7 +108,6 @@
 #define _XOPEN_SHM                          -1
 #define _XOPEN_STREAMS                      -1
 #define _XOPEN_UNIX                         -1
-#endif
 
 #include <aros/types/null.h>
 #include <aros/types/size_t.h>
@@ -131,24 +129,22 @@
 #define	F_OK	0		/* Test for existence.  */
 
 /*
-    XXX Arguments for confstr()
+    FIXME Arguments for confstr()
 */
 
 #include <aros/types/seek.h>
 
-#if __XSI_VISIBLE || __POSIX_VISIBLE >= 200112
 #define F_LOCK      0
 #define F_TEST      1
 #define F_TLOCK     2
 #define F_ULOCK     3
-#endif
 
 /* Arguments for pathconf() */
 #define _PC_PATH_MAX 1
 #define _PC_VDISABLE 2
 
 /*
-    XXX Arguments for sysconf()
+    FIXME Arguments for sysconf()
 */
 
 enum
@@ -210,39 +206,26 @@ char        *ttyname(int fd);
 int         unlink(const char *path);
 ssize_t     write(int fd, const void *buf, size_t nbytes);
 
-#if __POSIX_VISIBLE >= 199209 || __XSI_VISIBLE
 /* NOTIMPL size_t      confstr(int name, char *buf, size_t len); */
 int         getopt(int argc, char * const argv[], const char *optstring);
 
 extern char *optarg;
 extern int  optind, opterr, optopt;
-#endif
 
-#if __POSIX_VISIBLE >= 199506 || __XSI_VISIBLE
 int         fsync(int fd);
 int         ftruncate(int fd, off_t length);
-#endif
 
-#if __POSIX_VISIBLE >= 199506
 /* NOTIMPL int         getlogin_r(char *name, int len); */
-#endif
 
-#if __POSIX_VISIBLE >= 200112 || __XSI_VISIBLE
 int         fchown(int fd, uid_t owner, gid_t group);
 ssize_t     readlink(const char * restrict path, char * restrict buf, size_t bufsize);
-#endif
 
-#if __POSIX_VISIBLE >= 200112
 /* NOTIMPL int         gethostname(char *name, size_t namelen); */
 /* NOTIMPL int         setegid(gid_t egid); */
 /* NOTIMPL int         seteuid(uid_t euid); */
-#endif
 
-#if __POSIX_VISIBLE >= 200112 || __XSI_VISIBLE >= 402 || __BSD_VISIBLE
 int         symlink(const char *name1, const char *name2);
-#endif
 
-#if __XSI_VISIBLE
 /* NOTIMPL char        *crypt(const char *key, const char *salt); */
 /* NOTIMPL char        *ctermid(char *buf); */
 /* NOTIMPL void        encrypt(char block[64], int flag); */
@@ -264,12 +247,9 @@ int         truncate(const char *path, off_t length);
 /* NOTIMPL useconds_t  ualarm(useconds_t microseconds, useconds_t interval); */
 int         usleep(useconds_t microseconds);
 pid_t       vfork(void);
-#endif
 
 void        sharecontextwithchild(int share); /* AROS specific call */
-#if __POSIX_VERSION >= 200112
 /* NOTIMPL int         fdatasync(int fd); */
-#endif
 
 __END_DECLS
 

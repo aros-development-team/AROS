@@ -1,7 +1,7 @@
 #ifndef _SYS_AROSC_H
 #define _SYS_AROSC_H
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 struct __sFILE;
 

@@ -8,7 +8,7 @@
     Standard fixed sized integral types.
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <stdint.h>
 
 

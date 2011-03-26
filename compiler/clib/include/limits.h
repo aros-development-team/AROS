@@ -1,5 +1,5 @@
 /*
- *  Copyright © 2004 The AROS Developmemt Team. All rights reserved.
+ *  Copyright © 2004-2011 The AROS Developmemt Team. All rights reserved.
  *  $Id$
  *
  *  ISO C99 Standard: Sizes of integer types <limits.h>
@@ -9,7 +9,7 @@
 #ifndef _LIMITS_H_
 #define _LIMITS_H_ 1
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 /*
  *  Define ANSI <limits.h> for standard 32-bit words.
@@ -79,7 +79,6 @@
  * that, otherwise we are no longer POSIX compatible.
  */
 
-#if __POSIX_VISIBLE
 #define ARG_MAX                                 40960
 #define CHILD_MAX                               _POSIX_CHILD_MAX
 #define LINK_MAX                                _POSIX_LINK_MAX
@@ -121,9 +120,7 @@
 #define _POSIX2_EXPR_NEST_MAX                   32
 #define _POSIX2_LINE_MAX                        2048
 #define _POSIX2_RE_DUP_MAX                      255
-#endif
 
-#if __POSIX_VISIBLE >= 199506
 #define _POSIX_AIO_LISTIO_MAX                   2
 #define _POSIX_AIO_MAX                          1
 #define _POSIX_DELAYTIMER_MAX                   32
@@ -134,15 +131,11 @@
 #define _POSIX_SEM_MAX_VALUE                    32767
 #define _POSIX_SIGQUEUE_MAX                     32
 #define _POSIX_TIMER_MAX                        32
-#endif
 
-#if __POSIX_VISIBLE >= 199506
 #define _POSIX_THREAD_DESTRUCTOR_INTERATIONS    4
 #define _POSIX_THREAD_KEYS_MAX                  128
 #define _POSIX_THREAD_THREADS_MAX               64
-#endif
 
-#if __POSIX_VISIBLE >= 200112
 #define FILESIZEBITS                            32
 #define HOST_NAME_MAX                           _POSIX_HOST_NAME_MAX
 #define LOGIN_NAME_MAX                          _POSIX_LOGIN_NAME_MAX
@@ -164,9 +157,7 @@
 #define _POSIX_TTY_NAME_MAX                     9
 #define _POSIX2_CHARCLASS_NAME_MAX              14
 #define _POSIX2_COLL_WEIGHTS_MAX                2
-#endif
 
-#if __XSI_VISIBLE
 #define ATEXIT_MAX                              32
 #define IOV_MAX                                 _XOPEN_IOV_MAX
 #define PAGESIZE                                4096
@@ -186,14 +177,12 @@
 #define NL_TEXTMAX                              _POSIX2_LINE_MAX
 
 #define NZERO                                   0
-#endif
 
 /*
  * The following are specific to particular POSIX subsystems, which are
  * switched on or off as part of <unistd.h>
  */
 
-#if __POSIX_VERSION >= 200112
 /* _POSIX_ADVISORY_INFO */
 #define POSIX_ALLOC_SIZE_MIN                    // XXX
 #define POSIX_REC_INCR_XFER_SIZE                // XXX
@@ -235,10 +224,7 @@
 #define TRACE_NAME_MAX                          _POSIX_TRACE_NAME_MAX
 #define TRACE_SYS_MAX                           _POSIX_TRACE_SYS_MAX
 #define TRACE_USER_EVENT_MAX                    _POSIX_TRACE_USER_EVENT_MAX
-#endif
 
-#if __POSIX_VISIBLE >= 200112 || __XSI_VISIBLE
 #define SIZE_T_MAX	ULONG_MAX		/* max value for a size_t */
-#endif
 
 #endif /* _LIMITS_H_ */

@@ -7,7 +7,7 @@
     Standard C Library: Extended multibyte and wide character utilities.
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 #include <aros/types/wchar_t.h>
 #include <aros/types/size_t.h>

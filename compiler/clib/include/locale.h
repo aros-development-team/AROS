@@ -7,7 +7,7 @@
     C Standard Library: locale.h
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 /*
     struct lconv contains members relating to the formatting of numerical

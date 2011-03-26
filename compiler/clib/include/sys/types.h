@@ -9,7 +9,7 @@
     Lang: English
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <aros/macros.h>
 
 /* Some standard types */
@@ -27,13 +27,6 @@ typedef int64_t       quad_t;
 typedef quad_t *      qaddr_t;
 
 /*** For compatibility with POSIX source *************************************/
-
-#if __BSD_VISIBLE
-typedef unsigned char   u_char;
-typedef unsigned short  u_short;
-typedef unsigned int    u_int;
-typedef unsigned long   u_long;
-#endif
 
 #ifdef __SYSV_VISIBLE
 typedef unsigned short  ushort;         /* Sys V compatibility */
@@ -122,3 +115,16 @@ typedef struct fd_set {
 #define	FD_ZERO(p)      memset(p, 0, sizeof(*(p)))
 
 #endif /* _SYS_TYPES_H_ */
+
+#if __BSD_VISIBLE && !defined(__BSD_SYS_TYPES_H)
+#define __BSD_SYS_TYPES_H
+
+/* FIXME: remove temporary hack */
+#include <sys/cdefs.h>
+
+typedef unsigned char   u_char;
+typedef unsigned short  u_short;
+typedef unsigned int    u_int;
+typedef unsigned long   u_long;
+
+#endif /* __BSD_VISIBLE && !__BSD_SYS_TYPES_H */

@@ -9,7 +9,7 @@
     Lang: English
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <sys/arosc.h>
 
 /* It seems that also stdlib.h defines alloca() */

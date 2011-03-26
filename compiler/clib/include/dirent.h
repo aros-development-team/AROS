@@ -9,7 +9,7 @@
     Lang: english
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 #include <aros/types/ino_t.h>
 #include <aros/types/off_t.h>
@@ -54,15 +54,11 @@ struct dirent *readdir(DIR *dir);
 void rewinddir(DIR *dir);
 int dirfd(DIR *dir);
 
-#if __POSIX_VISIBLE >= 200112
 /* NOTIMPL int readdir_r(DIR * restrict dir , struct dirent * restrict entry,
         struct dirent * restrict result); */
-#endif
 
-#if __XSI_VISIBLE
 void seekdir(DIR *dir, off_t loc);
 long telldir(DIR *dir);
-#endif
 
 #if __BSD_VISIBLE
 

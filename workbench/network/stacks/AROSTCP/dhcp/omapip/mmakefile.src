@@ -2,7 +2,8 @@ include $(TOP)/config/make.cfg
 
 #MM network-dhcp-libomapip : arostcp-includes
 
-USER_CFLAGS :=	-I$(SRCDIR)/$(CURDIR)/.. -I$(SRCDIR)/$(CURDIR)/../includes
+USER_CFLAGS :=	-I$(SRCDIR)/$(CURDIR)/.. -I$(SRCDIR)/$(CURDIR)/../includes \
+        -D__BSD_VISIBLE
 
 FILES :=	alloc array auth buffer connection convert dispatch	\
 		errwarn generic handle hash inet_addr iscprint listener	\

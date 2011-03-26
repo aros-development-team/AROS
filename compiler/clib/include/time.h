@@ -8,7 +8,7 @@
     Desc: ANSI-C header file time.h
     Lang: english
 */
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <sys/arosc.h>
 
 #include <aros/types/time_t.h>
@@ -34,9 +34,7 @@ struct tm
     const char *tm_zone;
 };
 
-#define _P1003_1B_VISIBLE /* temp hack for grub2 */
-
-#if !defined(_ANSI_SOURCE) && defined(_P1003_1B_VISIBLE)
+#if !defined(_ANSI_SOURCE)
 
 #include <aros/types/timer_t.h>
 #include <aros/types/clockid_t.h>
@@ -49,16 +47,12 @@ struct tm
 /* time.h shouldn't include signal.h */
 struct sigevent;
 
-#endif /* !_ANSI_SOURCE && _P1003_1B_VISIBLE */
+#endif /* !_ANSI_SOURCE */
 
-#if __XSI_VISIBLE
 #define __daylight (__get_arosc_userdata()->acud_daylight)
 #define __timezone (__get_arosc_userdata()->acud_timezone)
-#endif
 
-#if __POSIX_VISIBLE
 #define __tzname   (__get_arosc_userdata()->acud_tzname)
-#endif
 
 __BEGIN_DECLS
 char      *asctime(const struct tm *);
@@ -75,19 +69,14 @@ time_t     time(time_t *);
 /* NOTIMPL void       tzset(void); */
 #endif
 
-#if __POSIX_VISIBLE >= 199506
 char      *asctime_r(const struct tm *, char *);
 char      *ctime_r(const time_t *, char *);
 struct tm *gmtime_r(const time_t *, struct tm *);
 struct tm *localtime_r(const time_t *, struct tm *);
-#endif
 
-#if __XSI_VISIBLE
 /* NOTIMPL struct tm *getdate(const char *); */
 char      *strptime(const char *, const char *, struct tm *);
-#endif
 
-#if __POSIX_VISIBLE >= 199309
 /* NOTIMPL int        clock_getres(clockid_t, struct timespec *); */
 /* NOTIMPL int        clock_gettime(clockid_t, struct timespec *); */
 /* NOTIMPL int        clock_settime(clockid_t, const struct timespec *); */
@@ -99,7 +88,6 @@ int        nanosleep(const struct timespec *, struct timespec *);
 /* NOTIMPL int        timer_getoverrun(timer_t); */
 /* NOTIMPL int        timer_settime(timer_t, int, const struct itimerspec *,
                struct itimerspec *); */
-#endif
 
 __END_DECLS
 
