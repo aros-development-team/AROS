@@ -150,7 +150,7 @@ CXX_FLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-decla
 
 # Define the use of cross compiler
 ifeq ($(TARGET_CXX),)
-  CXX_CC := $(TOOLDIR)/$(AROS_TARGET_CPU)-aros-g++
+  CXX_CC := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-g++
 else
   CXX_CC := $(TARGET_CXX)
 endif
