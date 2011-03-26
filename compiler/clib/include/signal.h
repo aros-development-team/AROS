@@ -9,7 +9,7 @@
     Based on SUSv2 with help from C99.
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 typedef void __sighandler_t (int);
 
@@ -85,8 +85,6 @@ typedef AROS_SIG_ATOMIC_T   sig_atomic_t;
 #define SIGINFO		31	/* terminal info request */
 #endif
 
-#if defined(_P1003_1B_VISIBLE)
-
 /* Real time signals as specified by POSIX 1003.1B */
 #define SIGRTMIN	33
 #define SIGRT1		33
@@ -143,8 +141,6 @@ typedef AROS_SIG_ATOMIC_T   sig_atomic_t;
 */
 #define sigev_notify_function	\
     __sigev_u.__sigev_notify_call.__sigenv_notify_function
-
-#endif /* P1003_1B_VISIBLE */
 
 #if !defined(_ANSI_SOURCE)
 
@@ -210,11 +206,9 @@ int	sigsuspend(const sigset_t *);
 /* NOTIMPL int	sigpause(int); */
 #endif /* !_POSIX_SOURCE */
 
-#if defined(_P1003_1B_VISIBLE)
 /* NOTIMPL int	sigqueue(pid_t, int, const union sigval); */
 /* NOTIMPL int	sigtimedwait(const sigset_t *, siginfo_t *, const struct timespec *); */
 /* NOTIMPL int	sigwaitinfo(const sigset_t *, siginfo_t *); */
-#endif /* _P1003_1B */
 
 #endif /* !_ANSI_SOURCE */
 

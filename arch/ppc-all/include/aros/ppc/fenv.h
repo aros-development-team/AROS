@@ -30,7 +30,7 @@
 #define	_FENV_H_
 
 #ifdef __AROS__
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #endif
 #include <aros/types/int_t.h>
 

@@ -2,11 +2,11 @@
 #define PROTO_BSDSOCKET_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>
-#include <aros/system.h>
+#include <sys/cdefs.h>
 
 #include <clib/bsdsocket_protos.h>
 

@@ -9,7 +9,7 @@
 */
 
 #include <aros/cpu.h>
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <signal.h>
 
 #include <aros/types/ucontext_t.h>

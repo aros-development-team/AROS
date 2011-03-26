@@ -9,7 +9,7 @@
     Lang: english
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 #ifdef __mc68000__
 #   define _JMPLEN 12
@@ -42,15 +42,12 @@ __BEGIN_DECLS
 int	setjmp (jmp_buf env);
 void	longjmp (jmp_buf env, int val) __noreturn ;
 
-#if __BSD_VISIBLE || __POSIX_VISIBLE || __XSI_VISIBLE
 /* Unix functions */
 /* NOTIMPL void   siglongjmp(sigjmp_buf, int) __noreturn ; */
 /* NOTIMPL int    sigsetjmp(sigjmp_buf, int); */
 
 /* NOTIMPL void	_longjmp(jmp_buf, int) __noreturn ; */
 /* NOTIMPL int	_setjmp(jmp_buf); */
-
-#endif /* __BSD_VISIBLE || __POSIX_VISIBLE || __XSI_VISIBLE */
 
 __END_DECLS
 

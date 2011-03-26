@@ -2,14 +2,14 @@
 #define _ASSERT_H_
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file assert.h
     Lang: english
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 #undef assert
 

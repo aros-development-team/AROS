@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     System header file <alloca.h>
@@ -8,7 +8,7 @@
 #ifndef	_ALLOCA_H
 #define	_ALLOCA_H
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <stddef.h>
 
 /* Discard any previous definition.  */

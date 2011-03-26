@@ -8,8 +8,8 @@ FILES  := main hooks colorlist str
 
 EXEDIR := $(AROS_SYSTEM)/Network/AROSTCP
 
-USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
-
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -D__BSD_VISIBLE=1
+ 
 ##MM- contrib : aros-tcpip-apps-syslog
 
 %build_prog mmake=aros-tcpip-apps-syslog \

@@ -8,7 +8,7 @@
     Desc: ANSI-C header file stdio.h
     Lang: english
 */
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <sys/arosc.h>
 
 #include <aros/types/null.h>
@@ -18,12 +18,10 @@
 typedef off_t fpos_t;
 
 /*
-    We are supposed to declare it, without including the file.
+    FIXME: We are supposed to declare it, without including the file.
     This is too compiler specific to handle at the moment.
 */
-#if __XSI_VISIBLE
 #include <stdarg.h>
-#endif
 
 /* Need to protect against standard Amiga includes */
 #ifndef EOF
@@ -47,9 +45,7 @@ typedef off_t fpos_t;
 #define L_ctermid	FILENAME_MAX	/* Max filename for controlling tty */
 #endif
 
-#if __XSI_VISIBLE
 #define P_tmpdir	"T:"		/* Default temporary path */
-#endif
 
 #ifndef __typedef_FILE
 #   define __typedef_FILE
@@ -166,16 +162,11 @@ char    *tmpnam(char *);
 void    setlinebuf(FILE *stream);
 #endif
 
-#if __XSI_VISIBLE
 /* NOTIMPL char    *tempnam(const char *, const char *); */
-#endif
 
-#if __POSIX_VISIBLE
 /* NOTIMPL char	*ctermid(char *); */
 /* NOTIMPL char	*ctermid_r(char *); */
-#endif
 
-#if __POSIX_VISIBLE >= 200112
 /* NOTIMPL void     flockfile(FILE *); */
 /* NOTIMPL int      ftrylockfile(FILE *); */
 /* NOTIMPL void     funlockfile(FILE *); */
@@ -184,12 +175,9 @@ void    setlinebuf(FILE *stream);
 /* NOTIMPL int      getchar_unlocked(void); */
 /* NOTIMPL int      putc_unlocked(int, FILE *); */
 /* NOTIMPL int      putchar_unlocked(int); */
-#endif
 
-#if __BSD_VISIBLE || __XSI_VISIBLE > 0 && __XSI_VISIBLE < 600
 int      getw(FILE *stream);
 int      putw(int word, FILE *stream);
-#endif
 
 __END_DECLS
 

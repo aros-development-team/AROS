@@ -9,7 +9,7 @@
     Lang: english
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 /* POSIX.1-2008 */
 #include <aros/types/blk_t.h> /* blkcnt_t and blksize_t */

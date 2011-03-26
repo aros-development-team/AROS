@@ -46,6 +46,9 @@
 #include <sys/_types.h>
 #else
 #include <aros/types/size_t.h>
+#ifdef __size_t
+#undef __size_t
+#endif
 #define __size_t size_t
 typedef int __rune_t;
 #endif

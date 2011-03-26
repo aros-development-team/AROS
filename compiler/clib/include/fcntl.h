@@ -9,14 +9,12 @@
     Lang: english
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
-#if __XSI_VISIBLE
 /* Both Linux and NetBSD seem to include this file and
    POSIX.1-2008 allows its inclusion
  */
 #include <sys/stat.h>
-#endif
 
 #include <aros/types/pid_t.h>
 #include <aros/types/mode_t.h>
@@ -89,7 +87,7 @@
 #define F_EXLCK		4	/* or 3 */
 #define F_SHLCK		8	/* or 4 */
 
-#ifdef __BSD_VISIBLE
+#if __BSD_VISIBLE
 /* operations for bsd flock(), also used by the kernel implementation */
 # define LOCK_SH	1	/* shared lock */
 # define LOCK_EX	2	/* exclusive lock */
@@ -98,14 +96,12 @@
 # define LOCK_UN	8	/* remove lock */
 #endif
 
-#if __POSIX_VERSION >= 200112
 #define POSIX_FADV_NORMAL       1
 #define POSIX_FADV_SEQUENTIAL   2
 #define POSIX_FADV_RANDOM       3
 #define POSIX_FADV_WILLNEED     4
 #define POSIX_FADV_DONTNEED     5
 #define POSIX_FADV_NOREUSE      6
-#endif
 
 /* For l_whence */
 #include <aros/types/seek.h>
@@ -126,10 +122,8 @@ int fcntl (int fd, int cmd, ...);
 int open  (const char * filename, int flags, ...);
 int creat (const char * filename, int mode);
 
-#if __POSIX_VERSION >= 200112
 /* NOTIMPL int posix_fadvise(int fd, off_t offset, size_t len, int advice); */
 /* NOTIMPL int posix_fallocate(int fd, off_t offset, size_t len); */
-#endif
 
 __END_DECLS
 

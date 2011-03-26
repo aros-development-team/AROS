@@ -29,7 +29,7 @@
 #ifndef	_FENV_H_
 #define	_FENV_H_
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <aros/types/int_t.h>
 
 typedef	uint32_t	fenv_t;

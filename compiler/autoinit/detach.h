@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef DETACH_H
 #define DETACH_H
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 __BEGIN_DECLS
 
@@ -16,7 +16,7 @@ __BEGIN_DECLS
    simply use the Detach() function wherever you want the detaching to
    happen.  If you don't use this function, then the program will be detached
    before the main() function is reached.  */
-void Detach __P((void));
+void Detach(void);
 
 __END_DECLS
 

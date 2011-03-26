@@ -17,12 +17,12 @@
 #ifndef _MATH_H_
 #define _MATH_H_
 
-#include <sys/cdefs.h>
-
 #ifndef __AROS__
+#include <sys/cdefs.h>
 #include <sys/_types.h>
 #include <machine/_limits.h>
 #else
+#include <aros/system.h>
 #include <sys/types.h>
 #include <limits.h>
 
@@ -60,7 +60,6 @@ extern const union __nan_un {
 #define	HUGE_VAL	(__infinity.__ud)
 #endif
 
-#if __ISO_C_VISIBLE >= 1999
 #define        FP_ILOGB0       (-__INT_MAX)
 #define        FP_ILOGBNAN     __INT_MAX
 
@@ -157,12 +156,9 @@ typedef long double double_t;
 typedef long double float_t;
 #endif
 
-#endif /* __ISO_C_VISIBLE >= 1999 */
-
 /*
  * XOPEN/SVID
  */
-#if __BSD_VISIBLE || __XSI_VISIBLE
 #define	M_E		2.7182818284590452354	/* e */
 #define	M_LOG2E		1.4426950408889634074	/* log 2e */
 #define	M_LOG10E	0.43429448190325182765	/* log 10e */
@@ -179,16 +175,13 @@ typedef long double float_t;
 
 #define	MAXFLOAT	((float)3.40282346638528860e+38)
 extern int signgam;
-#endif /* __BSD_VISIBLE || __XSI_VISIBLE */
 
-#if __BSD_VISIBLE
 #if 0
 /* Old value from 4.4BSD-Lite math.h; this is probably better. */
 #define	HUGE		HUGE_VAL
 #else
 #define	HUGE		MAXFLOAT
 #endif
-#endif /* __BSD_VISIBLE */
 
 /*
  * Most of these functions depend on the rounding mode and have the side
@@ -248,7 +241,6 @@ double	fmod(double, double);
 /*
  * These functions are not in C90.
  */
-#if __BSD_VISIBLE || __ISO_C_VISIBLE >= 1999 || __XSI_VISIBLE
 double	acosh(double);
 double	asinh(double);
 double	atanh(double);
@@ -274,9 +266,7 @@ double	remainder(double, double);
 double	remquo(double, double, int *);
 double	rint(double);
 double  nan(const char *tagp);
-#endif /* __BSD_VISIBLE || __ISO_C_VISIBLE >= 1999 || __XSI_VISIBLE */
 
-#if __BSD_VISIBLE || __XSI_VISIBLE
 double	j0(double);
 double	j1(double);
 double	jn(int, double);
@@ -285,12 +275,8 @@ double	y0(double);
 double	y1(double);
 double	yn(int, double);
 
-#if __XSI_VISIBLE <= 500 || __BSD_VISIBLE
 double	gamma(double);
-#endif
-#endif /* __BSD_VISIBLE || __XSI_VISIBLE */
 
-#if __BSD_VISIBLE || __ISO_C_VISIBLE >= 1999
 double	copysign(double, double) __pure2;
 double	fdim(double, double);
 double	fmax(double, double) __pure2;
@@ -301,12 +287,10 @@ double	scalbln(double, long);
 double	scalbn(double, int);
 double	tgamma(double);
 double	trunc(double);
-#endif
 
 /*
  * BSD math library entry points
  */
-#if __BSD_VISIBLE
 double	drem(double, double);
 int	finite(double) __pure2;
 int	isnanf(float) __pure2;
@@ -322,10 +306,8 @@ double	lgamma_r(double, int *);
  * IEEE Test Vector
  */
 double	significand(double);
-#endif /* __BSD_VISIBLE */
 
 /* float versions of ANSI/POSIX functions */
-#if __ISO_C_VISIBLE >= 1999
 float	acosf(float);
 float	asinf(float);
 float	atanf(float);
@@ -388,12 +370,10 @@ float	fmaxf(float, float) __pure2;
 float	fminf(float, float) __pure2;
 
 float   nanf(const char *tagp);
-#endif
 
 /*
  * float versions of BSD math library entry points
  */
-#if __BSD_VISIBLE
 float	dremf(float, float);
 int	finitef(float) __pure2;
 float	gammaf(float);
@@ -417,12 +397,10 @@ float	lgammaf_r(float, int *);
  * float version of IEEE Test Vector
  */
 float	significandf(float);
-#endif	/* __BSD_VISIBLE */
 
 /*
  * long double versions of ISO/POSIX math functions
  */
-#if __ISO_C_VISIBLE >= 1999
 #if 0
 long double	acoshl(long double);
 long double	acosl(long double);
@@ -502,7 +480,6 @@ long double	tgammal(long double);
 long double	truncl(long double);
 long double     nanl(const char *tagp);
 
-#endif /* __ISO_C_VISIBLE >= 1999 */
 __END_DECLS
 
 #endif /* !_MATH_H_ */

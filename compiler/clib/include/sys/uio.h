@@ -8,7 +8,7 @@
 */
 
 #include <aros/systypes.h>
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <aros/types/iovec_s.h>
 #include <aros/types/ssize_t.h>
 

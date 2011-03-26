@@ -8,7 +8,7 @@
     Desc: ANSI-C header file string.h
     Lang: english
 */
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 #include <aros/types/null.h>
 #include <aros/types/size_t.h>

@@ -2,14 +2,14 @@
 #define _SYS_UTSNAME_H
 
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX header file sys/utsname.h
     Lang: english
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 #define _UTS_LEN 65
 

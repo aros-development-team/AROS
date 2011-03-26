@@ -2,14 +2,14 @@
 #define _ERRNO_H_
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file errno.h
     Lang: english
 */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 #define EPERM		 1	/* Operation not permitted */
 #define ENOENT		 2	/* No such file or directory */
