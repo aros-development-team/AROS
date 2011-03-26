@@ -40,8 +40,8 @@ int main(int argc, char **argv)
     {
         if (command[0] != '#' && command[0] != '\n')
         {
-            bug("===============================\n");
-            bug("Running command \"%s\"", command);
+            bug("====================================\n");
+            bug("Running command: %s", command);
             error = SystemTags(command, TAG_DONE);
             bug("returns: %d\n", error);
             
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
                 okcnt++;
         }
     }
-    bug("===============================\n");
+    bug("====================================\n");
     bug("Summary: ok %d warn %d error %d fail %d\n", okcnt, warncnt, errorcnt, failcnt);
 
     return 0;
