@@ -30,10 +30,10 @@
 #define	_FENV_H_
 
 #include <sys/cdefs.h>
-#include <sys/_types.h>
+#include <aros/types/int_t.h>
 
-typedef	__uint32_t	fenv_t;
-typedef	__uint32_t	fexcept_t;
+typedef	uint32_t	fenv_t;
+typedef	uint32_t	fexcept_t;
 
 /* Exception flags */
 #define	FE_INVALID	0x0001

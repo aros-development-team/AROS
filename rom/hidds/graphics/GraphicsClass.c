@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics hidd class implementation.
@@ -19,6 +19,7 @@
 #include "graphics_intern.h"
 
 #include <string.h>
+#include <stddef.h>
 
 #include <proto/exec.h>
 #include <proto/utility.h>

@@ -2,16 +2,26 @@
 #define _SYS_STAT_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file sys/stat.h
     Lang: english
 */
 
-#include <sys/types.h>
 #include <sys/cdefs.h>
-#include <time.h>
+
+/* POSIX.1-2008 */
+#include <aros/types/blk_t.h> /* blkcnt_t and blksize_t */
+#include <aros/types/dev_t.h>
+#include <aros/types/ino_t.h>
+#include <aros/types/mode_t.h>
+#include <aros/types/nlink_t.h>
+#include <aros/types/uid_t.h>
+#include <aros/types/gid_t.h>
+#include <aros/types/off_t.h>
+#include <aros/types/time_t.h>
+#include <aros/types/timespec_s.h>
 
 struct stat
 {
@@ -93,8 +103,6 @@ int fchmod(int fildes, mode_t mode);
 int mkdir(const char *path, mode_t mode);
 int mkfifo(const char *path, mode_t mode);
 int mknod(const char *path, mode_t mode, dev_t dev);
-
-
 
 __END_DECLS
 

@@ -41,10 +41,13 @@
 #define	_RUNETYPE_H_
 
 #include <sys/cdefs.h>
-#include <sys/_types.h>
 
-#ifdef __AROS__
-#undef __size_t
+#ifndef __AROS__
+#include <sys/_types.h>
+#else
+#include <aros/types/size_t.h>
+#define __size_t size_t
+typedef int __rune_t;
 #endif
 
 #define	_CACHED_RUNES	(1 <<8 )	/* Must be a power of 2 */

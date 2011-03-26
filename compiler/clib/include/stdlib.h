@@ -2,7 +2,7 @@
 #define _STDLIB_H_
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file stdlib.h
@@ -15,8 +15,8 @@
 /* It seems that also stdlib.h defines alloca() */
 #include <alloca.h>
 
-/* For wchar_t and size_t */
-#include <stddef.h>
+#include <aros/types/size_t.h>
+#include <aros/types/wchar_t.h>
 
 /* Types for div and ldiv */
 typedef struct div_t {

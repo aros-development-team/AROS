@@ -47,9 +47,11 @@
 #define	__CTYPE_H_
 
 #include <sys/cdefs.h>
-#include <sys/_types.h>
 
 #ifndef __AROS__
+/* See comments in <sys/_types.h> about __ct_rune_t. */
+#include <sys/_types.h>
+
 #define	_CTYPE_A	0x00000100L		/* Alpha */
 #define	_CTYPE_C	0x00000200L		/* Control */
 #define	_CTYPE_D	0x00000400L		/* Digit */
@@ -75,7 +77,6 @@ typedef int __ct_rune_t;
 #define _CTYPE_R _ISprint
 #endif
 
-/* See comments in <sys/_types.h> about __ct_rune_t. */
 __BEGIN_DECLS
 unsigned long	___runetype(__ct_rune_t) __pure;
 __ct_rune_t	___tolower(__ct_rune_t) __pure;

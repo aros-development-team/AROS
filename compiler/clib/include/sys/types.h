@@ -2,22 +2,29 @@
 #define _SYS_TYPES_H_
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file sys/types.h
     Lang: English
 */
 
-#include <sys/_types.h>
 #include <sys/cdefs.h>
 #include <aros/macros.h>
 
-/* temp hack: need ssize_t here for grub2 utils */
-#include <sys/types/ssize_t.h>
+/* Some standard types */
+#include <aros/types/size_t.h>
+#include <aros/types/int_t.h>
 
-/* Technically namespace pollution, but what can you do... */
-#include <stdint.h>
+/* These are additions to the types in <stdint.h> */
+typedef uint64_t      u_int64_t;      /* 64-bit unsigned integer */
+typedef uint32_t      u_int32_t;      /* 32-bit unsigned integer */
+typedef uint16_t      u_int16_t;      /* 16-bit unsigned integer */
+typedef uint8_t       u_int8_t;       /* 8-bit unsigned integer  */
+
+typedef uint64_t      u_quad_t;
+typedef int64_t       quad_t;
+typedef quad_t *      qaddr_t;
 
 /*** For compatibility with POSIX source *************************************/
 
@@ -33,17 +40,6 @@ typedef unsigned short  ushort;         /* Sys V compatibility */
 typedef unsigned int    uint;           /* Sys V compatibility */
 #endif
 
-/* These are additions to the types in <stdint.h> */
-typedef __uint64_t      u_int64_t;      /* 64-bit unsigned integer */
-typedef __uint32_t      u_int32_t;      /* 32-bit unsigned integer */
-typedef __uint16_t      u_int16_t;      /* 16-bit unsigned integer */
-typedef __uint8_t       u_int8_t;       /* 8-bit unsigned integer  */
-
-typedef __uint64_t      u_quad_t;
-typedef __int64_t       quad_t;
-typedef quad_t *        qaddr_t;
-
-
 /*
     Standard POSIX/SUS/ISO C types
 
@@ -51,48 +47,33 @@ typedef quad_t *        qaddr_t;
     files, and need protection from this.
 */
 
-/*
-   stddef.h is part of the freestanding implementation of the C language,
-   GCC provides one such header already, by including it we include the 
-   definitions of wchar_t, wint_t, size_t, ptrdiff_t and NULL.
-   
-   POSIX, however, needs us to define some other types, which we do later.
-*/
+#include <aros/types/blk_t.h> /* blkcnt_t and blksize_t */
+#include <aros/types/clockid_t.h>
+#include <aros/types/clock_t.h>
+#include <aros/types/dev_t.h>
+#include <aros/types/fs_t.h>
+#include <aros/types/gid_t.h>
+#include <aros/types/id_t.h>
+#include <aros/types/ino_t.h>
+#include <aros/types/key_t.h>
+#include <aros/types/mode_t.h>
+#include <aros/types/nlink_t.h>
+#include <aros/types/off_t.h>
+#include <aros/types/pid_t.h>
+#include <aros/types/ssize_t.h>
+#include <aros/types/socklen_t.h>
+#include <aros/types/suseconds_t.h>
+#include <aros/types/time_t.h>
+#include <aros/types/timer_t.h>
+#include <aros/types/uid_t.h>
+#include <aros/types/useconds_t.h>
 
-#define __need_size_t
-#include <stddef.h>
-
-/* Define the rest of the POSIX types */
-
-#include <sys/types/clockid_t.h>
-#include <sys/types/clock_t.h>
-#include <sys/types/dev_t.h>
-#include <sys/types/fs_t.h>
-#include <sys/types/gid_t.h>
-#include <sys/types/id_t.h>
-#include <sys/types/ino_t.h>
-#include <sys/types/key_t.h>
-#include <sys/types/mode_t.h>
-#include <sys/types/nlink_t.h>
-#include <sys/types/off_t.h>
-#include <sys/types/pid_t.h>
-#include <sys/types/socklen_t.h>
-#include <sys/types/suseconds_t.h>
-#include <sys/types/time_t.h>
-#include <sys/types/timer_t.h>
-#include <sys/types/uid_t.h>
-#include <sys/types/useconds_t.h>
-
-/* These require this header to be included first */
-typedef	__blkcnt_t                  blkcnt_t;	/* File block count         */
-typedef __blksize_t                 blksize_t;	/* File block size          */
-
-typedef __caddr_t                   caddr_t;    /* Core address             */
-typedef __int32_t                   daddr_t;    /* Disk address             */
-typedef __uint32_t                  fixpt_t;    /* Fixed point number       */
-typedef __int64_t                   rlim_t;     /* Resource limit           */
-typedef __int64_t                   segsz_t;    /* Segment size             */
-typedef __int32_t                   swblk_t;    /* Swap offset              */
+typedef char *                    caddr_t;    /* Core address             */
+typedef int32_t                   daddr_t;    /* Disk address             */
+typedef uint32_t                  fixpt_t;    /* Fixed point number       */
+typedef int64_t                   rlim_t;     /* Resource limit           */
+typedef int64_t                   segsz_t;    /* Segment size             */
+typedef int32_t                   swblk_t;    /* Swap offset              */
 
 /* These are not supported */
 /*
@@ -123,7 +104,7 @@ typedef __int32_t                   swblk_t;    /* Swap offset              */
 #define FD_SETSIZE      64
 #endif
 
-typedef __int32_t       fd_mask;
+typedef int32_t       fd_mask;
 #define NFDBITS         (sizeof(fd_mask) * NBBY)
 
 #ifndef howmany

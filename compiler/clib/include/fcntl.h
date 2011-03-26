@@ -2,7 +2,7 @@
 #define _FCNTL_H_
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file fcntl.h
@@ -12,13 +12,15 @@
 #include <sys/cdefs.h>
 
 #if __XSI_VISIBLE
-#include <unistd.h>
+/* Both Linux and NetBSD seem to include this file and
+   POSIX.1-2008 allows its inclusion
+ */
 #include <sys/stat.h>
 #endif
 
-#include <sys/types/pid_t.h>
-#include <sys/types/mode_t.h>
-#include <sys/types/off_t.h>
+#include <aros/types/pid_t.h>
+#include <aros/types/mode_t.h>
+#include <aros/types/off_t.h>
 
 /* Flags for open */
 
@@ -104,6 +106,9 @@
 #define POSIX_FADV_DONTNEED     5
 #define POSIX_FADV_NOREUSE      6
 #endif
+
+/* For l_whence */
+#include <aros/types/seek.h>
 
 struct flock
 {

@@ -7,6 +7,7 @@
 #endif
 
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <dirent.h>
 #include <pwd.h>
 #include <time.h>

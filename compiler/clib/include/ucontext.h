@@ -2,7 +2,7 @@
 #define _UCONTEXT_H_
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Define the portable version of the execution context.
@@ -12,20 +12,7 @@
 #include <sys/cdefs.h>
 #include <signal.h>
 
-/* XXX Need to include the CPU specific version. */
-typedef struct __mcontext
-{
-    void *mc;
-} mcontext_t;
-
-typedef struct __ucontext
-{
-    mcontext_t		 uc_mcontext;
-
-    struct __ucontext	*uc_link;
-    sigset_t		 uc_sigmask;
-    stack_t		 uc_stack;
-} ucontext_t;
+#include <aros/types/ucontext_t.h>
 
 __BEGIN_DECLS
 

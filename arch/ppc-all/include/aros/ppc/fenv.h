@@ -32,10 +32,10 @@
 #ifdef __AROS__
 #include <sys/cdefs.h>
 #endif
-#include <sys/_types.h>
+#include <aros/types/int_t.h>
 
-typedef	__uint32_t	fenv_t;
-typedef	__uint32_t	fexcept_t;
+typedef	uint32_t	fenv_t;
+typedef	uint32_t	fexcept_t;
 
 /* Exception flags */
 #define	FE_INEXACT	0x02000000
@@ -91,7 +91,7 @@ extern const fenv_t	__fe_dfl_env;
 union __fpscr {
 	double __d;
 	struct {
-		__uint32_t __junk;
+		uint32_t __junk;
 		fenv_t __reg;
 	} __bits;
 };

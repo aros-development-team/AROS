@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function OpenMonitor()
@@ -10,6 +10,8 @@
 #include <aros/debug.h>
 #include <graphics/monitor.h>
 #include <proto/oop.h>
+
+#include <stddef.h>
 
 #include "graphics_intern.h"
 #include "dispinfo.h"

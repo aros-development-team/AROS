@@ -1,7 +1,7 @@
 #ifndef _SYS_UIO_H_
 #define _SYS_UIO_H_
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX/BSD header <sys/uio.h>
@@ -9,12 +9,8 @@
 
 #include <aros/systypes.h>
 #include <sys/cdefs.h>
-#include <sys/_iovec.h>
-
-#ifdef  _AROS_SSIZE_T_
-#define _AROS_SSIZE_T_          ssize_t;
-#undef  _AROS_SSIZE_T_
-#endif
+#include <aros/types/iovec_s.h>
+#include <aros/types/ssize_t.h>
 
 #if __BSD_VISIBILE
 enum uio_rw
