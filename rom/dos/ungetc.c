@@ -69,14 +69,14 @@
     }
 
     /* Unget EOF character if the last character read was an EOF */
-    if(character==EOF&&fh->fh_End==fh->fh_Buf)
+    if(character==EOF&&fh->fh_End==0)
     {
 	fh->fh_Pos++;
 	return EOF;
     }
 
     /* Test if I may unget a character on this file */
-    if(fh->fh_Pos==fh->fh_Buf)
+    if(fh->fh_Pos==0)
     {
 	*result=ERROR_SEEK_ERROR;
 	return 0;
@@ -85,7 +85,7 @@
     /* OK. Unget character and return. */
     fh->fh_Pos--;
     if(character!=EOF)
-	*fh->fh_Pos=character;
+	((UBYTE *)BADDR(fh->fh_Buf))[fh->fh_Pos]=character;
     return character?character:1;
     AROS_LIBFUNC_EXIT
 } /* UnGetC */

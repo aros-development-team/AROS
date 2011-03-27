@@ -54,7 +54,7 @@
 	{
 	    struct FileHandle *fh=(struct FileHandle *)ptr;
 	    if(fh->fh_Flags&FHF_BUF)
-		FreeMem(fh->fh_Buf,fh->fh_Size);
+		FreeMem(BADDR(fh->fh_Buf),fh->fh_Size);
 	    FreeMem(fh,sizeof(struct FileHandle));
 	    break;
 	}
