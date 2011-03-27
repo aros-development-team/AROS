@@ -8,6 +8,7 @@ FILES := \
             decoration \
             windowdecorclass \
             screendecorclass \
+            menudecorclass \
             config \
 
 EXEDIR := $(AROS_C)

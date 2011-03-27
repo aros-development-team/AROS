@@ -22,4 +22,12 @@ void DrawTileToRPRoot(struct RastPort *rp, struct NewImage *ni, ULONG color, UWO
 LONG WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh);
 LONG WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh);
 LONG WriteTiledImage(struct Window *win, struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh);
+void DrawPartToImage(struct NewImage *src, struct NewImage *dest, UWORD sx, UWORD sy, UWORD sw, UWORD sh, UWORD dx, UWORD dy);
+void SetImageTint(struct NewImage *dst, UWORD ratio, ULONG argb);
+void PutImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD y);
+void DrawPartImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD y, UWORD sx, UWORD sy, UWORD sw, UWORD sh);
+struct NewImage *GetImageFromRP(struct RastPort *rp, UWORD x, UWORD y, UWORD w, UWORD h);
+void RenderBackground(struct NewImage *pic, struct NewImage *texture, UWORD ratio);
+void TileMapToBitmap(struct NewImage *src, struct BitMap *map, UWORD dw, UWORD dh);
+
 #endif
