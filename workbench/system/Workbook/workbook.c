@@ -62,9 +62,6 @@ exit:
     if (wb->wb_WBApp)
     	FreeClass(wb->wb_WBApp);
 
-    if (wb->wb_OpenerSegList)
-    	UnLoadSeg(wb->wb_OpenerSegList);
-
     return rc;
 }
 
