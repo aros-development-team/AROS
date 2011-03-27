@@ -14,7 +14,6 @@
 
 struct scrdecor_data
 {
-
     struct NewImage *img_sdepth;
     struct NewImage *img_sbarlogo;
     struct NewImage *img_stitlebar;
@@ -134,8 +133,7 @@ struct ScreenData
 };
 
 #define SDA_Configuration   0x20002
-#define SDA_ScreenData      0x20003 /* TODO: remove */
-#define SDA_DecorImages     0x20004
+#define SDA_DecorImages     0x20003
 
 IPTR ScrDecor_Dispatcher(struct IClass *cl, Object *obj, Msg msg);
 #endif
