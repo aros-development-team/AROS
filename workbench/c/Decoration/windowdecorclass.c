@@ -1132,13 +1132,11 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         }
     }
 
-//     if (data->filltitlebar)
-//     {
-//         if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width, window->Height, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc);
-//         else DrawTileToRP(rp, ni, color, 0, 0, 0, 0, window->Width, window->BorderTop);
-//     }
-
-    if (window->BorderTop == data->winbarheight) DrawPartialTitleBar(wd, data, window, rp, msg->wdp_Dri, data->txt_align, 0, window->Width, pens);
+    /* Draw title bar */
+    if (window->BorderTop == data->winbarheight) 
+        DrawPartialTitleBar(wd, data, window, rp, msg->wdp_Dri, data->txt_align, 0, window->Width, pens);
+    
+    /* Draw left, right and bottom frames */
     if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
         if (window->BorderLeft > 2)
@@ -1157,6 +1155,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
             else DrawTileToRP(rp, ni, color, 0, 0, 0, window->Height - window->BorderBottom , window->Width, window->BorderBottom);
         }
 
+        /* Shading borders */
         int bbt = bt;
 
         if (bt != data->winbarheight) {
