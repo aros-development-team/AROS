@@ -12,6 +12,20 @@
 
 #include "newimage.h"
 
+struct CachedPropGadget
+{
+    /* This is pregenerate bitmap matching state saved in rest of fields */
+    struct BitMap   *bm; 
+
+    UWORD           width;
+    UWORD           height;
+    UWORD           knobwidth;
+    UWORD           knobheight;
+    UWORD           knobx;
+    UWORD           knoby;
+    ULONG           windowflags;
+};
+
 struct  WindowData
 {
     struct NewImage *ni;
@@ -44,6 +58,10 @@ struct  WindowData
 
     WORD   closewidth, depthwidth, zoomwidth;
     BOOL   truecolor;
+    
+    /* Cached bitmaps used to improve speed of redrawing of decorated window */
+    struct CachedPropGadget vert;
+    struct CachedPropGadget horiz;
 };
 
 #define WDA_Configuration   0x30002

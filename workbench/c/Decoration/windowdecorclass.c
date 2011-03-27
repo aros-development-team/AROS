@@ -112,6 +112,53 @@ struct windecor_data
     LONG             text_col, shadow_col;
 };
 
+
+static BOOL HasPropGadgetChanged(struct CachedPropGadget * cached, 
+    struct Rectangle * proprect, struct Rectangle * renderrect, struct Window * window)
+{
+    /* if knob position has changed */
+    if (cached->knobx != (renderrect->MinX - proprect->MinX))
+        return  TRUE;
+    if (cached->knoby != (renderrect->MinY - proprect->MinY))
+        return  TRUE;
+
+    /* if the window activity status has changed */
+    if (cached->windowflags ^ (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)))
+        return  TRUE;
+
+    /* If the size has changed */
+    if (cached->width != (proprect->MaxX - proprect->MinX + 1))
+        return  TRUE;
+    if (cached->height != (proprect->MaxY - proprect->MinY + 1))
+        return  TRUE;
+
+    /* If knob size has changed */
+    if (cached->knobwidth != (renderrect->MaxX - renderrect->MinX + 1))
+        return  TRUE;
+    if (cached->knobheight != (renderrect->MaxY - renderrect->MinY + 1))
+        return  TRUE;
+
+    /* If there is no cached bitmap at all (this can happen NOT only at first call) */
+    if (cached->bm == NULL)
+        return  TRUE;
+
+    return FALSE;
+}
+
+static VOID CachePropGadget(struct CachedPropGadget * cached, 
+    struct Rectangle * proprect, struct Rectangle * renderrect, 
+    struct Window * window, struct BitMap * bitmap)
+{
+    cached->bm         = bitmap;
+    cached->width      = proprect->MaxX - proprect->MinX + 1;
+    cached->height     = proprect->MaxY - proprect->MinY + 1;
+    cached->windowflags= (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX));
+    cached->knobwidth  = renderrect->MaxX - renderrect->MinX + 1;
+    cached->knobheight = renderrect->MaxY - renderrect->MinY + 1;
+    cached->knobx      = renderrect->MinX - proprect->MinX;
+    cached->knoby      = renderrect->MinY - proprect->MinY;
+}
+
 static int WriteTiledImageShape(BOOL fill, struct Window *win, struct NewLUT8Image *lut8, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
 {
     int     w = dw;
@@ -1635,13 +1682,51 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     ULONG                   y, x, bx0, bx1, by0, by1;
     int                     size, is, pos;
     ULONG                   bc, color, s_col, e_col, arc;
-    LONG    pen = -1;
+    LONG                    pen = -1;
+    struct BitMap          *cachedgadgetbitmap = NULL;
 
     if (!(pi->Flags & PROPNEWLOOK) || (gadget->Activation && (GACT_RIGHTBORDER | GACT_BOTTOMBORDER) == 0))
     {
         return DoSuperMethodA(cl, obj, (Msg)msg);
     }
 
+    /* Detect change in gadget dimensions (which needs to trigger redraw) */
+    if ((pi->Flags & FREEVERT) != 0)
+    {
+        if (HasPropGadgetChanged(&wd->vert, msg->wdp_PropRect, msg->wdp_RenderRect, msg->wdp_Window))
+        {
+            if (wd->vert.bm != NULL)
+                FreeBitMap(wd->vert.bm);
+            wd->vert.bm = NULL;
+        }
+        cachedgadgetbitmap = wd->vert.bm;
+    }
+    else if ((pi->Flags & FREEHORIZ) != 0)
+    {
+        if (HasPropGadgetChanged(&wd->horiz, msg->wdp_PropRect, msg->wdp_RenderRect, msg->wdp_Window))
+        {
+            if (wd->horiz.bm != NULL)
+                FreeBitMap(wd->horiz.bm);
+            wd->horiz.bm = NULL;
+        }
+        cachedgadgetbitmap = wd->horiz.bm;
+
+    }
+    else
+        return TRUE; /* Return TRUE - after all this is not an error */
+    
+    /* Reuse the bitmap if that is possible */
+    if (cachedgadgetbitmap != NULL)
+    {
+        /* Final blitting of gadget bitmap to window rast port */
+        BltBitMapRastPort(cachedgadgetbitmap, 0, 0, winrp, msg->wdp_PropRect->MinX, 
+            msg->wdp_PropRect->MinY, 
+            msg->wdp_PropRect->MaxX - msg->wdp_PropRect->MinX + 1, 
+            msg->wdp_PropRect->MaxY - msg->wdp_PropRect->MinY + 1, 0xc0);
+        return TRUE;
+    }
+
+    /* Regenerate the bitmap */
     r = msg->wdp_PropRect;
 
     bx0 = r->MinX;
@@ -1654,21 +1739,22 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     {
     	struct Rectangle cliprect = {0, 0, bx1 - bx0, by1 - by0};
     	struct TagItem rptags[] =
-	{
-	    {RPTAG_ClipRectangle, (IPTR)&cliprect},
-	    {TAG_DONE	    	    	    	 }
-	};
-	
+        {
+            {RPTAG_ClipRectangle, (IPTR)&cliprect},
+            {TAG_DONE	    	    	    	 }
+        };
+
         rp->BitMap = AllocBitMap(bx1 - bx0 + 1, by1 - by0 + 1, 1, 0, window->WScreen->RastPort.BitMap);
         if (rp->BitMap == NULL)
         {
             FreeRastPort(rp);
             return FALSE;
         }
-	
-	SetRPAttrsA(rp, rptags);
+
+    	SetRPAttrsA(rp, rptags);
     }
-    else return FALSE;
+    else
+        return FALSE;
 
     color = 0x00cccccc;
 
@@ -1697,25 +1783,23 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
         pen = wd->DeactivePen;
     }
 
+    /* Drawing background - this solves WDM_DRAW_BORDERPROPBACK without need of
+       reading from window when drawing container and knob */
     if (data->usegradients)
     {
-
         FillPixelArrayGradientDelta(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1,  0, 0, bx1 - bx0 + 1, by1 - by0 + 1, s_col, e_col, arc, 0, 0);
-
     }
     else
     {
-
-
         if (ni->ok != 0)
         {
             ULONG   color = 0x00cccccc;
 
             DrawTileToRPRoot(rp, ni, color, 0, 0, bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1);
         }
-
     }
 
+    /* Drawing knob container */
     r = msg->wdp_PropRect;
 
     bx0 = 0;
@@ -1748,6 +1832,8 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
         x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, data->ContainerRight_o, pos, data->ContainerRight_s, is, x, by0, data->ContainerRight_s, is);
     }
 
+
+    /* Drawing knob */
     bx0 = msg->wdp_PropRect->MinX;
     by0 = msg->wdp_PropRect->MinY;
     bx1 = msg->wdp_PropRect->MaxX;
@@ -1810,9 +1896,18 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
         x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobRight_o, pos, data->KnobRight_s, is, x, r->MinY - by0, data->KnobRight_s, is);
     }
 
-    BltBitMapRastPort(rp->BitMap, 0, 0, winrp, msg->wdp_PropRect->MinX, msg->wdp_PropRect->MinY, bx1 - bx0 + 1, by1 - by0 + 1, 0xc0);
+    /* Final blitting of gadget bitmap to window rast port */
+    BltBitMapRastPort(rp->BitMap, 0, 0, winrp, msg->wdp_PropRect->MinX, 
+        msg->wdp_PropRect->MinY, 
+        msg->wdp_PropRect->MaxX - msg->wdp_PropRect->MinX + 1, 
+        msg->wdp_PropRect->MaxY - msg->wdp_PropRect->MinY + 1, 0xc0);
 
-    FreeBitMap(rp->BitMap);
+    /* Cache the actual bitmap */
+    if ((pi->Flags & FREEVERT) != 0)
+        CachePropGadget(&wd->vert, msg->wdp_PropRect, msg->wdp_RenderRect, msg->wdp_Window, rp->BitMap);
+    else if ((pi->Flags & FREEHORIZ) != 0)
+        CachePropGadget(&wd->horiz, msg->wdp_PropRect, msg->wdp_RenderRect, msg->wdp_Window, rp->BitMap);
+
     FreeRastPort(rp);
 
     return TRUE;
@@ -2025,6 +2120,9 @@ static IPTR windecor_initwindow(Class *cl, Object *obj, struct wdpInitWindow *ms
 
     wd->ActivePen = sd->ActivePen;
     wd->DeactivePen = sd->DeactivePen;
+    
+    wd->vert.bm = NULL;
+    wd->horiz.bm = NULL;
 
     SETIMAGE_WIN(size);
     SETIMAGE_WIN(close);
@@ -2060,6 +2158,9 @@ static IPTR windecor_exitwindow(Class *cl, Object *obj, struct wdpExitWindow *ms
         if (wd->rp->BitMap) FreeBitMap(wd->rp->BitMap);
         FreeRastPort(wd->rp);
     }
+    
+    if (wd->vert.bm) FreeBitMap(wd->vert.bm);
+    if (wd->horiz.bm) FreeBitMap(wd->horiz.bm);
 
     return TRUE;
 }
