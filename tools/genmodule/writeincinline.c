@@ -13,7 +13,7 @@ static void writealiases(FILE *, struct functionhead *, struct config *);
 void writeincinline(struct config *cfg)
 {
     FILE *out;
-    char line[256];
+    char line[256], *banner;
     struct functionhead *funclistit;
 
     snprintf(line, 255, "%s/inline/%s.h", cfg->gendir, cfg->modulename);
@@ -25,6 +25,7 @@ void writeincinline(struct config *cfg)
         exit(20);
     }
 
+    banner = getBanner(cfg);
     fprintf(out,
 	    "#ifndef INLINE_%s_H\n"
 	    "#define INLINE_%s_H\n"
@@ -39,30 +40,30 @@ void writeincinline(struct config *cfg)
 	    "#include <exec/types.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper, getBanner(cfg), cfg->modulename
+	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
     );
-    if (cfg->command!=DUMMY)
+    freeBanner(banner);
+
+    for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)
     {
-	for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)
-	{
-	    if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
-	    {
-		if (funclistit->libcall != STACK)
-		{
-		    writeinlineregister(out, funclistit, cfg);
-		    if (!funclistit->novararg)
-			writeinlinevararg(out, funclistit, cfg);
-		}
-		else /* libcall == STACK */
-		{
-		    /* NOP: nothing to be written for stack argument passing.
-                       The stubs in sthe link library will be used */
-		}
-		
-		writealiases(out, funclistit, cfg);
-	    }
-	}
+        if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
+        {
+            if (funclistit->libcall != STACK)
+            {
+                writeinlineregister(out, funclistit, cfg);
+                if (!funclistit->novararg)
+                    writeinlinevararg(out, funclistit, cfg);
+            }
+            else /* libcall == STACK */
+            {
+                /* NOP: nothing to be written for stack argument passing.
+                   The stubs in sthe link library will be used */
+            }
+            
+            writealiases(out, funclistit, cfg);
+        }
     }
+
     fprintf(out,
 	    "\n"
 	    "#endif /* INLINE_%s_H*/\n",
