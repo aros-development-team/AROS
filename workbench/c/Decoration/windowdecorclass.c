@@ -517,7 +517,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
                 }
             }
 
-            if (ni) DrawAlphaStateImageToRP(data, rp, ni, state, x, y, TRUE);
+            if (ni) DrawAlphaStateImageToRP((data->threestate ? 3 : 4)/*data*/, rp, ni, state, x, y, TRUE);
         }
     }
     BltBitMapRastPort(rp->BitMap, start, 0, dst_rp, start, 0, width, window->BorderTop, 0xc0);
@@ -931,7 +931,7 @@ static IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImag
 
     if (wd && titlegadget) if (wd->rp) if (wd->rp->BitMap) BltBitMapRastPort(wd->rp->BitMap, left+addy, top+addy, rp, left+addy, top+addy, width, height, 0xc0);
 
-    if (ni) DrawAlphaStateImageToRP(data, rp, ni, state, left+addx, top+addy, TRUE);
+    if (ni) DrawAlphaStateImageToRP((data->threestate ? 3 : 4)/*data*/, rp, ni, state, left+addx, top+addy, TRUE);
 
     return TRUE;
 }
@@ -1025,30 +1025,30 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
                 if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1, 0, 0 , window->Width - 1, window->BorderTop - 1, s_col, e_col, arc);
                 else DrawTileToRP(rp, ni, color, 0, 0, 0, 0 , window->Width, window->BorderTop);
             }
-            if (bt > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, 0, 0, 0, ww - 1, 0);
-            if (bq > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bq, 0, bq, ww - 1, bq);
-            if (bt > 1) ShadeLine(lpen, tc, data, rp, ni, bc, data->light, 1, 1, 1, ww - 2, 1);
+            if (bt > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, 0, 0, 0, ww - 1, 0);
+            if (bq > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bq, 0, bq, ww - 1, bq);
+            if (bt > 1) ShadeLine(lpen, tc, data->usegradients, rp, ni, bc, data->light, 1, 1, 1, ww - 2, 1);
             bbt = 0;
         }
 
-        if (bl > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bbt, 0, bbt, 0, wh - 1);
-        if (bb > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, wh - 1, 0, wh - 1, ww - 1, wh - 1);
-        if (br > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bbt , ww - 1, bbt , ww - 1, wh - 1);
-        if (bl > 1) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bbt, bl - 1, bbt, bl - 1, wh - bb);
-        if (bb > 1) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
-        if (br > 1) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bbt , ww - br, bbt , ww - br, wh - bb);
-        if (bl > 2) ShadeLine(lpen, tc, data, rp, ni, bc, data->light, bbt, 1, bbt, 1, wh - 2);
+        if (bl > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bbt, 0, bbt, 0, wh - 1);
+        if (bb > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, wh - 1, 0, wh - 1, ww - 1, wh - 1);
+        if (br > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bbt , ww - 1, bbt , ww - 1, wh - 1);
+        if (bl > 1) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bbt, bl - 1, bbt, bl - 1, wh - bb);
+        if (bb > 1) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
+        if (br > 1) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bbt , ww - br, bbt , ww - br, wh - bb);
+        if (bl > 2) ShadeLine(lpen, tc, data->usegradients, rp, ni, bc, data->light, bbt, 1, bbt, 1, wh - 2);
         if (bl > 3) {
-            if (bb > 1) ShadeLine(mpen, tc, data, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
-            else ShadeLine(mpen, tc, data, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb);
+            if (bb > 1) ShadeLine(mpen, tc, data->usegradients, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
+            else ShadeLine(mpen, tc, data->usegradients, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb);
         }
-        if (br > 2) ShadeLine(mpen, tc, data, rp, ni, bc, data->middle, bbt, ww - 2, bbt, ww - 2, wh - 2);
-        if (bb > 2) ShadeLine(mpen, tc, data, rp, ni, bc, data->middle, wh - 2, 1, wh - 2, ww - 2, wh - 2);
+        if (br > 2) ShadeLine(mpen, tc, data->usegradients, rp, ni, bc, data->middle, bbt, ww - 2, bbt, ww - 2, wh - 2);
+        if (bb > 2) ShadeLine(mpen, tc, data->usegradients, rp, ni, bc, data->middle, wh - 2, 1, wh - 2, ww - 2, wh - 2);
         if (bb > 3) {
-            if ((bl > 0) && (br > 0)) ShadeLine(lpen, tc, data, rp, ni, bc, data->light, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
+            if ((bl > 0) && (br > 0)) ShadeLine(lpen, tc, data->usegradients, rp, ni, bc, data->light, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
         }
         if (br > 3) {
-            if (bb > 1) ShadeLine(lpen, tc, data, rp, ni, bc, data->light, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
+            if (bb > 1) ShadeLine(lpen, tc, data->usegradients, rp, ni, bc, data->light, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
         }
     }
     return TRUE;

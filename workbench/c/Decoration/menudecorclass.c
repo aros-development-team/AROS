@@ -100,7 +100,7 @@ static IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysIma
 
     if (!isset || (ni == NULL)) return DoSuperMethodA(cl, obj, (Msg)msg);
 
-    DrawAlphaStateImageToRP(NULL, rp, ni, state, left+addx, top+addy, FALSE);
+    DrawAlphaStateImageToRP(2/*NULL*/, rp, ni, state, left+addx, top+addy, FALSE);
 
     return TRUE;
 }

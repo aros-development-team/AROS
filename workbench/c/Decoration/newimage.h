@@ -37,7 +37,7 @@ void DisposeImageContainer(struct NewImage *ni);
 
 struct NewImage *GetImageFromFile(STRPTR path, STRPTR name, BOOL fixmode);
 void RemoveLUTImage(struct NewImage *ni);
-void SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct Screen* scr); /* TODO: Maybe move to drawfuncs.h ? */
+void SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct Screen* scr);
 
 struct NewLUT8Image *NewLUT8ImageContainer(UWORD w, UWORD h);
 void DisposeLUT8ImageContainer(struct NewLUT8Image *ni);

@@ -9,6 +9,8 @@ FILES := \
             windowdecorclass \
             screendecorclass \
             menudecorclass \
+            newimagefuncs \
+            drawfuncs \
             config \
 
 EXEDIR := $(AROS_C)
