@@ -164,35 +164,35 @@ static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
         Close(file);
     }
 
-    data->di.img_sdepth = GetImageFromFile(path, "System/SDepth/", TRUE);
-    data->di.img_stitlebar = GetImageFromFile(path, "System/STitlebar/", TRUE);
-    data->di.img_sbarlogo = GetImageFromFile(path, "System/SBarLogo/Default", FALSE);
+    data->di.img_sdepth = GetImageFromFile(path, "System/SDepth/Default", 2, 1);
+    data->di.img_stitlebar = GetImageFromFile(path, "System/STitlebar/Default", 1, 1);
+    data->di.img_sbarlogo = GetImageFromFile(path, "System/SBarLogo/Default", 1, 1);
 
-    data->di.img_size = GetImageFromFile(path, "System/Size/", TRUE);
-    data->di.img_close = GetImageFromFile(path, "System/Close/", TRUE);
-    data->di.img_depth = GetImageFromFile(path, "System/Depth/", TRUE);
-    data->di.img_zoom = GetImageFromFile(path, "System/Zoom/", TRUE);
-    data->di.img_mui = GetImageFromFile(path, "System/MUI/", TRUE);
-    data->di.img_popup = GetImageFromFile(path, "System/PopUp/", TRUE);
-    data->di.img_snapshot = GetImageFromFile(path, "System/Snapshot/", TRUE);
-    data->di.img_iconify = GetImageFromFile(path, "System/Iconify/", TRUE);
-    data->di.img_lock = GetImageFromFile(path, "System/Lock/", TRUE);
-    data->di.img_up = GetImageFromFile(path, "System/ArrowUp/", TRUE);
-    data->di.img_down = GetImageFromFile(path, "System/ArrowDown/", TRUE);
-    data->di.img_left = GetImageFromFile(path, "System/ArrowLeft/", TRUE);
-    data->di.img_right = GetImageFromFile(path, "System/ArrowRight/", TRUE);
-    data->di.img_winbar_normal = GetImageFromFile(path, "System/Titlebar/", TRUE);
-    data->di.img_border_normal = GetImageFromFile(path, "System/Borders/Default", FALSE);
-    data->di.img_border_deactivated = GetImageFromFile(path, "System/Borders/Default_Deactivated", FALSE);
-    data->di.img_verticalcontainer = GetImageFromFile(path, "System/Container/Vertical", FALSE);
-    data->di.img_verticalknob = GetImageFromFile(path, "System/Knob/Vertical", FALSE);
-    data->di.img_horizontalcontainer = GetImageFromFile(path, "System/Container/Horizontal", FALSE);
-    data->di.img_horizontalknob = GetImageFromFile(path, "System/Knob/Horizontal", FALSE);
+    data->di.img_size = GetImageFromFile(path, "System/Size/Default", 4, 1);
+    data->di.img_close = GetImageFromFile(path, "System/Close/Default", 4, 1);
+    data->di.img_depth = GetImageFromFile(path, "System/Depth/Default", 4, 1);
+    data->di.img_zoom = GetImageFromFile(path, "System/Zoom/Default", 4, 1);
+    data->di.img_mui = GetImageFromFile(path, "System/MUI/Default", 4, 1);
+    data->di.img_popup = GetImageFromFile(path, "System/PopUp/Default", 4, 1);
+    data->di.img_snapshot = GetImageFromFile(path, "System/Snapshot/Default", 4, 1);
+    data->di.img_iconify = GetImageFromFile(path, "System/Iconify/Default", 4, 1);
+    data->di.img_lock = GetImageFromFile(path, "System/Lock/Default", 4, 1);
+    data->di.img_up = GetImageFromFile(path, "System/ArrowUp/Default", 4, 1);
+    data->di.img_down = GetImageFromFile(path, "System/ArrowDown/Default", 4, 1);
+    data->di.img_left = GetImageFromFile(path, "System/ArrowLeft/Default", 4, 1);
+    data->di.img_right = GetImageFromFile(path, "System/ArrowRight/Default", 4, 1);
+    data->di.img_winbar_normal = GetImageFromFile(path, "System/Titlebar/Default", 1, 2);
+    data->di.img_border_normal = GetImageFromFile(path, "System/Borders/Default", 1, 1);
+    data->di.img_border_deactivated = GetImageFromFile(path, "System/Borders/Default_Deactivated", 1, 1);
+    data->di.img_verticalcontainer = GetImageFromFile(path, "System/Container/Vertical", 2, 1);
+    data->di.img_verticalknob = GetImageFromFile(path, "System/Knob/Vertical", 3, 1);
+    data->di.img_horizontalcontainer = GetImageFromFile(path, "System/Container/Horizontal", 2, 1);
+    data->di.img_horizontalknob = GetImageFromFile(path, "System/Knob/Horizontal", 3, 1);
 
-    data->di.img_menu = GetImageFromFile(path, "Menu/Background/Default", FALSE);
-    data->di.img_amigakey = GetImageFromFile(path, "Menu/AmigaKey/", TRUE);
-    data->di.img_menucheck = GetImageFromFile(path, "Menu/Checkmark/", TRUE);
-    data->di.img_submenu = GetImageFromFile(path, "Menu/SubMenu/", TRUE);
+    data->di.img_menu = GetImageFromFile(path, "Menu/Background/Default", 1, 1);
+    data->di.img_amigakey = GetImageFromFile(path, "Menu/AmigaKey/Default", 1, 1);
+    data->di.img_menucheck = GetImageFromFile(path, "Menu/Checkmark/Default", 1, 1);
+    data->di.img_submenu = GetImageFromFile(path, "Menu/SubMenu/Default", 1, 1);
 
     if (data->di.img_stitlebar)
     {
