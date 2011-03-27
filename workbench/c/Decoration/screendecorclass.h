@@ -6,6 +6,10 @@
 #ifndef SCREENDECORCLASS_H
 #define SCREENDECORCLASS_H
 
+#include <exec/types.h>
+#include <intuition/intuition.h>
+#include <intuition/classes.h>
+
 #include "newimage.h"
 
 struct scrdecor_data
@@ -90,4 +94,9 @@ struct ScreenData
     BOOL            truecolor;
 
 };
+
+#define SDA_Configuration   0x20002
+#define SDA_ScreenData      0x20003
+
+IPTR ScrDecor_Dispatcher(struct IClass *cl, Object *obj, Msg msg);
 #endif
