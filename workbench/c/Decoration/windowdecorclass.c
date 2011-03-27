@@ -1689,11 +1689,12 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     struct NewImage        *ni = NULL;
     BOOL                    hit = (msg->wdp_Flags & WDF_DBPK_HIT) ? TRUE : FALSE;
     ULONG                   y, x, bx0, bx1, by0, by1;
-    int                     size, is, pos;
+    LONG                    size;
     ULONG                   bc, color, s_col, e_col, arc;
     LONG                    pen = -1;
     struct BitMap          *cachedgadgetbitmap = NULL;
     ULONG                   changetype = CHANGE_NO_CHANGE;
+    ULONG                   subimage = 0;
 
     if (!(pi->Flags & PROPNEWLOOK) || (gadget->Activation && (GACT_RIGHTBORDER | GACT_BOTTOMBORDER) == 0))
     {
@@ -1830,27 +1831,23 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
 
     if ((pi->Flags & FREEVERT) != 0)
     {
-
-        is = wd->img_verticalcontainer->w >> 1;
-        if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) pos = 0; else pos = is;
+        if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) subimage = 0; else subimage = 1;
         y = by0;
         size = by1 - by0 - data->ContainerTop_s - data->ContainerBottom_s + 1;
-        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, pos, data->ContainerTop_o, is, data->ContainerTop_s, bx0, y, is, data->ContainerTop_s);
-        if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, pos, data->ContainerVertTile_o, is, data->ContainerVertTile_s, bx0, y, is, size);
+        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, subimage, data->ContainerTop_o, data->ContainerTop_s, bx0, y, data->ContainerTop_s);
+        if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, subimage, data->ContainerVertTile_o, data->ContainerVertTile_s, bx0, y, size);
 
-        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, pos, data->ContainerBottom_o, is, data->ContainerBottom_s, bx0, y, is, data->ContainerBottom_s);
+        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, subimage, data->ContainerBottom_o, data->ContainerBottom_s, bx0, y, data->ContainerBottom_s);
 
     }
     else if ((pi->Flags & FREEHORIZ) != 0)
     {
-
-        is = wd->img_horizontalcontainer->h >> 1;
-        if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) pos = 0; else pos = is;
+        if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) subimage = 0; else subimage = 1;
         x = bx0;
         size = bx1 - bx0 - data->ContainerLeft_s - data->ContainerRight_s + 1;
-        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, data->ContainerLeft_o, pos, data->ContainerLeft_s, is, x, by0, data->ContainerLeft_s, is);
-        if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, data->ContainerHorTile_o, pos, data->ContainerHorTile_s, is, x, by0, size, is);
-        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, data->ContainerRight_o, pos, data->ContainerRight_s, is, x, by0, data->ContainerRight_s, is);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, subimage, data->ContainerLeft_o, data->ContainerLeft_s, x, by0, data->ContainerLeft_s);
+        if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, subimage, data->ContainerHorTile_o, data->ContainerHorTile_s, x, by0, size);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, subimage, data->ContainerRight_o, data->ContainerRight_s, x, by0, data->ContainerRight_s);
     }
 
 
@@ -1863,12 +1860,11 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     r = msg->wdp_RenderRect;
     if ((pi->Flags & FREEVERT) != 0)
     {
-        is = wd->img_verticalknob->w / 3;
-        if (hit) pos = is; else if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) pos = 0; else pos = is * 2;
+        if (hit) subimage = 1; else if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) subimage = 0; else subimage = 2;
         y = r->MinY - by0;
         size = r->MaxY - r->MinY - data->KnobTop_s - data->KnobBottom_s + 1;
 
-        y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobTop_o, is, data->KnobTop_s, r->MinX - bx0, y, is, data->KnobTop_s);
+        y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobTop_o, data->KnobTop_s, r->MinX - bx0, y, data->KnobTop_s);
         if (size > 0)
         {
             if (size > data->KnobVertGripper_s)
@@ -1876,26 +1872,24 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
                 size = size - data->KnobVertGripper_s;
                 int size_bak = size;
                 size = size / 2;
-                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobTileTop_o, is, data->KnobTileTop_s, r->MinX - bx0, y, is, size);
-                y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobVertGripper_o, is, data->KnobVertGripper_s, r->MinX - bx0, y, is, data->KnobVertGripper_s);
+                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobTileTop_o, data->KnobTileTop_s, r->MinX - bx0, y, size);
+                y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobVertGripper_o, data->KnobVertGripper_s, r->MinX - bx0, y, data->KnobVertGripper_s);
                 size = size_bak - size;
-                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobTileBottom_o, is, data->KnobTileBottom_s, r->MinX - bx0, y, is, size);
+                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobTileBottom_o, data->KnobTileBottom_s, r->MinX - bx0, y, size);
             }
             else
             {
-                y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobTileTop_o, is, data->KnobTileTop_s, r->MinX - bx0, y, is, size);
+                y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobTileTop_o, data->KnobTileTop_s, r->MinX - bx0, y, size);
             }
         }
-        y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobBottom_o, is, data->KnobBottom_s, r->MinX - bx0, y, is, data->KnobBottom_s);
+        y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobBottom_o, data->KnobBottom_s, r->MinX - bx0, y, data->KnobBottom_s);
     }
     else if ((pi->Flags & FREEHORIZ) != 0)
     {
-
-        is = wd->img_horizontalknob->h / 3;
-        if (hit) pos = is; else if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) pos = 0; else pos = is * 2;
+        if (hit) subimage = 1; else if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) subimage = 0; else subimage = 2;
         x = r->MinX - bx0;
         size = r->MaxX - r->MinX - data->KnobLeft_s - data->KnobRight_s + 1;
-        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobLeft_o, pos, data->KnobLeft_s, is, x, r->MinY - by0, data->KnobLeft_s, is);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobLeft_o, data->KnobLeft_s, x, r->MinY - by0, data->KnobLeft_s);
 
         if (size > 0)
         {
@@ -1904,17 +1898,17 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
                 size = size - data->KnobHorGripper_s;
                 int size_bak = size;
                 size = size / 2;
-                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobTileLeft_o, pos, data->KnobTileLeft_s, is, x, r->MinY - by0, size, is);
-                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobHorGripper_o, pos, data->KnobHorGripper_s, is, x, r->MinY - by0, data->KnobHorGripper_s, is);
+                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobTileLeft_o, data->KnobTileLeft_s, x, r->MinY - by0, size);
+                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobHorGripper_o, data->KnobHorGripper_s, x, r->MinY - by0, data->KnobHorGripper_s);
                 size = size_bak - size;
-                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobTileRight_o, pos, data->KnobTileRight_s, is, x, r->MinY - by0, size, is);
+                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobTileRight_o, data->KnobTileRight_s, x, r->MinY - by0, size);
             }
             else
             {
-                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobTileRight_o, pos, data->KnobTileRight_s, is, x, r->MinY - by0, size, is);
+                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobTileRight_o, data->KnobTileRight_s, x, r->MinY - by0, size);
             }
         }
-        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobRight_o, pos, data->KnobRight_s, is, x, r->MinY - by0, data->KnobRight_s, is);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobRight_o, data->KnobRight_s, x, r->MinY - by0, data->KnobRight_s);
     }
 
     /* Final blitting of gadget bitmap to window rast port */
