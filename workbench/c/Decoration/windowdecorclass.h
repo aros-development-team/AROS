@@ -24,6 +24,7 @@ struct CachedPropGadget
     UWORD           knobx;
     UWORD           knoby;
     ULONG           windowflags;
+    ULONG           gadgetflags;
 };
 
 struct  WindowData
