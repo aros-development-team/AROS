@@ -35,7 +35,7 @@
 
 ******************************************************************************/
 
-#include <clib/alib_protos.h>
+#include <clib/alib_protos.h> /* TODO: remove, needed for HOOKFUNC */
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -92,12 +92,20 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
         if (nd->nd_Screen)
         {
-            APTR    screendata = NULL;
+            APTR screendata = NULL;
+            APTR decorimages = NULL;
 
             get(nd->nd_Screen, SDA_ScreenData, &screendata);
+            get(nd->nd_Screen, SDA_DecorImages, &decorimages);
 
             struct TagItem WindowTags[] = { {WDA_UserBuffer, sizeof(struct WindowData)}, {WDA_Configuration, (IPTR) newpath}, {WDA_ScreenData, (IPTR)screendata}, {TAG_DONE} };
-            struct TagItem MenuTags[]   = { {MDA_UserBuffer, sizeof(struct MenuData)}, {MDA_Configuration, (IPTR) newpath}, {MDA_ScreenData, (IPTR)screendata}, {TAG_DONE} };
+            struct TagItem MenuTags[] = 
+            { 
+                {MDA_UserBuffer, sizeof(struct MenuData)}, 
+                {MDA_Configuration, (IPTR) newpath}, 
+                {MDA_DecorImages, (IPTR)decorimages}, 
+                {TAG_DONE} 
+            };
 
 
             nd->nd_Window = NewObjectA(wndcl, NULL, WindowTags);
@@ -179,12 +187,9 @@ int main(void)
             scrcl->cl_Dispatcher.h_Entry    = HookEntry;
             scrcl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)ScrDecor_Dispatcher;
 		
-            menucl = MakeClass(NULL, MENUDECORCLASS, NULL, sizeof(struct menudecor_data), 0);
+            menucl = MakeMenuDecorClass();
             if (menucl)
             {
-                menucl->cl_Dispatcher.h_Entry    = HookEntry;
-                menucl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)MenuDecor_Dispatcher;
-
                 struct MsgPort *port = CreateMsgPort();
                 ULONG  skinSignal;
                 if (port)
