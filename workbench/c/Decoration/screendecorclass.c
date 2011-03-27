@@ -270,11 +270,6 @@ static struct DecorImages d;
             *msg->opg_Storage = TRUE;
             break;
 
-        /* TODO: remove */
-        case SDA_ScreenData:
-            *msg->opg_Storage = (IPTR)INST_DATA(cl, obj);
-            break;
-
         case SDA_DecorImages:
             *msg->opg_Storage = (IPTR)&d;
             break;
