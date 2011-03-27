@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009, The AROS Development Team.
+    Copyright © 2009-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -17,7 +17,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 
-#include <strings.h>
+#include <string.h>
 #include <stdlib.h>
 
 #include "displayidlist_class.h"

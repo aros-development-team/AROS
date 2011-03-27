@@ -4,7 +4,7 @@
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
-#include <strings.h>
+#include <string.h>
 #include <stdio.h>
 
 #include "prefs.h"
