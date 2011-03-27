@@ -82,6 +82,14 @@
             return EOF;
     }
 
+    /* Set sentinel to detect if a program
+     * has manually manipulated fh->fh_Buf
+     * instead of using SetVBuf
+     *
+     * (AOS compatability issue)
+     */
+    fh->fh_Buf2 = fh->fh_Buf;
+
     return 0;
     
     AROS_LIBFUNC_EXIT
@@ -95,9 +103,10 @@ vbuf_free(FileHandlePtr fh)
     {
 	/* free buffer allocated by system */
     	if (fh->fh_Flags & FHF_OWNBUF)
-	    FreeMem(fh->fh_Buf, fh->fh_Size);
+	    FreeMem(BADDR(fh->fh_Buf), fh->fh_Size);
 
-        fh->fh_Buf = fh->fh_Pos = fh->fh_End = NULL;
+        fh->fh_Buf = BNULL;
+        fh->fh_Pos = fh->fh_End = 0;
         fh->fh_Size = 0;
     }
 
@@ -124,12 +133,14 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
 
         if(fh->fh_Flags & FHF_WRITE)
         {
-            fh->fh_Pos = fh->fh_Buf = buf;
-            fh->fh_End = fh->fh_Buf + fh->fh_Size;
+            fh->fh_Buf = MKBADDR(buf);
+            fh->fh_Pos = 0;
+            fh->fh_End = fh->fh_Size;
         }
         else
         {
-            fh->fh_Pos = fh->fh_Buf = fh->fh_End = buf;
+            fh->fh_Buf = MKBADDR(buf);
+            fh->fh_Pos = fh->fh_End = 0;
         }
     }
 
@@ -156,15 +167,15 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
 
     	if (size > 0)
     	{
-	    CopyMem(argptr, fhinput->fh_Buf, size);
-	    fhinput->fh_Pos = fhinput->fh_Buf;
+	    CopyMem(argptr, BADDR(fhinput->fh_Buf), size);
+	    fhinput->fh_Pos = 0;
 
 	    /*
 	     * Append EOL if there's no one.
 	     * Without it ReadArgs() blocks in FGets() reading arguments.
 	     */
-	    if (fhinput->fh_Buf[size - 1] != '\n')
-	    	fhinput->fh_Buf[size++] = '\n';
+	    if (((UBYTE *)BADDR(fhinput->fh_Buf))[size - 1] != '\n')
+	    	((UBYTE *)BADDR(fhinput->fh_Buf))[size++] = '\n';
 	}
 	else
 	    /*
@@ -174,6 +185,6 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
 	     */
 	    fhinput->fh_Pos = fhinput->fh_Pos + 1;
 
-        fhinput->fh_End = fhinput->fh_Buf + size;
+        fhinput->fh_End = size;
     }
 }

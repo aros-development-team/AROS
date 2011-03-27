@@ -69,11 +69,11 @@
     if(fh->fh_Flags & FHF_WRITE)
     {
         /* write the buffer (in many pieces if the first one isn't enough). */
-        UBYTE  *pos = fh->fh_Buf;
+        LONG pos = 0;
 
         while(pos != fh->fh_Pos)
         {
-            size = Write(file, pos, fh->fh_Pos - pos);
+            size = Write(file, BADDR(fh->fh_Buf) + pos, fh->fh_Pos - pos);
 
             /* An error happened? Return it. */
             if(size < 0)
@@ -86,7 +86,7 @@
 
         /* Reinit filehandle. */
         fh->fh_Flags &= ~FHF_WRITE;
-        fh->fh_Pos = fh->fh_End = fh->fh_Buf;
+        fh->fh_Pos = fh->fh_End = 0;
     }
 
     /* No normal characters left. */
@@ -103,7 +103,7 @@
         }
 
         /* Is there a buffer? */
-        if(fh->fh_Buf == NULL)
+        if(fh->fh_Buf == BNULL)
         {
             if (NULL == vbuf_alloc(fh, NULL, IOBUFSIZE))
             {
@@ -112,14 +112,14 @@
         }
 
         /* Fill the buffer. */
-        size = Read(file, fh->fh_Buf, fh->fh_Size);
+        size = Read(file, BADDR(fh->fh_Buf), fh->fh_Size);
 
         /* Prepare filehandle for data. */
         if(size <= 0)
             size = 0;
 
-        fh->fh_Pos = fh->fh_Buf;
-        fh->fh_End = fh->fh_Buf + size;
+        fh->fh_Pos = 0;
+        fh->fh_End = size;
 
         /* No data read? Return EOF. */
         if(size == 0)
@@ -129,7 +129,7 @@
     }
 
     /* All OK. Get data. */
-    return *fh->fh_Pos++;
+    return ((UBYTE *)BADDR(fh->fh_Buf))[fh->fh_Pos++];
 
     AROS_LIBFUNC_EXIT
 } /* FGetC */

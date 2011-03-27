@@ -63,7 +63,7 @@ AROS_SH0(EndCLI, 41.3)
 	cli->cli_Background = TRUE;
 
         fhin->fh_Pos  = fhin->fh_End + 1; /* Simulate an EOF */
-        fhout->fh_Pos = fhout->fh_Buf; /* don't flush cli's standard output on close*/
+        fhout->fh_Pos = 0; /* don't flush cli's standard output on close*/
     }
 
     return RETURN_OK;

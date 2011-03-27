@@ -15,26 +15,24 @@
 
 LONG InternalFlush( struct FileHandle *fh, struct DosLibrary *DOSBase )
 {
-    UBYTE *position;
+    LONG position;
     
     /* Make sure the input parameters are sane. */
     ASSERT_VALID_PTR( fh );
-    ASSERT_VALID_PTR( fh->fh_Buf );
-    ASSERT_VALID_PTR( fh->fh_Pos );
-    ASSERT_VALID_PTR( fh->fh_End );
+    ASSERT_VALID_PTR( BADDR(fh->fh_Buf) );
 
-    ASSERT(fh->fh_End >  fh->fh_Buf);
-    ASSERT(fh->fh_Pos >= fh->fh_Buf);
+    ASSERT(fh->fh_End >  0);
+    ASSERT(fh->fh_Pos >= 0);
     ASSERT(fh->fh_Pos <= fh->fh_End );
     
     /* Write the data, in many pieces if the first one isn't enough. */
-    position = fh->fh_Buf;
+    position = 0;
 
     while( position < fh->fh_Pos )
     {
     	LONG size;
     
-    	size = Write( MKBADDR(fh), position, fh->fh_Pos - position );
+    	size = Write( MKBADDR(fh), BADDR(fh->fh_Buf) + position, fh->fh_Pos - position );
     
     	/* An error happened? No success. */
     	if( size < 0 )
@@ -48,7 +46,7 @@ LONG InternalFlush( struct FileHandle *fh, struct DosLibrary *DOSBase )
     }
     
     /* Reset the buffer. */
-    fh->fh_Pos = fh->fh_Buf;
+    fh->fh_Pos = 0;
     
     return TRUE;
 }

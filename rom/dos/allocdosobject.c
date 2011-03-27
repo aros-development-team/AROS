@@ -64,8 +64,8 @@
 	{
 	    struct FileHandle *fh = (struct FileHandle *)mem;
 
-	    fh->fh_Pos = (APTR)-1;
-	    fh->fh_End = (APTR)-1;
+	    fh->fh_Pos = -1;
+	    fh->fh_End = -1;
 
 #ifndef AROS_DOS_PACKETS
 	    /*

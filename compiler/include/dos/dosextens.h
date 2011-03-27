@@ -323,13 +323,13 @@ struct DevProc
 struct FileHandle
 {
     /* The next three are used with packet-based filesystems */
-    struct Message * fh_Link;   /* exec message containing packet */
+    ULONG  fh_Flags;
     struct MsgPort * fh_Port;   /* packet reply port */
     struct MsgPort * fh_Type;   /* port to send packets to */
 
-    UBYTE * fh_Buf;
-    UBYTE * fh_Pos;
-    UBYTE * fh_End;
+    BPTR    fh_Buf;
+    LONG    fh_Pos;
+    LONG    fh_End;
 
     LONG  fh_Funcs;
     LONG  fh_Func2;
@@ -337,9 +337,9 @@ struct FileHandle
     SIPTR fh_Args;
     APTR  fh_Arg2;
 
-    /* Private AROS-specific extensions. Do not touch! */
-    ULONG fh_Size;
-    ULONG fh_Flags;
+    /* v39+ */
+    ULONG fh_Size;	/* Size of buffered io buffer */
+    BPTR  fh_Buf2;	/* Always the same as fh_Buf */
 };
 
 /* Original AmigaOS aliases */
