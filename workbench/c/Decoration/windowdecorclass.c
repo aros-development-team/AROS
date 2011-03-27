@@ -112,37 +112,44 @@ struct windecor_data
     LONG             text_col, shadow_col;
 };
 
+#define CHANGE_NO_CHANGE        0
+#define CHANGE_SIZE_CHANGE      1 /* Whole gadget area has changed */
+#define CHANGE_NO_SIZE_CHANGE   2 /* Size remained the same, contents has changed */
 
-static BOOL HasPropGadgetChanged(struct CachedPropGadget * cached, 
+static ULONG HasPropGadgetChanged(struct CachedPropGadget * cached, 
     struct Rectangle * proprect, struct Rectangle * renderrect, struct Window * window)
 {
-    /* if knob position has changed */
-    if (cached->knobx != (renderrect->MinX - proprect->MinX))
-        return  TRUE;
-    if (cached->knoby != (renderrect->MinY - proprect->MinY))
-        return  TRUE;
-
-    /* if the window activity status has changed */
-    if (cached->windowflags ^ (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)))
-        return  TRUE;
-
+    /* More restrictive tests */
+    
     /* If the size has changed */
     if (cached->width != (proprect->MaxX - proprect->MinX + 1))
-        return  TRUE;
+        return  CHANGE_SIZE_CHANGE;
     if (cached->height != (proprect->MaxY - proprect->MinY + 1))
-        return  TRUE;
-
-    /* If knob size has changed */
-    if (cached->knobwidth != (renderrect->MaxX - renderrect->MinX + 1))
-        return  TRUE;
-    if (cached->knobheight != (renderrect->MaxY - renderrect->MinY + 1))
-        return  TRUE;
+        return  CHANGE_SIZE_CHANGE;
 
     /* If there is no cached bitmap at all (this can happen NOT only at first call) */
     if (cached->bm == NULL)
-        return  TRUE;
+        return  CHANGE_SIZE_CHANGE;
 
-    return FALSE;
+    /* Less restrictive tests */
+
+    /* if knob position has changed */
+    if (cached->knobx != (renderrect->MinX - proprect->MinX))
+        return  CHANGE_NO_SIZE_CHANGE;
+    if (cached->knoby != (renderrect->MinY - proprect->MinY))
+        return  CHANGE_NO_SIZE_CHANGE;
+
+    /* if the window activity status has changed */
+    if (cached->windowflags ^ (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)))
+        return  CHANGE_NO_SIZE_CHANGE;
+
+    /* If knob size has changed */
+    if (cached->knobwidth != (renderrect->MaxX - renderrect->MinX + 1))
+        return  CHANGE_NO_SIZE_CHANGE;
+    if (cached->knobheight != (renderrect->MaxY - renderrect->MinY + 1))
+        return  CHANGE_NO_SIZE_CHANGE;
+
+    return CHANGE_NO_CHANGE;
 }
 
 static VOID CachePropGadget(struct CachedPropGadget * cached, 
@@ -1684,6 +1691,7 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     ULONG                   bc, color, s_col, e_col, arc;
     LONG                    pen = -1;
     struct BitMap          *cachedgadgetbitmap = NULL;
+    ULONG                   changetype = CHANGE_NO_CHANGE;
 
     if (!(pi->Flags & PROPNEWLOOK) || (gadget->Activation && (GACT_RIGHTBORDER | GACT_BOTTOMBORDER) == 0))
     {
@@ -1693,8 +1701,11 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     /* Detect change in gadget dimensions (which needs to trigger redraw) */
     if ((pi->Flags & FREEVERT) != 0)
     {
-        if (HasPropGadgetChanged(&wd->vert, msg->wdp_PropRect, msg->wdp_RenderRect, msg->wdp_Window))
+        changetype = HasPropGadgetChanged(&wd->vert, msg->wdp_PropRect, msg->wdp_RenderRect, msg->wdp_Window);
+        
+        if (changetype == CHANGE_SIZE_CHANGE)
         {
+            /* Free is there was size change */
             if (wd->vert.bm != NULL)
                 FreeBitMap(wd->vert.bm);
             wd->vert.bm = NULL;
@@ -1703,8 +1714,11 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     }
     else if ((pi->Flags & FREEHORIZ) != 0)
     {
-        if (HasPropGadgetChanged(&wd->horiz, msg->wdp_PropRect, msg->wdp_RenderRect, msg->wdp_Window))
+        changetype = HasPropGadgetChanged(&wd->horiz, msg->wdp_PropRect, msg->wdp_RenderRect, msg->wdp_Window);
+        
+        if (changetype == CHANGE_SIZE_CHANGE)
         {
+            /* Free is there was size change */
             if (wd->horiz.bm != NULL)
                 FreeBitMap(wd->horiz.bm);
             wd->horiz.bm = NULL;
@@ -1716,7 +1730,7 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
         return TRUE; /* Return TRUE - after all this is not an error */
     
     /* Reuse the bitmap if that is possible */
-    if (cachedgadgetbitmap != NULL)
+    if (changetype == CHANGE_NO_CHANGE)
     {
         /* Final blitting of gadget bitmap to window rast port */
         BltBitMapRastPort(cachedgadgetbitmap, 0, 0, winrp, msg->wdp_PropRect->MinX, 
@@ -1725,7 +1739,7 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
             msg->wdp_PropRect->MaxY - msg->wdp_PropRect->MinY + 1, 0xc0);
         return TRUE;
     }
-
+    
     /* Regenerate the bitmap */
     r = msg->wdp_PropRect;
 
@@ -1744,7 +1758,12 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
             {TAG_DONE	    	    	    	 }
         };
 
-        rp->BitMap = AllocBitMap(bx1 - bx0 + 1, by1 - by0 + 1, 1, 0, window->WScreen->RastPort.BitMap);
+        /* Reuse the bitmap if there was no size change (ie. only move of knob) */        
+        if (changetype == CHANGE_NO_SIZE_CHANGE)
+            rp->BitMap = cachedgadgetbitmap;
+        else
+            rp->BitMap = AllocBitMap(bx1 - bx0 + 1, by1 - by0 + 1, 1, 0, window->WScreen->RastPort.BitMap);
+
         if (rp->BitMap == NULL)
         {
             FreeRastPort(rp);
