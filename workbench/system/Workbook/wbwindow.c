@@ -375,7 +375,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     			WA_WBenchWindow, TRUE,
     			WA_Borderless,  TRUE,
     			WA_Activate,    TRUE,
-    			WA_NoCareRefresh, TRUE,
+    			WA_SmartRefresh, TRUE,
     			WA_NewLookMenus, TRUE,
     			WA_PubScreen, NULL,
     			TAG_MORE, ops->ops_AttrList );
@@ -403,7 +403,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     			WA_Backdrop, FALSE,
     			WA_WBenchWindow, TRUE,
     			WA_Title,    my->Path,
-    			WA_NoCareRefresh, TRUE,
+    			WA_SmartRefresh, TRUE,
     			WA_SizeGadget, TRUE,
     			WA_DragBar, TRUE,
     			WA_DepthGadget, TRUE,
