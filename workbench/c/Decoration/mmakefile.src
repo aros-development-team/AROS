@@ -4,7 +4,11 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := decoration
+FILES := \
+            decoration \
+            windowdecorclass \
+            config \
+
 EXEDIR := $(AROS_C)
 
 #MM workbench-c-decoration : includes linklibs
