@@ -376,6 +376,8 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     			WA_Borderless,  TRUE,
     			WA_Activate,    TRUE,
     			WA_NoCareRefresh, TRUE,
+    			WA_NewLookMenus, TRUE,
+    			WA_PubScreen, NULL,
     			TAG_MORE, ops->ops_AttrList );
     	my->Window->BorderTop = my->Window->WScreen->BarHeight+1;
     } else {
@@ -643,8 +645,13 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
 
 static void NewCLI(struct WorkbookBase *wb, BPTR lock)
 {
-    BPTR cd = DupLock(lock);
+    BPTR cd;
     IPTR rc;
+
+    if (lock == BNULL)
+    	cd = Lock("SYS:", SHARED_LOCK);
+    else
+    	cd = DupLock(lock);
 
     D(bug("Lock=%p\n", BADDR(cd)));
     rc = SystemTags("NewShell", NP_CurrentDir, (IPTR)cd, TAG_DONE);
