@@ -39,6 +39,9 @@ struct WorkbookBase {
     BPTR wb_OpenerSegList;
 };
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define IntuitionBase wb->wb_IntuitionBase
 #define DOSBase       wb->wb_DOSBase
 #define UtilityBase   wb->wb_UtilityBase

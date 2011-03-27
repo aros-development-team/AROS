@@ -2,7 +2,7 @@
 #define DOSBOOT_INTERN_H
 
 /*
-	Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Internal definitions for dosboot
@@ -51,6 +51,9 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase);
 struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase);
 void CloseBootScreen(struct Screen *scr, struct DOSBootBase *DOSBootBase);
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #undef GfxBase
 #define GfxBase DOSBootBase->bm_GfxBase
 #undef IntuitionBase

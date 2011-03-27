@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -741,12 +741,20 @@ struct IntIntuiMessage
 #define GetPubIBase(ib)     	((struct IntuitionBase *)ib)
 #define GetPrivIBase(ib)    	((struct IntIntuitionBase *)ib)
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #ifdef __MORPHOS__
 #ifdef MUIMasterBase
 #undef MUIMasterBase
 #define MUIMasterBase 	    	(GetPrivIBase(IntuitionBase)->MUIMasterBase)
 #endif
 #endif
+
+/* struct Utilitybase is used in the following file so include it
+   before defining Utilitybase
+*/
+#include <proto/utility.h>
 
 #ifdef UtilityBase
 #undef UtilityBase

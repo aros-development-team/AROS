@@ -23,10 +23,18 @@
 */
 #include "../../compiler/clib/__filesystem_support.h"
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #ifdef TimerBase
 #undef TimerBase
 #endif
 #define TimerBase (DOSBase->dl_TimerIO.tr_node.io_Device)
+
+/* struct Utilitybase is used in the following file so include it
+   before defining Utilitybase
+*/
+#include <proto/utility.h>
 
 #ifdef UtilityBase
 #undef UtilityBase

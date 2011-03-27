@@ -226,6 +226,9 @@ void initGlobals();
 #undef TimerBase
 #endif
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define SysBase (globals->sysBase)
 #define DOSBase (globals->dosBase)
 #define IntuitionBase (globals->intuitionBase)
