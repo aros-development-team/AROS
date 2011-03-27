@@ -190,8 +190,8 @@ static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
     data->di.img_border_deactivated = GetImageFromFile(path, "System/Borders/Default_Deactivated", 1, 1);
     data->di.img_verticalcontainer = GetImageFromFile(path, "System/Container/Vertical", 2, 1);
     data->di.img_verticalknob = GetImageFromFile(path, "System/Knob/Vertical", 3, 1);
-    data->di.img_horizontalcontainer = GetImageFromFile(path, "System/Container/Horizontal", 2, 1);
-    data->di.img_horizontalknob = GetImageFromFile(path, "System/Knob/Horizontal", 3, 1);
+    data->di.img_horizontalcontainer = GetImageFromFile(path, "System/Container/Horizontal", 1, 2);
+    data->di.img_horizontalknob = GetImageFromFile(path, "System/Knob/Horizontal", 1, 3);
 
     data->di.img_menu = GetImageFromFile(path, "Menu/Background/Default", 1, 1);
     data->di.img_amigakey = GetImageFromFile(path, "Menu/AmigaKey/Default", 1, 1);
