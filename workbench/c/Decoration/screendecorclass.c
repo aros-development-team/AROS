@@ -10,14 +10,20 @@
 #include <proto/intuition.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
+#include <proto/exec.h>
 #include <string.h>
 
 #include "screendecorclass.h"
 #include "drawfuncs.h"
 #include "config.h"
 
-#define SETIMAGE_SCR(id) SetImage(data->di.img_##id, &sd->img_##id, truecolor, screen)
-#define DELIMAGE_SCR(id) RemoveLUTImage(&sd->img_##id)
+#define SETIMAGE_SCR(id)                                                        \
+{                                                                               \
+    sd->di.img_##id = AllocVec(sizeof(struct NewImage), MEMF_ANY | MEMF_CLEAR); \
+    SetImage(data->di.img_##id, sd->di.img_##id, truecolor, screen);            \
+}
+
+#define DELIMAGE_SCR(id) { RemoveLUTImage(sd->di.img_##id); FreeVec(sd->di.img_##id); }
 
 struct scrdecor_data
 {
@@ -303,13 +309,20 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 
     if (beeping) {
         SetAPen(rp, pens[BARDETAILPEN]);
-        RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar.h);
+        RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar->h);
     } else {
-        if (sd->img_stitlebar.ok)
-	    WriteTiledImage(NULL, rp, &sd->img_stitlebar, 0, 0, sd->img_stitlebar.w, sd->img_stitlebar.h, 0, 0, scr->Width, sd->img_stitlebar.h);
+        if (sd->img_stitlebar->ok)
+	    WriteTiledImage(NULL, rp, sd->img_stitlebar, 0, 0, sd->img_stitlebar->w, 
+	        sd->img_stitlebar->h, 0, 0, scr->Width, sd->img_stitlebar->h);
     }
-    if (sd->img_sbarlogo.ok) WriteTiledImage(NULL, rp, &sd->img_sbarlogo, 0, 0, sd->img_sbarlogo.w, sd->img_sbarlogo.h, data->slogo_off, (scr->BarHeight + 1 - sd->img_sbarlogo.h) / 2, sd->img_sbarlogo.w, sd->img_sbarlogo.h);
-    if (scr->Title == NULL) hastitle = FALSE;
+    if (sd->img_sbarlogo->ok)
+        WriteTiledImage(NULL, rp, sd->img_sbarlogo, 0, 0, sd->img_sbarlogo->w, 
+            sd->img_sbarlogo->h, data->slogo_off, 
+            (scr->BarHeight + 1 - sd->img_sbarlogo->h) / 2, 
+            sd->img_sbarlogo->w, sd->img_sbarlogo->h);
+
+    if (scr->Title == NULL)
+        hastitle = FALSE;
 
     if (hastitle)
     {
@@ -401,7 +414,7 @@ static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImag
     {
         if (&sd->img_sdepth)
         {
-            DrawAlphaStateImageToRP(2 /*NULL*/, rp, &sd->img_sdepth, state, left, top, TRUE);
+            DrawAlphaStateImageToRP(2 /*NULL*/, rp, sd->img_sdepth, state, left, top, TRUE);
         }
         else return DoSuperMethodA(cl, obj, (Msg) msg);
     }
@@ -423,7 +436,7 @@ static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutSc
         {
             case GTYP_SDEPTH:
                 gadget->LeftEdge = -gadget->Width;
-                gadget->TopEdge = (data->sbarheight - sd->img_sdepth.h) >> 1;
+                gadget->TopEdge = (data->sbarheight - sd->img_sdepth->h) >> 1;
                 gadget->Flags &= ~GFLG_RELWIDTH;
                 gadget->Flags |= GFLG_RELRIGHT;
                 break;
@@ -467,6 +480,9 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
         sd->DeactivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->lut_col_d << 8) & 0xff000000, (data->lut_col_d << 16) & 0xff000000, (data->lut_col_d << 24) & 0xff000000, PEN_EXCLUSIVE);
     }
 
+    /* Convert initial images to current screen */
+    /* TODO: Make sure a structure is always generated even if there is no image
+       That was the assumption of previous code :/ */
     SETIMAGE_SCR(sdepth);
     SETIMAGE_SCR(sbarlogo);
     SETIMAGE_SCR(stitlebar);
@@ -496,6 +512,15 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
     SETIMAGE_SCR(amigakey);
     SETIMAGE_SCR(menucheck);
     SETIMAGE_SCR(submenu);
+
+    /* Set pointers to converted images */
+    sd->img_sdepth      = sd->di.img_sdepth;
+    sd->img_sbarlogo    = sd->di.img_sbarlogo;
+    sd->img_stitlebar   = sd->di.img_stitlebar;
+    
+    sd->img_amigakey    = sd->di.img_amigakey;
+    sd->img_menucheck   = sd->di.img_menucheck;
+    sd->img_submenu     = sd->di.img_submenu;
 
     return TRUE;
 }
