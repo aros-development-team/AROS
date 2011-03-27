@@ -35,8 +35,6 @@
 
 ******************************************************************************/
 
-#include <clib/alib_protos.h> /* TODO: remove, needed for HOOKFUNC */
-
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -184,11 +182,10 @@ int main(void)
     if (wndcl)
     {
 
-        scrcl = MakeClass(NULL, SCRDECORCLASS, NULL, sizeof(struct scrdecor_data), 0);
+        scrcl = MakeScreenDecorClass();
         if (scrcl)
         {
-            scrcl->cl_Dispatcher.h_Entry    = HookEntry;
-            scrcl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)ScrDecor_Dispatcher;
+
 		
             menucl = MakeMenuDecorClass();
             if (menucl)

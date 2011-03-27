@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <clib/alib_protos.h>
+
 #include <graphics/rpattr.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
@@ -14,65 +16,83 @@
 #include "drawfuncs.h"
 #include "config.h"
 
-#define SETIMAGE_SCR(id) SetImage(data->img_##id, &sd->img_##id, truecolor, screen)
-#define DELIMAGE_SCR(id) RemoveLUTImage(&sd->img_##id) /* TODO: why LUT ? ? ??  */
+#define SETIMAGE_SCR(id) SetImage(data->di.img_##id, &sd->img_##id, truecolor, screen)
+#define DELIMAGE_SCR(id) RemoveLUTImage(&sd->img_##id)
+
+struct scrdecor_data
+{
+    /* This are original images loaded from disk */
+    struct DecorImages di;
+
+    UWORD            sbarheight;
+    UWORD            slogo_off;
+    UWORD            stitle_off;
+    UWORD            winbarheight;
+
+    BOOL             outline;
+    BOOL             shadow;
+
+    LONG             leftborder, bottomborder, rightborder;
+    LONG             lut_col_a, lut_col_d;
+    LONG             text_col, shadow_col;
+};
 
 static void DisposeScreenSkinning(struct scrdecor_data *data)
 {
-    DisposeImageContainer(data->img_sdepth);
-    DisposeImageContainer(data->img_sbarlogo);
-    DisposeImageContainer(data->img_stitlebar);
+    DisposeImageContainer(data->di.img_sdepth);
+    DisposeImageContainer(data->di.img_sbarlogo);
+    DisposeImageContainer(data->di.img_stitlebar);
 
-    DisposeImageContainer(data->img_size);
-    DisposeImageContainer(data->img_close);
-    DisposeImageContainer(data->img_depth);
-    DisposeImageContainer(data->img_zoom);
-    DisposeImageContainer(data->img_mui);
-    DisposeImageContainer(data->img_popup);
-    DisposeImageContainer(data->img_snapshot);
-    DisposeImageContainer(data->img_iconify);
-    DisposeImageContainer(data->img_lock);
-    DisposeImageContainer(data->img_up);
-    DisposeImageContainer(data->img_down);
-    DisposeImageContainer(data->img_left);
-    DisposeImageContainer(data->img_right);
-    DisposeImageContainer(data->img_winbar_normal);
-    DisposeImageContainer(data->img_border_normal);
-    DisposeImageContainer(data->img_border_deactivated);
-    DisposeImageContainer(data->img_verticalcontainer);
-    DisposeImageContainer(data->img_verticalknob);
-    DisposeImageContainer(data->img_horizontalcontainer);
-    DisposeImageContainer(data->img_horizontalknob);
+    DisposeImageContainer(data->di.img_size);
+    DisposeImageContainer(data->di.img_close);
+    DisposeImageContainer(data->di.img_depth);
+    DisposeImageContainer(data->di.img_zoom);
+    DisposeImageContainer(data->di.img_mui);
+    DisposeImageContainer(data->di.img_popup);
+    DisposeImageContainer(data->di.img_snapshot);
+    DisposeImageContainer(data->di.img_iconify);
+    DisposeImageContainer(data->di.img_lock);
+    DisposeImageContainer(data->di.img_up);
+    DisposeImageContainer(data->di.img_down);
+    DisposeImageContainer(data->di.img_left);
+    DisposeImageContainer(data->di.img_right);
+    DisposeImageContainer(data->di.img_winbar_normal);
+    DisposeImageContainer(data->di.img_border_normal);
+    DisposeImageContainer(data->di.img_border_deactivated);
+    DisposeImageContainer(data->di.img_verticalcontainer);
+    DisposeImageContainer(data->di.img_verticalknob);
+    DisposeImageContainer(data->di.img_horizontalcontainer);
+    DisposeImageContainer(data->di.img_horizontalknob);
 
-    DisposeImageContainer(data->img_menu);
-    DisposeImageContainer(data->img_menucheck);
-    DisposeImageContainer(data->img_amigakey);
-    DisposeImageContainer(data->img_submenu);
+    DisposeImageContainer(data->di.img_menu);
+    DisposeImageContainer(data->di.img_menucheck);
+    DisposeImageContainer(data->di.img_amigakey);
+    DisposeImageContainer(data->di.img_submenu);
 
-    data->img_size = NULL;
-    data->img_close = NULL;
-    data->img_depth = NULL;
-    data->img_zoom = NULL;
-    data->img_mui = NULL;
-    data->img_popup = NULL;
-    data->img_snapshot = NULL;
-    data->img_iconify = NULL;
-    data->img_lock = NULL;
-    data->img_up = NULL;
-    data->img_down = NULL;
-    data->img_left = NULL;
-    data->img_right = NULL;
-    data->img_winbar_normal = NULL;
-    data->img_border_normal = NULL;
-    data->img_border_deactivated = NULL;
-    data->img_verticalcontainer = NULL;
-    data->img_verticalknob = NULL;
-    data->img_horizontalcontainer = NULL;
-    data->img_horizontalknob = NULL;
+    data->di.img_size = NULL;
+    data->di.img_close = NULL;
+    data->di.img_depth = NULL;
+    data->di.img_zoom = NULL;
+    data->di.img_mui = NULL;
+    data->di.img_popup = NULL;
+    data->di.img_snapshot = NULL;
+    data->di.img_iconify = NULL;
+    data->di.img_lock = NULL;
+    data->di.img_up = NULL;
+    data->di.img_down = NULL;
+    data->di.img_left = NULL;
+    data->di.img_right = NULL;
+    data->di.img_winbar_normal = NULL;
+    data->di.img_border_normal = NULL;
+    data->di.img_border_deactivated = NULL;
+    data->di.img_verticalcontainer = NULL;
+    data->di.img_verticalknob = NULL;
+    data->di.img_horizontalcontainer = NULL;
+    data->di.img_horizontalknob = NULL;
 
-    data->img_sdepth = NULL;
-    data->img_sbarlogo = NULL;
-    data->img_stitlebar = NULL;
+    data->di.img_sdepth = NULL;
+    data->di.img_sbarlogo = NULL;
+    data->di.img_stitlebar = NULL;
 }
 
 static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
@@ -138,48 +158,48 @@ static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
         Close(file);
     }
 
-    data->img_sdepth = GetImageFromFile(path, "System/SDepth/", TRUE);
-    data->img_stitlebar = GetImageFromFile(path, "System/STitlebar/", TRUE);
-    data->img_sbarlogo = GetImageFromFile(path, "System/SBarLogo/Default", FALSE);
+    data->di.img_sdepth = GetImageFromFile(path, "System/SDepth/", TRUE);
+    data->di.img_stitlebar = GetImageFromFile(path, "System/STitlebar/", TRUE);
+    data->di.img_sbarlogo = GetImageFromFile(path, "System/SBarLogo/Default", FALSE);
 
-    data->img_size = GetImageFromFile(path, "System/Size/", TRUE);
-    data->img_close = GetImageFromFile(path, "System/Close/", TRUE);
-    data->img_depth = GetImageFromFile(path, "System/Depth/", TRUE);
-    data->img_zoom = GetImageFromFile(path, "System/Zoom/", TRUE);
-    data->img_mui = GetImageFromFile(path, "System/MUI/", TRUE);
-    data->img_popup = GetImageFromFile(path, "System/PopUp/", TRUE);
-    data->img_snapshot = GetImageFromFile(path, "System/Snapshot/", TRUE);
-    data->img_iconify = GetImageFromFile(path, "System/Iconify/", TRUE);
-    data->img_lock = GetImageFromFile(path, "System/Lock/", TRUE);
-    data->img_up = GetImageFromFile(path, "System/ArrowUp/", TRUE);
-    data->img_down = GetImageFromFile(path, "System/ArrowDown/", TRUE);
-    data->img_left = GetImageFromFile(path, "System/ArrowLeft/", TRUE);
-    data->img_right = GetImageFromFile(path, "System/ArrowRight/", TRUE);
-    data->img_winbar_normal = GetImageFromFile(path, "System/Titlebar/", TRUE);
-    data->img_border_normal = GetImageFromFile(path, "System/Borders/Default", FALSE);
-    data->img_border_deactivated = GetImageFromFile(path, "System/Borders/Default_Deactivated", FALSE);
-    data->img_verticalcontainer = GetImageFromFile(path, "System/Container/Vertical", FALSE);
-    data->img_verticalknob = GetImageFromFile(path, "System/Knob/Vertical", FALSE);
-    data->img_horizontalcontainer = GetImageFromFile(path, "System/Container/Horizontal", FALSE);
-    data->img_horizontalknob = GetImageFromFile(path, "System/Knob/Horizontal", FALSE);
+    data->di.img_size = GetImageFromFile(path, "System/Size/", TRUE);
+    data->di.img_close = GetImageFromFile(path, "System/Close/", TRUE);
+    data->di.img_depth = GetImageFromFile(path, "System/Depth/", TRUE);
+    data->di.img_zoom = GetImageFromFile(path, "System/Zoom/", TRUE);
+    data->di.img_mui = GetImageFromFile(path, "System/MUI/", TRUE);
+    data->di.img_popup = GetImageFromFile(path, "System/PopUp/", TRUE);
+    data->di.img_snapshot = GetImageFromFile(path, "System/Snapshot/", TRUE);
+    data->di.img_iconify = GetImageFromFile(path, "System/Iconify/", TRUE);
+    data->di.img_lock = GetImageFromFile(path, "System/Lock/", TRUE);
+    data->di.img_up = GetImageFromFile(path, "System/ArrowUp/", TRUE);
+    data->di.img_down = GetImageFromFile(path, "System/ArrowDown/", TRUE);
+    data->di.img_left = GetImageFromFile(path, "System/ArrowLeft/", TRUE);
+    data->di.img_right = GetImageFromFile(path, "System/ArrowRight/", TRUE);
+    data->di.img_winbar_normal = GetImageFromFile(path, "System/Titlebar/", TRUE);
+    data->di.img_border_normal = GetImageFromFile(path, "System/Borders/Default", FALSE);
+    data->di.img_border_deactivated = GetImageFromFile(path, "System/Borders/Default_Deactivated", FALSE);
+    data->di.img_verticalcontainer = GetImageFromFile(path, "System/Container/Vertical", FALSE);
+    data->di.img_verticalknob = GetImageFromFile(path, "System/Knob/Vertical", FALSE);
+    data->di.img_horizontalcontainer = GetImageFromFile(path, "System/Container/Horizontal", FALSE);
+    data->di.img_horizontalknob = GetImageFromFile(path, "System/Knob/Horizontal", FALSE);
 
-    data->img_menu = GetImageFromFile(path, "Menu/Background/Default", FALSE);
-    data->img_amigakey = GetImageFromFile(path, "Menu/AmigaKey/", TRUE);
-    data->img_menucheck = GetImageFromFile(path, "Menu/Checkmark/", TRUE);
-    data->img_submenu = GetImageFromFile(path, "Menu/SubMenu/", TRUE);
+    data->di.img_menu = GetImageFromFile(path, "Menu/Background/Default", FALSE);
+    data->di.img_amigakey = GetImageFromFile(path, "Menu/AmigaKey/", TRUE);
+    data->di.img_menucheck = GetImageFromFile(path, "Menu/Checkmark/", TRUE);
+    data->di.img_submenu = GetImageFromFile(path, "Menu/SubMenu/", TRUE);
 
-    if (data->img_stitlebar)
+    if (data->di.img_stitlebar)
     {
-        data->img_stitlebar->tile_left = 8;
-        data->img_stitlebar->tile_right = 8;
-        data->img_stitlebar->tile_top = 9;
-        data->img_stitlebar->tile_bottom = 8;
+        data->di.img_stitlebar->tile_left = 8;
+        data->di.img_stitlebar->tile_right = 8;
+        data->di.img_stitlebar->tile_top = 9;
+        data->di.img_stitlebar->tile_bottom = 8;
     }
 
     if (olddir) CurrentDir(olddir);
     UnLock(lock);
 
-    if (data->img_sdepth) return TRUE;
+    if (data->di.img_sdepth) return TRUE;
     DisposeScreenSkinning(data);
     return FALSE;
 }
@@ -209,8 +229,8 @@ static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
         {
             barh = data->sbarheight;
 
-            if (data->img_sbarlogo) if (data->img_sbarlogo->h > barh) barh = data->img_sbarlogo->h;
-            if (data->img_stitlebar) if (data->img_stitlebar->h > barh) barh = data->img_stitlebar->h;
+            if (data->di.img_sbarlogo) if (data->di.img_sbarlogo->h > barh) barh = data->di.img_sbarlogo->h;
+            if (data->di.img_stitlebar) if (data->di.img_stitlebar->h > barh) barh = data->di.img_stitlebar->h;
         }
     }
     return (IPTR)obj;
@@ -230,40 +250,7 @@ static IPTR scrdecor_dispose(Class *cl, Object *obj, struct opSet *msg)
 static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
-/* HACK */
-static struct DecorImages d;
 
-    d.img_sdepth = data->img_sdepth;
-    d.img_sbarlogo = data->img_sbarlogo;
-    d.img_stitlebar = data->img_stitlebar;
-
-    d.img_size = data->img_size;
-    d.img_close = data->img_close;
-    d.img_depth = data->img_depth;
-    d.img_zoom = data->img_zoom;
-    d.img_up = data->img_up;
-    d.img_down = data->img_down;
-    d.img_left = data->img_left;
-    d.img_right = data->img_right;
-    d.img_mui = data->img_mui;
-    d.img_popup = data->img_popup;
-    d.img_snapshot = data->img_snapshot;
-    d.img_iconify = data->img_iconify;
-    d.img_lock = data->img_lock;
-    d.img_winbar_normal = data->img_winbar_normal;
-    d.img_border_normal = data->img_border_normal;
-    d.img_border_deactivated = data->img_border_deactivated;
-    d.img_verticalcontainer = data->img_verticalcontainer;
-    d.img_verticalknob = data->img_verticalknob;
-    d.img_horizontalcontainer = data->img_horizontalcontainer;
-    d.img_horizontalknob = data->img_horizontalknob;
-
-    d.img_menu = data->img_menu;
-    d.img_amigakey = data->img_amigakey;
-    d.img_menucheck = data->img_menucheck;
-    d.img_submenu = data->img_submenu;
-
-/* HACK */
     switch(msg->opg_AttrID)
     {
         case SDA_TrueColorOnly:
@@ -271,7 +258,7 @@ static struct DecorImages d;
             break;
 
         case SDA_DecorImages:
-            *msg->opg_Storage = (IPTR)&d;
+            *msg->opg_Storage = (IPTR)&data->di;
             break;
 
         default:
@@ -316,12 +303,12 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 
     if (beeping) {
         SetAPen(rp, pens[BARDETAILPEN]);
-        RectFill(rp, 0, 0, scr->Width, data->img_stitlebar->h);
+        RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar.h);
     } else {
         if (sd->img_stitlebar.ok)
-	    WriteTiledImage(NULL, rp, &sd->img_stitlebar, 0, 0, data->img_stitlebar->w, data->img_stitlebar->h, 0, 0, scr->Width, data->img_stitlebar->h);
+	    WriteTiledImage(NULL, rp, &sd->img_stitlebar, 0, 0, sd->img_stitlebar.w, sd->img_stitlebar.h, 0, 0, scr->Width, sd->img_stitlebar.h);
     }
-    if (sd->img_sbarlogo.ok) WriteTiledImage(NULL, rp, &sd->img_sbarlogo, 0, 0, data->img_sbarlogo->w, data->img_sbarlogo->h, data->slogo_off, (scr->BarHeight + 1 - data->img_sbarlogo->h) / 2, data->img_sbarlogo->w, data->img_sbarlogo->h);
+    if (sd->img_sbarlogo.ok) WriteTiledImage(NULL, rp, &sd->img_sbarlogo, 0, 0, sd->img_sbarlogo.w, sd->img_sbarlogo.h, data->slogo_off, (scr->BarHeight + 1 - sd->img_sbarlogo.h) / 2, sd->img_sbarlogo.w, sd->img_sbarlogo.h);
     if (scr->Title == NULL) hastitle = FALSE;
 
     if (hastitle)
@@ -389,10 +376,10 @@ static IPTR scrdecor_getdefsize_sysimage(Class *cl, Object *obj, struct sdpGetDe
 
     if (msg->sdp_Which == SDEPTHIMAGE)
     {
-        if (data->img_sdepth)
+        if (data->di.img_sdepth)
         {
-            *msg->sdp_Height = data->img_sdepth->h;
-            *msg->sdp_Width = data->img_sdepth->w >> 1;
+            *msg->sdp_Height = data->di.img_sdepth->h;
+            *msg->sdp_Width = data->di.img_sdepth->w >> 1;
         }
         else return DoSuperMethodA(cl, obj, (Msg) msg);
     }
@@ -403,7 +390,6 @@ static IPTR scrdecor_getdefsize_sysimage(Class *cl, Object *obj, struct sdpGetDe
 
 static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
 {
-    struct scrdecor_data   *data = INST_DATA(cl, obj);
     struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
 
     struct RastPort        *rp = msg->sdp_RPort;
@@ -413,7 +399,7 @@ static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImag
 
     if (msg->sdp_Which == SDEPTHIMAGE)
     {
-        if (data->img_sdepth)
+        if (&sd->img_sdepth)
         {
             DrawAlphaStateImageToRP(2 /*NULL*/, rp, &sd->img_sdepth, state, left, top, TRUE);
         }
@@ -427,6 +413,7 @@ static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImag
 static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutScreenGadgets *msg)
 {
     struct Gadget          *gadget = msg->sdp_Gadgets;
+    struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
 
     struct scrdecor_data   *data = INST_DATA(cl, obj);
 
@@ -436,7 +423,7 @@ static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutSc
         {
             case GTYP_SDEPTH:
                 gadget->LeftEdge = -gadget->Width;
-                gadget->TopEdge = (data->sbarheight - data->img_sdepth->h) >> 1;
+                gadget->TopEdge = (data->sbarheight - sd->img_sdepth.h) >> 1;
                 gadget->Flags &= ~GFLG_RELWIDTH;
                 gadget->Flags |= GFLG_RELRIGHT;
                 break;
@@ -552,7 +539,7 @@ static IPTR scrdecor_exitscreen(Class *cl, Object *obj, struct sdpExitScreen *ms
 
 /**************************************************************************************************/
 
-IPTR ScrDecor_Dispatcher(struct IClass *cl, Object *obj, Msg msg)
+static IPTR scrdecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
 {
     IPTR retval;
   
@@ -600,4 +587,16 @@ IPTR ScrDecor_Dispatcher(struct IClass *cl, Object *obj, Msg msg)
     }
 
     return retval;
+}
+
+struct IClass * MakeScreenDecorClass()
+{
+    struct IClass * cl = MakeClass(NULL, SCRDECORCLASS, NULL, sizeof(struct scrdecor_data), 0);
+    if (cl)
+    {
+        cl->cl_Dispatcher.h_Entry    = HookEntry;
+        cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)scrdecor_dispatcher;
+    }
+    
+    return cl;
 }
