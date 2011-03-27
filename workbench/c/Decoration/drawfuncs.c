@@ -28,32 +28,45 @@
 #endif
 
 static void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
-    struct RastPort * destRP, LONG xDest, LONG yDest)
+    LONG xSrc, LONG ySrc, struct RastPort * destRP, LONG xDest, LONG yDest, LONG xSize, LONG ySize)
 {
     ULONG subimagewidth     = ni->w / ni->subimagescols;
     ULONG subimageheight    = ni->h / ni->subimagesrows;
     
-    if (subimageCol >= ni->subimagescols)
-        return;
-    if (subimageRow >= ni->subimagesrows)
-        return;
+    if (subimageCol >= ni->subimagescols) return;
+    if (subimageRow >= ni->subimagesrows) return;
+
+    /* If destination size not provided, use subimage size */
+    if (xSize < 0) xSize = (LONG)subimagewidth;
+    if (ySize < 0) ySize = (LONG)subimageheight;
 
     if (ni->bitmap == NULL)
     {
-        WritePixelArrayAlpha(ni->data, subimagewidth * subimageCol , subimageheight * subimageRow, 
-            ni->w * 4, destRP, xDest, yDest, subimagewidth, subimageheight, 0xffffffff);
+        WritePixelArrayAlpha(ni->data, (subimagewidth * subimageCol) + xSrc , 
+            (subimageheight * subimageRow) + ySrc, ni->w * 4, destRP,
+            xDest, yDest, xSize, ySize, 0xffffffff);
     }
     else
     {
         if (ni->mask)
         {
-            BltMaskBitMapRastPort(ni->bitmap, subimagewidth * subimageCol , subimageheight * subimageRow, 
-                destRP, xDest, yDest, subimagewidth, subimageheight, 0xe0, (PLANEPTR) ni->mask);  
+            BltMaskBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
+                (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest, 
+                xSize, ySize, 0xe0, (PLANEPTR) ni->mask);  
         }
         else 
-            BltBitMapRastPort(ni->bitmap, subimagewidth * subimageCol , subimageheight * subimageRow,
-                destRP, xDest, yDest, subimagewidth, subimageheight, 0xc0);
+            BltBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
+                (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
+                xSize, ySize, 0xc0);
     }
+
+}
+
+static void BltNewImageSubImageRastPortSimple(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+    struct RastPort * destRP, LONG xDest, LONG yDest)
+{
+    BltNewImageSubImageRastPort(ni, subimageCol, subimageRow, 0, 0, destRP, 
+        xDest, yDest, -1, -1);
 }
 
 static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
@@ -698,12 +711,30 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, st
     return x;
 }
 
-LONG WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
+LONG WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw)
 {
-    return WriteTiledImage(NULL, rp, ni, sx, sy, sw, sh, xp, yp, dw, dh);
+    int     w = dw;
+    int     x = xp;
+    int     ddw;
+
+    if (!ni->ok) return xp;
+
+    if ((sw == 0) || (dw == 0)) return xp;
+
+    while (w > 0)
+    {
+        ddw = sw;
+        if (w < ddw) ddw = w;
+
+        BltNewImageSubImageRastPort(ni, 0, subimage, sx, 0, rp, x, yp, ddw, -1);
+
+        w -= ddw;
+        x += ddw;
+    }
+    return x;
 }
 
-LONG WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
+LONG WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, ULONG subimage, LONG sy, LONG sh, LONG xp, LONG yp, LONG dh)
 {
     int     h = dh;
     int     y = yp;
@@ -717,24 +748,16 @@ LONG WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, LONG sx, 
     {
         ddh = sh;
         if (h < ddh) ddh = h;
-        if (ni->bitmap == NULL)
-        {
-            WritePixelArrayAlpha(ni->data, sx , sy, ni->w*4, rp, xp, y, dw, ddh, 0xffffffff);
-        }
-        else
-        {
-            if (ni->mask)
-            {
-                BltMaskBitMapRastPort(ni->bitmap, sx, sy, rp, xp, y, dw, ddh, 0xe0, (PLANEPTR) ni->mask);  
-            }
-            else BltBitMapRastPort(ni->bitmap, sx, sy, rp, xp, y, dw, ddh, 0xc0);
-        }
+
+        BltNewImageSubImageRastPort(ni, subimage, 0, 0, sy, rp, xp, y, -1, ddh);
+
         h -= ddh;
         y += ddh;
     }
     return y;
 }
 
+/* TODO: what is the purpose of this function in respect to WTIHorizontal, why the win parameter ? */
 LONG WriteTiledImage(struct Window *win, struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
 {
     int     w = dw;
@@ -754,18 +777,10 @@ LONG WriteTiledImage(struct Window *win, struct RastPort *rp, struct NewImage *n
     {
         ddw = sw;
         if (w < ddw) ddw = w;
-        if (ni->bitmap == NULL)
-        {
-            WritePixelArrayAlpha(ni->data, sx , sy, ni->w*4, rp, x, yp, ddw, dh, 0xffffffff);
-        }
-        else
-        {
-            if (ni->mask)
-            {
-                BltMaskBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xe0, (PLANEPTR) ni->mask);  
-            }
-            else BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xc0);
-        }
+
+        BltNewImageSubImageRastPort(ni, 0, 0/*FIXME*/, sx, sy/*FIXME:SHOULD BE 0*/,
+            rp, x, yp, ddw, dh);
+
         w -= ddw;
         x += ddw;
     }
@@ -1123,6 +1138,6 @@ void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG
                 break;
         }
             
-        BltNewImageSubImageRastPort(ni, subimagecol, subimagerow, rp, xp, yp);
+        BltNewImageSubImageRastPortSimple(ni, subimagecol, subimagerow, rp, xp, yp);
     }
 }
