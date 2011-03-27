@@ -92,13 +92,18 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
         if (nd->nd_Screen)
         {
-            APTR screendata = NULL;
             APTR decorimages = NULL;
 
-            get(nd->nd_Screen, SDA_ScreenData, &screendata);
             get(nd->nd_Screen, SDA_DecorImages, &decorimages);
 
-            struct TagItem WindowTags[] = { {WDA_UserBuffer, sizeof(struct WindowData)}, {WDA_Configuration, (IPTR) newpath}, {WDA_ScreenData, (IPTR)screendata}, {TAG_DONE} };
+            struct TagItem WindowTags[] = 
+            { 
+                {WDA_UserBuffer, sizeof(struct WindowData)},
+                {WDA_Configuration, (IPTR) newpath},
+                {WDA_DecorImages, (IPTR)decorimages},
+                {TAG_DONE} 
+            };
+
             struct TagItem MenuTags[] = 
             { 
                 {MDA_UserBuffer, sizeof(struct MenuData)}, 
@@ -175,11 +180,9 @@ int main(void)
     }
     Permit();
 
-    wndcl = MakeClass(NULL, WINDECORCLASS, NULL, sizeof(struct windecor_data), 0);
+    wndcl = MakeWindowDecorClass();
     if (wndcl)
     {
-        wndcl->cl_Dispatcher.h_Entry    = HookEntry;
-        wndcl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)WinDecor_Dispatcher;
 
         scrcl = MakeClass(NULL, SCRDECORCLASS, NULL, sizeof(struct scrdecor_data), 0);
         if (scrcl)

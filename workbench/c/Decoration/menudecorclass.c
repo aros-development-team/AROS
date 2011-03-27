@@ -357,7 +357,7 @@ static IPTR menudecor__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
         if (!InitMenuSkinning(path, data, di))
         {
-            CoerceMethod(cl,obj,OM_DISPOSE);
+            CoerceMethod(cl, obj ,OM_DISPOSE);
             obj = NULL;
         }
     }
