@@ -414,7 +414,7 @@ static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImag
     {
         if (&sd->img_sdepth)
         {
-            DrawAlphaStateImageToRP(2 /*NULL*/, rp, sd->img_sdepth, state, left, top, TRUE);
+            DrawStatefulGadgetImageToRP(rp, sd->img_sdepth, state, left, top);
         }
         else return DoSuperMethodA(cl, obj, (Msg) msg);
     }

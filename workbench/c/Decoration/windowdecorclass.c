@@ -659,7 +659,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
                 }
             }
 
-            if (ni) DrawAlphaStateImageToRP((data->threestate ? 3 : 4)/*data*/, rp, ni, state, x, y, TRUE);
+            if (ni) DrawStatefulGadgetImageToRP(rp, ni, state, x, y);
         }
     }
     BltBitMapRastPort(rp->BitMap, start, 0, dst_rp, start, 0, width, window->BorderTop, 0xc0);
@@ -1073,7 +1073,7 @@ static IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImag
 
     if (wd && titlegadget) if (wd->rp) if (wd->rp->BitMap) BltBitMapRastPort(wd->rp->BitMap, left+addy, top+addy, rp, left+addy, top+addy, width, height, 0xc0);
 
-    if (ni) DrawAlphaStateImageToRP((data->threestate ? 3 : 4)/*data*/, rp, ni, state, left+addx, top+addy, TRUE);
+    if (ni) DrawStatefulGadgetImageToRP(rp, ni, state, left + addx, top + addy);
 
     return TRUE;
 }
