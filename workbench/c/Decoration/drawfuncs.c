@@ -451,7 +451,7 @@ void RenderBackground(struct NewImage *pic, struct NewImage *texture, UWORD rati
     else BlurSourceAndMixTexture(pic, NULL, ratio);
 }
 
-void WriteAlphaPixelArray(struct NewImage *src, struct NewLUT8Image *dst, int sx, int sy, int dx, int dy, int w, int h)
+void WriteAlphaPixelArray(struct NewImage *src, struct NewLUT8Image *dst, LONG sx, LONG sy, LONG dx, LONG dy, LONG w, LONG h)
 {
     ULONG  *s = src->data;
     ULONG   argb;
@@ -620,7 +620,7 @@ void DrawTileToRPRoot(struct RastPort *rp, struct NewImage *ni, ULONG color, UWO
     }
 }
 
-LONG WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
+LONG WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
 {
     int     w = dw;
     int     x = xp;
@@ -669,12 +669,12 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, st
     return x;
 }
 
-int WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
+LONG WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
 {
     return WriteTiledImage(NULL, rp, ni, sx, sy, sw, sh, xp, yp, dw, dh);
 }
 
-int WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
+LONG WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
 {
     int     h = dh;
     int     y = yp;
@@ -706,7 +706,7 @@ int WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, int sx, in
     return y;
 }
 
-int WriteTiledImage(struct Window *win, struct RastPort *rp, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
+LONG WriteTiledImage(struct Window *win, struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
 {
     int     w = dw;
     int     x = xp;
@@ -748,7 +748,7 @@ struct myrgb
     int red,green,blue;
 };
     
-void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, int xt, int yt, int xb, int yb, int xp, int yp, int w, int h, ULONG start_rgb, ULONG end_rgb, int angle, int dx, int dy)
+void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle, LONG dx, LONG dy)
 {
     
     /* The basic idea of this algorithm is to calc the intersection between the
@@ -913,7 +913,7 @@ void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, int xt,
     FreeVec(buf);
 }
 
-void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, int xt, int yt, int xb, int yb, int xp, int yp, int w, int h, ULONG start_rgb, ULONG end_rgb, int angle)
+void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle)
 {
     FillPixelArrayGradientDelta(pen, tc, rp, xt, yt, xb, yb, xp, yp, w, h, start_rgb, end_rgb, angle, xp, yp);
 }
