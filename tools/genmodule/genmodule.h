@@ -16,6 +16,7 @@ void writemakefile(struct config *);
 void writeincproto(struct config *);
 void writeincclib(struct config *);
 void writeincdefines(struct config *);
+void writeincinline(struct config *);
 void writeinclibdefs(struct config *);
 void writestart(struct config *);
 void writeend(struct config *);

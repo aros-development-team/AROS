@@ -556,6 +556,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 	    if (!(cfg->options & OPTION_SELFINIT))
 	    cfg->options |= OPTION_RESAUTOINIT;
     }
+
     return NULL;
 }
 

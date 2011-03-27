@@ -31,6 +31,7 @@ int main(int argc, char **argv)
         writeincproto(cfg);
         writeincclib(cfg);
         writeincdefines(cfg);
+        writeincinline(cfg);
 	break;
 	
     case LIBDEFS:

@@ -52,8 +52,8 @@ void writemakefile(struct config *cfg)
     if (cfg->options & OPTION_INCLUDES)
     {
 	fprintf(out,
-		"clib/%s_protos.h defines/%s.h proto/%s.h",
-		cfg->modulename, cfg->modulename, cfg->modulename
+		"clib/%s_protos.h inline/%s.h defines/%s.h proto/%s.h",
+		cfg->modulename, cfg->modulename, cfg->modulename, cfg->modulename
 	);
     }
     fprintf(out, "\n");
