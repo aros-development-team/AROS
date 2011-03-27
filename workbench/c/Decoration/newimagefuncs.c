@@ -71,6 +71,8 @@ struct NewImage *NewImageContainer(UWORD w, UWORD h)
     {
         ni->w = w;
         ni->h = h;
+        ni->subimagescols = 1;
+        ni->subimagesrows = 1;
         ni->data = AllocVec(w * h * sizeof (ULONG), MEMF_ANY | MEMF_CLEAR);
         if (ni->data == NULL)
         {
@@ -81,7 +83,8 @@ struct NewImage *NewImageContainer(UWORD w, UWORD h)
     return ni;
 }
 
-struct NewImage *GetImageFromFile(STRPTR path, STRPTR name, BOOL fixmode)
+struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
+    ULONG expectedsubimagescols, ULONG expectedsubimagesrows)
 {
     struct	BitMapHeader       *bmhd = NULL;
     struct	NewImage           *ni = NULL;
@@ -95,12 +98,6 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name, BOOL fixmode)
     ULONG                       a;
     ULONG   *dst;
 
-    if (fixmode)
-    {
-        strcpy(Buffer, name);
-        strcat(Buffer, "Default");
-    }
-    else
     strcpy(Buffer, name);
 
     pic = NewDTObject(Buffer,  DTA_SourceType,  DTST_FILE,
@@ -119,6 +116,8 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name, BOOL fixmode)
             h = bmhd->bmh_Height;
             mask = bmhd->bmh_Masking;
             ni = NewImageContainer(w, h);
+            ni->subimagescols = expectedsubimagescols;
+            ni->subimagesrows = expectedsubimagesrows;
             if (ni)
             {
                 int len = strlen(path) + strlen(Buffer) +2;
@@ -253,6 +252,8 @@ void SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct 
     {
         out->w = in->w;
         out->h = in->h;
+        out->subimagescols = in->subimagescols;
+        out->subimagesrows = in->subimagesrows;
         out->istiled = in->istiled;
         out->data = in->data;
         out->tile_left = in->tile_left;
