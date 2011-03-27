@@ -50,12 +50,16 @@ void writeincproto(struct config *cfg)
     freeBanner(banner);
 
     fprintf(out,
-	    "#if !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
+	    "#if !defined(NOLIBINLINE) && !defined(%s_NOLIBINLINE)\n"
+	    "#   include <inline/%s.h>\n"
+	    "#elif !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
 	    "#   include <defines/%s.h>\n"
 	    "#endif\n"
 	    "\n"
 	    "#endif /* PROTO_%s_H */\n",
-	    cfg->modulenameupper, cfg->modulename, cfg->modulenameupper
+	    cfg->modulenameupper, cfg->modulename,
+	    cfg->modulenameupper, cfg->modulename,
+            cfg->modulenameupper
     );
     fclose(out);
 }

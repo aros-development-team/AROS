@@ -30,6 +30,7 @@ void writestubs(struct config *cfg)
         out,
         "%s"
         "#define NOLIBDEFINES\n"
+        "#define NOLIBINLINE\n"
         "/* Be sure that the libbases are included in the stubs file */\n"
         "#undef __NOLIBBASE__\n"
         "#undef __%s_NOLIBBASE__\n",
