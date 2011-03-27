@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <stdint.h>
+
 #define __user
 #define __iomem
 #define __force
