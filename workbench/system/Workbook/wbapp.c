@@ -147,10 +147,15 @@ static Object *wbLookupWindow(Class *cl, Object *obj, struct Window *win)
     struct wbApp *my = INST_DATA(cl, obj);
     Object *ostate = (Object *)my->Windows.mlh_Head;
     Object *owin;
+    struct Window *match = NULL;
+
+    /* Is it the root window? */
+    GetAttr(WBWA_Window, my->Root, (IPTR *)&match);
+    if (match == win)
+    	return my->Root;
 
     while ((owin = NextObject(&ostate))) {
-    	struct Window *match = NULL;
-
+    	match = NULL;
     	GetAttr(WBWA_Window, owin, (IPTR *)&match);
     	if (match == win)
     	    return owin;
