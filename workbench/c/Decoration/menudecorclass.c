@@ -106,7 +106,6 @@ static IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysIma
     struct ScreenData      *md = (struct ScreenData *) msg->mdp_UserBuffer;
     struct RastPort        *rp = msg->mdp_RPort;
     struct NewImage        *ni = NULL;
-    LONG                    state = msg->mdp_State;
     LONG                    left = msg->mdp_X;
     LONG                    top = msg->mdp_Y;
     WORD                    addx = 0;
@@ -145,7 +144,7 @@ static IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysIma
 
     if (!isset || (ni == NULL)) return DoSuperMethodA(cl, obj, (Msg)msg);
 
-    DrawAlphaStateImageToRP(2/*NULL*/, rp, ni, state, left+addx, top+addy, FALSE);
+    DrawStatefulGadgetImageToRP(rp, ni, IDS_NORMAL, left + addx, top + addy);
 
     return TRUE;
 }

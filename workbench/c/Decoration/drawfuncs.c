@@ -27,6 +27,35 @@
 #define SET_ARGB(a, r, g, b) b << 24 | g << 16 | r << 8 | a
 #endif
 
+static void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+    struct RastPort * destRP, LONG xDest, LONG yDest)
+{
+    ULONG subimagewidth     = ni->w / ni->subimagescols;
+    ULONG subimageheight    = ni->h / ni->subimagesrows;
+    
+    if (subimageCol >= ni->subimagescols)
+        return;
+    if (subimageRow >= ni->subimagesrows)
+        return;
+
+    if (ni->bitmap == NULL)
+    {
+        WritePixelArrayAlpha(ni->data, subimagewidth * subimageCol , subimageheight * subimageRow, 
+            ni->w * 4, destRP, xDest, yDest, subimagewidth, subimageheight, 0xffffffff);
+    }
+    else
+    {
+        if (ni->mask)
+        {
+            BltMaskBitMapRastPort(ni->bitmap, subimagewidth * subimageCol , subimageheight * subimageRow, 
+                destRP, xDest, yDest, subimagewidth, subimageheight, 0xe0, (PLANEPTR) ni->mask);  
+        }
+        else 
+            BltBitMapRastPort(ni->bitmap, subimagewidth * subimageCol , subimageheight * subimageRow,
+                destRP, xDest, yDest, subimagewidth, subimageheight, 0xc0);
+    }
+}
+
 static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
 {
 
@@ -1074,51 +1103,26 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
 }
 
-/* TODO: remove multiple parameter and just pass number of images calculated by client */
-void DrawAlphaStateImageToRP(int images, struct RastPort *rp, struct NewImage *ni, ULONG state, UWORD xp, UWORD yp, BOOL multiple)
+void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG state, UWORD xp, UWORD yp)
 {
 
-    UWORD   ix, iy, dx;
-    UBYTE  *d;
-
-//TODO: remove    int images = (data == NULL) ? 2 : data->threestate ? 3 : 4;
-
+    UWORD subimagecol = 0;
+    UWORD subimagerow = 0;
+    
     if (ni->ok)
     {
-        dx = 0;
-        d = (UBYTE *) ni->data;
-        ix=ni->w;
-        iy=ni->h;
-        if (multiple)
+        switch(state)
         {
-            switch(state)
-            {
-                case IDS_NORMAL:
-                    break;
-                case IDS_SELECTED:
-                    dx += ix / images;
-                    d += ix / images * 4;
-                    break;
-                case IDS_INACTIVENORMAL:
-                    dx += ix / images * 2;
-                    d += ix / images * 8;
-                    break;
-            }
+            case IDS_NORMAL:
+                break;
+            case IDS_SELECTED:
+                subimagecol = 1;
+                break;
+            case IDS_INACTIVENORMAL:
+                subimagecol = 2;
+                break;
         }
-        else
-        images = 1;
-
-        if (ni->bitmap == NULL)
-        {
-            WritePixelArrayAlpha(d, 0 , 0, ix*4, rp, xp, yp, ix / images, iy, 0xffffffff);
-        }
-        else
-        {
-            if (ni->mask)
-            {
-                BltMaskBitMapRastPort(ni->bitmap, dx, 0, rp, xp, yp, ix / images, iy, 0xe0, (PLANEPTR) ni->mask);  
-            }
-            else BltBitMapRastPort(ni->bitmap, dx, 0, rp, xp, yp, ix / images, iy, 0xc0);
-        }
+            
+        BltNewImageSubImageRastPort(ni, subimagecol, subimagerow, rp, xp, yp);
     }
 }
