@@ -162,6 +162,9 @@ struct Handler
    struct LocaleBase *LocaleBase;
 };
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define LocaleBase (handler->LocaleBase)
 #define UtilityBase (handler->UtilityBase)
 #define DOSBase (handler->DOSBase)

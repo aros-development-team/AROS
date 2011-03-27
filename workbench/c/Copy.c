@@ -1,5 +1,5 @@
 /*
-    Copyright © 2001-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy CLI command
@@ -595,6 +595,9 @@ __startup static AROS_ENTRY(int, Start,
 
         cd->SysBase = SysBase;
         cd->DOSBase = DOSBase;
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define SysBase cd->SysBase
 #define DOSBase cd->DOSBase
 
@@ -1214,6 +1217,9 @@ __startup static AROS_ENTRY(int, Start,
     AROS_USERFUNC_EXIT
 }
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define SysBase cd->SysBase
 #define DOSBase cd->DOSBase
 

@@ -1,7 +1,7 @@
 #ifndef __CON_HANDLER_INTERN_H
 #define __CON_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -116,6 +116,9 @@ struct filehandle
 
 typedef struct IntuitionBase IntuiBase;
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #ifdef InputBase
 #   undef InputBase
 #endif

@@ -251,6 +251,9 @@ struct AddressRange
 
 /* Library and device bases */
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define SysBase (base->sys_base)
 #define UtilityBase (base->utility_base)
 #define ExpansionBase (base->expansion_base)

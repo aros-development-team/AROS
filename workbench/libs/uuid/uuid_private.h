@@ -2,7 +2,7 @@
 #define UUID_PRIVATE_H_
 
 /*
-    Copyright © 2007-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -34,6 +34,9 @@ struct uuid_base {
     
 };
  
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #ifdef DOSBase
 #undef DOSBase
 #endif

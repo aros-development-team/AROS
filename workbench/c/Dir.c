@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: Dir CLI command
@@ -117,6 +117,9 @@ struct data
     int                 g_indent;
 };
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define SysBase		data->SysBase
 #define DOSBase		data->DOSBase
 #define UtilityBase	data->UtilityBase

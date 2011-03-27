@@ -2,7 +2,7 @@
 #define ICON_INTERN_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -166,6 +166,9 @@ struct IconBase
 
 typedef struct IconBase IconBase_T;
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define CyberGfxBase	(IconBase->ib_CyberGfxBase)
 #define DOSBase		(IconBase->ib_DOSBase)
 #define DataTypesBase	(IconBase->ib_DataTypesBase)

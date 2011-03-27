@@ -1,7 +1,7 @@
 #ifndef SERIAL_INTERN_H
 #define SERIAL_INTERN_H
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private definitions for Serial device.
@@ -132,6 +132,9 @@ struct SerialUnit
                                        of the buffer.
                                     */
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #ifdef OOPBase
     #undef OOPBase
 #endif

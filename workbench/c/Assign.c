@@ -140,6 +140,9 @@ struct localdata
 	struct MinList      ld_DeferList;
 };
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define SysBase   ld->ld_SysBase
 #define DOSBase   ld->ld_DOSBase
 #define DeferList ld->ld_DeferList

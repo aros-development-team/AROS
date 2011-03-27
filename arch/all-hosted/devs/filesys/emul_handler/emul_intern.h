@@ -1,7 +1,7 @@
 #ifndef __EMUL_HANDLER_INTERN_H
 #define __EMUL_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -46,6 +46,9 @@ struct emulbase
     struct Emul_PlatformData  pdata;	/* Platform-specific portion */
 };
 
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define HostLibBase emulbase->HostLibBase
 #define KernelBase  emulbase->KernelBase
 #define DOSBase     emulbase->DOSBase

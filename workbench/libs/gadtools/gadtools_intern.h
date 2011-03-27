@@ -2,7 +2,7 @@
 #define GADTOOLS_INTERN_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for gadtools.library.
@@ -370,6 +370,9 @@ struct GT_GenericGadget
 #define GTB(gtb)        	((struct GadToolsBase_intern *)gtb)
 
 extern struct ExecBase *SysBase;
+/* FIXME: Remove these #define xxxBase hacks
+   Do not use this in new code !
+*/
 #define IntuitionBase	(GTB(GadToolsBase)->gt_IntuitionBase)
 #define UtilityBase	(GTB(GadToolsBase)->gt_UtilityBase)
 #define GfxBase		(GTB(GadToolsBase)->gt_GfxBase)
