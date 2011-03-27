@@ -108,6 +108,8 @@ static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
     BPTR    file;
     BPTR    lock;
     BPTR    olddir = 0;
+    ULONG   wgsubimagecols = 4; /* Default value of subimage cols in window gadget */
+
     lock = Lock(path, ACCESS_READ);
     if (lock)
     {
@@ -157,6 +159,8 @@ static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
                 } else if ((v = strstr(line, "ScreenTitleMode ")) == line) {
                     data->outline = GetBool(v, "Outline");
                     data->shadow = GetBool(v, "Shadow");
+                } else if ((v = strstr(line, "NoInactiveSelected ")) == line) {
+                    if (GetBool(v, "Yes")) wgsubimagecols = 3;
                 }
             }
         }
@@ -168,19 +172,19 @@ static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
     data->di.img_stitlebar = GetImageFromFile(path, "System/STitlebar/Default", 1, 1);
     data->di.img_sbarlogo = GetImageFromFile(path, "System/SBarLogo/Default", 1, 1);
 
-    data->di.img_size = GetImageFromFile(path, "System/Size/Default", 4, 1);
-    data->di.img_close = GetImageFromFile(path, "System/Close/Default", 4, 1);
-    data->di.img_depth = GetImageFromFile(path, "System/Depth/Default", 4, 1);
-    data->di.img_zoom = GetImageFromFile(path, "System/Zoom/Default", 4, 1);
-    data->di.img_mui = GetImageFromFile(path, "System/MUI/Default", 4, 1);
-    data->di.img_popup = GetImageFromFile(path, "System/PopUp/Default", 4, 1);
-    data->di.img_snapshot = GetImageFromFile(path, "System/Snapshot/Default", 4, 1);
-    data->di.img_iconify = GetImageFromFile(path, "System/Iconify/Default", 4, 1);
-    data->di.img_lock = GetImageFromFile(path, "System/Lock/Default", 4, 1);
-    data->di.img_up = GetImageFromFile(path, "System/ArrowUp/Default", 4, 1);
-    data->di.img_down = GetImageFromFile(path, "System/ArrowDown/Default", 4, 1);
-    data->di.img_left = GetImageFromFile(path, "System/ArrowLeft/Default", 4, 1);
-    data->di.img_right = GetImageFromFile(path, "System/ArrowRight/Default", 4, 1);
+    data->di.img_size = GetImageFromFile(path, "System/Size/Default", wgsubimagecols, 1);
+    data->di.img_close = GetImageFromFile(path, "System/Close/Default", wgsubimagecols, 1);
+    data->di.img_depth = GetImageFromFile(path, "System/Depth/Default", wgsubimagecols, 1);
+    data->di.img_zoom = GetImageFromFile(path, "System/Zoom/Default", wgsubimagecols, 1);
+    data->di.img_mui = GetImageFromFile(path, "System/MUI/Default", wgsubimagecols, 1);
+    data->di.img_popup = GetImageFromFile(path, "System/PopUp/Default", wgsubimagecols, 1);
+    data->di.img_snapshot = GetImageFromFile(path, "System/Snapshot/Default", wgsubimagecols, 1);
+    data->di.img_iconify = GetImageFromFile(path, "System/Iconify/Default", wgsubimagecols, 1);
+    data->di.img_lock = GetImageFromFile(path, "System/Lock/Default", wgsubimagecols, 1);
+    data->di.img_up = GetImageFromFile(path, "System/ArrowUp/Default", wgsubimagecols, 1);
+    data->di.img_down = GetImageFromFile(path, "System/ArrowDown/Default", wgsubimagecols, 1);
+    data->di.img_left = GetImageFromFile(path, "System/ArrowLeft/Default", wgsubimagecols, 1);
+    data->di.img_right = GetImageFromFile(path, "System/ArrowRight/Default", wgsubimagecols, 1);
     data->di.img_winbar_normal = GetImageFromFile(path, "System/Titlebar/Default", 1, 2);
     data->di.img_border_normal = GetImageFromFile(path, "System/Borders/Default", 1, 1);
     data->di.img_border_deactivated = GetImageFromFile(path, "System/Borders/Default_Deactivated", 1, 1);
