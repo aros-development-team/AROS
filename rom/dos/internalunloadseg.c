@@ -54,7 +54,7 @@
     AROS_LIBFUNC_INIT
 
     BPTR next;
-    SIPTR funcarray[] = { NULL, NULL, (SIPTR)freefunc };
+    SIPTR funcarray[] = { (SIPTR)NULL, (SIPTR)NULL, (SIPTR)freefunc };
 
     if (seglist)
     {
