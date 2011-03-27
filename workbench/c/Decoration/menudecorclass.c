@@ -20,7 +20,7 @@
 #include "config.h"
 
 
-#define SETIMAGE_MEN(id) md->img_##id=&sd->img_##id
+#define SETIMAGE_MEN(id) md->img_##id=sd->di.img_##id
 
 struct menudecor_data
 {
@@ -116,25 +116,25 @@ static IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysIma
     switch(msg->mdp_Which)
     {
         case AMIGAKEY:
-            if (md && md->img_amigakey.ok)
+            if (md && md->img_amigakey->ok)
             {
-                ni = &md->img_amigakey;
+                ni = md->img_amigakey;
                 isset = TRUE;
             }
             break;
 
         case MENUCHECK:
-            if (md && md->img_amigakey.ok)
+            if (md && md->img_menucheck->ok)
             {
-                ni = &md->img_menucheck;
+                ni = md->img_menucheck;
                 isset = TRUE;
             }
             break;
 
         case SUBMENUIMAGE:
-            if (md && md->img_submenu.ok)
+            if (md && md->img_submenu->ok)
             {
-                ni = &md->img_submenu;
+                ni = md->img_submenu;
                 isset = TRUE;
             }
             break;
