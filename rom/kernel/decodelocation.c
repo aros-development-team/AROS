@@ -258,7 +258,7 @@ AROS_LH2(int, KrnDecodeLocationA,
 
 			    *module   = (char *)kmod->Name;
 			    *segment  = s_name;
-			    *secptr   = NULL;
+			    *secptr   = BNULL;
 			    *secnum   = i;
 			    *secstart = s_lowest;
 			    *secend   = s_highest;
