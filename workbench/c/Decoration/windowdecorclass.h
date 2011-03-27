@@ -51,8 +51,10 @@ struct  WindowData
     struct NewImage *img_horizontalcontainer;
     struct NewImage *img_horizontalknob;
 
+    /* Used to cache bitmap for window title */
     struct  RastPort    *rp;
     UWORD               w, h;
+
     LONG                ActivePen;
     LONG                DeactivePen;
 
