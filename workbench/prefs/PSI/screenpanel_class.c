@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2010, The AROS Development Team.
+    Copyright © 2009-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -10,7 +10,7 @@
 #include <proto/muiscreen.h>
 #include <proto/muimaster.h>
 
-#include <strings.h>
+#include <string.h>
 
 #include "screenlist_class.h"
 #include "editwindow_class.h"

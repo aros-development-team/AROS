@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2010, The AROS Development Team.
+    Copyright © 2009-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -14,7 +14,7 @@
 #include <proto/muimaster.h>
 #include <proto/muiscreen.h>
 
-#include <strings.h>
+#include <string.h>
 #include <stdlib.h>
 
 #include "psi.h"

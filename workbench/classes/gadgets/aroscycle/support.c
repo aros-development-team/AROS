@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for AROSCycleClass.
@@ -8,7 +8,7 @@
 
 /***********************************************************************************/
 
-#include <strings.h>
+#include <string.h>
 #include <exec/types.h>
 #include <proto/intuition.h>
 #include <intuition/screens.h>
