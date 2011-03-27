@@ -229,15 +229,54 @@ static IPTR scrdecor_dispose(Class *cl, Object *obj, struct opSet *msg)
 
 static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
 {
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+/* HACK */
+static struct DecorImages d;
 
+    d.img_sdepth = data->img_sdepth;
+    d.img_sbarlogo = data->img_sbarlogo;
+    d.img_stitlebar = data->img_stitlebar;
+
+    d.img_size = data->img_size;
+    d.img_close = data->img_close;
+    d.img_depth = data->img_depth;
+    d.img_zoom = data->img_zoom;
+    d.img_up = data->img_up;
+    d.img_down = data->img_down;
+    d.img_left = data->img_left;
+    d.img_right = data->img_right;
+    d.img_mui = data->img_mui;
+    d.img_popup = data->img_popup;
+    d.img_snapshot = data->img_snapshot;
+    d.img_iconify = data->img_iconify;
+    d.img_lock = data->img_lock;
+    d.img_winbar_normal = data->img_winbar_normal;
+    d.img_border_normal = data->img_border_normal;
+    d.img_border_deactivated = data->img_border_deactivated;
+    d.img_verticalcontainer = data->img_verticalcontainer;
+    d.img_verticalknob = data->img_verticalknob;
+    d.img_horizontalcontainer = data->img_horizontalcontainer;
+    d.img_horizontalknob = data->img_horizontalknob;
+
+    d.img_menu = data->img_menu;
+    d.img_amigakey = data->img_amigakey;
+    d.img_menucheck = data->img_menucheck;
+    d.img_submenu = data->img_submenu;
+
+/* HACK */
     switch(msg->opg_AttrID)
     {
         case SDA_TrueColorOnly:
             *msg->opg_Storage = TRUE;
             break;
 
+        /* TODO: remove */
         case SDA_ScreenData:
             *msg->opg_Storage = (IPTR)INST_DATA(cl, obj);
+            break;
+
+        case SDA_DecorImages:
+            *msg->opg_Storage = (IPTR)&d;
             break;
 
         default:
