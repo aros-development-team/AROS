@@ -82,7 +82,7 @@ extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec)(void);
         func = AROS_SLIB_ENTRY(CachePreDMA_00, Exec);
     }
 
-    SetFunction(SysBase, -LIB_VECTSIZE * 127, func);
+    SetFunction((struct Library *)SysBase, -LIB_VECTSIZE * 127, func);
     Enable();
 
     /* Call 'myself', which is now pointing to the correct routine */
