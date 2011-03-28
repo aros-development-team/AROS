@@ -193,7 +193,7 @@ static void AddFS(struct RDBData *data)
     	    	    dostype, version >> 16, version & 0xffff, &node->fhb.fhb_FileSysName, seg));
     	    	CopyMemQuick(&node->fhb.fhb_DosType, &fsrnode->fse_DosType, sizeof(struct FileSysEntry) - sizeof(struct Node));
     	    	fsrnode->fse_SegList = seg;
-    	    	AddHead(&fsr->fsr_FileSysEntries, fsrnode);
+    	    	AddHead(&fsr->fsr_FileSysEntries, &fsrnode->fse_Node);
     	    }
     	}
     }
