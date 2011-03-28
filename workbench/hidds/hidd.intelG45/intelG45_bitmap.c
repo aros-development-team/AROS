@@ -1323,14 +1323,10 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
     		uint32_t br00, br13, br14, br09, br11, br12;
 
     		br00 = (2 << 29) | (0x43 << 22) | (4);
-    		if (bm->bpp == 4)
-    			br00 |= 3 << 20;
+  			br00 |= 3 << 20;
 
     		br13 = bm->pitch | ROP3_S;
-    		if (bm->bpp == 4)
-    			br13 |= 3 << 24;
-    		else if (bm->bpp == 2)
-    			br13 |= 1 << 24;
+   			br13 |= 3 << 24;
 
     		br14 = (msg->width * bm->bpp) | (msg->height) << 16;
     		br09 = bm->framebuffer + bm->pitch * msg->y + bm->bpp * msg->x;
@@ -1514,108 +1510,108 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 			    	{
 			    		LOCK_HW
 
-			    			/* Get two buffers in different GTT regions and _surely_ in different CPU cache lines */
-			    			uint32_t *buffer_1 = (uint32_t *)(((intptr_t)pages + 4095) & ~4095);
-			    			uint32_t *buffer_2 = &buffer_1[line_width / 4];
-			    			uint32_t *buffer_3 = &buffer_2[line_width / 4];
-			    			uint32_t *buffer_4 = &buffer_3[line_width / 4];
+		    			/* Get two buffers in different GTT regions and _surely_ in different CPU cache lines */
+		    			uint32_t *buffer_1 = (uint32_t *)(((intptr_t)pages + 4095) & ~4095);
+		    			uint32_t *buffer_2 = &buffer_1[line_width / 4];
+		    			uint32_t *buffer_3 = &buffer_2[line_width / 4];
+		    			uint32_t *buffer_4 = &buffer_3[line_width / 4];
 
-			    			uint32_t y;
-			    			const uint32_t height = msg->height;
-			    			uint8_t *src = msg->pixels;
-			    			uint32_t x_add = msg->modulo;
+		    			uint32_t y;
+		    			const uint32_t height = msg->height;
+		    			uint8_t *src = msg->pixels;
+		    			uint32_t x_add = msg->modulo;
 
-			        	    D(bug("[GMA] Unknown PutImage(%d, %d) with buffers at %p\n", msg->width, msg->height, buffer_1));
+		        	    D(bug("[GMA] Unknown PutImage(%d, %d) with buffers at %p\n", msg->width, msg->height, buffer_1));
 
-			    			uint32_t *buffer[4] = { buffer_1, buffer_2, buffer_3, buffer_4 };
-			    			intptr_t virt[4] = { sd->ScratchArea, sd->ScratchArea + line_width,
-												 sd->ScratchArea + 2*line_width, sd->ScratchArea + 3*line_width  };
+		    			uint32_t *buffer[4] = { buffer_1, buffer_2, buffer_3, buffer_4 };
+		    			intptr_t virt[4] = { sd->ScratchArea, sd->ScratchArea + line_width,
+											 sd->ScratchArea + 2*line_width, sd->ScratchArea + 3*line_width  };
 
-			    			HIDDT_PixelFormat *srcpf, *dstpf;
+		    			HIDDT_PixelFormat *srcpf, *dstpf;
 
-			    			srcpf = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(
-                                sd->GMAObject, msg->pixFmt);
-			    			OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstpf);
+		    			srcpf = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(
+                            sd->GMAObject, msg->pixFmt);
+		    			OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstpf);
 
-			    			/* Attach memory, if necessary */
-			        		if (sd->AttachedMemory != (intptr_t)buffer_1 || sd->AttachedSize != 4 * line_width)
-			        		{
-			        			G45_AttachCacheableMemory(sd, (intptr_t)buffer_1, sd->ScratchArea, 4 * line_width);
-			        			sd->AttachedMemory = (intptr_t)buffer_1;
-			        			sd->AttachedSize = 4 * line_width;
-			        		}
+		    			/* Attach memory, if necessary */
+		        		if (sd->AttachedMemory != (intptr_t)buffer_1 || sd->AttachedSize != 4 * line_width)
+		        		{
+		        			G45_AttachCacheableMemory(sd, (intptr_t)buffer_1, sd->ScratchArea, 4 * line_width);
+		        			sd->AttachedMemory = (intptr_t)buffer_1;
+		        			sd->AttachedSize = 4 * line_width;
+		        		}
 
-			        		/* Both buffers are not busy */
-			        		writel(1, &sd->HardwareStatusPage[17]);
-			        		writel(1, &sd->HardwareStatusPage[18]);
-			        		writel(1, &sd->HardwareStatusPage[19]);
-			        		writel(1, &sd->HardwareStatusPage[20]);
+		        		/* Both buffers are not busy */
+		        		writel(1, &sd->HardwareStatusPage[17]);
+		        		writel(1, &sd->HardwareStatusPage[18]);
+		        		writel(1, &sd->HardwareStatusPage[19]);
+		        		writel(1, &sd->HardwareStatusPage[20]);
 
-			        		for (y=0; y < height; y++)
-			        		{
-			        			const uint8_t current = y & 3;
-								uint32_t *dst = buffer[current];
-								uint32_t x;
-								uint8_t *line = (uint8_t *)src;
-								const uint32_t width = msg->width;
-								APTR _src = src;
+		        		for (y=0; y < height; y++)
+		        		{
+		        			const uint8_t current = y & 3;
+							uint32_t *dst = buffer[current];
+							uint32_t x;
+							uint8_t *line = (uint8_t *)src;
+							const uint32_t width = msg->width;
+							APTR _src = src;
 
-								/* Wait until dst buffer is ready */
-								while(readl(&sd->HardwareStatusPage[17 + current]) == 0);
+							/* Wait until dst buffer is ready */
+							while(readl(&sd->HardwareStatusPage[17 + current]) == 0);
 
-								/* Convert! */
-								HIDD_BM_ConvertPixels(o, &_src, srcpf,
-                                    msg->modulo, (APTR *)&dst, dstpf,
-                                    msg->modulo, msg->width, 1, NULL);
+							/* Convert! */
+							HIDD_BM_ConvertPixels(o, &_src, srcpf,
+                                msg->modulo, (APTR *)&dst, dstpf,
+                                msg->modulo, msg->width, 1, NULL);
 
-								/* Mark buffer as busy */
-								writel(0, &sd->HardwareStatusPage[17 + current]);
+							/* Mark buffer as busy */
+							writel(0, &sd->HardwareStatusPage[17 + current]);
 
-								/* Prepare the Blit command */
-								uint32_t br00, br13, br14, br09, br11, br12;
+							/* Prepare the Blit command */
+							uint32_t br00, br13, br14, br09, br11, br12;
 
-								br00 = (2 << 29) | (0x43 << 22) | (4);
-								br00 |= 3 << 20;
+							br00 = (2 << 29) | (0x43 << 22) | (4);
+							br00 |= 3 << 20;
 
-								br13 = bm->pitch | ROP3_S;
-								br13 |= 3 << 24;
+							br13 = bm->pitch | ROP3_S;
+							br13 |= 3 << 24;
 
-								br14 = (msg->width * bm->bpp) | (1) << 16;
-								br09 = bm->framebuffer + bm->pitch * (msg->y + y) + bm->bpp * msg->x;
-								br11 = msg->width * bm->bpp;
-								br12 = virt[current];
+							br14 = (msg->width * bm->bpp) | (1) << 16;
+							br09 = bm->framebuffer + bm->pitch * (msg->y + y) + bm->bpp * msg->x;
+							br11 = msg->width * bm->bpp;
+							br12 = virt[current];
 
-								START_RING(12);
+							START_RING(12);
 
-								OUT_RING(br00);
-								OUT_RING(br13);
-								OUT_RING(br14);
-								OUT_RING(br09);
-								OUT_RING(br11);
-								OUT_RING(br12);
+							OUT_RING(br00);
+							OUT_RING(br13);
+							OUT_RING(br14);
+							OUT_RING(br09);
+							OUT_RING(br11);
+							OUT_RING(br12);
 
-								OUT_RING((4 << 23));
-								OUT_RING(0);
+							OUT_RING((4 << 23));
+							OUT_RING(0);
 
-								OUT_RING((0x21 << 23) | 1);
-								OUT_RING((17 + current) << 2);
-								OUT_RING(1);
-								OUT_RING(0);
+							OUT_RING((0x21 << 23) | 1);
+							OUT_RING((17 + current) << 2);
+							OUT_RING(1);
+							OUT_RING(0);
 
-								ADVANCE_RING();
+							ADVANCE_RING();
 
-								/*
-								 * Right now the buffer is busy. The commands will flush buffer and set the proper flag (17+current) back to 1.
-								 * During that time it is fully safe to advance the loop and work on another buffer with CPU.
-								 */
-								src += x_add;
-			        		}
+							/*
+							 * Right now the buffer is busy. The commands will flush buffer and set the proper flag (17+current) back to 1.
+							 * During that time it is fully safe to advance the loop and work on another buffer with CPU.
+							 */
+							src += x_add;
+		        		}
 
-							/* Wait until both buffer are ready */
-							while(readl(&sd->HardwareStatusPage[17]) == 0);
-							while(readl(&sd->HardwareStatusPage[18]) == 0);
-							while(readl(&sd->HardwareStatusPage[19]) == 0);
-							while(readl(&sd->HardwareStatusPage[20]) == 0);
+						/* Wait until both buffer are ready */
+						while(readl(&sd->HardwareStatusPage[17]) == 0);
+						while(readl(&sd->HardwareStatusPage[18]) == 0);
+						while(readl(&sd->HardwareStatusPage[19]) == 0);
+						while(readl(&sd->HardwareStatusPage[20]) == 0);
 
 			    		UNLOCK_HW
 
