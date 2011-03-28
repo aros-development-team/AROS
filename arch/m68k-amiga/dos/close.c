@@ -63,6 +63,10 @@
     if(file == BNULL)
 	return ret;
 
+    /* Func3 == -1: file was already closed. */
+    if (fh->fh_Func3 == (APTR)-1)
+    	Alert(AN_FileReclosed);
+
     /* If the filehandle has a pending write on it Flush() the buffer. */
     if(fh->fh_Flags & FHF_WRITE)
 	ret = Flush(file);
@@ -71,6 +75,7 @@
 
     /* Free the filehandle which was allocated in Open(), CreateDir()
        and such. */
+    fh->fh_Func3 = (APTR)-1;
     FreeDosObject(DOS_FILEHANDLE, fh);
 
     return ret;
