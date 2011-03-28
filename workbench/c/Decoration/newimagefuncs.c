@@ -4,11 +4,13 @@
 */
 
 #include <datatypes/pictureclass.h>
+#include <libraries/cybergraphics.h>
 #include <proto/datatypes.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/cybergraphics.h>
 #include <string.h>
 
 #include <libraries/mui.h> /* TODO: REMOVE needed for get() */
@@ -17,14 +19,18 @@
 
 #include "newimage.h"
 
+#if AROS_BIG_ENDIAN
+#define GET_A(rgb) (((rgb) >> 24) & 0xff)
+#else
+#define GET_A(rgb) ((rgb) & 0xff)
+#endif
+
 void DisposeImageContainer(struct NewImage *ni)
 {
     if (ni)
     {
         if (ni->data)
-        {
             FreeVec(ni->data);
-        }
 
         if (ni->o)
         {
@@ -34,7 +40,14 @@ void DisposeImageContainer(struct NewImage *ni)
             ni->mask = NULL;
         }
 
-        if (ni->filename) FreeVec(ni->filename);
+        if (ni->filename)
+            FreeVec(ni->filename);
+
+        if (ni->subimageinbm)
+            FreeVec(ni->subimageinbm);
+        if (ni->bitmap2)
+            FreeBitMap(ni->bitmap2);
+
         FreeVec(ni);
     }
 }
@@ -261,6 +274,7 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
         out->inner_bottom = in->inner_bottom;
         out->filename = NULL;
         out->bitmap = NULL;
+        out->bitmap2 = NULL;
         out->mask = NULL;
         out->o = NULL;
         if (in->data != NULL)
@@ -269,8 +283,8 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
             if (out->data != NULL) CopyMem(in->data, out->data, out->w * out->h * sizeof(ULONG));
         }
         out->ok = (out->data != NULL) ? TRUE : FALSE;
-
-        /* TODO: Allocate subimage ---> bitmap table */
+        out->subimageinbm = AllocVec(in->subimagescols * in->subimagesrows * sizeof(BOOL), MEMF_ANY | MEMF_CLEAR);
+        
 
         if (!truecolor)
         {
@@ -300,15 +314,86 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
 
                     if (out->bitmap != NULL)
                     {
+                        ULONG i = 0;
                         GetDTAttrs(out->o, PDTA_MaskPlane, (IPTR)&out->mask, TAG_DONE);
                         out->ok = TRUE;
+                        
+                        /* Mark all subimages as in bitmap */
+                        for (i = 0; i < in->subimagescols * in->subimagesrows; i++)
+                            out->subimageinbm[i] = TRUE;
                     }
                     else
                     {
                         DisposeDTObject(out->o);
                         out->o = NULL;
-                    } 
+                    }
             }
+        }
+        else
+        {
+            if (out->data != NULL)
+            {
+                ULONG subimagewidth = out->w / out->subimagescols;
+                ULONG subimageheight = out->h / out->subimagesrows;
+                ULONG col = 0, row = 0, x = 0, y = 0;
+                out->filename = strdup(in->filename);
+                out->mask = NULL;
+                out->o = NULL;
+                BOOL atleastone = FALSE;
+                /* It is possible that some subimage do not have alpha channel.
+                   If that is true, we could create a bitmap that can be later used
+                   for blitting instead of alpha drawing */
+
+                /* Scan subimages and detect which don't have alpha channel */
+                for (row = 0; row < out->subimagesrows; row++)
+                    for (col = 0; col < out->subimagescols; col++)
+                    {
+                        /* Assume image can be put to bitmap */
+                        out->subimageinbm[col + (row * col)] = TRUE;
+                        /* Place pointer at beginning of subimage */
+                        ULONG * ptr = out->data + (row * out->w * subimageheight) + (col * subimagewidth);
+                        for (y = 0; y < subimageheight; y++)
+                        {
+                            for (x = 0; x < subimagewidth; x++)
+                            {
+                                if (GET_A(*ptr) != 0xFF)
+                                   out->subimageinbm[col + (row * col)] = FALSE; 
+                                ptr++;
+                            }
+                            ptr += (subimagewidth * (out->subimagescols - 1)); /* Advance to next subimage line */
+                        }
+                    }
+
+                /* Check if there was at least one subimage without alpha channel */
+                D(bug("File: %s : ", out->filename));
+                atleastone = FALSE;
+                for (row = 0; row < out->subimagesrows; row++)
+                    for (col = 0; col < out->subimagescols; col++)
+                    {
+                        D(bug("sb(%d,%d):", col, row));
+                        if (out->subimageinbm[col + (row * col)])
+                        {
+                            D(bug("YES, "));
+                            atleastone = TRUE;
+                        }
+                        else
+                        {
+                            D(bug("NO, "));
+                        }
+                    }
+                D(bug("\n"));
+
+                /* If yes, generate a bitmap */
+                if (atleastone)
+                {
+                    struct RastPort * rp = CreateRastPort();
+                    out->bitmap2 = AllocBitMap(out->w, out->h, 1, 0, scr->RastPort.BitMap);
+                    rp->BitMap = out->bitmap2;
+                    WritePixelArray(out->data, 0, 0, out->w * 4, rp, 0, 0, out->w, out->h, RECTFMT_ARGB);
+                    FreeRastPort(rp);
+                }
+                    
+            }            
         }
     }
     
