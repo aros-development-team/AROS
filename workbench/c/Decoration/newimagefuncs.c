@@ -25,7 +25,15 @@ void DisposeImageContainer(struct NewImage *ni)
         {
             FreeVec(ni->data);
         }
-        if (ni->o) DisposeDTObject(ni->o);
+
+        if (ni->o)
+        {
+            DisposeDTObject(ni->o);
+            ni->o = NULL;
+            ni->bitmap = NULL;
+            ni->mask = NULL;
+        }
+
         if (ni->filename) FreeVec(ni->filename);
         FreeVec(ni);
     }
@@ -191,63 +199,51 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
     return ni;
 }
 
-void RemoveLUTImage(struct NewImage *ni)
-{
-    if (ni)
-    {
-        if (ni->ok)
-        {
-            if (ni->o) DisposeDTObject(ni->o);
-            ni->o = NULL;
-            ni->bitmap = NULL;
-            ni->mask = NULL;
-        }
-    }
-}
-
-static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
+static Object * LoadPicture(CONST_STRPTR filename, struct Screen *scr)
 {
     Object *o;
 
-
     o = NewDTObject((APTR)filename,
-    DTA_GroupID          , GID_PICTURE,
-    OBP_Precision        , PRECISION_EXACT,
-    PDTA_Screen          , (IPTR)scr,
-    PDTA_FreeSourceBitMap, TRUE,
-    PDTA_DestMode        , PMODE_V43,
-    PDTA_UseFriendBitMap , TRUE,
-    TAG_DONE);
-    
+                    DTA_GroupID          , GID_PICTURE,
+                    OBP_Precision        , PRECISION_EXACT,
+                    PDTA_Screen          , (IPTR)scr,
+                    PDTA_FreeSourceBitMap, TRUE,
+                    PDTA_DestMode        , PMODE_V43,
+                    PDTA_UseFriendBitMap , TRUE,
+                    TAG_DONE);
 
     if (o)
     {
-    struct BitMapHeader *bmhd;
-    
-    GetDTAttrs(o,PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
-    
-    struct FrameInfo fri = {0};
-    
-    D(bug("DTM_FRAMEBOX\n", o));
-    DoMethod(o,DTM_FRAMEBOX,NULL,(IPTR)&fri,(IPTR)&fri,sizeof(struct FrameInfo),0);
-    
-    if (fri.fri_Dimensions.Depth>0)
-    {
-        D(bug("DTM_PROCLAYOUT\n", o));
-        if (DoMethod(o,DTM_PROCLAYOUT,NULL,1))
+        struct BitMapHeader *bmhd;
+        
+        GetDTAttrs(o,PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
+        
+        struct FrameInfo fri = {0};
+        
+        D(bug("DTM_FRAMEBOX\n", o));
+        DoMethod(o,DTM_FRAMEBOX,NULL,(IPTR)&fri,(IPTR)&fri,sizeof(struct FrameInfo),0);
+        
+        if (fri.fri_Dimensions.Depth > 0)
         {
-        return o;
+            D(bug("DTM_PROCLAYOUT\n", o));
+            if (DoMethod(o,DTM_PROCLAYOUT,NULL,1))
+            {
+                return o;
+            }
         }
+        DisposeDTObject(o);
     }
-    DisposeDTObject(o);
-    }
+
     return NULL;
 }
 
-
-void SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct Screen* scr)
+/* This function must always never return NULL, because logic in drawing code
+   checks img->ok instead of img != NULL to make decitions */
+struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOOL truecolor, struct Screen* scr)
 {
+    struct NewImage * out = AllocVec(sizeof(struct NewImage), MEMF_ANY | MEMF_CLEAR);
     out->ok = FALSE;
+
     if (in != NULL)
     {
         out->w = in->w;
@@ -255,7 +251,6 @@ void SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct 
         out->subimagescols = in->subimagescols;
         out->subimagesrows = in->subimagesrows;
         out->istiled = in->istiled;
-        out->data = in->data;
         out->tile_left = in->tile_left;
         out->tile_right = in->tile_right;
         out->tile_top = in->tile_top;
@@ -264,37 +259,60 @@ void SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct 
         out->inner_right = in->inner_right;
         out->inner_top = in->inner_top;
         out->inner_bottom = in->inner_bottom;
+        out->filename = NULL;
         out->bitmap = NULL;
         out->mask = NULL;
         out->o = NULL;
-        out->ok = (in->data != NULL) ? TRUE : FALSE;
+        if (in->data != NULL)
+        {
+            out->data = AllocVec(out->w * out->h * sizeof(ULONG), MEMF_ANY | MEMF_CLEAR);
+            if (out->data != NULL) CopyMem(in->data, out->data, out->w * out->h * sizeof(ULONG));
+        }
+        out->ok = (out->data != NULL) ? TRUE : FALSE;
+
+        /* TODO: Allocate subimage ---> bitmap table */
+
         if (!truecolor)
         {
+            /* If this is LUT screen, try to load LUT version of image */
             out->ok = FALSE;
             STRPTR file = AllocVec(strlen(in->filename) + 5, MEMF_ANY | MEMF_CLEAR);
-            if (file != NULL)
+            strcpy(file, in->filename);
+            strcat(file, "_LUT");
+            out->o = LoadPicture(file, scr);
+            if (out->o != NULL)
+                out->filename = file;
+            else
             {
-                strcpy(file, in->filename);
-                strcat(file, "_LUT");
-                out->o = LoadPicture(file, scr);
                 FreeVec(file);
+                
+                /* Load the original image with conversion */
+                out->o = LoadPicture(in->filename, scr);
+                if (out->o != NULL)
+                    out->filename = strdup(in->filename);
             }
-            out->filename = in->filename; 
-            if (out->o == NULL) out->o = LoadPicture(in->filename, scr);
+            
             if (out->o)
             {
                     GetDTAttrs(out->o, PDTA_DestBitMap, (IPTR)&out->bitmap, TAG_DONE);
-                    if (out->bitmap == NULL) GetDTAttrs(out->o, PDTA_BitMap, (IPTR)&out->bitmap, TAG_DONE);
+                    if (out->bitmap == NULL) 
+                        GetDTAttrs(out->o, PDTA_BitMap, (IPTR)&out->bitmap, TAG_DONE);
 
-                    if (out->bitmap) GetDTAttrs(out->o, PDTA_MaskPlane, (IPTR)&out->mask, TAG_DONE);
-                    if (out->bitmap == NULL)
+                    if (out->bitmap != NULL)
+                    {
+                        GetDTAttrs(out->o, PDTA_MaskPlane, (IPTR)&out->mask, TAG_DONE);
+                        out->ok = TRUE;
+                    }
+                    else
                     {
                         DisposeDTObject(out->o);
                         out->o = NULL;
-                    } else out->ok = TRUE;
+                    } 
             }
         }
     }
+    
+    return out;
 }
 
 struct Region *RegionFromLUT8Image(int w, int h, struct NewLUT8Image *s)

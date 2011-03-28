@@ -17,13 +17,7 @@
 #include "drawfuncs.h"
 #include "config.h"
 
-#define SETIMAGE_SCR(id)                                                        \
-{                                                                               \
-    sd->di.img_##id = AllocVec(sizeof(struct NewImage), MEMF_ANY | MEMF_CLEAR); \
-    SetImage(data->di.img_##id, sd->di.img_##id, truecolor, screen);            \
-}
-
-#define DELIMAGE_SCR(id) { RemoveLUTImage(sd->di.img_##id); FreeVec(sd->di.img_##id); }
+#define SETIMAGE_SCR(id) sd->di.img_##id = CreateNewImageContainerMatchingScreen(data->di.img_##id, truecolor, screen)
 
 struct scrdecor_data
 {
@@ -468,7 +462,7 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
 
     sd->truecolor = msg->sdp_TrueColor;
 
-    BOOL    truecolor = sd->truecolor;
+    BOOL truecolor = sd->truecolor;
 
     msg->sdp_WBorTop = data->winbarheight - 1 - msg->sdp_FontHeight;
     msg->sdp_BarHBorder = 1;
@@ -485,7 +479,7 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
     }
 
     /* Convert initial images to current screen */
-    /* TODO: Make sure a structure is always generated even if there is no image
+    /* Make sure a structure is always generated even if there is no image
        That was the assumption of previous code :/ */
     SETIMAGE_SCR(sdepth);
     SETIMAGE_SCR(sbarlogo);
@@ -533,35 +527,35 @@ static IPTR scrdecor_exitscreen(Class *cl, Object *obj, struct sdpExitScreen *ms
 {
     struct ScreenData *sd = (struct ScreenData *)msg->sdp_UserBuffer;
 
-    DELIMAGE_SCR(sdepth);
-    DELIMAGE_SCR(sbarlogo);
-    DELIMAGE_SCR(stitlebar);
+    DisposeImageContainer(sd->di.img_sdepth);
+    DisposeImageContainer(sd->di.img_sbarlogo);
+    DisposeImageContainer(sd->di.img_stitlebar);
 
-    DELIMAGE_SCR(size);
-    DELIMAGE_SCR(close);
-    DELIMAGE_SCR(depth);
-    DELIMAGE_SCR(zoom);
-    DELIMAGE_SCR(up);
-    DELIMAGE_SCR(down);
-    DELIMAGE_SCR(left);
-    DELIMAGE_SCR(right);
-    DELIMAGE_SCR(mui);
-    DELIMAGE_SCR(popup);
-    DELIMAGE_SCR(snapshot);
-    DELIMAGE_SCR(iconify);
-    DELIMAGE_SCR(lock);
-    DELIMAGE_SCR(winbar_normal);
-    DELIMAGE_SCR(border_normal);
-    DELIMAGE_SCR(border_deactivated);
-    DELIMAGE_SCR(verticalcontainer);
-    DELIMAGE_SCR(verticalknob);
-    DELIMAGE_SCR(horizontalcontainer);
-    DELIMAGE_SCR(horizontalknob);
+    DisposeImageContainer(sd->di.img_size);
+    DisposeImageContainer(sd->di.img_close);
+    DisposeImageContainer(sd->di.img_depth);
+    DisposeImageContainer(sd->di.img_zoom);
+    DisposeImageContainer(sd->di.img_up);
+    DisposeImageContainer(sd->di.img_down);
+    DisposeImageContainer(sd->di.img_left);
+    DisposeImageContainer(sd->di.img_right);
+    DisposeImageContainer(sd->di.img_mui);
+    DisposeImageContainer(sd->di.img_popup);
+    DisposeImageContainer(sd->di.img_snapshot);
+    DisposeImageContainer(sd->di.img_iconify);
+    DisposeImageContainer(sd->di.img_lock);
+    DisposeImageContainer(sd->di.img_winbar_normal);
+    DisposeImageContainer(sd->di.img_border_normal);
+    DisposeImageContainer(sd->di.img_border_deactivated);
+    DisposeImageContainer(sd->di.img_verticalcontainer);
+    DisposeImageContainer(sd->di.img_verticalknob);
+    DisposeImageContainer(sd->di.img_horizontalcontainer);
+    DisposeImageContainer(sd->di.img_horizontalknob);
 
-    DELIMAGE_SCR(menu);
-    DELIMAGE_SCR(amigakey);
-    DELIMAGE_SCR(menucheck);
-    DELIMAGE_SCR(submenu);
+    DisposeImageContainer(sd->di.img_menu);
+    DisposeImageContainer(sd->di.img_amigakey);
+    DisposeImageContainer(sd->di.img_menucheck);
+    DisposeImageContainer(sd->di.img_submenu);
 
     return TRUE;
 }
