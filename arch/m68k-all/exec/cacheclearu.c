@@ -82,7 +82,7 @@ extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec)(void);
         func = AROS_SLIB_ENTRY(CacheClearU_00, Exec);
     }
     func();
-    SetFunction(SysBase, -LIB_VECTSIZE * 106, func);
+    SetFunction((struct Library *)SysBase, -LIB_VECTSIZE * 106, func);
     Enable();
 
     AROS_LIBFUNC_EXIT
