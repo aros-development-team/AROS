@@ -85,8 +85,8 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
 
     fprintf(out,
 	    "\n"
-	    "static inline %s __%s_inline(",
-	    funclistit->type, funclistit->name
+	    "static inline %s __inline_%s_%s(",
+	    funclistit->type, cfg->basename, funclistit->name
     );
     for (arglistit = funclistit->arguments, count = 1;
 	 arglistit!=NULL;
@@ -176,7 +176,7 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
 	    fprintf(out, ", ");
 	fprintf(out, "arg%d", count);
     }
-    fprintf(out, ") \\\n    __%s_inline(", funclistit->name);
+    fprintf(out, ") \\\n    __inline_%s_%s(", cfg->basename, funclistit->name);
     for (arglistit = funclistit->arguments, count = 1;
 	 arglistit != NULL;
 	 arglistit = arglistit->next, count++
