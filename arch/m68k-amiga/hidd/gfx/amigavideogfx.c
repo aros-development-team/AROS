@@ -418,14 +418,14 @@ VOID AmigaVideoCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, stru
 
 static void freeattrbases(struct amigavideo_staticdata *csd)
 {
-    OOP_ReleaseAttrBase(__IHidd_BitMap);
-    OOP_ReleaseAttrBase(__IHidd_PlanarBM);
-    OOP_ReleaseAttrBase(__IHidd_AmigaVideoBitmap);
-    OOP_ReleaseAttrBase(__IHidd_GC);
-    OOP_ReleaseAttrBase(__IHidd_Sync);
-    OOP_ReleaseAttrBase(__IHidd_Gfx);
-    OOP_ReleaseAttrBase(__IHidd_PixFmt);
-    OOP_ReleaseAttrBase(__IHidd_ColorMap);
+    OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+    OOP_ReleaseAttrBase(IID_Hidd_PlanarBM);
+    OOP_ReleaseAttrBase(IID_Hidd_AmigaVideoBitMap);
+    OOP_ReleaseAttrBase(IID_Hidd_GC);
+    OOP_ReleaseAttrBase(IID_Hidd_Sync);
+    OOP_ReleaseAttrBase(IID_Hidd_Gfx);
+    OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
+    OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
 }
 
 int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE)
