@@ -40,7 +40,8 @@ static void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol,
     if (xSize < 0) xSize = (LONG)subimagewidth;
     if (ySize < 0) ySize = (LONG)subimageheight;
 
-    if (ni->bitmap == NULL)
+    /* Detect if image can be drawn using blitting instead of alpha draw */
+    if (!(ni->subimageinbm[subimageCol + (subimageRow * subimageCol)]))
     {
         WritePixelArrayAlpha(ni->data, (subimagewidth * subimageCol) + xSrc , 
             (subimageheight * subimageRow) + ySrc, ni->w * 4, destRP,
@@ -48,16 +49,30 @@ static void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol,
     }
     else
     {
-        if (ni->mask)
+        /* LUT */
+        if (ni->bitmap != NULL)
         {
-            BltMaskBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
-                (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest, 
-                xSize, ySize, 0xe0, (PLANEPTR) ni->mask);  
+            if (ni->mask)
+            {
+                BltMaskBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
+                    (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest, 
+                    xSize, ySize, 0xe0, (PLANEPTR) ni->mask);  
+            }
+            else
+            {
+                BltBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
+                    (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
+                    xSize, ySize, 0xc0);
+            }
         }
-        else 
-            BltBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
+        
+        /* Truecolor */
+        if (ni->bitmap2 != NULL)
+        {
+            BltBitMapRastPort(ni->bitmap2, (subimagewidth * subimageCol) + xSrc ,
                 (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
                 xSize, ySize, 0xc0);
+        }
     }
 
 }
