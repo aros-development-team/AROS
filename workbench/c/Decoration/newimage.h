@@ -19,6 +19,7 @@ struct NewImage
 
     ULONG   subimagescols;  /* Number of columns of subimages in image, ie. states of gadget*/
     ULONG   subimagesrows;  /* Number of rows of subimages in image, ie. states of gadget*/
+    BOOL    *subimageinbm;  /* Array marking which subimage in present in *bitmap */
 
 
     BOOL    istiled;
@@ -29,6 +30,8 @@ struct NewImage
     APTR    mask;               /* Mask pointer from DT object */
     struct  BitMap  *bitmap;    /* Bitmap pointer from DT object */
     STRPTR  filename;
+    
+    struct  BitMap  *bitmap2;   /* Allocated bitmap object */
 };
 
 struct  NewLUT8Image
