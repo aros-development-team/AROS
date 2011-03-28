@@ -300,7 +300,7 @@ void find_mcps(void)
     	num_page_entries++;
     }
     
-    olddir = CurrentDir(NULL);
+    olddir = CurrentDir(BNULL);
     
     while((dp = GetDeviceProc("LIBS:", dp)))
     {
