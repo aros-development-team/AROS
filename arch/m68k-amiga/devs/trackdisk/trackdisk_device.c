@@ -442,7 +442,7 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
     /* Allocate Task Data structure */
     t = AllocMem(sizeof(struct TaskData), MEMF_PUBLIC|MEMF_CLEAR);
     /* Allocate Stack space */
-    if (t && !(t->td_Stack = (IPTR)AllocMem(STACK_SIZE, MEMF_PUBLIC|MEMF_CLEAR))) {
+    if (t && !(t->td_Stack = AllocMem(STACK_SIZE, MEMF_PUBLIC|MEMF_CLEAR))) {
         FreeMem(t, sizeof(struct TaskData));
         t = NULL;
     }
@@ -457,8 +457,8 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
     if (t && ml)
     {
 		/* Save stack info into task structure */
-		t->td_Task.tc_SPLower = (UBYTE*)t->td_Stack;
-		t->td_Task.tc_SPUpper = (BYTE*)t->td_Stack + STACK_SIZE;
+		t->td_Task.tc_SPLower = t->td_Stack;
+		t->td_Task.tc_SPUpper = t->td_Stack + STACK_SIZE;
 		t->td_Task.tc_SPReg = (BYTE*)t->td_Task.tc_SPUpper - SP_OFFSET - sizeof(APTR);
 	
 		/* Init MsgPort */
