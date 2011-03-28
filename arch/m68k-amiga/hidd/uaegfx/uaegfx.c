@@ -472,13 +472,13 @@ BOOL UAEGFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
 static void freeattrbases(struct uaegfx_staticdata *csd)
 {
-    OOP_ReleaseAttrBase(__IHidd_BitMap);
-    OOP_ReleaseAttrBase(__IHidd_UAEGFXBitmap);
-    OOP_ReleaseAttrBase(__IHidd_GC);
-    OOP_ReleaseAttrBase(__IHidd_Sync);
-    OOP_ReleaseAttrBase(__IHidd_Gfx);
-    OOP_ReleaseAttrBase(__IHidd_PixFmt);
-    OOP_ReleaseAttrBase(__IHidd_ColorMap);
+    OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+    OOP_ReleaseAttrBase(IID_Hidd_UAEGFXBitMap);
+    OOP_ReleaseAttrBase(IID_Hidd_GC);
+    OOP_ReleaseAttrBase(IID_Hidd_Sync);
+    OOP_ReleaseAttrBase(IID_Hidd_Gfx);
+    OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
+    OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
 }
 
 BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
