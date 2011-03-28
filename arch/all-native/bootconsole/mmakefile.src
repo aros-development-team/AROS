@@ -11,11 +11,11 @@ FILES := common init_multiboot init_taglist screen_text screen_fb vars $(FONT) $
 
 USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 
-%build_linklib mmake=linklibs-console libname=console files="$(FILES)" libdir=$(GENDIR)/lib
+%build_linklib mmake=linklibs-bootconsole libname=bootconsole files="$(FILES)" libdir=$(GENDIR)/lib
 
 USER_CFLAGS := -m32
 
-%build_linklib mmake=linklibs-console32 libname=console files="$(FILES)" \
+%build_linklib mmake=linklibs-bootconsole32 libname=bootconsole files="$(FILES)" \
 	       objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
 
 %common

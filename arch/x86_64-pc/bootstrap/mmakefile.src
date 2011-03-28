@@ -6,11 +6,11 @@ KOBJS	    :=
 FILES	    := bootstrap elfloader cpu support
 BOOT_LIBDIR := $(GENDIR)/lib32
 
-USER_CFLAGS  := -isystem $(SRCDIR)/boot/libconsole/include -DMULTIBOOT_64BIT
+USER_CFLAGS  := -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DMULTIBOOT_64BIT
 BOOT_LDFLAGS := -L$(BOOT_LIBDIR)
-BOOT_LIBS    := -lconsole -lrom
+BOOT_LIBS    := -lbootconsole -lrom
 
-#MM kernel-bootstrap-x86_64: linklibs-clib32 linklibs-console32 kernel-kernel-pc-x86_64-kobj kernel-exec-kobj kernel-utility-kobj kernel-expansion-kobj kernel-oop-kobj kernel-hidd-kobj kernel-bootstrap-pc-x86_64-drivers
+#MM kernel-bootstrap-x86_64: linklibs-clib32 linklibs-bootconsole32 kernel-kernel-pc-x86_64-kobj kernel-exec-kobj kernel-utility-kobj kernel-expansion-kobj kernel-oop-kobj kernel-hidd-kobj kernel-bootstrap-pc-x86_64-drivers
 kernel-bootstrap-x86_64: $(BINDIR)/boot/kernel-pc-x86_64 $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-pc-x86_64
 
 #MM
