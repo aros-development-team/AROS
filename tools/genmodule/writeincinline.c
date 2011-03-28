@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write inline/modulename.h. Part of genmodule.
@@ -97,10 +97,10 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
 	fprintf(out, "%s __arg%d, ", type, count);
     }
     fprintf(out,
-	    "%s __%s)\n"
+	    "APTR __%s)\n"
             "{\n"
 	    "    %sAROS_LC%d%s(%s, %s,\n",
-            cfg->libbasetypeptrextern, cfg->libbase,
+            cfg->libbase,
             (isvoid) ? "" : "return ",
 	    funclistit->argcount, (isvoid) ? "NR" : "",
 	    funclistit->type, funclistit->name
