@@ -20,7 +20,7 @@ static unsigned char use_serial = 0;
 
 void con_InitVESA(unsigned short version, struct vbe_mode *mode)
 {
-    scr_FrameBuffer = (version >= 0x0200) ? (void *)mode->phys_base : 0;
+    scr_FrameBuffer = (version >= 0x0200) ? (void *)(unsigned long)mode->phys_base : NULL;
 
     if (mode->mode_attributes & VM_GRAPHICS)
     {
@@ -80,6 +80,13 @@ void con_InitSerial(char *cmdline)
 
 void con_Putc(char c)
 {
+    /* 0x03 character shuts off boot-time screen console */
+    if (c == 0x03)
+    {
+    	scr_Type = SCR_UNKNOWN;
+    	return;
+    }
+
     if (use_serial)
 	serial_Putc(c);
 
