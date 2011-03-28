@@ -49,7 +49,7 @@
     dp->dp_Res1 = res1;
     dp->dp_Res2 = res2;
     dp->dp_Port = &me->pr_MsgPort;
-    ReplyMsg(dp->dp_Link->mn_ReplyPort);
+    ReplyMsg(dp->dp_Link);
 
     AROS_LIBFUNC_EXIT
 } /* ReplyPkt */
