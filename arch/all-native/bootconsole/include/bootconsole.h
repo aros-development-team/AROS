@@ -11,6 +11,16 @@ extern unsigned int  scr_Height;	/* Display height in characters */
  */
 extern char *fb_Mirror;
 
+/* Current screen type */
+enum scr_type
+{
+    SCR_UNKNOWN,
+    SCR_TEXT,
+    SCR_GFX
+};
+
+extern unsigned char scr_Type;
+
 /* Common initialization */
 void con_InitMultiboot(struct multiboot *mb);
 void con_InitTagList(const struct TagItem *tags);
@@ -30,6 +40,7 @@ void txt_Putc(char chr);
 void fb_Init(unsigned int width, unsigned int height, unsigned int depth, unsigned int pitch);
 void fb_Clear(void);
 void fb_Putc(char chr);
+void fb_SetMirror(char *addr);
 
 /* Serial I/O */
 void serial_Init(char *opts);
