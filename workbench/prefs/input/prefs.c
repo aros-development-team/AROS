@@ -274,7 +274,7 @@ BOOL Prefs_ImportFH(BPTR fh)
     if ((iff = AllocIFF()))
     {
         iff->iff_Stream = (IPTR)fh;
-        if (fh != NULL)
+        if (fh != BNULL)
         {
             D(Printf("LoadPrefs: stream opened.\n"));
 
