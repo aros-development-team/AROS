@@ -96,28 +96,68 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
         type = getargtype(arglistit);
 	fprintf(out, "%s __arg%d, ", type, count);
     }
-    fprintf(out,
-	    "APTR __%s)\n"
-            "{\n"
-	    "    %sAROS_LC%d%s(%s, %s,\n",
-            cfg->libbase,
-            (isvoid) ? "" : "return ",
-	    funclistit->argcount, (isvoid) ? "NR" : "",
-	    funclistit->type, funclistit->name
-    );
-
-    for (arglistit = funclistit->arguments, count = 1;
-	 arglistit!=NULL;
-	 arglistit = arglistit->next, count++
+    if (funclistit->arguments == NULL
+	|| strchr(funclistit->arguments->reg, '/') == NULL
     )
     {
-	type = getargtype(arglistit);
-	assert(type != NULL);
-	fprintf(out,
-		"        AROS_LCA(%s,(__arg%d),%s),\n",
-		type, count, arglistit->reg
-	);
-	free(type);
+        fprintf(out,
+                "APTR __%s)\n"
+                "{\n"
+                "    %sAROS_LC%d%s(%s, %s,\n",
+                cfg->libbase,
+                (isvoid) ? "" : "return ",
+                funclistit->argcount, (isvoid) ? "NR" : "",
+                funclistit->type, funclistit->name
+         );
+
+        for (arglistit = funclistit->arguments, count = 1;
+             arglistit!=NULL;
+             arglistit = arglistit->next, count++
+        )
+        {
+            type = getargtype(arglistit);
+            assert(type != NULL);
+            fprintf(out,
+                    "        AROS_LCA(%s,(__arg%d),%s),\n",
+                    type, count, arglistit->reg
+            );
+            free(type);
+        }
+    }
+    else
+    {
+        fprintf(out,
+                "APTR __%s)\n"
+                "{\n"
+                "    %sAROS_LCQUAD%d%s(%s, %s,\n",
+                cfg->libbase,
+                (isvoid) ? "" : "return ",
+                funclistit->argcount, (isvoid) ? "NR" : "",
+                funclistit->type, funclistit->name
+        );
+         
+	for (arglistit = funclistit->arguments, count = 1;
+	     arglistit != NULL;
+	     arglistit = arglistit->next, count++
+	)
+	{
+	    if (strlen(arglistit->reg) != 5)
+	    {
+		fprintf(stderr, "Internal error: ../.. register format expected\n");
+		exit(20);
+	    }
+	    arglistit->reg[2] = 0;
+
+	    type = getargtype(arglistit);
+	    assert(type != NULL);
+	
+	    fprintf(out,
+		    "         AROS_LCAQUAD(%s, (__arg%d), %s, %s), \\\n",
+		    type, count, arglistit->reg, arglistit->reg+3
+	    );
+	    arglistit->reg[2] = '/';
+	    free(type);
+	}
     }
     fprintf(out,
 	    "        %s, (__%s), %u, %s"
