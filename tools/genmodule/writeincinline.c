@@ -38,7 +38,6 @@ void writeincinline(struct config *cfg)
 	    "\n"
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
-	    "#include <exec/libraries.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n",
 	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename

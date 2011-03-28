@@ -593,7 +593,7 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 	    PrintBanner(DOSBase);
 	    is.isBannerDone = TRUE;
 	}
-	CloseLibrary(ExpansionBase);
+	CloseLibrary((struct Library *)ExpansionBase);
     }
 
     if(SHArg(COMMAND) && SHArg(COMMAND)[0])
