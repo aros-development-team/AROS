@@ -45,7 +45,7 @@ void __startup start(struct TagItem *tags)
 
 static int kputc(int c, void *data)
 {
-    fb_Putc(c);
+    con_Putc(c);
     return 1;
 }
 
