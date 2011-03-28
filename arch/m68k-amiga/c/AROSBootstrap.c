@@ -525,7 +525,7 @@ void BootROM(BPTR romlist)
     /* We're off in the weeds now. */
     Disable();
 
-    Supervisor(supercode);
+    Supervisor((ULONG_FUNC)supercode);
 }
 
 __startup static AROS_ENTRY(int, startup,

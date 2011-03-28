@@ -244,7 +244,8 @@ static AROS_UFH2(APTR, myCreateNewProc,
 {
     AROS_USERFUNC_INIT
 
-    struct TagItem *tstate, *tmp, *found, fake[2];
+    const struct TagItem *tstate;
+    struct TagItem *tmp, *found, fake[2];
     int tags;
 
     tstate = tag;
@@ -306,18 +307,18 @@ int main(int argc, char **argv)
 
        Disable();
 
-       oldRawDoFmt      = SetFunction(SysBase, -87 * LIB_VECTSIZE, myRawDoFmt);
-       oldCreateProc    = SetFunction(DOSBase, -23 * LIB_VECTSIZE, myCreateProc);
-       oldCreateNewProc = SetFunction(DOSBase, -83 * LIB_VECTSIZE, myCreateNewProc);
-       oldLoadSeg       = SetFunction(DOSBase, -25 * LIB_VECTSIZE, myLoadSeg);
+       oldRawDoFmt      = SetFunction((struct Library *)SysBase, -87 * LIB_VECTSIZE, myRawDoFmt);
+       oldCreateProc    = SetFunction((struct Library *)DOSBase, -23 * LIB_VECTSIZE, myCreateProc);
+       oldCreateNewProc = SetFunction((struct Library *)DOSBase, -83 * LIB_VECTSIZE, myCreateNewProc);
+       oldLoadSeg       = SetFunction((struct Library *)DOSBase, -25 * LIB_VECTSIZE, myLoadSeg);
        Enable();
        PutStr("AROS Support active. Press ^C to unload.\n");
        Wait(SIGBREAKF_CTRL_C);
        Disable();
-       SetFunction(DOSBase, -25 * LIB_VECTSIZE, oldLoadSeg);
-       SetFunction(DOSBase, -83 * LIB_VECTSIZE, oldCreateNewProc);
-       SetFunction(DOSBase, -23 * LIB_VECTSIZE, oldCreateProc);
-       SetFunction(SysBase, -87 * LIB_VECTSIZE, oldRawDoFmt);
+       SetFunction((struct Library *)DOSBase, -25 * LIB_VECTSIZE, oldLoadSeg);
+       SetFunction((struct Library *)DOSBase, -83 * LIB_VECTSIZE, oldCreateNewProc);
+       SetFunction((struct Library *)DOSBase, -23 * LIB_VECTSIZE, oldCreateProc);
+       SetFunction((struct Library *)SysBase, -87 * LIB_VECTSIZE, oldRawDoFmt);
        Enable();
        PutStr("AROS Support unloaded.\n");
        CloseLibrary(DOSBase);

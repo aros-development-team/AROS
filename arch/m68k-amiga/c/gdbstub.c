@@ -764,9 +764,9 @@ int main(int argc, char **argv)
     	 */
     	Disable();
     	oldTaskTrapCode = UpdateTrapCode(trapHandler);
-    	oldAddTask  = SetFunction(SysBase, -47 * LIB_VECTSIZE, myAddTask);
+    	oldAddTask  = SetFunction((struct Library *)SysBase, -47 * LIB_VECTSIZE, myAddTask);
     	/* Patch Alert() to generate a breakpoint */
-    	oldAlert = SetFunction(SysBase, -18 * LIB_VECTSIZE, myAlert);
+    	oldAlert = SetFunction((struct Library *)SysBase, -18 * LIB_VECTSIZE, myAlert);
     	Enable();
 
     	gdbstub();
@@ -777,8 +777,8 @@ int main(int argc, char **argv)
     	/* Restore traps. Not really safe, but better than nothing
     	 */
     	Disable();
-    	SetFunction(SysBase, -47 * LIB_VECTSIZE, oldAddTask);
-    	SetFunction(SysBase, -18 * LIB_VECTSIZE, oldAlert);
+    	SetFunction((struct Library *)SysBase, -47 * LIB_VECTSIZE, oldAddTask);
+    	SetFunction((struct Library *)SysBase, -18 * LIB_VECTSIZE, oldAlert);
     	UpdateTrapCode(oldTaskTrapCode);
     	Enable();
 
