@@ -264,9 +264,9 @@ static ULONG td_readwritetrack(UBYTE track, UBYTE write, struct TDU *tdu, struct
     if (sigs & (1L << tdb->td_IntBit)) {
         // dma finished
         err = 0;
-        AbortIO(tdb->td_TimerIO2);
+        AbortIO((struct IORequest *)tdb->td_TimerIO2);
     }
-    WaitIO(tdb->td_TimerIO2);
+    WaitIO((struct IORequest *)tdb->td_TimerIO2);
     D(bug("td diskdma finished, err=%d\n", err));
 
     if (td_getDiskChange(tdu, tdb) == 0)
