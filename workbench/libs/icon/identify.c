@@ -72,7 +72,7 @@ LONG __FindType_WB(BPTR lock, struct IconBase *IconBase)
                     /* Use datatypes to identify the file ------------------*/
                     struct DataType *dt = ObtainDataType
                     (
-                        DTST_FILE, lock, TAG_DONE
+                        DTST_FILE, (APTR)lock, TAG_DONE
                     );
                     
                     if (dt != NULL)
@@ -290,7 +290,7 @@ struct DiskObject *__FindDefaultIcon_WB
             /* Use datatypes to identify the file --------------------------*/
             struct DataType *dt = ObtainDataType
             (
-                DTST_FILE, iim->iim_FileLock, TAG_DONE
+                DTST_FILE, (APTR)iim->iim_FileLock, TAG_DONE
             );
             
             if (dt != NULL)
