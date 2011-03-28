@@ -790,7 +790,7 @@ static BOOL HandleProject
                         )
                         {
                             old_parent  = CurrentDir(paths[1]);
-                            deftool_parent = Lock(paths[1], SHARED_LOCK);
+                            deftool_parent = DupLock(paths[1]);
                             deftool_lock = Lock(icon->do_DefaultTool, SHARED_LOCK);
 
                             if (deftool_lock != BNULL)
