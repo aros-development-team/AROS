@@ -38,6 +38,8 @@ FUNCS := \
 
 #MM workbench-libs-workbench : workbench-libs-icon-linklib
 
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 %build_module mmake=workbench-libs-workbench \
   modname=workbench modtype=library \
   files="workbench_init $(FUNCS) $(FILES)" \
