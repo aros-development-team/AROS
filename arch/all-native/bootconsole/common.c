@@ -81,11 +81,7 @@ void con_InitSerial(char *cmdline)
 void con_Putc(char c)
 {
     if (use_serial)
-    {
-    	if (c == '\n')
-	    serial_Putc('\r');
 	serial_Putc(c);
-    }
 
     switch (scr_Type)
     {
