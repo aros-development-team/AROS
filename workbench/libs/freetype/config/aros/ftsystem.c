@@ -186,7 +186,7 @@
 
   /* We use the macro STREAM_FILE for convenience to extract the       */
   /* system-specific stream handle from a given FreeType stream object */
-#define STREAM_FILE( stream )  ( (BPTR*)stream->descriptor.pointer )
+#define STREAM_FILE( stream )  ( (BPTR)stream->descriptor.pointer )
 
 
   /*************************************************************************/
@@ -241,7 +241,7 @@
                      unsigned char*  buffer,
                      unsigned long   count )
   {
-    BPTR*  file;
+    BPTR file;
     unsigned long actcount;
     
     D(bug("Entering ft_ansi_stream_io(stream=%x,offset=%ld,buffer=%x,count=%ld)\n",
@@ -266,7 +266,7 @@
   FT_Stream_Open( FT_Stream    stream,
                   const char*  filepathname )
   {
-    BPTR*  file;
+    BPTR file;
 
     if ( !stream )
       return FT_Err_Invalid_Stream_Handle;
@@ -283,7 +283,7 @@
     Seek( file, 0, OFFSET_END );
     stream->size = Seek( file, 0, OFFSET_BEGINNING );
 
-    stream->descriptor.pointer = file;
+    stream->descriptor.pointer = (APTR)file;
     stream->pathname.pointer   = (char*)filepathname;
     stream->pos                = 0;
 
