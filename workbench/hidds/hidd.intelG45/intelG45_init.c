@@ -349,6 +349,8 @@ AROS_UFH3(void, Enumerator,
     		break;
     	}
 
+        sd->ProductID = ProductID;
+
         IPTR mmio_base, window_base, gatt_base;
         IPTR mmio_size, window_size, gatt_size;
 
@@ -587,7 +589,7 @@ AROS_UFH3(void, Enumerator,
 
     	sd->initialState = AllocVecPooled(sd->MemPool, sizeof(GMAState_t));
 
-		sd->initialBitMap = AllocBitmapArea(sd, 640, 480, 4, TRUE);
+		sd->initialBitMap = AllocBitmapArea(sd, 640, 480, 4);
 		G45_InitMode(sd, sd->initialState, 640, 480, 32, 25200, sd->initialBitMap,
 								640, 480,
 								656, 752, 800,
@@ -633,7 +635,7 @@ AROS_UFH3(void, Enumerator,
 		//  z  /,`.-'`'    -.  ;-;;,_
 		//    |,4-  ) )-,_..;\ (  `'-'
 		//   '---''(_/--'  `-'\_)
-		// In VGA ,Kitty run away too fast. 
+		// In VGA, Kitty runs away too fast.
 		if(sd->pipe == PIPE_A ) delay_ms(sd,1500);
 
 		bug("[GMA] %s", __greet);
@@ -665,7 +667,8 @@ static int G45_Init(struct intelg45base *intelg45base)
 
 	D(bug("[GMA] Init\n"));
 
-	sd->MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED, 8192, 4096);
+    sd->MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED
+        | MEMF_31BIT, 8192, 4096);
 
 	if (sd->MemPool)
 	{

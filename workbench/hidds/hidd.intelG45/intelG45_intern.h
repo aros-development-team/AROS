@@ -132,6 +132,7 @@ struct g45staticdata {
 	void *					MemPool;
 
 	struct g45chip			Card;
+	uint16_t				ProductID;
 
 	HIDDT_DPMSLevel			dpms;
 
@@ -264,7 +265,7 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
         uint16_t hdisp, uint16_t vdisp, uint16_t hstart, uint16_t hend, uint16_t htotal,
         uint16_t vstart, uint16_t vend, uint16_t vtotal, uint32_t flags);
 void G45_LoadState(struct g45staticdata *sd, GMAState_t *state);
-IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height, ULONG bpp, BOOL must_have);
+IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height, ULONG bpp);
 VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp);
 VOID delay_ms(struct g45staticdata *sd, uint32_t msec);
 VOID delay_us(struct g45staticdata *sd, uint32_t usec);

@@ -548,7 +548,7 @@ void G45_SaveState(struct g45staticdata *sd, GMAState_t *state)
 }
 
 IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height,
-    ULONG bpp, BOOL must_have)
+    ULONG bpp)
 {
     IPTR result;
 
