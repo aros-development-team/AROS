@@ -5,11 +5,19 @@
     Desc: 16450 serial UART serial console.
 */
 
+#include <asm/io.h>
+#include <hardware/uart.h>
+
 #include <bootconsole.h>
+#include <stdlib.h>
 
 #include "console.h"
 
-static unsigned short base = 0x03F8;
+#define SER_MAXBAUD 115200
+
+/* These settings can be kept accross warm reboots in kickstart */
+static unsigned short base     = 0x03F8;
+static unsigned int   baudRate = 115200;
 
 /* Standard base addresses for four PC AT serial ports */
 static unsigned short standard_ports[] = {
@@ -21,28 +29,58 @@ static unsigned short standard_ports[] = {
 
 void serial_Init(char *opts)
 {
-    /* Command line option format: debug=serial[:N][@baud], where N - port number (1 - 4) */
-    if (opts[0] == ':')
+    unsigned short uDivisor;
+    unsigned char tmp;
+
+    if (opts)
     {
-    	unsigned char portnum = opts[1] - '1';
+    	/* Command line option format: debug=serial[:N][@baud] */
+    	if (opts[0] == ':')
+    	{
+            unsigned short port = strtoul(++opts, &opts, 0);
 
-    	if (portnum < 4)
-	    base = standard_ports[portnum];
+	    /* N can be either port number (0 - 4) or direct base address specification */
+    	    if (port < 4)
+	    	base = standard_ports[port];
+	    else
+	    	base = port;
+	}
 
-	opts += 2;
+	/* Set baud rate */
+	if (opts[0] == '@')
+    	{
+    	    unsigned int baud = strtoul(++opts, NULL, 10);
+
+	    if (baud <= SER_MAXBAUD)
+	    	baudRate = baud;
+	}
     }
-    /* TODO: set baud rate */
+
+    uDivisor = SER_MAXBAUD / baudRate;
+    tmp = inb_p(base + UART_LCR);
+    outb_p(tmp | UART_LCR_DLAB, base + UART_LCR);
+    outb_p(uDivisor & 0xFF, base + UART_DLL);
+    outb_p(uDivisor >> 8, base + UART_DLM);
+    outb_p(tmp, base + UART_LCR);
+
+    outb_p(UART_LCR_WLEN8, base + UART_LCR);
+    inb_p(base + UART_RX);
 }
 
-static unsigned char __inb(addr)
+static void serial_RawPutc(unsigned char data) 
 {
-    unsigned char tmp;    
-    asm volatile ("inb %w1,%b0":"=a"(tmp):"Nd"(addr):"memory");
-    return tmp;
+    /* Wait until the transmitter is empty */
+    while (!(inb_p(base + UART_LSR) & UART_LSR_TEMT));
+
+    /* Send out the byte */
+    outb_p(data, base + UART_TX);
 }
 
-void serial_Putc(unsigned char data) 
+void serial_Putc(unsigned char data)
 {
-    while (!(__inb(base + 0x05) & 0x40));
-    asm volatile ("outb %b0,%w1"::"a"(data),"Nd"(base));
+    /* Prepend CR to LF */
+    if (data == '\n')
+    	serial_RawPutc('\r');
+
+    serial_RawPutc(data);
 }
