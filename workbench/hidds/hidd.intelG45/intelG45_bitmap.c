@@ -121,7 +121,7 @@ OOP_Object *METHOD(GMABM, Root, New)
         bm->pitch = (width * bytesPerPixel + 63) & ~63;
         bm->depth = depth;
         bm->bpp = bytesPerPixel;
-        bm->framebuffer = AllocBitmapArea(sd, bm->width, bm->height, bm->bpp, TRUE);
+        bm->framebuffer = AllocBitmapArea(sd, bm->width, bm->height, bm->bpp);
         bm->fbgfx = TRUE;
         bm->state = NULL;
         bm->bitmap = o;
@@ -314,7 +314,6 @@ VOID METHOD(GMABM, Root, Get)
 
 VOID METHOD(GMABM, Root, Set)
 {
-
 	struct TagItem  *tag, *tstate;
     GMABitMap_t * bmdata = OOP_INST_DATA(cl, o);
     ULONG idx;
@@ -367,50 +366,6 @@ VOID METHOD(GMABM, Root, Set)
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-
-	
-	
-	/*
-    GMABitMap_t *bm = OOP_INST_DATA(cl, o);
-    ULONG idx;
-    struct TagItem  *tag, *tstate;
-    LONG newxoffset = bm->xoffset;
-    LONG newyoffset = bm->yoffset;
-
-    tstate = msg->attrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
-    {
-        if (IS_BM_ATTR(tag->ti_Tag, idx))
-        {
-            switch(idx)
-            {
-            case aoHidd_BitMap_LeftEdge:
-                newxoffset = tag->ti_Data;
-                break;
-            case aoHidd_BitMap_TopEdge:
-                newyoffset = tag->ti_Data;
-                break;
-            }
-        }
-    }
-
-	if(newxoffset > 0) newxoffset = 0;
-	if(newxoffset < - bm->width ) newxoffset = - bm->width;
-	if(newyoffset > 0) newyoffset = 0;
-	if(newyoffset < - bm->height ) newyoffset = - bm->height;
-
-    if ((newxoffset != bm->xoffset) || (newyoffset != bm->yoffset))
-    {
-        bm->xoffset = newxoffset;
-        bm->yoffset = newyoffset;
-		LONG offset = sd->VisibleBitmap->yoffset * sd->VisibleBitmap->pitch +
-					  sd->VisibleBitmap->xoffset * sd->VisibleBitmap->bpp; 
-		//writel( bm->state->dspstride , sd->Card.MMIO + G45_DSPBSTRIDE );
-		writel( bm->state->dsplinoff - offset , sd->Card.MMIO + ( sd->pipe == PIPE_A ? G45_DSPALINOFF:G45_DSPBLINOFF ));
-		readl( sd->Card.MMIO + G45_DSPBLINOFF );
-    }
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-*/
 }
 
 
@@ -1020,14 +975,6 @@ ULONG METHOD(GMABM, Hidd_BitMap, BytesPerLine)
 
 BOOL METHOD(GMABM, Hidd_BitMap, ObtainDirectAccess)
 {
-/*
-	*msg->addressReturn = NULL;
-    *msg->widthReturn = 0;
-    *msg->heightReturn = 0;
-    *msg->bankSizeReturn = 0;
-    return FALSE;
-*/
-
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     LOCK_BITMAP
     IPTR VideoData = bm->framebuffer;
@@ -1043,7 +990,6 @@ BOOL METHOD(GMABM, Hidd_BitMap, ObtainDirectAccess)
     *msg->heightReturn = bm->height;
     *msg->bankSizeReturn = *msg->memSizeReturn = bm->pitch * bm->height;
     return TRUE;
-
 }
 
 VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
@@ -1337,7 +1283,11 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
      * draw (many blits of height=1 instead of one single blit).
      * Therefore, many many the cache flushes kill the expected performance significantly. */
 
-    if (bm->fbgfx && bm->bpp == 4 && (msg->pixFmt == vHidd_StdPixFmt_Native || msg->pixFmt == vHidd_StdPixFmt_Native32 || msg->pixFmt == vHidd_StdPixFmt_BGRA32 || msg->pixFmt == vHidd_StdPixFmt_BGR032))
+    if (sd->ProductID < 0x2800 && bm->fbgfx && bm->bpp == 4
+        && (msg->pixFmt == vHidd_StdPixFmt_Native
+        || msg->pixFmt == vHidd_StdPixFmt_Native32
+        || msg->pixFmt == vHidd_StdPixFmt_BGRA32
+        || msg->pixFmt == vHidd_StdPixFmt_BGR032))
     {
     	UBYTE *src = msg->pixels;
     	ULONG x_add = msg->modulo;
@@ -1554,7 +1504,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 				break;
 
 			default:
-				if (bm->bpp == 4)
+				if (sd->ProductID < 0x2800 && bm->bpp == 4)
 				{
 			    	/* Get image width aligned to 4K page boundary */
 			    	uint32_t line_width = (msg->width * bm->bpp + 4095) & ~4095;
@@ -1564,8 +1514,6 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 			    	{
 			    		LOCK_HW
 
-			    		if (bm->bpp == 4)
-			    		{
 			    			/* Get two buffers in different GTT regions and _surely_ in different CPU cache lines */
 			    			uint32_t *buffer_1 = (uint32_t *)(((intptr_t)pages + 4095) & ~4095);
 			    			uint32_t *buffer_2 = &buffer_1[line_width / 4];
@@ -1627,14 +1575,10 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 								uint32_t br00, br13, br14, br09, br11, br12;
 
 								br00 = (2 << 29) | (0x43 << 22) | (4);
-								if (bm->bpp == 4)
-									br00 |= 3 << 20;
+								br00 |= 3 << 20;
 
 								br13 = bm->pitch | ROP3_S;
-								if (bm->bpp == 4)
-									br13 |= 3 << 24;
-								else if (bm->bpp == 2)
-									br13 |= 1 << 24;
+								br13 |= 3 << 24;
 
 								br14 = (msg->width * bm->bpp) | (1) << 16;
 								br09 = bm->framebuffer + bm->pitch * (msg->y + y) + bm->bpp * msg->x;
@@ -1672,9 +1616,6 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 							while(readl(&sd->HardwareStatusPage[18]) == 0);
 							while(readl(&sd->HardwareStatusPage[19]) == 0);
 							while(readl(&sd->HardwareStatusPage[20]) == 0);
-			    		}
-			        	else
-			            	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
 			    		UNLOCK_HW
 
@@ -1709,7 +1650,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImageLUT)
     	{
     		LOCK_HW
 
-    		if (bm->bpp == 4)
+    		if (bm->bpp == 4 && sd->ProductID < 0x2800)
     		{
     			/* Get two buffers in different GTT regions and _surely_ in different CPU cache lines */
     			uint32_t *buffer_1 = (uint32_t *)(((intptr_t)pages + 4095) & ~4095);
@@ -1835,7 +1776,9 @@ VOID METHOD(GMABM, Hidd_BitMap, GetImage)
 			DO_FLUSH();
 			UNLOCK_HW
 
-		if (bm->bpp == 4 && (msg->pixFmt == vHidd_StdPixFmt_Native || msg->pixFmt == vHidd_StdPixFmt_Native32))
+        if (bm->bpp == 4 && sd->ProductID < 0x2800
+            && (msg->pixFmt == vHidd_StdPixFmt_Native
+            || msg->pixFmt == vHidd_StdPixFmt_Native32))
 		{
 	    	UBYTE *dst = msg->pixels;
 	    	ULONG x_add = msg->modulo;
