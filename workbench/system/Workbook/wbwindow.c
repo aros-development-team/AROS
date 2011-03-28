@@ -148,8 +148,8 @@ static BOOL wbMenuEnable(Class *cl, Object *obj, int id, BOOL onoff)
 
 AROS_UFH3(ULONG, wbIgnoreInfo_Hook,
     AROS_UFHA(struct Hook*, hook, A0),
-    AROS_UFHA(struct ExAllData*, ead, A1),
-    AROS_UFHA(LONG *, type, A2))
+    AROS_UFHA(struct ExAllData*, ead, A2),
+    AROS_UFHA(LONG *, type, A1))
 {
     int i;
 
@@ -188,8 +188,7 @@ static void wbAddFiles(Class *cl, Object *obj, CONST_STRPTR path)
     	    	struct Hook hook;
     	    	BOOL more = TRUE;
 
-    	    	hook.h_Entry = HookEntry;
-    	    	hook.h_SubEntry = wbIgnoreInfo_Hook;
+    	    	hook.h_Entry = wbIgnoreInfo_Hook;
 
     	    	eac->eac_MatchFunc = &hook;
     		while (more) {
