@@ -30,6 +30,8 @@ struct wbIcon {
     STRPTR             File;
     struct DiskObject *Icon;
     STRPTR             Label;
+
+    struct timeval LastActive;
 };
 
 void wbIcon_Update(Class *cl, Object *obj)
@@ -197,11 +199,33 @@ static IPTR wbIconRender(Class *cl, Object *obj, struct gpRender *gpr)
 // GM_GOACTIVE
 static IPTR wbIconGoActive(Class *cl, Object *obj, struct gpInput *gpi)
 {
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbIcon *my = INST_DATA(cl, obj);
     struct Gadget *gadget = (struct Gadget *)obj;
+    BOOL dclicked;
 
-    gadget->Flags |= GFLG_SELECTED;
-
+    gadget->Flags ^= GFLG_SELECTED;
     DoMethod(obj, GM_RENDER, gpi->gpi_GInfo, gpi->gpi_GInfo->gi_RastPort,GREDRAW_TOGGLE);
+    
+    /* On a double-click, don't go 'active', just
+     * do the action.
+     */
+    dclicked = DoubleClick(my->LastActive.tv_secs,
+    		           my->LastActive.tv_micro,
+    		           gpi->gpi_IEvent->ie_TimeStamp.tv_secs,
+    		           gpi->gpi_IEvent->ie_TimeStamp.tv_micro);
+
+    my->LastActive = gpi->gpi_IEvent->ie_TimeStamp;
+
+    if (dclicked) {
+    	struct TagItem tags[] = {
+    	    { NP_Seglist,     (IPTR)wb->wb_OpenerSegList },
+    	    { NP_Arguments,   (IPTR)my->File },
+    	    { NP_FreeSeglist, FALSE },
+    	    { TAG_END, 0 },
+    	};
+    	CreateNewProc(tags);
+    }
 
     return GMR_MEACTIVE;
 }
@@ -209,22 +233,6 @@ static IPTR wbIconGoActive(Class *cl, Object *obj, struct gpInput *gpi)
 // GM_GOINACTIVE
 static IPTR wbIconGoInactive(Class *cl, Object *obj, struct gpGoInactive *gpgi)
 {
-    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
-    struct wbIcon *my = INST_DATA(cl, obj);
-    struct Gadget *gadget = (struct Gadget *)obj;
-    struct TagItem tags[] = {
-	{ NP_Seglist,     (IPTR)wb->wb_OpenerSegList },
-	{ NP_Arguments,   (IPTR)my->File },
-	{ NP_FreeSeglist, FALSE },
-	{ TAG_END, 0 },
-    };
-
-    gadget->Flags &= ~GFLG_SELECTED;
-
-    DoMethod(obj, GM_RENDER, gpgi->gpgi_GInfo, gpgi->gpgi_GInfo->gi_RastPort,GREDRAW_TOGGLE);
-
-    CreateNewProc(tags);
-
     return GMR_NOREUSE;
 }
 
