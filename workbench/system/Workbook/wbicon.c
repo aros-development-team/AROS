@@ -97,7 +97,7 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
 	label = FilePart(my->File);
     }
 
-    my->Label = StrDup((CONST_STRPTR)GetTagData(WBIA_Label, label, ops->ops_AttrList));
+    my->Label = StrDup((CONST_STRPTR)GetTagData(WBIA_Label, (IPTR)label, ops->ops_AttrList));
     if (my->Label == NULL)
     	goto error;
 
