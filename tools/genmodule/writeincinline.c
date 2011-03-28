@@ -143,7 +143,7 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
 	 arglistit = arglistit->next, count++
     )
 	fprintf(out, "(arg%d), ", count);
-    fprintf(out, "%s)\n", cfg->libbase);
+    fprintf(out, "(APTR)%s)\n", cfg->libbase);
 }
 
 void
