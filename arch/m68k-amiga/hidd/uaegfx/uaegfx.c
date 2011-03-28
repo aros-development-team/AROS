@@ -397,15 +397,15 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
     Forbid();
     pb(csd->boardinfo + PSSO_BoardInfo_MouseXOffset, msg->xoffset);
     pb(csd->boardinfo + PSSO_BoardInfo_MouseYOffset, msg->yoffset);
-    p = (UWORD*)gl(csd->boardinfo + PSSO_BoardInfo_MouseImage);
+    p = (UWORD*)gp(csd->boardinfo + PSSO_BoardInfo_MouseImage);
     if (p == NULL || width != csd->sprite_width || height != csd->sprite_height) {
-    	FreeVec(gl(csd->boardinfo + PSSO_BoardInfo_MouseImage));
+    	FreeVec(gp(csd->boardinfo + PSSO_BoardInfo_MouseImage));
     	p = AllocVec(4 + 4 + ((width + 15) & ~15) / 8 * height * 2, MEMF_CLEAR | MEMF_PUBLIC);
     	if (!p) {
     	    Permit();
     	    return FALSE;
     	}
-        pl(csd->boardinfo + PSSO_BoardInfo_MouseImage, (ULONG)p);
+        pp(csd->boardinfo + PSSO_BoardInfo_MouseImage, p);
         csd->sprite_width = width;
         csd->sprite_height = height;
     }

@@ -247,6 +247,10 @@ void getrtgmodeinfo(struct uaegfx_staticdata *csd, OOP_Object *sync, OOP_Object 
 const UBYTE modetable[16] =
 	{  0, 8, 4, 12,  2, 10, 6, 14,  7, 9, 5, 13,  3, 11, 1, 15 };
 
+APTR gp(UBYTE *p)
+{
+    return ((APTR*)p)[0];
+}
 ULONG gl(UBYTE *p)
 {
     return ((ULONG*)p)[0];
@@ -254,6 +258,10 @@ ULONG gl(UBYTE *p)
 UWORD gw(UBYTE *p)
 {
     return ((UWORD*)p)[0];
+}
+void pp(UBYTE *p, APTR a)
+{
+    ((APTR*)p)[0] = a;
 }
 void pl(UBYTE *p, ULONG l)
 {

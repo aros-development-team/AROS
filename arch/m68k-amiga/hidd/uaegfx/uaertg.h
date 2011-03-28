@@ -337,8 +337,10 @@ ULONG getrtgformat(struct uaegfx_staticdata *csd, OOP_Object *);
 void makerenderinfo(struct uaegfx_staticdata *csd, struct RenderInfo*, struct bm_data*);
 void getrtgmodeinfo(struct uaegfx_staticdata *csd, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo);
 
+APTR  gp(UBYTE *p);
 ULONG gl(UBYTE *p);
 UWORD gw(UBYTE *p);
+void pp(UBYTE *p, APTR a);
 void pl(UBYTE *p, ULONG l);
 void pw(UBYTE *p, WORD w);
 void pb(UBYTE *p, BYTE b);
