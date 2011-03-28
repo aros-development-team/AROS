@@ -126,7 +126,7 @@ STRPTR __StrDup(CONST_STRPTR str, struct WorkbenchBase *WorkbenchBase)
 
 BPTR __DuplicateSearchPath(BPTR list, struct WorkbenchBase *WorkbenchBase)
 {
-    BPTR *paths, *current = NULL, *previous = NULL, first = NULL;
+    BPTR *paths, *current = BNULL, *previous = BNULL, first = BNULL;
     
     for
     (
@@ -137,7 +137,7 @@ BPTR __DuplicateSearchPath(BPTR list, struct WorkbenchBase *WorkbenchBase)
     { 
         if ((current = (BPTR *) AllocVec(2 * sizeof(BPTR), MEMF_ANY)) != NULL)
         {
-            current[0] = NULL;
+            current[0] = BNULL;
             current[1] = DupLock(paths[1]);
             
             if (previous != NULL) previous[0] = (BPTR) MKBADDR(current);

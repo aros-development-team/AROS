@@ -304,11 +304,11 @@ static VOID __HandleLaunch_WB
     
     /* Load the program from disk */
     startup->sm_Segment = LoadSeg(name);
-    if (startup->sm_Segment == NULL) goto error;
+    if (startup->sm_Segment == BNULL) goto error;
     
     /* Duplicate lock for NP_HomeDir */
     home = DupLock(lock);
-    if (home == NULL) goto error;
+    if (home == BNULL) goto error;
 
     const struct TagItem tags[]=
     {
@@ -342,7 +342,7 @@ static VOID __HandleLaunch_WB
 error:
     //FIXME: report error somehow?
     D(bug("[WBLIB] __HandleLaunch_WB: Failed to launch program. Deallocating resources.\n"));
-    if (startup->sm_Segment != NULL) UnLoadSeg(startup->sm_Segment);
+    if (startup->sm_Segment != BNULL) UnLoadSeg(startup->sm_Segment);
     DestroyWBS(startup);
     
 done:
