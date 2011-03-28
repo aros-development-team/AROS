@@ -52,6 +52,7 @@ static SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1
     struct Process   *me = (struct Process *)FindTask(NULL);
     struct DosPacket *dp;
     struct MsgPort   *replyPort;
+    struct Message   *msg;
     BOOL i_am_process = TRUE;
 
     if (port == NULL) { /* NIL: ? */
@@ -77,8 +78,8 @@ static SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1
 	i_am_process = FALSE;
     }
     
-    D(bug("dp=%x act=%d port=%x reply=%x proc=%d %x %x %x %x %x\n",
-    	dp, action, port, replyPort, i_am_process, arg1, arg2, arg3, arg4, arg5));
+    D(bug("dp=%x act=%d port=%x reply=%x proc=%d %x %x %x %x %x '%s'\n",
+    	dp, action, port, replyPort, i_am_process, arg1, arg2, arg3, arg4, arg5, me->pr_Task.tc_Node.ln_Name));
     dp->dp_Type = action;
     dp->dp_Arg1 = arg1;
     dp->dp_Arg2 = arg2;
@@ -93,9 +94,13 @@ static SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1
     dp->dp_Link->mn_ReplyPort = replyPort;
     PutMsg(port, dp->dp_Link);
 
-    while (GetMsg(replyPort) == NULL) {
+    while ((msg = GetMsg(replyPort)) == NULL) {
         Wait(1 << replyPort->mp_SigBit);
     }
+
+    /* Did we get different packet back? System is in unstable state. */
+    if (msg != dp->dp_Link)
+    	Alert(AN_AsyncPkt);
 
     if (res2)
     	*res2 = dp->dp_Res2;
