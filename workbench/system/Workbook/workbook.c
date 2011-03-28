@@ -68,7 +68,7 @@ exit:
 #undef WorkbenchBase
 
 AROS_ENTRY(LONG, wbOpener,
-	AROS_UFHA(const char *, argstr, A0),
+	AROS_UFHA(STRPTR, argstr, A0),
 	AROS_UFHA(ULONG, argsize, D0),
 	struct ExecBase *, SysBase)
 {
