@@ -27,14 +27,14 @@ struct vbe_controller
 {
     unsigned char  signature[4];	/* 'VESA' string				*/
     unsigned short version;		/* VBE version number				*/
-    unsigned long  oem_string;		/* 16-bit far pointer to OEM string pointer	*/
-    unsigned long  capabilities;	/* Capabilities flags, see below		*/
-    unsigned long  video_mode;		/* 16-bit far pointer to video mode table	*/
+    unsigned int   oem_string;		/* 16-bit far pointer to OEM string pointer	*/
+    unsigned int   capabilities;	/* Capabilities flags, see below		*/
+    unsigned int   video_mode;		/* 16-bit far pointer to video mode table	*/
     unsigned short total_memory;	/* Total amount of VRAM				*/
     unsigned short oem_software_rev;	/* ROM version number				*/
-    unsigned long  oem_vendor_name;	/* 16-bit far pointer to hardware vendor string	*/
-    unsigned long  oem_product_name;	/* 16-bit far pointer to name string		*/
-    unsigned long  oem_product_rev;	/* 16-bit far pointer to version string		*/
+    unsigned int   oem_vendor_name;	/* 16-bit far pointer to hardware vendor string	*/
+    unsigned int   oem_product_name;	/* 16-bit far pointer to name string		*/
+    unsigned int   oem_product_rev;	/* 16-bit far pointer to version string		*/
     unsigned char  reserved[222];	/* BIOS scratchpad				*/
     unsigned char  oem_data[256];	/* Strings can be copied here			*/
 } __attribute__ ((packed));
@@ -69,7 +69,7 @@ struct vbe_mode
     unsigned short win_size;
     unsigned short win_a_segment;
     unsigned short win_b_segment;
-    unsigned long  win_func;
+    unsigned int   win_func;
     unsigned short bytes_per_scanline;	    /* Number of bytes per line				*/
 
     /* >=1.2 */
@@ -88,7 +88,7 @@ struct vbe_mode
     /* direct color */
     unsigned char  red_mask_size;	    /* Number of bits for the color			*/
     unsigned char  red_field_position;	    /* LSB bit position of the color mask		*/
-    unsigned char  green_mask_size;
+    unsigned char  green_mask_size;	    /* Number of bits in the color mask			*/
     unsigned char  green_field_position;
     unsigned char  blue_mask_size;
     unsigned char  blue_field_position;
@@ -97,9 +97,9 @@ struct vbe_mode
     unsigned char  direct_color_mode_info;  /* Direct color mode flags, see below		*/
 
     /* >=2.0 */
-    unsigned long  phys_base;
-    unsigned long  reserved1;
-    unsigned short reversed2;
+    unsigned int   phys_base;		    /* Linear framebuffer address (32-bit)		*/
+    unsigned int   reserved1;
+    unsigned short reserved2;
 
     /* >=3.0 */
     unsigned short linear_bytes_per_scanline;
@@ -113,7 +113,7 @@ struct vbe_mode
     unsigned char  linear_blue_field_position;
     unsigned char  linear_reserved_mask_size;
     unsigned char  linear_reserved_field_position;
-    unsigned long  max_pixel_clock;
+    unsigned int   max_pixel_clock;
 
     unsigned char reserved3[189];
 } __attribute__ ((packed));

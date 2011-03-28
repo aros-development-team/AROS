@@ -7,14 +7,14 @@ include $(TOP)/config/make.cfg
 FILES  := testboot
 EXEDIR := $(BINDIR)/boot
 
-USER_CFLAGS  := -isystem $(SRCDIR)/boot/libconsole/include
+USER_CFLAGS  := -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 USER_LDFLAGS := -L $(GENDIR)/lib
 
-#MM boot-test : linklibs-console
+#MM test-boot : linklibs-bootconsole
 
-%build_prog mmake=boot-test \
+%build_prog mmake=test-boot \
     progname=testboot targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="console rom" \
+    files=$(FILES) uselibs="bootconsole rom" \
     usestartup=no
 
 %common
