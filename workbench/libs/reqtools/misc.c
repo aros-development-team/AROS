@@ -116,7 +116,9 @@ APTR DofmtArgs (char *buff, char *fmt ,...)
 {
     char *str = buff;
 
-#warning fix vararg stuff
+#ifdef AROS_SLOWSTACKTAGS
+#error Varargs is not an array of IPTR for your architecture!
+#endif
     
     return RawDoFmt(fmt, &fmt + 1, (VOID_FUNC)puttostr, &str);
 }

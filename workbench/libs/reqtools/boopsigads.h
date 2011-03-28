@@ -16,7 +16,7 @@ struct InitData
 {
     struct Gadget 	*idata_Gadget;		/* NULL for sole images */
     struct TextAttr 	*idata_TextAttr;
-    char 		*idata_Label;
+    const char 		*idata_Label;
     APTR 		idata_VisualInfo;
     ULONG 		idata_Underscore;
 };

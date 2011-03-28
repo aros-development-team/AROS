@@ -93,7 +93,7 @@ struct Gadget * REGARGS my_CreateButtonGadget (
 {
     struct InitData 	idata;
     struct Image 	*image;
-    char 		*label;
+    const char 		*label;
 
     label = ng->ng_GadgetText;
     ng->ng_GadgetText = NULL;

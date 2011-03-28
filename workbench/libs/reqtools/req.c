@@ -662,7 +662,7 @@ ULONG ASM SAVEDS GetString (
 	{
 	    gad->GadgetType |= GTYP_BOOLGADGET;
 #ifdef __AROS__
-#warning A workaround here for AROS, because this would overpaint many gadgets
+	    /* FIXME: A workaround here for AROS, because this would overpaint many gadgets */
 	    /* This seems to rely somehow on how GadTools refreshes gadgets
 	       (the order etc.).
 	       

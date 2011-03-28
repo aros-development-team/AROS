@@ -1040,9 +1040,10 @@ rememberclicked:
 				    goto checkdoubleclick;
 			    }
 			    
-			    #warning check following line. causes MuForces hits on Amiga when clicking
-			    #warning on volume or assign entry. Both with old Amiga reqtools.library and
-			    #warning in new reqtools.library compiled from AROS sources.
+			    /* FIXME: check following line. causes MuForces hits on Amiga when clicking
+			     *        on volume or assign entry. Both with old Amiga reqtools.library and
+			     *        in new reqtools.library compiled from AROS sources.
+			     */
 			    
 			#if 0
 			    entry->re_Flags &= ~ENTRYF_HIGHLIGHTED;
@@ -1254,7 +1255,7 @@ refreshlist:
 			    {
 				/* extract path from filename if one was entered */
 				char tempstr[108];
-				BPTR templock = NULL, dirlock, oldcd;
+				BPTR templock = BNULL, dirlock, oldcd;
 
 				str = glob->filestr;
 
