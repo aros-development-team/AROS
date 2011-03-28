@@ -687,7 +687,7 @@ kprintf ("ProcessFlagPtr: %08lx %ld\n", ptr);
 	else
 	    ptr = 0L;
 
-	if (FWrite (data->sdd_Stream, &ptr, 1, 4) != 4)
+	if (FWrite ((BPTR)data->sdd_Stream, &ptr, 1, 4) != 4)
 	    return FALSE;
 
 	break;
