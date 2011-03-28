@@ -30,12 +30,15 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 			struct Resident *res;
 			UWORD *romptr = (UWORD*)configDev->cd_Rom.er_DiagArea;
 			UWORD *romend = (UWORD*)(((UBYTE*)configDev->cd_Rom.er_DiagArea) + configDev->cd_Rom.er_DiagArea->da_Size);
-			SetCurrentBinding(&configDev, 4);
+			struct CurrentBinding cb = {
+			    .cb_ConfigDev = configDev
+			};
+			SetCurrentBinding(&cb, sizeof(cb));
 			while (romptr < romend - sizeof (struct Resident*)) {
 				res = (struct Resident*)romptr;
 				if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res && res->rt_Pri < 105) {
 					D(bug("initresident %x '%s'\n", res, res->rt_Name));
-					InitResident(res, NULL);
+					InitResident(res, BNULL);
 					break; /* must not keep looking */
 				} else {
 					romptr += 1;
