@@ -53,7 +53,7 @@ static int Init(LIBBASETYPEPTR RTBase)
         
     D(bug("reqtools.library: Inside libinit func\n"));
     
-    return RTFuncs_Init((struct ReqToolsBase *) RTBase, NULL) != NULL;
+    return RTFuncs_Init((struct ReqToolsBase *) RTBase, BNULL) != NULL;
 }
 
 /****************************************************************************************/
@@ -101,7 +101,7 @@ static int Expunge(LIBBASETYPEPTR RTBase)
  
     D(bug("reqtools.library: Inside libexpunge func.\n"));
 
-    return RTFuncs_Expunge((struct ReqToolsBase *) RTBase) != NULL;
+    return RTFuncs_Expunge((struct ReqToolsBase *) RTBase) != BNULL;
 }
 
 /****************************************************************************************/

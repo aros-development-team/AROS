@@ -267,21 +267,21 @@ SAVEDS ASM BPTR RTFuncs_Close(REGPARAM(a6, struct ReqToolsBase *, RTBase))
     }
 #endif
     
-    return NULL;
+    return BNULL;
 }
 
 /****************************************************************************************/
 
 SAVEDS ASM BPTR RTFuncs_Expunge(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 {
-    BPTR ret = NULL;
+    BPTR ret = BNULL;
 
 #ifndef __AROS__
     if(RTBase->LibNode.lib_OpenCnt != 0)
     {
 	/* Set the delayed expunge flag and return. */
 	RTBase->LibNode.lib_Flags |= LIBF_DELEXP;
-	return NULL;
+	return BNULL;
     }
     
     /* Get rid of the library. Remove it from the list. */
@@ -547,7 +547,8 @@ SAVEDS ASM void RTFuncs_rtSetReqPosition(REGPARAM(d0, ULONG, reqpos),
 					REGPARAM(a1, struct Screen *, scr),
 					REGPARAM(a2, struct Window *, win))
 {
-#warning Taken from rtfuncs.asm where the C version was in comments. Might be out of date
+    /* TODO: Taken from rtfuncs.asm where the C version was in comments. Might be out of date
+     */
 
     int mx = 0, my = 0, val, leftedge, topedge;
     ULONG scrwidth, scrheight;

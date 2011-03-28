@@ -291,7 +291,7 @@ ChangeReqAttrA (REGPARAM(a1, APTR, req),
 	
     } /* while ((tag = NextTagItem (&tstate))) */
  
-#warning There was a missing return. For AROS I added return 1!?
+    /* FIXME: There was a missing return. For AROS I added return 1!? */
 
     return 1;    
 }

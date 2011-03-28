@@ -207,7 +207,7 @@ void REGARGS PrintEntry (GlobData *glob, int i)
 	else if (type == FONT || (type == glob->file_id))
 	{
 #ifdef __AROS__
-#warning AROS LocaleLibrary does not yet patch RawDoFmt. So "%lD" (uppercase D) does not work yet here!
+	    /* FIXME: AROS LocaleLibrary does not yet patch RawDoFmt. So "%lD" (uppercase D) does not work yet here!  */
 	    Dofmt (sizestr, " %ld", &size);
 #else
 	    Dofmt (sizestr, LocaleBase ? " %lD" : " %ld", &size);
@@ -660,7 +660,7 @@ void REGARGS UnLockReqLock (GlobData *glob)
     glob->ledon = FALSE;
     RenderLED (glob);
     if (glob->lock) UnLock (glob->lock);
-    glob->lock = NULL;
+    glob->lock = BNULL;
 }
 
 /****************************************************************************************/
@@ -709,7 +709,7 @@ IsDosVolume(struct DosList *dlist)
 
     lock = Lock(volName, SHARED_LOCK);
 
-    if (lock != NULL)
+    if (lock != BNULL)
     {
 	BOOL result = Info(lock, &id);
 
@@ -836,7 +836,7 @@ AddDisk(
 	    {
 		BPTR lock = Lock((CONST_STRPTR) &deventry->name, SHARED_LOCK);
 
-		if (lock != NULL)
+		if (lock != BNULL)
 		{
 		    if (Info(lock, infodata))
 		    {
@@ -901,7 +901,7 @@ GetVolName( BSTR bstr, STRPTR cstr )
     /* In AROS, BPTR:s are handled differently on different systems
        (to be binary compatible on Amiga) */
 
-    if (bstr != NULL)
+    if (bstr != BNULL)
     {
 	LONG    length = AROS_BSTR_strlen(bstr);
 	LONG    i;		/* Loop variable */

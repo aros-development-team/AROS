@@ -14,7 +14,7 @@
 
 extern struct IClass *ButtonImgClass;
 
-extern ULONG ASM myTextLength (ASM_REGPARAM(a1, char *,),
+extern ULONG ASM myTextLength (ASM_REGPARAM(a1, const char *,),
     	    	    	       ASM_REGPARAM(a0, struct TextAttr *,),
 			       ASM_REGPARAM(a3, UBYTE *,),
 			       ASM_REGPARAM(a2, struct Image *,),
@@ -45,7 +45,7 @@ char KeyFromStr(char *string, char underchar)
 
 /****************************************************************************************/
 
-ULONG myTextLength(char *str, struct TextAttr *attr, UBYTE *underscore,
+ULONG myTextLength(const char *str, struct TextAttr *attr, UBYTE *underscore,
 		   struct Image *im, ULONG do_lod)
 {
     struct RastPort temprp;
@@ -74,7 +74,8 @@ ULONG myTextLength(char *str, struct TextAttr *attr, UBYTE *underscore,
     if (str)
     {
         struct LocalObjData 	*lod = (struct LocalObjData *)0xDEADBEAF;	
-	char			c, *str2;
+	char			c;
+	const char		*str2;
         WORD 			len = strlen(str), underoff;
 
         if (do_lod)
