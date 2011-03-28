@@ -32,7 +32,7 @@ static int ExpansionInit(LIBBASETYPEPTR LIBBASE)
 
     /* See what expansion hardware we can detect. */
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    ConfigChain(E_EXPANSIONBASE);
+    ConfigChain((APTR)E_EXPANSIONBASE);
 #endif
 
     return TRUE;
