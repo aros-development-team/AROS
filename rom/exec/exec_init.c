@@ -30,6 +30,7 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#include "exec_debug.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "etask.h"
@@ -171,13 +172,15 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     if (!KernelBase)
 	return NULL;
 
+    DINIT("exec.library init");
+
     /* We print the notice here because kprintf() works only after KernelBase is set up */
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     	bug("[exec] Mungwall enabled\n");
 
     /* If there's no MMU support, PageSize will stay zero */
     KrnStatMemory(0, KMS_PageSize, &PrivExecBase(SysBase)->PageSize, TAG_DONE);
-    D(bug("[exec] Memory page size: %u\n", PrivExecBase(SysBase)->PageSize));
+    DINIT("Memory page size: %lu", PrivExecBase(SysBase)->PageSize);
 
     /*
      * On MMU-less hardware kernel.resource will report zero page size.
@@ -192,8 +195,9 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     /* Create boot task */
     ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
     t  = (struct Task *)   AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-    if( !ml || !t ) {
-	kprintf("ERROR: Cannot create Boot Task!\n");
+    if( !ml || !t )
+    {
+	DINIT("ERROR: Cannot create Boot Task!");
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
 
@@ -216,8 +220,9 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     t->tc_Flags |= TF_ETASK;
 
     t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_ANY|MEMF_CLEAR);
-    if (!t->tc_UnionETask.tc_ETask) {
-	kprintf("Not enough memory for first task\n");
+    if (!t->tc_UnionETask.tc_ETask)
+    {
+	DINIT("Not enough memory for first task");
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
 
@@ -225,8 +230,9 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     InitETask(t, t->tc_UnionETask.tc_ETask);
 
     GetIntETask(t)->iet_Context = KrnCreateContext();
-    if (!GetIntETask(t)->iet_Context) {
-	kprintf("Not enough memory for first task\n");
+    if (!GetIntETask(t)->iet_Context)
+    {
+	DINIT("Not enough memory for first task context");
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
 
@@ -243,8 +249,9 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	    struct SoftIntList *sil;
 
 	    is = AllocMem(sizeof(struct Interrupt) + sizeof(struct SoftIntList), MEMF_CLEAR|MEMF_PUBLIC);
-	    if (is == NULL) {
-		kprintf("ERROR: Cannot install Interrupt Servers!\n");
+	    if (is == NULL)
+	    {
+		DINIT("ERROR: Cannot install Interrupt Servers!");
 		Alert( AT_DeadEnd | AN_IntrMem );
 	    }
 
@@ -263,8 +270,9 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	    struct Interrupt * is;
 
 	    is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-	    if (NULL == is) {
-		kprintf("Error: Cannot install SoftInt Handler!\n");
+	    if (NULL == is)
+	    {
+		DINIT("Error: Cannot install SoftInt Handler!\n");
 		Alert( AT_DeadEnd | AN_IntrMem );
 	    }
 

@@ -26,14 +26,34 @@ const char *ExecFlagNames[] =
     "InitResident",
     "InitCode",
     "FindResident",
-    (char *)-1,
+    (char *)-1,		/* Reserved bit		*/
     "CreateLibrary",
     "SetFunction",
     "NewSetFunction",
     "ChipRam",
     "AddTask",
     "RemTask",
-    /* This array is incomplete, TODO */
+    "GetTaskAttr",
+    "SetTaskAttr",
+    "ExceptHandler",
+    "AddDosNode",
+    "PCI",
+    "RamLib",
+    (char *)-1,		/* NoLogServer		*/
+    (char *)-1,		/* NoLogWindow		*/
+    (char *)-1,		/* LogFile		*/
+    (char *)-1,		/* LogKPrintF		*/
+    (char *)-1,		/* PermMemTrack		*/
+    "MemTrack",
+    (char *)-1,		/* CyberGuardDelay	*/
+    "LogExtended",
+    "LoadSeg",
+    "UnloadSeg",
+    (char *)-1,		/* PPCStart		*/
+    "CGXDebug",
+    "InvZeroPage",
+    (char *)-1,		/* Reserved bit		*/
+    "Init",
     NULL
 };
 
