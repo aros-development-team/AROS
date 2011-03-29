@@ -119,10 +119,12 @@ ULONG ParseFlags(char *opts, const char **FlagNames)
 	/* Decode flag name */
 	for (i = 0; FlagNames[i]; i++)
     	{
-    	    if (FlagNames[i] == (char *)-1)
+    	    const char *flagName = FlagNames[i];
+
+    	    if (flagName == (char *)-1)
     	    	continue;
 
-    	    if (!strnicmp(opts, FlagNames[i], p - opts))
+    	    if (!strnicmp(opts, flagName, strlen(flagName)))
     	    {
     	    	ret |= (1UL << i);
     	    	break;
