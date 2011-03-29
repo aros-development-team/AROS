@@ -644,7 +644,7 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
 
 static void NewCLI(struct WorkbookBase *wb, BPTR lock)
 {
-    BPTR cd;
+    BPTR cd, cis, script;
     IPTR rc;
 
     if (lock == BNULL)
@@ -652,10 +652,25 @@ static void NewCLI(struct WorkbookBase *wb, BPTR lock)
     else
     	cd = DupLock(lock);
 
+    cis = Open("CON:20/20/400/60/Workbook/CLOSE", MODE_OLDFILE);
+    script = Open("S:Shell-Startup", MODE_OLDFILE);
+
     D(bug("Lock=%p\n", BADDR(cd)));
-    rc = SystemTags("NewShell", NP_CurrentDir, (IPTR)cd, TAG_DONE);
-    if (rc == -1)
+    rc = SystemTags("",
+    	    SYS_Asynch,    TRUE,
+    	    SYS_Background,FALSE,
+    	    NP_CurrentDir, (IPTR)cd,
+    	    SYS_Input,     (IPTR)cis,
+    	    SYS_Output,    (IPTR)NULL,
+    	    SYS_Error,     (IPTR)NULL,
+    	    SYS_ScriptInput, (IPTR)script,
+    	    SYS_UserShell, TRUE,
+    	    TAG_DONE);
+    if (rc == -1) {
     	UnLock(cd);
+    	Close(cis);
+    	Close(script);
+    }
 }
 
 // WBWM_MENUPICK
