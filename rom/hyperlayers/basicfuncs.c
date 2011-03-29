@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic support functions for layers.library.
@@ -30,8 +30,6 @@
 #define CLIPRECTS_OUTSIDE_OF_SHAPE 1
 
 #define SCROLLSIGN +
-
-#define USE_POOLS 1
 
 /*
  *  Sections:
@@ -182,13 +180,9 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
     if (cr->BitMap)
       FreeBitMap(cr->BitMap);
     _cr = cr->Next;
-#if USE_POOLS  
-    ObtainSemaphore(&LayersBase->lb_MemLock);
+
     FreePooled(LayersBase->lb_ClipRectPool, cr, sizeof(struct ClipRect));
-    ReleaseSemaphore(&LayersBase->lb_MemLock);
-#else
-    FreeMem(cr, sizeof(struct ClipRect));
-#endif
+
     cr = _cr;
   }
 
@@ -200,13 +194,8 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
   while (cr)
   {
     _cr = cr->Next;
-#if USE_POOLS  
-    ObtainSemaphore(&LayersBase->lb_MemLock);
     FreePooled(LayersBase->lb_ClipRectPool, cr, sizeof(struct ClipRect));
-    ReleaseSemaphore(&LayersBase->lb_MemLock);
-#else
-    FreeMem(cr, sizeof(struct ClipRect));
-#endif
+
     cr = _cr;
   }
 
@@ -344,14 +333,7 @@ struct ClipRect * _AllocClipRect(struct Layer * L, struct LayersBase *LayersBase
     return CR;
   }
 
-#if USE_POOLS  
-  ObtainSemaphore(&LayersBase->lb_MemLock);
-  CR = (struct ClipRect *)AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
-  ReleaseSemaphore(&LayersBase->lb_MemLock);
-#else
-  CR = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_PUBLIC|MEMF_CLEAR);
-#endif
-  return CR;
+  return AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
 }
 
 /*
@@ -371,13 +353,7 @@ void _FreeClipRect(struct ClipRect   * CR,
   }
   else
   {
-#if USE_POOLS  
-    ObtainSemaphore(&LayersBase->lb_MemLock);
     FreePooled(LayersBase->lb_ClipRectPool, CR, sizeof(struct ClipRect));
-    ReleaseSemaphore(&LayersBase->lb_MemLock);
-#else
-    FreeMem(CR, sizeof(struct ClipRect));
-#endif
   }
 }
 
@@ -1165,13 +1141,7 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
     {
       struct ClipRect * cr;
 
-#if USE_POOLS
-      ObtainSemaphore(&LayersBase->lb_MemLock);
       cr = (struct ClipRect *)AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
-      ReleaseSemaphore(&LayersBase->lb_MemLock);
-#else
-      cr = AllocMem(sizeof(struct ClipRect), MEMF_CLEAR);
-#endif
 
 //kprintf("\t\tinvisible: %d !!!!!!!!!!!!\n",invisible);
 
