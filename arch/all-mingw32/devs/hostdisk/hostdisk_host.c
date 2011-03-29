@@ -103,6 +103,20 @@ ULONG Host_Seek(struct unit *Unit, ULONG pos)
     return TDERR_SeekError;
 }
 
+ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
+{
+    ULONG ret;
+
+    Forbid();
+    ret = Unit->hdskBase->iface->SetFilePointer(Unit->file, pos, &pos_hi, FILE_BEGIN);
+    Permit();
+
+    if (ret != -1)
+	return 0;
+
+    return TDERR_SeekError;
+}
+
 ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 {
     ULONG len, err;
@@ -129,6 +143,11 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 	    dg->dg_BufMemType   = MEMF_PUBLIC;
 	    dg->dg_DeviceType   = DG_DIRECT_ACCESS;
 	    dg->dg_Flags        = 0; //DGF_REMOVABLE;
+ 
+	    D(bug("hostdisk: Sector size      : %u\n", dg->dg_SectorSize));
+	    D(bug("hostdisk: Heads            : %u\n", dg->dg_Heads));
+	    D(bug("hostdisk: Sectors per track: %u\n", dg->dg_TrackSectors));
+	    D(bug("hostdisk: Cylinders        : %u\n", dg->dg_Cylinders));
  
 	    return 0;
         }

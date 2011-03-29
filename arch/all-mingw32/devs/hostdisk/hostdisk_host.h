@@ -74,9 +74,6 @@ typedef struct _DISK_GEOMETRY
 
 typedef void *file_t;
 
-/* Host-specific flags */
-#define UNIT_DEVICE 0x10
-
 struct HostInterface
 {
     void * __stdcall (*CreateFile)(char *lpFileName, ULONG dwDesiredAccess, ULONG dwShareMode, void *lpSecurityAttributes,

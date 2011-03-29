@@ -43,12 +43,14 @@ struct unit
 
 /* Unit flags */
 #define UNIT_READONLY 0x01
+#define UNIT_DEVICE   0x02
 
 ULONG Host_Open(struct unit *Unit);
 void Host_Close(struct unit *Unit);
 LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr);
 LONG Host_Write(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr);
 ULONG Host_Seek(struct unit *Unit, ULONG pos);
+ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi);
 ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg);
 
 #endif
