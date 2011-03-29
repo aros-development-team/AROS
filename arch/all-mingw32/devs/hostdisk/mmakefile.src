@@ -1,5 +1,7 @@
 include $(TOP)/config/make.cfg
 
+#MM- workbench-mingw32-$(CPU) : workbench-devs-hostdisk
+
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/devs/hostdisk
 
 %build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
