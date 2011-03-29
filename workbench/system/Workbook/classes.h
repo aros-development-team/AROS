@@ -54,6 +54,8 @@ Class *WBApp_MakeClass(struct WorkbookBase *wb);
 #define WBWM_NEWSIZE             (WBWM_Dummy+1)  /* N/A */
 #define WBWM_MENUPICK            (WBWM_Dummy+2)  /* struct wbwm_MenuPick {} */
 #define WBWM_INTUITICK           (WBWM_Dummy+3)  /* N/A */
+#define WBWM_HIDE                (WBWM_Dummy+4)  /* N/A */
+#define WBWM_SHOW                (WBWM_Dummy+5)  /* N/A */
 
 struct wbwm_MenuPick {
     STACKED ULONG             MethodID;
