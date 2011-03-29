@@ -66,7 +66,8 @@ kernel-package-pc-x86_64: $(BINDIR)/boot
 
 # -------- BSP part --------
 
-#MM kernel-bsp-x86_64-pc : kernel-kernel-pc-x86_64-kobj \
+#MM kernel-bsp-x86_64-pc : linklibs-bootconsole		\
+#MM			   kernel-kernel-pc-x86_64-kobj \
 #MM			   kernel-exec-kobj		\
 #MM			   kernel-utility-kobj		\
 #MM			   kernel-expansion-kobj	\
@@ -77,7 +78,7 @@ kernel-package-pc-x86_64: $(BINDIR)/boot
 #MM
 kernel-bsp-x86_64-pc : $(BINDIR)/boot/kernel-pc-x86_64
 
-BSP_LDFLAGS := -L$(GENDIR)/lib
+BSP_LIBDIR  := $(GENDIR)/lib
 
 KLIBS   := exec utility expansion oop
 KDEVS   :=
@@ -95,8 +96,8 @@ KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
 
 KOBJS += $(KOBJSDIR)/smpboot.bin.o
 
-$(BINDIR)/boot/kernel-pc-x86_64: $(BINDIR)/boot $(KOBJS)
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $@ $(KOBJS) $(BSP_LDFLAGS) -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lbootconsole
+$(BINDIR)/boot/kernel-pc-x86_64: $(BINDIR)/boot $(KOBJS) $(BSP_LIBDIR)/libbootconsole.a
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $@ $(KOBJS) -L$(BSP_LIBDIR) -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lbootconsole
 
 # -------- Common part --------
 
