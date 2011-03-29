@@ -118,20 +118,18 @@ void fb_Clear(void)
 
 void fb_Putc(char chr)
 {
-    if (chr == '\n')
+    switch (chr)
     {
+    /* Ignore null bytes, they are output by formatting routines as terminators */
+    case 0:
+    	return;
+
+    case '\n':
     	scr_XPos = 0;
     	scr_YPos++;
-    }
-    else
-    {
-    	/*
-    	 * Replace zero characters with '?', since zero bytes mark
-    	 * unused space in the fb_Mirror buffer, and they would screw us up.
-    	 */
-    	if (chr == '\0')
-    	    chr = '?';
+    	break;
 
+    default:
     	/* Draw the character at current position */
 	RenderChar(chr, scr_XPos, scr_YPos);
 

@@ -44,4 +44,4 @@ void fb_SetMirror(char *addr);
 
 /* Serial I/O */
 void serial_Init(char *opts);
-void serial_Putc(unsigned char data);
+void serial_Putc(char chr);
