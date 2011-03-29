@@ -2,7 +2,7 @@
 #define EXEC_EXECBASE_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: structure of exec.library
@@ -99,7 +99,8 @@ struct ExecBase
     ULONG          ex_TaskID;
     ULONG          ex_Reserved1[5];
     APTR           ex_MMULock;         /* PRIVATE */
-    ULONG          ex_Reserved2[3];
+    ULONG          ex_Reserved2[2];
+    ULONG	   ex_DebugFlags;
     struct MinList ex_MemHandlers;
     APTR           ex_MemHandler;      /* PRIVATE */
 
@@ -147,6 +148,41 @@ struct ExecBase
 #define DMA_Continue    (1L<<1)
 #define DMA_NoModify    (1L<<2)
 #define DMA_ReadFromRAM (1L<<3)
+
+/*
+ * Runtime debug output flags, MorphOS-compatible.
+ * Most of them are reserved for now.
+ */
+#define EXECDEBUGF_INITRESIDENT     0x00000001	/* Single resident initialization	*/
+#define EXECDEBUGF_INITCODE         0x00000002	/* Kickstart initialization		*/
+#define EXECDEBUGF_FINDRESIDENT     0x00000004
+#define EXECDEBUGF_CREATELIBRARY    0x00000010
+#define EXECDEBUGF_SETFUNCTION      0x00000020
+#define EXECDEBUGF_NEWSETFUNCTION   0x00000040
+#define EXECDEBUGF_CHIPRAM          0x00000080
+#define EXECDEBUGF_ADDTASK          0x00000100
+#define EXECDEBUGF_REMTASK          0x00000200
+#define EXECDEBUGF_GETTASKATTR      0x00000400
+#define EXECDEBUGF_SETTASKATTR      0x00000800
+#define EXECDEBUGF_EXCEPTHANDLER    0x00001000
+#define EXECDEBUGF_ADDDOSNODE       0x00002000
+#define EXECDEBUGF_PCI              0x00004000
+#define EXECDEBUGF_RAMLIB           0x00008000
+#define EXECDEBUGF_NOLOGSERVER      0x00010000
+#define EXECDEBUGF_NOLOGWINDOW      0x00020000
+#define EXECDEBUGF_LOGFILE          0x00040000
+#define EXECDEBUGF_LOGKPRINTF       0x00080000
+#define EXECDEBUGF_PERMMEMTRACK     0x00100000
+#define EXECDEBUGF_MEMTRACK         0x00200000
+#define EXECDEBUGF_CYBERGUARDDEADLY 0x00400000
+#define EXECDEBUGF_LOGEXTENDED      0x00800000
+#define EXECDEBUGF_LOADSEG          0x01000000
+#define EXECDEBUGF_UNLOADSEG        0x02000000
+#define EXECDEBUGF_PPCSTART         0x04000000
+#define EXECDEBUGF_CGXDEBUG         0x08000000
+#define EXECDEBUGF_INVZEROPAGE      0x10000000
+#define EXECDEBUGF_INIT             0x40000000	/* Generic system startup		*/
+#define EXECDEBUGF_LOG              0x80000000
 
 /*
  * The following definitions are private!

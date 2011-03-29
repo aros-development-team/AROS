@@ -1,25 +1,18 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Build a library or device from a resident structure.
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <dos/dos.h>
 #include <aros/asmcall.h>
-#include "exec_intern.h"
 #include <exec/devices.h>
 
 #include "exec_debug.h"
-#ifndef DEBUG_InitResident
-#   define DEBUG_InitResident 0
-#endif
-#undef DEBUG
-#if DEBUG_InitResident
-#   define DEBUG 1
-#endif
-#include <aros/debug.h>
-#undef kprintf
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -73,7 +66,7 @@
 
     struct Library *library = NULL;
     
-    D(bug("InitResident begin $%lx (\"%s\")\n", resident, resident->rt_Name));
+    DINITRESIDENT("InitResident begin 0x%p (\"%s\")", resident, resident->rt_Name);
 
     /* Check for validity */
     if(resident->rt_MatchWord != RTC_MATCHWORD ||
@@ -93,7 +86,7 @@
 	};
 	struct init *init = (struct init *)resident->rt_Init;
 
-        D(bug("Initresident RTF_AUTOINIT\n"));
+        DINITRESIDENT("Initresident RTF_AUTOINIT");
 
 	/*
 	    Make the library. Don't call the Init routine yet, but delay
@@ -133,7 +126,6 @@
 	    */
 	    if(init->init)
 	    {
-        	D(bug("Initresident call init @%p\n", init->init));
 		library = AROS_UFC3(struct Library *, init->init,
                     AROS_UFCA(struct Library *,  library, D0),
 		    AROS_UFCA(BPTR,              segList, A0),
@@ -168,7 +160,7 @@
     }
     else
     {
-        D(bug("Initresident !RTF_AUTOINIT\n"));
+        DINITRESIDENT("Initresident !RTF_AUTOINIT");
 
 	/* ...or let the library do it. */
         library = AROS_UFC3(struct Library *, resident->rt_Init,
@@ -178,7 +170,7 @@
         );
     }
 
-    D(bug("InitResident end $%lx (\"%s\")\n", resident, resident->rt_Name));
+    DINITRESIDENT("InitResident end 0x%p (\"%s\")", resident, resident->rt_Name);
 	
     return library;
 
