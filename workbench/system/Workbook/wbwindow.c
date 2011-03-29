@@ -640,8 +640,10 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
     struct wbWindow *my = INST_DATA(cl, obj);
 
     wbRedimension(cl, obj);
+    BeginRefresh(my->Window);
     RefreshWindowFrame(my->Window);
     RefreshGadgets(my->Window->FirstGadget, my->Window, NULL);
+    EndRefresh(my->Window, TRUE);
 
     return 0;
 }
