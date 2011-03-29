@@ -1,3 +1,5 @@
+#include <exec/rawfmt.h>
+
 #include "filereq.h"
 
 #include <string.h>
@@ -114,13 +116,13 @@ void CountNewLinesAndChars(REGPARAM(d0, UBYTE, chr),
 
 APTR DofmtArgs (char *buff, char *fmt ,...)
 {
-    char *str = buff;
+    va_list ap;
 
-#ifdef AROS_SLOWSTACKTAGS
-#error Varargs is not an array of IPTR for your architecture!
-#endif
-    
-    return RawDoFmt(fmt, &fmt + 1, (VOID_FUNC)puttostr, &str);
+    va_start(fmt, ap);
+    VNewRawDoFmt(fmt, (VOID_FUNC)RAWFMTFUNC_STRING, buff, ap);
+    va_end(ap);
+
+    return NULL;
 }
 
 /****************************************************************************************/
