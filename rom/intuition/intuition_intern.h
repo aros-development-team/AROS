@@ -1158,11 +1158,6 @@ AROS_UFPA(APTR  , args      , A1));
 #define DEBUG_GETSCREENDATA(x)      	;
 #define DEBUG_GETSCREENDRAWINFO(x)  	;
 #define DEBUG_HIDEWINDOW(x)         	;
-#ifdef __MORPHOS__
-#define DEBUG_INIT(x)               	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
-#else
-#define DEBUG_INIT(x)               	;
-#endif
 #define DEBUG_OPEN(x)               	;
 #define DEBUG_CLOSE(x)              	;
 #define DEBUG_INPUTEVENT(x)         	;
@@ -1198,16 +1193,6 @@ AROS_UFPA(APTR  , args      , A1));
 #define DEBUG_SETATTRS(x)           	;
 #define DEBUG_SETGADGETATTRS(x)     	;
 #define DEBUG_SETPOINTER(x)         	;
-#ifdef __MORPHOS__
-#define DEBUG_SETIPREFS(x)          	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
-#else
-#define DEBUG_SETIPREFS(x)          	;
-#endif
-#ifdef __MORPHOS__
-#define DEBUG_SETPREFS(x)           	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
-#else
-#define DEBUG_SETPREFS(x)           	;
-#endif
 #define DEBUG_SHOWWINDOW(x)         	;
 #define DEBUG_UNLOCKPUBSCREEN(x)    	;
 #define DEBUG_WINDOWLIMITS(x)       	;
@@ -1219,6 +1204,20 @@ AROS_UFPA(APTR  , args      , A1));
 #define DEBUG_LOCKPUBSCREENLIST(x)  	;
 #define DEBUG_UNLOCKPUBSCREENLIST(x)    ;
 #define DEBUG_RETHINKDISPLAY(x)   	;
+
+#ifdef NO_RUNTIME_DEBUG
+
+#define DEBUG_INIT(x)               	;
+#define DEBUG_SETIPREFS(x)          	;
+#define DEBUG_SETPREFS(x)           	;
+
+#else
+
+#define DEBUG_INIT(x)               	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETIPREFS(x)          	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETPREFS(x)           	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+
+#endif
 
 /*
  * Private data structures of the classes defined by intuition.library
