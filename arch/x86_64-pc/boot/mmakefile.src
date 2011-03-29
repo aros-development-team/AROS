@@ -3,7 +3,9 @@ include $(TOP)/config/make.cfg
 
 #MM- boot-pc-x86_64: bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-x86_64
 
-#MM- kernel-link-pc-x86_64: kernel-package-pc-x86_64
+#MM- kernel-link-pc-x86_64: kernel-package-pc-x86_64 kernel-bsp-x86_64-pc
+
+# -------- Base kickstart part (TODO: re-sort and move to rom) --------
 
 #MM kernel-package-pc-x86_64: \
 #MM	linklibs-clib \
@@ -61,6 +63,42 @@ kernel-package-pc-x86_64: $(BINDIR)/boot
 	@$(CP) $(MODULES) $(BINDIR)/.pkg/
 	@$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel-pc-x86_64.pkg $(BINDIR)/.pkg  
 	@$(RM) $(BINDIR)/.pkg
+
+# -------- BSP part --------
+
+#MM kernel-bsp-x86_64-pc : kernel-kernel-pc-x86_64-kobj \
+#MM			   kernel-exec-kobj		\
+#MM			   kernel-utility-kobj		\
+#MM			   kernel-expansion-kobj	\
+#MM			   kernel-oop-kobj		\
+#MM			   kernel-hidd-kobj		\
+#MM			   kernel-bootstrap-pc-x86_64-drivers
+
+#MM
+kernel-bsp-x86_64-pc : $(BINDIR)/boot/kernel-pc-x86_64
+
+BSP_LDFLAGS := -L$(GENDIR)/lib
+
+KLIBS   := exec utility expansion oop
+KDEVS   :=
+KHNDLRS :=
+KHIDDS  := hiddclass irq kbd mouse
+KRSRCS  := kernel
+
+# Module containing startup code (kernel.resource) must appear
+# in the beginning of the final list
+KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
+	 $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) ))
+
+KOBJS += $(KOBJSDIR)/smpboot.bin.o
+
+$(BINDIR)/boot/kernel-pc-x86_64: $(BINDIR)/boot $(KOBJS)
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $@ $(KOBJS) $(BSP_LDFLAGS) -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lbootconsole
+
+# -------- Common part --------
 
 $(BINDIR)/boot:
 	@$(ECHO) Creating $@...
