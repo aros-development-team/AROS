@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create the jumptable for a shared library or a device.
@@ -10,6 +10,8 @@
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_debug.h"
 
 AROS_LD3(void, CacheClearE,
 	 AROS_LHA(APTR, address, A0),
@@ -63,6 +65,8 @@ AROS_LD3(void, CacheClearE,
     AROS_LIBFUNC_INIT
     long n;
     APTR lastvec;
+
+    DCREATELIBRARY("MakeFunctions(0x%p, 0x%p, 0x%p)", target, functionArray, funcDispBase);
 
     n = 1;
 
@@ -121,7 +125,9 @@ AROS_LD3(void, CacheClearE,
 #endif
 
     /* Return size of jumptable */
+    DCREATELIBRARY("Created %lu vectors", n);
     return n;
+
     AROS_LIBFUNC_EXIT
 } /* MakeFunctions */
 

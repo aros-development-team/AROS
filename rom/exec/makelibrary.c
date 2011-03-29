@@ -1,16 +1,19 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Make a library ready for use.
     Lang: english
 */
+
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <proto/exec.h>
+
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -70,32 +73,41 @@
     AROS_LIBFUNC_INIT
 
     struct Library *library;
-    ULONG negsize=0;
+    ULONG negsize;
+    ULONG count = 0;
+
+    DCREATELIBRARY("MakeLibrary: functions table at 0x%p, data size is %lu", funcInit, dataSize);
 
     /* Calculate the jumptable's size */
-    if(*(WORD *)funcInit==-1)
+    if (*(WORD *)funcInit==-1)
     {
 	/* Count offsets */
 	WORD *fp=(WORD *)funcInit+1;
+
 	while(*fp++!=-1)
-	    negsize+=LIB_VECTSIZE;
+	    count++;
+	DCREATELIBRARY("Table contains %lu relative offsets", count);
     }
     else
     {
 	/* Count function pointers */
 	void **fp=(void **)funcInit;
+
 	while(*fp++!=(void *)-1)
-	    negsize+=LIB_VECTSIZE;
+	    count++;
+
+	DCREATELIBRARY("Table contains %lu absolute pointers", count);
     }
 
     /* Align library base */
-    negsize=AROS_ALIGN(negsize);
+    negsize=AROS_ALIGN(count * LIB_VECTSIZE);
 
     /* Allocate memory */
     library=(struct Library *)AllocMem(dataSize+negsize,MEMF_PUBLIC|MEMF_CLEAR);
+    DCREATELIBRARY("Allocated vector table at 0x%p, size is %lu", library, negsize);
 
     /* And initilize the library */
-    if(library!=NULL)
+    if (library!=NULL)
     {
 	/* Get real library base */
 	library=(struct Library *)((char *)library+negsize);
@@ -117,14 +129,20 @@
 	    InitStruct(structInit,library,dataSize);
 
 	/* Call init vector */
-	if(libInit!=NULL)
+	if (libInit!=NULL)
+	{
+	    DCREATELIBRARY("Calling init function 0x%p", libInit);
+
 	    library=AROS_UFC3(struct Library *, libInit,
 		AROS_UFCA(struct Library *,  library, D0),
 		AROS_UFCA(BPTR,              segList, A0),
 		AROS_UFCA(struct ExecBase *, SysBase, A6)
 	    );
+	}
     }
+
     /* All done */
+    DCREATELIBRARY("Created library 0x%p", library);
     return library;
 
     AROS_LIBFUNC_EXIT
