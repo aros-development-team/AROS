@@ -21,7 +21,7 @@
 
 #include "exec_debug.h"
 
-const char *ExecFlagNames[] =
+const char * const ExecFlagNames[] =
 {
     "InitResident",
     "InitCode",
@@ -92,7 +92,7 @@ static int IsAlpha(char c)
  * Option format: <flag1>,<flags>,...,<flagN>
  * Or:            "<flag1> <flag2> ... <flagN>"
  */
-ULONG ParseFlags(char *opts, const char **FlagNames)
+ULONG ParseFlags(char *opts, const char * const *FlagNames)
 {
     ULONG ret = 0;
     char quoted = 0;
@@ -160,7 +160,7 @@ ULONG ParseFlags(char *opts, const char **FlagNames)
     return ret;
 }
 
-void VLog(struct ExecBase *SysBase, ULONG flags, const char **FlagNames, const char *format, va_list args)
+void VLog(struct ExecBase *SysBase, ULONG flags, const char * const *FlagNames, const char *format, va_list args)
 {
     unsigned int i;
 
@@ -172,7 +172,7 @@ void VLog(struct ExecBase *SysBase, ULONG flags, const char **FlagNames, const c
 
     	if (flags & (1UL << i))
     	{
-	    RawDoFmt("[%s] ", &FlagNames[i], (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
+	    RawDoFmt("[%s] ", (APTR)&FlagNames[i], (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
 	    break;
 	}
     }

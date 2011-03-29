@@ -93,17 +93,17 @@
 /* Runtime debugging */
 #ifdef NO_RUNTIME_DEBUG
 
-#define ExecLog(...)
-#define ParseFlags(...) 0
+#define ExecLog(...) do { } while (0)
+#define ParseFlags(...) (0)
 
 #else
 
 #include <stdarg.h>	/* for va_list */
 
-extern const char *ExecFlagNames[];
-ULONG ParseFlags(char *opts, const char **FlagNames);
+extern const char * const ExecFlagNames[];
+ULONG ParseFlags(char *opts, const char * const *FlagNames);
 void ExecLog(struct ExecBase *SysBase, ULONG flags, const char *format, ...);
-void VLog(struct ExecBase *SysBase, ULONG flags, const char **FlagNames, const char *format, va_list args);
+void VLog(struct ExecBase *SysBase, ULONG flags, const char * const *FlagNames, const char *format, va_list args);
 
 #endif
 
