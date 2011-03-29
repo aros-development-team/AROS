@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Layers Resident and initialization.
@@ -24,13 +24,11 @@ static int LayersInit(LIBBASETYPEPTR LIBBASE)
         CloseLibrary(GfxBase);
         return FALSE;
     }
-
-    InitSemaphore(&LIBBASE->lb_MemLock);
  
-    LIBBASE->lb_ClipRectPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);
+    LIBBASE->lb_ClipRectPool = CreatePool(MEMF_CLEAR|MEMF_PUBLIC|MEMF_SEM_PROTECTED, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);
     if (!LIBBASE->lb_ClipRectPool)
 	return FALSE;
-  
+
     return TRUE;    
 }
 
