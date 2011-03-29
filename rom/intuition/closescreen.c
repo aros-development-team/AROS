@@ -89,14 +89,6 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
 
     if (screen != GetPrivIBase(IntuitionBase)->WorkBench)  FireScreenNotifyMessage((IPTR) screen, SNOTIFY_BEFORE_CLOSESCREEN, IntuitionBase);
 
-    /* Push ExitScreen Message to the Screensdecoration Class */
-    struct sdpExitScreen       semsg;
-
-    semsg.MethodID             = SDM_EXITSCREEN;
-    semsg.sdp_UserBuffer       = ((struct IntScreen *)screen)->DecorUserBuffer;
-    semsg.sdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
-    DoMethodA(((struct IntScreen *)screen)->ScrDecorObj, (Msg)&semsg);  
-
     /* there's a second check below for public screens */
     if (screen->FirstWindow)
     {
@@ -130,6 +122,14 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
         //something went wrong! int_closescreen is supposed to clear pubScrNode ptr!
         return FALSE;
     }
+
+    /* Push ExitScreen Message to the Screensdecoration Class */
+    struct sdpExitScreen       semsg;
+
+    semsg.MethodID             = SDM_EXITSCREEN;
+    semsg.sdp_UserBuffer       = ((struct IntScreen *)screen)->DecorUserBuffer;
+    semsg.sdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    DoMethodA(((struct IntScreen *)screen)->ScrDecorObj, (Msg)&semsg);  
 
     /* kill screen bar */
     KillScreenBar(screen, IntuitionBase);
