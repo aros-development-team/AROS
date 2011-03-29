@@ -53,8 +53,6 @@
 #define DEBUG_InitSemaphore 0
 #define DEBUG_InitStruct 0
 #define DEBUG_Insert 0
-#define DEBUG_MakeFunctions 0
-#define DEBUG_MakeLibrary 0
 #define DEBUG_ObtainQuickVector 0
 #define DEBUG_ObtainSemaphore 0
 #define DEBUG_ObtainSemaphoreList 0

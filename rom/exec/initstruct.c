@@ -1,13 +1,16 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialize a structure.
     Lang: english
 */
-#include "exec_intern.h"
+
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_debug.h"
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -75,6 +78,8 @@
     QUAD src;
     UBYTE *it,*dst;
     int   s,t;
+
+    DCREATELIBRARY("InitStruct(0x%p, 0x%p, %lu)", initTable, memory, size);
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     /* On 'real' Amigas, only the lower 16 bits are valid */
