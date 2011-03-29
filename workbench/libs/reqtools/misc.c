@@ -3,6 +3,7 @@
 #include "filereq.h"
 
 #include <string.h>
+#include <stdarg.h>
 
 #ifndef __AROS__
 typedef void (*VOID_FUNC)();
@@ -116,11 +117,19 @@ void CountNewLinesAndChars(REGPARAM(d0, UBYTE, chr),
 
 APTR DofmtArgs (char *buff, char *fmt ,...)
 {
+#ifdef __AROS__
     va_list ap;
 
-    va_start(fmt, ap);
+    /* Some AROS architectures don't have uniform varadics
+     * (ie an array of IPTR), so they can't use RawDoFmt()
+     * - we will use VNewRawDoFmt() instead.
+     */
+    va_start(ap, fmt);
     VNewRawDoFmt(fmt, (VOID_FUNC)RAWFMTFUNC_STRING, buff, ap);
     va_end(ap);
+#else
+    RawDoFmt(fmt, &fmt + 1, (VOID_FUNC)puttostr, &str);
+#endif
 
     return NULL;
 }
