@@ -56,7 +56,7 @@ BYTE get_full_path( STRPTR filename, STRPTR *dest )
 	lock = (BPTR) Lock(filename, SHARED_LOCK);
 
 	/* Can't get lock, surely because file does not exist */
-	if( lock == NULL ) {
+	if( lock == BNULL ) {
 		file = (STRPTR) FilePart(filename); len += strlen(file);
 		if(file != filename) {
 			char svg = *file; *file = 0;
@@ -65,7 +65,7 @@ BYTE get_full_path( STRPTR filename, STRPTR *dest )
 	}
 
 	/* Be sure the locked object is of the desired type */
-	if(lock != NULL)
+	if(lock != BNULL)
 	{
 		struct FileInfoBlock *fib;
 		if((fib = (void *) AllocVec(sizeof(*fib), MEMF_PUBLIC)) && Examine(lock, fib))
@@ -73,12 +73,12 @@ BYTE get_full_path( STRPTR filename, STRPTR *dest )
 			/* That's particularly nasty, but prevent user of doing mistakes */
 			if(file == NULL ? fib->fib_EntryType > 0 : fib->fib_EntryType < 0)
 				/* Filename sucks, get a generic one */
-				UnLock(lock), lock = NULL;
+				UnLock(lock), lock = BNULL;
 		}
 		if( fib ) FreeVec( fib );
 		else { UnLock(lock); return ERR_NOMEM; }
 		/* User has given a directory as file to edit! */
-		if(file == NULL && lock == NULL) return ERR_WRONG_TYPE;
+		if(file == NULL && lock == BNULL) return ERR_WRONG_TYPE;
 	}
 
 	/* The directory/file exists, Get its correctly spelled name */
