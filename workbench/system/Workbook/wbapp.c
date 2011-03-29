@@ -232,6 +232,18 @@ static void wbIntuiTick(Class *cl, Object *obj, struct Window *win)
     }
 }
 
+static void wbCloseAllWindows(Class *cl, Object *obj)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbApp *my = INST_DATA(cl, obj);
+    Object *ostate = (Object *)my->Windows.mlh_Head;
+    Object *owin;
+
+    while ((owin = NextObject(&ostate))) {
+    	DoMethod(obj, OM_REMMEMBER, owin);
+    	DisposeObject(owin);
+    }
+}
 
 // WBAM_WORKBENCH - Register and handle all workbench events
 static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
@@ -296,6 +308,8 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
     	    	GT_ReplyIMsg(im);
     	    }
     	}
+
+    	wbCloseAllWindows(cl, obj);
 
     	UnregisterWorkbench(my->AppPort);
     }
