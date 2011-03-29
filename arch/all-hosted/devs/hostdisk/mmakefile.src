@@ -1,6 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+# hostdisk_host.h is host-specific
+USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/devs/hostdisk
+
 %build_module mmake=workbench-devs-hostdisk \
   modname=hostdisk modtype=device \
   files="hostdisk_device hostdisk_host" \

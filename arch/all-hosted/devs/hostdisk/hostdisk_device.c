@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 /****************************************************************************************/
 
 #include <devices/trackdisk.h>
+#include <devices/newstyle.h>
 #include <exec/resident.h>
 #include <exec/errors.h>
 #include <exec/memory.h>
@@ -20,6 +21,11 @@
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
+
+#define DCMD(x)
+#define DOPEN(x)
+#define DREAD(x)
+#define DWRITE(x)
 
 /****************************************************************************************/
 
@@ -70,9 +76,7 @@ static int GM_UNIQUENAME(Open)
     };
     struct unit *unit;
 
-    D(bug("hostdisk: in libopen func.\n"));
-
-    D(bug("hostdisk: in libopen func. Looking if unit is already open\n"));
+    DOPEN(bug("hostdisk: in libopen func. Looking if unit is already open\n"));
 
     ObtainSemaphore(&hdskBase->sigsem);
 
@@ -93,13 +97,13 @@ static int GM_UNIQUENAME(Open)
 	    return TRUE;
 	}
 
-    D(bug("hostdisk: in libopen func. No, it is not. So creating new unit ...\n"));
+    DOPEN(bug("hostdisk: in libopen func. No, it is not. So creating new unit ...\n"));
 
     unit = (struct unit *)AllocMem(sizeof(struct unit),
         MEMF_PUBLIC | MEMF_CLEAR);
     if(unit != NULL)
     {
-        D(bug("hostdisk: in libopen func. Allocation of unit memory okay. Setting up unit and calling CreateNewProc ...\n"));
+        DOPEN(bug("hostdisk: in libopen func. Allocation of unit memory okay. Setting up unit and calling CreateNewProc ...\n"));
 
 	unit->usecount 			= 1;
 	unit->hdskBase 			= hdskBase;
@@ -111,7 +115,7 @@ static int GM_UNIQUENAME(Open)
 	unit->port.mp_SigTask 		= CreateNewProc((struct TagItem *)tags);
 	NEWLIST((struct List *)&unit->changeints);
 
-        D(bug("hostdisk: in libopen func. CreateNewProc called. Proc = %x\n", unit->port.mp_SigTask));
+        DOPEN(bug("hostdisk: in libopen func. CreateNewProc called. Proc = %x\n", unit->port.mp_SigTask));
 	
 	if(unit->port.mp_SigTask != NULL)
 	{
@@ -121,13 +125,13 @@ static int GM_UNIQUENAME(Open)
 	    hdskBase->port.mp_SigTask = FindTask(NULL);
     	    SetSignal(0, SIGF_SINGLE);
 	    
-    	    D(bug("hostdisk: in libopen func. Sending startup msg\n"));
+    	    DOPEN(bug("hostdisk: in libopen func. Sending startup msg\n"));
 	    PutMsg(&((struct Process *)unit->port.mp_SigTask)->pr_MsgPort, &unit->msg);
 
-    	    D(bug("hostdisk: in libopen func. Waiting for replymsg\n"));
+    	    DOPEN(bug("hostdisk: in libopen func. Waiting for replymsg\n"));
 	    WaitPort(&hdskBase->port);
 	    (void)GetMsg(&hdskBase->port);
-    	    D(bug("hostdisk: in libopen func. Received replymsg\n"));
+    	    DOPEN(bug("hostdisk: in libopen func. Received replymsg\n"));
 	    
 	    if (unit->file != INVALID_HANDLE_VALUE)
 	    {
@@ -137,12 +141,15 @@ static int GM_UNIQUENAME(Open)
 		iotd->iotd_Req.io_Error = 0;
 		ReleaseSemaphore(&hdskBase->sigsem);
 		return TRUE;
-	    }else
+	    }
+	    else
 		iotd->iotd_Req.io_Error = TDERR_NotSpecified;
-	}else
+	}
+	else
 	    iotd->iotd_Req.io_Error = TDERR_NoMem;
 	FreeMem(unit, sizeof(struct unit));
-    }else
+    }
+    else
 	iotd->iotd_Req.io_Error = TDERR_NoMem;
 
     ReleaseSemaphore(&hdskBase->sigsem);
@@ -187,26 +194,68 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 /****************************************************************************************/
 
+static const UWORD NSDSupported[] = {
+//  CMD_RESET,
+    CMD_READ,
+    CMD_WRITE,
+    CMD_UPDATE,
+    CMD_CLEAR,
+//  CMD_STOP,
+//  CMD_START,
+    CMD_FLUSH,
+    TD_MOTOR,
+//  TD_SEEK,
+    TD_FORMAT,
+//  TD_REMOVE,
+    TD_CHANGENUM,
+    TD_CHANGESTATE,
+    TD_PROTSTATUS,
+//  TD_GETNUMTRACKS,
+    TD_ADDCHANGEINT,
+    TD_REMCHANGEINT,
+    TD_GETGEOMETRY,
+//  TD_EJECT,
+    TD_READ64,
+    TD_WRITE64,
+//  TD_SEEK64,
+    TD_FORMAT64,
+    TD_GETDRIVETYPE,
+    NSCMD_DEVICEQUERY,
+    NSCMD_TD_READ64,
+    NSCMD_TD_WRITE64,
+//  NSCMD_TD_SEEK64,
+    NSCMD_TD_FORMAT64,
+    0
+};
+
 AROS_LH1(void, beginio, 
  AROS_LHA(struct IOExtTD *, iotd, A1), 
 	   struct HostDiskBase *, hdskBase, 5, Hostdisk)
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("hostdisk: command %u\n", iotd->iotd_Req.io_Command));
-    
+    struct NSDeviceQueryResult *nsdq;
+ 
+    DCMD(bug("hostdisk: command %u\n", iotd->iotd_Req.io_Command)); 
     switch(iotd->iotd_Req.io_Command)
     {
 	case CMD_UPDATE:
 	case CMD_CLEAR:
+	case CMD_FLUSH:
 	case TD_MOTOR:
 	    /* Ignore but don't fail */
 	    iotd->iotd_Req.io_Error = 0;
 	    break;
-	    
+
 	case CMD_READ:
 	case CMD_WRITE:
 	case TD_FORMAT:
+	case TD_READ64:
+	case TD_WRITE64:
+	case TD_FORMAT64:
+	case NSCMD_TD_READ64:
+	case NSCMD_TD_WRITE64:
+	case NSCMD_TD_FORMAT64:
 	case TD_CHANGENUM:
 	case TD_CHANGESTATE:
 	case TD_ADDCHANGEINT:
@@ -220,9 +269,37 @@ AROS_LH1(void, beginio,
 	    /* Not done quick */
 	    iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
 	    return;
+
+        /*
+            New Style Devices query. Introduce self as trackdisk and provide list of
+            commands supported
+        */
+        case NSCMD_DEVICEQUERY:
+	    nsdq = iotd->iotd_Req.io_Data;
+
+	    nsdq->DevQueryFormat    = 0;
+            nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
+            nsdq->DeviceType        = NSDEVTYPE_TRACKDISK;
+            nsdq->DeviceSubType     = 0;
+            nsdq->SupportedCommands = (UWORD *)NSDSupported;
+
+            iotd->iotd_Req.io_Actual = sizeof(struct NSDeviceQueryResult);
+	    iotd->iotd_Req.io_Error  = 0;
+            break;
+
+        /*
+            New Style Devices report here the 'NSTY' - only if such value is
+            returned here, the NSCMD_DEVICEQUERY might be called. Otherwice it should
+            report error.
+        */
+        case TD_GETDRIVETYPE:
+            iotd->iotd_Req.io_Actual = DRIVE_NEWSTYLE;
+	    iotd->iotd_Req.io_Error  = 0;
+            break;
 	    
 	default:
 	    /* Not supported */
+	    DCMD(bug("hostdisk: command not supported\n"));
 	    iotd->iotd_Req.io_Error = IOERR_NOCMD;
 	    break;
 	    
@@ -256,50 +333,33 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
     STRPTR 	buf;
     LONG 	size, subsize;
     ULONG	ioerr;
-
-    D(bug("hostdisk/read: offset = %d  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
-    
-#if 0
-    if(iotd->iotd_SecLabel)
-    {
-        D(bug("hostdisk/read: iotd->iotd_SecLabel is != NULL -> returning IOERR_NOCMD\n"));
-	return IOERR_NOCMD;
-    }
-#endif
-
-    ioerr = Host_Seek(unit, iotd->iotd_Req.io_Offset);
-    if (ioerr)
-    {
-        D(bug("hostdisk/read: Seek to offset %d failed\n", iotd->iotd_Req.io_Offset));
-	return ioerr;
-    }
     
     buf  = iotd->iotd_Req.io_Data;
     size = iotd->iotd_Req.io_Length;
-    iotd->iotd_Req.io_Actual = size;
-    
-    while(size)
+
+    iotd->iotd_Req.io_Actual = 0;
+    while (size)
     {
 	subsize = Host_Read(unit, buf, size, &ioerr);
-	if(!subsize)
+	if (!subsize)
 	{
-	     iotd->iotd_Req.io_Actual -= size;
-             D(bug("hostdisk.device/read: Host_Read() returned 0. Returning IOERR_BADLENGTH\n"));	     
+             DREAD(bug("hostdisk.device/read: Host_Read() returned 0. Returning IOERR_BADLENGTH\n"));	     
 	     return IOERR_BADLENGTH;
 	}
-	if(subsize == -1)
+	if (subsize == -1)
 	{
-	    iotd->iotd_Req.io_Actual -= size;
-            D(bug("hostdisk.device/read: Host_Read() returned -1. Returning error number %d\n", ioerr));
+            DREAD(bug("hostdisk.device/read: Host_Read() returned -1. Returning error number %d\n", ioerr));
 	    return ioerr;
 	}
+	
+	iotd->iotd_Req.io_Actual += subsize;
 	buf  += subsize;
 	size -= subsize;
     }
 
 #if DEBUG
     buf = iotd->iotd_Req.io_Data;
-    D(bug("hostdisk/read: returning 0. First 4 buffer bytes = [%c%c%c%c]\n", buf[0], buf[1], buf[2], buf[3]));
+    bug("hostdisk/read: returning 0. First 4 buffer bytes = [%c%c%c%c]\n", buf[0], buf[1], buf[2], buf[3]);
 #endif
 
     return 0;
@@ -315,28 +375,19 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
 
     if (unit->flags & UNIT_READONLY)
 	return TDERR_WriteProt;
-#if 0
-    if(iotd->iotd_SecLabel)
-	return IOERR_NOCMD;
-#endif
-    ioerr = Host_Seek(unit, iotd->iotd_Req.io_Offset);
-    if (ioerr)
-	return ioerr;
 
     buf  = iotd->iotd_Req.io_Data;
     size = iotd->iotd_Req.io_Length;
-    iotd->iotd_Req.io_Actual = size;
-    
+
+    iotd->iotd_Req.io_Actual = 0;
     while(size)
     {
-        ULONG ioerr;
-
-	subsize = Host_Write(unit, buf, size, &ioerr);
+  	subsize = Host_Write(unit, buf, size, &ioerr);
 	if(subsize == -1)
 	{
-	    iotd->iotd_Req.io_Actual -= size;
 	    return ioerr;
 	}
+	iotd->iotd_Req.io_Actual += subsize;
 	buf  += subsize;
 	size -= subsize;
     }
@@ -465,15 +516,49 @@ AROS_UFH3(LONG, unitentry,
  	    switch(iotd->iotd_Req.io_Command)
  	    {
  		case CMD_READ:
-     		    D(bug("hostdisk/unitentry: received CMD_READ.\n"));
-		    err = read(unit, iotd);
- 		    break;
+     		    DCMD(bug("hostdisk/unitentry: received CMD_READ.\n"));
+		    DREAD(bug("hostdisk/CMD_READ: offset = %u (0x%08X)  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
 		    
+		    err = Host_Seek(unit, iotd->iotd_Req.io_Offset);
+		    if (!err)
+			err = read(unit, iotd);
+		    DREAD(else bug("CMD_READ: Seek failed\n");)
+ 		    break;
+
+		case TD_READ64:
+		case NSCMD_TD_READ64:
+		    DREAD(bug("hostdisk/TD_READ64: offset = 0x%08X%08X  size = %d\n",
+			      iotd->iotd_Req.io_Actual, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
+
+		    err = Host_Seek64(unit, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Actual);
+		    if (!err)
+			err = read(unit, iotd);
+		    DREAD(else bug("CMD_READ64: Seek failed\n");)
+ 		    break;
+
  		case CMD_WRITE:
  		case TD_FORMAT:
-    		    D(bug("hostdisk/unitentry: received %s\n", (iotd->iotd_Req.io_Command == CMD_WRITE) ? "CMD_WRITE" : "TD_FORMAT"));
- 		    err = write(unit, iotd);
+		    DCMD(bug("hostdisk/unitentry: received %s\n", (iotd->iotd_Req.io_Command == CMD_WRITE) ? "CMD_WRITE" : "TD_FORMAT"));
+		    DWRITE(bug("hostdisk/CMD_WRITE: offset = %u (0x%08X)  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
+
+		    err = Host_Seek(unit, iotd->iotd_Req.io_Offset);
+		    if (!err)
+			err = write(unit, iotd);
  		    break;
+
+		case TD_WRITE64:
+ 		case TD_FORMAT64:
+		case NSCMD_TD_WRITE64:
+		case NSCMD_TD_FORMAT64:
+    		    DCMD(bug("hostdisk/unitentry: received TD_WRITE64\n"));
+		    DWRITE(bug("hostdisk/TD_WRITE64: offset = 0x%08X%08X  size = %d\n",
+			       iotd->iotd_Req.io_Actual, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
+
+		    err = Host_Seek64(unit, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Actual);
+		    if (!err)
+			err = write(unit, iotd);
+ 		    break;
+
 		case TD_CHANGENUM:
 		    err = 0;
 		    iotd->iotd_Req.io_Actual = unit->changecount;
