@@ -1,26 +1,18 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Patch a library or device function
     Lang: english
 */
-#include <aros/config.h>
+
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <proto/intuition.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
-#include "exec_debug.h"
 
-#ifndef DEBUG_SetFunction
-#   define DEBUG_SetFunction 0
-#endif
-#undef DEBUG
-#if DEBUG_SetFunction
-#   define DEBUG 1
-#endif
-#include <aros/debug.h>
-#undef kprintf
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -76,7 +68,7 @@
     AROS_LIBFUNC_INIT
     APTR ret;
 
-    D(bug("SetFunction(%s, %lx, %lx) = ", (ULONG)library->lib_Node.ln_Name, funcOffset, (ULONG)newFunction));
+    DSETFUNCTION("SetFunction(%s, %ld, 0x%p)", library->lib_Node.ln_Name, funcOffset, newFunction);
 
     /* Vector pre-processing for non-native machines: */
     funcOffset = (-funcOffset) / LIB_VECTSIZE;
@@ -115,7 +107,7 @@
     /* Sum the library up again */
     SumLibrary(library);
 
-    D(bug("%lx\n", ret));
+    DSETFUNCTION("Old function: 0x%p", ret);
 
     /* All done. */
     return ret;

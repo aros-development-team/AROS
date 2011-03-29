@@ -155,13 +155,13 @@ struct ExecBase
  */
 #define EXECDEBUGF_INITRESIDENT     0x00000001	/* Single resident initialization	*/
 #define EXECDEBUGF_INITCODE         0x00000002	/* Kickstart initialization		*/
-#define EXECDEBUGF_FINDRESIDENT     0x00000004
-#define EXECDEBUGF_CREATELIBRARY    0x00000010
-#define EXECDEBUGF_SETFUNCTION      0x00000020
+#define EXECDEBUGF_FINDRESIDENT     0x00000004	/* Resident search			*/
+#define EXECDEBUGF_CREATELIBRARY    0x00000010	/* Library creation			*/
+#define EXECDEBUGF_SETFUNCTION      0x00000020	/* Library function patching		*/
 #define EXECDEBUGF_NEWSETFUNCTION   0x00000040
 #define EXECDEBUGF_CHIPRAM          0x00000080
-#define EXECDEBUGF_ADDTASK          0x00000100
-#define EXECDEBUGF_REMTASK          0x00000200
+#define EXECDEBUGF_ADDTASK          0x00000100	/* Task creation			*/
+#define EXECDEBUGF_REMTASK          0x00000200	/* Task removal				*/
 #define EXECDEBUGF_GETTASKATTR      0x00000400
 #define EXECDEBUGF_SETTASKATTR      0x00000800
 #define EXECDEBUGF_EXCEPTHANDLER    0x00001000

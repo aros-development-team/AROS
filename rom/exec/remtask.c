@@ -1,11 +1,12 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
@@ -16,15 +17,6 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "exec_debug.h"
-
-#ifndef DEBUG_RemTask
-#   define DEBUG_RemTask 0
-#endif
-#undef DEBUG
-#if DEBUG_RemTask
-#   define DEBUG 1
-#endif
-#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -73,7 +65,10 @@
     if (task==NULL)
         task=SysBase->ThisTask;
 
-    D(bug("[exec] Call RemTask (%012lx (\"%s\"))\n", task, task->tc_Node.ln_Name));
+    DREMTASK("RemTask (0x%p (\"%s\"))", task, task->tc_Node.ln_Name);
+
+    if (task == SysBase->ThisTask)
+    	DREMTASK("Removing itself");
 
     /*
         Since it's possible that the following will free a task
@@ -152,7 +147,8 @@
     Enable();
     Permit();
 
-    ReturnVoid ("RemTask");
+    DREMTASK("Success");
+
     AROS_LIBFUNC_EXIT
 }
 

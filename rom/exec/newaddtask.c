@@ -5,24 +5,17 @@
     Desc: Add a task.
     Lang: english
 */
+
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
+#include <aros/debug.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
 #include "etask.h"
 #include "exec_util.h"
-
 #include "exec_debug.h"
-
-#ifndef DEBUG_AddTask
-#   define DEBUG_AddTask 0
-#endif
-#undef DEBUG
-#if DEBUG_AddTask
-#   define DEBUG 1
-#endif
-#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -77,13 +70,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[exec] Call NewAddTask (0x%p (\"%s\"), 0x%p, 0x%p)\n"
-        , task
-        , task->tc_Node.ln_Name
-        , initialPC
-        , finalPC
-    ));
     ASSERT_VALID_PTR(task);
+
+    /* Sigh - you should provide a name for your task. */
+    if(task->tc_Node.ln_Name==NULL)
+        task->tc_Node.ln_Name="unknown task";
+
+    DADDTASK("NewAddTask (0x%p (\"%s\"), 0x%p, 0x%p)", task, task->tc_Node.ln_Name, initialPC, finalPC);
 
     /* Initialize the memory entry list if the caller forgot */
     if (!task->tc_MemEntry.lh_Head)
@@ -92,10 +85,6 @@
     /* Set node type to NT_TASK if not set to something else. */
     if(!task->tc_Node.ln_Type)
         task->tc_Node.ln_Type=NT_TASK;
-
-    /* Sigh - you should provide a name for your task. */
-    if(task->tc_Node.ln_Name==NULL)
-        task->tc_Node.ln_Name="unknown task";
 
     /* This is moved into SysBase at the tasks's startup */
     task->tc_IDNestCnt=-1;
@@ -146,13 +135,13 @@
 #endif
 
 #ifdef AROS_STACKALIGN
-    D(if ((IPTR)task->tc_SPReg & (AROS_STACKALIGN - 1))
-        bug("[exec] NewAddTask with unaligned stack pointer (0x%p)! Fixing...\n", task->tc_SPReg);)
-
-    task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & ~(AROS_STACKALIGN - 1));
+    if ((IPTR)task->tc_SPReg & (AROS_STACKALIGN - 1))
+    {
+        DADDTASK("NewAddTask with unaligned stack pointer (0x%p)! Fixing...", task->tc_SPReg);
+    	task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & ~(AROS_STACKALIGN - 1));
+    }
 #endif
-    D(bug("[exec] NewAddTask: SPLower: 0x%p SPUpper: 0x%p SP: 0x%p\n",
-          task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg));
+    DADDTASK("NewAddTask: SPLower: 0x%p SPUpper: 0x%p SP: 0x%p", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
 
 #if AROS_STACK_DEBUG
     {
@@ -225,6 +214,8 @@
 
     Enable();
 
-    ReturnPtr ("NewAddTask", struct Task *, task);
+    DADDTASK("Added task 0x%p", task);
+    return task;
+
     AROS_LIBFUNC_EXIT
 } /* NewAddTask */

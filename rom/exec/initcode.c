@@ -52,7 +52,7 @@
 
     IPTR *list = SysBase->ResModules;
 
-    DINITCODE("enter InitCode(0x%02X, %d)", startClass, version);
+    DINITCODE("enter InitCode(0x%02lX, %ld)", startClass, version);
 
     if (list)
     {
@@ -88,7 +88,7 @@
 	}
     }
 
-    DINITCODE("leave InitCode(0x%02X, %d)", startClass, version);
+    DINITCODE("leave InitCode(0x%02lX, %ld)", startClass, version);
 
     AROS_LIBFUNC_EXIT
 } /* InitCode */

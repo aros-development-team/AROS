@@ -26,8 +26,13 @@ const char *ExecFlagNames[] =
     "InitResident",
     "InitCode",
     "FindResident",
+    (char *)-1,
     "CreateLibrary",
     "SetFunction",
+    "NewSetFunction",
+    "ChipRam",
+    "AddTask",
+    "RemTask",
     /* This array is incomplete, TODO */
     NULL
 };
@@ -87,9 +92,16 @@ ULONG ParseFlags(char *opts, const char **FlagNames)
     	while (IsAlpha(*p))
 	    p++;
 
+	/* "ALL" means all flags */
+	if (!strnicmp(opts, "all", 3))
+	    return -1;
+
 	/* Decode flag name */
 	for (i = 0; FlagNames[i]; i++)
     	{
+    	    if (FlagNames[i] == (char *)-1)
+    	    	continue;
+
     	    if (!strnicmp(opts, FlagNames[i], p - opts))
     	    {
     	    	ret |= (1UL << i);
@@ -133,6 +145,9 @@ void VLog(struct ExecBase *SysBase, ULONG flags, const char **FlagNames, const c
     /* Prepend tag (if known) */
     for (i = 0; FlagNames[i]; i++)
     {
+    	if (FlagNames[i] == (char *)-1)
+    	    continue;
+
     	if (flags & (1UL << i))
     	{
 	    RawDoFmt("[%s] ", &FlagNames[i], (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);

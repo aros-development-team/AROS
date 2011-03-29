@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a task.
@@ -8,23 +8,14 @@
 
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <aros/debug.h>
 #include <aros/libcall.h>
-#include <aros/config.h>
 #include <proto/exec.h>
 
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
-
 #include "exec_debug.h"
-#ifndef DEBUG_AddTask
-#   define DEBUG_AddTask 0
-#endif
-#undef DEBUG
-#if DEBUG_AddTask
-#   define DEBUG 1
-#endif
-#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -86,15 +77,10 @@
 
     struct Task *t;
     
-    D(bug("[exec] Call AddTask (%08lx (\"%s\"), %08lx, %08lx)\n"
-	, task
-	, task->tc_Node.ln_Name
-	, initialPC
-	, finalPC
-    ));
+    DADDTASK("AddTask (0x%p (\"%s\"), 0x%p, 0x%p)", task, task->tc_Node.ln_Name, initialPC, finalPC);
 
     t = NewAddTask(task, initialPC, finalPC, NULL);
-    
+
     ReturnPtr ("AddTask", struct Task *, t);
     
     AROS_LIBFUNC_EXIT
