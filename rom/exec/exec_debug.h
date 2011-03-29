@@ -98,6 +98,8 @@
 
 #else
 
+#include <stdarg.h>	/* for va_list */
+
 extern const char *ExecFlagNames[];
 ULONG ParseFlags(char *opts, const char **FlagNames);
 void ExecLog(struct ExecBase *SysBase, ULONG flags, const char *format, ...);
