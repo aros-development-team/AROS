@@ -279,10 +279,13 @@ static void wbRedimension(Class *cl, Object *obj)
     real.Left = win->BorderLeft;
     real.Top  = win->BorderTop;
     real.Width = win->Width - (win->BorderLeft + win->BorderRight);
-    real.Height= win->Height- (win->BorderTop  + win->BorderBottom + 6);
+    real.Height= win->Height- (win->BorderTop  + win->BorderBottom);
 
-    D(bug("%s: (%d,%d) %dx%d\n", __func__,
+    D(bug("%s: Real   (%d,%d) %dx%d\n", __func__,
     		real.Left, real.Top, real.Width, real.Height));
+    D(bug("%s: Border (%d,%d) %dx%d\n", __func__,
+    		my->Window->BorderLeft, my->Window->BorderTop,
+    		my->Window->BorderRight, my->Window->BorderBottom));
 
     SetAttrs(my->Area, GA_Top, real.Top,
     	               GA_Left,  real.Left,
@@ -292,16 +295,16 @@ static void wbRedimension(Class *cl, Object *obj)
 
     SetAttrs(my->ScrollH, PGA_Visible, real.Width,
     	                  GA_Left, real.Left,
-    	                  GA_RelBottom, -my->Window->BorderBottom - 5,
+    	                  GA_RelBottom, -(my->Window->BorderBottom - 2),
     	                  GA_Width, real.Width,
-    	                  GA_Height, my->Window->BorderBottom,
+    	                  GA_Height, my->Window->BorderBottom - 3,
     	                  TAG_END);
 
     SetAttrs(my->ScrollV, PGA_Visible, real.Height,
-    	                  GA_RelRight, -my->Window->BorderRight + 5,
+    	                  GA_RelRight, -(my->Window->BorderRight - 2),
     	                  GA_Top, real.Top,
-    	                  GA_Width, my->Window->BorderRight,
-    	                  GA_Height, real.Height - 10,
+    	                  GA_Width, my->Window->BorderRight - 3,
+    	                  GA_Height, real.Height,
     	                  TAG_END);
 
     {
@@ -439,9 +442,9 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 
     		ICA_TARGET, (IPTR)obj,
     		ICA_MAP, (IPTR)scrollv2window,
-    		PGA_Borderless, TRUE,
     		PGA_Freedom, FREEVERT,
     		PGA_NewLook, TRUE,
+    		PGA_Borderless, TRUE,
     		PGA_Total, 1,
     		PGA_Visible, 1,
     		PGA_Top, 0,
@@ -453,6 +456,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     		ICA_MAP, (IPTR)scrollh2window,
     		PGA_Freedom, FREEHORIZ,
     		PGA_NewLook, TRUE,
+    		PGA_Borderless, TRUE,
     		PGA_Total, 1,
     		PGA_Visible, 1,
     		PGA_Top, 0,
