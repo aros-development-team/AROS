@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -71,8 +71,7 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
 {
     AROS_LIBFUNC_INIT
 
-    DEBUG_SETPREFS(dprintf("SetPrefs: Buffer 0x%lx Size 0x%lx Inform %d\n",
-                           (ULONG) prefbuffer, size, inform));
+    DEBUG_SETPREFS(dprintf("SetPrefs: Buffer 0x%p Size 0x%d Inform %d\n", prefbuffer, size, inform));
     if (size > 0 && NULL != prefbuffer)
     {
         ULONG lock = LockIBase(0);
