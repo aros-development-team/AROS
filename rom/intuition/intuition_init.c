@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -90,7 +90,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 	{NULL           , NULL				             }
     };
 
-    DEBUG_INIT(dprintf("LIB_Init: base 0x%lx\n", (ULONG) LIBBASE));
+    DEBUG_INIT(dprintf("LIB_Init: base 0x%p\n", LIBBASE));
 
     /* Open our dependencies */
     if (!(UtilityBase = (APTR)OpenLibrary("utility.library", 0))) {
