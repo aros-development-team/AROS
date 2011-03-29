@@ -28,16 +28,13 @@ LIBBASETYPE
 {
     struct Library   	    lb_LibNode;
 
-    struct SignalSemaphore  lb_MemLock;
     APTR    	    	    lb_ClipRectPool;
 
     struct GfxBase *        lb_GfxBase;
     struct UtilityBase *    lb_UtilityBase;
 };
 
-/* FIXME: Remove these #define xxxBase hacks
-   Do not use this in new code !
-*/
+/* Store library bases in our base, not in .bss. Why not ? */
 #define GfxBase     (LIBBASE->lb_GfxBase)
 #define UtilityBase (LIBBASE->lb_UtilityBase)
 
