@@ -67,7 +67,7 @@ void serial_Init(char *opts)
     inb_p(base + UART_RX);
 }
 
-static void serial_RawPutc(unsigned char data) 
+static void serial_RawPutc(char data) 
 {
     /* Wait until the transmitter is empty */
     while (!(inb_p(base + UART_LSR) & UART_LSR_TEMT));
@@ -76,11 +76,18 @@ static void serial_RawPutc(unsigned char data)
     outb_p(data, base + UART_TX);
 }
 
-void serial_Putc(unsigned char data)
+void serial_Putc(char chr)
 {
-    /* Prepend CR to LF */
-    if (data == '\n')
-    	serial_RawPutc('\r');
+    switch (chr)
+    {
+    /* Ignore null bytes, they are output by formatting routines as terminators */
+    case 0:
+    	return;
 
-    serial_RawPutc(data);
+    /* Prepend CR to LF */
+    case '\n':
+    	serial_RawPutc('\r');
+    }
+
+    serial_RawPutc(chr);
 }

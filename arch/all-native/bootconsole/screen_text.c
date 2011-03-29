@@ -38,15 +38,21 @@ void txt_Clear()
 void txt_Putc(char chr)
 {
     struct scr *view = scr_FrameBuffer;
+    unsigned int i;
 
-    if (chr == '\n')
+    switch (chr)
     {
-        scr_XPos = 0;
-        scr_YPos++;
-    }
-    else
-    {
-        unsigned int i = 80 * scr_YPos + scr_XPos;
+    /* Ignore null bytes, they are output by formatting routines as terminators */
+    case 0:
+    	return;
+
+    case '\n':
+    	scr_XPos = 0;
+    	scr_YPos++;
+    	break;
+
+    default:
+        i = 80 * scr_YPos + scr_XPos;
 
         view[i].sign = chr;
         scr_XPos++;
@@ -59,10 +65,8 @@ void txt_Putc(char chr)
     }
     if (scr_YPos >= scr_Height)
     {
-        int i;
-
         scr_YPos = scr_Height - 1;
-        
+
         for (i = 0; i < scr_Width * scr_YPos; i++)
             view[i].sign = view[i+80].sign;
         for (i = scr_Width * scr_YPos; i < scr_Width * scr_Height; i++)
