@@ -27,6 +27,7 @@
 
 #include LC_LIBDEFS_FILE
 #include "memory.h"
+#include "exec_debug.h"
 #include "exec_intern.h"
 
 #undef kprintf /* This can't be used in the code here */
@@ -255,15 +256,31 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     args = (char *)LibGetTagData(KRN_CmdLine, 0, msg);
     if (args)
     {
+    	char *opts;
+
 	/*
 	 * Enable mungwall before the first AllocMem().
 	 * Yes, we have actually already called stdAlloc() once
 	 * in order to allocate memory for SysBase itself, however
 	 * this is not a real problem because it is never going
 	 * to be freed.
+	 *
+	 * We store mungwall setting in private flags because it must not be
+	 * switched at runtime (or hard crash will happen).
 	 */
-	if (strstr(args, "mungwall"))
+	opts = strstr(args, "mungwall");
+	if (opts)
 	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
+
+	/*
+	 * Parse system runtime debug flags.
+	 * These are public. In future they will be editable by prefs program.
+	 * However in order to be able to turn them on during early startup,
+	 * we apply them also here.
+	 */
+	opts = strstr(args, "sysdebug=");
+	if (opts)
+	    SysBase->ex_DebugFlags = ParseFlags(&opts[9], ExecFlagNames);
     }
 
     SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);

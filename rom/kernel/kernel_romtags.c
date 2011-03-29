@@ -20,10 +20,6 @@
 #include <kernel_debug.h>
 #include <kernel_romtags.h>
 
-#if AROS_SERIAL_DEBUG
-#define PRINT_LIST
-#endif
-
 static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 {
     ULONG i;
@@ -191,19 +187,6 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     	}
     } while (!sorted);
 
-#ifdef PRINT_LIST
-    bug("Resident modules (addr: pri flags version name):\n");
-    for (i = 0; i < num; i++)
-    {
-        bug("+ %p: %4d %02x %3d \"%s\"\n",
-            RomTag[i],
-            RomTag[i]->rt_Pri,
-            RomTag[i]->rt_Flags,
-            RomTag[i]->rt_Version,
-            RomTag[i]->rt_Name);
-    }
-#endif
-
     return RomTag;
 }
 
@@ -232,7 +215,23 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
 
 		sysBase = execBoot(mh, bootMsg);
 		if (sysBase)
+		{
 		    sysBase->ResModules = resList;
+
+#ifndef NO_RUNTIME_DEBUG
+		    /* Print out modules list if requested by the user */
+		    if (SysBase->ex_DebugFlags & EXECDEBUGF_INITCODE)
+		    {
+			bug("Resident modules (addr: pri flags version name):\n");
+
+			for (i = 0; resList[i]; i++)
+			{
+			    bug("+ %p: %4d %02x %3d \"%s\"\n", resList[i], resList[i]->rt_Pri,
+				resList[i]->rt_Flags, resList[i]->rt_Version, resList[i]->rt_Name);
+			}
+		    }
+#endif
+		}
 	    }
 
 	    return sysBase;

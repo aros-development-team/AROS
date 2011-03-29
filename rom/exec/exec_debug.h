@@ -2,6 +2,8 @@
 #define _EXEC_DEBUG_H_ 1
 /* Debug which function of Exec */
 
+#include <exec/execbase.h>
+
 #define DEBUG_AbortIO 0
 #define DEBUG_AddDevice 0
 #define DEBUG_AddHead 0
@@ -49,8 +51,6 @@
 #define DEBUG_FreeSignal 0
 #define DEBUG_FreeVec 0
 #define DEBUG_GetMsg 0
-#define DEBUG_InitCode 0
-#define DEBUG_InitResident 0
 #define DEBUG_InitSemaphore 0
 #define DEBUG_InitStruct 0
 #define DEBUG_Insert 0
@@ -93,5 +93,23 @@
 #define DEBUG_Wait 0
 #define DEBUG_WaitIO 0
 #define DEBUG_WaitPort 0
+
+/* Runtime debugging */
+#ifdef NO_RUNTIME_DEBUG
+
+#define ExecLog(...)
+#define ParseFlags(...) 0
+
+#else
+
+extern const char *ExecFlagNames[];
+ULONG ParseFlags(char *opts, const char **FlagNames);
+void ExecLog(struct ExecBase *SysBase, ULONG flags, const char *format, ...);
+void VLog(struct ExecBase *SysBase, ULONG flags, const char **FlagNames, const char *format, va_list args);
+
+#endif
+
+#define DINITCODE(...)		ExecLog(SysBase, EXECDEBUGF_INITCODE, __VA_ARGS__)
+#define DINITRESIDENT(...) 	ExecLog(SysBase, EXECDEBUGF_INITRESIDENT, __VA_ARGS__)
 
 #endif /* _EXEC_DEBUG_H_ */
