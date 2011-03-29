@@ -232,6 +232,30 @@ static void wbIntuiTick(Class *cl, Object *obj, struct Window *win)
     }
 }
 
+static void wbHideAllWindows(Class *cl, Object *obj)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbApp *my = INST_DATA(cl, obj);
+    Object *ostate = (Object *)my->Windows.mlh_Head;
+    Object *owin;
+
+    while ((owin = NextObject(&ostate))) {
+    	DoMethod(owin, WBWM_HIDE);
+    }
+}
+
+static void wbShowAllWindows(Class *cl, Object *obj)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbApp *my = INST_DATA(cl, obj);
+    Object *ostate = (Object *)my->Windows.mlh_Head;
+    Object *owin;
+
+    while ((owin = NextObject(&ostate))) {
+    	DoMethod(owin, WBWM_SHOW);
+    }
+}
+
 static void wbCloseAllWindows(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -267,9 +291,11 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
     	    	switch (wbhm->wbhm_Type) {
     	    	case WBHM_TYPE_SHOW:
     	    	    /* Show all windows */
+    	    	    wbShowAllWindows(cl, obj);
     	    	    break;
     	    	case WBHM_TYPE_HIDE:
     	    	    /* Hide all windows */
+    	    	    wbHideAllWindows(cl, obj);
     	    	    break;
     	    	case WBHM_TYPE_OPEN:
     	    	    /* Open a drawer */
