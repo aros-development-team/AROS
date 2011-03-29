@@ -14,7 +14,6 @@
 #define DEBUG_AddResource 0
 #define DEBUG_AddSemaphore 0
 #define DEBUG_AddTail 0
-#define DEBUG_AddTask 0
 #define DEBUG_Alert 0
 #define DEBUG_AllocAbs 0
 #define DEBUG_AllocEntry 0
@@ -78,7 +77,6 @@
 #define DEBUG_RemResource 0
 #define DEBUG_RemSemaphore 0
 #define DEBUG_RemTail 0
-#define DEBUG_RemTask 0
 #define DEBUG_Remove 0
 #define DEBUG_ReplyMsg 0
 #define DEBUG_SendIO 0
@@ -111,5 +109,10 @@ void VLog(struct ExecBase *SysBase, ULONG flags, const char **FlagNames, const c
 
 #define DINITCODE(...)		ExecLog(SysBase, EXECDEBUGF_INITCODE, __VA_ARGS__)
 #define DINITRESIDENT(...) 	ExecLog(SysBase, EXECDEBUGF_INITRESIDENT, __VA_ARGS__)
+#define DFINDRESIDENT(...)	ExecLog(SysBase, EXECDEBUGF_FINDRESIDENT, __VA_ARGS__)
+#define DCREATELIBRARY(...)	ExecLog(SysBase, EXECDEBUGF_CREATELIBRARY, __VA_ARGS__)
+#define DSETFUNCTION(...)	ExecLog(SysBase, EXECDEBUGF_SETFUNCTION, __VA_ARGS__)
+#define DADDTASK(...)		ExecLog(SysBase, EXECDEBUGF_ADDTASK, __VA_ARGS__)
+#define DREMTASK(...)		ExecLog(SysBase, EXECDEBUGF_REMTASK, __VA_ARGS__)
 
 #endif /* _EXEC_DEBUG_H_ */

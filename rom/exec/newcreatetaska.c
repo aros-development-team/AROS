@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include "exec_debug.h"
+
 struct newMemList
 {
     struct Node	    nml_Node;
@@ -149,6 +151,8 @@ static const struct newMemList MemTemplate =
 	    break;
  	}
     }
+
+    DADDTASK("NewCreateTaskA: name %s\n", taskname ? taskname : "<NULL>");
 
     if (NewAllocEntry((struct MemList *)&nml, &ml, NULL))
     {

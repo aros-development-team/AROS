@@ -1,14 +1,17 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Search a resident module by name
     Lang: english
 */
-#include "exec_intern.h"
+
 #include <string.h>
 #include <exec/resident.h>
 #include <proto/exec.h>
+
+#include "exec_debug.h"
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -48,11 +51,12 @@
 
     IPTR *list;
 
-    list = SysBase->ResModules;
+    DFINDRESIDENT("FindResident(\"%s\")", name);
 
-    if(list)
+    list = SysBase->ResModules;
+    if (list)
     {
-	while(*list)
+	while (*list)
 	{
             /* on amiga, if bit 31 is set then this points to another list of
              * modules rather than pointing to a single module. bit 31 is
@@ -60,13 +64,20 @@
              * 2GB. on these platforms we assume aligned pointers and use bit
              * 0 instead */
 #ifdef __mc68000__
-	    if(*list & 0x80000000) { list = (IPTR *)(*list & 0x7fffffff); continue; }
-#else
-	    if(*list & 0x1) { list = (IPTR *)(*list & ~(IPTR)0x1); continue; }
-#endif
-
-	    if(!(strcmp( ((struct Resident *)*list)->rt_Name, name)) )
+	    if (*list & 0x80000000)
 	    {
+	    	list = (IPTR *)(*list & 0x7fffffff);
+#else
+	    if (*list & 0x1)
+	    {
+	    	list = (IPTR *)(*list & ~(IPTR)0x1);
+#endif
+	    	continue;
+	    }
+
+	    if (!(strcmp( ((struct Resident *)*list)->rt_Name, name)))
+	    {
+	    	DFINDRESIDENT("Found at 0x%p", *list);
 		return (struct Resident *)*list;
 	    }
 
@@ -74,6 +85,8 @@
 	}
     }
 
+    DFINDRESIDENT("Not found");
     return NULL;
+
     AROS_LIBFUNC_EXIT
 } /* FindResident */
