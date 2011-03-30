@@ -536,7 +536,11 @@ int _CopyClipRectsToClipRects(struct Layer * l,
             
               _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
 
-#warning: stegerg: Not sure if this is a good idea. What for example if updating is done in several passes? And CopyClipRectsToClipRects is used by all kinds of functions including BeginUpdate/EndUpdate/InstallClipRegion/etc.
+/* FIXME: 
+ * stegerg: Not sure if this is a good idea. What for example if
+ * updating is done in several passes? And CopyClipRectsToClipRects is
+ * used by all kinds of functions including BeginUpdate/EndUpdate/InstallClipRegion/etc.
+ */
               ClearRectRegion(l->DamageList, &rect);
 #if 0
 kprintf("");
@@ -908,7 +912,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
         _cr->lobs);
 #endif
 
-#warning Must have oldcr->BitMap also for SuperBitMap layers!
+/* FIXME: Must have oldcr->BitMap also for SuperBitMap layers! */
 
               BltBitMap(srcbm,
                         xSrc,
@@ -1216,7 +1220,10 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
              BMF_CLEAR,
              bm);
 
-#warning stegerg: the backfill hook should be called for this bitmap! But _CallLayerHook always uses rp->BitMap
+/* FIXME:
+ * stegerg: the backfill hook should be called for this bitmap!
+ * But _CallLayerHook always uses rp->BitMap
+ */
         }
       }
 

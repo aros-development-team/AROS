@@ -239,7 +239,7 @@ struct CollectPixelsMsg
 				/*
 				 * Jump to the parent layer.
 				 */
-#warning Potential deadlock!
+/* FIXME: Potential deadlock! */
 				if (l->parent) {
 					LockLayer(0,l->parent);
 				}
@@ -247,7 +247,7 @@ struct CollectPixelsMsg
 				l = l->parent;
 			}
 		}
-#warning Potential deadlock!
+/* FIXME: Potential deadlock! */
 		if (l->back) {
 			LockLayer(0,l->back);
 		}
