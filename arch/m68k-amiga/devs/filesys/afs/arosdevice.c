@@ -52,7 +52,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
 	    fse->fse_Version = (afsbase->ab_Lib.lib_Version << 16) | afsbase->ab_Lib.lib_Revision;
 	    fse->fse_PatchFlags = FSEF_SEGLIST;
 	    fse->fse_SegList = afsbase->ab_SegList;
-	    AddTail(&fsr->fsr_FileSysEntries, fse);
+	    AddTail(&fsr->fsr_FileSysEntries, (struct Node *)fse);
 	}
     }
 
