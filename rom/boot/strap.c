@@ -60,6 +60,7 @@ const struct Resident boot_resident =
     (APTR)&boot_init
 };
 
+#ifndef __mc68000
 static const struct _dt {
     IPTR    mask,type;
     STRPTR  fs;
@@ -79,6 +80,7 @@ static const struct _dt {
     { 0xffffffff, AROS_MAKE_ID('V','F','A','T' ), "fat.handler"   },
     { 0,0,NULL }
 };
+#endif
 
 static const struct _pt {
     IPTR    part,type;
@@ -220,7 +222,7 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                            io->iotd_Req.io_Command = TD_GETGEOMETRY;
                            io->iotd_Req.io_Data = &dg;
                            io->iotd_Req.io_Length = sizeof dg;
-                           DoIO((struct IOReqest*)io);
+                           DoIO((struct IORequest*)io);
                            if (io->iotd_Req.io_Error == 0)
                                dg_ok = TRUE;
                            if (bootdrive < 0) {
@@ -281,6 +283,7 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
 
 #endif
 
+#ifndef __mc68000
 static STRPTR MatchHandler(IPTR DosType)
 {
     int i;
@@ -296,6 +299,7 @@ static STRPTR MatchHandler(IPTR DosType)
     }
     return fs;
 }
+#endif
 
 static IPTR MatchPartType(UBYTE PartType)
 {
@@ -453,11 +457,13 @@ static VOID AddPartitionVolume
         pp[4 + DE_LOWCYL] += i;
         pp[4 + DE_HIGHCYL] += i;
 
-#ifndef __mc68000
+#ifdef __mc68000
 	/* Do not check for handlers because m68k-amiga does not
 	 * have them if filesystem in DosType[] has been loaded from RDB
 	 * by 3rd party boot ROM. MatchFileSystemResourceHandler does the job.
 	 */
+        handler = NULL;
+#else
 	D(bug("[Boot] Looking up handler for 0x%08lX\n", pp[4+DE_DOSTYPE]));
         handler = MatchHandler(pp[4 + DE_DOSTYPE]);
 
