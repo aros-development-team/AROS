@@ -164,7 +164,7 @@ DEFINESET(INITLIB)
 AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(BPTR, segList, A0),
-    AROS_UFHA(struct ExecBase *, sysBase, A6)
+    AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
@@ -175,7 +175,14 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     UWORD sum;
     UWORD *ptr;
 
-    SysBase = sysBase;
+    /*
+     * Please do not do this here.
+     * Global SysBase is set up earlier, in PrepareExecBase(). This assignment
+     * causes crash on kernels using write-protected zeropage (like x86-64).
+     * Memory protection is set up by kernel.resource before entering this code.
+     *
+    SysBase = sysBase; */
+
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
 	return NULL;
