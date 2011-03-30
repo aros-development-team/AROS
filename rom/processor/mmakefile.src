@@ -5,5 +5,7 @@ include $(TOP)/config/make.cfg
 #MM kernel-processor-kobj: includes
 #MM kernel-processor: includes
 
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 %build_module mmake=kernel-processor modname=processor modtype=resource \
     files="getcpuinfo" uselibs="rom utility"
