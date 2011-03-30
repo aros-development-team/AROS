@@ -5,7 +5,7 @@
 
 int main(void)
 {
-    BPTR oldlock = CurrentDir(NULL);
+    BPTR oldlock = CurrentDir(BNULL);
     BPTR lock = DupLock(oldlock);
     CurrentDir(oldlock);
   
