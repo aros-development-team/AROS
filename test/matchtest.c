@@ -167,7 +167,7 @@ LONG MyMatchFirst(STRPTR pat, struct AnchorPath * AP)
     else
     {
       /* Create a lock to the current dir. */
-      firstlock = CurrentDir(NULL);
+      firstlock = CurrentDir(BNULL);
       firstlock = DupLock(firstlock);      
       (void)CurrentDir(firstlock);
     }
