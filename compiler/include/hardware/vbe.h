@@ -30,7 +30,7 @@ struct vbe_controller
     unsigned int   oem_string;		/* 16-bit far pointer to OEM string pointer	*/
     unsigned int   capabilities;	/* Capabilities flags, see below		*/
     unsigned int   video_mode;		/* 16-bit far pointer to video mode table	*/
-    unsigned short total_memory;	/* Total amount of VRAM				*/
+    unsigned short total_memory;	/* Total amount of VRAM	in 64KB units		*/
     unsigned short oem_software_rev;	/* ROM version number				*/
     unsigned int   oem_vendor_name;	/* 16-bit far pointer to hardware vendor string	*/
     unsigned int   oem_product_name;	/* 16-bit far pointer to name string		*/
