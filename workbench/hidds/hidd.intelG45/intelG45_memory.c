@@ -1,9 +1,7 @@
 /*
- * intelG45_memory.c
- *
- *  Created on: May 13, 2010
- *      $Id$
- */
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <exec/memory.h>
 #include <inttypes.h>
@@ -70,7 +68,6 @@ void G45_AttachCacheableMemory(struct g45staticdata *sd, intptr_t physical, intp
 void G45_DetachMemory(struct g45staticdata *sd, intptr_t virtual, intptr_t length)
 {
 	intptr_t page = virtual >> 12;
-	intptr_t pagecount = length >> 12;
 
 	if (page >= 0) do
 	{
