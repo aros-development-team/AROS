@@ -39,11 +39,17 @@ STATIC UBYTE *MemDupPooled(APTR pool, UBYTE *src, ULONG size)
     return newmem;
 }
 
-STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
+STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src, BOOL dupImage, BOOL dupImageData)
 {
     struct Image *dest;
 
     if (!src) return NULL;
+
+    if (dupImageData)
+    	dupImage = TRUE;
+
+    if (!dupImage)
+    	return src;
 
     dest = (struct Image*)AllocPooled(pool,sizeof(struct Image));
     if (dest)
@@ -75,6 +81,9 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
     	data_size = plane_size * src->Depth;
     #endif
 
+	if (!dupImageData)
+	    return dest;
+	
 	if ((dest->ImageData = AllocPooled(pool,data_size)))
 	{
 	    memcpy(dest->ImageData,src->ImageData,data_size);
@@ -263,19 +272,22 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
     /* and now the pointers and the rest */
     /* TODO: check for errors here */
 
-    if (dobj->do_DefaultTool)
+    if (GetTagData(ICONDUPA_DuplicateDefaultTool, TRUE, tags) &&
+        dobj->do_DefaultTool)
     {
     	dobj->do_DefaultTool = StrDupPooled(pool,icon->do_DefaultTool);
 	if (!dobj->do_DefaultTool) goto fail;
     }
     
-    if (dobj->do_ToolWindow)
+    if (GetTagData(ICONDUPA_DuplicateToolWindow, TRUE, tags) &&
+        dobj->do_ToolWindow)
     {
     	dobj->do_ToolWindow = StrDupPooled(pool,icon->do_ToolWindow);
     	if (!dobj->do_ToolWindow) goto fail;
     }
-    
-    if (icon->do_DrawerData)
+   
+    if (GetTagData(ICONDUPA_DuplicateDrawerData, TRUE, tags) &&
+        icon->do_DrawerData)
     {
     	LONG size;
 	
@@ -300,18 +312,23 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
     
     if (icon->do_Gadget.GadgetRender)
     {
-    	dobj->do_Gadget.GadgetRender = ImageDupPooled(pool, (struct Image*)icon->do_Gadget.GadgetRender);
+    	dobj->do_Gadget.GadgetRender = ImageDupPooled(pool, (struct Image*)icon->do_Gadget.GadgetRender,
+    		GetTagData(ICONDUPA_DuplicateImages, TRUE, tags),
+    		GetTagData(ICONDUPA_DuplicateImageData, TRUE, tags));
 	if (!dobj->do_Gadget.GadgetRender) goto fail;
     }
     
     if (icon->do_Gadget.SelectRender)
     {	    
-    	dobj->do_Gadget.SelectRender = ImageDupPooled(pool, (struct Image*)icon->do_Gadget.SelectRender);
+    	dobj->do_Gadget.SelectRender = ImageDupPooled(pool, (struct Image*)icon->do_Gadget.SelectRender,
+    		GetTagData(ICONDUPA_DuplicateImages, TRUE, tags),
+    		GetTagData(ICONDUPA_DuplicateImageData, TRUE, tags));
 	if (!dobj->do_Gadget.SelectRender) goto fail;
     }
 
     /* Duplicate the tool types */
-    if (icon->do_ToolTypes)
+    if (GetTagData(ICONDUPA_DuplicateToolTypes, TRUE, tags) &&
+        icon->do_ToolTypes)
     {
 	int num_tts;
 	/* Get number of tool types */
