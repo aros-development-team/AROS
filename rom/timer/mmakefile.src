@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 # Do not remove this! It allows to override of timer_intern.h
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 FILES := timer_init lowlevel
 FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
