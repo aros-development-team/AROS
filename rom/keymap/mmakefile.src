@@ -7,6 +7,8 @@ include $(TOP)/config/make.cfg
 FILES := defaultkeymap support
 FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
 
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 #MM kernel-keymap-includes : \
 #MM     kernel-exec-includes
 

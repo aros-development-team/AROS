@@ -76,8 +76,8 @@
     UBYTE	DeadQual[16];
     UBYTE	DoubleDeadCode[16];
     UBYTE	DoubleDeadQual[16];
-    UBYTE	*Types;
-    IPTR	*Descrs;
+    CONST UBYTE	*Types;
+    CONST IPTR	*Descrs;
     int		BaseCode;
     int		Code;
     int		k;
