@@ -33,28 +33,28 @@ typedef enum
 
 /* Tags for kernel boot message */
 #define KRN_Dummy               (TAG_USER + 0x03d00000)
-#define KRN_KernelBase          (KRN_Dummy + 1)
-#define KRN_KernelLowest        (KRN_Dummy + 2)
-#define KRN_KernelHighest       (KRN_Dummy + 3)
-#define KRN_KernelBss           (KRN_Dummy + 4)
-#define KRN_GDT                 (KRN_Dummy + 5)
-#define KRN_IDT                 (KRN_Dummy + 6)
-#define KRN_PL4                 (KRN_Dummy + 7)
-#define KRN_VBEModeInfo         (KRN_Dummy + 8)
-#define KRN_VBEControllerInfo   (KRN_Dummy + 9)
-#define KRN_MMAPAddress         (KRN_Dummy + 10)
-#define KRN_MMAPLength          (KRN_Dummy + 11)
-#define KRN_CmdLine             (KRN_Dummy + 12)
-#define KRN_ProtAreaStart       (KRN_Dummy + 13)
-#define KRN_ProtAreaEnd         (KRN_Dummy + 14)
-#define KRN_VBEMode             (KRN_Dummy + 15)
-#define KRN_VBEPaletteWidth     (KRN_Dummy + 16)
-#define KRN_MEMLower         	(KRN_Dummy + 17)
-#define KRN_MEMUpper          	(KRN_Dummy + 18)
-#define KRN_OpenFirmwareTree	(KRN_Dummy + 19)
-#define KRN_HostInterface	(KRN_Dummy + 20)
-#define KRN_DebugInfo		(KRN_Dummy + 21) /* (struct ELF_ModuleInfo *) */
-#define KRN_BootLoader          (KRN_Dummy + 22)
+#define KRN_KernelBase          (KRN_Dummy + 1)	 /* Kickstart base address (start of code section)	*/
+#define KRN_KernelLowest        (KRN_Dummy + 2)	 /* Lowest kickstart address 				*/
+#define KRN_KernelHighest       (KRN_Dummy + 3)	 /* Highest kickstart address			  	*/
+#define KRN_KernelBss           (KRN_Dummy + 4)	 /* (struct KernelBSS *) - BSS sections list	  	*/
+#define KRN_GDT                 (KRN_Dummy + 5)	 /* Boot-time GDT address (x86-specific)	  	*/
+#define KRN_IDT                 (KRN_Dummy + 6)	 /* Boot-time IDT address (x86-specific)	  	*/
+#define KRN_PL4                 (KRN_Dummy + 7)	 /* Base address of MMU control data		  	*/
+#define KRN_VBEModeInfo         (KRN_Dummy + 8)	 /* VBE mode information structure			*/
+#define KRN_VBEControllerInfo   (KRN_Dummy + 9)  /* VBE controller information structure		*/
+#define KRN_MMAPAddress         (KRN_Dummy + 10) /* Address of memory map in multiboot format		*/
+#define KRN_MMAPLength          (KRN_Dummy + 11) /* Lenght of memory map				*/
+#define KRN_CmdLine             (KRN_Dummy + 12) /* Address of command line arguments			*/
+#define KRN_ProtAreaStart       (KRN_Dummy + 13) /* Start address of preallocated area			*/
+#define KRN_ProtAreaEnd         (KRN_Dummy + 14) /* End address of preallocated area			*/
+#define KRN_VBEMode             (KRN_Dummy + 15) /* Current VBE mode number				*/
+#define KRN_VBEPaletteWidth     (KRN_Dummy + 16) /* Current VBE palette width				*/
+#define KRN_MEMLower         	(KRN_Dummy + 17) /* Amount of low memory in bytes (PC-specific)		*/
+#define KRN_MEMUpper          	(KRN_Dummy + 18) /* Amount of upper memory in bytes (PC-specific)	*/
+#define KRN_OpenFirmwareTree	(KRN_Dummy + 19) /* Pointer to OpenFirmware device tree structure	*/
+#define KRN_HostInterface	(KRN_Dummy + 20) /* Pointer to host OS interface structure (hosted)	*/
+#define KRN_DebugInfo		(KRN_Dummy + 21) /* (struct ELF_ModuleInfo *) - debug information	*/
+#define KRN_BootLoader          (KRN_Dummy + 22) /* Pointer to bootloader name string			*/
 
 /* Magic value passed by the bootstrap as second parameter */
 #define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')
