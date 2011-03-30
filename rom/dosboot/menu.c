@@ -319,19 +319,22 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
     }
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
-    {
+    if (1) {
     	volatile UBYTE *cia = (UBYTE*)0xbfe001;
     	volatile UWORD *potinp = (UWORD*)0xdff016;
+
     	/* check left + right mouse button state */
     	if ((cia[0] & 0x40) == 0 && (potinp[0] & 0x0400) == 0)
-	    WantBootMenu = TRUE;
-    }
-    /* native hardware have resident ROM drivers */
-#else
+    	    WantBootMenu = TRUE;
+
+    	/* native hardware have resident ROM drivers,
+    	 * so the following initHidds won't be executed on m68k
+    	 */
+    } else 
+#endif
     /* Initialize default HIDDs */
     if (!initHidds(LIBBASE))
 	return FALSE;
-#endif
 
     /* check keyboard if needed */
     if (!WantBootMenu)
