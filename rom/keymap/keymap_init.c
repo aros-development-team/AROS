@@ -67,7 +67,7 @@ static int KeymapInit(LIBBASETYPEPTR LIBBASE)
     /* Add ROM built-in usa1 keymap, keeps WB3.0 C:IPrefs quiet
      * TODO: add correct keymap instead of using default keymap
      */
-    AddKeymap(&def_km, "usa1", LIBBASE);
+    AddKeymap("usa1", &def_km, LIBBASE);
 #endif
 
     return TRUE;

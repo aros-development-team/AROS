@@ -25,14 +25,14 @@ struct KeyMapResource
 
 struct KeyMap
 {
-    UBYTE * km_LoKeyMapTypes;
-    IPTR  * km_LoKeyMap;
-    UBYTE * km_LoCapsable;
-    UBYTE * km_LoRepeatable;
-    UBYTE * km_HiKeyMapTypes;
-    IPTR  * km_HiKeyMap;
-    UBYTE * km_HiCapsable;
-    UBYTE * km_HiRepeatable;
+    CONST UBYTE * km_LoKeyMapTypes;
+    CONST IPTR  * km_LoKeyMap;
+    CONST UBYTE * km_LoCapsable;
+    CONST UBYTE * km_LoRepeatable;
+    CONST UBYTE * km_HiKeyMapTypes;
+    CONST IPTR  * km_HiKeyMap;
+    CONST UBYTE * km_HiCapsable;
+    CONST UBYTE * km_HiRepeatable;
 };
 
 struct KeyMapNode
