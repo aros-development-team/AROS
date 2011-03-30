@@ -13,6 +13,7 @@ include $(TOP)/config/make.cfg
 #MM-     includes-copy
 
 USER_CFLAGS := -DVARIANT="\"$(AROS_TARGET_VARIANT)\"" -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\""
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module mmake=kernel-aros \
   modname=aros modtype=library \
