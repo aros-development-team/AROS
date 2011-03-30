@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Bootloader information initialisation.
@@ -29,14 +29,64 @@
 
 #include LC_LIBDEFS_FILE
 
+void GetCmdLine(char *Kernel_Args, struct BootLoaderBase *BootLoaderBase)
+{
+    STRPTR buff;
+    ULONG len;
+
+    /* Sanity check against broken bootstraps */
+    if (!Kernel_Args)
+    	return;
+
+    D(bug("[BootLdr] Kernel arguments: %s\n", Kernel_Args));
+
+    /* First make a copy of the command line */
+    len = strlen(Kernel_Args) + 1;
+    buff = AllocMem(len, MEMF_ANY|MEMF_CLEAR);
+    if (buff)
+    {
+	CopyMem(Kernel_Args, buff, len);
+
+	while(*buff)
+	{
+	    struct Node *node;
+	    /* remove any leading spaces */
+	    char *cmd = stpblk(buff);
+	    /* Split the command line */
+	    ULONG temp = strcspn(cmd," ");
+
+	    cmd[temp++] = 0x00;
+	    D(bug("[BootLdr] Init: Argument %s\n",cmd));
+
+	    /* Allocate node and insert into list */
+	    node = AllocMem(sizeof(struct Node),MEMF_ANY|MEMF_CLEAR);
+	    if (node)
+	    {
+	    	node->ln_Name = cmd;
+	    	AddTail(&(BootLoaderBase->Args),node);
+	    }
+
+	    /* Skip to next part */
+	    buff = cmd + temp;
+	}
+	
+	/* We now have the command line */
+	BootLoaderBase->Flags |= BL_FLAGS_CMDLINE;
+    }
+}
+
+static const ULONG masks [] = {0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff};
+
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 {
-    struct TagItem *bootinfo;
-    STRPTR Kernel_Args;
+    const struct TagItem *bootinfo;
+    struct TagItem *tag;
     APTR KernelBase;
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
-    struct vbe_mode *vmi;
-    struct vbe_controller *vci;
+    struct vbe_mode *vmi = NULL;
+    struct vbe_controller *vci = NULL;
+    UWORD vmode = 0x00FF;	/* Dummy mode number by default		  */
+    UBYTE palette = 0;		/* By default we don't know palette width */
 #endif
 
     D(bug("[BootLdr] Init\n"));
@@ -45,83 +95,106 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 
     KernelBase = OpenResource("kernel.resource");
     bootinfo = KrnGetBootInfo();
-    BootLoaderBase->LdrName = (STRPTR)GetTagData(KRN_BootLoader, 0, bootinfo);
-
-    /* Get kernel arguments */
-    Kernel_Args = (STRPTR)GetTagData(KRN_CmdLine, 0, bootinfo);
-    if (Kernel_Args)
+    
+    while ((tag = NextTagItem(&bootinfo)))
     {
-	STRPTR cmd, buff;
-	ULONG temp;
-	struct Node *node;
-	ULONG len = strlen(Kernel_Args) + 1;	    
+    	switch (tag->ti_Tag)
+    	{
+#ifdef KRN_BootLoader
+    	case KRN_BootLoader:
+    	    BootLoaderBase->LdrName = (STRPTR)tag->ti_Data;
+    	    break;
+#endif
 
-	D(bug("[BootLdr] Kernel arguments: %s\n", Kernel_Args));
+    	case KRN_CmdLine:
+    	    GetCmdLine((char *)tag->ti_Data, BootLoaderBase);
+    	    break;
 
-	/* First make a working copy of the command line */
-	buff = AllocMem(len, MEMF_ANY|MEMF_CLEAR);
-	if (buff) {
-	    CopyMem(Kernel_Args, buff, len);
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+    	case KRN_VBEModeInfo:
+    	    vmi = (struct vbe_mode *)tag->ti_Data;
+    	    break;
 
-	    /* remove any leading spaces */
-	    cmd = stpblk(buff);
-	    while(cmd[0]) {
-		/* Split the command line */
-		temp = strcspn(cmd," ");
-		cmd[temp++] = 0x00;
-		D(bug("[BootLdr] Init: Argument %s\n",cmd));
+	case KRN_VBEControllerInfo:
+	    vci = (struct vbe_controller *)tag->ti_Data;
+	    break;
 
-		/* Allocate node and insert into list */
-		node = AllocMem(sizeof(struct Node),MEMF_ANY|MEMF_CLEAR);
-		node->ln_Name = cmd;
-		AddTail(&(BootLoaderBase->Args),node);
-		/* Skip to next part */
-		cmd = stpblk(cmd+temp);
-	    }
-		
-	    BootLoaderBase->Flags |= BL_FLAGS_CMDLINE;
+	case KRN_VBEMode:
+	    vmode = tag->ti_Data;
+	    break;
+
+	case KRN_VBEPaletteWidth:
+	    palette = tag->ti_Data;
+	    break;
+#endif
 	}
     }
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     /* Get VESA mode information */
-    vmi = (struct vbe_mode *)GetTagData(KRN_VBEModeInfo, 0, bootinfo);
-    vci = (struct vbe_controller *)GetTagData(KRN_VBEControllerInfo, 0, bootinfo);
     D(bug("[BootLdr] VESA mode info 0x%p, controller info 0x%p\n", vmi, vci));
 
-    if (vmi && vci)
+    /* We support only graphical framebuffers here. */
+    if (vmi && (vmi->mode_attributes & VM_GRAPHICS))
     {
-	BootLoaderBase->Vesa = AllocMem(sizeof(struct VesaInfo), MEMF_ANY);
+	BootLoaderBase->Vesa = AllocMem(sizeof(struct VesaInfo), MEMF_CLEAR);
 
 	if (BootLoaderBase->Vesa)
 	{
-	    ULONG masks [] = {0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff};
+	    /* If we don't have VBEControllerInfo, this is VBE v2 mode structure */
+	    unsigned short version = 0x0200;
 
-	    BootLoaderBase->Vesa->FrameBuffer = (APTR)vmi->phys_base;
-	    BootLoaderBase->Vesa->FrameBufferSize = vci->total_memory * 64; /* FrameBufferSize is in KBytes! */
-	    BootLoaderBase->Vesa->XSize = vmi->x_resolution;
-	    BootLoaderBase->Vesa->YSize = vmi->y_resolution;
-	    BootLoaderBase->Vesa->BytesPerLine = vmi->bytes_per_scanline;
-	    BootLoaderBase->Vesa->BitsPerPixel = vmi->bits_per_pixel;
-	    BootLoaderBase->Vesa->Masks [VI_Red]   = masks[vmi->red_mask_size-1]<<vmi->red_field_position;
-	    BootLoaderBase->Vesa->Masks [VI_Blue]  = masks[vmi->blue_mask_size-1]<<vmi->blue_field_position;
-	    BootLoaderBase->Vesa->Masks [VI_Green] = masks[vmi->green_mask_size-1]<<vmi->green_field_position;
-	    BootLoaderBase->Vesa->Masks [VI_Alpha] = masks[vmi->reserved_mask_size-1]<<vmi->reserved_field_position;
-	    BootLoaderBase->Vesa->Shifts[VI_Red]   = 32 - vmi->red_field_position - vmi->red_mask_size;
-	    BootLoaderBase->Vesa->Shifts[VI_Blue]  = 32 - vmi->blue_field_position - vmi->blue_mask_size;
-	    BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->green_field_position - vmi->green_mask_size;
-	    BootLoaderBase->Vesa->Shifts[VI_Alpha] = 32 - vmi->reserved_field_position - vmi->reserved_mask_size;
+	    if (vci)
+	    {
+		D(bug("[BootLdr] Init: Vesa card capability flags: 0x%08X\n", vci->capabilities));
 
-	    BootLoaderBase->Vesa->ModeNumber   = GetTagData(KRN_VBEMode, 3, bootinfo);
-	    BootLoaderBase->Vesa->PaletteWidth = GetTagData(KRN_VBEPaletteWidth, 6, bootinfo);
+	    	version = vci->version;
+		/* FrameBufferSize is in KBytes! */
+	    	BootLoaderBase->Vesa->FrameBufferSize = vci->total_memory << 6;
+	    }
 
-	    D(bug("[BootLdr] Init: Vesa card capability flags: 0x%08lx\n", vci->capabilities));
+	    BootLoaderBase->Vesa->XSize            = vmi->x_resolution;
+	    BootLoaderBase->Vesa->YSize            = vmi->y_resolution;
+	    BootLoaderBase->Vesa->BitsPerPixel     = vmi->bits_per_pixel;
+	    BootLoaderBase->Vesa->ModeNumber	   = vmode;
+	    BootLoaderBase->Vesa->PaletteWidth	   = palette;
+
+	    /* Framebuffer pointer is only valid for VBE v2 and better */
+	    if (version >= 0x0200)
+		BootLoaderBase->Vesa->FrameBuffer = (APTR)(IPTR)vmi->phys_base;
+
+	    if (version >= 0x0300)
+	    {
+	    	/* VBE v3 structures specify linear framebuffer parameters in separate fields */
+	    	BootLoaderBase->Vesa->BytesPerLine     = vmi->linear_bytes_per_scanline;
+	    	BootLoaderBase->Vesa->Masks [VI_Red]   = masks[vmi->linear_red_mask_size-1]<<vmi->linear_red_field_position;
+	    	BootLoaderBase->Vesa->Masks [VI_Blue]  = masks[vmi->linear_blue_mask_size-1]<<vmi->linear_blue_field_position;
+	    	BootLoaderBase->Vesa->Masks [VI_Green] = masks[vmi->linear_green_mask_size-1]<<vmi->linear_green_field_position;
+	    	BootLoaderBase->Vesa->Masks [VI_Alpha] = masks[vmi->linear_reserved_mask_size-1]<<vmi->linear_reserved_field_position;
+	    	BootLoaderBase->Vesa->Shifts[VI_Red]   = 32 - vmi->linear_red_field_position - vmi->linear_red_mask_size;
+	    	BootLoaderBase->Vesa->Shifts[VI_Blue]  = 32 - vmi->linear_blue_field_position - vmi->linear_blue_mask_size;
+	    	BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->linear_green_field_position - vmi->linear_green_mask_size;
+	    	BootLoaderBase->Vesa->Shifts[VI_Alpha] = 32 - vmi->linear_reserved_field_position - vmi->linear_reserved_mask_size;
+	    }
+	    else
+	    {
+	    	BootLoaderBase->Vesa->BytesPerLine     = vmi->bytes_per_scanline;
+	    	BootLoaderBase->Vesa->Masks [VI_Red]   = masks[vmi->red_mask_size-1]<<vmi->red_field_position;
+	    	BootLoaderBase->Vesa->Masks [VI_Blue]  = masks[vmi->blue_mask_size-1]<<vmi->blue_field_position;
+	    	BootLoaderBase->Vesa->Masks [VI_Green] = masks[vmi->green_mask_size-1]<<vmi->green_field_position;
+	    	BootLoaderBase->Vesa->Masks [VI_Alpha] = masks[vmi->reserved_mask_size-1]<<vmi->reserved_field_position;
+	    	BootLoaderBase->Vesa->Shifts[VI_Red]   = 32 - vmi->red_field_position - vmi->red_mask_size;
+	    	BootLoaderBase->Vesa->Shifts[VI_Blue]  = 32 - vmi->blue_field_position - vmi->blue_mask_size;
+	    	BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->green_field_position - vmi->green_mask_size;
+	    	BootLoaderBase->Vesa->Shifts[VI_Alpha] = 32 - vmi->reserved_field_position - vmi->reserved_mask_size;
+	    }
+
 	    D(bug("[BootLdr] Init: Vesa mode %x type (%dx%dx%d)\n", BootLoaderBase->Vesa->ModeNumber,
 		  BootLoaderBase->Vesa->XSize, BootLoaderBase->Vesa->YSize, BootLoaderBase->Vesa->BitsPerPixel));
-	    D(bug("[BootLdr] Init: Vesa FB at 0x%08x size %d kB\n", BootLoaderBase->Vesa->FrameBuffer,
+	    D(bug("[BootLdr] Init: Vesa FB at 0x%p size %d kB\n", BootLoaderBase->Vesa->FrameBuffer,
 		  BootLoaderBase->Vesa->FrameBufferSize));
 	    D(bug("[BootLdr] Init: Vesa mode palette width: %d\n", BootLoaderBase->Vesa->PaletteWidth));
-	    D(bug("[BootLdr] Init: Vesa mode direct color flags %02x\n", vmi->direct_color_mode_info));
+	    D(bug("[BootLdr] Init: Vesa mode direct color flags %02X\n", vmi->direct_color_mode_info));
 	}
     }
 #endif
