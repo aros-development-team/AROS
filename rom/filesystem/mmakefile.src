@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 %build_module mmake=kernel-filesystem \
   modname=FileSystem modtype=resource \
   files="filesystem"
