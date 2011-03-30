@@ -28,7 +28,7 @@ struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
     if (mode != INVALID_ID)
     {
 	struct Screen *scr = OpenScreenTags(NULL, SA_DisplayID, mode, SA_Draggable, FALSE, 
-					    SA_Quiet, TRUE, TAG_DONE);
+					    SA_Depth, 2, SA_Quiet, TRUE, TAG_DONE);
 
 	if (scr)
 	    return scr;
