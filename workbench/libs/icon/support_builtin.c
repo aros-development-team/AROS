@@ -14,7 +14,7 @@
 
 #define ICON_WIDTH  (32)
 #define ICON_HEIGHT (32)
-#define ICON_DEPTH  (32)
+#define ICON_DEPTH  (2)
 
 static const UBYTE disk_data_1[] =
 {
@@ -182,6 +182,8 @@ struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
     struct DrawerData  dd   = { { 0 }, 0 };
     struct Image       img1 = { 0 };
     struct Image       img2 = { 0 };
+    struct Image      *gad,*sel;
+    struct DiskObject *dobj;
     
     /* Only WBDISK, WBDRAWER, WBTOOL and WBPROJECT are supported */
     if (type < WBDISK || type > WBPROJECT) return NULL;
@@ -197,38 +199,62 @@ struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
     temp.do_Gadget.Height        = ICON_HEIGHT;
     temp.do_Gadget.Flags        |= GFLG_GADGIMAGE;
     // FIXME: probably need to setup some more fields 
-    
+   
+    img1.Depth     = ICON_DEPTH;
     img1.Width     = ICON_WIDTH;
     img1.Height    = ICON_HEIGHT;
-    img1.PlanePick = ICON_DEPTH;
+    img1.PlanePick  = (1 << ICON_DEPTH) - 1;
+    img1.PlaneOnOff = (1 << ICON_DEPTH) - 1;
+    img2.Depth     = ICON_DEPTH;
     img2.Width     = ICON_WIDTH;
     img2.Height    = ICON_HEIGHT;
-    img2.PlanePick = ICON_DEPTH;
+    img2.PlanePick  = (1 << ICON_DEPTH) - 1;
+    img2.PlaneOnOff = (1 << ICON_DEPTH) - 1;
             
     switch (type)
     {
         case WBDISK:
             temp.do_DrawerData =           &dd;
-            img1.ImageData     = (UWORD *) disk_data_1;
-            img2.ImageData     = (UWORD *) disk_data_2;
             break;
         
         case WBDRAWER:
             temp.do_DrawerData =           &dd;
-            img1.ImageData     = (UWORD *) drawer_data_1;
-            img2.ImageData     = (UWORD *) drawer_data_2;
-            break;
-        
-        case WBPROJECT:
-            img1.ImageData     = (UWORD *) project_data_1;
-            img2.ImageData     = (UWORD *) project_data_2;
-            break;
-        
-        case WBTOOL:
-            img1.ImageData     = (UWORD *) tool_data_1;
-            img2.ImageData     = (UWORD *) tool_data_2;
             break;
     }
 
-    return DupDiskObjectA(&temp, NULL);
+    dobj = DupDiskObject(&temp,
+    	    ICONDUPA_DuplicateImages, TRUE,
+    	    ICONDUPA_DuplicateImageData, FALSE,
+    	    TAG_END);
+
+    if (dobj == NULL)
+    	return NULL;
+
+    gad = dobj->do_Gadget.GadgetRender;
+    sel = dobj->do_Gadget.SelectRender;
+
+    switch (type)
+    {
+        case WBDISK:
+            gad->ImageData     = (UWORD *) disk_data_1;
+            sel->ImageData     = (UWORD *) disk_data_2;
+            break;
+        
+        case WBDRAWER:
+            gad->ImageData     = (UWORD *) drawer_data_1;
+            sel->ImageData     = (UWORD *) drawer_data_2;
+            break;
+        
+        case WBPROJECT:
+            gad->ImageData     = (UWORD *) project_data_1;
+            sel->ImageData     = (UWORD *) project_data_2;
+            break;
+        
+        case WBTOOL:
+            gad->ImageData     = (UWORD *) tool_data_1;
+            sel->ImageData     = (UWORD *) tool_data_2;
+            break;
+    }
+
+    return dobj;
 }
