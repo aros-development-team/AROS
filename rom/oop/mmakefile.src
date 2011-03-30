@@ -21,6 +21,7 @@ FUNCS :=    addclass		\
 	    setattrs
 
 USER_CFLAGS := -DAROS_USE_OOP -D__OOP_NOLIBBASE__
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 #MM kernel-oop-includes : \
 #MM     kernel-exec-includes \
