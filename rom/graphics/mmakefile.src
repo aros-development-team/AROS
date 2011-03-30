@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/cgfx
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 FILES	  := \
 	intregions \
