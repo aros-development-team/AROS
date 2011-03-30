@@ -1,9 +1,7 @@
 /*
- * intelG45_class.c
- *
- *  Created on: Apr 15, 2010
- *     $Id$
- */
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -52,6 +50,11 @@
 #define HiddI2CAttrBase         (sd->i2cAttrBase)
 #define HiddI2CDeviceAttrBase   (sd->i2cDeviceAttrBase)
 #define HiddCompositingAttrBase (sd->compositingAttrBase)
+
+#define MAX_MODE_NAME_LEN 30
+
+#define SYNC_TAG_COUNT 16
+#define SYNC_LIST_COUNT (15 + 8 + 4)
 
 #define DEBUG_POINTER 1
 
@@ -196,8 +199,8 @@ void calcTimings(int x, int y, int vfreq, sync_t *sync)
 void createSync(OOP_Class *cl, int x, int y, int refresh, struct TagItem **tagsptr, struct TagItem **poolptr)
 {
 	sync_t sync;
-	char *description = AllocVecPooled(sd->MemPool, 30);
-	snprintf(description, 29, "GMA: %dx%d@%d", x, y, refresh);
+	char *description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
+	snprintf(description, MAX_MODE_NAME_LEN, "GMA: %dx%d@%d", x, y, refresh);
 	calcTimings(x, y, refresh, &sync);
 
 	D(bug("[GMA]  %s %d  %d %d %d %d  %d %d %d %d  -HSync +VSync\n", description+5,
@@ -348,8 +351,10 @@ static VOID G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr,
 						ha, hb, hsync_o, hsync_w,
 						va, vb, vsync_o, vsync_w));
 
-				AllocVecPooled(sd->MemPool, 30);
-				snprintf(description, 29, "GMA: %dx%d@%d N", ha, va, ((pixel*10 / (uint32_t)(ha+hb)) * 1000) / ((uint32_t)(va+vb)));
+				description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
+				snprintf(description, MAX_MODE_NAME_LEN, "GMA: %dx%d@%d N",
+					ha, va, ((pixel * 10 / (uint32_t)(ha + hb)) * 1000)
+					/ ((uint32_t)(va + vb)));
 
 				PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, poolptr);
 
@@ -472,16 +477,16 @@ OOP_Object *METHOD(INTELG45, Root, New)
 
 	OOP_Object *i2c;
 
-	modetags = tags = AllocVecPooled(sd->MemPool, sizeof (struct TagItem) * 60);
-	pool = poolptr = AllocVecPooled(sd->MemPool, sizeof(struct TagItem) * 11 * 60);
+    modetags = tags = AllocVecPooled(sd->MemPool,
+        sizeof (struct TagItem) * (3 + SYNC_LIST_COUNT + 1));
+    pool = poolptr = AllocVecPooled(sd->MemPool,
+        sizeof(struct TagItem) * SYNC_TAG_COUNT * SYNC_LIST_COUNT);
 
 	struct TagItem i2c_attrs[] = {
 //			{ aHidd_I2C_HoldTime,   	40 },
 //			{ aHidd_I2C_RiseFallTime,   40 },
 			{ TAG_DONE, 0UL }
 	};
-
-	int automode_count = 0;
 
 	tags->ti_Tag = aHidd_Gfx_PixFmtTags;
 	tags->ti_Data = (IPTR)pftags_24bpp;
@@ -497,8 +502,9 @@ OOP_Object *METHOD(INTELG45, Root, New)
 
 	if( sd->pipe == PIPE_B )
 	{
-		char *description = AllocVecPooled(sd->MemPool, 30);
-		snprintf(description, 29, "GMA_LVDS:%dx%d", sd->lvds_fixed.hdisp,sd->lvds_fixed.vdisp);
+		char *description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
+		snprintf(description, MAX_MODE_NAME_LEN, "GMA_LVDS:%dx%d",
+			sd->lvds_fixed.hdisp, sd->lvds_fixed.vdisp);
 
 		//native lcd mode
 		struct TagItem sync_native[]={

@@ -1,9 +1,7 @@
 /*
- * intelG45_bitmap.c
- *
- *  Created on: May 1, 2010
- *  $Id$
- */
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -130,11 +128,6 @@ OOP_Object *METHOD(GMABM, Root, New)
         bm->yoffset = 0;
         bm->fbid = 0; /* Default value */
 
-        if (bm->framebuffer != -1)
-        {
-            ULONG pitch64 = ((bm->pitch)) >> 6;
-        }
-
 		if (displayable) bm->displayable = TRUE; else bm->displayable = FALSE;
 		//bm->compositing = sd->compositing;
         bm->compositing = (OOP_Object *)GetTagData(aHidd_BitMap_IntelG45_CompositingHidd, 0, msg->attrList);
@@ -216,7 +209,7 @@ OOP_Object *METHOD(GMABM, Root, New)
                 bm->fbgfx = FALSE;
             }
 
-            if (bm->framebuffer != NULL)
+            if (bm->framebuffer != 0)
             {
 				D(bug("[GMA] not displayable Bitmap::new = %p\n", o));
                 return o;
@@ -1080,7 +1073,6 @@ static inline int do_alpha(int a, int v)
 VOID METHOD(GMABM, Hidd_BitMap, PutAlphaImage)
 {
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
-    BOOL done = FALSE;
 
     LOCK_BITMAP
 
@@ -1551,9 +1543,6 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 		        		{
 		        			const uint8_t current = y & 3;
 							uint32_t *dst = buffer[current];
-							uint32_t x;
-							uint8_t *line = (uint8_t *)src;
-							const uint32_t width = msg->width;
 							APTR _src = src;
 
 							/* Wait until dst buffer is ready */
