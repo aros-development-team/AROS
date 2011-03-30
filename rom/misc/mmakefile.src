@@ -3,6 +3,8 @@ include $(TOP)/config/make.cfg
 
 FUNCS := allocmiscresource freemiscresource
 
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 #MM- kernel-misc : includes linklibs
 
 %build_module mmake=kernel-misc \
