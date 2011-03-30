@@ -38,6 +38,14 @@
 
 #include LC_LIBDEFS_FILE
 
+/* Kludges for old kernels (x86-64) */
+#ifndef KrnCreateContext
+#define KrnCreateContext() AllocTaskMem(t, SIZEOF_ALL_REGISTERS, MEMF_PUBLIC|MEMF_CLEAR)
+#endif
+#ifndef KrnStatMemory
+#define KrnStatMemory(...)
+#endif
+
 static const UBYTE name[];
 static const UBYTE version[];
 static const struct TagItem resTags[];
