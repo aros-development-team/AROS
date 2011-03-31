@@ -7,8 +7,6 @@ FILES	:=	\
 	hardware \
 	bitmap
 
-%build_module mmake=kernel-pc-i386-vesa \
+%build_module mmake=kernel-hidd-vesa \
   modname=vesagfx modtype=hidd \
   files=$(FILES) uselibs="hiddgraphicsstubs oop rom"
-
-
