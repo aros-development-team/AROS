@@ -107,20 +107,42 @@ $(BINDIR)/boot/aros-base: $(KOBJS_BASE) $(DEPLIBS)
 
 # *** PKG kickstart package ***
 
-#MM- kernel-package-base: kernel-modules kernel-package-base-quick
+#MM- kernel-package-base: kernel-pkg-modules kernel-package-base-quick
+
+#MM- kernel-pkg-modules : \
+#MM     kernel-aros-pkg \
+#MM	kernel-disk-pkg \
+#MM     kernel-dos-pkg \
+#MM     kernel-boot-pkg \
+#MM	kernel-fs-amberram-pkg \
+#MM	kernel-fs-con-pkg \
+#MM	kernel-fs-nil-pkg \
+#MM     kernel-fs-packet-pkg \
+#MM     kernel-graphics-pkg \
+#MM     kernel-hidd-graphics-pkg \
+#MM     kernel-hidd-kbd-pkg \
+#MM     kernel-hidd-mouse-pkg \
+#MM     kernel-utility-pkg \
+#MM     kernel-intuition-pkg \
+#MM     kernel-keymap-pkg \
+#MM     kernel-console-pkg \
+#MM	kernel-gameport-pkg \
+#MM	kernel-input-pkg \
+#MM	kernel-keyboard-pkg \
+#MM     kernel-hidd-pkg \
+#MM     kernel-oop-pkg \
+#MM     kernel-layers-pkg \
+#MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-pkg
 
 #MM
 kernel-package-base-quick: $(BINDIR)/boot/aros-base.pkg
 
-PKG_DEVICES  := $(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(BASE_DEVICES)))
-PKG_HANDLERS := $(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(BASE_HANDLERS)))
-PKG_HIDD     := $(addprefix $(BINDIR)/Devs/Drivers, $(addsuffix .hidd, $(BASE_HIDD)))
-PKG_LIBS     := $(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(BASE_LIBS)))
+PKG_DEVICES  := $(addprefix $(PKGDIR)/, $(addsuffix .device, $(BASE_DEVICES)))
+PKG_HANDLERS := $(addprefix $(PKGDIR)/, $(addsuffix .handler, $(BASE_HANDLERS)))
+PKG_HIDD     := $(addprefix $(PKGDIR)/, $(addsuffix .hidd, $(BASE_HIDD)))
+PKG_LIBS     := $(addprefix $(PKGDIR)/, $(addsuffix .library, $(BASE_LIBS)))
 
 PKG_BASE := $(PKG_HANDLERS) $(PKG_LIBS) $(PKG_DEVICES) $(PKG_HIDD)
 
 $(BINDIR)/boot/aros-base.pkg: $(PKG_BASE)
-	$(MKDIR) $(GENDIR)/pkg
-	$(RM) $(GENDIR)/pkg/*
-	$(MV) $(PKG_BASE) $(GENDIR)/pkg/
-	$(SRCDIR)/tools/package/pkg c $(GENDIR)/pkg $(BINDIR)/boot/aros-base.pkg
+	$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/aros-base.pkg $(PKGDIR)
