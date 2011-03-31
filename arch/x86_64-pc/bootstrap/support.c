@@ -9,7 +9,6 @@
 #include <bootconsole.h>
 #include <stdarg.h>
 
-#include "cpu.h"
 #include "support.h"
 
 const char *__bs_remove_path(const char *in)
@@ -24,13 +23,31 @@ const char *__bs_remove_path(const char *in)
     return p;
 }
 
-void panic(const char *str)
+/* Own memcpy(), because librom's one can use CopyMem() */
+void *__bs_memcpy(void *dest, const void *src, long len)
 {
-    kprintf("[BOOT] PANIC! %s\n", str);
-    kprintf("HALT!\n");
+    while (len >= 4)
+    {
+        *(unsigned long *)dest = *(unsigned long *)src;
+        len-=4;
+        dest+=4;
+        src+=4;
+    }
+    if (len >= 2)
+    {
+        *(unsigned short *)dest = *(unsigned short *)src;
+        dest+=2;
+        src+=2;
+        len-=2;
+    }
+    if (len == 1)
+    {
+        *(unsigned char *)dest = *(unsigned char *)src;
+        dest += 1;
+    }
 
-    for(;;)
-    	HALT;
+    /* Return next byte in the destination, useful in some cases */
+    return dest;
 }
 
 static unsigned int format_int (char *buf, char base, int d)

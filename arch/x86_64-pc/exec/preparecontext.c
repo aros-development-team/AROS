@@ -2,12 +2,11 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
-#include <sigcore.h>
 #include <asm/cpu.h>
 #include "etask.h"
 #include "exec_util.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/libcall.h>
 #include <aros/debug.h>

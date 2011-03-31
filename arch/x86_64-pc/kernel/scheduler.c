@@ -11,6 +11,7 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <asm/segments.h>
+#include <asm/tls.h>
 
 #include "kernel_intern.h"
 

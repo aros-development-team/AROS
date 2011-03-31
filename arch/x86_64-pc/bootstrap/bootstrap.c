@@ -6,25 +6,23 @@
     Lang: English
 */
 
-#define DEBUG
+//#define DEBUG
 //#define DEBUG_MEM
 //#define DEBUG_MEM_TYPE MMAP_TYPE_RAM
 //#define DEBUG_TAGLIST
 
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
+#include <asm/cpu.h>
 
 #include <bootconsole.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "bootstrap.h"
-#include "cpu.h"
 #include "elfloader.h"
 #include "support.h"
 #include "vesa.h"
-
-#define PAGE_MASK 0xFFF
 
 /*
     The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file, 
@@ -69,21 +67,28 @@ asm("	.text\n\t"
     "	jmp __bootstrap"
 );
 
-/* 
-    Global variables.
-
-    Stack is used only by bootstrap and is located just "somewhere" in memory. The IGATES, TSS and GDT
-    are stored in .bss.aros.tables section which is remapped to the begin of 0x00100000. Therefore this 
-    tables may be re-used by the 64-bit kernel.
+/*
+ * Global variables.
+ *
+ * Stack is used only by bootstrap and is located just "somewhere" in memory.
+ * Boot taglist, BSS list, GDT and MMU tables (see cpu.c) are stored in .bss.aros.tables
+ * section which is remapped to the begin of 0x00100000. Therefore these data
+ * may be re-used by the 64-bit kickstart (we pass this area using KRN_ProtAreaStart
+ * and KRN_ProtAreaEnd).
+ * It's up to the kickstart to preserve data pointed to by boot taglist (memory map,
+ * drive tables, VBE structures, etc), because they may originate from the machine's
+ * firmware and not from us.
 */
 extern char *_prot_lo, *_prot_hi;
 
 /* Structures to be passed to the kickstart */
+static unsigned char __bss_track[32768] __attribute__((section(".bss.aros.tables")));
+struct TagItem64 km[32] __attribute__((section(".bss.aros.tables")));
 static struct mb_mmap MemoryMap[2];
 static struct vbe_mode VBEModeInfo;
 static struct vbe_controller VBEControllerInfo;
-static unsigned char __bss_track[32768];
-struct TagItem64 km[KRN__TAGCOUNT * 4];
+
+/* A pointer used for building a taglist */
 struct TagItem64 *tag = &km[0];
 
 static unsigned char __stack[65536] __attribute__((used));
@@ -203,84 +208,74 @@ static int find_modules(struct multiboot *mb, const struct module *m)
     return count;
 }
 
-static void setupVESA(unsigned long vesa_base, char *vesa)
+static void setupVESA(char *vesa)
 {
-    D(kprintf("[BOOT] VESA Trampoline @ %p\n", vesa_base));
+    long x=0, y=0, d=0;
+    long mode;
 
-    if (vesa_base && vesa)
+    void *vesa_start = &_binary_vesa_start;
+    unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
+
+    x = strtoul(vesa, &vesa, 10);
+    vesa++;
+
+    y = strtoul(vesa, &vesa, 10);
+    vesa++;
+    
+    d = strtoul(vesa, &vesa, 10);
+
+    /*
+     * 16-bit VBE trampoline is needed only once only here, so
+     * we can simply copy it to some address, do what we need, and
+     * then forget.
+     */
+    kprintf("[BOOT] setupVESA: vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size);
+    __bs_memcpy((void *)0x1000, vesa_start, vesa_size);
+
+    kprintf("[BOOT] setupVESA: BestModeMatch for %dx%dx%d = ",x,y,d);
+    mode = findMode(x,y,d);
+
+    /* Get information and copy it from 16-bit memory space to our 32-bit memory */
+    getModeInfo(mode);
+    __bs_memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
+    getControllerInfo();
+    __bs_memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
+
+    /* Activate linear framebuffer is supported by the mode */
+    if (VBEModeInfo.mode_attributes & VM_LINEAR_FB)
+        mode |= VBE_MODE_LINEAR_FB;
+
+    kprintf("%x\n",mode);
+
+    if (setVbeMode(mode) == VBE_RC_SUPPORTED)
     {
-        long x=0, y=0, d=0;
-        long mode;
+        unsigned char palwidth = 6;
 
-        void *vesa_start = &_binary_vesa_start;
-        unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
-        vesa+=5;
+	/* Try to switch palette width to 8 bits if possible */
+        if (VBEControllerInfo.capabilities & VC_PALETTE_WIDTH)
+            paletteWidth(0x0800, &palwidth);
 
-        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
-        {
-            x = x*10 + *vesa++ - '0';
-        }
-        vesa++;
-        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
-        {
-            y = y*10 + *vesa++ - '0';
-        }
-        vesa++;
-        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
-        {
-            d = d*10 + *vesa++ - '0';
-        }
+	/* Reinitialize our console */
+	con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
 
-        kprintf("[BOOT] setupVESA: vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size);
-#warning "TODO: Fix vesa.bin.o to support relocation (ouch)"
-        memcpy((void *)0x1000, vesa_start, vesa_size);
-        kprintf("[BOOT] setupVESA: Module copied to 0x1000\n");
+        tag->ti_Tag = KRN_VBEModeInfo;
+        tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
+        tag++;
 
-        memcpy((void *)vesa_base, vesa_start, vesa_size);
-        kprintf("[BOOT] setupVESA: vesa.bin relocated to trampoline @ %p\n", vesa_base);
+        tag->ti_Tag = KRN_VBEControllerInfo;
+        tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEControllerInfo;
+        tag++;
 
-        kprintf("[BOOT] setupVESA: BestModeMatch for %dx%dx%d = ",x,y,d);
-        mode = findMode(x,y,d);
+        tag->ti_Tag = KRN_VBEMode;
+        tag->ti_Data = mode;
+        tag++;
 
-        getModeInfo(mode);
-        memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
-        getControllerInfo();
-        memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
-
-	/* Activate linear framebuffer is supported by the mode */
-        if (VBEModeInfo.mode_attributes & VM_LINEAR_FB)
-            mode |= VBE_MODE_LINEAR_FB;
-
-        kprintf("%x\n",mode);
-        if (setVbeMode(mode) == VBE_RC_SUPPORTED)
-        {
-            unsigned char palwidth = 6;
-
-	    /* Try to switch palette width to 8 bits if possible */
-            if (VBEControllerInfo.capabilities & VC_PALETTE_WIDTH)
-                paletteWidth(0x0800, &palwidth);
-
-	    /* Reinitialize our console */
-	    con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
-
-            tag->ti_Tag = KRN_VBEModeInfo;
-            tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
-            tag++;
-
-            tag->ti_Tag = KRN_VBEControllerInfo;
-            tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEControllerInfo;
-            tag++;
-
-            tag->ti_Tag = KRN_VBEMode;
-            tag->ti_Data = mode;
-            tag++;
-
-            tag->ti_Tag = KRN_VBEPaletteWidth;
-            tag->ti_Data = palwidth;
-            tag++;
-        }
-        kprintf("[BOOT] setupVESA: VESA setup complete\n");
+        tag->ti_Tag = KRN_VBEPaletteWidth;
+        tag->ti_Data = palwidth;
+        tag++;
     }
+
+    kprintf("[BOOT] setupVESA: VESA setup complete\n");
 }
 
 static void setupFB(struct multiboot *mb)
@@ -387,20 +382,25 @@ static void prepare_message(void *kick_base)
     tag->ti_Tag = TAG_DONE;
 }
 
+static void panic(const char *str)
+{
+    kprintf("%s\n", str);
+    kprintf("*** SYSTEM PANIC!!! ***\n");
+
+    for(;;)
+    	HALT;
+}
+
 /*
-    The entry point in C.
-    
-    The bootstrap routine has to load the kernel at 0x01000000, with RO sections growing up the memory and 
-    RW sections stored beneath the 0x01000000 address. It is supposed to transfer the GRUB information further 
-    into the 64-bit kernel.
-    
-    Thanks to smart linker scripts, the 64-bit kernel is pointed by the kernCode and kernData. They have to be
-    copied to specified locations only.
-    
-    After kernel copying, the bootstrap has to check whether the modules have been loaded by GRUB. The modules 
-    may be loaded separately, or as a collection in an IFF file. These modules have to be linked with the kernel 
-    together. If any file is specified in both IFF file and list of separate modules, the copy in IFF has to
-    be skipped.
+ * The entry point in C.
+ *
+ * The bootstrap routine has to load the kickstart at 0x01000000, with RO sections growing up the memory and 
+ * RW sections stored beneath the 0x01000000 address. It is supposed to transfer the GRUB information further 
+ * into the 64-bit kickstart.
+ *
+ * The kickstart is assembled from modules which have been loaded by GRUB. The modules may be loaded separately,
+ * or as a collection in PKG file. If some file is specified in both PKG file and list of separate modules, the
+ * copy in PKG will be skipped.
 */
 static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int addr)
 {
@@ -408,8 +408,6 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     struct module *mod = (struct module *)__stack;  /* The list of modules at the bottom of stack */
     char *vesa = NULL;
     int module_count = 0;
-    unsigned long vesa_size = 0;
-    unsigned long vesa_base = 0;
     void *kick_base = (void *)KERNEL_TARGET_ADDRESS;
     struct module *m;
     const char *cmdline = NULL;
@@ -452,8 +450,6 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 	}
 
     	vesa = strstr(cmdline, "vesa=");
-    	if (vesa)
-            vesa_size = (unsigned long)&_binary_vesa_size;
 
 	tag->ti_Tag = KRN_CmdLine;
     	tag->ti_Data = KERNEL_OFFSET | (unsigned long)cmdline;
@@ -536,7 +532,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
      * Otherwise specify to AROS what has been passed to us by the bootloader.
      */
     if (vesa)
-        setupVESA(vesa_base, vesa);
+        setupVESA(&vesa[5]);
     else
     	setupFB(mb);
 

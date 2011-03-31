@@ -6,6 +6,7 @@
 #include <asm/cpu.h>
 #include <asm/io.h>
 #include <asm/segments.h>
+#include <asm/tls.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
