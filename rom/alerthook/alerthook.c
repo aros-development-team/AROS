@@ -50,7 +50,7 @@ const struct Resident Alerthook_resident __attribute__((section(".text"))) =
     RTF_COLDSTART,
     41,
     NT_UNKNOWN,
-    -55,
+    -45,
     (UBYTE *)Alerthook_name,
     (UBYTE *)&Alerthook_version[6],
     (APTR)&AROS_SLIB_ENTRY(init,Alerthook)
@@ -181,7 +181,7 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
     SysBase->LastAlert[0] = old;
     SysBase->LastAlert[1] = NULL;
 #endif
-    return NULL;
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 }
