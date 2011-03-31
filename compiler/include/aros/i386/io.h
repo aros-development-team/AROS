@@ -46,7 +46,12 @@
 #define __FULL_SLOW_DOWN_IO __SLOW_DOWN_IO
 #endif
 
-#define port_t unsigned short
+/*
+ * We define port_t as unsigned long because otherwise
+ * we get warnings about converting pointers to small integers
+ * on x86-64
+ */
+#define port_t unsigned long
 
 /*
  * Talk about misusing macros..
