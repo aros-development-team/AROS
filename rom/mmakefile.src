@@ -111,7 +111,6 @@ $(BINDIR)/boot/aros-base: $(KOBJS_BASE) $(DEPLIBS)
 
 #MM- kernel-pkg-modules : \
 #MM     kernel-aros-pkg \
-#MM	kernel-disk-pkg \
 #MM     kernel-dos-pkg \
 #MM     kernel-boot-pkg \
 #MM	kernel-fs-amberram-pkg \
