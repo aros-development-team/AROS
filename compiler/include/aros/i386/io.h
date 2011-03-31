@@ -46,6 +46,8 @@
 #define __FULL_SLOW_DOWN_IO __SLOW_DOWN_IO
 #endif
 
+#define port_t unsigned short
+
 /*
  * Talk about misusing macros..
  */
