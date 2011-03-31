@@ -90,7 +90,7 @@ def listFiles( path='.' ):
             files.append( os.path.normpath( name ) )
             
     return files
-    
+
 
 def unpack( source, destination ):
     'unpack( source, destination ) -> None'
@@ -130,8 +130,11 @@ def pack( source, destination ):
     oldwd = os.getcwd()
     os.chdir( source )
     
-    files = listFiles()   
-    
+    if len(sys.argv) > 4:
+	files = sys.argv[4:]
+    else:
+    	files = listFiles()   
+
     writeHeader( output, PKG_VERSION )
     
     for path in files:
