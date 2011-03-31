@@ -264,6 +264,7 @@ asm (
 );
 
 /* Default handler */
+extern void Exec_MagicResetCode(void);
 void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     ULONG alert;
@@ -275,11 +276,22 @@ void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
      */
     alert = AT_DeadEnd | id;
 
-    if (SysBase == NULL || KernelBase == NULL) {
-    	/* Ok, we're trapping early. */
-    	void Early_Alert(ULONG alert);
+    if (SysBase == NULL ||
+    	KernelBase == NULL) {
+    	volatile LONG *LastAlert = (volatile LONG *)(64 * sizeof(LONG));
+    	/* SysBase has been corrupted! Mark the alert,
+    	 * and reboot.
+    	 */
+    	LastAlert[0] = (LONG)(AT_DeadEnd | AN_LibChkSum);
+    	/* LastAlert[1] was already set by
+    	 * Exec/Dispatch
+    	 */
+    	LastAlert[2] = 0;
+    	LastAlert[3] = 0;
 
-    	Early_Alert(alert);
+    	/* Set LastAlert marker */
+    	*(volatile ULONG *)0 = 0x48454c50; /* 'HELP' */
+    	Exec_MagicResetCode();
     	return;
     }
 
