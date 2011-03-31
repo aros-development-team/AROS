@@ -11,6 +11,28 @@
 
 #include <exec/types.h>
 
+/*
+ * Define this in your code if you want to build 32-bit code using full 64-bit pointers.
+ * Useful for building pc-x86_64 bootstrap which runs in 32 bit mode.
+ */
+#ifdef ELF_64BIT
+
+#define	elf_ptr_t	UQUAD
+#define elf_uintptr_t	UQUAD
+#define elf_intptr_t	QUAD
+
+#else
+
+#define elf_ptr_t	APTR
+#define elf_uintptr_t	IPTR
+#define elf_intptr_t	SIPTR
+
+#if (__WORDSIZE == 64)
+#define ELF_64BIT
+#endif
+
+#endif
+
 #define SHT_PROGBITS    1
 #define SHT_SYMTAB      2
 #define SHT_STRTAB      3
@@ -107,60 +129,60 @@
 
 struct elfheader
 {
-    UBYTE ident[16];
-    UWORD type;
-    UWORD machine;
-    ULONG version;
-    APTR  entry;
-    IPTR  phoff;
-    IPTR  shoff;
-    ULONG flags;
-    UWORD ehsize;
-    UWORD phentsize;
-    UWORD phnum;
-    UWORD shentsize;
-    UWORD shnum;
-    UWORD shstrndx;
+    UBYTE	  ident[16];
+    UWORD	  type;
+    UWORD	  machine;
+    ULONG	  version;
+    elf_ptr_t	  entry;
+    elf_uintptr_t phoff;
+    elf_uintptr_t shoff;
+    ULONG	  flags;
+    UWORD	  ehsize;
+    UWORD	  phentsize;
+    UWORD	  phnum;
+    UWORD	  shentsize;
+    UWORD	  shnum;
+    UWORD	  shstrndx;
 };
 
 struct sheader
 {
-    ULONG name;
-    ULONG type;
-    IPTR  flags;
-    APTR  addr;
-    IPTR  offset;
-    IPTR  size;
-    ULONG link;
-    ULONG info;
-    IPTR  addralign;
-    IPTR  entsize;
+    ULONG	  name;
+    ULONG	  type;
+    elf_uintptr_t flags;
+    elf_ptr_t	  addr;
+    elf_uintptr_t offset;
+    elf_uintptr_t size;
+    ULONG	  link;
+    ULONG	  info;
+    elf_uintptr_t addralign;
+    elf_uintptr_t entsize;
 };
 
 #define PT_LOAD 1
 
-#if (__WORDSIZE == 64)
+#ifdef ELF_64BIT
 
 struct pheader
 {
-    ULONG type;
-    ULONG flags;
-    IPTR  offset;
-    APTR  vaddr;
-    APTR  paddr;                
-    IPTR  filesz;
-    IPTR  memsz;
-    IPTR  align;
+    ULONG	  type;
+    ULONG	  flags;
+    elf_uintptr_t offset;
+    elf_ptr_t	  vaddr;
+    elf_ptr_t	  paddr;                
+    elf_uintptr_t filesz;
+    elf_uintptr_t memsz;
+    elf_uintptr_t align;
 };
 
 struct symbol
 {
-    ULONG name;     /* Offset of the name string in the string table */
-    UBYTE info;     /* What kind of symbol is this ? (global, variable, etc) */
-    UBYTE other;    /* undefined */
-    UWORD shindex;  /* In which section is the symbol defined ? */
-    IPTR  value;    /* Varies; eg. the offset of the symbol in its hunk */
-    IPTR  size;     /* How much memory does the symbol occupy */
+    ULONG	  name;     /* Offset of the name string in the string table		*/
+    UBYTE	  info;     /* What kind of symbol is this ? (global, variable, etc)	*/
+    UBYTE	  other;    /* undefined						*/
+    UWORD	  shindex;  /* In which section is the symbol defined ?			*/
+    elf_uintptr_t value;    /* Varies; eg. the offset of the symbol in its hunk		*/
+    elf_uintptr_t size;     /* How much memory does the symbol occupy			*/
 };
 
 #define ELF_R_SYM(i)	      (ULONG)((i) >> 32)
@@ -171,24 +193,24 @@ struct symbol
 
 struct pheader
 {
-    ULONG type;
-    ULONG offset;
-    APTR  vaddr;
-    APTR  paddr;                
-    ULONG filesz;
-    ULONG memsz;
-    ULONG flags;
-    ULONG align;
+    ULONG     type;
+    ULONG     offset;
+    elf_ptr_t vaddr;
+    elf_ptr_t paddr;                
+    ULONG     filesz;
+    ULONG     memsz;
+    ULONG     flags;
+    ULONG     align;
 };
 
 struct symbol
 {
-    ULONG name;     /* Offset of the name string in the string table */
-    IPTR  value;    /* Varies; eg. the offset of the symbol in its hunk */
-    IPTR  size;     /* How much memory does the symbol occupy */
-    UBYTE info;     /* What kind of symbol is this ? (global, variable, etc) */
-    UBYTE other;    /* undefined */
-    UWORD shindex;  /* In which section is the symbol defined ? */
+    ULONG	  name;     /* Offset of the name string in the string table	   	*/
+    elf_uintptr_t value;    /* Varies; eg. the offset of the symbol in its hunk	   	*/
+    elf_uintptr_t size;     /* How much memory does the symbol occupy		   	*/
+    UBYTE	  info;     /* What kind of symbol is this ? (global, variable, etc)	*/
+    UBYTE	  other;    /* undefined						*/
+    UWORD	  shindex;  /* In which section is the symbol defined ?		   	*/
 };
 
 #define ELF_R_SYM(val)        ((val) >> 8)
@@ -197,13 +219,17 @@ struct symbol
 
 #endif
 
-struct relo
+struct rel
 {
-    IPTR  offset;   /* Address of the relocation relative to the section it refers to */
-    IPTR  info;     /* Type of the relocation */
-#if !defined(__i386__) && !defined(__arm__)
-    SIPTR addend;   /* Constant addend used to compute value */
-#endif
+    elf_uintptr_t offset;   /* Address of the relocation relative to the section it refers to */
+    elf_uintptr_t info;     /* Type of the relocation */
+};
+
+struct rela
+{
+    elf_uintptr_t offset;   /* Address of the relocation relative to the section it refers to */
+    elf_uintptr_t info;     /* Type of the relocation */
+    elf_intptr_t  addend;   /* Constant addend used to compute value */
 };
 
 /* convert section header number to array index */
@@ -215,7 +241,7 @@ struct relo
     ((i) < SHN_LORESERVE ? (i) : (i) + (SHN_HIRESERVE + 1 - SHN_LORESERVE))
 
 /* Machine's native values */
-#if (__WORDSIZE == 64)
+#ifdef ELF_64BIT
 #define AROS_ELF_CLASS ELFCLASS64
 #else
 #define AROS_ELF_CLASS ELFCLASS32
@@ -227,25 +253,31 @@ struct relo
 #define AROS_ELF_DATA ELFDATA2LSB
 #endif
 
-#ifdef __i386__
-#define AROS_ELF_MACHINE EM_386
-#define AROS_ELF_REL     SHT_REL
-#endif
-#ifdef __x86_64__
+#if defined(__i386__) || defined(__x86_64__)
+#ifdef ELF_64BIT
 #define AROS_ELF_MACHINE EM_X86_64
 #define AROS_ELF_REL     SHT_RELA
+#define relo		 rela
+#else
+#define AROS_ELF_MACHINE EM_386
+#define AROS_ELF_REL     SHT_REL
+#define relo		 rel
+#endif
 #endif
 #ifdef __mc68000__
 #define AROS_ELF_MACHINE EM_68K
 #define AROS_ELF_REL     SHT_RELA
+#define relo		 rela
 #endif
-#if defined(__ppc__) || defined(__powerpc__)
+#ifdef __powerpc__
 #define AROS_ELF_MACHINE EM_PPC
 #define AROS_ELF_REL     SHT_RELA
+#define relo		 rela
 #endif
 #ifdef __arm__
 #define AROS_ELF_MACHINE EM_ARM
 #define AROS_ELF_REL     SHT_REL
+#define relo		 rel
 #endif
 
 #endif
