@@ -2486,6 +2486,6 @@ PKG_DEPS  := $(addprefix $(PKGDIR)/, $(PKG_FILES))
 
 %(file): $(PKG_DEPS)
 	@$(ECHO) Packaging $@...
-	@$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/aros-base.pkg $(PKGDIR) $(PKG_FILES)
+	@$(SRCDIR)/tools/package/pkg c %(file) $(PKGDIR) $(PKG_FILES)
 
 %end
