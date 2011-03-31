@@ -10,7 +10,7 @@ include $(TOP)/config/make.cfg
 #MM kernel-package-pc-x86_64: \
 #MM	linklibs-clib \
 #MM	kernel-aros \
-#MM	kernel-bootloader-pc-x86_64 \
+#MM	kernel-bootloader \
 #MM	kernel-timer \
 #MM	kernel-keyboard \
 #MM	kernel-gameport \

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: vesa "hardware" functions
@@ -145,6 +145,18 @@ void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
     dst = hwdata->framebuffer + y1 * hwdata->bytesperline + x1 * hwdata->bytesperpixel;
 
     /*
+     * Disable screen debug output if not done yet.
+     * TODO: develop some mechanism to tell kernel that we actually
+     * didn't change the mode, so upon warm reboot it can reuse
+     * the framebuffer for debug output.
+     */
+    if (!hwdata->owned)
+    {
+    	RawPutChar(0x03);
+    	hwdata->owned = TRUE;
+    }
+
+    /*
     ** common sense assumption: memcpy can't possibly be faster than CopyMem[Quick]
     */
     if ((srcmod != dstmod) || (srcmod != w))
@@ -267,9 +279,15 @@ void DACLoad(struct VesaGfx_staticdata *xsd, UBYTE *DAC,
 ** ClearBuffer --
 **      clear the screen buffer
 */
-void ClearBuffer(const struct HWData *data)
+void ClearBuffer(struct HWData *data)
 {
     IPTR *p, *limit;
+
+    if (!data->owned)
+    {
+    	RawPutChar(0x03);
+    	data->owned = TRUE;
+    }
 
     p = (IPTR *)data->framebuffer;
     limit = (IPTR *)((IPTR)p + data->height * data->bytesperline);

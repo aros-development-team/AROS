@@ -2,12 +2,14 @@
 
 #include "kernel_intern.h"
 
+#define DMMU(x)
+
 /*
     The MMU pages and directories. They are stored at fixed location and may be either reused in the 
     64-bit kernel, or replaced by it. Four PDE directories (PDE2M structures) are enough to map whole
     4GB address space.
 */
-static struct PML4E PML4[512] __attribute__((used,aligned(4096)));
+struct PML4E PML4[512] __attribute__((used,aligned(4096)));
 static struct PDPE PDP[512] __attribute__((used,aligned(4096)));
 static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096)));
 
@@ -37,7 +39,7 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
         PML4[0].pcd= 0; /* cache enabled */
         PML4[0].a  = 0; /* not yet accessed */
         PML4[0].mbz= 0; /* must be zero */
-        PML4[0].base_low = (unsigned int)PDP >> 12;
+        PML4[0].base_low = (unsigned long)PDP >> 12;
         PML4[0].avl= 0;
         PML4[0].nx = 0;
         PML4[0].avail = 0;
@@ -58,7 +60,7 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
             PDP[i].pcd= 0;
             PDP[i].a  = 0;
             PDP[i].mbz= 0;
-            PDP[i].base_low = (unsigned int)pdes[i] >> 12;
+            PDP[i].base_low = (unsigned long)pdes[i] >> 12;
 
             PDP[i].nx = 0;
             PDP[i].avail = 0;
@@ -86,9 +88,6 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
                 PDE[j].base_high = 0;
             }
         }
-        /* HACK! Store the PML4 address in smp trampoline area */
-        if (__KernBootPrivate->kbp_APIC_TrampolineBase)
-            *(ULONG *)(__KernBootPrivate->kbp_APIC_TrampolineBase + 0x0014) = (ULONG)&PML4;
     }
 
     rkprintf("[Kernel] core_SetupMMU[%d]: Registering New PML4\n", _APICID);
@@ -103,27 +102,28 @@ static int used_page;
 
 void core_ProtPage(intptr_t addr, char p, char rw, char us)
 {
-    struct PML4E *pml4 = rdcr(cr3);
-    struct PDPE *pdpe = pml4[(addr >> 39) & 0x1ff].base_low << 12;
-    struct PDE4K *pde = pdpe[(addr >> 30) & 0x1ff].base_low << 12;
-    
-    rkprintf("[Kernel] Marking page %012p as read-only\n",addr);
-    
+    struct PML4E *pml4 = (struct PML4E *)rdcr(cr3);
+    struct PDPE *pdpe  = (struct PDPE *)((unsigned long)pml4[(addr >> 39) & 0x1ff].base_low << 12);
+    struct PDE4K *pde  = (struct PDE4K *)((unsigned long)pdpe[(addr >> 30) & 0x1ff].base_low << 12);
+    struct PTE *pte;
+
+    DMMU(bug("[Kernel] Marking page 0x%p as read-only\n", addr));
+
     if (pde[(addr >> 21) & 0x1ff].ps)
     {
-        struct PTE *pte = Pages4K[used_page++];
         struct PDE2M *pde2 = (struct PDE2M *)pde;
-        
+
+        pte = Pages4K[used_page++];
+
         /* work on local copy of the affected PDE */
         struct PDE4K tmp_pde = pde[(addr >> 21) & 0x1ff]; 
-        
+
         intptr_t base = pde2[(addr >> 21) & 0x1ff].base_low << 13;
         int i;
-        
-        rkprintf("[Kernel] The page for address %012p was a big one. Splitting it into 4K pages\n",
-                 addr);
-        rkprintf("[Kernel] Base=%012p, pte=%012p\n", base, pte);
-        
+
+        bug("[Kernel] The page for address 0x%p was a big one. Splitting it into 4K pages\n", addr);
+        bug("[Kernel] Base=0x%p, pte=0x%p\n", base, pte);
+
         for (i = 0; i < 512; i++)
         {
             pte[i].p = 1;
@@ -141,7 +141,8 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
         pde[(addr >> 21) & 0x1ff] = tmp_pde;
     }
             
-    struct PTE *pte = pde[(addr >> 21) & 0x1ff].base_low << 12;
+    pte = (struct PTE *)((unsigned long)pde[(addr >> 21) & 0x1ff].base_low << 12);
+
     pte[(addr >> 12) & 0x1ff].rw = rw ? 1:0;
     pte[(addr >> 12) & 0x1ff].us = us ? 1:0;
     pte[(addr >> 12) & 0x1ff].p = p ? 1:0;
@@ -150,7 +151,7 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
 
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us)
 {
-    rkprintf("[Kernel] Protecting area %012p-%012p\n", addr, addr + length - 1);
+    bug("[Kernel] Protecting area 0x%p - 0x%p\n", addr, addr + length - 1);
 
     while (length > 0)
     {

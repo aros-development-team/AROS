@@ -6,7 +6,7 @@
     Lang: English
 */
 
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_MEM
 //#define DEBUG_MEM_TYPE MMAP_TYPE_RAM
 //#define DEBUG_TAGLIST
@@ -77,15 +77,16 @@ asm("	.text\n\t"
     tables may be re-used by the 64-bit kernel.
 */
 extern char *_prot_lo, *_prot_hi;
-static unsigned char __stack[65536] __attribute__((used));
-static unsigned char __bss_track[32768] __attribute__((used,section(".bss.aros.tables")));
 
-static struct vbe_mode VBEModeInfo __attribute__((used, section(".bss.aros.tables")));
-static struct vbe_controller VBEControllerInfo __attribute__((used, section(".bss.aros.tables")));
-
-struct TagItem64 km[KRN__TAGCOUNT * 4] __attribute__((used, section(".bss.aros.tables")));
-
+/* Structures to be passed to the kickstart */
+static struct mb_mmap MemoryMap[2];
+static struct vbe_mode VBEModeInfo;
+static struct vbe_controller VBEControllerInfo;
+static unsigned char __bss_track[32768];
+struct TagItem64 km[KRN__TAGCOUNT * 4];
 struct TagItem64 *tag = &km[0];
+
+static unsigned char __stack[65536] __attribute__((used));
 
 static const char default_mod_name[] = "<unknown>";
 
@@ -253,13 +254,11 @@ static void setupVESA(unsigned long vesa_base, char *vesa)
         kprintf("%x\n",mode);
         if (setVbeMode(mode) == VBE_RC_SUPPORTED)
         {
-            unsigned char palwidth = 0;
+            unsigned char palwidth = 6;
 
 	    /* Try to switch palette width to 8 bits if possible */
             if (VBEControllerInfo.capabilities & VC_PALETTE_WIDTH)
                 paletteWidth(0x0800, &palwidth);
-            else
-                palwidth = 6;
 
 	    /* Reinitialize our console */
 	    con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
@@ -366,11 +365,11 @@ static void prepare_message(void *kick_base)
     tag++;
 
     tag->ti_Tag = KRN_KernelLowest;
-    tag->ti_Data = KERNEL_OFFSET | ((long)kernel_lowest() & ~4095);
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long)kernel_lowest();
     tag++;
 
     tag->ti_Tag = KRN_KernelHighest;
-    tag->ti_Data = KERNEL_OFFSET | (((long)kernel_highest() + 4095) & ~4095);
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long)kernel_highest();
     tag++;
 
     tag->ti_Tag = KRN_KernelBss;
@@ -414,6 +413,8 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     void *kick_base = (void *)KERNEL_TARGET_ADDRESS;
     struct module *m;
     const char *cmdline = NULL;
+    struct mb_mmap *mmap = NULL;
+    unsigned long len = 0;
 
     /*
      * We are loaded at 0x200000, so we can use one megabyte at 0x100000
@@ -459,12 +460,13 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     	tag++;
     }
 
-    if ((mb->mmap_addr) && (mb->mmap_length))
+    if ((mb->flags & MB_FLAGS_MMAP))
     {
-    	unsigned long len = mb->mmap_length;
-    	struct mb_mmap *mmap = (struct mb_mmap *)mb->mmap_addr;
+    	mmap = (struct mb_mmap *)mb->mmap_addr;
+    	len  = mb->mmap_length;
 
 #ifdef DEBUG_MEM
+	kprintf("[BOOT] Memory map at 0x%p:\n", mmap);
         while (len >= sizeof(struct mb_mmap))
         {
 #ifdef DEBUG_MEM_TYPE
@@ -476,54 +478,58 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
             mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
         }
 
-    	len = mb->mmap_length;
     	mmap = (struct mb_mmap *)mb->mmap_addr;
+    	len = mb->mmap_length;
 #endif
 
-        tag->ti_Tag = KRN_MMAPLength;
-        tag->ti_Data = len;
-        tag++;
-        tag->ti_Tag = KRN_MMAPAddress;
-        tag->ti_Data = KERNEL_OFFSET | (unsigned long)mmap;
-        tag++;
-
-        /* Quickly locate a suitable region to use for lowpage memory */
-        while (len >= sizeof(struct mb_mmap))
-        {
-            if (mmap->type == MMAP_TYPE_RAM)
-            {
-                unsigned long addr = mmap->addr;
-                unsigned long size = mmap->len;
-
-                if (addr < 0x00100000 && addr + size <= 0x00100000)
-                {
-                    D(kprintf("[BOOT] MMAP: Using Entry %p [%d bytes] for lowpages\n", addr, size));
-                    tag->ti_Tag = KRN_MEMLower;
-                    vesa_base = ((addr + size) - vesa_size) & ~PAGE_MASK;
-                    D(kprintf("[BOOT] MMAP: Adjusted size for VESA Trampoline = %d\n", vesa_base - addr));
-                    tag->ti_Data = ((vesa_base - 1)/1024);
-                    tag++;
-                    break;
-                }
-            }
-
-            len -= mmap->size+4;
-            mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
-        }
     }
-    else
+
+    if (mb->flags & MB_FLAGS_MEM)
     {
-        D(kprintf("[BOOT] No memory map supplied by the bootstrap, using defaults\n"));
-    	D(kprintf("[BOOT] Low memory %u KB, upper memory %u kb\n", mb->mem_lower, mb->mem_upper));
+        D(kprintf("[BOOT] Low memory %u KB, upper memory %u KB\n", mb->mem_lower, mb->mem_upper));
 
-        tag->ti_Tag = KRN_MEMLower;
-        vesa_base = (mb->mem_lower - vesa_size) & ~PAGE_MASK;
-        tag->ti_Data = ((vesa_base - 1)/1024);
-        tag++;
-        tag->ti_Tag = KRN_MEMUpper;
-        tag->ti_Data = mb->mem_upper;
-        tag++;
+    	if (!mmap)
+    	{
+    	    /*
+    	     * To simplify things down, memory map is mandatory for our kickstart.
+    	     * So we create an implicit one if the bootloader didn't supply it.
+    	     */
+            D(kprintf("[BOOT] No memory map supplied by the bootloader, using defaults\n"));
+
+	    MemoryMap[0].size = 20;
+            MemoryMap[0].addr = 0;
+            MemoryMap[0].len  = mb->mem_lower << 10;
+            MemoryMap[0].type = MMAP_TYPE_RAM;
+
+            MemoryMap[1].size = 20;
+            MemoryMap[1].addr = 0x100000;
+            MemoryMap[1].len  = mb->mem_upper << 10;
+            MemoryMap[1].type = MMAP_TYPE_RAM;
+
+            mmap = MemoryMap;
+            len = sizeof(MemoryMap);
+        }
+
+	/* Kickstart wants size in bytes */
+    	tag->ti_Tag = KRN_MEMLower;
+    	tag->ti_Data = mb->mem_lower << 10;
+    	tag++;
+
+	tag->ti_Tag = KRN_MEMUpper;
+    	tag->ti_Data = mb->mem_upper << 10;
+    	tag++;
     }
+
+    if (!mmap)
+    	panic("No memory information provided by the bootloader");
+
+    tag->ti_Tag = KRN_MMAPAddress;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long)mmap;
+    tag++;
+
+    tag->ti_Tag = KRN_MMAPLength;
+    tag->ti_Data = len;
+    tag++;
 
     /*
      * If vesa= option was given, set up the specified video mode explicitly.

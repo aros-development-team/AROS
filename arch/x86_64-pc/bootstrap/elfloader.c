@@ -155,28 +155,27 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
     for (i=0; i<numrel; i++, rel++)
     {
         struct symbol *sym = &symtab[ELF64_R_SYM(rel->info)];
+        char *name = (char *)sh[shsymtab->link].addr + sym->name;
         unsigned long *p = (unsigned long *)&section[rel->offset];
-        unsigned long long  s;
+        unsigned long long s;
 
         switch (sym->shindex)
         {
             case SHN_UNDEF:
                 D(kprintf("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
-                      (char *)((unsigned long)sh[shsymtab->link].addr) + sym->name,
-                      (char *)((unsigned long)sh[eh->shstrndx].addr) + toreloc->name));
+			  name, (char *)sh[eh->shstrndx].addr + toreloc->name));
                 return 0;
 
             case SHN_COMMON:
                 D(kprintf("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
-                      (char *)((unsigned long)sh[shsymtab->link].addr) + sym->name,
-                      (char *)((unsigned long)sh[eh->shstrndx].addr) + toreloc->name));
+                      	  name, (char *)sh[eh->shstrndx].addr + toreloc->name));
 
                 return 0;
 
             case SHN_ABS:
                 if (SysBase_sym == (void*)0)
                 {
-                    if (strcmp((char *)((unsigned long)sh[shsymtab->link].addr) + sym->name, "SysBase") == 0)
+                    if (strcmp(name, "SysBase") == 0)
                     {
                         SysBase_sym = sym;
                         goto SysBase_yes;
@@ -184,25 +183,20 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
                     else
                         goto SysBase_no;
                 }
+                else if (SysBase_sym == sym)
+SysBase_yes:	    s = 8ULL;			/* Global SysBase address is 8 on 64-bit machines */
                 else
-                if (SysBase_sym == sym)
-                {
-                    SysBase_yes: s = (unsigned long long)4ULL;
-                }
-                else
-                    SysBase_no:  s = sym->value;
+SysBase_no:	    s = sym->value;
                 break;
 
             default:
                 s = (unsigned long long)sh[sym->shindex].addr + virt + sym->value;
         }
-        
-        //s+=virt;
 
         switch (ELF64_R_TYPE(rel->info))
         {
             case R_X86_64_64: /* 64bit direct/absolute */
-                *(unsigned long long *)p = s + rel->addend;// + virt;
+                *(unsigned long long *)p = s + rel->addend;
                 break;
 
             case R_X86_64_PC32: /* PC relative 32 bit signed */
@@ -210,11 +204,11 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
                 break;
 
             case R_X86_64_32:
-                *(unsigned long *)p = (unsigned long long)s + (unsigned long long)rel->addend;// + virt;
+                *(unsigned long *)p = (unsigned long long)s + (unsigned long long)rel->addend;
                 break;
 
             case R_X86_64_32S:
-                *(signed long *)p = (signed long long)s + (signed long long)rel->addend;// + virt;
+                *(signed long *)p = (signed long long)s + (signed long long)rel->addend;
                 break;
 
             case R_X86_64_NONE: /* No reloc */
