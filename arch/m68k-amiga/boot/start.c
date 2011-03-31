@@ -422,7 +422,7 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 		}
 	};
 	struct MemHeader *mh;
-	ULONG LastAlert[4] = { 0, 0, 0, 0};
+	LONG oldLastAlert[4];
 	ULONG oldmem;
 	APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
 	APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
@@ -495,14 +495,20 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	 * from a fatal alert
 	 */
 	if (trap[0] == (APTR)0x48454c50) {
-		for (i = 0; i < 4; i++)
-			LastAlert[i] = (ULONG)trap[64 + i];
+	    for (i = 0; i < 4; i++)
+	    	oldLastAlert[i] = (LONG)trap[64 + i];
+
+	    DEBUGPUTHEX(("LastAlert Alert", oldLastAlert[0]));
+	    DEBUGPUTHEX(("LastAlert  Task", oldLastAlert[1]));
+	} else {
+	    oldLastAlert[0] = (LONG)-1;
+	    oldLastAlert[1] = 0;
+	    oldLastAlert[2] = 0;
+	    oldLastAlert[2] = 0;
 	}
 
-	/* Clear last alert area */
+	/* Clear alert marker */
 	trap[0] = 0;
-	for (i = 0; i < 4; i++)
-		trap[64 + i] = 0;
 
 	/* Clear the BSS. */
 	__clear_bss(&kbss[0]);
@@ -545,7 +551,7 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 
         /* Mark what the last alert was */
         for (i = 0; i < 4; i++)
-        	SysBase->LastAlert[i] = LastAlert[i];
+            SysBase->LastAlert[i] = oldLastAlert[i];
 
 	/* Determine CPU model */
 	SysBase->AttnFlags |= cpu_detect();
