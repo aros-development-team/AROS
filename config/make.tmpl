@@ -1000,10 +1000,11 @@ GLOB_MKDIRS += $(BD_TARGETDIR) $(BD_OBJDIR)
 # Define metamake targets and their dependencies
 #MM %(mmake) : core-linklibs includes-generate-deps
 #MM %(mmake)-kobj : core-linklibs includes-generate-deps
+#MM %(mmake)-pkg  : core-linklibs includes-generate-deps
 #MM %(mmake)-quick
 #MM %(mmake)-clean
 
-BD_ALLTARGETS := %(mmake) %(mmake)-clean %(mmake)-quick %(mmake)-kobj
+BD_ALLTARGETS := %(mmake) %(mmake)-clean %(mmake)-quick %(mmake)-kobj %(mmake)-pkg
 
 .PHONY : $(BD_ALLTARGETS)
 
@@ -1068,15 +1069,22 @@ BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),%(files))
     compiler=%(compiler)
 
 BD_MODULE := $(BD_MODDIR)/%(modname).%(modtype)
-BD_KOBJ := $(KOBJSDIR)/%(modname)_%(modtype).o
+BD_PKGMOD := $(PKGDIR)/%(modname).%(modtype)
+BD_KOBJ   := $(KOBJSDIR)/%(modname)_%(modtype).o
 
 %(mmake)-quick : %(mmake)
-%(mmake) : $(BD_MODULE)
-%(mmake)-kobj : $(BD_KOBJ)
+%(mmake)       : $(BD_MODULE)
+%(mmake)-pkg   : $(BD_PKGMOD)
+%(mmake)-kobj  : $(BD_KOBJ)
 
 # The module is linked from all the compiled .o files
 BD_OBJS       := $(BD_ARCHOBJS) $(addprefix %(objdir)/, $(addsuffix .o,$(notdir $(BD_NARCHFILES))))
+
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
+		 endobj= err=%(modname).err objdir=%(objdir) \
+		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
+
+%rule_linkmodule module=$(BD_PKGMOD) objs=$(BD_OBJS) \
 		 endobj= err=%(modname).err objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
@@ -1102,7 +1110,7 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 ## Dependency fine-tuning
 ##
 BD_DEPS       := $(addprefix %(objdir)/, $(addsuffix .d,%(files)))
-%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(BD_DEPS)
+%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-pkg" deps=$(BD_DEPS)
 
 $(BD_OBJS) $(BD_DEPS) : | %(objdir)
 $(BD_MODULE) : | $(BD_MODDIR)
@@ -1132,6 +1140,8 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 #MM %(mmake) : %(mmake)-includes core-linklibs
 #MM %(mmake)-kobj : %(mmake)-includes core-linklibs
 #MM %(mmake)-kobj-quick : %(mmake)-includes-quick
+#MM %(mmake)-pkg : %(mmake)-includes core-linklibs
+#MM %(mmake)-pkg-quick : %(mmake)-includes-quick
 #MM %(mmake)-linklib : %(mmake)-includes
 #MM %(mmake)-quick : %(mmake)-includes-quick
 #MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
@@ -1144,7 +1154,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
     %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-linklib
+    %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-pkg %(mmake)-pkg-quick %(mmake)-linklib
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
@@ -1277,17 +1287,21 @@ endif
 ##
 ifeq (%(modsuffix),)
 BD_MODULE    := %(prefix)/%(moduledir)/%(modname).%(modtype)
+BD_PKGMOD    := $(PKGDIR)/%(modname).%(modtype)
 BD_KOBJ      := $(KOBJSDIR)/%(modname)_%(modtype).o
 else
 BD_MODULE    := %(prefix)/%(moduledir)/%(modname).%(modsuffix)
+BD_PKGMOD    := $(PKGDIR)/%(modname).%(modsuffix)
 BD_KOBJ      := $(KOBJSDIR)/%(modname)_%(modsuffix).o
 endif
 
-%(mmake)-quick : %(mmake)
-%(mmake) : $(BD_MODULE) $(BD_LINKLIB)
-%(mmake)-kobj : $(BD_KOBJ) $(BD_LINKLIB)
+%(mmake)-quick      : %(mmake)
+%(mmake)            : $(BD_MODULE) $(BD_LINKLIB)
+%(mmake)-pkg        : $(BD_PKGMOD) $(BD_LINKLIB)
+%(mmake)-pkg-quick  : $(BD_PKGMOD) $(BD_LINKLIB)
+%(mmake)-kobj       : $(BD_KOBJ) $(BD_LINKLIB)
 %(mmake)-kobj-quick : $(BD_KOBJ) $(BD_LINKLIB)
-%(mmake)-linklib : $(BD_LINKLIB)
+%(mmake)-linklib    : $(BD_LINKLIB)
 
 BD_OBJS       := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
 	     	 $(addsuffix .o, $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES))))
@@ -1298,6 +1312,10 @@ BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))
 
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs="$(BD_STARTOBJS) $(BD_OBJS)" \
+		 endobj=$(BD_ENDOBJS) err=%(modname).err objdir=%(objdir) \
+		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
+
+%rule_linkmodule module=$(BD_PKGMOD) objs="$(BD_STARTOBJS) $(BD_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=%(modname).err objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
@@ -1330,15 +1348,16 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 ## Dependency fine-tuning
 ##
 BD_DEPS := $(addsuffix .d,$(addprefix %(objdir)/,$(notdir $(BD_CCFILES) $(BD_TARGETCCFILES))))
-%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick" deps=$(BD_DEPS)
+%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-pkg %(mmake)-pkg-quick" deps=$(BD_DEPS)
 
 $(BD_OBJS) $(BD_DEPS) : | %(objdir)
 $(BD_MODULE) : | %(prefix)/%(moduledir)
-$(BD_KOBJ) : | $(KOBJSDIR)
-GLOB_MKDIRS += %(objdir) %(prefix)/%(moduledir) $(KOBJSDIR)
+$(BD_PKGMOD) : | $(PKGDIR)
+$(BD_KOBJ)   : | $(KOBJSDIR)
+GLOB_MKDIRS += %(objdir) %(prefix)/%(moduledir) $(KOBJSDIR) $(PKGDIR)
 
 # Some include files need to be generated before the .c can be parsed.
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick),) # Only for this target these deps are wanted
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-pkg %(mmake)-pkg-quick),) # Only for this target these deps are wanted
 
 BD_DFILE_DEPS := $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) \
     $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES))
@@ -1378,6 +1397,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 #MM- includes-all : %(mmake)-includes
 #MM %(mmake) : %(mmake)-includes core-linklibs
 #MM %(mmake)-kobj : %(mmake)-includes core-linklibs
+#MM %(mmake)-pkg  : %(mmake)-includes core-linklibs
 #MM %(mmake)-linklib : %(mmake)-includes
 #MM %(mmake)-quick : %(mmake)-includes-quick
 #MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
@@ -1390,7 +1410,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
     %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj
+    %(mmake)-kobj %(mmake)-pkg
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
@@ -1710,6 +1730,12 @@ endif
 #MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
 #MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-kobj-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
+#MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-pkg :     %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
+#MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-pkg-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
 #MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
 #MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \

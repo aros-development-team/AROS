@@ -168,6 +168,7 @@ LIBDIR	    	:=	$(AROS_LIB)
 CONTRIBDIR      :=      $(AROS_CONTRIB)
 OSGENDIR    	:=	$(GENDIR)/rom
 KOBJSDIR        :=      $(GENDIR)/kobjs
+PKGDIR		:=	$(GENDIR)/pkg
 
 # the build system needs to have some tools in the PATH
 
