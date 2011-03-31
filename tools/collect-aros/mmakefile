@@ -7,6 +7,16 @@
 development-collect-aros-quick :
 	$(MAKE) HOST_CC="$(TARGET_CC)" HOST_CFLAGS="$(CFLAGS)" \
 	COLLECT-AROS=$(AROS_DEVELOPMENT)/bin/collect-aros \
-	COLLECT-AROS-BACKEND=backend-bfd.c COLLECT-AROS-DOCOMMAND=docommand-spawn.c \
+	COLLECT-AROS-BACKEND=backend-bfd.c \
 	USER_CFLAGS="-nix -O2 -D_HAVE_LIBIBERTY_ -D_NATIVE_" HOST_LDFLAGS="-lbfd -liberty -lz"
 	$(STRIP) $(AROS_DEVELOPMENT)/bin/collect-aros
+
+#MM tools-crosstools-collect-aros : tools-crosstools-binutils
+.PHONY : tools-crosstools-collect-aros
+tools-crosstools-collect-aros : tools-crosstools-collect-aros-quick
+
+#MM
+tools-crosstools-collect-aros-quick :
+	$(MAKE)	COLLECT-AROS=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros USER_CFLAGS="-D_CROSS_"
+	$(STRIP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros
+	$(CP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-collect-aros
