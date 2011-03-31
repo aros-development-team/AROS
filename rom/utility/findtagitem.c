@@ -1,21 +1,23 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include <exec/types.h>
 #include <utility/utility.h>
 #include <utility/tagitem.h>
 #include <aros/libcall.h>
+#include <proto/alib.h>
 
 /*****************************************************************************
 
     NAME */
 #include <proto/utility.h>
 
-	AROS_LH2(struct TagItem *, FindTagItem,
+	AROS_LH2I(struct TagItem *, FindTagItem,
 
 /*  SYNOPSIS */
 	AROS_LHA(Tag,                    tagValue, D0),
@@ -46,15 +48,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem *tag;
-    const struct TagItem *tagptr = tagList;
-
-    while( (tag = NextTagItem(&tagptr)) )
-    {
-	if(tag->ti_Tag == tagValue) return tag;
-    }
-
-    return NULL;
+    /* Use code from libamiga */
+    return LibFindTagItem(tagValue, tagList);
 
     AROS_LIBFUNC_EXIT
 } /* FindTagItem */

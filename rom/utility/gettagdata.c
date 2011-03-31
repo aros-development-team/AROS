@@ -1,9 +1,12 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     GetTagData()
 */
+
+#include <proto/alib.h>
+
 #include "intern.h"
 
 /*****************************************************************************
@@ -61,17 +64,9 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct TagItem *ti = NULL;
 
-    /*
-	If we can find the Tag in the supplied list, then return the
-	ti_Data fields value.
+    /* Use code from libamiga */
+    return LibGetTagData(tagValue, defaultVal, tagList);
 
-	If the tag is not in the list, just return the default value.
-    */
-    if (tagList && (ti = FindTagItem(tagValue, tagList)))
-	return ti->ti_Data;
-
-    return defaultVal;
     AROS_LIBFUNC_EXIT
 } /* GetTagData */

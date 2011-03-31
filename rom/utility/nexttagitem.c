@@ -1,7 +1,10 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$    $Log
 */
+
+#include <proto/alib.h>
+
 #include "intern.h"
 
 /*****************************************************************************
@@ -10,7 +13,7 @@
 #include <utility/tagitem.h>
 #include <proto/utility.h>
 
-	AROS_LH1(struct TagItem *, NextTagItem,
+	AROS_LH1I(struct TagItem *, NextTagItem,
 
 /*  SYNOPSIS */
 	AROS_LHA(const struct TagItem **, tagListPtr, A0),
@@ -58,42 +61,14 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(!(*tagListPtr)) return NULL;
-
 /*  Gosh, can't enable these because we get LOTS of hits at startup time
  *
  *  ASSERT_VALID_PTR(tagListPtr);
  *  ASSERT_VALID_PTR(*tagListPtr);
  */
 
-    while (TRUE)
-    {
-	switch ((*tagListPtr)->ti_Tag)
-	{
-	case TAG_MORE:
-	    if (!((*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data))
-		return NULL;
-	    continue;
-
-	case TAG_IGNORE:
-	    break;
-
-	case TAG_END:
-	    (*tagListPtr) = NULL;
-	    return NULL;
-
-	case TAG_SKIP:
-	    (*tagListPtr) += (*tagListPtr)->ti_Data + 1;
-	    continue;
-
-	default:
-	    /* Use post-increment (return will return the current value and
-		then tagListPtr will be incremented) */
-	    return (struct TagItem *)(*tagListPtr)++;
-	}
-
-	(*tagListPtr) ++;
-    }
+    /* Use code from libamiga */
+    return LibNextTagItem(tagListPtr);
 
     AROS_LIBFUNC_EXIT
 } /* NextTagItem */
