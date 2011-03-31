@@ -1,0 +1,8 @@
+include $(TOP)/config/make.cfg
+
+#MM kernel-package-strap-native: kernel-bootloader-pkg kernel-dosboot-pkg
+
+%make_package mmake=kernel-package-strap-native file=$(BINDIR)/boot/aros-strap-native.pkg \
+	      res="bootloader dosboot"
+
+%common
