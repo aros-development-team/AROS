@@ -5,9 +5,66 @@
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
+#include <proto/exec.h>
 #include <exec/memory.h>
 
+#include "amiga_hwreg.h"
+
 #include "early.h"
+#include "debug.h"
+
+void Early_ScreenCode(ULONG code)
+{
+	reg_w(BPLCON0, 0x0200);
+	reg_w(BPL1DAT, 0x0000);
+	reg_w(COLOR00, code & RGB_MASK);
+}
+
+void Early_Alert(ULONG alert)
+{
+    const int bright = ((alert >> 4) & 1) ? 0xf : 0x7;
+    const int color = 
+    		RGB(((alert >> 2) & 1) * bright,
+    		    ((alert >> 1) & 1) * bright,
+    		    ((alert >> 0) & 1) * bright);
+
+    DEBUGPUTHEX(("Early_Alert", alert));
+
+    for (;;) {
+    	volatile int i;
+    	Early_ScreenCode(color);
+    	for (i = 0; i < 100000; i++);
+    	Early_ScreenCode(0x000);
+    	for (i = 0; i < 100000; i++);
+
+    	if (!(alert & AT_DeadEnd))
+    	    break;
+    }
+}
+
+/* Fatal trap for early problems */
+extern void Exec_MagicResetCode(void);
+void __attribute__((interrupt)) Early_TrapHandler(void)
+{
+    volatile int i;
+    Early_ScreenCode(CODE_TRAP_FAIL);
+
+    /* If we have a valid SysBase, then
+     * we can run the debugger.
+     */
+    if (SysBase != NULL)
+	Debug(0);
+    else
+    	Early_Alert(AT_DeadEnd | 1);
+
+    /* Sleep for a while */
+    for (i = 0; i < 100000; i++);
+
+    /* Reset everything but the CPU, then restart
+     * at the ROM exception vector
+     */
+    Exec_MagicResetCode();
+}
 
 APTR Early_AllocAbs(struct MemHeader *mh, APTR location, IPTR byteSize)
 {

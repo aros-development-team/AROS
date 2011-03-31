@@ -24,137 +24,13 @@
 #include "amiga_irq.h"
 
 #include "early.h"
+#include "debug.h"
 
 #define SS_STACK_SIZE	0x04000
 
 extern const struct Resident Exec_resident;
 
 extern void __clear_bss(const struct KernelBSS *bss);
-
-#define RGB(r,g,b)	((((r) & 0xf) << 8) | (((g) & 0xf) << 4) | (((b) & 0xf) << 0))
-#define RGB_MASK	RGB(15, 15, 15)
-
-#define CODE_ROM_CHECK	RGB( 4,  4, 4)
-#define CODE_RAM_CHECK	RGB( 9,  9, 9)
-#define CODE_EXEC_CHECK	RGB( 1,  1, 1)
-#define CODE_ALLOC_FAIL	(RGB( 0, 12, 0) | AT_DeadEnd)
-#define CODE_TRAP_FAIL	(RGB(12, 12, 0) | AT_DeadEnd)
-#define CODE_EXEC_FAIL	(RGB( 0, 12,12) | AT_DeadEnd)
-
-void Early_ScreenCode(ULONG code)
-{
-	reg_w(BPLCON0, 0x0200);
-	reg_w(BPL1DAT, 0x0000);
-	reg_w(COLOR00, code & RGB_MASK);
-}
-
-void DebugInit()
-{
-	/* Set the debug UART to 115200 */
-	reg_w(SERPER, SERPER_BAUD(SERPER_BASE_PAL, 115200));
-}
-
-int DebugPutChar(register int chr)
-{
-	if (chr == '\n')
-		DebugPutChar('\r');
-	while ((reg_r(SERDATR) & SERDATR_TBE) == 0);
-
-	/* Output a char to the debug UART */
-	reg_w(SERDAT, SERDAT_STP8 | SERDAT_DB8(chr));
-
-	return 1;
-}
-
-int DebugMayGetChar(void)
-{
-	int c;
-
-	if ((reg_r(SERDATR) & SERDATR_RBF) == 0)
-	    return -1;
-
-	c = SERDATR_DB8_of(reg_r(SERDATR));
-
-	/* Clear RBF */
-	reg_w(INTREQ, (1 << 11));
-
-	return c;
-}
-
-#ifdef AROS_SERIAL_DEBUG
-
-static void DebugPuts(register const char *buff)
-{
-	for (; *buff != 0; buff++)
-		DebugPutChar(*buff);
-}
-
-static void DebugPutHex(const char *what, ULONG val)
-{
-	int i;
-	DebugPuts(what);
-	DebugPuts(": ");
-	for (i = 0; i < 8; i ++) {
-		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
-	}
-	DebugPutChar('\n');
-}
-
-#define DEBUGPUTS(x) do { DebugPuts x; } while(0)
-#define DEBUGPUTHEX(x) do { DebugPutHex x; } while(0)
-
-#else
-
-#define DEBUGPUTS(x) do { } while (0)
-#define DEBUGPUTHEX(x) do { } while (0)
-
-#endif
-
-void Early_Alert(ULONG alert)
-{
-    const int bright = ((alert >> 4) & 1) ? 0xf : 0x7;
-    const int color = 
-    		RGB(((alert >> 2) & 1) * bright,
-    		    ((alert >> 1) & 1) * bright,
-    		    ((alert >> 0) & 1) * bright);
-
-    DEBUGPUTHEX(("Early_Alert", alert));
-
-    for (;;) {
-    	volatile int i;
-    	Early_ScreenCode(color);
-    	for (i = 0; i < 100000; i++);
-    	Early_ScreenCode(0x000);
-    	for (i = 0; i < 100000; i++);
-
-    	if (!(alert & AT_DeadEnd))
-    	    break;
-    }
-}
-
-/* Fatal trap for early problems */
-extern void Exec_MagicResetCode(void);
-static void __attribute__((interrupt)) Early_TrapHandler(void)
-{
-    volatile int i;
-    Early_ScreenCode(CODE_TRAP_FAIL);
-
-    /* If we have a valid KernelBase, then
-     * we can run the debugger.
-     */
-    if (SysBase != NULL && KernelBase != NULL)
-	Debug(0);
-    else
-    	Early_Alert(AT_DeadEnd | 1);
-
-    /* Sleep for a while */
-    for (i = 0; i < 100000; i++);
-
-    /* Reset everything but the CPU, then restart
-     * at the ROM exception vector
-     */
-    Exec_MagicResetCode();
-}
 
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 
@@ -399,7 +275,7 @@ static LONG doInitCode(ULONG startClass, ULONG version)
             SysBase->SysStkUpper    = ss_stack + SS_STACK_SIZE;
 	    SetSysBaseChkSum();
 
-	    Supervisor(SuperstackSwap);
+	    Supervisor((ULONG_FUNC)SuperstackSwap);
 	} while(0);
 
 	InitCode(startClass, version);
@@ -526,7 +402,7 @@ void doColdCapture(void)
      * strange. It's in supervisor mode, requires
      * the return location in A5, and SysBase in A6.
      */
-    Supervisor(superColdCapture);
+    Supervisor((ULONG_FUNC)superColdCapture);
     SysBase->ColdCapture = ColdCapture;
 }
 
