@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
 #include <aros/config.h>
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -116,11 +118,14 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
     *location_zero = 0;
 #endif
 
+    D(bug("AlertHook: *******************\n"));
     if(SysBase->LastAlert[0] != -1)
     {
         struct IntuitionBase *IntuitionBase;
         struct Task *task;
         UBYTE buffer[256], *buf, *tname;
+
+        D(bug("alert.hook: LastAlert[0] = 0x%lx\n", SysBase->LastAlert[0]));
 
         buffer[0] = 0;
         buf = &buffer[1];
@@ -173,6 +178,9 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
                 DisplayAlert(SysBase->LastAlert[0] & AT_DeadEnd, buffer, 0x38);
 
             CloseLibrary((struct Library *)IntuitionBase);
+        } else {
+            D(bug("alert.hook: No intuition, dumping message\n"));
+            D(bug("alert.hook: %s\n", buffer));
         }
 
         SysBase->LastAlert[0] = -1;
