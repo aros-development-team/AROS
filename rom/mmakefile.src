@@ -130,8 +130,7 @@ $(BINDIR)/boot/aros-base: $(KOBJS_BASE) $(DEPLIBS)
 #MM	kernel-keyboard-pkg \
 #MM     kernel-hidd-pkg \
 #MM     kernel-oop-pkg \
-#MM     kernel-layers-pkg \
-#MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-pkg
+#MM     kernel-layers-pkg
 
 #MM
 kernel-package-base-quick: $(BINDIR)/boot/aros-base.pkg
