@@ -15,7 +15,7 @@ include $(TOP)/config/make.cfg
 #MM    kernel-pc-i386-serial \
 #MM    kernel-pc-i386-parallel \
 #MM    kernel-pc-i386-vga \
-#MM    kernel-pc-i386-vesa \
+#MM    kernel-hidd-vesa \
 #MM    kernel-pci \
 #MM    kernel-pci-pcipc \
 #MM    kernel-ata
