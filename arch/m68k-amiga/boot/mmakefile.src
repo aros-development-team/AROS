@@ -31,6 +31,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-fs-con-kobj \
 #MM     kernel-kernel-kobj \
 #MM     kernel-cia-kobj \
+#MM     kernel-alerthook-kobj \
 #MM     workbench-libs-mathffp-kobj \
 #MM     kernel-amiga-m68k-audio-kobj \
 #MM     kernel-ata-kobj \
@@ -58,13 +59,15 @@ KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram # pipefs xpipe
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock kernel processor dosboot cia potgo disk FileSystem misc
+KHOOKS  :=
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS))) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS)))
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.o    ,$(KHOOKS) ))
 
 OBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
@@ -79,6 +82,7 @@ KDEVS   :=
 KHNDLRS := 
 KHIDDS  :=
 KRSRCS  := shellcommands workbook wbtag
+KHOOKS  := alert
 
 ROMLOC_ext := 0xe00000
 KOBJS_ext := \
@@ -87,7 +91,8 @@ KOBJS_ext := \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.o    ,$(KHOOKS) ))
 OBJS_ext := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
 $(DISTDIR)/aros-amiga-m68k-ext.elf: $(KOBJS_ext) $(OBJS_ext)
