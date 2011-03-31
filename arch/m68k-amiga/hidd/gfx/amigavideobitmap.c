@@ -83,28 +83,26 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)p_pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, (IPTR *)&depth);
-    
-    /* We cache some info */
-    data->width = width;
-    data->bytesperrow = ((width + align) & ~align) / 8;
-    data->rows		  = height;
-    data->depth		  = depth;
 
     DB2(bug("%dx%dx%d\n", width, height, depth));
 
+    /* We cache some info */
+    data->width = width;
+    data->bytesperrow = ((width + align) & ~align) / 8;
+    data->height = height;
+    data->depth = depth;
+
     if (ok) {
 	/* Allocate memory for plane array */
-	data->planes = AllocVec(sizeof (UBYTE *) * depth * 2, MEMF_PUBLIC | MEMF_CLEAR);
+	data->planes = AllocVec(sizeof(UBYTE*) * depth, MEMF_PUBLIC | MEMF_CLEAR);
 	if (NULL == data->planes) {
 	    ok = FALSE;
 	} else {
 	    UBYTE i;
-	    data->planesmem = data->planes + depth;
 	    /* Allocate all the planes */
 	    for (i = 0; i < depth && ok; i++) {
-	    	data->planesmem[i] = AllocVec(height * data->bytesperrow + bmadd, MEMF_CHIP);
-	    	data->planes[i] = (UBYTE*)((((ULONG)(data->planesmem[i])) + bmadd / 2 + 7) & ~7);
-	    	if (NULL == data->planesmem[i])
+	    	data->planes[i] = AllocMem(data->bytesperrow * data->height, MEMF_CHIP | MEMF_CLEAR);
+	    	if (NULL == data->planes[i])
 	    	    ok = FALSE;
 	    }
 	}
@@ -141,9 +139,9 @@ VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	{
 	    for (i = 0; i < data->depth; i ++)
 	    {
-		if (NULL != data->planesmem[i])
+		if (NULL != data->planes[i])
 		{
-		    FreeVec(data->planesmem[i]);
+		    FreeMem(data->planes[i], data->bytesperrow * data->height);
 		}
 	    }
 	    FreeVec(data->planes);
