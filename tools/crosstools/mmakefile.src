@@ -1,26 +1,34 @@
 include $(TOP)/config/make.cfg
 
-ifeq ($(AROS_TARGET_CPU), arm)
-  GCC_VERSION = 4.4.2
-  GCC_EXTRA_FLAGS = 
-else
-  GCC_VERSION = 4.2.2
-  GCC_EXTRA_FLAGS = --enable-sjlj-exceptions
-endif
-
 BINUTILS_VERSION = 2.20.1
 
 GCC_LANGUAGES = c,c++
 
+ifeq ($(AROS_TARGET_CPU), arm)
+  # FIXME: Update patch to work with --with-sysroot
+  GCC_VERSION = 4.4.2
+  GCC_EXTRA_OPTS := \
+    --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
+    --enable-long-long --enable-version-specific-runtime-libs \
+    --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
+else
+  GCC_VERSION = 4.2.2
+  GCC_EXTRA_OPTS := \
+    --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
+    --enable-long-long --enable-version-specific-runtime-libs --enable-sjlj-exceptions \
+    --with-sysroot=$(AROS_DEVELOPMENT)
+endif
+
 GNU_REPOSITORY := gnu://
 
-#MM- tools-crosstools : tools-crosstools-binutils tools-crosstools-gcc
+#MM- tools-crosstools : tools-crosstools-gcc
+#MM- tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros
 
 %fetch_and_build mmake=tools-crosstools-binutils package=binutils version=$(BINUTILS_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/binutils" \
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--target=$(AROS_TARGET_CPU)-aros -bindir=$(CROSSTOOLSDIR) --disable-werror"
+	extraoptions="--target=$(AROS_TARGET_CPU)-aros -bindir=$(CROSSTOOLSDIR) --with-sysroot=$(AROS_DEVELOPMENT) --disable-werror"
 
 HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
@@ -28,4 +36,4 @@ HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 	package_repo="$(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION)" \
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--target=$(AROS_TARGET_CPU)-aros -bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) --enable-long-long --enable-version-specific-runtime-libs $(GCC_EXTRA_FLAGS) --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib"
+	extraoptions="$(GCC_EXTRA_OPTS)"
