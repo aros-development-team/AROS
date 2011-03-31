@@ -1039,6 +1039,9 @@ ifeq ($(BD_MODDIR),)
   ifeq (%(modtype),resource)
     BD_MODDIR  := $(AROS_RESOURCES)
   endif
+  ifeq (%(modtype),hook)
+    BD_MODDIR  := $(AROS_RESOURCES)
+  endif
   ifeq (%(modtype),mui)
     BD_MODDIR  := $(AROS_CLASSES)/Zune
   endif
