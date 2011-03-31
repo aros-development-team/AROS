@@ -59,6 +59,7 @@ struct amigavideo_staticdata
 	UWORD *copper1_pt2;
 	UWORD *copper1_spritept;
 	UWORD *copper2_backup;
+	UWORD spritedatasize;
 	WORD sprite_width, sprite_height;
 	UWORD spritepos, spritectl;
 	UWORD *sprite_null;

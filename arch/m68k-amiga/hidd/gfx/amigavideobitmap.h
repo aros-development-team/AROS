@@ -26,10 +26,9 @@ enum
 struct amigabm_data
 {
     struct MinNode node;
-    UBYTE **planes; // bitmap pointers (aligned to 8-byte if AGA)
-    UBYTE **planesmem; // allocated memory
+    UBYTE **planes; // allocated memory
     WORD width;
-    WORD rows;
+    WORD height;
     WORD bytesperrow;
     UBYTE depth;
     UBYTE planes_alloced;
