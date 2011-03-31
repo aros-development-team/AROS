@@ -15,29 +15,31 @@
 
 struct   KernBootPrivate
 {
-    IPTR                kbp_PrivateNext;
+    IPTR	        kbp_PrivateNext;
     IPTR                kbp_InitFlags;
     IPTR                kbp_ACPIRSDP;
-    IPTR                kbp_APIC_TrampolineBase;
+    struct MemHeader   *kbp_LowMem;
     const struct GenericAPIC  **kbp_APIC_Drivers;
     IPTR                kbp_APIC_DriverID;
     UWORD               kbp_APIC_BSPID;
     int                 kbp_APIC_IRQ_Model;
-    char                kbp_BOOTCmdLine[200];
 };
 
 #define KERNBOOTFLAG_SERDEBUGCONFIGURED (1 << 0)
 #define KERNBOOTFLAG_DEBUG              (1 << 1)
 #define KERNBOOTFLAG_BOOTCPUSET         (1 << 2)
 
-struct KernelBase {
+extern struct KernBootPrivate *__KernBootPrivate;
+extern struct PML4E PML4[512];
+
+struct KernelBase
+{
     struct Node         kb_Node;
-    void *              kb_MemPool;
     struct List         kb_Intr[256];
 
     IPTR                kb_ACPIRSDP;
 
-    IPTR                kb_APIC_TrampolineBase;
+    APTR                kb_APIC_TrampolineBase;
     const struct GenericAPIC  **kb_APIC_Drivers;
     IPTR                kb_APIC_DriverID;
     uint16_t            kb_XTPIC_Mask;
@@ -63,7 +65,6 @@ struct IntrNode {
 #define SC_SWITCH       2
 #define SC_SCHEDULE     3
 
-int exec_main(struct TagItem *msg, void *entry);
 void core_LeaveInterrupt(regs_t *regs) __attribute__((noreturn));
 void core_Switch(regs_t *regs) __attribute__((noreturn));
 void core_Schedule(regs_t *regs) __attribute__((noreturn));
@@ -93,28 +94,12 @@ void core_SetupMMU(struct KernBootPrivate *);
 void core_CPUSetup(IPTR);
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
 void core_DefaultIRETQ();
-/** Kernel Attribute Functions **/
-struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
-struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
-IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
-void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tagList);
 
-/* Debug support .. */
-extern void Exec_SerialRawIOInit();
-extern void scr_RawPutChars(char *, int);
-void vesa_init(int width, int height, int depth, void *base);
-extern ULONG            __serial_rawio_speed;
-extern UBYTE            __serial_rawio_databits;
-extern UBYTE            __serial_rawio_parity;
-extern UBYTE            __serial_rawio_stopbits;
-extern UWORD            __serial_rawio_port;
-extern unsigned char    __serial_rawio_debug;
-
-void clr();
-static char tab[512];
-#ifdef rkprintf
+/* Silly renaming, all rkprintf() calls need to be replaced with bug() */
+#undef bug
 #undef rkprintf
-#endif
-#define rkprintf(x...) scr_RawPutChars(tab, snprintf(tab, 510, x))
+#define rkprintf bug
+
+int bug(const char *format, ...);
 
 #endif /*KERNEL_INTERN_H_*/

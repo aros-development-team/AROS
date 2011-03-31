@@ -23,6 +23,7 @@ struct HWData
     ULONG	greenshift;
     ULONG	blueshift;
     ULONG	bytesperline;
+    BOOL	owned;
     UBYTE	palettewidth;
     UBYTE	DAC[768];
 };
@@ -34,7 +35,7 @@ struct BitmapData;
 
 BOOL initVesaGfxHW(struct HWData *);
 void DACLoad(struct VesaGfx_staticdata *, UBYTE *, unsigned char, int);
-void ClearBuffer(const struct HWData *data);
+void ClearBuffer(struct HWData *data);
 void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
 		       LONG x1, LONG y1, LONG x2, LONG y2);
 

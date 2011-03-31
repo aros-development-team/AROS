@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <inttypes.h>
@@ -16,6 +16,7 @@
 #include <aros/libcall.h>
 #include <asm/segments.h>
 
+#include <proto/alib.h>
 #include <proto/kernel.h>
 
 #include "kernel_intern.h"
@@ -736,7 +737,7 @@ IPTR core_ACPIProbe(struct TagItem *msg, struct KernBootPrivate *__KernBootPriva
     
     _Kern_ACPIData->kb_ACPI_Disabled = TRUE;
 
-    tag = krnFindTagItem(KRN_CmdLine, msg);
+    tag = LibFindTagItem(KRN_CmdLine, msg);
     if (tag)
     {
         STRPTR cmd;
@@ -746,7 +747,7 @@ IPTR core_ACPIProbe(struct TagItem *msg, struct KernBootPrivate *__KernBootPriva
         {
             /* Split the command line */
             temp = strcspn(cmd," ");
-            if (strncmp(cmd, "NOACPI", 6)==0)
+            if (strnicmp(cmd, "NOACPI", 6)==0)
             {
                 rkprintf("[Kernel] core_ACPIProbe: ACPI Disabled from boot command line\n");
                 return NULL;

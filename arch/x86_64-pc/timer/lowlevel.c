@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VBlank server for the timer.device/timer.hidd
@@ -70,14 +70,6 @@ void VBlankInt(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 			AROS_UFCA(struct ExecBase *, SysBase, A6)
 		    );
 		}
-		
-		/* Decrease SysBase->Elapsed */
-		if (SysBase->Elapsed == 0)
-        	{
-		    SysBase->SysFlags |= 0x2000;
-        	    SysBase->AttnResched |= 0x80;
-        	}
-        	else SysBase->Elapsed--;
 
 		/* Automatically requeue/reactivate request */
 		

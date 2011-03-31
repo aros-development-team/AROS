@@ -33,11 +33,10 @@ AROS_LH4(void *, KrnAddIRQHandler,
     
     if (irq >=0 && irq <= 0xff)
     {
-    
-        handle = AllocVecPooled(KernelBase->kb_MemPool, sizeof(struct IntrNode));
-        
+        handle = AllocVec(sizeof(struct IntrNode), MEMF_PUBLIC|MEMF_CLEAR);
+
 #warning TODO: Add IP range checking
-        
+
         D(bug("[Kernel]   handle=%012p\n", handle));
         
         if (handle)
@@ -71,7 +70,7 @@ AROS_LH1(void, KrnRemIRQHandler,
     REMOVE(h);
     Enable();
 
-    FreeVecPooled(KernelBase->kb_MemPool, h);
+    FreeVec(h);
     
     AROS_LIBFUNC_EXIT
 }
@@ -468,9 +467,9 @@ void core_IRQHandle(regs_t regs)
         
         die = 1;
         
-        if (ptr == (void*)4)
+        if (ptr == (void*)8)
         {
-//            rkprintf("[Kernel] ** Code at %012lx is trying to access the SysBase at 4UL.\n", regs.return_rip);
+//            rkprintf("[Kernel] ** Code at %012lx is trying to access the SysBase at 8UL.\n", regs.return_rip);
             
             if (   (ip[0] & 0xfb) == 0x48 &&
                     ip[1]         == 0x8b && 
@@ -630,6 +629,8 @@ void core_IRQHandle(regs_t regs)
             for (i = 0; i < 16; i++)
                 rkprintf("%02x ", ip[i]);
             rkprintf("\n");
+
+	    for (;;); /* TODO: call exec handler, leading into Alert() */
 
         }
     }

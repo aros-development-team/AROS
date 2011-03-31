@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := \
-        exec_init enable preparecontext rawputchar serialrawio screen \
+        enable preparecontext rawputchar rawioinit \
         permit shutdowna
 
 AFILES		:= coldreboot
@@ -10,7 +10,7 @@ AFILES		:= coldreboot
 #MM kernel-exec : kernel-exec-pc-x86_64
 #MM kernel-exec-pc-x86_64 : kernel-kernel-pc-x86_64-includes kernel-exec-includes includes-asm_h-x86_64
 
-USER_CFLAGS     := -I$(SRCDIR)/rom/exec -Os
+USER_CFLAGS     := -I$(SRCDIR)/rom/exec -isystem $(SRCDIR)/arch/all-native/bootconsole/include -Os 
 USER_AFLAGS     := -I$(SRCDIR)/rom/exec -I$(GENINCDIR) -Os
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc-x86_64 \
