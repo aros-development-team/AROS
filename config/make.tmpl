@@ -2460,3 +2460,32 @@ GNU_REPOSITORY := gnu://
     
 %end
 #------------------------------------------------------------------------------
+
+# Builds a kickstart package in PKG format
+# mmake   - target name
+# file    - Destination file name with path
+# startup - The file which will be put first
+# Other arguments are self-explanatory
+
+%define make_package mmake=/A file=/A devs= handlers= hidds= libs= res= startup=
+
+PKG_DEVICES   := $(addsuffix .device, %(devs))
+PKG_HANDLERS  := $(addsuffix .handler, %(handlers))
+PKG_HIDD      := $(addsuffix .hidd, %(hidds))
+PKG_LIBS      := $(addsuffix .library, %(libs))
+PKG_RESOURCES := $(addsuffix .resource, %(res))
+
+PKG_FILES := %(startup) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) $(PKG_LIBS) $(PKG_RESOURCES)
+PKG_DEPS  := $(addprefix $(PKGDIR)/, $(PKG_FILES))
+
+#MM
+%(mmake) : %(file)
+
+#MM
+%(mmake)-quick : %(file)
+
+%(file): $(PKG_DEPS)
+	@$(ECHO) Packaging $@...
+	@$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/aros-base.pkg $(PKGDIR) $(PKG_FILES)
+
+%end
