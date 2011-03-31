@@ -107,9 +107,7 @@ $(BINDIR)/boot/aros-base: $(KOBJS_BASE) $(DEPLIBS)
 
 # *** PKG kickstart package ***
 
-#MM- kernel-package-base: kernel-pkg-modules kernel-package-base-quick
-
-#MM- kernel-pkg-modules : \
+#MM- kernel-package-base : \
 #MM     kernel-aros-pkg \
 #MM     kernel-dos-pkg \
 #MM     kernel-boot-pkg \
@@ -132,17 +130,5 @@ $(BINDIR)/boot/aros-base: $(KOBJS_BASE) $(DEPLIBS)
 #MM     kernel-oop-pkg \
 #MM     kernel-layers-pkg
 
-#MM
-kernel-package-base-quick: $(BINDIR)/boot/aros-base.pkg
-
-PKG_DEVICES  := $(addsuffix .device, $(BASE_DEVICES))
-PKG_HANDLERS := $(addsuffix .handler, $(BASE_HANDLERS))
-PKG_HIDD     := $(addsuffix .hidd, $(BASE_HIDD))
-PKG_LIBS     := $(addsuffix .library, $(BASE_LIBS))
-
-PKG_FILES := $(PKG_HANDLERS) $(PKG_LIBS) $(PKG_DEVICES) $(PKG_HIDD)
-PKG_DEPS  := $(addprefix $(PKGDIR)/, $(PKG_FILES))
-
-$(BINDIR)/boot/aros-base.pkg: $(PKG_DEPS)
-	@$(ECHO) Packaging $@...
-	@$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/aros-base.pkg $(PKGDIR) $(PKG_FILES)
+%make_package mmake=kernel-package-base file=$(BINDIR)/boot/aros-base.pkg \
+	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS)
