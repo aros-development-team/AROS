@@ -66,7 +66,7 @@
     AROS_LIBFUNC_INIT
 
     /* Use code from libamiga */
-    return LibGetTagData(tagValue, defaultVal, tagList);
+    return LibGetTagData(tagValue, defaultVal, (struct TagItem *)tagList);
 
     AROS_LIBFUNC_EXIT
 } /* GetTagData */
