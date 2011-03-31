@@ -521,6 +521,8 @@ int td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
   
 	if (tdu->tdu_DiskIn == TDU_NODISK)
 		return TDERR_DiskChanged;
+	if (checkbuffer(tdu, tdb))
+		return TDERR_NoMem;
 
 	iotd->iotd_Req.io_Actual = 0;
 	offset = iotd->iotd_Req.io_Offset;
