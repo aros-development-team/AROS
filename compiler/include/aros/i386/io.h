@@ -1,10 +1,10 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef ASM_IO_H
-#define ASM_IO_H
+#ifndef ASM_I386_IO_H
+#define ASM_I386_IO_H
 
 /*
  * This file contains the definitions for the x86 IO instructions
