@@ -95,6 +95,14 @@ asm (
 	".Lfault_13:	bsr.w	.Lfault\n"	// Placeholder
 	".Lfault_14:	bsr.w	.Lfault\n"	// Placeholder
 	".Lfault_15:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_16:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_17:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_18:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_19:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_20:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_21:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_22:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_23:	bsr.w	.Lfault\n"	// Placeholder
 	".Lfault:	subi.l	#(M68KFaultTable_00 + 1*4 - 0*4),%sp@\n"
 	"		jmp	M68KExceptionHelper\n"
 );
@@ -150,12 +158,14 @@ static void M68KExceptionInit_00(struct ExecBase *SysBase)
 	int i;
 
 	/* Faults */
-	for (i = 2; i < 16; i++)
+	for (i = 2; i < 24; i++)
 	    exception[i] = &M68KFaultTable_00[i];
 
 	/* Level interrupts */
 	for (i = 0; i < 7; i++)
 	    exception[i + 24] = &M68KLevelTable_00[i];
+
+	/* NMI (exception[31]) is left unset, for debuggers */
 
 	/* Traps */
 	for (i = 0; i < 16; i++)
@@ -186,8 +196,12 @@ static void M68KExceptionInit_10(struct ExecBase *SysBase)
 	int i;
 
 	/* We can use the same code for all M68010+ traps */
-	for (i = 2; i < 63; i++)
+	for (i = 2; i < 64; i++) {
+	    /* Don't touch the NMI exception (for debuggers) */
+	    if (i == 31)
+	    	continue;
 	    exception[i] = M68KTrapHelper_10;
+	}
 }
 
 /******************** Exceptions *****************/
