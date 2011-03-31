@@ -9,6 +9,8 @@
 #ifndef AMIGA_HWREG_H
 #define AMIGA_HWREG_H
 
+#include <exec/types.h>
+
 /** Interrupts */
 #define INTENAR			0x1c
 #define INTREQR			0x1e
