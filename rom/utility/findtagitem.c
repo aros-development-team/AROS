@@ -49,7 +49,7 @@
     AROS_LIBFUNC_INIT
 
     /* Use code from libamiga */
-    return LibFindTagItem(tagValue, tagList);
+    return LibFindTagItem(tagValue, (struct TagItem *)tagList);
 
     AROS_LIBFUNC_EXIT
 } /* FindTagItem */
