@@ -112,7 +112,9 @@ typedef struct regs {
 #define _EFER_LMA   (1 << _EFER_LMA_B)
 #define _EFER_NXE   (1 << _EFER_NXE_B)
 #define _EFER_FFXSR (1 << _EFER_FFXSR_B)
-    
+
+#define HALT asm volatile("hlt")
+
 struct int_gate_64bit {
     uint16_t    offset_low;
     uint16_t    selector;
@@ -122,11 +124,15 @@ struct int_gate_64bit {
     uint32_t    __pad1;
 } __attribute__((packed));
 
-struct segment_desc {
+/* Segment descriptor in the GDT */
+struct segment_desc
+{
     uint16_t    limit_low;
     uint16_t    base_low;
-    unsigned    base_mid:8, type:5, dpl:2, p:1;
-    unsigned    limit_high:4, avl:1, l:1, d:1, g:1, base_high:8;
+    uint8_t     base_mid;
+    unsigned    type:5, dpl:2, p:1;
+    unsigned    limit_high:4, avl:1, l:1, d:1, g:1;
+    uint8_t     base_high:8;
 } __attribute__((packed));
 
 struct segment_ext {
@@ -160,8 +166,9 @@ struct tss_64bit {
 #define MMU_PAGEB_PCD   4
 #define MMU_PAGEB_A     5
 
-struct PML4E {
-    unsigned p:1,rw:1,us:1,pwt:1,pcd:1,a:1,__pad0:1,mbz:2,avl:3,base_low:20;
+struct PML4E
+{
+    unsigned p:1,rw:1,us:1,pwt:1,pcd:1,a:1,mbz:3,avl:3,base_low:20;
     unsigned base_high:20,avail:11,nx:1;
 } __attribute__((packed));
 
@@ -198,6 +205,9 @@ struct PTE {
 
 #define wrcr(reg, val) \
     do { asm volatile("mov %0,%%" #reg::"r"(val)); } while(0)
+
+#define cpuid(num, eax, ebx, ecx, edx) \
+    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
 
 static inline void __attribute__((always_inline)) rdmsr(uint32_t msr_no, uint32_t *ret_lo, uint32_t *ret_hi)
 {

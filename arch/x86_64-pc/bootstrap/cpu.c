@@ -1,7 +1,7 @@
 #include <aros/kernel.h>
+#include <asm/cpu.h>
 
 #include "bootstrap.h"
-#include "cpu.h"
 #include "support.h"
 
 /* Global descriptor table */

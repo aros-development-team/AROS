@@ -9,6 +9,7 @@
 //#define DEBUG
 
 #include <aros/kernel.h>
+#include <dos/elf.h>
 
 #include <string.h>
 
@@ -50,7 +51,7 @@ void set_base_address(void *ptr, void *tracker)
  */
 static int read_block(void *file, long offset, void *dest, long length)
 {
-    memcpy(dest, (void *)((long)file + offset), length);
+    __bs_memcpy(dest, (void *)((long)file + offset), length);
     return 1;
 }
 
@@ -79,7 +80,7 @@ static int check_header(struct elfheader *eh)
         return 0;
     }
 
-    if (eh->type != ET_REL || eh->machine != EM_X86_64)
+    if (eh->type != ET_REL || eh->machine != AROS_ELF_MACHINE)
     {
         kprintf("[ELF Loader] Wrong object type or wrong architecture\n");
         return 0;
@@ -154,8 +155,8 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
 
     for (i=0; i<numrel; i++, rel++)
     {
-        struct symbol *sym = &symtab[ELF64_R_SYM(rel->info)];
-        char *name = (char *)sh[shsymtab->link].addr + sym->name;
+        struct symbol *sym = &symtab[ELF_R_SYM(rel->info)];
+        char *name = (char *)(unsigned long)sh[shsymtab->link].addr + sym->name;
         unsigned long *p = (unsigned long *)&section[rel->offset];
         unsigned long long s;
 
@@ -193,7 +194,7 @@ SysBase_no:	    s = sym->value;
                 s = (unsigned long long)sh[sym->shindex].addr + virt + sym->value;
         }
 
-        switch (ELF64_R_TYPE(rel->info))
+        switch (ELF_R_TYPE(rel->info))
         {
             case R_X86_64_64: /* 64bit direct/absolute */
                 *(unsigned long long *)p = s + rel->addend;
@@ -215,7 +216,7 @@ SysBase_no:	    s = sym->value;
                 break;
 
             default:
-                kprintf("[ELF Loader] Unrecognized relocation type %d %d\n", i, (unsigned int)ELF64_R_TYPE(rel->info));
+                kprintf("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF_R_TYPE(rel->info));
                 return 0;
         }
     }
@@ -266,11 +267,11 @@ void load_elf_file(void *file, unsigned long long virt)
             }
         }	
     }
-    
+
     /* For every loaded section perform the relocations */
     for (i=0; i < eh.shnum; i++)
     {
-        if (sh[i].type == SHT_RELA && sh[sh[i].info].addr)
+        if (sh[i].type == AROS_ELF_REL && sh[sh[i].info].addr)
         {
             sh[i].addr = (unsigned long)load_block(file, sh[i].offset, sh[i].size);
             if (!sh[i].addr || !relocate(&eh, sh, i, virt))

@@ -157,8 +157,19 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 	msg = BootMsg;
 	while ((tag = LibNextTagItem(&msg)))
     	{
+    	    unsigned long l;
+    	    struct KernelBSS *bss;
+
     	    switch (tag->ti_Tag)
     	    {
+    	    case KRN_KernelBss:
+    	    	l = sizeof(struct KernelBSS);
+    	    	for (bss = (struct KernelBSS *)tag->ti_Data; bss->addr; bss++)
+    	    	    l += sizeof(struct KernelBSS);
+
+    	    	ptr = RelocateTagData(ptr, tag, l);
+    	    	break;
+
     	    case KRN_MMAPAddress:
     	    	ptr = RelocateTagData(ptr, tag, mlen);
     	    	break;
@@ -172,7 +183,8 @@ void kernel_cstart(struct TagItem *msg, void *entry)
     	    	break;
 
 	    case KRN_CmdLine:
-	    	ptr = RelocateTagData(ptr, tag, strlen((char *)tag->ti_Data));
+	    	l = strlen((char *)tag->ti_Data);
+	    	ptr = RelocateTagData(ptr, tag, l);
 	    	break;
 	    }
 	}
