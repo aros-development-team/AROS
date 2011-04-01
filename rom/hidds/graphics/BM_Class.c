@@ -907,6 +907,8 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	        data->width = attrs[AO(Width)];
 	    if (GOT_BM_ATTR(Height))
 	        data->height = attrs[AO(Height)];
+	    if (GOT_BM_ATTR(Height))
+	        data->reqdepth = attrs[AO(Depth)];
 	} /* if (ok) */
 
 	if (ok)
@@ -1019,6 +1021,10 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
             case aoHidd_BitMap_Height:
 	    	*msg->storage = data->height;
+		break;
+
+            case aoHidd_BitMap_Depth:
+	    	*msg->storage = data->reqdepth;
 		break;
 
             case aoHidd_BitMap_Displayable:
@@ -4508,6 +4514,10 @@ VOID BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
                 case aoHidd_BitMap_Height:
 		    data->height = tag->ti_Data;
+		    break;
+
+                case aoHidd_BitMap_Depth:
+		    data->reqdepth = tag->ti_Data;
 		    break;
 
     	    #if 0

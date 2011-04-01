@@ -1027,7 +1027,7 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     	    	    	    	      struct pHidd_Gfx_NewBitMap *msg)
 {
-    struct TagItem  	    bmtags[7];
+    struct TagItem  	    bmtags[8];
     
     IPTR    	    	    attrs[num_Total_BitMap_Attrs];
     STRPTR  	    	    classid = NULL;
@@ -1037,6 +1037,7 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     OOP_Object      	    *pf = NULL, *sync;
     HIDDT_ModeID    	    modeid = 0;
     OOP_Object      	    *bm;
+    IPTR    	    	    depth = NULL;
     struct HIDDGraphicsData *data;
     
     DECLARE_ATTRCHECK(bitmap);
@@ -1092,6 +1093,8 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 	    D(bug("!!! Gfx::NewBitMap: USER PASSED INVALID MODEID !!!\n"));
 	}
     }
+    if (GOT_BM_ATTR(Depth))
+    	depth = attrs[BMAO(Depth)];
 
     /* First argument is gfxhidd */    
     SET_BM_TAG(bmtags, 0, GfxHidd, o);
@@ -1124,7 +1127,10 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 	{
 	    SET_TAG(bmtags, 4, TAG_IGNORE, 0UL);
 	}
-	SET_TAG(bmtags, 5, TAG_MORE, msg->attrList);
+	if (!depth)
+	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	SET_BM_TAG(bmtags, 5, Depth, depth);
+	SET_TAG(bmtags, 6, TAG_MORE, msg->attrList);
 	
     }
     else
@@ -1221,20 +1227,24 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 	    
 	} /* if (!gotclass) */
 	
+	if (!depth)
+	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+
 	/* Set the tags we want to pass to the selected bitmap class */
 	SET_BM_TAG(bmtags, 2, Width,  width);
 	SET_BM_TAG(bmtags, 3, Height, height);
-	SET_BM_TAG(bmtags, 4, PixFmt, pf);
+	SET_BM_TAG(bmtags, 4, Depth, depth);
+	SET_BM_TAG(bmtags, 5, PixFmt, pf);
 
 	if (GOT_BM_ATTR(Friend))
 	{
-	    SET_BM_TAG(bmtags, 5, Friend, attrs[BMAO(Friend)]);
+	    SET_BM_TAG(bmtags, 6, Friend, attrs[BMAO(Friend)]);
 	}
 	else
 	{
-	    SET_TAG(bmtags, 5, TAG_IGNORE, 0UL);
+	    SET_TAG(bmtags, 6, TAG_IGNORE, 0UL);
 	}
-	SET_TAG(bmtags, 6, TAG_MORE, msg->attrList);
+	SET_TAG(bmtags, 7, TAG_MORE, msg->attrList);
 	
     } /* if (!displayable) */
     
