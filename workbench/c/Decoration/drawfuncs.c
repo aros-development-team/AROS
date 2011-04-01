@@ -566,65 +566,15 @@ void  SetImageTint(struct NewImage *dst, UWORD ratio, ULONG argb)
     }
 }
 
+/* 
+ * offx - offset between start of ni and place where image should be sample from
+ * offy - offset between start of ni and place where image should be sample from
+ * x, y, w, h - coords in rastport rp
+ */
 void DrawTileToRP(struct RastPort *rp, struct NewImage *ni, ULONG color, UWORD offx, UWORD offy, UWORD x, UWORD y, WORD w, WORD h)
 {
-
     ULONG   ow, oh, sy, sx, dy, dx;
     LONG    dh, height, dw, width;
-
-    if ((w <= 0) || (h <= 0)) return;
-
-    if (ni == NULL)
-    {
-        FillPixelArray(rp, x, y, w, h, color);
-        return;
-    }
-
-    ow = ni->w;
-    oh = ni->h;
-
-    sy = (y - offy )% oh;
-    dh = oh - sy;
-    height = h;
-    dy = y;
-    while (height > 0)
-    {
-        if ((height-dh)<0) dh = height;
-        height -= dh;
-
-        sx = (x - offx) % ow;
-        dw = ow - sx;
-        width = w;
-        dx = x;
-        while (width > 0)
-        {
-            if ((width-dw)<0) dw = width;
-            width -= dw;
-            if (ni->bitmap == NULL)
-            {
-                WritePixelArray(ni->data, sx, sy, ni->w*4, rp, dx, dy, dw, dh, RECTFMT_ARGB);
-            }
-            else
-            {
-                BltBitMapRastPort(ni->bitmap, sx, sy, rp, dx, dy, dw, dh, 0xc0);
-            }
-            dx += dw;
-            sx = 0;
-            dw = ow;
-        }
-        dy += dh;
-        sy = 0;
-        dh = oh;
-    }
-}
-
-void DrawTileToRPRoot(struct RastPort *rp, struct NewImage *ni, ULONG color, UWORD offx, UWORD offy, UWORD x, UWORD y, WORD w, WORD h)
-{
-
-    ULONG   ow, oh, sy, sx, dy, dx, _dy, _dx;
-    LONG    dh, height, dw, width;
-
-    if (!ni->ok) return;
 
     if ((w <= 0) || (h <= 0)) return;
 
@@ -637,9 +587,7 @@ void DrawTileToRPRoot(struct RastPort *rp, struct NewImage *ni, ULONG color, UWO
     ow = ni->w;
     oh = ni->h;
 
-    _dy = 0;
-
-    sy = (y - offy )% oh;
+    sy = (y + offy ) % oh;
     dh = oh - sy;
     height = h;
     dy = y;
@@ -648,30 +596,22 @@ void DrawTileToRPRoot(struct RastPort *rp, struct NewImage *ni, ULONG color, UWO
         if ((height-dh)<0) dh = height;
         height -= dh;
 
-        sx = (x - offx) % ow;
+        sx = (x + offx) % ow;
         dw = ow - sx;
         width = w;
         dx = x;
-        _dx = 0;
         while (width > 0)
         {
             if ((width-dw)<0) dw = width;
             width -= dw;
-            if (ni->bitmap == NULL)
-            {
-                WritePixelArray(ni->data, sx, sy, ni->w*4, rp, _dx, _dy, dw, dh, RECTFMT_ARGB);
-            }
-            else
-            {
-                BltBitMapRastPort(ni->bitmap, sx, sy, rp, _dx, _dy, dw, dh, 0xc0);
-            }
+
+            BltNewImageSubImageRastPort(ni, 0, 0, sx, sy, rp, dx, dy, dw, dh);
+
             dx += dw;
-            _dx += dw;
             sx = 0;
             dw = ow;
         }
         dy += dh;
-        _dy += dh;
         sy = 0;
         dh = oh;
     }

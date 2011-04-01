@@ -1138,7 +1138,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     /* Draw title bar */
     if (window->BorderTop == data->winbarheight) 
         DrawPartialTitleBar(wd, data, window, rp, msg->wdp_Dri, data->txt_align, 0, window->Width, pens);
-    
+
     /* Draw left, right and bottom frames */
     if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
@@ -1813,11 +1813,10 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     }
     else
     {
-        if (ni->ok != 0)
+        if (ni->ok)
         {
             ULONG   color = 0x00cccccc;
-
-            DrawTileToRPRoot(rp, ni, color, 0, 0, bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1);
+            DrawTileToRP(rp, ni, color, bx0/*0*/, by0/*0*/, 0 /*bx0*/, 0/*by0*/, bx1 - bx0 + 1, by1 - by0 + 1);
         }
     }
 
