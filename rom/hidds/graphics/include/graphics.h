@@ -659,9 +659,6 @@ enum
     /* Attributes for a bitmap */
     aoHidd_BitMap_Width,         /*  0 [ISG] Bitmap with                          */
     aoHidd_BitMap_Height,        /*  1 [ISG] Bitmap height                        */
-#if 0
-    aoHidd_BitMap_Depth,         /*    [I.G] Bitmap depth                         */
-#endif
     aoHidd_BitMap_Displayable,   /*  2 [I.G] BOOL bitmap is displayable (default: FALSE)  */
     aoHidd_BitMap_Visible,       /*  3 [..G] Check if a bitmap is visible         */
     aoHidd_BitMap_IsLinearMem,   /*  4 [..G] Is the bitmap memory contigous       */
@@ -692,14 +689,14 @@ enum
     aoHidd_BitMap_TopEdge,       /* 17 [.SG] Top edge position of the bitmap      */
     aoHidd_BitMap_Align,         /* 18 [I..] Number of pixels to align bitmap data width to */
 
+    aoHidd_BitMap_Depth,         /* 19 [I.G] Bitmap depth                         */
+
     num_Hidd_BitMap_Attrs
 };    
 
 #define aHidd_BitMap_Width         (HiddBitMapAttrBase + aoHidd_BitMap_Width)
 #define aHidd_BitMap_Height        (HiddBitMapAttrBase + aoHidd_BitMap_Height)
-#if 0
 #define aHidd_BitMap_Depth         (HiddBitMapAttrBase + aoHidd_BitMap_Depth)
-#endif
 #define aHidd_BitMap_Displayable   (HiddBitMapAttrBase + aoHidd_BitMap_Displayable)
 #define aHidd_BitMap_Visible       (HiddBitMapAttrBase + aoHidd_BitMap_Visible)
 #define aHidd_BitMap_IsLinearMem   (HiddBitMapAttrBase + aoHidd_BitMap_IsLinearMem)

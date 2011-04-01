@@ -253,7 +253,7 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 	(friend_bitmap && (friend_bitmap->Flags & BMF_SPECIALFMT)) ||
 	(flags & BMF_SPECIALFMT))
     {
-	struct TagItem bm_tags[6];
+	struct TagItem bm_tags[7];
 	HIDDT_StdPixFmt stdpf = vHidd_StdPixFmt_Unknown;
 
 	D(bug("[AllocBitMap] Allocating HIDD bitmap\n"));
@@ -261,13 +261,14 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 	/* Set size */
 	SET_BM_TAG( bm_tags, 0, Width,  sizex	);
 	SET_BM_TAG( bm_tags, 1, Height, sizey	);
+	SET_BM_TAG( bm_tags, 2, Depth,  depth	);
 
 	/* Set friend bitmap */
-	SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
+	SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
 	if (friend_bitmap && IS_HIDD_BM(friend_bitmap))
 	{
 	    D(bug("[AllocBitMap] Setting friend bitmap: 0x%p\n", friend_bitmap));
-	    SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend_bitmap));
+	    SET_BM_TAG(bm_tags, 3, Friend, HIDD_BM_OBJ(friend_bitmap));
 
 	    /* If we have no ModeID specified, obtain it from friend */
 	    if (hiddmode == vHidd_ModeID_Invalid)
@@ -306,13 +307,13 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 	if (stdpf != vHidd_StdPixFmt_Unknown)
 	{
 	    D(bug("[AllocBitMap] Setting pixelformat to %d\n", stdpf));
-	    SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
+	    SET_BM_TAG(bm_tags, 4, StdPixFmt, stdpf);
 	    hiddmode = vHidd_ModeID_Invalid;
 	}
 	else if (hiddmode != vHidd_ModeID_Invalid)
 	{
 	    D(bug("[AllocBitMap] Setting ModeID to 0x%08lX\n", hiddmode));
-	    SET_BM_TAG(bm_tags, 3, ModeID, hiddmode);
+	    SET_BM_TAG(bm_tags, 4, ModeID, hiddmode);
 	}
 	else
 	{
@@ -320,15 +321,15 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 	     * SET_TAG() is TWO operators, so we absolutely need parenthesis here.
 	     * Remember this!
 	     */
-	    SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
+	    SET_TAG(bm_tags, 4, TAG_IGNORE, 0);
 	    hiddmode = vHidd_ModeID_Invalid;
 	}
 
 	/* Set Displayable attribute */
-	SET_BM_TAG(bm_tags, 4, Displayable, ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM));
-	D(bug("[AllocBitMap] Displayable: %d\n", bm_tags[4].ti_Data));
+	SET_BM_TAG(bm_tags, 5, Displayable, ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM));
+	D(bug("[AllocBitMap] Displayable: %d\n", bm_tags[5].ti_Data));
 
-	SET_TAG(bm_tags, 5, TAG_DONE, 0);
+	SET_TAG(bm_tags, 6, TAG_DONE, 0);
 
 	nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
 	D(bug("[AllocBitMap] Allocated bitmap structure: 0x%p\n", nbm));
@@ -360,7 +361,7 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 		{
     		    OOP_Object      *pf;
     		    OOP_Object      *colmap = NULL;
-		    IPTR val;
+		    IPTR val, bmtype;
 
     		    /*  It is possible that the HIDD had to allocate
     		        a larger depth than that supplied, so
@@ -370,11 +371,16 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
     		        store obscured areas, and then those
     		        offscreen bitmaps should be of the same depth as
     		        the onscreen ones. */
+    		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    		    OOP_GetAttr(pf, aHidd_PixFmt_BitMapType, &bmtype);
+
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_Width, &width);
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
-    		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-
-    		    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &val);
+		    /* aHidd_PixFmt_Depth is max supported depth if planar bitmap */
+		    if (bmtype == vHidd_BitMapType_Planar)
+		    	OOP_GetAttr(bm_obj, aHidd_BitMap_Depth, &val);
+		    else
+		    	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &val);
 		    depth = val;
 
     		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
