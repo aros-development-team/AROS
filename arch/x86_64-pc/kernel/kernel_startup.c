@@ -331,18 +331,18 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 	mh2 = (struct MemHeader *)mh->mh_Node.ln_Succ;
 
 	/*
-	 * TODO: We may have SysBase validation code instead of this.
-	 * This will let us to keep KickTags accross reboots.
-	 */
-        SysBase = NULL;
-
-	/*
 	 * SysBase will be put to address 8 by krnPrepareExecBase().
 	 * We want to track down all accesses to invalid addresses, especially
 	 * dereferencing NULL pointers. So we fill zero page with 0xEE values in
 	 * order to get trapped soon after that.
 	 */
 	memset(NULL, 0xEE, PAGE_SIZE);
+
+	/*
+	 * TODO: We may have SysBase validation code instead of this.
+	 * This will let us to keep KickTags accross reboots.
+	 */
+        SysBase = NULL;
 
 	ranges[0] = (UWORD *)klo;
 	ranges[1] = (UWORD *)khi;
