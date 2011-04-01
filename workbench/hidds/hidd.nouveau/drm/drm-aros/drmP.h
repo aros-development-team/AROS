@@ -1,6 +1,6 @@
 /*
     Copyright 2009-2010, The AROS Development Team. All rights reserved.
-    $Id: drmP.h 33731 2010-06-29 18:29:56Z deadwood $
+    $Id$
 */
 
 /*-

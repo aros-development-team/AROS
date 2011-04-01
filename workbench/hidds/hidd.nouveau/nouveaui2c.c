@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id: nouveaui2c.c 33313 2010-05-19 18:12:41Z deadwood $
+    $Id$
 */
 
 #include "drmP.h"

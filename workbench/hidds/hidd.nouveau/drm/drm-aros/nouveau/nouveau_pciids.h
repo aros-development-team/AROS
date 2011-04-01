@@ -1,6 +1,6 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id: nouveau_pciids.h 34292 2010-08-29 19:14:11Z deadwood $
+    $Id$
 */
 
 #if !defined(NOVUEAU_PCIIDS_H)

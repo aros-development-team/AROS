@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id: nouveau_init.c 35881 2010-12-03 20:28:26Z deadwood $
+    $Id$
 */
 
 #include "nouveau_intern.h"

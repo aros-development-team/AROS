@@ -2,7 +2,7 @@
 #define _NOUVEAU_INTERN_H
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id: nouveau_intern.h 35441 2010-11-13 22:17:39Z deadwood $
+    $Id$
 */
 
 #include <hidd/graphics.h>
