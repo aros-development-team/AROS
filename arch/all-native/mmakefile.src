@@ -1,6 +1,18 @@
 include $(TOP)/config/make.cfg
 
-#MM kernel-package-strap-native: kernel-bootloader-pkg kernel-dosboot-pkg
+# Strap package includes all hardware-independent boot code.
+# These include filesystems and dos.library starter
+
+#MM kernel-package-strap-native:	\
+#MM	kernel-bootloader-pkg		\
+#MM	kernel-dosboot-pkg		\
+#MM	kernel-fs-afs-pkg		\
+#MM	workbench-devs-sfs-pkg		\
+#MM	workbench-libs-partition-pkg	
+
+PKG_RSRC     := bootloader dosboot
+PKG_LIBS     := partition
+PKG_HANDLERS := afs cdrom sfs
 
 %make_package mmake=kernel-package-strap-native file=$(BINDIR)/boot/aros-strap-native.pkg \
 	      res="bootloader dosboot"
