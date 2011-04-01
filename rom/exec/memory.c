@@ -444,6 +444,8 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
 	    if (physFlags & ~mh->mh_Attributes)
 	    {
 		D(bug("[InternalAllocPooled] Wrong flags for puddle 0x%p (wanted 0x%08X, have 0x%08X\n", flags, mh->mh_Attributes));
+
+		mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
 	    	continue;
 	    }
 	}
