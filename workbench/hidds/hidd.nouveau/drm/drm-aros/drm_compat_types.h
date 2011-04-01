@@ -1,6 +1,6 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id: drm_compat_types.h 36033 2010-12-11 12:49:14Z deadwood $
+    $Id$
 */
 
 #ifndef _DRM_COMPAT_TYPES_

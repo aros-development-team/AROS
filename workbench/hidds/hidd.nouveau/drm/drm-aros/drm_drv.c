@@ -1,6 +1,6 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id: drm_drv.c 33568 2010-06-13 11:11:33Z deadwood $
+    $Id$
 */
 
 #include "drmP.h"
