@@ -892,6 +892,45 @@ void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, LONG xt
     FreeVec(buf);
 }
 
+void HorizontalRepeatBuffer(UBYTE * buf, LONG ys, LONG pen, BOOL tc, struct RastPort *rp, 
+    LONG xp, LONG yp, LONG w, LONG h)
+{
+    UBYTE * bufblit = NULL;
+    ULONG x, y;
+    ULONG idxd;
+    ULONG idxs;
+
+    if ((w <= 0) || (h <= 0)) return;
+    if (!tc)
+    {
+        if (pen != -1) SetAPen(rp, pen); else SetAPen(rp, 2);
+        RectFill(rp, xp, yp, xp + w - 1, yp + h - 1);
+        return;
+    }
+
+	/* By bringing building the gradient array in the same format as the RastPort BitMap a call
+        to WritePixelArray() can be made also faster */
+    bufblit = AllocVec(w * h * 3, MEMF_ANY);
+    
+    /* Copy one column buffer into blit buffer */
+    for (y = 0; y < h; y++)
+    {
+        idxs = (ys + y) * 3; /* source index */
+        idxd = y * 3 * w; /* dest index */
+        for (x = 0; x < w; x++)
+        {
+            /* Copy RGB pixel */
+            bufblit[idxd++] = buf[idxs + 0];
+            bufblit[idxd++] = buf[idxs + 1];
+            bufblit[idxd++] = buf[idxs + 2];
+        }
+    }
+    
+    WritePixelArray(bufblit, 0, 0, w * 3, rp, xp, yp, w, h, RECTFMT_RGB);
+
+    FreeVec(bufblit);
+}
+
 void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle)
 {
     FillPixelArrayGradientDelta(pen, tc, rp, xt, yt, xb, yb, xp, yp, w, h, start_rgb, end_rgb, angle, xp, yp);

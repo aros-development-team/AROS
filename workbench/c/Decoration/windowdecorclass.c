@@ -14,6 +14,7 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
+#include <proto/exec.h>
 #include <string.h>
 
 #include <libraries/mui.h> /* TODO: REMOVE needed for get() */
@@ -1142,22 +1143,48 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     /* Draw left, right and bottom frames */
     if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
-        if (window->BorderLeft > 2)
+        UBYTE * buf = NULL;
+        
+        if (data->usegradients)
         {
-            if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1, 0, window->BorderTop, window->BorderLeft, window->Height - window->BorderTop, s_col, e_col, arc);
-            else DrawTileToRP(rp, ni, color, 0, 0, 0, window->BorderTop, window->BorderLeft - 1, window->Height - window->BorderTop);
+            UWORD height = window->Height - window->BorderTop;
+            
+            /* Create one pixel wide buffer */
+            buf = AllocVec(1 * height * 3, MEMF_ANY | MEMF_CLEAR);
+            
+            /* Fill the buffer with gradient */
+            FillMemoryBufferRGBGradient(buf, pen, 0, 0, window->Width - 1, window->Height - 1, 0, 0, 
+                1, height , s_col, e_col, arc);
         }
-        if (window->BorderRight > 2)
+    
+        if (data->usegradients)
         {
-            if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1, window->Width - window->BorderRight , window->BorderTop, window->BorderRight, window->Height - window->BorderTop, s_col, e_col, arc);
-            else DrawTileToRP(rp, ni, color, 0, 0, window->Width - window->BorderRight , window->BorderTop, window->BorderRight, window->Height - window->BorderTop);
-        }
-        if (window->BorderBottom > 2)
-        {
-            if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1, 0, window->Height - window->BorderBottom , window->Width, window->BorderBottom, s_col, e_col, arc);
-            else DrawTileToRP(rp, ni, color, 0, 0, 0, window->Height - window->BorderBottom , window->Width, window->BorderBottom);
-        }
+            /* Reuse the buffer for blitting frames */
+            if (window->BorderLeft > 2) HorizontalRepeatBuffer(buf, 0, pen, wd->truecolor, rp, 
+                                            0, window->BorderTop, 
+                                            window->BorderLeft, window->Height - window->BorderTop);
 
+            if (window->BorderRight > 2) HorizontalRepeatBuffer(buf, 0, pen, wd->truecolor, rp, 
+                                            window->Width - window->BorderRight, window->BorderTop,
+                                            window->BorderRight, window->Height - window->BorderTop);
+            if (window->BorderBottom > 2) HorizontalRepeatBuffer(buf, 
+                                            window->Height - window->BorderBottom -window->BorderTop, pen, wd->truecolor, rp,
+                                            0, window->Height - window->BorderBottom,
+                                            window->Width, window->BorderBottom);
+        }
+        else
+        {
+            if (window->BorderLeft > 2) DrawTileToRP(rp, ni, color, 0, 0, 
+                                            0, window->BorderTop, 
+                                            window->BorderLeft - 1, window->Height - window->BorderTop);
+            if (window->BorderRight > 2) DrawTileToRP(rp, ni, color, 0, 0, 
+                                            window->Width - window->BorderRight , window->BorderTop, 
+                                            window->BorderRight, window->Height - window->BorderTop);
+            if (window->BorderBottom > 2) DrawTileToRP(rp, ni, color, 0, 0, 
+                                            0, window->Height - window->BorderBottom, 
+                                            window->Width, window->BorderBottom);
+        }
+        
         /* Shading borders */
         int bbt = bt;
 
@@ -1166,7 +1193,8 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
             if (bt > 1) bq = bt - 1;
             if (window->BorderTop > 2)
             {
-                if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1, 0, 0 , window->Width - 1, window->BorderTop - 1, s_col, e_col, arc);
+                if (data->usegradients) HorizontalRepeatBuffer(buf, 0, pen, wd->truecolor, rp, 
+                                            0, 0, window->Width - 1, window->BorderTop - 1);
                 else DrawTileToRP(rp, ni, color, 0, 0, 0, 0 , window->Width, window->BorderTop);
             }
             if (bt > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, 0, 0, 0, ww - 1, 0);
@@ -1194,6 +1222,8 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         if (br > 3) {
             if (bb > 1) ShadeLine(lpen, tc, data->usegradients, rp, ni, bc, data->light, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
         }
+        
+        FreeVec(buf);
     }
     return TRUE;
 }
