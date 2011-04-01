@@ -1,106 +1,71 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- boot-pc-x86_64: bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-x86_64
+# What out port consists of
 
-#MM- kernel-link-pc-x86_64: kernel-package-pc-x86_64 kernel-bsp-x86_64-pc
+#MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-x86_64
+#MM- kernel-link-pc-x86_64 : kernel-package-base kernel-package-strap-native kernel-bsp-x86_64-pc
+#MM- workbench-pc-x86_64   : workbench-drivers kernel-pc-i386-trackdisk
 
-# -------- Base kickstart part (TODO: re-sort and move to rom) --------
+# -------- x86_64-pc board support package --------
 
-#MM kernel-package-pc-x86_64: \
-#MM	linklibs-clib \
-#MM	kernel-aros \
-#MM	kernel-bootloader \
-#MM	kernel-timer \
-#MM	kernel-keyboard \
-#MM	kernel-gameport \
-#MM	kernel-battclock \
-#MM	kernel-misc \
-#MM	workbench-libs-partition \
-#MM	kernel-hidd-graphics \
-#MM	kernel-hidd-kbd \
-#MM	kernel-hidd-mouse \
-#MM	kernel-graphics \
-#MM	kernel-layers \
-#MM	kernel-keymap \
-#MM	kernel-intuition \
-#MM	kernel-input \
-#MM	workbench-libs-cgfx-kobj \
-#MM	kernel-dos \
-#MM	kernel-console \
-#MM	kernel-fs-packet \
-#MM	kernel-fs-con \
-#MM	workbench-libs-workbench \
-#MM	kernel-fs-nil \
-#MM	kernel-fs-amberram \
-#MM	workbench-devs-cdvdfs-packet \
-#MM	kernel-fs-afs \
-#MM	kernel-pc-x86_64-drivers \
-#MM	kernel-workbench-devs-pc-x86_64 \
-#MM	kernel-dosboot \
-#MM	kernel-boot \
-#MM	kernel-processor
+#MM kernel-bsp-x86_64-pc : linklibs-bootconsole		 \
+#MM			   kernel-kernel-pc-x86_64-kobj  \
+#MM			   kernel-exec-kobj		 \
+#MM			   kernel-ata-kobj		 \
+#MM			   kernel-timer-kobj		 \
+#MM			   kernel-expansion-kobj	 \
+#MM			   kernel-pc-x86_64-irq-kobj	 \
+#MM			   kernel-pc-i386-kbd-kobj	 \
+#MM			   kernel-pc-i386-mouse-kobj	 \
+#MM			   kernel-pc-i386-serial-kobj	 \
+#MM			   kernel-pc-i386-parallel-kobj	 \
+#MM			   kernel-pc-i386-vga-kobj	 \
+#MM			   kernel-hidd-vesa-kobj	 \
+#MM			   kernel-pci-kobj		 \
+#MM			   kernel-pci-pcipc-kobj
 
-#MM- workbench-devs-pc-x86_64 : workbench-devs-pc-x86_64
+STARTUP := kernel_resource.o smpboot.bin.o
+KRSRCS  := battclock processor
+KLIBS   := exec expansion
+KDEVS   := ata timer
+KHNDLRS :=
+KHIDDS  := irq parallel pci pcipc serial vesagfx vgah kbd ps2mouse
 
-PKG_LIBS := aros boot dos graphics intuition keymap layers partition workbench
-PKG_RSRC := battclock bootloader dosboot misc processor
-PKG_DEVS := ata console gameport input keyboard timer
-PKG_HANDLERS := afs cdrom con nil packet amberram
-PKG_HIDDS:= graphics keyboard mouse parallel pci pcipc serial vesagfx vgah
+USER_LDFLAGS := -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/kernel.lds
+USER_LIBDIR  := $(GENDIR)/lib
+USER_LIBS    := bootconsole
+LIBS         := autoinit libinit amiga arossupport rom arosm hiddstubs hiddgraphicsstubs
 
-MODULES := \
-	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
-	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS)))
-
-kernel-package-pc-x86_64: $(BINDIR)/boot
-	@$(ECHO) Creating $@...
-	@$(RM) $(BINDIR)/.pkg
-	%mkdirs_q $(BINDIR)/.pkg
-	@$(CP) $(MODULES) $(BINDIR)/.pkg/
-	@$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel-pc-x86_64.pkg $(BINDIR)/.pkg  
-	@$(RM) $(BINDIR)/.pkg
-
-# -------- BSP part --------
-
-#MM kernel-bsp-x86_64-pc : linklibs-bootconsole		\
-#MM			   kernel-kernel-pc-x86_64-kobj \
-#MM			   kernel-exec-kobj		\
-#MM			   kernel-utility-kobj		\
-#MM			   kernel-expansion-kobj	\
-#MM			   kernel-oop-kobj		\
-#MM			   kernel-hidd-kobj		\
-#MM			   kernel-bootstrap-pc-x86_64-drivers
+BSP_FILE := $(BINDIR)/boot/aros-bsp-pc-x86_64
 
 #MM
-kernel-bsp-x86_64-pc : $(BINDIR)/boot/kernel-pc-x86_64
+kernel-bsp-x86_64-pc : $(BSP_FILE)
 
-BSP_LIBDIR  := $(GENDIR)/lib
+#MM
+kernel-bsp-x86_64-pc-quick : $(BSP_FILE)
 
-KLIBS   := exec utility expansion oop
-KDEVS   :=
-KHNDLRS :=
-KHIDDS  := hiddclass irq kbd mouse
-KRSRCS  := kernel
-
-# Module containing startup code (kernel.resource) must appear
-# in the beginning of the final list
-KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
+KOBJS := $(addprefix $(KOBJSDIR)/,$(STARTUP))			       \
+	 $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
 	 $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
       	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
       	 $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
       	 $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) ))
 
-KOBJS += $(KOBJSDIR)/smpboot.bin.o
+LDLIBS      := $(addprefix -l,$(LIBS) $(USER_LIBS))
+LIBDEPS     := $(addsuffix .a,$(addprefix $(LIBDIR)/lib,$(LIBS)))
+USERLIBDEPS := $(addsuffix .a,$(addprefix $(USER_LIBDIR)/lib,$(USER_LIBS)))
 
-$(BINDIR)/boot/kernel-pc-x86_64: $(BINDIR)/boot $(KOBJS) $(BSP_LIBDIR)/libbootconsole.a
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $@ $(KOBJS) -L$(BSP_LIBDIR) -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lbootconsole
-
-# -------- Common part --------
+$(BSP_FILE): $(BINDIR)/boot $(OSGENDIR)/boot $(KOBJS) $(LIBDEPS) $(USERLIBDEPS)
+	@$(ECHO) Linking $@...
+	@$(TARGET_LD) $(USER_LDFLAGS) -o $@ $(KOBJS) -L$(USER_LIBDIR) -L$(LIBDIR) $(LDLIBS)
 
 $(BINDIR)/boot:
 	@$(ECHO) Creating $@...
 	%mkdirs_q $@
+
+$(OSGENDIR)/boot:
+	@$(ECHO) Creating $@...
+	%mkdirs_q $@
+
+%common
