@@ -716,10 +716,9 @@ struct myrgb
 {
     int red,green,blue;
 };
-    
-void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle, LONG dx, LONG dy)
+
+void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle)
 {
-    
     /* The basic idea of this algorithm is to calc the intersection between the
     * diagonal of the rectangle (xs,ys) with dimension (xw,yw) a with the line starting
     * at (x,y) (every pixel inside the rectangle) and angle angle with direction vector (vx,vy).
@@ -750,17 +749,9 @@ void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, LONG xt
     
     int width = xb - xt + 1;
     int height = yb - yt + 1;
-    
-    if ((w <= 0) || (h <= 0)) return;
-    if (!tc)
-    {
-        if (pen != -1) SetAPen(rp, pen); else SetAPen(rp, 2);
-        RectFill(rp, xp, yp, xp + w - 1, yp + h - 1);
-        return;
-    }
 
-    UBYTE *buf = AllocVec(w*h*3, 0);
     if (buf == NULL) return;
+
     startRGB.red = (start_rgb >> 16) & 0xff;
     startRGB.green = (start_rgb >> 8) & 0xff;
     startRGB.blue = start_rgb & 0xff;
@@ -875,10 +866,29 @@ void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, LONG xt
 
             y1_mul_t_accu += incr_y1;
         }
-	/* By bringing building the gradient array in the same format as the RastPort BitMap a call
- * to WritePixelArray() can be made also faster */
     }
-    WritePixelArray(buf,0,0,w*3, rp,dx,dy,w,h,RECTFMT_RGB);
+
+}
+    
+void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle, LONG dx, LONG dy)
+{
+    UBYTE * buf = NULL;
+    
+    if ((w <= 0) || (h <= 0)) return;
+    if (!tc)
+    {
+        if (pen != -1) SetAPen(rp, pen); else SetAPen(rp, 2);
+        RectFill(rp, xp, yp, xp + w - 1, yp + h - 1);
+        return;
+    }
+
+	/* By bringing building the gradient array in the same format as the RastPort BitMap a call
+        to WritePixelArray() can be made also faster */
+    buf = AllocVec(w * h * 3, 0);
+    FillMemoryBufferRGBGradient(buf, pen, xt, yt, xb, yb, xp, yp, w, h, start_rgb, end_rgb, angle);
+
+    WritePixelArray(buf, 0, 0, w * 3, rp, dx, dy, w, h, RECTFMT_RGB);
+
     FreeVec(buf);
 }
 
