@@ -712,36 +712,6 @@ LONG WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, ULONG sub
     return y;
 }
 
-/* TODO: what is the purpose of this function in respect to WTIHorizontal, why the win parameter ? */
-LONG WriteTiledImage(struct Window *win, struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
-{
-    int     w = dw;
-    int     x = xp;
-    int     ddw;
-
-    if (!ni->ok) return xp;
-
-    if ((sw == 0) || (dw == 0)) return xp;
-    if (win)
-    {
-        if (x > win->Width) return xp;
-        if ((x + w) > win->Width) w = win->Width - x;
-    }
-
-    while (w > 0)
-    {
-        ddw = sw;
-        if (w < ddw) ddw = w;
-
-        BltNewImageSubImageRastPort(ni, 0, 0/*FIXME*/, sx, sy/*FIXME:SHOULD BE 0*/,
-            rp, x, yp, ddw, dh);
-
-        w -= ddw;
-        x += ddw;
-    }
-    return x;
-}
-
 struct myrgb
 {
     int red,green,blue;
