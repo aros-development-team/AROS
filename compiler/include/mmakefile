@@ -2,11 +2,6 @@
 include $(TOP)/config/make.cfg
 
 INCSUBDIRS :=	aros				\
-		aros/arm			\
-		aros/i386			\
-		aros/m68k			\
-		aros/ppc			\
-		aros/x86_64			\
 		aros/preprocessor		\
 		aros/preprocessor/facilities	\
 		aros/preprocessor/variadic	\
