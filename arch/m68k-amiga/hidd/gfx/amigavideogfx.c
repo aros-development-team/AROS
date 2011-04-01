@@ -134,7 +134,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 		ADDTAG(aHidd_Sync_HMax,		16384);
 		ADDTAG(aHidd_Sync_VMax,		16384);
 		ADDTAG(aHidd_Sync_Description,	(IPTR)"MODE: %hx%v");
-#if 1
+#if 0
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[0]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[1]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[2]);
@@ -204,18 +204,22 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 		ADDTAG(aHidd_Sync_HMax,		16384);
 		ADDTAG(aHidd_Sync_VMax,		16384);
 		ADDTAG(aHidd_Sync_Description,	(IPTR)"MODE: %hx%v");
+#if 0
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_hires[0]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_hires[1]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_hires[2]);
+#endif
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_hires[3]);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_200);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_256);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_512);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_400);
+#if 0
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[0]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[1]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[2]);
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[3]);
+#endif
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[4]);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_200);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_256);
