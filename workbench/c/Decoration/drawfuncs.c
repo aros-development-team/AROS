@@ -571,7 +571,7 @@ void  SetImageTint(struct NewImage *dst, UWORD ratio, ULONG argb)
  * offy - offset between start of ni and place where image should be sample from
  * x, y, w, h - coords in rastport rp
  */
-void DrawTileToRP(struct RastPort *rp, struct NewImage *ni, ULONG color, UWORD offx, UWORD offy, UWORD x, UWORD y, WORD w, WORD h)
+void HorizVertRepeatNewImage(struct NewImage *ni, ULONG color, UWORD offx, UWORD offy, struct RastPort *rp, UWORD x, UWORD y, WORD w, WORD h)
 {
     ULONG   ow, oh, sy, sx, dy, dx;
     LONG    dh, height, dw, width;
@@ -587,7 +587,7 @@ void DrawTileToRP(struct RastPort *rp, struct NewImage *ni, ULONG color, UWORD o
     ow = ni->w;
     oh = ni->h;
 
-    sy = (y + offy ) % oh;
+    sy = offy % oh;
     dh = oh - sy;
     height = h;
     dy = y;
@@ -596,7 +596,7 @@ void DrawTileToRP(struct RastPort *rp, struct NewImage *ni, ULONG color, UWORD o
         if ((height-dh)<0) dh = height;
         height -= dh;
 
-        sx = (x + offx) % ow;
+        sx = offx % ow;
         dw = ow - sx;
         width = w;
         dx = x;
@@ -882,16 +882,15 @@ void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LON
     
     FillMemoryBufferRGBGradient(buf, pen, xt, yt, xb, yb, xp, yp, 1, yb, start_rgb, end_rgb, angle);
 
-    HorizontalRepeatBuffer(buf, dy, pen, tc, rp, xp, yp, w, h);
+    HorizRepeatBuffer(buf, dy, pen, tc, rp, xp, yp, w, h);
 
     FreeVec(buf);
 }
 
-void HorizontalRepeatBuffer(UBYTE * buf, LONG ys, LONG pen, BOOL tc, struct RastPort *rp, 
-    LONG xp, LONG yp, LONG w, LONG h)
+void HorizRepeatBuffer(UBYTE * buf, LONG offy, LONG pen, BOOL tc, struct RastPort *rp, LONG x, LONG y, LONG w, LONG h)
 {
     UBYTE * bufblit = NULL;
-    ULONG x, y;
+    ULONG xi, yi;
     ULONG idxd;
     ULONG idxs;
 
@@ -899,7 +898,7 @@ void HorizontalRepeatBuffer(UBYTE * buf, LONG ys, LONG pen, BOOL tc, struct Rast
     if (!tc)
     {
         if (pen != -1) SetAPen(rp, pen); else SetAPen(rp, 2);
-        RectFill(rp, xp, yp, xp + w - 1, yp + h - 1);
+        RectFill(rp, x, y, x + w - 1, y + h - 1);
         return;
     }
 
@@ -908,11 +907,11 @@ void HorizontalRepeatBuffer(UBYTE * buf, LONG ys, LONG pen, BOOL tc, struct Rast
     bufblit = AllocVec(w * h * 3, MEMF_ANY);
     
     /* Copy one column buffer into blit buffer */
-    for (y = 0; y < h; y++)
+    for (yi = 0; yi < h; yi++)
     {
-        idxs = (ys + y) * 3; /* source index */
-        idxd = y * 3 * w; /* dest index */
-        for (x = 0; x < w; x++)
+        idxs = (offy + yi) * 3; /* source index */
+        idxd = yi * 3 * w; /* dest index */
+        for (xi = 0; xi < w; xi++)
         {
             /* Copy RGB pixel */
             bufblit[idxd++] = buf[idxs + 0];
@@ -921,7 +920,7 @@ void HorizontalRepeatBuffer(UBYTE * buf, LONG ys, LONG pen, BOOL tc, struct Rast
         }
     }
     
-    WritePixelArray(bufblit, 0, 0, w * 3, rp, xp, yp, w, h, RECTFMT_RGB);
+    WritePixelArray(bufblit, 0, 0, w * 3, rp, x, y, w, h, RECTFMT_RGB);
 
     FreeVec(bufblit);
 }
