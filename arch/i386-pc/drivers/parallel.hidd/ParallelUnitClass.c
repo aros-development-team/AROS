@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Parallel Unit hidd class implementation.
@@ -80,11 +80,7 @@ static inline unsigned int parallel_in(struct HIDDParallelUnitData * data,
 
 /* IO bases for every Parallel port */
 
-#if 0
-ULONG bases[] = { 0x3bc, 0x378, 0x278};
-#else
-ULONG bases[] = { 0x378, 0x278, 0x3bc};
-#endif
+static ULONG bases[] = { 0x378, 0x278, 0x3bc};
 
 static OOP_AttrBase HiddParallelUnitAB;
 

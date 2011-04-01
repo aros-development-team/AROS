@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Serial Unit hidd class implementation.
@@ -85,7 +85,7 @@ static inline unsigned int serial_inp(struct HIDDSerialUnitData * data,
 /*************************** Classes *****************************/
 
 /* IO bases for every COM port */
-ULONG bases[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
+static ULONG bases[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
 
 /******* SerialUnit::New() ***********************************/
 OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
