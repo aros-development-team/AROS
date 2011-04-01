@@ -100,11 +100,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     {
     	switch (tag->ti_Tag)
     	{
-#ifdef KRN_BootLoader
     	case KRN_BootLoader:
     	    BootLoaderBase->LdrName = (STRPTR)tag->ti_Data;
     	    break;
-#endif
 
     	case KRN_CmdLine:
     	    GetCmdLine((char *)tag->ti_Data, BootLoaderBase);
