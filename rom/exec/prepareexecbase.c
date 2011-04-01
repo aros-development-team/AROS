@@ -110,8 +110,10 @@ void SetSysBaseChkSum()
 }
 
 /*
- *  PrepareExecBase() will initialize the ExecBase to default values,
- *  and not add anything yet (except for the MemHeader).
+ *  PrepareExecBase() will initialize the ExecBase to default values.
+ *  MemHeader and ExecBase itself will already be added to appropriate
+ *  lists. You don't need to do this yourself.
+ *
  *  WARNING: this routine intentionally sets up global SysBase.
  *  This is done because:
  *  1. PrepareAROSSupportBase() calls Allocate() which relies on functional SysBase
