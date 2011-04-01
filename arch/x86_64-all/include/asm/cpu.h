@@ -1,5 +1,13 @@
-#ifndef ASM_CPU_H
-#define ASM_CPU_H
+#ifndef ASM_X86_64_CPU_H
+#define ASM_X86_64_CPU_H
+
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: assembler-level specific definitions for x86-64 CPU
+    Lang: english
+*/
 
 #include <inttypes.h>
   
@@ -45,7 +53,7 @@ typedef struct regs {
 /* CR0 bits */
 #define _CR0_PE_B  0    /* RW: Protected mode enable */
 #define _CR0_MP_B  1    /* RW: Monitor FPU? If 1 then #NM exception may be generated */
-#define _CR0_EM_B  2    /* RW: Eulate FPU */
+#define _CR0_EM_B  2    /* RW: Emulate FPU */
 #define _CR0_TS_B  3    /* RW: Task switched */
 #define _CR0_ET_B  4    /* RO: Exception type */
 #define _CR0_NE_B  5    /* RW: Numeric error */
