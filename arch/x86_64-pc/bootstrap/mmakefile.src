@@ -1,52 +1,42 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-TARGETDIR   := $(GENDIR)/$(CURDIR)
-KOBJS	    :=
-FILES	    := bootstrap elfloader cpu support
-BOOT_LIBDIR := $(GENDIR)/lib32
+FILES	     := bootstrap elfloader cpu support
+USER_CFLAGS  := -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DMULTIBOOT_64BIT -DELF_64BIT
+USER_LDFLAGS := -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds
+LIBDIR       := $(GENDIR)/lib32
+LIBS         := bootconsole rom
+OBJDIR       := $(GENDIR)/$(CURDIR)
+USER_OBJS    := $(OBJDIR)/vesa.bin.o
 
-USER_CFLAGS  := -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DMULTIBOOT_64BIT -DELF_64BIT
-BOOT_LDFLAGS := -L$(BOOT_LIBDIR)
-BOOT_LIBS    := -lbootconsole -lrom
+BOOTSTRAP_NAME := $(BINDIR)/boot/bootstrap-pc-x86_64
 
 #MM kernel-bootstrap-x86_64: linklibs-clib32 linklibs-bootconsole32
-kernel-bootstrap-x86_64: $(BINDIR)/boot/kernel-pc-x86_64 $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-pc-x86_64
+kernel-bootstrap-x86_64: $(BOOTSTRAP_NAME)
 
 #MM
-kernel-bootstrap-x86_64-quick: $(BINDIR)/boot/aros-pc-x86_64
+kernel-bootstrap-x86_64-quick: $(BOOTSTRAP_NAME)
 
-setup-pc-x86_64 :
-	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
+OBJS      := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(FILES)))
+DEPS      := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(FILES)))
+LIBDEPS   := $(addsuffix .a,$(addprefix $(LIBDIR)/lib,$(LIBS)))
+LDLIBS    := $(addprefix -l,$(LIBS))
 
-$(BINDIR)/boot/aros-pc-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o $(BOOT_LIBDIR)/libbootconsole.a $(BOOT_LIBDIR)/librom.a
+$(BOOTSTRAP_NAME): setup-pc-x86_64 $(OBJS) $(USER_OBJS) $(LIBDEPS)
 	@$(ECHO) Linking $@...
-	@$(KERNEL_LD) $(BOOT_LDFLAGS) -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $< $(KOBJS) $(BOOT_LIBS)
+	@$(KERNEL_LD) $(USER_LDFLAGS) -o $@ $(OBJS) $(USER_OBJS) -L$(LIBDIR) $(LDLIBS)
 	#@strip --strip-unneeded -R .note -R .comment $@
 
-$(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/vesa.bin.o
-	$(KERNEL_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/vesa.bin.o -o $@
-
-$(TARGETDIR)/vesa.bin.o: setup-pc-x86_64 $(TARGETDIR)/vesa.o
+$(OBJDIR)/vesa.bin.o: $(OBJDIR)/vesa.o
 	@$(ECHO) Linking $@...
-	@$(KERNEL_LD) -melf_i386 -e 0x1000 -Ttext 0x1000 -N -d -nostdlib -o $(TARGETDIR)/vesa $(TARGETDIR)/vesa.o
-	@$(OBJCOPY) -O binary $(TARGETDIR)/vesa
-	@cd $(TARGETDIR) && $(KERNEL_LD) -r --format binary --oformat elf32-i386 vesa -o vesa.bin.o
-	
-#MM
-clean ::
-	-$(RM) $(TESTS)
+	@$(KERNEL_LD) -melf_i386 --oformat=binary -e 0x1000 -Ttext 0x1000 -N -d -o $(OBJDIR)/vesa $(OBJDIR)/vesa.o
+	@cd $(OBJDIR) && $(KERNEL_LD) -r --format binary --oformat elf32-i386 vesa -o $@
 
-$(TARGETDIR)/%.o : %.c
-	%compile_q opt="-m32 $(CFLAGS) -fomit-frame-pointer -nostdlib"
+setup-pc-x86_64 :
+	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(OBJDIR)
 
-$(TARGETDIR)/%.o : %.S
-	%compile_q opt="-m32 $(CFLAGS) -fomit-frame-pointer -nostdinc -nostdlib"
+%rule_compile basename=% targetdir=$(OBJDIR)
 
-$(TARGETDIR)/%.d : %.c
-	%mkdepend_q
-
-DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 -include $(DEPS)
 
 %common
