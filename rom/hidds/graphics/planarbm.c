@@ -701,7 +701,6 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 {
     struct planarbm_data *data;
     struct BitMap   	 *bm;
-#if 0
     struct TagItem  	 pftags[] =
     {
     	{ aHidd_PixFmt_Depth	    , 0UL			},	/* 0 */
@@ -717,15 +716,12 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Plane	},
     	{ TAG_DONE  	    	    , 0UL   	    	    	}
     };
-#endif
     struct TagItem  	bmtags[] =
     {
 	{ aHidd_BitMap_Width	    , 0UL },
 	{ aHidd_BitMap_Height	    , 0UL },
 	{ aHidd_BitMap_Depth	    , 0UL },
-#if 0
     	{ aHidd_BitMap_PixFmtTags   , 0UL },
-#endif
 	{ TAG_DONE  	    	    , 0UL }
     };
 	
@@ -773,16 +769,12 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
     data->depth		= bm->Depth;
     data->bytesperrow	= bm->BytesPerRow;
     data->rows		= bm->Rows;
-#if 0    
     pftags[0].ti_Data = bm->Depth;	/* PixFmt_Depth */
     pftags[1].ti_Data = bm->Depth;	/* PixFmt_BitsPerPixel */
-#endif
     bmtags[0].ti_Data = bm->BytesPerRow * 8;
     bmtags[1].ti_Data = bm->Rows;
     bmtags[2].ti_Data = bm->Depth;
-#if 0
     bmtags[3].ti_Data = (IPTR)pftags;
-#endif
     
     /* Call private bitmap method to update superclass */
     if (!HIDD_BitMap_SetBitMapTags(o, bmtags))
