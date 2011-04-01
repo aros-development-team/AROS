@@ -32,13 +32,15 @@ ULONG Host_Open(struct unit *Unit)
     
     Forbid();
     attrs = Unit->hdskBase->iface->GetFileAttributes(Unit->filename);
-    Unit->file = Unit->hdskBase->iface->CreateFile(Unit->filename, GENERIC_READ, FILE_SHARE_VALID_FLAGS, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    Unit->file = Unit->hdskBase->iface->CreateFile(Unit->filename, GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
+						   NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     Permit();
 
     if (Unit->file == (APTR)-1)
 	return TDERR_NotSpecified;
 
-    Unit->flags = (attrs & FILE_ATTRIBUTE_READONLY) ? UNIT_READONLY : 0;
+//  Unit->flags = (attrs & FILE_ATTRIBUTE_READONLY) ? UNIT_READONLY : 0;
+    Unit->flags = 0;
     if (attrs & FILE_ATTRIBUTE_DEVICE)
 	Unit->flags |= UNIT_DEVICE;
 

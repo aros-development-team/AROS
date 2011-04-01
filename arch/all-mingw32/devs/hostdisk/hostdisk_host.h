@@ -6,8 +6,11 @@
 
 #define INVALID_HANDLE_VALUE (void *)-1
 
+#define FILE_SHARE_READ		0x00000001
+#define FILE_SHARE_WRITE	0x00000002
 #define FILE_SHARE_VALID_FLAGS	0x00000007
 #define GENERIC_READ            0x80000000
+#define GENERIC_WRITE		0x40000000
 #define OPEN_EXISTING           3
 #define FILE_BEGIN              0
 
