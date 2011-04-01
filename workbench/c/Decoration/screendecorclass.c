@@ -310,14 +310,13 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar->h);
     } else {
         if (sd->img_stitlebar->ok)
-	    WriteTiledImage(NULL, rp, sd->img_stitlebar, 0, 0, sd->img_stitlebar->w, 
-	        sd->img_stitlebar->h, 0, 0, scr->Width, sd->img_stitlebar->h);
+	        WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0, 
+	        sd->img_stitlebar->w, 0, 0, scr->Width);
     }
     if (sd->img_sbarlogo->ok)
-        WriteTiledImage(NULL, rp, sd->img_sbarlogo, 0, 0, sd->img_sbarlogo->w, 
-            sd->img_sbarlogo->h, data->slogo_off, 
-            (scr->BarHeight + 1 - sd->img_sbarlogo->h) / 2, 
-            sd->img_sbarlogo->w, sd->img_sbarlogo->h);
+        WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0, 
+            sd->img_sbarlogo->w, data->slogo_off, 
+            (scr->BarHeight + 1 - sd->img_sbarlogo->h) / 2, sd->img_sbarlogo->w);
 
     if (scr->Title == NULL)
         hastitle = FALSE;
