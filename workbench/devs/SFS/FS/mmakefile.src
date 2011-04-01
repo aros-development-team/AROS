@@ -19,8 +19,9 @@ FILES := adminspaces \
 
 MODULE_FILES := arosdevice arosmain
 
-#MM workbench-devs-sfs: workbench-devs-sfs-c
-#MM workbench-devs-sfs-kobj: workbench-devs-sfs-c
+#MM workbench-devs-sfs       : workbench-devs-sfs-c
+#MM workbench-devs-sfs-pkg   : workbench-devs-sfs-c
+#MM workbench-devs-sfs-kobj  : workbench-devs-sfs-c
 #MM workbench-devs-sfs-packet: workbench-devs-sfs-c
 
 USER_CFLAGS := -DSFS_BE
