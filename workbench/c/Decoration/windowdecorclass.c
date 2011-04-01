@@ -462,7 +462,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     if (data->filltitlebar)
     {
         if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width - 1, window->Height - 1, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc, 0, 0);
-        else DrawTileToRP(rp, ni, color, 0, 0, 0, 0, window->Width, window->BorderTop);
+        else HorizVertRepeatNewImage(ni, color, 0, 0, rp, 0, 0, window->Width, window->BorderTop);
     }
 
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
@@ -1158,26 +1158,25 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         if (data->usegradients)
         {
             /* Reuse the buffer for blitting frames */
-            if (window->BorderLeft > 2) HorizontalRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
+            if (window->BorderLeft > 2) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
                                             0, window->BorderTop, 
                                             window->BorderLeft, window->Height - window->BorderTop);
-            if (window->BorderRight > 2) HorizontalRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
+            if (window->BorderRight > 2) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
                                             window->Width - window->BorderRight, window->BorderTop,
                                             window->BorderRight, window->Height - window->BorderTop);
-            if (window->BorderBottom > 2) HorizontalRepeatBuffer(buf, 
-                                            window->Height - window->BorderBottom, pen, wd->truecolor, rp,
+            if (window->BorderBottom > 2) HorizRepeatBuffer(buf, window->Height - window->BorderBottom, pen, wd->truecolor, rp,
                                             0, window->Height - window->BorderBottom,
                                             window->Width, window->BorderBottom);
         }
         else
         {
-            if (window->BorderLeft > 2) DrawTileToRP(rp, ni, color, 0, 0, 
+            if (window->BorderLeft > 2) HorizVertRepeatNewImage(ni, color, 0, window->BorderTop, rp,  
                                             0, window->BorderTop, 
                                             window->BorderLeft - 1, window->Height - window->BorderTop);
-            if (window->BorderRight > 2) DrawTileToRP(rp, ni, color, 0, 0, 
+            if (window->BorderRight > 2) HorizVertRepeatNewImage(ni, color, window->Width - window->BorderRight , window->BorderTop, rp,  
                                             window->Width - window->BorderRight , window->BorderTop, 
                                             window->BorderRight, window->Height - window->BorderTop);
-            if (window->BorderBottom > 2) DrawTileToRP(rp, ni, color, 0, 0, 
+            if (window->BorderBottom > 2) HorizVertRepeatNewImage(ni, color, 0, window->Height - window->BorderBottom, rp,  
                                             0, window->Height - window->BorderBottom, 
                                             window->Width, window->BorderBottom);
         }
@@ -1190,9 +1189,9 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
             if (bt > 1) bq = bt - 1;
             if (window->BorderTop > 2)
             {
-                if (data->usegradients) HorizontalRepeatBuffer(buf, 0, pen, wd->truecolor, rp, 
+                if (data->usegradients) HorizRepeatBuffer(buf, 0, pen, wd->truecolor, rp, 
                                             0, 0, window->Width - 1, window->BorderTop - 1);
-                else DrawTileToRP(rp, ni, color, 0, 0, 0, 0 , window->Width, window->BorderTop);
+                else HorizVertRepeatNewImage(ni, color, 0, 0, rp, 0, 0 , window->Width, window->BorderTop);
             }
             if (bt > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, 0, 0, 0, ww - 1, 0);
             if (bq > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bq, 0, bq, ww - 1, bq);
@@ -1843,7 +1842,7 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
         if (ni->ok)
         {
             ULONG   color = 0x00cccccc;
-            DrawTileToRP(rp, ni, color, bx0, by0, 0, 0, bx1 - bx0 + 1, by1 - by0 + 1);
+            HorizVertRepeatNewImage(ni, color, bx0, by0, rp, 0, 0, bx1 - bx0 + 1, by1 - by0 + 1);
         }
     }
 
