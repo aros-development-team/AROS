@@ -461,10 +461,10 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
 
     if (data->filltitlebar)
     {
-        if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width - 1, window->Height - 1, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc);
+        if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width - 1, window->Height - 1, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc, 0, 0);
         else DrawTileToRP(rp, ni, color, 0, 0, 0, 0, window->Width, window->BorderTop);
     }
-    
+
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
     {
         dy = 0;
@@ -1147,28 +1147,25 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         
         if (data->usegradients)
         {
-            UWORD height = window->Height - window->BorderTop;
-            
             /* Create one pixel wide buffer */
-            buf = AllocVec(1 * height * 3, MEMF_ANY | MEMF_CLEAR);
+            buf = AllocVec(1 * window->Height * 3, MEMF_ANY | MEMF_CLEAR);
             
             /* Fill the buffer with gradient */
             FillMemoryBufferRGBGradient(buf, pen, 0, 0, window->Width - 1, window->Height - 1, 0, 0, 
-                1, height , s_col, e_col, arc);
+                1, window->Height , s_col, e_col, arc);
         }
     
         if (data->usegradients)
         {
             /* Reuse the buffer for blitting frames */
-            if (window->BorderLeft > 2) HorizontalRepeatBuffer(buf, 0, pen, wd->truecolor, rp, 
+            if (window->BorderLeft > 2) HorizontalRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
                                             0, window->BorderTop, 
                                             window->BorderLeft, window->Height - window->BorderTop);
-
-            if (window->BorderRight > 2) HorizontalRepeatBuffer(buf, 0, pen, wd->truecolor, rp, 
+            if (window->BorderRight > 2) HorizontalRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
                                             window->Width - window->BorderRight, window->BorderTop,
                                             window->BorderRight, window->Height - window->BorderTop);
             if (window->BorderBottom > 2) HorizontalRepeatBuffer(buf, 
-                                            window->Height - window->BorderBottom -window->BorderTop, pen, wd->truecolor, rp,
+                                            window->Height - window->BorderBottom, pen, wd->truecolor, rp,
                                             0, window->Height - window->BorderBottom,
                                             window->Width, window->BorderBottom);
         }
@@ -1839,14 +1836,14 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
        reading from window when drawing container and knob */
     if (data->usegradients)
     {
-        FillPixelArrayGradientDelta(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1,  0, 0, bx1 - bx0 + 1, by1 - by0 + 1, s_col, e_col, arc, 0, 0);
+        FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1,  0, 0, bx1 - bx0 + 1, by1 - by0 + 1, s_col, e_col, arc, bx0, by0);
     }
     else
     {
         if (ni->ok)
         {
             ULONG   color = 0x00cccccc;
-            DrawTileToRP(rp, ni, color, bx0/*0*/, by0/*0*/, 0 /*bx0*/, 0/*by0*/, bx1 - bx0 + 1, by1 - by0 + 1);
+            DrawTileToRP(rp, ni, color, bx0, by0, 0, 0, bx1 - bx0 + 1, by1 - by0 + 1);
         }
     }
 

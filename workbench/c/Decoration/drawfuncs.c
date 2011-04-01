@@ -870,24 +870,19 @@ void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG x
 
 }
     
-void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle, LONG dx, LONG dy)
+void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle, LONG dx, LONG dy)
 {
     UBYTE * buf = NULL;
     
     if ((w <= 0) || (h <= 0)) return;
-    if (!tc)
-    {
-        if (pen != -1) SetAPen(rp, pen); else SetAPen(rp, 2);
-        RectFill(rp, xp, yp, xp + w - 1, yp + h - 1);
-        return;
-    }
 
 	/* By bringing building the gradient array in the same format as the RastPort BitMap a call
         to WritePixelArray() can be made also faster */
-    buf = AllocVec(w * h * 3, 0);
-    FillMemoryBufferRGBGradient(buf, pen, xt, yt, xb, yb, xp, yp, w, h, start_rgb, end_rgb, angle);
+    buf = AllocVec(1 * yb * 3, 0);
+    
+    FillMemoryBufferRGBGradient(buf, pen, xt, yt, xb, yb, xp, yp, 1, yb, start_rgb, end_rgb, angle);
 
-    WritePixelArray(buf, 0, 0, w * 3, rp, dx, dy, w, h, RECTFMT_RGB);
+    HorizontalRepeatBuffer(buf, dy, pen, tc, rp, xp, yp, w, h);
 
     FreeVec(buf);
 }
@@ -929,11 +924,6 @@ void HorizontalRepeatBuffer(UBYTE * buf, LONG ys, LONG pen, BOOL tc, struct Rast
     WritePixelArray(bufblit, 0, 0, w * 3, rp, xp, yp, w, h, RECTFMT_RGB);
 
     FreeVec(bufblit);
-}
-
-void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle)
-{
-    FillPixelArrayGradientDelta(pen, tc, rp, xt, yt, xb, yb, xp, yp, w, h, start_rgb, end_rgb, angle, xp, yp);
 }
 
 void TileMapToBitmap(struct NewImage *src, struct BitMap *map, UWORD dw, UWORD dh)
