@@ -336,6 +336,14 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 	 */
         SysBase = NULL;
 
+	/*
+	 * SysBase will be put to address 8 by krnPrepareExecBase().
+	 * We want to track down all accesses to invalid addresses, especially
+	 * dereferencing NULL pointers. So we fill zero page with 0xEE values in
+	 * order to get trapped soon after that.
+	 */
+	memset(NULL, 0xEE, PAGE_SIZE);
+
 	ranges[0] = (UWORD *)klo;
 	ranges[1] = (UWORD *)khi;
         if (!krnPrepareExecBase(ranges, mh, BootMsg))
@@ -364,9 +372,8 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 
 	/*
     	 * At this point SysBase is put into 8ULL by PrepareExecBase().
-    	 * Store bogus pointer into 0ULL and set the whole page to read-only.
+    	 * Set the whole page to read-only.
     	 */
-	*((IPTR *)0ULL) = 0xC0DEBAD1C0DEBAD2;
 	core_ProtKernelArea(0, PAGE_SIZE, 1, 0, 1);
 
 	/* Transfer the rest of memory list into SysBase */
