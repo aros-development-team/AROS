@@ -18,5 +18,5 @@ tools-crosstools-collect-aros : tools-crosstools-collect-aros-quick
 #MM
 tools-crosstools-collect-aros-quick :
 	$(MAKE)	COLLECT-AROS=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros USER_CFLAGS="-D_CROSS_"
-	$(STRIP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros
+	$(HOST_STRIP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros
 	$(CP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-collect-aros
