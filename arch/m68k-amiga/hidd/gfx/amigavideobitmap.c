@@ -53,8 +53,6 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     IPTR width, height, depth;
     BOOL  ok = TRUE;      
     struct amigabm_data *data;
-    OOP_Object      	 *pf;
-    APTR		 p_pf = &pf;
     ULONG		 align, bmadd;
 
     DB2(bug("AmigaVideoBM__Root__New\n"));
