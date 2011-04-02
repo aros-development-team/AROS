@@ -10,6 +10,14 @@
 #include <intuition/intuition.h>
 #include <graphics/gfx.h>
 
+struct TileInfo
+{
+    UWORD TileLeft;
+    UWORD TileRight;
+    UWORD TileTop;
+    UWORD TileBottom;
+};
+
 struct NewImage
 {
     ULONG  *data; /* Buffer of RAW ARGB data */
@@ -20,10 +28,6 @@ struct NewImage
     ULONG   subimagescols;  /* Number of columns of subimages in image, ie. states of gadget*/
     ULONG   subimagesrows;  /* Number of rows of subimages in image, ie. states of gadget*/
     BOOL    *subimageinbm;  /* Array marking which subimage in present in *bitmap */
-
-
-    BOOL    istiled;
-    UWORD   tile_left, tile_top, tile_bottom, tile_right;
 
     Object  *o;                 /* Stored DT object */
     APTR    mask;               /* Mask pointer from DT object */

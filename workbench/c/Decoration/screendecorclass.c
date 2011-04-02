@@ -37,14 +37,6 @@ static BOOL InitScreenSkinning(struct scrdecor_data *data, struct DecorImages * 
     data->dc = dc;
     data->di = di;
 
-    if (data->di->img_stitlebar)
-    {
-        data->di->img_stitlebar->tile_left = 8;
-        data->di->img_stitlebar->tile_right = 8;
-        data->di->img_stitlebar->tile_top = 9;
-        data->di->img_stitlebar->tile_bottom = 8;
-    }
-
     if (data->di->img_sdepth) return TRUE;
 
     DisposeScreenSkinning(data);
