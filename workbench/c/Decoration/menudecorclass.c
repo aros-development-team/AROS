@@ -9,7 +9,6 @@
 #include <intuition/extensions.h>
 #include <intuition/imageclass.h>
 #include <proto/intuition.h>
-#include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <string.h>
@@ -24,16 +23,7 @@
 
 struct menudecor_data
 {
-    /* img_menu */
-    BOOL    tiled;
-    LONG    tile_left;
-    LONG    tile_top;
-    LONG    tile_right;
-    LONG    tile_bottom;
-    LONG    inner_left;
-    LONG    inner_top;
-    LONG    inner_right;
-    LONG    inner_bottom;
+    struct DecorConfig * dc;
 
     /* Pointers to images used for sys images */
     struct NewImage *img_amigakey;
@@ -80,23 +70,23 @@ static IPTR menudecor_getmenuspaces(Class *cl, Object *obj, struct mdpGetMenuSpa
 {
     struct menudecor_data *data = INST_DATA(cl, obj);
 
-    msg->mdp_InnerLeft =  data->inner_left;
-    msg->mdp_InnerTop =  data->inner_top;
-    msg->mdp_InnerRight =  data->inner_right;
-    msg->mdp_InnerBottom =  data->inner_bottom;
+    msg->mdp_InnerLeft =  data->dc->MenuInnerLeft;
+    msg->mdp_InnerTop =  data->dc->MenuInnerTop;
+    msg->mdp_InnerRight =  data->dc->MenuInnerRight;
+    msg->mdp_InnerBottom =  data->dc->MenuInnerBottom;
     msg->mdp_ItemInnerLeft = 1;
     msg->mdp_ItemInnerTop = 2;
     msg->mdp_ItemInnerRight = 2;
     msg->mdp_ItemInnerBottom = 1;
-    if ((data->tile_left + data->tile_right) > (data->inner_left + data->inner_right)) 
-        msg->mdp_MinWidth = data->tile_left + data->tile_right; 
+    if ((data->dc->MenuTileLeft + data->dc->MenuTileRight) > (data->dc->MenuInnerLeft + data->dc->MenuInnerRight)) 
+        msg->mdp_MinWidth = data->dc->MenuTileLeft + data->dc->MenuTileRight; 
     else 
-        msg->mdp_MinWidth = data->inner_left + data->inner_right;
+        msg->mdp_MinWidth = data->dc->MenuInnerLeft + data->dc->MenuInnerRight;
 
-    if ((data->tile_top + data->tile_bottom) > (data->inner_top + data->inner_bottom)) 
-        msg->mdp_MinHeight = data->tile_top + data->tile_bottom; 
+    if ((data->dc->MenuTileTop + data->dc->MenuTileBottom) > (data->dc->MenuInnerTop + data->dc->MenuInnerBottom)) 
+        msg->mdp_MinHeight = data->dc->MenuTileTop + data->dc->MenuTileBottom; 
     else 
-        msg->mdp_MinHeight = data->inner_top + data->inner_bottom;
+        msg->mdp_MinHeight = data->dc->MenuInnerTop + data->dc->MenuInnerBottom;
 
     return TRUE;
 }
@@ -206,15 +196,15 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
     SETIMAGE_MEN(menucheck);
     SETIMAGE_MEN(submenu);
 
-    md->img_menu->istiled       = data->tiled;
-    md->img_menu->tile_left     = data->tile_left;
-    md->img_menu->tile_top      = data->tile_top;
-    md->img_menu->tile_right    = data->tile_right;
-    md->img_menu->tile_bottom   = data->tile_bottom;
-    md->img_menu->inner_left    = data->inner_left;
-    md->img_menu->inner_top     = data->inner_top;
-    md->img_menu->inner_right   = data->inner_right;
-    md->img_menu->inner_bottom  = data->inner_bottom;
+    md->img_menu->istiled       = data->dc->MenuIsTiled;
+    md->img_menu->tile_left     = data->dc->MenuTileLeft;
+    md->img_menu->tile_top      = data->dc->MenuTileTop;
+    md->img_menu->tile_right    = data->dc->MenuTileRight;
+    md->img_menu->tile_bottom   = data->dc->MenuTileBottom;
+    md->img_menu->inner_left    = data->dc->MenuInnerLeft;
+    md->img_menu->inner_top     = data->dc->MenuInnerTop;
+    md->img_menu->inner_right   = data->dc->MenuInnerRight;
+    md->img_menu->inner_bottom  = data->dc->MenuInnerBottom;
     md->truecolor = msg->mdp_TrueColor;
 
 //    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -254,90 +244,18 @@ static void DisposeMenuSkinning(struct menudecor_data *data)
 {
 }
 
-static BOOL InitMenuSkinning(STRPTR path, struct menudecor_data *data, struct DecorImages * di) 
+static BOOL InitMenuSkinning(struct menudecor_data *data, struct DecorImages * di, struct DecorConfig * dc) 
 {
-
-    char    buffer[256];
-    char    *line, *v;
-    BPTR    file;
-    BPTR    lock;
-    BPTR    olddir = 0;
-
-    data->tiled = FALSE;
-    data->tile_left = 0;
-    data->tile_top = 0;
-    data->tile_right = 0;
-    data->tile_bottom = 0;
-    data->inner_left = 0;
-    data->inner_top = 0;
-    data->inner_right = 0;
-    data->inner_bottom = 0;
-
-    
-    lock = Lock(path, ACCESS_READ);
-    if (lock)
-        olddir = CurrentDir(lock);
-    else 
+    if ((!dc) || (!di))
         return FALSE;
-
-    file = Open("Menu/Config", MODE_OLDFILE);
-    if (file)
-    {
-        do
-        {
-            line = FGets(file, buffer, 256);
-            if (line)
-            {
-                if ((v = strstr(line, "TileLeft ")) == line)
-                {
-                    data->tile_left = GetInt(v);
-                    data->tiled = TRUE;
-                }
-                else  if ((v = strstr(line, "TileTop ")) == line)
-                {
-                    data->tile_top = GetInt(v);
-                    data->tiled = TRUE;
-                }
-                else  if ((v = strstr(line, "TileRight ")) == line)
-                {
-                    data->tile_right = GetInt(v);
-                    data->tiled = TRUE;
-                }
-                else  if ((v = strstr(line, "TileBottom ")) == line)
-                {
-                    data->tile_bottom = GetInt(v);
-                    data->tiled = TRUE;
-                }
-                else if ((v = strstr(line, "InnerLeft ")) == line)
-                {
-                    data->inner_left = GetInt(v);
-                }
-                else  if ((v = strstr(line, "InnerTop ")) == line)
-                {
-                    data->inner_top = GetInt(v);
-                }
-                else  if ((v = strstr(line, "InnerRight ")) == line)
-                {
-                    data->inner_right = GetInt(v);
-                }
-                else  if ((v = strstr(line, "InnerBottom ")) == line)
-                {
-                    data->inner_bottom = GetInt(v);
-                }
-            }
-        }
-        while(line);
-        Close(file);
-    }
+        
+    data->dc = dc;
 
     /* Set pointers to gadget images, used only to get gadget sizes as their
        are requested prior to creation of menu object */
     data->img_amigakey  = di->img_amigakey;
     data->img_menucheck = di->img_menucheck;
     data->img_submenu   = di->img_submenu;
-
-    if (olddir) CurrentDir(olddir);
-    UnLock(lock);
 
     return TRUE;
 }
@@ -351,10 +269,10 @@ static IPTR menudecor__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     {
         data = INST_DATA(cl, obj);
 
-        STRPTR path = (STRPTR) GetTagData(MDA_Configuration, (IPTR) "Theme:", msg->ops_AttrList);
         struct DecorImages * di = (struct DecorImages *) GetTagData(MDA_DecorImages, (IPTR) NULL, msg->ops_AttrList);
+        struct DecorConfig * dc = (struct DecorConfig *) GetTagData(MDA_DecorConfig, (IPTR) NULL, msg->ops_AttrList);
 
-        if (!InitMenuSkinning(path, data, di))
+        if (!InitMenuSkinning(data, di, dc))
         {
             CoerceMethod(cl, obj ,OM_DISPOSE);
             obj = NULL;
