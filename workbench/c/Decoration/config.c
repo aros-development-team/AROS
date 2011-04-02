@@ -20,14 +20,14 @@ static STRPTR SkipChars(STRPTR v)
     return ++c;
 }
 
-LONG GetInt(STRPTR v)
+static LONG GetInt(STRPTR v)
 {
     STRPTR c;
     c = SkipChars(v);
     return (LONG) atol(c);
 }
 
-void GetIntegers(STRPTR v, LONG *v1, LONG *v2)
+static void GetIntegers(STRPTR v, LONG *v1, LONG *v2)
 {
     STRPTR c;
     TEXT va1[32], va2[32];
@@ -49,7 +49,7 @@ void GetIntegers(STRPTR v, LONG *v1, LONG *v2)
     }
 }
 
-void GetTripleIntegers(STRPTR v, LONG *v1, LONG *v2, LONG *v3)
+static void GetTripleIntegers(STRPTR v, LONG *v1, LONG *v2, LONG *v3)
 {
     STRPTR ch;
     LONG a, b, c;
@@ -67,7 +67,7 @@ void GetTripleIntegers(STRPTR v, LONG *v1, LONG *v2, LONG *v3)
     }
 }
 
-void GetColors(STRPTR v, LONG *v1, LONG *v2)
+static void GetColors(STRPTR v, LONG *v1, LONG *v2)
 {
     STRPTR ch;
     LONG a, b;
@@ -85,7 +85,7 @@ void GetColors(STRPTR v, LONG *v1, LONG *v2)
 }
 
 
-BOOL GetBool(STRPTR v, STRPTR id)
+static BOOL GetBool(STRPTR v, STRPTR id)
 {
     if (strstr(v, id)) return TRUE; else return FALSE;
 }
@@ -269,6 +269,18 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
     dc->BaseColors_d = 0;
     dc->TitleColorText = 0x00CCCCCC;
     dc->TitleColorShadow = 0x00444444;
+    dc->LeftBorder = 4;
+    dc->RightBorder = 4;
+    dc->BottomBorder = 4;
+    dc->SLogoOffset = 0;
+    dc->STitleOffset = 0;
+    dc->SBarHeight = 0;
+    dc->STitleOutline = FALSE;
+    dc->STitleShadow = FALSE;
+    dc->LUTBaseColors_a = 0x00CCCCCC;
+    dc->LUTBaseColors_d = 0x00888888;
+    dc->STitleColorText = 0x00CCCCCC;
+    dc->STitleColorShadow = 0x00444444;
     
     
     
@@ -392,6 +404,25 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
                     GetColors(v, &dc->BaseColors_a, &dc->BaseColors_d);
                 } else  if ((v = strstr(line, "WindowTitleColors ")) == line) {
                     GetColors(v, &dc->TitleColorText, &dc->TitleColorShadow);
+                } else if ((v = strstr(line, "LeftBorder ")) == line) {
+                    dc->LeftBorder = GetInt(v);
+                } else  if ((v = strstr(line, "RightBorder ")) == line) {
+                    dc->RightBorder = GetInt(v);
+                } else  if ((v = strstr(line, "BottomBorder ")) == line) {
+                    dc->BottomBorder = GetInt(v);
+                } else  if ((v = strstr(line, "LogoOffset ")) == line) {
+                    dc->SLogoOffset = GetInt(v);
+                } else  if ((v = strstr(line, "TitleOffset ")) == line) {
+                    dc->STitleOffset = GetInt(v);
+                } else  if ((v = strstr(line, "SBarHeight ")) == line) {
+                    dc->SBarHeight = GetInt(v);
+                } else  if ((v = strstr(line, "LUTBaseColors ")) == line) {
+                    GetColors(v, &dc->LUTBaseColors_a, &dc->LUTBaseColors_d);
+                } else  if ((v = strstr(line, "ScreenTitleColors ")) == line) {
+                    GetColors(v, &dc->STitleColorText, &dc->STitleColorShadow);
+                } else if ((v = strstr(line, "ScreenTitleMode ")) == line) {
+                    dc->STitleOutline = GetBool(v, "Outline");
+                    dc->STitleShadow = GetBool(v, "Shadow");
                 }
             }
         }

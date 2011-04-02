@@ -23,18 +23,12 @@ struct scrdecor_data
 {
     /* This are original images loaded from disk */
     struct DecorImages di;
+    struct DecorConfig * dc;
 
-    UWORD            sbarheight;
-    UWORD            slogo_off;
-    UWORD            stitle_off;
-    UWORD            winbarheight;
 
-    BOOL             outline;
-    BOOL             shadow;
 
-    LONG             leftborder, bottomborder, rightborder;
-    LONG             lut_col_a, lut_col_d;
-    LONG             text_col, shadow_col;
+
+
 };
 
 static void DisposeScreenSkinning(struct scrdecor_data *data)
@@ -95,14 +89,19 @@ static void DisposeScreenSkinning(struct scrdecor_data *data)
     data->di.img_stitlebar = NULL;
 }
 
-static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
+static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data, struct DecorConfig * dc)
+{
     
-    char    buffer[256];
-    char    *line, *v;
-    BPTR    file;
     BPTR    lock;
     BPTR    olddir = 0;
     ULONG   wgsubimagecols = 4; /* Default value of subimage cols in window gadget */
+
+    if (!dc)
+        return FALSE;
+
+    data->dc = dc;
+    
+    if (dc->GadgetsThreeState) wgsubimagecols = 3;
 
     lock = Lock(path, ACCESS_READ);
     if (lock)
@@ -110,57 +109,6 @@ static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
         olddir = CurrentDir(lock);
     }
     else return FALSE;
-
-    data->leftborder = 4;
-    data->rightborder = 4;
-    data->bottomborder = 4;
-
-    data->lut_col_a = 0x00cccccc;
-    data->lut_col_d = 0x00888888;
-
-    data->outline = FALSE;
-    data->shadow = FALSE;
-
-    data->text_col = 0x00cccccc;
-    data->shadow_col = 0x00444444;
-
-    file = Open("System/Config", MODE_OLDFILE);
-    if (file)
-    {
-        do
-        {
-            line = FGets(file, buffer, 256);
-            if (line)
-            {
-                if ((v = strstr(line, "LeftBorder ")) == line) {
-                    data->leftborder = GetInt(v);
-                } else  if ((v = strstr(line, "RightBorder ")) == line) {
-                    data->rightborder = GetInt(v);
-                } else  if ((v = strstr(line, "BottomBorder ")) == line) {
-                    data->bottomborder = GetInt(v);
-                } else  if ((v = strstr(line, "LogoOffset ")) == line) {
-                    data->slogo_off = GetInt(v);
-                } else  if ((v = strstr(line, "TitleOffset ")) == line) {
-                    data->stitle_off = GetInt(v);
-                } else  if ((v = strstr(line, "SBarHeight ")) == line) {
-                    data->sbarheight = GetInt(v);
-                } else  if ((v = strstr(line, "BarHeight ")) == line) {
-                    data->winbarheight = GetInt(v); //screen, window
-                } else  if ((v = strstr(line, "LUTBaseColors ")) == line) {
-                    GetColors(v, &data->lut_col_a, &data->lut_col_d);
-                } else  if ((v = strstr(line, "ScreenTitleColors ")) == line) {
-                    GetColors(v, &data->text_col, &data->shadow_col);
-                } else if ((v = strstr(line, "ScreenTitleMode ")) == line) {
-                    data->outline = GetBool(v, "Outline");
-                    data->shadow = GetBool(v, "Shadow");
-                } else if ((v = strstr(line, "NoInactiveSelected ")) == line) {
-                    if (GetBool(v, "Yes")) wgsubimagecols = 3;
-                }
-            }
-        }
-        while(line);
-        Close(file);
-    }
 
     data->di.img_sdepth = GetImageFromFile(path, "System/SDepth/Default", 2, 1);
     data->di.img_stitlebar = GetImageFromFile(path, "System/STitlebar/Default", 1, 1);
@@ -223,15 +171,16 @@ static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
     {
         data = INST_DATA(cl, obj);
         STRPTR path = (STRPTR) GetTagData(SDA_Configuration, (IPTR) "Theme:", msg->ops_AttrList);
+        struct DecorConfig * dc = (struct DecorConfig *) GetTagData(SDA_DecorConfig, (IPTR) NULL, msg->ops_AttrList);
 
-        if (!InitScreenSkinning(path, data))
+        if (!InitScreenSkinning(path, data, dc))
         {
             CoerceMethod(cl,obj,OM_DISPOSE);
             obj = NULL;
         }
         else
         {
-            barh = data->sbarheight;
+            barh = data->dc->SBarHeight;
 
             if (data->di.img_sbarlogo) if (data->di.img_sbarlogo->h > barh) barh = data->di.img_sbarlogo->h;
             if (data->di.img_stitlebar) if (data->di.img_stitlebar->h > barh) barh = data->di.img_stitlebar->h;
@@ -315,7 +264,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     }
     if (sd->img_sbarlogo->ok)
         WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0, 
-            sd->img_sbarlogo->w, data->slogo_off, 
+            sd->img_sbarlogo->w, data->dc->SLogoOffset, 
             (scr->BarHeight + 1 - sd->img_sbarlogo->h) / 2, sd->img_sbarlogo->w);
 
     if (scr->Title == NULL)
@@ -325,31 +274,31 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     {
         scr_findtitlearea(scr, &left, &right);
         titlelen = strlen(scr->Title);
-        titlelen = TextFit(rp, scr->Title, titlelen, &te, NULL, 1, right - data->stitle_off, data->sbarheight);
+        titlelen = TextFit(rp, scr->Title, titlelen, &te, NULL, 1, right - data->dc->STitleOffset, data->dc->SBarHeight);
         if (titlelen == 0) hastitle = 0;
     }
 
     if (hastitle)
     {
-        UWORD tx = data->stitle_off;
+        UWORD tx = data->dc->STitleOffset;
         UWORD ty = (scr->BarHeight + 1 - msg->sdp_Dri->dri_Font->tf_YSize) / 2 + rp->TxBaseline;
 
         SetFont(rp, msg->sdp_Dri->dri_Font);
         SetDrMd(rp, JAM1);
-//         Move(rp, data->stitle_off, (scr->BarHeight + 1 - msg->sdp_Dri->dri_Font->tf_YSize) / 2 + rp->TxBaseline);
+//         Move(rp, data->dc->STitleOffset, (scr->BarHeight + 1 - msg->sdp_Dri->dri_Font->tf_YSize) / 2 + rp->TxBaseline);
 //         Text(rp, scr->Title, titlelen);
 
-        if (!sd->truecolor || ((data->outline == FALSE) && (data->shadow == FALSE)))
+        if (!sd->truecolor || ((data->dc->STitleOutline == FALSE) && (data->dc->STitleShadow == FALSE)))
         {
 	    SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
             Move(rp, tx, ty);
             Text(rp, scr->Title, titlelen);
         }
-        else if (data->outline)
+        else if (data->dc->STitleOutline)
         {
 
                 SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->shadow_col, TAG_DONE);
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
 
                 Move(rp, tx + 1, ty ); Text(rp, scr->Title, titlelen);
                 Move(rp, tx + 2, ty ); Text(rp, scr->Title, titlelen);
@@ -360,18 +309,18 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
                 Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, titlelen);
                 Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, titlelen);
 
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->text_col, TAG_DONE);
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
                 Move(rp, tx + 1, ty + 1);
                 Text(rp, scr->Title, titlelen);
                 SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
         }
         else
         {
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->shadow_col, TAG_DONE);
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
                 Move(rp, tx + 1, ty + 1 );
                 Text(rp, scr->Title, titlelen);
 
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->text_col, TAG_DONE);
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
                 Move(rp, tx, ty);
                 Text(rp, scr->Title, titlelen);
 
@@ -433,7 +382,7 @@ static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutSc
         {
             case GTYP_SDEPTH:
                 gadget->LeftEdge = -gadget->Width;
-                gadget->TopEdge = (data->sbarheight - sd->img_sdepth->h) >> 1;
+                gadget->TopEdge = (data->dc->SBarHeight - sd->img_sdepth->h) >> 1;
                 gadget->Flags &= ~GFLG_RELWIDTH;
                 gadget->Flags |= GFLG_RELRIGHT;
                 break;
@@ -463,18 +412,18 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
 
     BOOL truecolor = sd->truecolor;
 
-    msg->sdp_WBorTop = data->winbarheight - 1 - msg->sdp_FontHeight;
+    msg->sdp_WBorTop = data->dc->BarHeight - 1 - msg->sdp_FontHeight;
     msg->sdp_BarHBorder = 1;
-    msg->sdp_BarHeight = data->sbarheight - 1; //compatiblity issue
-    msg->sdp_WBorLeft = data->leftborder;
-    msg->sdp_WBorRight = data->rightborder;
-    msg->sdp_WBorBottom = data->bottomborder;
+    msg->sdp_BarHeight = data->dc->SBarHeight - 1; //compatiblity issue
+    msg->sdp_WBorLeft = data->dc->LeftBorder;
+    msg->sdp_WBorRight = data->dc->RightBorder;
+    msg->sdp_WBorBottom = data->dc->BottomBorder;
 
     sd->ActivePen = -1;
     sd->DeactivePen = -1;
     if (!truecolor) {
-        sd->ActivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->lut_col_a << 8) & 0xff000000, (data->lut_col_a << 16) & 0xff000000, (data->lut_col_a << 24) & 0xff000000, PEN_EXCLUSIVE);
-        sd->DeactivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->lut_col_d << 8) & 0xff000000, (data->lut_col_d << 16) & 0xff000000, (data->lut_col_d << 24) & 0xff000000, PEN_EXCLUSIVE);
+        sd->ActivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->dc->LUTBaseColors_a << 8) & 0xff000000, (data->dc->LUTBaseColors_a << 16) & 0xff000000, (data->dc->LUTBaseColors_a << 24) & 0xff000000, PEN_EXCLUSIVE);
+        sd->DeactivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->dc->LUTBaseColors_d << 8) & 0xff000000, (data->dc->LUTBaseColors_d << 16) & 0xff000000, (data->dc->LUTBaseColors_d << 24) & 0xff000000, PEN_EXCLUSIVE);
     }
 
     /* Convert initial images to current screen */

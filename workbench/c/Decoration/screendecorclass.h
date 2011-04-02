@@ -74,6 +74,7 @@ struct ScreenData
 
 #define SDA_Configuration   0x20002
 #define SDA_DecorImages     0x20003
+#define SDA_DecorConfig     0x20004
 
 struct IClass * MakeScreenDecorClass();
 #endif

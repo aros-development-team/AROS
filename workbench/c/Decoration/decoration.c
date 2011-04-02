@@ -89,7 +89,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
     if (path != NULL) newpath = path; else newpath = "Theme:";
 
-    struct TagItem ScreenTags[] = { {SDA_UserBuffer, sizeof(struct ScreenData)}, {SDA_Configuration, (IPTR) newpath}, {TAG_DONE} };
+    
 
 
     dnd = AllocVec(sizeof(struct DefaultNewDecorator), MEMF_CLEAR | MEMF_ANY);
@@ -105,8 +105,17 @@ struct NewDecorator *GetDecorator(STRPTR path)
             return NULL;
         }
 
-        nd->nd_Screen = NewObjectA(scrcl, NULL, ScreenTags);
-
+        {
+            struct TagItem ScreenTags[] = 
+            { 
+                {SDA_UserBuffer, sizeof(struct ScreenData)},
+                {SDA_Configuration, (IPTR) newpath},
+                {SDA_DecorConfig, (IPTR)dnd->dc},
+                {TAG_DONE}
+            };
+            nd->nd_Screen = NewObjectA(scrcl, NULL, ScreenTags);
+        }
+        
         if (nd->nd_Screen)
         {
             APTR decorimages = NULL;
