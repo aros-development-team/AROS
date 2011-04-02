@@ -116,8 +116,8 @@ struct NewDecorator *GetDecorator(STRPTR path)
             struct TagItem WindowTags[] = 
             { 
                 {WDA_UserBuffer, sizeof(struct WindowData)},
-                {WDA_Configuration, (IPTR) newpath},
                 {WDA_DecorImages, (IPTR)decorimages},
+                {WDA_DecorConfig, (IPTR)dnd->dc},
                 {TAG_DONE} 
             };
 

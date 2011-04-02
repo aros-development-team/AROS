@@ -67,8 +67,8 @@ struct  WindowData
     struct CachedPropGadget horiz;
 };
 
-#define WDA_Configuration   0x30002
 #define WDA_DecorImages     0x30003
+#define WDA_DecorConfig     0x30004
 
 struct IClass * MakeWindowDecorClass();
 #endif
