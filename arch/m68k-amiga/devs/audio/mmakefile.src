@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := audio
+FILES := audio audio_hardware
 
 %build_module mmake=kernel-amiga-m68k-audio \
     modname=audio modtype=device \
