@@ -201,10 +201,6 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
     md->img_menu->tile_top      = data->dc->MenuTileTop;
     md->img_menu->tile_right    = data->dc->MenuTileRight;
     md->img_menu->tile_bottom   = data->dc->MenuTileBottom;
-    md->img_menu->inner_left    = data->dc->MenuInnerLeft;
-    md->img_menu->inner_top     = data->dc->MenuInnerTop;
-    md->img_menu->inner_right   = data->dc->MenuInnerRight;
-    md->img_menu->inner_bottom  = data->dc->MenuInnerBottom;
     md->truecolor = msg->mdp_TrueColor;
 
 //    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
