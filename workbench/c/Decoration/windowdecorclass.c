@@ -23,7 +23,7 @@
 #include "drawfuncs.h"
 #include "config.h"
 
-#define SETIMAGE_WIN(id) wd->img_##id=sd->di.img_##id
+#define SETIMAGE_WIN(id) wd->img_##id=sd->di->img_##id
 
 struct windecor_data
 {

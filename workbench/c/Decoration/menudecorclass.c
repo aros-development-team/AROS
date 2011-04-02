@@ -19,7 +19,7 @@
 #include "config.h"
 
 
-#define SETIMAGE_MEN(id) md->img_##id=sd->di.img_##id
+#define SETIMAGE_MEN(id) md->img_##id=sd->di->img_##id
 
 struct menudecor_data
 {

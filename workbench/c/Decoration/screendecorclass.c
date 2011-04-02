@@ -16,18 +16,13 @@
 #include "drawfuncs.h"
 #include "config.h"
 
-#define SETIMAGE_SCR(id) sd->di.img_##id = CreateNewImageContainerMatchingScreen(data->di.img_##id, truecolor, screen)
+#define SETIMAGE_SCR(id) sd->di->img_##id = CreateNewImageContainerMatchingScreen(data->di.img_##id, truecolor, screen)
 
 struct scrdecor_data
 {
     /* This are original images loaded from disk */
     struct DecorImages di;
     struct DecorConfig * dc;
-
-
-
-
-
 };
 
 static void DisposeScreenSkinning(struct scrdecor_data *data)
@@ -415,6 +410,9 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
     /* Convert initial images to current screen */
     /* Make sure a structure is always generated even if there is no image
        That was the assumption of previous code :/ */
+
+    sd->di = NewImages();
+
     SETIMAGE_SCR(sdepth);
     SETIMAGE_SCR(sbarlogo);
     SETIMAGE_SCR(stitlebar);
@@ -446,13 +444,13 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
     SETIMAGE_SCR(submenu);
 
     /* Set pointers to converted images */
-    sd->img_sdepth      = sd->di.img_sdepth;
-    sd->img_sbarlogo    = sd->di.img_sbarlogo;
-    sd->img_stitlebar   = sd->di.img_stitlebar;
+    sd->img_sdepth      = sd->di->img_sdepth;
+    sd->img_sbarlogo    = sd->di->img_sbarlogo;
+    sd->img_stitlebar   = sd->di->img_stitlebar;
     
-    sd->img_amigakey    = sd->di.img_amigakey;
-    sd->img_menucheck   = sd->di.img_menucheck;
-    sd->img_submenu     = sd->di.img_submenu;
+    sd->img_amigakey    = sd->di->img_amigakey;
+    sd->img_menucheck   = sd->di->img_menucheck;
+    sd->img_submenu     = sd->di->img_submenu;
 
     return TRUE;
 }
@@ -461,35 +459,7 @@ static IPTR scrdecor_exitscreen(Class *cl, Object *obj, struct sdpExitScreen *ms
 {
     struct ScreenData *sd = (struct ScreenData *)msg->sdp_UserBuffer;
 
-    DisposeImageContainer(sd->di.img_sdepth);
-    DisposeImageContainer(sd->di.img_sbarlogo);
-    DisposeImageContainer(sd->di.img_stitlebar);
-
-    DisposeImageContainer(sd->di.img_size);
-    DisposeImageContainer(sd->di.img_close);
-    DisposeImageContainer(sd->di.img_depth);
-    DisposeImageContainer(sd->di.img_zoom);
-    DisposeImageContainer(sd->di.img_up);
-    DisposeImageContainer(sd->di.img_down);
-    DisposeImageContainer(sd->di.img_left);
-    DisposeImageContainer(sd->di.img_right);
-    DisposeImageContainer(sd->di.img_mui);
-    DisposeImageContainer(sd->di.img_popup);
-    DisposeImageContainer(sd->di.img_snapshot);
-    DisposeImageContainer(sd->di.img_iconify);
-    DisposeImageContainer(sd->di.img_lock);
-    DisposeImageContainer(sd->di.img_winbar_normal);
-    DisposeImageContainer(sd->di.img_border_normal);
-    DisposeImageContainer(sd->di.img_border_deactivated);
-    DisposeImageContainer(sd->di.img_verticalcontainer);
-    DisposeImageContainer(sd->di.img_verticalknob);
-    DisposeImageContainer(sd->di.img_horizontalcontainer);
-    DisposeImageContainer(sd->di.img_horizontalknob);
-
-    DisposeImageContainer(sd->di.img_menu);
-    DisposeImageContainer(sd->di.img_amigakey);
-    DisposeImageContainer(sd->di.img_menucheck);
-    DisposeImageContainer(sd->di.img_submenu);
+    FreeImages(sd->di);
 
     return TRUE;
 }
