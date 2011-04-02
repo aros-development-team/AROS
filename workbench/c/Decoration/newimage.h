@@ -24,7 +24,6 @@ struct NewImage
 
     BOOL    istiled;
     UWORD   tile_left, tile_top, tile_bottom, tile_right;
-    UWORD   inner_left, inner_top, inner_bottom, inner_right;
 
     Object  *o;                 /* Stored DT object */
     APTR    mask;               /* Mask pointer from DT object */

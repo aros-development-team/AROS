@@ -129,6 +129,8 @@ struct DecorConfig
     LONG    MenuTileTop;
     LONG    MenuTileRight;
     LONG    MenuTileBottom;
+    
+    /* Menu Section - not used */
     LONG    MenuInnerLeft;
     LONG    MenuInnerTop;
     LONG    MenuInnerRight;
