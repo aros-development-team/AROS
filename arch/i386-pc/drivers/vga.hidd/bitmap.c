@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for VGA hidd.
@@ -39,6 +39,7 @@
 /* Don't initialize static variables with "=0", otherwise they go into DATA segment */
 
 static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddChunkyBMAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
 static OOP_AttrBase HiddSyncAttrBase;
@@ -48,6 +49,7 @@ static OOP_AttrBase HiddVGABitMapAB;
 static struct OOP_ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
+    { IID_Hidd_ChunkyBM,	&HiddChunkyBMAttrBase },
     { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },
     { IID_Hidd_Gfx,		&HiddGfxAttrBase },
     { IID_Hidd_Sync,		&HiddSyncAttrBase },
@@ -119,6 +121,13 @@ OOP_Object *PCVGABM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
 	D(bug("[VGABitMap] Allocated videodata at 0x%p\n", data->VideoData));
 	if (data->VideoData) {
+            struct TagItem tags[2];
+
+            tags[0].ti_Tag = aHidd_ChunkyBM_Buffer;
+            tags[0].ti_Data = (IPTR)data->VideoData;
+            tags[1].ti_Tag = TAG_END;
+            OOP_SetAttrs(o, tags);
+
 	    /* If the bitmap is not displayable, we're done */
 	    if (!displayable)
 		ReturnPtr("VGAGfx.BitMap::New()", OOP_Object *, o);
@@ -277,208 +286,12 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 }
 
 /*********  BitMap::PutPixel()  ***************************/
+// FIXME: in theory we shouldn't need this method since the superclass implements it
 
 VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    HIDDT_Pixel fg;
-    unsigned char *ptr;
-
-    fg = msg->pixel;
-    ptr = (char *)(data->VideoData + msg->x + (msg->y * data->bpr));
-    *ptr = (char) fg;
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     return;
-}
-
-/*********  BitMap::GetPixel()  *********************************/
-HIDDT_Pixel MNAME_BM(GetPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
-{
-    HIDDT_Pixel pixel=0;
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    
-    unsigned char *ptr;
-
-    ptr = (char *)(data->VideoData + msg->x + (msg->y * data->bpr));
-
-    pixel = *(char*)ptr;
-
-    /* Get pen number from colortab */
-    return pixel;
-}
-
-/*********  BitMap::PutImage()  ***************************/
-
-VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
-{
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    
-    EnterFunc(bug("VGAGfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
-    	msg->pixels, msg->x, msg->y, msg->width, msg->height));
-
-    switch(msg->pixFmt)
-    {
-    	case vHidd_StdPixFmt_Native:
-	    HIDD_BM_CopyMemBox8(o,
-		    	    	msg->pixels,
-				0,
-				0,
-				data->VideoData,
-				msg->x,
-				msg->y,
-				msg->width,
-				msg->height,
-				msg->modulo,
-				data->bpr);
-	    break;
-	    
-   	case vHidd_StdPixFmt_Native32:
-	    HIDD_BM_PutMem32Image8(o,
-		    	    	   msg->pixels,
-				   data->VideoData,
-				   msg->x,
-				   msg->y,
-				   msg->width,
-				   msg->height,
-				   msg->modulo,
-				   data->bpr);
-	    break;
-	    
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    break;
-	    
-    }    
-    ReturnVoid("VGAGfx.BitMap::PutImage");
-}
-
-/*********  BitMap::GetImage()  ***************************/
-
-VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
-{
-    struct bitmap_data  *data = OOP_INST_DATA(cl, o);
-
-    switch(msg->pixFmt)
-    {
-    	case vHidd_StdPixFmt_Native:
-	    HIDD_BM_CopyMemBox8(o,
-		    	    	data->VideoData,
-				msg->x,
-				msg->y,
-				msg->pixels,
-				0,
-				0,
-				msg->width,
-				msg->height,
-				data->bpr,
-				msg->modulo);
-	    break;
-	    
-    	case vHidd_StdPixFmt_Native32:
-	    HIDD_BM_GetMem32Image8(o,
-		    	    	   data->VideoData,
-				   msg->x,
-				   msg->y,
-				   msg->pixels,
-				   msg->width,
-				   msg->height,
-				   data->bpr,
-				   msg->modulo);
-    	    break;
-	    
-	    
-    	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    break;
-	    
-    } /* switch(msg->pixFmt) */
-    
-}
-
-/*********  BitMap::PutImageLUT()  ***************************/
-
-VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
-{
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-
-    EnterFunc(bug("VGAGfx.BitMap::PutImageLUT(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
-    	msg->pixels, msg->x, msg->y, msg->width, msg->height));
-
-    HIDD_BM_CopyMemBox8(o,
-		    	msg->pixels,
-			0,
-			0,
-			data->VideoData,
-			msg->x,
-			msg->y,
-			msg->width,
-			msg->height,
-			msg->modulo,
-			data->bpr);
-    
-    ReturnVoid("VGAGfx.BitMap::PutImageLUT");
-}
-
-/*********  BitMap::GetImageLUT()  ***************************/
-
-VOID MNAME_BM(GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
-{
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-
-    HIDD_BM_CopyMemBox8(o,
-			data->VideoData,
-			msg->x,
-			msg->y,
-			msg->pixels,
-			0,
-			0,
-			msg->width,
-			msg->height,
-			data->bpr,
-			msg->modulo);
-
-}
-
-/*********  BitMap::FillRect()  ***************************/
-
-VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
-{
-    struct bitmap_data *data =OOP_INST_DATA(cl, o);
-    HIDDT_Pixel fg = GC_FG(msg->gc);
-    HIDDT_DrawMode mode = GC_DRMD(msg->gc);
-
-    EnterFunc(bug("VGAGfx.BitMap::FillRect(%d,%d,%d,%d)\n",
-    	msg->minX, msg->minY, msg->maxX, msg->maxY));
-
-    switch(mode)
-    {
-        case vHidd_GC_DrawMode_Copy:
-	    HIDD_BM_FillMemRect8(o,
-	    	    	    	 data->VideoData,
-	    	    	    	 msg->minX,
-				 msg->minY,
-				 msg->maxX,
-				 msg->maxY,
-				 data->bpr,
-				 fg);
-	    break;
-	    
-	case vHidd_GC_DrawMode_Invert:
-	    HIDD_BM_InvertMemRect(o,
-	    	    	    	 data->VideoData,
-	    	    	    	 msg->minX,
-				 msg->minY,
-				 msg->maxX,
-				 msg->maxY,
-				 data->bpr);
-	    break;
-	    
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    break;
-	    
-    } /* switch(mode) */
-
-    ReturnVoid("VGAGfx.BitMap::FillRect");
 }
 
 /*** BitMap::Set() *******************************************/
