@@ -3,13 +3,34 @@
 
 #include <exec/types.h>
 #include <exec/devices.h>
-#include <exec/semaphores.h>
 #include <exec/interrupts.h>
-#include <exec/tasks.h>
+#include <devices/audio.h>
+
+#define NR_CH 4
+#define CH_MASK ((1 << NR_CH) - 1)
 
 struct AudioBase
 {
     struct Device td_device;
+    struct Interrupt audint[NR_CH];
+    UWORD *zerosample;
+    WORD key[NR_CH];
+    BYTE  pri[NR_CH];
+    WORD keygen;
+    struct MinList writelist[NR_CH];
+    struct MinList misclist;
+    UWORD cycles[NR_CH];
+    UWORD initialcyclemask;
+    UWORD stopmask;
 };
+
+extern void audiohw_reset(struct AudioBase *ab, UWORD mask);
+extern void audiohw_start(struct AudioBase *ab, UWORD mask);
+extern void audiohw_stop(struct AudioBase *ab, UWORD mask);
+extern void audiohw_preparept(struct AudioBase *ab, struct IOAudio *io, UBYTE ch);
+extern void audiohw_preparepervol(struct AudioBase *ab, struct IOAudio *io, UBYTE ch);
+
+extern struct IOAudio *getnextwrite(struct AudioBase *ab, UBYTE ch, BOOL second);
+
 
 #endif
