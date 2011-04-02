@@ -18,6 +18,7 @@ struct MenuData
     struct BitMap   *map;
 
     struct NewImage *img_menu;
+    struct TileInfo *img_menu_ti;
     struct NewImage *img_amigakey;
     struct NewImage *img_menucheck;
     struct NewImage *img_submenu;

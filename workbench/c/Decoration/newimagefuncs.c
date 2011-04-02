@@ -256,11 +256,6 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
         out->h = in->h;
         out->subimagescols = in->subimagescols;
         out->subimagesrows = in->subimagesrows;
-        out->istiled = in->istiled;
-        out->tile_left = in->tile_left;
-        out->tile_right = in->tile_right;
-        out->tile_top = in->tile_top;
-        out->tile_bottom = in->tile_bottom;
         out->filename = NULL;
         out->bitmap = NULL;
         out->bitmap2 = NULL;

@@ -115,38 +115,37 @@ static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _
     }
 }
 
-static void TileImageToImage(struct NewImage *src, struct NewImage *dest)
+static void TileImageToImage(struct NewImage *src, struct TileInfo * srcti, struct NewImage *dest)
 {
     ULONG  *s, *d;
     UWORD   y, h;
 
     if (dest == NULL) return;
     if (src == NULL) return;
+    if (srcti == NULL) return;
     y = 0;
 
     h = src->h;
 
     s = src->data;
     d = dest->data;
-    if (src->istiled == FALSE) return;
-    dest->istiled = TRUE;
 
-    if ((src->tile_top + src->tile_bottom) > dest->h) return;
-    if ((src->tile_left + src->tile_right) > dest->w) return;
+    if ((srcti->TileTop + srcti->TileBottom) > dest->h) return;
+    if ((srcti->TileLeft + srcti->TileRight) > dest->w) return;
 
-    DrawTileToImage(src, dest, 0, y, src->tile_left, src->tile_top, 0 , 0, src->tile_left, src->tile_top);
-    DrawTileToImage(src, dest, 0, y + h - src->tile_bottom, src->tile_left, src->tile_bottom, 0 , dest->h - src->tile_bottom, src->tile_left, src->tile_bottom);
-    DrawTileToImage(src, dest, src->w - src->tile_right, y, src->tile_right, src->tile_top, dest->w - src->tile_right, 0, src->tile_right, src->tile_top);
-    DrawTileToImage(src, dest, src->w - src->tile_right, y + h - src->tile_bottom, src->tile_right, src->tile_bottom, dest->w - src->tile_right , dest->h - src->tile_bottom, src->tile_right, src->tile_bottom);
+    DrawTileToImage(src, dest, 0, y, srcti->TileLeft, srcti->TileTop, 0 , 0, srcti->TileLeft, srcti->TileTop);
+    DrawTileToImage(src, dest, 0, y + h - srcti->TileBottom, srcti->TileLeft, srcti->TileBottom, 0 , dest->h - srcti->TileBottom, srcti->TileLeft, srcti->TileBottom);
+    DrawTileToImage(src, dest, src->w - srcti->TileRight, y, srcti->TileRight, srcti->TileTop, dest->w - srcti->TileRight, 0, srcti->TileRight, srcti->TileTop);
+    DrawTileToImage(src, dest, src->w - srcti->TileRight, y + h - srcti->TileBottom, srcti->TileRight, srcti->TileBottom, dest->w - srcti->TileRight , dest->h - srcti->TileBottom, srcti->TileRight, srcti->TileBottom);
 
-    DrawTileToImage(src, dest, src->tile_left, y, src->w - src->tile_left - src->tile_right, src->tile_top, src->tile_left, 0, dest->w - src->tile_left - src->tile_right, src->tile_top);
-    DrawTileToImage(src, dest, src->tile_left, y + h - src->tile_bottom, src->w - src->tile_left - src->tile_right, src->tile_bottom, src->tile_left, dest->h - src->tile_bottom, dest->w - src->tile_left - src->tile_right, src->tile_bottom);
-    DrawTileToImage(src, dest, 0, y + src->tile_top, src->tile_left, h - src->tile_bottom - src->tile_top, 0 , src->tile_top + 0, src->tile_left, dest->h - src->tile_top - src->tile_bottom - 0);
-    DrawTileToImage(src, dest, src->w - src->tile_right, y + src->tile_top, src->tile_right,  h - src->tile_bottom - src->tile_top, dest->w - src->tile_right, src->tile_top + 0, src->tile_right, dest->h - src->tile_top - src->tile_bottom - 0);
-    DrawTileToImage(src, dest, src->tile_left, y + src->tile_top, src->w - src->tile_left - src->tile_right, h - src->tile_bottom - src->tile_top, src->tile_left, src->tile_top + 0, dest->w - src->tile_left - src->tile_right, dest->h - src->tile_top - src->tile_bottom - 0);
+    DrawTileToImage(src, dest, srcti->TileLeft, y, src->w - srcti->TileLeft - srcti->TileRight, srcti->TileTop, srcti->TileLeft, 0, dest->w - srcti->TileLeft - srcti->TileRight, srcti->TileTop);
+    DrawTileToImage(src, dest, srcti->TileLeft, y + h - srcti->TileBottom, src->w - srcti->TileLeft - srcti->TileRight, srcti->TileBottom, srcti->TileLeft, dest->h - srcti->TileBottom, dest->w - srcti->TileLeft - srcti->TileRight, srcti->TileBottom);
+    DrawTileToImage(src, dest, 0, y + srcti->TileTop, srcti->TileLeft, h - srcti->TileBottom - srcti->TileTop, 0 , srcti->TileTop + 0, srcti->TileLeft, dest->h - srcti->TileTop - srcti->TileBottom - 0);
+    DrawTileToImage(src, dest, src->w - srcti->TileRight, y + srcti->TileTop, srcti->TileRight,  h - srcti->TileBottom - srcti->TileTop, dest->w - srcti->TileRight, srcti->TileTop + 0, srcti->TileRight, dest->h - srcti->TileTop - srcti->TileBottom - 0);
+    DrawTileToImage(src, dest, srcti->TileLeft, y + srcti->TileTop, src->w - srcti->TileLeft - srcti->TileRight, h - srcti->TileBottom - srcti->TileTop, srcti->TileLeft, srcti->TileTop + 0, dest->w - srcti->TileLeft - srcti->TileRight, dest->h - srcti->TileTop - srcti->TileBottom - 0);
 }
 
-static void  MixImage(struct NewImage *dst, struct NewImage *src, UWORD ratio, UWORD w, UWORD h, UWORD dx, UWORD dy)
+static void  MixImage(struct NewImage *dst, struct NewImage *src, struct TileInfo *srcti, UWORD ratio, UWORD w, UWORD h, UWORD dx, UWORD dy)
 {
     ULONG  *s, *d;
     ULONG   rgba, rgb;
@@ -161,7 +160,7 @@ static void  MixImage(struct NewImage *dst, struct NewImage *src, UWORD ratio, U
     s = src->data;
     d = dst->data;
 
-    if (src) if (src->istiled) tiled = TRUE;
+    if (srcti) tiled = TRUE;
 
     for (y = 0; y < h; y++)
     {
@@ -198,7 +197,7 @@ static void  MixImage(struct NewImage *dst, struct NewImage *src, UWORD ratio, U
 }
 
 
-static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *texture, UWORD ratio)
+static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *texture, struct TileInfo * textureti, UWORD ratio)
 {
     int     x, y, ytw, t1, t2, b1, b2, l1, l2, r1, r2;
     UWORD   red, green, blue, alpha= 0, rs, gs, bs, as;
@@ -211,7 +210,7 @@ static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *textu
     if (pic->data == NULL) return;
 
     tw = pic->w;
-    if (texture) if (texture->istiled) tiled = TRUE;
+    if (textureti) tiled = TRUE;
     th = pic->h;
     raw = pic->data;
     height = th;
@@ -358,7 +357,7 @@ static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *textu
                 {
                     aw = texture->w;
                     if (aw > w) aw = w;
-                    MixImage(pic, texture, 255 - (2.55 * ratio), aw, ah, xpos, ypos);
+                    MixImage(pic, texture, textureti, 255 - (2.55 * ratio), aw, ah, xpos, ypos);
                     w -= aw;
                     xpos += aw;
                 }
@@ -369,7 +368,7 @@ static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *textu
     }
 }
 
-static void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture, UWORD ratio)
+static void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio)
 {
     struct NewImage *ni;
 
@@ -378,18 +377,18 @@ static void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture
         ni = NewImageContainer(pic->w, pic->h);
         if (ni)
         {
-            if (texture->istiled)
+            if (textureti)
             {
-                TileImageToImage(texture, ni);
-                BlurSourceAndMixTexture(pic, ni, ratio);
+                TileImageToImage(texture, textureti, ni);
+                BlurSourceAndMixTexture(pic, ni, textureti, ratio);
             }
-            else BlurSourceAndMixTexture(pic, texture, ratio);
+            else BlurSourceAndMixTexture(pic, texture, textureti, ratio);
 
             DisposeImageContainer(ni);
         }
-        else BlurSourceAndMixTexture(pic, texture, ratio);
+        else BlurSourceAndMixTexture(pic, texture, textureti, ratio);
     }
-    else BlurSourceAndMixTexture(pic, NULL, ratio);
+    else BlurSourceAndMixTexture(pic, NULL, NULL, ratio);
 }
 
 static int WriteTiledImageNoAlpha(struct Window *win, struct RastPort *rp, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
@@ -499,13 +498,14 @@ void DrawPartToImage(struct NewImage *src, struct NewImage *dest, UWORD sx, UWOR
     }
 }
 
-void RenderBackground(struct NewImage *pic, struct NewImage *texture, UWORD ratio)
+void RenderBackground(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio)
 {
     if (texture)
     {
-        if (texture->istiled) RenderBackgroundTiled(pic, texture, ratio); else BlurSourceAndMixTexture(pic, texture, ratio);
+        if (textureti) RenderBackgroundTiled(pic, texture, textureti, ratio); 
+        else BlurSourceAndMixTexture(pic, texture, textureti, ratio);
     }
-    else BlurSourceAndMixTexture(pic, NULL, ratio);
+    else BlurSourceAndMixTexture(pic, NULL, NULL, ratio);
 }
 
 void WriteAlphaPixelArray(struct NewImage *src, struct NewLUT8Image *dst, LONG sx, LONG sy, LONG dx, LONG dy, LONG w, LONG h)
@@ -925,20 +925,19 @@ void HorizRepeatBuffer(UBYTE * buf, LONG offy, LONG pen, BOOL tc, struct RastPor
     FreeVec(bufblit);
 }
 
-void TileMapToBitmap(struct NewImage *src, struct BitMap *map, UWORD dw, UWORD dh)
+void TileMapToBitmap(struct NewImage *src, struct TileInfo *srcti, struct BitMap *map, UWORD dw, UWORD dh)
 {
     UWORD   y, h;
 
     if (map == NULL) return;
     if (src == NULL) return;
+    if (srcti == NULL) return;
     y = 0;
 
     h = src->h;
 
-    if (src->istiled == FALSE) return;
-
-    if ((src->tile_top + src->tile_bottom) > dh) return;
-    if ((src->tile_left + src->tile_right) > dw) return;
+    if ((srcti->TileTop + srcti->TileBottom) > dh) return;
+    if ((srcti->TileLeft + srcti->TileRight) > dw) return;
 
     struct RastPort *dest = CreateRastPort();
 
@@ -946,16 +945,16 @@ void TileMapToBitmap(struct NewImage *src, struct BitMap *map, UWORD dw, UWORD d
     {
         dest->BitMap = map;
 
-        DrawMapTileToRP(src, dest, 0, y, src->tile_left, src->tile_top, 0 , 0, src->tile_left, src->tile_top);
-        DrawMapTileToRP(src, dest, 0, y + h - src->tile_bottom, src->tile_left, src->tile_bottom, 0 , dh - src->tile_bottom, src->tile_left, src->tile_bottom);
-        DrawMapTileToRP(src, dest, src->w - src->tile_right, y, src->tile_right, src->tile_top, dw - src->tile_right, 0, src->tile_right, src->tile_top);
-        DrawMapTileToRP(src, dest, src->w - src->tile_right, y + h - src->tile_bottom, src->tile_right, src->tile_bottom, dw - src->tile_right , dh - src->tile_bottom, src->tile_right, src->tile_bottom);
+        DrawMapTileToRP(src, dest, 0, y, srcti->TileLeft, srcti->TileTop, 0 , 0, srcti->TileLeft, srcti->TileTop);
+        DrawMapTileToRP(src, dest, 0, y + h - srcti->TileBottom, srcti->TileLeft, srcti->TileBottom, 0 , dh - srcti->TileBottom, srcti->TileLeft, srcti->TileBottom);
+        DrawMapTileToRP(src, dest, src->w - srcti->TileRight, y, srcti->TileRight, srcti->TileTop, dw - srcti->TileRight, 0, srcti->TileRight, srcti->TileTop);
+        DrawMapTileToRP(src, dest, src->w - srcti->TileRight, y + h - srcti->TileBottom, srcti->TileRight, srcti->TileBottom, dw - srcti->TileRight , dh - srcti->TileBottom, srcti->TileRight, srcti->TileBottom);
 
-        DrawMapTileToRP(src, dest, src->tile_left, y, src->w - src->tile_left - src->tile_right, src->tile_top, src->tile_left, 0, dw - src->tile_left - src->tile_right, src->tile_top);
-        DrawMapTileToRP(src, dest, src->tile_left, y + h - src->tile_bottom, src->w - src->tile_left - src->tile_right, src->tile_bottom, src->tile_left, dh - src->tile_bottom, dw - src->tile_left - src->tile_right, src->tile_bottom);
-        DrawMapTileToRP(src, dest, 0, y + src->tile_top, src->tile_left, h - src->tile_bottom - src->tile_top, 0 , src->tile_top + 0, src->tile_left, dh - src->tile_top - src->tile_bottom - 0);
-        DrawMapTileToRP(src, dest, src->w - src->tile_right, y + src->tile_top, src->tile_right,  h - src->tile_bottom - src->tile_top, dw - src->tile_right, src->tile_top + 0, src->tile_right, dh - src->tile_top - src->tile_bottom - 0);
-        DrawMapTileToRP(src, dest, src->tile_left, y + src->tile_top, src->w - src->tile_left - src->tile_right, h - src->tile_bottom - src->tile_top, src->tile_left, src->tile_top + 0, dw - src->tile_left - src->tile_right, dh - src->tile_top - src->tile_bottom - 0);
+        DrawMapTileToRP(src, dest, srcti->TileLeft, y, src->w - srcti->TileLeft - srcti->TileRight, srcti->TileTop, srcti->TileLeft, 0, dw - srcti->TileLeft - srcti->TileRight, srcti->TileTop);
+        DrawMapTileToRP(src, dest, srcti->TileLeft, y + h - srcti->TileBottom, src->w - srcti->TileLeft - srcti->TileRight, srcti->TileBottom, srcti->TileLeft, dh - srcti->TileBottom, dw - srcti->TileLeft - srcti->TileRight, srcti->TileBottom);
+        DrawMapTileToRP(src, dest, 0, y + srcti->TileTop, srcti->TileLeft, h - srcti->TileBottom - srcti->TileTop, 0 , srcti->TileTop + 0, srcti->TileLeft, dh - srcti->TileTop - srcti->TileBottom - 0);
+        DrawMapTileToRP(src, dest, src->w - srcti->TileRight, y + srcti->TileTop, srcti->TileRight,  h - srcti->TileBottom - srcti->TileTop, dw - srcti->TileRight, srcti->TileTop + 0, srcti->TileRight, dh - srcti->TileTop - srcti->TileBottom - 0);
+        DrawMapTileToRP(src, dest, srcti->TileLeft, y + srcti->TileTop, src->w - srcti->TileLeft - srcti->TileRight, h - srcti->TileBottom - srcti->TileTop, srcti->TileLeft, srcti->TileTop + 0, dw - srcti->TileLeft - srcti->TileRight, dh - srcti->TileTop - srcti->TileBottom - 0);
         FreeRastPort(dest);
     }
 }

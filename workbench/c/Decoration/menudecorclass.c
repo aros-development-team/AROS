@@ -11,7 +11,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
-#include <string.h>
+#include <proto/exec.h>
 
 #include "menudecorclass.h"
 #include "screendecorclass.h"
@@ -196,11 +196,15 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
     SETIMAGE_MEN(menucheck);
     SETIMAGE_MEN(submenu);
 
-    md->img_menu->istiled       = data->dc->MenuIsTiled;
-    md->img_menu->tile_left     = data->dc->MenuTileLeft;
-    md->img_menu->tile_top      = data->dc->MenuTileTop;
-    md->img_menu->tile_right    = data->dc->MenuTileRight;
-    md->img_menu->tile_bottom   = data->dc->MenuTileBottom;
+    if (data->dc->MenuIsTiled)
+    {
+        md->img_menu_ti = AllocVec(sizeof(struct TileInfo), MEMF_ANY | MEMF_CLEAR);
+        md->img_menu_ti->TileLeft   = data->dc->MenuTileLeft;
+        md->img_menu_ti->TileRight  = data->dc->MenuTileRight;
+        md->img_menu_ti->TileBottom = data->dc->MenuTileBottom;
+        md->img_menu_ti->TileTop    = data->dc->MenuTileTop;
+    }
+
     md->truecolor = msg->mdp_TrueColor;
 
 //    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -210,7 +214,7 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
         md->ni = GetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
         if (md->ni) {
             md->ni->ok = TRUE;
-            RenderBackground(md->ni, md->img_menu, 20);
+            RenderBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
         }
     }
     else
@@ -219,7 +223,7 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
         if (md->map) {
             BltBitMap(rp->BitMap, msg->mdp_Left, msg->mdp_Top, md->map, 0, 0, msg->mdp_Width, msg->mdp_Height, 0xc0, 0xff, NULL);
 
-            TileMapToBitmap(md->img_menu, md->map, msg->mdp_Width, msg->mdp_Height);
+            TileMapToBitmap(md->img_menu, md->img_menu_ti, md->map, msg->mdp_Width, msg->mdp_Height);
         }
     }
 
@@ -232,6 +236,7 @@ static IPTR menudecor_exitmenu(Class *cl, Object *obj, struct mdpExitMenu *msg)
 
     if (md->ni) DisposeImageContainer(md->ni);
     if (md->map) FreeBitMap(md->map);
+    if (md->img_menu_ti) FreeVec(md->img_menu_ti);
 
     return TRUE;
 }
