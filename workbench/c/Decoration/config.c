@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "newimage.h"
 #include "config.h"
 
 
@@ -454,4 +455,44 @@ void FreeConfig(struct DecorConfig * dc)
         FreeVec(dc->ThemePath);
 
     FreeVec(dc);
+}
+
+struct DecorImages * NewImages()
+{
+    return AllocVec(sizeof(struct DecorImages), MEMF_ANY | MEMF_CLEAR);
+}
+
+void FreeImages(struct DecorImages * di)
+{
+    DisposeImageContainer(di->img_sdepth);
+    DisposeImageContainer(di->img_sbarlogo);
+    DisposeImageContainer(di->img_stitlebar);
+
+    DisposeImageContainer(di->img_size);
+    DisposeImageContainer(di->img_close);
+    DisposeImageContainer(di->img_depth);
+    DisposeImageContainer(di->img_zoom);
+    DisposeImageContainer(di->img_up);
+    DisposeImageContainer(di->img_down);
+    DisposeImageContainer(di->img_left);
+    DisposeImageContainer(di->img_right);
+    DisposeImageContainer(di->img_mui);
+    DisposeImageContainer(di->img_popup);
+    DisposeImageContainer(di->img_snapshot);
+    DisposeImageContainer(di->img_iconify);
+    DisposeImageContainer(di->img_lock);
+    DisposeImageContainer(di->img_winbar_normal);
+    DisposeImageContainer(di->img_border_normal);
+    DisposeImageContainer(di->img_border_deactivated);
+    DisposeImageContainer(di->img_verticalcontainer);
+    DisposeImageContainer(di->img_verticalknob);
+    DisposeImageContainer(di->img_horizontalcontainer);
+    DisposeImageContainer(di->img_horizontalknob);
+
+    DisposeImageContainer(di->img_menu);
+    DisposeImageContainer(di->img_amigakey);
+    DisposeImageContainer(di->img_menucheck);
+    DisposeImageContainer(di->img_submenu);
+    
+    FreeVec(di);
 }
