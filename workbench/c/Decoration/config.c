@@ -437,10 +437,21 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
 struct DecorConfig * LoadConfig(STRPTR path)
 {
     struct DecorConfig * dc = AllocVec(sizeof(struct DecorConfig), MEMF_ANY | MEMF_CLEAR);
-    
+
+    dc->ThemePath = AllocVec(strlen(path) + 1, MEMF_ANY | MEMF_CLEAR);
+    strcpy(dc->ThemePath, path);
+
     LoadMenuConfig(path, dc);
     
     LoadSystemConfig(path, dc);
     
     return dc;
 };
+
+void FreeConfig(struct DecorConfig * dc)
+{
+    if (dc->ThemePath)
+        FreeVec(dc->ThemePath);
+
+    FreeVec(dc);
+}

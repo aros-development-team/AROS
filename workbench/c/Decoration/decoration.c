@@ -76,7 +76,7 @@ void DeleteDecorator(struct NewDecorator *nd)
     if (nd->nd_Menu != NULL) DisposeObject(nd->nd_Menu);
     if (nd->nd_Window != NULL) DisposeObject(nd->nd_Window);
     if (nd->nd_Screen != NULL) DisposeObject(nd->nd_Screen);
-    if (((struct DefaultNewDecorator *)nd)->dc != NULL) FreeVec(((struct DefaultNewDecorator *)nd)->dc);
+    if (((struct DefaultNewDecorator *)nd)->dc != NULL) FreeConfig(((struct DefaultNewDecorator *)nd)->dc);
     FreeVec(nd);
 }
 
@@ -88,9 +88,6 @@ struct NewDecorator *GetDecorator(STRPTR path)
     STRPTR newpath;
 
     if (path != NULL) newpath = path; else newpath = "Theme:";
-
-    
-
 
     dnd = AllocVec(sizeof(struct DefaultNewDecorator), MEMF_CLEAR | MEMF_ANY);
     

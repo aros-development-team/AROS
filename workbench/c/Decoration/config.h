@@ -10,6 +10,8 @@
 
 struct DecorConfig
 {
+    STRPTR  ThemePath;
+
     /* Screen Section */
     LONG    LeftBorder;
     LONG    RightBorder;
@@ -134,5 +136,6 @@ struct DecorConfig
 };
 
 struct DecorConfig * LoadConfig(STRPTR path);
+void FreeConfig(struct DecorConfig * dc);
 
 #endif
