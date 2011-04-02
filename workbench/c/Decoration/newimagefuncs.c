@@ -296,7 +296,10 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
                 /* Load the original image with conversion */
                 out->o = LoadPicture(in->filename, scr);
                 if (out->o != NULL)
-                    out->filename = strdup(in->filename);
+                {
+                    out->filename = AllocVec(strlen(in->filename), MEMF_ANY | MEMF_CLEAR);
+                    strcpy(out->filename, in->filename);
+                }
             }
             
             if (out->o)
@@ -329,7 +332,8 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
                 ULONG subimagewidth = out->w / out->subimagescols;
                 ULONG subimageheight = out->h / out->subimagesrows;
                 ULONG col = 0, row = 0, x = 0, y = 0;
-                out->filename = strdup(in->filename);
+                out->filename = AllocVec(strlen(in->filename), MEMF_ANY | MEMF_CLEAR);
+                strcpy(out->filename, in->filename);
                 out->mask = NULL;
                 out->o = NULL;
                 BOOL atleastone = FALSE;
