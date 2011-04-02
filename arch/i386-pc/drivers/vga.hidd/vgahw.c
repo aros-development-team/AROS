@@ -473,8 +473,8 @@ void vgaRefreshArea(struct bitmap_data *bmap, struct Box *pbox)
     left   = pbox->x1 & ~7;	      /* Round down left (start) coordinate */
     right  = (pbox->x2 & ~7) + 7;     /* Round up right (end) coordinate    */
 
-    /* Check if refresh region is completely beyond physical display limits.     
-       If so, do noting */
+    /* Check if refresh region is completely beyond physical display limits.
+       If so, do nothing */
     if ((left >= bmap->disp_width) || (pbox->y1 >= bmap->disp_height))
         return;
     /* Now adjust bottom-right corner */
@@ -485,7 +485,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, struct Box *pbox)
     else
         height = bmap->disp_height - pbox->y1;
 
-    /* We don't check top-left corne of the display.
+    /* We don't check top-left corner of the display.
        We assume that refresh region will never have negative
        coordinates. Also we assume that the entire screen is
        covered with the bitmap (i. e. bitmap is not smaller than
@@ -511,7 +511,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, struct Box *pbox)
     dst    = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
 
     /* In order to speedup we operate on LONGs. However since our start
-       coordinate may be not LONG-aqligned, we probably have to copy
+       coordinate may be not LONG-aligned, we probably have to copy
        some BYTEs before we reach LONG border. phase is a number
        of these bytes */
     phase = (LONG)dst & 3L;
