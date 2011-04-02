@@ -2,7 +2,7 @@
 #define HIDD_GRAPHICS_H
 
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for the Graphics HIDD system.
@@ -34,10 +34,6 @@
 #define IID_Hidd_PixFmt	    	"hidd.graphics.pixfmt"
 
 #define IID_Hidd_Overlay	"hidd.graphics.overlay"
-
-/* Some "example" hidd bitmaps */
-
-#define CLID_Hidd_ChunkyBM "hidd.graphics.bitmap.chunkybm"
 
 
 typedef OOP_Object *HIDDT_BitMap;
@@ -450,7 +446,7 @@ typedef struct
 /* Standard pixelformats */
 enum
 {
-    /* Pseudo formats. These are not real pixelfromats but are passed
+    /* Pseudo formats. These are not real pixelformats but are passed
        for example to HIDD_BM_PutImage() to tell the format of the data
     */
       
@@ -657,11 +653,11 @@ enum
 enum
 {
     /* Attributes for a bitmap */
-    aoHidd_BitMap_Width,         /*  0 [ISG] Bitmap with                          */
+    aoHidd_BitMap_Width,         /*  0 [ISG] Bitmap width                         */
     aoHidd_BitMap_Height,        /*  1 [ISG] Bitmap height                        */
     aoHidd_BitMap_Displayable,   /*  2 [I.G] BOOL bitmap is displayable (default: FALSE)  */
     aoHidd_BitMap_Visible,       /*  3 [..G] Check if a bitmap is visible         */
-    aoHidd_BitMap_IsLinearMem,   /*  4 [..G] Is the bitmap memory contigous       */
+    aoHidd_BitMap_IsLinearMem,   /*  4 [..G] Is the bitmap memory contiguous      */
     aoHidd_BitMap_BytesPerRow,   /*  5 [..G] Number of bytes in a row             */
     aoHidd_BitMap_ColorMap,      /*  6 [..G] Colormap of the bitmap               */
     aoHidd_BitMap_Friend,	 /*  7 [I.G] Friend bitmap. The bitmap will be allocated so that it
@@ -669,7 +665,7 @@ enum
     aoHidd_BitMap_GfxHidd,	 /*  8 [..G] Pointer to the gfxhidd object this bitmap was created with */
     aoHidd_BitMap_StdPixFmt,	 /*  9 [I..] (HIDDT_StdPixFmt) What stdpixel format the bitmap should have.
 				             This is a shortcut to create a bitmap with a std pixelformat */
-    aoHidd_BitMap_PixFmt,	 /* 10 [..G] (OOP_Object *) This is complete pixmft of a bitmap */
+    aoHidd_BitMap_PixFmt,	 /* 10 [..G] (OOP_Object *) This is complete pixfmt of a bitmap */
     aoHidd_BitMap_ModeID,	 /* 11 [I.G] (HIDDT_ModeID) must be passed on initialization of
 				             aHidd_BitMap_Displayable=TRUE bitmaps. May also be
 				             used with non-displayable bitmaps */
@@ -2174,7 +2170,36 @@ enum
 
 #define IS_PLANARBM_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddPlanarBMAttrBase) < num_Hidd_PlanarBM_Attrs)
-    
+  
+
+
+/********** Chunky bitmap *******************/
+
+#define CLID_Hidd_ChunkyBM "hidd.graphics.bitmap.chunkybm"
+#define IID_Hidd_ChunkyBM  "hidd.graphics.bitmap.chunkybm"
+
+#define HiddChunkyBMAttrBase __IHidd_ChunkyBM
+
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddChunkyBMAttrBase;
+#endif
+
+enum
+{
+    aoHidd_ChunkyBM_Buffer,	/* [.SG] APTR */
+
+    num_Hidd_ChunkyBM_Attrs
+};
+
+#define aHidd_ChunkyBM_Buffer	(HiddChunkyBMAttrBase + aoHidd_ChunkyBM_Buffer)
+#define aHidd_ChunkyBM_		(HiddChunkyBMAttrBase + aoHidd_ChunkyBM_)
+
+
+
+#define IS_CHUNKYBM_ATTR(attr, idx) \
+	( ( ( idx ) = (attr) - HiddChunkyBMAttrBase) < num_Hidd_ChunkyBM_Attrs)
+
 
 
 /********** ColorMap *******************/

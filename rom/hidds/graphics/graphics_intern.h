@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -85,6 +85,7 @@ struct chunkybm_data
     UBYTE *buffer;
     ULONG bytesperrow;
     ULONG bytesperpixel;
+    BOOL own_buffer;
 };
 
 struct sync_data {
@@ -284,6 +285,7 @@ struct class_static_data
     OOP_AttrBase	 hiddOverlayAttrBase;
     OOP_AttrBase    	 hiddColorMapAttrBase;
     OOP_AttrBase    	 hiddPlanarBMAttrBase;
+    OOP_AttrBase    	 hiddChunkyBMAttrBase;
     
     OOP_Class            *gfxhiddclass; /* graphics hidd class    */
     OOP_Class            *bitmapclass;  /* bitmap class           */
@@ -332,6 +334,7 @@ struct class_static_data
 #define __IHidd_Overlay	    (csd->hiddOverlayAttrBase)
 #define __IHidd_ColorMap    (csd->hiddColorMapAttrBase)
 #define __IHidd_PlanarBM    (csd->hiddPlanarBMAttrBase)
+#define __IHidd_ChunkyBM    (csd->hiddChunkyBMAttrBase)
 
 /* Library base */
 
