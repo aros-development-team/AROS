@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VGA and compatible cards.
@@ -48,7 +48,7 @@ static AROS_UFH3(void, ResetHandler,
 	Pavel Fedin.
     vgaBlankScreen(0); */
 
-    struct bitmap_data *data = xsd->visible;
+    struct bitmap_data *data = OOP_INST_DATA(xsd->bmclass, xsd->visible);
 
     if (data)
     {
@@ -280,8 +280,8 @@ OOP_Object *PCVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 OOP_Object *PCVGA__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
     /* We currently use class static data instead of
-       object tata. In addition we directly access
-       bitmap's private data. This is horrbly wrong
+       object data. In addition we directly access
+       bitmap's private data. This is horribly wrong
        and needs further refactoring */
     struct vga_staticdata *data = XSD(cl);
     struct Box box;
@@ -291,8 +291,10 @@ OOP_Object *PCVGA__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 
     /* Remove old bitmap from the screen */
     if (data->visible) {
-	D(bug("[VGAGfx] Old displayed bitmap data: 0x%p\n", data->visible));
-	data->visible->disp = FALSE;
+	IPTR tags[] = {aHidd_BitMap_Visible, FALSE, TAG_DONE};
+
+	D(bug("[VGAGfx] Old displayed bitmap: 0x%p\n", data->visible));
+	OOP_SetAttrs(data->visible, (struct TagItem *)tags);
     }
 
     if (msg->bitMap) {
@@ -307,9 +309,9 @@ OOP_Object *PCVGA__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	data->mouseBase = (depth > 4) ? 16 : (1 << depth) - 8;
 
 	OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
-	data->visible = OOP_INST_DATA(data->bmclass, msg->bitMap);
+	data->visible = msg->bitMap;
     } else {
-	/* Otherwize simply clear the framebuffer */
+	/* Otherwise simply clear the framebuffer */
 	box.x1 = 0;
 	box.y1 = 0;
 	box.x2 = 639;
@@ -317,13 +319,13 @@ OOP_Object *PCVGA__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	ObtainSemaphore(&data->HW_acc);
 	/* We use old visible bitmap pointer here since this bitmap
 	   contains data about the current video mode */
-        vgaEraseArea(data->visible, &box);
+        vgaEraseArea(OOP_INST_DATA(data->bmclass, data->visible), &box);
 	draw_mouse(data);
 	ReleaseSemaphore(&data->HW_acc);
 
 	data->visible = NULL;
     }
-    D(bug("[VGAGfx] New displayed bitmap data: 0x%p\n", data->visible));
+    D(bug("[VGAGfx] New displayed bitmap: 0x%p\n", data->visible));
     D(bug("[VGAGfx] Mouse pointer base color: %u\n", data->mouseBase));
     
     ReleaseSemaphore(&data->sema);
@@ -633,8 +635,6 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     ReturnVoid("VGAGfx.BitMap::CopyBox");
 }
 
-/* stuff added by stegerg */
-
 /********** GfxHidd::SetCursorShape()  ****************************/
 
 BOOL PCVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
@@ -679,10 +679,15 @@ BOOL PCVGA__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
     if (XSD(cl)->visible)
     {
+        struct bitmap_data *bm_data =
+            OOP_INST_DATA(XSD(cl)->bmclass, XSD(cl)->visible);
+
         if (XSD(cl)->mouseX < 0) XSD(cl)->mouseX = 0;
 	if (XSD(cl)->mouseY < 0) XSD(cl)->mouseY = 0;
-	if (XSD(cl)->mouseX >= XSD(cl)->visible->width) XSD(cl)->mouseX = XSD(cl)->visible->width - 1;
-	if (XSD(cl)->mouseY >= XSD(cl)->visible->height) XSD(cl)->mouseY = XSD(cl)->visible->height - 1;
+	if (XSD(cl)->mouseX >= bm_data->width) XSD(cl)->mouseX =
+            bm_data->width - 1;
+	if (XSD(cl)->mouseY >= bm_data->height) XSD(cl)->mouseY =
+            bm_data->height - 1;
     }
     
     draw_mouse(XSD(cl));
@@ -745,8 +750,11 @@ void draw_mouse(struct vga_staticdata *xsd)
     {
         if (xsd->visible)
 	{
+            struct bitmap_data *bm_data =
+                OOP_INST_DATA(xsd->bmclass, xsd->visible);
+
 	    /* Get display width */
-	    width = xsd->visible->disp_width;
+	    width = bm_data->disp_width;
 
     	    /* And pointer data */
     	    data = xsd->mouseShape;
@@ -793,6 +801,6 @@ void erase_mouse(struct vga_staticdata *data)
         box.x2 = box.x1 + data->mouseW;
         box.y2 = box.y1 + data->mouseH;
 
-	vgaRefreshArea(data->visible, &box);
+	vgaRefreshArea(OOP_INST_DATA(data->bmclass, data->visible), &box);
     }
 }

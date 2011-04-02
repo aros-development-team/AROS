@@ -2,7 +2,7 @@
 #define HIDD_VGA_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the vga gfx HIDD.
@@ -42,7 +42,7 @@ struct vga_staticdata
 
     /* The following should be object data, not class data! */
     struct SignalSemaphore	HW_acc;	/* Exclusive hardware use */
-    struct bitmap_data	*visible;	/* Point to visible bitmap */
+    OOP_Object			*visible;	/* Points to visible bitmap */
 
     LONG		mouseX;		/* Pointer X position on screen */
     ULONG		mouseW;		/* Pointer width */
