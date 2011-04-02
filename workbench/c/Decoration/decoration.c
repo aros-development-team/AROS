@@ -49,12 +49,19 @@
 #include "screendecorclass.h"
 #include "menudecorclass.h"
 #include "newimage.h"
+#include "config.h"
 
 struct IClass *wndcl, *scrcl, *menucl;
 
 STRPTR __detached_name = "Decoration";
 
 #define MAGIC_PRIVATE_SKIN      0x0001
+
+struct DefaultNewDecorator
+{
+    struct NewDecorator base;   /* MUST BE FIRST */
+    struct DecorConfig * dc;
+};
 
 struct SkinMessage {
     struct MagicMessage msg;
@@ -69,12 +76,14 @@ void DeleteDecorator(struct NewDecorator *nd)
     if (nd->nd_Menu != NULL) DisposeObject(nd->nd_Menu);
     if (nd->nd_Window != NULL) DisposeObject(nd->nd_Window);
     if (nd->nd_Screen != NULL) DisposeObject(nd->nd_Screen);
+    if (((struct DefaultNewDecorator *)nd)->dc != NULL) FreeVec(((struct DefaultNewDecorator *)nd)->dc);
     FreeVec(nd);
 }
 
 struct NewDecorator *GetDecorator(STRPTR path)
 {
     struct NewDecorator *nd = NULL;
+    struct DefaultNewDecorator * dnd = NULL;
 
     STRPTR newpath;
 
@@ -83,9 +92,19 @@ struct NewDecorator *GetDecorator(STRPTR path)
     struct TagItem ScreenTags[] = { {SDA_UserBuffer, sizeof(struct ScreenData)}, {SDA_Configuration, (IPTR) newpath}, {TAG_DONE} };
 
 
-    nd = AllocVec(sizeof(struct NewDecorator), MEMF_CLEAR | MEMF_ANY);
-    if (nd)
+    dnd = AllocVec(sizeof(struct DefaultNewDecorator), MEMF_CLEAR | MEMF_ANY);
+    
+    if (dnd)
     {
+        nd = (struct NewDecorator *)dnd;
+
+        dnd->dc = LoadConfig(newpath);
+        if (!dnd->dc)
+        {
+            DeleteDecorator(nd);
+            return NULL;
+        }
+
         nd->nd_Screen = NewObjectA(scrcl, NULL, ScreenTags);
 
         if (nd->nd_Screen)
@@ -104,9 +123,9 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
             struct TagItem MenuTags[] = 
             { 
-                {MDA_UserBuffer, sizeof(struct MenuData)}, 
-                {MDA_Configuration, (IPTR) newpath}, 
-                {MDA_DecorImages, (IPTR)decorimages}, 
+                {MDA_UserBuffer, sizeof(struct MenuData)},
+                {MDA_DecorImages, (IPTR)decorimages},
+                {MDA_DecorConfig, (IPTR)dnd->dc},
                 {TAG_DONE} 
             };
 

@@ -27,8 +27,8 @@ struct MenuData
 
 };
 
-#define MDA_Configuration   0x10002
 #define MDA_DecorImages     0x10003
+#define MDA_DecorConfig     0x10004
 
 struct IClass * MakeMenuDecorClass();
 #endif
