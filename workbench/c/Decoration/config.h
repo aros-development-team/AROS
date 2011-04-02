@@ -8,16 +8,22 @@
 
 #include <exec/types.h>
 
-/* TODO: make private */
-LONG GetInt(STRPTR v);
-void GetIntegers(STRPTR v, LONG *v1, LONG *v2);
-void GetTripleIntegers(STRPTR v, LONG *v1, LONG *v2, LONG *v3);
-void GetColors(STRPTR v, LONG *v1, LONG *v2);
-BOOL GetBool(STRPTR v, STRPTR id);
-/* TODO: make private */
-
 struct DecorConfig
 {
+    /* Screen Section */
+    LONG    LeftBorder;
+    LONG    RightBorder;
+    LONG    BottomBorder;
+    LONG    SLogoOffset;
+    LONG    STitleOffset;
+    LONG    SBarHeight;
+    BOOL    STitleOutline;
+    BOOL    STitleShadow;
+    LONG    LUTBaseColors_a;
+    LONG    LUTBaseColors_d;
+    LONG    STitleColorText;
+    LONG    STitleColorShadow;
+
     /* Window Section */
     BOOL    BarRounded;
     BOOL    BarVertical;
