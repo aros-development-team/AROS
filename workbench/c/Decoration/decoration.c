@@ -61,6 +61,7 @@ struct DefaultNewDecorator
 {
     struct NewDecorator base;   /* MUST BE FIRST */
     struct DecorConfig * dc;
+    struct DecorImages * di;
 };
 
 struct SkinMessage {
@@ -77,6 +78,7 @@ void DeleteDecorator(struct NewDecorator *nd)
     if (nd->nd_Window != NULL) DisposeObject(nd->nd_Window);
     if (nd->nd_Screen != NULL) DisposeObject(nd->nd_Screen);
     if (((struct DefaultNewDecorator *)nd)->dc != NULL) FreeConfig(((struct DefaultNewDecorator *)nd)->dc);
+    if (((struct DefaultNewDecorator *)nd)->di != NULL) FreeImages(((struct DefaultNewDecorator *)nd)->di);
     FreeVec(nd);
 }
 
@@ -101,12 +103,20 @@ struct NewDecorator *GetDecorator(STRPTR path)
             DeleteDecorator(nd);
             return NULL;
         }
+        
+        dnd->di = LoadImages(dnd->dc);
+        
+        if (!dnd->di)
+        {
+            DeleteDecorator(nd);
+            return NULL;
+        }
 
         {
             struct TagItem ScreenTags[] = 
             { 
                 {SDA_UserBuffer, sizeof(struct ScreenData)},
-                {SDA_Configuration, (IPTR) newpath},
+                {SDA_DecorImages, (IPTR)dnd->di},
                 {SDA_DecorConfig, (IPTR)dnd->dc},
                 {TAG_DONE}
             };
@@ -115,14 +125,10 @@ struct NewDecorator *GetDecorator(STRPTR path)
         
         if (nd->nd_Screen)
         {
-            APTR decorimages = NULL;
-
-            get(nd->nd_Screen, SDA_DecorImages, &decorimages);
-
             struct TagItem WindowTags[] = 
             { 
                 {WDA_UserBuffer, sizeof(struct WindowData)},
-                {WDA_DecorImages, (IPTR)decorimages},
+                {WDA_DecorImages, (IPTR)dnd->di},
                 {WDA_DecorConfig, (IPTR)dnd->dc},
                 {TAG_DONE} 
             };
@@ -130,7 +136,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
             struct TagItem MenuTags[] = 
             { 
                 {MDA_UserBuffer, sizeof(struct MenuData)},
-                {MDA_DecorImages, (IPTR)decorimages},
+                {MDA_DecorImages, (IPTR)dnd->di},
                 {MDA_DecorConfig, (IPTR)dnd->dc},
                 {TAG_DONE} 
             };

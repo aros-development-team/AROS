@@ -462,6 +462,51 @@ struct DecorImages * NewImages()
     return AllocVec(sizeof(struct DecorImages), MEMF_ANY | MEMF_CLEAR);
 }
 
+struct DecorImages * LoadImages(struct DecorConfig * dc)
+{
+    ULONG   wgsubimagecols = 4; /* Default value of subimage cols in window gadget */
+    STRPTR  path = dc->ThemePath;
+
+    struct DecorImages * di = NewImages();
+
+    if (!di)
+        return NULL;
+        
+    if (dc->GadgetsThreeState) wgsubimagecols = 3;
+
+    di->img_sdepth = GetImageFromFile(path, "System/SDepth/Default", 2, 1);
+    di->img_stitlebar = GetImageFromFile(path, "System/STitlebar/Default", 1, 1);
+    di->img_sbarlogo = GetImageFromFile(path, "System/SBarLogo/Default", 1, 1);
+
+    di->img_size = GetImageFromFile(path, "System/Size/Default", wgsubimagecols, 1);
+    di->img_close = GetImageFromFile(path, "System/Close/Default", wgsubimagecols, 1);
+    di->img_depth = GetImageFromFile(path, "System/Depth/Default", wgsubimagecols, 1);
+    di->img_zoom = GetImageFromFile(path, "System/Zoom/Default", wgsubimagecols, 1);
+    di->img_mui = GetImageFromFile(path, "System/MUI/Default", wgsubimagecols, 1);
+    di->img_popup = GetImageFromFile(path, "System/PopUp/Default", wgsubimagecols, 1);
+    di->img_snapshot = GetImageFromFile(path, "System/Snapshot/Default", wgsubimagecols, 1);
+    di->img_iconify = GetImageFromFile(path, "System/Iconify/Default", wgsubimagecols, 1);
+    di->img_lock = GetImageFromFile(path, "System/Lock/Default", wgsubimagecols, 1);
+    di->img_up = GetImageFromFile(path, "System/ArrowUp/Default", wgsubimagecols, 1);
+    di->img_down = GetImageFromFile(path, "System/ArrowDown/Default", wgsubimagecols, 1);
+    di->img_left = GetImageFromFile(path, "System/ArrowLeft/Default", wgsubimagecols, 1);
+    di->img_right = GetImageFromFile(path, "System/ArrowRight/Default", wgsubimagecols, 1);
+    di->img_winbar_normal = GetImageFromFile(path, "System/Titlebar/Default", 1, 2);
+    di->img_border_normal = GetImageFromFile(path, "System/Borders/Default", 1, 1);
+    di->img_border_deactivated = GetImageFromFile(path, "System/Borders/Default_Deactivated", 1, 1);
+    di->img_verticalcontainer = GetImageFromFile(path, "System/Container/Vertical", 2, 1);
+    di->img_verticalknob = GetImageFromFile(path, "System/Knob/Vertical", 3, 1);
+    di->img_horizontalcontainer = GetImageFromFile(path, "System/Container/Horizontal", 1, 2);
+    di->img_horizontalknob = GetImageFromFile(path, "System/Knob/Horizontal", 1, 3);
+
+    di->img_menu = GetImageFromFile(path, "Menu/Background/Default", 1, 1);
+    di->img_amigakey = GetImageFromFile(path, "Menu/AmigaKey/Default", 1, 1);
+    di->img_menucheck = GetImageFromFile(path, "Menu/Checkmark/Default", 1, 1);
+    di->img_submenu = GetImageFromFile(path, "Menu/SubMenu/Default", 1, 1);
+    
+    return di;
+}
+
 void FreeImages(struct DecorImages * di)
 {
     DisposeImageContainer(di->img_sdepth);
