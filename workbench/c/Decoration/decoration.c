@@ -39,9 +39,6 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 
-#include <libraries/mui.h> /* TODO: REMOVE needed for get() */
-
-
 #include <aros/detach.h>
 
 

@@ -13,8 +13,6 @@
 #include <proto/cybergraphics.h>
 #include <string.h>
 
-#include <libraries/mui.h> /* TODO: REMOVE needed for get() */
-
 #include <aros/debug.h>
 
 #include "newimage.h"
@@ -132,7 +130,7 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
                                TAG_DONE);
     if (pic)
     {
-        get(pic, PDTA_BitMapHeader, &bmhd);
+        GetAttr(PDTA_BitMapHeader, pic, (APTR)&bmhd);
         if(bmhd)
         {
 
@@ -158,7 +156,7 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
                 ni->ok = TRUE;
                 if (bmhd->bmh_Depth <= 8)
                 {
-                    get(pic, PDTA_BitMap, &map);
+                    GetAttr(PDTA_BitMap, pic, (APTR)&map);
                     if (map && (mask == mskHasTransparentColor))
                     {
                         rp = CreateRastPort();

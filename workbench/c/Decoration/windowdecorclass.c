@@ -16,8 +16,6 @@
 #include <proto/exec.h>
 #include <string.h>
 
-#include <libraries/mui.h> /* TODO: REMOVE needed for get() */
-
 #include "windowdecorclass.h"
 #include "screendecorclass.h"
 #include "drawfuncs.h"
@@ -1353,32 +1351,32 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                 {
                     if ((((struct ExtGadget *) gadget)->MoreFlags & GMORE_BOOPSIGADGET) != 0)
                     {
-                        ULONG   rtsm = 0;
-                        get((Object *) gadget, GA_RightBorder, &rtsm);
+                        ULONG rtsm = 0;
+                        GetAttr(GA_RightBorder, (Object *) gadget, (APTR)&rtsm);
                         if (rtsm)
                         {
-                            if (get((Object *) gadget, PGA_Top, &rtsm))
+                            if (GetAttr(PGA_Top, (Object *) gadget, (APTR)&rtsm))
                             {
                                 SetAttrs((Object *) gadget, GA_RelRight, - data->dc->RightBorderGadgets + ((data->dc->RightBorderGadgets - (wd->img_verticalcontainer->w >> 1) + 1) >> 1) + 1, GA_Width, wd->img_verticalcontainer->w >> 1, TAG_DONE);
                             }
                             else
                             {
-                                get((Object *) gadget, GA_Width, &rtsm);
+                                GetAttr(GA_Width, (Object *) gadget, (APTR)&rtsm);
                                 SetAttrs((Object *) gadget, GA_RelRight, - data->dc->RightBorderGadgets + ((data->dc->RightBorderGadgets - rtsm + 1) >> 1) + 1, TAG_DONE);
                             }
                         }
                         else
                         {
-                            get((Object *) gadget, GA_BottomBorder, &rtsm);
+                            GetAttr(GA_BottomBorder, (Object *) gadget, (APTR)&rtsm);
                             if (rtsm)
                             {
-                                if (get((Object *) gadget, PGA_Top, &rtsm))
+                                if (GetAttr(PGA_Top, (Object *) gadget, (APTR)&rtsm))
                                 {
                                     SetAttrs((Object *) gadget, GA_RelBottom, - data->dc->BottomBorderGadgets + ((data->dc->BottomBorderGadgets - (wd->img_horizontalcontainer->h >> 1) + 1)  >> 1) +1, GA_Height, (wd->img_horizontalcontainer->h >> 1), TAG_DONE);
                                 }
                                 else
                                 {
-                                    get((Object *) gadget, GA_Height, &rtsm);
+                                    GetAttr(GA_Height, (Object *) gadget, (APTR)&rtsm);
                                     SetAttrs((Object *) gadget, GA_RelBottom, - data->dc->BottomBorderGadgets + ((data->dc->BottomBorderGadgets - rtsm + 1) >> 1) + 1, TAG_DONE);
                                 }
                             }
