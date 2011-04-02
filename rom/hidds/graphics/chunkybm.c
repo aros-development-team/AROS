@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics chunky bitmap class implementation.
@@ -31,7 +31,7 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct chunkybm_data    *data;
     
-    IPTR   	    	    width, height;
+    IPTR   	    	    width, height, displayable;
 
 #if 0
     UBYTE   	    	    alignoffset	= 15;
@@ -62,13 +62,19 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     data->bytesperpixel = bytesperpixel;
     data->bytesperrow	= data->bytesperpixel * width;
 
-    data->buffer = AllocVec(height * data->bytesperrow, MEMF_ANY|MEMF_CLEAR);
-    if (NULL == data->buffer)
-    	ok = FALSE;
+    OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
+    if (!displayable)
+    {
+        data->own_buffer = TRUE;
+        data->buffer = AllocVec(height * data->bytesperrow,
+            MEMF_ANY | MEMF_CLEAR);
+        if (data->buffer == NULL)
+            ok = FALSE;
+    }
 
     /* free all on error */
-    
-    if(ok == FALSE)
+
+    if(!ok)
     {
         OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
         if(o) OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
@@ -87,7 +93,7 @@ void CBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     data = OOP_INST_DATA(cl, o);
     
-    if (NULL != data->buffer)
+    if (data->own_buffer)
     	FreeVec(data->buffer);
 	
     OOP_DoSuperMethod(cl, o, msg);
@@ -861,3 +867,54 @@ VOID CBM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 }
 
 /****************************************************************************************/
+
+VOID CBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+    ULONG idx;
+
+    EnterFunc(bug("BitMap::Get() attrID: %i  storage: %p\n", msg->attrID, msg->storage));
+
+    if(IS_CHUNKYBM_ATTR(msg->attrID, idx))
+    {
+        switch(idx)
+        {
+            case aoHidd_ChunkyBM_Buffer:
+                 *msg->storage = data->buffer;
+                 break;
+        }
+    }
+    else
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
+VOID CBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+    struct TagItem  *tag, *tstate;
+    ULONG idx;
+
+    tstate = msg->attrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    {
+        if(IS_CHUNKYBM_ATTR(tag->ti_Tag, idx))
+        {
+            switch(idx)
+            {
+                case aoHidd_ChunkyBM_Buffer:
+                    if (data->own_buffer)
+                    {
+    	                FreeVec(data->buffer);
+                        data->own_buffer = FALSE;
+                    }
+                    data->buffer = (UBYTE *)tag->ti_Data;
+                    D(bug("[CBM] New buffer now 0x%p\n", data->buffer));
+                    break;
+            }
+        }
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}

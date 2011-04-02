@@ -945,25 +945,25 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 
 	One graphics driver represents at least one displayable bitmap class.
 	Additionally it may represent more classes (for example some old drivers use
-	separate class for nondisplayable bitmaps).
+	a separate class for nondisplayable bitmaps).
 
 	These classes are private to the driver. In order to be able to use them
-	bitmap objects are never created directly. Instead they are created using
+	bitmap objects are never created directly. Instead they are created using the
 	HIDD_Gfx_NewBitMap() call. An implementation of this method in the driver
 	should examine bitmap attributes supplied and make a decision if the bitmap
-	should be created using driver's own class or one of system classes.
+	should be created using the driver's own class or one of the system classes.
 
 	A typical implementation should pay attention to the following bitmap attributes:
     
 	aHIDD_BitMap_ModeID - If this attribute is supplied, the bitmap needs to be
-			      either displayable by this driver, or be a friend of
+			      either displayable by this driver, or be a friend of a
 			      displayable bitmap. A friend bitmap usually repeats the
 			      internal layout of its friend so that the driver may
 			      perform blitting operations quickly.
 
 	aHIDD_BitMap_Displayable - If this attribute is supplied, the bitmap NEEDS to be
 			           displayable by this driver. Usually this means that
-			           bitmap object will contain video hardware state
+			           the bitmap object will contain video hardware state
 			           information. This attribute will always be accompanied
 			           by aHIDD_BitMap_ModeID.
 
@@ -971,7 +971,7 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 			           framebuffer bitmap is necessary for some kinds of
 			           hardware which have a small fixed amount of video
 			           RAM which can hold only one screen at a time. Setting
-			           this attribute also requires to set also a valid ModeID.
+			           this attribute requires that a valid ModeID be also set.
 
 	aHIDD_BitMap_Friend - If there's no ModeID supplied, you may wish to check class
 			      of friend bitmap. This can be useful if your driver uses
@@ -2286,7 +2286,7 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 	The function's behavior differs a lot depending on whether the driver uses a
 	framebuffer or video hardware is able to switch screens itself.
 
-	If the driver uses framebuffer bitmap, it is supposed to copy the supplied bitmap
+	If the driver uses a framebuffer bitmap, it is supposed to copy the supplied bitmap
 	into the framebuffer and return a framebuffer pointer. It also can be asked to
 	copy back old framebuffer contents into previous bitmap object. It is driver's
 	job to keep track of which bitmap object was displayed last time. This is what
@@ -2643,7 +2643,7 @@ BOOL GFX__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 	Perform rectangle copy (blit) operation from one bitmap to another.
     
 	Given bitmaps may belong to different display drivers. The driver may attempt to
-	use hardware for acceleration (if availible), and if it's impossible, pass the
+	use hardware for acceleration (if available), and if it's impossible, pass the
 	operation on to the base class.
     
 	Always check class of the supplied bitmap before attempting to look at its
@@ -3600,6 +3600,7 @@ static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
     __IHidd_Overlay    	= OOP_ObtainAttrBase(IID_Hidd_Overlay);
     __IHidd_ColorMap 	= OOP_ObtainAttrBase(IID_Hidd_ColorMap);
     __IHidd_PlanarBM	= OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
+    __IHidd_ChunkyBM	= OOP_ObtainAttrBase(IID_Hidd_ChunkyBM);
     
     if (!__IHidd_PixFmt     ||
      	!__IHidd_BitMap     ||
@@ -3607,7 +3608,8 @@ static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
 	!__IHidd_Sync 	    ||
 	!__IHidd_GC 	    ||
 	!__IHidd_ColorMap   ||
-	!__IHidd_PlanarBM
+	!__IHidd_PlanarBM   ||
+	!__IHidd_ChunkyBM
        )
     {
 	goto failexit;
@@ -3655,6 +3657,7 @@ static int GFX_ClassFree(LIBBASETYPEPTR LIBBASE)
 	OOP_ReleaseAttrBase(IID_Hidd_Overlay);
     	OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
     	OOP_ReleaseAttrBase(IID_Hidd_PlanarBM);
+    	OOP_ReleaseAttrBase(IID_Hidd_ChunkyBM);
     }
     
     ReturnInt("free_gfxhiddclass", BOOL, TRUE);
