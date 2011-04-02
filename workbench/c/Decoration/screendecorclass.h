@@ -37,7 +37,6 @@ struct ScreenData
     BOOL            truecolor;
 };
 
-#define SDA_Configuration   0x20002
 #define SDA_DecorImages     0x20003
 #define SDA_DecorConfig     0x20004
 
