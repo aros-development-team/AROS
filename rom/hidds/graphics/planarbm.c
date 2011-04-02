@@ -77,13 +77,13 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     
     /* FIXME: Fix this hack */
     /* Because this class is used to emulate Amiga bitmaps, we
-       have to see if it should have late initalisation
+       have to see if it should have late initialisation
     */
     if (!data->planes_alloced)
 	return o; /* Late initialization */
 	
 
-    /* Not late initalization. Get some info on the bitmap */	
+    /* Not late initialization. Get some info on the bitmap */	
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     OOP_GetAttr(o, aHidd_BitMap_Depth,	&depth);
@@ -732,11 +732,11 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
     
     if (data->planes_alloced)
     {
-    	D(bug(" !!!!! PlanarBM: Trying to set bitmap in one that allready has planes allocated\n"));
+    	D(bug(" !!!!! PlanarBM: Trying to set bitmap in one that already has planes allocated\n"));
 	return FALSE;
     }
     
-    /* Check if plane array allready allocated */
+    /* Check if plane array already allocated */
     if (NULL != data->planes)
     {
     	if (bm->Depth > data->planebuf_size)

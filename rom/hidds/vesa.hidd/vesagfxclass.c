@@ -219,7 +219,7 @@ OOP_Object *PCVesa__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 	OOP_SetAttrs(msg->bitMap, tags);
     } else {
 	D(bug("[VesaGfx] Blanking screen\n"));
-	/* Otherwize simply clear the framebuffer */
+	/* Otherwise simply clear the framebuffer */
 	ClearBuffer(&data->data);
     }
 

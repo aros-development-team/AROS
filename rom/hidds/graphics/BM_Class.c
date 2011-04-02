@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics bitmap class implementation.
@@ -56,24 +56,24 @@
 	should pass class pointer as aoHidd_BitMap_ClassPtr value to the graphics base class
 	in its moHidd_Gfx_NewBitMap implementation.
 
-	BitMap base class is a in C++ terminology a pure virtual
-	baseclass. It will not allocate any bitmap data at all,
+	BitMap base class is in C++ terminology a pure virtual
+	baseclass. It will not allocate any bitmap data at all;
 	that is up to the subclass to do.
 
 	The main task of the BitMap baseclass is to store some information about the bitmap
 	like its size and pixelformat. A pixelformat is an object of private class which
 	stores the actual information about the format.
 
-	There are two ways the we can find out the pixfmt in our moHidd_Gfx_NewBitMap
+	There are two ways that we can find out the pixfmt in our moHidd_Gfx_NewBitMap
 	implementation:
 
 	Displayable bitmap -
-	    The tags will contrain a modeid.
+	    The tags will contain a modeid.
    	    One can use this modeid to get a pointer to an
-	    allready registered pixfmt.
+	    already registered pixfmt.
 
 	Non-displayable bitmap -
-	    The aoHidd_BitMap_StdPixFmt or aoHidd_BitMap_Friend attribute will allways be
+	    The aoHidd_BitMap_StdPixFmt or aoHidd_BitMap_Friend attribute will always be
 	    passed.
 
 *****************************************************************************************/
@@ -2087,7 +2087,7 @@ VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_B
 
     EnterFunc(bug("BitMap::FillPolygon()"));
 
-    D(bug("Sorry, FillPolygon() not implemented yet in bitmap baseclasss\n"));
+    D(bug("Sorry, FillPolygon() not implemented yet in bitmap baseclass\n"));
 
     ReturnVoid("BitMap::FillPolygon");
 }
@@ -4486,7 +4486,7 @@ ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 
 /*
    This makes it easier to create a subclass of the graphics hidd.
-   It only allowd to use this method in the p_RootNew method of a
+   It is only allowed to use this method in the p_RootNew method of a
    bitmap subclass.
 */
 
