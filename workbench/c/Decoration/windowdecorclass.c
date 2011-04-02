@@ -11,7 +11,6 @@
 #include <graphics/rpattr.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
-#include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/exec.h>
@@ -28,6 +27,8 @@
 
 struct windecor_data
 {
+    struct DecorConfig * dc;
+
     /* Pointers to images used for sys images */
     struct NewImage *img_close;
     struct NewImage *img_depth;
@@ -42,75 +43,7 @@ struct windecor_data
     struct NewImage *img_iconify;
     struct NewImage *img_lock;
 
-    BOOL             outline;
-    BOOL             shadow;
-    BOOL             barmasking;
-    BOOL             closeright;
-    BOOL             threestate;
-    BOOL             barvert;
-    BOOL             usegradients;
-    BOOL             rounded;
-    BOOL             filltitlebar;
-
-    UWORD            winbarheight;
-    UWORD            txt_align;
-
-    LONG             BarJoinTB_o;
-    LONG             BarJoinTB_s;
-    LONG             BarPreGadget_o;
-    LONG             BarPreGadget_s;
-    LONG             BarPre_o;
-    LONG             BarPre_s;
-    LONG             BarLGadgetFill_o;
-    LONG             BarLGadgetFill_s;
-    LONG             BarJoinGB_o;
-    LONG             BarJoinGB_s;
-    LONG             BarLFill_o;
-    LONG             BarLFill_s;
-    LONG             BarJoinBT_o;
-    LONG             BarJoinBT_s;
-    LONG             BarTitleFill_o;
-    LONG             BarTitleFill_s;
-    LONG             BarRFill_o;
-    LONG             BarRFill_s;
-    LONG             BarJoinBG_o;
-    LONG             BarJoinBG_s;
-    LONG             BarRGadgetFill_o;
-    LONG             BarRGadgetFill_s;
-    LONG             BarPostGadget_o;
-    LONG             BarPostGadget_s;
-    LONG             BarPost_o;
-    LONG             BarPost_s;
-
-    LONG             ContainerTop_o, ContainerTop_s;
-    LONG             ContainerVertTile_o, ContainerVertTile_s;
-    LONG             ContainerBottom_o, ContainerBottom_s;
-    LONG             KnobTop_o, KnobTop_s;
-    LONG             KnobTileTop_o, KnobTileTop_s;
-    LONG             KnobVertGripper_o, KnobVertGripper_s;
-    LONG             KnobTileBottom_o, KnobTileBottom_s;
-    LONG             KnobBottom_o, KnobBottom_s;
-    LONG             ContainerLeft_o, ContainerLeft_s;
-    LONG             ContainerHorTile_o, ContainerHorTile_s;
-    LONG             ContainerRight_o, ContainerRight_s;
-    LONG             KnobLeft_o, KnobLeft_s;
-    LONG             KnobTileLeft_o, KnobTileLeft_s;
-    LONG             KnobHorGripper_o, KnobHorGripper_s;
-    LONG             KnobTileRight_o, KnobTileRight_s;
-    LONG             KnobRight_o, KnobRight_s;
-    LONG             sizeaddx, sizeaddy;
-    LONG             updownaddx, updownaddy;
-    LONG             leftrightaddx, leftrightaddy;
-    LONG             rightbordergads, bottombordergads;
-    LONG             rightbordernogads, bottombordernogads;
-    LONG             horscrollerheight;
-    LONG             scrollerinnerspacing;
-    LONG             a_arc, d_arc;
-    LONG             a_col_s, a_col_e;
-    LONG             d_col_s, d_col_e;
-    LONG             b_col_a, b_col_d;
-    LONG             light, middle, dark;
-    LONG             text_col, shadow_col;
+    UWORD            TextAlign;
 };
 
 #define CHANGE_NO_CHANGE        0
@@ -210,7 +143,7 @@ static void getrightgadgetsdimensions(struct windecor_data *data, struct Window 
         if ((g->Flags & GFLG_RELRIGHT) == GFLG_RELRIGHT)
         {
             type = g->GadgetType & GTYP_SYSTYPEMASK;
-            if (data->closeright)
+            if (data->dc->CloseGadgetOnRight)
             {
                 if (((type & (GTYP_CLOSE | GTYP_WDEPTH | GTYP_WZOOM)) != 0) || (g->Activation & GACT_TOPBORDER))
                 {
@@ -279,7 +212,7 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
 
     struct RastPort    *rp = &window->WScreen->RastPort;
     hastitle = window->Title != NULL ? TRUE : FALSE;
-    hastitlebar = (window->BorderTop == data->winbarheight) ? TRUE : FALSE;
+    hastitlebar = (window->BorderTop == data->dc->BarHeight) ? TRUE : FALSE;
 
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
     {
@@ -287,26 +220,26 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
     }
     else
     {
-        dy = data->winbarheight;
+        dy = data->dc->BarHeight;
     }
     getleftgadgetsdimensions(data, window, &xl0, &xl1);
     getrightgadgetsdimensions(data, window, &xr0, &xr1);
 
-    defwidth = (xl0 != xl1) ? data->BarPreGadget_s : data->BarPre_s;
+    defwidth = (xl0 != xl1) ? data->dc->BarPreGadget_s : data->dc->BarPre_s;
     if(xr1 == 0)
     {
-        xr1 = window->Width - data->BarPre_s;
-        xr0 = window->Width - data->BarPre_s;
+        xr1 = window->Width - data->dc->BarPre_s;
+        xr0 = window->Width - data->dc->BarPre_s;
     }
 
     defwidth += (xl1 - xl0);
 
-    defwidth += data->BarJoinGB_s;
-    defwidth += data->BarJoinBT_s;
-    defwidth += data->BarJoinTB_s;
-    defwidth += data->BarJoinBG_s;
+    defwidth += data->dc->BarJoinGB_s;
+    defwidth += data->dc->BarJoinBT_s;
+    defwidth += data->dc->BarJoinTB_s;
+    defwidth += data->dc->BarJoinBG_s;
     defwidth += (xr1 - xr0);
-    defwidth += (xr0 != xr1) ? data->BarPostGadget_s : data->BarPost_s;
+    defwidth += (xr0 != xr1) ? data->dc->BarPostGadget_s : data->dc->BarPost_s;
 
     if (defwidth >= window->Width) hastitle = FALSE;
  
@@ -324,28 +257,28 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
     if (wd->img_winbar_normal->ok && hastitlebar)
     {
         barh =  wd->img_winbar_normal->h;
-        if (data->barvert)
+        if (data->dc->BarVertical)
         {
-            if (barh > data->winbarheight) barh =  data->winbarheight;
+            if (barh > data->dc->BarHeight) barh =  data->dc->BarHeight;
         }
         x = 0;
         if (xl0 != xl1)
         {
-            x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarPreGadget_o, dy, data->BarPreGadget_s, barh, x, 0, data->BarPreGadget_s, barh);
-            if ((xl1-xl0) > 0) x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarLGadgetFill_o, dy, data->BarLGadgetFill_s, barh, x, 0, xl1-xl0, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarPreGadget_o, dy, data->dc->BarPreGadget_s, barh, x, 0, data->dc->BarPreGadget_s, barh);
+            if ((xl1-xl0) > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarLGadgetFill_o, dy, data->dc->BarLGadgetFill_s, barh, x, 0, xl1-xl0, barh);
         }
         else
         {
-            x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarPre_o, dy, data->BarPre_s, barh, x, 0, data->BarPreGadget_s, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarPre_o, dy, data->dc->BarPre_s, barh, x, 0, data->dc->BarPreGadget_s, barh);
         }
-        x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarJoinGB_o, dy, data->BarJoinGB_s, barh, x, 0, data->BarJoinGB_s, barh);
+        x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinGB_o, dy, data->dc->BarJoinGB_s, barh, x, 0, data->dc->BarJoinGB_s, barh);
         if (hastitle && (textlen > 0))
         {
             switch(align)
             {
                 case WD_DWTA_CENTER:
                     //BarLFill
-                    x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarLFill_o, dy, data->BarLFill_s, barh, x, 0, 60, barh);
+                    x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarLFill_o, dy, data->dc->BarLFill_s, barh, x, 0, 60, barh);
                     break;
                 case WD_DWTA_RIGHT:
                     //BarLFill
@@ -354,21 +287,21 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
                 case WD_DWTA_LEFT:
                     break;
             }
-            x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarJoinBT_o, dy, data->BarJoinBT_s, barh, x, 0, data->BarJoinBT_s, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinBT_o, dy, data->dc->BarJoinBT_s, barh, x, 0, data->dc->BarJoinBT_s, barh);
             textstart = x;
-            if (textpixellen > 0) x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarTitleFill_o, dy, data->BarTitleFill_s, barh, x, 0, textpixellen, barh);
-            x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarJoinTB_o, dy, data->BarJoinTB_s, barh, x, 0, data->BarJoinTB_s, barh);
+            if (textpixellen > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarTitleFill_o, dy, data->dc->BarTitleFill_s, barh, x, 0, textpixellen, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinTB_o, dy, data->dc->BarJoinTB_s, barh, x, 0, data->dc->BarJoinTB_s, barh);
         }
-        x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarRFill_o, dy, data->BarRFill_s, barh, x, 0, xr0 - x - data->BarJoinBG_s, barh);
-        x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarJoinBG_o, dy, data->BarJoinBG_s, barh, x, 0, data->BarJoinBG_s, barh);
-        if ((xr1-xr0) > 0) x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarRGadgetFill_o, dy, data->BarRGadgetFill_s, barh, x, 0, xr1-xr0, barh);
+        x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarRFill_o, dy, data->dc->BarRFill_s, barh, x, 0, xr0 - x - data->dc->BarJoinBG_s, barh);
+        x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinBG_o, dy, data->dc->BarJoinBG_s, barh, x, 0, data->dc->BarJoinBG_s, barh);
+        if ((xr1-xr0) > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarRGadgetFill_o, dy, data->dc->BarRGadgetFill_s, barh, x, 0, xr1-xr0, barh);
         if (xr0 != xr1)
         {
-            x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarPostGadget_o, dy, data->BarPostGadget_s, barh, x, 0, data->BarPostGadget_s, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarPostGadget_o, dy, data->dc->BarPostGadget_s, barh, x, 0, data->dc->BarPostGadget_s, barh);
         }
         else
         {
-            x = WriteTiledImageShape(data->filltitlebar, window, shape, wd->img_winbar_normal, data->BarPost_o, dy, data->BarPost_s, barh, x, 0, data->BarPost_s, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarPost_o, dy, data->dc->BarPost_s, barh, x, 0, data->dc->BarPost_s, barh);
         }
     }
 }
@@ -429,29 +362,29 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     hasdepth = (window->Flags & WFLG_DEPTHGADGET) ? TRUE : FALSE;
     hasdrag = (window->Flags & WFLG_DRAGBAR) ? TRUE : FALSE;
     haszoom = ((window->Flags & WFLG_HASZOOM) || ((window->Flags & WFLG_SIZEGADGET) && hasdepth)) ? TRUE : FALSE;
-    hastitlebar = (window->BorderTop == data->winbarheight) ? TRUE : FALSE;
+    hastitlebar = (window->BorderTop == data->dc->BarHeight) ? TRUE : FALSE;
 
     if (wd->img_border_normal->ok) ni = wd->img_border_normal;
 
-    if (ni == NULL) data->usegradients = TRUE;
+    if (ni == NULL) data->dc->UseGradients = TRUE;
 
     color = 0x00cccccc;
 
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
     {
-        s_col = data->a_col_s;
-        e_col = data->a_col_e;
-        arc = data->a_arc;
+        s_col = data->dc->ActivatedGradientColor_s;
+        e_col = data->dc->ActivatedGradientColor_e;
+        arc = data->dc->ActivatedGradientColor_a;
         dy = 0;
-        bc = data->b_col_a;
+        bc = data->dc->BaseColors_a;
         pen = wd->ActivePen;
     } else {
-        s_col = data->d_col_s;
-        e_col = data->d_col_e;
-        arc = data->d_arc;
-        dy = data->winbarheight;
-        bc = data->b_col_d;
-        if (!data->usegradients)
+        s_col = data->dc->DeactivatedGradientColor_s;
+        e_col = data->dc->DeactivatedGradientColor_e;
+        arc = data->dc->DeactivatedGradientColor_a;
+        dy = data->dc->BarHeight;
+        bc = data->dc->BaseColors_d;
+        if (!data->dc->UseGradients)
         {
             if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
         }
@@ -459,9 +392,9 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     }
 
 
-    if (data->filltitlebar)
+    if (data->dc->FillTitleBar)
     {
-        if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width - 1, window->Height - 1, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc, 0, 0);
+        if (data->dc->UseGradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width - 1, window->Height - 1, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc, 0, 0);
         else HorizVertRepeatNewImage(ni, color, 0, 0, rp, 0, 0, window->Width, window->BorderTop);
     }
 
@@ -471,25 +404,25 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     }
     else
     {
-        dy = data->winbarheight;
+        dy = data->dc->BarHeight;
     }
     getleftgadgetsdimensions(data, window, &xl0, &xl1);
     getrightgadgetsdimensions(data, window, &xr0, &xr1);
-    defwidth = (xl0 != xl1) ? data->BarPreGadget_s : data->BarPre_s;
+    defwidth = (xl0 != xl1) ? data->dc->BarPreGadget_s : data->dc->BarPre_s;
     if(xr1 == 0)
     {
-        xr1 = window->Width - data->BarPre_s;
-        xr0 = window->Width - data->BarPre_s;
+        xr1 = window->Width - data->dc->BarPre_s;
+        xr0 = window->Width - data->dc->BarPre_s;
     }
 
     defwidth += (xl1 - xl0);
 
-    defwidth += data->BarJoinGB_s;
-    defwidth += data->BarJoinBT_s;
-    defwidth += data->BarJoinTB_s;
-    defwidth += data->BarJoinBG_s;
+    defwidth += data->dc->BarJoinGB_s;
+    defwidth += data->dc->BarJoinBT_s;
+    defwidth += data->dc->BarJoinTB_s;
+    defwidth += data->dc->BarJoinBG_s;
     defwidth += (xr1 - xr0);
-    defwidth += (xr0 != xr1) ? data->BarPostGadget_s : data->BarPost_s;
+    defwidth += (xr0 != xr1) ? data->dc->BarPostGadget_s : data->dc->BarPost_s;
 
     if (defwidth >= window->Width) hastitle = FALSE;
 
@@ -506,28 +439,28 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     if (wd->img_winbar_normal->ok && hastitlebar)
     {
         barh =  wd->img_winbar_normal->h;
-        if (data->barvert)
+        if (data->dc->BarVertical)
         {
-            if (barh > data->winbarheight) barh =  data->winbarheight;
+            if (barh > data->dc->BarHeight) barh =  data->dc->BarHeight;
         }
         x = 0;
         if (xl0 != xl1)
         {
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarPreGadget_o, dy, data->BarPreGadget_s, barh, x, 0, data->BarPreGadget_s, barh);
-            if ((xl1-xl0) > 0) x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarLGadgetFill_o, dy, data->BarLGadgetFill_s, barh, x, 0, xl1-xl0, barh);
+            x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarPreGadget_o, dy, data->dc->BarPreGadget_s, barh, x, 0, data->dc->BarPreGadget_s, barh);
+            if ((xl1-xl0) > 0) x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarLGadgetFill_o, dy, data->dc->BarLGadgetFill_s, barh, x, 0, xl1-xl0, barh);
         }
         else
         {
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarPre_o, dy, data->BarPre_s, barh, x, 0, data->BarPreGadget_s, barh);
+            x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarPre_o, dy, data->dc->BarPre_s, barh, x, 0, data->dc->BarPreGadget_s, barh);
         }
-        x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarJoinGB_o, dy, data->BarJoinGB_s, barh, x, 0, data->BarJoinGB_s, barh);
+        x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarJoinGB_o, dy, data->dc->BarJoinGB_s, barh, x, 0, data->dc->BarJoinGB_s, barh);
         if (hastitle && (textlen > 0))
         {
             switch(align)
             {
                 case WD_DWTA_CENTER:
                     //BarLFill
-                    x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarLFill_o, dy, data->BarLFill_s, barh, x, 0, 60, barh);
+                    x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarLFill_o, dy, data->dc->BarLFill_s, barh, x, 0, 60, barh);
                     break;
                 case WD_DWTA_RIGHT:
                     //BarLFill
@@ -536,21 +469,21 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
                 case WD_DWTA_LEFT:
                     break;
             }
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarJoinBT_o, dy, data->BarJoinBT_s, barh, x, 0, data->BarJoinBT_s, barh);
+            x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarJoinBT_o, dy, data->dc->BarJoinBT_s, barh, x, 0, data->dc->BarJoinBT_s, barh);
             textstart = x;
-            if (textpixellen > 0) x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarTitleFill_o, dy, data->BarTitleFill_s, barh, x, 0, textpixellen, barh);
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarJoinTB_o, dy, data->BarJoinTB_s, barh, x, 0, data->BarJoinTB_s, barh);
+            if (textpixellen > 0) x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarTitleFill_o, dy, data->dc->BarTitleFill_s, barh, x, 0, textpixellen, barh);
+            x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarJoinTB_o, dy, data->dc->BarJoinTB_s, barh, x, 0, data->dc->BarJoinTB_s, barh);
         }
-        x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarRFill_o, dy, data->BarRFill_s, barh, x, 0, xr0 - x - data->BarJoinBG_s, barh);
-        x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarJoinBG_o, dy, data->BarJoinBG_s, barh, x, 0, data->BarJoinBG_s, barh);
-        if ((xr1-xr0) > 0) x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarRGadgetFill_o, dy, data->BarRGadgetFill_s, barh, x, 0, xr1-xr0, barh);
+        x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarRFill_o, dy, data->dc->BarRFill_s, barh, x, 0, xr0 - x - data->dc->BarJoinBG_s, barh);
+        x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarJoinBG_o, dy, data->dc->BarJoinBG_s, barh, x, 0, data->dc->BarJoinBG_s, barh);
+        if ((xr1-xr0) > 0) x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarRGadgetFill_o, dy, data->dc->BarRGadgetFill_s, barh, x, 0, xr1-xr0, barh);
         if (xr0 != xr1)
         {
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarPostGadget_o, dy, data->BarPostGadget_s, barh, x, 0, data->BarPostGadget_s, barh);
+            x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarPostGadget_o, dy, data->dc->BarPostGadget_s, barh, x, 0, data->dc->BarPostGadget_s, barh);
         }
         else
         {
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarPost_o, dy, data->BarPost_s, barh, x, 0, data->BarPost_s, barh);
+            x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarPost_o, dy, data->dc->BarPost_s, barh, x, 0, data->dc->BarPost_s, barh);
         }
     }
 
@@ -559,18 +492,18 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
         SetAPen(rp, pens[(window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) ? FILLTEXTPEN : TEXTPEN]);
         SetDrMd(rp, JAM1);
         UWORD   tx = textstart;
-        UWORD   ty = ((data->winbarheight - dri->dri_Font->tf_YSize) >> 1) + dri->dri_Font->tf_Baseline;
+        UWORD   ty = ((data->dc->BarHeight - dri->dri_Font->tf_YSize) >> 1) + dri->dri_Font->tf_Baseline;
 
-        if (!wd->truecolor || ((data->outline == FALSE) && (data->shadow == FALSE)))
+        if (!wd->truecolor || ((data->dc->TitleOutline == FALSE) && (data->dc->TitleShadow == FALSE)))
         {
             Move(rp, tx, ty);
             Text(rp, window->Title, textlen);
         }
-        else if (data->outline)
+        else if (data->dc->TitleOutline)
         {
 
                 SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->shadow_col, TAG_DONE);
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->TitleColorShadow, TAG_DONE);
 
                 Move(rp, tx + 1, ty ); Text(rp, window->Title, textlen);
                 Move(rp, tx + 2, ty ); Text(rp, window->Title, textlen);
@@ -581,18 +514,18 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
                 Move(rp, tx + 2, ty + 1);  Text(rp, window->Title, textlen);
                 Move(rp, tx + 2, ty + 2);  Text(rp, window->Title, textlen);
 
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->text_col, TAG_DONE);
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->TitleColorText, TAG_DONE);
                 Move(rp, tx + 1, ty + 1);
                 Text(rp, window->Title, textlen);
                 SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
         }
         else
         {
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->shadow_col, TAG_DONE);
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->TitleColorShadow, TAG_DONE);
                 Move(rp, tx + 1, ty + 1 );
                 Text(rp, window->Title, textlen);
 
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->text_col, TAG_DONE);
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->TitleColorText, TAG_DONE);
                 Move(rp, tx, ty);
                 Text(rp, window->Title, textlen);
 
@@ -674,195 +607,14 @@ static VOID DisposeWindowSkinning(struct windecor_data *data)
 
 }
 
-static BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data, struct DecorImages * di) 
+static BOOL InitWindowSkinning(struct windecor_data *data, struct DecorImages * di, struct DecorConfig * dc) 
 {
-    char    buffer[256];
-    char    *line, *v;
-    BPTR    file;
-    BPTR    lock;
-    BPTR    olddir = 0;
+    if ((!di) || (!dc))
+        return FALSE;
+        
+    data->dc = dc;
 
-    lock = Lock(path, ACCESS_READ);
-    if (lock)
-    {
-        olddir = CurrentDir(lock);
-    }
-    else return FALSE;
-
-    data->rounded = FALSE;
-    data->threestate = FALSE;
-    data->barmasking = FALSE;
-    data->winbarheight = 0; //screen, window
-
-    data->sizeaddx = 2;
-    data->sizeaddy = 2;
-    data->BarJoinTB_o = 0;
-    data->BarJoinTB_s = 0;
-    data->BarPreGadget_o = 0;
-    data->BarPreGadget_s = 0;
-    data->BarPre_o = 0;
-    data->BarPre_s = 0;
-    data->BarLGadgetFill_o = 0;
-    data->BarLGadgetFill_s = 0;
-    data->BarJoinGB_o = 0;
-    data->BarJoinGB_s = 0;
-    data->BarLFill_o = 0;
-    data->BarLFill_s = 0;
-    data->BarJoinBT_o = 0;
-    data->BarJoinBT_s = 0;
-    data->BarTitleFill_o = 0;
-    data->BarTitleFill_s = 0;
-    data->BarRFill_o = 0;
-    data->BarRFill_s = 0;
-    data->BarJoinBG_o = 0;
-    data->BarJoinBG_s = 0;
-    data->BarRGadgetFill_o = 0;
-    data->BarRGadgetFill_s = 0;
-    data->BarPostGadget_o = 0;
-    data->BarPostGadget_s = 0;
-    data->BarPost_o = 0;
-    data->BarPost_s = 0;
-    data->txt_align = WD_DWTA_LEFT;
-    data->usegradients = FALSE;
-    data->closeright = FALSE;
-    data->barvert = FALSE;
-    data->filltitlebar = FALSE;
-    data->outline = FALSE;
-    data->shadow = FALSE;
-
-    data->a_col_s = 0xaaaaaaaa;
-    data->a_col_e = 0xeeeeeeff;
-    data->d_col_s = 0x66666666;
-    data->d_col_e = 0xaaaaaabb;
-
-    data->text_col = 0x00cccccc;
-    data->shadow_col = 0x00444444;
-
-    data->a_arc = 0;
-    data->d_arc = 0;
-    data->light = 320;
-    data->middle = 240;
-    data->dark = 128;
-
-    file = Open("System/Config", MODE_OLDFILE);
-    if (file)
-    {
-        do
-        {
-            line = FGets(file, buffer, 256);
-            if (line)
-            {
-                if ((v = strstr(line, "NoInactiveSelected ")) == line) {
-                    data->threestate = GetBool(v, "Yes");
-                } else if ((v = strstr(line, "BarRounded ")) == line) {
-                    data->rounded = GetBool(v, "Yes");
-                } else if ((v = strstr(line, "WindowTitleMode ")) == line) {
-                    data->outline = GetBool(v, "Outline");
-                    data->shadow = GetBool(v, "Shadow");
-                } else if ((v = strstr(line, "FillTitleBar ")) == line) {
-                    data->filltitlebar = GetBool(v, "Yes");
-                } else if ((v = strstr(line, "BarMasking ")) == line) {
-                    data->barmasking = GetBool(v, "Yes");
-                } else if ((v = strstr(line, "CloseRight ")) == line) {
-                    data->closeright = GetBool(v, "Yes");
-                } else if ((v = strstr(line, "UseGradients ")) == line) {
-                    data->usegradients = GetBool(v, "Yes");
-                } else if ((v = strstr(line, "BarLayout ")) == line) {
-                    data->barvert = GetBool(v, "Vertical");
-                } else  if ((v = strstr(line, "RightBorderGads ")) == line) {
-                    data->rightbordergads = GetInt(v);
-                } else  if ((v = strstr(line, "HorScrollerHeight ")) == line) {
-                    data->horscrollerheight = GetInt(v);
-                } else  if ((v = strstr(line, "ScrollerInnerSpacing ")) == line) {
-                    data->scrollerinnerspacing = GetInt(v);
-                } else  if ((v = strstr(line, "BottomBorderGads ")) == line) {
-                    data->bottombordergads = GetInt(v);
-                } else  if ((v = strstr(line, "RightBorderNoGads ")) == line) {
-                    data->rightbordernogads = GetInt(v);
-                } else  if ((v = strstr(line, "BottomBorderNoGads ")) == line) {
-                    data->bottombordernogads = GetInt(v);
-                } else  if ((v = strstr(line, "BarHeight ")) == line) {
-                    data->winbarheight = GetInt(v); //screen, window
-                } else  if ((v = strstr(line, "BarJoinTB ")) == line) {
-                    GetIntegers(v, &data->BarJoinTB_o, &data->BarJoinTB_s);
-                } else  if ((v = strstr(line, "BarPreGadget ")) == line) {
-                    GetIntegers(v, &data->BarPreGadget_o, &data->BarPreGadget_s);
-                } else  if ((v = strstr(line, "BarPre ")) == line) {
-                    GetIntegers(v, &data->BarPre_o, &data->BarPre_s);
-                } else  if ((v = strstr(line, "BarLGadgetFill ")) == line) {
-                    GetIntegers(v, &data->BarLGadgetFill_o, &data->BarLGadgetFill_s);
-                } else  if ((v = strstr(line, "BarJoinGB ")) == line) {
-                    GetIntegers(v, &data->BarJoinGB_o, &data->BarJoinGB_s);
-                } else  if ((v = strstr(line, "BarLFill ")) == line) {
-                    GetIntegers(v, &data->BarLFill_o, &data->BarLFill_s);
-                } else  if ((v = strstr(line, "BarJoinBT ")) == line) {
-                    GetIntegers(v, &data->BarJoinBT_o, &data->BarJoinBT_s);
-                } else  if ((v = strstr(line, "BarTitleFill ")) == line) {
-                    GetIntegers(v, &data->BarTitleFill_o, &data->BarTitleFill_s);
-                } else  if ((v = strstr(line, "BarRFill ")) == line) {
-                    GetIntegers(v, &data->BarRFill_o, &data->BarRFill_s);
-                } else  if ((v = strstr(line, "BarJoinBG ")) == line) {
-                    GetIntegers(v, &data->BarJoinBG_o, &data->BarJoinBG_s);
-                } else  if ((v = strstr(line, "BarRGadgetFill ")) == line) {
-                    GetIntegers(v, &data->BarRGadgetFill_o, &data->BarRGadgetFill_s);
-                } else  if ((v = strstr(line, "BarPostGadget ")) == line) {
-                    GetIntegers(v, &data->BarPostGadget_o, &data->BarPostGadget_s);
-                } else  if ((v = strstr(line, "BarPost ")) == line) {
-                    GetIntegers(v, &data->BarPost_o, &data->BarPost_s);
-                } else  if ((v = strstr(line, "ContainerTop ")) == line) {
-                    GetIntegers(v, &data->ContainerTop_o, &data->ContainerTop_s);
-                } else  if ((v = strstr(line, "ContainerVertTile ")) == line) {
-                    GetIntegers(v, &data->ContainerVertTile_o, &data->ContainerVertTile_s);
-                } else  if ((v = strstr(line, "KnobTop ")) == line) {
-                    GetIntegers(v, &data->KnobTop_o, &data->KnobTop_s);
-                } else  if ((v = strstr(line, "KnobTileTop ")) == line) {
-                    GetIntegers(v, &data->KnobTileTop_o, &data->KnobTileTop_s);
-                } else  if ((v = strstr(line, "KnobVertGripper ")) == line) {
-                    GetIntegers(v, &data->KnobVertGripper_o, &data->KnobVertGripper_s);
-                } else  if ((v = strstr(line, "KnobTileBottom ")) == line) {
-                    GetIntegers(v, &data->KnobTileBottom_o, &data->KnobTileBottom_s);
-                } else  if ((v = strstr(line, "KnobBottom ")) == line) {
-                    GetIntegers(v, &data->KnobBottom_o, &data->KnobBottom_s);
-                } else  if ((v = strstr(line, "ContainerBottom ")) == line) {
-                    GetIntegers(v, &data->ContainerBottom_o, &data->ContainerBottom_s);
-                } else  if ((v = strstr(line, "ContainerLeft ")) == line) {
-                    GetIntegers(v, &data->ContainerLeft_o, &data->ContainerLeft_s);
-                } else  if ((v = strstr(line, "ContainerHorTile ")) == line) {
-                    GetIntegers(v, &data->ContainerHorTile_o, &data->ContainerHorTile_s);
-                } else  if ((v = strstr(line, "KnobLeft ")) == line) {
-                    GetIntegers(v, &data->KnobLeft_o, &data->KnobLeft_s);
-                } else  if ((v = strstr(line, "KnobTileLeft ")) == line) {
-                    GetIntegers(v, &data->KnobTileLeft_o, &data->KnobTileLeft_s);
-                } else  if ((v = strstr(line, "KnobHorGripper ")) == line) {
-                    GetIntegers(v, &data->KnobHorGripper_o, &data->KnobHorGripper_s);
-                } else  if ((v = strstr(line, "KnobTileRight ")) == line) {
-                    GetIntegers(v, &data->KnobTileRight_o, &data->KnobTileRight_s);
-                } else  if ((v = strstr(line, "KnobRight ")) == line) {
-                    GetIntegers(v, &data->KnobRight_o, &data->KnobRight_s);
-                } else  if ((v = strstr(line, "ContainerRight ")) == line) {
-                    GetIntegers(v, &data->ContainerRight_o, &data->ContainerRight_s);
-                } else  if ((v = strstr(line, "AddSize ")) == line) {
-                    GetIntegers(v, &data->sizeaddx, &data->sizeaddy);
-                } else  if ((v = strstr(line, "AddUpDown ")) == line) {
-                    GetIntegers(v, &data->updownaddx, &data->updownaddy);
-                } else  if ((v = strstr(line, "AddLeftRight ")) == line) {
-                    GetIntegers(v, &data->leftrightaddx, &data->leftrightaddy);
-                } else  if ((v = strstr(line, "ActivatedGradient ")) == line) {
-                    GetTripleIntegers(v, &data->a_col_s, &data->a_col_e, &data->a_arc);
-                } else  if ((v = strstr(line, "DeactivatedGradient ")) == line) {
-                    GetTripleIntegers(v, &data->d_col_s, &data->d_col_e, &data->d_arc);
-                } else  if ((v = strstr(line, "ShadeValues ")) == line) {
-                    GetTripleIntegers(v, &data->light, &data->middle, &data->dark);
-                } else  if ((v = strstr(line, "BaseColors ")) == line) {
-                    GetColors(v, &data->b_col_a, &data->b_col_d);
-                } else  if ((v = strstr(line, "WindowTitleColors ")) == line) {
-                    GetColors(v, &data->text_col, &data->shadow_col);
-                }
-            }
-        }
-        while(line);
-        Close(file);
-    }
+    data->TextAlign = WD_DWTA_LEFT;
 
     /* Set pointers to gadget images, used only to get gadget sizes as their
        are requested prior to creation of menu object */
@@ -878,9 +630,6 @@ static BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data, struct D
     data->img_snapshot  = di->img_snapshot;
     data->img_iconify   = di->img_iconify;
     data->img_lock      = di->img_lock;
-
-    if (olddir) CurrentDir(olddir);
-    UnLock(lock);
 
     if (data->img_close && data->img_depth && data->img_zoom && data->img_up && 
         data->img_down && data->img_left && data->img_right)
@@ -900,10 +649,10 @@ static IPTR windecor_new(Class *cl, Object *obj, struct opSet *msg)
     {
          data = INST_DATA(cl, obj);
 
-         STRPTR path = (STRPTR) GetTagData(WDA_Configuration, (IPTR) "Theme:", msg->ops_AttrList);
          struct DecorImages * di = (struct DecorImages *) GetTagData(WDA_DecorImages, (IPTR)NULL, msg->ops_AttrList);
+         struct DecorConfig * dc = (struct DecorConfig *) GetTagData(WDA_DecorConfig, (IPTR)NULL, msg->ops_AttrList);
 
-         if (!InitWindowSkinning(path, data, di))
+         if (!InitWindowSkinning(data, di, dc))
          {
              CoerceMethod(cl, obj, OM_DISPOSE);
              obj = NULL;
@@ -961,11 +710,11 @@ static IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImag
             {
                 ni = wd->img_size;
                 isset = TRUE;
-                if (data->threestate) 
-                    addx = (data->rightbordergads - (wd->img_size->w / 3)) /2; 
+                if (data->dc->GadgetsThreeState) 
+                    addx = (data->dc->RightBorderGadgets - (wd->img_size->w / 3)) /2; 
                 else 
-                    addx = (data->rightbordergads - (wd->img_size->w >> 2)) /2;
-                addy = (data->bottombordergads - wd->img_size->h) / 2;
+                    addx = (data->dc->RightBorderGadgets - (wd->img_size->w >> 2)) /2;
+                addy = (data->dc->BottomBorderGadgets - wd->img_size->h) / 2;
             }
             break;
 
@@ -1043,29 +792,29 @@ static IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImag
 
         case UPIMAGE:
             ni = wd->img_up;
-            if (data->threestate) addx = (data->rightbordergads - (wd->img_up->w / 3)) /2; else addx = (data->rightbordergads - (wd->img_up->w >> 2)) /2;
-            addy = data->updownaddy / 2;
+            if (data->dc->GadgetsThreeState) addx = (data->dc->RightBorderGadgets - (wd->img_up->w / 3)) /2; else addx = (data->dc->RightBorderGadgets - (wd->img_up->w >> 2)) /2;
+            addy = data->dc->UpDownAddY / 2;
             isset = TRUE;
             break;
 
         case DOWNIMAGE:
             ni = wd->img_down;
-            if (data->threestate) addx = (data->rightbordergads - (wd->img_down->w / 3)) /2; else addx = (data->rightbordergads - (wd->img_down->w >> 2)) /2;
-            addy = data->updownaddy / 2;
+            if (data->dc->GadgetsThreeState) addx = (data->dc->RightBorderGadgets - (wd->img_down->w / 3)) /2; else addx = (data->dc->RightBorderGadgets - (wd->img_down->w >> 2)) /2;
+            addy = data->dc->UpDownAddY / 2;
             isset = TRUE;
             break;
 
         case LEFTIMAGE:
             ni = wd->img_left;
-            addx = data->leftrightaddx / 2;
-            addy = (data->bottombordergads - wd->img_left->h) / 2;
+            addx = data->dc->LeftRightAddX / 2;
+            addy = (data->dc->BottomBorderGadgets - wd->img_left->h) / 2;
             isset = TRUE;
             break;
 
         case RIGHTIMAGE:
             ni = wd->img_right;
-            addx = data->leftrightaddx / 2;
-            addy = (data->bottombordergads - wd->img_right->h) /2;
+            addx = data->dc->LeftRightAddX / 2;
+            addy = (data->dc->BottomBorderGadgets - wd->img_right->h) /2;
             isset = TRUE;
             break;
 
@@ -1098,7 +847,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
 
     if (wd->img_border_normal->ok) ni = wd->img_border_normal;
 
-    if (ni == NULL) data->usegradients = TRUE;
+    if (ni == NULL) data->dc->UseGradients = TRUE;
 
     BOOL    tc = wd->truecolor;
 
@@ -1118,34 +867,34 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
     {
         pen = wd->ActivePen;
-        s_col = data->a_col_s;
-        e_col = data->a_col_e;
-        arc = data->a_arc;
+        s_col = data->dc->ActivatedGradientColor_s;
+        e_col = data->dc->ActivatedGradientColor_e;
+        arc = data->dc->ActivatedGradientColor_a;
         dy = 0;
-        bc = data->b_col_a;
+        bc = data->dc->BaseColors_a;
     } else {
         pen = wd->DeactivePen;
-        s_col = data->d_col_s;
-        e_col = data->d_col_e;
-        arc = data->d_arc;
-        dy = data->winbarheight;
-        bc = data->b_col_d;
-        if (!data->usegradients)
+        s_col = data->dc->DeactivatedGradientColor_s;
+        e_col = data->dc->DeactivatedGradientColor_e;
+        arc = data->dc->DeactivatedGradientColor_a;
+        dy = data->dc->BarHeight;
+        bc = data->dc->BaseColors_d;
+        if (!data->dc->UseGradients)
         {
             if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
         }
     }
 
     /* Draw title bar */
-    if (window->BorderTop == data->winbarheight) 
-        DrawPartialTitleBar(wd, data, window, rp, msg->wdp_Dri, data->txt_align, 0, window->Width, pens);
+    if (window->BorderTop == data->dc->BarHeight) 
+        DrawPartialTitleBar(wd, data, window, rp, msg->wdp_Dri, data->TextAlign, 0, window->Width, pens);
 
     /* Draw left, right and bottom frames */
     if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
         UBYTE * buf = NULL;
         
-        if (data->usegradients)
+        if (data->dc->UseGradients)
         {
             /* Create one pixel wide buffer */
             buf = AllocVec(1 * window->Height * 3, MEMF_ANY | MEMF_CLEAR);
@@ -1155,7 +904,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
                 1, window->Height , s_col, e_col, arc);
         }
     
-        if (data->usegradients)
+        if (data->dc->UseGradients)
         {
             /* Reuse the buffer for blitting frames */
             if (window->BorderLeft > 2) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
@@ -1184,39 +933,39 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         /* Shading borders */
         int bbt = bt;
 
-        if (bt != data->winbarheight) {
+        if (bt != data->dc->BarHeight) {
             int bq = 0;
             if (bt > 1) bq = bt - 1;
             if (window->BorderTop > 2)
             {
-                if (data->usegradients) HorizRepeatBuffer(buf, 0, pen, wd->truecolor, rp, 
+                if (data->dc->UseGradients) HorizRepeatBuffer(buf, 0, pen, wd->truecolor, rp, 
                                             0, 0, window->Width - 1, window->BorderTop - 1);
                 else HorizVertRepeatNewImage(ni, color, 0, 0, rp, 0, 0 , window->Width, window->BorderTop);
             }
-            if (bt > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, 0, 0, 0, ww - 1, 0);
-            if (bq > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bq, 0, bq, ww - 1, bq);
-            if (bt > 1) ShadeLine(lpen, tc, data->usegradients, rp, ni, bc, data->light, 1, 1, 1, ww - 2, 1);
+            if (bt > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, 0, 0, 0, ww - 1, 0);
+            if (bq > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bq, 0, bq, ww - 1, bq);
+            if (bt > 1) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, 1, 1, 1, ww - 2, 1);
             bbt = 0;
         }
 
-        if (bl > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bbt, 0, bbt, 0, wh - 1);
-        if (bb > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, wh - 1, 0, wh - 1, ww - 1, wh - 1);
-        if (br > 0) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bbt , ww - 1, bbt , ww - 1, wh - 1);
-        if (bl > 1) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bbt, bl - 1, bbt, bl - 1, wh - bb);
-        if (bb > 1) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
-        if (br > 1) ShadeLine(dpen, tc, data->usegradients, rp, ni, bc, data->dark, bbt , ww - br, bbt , ww - br, wh - bb);
-        if (bl > 2) ShadeLine(lpen, tc, data->usegradients, rp, ni, bc, data->light, bbt, 1, bbt, 1, wh - 2);
+        if (bl > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt, 0, bbt, 0, wh - 1);
+        if (bb > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, wh - 1, 0, wh - 1, ww - 1, wh - 1);
+        if (br > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt , ww - 1, bbt , ww - 1, wh - 1);
+        if (bl > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt, bl - 1, bbt, bl - 1, wh - bb);
+        if (bb > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
+        if (br > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt , ww - br, bbt , ww - br, wh - bb);
+        if (bl > 2) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, bbt, 1, bbt, 1, wh - 2);
         if (bl > 3) {
-            if (bb > 1) ShadeLine(mpen, tc, data->usegradients, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
-            else ShadeLine(mpen, tc, data->usegradients, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb);
+            if (bb > 1) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
+            else ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb);
         }
-        if (br > 2) ShadeLine(mpen, tc, data->usegradients, rp, ni, bc, data->middle, bbt, ww - 2, bbt, ww - 2, wh - 2);
-        if (bb > 2) ShadeLine(mpen, tc, data->usegradients, rp, ni, bc, data->middle, wh - 2, 1, wh - 2, ww - 2, wh - 2);
+        if (br > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, ww - 2, bbt, ww - 2, wh - 2);
+        if (bb > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, wh - 2, 1, wh - 2, ww - 2, wh - 2);
         if (bb > 3) {
-            if ((bl > 0) && (br > 0)) ShadeLine(lpen, tc, data->usegradients, rp, ni, bc, data->light, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
+            if ((bl > 0) && (br > 0)) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
         }
         if (br > 3) {
-            if (bb > 1) ShadeLine(lpen, tc, data->usegradients, rp, ni, bc, data->light, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
+            if (bb > 1) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
         }
         
         FreeVec(buf);
@@ -1265,28 +1014,28 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                 case ETI_MUI:
                     if (wd->img_mui->ok)
                     {
-                        if (data->threestate) width = (wd->img_mui->w / 3); else width = (wd->img_mui->w >> 2);
+                        if (data->dc->GadgetsThreeState) width = (wd->img_mui->w / 3); else width = (wd->img_mui->w >> 2);
 
                         gadget->Width = width;
                         gadget->Height = wd->img_mui->h;
-                        gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+                        gadget->TopEdge = (data->dc->BarHeight - gadget->Height) / 2;
 
                         if (haszoom)
                         {
-                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
                         }
-                        if (hasclose && data->closeright)
+                        if (hasclose && data->dc->CloseGadgetOnRight)
                         {
-                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
                         }
                         if (hasdepth)
                         {
-                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            if (data->dc->GadgetsThreeState) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
                         else
                         {
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
                         gadget->Flags &= ~GFLG_RELWIDTH;
                         gadget->Flags |= GFLG_RELRIGHT;
@@ -1297,37 +1046,37 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                 case ETI_PopUp:
                     if (wd->img_popup->ok)
                     {
-                        if (data->threestate) width = (wd->img_popup->w / 3); else width = (wd->img_popup->w >> 2);
+                        if (data->dc->GadgetsThreeState) width = (wd->img_popup->w / 3); else width = (wd->img_popup->w >> 2);
 
                         gadget->Width = width;
                         gadget->Height = wd->img_popup->h;
-                        gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+                        gadget->TopEdge = (data->dc->BarHeight - gadget->Height) / 2;
 
                         if ((eb & ETG_MUI) != 0)
                         {
                             if (wd->img_mui->ok)
                             {
-                                if (data->threestate) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
                             }
                         }
 
                         if (haszoom)
                         {
-                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
                         }
 
-                        if (hasclose && data->closeright)
+                        if (hasclose && data->dc->CloseGadgetOnRight)
                         {
-                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
                         }
                         if (hasdepth)
                         {
-                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            if (data->dc->GadgetsThreeState) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
                         else
                         {
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
                         gadget->Flags &= ~GFLG_RELWIDTH;
                         gadget->Flags |= GFLG_RELRIGHT;
@@ -1338,18 +1087,18 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                 case ETI_Snapshot:
                     if (wd->img_snapshot->ok)
                     {
-                        if (data->threestate) width = (wd->img_snapshot->w / 3); else width = (wd->img_snapshot->w >> 2);
+                        if (data->dc->GadgetsThreeState) width = (wd->img_snapshot->w / 3); else width = (wd->img_snapshot->w >> 2);
 
                         gadget->Width = width;
                         gadget->Height = wd->img_snapshot->h;
-                        gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+                        gadget->TopEdge = (data->dc->BarHeight - gadget->Height) / 2;
 
                         if ((eb & ETG_MUI) != 0)
                         {
 
                             if (wd->img_mui->ok)
                             {
-                                if (data->threestate) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
                             }
                         }
 
@@ -1357,28 +1106,28 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                         {
                             if (wd->img_popup->ok)
                             {
-                                if (data->threestate) width += (wd->img_popup->w / 3); else width += (wd->img_popup->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_popup->w / 3); else width += (wd->img_popup->w >> 2);
                             }
                         }
 
                         if (haszoom)
                         {
-                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
                         }
 
-                        if (hasclose && data->closeright)
+                        if (hasclose && data->dc->CloseGadgetOnRight)
                         {
-                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
                         }
 
                         if (hasdepth)
                         {
-                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            if (data->dc->GadgetsThreeState) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
                         else
                         {
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
 
                         gadget->Flags &= ~GFLG_RELWIDTH;
@@ -1390,17 +1139,17 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                 case ETI_Iconify:
                     if (wd->img_iconify->ok)
                     {
-                        if (data->threestate) width = (wd->img_iconify->w / 3); else width = (wd->img_iconify->w >> 2);
+                        if (data->dc->GadgetsThreeState) width = (wd->img_iconify->w / 3); else width = (wd->img_iconify->w >> 2);
 
                         gadget->Width = width;
                         gadget->Height = wd->img_iconify->h;
-                        gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+                        gadget->TopEdge = (data->dc->BarHeight - gadget->Height) / 2;
 
                         if ((eb & ETG_MUI) != 0)
                         {
                             if (wd->img_mui->ok)
                             {
-                                if (data->threestate) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
                             }
                         }
 
@@ -1408,7 +1157,7 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                         {
                             if (wd->img_popup->ok)
                             {
-                                if (data->threestate) width += (wd->img_popup->w / 3); else width += (wd->img_popup->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_popup->w / 3); else width += (wd->img_popup->w >> 2);
                             }
                         }
 
@@ -1416,27 +1165,27 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                         {
                             if (wd->img_snapshot->ok)
                             {
-                                if (data->threestate) width += (wd->img_snapshot->w / 3); else width += (wd->img_snapshot->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_snapshot->w / 3); else width += (wd->img_snapshot->w >> 2);
                             }
                         }
 
                         if (haszoom)
                         {
-                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
                         }
 
-                        if (hasclose && data->closeright)
+                        if (hasclose && data->dc->CloseGadgetOnRight)
                         {
-                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
                         }
                         if (hasdepth)
                         {
-                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            if (data->dc->GadgetsThreeState) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
                         else
                         {
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
                         gadget->Flags &= ~GFLG_RELWIDTH;
                         gadget->Flags |= GFLG_RELRIGHT;
@@ -1447,17 +1196,17 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                 case ETI_Lock:
                     if (wd->img_lock->ok)
                     {
-                        if (data->threestate) width = (wd->img_lock->w / 3); else width = (wd->img_lock->w >> 2);
+                        if (data->dc->GadgetsThreeState) width = (wd->img_lock->w / 3); else width = (wd->img_lock->w >> 2);
 
                         gadget->Width = width;
                         gadget->Height = wd->img_lock->h;
-                        gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+                        gadget->TopEdge = (data->dc->BarHeight - gadget->Height) / 2;
 
                         if ((eb & ETG_MUI) != 0)
                         {
                             if (wd->img_mui->ok)
                             {
-                                if (data->threestate) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
                             }
                         }
 
@@ -1465,7 +1214,7 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                         {
                             if (wd->img_popup->ok)
                             {
-                                if (data->threestate) width += (wd->img_popup->w / 3); else width += (wd->img_popup->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_popup->w / 3); else width += (wd->img_popup->w >> 2);
                             }
                         }
 
@@ -1473,7 +1222,7 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                         {
                             if (wd->img_snapshot->ok)
                             {
-                                if (data->threestate) width += (wd->img_snapshot->w / 3); else width += (wd->img_snapshot->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_snapshot->w / 3); else width += (wd->img_snapshot->w >> 2);
                             }
                         }
 
@@ -1481,27 +1230,27 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                         {
                             if (wd->img_iconify->ok)
                             {
-                                if (data->threestate) width += (wd->img_iconify->w / 3); else width += (wd->img_iconify->w >> 2);
+                                if (data->dc->GadgetsThreeState) width += (wd->img_iconify->w / 3); else width += (wd->img_iconify->w >> 2);
                             }
                         }
 
                         if (haszoom)
                         {
-                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
                         }
 
-                        if (hasclose && data->closeright)
+                        if (hasclose && data->dc->CloseGadgetOnRight)
                         {
-                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                            if (data->dc->GadgetsThreeState) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
                         }
                         if (hasdepth)
                         {
-                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            if (data->dc->GadgetsThreeState) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
                         else
                         {
-                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                            gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                         }
                         gadget->Flags &= ~GFLG_RELWIDTH;
                         gadget->Flags |= GFLG_RELRIGHT;
@@ -1516,56 +1265,56 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
             switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
             {
                 case GTYP_CLOSE:
-                    if (data->threestate) width = (wd->img_close->w / 3); else width = (wd->img_close->w >> 2);
+                    if (data->dc->GadgetsThreeState) width = (wd->img_close->w / 3); else width = (wd->img_close->w >> 2);
                     gadget->Width = width;
                     wd->closewidth = width;
                     gadget->Height = wd->img_close->h;
-                    if (data->closeright)
+                    if (data->dc->CloseGadgetOnRight)
                     {
                         gadget->Flags &= ~GFLG_RELWIDTH;
                         gadget->Flags |= GFLG_RELRIGHT;
-                        gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                     }
                     else
                     {
-                        gadget->LeftEdge = data->BarPreGadget_s;
+                        gadget->LeftEdge = data->dc->BarPreGadget_s;
                     }
-                    gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+                    gadget->TopEdge = (data->dc->BarHeight - gadget->Height) / 2;
                     break;
     
                 case GTYP_WDEPTH:
-                    if (data->threestate) width = (wd->img_depth->w / 3); else width = (wd->img_depth->w >> 2);
+                    if (data->dc->GadgetsThreeState) width = (wd->img_depth->w / 3); else width = (wd->img_depth->w >> 2);
                     gadget->Width = width;
                     wd->depthwidth = width;
                     gadget->Height = wd->img_depth->h;
-                    if (hasclose && data->closeright)
+                    if (hasclose && data->dc->CloseGadgetOnRight)
                     {
-                        if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                        if (data->dc->GadgetsThreeState) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
                     }
-                    gadget->LeftEdge = -data->BarPostGadget_s - width;
-                    gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+                    gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
+                    gadget->TopEdge = (data->dc->BarHeight - gadget->Height) / 2;
                     gadget->Flags &= ~GFLG_RELWIDTH;
                     gadget->Flags |= GFLG_RELRIGHT;
                     break;
     
                 case GTYP_WZOOM:
-                    if (data->threestate) width = (wd->img_zoom->w / 3); else width = (wd->img_zoom->w >> 2);
+                    if (data->dc->GadgetsThreeState) width = (wd->img_zoom->w / 3); else width = (wd->img_zoom->w >> 2);
                     gadget->Width = width;
                     wd->zoomwidth = width;
                     gadget->Height = wd->img_zoom->h;
-                    gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
-                    if (hasclose && data->closeright)
+                    gadget->TopEdge = (data->dc->BarHeight - gadget->Height) / 2;
+                    if (hasclose && data->dc->CloseGadgetOnRight)
                     {
-                        if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                        if (data->dc->GadgetsThreeState) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
                     }
                     if (hasdepth)
                     {
-                        if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
-                        gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        if (data->dc->GadgetsThreeState) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                        gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                     }
                     else
                     {
-                        gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        gadget->LeftEdge = -data->dc->BarPostGadget_s - width;
                     }
                     gadget->Flags &= ~GFLG_RELWIDTH;
                     gadget->Flags |= GFLG_RELRIGHT;
@@ -1573,8 +1322,8 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                     break;
     
                 case GTYP_SIZING:
-                    rightborder = data->rightbordergads;
-                    if ((gadget->Flags & WFLG_SIZEBBOTTOM) != 0) bottomborder = data->bottombordergads;
+                    rightborder = data->dc->RightBorderGadgets;
+                    if ((gadget->Flags & WFLG_SIZEBBOTTOM) != 0) bottomborder = data->dc->BottomBorderGadgets;
                     break;
     
                 case GTYP_WDRAGGING:
@@ -1585,9 +1334,9 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
         return TRUE;
     }
 
-    int sysrgad = -data->BarPostGadget_s - 1;
+    int sysrgad = -data->dc->BarPostGadget_s - 1;
 
-    if (data->closeright && hasclose) sysrgad -= wd->closewidth;
+    if (data->dc->CloseGadgetOnRight && hasclose) sysrgad -= wd->closewidth;
     if (hasdepth) sysrgad -= wd->depthwidth;
     if (haszoom) sysrgad -= wd->zoomwidth;
     while(gadget)
@@ -1610,12 +1359,12 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                         {
                             if (get((Object *) gadget, PGA_Top, &rtsm))
                             {
-                                SetAttrs((Object *) gadget, GA_RelRight, - data->rightbordergads + ((data->rightbordergads - (wd->img_verticalcontainer->w >> 1) + 1) >> 1) + 1, GA_Width, wd->img_verticalcontainer->w >> 1, TAG_DONE);
+                                SetAttrs((Object *) gadget, GA_RelRight, - data->dc->RightBorderGadgets + ((data->dc->RightBorderGadgets - (wd->img_verticalcontainer->w >> 1) + 1) >> 1) + 1, GA_Width, wd->img_verticalcontainer->w >> 1, TAG_DONE);
                             }
                             else
                             {
                                 get((Object *) gadget, GA_Width, &rtsm);
-                                SetAttrs((Object *) gadget, GA_RelRight, - data->rightbordergads + ((data->rightbordergads - rtsm + 1) >> 1) + 1, TAG_DONE);
+                                SetAttrs((Object *) gadget, GA_RelRight, - data->dc->RightBorderGadgets + ((data->dc->RightBorderGadgets - rtsm + 1) >> 1) + 1, TAG_DONE);
                             }
                         }
                         else
@@ -1625,12 +1374,12 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                             {
                                 if (get((Object *) gadget, PGA_Top, &rtsm))
                                 {
-                                    SetAttrs((Object *) gadget, GA_RelBottom, - data->bottombordergads + ((data->bottombordergads - (wd->img_horizontalcontainer->h >> 1) + 1)  >> 1) +1, GA_Height, (wd->img_horizontalcontainer->h >> 1), TAG_DONE);
+                                    SetAttrs((Object *) gadget, GA_RelBottom, - data->dc->BottomBorderGadgets + ((data->dc->BottomBorderGadgets - (wd->img_horizontalcontainer->h >> 1) + 1)  >> 1) +1, GA_Height, (wd->img_horizontalcontainer->h >> 1), TAG_DONE);
                                 }
                                 else
                                 {
                                     get((Object *) gadget, GA_Height, &rtsm);
-                                    SetAttrs((Object *) gadget, GA_RelBottom, - data->bottombordergads + ((data->bottombordergads - rtsm + 1) >> 1) + 1, TAG_DONE);
+                                    SetAttrs((Object *) gadget, GA_RelBottom, - data->dc->BottomBorderGadgets + ((data->dc->BottomBorderGadgets - rtsm + 1) >> 1) + 1, TAG_DONE);
                                 }
                             }
                         }
@@ -1658,7 +1407,7 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
             {
                 if ((gadget->Flags & GFLG_RELRIGHT) != 0)
                 {
-                    gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+                    gadget->TopEdge = (data->dc->BarHeight - gadget->Height) / 2;
                     sysrgad -= gadget->Width;
                     gadget->LeftEdge = sysrgad;
                 }
@@ -1675,10 +1424,10 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
         {
             case GTYP_WDRAGGING:
                 gadget->Width = sysrgad;
-                if (hasclose && !data->closeright)
+                if (hasclose && !data->dc->CloseGadgetOnRight)
                 {
-                    gadget->Width -= data->BarPreGadget_s;
-                    if (data->threestate) gadget->Width -= (wd->img_close->w / 3); else gadget->Width -= (wd->img_close->w >> 2);
+                    gadget->Width -= data->dc->BarPreGadget_s;
+                    if (data->dc->GadgetsThreeState) gadget->Width -= (wd->img_close->w / 3); else gadget->Width -= (wd->img_close->w >> 2);
                 }
                 break;
         }
@@ -1808,23 +1557,23 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
 
     if (wd->img_border_normal->ok) ni = wd->img_border_normal;
 
-    if (ni == NULL) data->usegradients = TRUE;
+    if (ni == NULL) data->dc->UseGradients = TRUE;
 
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
     {
-        s_col = data->a_col_s;
-        e_col = data->a_col_e;
-        arc = data->a_arc;
-        bc = data->b_col_a;
+        s_col = data->dc->ActivatedGradientColor_s;
+        e_col = data->dc->ActivatedGradientColor_e;
+        arc = data->dc->ActivatedGradientColor_a;
+        bc = data->dc->BaseColors_a;
         pen = wd->ActivePen;
     }
     else
     {
-        s_col = data->d_col_s;
-        e_col = data->d_col_e;
-        arc = data->d_arc;
-        bc = data->b_col_d;
-        if (!data->usegradients)
+        s_col = data->dc->DeactivatedGradientColor_s;
+        e_col = data->dc->DeactivatedGradientColor_e;
+        arc = data->dc->DeactivatedGradientColor_a;
+        bc = data->dc->BaseColors_d;
+        if (!data->dc->UseGradients)
         {
             if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
         }
@@ -1833,7 +1582,7 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
 
     /* Drawing background - this solves WDM_DRAW_BORDERPROPBACK without need of
        reading from window when drawing container and knob */
-    if (data->usegradients)
+    if (data->dc->UseGradients)
     {
         FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1,  0, 0, bx1 - bx0 + 1, by1 - by0 + 1, s_col, e_col, arc, bx0, by0);
     }
@@ -1858,21 +1607,21 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     {
         if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) subimage = 0; else subimage = 1;
         y = by0;
-        size = by1 - by0 - data->ContainerTop_s - data->ContainerBottom_s + 1;
-        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, subimage, data->ContainerTop_o, data->ContainerTop_s, bx0, y, data->ContainerTop_s);
-        if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, subimage, data->ContainerVertTile_o, data->ContainerVertTile_s, bx0, y, size);
+        size = by1 - by0 - data->dc->ContainerTop_s - data->dc->ContainerBottom_s + 1;
+        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, subimage, data->dc->ContainerTop_o, data->dc->ContainerTop_s, bx0, y, data->dc->ContainerTop_s);
+        if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, subimage, data->dc->ContainerVertTile_o, data->dc->ContainerVertTile_s, bx0, y, size);
 
-        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, subimage, data->ContainerBottom_o, data->ContainerBottom_s, bx0, y, data->ContainerBottom_s);
+        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, subimage, data->dc->ContainerBottom_o, data->dc->ContainerBottom_s, bx0, y, data->dc->ContainerBottom_s);
 
     }
     else if ((pi->Flags & FREEHORIZ) != 0)
     {
         if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) subimage = 0; else subimage = 1;
         x = bx0;
-        size = bx1 - bx0 - data->ContainerLeft_s - data->ContainerRight_s + 1;
-        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, subimage, data->ContainerLeft_o, data->ContainerLeft_s, x, by0, data->ContainerLeft_s);
-        if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, subimage, data->ContainerHorTile_o, data->ContainerHorTile_s, x, by0, size);
-        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, subimage, data->ContainerRight_o, data->ContainerRight_s, x, by0, data->ContainerRight_s);
+        size = bx1 - bx0 - data->dc->ContainerLeft_s - data->dc->ContainerRight_s + 1;
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, subimage, data->dc->ContainerLeft_o, data->dc->ContainerLeft_s, x, by0, data->dc->ContainerLeft_s);
+        if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, subimage, data->dc->ContainerHorTile_o, data->dc->ContainerHorTile_s, x, by0, size);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, subimage, data->dc->ContainerRight_o, data->dc->ContainerRight_s, x, by0, data->dc->ContainerRight_s);
     }
 
 
@@ -1887,53 +1636,53 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     {
         if (hit) subimage = 1; else if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) subimage = 0; else subimage = 2;
         y = r->MinY - by0;
-        size = r->MaxY - r->MinY - data->KnobTop_s - data->KnobBottom_s + 1;
+        size = r->MaxY - r->MinY - data->dc->KnobTop_s - data->dc->KnobBottom_s + 1;
 
-        y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobTop_o, data->KnobTop_s, r->MinX - bx0, y, data->KnobTop_s);
+        y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->dc->KnobTop_o, data->dc->KnobTop_s, r->MinX - bx0, y, data->dc->KnobTop_s);
         if (size > 0)
         {
-            if (size > data->KnobVertGripper_s)
+            if (size > data->dc->KnobVertGripper_s)
             {
-                size = size - data->KnobVertGripper_s;
+                size = size - data->dc->KnobVertGripper_s;
                 int size_bak = size;
                 size = size / 2;
-                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobTileTop_o, data->KnobTileTop_s, r->MinX - bx0, y, size);
-                y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobVertGripper_o, data->KnobVertGripper_s, r->MinX - bx0, y, data->KnobVertGripper_s);
+                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->dc->KnobTileTop_o, data->dc->KnobTileTop_s, r->MinX - bx0, y, size);
+                y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->dc->KnobVertGripper_o, data->dc->KnobVertGripper_s, r->MinX - bx0, y, data->dc->KnobVertGripper_s);
                 size = size_bak - size;
-                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobTileBottom_o, data->KnobTileBottom_s, r->MinX - bx0, y, size);
+                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->dc->KnobTileBottom_o, data->dc->KnobTileBottom_s, r->MinX - bx0, y, size);
             }
             else
             {
-                y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobTileTop_o, data->KnobTileTop_s, r->MinX - bx0, y, size);
+                y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->dc->KnobTileTop_o, data->dc->KnobTileTop_s, r->MinX - bx0, y, size);
             }
         }
-        y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->KnobBottom_o, data->KnobBottom_s, r->MinX - bx0, y, data->KnobBottom_s);
+        y = WriteTiledImageVertical(rp, wd->img_verticalknob, subimage, data->dc->KnobBottom_o, data->dc->KnobBottom_s, r->MinX - bx0, y, data->dc->KnobBottom_s);
     }
     else if ((pi->Flags & FREEHORIZ) != 0)
     {
         if (hit) subimage = 1; else if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) subimage = 0; else subimage = 2;
         x = r->MinX - bx0;
-        size = r->MaxX - r->MinX - data->KnobLeft_s - data->KnobRight_s + 1;
-        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobLeft_o, data->KnobLeft_s, x, r->MinY - by0, data->KnobLeft_s);
+        size = r->MaxX - r->MinX - data->dc->KnobLeft_s - data->dc->KnobRight_s + 1;
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->dc->KnobLeft_o, data->dc->KnobLeft_s, x, r->MinY - by0, data->dc->KnobLeft_s);
 
         if (size > 0)
         {
-            if (size > data->KnobHorGripper_s)
+            if (size > data->dc->KnobHorGripper_s)
             {
-                size = size - data->KnobHorGripper_s;
+                size = size - data->dc->KnobHorGripper_s;
                 int size_bak = size;
                 size = size / 2;
-                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobTileLeft_o, data->KnobTileLeft_s, x, r->MinY - by0, size);
-                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobHorGripper_o, data->KnobHorGripper_s, x, r->MinY - by0, data->KnobHorGripper_s);
+                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->dc->KnobTileLeft_o, data->dc->KnobTileLeft_s, x, r->MinY - by0, size);
+                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->dc->KnobHorGripper_o, data->dc->KnobHorGripper_s, x, r->MinY - by0, data->dc->KnobHorGripper_s);
                 size = size_bak - size;
-                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobTileRight_o, data->KnobTileRight_s, x, r->MinY - by0, size);
+                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->dc->KnobTileRight_o, data->dc->KnobTileRight_s, x, r->MinY - by0, size);
             }
             else
             {
-                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobTileRight_o, data->KnobTileRight_s, x, r->MinY - by0, size);
+                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->dc->KnobTileRight_o, data->dc->KnobTileRight_s, x, r->MinY - by0, size);
             }
         }
-        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->KnobRight_o, data->KnobRight_s, x, r->MinY - by0, data->KnobRight_s);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, subimage, data->dc->KnobRight_o, data->dc->KnobRight_s, x, r->MinY - by0, data->dc->KnobRight_s);
     }
 
     /* Final blitting of gadget bitmap to window rast port */
@@ -1964,8 +1713,8 @@ static IPTR windecor_getdefsizes(Class *cl, Object *obj, struct wdpGetDefSizeSys
     {
         case SIZEIMAGE:
             n = NULL;
-            w = data->rightbordergads;
-            h = data->bottombordergads;
+            w = data->dc->RightBorderGadgets;
+            h = data->dc->BottomBorderGadgets;
             isset = TRUE;
             break;
 
@@ -2001,31 +1750,31 @@ static IPTR windecor_getdefsizes(Class *cl, Object *obj, struct wdpGetDefSizeSys
 
         case UPIMAGE:
             n = NULL;
-            w = data->rightbordergads;
-            h = data->img_up->h + data->updownaddy;
+            w = data->dc->RightBorderGadgets;
+            h = data->img_up->h + data->dc->UpDownAddY;
             isset = TRUE;
             break;
 
         case DOWNIMAGE:
             n = NULL;
-            w = data->rightbordergads;
-            h = data->img_down->h + data->updownaddy;
+            w = data->dc->RightBorderGadgets;
+            h = data->img_down->h + data->dc->UpDownAddY;
             isset = TRUE;
             break;
 
         case LEFTIMAGE:
             n = NULL;
-            if (data->threestate) w = (data->img_left->w / 3); else w = (data->img_left->w >> 2);
-            w += data->leftrightaddx;
-            h = data->bottombordergads;
+            if (data->dc->GadgetsThreeState) w = (data->img_left->w / 3); else w = (data->img_left->w >> 2);
+            w += data->dc->LeftRightAddX;
+            h = data->dc->BottomBorderGadgets;
             isset = TRUE;
             break;
 
         case RIGHTIMAGE:
             n = NULL;
-            if (data->threestate) w = (data->img_right->w / 3); else w = (data->img_right->w >> 2);
-            w += data->leftrightaddx;
-            h = data->bottombordergads;
+            if (data->dc->GadgetsThreeState) w = (data->img_right->w / 3); else w = (data->img_right->w >> 2);
+            w += data->dc->LeftRightAddX;
+            h = data->dc->BottomBorderGadgets;
             isset = TRUE;
             break;
 
@@ -2053,7 +1802,7 @@ static IPTR windecor_getdefsizes(Class *cl, Object *obj, struct wdpGetDefSizeSys
     else
     {
         if (n->ok) {
-            if (data->threestate)
+            if (data->dc->GadgetsThreeState)
             {
                 *msg->wdp_Width = (n->w / 3);
                 *msg->wdp_Height = n->h;
@@ -2076,14 +1825,14 @@ static IPTR windecor_windowshape(Class *cl, Object *obj, struct wdpWindowShape *
     struct WindowData      *wd = (struct WindowData *) msg->wdp_UserBuffer;
     struct Window          *window = msg->wdp_Window;
 
-    if (data->barmasking)
+    if (data->dc->BarMasking)
     {
         struct  NewLUT8ImageContainer *shape;
         IPTR    back = 0;
         shape = (struct  NewLUT8ImageContainer *)NewLUT8ImageContainer(window->Width, window->BorderTop);
         if (shape)
         {
-            if (window->BorderTop == data->winbarheight) DrawShapePartialTitleBar(wd, (struct NewLUT8Image *)shape, data, window, data->txt_align, 0, window->Width);
+            if (window->BorderTop == data->dc->BarHeight) DrawShapePartialTitleBar(wd, (struct NewLUT8Image *)shape, data, window, data->TextAlign, 0, window->Width);
             back =(IPTR) RegionFromLUT8Image(msg->wdp_Width, msg->wdp_Height, (struct NewLUT8Image *)shape);
 
             DisposeLUT8ImageContainer((struct NewLUT8Image *)shape);
@@ -2093,7 +1842,7 @@ static IPTR windecor_windowshape(Class *cl, Object *obj, struct wdpWindowShape *
 
     }
 
-    if (!data->rounded) return (IPTR) NULL;
+    if (!data->dc->BarRounded) return (IPTR) NULL;
 
     struct  Region *newshape;
 
