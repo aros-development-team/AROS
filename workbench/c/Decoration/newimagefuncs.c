@@ -107,28 +107,31 @@ struct NewImage *NewImageContainer(UWORD w, UWORD h)
 struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
     ULONG expectedsubimagescols, ULONG expectedsubimagesrows)
 {
-    struct	BitMapHeader       *bmhd = NULL;
-    struct	NewImage           *ni = NULL;
-    struct  BitMap             *map = NULL;
-    struct  RastPort           *rp = NULL;
+    struct BitMapHeader        *bmhd = NULL;
+    struct NewImage            *ni = NULL;
+    struct BitMap              *map = NULL;
+    struct RastPort            *rp = NULL;
     Object                     *pic;
-    struct	pdtBlitPixelArray   pa;
-    char                        Buffer[256];
+    struct pdtBlitPixelArray    pa;
+    STRPTR                      buffer;
     UWORD                       w, h, tc, x, y;
     UBYTE                       mask;
     ULONG                       a;
-    ULONG   *dst;
+    ULONG                      *dst;
+    LONG                        len;
+    
+    len = strlen(path) + strlen(name) + 2;
+    buffer = AllocVec(len, MEMF_CLEAR | MEMF_ANY);
+    strncpy(buffer, path, len);
+    AddPart(buffer, name, len);
 
-    strcpy(Buffer, name);
-
-    pic = NewDTObject(Buffer,  DTA_SourceType,  DTST_FILE,
+    pic = NewDTObject(buffer,  DTA_SourceType,  DTST_FILE,
                                DTA_GroupID,     GID_PICTURE,
                                PDTA_Remap,      FALSE,
                                PDTA_DestMode,   PMODE_V43,
                                TAG_DONE);
     if (pic)
     {
-
         get(pic, PDTA_BitMapHeader, &bmhd);
         if(bmhd)
         {
@@ -137,77 +140,67 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
             h = bmhd->bmh_Height;
             mask = bmhd->bmh_Masking;
             ni = NewImageContainer(w, h);
-            ni->subimagescols = expectedsubimagescols;
-            ni->subimagesrows = expectedsubimagesrows;
             if (ni)
             {
-                int len = strlen(path) + strlen(Buffer) +2;
                 ni->filename = AllocVec(len, MEMF_CLEAR | MEMF_ANY);
-                if (ni->filename != NULL)
+                strncpy(ni->filename, buffer, len);
+                ni->subimagescols = expectedsubimagescols;
+                ni->subimagesrows = expectedsubimagesrows;
+                pa.MethodID = PDTM_READPIXELARRAY;
+                pa.pbpa_PixelData = (APTR) ni->data;
+                pa.pbpa_PixelFormat = PBPAFMT_ARGB;
+                pa.pbpa_PixelArrayMod = w*4;
+                pa.pbpa_Left = 0;
+                pa.pbpa_Top = 0;
+                pa.pbpa_Width = w;
+                pa.pbpa_Height = h;
+                DoMethodA(pic, (Msg) &pa);
+                ni->ok = TRUE;
+                if (bmhd->bmh_Depth <= 8)
                 {
-                    strncpy(ni->filename, path, len);
-                    AddPart(ni->filename, Buffer, len);
-
-                    pa.MethodID = PDTM_READPIXELARRAY;
-                    pa.pbpa_PixelData = (APTR) ni->data;
-                    pa.pbpa_PixelFormat = PBPAFMT_ARGB;
-                    pa.pbpa_PixelArrayMod = w*4;
-                    pa.pbpa_Left = 0;
-                    pa.pbpa_Top = 0;
-                    pa.pbpa_Width = w;
-                    pa.pbpa_Height = h;
-                    DoMethodA(pic, (Msg) &pa);
-                    ni->ok = TRUE;
-                    if (bmhd->bmh_Depth <= 8)
+                    get(pic, PDTA_BitMap, &map);
+                    if (map && (mask == mskHasTransparentColor))
                     {
-                        get(pic, PDTA_BitMap, &map);
-                        if (map && (mask == mskHasTransparentColor))
-                        {
-                            rp = CreateRastPort();
-                            if (rp) rp->BitMap = map;
-                            tc = bmhd->bmh_Transparent;
-                        }
-                    }
-
-                    if (rp)
-                    {
-                        dst = ni->data;
-                        for (y = 0; y < h; y++)
-                        {
-                            for (x = 0; x < w; x++)
-                            {
-    #if !AROS_BIG_ENDIAN
-                            if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0xffffff00; else dst[x+y*w] |= 0x000000ff;
-    #else
-                            if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0x00ffffff; else dst[x+y*w] |= 0xff000000;
-    #endif
-                            }
-                        }
-                        FreeRastPort(rp);
-                    }
-                    else
-                    {
-    
-                        if (mask != mskHasAlpha)
-                        {
-    #if !AROS_BIG_ENDIAN
-                            for (a= 0; a < (w*h); a++) ni->data[a] |= 0x000000ff;
-    #else
-                            for (a= 0; a < (w*h); a++) ni->data[a] |= 0xff000000;
-    #endif
-                        }
+                        rp = CreateRastPort();
+                        if (rp) rp->BitMap = map;
+                        tc = bmhd->bmh_Transparent;
                     }
                 }
-                else 
+
+                if (rp)
                 {
-                    DisposeImageContainer(ni);
-                    ni = NULL;
+                    dst = ni->data;
+                    for (y = 0; y < h; y++)
+                    {
+                        for (x = 0; x < w; x++)
+                        {
+#if !AROS_BIG_ENDIAN
+                        if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0xffffff00; else dst[x+y*w] |= 0x000000ff;
+#else
+                        if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0x00ffffff; else dst[x+y*w] |= 0xff000000;
+#endif
+                        }
+                    }
+                    FreeRastPort(rp);
+                }
+                else
+                {
+
+                    if (mask != mskHasAlpha)
+                    {
+#if !AROS_BIG_ENDIAN
+                        for (a= 0; a < (w*h); a++) ni->data[a] |= 0x000000ff;
+#else
+                        for (a= 0; a < (w*h); a++) ni->data[a] |= 0xff000000;
+#endif
+                    }
                 }
             }
         }
-
         DisposeDTObject(pic);
     }
+
+    FreeVec(buffer);
 
     return ni;
 }

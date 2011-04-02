@@ -8,7 +8,6 @@
 #include <graphics/rpattr.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
-#include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>
 #include <string.h>
@@ -91,9 +90,6 @@ static void DisposeScreenSkinning(struct scrdecor_data *data)
 
 static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data, struct DecorConfig * dc)
 {
-    
-    BPTR    lock;
-    BPTR    olddir = 0;
     ULONG   wgsubimagecols = 4; /* Default value of subimage cols in window gadget */
 
     if (!dc)
@@ -102,13 +98,6 @@ static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data, struct D
     data->dc = dc;
     
     if (dc->GadgetsThreeState) wgsubimagecols = 3;
-
-    lock = Lock(path, ACCESS_READ);
-    if (lock)
-    {
-        olddir = CurrentDir(lock);
-    }
-    else return FALSE;
 
     data->di.img_sdepth = GetImageFromFile(path, "System/SDepth/Default", 2, 1);
     data->di.img_stitlebar = GetImageFromFile(path, "System/STitlebar/Default", 1, 1);
@@ -147,9 +136,6 @@ static BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data, struct D
         data->di.img_stitlebar->tile_top = 9;
         data->di.img_stitlebar->tile_bottom = 8;
     }
-
-    if (olddir) CurrentDir(olddir);
-    UnLock(lock);
 
     if (data->di.img_sdepth) return TRUE;
     DisposeScreenSkinning(data);
