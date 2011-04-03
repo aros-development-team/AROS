@@ -48,9 +48,9 @@ void audiohw_prepareptlen(struct AudioBase *ab, struct IOAudio *io, UBYTE ch)
     } else {
     	custom->aud[ch].ac_ptr = ab->zerosample;
     	custom->aud[ch].ac_len = 1;
-    	ab->cycles[ch] = 1;
     	D(bug("ch%d: null\n", ch));
     }
+    ab->initialcyclemask &= ~(1 << ch);
 }
 
 void audiohw_preparepervol(struct AudioBase *ab, struct IOAudio *io, UBYTE ch)
@@ -69,34 +69,42 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     struct IOAudio *io = getnextwrite(ab, ch, FALSE);
     UBYTE mask = 1 << ch;
 
-    D(bug("audio: ch %d interrupt, io %p %04x %d\n", ch, io, ab->initialcyclemask, ab->cycles[ch]));
+    D(bug("audio: ch %d interrupt, io %p %04x %04x %d\n", ch, io, ab->initialcyclemask, ab->initialdmamask, ab->cycles[ch]));
 
     if (!io || (ab->stopmask & mask)) {
         audiohw_stop(ab, mask);
-        D(bug("audio: finished\n"));
+        D(bug("ch%d: finished\n", ch));
         return;
     }
     
-    if (!(ab->initialcyclemask & mask)) {
-    	ab->initialcyclemask |= mask;
+    if (!(ab->initialdmamask & mask)) {
+    	D(bug("audio: ch%d startup interrupt\n", ch));
+    	ab->initialdmamask |= mask;
     	if (io->ioa_Request.io_Flags & ADIOF_WRITEMESSAGE)
     	    ReplyMsg(&io->ioa_WriteMsg);
     	io = getnextwrite(ab, ch, TRUE);
-        D(bug("audio: initial next io %p\n", io));
         audiohw_prepareptlen(ab, io, ch);
     } else {
         struct IOAudio *wio, *next;
     	struct IOAudio *io2 = getnextwrite(ab, ch, TRUE);
-    	audiohw_preparepervol(ab, io2, ch);
+
+    	if (!(ab->initialcyclemask & mask)) {
+    	    ab->initialcyclemask |= mask;
+    	    audiohw_preparepervol(ab, io2, ch);
+    	    if (io2->ioa_Request.io_Flags & ADIOF_WRITEMESSAGE)
+    	    	ReplyMsg(&io2->ioa_WriteMsg);
+    	}
+
         if (ab->cycles[ch] == 1) {
     	    REMOVE(io);
-    	    ReplyMsg((struct Message*)io);
+    	    ReplyMsg(&io->ioa_Request.io_Message);
     	    io = getnextwrite(ab, ch, TRUE);
+            D(bug("audio: ch%d next io %p\n", ch, io));
             audiohw_prepareptlen(ab, io, ch);
-            D(bug("audio: next io %p\n", io));
     	} else if (ab->cycles[ch]) {
 	    ab->cycles[ch]--;
 	}
+
     	ForeachNodeSafe(&ab->misclist, wio, next) {
     	    UWORD cmd = wio->ioa_Request.io_Command;
     	    UBYTE cmask = (UBYTE)(ULONG)wio->ioa_Request.io_Unit;
@@ -108,7 +116,7 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     	    if ((cmask >> NR_CH) == 0) {
      	        D(bug("audio: ch %d SYNCCYCLE woken up, io %p\n", ch, wio));
     	        REMOVE(wio);
-    	        ReplyMsg((struct Message*)wio);
+    	        ReplyMsg(&wio->ioa_Request.io_Message);
     	    }
     	}
 
@@ -126,7 +134,7 @@ AROS_UFH4(ULONG, audio_int,
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct AudioBase *ab = data;
     UWORD irqmask = custom->intreqr;
-    D(bug("intreqr=%04x\n", irqmask));
+
     if (irqmask & INTF_AUD0)
     	audioirq(ab, 0);
     if (irqmask & INTF_AUD1)
@@ -174,7 +182,8 @@ static void preparech_initial(struct AudioBase *ab, UBYTE ch)
     ab->cycles[ch] = 1;
     audiohw_prepareptlen(ab, io, ch);
     audiohw_preparepervol(ab, io, ch);
-    ab->initialcyclemask &= ~(1 << ch);
+    ab->initialdmamask &= ~(1 << ch);
+    ab->initialcyclemask |= 1 << ch;
 }	
 
 void audiohw_start(struct AudioBase *ab, UWORD mask)

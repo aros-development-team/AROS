@@ -21,6 +21,7 @@ struct AudioBase
     struct MinList misclist;
     UWORD cycles[NR_CH];
     UWORD initialcyclemask;
+    UWORD initialdmamask;
     UWORD stopmask;
 };
 

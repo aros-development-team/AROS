@@ -197,8 +197,8 @@ static BOOL ADCMD_FREE_f(struct AudioBase *ab, struct IOAudio *io)
     }
     ForeachNodeSafe(&ab->misclist, node, next) {
     	if (node->ioa_Request.io_Command == ADCMD_ALLOCATE && allocaudio(ab, node)) {
-    	    Remove((struct Node*)node);
-    	    ReplyMsg((struct Message*)io);
+    	    REMOVE(node);
+    	    ReplyMsg(&io->ioa_Request.io_Message);
     	}
     }
     return TRUE;
@@ -422,8 +422,9 @@ static BOOL ADCMD_WRITE_f(struct AudioBase *ab, struct IOAudio *io)
     	    break;
     	}
     }
-    D(bug("unit=%08x 1=%d 2=%d newmask=%02x stopmask=%02x\n",
-    	io->ioa_Request.io_Unit, firstempty, secondempty, newmask, ab->stopmask));
+    D(bug("unit=%08x 1=%d 2=%d newmask=%02x stopmask=%02x cycles=%d\n",
+    	io->ioa_Request.io_Unit, firstempty, secondempty, newmask,
+    	ab->stopmask, io->ioa_Cycles));
     if (!io->ioa_Request.io_Unit) {
     	io->ioa_Request.io_Error = ADIOERR_NOALLOCATION;
     } else {
@@ -538,7 +539,7 @@ AROS_LH1(void, beginio,
     if (processcommand(AudioBase, io)) {
     	/* TRUE = finished immediately */
    	if (!(io->ioa_Request.io_Flags & IOF_QUICK))
- 	    ReplyMsg((struct Message*)io);
+ 	    ReplyMsg(&io->ioa_Request.io_Message);
     } else {
     	/* FALSE = async */
    	io->ioa_Request.io_Flags &= ~IOF_QUICK;
