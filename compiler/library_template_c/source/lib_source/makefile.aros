@@ -1,0 +1,71 @@
+# Make this point to the place where AROS is installed
+TOP = ../../../..
+
+include $(TOP)/config/make.cfg
+
+LIBCOREDIR = ../include/libcore
+LIBHEADER_SRC = $(LIBCOREDIR)/libheader.c
+LIBTAIL_SRC = $(LIBCOREDIR)/libtail.c
+USER_INCLUDES = -D_AROS -I. -I../include
+
+LIBS = -L$(LIBDIR) -lamiga -larossupport -larosc
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
+	$(LIBDIR)/libarosc.a
+
+SCRIPTDIR = $(BINDIR)/scripts
+
+SRCS = LibInit.c SampleFuncs.c
+OBJS = libheader.o LibInit.o functable.o SampleFuncs.o libtail.o
+LIB = $(AROS_LIBS)/example.library
+
+all : setup $(LIB)
+
+clean :
+	$(RM) *.o $(LIB)
+
+setup : make-dirs copy-scripts
+	@echo "CFLAGS=$(CFLAGS)"
+
+make-dirs :
+	@if test ! -d $(SCRIPTDIR) ; then $(MKDIR) $(SCRIPTDIR) ; else true ; fi
+
+copy-scripts : $(SCRIPTDIR)/genlibdefs.awk $(SCRIPTDIR)/genfunctable.awk
+
+$(SCRIPTDIR)/% : %
+	$(CP) $< $@
+
+
+$(LIB) : $(OBJS) $(DEPLIBS)
+	@echo "Creating $@..."
+	@$(CC) $(ILDFLAGS) -o $@ $(OBJS) $(LIBS)
+	@echo "Checking $@..."
+	@$(NM) $@
+
+libheader.o : $(LIBHEADER_SRC) libdefs.h
+	@echo "Compiling $< with -DLC_NO_OPENLIB..."
+	@$(CC) $(CFLAGS) -DLC_NO_OPENLIB -DLC_NO_CLOSELIB -c $< -o $@
+
+libtail.o : $(LIBTAIL_SRC) libdefs.h
+	@echo "Compiling $<..."
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+LibInit.o : LibInit.c intern.h libdefs.h
+	@echo "Compiling $<..."
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+functable.o : functable.c intern.h SampleFuncs.h
+	@echo "Compiling $<..."
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+SampleFuncs.o : SampleFuncs.c SampleFuncs.h intern.h libdefs.h
+	@echo "Compiling $<..."
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+libdefs.h : lib.conf ./genlibdefs.awk
+	@echo "Generating $@..."
+	@$(AWK) -f ./genlibdefs.awk $< > $@
+
+functable.c : $(SRCS) ./genfunctable.awk
+	@echo "Generating $@..."
+	@$(AWK) -f ./genfunctable.awk $(SRCS) > $@
+
