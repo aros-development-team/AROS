@@ -8,7 +8,8 @@
 /*************************************************************************/
 
 #define SOURCENAME "main.c"
-#define NODEBUG  /* turns off debug of this file */
+//#define NODEBUG  /* turns off debug of this file */
+#define DEBUG 1
 
 #include <internal/debug.h>
 #include <internal/memory.h>
@@ -50,9 +51,6 @@ int main( void )
 {
 ULONG result;
 
-#ifndef __amigaos4__
-SysBase = (*((struct ExecBase **) 4));
-#endif
 /* Call resource tracking module to init resource tracking */
 
     WBMessage_Get();
