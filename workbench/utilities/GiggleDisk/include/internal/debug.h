@@ -9,7 +9,7 @@
 
 #include <proto/exec.h>
 
-#include <sdi/SDI_compiler.h>
+#include <SDI/SDI_compiler.h>
 
 /*************************************************************************/
 
