@@ -104,7 +104,7 @@
     {
 	ULONG bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
 
-        if (nativeicon->iconPNG.img1 && CyberGfxBase && (bmdepth >= 15))
+        if (nativeicon->iconPNG.img1 && CyberGfxBase && (bmdepth >= 4))
 	{
 	    APTR img;
 	        
@@ -131,7 +131,7 @@
 
         if (nativeicon->icon35.img1.imagedata)
 	{
-	    if (bmdepth >= 15)
+	    if (bmdepth >= 4)
 	    {
 	        struct Image35 *img;
 		ULONG	    	*cgfxcoltab;
@@ -203,7 +203,7 @@
 		    return;
 		} /* if (cgfxcoltab != NULL) */
 
-	    } /* if (bmdepth >= 15) */
+	    } /* if (bmdepth >= 4) */
 	} /* if (nativeicon->icon35.img1.imagedata) */
     } /* if (nativeicon && GfxBase && CyberGfxBase) */
 #endif
