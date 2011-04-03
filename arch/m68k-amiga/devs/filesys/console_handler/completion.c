@@ -583,11 +583,11 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
 						break;
 						
 					    case RAWKEY_NM_WHEEL_UP:
-					    	scroll = -3;
+					    	scroll = -1;
 						break;
 						
 					    case RAWKEY_NM_WHEEL_DOWN:
-					    	scroll = 3;
+					    	scroll = 1;
 						break;
 					}
 					
@@ -625,8 +625,8 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
 					    }
 					    
 					    sel += scroll;
-					    if (sel < 0) sel = 0;
-					    if (sel >= ci->nummatchnodes) sel = ci->nummatchnodes - 1;
+					    if (sel < 0) sel = ci->nummatchnodes - 1;
+					    if (sel >= ci->nummatchnodes) sel = 0;
 					    
 					    tags[0].ti_Data = (IPTR)sel;
 					    tags[1].ti_Tag  = GTLV_MakeVisible;
