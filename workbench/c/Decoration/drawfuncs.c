@@ -391,40 +391,6 @@ static void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture
     else BlurSourceAndMixTexture(pic, NULL, NULL, ratio);
 }
 
-static int WriteTiledImageNoAlpha(struct Window *win, struct RastPort *rp, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
-{
-    int     w = dw;
-    int     x = xp;
-    int     ddw;
-
-    if (!ni->ok) return x;
-
-    if ((sw == 0) || (dw == 0)) return xp;
-
-    if (win)
-    {
-        if (x > win->Width) return xp;
-        if ((x + w) > win->Width) w = win->Width - x;
-    }
-
-    while (w > 0)
-    {
-        ddw = sw;
-        if (w < ddw) ddw = w;
-        if (ni->bitmap == NULL)
-        {
-            WritePixelArray(ni->data, sx , sy, ni->w*4, rp, x, yp, ddw, dh, RECTFMT_ARGB);
-        }
-        else
-        {
-            BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xc0);
-        }
-        w -= ddw;
-        x += ddw;
-    }
-    return x;
-}
-
 static void DrawMapTileToRP(struct NewImage *src, struct RastPort *rp, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
 {
 
@@ -617,6 +583,8 @@ void HorizVertRepeatNewImage(struct NewImage *ni, ULONG color, UWORD offx, UWORD
     }
 }
 
+/* NOTE: fill parameter is ignored, previously it was forcing a no-alpha blit, but
+   this is already handled in BltNewImageSubImageRastPort */
 LONG WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
 {
     int     w = dw;
@@ -624,8 +592,6 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, st
     int     ddw;
 
     if (!ni->ok) return x;
-
-    if (!fill) return WriteTiledImageNoAlpha(win, rp, ni, sx, sy, sw, sh, xp, yp, dw, dh);
 
     if ((sw == 0) || (dw == 0)) return xp;
 
@@ -639,27 +605,9 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, st
     {
         ddw = sw;
         if (w < ddw) ddw = w;
-        if (ni->bitmap == NULL)
-        {
-            if (fill) WritePixelArrayAlpha(ni->data, sx, sy, ni->w*4, rp, x, yp, ddw, dh, 0xffffffff); //RECTFMT_ARGB);
-            else WritePixelArray(ni->data, sx, sy, ni->w*4, rp, x, yp, ddw, dh, RECTFMT_ARGB);
+        
+        BltNewImageSubImageRastPort(ni, 0, 0, sx, sy, rp, x, yp, ddw, dh);
 
-        }
-        else
-        {
-            if (fill)
-            {
-                if (ni->mask)
-                {
-                    BltMaskBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xe0, (PLANEPTR) ni->mask);  
-                }
-                else BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xc0);
-            }
-            else
-            {
-                BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xc0);
-            }
-        }
         w -= ddw;
         x += ddw;
     }
