@@ -34,6 +34,9 @@ struct CachedTitleBar
 
     UWORD           width;
     UWORD           height;
+    ULONG           windowflags;
+    STRPTR          title;
+    ULONG           titlelen;
 };
 
 struct  WindowData
