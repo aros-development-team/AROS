@@ -48,7 +48,7 @@ struct windecor_data
 #define CHANGE_SIZE_CHANGE      1 /* Whole gadget area has changed */
 #define CHANGE_NO_SIZE_CHANGE   2 /* Size remained the same, contents has changed */
 
-static ULONG HasPropGadgetChanged(struct CachedPropGadget * cached, struct wdpDrawBorderPropKnob *msg)
+static ULONG HasPropGadgetChanged(struct CachedPropGadget *cached, struct wdpDrawBorderPropKnob *msg)
 {
     /* More restrictive tests */
     
@@ -64,7 +64,7 @@ static ULONG HasPropGadgetChanged(struct CachedPropGadget * cached, struct wdpDr
 
     /* Less restrictive tests */
 
-    /* if knob position has changed */
+    /* If knob position has changed */
     if (cached->knobx != (msg->wdp_RenderRect->MinX - msg->wdp_PropRect->MinX))
         return CHANGE_NO_SIZE_CHANGE;
     if (cached->knoby != (msg->wdp_RenderRect->MinY - msg->wdp_PropRect->MinY))
@@ -74,7 +74,7 @@ static ULONG HasPropGadgetChanged(struct CachedPropGadget * cached, struct wdpDr
     if (cached->gadgetflags ^ (msg->wdp_Flags & WDF_DBPK_HIT))
         return CHANGE_NO_SIZE_CHANGE;
 
-    /* if the window activity status has changed */
+    /* If the window activity status has changed */
     if (cached->windowflags ^ (msg->wdp_Window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)))
         return CHANGE_NO_SIZE_CHANGE;
 
@@ -87,8 +87,8 @@ static ULONG HasPropGadgetChanged(struct CachedPropGadget * cached, struct wdpDr
     return CHANGE_NO_CHANGE;
 }
 
-static VOID CachePropGadget(struct CachedPropGadget * cached, struct wdpDrawBorderPropKnob *msg,
-    struct BitMap * bitmap)
+static VOID CachePropGadget(struct CachedPropGadget *cached, struct wdpDrawBorderPropKnob *msg,
+    struct BitMap *bitmap)
 {
     cached->bm         = bitmap;
     cached->width      = msg->wdp_PropRect->MaxX - msg->wdp_PropRect->MinX + 1;
@@ -99,6 +99,30 @@ static VOID CachePropGadget(struct CachedPropGadget * cached, struct wdpDrawBord
     cached->knobheight = msg->wdp_RenderRect->MaxY - msg->wdp_RenderRect->MinY + 1;
     cached->knobx      = msg->wdp_RenderRect->MinX - msg->wdp_PropRect->MinX;
     cached->knoby      = msg->wdp_RenderRect->MinY - msg->wdp_PropRect->MinY;
+}
+
+static ULONG HasTitleBarChanged(struct CachedTitleBar *cached, struct Window *window)
+{
+    /* More restrictive tests */
+
+    /* If the window size has changed */
+    if (cached->width != window->Width)
+        return CHANGE_SIZE_CHANGE;
+    if (cached->height != window->Height)
+        return CHANGE_SIZE_CHANGE;
+
+    /* If there is no cached bitmap at all (this can happen NOT only at first call) */
+    if (cached->bm == NULL)
+        return CHANGE_SIZE_CHANGE;
+
+    return CHANGE_NO_CHANGE;
+}
+
+static VOID CacheTitleBar(struct CachedTitleBar *cached, struct Window *window, struct BitMap *bitmap)
+{
+    cached->bm          = bitmap;
+    cached->width       = window->Width;
+    cached->height      = window->Height;
 }
 
 static int WriteTiledImageShape(BOOL fill, struct Window *win, struct NewLUT8Image *lut8, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
@@ -306,7 +330,7 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
 
 static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, struct Window *window, struct RastPort *dst_rp, struct DrawInfo *dri, UWORD align, UWORD start, UWORD width, UWORD *pens)
 {
-    int                 xl0, xl1, xr0, xr1, defwidth;
+    LONG                xl0, xl1, xr0, xr1, defwidth;
     ULONG               textlen = 0, titlelen = 0, textpixellen = 0;
     struct TextExtent   te;
     struct RastPort    *rp;
@@ -319,41 +343,56 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     BOOL                hastitle;
     BOOL                hastitlebar;
     UWORD               textstart = 0, barh, x;
-    ULONG                   bc, color, s_col, e_col, arc;
-    int                     dy;
-
-    LONG    pen = -1;
-
-    if ((wd->rp == NULL) || (window->Width != wd->w) || (window->BorderTop != wd->h))
+    ULONG               bc, color, s_col, e_col, arc;
+    LONG                dy;
+    LONG                pen = -1;
+    ULONG               changetype = CHANGE_NO_CHANGE;
+    struct BitMap       *cachedtitlebarbitmap = NULL;
+    
+    changetype = HasTitleBarChanged(&wd->tbar, window);
+    
+    if (changetype == CHANGE_SIZE_CHANGE)
     {
-        if (wd->rp)
+        if (wd->tbar.bm)
+            FreeBitMap(wd->tbar.bm);
+        wd->tbar.bm = NULL;
+    }
+    cachedtitlebarbitmap = wd->tbar.bm;
+    
+    if (changetype == CHANGE_NO_CHANGE)
+    {
+        BltBitMapRastPort(cachedtitlebarbitmap, start, 0, dst_rp, start, 0, width, window->BorderTop, 0xc0);
+        return;
+    }
+    
+    /* Regenerate the bitmap */
+    rp = CreateRastPort();
+    if (rp)
+    {
+    	struct Rectangle cliprect = {0, 0, window->Width - 1, window->BorderTop - 1};
+    	struct TagItem rptags[] =
         {
-            FreeBitMap(wd->rp->BitMap);
-            FreeRastPort(wd->rp);
+            {RPTAG_ClipRectangle, (IPTR)&cliprect},
+            {TAG_DONE	    	    	    	 }
+        };
+
+        /* Reuse the bitmap if there was no size change (ie. only change of state) */        
+        if (changetype == CHANGE_NO_SIZE_CHANGE)
+            rp->BitMap = cachedtitlebarbitmap;
+        else
+            rp->BitMap = AllocBitMap(window->Width, window->BorderTop, 1, 0, window->WScreen->RastPort.BitMap);
+
+        if (rp->BitMap == NULL)
+        {
+            FreeRastPort(rp);
+            return;
         }
 
-
-
-        wd->h = window->BorderTop;
-        wd->w = window->Width;
-        wd->rp = NULL;
-
-
-        rp = CreateRastPort();
-        if (rp)
-        {
-            SetFont(rp, dri->dri_Font);
-            rp->BitMap = AllocBitMap(window->Width, window->BorderTop, 1, 0, window->WScreen->RastPort.BitMap);
-            if (rp->BitMap == NULL)
-            {
-                FreeRastPort(rp);
-                return;
-            }
-        } else return;
-
-        wd->rp = rp;
-
-    } else rp = wd->rp;
+        SetFont(rp, dri->dri_Font);
+    	SetRPAttrsA(rp, rptags);
+    }
+    else
+        return;
 
     hastitle = window->Title != NULL ? TRUE : FALSE;
     hasclose = (window->Flags & WFLG_CLOSEGADGET) ? TRUE : FALSE;
@@ -598,6 +637,11 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
         }
     }
     BltBitMapRastPort(rp->BitMap, start, 0, dst_rp, start, 0, width, window->BorderTop, 0xc0);
+
+    /* Cache the actual bitmap */
+    CacheTitleBar(&wd->tbar, window, rp->BitMap);
+
+    FreeRastPort(rp);
 }
 
 static VOID DisposeWindowSkinning(struct windecor_data *data)
@@ -822,7 +866,9 @@ static IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImag
 
     if (!isset) return DoSuperMethodA(cl, obj, (Msg)msg);
 
-    if (wd && titlegadget) if (wd->rp) if (wd->rp->BitMap) BltBitMapRastPort(wd->rp->BitMap, left+addy, top+addy, rp, left+addy, top+addy, width, height, 0xc0);
+    /* Reblit title bar */
+    if (wd && titlegadget && wd->tbar.bm)
+        BltBitMapRastPort(wd->tbar.bm, left+addy, top+addy, rp, left+addy, top+addy, width, height, 0xc0);
 
     if (ni) DrawStatefulGadgetImageToRP(rp, ni, state, left + addx, top + addy);
 
@@ -1940,14 +1986,9 @@ static IPTR windecor_exitwindow(Class *cl, Object *obj, struct wdpExitWindow *ms
 {
     struct WindowData *wd = (struct WindowData *) msg->wdp_UserBuffer;
 
-    if (wd->rp)
-    {
-        if (wd->rp->BitMap) FreeBitMap(wd->rp->BitMap);
-        FreeRastPort(wd->rp);
-    }
-    
     if (wd->vert.bm) FreeBitMap(wd->vert.bm);
     if (wd->horiz.bm) FreeBitMap(wd->horiz.bm);
+    if (wd->tbar.bm) FreeBitMap(wd->tbar.bm);
 
     return TRUE;
 }
