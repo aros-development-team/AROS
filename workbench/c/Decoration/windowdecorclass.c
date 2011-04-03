@@ -103,6 +103,8 @@ static VOID CachePropGadget(struct CachedPropGadget *cached, struct wdpDrawBorde
 
 static ULONG HasTitleBarChanged(struct CachedTitleBar *cached, struct Window *window)
 {
+    ULONG len = 0;
+    
     /* More restrictive tests */
 
     /* If the window size has changed */
@@ -114,15 +116,56 @@ static ULONG HasTitleBarChanged(struct CachedTitleBar *cached, struct Window *wi
     /* If there is no cached bitmap at all (this can happen NOT only at first call) */
     if (cached->bm == NULL)
         return CHANGE_SIZE_CHANGE;
+    
+    /* Less restrictive tests */
+
+    /* If the window activity status has changed */
+    if (cached->windowflags ^ (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)))
+        return CHANGE_NO_SIZE_CHANGE;
+
+    /* If the window title/title contents has changed */
+    if (window->Title)
+        len = strlen(window->Title);
+
+    if (cached->titlelen != len)
+        return CHANGE_NO_SIZE_CHANGE;
+    
+    if (cached->title)
+    {
+        /* At this point:
+            - length of both buffer is guarateed to be the same, see previous test
+            - both buffers are allocated
+         */
+        ULONG i;
+        for (i = 0; i < len; i++)
+            if (cached->title[i] != window->Title[i])
+                return CHANGE_NO_SIZE_CHANGE;
+    }
 
     return CHANGE_NO_CHANGE;
 }
 
 static VOID CacheTitleBar(struct CachedTitleBar *cached, struct Window *window, struct BitMap *bitmap)
 {
+    ULONG len = 0;
+
     cached->bm          = bitmap;
     cached->width       = window->Width;
     cached->height      = window->Height;
+    cached->windowflags = (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX));
+    
+    /* Cache the title */
+    if (window->Title)
+        len = strlen(window->Title);
+
+    if (cached->titlelen != len)
+    {
+        if (cached->title)
+            FreeVec(cached->title);
+        cached->title = AllocVec(len + 1, MEMF_ANY | MEMF_CLEAR);
+    }
+    cached->titlelen    = len;
+    strncpy(cached->title, window->Title, len);
 }
 
 static int WriteTiledImageShape(BOOL fill, struct Window *win, struct NewLUT8Image *lut8, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
@@ -221,16 +264,16 @@ static void getleftgadgetsdimensions(struct windecor_data *data, struct Window *
     *xe = x1;
 }
 
-static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image *shape, struct windecor_data *data, struct Window *window, UWORD align, UWORD start, UWORD width)
+static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image *shape, struct windecor_data *data, struct Window *window)
 {
-    int                 xl0, xl1, xr0, xr1, defwidth;
+    LONG                xl0, xl1, xr0, xr1, defwidth;
     ULONG               textlen = 0, titlelen = 0, textpixellen = 0;
     struct TextExtent   te;
 
     BOOL                hastitle;
     BOOL                hastitlebar;
     UWORD               textstart = 0, barh, x;
-    int                     dy;
+    LONG                dy;
 
     struct RastPort    *rp = &window->WScreen->RastPort;
     hastitle = window->Title != NULL ? TRUE : FALSE;
@@ -296,7 +339,7 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
         x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinGB_o, dy, data->dc->BarJoinGB_s, barh, x, 0, data->dc->BarJoinGB_s, barh);
         if (hastitle && (textlen > 0))
         {
-            switch(align)
+            switch(data->TextAlign)
             {
                 case WD_DWTA_CENTER:
                     //BarLFill
@@ -328,7 +371,7 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
     }
 }
 
-static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, struct Window *window, struct RastPort *dst_rp, struct DrawInfo *dri, UWORD align, UWORD start, UWORD width, UWORD *pens)
+static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, struct Window *window, struct RastPort *dst_rp, struct DrawInfo *dri, UWORD *pens)
 {
     LONG                xl0, xl1, xr0, xr1, defwidth;
     ULONG               textlen = 0, titlelen = 0, textpixellen = 0;
@@ -361,7 +404,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     
     if (changetype == CHANGE_NO_CHANGE)
     {
-        BltBitMapRastPort(cachedtitlebarbitmap, start, 0, dst_rp, start, 0, width, window->BorderTop, 0xc0);
+        BltBitMapRastPort(cachedtitlebarbitmap, 0, 0, dst_rp, 0, 0, window->Width, window->BorderTop, 0xc0);
         return;
     }
     
@@ -493,7 +536,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
         x = WriteTiledImageTitle(data->dc->FillTitleBar, window, rp, wd->img_winbar_normal, data->dc->BarJoinGB_o, dy, data->dc->BarJoinGB_s, barh, x, 0, data->dc->BarJoinGB_s, barh);
         if (hastitle && (textlen > 0))
         {
-            switch(align)
+            switch(data->TextAlign)
             {
                 case WD_DWTA_CENTER:
                     //BarLFill
@@ -636,7 +679,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
             if (ni) DrawStatefulGadgetImageToRP(rp, ni, state, x, y);
         }
     }
-    BltBitMapRastPort(rp->BitMap, start, 0, dst_rp, start, 0, width, window->BorderTop, 0xc0);
+    BltBitMapRastPort(rp->BitMap, 0, 0, dst_rp, 0, 0, window->Width, window->BorderTop, 0xc0);
 
     /* Cache the actual bitmap */
     CacheTitleBar(&wd->tbar, window, rp->BitMap);
@@ -931,7 +974,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
 
     /* Draw title bar */
     if (window->BorderTop == data->dc->BarHeight) 
-        DrawPartialTitleBar(wd, data, window, rp, msg->wdp_Dri, data->TextAlign, 0, window->Width, pens);
+        DrawPartialTitleBar(wd, data, window, rp, msg->wdp_Dri, pens);
 
     /* Draw left, right and bottom frames */
     if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
@@ -1876,7 +1919,7 @@ static IPTR windecor_windowshape(Class *cl, Object *obj, struct wdpWindowShape *
         shape = (struct  NewLUT8ImageContainer *)NewLUT8ImageContainer(window->Width, window->BorderTop);
         if (shape)
         {
-            if (window->BorderTop == data->dc->BarHeight) DrawShapePartialTitleBar(wd, (struct NewLUT8Image *)shape, data, window, data->TextAlign, 0, window->Width);
+            if (window->BorderTop == data->dc->BarHeight) DrawShapePartialTitleBar(wd, (struct NewLUT8Image *)shape, data, window);
             back =(IPTR) RegionFromLUT8Image(msg->wdp_Width, msg->wdp_Height, (struct NewLUT8Image *)shape);
 
             DisposeLUT8ImageContainer((struct NewLUT8Image *)shape);
@@ -1989,6 +2032,7 @@ static IPTR windecor_exitwindow(Class *cl, Object *obj, struct wdpExitWindow *ms
     if (wd->vert.bm) FreeBitMap(wd->vert.bm);
     if (wd->horiz.bm) FreeBitMap(wd->horiz.bm);
     if (wd->tbar.bm) FreeBitMap(wd->tbar.bm);
+    if (wd->tbar.title) FreeVec(wd->tbar.title);
 
     return TRUE;
 }
