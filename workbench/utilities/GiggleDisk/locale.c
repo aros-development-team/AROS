@@ -21,6 +21,9 @@
 #include <exec/types.h>
 #include <libraries/locale.h>
 
+#define CATCOMP_ARRAY
+#include "strings.h"
+
 /*************************************************************************/
 
 #ifdef __amigaos4__
@@ -112,17 +115,17 @@ void Locale_Close( void )
 
 STRPTR Locale_GetString( long id )
 {
-LONG   *l;
-UWORD  *w;
-STRPTR  builtin;
+    const struct CatCompArrayType *a;
+    STRPTR  builtin = NULL;
 
-	l = (LONG *) CatCompBlock;
-
-    while (*l != id ) {
-		w = (UWORD *) ( (ULONG) l + 4 );
-		l = (LONG *) ( (ULONG) l + (ULONG)*w + 6 );
+    for (a = CatCompArray; a->cca_Str; a++)
+    {
+	if (a->cca_ID == id)
+	{
+	    builtin = a->cca_Str;
+	    break;
+	}
     }
-	builtin = (STRPTR)( (ULONG) l + 6 );
 
     if ( locale_catalog && LocaleBase ) {
 		return( (APTR) GetCatalogStr( locale_catalog, id, builtin ) );
