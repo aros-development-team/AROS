@@ -1,0 +1,47 @@
+;
+##define CATCOMP_NUMBERS
+;
+MSG_Requester_Title (1//)
+GiggleDisk Request
+;
+MSG_Requester_Ok (//)
+OK
+;
+MSG_Error_UnableToOpenLibrary (//)
+Unable to open '%s' version %ld or bigger!
+;
+MSG_ERROR_UnableToCreateTargetDir (//)
+Unable to create target directory
+;
+MSG_Error_UnableToOpen (//)
+Unable to open '%s'!
+;
+MSG_ERROR_UnableToOpenDevice (//)
+Unable to open '%s' unit %ld!
+;
+MSG_ERROR_DeviceIsNotTrackDiskCompatible (//)
+Device is not a trackdisk compatible device!
+;
+MSG_ERROR_NotEnoughMemory (//)
+Not enough memory for operation!
+;
+MSG_ERROR_UnableToReadPartitionTable (//)
+Unable to read Partition Table!
+;
+MSG_ERROR_PartitionTableIsInvalid (//)
+Partitiontable is invalid!
+;
+MSG_ERROR_UnableToLocateDrawer (//)
+Unable to locate drawer!
+;
+MSG_ERROR_RDBFileSystemHeaderIsInvalid (//)
+RDB filesystem header is invalid!
+;
+MSG_ERROR_RDBPartitionIsInvalid (//)
+RDB partition is invalid!
+;
+MSG_ERROR_UnableToReadBlock (//)
+Unable to read block %ld (size: 0x%lx)!
+;
+MSG_ERROR_NothingUseful (//)
+Unable to find any sign of a partition!\n
