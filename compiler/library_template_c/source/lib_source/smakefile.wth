@@ -1,5 +1,0 @@
-FROM LibInit.o
-SampleFuncs.o
-LIB lib:sc.lib lib:amiga.lib
-NODEBUG
-TO example.library
