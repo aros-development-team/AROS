@@ -17,7 +17,7 @@
 
 #include <stdarg.h>
 #include <exec/types.h>
-#include <sdi/SDI_misc.h>
+#include <SDI/SDI_misc.h>
 
 #include "version.h"
 

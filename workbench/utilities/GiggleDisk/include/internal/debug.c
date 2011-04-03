@@ -218,7 +218,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include <sdi/SDI_compiler.h>
+#include <SDI/SDI_compiler.h>
 
 /*************************************************************************/
 

@@ -1,0 +1,34 @@
+include $(TOP)/config/make.cfg
+
+APPLICATION := GiggleDisk
+EXEDIR      := $(AROSDIR)/Utilities
+
+USER_INCLUDES := -I $(SRCDIR)/$(CURDIR)/include
+
+FILES := main                \
+	 cache               \
+	 create              \
+         createpartitionlist \
+	 giggledisk          \
+	 header              \
+	 mbr                 \
+	 rdb                 \
+	 readargs            \
+	 mount               \
+	 readwrite           \
+	 partitionentry      \
+	 wbstartup           \
+	 library             \
+	 requester           \
+	 locale              \
+	 process             \
+	 sprintf             \
+	 version             \
+	 icon                \
+	 functions
+
+%build_prog mmake=workbench-utilities-giggledisk \
+    progname=$(APPLICATION) targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui"
+
+%common
