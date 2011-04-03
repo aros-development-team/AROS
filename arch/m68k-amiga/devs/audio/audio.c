@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Paula audio.device
@@ -11,6 +11,11 @@
     - ADCMD_LOCK never returns
     - DMA wait missing (CMD_STOP and immediate CMD_START may cause glitches)
     - and lots bugs
+
+    NOTES:
+    - normally unused io->ioa_Request.io_Unit bits 4 to 7 are used to keep
+      track of pending SYNCCYCLE-style requests (all cleared = done)
+
 */
 
 #define DEBUG 0
@@ -140,7 +145,7 @@ static BOOL allocaudio(struct AudioBase *ab, struct IOAudio *io)
     }
     for (i = 0; i < io->ioa_Length && i < 16; i++) {
     	UBYTE mask = io->ioa_Data[i];
-    	bug("%d: allocation mask %02x & %02x\n", i, mask, freech);
+    	D(bug("%d: allocation mask %02x & %02x\n", i, mask, freech));
     	if (mask == 0 || (mask & freech) == mask) {
     	    allocchannels(ab, io, mask, io->ioa_Request.io_Message.mn_Node.ln_Pri);
    	    return TRUE;
@@ -400,33 +405,33 @@ static BOOL ADCMD_WRITE_f(struct AudioBase *ab, struct IOAudio *io)
     HEADER
     UBYTE ch;
     UWORD newmask;
-    BOOL wasfirst, wassecond;
+    BOOL firstempty, secondempty;
     BOOL ret = TRUE;
 
     D(bug("ADCMD_WRITE %02x %04x\n", mask, key));
     Disable();
     newmask = 0;
-    wasfirst = wassecond = FALSE;
+    firstempty = secondempty = FALSE;
     for (ch = 0; ch < NR_CH; ch++) {
     	if ((mask & (1 << ch)) && key == ab->key[ch]) {
     	    setunit(io, ch);
-    	    wasfirst = getnextwrite(ab, ch, FALSE) == NULL;
-    	    wassecond = getnextwrite(ab, ch, TRUE) == NULL;
+    	    firstempty = getnextwrite(ab, ch, FALSE) == NULL;
+    	    secondempty = getnextwrite(ab, ch, TRUE) == NULL;
     	    AddTail((struct List*)&ab->writelist[ch], &io->ioa_Request.io_Message.mn_Node);
     	    newmask = 1 << ch;
     	    break;
     	}
     }
     D(bug("unit=%08x 1=%d 2=%d newmask=%02x stopmask=%02x\n",
-    	io->ioa_Request.io_Unit, wasfirst, wassecond, newmask, ab->stopmask));
+    	io->ioa_Request.io_Unit, firstempty, secondempty, newmask, ab->stopmask));
     if (!io->ioa_Request.io_Unit) {
     	io->ioa_Request.io_Error = ADIOERR_NOALLOCATION;
     } else {
     	if (!(ab->stopmask & newmask)) {
-    	    if (wasfirst) {
+    	    if (firstempty) {
     	    	audiohw_start(ab, newmask);
-    	    } else if (wassecond) {
-    	    	audiohw_preparept(ab, getnextwrite(ab, ch, TRUE), ch);
+    	    } else if (secondempty) {
+    	    	audiohw_prepareptlen(ab, getnextwrite(ab, ch, TRUE), ch);
 	    }	
     	}
     	ret = FALSE;
@@ -531,9 +536,11 @@ AROS_LH1(void, beginio,
     D(bug("audio beginio %p:%d\n", io, io->ioa_Request.io_Command));
  
     if (processcommand(AudioBase, io)) {
+    	/* TRUE = finished immediately */
    	if (!(io->ioa_Request.io_Flags & IOF_QUICK))
  	    ReplyMsg((struct Message*)io);
     } else {
+    	/* FALSE = async */
    	io->ioa_Request.io_Flags &= ~IOF_QUICK;
     }
 

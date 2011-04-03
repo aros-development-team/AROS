@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id:$
 
     Desc: Paula audio.device
     Lang: English
@@ -34,10 +34,12 @@ void audiohw_stop(struct AudioBase *ab, UWORD mask)
     custom->intena = mask << INTB_AUD0;
 }
 
-void audiohw_preparept(struct AudioBase *ab, struct IOAudio *io, UBYTE ch)
+void audiohw_prepareptlen(struct AudioBase *ab, struct IOAudio *io, UBYTE ch)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
+    if (ab->cycles[ch] != 1)
+    	return;
     if (io) {
     	custom->aud[ch].ac_ptr = (UWORD*)io->ioa_Data;
     	custom->aud[ch].ac_len = io->ioa_Length / 2;
@@ -49,7 +51,6 @@ void audiohw_preparept(struct AudioBase *ab, struct IOAudio *io, UBYTE ch)
     	ab->cycles[ch] = 1;
     	D(bug("ch%d: null\n", ch));
     }
-    ab->initialcyclemask |= 1 << ch;
 }
 
 void audiohw_preparepervol(struct AudioBase *ab, struct IOAudio *io, UBYTE ch)
@@ -82,7 +83,7 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     	    ReplyMsg(&io->ioa_WriteMsg);
     	io = getnextwrite(ab, ch, TRUE);
         D(bug("audio: initial next io %p\n", io));
-        audiohw_preparept(ab, io, ch);
+        audiohw_prepareptlen(ab, io, ch);
     } else {
         struct IOAudio *wio, *next;
     	struct IOAudio *io2 = getnextwrite(ab, ch, TRUE);
@@ -91,9 +92,9 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     	    REMOVE(io);
     	    ReplyMsg((struct Message*)io);
     	    io = getnextwrite(ab, ch, TRUE);
-            audiohw_preparept(ab, io, ch);
+            audiohw_prepareptlen(ab, io, ch);
             D(bug("audio: next io %p\n", io));
-    	} else {
+    	} else if (ab->cycles[ch]) {
 	    ab->cycles[ch]--;
 	}
     	ForeachNodeSafe(&ab->misclist, wio, next) {
@@ -105,7 +106,7 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     	    	continue;
     	    cmask &= ~(mask << NR_CH);
     	    if ((cmask >> NR_CH) == 0) {
-     	        D(bug("audio: ch %d SYNCCYLE woken up, io %p\n", ch, wio));
+     	        D(bug("audio: ch %d SYNCCYCLE woken up, io %p\n", ch, wio));
     	        REMOVE(wio);
     	        ReplyMsg((struct Message*)wio);
     	    }
@@ -160,7 +161,7 @@ void audiohw_reset(struct AudioBase *ab, UWORD mask)
 	inter->is_Node.ln_Type = NT_INTERRUPT;
 	SetIntVector(INTB_AUD0 + ch, inter);
 	custom->aud[ch].ac_vol = 0;
-	custom->aud[ch].ac_per = 1000;
+	custom->aud[ch].ac_per = 100;
     }
     custom->intena = mask << INTB_AUD0;
     custom->intreq = mask << INTB_AUD0;
@@ -170,9 +171,10 @@ void audiohw_reset(struct AudioBase *ab, UWORD mask)
 static void preparech_initial(struct AudioBase *ab, UBYTE ch)
 {
     struct IOAudio *io = getnextwrite(ab, ch, FALSE);
-    audiohw_preparept(ab, io, ch);
+    ab->cycles[ch] = 1;
+    audiohw_prepareptlen(ab, io, ch);
     audiohw_preparepervol(ab, io, ch);
-    ab->initialcyclemask &= ~1 << ch;
+    ab->initialcyclemask &= ~(1 << ch);
 }	
 
 void audiohw_start(struct AudioBase *ab, UWORD mask)
