@@ -1,0 +1,7 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+
+include $(TOP)/config/make.cfg
+
+%build_catalogs mmake=workbench-utilities-giggledisk-catalogs \
+	name=GiggleDisk subdir=System/Utilities
