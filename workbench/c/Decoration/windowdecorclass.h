@@ -27,6 +27,15 @@ struct CachedPropGadget
     ULONG           gadgetflags;
 };
 
+struct CachedTitleBar
+{
+    /* This is pregenerate bitmap matching state saved in rest of fields */
+    struct BitMap   *bm;
+
+    UWORD           width;
+    UWORD           height;
+};
+
 struct  WindowData
 {
     struct NewImage *ni;
@@ -52,10 +61,6 @@ struct  WindowData
     struct NewImage *img_horizontalcontainer;
     struct NewImage *img_horizontalknob;
 
-    /* Used to cache bitmap for window title */
-    struct  RastPort    *rp;
-    UWORD               w, h;
-
     LONG                ActivePen;
     LONG                DeactivePen;
 
@@ -65,6 +70,7 @@ struct  WindowData
     /* Cached bitmaps used to improve speed of redrawing of decorated window */
     struct CachedPropGadget vert;
     struct CachedPropGadget horiz;
+    struct CachedTitleBar   tbar;
 };
 
 #define WDA_DecorImages     0x30003
