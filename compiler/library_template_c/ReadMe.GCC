@@ -1,0 +1,61 @@
+GNU/C (gcc) notes:
+------------------
+[Stefan Fuchs <snfuchs@sokrates.franken.de> ]
+
+
+I have ported this source to gnu/c.
+
+This source can only be compiled with gcc V2.7.2.1 and above
+as it requires explicit register specification, which was made
+available with this version for the first time.
+
+As its implementation is not yet perfect, the source code must
+be modified to work with gcc (see below).
+
+Some of this problems are announced to be fixed with gcc V2.8.0 .
+
+The size of the executable is quite small (840 Bytes) compared to
+the SAS/C version (860 Bytes) and shows that gcc has become a very
+efficient compiler.
+
+
+
+I made the following changes:
+
+makefile.gcc:
+  added
+
+compiler.h:
+  In order to compile with gcc the following changes must be made within
+  source and include files:
+  __asm must be converted to ASM, as __asm has a different meaning with gcc.
+  GNUCREG("xy") must be added after each parameter of each function, which
+  gets parameters in certain registers.
+
+Startup.c:
+  Changed #include "samplefuncs.h"  to  #include "SampleFuncs.h"
+          as the gcc precompiler is case-sensitive with filenames
+  gcc can not handle relative pathnames, so when compiling with gcc, the
+          pathname of examplebase.h is specified within the makefile
+  __asm replaced by ASM
+  GNUCREG("xy") added
+  all references to struct SegList * replaced by APTR as this structure is
+          nowhere declared and gcc does not like this.
+  __saveds removed for LibStart() and ExtFuncLib(), as these do not access
+          any global data. This should save some bytes on all compilers.
+
+SampleFuncs.h:
+  __asm replaced by ASM
+  GNUCREG("xy") added
+
+LibInit.c:
+  gcc can not handle relative pathnames, so when compiling with gcc, the
+          pathname of examplebase.h is specified within the makefile
+
+SampleFuncs.c:
+  __asm replaced by ASM
+  GNUCREG("xy") added
+
+
+Have fun.
+
