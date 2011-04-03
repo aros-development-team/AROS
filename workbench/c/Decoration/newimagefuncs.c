@@ -265,30 +265,26 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
             if (out->data != NULL) CopyMem(in->data, out->data, out->w * out->h * sizeof(ULONG));
         }
         out->ok = (out->data != NULL) ? TRUE : FALSE;
+        /* Allocate decision table, all values are set to FALSE (MEMF_CLEAR) */
         out->subimageinbm = AllocVec(in->subimagescols * in->subimagesrows * sizeof(BOOL), MEMF_ANY | MEMF_CLEAR);
-        
+
+        out->filename = AllocVec(strlen(in->filename) + 5, MEMF_ANY | MEMF_CLEAR); /* size + 5 -> covers all */
+        strcpy(out->filename, in->filename);
 
         if (!truecolor)
         {
             /* If this is LUT screen, try to load LUT version of image */
             out->ok = FALSE;
-            STRPTR file = AllocVec(strlen(in->filename) + 5, MEMF_ANY | MEMF_CLEAR);
-            strcpy(file, in->filename);
-            strcat(file, "_LUT");
-            out->o = LoadPicture(file, scr);
-            if (out->o != NULL)
-                out->filename = file;
-            else
+            strcpy(out->filename, in->filename);
+            strcat(out->filename, "_LUT");
+        
+            out->o = LoadPicture(out->filename, scr);
+            if (out->o == NULL)
             {
-                FreeVec(file);
-                
                 /* Load the original image with conversion */
                 out->o = LoadPicture(in->filename, scr);
                 if (out->o != NULL)
-                {
-                    out->filename = AllocVec(strlen(in->filename), MEMF_ANY | MEMF_CLEAR);
                     strcpy(out->filename, in->filename);
-                }
             }
             
             if (out->o)
@@ -321,8 +317,6 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
                 ULONG subimagewidth = out->w / out->subimagescols;
                 ULONG subimageheight = out->h / out->subimagesrows;
                 ULONG col = 0, row = 0, x = 0, y = 0;
-                out->filename = AllocVec(strlen(in->filename), MEMF_ANY | MEMF_CLEAR);
-                strcpy(out->filename, in->filename);
                 out->mask = NULL;
                 out->o = NULL;
                 BOOL atleastone = FALSE;
