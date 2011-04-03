@@ -2122,14 +2122,25 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
             DEBUG_KEY(dprintf("Handler: real Qual 0x%lx\n",iihdata->ActQualifier));
 
-            /* Keyboard mouse emulation */
+            /* Keyboard mouse emulation and screen switching */
 
             {
                 UWORD code = ie->ie_Code & ~IECODE_UP_PREFIX;
+                DEBUG_KEY(dprintf("Handler: code 0x%lx\n",code));
+
+                /* Left Amiga + N/M screen switching shortcut */
+                if ((ie->ie_Qualifier & IEQUALIFIER_LCOMMAND) && (code == RAWKEY_N || code == RAWKEY_M)) {
+                    if (!(ie->ie_Qualifier & IEQUALIFIER_REPEAT) && !(ie->ie_Code & IECODE_UP_PREFIX)) {
+                        if (code == RAWKEY_N)
+                            WBenchToFront();
+                        else if (code == RAWKEY_M)
+                            ScreenToBack(IntuitionBase->FirstScreen);
+                    }
+                    keep_event = FALSE;
+                    break;
+                }
 
                 /* Mouse button emulation: LALT + LAMIGA = LBUTTON, RALT + RAMIGA = RBUTTON */
-
-                DEBUG_KEY(dprintf("Handler: code 0x%lx\n",code));
                 if ((code == RAWKEY_LAMIGA) ||
                     (code == RAWKEY_LALT)   ||
                     (code == RAWKEY_RAMIGA) ||
