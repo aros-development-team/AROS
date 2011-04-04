@@ -1245,7 +1245,7 @@ ULONG partitionnumber;
 ** Our device structure
 */
 
-struct MDevice device = {NULL,NULL,FALSE};
+struct MDevice device = {NULL};
 
 /*
 ** our nsd check

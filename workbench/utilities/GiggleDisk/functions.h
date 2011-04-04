@@ -7,19 +7,13 @@
 #include <exec/lists.h>
 #include <exec/devices.h>
 
+#ifdef __AROS__
+#include "io_aros.h"
+#else
+#include "io_builtin.h"
+#endif
+
 /*************************************************************************/
-
-
-/*
-** device struct
-*/
-
-struct MDevice
-{
-     struct IORequest *IORequest;
-     struct MsgPort *MessagePort;
-     BOOL DeviceOpen;
-};
 
 /*
 ** prototypes
