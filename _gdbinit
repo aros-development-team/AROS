@@ -398,7 +398,6 @@ define loadseg
   end
   if $step < 2
     printf "no matching module for this address\n"
-  end
   else
     printf "no debug symbols found\n"
   end
