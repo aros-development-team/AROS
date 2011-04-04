@@ -349,11 +349,20 @@ define loadseg
 
         set $i = 0
         while ($i < $shnum) && $cont
-            if ($sh->addr != 0) && (sh->size != 0)
+            if ($sh->addr != 0) && ($sh->size != 0)
 		set $lowest  = $sh->addr
 		set $highest = $sh->addr + $sh->size - 1
 
 		if $arg0 >= $lowest && $arg0 <= $highest
+		
+		    set $shstrndx = $eh->shstrndx
+		    set $shstr = 0
+
+		    if ($shstrndx < 0xFF00)
+		    	set $shstr = $shstrndx
+		    if ($shstrndx > 0xFFFF)
+		    	set $shstr = $shstrndx - (0x10000 - 0xFF00)
+
 		    log_to_file segname.tmp on
 		    printf "%s", $kicknode->s_module.m_name
 		    end_log
@@ -365,18 +374,16 @@ define loadseg
 		    log_to_file loadseg.tmp off
 		    printf " %p", $s_lowest
 
-# FIXME!!! This won't work, format changed.
-#        if $kicknode->s_next != 0
-#          set $kicknode = $kicknode->s_next
-#          while ($kicknode != 0) && $step < 5
-#            if strcmp($kicknode->s_name, ".text") == 0
-#              loop_break
-#            end
-#            printf " -s %s %p", $kicknode->s_name, $kicknode->s_lowest
-#            set $step = $step + 1
-#            set $kicknode = $kicknode->s_next
-#          end
-#        end
+		    set $sh = $sh + 1
+		    set $i = $i + 1
+		    while ($i < $shnum)
+		        if ($sh->addr != 0) && ($sh->size != 0)
+		            set $segname = $kicknode->sh[$shstr] + $sh->name
+		            printf " -s %s %p", $segname, $sh->addr
+		        end
+		        set $step = $step + 1
+		    end
+
 		    end_log
 		    source loadseg.tmp
 		    loop_break
