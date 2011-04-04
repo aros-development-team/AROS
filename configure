@@ -11093,12 +11093,10 @@ ac_config_headers="$ac_config_headers ${aros_geninc_dir}/host-conf.h:config/host
 
 ac_config_commands="$ac_config_commands compiler_executable"
 
-ac_config_commands="$ac_config_commands genshared_executable"
-
 ac_config_commands="$ac_config_commands genmf_executable"
 
 
-ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_scripts_dir}/genshared:compiler/library_template_c/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/collect-aros/env.h ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in"
+ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/collect-aros/env.h ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in"
 
 
 cat >confcache <<\_ACEOF
@@ -11816,8 +11814,6 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 	aros_target_strip_ln=${aros_target_strip_ln}
 
 
-aros_scripts_dir=${aros_scripts_dir}
-
 aros_tools_dir=${aros_tools_dir}
 
 
@@ -11831,7 +11827,6 @@ do
   case $ac_config_target in
     "${aros_geninc_dir}/host-conf.h") CONFIG_HEADERS="$CONFIG_HEADERS ${aros_geninc_dir}/host-conf.h:config/host-conf.h.in" ;;
     "compiler_executable") CONFIG_COMMANDS="$CONFIG_COMMANDS compiler_executable" ;;
-    "genshared_executable") CONFIG_COMMANDS="$CONFIG_COMMANDS genshared_executable" ;;
     "genmf_executable") CONFIG_COMMANDS="$CONFIG_COMMANDS genmf_executable" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "config/make.cfg") CONFIG_FILES="$CONFIG_FILES config/make.cfg" ;;
@@ -11844,7 +11839,6 @@ do
     "${aros_targetcfg_dir}/specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/specs:config/specs.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in" ;;
-    "${aros_scripts_dir}/genshared") CONFIG_FILES="$CONFIG_FILES ${aros_scripts_dir}/genshared:compiler/library_template_c/source/lib_source/genshared.in" ;;
     "${aros_tools_dir}/genmf.py") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;
     "tools/collect-aros/env.h") CONFIG_FILES="$CONFIG_FILES tools/collect-aros/env.h" ;;
     "${aros_gendir}/arch/all-android/bootstrap/app/default.properties") CONFIG_FILES="$CONFIG_FILES ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in" ;;
@@ -12427,7 +12421,6 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
         ln -sf $aros_target_objdump_ln$aros_host_exe_suffix ${prefix2}-objdump
         ln -sf $aros_target_strip_ln$aros_host_exe_suffix   ${prefix2}-strip
      ;;
-    "genshared_executable":C) chmod a+x ${aros_scripts_dir}/genshared ;;
     "genmf_executable":C) chmod a+x ${aros_tools_dir}/genmf.py ;;
 
   esac

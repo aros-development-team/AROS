@@ -2,7 +2,7 @@
 #define COLORWHEEL_INTERN_H
 
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for colorwheel.gadget.
@@ -14,11 +14,6 @@
 #endif
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
-#endif
-#ifdef __AROS__
-#ifndef LIBCORE_BASE_H
-#   include <libcore/base.h>
-#endif
 #endif
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>

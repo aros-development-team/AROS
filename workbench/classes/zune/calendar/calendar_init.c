@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,6 @@
 #include <dos/dosextens.h>
 #include <aros/libcall.h>
 #include <aros/debug.h>
-#include <libcore/base.h>
 
 #include <proto/exec.h>
 #include <proto/timer.h>

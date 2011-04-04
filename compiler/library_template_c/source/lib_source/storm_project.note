@@ -1,3 +1,0 @@
-The storm files have been rename because of problems on a mixed DOS/Win95
-environment. To restore these files to the proper names, change the
-underscore ("_") into the ASCII 182 ("¶") character.

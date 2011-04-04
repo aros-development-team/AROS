@@ -2,7 +2,7 @@
 #define GRADIENTSLIDER_INTERN_H
 
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for gradientslider.gadget.
@@ -14,9 +14,6 @@
 #endif
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
-#endif
-#ifndef LIBCORE_BASE_H
-#   include <libcore/base.h>
 #endif
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>

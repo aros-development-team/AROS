@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,14 +15,6 @@
 
 /* This is a short file that contains a few things every mathieeespbas
    function needs
-*/
-/*
-#ifndef AROS_LIBCALL_H
-#   include <aros/libcall.h>
-#endif
-#ifndef PROTO_MATHFFP_H
-#   include <proto/mathieeespbas.h>
-#endif
 */
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
@@ -42,7 +34,8 @@
 #include <proto/mathieeesingbas.h>
 #include <proto/exec.h>
 
-#include <libcore/base.h>
+/* Replace obsolete struct LibHeader with struct Library */
+#define LibHeader Library
 
 #define IEEESPMantisse_Mask 0x007FFFFF /* 23 bit for the mantisse  */
 #define IEEESPExponent_Mask 0x7F800000 /*  8 bit for the exponent  */

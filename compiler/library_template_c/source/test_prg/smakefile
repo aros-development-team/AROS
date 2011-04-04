@@ -1,7 +1,0 @@
-TestExampleLib : TestExampleLib.o
-
-                 SLINK LIB:c.o,TestExampleLib.o TO TestExampleLib LIB LIB:sc.lib LIB:amiga.lib SC SD ND
-                 Copy TestExampleLib //bin
-
-TestExampleLib.o: TestExampleLib.c
-                  SC TestExampleLib.c
