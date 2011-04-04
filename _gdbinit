@@ -189,7 +189,7 @@ define findaddr
     if $cont
 	printf "Searching in the kickstart list...\n"
     	set $kicknode = Debug_KickList
-        
+
 	while ($kicknode != 0) && $cont
             set $eh = $kicknode->eh
             set $sh = $kicknode->sh
@@ -197,7 +197,7 @@ define findaddr
 
             set $i = 0
             while ($i < $shnum) && $cont
-            	if ($sh->addr != 0) && (sh->size != 0)
+            	if ($sh->addr != 0) && ($sh->size != 0)
 		    set $lowest  = $sh->addr
 		    set $highest = $sh->addr + $sh->size - 1
 
@@ -207,8 +207,8 @@ define findaddr
                     end
                 end
 
-		$sh++
-		$i++
+		set $sh = $sh + 1
+		set $i = $i + 1
 	    end
             set $kicknode = $kicknode->Next
         end
