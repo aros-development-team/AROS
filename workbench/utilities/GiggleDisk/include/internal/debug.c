@@ -11,6 +11,7 @@
  Function: Dump debug information over the system debug port
 
  Copyright in 1991 - 2007 by Guido Mersmann
+ Copyright in 2011 The AROS Development Team.
 
  $VER: Debug 3.15 (09.01.2007)
 
@@ -807,7 +808,7 @@ char chr;
             }
 /* now we can dump the line data as ASCII */
             IDGB_PutChar( 39 );
-			while( ( (ULONG) str < (ULONG) value ) ) {
+			while( ( (IPTR) str < (IPTR) value ) ) {
 				chr = *((BYTE *) str++ );
                 if( chr != ASCII_RETURN && chr != ASCII_TAB ) {
                     IDGB_PutChar( chr);

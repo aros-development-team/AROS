@@ -8,9 +8,9 @@
 
 /*************************************************************************/
 
-ULONG         SPrintf  ( char *format, char *target, ULONG *args );
+ULONG         SPrintf  ( char *format, char *target, IPTR *args );
 ULONG         SPrintfnv( char *format, char *target, ULONG targetsize, ULONG numargs, ... );
-ULONG         SPrintfn ( char *format, char *target, ULONG targetsize, ULONG *args );
+ULONG         SPrintfn ( char *format, char *target, ULONG targetsize, IPTR *args );
 
 /*************************************************************************/
 

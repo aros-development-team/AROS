@@ -3,6 +3,7 @@
 ** cache.c
 **
 ** (c) 1998-2011 Guido Mersmann
+** (c) 2011 The AROS Development Team.
 */
 
 /*************************************************************************/
@@ -142,7 +143,7 @@ void Cache_Printf( STRPTR str, APTR args )
 ULONG length;
 
     Cache_Store();
-    length = SPrintfn( str, cache_pointer, cache_free, (ULONG *) args ) -1; /* subtract 0x00 */
+    length = SPrintfn( str, cache_pointer, cache_free, (IPTR *) args ) -1; /* subtract 0x00 */
     cache_pointer += length;
     cache_free -= length;
 }

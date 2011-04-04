@@ -34,7 +34,7 @@ ULONG result;
 char mountfile[ MOUNTFILE_SIZEOF ];
 
 
-	SPrintf( "t:tmp_giggle%08lx", mountfile, (ULONG *) &pe );
+	SPrintf( "t:tmp_giggle%p", mountfile, (IPTR *) &pe );
 
 	debug( APPLICATIONNAME ": mount file: %s\n", mountfile );
 
@@ -66,14 +66,15 @@ char mountfile[ MOUNTFILE_SIZEOF ];
 
 /*************************************************************************/
 
+#define COMMAND_SIZEOF 0x200
+
 ULONG Do_Mount( struct PartitionEntry *pe, STRPTR mountfile )
 {
-#define COMMAND_SIZEOF 0x200
-char command[ COMMAND_SIZEOF ];
-ULONG args[2];
+    char command[ COMMAND_SIZEOF ];
+    IPTR args[2];
 
-    args[0] = (ULONG) &pe->DriveName[0];
-    args[1] = (ULONG) mountfile;
+    args[0] = (IPTR)&pe->DriveName[0];
+    args[1] = (IPTR)mountfile;
 
 
 	SPrintf("mount %s: from %s", &command[0], args );

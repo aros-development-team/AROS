@@ -7,7 +7,7 @@
 
 /*************************************************************************/
 
-extern ULONG requester_args[16];
+extern IPTR requester_args[16];
 
 /*
 ** Prototypes

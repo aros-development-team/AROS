@@ -1,5 +1,7 @@
 include $(TOP)/config/make.cfg
 
+#MM workbench-utilities-giggledisk : workbench-utilities-giggledisk-catalogs
+
 APPLICATION := GiggleDisk
 EXEDIR      := $(AROSDIR)/Utilities
 
@@ -8,7 +10,6 @@ USER_INCLUDES := -I $(SRCDIR)/$(CURDIR)/include
 FILES := main                \
 	 cache               \
 	 create              \
-         createpartitionlist \
 	 giggledisk          \
 	 header              \
 	 mbr                 \
@@ -27,8 +28,10 @@ FILES := main                \
 	 icon                \
 	 functions
 
+OS_FILES := createpartitionlist_builtin device_builtin
+
 %build_prog mmake=workbench-utilities-giggledisk \
     progname=$(APPLICATION) targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files="$(FILES) $(OS_FILES)" uselibs="mui"
 
 %common

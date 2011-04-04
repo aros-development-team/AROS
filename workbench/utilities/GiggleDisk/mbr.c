@@ -37,11 +37,11 @@
 
 ULONG CreatePartition_MBR( ULONG block )
 {
-struct MBRPartitionBlock pb;
-struct PartitionEntry *pe;
-ULONG i;
-ULONG result;
-ULONG args[2];
+    struct MBRPartitionBlock pb;
+    struct PartitionEntry *pe;
+    ULONG i;
+    ULONG result;
+    IPTR args[2];
 
 	debug( APPLICATIONNAME ": MBR read (again (%ld))\n", block);
     if( !(result = Device_ReadBlock( (UBYTE *) &pb, block, SECTORSIZE )) ) {

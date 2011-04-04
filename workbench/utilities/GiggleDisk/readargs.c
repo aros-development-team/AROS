@@ -3,6 +3,7 @@
 ** readargs.c
 **
 ** (c) 1998-2011 Guido Mersmann
+** (c) 2011 The AROS Development Team.
 */
 
 /*************************************************************************/
@@ -27,7 +28,7 @@
 static char *readargs_template = "DEVICE,UNIT/N,TO/K,LIST/S,LOWERCYL/S,PREFIX=PRE/K,MAXTRANSFER=MT/K,MOUNTDOS/S,MOUNTNTFS/S,MOUNTEXT/S,MOUNTSGIX/S";
 static struct RDArgs *readargs_args;
 
-ULONG readargs_array[ARGS_SIZEOF];
+IPTR readargs_array[ARGS_SIZEOF];
 
 static char devicename[DEVICENAME_SIZEOF];    /* local copy of device name */
 static char deviceprefix[DEVICENAME_SIZEOF];  /* local copy of device prefix */
@@ -69,11 +70,12 @@ struct DiskObject *dob;
 
         if( (readargs_args = ReadArgs(readargs_template, readargs_array, NULL)) ) {
 
-			readargs_array[ ARG_DEVICE ] = (ULONG) ( (readargs_array[ ARG_DEVICE ] ? (STRPTR) readargs_array[ ARG_DEVICE ] : (STRPTR) DEFAULT_DEVICE ) );
-
-            readargs_array[ARG_UNIT] = readargs_array[ARG_UNIT] ? *((ULONG *)readargs_array[ARG_UNIT]) : DEFAULT_UNIT;
-
-			readargs_array[ARG_PREFIX] = (ULONG) (readargs_array[ARG_PREFIX] ? ((STRPTR) readargs_array[ARG_PREFIX]) : (STRPTR) DEFAULT_PREFIX);
+	    if (!readargs_array[ARG_DEVICE])
+	    	readargs_array[ARG_DEVICE] = (IPTR)DEFAULT_DEVICE;
+	    if (!readargs_array[ARG_UNIT])
+	        readargs_array[ARG_UNIT] = DEFAULT_UNIT;
+	    if (!readargs_array[ARG_PREFIX])
+	        readargs_array[ARG_PREFIX] = (IPTR)DEFAULT_PREFIX;
 
 			readargs_array[ARG_MAXTRANSFER] = String_HexToLongPreFix( (readargs_array[ARG_MAXTRANSFER] ? (STRPTR) readargs_array[ARG_MAXTRANSFER] : (STRPTR) DEFAULT_MAXTRANSFER), 8 );
 
@@ -86,8 +88,8 @@ struct DiskObject *dob;
 
 		if( (dob = Icon_GetPutDiskObject( NULL ) ) ) {
 
-            readargs_array[ ARG_DEVICE ]      = (ULONG) &devicename[0];
-            readargs_array[ ARG_PREFIX ]      = (ULONG) &deviceprefix[0];
+            readargs_array[ ARG_DEVICE ]      = (IPTR)&devicename[0];
+            readargs_array[ ARG_PREFIX ]      = (IPTR)&deviceprefix[0];
 
             String_CopySize( Icon_ToolTypeGetString( dob, "DEVICE", DEFAULT_DEVICE ), &devicename[0], DEVICENAME_SIZEOF );
             String_CopySize( Icon_ToolTypeGetString( dob, "PREFIX", DEFAULT_PREFIX ), &deviceprefix[0], DEVICENAME_SIZEOF );
