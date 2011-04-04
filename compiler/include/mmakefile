@@ -25,7 +25,8 @@ INCSUBDIRS :=	aros				\
 		hardware/pic \
 		hidd \
 		intuition \
-        irda \
+	        irda \
+	        libcore				\
 		libraries \
 		midi \
 		pragmas \

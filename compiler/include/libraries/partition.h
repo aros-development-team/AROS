@@ -2,7 +2,7 @@
 #define PARTITION_H
 
 /*
-    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,6 @@
 #include <exec/nodes.h>
 #include <exec/types.h>
 #include <exec/ports.h>
-#include <libcore/base.h>
 
 struct PartitionTableInfo
 {

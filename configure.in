@@ -2302,10 +2302,6 @@ AC_CONFIG_COMMANDS([compiler_executable],
 	aros_target_strip_ln=${aros_target_strip_ln}
     ]
 )
-AC_CONFIG_COMMANDS([genshared_executable],
-    [chmod a+x ${aros_scripts_dir}/genshared],
-    [aros_scripts_dir=${aros_scripts_dir}]
-)
 AC_CONFIG_COMMANDS([genmf_executable],
     [chmod a+x ${aros_tools_dir}/genmf.py],
     [aros_tools_dir=${aros_tools_dir}]
@@ -2323,7 +2319,6 @@ AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/specs:config/specs.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in
-    ${aros_scripts_dir}/genshared:compiler/library_template_c/source/lib_source/genshared.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
     tools/collect-aros/env.h
     ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in

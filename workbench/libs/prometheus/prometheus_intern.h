@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2005 Neil Cafferkey
+    Copyright (C) 2011 The AROS Development Team.
     $Id$
 */
 
@@ -16,7 +17,6 @@
 #include <hidd/irq.h>
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
-#include <libcore/base.h>
 
 
 #ifndef UPINT
@@ -31,7 +31,7 @@ typedef struct PCIBoard PCIBoard;
 
 struct LibBase
 {
-   struct LibHeader lib_header;
+   struct Library lib_header;
    OOP_Object *pci_hidd;
    OOP_Object *irq_hidd;
    OOP_AttrBase pcidevice_attr_base;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef __MATHFFP_INTERN_H__
@@ -36,20 +36,9 @@
 #endif
 
 #include <proto/exec.h>
-#include <libcore/base.h>
 
-/*
-    This is the MAthffpBase structure. It is documented here because it is
-    completely private. Applications should treat it as a struct Library, and
-    use the mathffp.library functions to get information.
-*/
-
-#if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-/* FIXME: lh_SysBase is NULL if mathffp is in rom. */
-#else
-#undef SysBase
-#define SysBase (MathBase->lh_SysBase)
-#endif
+/* Replace obsolete struct LibHeader with struct Library */
+#define LibHeader Library
 
 #define FFPMantisse_Mask 0xFFFFFF00 /* 24 bit for the mantisse    */
 #define FFPExponent_Mask 0x0000007F /*  7 bit for the exponent    */
