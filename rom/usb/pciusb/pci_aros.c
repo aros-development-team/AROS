@@ -121,21 +121,6 @@ static AROS_UFH3(void, UhciResetHandler,
 }
 /* \\\ */
 
-/* /// "OhciResetHandler()" */
-static AROS_UFH3(void, OhciResetHandler,
-                 AROS_UFHA(struct PCIController *, hc, A1),
-                 AROS_UFHA(APTR, unused, A5),
-                 AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-
-    // reset controller
-    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
-
-    AROS_USERFUNC_EXIT
-}
-/* \\\ */
-
 /* /// "pciInit()" */
 BOOL pciInit(struct PCIDevice *hd)
 {
@@ -635,283 +620,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                 case HCITYPE_OHCI:
                 {
-                    struct OhciED *oed;
-                    struct OhciED *predoed;
-                    struct OhciTD *otd;
-                    ULONG *tabptr;
-                    UBYTE *memptr;
-                    ULONG bitcnt;
-                    ULONG hubdesca;
-                    ULONG cmdstatus;
-                    ULONG control;
-                    ULONG timeout;
-                    ULONG frameival;
-
-                    hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
-                    hc->hc_CompleteInt.is_Node.ln_Name = "OHCI CompleteInt";
-                    hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
-                    hc->hc_CompleteInt.is_Data = hc;
-                    hc->hc_CompleteInt.is_Code = (void (*)(void)) &ohciCompleteInt;
-
-                    hc->hc_PCIMemSize = OHCI_HCCA_SIZE + OHCI_HCCA_ALIGNMENT + 1;
-                    hc->hc_PCIMemSize += sizeof(struct OhciED) * OHCI_ED_POOLSIZE;
-                    hc->hc_PCIMemSize += sizeof(struct OhciTD) * OHCI_TD_POOLSIZE;
-                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
-                    if(!memptr)
-                    {
-                        allocgood = FALSE;
-                        break;
-                    }
-                    hc->hc_PCIMem = (APTR) memptr;
-                    // PhysicalAddress - VirtualAdjust = VirtualAddress
-                    // VirtualAddress  + VirtualAdjust = PhysicalAddress
-                    hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
-                    KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
-
-                    // align memory
-                    memptr = (UBYTE *) ((((ULONG) hc->hc_PCIMem) + OHCI_HCCA_ALIGNMENT) & (~OHCI_HCCA_ALIGNMENT));
-                    hc->hc_OhciHCCA = (struct OhciHCCA *) memptr;
-                    KPRINTF(10, ("HCCA 0x%08lx\n", hc->hc_OhciHCCA));
-                    memptr += OHCI_HCCA_SIZE;
-
-                    // build up ED pool
-                    oed = (struct OhciED *) memptr;
-                    hc->hc_OhciEDPool = oed;
-                    cnt = OHCI_ED_POOLSIZE - 1;
-                    do
-                    {
-                        // minimal initalization
-                        oed->oed_Succ = (oed + 1);
-                        WRITEMEM32_LE(&oed->oed_Self, (ULONG) (&oed->oed_EPCaps) + hc->hc_PCIVirtualAdjust);
-                        oed++;
-                    } while(--cnt);
-                    oed->oed_Succ = NULL;
-                    WRITEMEM32_LE(&oed->oed_Self, (ULONG) (&oed->oed_EPCaps) + hc->hc_PCIVirtualAdjust);
-                    memptr += sizeof(struct OhciED) * OHCI_ED_POOLSIZE;
-
-                    // build up TD pool
-                    otd = (struct OhciTD *) memptr;
-                    hc->hc_OhciTDPool = otd;
-                    cnt = OHCI_TD_POOLSIZE - 1;
-                    do
-                    {
-                        otd->otd_Succ = (otd + 1);
-                        WRITEMEM32_LE(&otd->otd_Self, (ULONG) (&otd->otd_Ctrl) + hc->hc_PCIVirtualAdjust);
-                        otd++;
-                    } while(--cnt);
-                    otd->otd_Succ = NULL;
-                    WRITEMEM32_LE(&otd->otd_Self, (ULONG) (&otd->otd_Ctrl) + hc->hc_PCIVirtualAdjust);
-                    memptr += sizeof(struct OhciTD) * OHCI_TD_POOLSIZE;
-
-                    // terminating ED
-                    hc->hc_OhciTermED = oed = ohciAllocED(hc);
-                    oed->oed_Succ = NULL;
-                    oed->oed_Pred = NULL;
-                    CONSTWRITEMEM32_LE(&oed->oed_EPCaps, OECF_SKIP);
-                    oed->oed_NextED = 0;
-
-                    // terminating TD
-                    hc->hc_OhciTermTD = otd = ohciAllocTD(hc);
-                    otd->otd_Succ = NULL;
-                    otd->otd_NextTD = 0;
-
-                    // dummy head & tail Ctrl ED
-                    hc->hc_OhciCtrlHeadED = predoed = ohciAllocED(hc);
-                    hc->hc_OhciCtrlTailED = oed = ohciAllocED(hc);
-                    CONSTWRITEMEM32_LE(&predoed->oed_EPCaps, OECF_SKIP);
-                    CONSTWRITEMEM32_LE(&oed->oed_EPCaps, OECF_SKIP);
-                    predoed->oed_Succ = oed;
-                    predoed->oed_Pred = NULL;
-                    predoed->oed_NextED = oed->oed_Self;
-                    oed->oed_Succ = NULL;
-                    oed->oed_Pred = predoed;
-                    oed->oed_NextED = 0;
-
-                    // dummy head & tail Bulk ED
-                    hc->hc_OhciBulkHeadED = predoed = ohciAllocED(hc);
-                    hc->hc_OhciBulkTailED = oed = ohciAllocED(hc);
-                    CONSTWRITEMEM32_LE(&predoed->oed_EPCaps, OECF_SKIP);
-                    CONSTWRITEMEM32_LE(&oed->oed_EPCaps, OECF_SKIP);
-                    predoed->oed_Succ = oed;
-                    predoed->oed_Pred = NULL;
-                    predoed->oed_NextED = oed->oed_Self;
-                    oed->oed_Succ = NULL;
-                    oed->oed_Pred = predoed;
-                    oed->oed_NextED = 0;
-
-                    // 1 ms INT QH
-                    hc->hc_OhciIntED[0] = oed = ohciAllocED(hc);
-                    oed->oed_Succ = hc->hc_OhciTermED;
-                    oed->oed_Pred = NULL; // who knows...
-                    CONSTWRITEMEM32_LE(&oed->oed_EPCaps, OECF_SKIP);
-                    oed->oed_NextED = hc->hc_OhciTermED->oed_Self;
-                    predoed = oed;
-
-                    // make 5 levels of QH interrupts
-                    for(cnt = 1; cnt < 5; cnt++)
-                    {
-                        hc->hc_OhciIntED[cnt] = oed = ohciAllocED(hc);
-                        oed->oed_Succ = predoed;
-                        oed->oed_Pred = NULL; // who knows...
-                        CONSTWRITEMEM32_LE(&oed->oed_EPCaps, OECF_SKIP);
-                        oed->oed_NextED = hc->hc_OhciTermED->oed_Self;
-                        predoed = oed;
-                    }
-
-                    ohciUpdateIntTree(hc);
-
-                    // fill in framelist with IntED entry points based on interval
-                    tabptr = hc->hc_OhciHCCA->oha_IntEDs;
-                    for(cnt = 0; cnt < 32; cnt++)
-                    {
-                        oed = hc->hc_OhciIntED[4];
-                        bitcnt = 0;
-                        do
-                        {
-                            if(cnt & (1UL<<bitcnt))
-                            {
-                                oed = hc->hc_OhciIntED[bitcnt];
-                                break;
-                            }
-                        } while(++bitcnt < 5);
-                        *tabptr++ = oed->oed_Self;
-                    }
-
-                    // time to initialize hardware...
-                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &hc->hc_RegBase);
-                    hc->hc_RegBase = (APTR) (((IPTR) hc->hc_RegBase) & (~0xf));
-                    KPRINTF(10, ("RegBase = 0x%08lx\n", hc->hc_RegBase));
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // enable memory
-
-                    hubdesca = READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA);
-                    hc->hc_NumPorts = (hubdesca & OHAM_NUMPORTS)>>OHAS_NUMPORTS;
-                    KPRINTF(20, ("Found OHCI Controller %08lx FuncNum = %ld, Rev %02lx, with %ld ports\n",
-                                 hc->hc_PCIDeviceObject, hc->hc_FunctionNum,
-                                 READREG32_LE(hc->hc_RegBase, OHCI_REVISION),
-                                 hc->hc_NumPorts));
-
-                    KPRINTF(20, ("Powerswitching: %s %s\n",
-                                 hubdesca & OHAF_NOPOWERSWITCH ? "Always on" : "Available",
-                                 hubdesca & OHAF_INDIVIDUALPS ? "per port" : "global"));
-
-                    // disable BIOS legacy support
-                    control = READREG32_LE(hc->hc_RegBase, OHCI_CONTROL);
-                    if(control & OCLF_SMIINT)
-                    {
-                        KPRINTF(10, ("BIOS still has hands on OHCI, trying to get rid of it\n"));
-                        cmdstatus = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
-                        cmdstatus |= OCSF_OWNERCHANGEREQ;
-                        WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, cmdstatus);
-                        timeout = 100;
-                        do
-                        {
-                            control = READREG32_LE(hc->hc_RegBase, OHCI_CONTROL);
-                            if(!(control & OCLF_SMIINT))
-                            {
-                                KPRINTF(10, ("BIOS gave up on OHCI. Pwned!\n"));
-                                break;
-                            }
-                            uhwDelayMS(10, hu);
-                        } while(--timeout);
-                        if(!timeout)
-                        {
-                            KPRINTF(10, ("BIOS didn't release OHCI. Forcing and praying...\n"));
-                            control &= ~OCLF_SMIINT;
-                            WRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, control);
-                        }
-                    }
-
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
-
-                    KPRINTF(10, ("Resetting OHCI HC\n"));
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
-                    cnt = 100;
-                    do
-                    {
-                        if(!(READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS) & OCSF_HCRESET))
-                        {
-                            break;
-                        }
-                        uhwDelayMS(1, hu);
-                    } while(--cnt);
-
-#ifdef DEBUG
-                    if(cnt == 0)
-                    {
-                        KPRINTF(20, ("Reset Timeout!\n"));
-                    } else {
-                        KPRINTF(20, ("Reset finished after %ld ticks\n", 100-cnt));
-                    }
-#endif
-
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster); // enable busmaster
-
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT, 0);
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_PERIODICSTART, 10800); // 10% of 12000
-                    frameival = READREG32_LE(hc->hc_RegBase, OHCI_FRAMEINTERVAL);
-                    KPRINTF(10, ("FrameInterval=%08lx\n", frameival));
-                    frameival &= ~OIVM_BITSPERFRAME;
-                    frameival |= OHCI_DEF_BITSPERFRAME<<OIVS_BITSPERFRAME;
-                    frameival ^= OIVF_TOGGLE;
-                    WRITEREG32_LE(hc->hc_RegBase, OHCI_FRAMEINTERVAL, frameival);
-
-                    // make sure nothing is running
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_PERIODIC_ED, 0);
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CTRL_HEAD_ED, AROS_LONG2LE(hc->hc_OhciCtrlHeadED->oed_Self));
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CTRL_ED, 0);
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_BULK_HEAD_ED, AROS_LONG2LE(hc->hc_OhciBulkHeadED->oed_Self));
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_BULK_ED, 0);
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_DONEHEAD, 0);
-
-                    WRITEREG32_LE(hc->hc_RegBase, OHCI_HCCA, (ULONG) pciGetPhysical(hc, hc->hc_OhciHCCA));
-
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, OISF_ALL_INTS);
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTDIS, OISF_ALL_INTS);
-                    SYNC;
-
-                    // install reset handler
-                    hc->hc_ResetInt.is_Code = OhciResetHandler;
-                    hc->hc_ResetInt.is_Data = hc;
-                    AddResetCallback(&hc->hc_ResetInt);
-
-                    // add interrupt
-                    hc->hc_PCIIntHandler.h_Node.ln_Name = "OHCI PCI (pciusb.device)";
-                    hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
-                    hc->hc_PCIIntHandler.h_Code = ohciIntCode;
-                    hc->hc_PCIIntHandler.h_Data = hc;
-                    HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
-
-                    hc->hc_PCIIntEnMask = OISF_DONEHEAD|OISF_RESUMEDTX|OISF_HOSTERROR|OISF_FRAMECOUNTOVER|OISF_HUBCHANGE;
-
-                    WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, hc->hc_PCIIntEnMask|OISF_MASTERENABLE);
-
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_ISOENABLE|OCLF_USBRESET);
-                    SYNC;
-
-                    // make sure the ports are on with chipset quirk workaround
-                    hubdesca = READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA);
-                    WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA, hubdesca|OHAF_NOOVERCURRENT);
-                    WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_POWERHUB);
-                    if((hubdesca & OHAF_NOPOWERSWITCH) || (!(hubdesca & OHAF_INDIVIDUALPS)))
-                    {
-                        KPRINTF(20, ("Individual power switching not available, turning on all ports!\n"));
-                        WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, 0);
-                    } else {
-                        KPRINTF(20, ("Enabling individual power switching\n"));
-                        WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, ((2<<hc->hc_NumPorts)-2)<<OHBS_PORTPOWERCTRL);
-                    }
-
-                    uhwDelayMS(50, hu);
-                    WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA, hubdesca);
-
-                    CacheClearE(hc->hc_OhciHCCA,   sizeof(struct OhciHCCA),                  CACRF_ClearD);
-                    CacheClearE(hc->hc_OhciEDPool, sizeof(struct OhciED) * OHCI_ED_POOLSIZE, CACRF_ClearD);
-                    CacheClearE(hc->hc_OhciTDPool, sizeof(struct OhciTD) * OHCI_TD_POOLSIZE, CACRF_ClearD);
-                    
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_ISOENABLE|OCLF_USBOPER);
-                    SYNC;
-
-                    KPRINTF(20, ("HW Init done\n"));
+                    allocgood = ohciInit(hc,hu);
                     break;
                 }
 
@@ -958,6 +667,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #if defined(USB3)
     usb30ports = 0;
 #endif
+
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
@@ -1034,6 +744,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     {
         KPRINTF(20, ("Warning! #EHCI Ports (%ld) does not match USB 1.1 Ports (%ld)!\n", usb20ports, usb11ports));
     }
+
     hu->hu_RootHub11Ports = usb11ports;
     hu->hu_RootHub20Ports = usb20ports;
 #if defined(USB3)
@@ -1046,11 +757,13 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     {
         hu->hu_EhciOwned[cnt] = hu->hu_PortMap20[cnt] ? TRUE : FALSE;
     }
+
 #if defined(USB3)
-    KPRINTF(10, ("Unit %ld: USB Board %08lx has %ld USB1.1, %ld USB2.0 and %ld USB3.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports, hu->hu_RootHub30Ports));
+    KPRINTF(1000, ("Unit %ld: USB Board %08lx has %ld USB1.1, %ld USB2.0 and %ld USB3.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports, hu->hu_RootHub30Ports));
 #else
     KPRINTF(10, ("Unit %ld: USB Board %08lx has %ld USB1.1 and %ld USB2.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports));
 #endif
+
     hu->hu_FrameCounter = 1;
     hu->hu_RootHubAddr = 0;
 
@@ -1144,6 +857,7 @@ void pciFreeUnit(struct PCIUnit *hu)
 #endif
     // doing this in three steps to avoid these damn host errors
     ehciFree(hc, hu);
+    ohciFree(hc, hu);
 
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
@@ -1176,31 +890,6 @@ void pciFreeUnit(struct PCIUnit *hu)
                 SYNC;
 
                 KPRINTF(20, ("Shutting down UHCI done.\n"));
-                break;
-
-            case HCITYPE_OHCI:
-                KPRINTF(20, ("Shutting down OHCI %08lx\n", hc));
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTDIS, OISF_ALL_INTS);
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, OISF_ALL_INTS);
-
-                // disable all ports
-                WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, 0);
-                WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_UNPOWERHUB);
-
-                uhwDelayMS(50, hu);
-                KPRINTF(20, ("Stopping OHCI %08lx\n", hc));
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, 0);
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, 0);
-                SYNC;
-
-                //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
-                uhwDelayMS(10, hu);
-                KPRINTF(20, ("Resetting OHCI %08lx\n", hc));
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
-                SYNC;
-                uhwDelayMS(50, hu);
-
-                KPRINTF(20, ("Shutting down OHCI done.\n"));
                 break;
         }
 
