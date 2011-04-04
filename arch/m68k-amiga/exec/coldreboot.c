@@ -71,7 +71,7 @@ asm (
      */
     Exec_DoResetCallbacks((struct IntExecBase *)SysBase);
 
-    Supervisor(Exec_MagicResetCode);
+    Supervisor((ULONG_FUNC)Exec_MagicResetCode);
 
     AROS_LIBFUNC_EXIT
 } /* ColdReboot() */
