@@ -28,6 +28,19 @@ include $(TOP)/config/make.cfg
 #MM         workbench-rexxc \
 #MM         kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
+# These are disk-based hardware drivers.
+# By default they are built only for native targets, however you can
+# build and use them also on hosted AROS (e.g. Linux) using tunnelling PCI driver.
+
+#MM- workbench-drivers : \
+#MM    hidd-vmwaresvga 	 \
+#MM    hidd-nvidia	 \
+#MM    hidd-radeon	 \
+#MM    hidd-intelg45
+# Currently excluded because nouveau.hidd uses agp.hidd which fails to build
+# on architectures other than i386 because of missing Wbinvd() definition
+##MM    hidd-nouveau
+
 WBSTARTUPDIR := $(AROSDIR)/WBStartup
 WBSTORAGEDIR := $(AROSDIR)/Storage
 WBDOSDRIVERDIRS := $(AROSDIR)/Devs/DOSDrivers $(AROSDIR)/Storage/DOSDrivers
