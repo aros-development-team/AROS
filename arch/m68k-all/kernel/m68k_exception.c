@@ -286,6 +286,7 @@ void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
     	/* LastAlert[1] was already set by
     	 * Exec/Dispatch
     	 */
+    	LastAlert[1] = 0; /* No SysBase? No Task. */
     	LastAlert[2] = 0;
     	LastAlert[3] = 0;
 
