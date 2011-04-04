@@ -40,14 +40,14 @@ struct PortInfo
 
 /*** Module entry (exactly 4 bytes!!) *****************************************/
 
-__asm("
-  moveq #-1,d0
-  rts
-");
+__asm(
+"  moveq #-1,%d0\n"
+"  rts\n"
+);
 
 /*** Identification data must follow directly *********************************/
 
-static const struct MidiDeviceData MidiDeviceData =
+static struct MidiDeviceData MidiDeviceData =
 {
   MDD_Magic,
   "emu10kx",
@@ -65,7 +65,9 @@ static const struct MidiDeviceData MidiDeviceData =
 
 /*** Global data **************************************************************/
 
+#ifndef __AROS__
 static struct ExecBase*    SysBase         = NULL;
+#endif
 static struct Library*     EMU10kxBase     = NULL;
 static struct EMU10kxCamd* EMU10kxCamd     = NULL;
 static struct PortInfo*    PortInfos       = NULL;
@@ -99,44 +101,68 @@ KPrintFArgs( UBYTE* fmt,
 
 /*** CAMD callbacks ***********************************************************/
 
+#ifdef __AROS__
+static AROS_UFH3(ULONG, TransmitFunc,
+	AROS_UFHA(struct Hook *, hook, A0),
+	AROS_UFHA(struct Library *, emu10kxbase, A2),
+	AROS_UFHA(APTR, null, A1))
+{
+    AROS_USERFUNC_INIT
+#else
 static ULONG
 TransmitFunc( struct Hook*    hook         __asm( "a0" ),
 	      struct Library* emu10kxbase  __asm( "a2" ),
 	      APTR            null         __asm( "a1" ) )
 {
+#endif
   struct PortInfo* pi = (struct PortInfo*) hook->h_Data;
   ULONG            res;
 
   __asm volatile (
-    "movel %1,a2
-     movel %2,a0
-     jsr   (a0)
-     swapw d0
-     movew d1,d0
-     swapw d0"
+      "movel %1,%%a2\n"
+      "movel %2,%%a0\n"
+      "jsr   (%%a0)\n"
+      "swapw %%d0\n"
+      "movew %%d1,%%d0\n"
+      "swapw %%d0\n"
     : "=r"(res)
     : "m" (pi->UserData), "m" (pi->TransmitFunc)
     : "a0", "a2" );
 
   return res;
+#ifdef __AROS__
+  AROS_USERFUNC_EXIT
+#endif
 }
 
 
+#ifdef __AROS__
+static AROS_UFH3(VOID, ReceiveFunc,
+	AROS_UFHA(struct Hook *, hook, A0),
+	AROS_UFHA(struct Library *, emu10kxbase, A2),
+	AROS_UFHA(struct ReceiveMessage*, msg, A1))
+{
+    AROS_USERFUNC_INIT
+#else
 static VOID
 ReceiveFunc( struct Hook*           hook        __asm( "a0" ),
 	     struct Library*        emu10kxbase __asm( "a2" ),
 	     struct ReceiveMessage* msg         __asm( "a1" ) )
 {
+#endif
   struct PortInfo* pi = (struct PortInfo*) hook->h_Data;
 
   __asm volatile (
-    "movel %0,d0
-     movel %1,a2
-     movel %2,a0
-     jsr   (a0)"
+    "movel %0,%%d0\n"
+    "movel %1,%%a2\n"
+    "movel %2,%%a0\n"
+    "jsr   (%%a0)\n"
     : 
     : "m" (msg->InputByte), "m" (pi->UserData), "m" (pi->ReceiveFunc)
     : "d0", "a0", "a2" );
+#ifdef __AROS__
+  AROS_USERFUNC_EXIT
+#endif
 }
 
 
@@ -187,7 +213,7 @@ _Init( struct ExecBase* sysbase )
   struct Library* camdlib;
   
 #ifdef __AROS__
-  SysBase = sysbase;
+  APTR SysBase = sysbase;
 #else
   // sysbase is not valid in the original CAMD anyway
   SysBase = *(struct ExecBase**) 4;

@@ -6,13 +6,13 @@
 
 ==public
 
-BOOL Init(APTR SysBase) (a6)
+BOOL Init(APTR SysBase) (A6)
 VOID Expunge() ()
 struct MidiPortData* OpenPort(struct MidiDeviceData * data,
                               LONG portnum,
                               APTR transmitfunc,
                               APTR recievefunc,
-                              APTR userdata) (a3,d0,a0,a1,a2)
-VOID ClosePort(struct MidiDeviceData * data, LONG portnum) (a3,d0)
-VOID ActivateXmit(APTR userdata, LONG portnum)(a2,d0)
+                              APTR userdata) (A3,D0,A0,A1,A2)
+VOID ClosePort(struct MidiDeviceData * data, LONG portnum) (A3,D0)
+VOID ActivateXmit(APTR userdata, LONG portnum)(A2,D0)
 ==end
