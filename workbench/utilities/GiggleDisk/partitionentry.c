@@ -362,52 +362,6 @@ return( id );
 }
 /* \\\ */
 
-/* /// PE_GetGeometry()
-**
-*/
-
-/*************************************************************************/
-
-ULONG PE_GetGeometry( struct PartitionEntry *pe )
-{
-struct DriveGeometry dg;
-
-    ((struct IOExtTD *) device.IORequest)->iotd_Req.io_Command = TD_GETGEOMETRY;
-    ((struct IOExtTD *) device.IORequest)->iotd_Req.io_Data = (APTR) &dg;
-    ((struct IOExtTD *) device.IORequest)->iotd_Req.io_Length = sizeof( struct DriveGeometry );
-
-    if( !DoIO( device.IORequest )) {
-/* first the standard stuff */
-        pe->Device                 = readargs_array[ARG_DEVICE];
-        pe->Unit                   = readargs_array[ARG_UNIT];
-        pe->StackSize              = 16384;
-        pe->ENV.de_NumBuffers      = 50;
-        pe->ENV.de_MaxTransfer     = readargs_array[ARG_MAXTRANSFER];
-        pe->ENV.de_Mask            = 0x7ffffffe;
-        pe->ENV.de_BootPri         = 10;
-/* and now the geometry stuff */
-
-        pe->ENV.de_SizeBlock      = dg.dg_SectorSize/4;
-        pe->ENV.de_LowCyl         = 0L;
-        pe->ENV.de_HighCyl        = dg.dg_Cylinders-1;
-        pe->ENV.de_Surfaces       = dg.dg_Heads;
-        pe->ENV.de_BlocksPerTrack = dg.dg_TrackSectors;
-        pe->ENV.de_SectorPerBlock = dg.dg_CylSectors;
-        pe->ENV.de_BufMemType     = dg.dg_BufMemType;
-
-		debug( APPLICATIONNAME ": SizeBlock = %ld\n", pe->ENV.de_SizeBlock *4);
-		debug( APPLICATIONNAME ": LowCyl = %ld\n", pe->ENV.de_LowCyl);
-		debug( APPLICATIONNAME ": HighCyl = %ld\n", pe->ENV.de_HighCyl);
-		debug( APPLICATIONNAME ": Surfaces = %ld\n", pe->ENV.de_Surfaces);
-		debug( APPLICATIONNAME ": BlocksPerTrack = %ld\n", pe->ENV.de_BlocksPerTrack);
-		debug( APPLICATIONNAME ": SectorsPerBlock = %ld\n", pe->ENV.de_SectorPerBlock);
-		debug( APPLICATIONNAME ": BufMemType = %ld\n", pe->ENV.de_BufMemType);
-
-    }
-    return( 0L);
-}
-/* \\\ */
-
 #ifdef JustToSeeStructureNames
 struct DriveGeometry {
 	ULONG	dg_SectorSize;		/* in bytes */

@@ -12,12 +12,8 @@ FILES := main                \
 	 create              \
 	 giggledisk          \
 	 header              \
-	 mbr                 \
-	 rdb                 \
 	 readargs            \
 	 mount               \
-	 readwrite           \
-	 partitionentry      \
 	 wbstartup           \
 	 library             \
 	 requester           \
@@ -28,7 +24,7 @@ FILES := main                \
 	 icon                \
 	 functions
 
-OS_FILES := createpartitionlist_builtin device_builtin
+OS_FILES := createpartitionlist_aros device_aros
 
 %build_prog mmake=workbench-utilities-giggledisk \
     progname=$(APPLICATION) targetdir=$(EXEDIR) \
