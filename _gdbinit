@@ -293,7 +293,7 @@ define printtaglist
 end
 document printtaglist
 end
-    
+
 define log_to_file
   set logging file $arg0
   set logging redirect on
@@ -383,8 +383,8 @@ define loadseg
                 end
             end
 
-	    $sh++
-	    $i++
+	    set $sh = $sh + 1
+	    set $i = $i + 1
 	end
         set $kicknode = $kicknode->Next
     end
