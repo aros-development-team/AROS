@@ -1,5 +1,5 @@
 #include <aros/kernel.h>
-#include <asm/cpu.h>
+#include <asm/x86_64/cpu.h>
 
 #include "bootstrap.h"
 #include "support.h"
