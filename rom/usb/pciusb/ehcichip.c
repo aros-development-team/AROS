@@ -1137,6 +1137,19 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     struct PCIDevice *hd = hu->hu_Device;
 
+    struct EhciQH *eqh;
+    struct EhciQH *predeqh;
+    struct EhciTD *etd;
+    ULONG *tabptr;
+    UBYTE *memptr;
+    ULONG bitcnt;
+    ULONG hcsparams;
+    ULONG hccparams;
+    volatile APTR pciregbase;
+    ULONG extcapoffset;
+    ULONG legsup;
+    ULONG timeout;
+
     ULONG cnt;
 
     struct TagItem pciActivateMem[] =
@@ -1156,19 +1169,6 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
             { aHidd_PCIDevice_isMaster, FALSE },
             { TAG_DONE, 0UL },
     };
-
-    struct EhciQH *eqh;
-    struct EhciQH *predeqh;
-    struct EhciTD *etd;
-    ULONG *tabptr;
-    UBYTE *memptr;
-    ULONG bitcnt;
-    ULONG hcsparams;
-    ULONG hccparams;
-    volatile APTR pciregbase;
-    ULONG extcapoffset;
-    ULONG legsup;
-    ULONG timeout;
 
     hc->hc_portroute = 0;
 

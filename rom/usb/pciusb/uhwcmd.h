@@ -51,31 +51,32 @@ BOOL pciAllocUnit(struct PCIUnit *hu);
 void pciFreeUnit(struct PCIUnit *hu);
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr);
 
+void uhciUpdateIntTree(struct PCIController *hc);
+void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh);
 void uhciCompleteInt(struct PCIController *hc);
 void uhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
-void uhciUpdateIntTree(struct PCIController *hc);
-void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh);
 static inline struct UhciQH * uhciAllocQH(struct PCIController *hc);
 static inline void uhciFreeQH(struct PCIController *hc, struct UhciQH *uqh);
 static inline struct UhciTD * uhciAllocTD(struct PCIController *hc);
 static inline void uhciFreeTD(struct PCIController *hc, struct UhciTD *utd);
 
-
+void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed);
+void ohciUpdateIntTree(struct PCIController *hc);
+void ohciHandleFinishedTDs(struct PCIController *hc);
+void ohciScheduleCtrlTDs(struct PCIController *hc);
+void ohciScheduleIntTDs(struct PCIController *hc);
+void ohciScheduleBulkTDs(struct PCIController *hc);
+void ohciUpdateFrameCounter(struct PCIController *hc);
 void ohciCompleteInt(struct PCIController *hc);
 void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
+BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu);
+void ohciFree(struct PCIController *hc, struct PCIUnit *hu);
 
-void ohciUpdateIntTree(struct PCIController *hc);
-void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed);
 static inline struct OhciED * ohciAllocED(struct PCIController *hc);
 static inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed);
 static inline struct OhciTD * ohciAllocTD(struct PCIController *hc);
 static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd);
-
-BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu);
-void ehciFree(struct PCIController *hc, struct PCIUnit *hu);
-void ehciCompleteInt(struct PCIController *hc);
-void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
 void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh);
 void ehciFreePeriodicContext(struct PCIController *hc, struct EhciQH *eqh);
@@ -86,6 +87,10 @@ void ehciScheduleCtrlTDs(struct PCIController *hc);
 void ehciScheduleIntTDs(struct PCIController *hc);
 void ehciScheduleBulkTDs(struct PCIController *hc);
 void ehciUpdateFrameCounter(struct PCIController *hc);
+void ehciCompleteInt(struct PCIController *hc);
+void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
+BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu);
+void ehciFree(struct PCIController *hc, struct PCIUnit *hu);
 
 static inline struct EhciQH * ehciAllocQH(struct PCIController *hc);
 static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh);
