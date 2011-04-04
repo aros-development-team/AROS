@@ -3,6 +3,7 @@
 ** create.c
 **
 ** (c) 1998-2011 Guido Mersmann
+** (c) 2011 The AROS Development Team.
 */
 
 /*************************************************************************/
@@ -56,7 +57,7 @@ ULONG args[2];
             if( (!pei || pei == pe) && pe->ENV.de_DosType ) {
 
                 if( pe->DriveName[0] ) {
-                    args[0] = (ULONG) &pe->DriveName[0];
+                    args[0] = (IPTR) &pe->DriveName[0];
                     Cache_Printf("%s:\n", args);
                 } else {
                     args[0] = readargs_array[ARG_PREFIX];
@@ -85,11 +86,11 @@ return(0L);
 
 ULONG Create_DosDriver( STRPTR dir, struct PartitionEntry *pei )
 {
-struct PartitionEntry *pe;
-BPTR handle, lock;
-ULONG i, result;
-char name[20];
-ULONG args[2];
+    struct PartitionEntry *pe;
+    BPTR handle, lock;
+    ULONG i, result;
+    char name[20];
+    IPTR args[2];
 
     result = MSG_ERROR_UnableToLocateDrawer;
     if( (lock = Lock( dir, ACCESS_READ )) ) {
@@ -138,9 +139,10 @@ return( result );
 
 static void DD_WriteDosDriverData( struct PartitionEntry *pe )
 {
-ULONG args[25];
-ULONG *arg = args;
-            *arg++ = (ULONG) &pe->FileSysName[0];
+    IPTR args[25];
+    IPTR *arg = args;
+
+            *arg++ = (IPTR) &pe->FileSysName[0];
             *arg++ = pe->Device;
             *arg++ = pe->Unit;
             *arg++ = pe->ENV.de_SizeBlock * 4;  /* block size in longs */
@@ -160,7 +162,7 @@ ULONG *arg = args;
             *arg++ = pe->ENV.de_BootPri;
             *arg++ = pe->ENV.de_DosType;
             *arg++ =         ((pe->Flags & PBFF_NOMOUNT) ? 0 : 1);
-            *arg++ = (ULONG) ((pe->Flags & PBFF_BOOTABLE) ? "TRUE" : "FALSE");
+            *arg++ = (IPTR) ((pe->Flags & PBFF_BOOTABLE) ? "TRUE" : "FALSE");
 
             Cache_Printf("FileSystem       = %s\n"
                          "Device           = %s\n"

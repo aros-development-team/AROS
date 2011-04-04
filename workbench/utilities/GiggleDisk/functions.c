@@ -3,6 +3,7 @@
 ** functions.c
 **
 ** (c) 1998-2011 Guido Mersmann
+** (c) 2011 The AROS Development Team.
 */
 
 /*************************************************************************/
@@ -134,65 +135,6 @@ ULONG result;
 		UnLock( lock );
     }
 	return( result );
-}
-/* \\\ */
-
-/*
-** Device
-*/
-
-/****************************************************************************/
-
-/* /// Device_Open()
-**
-*/
-
-/*****************************************************************************/
-
-BOOL Device_Open( struct MDevice *mdevice, char *name, ULONG unit, ULONG flags, ULONG iosize )
-{
-
-	if( ( mdevice->MessagePort = CreateMsgPort() ) ) {
-		if( ( mdevice->IORequest = CreateIORequest( mdevice->MessagePort, iosize ) ) ) {
-			if( !OpenDevice(name, unit, mdevice->IORequest, flags ) ) {
-	            mdevice->IORequest->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-	            mdevice->DeviceOpen = TRUE;
-	        }
-	    }
-	}
-	return( mdevice->DeviceOpen );
-}
-/* \\\ */
-/* /// Device_Close()
-**
-*/
-
-/*****************************************************************************/
-
-void Device_Close( struct MDevice *mdevice )
-{
-
-	if( mdevice->DeviceOpen ) {
-
-		while( !CheckIO( mdevice->IORequest ) ) {
-			AbortIO( mdevice->IORequest );
-
-            WaitIO( mdevice->IORequest );  /* wait for outstanding timer */
-
-        }
-		CloseDevice( mdevice->IORequest );
-        mdevice->DeviceOpen = 0;
-    }
-	if( mdevice->IORequest ) {
-		DeleteIORequest( mdevice->IORequest );
-        mdevice->IORequest = NULL;
-    }
-
-	if( mdevice->MessagePort ) {
-		DeleteMsgPort( mdevice->MessagePort );
-        mdevice->MessagePort = NULL;
-    }
-
 }
 /* \\\ */
 

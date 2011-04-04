@@ -25,7 +25,7 @@ enum
 ** Externals
 */
 
-extern ULONG readargs_array[];
+extern IPTR readargs_array[];
 
 /*
 ** Prototypes

@@ -62,8 +62,8 @@ struct PartitionEntry {
     ULONG       FirstSector;
     ULONG       NumberOfSectors;
 /* Amiga Style extensions */
-    ULONG       Device;
-    ULONG       Unit;
+    IPTR        Device;
+    IPTR        Unit;
     ULONG       StackSize;
     char        FileSysName[84+2]; /* copy of partitionblock->FileSysName */
     char        DriveName[32];     /* copy of partitionblock->DriveName */

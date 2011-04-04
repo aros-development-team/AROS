@@ -3,6 +3,7 @@
 ** requester.c
 **
 ** (c) 1998-2011 Guido Mersmann
+** (c) 2011 The AROS Development Team.
 **
 ** This file contains requester handling. When MUI is available it's
 ** requester will be used. If not a simple EasyRequest opens.
@@ -27,7 +28,7 @@
 
 /*************************************************************************/
 
-ULONG requester_args[16];
+IPTR requester_args[16];
 
 /*************************************************************************/
 

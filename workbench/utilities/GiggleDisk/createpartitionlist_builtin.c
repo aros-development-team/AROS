@@ -34,10 +34,10 @@
 
 ULONG Create_PartitionList( void )
 {
-struct PartitionEntry *pe;
-BYTE data[0x800];
-ULONG result, block, i, id;
-ULONG args[2];
+    struct PartitionEntry *pe;
+    BYTE data[0x800];
+    ULONG result, block, i, id;
+    IPTR args[2];
 
     i = 0;
     for( block = 0; block < RDB_LOCATION_LIMIT ; block ++ ) {
