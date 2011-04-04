@@ -44,7 +44,7 @@ static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct DosLibrar
      * Luckily, reading HUNKs is linear, so we can just
      * read ahead.
      */
-    while (!(err = read_block(fd, &tmp, sizeof(tmp), funcarray, DOSBase)) && count)
+    while (count && !(err = read_block(fd, &tmp, sizeof(tmp), funcarray, DOSBase)))
     	count--;
 
     return err;
