@@ -58,7 +58,6 @@ void cpu_Dispatch(regs_t *regs)
 {
     struct Task *task;
     struct AROSCPUContext *ctx;
-    volatile LONG *LastAlert = (volatile LONG *)(64 * sizeof(LONG));
 
     for (;;) {
         asm volatile ("ori  #0x0700, %sr\n");    // Disable CPU interrupts
@@ -75,11 +74,6 @@ void cpu_Dispatch(regs_t *regs)
 	}
         asm volatile ("stop #0x2000\n"); // Wait for an interrupt
     }
-
-    /* Update LastAlert's task ID, in case we
-     * crash while this task is active.
-     */
-    LastAlert[1] = (SIPTR)task;
 
     ctx = GetIntETask(task)->iet_Context;
     CopyMem(&ctx->cpu, regs, sizeof(regs_t));
