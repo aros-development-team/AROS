@@ -63,7 +63,7 @@ INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
 compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(AROS_INCLUDES)/%.h : %.h
-	@$(CP) $< $@
+	$(CP) $< $@
 
 $(GENINCDIR)/%.h : %.h
 	@$(CP) $< $@
