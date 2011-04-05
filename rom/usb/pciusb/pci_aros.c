@@ -105,22 +105,6 @@ AROS_UFH3(void, pciEnumerator,
     AROS_USERFUNC_EXIT
 }
 
-/* /// "UhciResetHandler()" */
-static AROS_UFH3(void, UhciResetHandler,
-                 AROS_UFHA(struct PCIController *, hc, A1),
-                 AROS_UFHA(APTR, unused, A5),
-                 AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-
-    // stop controller and disable all interrupts
-    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
-    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
-
-    AROS_USERFUNC_EXIT
-}
-/* \\\ */
-
 /* /// "pciInit()" */
 BOOL pciInit(struct PCIDevice *hd)
 {
@@ -338,30 +322,6 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #endif
     STRPTR prodname;
 
-    struct TagItem pciActivateMem[] =
-    {
-            { aHidd_PCIDevice_isMEM,    TRUE },
-            { TAG_DONE, 0UL },
-    };
-
-    struct TagItem pciActivateIO[] =
-    {
-            { aHidd_PCIDevice_isIO,     TRUE },
-            { TAG_DONE, 0UL },
-    };
-
-    struct TagItem pciDeactivateBusmaster[] =
-    {
-            { aHidd_PCIDevice_isMaster, FALSE },
-            { TAG_DONE, 0UL },
-    };
-
-    struct TagItem pciActivateBusmaster[] =
-    {
-            { aHidd_PCIDevice_isMaster, TRUE },
-            { TAG_DONE, 0UL },
-    };
-
     KPRINTF(10, ("*** pciAllocUnit(%08lx) ***\n", hu));
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
@@ -390,231 +350,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             {
                 case HCITYPE_UHCI:
                 {
-                    struct UhciQH *uqh;
-                    struct UhciQH *preduqh;
-                    struct UhciTD *utd;
-                    ULONG *tabptr;
-                    UBYTE *memptr;
-                    ULONG bitcnt;
-
-                    hc->hc_NumPorts = 2; // UHCI always uses 2 ports per controller
-                    KPRINTF(20, ("Found UHCI Controller %08lx FuncNum=%ld with %ld ports\n", hc->hc_PCIDeviceObject, hc->hc_FunctionNum, hc->hc_NumPorts));
-                    hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
-                    hc->hc_CompleteInt.is_Node.ln_Name = "UHCI CompleteInt";
-                    hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
-                    hc->hc_CompleteInt.is_Data = hc;
-                    hc->hc_CompleteInt.is_Code = (void (*)(void)) &uhciCompleteInt;
-
-                    hc->hc_PCIMemSize = sizeof(ULONG) * UHCI_FRAMELIST_SIZE + UHCI_FRAMELIST_ALIGNMENT + 1;
-                    hc->hc_PCIMemSize += sizeof(struct UhciQH) * UHCI_QH_POOLSIZE;
-                    hc->hc_PCIMemSize += sizeof(struct UhciTD) * UHCI_TD_POOLSIZE;
-                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
-                    if(!memptr)
-                    {
-                        allocgood = FALSE;
-                        break;
-                    }
-                    hc->hc_PCIMem = (APTR) memptr;
-                    // PhysicalAddress - VirtualAdjust = VirtualAddress
-                    // VirtualAddress  + VirtualAdjust = PhysicalAddress
-                    hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
-                    KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
-
-                    // align memory
-                    memptr = (UBYTE *) ((((ULONG) hc->hc_PCIMem) + UHCI_FRAMELIST_ALIGNMENT) & (~UHCI_FRAMELIST_ALIGNMENT));
-                    hc->hc_UhciFrameList = (ULONG *) memptr;
-                    KPRINTF(10, ("FrameListBase 0x%08lx\n", hc->hc_UhciFrameList));
-                    memptr += sizeof(APTR) * UHCI_FRAMELIST_SIZE;
-
-                    // build up QH pool
-                    uqh = (struct UhciQH *) memptr;
-                    hc->hc_UhciQHPool = uqh;
-                    cnt = UHCI_QH_POOLSIZE - 1;
-                    do
-                    {
-                        // minimal initalization
-                        uqh->uqh_Succ = (struct UhciXX *) (uqh + 1);
-                        WRITEMEM32_LE(&uqh->uqh_Self, (ULONG) (&uqh->uqh_Link) + hc->hc_PCIVirtualAdjust + UHCI_QHSELECT);
-                        uqh++;
-                    } while(--cnt);
-                    uqh->uqh_Succ = NULL;
-                    WRITEMEM32_LE(&uqh->uqh_Self, (ULONG) (&uqh->uqh_Link) + hc->hc_PCIVirtualAdjust + UHCI_QHSELECT);
-                    memptr += sizeof(struct UhciQH) * UHCI_QH_POOLSIZE;
-
-                    // build up TD pool
-                    utd = (struct UhciTD *) memptr;
-                    hc->hc_UhciTDPool = utd;
-                    cnt = UHCI_TD_POOLSIZE - 1;
-                    do
-                    {
-                        utd->utd_Succ = (struct UhciXX *) (utd + 1);
-                        WRITEMEM32_LE(&utd->utd_Self, (ULONG) (&utd->utd_Link) + hc->hc_PCIVirtualAdjust + UHCI_TDSELECT);
-                        utd++;
-                    } while(--cnt);
-                    utd->utd_Succ = NULL;
-                    WRITEMEM32_LE(&utd->utd_Self, (ULONG) (&utd->utd_Link) + hc->hc_PCIVirtualAdjust + UHCI_TDSELECT);
-                    memptr += sizeof(struct UhciTD) * UHCI_TD_POOLSIZE;
-
-                    // terminating QH
-                    hc->hc_UhciTermQH = preduqh = uqh = uhciAllocQH(hc);
-                    uqh->uqh_Succ = NULL;
-                    CONSTWRITEMEM32_LE(&uqh->uqh_Link, UHCI_TERMINATE);
-                    CONSTWRITEMEM32_LE(&uqh->uqh_Element, UHCI_TERMINATE);
-
-                    // dummy Bulk QH
-                    hc->hc_UhciBulkQH = uqh = uhciAllocQH(hc);
-                    uqh->uqh_Succ = (struct UhciXX *) preduqh;
-                    preduqh->uqh_Pred = (struct UhciXX *) uqh;
-                    uqh->uqh_Link = preduqh->uqh_Self; // link to terminating QH
-                    CONSTWRITEMEM32_LE(&uqh->uqh_Element, UHCI_TERMINATE);
-                    preduqh = uqh;
-
-                    // dummy Ctrl QH
-                    hc->hc_UhciCtrlQH = uqh = uhciAllocQH(hc);
-                    uqh->uqh_Succ = (struct UhciXX *) preduqh;
-                    preduqh->uqh_Pred = (struct UhciXX *) uqh;
-                    uqh->uqh_Link = preduqh->uqh_Self; // link to Bulk QH
-                    CONSTWRITEMEM32_LE(&uqh->uqh_Element, UHCI_TERMINATE);
-
-                    // dummy ISO TD
-                    hc->hc_UhciIsoTD = utd = uhciAllocTD(hc);
-                    utd->utd_Succ = (struct UhciXX *) uqh;
-                    //utd->utd_Pred = NULL; // no certain linkage above this level
-                    uqh->uqh_Pred = (struct UhciXX *) utd;
-                    utd->utd_Link = uqh->uqh_Self; // link to Ctrl QH
-
-                    CONSTWRITEMEM32_LE(&utd->utd_CtrlStatus, 0);
-
-                    // 1 ms INT QH
-                    hc->hc_UhciIntQH[0] = uqh = uhciAllocQH(hc);
-                    uqh->uqh_Succ = (struct UhciXX *) utd;
-                    uqh->uqh_Pred = NULL; // who knows...
-                    //uqh->uqh_Link = utd->utd_Self; // link to ISO
-                    CONSTWRITEMEM32_LE(&uqh->uqh_Element, UHCI_TERMINATE);
-                    preduqh = uqh;
-
-                    // make 9 levels of QH interrupts
-                    for(cnt = 1; cnt < 9; cnt++)
-                    {
-                        hc->hc_UhciIntQH[cnt] = uqh = uhciAllocQH(hc);
-                        uqh->uqh_Succ = (struct UhciXX *) preduqh;
-                        uqh->uqh_Pred = NULL; // who knows...
-                        //uqh->uqh_Link = preduqh->uqh_Self; // link to previous int level
-                        CONSTWRITEMEM32_LE(&uqh->uqh_Element, UHCI_TERMINATE);
-                        preduqh = uqh;
-                    }
-
-                    uhciUpdateIntTree(hc);
-
-                    // fill in framelist with IntQH entry points based on interval
-                    tabptr = hc->hc_UhciFrameList;
-                    for(cnt = 0; cnt < UHCI_FRAMELIST_SIZE; cnt++)
-                    {
-                        uqh = hc->hc_UhciIntQH[8];
-                        bitcnt = 0;
-                        do
-                        {
-                            if(cnt & (1UL<<bitcnt))
-                            {
-                                uqh = hc->hc_UhciIntQH[bitcnt];
-                                break;
-                            }
-                        } while(++bitcnt < 9);
-                        *tabptr++ = uqh->uqh_Self;
-                    }
-
-                    // this will cause more PCI memory access, but faster USB transfers as well
-                    //WRITEMEM32_LE(&hc->hc_UhciTermQH->uqh_Link, AROS_LONG2LE(hc->hc_UhciBulkQH->uqh_Self));
-
-                    // time to initialize hardware...
-                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base4, (IPTR *) &hc->hc_RegBase);
-                    hc->hc_RegBase = (APTR) (((IPTR) hc->hc_RegBase) & (~0xf));
-                    KPRINTF(10, ("RegBase = 0x%08lx\n", hc->hc_RegBase));
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateIO);
-
-                    // disable BIOS legacy support
-                    KPRINTF(10, ("Turning off BIOS legacy support (old value=%04lx)\n", PCIXReadConfigWord(hc, UHCI_USBLEGSUP)));
-                    PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0x8f00);
-
-                    KPRINTF(10, ("Resetting UHCI HC\n"));
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_GLOBALRESET);
-                    uhwDelayMS(15, hu);
-
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
-
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
-                    cnt = 100;
-                    do
-                    {
-                        uhwDelayMS(10, hu);
-                        if(!(READIO16_LE(hc->hc_RegBase, UHCI_USBCMD) & UHCF_HCRESET))
-                        {
-                            break;
-                        }
-                    } while(--cnt);
-
-                    if(cnt == 0)
-                    {
-                        KPRINTF(20, ("Reset Timeout!\n"));
-                        WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
-                        uhwDelayMS(15, hu);
-                    } else {
-                        KPRINTF(20, ("Reset finished after %ld ticks\n", 100-cnt));
-                    }
-
-                    // stop controller and disable all interrupts first
-                    KPRINTF(10, ("Stopping controller and enabling busmaster\n"));
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
-
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster); // enable busmaster
-
-                    // Fix for VIA Babble problem
-                    cnt = PCIXReadConfigByte(hc, 0x40);
-                    if(!(cnt & 0x40))
-                    {
-                        KPRINTF(20, ("Applying VIA Babble workaround\n"));
-                        PCIXWriteConfigByte(hc, 0x40, cnt|0x40);
-                    }
-
-                    KPRINTF(10, ("Configuring UHCI HC\n"));
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE);
-
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT, 0);
-
-                    WRITEIO32_LE(hc->hc_RegBase, UHCI_FRAMELISTADDR, (ULONG) pciGetPhysical(hc, hc->hc_UhciFrameList));
-
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
-
-                    // install reset handler
-                    hc->hc_ResetInt.is_Code = UhciResetHandler;
-                    hc->hc_ResetInt.is_Data = hc;
-                    AddResetCallback(&hc->hc_ResetInt);
-
-                    // add interrupt
-                    hc->hc_PCIIntHandler.h_Node.ln_Name = "UHCI PCI (pciusb.device)";
-                    hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
-                    hc->hc_PCIIntHandler.h_Code = uhciIntCode;
-                    hc->hc_PCIIntHandler.h_Data = hc;
-                    HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
-
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
-
-                    // clear all port bits (both ports)
-                    WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
-
-                    // enable PIRQ
-                    KPRINTF(10, ("Enabling PIRQ (old value=%04lx)\n", PCIXReadConfigWord(hc, UHCI_USBLEGSUP)));
-                    PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0x2000);
-
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE|UHCF_RUNSTOP);
-                    SYNC;
-
-                    KPRINTF(20, ("HW Init done\n"));
-
-                    KPRINTF(10, ("HW Regs USBCMD=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_USBCMD)));
-                    KPRINTF(10, ("HW Regs USBSTS=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS)));
-                    KPRINTF(10, ("HW Regs FRAMECOUNT=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT)));
+                    allocgood = uhciInit(hc,hu);
                     break;
                 }
 
@@ -858,43 +594,12 @@ void pciFreeUnit(struct PCIUnit *hu)
     // doing this in three steps to avoid these damn host errors
     ehciFree(hc, hu);
     ohciFree(hc, hu);
+    uhciFree(hc, hu);
 
+    //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
-    {
-        switch(hc->hc_HCIType)
-        {
-            case HCITYPE_UHCI:
-                KPRINTF(20, ("Shutting down UHCI %08lx\n", hc));
-                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
-                // disable PIRQ
-                PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0);
-                // disable all ports
-                WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
-                uhwDelayMS(50, hu);
-                //WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE);
-                //uhwDelayMS(50, hu);
-                KPRINTF(20, ("Stopping UHCI %08lx\n", hc));
-                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
-                SYNC;
-
-                //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
-                uhwDelayMS(10, hu);
-
-                KPRINTF(20, ("Resetting UHCI %08lx\n", hc));
-                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
-                SYNC;
-
-                uhwDelayMS(50, hu);
-                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
-                SYNC;
-
-                KPRINTF(20, ("Shutting down UHCI done.\n"));
-                break;
-        }
-
-        if(hc->hc_PCIMem)
-        {
+    while(hc->hc_Node.ln_Succ) {
+        if(hc->hc_PCIMem) {
             HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem);
             hc->hc_PCIMem = NULL;
         }
