@@ -51,8 +51,8 @@ AROS_UFH2(BOOL, Dos_BCPL_putpkt,
     mess->mn_Node.ln_Name = (char *)dp;
     mess->mn_Length = sizeof(*mess);
 
-bug("BCPL putPkt: Send to port %p, reply on port %p, DosPacket %p\n",
-	port, mess->mn_ReplyPort, dp);
+    D(bug("BCPL putPkt: Send to port %p, reply on port %p, DosPacket %p\n",
+	port, mess->mn_ReplyPort, dp));
 
     PutMsg(port, mess);
 
