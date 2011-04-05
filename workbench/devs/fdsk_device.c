@@ -384,7 +384,7 @@ static void remchangeint(struct unit *unit, struct IOExtTD *iotd) {
 void getgeometry(struct unit *unit, struct DriveGeometry *dg) {
 struct FileInfoBlock fib;
 
-    Examine(unit->file, &fib);
+    ExamineFH(unit->file, &fib);
     dg->dg_SectorSize = 512;
     dg->dg_Heads = 16;
     dg->dg_TrackSectors = 63;
@@ -415,7 +415,7 @@ struct FileInfoBlock fib;
         unit->file = Open(unit->filename, MODE_OLDFILE);
         if (unit->file == (BPTR) NULL)
             return;
-        Examine(unit->file, &fib);
+        ExamineFH(unit->file, &fib);
         unit->writable = !(fib.fib_Protection & FIBF_WRITE);
     }
 
@@ -489,7 +489,7 @@ AROS_UFH3(LONG, unitentry,
 	return 0;
     }
 
-    Examine(unit->file, &fib);
+    ExamineFH(unit->file, &fib);
     unit->writable = !(fib.fib_Protection & FIBF_WRITE);
 
     /* enable requesters */

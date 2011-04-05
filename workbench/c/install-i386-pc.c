@@ -899,7 +899,7 @@ D(bug("[install-i386] changeStage2(%x)\n", volume));
 	fh = Open(stage2path, MODE_OLDFILE);
 	if (fh)
 	{
-		if (Examine(fh, &fib))
+		if (ExamineFH(fh, &fib))
 		{
 			if (Read(fh, buffer, 512) == 512)
 			{
