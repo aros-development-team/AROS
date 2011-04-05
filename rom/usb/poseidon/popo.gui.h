@@ -52,7 +52,7 @@ void pPoPoFreeSound(struct PsdBase *ps, struct PsdPoPoSound *pps);
 #define MUIM_PoPo_About             (TAGBASE_PoPo | 0x0030)
 #define MUIM_PoPo_OpenTrident       (TAGBASE_PoPo | 0x0031)
 
-AROS_UFP3(ULONG, PoPoDispatcher,
+AROS_UFP3(IPTR, PoPoDispatcher,
                  AROS_UFPA(struct IClass *, cl, A0),
                  AROS_UFPA(Object *, obj, A2),
                  AROS_UFPA(Msg, msg, A1));
