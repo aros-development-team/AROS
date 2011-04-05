@@ -105,6 +105,10 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
 	    ab->cycles[ch]--;
 	}
 
+	/* Does ADIOF_SYNCCYCLE mean end of any cycle or only when cycle count == 1?
+	 * Documentation isn't clear about this ("end of current cycle")
+	 * This assumes "end of any cycle"
+	 */
     	ForeachNodeSafe(&ab->misclist, wio, next) {
     	    UWORD cmd = wio->ioa_Request.io_Command;
     	    UBYTE cmask = (UBYTE)(ULONG)wio->ioa_Request.io_Unit;
@@ -112,6 +116,10 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     	    	continue;
     	    if (!(cmask & mask))
     	    	continue;
+    	    if (cmask & (mask << NR_CH)) {
+    	    	if (cmd == ADCMD_PERVOL)
+    	    	    audiohw_preparepervol(ab, wio, ch);
+    	    }
     	    cmask &= ~(mask << NR_CH);
     	    if ((cmask >> NR_CH) == 0) {
      	        D(bug("audio: ch %d SYNCCYCLE woken up, io %p\n", ch, wio));
@@ -148,7 +156,6 @@ AROS_UFH4(ULONG, audio_int,
 
     AROS_USERFUNC_EXIT
 }
-
 
 void audiohw_reset(struct AudioBase *ab, UWORD mask)
 {
