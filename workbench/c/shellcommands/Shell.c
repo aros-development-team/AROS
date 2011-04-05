@@ -2110,6 +2110,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss, struct InterpreterSt
     struct Segment *residentSeg;
     BOOL   absolutePath = strpbrk(commandName, "/:") != NULL;
     BPTR   file;
+    LONG   err = 0;
 
     /* We check the resident lists only if we do not have an absolute path */
     if(!absolutePath)
@@ -2186,7 +2187,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss, struct InterpreterSt
     if (file)
     {
         commandSeg = LoadSeg(commandName);
-
+        err = IoErr();
 	#if SET_HOMEDIR
 	if (commandSeg)
 	{
@@ -2198,27 +2199,33 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss, struct InterpreterSt
 	        ss->homeDirChanged = TRUE;
 	    }
 	}
-	else
         #endif
-	{
-	    struct FileInfoBlock fib;
-	    if (ExamineFH(file, &fib) && fib.fib_Protection & FIBF_SCRIPT)
+	if (!commandSeg && err == ERROR_NOT_EXECUTABLE) {
+	    struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+	    if (fib && ExamineFH(file, fib) && (fib->fib_Protection & FIBF_SCRIPT))
 	    {
         	commandSeg = LoadSeg("C:Execute");
 		if (commandSeg)
 		{
-		    ss->script = TRUE;
 		    ss->scriptLock = Lock(commandName, SHARED_LOCK);
+		    if (ss->scriptLock) {
+		    	ss->script = TRUE;
+		    	err = 0;
+		    } else {
+		    	UnLoadSeg(commandSeg);
+		    	commandSeg = BNULL;
+		    }
 		}
 	    }
-	    else
-		SetIoErr(ERROR_FILE_NOT_OBJECT);
+	    FreeDosObject(DOS_FIB, fib);
 	}
 
 	Close(file);
-    }
+    } else
+        err = IoErr();
 
     CurrentDir(oldCurDir);
+    SetIoErr(err);
 
     return commandSeg;
 }
