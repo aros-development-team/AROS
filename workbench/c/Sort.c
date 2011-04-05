@@ -324,28 +324,28 @@ int main (void)
     if (lock_in)
     {
        BPTR file_out = Open((STRPTR)args[ARG_TO], MODE_NEWFILE);
+       struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 
-       if (BNULL != file_out)
+       if (BNULL != file_out && fib)
        {
-          struct FileInfoBlock fib;
           UBYTE * data = NULL;
-          BOOL success = Examine(lock_in, &fib);
+          BOOL success = Examine(lock_in, fib);
 
           /*
           ** Read  the input file into memory
           */
-          if (fib.fib_Size && DOSTRUE == success)
-            data = AllocVec(fib.fib_Size, MEMF_ANY);
+          if (fib->fib_Size && success)
+            data = AllocVec(fib->fib_Size, MEMF_ANY);
 
           if (data)
           {
-            ULONG read = Read(lock_in, data, fib.fib_Size);
+            ULONG read = Read(lock_in, data, fib->fib_Size);
 
             if (-1 != read)
             {
               struct sorted_data * sd;
               sd = sort(data, 
-                        fib.fib_Size, 
+                        fib->fib_Size, 
                         (STRPTR)args[ARG_COLSTART],
                         (BOOL)args[ARG_CASE],
                         (BOOL)args[ARG_NUMERIC]);
@@ -357,6 +357,7 @@ int main (void)
 
           Close(file_out);  
        } /* if (file_out) */
+       FreeDosObject(DOS_FIB, fib);
        UnLock(lock_in);
     } /* if (lock_in) */
     FreeArgs(rda);
