@@ -2,58 +2,59 @@
 include $(TOP)/config/make.cfg
 
 #MM bootiso-sam440-ppc: \
-#MM parthenope-sam440 \
-#MM	kernel-sam440-ppc \
-#MM	kernel-package-sam440-ppc \
-#MM	workbench-complete \
-#MM	devs-networks-drivers-emac-powerpc \
-#MM	aros-tcpip-apps
+#MM     boot \
+#MM     parthenope-sam440 \
+#MM     kernel-sam440-ppc \
+#MM     kernel-package-sam440-ppc \
+#MM     workbench-complete \
+#MM     devs-networks-drivers-emac-powerpc \
+#MM     aros-tcpip-apps
 
 #MM kernel-package-sam440-ppc: \
-#MM	linklibs-clib \
-#MM	kernel-expansion \
-#MM	kernel-utility \
-#MM	kernel-oop \
-#MM	kernel-battclock \
-#MM	kernel-hidd \
-#MM	kernel-aros \
-#MM	kernel-misc \
-#MM	kernel-timer \
-#MM	kernel-pci \
-#MM	kernel-pci-amcc440 \
-#MM	kernel-graphics \
-#MM	kernel-layers \
-#MM	kernel-keymap \
-#MM	kernel-intuition \
-#MM	kernel-input \
-#MM	kernel-gameport \
-#MM	kernel-keyboard \
-#MM	kernel-console \
-#MM	kernel-fs-con \
-#MM	kernel-fs-packet \
-#MM	kernel-fs-afs \
-#MM	kernel-bootloader-sam440-ppc \
-#MM	kernel-dos \
-#MM	kernel-boot \
-#MM	kernel-dosboot \
-#MM	kernel-ata \
-#MM	hidd-i2c \
-#MM hidd-i2c-amcc440 \
-#MM	hidd-radeon \
-#MM	hidd-usb \
-#MM	kernel-fs-nil \
-#MM	workbench-libs-partition \
-#MM	workbench-libs-workbench \
-#MM	kernel-sam440-ppc-irq \
-#MM	workbench-devs-cdvdfs \
-#MM	workbench-devs-sfs \
-#MM	kernel-fs-amberram \
-#MM	kernel-hidd-graphics \
-#MM	kernel-hidd-kbd \
-#MM	kernel-hidd-mouse \
-#MM	kernel-usb-sam440-ppc \
-#MM	kernel-usb-usbromstartup \
-#MM	kernel-processor
+#MM     linklibs-clib \
+#MM     kernel-expansion \
+#MM     kernel-utility \
+#MM     kernel-oop \
+#MM     kernel-battclock \
+#MM     kernel-hidd \
+#MM     kernel-aros \
+#MM     kernel-misc \
+#MM     kernel-timer \
+#MM     kernel-pci \
+#MM     kernel-pci-amcc440 \
+#MM     kernel-graphics \
+#MM     kernel-layers \
+#MM     kernel-keymap \
+#MM     kernel-intuition \
+#MM     kernel-input \
+#MM     kernel-gameport \
+#MM     kernel-keyboard \
+#MM     kernel-console \
+#MM     kernel-fs-con \
+#MM     kernel-fs-packet \
+#MM     kernel-fs-afs \
+#MM     kernel-bootloader-sam440-ppc \
+#MM     kernel-dos \
+#MM     kernel-boot \
+#MM     kernel-dosboot \
+#MM     kernel-ata \
+#MM     hidd-i2c \
+#MM     hidd-i2c-amcc440 \
+#MM     hidd-radeon \
+#MM     hidd-usb \
+#MM     kernel-fs-nil \
+#MM     workbench-libs-partition \
+#MM     workbench-libs-workbench \
+#MM     kernel-sam440-ppc-irq \
+#MM     workbench-devs-cdvdfs \
+#MM     workbench-devs-sfs \
+#MM     kernel-fs-amberram \
+#MM     kernel-hidd-graphics \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-usb-sam440-ppc \
+#MM     kernel-usb-usbromstartup \
+#MM     kernel-processor
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
 PKG_RSRC     := misc bootloader battclock dosboot usbromstartup processor
