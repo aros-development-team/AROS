@@ -2470,15 +2470,16 @@ GNU_REPOSITORY := gnu://
 # startup - The file which will be put first
 # Other arguments are self-explanatory
 
-%define make_package mmake=/A file=/A devs= handlers= hidds= libs= res= startup=
+%define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res= startup=
 
+PKG_CLASSES   := $(addsuffix .class, %(classes))
 PKG_DEVICES   := $(addsuffix .device, %(devs))
 PKG_HANDLERS  := $(addsuffix .handler, %(handlers))
 PKG_HIDD      := $(addsuffix .hidd, %(hidds))
 PKG_LIBS      := $(addsuffix .library, %(libs))
 PKG_RESOURCES := $(addsuffix .resource, %(res))
 
-PKG_FILES := %(startup) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) $(PKG_LIBS) $(PKG_RESOURCES)
+PKG_FILES := %(startup) $(PKG_CLASSES) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) $(PKG_LIBS) $(PKG_RESOURCES)
 PKG_DEPS  := $(addprefix $(PKGDIR)/, $(PKG_FILES))
 
 #MM
