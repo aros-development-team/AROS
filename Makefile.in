@@ -171,7 +171,7 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/confi
 	test kernel boot workbench compiler contrib sdk mmake
 
 # Workaround for bug in make v3.81 (should normally be handled by .DEFAULT)
-install test kernel workbench compiler contrib sdk : tools
+install test kernel boot workbench compiler contrib sdk : tools
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
 # Map MetaTargets to make targets : Call mmake with AROS.target

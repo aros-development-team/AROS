@@ -16,6 +16,8 @@ include $(TOP)/config/make.cfg
 AROSBOOTSIGFILE := AROS.boot
 
 #MM
-boot:
+boot : $(AROSDIR)/$(AROSBOOTSIGFILE)
+
+$(AROSDIR)/$(AROSBOOTSIGFILE) :
 	@$(ECHO) Writing $@...
 	@$(ECHO) "$(ARCH)-$(CPU)" > $(AROSDIR)/$(AROSBOOTSIGFILE)
