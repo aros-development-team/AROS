@@ -10,7 +10,6 @@ include $(TOP)/config/make.cfg
 
 #MM systemdisk-pc-i386 : AROS		\
 #MM			systemdisk-setup-pc-i386 \
-#MM                     arch-common-boot-generatebootsig  \
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 SYSTEM_FILES := \

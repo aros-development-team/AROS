@@ -6,7 +6,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-sam440-ppc \
 #MM	kernel-package-sam440-ppc \
 #MM	workbench-complete \
-#MM	arch-common-boot-generatebootsig \
 #MM	devs-networks-drivers-emac-powerpc \
 #MM	aros-tcpip-apps
 
@@ -33,7 +32,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-con \
 #MM	kernel-fs-packet \
 #MM	kernel-fs-afs \
-#MM	workbench-workbench \
 #MM	kernel-bootloader-sam440-ppc \
 #MM	kernel-dos \
 #MM	kernel-boot \

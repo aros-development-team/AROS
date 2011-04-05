@@ -20,7 +20,7 @@ KOBJS_MINGW32 := $(KOBJ_RES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_HIDD)
 
 #MM- AROS-mingw32-$(CPU): kernel-bootstrap-hosted kernel-boot-mingw32 \
 #MM			  kernel-link-mingw32 kernel-link-base kernel-link-hosted \
-#MM			  kernel-timer workbench-hosted arch-common-boot-generatebootsig
+#MM			  kernel-timer workbench-hosted
 
 #MM- kernel-link-mingw32: kernel-kernel-kobj		\
 #MM			  kernel-hostlib-kobj		\

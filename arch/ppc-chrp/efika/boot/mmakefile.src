@@ -6,7 +6,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-chrp-ppc-efika \
 #MM	kernel-chrp-ppc-irq \
 #MM	kernel-package-chrp-ppc-efika \
-#MM	arch-common-boot-generatebootsig \
 #MM	workbench-complete
 
 #MM kernel-package-chrp-ppc-efika: \
