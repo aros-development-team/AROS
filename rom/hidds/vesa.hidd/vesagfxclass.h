@@ -2,7 +2,7 @@
 #define HIDD_VESAGFXCLASS_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VesaGfx useful data.
@@ -26,6 +26,8 @@ struct VesaGfx_data
     struct Interrupt ResetInterrupt;
 };
 
+#define ATTRBASES_NUM 7
+
 struct VesaGfx_staticdata
 {
     OOP_Class 	    	    *vesagfxclass;
@@ -35,6 +37,7 @@ struct VesaGfx_staticdata
     struct HWData   	    data;
     struct SignalSemaphore  framebufferlock;
     struct SignalSemaphore  HW_acc;
+    OOP_AttrBase	    attrBases[ATTRBASES_NUM];
 };
 
 struct VesaGfxBase
@@ -46,6 +49,23 @@ struct VesaGfxBase
 #define LOCK_FRAMEBUFFER(xsd)	ObtainSemaphore(&xsd->framebufferlock)
 #define UNLOCK_FRAMEBUFFER(xsd) ReleaseSemaphore(&xsd->framebufferlock)
 
-#define XSD(cl)     	    	(&((struct VesaGfxBase *)cl->UserData)->vsd)
+#define XSD(cl)	(&((struct VesaGfxBase *)cl->UserData)->vsd)
+
+#undef HiddVesaGfxBitMapAttrBase
+#undef HiddChunkyBMAttrBase
+#undef HiddBitMapAttrBase
+#undef HiddGfxAttrBase
+#undef HiddPixFmtAttrBase
+#undef HiddSyncAttrBase
+#undef HiddAttrBase
+
+/* These must stay in the same order as interfaces[] array in vesagfx_init.c */
+#define HiddVesaGfxBitMapAttrBase XSD(cl)->attrBases[0]
+#define HiddChunkyBMAttrBase	  XSD(cl)->attrBases[1]
+#define HiddBitMapAttrBase	  XSD(cl)->attrBases[2]
+#define HiddGfxAttrBase		  XSD(cl)->attrBases[3]
+#define HiddPixFmtAttrBase	  XSD(cl)->attrBases[4]
+#define HiddSyncAttrBase	  XSD(cl)->attrBases[5]
+#define HiddAttrBase		  XSD(cl)->attrBases[6]
 
 #endif /* HIDD_VESAGFXCLASS_H */

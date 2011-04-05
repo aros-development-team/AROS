@@ -22,8 +22,8 @@ void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
     {
         if (vi->ModeNumber != 3)
         {
-            bootcfg->gfxlib  = "vesagfx.hidd";
-            bootcfg->gfxhidd = "hidd.gfx.vesa";
+            /* VESA driver is self-initing now */
+            bootcfg->gfxhidd = NULL;
         }
     }
 }
