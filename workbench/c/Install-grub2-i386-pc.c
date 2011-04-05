@@ -1294,7 +1294,7 @@ ULONG updateCoreIMG(CONST_STRPTR grubpath,     /* path of grub dir */
 	fh = Open(coreimgpath, MODE_OLDFILE);
 	if (fh)
 	{
-		if (Examine(fh, &fib))
+		if (ExamineFH(fh, &fib))
 		{
 			if (Read(fh, buffer, 512) == 512)
 			{

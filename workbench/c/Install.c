@@ -225,7 +225,7 @@ STRPTR errstr=NULL;
 	fh = Open(stagename,MODE_OLDFILE);
 	if (fh)
 	{
-		if (Examine(fh, &fib))
+		if (ExamineFH(fh, &fib))
 		{
 			if (Read(fh, stage2_firstblock, 512) == 512)
 			{
