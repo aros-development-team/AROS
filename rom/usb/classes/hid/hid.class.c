@@ -89,17 +89,17 @@ static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh)
     {
         APTR ourvec;
         Disable();
-        ourvec = SetFunction(nh->nh_LowLevelBase, -0x1e / 6 * LIB_VECTSIZE, nh->nh_LLOldReadJoyPort);
+        ourvec = SetFunction(nh->nh_LowLevelBase, -5 * LIB_VECTSIZE, nh->nh_LLOldReadJoyPort);
         if(ourvec != AROS_SLIB_ENTRY(nReadJoyPort, hid))
         {
-            SetFunction(nh->nh_LowLevelBase, -0x1e / 6 * LIB_VECTSIZE, ourvec);
+            SetFunction(nh->nh_LowLevelBase, -5 / 6 * LIB_VECTSIZE, ourvec);
             Enable();
             return(FALSE); /* we couldn't remove the patch! */
         }
-        ourvec = SetFunction(nh->nh_LowLevelBase, -0x84 / 6 * LIB_VECTSIZE, nh->nh_LLOldSetJoyPortAttrsA);
+        ourvec = SetFunction(nh->nh_LowLevelBase, -22 * LIB_VECTSIZE, nh->nh_LLOldSetJoyPortAttrsA);
         if(ourvec != AROS_SLIB_ENTRY(nSetJoyPortAttrsA, hid))
         {
-            SetFunction(nh->nh_LowLevelBase, -0x84 / 6 * LIB_VECTSIZE, ourvec);
+            SetFunction(nh->nh_LowLevelBase, -22 * LIB_VECTSIZE, ourvec);
             Enable();
             return(FALSE); /* we couldn't remove the patch! */
         }
@@ -450,8 +450,8 @@ void nInstallLLPatch(struct NepHidBase *nh)
         if((nh->nh_LowLevelBase = OpenLibrary("lowlevel.library", 40)))
         {
             Disable();
-            nh->nh_LLOldReadJoyPort = SetFunction(nh->nh_LowLevelBase, -0x1e / 6 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nReadJoyPort, hid));
-            nh->nh_LLOldSetJoyPortAttrsA = SetFunction(nh->nh_LowLevelBase, -0x84 / 6 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nSetJoyPortAttrsA, hid));
+            nh->nh_LLOldReadJoyPort = SetFunction(nh->nh_LowLevelBase, -5 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nReadJoyPort, hid));
+            nh->nh_LLOldSetJoyPortAttrsA = SetFunction(nh->nh_LowLevelBase, -22 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nSetJoyPortAttrsA, hid));
             Enable();
         }
     }
@@ -2532,7 +2532,7 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
     /* Parse the items */
     while(rptr && (rptr < rptrend))
     {
-        reportpos = ((ULONG) rptr) - ((ULONG) nhr->nhr_ReportBuf);
+        reportpos = ((IPTR) rptr) - ((IPTR) nhr->nhr_ReportBuf);
         itag = *rptr & REPORT_ITAG_MASK;
         isize = *rptr & REPORT_ISIZE_MASK;
         itype = *rptr & REPORT_ITYPE_MASK;
