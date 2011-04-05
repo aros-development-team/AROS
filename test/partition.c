@@ -34,7 +34,7 @@ LONG GetPartitionAttrsA(struct PartitionHandle *ph, LONG tag, ...) {
 void PrintPInfo(struct PartitionHandle *ph, ULONG i) {
 struct DosEnvec de;
 UBYTE name[32];
-LONG type;
+LONG type = 0;
 ULONG a;
 
 	GetPartitionAttrsA
@@ -72,8 +72,8 @@ LONG GetPartitionTableAttrsA(struct PartitionHandle *ph, LONG tag, ...) {
 
 void PrintPartitionTable(struct PartitionHandle *root, ULONG i) {
 struct DosEnvec de;
-ULONG type;
-ULONG reserved;
+ULONG type = 0;
+ULONG reserved = 0;
 ULONG a;
 
 	if (OpenPartitionTable(root)==0)
