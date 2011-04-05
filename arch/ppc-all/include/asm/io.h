@@ -72,4 +72,15 @@ static inline void outl_le(uint32_t val, uint32_t *port) {
     asm volatile("stwbrx %1,0,%2; eieio":"=m"(*port):"r"(val),"r"(port));
 }
 
+/* This CPU needs special MMIO instructions */
+#define WEAK_IO_ORDER
+
+#define mmio_inb(address) inb((uint8_t *)address)
+#define mmio_inw(address) inw((uint16_t *)address)
+#define mmio_inl(address) inl((uint32_t *)address)
+
+#define mmio_outb(value, address) outb(value, (uint8_t *)address)
+#define mmio_outw(value, address) outw(value, (uint16_t *)address)
+#define mmio_outl(value, address) outl(value, (uint32_t *)address)
+
 #endif
