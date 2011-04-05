@@ -2,7 +2,7 @@
 #define AHCI_HEADER_H
 
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved
     $Id$
 */
 
@@ -13,6 +13,7 @@
 #include <exec/nodes.h>
 #include <exec/devices.h>
 #include <exec/resident.h>
+#include <hardware/ahci.h>
 
 #include <utility/utility.h>
 
@@ -38,8 +39,6 @@
 
 #include <inttypes.h>
 #include <string.h>
-
-#include "ahci_hba.h"
 
 #define HBAHW_D(fmt, ...) D(bug("[HBAHW%d] " fmt, hba_chip->HBANumber, ##__VA_ARGS__))
 
