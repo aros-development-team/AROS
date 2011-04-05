@@ -62,6 +62,7 @@ COMPILER_LIBS   := @aros_compiler_libs@
 ARCH_LIBS	:= @aros_arch_libs@
 
 AR		:= @aros_target_ar@
+AR_PLAIN        := @aros_kernel_ar@
 RANLIB		:= @aros_target_ranlib@
 NM		:= @aros_target_nm@
 NM_PLAIN	:= @aros_kernel_nm@
