@@ -28,16 +28,28 @@
 
 #define inb(address) (*((volatile unsigned char  *)(address)))
 #define inw(address) (*((volatile unsigned short *)(address)))
-#define inl(address) (*((volatile unsigned long  *)(address)))
+#define inl(address) (*((volatile unsigned int   *)(address)))
 
 #define outb(value, address) *((volatile unsigned char  *)(address)) = (value)
 #define outw(value, address) *((volatile unsigned short *)(address)) = (value)
-#define outl(value, address) *((volatile unsigned long  *)(address)) = (value)
+#define outl(value, address) *((volatile unsigned int   *)(address)) = (value)
 
 #endif
 
 #ifndef port_t
 #define port_t void *
+#endif
+
+#ifndef WEAK_IO_ORDER
+
+#define mmio_inb(address) (*((volatile unsigned char  *)(address)))
+#define mmio_inw(address) (*((volatile unsigned short *)(address)))
+#define mmio_inl(address) (*((volatile unsigned int   *)(address)))
+
+#define mmio_outb(value, address) *((volatile unsigned char  *)(address)) = (value)
+#define mmio_outw(value, address) *((volatile unsigned short *)(address)) = (value)
+#define mmio_outl(value, address) *((volatile unsigned int   *)(address)) = (value)
+
 #endif
 
 #endif
