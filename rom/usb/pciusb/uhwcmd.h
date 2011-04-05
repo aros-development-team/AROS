@@ -51,16 +51,26 @@ BOOL pciAllocUnit(struct PCIUnit *hu);
 void pciFreeUnit(struct PCIUnit *hu);
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr);
 
-void uhciUpdateIntTree(struct PCIController *hc);
+/* uhcichip.c, in order of appearance */
 void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh);
+void uhciUpdateIntTree(struct PCIController *hc);
+void uhciCheckPortStatusChange(struct PCIController *hc);
+void uhciHandleFinishedTDs(struct PCIController *hc);
+void uhciScheduleCtrlTDs(struct PCIController *hc);
+void uhciScheduleIntTDs(struct PCIController *hc);
+void uhciScheduleBulkTDs(struct PCIController *hc);
+void uhciUpdateFrameCounter(struct PCIController *hc);
 void uhciCompleteInt(struct PCIController *hc);
 void uhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
+BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu);
+void uhciFree(struct PCIController *hc, struct PCIUnit *hu);
 
 static inline struct UhciQH * uhciAllocQH(struct PCIController *hc);
 static inline void uhciFreeQH(struct PCIController *hc, struct UhciQH *uqh);
 static inline struct UhciTD * uhciAllocTD(struct PCIController *hc);
 static inline void uhciFreeTD(struct PCIController *hc, struct UhciTD *utd);
 
+/* ohcichip.c, in order of appearance */
 void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed);
 void ohciUpdateIntTree(struct PCIController *hc);
 void ohciHandleFinishedTDs(struct PCIController *hc);
@@ -78,6 +88,7 @@ static inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed);
 static inline struct OhciTD * ohciAllocTD(struct PCIController *hc);
 static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd);
 
+/* ehcichip.c, in order of appearance */
 void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh);
 void ehciFreePeriodicContext(struct PCIController *hc, struct EhciQH *eqh);
 void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh);
@@ -98,10 +109,13 @@ static inline struct EhciTD * ehciAllocTD(struct PCIController *hc);
 static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
 
 #if defined(USB3)
-BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu);
-void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
+/* xhcichip.c, in order of appearance */
 void xhciCompleteInt(struct PCIController *hc);
 void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
+IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap);
+BOOL xhciResetHC(struct PCIController *hc);
+BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu);
+void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
 #endif
 
 UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset);
