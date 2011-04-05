@@ -2,56 +2,57 @@
 include $(TOP)/config/make.cfg
 
 #MM bootiso-chrp-ppc-efika: \
-#MM	ub2lb-chrp-ppc-efika \
-#MM	kernel-chrp-ppc-efika \
-#MM	kernel-chrp-ppc-irq \
-#MM	kernel-package-chrp-ppc-efika \
-#MM	workbench-complete
+#MM     boot \
+#MM     ub2lb-chrp-ppc-efika \
+#MM     kernel-chrp-ppc-efika \
+#MM     kernel-chrp-ppc-irq \
+#MM     kernel-package-chrp-ppc-efika \
+#MM     workbench-complete
 
 #MM kernel-package-chrp-ppc-efika: \
-#MM	linklibs-clib \
-#MM	kernel-bootloader-chrp-ppc-efika \
-#MM kernel-bestcomm-chrp-ppc-efika \
-#MM	kernel-expansion \
-#MM	kernel-utility \
-#MM kernel-openfirmware \
-#MM	kernel-oop \
-#MM	kernel-battclock \
-#MM	kernel-hidd \
-#MM	kernel-aros \
-#MM	kernel-misc \
-#MM	kernel-timer \
-#MM	kernel-pci \
-#MM kernel-pci-efika \
-#MM	kernel-graphics \
-#MM	workbench-libs-cgfx-kobj \
-#MM	kernel-layers \
-#MM	kernel-keymap \
-#MM	kernel-intuition \
-#MM	kernel-input \
-#MM	kernel-gameport \
-#MM	kernel-keyboard \
-#MM	kernel-console \
-#MM	kernel-fs-con \
-#MM	kernel-fs-packet \
-#MM	workbench-libs-workbench \
-#MM	kernel-boot \
-#MM kernel-dos \
-#MM kernel-dosboot \
-#MM kernel-ata \
-#MM	hidd-i2c \
-#MM	hidd-radeon \
-#MM	hidd-usb \
-#MM	kernel-fs-nil \
-#MM	workbench-libs-partition \
-#MM	workbench-devs-cdvdfs \
-#MM workbench-devs-sfs \
-#MM kernel-fs-amberram \
-#MM	kernel-hidd-graphics \
-#MM	kernel-hidd-kbd \
-#MM	kernel-hidd-mouse \
-#MM	devs-networks-drivers-fec-powerpc \
-#MM	kernel-processor
+#MM     linklibs-clib \
+#MM     kernel-bootloader-chrp-ppc-efika \
+#MM     kernel-bestcomm-chrp-ppc-efika \
+#MM     kernel-expansion \
+#MM     kernel-utility \
+#MM     kernel-openfirmware \
+#MM     kernel-oop \
+#MM     kernel-battclock \
+#MM     kernel-hidd \
+#MM     kernel-aros \
+#MM     kernel-misc \
+#MM     kernel-timer \
+#MM     kernel-pci \
+#MM     kernel-pci-efika \
+#MM     kernel-graphics \
+#MM     workbench-libs-cgfx-kobj \
+#MM     kernel-layers \
+#MM     kernel-keymap \
+#MM     kernel-intuition \
+#MM     kernel-input \
+#MM     kernel-gameport \
+#MM     kernel-keyboard \
+#MM     kernel-console \
+#MM     kernel-fs-con \
+#MM     kernel-fs-packet \
+#MM     workbench-libs-workbench \
+#MM     kernel-boot \
+#MM     kernel-dos \
+#MM     kernel-dosboot \
+#MM     kernel-ata \
+#MM     hidd-i2c \
+#MM     hidd-radeon \
+#MM     hidd-usb \
+#MM     kernel-fs-nil \
+#MM     workbench-libs-partition \
+#MM     workbench-devs-cdvdfs \
+#MM     workbench-devs-sfs \
+#MM     kernel-fs-amberram \
+#MM     kernel-hidd-graphics \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     devs-networks-drivers-fec-powerpc \
+#MM     kernel-processor
 
 PKG_GEN_LIBS 	:= aros partition expansion utility oop graphics layers intuition keymap workbench boot dos
 PKG_GEN_RSRC 	:= dosboot bestcomm
