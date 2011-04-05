@@ -2325,7 +2325,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
             {
                 return(0);
             }
-            return((ULONG) obj);
+            return (IPTR)obj;
 
         case MUIM_Action_UseConfig:
         case MUIM_Action_DefaultConfig:
@@ -2784,7 +2784,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                                 if(((nha->nha_Type & HUA_ATYPEMASK) == HUA_DIGJOY) ||
                                    ((nha->nha_Type & HUA_ATYPEMASK) == HUA_ANALOGJOY))
                                 {
-                                    nha->nha_JoypadPort = (ULONG) ((struct opSet *) msg)->ops_AttrList;
+                                    nha->nha_JoypadPort = (IPTR)((struct opSet *) msg)->ops_AttrList;
                                 }
                             }
                             nha = (struct NepHidAction *) nha->nha_Node.ln_Succ;

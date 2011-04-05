@@ -472,7 +472,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(HCActionDispatcher),
             {
                 return(0);
             }
-            return((ULONG) obj);
+            return (IPTR)obj;
 
         case MUIM_Action_UpdateHIDCtrl:
         {

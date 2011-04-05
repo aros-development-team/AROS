@@ -3720,7 +3720,7 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
         }
 
         datalen = scsicmd->scsi_Length;
-        umscbw.dCBWTag = (ULONG) scsicmd + ++ncm->ncm_TagCount;
+        umscbw.dCBWTag = (IPTR) scsicmd + ++ncm->ncm_TagCount;
         umscbw.dCBWDataTransferLength = AROS_LONG2LE(datalen);
         umscbw.bmCBWFlags = scsicmd->scsi_Flags & SCSIF_READ ? 0x80 : 0x00;
         umscbw.bCBWLUN = ncm->ncm_UnitLUN;
@@ -3867,7 +3867,7 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                             /*nBulkClear(ncm);*/
 
                             datalen = scsicmd->scsi_SenseLength;
-                            umscbw.dCBWTag = (ULONG) scsicmd + ++ncm->ncm_TagCount;
+                            umscbw.dCBWTag = (IPTR) scsicmd + ++ncm->ncm_TagCount;
                             umscbw.dCBWDataTransferLength = AROS_LONG2LE(datalen);
                             umscbw.bmCBWFlags = 0x80;
                             /*umscbw.bCBWLUN = ncm->ncm_UnitLun;*/
@@ -6942,7 +6942,7 @@ void AutoDetectMaxTransfer(struct NepClassMS *cncm)
                         lbufptr = (ULONG *) cmpbuffer;
                         do
                         {
-                            *lbufptr = (ULONG) lbufptr;
+                            *lbufptr = (IPTR) lbufptr;
                             lbufptr++;
                         }
                         while(--cnt);

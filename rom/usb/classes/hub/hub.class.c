@@ -1144,7 +1144,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                 Permit();
                 /* Hub reference */
                 psdSetAttrs(PGA_DEVICE, pd,
-                            DA_HubDevice, (ULONG) nch->nch_Device,
+                            DA_HubDevice, nch->nch_Device,
                             DA_IsConnected, TRUE,
                             DA_AtHubPortNumber, port,
                             TAG_END);
