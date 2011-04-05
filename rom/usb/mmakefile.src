@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 #MM         kernel-usb
 
 #MM- kernel-usb-pc-x86_64 : \
-#MM         kernel-usb
+#MM         kernel-package-usb
 
 #MM- kernel-usb-sam440-ppc : \
 #MM         kernel-usb
@@ -55,6 +55,30 @@ include $(TOP)/config/make.cfg
 #MM- kernel-usb-includes : \
 #MM      kernel-usb-poseidon-includes \
 #MM      kernel-usb-usbclass-includes
+
+# --- PKG kickstart package ---
+
+#MM- kernel-usb-pkg :			\
+#MM      kernel-usb-poseidon-pkg	\
+#MM      kernel-usb-shelltools		\
+#MM      kernel-usb-classes-common	\
+#MM	 kernel-usb-classes-pkg		\
+#MM      kernel-usb-shellapps		\
+#MM      kernel-usb-trident		\
+#MM      kernel-usb-pciusb-pkg		\
+#MM	 kernel-usb-usbromstartup-pkg
+
+#MM kernel-package-usb : kernel-usb-pkg
+
+USB_CLASSES := bootkeyboard bootmouse hub hid massstorage
+USB_DEVS    := pciusb
+USB_LIBS    := poseidon
+USB_RES     := usbromstartup
+
+%make_package mmake=kernel-package-usb file=$(BINDIR)/boot/poseidon.pkg \
+	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES)
+
+# -----------------------------
 
 .PHONY: kernel-usb-pc-i386
 .PHONY: kernel-usb-pc-x86_64

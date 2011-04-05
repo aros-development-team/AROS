@@ -6,21 +6,17 @@ include $(TOP)/config/make.cfg
 #MM     includes-copy
 #MM- kernel-usb-usbclass : linklibs
 
-#MM kernel-usb-classes : \
+# This metatarget builds classes which are always disk-based
+#MM- kernel-usb-classes-common : \
 #MM     kernel-usb-classes-asixeth \
 #MM     kernel-usb-classes-usbaudio \
 #MM     kernel-usb-classes-bluetooth \
-#MM     kernel-usb-classes-bootkeyboard \
-#MM     kernel-usb-classes-bootmouse \
 #MM     kernel-usb-classes-camdusbmidi \
 #MM     kernel-usb-classes-cdcacm \
 #MM     kernel-usb-classes-dm9601eth \
 #MM     kernel-usb-classes-dfu \
 #MM     kernel-usb-classes-egalaxtouch \
 #MM     kernel-usb-classes-ethwrap \
-#MM     kernel-usb-classes-hid \
-#MM     kernel-usb-classes-hub \
-#MM     kernel-usb-classes-massstorage \
 #MM     kernel-usb-classes-moschipeth \
 #MM     kernel-usb-classes-palmpda \
 #MM     kernel-usb-classes-pegasus \
@@ -31,6 +27,23 @@ include $(TOP)/config/make.cfg
 #MM     kernel-usb-classes-serialpl2303 \
 #MM     kernel-usb-classes-simplemidi \
 #MM     kernel-usb-classes-stir4200 
+
+# Build complete set of classes on disk
+#MM kernel-usb-classes :		\
+#MM	kernel-usb-classes-common	\
+#MM     kernel-usb-classes-bootkeyboard \
+#MM     kernel-usb-classes-bootmouse	\
+#MM     kernel-usb-classes-hid		\
+#MM     kernel-usb-classes-hub		\
+#MM     kernel-usb-classes-massstorage
+
+# Build a PKG package of kickstart-resident classes
+#MM- kernel-usb-classes-pkg :			\
+#MM     kernel-usb-classes-bootkeyboard-pkg	\
+#MM     kernel-usb-classes-bootmouse-pkg	\
+#MM     kernel-usb-classes-hid-pkg		\
+#MM     kernel-usb-classes-hub-pkg		\
+#MM     kernel-usb-classes-massstorage-pkg
 
 #MM kernel-usb-classes-kobj : \
 #MM     kernel-usb-usbclass kernel-usb-poseidon \
