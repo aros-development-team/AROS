@@ -2,6 +2,7 @@
 #define HARDWARE_H
 
 #include <exec/types.h>
+#include <oop/oop.h>
 
 #define PCI_VENDOR_S3 0x5333
 
@@ -9,26 +10,29 @@
 
 struct HWData
 {
-    APTR	framebuffer;
-    ULONG	fbsize;
-    ULONG	width;
-    ULONG	height;
-    ULONG	depth;
-    ULONG	bytesperpixel;
-    ULONG	bitsperpixel;
-    ULONG	redmask;
-    ULONG	greenmask;
-    ULONG	bluemask;
-    ULONG	redshift;
-    ULONG	greenshift;
-    ULONG	blueshift;
-    ULONG	bytesperline;
-    BOOL	owned;
-    UBYTE	palettewidth;
-    UBYTE	DAC[768];
+    APTR	 framebuffer;
+    ULONG	 fbsize;
+    ULONG	 width;
+    ULONG	 height;
+    ULONG	 depth;
+    ULONG	 bytesperpixel;
+    ULONG	 bitsperpixel;
+    ULONG	 redmask;
+    ULONG	 greenmask;
+    ULONG	 bluemask;
+    ULONG	 redshift;
+    ULONG	 greenshift;
+    ULONG	 blueshift;
+    ULONG	 bytesperline;
+    BOOL	 owned;
+    UBYTE	 palettewidth;
+    UBYTE	 DAC[768];
+    /* Used by PCI scanning routine */
+    OOP_AttrBase pciDeviceAttrBase;
 };
 
-extern OOP_AttrBase HiddPCIDeviceAttrBase;
+#undef HiddPCIDeviceAttrBase
+#define HiddPCIDeviceAttrBase sd->pciDeviceAttrBase
 
 struct VesaGfx_staticdata;
 struct BitmapData;

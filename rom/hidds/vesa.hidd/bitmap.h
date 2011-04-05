@@ -10,10 +10,6 @@
 
 #define IID_Hidd_VesaGfxBitMap "hidd.bitmap.vesabitmap"
 
-#define HiddVesaGfxBitMapAttrBase __abHidd_VesaGfxBitMap
-
-/* extern OOP_AttrBase HiddVesaGfxBitMapAttrBase; */
-
 enum
 {
     aoHidd_VesaGfxBitMap_Drawable,

@@ -28,29 +28,6 @@
 
 #include LC_LIBDEFS_FILE
 
-/* Don't initialize static variables with "=0", otherwise they go into DATA segment */
-
-static OOP_AttrBase HiddBitMapAttrBase;
-static OOP_AttrBase HiddChunkyBMAttrBase;
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVesaGfxAttrBase;
-static OOP_AttrBase HiddVesaGfxBitMapAttrBase;
-
-static struct OOP_ABDescr attrbases[] = 
-{
-    { IID_Hidd_BitMap	    , &HiddBitMapAttrBase   	},
-    { IID_Hidd_ChunkyBM	    , &HiddChunkyBMAttrBase   	},
-    { IID_Hidd_PixFmt	    , &HiddPixFmtAttrBase   	},
-    { IID_Hidd_Gfx  	    , &HiddGfxAttrBase      	},
-    { IID_Hidd_Sync 	    , &HiddSyncAttrBase     	},
-    /* Private bases */
-    { IID_Hidd_VesaGfx	    , &HiddVesaGfxAttrBase  	},
-    { IID_Hidd_VesaGfxBitMap, &HiddVesaGfxBitMapAttrBase},
-    { NULL  	    	    , NULL  	    	    	}
-};
-
 #define MNAME_ROOT(x) PCVesaBM__Root__ ## x
 #define MNAME_BM(x) PCVesaBM__Hidd_BitMap__ ## x
 
@@ -159,26 +136,6 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     ReturnVoid("VesaGfx.BitMap::Dispose");
 }
-
-/*** init_bitmapclass *********************************************************/
-
-static int PCVesaBM_Init(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("PCVesaOnBM_Init\n"));
-    
-    ReturnPtr("PCVesaOnBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-}
-
-/*** free_bitmapclass *********************************************************/
-
-static int PCVesaBM_Expunge(LIBBASETYPEPTR LIBBASE)
-{
-    OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("PCVesaOnBM_Expunge", int, TRUE);
-}
-
-ADD2INITLIB(PCVesaBM_Init, 0)
-ADD2EXPUNGELIB(PCVesaBM_Expunge, 0)
 
 /*********  BitMap::PutPixel()  ***************************/
 // FIXME: in theory we shouldn't need this method since the superclass implements it

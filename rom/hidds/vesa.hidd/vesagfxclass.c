@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for Vesa.
@@ -31,24 +31,6 @@
 #include "hardware.h"
 
 #include LC_LIBDEFS_FILE
-
-static OOP_AttrBase HiddBitMapAttrBase;  
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVesaGfxAttrBase;
-static OOP_AttrBase HiddVesaGfxBitMapAttrBase;
-
-static struct OOP_ABDescr attrbases[] =
-{
-    {IID_Hidd_BitMap,          &HiddBitMapAttrBase},
-    {IID_Hidd_VesaGfxBitMap,   &HiddVesaGfxBitMapAttrBase},
-    {IID_Hidd_VesaGfx,         &HiddVesaGfxAttrBase},
-    {IID_Hidd_PixFmt,          &HiddPixFmtAttrBase},
-    {IID_Hidd_Sync,            &HiddSyncAttrBase},
-    {IID_Hidd_Gfx,             &HiddGfxAttrBase},
-    {NULL, NULL}
-};
 
 static AROS_UFH3(void, ResetHandler,
 		 AROS_UFHA(struct HWData *, hwdata, A1),
@@ -326,19 +308,3 @@ VOID PCVesa__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
     }
     DB2(bug("[VesaGfx] CopyBox() done\n"));
 }
-
-static int PCVesa_InitClass(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("PCVesa_InitClass\n"));
-
-    ReturnInt("PCVesa_InitClass", ULONG, OOP_ObtainAttrBases(attrbases));
-}
-
-static int PCVesa_ExpungeClass(LIBBASETYPEPTR LIBBASE)
-{
-    OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("PCVesa_ExpungeClass", int, TRUE);
-}
-
-ADD2INITLIB(PCVesa_InitClass, 0)
-ADD2EXPUNGELIB(PCVesa_ExpungeClass, 0)
