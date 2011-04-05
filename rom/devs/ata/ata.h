@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-   Copyright © 2004-2010, The AROS Development Team. All rights reserved.
+   Copyright © 2004-2011, The AROS Development Team. All rights reserved.
    $Id$
 
 Desc: ata.device main private include file
@@ -33,6 +33,7 @@ Lang: English
  * 2008-06-24  P. Fedin            Added 'nomulti' flag to disable multisector operations
  * 2009-02-21  M. Schulz           ata_in/ata_out declared as functions, if no PCI-io operations are defined.
  * 2009-10-07  M. Weiss            Rely on definition of AROS_PCI_IO_FUNCS to check if PCI-io operations are defined.
+ * 2011-04-05  P. Fedin		   Store PCI HIDD attribute and method bases in ata.device base
  */
 
 #include <exec/types.h>
@@ -124,6 +125,10 @@ struct ataBase
     * memory pool
     */
    APTR                    ata_MemPool;
+   
+   /* Method and attribute bases */
+   OOP_AttrBase		   HiddPCIDeviceAttrBase;
+   OOP_MethodID		   HiddPCIDriverMethodBase;
 };
 
 /*

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2010, The AROS Development Team. All rights reserved
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -38,9 +38,12 @@
  * 2008-05-18  T. Wiszkowski       corrected device naming to handle cases where more than 10 physical units may be available
  * 2008-06-24  P. Fedin            Added 'NoMulti' flag to disable multisector transfers
  * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
+ * 2011-04-05  P. Fedin		   Addid basic SATA handling, needed for Mac.
  */
 
 #define DEBUG 1
+#define DSATA(x) x
+
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>
@@ -51,6 +54,7 @@
 #include <exec/tasks.h>
 #include <exec/memory.h>
 #include <exec/nodes.h>
+#include <hardware/ahci.h>
 #include <utility/utility.h>
 #include <oop/oop.h>
 #include <libraries/expansion.h>
@@ -70,6 +74,7 @@
 #include <proto/oop.h>
 
 #include "ata.h"
+#include "pci.h"
 #include "timer.h"
 
 #include LC_LIBDEFS_FILE
@@ -317,14 +322,14 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     BOOL	_usablebus = FALSE;
 
     /*
-     * the PCI Attr Base
-     */
-    OOP_AttrBase HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-
-    /*
      * enumerator params
      */
     EnumeratorArgs *a = (EnumeratorArgs*)hook->h_Data;
+
+    /*
+     * the PCI Attr Base
+     */
+    OOP_AttrBase HiddPCIDeviceAttrBase = a->ATABase->HiddPCIDeviceAttrBase;
 
     /*
      * temporary variables
@@ -341,6 +346,141 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     OOP_GetAttr(Device, aHidd_PCIDevice_SubClass,           &SubClass);
     OOP_GetAttr(Device, aHidd_PCIDevice_Interface,          &Interface);
 
+    D(bug("[ATA  ] ata_PCIEnumerator_h: Found IDE device %04x:%04x\n", VendorID, ProductID));
+
+    /*
+     * SATA controllers may need a special treatment before becoming usable.
+     * The machine's firmware (EFI on Mac) may operate them in native AHCI mode
+     * and do not set up legacy mode by itself.
+     * In this case we have to do it ourselves.
+     * This code is based on incomplete ahci.device source code by DissyOfCRN.
+     */
+    if (SubClass == PCI_SUBCLASS_SATA)
+    {
+    	APTR hba_phys = NULL;
+    	IPTR hba_size = 0;
+	OOP_Object *Driver = NULL;
+    	volatile struct ahci_hwhba *hwhba;
+    	struct pHidd_PCIDriver_MapPCI map;
+    	struct pHidd_PCIDriver_UnmapPCI unmap;
+    	ULONG ghc, cap;
+
+    	OOP_GetAttr(Device, aHidd_PCIDevice_Base5, (IPTR *)&hba_phys);
+        OOP_GetAttr(Device, aHidd_PCIDevice_Size5, &hba_size);
+
+    	DSATA(bug("[ATA  ] Device %04x:%04x is a SATA device, HBA 0x%p, size 0x%p\n", VendorID, ProductID, hba_phys, hba_size));
+
+        OOP_GetAttr(Device, aHidd_PCIDevice_Driver, (IPTR *)&Driver);
+
+	/*
+	 * Obtain PCIDriver method base (lazy).
+	 * Methods are numbered subsequently, the same as attributes. This means
+	 * we can use the same mechanism for them (get base value and add offsets).
+	 */
+        if (!a->ATABase->HiddPCIDriverMethodBase)
+            a->ATABase->HiddPCIDriverMethodBase = OOP_GetMethodID(IID_Hidd_PCIDriver, 0);
+
+	map.mID        = a->ATABase->HiddPCIDriverMethodBase + moHidd_PCIDriver_MapPCI;
+	map.PCIAddress = hba_phys;
+	map.Length     = hba_size;
+
+	hwhba = (struct ahci_hwhba *)OOP_DoMethod(Driver, (OOP_Msg)&map);
+	DSATA(bug("[ATA  ] Mapped at 0x%p\n", hwhba));
+
+	if (!hwhba)
+	{
+	    DSATA(bug("[ATA  ] Mapping failed, device will be ignored\n"));
+
+	    return;
+	}
+
+	unmap.mID        = a->ATABase->HiddPCIDriverMethodBase + moHidd_PCIDriver_UnmapPCI;
+	unmap.CPUAddress = (APTR)hwhba;
+	unmap.Length     = hba_size;
+
+	cap = mmio_inl(&hwhba->cap);
+	ghc = mmio_inl(&hwhba->ghc);
+	DSATA(bug("[ATA  ] Capabilities: 0x%08X, host control: 0x%08X\n", cap, ghc));
+
+	if (ghc & GHC_AE)
+	{
+	    DSATA(bug("[ATA  ] AHCI enabled\n"));
+
+	    if (cap & CAP_SAM)
+	    {
+	    	DSATA(bug("[ATA  ] Legacy mode is not supported, device will be ignored\n"));
+
+	    	OOP_DoMethod(Driver, (OOP_Msg)&unmap);
+	    	return;
+	    }
+	    else
+	    {
+	    	/*
+	    	 * This is ATA driver, not SATA driver, so i'd like to keep SATA-specific code
+	    	 * at a minimum.
+	    	 * On Mac everything runs fine without this (GRUB tells EFI to handoff the whole
+	    	 * machine for us). However, if on some machine we have problems, we can try
+	    	 * to #define this.
+	    	 */
+#ifdef DO_SATA_HANDOFF
+		ULONG version = mmio_inl(&hwhba->vs);
+		ULONG cap2    = mmio_inl(&hwhba->cap2);
+
+		DSATA(bug("[ATA  ] Version: 0x%08X, Cap2: 0x%08X\n", version, cap2));
+
+	    	if ((version >= AHCI_VERSION_1_20) && (cap2 && CAP2_BOH))
+		{
+	    	    ULONG bohc;
+
+            	    DSATA(bug("[ATA  ] HBA supports BIOS/OS handoff\n"));
+
+		    bohc = mmio_inl(&hwhba->bohc);
+		    if (bohc && BOHC_BOS)
+		    {
+	    		struct IORequest *timereq;
+
+			DSATA(bug("[ATA  ] Device owned by BIOS, performing handoff\n"));
+
+			/*
+		 	 * We need timer.device in order to perform delays.
+		 	 * TODO: in ata_InitBus() it will be opened and closed again.
+		 	 * This is not optimal, it could be opened and closed just once.
+		 	 */
+	    		timereq = ata_OpenTimer();
+	    		if (!timereq)
+	    		{
+	    		    DSATA(bug("[ATA  ] Failed to open timer, can't perform handoff. Device will be ignored\n"));
+
+			    OOP_DoMethod(Driver, (OOP_Msg)&unmap);
+	    		    return;
+	    		}
+
+                	mmio_outl(bohc | BOHC_OOS, &hwhba->bohc);
+                	/* Spin on BOHC_BOS bit FIXME: Possible dead lock. No maximum time given on AHCI1.3 specs... */
+			while (mmio_inl(&hwhba->bohc) & BOHC_BOS);
+
+			ata_WaitTO(timereq, 0, 25000, 0);
+                	/* If after 25ms BOHC_BB bit is still set give bios a minimum of 2 seconds more time to run */
+                
+                	if (mmio_inl(&hwhba->bohc) & BOHC_BB)
+                	{
+                	    DSATA(bug("[ATA  ] Delayed handoff, waiting...\n"));
+                	    ata_WaitTO(timereq, 2, 0, 0);
+                	}
+
+                	DSATA(bug("[ATA ] Handoff done\n"));
+                	ata_CloseTimer(timereq);
+            	    }
+        	}
+#endif
+	    	/* This resets GHC_AE bit, disabling AHCI */
+	    	mmio_outl(0, &hwhba->ghc);
+	    }
+	}
+
+	OOP_DoMethod(Driver, (OOP_Msg)&unmap);
+    }
+
     /*
      * we can have up to two buses assigned to this device
      */
@@ -349,15 +489,10 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 	struct ata_LegacyBus *_legacyBus = NULL;
         BOOL isLegacy = FALSE;
 
-	if (x == 0)
-	{
-		bug("[ATA  ] ata_PCIEnumerator_h: Found IDE device %04x:%04x\n", VendorID, ProductID);
-	}
-
         /*
          * obtain I/O bases and interrupt line
          */
-        if ((Interface & (1 << (x << 1))) || SubClass != 1)
+        if ((Interface & (1 << (x << 1))) || SubClass != PCI_SUBCLASS_IDE)
         {
             switch (x)
             {
@@ -396,7 +531,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 
         if (IOBase != (IPTR)NULL && IOSize == RANGESIZE0
             && AltSize == RANGESIZE1
-            && (DMASize >= DMASIZE || DMABase == NULL || SubClass == 1))
+            && (DMASize >= DMASIZE || DMABase == NULL || SubClass == PCI_SUBCLASS_IDE))
 	{
 	    struct ata_ProbedBus *probedbus;
 	    D(bug("[ATA  ] ata_PCIEnumerator_h: Adding Bus %d - IRQ %d, IO: %x:%x, DMA: %x\n", x, INTLine, IOBase, IOAlt, DMABase));
@@ -439,8 +574,6 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     if (DMABase != 0)
         D(bug("[ATA  ] ata_PCIEnumerator_h: Bus0 DMA Status %02x, Bus1 DMA Status %02x\n", ata_in(2, DMABase), ata_in(10, DMABase)));
 
-    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-
     AROS_USERFUNC_EXIT
 }
 
@@ -460,35 +593,46 @@ void ata_Scan(struct ataBase *base)
 
     D(bug("[ATA--] ata_Scan: Enumerating devices\n"));
 
-    if (base->ata_ScanFlags & ATA_SCANPCI) {
+    if (base->ata_ScanFlags & ATA_SCANPCI)
+    {
 	D(bug("[ATA--] ata_Scan: Checking for supported PCI devices ..\n"));
-	pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
-	if (pci)
+	base->HiddPCIDeviceAttrBase   = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+	if (base->HiddPCIDeviceAttrBase)
 	{
-	    struct Hook FindHook = {
-		h_Entry:    (IPTR (*)())ata_PCIEnumerator_h,
-		h_Data:     &Args
-	    };
+	    pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
-	    struct TagItem Requirements[] = {
-		{tHidd_PCI_Class,       0x01},
-		{TAG_DONE,              0x00}
-	    };
+	    if (pci)
+	    {
+	    	struct Hook FindHook =
+	    	{
+		    h_Entry:    (IPTR (*)())ata_PCIEnumerator_h,
+		    h_Data:     &Args
+	        };
 
-	    struct pHidd_PCI_EnumDevices enummsg = {
-		mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-		callback:       &FindHook,
-		requirements:   (struct TagItem *)&Requirements,
-	    }, *msg = &enummsg;
+		struct TagItem Requirements[] = {
+		    {tHidd_PCI_Class, PCI_CLASS_MASSSTORAGE},
+		    {TAG_DONE,        0x00		       }
+	        };
+
+	        struct pHidd_PCI_EnumDevices enummsg = {
+		    mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+		    callback:       &FindHook,
+		    requirements:   (struct TagItem *)&Requirements,
+	        };
 	    
-	    OOP_DoMethod(pci, (OOP_Msg)msg);
+	    	OOP_DoMethod(pci, (OOP_Msg)&enummsg);
+	    	OOP_DisposeObject(pci);
+	    }
 
-	    OOP_DisposeObject(pci);
+	    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
 	}
     }
-    if (base->ata_ScanFlags & ATA_SCANLEGACY) {
+
+    if (base->ata_ScanFlags & ATA_SCANLEGACY)
+    {
 	struct ata_LegacyBus *legacybus;
+
 	D(bug("[ATA--] ata_Scan: Adding Remaining Legacy-Buses\n"));
 	while ((legacybus = (struct ata_LegacyBus *)
 	    RemHead((struct List *)&base->ata__legacybuses)) != NULL)
