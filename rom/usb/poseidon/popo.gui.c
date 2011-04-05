@@ -143,7 +143,7 @@ AROS_UFH0(void, pPoPoGUITask)
         pPoPoGUITaskCleanup(ps);
         return;
     }
-    po->po_PoPoClass->mcc_Class->cl_UserData = (ULONG) ps;
+    po->po_PoPoClass->mcc_Class->cl_UserData = (IPTR) ps;
 
     po->po_AppObj = ApplicationObject,
         MUIA_Application_Title      , "PoPo -- Poseidon Popup Provider",
@@ -1127,9 +1127,9 @@ ULONG pCheckConfigurable(LIBBASETYPEPTR ps, struct PsdDevice *pd)
             if(pIsClassStillValid(ps, UsbClsBase))
             {
                 usbGetAttrs(UGA_CLASS, NULL,
-                            UCCA_HasClassCfgGUI, (ULONG) &hasclassgui,
-                            UCCA_HasBindingCfgGUI, (ULONG) &hasbindinggui,
-                            UCCA_UsingDefaultCfg, (ULONG) &noconfig,
+                            UCCA_HasClassCfgGUI, &hasclassgui,
+                            UCCA_HasBindingCfgGUI, &hasbindinggui,
+                            UCCA_UsingDefaultCfg, &noconfig,
                             TAG_END);
                 result |= PPF_HasBinding;
                 if(hasclassgui)
@@ -1144,7 +1144,7 @@ ULONG pCheckConfigurable(LIBBASETYPEPTR ps, struct PsdDevice *pd)
                 {
                     result |= PPF_HasBindingGUI;
                     usbGetAttrs(UGA_BINDING, pd->pd_DevBinding,
-                                UCBA_UsingDefaultCfg, (ULONG) &noconfig,
+                                UCBA_UsingDefaultCfg, &noconfig,
                                 TAG_END);
                     if(!noconfig)
                     {
@@ -1169,9 +1169,9 @@ ULONG pCheckConfigurable(LIBBASETYPEPTR ps, struct PsdDevice *pd)
                     if(pIsClassStillValid(ps, UsbClsBase))
                     {
                         usbGetAttrs(UGA_CLASS, NULL,
-                                    UCCA_HasClassCfgGUI, (ULONG) &hasclassgui,
-                                    UCCA_HasBindingCfgGUI, (ULONG) &hasbindinggui,
-                                    UCCA_UsingDefaultCfg, (ULONG) &noconfig,
+                                    UCCA_HasClassCfgGUI, &hasclassgui,
+                                    UCCA_HasBindingCfgGUI, &hasbindinggui,
+                                    UCCA_UsingDefaultCfg, &noconfig,
                                     TAG_END);
                         result |= PPF_HasBinding;
                         if(hasclassgui)
@@ -1186,7 +1186,7 @@ ULONG pCheckConfigurable(LIBBASETYPEPTR ps, struct PsdDevice *pd)
                         {
                             result |= PPF_HasBindingGUI;
                             usbGetAttrs(UGA_BINDING, pif->pif_IfBinding,
-                                        UCBA_UsingDefaultCfg, (ULONG) &noconfig,
+                                        UCBA_UsingDefaultCfg, &noconfig,
                                         TAG_END);
                             if(!noconfig)
                             {
@@ -1428,7 +1428,7 @@ void pFreePoPoGadgets(LIBBASETYPEPTR ps, struct PsdPoPoGadgets *pog)
 /* \\\ */
 
 /* /// "PoPoDispatcher()" */
-AROS_UFH3(ULONG, PoPoDispatcher,
+AROS_UFH3(IPTR, PoPoDispatcher,
                  AROS_UFHA(struct IClass *, cl, A0),
                  AROS_UFHA(Object *, obj, A2),
                  AROS_UFHA(Msg, msg, A1))
@@ -1452,7 +1452,7 @@ AROS_UFH3(ULONG, PoPoDispatcher,
         case OM_NEW:
             if(!(obj = (Object *)DoSuperMethodA(cl,obj,msg)))
                 return(0);
-            return((ULONG)obj);
+            return((IPTR)obj);
 
         case MUIM_PoPo_SavePrefs:
             psdSaveCfgToDisk(NULL, FALSE);
@@ -1477,27 +1477,27 @@ AROS_UFH3(ULONG, PoPoDispatcher,
             return(0);
 
         case MUIM_PoPo_ConfigureBinding:
-            pog = (struct PsdPoPoGadgets *) ((ULONG *) msg)[1];
+            pog = (struct PsdPoPoGadgets *) ((IPTR *) msg)[1];
             //KPRINTF(20, ("Config Po=%08lx, Pog=%08lx, PS=%08lx\n", po, pog, ps));
             pog->pog_TimeoutTime.tv_secs += 60*60*24;
             pOpenBindingsConfigGUI(ps, pog->pog_Device);
             return(0);
 
         case MUIM_PoPo_ConfigureClass:
-            pog = (struct PsdPoPoGadgets *) ((ULONG *) msg)[1];
+            pog = (struct PsdPoPoGadgets *) ((IPTR *) msg)[1];
             //KPRINTF(20, ("Config Po=%08lx, Pog=%08lx, PS=%08lx\n", po, pog, ps));
             pog->pog_TimeoutTime.tv_secs += 60*60*24;
             pOpenClassesConfigGUI(ps, pog->pog_Device);
             return(0);
 
         case MUIM_PoPo_ShutUp:
-            pog = (struct PsdPoPoGadgets *) ((ULONG *) msg)[1];
+            pog = (struct PsdPoPoGadgets *) ((IPTR *) msg)[1];
             pDisableDevicePopup(ps, pog->pog_Device);
             pRemoveOldBox(ps, pog->pog_Device);
             return(0);
 
         case MUIM_PoPo_RemInfo:
-            pog = (struct PsdPoPoGadgets *) ((ULONG *) msg)[1];
+            pog = (struct PsdPoPoGadgets *) ((IPTR *) msg)[1];
             //KPRINTF(20, ("RemInfo Po=%08lx, Pog=%08lx, PS=%08lx\n", po, pog, ps));
             tmppog = (struct PsdPoPoGadgets *) po->po_GadgetList.lh_Head;
             while(tmppog->pog_Node.ln_Succ)
@@ -1518,7 +1518,7 @@ AROS_UFH3(ULONG, PoPoDispatcher,
             struct Library *UsbClsBase;
             BOOL disable = (msg->MethodID == MUIM_PoPo_DisablePort);
 
-            pog = (struct PsdPoPoGadgets *) ((ULONG *) msg)[1];
+            pog = (struct PsdPoPoGadgets *) ((IPTR *) msg)[1];
             pd = pog->pog_Device;
             set(pog->pog_GadgetObj[0], MUIA_Disabled, TRUE);
             if(pog->pog_GadgetObj[1] && (!disable))

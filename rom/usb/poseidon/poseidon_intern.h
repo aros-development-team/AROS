@@ -694,7 +694,7 @@ struct PsdAppBinding
     struct Node         pab_Node;         /* Node linkage */
     struct PsdDevice   *pab_Device;       /* Uplinking */
     struct Hook        *pab_ReleaseHook;  /* CallBackHook for releasing binding */
-    ULONG               pab_UserData;     /* User Data */
+    IPTR                pab_UserData;     /* User Data */
     struct Task        *pab_Task;         /* Task bound to */
     BOOL                pab_ForceRelease; /* Force release of other app or class bindings */
 };

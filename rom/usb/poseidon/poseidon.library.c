@@ -1441,12 +1441,12 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
     /* If there's dos available, create a process instead of a task */
     if(pOpenDOS(ps))
     {
-         subtask = CreateNewProcTags(NP_Entry, (ULONG) initpc,
+         subtask = CreateNewProcTags(NP_Entry, initpc,
                                      NP_StackSize, SUBTASKSTACKSIZE,
                                      NP_Priority, ps->ps_GlobalCfg->pgc_SubTaskPri,
-                                     NP_Name, (ULONG) name,
+                                     NP_Name, name,
                                      NP_CopyVars, FALSE,
-                                     NP_UserData, (ULONG) userdata,
+                                     NP_UserData, userdata,
                                      TAG_END);
          return((struct Task *) subtask);
     }
@@ -1463,8 +1463,12 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
     memlist.mrm_ml.ml_ME[2].me_Un.meu_Reqs = MEMF_PUBLIC;
     memlist.mrm_ml.ml_ME[2].me_Length = strlen(name) + 1;
 
+#ifdef __AROS__
+    if (!NewAllocEntry(&memlist.mrm_ml, &newmemlist, NULL))
+#else
     newmemlist = AllocEntry(&memlist.mrm_ml);
-    if((ULONG) newmemlist & 0x80000000)
+    if((IPTR) newmemlist & 0x80000000)
+#endif
     {
         return(NULL);
     }
@@ -1474,7 +1478,7 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
     nt->tc_Node.ln_Type = NT_TASK;
     nt->tc_Node.ln_Pri = ps->ps_GlobalCfg->pgc_SubTaskPri;
     nt->tc_SPLower = newmemlist->ml_ME[1].me_Un.meu_Addr;
-    nt->tc_SPUpper = nt->tc_SPReg = (APTR) ((ULONG) nt->tc_SPLower + SUBTASKSTACKSIZE);
+    nt->tc_SPUpper = nt->tc_SPReg = (APTR) ((IPTR) nt->tc_SPLower + SUBTASKSTACKSIZE);
     nt->tc_UserData = userdata;
     NewList(&nt->tc_MemEntry);
     AddTail(&nt->tc_MemEntry, (struct Node *) newmemlist);
@@ -3557,14 +3561,14 @@ AROS_LH2(struct PsdDevice *, psdFindDeviceA,
         }
         if((ti = FindTagItem(DA_Binding, tags)))
         {
-            if(ti->ti_Data != (ULONG) pd->pd_DevBinding)
+            if(ti->ti_Data != (IPTR) pd->pd_DevBinding)
             {
                 takeit = FALSE;
             }
         }
         if((ti = FindTagItem(DA_HubDevice, tags)))
         {
-            if(ti->ti_Data != (ULONG) pd->pd_Hub)
+            if(ti->ti_Data != (IPTR) pd->pd_Hub)
             {
                 takeit = FALSE;
             }
@@ -8747,28 +8751,28 @@ AROS_UFH0(void, pDeviceTask)
             phw->phw_Node.ln_Name = phw->phw_RootIOReq->iouh_Req.io_Device->dd_Library.lib_Node.ln_Name;
             tag = taglist;
             tag->ti_Tag = UHA_ProductName;
-            tag->ti_Data = (ULONG) &prodname;
+            tag->ti_Data = (IPTR) &prodname;
             ++tag;
             tag->ti_Tag = UHA_Manufacturer;
-            tag->ti_Data = (ULONG) &manufacturer;
+            tag->ti_Data = (IPTR) &manufacturer;
             ++tag;
             tag->ti_Tag = UHA_Description;
-            tag->ti_Data = (ULONG) &description;
+            tag->ti_Data = (IPTR) &description;
             ++tag;
             tag->ti_Tag = UHA_Version;
-            tag->ti_Data = (ULONG) &version;
+            tag->ti_Data = (IPTR) &version;
             ++tag;
             tag->ti_Tag = UHA_Revision;
-            tag->ti_Data = (ULONG) &revision;
+            tag->ti_Data = (IPTR) &revision;
             ++tag;
             tag->ti_Tag = UHA_Copyright;
-            tag->ti_Data = (ULONG) &copyright;
+            tag->ti_Data = (IPTR) &copyright;
             ++tag;
             tag->ti_Tag = UHA_DriverVersion;
-            tag->ti_Data = (ULONG) &driververs;
+            tag->ti_Data = (IPTR) &driververs;
             ++tag;
             tag->ti_Tag = UHA_Capabilities;
-            tag->ti_Data = (ULONG) &caps;
+            tag->ti_Data = (IPTR) &caps;
             ++tag;
             tag->ti_Tag = TAG_END;
             phw->phw_RootIOReq->iouh_Data = taglist;
