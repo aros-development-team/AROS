@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved
     $Id$
 */
 
@@ -175,7 +175,10 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
     ahci_enable_hba(hba_chip);
 
     /* Reset the HBA */
-    if ( ahci_reset_hba(hba_chip) ) {
+    if ( ahci_reset_hba(hba_chip) )
+    {
+    	int i;
+
         HBAHW_D("Reset done\n");
 
     /* FIXME: Is there something better for this? */
@@ -252,7 +255,8 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
         HBAHW_D("Port numbering starts at %d\n", hba_chip->StartingPortNumber);
 
         ObtainSemaphore(&hba_chip->port_list_lock);
-        for (int i = 0; i <= hba_chip->PortCountMax; i++) {
+        for (i = 0; i <= hba_chip->PortCountMax; i++)
+        {
     		if (hba_chip->PortImplementedMask & (1 << i)) {
                 ahci_add_port(hba_chip, hba_chip->StartingPortNumber+i, i);
     		}
