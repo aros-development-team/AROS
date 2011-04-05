@@ -40,13 +40,6 @@
 
 #include LC_LIBDEFS_FILE
 
-AROS_UFP4(APTR, audio_int,
-    AROS_UFPA(ULONG, dummy, A0),
-    AROS_UFPA(void *, data, A1),
-    AROS_UFPA(ULONG, dummy2, A5),
-    AROS_UFPA(struct ExecBase *, mySysBase, A6)); 
-
-
 static const UBYTE masktoch[16] = { 0, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0 };
 
 static BOOL isplaying(struct AudioBase *ab, struct IOAudio *io, UBYTE ch)
