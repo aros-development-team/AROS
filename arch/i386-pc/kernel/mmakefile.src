@@ -1,0 +1,23 @@
+# $Id:$
+include $(TOP)/config/make.cfg
+
+FUNCS := 
+FILES := startup
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel \
+  arch=pc-i386 files="$(FILES) $(FUNCS)"
+
+kernel-kernel-pc-i386 :: $(KOBJSDIR)/smpboot.bin.o
+kernel-kernel-pc-i386-kobj :: $(KOBJSDIR)/smpboot.bin.o
+
+$(KOBJSDIR)/smpboot.bin.o : smpbootstrap.c
+		%mkdirs_q $(GENDIR)/$(CURDIR)/arch
+		$(TARGET_CC) $(CFLAGS) -fomit-frame-pointer -c $(SRCDIR)/$(CURDIR)/smpbootstrap.c
+		$(KERNEL_LD) -melf_i386 -Ttext=0 -o smpbootstrap smpbootstrap.o
+		$(OBJCOPY) -O binary smpbootstrap
+		$(KERNEL_LD) -melf_i386 -r --format binary smpbootstrap -o $(KOBJSDIR)/smpboot.bin.o
+		rm smpbootstrap.o smpbootstrap
+
+%common
+  
