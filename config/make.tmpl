@@ -2099,7 +2099,7 @@ endif
 ifeq (%(compiler),target)
     COMPILER_ENV := \
         CC="$(TARGET_CC) $(TARGET_CFLAGS) %(extracflags) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
-        AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"\
+        AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" AR="$(AR_PLAIN)"\
         TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)"\
         TARGET_RANLIB="$(RANLIB)"

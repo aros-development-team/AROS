@@ -1611,6 +1611,7 @@ aros_target_ranlib="${prefix}-ranlib $aros_target_ranlib_flags"
 aros_target_nm="${prefix}-nm $aros_target_nm_flags"
 aros_kernel_nm="${prefix}-nm"
 aros_target_strip=${prefix}-strip
+aros_kernel_ar="${prefix}-ar"
 
 # Find the system include path. We can suggest that an alternative is
 # used if we don't get it correct. The default is to use /usr/include.
@@ -2110,6 +2111,7 @@ AC_SUBST(aros_target_incl)
 AC_SUBST(aros_target_ar)
 AC_SUBST(aros_target_ranlib)
 AC_SUBST(aros_kernel_nm)
+AC_SUBST(aros_kernel_ar)
 AC_SUBST(orig_target_cc)
 AC_SUBST(aros_target_cc)
 AC_SUBST(aros_target_cxx)
