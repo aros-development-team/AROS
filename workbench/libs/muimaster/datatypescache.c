@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2007, The AROS Development Team. 
+    Copyright  2002-2011, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -134,7 +134,6 @@ static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
 	DTA_GroupID          , GID_PICTURE,
 	OBP_Precision        , PRECISION_EXACT,
 	PDTA_Screen          , (IPTR)scr,
-	PDTA_FreeSourceBitMap, TRUE,
 	PDTA_DestMode        , PMODE_V43,
 	PDTA_UseFriendBitMap , TRUE,
 	TAG_DONE);
@@ -660,7 +659,6 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y)
 {
     struct BitMap *bitmap = NULL;
     struct	pdtBlitPixelArray pa;
-    ULONG	depth = 0;
     ULONG       *img;
     Object *o;
 
@@ -668,8 +666,7 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y)
     if (NULL == o)
 	return;
 
-    depth = (ULONG) GetBitMapAttr(rp->BitMap, BMA_DEPTH);
-    if ((depth >= 15) && (node->mask == mskHasAlpha))
+    if (node->mask == mskHasAlpha)
     {
 	img = (ULONG *) AllocVec(dt_width(node) * dt_height(node) * 4, MEMF_ANY);
         if (img)
@@ -721,7 +718,6 @@ void dt_put_mim_on_rastport(struct dt_node *node, struct RastPort *rp, int x, in
 {
     struct BitMap *bitmap = NULL;
     struct	pdtBlitPixelArray pa;
-    ULONG	depth = 0;
     ULONG       *img;
 
     Object *o;
@@ -730,8 +726,7 @@ void dt_put_mim_on_rastport(struct dt_node *node, struct RastPort *rp, int x, in
     if (NULL == o)
 	return;
     int width  = dt_width(node) >> 1;
-    depth = (ULONG) GetBitMapAttr(rp->BitMap, BMA_DEPTH);
-    if ((depth >= 15) && (node->mask == mskHasAlpha))
+    if (node->mask == mskHasAlpha)
     {
    		img = (ULONG *) AllocVec(dt_width(node) * dt_height(node) * 4, MEMF_ANY);
 			if (img)
