@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-KERNELFILES := kernel_startup kernel_init kernel_debug kernel_memory kernel_romtags intr apic acpi_tables acpi_parsers scheduler mmu
-USER_CFLAGS := -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+KERNELFILES   := kernel_startup kernel_init kernel_debug kernel_memory kernel_romtags intr apic acpi_tables acpi_parsers scheduler mmu
+USER_INCLUDES := -I$(SRCDIR)/rom/exec -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
 #MM kernel-kernel-pc-x86_64 : includes kernel-kernel-pc-x86_64-includes
 #MM kernel-kernel-pc-x86_64-kobj : includes kernel-kernel-pc-x86_64-includes
@@ -10,15 +10,20 @@ USER_CFLAGS := -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 kernel-kernel-pc-x86_64 : $(KOBJSDIR)/smpboot.bin.o
 kernel-kernel-pc-x86_64-kobj : $(KOBJSDIR)/smpboot.bin.o
 
+OBJDIR    := $(GENDIR)/$(CURDIR)
+USER_OBJS := $(OBJDIR)/smpboot.bin.o
+
 %build_module mmake=kernel-kernel-pc-x86_64 	\
   modname=kernel modtype=resource		\
-  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"	\
   files="$(KERNELFILES)" uselibs="rom"
 
-$(KOBJSDIR)/smpboot.bin.o : smpbootstrap.c
-	%mkdirs_q $(GENDIR)/$(CURDIR)/arch $(KOBSDIR)
-	$(TARGET_CC) $(CFLAGS) -m32 -fomit-frame-pointer -c $(SRCDIR)/$(CURDIR)/smpbootstrap.c
-	$(KERNEL_LD) -melf_i386	-Ttext=0 -o smpbootstrap smpbootstrap.o
-	$(OBJCOPY) -O binary smpbootstrap
-	$(KERNEL_LD) -r --format binary smpbootstrap -o $(KOBJSDIR)/smpboot.bin.o
-	rm smpbootstrap.o smpbootstrap
+USER_CFLAGS := -m32
+
+$(OBJDIR)/smpboot.bin.o : $(OBJDIR)/smpbootstrap.o
+	@$(ECHO) Linking $@...
+	@$(KERNEL_LD) -melf_i386 --oformat=binary -e 0 -Ttext=0 -o $(OBJDIR)/smpbootstrap $^
+	@cd $(OBJDIR) && $(KERNEL_LD) -r --format binary smpbootstrap -o $@
+
+%rule_compile basename=smpbootstrap targetdir=$(OBJDIR)
+
+%common

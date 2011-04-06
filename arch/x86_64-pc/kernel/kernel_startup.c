@@ -40,7 +40,7 @@ static const struct MemRegion PC_Memory[] =
 
 /* Pre-exec init */
 
-asm(".section .aros.init,\"ax\"\n\t"
+asm(".section .aros.startup,\"ax\"\n\t"
     ".globl start64\n\t"
     ".type start64,@function\n"
     "start64: movq tmp_stack_end(%rip),%rsp\n\t"
