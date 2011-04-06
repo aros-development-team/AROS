@@ -1,0 +1,13 @@
+include $(TOP)/config/make.cfg
+
+#MM- workbench-hosted:  $(SDL_HIDD_TARGET)     \
+#MM			workbench-devs-cdvdfs-packet  \
+#MM			workbench-devs-sfs-packet
+
+#MM kernel-link-hosted: kernel-bootloader-kobj kernel-dosboot-kobj
+
+%link_kickstart mmake=kernel-link-hosted file=$(BINDIR)/boot/aros-strap-hosted \
+	res="bootloader dosboot" uselibs="autoinit libinit amiga arossupport rom arosm" \
+	map=$(GENDIR)/boot/kernel-hosted.map
+
+%common
