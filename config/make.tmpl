@@ -2516,14 +2516,24 @@ else
     KOBJ_STARTUP := %(startup)
 endif
 
-KOBJS   := $(KOBJ_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
-LDLIBS  := $(addprefix -l, %(uselibs))
-DEPDIRS := $(dir %(file))
-DEPLIBS := $(addprefix $(LIBDIR)/lib, $(addsuffix .a, %(uselibs)))
+KOBJS       := $(KOBJ_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
+LDLIBS      := $(addprefix -l, %(uselibs))
+DEPDIRS     := $(dir %(file))
+DEPLIBS     := $(addprefix lib,$(addsuffix .a, %(uselibs)))
+TMP_LDFLAGS := -L$(LIBDIR)
+
+ifneq ($(USER_LIBDIR),)
+    ALL_USERLIBS := $(notdir $(wildcard $(USER_LIBDIR)/lib*.a))
+    USER_DEPLIBS := $(addprefix $(USER_LIBDIR)/, $(filter $(ALL_USERLIBS),$(DEPLIBS))
+    DEPLIBS      := $(filter-out $(ALL_USERLIBS),$(DEPLIBS))
+    TMP_LDFLAGS  := -L$(USER_LIBDIR) $(TMP_LDFLAGS)
+endif
+
+DEPLIBS := $(addprefix $(LIBDIR)/, $(DEPLIBS))
 
 ifneq (%(map),)
-    GENMAP_LDFLAGS := $(GENMAP) %(map)
-    DEPDIRS += $(dir %(map))
+    TMP_LDFLAGS += $(GENMAP) %(map)
+    DEPDIRS     += $(dir %(map))
 endif
 
 #MM
@@ -2534,7 +2544,7 @@ endif
 
 %(file): $(KOBJS) $(DEPDIRS) $(DEPLIBS)
 	@$(ECHO) Linking $@...
-	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(NOSTARTUP_LDFLAGS) $(GENMAP_LDFLAGS) -L$(LIBDIR) $(LDLIBS)
+	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(NOSTARTUP_LDFLAGS) $(TMP_LDFLAGS) $(LDLIBS)
 
 GLOB_MKDIRS += $(DEPDIRS)
 
