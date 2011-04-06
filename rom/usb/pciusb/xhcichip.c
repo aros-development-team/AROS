@@ -12,6 +12,8 @@
 
 #if defined(USB3)
 
+void *AllocVecAligned(ULONG bytesize, ULONG boundary);
+
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
 #undef HiddAttrBase
@@ -139,10 +141,10 @@ BOOL xhciHaltHC(struct PCIController *hc) {
         The HCHalted (HCH) bit in the USBSTS register indicates when the xHC has finished its
         pending pipelined transactions and has entered the stopped state. 
     */
-    timeout = 250;  //FIXME: arbitrary value of 250ms
+    timeout = 250;  //FIXME: arbitrary value of 2500ms
     do {
         temp = opreg_readl(XHCI_USBSTS);
-        if( !(temp & XHCF_STS_HCH) ) {
+        if( (temp & XHCF_STS_HCH) ) {
             KPRINTF(1000, ("controller halted!\n"));
             return TRUE;
         }
@@ -166,12 +168,12 @@ BOOL xhciResetHC(struct PCIController *hc) {
     /*
         Controller clears HCRST bit when reset is done, wait for it and for CNR-bit to be cleared
     */
-    timeout = 250;  //FIXME: arbitrary value of 250ms
+    timeout = 250;  //FIXME: arbitrary value of 2500ms
     do {
         temp = opreg_readl(XHCI_USBCMD);
         if( !(temp & XHCF_CMD_HCRST) ) {
             /* Wait for CNR-bit to be 0 */
-            timeout = 250;  //FIXME: arbitrary value of 250ms
+            timeout = 250;  //FIXME: arbitrary value of 2500ms
             do {
                 temp = opreg_readl(XHCI_USBSTS);
                 if( !(temp & XHCF_STS_CNR) ) {
@@ -251,17 +253,23 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         temp = temp>>1;
         cnt++;
     }
-    hc->xhc_pagesize = 1<< (cnt);
-
-    hc->xhc_scratchbufs = XHCV_SPB_Max(capreg_readl(XHCI_HCSPARAMS2));
-
-    KPRINTF(1000, ("Max Scratchpad Buffers %lx\n",hc->xhc_scratchbufs));
+    hc->xhc_pagesize = 1<<(cnt);
     KPRINTF(1000, ("Pagesize 2^(n+12) = %lx\n", hc->xhc_pagesize));
 
-    hc->hc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
+    hc->xhc_scratchbufs = XHCV_SPB_Max(capreg_readl(XHCI_HCSPARAMS2));
+    KPRINTF(1000, ("Max Scratchpad Buffers %lx\n",hc->xhc_scratchbufs));
 
+    hc->hc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
     KPRINTF(1000, ("MaxPorts %lx\n",hc->hc_NumPorts));
-    KPRINTF(1000, ("MaxSlots %lx\n",XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))));
+
+    /*
+        Number of Device Slots (MaxSlots). This field specifies the maximum number of Device
+        Context Structures and Doorbell Array entries this host controller can support. Valid values are
+        in the range of 1 to 255. The value of ‘0’ is reserved.
+    */
+    hc->xhc_maxslots = XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1));
+    KPRINTF(1000, ("MaxSlots %lx\n",hc->xhc_maxslots));
+
     KPRINTF(1000, ("MaxIntrs %lx\n",XHCV_MaxIntrs(capreg_readl(XHCI_HCSPARAMS1))));
 
     /* 64 byte or 32 byte context data structures? */
@@ -354,7 +362,25 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 /* Program the Max Device Slots Enabled (MaxSlotsEn) field */
                 opreg_writel(XHCI_CONFIG, ((opreg_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))) );
 
-                /* Program the Device Context Base Address Array Pointer (DCBAAP) */
+                /*
+                    Program the Device Context Base Address Array Pointer (DCBAAP) register (5.4.6) with a 64-bit
+                    address pointing to where the Device Context Base Address Array is located.
+
+                    - The Device Context Base Address Array shall be indexed by the Device Slot ID.
+                    - The Device Context Base Address Array shall be aligned to a 64 byte boundary.
+                    - The Device Context Base Address Array shall be physically contiguous within a page.
+                    - The Device Context Base Address Array shall contain MaxSlotsEn + 1 entries. The maximum size of the
+                    - Device Context Base Address Array is 256 64-bit entries, or 2K Bytes.
+                    - Software shall set Device Context Base Address Array entries for unallocated Device Slots to ‘0’.
+                    - Software shall set Device Context Base Address Array entries for allocated Device Slots to point to the
+                      Device Context data structure associated with the device.
+                */
+
+                /* Allocate 256 entries aligned on 4K(quess) border (page size, where to get this on Aros?) */
+                hc->xhc_dcbaa = AllocVecAligned( (256)*8, 4096);
+
+                if(hc->xhc_scratchbufs = 0) {
+                }
 
                 /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
 
@@ -391,6 +417,19 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
 
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
+}
+
+void *AllocVecAligned(ULONG bytesize, ULONG boundary) {
+
+    APTR address;
+    
+    if(!(address = AllocVec(bytesize + boundary, MEMF_PUBLIC | MEMF_CLEAR))) {
+        bug("AllocVecAligned before %lx\n", address);
+        address = ((IPTR)address + boundary - 1) & ~(boundary - 1);
+        bug("AllocVecAligned after %lx\n", address);
+    }
+
+    return address;
 }
 
 #endif
