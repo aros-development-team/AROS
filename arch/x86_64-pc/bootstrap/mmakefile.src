@@ -18,7 +18,7 @@ kernel-bootstrap-x86_64: $(BOOTSTRAP_NAME)
 kernel-bootstrap-x86_64-quick: $(BOOTSTRAP_NAME)
 
 OBJS      := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(FILES)))
-DEPS      := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(FILES)))
+DEPS      := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(FILES) vesa))
 LIBDEPS   := $(addsuffix .a,$(addprefix $(LIBDIR)/lib,$(LIBS)))
 LDLIBS    := $(addprefix -l,$(LIBS))
 
