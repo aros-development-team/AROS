@@ -21,11 +21,11 @@ Renommer
 ;
 MSG_LINE
 Entrez un nouveau nom
-; Enter a new name
+; Enter a new name for:
 ;
 MSG_NAME
-Nouveau nom :
-; New name:
+\33bNouveau nom :\33n 
+; \33bNew name:\33n 
 ;
 MSG_OK
 _Ok

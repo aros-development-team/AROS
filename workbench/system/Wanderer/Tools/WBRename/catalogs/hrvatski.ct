@@ -21,11 +21,11 @@ Preimenuj
 ;
 MSG_LINE
 Unesite novo ime
-; Enter a new name
+; Enter a new name for:
 ;
 MSG_NAME
-Novo Ime:
-; New name:
+\33bNovo Ime:\33n 
+; \33bNew name:\33n 
 ;
 MSG_OK
 U redu

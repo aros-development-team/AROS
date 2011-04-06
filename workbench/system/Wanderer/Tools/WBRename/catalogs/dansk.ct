@@ -22,11 +22,11 @@ Omdøb
 ;
 MSG_LINE
 Indtast et nyt navn
-; Enter a new name
+; Enter a new name for
 ;
 MSG_NAME
-Nyt navn:
-; New name:
+\33bNyt navn:\33n 
+; \33bNew name:\33n 
 ;
 MSG_OK
 _O.k.

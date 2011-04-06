@@ -20,12 +20,12 @@ Rinomina
 ; Rename
 ;
 MSG_LINE
-Inserisci il nuovo nome
-; Enter a new name
+Inserisci il nuovo nome per:
+; Enter a new name for:
 ;
 MSG_NAME
-Nuovo nome:
-; New name:
+\33bNuovo nome:\33n 
+; \33bNew name:\33n 
 ;
 MSG_OK
 _OK
