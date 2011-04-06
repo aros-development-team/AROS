@@ -125,14 +125,14 @@
 
 /* These are for XHCI_EXT_CAPS_LEGACY */
 /* USB Legacy Support Capability (USBLEGSUP) */
-#define XHCI_EC_USBLEGSUP   0x00
-#define XHCB_EC_BIOSOWNED   16
-#define XHCB_EC_OSOWNED     24
-#define XHCF_EC_BIOSOWNED  (1UL<<XHCB_EC_BIOSOWNED)
-#define XHCF_EC_OSOWNED    (1UL<<XHCB_EC_OSOWNED)
+#define XHCI_USBLEGSUP   0x00
+#define XHCB_BIOSOWNED   16
+#define XHCB_OSOWNED     24
+#define XHCF_BIOSOWNED  (1UL<<XHCB_BIOSOWNED)
+#define XHCF_OSOWNED    (1UL<<XHCB_OSOWNED)
 
 /* USB Legacy Support Control/Status (USBLEGCTLSTS) */
-#define XHCI_EC_USBLEGCTLSTS    0x04
+#define XHCI_USBLEGCTLSTS       0x04
 #define XHCB_SMI_USBE           0
 #define XHCB_SMI_HSEE           4
 #define XHCB_SMI_OSOE           13

@@ -140,23 +140,63 @@ IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
     return (IPTR) 0;
 }
 
+BOOL xhciHaltHC(struct PCIController *hc) {
+
+    struct PCIUnit *hu = hc->hc_Unit;
+
+    ULONG timeout, temp;
+
+    /* Halt the controller, clear Run/Stop bit */
+    temp = opreg_readl(XHCI_USBCMD);
+    opreg_writel(XHCI_USBCMD, (temp | ~XHCF_CMD_RS));
+
+    /*
+        The xHC shall halt within 16 ms. after software clears the Run/Stop bit if certain conditions have been met.
+        The HCHalted (HCH) bit in the USBSTS register indicates when the xHC has finished its
+        pending pipelined transactions and has entered the stopped state. 
+    */
+    timeout = 250;  //FIXME: arbitrary value of 250ms
+    do {
+        temp = opreg_readl(XHCI_USBSTS);
+        if( !(temp & XHCF_STS_HCH) ) {
+            KPRINTF(1000, ("controlller halted!\n"));
+            return TRUE;
+        }
+        uhwDelayMS(10, hu);
+    } while(--timeout);
+
+    KPRINTF(1000, ("halt failed!\n"));
+    return FALSE;
+}
+
 BOOL xhciResetHC(struct PCIController *hc) {
 
     struct PCIUnit *hu = hc->hc_Unit;
 
     ULONG timeout, temp;
 
-    /* Reset controller */
+    /* Reset controller by setting HCRST-bit */
     temp = opreg_readl(XHCI_USBCMD);
     opreg_writel(XHCI_USBCMD, (temp | XHCF_CMD_HCRST));
 
-    timeout = 250;
+    /*
+        Controller clears HCRST bit when reset is done, wait for it and for CNR-bit to be cleared
+    */
+    timeout = 250;  //FIXME: arbitrary value of 250ms
     do {
-        temp = opreg_readl(XHCI_USBSTS);
-        if( !(temp & XHCF_STS_CNR) ) {
-            KPRINTF(1000, ("reset succeeded!\n"));
-            return TRUE;
-            break;
+        temp = opreg_readl(XHCI_USBCMD);
+        if( !(temp & XHCF_CMD_HCRST) ) {
+            /* Wait for CNR-bit to be 0 */
+            timeout = 250;  //FIXME: arbitrary value of 250ms
+            do {
+                temp = opreg_readl(XHCI_USBSTS);
+                if( !(temp & XHCF_STS_CNR) ) {
+                    KPRINTF(1000, ("reset succeeded!\n"));
+                    return TRUE;
+                }
+                uhwDelayMS(10, hu);
+            } while(--timeout);
+            return FALSE;
         }
         uhwDelayMS(10, hu);
     } while(--timeout);
@@ -214,6 +254,12 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
             a. Software allocates a PAGESIZE Scratchpad Buffer.
             b. Software writes the base address of the allocated Scratchpad Buffer to associated entry in the Scratchpad Buffer Array.
     */
+
+    /*
+        This field defines the page size supported by the xHC implementation.
+        This xHC supports a page size of 2^(n+12) if bit n is Set. For example,
+        if bit 0 is Set, the xHC supports 4k byte page sizes.
+    */
     cnt = 0;
     temp = opreg_readl(XHCI_PAGESIZE)&0xffff;
     while((~temp&1) & temp){
@@ -233,20 +279,21 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     KPRINTF(1000, ("MaxSlots %lx\n",XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))));
     KPRINTF(1000, ("MaxIntrs %lx\n",XHCV_MaxIntrs(capreg_readl(XHCI_HCSPARAMS1))));
 
+    /* xHCI Extended Capabilities, search for USB Legacy Support */
     extcap = xhciExtCap(hc, XHCI_EXT_CAPS_LEGACY, 0);
     if(extcap) {
 
         temp = READMEM32_LE(extcap);
-        if( (temp & XHCF_EC_BIOSOWNED) ){
+        if( (temp & XHCF_BIOSOWNED) ){
            KPRINTF(1000, ("controller owned by BIOS\n"));
 
            /* Spec says "no more than a second", we give it a little more */
            timeout = 250;
 
-           WRITEMEM32_LE(extcap, (temp | XHCF_EC_OSOWNED) );
+           WRITEMEM32_LE(extcap, (temp | XHCF_OSOWNED) );
            do {
                temp = READMEM32_LE(extcap);
-               if( !(temp & XHCF_EC_BIOSOWNED) ) {
+               if( !(temp & XHCF_BIOSOWNED) ) {
                    KPRINTF(1000, ("BIOS gave up on XHCI. Pwned!\n"));
                    break;
                }
@@ -255,11 +302,16 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
             if(!timeout) {
                 KPRINTF(1000, ("BIOS didn't release XHCI. Forcing and praying...\n"));
-                WRITEMEM32_LE(extcap, (temp & ~XHCF_EC_BIOSOWNED) );
+                WRITEMEM32_LE(extcap, (temp & ~XHCF_BIOSOWNED) );
             }
         }
+
+        /* Clear all SMI enable bits in USBLEGCTLSTS register*/
+        temp = READMEM32_LE(extcap + XHCI_USBLEGCTLSTS);
+        WRITEMEM32_LE(extcap + XHCI_USBLEGCTLSTS, (temp & ~(XHCF_SMI_USBE|XHCF_SMI_HSEE|XHCF_SMI_OSOE|XHCF_SMI_PCICE|XHCF_SMI_BARE)) );
     }
 
+    /* xHCI Extended Capabilities, search for Supported Protocol */
     extcap = 0;
     do {
         extcap = xhciExtCap(hc, XHCI_EXT_CAPS_PROTOCOL, extcap);
@@ -268,62 +320,64 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         }
     } while (extcap);
 
-    if(xhciResetHC(hc)) {
+    if(xhciHaltHC(hc)) {
+        if(xhciResetHC(hc)) {
 
-        for(cnt = 1; cnt <=hc->hc_NumPorts; cnt++) {
-            temp = opreg_readl(XHCI_PORTSC(cnt));
-            KPRINTF(1000, ("Port #%d speed is %d\n",cnt, (temp&XHCM_PS_SPEED)>>XHCB_PS_SPEED ));
-        }
+            for(cnt = 1; cnt <=hc->hc_NumPorts; cnt++) {
+                temp = opreg_readl(XHCI_PORTSC(cnt));
+                KPRINTF(1000, ("Port #%d speed is %d\n",cnt, (temp&XHCM_PS_SPEED)>>XHCB_PS_SPEED ));
+            }
 
-        hc->hc_PCIMemSize = 1024;   //Arbitrary number
-        hc->hc_PCIMemSize += ((hc->xhc_scratchbufs) * (hc->xhc_pagesize));
+            hc->hc_PCIMemSize = 1024;   //Arbitrary number
+            hc->hc_PCIMemSize += ((hc->xhc_scratchbufs) * (hc->xhc_pagesize));
 
-        memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
-        hc->hc_PCIMem = (APTR) memptr;
+            memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
+            hc->hc_PCIMem = (APTR) memptr;
 
-        if(memptr) {
-            // PhysicalAddress - VirtualAdjust = VirtualAddress
-            // VirtualAddress  + VirtualAdjust = PhysicalAddress
-            hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
-            KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
+            if(memptr) {
+                // PhysicalAddress - VirtualAdjust = VirtualAddress
+                // VirtualAddress  + VirtualAdjust = PhysicalAddress
+                hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
+                KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
 
-            hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
-            hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
-            hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
-            hc->hc_CompleteInt.is_Data = hc;
-            hc->hc_CompleteInt.is_Code = (void (*)(void)) &xhciCompleteInt;
+                hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
+                hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
+                hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
+                hc->hc_CompleteInt.is_Data = hc;
+                hc->hc_CompleteInt.is_Code = (void (*)(void)) &xhciCompleteInt;
 
-            // install reset handler
-            hc->hc_ResetInt.is_Code = xhciResetHandler;
-            hc->hc_ResetInt.is_Data = hc;
-            AddResetCallback(&hc->hc_ResetInt);
+                // install reset handler
+                hc->hc_ResetInt.is_Code = xhciResetHandler;
+                hc->hc_ResetInt.is_Data = hc;
+                AddResetCallback(&hc->hc_ResetInt);
 
-            /* Clears (RW1C) Host System Error(HSE), Event Interrupt(EINT), Port Change Detect(PCD) and Save/Restore Error(SRE) */
-            temp = opreg_readl(XHCI_USBSTS);
-            opreg_writel(XHCI_USBSTS, temp);
+                /* Clears (RW1C) Host System Error(HSE), Event Interrupt(EINT), Port Change Detect(PCD) and Save/Restore Error(SRE) */
+                temp = opreg_readl(XHCI_USBSTS);
+                opreg_writel(XHCI_USBSTS, temp);
 
-            // add interrupt handler
-            hc->hc_PCIIntHandler.h_Node.ln_Name = "XHCI PCI (pciusb.device)";
-            hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
-            hc->hc_PCIIntHandler.h_Code = xhciIntCode;
-            hc->hc_PCIIntHandler.h_Data = hc;
-            HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
+                // add interrupt handler
+                hc->hc_PCIIntHandler.h_Node.ln_Name = "XHCI PCI (pciusb.device)";
+                hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
+                hc->hc_PCIIntHandler.h_Code = xhciIntCode;
+                hc->hc_PCIIntHandler.h_Data = hc;
+                HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
 
-            /* After reset all notifications should be automatically disabled but ensure anyway */
-            opreg_writel(XHCI_DNCTRL, 0);
+                /* After reset all notifications should be automatically disabled but ensure anyway */
+                opreg_writel(XHCI_DNCTRL, 0);
 
-            /* Program the Max Device Slots Enabled (MaxSlotsEn) field */
-            opreg_writel(XHCI_CONFIG, ((opreg_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))) );
+                /* Program the Max Device Slots Enabled (MaxSlotsEn) field */
+                opreg_writel(XHCI_CONFIG, ((opreg_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))) );
 
-            /* Program the Device Context Base Address Array Pointer (DCBAAP) */
+                /* Program the Device Context Base Address Array Pointer (DCBAAP) */
 
-            /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
+                /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
 
-            /* Set Run/Stop(R/S), Interrupter Enable(INTE) and Host System Error Enable(HSEE) */
-            opreg_writel(XHCI_USBCMD, (XHCF_CMD_RS | XHCF_CMD_INTE | XHCF_CMD_HSEE) );
+                /* Set Run/Stop(R/S), Interrupter Enable(INTE) and Host System Error Enable(HSEE) */
+                opreg_writel(XHCI_USBCMD, (XHCF_CMD_RS | XHCF_CMD_INTE | XHCF_CMD_HSEE) );
 
-            KPRINTF(1000, ("xhciInit returns TRUE...\n"));
-            return TRUE;
+                KPRINTF(1000, ("xhciInit returns TRUE...\n"));
+                return TRUE;
+            }
         }
     }
 
