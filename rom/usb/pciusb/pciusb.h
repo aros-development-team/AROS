@@ -130,6 +130,7 @@ struct PCIController
     volatile APTR         xhc_opregbase;
     ULONG                 xhc_pagesize;
     ULONG                 xhc_scratchbufs;
+    BOOL                  xhc_contextsize64; 
     #endif
 
     APTR                  hc_PCIMem;
