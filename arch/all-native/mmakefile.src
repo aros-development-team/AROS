@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-bootloader-pkg		\
 #MM	kernel-dosboot-pkg		\
 #MM	kernel-fs-afs-pkg		\
+#MM	workbench-devs-cdvdfs-pkg	\
 #MM	workbench-devs-sfs-pkg		\
 #MM	workbench-libs-partition-pkg	
 
@@ -15,6 +16,6 @@ PKG_LIBS     := partition
 PKG_HANDLERS := afs cdrom sfs
 
 %make_package mmake=kernel-package-strap-native file=$(BINDIR)/boot/aros-strap-native.pkg \
-	      res="bootloader dosboot"
+	      handlers=$(PKG_HANDLERS) libs=$(PKG_LIBS) res=$(PKG_RSRC)
 
 %common
