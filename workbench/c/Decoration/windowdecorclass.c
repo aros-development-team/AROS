@@ -611,74 +611,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
 
         }
     }
-    struct Gadget *g;
 
-    for (g = window->FirstGadget; g; g = g->NextGadget)
-    {
-        if (g->Activation & GACT_TOPBORDER && (g->GadgetType & GTYP_SYSTYPEMASK) != GTYP_WDRAGGING)
-        {
-            int x, y;
-            y = g->TopEdge;
-            if (!(g->Flags & GFLG_RELRIGHT))
-            {
-                x = g->LeftEdge;
-            }
-            else
-            {
-                x = g->LeftEdge + window->Width - 1;
-            }
-            struct NewImage *ni = NULL;
-            UWORD state = IDS_NORMAL;
-
-            if ((window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) == 0)
-            {
-                state = IDS_INACTIVENORMAL;
-            }
-            else  if (g->Flags & GFLG_SELECTED) state = IDS_SELECTED;
-
-            if (g->GadgetType & GTYP_SYSTYPEMASK) {
-                switch(g->GadgetType & GTYP_SYSTYPEMASK)
-                {
-                    case GTYP_CLOSE:
-                        ni = wd->img_close;
-                        break;
-                    case GTYP_WDEPTH:
-                        ni = wd->img_depth;
-                        break;
-                    case GTYP_WZOOM:
-                        ni = wd->img_zoom;
-                        break;
-                }
-            }
-            else
-            {
-                switch(g->GadgetID)
-                {
-                    case ETI_MUI:
-                        ni = wd->img_mui;
-                        break;
-
-                    case ETI_PopUp:
-                        ni = wd->img_popup;
-                        break;
-
-                    case ETI_Snapshot:
-                        ni = wd->img_snapshot;
-                        break;
-
-                    case ETI_Iconify:
-                        ni = wd->img_iconify;
-                        break;
-
-                    case ETI_Lock:
-                        ni = wd->img_lock;
-                        break;
-                }
-            }
-
-            if (ni) DrawStatefulGadgetImageToRP(rp, ni, state, x, y);
-        }
-    }
     BltBitMapRastPort(rp->BitMap, 0, 0, dst_rp, 0, 0, window->Width, window->BorderTop, 0xc0);
 
     /* Cache the actual bitmap */
@@ -701,7 +634,7 @@ static BOOL InitWindowSkinning(struct windecor_data *data, struct DecorImages * 
 
     data->TextAlign = WD_DWTA_LEFT;
 
-    /* Set pointers to gadget images, used only to get gadget sizes as their
+    /* Set pointers to gadget images, used only to get gadget sizes as they
        are requested prior to creation of menu object */
     data->img_close     = di->img_close;
     data->img_depth     = di->img_depth;

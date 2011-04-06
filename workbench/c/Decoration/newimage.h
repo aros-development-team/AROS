@@ -27,7 +27,7 @@ struct NewImage
 
     ULONG   subimagescols;  /* Number of columns of subimages in image, ie. states of gadget*/
     ULONG   subimagesrows;  /* Number of rows of subimages in image, ie. states of gadget*/
-    BOOL    *subimageinbm;  /* Array marking which subimage in present in *bitmap */
+    BOOL    *subimageinbm;  /* Array marking which subimage is present in *bitmap */
 
     Object  *o;                 /* Stored DT object */
     APTR    mask;               /* Mask pointer from DT object */

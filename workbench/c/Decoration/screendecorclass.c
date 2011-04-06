@@ -20,7 +20,7 @@
 
 struct scrdecor_data
 {
-    /* This are original images loaded from disk */
+    /* These are original images loaded from disk */
     struct DecorImages * di;
     struct DecorConfig * dc;
 };
@@ -302,10 +302,12 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
 
     sd->ActivePen = -1;
     sd->DeactivePen = -1;
+#if 0 // Omitting this gives better colours on low-color screens
     if (!truecolor) {
         sd->ActivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->dc->LUTBaseColors_a << 8) & 0xff000000, (data->dc->LUTBaseColors_a << 16) & 0xff000000, (data->dc->LUTBaseColors_a << 24) & 0xff000000, PEN_EXCLUSIVE);
         sd->DeactivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->dc->LUTBaseColors_d << 8) & 0xff000000, (data->dc->LUTBaseColors_d << 16) & 0xff000000, (data->dc->LUTBaseColors_d << 24) & 0xff000000, PEN_EXCLUSIVE);
     }
+#endif
 
     /* Convert initial images to current screen */
     /* Make sure a structure is always generated even if there is no image

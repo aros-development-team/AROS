@@ -27,8 +27,7 @@ void DisposeImageContainer(struct NewImage *ni)
 {
     if (ni)
     {
-        if (ni->data)
-            FreeVec(ni->data);
+        FreeVec(ni->data);
 
         if (ni->o)
         {
@@ -38,13 +37,10 @@ void DisposeImageContainer(struct NewImage *ni)
             ni->mask = NULL;
         }
 
-        if (ni->filename)
-            FreeVec(ni->filename);
+        FreeVec(ni->filename);
 
-        if (ni->subimageinbm)
-            FreeVec(ni->subimageinbm);
-        if (ni->bitmap2)
-            FreeBitMap(ni->bitmap2);
+        FreeVec(ni->subimageinbm);
+        FreeBitMap(ni->bitmap2);
 
         FreeVec(ni);
     }
@@ -54,10 +50,7 @@ void DisposeLUT8ImageContainer(struct NewLUT8Image *ni)
 {
     if (ni)
     {
-        if (ni->data)
-        {
-            FreeVec(ni->data);
-        }
+        FreeVec(ni->data);
         FreeVec(ni);
     }
 }
@@ -181,18 +174,6 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
                     }
                     FreeRastPort(rp);
                 }
-                else
-                {
-
-                    if (mask != mskHasAlpha)
-                    {
-#if !AROS_BIG_ENDIAN
-                        for (a= 0; a < (w*h); a++) ni->data[a] |= 0x000000ff;
-#else
-                        for (a= 0; a < (w*h); a++) ni->data[a] |= 0xff000000;
-#endif
-                    }
-                }
             }
         }
         DisposeDTObject(pic);
@@ -218,10 +199,6 @@ static Object * LoadPicture(CONST_STRPTR filename, struct Screen *scr)
 
     if (o)
     {
-        struct BitMapHeader *bmhd;
-        
-        GetDTAttrs(o,PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
-        
         struct FrameInfo fri = {0};
         
         D(bug("DTM_FRAMEBOX\n", o));
@@ -241,8 +218,8 @@ static Object * LoadPicture(CONST_STRPTR filename, struct Screen *scr)
     return NULL;
 }
 
-/* This function must always never return NULL, because logic in drawing code
-   checks img->ok instead of img != NULL to make decitions */
+/* This function must never return NULL, because logic in drawing code
+   checks img->ok instead of img != NULL to make decisions */
 struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOOL truecolor, struct Screen* scr)
 {
     struct NewImage * out = AllocVec(sizeof(struct NewImage), MEMF_ANY | MEMF_CLEAR);
@@ -346,7 +323,6 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
 
                 /* Check if there was at least one subimage without alpha channel */
                 D(bug("File: %s : ", out->filename));
-                atleastone = FALSE;
                 for (row = 0; row < out->subimagesrows; row++)
                     for (col = 0; col < out->subimagescols; col++)
                     {

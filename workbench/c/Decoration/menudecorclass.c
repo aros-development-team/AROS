@@ -148,24 +148,6 @@ static IPTR menudecor_renderbackground(Class *cl, Object *obj, struct mdpDrawBac
     struct MenuData    *md = (struct MenuData *) msg->mdp_UserBuffer;
     UWORD               flags = msg->mdp_Flags;
 
-    if (!msg->mdp_TrueColor)
-    {   
-
-        if ((flags & HIGHITEM) && md->map)
-        {
-        }
-        else
-        {
-            if (md->map)
-            {
-                BltBitMapRastPort(md->map, msg->mdp_ItemLeft, msg->mdp_ItemTop, rp, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight, 0xc0);
-                return TRUE;
-            }
-        }
-        return FALSE;
-
-    }
-
     if ((flags & HIGHITEM) && md->ni)
     {
         ni = NewImageContainer(msg->mdp_ItemWidth, msg->mdp_ItemHeight);
@@ -205,26 +187,11 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
         md->img_menu_ti->TileTop    = data->dc->MenuTileTop;
     }
 
-    md->truecolor = msg->mdp_TrueColor;
-
-//    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
-
-    if (md->truecolor)
+    md->ni = GetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
+    if (md->ni)
     {
-        md->ni = GetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
-        if (md->ni) {
-            md->ni->ok = TRUE;
-            RenderBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
-        }
-    }
-    else
-    {
-        md->map = AllocBitMap(msg->mdp_Width, msg->mdp_Height, 1, BMF_CLEAR, rp->BitMap);
-        if (md->map) {
-            BltBitMap(rp->BitMap, msg->mdp_Left, msg->mdp_Top, md->map, 0, 0, msg->mdp_Width, msg->mdp_Height, 0xc0, 0xff, NULL);
-
-            TileMapToBitmap(md->img_menu, md->img_menu_ti, md->map, msg->mdp_Width, msg->mdp_Height);
-        }
+        md->ni->ok = TRUE;
+        RenderBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
     }
 
     return TRUE;
