@@ -107,7 +107,6 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
     STRPTR                      buffer;
     UWORD                       w, h, tc, x, y;
     UBYTE                       mask;
-    ULONG                       a;
     ULONG                      *dst;
     LONG                        len;
     
