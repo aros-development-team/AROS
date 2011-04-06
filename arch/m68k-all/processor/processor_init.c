@@ -28,26 +28,35 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     
     info->CPUModel = CPUMODEL_UNKNOWN;
     info->FPUModel = FPUMODEL_UNKNOWN;
+    info->L1InstructionCacheSize = 0;
+    info->L1DataCacheSize = 0;
 
     if (SysBase->AttnFlags & AFF_68060)
     {
         info->CPUModel = CPUMODEL_68060;
         __sprintf(info->ModelStringBuffer, "%s", "68060");
+        info->L1InstructionCacheSize = 8192;
+        info->L1DataCacheSize = 8192;
     }
     else if (SysBase->AttnFlags & AFF_68040)
     {
         info->CPUModel = CPUMODEL_68040;
         __sprintf(info->ModelStringBuffer, "%s", "68040");
+        info->L1InstructionCacheSize = 4096;
+        info->L1DataCacheSize = 4096;
     }
     else if (SysBase->AttnFlags & AFF_68030)
     {
         info->CPUModel = CPUMODEL_68030;
         __sprintf(info->ModelStringBuffer, "%s", "68030");
+        info->L1InstructionCacheSize = 256;
+        info->L1DataCacheSize = 256;
     }
     else if (SysBase->AttnFlags & AFF_68020)
     {
         info->CPUModel = CPUMODEL_68020;
         __sprintf(info->ModelStringBuffer, "%s", "68020");
+        info->L1InstructionCacheSize = 256;
     }
     else if (SysBase->AttnFlags & AFF_68010)
     {
@@ -87,10 +96,6 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     else
         info->FPUModel = FPUMODEL_NONE;
 
-
-
-    info->L1DataCacheSize = 0; /* TODO: Implement */
-    info->L1InstructionCacheSize = 0; /* TODO: Implement */
     info->CPUFrequency = 0; /* TODO: Implement */
 }
 
