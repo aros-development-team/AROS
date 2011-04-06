@@ -72,9 +72,16 @@ static inline void outl_le(uint32_t val, uint32_t *port) {
     asm volatile("stwbrx %1,0,%2; eieio":"=m"(*port):"r"(val),"r"(port));
 }
 
-/* This CPU needs special MMIO instructions */
-#define WEAK_IO_ORDER
+/* This CPU has special little-endian I/O instructions */
+#define HAVE_LE_IO
 
+/* This CPU has special MMIO instructions */
+#define HAVE_MMIO_IO
+
+/* This CPU has special little-endian MMIO instructions */
+#define HAVE_LE_MMIO_IO
+
+/* All I/O on this CPU is memory-mapped */
 #define mmio_inb(address) inb((uint8_t *)address)
 #define mmio_inw(address) inw((uint16_t *)address)
 #define mmio_inl(address) inl((uint32_t *)address)
@@ -82,5 +89,11 @@ static inline void outl_le(uint32_t val, uint32_t *port) {
 #define mmio_outb(value, address) outb(value, (uint8_t *)address)
 #define mmio_outw(value, address) outw(value, (uint16_t *)address)
 #define mmio_outl(value, address) outl(value, (uint32_t *)address)
+
+#define mmio_inw_le(address) inw_le((uint16_t *)address)
+#define mmio_inl_le(address) inl_le((uint32_t *)address)
+
+#define mmio_outw_le(value, address) outw_le(value, (uint16_t *)address)
+#define mmio_outl_le(value, address) outl_le(value, (uint32_t *)address)
 
 #endif

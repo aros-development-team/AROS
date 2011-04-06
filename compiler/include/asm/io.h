@@ -8,11 +8,7 @@
     I/O operations, generic header.
 */
 
-#ifdef __ppc__
-#ifndef __powerpc__
-#define __powerpc__
-#endif
-#endif
+#include <aros/macros.h>
 
 /* Include the actual CPU-dependent definitions */
 #if defined __i386__
@@ -40,7 +36,7 @@
 #define port_t void *
 #endif
 
-#ifndef WEAK_IO_ORDER
+#ifndef HAVE_MMIO_IO
 
 #define mmio_inb(address) (*((volatile unsigned char  *)(address)))
 #define mmio_inw(address) (*((volatile unsigned short *)(address)))
@@ -49,6 +45,26 @@
 #define mmio_outb(value, address) *((volatile unsigned char  *)(address)) = (value)
 #define mmio_outw(value, address) *((volatile unsigned short *)(address)) = (value)
 #define mmio_outl(value, address) *((volatile unsigned int   *)(address)) = (value)
+
+#endif
+
+#ifndef HAVE_LE_IO
+
+#define inw_le(address) AROS_LE2WORD(inw(address))
+#define inl_le(address) AROS_LE2LONG(inl(address))
+
+#define outw_le(value, address) outw(AROS_WORD2LE(value), address)
+#define outl_le(value, address) outl(AROS_LONG2LE(value), address)
+
+#endif
+
+#ifndef HAVE_LE_MMIO_IO
+
+#define mmio_inw_le(address) AROS_LE2WORD(mmio_inw(address))
+#define mmio_inl_le(address) AROS_LE2LONG(mmio_inl(address))
+
+#define mmio_outw_le(value, address) mmio_outw(AROS_WORD2LE(value), address)
+#define mmio_outl_le(value, address) mmio_outl(AROS_LONG2LE(value), address)
 
 #endif
 
