@@ -63,20 +63,25 @@ INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
 compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(AROS_INCLUDES)/%.h : %.h
-	$(CP) $< $@
+	@$(ECHO) Copying C includes to $(AROS_INCLUDES)...
+	@$(CP) $< $@
 
 $(GENINCDIR)/%.h : %.h
+	@$(ECHO) Copying C includes to $(GENINCDIR)...
 	@$(CP) $< $@
 
 $(AROS_INCLUDES)/%.hpp : %.hpp
+	@$(ECHO) Copying C++ includes to $(AROS_INCLUDES)...
 	@$(CP) $< $@
 
 $(GENINCDIR)/%.hpp : %.hpp
+	@$(ECHO) Copying C++ includes to $(GENINCDIR)...
 	@$(CP) $< $@
 
 setup : $(INCL_DIRS)
 
 $(INCL_DIRS) :
+	@$(ECHO) Creating $@...
 	@$(MKDIR) $@
 
 #MM
