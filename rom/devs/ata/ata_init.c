@@ -41,8 +41,8 @@
  * 2011-04-05  P. Fedin		   Addid basic SATA handling, needed for Mac.
  */
 
-#define DEBUG 1
-#define DSATA(x) x
+#define DEBUG 0
+#define DSATA(x)
 
 #include <aros/debug.h>
 
