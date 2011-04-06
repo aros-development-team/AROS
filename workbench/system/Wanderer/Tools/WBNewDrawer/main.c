@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBNewDrawer 0.6 (09.03.2010) ©2010 AROS Dev Team";
+char versionstring[] = "$VER: WBNewDrawer 0.7 (06.04.2011) ©2011 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -138,7 +138,7 @@ static void MakeGUI(void)
     set(str_name, MUIA_CycleChain, 1);
     set(window, MUIA_Window_Open, TRUE);
     set(window, MUIA_Window_ActiveObject, str_name);
-    set(window, MUIA_Window_DefaultObject, str_name);
+    set(window, MUIA_Window_DefaultObject, bt_ok);
     DoMethod(app, MUIM_Application_Execute);
 }
 
