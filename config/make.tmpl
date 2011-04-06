@@ -1314,11 +1314,11 @@ BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))
                  %(linklibobjs)
 
 # The module is linked from all the compiled .o files
-%rule_linkmodule module=$(BD_MODULE) objs="$(BD_STARTOBJS) $(BD_OBJS)" \
+%rule_linkmodule module=$(BD_MODULE) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=%(modname).err objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
-%rule_linkmodule module=$(BD_PKGMOD) objs="$(BD_STARTOBJS) $(BD_OBJS)" \
+%rule_linkmodule module=$(BD_PKGMOD) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=%(modname).err objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
@@ -1343,7 +1343,7 @@ BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libi
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
-$(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
+$(BD_KOBJ) : $(BD_OBJS) $(USER_OBJS) $(BD_ENDOBJS)
 	@$(ECHO) "Linking $@"
 	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
 	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
@@ -2524,7 +2524,7 @@ TMP_LDFLAGS := -L$(LIBDIR)
 
 ifneq ($(USER_LIBDIR),)
     ALL_USERLIBS := $(notdir $(wildcard $(USER_LIBDIR)/lib*.a))
-    USER_DEPLIBS := $(addprefix $(USER_LIBDIR)/, $(filter $(ALL_USERLIBS),$(DEPLIBS))
+    USER_DEPLIBS := $(addprefix $(USER_LIBDIR)/, $(filter $(ALL_USERLIBS),$(DEPLIBS)))
     DEPLIBS      := $(filter-out $(ALL_USERLIBS),$(DEPLIBS))
     TMP_LDFLAGS  := -L$(USER_LIBDIR) $(TMP_LDFLAGS)
 endif
