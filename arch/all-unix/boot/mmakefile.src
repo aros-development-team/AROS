@@ -39,7 +39,6 @@ $(BINDIR)/boot:
 # ---- UNIX board support package ----
 
 KLIBS   := exec expansion
-KDEVS   :=
 KHNDLRS := emul
 KHIDDS  := 
 KRSRCS  := battclock hostlib processor
@@ -52,7 +51,7 @@ ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
 endif
 
 %link_kickstart mmake=kernel-link-unix file=$(BINDIR)/boot/aros-bsp-$(BSP) \
-	handlers=$(KHNDLRS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
+	handlers=$(KHNDLRS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
 	uselibs="arossupport hiddgraphicsstubs hiddstubs amiga autoinit libinit rom m"
 
 %common

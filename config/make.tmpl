@@ -2516,7 +2516,7 @@ else
     KOBJ_STARTUP := %(startup)
 endif
 
-KOBJS   := $(KOBS_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
+KOBJS   := $(KOBJ_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
 LDLIBS  := $(addprefix -l, %(uselibs))
 DEPDIRS := $(dir %(file))
 DEPLIBS := $(addprefix $(LIBDIR)/lib, $(addsuffix .a, %(uselibs)))
