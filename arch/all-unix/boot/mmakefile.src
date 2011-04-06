@@ -34,18 +34,15 @@ $(BINDIR)/boot:
 #MM	kernel-exec-kobj			\
 #MM     $(X11_HIDD_TARGET)		        \
 #MM     kernel-fs-emul-kobj                     \
-#MM	linklibs				\
-#MM	kernel-link-unix-quick
+#MM	linklibs
 
-#MM
-kernel-link-unix-quick : $(BINDIR)/boot/aros-bsp-$(BSP)
+# ---- UNIX board support package ----
 
-# UNIX board support package
 KLIBS   := exec expansion
 KDEVS   :=
 KHNDLRS := emul
 KHIDDS  := 
-KRSRCS  := kernel battclock hostlib processor
+KRSRCS  := battclock hostlib processor
 # Disabled until ported - sonic
 # ifeq ("$(AROS_HOST_ARCH)","linux")
 # KHIDDS  += linux
@@ -54,24 +51,8 @@ ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
     KHIDDS += x11gfx
 endif
 
-# Module containing startup code (kernel.resource) must appear
-# in the beginning of the final list
-KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
-	 $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) ))
+%link_kickstart mmake=kernel-link-unix file=$(BINDIR)/boot/aros-bsp-$(BSP) \
+	handlers=$(KHNDLRS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
+	uselibs="arossupport hiddgraphicsstubs hiddstubs amiga autoinit libinit rom m"
 
-DEP_LIBS := \
-	$(LIBDIR)/libamiga.a \
-	$(LIBDIR)/libarossupport.a \
-	$(LIBDIR)/libhiddgraphicsstubs.a \
-	$(LIBDIR)/libhiddstubs.a \
-	$(LIBDIR)/libautoinit.a \
-	$(LIBDIR)/liblibinit.a
-
-LIBS :=	-larossupport -lhiddgraphicsstubs -lhiddstubs -lamiga -lautoinit -llibinit -lrom -lm
-
-$(BINDIR)/boot/aros-bsp-$(BSP): $(DEP_LIBS) $(KOBJS) $(BINDIR)/boot
-	@$(ECHO) Linking $@...
-	@$(TARGET_CC) $(KOBJS) $(LIBS) -o $@ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS)
+%common
