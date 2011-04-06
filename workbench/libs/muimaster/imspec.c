@@ -858,7 +858,7 @@ void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo 
 }
 
 /**************************************************************************
- Duplicates a image spec. In in may be one of the MUII_#? identifiers
+ Duplicates an image spec. In 'in' may be one of the MUII_#? identifiers
  (but it will always return a string).
  The returned string must be freed with zune_image_spec_free() because
  in the future it might be that the MUII_#? stuff is not converted to
