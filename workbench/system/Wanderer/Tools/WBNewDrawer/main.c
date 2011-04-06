@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBNewDrawer 0.7 (06.04.2011) ©2011 AROS Dev Team";
+char versionstring[] = "$VER: WBNewDrawer 0.7 (6.4.2011) ©2006-2011 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
