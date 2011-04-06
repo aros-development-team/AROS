@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2008, The AROS Development Team. All rights reserved.
+  Copyright  2004-2011, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -458,7 +458,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 
   if ((this_bgtype[0] - 48) != 5)
   {
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background is NOT an image - letting our windoclass handle it ..\n"));
+    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background is NOT an image - letting our windowclass handle it...\n"));
     
     goto pb_cleanup_buffer;
   }
@@ -515,6 +515,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
                           PDTA_Screen,            this_BFI->bfi_Screen,
                           PDTA_FreeSourceBitMap,  TRUE,
                           OBP_Precision,          PRECISION_IMAGE,
+                          PDTA_DitherQuality,     2,
                           TAG_DONE)))
     {
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Opened Datatype Object @ %x for image '%s'\n", this_BFI->bfi_Source->bfsir_DTPictureObject, this_BFI->bfi_Source->bfsir_SourceImage));
@@ -692,7 +693,7 @@ check_imagebuffer:
           goto pb_backfillsetup_complete;
         }
       }
-      // We arent the "ROOT" (desktop) window so only tile ...
+      // We aren't the "ROOT" (desktop) window so only tile...
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Drawer window scaling unsupported ...\n"));
     }
     default:
