@@ -354,6 +354,8 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
      * and do not set up legacy mode by itself.
      * In this case we have to do it ourselves.
      * This code is based on incomplete ahci.device source code by DissyOfCRN.
+     * CHECKME: In order to work on PPC it uses explicit little-endian I/O,
+     * assuning AHCI register file is always little-endian. Is it correct ?
      */
     if (SubClass == PCI_SUBCLASS_SATA)
     {
@@ -398,8 +400,8 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 	unmap.CPUAddress = (APTR)hwhba;
 	unmap.Length     = hba_size;
 
-	cap = mmio_inl(&hwhba->cap);
-	ghc = mmio_inl(&hwhba->ghc);
+	cap = mmio_inl_le(&hwhba->cap);
+	ghc = mmio_inl_le(&hwhba->ghc);
 	DSATA(bug("[ATA  ] Capabilities: 0x%08X, host control: 0x%08X\n", cap, ghc));
 
 	if (ghc & GHC_AE)
@@ -423,8 +425,8 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 	    	 * to #define this.
 	    	 */
 #ifdef DO_SATA_HANDOFF
-		ULONG version = mmio_inl(&hwhba->vs);
-		ULONG cap2    = mmio_inl(&hwhba->cap2);
+		ULONG version = mmio_inl_le(&hwhba->vs);
+		ULONG cap2    = mmio_inl_le(&hwhba->cap2);
 
 		DSATA(bug("[ATA  ] Version: 0x%08X, Cap2: 0x%08X\n", version, cap2));
 
@@ -434,7 +436,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 
             	    DSATA(bug("[ATA  ] HBA supports BIOS/OS handoff\n"));
 
-		    bohc = mmio_inl(&hwhba->bohc);
+		    bohc = mmio_inl_le(&hwhba->bohc);
 		    if (bohc && BOHC_BOS)
 		    {
 	    		struct IORequest *timereq;
@@ -455,14 +457,14 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 	    		    return;
 	    		}
 
-                	mmio_outl(bohc | BOHC_OOS, &hwhba->bohc);
+                	mmio_outl_le(bohc | BOHC_OOS, &hwhba->bohc);
                 	/* Spin on BOHC_BOS bit FIXME: Possible dead lock. No maximum time given on AHCI1.3 specs... */
-			while (mmio_inl(&hwhba->bohc) & BOHC_BOS);
+			while (mmio_inl_le(&hwhba->bohc) & BOHC_BOS);
 
 			ata_WaitTO(timereq, 0, 25000, 0);
                 	/* If after 25ms BOHC_BB bit is still set give bios a minimum of 2 seconds more time to run */
                 
-                	if (mmio_inl(&hwhba->bohc) & BOHC_BB)
+                	if (mmio_inl_le(&hwhba->bohc) & BOHC_BB)
                 	{
                 	    DSATA(bug("[ATA  ] Delayed handoff, waiting...\n"));
                 	    ata_WaitTO(timereq, 2, 0, 0);
@@ -474,7 +476,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
         	}
 #endif
 	    	/* This resets GHC_AE bit, disabling AHCI */
-	    	mmio_outl(0, &hwhba->ghc);
+	    	mmio_outl_le(0, &hwhba->ghc);
 	    }
 	}
 
