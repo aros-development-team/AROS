@@ -1,4 +1,4 @@
-#include "../bootstrap/cpu.h"
+#include <asm/x86_64/cpu.h>
 
 extern const struct {
     unsigned short size __attribute__((packed));

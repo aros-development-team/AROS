@@ -25,47 +25,16 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-pci-kobj		 \
 #MM			   kernel-pci-pcipc-kobj
 
-STARTUP := kernel_resource.o smpboot.bin.o
 KRSRCS  := battclock processor
 KLIBS   := exec expansion
 KDEVS   := ata timer
-KHNDLRS :=
 KHIDDS  := irq parallel pci pcipc serial vesagfx vgah kbd ps2mouse
 
-USER_LDFLAGS := -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/kernel.lds
-USER_LIBDIR  := $(GENDIR)/lib
-USER_LIBS    := bootconsole
-LIBS         := autoinit libinit amiga arossupport rom arosm hiddstubs hiddgraphicsstubs
+USER_LIBDIR := $(GENDIR)/lib
 
-BSP_FILE := $(BINDIR)/boot/aros-bsp-pc-x86_64
-
-#MM
-kernel-bsp-x86_64-pc : $(BSP_FILE)
-
-#MM
-kernel-bsp-x86_64-pc-quick : $(BSP_FILE)
-
-KOBJS := $(addprefix $(KOBJSDIR)/,$(STARTUP))			       \
-	 $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
-	 $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) ))
-
-LDLIBS      := $(addprefix -l,$(LIBS) $(USER_LIBS))
-LIBDEPS     := $(addsuffix .a,$(addprefix $(LIBDIR)/lib,$(LIBS)))
-USERLIBDEPS := $(addsuffix .a,$(addprefix $(USER_LIBDIR)/lib,$(USER_LIBS)))
-
-$(BSP_FILE): $(BINDIR)/boot $(OSGENDIR)/boot $(KOBJS) $(LIBDEPS) $(USERLIBDEPS)
-	@$(ECHO) Linking $@...
-	@$(TARGET_LD) $(USER_LDFLAGS) -o $@ $(KOBJS) -L$(USER_LIBDIR) -L$(LIBDIR) $(LDLIBS)
-
-$(BINDIR)/boot:
-	@$(ECHO) Creating $@...
-	%mkdirs_q $@
-
-$(OSGENDIR)/boot:
-	@$(ECHO) Creating $@...
-	%mkdirs_q $@
+%link_kickstart mmake=kernel-bsp-x86_64-pc file=$(BINDIR)/boot/aros-bsp-pc-x86_64 \
+	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
+	uselibs="bootconsole autoinit libinit amiga arossupport rom arosm hiddstubs hiddgraphicsstubs" \
+	map=$(OSGENDIR)/boot/kernel-bsp-x86_64-pc.map
 
 %common
