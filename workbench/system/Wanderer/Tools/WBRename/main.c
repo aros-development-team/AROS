@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBRename 0.3 (10.04.2006) ©2006 AROS Dev Team";
+char versionstring[] = "$VER: WBRename 0.4 (06.04.2011) ©2006 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -101,15 +101,15 @@ static void MakeGUI(void)
                 Child, (IPTR) Label2(__(MSG_LINE)),   
                 Child, (IPTR) Label2(oldname),       // FIXME: Instead of two "Label2" would probably be better using a string with %s referring to oldname
             End),                                    // so that the output looks more like WB 3.1: "Enter a new name for '%s'."  
-            Child, (IPTR) (HGroup,
+                Child, (IPTR) (HGroup,
                 Child, (IPTR) Label2(__(MSG_NAME)),
                 Child, (IPTR)(str_name = (Object *)StringObject,
-                MUIA_CycleChain, 1,
-                MUIA_String_Contents, (IPTR) oldname,
-                MUIA_String_MaxLen, MAXFILENAMELENGTH,
-                MUIA_String_Reject, (IPTR) illegal_chars, // Doesn't work :-/
-                MUIA_String_Columns, -1,
-                MUIA_Frame, MUIV_Frame_String,
+                    MUIA_CycleChain, 1,
+                    MUIA_String_Contents, (IPTR) oldname,
+                    MUIA_String_MaxLen, MAXFILENAMELENGTH,
+                    MUIA_String_Reject, (IPTR) illegal_chars, // Doesn't work :-/
+                    MUIA_String_Columns, -1,
+                    MUIA_Frame, MUIV_Frame_String,
                 End),
             End),
             Child, (IPTR) (RectangleObject, 
@@ -134,6 +134,8 @@ static void MakeGUI(void)
     DoMethod(bt_ok, MUIM_Notify, MUIA_Pressed, FALSE,
 	    app, 2, MUIM_CallHook, (IPTR)&bt_ok_hook);
     set(window, MUIA_Window_Open, TRUE);
+    set(window, MUIA_Window_ActiveObject, str_name);
+    set(window, MUIA_Window_DefaultObject, bt_ok);
 }
 
 
@@ -146,6 +148,12 @@ static void bt_ok_hook_function(void)
     {
 	   DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     }
+    else
+    {
+        set(window, MUIA_Window_Activate, TRUE);
+        set(window, MUIA_Window_ActiveObject, str_name);
+    }
+
 }
 
 
