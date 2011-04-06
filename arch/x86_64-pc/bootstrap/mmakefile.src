@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES	     := bootstrap elfloader cpu support
 USER_CFLAGS  := -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DMULTIBOOT_64BIT -DELF_64BIT
-USER_LDFLAGS := -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds
+USER_LDFLAGS := -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/bootstrap-pc-x86_64.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds
 LIBDIR       := $(GENDIR)/lib32
 LIBS         := bootconsole rom
 OBJDIR       := $(GENDIR)/$(CURDIR)
@@ -22,21 +22,18 @@ DEPS      := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(FILES)))
 LIBDEPS   := $(addsuffix .a,$(addprefix $(LIBDIR)/lib,$(LIBS)))
 LDLIBS    := $(addprefix -l,$(LIBS))
 
-$(BOOTSTRAP_NAME): setup-pc-x86_64 $(OBJS) $(USER_OBJS) $(LIBDEPS)
+$(BOOTSTRAP_NAME): $(OBJS) $(USER_OBJS) $(BINDIR)/boot $(OSGENDIR)/boot $(LIBDEPS)
 	@$(ECHO) Linking $@...
 	@$(KERNEL_LD) $(USER_LDFLAGS) -o $@ $(OBJS) $(USER_OBJS) -L$(LIBDIR) $(LDLIBS)
 	#@strip --strip-unneeded -R .note -R .comment $@
 
-$(OBJDIR)/vesa.bin.o: $(OBJDIR)/vesa.o
-	@$(ECHO) Linking $@...
-	@$(KERNEL_LD) -melf_i386 --oformat=binary -e 0x1000 -Ttext 0x1000 -N -d -o $(OBJDIR)/vesa $(OBJDIR)/vesa.o
-	@cd $(OBJDIR) && $(KERNEL_LD) -r --format binary --oformat elf32-i386 vesa -o $@
-
-setup-pc-x86_64 :
-	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(OBJDIR)
+%rule_link_binary file=$(OBJDIR)/vesa.bin.o name=vesa objs=$(OBJDIR)/vesa.o \
+	start=0x1000 ldflags="--oformat elf32-i386"
 
 %rule_compile basename=% targetdir=$(OBJDIR)
 
 -include $(DEPS)
+
+GLOB_MKDIRS += $(BINDIR)/boot $(OSGENDIR)/boot
 
 %common
