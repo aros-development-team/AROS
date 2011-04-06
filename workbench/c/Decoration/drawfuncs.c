@@ -41,7 +41,7 @@ static void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol,
     if (ySize < 0) ySize = (LONG)subimageheight;
 
     /* Detect if image can be drawn using blitting instead of alpha draw */
-    if (!(ni->subimageinbm[subimageCol + (subimageRow * subimageCol)]))
+    if (!(ni->subimageinbm[subimageCol + (subimageRow * ni->subimagescols)]))
     {
         WritePixelArrayAlpha(ni->data, (subimagewidth * subimageCol) + xSrc , 
             (subimageheight * subimageRow) + ySrc, ni->w * 4, destRP,
@@ -74,14 +74,19 @@ static void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol,
                 xSize, ySize, 0xc0);
         }
     }
-
 }
 
 static void BltNewImageSubImageRastPortSimple(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
     struct RastPort * destRP, LONG xDest, LONG yDest)
 {
-    BltNewImageSubImageRastPort(ni, subimageCol, subimageRow, 0, 0, destRP, 
-        xDest, yDest, -1, -1);
+    ULONG xSize = ni->w / ni->subimagescols;
+    ULONG ySize = ni->h / ni->subimagesrows;
+    
+    if (subimageCol >= ni->subimagescols) return;
+    if (subimageRow >= ni->subimagesrows) return;
+
+    WritePixelArrayAlpha(ni->data, xSize * subimageCol, ySize * subimageRow,
+        ni->w * 4, destRP, xDest, yDest, xSize, ySize, 0xffffffff);
 }
 
 static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
@@ -850,8 +855,8 @@ void HorizRepeatBuffer(UBYTE * buf, LONG offy, LONG pen, BOOL tc, struct RastPor
         return;
     }
 
-	/* By bringing building the gradient array in the same format as the RastPort BitMap a call
-        to WritePixelArray() can be made also faster */
+    /* By bringing building the gradient array in the same format as the RastPort BitMap a call
+       to WritePixelArray() can be made also faster */
     bufblit = AllocVec(w * h * 3, MEMF_ANY);
     
     /* Copy one column buffer into blit buffer */
