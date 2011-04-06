@@ -6,8 +6,8 @@
 #include "debug.h"
 #include "rndis.class.h"
 
-#define htole32(x) (x) //TODO
-#define letoh32(x) (x)
+#define htole32(x) AROS_LONG2LE(x)
+#define letoh32(x) AROS_LE2LONG(x)
 
 #undef  ps
 #define ps ncp->ncp_Base
@@ -51,7 +51,7 @@ uint32_t urndis_ctrl_msg(struct NepClassEth *ncp, uint8_t rt, uint8_t r,
 uint32_t urndis_ctrl_send(struct NepClassEth *ncp, void *buf, size_t len)
 {
     LONG err;
-    LONG sc_ifaceno_ctl=0;// TODO
+    LONG sc_ifaceno_ctl=0;
 
     bug("urndis_ctrl_send:\n");
     //dumpmem(buf,len);
@@ -75,7 +75,7 @@ urndis_ctrl_recv(struct NepClassEth *ncp)
     struct urndis_comp_hdr  *hdr;
     char            *buf;
     LONG         err;
-    LONG sc_ifaceno_ctl=0;// TODO
+    LONG sc_ifaceno_ctl=0;
 
 
     buf = psdAllocVec(RNDIS_RESPONSE_LEN);
@@ -110,10 +110,10 @@ urndis_ctrl_recv(struct NepClassEth *ncp)
         return NULL;
     }
 
-
-
     return hdr;
 }
+
+
 uint32_t
 urndis_ctrl_handle_init(struct NepClassEth *ncp,
     const struct urndis_comp_hdr *hdr)
@@ -166,6 +166,7 @@ urndis_ctrl_handle_init(struct NepClassEth *ncp,
 
     return letoh32(msg->rm_status);
 }
+
 
 uint32_t
 urndis_ctrl_handle_query(struct NepClassEth *ncp,
@@ -228,7 +229,6 @@ urndis_ctrl_handle_query(struct NepClassEth *ncp,
 
     return letoh32(msg->rm_status);
 }
-
 
 
 uint32_t
@@ -367,6 +367,7 @@ uint32_t urndis_ctrl_handle(struct NepClassEth *ncp, struct urndis_comp_hdr *hdr
     return rval;
 }
 
+
 uint32_t
 urndis_ctrl_query(struct NepClassEth *ncp, uint32_t oid,
     void *qbuf, size_t qlen,
@@ -421,6 +422,7 @@ urndis_ctrl_query(struct NepClassEth *ncp, uint32_t oid,
 
     return rval;
 }
+
 
 uint32_t urndis_ctrl_init(struct NepClassEth *ncp)
 {
@@ -495,6 +497,7 @@ long urndis_encap(struct NepClassEth *ncp, BYTE *m,LONG len )
 
     return(sizeof(*msg));
 }
+
 
 void urndis_decap(struct NepClassEth *ncp, BYTE **buf, LONG *datalen)
 {
@@ -595,7 +598,6 @@ void urndis_decap(struct NepClassEth *ncp, BYTE **buf, LONG *datalen)
 }
 
 
-
 void
 urndis_attach(struct NepClassEth *ncp)
 {
@@ -606,7 +608,6 @@ urndis_attach(struct NepClassEth *ncp)
     uint32_t             filter;
 
     urndis_ctrl_init(ncp);
-
 
     if (urndis_ctrl_query(ncp, OID_802_3_PERMANENT_ADDRESS, NULL, 0,
         &buf, &bufsz) != RNDIS_STATUS_SUCCESS) {
