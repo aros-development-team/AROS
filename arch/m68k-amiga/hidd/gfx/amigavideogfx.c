@@ -49,21 +49,42 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	struct amigavideo_staticdata *csd = CSD(cl);
 	struct TagItem mytags[2];
 	struct pRoot_New mymsg;
-	ULONG allocsize = 2000;
+	ULONG allocsize = 800;
 	ULONG allocedsize = 0;
-	UBYTE i;
 
 	ULONG *tags, *tagptr;
 
 	ULONG *tags_640_512, *tags_640_400, *tags_640_256, *tags_640_200;
 	ULONG *tags_320_512, *tags_320_400, *tags_320_256, *tags_320_200;
-	ULONG *pftags_aga[8], *pftags_ecs_hires[4], *pftags_ecs_lores[5];
+	ULONG *tags_1280_512, *tags_1280_400, *tags_1280_256, *tags_1280_200;
+	ULONG *pftags_aga, *pftags_ecs_hires, *pftags_ecs_lores;
 	ULONG *mode_tags_aga, *mode_tags_ecs;
 
 	if (csd->initialized)
 		return NULL;
    
 	tags = tagptr = AllocVec(allocsize, MEMF_PUBLIC);
+
+	tags_1280_512 = tagptr;
+	ADDTAG(aHidd_Sync_HDisp, 1280);
+	ADDTAG(aHidd_Sync_VDisp, 512);
+	ADDTAG(aHidd_Sync_Flags, vHidd_Sync_Interlaced);
+	ADDTAG(TAG_DONE, 0);
+	tags_1280_400 = tagptr;
+	ADDTAG(aHidd_Sync_HDisp, 1280);
+	ADDTAG(aHidd_Sync_VDisp, 400);
+	ADDTAG(aHidd_Sync_Flags, vHidd_Sync_Interlaced);
+	ADDTAG(TAG_DONE, 0);
+	tags_1280_256 = tagptr;
+	ADDTAG(aHidd_Sync_HDisp, 1280);
+	ADDTAG(aHidd_Sync_VDisp, 256);
+	ADDTAG(aHidd_Sync_Flags, 0);
+	ADDTAG(TAG_DONE, 0);
+	tags_1280_200 = tagptr;
+	ADDTAG(aHidd_Sync_HDisp, 1280);
+	ADDTAG(aHidd_Sync_VDisp, 200);
+	ADDTAG(aHidd_Sync_Flags, 0);
+	ADDTAG(TAG_DONE, 0);
 
 	tags_640_512 = tagptr;
 	ADDTAG(aHidd_Sync_HDisp, 640);
@@ -108,42 +129,32 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	ADDTAG(TAG_DONE, 0);
 
 	if (csd->aga) {
-		for (i = 0; i < 8; i++) {
-			pftags_aga[i] = tagptr;
-			ADDTAG(aHidd_PixFmt_RedShift,		 8);
-			ADDTAG(aHidd_PixFmt_GreenShift, 	16);
-			ADDTAG(aHidd_PixFmt_BlueShift,		24);
-			ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
-			ADDTAG(aHidd_PixFmt_RedMask,		0x00FF0000);
-			ADDTAG(aHidd_PixFmt_GreenMask,		0x0000FF00);
-			ADDTAG(aHidd_PixFmt_BlueMask,		0x000000FF);
-			ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
-			ADDTAG(aHidd_PixFmt_CLUTMask,		0x000000FF);
-			ADDTAG(aHidd_PixFmt_CLUTShift,		0);
-			ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
-			ADDTAG(aHidd_PixFmt_Depth,		i + 1);
-			ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
-			ADDTAG(aHidd_PixFmt_BitsPerPixel,	i + 1);
-			ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
-			ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
-			ADDTAG(TAG_DONE, 0);
-		}
+		pftags_aga = tagptr;
+		ADDTAG(aHidd_PixFmt_RedShift,		 8);
+		ADDTAG(aHidd_PixFmt_GreenShift, 	16);
+		ADDTAG(aHidd_PixFmt_BlueShift,		24);
+		ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
+		ADDTAG(aHidd_PixFmt_RedMask,		0x00FF0000);
+		ADDTAG(aHidd_PixFmt_GreenMask,		0x0000FF00);
+		ADDTAG(aHidd_PixFmt_BlueMask,		0x000000FF);
+		ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
+		ADDTAG(aHidd_PixFmt_CLUTMask,		0x000000FF);
+		ADDTAG(aHidd_PixFmt_CLUTShift,		0);
+		ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
+		ADDTAG(aHidd_PixFmt_Depth,		8);
+		ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
+		ADDTAG(aHidd_PixFmt_BitsPerPixel,	8);
+		ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
+		ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
+		ADDTAG(TAG_DONE, 0);
+		
 		mode_tags_aga = tagptr;
 		ADDTAG(aHidd_Sync_HMin,		112);
 		ADDTAG(aHidd_Sync_VMin,		112);
 		ADDTAG(aHidd_Sync_HMax,		16384);
 		ADDTAG(aHidd_Sync_VMax,		16384);
-		ADDTAG(aHidd_Sync_Description,	(IPTR)"MODE: %hx%v");
-#if 0
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[0]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[1]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[2]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[3]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[4]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[5]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[6]);
-#endif
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga[7]);
+		ADDTAG(aHidd_Sync_Description,	(IPTR)"AGA: %hx%v");
+		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_aga);
 
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_200);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_256);
@@ -153,74 +164,67 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_256);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_512);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_400);
+		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_1280_200);
+		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_1280_256);
+		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_1280_512);
+		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_1280_400);
 		ADDTAG(TAG_DONE, 0);
 
     		mytags[0].ti_Tag = aHidd_Gfx_ModeTags;
     		mytags[0].ti_Data = (IPTR)mode_tags_aga;
 	} else {
-		for (i = 0; i < 5; i++) {
-			pftags_ecs_lores[i] = tagptr;
-			ADDTAG(aHidd_PixFmt_RedShift,		20);
-			ADDTAG(aHidd_PixFmt_GreenShift, 	24);
-			ADDTAG(aHidd_PixFmt_BlueShift,		28);
-			ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
-			ADDTAG(aHidd_PixFmt_RedMask,		0x00000F00);
-			ADDTAG(aHidd_PixFmt_GreenMask,		0x000000F0);
-			ADDTAG(aHidd_PixFmt_BlueMask,		0x0000000F);
-			ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
-			ADDTAG(aHidd_PixFmt_CLUTMask,		0x0000001F);
-			ADDTAG(aHidd_PixFmt_CLUTShift,		0);
-			ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
-			ADDTAG(aHidd_PixFmt_Depth,		i + 1);
-			ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
-			ADDTAG(aHidd_PixFmt_BitsPerPixel,	i + 1);
-			ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
-			ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
-			ADDTAG(TAG_DONE, 0);
-		}
-		for (i = 0; i < 4; i++) {
-			pftags_ecs_hires[i] = tagptr;
-			ADDTAG(aHidd_PixFmt_RedShift,		20);
-			ADDTAG(aHidd_PixFmt_GreenShift, 	24);
-			ADDTAG(aHidd_PixFmt_BlueShift,		28);
-			ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
-			ADDTAG(aHidd_PixFmt_RedMask,		0x00000F00);
-			ADDTAG(aHidd_PixFmt_GreenMask,		0x000000F0);
-			ADDTAG(aHidd_PixFmt_BlueMask,		0x0000000F);
-			ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
-			ADDTAG(aHidd_PixFmt_CLUTMask,		0x0000001F);
-			ADDTAG(aHidd_PixFmt_CLUTShift,		0);
-			ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
-			ADDTAG(aHidd_PixFmt_Depth,		i + 1);
-			ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
-			ADDTAG(aHidd_PixFmt_BitsPerPixel,	i + 1);
-			ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
-			ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
-			ADDTAG(TAG_DONE, 0);
-		}
+		pftags_ecs_lores = tagptr;
+		ADDTAG(aHidd_PixFmt_RedShift,		20);
+		ADDTAG(aHidd_PixFmt_GreenShift, 	24);
+		ADDTAG(aHidd_PixFmt_BlueShift,		28);
+		ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
+		ADDTAG(aHidd_PixFmt_RedMask,		0x00000F00);
+		ADDTAG(aHidd_PixFmt_GreenMask,		0x000000F0);
+		ADDTAG(aHidd_PixFmt_BlueMask,		0x0000000F);
+		ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
+		ADDTAG(aHidd_PixFmt_CLUTMask,		0x0000001F);
+		ADDTAG(aHidd_PixFmt_CLUTShift,		0);
+		ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
+		ADDTAG(aHidd_PixFmt_Depth,		6);
+		ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
+		ADDTAG(aHidd_PixFmt_BitsPerPixel,	6);
+		ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
+		ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
+		ADDTAG(TAG_DONE, 0);
+
+		pftags_ecs_hires = tagptr;
+		ADDTAG(aHidd_PixFmt_RedShift,		20);
+		ADDTAG(aHidd_PixFmt_GreenShift, 	24);
+		ADDTAG(aHidd_PixFmt_BlueShift,		28);
+		ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
+		ADDTAG(aHidd_PixFmt_RedMask,		0x00000F00);
+		ADDTAG(aHidd_PixFmt_GreenMask,		0x000000F0);
+		ADDTAG(aHidd_PixFmt_BlueMask,		0x0000000F);
+		ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
+		ADDTAG(aHidd_PixFmt_CLUTMask,		0x0000001F);
+		ADDTAG(aHidd_PixFmt_CLUTShift,		0);
+		ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
+		ADDTAG(aHidd_PixFmt_Depth,		4);
+		ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
+		ADDTAG(aHidd_PixFmt_BitsPerPixel,	4);
+		ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
+		ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
+		ADDTAG(TAG_DONE, 0);
+
 		mode_tags_ecs = tagptr;
 		ADDTAG(aHidd_Sync_HMin,		112);
 		ADDTAG(aHidd_Sync_VMin,		112);
 		ADDTAG(aHidd_Sync_HMax,		16384);
 		ADDTAG(aHidd_Sync_VMax,		16384);
-		ADDTAG(aHidd_Sync_Description,	(IPTR)"MODE: %hx%v");
-#if 0
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_hires[0]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_hires[1]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_hires[2]);
-#endif
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_hires[3]);
+		ADDTAG(aHidd_Sync_Description,	csd->ecs_denise ? (IPTR)"ECS: %hx%v" : (IPTR)"OCS: %hx%v");
+
+		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_hires);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_200);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_256);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_512);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_640_400);
-#if 0
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[0]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[1]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[2]);
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[3]);
-#endif
-		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores[4]);
+
+		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_200);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_256);
 		ADDTAG(aHidd_Gfx_SyncTags,	(IPTR)tags_320_512);
@@ -232,7 +236,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	}
 
     allocedsize = (ULONG)tagptr - (ULONG)tags;
-    bug("alloc=%d alloced=%d\n", allocsize, allocedsize);
+    D(bug("alloc=%d alloced=%d\n", allocsize, allocedsize));
 
     mytags[1].ti_Tag = TAG_MORE;
     mytags[1].ti_Data = (IPTR)msg->attrList;
