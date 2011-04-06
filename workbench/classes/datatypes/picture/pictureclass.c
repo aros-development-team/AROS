@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -170,9 +170,9 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
     pd->ModeID = INVALID_ID;
     pd->Remap = TRUE;
     pd->SrcPixelFormat = -1;
-    pd->DitherQuality = 4;
+    pd->DitherQuality = 0;
     pd->UseFriendBM = 1;
-    pd->DestMode = 1;	/* needs to be changed to FALSE after Multiview adaption */
+    pd->DestMode = 1;	/* needs to be changed to FALSE after Multiview adaptation */
 
     /* Prefs overrides default, but application overrides Prefs */
     ReadPrefs(pd);
@@ -589,8 +589,8 @@ static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG S
 
     if ((depth >= 15) && (bmhd->bmh_Masking == mskHasAlpha))
     {
-        /* FIXME: This method does not work on scalled datatype images */
-        /* Transparency on high color rast port with alpha channel in picture*/
+        /* FIXME: This method does not work on scaled datatype images */
+        /* Transparency on high color rast port with alpha channel in picture */
         ULONG * img = (ULONG *) AllocVec(SizeX * SizeY * 4, MEMF_ANY);
         if (img)
         {
@@ -1251,7 +1251,7 @@ STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBl
     else if ( pixelformat == PBPAFMT_RGB || pixelformat == PBPAFMT_RGBA || pixelformat == PBPAFMT_ARGB )
     {
 	/* Copy picture data pixel by pixel (this is not fast, but compatible :-) */
-	UBYTE r=0, g=0, b=0, a;
+	UBYTE r=0, g=0, b=0, a=0xff;
         long line, x, col;
 	int srcpixelformat;
         STRPTR srcstart;
@@ -1269,7 +1269,6 @@ STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBl
         deststart = msg->pbpa_PixelData;
 	colregs = pd->SrcColRegs;
 
-	a = 0;
 	for( line=0; line<msg->pbpa_Height; line++ )
 	{
 	    srcptr = srcstart;

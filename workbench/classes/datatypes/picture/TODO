@@ -1,12 +1,5 @@
-Last status update: 24. Jan 2003
+Last status update: 6th Apr 2011
 
-picture.datatype is an external class. So it has only very few
-functions: some library-support and the class-dispatcher.
-But the methods and properties of the class must be written.
-As a first step picture.datatype will be developed for a very
-special environment: AROS datatypes.library, AROS ppm.datatype,
-AROS Multiview.
-When it runs in this env it will be generalized.
 The following items must be implemented:
 
 library-framework               100% done
@@ -33,7 +26,7 @@ methods:
     DTM_PRINT                   missing
     DTM_WRITE                   missing
     PDTM_WRITEPIXELARRAY        OK
-    PDTM_READPIXELARRAY         missing
+    PDTM_READPIXELARRAY         mostly done
     PDTM_SCALE                  in progress
 
 The following attributes must be supported:
