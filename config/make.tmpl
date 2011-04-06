@@ -2553,7 +2553,8 @@ GLOB_MKDIRS += $(DEPDIRS)
 #------------------------------------------------------------------------------
 # Link %(objs) to binary blob in %(file) using %(name) as name of embedded binary object
 # 'start' is an optional starting address
-%define rule_link_binary file=/A name=/A objs=/A start=0
+# 'ldflags' is optional additional flags for the linker
+%define rule_link_binary file=/A name=/A objs=/A start=0 ldflags=
 
 BD_OUTDIR := $(dir %(file))
 BD_TMPDIR  := $(GENDIR)/$(CURDIR)
@@ -2561,7 +2562,7 @@ BD_TMPDIR  := $(GENDIR)/$(CURDIR)
 %(file) : %(objs) $(BD_OUTDIR)
 	@$(ECHO) Linking $@...
 	@$(KERNEL_LD) -melf_i386 --oformat=binary -e %(start) -Ttext=%(start) -o $(BD_TMPDIR)/%(name) %(objs)
-	@cd $(BD_TMPDIR) && $(KERNEL_LD) -r --format binary %(name) -o $@
+	@cd $(BD_TMPDIR) && $(KERNEL_LD) -r --format binary %(ldflags) %(name) -o $@
 
 GLOB_MKDIRS += $(BD_OUTDIR)
 

@@ -17,13 +17,11 @@ USER_OBJS := $(OBJDIR)/smpboot.bin.o
   modname=kernel modtype=resource		\
   files="$(KERNELFILES)" uselibs="rom"
 
+# This builds SMP bootstrap code
+
 USER_CFLAGS := -m32
 
-$(OBJDIR)/smpboot.bin.o : $(OBJDIR)/smpbootstrap.o
-	@$(ECHO) Linking $@...
-	@$(KERNEL_LD) -melf_i386 --oformat=binary -e 0 -Ttext=0 -o $(OBJDIR)/smpbootstrap $^
-	@cd $(OBJDIR) && $(KERNEL_LD) -r --format binary smpbootstrap -o $@
-
 %rule_compile basename=smpbootstrap targetdir=$(OBJDIR)
+%rule_link_binary file=$(OBJDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o
 
 %common
