@@ -23,21 +23,20 @@ static int UAEGFX_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("************************* UAEGFX_Init ******************************\n"));
     if (!Init_UAEGFXClass(LIBBASE))
     	return FALSE;
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
+    GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     if (!GfxBase)
         return FALSE;
     LIBBASE->library.lib_OpenCnt = 1;
     gfxhidd = OOP_NewObject(LIBBASE->csd.gfxclass, NULL, NULL);
     D(bug("UAEGFX=0x%p\n", gfxhidd));
     if (gfxhidd) {
-	ULONG err = AddDisplayDriver(gfxhidd, DDRV_BootMode, TRUE, TAG_DONE);
+	ULONG err = AddDisplayDriver(gfxhidd, DDRV_KeepBootMode, TRUE, TAG_DONE);
 	D(bug("UAEGFX AddDisplayDriver() result: %u\n", err));
 	if (err) {
 	    OOP_DisposeObject(gfxhidd);
 	    gfxhidd = NULL;
 	}
     }
-
     CloseLibrary(&GfxBase->LibNode);
     D(bug("UAEGFX_Init=0x%p\n", gfxhidd));
     return gfxhidd ? TRUE : FALSE;

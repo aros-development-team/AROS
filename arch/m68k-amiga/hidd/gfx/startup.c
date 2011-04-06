@@ -24,7 +24,7 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
     OOP_Object *gfxhidd;
  	
     D(bug("************************* AmigaVideo_Init ******************************\n"));
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
+    GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     if (!GfxBase)
         return FALSE;
     initcustom(&LIBBASE->csd);
@@ -33,14 +33,13 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
     gfxhidd = OOP_NewObject(LIBBASE->csd.amigagfxclass, NULL, NULL);
     D(bug("AMIGAGFXHIDD=0x%p\n", gfxhidd));
     if (gfxhidd) {
-	ULONG err = AddDisplayDriver(gfxhidd, DDRV_BootMode, TRUE, DDRV_KeepBootMode, FALSE, TAG_DONE);
+	ULONG err = AddDisplayDriver(gfxhidd, DDRV_KeepBootMode, TRUE, TAG_DONE);
 	D(bug("AMIGAGFXHIDD AddDisplayDriver() result: %u\n", err));
 	if (err) {
 	    OOP_DisposeObject(gfxhidd);
 	    gfxhidd = NULL;
 	}
     }
-
     CloseLibrary(&GfxBase->LibNode);
     D(bug("AmigaVideo_Init=0x%p\n", gfxhidd));
     return gfxhidd ? TRUE : FALSE;
