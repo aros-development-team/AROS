@@ -26,33 +26,16 @@ AROS_UFH3(void, xhciResetHandler,
 {
     AROS_USERFUNC_INIT
 
-    ULONG timeout, temp;
-
-    struct PCIUnit *hu = hc->hc_Unit;
-
 	/* Halt controller */
-	temp = opreg_readl(XHCI_USBCMD);
-	opreg_writel(XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
-
-    /* Spec says "16ms" if conditions are met... */
-    timeout = 100;
-    do {
-        temp = opreg_readl(XHCI_USBSTS);
-        if( (temp & XHCF_STS_HCH) ) {
-            KPRINTF(1000, ("XHCI Controller halted!\n"));
-            break;
-        }
-        uhwDelayMS(10, hu);
-    } while(--timeout);
-
     #ifdef DEBUG
-    if(!timeout)
-        KPRINTF(1000, ("XHCI Halting timed out, reset may result in undefined behavior!\n"));
+    if(!xhciHaltHC(hc))
+        KPRINTF(1000, ("XHCI Halting HC failed, reset may result in undefined behavior!\n"));
+    #else
+    xhciHaltHC(hc);
     #endif
 
 	/* Reset controller */
-	temp = opreg_readl(XHCI_USBCMD);
-	opreg_writel(XHCI_USBCMD, (temp | XHCF_CMD_HCRST));
+    xhciResetHC(hc);
 
     AROS_USERFUNC_EXIT
 }
@@ -67,8 +50,9 @@ void xhciCompleteInt(struct PCIController *hc)
 void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct PCIController *hc = (struct PCIController *) irq->h_Data;
-    struct PCIDevice *base = hc->hc_Device;
-    struct PCIUnit *unit = hc->hc_Unit;
+//    struct PCIDevice *base = hc->hc_Device;
+//    struct PCIUnit *unit = hc->hc_Unit;
+
     ULONG intr, portn;
 
     intr = opreg_readl(XHCI_USBSTS);
@@ -103,7 +87,7 @@ void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                 KPRINTF(1000, ("Host Controller Error (HCE)!\n"));
             }
 
-        }
+        } // not online
     }
 }
 
@@ -146,9 +130,9 @@ BOOL xhciHaltHC(struct PCIController *hc) {
 
     ULONG timeout, temp;
 
-    /* Halt the controller, clear Run/Stop bit */
+    /* Halt the controller by clearing Run/Stop bit */
     temp = opreg_readl(XHCI_USBCMD);
-    opreg_writel(XHCI_USBCMD, (temp | ~XHCF_CMD_RS));
+    opreg_writel(XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
 
     /*
         The xHC shall halt within 16 ms. after software clears the Run/Stop bit if certain conditions have been met.
@@ -159,7 +143,7 @@ BOOL xhciHaltHC(struct PCIController *hc) {
     do {
         temp = opreg_readl(XHCI_USBSTS);
         if( !(temp & XHCF_STS_HCH) ) {
-            KPRINTF(1000, ("controlller halted!\n"));
+            KPRINTF(1000, ("controller halted!\n"));
             return TRUE;
         }
         uhwDelayMS(10, hu);
@@ -216,6 +200,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     struct TagItem pciActivateMemAndBusmaster[] =
     {
+            { aHidd_PCIDevice_isIO,     FALSE },
             { aHidd_PCIDevice_isMEM,    TRUE },
             { aHidd_PCIDevice_isMaster, TRUE },
             { TAG_DONE, 0UL },
@@ -260,24 +245,29 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         This xHC supports a page size of 2^(n+12) if bit n is Set. For example,
         if bit 0 is Set, the xHC supports 4k byte page sizes.
     */
-    cnt = 0;
+    cnt = 12;
     temp = opreg_readl(XHCI_PAGESIZE)&0xffff;
     while((~temp&1) & temp){
         temp = temp>>1;
         cnt++;
     }
-    hc->xhc_pagesize = 1<<(cnt+12);
+    hc->xhc_pagesize = 1<< (cnt);
 
     hc->xhc_scratchbufs = XHCV_SPB_Max(capreg_readl(XHCI_HCSPARAMS2));
 
     KPRINTF(1000, ("Max Scratchpad Buffers %lx\n",hc->xhc_scratchbufs));
-    KPRINTF(1000, ("Pagesize 2^(n+12) = %lx\n",hc->xhc_pagesize));
+    KPRINTF(1000, ("Pagesize 2^(n+12) = %lx\n", hc->xhc_pagesize));
 
     hc->hc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
 
     KPRINTF(1000, ("MaxPorts %lx\n",hc->hc_NumPorts));
     KPRINTF(1000, ("MaxSlots %lx\n",XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))));
     KPRINTF(1000, ("MaxIntrs %lx\n",XHCV_MaxIntrs(capreg_readl(XHCI_HCSPARAMS1))));
+
+    /* 64 byte or 32 byte context data structures? */
+    if(capreg_readl(XHCI_HCCPARAMS) & XHCF_CSZ) {
+        hc->xhc_contextsize64=TRUE; 
+    }
 
     /* xHCI Extended Capabilities, search for USB Legacy Support */
     extcap = xhciExtCap(hc, XHCI_EXT_CAPS_LEGACY, 0);
@@ -305,10 +295,6 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 WRITEMEM32_LE(extcap, (temp & ~XHCF_BIOSOWNED) );
             }
         }
-
-        /* Clear all SMI enable bits in USBLEGCTLSTS register*/
-        temp = READMEM32_LE(extcap + XHCI_USBLEGCTLSTS);
-        WRITEMEM32_LE(extcap + XHCI_USBLEGCTLSTS, (temp & ~(XHCF_SMI_USBE|XHCF_SMI_HSEE|XHCF_SMI_OSOE|XHCF_SMI_PCICE|XHCF_SMI_BARE)) );
     }
 
     /* xHCI Extended Capabilities, search for Supported Protocol */
@@ -346,14 +332,10 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 hc->hc_CompleteInt.is_Data = hc;
                 hc->hc_CompleteInt.is_Code = (void (*)(void)) &xhciCompleteInt;
 
-                // install reset handler
+                // add reset handler
                 hc->hc_ResetInt.is_Code = xhciResetHandler;
                 hc->hc_ResetInt.is_Data = hc;
                 AddResetCallback(&hc->hc_ResetInt);
-
-                /* Clears (RW1C) Host System Error(HSE), Event Interrupt(EINT), Port Change Detect(PCD) and Save/Restore Error(SRE) */
-                temp = opreg_readl(XHCI_USBSTS);
-                opreg_writel(XHCI_USBSTS, temp);
 
                 // add interrupt handler
                 hc->hc_PCIIntHandler.h_Node.ln_Name = "XHCI PCI (pciusb.device)";
@@ -361,6 +343,10 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 hc->hc_PCIIntHandler.h_Code = xhciIntCode;
                 hc->hc_PCIIntHandler.h_Data = hc;
                 HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
+
+                /* Clears (RW1C) Host System Error(HSE), Event Interrupt(EINT), Port Change Detect(PCD) and Save/Restore Error(SRE) */
+                temp = opreg_readl(XHCI_USBSTS);
+                opreg_writel(XHCI_USBSTS, temp);
 
                 /* After reset all notifications should be automatically disabled but ensure anyway */
                 opreg_writel(XHCI_DNCTRL, 0);
@@ -394,6 +380,7 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
         {
             case HCITYPE_XHCI:
             {
+                xhciHaltHC(hc);
                 KPRINTF(1000, ("Shutting down XHCI %08lx\n", hc));
                 uhwDelayMS(50, hu);
                 SYNC;
