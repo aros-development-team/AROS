@@ -21,11 +21,11 @@ Pøejmenování objektu
 ;
 MSG_LINE
 Zadejte nový název
-; Enter a new name
+; Enter a new name for:
 ;
 MSG_NAME
-Název:
-; New name:
+\33bNázev:\33n 
+; \33bNew name:\33n 
 ;
 MSG_OK
 _Potvrdit

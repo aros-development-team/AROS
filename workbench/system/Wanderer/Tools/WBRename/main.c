@@ -91,21 +91,23 @@ static void MakeGUI(void)
 	MUIA_Application_UseRexx, FALSE,
         SubWindow, (IPTR)(window = (Object *)WindowObject,
             MUIA_Window_Title, __(MSG_WINDOW_TITLE),
+            MUIA_Window_Width, MUIV_Window_Width_Visible(33),  // Set width at least as 33% of visible screen
             MUIA_Window_NoMenus, TRUE,
             MUIA_Window_CloseGadget, FALSE,
             WindowContents, (IPTR) (VGroup,
             MUIA_Frame, MUIV_Frame_Group,
             Child, (IPTR) (HGroup,
-                Child, (IPTR) HVSpace,
-                Child, (IPTR) Label2(__(MSG_LINE)),
-            End),
+                Child, (IPTR) HVSpace,               
+                Child, (IPTR) Label2(__(MSG_LINE)),   
+                Child, (IPTR) Label2(oldname),       // FIXME: Instead of two "Label2" would probably be better using a string with %s referring to oldname
+            End),                                    // so that the output looks more like WB 3.1: "Enter a new name for '%s'."  
             Child, (IPTR) (HGroup,
                 Child, (IPTR) Label2(__(MSG_NAME)),
                 Child, (IPTR)(str_name = (Object *)StringObject,
                 MUIA_CycleChain, 1,
                 MUIA_String_Contents, (IPTR) oldname,
                 MUIA_String_MaxLen, MAXFILENAMELENGTH,
-                MUIA_String_Reject, (IPTR) illegal_chars, // Doesn't work :-(
+                MUIA_String_Reject, (IPTR) illegal_chars, // Doesn't work :-/
                 MUIA_String_Columns, -1,
                 MUIA_Frame, MUIV_Frame_String,
                 End),

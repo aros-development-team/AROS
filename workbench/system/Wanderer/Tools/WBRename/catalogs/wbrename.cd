@@ -12,10 +12,10 @@ MSG_WINDOW_TITLE (//)
 Rename
 ;
 MSG_LINE (//)
-Enter a new name
+Enter a new name for:
 ;
 MSG_NAME (//)
-New name:
+\33bNew name:\33n 
 ;
 MSG_OK (//)
 _OK
