@@ -87,7 +87,7 @@ void initcustom(struct amigavideo_staticdata *data)
 {
     UBYTE i;
     UWORD *c;
-    UWORD vposr;
+    UWORD vposr, val;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
     resetcustom();
@@ -107,6 +107,15 @@ void initcustom(struct amigavideo_staticdata *data)
     vposr = custom->vposr & 0x7f00;
     data->aga = vposr >= 0x2200;
     data->ecs_agnus = vposr >= 0x2000;
+    val = custom->deniseid;
+    custom->deniseid = 0x0000;
+    if (val == custom->deniseid) {
+    	custom->deniseid = 0xffff;
+    	if (val == custom->deniseid) {
+            if ((val & (2 + 8)) == 8)
+    		data->ecs_denise = TRUE;
+    	}
+    }
     data->max_colors = data->aga ? 256 : 32;
     data->palette = AllocVec(data->max_colors * 3, MEMF_CLEAR);
     data->copper1 = AllocVec(20 * 2 * sizeof(WORD), MEMF_CLEAR | MEMF_CHIP);
@@ -217,7 +226,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     	yscroll = y - 10;
     	y = 10;
     }
-    if (x < 0)
+    //if (x < 0)
     	x = 0;
     copptr[1] = 0x0a81; //(y << 8) + (x + 1);
     copptr[3] = 0x40c1; //((y + (bm->rows >> data->interlace)) << 8) + ((x + 1 + (bm->width >> data->res)) & 0x00ff);
@@ -311,6 +320,8 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     // need to update sprite colors
     if (data->use_colors < 20)
     	data->use_colors = 20;
+    if (data->use_colors > 32 && !data->aga)
+    	data->use_colors = 32;
 
     c2d->copper2_scroll = c;
     *c++ = 0x008e;
@@ -328,10 +339,12 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     *c++ = 0x010a;
     *c++ = 0x0000 + (data->interlace ? bm->bytesperrow : 0) + data->modulo;
     *c++ = 0x0104;
-    *c++ = 0x0024;
+    *c++ = 0x0024 | (data->aga ? 0x0200 : 0);
 
     c2d->copper2_fmode = NULL;
     if (data->aga) {
+    	*c++ = 0x010c;
+    	*c++ = 0x0011;
     	*c++ = 0x01fc;
     	c2d->copper2_fmode = c;
     	*c++ = 0;
@@ -411,6 +424,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
 {
     UWORD ddfstrt, ddfstop;
     UBYTE fetchunit, fetchstart, maxplanes;
+    UWORD bplwidth;
     
     resetmode(data);
 
@@ -423,13 +437,14 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     D(bug("setmode bm=%x w=%d h=%d d=%d fu=%d fs=%d\n",
     	bm, bm->width, bm->height, bm->depth, fetchunit, fetchstart));
     
+    bplwidth = bm->width >> (data->res + 1);
     ddfstrt = (data->startx / 2) & ~((1 << fetchunit) - 1);
-    ddfstop = ddfstrt + ((bm->width / 4 + ((1 << fetchunit) - 1) - 2 * (1 << fetchunit)) & ~((1 << fetchunit) - 1));
+    ddfstop = ddfstrt + ((bplwidth + ((1 << fetchunit) - 1) - 2 * (1 << fetchunit)) & ~((1 << fetchunit) - 1));
     if (ddfstop >= 0xd4)
 	ddfstop = 0xd4;
-    data->modulo = (ddfstop + 2 * (1 << fetchunit) - ((1 << maxplanes) - 1) - ddfstrt) * 4;
-    data->modulo = bm->width - data->modulo;
-    data->modulo /= 8;
+    data->modulo = (ddfstop + 2 * (1 << fetchunit) - ((1 << maxplanes) - 1) - ddfstrt);
+    data->modulo = bplwidth - data->modulo;
+    data->modulo /= 2;
     data->modulo &= ~((2 << data->fmode_bpl) - 1);
     ddfstrt -= (1 << maxplanes);
     data->ddfstrt = ddfstrt;
