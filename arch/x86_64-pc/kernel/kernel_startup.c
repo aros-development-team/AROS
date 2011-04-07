@@ -183,7 +183,7 @@ void kernel_cstart(struct TagItem *msg, void *entry)
     	    	break;
 
 	    case KRN_CmdLine:
-	    	l = strlen((char *)tag->ti_Data);
+	    	l = strlen((char *)tag->ti_Data) + 1;
 	    	ptr = RelocateTagData(ptr, tag, l);
 	    	break;
 	    }
