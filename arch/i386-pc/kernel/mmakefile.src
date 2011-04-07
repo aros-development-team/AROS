@@ -23,6 +23,10 @@ kernel-kernel-pc-i386-kobj :: $(OUTDIR)/smpboot.bin.o
 %rule_compile basename=smpbootstrap targetdir=$(OBJDIR)
 %rule_link_binary file=$(OUTDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o
 
+-include $(OBJDIR)/smpbootstrap.d
+
+$(OBJDIR)/smpbootstrap.o $(OBJDIR)/smpbootstrap.d : | $(OBJDIR)
+
 GLOB_MKDIRS += $(OUTDIR) $(OBJDIR)
 
 %common
