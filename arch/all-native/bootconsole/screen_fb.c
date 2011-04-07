@@ -89,9 +89,15 @@ static void RenderChar(unsigned char c, unsigned int xc, unsigned int yc)
 void fb_Init(unsigned int width, unsigned int height, unsigned int depth, unsigned int pitch)
 {
     scr_Width       = width / fontWidth;
-    scr_Height      = height / fontHeight;
     fb_BytesPerPix  = depth >> 3;
     fb_BytesPerLine = pitch;
+
+    fb_Resize(height);
+}
+
+void fb_Resize(unsigned int height)
+{
+    scr_Height = height / fontHeight;
 
     fb_Clear();
 }
