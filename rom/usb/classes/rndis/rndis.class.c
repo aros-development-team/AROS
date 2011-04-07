@@ -118,8 +118,10 @@ struct AutoBindData
     UWORD abd_ProdID;
 };
 
+
 struct AutoBindData ClassBinds[] =
 {
+    { 0x0bb4, 0x0ffe },      // HTC , Android phone
     //{ 0x12d1, 0x1039 },   // Huawei u8800
     { 0, 0 }
 };
