@@ -55,7 +55,7 @@ static const struct multiboot_header __header __attribute__((used,section(".aros
 asm("	.text\n\t"
     "	.globl kernel_bootstrap\n\t"
     "	.type  kernel_bootstrap,@function\n"
-    "kernel_bootstrap: movl $__stack+65536, %esp\n\t"   /* Load stack pointer */
+    "kernel_bootstrap: movl $__stack + 65536, %esp\n\t"		/* Load stack pointer */
     "	pushl %ebx\n\t"                                 /* store parameters passed by GRUB in registers */
     "	pushl %eax\n\t"
     "	pushl $0\n\t"
@@ -201,6 +201,8 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                     file += len;
                 }
             }
+            else
+            	kprintf("[BOOT] Unknown module 0x%p (%s)\n", p, (char *)mod->cmdline);
         }
     }
 
@@ -208,13 +210,34 @@ static int find_modules(struct multiboot *mb, const struct module *m)
     return count;
 }
 
+/* Marks console mirror buffer as allocated */
+static void AllocFB(void)
+{
+    if (scr_Type == SCR_GFX)
+    {
+	D(kprintf("[BOOT] Allocating %u bytes for console mirror (%ux%u)\n", scr_Width * scr_Height, scr_Width, scr_Height));
+
+    	__bs_malloc(scr_Width * scr_Height);
+    }
+}
+
 static void setupVESA(char *vesa)
 {
     long x=0, y=0, d=0;
+    unsigned char palwidth = 6;
     long mode;
+    short res;
 
     void *vesa_start = &_binary_vesa_start;
     unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
+    void *tmp = __bs_malloc(vesa_size);
+
+    if (!tmp)
+    {
+    	kprintf("[BOOT] VESA mode setup failed, not enough working memory\n");
+
+    	return;
+    }
 
     x = strtoul(vesa, &vesa, 10);
     vesa++;
@@ -228,9 +251,16 @@ static void setupVESA(char *vesa)
      * 16-bit VBE trampoline is needed only once only here, so
      * we can simply copy it to some address, do what we need, and
      * then forget.
+     * However we must keep in mind that low memory can be occupied by
+     * something useful, like kickstart modules or boot information.
+     * So we preserve our region and put it back when we are done.
      */
-    kprintf("[BOOT] setupVESA: vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size);
-    __bs_memcpy((void *)0x1000, vesa_start, vesa_size);
+
+    D(kprintf("[BOOT] Backing up low memory, buffer at 0x%p\n", tmp));
+    __bs_memcpy(tmp, VESA_START, vesa_size);
+
+    D(kprintf("[BOOT] setupVESA: vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size));
+    __bs_memcpy(VESA_START, vesa_start, vesa_size);
 
     kprintf("[BOOT] setupVESA: BestModeMatch for %dx%dx%d = ",x,y,d);
     mode = findMode(x,y,d);
@@ -247,16 +277,24 @@ static void setupVESA(char *vesa)
 
     kprintf("%x\n",mode);
 
-    if (setVbeMode(mode) == VBE_RC_SUPPORTED)
+    res = setVbeMode(mode);
+    if (res == VBE_RC_SUPPORTED)
     {
-        unsigned char palwidth = 6;
-
 	/* Try to switch palette width to 8 bits if possible */
         if (VBEControllerInfo.capabilities & VC_PALETTE_WIDTH)
             paletteWidth(0x0800, &palwidth);
+    }
 
-	/* Reinitialize our console */
-	con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
+    /* Put memory back and reset memory allocator */
+    __bs_memcpy(VESA_START, tmp, vesa_size);
+    __bs_free();
+
+    if (res == VBE_RC_SUPPORTED)
+    {
+    	/* Reinitialize our console */
+    	fb_Mirror = __bs_malloc(0);
+    	con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
+    	AllocFB();
 
         tag->ti_Tag = KRN_VBEModeInfo;
         tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
@@ -402,10 +440,9 @@ static void panic(const char *str)
  * or as a collection in PKG file. If some file is specified in both PKG file and list of separate modules, the
  * copy in PKG will be skipped.
 */
-static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int addr)
+static void __attribute__((used)) __bootstrap(unsigned int magic, struct multiboot *mb)
 {
-    struct multiboot *mb = (struct multiboot *)addr;/* Multiboot structure from GRUB */
-    struct module *mod = (struct module *)__stack;  /* The list of modules at the bottom of stack */
+    struct module *mod;
     char *vesa = NULL;
     int module_count = 0;
     void *kick_base = (void *)KERNEL_TARGET_ADDRESS;
@@ -415,16 +452,21 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     unsigned long len = 0;
 
     /*
-     * We are loaded at 0x200000, so we can use one megabyte at 0x100000
-     * as our working area. Let's put console mirror there.
-     * I hope every PC has memory at this address.
+     * This will set fb_Mirror address to start of our working memory.
+     * We don't know its size yet, we will allocate it later.
      */
-    fb_Mirror = (char *)0x100000;
+    fb_Mirror = __bs_malloc(0);
     con_InitMultiboot(mb);
 
     kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
     D(kprintf("[BOOT] Stack @ %p, [%d bytes]\n", __stack, sizeof(__stack)));
     D(kprintf("[BOOT] Multiboot structure @ %p\n", mb));
+
+    /*
+     * Now allocate our mirror buffer.
+     * The buffer is used only by graphical console.
+     */
+    AllocFB();
 
     if (mb->flags & MB_FLAGS_CMDLINE)
     {
@@ -541,6 +583,12 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 
     kprintf("[BOOT] Loading kickstart...\n");
     set_base_address(kick_base, __bss_track);
+
+    /*
+     * This will place list of modules in the end of our working memory.
+     * It's safe to reserve zero bytes because we won't allocate anything else.
+     */
+    mod = __bs_malloc(0);
 
     /* Search for external modules loaded by GRUB */
     module_count = find_modules(mb, mod);
