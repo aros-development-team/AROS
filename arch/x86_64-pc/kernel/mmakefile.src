@@ -7,9 +7,6 @@ USER_INCLUDES := -I$(SRCDIR)/rom/exec -isystem $(SRCDIR)/arch/all-native/bootcon
 #MM kernel-kernel-pc-x86_64 : includes kernel-kernel-pc-x86_64-includes
 #MM kernel-kernel-pc-x86_64-kobj : includes kernel-kernel-pc-x86_64-includes
 
-kernel-kernel-pc-x86_64 : $(KOBJSDIR)/smpboot.bin.o
-kernel-kernel-pc-x86_64-kobj : $(KOBJSDIR)/smpboot.bin.o
-
 OBJDIR    := $(GENDIR)/$(CURDIR)
 USER_OBJS := $(OBJDIR)/smpboot.bin.o
 
