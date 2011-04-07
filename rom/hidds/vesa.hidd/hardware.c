@@ -8,16 +8,6 @@
 
 #define DEBUG 0
 
-/*
- * This weird thing allows you to see the debug console
- * after the driver initialises the screen.
- * Yes, you won't see the image on display. However, you'll see
- * a debug log.
- * Needs to be replaced by something less weird. Have some ideas,
- * but no time to code them - sonic.
- *
-#define DEBUG_HACK */
-
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
@@ -154,7 +144,6 @@ void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
     src = data->VideoData + sy * data->bytesperline + sx * data->bytesperpix;
     dst = hwdata->framebuffer + y1 * hwdata->bytesperline + x1 * hwdata->bytesperpixel;
 
-#ifndef DEBUG_HACK
     /*
      * Disable screen debug output if not done yet.
      * TODO: develop some mechanism to tell kernel that we actually
@@ -166,7 +155,6 @@ void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
     	RawPutChar(0x03);
     	hwdata->owned = TRUE;
     }
-#endif
 
     /*
     ** common sense assumption: memcpy can't possibly be faster than CopyMem[Quick]
@@ -297,13 +285,11 @@ void ClearBuffer(struct HWData *data)
 {
     IPTR *p, *limit;
 
-#ifndef DEBUG_HACK
     if (!data->owned)
     {
     	RawPutChar(0x03);
     	data->owned = TRUE;
     }
-#endif
 
     p = (IPTR *)data->framebuffer;
     limit = (IPTR *)((IPTR)p + data->height * data->bytesperline);
