@@ -2826,12 +2826,9 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
 //    DoMenuNotify(strip, MEN_WINDOW_VIEW_HIDDEN, MUIA_Menuitem_Trigger,
 //				wanderer_menufunc_window_view_hidden, strip);
 
-
-    //trying to add a "Clean up" code
+    
     DoMenuNotify(strip, MEN_WINDOW_SORT_NOW, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_cleanup, NULL); 
-    // EOF try
-
     DoMenuNotify(strip, MEN_WINDOW_SORT_ENABLE, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_enable, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_NAME, MUIA_Menuitem_Trigger,
