@@ -1,5 +1,5 @@
 /*
-    Copyright  2004-2010, The AROS Development Team. All rights reserved.
+    Copyright  2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -109,6 +109,7 @@ extern IPTR             InitWandererPrefs(void);
 Object                  *FindMenuitem(Object* strip, int id);
 Object                  *Wanderer__Func_CreateWandererIntuitionMenu(BOOL isRoot, BOOL useBackdrop);
 void                    wanderer_menufunc_window_update(void);
+void                    wanderer_menufunc_window_cleanup(void);
 void                    execute_open_with_command(BPTR cd, STRPTR contents);
 void                    DisposeCopyDisplay(struct MUIDisplayObjects *d);
 BOOL                    CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d);
@@ -1240,6 +1241,23 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     }
 }
 ///
+
+///wanderer_menufunc_window_cleanup()
+void wanderer_menufunc_window_cleanup()
+{
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+
+    if (iconList != NULL)
+    {
+        DoMethod(iconList, MUIM_IconList_Sort);
+    } 
+}
+///
+
+
 
 ///wanderer_menufunc_window_clear()
 void wanderer_menufunc_window_clear()
@@ -2808,6 +2826,12 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
 //    DoMenuNotify(strip, MEN_WINDOW_VIEW_HIDDEN, MUIA_Menuitem_Trigger,
 //				wanderer_menufunc_window_view_hidden, strip);
 
+
+    //trying to add a "Clean up" code
+    DoMenuNotify(strip, MEN_WINDOW_SORT_NOW, MUIA_Menuitem_Trigger,
+				wanderer_menufunc_window_cleanup, NULL); 
+    // EOF try
+
     DoMenuNotify(strip, MEN_WINDOW_SORT_ENABLE, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_enable, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_NAME, MUIA_Menuitem_Trigger,
@@ -3622,7 +3646,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       _(MSG_MEN_ABOUT),       NULL                    , 0                                     , 0, (APTR) MEN_WANDERER_ABOUT },
                 {NM_ITEM,       _(MSG_MEN_QUIT) ,       _(MSG_MEN_SC_QUIT)      , 0                                     , 0, (APTR) MEN_WANDERER_QUIT },
                 {NM_ITEM,       _(MSG_MEN_SHUTDOWN),    NULL                    , 0			                , 0, (APTR) MEN_WANDERER_SHUTDOWN },
-            {NM_TITLE,          _(MSG_MEN_WINDOW),      NULL                    , 0 },
+                {NM_TITLE,      _(MSG_MEN_WINDOW),      NULL                    , 0 },
                 {NM_ITEM,       _(MSG_MEN_UPDATE),      NULL                    , 0                                     , 0, (APTR) MEN_WINDOW_UPDATE },
                 {NM_ITEM,       NM_BARLABEL },
                 {NM_ITEM,       _(MSG_MEN_CONTENTS),    _(MSG_MEN_SC_CONTENTS)  , 0                                     , 0, (APTR) MEN_WINDOW_SELECT },
