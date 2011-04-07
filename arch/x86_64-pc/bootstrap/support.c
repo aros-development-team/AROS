@@ -9,6 +9,7 @@
 #include <bootconsole.h>
 #include <stdarg.h>
 
+#include "bootstrap.h"
 #include "support.h"
 
 const char *__bs_remove_path(const char *in)
@@ -48,6 +49,47 @@ void *__bs_memcpy(void *dest, const void *src, long len)
 
     /* Return next byte in the destination, useful in some cases */
     return dest;
+}
+
+/*
+ * Our extremely simple working memory allocator.
+ * We can't just use some memory region because kickstart modules are placed there by GRUB.
+ * We risk clobbering loaded kickstart in such a case.
+ * The only 100% usable memory is memory contained in our own file.
+ * So we reserve some workspace here. I hope 1MB is more than enough for out needs.
+ * This space ends up in .bss section, so it does not occupy this megabyte on disk.
+ */
+static char workspace[0x1000000];
+
+static char *MemPtr = workspace;
+
+void *__bs_malloc(unsigned long size)
+{
+    char *start = MemPtr;
+    char *end;
+
+    /* Longword-align the size */
+    size = (size + sizeof(void *) - 1) & ~sizeof(void *);
+    end  = start + size;
+
+    /*
+     * _start is provided by linker script, it marks start of
+     * our executable. This is the end of allocatable region.
+     * We also count reserved space for stack which is placed in the
+     * end of our working memory.
+     */
+    if (end > workspace + sizeof(workspace))
+    	return 0;
+
+    MemPtr = end;
+
+    return start;
+}
+
+/* This routine resets the allocator and releases all previously allocated memory */
+void __bs_free(void)
+{
+    MemPtr = workspace;
 }
 
 static unsigned int format_int (char *buf, char base, int d)

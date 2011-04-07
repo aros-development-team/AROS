@@ -2,7 +2,7 @@ FORCE_COMMON_ALLOCATION
 
 SECTIONS
 {
-    . = 0x200000;
+    . = 0x100000;
 
     .tables :
     {

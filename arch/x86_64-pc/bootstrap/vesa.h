@@ -3,6 +3,9 @@
 
 #include <hardware/vbe.h>
 
+/* Our trampoline code is linked at this address */
+#define VESA_START (void *)0x1000
+
 #ifndef _IMPLEMENTATION_
 
 asm (".set getControllerInfo,0x1000");
