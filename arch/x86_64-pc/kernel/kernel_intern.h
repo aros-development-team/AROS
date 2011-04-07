@@ -23,6 +23,8 @@ struct   KernBootPrivate
     IPTR                kbp_APIC_DriverID;
     UWORD               kbp_APIC_BSPID;
     int                 kbp_APIC_IRQ_Model;
+    unsigned short	debug_y_resolution;
+    void	       *debug_framebuffer;
 };
 
 #define KERNBOOTFLAG_SERDEBUGCONFIGURED (1 << 0)

@@ -38,8 +38,12 @@ static const struct MemRegion PC_Memory[] =
     {0          , 0          , NULL            ,  0, 0                                                                  }
 };
 
-/* Pre-exec init */
-
+/*
+ * Small asm stub in the beginning.
+ * We do it in asm because we need to clear BSS section
+ * before we set stack pointer, because our stack is located in .bss.
+ * When we are done, we actually jump to boot_start() routine below.
+ */
 asm(".section .aros.startup,\"ax\"\n\t"
     ".globl start64\n\t"
     ".type start64,@function\n"
@@ -94,21 +98,13 @@ static void *RelocateTagData(unsigned char *dest, struct TagItem *tag, unsigned 
 
 static struct TagItem *BootMsg;
 static volatile UBYTE apicready = 0;
+UBYTE vesa_hack = 0;
 
+/* All CPUs start up from this point */
 void kernel_cstart(struct TagItem *msg, void *entry)
 {
     IPTR _APICBase;
     UBYTE _APICID;
-
-    /*
-     * Initialize console ASAP in order to get debug output correctly.
-     * This will deal with both serial and on-screen console.
-     */
-    fb_Mirror = (void *)0x101000;
-    con_InitTagList(msg);
-
-    bug("AROS64 - The AROS Research OS, 64-bit version. Compiled %s\n", __DATE__);
-    D(bug("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, &start64));
 
     /* Enable fxsave/fxrstor */ 
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
@@ -121,7 +117,9 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 	struct TagItem *dest;
 	unsigned long mlen;
         void *ptr;
-        
+        struct vbe_mode *vmode = NULL;
+        char *cmdline = NULL;
+
         if (!tag)
         {
             bug("Incomplete information from the bootstrap\n");
@@ -135,6 +133,7 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 
         __KernBootPrivate = ptr;
         __KernBootPrivate->kbp_InitFlags = 0;
+        __KernBootPrivate->debug_framebuffer = NULL;
 
 	/*
 	 * Our boot taglist is placed by the bootstrap just somewhere in memory.
@@ -176,6 +175,7 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 
     	    case KRN_VBEModeInfo:
     	    	ptr = RelocateTagData(ptr, tag, sizeof(struct vbe_mode));
+    	    	vmode = (struct vbe_mode *)tag->ti_Data;
     	    	break;
 
     	    case KRN_VBEControllerInfo:
@@ -185,10 +185,27 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 	    case KRN_CmdLine:
 	    	l = strlen((char *)tag->ti_Data) + 1;
 	    	ptr = RelocateTagData(ptr, tag, l);
+	    	cmdline = (char *)tag->ti_Data;
 	    	break;
 	    }
 	}
 	__KernBootPrivate->kbp_PrivateNext = (IPTR)ptr;
+
+	if (cmdline && vmode && vmode->phys_base && strstr(cmdline, "vesahack"))
+	{
+	    bug("[Kernel] VESA debugging hack activated\n");
+
+	    /*
+	     * VESA hack.
+	     * It divides screen height by 2 and increments framebuffer pointer.
+	     * This allows VESA driver to use only upper half of the screen, while
+	     * lower half will still be used for debug output.
+	     */
+	    vmode->y_resolution >>= 1;
+
+	    __KernBootPrivate->debug_y_resolution = vmode->y_resolution;
+	    __KernBootPrivate->debug_framebuffer  = (void *)vmode->phys_base + vmode->y_resolution * vmode->bytes_per_scanline;
+	}
     }
 
     D(bug("[Kernel] End of kickstart data area: 0x%p\n", __KernBootPrivate->kbp_PrivateNext));
@@ -436,6 +453,25 @@ void kernel_cstart(struct TagItem *msg, void *entry)
     while (1) asm volatile("hlt");
 }
 
+/*
+ * This code is executed only once, after the kickstart is loaded by bootstrap.
+ * Its main job is to initialize boot-time debugging console.
+ */
+static void boot_start(struct TagItem *msg)
+{
+    /*
+     * Initialize console ASAP in order to get debug output correctly.
+     * This will deal with both serial and on-screen console.
+     */
+    fb_Mirror = (void *)0x101000;
+    con_InitTagList(msg);
+
+    bug("AROS64 - The AROS Research OS, 64-bit version. Compiled %s\n", __DATE__);
+    D(bug("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", boot_start, &start64));
+
+    kernel_cstart(msg, NULL);
+}
+
 /* Small delay routine used by exec_cinit initializer */
 asm("\ndelay:\t.short   0x00eb\n\tretq");
 
@@ -448,7 +484,7 @@ static uint64_t stack_super[STACK_SIZE] __attribute__((used));
 static uint64_t stack_ring1[STACK_SIZE] __attribute__((used));
 
 static const uint64_t *stack_end __attribute__((used, section(".text"))) = &stack[STACK_SIZE-16];
-static const void *target_address __attribute__((section(".text"),used)) = (void*)kernel_cstart;
+static const void *target_address __attribute__((section(".text"),used)) = (void*)boot_start;
 
 static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256)));
 static struct tss_64bit TSS[16] __attribute__((used,aligned(128)));
