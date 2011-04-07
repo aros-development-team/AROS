@@ -38,6 +38,7 @@ void txt_Putc(char chr);
 
 /* Graphical framebuffer output */
 void fb_Init(unsigned int width, unsigned int height, unsigned int depth, unsigned int pitch);
+void fb_Resize(unsigned int height);
 void fb_Clear(void);
 void fb_Putc(char chr);
 void fb_SetMirror(char *addr);
