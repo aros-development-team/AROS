@@ -30,6 +30,15 @@ struct copper2data
 	UWORD *copper2_fmode;
 };
 
+struct NativeChipsetMode
+{
+	struct Node node;
+	ULONG modeid;
+	UWORD width, height;
+	OOP_Object *pf;
+	OOP_Object *sync;
+};
+
 struct amigavideo_staticdata
 {
     OOP_Class 	    	    *amigagfxclass;
@@ -45,9 +54,12 @@ struct amigavideo_staticdata
 	OOP_AttrBase hiddAttrBase;
 	OOP_AttrBase hiddColorMapAttrBase;
 	
+	struct List nativemodelist;
+	BOOL superforward;
 	struct GfxBase *gfxbase;
 
 	struct amigabm_data *disp;
+	ULONG modeid;
 	struct Interrupt inter;
 	volatile UWORD framecounter;
 	volatile UWORD mode;
