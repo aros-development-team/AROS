@@ -29,7 +29,7 @@ if (bitmap->Flags & BMF_SPECIALFMT) {					\
     OOP_Object *pf;							\
     IPTR stdpf;								\
 									\
-    OOP_GetAttr(bitmap->Planes[0], aHidd_BitMap_PixFmt, (IPTR *)&pf);	\
+    OOP_GetAttr((OOP_Object *)bitmap->Planes[0], aHidd_BitMap_PixFmt, (IPTR *)&pf);	\
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);			\
 									\
     bug("[AllocSpriteData] Bitmap pixelformat: %lu\n", stdpf);		\
@@ -176,19 +176,23 @@ bug("[AllocSpriteData] Bitmap contents:\n");			\
 	    int k;
 
 	    InitBitMap(&old_bitmap, 2, 16, height);
-	    planes_size = height * sizeof(UWORD) * 2;
-	    planes = AllocMem(planes_size, MEMF_CHIP);
-	    if (!planes)
-	        return NULL;
-	    p = planes;
-	    q = &planes[height];
-	    mask = ~((1 << (16 - width)) - 1);
-	    old_bitmap.Planes[0] = (PLANEPTR)p;
-	    old_bitmap.Planes[1] = (PLANEPTR)q;
 
-	    for (k = 0; k < height; ++k) {
-		*p++ = AROS_WORD2BE(*s++ & mask);
-		*q++ = AROS_WORD2BE(*s++ & mask);
+	    /* A zero-height sprite is evidently legal on AOS */
+	    planes_size = height * sizeof(UWORD) * 2;
+	    if (planes_size) {
+		planes = AllocMem(planes_size, MEMF_CHIP);
+		if (!planes)
+		    return NULL;
+		p = planes;
+		q = &planes[height];
+		mask = ~((1 << (16 - width)) - 1);
+		old_bitmap.Planes[0] = (PLANEPTR)p;
+		old_bitmap.Planes[1] = (PLANEPTR)q;
+
+		for (k = 0; k < height; ++k) {
+		    *p++ = AROS_WORD2BE(*s++ & mask);
+		    *q++ = AROS_WORD2BE(*s++ & mask);
+		}
 	    }
 	    bsa.bsa_SrcBitMap = &old_bitmap;
 	    bsa.bsa_SrcWidth = 16;
@@ -262,7 +266,7 @@ bug("[AllocSpriteData] Bitmap contents:\n");			\
 		sprite = NULL;
 	    }
         }
-	if (have_OldDataFormat)
+	if (have_OldDataFormat && planes_size)
 	    FreeMem(planes, planes_size);
     }
     return sprite;
