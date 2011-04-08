@@ -12,6 +12,7 @@ bootiso-pc-x86_64: $(TARGET_ISO)
 bootiso-pc-x86_64-quick: $(TARGET_ISO)
 
 .PHONY: bootiso-pc-x86_64-quick
+.PHONY: $(TARGET_ISO)
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
 BOOTLOADER_ELTORITO_REL := boot/grub/iso9660_stage1_5
@@ -27,7 +28,7 @@ endif
 
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 
-$(TARGET_ISO): $(BINDIR)/boot/kernel-pc-x86_64.pkg $(BINDIR)/boot/kernel-pc-x86_64
+$(TARGET_ISO):
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(DISTDIR)"
