@@ -97,14 +97,14 @@ static struct Gadget *createGadgets(LIBBASETYPEPTR DOSBootBase)
 
     /* Create BOOT Gadgets */
     DOSBootBase->bm_MainGadgets.boot = createButton(
-                                                        16, 190, 280, 14,
+                                                        16, 184, 280, 14,
                                                         DOSBootBase->bm_MainGadgets.expboarddiag->gadget, "Boot",
                                                         BUTTON_BOOT, (struct DOSBootBase *)DOSBootBase);
     if (DOSBootBase->bm_MainGadgets.boot == NULL)
             return NULL;
 
     DOSBootBase->bm_MainGadgets.bootnss = createButton(
-                                                        344, 190, 280, 14,
+                                                        344, 184, 280, 14,
                                                         DOSBootBase->bm_MainGadgets.boot->gadget, "Boot With No Startup-Sequence",
                                                         BUTTON_BOOT_WNSS, (struct DOSBootBase *)DOSBootBase);
     if (DOSBootBase->bm_MainGadgets.bootnss == NULL)
