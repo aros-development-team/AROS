@@ -5,6 +5,7 @@
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
 #include <hidd/graphics.h>
+#include <graphics/modeid.h>
 
 #include "amigavideogfx.h"
 #include "amigavideobitmap.h"
@@ -320,8 +321,14 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     // need to update sprite colors
     if (data->use_colors < 20)
     	data->use_colors = 20;
-    if (data->use_colors > 32 && !data->aga)
+    if (data->use_colors > 32 && (data->mode & EXTRAHALFBRITE_KEY))
     	data->use_colors = 32;
+    if (data->mode & HAM_KEY) {
+    	if (bm->depth <= 6)
+    	    data->use_colors = 20;
+    	else
+    	    data->use_colors = 64;
+    }
 
     c2d->copper2_scroll = c;
     *c++ = 0x008e;
@@ -339,7 +346,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     *c++ = 0x010a;
     *c++ = 0x0000 + (data->interlace ? bm->bytesperrow : 0) + data->modulo;
     *c++ = 0x0104;
-    *c++ = 0x0024 | (data->aga ? 0x0200 : 0);
+    *c++ = 0x0024 | ((data->aga && !(data->mode & EXTRAHALFBRITE_KEY)) ? 0x0200 : 0);
 
     c2d->copper2_fmode = NULL;
     if (data->aga) {
@@ -360,6 +367,8 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
 	bplcon0 |= bm->depth << 12;
     if (data->interlace)
 	bplcon0 |= 0x0004;
+    if (data->modeid & HAM_KEY)
+    	bplcon0 |= 0x0800;
 
     c2d->copper2_palette = c;
     if (data->aga) {
@@ -428,14 +437,20 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     
     resetmode(data);
 
+    data->res = 0;
+    if ((data->modeid & SUPER_KEY) == SUPER_KEY)
+    	data->res = 2;
+    else if ((data->modeid & SUPER_KEY) == HIRES_KEY)
+    	data->res = 1;
+    data->interlace = (data->modeid & LORESLACE_KEY) != 0;
     data->fmode_bpl = data->aga ? 2 : 0;
 
     fetchunit = fetchunits[data->fmode_bpl * 4 + data->res];
     fetchstart = fetchstarts[data->fmode_bpl * 4 + data->res];
     maxplanes = fm_maxplanes[data->fmode_bpl * 4 + data->res];
 
-    D(bug("setmode bm=%x w=%d h=%d d=%d fu=%d fs=%d\n",
-    	bm, bm->width, bm->height, bm->depth, fetchunit, fetchstart));
+    D(bug("setmode bm=%x mode=%08x w=%d h=%d d=%d fu=%d fs=%d\n",
+    	bm, data->modeid, bm->width, bm->height, bm->depth, fetchunit, fetchstart));
     
     bplwidth = bm->width >> (data->res + 1);
     ddfstrt = (data->startx / 2) & ~((1 << fetchunit) - 1);
