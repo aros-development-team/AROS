@@ -106,39 +106,42 @@ static void getarguments(int argc, char **argv)
 {
     char *imagenamestart, *sp;
     WORD i;
+    unsigned int narg = 1;
     
-    if (argc == 3 && !strcasecmp(argv[1], "-b2c"))
+    if (!strcasecmp(argv[1], "-b2c"))
     {
 	brush2c = 1;
-	filename = argv[2];
+	narg++;
     }
-    else if (argc == 3 && !strcasecmp(argv[1], "-b2p"))
+    else if (!strcasecmp(argv[1], "-b2p"))
     {
 	brush2pix = 1;
-	filename = argv[2];
+	narg++;
     }
-    else if (argc == 2)
-    {
-	filename = argv[1];
-    }
+    
+    if (argc > narg)
+	filename = argv[narg++];
+    else
+        cleanup("Usage: ilbmtoc [-b2c|-b2p] filename [imagename]", 1);
+    
+    if (argc > narg)
+    	imagenamestart = argv[narg];
     else
     {
-        cleanup("Usage: ilbmtoc [-b2c|-b2p] filename", 1);
-    }
-    
-    if (strlen(filename) >= sizeof(imagename)) cleanup("Filename too long!", 1);
-    
-    imagenamestart = filename;
-    for(;;)
-    {
-        sp = strchr(imagenamestart + 1, '/');
-	if (!sp) sp = strchr(imagenamestart + 1, '\\');
-	if (!sp) sp = strchr(imagenamestart + 1, ':');
-	if (!sp) break;
+    	imagenamestart = filename;
+    	for(;;)
+    	{
+            sp = strchr(imagenamestart + 1, '/');
+	    if (!sp) sp = strchr(imagenamestart + 1, '\\');
+	    if (!sp) sp = strchr(imagenamestart + 1, ':');
+	    if (!sp) break;
 	
-	imagenamestart = sp + 1;
+	    imagenamestart = sp + 1;
+	}
     }
-    
+
+    if (strlen(imagename) >= sizeof(imagename)) cleanup("Image name too long!", 1);
+
     strcpy(imagename, imagenamestart);
     if ((sp = strchr(imagename, '.'))) *sp = 0;
     
