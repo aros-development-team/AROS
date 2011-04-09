@@ -79,14 +79,8 @@ static void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol,
 static void BltNewImageSubImageRastPortSimple(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
     struct RastPort * destRP, LONG xDest, LONG yDest)
 {
-    ULONG xSize = ni->w / ni->subimagescols;
-    ULONG ySize = ni->h / ni->subimagesrows;
-    
-    if (subimageCol >= ni->subimagescols) return;
-    if (subimageRow >= ni->subimagesrows) return;
-
-    WritePixelArrayAlpha(ni->data, xSize * subimageCol, ySize * subimageRow,
-        ni->w * 4, destRP, xDest, yDest, xSize, ySize, 0xffffffff);
+    BltNewImageSubImageRastPort(ni, subimageCol, subimageRow, 0, 0, destRP,
+        xDest, yDest, -1, -1);
 }
 
 static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
@@ -590,7 +584,9 @@ void HorizVertRepeatNewImage(struct NewImage *ni, ULONG color, UWORD offx, UWORD
 
 /* NOTE: fill parameter is ignored, previously it was forcing a no-alpha blit, but
    this is already handled in BltNewImageSubImageRastPort */
-LONG WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw, LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
+LONG WriteTiledImageTitle(BOOL fill, struct Window *win,
+    struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw,
+    LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
 {
     int     w = dw;
     int     x = xp;
