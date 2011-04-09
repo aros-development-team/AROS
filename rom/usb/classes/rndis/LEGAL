@@ -1,6 +1,6 @@
 
 if_urndis.c and if_urndisreg.h are ported from openbsd urndis driver
-and MIT licensed:
+and BSD licensed:
 
 /*
  * Copyright (c) 2010 Jonathan Armani <armani@openbsd.org>
