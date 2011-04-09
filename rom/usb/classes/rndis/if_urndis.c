@@ -453,7 +453,7 @@ uint32_t urndis_ctrl_init(struct NepClassEth *ncp)
         letoh32(msg->rm_ver_minor),
         letoh32(msg->rm_max_xfersz));
 
-    Delay(50);
+    //Delay(50);
 
     rval = urndis_ctrl_send(ncp, msg, sizeof(*msg));
     psdFreeVec(msg);
@@ -499,23 +499,18 @@ long urndis_encap(struct NepClassEth *ncp, BYTE *m,LONG len )
 }
 
 
-void urndis_decap(struct NepClassEth *ncp, BYTE **buf, LONG *datalen)
+void urndis_decap(struct NepClassEth *ncp, const UBYTE *buf, const LONG datalen)
 {
 
     struct urndis_packet_msg    *msg;
-    int          count=0;
     int          offset;
     int         len;
 
     offset = 0;
-    len = *datalen;
+    len = datalen;
 
     while (len > 0) {
-        msg = (struct urndis_packet_msg *)((char*)(*buf) + offset);
-
-        if(++count > 1)bug("%s: urndis_decap TODO:MULTIPLE ETHERNET FRAMES NOT SUPPORTED %d\n", DEVNAME,count);
-
-
+        msg = (struct urndis_packet_msg *)(buf + offset);
         DB(bug("%s: urndis_decap buffer size left %u\n", DEVNAME,len));
 
         if (len < sizeof(*msg)) {
@@ -586,11 +581,9 @@ void urndis_decap(struct NepClassEth *ncp, BYTE **buf, LONG *datalen)
             return;
         }
 
-        DB(bug("%s: urndis_decap ethernet packet OK,size %d\n",DEVNAME, letoh32(msg->rm_datalen)));
+        DB(bug("%s: urndis_decap ethernet packet OK,size %d,offset %d\n",DEVNAME, letoh32(msg->rm_datalen),offset));
 
-        *buf = ((char*)&msg->rm_dataoffset + letoh32(msg->rm_dataoffset));
-        *datalen = letoh32(msg->rm_datalen);
-        //dumpmem(*buf,*datalen);
+        nReadPacket(ncp, ((char*)&msg->rm_dataoffset + letoh32(msg->rm_dataoffset)), letoh32(msg->rm_datalen) );
 
         offset += letoh32(msg->rm_len);
         len -= letoh32(msg->rm_len);

@@ -571,7 +571,7 @@ AROS_UFH0(void, nEthTask)
                             break;
                         } else {
                             KPRINTF(1, ("Pkt %ld received\n", pktlen));
-                            nReadPacket(ncp, pktptr, pktlen);
+                            urndis_decap(ncp, pktptr, pktlen);
                         }
                     }
                 }
@@ -1038,10 +1038,6 @@ BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG pktlen)
 
     KPRINTF(20, ("PktIn [%ld] %ld\n", ncp->ncp_ReadBufNum, pktlen));
     //bug("in %d\n",pktlen);
-
-    // add RNDIS header
-    urndis_decap(ncp, (BYTE **)&pktptr, (LONG *)&pktlen);
-    //dumpmem(pktptr, pktlen);
 
     if(pktlen < 14)
     {
