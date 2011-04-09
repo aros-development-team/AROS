@@ -174,7 +174,7 @@
 	if (round == 0 && (modeid & 0xff000000) == 0)
 	    continue;
 	/* scan native modes next only if nothing was found */
-	if (round == 1 && found_id)
+	if (round == 1 && found_id != INVALID_ID)
 	    break;
 	/* scan chipset modes last */
 	if (round == 1 && (modeid & 0xff000000) != 0)
