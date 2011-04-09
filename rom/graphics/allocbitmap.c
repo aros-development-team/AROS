@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new BitMap
@@ -186,8 +186,6 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 	for this.
 
 	BMF_SCREEN implies these flags.
-
-    HISTORY
 
 *****************************************************************************/
 {
@@ -410,12 +408,18 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
     		nbm->Flags  = flags | BMF_SPECIALFMT;
 
     		/* If this is a displayable bitmap, create a color table for it */
-    		if (((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM) && alloc)
+    		if (alloc && (friend_bitmap ||
+                    (flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM))
 		{
 		    HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SCREEN_BITMAP;
 
-		    if (friend_bitmap)
+    		    if (friend_bitmap && IS_HIDD_BM(friend_bitmap))
 		    {
+    		        /* We got a friend_bitmap bitmap. We inherit its
+                           colormap.
+    		           !!! NOTE !!! If this is used after the
+                           friend_bitmap bitmap is freed it means trouble,
+                           as the colortab mem will no longer be valid */
 			OOP_Object *oldcolmap;
 			    
 			oldcolmap = HIDD_BM_SetColorMap(HIDD_BM_OBJ(nbm), HIDD_BM_COLMAP(friend_bitmap));
@@ -462,22 +466,6 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 			else
 			    ok = FALSE;
 		    }
-    		}
-		else if (friend_bitmap)
-		{
-    		    /* We got a friend_bitmap bitmap. We inherit its colormap
-    		       !!! NOTE !!! If this is used after the friend_bitmap bitmap is freed
-    		       it means trouble, as the colortab mem
-    		       will no longer be valid */
-    		    if (IS_HIDD_BM(friend_bitmap))
-		    {
-			HIDD_BM_COLMAP(nbm)     = HIDD_BM_COLMAP(friend_bitmap);
-    			HIDD_BM_COLMOD(nbm)     = HIDD_BM_COLMOD(friend_bitmap);
-    			HIDD_BM_PIXTAB(nbm)     = HIDD_BM_PIXTAB(friend_bitmap);
-    	    	    	HIDD_BM_REALDEPTH(nbm)  = HIDD_BM_REALDEPTH(friend_bitmap);
-		    }
-		    else
-    			ok = FALSE;
     		}
 
     		if (ok)
