@@ -64,31 +64,6 @@
 # /arch/.unmaintained/m68k-linux/utility/
 /arch/.unmaintained/m68k-linux/utility/mmakefile
 
-# /arch/.unmaintained/m68k-native/
-/arch/.unmaintained/m68k-native/geninc
-/arch/.unmaintained/m68k-native/machine.i
-/arch/.unmaintained/m68k-native/makefile
-/arch/.unmaintained/m68k-native/mmakefile
-
-# /arch/.unmaintained/m68k-native/aros/
-/arch/.unmaintained/m68k-native/aros/mmakefile
-
-# /arch/.unmaintained/m68k-native/clib/
-/arch/.unmaintained/m68k-native/clib/makefile
-/arch/.unmaintained/m68k-native/clib/mmakefile
-
-# /arch/.unmaintained/m68k-native/exec/
-/arch/.unmaintained/m68k-native/exec/makefile
-/arch/.unmaintained/m68k-native/exec/mmakefile
-
-# /arch/.unmaintained/m68k-native/layers/
-/arch/.unmaintained/m68k-native/layers/makefile
-/arch/.unmaintained/m68k-native/layers/mmakefile
-
-# /arch/.unmaintained/m68k-native/utility/
-/arch/.unmaintained/m68k-native/utility/makefile
-/arch/.unmaintained/m68k-native/utility/mmakefile
-
 # /arch/.unmaintained/m68k-pp-native/
 /arch/.unmaintained/m68k-pp-native/mmakefile
 
@@ -322,11 +297,87 @@
 # /arch/all-mingw32/kernel/
 /arch/all-mingw32/kernel/mmakefile
 
+# /arch/all-native/
+/arch/all-native/mmakefile
+
+# /arch/all-native/bootconsole/
+/arch/all-native/bootconsole/mmakefile
+
 # /arch/all-netbsd/
 /arch/all-netbsd/mmakefile
 
 # /arch/all-openbsd/
 /arch/all-openbsd/mmakefile
+
+# /arch/all-pc/boot/
+/arch/all-pc/boot/mmakefile
+
+# /arch/all-pc/boot/grub/
+/arch/all-pc/boot/grub/Makefile
+/arch/all-pc/boot/grub/config.status
+/arch/all-pc/boot/grub/config.cache
+/arch/all-pc/boot/grub/config.log
+/arch/all-pc/boot/grub/stamp-h
+/arch/all-pc/boot/grub/stamp-h1
+/arch/all-pc/boot/grub/mmakefile
+/arch/all-pc/boot/grub/.files-touched
+/arch/all-pc/boot/grub/autom4te.cache
+
+# /arch/all-pc/boot/grub/docs/
+/arch/all-pc/boot/grub/docs/.deps
+/arch/all-pc/boot/grub/docs/Makefile
+/arch/all-pc/boot/grub/docs/*.info*
+
+# /arch/all-pc/boot/grub/grub/
+/arch/all-pc/boot/grub/grub/.deps
+/arch/all-pc/boot/grub/grub/Makefile
+/arch/all-pc/boot/grub/grub/grub
+
+# /arch/all-pc/boot/grub/lib/
+/arch/all-pc/boot/grub/lib/.deps
+/arch/all-pc/boot/grub/lib/Makefile
+
+# /arch/all-pc/boot/grub/netboot/
+/arch/all-pc/boot/grub/netboot/.deps
+/arch/all-pc/boot/grub/netboot/Makefile
+
+# /arch/all-pc/boot/grub/stage1/
+/arch/all-pc/boot/grub/stage1/.deps
+/arch/all-pc/boot/grub/stage1/Makefile
+/arch/all-pc/boot/grub/stage1/stage1
+/arch/all-pc/boot/grub/stage1/stage1.exec
+
+# /arch/all-pc/boot/grub/stage2/
+/arch/all-pc/boot/grub/stage2/.deps
+/arch/all-pc/boot/grub/stage2/Makefile
+/arch/all-pc/boot/grub/stage2/diskless
+/arch/all-pc/boot/grub/stage2/diskless_size.h
+/arch/all-pc/boot/grub/stage2/nbgrub
+/arch/all-pc/boot/grub/stage2/nbloader
+/arch/all-pc/boot/grub/stage2/pre_stage2
+/arch/all-pc/boot/grub/stage2/pxegrub
+/arch/all-pc/boot/grub/stage2/pxeloader
+/arch/all-pc/boot/grub/stage2/stage2
+/arch/all-pc/boot/grub/stage2/stage2_size.h
+/arch/all-pc/boot/grub/stage2/start
+/arch/all-pc/boot/grub/stage2/*.exec
+/arch/all-pc/boot/grub/stage2/*_stage1_5
+
+# /arch/all-pc/boot/grub/util/
+/arch/all-pc/boot/grub/util/.deps
+/arch/all-pc/boot/grub/util/Makefile
+/arch/all-pc/boot/grub/util/grub-image
+/arch/all-pc/boot/grub/util/grub-install
+/arch/all-pc/boot/grub/util/grub-md5-crypt
+/arch/all-pc/boot/grub/util/grub-terminfo
+/arch/all-pc/boot/grub/util/mbchk
+
+# /arch/all-pc/boot/grub2-aros/
+/arch/all-pc/boot/grub2-aros/mmakefile
+/arch/all-pc/boot/grub2-aros/.files-touched
+
+# /arch/all-pc/boot/grub2-host/
+/arch/all-pc/boot/grub2-host/mmakefile
 
 # /arch/all-unix/
 /arch/all-unix/*.err
@@ -341,6 +392,9 @@
 
 # /arch/all-unix/devs/filesys/emul_handler/
 /arch/all-unix/devs/filesys/emul_handler/mmakefile
+
+# /arch/all-unix/devs/midi/
+/arch/all-unix/devs/midi/mmakefile
 
 # /arch/all-unix/devs/networks/tap/
 /arch/all-unix/devs/networks/tap/mmakefile
@@ -386,6 +440,9 @@
 # /arch/arm-all/include/
 /arch/arm-all/include/mmakefile
 
+# /arch/arm-all/kernel/
+/arch/arm-all/kernel/mmakefile
+
 # /arch/arm-all/mlib/
 /arch/arm-all/mlib/mmakefile
 
@@ -395,80 +452,8 @@
 # /arch/arm-efika/kernel/
 /arch/arm-efika/kernel/mmakefile
 
-# /arch/common/boot/
-/arch/common/boot/mmakefile
-
-# /arch/common/boot/floppy/
-/arch/common/boot/floppy/mmakefile
-
-# /arch/common/boot/grub/
-/arch/common/boot/grub/Makefile
-/arch/common/boot/grub/config.status
-/arch/common/boot/grub/config.cache
-/arch/common/boot/grub/config.log
-/arch/common/boot/grub/stamp-h
-/arch/common/boot/grub/stamp-h1
-/arch/common/boot/grub/mmakefile
-/arch/common/boot/grub/.files-touched
-/arch/common/boot/grub/autom4te.cache
-
-# /arch/common/boot/grub/docs/
-/arch/common/boot/grub/docs/.deps
-/arch/common/boot/grub/docs/Makefile
-/arch/common/boot/grub/docs/*.info*
-
-# /arch/common/boot/grub/grub/
-/arch/common/boot/grub/grub/.deps
-/arch/common/boot/grub/grub/Makefile
-/arch/common/boot/grub/grub/grub
-
-# /arch/common/boot/grub/lib/
-/arch/common/boot/grub/lib/.deps
-/arch/common/boot/grub/lib/Makefile
-
-# /arch/common/boot/grub/netboot/
-/arch/common/boot/grub/netboot/.deps
-/arch/common/boot/grub/netboot/Makefile
-
-# /arch/common/boot/grub/stage1/
-/arch/common/boot/grub/stage1/.deps
-/arch/common/boot/grub/stage1/Makefile
-/arch/common/boot/grub/stage1/stage1
-/arch/common/boot/grub/stage1/stage1.exec
-
-# /arch/common/boot/grub/stage2/
-/arch/common/boot/grub/stage2/.deps
-/arch/common/boot/grub/stage2/Makefile
-/arch/common/boot/grub/stage2/diskless
-/arch/common/boot/grub/stage2/diskless_size.h
-/arch/common/boot/grub/stage2/nbgrub
-/arch/common/boot/grub/stage2/nbloader
-/arch/common/boot/grub/stage2/pre_stage2
-/arch/common/boot/grub/stage2/pxegrub
-/arch/common/boot/grub/stage2/pxeloader
-/arch/common/boot/grub/stage2/stage2
-/arch/common/boot/grub/stage2/stage2_size.h
-/arch/common/boot/grub/stage2/start
-/arch/common/boot/grub/stage2/*.exec
-/arch/common/boot/grub/stage2/*_stage1_5
-
-# /arch/common/boot/grub/util/
-/arch/common/boot/grub/util/.deps
-/arch/common/boot/grub/util/Makefile
-/arch/common/boot/grub/util/grub-image
-/arch/common/boot/grub/util/grub-install
-/arch/common/boot/grub/util/grub-md5-crypt
-/arch/common/boot/grub/util/grub-terminfo
-/arch/common/boot/grub/util/mbchk
-
-# /arch/common/boot/grub2-host/
-/arch/common/boot/grub2-host/mmakefile
-
-# /arch/common/boot/iso/
-/arch/common/boot/iso/mmakefile
-
-# /arch/common/include/
-/arch/common/include/mmakefile
+# /arch/arm-linux/exec/
+/arch/arm-linux/exec/mmakefile
 
 # /arch/i386-all/
 /arch/i386-all/mmakefile
@@ -531,6 +516,9 @@
 /arch/i386-pc/bootloader/mmakefile
 /arch/i386-pc/bootloader/libdefs.h
 
+# /arch/i386-pc/bootstrap/
+/arch/i386-pc/bootstrap/mmakefile
+
 # /arch/i386-pc/cpu/
 /arch/i386-pc/cpu/mmakefile
 
@@ -565,10 +553,6 @@
 # /arch/i386-pc/drivers/trackdisk/
 /arch/i386-pc/drivers/trackdisk/mmakefile
 
-# /arch/i386-pc/drivers/vesa.hidd/
-/arch/i386-pc/drivers/vesa.hidd/mmakefile
-/arch/i386-pc/drivers/vesa.hidd/libdefs.h
-
 # /arch/i386-pc/drivers/vga.hidd/
 /arch/i386-pc/drivers/vga.hidd/mmakefile
 /arch/i386-pc/drivers/vga.hidd/libdefs.h
@@ -584,6 +568,9 @@
 
 # /arch/i386-pc/intuition/
 /arch/i386-pc/intuition/mmakefile
+
+# /arch/i386-pc/kernel/
+/arch/i386-pc/kernel/mmakefile
 
 # /arch/i386-pc/processor/
 /arch/i386-pc/processor/mmakefile
@@ -609,8 +596,17 @@
 # /arch/m68k-all/libgcc1/
 /arch/m68k-all/libgcc1/mmakefile
 
+# /arch/m68k-all/mathffp/
+/arch/m68k-all/mathffp/mmakefile
+
+# /arch/m68k-all/mathieeedoubbas/
+/arch/m68k-all/mathieeedoubbas/mmakefile
+
 # /arch/m68k-all/mlib/
 /arch/m68k-all/mlib/mmakefile
+
+# /arch/m68k-all/processor/
+/arch/m68k-all/processor/mmakefile
 
 # /arch/m68k-all/utility/
 /arch/m68k-all/utility/mmakefile
@@ -627,14 +623,17 @@
 # /arch/m68k-amiga/boot/floppy/
 /arch/m68k-amiga/boot/floppy/mmakefile
 
+# /arch/m68k-amiga/c/
+/arch/m68k-amiga/c/mmakefile
+
 # /arch/m68k-amiga/cia/
 /arch/m68k-amiga/cia/mmakefile
 
 # /arch/m68k-amiga/devs/
 /arch/m68k-amiga/devs/mmakefile
 
-# /arch/m68k-amiga/devs/ata.device/
-/arch/m68k-amiga/devs/ata.device/mmakefile
+# /arch/m68k-amiga/devs/ata/
+/arch/m68k-amiga/devs/ata/mmakefile
 
 # /arch/m68k-amiga/devs/audio/
 /arch/m68k-amiga/devs/audio/mmakefile
@@ -690,17 +689,14 @@
 # /arch/m68k-amiga/kernel/
 /arch/m68k-amiga/kernel/mmakefile
 
-# /arch/m68k-amiga/libs/
-/arch/m68k-amiga/libs/mmakefile
-
-# /arch/m68k-amiga/mlib/
-/arch/m68k-amiga/mlib/mmakefile
-
 # /arch/m68k-amiga/potgo/
 /arch/m68k-amiga/potgo/mmakefile
 
 # /arch/m68k-amiga/timer/
 /arch/m68k-amiga/timer/mmakefile
+
+# /arch/m68k-amiga/wb.tag/
+/arch/m68k-amiga/wb.tag/mmakefile
 
 # /arch/m68k-mac/
 /arch/m68k-mac/mmakefile
@@ -894,17 +890,11 @@
 # /arch/x86_64-pc/boot/iso/
 /arch/x86_64-pc/boot/iso/mmakefile
 
-# /arch/x86_64-pc/bootloader/
-/arch/x86_64-pc/bootloader/mmakefile
-
 # /arch/x86_64-pc/bootstrap/
 /arch/x86_64-pc/bootstrap/mmakefile
 
 # /arch/x86_64-pc/dos/
 /arch/x86_64-pc/dos/mmakefile
-
-# /arch/x86_64-pc/drivers/
-/arch/x86_64-pc/drivers/mmakefile
 
 # /arch/x86_64-pc/exec/
 /arch/x86_64-pc/exec/mmakefile
@@ -920,6 +910,9 @@
 
 # /arch/x86_64-pc/timer/
 /arch/x86_64-pc/timer/mmakefile
+
+# /boot/
+/boot/mmakefile
 
 # /compiler/
 /compiler/fdlibm
@@ -981,12 +974,6 @@
 
 # /compiler/libpng/
 /compiler/libpng/mmakefile
-
-# /compiler/library_template_c/
-/compiler/library_template_c/makefile
-
-# /compiler/library_template_c/source/
-/compiler/library_template_c/source/makefile
 
 # /compiler/mlib/
 /compiler/mlib/mmakefile
@@ -1225,14 +1212,14 @@
 # /rom/bootloader/
 /rom/bootloader/mmakefile
 
-# /rom/cia/
-/rom/cia/mmakefile
-
 # /rom/dbus/
 /rom/dbus/mmakefile
 
 # /rom/devs/
 /rom/devs/makefile
+
+# /rom/devs/ahci.device/
+/rom/devs/ahci.device/mmakefile
 
 # /rom/devs/ata/
 /rom/devs/ata/mmakefile
@@ -1272,6 +1259,9 @@
 # /rom/devs/keyboard/
 /rom/devs/keyboard/mmakefile
 /rom/devs/keyboard/libdefs.h
+
+# /rom/disk/
+/rom/disk/mmakefile
 
 # /rom/dos/
 /rom/dos/libdefs.h
@@ -1331,6 +1321,10 @@
 
 # /rom/hidds/mouse/
 /rom/hidds/mouse/mmakefile
+
+# /rom/hidds/vesa.hidd/
+/rom/hidds/vesa.hidd/mmakefile
+/rom/hidds/vesa.hidd/libdefs.h
 
 # /rom/hyperlayers/
 /rom/hyperlayers/mmakefile
@@ -1434,6 +1428,9 @@
 # /rom/usb/classes/rawwrap/
 /rom/usb/classes/rawwrap/mmakefile
 
+# /rom/usb/classes/rndis/
+/rom/usb/classes/rndis/mmakefile
+
 # /rom/usb/classes/serialcp210x/
 /rom/usb/classes/serialcp210x/mmakefile
 
@@ -1510,6 +1507,9 @@
 # /test/benchmarks/graphics/
 /test/benchmarks/graphics/mmakefile
 
+# /test/boot/
+/test/boot/mmakefile
+
 # /test/clib/
 /test/clib/mmakefile
 
@@ -1536,6 +1536,9 @@
 
 # /test/mesa/
 /test/mesa/mmakefile
+
+# /test/net/
+/test/net/mmakefile
 
 # /test/oop/
 /test/oop/oop
@@ -1634,6 +1637,9 @@
 /tools/dtdesc/c_iff/example
 /tools/dtdesc/c_iff/test1.iff
 /tools/dtdesc/c_iff/mmakefile
+
+# /tools/elf2hunk/
+/tools/elf2hunk/mmakefile
 
 # /tools/genmf/
 /tools/genmf/mmakefile
@@ -1900,6 +1906,9 @@
 /workbench/devs/AHI/mmakefile
 /workbench/devs/AHI/.files-touched
 
+# /workbench/devs/AHI/Drivers/HDAudio/
+/workbench/devs/AHI/Drivers/HDAudio/mmakefile
+
 # /workbench/devs/AHI/PackageFiles/Packages/
 /workbench/devs/AHI/PackageFiles/Packages/mmakefile
 
@@ -2001,9 +2010,6 @@
 /workbench/devs/midi/mmakefile
 /workbench/devs/midi/*.o
 
-# /workbench/devs/monitors/default/
-/workbench/devs/monitors/default/mmakefile
-
 # /workbench/devs/monitors/wrapper/
 /workbench/devs/monitors/wrapper/mmakefile
 
@@ -2030,6 +2036,9 @@
 
 # /workbench/devs/networks/ppp/
 /workbench/devs/networks/ppp/mmakefile
+
+# /workbench/devs/networks/ppp/ModemManager/
+/workbench/devs/networks/ppp/ModemManager/mmakefile
 
 # /workbench/devs/networks/prism2/
 /workbench/devs/networks/prism2/mmakefile
@@ -2258,6 +2267,9 @@
 /workbench/libs/iffparse/libdefs.h
 /workbench/libs/iffparse/mmakefile
 
+# /workbench/libs/kms/
+/workbench/libs/kms/mmakefile
+
 # /workbench/libs/locale/
 /workbench/libs/locale/libdefs.h
 /workbench/libs/locale/mmakefile
@@ -2290,8 +2302,29 @@
 /workbench/libs/mathtrans/libdefs.h
 /workbench/libs/mathtrans/mmakefile
 
+# /workbench/libs/mesa/include/EGL/
+/workbench/libs/mesa/include/EGL/mmakefile
+
 # /workbench/libs/mesa/include/GL/
 /workbench/libs/mesa/include/GL/mmakefile
+
+# /workbench/libs/mesa/include/KHR/
+/workbench/libs/mesa/include/KHR/mmakefile
+
+# /workbench/libs/mesa/include/VG/
+/workbench/libs/mesa/include/VG/mmakefile
+
+# /workbench/libs/mesa/src/aros/arosmesa/
+/workbench/libs/mesa/src/aros/arosmesa/mmakefile
+
+# /workbench/libs/mesa/src/aros/egl/
+/workbench/libs/mesa/src/aros/egl/mmakefile
+
+# /workbench/libs/mesa/src/aros/glu/
+/workbench/libs/mesa/src/aros/glu/mmakefile
+
+# /workbench/libs/mesa/src/aros/vega/
+/workbench/libs/mesa/src/aros/vega/mmakefile
 
 # /workbench/libs/mesa/src/gallium/auxiliary/
 /workbench/libs/mesa/src/gallium/auxiliary/mmakefile
@@ -2474,6 +2507,9 @@
 
 # /workbench/libs/uuid/
 /workbench/libs/uuid/mmakefile
+
+# /workbench/libs/version/
+/workbench/libs/version/mmakefile
 
 # /workbench/libs/workbench/
 /workbench/libs/workbench/libdefs.h
@@ -2791,6 +2827,9 @@
 # /workbench/system/Wanderer/Tools/WBRename/icons/
 /workbench/system/Wanderer/Tools/WBRename/icons/mmakefile
 
+# /workbench/system/Workbook/
+/workbench/system/Workbook/mmakefile
+
 # /workbench/system/ftmanager/
 /workbench/system/ftmanager/mmakefile
 /workbench/system/ftmanager/strings.h
@@ -2855,6 +2894,12 @@
 
 # /workbench/utilities/Clock/catalogs/
 /workbench/utilities/Clock/catalogs/mmakefile
+
+# /workbench/utilities/GiggleDisk/
+/workbench/utilities/GiggleDisk/mmakefile
+
+# /workbench/utilities/GiggleDisk/catalogs/
+/workbench/utilities/GiggleDisk/catalogs/mmakefile
 
 # /workbench/utilities/Installer/
 /workbench/utilities/Installer/mmakefile
