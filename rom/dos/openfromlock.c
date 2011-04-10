@@ -165,7 +165,7 @@ static BPTR SFSOpenFromLock(BPTR lock, struct DosLibrary *DOSBase)
 	    return BNULL;
 	}
 
-	fh->fh_Pos = fh->fh_End = (UBYTE *)-1;
+	fh->fh_Pos = fh->fh_End = -1;
 
 	pkt.dp_Type = ACTION_FH_FROM_LOCK;
 	pkt.dp_Arg1 = (SIPTR)MKBADDR(fh);
