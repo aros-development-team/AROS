@@ -38,7 +38,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
     
     D(bug("[DOSBoot] __dosboot_Boot()\n"));
 
-    cis = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
+    cis = Open("CON:////Boot Shell/AUTO", FMF_READ);
     if (cis)
     {
         BPTR sseq = BNULL;
