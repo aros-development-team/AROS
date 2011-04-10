@@ -1363,8 +1363,8 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
     {
         if ((gadget->GadgetType & GTYP_SYSTYPEMASK) == 0)
         {
-        switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
-        {
+            switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
+            {
                 case GTYP_WDRAGGING:
                    break;
 
@@ -1373,32 +1373,32 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                 {
                     if ((((struct ExtGadget *) gadget)->MoreFlags & GMORE_BOOPSIGADGET) != 0)
                     {
-                        ULONG rtsm = 0;
-                        GetAttr(GA_RightBorder, (Object *) gadget, (APTR)&rtsm);
+                        IPTR rtsm = 0;
+                        GetAttr(GA_RightBorder, (Object *) gadget, &rtsm);
                         if (rtsm)
                         {
-                            if (GetAttr(PGA_Top, (Object *) gadget, (APTR)&rtsm))
+                            if (GetAttr(PGA_Top, (Object *) gadget, &rtsm))
                             {
                                 SetAttrs((Object *) gadget, GA_RelRight, - data->dc->RightBorderGadgets + ((data->dc->RightBorderGadgets - (wd->img_verticalcontainer->w >> 1) + 1) >> 1) + 1, GA_Width, wd->img_verticalcontainer->w >> 1, TAG_DONE);
                             }
                             else
                             {
-                                GetAttr(GA_Width, (Object *) gadget, (APTR)&rtsm);
+                                GetAttr(GA_Width, (Object *) gadget, &rtsm);
                                 SetAttrs((Object *) gadget, GA_RelRight, - data->dc->RightBorderGadgets + ((data->dc->RightBorderGadgets - rtsm + 1) >> 1) + 1, TAG_DONE);
                             }
                         }
                         else
                         {
-                            GetAttr(GA_BottomBorder, (Object *) gadget, (APTR)&rtsm);
+                            GetAttr(GA_BottomBorder, (Object *) gadget, &rtsm);
                             if (rtsm)
                             {
-                                if (GetAttr(PGA_Top, (Object *) gadget, (APTR)&rtsm))
+                                if (GetAttr(PGA_Top, (Object *) gadget, &rtsm))
                                 {
                                     SetAttrs((Object *) gadget, GA_RelBottom, - data->dc->BottomBorderGadgets + ((data->dc->BottomBorderGadgets - (wd->img_horizontalcontainer->h >> 1) + 1)  >> 1) +1, GA_Height, (wd->img_horizontalcontainer->h >> 1), TAG_DONE);
                                 }
                                 else
                                 {
-                                    GetAttr(GA_Height, (Object *) gadget, (APTR)&rtsm);
+                                    GetAttr(GA_Height, (Object *) gadget, &rtsm);
                                     SetAttrs((Object *) gadget, GA_RelBottom, - data->dc->BottomBorderGadgets + ((data->dc->BottomBorderGadgets - rtsm + 1) >> 1) + 1, TAG_DONE);
                                 }
                             }
@@ -1406,7 +1406,7 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
                     }
                 }
                 break;
-                }
+            }
         }
         if (msg->wdp_Flags & WDF_LBG_MULTIPLE)
         {
@@ -1416,7 +1416,7 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
         {
             gadget = NULL;
         }
-   }
+    }
     gadget = msg->wdp_Gadgets;
 
     while(gadget)
