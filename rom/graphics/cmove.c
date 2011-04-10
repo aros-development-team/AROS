@@ -56,7 +56,7 @@
 
   struct CopIns * copIns = ucl->CopList->CopPtr;
   copIns->OpCode = COPPER_MOVE;
-  copIns->u3.u4.u1.DestAddr = (WORD)(ULONG)reg;
+  copIns->u3.u4.u1.DestAddr = (WORD)(IPTR)reg;
   copIns->u3.u4.u2.DestData = value;
 
   AROS_LIBFUNC_EXIT
