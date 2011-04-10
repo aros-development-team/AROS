@@ -16,8 +16,10 @@
 
 #define TRACE_DEPTH 10
 
+#ifdef KrnDecodeLocation
 static const char *modstring  = "\n0x%P %s Segment %lu %s + 0x%P";
 static const char *funstring  = "\n0x%P %s Function %s + 0x%P";
+#endif
 static const char *unknownstr = "\n0x%P Address not found";
 static const char *invalidstr = "\n0x%P Invalid stack frame address";
 
@@ -57,9 +59,11 @@ void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase)
 	    if (TypeOfMem(fp))
 	    {
 		APTR caller = NULL;
+#ifdef KrnDecodeLocation
 		char *modname, *segname, *symname;
 		void *segaddr, *symaddr;
 		unsigned int segnum;
+#endif
 
 		fp = UnwindFrame(fp, &caller);
 
