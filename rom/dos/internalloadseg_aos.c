@@ -241,8 +241,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       case HUNK_CODE:
       case HUNK_DATA:
       case HUNK_BSS:
-        if (curhunk >= numhunks)
-          goto end;
 
         if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
           goto end;
@@ -437,7 +435,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
         /* See above for MEMF_31BIT explanation */
         count = count * 4 + sizeof(ULONG) + sizeof(ULONG);
-        overlaytable = ilsAllocVec(count, req | MEMF_31BIT);
+        overlaytable = ilsAllocVec(count, MEMF_CLEAR | MEMF_31BIT);
         if (overlaytable == NULL)
           ERROR(ERROR_NO_FREE_STORE);
         if (read_block(fh, overlaytable, count - sizeof(ULONG), funcarray, DOSBase))
