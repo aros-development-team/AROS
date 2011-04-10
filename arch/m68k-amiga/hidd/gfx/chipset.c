@@ -93,7 +93,7 @@ void initcustom(struct amigavideo_staticdata *data)
 
     resetcustom();
 
-    data->gfxbase = (struct GfxBase*)OpenLibrary("graphics.library", 0);
+    data->gfxbase = (struct GfxBase*)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
 
     data->inter.is_Code         = (APTR)gfx_vblank;
     data->inter.is_Data         = data;
@@ -190,6 +190,20 @@ static void setcoppercolors(struct amigavideo_staticdata *data)
     }
 }
 
+static void setpalntsc(struct amigavideo_staticdata *data, ULONG modeid)
+{
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+
+    if (!data->ecs_agnus)
+    	return;
+    if ((modeid & (PAL_MONITOR_ID | NTSC_MONITOR_ID)) == PAL_MONITOR_ID)
+ 	custom->beamcon0 = 0x0020;
+    else if ((modeid & (PAL_MONITOR_ID | NTSC_MONITOR_ID)) == NTSC_MONITOR_ID)
+ 	custom->beamcon0 = 0x0000;
+    else
+    	custom->beamcon0 = (data->gfxbase->DisplayFlags & NTSC) ? 0x0000 : 0x0020;
+}
+
 void resetmode(struct amigavideo_staticdata *data)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -199,6 +213,7 @@ void resetmode(struct amigavideo_staticdata *data)
     data->disp = NULL;
 
     custom->dmacon = 0x0100;
+    setpalntsc(data, 0);
 
     custom->cop2lc = (ULONG)data->copper2_backup;
 
@@ -227,7 +242,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     	yscroll = y - 10;
     	y = 10;
     }
-    //if (x < 0)
+    if (x < 0)
     	x = 0;
     copptr[1] = 0x0a81; //(y << 8) + (x + 1);
     copptr[3] = 0x40c1; //((y + (bm->rows >> data->interlace)) << 8) + ((x + 1 + (bm->width >> data->res)) & 0x00ff);
@@ -475,6 +490,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     setfmode(data);
     setcopperscroll(data, bm);
     data->depth = bm->depth;
+    setpalntsc(data, data->modeid);
 
     data->mode = 1;
     while (data->mode);
