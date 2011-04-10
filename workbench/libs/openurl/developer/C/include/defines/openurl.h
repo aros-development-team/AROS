@@ -36,7 +36,7 @@ typedef ULONG _sfdc_vararg;
 	struct Library *, OPENURL_BASE_NAME, 6, Openurl)
 
 #define URL_OldFreePrefs(___up) \
-	AROS_LC1(void, URL_OldFreePrefs, \
+	AROS_LC1NR(void, URL_OldFreePrefs, \
 	AROS_LCA(struct URL_Prefs *, (___up), A0), \
 	struct Library *, OPENURL_BASE_NAME, 7, Openurl)
 
@@ -65,7 +65,7 @@ typedef ULONG _sfdc_vararg;
 #endif /* !NO_INLINE_STDARG */
 
 #define URL_FreePrefsA(___prefs, ___tags) \
-	AROS_LC2(void, URL_FreePrefsA, \
+	AROS_LC2NR(void, URL_FreePrefsA, \
 	AROS_LCA(struct URL_Prefs *, (___prefs), A0), \
 	AROS_LCA(struct TagItem *, (___tags), A1), \
 	struct Library *, OPENURL_BASE_NAME, 13, Openurl)

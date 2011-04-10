@@ -98,7 +98,7 @@ typedef ULONG _sfdc_vararg;
 #endif /* !NO_INLINE_STDARG */
 
 #define CodesetsFreeA(___obj, ___attrs) \
-	AROS_LC2(void, CodesetsFreeA, \
+	AROS_LC2NR(void, CodesetsFreeA, \
 	AROS_LCA(APTR, (___obj), A0), \
 	AROS_LCA(struct TagItem *, (___attrs), A1), \
 	struct Library *, CODESETS_BASE_NAME, 15, Codesets)
@@ -201,7 +201,7 @@ typedef ULONG _sfdc_vararg;
 	struct Library *, CODESETS_BASE_NAME, 25, Codesets)
 
 #define CodesetsFreeVecPooledA(___pool, ___mem, ___attrs) \
-	AROS_LC3(void, CodesetsFreeVecPooledA, \
+	AROS_LC3NR(void, CodesetsFreeVecPooledA, \
 	AROS_LCA(APTR, (___pool), A0), \
 	AROS_LCA(APTR, (___mem), A1), \
 	AROS_LCA(struct TagItem *, (___attrs), A2), \
