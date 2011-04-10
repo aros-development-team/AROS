@@ -122,3 +122,9 @@ Error while writing partition table
 MSG_CreateTableError (//)
 Error while creating partition table
 ;
+WORD_MENU_Partition (//)
+Partition
+;
+WORD_MENU_CreateMountlist (//)
+Create mountlist...
+;

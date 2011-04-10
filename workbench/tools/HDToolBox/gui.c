@@ -58,6 +58,7 @@ Object *app;
 Object *mainwin;
 Object *about_item;
 Object *quit_item;
+Object *createml_item;
 struct GUIGadgets gadgets;
 
 struct Hook hook_display;
@@ -1515,6 +1516,14 @@ LONG initGUI(void)
                 End,
                 MUIA_Family_Child,
                     quit_item  = MenuitemObject, MUIA_Menuitem_Title, MSG(WORD_MENU_Quit),
+                End,
+            End,
+            MUIA_Family_Child, MenuitemObject,
+                MUIA_Menuitem_Title, MSG(WORD_MENU_Partition),
+		MUIA_Menuitem_Enabled, FALSE,
+                MUIA_Family_Child,
+                    createml_item = MenuitemObject,
+		    MUIA_Menuitem_Title, MSG(WORD_MENU_CreateMountlist),
                 End,
             End,
         End,
