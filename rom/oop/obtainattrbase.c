@@ -70,7 +70,7 @@
     /* Look up ID */
     struct iid_bucket *idb;
     struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
-    ULONG base = -1UL;
+    ULONG base = (ULONG)-1;
     
     EnterFunc(bug("OOP_ObtainAttrBase(interfaceID=%s)\n", interfaceID));
     
@@ -119,7 +119,7 @@
 		base <<= NUM_METHOD_BITS;
 		
 		/* Methodbase not inited yet */
-		idb->methodbase = -1UL;
+		idb->methodbase = (ULONG)-1;
 		
 		/* Insert bucket into hash table */
 		InsertBucket(iidtable, (struct Bucket *)idb, GetOBase(OOPBase));

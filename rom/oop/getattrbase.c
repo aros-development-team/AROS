@@ -61,7 +61,7 @@
     /* Look up ID */
     struct iid_bucket *idb;
     struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
-    ULONG base = -1UL;
+    ULONG base = (ULONG)-1;
     
     EnterFunc(bug("OOP_GetAttrBase(interfaceID=%s)\n", interfaceID));
     
