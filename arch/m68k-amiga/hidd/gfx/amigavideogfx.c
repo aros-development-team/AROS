@@ -44,6 +44,23 @@
 static const UWORD widthtable[] = { 320, 640, 1280, 0 };
 static const UWORD heighttable[] = { 200, 256, 400, 512, 0 };
 
+ULONG AmigaVideoCl__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
+{
+    msg->props->DisplayInfoFlags = DIPF_IS_SPRITES | DIPF_IS_DRAGGABLE |
+    	DIPF_IS_SPRITES_ATT | DIPF_IS_SPRITES_CHNG_BASE | DIPF_IS_SPRITES_CHNG_PRI |
+    	DIPF_IS_DBUFFER;
+    msg->props->NumHWSprites = 8;
+    if ((msg->modeID & (PAL_MONITOR_ID | NTSC_MONITOR_ID)) == PAL_MONITOR_ID)
+    	msg->props->DisplayInfoFlags |= DIPF_IS_PAL;
+    if (msg->modeID & LORESLACE_KEY)
+    	msg->props->DisplayInfoFlags |= DIPF_IS_LACE;
+    if (msg->modeID & HAM_KEY)
+    	msg->props->DisplayInfoFlags |= DIPF_IS_HAM;
+    if (msg->modeID & EXTRAHALFBRITE_KEY)
+    	msg->props->DisplayInfoFlags |= DIPF_IS_EXTRAHALFBRITE;
+     return sizeof(struct HIDD_ModeProperties);
+}
+
 HIDDT_ModeID *AmigaVideoCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
