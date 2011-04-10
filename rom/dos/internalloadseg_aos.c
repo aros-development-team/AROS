@@ -240,6 +240,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       case HUNK_CODE:
       case HUNK_DATA:
       case HUNK_BSS:
+        if (curhunk >= numhunks)
+          goto end;
+
         if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
           goto end;
 
@@ -393,8 +396,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       {
         D(bug("HUNK_END\n"));
         ++curhunk;
-        if (curhunk >= numhunks)
-          goto done;
       }
       break;
 
