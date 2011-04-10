@@ -150,7 +150,7 @@ struct iid_bucket
 struct IFBucket
 {
     struct IFBucket *Next;
-    IPTR InterfaceID;
+    ULONG InterfaceID;
     STRPTR GlobalInterfaceID;
     struct IFMethod *MethodTable;
     ULONG NumMethods;

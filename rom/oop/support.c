@@ -156,7 +156,7 @@ BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_pt
 		*methodbase_ptr = methodbase;
 		
 		/* Leave attrbase field unitialized */
-		idb->attrbase = -1UL;
+		idb->attrbase = (ULONG)-1;
 		
 		/* Insert bucket into hash table */
 		InsertBucket(iidtable, (struct Bucket *)idb, (struct IntOOPBase *)OOPBase);
