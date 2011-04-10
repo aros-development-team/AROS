@@ -472,8 +472,10 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
 static char *hdrstring = "Task : 0x%P - %s\n"
 			 "Error: 0x%08lx - ";
 static char *locstring = "PC   : 0x%P";
+#ifdef KrnDecodeLocation
 static char *modstring = "Module %s Segment %lu %s (0x%P) Offset 0x%P";
 static char *funstring = "Function %s (0x%P) Offset 0x%P";
+#endif
 
 STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
 {
@@ -490,9 +492,11 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 
 	if (iet->iet_AlertLocation)
 	{
+#ifdef KrnDecodeLocation
 	    char *modname, *segname, *symname;
 	    void *segaddr, *symaddr;
 	    unsigned int segnum;
+#endif
 
 	    buf[-1] = '\n';
 	    buf = NewRawDoFmt(locstring, RAWFMTFUNC_STRING, buf, iet->iet_AlertLocation);
