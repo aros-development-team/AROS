@@ -429,7 +429,7 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
       cr->bounds.MinY = rr->bounds.MinY + r->bounds.MinY;
       cr->bounds.MaxX = rr->bounds.MaxX + r->bounds.MinX;
       cr->bounds.MaxY = rr->bounds.MaxY + r->bounds.MinY;
-      cr->lobs  = (struct Layer *)invisible;
+      cr->lobs  = (struct Layer *)(IPTR)invisible;
       cr->Next  = firstcr;
 
       if (TRUE == invisible && IS_SMARTREFRESH(l))
@@ -1153,7 +1153,7 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
       MinY(cr) = MinY(rr) + MinY(r);
       MaxX(cr) = MaxX(rr) + MinX(r);
       MaxY(cr) = MaxY(rr) + MinY(r);
-      cr->lobs = (struct Layer *)invisible;
+      cr->lobs = (struct Layer *)(IPTR)invisible;
 #if 0
 kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
         __FUNCTION__,
