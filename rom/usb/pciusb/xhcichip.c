@@ -12,7 +12,7 @@
 
 #if defined(USB3)
 
-void *AllocVecAligned(ULONG bytesize, ULONG boundary);
+void *AllocVecAlignedOnPage(ULONG bytesize, ULONG flags, ULONG alignment);
 
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
@@ -376,10 +376,16 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                       Device Context data structure associated with the device.
                 */
 
-                /* Allocate 256 entries aligned on 4K(quess) border (page size, where to get this on Aros?) */
-                hc->xhc_dcbaa = AllocVecAligned( (256)*8, 4096);
+                /* Allocate 256 entries of 64bit pointer array aligned on 64 byte cache line not crossing 4K page border */
+                hc->xhc_dcbaa = AllocVecAlignedOnPage( (256*8), MEMF_CLEAR, 64);
 
-                if(hc->xhc_scratchbufs = 0) {
+                /*
+                    If the Max Scratchpad Buffers field of the HCSPARAMS2 register is > ‘0’, then the first entry (entry_0) in
+                    the DCBAA shall contain a pointer to the Scratchpad Buffer Array. If the Max Scratchpad Buffers field of
+                    the HCSPARAMS2 register is = ‘0’, then the first entry (entry_0) in the DCBAA is reserved and shall be
+                    cleared to ‘0’ by software.
+                */
+                if(!hc->xhc_scratchbufs) {
                 }
 
                 /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
@@ -419,17 +425,54 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
     }
 }
 
-void *AllocVecAligned(ULONG bytesize, ULONG boundary) {
 
-    APTR address;
-    
-    if(!(address = AllocVec(bytesize + boundary, MEMF_PUBLIC | MEMF_CLEAR))) {
-        bug("AllocVecAligned before %lx\n", address);
-        address = ((IPTR)address + boundary - 1) & ~(boundary - 1);
-        bug("AllocVecAligned after %lx\n", address);
+/*
+    Allocate aligned memory that does not cross 4K page boundaries
+*/
+void *AllocVecAlignedOnPage(ULONG bytesize, ULONG flags, ULONG alignment) {
+
+#define PAGE_SHIFT          12
+#define PAGE_SIZE           (1 << PAGE_SHIFT)
+#define PAGE_MASK           (~(PAGE_SIZE-1))
+
+#define ALIGN_MASK          (~(alignment-1))
+
+#define PAGE_ALIGN(addr)    (((addr)+PAGE_SIZE-1)&PAGE_MASK)
+
+    APTR res = NULL;
+    IPTR pageaddr;
+    ULONG requirements = flags & MEMF_PHYSICAL_MASK;
+
+    struct MemHeader *mh;
+
+    /* can not fulfill requirement for not crossing page boundaries */
+    if(!(bytesize>PAGE_SIZE)) {
+
+        Forbid();
+
+        ForeachNode(&SysBase->MemList, mh) {
+
+            /* type matches and enough free space */
+            if ((requirements & ~mh->mh_Attributes) || mh->mh_Free < bytesize) {
+
+                pageaddr = (IPTR) mh->mh_Lower;
+                /**/
+                do {
+                    pageaddr += (PAGE_SIZE)-1;
+                    if( ((IPTR)mh->mh_Lower <= ((pageaddr&PAGE_MASK) - AROS_ALIGN(sizeof(ULONG)))) ){
+                        if(((IPTR)mh->mh_Upper >= (pageaddr&PAGE_MASK) + bytesize)){
+                            /* there is memory for us in this memheader, now go and claim it... */
+                            /* implement private nommu_AllocAbs in here */
+                            Permit();
+                            return res;
+                        }
+                    }
+                }while(1);
+            }
+        }
+        Permit();
     }
-
-    return address;
+    return res;
 }
 
 #endif
