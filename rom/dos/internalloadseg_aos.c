@@ -196,6 +196,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   while(!read_block(fh, &hunktype, sizeof(hunktype), funcarray, DOSBase))
   {
     hunktype = AROS_BE2LONG(hunktype);
+    D(bug("Hunk Type: %d\n", hunktype & 0xFFFFFF));
 
     switch(hunktype & 0xFFFFFF)
     {
@@ -356,7 +357,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             word = AROS_BE2WORD(word);
 
     	    count = word;
-            D(bug("\tHunk #%ld:\n", count));
+            D(bug("\tHunk #%ld @%p: %ld relocations\n", count, GETHUNKPTR(curhunk), i));
             while (i > 0)
             {
               Wordcount++;
@@ -364,14 +365,12 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
               if (read_block(fh, &word, sizeof(word), funcarray, DOSBase))
                 goto end;
 
-              word = AROS_BE2WORD(word);
-
-              offset = word;
               /* offset now contains the byte offset in it`s 16 highest bits.
                  These 16 highest bits have to become the 16 lowest bits so
                  we get the word we need.  */
-              //(ULONG)offset >>= ((sizeof(offset)-2)*8);
-              //D(bug("\t\t0x%06lx\n", offset));
+              offset = AROS_BE2WORD(word);
+
+              D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(count)));
               addr = (ULONG *)(GETHUNKPTR(curhunk) + offset);
 
               /* See the above MEMF_31 explanation for why this
