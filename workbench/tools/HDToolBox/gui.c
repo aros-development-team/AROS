@@ -1453,7 +1453,7 @@ AROS_UFH3(void, lv_click,
                     enableObject(gadgets.buttons[GB_RENAME]);
                     enableObject(gadgets.buttons[GB_DOSENVEC]);
                     enableObject(gadgets.buttons[GB_SWITCHES]);
-		    SetAttrs(part_item, MUIA_Menuitem_Enabled, TRUE, TAG_DONE);
+		    SetAttrs(part_item, MUIA_Menuitem_Enabled, !partition->table, TAG_DONE);
                 }
                 else if (iln->ln.ln_Type == LNT_Harddisk)
                 {
