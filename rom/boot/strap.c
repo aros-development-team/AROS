@@ -678,11 +678,13 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     				struct MsgPort *port = CreateMsgPort();
     				struct timerequest *tr = (struct timerequest *)
                         CreateIORequest(port, sizeof(struct timerequest));
+                        	unsigned long tmp;
 
     				OpenDevice("timer.device", UNIT_VBLANK,
                         (struct IORequest *)tr, 0);
 
-    				sscanf(node->ln_Name, "bootdelay=%lu", &delay);
+    				sscanf(node->ln_Name, "bootdelay=%lu", &tmp);
+    				delay = tmp;
     				D(bug("[Boot] delay of %d seconds requested.", delay));
 
     				tr->tr_node.io_Command = TR_ADDREQUEST;
