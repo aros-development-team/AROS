@@ -58,6 +58,7 @@ Object *app;
 Object *mainwin;
 Object *about_item;
 Object *quit_item;
+Object *part_item;
 Object *createml_item;
 struct GUIGadgets gadgets;
 
@@ -1452,6 +1453,7 @@ AROS_UFH3(void, lv_click,
                     enableObject(gadgets.buttons[GB_RENAME]);
                     enableObject(gadgets.buttons[GB_DOSENVEC]);
                     enableObject(gadgets.buttons[GB_SWITCHES]);
+		    SetAttrs(part_item, MUIA_Menuitem_Enabled, TRUE, TAG_DONE);
                 }
                 else if (iln->ln.ln_Type == LNT_Harddisk)
                 {
@@ -1472,6 +1474,7 @@ AROS_UFH3(void, lv_click,
             disableObject(gadgets.buttons[GB_CREATE_TABLE]);
             disableObject(gadgets.buttons[GB_CHANGE_TYPE]);
             disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
+	    SetAttrs(part_item, MUIA_Menuitem_Enabled, FALSE, TAG_DONE);
             break;
         }
     }
@@ -1518,7 +1521,8 @@ LONG initGUI(void)
                     quit_item  = MenuitemObject, MUIA_Menuitem_Title, MSG(WORD_MENU_Quit),
                 End,
             End,
-            MUIA_Family_Child, MenuitemObject,
+            MUIA_Family_Child,
+		part_item = MenuitemObject,
                 MUIA_Menuitem_Title, MSG(WORD_MENU_Partition),
 		MUIA_Menuitem_Enabled, FALSE,
                 MUIA_Family_Child,
