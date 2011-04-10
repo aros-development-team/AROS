@@ -128,7 +128,7 @@ static BOOL wbMenuEnable(Class *cl, Object *obj, int id, BOOL onoff)
     	    break;
     	}
 
-    	if (nm->nm_UserData == (APTR)id) {
+    	if (nm->nm_UserData == (APTR)(IPTR)id) {
     	    MenuNumber = FULLMENUNUM(menu, item, sub);
     	    break;
     	}
@@ -188,7 +188,7 @@ static void wbAddFiles(Class *cl, Object *obj, CONST_STRPTR path)
     	    	struct Hook hook;
     	    	BOOL more = TRUE;
 
-    	    	hook.h_Entry = wbIgnoreInfo_Hook;
+    	    	hook.h_Entry = (APTR)wbIgnoreInfo_Hook;
 
     	    	eac->eac_MatchFunc = &hook;
     		while (more) {
