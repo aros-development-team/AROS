@@ -117,7 +117,7 @@
 #endif /* !NO_INLINE_STDARG */
 
 #define rtReqHandlerA(handlerinfo, sigs, taglist) \
-    LP3(0x6c, ULONG, rtReqHandlerA, struct rtHandlerInfo *, handlerinfo, a1, ULONG, sigs, d0, struct TagItem *, taglist, a0, \
+    LP3(0x6c, IPTR, rtReqHandlerA, struct rtHandlerInfo *, handlerinfo, a1, ULONG, sigs, d0, struct TagItem *, taglist, a0, \
     , REQTOOLS_BASE_NAME)
 
 #ifndef NO_INLINE_STDARG

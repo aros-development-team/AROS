@@ -165,9 +165,9 @@ void ShortDelay(void)
 
 /****************************************************************************************/
 
-ULONG LoopReqHandler(struct rtHandlerInfo *rthi)
+IPTR LoopReqHandler(struct rtHandlerInfo *rthi)
 {
-    ULONG handler_retval, sigs;
+    IPTR handler_retval, sigs;
 
     do
     {

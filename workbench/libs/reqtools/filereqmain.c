@@ -439,7 +439,7 @@ IPTR ASM SAVEDS PropReqHandler (
 		{
 		    if (glob->filterhook)
 		    {
-			if (!CallHookPkt (glob->filterhook, glob->scrmodereq, (APTR)id))
+			if (!CallHookPkt (glob->filterhook, glob->scrmodereq, (APTR)(IPTR)id))
 			    continue;
 		    }
 		    

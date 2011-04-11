@@ -315,9 +315,8 @@ SAVEDS ASM BPTR RTFuncs_Expunge(REGPARAM(a6, struct ReqToolsBase *, RTBase))
     /* Free the memory. */
     FreeMem((char *)RTBase-RTBase->LibNode.lib_NegSize,
 	    RTBase->LibNode.lib_NegSize + RTBase->LibNode.lib_PosSize);
-#else
-    ret = TRUE;
 #endif
+    ret = (BPTR)TRUE;
     
     return ret;
 }
