@@ -289,6 +289,8 @@ AROS_UFH3(void, __dosboot_BootProcess,
             bootNode->bn_Flags &= ~BNF_MOUNTED;
     }
 
+    LIBBASE->delayTicks = 500;
+
     /**** Try to find a bootable filesystem ****************************************/
     while (LIBBASE->db_BootDevice == NULL)
     {
@@ -314,14 +316,21 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
         if (!(LIBBASE->db_BootDevice))
         {
+            ULONG t;
+
 	    if (!bootScreen)
 		bootScreen = NoBootMediaScreen(LIBBASE);
 
             D(kprintf("No bootable disk was found.\n"));
             D(kprintf("Please insert a bootable disk in any drive.\n"));
-            D(kprintf("Retrying in 5 seconds...\n"));
+            D(kprintf("Retrying in 3 seconds...\n"));
 
-            Delay(500);
+	    for (t = 0; t < 150; t += LIBBASE->delayTicks)
+	    {
+
+	        Delay(LIBBASE->delayTicks);
+	        anim_Animate(bootScreen, DOSBootBase);
+	    }
 
             /*
              * Retry to mount stuff -- there might be some additional device in the meanwhile
