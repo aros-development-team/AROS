@@ -8,7 +8,7 @@ FILES := dosboot_init inithidds boot menu gadgets bootscreen bootanim bootconfig
 #MM- kernel-dosboot-includes : kernel-bootloader-includes
 #MM- kernel-dosboot : includes linklibs kernel-bootloader-includes
 
-USER_INCLUDES := -I$(SRCDIR)/rom/devs
+USER_INCLUDES := -I$(SRCDIR)/rom/devs -I$(GENDIR)/$(CURDIR)
 USER_CFLAGS := -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 
