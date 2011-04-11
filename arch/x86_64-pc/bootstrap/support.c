@@ -69,7 +69,7 @@ void *__bs_malloc(unsigned long size)
     char *end;
 
     /* Longword-align the size */
-    size = (size + sizeof(void *) - 1) & ~sizeof(void *);
+    size = (size + sizeof(void *) - 1) & ~(sizeof(void *) - 1);
     end  = start + size;
 
     /*
