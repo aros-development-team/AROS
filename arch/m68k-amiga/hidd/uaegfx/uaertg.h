@@ -330,7 +330,8 @@ struct ModeInfo {
 #define PSSO_BoardInfo_SyncTime			    PSSO_BoardInfo_DoubleBufferList + 4
 #define PSSO_BoardInfo_SyncPeriod		    PSSO_BoardInfo_SyncTime + 4
 #define PSSO_BoardInfo_SoftVBlankPort		    PSSO_BoardInfo_SyncPeriod + 8
-#define PSSO_BoardInfo_SizeOf			    PSSO_BoardInfo_SoftVBlankPort + 34
+#define PSSO_BoardInfo_WaitQ		    PSSO_BoardInfo_SyncPeriod + 34
+#define PSSO_BoardInfo_SizeOf			    PSSO_BoardInfo_WaitQ + 12
 
 WORD getrtgdepth (ULONG rgbformat);
 ULONG getrtgformat(struct uaegfx_staticdata *csd, OOP_Object *);

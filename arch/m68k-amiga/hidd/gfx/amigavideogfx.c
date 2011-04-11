@@ -206,7 +206,7 @@ static void makemodename(ULONG modeid, UBYTE *bufptr)
     DB2(bug("%08x '%s'\n", modeid, bufptr));
 }
 
-static struct NativeChipsetMode *addmodeid(struct amigavideo_staticdata *csd, ULONG modeid, WORD w, WORD h)
+static struct NativeChipsetMode *addmodeid(struct amigavideo_staticdata *csd, ULONG modeid, WORD w, WORD h, WORD d)
 {
     struct NativeChipsetMode *m;
 
@@ -214,6 +214,7 @@ static struct NativeChipsetMode *addmodeid(struct amigavideo_staticdata *csd, UL
     DB2(bug("%p %08x %dx%d\n", m, modeid, w, h));
     m->width = w;
     m->height = h;
+    m->depth = d;
     m->modeid = modeid;
     AddTail(&csd->nativemodelist, &m->node);
     return m;
@@ -246,6 +247,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 		WORD h = heighttable[y];
 		for (x = 0; widthtable[x]; x++) {
 			WORD w = widthtable[x];
+			WORD d;
 			ULONG modeid;
 			
 			modeid = 0;
@@ -253,9 +255,14 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 				modeid |= SUPER_KEY;
 				if (!csd->aga && !csd->ecs_denise)
 					continue;
+				d = csd->aga ? 8 : 2;
 			}
-			else if (w == 640)
+			else if (w == 640) {
 				modeid |= HIRES_KEY;
+				d = csd->aga ? 8 : 4;
+			} else {
+				d = csd->aga ? 8 : 6;
+			}
 			if (h >= 400)
 				modeid |= LORESLACE_KEY;
 			if (h == 200 || h == 400)
@@ -263,7 +270,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 			else
 				modeid |= PAL_MONITOR_ID;		
 
-			addmodeid(csd, modeid, w, h);
+			addmodeid(csd, modeid, w, h, d);
     			modetags[cnt] = tagptr;
 			modeids[cnt++] = modeid;
 
@@ -447,7 +454,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	for (i = 0; midp[i] != vHidd_ModeID_Invalid; i++) {
 	    OOP_Object *sync, *pf;
 	    HIDDT_ModeID mid = midp[i];
-	    IPTR dwidth, dheight;
+	    IPTR dwidth, dheight, ddepth;
 	    BOOL found = FALSE;
 	    
 	    DB2(bug("mid=%08x\n", mid));
@@ -456,12 +463,13 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	    DB2(bug("sync=%x pf=%x\n", sync, pf));
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
+	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &ddepth);
 	    ForeachNode(&csd->nativemodelist, node) {
-	    	if (node->width == dwidth && node->height == dheight) {
+	    	if (node->width == dwidth && node->height == dheight && node->depth == ddepth) {
 	    	    node->sync = sync;
 	    	    node->pf = pf;
 	    	    found = TRUE;
-	    	    DB2(bug("%08x %dx%d sync = %p pf = %p\n", node->modeid, dwidth, dheight, sync, pf));
+	    	    DB2(bug("%08x %dx%dx%d sync = %p pf = %p\n", node->modeid, dwidth, dheight, ddepth, sync, pf));
 	    	}
 	    }
 	    if (!found)
@@ -469,6 +477,11 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	}
 	HIDD_Gfx_ReleaseModeIDs(o, midp);
 	csd->superforward = FALSE;
+#if 0
+	ForeachNode(&csd->nativemodelist, node) {
+	    DB2(bug("%08x %dx%dx%d sync = %p pf = %p\n", node->modeid, node->width, node->height, node->depth, node->sync, node->pf));
+	}
+#endif
 	
     }
     FreeVec(buf);

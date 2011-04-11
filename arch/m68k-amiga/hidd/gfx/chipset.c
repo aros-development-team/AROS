@@ -11,7 +11,7 @@
 #include "amigavideobitmap.h"
 #include "chipset.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 static const UBYTE fetchunits[] = { 3,3,3,0, 4,3,3,0, 5,4,3,0 };
@@ -229,7 +229,7 @@ void resetmode(struct amigavideo_staticdata *data)
     data->depth = 0;
 }
 
-static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct copper2data *c2d)
+static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct copper2data *c2d, BOOL odd)
 {
     UWORD *copptr = c2d->copper2_scroll, *copbpl;
     WORD scroll, yscroll;
@@ -252,7 +252,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     copbpl = c2d->copper2_bpl;
     for (i = 0; i < bm->depth; i++) {
 	ULONG pptr = (ULONG)(bm->planes[i]);
-	if (data->interlace)
+	if (data->interlace && odd)
 	    pptr += bm->bytesperrow;
 	pptr -= (bm->leftedge >> (8 << data->fmode_bpl)) & ~((2 << data->fmode_bpl) - 1);
 	pptr -= (yscroll * bm->bytesperrow) << (data->interlace ? 1 : 0);
@@ -264,7 +264,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     scroll = bm->leftedge & ((16 << data->fmode_bpl) - 1);
     copptr[9] = (scroll & 0x0f) | ((scroll & 0x0f) << 4) | ((scroll >> 4) << 10) | ((scroll >> 4) << 14);
 
-    yend = y + bm->height + yscroll;
+    yend = y + data->height + yscroll;
     if (yend > 312)
     	yend = 312;
     copptr = c2d->copper2_bplcon0;
@@ -286,9 +286,9 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
 
 static void setcopperscroll(struct amigavideo_staticdata *data, struct amigabm_data *bm)
 {
-    setcopperscroll2(data, bm, &data->copper2);
+    setcopperscroll2(data, bm, &data->copper2, FALSE);
     if (data->interlace)
-    	setcopperscroll2(data, bm, &data->copper2i);
+    	setcopperscroll2(data, bm, &data->copper2i, TRUE);
 }
 
 static UWORD get_copper_list_length(UBYTE aga, UBYTE depth)
@@ -459,15 +459,17 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     	data->res = 1;
     data->interlace = (data->modeid & LORESLACE_KEY) != 0;
     data->fmode_bpl = data->aga ? 2 : 0;
+    data->width = bm->width;
+    data->height = data->interlace ? (bm->height + 1) / 2 : bm->height;
 
     fetchunit = fetchunits[data->fmode_bpl * 4 + data->res];
     fetchstart = fetchstarts[data->fmode_bpl * 4 + data->res];
     maxplanes = fm_maxplanes[data->fmode_bpl * 4 + data->res];
 
-    D(bug("setmode bm=%x mode=%08x w=%d h=%d d=%d fu=%d fs=%d\n",
-    	bm, data->modeid, bm->width, bm->height, bm->depth, fetchunit, fetchstart));
+    D(bug("setmode bm=%x mode=%08x w=%d h=%d d=%d bpr=%d fu=%d fs=%d\n",
+    	bm, data->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow, fetchunit, fetchstart));
     
-    bplwidth = bm->width >> (data->res + 1);
+    bplwidth = data->width >> (data->res + 1);
     ddfstrt = (data->startx / 2) & ~((1 << fetchunit) - 1);
     ddfstop = ddfstrt + ((bplwidth + ((1 << fetchunit) - 1) - 2 * (1 << fetchunit)) & ~((1 << fetchunit) - 1));
     if (ddfstop >= 0xd4)
@@ -483,9 +485,9 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     data->copper2.copper2 = AllocVec(get_copper_list_length(data->aga, bm->depth), MEMF_CLEAR | MEMF_CHIP);
     if (data->interlace)
     	data->copper2i.copper2 = AllocVec(get_copper_list_length(data->aga, bm->depth), MEMF_CLEAR | MEMF_CHIP);
-    createcopperlist(data, bm, &data->copper2, 0);
+    createcopperlist(data, bm, &data->copper2, FALSE);
     if (data->interlace)
-    	createcopperlist(data, bm, &data->copper2i, 1);
+    	createcopperlist(data, bm, &data->copper2i, TRUE);
  
     setfmode(data);
     setcopperscroll(data, bm);
