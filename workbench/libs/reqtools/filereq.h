@@ -81,7 +81,7 @@
 extern APTR ASM Dofmt (ASM_REGPARAM(a3, char *,), ASM_REGPARAM(a0, char *,), ASM_REGPARAM(a1, APTR,));
 extern APTR STDARGS DofmtArgs (char *, char *,...);
 extern void SetWinTitleFlash (ASM_REGPARAM(a0, struct Window *,), ASM_REGPARAM(a1, char *,));
-extern ULONG ASM LoopReqHandler (ASM_REGPARAM(a1, struct rtHandlerInfo *,));
+extern IPTR ASM LoopReqHandler (ASM_REGPARAM(a1, struct rtHandlerInfo *,));
 /*extern ULONG CallHook (struct Hook *, APTR,...);*/
 extern void ASM StrCat (ASM_REGPARAM(a0, char *,), ASM_REGPARAM(a1, char *,));
 extern void ShortDelay (void);

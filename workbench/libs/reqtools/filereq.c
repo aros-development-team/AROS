@@ -848,7 +848,7 @@ IPTR REGARGS LeaveReq (GlobData *glob, char *filename)
     {
 	glob->fontreq->Attr.ta_Style &= ~(FSF_ITALIC|FSF_BOLD|FSF_UNDERLINED);
 	glob->fontreq->Attr.ta_Style |= glob->fontstyle;
-	selfile = (APTR)(filename[0] != 0);
+	selfile = (APTR)(IPTR)(filename[0] != 0);
     }
     else
     {

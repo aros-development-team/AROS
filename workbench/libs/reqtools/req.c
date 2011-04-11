@@ -49,7 +49,7 @@ struct PWCallBackArgs
 
 /****************************************************************************************/
 
-extern ULONG ASM LoopReqHandler (ASM_REGPARAM(a1, struct rtHandlerInfo *,));
+extern IPTR ASM LoopReqHandler (ASM_REGPARAM(a1, struct rtHandlerInfo *,));
 extern void REGARGS SetWinTitleFlash (struct Window *, char *);
 extern void ShortDelay (void);
 extern ULONG ASM myTextLength (ASM_REGPARAM(a1, char *,),
@@ -348,7 +348,7 @@ ULONG ASM SAVEDS GetString (
     {
 	glob->reqflags &= EZREQ_FLAGS;
 	glob->textfmt = stringbuff;
-	textfmtargs = (APTR)maxlen;
+	textfmtargs = (APTR)(IPTR)maxlen;
     }
 
     if (glob->textfmt)
