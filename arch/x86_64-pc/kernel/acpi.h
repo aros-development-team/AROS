@@ -22,7 +22,12 @@
 #define   ACPI_MAX_TABLES           32
 #endif
 
-struct KernelACPIData {
+/*
+ * This structure is placed in protected memory.
+ * Read-only in user mode!!!
+ */
+struct KernelACPIData
+{
     IPTR                kb_ACPI_SDT_Phys;
     ULONG               kb_ACPI_SDT_Count;
     IPTR                kb_ACPI_SDT_Entry[ACPI_MAX_TABLES];
@@ -31,12 +36,6 @@ struct KernelACPIData {
     int                 kb_ACPI_IRQ;
 
     int                 kb_ACPI_HT;
-
-    int                 kb_ACPI_IOAPIC;
-
-//    BOOL                kb_APIC_Enabled;
-//    BOOL                kb_SMP_Enabled;
-    int                 kb_SMP_Config;
 };
 
 /* Table Handlers */

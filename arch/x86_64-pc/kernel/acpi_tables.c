@@ -639,12 +639,11 @@ ULONG core_ACPIInitialise(struct KernelBase *KernelBase)
     }
 
     KernelBase->kb_APIC_IRQ_Model = ACPI_IRQ_MODEL_IOAPIC;
+    KernelBase->kb_ACPI_IOAPIC = 1;
 
-    _Kern_ACPIData->kb_ACPI_IOAPIC = 1;
-
-    if ( KernelBase->kb_APIC_Count && _Kern_ACPIData->kb_ACPI_IOAPIC )
+    if ( KernelBase->kb_APIC_Count && KernelBase->kb_ACPI_IOAPIC )
     {
-        _Kern_ACPIData->kb_SMP_Config = 1;
+        KernelBase->kb_SMP_Config = 1;
         rkprintf("[Kernel] core_ACPIInitialise: SMP APICs Configured from ACPI\n");
 #warning "TODO: implement check for clustered apic's.."
         //core_APICClusteredCheck();
