@@ -42,10 +42,12 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
 {
     struct Screen *scr = OpenBootScreen(DOSBootBase);
 
-    /* TODO: Display a picture here */
-    SetAPen(&scr->RastPort, 1);
-    Move(&scr->RastPort, 215, 120);
-    Text(&scr->RastPort, "No bootable media found...", 26);
+    if (!anim_Init(scr, DOSBootBase))
+    {
+	SetAPen(&scr->RastPort, 1);
+	Move(&scr->RastPort, 215, 120);
+	Text(&scr->RastPort, "No bootable media found...", 26);
+    }
 
     return scr;
 }
