@@ -421,7 +421,7 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 	D(bug("[Kernel] Done?! Still here?\n"));
 
 	apictotal = core_APICGetTotal();
-	D(bug("[Kernel] %u APICs detected\n"));
+	D(bug("[Kernel] %u APICs detected\n", apictotal));
 	
 	if (apictotal > 1)
     	{
