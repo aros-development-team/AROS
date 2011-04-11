@@ -49,6 +49,8 @@ struct KernelBase
     UWORD               *kb_APIC_IDMap;                         /* ACPI_ID << 8 | LOGICAL_ID */
     IPTR                *kb_APIC_BaseMap;
     int                 kb_APIC_IRQ_Model;
+    int                 kb_ACPI_IOAPIC;
+    int                 kb_SMP_Config;
 };
 
 #define KBL_INTERNAL    0
