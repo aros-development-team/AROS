@@ -16,6 +16,15 @@
 #define __IHidd_Attr		(csd->hiddAttrBase)
 #define __IHidd_ColorMap	(csd->hiddColorMapAttrBase)
 
+struct RTGMode
+{
+	struct Node node;
+	ULONG modeid;
+	UWORD width, height;
+	OOP_Object *pf;
+	OOP_Object *sync;
+};
+
 struct uaegfx_staticdata
 {
     OOP_Class 	    	    *gfxclass;
@@ -30,8 +39,9 @@ struct uaegfx_staticdata
 	OOP_AttrBase hiddAttrBase;
 	OOP_AttrBase hiddColorMapAttrBase;
 	
+	struct List rtglist;
 	struct Library *GfxBase;
-
+	struct Library *CardBase;
 	struct bm_data *disp;
 	APTR uaeromvector;
 	ULONG rgbformat;
@@ -46,7 +56,8 @@ struct uaegfx_staticdata
 	BOOL hardwaresprite;
 	WORD spritecolors;
 
-	UBYTE initialized;
+	BOOL initialized;
+	BOOL superforward; 
 };
 
 struct UAEGFXclbase

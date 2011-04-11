@@ -33,7 +33,7 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
     gfxhidd = OOP_NewObject(LIBBASE->csd.amigagfxclass, NULL, NULL);
     D(bug("AMIGAGFXHIDD=0x%p\n", gfxhidd));
     if (gfxhidd) {
-	ULONG err = AddDisplayDriver(gfxhidd, DDRV_KeepBootMode, TRUE, DDRV_MonitorID, 0, DDRV_IDMask, 0xFF000000, TAG_DONE);
+	ULONG err = AddDisplayDriver(gfxhidd, DDRV_KeepBootMode, TRUE, DDRV_MonitorID, 0, DDRV_IDMask, 0xF0000000, TAG_DONE);
 	D(bug("AMIGAGFXHIDD AddDisplayDriver() result: %u\n", err));
 	if (err) {
 	    OOP_DisposeObject(gfxhidd);

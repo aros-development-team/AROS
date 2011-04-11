@@ -41,6 +41,125 @@
 #define SIZE_PFLIST 18
 #define SIZE_MODELIST (5 + RGBFB_MaxFormats)
 
+
+
+HIDDT_ModeID *UAEGFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+    struct RTGMode *node;
+    struct TagItem *tag, *tstate;
+    ULONG minwidth = 0, maxwidth = 0xFFFFFFFF;
+    ULONG minheight = 0, maxheight = 0xFFFFFFFF;
+    OOP_Object *pf = NULL;
+    HIDDT_ModeID *modeids;
+    WORD cnt;
+
+   if (csd->superforward)
+   	return (HIDDT_ModeID*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    for (tstate = msg->queryTags; (tag = NextTagItem((const struct TagItem **)&tstate)); )
+    {
+	switch (tag->ti_Tag)
+	{
+	    case tHidd_GfxMode_MinWidth:
+	    	minwidth = (ULONG)tag->ti_Tag;
+		break;
+
+	    case tHidd_GfxMode_MaxWidth:
+	    	maxwidth = (ULONG)tag->ti_Tag;
+		break;
+
+	    case tHidd_GfxMode_MinHeight:
+	    	minheight = (ULONG)tag->ti_Tag;
+		break;
+
+	    case tHidd_GfxMode_MaxHeight:
+	    	maxheight = (ULONG)tag->ti_Tag;
+		break;
+		
+	    case tHidd_GfxMode_PixFmts:
+	    	pf = (OOP_Object*)tag->ti_Tag;
+		break;
+
+	}
+    }
+    DB2(bug("QueryModeIDs (%dx%d)-(%dx%d)\n", minwidth, minheight, maxwidth, maxheight));
+    cnt = 0;
+    ForeachNode(&csd->rtglist, node) {
+	if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight && (!pf || pf == node->pf)) {
+	    cnt++;
+	}
+    }
+    modeids = AllocVec((cnt + 1) * sizeof(HIDDT_ModeID), MEMF_PUBLIC);
+    if (!modeids)
+    	return NULL;
+    cnt = 0;
+    ForeachNode(&csd->rtglist, node) {
+ 	if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight && (!pf || pf == node->pf)) {
+    	    DB2(bug("%d: %08x\n", cnt, node->modeid));
+	    modeids[cnt++] = node->modeid;
+	}
+    }
+    modeids[cnt] = vHidd_ModeID_Invalid;
+    return modeids;
+}
+
+VOID UAEGFXCl__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ReleaseModeIDs *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+    if (csd->superforward)
+   	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    else
+    	FreeVec(msg->modeIDs);
+}
+
+HIDDT_ModeID UAEGFXCl__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NextModeID *msg)
+{
+	struct uaegfx_staticdata *csd = CSD(cl);
+	struct RTGMode *node = NULL;
+	HIDDT_ModeID mid = vHidd_ModeID_Invalid;
+
+    	DB2(bug("NextModeID %08x\n", msg->modeID));
+	if (msg->modeID != vHidd_ModeID_Invalid) {
+		ForeachNode(&csd->rtglist, node) {
+			if (node->modeid == msg->modeID) {
+				node = (struct RTGMode*)node->node.ln_Succ;
+				break;
+			}
+		}
+	}
+	if (!node)
+		node = (struct RTGMode*)csd->rtglist.lh_Head;
+	if (node->node.ln_Succ) {
+		mid = node->modeid;
+		*msg->syncPtr = node->sync;
+		*msg->pixFmtPtr = node->pf;
+	}
+	DB2(bug("=%08x %p %p\n", mid, *msg->syncPtr, *msg->pixFmtPtr));
+	return mid;
+}
+
+BOOL UAEGFXCl__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMode *msg)
+{
+	struct uaegfx_staticdata *csd = CSD(cl);
+	struct RTGMode *node;
+
+ 	if (csd->superforward)
+   		return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+        DB2(bug("GetMode %08x\n", msg->modeID));
+	ForeachNode(&csd->rtglist, node) {
+		if (node->modeid == msg->modeID) {
+			*msg->syncPtr = node->sync;
+			*msg->pixFmtPtr = node->pf;
+			DB2(bug("= %p %p\n", node->sync, node->pf));
+			return TRUE;
+		}
+	}
+	DB2(bug("= FAIL\n"));
+	return FALSE;
+}
+
 struct RTGFormat
 {
     UWORD rgbformat;
@@ -86,6 +205,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     if (csd->initialized)
 	return NULL;
 
+    NEWLIST(&csd->rtglist);
     supportedformats = gw(csd->boardinfo + PSSO_BoardInfo_RGBFormats);
     node = (struct Node*)(((ULONG*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList))[0]);
     r = (struct LibResolution*)node->ln_Succ;
@@ -231,10 +351,66 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     if (NULL != o)
     {
 	struct gfx_data *data = OOP_INST_DATA(cl, o);
+	HIDDT_ModeID *midp;
+
 	D(bug("UAEGFX::New(): Got object from super\n"));
 	NewList((struct List *)&data->bitmaps);
 	csd->initialized = 1;
 	csd->spritecolors = 16;
+
+	csd->superforward = TRUE;
+    	midp = HIDD_Gfx_QueryModeIDs(o, NULL);
+	for (i = 0; midp[i] != vHidd_ModeID_Invalid; i++) {
+	    OOP_Object *sync, *pf;
+	    HIDDT_ModeID mid = midp[i];
+	    IPTR dwidth, dheight, ddepth, dswap = 0;
+	    struct RTGMode *node1, *node2;
+	    UWORD depthmask;
+	    ULONG modeid, rtgmodeid, p96mode;
+	    
+	    DB2(bug("mid=%08x\n", mid));
+	    if (!HIDD_Gfx_GetMode(o, mid, &sync, &pf))
+	    	continue;
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
+
+	    DB2(bug("w=%d h=%d sync=%x pf=%x\n", dwidth, dheight, sync, pf));
+
+	    modeid = vHidd_ModeID_Invalid;
+	    r = (struct LibResolution*)node->ln_Succ;
+	    while (r->node.ln_Succ) {
+	    	if (r->Width == dwidth && r->Height == dheight) {
+	    	    modeid = r->DisplayID;
+	    	    break;
+	    	}
+	    	r = (struct LibResolution*)r->node.ln_Succ;
+	    }
+	    if (modeid == vHidd_ModeID_Invalid)
+	    	continue;
+
+	    p96mode = getrtgformat(csd, pf);
+	    rtgmodeid = (modeid & 0x00ff0000) | 0x1000 | (p96mode << 8);
+
+	    ForeachNode(&csd->rtglist, node2) {
+	    	if (node2->width == dwidth && node2->height == dheight && node2->modeid == rtgmodeid)
+	    	    break;
+	    }
+	    if (node2->node.ln_Succ != NULL)
+	    	continue;
+
+	    node1 = AllocMem(sizeof(struct RTGMode), MEMF_CLEAR);
+	    node1->width = dwidth;
+	    node1->height = dheight;
+	    node1->pf = pf;
+	    node1->sync = sync;
+	    node1->modeid = rtgmodeid;
+	    AddTail(&csd->rtglist, &node1->node);
+
+	    DB2(bug("%dx%d %08x %d\n", node1->width, node1->height, node1->modeid, p96mode));
+	}
+	HIDD_Gfx_ReleaseModeIDs(o, midp);
+	csd->superforward = FALSE;
+
     }
     
     FreeVec(restags);
@@ -321,11 +497,12 @@ VOID UAEGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
+#if 0
     struct uaegfx_staticdata *csd = CSD(cl);
     struct gfx_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  	    *tag;
     const struct TagItem    *tstate;
-#if 0
+
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {
@@ -386,7 +563,7 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
-    OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, &cm);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (IPTR*)&cm);
     if (cm) {
 	for (i = 0; i < 3; i++) {
 	    HIDDT_Color c;
@@ -481,11 +658,27 @@ static void freeattrbases(struct uaegfx_staticdata *csd)
     OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
 }
 
+AROS_UFH4(APTR, rtg_vblank,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(struct uaegfx_staticdata *, csd, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    	AROS_USERFUNC_INIT
+
+	return 0;	
+
+	AROS_USERFUNC_EXIT
+
+}
+
 BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 {
     struct uaegfx_staticdata *csd = &LIBBASE->csd;
     struct MemChunk *mc;
     ULONG size;
+    struct Interrupt *intr;
+    struct Node *node;
 
     D(bug("Init_UAEGFXClass\n"));
     csd->uaeromvector = (APTR)(0xf00000 + 0xff60);
@@ -497,18 +690,65 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     if (!csd->boardinfo)
     	return FALSE;
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList));
+    NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_BitMapList));
+    NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_MemList));
+    NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_WaitQ));
     csd->bitmapextra = csd->boardinfo + PSSO_BoardInfo_SizeOf;
     pl(csd->boardinfo + PSSO_BoardInfo_BitMapExtra, (ULONG)csd->bitmapextra);
-    if (!FindCard(csd)) {
-    	D(bug("FindCard() returned false\n"));
-    	FreeVec(csd->boardinfo);
-    	csd->boardinfo = NULL;
-    	return FALSE;
+    pl(csd->boardinfo + PSSO_BoardInfo_UtilBase, (ULONG)TaggedOpenLibrary(TAGGEDOPEN_UTILITY));
+    InitSemaphore((struct SignalSemaphore*)(csd->boardinfo + PSSO_BoardInfo_BoardLock));
+    intr = (struct Interrupt*)(csd->boardinfo + PSSO_BoardInfo_HardInterrupt);
+    intr->is_Code = (APTR)rtg_vblank;
+    intr->is_Data         = csd;
+    intr->is_Node.ln_Name = "RTG VBlank";
+    intr->is_Node.ln_Pri  = 0;
+    intr->is_Node.ln_Type = NT_INTERRUPT;
+    intr = (struct Interrupt*)(csd->boardinfo + PSSO_BoardInfo_SoftInterrupt);
+    intr->is_Code = (APTR)rtg_vblank;
+    intr->is_Data         = csd;
+    intr->is_Node.ln_Name = "RTG VBlank";
+    intr->is_Node.ln_Pri  = 0;
+    intr->is_Node.ln_Type = NT_INTERRUPT;
+
+    Forbid();
+    node = SysBase->LibList.lh_Head;
+    while (node->ln_Succ) {
+    	struct Library *lib = (struct Library*)node;
+    	struct Node *next = node->ln_Succ;
+    	char *name = node->ln_Name;
+    	int len = strlen(name);
+    	if (len > 5 && !strcmp(name + len - 5, ".card")) {
+    	    D(bug("P96GFX: attempting to init '%s'\n", name));
+    	    pl(csd->boardinfo + PSSO_BoardInfo_CardBase, (ULONG)lib);
+    	    csd->CardBase = lib;
+    	    if (FindCard(csd)) {
+    	    	D(bug("P96GFX: FindCard succeeded\n"));
+    	    	if (InitCard(csd)) {
+		    D(bug("P96GFX: InitCard succeeded\n"));
+		    break;
+		}
+	    }
+    	    pl(csd->boardinfo + PSSO_BoardInfo_CardBase, 0);
+    	    csd->CardBase = NULL;
+	    D(bug("P96GFX: init failed\n"));   
+	}
+	node = next;
+    }	
+    Permit();
+
+    if (!csd->CardBase) {
+	if (!FindCard(csd)) {
+    	    D(bug("FindCard() returned false\n"));
+    	    FreeVec(csd->boardinfo);
+    	    csd->boardinfo = NULL;
+    	    return FALSE;
+        }
+        D(bug("FindCard done\n"));
+        InitCard(csd);
     }
-    D(bug("FindCard done\n"));
-    InitCard(csd);
+
     if (IsListEmpty((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList))) {
-     	D(bug("InitCard() failed\n"));
+     	D(bug("Resolutionlist is empty, init failed.\n"));
     	FreeVec(csd->boardinfo);
     	csd->boardinfo = NULL;
     	return FALSE;
@@ -520,7 +760,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 
     csd->vram_start = (UBYTE*)gl(csd->boardinfo + PSSO_BoardInfo_MemoryBase);
     csd->vram_size = gl(csd->boardinfo + PSSO_BoardInfo_MemorySize);
-    D(bug("UAE RTG found at %08x size %08x\n", csd->vram_start, csd->vram_size));
+    D(bug("P96RTG found at %08x size %08x\n", csd->vram_start, csd->vram_size));
 
     size = (csd->vram_size - 1) & 0xffff0000;
     mc = (struct MemChunk*)csd->vram_start;

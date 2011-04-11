@@ -47,6 +47,10 @@
 
 /****************************************************************************************/
 
+static void setrtg(struct amigavideo_staticdata *csd, BOOL showrtg)
+{
+}
+
 OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
@@ -170,9 +174,14 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
             switch(idx)
             {
 	        case aoHidd_BitMap_Visible:
-	        data->disp = tag->ti_Data;
-	        if (data->disp)
-	            setmode(csd, data);
+	            data->disp = tag->ti_Data;
+	            if (data->disp) {
+	            	setrtg(csd, FALSE);
+	            	setmode(csd, data);
+	            } else {
+	            	resetmode(csd);
+	            	setrtg(csd, TRUE);
+	            }
 		    break;
 		case aoHidd_BitMap_LeftEdge:
 		    if (data->leftedge != tag->ti_Data) {

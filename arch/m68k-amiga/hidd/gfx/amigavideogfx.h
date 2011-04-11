@@ -34,7 +34,7 @@ struct NativeChipsetMode
 {
 	struct Node node;
 	ULONG modeid;
-	UWORD width, height;
+	UWORD width, height, depth;
 	OOP_Object *pf;
 	OOP_Object *sync;
 };
@@ -66,6 +66,7 @@ struct amigavideo_staticdata
 
 	WORD width_alignment;
 	WORD startx, starty;
+	WORD width, height;
 
 	UWORD *copper1;
 	UWORD *copper1_pt2;

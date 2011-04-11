@@ -12,125 +12,245 @@
 #include "uaertg.h"
 #include "p96call.h"
 
+static APTR gptr(struct uaegfx_staticdata *csd, WORD offset)
+{
+    return (APTR)((ULONG*)(((UBYTE*)(csd->boardinfo)) + offset))[0];
+}
+
 BOOL FindCard(struct uaegfx_staticdata *csd)
 {
-    return P96_LC1(BOOL, csd->uaeromvector, 16,
-    	AROS_LCA(APTR, csd->boardinfo, A0));
+    if (csd->CardBase)
+	return AROS_LVO_CALL1(BOOL,
+	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    struct Library*, csd->CardBase, 5, );
+    else
+	return P96_LC1(BOOL, csd->uaeromvector, 16,
+    	    AROS_LCA(APTR, csd->boardinfo, A0));
 }
 BOOL InitCard(struct uaegfx_staticdata *csd)
 {
-    return P96_LC2(BOOL, csd->uaeromvector, 29,
-    	AROS_LCA(APTR, csd->boardinfo, A0),       // For current WinUAEs
-    	AROS_LCA(APTR, csd->boardinfo, A2));      // For older E-UAEs
+    if (csd->CardBase)
+	return AROS_LVO_CALL2(BOOL,
+	    AROS_LCA(APTR, csd->boardinfo, A0),
+	    AROS_LCA(APTR, NULL, A1),
+    	    struct Library*, csd->CardBase, 6, );
+   else
+	return P96_LC2(BOOL, csd->uaeromvector, 29,
+	    AROS_LCA(APTR, csd->boardinfo, A0),       // For current WinUAEs
+	    AROS_LCA(APTR, csd->boardinfo, A2));      // For older E-UAEs
 }
 BOOL SetDisplay(struct uaegfx_staticdata *csd, BOOL state)
 {
-    return P96_LC2(BOOL, csd->uaeromvector, 26,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(BOOL, state, D0));
+    if (csd->CardBase)
+    	return AROS_CALL2(BOOL, gptr(csd, PSSO_BoardInfo_SetDisplay),
+     	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(BOOL, state, D0),
+    	    struct Library*, csd->CardBase);
+    else
+	return P96_LC2(BOOL, csd->uaeromvector, 26,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(BOOL, state, D0));
 }
 BOOL SetSwitch(struct uaegfx_staticdata *csd, BOOL state)
 {
-    return P96_LC2(BOOL, csd->uaeromvector, 18,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(BOOL, state, D0));
+    if (csd->CardBase)
+    	return AROS_CALL2(BOOL, gptr(csd, PSSO_BoardInfo_SetSwitch),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(BOOL, state, D0),
+    	    struct Library*, csd->CardBase);
+    else
+	return P96_LC2(BOOL, csd->uaeromvector, 18,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(BOOL, state, D0));
 }
 void SetColorArray(struct uaegfx_staticdata *csd, UWORD start, UWORD count)
 {
-    P96_LC3(BOOL, csd->uaeromvector, 19,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(WORD, start, D0),
-    	AROS_LCA(WORD, count, D1));
+    if (csd->CardBase)
+    	AROS_CALL3(BOOL, gptr(csd, PSSO_BoardInfo_SetColorArray),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(WORD, start, D0),
+    	    AROS_LCA(WORD, count, D1),
+    	    struct Library*, csd->CardBase);
+    else
+	P96_LC3(BOOL, csd->uaeromvector, 19,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(WORD, start, D0),
+    	    AROS_LCA(WORD, count, D1));
 }
 void SetDAC(struct uaegfx_staticdata *csd)
 {
-    P96_LC2(BOOL, csd->uaeromvector, 20,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(ULONG, csd->rgbformat, D7));
+    if (csd->CardBase)
+    	AROS_CALL2(BOOL, gptr(csd, PSSO_BoardInfo_SetDAC),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(ULONG, csd->rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    else
+	P96_LC2(BOOL, csd->uaeromvector, 20,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(ULONG, csd->rgbformat, D7));
 }
 void SetGC(struct uaegfx_staticdata *csd, struct ModeInfo *mi, BOOL border)
 {
-    P96_LC3(BOOL, csd->uaeromvector, 21,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(APTR, mi, A1),
-    	AROS_LCA(BOOL, border, D0));
+    if (csd->CardBase)
+    	AROS_CALL3(BOOL, gptr(csd, PSSO_BoardInfo_SetGC),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, mi, A1),
+    	    AROS_LCA(BOOL, border, D0),
+    	    struct Library*, csd->CardBase);
+    else
+	P96_LC3(BOOL, csd->uaeromvector, 21,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, mi, A1),
+    	    AROS_LCA(BOOL, border, D0));
 }
 void SetPanning(struct uaegfx_staticdata *csd, UBYTE *video, UWORD width, WORD x, WORD y)
 {
-    P96_LC6(BOOL, csd->uaeromvector, 22,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(APTR, video, A1),
-    	AROS_LCA(UWORD, width, D0),
-    	AROS_LCA(WORD, x, D1),
-    	AROS_LCA(WORD, y, D2),
-    	AROS_LCA(ULONG, csd->rgbformat, D7));
+    if (csd->CardBase)
+    	AROS_CALL6(BOOL, gptr(csd, PSSO_BoardInfo_SetPanning),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, video, A1),
+    	    AROS_LCA(UWORD, width, D0),
+    	    AROS_LCA(WORD, x, D1),
+    	    AROS_LCA(WORD, y, D2),
+    	    AROS_LCA(ULONG, csd->rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    else
+	P96_LC6(BOOL, csd->uaeromvector, 22,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, video, A1),
+    	    AROS_LCA(UWORD, width, D0),
+    	    AROS_LCA(WORD, x, D1),
+    	    AROS_LCA(WORD, y, D2),
+    	    AROS_LCA(ULONG, csd->rgbformat, D7));
 }
 BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask, ULONG rgbformat)
 {
-    return P96_LC9(BOOL, csd->uaeromvector, 17,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(APTR, ri, A1),
-    	AROS_LCA(WORD, x, D0),
-    	AROS_LCA(WORD, y, D1),
-    	AROS_LCA(WORD, w, D2),
-    	AROS_LCA(WORD, h, D3),
-    	AROS_LCA(ULONG, pen, D4),
-    	AROS_LCA(UBYTE, mask, D5),
-    	AROS_LCA(ULONG, rgbformat, D7));
+    if (csd->CardBase)
+    	return AROS_CALL9(BOOL, gptr(csd, PSSO_BoardInfo_FillRect),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, ri, A1),
+    	    AROS_LCA(WORD, x, D0),
+    	    AROS_LCA(WORD, y, D1),
+    	    AROS_LCA(WORD, w, D2),
+    	    AROS_LCA(WORD, h, D3),
+    	    AROS_LCA(ULONG, pen, D4),
+    	    AROS_LCA(UBYTE, mask, D5),
+    	    AROS_LCA(ULONG, rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    else
+	return P96_LC9(BOOL, csd->uaeromvector, 17,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, ri, A1),
+    	    AROS_LCA(WORD, x, D0),
+    	    AROS_LCA(WORD, y, D1),
+    	    AROS_LCA(WORD, w, D2),
+    	    AROS_LCA(WORD, h, D3),
+    	    AROS_LCA(ULONG, pen, D4),
+    	    AROS_LCA(UBYTE, mask, D5),
+    	    AROS_LCA(ULONG, rgbformat, D7));
 }
 BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
 {
-    return P96_LC8(BOOL, csd->uaeromvector, 31,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(APTR, ri, A1),
-    	AROS_LCA(WORD, x, D0),
-    	AROS_LCA(WORD, y, D1),
-    	AROS_LCA(WORD, w, D2),
-    	AROS_LCA(WORD, h, D3),
-     	AROS_LCA(UBYTE, mask, D4),
-    	AROS_LCA(ULONG, rgbformat, D7));
+    if (csd->CardBase)
+    	return AROS_CALL8(BOOL, gptr(csd, PSSO_BoardInfo_InvertRect),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, ri, A1),
+    	    AROS_LCA(WORD, x, D0),
+    	    AROS_LCA(WORD, y, D1),
+    	    AROS_LCA(WORD, w, D2),
+    	    AROS_LCA(WORD, h, D3),
+     	    AROS_LCA(UBYTE, mask, D4),
+    	    AROS_LCA(ULONG, rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    else
+	return P96_LC8(BOOL, csd->uaeromvector, 31,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, ri, A1),
+    	    AROS_LCA(WORD, x, D0),
+    	    AROS_LCA(WORD, y, D1),
+    	    AROS_LCA(WORD, w, D2),
+    	    AROS_LCA(WORD, h, D3),
+     	    AROS_LCA(UBYTE, mask, D4),
+    	    AROS_LCA(ULONG, rgbformat, D7));
 }
 BOOL BlitRectNoMaskComplete(struct uaegfx_staticdata *csd, struct RenderInfo *risrc, struct RenderInfo *ridst,
     WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE opcode, ULONG rgbformat)
 {
-    return P96_LC11(BOOL, csd->uaeromvector, 28,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(APTR, risrc, A1),
-    	AROS_LCA(APTR, ridst, A2),
-    	AROS_LCA(WORD, sx, D0),
-    	AROS_LCA(WORD, sy, D1),
-    	AROS_LCA(WORD, dx, D2),
-    	AROS_LCA(WORD, dy, D3),
-    	AROS_LCA(WORD, w, D4),
-    	AROS_LCA(WORD, h, D5),
-     	AROS_LCA(UBYTE, opcode, D6),
-    	AROS_LCA(ULONG, rgbformat, D7));
+    if (csd->CardBase)
+    	return AROS_CALL11(BOOL, gptr(csd, PSSO_BoardInfo_BlitRectNoMaskComplete),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, risrc, A1),
+    	    AROS_LCA(APTR, ridst, A2),
+    	    AROS_LCA(WORD, sx, D0),
+    	    AROS_LCA(WORD, sy, D1),
+    	    AROS_LCA(WORD, dx, D2),
+    	    AROS_LCA(WORD, dy, D3),
+    	    AROS_LCA(WORD, w, D4),
+    	    AROS_LCA(WORD, h, D5),
+     	    AROS_LCA(UBYTE, opcode, D6),
+    	    AROS_LCA(ULONG, rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    else
+	return P96_LC11(BOOL, csd->uaeromvector, 28,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, risrc, A1),
+    	    AROS_LCA(APTR, ridst, A2),
+    	    AROS_LCA(WORD, sx, D0),
+    	    AROS_LCA(WORD, sy, D1),
+    	    AROS_LCA(WORD, dx, D2),
+    	    AROS_LCA(WORD, dy, D3),
+    	    AROS_LCA(WORD, w, D4),
+    	    AROS_LCA(WORD, h, D5),
+     	    AROS_LCA(UBYTE, opcode, D6),
+    	    AROS_LCA(ULONG, rgbformat, D7));
 };
 BOOL BlitTemplate(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct Template *tmpl,
     WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
 {
-    return P96_LC9(BOOL, csd->uaeromvector, 27,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(APTR, ri, A1),
-    	AROS_LCA(APTR, tmpl, A2),
-    	AROS_LCA(WORD, x, D0),
-    	AROS_LCA(WORD, y, D1),
-    	AROS_LCA(WORD, w, D2),
-    	AROS_LCA(WORD, h, D3),
-     	AROS_LCA(UBYTE, mask, D4),
-    	AROS_LCA(ULONG, rgbformat, D7));
+    if (csd->CardBase)
+    	return AROS_CALL9(BOOL, gptr(csd, PSSO_BoardInfo_BlitTemplate),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, ri, A1),
+    	    AROS_LCA(APTR, tmpl, A2),
+    	    AROS_LCA(WORD, x, D0),
+    	    AROS_LCA(WORD, y, D1),
+    	    AROS_LCA(WORD, w, D2),
+    	    AROS_LCA(WORD, h, D3),
+     	    AROS_LCA(UBYTE, mask, D4),
+    	    AROS_LCA(ULONG, rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    else
+	return P96_LC9(BOOL, csd->uaeromvector, 27,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, ri, A1),
+    	    AROS_LCA(APTR, tmpl, A2),
+    	    AROS_LCA(WORD, x, D0),
+    	    AROS_LCA(WORD, y, D1),
+    	    AROS_LCA(WORD, w, D2),
+    	    AROS_LCA(WORD, h, D3),
+     	    AROS_LCA(UBYTE, mask, D4),
+    	    AROS_LCA(ULONG, rgbformat, D7));
 }
 
 WORD CalculateBytesPerRow(struct uaegfx_staticdata *csd, WORD width, ULONG rgbformat)
 {
-    return P96_LC3(BOOL, csd->uaeromvector, 23,
-    	AROS_LCA(APTR, csd->boardinfo, A0),
-    	AROS_LCA(UWORD, width, D0),
-    	AROS_LCA(ULONG, rgbformat, D7));
+    if (csd->CardBase)
+    	return AROS_CALL3(BOOL, gptr(csd, PSSO_BoardInfo_CalculateBytesPerRow),
+     	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(UWORD, width, D0),
+    	    AROS_LCA(ULONG, rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    else
+	return P96_LC3(BOOL, csd->uaeromvector, 23,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(UWORD, width, D0),
+    	    AROS_LCA(ULONG, rgbformat, D7));
 }
 
 BOOL SetSprite(struct uaegfx_staticdata *csd, BOOL activate)
 {
+    if (csd->CardBase)
+    	return FALSE;
     return P96_LC3(BOOL, csd->uaeromvector, 36,
     	AROS_LCA(APTR, csd->boardinfo, A0),
     	AROS_LCA(BOOL, activate, D0),
@@ -139,6 +259,8 @@ BOOL SetSprite(struct uaegfx_staticdata *csd, BOOL activate)
 
 BOOL SetSpritePosition(struct uaegfx_staticdata *csd)
 {
+    if (csd->CardBase)
+    	return FALSE;
     return P96_LC2(BOOL, csd->uaeromvector, 37,
     	AROS_LCA(APTR, csd->boardinfo, A0),
      	AROS_LCA(ULONG, csd->rgbformat, D7));
@@ -146,6 +268,8 @@ BOOL SetSpritePosition(struct uaegfx_staticdata *csd)
 
 BOOL SetSpriteImage(struct uaegfx_staticdata *csd)
 {
+    if (csd->CardBase)
+    	return FALSE;
     return P96_LC2(BOOL, csd->uaeromvector, 38,
     	AROS_LCA(APTR, csd->boardinfo, A0),
      	AROS_LCA(ULONG, csd->rgbformat, D7));
@@ -153,6 +277,8 @@ BOOL SetSpriteImage(struct uaegfx_staticdata *csd)
 
 BOOL SetSpriteColor(struct uaegfx_staticdata *csd, UBYTE idx, UBYTE r, UBYTE g, UBYTE b)
 {
+    if (csd->CardBase)
+    	return FALSE;
     return P96_LC6(BOOL, csd->uaeromvector, 39,
     	AROS_LCA(APTR, csd->boardinfo, A0),
     	AROS_LCA(UBYTE, idx, D0),
