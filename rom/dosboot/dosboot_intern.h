@@ -37,6 +37,9 @@ struct DOSBootBase
 
     struct BootConfig     bm_BootConfig;	/* Current HIDD configuration     */
     ULONG		  BootFlags;		/* Bootup flags			  */
+    
+    APTR		  animData;		/* Animation stuff		  */
+    ULONG		  delayTicks;		/* Delay period. Can be adjusted by animation code */
 };
 
 /* Boot flags */
@@ -51,9 +54,10 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase);
 struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase);
 void CloseBootScreen(struct Screen *scr, struct DOSBootBase *DOSBootBase);
 
-/* FIXME: Remove these #define xxxBase hacks
-   Do not use this in new code !
-*/
+APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase);
+void anim_Stop(struct DOSBootBase *DOSBootBase);
+void anim_Animate(struct Screen *scr, struct DOSBootBase *DOSBootBase);
+
 #undef GfxBase
 #define GfxBase DOSBootBase->bm_GfxBase
 #undef IntuitionBase

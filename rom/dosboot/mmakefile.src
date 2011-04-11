@@ -1,7 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := dosboot_init inithidds boot menu gadgets bootscreen bootconfig
+NOMEDIA_IMAGE := nomedia
+
+FILES := dosboot_init inithidds boot menu gadgets bootscreen bootanim bootconfig
 
 #MM- kernel-dosboot-includes : kernel-bootloader-includes
 #MM- kernel-dosboot : includes linklibs kernel-bootloader-includes
@@ -12,4 +14,12 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module mmake=kernel-dosboot \
   modname=dosboot modtype=resource \
-  files=$(FILES) uselibs="rom oop hiddstubs"
+  files="$(FILES)" uselibs="rom oop hiddstubs"
+
+$(GENDIR)/$(CURDIR)/bootanim.o : nomedia_image.h
+
+nomedia_image.h : $(NOMEDIA_IMAGE).ilbm
+	@$(ECHO) Creating $@...
+	@$(ILBMTOC) $< >$@
+
+%common
