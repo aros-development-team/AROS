@@ -19,7 +19,7 @@ struct AnimData
     UWORD y;
 };
 
-static UBYTE *unpack_byterun1(UBYTE *source, UBYTE *dest, LONG unpackedsize)
+static const UBYTE *unpack_byterun1(const UBYTE *source, UBYTE *dest, LONG unpackedsize)
 {
     UBYTE r;
     BYTE c;

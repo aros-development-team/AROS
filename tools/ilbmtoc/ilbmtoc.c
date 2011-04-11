@@ -604,7 +604,7 @@ static void gensource(void)
     
     if (have_cmap)
     {
-        printf("ULONG %s_pal[%ld] =\n", imagename, cmapentries);
+        printf("const ULONG %s_pal[%ld] =\n", imagename, cmapentries);
 	printf("{\n");
 	for(i = 0; i < cmapentries; i++)
 	{
@@ -633,7 +633,7 @@ static void gensource(void)
 	buffersize = bodysize;
     }
 
-    printf("UBYTE %s_data[%ld] =\n", imagename, buffersize);
+    printf("const UBYTE %s_data[%ld] =\n", imagename, buffersize);
     printf("{");
     
     i = 0;
