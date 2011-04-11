@@ -3,6 +3,7 @@
  * and flashes a specified region once per second.
  */
 
+#include <aros/debug.h>
 #include <intuition/screens.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -51,8 +52,11 @@ static const UBYTE *unpack_byterun1(const UBYTE *source, UBYTE *dest, LONG unpac
 
 APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 {
+    D(bug("Screen: %dx%dx%d\nImage: %dx%dx%d\n",
+    	scr->Width, scr->Height, scr->RastPort.BitMap->Depth,
+    	NOMEDIA_WIDTH, NOMEDIA_HEIGHT, NOMEDIA_PLANES));
     if ((scr->Width >= NOMEDIA_WIDTH) && (scr->Height >= NOMEDIA_HEIGHT) &&
-        (scr->RastPort.BitMap->Depth >= 4))
+        (scr->RastPort.BitMap->Depth >= NOMEDIA_PLANES))
     {
         struct AnimData *ad = AllocMem(sizeof(struct AnimData), MEMF_ANY);
         ULONG size = NOMEDIA_WIDTH * NOMEDIA_HEIGHT;

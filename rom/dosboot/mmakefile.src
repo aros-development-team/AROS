@@ -16,9 +16,9 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
   modname=dosboot modtype=resource \
   files="$(FILES)" uselibs="rom oop hiddstubs"
 
-$(GENDIR)/$(CURDIR)/bootanim.o : nomedia_image.h
+$(GENDIR)/$(CURDIR)/bootanim.o : $(GENDIR)/$(CURDIR)/nomedia_image.h
 
-nomedia_image.h : $(NOMEDIA_IMAGE).ilbm
+$(GENDIR)/$(CURDIR)/nomedia_image.h : $(NOMEDIA_IMAGE).ilbm
 	@$(ECHO) Creating $@...
 	@$(ILBMTOC) $< >$@
 
