@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -8,6 +8,7 @@
 
 #include <proto/exec.h>
 #include <proto/partition.h>
+#include <proto/utility.h>
 
 #include <devices/hardblocks.h>
 #include <exec/memory.h>
@@ -37,8 +38,10 @@ struct BadBlockNode {
     struct BadBlockBlock bbb;
 };
 
-struct FileSysNode {
-    struct Node ln;
+struct FileSysNode
+{
+    struct FileSysHandle h;
+    
     struct FileSysHeaderBlock fhb;
     struct LoadSegBlock *filesystem; /* the FS in LSEG blocks */
     ULONG fsblocks;                  /* nr of LSEG blocks for FS */
@@ -369,6 +372,12 @@ struct FileSysNode *fn;
         if (fn)
         {
             CopyMem(buffer, &fn->fhb, sizeof(struct FileSysHeaderBlock));
+
+	    /* Fill in common part of the handle */
+            fn->h.ln.ln_Name = fn->fhb.fhb_FileSysName;
+            fn->h.ln.ln_Pri  = fn->fhb.fhb_Priority;
+            fn->h.handler    = &PartitionRDB;
+
             return fn;
         }
     }
@@ -524,7 +533,7 @@ UBYTE i;
                     fn = PartitionRDBNewFileSys(PartitionBase, root, (struct FileSysHeaderBlock *)buffer);
                     if (fn != NULL)
                     {
-                        AddTail(&data->fsheaderlist, &fn->ln);
+                        Enqueue(&data->fsheaderlist, &fn->h.ln);
                         PartitionRDBReadFileSys(PartitionBase, root, fn, (struct LoadSegBlock *)buffer);
                         block = AROS_BE2LONG(fn->fhb.fhb_Next);
                     }
@@ -681,11 +690,11 @@ ULONG block;
 
     /* write filesystem blocks */
     fn = (struct FileSysNode *)data->fsheaderlist.lh_Head;
-    if (fn->ln.ln_Succ)
+    if (fn->h.ln.ln_Succ)
         data->rdb.rdb_FileSysHeaderList = AROS_LONG2BE(block);
     else
         data->rdb.rdb_FileSysHeaderList = (ULONG)-1;
-    while (fn->ln.ln_Succ)
+    while (fn->h.ln.ln_Succ)
     {
     ULONG fshblock;
 
@@ -694,7 +703,7 @@ ULONG block;
         fn->fhb.fhb_SegListBlocks = AROS_LONG2BE(block);
         /* write filesystem LSEG blocks */
         block = PartitionRDBWriteFileSys(PartitionBase, root, fn, block);
-        fn->fhb.fhb_Next = fn->ln.ln_Succ->ln_Succ ? AROS_LONG2BE(block) : (ULONG)-1;
+        fn->fhb.fhb_Next = fn->h.ln.ln_Succ->ln_Succ ? AROS_LONG2BE(block) : (ULONG)-1;
         fn->fhb.fhb_ChkSum = 0;
         CopyMem(&fn->fhb, buffer, sizeof(struct FileSysHeaderBlock));
         ((struct FileSysHeaderBlock *)buffer)->fhb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)buffer, AROS_BE2LONG(fn->fhb.fhb_SummedLongs)));
@@ -703,7 +712,7 @@ ULONG block;
 #else
         kprintf("RDB-write: block=%ld, type=FSHD\n", fshblock);
 #endif
-        fn = (struct FileSysNode *)fn->ln.ln_Succ;
+        fn = (struct FileSysNode *)fn->h.ln.ln_Succ;
     }
     data->rdb.rdb_HighRDSKBlock = AROS_LONG2BE(block-1);
     data->rdb.rdb_ChkSum = 0;
@@ -1049,6 +1058,40 @@ UBYTE buffer[4096];
     return 0;
 }
 
+APTR PartitionRDBFindFileSystem(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tags)
+{
+    struct RDBData *data = (struct RDBData *)ph->table->data;
+    struct FileSysNode *fn;
+    struct TagItem *idTag   = FindTagItem(FST_NAME, tags);
+    struct TagItem *nameTag = FindTagItem(FST_NAME, tags);
+
+    for (fn = (struct FileSysNode *)data->fsheaderlist.lh_Head; fn->h.ln.ln_Succ;
+    	 fn = (struct FileSysNode *)fn->h.ln.ln_Succ)
+    {
+	if (idTag)
+	{
+	    if (fn->fhb.fhb_ID != idTag->ti_Data)
+	    	continue;
+	}
+
+	if (nameTag)
+	{
+	    if (strcmp(fn->fhb.fhb_FileSysName, (char *)nameTag->ti_Data))
+	    	continue;
+	}
+
+	return fn;
+    }
+
+    return NULL;
+}
+
+BPTR PartitionRDBLoadFileSystem(struct Library *PartitionBase, struct FileSysNode *fn)
+{
+    /* Not done yet */
+    return BNULL;
+}
+
 const struct PTFunctionTable PartitionRDB =
 {
     PHPTT_RDB,
@@ -1066,6 +1109,8 @@ const struct PTFunctionTable PartitionRDB =
     PartitionRDBSetPartitionAttrs,
     PartitionRDBQueryPartitionTableAttrs,
     PartitionRDBQueryPartitionAttrs,
-    PartitionRDBDestroyPartitionTable
+    PartitionRDBDestroyPartitionTable,
+    PartitionRDBFindFileSystem,
+    PartitionRDBLoadFileSystem
 };
 

@@ -88,6 +88,9 @@ struct PartitionType
 #define PT_BOOTABLE  (TAG_USER | 35L) /* BOOL - partition is bootable */
 #define PT_AUTOMOUNT (TAG_USER | 36L) /* BOOL - partition will be auto mounted */
 
+/* Tags for filesystems */
+#define FST_ID		(TAG_USER | 1L)	/* ULONG  - filesystem ID   */
+#define FST_NAME	(TAG_USER | 2L)	/* STRPTR - filesystem name */
 
 /* Attributes */
 

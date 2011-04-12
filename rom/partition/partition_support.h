@@ -2,7 +2,7 @@
 #define PARTITION_SUPPORT_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -13,7 +13,15 @@
 
 #include "partition_intern.h"
 
-struct PTFunctionTable {
+struct FileSysHandle
+{
+    struct Node ln;
+    struct PTFunctionTable *handler;
+    /* Handler's private data follows */
+};
+
+struct PTFunctionTable
+{
     ULONG       type; /* Partition Table Type */
     STRPTR  name;
     LONG        (*checkPartitionTable)  (struct Library *, struct PartitionHandle *);
@@ -29,10 +37,16 @@ struct PTFunctionTable {
     LONG        (*setPartitionAttrs)        (struct Library *, struct PartitionHandle *, struct TagItem *);
     struct PartitionAttribute * (*queryPartitionTableAttrs)(struct Library *);
     struct PartitionAttribute * (*queryPartitionAttrs)  (struct Library *);
-    ULONG    (*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
+    ULONG    	(*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
+    APTR	(*findFileSystem)	 (struct Library *, struct PartitionHandle *, struct TagItem *);
+    BPTR	(*loadFileSystem)	 (struct Library *, struct FileSysHandle *);
 };
 
 extern const struct PTFunctionTable * const PartitionSupport[];
+
+extern const struct PTFunctionTable PartitionEBR;
+extern const struct PTFunctionTable PartitionMBR;
+extern const struct PTFunctionTable PartitionRDB;
 
 LONG PartitionGetGeometry(struct Library *, struct IOExtTD *, struct DriveGeometry *);
 void PartitionNsdCheck(struct Library *, struct PartitionHandle *);

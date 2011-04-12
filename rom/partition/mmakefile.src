@@ -22,7 +22,9 @@ FUNCS := \
 	setpartitionattrs \
 	querypartitiontableattrs \
 	querypartitionattrs \
-	destroypartitiontable
+	destroypartitiontable	 \
+	findfilesystema		 \
+	loadfilesystem
 
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \
