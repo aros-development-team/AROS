@@ -68,6 +68,7 @@
     struct HIDD_ViewPortData *prev_vpd;
     struct monitor_driverdata *mdd;
     struct monitor_driverdata *prev_mdd = NULL;
+    ULONG ret;
 
     /* Build lists of displayed bitmaps, one list per display.
        Lists are embedded in ViewPortExtra.DriverData field. Start of
@@ -108,15 +109,25 @@
 	}
     }
 
-    ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
+    if (prev_mdd)
+    {
+	ret = DoViewFunction(view, driver_PrepareViewPorts, GfxBase);
 
-    /* If the given view is a currently displayed one, refresh immediately */
-    if (GfxBase->ActiView == view)
-        driver_LoadView(view, GfxBase);
+	if (ret == MCOP_OK)
+	{
+	    ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
 
-    ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
+	    /* If the given view is a currently displayed one, refresh immediately */
+	    if (GfxBase->ActiView == view)
+            	DoViewFunction(view, driver_LoadViewPorts, GfxBase);
 
-    return prev_mdd ? MCOP_OK : MCOP_NOP;
+	    ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
+	}
+    }
+    else
+    	ret = MCOP_NOP;
+
+    return ret;
 
     AROS_LIBFUNC_EXIT
 } /* MrgCop */

@@ -297,10 +297,15 @@ void internal_ClipBlit(struct RastPort * srcRP,
                        struct GfxBase * GfxBase);
 
 /* Driver prototypes */
-extern void driver_LoadView(struct View *view, struct GfxBase *);
 
+typedef ULONG (*VIEW_FUNC)(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+
+extern ULONG driver_PrepareViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+extern ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 extern struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
 extern void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+extern struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+extern ULONG DoViewFunction(struct View *view, VIEW_FUNC fn, struct GfxBase *GfxBase);
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp

@@ -53,9 +53,10 @@
 
     ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
 
-    if (GfxBase->ActiView != view) {
+    if (GfxBase->ActiView != view)
+    {
 	GfxBase->ActiView = view;
-	driver_LoadView(view, GfxBase);
+	DoViewFunction(view, driver_LoadViewPorts, GfxBase);
     }
 
     ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);

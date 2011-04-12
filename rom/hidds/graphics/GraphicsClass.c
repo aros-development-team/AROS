@@ -2440,7 +2440,6 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     INPUTS
 	gfxHidd - a display driver object, whose display you wish to change.
 	data    - a singly linked list of bitmap objects to show
-	view    - a graphics.library view structure to which shown viewports belong
 
     RESULT
 	TRUE if this method is supported by the driver, FALSE otherwise
@@ -3682,7 +3681,55 @@ void GFX__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     D(bug("Gfx::CleanViewPort: object 0x%p, data 0x%p\n", o, msg->Data));
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+	moHidd_Gfx_PrepareViewPorts
+
+    SYNOPSIS
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_PrepareViewPorts *msg);
+
+	ULONG HIDD_Gfx_PrepareViewPorts(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data, struct View *view)
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Performs driver-specific setup on a given view.
+
+    INPUTS
+	gfxHidd - A display driver object.
+	data    - a pointer to a chain of HIDD_ViewPortData structures.
+	view	- A pointer to graphics.library View structure being prepared.
+
+    RESULT
+	MCOP_OK if there was no error or MCOP_NO_MEM otherwise.
+	MCOP_NOP is not allowed as a return value of this method.
+
+    NOTES
+    	graphics.library calls this method in MrgCop() after the complete view
+    	is built. data->Next pointer contains valid data.
+
+    	This function can be repeatedly called several times, and there is no
+    	cleanup counterpart for it. This should be taken into account in method
+    	implementation.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+	Base class implementation just does nothing. This function is mainly intended
+	to provide support for copperlist maintenance by Amiga(tm) chipset driver.
+
+*****************************************************************************************/
+
+ULONG GFX__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+{
+    return MCOP_OK;
+}
 
 #undef csd
 

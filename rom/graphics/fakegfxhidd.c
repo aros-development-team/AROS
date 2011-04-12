@@ -1210,6 +1210,7 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeOverlay	},
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_MakeViewPort	},
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CleanViewPort	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_PrepareViewPorts},
         {NULL	    	    	    	   , 0UL   	    	    	}
     };
     

@@ -103,6 +103,7 @@ enum
 
     moHidd_Gfx_MakeViewPort,
     moHidd_Gfx_CleanViewPort,
+    moHidd_Gfx_PrepareViewPorts,
 
     num_Hidd_Gfx_Methods
 };
@@ -373,7 +374,6 @@ struct pHidd_Gfx_ShowViewPorts
 {
     OOP_MethodID mID;
     struct HIDD_ViewPortData *Data;
-    struct View *view;
 };
 
 struct pHidd_Gfx_GetSync
@@ -411,6 +411,13 @@ struct pHidd_Gfx_MakeViewPort
 };
 
 #define pHidd_Gfx_CleanViewPort pHidd_Gfx_MakeViewPort
+
+struct pHidd_Gfx_PrepareViewPorts
+{
+    OOP_MethodID mID;
+    struct HIDD_ViewPortData *Data;
+    struct View *view;
+};
 
 enum
 {
@@ -1541,14 +1548,15 @@ OOP_Object *HIDD_Gfx_Show(OOP_Object *obj, OOP_Object *bitMap, ULONG flags);
 BOOL 	    HIDD_Gfx_SetMode(OOP_Object *obj, OOP_Object *sync);
 VOID  	    HIDD_Gfx_CopyBox(OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, OOP_Object *gc);
 ULONG       HIDD_Gfx_ModeProperties(OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_ModeProperties *props, ULONG propsLen);
-ULONG	    HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data, struct View *view);
+ULONG	    HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data);
 OOP_Object *HIDD_Gfx_GetSync(OOP_Object *obj, ULONG num);
-BOOL HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
-BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
-BOOL HIDD_Gfx_QueryHardware3D(OOP_Object *obj, OOP_Object *pixFmt);
-BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *obj, ULONG Type, ULONG *Width, ULONG *Height);
-ULONG HIDD_Gfx_MakeViewPort(OOP_Object *obj, struct HIDD_ViewPortData *data);
-void  HIDD_Gfx_CleanViewPort(OOP_Object *obj, struct HIDD_ViewPortData *data);
+BOOL	    HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+BOOL	    HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+BOOL	    HIDD_Gfx_QueryHardware3D(OOP_Object *obj, OOP_Object *pixFmt);
+BOOL	    HIDD_Gfx_GetMaxSpriteSize(OOP_Object *obj, ULONG Type, ULONG *Width, ULONG *Height);
+ULONG	    HIDD_Gfx_MakeViewPort(OOP_Object *obj, struct HIDD_ViewPortData *data);
+void	    HIDD_Gfx_CleanViewPort(OOP_Object *obj, struct HIDD_ViewPortData *data);
+ULONG	    HIDD_Gfx_PrepareViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data, struct View *view);
 
 VOID HIDD_GC_SetClipRect(OOP_Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
 VOID HIDD_GC_UnsetClipRect(OOP_Object *gc);
