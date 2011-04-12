@@ -66,6 +66,7 @@
     struct HIDD_ViewPortData *vpd;
     ULONG ret = MVP_OK;
     BOOL own_vpe = FALSE;
+    BOOL release_bm = FALSE;
 
     /* Attach a temporary ViewPortExtra if needed */
     vpe = (struct ViewPortExtra *)GfxLookUp(viewport);
@@ -89,47 +90,64 @@
     vpd = VPE_DATA(vpe);
     if (vpd)
     {
-    	vpd->vpe    = vpe;
-    	vpd->Bitmap = OBTAIN_HIDD_BM(viewport->RasInfo->BitMap);
+    	vpd->vpe = vpe;
+
+	/*
+	 * MakeVPort() can be called repeatedly on the same ViewPort.
+	 * In order to handle this correctly we obtain the bitmap only if
+	 * the pointer is not set yet.
+	 * Otherwise we will allocate a new planar bitmap object from the
+	 * cache every time if our ViewPort contains plain Amiga bitmap.
+	 */
+    	if (!vpd->Bitmap)
+    	{
+    	    vpd->Bitmap = OBTAIN_HIDD_BM(viewport->RasInfo->BitMap);
+    	    release_bm = TRUE;
+    	}
+
 	D(bug("[MakeVPort] Bitmap object: 0x%p\n", vpd->Bitmap));
 
-	/*
-	 * If we have a colormap attached to a HIDD bitmap, we can verify
-	 * that bitmap and colormap modes do not diffe
-	 */
-	if (IS_HIDD_BM(viewport->RasInfo->BitMap) && viewport->ColorMap)
+	if (IS_HIDD_BM(viewport->RasInfo->BitMap))
 	{
-	    struct DisplayInfoHandle *dih = viewport->ColorMap->NormalDisplayInfo;
+	    /*
+	     * VPXF_RELEASE_BITMAP is our private flag, so we ensure that it's not
+	     * ocassionally set by caller. Just in case.
+	     */
+	    vpe->Flags &= ~VPXF_RELEASE_BITMAP;
 
-	    if (dih)
+	    /*
+	     * If we have a colormap attached to a HIDD bitmap, we can verify
+	     * that bitmap and colormap modes do not differ.
+	     */
+	    if (viewport->ColorMap)
 	    {
-	        if ((HIDD_BM_DRVDATA(viewport->RasInfo->BitMap) != dih->drv) ||
-		    (HIDD_BM_HIDDMODE(viewport->RasInfo->BitMap) != dih->id))
-		{
+	    	struct DisplayInfoHandle *dih = viewport->ColorMap->NormalDisplayInfo;
 
-		    D(bug("[MakeVPort] Bad NormalDisplayInfo\n"));
-		    D(bug("[MakeVPort] Driverdata: ViewPort 0x%p, BitMap 0x%p\n", dih->drv, HIDD_BM_DRVDATA(viewport->RasInfo->BitMap)));
-		    D(bug("[MakeVPort] HIDD ModeID: ViewPort 0x%p, BitMap 0x%p\n", dih->id, HIDD_BM_HIDDMODE(viewport->RasInfo->BitMap)));
-		    ret = MVP_NO_DISPLAY;
-		}
-	    }
+	    	if (dih)
+	    	{
+	            if ((HIDD_BM_DRVDATA(viewport->RasInfo->BitMap) != dih->drv) ||
+		        (HIDD_BM_HIDDMODE(viewport->RasInfo->BitMap) != dih->id))
+		    {
 
-	    if (viewport->ColorMap->VPModeID != INVALID_ID)
-	    {
-		if (GET_BM_MODEID(viewport->RasInfo->BitMap) != viewport->ColorMap->VPModeID)
-		{
+		    	D(bug("[MakeVPort] Bad NormalDisplayInfo\n"));
+		    	D(bug("[MakeVPort] Driverdata: ViewPort 0x%p, BitMap 0x%p\n", dih->drv, HIDD_BM_DRVDATA(viewport->RasInfo->BitMap)));
+		    	D(bug("[MakeVPort] HIDD ModeID: ViewPort 0x%p, BitMap 0x%p\n", dih->id, HIDD_BM_HIDDMODE(viewport->RasInfo->BitMap)));
+		    	ret = MVP_NO_DISPLAY;
+		    }
+	    	}
 
-		    D(bug("[MakeVPort] Bad ModeID, ViewPort 0x%08lX, BitMap 0x%08lX\n", viewport->ColorMap->VPModeID, GET_BM_MODEID(viewport->RasInfo->BitMap)));
-		    ret = MVP_NO_DISPLAY;
-		}
+	    	if (viewport->ColorMap->VPModeID != INVALID_ID)
+	    	{
+		    if (GET_BM_MODEID(viewport->RasInfo->BitMap) != viewport->ColorMap->VPModeID)
+		    {
+		    	D(bug("[MakeVPort] Bad ModeID, ViewPort 0x%08lX, BitMap 0x%08lX\n", viewport->ColorMap->VPModeID, GET_BM_MODEID(viewport->RasInfo->BitMap)));
+		    	ret = MVP_NO_DISPLAY;
+		    }
+	    	}
 	    }
 	}
-
-	/*
-	 * Remember if we need to release the bitmap.
-	 * This is done in case if caller first frees the BitMap, then ViewPort.
-	 */
-	vpe->DriverData[1] = (APTR)IS_HIDD_BM(viewport->RasInfo->BitMap);
+	else
+	    vpe->Flags |= VPXF_RELEASE_BITMAP;
 
 	/*
 	 * Ensure that we have a bitmap object.
@@ -139,7 +157,13 @@
 	{
 	    struct monitor_driverdata *mdd = GET_VP_DRIVERDATA(viewport);
 
-	    D(bug("[MakeVPort] Driverdata 0x%p, driver object 0x%p\n", mdd, mdd->gfxhidd));
+	    /*
+	     * Store driverdata pointer in private ViewPortExtra field.
+	     * It is needed because the caller can first free BitMap, then
+	     * its ViewPort. In this case we won't be able to retrieve
+	     * driver pointer from the bitmap in FreeVPortCopLists().
+	     */
+	    vpe->DriverData[1] = mdd;
 	    ret = HIDD_Gfx_MakeViewPort(mdd->gfxhidd, vpd);
 	}
 	else
@@ -151,8 +175,14 @@
     if (ret == MVP_OK)
 	/* Use ScrollVPort() in order to validate offsets */
 	ScrollVPort(viewport);
-    else if (own_vpe)
-	GfxFree(&vpe->n);
+    else
+    {
+    	if (release_bm)
+    	    RELEASE_HIDD_BM(vpd->Bitmap, viewport->RasInfo->BitMap);
+
+    	if (own_vpe)
+	    GfxFree(&vpe->n);
+    }
 
     return ret;
 

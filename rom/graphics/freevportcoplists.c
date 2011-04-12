@@ -67,14 +67,11 @@
 
 	if (vpd)
 	{
-	    OOP_Object *gfxhidd;
-
 	    /* Do driver-specific cleanup */
-	    OOP_GetAttr(vpd->Bitmap, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-	    HIDD_Gfx_CleanViewPort(gfxhidd, vpd);
+	    HIDD_Gfx_CleanViewPort(VPE_DRIVER(vpe)->gfxhidd, vpd);
 
 	    /* Release temporary planar bitmap object */
-	    if (VPE_FLAGS(vpe))
+	    if (vpe->Flags & VPXF_RELEASE_BITMAP)
 		release_cache_object(CDD(GfxBase)->planarbm_cache, vpd->Bitmap, GfxBase);
 
 	    FreeMem(vpd, sizeof(struct HIDD_ViewPortData));
