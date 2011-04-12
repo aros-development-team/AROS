@@ -355,7 +355,10 @@ AROS_UFH3(void, __dosboot_BootProcess,
     }
 
     if (bootScreen)
+    {
+        anim_Stop(DOSBootBase);
 	CloseBootScreen(bootScreen, LIBBASE);
+    }
 
     if (LIBBASE->db_BootDevice != NULL)
     {

@@ -11,6 +11,7 @@
 
 struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
 {   
+    UWORD height;
     ULONG mode;
 
     GfxBase = (void *)OpenLibrary("graphics.library", 36);
@@ -20,9 +21,17 @@ struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
 	/* We failed to open one of system libraries. AROS is in utterly broken state */
 	Alert(AT_DeadEnd|AN_BootStrap|AG_OpenLib);
 
+    if (GfxBase->DisplayFlags & NTSC)
+    	height = 200;
+    else if (GfxBase->DisplayFlags & PAL)
+    	height = 256;
+    else
+    	/* Neither PAL nor NTSC - non-Amiga(tm) hardware assumed */
+    	height = 480;
+
     /* We want the screen to occupy the whole display, so we find best maching
        mode ID and then open a screen with that mode */
-    mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, 480,
+    mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, height,
 			    BIDTAG_Depth, 4, TAG_DONE);
 
     if (mode != INVALID_ID)
@@ -56,7 +65,6 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
 
 void CloseBootScreen(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 {
-    anim_Stop(DOSBootBase);
     CloseScreen(scr);
 
     CloseLibrary(&IntuitionBase->LibNode);

@@ -243,6 +243,22 @@ static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
     struct MsgPort *mp = NULL;
     UBYTE matrix[KB_MATRIXSIZE];
 
+#ifdef mc68000
+    /*
+     * On m68k we may have ciaa.resource (if running on classic Amiga HW)
+     * Let's check mouse buttons.
+     */
+    if (OpenResource("ciaa.resource"))
+    {
+    	volatile UBYTE *cia = (UBYTE*)0xbfe001;
+    	volatile UWORD *potinp = (UWORD*)0xdff016;
+
+    	/* check left + right mouse button state */
+    	if ((cia[0] & 0x40) == 0 && (potinp[0] & 0x0400) == 0)
+    	    return TRUE;
+    }
+#endif
+
     if ((mp = CreateMsgPort()) != NULL)
     {
         struct IORequest *io = NULL;
@@ -283,18 +299,22 @@ static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
 
 int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct BootLoaderBase *BootLoaderBase = NULL;
+    struct BootLoaderBase *BootLoaderBase = OpenResource("bootloader.resource");
     BOOL bmi_RetVal = FALSE;
     BOOL WantBootMenu = FALSE;
 
     D(bug("[BootMenu] bootmenu_Init()\n"));
 
-    BootLoaderBase = OpenResource("bootloader.resource");
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
-   /* Hosted ports have their HIDDs rewritten. Native still don't,
-      and native drivers still need external initialization. This is
-      going to change. */
+#ifndef mc68000
+   /*
+    * VGA and PCI hardware display drivers still need
+    * external initialization.
+    * This urgently needs to be fixed. After fixing this kludge
+    * will not be needed any more.
+    */
     InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
+#endif
 #endif
 
     /* Check for command line argument */
@@ -318,20 +338,6 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
         }
     }
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
-    if (1) {
-    	volatile UBYTE *cia = (UBYTE*)0xbfe001;
-    	volatile UWORD *potinp = (UWORD*)0xdff016;
-
-    	/* check left + right mouse button state */
-    	if ((cia[0] & 0x40) == 0 && (potinp[0] & 0x0400) == 0)
-    	    WantBootMenu = TRUE;
-
-    	/* native hardware have resident ROM drivers,
-    	 * so the following initHidds won't be executed on m68k
-    	 */
-    } else 
-#endif
     /* Initialize default HIDDs */
     if (!initHidds(LIBBASE))
 	return FALSE;

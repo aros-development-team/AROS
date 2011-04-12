@@ -113,9 +113,12 @@ void anim_Animate(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 void anim_Stop(struct DOSBootBase *DOSBootBase)
 {
     struct AnimData *ad = DOSBootBase->animData;
-
-    FreeVec(ad->picture);
-    FreeMem(ad, sizeof(struct AnimData));
     
-    DOSBootBase->animData = NULL;
+    if (ad)
+    {
+    	FreeVec(ad->picture);
+    	FreeMem(ad, sizeof(struct AnimData));
+    
+    	DOSBootBase->animData = NULL;
+    }
 }
