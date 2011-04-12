@@ -43,7 +43,7 @@ include $(TOP)/config/make.cfg
 #MM     hidd-radeon \
 #MM     hidd-usb \
 #MM     kernel-fs-nil \
-#MM     workbench-libs-partition \
+#MM     kernel-partition \
 #MM     workbench-libs-workbench \
 #MM     kernel-sam440-ppc-irq \
 #MM     workbench-devs-cdvdfs \

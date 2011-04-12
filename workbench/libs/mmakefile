@@ -25,7 +25,6 @@
 #MM     workbench-libs-mathtrans \
 #MM     workbench-libs-mathieeedoubbas \
 #MM     workbench-libs-mathieeedoubtrans \
-#MM     workbench-libs-partition \
 #MM     workbench-libs-prometheus \
 #MM     workbench-libs-reqtools \
 #MM     workbench-libs-rexxsupport \
@@ -66,7 +65,6 @@
 #MM     workbench-libs-mathtrans-includes \
 #MM     workbench-libs-mathieeedoubbas-includes \
 #MM     workbench-libs-mathieeedoubtrans-includes \
-#MM     workbench-libs-partition-includes \
 #MM     workbench-libs-prometheus-includes \
 #MM     workbench-libs-reqtools-includes \
 #MM     workbench-libs-rexxsupport-includes \

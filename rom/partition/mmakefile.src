@@ -24,17 +24,16 @@ FUNCS := \
 	querypartitionattrs \
 	destroypartitiontable
 
-#MM workbench-libs-partition-includes : \
+#MM kernel-partition-includes : \
 #MM    kernel-exec-includes \
 #MM    includes-copy
-#MM- workbench-libs-partition : linklibs
+#MM kernel-partition : linklibs
 
 USER_CFLAGS := -DDEBUG=0 \
 	       $(PARANOIA_CFLAGS)
 
-%build_module mmake=workbench-libs-partition \
+%build_module mmake=kernel-partition \
     modname=partition modtype=library \
     files="partition_init $(FUNCS) $(FILES)" uselibs="rom"
 
 %common
-

@@ -22,7 +22,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-c-shellcommands-kobj \
 #MM     workbench-libs-icon-kobj \
 #MM     workbench-libs-gadtools-kobj \
-#MM     workbench-libs-partition-kobj \
+#MM     kernel-partition-kobj \
 #MM     kernel-workbook-kobj \
 #MM     kernel-amiga-m68k-wbtag-kobj \
 #MM     kernel-workbench-devs-amiga-m68k \

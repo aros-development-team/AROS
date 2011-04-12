@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-afs-pkg		\
 #MM	workbench-devs-cdvdfs-pkg	\
 #MM	workbench-devs-sfs-pkg		\
-#MM	workbench-libs-partition-pkg	
+#MM	kernel-partition-pkg
 
 PKG_RSRC     := bootloader dosboot
 PKG_LIBS     := partition
