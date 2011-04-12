@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function FreeVPortCopLists()
@@ -9,6 +9,7 @@
 #include <aros/debug.h>
 #include <graphics/copper.h>
 #include <graphics/view.h>
+#include <hidd/graphics.h>
 #include <proto/exec.h>
 
 #include "graphics_intern.h"
@@ -52,42 +53,61 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  struct ViewPortExtra *vpe;
+    AROS_LIBFUNC_INIT
 
-  if (NULL != vp->DspIns)
-  {
-    FreeCopList(vp->DspIns);
-    vp->DspIns = NULL;
-  }
+    struct ViewPortExtra *vpe;
 
-  if (NULL != vp->SprIns)
-  {
-    FreeCopList(vp->SprIns);
-    vp->SprIns = NULL;
-  }
+/* TODO: delegate this to the driver
+    if (NULL != vp->DspIns)
+    {
+    	FreeCopList(vp->DspIns);
+    	vp->DspIns = NULL;
+    }
 
-  if (NULL != vp->ClrIns)
-  {
-    FreeCopList(vp->ClrIns);
-    vp->ClrIns = NULL;
-  }
+    if (NULL != vp->SprIns)
+    {
+    	FreeCopList(vp->SprIns);
+    	vp->SprIns = NULL;
+    }
 
-  if (NULL != vp->UCopIns)
-  {
-    if (NULL != vp->UCopIns->FirstCopList)
-      FreeCopList(vp->UCopIns->FirstCopList);
+    if (NULL != vp->ClrIns)
+    {
+    	FreeCopList(vp->ClrIns);
+    	vp->ClrIns = NULL;
+    }
 
-    FreeMem(vp->UCopIns, sizeof(struct UCopList));
-    vp->UCopIns = NULL;
-  }
+    if (NULL != vp->UCopIns)
+    {
+    	if (NULL != vp->UCopIns->FirstCopList)
+      	    FreeCopList(vp->UCopIns->FirstCopList);
 
-  vpe = (struct ViewPortExtra *)GfxLookUp(vp);
-  D(bug("[FreeVPortCopLists] ViewPort 0x%p, ViewPortExtra 0x%p\n", vp, vpe));
-  if (vpe && (vpe->Flags & VPXF_FREE_ME)) {
-    D(bug("[FreeVPortCopLists] Freeing temporary ViewPortExtra\n"));
-    GfxFree(&vpe->n);
-  }
+    	FreeMem(vp->UCopIns, sizeof(struct UCopList));
+    	vp->UCopIns = NULL;
+    } */
 
-  AROS_LIBFUNC_EXIT
+    vpe = (struct ViewPortExtra *)GfxLookUp(vp);
+    D(bug("[FreeVPortCopLists] ViewPort 0x%p, ViewPortExtra 0x%p\n", vp, vpe));
+    if (vpe)
+    {
+	/* Free the associated DriverData */
+    	struct HIDD_ViewPortData *vpd = VPE_DATA(vpe);
+
+	if (vpd)
+	{
+	    if (VPE_FLAGS(vpe))
+		release_cache_object(CDD(GfxBase)->planarbm_cache, vpd->Bitmap, GfxBase);
+
+	    FreeMem(vpd, sizeof(struct HIDD_ViewPortData));
+
+	    vpe->DriverData[0] = NULL;
+	}
+
+    	if (vpe->Flags & VPXF_FREE_ME)
+    	{
+    	    D(bug("[FreeVPortCopLists] Freeing temporary ViewPortExtra\n"));
+    	    GfxFree(&vpe->n);
+    	}
+    }
+
+    AROS_LIBFUNC_EXIT
 } /* FreeVPortCopLists */

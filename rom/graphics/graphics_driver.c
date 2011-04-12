@@ -515,7 +515,7 @@ static ULONG getbitmappixel(struct BitMap *bm
 
 #endif
 
-static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+static void driver_LoadViewPorts(struct ViewPort *vp, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     struct HIDD_ViewPortData *vpd;
     struct BitMap *bitmap;
@@ -529,7 +529,8 @@ static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata 
     mdd->display = vpd;
 
     /* First try the new method */
-    if (HIDD_Gfx_ShowViewPorts(mdd->gfxhidd, vpd)) {
+    if (HIDD_Gfx_ShowViewPorts(mdd->gfxhidd, vpd, v))
+    {
         DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] ShowViewPorts() worked\n"));
         return;
     }
@@ -624,21 +625,25 @@ void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
 
     ObtainSemaphoreShared(&CDD(GfxBase)->displaydb_sem);
 
-    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
+    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
+    {
         struct ViewPort *vp = NULL;
 
         /* Find the first visible ViewPort for this display. It
 	   will be a start of bitmaps chain to show. */
-	if (view) {
-            for (vp = view->ViewPort; vp; vp = vp->Next) {
-		if (!(vp->Modes & VP_HIDE)) {
+	if (view)
+	{
+            for (vp = view->ViewPort; vp; vp = vp->Next)
+            {
+		if (!(vp->Modes & VP_HIDE))
+		{
 		    if (GET_VP_DRIVERDATA(vp) == mdd)
 			break;
 		}
 	    }
 	}
 
-	driver_LoadViewPorts(vp, mdd, GfxBase);
+	driver_LoadViewPorts(vp, view, mdd, GfxBase);
     }
     
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);

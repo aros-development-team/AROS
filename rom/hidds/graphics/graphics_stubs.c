@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Stubs for graphics, bitmap, gc and colormap hidd class
@@ -13,6 +13,7 @@
 #include <aros/config.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <graphics/view.h>
 
 #include <proto/oop.h>
 
@@ -364,7 +365,7 @@ ULONG HIDD_Gfx_ModeProperties(OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_
 
 /***************************************************************/
 
-ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data)
+ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data, struct View *view)
 {
     STATIC_MID;
     struct pHidd_Gfx_ShowViewPorts p, *msg = &p;
@@ -373,6 +374,7 @@ ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data)
 
     p.mID  = static_mid;
     p.Data = data;
+    p.view = view;
 
     return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
