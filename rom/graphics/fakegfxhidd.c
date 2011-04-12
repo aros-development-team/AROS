@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -738,12 +738,18 @@ static void fakefb_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct fakefb_data *data = OOP_INST_DATA(cl, o);
 
-    if (msg->attrID == aHidd_FakeFB_RealBitMap) {
+    if (msg->attrID == aHidd_FakeFB_RealBitMap)
+    {
         *msg->storage = (IPTR)data->framebuffer;
 	return;
     }
-
-    OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
+    else if (msg->attrID == aHidd_BitMap_GfxHidd)
+    {
+    	*msg->storage = (IPTR)data->fakegfxhidd;
+    	return;
+    }
+    else
+    	OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
 }
 
 static IPTR fakefb_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
@@ -1177,36 +1183,34 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
     
     struct OOP_MethodDescr gfxhidd_descr[num_Hidd_Gfx_Methods + 1] = 
     {
-        {(IPTR (*)())gfx_fwd	    , moHidd_Gfx_NewGC		},
-        {(IPTR (*)())gfx_fwd	    , moHidd_Gfx_DisposeGC	},
-        {(IPTR (*)())gfx_newbitmap  , moHidd_Gfx_NewBitMap	},
-        {(IPTR (*)())gfx_fwd	    , moHidd_Gfx_DisposeBitMap	},
-        {(IPTR (*)())gfx_fwd	    , moHidd_Gfx_QueryModeIDs	},
-        {(IPTR (*)())gfx_fwd	    , moHidd_Gfx_ReleaseModeIDs	},
-	{(IPTR (*)())gfx_fwd	    , moHidd_Gfx_CheckMode	},
-	{(IPTR (*)())gfx_fwd	    , moHidd_Gfx_NextModeID	},
-	{(IPTR (*)())gfx_fwd	    , moHidd_Gfx_GetMode	},
-	
-#if 0
-/* These are private to the gfxhidd, and we should not be called with these */
-        {(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_RegisterPixFmt	    },
-        {(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_ReleasePixFmt	    },
-#endif	
-	{(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_GetPixFmt	    },
-	{(IPTR (*)())gfx_setcursorshape    , moHidd_Gfx_SetCursorShape	    },
-	{(IPTR (*)())gfx_setcursorpos	    , moHidd_Gfx_SetCursorPos	    },
-	{(IPTR (*)())gfx_setcursorvisible  , moHidd_Gfx_SetCursorVisible   },
-	{(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_SetMode	    },
-	{(IPTR (*)())gfx_show	    	    , moHidd_Gfx_Show		    },
-	{(IPTR (*)())gfx_copybox    	    , moHidd_Gfx_CopyBox	    },
-	{(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_ModeProperties	    },
-	{(IPTR (*)())gfx_showviewports	    , moHidd_Gfx_ShowViewPorts	    },
-	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_GetSync	    },
-	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_GetGamma	    },
-	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_SetGamma	    },
-	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_QueryHardware3D    },
-	{(IPTR (*)())gfx_getmaxspritesize  , moHidd_Gfx_GetMaxSpriteSize   },
-        {NULL	    	    	    	    , 0UL   	    	    	    }
+        {(IPTR (*)())gfx_fwd	  	   , moHidd_Gfx_NewGC		},
+        {(IPTR (*)())gfx_fwd	  	   , moHidd_Gfx_DisposeGC	},
+        {(IPTR (*)())gfx_newbitmap	   , moHidd_Gfx_NewBitMap	},
+        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeBitMap	},
+        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryModeIDs	},
+        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_ReleaseModeIDs	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CheckMode	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NextModeID	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetMode		},
+	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_GetPixFmt	},
+	{(IPTR (*)())gfx_setcursorshape    , moHidd_Gfx_SetCursorShape	},
+	{(IPTR (*)())gfx_setcursorpos	   , moHidd_Gfx_SetCursorPos	},
+	{(IPTR (*)())gfx_setcursorvisible  , moHidd_Gfx_SetCursorVisible},
+	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_SetMode	    	},
+	{(IPTR (*)())gfx_show	    	   , moHidd_Gfx_Show		},
+	{(IPTR (*)())gfx_copybox    	   , moHidd_Gfx_CopyBox	    	},
+	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_ModeProperties	},
+	{(IPTR (*)())gfx_showviewports	   , moHidd_Gfx_ShowViewPorts	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetSync	    	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetGamma	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_SetGamma	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryHardware3D },
+	{(IPTR (*)())gfx_getmaxspritesize  , moHidd_Gfx_GetMaxSpriteSize},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NewOverlay	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeOverlay	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_MakeViewPort	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CleanViewPort	},
+        {NULL	    	    	    	   , 0UL   	    	    	}
     };
     
     struct OOP_InterfaceDescr ifdescr[] =

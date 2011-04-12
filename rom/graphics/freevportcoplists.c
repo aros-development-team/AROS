@@ -11,6 +11,7 @@
 #include <graphics/view.h>
 #include <hidd/graphics.h>
 #include <proto/exec.h>
+#include <proto/oop.h>
 
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
@@ -57,34 +58,6 @@
 
     struct ViewPortExtra *vpe;
 
-/* TODO: delegate this to the driver
-    if (NULL != vp->DspIns)
-    {
-    	FreeCopList(vp->DspIns);
-    	vp->DspIns = NULL;
-    }
-
-    if (NULL != vp->SprIns)
-    {
-    	FreeCopList(vp->SprIns);
-    	vp->SprIns = NULL;
-    }
-
-    if (NULL != vp->ClrIns)
-    {
-    	FreeCopList(vp->ClrIns);
-    	vp->ClrIns = NULL;
-    }
-
-    if (NULL != vp->UCopIns)
-    {
-    	if (NULL != vp->UCopIns->FirstCopList)
-      	    FreeCopList(vp->UCopIns->FirstCopList);
-
-    	FreeMem(vp->UCopIns, sizeof(struct UCopList));
-    	vp->UCopIns = NULL;
-    } */
-
     vpe = (struct ViewPortExtra *)GfxLookUp(vp);
     D(bug("[FreeVPortCopLists] ViewPort 0x%p, ViewPortExtra 0x%p\n", vp, vpe));
     if (vpe)
@@ -94,6 +67,13 @@
 
 	if (vpd)
 	{
+	    OOP_Object *gfxhidd;
+
+	    /* Do driver-specific cleanup */
+	    OOP_GetAttr(vpd->Bitmap, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+	    HIDD_Gfx_CleanViewPort(gfxhidd, vpd);
+
+	    /* Release temporary planar bitmap object */
 	    if (VPE_FLAGS(vpe))
 		release_cache_object(CDD(GfxBase)->planarbm_cache, vpd->Bitmap, GfxBase);
 

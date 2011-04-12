@@ -67,14 +67,11 @@ enum
     moHidd_Gfx_DisposeGC,      
     moHidd_Gfx_NewBitMap,      
     moHidd_Gfx_DisposeBitMap,  
-			
-			
     
     moHidd_Gfx_QueryModeIDs,
     moHidd_Gfx_ReleaseModeIDs,
     moHidd_Gfx_NextModeID,
     moHidd_Gfx_GetMode,
-    
     moHidd_Gfx_CheckMode,
     
     moHidd_Gfx_GetPixFmt,
@@ -103,6 +100,9 @@ enum
 
     moHidd_Gfx_NewOverlay,
     moHidd_Gfx_DisposeOverlay,
+
+    moHidd_Gfx_MakeViewPort,
+    moHidd_Gfx_CleanViewPort,
 
     num_Hidd_Gfx_Methods
 };
@@ -211,9 +211,10 @@ struct View;
 /* A structure passed to ShowViewPorts() method */
 struct HIDD_ViewPortData
 {
-    struct HIDD_ViewPortData *Next;	/* Pointer to a next bitmap	*/
-    OOP_Object		     *Bitmap;	/* The bitmap object itself	*/
-    struct ViewPort	     *vp;	/* Associated ViewPort itself	*/
+    struct HIDD_ViewPortData *Next;	/* Pointer to a next bitmap		*/
+    OOP_Object		     *Bitmap;	/* The bitmap object itself		*/
+    struct ViewPortExtra     *vpe;	/* Associated ViewPortExtra		*/
+    APTR		      UserData;	/* The driver can keep own stuff here	*/
 };
 
 #define vHidd_ModeID_Invalid ((HIDDT_ModeID)-1)
@@ -402,6 +403,14 @@ struct pHidd_Gfx_GetMaxSpriteSize
     ULONG	 *Width;
     ULONG	 *Height;
 };
+
+struct pHidd_Gfx_MakeViewPort
+{
+    OOP_MethodID mID;
+    struct HIDD_ViewPortData *Data;
+};
+
+#define pHidd_Gfx_CleanViewPort pHidd_Gfx_MakeViewPort
 
 enum
 {
@@ -1538,6 +1547,8 @@ BOOL HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 BOOL HIDD_Gfx_QueryHardware3D(OOP_Object *obj, OOP_Object *pixFmt);
 BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *obj, ULONG Type, ULONG *Width, ULONG *Height);
+ULONG HIDD_Gfx_MakeViewPort(OOP_Object *obj, struct HIDD_ViewPortData *data);
+void  HIDD_Gfx_CleanViewPort(OOP_Object *obj, struct HIDD_ViewPortData *data);
 
 VOID HIDD_GC_SetClipRect(OOP_Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
 VOID HIDD_GC_UnsetClipRect(OOP_Object *gc);

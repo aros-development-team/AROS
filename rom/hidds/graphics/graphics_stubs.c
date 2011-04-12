@@ -462,6 +462,36 @@ BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *obj, ULONG Type, ULONG *Width, ULONG 
 
 /***************************************************************/
 
+ULONG HIDD_Gfx_MakeViewPort(OOP_Object *obj, struct HIDD_ViewPortData *data)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_MakeViewPort p, *msg = &p;
+
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_MakeViewPort);
+
+    p.mID  = static_mid;
+    p.Data = data;
+
+    return OOP_DoMethod(obj, (OOP_Msg)msg);
+}
+
+/***************************************************************/
+
+void HIDD_Gfx_CleanViewPort(OOP_Object *obj, struct HIDD_ViewPortData *data)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_CleanViewPort p, *msg = &p;
+
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_CleanViewPort);
+
+    p.mID  = static_mid;
+    p.Data = data;
+
+    return OOP_DoMethod(obj, (OOP_Msg)msg);
+}
+
+/***************************************************************/
+
 BOOL HIDD_BM_SetColors (OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
 {
     STATIC_MID;
