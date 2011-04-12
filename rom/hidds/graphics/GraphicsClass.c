@@ -2409,7 +2409,7 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     SYNOPSIS
         ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_ShowViewPorts *msg);
 
-	ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data);
+	ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data, struct View *view);
 
     LOCATION
 	hidd.graphics.graphics
@@ -2439,6 +2439,7 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     INPUTS
 	gfxHidd - a display driver object, whose display you wish to change.
 	data    - a singly linked list of bitmap objects to show
+	view    - a graphics.library view structure to which shown viewports belong
 
     RESULT
 	TRUE if this method is supported by the driver, FALSE otherwise

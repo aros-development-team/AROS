@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function ScrollVPort()
@@ -52,27 +52,32 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* We use obtain/release pair because this makes ScrollVPort()
-       operating also on planar bitmaps, which can aid in porting AROS
-       to m68k Amiga */
-    OOP_Object *bitmap = OBTAIN_HIDD_BM(vp->RasInfo->BitMap);
-    struct TagItem tags[] = {
-        { .ti_Tag = aHidd_BitMap_LeftEdge, .ti_Data = vp->DxOffset, },
-        { .ti_Tag = aHidd_BitMap_TopEdge,  .ti_Data = vp->DyOffset, },
-	{ .ti_Tag = TAG_DONE, }
-    };
-    IPTR offset;
+    /*
+     * Bitmap object pointer is contained in struct ViewPortData,
+     * connected to a ViewPortExtra.
+     * This is true even for planar Amiga bitmaps.
+     */
+    struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
 
-    /* Actually move the bitmap */
-    OOP_SetAttrs(bitmap, tags);
+    if (vpe)
+    {
+    	struct TagItem tags[] =
+    	{
+            { .ti_Tag = aHidd_BitMap_LeftEdge, .ti_Data = vp->DxOffset, },
+            { .ti_Tag = aHidd_BitMap_TopEdge,  .ti_Data = vp->DyOffset, },
+	    { .ti_Tag = TAG_DONE, }
+        };
+	IPTR offset;
 
-    /* The bitmap may fail to move. Fix up offsets now */
-    OOP_GetAttr(bitmap, aHidd_BitMap_LeftEdge, &offset);
-    vp->DxOffset = offset;
-    OOP_GetAttr(bitmap, aHidd_BitMap_TopEdge, &offset);
-    vp->DyOffset = offset;
+	/* Actually move the bitmap */
+	OOP_SetAttrs(VPE_DATA(vpe)->Bitmap, tags);
 
-    RELEASE_HIDD_BM(bitmap, vp->RasInfo->BitMap);
+	/* The bitmap may fail to move. Fix up offsets now */
+	OOP_GetAttr(VPE_DATA(vpe)->Bitmap, aHidd_BitMap_LeftEdge, &offset);
+	vp->DxOffset = offset;
+	OOP_GetAttr(VPE_DATA(vpe)->Bitmap, aHidd_BitMap_TopEdge, &offset);
+	vp->DyOffset = offset;
+    }
 
     AROS_LIBFUNC_EXIT
 } /* ScrollVPort */

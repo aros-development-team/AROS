@@ -19,6 +19,7 @@
 #   include <oop/oop.h>
 #endif
 
+
 #include <utility/utility.h>
 
 
@@ -204,10 +205,15 @@ struct HIDD_ModeProperties
 #define COMPF_LEFT  0x0004 /* ... to the left of ...			  */
 #define COMPF_RIGHT 0x0008 /* ... to the right of ...			  */
 
+struct ViewPort;
+struct View;
+
+/* A structure passed to ShowViewPorts() method */
 struct HIDD_ViewPortData
 {
-    struct HIDD_ViewPortData *Next;
-    OOP_Object *Bitmap;
+    struct HIDD_ViewPortData *Next;	/* Pointer to a next bitmap	*/
+    OOP_Object		     *Bitmap;	/* The bitmap object itself	*/
+    struct ViewPort	     *vp;	/* Associated ViewPort itself	*/
 };
 
 #define vHidd_ModeID_Invalid ((HIDDT_ModeID)-1)
@@ -366,6 +372,7 @@ struct pHidd_Gfx_ShowViewPorts
 {
     OOP_MethodID mID;
     struct HIDD_ViewPortData *Data;
+    struct View *view;
 };
 
 struct pHidd_Gfx_GetSync
@@ -1525,7 +1532,7 @@ OOP_Object *HIDD_Gfx_Show(OOP_Object *obj, OOP_Object *bitMap, ULONG flags);
 BOOL 	    HIDD_Gfx_SetMode(OOP_Object *obj, OOP_Object *sync);
 VOID  	    HIDD_Gfx_CopyBox(OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, OOP_Object *gc);
 ULONG       HIDD_Gfx_ModeProperties(OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_ModeProperties *props, ULONG propsLen);
-ULONG	    HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data);
+ULONG	    HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data, struct View *view);
 OOP_Object *HIDD_Gfx_GetSync(OOP_Object *obj, ULONG num);
 BOOL HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);

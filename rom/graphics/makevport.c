@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function MakeVPort()
@@ -54,8 +54,6 @@
     SEE ALSO
 
     INTERNALS
-    	Currently always returns MVP_NO_DISPLAY for planar bitmaps because
-	support for Amiga(tm) chipset is not implemented yet
 
     HISTORY
 
@@ -65,6 +63,7 @@
     AROS_LIBFUNC_INIT
 
     struct ViewPortExtra *vpe;
+    struct HIDD_ViewPortData *vpd;
     ULONG ret = MVP_OK;
     BOOL own_vpe = FALSE;
 
@@ -72,28 +71,41 @@
     vpe = (struct ViewPortExtra *)GfxLookUp(viewport);
     D(bug("[MakeVPort] ViewPort 0x%p, ViewPortExtra 0x%p\n", viewport, vpe));
 
-    if (!vpe) {
+    if (!vpe)
+    {
         vpe = (struct ViewPortExtra *)GfxNew(VIEWPORT_EXTRA_TYPE);
 	if (!vpe)
 	    return MVP_NO_VPE;
+
 	vpe->Flags = VPXF_FREE_ME;
 	GfxAssociate(viewport, &vpe->n);
 	own_vpe = TRUE;
     }
 
-    /* Store bitmap object in the ViewPortExtra */
-    if (IS_HIDD_BM(viewport->RasInfo->BitMap)) {
-    	VPE_DATA(vpe)->Bitmap = HIDD_BM_OBJ(viewport->RasInfo->BitMap);
-	D(bug("[MakeVPort] Bitmap object: 0x%p\n", VPE_DATA(vpe)->Bitmap));
+    /* Now make sure that ViewPortData is created */
+    if (!VPE_DATA(vpe))
+    	vpe->DriverData[0] = AllocMem(sizeof(struct HIDD_ViewPortData), MEMF_PUBLIC);
 
-	/* If we have attached colormap, we can verify that bitmap and colormap
-	   modes do not differ */
-	if (viewport->ColorMap) {
+    vpd = VPE_DATA(vpe);
+    if (vpd)
+    {
+    	vpd->vp     = viewport;
+    	vpd->Bitmap = OBTAIN_HIDD_BM(viewport->RasInfo->BitMap);
+	D(bug("[MakeVPort] Bitmap object: 0x%p\n", vpd->Bitmap));
+
+	/*
+	 * If we have a colormap attached to a HIDD bitmap, we can verify
+	 * that bitmap and colormap modes do not diffe
+	 */
+	if (IS_HIDD_BM(viewport->RasInfo->BitMap) && viewport->ColorMap)
+	{
 	    struct DisplayInfoHandle *dih = viewport->ColorMap->NormalDisplayInfo;
 
-	    if (dih) {
+	    if (dih)
+	    {
 	        if ((HIDD_BM_DRVDATA(viewport->RasInfo->BitMap) != dih->drv) ||
-		    (HIDD_BM_HIDDMODE(viewport->RasInfo->BitMap) != dih->id)) {
+		    (HIDD_BM_HIDDMODE(viewport->RasInfo->BitMap) != dih->id))
+		{
 
 		    D(bug("[MakeVPort] Bad NormalDisplayInfo\n"));
 		    D(bug("[MakeVPort] Driverdata: ViewPort 0x%p, BitMap 0x%p\n", dih->drv, HIDD_BM_DRVDATA(viewport->RasInfo->BitMap)));
@@ -102,19 +114,32 @@
 		}
 	    }
 
-	    if (viewport->ColorMap->VPModeID != INVALID_ID) {
-		if (GET_BM_MODEID(viewport->RasInfo->BitMap) != viewport->ColorMap->VPModeID) {
+	    if (viewport->ColorMap->VPModeID != INVALID_ID)
+	    {
+		if (GET_BM_MODEID(viewport->RasInfo->BitMap) != viewport->ColorMap->VPModeID)
+		{
 
 		    D(bug("[MakeVPort] Bad ModeID, ViewPort 0x%08lX, BitMap 0x%08lX\n", viewport->ColorMap->VPModeID, GET_BM_MODEID(viewport->RasInfo->BitMap)));
 		    ret = MVP_NO_DISPLAY;
 		}
 	    }
 	}
-    } else {
-	/* TODO: Do Amiga(tm) copperlist stuff here */
-	D(bug("[MakeVPort] Planar bitmap, not supported at the moment\n"));
-	ret = MVP_NO_DISPLAY;
+
+	/*
+	 * Remember if we need to release the bitmap.
+	 * This is done in case if caller first frees the BitMap, then ViewPort.
+	 */
+	vpe->DriverData[1] = (APTR)IS_HIDD_BM(viewport->RasInfo->BitMap);
+
+	/*
+	 * Ensure that we have a bitmap object.
+	 * OBTAIN_HIDD_BM() may fail on planar bitmap in low memory situation.
+	 */
+	if (!vpd->Bitmap)
+	    ret = MVP_NO_MEM;
     }
+    else
+	ret = MVP_NO_MEM;
 
     if (ret == MVP_OK)
 	/* Use ScrollVPort() in order to validate offsets */
