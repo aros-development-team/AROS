@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -515,7 +515,20 @@ static ULONG getbitmappixel(struct BitMap *bm
 
 #endif
 
-static void driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+/* This is called for every ViewPorts chain during MrgCop() */
+ULONG driver_PrepareViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+{
+    /* Do not bother the driver if there's nothing to prepare. Can be changed if needed. */
+    return vpd ? HIDD_Gfx_PrepareViewPorts(mdd->gfxhidd, vpd, v) : MCOP_OK;
+}
+
+/*
+ * This is called for every ViewPorts chain during LoadView()
+ * LoadView() actually has no rights for errors because error condition
+ * in it will screw up the display, likely with no chance to recover.
+ * Because of this we always return zero here.
+ */
+ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     struct BitMap *bitmap;
     OOP_Object *bm, *fb;
@@ -526,10 +539,10 @@ static void driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, 
     mdd->display = vpd;
 
     /* First try the new method */
-    if (HIDD_Gfx_ShowViewPorts(mdd->gfxhidd, vpd, v))
+    if (HIDD_Gfx_ShowViewPorts(mdd->gfxhidd, vpd))
     {
         DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] ShowViewPorts() worked\n"));
-        return;
+        return 0;
     }
 
     /* If it failed, we may be working with a framebuffer. First check if the bitmap
@@ -548,7 +561,7 @@ static void driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, 
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Old bitmap 0x%p, New bitmap 0x%p, object 0x%p\n", mdd->frontbm, bitmap, bm));
 
     if (mdd->frontbm == bitmap)
-        return;
+        return 0;
 
     fb = HIDD_Gfx_Show(mdd->gfxhidd, bm, fHidd_Gfx_Show_CopyBack);
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Show() returned 0x%p\n", fb));
@@ -617,11 +630,39 @@ static void driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, 
     }
     else
         mdd->frontbm = NULL;
+
+    return 0;
 }
 
-void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
+/* Find the first visible ViewPortData for the specified monitor in the View */
+struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+{
+    struct ViewPort *vp;
+
+    for (vp = view->ViewPort; vp; vp = vp->Next)
+    {
+	if (!(vp->Modes & VP_HIDE))
+	{
+	    struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
+
+	    if (VPE_DRIVER(vpe) == mdd)
+	    	return VPE_DATA(vpe);
+	}
+    }
+    return NULL;
+}
+
+/*
+ * Iterate through HIDD_ViewPortData chains in the view and call
+ * the specified function for every chain and every driver.
+ * The function will be called at least once for every driver.
+ * If there is no ViewPorts for the driver, the function will be
+ * called with ViewPortData = NULL.
+ */
+ULONG DoViewFunction(struct View *view, VIEW_FUNC fn, struct GfxBase *GfxBase)
 {
     struct monitor_driverdata *mdd;
+    ULONG rc = 0;
 
     ObtainSemaphoreShared(&CDD(GfxBase)->displaydb_sem);
 
@@ -629,29 +670,21 @@ void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
     {
         struct HIDD_ViewPortData *vpd = NULL;
 
-        /* Find the first visible ViewPort for this display. It
-	   will be a start of bitmaps chain to show. */
+        /*
+         * Find the first visible ViewPort for this display. It
+	 * will be a start of bitmaps chain to process.
+	 */
 	if (view)
-	{
-	    struct ViewPort *vp;
+	    vpd = driver_FindViewPorts(view, mdd, GfxBase);
 
-            for (vp = view->ViewPort; vp; vp = vp->Next)
-            {
-		if (!(vp->Modes & VP_HIDE))
-		{
-		    struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
+	rc = fn(vpd, view, mdd, GfxBase);
 
-		    if (VPE_DRIVER(vpe) == mdd)
-		    {
-		    	vpd = VPE_DATA(vpe);
-			break;
-		    }
-		}
-	    }
-	}
-
-	driver_LoadViewPorts(vpd, view, mdd, GfxBase);
+	/* Interrupt immediately if the callback returned error */
+	if (!rc)
+	    break;
     }
-    
+
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
+
+    return rc;
 }

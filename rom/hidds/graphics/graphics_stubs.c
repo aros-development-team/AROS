@@ -365,7 +365,7 @@ ULONG HIDD_Gfx_ModeProperties(OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_
 
 /***************************************************************/
 
-ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data, struct View *view)
+ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data)
 {
     STATIC_MID;
     struct pHidd_Gfx_ShowViewPorts p, *msg = &p;
@@ -374,7 +374,6 @@ ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data, st
 
     p.mID  = static_mid;
     p.Data = data;
-    p.view = view;
 
     return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
@@ -488,6 +487,22 @@ void HIDD_Gfx_CleanViewPort(OOP_Object *obj, struct HIDD_ViewPortData *data)
     p.Data = data;
 
     return OOP_DoMethod(obj, (OOP_Msg)msg);
+}
+
+/***************************************************************/
+
+ULONG HIDD_Gfx_PrepareViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data, struct View *view)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_PrepareViewPorts p, *msg = &p;
+
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_PrepareViewPorts);
+
+    p.mID  = static_mid;
+    p.Data = data;
+    p.view = view;
+
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 /***************************************************************/
