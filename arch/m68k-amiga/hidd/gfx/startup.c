@@ -20,13 +20,10 @@ int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE);
 
 static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct GfxBase *GfxBase;
     OOP_Object *gfxhidd;
  	
     D(bug("************************* AmigaVideo_Init ******************************\n"));
-    GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
-    if (!GfxBase)
-        return FALSE;
+
     initcustom(&LIBBASE->csd);
     Init_AmigaVideoClass(LIBBASE);
     LIBBASE->library.lib_OpenCnt = 1;
@@ -40,7 +37,7 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
 	    gfxhidd = NULL;
 	}
     }
-    CloseLibrary(&GfxBase->LibNode);
+
     D(bug("AmigaVideo_Init=0x%p\n", gfxhidd));
     return gfxhidd ? TRUE : FALSE;
 }

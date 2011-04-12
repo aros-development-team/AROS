@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,6 +17,7 @@
 #include <aros/libcall.h>
 #include <proto/alib.h>
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <proto/kernel.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -642,6 +643,34 @@ VOID AmigaVideoCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, stru
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     setspritevisible(csd, msg->visible);
+}
+
+ULONG AmigaVideoCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)
+{
+    /* TODO: implement this correctly */
+    return MVP_OK;
+}
+
+void GFX__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CleanViewPort *msg)
+{
+    struct ViewPort *vp = msg->Data->vpe->ViewPort;
+
+    /* It's safe to call these functions on NULL pointers */
+    FreeCopList(vp->ClrIns);
+    FreeCopList(vp->DspIns);
+    FreeCopList(vp->SprIns);
+
+    if (vp->UCopIns)
+    {
+        FreeCopList(vp->UCopIns->FirstCopList);
+    	FreeMem(vp->UCopIns, sizeof(struct UCopList));
+    }
+
+    /* Everything has been freed */
+    vp->ClrIns  = NULL;
+    vp->DspIns  = NULL;
+    vp->SprIns  = NULL;
+    vp->UCopIns = NULL;
 }
 
 static void freeattrbases(struct amigavideo_staticdata *csd)
