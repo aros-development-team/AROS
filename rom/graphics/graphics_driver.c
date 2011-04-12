@@ -515,17 +515,14 @@ static ULONG getbitmappixel(struct BitMap *bm
 
 #endif
 
-static void driver_LoadViewPorts(struct ViewPort *vp, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+static void driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
-    struct HIDD_ViewPortData *vpd;
     struct BitMap *bitmap;
     OOP_Object *bm, *fb;
     OOP_Object *cmap, *pf;
     HIDDT_ColorModel colmod;
 
-    vpd = vp ? VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp)) : NULL;
-    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Showing ViewPort 0x%p, data 0x%p, BitMap object 0x%p\n", 
-                    vp, vpd, vpd ? vpd->Bitmap : NULL));
+    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Showing ViewPortData 0x%p, BitMap object 0x%p\n", vpd, vpd ? vpd->Bitmap : NULL));
     mdd->display = vpd;
 
     /* First try the new method */
@@ -538,12 +535,15 @@ static void driver_LoadViewPorts(struct ViewPort *vp, struct View *v, struct mon
     /* If it failed, we may be working with a framebuffer. First check if the bitmap
     is already displayed. If so, do nothing (because displaying the same bitmap twice may
     cause some problems */
-    if (vp) {
-        bitmap = vp->RasInfo->BitMap;
-        bm = vpd->Bitmap;
-    } else {
+    if (vpd)
+    {
+        bitmap = vpd->vpe->ViewPort->RasInfo->BitMap;
+        bm     = vpd->Bitmap;
+    }
+    else
+    {
         bitmap = NULL;
-        bm = NULL;
+        bm     = NULL;
     }
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Old bitmap 0x%p, New bitmap 0x%p, object 0x%p\n", mdd->frontbm, bitmap, bm));
 
@@ -627,23 +627,30 @@ void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
 
     for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
     {
-        struct ViewPort *vp = NULL;
+        struct HIDD_ViewPortData *vpd = NULL;
 
         /* Find the first visible ViewPort for this display. It
 	   will be a start of bitmaps chain to show. */
 	if (view)
 	{
+	    struct ViewPort *vp;
+
             for (vp = view->ViewPort; vp; vp = vp->Next)
             {
 		if (!(vp->Modes & VP_HIDE))
 		{
-		    if (GET_VP_DRIVERDATA(vp) == mdd)
+		    struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
+
+		    if (VPE_DRIVER(vpe) == mdd)
+		    {
+		    	vpd = VPE_DATA(vpe);
 			break;
+		    }
 		}
 	    }
 	}
 
-	driver_LoadViewPorts(vp, view, mdd, GfxBase);
+	driver_LoadViewPorts(vpd, view, mdd, GfxBase);
     }
     
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
