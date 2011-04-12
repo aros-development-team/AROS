@@ -84,12 +84,12 @@
 
     /* Now make sure that ViewPortData is created */
     if (!VPE_DATA(vpe))
-    	vpe->DriverData[0] = AllocMem(sizeof(struct HIDD_ViewPortData), MEMF_PUBLIC);
+    	vpe->DriverData[0] = AllocMem(sizeof(struct HIDD_ViewPortData), MEMF_PUBLIC|MEMF_CLEAR);
 
     vpd = VPE_DATA(vpe);
     if (vpd)
     {
-    	vpd->vp     = viewport;
+    	vpd->vpe    = vpe;
     	vpd->Bitmap = OBTAIN_HIDD_BM(viewport->RasInfo->BitMap);
 	D(bug("[MakeVPort] Bitmap object: 0x%p\n", vpd->Bitmap));
 
@@ -135,7 +135,14 @@
 	 * Ensure that we have a bitmap object.
 	 * OBTAIN_HIDD_BM() may fail on planar bitmap in low memory situation.
 	 */
-	if (!vpd->Bitmap)
+	if (vpd->Bitmap)
+	{
+	    struct monitor_driverdata *mdd = GET_VP_DRIVERDATA(viewport);
+
+	    D(bug("[MakeVPort] Driverdata 0x%p, driver object 0x%p\n", mdd, mdd->gfxhidd));
+	    ret = HIDD_Gfx_MakeViewPort(mdd->gfxhidd, vpd);
+	}
+	else
 	    ret = MVP_NO_MEM;
     }
     else

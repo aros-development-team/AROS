@@ -15,6 +15,7 @@
 #include <exec/lists.h>
 #include <oop/static_mid.h>
 #include <graphics/displayinfo.h>
+#include <graphics/view.h>
 
 #include "graphics_intern.h"
 
@@ -3581,6 +3582,104 @@ OOP_Object *GFX__Hidd_Gfx__NewOverlay(OOP_Class *cl, OOP_Object *o, struct pHidd
 VOID GFX__Hidd_Gfx__DisposeOverlay(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisposeOverlay *msg)
 {
     OOP_DisposeObject(msg->Overlay);
+}
+
+/*****************************************************************************************
+
+    NAME
+	moHidd_Gfx_MakeViewPort
+
+    SYNOPSIS
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_MakeViewPort *msg);
+
+	ULONG HIDD_Gfx_MakeViewPort(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data)
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Performs driver-specific setup on a given ViewPort.
+
+    INPUTS
+	gfxHidd - A display driver object.
+	data    - a pointer to a HIDD_ViewPortDats structure.
+
+    RESULT
+	The same code as used as return value for graphics.library/MakeVPort().
+
+    NOTES
+    	When graphics.library calls this method, a complete view is not built yet.
+    	This means that data->Next pointer contains invalid data and needs to be
+    	ignored.
+
+    	It is valid to keep private data pointer in data->UserData accross calls.
+    	Newly created HIDD_ViewPortData is guraranteed to have NULL there.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_Gfx_CleanViewPort
+
+    INTERNALS
+	Base class implementation just does nothing. This function is mainly intended
+	to provide support for copperlist maintenance by Amiga(tm) chipset driver.
+
+*****************************************************************************************/
+
+ULONG GFX__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)
+{
+    D(bug("Gfx::MakeViewPort: object 0x%p, data 0x%p\n", o, msg->Data));
+
+    return MVP_OK;
+}
+
+/*****************************************************************************************
+
+    NAME
+	moHidd_Gfx_CleanViewPort
+
+    SYNOPSIS
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_CleanViewPort *msg);
+
+	ULONG HIDD_Gfx_CleanViewPort(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data)
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Performs driver-specific cleanup on a given ViewPort.
+
+    INPUTS
+	gfxHidd - A display driver object.
+	data    - a pointer to a HIDD_ViewPortDats structure.
+
+    RESULT
+	The same code as used as return value for graphics.library/MakeVPort().
+
+    NOTES
+    	When graphics.library calls this method, the ViewPort is already unlinked
+    	from its view, and the bitmap can already be deallocated.
+    	This means that both data->Next and data->Bitmap pointers can contain invalid
+    	values.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_Gfx_MakeViewPort
+
+    INTERNALS
+	Base class implementation just does nothing. This function is mainly intended
+	to provide support for copperlist disposal by Amiga(tm) chipset driver.
+
+*****************************************************************************************/
+
+void GFX__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CleanViewPort *msg)
+{
+    D(bug("Gfx::CleanViewPort: object 0x%p, data 0x%p\n", o, msg->Data));
 }
 
 /****************************************************************************************/
