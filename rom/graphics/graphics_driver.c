@@ -680,7 +680,7 @@ ULONG DoViewFunction(struct View *view, VIEW_FUNC fn, struct GfxBase *GfxBase)
 	rc = fn(vpd, view, mdd, GfxBase);
 
 	/* Interrupt immediately if the callback returned error */
-	if (!rc)
+	if (rc)
 	    break;
     }
 
