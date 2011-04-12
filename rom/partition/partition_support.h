@@ -23,7 +23,7 @@ struct FileSysHandle
 struct PTFunctionTable
 {
     ULONG       type; /* Partition Table Type */
-    STRPTR  name;
+    CONST_STRPTR  name;
     LONG        (*checkPartitionTable)  (struct Library *, struct PartitionHandle *);
     LONG        (*openPartitionTable)   (struct Library *, struct PartitionHandle *);
     void        (*closePartitionTable)  (struct Library *, struct PartitionHandle *);

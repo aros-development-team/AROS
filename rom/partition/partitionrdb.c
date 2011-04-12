@@ -1086,7 +1086,7 @@ APTR PartitionRDBFindFileSystem(struct Library *PartitionBase, struct PartitionH
     return NULL;
 }
 
-BPTR PartitionRDBLoadFileSystem(struct Library *PartitionBase, struct FileSysNode *fn)
+BPTR PartitionRDBLoadFileSystem(struct Library *PartitionBase, struct FileSysHandle *fn)
 {
     /* Not done yet */
     return BNULL;
