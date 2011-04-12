@@ -179,9 +179,12 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     {
         cs = &rdargs->RDA_Source;
     }
-    else if (Cli())
+    else
     {
-    	D(bug("[ReadArgs] Input: 0x%p\n", Input()));
+    	BOOL notempty = TRUE;
+    	BPTR input = Input();
+
+    	D(bug("[ReadArgs] Input: 0x%p\n", input));
 	/*
 	 * Take arguments from input stream. They were injected there by either
 	 * runcommand.c or createnewproc.c (see vbuf_inject() routine).
@@ -189,7 +192,28 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 	 */
 	argbuff[0] = 0;
         lcs.CS_Buffer = &argbuff[0];
-        FGets(Input(), lcs.CS_Buffer, sizeof(argbuff));
+
+	/*
+	 * Special kludge for interactive filehandles (i. e. CLI windows).
+	 * Read data only if filehandle's buffer is not empty. Otherwise
+	 * read will cause opening CLI window and waiting for user's input.
+	 * As a consequence we still can use ReadArgs() on input redirected
+	 * from a file, even if we are started from Workbench (hypothetical
+	 * situation).
+	 * This prevents opening a CLI window if the program was started from
+	 * Workbench and redirected its Input() and Output() to own window,
+	 * but still called ReadArgs() after redirection for some reason.
+	 * Streams redirection is widely used in AROS startup code.
+	 */
+        if (IsInteractive(input))
+        {
+            struct FileHandle *fh = BADDR(input);
+
+            notempty = (fh->fh_Pos != fh->fh_End);
+        }
+
+        if (notempty)
+	    FGets(input, lcs.CS_Buffer, sizeof(argbuff));
 
 	D(bug("[ReadArgs] Line: %s\n", argbuff));
 
@@ -201,13 +225,6 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         lcs.CS_CurChr = 0;
 
         cs = &lcs;
-    }
-    else
-    {
-	/* We were called from Wanderer */
-	D(bug("[ReadArgs] No Cli\n"));
-	error = 0;
-	goto end;
     }
 
     /* Check for optional reprompting */
