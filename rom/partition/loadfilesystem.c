@@ -44,7 +44,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct PTFunctionTable *handler = ((struct FileSysHandle *)handle)->handler;
+    const struct PTFunctionTable *handler = ((struct FileSysHandle *)handle)->handler;
 
     if (handler->loadFileSystem)
         return handler->loadFileSystem(PartitionBase, handle);

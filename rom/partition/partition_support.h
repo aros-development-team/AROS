@@ -16,7 +16,7 @@
 struct FileSysHandle
 {
     struct Node ln;
-    struct PTFunctionTable *handler;
+    const struct PTFunctionTable *handler;
     /* Handler's private data follows */
 };
 
