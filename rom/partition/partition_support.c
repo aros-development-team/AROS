@@ -17,10 +17,6 @@
 #endif
 #include "debug.h"
 
-extern struct PTFunctionTable PartitionEBR;
-extern struct PTFunctionTable PartitionMBR;
-extern struct PTFunctionTable PartitionRDB;
-
 const struct PTFunctionTable * const PartitionSupport[] =
     {&PartitionRDB, &PartitionMBR, &PartitionEBR, 0};
 
