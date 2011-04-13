@@ -12,7 +12,7 @@ ifeq ($(AROS_TARGET_CPU), arm)
     --enable-long-long --enable-version-specific-runtime-libs \
     --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
 else
-  GCC_VERSION = 4.2.2
+  GCC_VERSION = 4.2.4
   GCC_EXTRA_OPTS := \
     --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
     --enable-long-long --enable-version-specific-runtime-libs --enable-sjlj-exceptions \

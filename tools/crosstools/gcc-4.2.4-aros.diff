@@ -1,6 +1,6 @@
-diff -ruN gcc-4.2.2/configure gcc-4.2.2.aros/configure
---- gcc-4.2.2/configure	2007-09-15 02:42:24.000000000 +0200
-+++ gcc-4.2.2.aros/configure	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/configure gcc-4.2.4.aros/configure
+--- gcc-4.2.4/configure	2007-09-15 02:42:24.000000000 +0200
++++ gcc-4.2.4.aros/configure	2011-04-11 22:46:42.763937000 +0200
 @@ -1125,6 +1125,9 @@
    ppc*-*-pe)
      noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl gnuserv"
@@ -1232,9 +1232,9 @@ diff -ruN gcc-4.2.2/configure gcc-4.2.2.aros/configure
    rm -rf conftest*
    echo "$ac_t""yes" 1>&6; stage1_cflags="$stage1_cflags -fkeep-inline-functions"
  else
-diff -ruN gcc-4.2.2/configure.in gcc-4.2.2.aros/configure.in
---- gcc-4.2.2/configure.in	2007-09-15 02:42:24.000000000 +0200
-+++ gcc-4.2.2.aros/configure.in	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/configure.in gcc-4.2.4.aros/configure.in
+--- gcc-4.2.4/configure.in	2007-09-15 02:42:24.000000000 +0200
++++ gcc-4.2.4.aros/configure.in	2011-04-11 22:46:42.763937000 +0200
 @@ -293,6 +293,9 @@
    ppc*-*-pe)
      noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl gnuserv"
@@ -1254,9 +1254,9 @@ diff -ruN gcc-4.2.2/configure.in gcc-4.2.2.aros/configure.in
  esac
  fi
  
-diff -ruN gcc-4.2.2/fixincludes/configure gcc-4.2.2.aros/fixincludes/configure
---- gcc-4.2.2/fixincludes/configure	2006-05-17 02:31:31.000000000 +0200
-+++ gcc-4.2.2.aros/fixincludes/configure	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/fixincludes/configure gcc-4.2.4.aros/fixincludes/configure
+--- gcc-4.2.4/fixincludes/configure	2006-05-17 02:31:31.000000000 +0200
++++ gcc-4.2.4.aros/fixincludes/configure	2011-04-11 22:46:42.763937000 +0200
 @@ -2561,6 +2561,7 @@
  fi
  else
@@ -1265,9 +1265,9 @@ diff -ruN gcc-4.2.2/fixincludes/configure gcc-4.2.2.aros/fixincludes/configure
  	i?86-*-msdosdjgpp* | \
  	i?86-*-mingw32* | \
  	*-*-beos* )
-diff -ruN gcc-4.2.2/fixincludes/configure.ac gcc-4.2.2.aros/fixincludes/configure.ac
---- gcc-4.2.2/fixincludes/configure.ac	2006-05-17 02:31:31.000000000 +0200
-+++ gcc-4.2.2.aros/fixincludes/configure.ac	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/fixincludes/configure.ac gcc-4.2.4.aros/fixincludes/configure.ac
+--- gcc-4.2.4/fixincludes/configure.ac	2006-05-17 02:31:31.000000000 +0200
++++ gcc-4.2.4.aros/fixincludes/configure.ac	2011-04-11 22:46:42.763937000 +0200
 @@ -47,6 +47,7 @@
  	TARGET=oneprocess
  fi],
@@ -1276,9 +1276,9 @@ diff -ruN gcc-4.2.2/fixincludes/configure.ac gcc-4.2.2.aros/fixincludes/configur
  	i?86-*-msdosdjgpp* | \
  	i?86-*-mingw32* | \
  	*-*-beos* )
-diff -ruN gcc-4.2.2/gcc/c-incpath.c gcc-4.2.2.aros/gcc/c-incpath.c
---- gcc-4.2.2/gcc/c-incpath.c	2007-09-01 17:28:30.000000000 +0200
-+++ gcc-4.2.2.aros/gcc/c-incpath.c	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/c-incpath.c gcc-4.2.4.aros/gcc/c-incpath.c
+--- gcc-4.2.4/gcc/c-incpath.c	2007-09-01 17:28:30.000000000 +0200
++++ gcc-4.2.4.aros/gcc/c-incpath.c	2011-04-11 22:46:42.763937000 +0200
 @@ -38,7 +38,7 @@
  # define INO_T_EQ(A, B) (!memcmp (&(A), &(B), sizeof (A)))
  # define INO_T_COPY(DEST, SRC) memcpy(&(DEST), &(SRC), sizeof (SRC))
@@ -1288,9 +1288,9 @@ diff -ruN gcc-4.2.2/gcc/c-incpath.c gcc-4.2.2.aros/gcc/c-incpath.c
  #  define INO_T_EQ(A, B) 0
  # else
  #  define INO_T_EQ(A, B) ((A) == (B))
-diff -ruN gcc-4.2.2/gcc/config/aros.h gcc-4.2.2.aros/gcc/config/aros.h
---- gcc-4.2.2/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/gcc/config/aros.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/config/aros.h gcc-4.2.4.aros/gcc/config/aros.h
+--- gcc-4.2.4/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/gcc/config/aros.h	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,101 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
@@ -1393,9 +1393,9 @@ diff -ruN gcc-4.2.2/gcc/config/aros.h gcc-4.2.2.aros/gcc/config/aros.h
 +#define HANDLE_PRAGMA_PACK_PUSH_POP
 +
 +#define TARGET_HAS_F_SETLKW
-diff -ruN gcc-4.2.2/gcc/config/i386/aros64.h gcc-4.2.2.aros/gcc/config/i386/aros64.h
---- gcc-4.2.2/gcc/config/i386/aros64.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/gcc/config/i386/aros64.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/config/i386/aros64.h gcc-4.2.4.aros/gcc/config/i386/aros64.h
+--- gcc-4.2.4/gcc/config/i386/aros64.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/gcc/config/i386/aros64.h	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,43 @@
 +/* Definitions for AMD x86_64 running AROS systems with ELF64 format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
@@ -1440,9 +1440,9 @@ diff -ruN gcc-4.2.2/gcc/config/i386/aros64.h gcc-4.2.2.aros/gcc/config/i386/aros
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
-diff -ruN gcc-4.2.2/gcc/config/i386/aros.h gcc-4.2.2.aros/gcc/config/i386/aros.h
---- gcc-4.2.2/gcc/config/i386/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/gcc/config/i386/aros.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/config/i386/aros.h gcc-4.2.4.aros/gcc/config/i386/aros.h
+--- gcc-4.2.4/gcc/config/i386/aros.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/gcc/config/i386/aros.h	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,114 @@
 +/* Definitions for Intel 386 running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
@@ -1558,9 +1558,9 @@ diff -ruN gcc-4.2.2/gcc/config/i386/aros.h gcc-4.2.2.aros/gcc/config/i386/aros.h
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
-diff -ruN gcc-4.2.2/gcc/config/rs6000/aros.h gcc-4.2.2.aros/gcc/config/rs6000/aros.h
---- gcc-4.2.2/gcc/config/rs6000/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/gcc/config/rs6000/aros.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/config/rs6000/aros.h gcc-4.2.4.aros/gcc/config/rs6000/aros.h
+--- gcc-4.2.4/gcc/config/rs6000/aros.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/gcc/config/rs6000/aros.h	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,175 @@
 +/* Definitions for Powerpc running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
@@ -1737,9 +1737,9 @@ diff -ruN gcc-4.2.2/gcc/config/rs6000/aros.h gcc-4.2.2.aros/gcc/config/rs6000/ar
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
-diff -ruN gcc-4.2.2/gcc/config/rs6000/rs6000.c gcc-4.2.2.aros/gcc/config/rs6000/rs6000.c
---- gcc-4.2.2/gcc/config/rs6000/rs6000.c	2007-09-01 17:28:30.000000000 +0200
-+++ gcc-4.2.2.aros/gcc/config/rs6000/rs6000.c	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/config/rs6000/rs6000.c gcc-4.2.4.aros/gcc/config/rs6000/rs6000.c
+--- gcc-4.2.4/gcc/config/rs6000/rs6000.c	2007-09-01 17:28:30.000000000 +0200
++++ gcc-4.2.4.aros/gcc/config/rs6000/rs6000.c	2011-04-11 22:46:42.763937000 +0200
 @@ -4434,6 +4434,9 @@
  	  && !lookup_attribute ("shortcall", TYPE_ATTRIBUTES (fntype))))
      cum->call_cookie |= CALL_LONG;
@@ -1778,9 +1778,9 @@ diff -ruN gcc-4.2.2/gcc/config/rs6000/rs6000.c gcc-4.2.2.aros/gcc/config/rs6000/
    { "ms_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute },
    { "gcc_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute },
  #ifdef SUBTARGET_ATTRIBUTE_TABLE
-diff -ruN gcc-4.2.2/gcc/config/rs6000/rs6000.h gcc-4.2.2.aros/gcc/config/rs6000/rs6000.h
---- gcc-4.2.2/gcc/config/rs6000/rs6000.h	2007-09-01 17:28:30.000000000 +0200
-+++ gcc-4.2.2.aros/gcc/config/rs6000/rs6000.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/config/rs6000/rs6000.h gcc-4.2.4.aros/gcc/config/rs6000/rs6000.h
+--- gcc-4.2.4/gcc/config/rs6000/rs6000.h	2007-09-01 17:28:30.000000000 +0200
++++ gcc-4.2.4.aros/gcc/config/rs6000/rs6000.h	2011-04-11 22:46:42.763937000 +0200
 @@ -1369,6 +1369,7 @@
    int nargs_prototype;		/* # args left in the current prototype */
    int prototype;		/* Whether a prototype was defined */
@@ -1789,9 +1789,9 @@ diff -ruN gcc-4.2.2/gcc/config/rs6000/rs6000.h gcc-4.2.2.aros/gcc/config/rs6000/
    int call_cookie;		/* Do special things for this call */
    int sysv_gregno;		/* next available GP register */
    int intoffset;		/* running offset in struct (darwin64) */
-diff -ruN gcc-4.2.2/gcc/config/t-aros gcc-4.2.2.aros/gcc/config/t-aros
---- gcc-4.2.2/gcc/config/t-aros	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/gcc/config/t-aros	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/config/t-aros gcc-4.2.4.aros/gcc/config/t-aros
+--- gcc-4.2.4/gcc/config/t-aros	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/gcc/config/t-aros	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,9 @@
 +# On AROS we assume that development files are installed in Development:
 +NATIVE_SYSTEM_HEADER_DIR = /include
@@ -1802,10 +1802,10 @@ diff -ruN gcc-4.2.2/gcc/config/t-aros gcc-4.2.2.aros/gcc/config/t-aros
 +# Allthough AROS does not have limits.h in  SYSTEM_HEADER_DIR it has <limits.h>
 +# It is in aros/nixc which is normally added to system header search path
 +LIMITS_H_TEST = true
-diff -ruN gcc-4.2.2/gcc/config.gcc gcc-4.2.2.aros/gcc/config.gcc
---- gcc-4.2.2/gcc/config.gcc	2007-09-01 17:28:30.000000000 +0200
-+++ gcc-4.2.2.aros/gcc/config.gcc	2011-03-31 21:03:58.000000000 +0200
-@@ -539,6 +539,15 @@
+diff -ruN gcc-4.2.4/gcc/config.gcc gcc-4.2.4.aros/gcc/config.gcc
+--- gcc-4.2.4/gcc/config.gcc	2008-03-13 20:11:43.000000000 +0100
++++ gcc-4.2.4.aros/gcc/config.gcc	2011-04-11 22:46:42.763937000 +0200
+@@ -543,6 +543,15 @@
        ;;
    esac
    ;;
@@ -1821,9 +1821,9 @@ diff -ruN gcc-4.2.2/gcc/config.gcc gcc-4.2.2.aros/gcc/config.gcc
  *-*-openbsd*)
    tmake_file="t-libc-ok t-openbsd t-libgcc-pic"
    case ${enable_threads} in
-@@ -1106,6 +1115,12 @@
+@@ -1112,6 +1121,12 @@
  	esac
- 	tmake_file="${tmake_file} i386/t-linux64 i386/t-crtfm t-dfprules"
+ 	tmake_file="${tmake_file} i386/t-linux64 i386/t-crtstuff i386/t-crtfm t-dfprules"
  	;;
 +i[34567]86-*-aros*)
 +	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h aros.h i386/aros.h"
@@ -1834,7 +1834,7 @@ diff -ruN gcc-4.2.2/gcc/config.gcc gcc-4.2.2.aros/gcc/config.gcc
  i[34567]86-*-gnu*)
  	;;
  i[34567]86-pc-msdosdjgpp*)
-@@ -1797,6 +1812,11 @@
+@@ -1803,6 +1818,11 @@
  	extra_options="${extra_options} rs6000/sysv4.opt"
  	tmake_file="rs6000/t-fprules rs6000/t-fprules-softfp soft-fp/t-softfp rs6000/t-ppcos ${tmake_file} rs6000/t-ppccomm"
  	;;
@@ -1846,9 +1846,9 @@ diff -ruN gcc-4.2.2/gcc/config.gcc gcc-4.2.2.aros/gcc/config.gcc
  powerpc-*-linux*)
  	tm_file="${tm_file} dbxelf.h elfos.h svr4.h freebsd-spec.h rs6000/sysv4.h"
  	extra_options="${extra_options} rs6000/sysv4.opt"
-diff -ruN gcc-4.2.2/gcc/config.host gcc-4.2.2.aros/gcc/config.host
---- gcc-4.2.2/gcc/config.host	2007-09-01 17:28:30.000000000 +0200
-+++ gcc-4.2.2.aros/gcc/config.host	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/config.host gcc-4.2.4.aros/gcc/config.host
+--- gcc-4.2.4/gcc/config.host	2007-09-01 17:28:30.000000000 +0200
++++ gcc-4.2.4.aros/gcc/config.host	2011-04-11 22:46:42.763937000 +0200
 @@ -209,4 +209,7 @@
      out_host_hook_obj=host-hpux.o
      host_xmake_file="${host_xmake_file} x-hpux"
@@ -1857,9 +1857,9 @@ diff -ruN gcc-4.2.2/gcc/config.host gcc-4.2.2.aros/gcc/config.host
 +    host_can_use_collect2=no
 +    ;;
  esac
-diff -ruN gcc-4.2.2/gcc/gcc.c gcc-4.2.2.aros/gcc/gcc.c
---- gcc-4.2.2/gcc/gcc.c	2007-09-01 17:28:30.000000000 +0200
-+++ gcc-4.2.2.aros/gcc/gcc.c	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/gcc.c gcc-4.2.4.aros/gcc/gcc.c
+--- gcc-4.2.4/gcc/gcc.c	2007-09-01 17:28:30.000000000 +0200
++++ gcc-4.2.4.aros/gcc/gcc.c	2011-04-11 22:46:42.763937000 +0200
 @@ -3723,7 +3723,7 @@
  	{
  	  /* -pipe has to go into the switches array as well as
@@ -1869,9 +1869,9 @@ diff -ruN gcc-4.2.2/gcc/gcc.c gcc-4.2.2.aros/gcc/gcc.c
  	  n_switches++;
  	}
        else if (strcmp (argv[i], "-###") == 0)
-diff -ruN gcc-4.2.2/gcc/toplev.c gcc-4.2.2.aros/gcc/toplev.c
---- gcc-4.2.2/gcc/toplev.c	2007-09-01 17:28:30.000000000 +0200
-+++ gcc-4.2.2.aros/gcc/toplev.c	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/toplev.c gcc-4.2.4.aros/gcc/toplev.c
+--- gcc-4.2.4/gcc/toplev.c	2007-09-01 17:28:30.000000000 +0200
++++ gcc-4.2.4.aros/gcc/toplev.c	2011-04-11 22:46:42.763937000 +0200
 @@ -530,7 +530,7 @@
     for floor_log2 and exact_log2; see toplev.h.  That construct, however,
     conflicts with the ISO C++ One Definition Rule.   */
@@ -1881,9 +1881,9 @@ diff -ruN gcc-4.2.2/gcc/toplev.c gcc-4.2.2.aros/gcc/toplev.c
  
  /* Given X, an unsigned number, return the largest int Y such that 2**Y <= X.
     If X is 0, return -1.  */
-diff -ruN gcc-4.2.2/gcc/toplev.h gcc-4.2.2.aros/gcc/toplev.h
---- gcc-4.2.2/gcc/toplev.h	2007-09-01 17:28:30.000000000 +0200
-+++ gcc-4.2.2.aros/gcc/toplev.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/gcc/toplev.h gcc-4.2.4.aros/gcc/toplev.h
+--- gcc-4.2.4/gcc/toplev.h	2007-09-01 17:28:30.000000000 +0200
++++ gcc-4.2.4.aros/gcc/toplev.h	2011-04-11 22:46:42.763937000 +0200
 @@ -157,7 +157,7 @@
  extern int floor_log2                  (unsigned HOST_WIDE_INT);
  
@@ -1893,9 +1893,9 @@ diff -ruN gcc-4.2.2/gcc/toplev.h gcc-4.2.2.aros/gcc/toplev.h
  # if HOST_BITS_PER_WIDE_INT == HOST_BITS_PER_LONG
  #  define CLZ_HWI __builtin_clzl
  #  define CTZ_HWI __builtin_ctzl
-diff -ruN gcc-4.2.2/include/filenames.h gcc-4.2.2.aros/include/filenames.h
---- gcc-4.2.2/include/filenames.h	2005-05-10 17:22:21.000000000 +0200
-+++ gcc-4.2.2.aros/include/filenames.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/include/filenames.h gcc-4.2.4.aros/include/filenames.h
+--- gcc-4.2.4/include/filenames.h	2005-05-10 17:22:21.000000000 +0200
++++ gcc-4.2.4.aros/include/filenames.h	2011-04-11 22:46:42.763937000 +0200
 @@ -40,6 +40,12 @@
  #define IS_ABSOLUTE_PATH(f)	(IS_DIR_SEPARATOR((f)[0]) || (((f)[0]) && ((f)[1] == ':')))
  #define FILENAME_CMP(s1, s2)	strcasecmp(s1, s2)
@@ -1909,9 +1909,9 @@ diff -ruN gcc-4.2.2/include/filenames.h gcc-4.2.2.aros/include/filenames.h
  #else  /* not DOSish */
  
  #define IS_DIR_SEPARATOR(c)	((c) == '/')
-diff -ruN gcc-4.2.2/libiberty/configure gcc-4.2.2.aros/libiberty/configure
---- gcc-4.2.2/libiberty/configure	2006-08-30 15:46:50.000000000 +0200
-+++ gcc-4.2.2.aros/libiberty/configure	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libiberty/configure gcc-4.2.4.aros/libiberty/configure
+--- gcc-4.2.4/libiberty/configure	2006-08-30 15:46:50.000000000 +0200
++++ gcc-4.2.4.aros/libiberty/configure	2011-04-11 22:46:42.763937000 +0200
 @@ -8403,6 +8403,7 @@
       *-*-mingw* | *-*-winnt*)	pexecute=./pex-win32.o  ;;
       *-*-msdosdjgpp*)		pexecute=./pex-djgpp.o  ;;
@@ -1920,9 +1920,9 @@ diff -ruN gcc-4.2.2/libiberty/configure gcc-4.2.2.aros/libiberty/configure
       *)				pexecute=./pex-unix.o   ;;
  esac
  
-diff -ruN gcc-4.2.2/libiberty/configure.ac gcc-4.2.2.aros/libiberty/configure.ac
---- gcc-4.2.2/libiberty/configure.ac	2006-08-30 15:46:50.000000000 +0200
-+++ gcc-4.2.2.aros/libiberty/configure.ac	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libiberty/configure.ac gcc-4.2.4.aros/libiberty/configure.ac
+--- gcc-4.2.4/libiberty/configure.ac	2006-08-30 15:46:50.000000000 +0200
++++ gcc-4.2.4.aros/libiberty/configure.ac	2011-04-11 22:46:42.763937000 +0200
 @@ -663,6 +663,7 @@
       *-*-mingw* | *-*-winnt*)	pexecute=./pex-win32.o  ;;
       *-*-msdosdjgpp*)		pexecute=./pex-djgpp.o  ;;
@@ -1931,9 +1931,9 @@ diff -ruN gcc-4.2.2/libiberty/configure.ac gcc-4.2.2.aros/libiberty/configure.ac
       *)				pexecute=./pex-unix.o   ;;
  esac
  AC_SUBST(pexecute)
-diff -ruN gcc-4.2.2/libiberty/Makefile.in gcc-4.2.2.aros/libiberty/Makefile.in
---- gcc-4.2.2/libiberty/Makefile.in	2007-03-03 20:29:51.000000000 +0100
-+++ gcc-4.2.2.aros/libiberty/Makefile.in	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libiberty/Makefile.in gcc-4.2.4.aros/libiberty/Makefile.in
+--- gcc-4.2.4/libiberty/Makefile.in	2007-03-03 20:29:51.000000000 +0100
++++ gcc-4.2.4.aros/libiberty/Makefile.in	2011-04-11 22:46:42.763937000 +0200
 @@ -145,7 +145,7 @@
  	objalloc.c obstack.c						\
  	partition.c pexecute.c						\
@@ -1966,9 +1966,9 @@ diff -ruN gcc-4.2.2/libiberty/Makefile.in gcc-4.2.2.aros/libiberty/Makefile.in
  ./physmem.o: $(srcdir)/physmem.c config.h $(INCDIR)/ansidecl.h \
  	$(INCDIR)/libiberty.h
  	if [ x"$(PICFLAG)" != x ]; then \
-diff -ruN gcc-4.2.2/libiberty/pex-aros.c gcc-4.2.2.aros/libiberty/pex-aros.c
---- gcc-4.2.2/libiberty/pex-aros.c	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/libiberty/pex-aros.c	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libiberty/pex-aros.c gcc-4.2.4.aros/libiberty/pex-aros.c
+--- gcc-4.2.4/libiberty/pex-aros.c	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/libiberty/pex-aros.c	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,303 @@
 +/* Utilities to execute a program in a subprocess (possibly linked by pipes
 +   with other subprocesses), and wait for it.  OS/2 specialization.
@@ -2273,9 +2273,9 @@ diff -ruN gcc-4.2.2/libiberty/pex-aros.c gcc-4.2.2.aros/libiberty/pex-aros.c
 +
 +  return 0;
 +}
-diff -ruN gcc-4.2.2/libstdc++-v3/config/os/aros/ctype_base.h gcc-4.2.2.aros/libstdc++-v3/config/os/aros/ctype_base.h
---- gcc-4.2.2/libstdc++-v3/config/os/aros/ctype_base.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/libstdc++-v3/config/os/aros/ctype_base.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libstdc++-v3/config/os/aros/ctype_base.h gcc-4.2.4.aros/libstdc++-v3/config/os/aros/ctype_base.h
+--- gcc-4.2.4/libstdc++-v3/config/os/aros/ctype_base.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/libstdc++-v3/config/os/aros/ctype_base.h	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,24 @@
 +_GLIBCXX_BEGIN_NAMESPACE(std)
 +
@@ -2301,9 +2301,9 @@ diff -ruN gcc-4.2.2/libstdc++-v3/config/os/aros/ctype_base.h gcc-4.2.2.aros/libs
 +};
 +
 +_GLIBCXX_END_NAMESPACE
-diff -ruN gcc-4.2.2/libstdc++-v3/config/os/aros/ctype_inline.h gcc-4.2.2.aros/libstdc++-v3/config/os/aros/ctype_inline.h
---- gcc-4.2.2/libstdc++-v3/config/os/aros/ctype_inline.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/libstdc++-v3/config/os/aros/ctype_inline.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libstdc++-v3/config/os/aros/ctype_inline.h gcc-4.2.4.aros/libstdc++-v3/config/os/aros/ctype_inline.h
+--- gcc-4.2.4/libstdc++-v3/config/os/aros/ctype_inline.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/libstdc++-v3/config/os/aros/ctype_inline.h	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,170 @@
 +// Locale support -*- C++ -*-
 +
@@ -2475,9 +2475,9 @@ diff -ruN gcc-4.2.2/libstdc++-v3/config/os/aros/ctype_inline.h gcc-4.2.2.aros/li
 +  }
 +
 +_GLIBCXX_END_NAMESPACE
-diff -ruN gcc-4.2.2/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-4.2.2.aros/libstdc++-v3/config/os/aros/ctype_noninline.h
---- gcc-4.2.2/libstdc++-v3/config/os/aros/ctype_noninline.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/libstdc++-v3/config/os/aros/ctype_noninline.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-4.2.4.aros/libstdc++-v3/config/os/aros/ctype_noninline.h
+--- gcc-4.2.4/libstdc++-v3/config/os/aros/ctype_noninline.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/libstdc++-v3/config/os/aros/ctype_noninline.h	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,56 @@
 +  const ctype_base::mask*
 +  ctype<char>::classic_table() throw()
@@ -2535,9 +2535,9 @@ diff -ruN gcc-4.2.2/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-4.2.2.aros
 +      }
 +    return __high;
 +  }
-diff -ruN gcc-4.2.2/libstdc++-v3/config/os/aros/os_defines.h gcc-4.2.2.aros/libstdc++-v3/config/os/aros/os_defines.h
---- gcc-4.2.2/libstdc++-v3/config/os/aros/os_defines.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-4.2.2.aros/libstdc++-v3/config/os/aros/os_defines.h	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libstdc++-v3/config/os/aros/os_defines.h gcc-4.2.4.aros/libstdc++-v3/config/os/aros/os_defines.h
+--- gcc-4.2.4/libstdc++-v3/config/os/aros/os_defines.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.4.aros/libstdc++-v3/config/os/aros/os_defines.h	2011-04-11 22:46:42.763937000 +0200
 @@ -0,0 +1,6 @@
 +#ifndef _GLIBCXX_OS_DEFINES
 +#define _GLIBCXX_OS_DEFINES
@@ -2545,9 +2545,9 @@ diff -ruN gcc-4.2.2/libstdc++-v3/config/os/aros/os_defines.h gcc-4.2.2.aros/libs
 +#define __off64_t   off_t
 +
 +#endif
-diff -ruN gcc-4.2.2/libstdc++-v3/configure gcc-4.2.2.aros/libstdc++-v3/configure
---- gcc-4.2.2/libstdc++-v3/configure	2007-06-29 01:02:05.000000000 +0200
-+++ gcc-4.2.2.aros/libstdc++-v3/configure	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libstdc++-v3/configure gcc-4.2.4.aros/libstdc++-v3/configure
+--- gcc-4.2.4/libstdc++-v3/configure	2007-06-29 01:02:05.000000000 +0200
++++ gcc-4.2.4.aros/libstdc++-v3/configure	2011-04-11 22:46:42.763937000 +0200
 @@ -32533,6 +32533,918 @@
  
  # Base decisions on target environment.
@@ -3467,9 +3467,9 @@ diff -ruN gcc-4.2.2/libstdc++-v3/configure gcc-4.2.2.aros/libstdc++-v3/configure
    arm*-*-symbianelf*)
      # This is a freestanding configuration; there is nothing to do here.
      ;;
-diff -ruN gcc-4.2.2/libstdc++-v3/configure.host gcc-4.2.2.aros/libstdc++-v3/configure.host
---- gcc-4.2.2/libstdc++-v3/configure.host	2006-07-15 00:41:43.000000000 +0200
-+++ gcc-4.2.2.aros/libstdc++-v3/configure.host	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libstdc++-v3/configure.host gcc-4.2.4.aros/libstdc++-v3/configure.host
+--- gcc-4.2.4/libstdc++-v3/configure.host	2006-07-15 00:41:43.000000000 +0200
++++ gcc-4.2.4.aros/libstdc++-v3/configure.host	2011-04-11 22:46:42.763937000 +0200
 @@ -184,6 +184,9 @@
      os_include_dir="os/generic"
      atomicity_dir="cpu/generic"
@@ -3480,9 +3480,9 @@ diff -ruN gcc-4.2.2/libstdc++-v3/configure.host gcc-4.2.2.aros/libstdc++-v3/conf
    bsd*)
      # Plain BSD attempts to share FreeBSD files.
      os_include_dir="os/bsd/freebsd"
-diff -ruN gcc-4.2.2/libstdc++-v3/crossconfig.m4 gcc-4.2.2.aros/libstdc++-v3/crossconfig.m4
---- gcc-4.2.2/libstdc++-v3/crossconfig.m4	2007-01-06 23:38:41.000000000 +0100
-+++ gcc-4.2.2.aros/libstdc++-v3/crossconfig.m4	2011-03-31 21:03:58.000000000 +0200
+diff -ruN gcc-4.2.4/libstdc++-v3/crossconfig.m4 gcc-4.2.4.aros/libstdc++-v3/crossconfig.m4
+--- gcc-4.2.4/libstdc++-v3/crossconfig.m4	2007-01-06 23:38:41.000000000 +0100
++++ gcc-4.2.4.aros/libstdc++-v3/crossconfig.m4	2011-04-11 22:46:42.763937000 +0200
 @@ -5,6 +5,34 @@
  AC_DEFUN([GLIBCXX_CROSSCONFIG],[
  # Base decisions on target environment.
