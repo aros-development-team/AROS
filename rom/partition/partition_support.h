@@ -13,11 +13,20 @@
 
 #include "partition_intern.h"
 
+struct FSFunctionTable;
+
 struct FileSysHandle
 {
     struct Node ln;
-    struct PartitionHandle *part;
+    const struct FSFunctionTable *handler;
+    BOOL boot;
     /* Handler's private data follows */
+};
+
+struct FSFunctionTable
+{
+    BPTR (*loadFileSystem)    (struct PartitionBase_intern *, struct FileSysHandle *);
+    LONG (*getFileSystemAttrs)(struct Library *, struct FileSysHandle *, const struct TagItem *);
 };
 
 struct PTFunctionTable
@@ -39,8 +48,12 @@ struct PTFunctionTable
     struct PartitionAttribute * (*queryPartitionAttrs)  (struct Library *);
     ULONG    	(*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
     struct Node *(*findFileSystem)	 (struct Library *, struct PartitionHandle *, struct TagItem *);
-    BPTR	(*loadFileSystem)	 (struct PartitionBase_intern *, struct FileSysHandle *);
-    LONG	(*getFileSystemAttrs)	 (struct Library *, struct FileSysHandle *, const struct TagItem *);
+};
+
+struct BootFileSystem
+{
+    struct Node ln;
+    struct FileSysHandle *handle;
 };
 
 extern const struct PTFunctionTable * const PartitionSupport[];
@@ -48,6 +61,7 @@ extern const struct PTFunctionTable * const PartitionSupport[];
 extern const struct PTFunctionTable PartitionEBR;
 extern const struct PTFunctionTable PartitionMBR;
 extern const struct PTFunctionTable PartitionRDB;
+extern const struct FSFunctionTable FilesystemRDB;
 
 LONG PartitionGetGeometry(struct Library *, struct IOExtTD *, struct DriveGeometry *);
 void PartitionNsdCheck(struct Library *, struct PartitionHandle *);
