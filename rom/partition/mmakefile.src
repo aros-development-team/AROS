@@ -5,7 +5,8 @@ FILES := \
 	partition_support \
 	partitionebr \
 	partitionmbr \
-	partitionrdb
+	partitionrdb \
+	fsloader
 
 FUNCS := \
 	openrootpartition \
@@ -25,7 +26,8 @@ FUNCS := \
 	destroypartitiontable	 \
 	findfilesystema		 \
 	loadfilesystem		 \
-	getfilesystemattrsa
+	getfilesystemattrsa	 \
+	addbootfilesystem
 
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \

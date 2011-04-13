@@ -27,6 +27,7 @@ struct FSFunctionTable
 {
     BPTR (*loadFileSystem)    (struct PartitionBase_intern *, struct FileSysHandle *);
     LONG (*getFileSystemAttrs)(struct Library *, struct FileSysHandle *, const struct TagItem *);
+    void (*freeFileSystem)    (struct FileSysHandle *);
 };
 
 struct PTFunctionTable

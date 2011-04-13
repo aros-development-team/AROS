@@ -92,6 +92,7 @@ struct PartitionType
 #define FST_ID		(TAG_USER | 1L)	/* ULONG 		 - filesystem ID   	*/
 #define FST_NAME	(TAG_USER | 2L)	/* STRPTR		 - filesystem name	*/
 #define FST_FSENTRY	(TAG_USER | 3L) /* struct FileSysEntry * - fill in FileSysEntry */
+#define FST_VERSION	(TAG_USER | 4L) /* ULONG		 - version number	*/
 
 /* Attributes */
 
