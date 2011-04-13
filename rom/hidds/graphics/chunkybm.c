@@ -880,7 +880,7 @@ VOID CBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         switch(idx)
         {
             case aoHidd_ChunkyBM_Buffer:
-                 *msg->storage = data->buffer;
+                 *msg->storage = (IPTR)data->buffer;
                  break;
         }
     }
