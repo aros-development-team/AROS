@@ -400,7 +400,7 @@ struct FileSysNode *fn;
 
 	    /* Fill in common part of the handle */
             fn->h.ln.ln_Name = fn->fhb.fhb_FileSysName;
-            fn->h.ln.ln_Pri  = fn->fhb.fhb_Priority;
+            fn->h.ln.ln_Pri  = 0;
             fn->h.part       = root;
 
             return fn;
@@ -558,7 +558,7 @@ UBYTE i;
                     fn = PartitionRDBNewFileSys(PartitionBase, root, (struct FileSysHeaderBlock *)buffer);
                     if (fn != NULL)
                     {
-                        Enqueue(&data->fsheaderlist, &fn->h.ln);
+                        AddTail(&data->fsheaderlist, &fn->h.ln);
                         PartitionRDBReadFileSys(PartitionBase, root, fn, (struct LoadSegBlock *)buffer);
                         block = AROS_BE2LONG(fn->fhb.fhb_Next);
                     }
@@ -1137,6 +1137,57 @@ BPTR PartitionRDBLoadFileSystem(struct PartitionBase_intern *PartitionBase, stru
     }
 }
 
+LONG PartitionRDBGetFileSystemAttrs(struct Library *PartitionBase, struct FileSysHandle *fn, const struct TagItem *taglist)
+{
+    struct TagItem *tag;
+    struct FileSysEntry *fse;
+    struct FileSysHeaderBlock *fhb = &((struct FileSysNode *)fn)->fhb;
+
+    while ((tag = NextTagItem(&taglist)))
+    {
+        switch (tag->ti_Tag)
+        {
+        case FST_ID:
+            *((ULONG *)tag->ti_Data) = AROS_BE2LONG(fhb->fhb_DosType);
+            break;
+
+        case FST_NAME:
+            *((STRPTR *)tag->ti_Data) = fhb->fhb_FileSysName;
+            break;
+
+	case FST_FSENTRY:
+	    fse = (struct FileSysEntry *)tag->ti_Data;
+
+	    /* RDB filesystems are not prioritized */
+	    fse->fse_Node.ln_Pri = 0;
+
+	    /*
+	     * Don't use CopyMem() or something like that.
+	     * First, you need to deal with endianess.
+	     * Second, some things are actually pointers, you need
+	     * to sign-extend them on 64 bits.
+	     */
+	    fse->fse_DosType    = AROS_BE2LONG(fhb->fhb_DosType);
+	    fse->fse_Version    = AROS_BE2LONG(fhb->fhb_Version);
+	    fse->fse_PatchFlags = AROS_BE2LONG(fhb->fhb_PatchFlags);
+	    fse->fse_Type	= AROS_BE2LONG(fhb->fhb_Type);
+	    fse->fse_Task	= AROS_BE2LONG(fhb->fhb_Task);
+	    fse->fse_Lock	= (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Lock);
+	    /* Just for convenience. This is expected to be zero. */
+	    fse->fse_Handler	= (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Handler);
+	    fse->fse_StackSize  = AROS_BE2LONG(fhb->fhb_StackSize);
+	    fse->fse_Priority	= AROS_BE2LONG(fhb->fhb_Priority);
+	    fse->fse_Startup	= (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Startup);
+	    /* Skip fse_SegList */
+	    fse->fse_GlobalVec	= (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_GlobalVec);
+
+	    break;
+        }
+    }
+
+    return 0;
+}
+
 const struct PTFunctionTable PartitionRDB =
 {
     PHPTT_RDB,
@@ -1156,5 +1207,6 @@ const struct PTFunctionTable PartitionRDB =
     PartitionRDBQueryPartitionAttrs,
     PartitionRDBDestroyPartitionTable,
     PartitionRDBFindFileSystem,
-    PartitionRDBLoadFileSystem
+    PartitionRDBLoadFileSystem,
+    PartitionRDBGetFileSystemAttrs
 };
