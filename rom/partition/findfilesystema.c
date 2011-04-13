@@ -11,7 +11,7 @@
     NAME */
 #include <libraries/partition.h>
 
-    AROS_LH2(APTR, FindFileSystemA,
+    AROS_LH2(struct Node *, FindFileSystemA,
 
 /*  SYNOPSIS */
     AROS_LHA(struct PartitionHandle *, table, A1),
@@ -32,7 +32,7 @@
 
               If more than one condition is specified for the search, logical
               AND will be applied to them. Empty taglist will give you the first
-              filesystem with the highest priority (if present).
+              filesystem in the list.
 
     RESULT
     Abstract handle of a filesystem or NULL if the filesystem with the given

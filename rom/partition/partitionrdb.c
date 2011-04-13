@@ -1058,11 +1058,11 @@ UBYTE buffer[4096];
     return 0;
 }
 
-APTR PartitionRDBFindFileSystem(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tags)
+struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tags)
 {
     struct RDBData *data = (struct RDBData *)ph->table->data;
     struct FileSysNode *fn;
-    struct TagItem *idTag   = FindTagItem(FST_NAME, tags);
+    struct TagItem *idTag   = FindTagItem(FST_ID  , tags);
     struct TagItem *nameTag = FindTagItem(FST_NAME, tags);
 
     for (fn = (struct FileSysNode *)data->fsheaderlist.lh_Head; fn->h.ln.ln_Succ;
@@ -1080,7 +1080,7 @@ APTR PartitionRDBFindFileSystem(struct Library *PartitionBase, struct PartitionH
 	    	continue;
 	}
 
-	return fn;
+	return &fn->h.ln;
     }
 
     return NULL;
@@ -1113,4 +1113,3 @@ const struct PTFunctionTable PartitionRDB =
     PartitionRDBFindFileSystem,
     PartitionRDBLoadFileSystem
 };
-
