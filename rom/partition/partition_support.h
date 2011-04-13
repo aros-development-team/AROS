@@ -40,6 +40,7 @@ struct PTFunctionTable
     ULONG    	(*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
     struct Node *(*findFileSystem)	 (struct Library *, struct PartitionHandle *, struct TagItem *);
     BPTR	(*loadFileSystem)	 (struct PartitionBase_intern *, struct FileSysHandle *);
+    LONG	(*getFileSystemAttrs)	 (struct Library *, struct FileSysHandle *, const struct TagItem *);
 };
 
 extern const struct PTFunctionTable * const PartitionSupport[];

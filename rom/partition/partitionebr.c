@@ -582,5 +582,6 @@ const struct PTFunctionTable PartitionEBR =
     PartitionEBRQueryPartitionAttrs,
     PartitionEBRDestroyPartitionTable,
     NULL,
+    NULL,
     NULL
 };
