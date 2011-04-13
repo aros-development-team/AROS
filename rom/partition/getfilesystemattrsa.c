@@ -32,8 +32,7 @@
         FST_FSENTRY (struct FileSysEntry *) - Fill in the given struct FileSysEntry.
 
     RESULT
-    	Currently should always return zero. Nonzero means internal partition.library
-    	error.
+    	Reserved. Do not inteprete it in any way.
 
     NOTES
     	Name is returned as a pointer to internally allocated string. You should copy
@@ -62,12 +61,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    const struct PTFunctionTable *handler = ((struct FileSysHandle *)handle)->part->table->handler;
+    const struct FSFunctionTable *handler = ((struct FileSysHandle *)handle)->handler;
 
-    if (handler->getFileSystemAttrs)
-        return handler->getFileSystemAttrs(PartitionBase, (struct FileSysHandle *)handle, taglist);
-
-    return 1;
+    return handler->getFileSystemAttrs(PartitionBase, (struct FileSysHandle *)handle, taglist);
 
     AROS_LIBFUNC_EXIT
 }

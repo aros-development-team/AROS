@@ -403,7 +403,7 @@ struct FileSysNode *fn;
 	    /* Fill in common part of the handle */
             fn->h.ln.ln_Name = fn->fhb.fhb_FileSysName;
             fn->h.ln.ln_Pri  = 0;
-            fn->h.part       = root;
+            fn->h.handler    = &FilesystemRDB;
 
             return fn;
         }
@@ -1194,7 +1194,11 @@ const struct PTFunctionTable PartitionRDB =
     PartitionRDBQueryPartitionTableAttrs,
     PartitionRDBQueryPartitionAttrs,
     PartitionRDBDestroyPartitionTable,
-    PartitionRDBFindFileSystem,
+    PartitionRDBFindFileSystem
+};
+
+const struct FSFunctionTable FilesystemRDB =
+{
     PartitionRDBLoadFileSystem,
     PartitionRDBGetFileSystemAttrs
 };
