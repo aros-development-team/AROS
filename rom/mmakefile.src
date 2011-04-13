@@ -38,6 +38,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-utility-includes \
 #MM     kernel-intuition-includes \
 #MM     kernel-keymap-includes \
+#MM	kernel-partition-includes \
 #MM     kernel-expansion-includes \
 #MM     kernel-layers-includes \
 #MM     kernel-timer-includes \
