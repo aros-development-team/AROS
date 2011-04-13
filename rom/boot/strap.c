@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
@@ -581,11 +581,11 @@ static VOID CheckPartitions
 	)
 {
     struct PartitionBase *PartitionBase;
-    struct PartitionHandle *pt;
     struct FileSysStartupMsg *fssm;
     struct DeviceNode *dn = (struct DeviceNode *)bn->bn_DeviceNode;
 
-    if (dn->dn_SegList != BNULL) {
+    if (dn->dn_SegList != BNULL)
+    {
     	D(bug("CheckPartition('%s') handler = %x\n", AROS_DOSDEVNAME(dn), dn->dn_SegList));
         /* we already have filesystem handler */
         Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
@@ -597,28 +597,32 @@ static VOID CheckPartitions
         (struct PartitionBase *)OpenLibrary("partition.library", 1);
     if (PartitionBase)
     {
+        struct PartitionHandle *pt = NULL;
+
         fssm = BADDR(dn->dn_Startup);
-        pt = OpenRootPartition(AROS_BSTR_ADDR(fssm->fssm_Device),
-            fssm->fssm_Unit);
-        if (pt)
-        {
-            if (IsRemovable(SysBase, pt->bd->ioreq))
+	if (fssm && fssm->fssm_Device)
+	{
+            pt = OpenRootPartition(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit);
+            if (pt)
             {
-                /* don't check removable devices for partition tables */
-                Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
-            }
-            else
-            {
-                if (!CheckTables(ExpansionBase, PartitionBase, fssm, pt,
-                    SysBase))
-                {
-                    /* no partition table found, so reinsert node */
-                  Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
+            	if (IsRemovable(SysBase, pt->bd->ioreq))
+            	{
+                    /* don't check removable devices for partition tables */
+                    Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
+            	}
+            	else
+            	{
+                    if (!CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase))
+                    {
+                    	/* no partition table found, so reinsert node */
+                  	Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
+                    }
                 }
-            }
-            CloseRootPartition(pt);
+           	CloseRootPartition(pt);
+           }
         }
-        else
+        
+        if (!pt)
         {
             /* amicdrom fails here because of non-initialized libraries */
             Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
@@ -645,6 +649,8 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
 
     ExpansionBase =
         (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
+
+    D(bug("[Strap] ExpansionBase 0x%p\n", ExpansionBase));
     if( ExpansionBase == NULL )
     {
         D(bug( "Could not open expansion.library, something's wrong!\n"));
