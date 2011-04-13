@@ -55,8 +55,7 @@ struct FileSysReader
     ULONG count;
     ULONG offset;
     ULONG size;
-    ULONG fsblocks;
-    struct LoadSegBlock *filesystem;
+    struct FileSysNode *fsn;
 };
 
 static AROS_UFH4(LONG, ReadFunc,
@@ -77,7 +76,7 @@ static AROS_UFH4(LONG, ReadFunc,
     	if (size + fsr->offset > fsr->size)
     	    size = fsr->size - fsr->offset;
     	if (size > 0) {
-    	    UBYTE *inbuf = (UBYTE*)(fsr->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
+    	    UBYTE *inbuf = (UBYTE*)(fsr->fsn->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
 	    CopyMemQuick(inbuf, outbuf, size);
 	}
 
@@ -89,7 +88,7 @@ static AROS_UFH4(LONG, ReadFunc,
 	if (fsr->offset == fsr->size) {
 	    fsr->offset = 0;
 	    fsr->count++;
-	    if (fsr->count == fsr->fsblocks)
+	    if (fsr->count == fsr->fsn->fsblocks)
 	    	break;
 	}
 
@@ -129,10 +128,16 @@ static AROS_UFH4(LONG, SeekFunc,
 }
 
 /* Load a filesystem into DOS seglist */
-static BPTR LoadFS(struct LoadSegBlock *filesystem, ULONG fsblocks, struct DosLibrary *DOSBase)
+static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
 {
     LONG (*FunctionArray[4])();
     struct FileSysReader fakefile;
+
+#ifndef __mc68000
+    /* Prevent loading hunk files on non-m68k */
+    if (AROS_BE2LONG(node->filesystem[0].lsb_LoadData[0]) == 0x000003f3)
+    	return BNULL;
+#endif
 
     FunctionArray[0] = ReadFunc;
     FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
@@ -143,19 +148,16 @@ static BPTR LoadFS(struct LoadSegBlock *filesystem, ULONG fsblocks, struct DosLi
     fakefile.count      = 0;
     fakefile.offset     = 4;	/* ??? */
     fakefile.size       = LSEGDATASIZE;
-    fakefile.fsblocks   = fsblocks;
-    fakefile.filesystem = filesystem;
-
-#ifndef __mc68000
-    /* Prevent loading hunk files on non-m68k */
-    if (AROS_BE2LONG(filesystem[0].lsb_LoadData[0]) == 0x000003f3)
-    	return BNULL;
-#endif
+    fakefile.fsn        = node;
 
     return InternalLoadSeg((BPTR)&fakefile, BNULL, FunctionArray, NULL);
 }
 
-/* Insert RDB LSEG filesystem to FileSystem.resource */
+/*
+ * Insert RDB LSEG filesystem to FileSystem.resource
+ * FIXME: this is an obsolete hack. Use new filesystem API
+ * in Boot Strap instead.
+ */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
 
@@ -411,6 +413,15 @@ struct FileSysNode *fn;
     return NULL;
 }
 
+static void PartitionRDBFreeFileSystem(struct FileSysHandle *fsh)
+{
+    struct FileSysNode *fn = (struct FileSysNode *)fsh;
+
+    if (fn->filesystem)
+        FreeVec(fn->filesystem);
+    FreeMem(fn, sizeof(struct FileSysNode));
+}
+
 ULONG PartitionRDBCalcFSSize
     (
         struct Library *PartitionBase,
@@ -611,11 +622,12 @@ struct RDBData *data;
     data = (struct RDBData *)root->table->data;
     while ((bn = (struct BadBlockNode *)RemTail(&data->badblocklist)))
         FreeMem(bn, sizeof(struct BadBlockNode));
+
     while ((fn = (struct FileSysNode *)RemTail(&data->fsheaderlist)))
     {
-        if (fn->filesystem)
-            FreeVec(fn->filesystem);
-        FreeMem(fn, sizeof(struct FileSysNode));
+	/* Do not deallocate filesystem handles which are queued for loading */
+    	if (!fn->h.boot)
+    	    PartitionRDBFreeFileSystem(&fn->h);
     }
     FreeMem(data, sizeof(struct RDBData));
 }
@@ -1116,11 +1128,7 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
 BPTR PartitionRDBLoadFileSystem(struct PartitionBase_intern *PartitionBase, struct FileSysHandle *fn)
 {
     if (PartitionBase->dosBase)
-    {
-    	struct FileSysNode *fsn = (struct FileSysNode *)fn;
-
-    	return LoadFS(fsn->filesystem, fsn->fsblocks, (struct DosLibrary *)PartitionBase->dosBase);
-    }
+    	return LoadFS((struct FileSysNode *)fn, (struct DosLibrary *)PartitionBase->dosBase);
     else
 	return BNULL;
 }
@@ -1170,6 +1178,10 @@ LONG PartitionRDBGetFileSystemAttrs(struct Library *PartitionBase, struct FileSy
 	    fse->fse_GlobalVec	= (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_GlobalVec);
 
 	    break;
+
+	case FST_VERSION:
+	    *((ULONG *)tag->ti_Data) = AROS_BE2LONG(fhb->fhb_Version);
+	    break;
         }
     }
 
@@ -1200,5 +1212,6 @@ const struct PTFunctionTable PartitionRDB =
 const struct FSFunctionTable FilesystemRDB =
 {
     PartitionRDBLoadFileSystem,
-    PartitionRDBGetFileSystemAttrs
+    PartitionRDBGetFileSystemAttrs,
+    PartitionRDBFreeFileSystem
 };
