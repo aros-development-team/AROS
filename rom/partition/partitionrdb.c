@@ -130,7 +130,7 @@ static AROS_UFH4(LONG, SeekFunc,
 /* Load a filesystem into DOS seglist */
 static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
 {
-    LONG (*FunctionArray[4])();
+    LONG_FUNC FunctionArray[4];
     struct FileSysReader fakefile;
 
 #ifndef __mc68000
@@ -139,10 +139,10 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
     	return BNULL;
 #endif
 
-    FunctionArray[0] = ReadFunc;
-    FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
-    FunctionArray[2] = __AROS_GETVECADDR(SysBase,35); /* FreeMem() */
-    FunctionArray[3] = SeekFunc;
+    FunctionArray[0] = (LONG_FUNC)ReadFunc;
+    FunctionArray[1] = (LONG_FUNC)__AROS_GETVECADDR(SysBase,33); /* AllocMem() */
+    FunctionArray[2] = (LONG_FUNC)__AROS_GETVECADDR(SysBase,35); /* FreeMem() */
+    FunctionArray[3] = (LONG_FUNC)SeekFunc;
 
     /* Initialize our stream */
     fakefile.count      = 0;
