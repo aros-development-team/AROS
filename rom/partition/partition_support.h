@@ -16,7 +16,7 @@
 struct FileSysHandle
 {
     struct Node ln;
-    const struct PTFunctionTable *handler;
+    struct PartitionHandle *part;
     /* Handler's private data follows */
 };
 
@@ -39,7 +39,7 @@ struct PTFunctionTable
     struct PartitionAttribute * (*queryPartitionAttrs)  (struct Library *);
     ULONG    	(*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
     struct Node *(*findFileSystem)	 (struct Library *, struct PartitionHandle *, struct TagItem *);
-    BPTR	(*loadFileSystem)	 (struct Library *, struct FileSysHandle *);
+    BPTR	(*loadFileSystem)	 (struct PartitionBase_intern *, struct FileSysHandle *);
 };
 
 extern const struct PTFunctionTable * const PartitionSupport[];
