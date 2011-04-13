@@ -92,7 +92,7 @@ USER_CFLAGS := -std=gnu99
 %build_module mmake=hidd-nouveau \
     modname=nouveau modtype=hidd \
     files="$(NOUVEAU_HIDD_SOURCES)" \
-    uselibs="oop amiga hiddgraphicsstubs hiddstubs galliumauxiliary rom"
+    uselibs="oop amiga hiddstubs galliumauxiliary rom"
 
 %build_archspecific mainmmake=hidd-nouveau asmfiles=aros_wbinvd_hack \
     maindir=$(CURDIR) arch=i386 modulename=nouveau

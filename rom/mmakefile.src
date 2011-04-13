@@ -91,7 +91,7 @@ BASE_LIBS     := aros boot dos graphics intuition keymap layers oop utility
 
 %link_kickstart mmake=kernel-link-base file=$(BINDIR)/boot/aros-base \
 	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) \
-	uselibs="autoinit libinit amiga arossupport rom arosm hiddstubs hiddgraphicsstubs" \
+	uselibs="autoinit libinit amiga arossupport rom arosm hiddstubs" \
 	map=$(GENDIR)/boot/kernel-base.map
 
 # *** PKG kickstart package ***

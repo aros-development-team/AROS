@@ -7,4 +7,4 @@ USER_CFLAGS := -Wno-uninitialized
 
 %build_module mmake=hidd-intelG45 \
            modname=intelG45 modtype=hidd \
-           files=$(FILES) uselibs="oop rom amiga hiddstubs hiddgraphicsstubs"
+           files=$(FILES) uselibs="oop rom amiga hiddstubs"

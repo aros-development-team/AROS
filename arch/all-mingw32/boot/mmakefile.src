@@ -41,7 +41,7 @@ $(EXEDIR)/aros-bsp-mingw32: $(KOBJS_MINGW32)
 	@$(MKDIR) $(GENDIR)/boot
 	@$(TARGET_CC) $(GENMAP) $(GENDIR)/boot/kernel-mingw32.map \
 	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
-	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
+	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
 
 #MM
 kernel-boot-mingw32: $(EXEDIR)/AROSBootstrap.conf

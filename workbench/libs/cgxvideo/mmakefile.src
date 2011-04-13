@@ -24,7 +24,7 @@ FUNCS := \
 %build_module mmake=workbench-libs-cgxvideo \
   modname=cgxvideo modtype=library \
   files="cgxvideo_init $(FUNCS)" \
-  uselibs="hiddgraphicsstubs oop"
+  uselibs="oop"
 
 #MM includes-copy
 
