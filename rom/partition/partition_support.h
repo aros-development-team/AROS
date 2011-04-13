@@ -38,7 +38,7 @@ struct PTFunctionTable
     struct PartitionAttribute * (*queryPartitionTableAttrs)(struct Library *);
     struct PartitionAttribute * (*queryPartitionAttrs)  (struct Library *);
     ULONG    	(*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
-    APTR	(*findFileSystem)	 (struct Library *, struct PartitionHandle *, struct TagItem *);
+    struct Node *(*findFileSystem)	 (struct Library *, struct PartitionHandle *, struct TagItem *);
     BPTR	(*loadFileSystem)	 (struct Library *, struct FileSysHandle *);
 };
 

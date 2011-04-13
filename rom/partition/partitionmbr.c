@@ -673,6 +673,7 @@ const struct PTFunctionTable PartitionMBR =
     PartitionMBRQueryPartitionTableAttrs,
     PartitionMBRQueryPartitionAttrs,
     PartitionMBRDestroyPartitionTable,
+    NULL,
     NULL
 };
 
