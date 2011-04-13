@@ -47,19 +47,31 @@ static const UWORD heighttable[] = { 200, 256, 400, 512, 0 };
 
 ULONG AmigaVideoCl__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
 {
-    msg->props->DisplayInfoFlags = DIPF_IS_SPRITES | DIPF_IS_DRAGGABLE |
+    ULONG flags = 0;
+    ULONG modeid = msg->modeID;
+
+    flags = DIPF_IS_SPRITES | DIPF_IS_DRAGGABLE |
     	DIPF_IS_SPRITES_ATT | DIPF_IS_SPRITES_CHNG_BASE | DIPF_IS_SPRITES_CHNG_PRI |
-    	DIPF_IS_DBUFFER;
+    	DIPF_IS_DBUFFER | DIPF_IS_BEAMSYNC | DIPF_IS_GENLOCK;
     msg->props->NumHWSprites = 8;
-    if ((msg->modeID & (PAL_MONITOR_ID | NTSC_MONITOR_ID)) == PAL_MONITOR_ID)
-    	msg->props->DisplayInfoFlags |= DIPF_IS_PAL;
-    if (msg->modeID & LORESLACE_KEY)
-    	msg->props->DisplayInfoFlags |= DIPF_IS_LACE;
-    if (msg->modeID & HAM_KEY)
-    	msg->props->DisplayInfoFlags |= DIPF_IS_HAM;
-    if (msg->modeID & EXTRAHALFBRITE_KEY)
-    	msg->props->DisplayInfoFlags |= DIPF_IS_EXTRAHALFBRITE;
-     return sizeof(struct HIDD_ModeProperties);
+    if ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID)
+    	flags |= DIPF_IS_PAL;
+    if (modeid & LORESLACE_KEY)
+    	flags |= DIPF_IS_LACE;
+    if (modeid & HAM_KEY) {
+    	flags |= DIPF_IS_HAM;
+   	if (flags & SUPER_KEY)
+    	    flags |= DIPF_IS_AA;
+    }
+    if (modeid & EXTRAHALFBRITE_KEY) {
+    	flags |= DIPF_IS_EXTRAHALFBRITE;
+    	if (flags & SUPER_KEY)
+    	    flags |= DIPF_IS_AA;
+    }
+    if ((modeid & SUPER_KEY) == SUPER_KEY)
+    	flags |= DIPF_IS_ECS;
+    msg->props->DisplayInfoFlags = flags;
+    return sizeof(struct HIDD_ModeProperties);
 }
 
 HIDDT_ModeID *AmigaVideoCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
@@ -186,7 +198,11 @@ static void makemodename(ULONG modeid, UBYTE *bufptr)
     BOOL special = FALSE;
     
     special = (modeid & (HAM_KEY | EXTRAHALFBRITE_KEY | LORESDPF2_KEY)) != 0;
-    strcpy(bufptr, (modeid & PAL_MONITOR_ID) == PAL_MONITOR_ID ? "PAL" : "NTSC");
+    bufptr[0] = 0;
+    if ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID)
+    	strcat(bufptr, "PAL");
+    else if ((modeid & MONITOR_ID_MASK) == NTSC_MONITOR_ID)
+    	strcat (bufptr, "NTSC");
     strcat(bufptr, ":");
     if ((modeid & (HIRES_KEY | SUPER_KEY)) == LORES_KEY)
     	strcat(bufptr, special ? "LowRes" : "Low Res");
@@ -580,21 +596,29 @@ VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *m
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
 
-OOP_Object *AmigaVideoCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct HIDD_ViewPortData *vpd = msg->Data;
+    OOP_Object *bm = NULL;
 
-    D(bug("SHOW %x\n", msg->bitMap));
+    if (vpd)
+    	bm = vpd->Bitmap;
 
-    if (msg->bitMap) {
+    D(bug("AmigaShowViewPorts %p %p\n", vpd, bm));
+
+    if (bm) {
     	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
     	IPTR modeid = vHidd_ModeID_Invalid;
 
-	OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID , &modeid);
+	OOP_GetAttr(bm, aHidd_BitMap_ModeID , &modeid);
 	csd->modeid = modeid;
-	OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
+	OOP_SetAttrs(bm, (struct TagItem *)tags);
+    } else {
+    	resetmode(csd);
     }
-    return msg->bitMap;
+
+    return TRUE;
 }
 
 VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
@@ -647,14 +671,19 @@ VOID AmigaVideoCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, stru
 
 ULONG AmigaVideoCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)
 {
+    struct HIDD_ViewPortData *vpd = msg->Data;
+    
+    bug("AmigaVideoCl__Hidd_Gfx__MakeViewPort vp=%p bm=%p vpe=%p\n", vpd->vpe->ViewPort, vpd->Bitmap, vpd->vpe);
     /* TODO: implement this correctly */
     return MVP_OK;
 }
 
 void AmigaVideoCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CleanViewPort *msg)
 {
-    struct ViewPort *vp = msg->Data->vpe->ViewPort;
+    struct HIDD_ViewPortData *vpd = msg->Data;
+    struct ViewPort *vp = vpd->vpe->ViewPort;
 
+    bug("AmigaVideoCl__Hidd_Gfx__CleanViewPort vp=%p bm=%p vpe=%p\n", vpd->vpe->ViewPort, vpd->Bitmap, vpd->vpe);
     /* It's safe to call these functions on NULL pointers */
     FreeCopList(vp->ClrIns);
     FreeCopList(vp->DspIns);

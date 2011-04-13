@@ -14,6 +14,7 @@
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <graphics/displayinfo.h>
+#include <intuition/intuitionbase.h>
 #include <aros/libcall.h>
 #include <proto/alib.h>
 #include <proto/exec.h>
@@ -36,12 +37,11 @@
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
+#define DB2(x) ;
 
 #define SIZE_RESLIST 4
 #define SIZE_PFLIST 18
 #define SIZE_MODELIST (5 + RGBFB_MaxFormats)
-
-
 
 HIDDT_ModeID *UAEGFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
 {
@@ -50,7 +50,7 @@ HIDDT_ModeID *UAEGFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
     struct TagItem *tag, *tstate;
     ULONG minwidth = 0, maxwidth = 0xFFFFFFFF;
     ULONG minheight = 0, maxheight = 0xFFFFFFFF;
-    OOP_Object *pf = NULL;
+    OOP_Object **pf = NULL;
     HIDDT_ModeID *modeids;
     WORD cnt;
 
@@ -78,16 +78,28 @@ HIDDT_ModeID *UAEGFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
 		break;
 		
 	    case tHidd_GfxMode_PixFmts:
-	    	pf = (OOP_Object*)tag->ti_Tag;
+	    	pf = (OOP_Object**)tag->ti_Tag;
 		break;
 
 	}
     }
-    DB2(bug("QueryModeIDs (%dx%d)-(%dx%d)\n", minwidth, minheight, maxwidth, maxheight));
+    DB2(bug("QueryModeIDs (%dx%d)-(%dx%d) %p\n", minwidth, minheight, maxwidth, maxheight, pf));
     cnt = 0;
     ForeachNode(&csd->rtglist, node) {
-	if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight && (!pf || pf == node->pf)) {
-	    cnt++;
+	if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight) {
+	    OOP_Object **pfp = NULL;
+	    if (pf) {
+	    	pfp = pf;
+	    	while (*pfp) {
+	    	    if (*pfp == node->pf) {
+	    	    	pfp = NULL;
+	    	    	break;
+	    	    }
+	    	    pfp++;
+	    	}
+	    }
+	    if (!pfp)
+	    	cnt++;
 	}
     }
     modeids = AllocVec((cnt + 1) * sizeof(HIDDT_ModeID), MEMF_PUBLIC);
@@ -95,9 +107,22 @@ HIDDT_ModeID *UAEGFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
     	return NULL;
     cnt = 0;
     ForeachNode(&csd->rtglist, node) {
- 	if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight && (!pf || pf == node->pf)) {
-    	    DB2(bug("%d: %08x\n", cnt, node->modeid));
-	    modeids[cnt++] = node->modeid;
+ 	if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight) {
+	    OOP_Object **pfp = NULL;
+	    if (pf) {
+	    	pfp = pf;
+	    	while (*pfp) {
+	    	    if (*pfp == node->pf) {
+	    	    	pfp = NULL;
+	    	    	break;
+	    	    }
+	    	    pfp++;
+	    	}
+	    }
+	    if (!pfp) {
+    	    	DB2(bug("%d: %08x\n", cnt, node->modeid));
+	    	modeids[cnt++] = node->modeid;
+	    }
 	}
     }
     modeids[cnt] = vHidd_ModeID_Invalid;
@@ -363,9 +388,8 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	for (i = 0; midp[i] != vHidd_ModeID_Invalid; i++) {
 	    OOP_Object *sync, *pf;
 	    HIDDT_ModeID mid = midp[i];
-	    IPTR dwidth, dheight, ddepth, dswap = 0;
+	    IPTR dwidth, dheight;
 	    struct RTGMode *node1, *node2;
-	    UWORD depthmask;
 	    ULONG modeid, rtgmodeid, p96mode;
 	    
 	    DB2(bug("mid=%08x\n", mid));
@@ -442,9 +466,6 @@ OOP_Object *UAEGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct p
     struct uaegfx_staticdata *csd = CSD(cl);
     HIDDT_ModeID		modeid;
     struct pHidd_Gfx_NewBitMap   newbitmap;
-    OOP_Object			*newbm;
-    HIDDT_StdPixFmt		 stdpf;
-    struct gfx_data 	*data = OOP_INST_DATA(cl, o);
     struct TagItem tags[2];
    
     EnterFunc(bug("UAEGFX::NewBitMap()\n"));
@@ -516,20 +537,40 @@ VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
 
-OOP_Object *UAEGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    struct HIDD_ViewPortData *vpd = msg->Data;
+    OOP_Object *bm = NULL;
+    struct ViewPort *vp = NULL;
+    struct ViewPort *vpi = NULL;
+    struct IntuitionBase *ib = (struct IntuitionBase*)csd->IntuitionBase;
 
-    D(bug("SHOW %x\n", msg->bitMap));
-
-    if (msg->bitMap) {
-    	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
-        OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
-    } else {
-    	SetDisplay(csd, FALSE);
+    if (vpd) {
+    	bm = vpd->Bitmap;
+    	if (vpd->vpe)
+    	    vp = vpd->vpe->ViewPort;
     }
-    return msg->bitMap;
+    if (ib->FirstScreen)
+    	vpi = &ib->FirstScreen->ViewPort;
+
+    D(bug("RTGShowViewPorts vpd=%p bm=%p v=%p vpi=%p\n", vpd, bm, vp, vpi));
+
+    if (bm && vpi == vp) {
+    	/* we are topmost screen -> show our display */
+    	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
+        OOP_SetAttrs(bm, (struct TagItem *)tags);
+    } else if (bm) {
+    	/* we are not topmost -> turn off our display */
+   	IPTR tags[] = {aHidd_BitMap_Visible, FALSE, TAG_DONE};
+        OOP_SetAttrs(bm, (struct TagItem *)tags);
+    } else {
+    	/* no display */
+    	SetDisplay(csd, FALSE);
+    	SetSwitch(csd, FALSE);
+    }
+
+    return TRUE;
 }
 
 VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
@@ -788,6 +829,8 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     	freeattrbases(csd);
     	return FALSE;
     }
+    
+    csd->IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     return TRUE;
 }
 
