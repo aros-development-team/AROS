@@ -10,7 +10,6 @@
 */
 
 #include <exec/libraries.h>
-#include <exec/semaphores.h>
 #include <libraries/partition.h>
 
 #include <aros/libcall.h>
@@ -19,7 +18,7 @@
 struct PartitionBase_intern
 {
     struct PartitionBase partbase;
-    struct SignalSemaphore sem;
+    struct List bootList;
     struct Library *dosBase;
 };
 

@@ -42,7 +42,7 @@ struct BadBlockNode {
 struct FileSysNode
 {
     struct FileSysHandle h;
-    
+
     struct FileSysHeaderBlock fhb;
     struct LoadSegBlock *filesystem; /* the FS in LSEG blocks */
     ULONG fsblocks;                  /* nr of LSEG blocks for FS */
@@ -55,7 +55,8 @@ struct FileSysReader
     ULONG count;
     ULONG offset;
     ULONG size;
-    struct FileSysNode *fsn;
+    ULONG fsblocks;
+    struct LoadSegBlock *filesystem;
 };
 
 static AROS_UFH4(LONG, ReadFunc,
@@ -76,7 +77,7 @@ static AROS_UFH4(LONG, ReadFunc,
     	if (size + fsr->offset > fsr->size)
     	    size = fsr->size - fsr->offset;
     	if (size > 0) {
-    	    UBYTE *inbuf = (UBYTE*)(fsr->fsn->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
+    	    UBYTE *inbuf = (UBYTE*)(fsr->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
 	    CopyMemQuick(inbuf, outbuf, size);
 	}
 
@@ -88,7 +89,7 @@ static AROS_UFH4(LONG, ReadFunc,
 	if (fsr->offset == fsr->size) {
 	    fsr->offset = 0;
 	    fsr->count++;
-	    if (fsr->count == fsr->fsn->fsblocks)
+	    if (fsr->count == fsr->fsblocks)
 	    	break;
 	}
 
@@ -128,7 +129,7 @@ static AROS_UFH4(LONG, SeekFunc,
 }
 
 /* Load a filesystem into DOS seglist */
-static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
+static BPTR LoadFS(struct LoadSegBlock *filesystem, ULONG fsblocks, struct DosLibrary *DOSBase)
 {
     LONG (*FunctionArray[4])();
     struct FileSysReader fakefile;
@@ -139,14 +140,15 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
     FunctionArray[3] = SeekFunc;
 
     /* Initialize our stream */
-    fakefile.count  = 0;
-    fakefile.offset = 4;	/* ??? */
-    fakefile.size   = LSEGDATASIZE;
-    fakefile.fsn    = node;
+    fakefile.count      = 0;
+    fakefile.offset     = 4;	/* ??? */
+    fakefile.size       = LSEGDATASIZE;
+    fakefile.fsblocks   = fsblocks;
+    fakefile.filesystem = filesystem;
 
 #ifndef __mc68000
     /* Prevent loading hunk files on non-m68k */
-    if (AROS_BE2LONG(node->filesystem[0].lsb_LoadData[0]) == 0x000003f3)
+    if (AROS_BE2LONG(filesystem[0].lsb_LoadData[0]) == 0x000003f3)
     	return BNULL;
 #endif
 
@@ -1113,28 +1115,14 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
 
 BPTR PartitionRDBLoadFileSystem(struct PartitionBase_intern *PartitionBase, struct FileSysHandle *fn)
 {
-    struct DosLibrary *DOSBase;
-
-    /*
-     * This semaphore makes opening dos.library atomic.
-     * We will open it only once and close only if expunged.
-     */
-    ObtainSemaphore(&PartitionBase->sem);
-
-    if (!PartitionBase->dosBase)
-	PartitionBase->dosBase = OpenLibrary("dos.library", 36);
-
-    DOSBase = (struct DosLibrary *)PartitionBase->dosBase;
-
-    ReleaseSemaphore(&PartitionBase->sem);
-
-    if (DOSBase)
-    	return LoadFS((struct FileSysNode *)fn, DOSBase);
-    else
+    if (PartitionBase->dosBase)
     {
-	/* Not done yet */
-	return BNULL;
+    	struct FileSysNode *fsn = (struct FileSysNode *)fn;
+
+    	return LoadFS(fsn->filesystem, fsn->fsblocks, (struct DosLibrary *)PartitionBase->dosBase);
     }
+    else
+	return BNULL;
 }
 
 LONG PartitionRDBGetFileSystemAttrs(struct Library *PartitionBase, struct FileSysHandle *fn, const struct TagItem *taglist)

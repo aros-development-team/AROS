@@ -7,8 +7,8 @@
 */
 
 #include <aros/symbolsets.h>
-
 #include <aros/debug.h>
+#include <proto/alib.h>
 
 #include "partition_intern.h"
 #include "partition_support.h"
@@ -18,7 +18,7 @@ static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 {
     LIBBASE->partbase.tables =  (struct PartitionTableInfo **)PartitionSupport;
 
-    InitSemaphore(&LIBBASE->sem);
+    NewList(&LIBBASE->bootList);
 
     return TRUE;
 }
@@ -27,7 +27,7 @@ static int PartitionCleanup(struct PartitionBase_intern *base)
 {
     if (base->dosBase)
     	CloseLibrary(base->dosBase);
-    
+
     return TRUE;
 }
 
