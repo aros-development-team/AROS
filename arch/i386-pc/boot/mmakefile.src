@@ -40,7 +40,7 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 
 #MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 
-USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
+USELIBS	:= hiddstubs amiga arossupport rom arosm autoinit libinit
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 

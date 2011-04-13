@@ -178,6 +178,6 @@ USER_CFLAGS := $(PARANOIA_CFLAGS)
 
 %build_module mmake=kernel-intuition \
   modname=intuition modtype=library \
-  files="intuition_init $(FUNCS) $(FILES)" uselibs="hiddgraphicsstubs rom oop"
+  files="intuition_init $(FUNCS) $(FILES)" uselibs="rom oop"
 
 

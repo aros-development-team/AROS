@@ -13,26 +13,9 @@ USER_CFLAGS      := -DAROS_USE_OOP
 %build_module mmake=kernel-hidd-graphics \
   modname=graphics modtype=hidd \
   files=$(FILES) \
-  uselibs="hiddgraphicsstubs oop rom"
+  uselibs="oop rom"
 
 LIBNAME     := graphics
-STUBS       := $(LIBNAME)_stubs
-STUB_FILE   := $(LIBDIR)/libhidd$(LIBNAME)stubs.a
-STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
-
-#MM kernel-hidd-graphics-setup :
-kernel-hidd-graphics-setup : setup
-
-#MM kernel-hidd-graphics-stubs : kernel-hidd-graphics-setup
-kernel-hidd-graphics-stubs : $(STUB_FILE)
-
-$(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS) 
-	%mklib_q from=$(STUB_OBJS)
-
-$(STUB_OBJS) : | $(OBJDIR)
-$(STUB_OBJS) : $(OBJDIR)/%.o : %.c	
-	%compile_q	
-
 
 INCLUDE_FILES    := $(call WILDCARD, include/*.h)
 

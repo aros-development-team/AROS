@@ -42,7 +42,7 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := $(PARANOIA_CFLAGS)
 
 USELIBS := amiga arossupport rom arosm autoinit libinit \
-	   hiddgraphicsstubs hiddstubs 
+	   hiddstubs 
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 

@@ -3,4 +3,4 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-amiga-m68k-uaegfx \
     modname=uaegfx modtype=hidd \
-    files="startup uaegfx uaegfxbitmap uaertg" uselibs="rom oop hiddgraphicsstubs"
+    files="startup uaegfx uaegfxbitmap uaertg" uselibs="rom oop"
