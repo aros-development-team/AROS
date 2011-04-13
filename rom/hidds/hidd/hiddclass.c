@@ -249,7 +249,7 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 		return NULL;
 	    CopyMem(name, name2, l);
 	} else
-	    name2 = unknown;
+	    name2 = (STRPTR)unknown;
 
         hd = OOP_INST_DATA(cl, o);
 
@@ -293,7 +293,7 @@ VOID HIDDCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct HIDDData *hd = OOP_INST_DATA(cl, o);
 
-    if (hd->hd_Name != unknown)
+    if (hd->hd_Name != (STRPTR)unknown)
 	FreeVec(hd->hd_Name);
 
     OOP_DoSuperMethod(cl, o, msg);

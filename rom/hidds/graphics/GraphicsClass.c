@@ -1038,7 +1038,7 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     OOP_Object      	    *pf = NULL, *sync;
     HIDDT_ModeID    	    modeid = 0;
     OOP_Object      	    *bm;
-    IPTR    	    	    depth = NULL;
+    IPTR    	    	    depth = 0;
     struct HIDDGraphicsData *data;
     
     DECLARE_ATTRCHECK(bitmap);

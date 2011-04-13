@@ -384,10 +384,10 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
 		        l = snprintf(d, dlen, "%lu", attrs[SYAO(BoardNumber)]);
 		        break;
 		    case 'h':
-		        l = snprintf(d, dlen, "%lu", data->hdisp);
+		        l = snprintf(d, dlen, "%lu", (unsigned long)data->hdisp);
 			break;
 		    case 'v':
-		        l = snprintf(d, dlen, "%lu", data->vdisp);
+		        l = snprintf(d, dlen, "%lu", (unsigned long)data->vdisp);
 			break;
 		    default:
 			/* Just copy over two chars */
