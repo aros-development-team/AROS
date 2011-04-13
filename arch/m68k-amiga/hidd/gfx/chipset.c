@@ -210,8 +210,8 @@ void resetmode(struct amigavideo_staticdata *data)
     setpalntsc(data, 0);
 
     custom->cop2lc = (ULONG)data->copper2_backup;
+    custom->copjmp2 = 0;
 
-    waitvblank(data);
     waitvblank(data);
 
     FreeVec(data->copper2.copper2);
@@ -403,6 +403,8 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     	    *c++ = 0x180 + agac * 2;
     	    *c++ = 0x000;
 	}
+	*c++ = 0x106;
+	*c++ = data->bplcon3;
     } else {
     	// ocs/ecs
      	for (i = 0; i < data->use_colors; i++) {
