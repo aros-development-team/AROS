@@ -1,5 +1,5 @@
 /*
-   Copyright © 2001-2006, The AROS Development Team. All rights reserved.
+   Copyright © 2001-2011, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Partition initialization code
@@ -16,8 +16,20 @@
 
 static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 {
-    ((struct PartitionBase *)LIBBASE)->tables = (struct PartitionTableInfo **)PartitionSupport;
+    LIBBASE->partbase.tables =  (struct PartitionTableInfo **)PartitionSupport;
+
+    InitSemaphore(&LIBBASE->sem);
+
+    return TRUE;
+}
+
+static int PartitionCleanup(struct PartitionBase_intern *base)
+{
+    if (base->dosBase)
+    	CloseLibrary(base->dosBase);
+    
     return TRUE;
 }
 
 ADD2INITLIB(PartitionInit, 0);
+ADD2EXPUNGELIB(PartitionCleanup, 0);

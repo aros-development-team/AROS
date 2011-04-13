@@ -6,6 +6,7 @@
 
 #define RDB_WRITE 1
 
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/partition.h>
 #include <proto/utility.h>
@@ -47,8 +48,6 @@ struct FileSysNode
     ULONG fsblocks;                  /* nr of LSEG blocks for FS */
 };
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
-
 #define LSEGDATASIZE (123 * sizeof(ULONG))
 
 struct FileSysReader
@@ -58,28 +57,6 @@ struct FileSysReader
     ULONG size;
     struct FileSysNode *fsn;
 };
-
-/* We can't use InternalLoadSeg() because DOS isn't initialized
- * at this point. To allow this to be built as a relocatable
- * library, we provide a dummy weak alias here, which will
- * be overridden when linking the ROM image.
- */
-static BPTR _InternalLoadSeg_AOS(BPTR fh,
-                         BPTR table,
-                         SIPTR * funcarray,
-                         SIPTR * stack,
-                         struct Library * DOSBase)
-{
-	return BNULL;
-}
-
-BPTR InternalLoadSeg_AOS(BPTR fh,
-                         BPTR table,
-                         SIPTR * funcarray,
-                         SIPTR * stack,
-                         struct Library * DOSBase)
-	__attribute__((weak, alias("_InternalLoadSeg_AOS")));
-
 
 static AROS_UFH4(LONG, ReadFunc,
 	AROS_UFHA(BPTR, file,   D1),
@@ -150,8 +127,56 @@ static AROS_UFH4(LONG, SeekFunc,
     AROS_USERFUNC_EXIT
 }
 
+/* Load a filesystem into DOS seglist */
+static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
+{
+    LONG (*FunctionArray[4])();
+    struct FileSysReader fakefile;
+
+    FunctionArray[0] = ReadFunc;
+    FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
+    FunctionArray[2] = __AROS_GETVECADDR(SysBase,35); /* FreeMem() */
+    FunctionArray[3] = SeekFunc;
+
+    /* Initialize our stream */
+    fakefile.count  = 0;
+    fakefile.offset = 4;	/* ??? */
+    fakefile.size   = LSEGDATASIZE;
+    fakefile.fsn    = node;
+
+#ifndef __mc68000
+    /* Prevent loading hunk files on non-m68k */
+    if (AROS_BE2LONG(node->filesystem[0].lsb_LoadData[0]) == 0x000003f3)
+    	return BNULL;
+#endif
+
+    return InternalLoadSeg((BPTR)&fakefile, BNULL, FunctionArray, NULL);
+}
 
 /* Insert RDB LSEG filesystem to FileSystem.resource */
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+
+/* We can't use InternalLoadSeg() because DOS isn't initialized
+ * at this point. To allow this to be built as a relocatable
+ * library, we provide a dummy weak alias here, which will
+ * be overridden when linking the ROM image.
+ */
+static BPTR _InternalLoadSeg_AOS(BPTR fh,
+                         BPTR table,
+                         SIPTR * funcarray,
+                         SIPTR * stack,
+                         struct Library * DOSBase)
+{
+	return BNULL;
+}
+
+BPTR InternalLoadSeg_AOS(BPTR fh,
+                         BPTR table,
+                         SIPTR * funcarray,
+                         SIPTR * stack,
+                         struct Library * DOSBase)
+	__attribute__((weak, alias("_InternalLoadSeg_AOS")));
 
 static void AddFS(struct RDBData *data)
 {
@@ -376,7 +401,7 @@ struct FileSysNode *fn;
 	    /* Fill in common part of the handle */
             fn->h.ln.ln_Name = fn->fhb.fhb_FileSysName;
             fn->h.ln.ln_Pri  = fn->fhb.fhb_Priority;
-            fn->h.handler    = &PartitionRDB;
+            fn->h.part       = root;
 
             return fn;
         }
@@ -1086,10 +1111,30 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
     return NULL;
 }
 
-BPTR PartitionRDBLoadFileSystem(struct Library *PartitionBase, struct FileSysHandle *fn)
+BPTR PartitionRDBLoadFileSystem(struct PartitionBase_intern *PartitionBase, struct FileSysHandle *fn)
 {
-    /* Not done yet */
-    return BNULL;
+    struct DosLibrary *DOSBase;
+
+    /*
+     * This semaphore makes opening dos.library atomic.
+     * We will open it only once and close only if expunged.
+     */
+    ObtainSemaphore(&PartitionBase->sem);
+
+    if (!PartitionBase->dosBase)
+	PartitionBase->dosBase = OpenLibrary("dos.library", 36);
+
+    DOSBase = (struct DosLibrary *)PartitionBase->dosBase;
+
+    ReleaseSemaphore(&PartitionBase->sem);
+
+    if (DOSBase)
+    	return LoadFS((struct FileSysNode *)fn, DOSBase);
+    else
+    {
+	/* Not done yet */
+	return BNULL;
+    }
 }
 
 const struct PTFunctionTable PartitionRDB =

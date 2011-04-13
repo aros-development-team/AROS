@@ -14,7 +14,7 @@
     AROS_LH1(BPTR, LoadFileSystem,
 
 /*  SYNOPSIS */
-    AROS_LHA(APTR, handle, A1),
+    AROS_LHA(struct Node *, handle, A1),
 
 /*  LOCATION */
     struct Library *, PartitionBase, 20, Partition)
@@ -44,10 +44,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    const struct PTFunctionTable *handler = ((struct FileSysHandle *)handle)->handler;
+    const struct PTFunctionTable *handler = ((struct FileSysHandle *)handle)->part->table->handler;
 
     if (handler->loadFileSystem)
-        return handler->loadFileSystem(PartitionBase, handle);
+        return handler->loadFileSystem((struct PartitionBase_intern *)PartitionBase, (struct FileSysHandle *)handle);
 
     return BNULL;
 
