@@ -40,7 +40,7 @@ struct uaegfx_staticdata
 	OOP_AttrBase hiddColorMapAttrBase;
 	
 	struct List rtglist;
-	struct Library *GfxBase;
+	struct Library *IntuitionBase;
 	struct Library *CardBase;
 	struct bm_data *disp;
 	APTR uaeromvector;

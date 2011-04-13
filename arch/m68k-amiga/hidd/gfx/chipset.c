@@ -18,24 +18,18 @@ static const UBYTE fetchunits[] = { 3,3,3,0, 4,3,3,0, 5,4,3,0 };
 static const UBYTE fetchstarts[] = { 3,2,1,0, 4,3,2,0, 5,4,3,0 };
 static const UBYTE fm_maxplanes[] = { 3,2,1,0, 3,3,2,0, 3,3,3,0 };
 
+/* reset to OCS defaults */
 void resetcustom(void)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    custom->fmode = 0;
+    custom->fmode = 0x0000;
     custom->bplcon0 = 0x0200;
     custom->bplcon1 = 0x0000;
     custom->bplcon2 = 0x0000;
-    custom->bplcon3 = 0x0c02;
+    custom->bplcon3 = 0x0c00;
     custom->bplcon4 = 0x0011;
     custom->vposw = 0x8000;
     custom->color[0] = 0x0444;
-
-    /* workaround for recent WinUAE initial blit bug */
-    custom->bltapt = 0;
-    custom->bltcon0 = 0x0800;
-    custom->bltcon1 = 0x0000;
-    custom->bltsize = (1 << 6) | 1;
-    
 }
 
 static AROS_UFH4(ULONG, gfx_vblank,
@@ -196,9 +190,9 @@ static void setpalntsc(struct amigavideo_staticdata *data, ULONG modeid)
 
     if (!data->ecs_agnus)
     	return;
-    if ((modeid & (PAL_MONITOR_ID | NTSC_MONITOR_ID)) == PAL_MONITOR_ID)
+    if ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID)
  	custom->beamcon0 = 0x0020;
-    else if ((modeid & (PAL_MONITOR_ID | NTSC_MONITOR_ID)) == NTSC_MONITOR_ID)
+    else if ((modeid & MONITOR_ID_MASK) == NTSC_MONITOR_ID)
  	custom->beamcon0 = 0x0000;
     else
     	custom->beamcon0 = (data->gfxbase->DisplayFlags & NTSC) ? 0x0000 : 0x0020;
@@ -217,6 +211,7 @@ void resetmode(struct amigavideo_staticdata *data)
 
     custom->cop2lc = (ULONG)data->copper2_backup;
 
+    waitvblank(data);
     waitvblank(data);
 
     FreeVec(data->copper2.copper2);
