@@ -1730,6 +1730,11 @@ enum
 
 #define HiddPlanarBMAttrBase __IHidd_PlanarBM
 
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddPlanarBMAttrBase;
+#endif
+
 enum
 {
     moHidd_PlanarBM_SetBitMap,
@@ -1858,6 +1863,10 @@ enum
 
 #define HiddSyncAttrBase __IHidd_Sync
 #define IID_Hidd_Sync "hidd.gfx.sync"
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddSyncAttrBase;
+#endif
 
 enum
 {
