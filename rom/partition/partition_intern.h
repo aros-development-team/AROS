@@ -18,9 +18,9 @@
 struct PartitionBase_intern
 {
     struct PartitionBase partbase;
+    BPTR segList;
     struct List bootList;
     struct Library *dosBase;
 };
 
 #endif /* PARTITION_INTERN_H */
-
