@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
     
     Print the library magic and init code in the file modname_start.c.
@@ -399,8 +399,16 @@ static void writedeclsets(FILE *out, struct config *cfg)
 
 static void writeresident(FILE *out, struct config *cfg)
 {
+    char *rt_skip = cfg->addromtag;
+
+    if (rt_skip)
+    	fprintf(out, "extern const struct Resident %s;\n", rt_skip);
+    else
+    {
+    	rt_skip = "GM_UNIQUENAME(End)";
+	fprintf(out, "extern const int %s;\n", rt_skip);
+    }
     fprintf(out,
-	    "extern const int GM_UNIQUENAME(End);\n"
 	    "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
     );
     if (cfg->options & OPTION_RESAUTOINIT)
@@ -498,9 +506,10 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "{\n"
 	    "    RTC_MATCHWORD,\n"
 	    "    (struct Resident *)&GM_UNIQUENAME(ROMTag),\n"
-	    "    (APTR)&GM_UNIQUENAME(End),\n"
+	    "    (APTR)&%s,\n"
 	    "    RESIDENTFLAGS,\n"
-	    "    VERSION_NUMBER,\n"
+	    "    VERSION_NUMBER,\n",
+	    rt_skip
     );
     switch (cfg->modtype)
     {

@@ -118,6 +118,7 @@ struct config
     char *datestring, *copyright;
     int residentpri;
     unsigned int majorversion, minorversion;
+    char *addromtag;
     
     /* In forcelist a list of basenames is present that need to be present in the
      * static link library so that certain libraries are opened by a program
