@@ -722,6 +722,8 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
 	    CheckPartitions(ExpansionBase, PartitionBase, SysBase, (struct BootNode *)bootNode);
 	    bootNode = nextNode;
 	}
+
+	CloseLibrary(PartitionBase);
     }
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
