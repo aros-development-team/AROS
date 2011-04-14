@@ -8,7 +8,7 @@
 #include <aros/kernel.h>
 #include <hardware/vbe.h>
 #include <utility/tagitem.h>
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 
 #include <bootconsole.h>
 

@@ -1,5 +1,5 @@
 #include <aros/kernel.h>
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 
 #include "../kernel/hostinterface.h"

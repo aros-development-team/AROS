@@ -16,6 +16,9 @@ FILES	:= \
     rkprintf \
     nastyfreemem \
     purify \
+    libfindtagitem \
+    libgettagdata \
+    libnexttagitem \
     rawputchars \
     readbyte \
     readdouble \

@@ -1,4 +1,4 @@
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 
 struct TagItem *LibNextTagItem(const struct TagItem **tagListPtr)
 {

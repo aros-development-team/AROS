@@ -3,7 +3,7 @@
     $Id$    $Log
 */
 
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 
 #include "intern.h"
 
@@ -67,7 +67,7 @@
  *  ASSERT_VALID_PTR(*tagListPtr);
  */
 
-    /* Use code from libamiga */
+    /* Use code from libarossupport */
     return LibNextTagItem(tagListPtr);
 
     AROS_LIBFUNC_EXIT

@@ -2,7 +2,7 @@
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <utility/tagitem.h>
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
 

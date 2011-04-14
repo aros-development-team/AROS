@@ -9,7 +9,7 @@
 #include <aros/config.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>

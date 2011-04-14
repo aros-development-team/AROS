@@ -1,6 +1,6 @@
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 
-IPTR LibGetTagData(Tag tagValue, IPTR defaultVal, struct TagItem *tagList)
+IPTR LibGetTagData(Tag tagValue, IPTR defaultVal, const struct TagItem *tagList)
 {
     struct TagItem *tag = LibFindTagItem(tagValue, tagList);
  

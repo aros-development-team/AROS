@@ -2,7 +2,7 @@
 #define  CLIB_AROSSUPPORT_PROTOS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for aros.lib
@@ -53,6 +53,16 @@ int     strrncasecmp (const char *, const char *, int);
 void    RawPutChars  (const UBYTE * string, int len);
 BOOL    IsDosEntryA  (char *Name, ULONG Flags);
 BPTR    CreateSegList(APTR function);
+
+/*
+ * Taglist parsing functions.
+ * These functions are intended for use by early startup code only
+ * (where utility.library is not available yet).
+ * Please consider using utility.library whenever possible.
+ */
+struct TagItem *LibNextTagItem(const struct TagItem **tagListPtr);
+struct TagItem *LibFindTagItem(Tag tagValue, const struct TagItem *tagList);
+IPTR LibGetTagData(Tag tagValue, IPTR defaultVal, const struct TagItem *tagList);
 
 /* AROS enhancements */
 BOOL ReadByte    (struct Hook *, UBYTE  * dataptr, void * stream);

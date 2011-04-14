@@ -4,6 +4,7 @@
 #include <exec/execbase.h>
 #include <exec/resident.h>
 #include <utility/tagitem.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 
 #include <sys/mman.h>
@@ -35,12 +36,6 @@
 #ifndef ARCH_31BIT
 #define ARCH_31BIT 0
 #endif
-
-/*
- * This prototype is dubbed here because proto/alib.h causes conflict
- * because of struct timeval redefinition.
- */
-struct TagItem *LibNextTagItem(const struct TagItem **tstate);
 
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
