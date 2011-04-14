@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP rootclass
@@ -179,6 +179,8 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     	    	ReturnPtr ("Meta::New", OOP_Object *, o);
 	    }
 	}
+
+	D(bug("Failed to allocate dispatch tables\n"));
 
 	OOP_CoerceMethod((OOP_Class *)cl, o, (OOP_Msg)&dispose_mid);
     }
@@ -573,12 +575,10 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     rco->inst.data.public.InstOffset	= 0;
     rco->inst.data.public.UserData	= (APTR)OOPBase;
     
-    rco->inst.data.public.cl_DoMethod	= NULL;
-    rco->inst.data.public.cl_CoerceMethod	= NULL;
-    rco->inst.data.public.cl_DoSuperMethod	= basemeta_dosupermethod;
-    rco->inst.data.public.cl_CoerceMethod	= basemeta_coercemethod;
-    rco->inst.data.public.cl_DoMethod	= basemeta_domethod;
-    
+    rco->inst.data.public.cl_DoSuperMethod = basemeta_dosupermethod;
+    rco->inst.data.public.cl_CoerceMethod  = basemeta_coercemethod;
+    rco->inst.data.public.cl_DoMethod	   = basemeta_domethod;
+
     D(bug("Root stuff: dosupermethod %p, coeremethod %p, domethod %p\n",
 	basemeta_dosupermethod, basemeta_coercemethod, basemeta_domethod));
     

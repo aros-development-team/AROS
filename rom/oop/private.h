@@ -1,7 +1,7 @@
 #ifndef PRIVATE_H
 #define PRIVATE_H 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private methods and attrs
@@ -22,7 +22,7 @@
 
 enum
 {
-   MO_meta_allocdisptabs = num_Meta_Attrs,
+   MO_meta_allocdisptabs,
    MO_meta_freedisptabs,
    MO_meta_iterateifs,
    MO_meta_findmethod,
