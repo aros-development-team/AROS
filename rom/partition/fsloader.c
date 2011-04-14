@@ -16,7 +16,7 @@
 #include "fsloader.h"
 
 static const UBYTE FSLoader_version[];
-extern const int Partition_End;
+extern int Partition_End;
 
 AROS_UFP3(static APTR, FSLoader_Init,
 	  AROS_UFPA(void *, dummy1,  D0),
@@ -64,23 +64,27 @@ AROS_UFH3(static APTR, FSLoader_Init,
     /* We should really have dos.library online now */
     PartitionBase->dosBase = OpenLibrary("dos.library", 36);
     D(bug("[FSLoader] DOSBase 0x%p\n", PartitionBase->dosBase));
-    if (!PartitionBase->dosBase)
-    	return NULL;
 
-    ForeachNodeSafe(&PartitionBase->bootList, bfs, bfs2)
+    if (PartitionBase->dosBase)
     {
-	/*
-	 * Unfortunately we have no way to process errors here.
-	 * Well, let's hope that everything will be okay.
-	 */
-	D(bug("[FSLoader] Loading %s...\n", bfs->ln.ln_Name));
+    	ForeachNodeSafe(&PartitionBase->bootList, bfs, bfs2)
+    	{
+	    /*
+	     * Unfortunately we have no way to process errors here.
+	     * Well, let's hope that everything will be okay.
+	     */
+	    D(bug("[FSLoader] Loading %s...\n", bfs->ln.ln_Name));
 
-	AddFS(&PartitionBase->partbase.lib, bfs->handle);
-	bfs->handle->handler->freeFileSystem(bfs->handle);
-	FreeMem(bfs, sizeof(struct BootFileSystem));
+	    AddFS(&PartitionBase->partbase.lib, bfs->handle);
+	    bfs->handle->handler->freeFileSystem(bfs->handle);
+	    FreeMem(bfs, sizeof(struct BootFileSystem));
+	}
+
+	/* All nodes are already freed, reinitialize the list */
+	NewList(&PartitionBase->bootList);
     }
 
-    NewList(&PartitionBase->bootList);
+    CloseLibrary(&PartitionBase->partbase.lib);
     return 0;
 
     AROS_USERFUNC_EXIT
