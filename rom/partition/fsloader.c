@@ -16,7 +16,7 @@
 #include "fsloader.h"
 
 static const UBYTE FSLoader_version[];
-extern struct Resident Partition_ROMTag;
+extern const int Partition_End;
 
 AROS_UFP3(static APTR, FSLoader_Init,
 	  AROS_UFPA(void *, dummy1,  D0),
@@ -24,15 +24,19 @@ AROS_UFP3(static APTR, FSLoader_Init,
 	  AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 /*
- * Currently genmodule-generated code contains Resident structure in .data section.
- * We are in .code, so our rt_Skip points to it.
- * If we point to something in .data section, we will skip the main Resident.
+ * This ROMTag is placed in the file after the first one,
+ * provided by genmodule. rt_Skip of that ROMTag points to
+ * our one. This is specified in .conf * file (addromtag option).
+ * It needs to be in this way because disk-based library loader
+ * will find and initialize only the first ROMTag in the file.
+ * It must be the main library's ROMTag in order for disk-based library
+ * to work.
  */
-const struct Resident FSLoader_resident __attribute__((section(".text"))) =
+const struct Resident FSLoader_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&FSLoader_resident,
-    &Partition_ROMTag,
+    &Partition_End,
     RTF_AFTERDOS,
     1,
     NT_PROCESS,

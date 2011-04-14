@@ -17,8 +17,14 @@
 static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 {
     LIBBASE->partbase.tables =  (struct PartitionTableInfo **)PartitionSupport;
-
     NewList(&LIBBASE->bootList);
+
+    /*
+     * This is intentionally allowed to fail.
+     * It fill fail if we are in kickstart, partition.library is initialized
+     * long before dos.library.
+     */
+    LIBBASE->dosBase = OpenLibrary("dos.library", 36);
 
     return TRUE;
 }
