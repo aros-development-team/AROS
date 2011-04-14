@@ -12,7 +12,6 @@ INCSUBDIRS :=	aros				\
 		c++/exec \
 		clib \
 		datatypes \
-		defines \
 		devices \
 		diskfont \
 		dos \

@@ -5,7 +5,7 @@
     GetTagData()
 */
 
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 
 #include "intern.h"
 
@@ -65,8 +65,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Use code from libamiga */
-    return LibGetTagData(tagValue, defaultVal, (struct TagItem *)tagList);
+    /* Use code from libarossupport */
+    return LibGetTagData(tagValue, defaultVal, tagList);
 
     AROS_LIBFUNC_EXIT
 } /* GetTagData */

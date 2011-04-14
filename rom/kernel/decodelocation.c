@@ -1,6 +1,6 @@
 #include <aros/kernel.h>
 #include <dos/bptr.h>
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>

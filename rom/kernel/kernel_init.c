@@ -1,7 +1,7 @@
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>

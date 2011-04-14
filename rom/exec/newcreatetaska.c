@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
 

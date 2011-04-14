@@ -13,6 +13,7 @@
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <proto/alib.h>
+#include <proto/arossupport.h>
 
 #include <stdarg.h>
 

@@ -8,12 +8,6 @@
 
 #include "exec_intern.h"
 
-/*
- * This prototype is dubbed here because proto/alib.h causes conflict
- * because of struct timeval redefinition.
- */
-struct TagItem *LibFindTagItem(Tag id, struct TagItem *tags);
-
 static const char *libc_symbols[] = {
     "exit",
 #ifdef HAVE_SWAPCONTEXT

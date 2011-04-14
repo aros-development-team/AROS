@@ -10,7 +10,7 @@
 #include <utility/utility.h>
 #include <utility/tagitem.h>
 #include <aros/libcall.h>
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 
 /*****************************************************************************
 
@@ -48,8 +48,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Use code from libamiga */
-    return LibFindTagItem(tagValue, (struct TagItem *)tagList);
+    /* Use code from libarossupport */
+    return LibFindTagItem(tagValue, tagList);
 
     AROS_LIBFUNC_EXIT
 } /* FindTagItem */

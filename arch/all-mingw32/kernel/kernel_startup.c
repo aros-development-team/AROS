@@ -6,7 +6,7 @@
 #include <exec/execbase.h>
 #include <exec/resident.h>
 #include <utility/tagitem.h>
-#include <proto/alib.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>
