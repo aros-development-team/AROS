@@ -9,7 +9,7 @@
 #define DEBUG 0
 
 #include <string.h>
-#include <stdio.h>
+#include <stdlib.h>
 
 #include <exec/alerts.h>
 #include <aros/asmcall.h>
@@ -38,7 +38,7 @@
 
 #define uppercase(x) ((x >= 'a' && x <= 'z') ? (x & 0xdf) : x)
 
-int boot_entry()
+int __startup boot_entry()
 {
 	return -1;
 }
@@ -53,7 +53,7 @@ const struct Resident boot_resident =
     (APTR)&boot_end,
     RTF_COLDSTART,
     41,
-    NT_PROCESS,
+    NT_TASK,
     -50,
     "Boot Strap",
     "AROS Boot Strap 41.0\r\n",
@@ -61,6 +61,12 @@ const struct Resident boot_resident =
 };
 
 #ifndef __mc68000
+/*
+ * FIXME: this hardcoded table should not exist at all.
+ * Instead all kickstart-resident handlers should registed themselves
+ * in FileSystem.resource. Its contents should be used instead of this
+ * table.
+ */
 static const struct _dt {
     IPTR    mask,type;
     STRPTR  fs;
@@ -82,6 +88,7 @@ static const struct _dt {
 };
 #endif
 
+/* FIXME: this is really partition.library's job */
 static const struct _pt {
     IPTR    part,type;
 } PartTypes[] = {
@@ -146,13 +153,12 @@ static BOOL BootBlockChecksum(UBYTE *bootblock)
        return crc == crc2;
 }
 
-struct InitTable {
-	ULONG dSize;
-	APTR  vectors;
-	APTR  structure;
-	ULONG_FUNC init;
-};
-
+/*
+ * FIXME: Since this routine exists, and it is Amiga-compatible behavior
+ * (Amiga trackdisk.device does not mount itself), this code should be used
+ * for all ports. PC trackdisk.device should also be mounted here.
+ * Of course this routine should be updated to handle possible geometries correctly.
+ */
 static void FloppyBootNode(
         struct ExpansionBase *ExpansionBase,
         CONST_STRPTR driver, UBYTE unit, ULONG type, BOOL hddisk, BOOL bootable)
@@ -225,7 +231,14 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                            DoIO((struct IORequest*)io);
                            if (io->iotd_Req.io_Error == 0)
                                dg_ok = TRUE;
-                           if (bootdrive < 0) {
+
+#ifdef __mc68000
+			   /*
+			    * Try to read Amiga floppy bootblock.
+			    * This done only on m68k
+			    */
+                           if (bootdrive < 0)
+                           {
                                io->iotd_Req.io_Length = BOOTBLOCK_SIZE;
                                io->iotd_Req.io_Data = buffer;
                                io->iotd_Req.io_Offset = 0;
@@ -237,7 +250,7 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                                    if (canboot && BootBlockChecksum(buffer)) {
                                	       APTR bootcode = buffer + 12;
                                	       ExpansionBase->Flags &= ~EBF_SILENTSTART;
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+
                                	       D(bug("calling bootblock!\n", buffer));
                                	       asm volatile (
                                	       	             "move.l %2,%%a1\n"
@@ -257,11 +270,11 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                                	       	   bootdrive = i;
                                        else
                                            Alert(AN_BootError);
-#endif
                                    }
                                } else {
                                    D(bug("ioerror %d\n", io->iotd_Req.io_Error));
                                }
+#endif
                            }
                            CloseDevice((struct IORequest*)io);
                            FloppyBootNode(ExpansionBase, driver, i, dostype, dg.dg_TotalSectors == 22 && dg_ok, bootdrive == i);
@@ -317,8 +330,7 @@ static IPTR MatchPartType(UBYTE PartType)
     return type;
 }
 
-static ULONG GetOffset(struct PartitionBase *PartitionBase,
-    struct PartitionHandle *ph)
+static ULONG GetOffset(struct Library *PartitionBase, struct PartitionHandle *ph)
 {
     IPTR tags[3];
     struct DosEnvec de;
@@ -337,15 +349,9 @@ static ULONG GetOffset(struct PartitionBase *PartitionBase,
     return offset;
 }
 
-static VOID AddPartitionVolume
-    (
-	struct ExpansionBase *ExpansionBase,
-	struct PartitionBase *PartitionBase,
-	struct FileSysStartupMsg *fssm,
-	struct PartitionHandle *table,
-	struct PartitionHandle *pn,
-	struct ExecBase * SysBase
-    )
+static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Library *PartitionBase,
+			       struct FileSysStartupMsg *fssm, struct PartitionHandle *table,
+			       struct PartitionHandle *pn, struct ExecBase *SysBase)
 {
     UBYTE name[32];
     ULONG i, blockspercyl;
@@ -358,6 +364,11 @@ static VOID AddPartitionVolume
     TEXT *devname, *handler;
     LONG bootable;
     struct FileSysEntry *fse;
+
+    /*
+     * TODO: Try to locate RDB filesystem for this volume and make it bootable.
+     * Use FindFileSystem() and AddBootFileSystem() for this.
+     */
 
     D(bug("[Boot] AddPartitionVolume\n"));
     pp = AllocVec(sizeof(struct DosEnvec) + sizeof(IPTR) * 4,
@@ -457,13 +468,13 @@ static VOID AddPartitionVolume
         pp[4 + DE_LOWCYL] += i;
         pp[4 + DE_HIGHCYL] += i;
 
-#ifdef __mc68000
-	/* Do not check for handlers because m68k-amiga does not
+	/*
+	 * Do not check for handlers because m68k-amiga does not
 	 * have them if filesystem in DosType[] has been loaded from RDB
 	 * by 3rd party boot ROM. MatchFileSystemResourceHandler does the job.
+	 * FIXME: use FileSystem.resource on all architectures.
 	 */
-        handler = NULL;
-#else
+#ifndef __mc68000
 	D(bug("[Boot] Looking up handler for 0x%08lX\n", pp[4+DE_DOSTYPE]));
         handler = MatchHandler(pp[4 + DE_DOSTYPE]);
 
@@ -522,14 +533,9 @@ static VOID AddPartitionVolume
     }
 }
 
-static BOOL CheckTables
-    (
-	struct ExpansionBase *ExpansionBase,
-	struct PartitionBase *PartitionBase,
-	struct FileSysStartupMsg *fssm,
-	struct PartitionHandle *table,
-	struct ExecBase *SysBase
-    )
+static BOOL CheckTables(struct ExpansionBase *ExpansionBase, struct Library *PartitionBase,
+			struct FileSysStartupMsg *fssm,	struct PartitionHandle *table,
+			struct ExecBase *SysBase)
 {
     BOOL retval = FALSE;
     struct PartitionHandle *ph;
@@ -555,83 +561,66 @@ static BOOL CheckTables
 
 static BOOL IsRemovable(struct ExecBase *SysBase, struct IOExtTD *ioreq)
 {
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
-    /* On AROS m68k, CF cards are removable, but are
+    struct DriveGeometry dg;
+
+    /*
+     * On AROS m68k, CF cards are removable, but are
      * bootable. Also, we should support CDROMs that
      * have RDB blocks. So, in all cases, allow the
      * RDB support.
+     * UPD: this is not so easy. If you remove one disk with RDB on it
+     * and insert another one, number of partitions and their parameters
+     * will change. This means that we actually have to dismount all DeviceNodes
+     * for old disk and mount new ones.
+     * This is technically possible, however rather complex (we need to track down
+     * which DeviceNodes are currently in use, and be able to reuse them when the
+     * disk is inserted again in a response to "Insert disk XXX in any drive".
+     * MorphOS has this mechanism implemented in mount.library.
+     * An alternative is to bind mounted DeviceNodes to a particular disk and mount
+     * a new set for every new one. Perhaps it's simpler, but anyway, needs to be
+     * handled in some special way.
      */
-    return FALSE;
-#else
-    struct DriveGeometry dg;
+    if (!strcmp(ioreq->iotd_Req.io_Device->dd_Library.lib_Node.ln_Name, "carddisk.device"))
+	return FALSE;
 
     ioreq->iotd_Req.io_Command = TD_GETGEOMETRY;
     ioreq->iotd_Req.io_Data = &dg;
     ioreq->iotd_Req.io_Length = sizeof(struct DriveGeometry);
     DoIO((struct IORequest *)ioreq);
+
     return (dg.dg_Flags & DGF_REMOVABLE) ? TRUE : FALSE;
-#endif
 }
 
-static VOID CheckPartitions
-	(
-		struct ExpansionBase *ExpansionBase,
-		struct ExecBase *SysBase,
-		struct BootNode *bn
-	)
+static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library *PartitionBase, struct ExecBase *SysBase, struct BootNode *bn)
 {
-    struct PartitionBase *PartitionBase;
-    struct FileSysStartupMsg *fssm;
-    struct DeviceNode *dn = (struct DeviceNode *)bn->bn_DeviceNode;
+    struct DeviceNode *dn = bn->bn_DeviceNode;
+    BOOL res = FALSE;
 
-    if (dn->dn_SegList != BNULL)
+    D(bug("CheckPartition('%b') handler = %x\n", dn->dn_Name, dn->dn_SegList));
+    
+    /* If we already have filesystem handler, don't do anything */
+    if (dn->dn_SegList == BNULL)
     {
-    	D(bug("CheckPartition('%s') handler = %x\n", AROS_DOSDEVNAME(dn), dn->dn_SegList));
-        /* we already have filesystem handler */
-        Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
-        return;
-    }
+    	struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
 
-    D(bug("CheckPartition('%s') checking..\n", AROS_DOSDEVNAME(dn)));
-    PartitionBase =
-        (struct PartitionBase *)OpenLibrary("partition.library", 1);
-    if (PartitionBase)
-    {
-        struct PartitionHandle *pt = NULL;
-
-        fssm = BADDR(dn->dn_Startup);
 	if (fssm && fssm->fssm_Device)
 	{
-            pt = OpenRootPartition(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit);
-            if (pt)
+            struct PartitionHandle *pt = OpenRootPartition(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit);
+
+	    if (pt)
             {
-            	if (IsRemovable(SysBase, pt->bd->ioreq))
-            	{
-                    /* don't check removable devices for partition tables */
-                    Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
-            	}
-            	else
-            	{
-                    if (!CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase))
-                    {
-                    	/* no partition table found, so reinsert node */
-                  	Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
-                    }
-                }
+            	/* don't check removable devices for partition tables */
+            	if (!IsRemovable(SysBase, pt->bd->ioreq))
+                    res = CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
+
            	CloseRootPartition(pt);
            }
         }
-        
-        if (!pt)
-        {
-            /* amicdrom fails here because of non-initialized libraries */
-            Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
-        }
-        CloseLibrary((struct Library *)PartitionBase);
-    } else {
-        /* If no partition.library, put it back. */
-        Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
     }
+
+    if (!res)    
+        /* If no partitions were found for the DeviceNode, put it back */
+        Enqueue(&ExpansionBase->MountList, &bn->bn_Node);
 }
 
 AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
@@ -641,14 +630,13 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
 )
 {
     AROS_USERFUNC_INIT
+
     struct ExpansionBase *ExpansionBase;
-    struct BootNode *bootNode;
-    struct List list;
     struct Resident *DOSResident;
     void *BootLoaderBase;
+    struct Library *PartitionBase;
 
-    ExpansionBase =
-        (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
+    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
 
     D(bug("[Strap] ExpansionBase 0x%p\n", ExpansionBase));
     if( ExpansionBase == NULL )
@@ -661,69 +649,93 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     ConfigChain(NULL);
     ExpansionBase->Flags |= EBF_SILENTSTART;
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
-    /* Try to open bootloader.resource */
+    /*
+     * Search the kernel parameters for the bootdelay=%d string. It determines the
+     * delay in seconds.
+     */
     if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
     {
-    	struct List *args;
-    	struct Node *node;
-    	ULONG delay = 0;
-
-    	args = GetBootInfo(BL_Args);
+    	struct List *args = GetBootInfo(BL_Args);
 
     	if (args)
     	{
-    		/*
-    		 * Search the kernel parameters for the bootdelay=%d string. It determines the
-    		 * delay in seconds.
-    		 */
-    		ForeachNode(args, node)
+    	    struct Node *node;
+
+    	    ForeachNode(args, node)
+    	    {
+    		if (strncmp(node->ln_Name, "bootdelay=", 10) == 0)
     		{
-    			if (strncmp(node->ln_Name, "bootdelay=", 10) == 0)
+    		    ULONG delay = atoi(&node->ln_Name[10]);
+
+		    D(bug("[Boot] delay of %d seconds requested.", delay));
+		    if (delay)
+		    {
+    			struct MsgPort *port = CreateMsgPort();
+    			if (port)
     			{
-    				struct MsgPort *port = CreateMsgPort();
-    				struct timerequest *tr = (struct timerequest *)
-                        CreateIORequest(port, sizeof(struct timerequest));
-                        	unsigned long tmp;
+    			    struct timerequest *tr = (struct timerequest *)CreateIORequest(port, sizeof(struct timerequest));
 
-    				OpenDevice("timer.device", UNIT_VBLANK,
-                        (struct IORequest *)tr, 0);
+    			    if (tr)
+    			    {
+    				if (!OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0))
+    				{
+    				    tr->tr_node.io_Command = TR_ADDREQUEST;
+    				    tr->tr_time.tv_sec = delay;
+    				    tr->tr_time.tv_usec = 0;
 
-    				sscanf(node->ln_Name, "bootdelay=%lu", &tmp);
-    				delay = tmp;
-    				D(bug("[Boot] delay of %d seconds requested.", delay));
+    				    DoIO((struct IORequest *)tr);
 
-    				tr->tr_node.io_Command = TR_ADDREQUEST;
-    				tr->tr_time.tv_sec = delay;
-    				tr->tr_time.tv_usec = 0;
-
-    				DoIO((struct IORequest *)tr);
-
-    				CloseDevice((struct IORequest *)tr);
+    				    CloseDevice((struct IORequest *)tr);
+    				}
     				DeleteIORequest((struct IORequest *)tr);
-    				DeleteMsgPort(port);
+    			    }
+    			    DeleteMsgPort(port);
     			}
+    		    }
+
+    		    break;
     		}
+    	    }
     	}
     }
-#endif
 
-    /* move all boot nodes into another list */
-    NEWLIST(&list);
-    while ((bootNode = (struct BootNode *)RemHead(&ExpansionBase->MountList)))
-        AddTail(&list, &bootNode->bn_Node);
+    /* If we have partition.library, we can look for partitions */
+    PartitionBase = OpenLibrary("partition.library", 2);
+    if (PartitionBase)
+    {
+    	/*
+    	 * Remove the whole chain of BootNodes from the list and re-initialize it.
+    	 * We will insert new nodes into it, based on old ones.
+    	 * What is done here is safe as long is we don't move the list itself.
+    	 * ln_Succ of the last node in chain points to the lh_Tail of our list
+    	 * which always contains NULL.
+    	 */
+	struct Node *bootNode = ExpansionBase->MountList.lh_Head;
 
-    /* check boot nodes for partition tables */
-    while ((bootNode = (struct BootNode *)RemHead(&list)))
-        CheckPartitions(ExpansionBase, SysBase, bootNode);
+	NEWLIST(&ExpansionBase->MountList);
+
+	while (bootNode->ln_Succ)
+	{
+	    /* Keep ln_Succ because it can be clobbered by reinsertion */
+	    struct Node *nextNode = bootNode->ln_Succ;
+
+	    CheckPartitions(ExpansionBase, PartitionBase, SysBase, (struct BootNode *)bootNode);
+	    bootNode = nextNode;
+	}
+    }
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
     /* Try to get a boot-block from the trackdisk.device */
     BootBlock(ExpansionBase);
 #endif
 
-    CloseLibrary((struct Library *)ExpansionBase);
+    CloseLibrary(&ExpansionBase->LibNode);
 
+    /*
+     * Initialize dos.library manually.
+     * It is done for binary compatibility with original m68k Amiga
+     * Workbench floppy bootblocks. This is what they do.
+     */
     DOSResident = FindResident( "dos.library" );
 
     if( DOSResident == NULL )
