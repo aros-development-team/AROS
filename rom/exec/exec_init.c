@@ -42,9 +42,6 @@
 #ifndef KrnCreateContext
 #define KrnCreateContext() AllocTaskMem(t, SIZEOF_ALL_REGISTERS, MEMF_PUBLIC|MEMF_CLEAR)
 #endif
-#ifndef KrnStatMemory
-#define KrnStatMemory(...)
-#endif
 
 static const UBYTE name[];
 static const UBYTE version[];
@@ -183,29 +180,7 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
      *
     SysBase = sysBase; */
 
-    KernelBase = OpenResource("kernel.resource");
-    if (!KernelBase)
-	return NULL;
-
     DINIT("exec.library init");
-
-    /* We print the notice here because kprintf() works only after KernelBase is set up */
-    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
-    	bug("[exec] Mungwall enabled\n");
-
-    /* If there's no MMU support, PageSize will stay zero */
-    KrnStatMemory(0, KMS_PageSize, &PrivExecBase(SysBase)->PageSize, TAG_DONE);
-    DINIT("Memory page size: %lu", PrivExecBase(SysBase)->PageSize);
-
-    /*
-     * On MMU-less hardware kernel.resource will report zero page size.
-     * In this case we use MEMCHUNK_TOTAL as allocation granularity.
-     * This is because our Allocate() relies on the fact that all chunks
-     * are at least MemChunk-aligned, otherwise we end up in
-     * "Corrupt memory list" alert.
-     */
-    if (!PrivExecBase(SysBase)->PageSize)
-	PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
 
     /* Create boot task */
     ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
