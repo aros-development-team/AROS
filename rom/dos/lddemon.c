@@ -67,16 +67,11 @@ struct LDDMsg
     struct Library *	 ldd_Return;	    /* The result */
 };
 
-#ifdef LIBEND
-#undef LIBEND
-#endif
-#define LIBEND LDDemon_end
-
 #include <libcore/compiler.h>
 
 static const char name[];
 static const char version[];
-extern const int LIBEND TEXT_SECTION;
+extern const int LIBEND;
 static ULONG AROS_SLIB_ENTRY(Init, LDDemon)();
 
 const struct Resident LDDemon_resident =
@@ -918,5 +913,3 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
 
     AROS_USERFUNC_EXIT
 }
-
-const int LIBEND TEXT_SECTION = 1;
