@@ -85,6 +85,17 @@
         WORD  depth  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth;
 	ULONG modeid = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID;
 
+#ifdef __mc68000
+	/* FIXME: less hacky RTG detection */
+	/* select 640x480 if we appear to have RTG hardware (instead of standard PAL/NTSC mode) */
+    	if (modeid == INVALID_ID && height < 480) {
+    	    ULONG mode = BestModeID(BIDTAG_DesiredWidth, 800, BIDTAG_DesiredHeight, 600,
+		BIDTAG_Depth, 8, TAG_DONE);
+	    if (mode != INVALID_ID) /* we are guaranteed to have RTG hardware */
+		height = 480;
+	}
+#endif
+
         struct TagItem screenTags[] =
         {
             { SA_Width,                0                  }, /* 0 */
