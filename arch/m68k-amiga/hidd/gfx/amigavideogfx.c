@@ -708,7 +708,6 @@ VOID AmigaVideoCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
 VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
-#if 0
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigagfx_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  	    *tag;
@@ -717,12 +716,21 @@ VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *m
     while((tag = NextTagItem(&tstate)))
     {
     	ULONG idx;
-	bug("AmigaVideoCl__Root__Set %x\n", tag->ti_Tag);
+	D(bug("AmigaVideoCl__Root__Set %x\n", tag->ti_Tag));
     	if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
-    	    bug("->%d\n", idx);
+    	    D(bug("->%d\n", idx));
+	    switch(idx)
+	    {
+	    case aoHidd_Gfx_ActiveCallBack:
+	        csd->acb = (void *)tag->ti_Data;
+		break;
+
+	    case aoHidd_Gfx_ActiveCallBackData:
+	        csd->acbdata = (APTR)tag->ti_Data;
+		break;
+	    }
     	}
     }
-#endif
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
 
@@ -744,6 +752,10 @@ ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct
 	OOP_GetAttr(bm, aHidd_BitMap_ModeID , &modeid);
 	csd->modeid = modeid;
 	OOP_SetAttrs(bm, (struct TagItem *)tags);
+
+	if (csd->acb)
+	    csd->acb(csd->acbdata, NULL);
+
     } else {
     	resetmode(csd);
     }
