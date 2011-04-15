@@ -393,9 +393,11 @@ static ULONG check_sizes(ULONG tagID, ULONG size);
 			break;
 			
 		}
-
-		snprintf(ni->Name, DISPLAYNAMELEN, "%s %2dbit %s",
+		if (stdpixfmt != vHidd_StdPixFmt_Plane)
+		    snprintf(ni->Name, DISPLAYNAMELEN, "%s %2dbit %s",
 		    	 sync_description, (int)depth, pixfmt_name);
+		else
+		    strncpy(ni->Name, sync_description, DISPLAYNAMELEN);
 	    }
 	    else
 	    {
