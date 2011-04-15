@@ -15,6 +15,7 @@
 
 #include "intern.h"
 #include "private.h"
+#include "basemetaclass.h"
 
 #undef SDEBUG
 #undef DEBUG
@@ -22,471 +23,80 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define MD(x) ((struct metadata *)x)
+/*****************************************************************************************
 
-/***************************
-**  RootClass' metaclass  **
-***************************/
-/* The root class' meta class is not really needed, but 
-   it makes code of other metaclasses more consistent
-*/
+    NAME
+	--background_root--
 
-#define OOPBase ((struct IntOOPBase *)(cl->OOPBasePtr))
-#define IS_META_ATTR(attr, idx) ( (idx = attr - MetaAttrBase) < num_Meta_Attrs )
-/**********************
-**  BaseMeta::New()  **
-**********************/
-static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
-{
-    struct metadata *data;
+    LOCATION
+	Root
 
-    struct OOP_InterfaceDescr *ifdescr = NULL;
-    STRPTR superid = NULL, clid = "-- private class -- ";
-    struct metadata *superptr = NULL;
-    struct TagItem *tag, *tstate;
-    ULONG instsize = (ULONG)-1L;
-    
-    ULONG idx;
+    NOTES
+	Root class is the base class of all classes.
+	One can create new baseclasses, but all classes must implement the root interface.
 
-    EnterFunc(bug("BaseMeta::New(cl=%s, msg = %p)\n",
-    	cl->ClassNode.ln_Name, msg));
+*****************************************************************************************/
 
-    /* Analyze the taglist before object is allocated,
-    ** so we can easily exit cleanly if some info is missing
-    */
+/*****************************************************************************************
 
-    tstate = msg->attrList;
-
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
-    {    
-        if (IS_META_ATTR(tag->ti_Tag, idx))
-	{
-	    D(bug("Got meta attr %lx with TagIdx %ld\n",
-	    	tag->ti_Tag, idx ));
-	    
-	    switch (idx)
-	    {
-	    
-	    case aoMeta_SuperID:
-		/* ID of superclass */
-		superid = (STRPTR)tag->ti_Data;
-	        D(bug("Got superID: %s\n", superid));
-		break;
-		    
-	    case aoMeta_InterfaceDescr:
-	        D(bug("Got ifdescr\n"));
-		/* What interfaces does the class support ? */
-		ifdescr = (struct OOP_InterfaceDescr *)tag->ti_Data;
-		break;
-		    
-	    case aoMeta_ID:
-		/* The new class' ID */
-		clid = (STRPTR)tag->ti_Data;
-	        D(bug("Got classID: %s\n", clid));
-		break;
-		    
-	    case aoMeta_SuperPtr:
-	        D(bug("Got superPtr\n"));
-		/* If the super class is private, than we must have
-		   a pointer to it.
-		*/
-		superptr = (struct metadata *)tag->ti_Data;
-		break;
-		
-	    case aoMeta_InstSize:
-	        /* Instance data size for the new class */
-	        instsize = (ULONG)tag->ti_Data;
-		break;
-		
-	    }
-	    
-	}
+    NAME
+	moRoot_New
 	
-    }
-    
-    /* The user must supply instance size */
-    if (instsize == (ULONG)-1)
-    	ReturnPtr ("Meta::New, no instsize", OOP_Object *, NULL);
-    
-    /* The new class must have interfaces */
-    if (!ifdescr)
-    	ReturnPtr ("Meta::New, no ifdescr", OOP_Object *, NULL);
+    SYNOPSIS
+	See OOP_NewObject() doc.
 
-    /* The new class must have a superclass */
-    if (!superptr)
-    {
-	if (superid)
-	{
-	    superptr = (struct metadata *)FindName((struct List *)&(GetOBase(OOPBase)->ob_ClassList), superid);
-	    if (!superptr)
-	    	ReturnPtr ("Meta::New, no superptr/id", OOP_Object *, NULL);
-	}
-    }
-    
-    /* We are sure we have enough args, and can let rootclass alloc the instance data */
-    o = (OOP_Object *)OOP_DoSuperMethod((OOP_Class *)cl, o, (OOP_Msg)msg);
-    if (o)
-    {
+    FUNCTION
+	Creates a new object of some class. Class users should use OOP_NewObject() to
+	create an object.
 
-	ULONG dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+*****************************************************************************************/
 
-        D(bug("Instance allocated\n"));
+/*****************************************************************************************
+
+    NAME
+	moRoot_Dispose
 	
-	data = OOP_INST_DATA(cl, o);
+    SYNOPSIS
+	See OOP_DisposeObject() doc.
+
+    FUNCTION
+	Used internally to dispose of an object previously
+	created using the moRoot_New method.
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	moRoot_Set
+
+    SYNOPSIS
+	OOP_SetAttrs() (OOP_Object *object, struct TagItem *attrs);
+
+    FUNCTION
+	Set an attribute of an object.
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	moRoot_Get
+
+    SYNOPSIS
+	OOP_GetAttr(OOP_Object *object, ULONG attrID, IPTR *storage);
+
+    FUNCTION
+	Get the value for an object attribute.
+	The attribute value will be stored in *storage.
+
+    EXAMPLE
+	..
+	ULONG num_members;
 	
-	D(bug("o=%p,data=%p\n", o, data));
-	D(bug("instoffset: %ld\n", cl->InstOffset));
-	
-	/* Clear instdata, so we in Dispose() can see what's been allocated */
-	memset(data, 0, sizeof (struct metadata));
-	
-	D(bug("superptr=%p\n", superptr));
+	OOP_GetAttr(list, aList_NumMembers, &num_members);
 
-    	data->public.OOPBasePtr = (struct IntOOPBase *)OOPBase;
-
-	
-	/* Let subclass create an initialize dispatch tables for the new class object*/
-	if (meta_allocdisptabs(o, (OOP_Class *)superptr, ifdescr))
-	{
-	    data->disptabs_inited = TRUE;
-	
-	    /* Copy the class' ID */
-	    D(bug("Allocating class ID\n"));
-	    data->public.ClassNode.ln_Name = AllocVec(strlen (clid) + 1, MEMF_ANY);
-	    if (data->public.ClassNode.ln_Name)
-	    {
-	    	D(bug("class ID allocated\n"));
-	    
-	    	/* Initialize class fields */
-		D(bug("Setting instoffset\n"));
-		/* Instoffset */
-		if (superptr)
-	    	    data->public.InstOffset = superptr->public.InstOffset + superptr->instsize;
-		else
-		    data->public.InstOffset = 0UL;
-		D(bug("Setting other stuff\n"));
-				
-	    	data->subclasscount 	= 0UL;
-	    	data->objectcount	= 0UL;
-	    	data->public.superclass	= (OOP_Class *)superptr;
-		data->instsize 	= instsize;
-		
-		D(bug("Copying class ID\n"));
-		/* Copy class ID */
-		strcpy(data->public.ClassNode.ln_Name, clid);
-		
-
-    	    	ReturnPtr ("Meta::New", OOP_Object *, o);
-	    }
-	}
-
-	D(bug("Failed to allocate dispatch tables\n"));
-
-	OOP_CoerceMethod((OOP_Class *)cl, o, (OOP_Msg)&dispose_mid);
-    }
-    
-    ReturnPtr ("Meta::New", OOP_Object *, NULL);   
-    
-}
-
-/**************************
-**  BaseMeta::Dispose()  **
-**************************/
-static VOID basemeta_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    struct metadata *data = OOP_INST_DATA(cl, o);
-    IPTR iterval = 0UL;
-    STRPTR interface_id = NULL;
-    ULONG num_methods = 0UL;
-    
-    if (data->public.ClassNode.ln_Name)
-    	FreeVec(data->public.ClassNode.ln_Name);
-	
-    /* Release interfaces from global interface table */
-    while (meta_iterateifs(o, &iterval, &interface_id, &num_methods))
-    {
-    	/* Only release the interfaces that were new for the class */
-	if (!meta_getifinfo((OOP_Object *)MD(o)->public.superclass, interface_id, &num_methods))
-    	     release_idbucket(interface_id, GetOBase(OOPBase));
-    }
-    
-
-    if (data->disptabs_inited)
-    	meta_freedisptabs(o);
-
-    OOP_DoSuperMethod(cl, o, msg);
-    
-    return;
-}
-
-
-/****************************
-**  BaseMeta::getifinfo()  **
-****************************/
-static struct IFMethod *basemeta_getifinfo(OOP_Class *cl, OOP_Object *o, struct P_meta_getifinfo *msg)
-{
-    struct IFMethod *mtab = NULL;
-    EnterFunc(bug("BaseMeta::hasinterface(cl=%p, o=%p, iid=%s\n",
-    	cl, o, msg->interface_id));
-	
-    /* The object passed might be one of two classes: Root class or basemetaclass */
-    if (0 == strcmp(msg->interface_id, IID_Root))
-    {
-        /* Both classes support the root interface */
-	D(bug("Root interface\n"));
-	*(msg->num_methods_ptr) = num_Root_Methods;
-	if ( ((OOP_Class *)o) == BASEMETAPTR)
-	{
-	    mtab = OOPBase->ob_BaseMetaObject.inst.rootif;
-	}
-	else
-	{
-	    mtab = OOPBase->ob_RootClassObject.inst.rootif;
-	}
-
-    }
-    else if (0 == strcmp(msg->interface_id, IID_Meta))
-    {
-    	D(bug("Meta interface. BASEMETAPTR: %p\n", BASEMETAPTR));
-    	if ( ((OOP_Class *)o) == BASEMETAPTR )
-	{
-	
-	    /* Only BaseMeta has Meta interface */
-	    mtab = OOPBase->ob_BaseMetaObject.inst.metaif;
-	    *(msg->num_methods_ptr) = NUMTOTAL_M_Meta;
-	}
-	
-    }
-    ReturnPtr ("BaseMeta::hasinterface", struct IFMethod *, mtab);
-    
-}
-
-/*****************************
-**  BaseMeta::iterateifs()  **
-*****************************/
-static struct IFMethod *basemeta_iterateifs(
-			OOP_Class *cl, OOP_Object *o, struct P_meta_iterateifs *msg)
-{
-    struct IFMethod *current_if = NULL;
-    
-    EnterFunc(bug("BaseMeta::iterateifs(o=%p)\n", o));
-    
-    /* As in has_interface() the object here can only be the basemetaclass, or rootclass */
-    if (((OOP_Class *)o) == ROOTCLASSPTR)
-    {
-    	/* Rootclass have only one interface */
-        if ( *(msg->iterval_ptr) )
-	{
-	    current_if = NULL;
-	}
-	else
-	{
-	    current_if = OOPBase->ob_RootClassObject.inst.rootif;
-	    *(msg->num_methods_ptr)	= num_Root_Methods;
-	    *(msg->interface_id_ptr)	= IID_Root;
-	    *(msg->iterval_ptr) = 1UL; /* We're through iterating */
-	}
-    }
-    else if (((OOP_Class *)o) == BASEMETAPTR)
-    {
-    	struct basemeta_inst *inst = (struct basemeta_inst *)o;
-    	switch (*(msg->iterval_ptr))
-	{
-	    case 0:
-	    	current_if  = inst->rootif;
-		*(msg->num_methods_ptr)  = num_Root_Methods;
-		*(msg->interface_id_ptr) = IID_Root;
-		break;
-	    
-	    case 1:
-	    	current_if  = inst->metaif;
-		*(msg->num_methods_ptr)  = NUMTOTAL_M_Meta;
-		*(msg->interface_id_ptr) = IID_Meta;
-		break;
-	    
-	    default:
-  	    	current_if = NULL;
-		break;
-		
-	}
-	(*(msg->iterval_ptr)) ++;
-
-    }
-    else
-    {
-    	/* Should never get here, unless someone has created an instance
-	   of the BaseMeta class (which is meaningless)
-	*/
-	current_if = NULL;
-    }
-#if DEBUG
-    if (current_if)
-    {
-    	D(bug("Current IF: %s, num_methods %ld\n",
-    		*(msg->interface_id_ptr), *(msg->num_methods_ptr)));
-    }
-#endif
-    ReturnPtr ("BaseMeta::iterate_ifs", struct IFMethod *, current_if);
-    
-}			
-
-#undef OOPBase
-
-/*******************************
-**  BaseMeta DoSuperMethod()  **
-*******************************/
-/* cl->USerData passed to DoSuperMethodA might be
-   a subclass of rootclass, which does not have
-   the OOPBase in cl->UserData, so instead we use the
-   meta's UserData (IFMeta or HIDDMeta class
-*/   
-   
-#define OOPBase ((struct IntOOPBase *)cl->OOPBasePtr)
-
-static IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    ULONG method_offset = *msg & METHOD_MASK;
-    struct IFMethod *ifm;
-    
-    EnterFunc(bug("basemeta_dosupermethod(cl=%p, o=%p, msg=%p)\n",
-    	cl, o, msg));
-
-    if (MD(cl)->public.superclass == ROOTCLASSPTR)
-    {
-    	ifm = &(OOPBase->ob_RootClassObject.inst.rootif[*msg]);
-    }
-    else /* superclass is the BaseMeta class */
-    {
-    	switch (*msg >> NUM_METHOD_BITS)
-    	{
-    
-        case 0:
-	    ifm = &(OOPBase->ob_BaseMetaObject.inst.rootif[method_offset]);
-	    break;
-	    
-	case 1:
-	    ifm = &(OOPBase->ob_BaseMetaObject.inst.metaif[method_offset]);
-	    break;
-	    
-	
-	default:
-	    D(bug("Error: basemeta_dosupermethod got method call to unknown interface %d\n",
-	    	*msg >> NUM_METHOD_BITS));
-	    ifm = NULL;
-	    break;
-    	}
-    }
-    ReturnPtr ("basemeta_dosupermethod", IPTR, ifm->MethodFunc(ifm->mClass, o, msg));
-}
-
-#undef OOPBase
-
-#define OOPBase ((struct IntOOPBase *)(cl->OOPBasePtr))
-/*******************************
-**  BaseMeta CoerceMethod()  **
-*******************************/
-static IPTR basemeta_coercemethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    ULONG method_offset = *msg & METHOD_MASK;
-    struct IFMethod *ifm;
-    
-    EnterFunc(bug("basemeta_coercemethod(cl=%p, o=%p, msg=%p)\n",
-    	cl, o, msg));
-	
-    
-    switch (*msg >> NUM_METHOD_BITS)
-    {
-    
-        case 0:
-	    ifm = &(OOPBase->ob_BaseMetaObject.inst.rootif[method_offset]);
-	    break;
-	    
-	case 1:
-	    ifm = &(OOPBase->ob_BaseMetaObject.inst.metaif[method_offset]);
-	    break;
-	    
-	
-	default:
-	    D(bug("Error: basemeta_coercemethod got method call to unknown interface %d\n",
-	    	*msg >> NUM_METHOD_BITS));
-	    ifm = NULL;
-	    break;
-    }
-    ReturnPtr ("basemeta_coercemethod", IPTR, ifm->MethodFunc(ifm->mClass, o, msg));
-}
-
-/************************
-**  BaseMeta DoMethod  **
-************************/
-
-static IPTR basemeta_domethod(OOP_Object *o, OOP_Msg msg)
-{
-    return basemeta_coercemethod(OOP_OCLASS(o), o, msg);
-}
-#undef OOPBase
-
-/**********************
-**  init_basemeta()  **
-**********************/
-
-BOOL init_basemeta(struct IntOOPBase *OOPBase)
-{
-    struct basemetaobject *bmo;
-    BOOL success;
-    ULONG mbase = 0;
-    
-    EnterFunc(bug("init_basemeta()\n"));
-    
-    bmo = &(OOPBase->ob_BaseMetaObject);
-    bmo->oclass = BASEMETAPTR;
-    
-    bmo->inst.data.public.ClassNode.ln_Name = "private base metaclass";
-    bmo->inst.data.public.OOPBasePtr	= OOPBase;
-    bmo->inst.data.public.InstOffset 	= 0UL;
-    bmo->inst.data.public.UserData 	= OOPBase;
-    bmo->inst.data.public.cl_DoSuperMethod = basemeta_dosupermethod;
-    bmo->inst.data.public.cl_CoerceMethod 	= basemeta_coercemethod;
-    bmo->inst.data.public.cl_DoMethod 	= basemeta_domethod;
-    	
-    bmo->inst.data.public.superclass  	= ROOTCLASSPTR;
-    bmo->inst.data.subclasscount 	= 0UL;
-    bmo->inst.data.objectcount 		= 0UL;
-    bmo->inst.data.instsize		= sizeof (struct metadata);
-    bmo->inst.data.numinterfaces	= NUM_BASEMETA_IFS;
-    
-    /* Initialize interface table */
-    bmo->inst.iftable[0] = bmo->inst.rootif;
-    bmo->inst.iftable[1] = bmo->inst.metaif;
-    
-    /* initialize interfaces */
-    bmo->inst.rootif[moRoot_New].MethodFunc     = (IPTR (*)())basemeta_new;
-    bmo->inst.rootif[moRoot_Dispose].MethodFunc = (IPTR (*)())basemeta_dispose;
-
-    bmo->inst.rootif[moRoot_New].mClass     	= BASEMETAPTR;
-    bmo->inst.rootif[moRoot_Dispose].mClass  = BASEMETAPTR;
-    
-    /* Initialize meta interface */
-    bmo->inst.metaif[MO_meta_allocdisptabs].MethodFunc 	= (IPTR (*)())NULL;
-    bmo->inst.metaif[MO_meta_freedisptabs].MethodFunc		= (IPTR (*)())NULL;
-    bmo->inst.metaif[MO_meta_getifinfo].MethodFunc		= (IPTR (*)())basemeta_getifinfo;
-    bmo->inst.metaif[MO_meta_iterateifs].MethodFunc 		= (IPTR (*)())basemeta_iterateifs;
-    
-    bmo->inst.metaif[MO_meta_allocdisptabs].mClass 	= BASEMETAPTR;
-    bmo->inst.metaif[MO_meta_freedisptabs].mClass 	= BASEMETAPTR;
-    bmo->inst.metaif[MO_meta_getifinfo].mClass 		= BASEMETAPTR;
-    bmo->inst.metaif[MO_meta_iterateifs].mClass 	= BASEMETAPTR;
-    
-    /* Meta interface ID gets initialized to 1 */
-    success = init_mi_methodbase(IID_Meta, &mbase, OOPBase);
-    
-    ReturnBool ("init_basemeta", success);
-    
-}
-
-/* Root class is the base class of all classes.
-   (Well, one can create new baseclasses, but all classes must
-   implement the root interface).
-*/    
+*****************************************************************************************/
 
 /************************
 **  Rootclass methods  **

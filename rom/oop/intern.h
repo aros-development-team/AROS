@@ -2,7 +2,7 @@
 #define INTERN_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -203,6 +203,8 @@ struct metadata
     ULONG numinterfaces;
     
 };
+
+#define MD(x) ((struct metadata *)x)
 
 #define NUM_BASEMETA_IFS 2
 struct basemetaobject /* Real instance data of the base meta class */

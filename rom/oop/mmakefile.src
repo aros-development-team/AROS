@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES	  :=	hash hiddmetaclass metaclass   \
+FILES	  :=	hash hiddmetaclass metaclass basemetaclass  \
 		privatestubs rootclass support 
 	
 FUNCS :=    addclass		\
