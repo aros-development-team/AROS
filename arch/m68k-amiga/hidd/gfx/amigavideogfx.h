@@ -99,6 +99,9 @@ struct amigavideo_staticdata
 
 	UBYTE initialized;
 	UBYTE bploffsets[8];
+
+    void (*acb)(void *data, void *bm);
+    APTR acbdata;
 };
 
 struct amigavideoclbase

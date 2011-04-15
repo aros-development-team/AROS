@@ -58,6 +58,9 @@ struct uaegfx_staticdata
 
 	BOOL initialized;
 	BOOL superforward; 
+
+    void (*acb)(void *data, void *bm);
+    APTR acbdata;
 };
 
 struct UAEGFXclbase

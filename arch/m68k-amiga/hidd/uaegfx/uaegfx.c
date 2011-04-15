@@ -518,7 +518,6 @@ VOID UAEGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
-#if 0
     struct uaegfx_staticdata *csd = CSD(cl);
     struct gfx_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  	    *tag;
@@ -528,12 +527,21 @@ VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     while((tag = NextTagItem(&tstate)))
     {
     	ULONG idx;
-	bug("UAEGFXCl__Root__Set %x\n", tag->ti_Tag);
+	D(bug("UAEGFXCl__Root__Set %x\n", tag->ti_Tag));
     	if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
     	    D(bug("->%d\n", idx));
+	    switch(idx)
+	    {
+	    case aoHidd_Gfx_ActiveCallBack:
+	        csd->acb = (void *)tag->ti_Data;
+		break;
+
+	    case aoHidd_Gfx_ActiveCallBackData:
+	        csd->acbdata = (APTR)tag->ti_Data;
+		break;
+	    }
     	}
     }
-#endif
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
 
@@ -560,6 +568,10 @@ ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHi
     	/* we are topmost screen -> show our display */
     	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
         OOP_SetAttrs(bm, (struct TagItem *)tags);
+
+	if (csd->acb)
+	    csd->acb(csd->acbdata, NULL);
+
     } else if (bm) {
     	/* we are not topmost -> turn off our display */
    	IPTR tags[] = {aHidd_BitMap_Visible, FALSE, TAG_DONE};
