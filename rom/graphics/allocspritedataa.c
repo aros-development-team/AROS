@@ -170,19 +170,19 @@ bug("[AllocSpriteData] Bitmap contents:\n");			\
         }
 	
 	if (have_OldDataFormat) {
-	    UWORD *s = (UWORD *)bitmap + 2;
-	    UWORD *p, *q;
-	    UWORD mask;
-	    int k;
-
-	    InitBitMap(&old_bitmap, 2, 16, height);
-
 	    /* A zero-height sprite is evidently legal on AOS */
-	    planes_size = height * sizeof(UWORD) * 2;
-	    if (planes_size) {
-		planes = AllocMem(planes_size, MEMF_CHIP);
-		if (!planes)
-		    return NULL;
+	    UWORD height2 = height == 0 ? 1 : height;
+	    UWORD *s = (UWORD *)bitmap + 2;
+	    UWORD k;
+
+	    InitBitMap(&old_bitmap, 2, 16, height2);
+	    planes_size = height2 * sizeof(UWORD) * 2;
+	    planes = AllocMem(planes_size, MEMF_CLEAR | MEMF_CHIP);
+	    if (!planes)
+		return NULL;
+	    if (height) {
+	    	UWORD *p, *q;
+	    	UWORD mask;
 		p = planes;
 		q = &planes[height];
 		mask = ~((1 << (16 - width)) - 1);
@@ -193,6 +193,8 @@ bug("[AllocSpriteData] Bitmap contents:\n");			\
 		    *p++ = AROS_WORD2BE(*s++ & mask);
 		    *q++ = AROS_WORD2BE(*s++ & mask);
 		}
+	    } else {
+	    	height = height2;
 	    }
 	    bsa.bsa_SrcBitMap = &old_bitmap;
 	    bsa.bsa_SrcWidth = 16;
