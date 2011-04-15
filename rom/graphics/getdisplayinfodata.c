@@ -31,7 +31,6 @@ static const ULONG size_checks[] =
 #define KNOWN_IDS 4
 
 static ULONG check_sizes(ULONG tagID, ULONG size);
-static ULONG compute_numbits(HIDDT_Pixel mask);
 
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
 #define DTAG_TO_IDX(dtag)   (((dtag) & 0x7FFFF000) >> 12)
@@ -153,7 +152,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	{
 	    struct DisplayInfo *di;
 	    IPTR redmask, greenmask, bluemask;
-	    IPTR pixclk = 0;
+	    IPTR val = 0;
 
 	    HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
 
@@ -163,36 +162,69 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->NotAvailable = FALSE;
 
 	    /*
-	     * Set the propertyflags,
-	     * Note that we enforce some flags because we emulate these features by software
-	     * DIPF_IS_FOREIGN is actually set only by Picasso96 and only for modes that are
-	     * not graphics.library compatible. Many m68k RTG games rely on this flag not being
-	     * set.
+	     * Set the propertyflags. We always set DIPF_IS_SPRITES because we always emulate
+	     * one sprite for mouse pointer.
 	     */
-	    di->PropertyFlags = DIPF_IS_WB | DIPF_IS_SPRITES | DIPF_IS_DBUFFER | HIDDProps.DisplayInfoFlags;
+	    di->PropertyFlags = DIPF_IS_SPRITES | HIDDProps.DisplayInfoFlags;
 
-	    /* Too many colors to count here. This field is really obsolete */
-	    di->PaletteRange = 65535;
+	    /*
+	     * Some more tweaks.
+	     * All non-planar modes are considered Workbench-compatible. This is done
+	     * for compatibility with existing RTG drivers which never set this flag themselves.
+	     * This can be considered historical, in initial API design HIDD_Gfx_ModeProperties()
+	     * did not exist at all and this flag was simply always set.
+	     * In fact all modes can be considered Workbench-compatible. This flag is
+	     * known to be used by original AmigaOS screenmode prefs program to filter out
+	     * some modes. This program has many replacement which do not obey this flag,
+	     * enabling opening Workbench on HAM screen for example.
+	     * But we delegate setting this flag to the driver for planar modes. We do it
+	     * for 100% compatibility of chipset driver. What if some m68k program has its own
+	     * weird assumptions about this bit ?
+	     * One more thing to note: we don't set DIPF_IS_FOREIGN bit. It is actually used
+	     * only by Picasso96 and only for modes that are not graphics.library compatible.
+	     * Many m68k RTG games rely on this flag not being set.
+	     */
+	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &val);
+	    if (val != vHidd_StdPixFmt_Plane)
+		di->PropertyFlags |= DIPF_IS_WB;
 
 	    /* Compute red green and blue bits */
 	    OOP_GetAttr(pf, aHidd_PixFmt_RedMask,   &redmask);
 	    OOP_GetAttr(pf, aHidd_PixFmt_GreenMask, &greenmask);
 	    OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,  &bluemask);
-	    
-	    di->RedBits	  = compute_numbits(redmask);
-	    di->GreenBits = compute_numbits(greenmask);
-	    di->BlueBits  = compute_numbits(bluemask);
 
-	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &pixclk);
+	    /* Use gcc builtin function */
+	    di->RedBits	  = __builtin_popcount(redmask);
+	    di->GreenBits = __builtin_popcount(greenmask);
+	    di->BlueBits  = __builtin_popcount(bluemask);
 
-	    /* FIXME: don't know what to put here */
+	    /*
+	     * If number of colors is too large, PaletteRange is set to 65535.
+	     * This is the behavior of original AmigaOS(tm).
+	     */
+	    val = di->RedBits * di->GreenBits * di->BlueBits;
+	    di->PaletteRange = (val > 65535) ? 65535 : val;
+
+	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &val);
+
+	    /*
+	     * FIXME: don't know what to put here
+	     * These seems to be some made-up units reflecting pixel ratio.
+	     * In original AmigaOS(tm) they are hardcoded in monitor driver for
+	     * every mode.
+	     * They have something to do with ratioh and ratiov fields in struct MonitorSpec.
+	     */
 	    di->Resolution.x = 22;
 	    di->Resolution.y = 22;
 
-	    if (pixclk)
-	        di->PixelSpeed = 1000000000 / pixclk;
+	    if (val)
+	        di->PixelSpeed = 1000000000 / val;
 
-	    /* We can emulate one sprite via software, because it's necessary for mouse pointer. */
+	    /*
+	     * If the driver says it does not support sprites, we return one sprite.
+	     * We emulate it by software in such a case because it's necessary for
+	     * the mouse pointer.
+	     */
 	    di->NumStdSprites = (HIDDProps.DisplayInfoFlags & DIPF_IS_SPRITES) ? HIDDProps.NumHWSprites : 1;
 
 	    /* At the moment sprites always have the same resolution as display */
@@ -233,7 +265,8 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->VideoOScan	= di->Nominal;
 	    di->TxtOScan	= di->Nominal;
 	    di->StdOScan	= di->Nominal;
-/* 
+/*
+ * FIXME: our graphics subsystem does not have overscan API.
 	    di->MaxOScan.MinX	= di->Nominal.MinX;
 	    di->MaxOScan.MinY	= di->Nominal.MinY;
 	    di->MaxOScan.MaxX	= di->Nominal.MaxX;
@@ -412,19 +445,4 @@ static ULONG check_sizes(ULONG tagID, ULONG size)
     }
 
     return size_checks[idx];
-}
-
-/****************************************************************************************/
-
-static ULONG compute_numbits(HIDDT_Pixel mask)
-{
-    ULONG i;
-    ULONG numbits = 0;
-    
-    for (i = 0; i <= 31; i ++)
-    {
-    	if (mask & (1L << i)) numbits ++;
-    }
-    
-    return numbits;
 }
