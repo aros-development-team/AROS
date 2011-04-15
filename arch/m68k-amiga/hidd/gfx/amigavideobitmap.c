@@ -380,6 +380,71 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+VOID AmigaVideoBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
+				   struct pHidd_BitMap_PutImageLUT *msg)
+{
+    WORD    	    	    x, y, d;
+    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
+    UBYTE   	    	    **plane;
+    ULONG   	    	    planeoffset;
+    struct amigabm_data   *data;  
+    
+    data = OOP_INST_DATA(cl, o);
+    
+    planeoffset = msg->y * data->bytesperrow + msg->x / 8;
+    
+    for(y = 0; y < msg->height; y++)
+    {
+    	UBYTE *src = pixarray;
+	
+    	plane = data->planes;
+	
+    	for(d = 0; d < data->depth; d++)
+	{
+	    ULONG dmask = 1L << d;
+	    ULONG pmask = 0x80 >> (msg->x & 7);
+	    UBYTE *pl = *plane;
+	    
+	    if (pl == (UBYTE *)-1) continue;
+	    if (pl == NULL) continue;
+	    
+	    pl += planeoffset;
+
+    	    for(x = 0; x < msg->width; x++)
+	    {
+	    	if (src[x] & dmask)
+		{
+		    *pl |= pmask;
+		}
+		else
+		{
+		    *pl &= ~pmask;
+		}
+		
+		if (pmask == 0x1)
+		{
+		    pmask = 0x80;
+		    pl++;
+		}
+		else
+		{
+		    pmask >>= 1;
+		}
+		
+	    } /* for(x = 0; x < msg->width; x++) */
+	    
+	    plane++;
+	    
+	} /* for(d = 0; d < data->depth; d++) */
+	
+	pixarray += msg->modulo;
+	planeoffset += data->bytesperrow;
+	
+    } /* for(y = 0; y < msg->height; y++) */
+}
+
+/****************************************************************************************/
+
 VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutImage *msg)
 {
