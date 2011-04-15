@@ -246,7 +246,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
 
     copbpl = c2d->copper2_bpl;
     for (i = 0; i < bm->depth; i++) {
-	ULONG pptr = (ULONG)(bm->planes[i]);
+	ULONG pptr = (ULONG)(bm->planes[data->bploffsets[i]]);
 	if (data->interlace && odd)
 	    pptr += bm->bytesperrow;
 	pptr -= (bm->leftedge >> (8 << data->fmode_bpl)) & ~((2 << data->fmode_bpl) - 1);
@@ -318,7 +318,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
 
     c2d->copper2_bpl = c;
     for (i = 0; i < bm->depth; i++) {
-	pptr = (ULONG)(bm->planes[i]);
+	pptr = (ULONG)(bm->planes[data->bploffsets[i]]);
 	if (lace)
 	    pptr += bm->bytesperrow;
 	*c++ = 0xe0 + i * 4;
@@ -331,9 +331,9 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     // need to update sprite colors
     if (data->use_colors < 20)
     	data->use_colors = 20;
-    if (data->use_colors > 32 && (data->mode & EXTRAHALFBRITE_KEY))
+    if (data->use_colors > 32 && (data->modeid & EXTRAHALFBRITE_KEY))
     	data->use_colors = 32;
-    if (data->mode & HAM_KEY) {
+    if (data->modeid & HAM_KEY) {
     	if (bm->depth <= 6)
     	    data->use_colors = 20;
     	else
@@ -356,7 +356,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     *c++ = 0x010a;
     *c++ = 0x0000 + (data->interlace ? bm->bytesperrow : 0) + data->modulo;
     *c++ = 0x0104;
-    *c++ = 0x0024 | ((data->aga && !(data->mode & EXTRAHALFBRITE_KEY)) ? 0x0200 : 0);
+    *c++ = 0x0024 | ((data->aga && !(data->modeid & EXTRAHALFBRITE_KEY)) ? 0x0200 : 0);
 
     c2d->copper2_fmode = NULL;
     if (data->aga) {
@@ -446,6 +446,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     UWORD ddfstrt, ddfstop;
     UBYTE fetchunit, fetchstart, maxplanes;
     UWORD bplwidth;
+    UBYTE i;
     
     resetmode(data);
 
@@ -471,13 +472,22 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     ddfstop = ddfstrt + ((bplwidth + ((1 << fetchunit) - 1) - 2 * (1 << fetchunit)) & ~((1 << fetchunit) - 1));
     if (ddfstop >= 0xd4)
 	ddfstop = 0xd4;
-    data->modulo = (ddfstop + 2 * (1 << fetchunit) - ((1 << maxplanes) - 1) - ddfstrt);
+    data->modulo = (ddfstop + 2 * (1 << fetchunit) - ddfstrt);
     data->modulo = bplwidth - data->modulo;
     data->modulo /= 2;
     data->modulo &= ~((2 << data->fmode_bpl) - 1);
     ddfstrt -= (1 << maxplanes);
     data->ddfstrt = ddfstrt;
     data->ddfstop = ddfstop;
+
+    for (i = 0; i < 8; i++)
+    	data->bploffsets[i] = i;
+    if ((data->modeid & HAM_KEY) && bm->depth > 6) {
+    	data->bploffsets[0] = 6;
+    	data->bploffsets[1] = 7;
+    	for (i = 0; i < 6; i++)
+    	    data->bploffsets[i + 2] = i;
+    }
 
     data->copper2.copper2 = AllocVec(get_copper_list_length(data->aga, bm->depth), MEMF_CLEAR | MEMF_CHIP);
     if (data->interlace)
