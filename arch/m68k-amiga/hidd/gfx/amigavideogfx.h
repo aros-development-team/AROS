@@ -37,6 +37,7 @@ struct NativeChipsetMode
 	UWORD width, height, depth;
 	OOP_Object *pf;
 	OOP_Object *sync;
+	UBYTE special;
 };
 
 struct amigavideo_staticdata
@@ -97,6 +98,7 @@ struct amigavideo_staticdata
 	BOOL cursorvisible;
 
 	UBYTE initialized;
+	UBYTE bploffsets[8];
 };
 
 struct amigavideoclbase
