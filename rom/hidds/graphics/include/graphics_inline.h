@@ -32,6 +32,12 @@
 
 #define OOPBase ((struct Library *)OOP_OCLASS(obj)->OOPBasePtr)
 
+/* Compatibility hack. In C++ template is a reserved keyword, so we
+   can't use it as variable name */
+#ifndef __cplusplus
+#define template Template
+#endif
+
 /***************************************************************/
 
 #ifndef HiddGfxBase
@@ -837,7 +843,7 @@ static inline VOID     HIDD_BM_PutAlphaImage  (OOP_Object *obj
 
 static inline VOID     HIDD_BM_PutTemplate  (OOP_Object *obj
 	, OOP_Object *gc
-	, UBYTE *template
+	, UBYTE *Template
 	, ULONG modulo
 	, WORD srcx
 	, WORD x, WORD y
@@ -851,7 +857,7 @@ static inline VOID     HIDD_BM_PutTemplate  (OOP_Object *obj
         
     p.mID    	= mid;
     p.gc     	= gc;
-    p.template  = template;
+    p.Template     = Template;
     p.modulo 	= modulo;
     p.srcx   	= srcx;
     p.x      	= x;
@@ -1637,7 +1643,7 @@ static inline VOID	HIDD_BM_GetMem32Image24(OOP_Object *obj,
 
 static inline VOID	HIDD_BM_PutMemTemplate8	(OOP_Object *obj,
     	    	    	    	 OOP_Object *gc,
-				 UBYTE *template,
+				 UBYTE *Template,
 				 ULONG modulo,
 				 WORD srcx,
 				 APTR dst,
@@ -1655,7 +1661,7 @@ static inline VOID	HIDD_BM_PutMemTemplate8	(OOP_Object *obj,
     
     p.mID = mid;
     p.gc = gc;
-    p.template = template;
+    p.Template = Template;
     p.modulo = modulo;
     p.srcx = srcx;
     p.dst = dst;
@@ -1671,7 +1677,7 @@ static inline VOID	HIDD_BM_PutMemTemplate8	(OOP_Object *obj,
 
 static inline VOID	HIDD_BM_PutMemTemplate16(OOP_Object *obj,
     	    	    	    	 OOP_Object *gc,
-				 UBYTE *template,
+				 UBYTE *Template,
 				 ULONG modulo,
 				 WORD srcx,
 				 APTR dst,
@@ -1689,7 +1695,7 @@ static inline VOID	HIDD_BM_PutMemTemplate16(OOP_Object *obj,
     
     p.mID = mid;
     p.gc = gc;
-    p.template = template;
+    p.Template = Template;
     p.modulo = modulo;
     p.srcx = srcx;
     p.dst = dst;
@@ -1705,7 +1711,7 @@ static inline VOID	HIDD_BM_PutMemTemplate16(OOP_Object *obj,
 
 static inline VOID	HIDD_BM_PutMemTemplate24(OOP_Object *obj,
     	    	    	    	 OOP_Object *gc,
-				 UBYTE *template,
+				 UBYTE *Template,
 				 ULONG modulo,
 				 WORD srcx,
 				 APTR dst,
@@ -1723,7 +1729,7 @@ static inline VOID	HIDD_BM_PutMemTemplate24(OOP_Object *obj,
     
     p.mID = mid;
     p.gc = gc;
-    p.template = template;
+    p.Template = Template;
     p.modulo = modulo;
     p.srcx = srcx;
     p.dst = dst;
@@ -1739,7 +1745,7 @@ static inline VOID	HIDD_BM_PutMemTemplate24(OOP_Object *obj,
 
 static inline VOID	HIDD_BM_PutMemTemplate32(OOP_Object *obj,
     	    	    	    	 OOP_Object *gc,
-				 UBYTE *template,
+				 UBYTE *Template,
 				 ULONG modulo,
 				 WORD srcx,
 				 APTR dst,
@@ -1757,7 +1763,7 @@ static inline VOID	HIDD_BM_PutMemTemplate32(OOP_Object *obj,
     
     p.mID = mid;
     p.gc = gc;
-    p.template = template;
+    p.Template = Template;
     p.modulo = modulo;
     p.srcx = srcx;
     p.dst = dst;
