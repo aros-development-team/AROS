@@ -78,10 +78,11 @@ static AROS_ENTRY(LONG, SetPatch_noop,
 {
     AROS_USERFUNC_INIT
 
-    APTR DOSBase = OpenLibrary("dos.library", 0);
+    APTR DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
     if (DOSBase) {
-    	if (IsInteractive(Output())) {
+    	struct CommandLineInterface *cli = Cli();
+    	if (cli && cli->cli_Interactive) {
     	    Printf("SetPatch is a reserved program name.\n");
     	}
     	CloseLibrary(DOSBase);
