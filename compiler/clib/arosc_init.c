@@ -264,7 +264,6 @@ int arosc_internalinit(void)
             */
             assert(oldprivdata->acpd_usercount == 1);
             oldprivdata->acpd_flags &= ~KEEP_OLD_ACPD;
-            oldprivdata->acpd_flags |= ACPD_FROM_PARENT;
             oldprivdata->acpd_process_returnaddr = me->pr_ReturnAddr;
         }
         else
@@ -336,14 +335,7 @@ int arosc_internalexit(void)
 
     D(bug("arosc_internalexit(): acpd_usercount = %d\n", privdata->acpd_usercount));
 
-    /* If ACPD_FROM_PARENT is set, the parent has done an OpenLibrary() and
-       will do a final CloseLibrary(); but the child should call the EXIT
-       functions when the last CloseLibrary is called there; otherwise
-       atexit functions will be called after client has finished
-    */
-    if (privdata->acpd_usercount ==
-           ((privdata->acpd_flags & ACPD_FROM_PARENT) ? 1 : 0)
-    )
+    if (privdata->acpd_usercount == 0)
     {
         set_call_funcs(SETNAME(EXIT), -1, 0);
     }
