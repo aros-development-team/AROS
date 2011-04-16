@@ -31,6 +31,7 @@ static const ULONG size_checks[] =
 #define KNOWN_IDS 4
 
 static ULONG check_sizes(ULONG tagID, ULONG size);
+static UBYTE popcount(IPTR x);
 
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
 #define DTAG_TO_IDX(dtag)   (((dtag) & 0x7FFFF000) >> 12)
@@ -194,10 +195,17 @@ static ULONG check_sizes(ULONG tagID, ULONG size);
 	    OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,  &bluemask);
 
 	    /* Use gcc builtin function */
-	    di->RedBits	  = __builtin_popcount(redmask);
+	    /* weissms: do not use, can cause undefined symbol _GLOBAL_OFFSET_TABLE_
+	     * should work if we use a real cross compiler with static libgcc
+	    di->RedBits   = __builtin_popcount(redmask);
 	    di->GreenBits = __builtin_popcount(greenmask);
 	    di->BlueBits  = __builtin_popcount(bluemask);
+	    */
 
+	    di->RedBits   = popcount(redmask);
+	    di->GreenBits = popcount(greenmask);
+	    di->BlueBits  = popcount(bluemask);
+	    
 	    /*
 	     * If number of colors is too large, PaletteRange is set to 65535.
 	     * This is the behavior of original AmigaOS(tm).
@@ -447,4 +455,12 @@ static ULONG check_sizes(ULONG tagID, ULONG size)
     }
 
     return size_checks[idx];
+}
+
+/* taken from http://en.wikipedia.org/wiki/Hamming_weight */
+static UBYTE popcount(IPTR x) {
+    UBYTE count;
+    for (count=0; x; count++)
+        x &= x-1;
+    return count;
 }
