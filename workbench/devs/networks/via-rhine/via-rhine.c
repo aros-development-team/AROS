@@ -124,8 +124,8 @@ static int mdio_read(struct net_device *dev, int phy_id, int location)
 
 static void viarhinenic_start_rx(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
-    UBYTE *base = get_hwbase(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: viarhinenic_start_rx\n", dev->rhineu_name));
     // Already running? Stop it.
@@ -134,7 +134,7 @@ D(bug("%s: viarhinenic_start_rx\n", dev->rhineu_name));
 
 static void viarhinenic_stop_rx(struct net_device *dev)
 {
-    UBYTE *base = get_hwbase(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: viarhinenic_stop_rx\n", dev->rhineu_name));
 #warning "TODO: Handle starting/stopping Rx"
@@ -142,7 +142,7 @@ D(bug("%s: viarhinenic_stop_rx\n", dev->rhineu_name));
 
 static void viarhinenic_start_tx(struct net_device *dev)
 {
-    UBYTE *base = get_hwbase(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: viarhinenic_start_tx()\n", dev->rhineu_name));
 #warning "TODO: Handle starting/stopping Tx"
@@ -150,7 +150,7 @@ D(bug("%s: viarhinenic_start_tx()\n", dev->rhineu_name));
 
 static void viarhinenic_stop_tx(struct net_device *dev)
 {
-    UBYTE *base = get_hwbase(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: viarhinenic_stop_tx()\n", dev->rhineu_name));
 #warning "TODO: Handle starting/stopping Tx"
@@ -158,8 +158,8 @@ D(bug("%s: viarhinenic_stop_tx()\n", dev->rhineu_name));
 
 static void viarhinenic_txrx_reset(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
-    UBYTE *base = get_hwbase(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: viarhinenic_txrx_reset()\n", dev->rhineu_name));
 }
@@ -170,11 +170,11 @@ D(bug("%s: viarhinenic_txrx_reset()\n", dev->rhineu_name));
  */
 static void viarhinenic_set_multicast(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
-    UBYTE *base = get_hwbase(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
+    // UBYTE *base = get_hwbase(dev);
     ULONG addr[2];
     ULONG mask[2];
-    ULONG pff;
+    // ULONG pff;
 
 D(bug("%s: viarhinenic_set_multicast()\n", dev->rhineu_name));
 
@@ -195,7 +195,8 @@ static void viarhinenic_initialize(struct net_device *dev)
 {
     struct fe_priv *np = dev->rhineu_fe_priv;
     UBYTE *base = get_hwbase(dev);
-    int i, config1;
+    int i;
+    // int config1;
 
 	WORDOUT(base + VIAR_ChipCmd, CmdReset);
 	udelay(20000);
@@ -239,7 +240,7 @@ D(bug("%s: MAC Address %02x:%02x:%02x:%02x:%02x:%02x\n", dev->rhineu_name,
 
 static void viarhinenic_drain_tx(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
     int i;
     for (i = 0; i < TX_BUFFERS; i++) {
 #warning "TODO: viarhinenic_drain_tx does nothing atm."
@@ -248,7 +249,7 @@ static void viarhinenic_drain_tx(struct net_device *dev)
 
 static void viarhinenic_drain_rx(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
     int i;
     for (i = 0; i < RX_BUFFERS; i++) {
 #warning "TODO: viarhinenic_drain_rx does nothing atm."

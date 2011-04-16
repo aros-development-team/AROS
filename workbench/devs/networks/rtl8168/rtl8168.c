@@ -315,7 +315,7 @@ static ULONG rtl8168nic_CSIRead(struct net_device *unit, int addr)
 
 static void rtl8168nic_PHYPowerUP(struct net_device *unit)
 {
-    APTR		base = get_hwbase(unit);
+    // APTR		base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8168nic_PHYPowerUP()\n", unit->rtl8168u_name))
 
@@ -412,8 +412,8 @@ RTLD(bug("[%s] rtl8168nic_PrintMACVersion()\n", unit->rtl8168u_name))
 static void rtl8168nic_HWPHYConfig(struct net_device *unit)
 {
     struct rtl8168_priv *np = get_pcnpriv(unit);
-    APTR		base = get_hwbase(unit);
-    int data;
+    // APTR		base = get_hwbase(unit);
+    // int data;
 
 RTLD(bug("[%s] rtl8168nic_HWPHYConfig()\n", unit->rtl8168u_name))
 
@@ -879,11 +879,11 @@ static int rtl8168nic_SetSpeedXMII(struct net_device *unit,
 		       UBYTE duplex)
 {
     struct rtl8168_priv *np = get_pcnpriv(unit);
-    APTR		base = get_hwbase(unit);
+    // APTR		base = get_hwbase(unit);
     int auto_nego = 0;
     int giga_ctrl = 0;
     int bmcr_true_force = 0;
-    unsigned long flags;
+    // unsigned long flags;
 
 RTLD(bug("[%s] rtl8168nic_SetSpeedXMII()\n", unit->rtl8168u_name))
 
@@ -966,8 +966,8 @@ RTLD(bug("[%s] rtl8168nic_SetSpeedXMII()\n", unit->rtl8168u_name))
 
 static void rtl8168nic_start_rx(struct net_device *unit)
 {
-    struct rtl8168_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
+    // struct rtl8168_priv *np = get_pcnpriv(unit);
+    // APTR base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8168nic_start_rx\n", unit->rtl8168u_name))
     // Already running? Stop it.
@@ -976,7 +976,7 @@ RTLD(bug("[%s] rtl8168nic_start_rx\n", unit->rtl8168u_name))
 
 static void rtl8168nic_stop_rx(struct net_device *unit)
 {
-    APTR base = get_hwbase(unit);
+    // APTR base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8168nic_stop_rx\n", unit->rtl8168u_name))
 #warning "TODO: Handle starting/stopping Rx"
@@ -984,7 +984,7 @@ RTLD(bug("[%s] rtl8168nic_stop_rx\n", unit->rtl8168u_name))
 
 static void rtl8168nic_start_tx(struct net_device *unit)
 {
-    APTR base = get_hwbase(unit);
+    // APTR base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8168nic_start_tx()\n", unit->rtl8168u_name))
 #warning "TODO: Handle starting/stopping Tx"
@@ -992,7 +992,7 @@ RTLD(bug("[%s] rtl8168nic_start_tx()\n", unit->rtl8168u_name))
 
 static void rtl8168nic_stop_tx(struct net_device *unit)
 {
-    APTR base = get_hwbase(unit);
+    // APTR base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8168nic_stop_tx()\n", unit->rtl8168u_name))
 #warning "TODO: Handle starting/stopping Tx"
@@ -1000,8 +1000,8 @@ RTLD(bug("[%s] rtl8168nic_stop_tx()\n", unit->rtl8168u_name))
 
 static void rtl8168nic_txrx_reset(struct net_device *unit)
 {
-    struct rtl8168_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
+    // struct rtl8168_priv *np = get_pcnpriv(unit);
+    // APTR base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8168nic_txrx_reset()\n", unit->rtl8168u_name))
 }
@@ -1012,11 +1012,11 @@ RTLD(bug("[%s] rtl8168nic_txrx_reset()\n", unit->rtl8168u_name))
  */
 static void rtl8168nic_SetMulticast(struct net_device *unit)
 {
-    struct rtl8168_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
+    // struct rtl8168_priv *np = get_pcnpriv(unit);
+    // APTR base = get_hwbase(unit);
     ULONG addr[2];
     ULONG mask[2];
-    ULONG pff;
+    // ULONG pff;
 
 RTLD(bug("[%s] rtl8168nic_SetMulticast()\n", unit->rtl8168u_name))
 
@@ -1043,7 +1043,7 @@ RTLD(bug("[%s] rtl8168nic_GetMACAddr()\n",unit->rtl8168u_name))
 static void rtl8168nic_SetMACAddr(struct net_device *unit)
 {
     APTR base = get_hwbase(unit);
-    int i,j;
+    // int i,j;
 
 RTLD(bug("[%s] rtl8168nic_SetMACAddr()\n",unit->rtl8168u_name))
 
@@ -1102,7 +1102,8 @@ static void rtl8168nic_Init(struct net_device *unit)
     APTR base = get_hwbase(unit);
     UBYTE autoneg, duplex;
     UWORD speed;
-    int i, config1;
+    int i;
+    // int config1;
 
 RTLD(bug("[%s] rtl8168nic_Init(unit @ %p)\n", unit->rtl8168u_name, unit))
 
@@ -1134,9 +1135,8 @@ RTLD(bug("[%s] rtl8168nic_Init: Power Management enabled\n", unit->rtl8168u_name
 
 /*    RTL_W8(base + (Cfg9346), Cfg9346_Unlock);
     np->features |= rtl8168_try_msi(pdev, base);
-    RTL_W8(base + (Cfg9346), Cfg9346_Lock); /*
+    RTL_W8(base + (Cfg9346), Cfg9346_Lock); */
 
-    /***/
 
     rtl8168nic_GetMACAddr(unit, &np->orig_mac[0], TRUE);
 
@@ -1180,8 +1180,8 @@ RTLD(bug("[%s] rtl8168nic_Init: Link Speed %dbps %s duplex %s\n", unit->rtl8168u
 
 static void rtl8168nic_drain_tx(struct net_device *unit)
 {
-    struct rtl8168_priv *np = get_pcnpriv(unit);
-    int i;
+    // struct rtl8168_priv *np = get_pcnpriv(unit);
+    // int i;
 //    for (i = 0; i < NUM_TX_DESC; i++) {
 #warning "TODO: rtl8168nic_drain_tx does nothing atm."
 //    }
@@ -1189,8 +1189,8 @@ static void rtl8168nic_drain_tx(struct net_device *unit)
 
 static void rtl8168nic_drain_rx(struct net_device *unit)
 {
-    struct rtl8168_priv *np = get_pcnpriv(unit);
-    int i;
+    // struct rtl8168_priv *np = get_pcnpriv(unit);
+    // int i;
 //    for (i = 0; i < RX_RING_SIZE; i++) {
 #warning "TODO: rtl8168nic_drain_rx does nothing atm."
 //    }
@@ -1281,7 +1281,7 @@ static void rtl8168nic_SetRxMode(struct net_device *unit)
 {
     struct rtl8168_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
-    unsigned long flags;
+    // unsigned long flags;
     ULONG mc_filter[2];	/* Multicast hash filter */
     int i, j, k, rx_mode;
     ULONG tmp = 0;
@@ -2107,7 +2107,7 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
 static unsigned int rtl8168nic_XMIILinkOK(struct net_device *unit)
 {
-    struct rtl8168_priv *np = get_pcnpriv(unit);
+    // struct rtl8168_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
 
     mdio_write(unit, 0x1f, 0x0000);
@@ -2117,9 +2117,9 @@ static unsigned int rtl8168nic_XMIILinkOK(struct net_device *unit)
 
 void rtl8168_CheckLinkStatus(struct net_device *unit)
 {
-    struct rtl8168_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
-    unsigned long flags;
+    // struct rtl8168_priv *np = get_pcnpriv(unit);
+    // APTR base = get_hwbase(unit);
+    // unsigned long flags;
 
     if (rtl8168nic_XMIILinkOK(unit)) {
 	netif_carrier_on(unit);
@@ -2169,7 +2169,7 @@ static ULONG rtl8168nic_RxFill(struct net_device *unit, ULONG start, ULONG end)
     ULONG cur;
 
     for (cur = start; end - cur > 0; cur++) {
-	int ret, i = cur % NUM_RX_DESC;
+	int i = cur % NUM_RX_DESC;
 
 	if (np->RxDescArray[i].addr)
 	    continue;
@@ -2213,7 +2213,7 @@ err_out:
 static int rtl8168nic_Open(struct net_device *unit)
 {
     struct rtl8168_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
+    // APTR base = get_hwbase(unit);
     int ret;
 
     RTLD(bug("[%s] rtl8168nic_Open(unit @ %p)\n", unit->rtl8168u_name, unit))

@@ -118,8 +118,8 @@ static inline void pci_push(UBYTE *base)
 
 static void pcn32_start_rx(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
-    UBYTE *base = get_hwbase(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: pcn32_start_rx\n", dev->pcnu_name));
     // Already running? Stop it.
@@ -128,7 +128,7 @@ D(bug("%s: pcn32_start_rx\n", dev->pcnu_name));
 
 static void pcn32_stop_rx(struct net_device *dev)
 {
-    UBYTE *base = get_hwbase(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: pcn32_stop_rx\n", dev->pcnu_name));
 #warning "TODO: Handle starting/stopping Rx"
@@ -136,7 +136,7 @@ D(bug("%s: pcn32_stop_rx\n", dev->pcnu_name));
 
 static void pcn32_start_tx(struct net_device *dev)
 {
-    UBYTE *base = get_hwbase(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: pcn32_start_tx()\n", dev->pcnu_name));
 #warning "TODO: Handle starting/stopping Tx"
@@ -144,7 +144,7 @@ D(bug("%s: pcn32_start_tx()\n", dev->pcnu_name));
 
 static void pcn32_stop_tx(struct net_device *dev)
 {
-    UBYTE *base = get_hwbase(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: pcn32_stop_tx()\n", dev->pcnu_name));
 #warning "TODO: Handle starting/stopping Tx"
@@ -152,8 +152,8 @@ D(bug("%s: pcn32_stop_tx()\n", dev->pcnu_name));
 
 static void pcn32_txrx_reset(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
-    UBYTE *base = get_hwbase(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
+    // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: pcn32_txrx_reset()\n", dev->pcnu_name));
 }
@@ -164,11 +164,11 @@ D(bug("%s: pcn32_txrx_reset()\n", dev->pcnu_name));
  */
 static void pcn32_set_multicast(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
-    UBYTE *base = get_hwbase(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
+    // UBYTE *base = get_hwbase(dev);
     ULONG addr[2];
     ULONG mask[2];
-    ULONG pff;
+    // ULONG pff;
 
 D(bug("%s: pcn32_set_multicast()\n", dev->pcnu_name));
 
@@ -189,7 +189,7 @@ static void pcnet32_initialize(struct net_device *dev)
 {
     struct fe_priv *np = dev->pcnu_fe_priv;
     UBYTE *base = get_hwbase(dev);
-    int i;
+    // int i;
 
    dev->reset(base); /* Cause the PCnet Chipset to reset */
 D(bug("%s: Chipset RESET\n", dev->pcnu_name));
@@ -229,7 +229,7 @@ D(bug("%s: MAC Address %02x:%02x:%02x:%02x:%02x:%02x\n", dev->pcnu_name,
 
 static void pcn32_drain_tx(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
     int i;
     for (i = 0; i < TX_RING_SIZE; i++) {
 #warning "TODO: pcn32_drain_tx does nothing atm."
@@ -239,7 +239,7 @@ static void pcn32_drain_tx(struct net_device *dev)
 
 static void pcn32_drain_rx(struct net_device *dev)
 {
-    struct fe_priv *np = get_pcnpriv(dev);
+    // struct fe_priv *np = get_pcnpriv(dev);
     int i;
     for (i = 0; i < RX_RING_SIZE; i++) {
 #warning "TODO: pcn32_drain_rx does nothing atm."
@@ -291,7 +291,7 @@ static void free_irq(struct net_device *dev)
 
 static void pcnet32_set_mac(struct net_device *dev)
 {
-   UBYTE *base = get_hwbase(dev);
+   // UBYTE *base = get_hwbase(dev);
    int i;
 
    for (i = 0; i < 6; i++) // Copy MAC Address to init block

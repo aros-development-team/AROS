@@ -273,7 +273,7 @@ static BOOL CmdFlush(LIBBASETYPEPTR LIBBASE, struct IORequest *request)
 static BOOL CmdS2DeviceQuery(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
     struct RTL8168Unit *unit = (APTR)request->ios2_Req.io_Unit;
-    struct rtl8168_priv *np = unit->rtl8168u_priv;
+    // struct rtl8168_priv *np = unit->rtl8168u_priv;
     struct Sana2DeviceQuery *info;
     ULONG size_available, size;
 

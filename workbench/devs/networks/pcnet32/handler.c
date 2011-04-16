@@ -273,7 +273,7 @@ static BOOL CmdFlush(LIBBASETYPEPTR LIBBASE, struct IORequest *request)
 static BOOL CmdS2DeviceQuery(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
     struct PCN32Unit *unit = (APTR)request->ios2_Req.io_Unit;
-    struct fe_priv *np = unit->pcnu_fe_priv;
+    // struct fe_priv *np = unit->pcnu_fe_priv;
     struct Sana2DeviceQuery *info;
     ULONG size_available, size;
 

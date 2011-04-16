@@ -156,7 +156,7 @@ AROS_UFH3(void, VIARHINE_RX_IntF,
 
     struct VIARHINEBase *VIARHINEDeviceBase = unit->rhineu_device;
     struct fe_priv *np = unit->rhineu_fe_priv;
-    UWORD Flags;
+    // UWORD Flags;
     struct TypeStats *tracker;
     ULONG packet_type;
     struct Opener *opener, *opener_tail;
@@ -474,10 +474,11 @@ static void VIARHINE_IntHandlerF(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     struct VIARHINEBase *VIARHINEDeviceBase = dev->rhineu_device;
     struct fe_priv *np = dev->rhineu_fe_priv;
     UBYTE *base = (UBYTE*) dev->rhineu_BaseMem;
-    ULONG events;
-    int i, link_changed, interrupt_work = 20;
-    struct Device *TimerBase = dev->rhineu_TimerSlowReq->tr_node.io_Device;
-    struct timeval time;
+    // ULONG events;
+    // int i, link_changed;
+    int interrupt_work = 20;
+    // struct Device *TimerBase = dev->rhineu_TimerSlowReq->tr_node.io_Device;
+    // struct timeval time;
 
 D(bug("%s: VIARHINE_IntHandlerF()!!!!!!!\n", dev->rhineu_name));
     
