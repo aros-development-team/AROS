@@ -305,7 +305,7 @@ addwith(struct NetDataBase *ndb,
 	struct RDArgs *rdargs,
 	UBYTE **errstrp, struct CSource *res, ULONG flags)
 {
-  UBYTE result[REPLYBUFLEN + 1];
+  // UBYTE result[REPLYBUFLEN + 1];
 //struct CSource res;
   LONG retval = RETURN_OK;
   IPTR Args[WITHARGS] = { 0 };
@@ -1048,7 +1048,7 @@ D(bug("[AROSTCP](amiga_netdb.c) read_netdb: Too many files included\n"));
 	/* initialize CSource of the rdargs */
 	rdargs->RDA_Source.CS_Buffer = buf;
 	/* initialize rest fields (see dos/rdargs.h) */
-	rdargs->RDA_DAList = NULL;
+	rdargs->RDA_DAList = 0;
 	rdargs->RDA_ExtHelp = NULL;
 	rdargs->RDA_Flags = 0;
 	
@@ -1159,7 +1159,7 @@ D(bug("[AROSTCP](amiga_netdb.c) do_netdb()\n"));
     /* initialize CSource of the rdargs */
     rdargs->RDA_Source = *csarg;
     /* initialize rest fields (see <dos/rdargs.h>) */
-    rdargs->RDA_DAList = NULL;
+    rdargs->RDA_DAList = 0;
     rdargs->RDA_Buffer = NULL;
     rdargs->RDA_BufSiz = 0;
     rdargs->RDA_ExtHelp = NULL;

@@ -64,7 +64,7 @@ static int res_sock = -1;	/* socket used for communications */
 #endif
 
 /* constant */
-static const struct sockaddr no_addr = { sizeof(struct sockaddr), AF_INET, 0 };
+static const struct sockaddr no_addr = { sizeof(struct sockaddr), AF_INET, { 0 } };
 
 #ifndef FD_SET
 #define	NFDBITS		32

@@ -32,10 +32,10 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004-2005 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include "dhcpd.h"
 
@@ -311,8 +311,8 @@ int parse_ip_addr (cfile, addr)
 	struct parse *cfile;
 	struct iaddr *addr;
 {
-	const char *val;
-	enum dhcp_token token;
+	// const char *val;
+	// enum dhcp_token token;
 
 	addr -> len = 4;
 	if (parse_numeric_aggregate (cfile, addr -> iabuf,
@@ -649,7 +649,7 @@ void convert_num (cfile, buf, str, base, size)
 TIME parse_date (cfile)
 	struct parse *cfile;
 {
-	struct tm tm;
+	// struct tm tm;
 	int guess;
 	int tzoff, wday, year, mon, mday, hour, min, sec;
 	const char *val;
@@ -1021,7 +1021,7 @@ int parse_option_code_definition (cfile, option)
 	char tokbuf [128];
 	unsigned tokix = 0;
 	char type;
-	int code;
+	// int code;
 	int is_signed;
 	char *s;
 	int has_encapsulation = 0;
@@ -1510,7 +1510,7 @@ int parse_executable_statement (result, cfile, lose, case_context)
 {
 	enum dhcp_token token;
 	const char *val;
-	struct executable_statement base;
+	// struct executable_statement base;
 	struct class *cta;
 	struct option *option;
 	struct option_cache *cache;
@@ -2788,16 +2788,16 @@ int parse_non_binary (expr, cfile, lose, context)
 	enum dhcp_token token;
 	const char *val;
 	struct collection *col;
-	struct option *option;
+	// struct option *option;
 	struct expression *nexp, **ep;
 	int known;
 	enum expr_op opcode;
 	const char *s;
 	char *cptr;
-	struct executable_statement *stmt;
-	int i;
+	// struct executable_statement *stmt;
+	// int i;
 	unsigned long u;
-	isc_result_t status, code;
+	// isc_result_t status, code;
 	unsigned len;
 
 	token = peek_token (&val, (unsigned *)0, cfile);
@@ -4193,8 +4193,8 @@ int parse_option_statement (result, cfile, lookups, option, op)
 	struct expression *expr = (struct expression *)0;
 	struct expression *tmp;
 	int lose;
-	struct executable_statement *stmt;
-	int ftt = 1;
+	// struct executable_statement *stmt;
+	// int ftt = 1;
 
 	token = peek_token (&val, (unsigned *)0, cfile);
 	if (token == SEMI) {
@@ -4312,9 +4312,9 @@ int parse_option_token (rv, cfile, fmt, expr, uniform, lookups)
 	struct expression *t = (struct expression *)0;
 	unsigned char buf [4];
 	unsigned len;
-	unsigned char *ob;
+	// unsigned char *ob;
 	struct iaddr addr;
-	int num;
+	// int num;
 	const char *f, *g;
 	struct enumeration_value *e;
 
@@ -4555,7 +4555,7 @@ int parse_option_decl (oc, cfile)
 		/* Set a flag if this is an array of a simple type (i.e.,
 		   not an array of pairs of IP addresses, or something
 		   like that. */
-		int uniform = option -> format [1] == 'A';
+		// int uniform = option -> format [1] == 'A';
 
 		for (fmt = option -> format; *fmt; fmt++) {
 			if (*fmt == 'A')
@@ -4755,7 +4755,7 @@ int parse_X (cfile, buf, max)
 	int token;
 	const char *val;
 	unsigned len;
-	u_int8_t *s;
+	// u_int8_t *s;
 
 	token = peek_token (&val, (unsigned *)0, cfile);
 	if (token == NUMBER_OR_NAME || token == NUMBER) {

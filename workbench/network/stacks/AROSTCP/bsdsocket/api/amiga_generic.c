@@ -723,7 +723,7 @@ LONG __CloseSocket(LONG fd, struct SocketBase *libPtr)
   FD_CLR(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
 
   if (error = getSock(libPtr, fd, &so)) {
-/*    error = ENOTSOCK;	/* well, bit set, but socket == NULL */
+//    error = ENOTSOCK;	/* well, bit set, but socket == NULL */
     error = 0; /* ignore silently */
     goto Return;
   }

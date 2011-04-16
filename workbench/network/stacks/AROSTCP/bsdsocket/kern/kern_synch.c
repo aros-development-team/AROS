@@ -52,7 +52,7 @@ queue_head_t	sleep_queue[SLEEP_QUEUE_SIZE];
 /*
  * semaphore protecting sleep queues
  */
-struct SignalSemaphore sleep_semaphore = { 0 };
+struct SignalSemaphore sleep_semaphore;
 static BOOL sleep_initialized = FALSE;
 
 /*

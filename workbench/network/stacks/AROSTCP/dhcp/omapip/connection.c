@@ -112,8 +112,8 @@ isc_result_t omapi_connect_list (omapi_object_t *c,
 	int flag;
 	struct sockaddr_in local_sin;
 #if defined (TRACING)
-	trace_addr_t *addrs;
-	u_int16_t naddrs;
+	// trace_addr_t *addrs;
+	// u_int16_t naddrs;
 #endif
 
 	obj = (omapi_connection_object_t *)0;
@@ -1014,7 +1014,7 @@ isc_result_t omapi_connection_stuff_values (omapi_object_t *c,
 					    omapi_object_t *id,
 					    omapi_object_t *m)
 {
-	int i;
+	// int i;
 
 	if (m -> type != omapi_type_connection)
 		return ISC_R_INVALIDARG;

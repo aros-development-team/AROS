@@ -32,10 +32,10 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include "dhcpd.h"
 #include <omapip/omapip_p.h>
@@ -54,8 +54,8 @@ int execute_statements (result, packet, lease, client_state,
 	struct executable_statement *r, *e, *next;
 	int rc;
 	int status;
-	unsigned long num;
-	struct binding_scope *outer;
+	// unsigned long num;
+	__unused struct binding_scope *outer;
 	struct binding *binding;
 	struct data_string ds;
 	struct binding_scope *ns;
@@ -526,7 +526,7 @@ int executable_statement_dereference (ptr, file, line)
 	const char *file;
 	int line;
 {
-	struct executable_statement *bp;
+	// struct executable_statement *bp;
 
 	if (!ptr || !*ptr) {
 		log_error ("%s(%d): null pointer", file, line);
@@ -650,8 +650,8 @@ void write_statements (file, statements, indent)
 	int indent;
 {
 	struct executable_statement *r, *x;
-	int result;
-	int status;
+	// int result;
+	// int status;
 	const char *s, *t, *dot;
 	int col;
 
@@ -906,10 +906,10 @@ int find_matching_case (struct executable_statement **ep,
 {
 	int status, sub;
 	struct executable_statement *s;
-	unsigned long foo;
+	// unsigned long foo;
 
 	if (is_data_expression (expr)) {
-		struct executable_statement *e;
+		// struct executable_statement *e;
 		struct data_string cd, ds;
 		memset (&ds, 0, sizeof ds);
 		memset (&cd, 0, sizeof cd);
@@ -983,7 +983,7 @@ int executable_statement_foreach (struct executable_statement *stmt,
 {
 	struct executable_statement *foo;
 	int ok = 0;
-	int result;
+	// int result;
 
 	for (foo = stmt; foo; foo = foo -> next) {
 	    if ((*callback) (foo, vp, condp) != 0)

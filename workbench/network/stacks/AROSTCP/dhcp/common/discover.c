@@ -32,10 +32,10 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004-2005 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include "dhcpd.h"
 #include <sys/ioctl.h>
@@ -124,16 +124,17 @@ isc_result_t interface_initialize (omapi_object_t *ipo,
 void discover_interfaces (state)
 	int state;
 {
-	struct interface_info *tmp, *ip;
+	struct interface_info *tmp;
+	// struct interface_info *ip;
 	struct interface_info *last, *next;
 	char buf [2048];
 	struct ifconf ic;
 	struct ifreq ifr;
 	int i;
 	int sock;
-	int address_count = 0;
+	// int address_count = 0;
 	struct subnet *subnet;
-	struct shared_network *share;
+	// struct shared_network *share;
 	struct sockaddr_in foo;
 	int ir;
 	struct ifreq *tif;
@@ -825,7 +826,7 @@ isc_result_t dhcp_interface_set_value  (omapi_object_t *h,
 {
 	struct interface_info *interface;
 	isc_result_t status;
-	int foo;
+	// int foo;
 
 	if (h -> type != dhcp_type_interface)
 		return ISC_R_INVALIDARG;
@@ -868,7 +869,7 @@ isc_result_t dhcp_interface_destroy (omapi_object_t *h,
 					 const char *file, int line)
 {
 	struct interface_info *interface;
-	isc_result_t status;
+	// isc_result_t status;
 
 	if (h -> type != dhcp_type_interface)
 		return ISC_R_INVALIDARG;
@@ -898,8 +899,8 @@ isc_result_t dhcp_interface_signal_handler (omapi_object_t *h,
 					    const char *name, va_list ap)
 {
 	struct interface_info *ip, *interface;
-	struct client_config *config;
-	struct client_state *client;
+	// struct client_config *config;
+	// struct client_state *client;
 	isc_result_t status;
 
 	if (h -> type != dhcp_type_interface)

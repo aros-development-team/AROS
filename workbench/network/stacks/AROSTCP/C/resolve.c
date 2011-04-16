@@ -60,10 +60,10 @@ int main(void)
     const char *template = "HOST/A";
     struct {
       STRPTR a_ipaddr;
-    } args[1] = { 0 };
+    } args[1] = { { 0 } };
     struct RDArgs *rdargs = NULL;
 
-    if (rdargs = ReadArgs((UBYTE *)template, (LONG *)args, NULL)) {
+    if (rdargs = ReadArgs((UBYTE *)template, (IPTR *)args, NULL)) {
       long addr = inet_addr(args->a_ipaddr);
       struct hostent *hp;
       if (addr == INADDR_NONE)

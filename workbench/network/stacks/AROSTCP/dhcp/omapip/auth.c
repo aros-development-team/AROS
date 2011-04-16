@@ -32,7 +32,7 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char ocopyright[] =
 "$Id$ Copyright 2004 Internet Systems Consortium.";
 #endif

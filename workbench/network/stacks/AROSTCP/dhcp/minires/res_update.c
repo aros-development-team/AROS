@@ -91,7 +91,8 @@ res_nupdate(res_state statp, ns_updrec *rrecp_in) {
 	} __tmp;
 	double packet[2*PACKETSZ / sizeof (double)];
 	struct zonegrp *zptr, tgrp;
-	int nzones = 0, nscount = 0;
+	int nscount = 0;
+	// int nzones = 0;
 	unsigned n;
 	unsigned rval;
 	struct sockaddr_in nsaddrs[MAXNS];

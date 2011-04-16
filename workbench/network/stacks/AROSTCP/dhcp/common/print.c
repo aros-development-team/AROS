@@ -32,10 +32,10 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include "dhcpd.h"
 
@@ -1043,7 +1043,7 @@ int token_print_indent_concat (FILE *file, int col,  int indent,
 			       const char *suffix, ...)
 {
 	va_list list;
-	char *buf;
+	// char *buf;
 	unsigned len;
 	char *s, *t, *u;
 
@@ -1081,7 +1081,7 @@ int token_indent_data_string (FILE *file, int col, int indent,
 			      struct data_string *data)
 {
 	int i;
-	char *buf;
+	// char *buf;
 	char obuf [3];
 
 	/* See if this is just ASCII. */

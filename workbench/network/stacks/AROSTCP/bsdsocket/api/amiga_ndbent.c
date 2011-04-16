@@ -272,7 +272,7 @@ AROS_LH1(LONG, AddDynNameServ,
   }
 
   AddTail((struct List *)&DynDB.dyn_NameServers, (struct Node*)nsn);
-  return NULL;
+  return 0;
 
 	AROS_LIBFUNC_EXIT
 }
@@ -303,7 +303,7 @@ AROS_LH1(LONG, AddDynDomain,
   }
 
   AddTail((struct List *)&DynDB.dyn_Domains, (struct Node*)dn);
-  return NULL;
+  return 0;
 
 	AROS_LIBFUNC_EXIT
 }

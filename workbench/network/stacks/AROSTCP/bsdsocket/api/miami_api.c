@@ -107,7 +107,7 @@ D(bug("[AROSTCP](miami_api.c) MiamiLIB_Open: Created MIAMI user library base: 0x
 		if (SocketBase) {
 			D(__log(LOG_DEBUG,"miami.library opened: SocketBase = 0x%p, MiamiBase = 0x%p", (IPTR)SocketBase, (IPTR)MiamiBase);)
 			MasterBase->lib_OpenCnt++;
-			return(MiamiBase);
+			return((struct Library *)MiamiBase);
 		}
 		D(else kprintf("Unable to open bsdsocket.library\n");)
 		__MiamiLIB_Cleanup(MiamiBase);
@@ -276,7 +276,7 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: MiamiGetHardwareLen()\n"));
 #endif
 
 	__log(LOG_CRIT,"MiamiGetHardwareLen() is not implemented");
-	return NULL;
+	return 0;
 
 	AROS_LIBFUNC_EXIT
 }
@@ -737,8 +737,8 @@ AROS_LH2(void, Miami_QueryInterfaceTagList,
 #if defined(__AROS__)
 D(bug("[AROSTCP.MIAMI] miami_api.c: Miami_QueryInterfaceTagList()\n"));
 #endif
-
-	return __QueryInterfaceTagList(interface_name, tags, SocketBase);
+	// "return" removed, because we are a void function
+	__QueryInterfaceTagList(interface_name, tags, SocketBase);
 
 	AROS_LIBFUNC_EXIT
 }

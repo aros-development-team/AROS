@@ -114,14 +114,15 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
 	int errno;
 #else	/* NET_RT_IFLIST */
 	char buf[1024];
-	int m, sock;
+	__unused int m;
+	int sock;
 	struct ifconf ifc;
 	struct ifreq *ifr;
 	struct ifreq *lifr;
 #endif	/* NET_RT_IFLIST */
 	struct ifaddrs *ifa, *ift;
 	int i;
-	size_t len, alen;
+	__unused size_t len, alen;
 	char *data;
 	char *names;
 

@@ -32,14 +32,14 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include "dhcpd.h"
 
-static TIME parsed_time;
+// static TIME parsed_time;
 
 struct client_config top_level_config;
 
@@ -62,7 +62,7 @@ u_int32_t default_requested_options [] = {
 isc_result_t read_client_conf ()
 {
 	struct client_config *config;
-	struct client_state *state;
+	// struct client_state *state;
 	struct interface_info *ip;
 	isc_result_t status;
 
@@ -242,11 +242,12 @@ void parse_client_statement (cfile, ip, config)
 	int token;
 	const char *val;
 	struct option *option;
-	struct executable_statement *stmt, **p;
-	enum statement_op op;
+	struct executable_statement *stmt;
+	// struct executable_statement **p;
+	// enum statement_op op;
 	int lose;
 	char *name;
-	struct data_string key_id;
+	// struct data_string key_id;
 	enum policy policy;
 	int known;
 	int tmp, i;
@@ -963,11 +964,11 @@ void parse_client_lease_declaration (cfile, lease, ipp, clientp)
 {
 	int token;
 	const char *val;
-	char *t, *n;
+	// char *t, *n;
 	struct interface_info *ip;
 	struct option_cache *oc;
 	struct client_state *client = (struct client_state *)0;
-	struct data_string key_id;
+	// struct data_string key_id;
 
 	switch (next_token (&val, (unsigned *)0, cfile)) {
 	      case KEY:
@@ -1157,11 +1158,11 @@ int parse_allow_deny (oc, cfile, flag)
 	struct parse *cfile;
 	int flag;
 {
-	enum dhcp_token token;
-	const char *val;
-	unsigned char rf = flag;
-	struct expression *data = (struct expression *)0;
-	int status;
+	// enum dhcp_token token;
+	// const char *val;
+	// unsigned char rf = flag;
+	// struct expression *data = (struct expression *)0;
+	// int status;
 
 	parse_warn (cfile, "allow/deny/ignore not permitted here.");
 	skip_to_semi (cfile);

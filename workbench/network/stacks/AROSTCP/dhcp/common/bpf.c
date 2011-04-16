@@ -32,10 +32,10 @@
  * managed to get me to integrate them.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #if defined (USE_BPF_SEND) || defined (USE_BPF_RECEIVE)	\
 				|| defined (USE_LPF_RECEIVE)

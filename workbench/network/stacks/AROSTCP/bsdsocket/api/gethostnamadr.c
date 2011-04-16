@@ -322,7 +322,7 @@ D(bug("[AROSTCP](gethostnameadr.c) getanswer()\n"));
       }
     }
 
-/*    bp = (char *)ALIGN(bp); /* align answer buffer for next host address */
+//    bp = (char *)ALIGN(bp); /* align answer buffer for next host address */
 		
     if (HS->host.h_length >= buflen) {
 #ifdef RES_DEBUG
@@ -412,7 +412,7 @@ D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: name IS an IP address\n"));
     *lptr++ = inaddr.s_addr;
     *(u_long **)(lptr) = lptr - 1;
     HOSTENT->h_addr_list = (char **)lptr;
-    *++lptr = NULL;
+    *++lptr = 0;
     HOSTENT->h_aliases = (char **)lptr;
     HOSTENT->h_name = strcpy((char *)++lptr, name);
 

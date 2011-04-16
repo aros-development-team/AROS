@@ -47,7 +47,7 @@ D(bug("[AROSTCP](res_init.c) res_cleanup_db()\n"));
 	}
 	if (state->nsaddr_list)
 		bsd_free(state->nsaddr_list, NULL);
-	state->options = NULL;
+	state->options = 0;
 }
 
 int res_update_db(struct state *state)
