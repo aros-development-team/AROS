@@ -145,8 +145,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
             switch(idx)
             {
 	        case aoHidd_BitMap_Visible:
-	        data->disp = tag->ti_Data;
-	        if (data->disp) {
+	        if (tag->ti_Data) {
 	     	    OOP_Object *gfxhidd, *sync, *pf;
     		    IPTR modeid = vHidd_ModeID_Invalid;
     		    IPTR dwidth, dheight, depth, width, height;
@@ -167,6 +166,12 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
 		    D(bug("%dx%dx%d (%dx%d) BF=%08x\n", dwidth, dheight, depth, width, height, data->rgbformat));
 
+		    if (dwidth == csd->dwidth && dheight == csd->dheight && modeid == csd->dmodeid && data->disp && csd->disp == data)
+		    	break;
+		    csd->dwidth = dwidth;
+		    csd->dheight = dheight;
+		    csd->dmodeid = modeid;
+
 		    if (csd->hardwaresprite && depth <= 8) {
 		    	UWORD i;
     			UBYTE *clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
@@ -180,9 +185,14 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     		    SetColorArray(csd, 0, 256);
 		    SetDisplay(csd, TRUE);
 		    SetSwitch(csd, TRUE);
+	            data->disp = TRUE;
+	            csd->disp = data;
 		} else {
 		    SetDisplay(csd, FALSE);
 		    SetSwitch(csd, FALSE);
+		    csd->dmodeid = 0;
+		    data->disp = FALSE;
+		    csd->disp = NULL;
 		}
 		break;
 		case aoHidd_BitMap_LeftEdge:
