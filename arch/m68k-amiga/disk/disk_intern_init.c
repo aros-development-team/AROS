@@ -54,10 +54,14 @@ static AROS_UFH4(ULONG, disk_index_interrupt,
     AROS_USERFUNC_INIT
  
  	struct DiscResource *DiskBase = (struct DiscResource*)data;
- 	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_Index.is_Code) {
- 		AROS_UFC2(void, DiskBase->dr_Current->dru_Index.is_Code,
+	volatile struct Custom *custom = (struct Custom*)0xdff000;
+  	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_Index.is_Code) {
+ 		D(bug("disk_index %p %p\n", DiskBase->dr_Current->dru_Index.is_Code, DiskBase->dr_Current->dru_Index.is_Data));
+ 		AROS_UFC4(void, DiskBase->dr_Current->dru_Index.is_Code,
+			AROS_UFCA(struct Custom *, custom, A0),
 			AROS_UFCA(APTR, DiskBase->dr_Current->dru_Index.is_Data, A1),
-			AROS_UFCA(APTR, DiskBase->dr_Current->dru_Index.is_Code, A5));
+			AROS_UFCA(APTR, DiskBase->dr_Current->dru_Index.is_Code, A5),
+			AROS_UFCA(struct ExecBase *, mySysBase, A6));
  	}
  	return 0;
 	
@@ -73,11 +77,14 @@ static AROS_UFH4(ULONG, disk_index_interrupt,
  
  	struct DiscResource *DiskBase = (struct DiscResource*)data;
  	volatile struct Custom *custom = (struct Custom*)0xdff000;
- 	custom->intreq = 0x1000;
+ 	custom->intreq = INTF_DSKSYNC;
  	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_DiscSync.is_Code) {
- 		AROS_UFC2(void, DiskBase->dr_Current->dru_DiscSync.is_Code,
+ 		D(bug("disk_sync %p %p\n", DiskBase->dr_Current->dru_DiscSync.is_Code, DiskBase->dr_Current->dru_DiscSync.is_Data));
+ 		AROS_UFC4(void, DiskBase->dr_Current->dru_DiscSync.is_Code,
+ 			AROS_UFCA(struct Custom *, custom, A0),
 			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscSync.is_Data, A1),
-			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscSync.is_Code, A5));
+			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscSync.is_Code, A5),
+			AROS_UFCA(struct ExecBase *, mySysBase, A6));
  	}
  	return 0;
 	
@@ -93,12 +100,15 @@ static AROS_UFH4(ULONG, disk_index_interrupt,
  
  	struct DiscResource *DiskBase = (struct DiscResource*)data;
    	volatile struct Custom *custom = (struct Custom*)0xdff000;	
- 	custom->intreq = 0x0002;
+ 	custom->intreq = INTF_DSKBLK;
  	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_DiscBlock.is_Code) {
- 		AROS_UFC2(void, DiskBase->dr_Current->dru_DiscBlock.is_Code,
+ 		D(bug("disk_block %p %p\n", DiskBase->dr_Current->dru_DiscBlock.is_Code, DiskBase->dr_Current->dru_DiscBlock.is_Data));
+  		AROS_UFC4(void, DiskBase->dr_Current->dru_DiscBlock.is_Code,
+ 			AROS_UFCA(struct Custom *, custom, A0),
 			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscBlock.is_Data, A1),
-			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscBlock.is_Code, A5));
- 	}
+			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscBlock.is_Code, A5),
+			AROS_UFCA(struct ExecBase *, mySysBase, A6));
+  	}
  	return 0;
 	
 	AROS_USERFUNC_EXIT
@@ -126,8 +136,8 @@ BOOL disk_internal_init (struct DiscResource *DiskBase)
 	ciab->ciaprb = 0xff; // inactive
 	ciab->ciaddrb = 0xff; // MTR SELx SIDE DIR STEP = inactive and output
 	
-	custom->dmacon = 0x0010; // disk dma off
 	custom->dsklen = 0x4000; // dsklen idle
+	custom->dmacon = 0x8010; // disk dma on
 	custom->dsksync = 0x4489; // sync
 	custom->adkcon = 0x7f00;
 	custom->adkcon = 0x8000 | 0x1000 | 0x0400 | 0x0100; // mfm, wordsync, fast
@@ -152,7 +162,7 @@ BOOL disk_internal_init (struct DiscResource *DiskBase)
 	inter->is_Data = DiskBase;
 	Disable();
 	SetIntVector(INTB_DSKSYNC, inter);
-	custom->intena = 0x1000;
+	custom->intena = INTF_DSKSYNC;
 	Enable();
 
 	inter = &DiskBase->dr_DiscBlock;
@@ -163,7 +173,7 @@ BOOL disk_internal_init (struct DiscResource *DiskBase)
 	inter->is_Data = DiskBase;
 	Disable();
 	SetIntVector(INTB_DSKBLK, inter);
-	custom->intena = 0x0002;
+	custom->intena = INTF_DSKBLK;
 	Enable();
 	
 	// detect drives
