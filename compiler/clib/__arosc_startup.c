@@ -15,7 +15,7 @@ void __arosc_program_startup(void)
 {
     D(bug("[__arosc_program_startup]\n"));
 
-    __get_arosc_privdata()->acpd_flags |= ACPD_NEWSTARTUP;
+    /* Function is just a placeholder for the future */
 }
 
 void __arosc_program_end(void)

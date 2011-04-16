@@ -45,11 +45,4 @@ int __init_atexit(void)
     return 1;
 }
 
-void __exit_atexit(void)
-{
-    if (!(__get_arosc_privdata()->acpd_flags & ACPD_NEWSTARTUP))
-        __callexitfuncs();
-}
-
 ADD2INIT(__init_atexit, 100);
-ADD2EXIT(__exit_atexit, 100);
