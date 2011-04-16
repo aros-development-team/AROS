@@ -125,6 +125,8 @@
 	ULONG width, height;
 	struct DimensionInfo info;
 	struct NameInfo name;
+	HIDDT_StdPixFmt stdpf;
+	OOP_Object *pf;
 	
 	if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_DIMS, mode) != sizeof(info)) {
 	    /* This should never happen because NextDisplayInfo() should
@@ -153,16 +155,18 @@
 	}   
 	if (info.MaxDepth < mindepth || info.MaxDepth > maxdepth)
 	    continue;
-		
+
+	/* Get the gfxmode pixelf format */
+	pf = (OOP_Object *)info.reserved[1];
+	OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+	/* ignore planar modes */
+	if (stdpf == vHidd_StdPixFmt_Plane)
+	    continue;
+
 	/* Check whether the gfxmode is the correct pixel format */
 	if (NULL != cmodelarray) {
-	    HIDDT_StdPixFmt stdpf;
 	    UWORD cyberpf;
-	    OOP_Object *pf = (OOP_Object *)info.reserved[1];
 	    BOOL found = FALSE;
-
-	    /* Get the gfxmode pixelf format */
-	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
 
 	    cyberpf = hidd2cyber_pixfmt[stdpf];
 	    if (cyberpf == (UWORD)-1)
@@ -189,10 +193,10 @@
 	cmnode->Width	= width;
 	cmnode->Height	= height;
 	cmnode->Depth	= info.MaxDepth;
+	cmnode->DisplayID = mode;
 	cmnode->DisplayTagList = NULL;
-	
-	/* This relies on DISPLAYNAMELEN being multiple of 4 */
-	CopyMemQuick(name.Name, cmnode->ModeText, DISPLAYNAMELEN);
+	CopyMem("CGFX:", cmnode->ModeText, 5);
+	CopyMem(name.Name, cmnode->ModeText + 5, DISPLAYNAMELEN - 5);
 
 	/* Keep track of the node */
 	AddTail(cybermlist, (struct Node *)cmnode);
