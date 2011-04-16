@@ -155,7 +155,7 @@ static void mdio_sync(long base)
 
 static int mdio_read(struct net_device *unit, int phy_id, int location)
 {
-	struct fe_priv *np = get_pcnpriv(unit);
+	// struct fe_priv *np = get_pcnpriv(unit);
 	UBYTE *base = get_hwbase(unit);
 	int mii_cmd = (0xf6 << 10) | (phy_id << 5) | location;
 	int retval = 0;
@@ -195,8 +195,8 @@ static int mdio_read(struct net_device *unit, int phy_id, int location)
 
 static void rtl8139nic_start_rx(struct net_device *unit)
 {
-	struct fe_priv *np = get_pcnpriv(unit);
-	UBYTE *base = get_hwbase(unit);
+	// struct fe_priv *np = get_pcnpriv(unit);
+	// UBYTE *base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8139nic_start_rx\n", unit->rtl8139u_name))
 	// Already running? Stop it.
@@ -205,7 +205,7 @@ RTLD(bug("[%s] rtl8139nic_start_rx\n", unit->rtl8139u_name))
 
 static void rtl8139nic_stop_rx(struct net_device *unit)
 {
-	UBYTE *base = get_hwbase(unit);
+	// UBYTE *base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8139nic_stop_rx\n", unit->rtl8139u_name))
 #warning "TODO: Handle starting/stopping Rx"
@@ -213,7 +213,7 @@ RTLD(bug("[%s] rtl8139nic_stop_rx\n", unit->rtl8139u_name))
 
 static void rtl8139nic_start_tx(struct net_device *unit)
 {
-	UBYTE *base = get_hwbase(unit);
+	// UBYTE *base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8139nic_start_tx()\n", unit->rtl8139u_name))
 #warning "TODO: Handle starting/stopping Tx"
@@ -221,7 +221,7 @@ RTLD(bug("[%s] rtl8139nic_start_tx()\n", unit->rtl8139u_name))
 
 static void rtl8139nic_stop_tx(struct net_device *unit)
 {
-	UBYTE *base = get_hwbase(unit);
+	// UBYTE *base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8139nic_stop_tx()\n", unit->rtl8139u_name))
 #warning "TODO: Handle starting/stopping Tx"
@@ -229,8 +229,8 @@ RTLD(bug("[%s] rtl8139nic_stop_tx()\n", unit->rtl8139u_name))
 
 static void rtl8139nic_txrx_reset(struct net_device *unit)
 {
-	struct fe_priv *np = get_pcnpriv(unit);
-	UBYTE *base = get_hwbase(unit);
+	// struct fe_priv *np = get_pcnpriv(unit);
+	// UBYTE *base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8139nic_txrx_reset()\n", unit->rtl8139u_name))
 }
@@ -241,11 +241,11 @@ RTLD(bug("[%s] rtl8139nic_txrx_reset()\n", unit->rtl8139u_name))
  */
 static void rtl8139nic_set_multicast(struct net_device *unit)
 {
-	struct fe_priv *np = get_pcnpriv(unit);
-	UBYTE *base = get_hwbase(unit);
+	// struct fe_priv *np = get_pcnpriv(unit);
+	// UBYTE *base = get_hwbase(unit);
 	ULONG addr[2];
 	ULONG mask[2];
-	ULONG pff;
+	// ULONG pff;
 
 RTLD(bug("[%s] rtl8139nic_set_multicast()\n", unit->rtl8139u_name))
 
@@ -292,7 +292,7 @@ RTLD(bug("[%s] rtl8139nic_get_mac()\n",unit->rtl8139u_name))
 static void rtl8139nic_set_mac(struct net_device *unit)
 {
 	UBYTE *base = get_hwbase(unit);
-	int i,j;
+	// int i,j;
 
 RTLD(bug("[%s] rtl8139nic_set_mac()\n",unit->rtl8139u_name))
 
@@ -323,7 +323,8 @@ static void rtl8139nic_initialize(struct net_device *unit)
 {
 	struct fe_priv *np = unit->rtl8139u_fe_priv;
 	UBYTE *base = get_hwbase(unit);
-	int i, config1;
+	int config1;
+	// int i;
 
 	config1 = BYTEIN(base + RTLr_Config1);
 	if (unit->rtl8139u_rtl_chipcapabilities & RTLc_HAS_MII_XCVR)
@@ -380,8 +381,8 @@ RTLD(bug("[%s] Chipset put into low power mode.\n", unit->rtl8139u_name))
 
 static void rtl8139nic_drain_tx(struct net_device *unit)
 {
-	struct fe_priv *np = get_pcnpriv(unit);
-	int i;
+	// struct fe_priv *np = get_pcnpriv(unit);
+	// int i;
 
 //	for (i = 0; i < NUM_TX_DESC; i++)
 //	{
@@ -391,8 +392,8 @@ static void rtl8139nic_drain_tx(struct net_device *unit)
 
 static void rtl8139nic_drain_rx(struct net_device *unit)
 {
-	struct fe_priv *np = get_pcnpriv(unit);
-	int i;
+	// struct fe_priv *np = get_pcnpriv(unit);
+	// int i;
 
 //	for (i = 0; i < RX_RING_SIZE; i++)
 //	{

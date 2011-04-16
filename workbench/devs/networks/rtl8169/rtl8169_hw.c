@@ -150,9 +150,9 @@ void rtl_hw_start_8169(struct net_device *unit)
 
     struct pHidd_PCIDevice_WriteConfigByte pcibyte;
 
-    UBYTE device_control;
-    UWORD ephy_data;
-    ULONG csi_tmp;
+    // UBYTE device_control;
+    // UWORD ephy_data;
+    // ULONG csi_tmp;
 
     RTLD(bug("[%s] rtl8169nic_HWStart_8169()\n", unit->rtl8169u_name))
 	if (np->mcfg == RTL_GIGA_MAC_VER_05)

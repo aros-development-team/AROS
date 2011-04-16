@@ -153,7 +153,7 @@ static inline int rtl8169_fragmented_frame(ULONG status)
 
 static inline void rtl8169_MarkToASIC(struct RxDesc *desc, ULONG rx_buf_sz)
 {
-	ULONG eor = AROS_LE2LONG(desc->opts1) & RingEnd;
+	// ULONG eor = AROS_LE2LONG(desc->opts1) & RingEnd;
 
 	desc->opts1 = AROS_LONG2LE(DescOwn | rx_buf_sz);
 }
@@ -165,7 +165,7 @@ void RTL8169_Rx_Process(struct RTL8169Unit *unit)
 {
     struct RTL8169Base *RTL8169DeviceBase = unit->rtl8169u_device;
     struct rtl8169_priv *np = unit->rtl8169u_priv;
-    UBYTE *base = unit->rtl8169u_BaseMem;
+    // UBYTE *base = unit->rtl8169u_BaseMem;
 
     struct TypeStats *tracker;
     ULONG packet_type;
@@ -175,9 +175,9 @@ void RTL8169_Rx_Process(struct RTL8169Unit *unit)
     struct IOSana2Req *request_tail;
     BOOL accepted;
     BOOL is_orphan;
-	unsigned int delta;
-	unsigned int count;
-	unsigned int rx_left;
+	// unsigned int delta;
+	// unsigned int count;
+	// unsigned int rx_left;
 	unsigned int cur_rx;
 
     RTLD(bug("[%s] RTL8169_Rx_Process()\n", unit->rtl8169u_name))
@@ -185,7 +185,7 @@ void RTL8169_Rx_Process(struct RTL8169Unit *unit)
 	for(;;)
 	{
 		UWORD len = 0;
-		UWORD overspill = 0;
+		// UWORD overspill = 0;
 		struct eth_frame *frame;
 
 		unsigned long rx_status;
@@ -1022,7 +1022,8 @@ struct RTL8169Unit *CreateUnit(struct RTL8169Base *RTL8169DeviceBase, OOP_Object
 
     if ((unit = AllocMem(sizeof(struct RTL8169Unit), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
     {
-		IPTR DeviceID, mmiobase, mmiolen, type;
+		IPTR mmiobase, mmiolen, type;
+		// IPTR DeviceID;
 		OOP_Object *driver;
 		BOOL mmioerror = FALSE;
 

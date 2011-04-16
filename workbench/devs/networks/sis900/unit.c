@@ -170,7 +170,7 @@ D(bug("[%s]: SiS900_RX_IntF: cur_rx:%4.4d, dirty_rx:%4.4d status:0x%8.8x\n", uni
 	while (rx_status & OWN)
 	{
 		unsigned int rx_size;
-        int i;
+        // int i;
         struct eth_frame *frame;
 
 		rx_size = (rx_status & DSIZE) - CRC_SIZE;
@@ -437,8 +437,8 @@ D(bug("[%s]: SiS900_TX_IntF: Packet Queued.\n", unit->sis900u_name));
 static void SiS900_TimeoutHandlerF(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct SiS900Unit *unit = (struct SiS900Unit *) irq->h_Data;
-    struct timeval time;
-    struct Device *TimerBase = unit->sis900u_TimerSlowReq->tr_node.io_Device;
+    // struct timeval time;
+    // struct Device *TimerBase = unit->sis900u_TimerSlowReq->tr_node.io_Device;
 
 //    GetSysTime(&time);
 //D(bug("[%s]: SiS900_TimeoutHandlerF()\n", unit->sis900u_name));
@@ -461,12 +461,13 @@ static void SiS900_IntHandlerF(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct SiS900Unit *unit = (struct SiS900Unit *)irq->h_Data;
 	long ioaddr = unit->sis900u_BaseMem;
-    ULONG events;
-    int i, link_changed, boguscnt = 20;
+    // ULONG events;
+    int boguscnt = 20;
+    // int i, link_changed;
 	ULONG status;
 	unsigned int handled = 0;
-    struct Device *TimerBase = unit->sis900u_TimerSlowReq->tr_node.io_Device;
-    struct timeval time;
+    // struct Device *TimerBase = unit->sis900u_TimerSlowReq->tr_node.io_Device;
+    // struct timeval time;
 
 D(bug("[%s]: SiS900_IntHandlerF()!!!!!!!\n", unit->sis900u_name));
 
@@ -796,7 +797,7 @@ D(bug("[SiS900] CreateUnit()\n"));
 
     if ((unit = AllocMem(sizeof(struct SiS900Unit), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
     {
-        IPTR        DeviceID = NULL, RevisionID = NULL, HostRevisionID = NULL, base = NULL, len;
+        IPTR        DeviceID = 0, RevisionID = 0, HostRevisionID = 0, base = 0, len;
         OOP_Object  *driver = NULL;
 
 D(bug("[SiS900] CreateUnit: Unit allocated @ %x\n", unit));

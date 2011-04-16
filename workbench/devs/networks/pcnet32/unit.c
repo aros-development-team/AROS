@@ -53,7 +53,7 @@ volatile UBYTE readb(APTR base)
 {
     return BYTEIN(base);
 }
-volatile void writeb(UBYTE val, APTR base)
+void writeb(UBYTE val, APTR base)
 {
     BYTEOUT(base, val);
 }
@@ -63,7 +63,7 @@ volatile UWORD readw(APTR base)
 {
     return WORDIN(base);
 }
-volatile void writew(UWORD val, APTR base)
+void writew(UWORD val, APTR base)
 {
     WORDOUT(base, val);
 }
@@ -73,7 +73,7 @@ volatile ULONG readl(APTR base)
 {
     return *((ULONG*)base);
 }
-volatile void writel(ULONG val, APTR base)
+void writel(ULONG val, APTR base)
 {
     *((ULONG*)base) = val;
 }
@@ -612,7 +612,7 @@ AROS_UFH3(void, PCN32_TX_End_Int,
     struct PCN32Base *PCNet32Base = unit->pcnu_device;
     struct PCN32Unit *dev = unit;
     struct fe_priv *np = dev->pcnu_fe_priv;
-    UBYTE *base = (UBYTE*) dev->pcnu_BaseMem;
+    // UBYTE *base = (UBYTE*) dev->pcnu_BaseMem;
 
 D(bug("%s: PCN32_TX_End_Int()\n", unit->pcnu_name));
 
@@ -711,16 +711,16 @@ static void PCN32_TimeoutHandler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 static void PCN32_IntHandler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct PCN32Unit *dev = (struct PCN32Unit *) irq->h_Data;
-    struct fe_priv *np = dev->pcnu_fe_priv;
-    UBYTE *base = (UBYTE*) dev->pcnu_BaseMem;
-    ULONG events;
-    int i;
+    // struct fe_priv *np = dev->pcnu_fe_priv;
+    // UBYTE *base = (UBYTE*) dev->pcnu_BaseMem;
+    // ULONG events;
+    // int i;
     struct Device *TimerBase = dev->pcnu_TimerSlowReq->tr_node.io_Device;
     struct timeval time;
 
     GetSysTime(&time);
     int csr_0 = 0;
-    int csr_4 = 0;
+    // int csr_4 = 0;
 D(bug("%s: PCN32_IntHandler()!!!!!!!\n", dev->pcnu_name));
     
     while ( (csr_0 = dev->read_csr(dev->pcnu_BaseMem, 0)) & (1 << 7))

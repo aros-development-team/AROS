@@ -103,7 +103,7 @@ struct BusContext *AllocPrometheusCard(ULONG index, struct DevBase *base)
    UPINT vendor_id, product_id, plx_base;
    UBYTE io_range_no;
    volatile UBYTE *cor_reg;
-   ULONG pci_control;
+   __unused ULONG pci_control;
 
    /* Find a compatible card */
 

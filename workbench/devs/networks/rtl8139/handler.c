@@ -290,7 +290,7 @@ static BOOL CmdFlush(LIBBASETYPEPTR LIBBASE, struct IORequest *request)
 static BOOL CmdS2DeviceQuery(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
 	struct RTL8139Unit *unit = (APTR)request->ios2_Req.io_Unit;
-	struct fe_priv *np = unit->rtl8139u_fe_priv;
+	// struct fe_priv *np = unit->rtl8139u_fe_priv;
 	struct Sana2DeviceQuery *info;
 	ULONG size_available, size;
 
@@ -691,10 +691,10 @@ RTLD(bug("[%s] S2CmdReadOrphan()\n", unit->rtl8139u_name))
 
 static BOOL CmdOnline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
-	struct RTL8139Unit *unit = (struct RTL8139Unit *)request->ios2_Req.io_Unit;
+	// struct RTL8139Unit *unit = (struct RTL8139Unit *)request->ios2_Req.io_Unit;
 	BYTE error = 0;
 	ULONG wire_error = 0;
-	UWORD i;
+	// UWORD i;
 
 #if 0 // FIXME: some of what's done here is duplicated in device init
 RTLD(bug("[%s] S2CmdOnline()\n", unit->rtl8139u_name))
@@ -736,7 +736,7 @@ RTLD(bug("[%s] S2CmdOnline()\n", unit->rtl8139u_name))
 
 static BOOL CmdOffline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
-	struct RTL8139Unit *unit;
+	// struct RTL8139Unit *unit;
 
 #if 0 // FIXME: some of what's done here is duplicated in device de-init
 	/* Put adapter offline */

@@ -198,8 +198,8 @@ static BOOL CmdRead(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
     struct RTL8169Unit *unit;
     struct Opener *opener;
-    BYTE error = 0;
-    ULONG wire_error = S2WERR_GENERIC_ERROR;
+    // BYTE error = 0;
+    // ULONG wire_error = S2WERR_GENERIC_ERROR;
     BOOL complete = FALSE;
 
     unit = (APTR) request->ios2_Req.io_Unit;
@@ -277,7 +277,7 @@ static BOOL CmdFlush(LIBBASETYPEPTR LIBBASE, struct IORequest *request)
 static BOOL CmdS2DeviceQuery(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
     struct RTL8169Unit *unit = (APTR)request->ios2_Req.io_Unit;
-    struct rtl8169_priv *np = unit->rtl8169u_priv;
+    // struct rtl8169_priv *np = unit->rtl8169u_priv;
     struct Sana2DeviceQuery *info;
     ULONG size_available, size;
 

@@ -489,7 +489,7 @@ static void rtl_hw_phy_config(struct net_device *unit)
 static int rtl8169_set_speed_tbi(struct net_device *unit,
 				 UBYTE autoneg, UWORD speed, UBYTE duplex)
 {
-    struct rtl8169_priv *np = get_pcnpriv(unit);
+    // struct rtl8169_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
 	ULONG reg;
 
@@ -515,11 +515,11 @@ static int rtl8169_set_speed_xmii(struct net_device *unit,
 				  UBYTE autoneg, UWORD speed, UBYTE duplex)
 {
     struct rtl8169_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
+    // APTR base = get_hwbase(unit);
     int auto_nego = 0;
     int giga_ctrl = 0;
-    int bmcr_true_force = 0;
-    unsigned long flags;
+    // int bmcr_true_force = 0;
+    // unsigned long flags;
 
 	auto_nego = mdio_read(unit, MII_ADVERTISE);
 	auto_nego &= ~(ADVERTISE_10HALF | ADVERTISE_10FULL |
@@ -784,7 +784,8 @@ static void rtl8169_Init(struct net_device *unit)
     APTR base = get_hwbase(unit);
     UBYTE autoneg, duplex;
     UWORD speed;
-    int i, config1;
+    int i;
+    // int config1;
 
     RTLD(bug("[%s] rtl8169_Init(unit @ %p)\n", unit->rtl8169u_name, unit))
 
@@ -913,8 +914,8 @@ static void rtl8169_Init(struct net_device *unit)
 
 static void rtl8169_drain_tx(struct net_device *unit)
 {
-    struct rtl8169_priv *np = get_pcnpriv(unit);
-    int i;
+    // struct rtl8169_priv *np = get_pcnpriv(unit);
+    // int i;
 //    for (i = 0; i < NUM_TX_DESC; i++) {
     #warning "TODO: rtl8169_drain_tx does nothing atm."
 //    }
@@ -922,8 +923,8 @@ static void rtl8169_drain_tx(struct net_device *unit)
 
 static void rtl8169_drain_rx(struct net_device *unit)
 {
-    struct rtl8169_priv *np = get_pcnpriv(unit);
-    int i;
+    // struct rtl8169_priv *np = get_pcnpriv(unit);
+    // int i;
 //    for (i = 0; i < RX_RING_SIZE; i++) {
     #warning "TODO: rtl8169_drain_rx does nothing atm."
 //    }
@@ -1074,7 +1075,7 @@ void rtl_set_rx_mode(struct net_device *unit)
     struct rtl8169_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
 
-	unsigned long flags;
+	// unsigned long flags;
 	ULONG mc_filter[2];	/* Multicast hash filter */
 	int rx_mode;
 	ULONG tmp = 0;
@@ -1131,7 +1132,7 @@ void rtl_set_rx_mode(struct net_device *unit)
 
 static unsigned int rtl8169_XMIILinkOK(struct net_device *unit)
 {
-    struct rtl8169_priv *np = get_pcnpriv(unit);
+    // struct rtl8169_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
 
     mdio_write(unit, 0x1f, 0x0000);
@@ -1143,7 +1144,7 @@ void rtl8169_CheckLinkStatus(struct net_device *unit)
 {
     struct rtl8169_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
-    unsigned long flags;
+    // unsigned long flags;
     int result;
 
 	if ((np->mcfg <= RTL_GIGA_MAC_VER_06) &&
@@ -1198,7 +1199,7 @@ static ULONG rtl8169_TxFill(struct net_device *unit, ULONG start, ULONG end)
 
     for (cur = start; end - cur > 0; cur++)
     {
-    	int ret, i = cur % NUM_TX_DESC;
+    	int i = cur % NUM_TX_DESC;
     
     	if (np->TxDescArray[i].addr)
     	{
@@ -1239,7 +1240,7 @@ static ULONG rtl8169_RxFill(struct net_device *unit, ULONG start, ULONG end)
 
     for (cur = start; end - cur > 0; cur++)
     {
-    	int ret, i = cur % NUM_RX_DESC;
+    	int i = cur % NUM_RX_DESC;
     
     	if (np->RxDescArray[i].addr)
     	{
@@ -1327,7 +1328,7 @@ static void rtl8169_HWStart(struct net_device *unit)
 static int rtl8169_Open(struct net_device *unit)
 {
     struct rtl8169_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
+    // APTR base = get_hwbase(unit);
     int ret;
 
     RTLD(bug("[%s] rtl8169_Open(unit @ %p)\n", unit->rtl8169u_name, unit))
@@ -1387,7 +1388,7 @@ out_drain:
 static int rtl8169_Close(struct net_device *unit)
 {
     struct rtl8169_priv *np = get_pcnpriv(unit);
-    UBYTE *base;
+    // UBYTE *base;
 
     RTLD(bug("[%s] rtl8169_Close()\n", unit->rtl8169u_name))
     

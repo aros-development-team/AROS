@@ -519,7 +519,7 @@ static int sis900_mii_probe(struct net_device *unit)
 	UWORD poll_bit = MII_STAT_LINK, status = 0;
 #warning "TODO: Replace jiffies"
 #define jiffies 10
-	unsigned long timeout = jiffies + 5 * HZ;
+	// unsigned long timeout = jiffies + 5 * HZ;
 	int phy_addr;
 
 D(bug("[%s]  sis900_mii_probe()\n", unit->sis900u_name));
@@ -699,7 +699,7 @@ D(bug("[%s]: sis900_get_mac_addr:  Error EERPOM read %x\n", unit->sis900u_name, 
 static int sis630e_get_mac_addr(struct net_device *unit)
 {
 //	struct pci_dev *isa_bridge = NULL;
-	UBYTE reg;
+	// UBYTE reg;
 	int i;
 
 D(bug("[%s]  sis630e_get_mac_addr()\n", unit->sis900u_name));
@@ -813,7 +813,7 @@ void sis900func_set_multicast(struct net_device *unit)
 {
     ULONG addr[2];
     ULONG mask[2];
-    ULONG pff;
+    // ULONG pff;
 
 D(bug("[%s]: sis900func_set_multicast()\n", unit->sis900u_name));
 
@@ -828,7 +828,8 @@ D(bug("[%s]  sis900func_deinitialize()\n", unit->sis900u_name));
 
 void sis900func_initialize(struct net_device *unit)
 {
-    int i, ret, config1;
+    int ret;
+    // int i, config1;
 
 D(bug("[%s]  sis900func_initialize()\n", unit->sis900u_name));
 	
@@ -932,7 +933,7 @@ static void free_irq(struct net_device *unit)
 
 void sis900func_set_mac(struct net_device *unit)
 {
-   int i;
+   // int i;
 
 D(bug("[%s]: sis900func_set_mac()\n", unit->sis900u_name));
 
@@ -1361,7 +1362,8 @@ D(bug("[%s]: sis900_check_mode()\n", unit->sis900u_name));
 
 int sis900func_open(struct net_device *unit)
 {
-    int ret, i, rx_buf_len_idx;
+    int ret;
+    // int i, rx_buf_len_idx;
 
 D(bug("[%s]: sis900func_open()\n", unit->sis900u_name));
 
@@ -1408,7 +1410,7 @@ out_drain:
 
 int sis900func_close(struct net_device *unit)
 {
-    UBYTE *base;
+    // UBYTE *base;
 
 D(bug("[%s]: sis900func_close()\n", unit->sis900u_name));
 	

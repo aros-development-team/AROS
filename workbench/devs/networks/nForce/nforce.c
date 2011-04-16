@@ -95,7 +95,7 @@ static volatile ULONG readl(APTR base)
 {
     return *((ULONG*)base);
 }
-static volatile void writel(ULONG val, APTR base)
+static void writel(ULONG val, APTR base)
 {
     *((ULONG*)base) = val;
 }

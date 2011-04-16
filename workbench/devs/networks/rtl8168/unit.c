@@ -160,7 +160,7 @@ void RTL8168_Rx_Process(struct RTL8168Unit *unit)
 {
     struct RTL8168Base *RTL8168DeviceBase = unit->rtl8168u_device;
     struct rtl8168_priv *np = unit->rtl8168u_priv;
-    APTR base = unit->rtl8168u_BaseMem;
+    // APTR base = unit->rtl8168u_BaseMem;
 
     struct TypeStats *tracker;
     ULONG packet_type;
@@ -488,7 +488,7 @@ static void RTL8168_Tx_Cleanup(struct net_device *unit)
 	if (status & LastFrag) {
 RTLD(bug("[%s] RTL8168_Tx_Cleanup: Released buffer %d (%d bytes)\n", unit->rtl8168u_name, entry, packet_size))
 	    np->TxDescArray[entry].opts1 = AROS_LONG2LE(RingEnd);
-	    np->TxDescArray[entry].addr = NULL;
+	    np->TxDescArray[entry].addr = 0;
 	}
 	dirty_tx++;
 	tx_left--;
@@ -967,7 +967,8 @@ struct RTL8168Unit *CreateUnit(struct RTL8168Base *RTL8168DeviceBase, OOP_Object
 
     if ((unit = AllocMem(sizeof(struct RTL8168Unit), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
     {
-	IPTR		DeviceID, mmiobase, mmiolen, type;
+	IPTR		mmiobase, mmiolen, type;
+	// IPTR		DeviceID;
 	OOP_Object	*driver;
 	BOOL		mmioerror = FALSE;
 
