@@ -62,7 +62,7 @@ D(bug("[AROSTCP] ssconfig_parse()\n"));
 
   if (config != NULL) {
     
-    if (ReadArgs(template, (LONG *)config->args, rdargs)) {
+    if (ReadArgs(template, (IPTR *)config->args, rdargs)) {
       config->rdargs = rdargs;
       config->flags |= SSCF_RDARGS;
       return config;

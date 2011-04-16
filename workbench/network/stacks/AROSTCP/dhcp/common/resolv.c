@@ -32,10 +32,10 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include "dhcpd.h"
 
@@ -50,10 +50,10 @@ void read_resolv_conf (parse_time)
 	struct parse *cfile;
 	const char *val;
 	int token;
-	int declaration = 0;
+	// int declaration = 0;
 	struct name_server *sp, *sl, *ns;
 	struct domain_search_list *dp, *dl, *nd;
-	struct iaddr *iaddr;
+	// struct iaddr *iaddr;
 
 	if ((file = open (path_resolv_conf, O_RDONLY)) < 0) {
 		log_error ("Can't open %s: %m", path_resolv_conf);
@@ -180,7 +180,7 @@ void read_resolv_conf (parse_time)
 
 struct name_server *first_name_server ()
 {
-	FILE *rc;
+	// FILE *rc;
 	static TIME rcdate;
 	struct stat st;
 
@@ -191,8 +191,8 @@ struct name_server *first_name_server ()
 			return (struct name_server *)0;
 		}
 		if (st.st_mtime > rcdate) {
-			char rcbuf [512];
-			char *s, *t, *u;
+			// char rcbuf [512];
+			// char *s, *t, *u;
 			rcdate = cur_time + 1;
 			
 			read_resolv_conf (rcdate);

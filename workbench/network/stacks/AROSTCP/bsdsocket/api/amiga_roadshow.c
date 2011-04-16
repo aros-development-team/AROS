@@ -316,7 +316,6 @@ AROS_LH1I(void, setnetent,
 {
 	AROS_LIBFUNC_INIT
 	__log(LOG_CRIT, "setnetent() is not implemented");
-	return NULL;
 	AROS_LIBFUNC_EXIT
 }
 
@@ -342,7 +341,6 @@ AROS_LH1I(void, setprotoent,
 {
 	AROS_LIBFUNC_INIT
 	__log(LOG_CRIT, "setprotoent() is not implemented");
-	return NULL;
 	AROS_LIBFUNC_EXIT
 }
 
@@ -353,7 +351,6 @@ AROS_LH1I(void, setservent,
 {
 	AROS_LIBFUNC_INIT
 	__log(LOG_CRIT, "setservent() is not implemented");
-	return NULL;
 	AROS_LIBFUNC_EXIT
 }
 

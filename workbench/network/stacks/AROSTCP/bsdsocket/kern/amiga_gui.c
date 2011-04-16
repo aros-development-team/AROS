@@ -128,7 +128,7 @@ long callback(long code, long count, va_list args)
 	default:
 		DGUI(KPrintF("Bad callback code %ld from panel\n", code));
 	}
-	return NULL;
+	return 0;
 }
 
 #ifdef __MORPHOS__

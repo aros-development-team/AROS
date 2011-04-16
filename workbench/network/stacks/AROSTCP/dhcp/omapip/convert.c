@@ -33,10 +33,10 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include <omapip/omapip_p.h>
 
@@ -165,7 +165,8 @@ int binary_to_ascii (outbuf, inbuf, base, width)
 	u_int32_t number;
 	static char h2a [] = "0123456789abcdef";
 	int power = converted_length (inbuf, base, width);
-	int i, j;
+	int i;
+	// int j;
 
 	if (base > 16)
 		return 0;

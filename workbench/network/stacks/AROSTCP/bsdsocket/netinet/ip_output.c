@@ -667,7 +667,7 @@ ip_pcbopts(pcbopt, m)
 	struct mbuf **pcbopt;
 	register struct mbuf *m;
 {
-	register cnt, optlen;
+	register int cnt, optlen;
 	register u_char *cp;
 	u_char opt;
 

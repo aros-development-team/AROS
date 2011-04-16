@@ -68,7 +68,7 @@
 unsigned int
 __if_nametoindex(char *ifname, struct SocketBase *SocketBase)
 {
-	int s;
+	// int s;
 	struct ifnet *ifp;
 	struct ifaddrs *ifaddrs, *ifa;
 	unsigned int ni;

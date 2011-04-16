@@ -27,7 +27,7 @@
 
 #include <kern/amiga_includes.h>
 
-struct SignalSemaphore malloc_semaphore = { 0 };
+struct SignalSemaphore malloc_semaphore;
 static BOOL initialized = FALSE;
 static APTR mem_pool = NULL;
 

@@ -118,7 +118,7 @@ D(bug("[AROSTCP](amiga_timer.c) timer_init()\n"));
 	  /*
 	   * initialize TimerBase from timerIORequest
 	   */
-	  TimerBase = (struct Library *)timerIORequest->tr_node.io_Device;
+	  TimerBase = timerIORequest->tr_node.io_Device;
 	  /*
 	   * Initialize some fields of the IO request to common values
 	   */

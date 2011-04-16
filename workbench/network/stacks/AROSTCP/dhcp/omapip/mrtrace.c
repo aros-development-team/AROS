@@ -85,7 +85,7 @@ void trace_mr_statp_setup (res_state statp)
 	unsigned buflen = 0;
 	char *buf = (char *)0;
 	isc_result_t status;
-	u_int32_t id;
+	// u_int32_t id;
 	int i;
 
 	if (trace_playback ()) {
@@ -416,7 +416,7 @@ unsigned int trace_mr_res_randomid (unsigned int oldid)
 	isc_result_t status;
 
 	if (trace_playback ()) {
-		int nscount;
+		// int nscount;
 		status = trace_get_packet (&trace_mr_randomid, &buflen, &buf);
 		if (status != ISC_R_SUCCESS) {
 			log_error ("trace_mr_statp: no statp packet found.");

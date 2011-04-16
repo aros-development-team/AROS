@@ -32,7 +32,9 @@
  * SUCH DAMAGE.
  */
 
+#if 0
 static char sccsid[] = "@(#)route.c	5.35 (Berkeley) 6/27/91";
+#endif
 
 /****** netutil.doc/route ***************************************************
 *
@@ -234,13 +236,13 @@ quit(char *s)
 	((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
 #define ADVANCE(x, n) (x += ROUNDUP((n)->sa_len))
 
-main(argc, argv)
+int main(argc, argv)
 	int argc;
 	char **argv;
 {
 	extern int optind;
 	int ch;
-	char *argvp;
+	// char *argvp;
 
 	SocketBase = OpenLibrary(socket_name, SOCKET_VERSION);
 	if(SocketBase == NULL) {
@@ -965,6 +967,8 @@ do_sa:
 	sockaddr(s, &su->sa);
 	return (1);
 #endif
+
+	return 0;
 }
 
 short ns_nullh[] = {0,0,0};

@@ -108,7 +108,8 @@ res_nmkupdate(res_state statp,
 	u_int16_t rtype, rclass;
 	u_int32_t n1, rttl;
 	u_char *dnptrs[20], **dpp, **lastdnptr;
-	unsigned siglen, certlen;
+	unsigned certlen;
+	__unused unsigned siglen;
 	int keylen;
 	unsigned buflen = *blp;
 	u_char *buf = (unsigned char *)bp;
@@ -934,8 +935,8 @@ static struct valuelist *servicelist, *protolist;
 
 void
 res_buildservicelist() {
-	struct servent *sp;
-	struct valuelist *slp;
+	__unused struct servent *sp;
+	__unused struct valuelist *slp;
 
 #ifndef SET_SERVENT_MISSING
 #ifdef MAYBE_HESIOD

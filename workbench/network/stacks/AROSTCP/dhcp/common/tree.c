@@ -32,10 +32,10 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include "dhcpd.h"
 #include <omapip/omapip_p.h>
@@ -249,7 +249,7 @@ int make_limit (new, expr, limit)
 	struct expression *expr;
 	int limit;
 {
-	struct expression *rv;
+	// struct expression *rv;
 
 	/* Allocate a node to enforce a limit on evaluation. */
 	if (!expression_allocate (new, MDL))
@@ -644,11 +644,12 @@ int evaluate_dns_expression (result, packet, lease, client_state, in_options,
 	struct binding_scope **scope;
 	struct expression *expr;
 {
-	ns_updrec *foo;
+	// ns_updrec *foo;
 	unsigned long ttl = 0;
 	char *tname;
 	struct data_string name, data;
-	int r0, r1, r2, r3;
+	int r0, r1, r2;
+	// int r3;
 
 	if (!result || *result) {
 		log_error ("evaluate_dns_expression called with non-null %s",
@@ -903,10 +904,12 @@ int evaluate_boolean_expression (result, packet, lease, client_state,
 	struct binding_scope **scope;
 	struct expression *expr;
 {
-	struct data_string left, right;
-	struct data_string rrtype, rrname, rrdata;
-	unsigned long ttl;
-	int srrtype, srrname, srrdata, sttl;
+	struct data_string left;
+	// struct data_string right;
+	// struct data_string rrtype, rrname, rrdata;
+	// unsigned long ttl;
+	// int srrtype, srrname, srrdata;
+	// int sttl;
 	int bleft, bright;
 	int sleft, sright;
 	struct binding *binding;
@@ -1275,11 +1278,12 @@ int evaluate_data_expression (result, packet, lease, client_state,
 	int line;
 {
 	struct data_string data, other;
-	unsigned long offset, len, i;
+	unsigned long offset, len;
+	// unsigned long i;
 	int s0, s1, s2, s3;
 	int status;
 	struct binding *binding;
-	char *s;
+	// char *s;
 	struct binding_value *bv;
 
 	switch (expr -> op) {
@@ -1826,7 +1830,7 @@ int evaluate_data_expression (result, packet, lease, client_state,
 					       MDL);
 
 		if (s0 && s1) {
-			char *upper;
+			// char *upper;
 			int i;
 
 			/* The buffer must be a multiple of the number's
@@ -3125,7 +3129,7 @@ static int op_val (op)
 int op_precedence (op1, op2)
 	enum expr_op op1, op2;
 {
-	int ov1, ov2;
+	// int ov1, ov2;
 
 	return op_val (op1) - op_val (op2);
 }
@@ -3740,7 +3744,7 @@ int binding_scope_dereference (ptr, file, line)
 	const char *file;
 	int line;
 {
-	int i;
+	// int i;
 	struct binding_scope *binding_scope;
 
 	if (!ptr || !*ptr) {

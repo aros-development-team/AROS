@@ -82,7 +82,7 @@ struct pstruct {
     };
 
 #define MAXPIPES    6
-static struct pstruct poarray[MAXPIPES] = { 0 };
+static struct pstruct poarray[MAXPIPES];
 
 static int childprocess(void);
 

@@ -50,13 +50,13 @@ D(bug("[AROSTCP] amiga_netstat.c: __QueryInterfaceTagList()\n"));
 			case IFQ_BadData:
 			{
 //				log(LOG_CRIT, "IFQ_BadData is not implemented");
-				*((ULONG *)tag->ti_Data) = NULL; /*** TODO ***/
+				*((ULONG *)tag->ti_Data) = 0; /*** TODO ***/
 				break;
 			}
 			case IFQ_Overruns:
 			{
 //				log(LOG_CRIT, "IFQ_Overruns is not implemented");
-				*((ULONG *)tag->ti_Data) = NULL;
+				*((ULONG *)tag->ti_Data) = 0;
 				break;
 			}
 			case IFQ_UnknownTypes:
@@ -70,25 +70,25 @@ D(bug("[AROSTCP] amiga_netstat.c: __QueryInterfaceTagList()\n"));
 				break;
 		        case IFQ_Address:
 //				log(LOG_CRIT, "IFQ_Address is not implemented");
-				*(STRPTR)tag->ti_Data = NULL;
+				*(STRPTR)tag->ti_Data = 0;
 				break;
 			}
 			case IFQ_DestinationAddress:
 			{
 //				log(LOG_CRIT, "IFQ_DestinationAddress is not implemented");
-				*(STRPTR)tag->ti_Data = NULL;
+				*(STRPTR)tag->ti_Data = 0;
 				break;
 			}
 			case IFQ_BroadcastAddress:
 			{
 //				log(LOG_CRIT, "IFQ_BroadcastAddress is not implemented");
-				*(STRPTR)tag->ti_Data = NULL;
+				*(STRPTR)tag->ti_Data = 0;
 				break;
 			}
 			case IFQ_NetMask:
 			{
 //				log(LOG_CRIT, "IFQ_NetMask is not implemented");
-				*(STRPTR)tag->ti_Data = NULL;
+				*(STRPTR)tag->ti_Data = 0;
 				break;
 			}
 			case IFQ_Metric:
@@ -138,7 +138,7 @@ D(bug("[AROSTCP] amiga_netstat.c: __QueryInterfaceTagList()\n"));
 			   {
 			       if ((ifp->if_query) && (ifp->if_query(ifp, tag) == 0))
 					  break;
-				   *((ULONG *)tag->ti_Data) = NULL;
+				   *((ULONG *)tag->ti_Data) = 0;
 			    }
 			};
 

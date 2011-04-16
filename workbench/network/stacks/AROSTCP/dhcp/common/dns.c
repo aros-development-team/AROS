@@ -31,10 +31,10 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include "dhcpd.h"
 #include "arpa/nameser.h"
@@ -127,7 +127,7 @@ dns_zone_hash_t *dns_zone_hash;
 isc_result_t find_tsig_key (ns_tsig_key **key, const char *zname,
 			    struct dns_zone *zone)
 {
-	isc_result_t status;
+	// isc_result_t status;
 	ns_tsig_key *tkey;
 
 	if (!zone)
@@ -201,7 +201,7 @@ isc_result_t enter_dns_zone (struct dns_zone *zone)
 
 isc_result_t dns_zone_lookup (struct dns_zone **zone, const char *name)
 {
-	struct dns_zone *tz = (struct dns_zone *)0;
+	// struct dns_zone *tz = (struct dns_zone *)0;
 	int len;
 	char *tname = (char *)0;
 	isc_result_t status;
@@ -234,7 +234,7 @@ int dns_zone_dereference (ptr, file, line)
 	const char *file;
 	int line;
 {
-	int i;
+	// int i;
 	struct dns_zone *dns_zone;
 
 	if (!ptr || !*ptr) {
@@ -397,9 +397,9 @@ void repudiate_zone (struct dns_zone **zone)
 void cache_found_zone (ns_class class,
 		       char *zname, struct in_addr *addrs, int naddrs)
 {
-	isc_result_t status = ISC_R_NOTFOUND;
+	// isc_result_t status = ISC_R_NOTFOUND;
 	struct dns_zone *zone = (struct dns_zone *)0;
-	struct data_string nsaddrs;
+	// struct data_string nsaddrs;
 	int ix = strlen (zname);
 
 	if (zname [ix - 1] == '.')

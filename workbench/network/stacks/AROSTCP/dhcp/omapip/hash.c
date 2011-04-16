@@ -32,10 +32,10 @@
  * ``http://www.nominum.com''.
  */
 
-#ifndef lint
+#if 0
 static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
+#endif
 
 #include <omapip/omapip_p.h>
 #include <ctype.h>
@@ -82,8 +82,8 @@ void free_hash_table (tp, file, line)
 	const char *file;
 	int line;
 {
-	int i;
-	struct hash_bucket *hbc, *hbn = (struct hash_bucket *)0;
+	__unused int i;
+	__unused struct hash_bucket *hbc, *hbn = (struct hash_bucket *)0;
 	struct hash_table *ptr = *tp;
 
 #if defined (DEBUG_MEMORY_LEAKAGE) || \
@@ -176,7 +176,7 @@ void free_hash_bucket (ptr, file, line)
 	const char *file;
 	int line;
 {
-	struct hash_bucket *hp;
+	__unused struct hash_bucket *hp;
 #if defined (DEBUG_MALLOC_POOL)
 	for (hp = free_hash_buckets; hp; hp = hp -> next) {
 		if (hp == ptr) {

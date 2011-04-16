@@ -200,7 +200,7 @@ char usage_str[] =
 #define SOCKET_VERSION 3
 const TEXT socket_name[] = "bsdsocket.library";
 
-main(argc, argv)
+int main(argc, argv)
 	int argc;
 	char **argv;
 {
@@ -603,7 +603,7 @@ sana_aton(const char *str, u_char *n, u_char *lenp)
 static void
 usage(void)
 {
-  printf(usage_str);
+  puts(usage_str);
 
   exit(1);
 }
