@@ -1,13 +1,14 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #warning "TODO: fs support"
-//#error "Continue: clean (disable other windows) + check mount"
 
 #include <proto/alib.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/icon.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -16,8 +17,10 @@
 #include <intuition/icclass.h>
 #include <intuition/intuition.h>
 #include <intuition/sghooks.h>
+#include <libraries/asl.h>
 #include <libraries/locale.h>
 #include <libraries/mui.h>
+#include <workbench/workbench.h>
 #ifdef HAVE_COOLIMAGES
 #include <libraries/coolimages.h>
 #endif
@@ -64,6 +67,7 @@ struct GUIGadgets gadgets;
 
 struct Hook hook_display;
 struct Hook hook_buttons;
+struct Hook hook_createml;
 struct Hook hook_lv_doubleclick;
 struct Hook hook_lv_click;
 
@@ -1167,6 +1171,122 @@ AROS_UFH3(void, buttons_function,
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3(void, createml_function,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(ULONG *, arg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    IPTR active = MUIA_List_Active;
+    struct HDTBPartition *partition = NULL;
+
+    get(gadgets.leftlv, MUIA_List_Active, &active);
+    if (active != MUIV_List_Active_Off)
+    {
+	struct FileRequester *req;
+	struct TagItem asltags[] =
+	{
+	    {ASLFR_InitialDrawer, "SYS:Storage/DOSDrivers"},
+	    {ASLFR_InitialFile  , 0},
+	    {ASLFR_DoSaveMode   , TRUE},
+	    {TAG_DONE           , 0}
+	};
+	
+        DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, &partition);
+	asltags[1].ti_Data = (IPTR)partition->listnode.ln.ln_Name;
+
+	req = MUI_AllocAslRequest(ASL_FileRequest, asltags);
+
+	if (!req)
+	    return;
+	
+	if (MUI_AslRequest(req, NULL))
+	{
+	    ULONG len = strlen(req->fr_Drawer) + strlen(req->fr_File) + 2;
+	    STRPTR pathname = AllocMem(len, MEMF_ANY);
+	    
+	    if (pathname)
+	    {
+		BPTR file;
+
+		strcpy(pathname, req->fr_Drawer);
+		AddPart(pathname, req->fr_File, len);
+
+		file = Open(pathname, MODE_NEWFILE);
+		FreeMem(pathname, len);
+
+		if (file)
+		{
+		    /* TODO: Attempt to pick up these from FileSystem.resource */
+		    ULONG stack = 16384;
+		    STRPTR fs = "";
+		    LONG globvec = -1;
+		    struct DiskObject *icon;
+		    IPTR args[20];
+
+		    args[ 0] = fs;
+		    args[ 1] = partition->ph->bd->ioreq->iotd_Req.io_Device->dd_Library.lib_Node.ln_Name;
+		    args[ 2] = ((struct HDNode *)partition->root)->unit;
+		    args[ 3] = partition->de.de_SizeBlock * 4;  /* block size in longs */
+		    args[ 4] = partition->de.de_Surfaces;
+		    args[ 5] = partition->de.de_SectorPerBlock;
+		    args[ 6] = partition->de.de_BlocksPerTrack;
+		    args[ 7] = partition->de.de_Reserved;
+		    args[ 8] = partition->de.de_PreAlloc;
+		    args[ 9] = partition->de.de_Interleave;
+		    args[10] = partition->de.de_MaxTransfer;
+		    args[11] = partition->de.de_Mask;
+		    args[12] = partition->de.de_LowCyl;
+		    args[13] = partition->de.de_HighCyl;
+		    args[14] = partition->de.de_NumBuffers;
+		    args[15] = partition->de.de_BufMemType;
+		    args[16] = stack;
+		    args[17] = partition->de.de_BootPri;
+		    args[18] = globvec;
+		    args[19] = partition->de.de_DosType;
+
+		    VFPrintf(file, "FileSystem       = %s\n"
+				  "Device           = %s\n"
+				  "Unit             = %ld\n"
+				  "BlockSize        = %ld\n"
+				  "Surfaces         = %ld\n"
+				  "SectorsPerBlock  = %ld\n"
+				  "BlocksPerTrack   = %ld\n"
+				  "Reserved         = %ld\n"
+				  "PreAlloc         = %ld\n"
+				  "Interleave       = %ld\n"
+				  "MaxTransfer      = 0x%08lx\n"
+				  "Mask             = 0x%08lx\n"
+				  "LowCyl           = %ld\n"
+				  "HighCyl          = %ld\n"
+				  "Buffers          = %ld\n"
+				  "BufMemType       = %ld\n"
+				  "StackSize        = %ld\n"
+				  "Priority         = %ld\n"
+				  "GlobVec          = %ld\n"
+				  "DosType          = 0x%08lx\n"
+				  "Activate         = 1\n",
+			     args);
+
+		    Close(file);
+		    
+		    icon = GetDiskObject("ENV:Sys/def_Mountlist");
+		    if (icon)
+		    {
+			PutDiskObject(pathname, icon);
+			FreeDiskObject(icon);
+		    }
+		}
+	    }
+	}
+
+	MUI_FreeAslRequest(req);
+    }
+    
+    AROS_USERFUNC_EXIT
+}
+
 /************************* general List functions ***************************/
 
 LONG InitListNode(struct ListNode *node, struct ListNode *parent)
@@ -1500,6 +1620,7 @@ LONG initGUI(void)
 
     hook_display.h_Entry = (HOOKFUNC)display_function;
     hook_buttons.h_Entry = (HOOKFUNC)buttons_function;
+    hook_createml.h_Entry = (HOOKFUNC)createml_function;
     hook_lv_doubleclick.h_Entry = (HOOKFUNC)lv_doubleclick;
     hook_lv_click.h_Entry = (HOOKFUNC)lv_click;
     partitiontypegadgets.hook_hexidedit.h_Entry = (HOOKFUNC)hexidedit_function;
@@ -1967,6 +2088,9 @@ LONG initGUI(void)
         MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, (IPTR)app, 2,
         MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
     );
+    DoMethod(createml_item,
+	     MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2,
+	     MUIM_CallHook, &hook_createml);
     /* add device window */
     DoMethod
     (
