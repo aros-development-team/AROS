@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-INCLUDE_FILES := $(call WILDCARD, aros/m68k/*.h)
-%copy_includes mmake=compiler-includes
+INCLUDE_FILES := $(call WILDCARD, aros/*.h)
+%copy_includes mmake=compiler-includes path=aros/m68k dir=aros
 
 INCLUDE_FILES := jmpdefs.h
 %copy_includes mmake=includes-common-m68k
