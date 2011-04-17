@@ -1,4 +1,0 @@
-
-Comment the unit within the dosdriver files: suggested by CISC
-number the partition xxx.1 suggested by CISC
-
