@@ -21,7 +21,7 @@ void  strcrem(char *s, char *d, char c)
 ///
 
 ///AskChoiceNew()
-WORD AskChoiceNew(char *title, char *strg, char *gadgets, UWORD sel, BOOL centered) 
+WORD AskChoiceNew(const char *title, const char *strg, const char *gadgets, UWORD sel, BOOL centered) 
 {
 
     Object  *app, *win;
@@ -157,14 +157,14 @@ WORD AskChoiceNew(char *title, char *strg, char *gadgets, UWORD sel, BOOL center
 ///
 
 /// AskChoice()
-WORD AskChoice(char *title, char *strg, char *gadgets, UWORD sel) 
+WORD AskChoice(const char *title, const char *strg, const char *gadgets, UWORD sel) 
 {
     return AskChoiceNew(title, strg, gadgets, sel, FALSE);
 }
 ///
 
 ///AskChoiceCentered()
-WORD AskChoiceCentered(char *title, char *strg, char *gadgets, UWORD sel) 
+WORD AskChoiceCentered(const char *title, const char *strg, const char *gadgets, UWORD sel) 
 {
     return AskChoiceNew(title, strg, gadgets, sel, TRUE);
 }

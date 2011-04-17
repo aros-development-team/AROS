@@ -8,6 +8,7 @@
 
 #include <exec/types.h>
 #include <libraries/mui.h>
+#include <dos/notify.h>
 
 /*** Identifier Base ********************************************************/
 #define MUIB_Wanderer                     (TAG_USER | 0x11000000)

@@ -119,11 +119,13 @@ static struct TagItem          __iconList_DrawIconStateTags[] = {
     { TAG_DONE, 			}
 };
 
+#if 0
 static struct TagItem		__iconList_BackBuffLayerTags[] =
 {
     { LA_Visible, FALSE			},
     { TAG_DONE,				}
 };
+#endif
 
 #ifndef NO_ICON_POSITION
 #define NO_ICON_POSITION                               (0x8000000) /* belongs to workbench/workbench.h */
@@ -295,7 +297,7 @@ const UBYTE MSG_MEM_B[] = "Bytes";
 static void FmtSizeToString(UBYTE *buf, ULONG num)
 {
     UQUAD       d;
-    UBYTE       *ch;
+    const UBYTE       *ch;
     struct
     {
         IPTR    val;
@@ -2122,7 +2124,7 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 #if defined(DEBUG_ILC_ATTRIBS)
                     D(bug("[IconList] %s: MUIA_IconList_DisplayFlags %08x\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
-		    ULONG origModeFlags = data->icld_DisplayFlags & (ICONLIST_DISP_MODEDEFAULT|ICONLIST_DISP_MODELABELRIGHT|ICONLIST_DISP_MODELIST);
+		    // ULONG origModeFlags = data->icld_DisplayFlags & (ICONLIST_DISP_MODEDEFAULT|ICONLIST_DISP_MODELABELRIGHT|ICONLIST_DISP_MODELIST);
                     data->icld_DisplayFlags = (ULONG)tag->ti_Data;
 
                     if (data->icld_DisplayFlags & ICONLIST_DISP_BUFFERED)
@@ -2164,9 +2166,9 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 				if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
 				{
 				    data->icld_BufferRastPort->BitMap = bitmap_New;
-				    if (li = NewLayerInfo())
+				    if ((li = NewLayerInfo()))
 				    {
-					if (data->icld_BufferRastPort->Layer = CreateUpfrontLayer(li, data->icld_BufferRastPort->BitMap, 0, 0, data->icld_ViewWidth - 1, data->icld_ViewHeight - 1, 0, NULL))
+					if ((data->icld_BufferRastPort->Layer = CreateUpfrontLayer(li, data->icld_BufferRastPort->BitMap, 0, 0, data->icld_ViewWidth - 1, data->icld_ViewHeight - 1, 0, NULL)))
 					{
 					   /*
 					    * Mark it as a buffered rastport.
@@ -2527,7 +2529,7 @@ IPTR IconList__OM_ADDMEMBER(struct IClass *CLASS, Object *obj, struct MUIP_Famil
 
 IPTR IconList__MUIM_Family_Remove(struct IClass *CLASS, Object *obj, struct MUIP_Family_Remove *message)
 {
-    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    // struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 #if defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
@@ -2569,7 +2571,7 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
 
     if (!DoSuperMethodA(CLASS, obj, (Msg) message)) return (IPTR)NULL;
 
-    iconlistScreen = _screen(obj);
+    iconlistScreen = (IPTR)_screen(obj);
 #if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
 #endif
@@ -2743,9 +2745,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 		if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
 		{
 		    data->icld_BufferRastPort->BitMap = bitmap_New;
-		    if (li = NewLayerInfo())
+		    if ((li = NewLayerInfo()))
 		    {
-			if (data->icld_BufferRastPort->Layer = CreateUpfrontLayer(li, data->icld_BufferRastPort->BitMap, 0, 0, data->icld_ViewWidth - 1, data->icld_ViewHeight - 1, 0, NULL))
+			if ((data->icld_BufferRastPort->Layer = CreateUpfrontLayer(li, data->icld_BufferRastPort->BitMap, 0, 0, data->icld_ViewWidth - 1, data->icld_ViewHeight - 1, 0, NULL)))
 			{
 			   /*
 			    * Mark it as a buffered rastport.
@@ -3131,7 +3133,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
     LONG                        clear_xoffset = 0,
                                 clear_yoffset = 0;
 
-    IPTR                        draw_id = DrawCount++;
+    __unused IPTR               draw_id = DrawCount++;
 
 #if defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
@@ -3607,9 +3609,9 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 			if ((data->icld_BufferRastPort = CreateRastPort()) != NULL)
 			{
 			    data->icld_BufferRastPort->BitMap = bitmap_New;
-			    if (li = NewLayerInfo())
+			    if ((li = NewLayerInfo()))
 			    {
-				if (data->icld_BufferRastPort->Layer = CreateUpfrontLayer(li, data->icld_BufferRastPort->BitMap, 0, 0, data->icld_ViewWidth - 1, data->icld_ViewHeight - 1, 0, NULL))
+				if ((data->icld_BufferRastPort->Layer = CreateUpfrontLayer(li, data->icld_BufferRastPort->BitMap, 0, 0, data->icld_ViewWidth - 1, data->icld_ViewHeight - 1, 0, NULL)))
 				{
 				   /*
 				    * Mark it as a buffered rastport.
@@ -3920,7 +3922,7 @@ IPTR IconList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, str
 
                 /* get selected entries from SOURCE iconlist */
                 DoMethod(obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&nextentry);
-                if ((nextentry) && (nextentry != (IPTR)MUIV_IconList_NextIcon_End))
+                if ((nextentry) && ((IPTR)nextentry != MUIV_IconList_NextIcon_End))
                     data->icld_SelectionLastClicked = (struct IconEntry *)((IPTR)nextentry - ((IPTR)&message->entry->ie_IconListEntry - (IPTR)message->entry));
                 else
                     data->icld_SelectionLastClicked = NULL;
@@ -3989,7 +3991,7 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
     /*disk object (icon)*/
     if (message->entry_dob == NULL)
     {
-        IPTR iconlistScreen = _screen(obj);
+        IPTR iconlistScreen = (IPTR)_screen(obj);
         D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
 
         dob = GetIconTags
@@ -4166,14 +4168,14 @@ Returns 0 on failure otherwise it returns the icons entry ..
 IPTR IconList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_UpdateEntry *message)
 {
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
-    struct DateTime             dt;
-    struct DateStamp            now;
-    UBYTE                       *sp = NULL;
+    // struct DateTime             dt;
+    // struct DateStamp            now;
+    // UBYTE                       *sp = NULL;
 
-    struct DiskObject           *dob = NULL;
+    // struct DiskObject           *dob = NULL;
     struct Rectangle            rect;
 
-    IPTR                        geticon_error = 0;
+    // IPTR                        geticon_error = 0;
 
 #if defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -5699,7 +5701,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 				    update_entry = TRUE;
 				}
 
-				if (update_entry != NULL)
+				if (update_entry != 0)
 				{
 				    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
 				    data->update_entry = new_selected;
@@ -6489,7 +6491,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
     /* SANITY CHECK: Get first selected entry from SOURCE iconlist */
     DoMethod(message->obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
 
-    if ((entry) && (entry != (IPTR)MUIV_IconList_NextIcon_End))
+    if ((entry) && ((IPTR)entry != MUIV_IconList_NextIcon_End))
     {
         /* Ok.. atleast one entry was dropped .. */
 	char     			tmp_dirbuff[256];
@@ -6656,11 +6658,11 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 		LONG offset_y = message->y - (data->click_y + _mtop(obj));
 
 		entry = (IPTR)MUIV_IconList_NextIcon_Start;
-		while (entry != (IPTR)MUIV_IconList_NextIcon_End)
+		while ((IPTR)entry != MUIV_IconList_NextIcon_End)
 		{
 		    DoMethod(message->obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
 
-		    if (entry != (IPTR)MUIV_IconList_NextIcon_End)
+		    if ((IPTR)entry != MUIV_IconList_NextIcon_End)
 		    {
 			entry->ile_IconEntry->ie_IconX += offset_x;
 			entry->ile_IconEntry->ie_IconY += offset_y;
@@ -6683,11 +6685,11 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
             int copycount = 0;
             /* Create list of entries to copy .. */
             entry = (IPTR)MUIV_IconList_NextIcon_Start;
-            while (entry != (IPTR)MUIV_IconList_NextIcon_End)
+            while ((IPTR)entry != MUIV_IconList_NextIcon_End)
             {
                 DoMethod(message->obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
 
-                if (entry != (IPTR)MUIV_IconList_NextIcon_End)
+                if ((IPTR)entry != MUIV_IconList_NextIcon_End)
                 {
                     struct IconList_Drop_SourceEntry *sourceEntry = NULL;
                     sourceEntry = AllocMem(sizeof(struct IconList_Drop_SourceEntry), MEMF_CLEAR);
@@ -6748,7 +6750,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
             }
             if (copycount > 0)
             {
-                dragDropEvent->drop_TargetObj = (IPTR)obj;
+                dragDropEvent->drop_TargetObj = obj;
 
 #if defined(DEBUG_ILC_ICONDRAGDROP)
                 D(bug("[IconList] %s: Causing DROP notification..\n", __PRETTY_FUNCTION__));
@@ -6909,7 +6911,7 @@ IPTR IconList__MUIM_IconList_CoordsSort(struct IClass *CLASS, Object *obj, struc
 
     struct List                 list_VisibleIcons;
     struct List                 list_HiddenIcons;
-    struct List                 list_UnplacedIcons;
+    // struct List                 list_UnplacedIcons;
 
     /*
         perform a quick sort of the iconlist based on entry coords

@@ -151,8 +151,6 @@ HOOKPROTO(panelToolBar__HookFunc_LocationStringFunc, void, APTR *obj, APTR param
     struct FileInfoBlock                *fib;
     struct panel_ToolBar_DATA           *panelToolBarPrivate = NULL;
 
-#warning "stegerg: doesn't allocate fib with AllocDOSObject"
-
     SETUP_ICONWINDOW_INST_DATA;
 
     /* Only change dir if it is a valid directory/volume */
@@ -215,7 +213,7 @@ IPTR panelToolBar__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *msg
             SET(panelToolBar__PrefsNotificationObject, MUIA_ShowMe, FALSE);
         }
     }
-    return NULL;
+    return 0;
 }
 
 /*** Main Functions ****************************************************************/
@@ -237,7 +235,7 @@ IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
     {
         if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
-            return NULL;
+            return 0;
 
         extension_PrefsData = AllocVec(TOOLBAR_PREFSSIZE, MEMF_CLEAR);
 
@@ -272,6 +270,7 @@ IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
             D(bug("[IW.toolbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
         }
     }
+    return 0;
 }
 ///
 
@@ -299,7 +298,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
     if (data->iwd_TopPanel.iwp_PanelPrivate == (IPTR)NULL)
     {
         if ((data->iwd_TopPanel.iwp_PanelPrivate = (IPTR)AllocVec(sizeof(struct panel_ToolBar_DATA), MEMF_CLEAR)) == (IPTR)NULL)
-            return NULL;
+            return 0;
 
         panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate;
         panelToolBarPrivate->iwp_Node.ln_Name = extension_Name;
@@ -431,7 +430,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
             panelToolBarPrivate->iwp_ToolBar_ToolBarObj = NULL;
         }
     }
-    return NULL;
+    return 0;
 }
 ///
 
@@ -446,7 +445,7 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, struct opSet *message)
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
     {
         if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
-            return NULL;
+            return 0;
         
         if (panelToolBar__PrefsNotificationObject)
         {
@@ -465,7 +464,7 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, struct opSet *message)
               );
         }
     }
-    return NULL;
+    return 0;
 }
 
 ///OM_GET()
@@ -474,7 +473,7 @@ IPTR panelToolBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     SETUP_ICONWINDOW_INST_DATA;
 
     struct panel_ToolBar_DATA   *panelToolBarPrivate = NULL;
-    IPTR                        *store = message->opg_Storage;
+    // IPTR                        *store = message->opg_Storage;
     IPTR                        rv    = FALSE;
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
@@ -499,8 +498,8 @@ IPTR panelToolBar__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
     struct panel_ToolBar_DATA   *panelToolBarPrivate = NULL;
     struct TagItem              *tstate = message->ops_AttrList, *tag;
-    BOOL                        UpdateIconlist = FALSE;
-    IPTR                        focusicon = (IPTR) NULL;
+    // BOOL                        UpdateIconlist = FALSE;
+    // IPTR                        focusicon = (IPTR) NULL;
     IPTR                        rv = FALSE;
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));

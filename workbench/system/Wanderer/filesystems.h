@@ -119,9 +119,9 @@ struct FileEntry
 char  *CombineString(char *format, ...);
 void freeString(APTR pool, char *str);
 
-WORD AskChoiceNew(char *title, char *strg, char *gadgets, UWORD sel, BOOL centered);
-WORD AskChoice(char *title, char *strg, char *gadgets, UWORD sel);
-WORD AskChoiceCentered(char *title, char *strg, char *gadgets, UWORD sel);
+WORD AskChoiceNew(const char *title, const char *strg, const char *gadgets, UWORD sel, BOOL centered);
+WORD AskChoice(const char *title, const char *strg, const char *gadgets, UWORD sel);
+WORD AskChoiceCentered(const char *title, const char *strg, const char *gadgets, UWORD sel);
 
 BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct Hook *delHook, APTR userdata);
 

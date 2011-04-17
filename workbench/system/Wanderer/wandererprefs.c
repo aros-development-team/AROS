@@ -334,7 +334,7 @@ D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen =
                 AI_ArosReleaseMinor, (IPTR)&rev,
                 TAG_DONE
               );
-            sprintf(infostr, "%ld.%ld", ver, rev);
+            sprintf(infostr, "%d.%d", ver, rev);
             CloseLibrary(AROSBase);
             found = TRUE;
           }
@@ -416,7 +416,7 @@ D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen =
           temp[screentitle_curChar] = '?';
           temp[screentitle_curChar + 1] = '?';
           temp[screentitle_curChar + 2] = '?';
-          sprintf(title, temp);
+          strcpy(title, temp);
         }
       }
       else
@@ -430,11 +430,11 @@ D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen =
           case 1:
             temp[screentitle_curChar] = '?';
         }
-        sprintf(title, temp);
+        strcpy(title, temp);
       }
     }
   }
-  sprintf(title, temp);
+  strcpy(title, temp);
 
   return title;
 }
@@ -444,7 +444,7 @@ D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen =
 /* Expand a passed in env: string to its full location */
 /* Wanderer doesnt free this mem at the moment but should 
    incase it is every closed */
-static STRPTR ExpandEnvName(STRPTR env_path)
+static CONST_STRPTR ExpandEnvName(CONST_STRPTR env_path)
 {
     BOOL     ok = FALSE;
     char     tmp_envbuff[1024];
@@ -477,7 +477,7 @@ static STRPTR ExpandEnvName(STRPTR env_path)
 IPTR WandererPrefs__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *msg)
 {
     DoMethod(wandererPrefs_PrefsObject, MUIM_WandererPrefs_Reload);
-    return NULL;
+    return 0;
 }
 
 /*** Methods ****************************************************************/
