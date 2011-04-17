@@ -40,7 +40,7 @@
 #define DB2(x) ;
 
 #define SIZE_RESLIST 4
-#define SIZE_PFLIST 18
+#define SIZE_PFLIST 19
 #define SIZE_MODELIST (5 + RGBFB_MaxFormats)
 
 HIDDT_ModeID *UAEGFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
@@ -392,13 +392,12 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    struct RTGMode *node1, *node2;
 	    ULONG modeid, rtgmodeid, p96mode;
 	    
-	    DB2(bug("mid=%08x\n", mid));
 	    if (!HIDD_Gfx_GetMode(o, mid, &sync, &pf))
 	    	continue;
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
 
-	    DB2(bug("w=%d h=%d sync=%x pf=%x\n", dwidth, dheight, sync, pf));
+	    DB2(bug("w=%d h=%d mode=%08x sync=%x pf=%x\n", dwidth, dheight, mid, sync, pf));
 
 	    modeid = vHidd_ModeID_Invalid;
 	    r = (struct LibResolution*)node->ln_Succ;
@@ -409,8 +408,10 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    	}
 	    	r = (struct LibResolution*)r->node.ln_Succ;
 	    }
-	    if (modeid == vHidd_ModeID_Invalid)
+	    if (modeid == vHidd_ModeID_Invalid) {
+	    	D(bug("w=%d h=%d not found!\n", dwidth, dheight));
 	    	continue;
+	    }
 
 	    p96mode = getrtgformat(csd, pf);
 	    rtgmodeid = (modeid & 0x00ff0000) | 0x1000 | (p96mode << 8);
@@ -419,8 +420,10 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    	if (node2->width == dwidth && node2->height == dheight && node2->modeid == rtgmodeid)
 	    	    break;
 	    }
-	    if (node2->node.ln_Succ != NULL)
+	    if (node2->node.ln_Succ != NULL) {
+	    	D(bug("w=%d h=%d mode=%08x already found!\n", dwidth, dheight, rtgmodeid));
 	    	continue;
+	    }
 
 	    node1 = AllocMem(sizeof(struct RTGMode), MEMF_CLEAR);
 	    node1->width = dwidth;
@@ -544,6 +547,23 @@ VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     }
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
+
+OOP_Object *UAEGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+
+    if (msg->bitMap) {
+    	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
+        OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
+	if (csd->acb)
+	    csd->acb(csd->acbdata, NULL);
+    } else {
+    	SetDisplay(csd, FALSE);
+    	SetSwitch(csd, FALSE);
+    }
+    return msg->bitMap;
+}    	   
 
 ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {

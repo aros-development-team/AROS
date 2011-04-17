@@ -28,7 +28,7 @@
 #include <aros/symbolsets.h>
 
 #define DEBUG 0
-#define DB2(x) x;
+#define DB2(x) ;
 #define DEBUG_TEXT(x)
 #include <aros/debug.h>
 
