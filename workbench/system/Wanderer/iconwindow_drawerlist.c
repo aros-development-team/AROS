@@ -103,7 +103,7 @@ struct IconWindowDrawerList_DATA
     struct NotifyRequest        iwidld_DrawerNotifyRequest;
 };
 
-static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
+// static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct IconWindowDrawerList_DATA *data = INST_DATA(CLASS, self)
@@ -860,7 +860,7 @@ IPTR IconWindowDrawerList__MUIM_IconList_Update
     Class *CLASS, Object *self, struct MUIP_IconList_Update *message
 )
 {
-    SETUP_INST_DATA;
+    // SETUP_INST_DATA;
 
     IPTR        retVal = (IPTR)TRUE;
 

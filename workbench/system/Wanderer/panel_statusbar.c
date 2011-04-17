@@ -134,7 +134,7 @@ const UBYTE MSG_MEM_B[] = "Bytes";
 static void FmtSizeToString(UBYTE *buf, ULONG num)
 {
   UQUAD d;
-  UBYTE *ch;
+  const UBYTE *ch;
   struct
   {
     IPTR val;
@@ -312,7 +312,7 @@ static IPTR panelStatusBar__HandleFSUpdate(Object *WandererObj, struct NotifyMes
             SET(panelStatusBar__PrefsNotificationObject, MUIA_ShowMe, FALSE);
         }
     }
-    return NULL;
+    return 0;
 }
 
 ///panelStatusBar__PrefsSetup()
@@ -332,7 +332,7 @@ static IPTR panelStatusBar__PrefsSetup(Class *CLASS, Object *self, struct opSet 
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != (IPTR)NULL)
     {
         if (panelStatusBarPrivate->iwp_Node.ln_Name != extension_Name)
-            return NULL;
+            return 0;
 
         extension_PrefsData = AllocVec(STATUSBAR_PREFSSIZE, MEMF_CLEAR);
 
@@ -367,6 +367,7 @@ static IPTR panelStatusBar__PrefsSetup(Class *CLASS, Object *self, struct opSet 
             D(bug("[IW.statusbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
         }
     }
+    return 0;
 }
 ///
 
@@ -381,14 +382,14 @@ static IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *mess
     struct panel_StatusBar_DATA         *panelStatusBarPrivate = NULL;
 
     if (!(!(data->iwd_Flags & IWDFLAG_ISROOT) && data->iwd_BottomPanel.iwp_PanelContainerObj))
-        return NULL;
+        return 0;
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    if (data->iwd_BottomPanel.iwp_PanelPrivate == NULL)
+    if (data->iwd_BottomPanel.iwp_PanelPrivate == 0)
     {
         if ((data->iwd_BottomPanel.iwp_PanelPrivate = AllocVec(sizeof(struct panel_StatusBar_DATA), MEMF_CLEAR)) == NULL)
-            return;
+            return 0;
 
         panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate;
         panelStatusBarPrivate->iwp_Node.ln_Name = extension_Name;
@@ -489,6 +490,7 @@ static IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *mess
             panelStatusBarPrivate->iwp_StatusBar_StatusBarObj = NULL;
         }
     }
+    return 0;
 }
 ///
 
@@ -503,7 +505,7 @@ static IPTR panelStatusBar__Cleanup(Class *CLASS, Object *self, struct opSet *me
     if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
     {
         if (panelStatusBarPrivate->iwp_Node.ln_Name != extension_Name)
-            return NULL;
+            return 0;
 
         if (panelStatusBar__PrefsNotificationObject)
         {
@@ -514,7 +516,7 @@ static IPTR panelStatusBar__Cleanup(Class *CLASS, Object *self, struct opSet *me
               );
         }
     }
-    return NULL;
+    return 0;
 }
 ///
 
@@ -524,7 +526,7 @@ static IPTR panelStatusBar__OM_GET(Class *CLASS, Object *self, struct opGet *mes
     SETUP_ICONWINDOW_INST_DATA;
 
     struct panel_StatusBar_DATA *panelStatusBarPrivate = NULL;
-    IPTR                        *store = message->opg_Storage;
+    // IPTR                        *store = message->opg_Storage;
     IPTR                        rv = FALSE;
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
@@ -549,8 +551,8 @@ static IPTR panelStatusBar__OM_SET(Class *CLASS, Object *self, struct opSet *mes
 
     struct panel_StatusBar_DATA *panelStatusBarPrivate = NULL;
     struct TagItem              *tstate = message->ops_AttrList, *tag;
-    BOOL                        UpdateIconlist = FALSE;
-    IPTR                        focusicon = (IPTR) NULL;
+    // BOOL                        UpdateIconlist = FALSE;
+    // IPTR                        focusicon = (IPTR) NULL;
     IPTR                        rv = FALSE;
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));

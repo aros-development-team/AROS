@@ -869,7 +869,7 @@ MakeStaticHook(Hook_BackdropFunc,Wanderer__HookFunc_BackdropFunc);
 static void fmtlarge(UBYTE *buf, ULONG num)
 {
     UQUAD d;
-    UBYTE *ch;
+    const UBYTE *ch;
     struct
     {
         IPTR val;
@@ -1990,7 +1990,7 @@ void wanderer_menufunc_icon_leaveout(void)
     Object                		*rootwindow   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
     Object                		*rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
     struct IconList_Entry 		*entry    = (IPTR)MUIV_IconList_NextIcon_Start;
-    struct IconEntry      		*node     = NULL;
+    // struct IconEntry      		*node     = NULL;
     char				*leavout_dir = NULL;
     struct DesktopLinkIcon_Entry	*bdrpeNode = NULL, *loiEntry = NULL;
 
@@ -2589,91 +2589,91 @@ void wanderer_menufunc_wanderer_about(Object **pwand)
     if (data->wd_AboutWindow == NULL)
     {
         data->wd_AboutWindow = WindowObject,
-            MUIA_Window_Title,          "About Wanderer...",
+            MUIA_Window_Title,          (IPTR)"About Wanderer...",
             MUIA_Window_ID,             (IPTR)MAKE_ID('W','A','B','T'),
-            WindowContents, VGroup,
-                Child, HGroup,
+            WindowContents, (IPTR)VGroup,
+                Child, (IPTR)HGroup,
                         Child, (IPTR) IconImageObject,
                             MUIA_InputMode, MUIV_InputMode_Toggle,
                             MUIA_IconImage_File, (IPTR)"PROGDIR:Wanderer",
                         End,
-                    Child, VGroup,
-                        Child, TextObject,
-                            MUIA_Text_PreParse, "\33c\33b", 
+                    Child, (IPTR)VGroup,
+                        Child, (IPTR)TextObject,
+                            MUIA_Text_PreParse, (IPTR)"\33c\33b", 
                             MUIA_Text_Contents, (IPTR)wand_titlestr,
                         End,
-                        Child, TextObject,
-                            MUIA_Text_PreParse, "\33c", 
+                        Child, (IPTR)TextObject,
+                            MUIA_Text_PreParse, (IPTR)"\33c", 
                             MUIA_Text_Contents, (IPTR)wand_copyrightstr,
                         End,
                     End,
                 End,
-                Child, VGroup,
+                Child, (IPTR)VGroup,
                     MUIA_Frame, MUIV_Frame_Group,
-                    Child, TextObject,
-                        MUIA_Text_PreParse, "\33b", 
+                    Child, (IPTR)TextObject,
+                        MUIA_Text_PreParse, (IPTR)"\33b", 
                         MUIA_Text_Contents, (IPTR)"Internal Classes:",
                     End,
-                    Child, HVSpace,
-                    Child, ColGroup(2),
-                        Child, TextObject,
+                    Child, (IPTR)HVSpace,
+                    Child, (IPTR)ColGroup(2),
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"iconwindow",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"vXX.XX",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"volumelist",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"vXX.XX",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"drawerlist",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"vXX.XX",
                         End,
                     End,
-                    Child, HVSpace,
-                    Child, TextObject,
-                        MUIA_Text_PreParse, "\33b", 
+                    Child, (IPTR)HVSpace,
+                    Child, (IPTR)TextObject,
+                        MUIA_Text_PreParse, (IPTR)"\33b", 
                         MUIA_Text_Contents, (IPTR)"External Classes:",
                     End,
-                    Child, HVSpace,
-                    Child, ColGroup(2),
+                    Child, (IPTR)HVSpace,
+                    Child, (IPTR)ColGroup(2),
 //                        Child, TextObject,
 //                            MUIA_Text_Contents, (IPTR)"icon.mui",
 //                        End,
 //                        Child, TextObject,
 //                            MUIA_Text_Contents, (IPTR)"vXX.XX",
 //                        End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"iconlist.mui",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"vXX.XX",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"iconlistview.mui",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"vXX.XX",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"iconvolumelist.mui",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"vXX.XX",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"icondrawerlist.mui",
                         End,
-                        Child, TextObject,
+                        Child, (IPTR)TextObject,
                             MUIA_Text_Contents, (IPTR)"vXX.XX",
                         End,
                     End,
-                    Child, HVSpace,
+                    Child, (IPTR)HVSpace,
                 End,
             End,
         End;
@@ -2888,7 +2888,7 @@ VOID Wanderer__Func_UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
     BOOL icon_men_LeaveOut = FALSE;
     BOOL icon_men_Format = FALSE;
     BOOL icon_men_EmptyTrash = FALSE;
-    BOOL icon_men_IconSort = FALSE;
+    // BOOL icon_men_IconSort = FALSE;
 
     if (IconlistObj == NULL)
         return;
@@ -3091,7 +3091,7 @@ HOOKPROTO(Wanderer__HookFunc_UpdateMenuStatesFunc, ULONG, struct dCopyStruct *ob
 #endif
     AROS_USERFUNC_INIT
 
-    Object	*self = ( Object *)obj;
+    __unused Object	*self = ( Object *)obj;
     Object	*window = *( Object **)param;
     Object	*iconlist = NULL;
 

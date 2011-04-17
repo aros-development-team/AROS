@@ -1109,7 +1109,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
     if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
     {
-	struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+	// struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
         Object *prefs = NULL;
         struct Node *Obj_NetworkIcon = NULL;
         struct Node *Obj_UserFilesIcon = NULL;
@@ -1141,7 +1141,7 @@ D(bug("[Wanderer:VolumeList] %s: Removing left out entry '%s'\n", __PRETTY_FUNCT
 	    {
 D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNCTION__));
 		Remove(&entry->ie_IconNode);
-		Obj_NetworkIcon = entry;
+		Obj_NetworkIcon = (struct Node *)entry;
 	    }
 	    /*else if (strcmp(, "User Files..") == 0)
 	    {
@@ -1345,7 +1345,7 @@ IPTR IconWindowVolumeList__HandleFSUpdate(Object *WandererObj, struct NotifyMess
 	DoMethod(rooticonList, MUIM_IconList_Sort);
     }
     
-    return NULL;
+    return 0;
 }
 
 
@@ -1359,7 +1359,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
-    this_Icon = DoSuperMethodA(CLASS, obj, (Msg) message);
+    this_Icon = (struct IconEntry *)DoSuperMethodA(CLASS, obj, (Msg) message);
 
     if (this_Icon)
     {
@@ -1395,7 +1395,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
             IconWindowVolumeList__Func_ParseBackdrop(obj, this_Icon, NULL);
         }
     }
-    return this_Icon;
+    return (IPTR)this_Icon;
 }
 
 IPTR IconWindowVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_UpdateEntry *message)
@@ -1419,15 +1419,15 @@ IPTR IconWindowVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Objec
 
     }
 
-    this_Icon = DoSuperMethodA(CLASS, obj, (Msg) message);
+    this_Icon = (struct IconEntry *)DoSuperMethodA(CLASS, obj, (Msg) message);
 
-    return this_Icon;
+    return (IPTR)this_Icon;
 }
 
 IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DestroyEntry *message)
 {
     struct VolumeIcon_Private   *volPrivate = NULL;
-    IPTR                        rv = NULL;
+    IPTR                        rv = 0;
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -1476,8 +1476,8 @@ ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
     OM_GET,                     struct opGet *,
     MUIM_Setup,                 Msg,
     MUIM_Cleanup,               Msg,
-    MUIM_DrawBackground,        Msg,
-    MUIM_HandleEvent,           Msg,
+    MUIM_DrawBackground,        struct MUIP_DrawBackground *,
+    MUIM_HandleEvent,           struct MUIP_HandleEvent *,
     MUIM_IconList_Update,       struct MUIP_IconList_Update *,
     MUIM_IconList_CreateEntry,  struct MUIP_IconList_CreateEntry *,
     MUIM_IconList_UpdateEntry,  struct MUIP_IconList_UpdateEntry *,
