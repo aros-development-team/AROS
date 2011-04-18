@@ -3184,7 +3184,7 @@ OOP_Object *GFX__Hidd_Gfx__GetPixFmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
     INPUTS
 	gfxHidd - A display driver object to query
-	num     - An index of pixelformat starting from 0
+	num     - An index of sync object starting from 0
 
     RESULT
 	A pointer to a sync object or NULL if there's no sync with such index
