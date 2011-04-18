@@ -104,7 +104,7 @@ if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
         done
         mail_write ""
         mail_write "Please see the attached shortened logs or the full logs at"
-        mail_write "http://www.aros.org/downloads/nightly/$VERSION/logs/ for details."
+        mail_write "http://www.aros.org/downloads/nightly2/$VERSION/logs/ for details."
     fi
     if [ ! -z "$succeeded" ]; then
         mail_write ""
