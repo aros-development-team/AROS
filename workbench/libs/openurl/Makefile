@@ -49,6 +49,7 @@ cleanall:
 	@$(MAKE) -C library cleanall
 	@$(MAKE) -C prefs cleanall
 	@$(MAKE) -C cmd cleanall
+	@$(MAKE) -C raPrefs cleanall
 
 .PHONY: bumprev
 bumprev:

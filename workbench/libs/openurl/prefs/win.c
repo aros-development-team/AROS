@@ -329,6 +329,7 @@ static IPTR mStorePrefs(struct IClass *cl, Object *obj, struct MUIP_Win_StorePre
             AddTail((struct List *)&up.up_BrowserList,(struct Node *)bn);
     }
 
+    /* Mailers */
     for (i = 0; ; i++)
     {
         struct URL_MailerNode *mn;

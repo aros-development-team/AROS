@@ -968,7 +968,7 @@ SDISPATCHER(dispatcher)
         case MUIM_AppList_ActiveChanged: return mActiveChanged(cl,obj,(APTR)msg);
         case MUIM_AppList_Disable:       return mDisable(cl,obj,(APTR)msg);
         case MUIM_AppList_Move:          return mMove(cl,obj,(APTR)msg);
-        case MUIM_App_CheckSave:    return mCheckSave(cl,obj,(APTR)msg);
+        case MUIM_App_CheckSave:         return mCheckSave(cl,obj,(APTR)msg);
 
         default:                         return DoSuperMethodA(cl,obj,msg);
     }

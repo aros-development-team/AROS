@@ -25,9 +25,9 @@
 
 // for setting all necessary version information
 #define LIB_VERSION    7
-#define LIB_REVISION   8
-#define LIB_DATE       "23.09.2010"
-#define LIB_COPYRIGHT  "Copyright (c) 2005-2010 openurl.library Open Source Team"
+#define LIB_REVISION   9
+#define LIB_DATE       "17.04.2011"
+#define LIB_COPYRIGHT  "Copyright (c) 2005-2011 openurl.library Open Source Team"
 
 // set the LIB_REV_STRING
 #define LIB_REV_STRING STR(LIB_VERSION) "." STR(LIB_REVISION)
