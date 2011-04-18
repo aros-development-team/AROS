@@ -11,12 +11,6 @@ printi  "Updating contrib sources..."
 cd      $SOURCE_CONTRIB
 execute svn update
 
-#OLD
-#cd      $SOURCE_AROS
-#execute svn checkout necessary
-#delete  $SOURCE_NECESSARY
-#move    contrib $SOURCE_NECESSARY
-
 printi  "Updating documentation sources..."
 cd      $SOURCE_DOCS
 execute svn update 

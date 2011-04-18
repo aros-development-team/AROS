@@ -1,3 +1,2 @@
 printi  "Cleaning up..."
-#execute rm -rf $SOURCE_NECESSARY
 execute rm -rf $BUILD_BASE
