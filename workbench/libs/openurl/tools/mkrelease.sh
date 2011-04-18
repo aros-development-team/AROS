@@ -88,4 +88,4 @@ echo "  MK OpenURL-$releasever.$releaserev.lha"
 find release -nowarn -name ".svn" -exec rm -rf {} \; 2>/dev/null
 cd release
 rm -f ../OpenURL-$releasever.$releaserev.lha
-lha -aq ../OpenURL-$releasever.$releaserev.lha *
+lha -ao5q ../OpenURL-$releasever.$releaserev.lha *

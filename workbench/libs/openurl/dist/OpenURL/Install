@@ -1,5 +1,5 @@
 ;
-; $VER: Install 1.1 (11.06.2010)
+; $VER: Install 1.2 (06.10.2010)
 ;
 ; $Id: Install 246 2010-06-11 10:07:45Z thboeckel $
 ;
@@ -8,7 +8,8 @@
 ;   1.0   10.06.2010: initial release
 ;   1.1   11.06.2010: extended the final message that a reboot might be
 ;                     necessary to be able to use the just installed version.
-
+;   1.2   06.10.2010: changed the default destination path for libs depending
+;                     on the detected system
 ;----------------------------------------------------------------------------
 ; /// ***** English
 (if (= @language "english")
@@ -86,42 +87,54 @@
 (if (= #detectedSystem "os3")
   (
     (set #C_source "C/AmigaOS3")
+    (set #C_dest "C:")
     (set #LIB_source "Libs/AmigaOS3")
+    (set #LIB_dest "LIBS:")
     (set #PREFS_source "Prefs/AmigaOS3")
   )
 )
 (if (= #detectedSystem "os4")
   (
     (set #C_source "C/AmigaOS4")
+    (set #C_dest "C:")
     (set #LIB_source "Libs/AmigaOS4")
+    (set #LIB_dest "LIBS:")
     (set #PREFS_source "Prefs/AmigaOS4")
   )
 )
 (if (= #detectedSystem "mos")
   (
     (set #C_source "C/MorphOS")
+    (set #C_dest "SYS:C")
     (set #LIB_source "Libs/MorphOS")
+    (set #LIB_dest "SYS:Libs")
     (set #PREFS_source "Prefs/MorphOS")
   )
 )
 (if (= #detectedSystem "aros-i386")
   (
     (set #C_source "C/AROS-i386")
+    (set #C_dest "C:")
     (set #LIB_source "Libs/AROS-i386")
+    (set #LIB_dest "LIBS:")
     (set #PREFS_source "Prefs/AROS-i386")
   )
 )
 (if (= #detectedSystem "aros-ppc")
   (
     (set #C_source "C/AROS-ppc")
+    (set #C_dest "C:")
     (set #LIB_source "Libs/AROS-i386")
+    (set #LIB_dest "LIBS:")
     (set #PREFS_source "Prefs/AROS-i386")
   )
 )
 (if (= #detectedSystem "aros-x86_64")
   (
     (set #C_source "C/AROS-x86_64")
+    (set #C_dest "C:")
     (set #LIB_source "Libs/AROS-x86_64")
+    (set #LIB_dest "LIBS:")
     (set #PREFS_source "Prefs/AROS-x86_64")
   )
 )
@@ -136,7 +149,7 @@
     (copylib
         (prompt @each-name)
         (source (tackon #LIB_source @each-name))
-        (dest "LIBS:")
+        (dest #LIB_dest)
         (confirm)
         (help @copylib-help)
     )
@@ -149,7 +162,7 @@
     (copylib
         (prompt @each-name)
         (source (tackon #C_source @each-name))
-        (dest "C:")
+        (dest #C_dest)
         (confirm)
         (help @copylib-help)
     )
