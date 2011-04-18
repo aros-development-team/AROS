@@ -180,7 +180,11 @@ struct monitor_driverdata *MonitorFromSpec(struct MonitorSpec *mspc, struct GfxB
 
     for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
     {
-    	if (mdd->gfxhidd == drv)
+	/*
+	 * Sync objects know nothing about fakegfx proxy class.
+	 * They carry a pointer to a real driver object.
+	 */
+    	if (mdd->gfxhidd_orig == drv)
     	{
     	    ret = mdd;
     	    break;
