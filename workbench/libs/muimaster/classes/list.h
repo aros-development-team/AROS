@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_LIST_H
 
 /*
-    Copyright © 2002-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -119,12 +119,12 @@ enum
     MUIV_List_Active_PageDown = -7,
 };
 
-#define MUIV_List_ConstructHook_String -1
-#define MUIV_List_CopyHook_String -1
+#define MUIV_List_ConstructHook_String (IPTR)-1
+#define MUIV_List_CopyHook_String      (IPTR)-1
 #define MUIV_List_CursorType_None 0
-#define MUIV_List_CursorType_Bar 1
+#define MUIV_List_CursorType_Bar  1
 #define MUIV_List_CursorType_Rect 2
-#define MUIV_List_DestructHook_String -1
+#define MUIV_List_DestructHook_String  (IPTR)-1
 
 enum
 {
