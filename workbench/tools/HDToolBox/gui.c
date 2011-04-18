@@ -20,6 +20,7 @@
 #include <libraries/asl.h>
 #include <libraries/locale.h>
 #include <libraries/mui.h>
+#include <resources/filesysres.h>
 #include <workbench/workbench.h>
 #ifdef HAVE_COOLIMAGES
 #include <libraries/coolimages.h>
@@ -350,7 +351,7 @@ AROS_UFH3(void, buttons_function,
 {
     AROS_USERFUNC_INIT
 
-    LONG active;
+    LONG active = MUIV_List_Active_Off;
     struct ListNode *iln;
     int i;
 
@@ -367,20 +368,23 @@ AROS_UFH3(void, buttons_function,
         }
         else if (object == adddevicegadgets.ok)
         {
-            char *str;
+            char *str = NULL;
             struct HDTBDevice *dn;
+
             get(adddevicegadgets.file, MUIA_String_Contents, &str);
             if (str[0])
                 dn = addDeviceName(str);
         }
         else if (object == addpartitiongadgets.ok)
         {
-            struct DosEnvec *de;
+            struct DosEnvec *de = NULL;
+
             get(addpartitiongadgets.pt, PTCT_ActivePartition, &de);
             if (de)
             {
                 struct HDTBPartition *table;
                 struct HDTBPartition *partition;
+
                 get(addpartitiongadgets.pt, PTCT_PartitionTable, &iln);
                 table = (struct HDTBPartition *)iln;
                 partition = addPartition(table, de);
@@ -397,8 +401,9 @@ AROS_UFH3(void, buttons_function,
         else if (object == addpartitiongadgets.pt);
         else if (object == partitiontypegadgets.hexid)
         {
-            char *str;
+            char *str = NULL;
             struct HDTBPartition *partition;
+
             partition = (struct HDTBPartition *)partitiontypegadgets.iln;
             DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, (IPTR)&iln);
             get(object, MUIA_String_Contents, &str);
@@ -456,8 +461,9 @@ AROS_UFH3(void, buttons_function,
         }
         else if (object == resizemovegadgets.ok)
         {
-            struct HDTBPartition *table;
+            struct HDTBPartition *table = NULL;
             struct HDTBPartition *partition;
+
             get(resizemovegadgets.pt, PTCT_PartitionTable, &table);
             partition = (struct HDTBPartition *)table->listnode.list.lh_Head;
             table->listnode.flags |= LNF_ToSave;
@@ -474,8 +480,9 @@ AROS_UFH3(void, buttons_function,
         }
         else if (object == resizemovegadgets.cancel)
         {
-            struct HDTBPartition *table;
+            struct HDTBPartition *table = NULL;
             struct HDTBPartition *partition;
+
             get(resizemovegadgets.pt, PTCT_PartitionTable, &table);
             partition = (struct HDTBPartition *)table->listnode.list.lh_Head;
             while (partition->listnode.ln.ln_Succ)
@@ -490,9 +497,10 @@ AROS_UFH3(void, buttons_function,
         }
         else if (object == resizemovegadgets.pt)
         {
-            LONG type;
-            struct DosEnvec *de;
+            LONG type = 0;
+            struct DosEnvec *de = NULL;
             char str[32];
+
 	    D(bug("[HDToolBox] buttons_function() - Resize/Move Partition Display:\n"));
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_EMPTY_AREA)
@@ -501,7 +509,8 @@ AROS_UFH3(void, buttons_function,
             }
             else
             {
-                struct HDTBPartition *partition;
+                struct HDTBPartition *partition = NULL;
+
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
                 de = &partition->de;
                 if (*arg == PTCT_PartitionMove)
@@ -518,16 +527,18 @@ AROS_UFH3(void, buttons_function,
         }
         else if (object == resizemovegadgets.lowcyl)
         {
-            LONG type;
-            ULONG value;
+            LONG type = 0;
+            ULONG value = 0;
+
 	    D(bug("[HDToolBox] buttons_function() - Resize/Move Lowcyl:\n"));
             get(object, MUIA_String_Integer, &value);
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_PARTITION)
             {
-                struct HDTBPartition *table;
-                struct HDTBPartition *partition;
+                struct HDTBPartition *table = NULL;
+                struct HDTBPartition *partition = NULL;
                 ULONG block;
+
                 get(resizemovegadgets.pt, PTCT_PartitionTable, &table);
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
 		D(bug("[HDToolBox] - Type             : Partition\n"));
@@ -564,7 +575,8 @@ AROS_UFH3(void, buttons_function,
             }
             else if (type == PTS_EMPTY_AREA)
             {
-                struct DosEnvec *de;
+                struct DosEnvec *de = NULL;
+
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &de);
                 if (value != de->de_LowCyl)
                     set(object, MUIA_String_Integer, de->de_LowCyl);
@@ -574,16 +586,18 @@ AROS_UFH3(void, buttons_function,
         }
         else if (object == resizemovegadgets.highcyl)
         {
-            LONG type;
-            ULONG value;
+            LONG type = 0;
+            ULONG value = 0;
+
 	    D(bug("[HDToolBox] buttons_function() - Resize/Move Highcyl:\n"));
             get(object, MUIA_String_Integer, &value);
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_PARTITION)
             {
-                struct HDTBPartition *table;
-                struct HDTBPartition *partition;
+                struct HDTBPartition *table = NULL;
+                struct HDTBPartition *partition = NULL;
                 ULONG block;
+
                 get(resizemovegadgets.pt, PTCT_PartitionTable, &table);
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
 		D(bug("[HDToolBox] - Type             : Partition\n"));
@@ -623,7 +637,8 @@ AROS_UFH3(void, buttons_function,
             }
             else if (type == PTS_EMPTY_AREA)
             {
-                struct DosEnvec *de;
+                struct DosEnvec *de = NULL;
+
 		D(bug("[HDToolBox] - Type             : Empty Area\n"));
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &de);
                 if (value != de->de_HighCyl)
@@ -634,15 +649,17 @@ AROS_UFH3(void, buttons_function,
         }
         else if (object == resizemovegadgets.totalcyl)
         {
-            LONG type;
-            ULONG value;
+            LONG type = 0;
+            ULONG value = 0;
+
             get(object, MUIA_String_Integer, &value);
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_PARTITION)
             {
-                struct HDTBPartition *table;
-                struct HDTBPartition *partition;
+                struct HDTBPartition *table = NULL;
+                struct HDTBPartition *partition = NULL;
                 ULONG block;
+
                 get(resizemovegadgets.pt, PTCT_PartitionTable, &table);
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
                 if (value != (partition->de.de_HighCyl-partition->de.de_LowCyl+1))
@@ -677,7 +694,8 @@ AROS_UFH3(void, buttons_function,
             }
             else if (type == PTS_EMPTY_AREA)
             {
-                struct DosEnvec *de;
+                struct DosEnvec *de = NULL;
+
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &de);
                 if (value != (de->de_HighCyl-de->de_LowCyl+1))
                     set(object, MUIA_String_Integer, de->de_HighCyl-de->de_LowCyl+1);
@@ -688,14 +706,16 @@ AROS_UFH3(void, buttons_function,
         else if (object == resizemovegadgets.size)
         {
             char val[32];
-            struct DosEnvec *de;
-            STRPTR *str;
+            struct DosEnvec *de = NULL;
+            STRPTR *str = NULL;
             ULONG size = 0;
-            ULONG type;
+            ULONG type = 0;
+
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_PARTITION)
             {
-                struct HDTBPartition *partition;
+                struct HDTBPartition *partition = NULL;
+
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
                 de = &partition->de;
                 get(object, MUIA_String_Contents, &str);
@@ -723,7 +743,8 @@ AROS_UFH3(void, buttons_function,
         else if (object == renamegadgets.ok)
         {
             struct HDTBPartition *partition;
-            STRPTR name;
+            STRPTR name = NULL;
+
             partition = (struct HDTBPartition *)renamegadgets.iln;
             get(renamegadgets.name, MUIA_String_Contents, &name);
             if (strcmp(name, partition->listnode.ln.ln_Name) != 0)
@@ -737,11 +758,12 @@ AROS_UFH3(void, buttons_function,
         else if (object == dosenvecgadgets.ok)
         {
             BOOL changed = FALSE;
-            LONG check;
-            ULONG value;
-            STRPTR str;
+            LONG check = 0;
+            ULONG value = 0;
+            STRPTR str = NULL;
             char *end;
             struct HDTBPartition *partition;
+
             partition = (struct HDTBPartition *)dosenvecgadgets.iln;
             get(dosenvecgadgets.mask, MUIA_String_Integer, &value);
             if (value != partition->de.de_Mask)
@@ -820,8 +842,9 @@ AROS_UFH3(void, buttons_function,
             struct HDTBPartition *partition;
             BOOL changeda = FALSE;
             BOOL changed = FALSE;
-            LONG check;
-            ULONG value;
+            LONG check = 0;
+            ULONG value = 0;
+
             partition = (struct HDTBPartition *)mountbootgadgets.iln;
             get(mountbootgadgets.active, MUIA_Selected, &check);
             if (check)
@@ -1171,6 +1194,44 @@ AROS_UFH3(void, buttons_function,
     AROS_USERFUNC_EXIT
 }
 
+/*
+ * DosEnvec of all partitions holds cylinder numbers relative to partition start.
+ * This function returns absolute start cylinder number for the partition.
+ */
+static ULONG GetStartCyl(struct HDTBPartition *part)
+{
+    ULONG ret = 0;
+
+    while (part->listnode.parent)
+    {
+    	part = (struct HDTBPartition *)part->listnode.parent;
+
+	if (part->listnode.ln.ln_Type != LNT_Partition)
+	    break;
+
+	ret += part->de.de_LowCyl;
+    }
+
+    return ret;
+}
+
+static struct FileSysEntry *FindFileSysEntry(ULONG dostype)
+{
+    struct FileSysEntry *fse;
+    struct FileSysResource *fsr = OpenResource("FileSystem.resource");
+    
+    if (!fsr)
+    	return NULL;
+
+    ForeachNode(&fsr->fsr_FileSysEntries, fse)
+    {
+    	if (fse->fse_DosType == dostype)
+	    return fse;
+    }
+    
+    return NULL;
+}
+
 AROS_UFH3(void, createml_function,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, object, A2),
@@ -1187,7 +1248,7 @@ AROS_UFH3(void, createml_function,
 	struct FileRequester *req;
 	struct TagItem asltags[] =
 	{
-	    {ASLFR_InitialDrawer, "SYS:Storage/DOSDrivers"},
+	    {ASLFR_InitialDrawer, (IPTR)"SYS:Storage/DOSDrivers"},
 	    {ASLFR_InitialFile  , 0},
 	    {ASLFR_DoSaveMode   , TRUE},
 	    {TAG_DONE           , 0}
@@ -1205,7 +1266,7 @@ AROS_UFH3(void, createml_function,
 	{
 	    ULONG len = strlen(req->fr_Drawer) + strlen(req->fr_File) + 2;
 	    STRPTR pathname = AllocMem(len, MEMF_ANY);
-	    
+
 	    if (pathname)
 	    {
 		BPTR file;
@@ -1218,15 +1279,13 @@ AROS_UFH3(void, createml_function,
 
 		if (file)
 		{
-		    /* TODO: Attempt to pick up these from FileSystem.resource */
-		    ULONG stack = 16384;
-		    STRPTR fs = "";
-		    LONG globvec = -1;
 		    struct DiskObject *icon;
 		    IPTR args[20];
+		    struct FileSysEntry *fse;
+    		    ULONG startcyl = GetStartCyl(partition);
 
-		    args[ 0] = fs;
-		    args[ 1] = partition->ph->bd->ioreq->iotd_Req.io_Device->dd_Library.lib_Node.ln_Name;
+		    args[ 0] = (IPTR)"";
+		    args[ 1] = (IPTR)partition->ph->bd->ioreq->iotd_Req.io_Device->dd_Library.lib_Node.ln_Name;
 		    args[ 2] = ((struct HDNode *)partition->root)->unit;
 		    args[ 3] = partition->de.de_SizeBlock * 4;  /* block size in longs */
 		    args[ 4] = partition->de.de_Surfaces;
@@ -1237,14 +1296,34 @@ AROS_UFH3(void, createml_function,
 		    args[ 9] = partition->de.de_Interleave;
 		    args[10] = partition->de.de_MaxTransfer;
 		    args[11] = partition->de.de_Mask;
-		    args[12] = partition->de.de_LowCyl;
-		    args[13] = partition->de.de_HighCyl;
+		    args[12] = partition->de.de_LowCyl  + startcyl;
+		    args[13] = partition->de.de_HighCyl + startcyl;
 		    args[14] = partition->de.de_NumBuffers;
 		    args[15] = partition->de.de_BufMemType;
-		    args[16] = stack;
-		    args[17] = partition->de.de_BootPri;
-		    args[18] = globvec;
+		    args[16] = 16384;
+		    args[17] = 0;
+		    args[18] = -1;
 		    args[19] = partition->de.de_DosType;
+
+		    /*
+		     * Some things can be fetched only from FileSystem.resource.
+		     * Let's try to do it.
+		     */
+		    fse = FindFileSysEntry(partition->de.de_DosType);
+		    if (fse)
+		    {
+		    	if (fse->fse_PatchFlags & FSEF_HANDLER)
+		    	    args[0] = (IPTR)AROS_BSTR_ADDR(fse->fse_Handler);
+
+		    	if (fse->fse_PatchFlags & FSEF_STACKSIZE)
+		    	    args[16] = fse->fse_StackSize;
+
+		    	if (fse->fse_PatchFlags & FSEF_PRIORITY)
+		    	    args[17] = fse->fse_Priority;
+
+		    	if (fse->fse_PatchFlags & FSEF_GLOBALVEC)
+		    	    args[18] = (IPTR)fse->fse_GlobalVec;
+		    }
 
 		    VFPrintf(file, "FileSystem       = %s\n"
 				  "Device           = %s\n"
@@ -1363,7 +1442,7 @@ void ShowList(Object *list, struct List *lh)
 
 void disableObject(Object *object)
 {
-    LONG disabled;
+    LONG disabled = FALSE;
 
     D(bug("[HDToolBox] disableObject()\n"));
 
@@ -1376,7 +1455,7 @@ void disableObject(Object *object)
 
 void enableObject(Object *object)
 {
-    LONG disabled;
+    LONG disabled = FALSE;
 
     D(bug("[HDToolBox] enableObject()\n"));
 
@@ -1397,8 +1476,8 @@ AROS_UFH3(void, lv_doubleclick,
 {
     AROS_USERFUNC_INIT
 
-    LONG active;
-    LONG type=-1;
+    LONG active = MUIV_List_Active_Off;
+    LONG type = -1;
     struct ListNode *iln;
 
     D(bug("[HDToolBox] lv_doubleclick()\n"));
@@ -1486,7 +1565,7 @@ AROS_UFH3(void, lv_click,
 {
     AROS_USERFUNC_INIT
 
-    LONG active;
+    LONG active = MUIV_List_Active_Off;
     struct ListNode *iln;
     char str[64];
     char sizestr[16];
