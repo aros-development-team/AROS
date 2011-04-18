@@ -1200,6 +1200,7 @@ AROS_UFH3(void, buttons_function,
  */
 static ULONG GetStartCyl(struct HDTBPartition *part)
 {
+    ULONG blockspercyl = part->de.de_Surfaces * part->de.de_BlocksPerTrack;
     ULONG ret = 0;
 
     while (part->listnode.parent)
@@ -1209,10 +1210,21 @@ static ULONG GetStartCyl(struct HDTBPartition *part)
 	if (part->listnode.ln.ln_Type != LNT_Partition)
 	    break;
 
-	ret += part->de.de_LowCyl;
+	/*
+	 * Calculate start offset in blocks. This can be done because theoretically
+	 * partitions can have different virtual geometries.
+	 */
+	ret += part->de.de_LowCyl * part->de.de_Surfaces * part->de.de_BlocksPerTrack;
     }
 
-    return ret;
+    /*
+     * FIXME: What if this can't be divided in interegs?
+     * This can happen for example if the disk was partitioned on another machine where
+     * disk driver reported different (virtual) geometry. In this case we should be able
+     * to adjust mountlist geometry (Surfaces and BlocksPerTrack) so that division works
+     * correctly and CHS-LBA relationship is still not broken.
+     */
+    return ret / blockspercyl;
 }
 
 static struct FileSysEntry *FindFileSysEntry(ULONG dostype)
