@@ -152,7 +152,8 @@
 	}
     }
 
-    if (ret == DD_OK) {
+    if (ret == DD_OK)
+    {
 	/* Attach system structures to the driver */
 	D(bug("[AddDisplayDriverA] Installing driver\n"));
 	mdd = driver_Setup(gfxhidd, GfxBase);
@@ -176,13 +177,16 @@
 
 	    /* Remove boot mode drivers if needed */
 	    keep_boot = GetTagData(DDRV_KeepBootMode, FALSE, tags);
-	    if (!keep_boot) {
+	    if (!keep_boot)
+	    {
 		D(bug("[AddDisplayDriverA] Shutting down boot mode drivers\n"));
-		for (last = (struct monitor_driverdata *)CDD(GfxBase);; last = last->next) {
+		for (last = (struct monitor_driverdata *)CDD(GfxBase);; last = last->next)
+		{
 		    D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p\n", last, last->next));
 		    /* Do not shut down the driver if it displays something.
 		       Experimental and will cause problems in certain cases. */
-		    while (last->next && (last->next->flags & DF_BootMode) && (!last->next->display)) {
+		    while (last->next && (last->next->flags & DF_BootMode) && (!last->next->display))
+		    {
 		        old = last->next;
 			D(bug("[AddDisplayDriverA] Shutting down driver 0x%p (ID 0x%08lX, next 0x%p)\n", old, old->id, old->next));
 			last->next = old->next;
@@ -200,7 +204,8 @@
 
 	    /* Insert the driverdata into chain, sorted by ID */
 	    D(bug("[AddDisplayDriverA] Inserting driver 0x%p, ID 0x%08lX\n", mdd, mdd->id));
-	    for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next) {
+	    for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next)
+	    {
 	        D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p, ID 0x%08lX\n", last, last->next, last->next->id));
 		if (mdd->id < last->next->id)
 		    break;
@@ -223,6 +228,43 @@
     }
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
+
+    /* Set the first non-boot non-planar driver as default */
+    if ((ret == DD_OK) && (!GfxBase->default_monitor) && (!(mdd->flags & DF_BootMode)))
+    {
+    	OOP_Class *cl = OOP_OCLASS(mdd->gfxhidd_orig);
+
+	/*
+	 * Amiga(tm) chipset driver does not become a default.
+	 * This is done because RTG modes (if any) are commonly preferred
+	 * over it.
+	 * TODO: in future some prefs program could be implemented. It would
+	 * allow the user to describe the physical placement of several displays
+	 * in his environment, and explicitly set the preferred display.
+	 */
+	if (strcmp(cl->ClassNode.ln_Name, "hidd.gfx.amigavideo"))
+	{
+	    /*
+	     * graphics.library uses struct MonitorSpec pointers for historical reasons,
+	     * so we satisfy it.
+	     * Here we just get the first available sync object from the driver and
+	     * set default_monitor fo its MonitorSpec. This allows BestModeIDA() to
+	     * obtain preferred monitor back from this MonitorSpec (by asking the associated
+	     * sync object about its parent driver).
+	     *
+	     * TODO:
+	     * Originally display drivers in AmigaOS had a concept of "preferred mode ID".
+	     * Every driver supplied own hardcoded ID which can be retrieved by GetDisplayInfoData()
+	     * in MonitorInfo->PreferredModeID. Currently AROS does not implement this concept.
+	     * However this sync could be a preferred mode's sync.
+	     * It needs to be researched what exactly this mode ID is. Implementing this concept would
+	     * improve AmigaOS(tm) compatibility.
+	     */
+    	    OOP_Object *sync = HIDD_Gfx_GetSync(mdd->gfxhidd_orig, 0);
+
+	    OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&GfxBase->default_monitor);
+	}
+    }
 
     D(bug("[AddDisplayDriverA] Returning %u\n", ret));
     return ret;
