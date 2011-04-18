@@ -53,6 +53,9 @@ do                                                                             \
 } while (0)
 
 
+#define GET_BM_DEPTH(bitmap) \
+	(IS_HIDD_BM(bitmap) ? HIDD_BM_REALDEPTH(bitmap) : bitmap->Depth)
+
 #define GET_BM_DRIVERDATA(bitmap) \
 	((IS_HIDD_BM(bitmap)) \
 		? HIDD_BM_DRVDATA(bitmap) \
