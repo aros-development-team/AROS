@@ -52,7 +52,10 @@ void    hexdump      (const void * data, IPTR offset, ULONG count);
 int     strrncasecmp (const char *, const char *, int);
 void    RawPutChars  (const UBYTE * string, int len);
 BOOL    IsDosEntryA  (char *Name, ULONG Flags);
-BPTR    CreateSegList(APTR function);
+
+/* dos.library-compatible data generation */
+BSTR CreateBSTR(CONST_STRPTR src);
+BPTR CreateSegList(APTR function);
 
 /*
  * Taglist parsing functions.
