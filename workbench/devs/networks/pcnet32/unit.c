@@ -49,7 +49,7 @@
 #include LC_LIBDEFS_FILE
 
 /* BYTE IO */
-volatile UBYTE readb(APTR base)
+UBYTE readb(APTR base)
 {
     return BYTEIN(base);
 }
@@ -59,7 +59,7 @@ void writeb(UBYTE val, APTR base)
 }
 
 /* WORD IO */
-volatile UWORD readw(APTR base)
+UWORD readw(APTR base)
 {
     return WORDIN(base);
 }
@@ -69,13 +69,13 @@ void writew(UWORD val, APTR base)
 }
 
 /* LONG IO */
-volatile ULONG readl(APTR base)
+ULONG readl(APTR base)
 {
-    return *((ULONG*)base);
+    return *((volatile ULONG*)base);
 }
 void writel(ULONG val, APTR base)
 {
-    *((ULONG*)base) = val;
+    *((volatile ULONG*)base) = val;
 }
 
 /* 16/32bit control funcs */
