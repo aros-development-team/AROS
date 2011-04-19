@@ -54,7 +54,7 @@ const struct Resident boot_resident =
     RTF_COLDSTART,
     41,
     NT_TASK,
-    -50,
+    -119,
     "Boot Strap",
     "AROS Boot Strap 41.0\r\n",
     (APTR)&boot_init
