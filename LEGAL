@@ -6,6 +6,7 @@ of the binaries is specified first (sometimes with AROS-style path pattern
 matching), followed by the location of the sources inside square brakets.
 Some components are not distributed as binaries.
 
+
 The following components are distributed under the terms of version 2.1 of the
 GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
 
@@ -14,12 +15,18 @@ GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
 + Classes/Zune/PrefsWindow.mcc [workbench/classes/zune/prefswindow]
 + Classes/Zune/PrefsEditor.mcc [workbench/classes/zune/prefseditor]
 + Classes/Zune/SystemPrefsWindow.mcc [workbench/classes/zune/systemprefswindow]
++ Classes/Zune/BetterString.mc* Classes/Zune/HotkeyString.mcc
+  [workbench/classes/zune/betterstring]
++ Classes/Zune/TextEditor.mc* [workbench/classes/zune/texteditor]
++ Libs/codesets.library [workbench/libs/codesetslib]
 + AmberRAM (linked in some AROS kernels) [workbench/devs/AmberRAM]
+
 
 The following components are distributed under the terms of version 3.0 of the
 GNU Lesser General Public License. Please read the relevant "LEGAL" files that 
 accompanies these components' sources.
 + [workbench/libs/mesa/src/talloc]
+
 
 The following components are distributed under the terms of version 2 of the
 GNU General Public License, as specified in the file "LICENSE.GPL":
@@ -36,7 +43,8 @@ GNU General Public License, as specified in the file "LICENSE.GPL":
 + [tools/adflib]
 + [workbench/devs/AHI] (as it is needed to compile AROS)
 + [workbench/devs/SFS] (linked in some AROS kernels)
-    
+
+
 The following components are distributed under the terms various different
 open source licenses, most of them similar to the BSD license. Please read the
 relevant "LEGAL" files that accompanies these components' sources.
@@ -53,3 +61,4 @@ relevant "LEGAL" files that accompanies these components' sources.
 + [tools/fd2pragma]
 + [workbench/hidds/hidd.nouveau/drm]
 + [workbench/libs/mesa]
++ C/OpenURL Prefs/OpenURL Libs/OpenURL [workbench/libs/openurllib]
