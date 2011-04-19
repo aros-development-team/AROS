@@ -15,7 +15,7 @@ struct PlatformData;
 struct KernelBase
 {
     struct Node            kb_Node;
-    struct MinList         kb_Exceptions[EXCEPTIONS_COUNT];
+    struct List            kb_Exceptions[EXCEPTIONS_COUNT];
     struct List            kb_Interrupts[IRQ_COUNT];
     struct MinList         kb_Modules;
     struct ELF_ModuleInfo *kb_KernelModules;
