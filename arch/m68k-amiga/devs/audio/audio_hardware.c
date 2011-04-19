@@ -91,7 +91,7 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     	if (!(ab->initialcyclemask & mask)) {
     	    ab->initialcyclemask |= mask;
     	    audiohw_preparepervol(ab, io2, ch);
-    	    if (io2->ioa_Request.io_Flags & ADIOF_WRITEMESSAGE)
+    	    if (io2 && (io2->ioa_Request.io_Flags & ADIOF_WRITEMESSAGE))
     	    	ReplyMsg(&io2->ioa_WriteMsg);
     	}
 
