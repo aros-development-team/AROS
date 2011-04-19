@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 FILES	:= \
     _kprintf \
     calcchecksum \
+    createbstr \
     createseglist \
     debugmem \
     freestruct \
