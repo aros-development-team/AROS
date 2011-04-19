@@ -91,13 +91,13 @@ void udelay(LONG usec)
     }
 }
 
-static volatile ULONG readl(APTR base)
+static ULONG readl(APTR base)
 {
-    return *((ULONG*)base);
+    return *((volatile ULONG*)base);
 }
 static void writel(ULONG val, APTR base)
 {
-    *((ULONG*)base) = val;
+    *((volatile ULONG*)base) = val;
 }
 
 static inline struct fe_priv *get_nvpriv(struct net_device *dev)

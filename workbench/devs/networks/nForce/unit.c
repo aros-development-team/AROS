@@ -140,14 +140,14 @@ void FlushUnit(LIBBASETYPEPTR LIBBASE, struct NFUnit *unit, UBYTE last_queue, BY
     }
 }
 
-static inline volatile ULONG readl(APTR base)
+static inline ULONG readl(APTR base)
 {
-    return *((ULONG*)base);
+    return *((volatile ULONG*)base);
 }
 
 static inline void writel(ULONG val, APTR base)
 {
-    *((ULONG*)base) = val;
+    *((volatile ULONG*)base) = val;
 }
 
 static inline void pci_push(UBYTE *base)
