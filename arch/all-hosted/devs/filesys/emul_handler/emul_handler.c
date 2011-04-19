@@ -30,6 +30,7 @@
 #include <utility/tagitem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
+#include <proto/arossupport.h>
 #include <proto/dos.h>
 #include <proto/expansion.h>
 
@@ -273,16 +274,14 @@ static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
 
 #define DEVNAME	    "EMU"
 #define VOLNAME	    "System"
-#define HANDLERNAME "emul.handler"
 
-#define DEVNAME_LEN	3
-#define VOLNAME_LEN     6
-#define HANDLERNAME_LEN 12
+#define VOLNAME_LEN  6
 
 static LONG startup(struct emulbase *emulbase)
 {
     struct Library *ExpansionBase;
-    struct DeviceNode *dlv;
+    struct DeviceNode *dlv = NULL;
+    BSTR devname;
 
     D(kprintf("[Emulhandler] startup\n"));
 
@@ -296,33 +295,22 @@ static LONG startup(struct emulbase *emulbase)
 
     D(kprintf("[Emulhandler] startup: got ExpansionBase\n"));	  
 
-    /*
-     * Allocate space for the string from same mem,
-     * Use AROS_BSTR_MEMSIZE4LEN macro for space to
-     * to allocate and add an extra 4 for alignment
-     * purposes.
-     */
-    dlv = AllocMem(sizeof(struct DeviceNode) + 6 +
-		   AROS_BSTR_MEMSIZE4LEN(DEVNAME_LEN) +
-		   AROS_BSTR_MEMSIZE4LEN(HANDLERNAME_LEN), MEMF_CLEAR|MEMF_PUBLIC);
-    if (dlv)
+    devname = CreateBSTR(DEVNAME);
+    if (devname)
     {
-	STRPTR str;
+    	dlv = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR|MEMF_PUBLIC);
+    	if (dlv)
+    	{
+	    D(kprintf("[Emulhandler] startup allocated dlv\n"));
 
-	D(kprintf("[Emulhandler] startup allocated dlv\n"));
-	/* We want str to point to the first 4-byte aligned memory after the structure */
-	str = (STRPTR)(((IPTR)dlv + sizeof(struct DeviceNode) + 3) & ~3);
+	    dlv->dn_Name    = devname;
+    	    dlv->dn_Type    = DLT_DEVICE;
+    	    dlv->dn_Handler = CreateBSTR(MOD_NAME_STRING);
 
-	bstrcpy(str, DEVNAME);
-	dlv->dn_Name = MKBADDR(str);
-	dlv->dn_Ext.dn_AROS.dn_DevName = str;
+	    dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(devname);
 
-	str = (STRPTR)(((IPTR)str + AROS_BSTR_MEMSIZE4LEN(DEVNAME_LEN) + 3) & ~3);
-	bstrcpy(str, HANDLERNAME);
-	dlv->dn_Handler = MKBADDR(str);
-
-	dlv->dn_Type    = DLT_DEVICE;
-	AddBootNode(5, 0, dlv, NULL);
+	    AddBootNode(5, 0, dlv, NULL);
+	}
     }
 
     CloseLibrary(ExpansionBase);
