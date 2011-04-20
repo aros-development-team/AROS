@@ -2,29 +2,21 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
+
 #include <inttypes.h>
 
-#include "exec_intern.h"
-#include "etask.h"
-
-#undef KernelBase
-
-#define DEBUG 0
-#include <aros/debug.h>
-
-#include <stdio.h>
 #include <asm/cpu.h>
 #include <asm/io.h>
-#include <asm/segments.h>
-#include <asm/tls.h>
-#include <inttypes.h>
-#include <aros/symbolsets.h>
-#include <aros/libcall.h>
 #include <aros/asmcall.h>
-#include <exec/execbase.h>
-#include <hardware/intbits.h>
+#include <proto/exec.h>
 
+#include "kernel_base.h"
+#include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "acpi.h"
+#include "apic.h"
+
+#define D(x) x
 
 #define CONFIG_LAPICS
 
@@ -38,28 +30,28 @@ AROS_UFH1(IPTR, ACPI_hook_Table_MADT_Parse,
 {
     AROS_USERFUNC_INIT
 
-    D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse()\n"));
+    struct acpi_table_madt *madt;
+    struct PlatformData *pdata;
 
-    struct acpi_table_madt	*madt = NULL;
-
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    D(bug("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse()\n"));
 
     if (!table_hook->phys_addr || !table_hook->size)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Illegal MADT Table Addr/Size\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Illegal MADT Table Addr/Size\n");
         return 0;
     }
 
+    pdata = table_hook->data;
     madt = (struct acpi_table_madt *) table_hook->phys_addr;
 
     if (madt->lapic_address)
     {
-        KernelBase->kb_APIC_BaseMap[0] = madt->lapic_address;
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Local APIC address 0x%08x\n", KernelBase->kb_APIC_BaseMap[0]);
+        pdata->kb_APIC_BaseMap[0] = madt->lapic_address;
+        bug("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Local APIC address 0x%08x\n", pdata->kb_APIC_BaseMap[0]);
     }
     if (madt->flags.pcat_compat)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Local APIC has 8259 PIC\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Local APIC has 8259 PIC\n");
     }
     return 1;
  
@@ -72,55 +64,54 @@ AROS_UFH1(IPTR, ACPI_hook_Table_LAPIC_Parse,
 {
     AROS_USERFUNC_INIT
 
-    D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse()\n"));
+    struct acpi_table_lapic *processor;
+    struct PlatformData *pdata = table_hook->data;
 
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
-    struct acpi_table_lapic	*processor = NULL;
-
-    D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: KernelBase @ %p\n", KernelBase));
+    D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: pdata @ %p\n", pdata));
 
     if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Illegal LAPIC Table Addr\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Illegal LAPIC Table Addr\n");
         return 0;
     }
 
     processor = (struct acpi_table_lapic *) table_hook->header;
-    
-    rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags);
+
+    bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags);
 
 #if defined(CONFIG_LAPICS)
-    if (((KernelBase->kb_APIC_IDMap[0] & 0xFF) != processor->id) && processor->flags.enabled)
+    if (((pdata->kb_APIC_IDMap[0] & 0xFF) != processor->id) && processor->flags.enabled)
     {
-        if (KernelBase->kb_APIC_TrampolineBase != NULL)
+        if (pdata->kb_APIC_TrampolineBase != NULL)
         {
             UBYTE apic_count;
-            UBYTE apic_newno = KernelBase->kb_APIC_Count++;
-            UWORD *apic_oldidmap = KernelBase->kb_APIC_IDMap;
-            IPTR *apic_oldbasemap = KernelBase->kb_APIC_BaseMap;
+            IPTR wakeresult;
+            UBYTE apic_newno = pdata->kb_APIC_Count++;
+            UWORD *apic_oldidmap = pdata->kb_APIC_IDMap;
+            IPTR *apic_oldbasemap = pdata->kb_APIC_BaseMap;
 
-            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering APIC number %d\n", apic_newno);
+            bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering APIC number %d\n", apic_newno);
 
-            KernelBase->kb_APIC_IDMap = AllocVec((KernelBase->kb_APIC_Count + 1) * sizeof(UWORD), MEMF_CLEAR);
-            KernelBase->kb_APIC_BaseMap = AllocVec((KernelBase->kb_APIC_Count + 1) * sizeof(IPTR), MEMF_CLEAR);
-            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: New IDMap Allocated @ %p, BaseMap @ %p\n", KernelBase->kb_APIC_IDMap, KernelBase->kb_APIC_BaseMap);
+            pdata->kb_APIC_IDMap = AllocVec((pdata->kb_APIC_Count + 1) * sizeof(UWORD), MEMF_CLEAR);
+            pdata->kb_APIC_BaseMap = AllocVec((pdata->kb_APIC_Count + 1) * sizeof(IPTR), MEMF_CLEAR);
+            bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: New IDMap Allocated @ %p, BaseMap @ %p\n", pdata->kb_APIC_IDMap, pdata->kb_APIC_BaseMap);
 
             for (apic_count = 0; apic_count < apic_newno; apic_count++)
             {
-                KernelBase->kb_APIC_IDMap[apic_count] = apic_oldidmap[apic_count];
-                KernelBase->kb_APIC_BaseMap[apic_count] = apic_oldbasemap[apic_count];
+                pdata->kb_APIC_IDMap[apic_count] = apic_oldidmap[apic_count];
+                pdata->kb_APIC_BaseMap[apic_count] = apic_oldbasemap[apic_count];
             }
-            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Freeing old  IDMap @ %p, BaseMap @ %p\n", apic_oldidmap, apic_oldbasemap);
+            bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Freeing old  IDMap @ %p, BaseMap @ %p\n", apic_oldidmap, apic_oldbasemap);
             FreeVec(apic_oldidmap);
             FreeVec(apic_oldbasemap);
 
             /* We set the ID here - the APIC will set its own base (which we can use to tell if its up.. */
-            KernelBase->kb_APIC_IDMap[apic_newno] = ((processor->acpi_id << 8) | processor->id);
+            pdata->kb_APIC_IDMap[apic_newno] = ((processor->acpi_id << 8) | processor->id);
 #if (0)
             /* Allow access to page 0 again */
             core_ProtKernelArea(0, 1, 1, 1, 1);
 
-            D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Setting warm reset code ..\n"));
+            D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Setting warm reset code ..\n"));
             outb(0xf, 0x70);
             outb(0xa, 0x71);
 
@@ -134,27 +125,24 @@ AROS_UFH1(IPTR, ACPI_hook_Table_LAPIC_Parse,
                     "movq %0, %%cr3":"=r"(scratchreg)::"memory");
             } while (0);
 
-            /* 40:67 set to KernelBase->kb_APIC_TrampolineBase so that APIC recieves it in CS:IP */
-            D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Setting vector for trampoline @ %p ..\n", KernelBase->kb_APIC_TrampolineBase));
-            *((volatile unsigned short *)0x469) = KernelBase->kb_APIC_TrampolineBase >> 4;
-            *((volatile unsigned short *)0x467) = KernelBase->kb_APIC_TrampolineBase & 0xf;
+            /* 40:67 set to pdata->kb_APIC_TrampolineBase so that APIC recieves it in CS:IP */
+            D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Setting vector for trampoline @ %p ..\n", pdata->kb_APIC_TrampolineBase));
+            *((volatile unsigned short *)0x469) = pdata->kb_APIC_TrampolineBase >> 4;
+            *((volatile unsigned short *)0x467) = pdata->kb_APIC_TrampolineBase & 0xf;
 #endif
             /* Start IPI sequence */
-            IPTR wakeresult = AROS_UFC2(IPTR,
-                                ((struct GenericAPIC *)KernelBase->kb_APIC_Drivers[KernelBase->kb_APIC_DriverID])->wake,
-                                AROS_UFCA(IPTR, KernelBase->kb_APIC_TrampolineBase, A0),
-                                AROS_UFCA(UBYTE, processor->id, D0));
+            wakeresult = core_APIC_Wake(pdata->kb_APIC_TrampolineBase, processor->id, pdata);
 
 #if (0)
             /* Lock page 0 access again! */
             core_ProtKernelArea(0, 1, 0, 0, 0);
 #endif
 
-            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: core_APICIPIWake returns %d\n", wakeresult);
+            bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: core_APICIPIWake returns %d\n", wakeresult);
         }
         else
         {
-            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Warning - No APIC Trampoline.. Cannot start apic id %d\n", processor->id);
+            bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Warning - No APIC Trampoline.. Cannot start apic id %d\n", processor->id);
             return 0;
         }
     }
@@ -170,24 +158,24 @@ AROS_UFH1(IPTR, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
 {
     AROS_USERFUNC_INIT
 
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    struct PlatformData *pdata;
+    struct acpi_table_lapic_addr_ovr *lapic_addr_ovr;
 
-    D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse()\n"));
-
-    struct acpi_table_lapic_addr_ovr *lapic_addr_ovr = NULL;
+    D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse()\n"));
 
     if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Illegal LAPIC_Addr_Ovr Table Addr\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Illegal LAPIC_Addr_Ovr Table Addr\n");
         return 0;
     }
 
+    pdata = table_hook->data;
     lapic_addr_ovr = (struct acpi_table_lapic_addr_ovr *) table_hook->header;
 
     if (lapic_addr_ovr->address)
     {
-        KernelBase->kb_APIC_BaseMap[0] = lapic_addr_ovr->address;
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Local APIC address Override to 0x%p\n", KernelBase->kb_APIC_BaseMap[0]);
+        pdata->kb_APIC_BaseMap[0] = lapic_addr_ovr->address;
+        bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Local APIC address Override to 0x%p\n", pdata->kb_APIC_BaseMap[0]);
     }
     
     return 1;
@@ -201,13 +189,13 @@ AROS_UFH1(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
 {
     AROS_USERFUNC_INIT
 
-    D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_NMI_Parse()\n"));
+    D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_NMI_Parse()\n"));
 
     struct acpi_table_lapic_nmi *lapic_nmi = NULL;
 
     if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_NMI_Parse: Illegal LAPIC_NMI Table  Addr\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_NMI_Parse: Illegal LAPIC_NMI Table  Addr\n");
         return 0;
     }
 
@@ -215,7 +203,7 @@ AROS_UFH1(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
 
     if (lapic_nmi->lint != 1)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_NMI_Parse: APIC ID %d: WARNING - NMI not connected to LINT1!\n", lapic_nmi->acpi_id);
+        bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_NMI_Parse: APIC ID %d: WARNING - NMI not connected to LINT1!\n", lapic_nmi->acpi_id);
     }
 
     return 1;
@@ -229,19 +217,19 @@ AROS_UFH1(IPTR, ACPI_hook_Table_IOAPIC_Parse,
 {
     AROS_USERFUNC_INIT
 
-    D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_IOAPIC_Parse()\n"));
+    D(bug("[Kernel] (HOOK) ACPI_hook_Table_IOAPIC_Parse()\n"));
 
     struct acpi_table_ioapic *ioapic = NULL;
 
     if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_IOAPIC_Parse: Illegal IOAPIC Table Addr\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_IOAPIC_Parse: Illegal IOAPIC Table Addr\n");
         return 0;
     }
 
     ioapic = (struct acpi_table_ioapic *) table_hook->header;
 
-    rkprintf("[Kernel] (HOOK) ACPI_hook_Table_IOAPIC_Parse: IOAPIC %d @ %p [irq base = %d]\n", ioapic->id, ioapic->address, ioapic->global_irq_base);
+    bug("[Kernel] (HOOK) ACPI_hook_Table_IOAPIC_Parse: IOAPIC %d @ %p [irq base = %d]\n", ioapic->id, ioapic->address, ioapic->global_irq_base);
 
     return 1;
     
@@ -254,19 +242,19 @@ AROS_UFH1(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
 {
     AROS_USERFUNC_INIT
 
-    D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_Int_Src_Ovr_Parse()\n"));
+    D(bug("[Kernel] (HOOK) ACPI_hook_Table_Int_Src_Ovr_Parse()\n"));
 
     struct acpi_table_int_src_ovr *intsrc = NULL;
 
     if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_Int_Src_Ovr_Parse: Illegal Int_Src_Ovr Table Addr\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_Int_Src_Ovr_Parse: Illegal Int_Src_Ovr Table Addr\n");
         return 0;
     }
 
     intsrc = (struct acpi_table_int_src_ovr *) table_hook->header;
 
-    rkprintf("[Kernel] (HOOK) ACPI_hook_Table_Int_Src_Ovr_Parse: BUS IRQ %d, Global IRQ %d, polarity ##, trigger ##\n", intsrc->bus_irq, intsrc->global_irq);
+    bug("[Kernel] (HOOK) ACPI_hook_Table_Int_Src_Ovr_Parse: BUS IRQ %d, Global IRQ %d, polarity ##, trigger ##\n", intsrc->bus_irq, intsrc->global_irq);
                     //intsrc->flags.polarity,
                     //intsrc->flags.trigger,
 
@@ -281,13 +269,13 @@ AROS_UFH1(IPTR, ACPI_hook_Table_NMI_Src_Parse,
 {
     AROS_USERFUNC_INIT
 
-    D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_NMI_Src_Parse()\n"));
+    D(bug("[Kernel] (HOOK) ACPI_hook_Table_NMI_Src_Parse()\n"));
 
     struct acpi_table_nmi_src *nmi_src = NULL;
 
     if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_NMI_Src_Parse: Illegal NMI_Src Table Addr\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_NMI_Src_Parse: Illegal NMI_Src Table Addr\n");
         return 0;
     }
 
@@ -304,13 +292,13 @@ AROS_UFH1(IPTR, ACPI_hook_Table_HPET_Parse,
 {
     AROS_USERFUNC_INIT
 
-    D(rkprintf("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse()\n"));
+    D(bug("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse()\n"));
 
     struct acpi_table_hpet *hpet_tbl;
 
     if (!table_hook->phys_addr || !table_hook->size)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: Illegal HPET Table Addr/Size\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: Illegal HPET Table Addr/Size\n");
         return 0;
     }
 
@@ -318,11 +306,11 @@ AROS_UFH1(IPTR, ACPI_hook_Table_HPET_Parse,
 
     if (hpet_tbl->addr.space_id != ACPI_SPACE_MEM) 
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: HPET timers must be located in memory.\n");
+        bug("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: HPET timers must be located in memory.\n");
         return -1;
     }
 
-    rkprintf("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: INFORMATION - HPET id: %d @ %p\n", hpet_tbl->id, hpet_tbl->addr.addrl);
+    bug("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: INFORMATION - HPET id: %d @ %p\n", hpet_tbl->id, hpet_tbl->addr.addrl);
     
     return 1;
 

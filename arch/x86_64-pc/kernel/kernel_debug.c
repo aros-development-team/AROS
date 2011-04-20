@@ -1,17 +1,15 @@
 #include <bootconsole.h>
-#include <stdarg.h>
 
+#include "kernel_base.h"
+#include "kernel_debug.h"
 #include "kernel_intern.h"
-
-/* This comes from librom.a */
-int __vcformat(void *data, int(*outc)(int, void *), const char * format, va_list args);
 
 #define __save_flags(x)		__asm__ __volatile__("pushfq ; popq %0":"=g" (x): /* no input */)
 #define __restore_flags(x) 	__asm__ __volatile__("pushq %0 ; popfq": /* no output */ :"g" (x):"memory", "cc")
 #define __cli() 		__asm__ __volatile__("cli": : :"memory")
 #define __sti()			__asm__ __volatile__("sti": : :"memory")
 
-int kputc(int c, void *data)
+int krnPutC(int c, struct KernelBase *KernelBase)
 {
     unsigned long flags;
 
@@ -47,16 +45,4 @@ int kputc(int c, void *data)
     __restore_flags(flags);
 
     return 1;
-}
-
-int bug(const char *format, ...)
-{
-    va_list ap;
-    int res;
-
-    va_start(ap, format);
-    res = __vcformat(0, kputc, format, ap);
-    va_end(ap);
-
-    return res;
 }

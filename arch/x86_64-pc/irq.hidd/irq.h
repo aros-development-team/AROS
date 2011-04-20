@@ -1,13 +1,10 @@
 #ifndef IRQ_H_
 #define IRQ_H_
 
-#include <inttypes.h>
 #include <exec/lists.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
-
 #include <oop/oop.h>
-
 #include <hidd/irq.h>
 
 /***** IRQ system HIDD *******************/
@@ -20,10 +17,10 @@
 
 struct irq_staticdata
 {
-    OOP_Class           *irqclass;
-
-    struct List         irqlist[16];
-    ULONG               transtable[16];
+    OOP_Class *irqclass;
+    HIDDT_IRQ_HwInfo hwinfo;
+    APTR kernelBase;
+    OOP_AttrBase irqAttrBase;
 };
 
 struct irqbase

@@ -1,44 +1,34 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
+
 #include <inttypes.h>
-
-#include <proto/kernel.h>
-
-#include "exec_intern.h"
-#include "etask.h"
-
-#undef KernelBase
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 #include <exec/lists.h>
 #include <exec/types.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
-#include <asm/segments.h>
 #include <asm/io.h>
+#include <proto/exec.h>
 
+#include "kernel_base.h"
+#include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "acpi.h"
+#include "apic.h"
+
+#define D(x) x
 
 #define CONFIG_LAPICS
 
-#define                 APICICR_INT_LEVELTRIG      0x8000
-#define                 APICICR_INT_ASSERT         0x4000
-#define                 APICICR_DM_INIT            0x500
-#define                 APICICR_DM_STARTUP            0x600
-
-#define IN_USER_MODE \
-    ({  short __val; \
-        __asm__ __volatile__("mov %%cs,%0":"=r"(__val)); \
-        (__val & 0x03); })
+#define APICICR_INT_LEVELTRIG 0x8000
+#define APICICR_INT_ASSERT    0x4000
+#define APICICR_DM_INIT       0x500
+#define APICICR_DM_STARTUP    0x600
 
 extern int kernel_cstart(struct TagItem *msg, void *entry);
-
-#warning "TODO: udelay doesnt work - fix!"
 
 static ULONG usec2tick(ULONG usec)
 {
@@ -49,7 +39,9 @@ static ULONG usec2tick(ULONG usec)
  
 void udelay(LONG usec)
 {
-/*    int tick_start, tick;
+/*  FIXME: udelay doesn't work - fix!
+
+    int tick_start, tick;
     usec = usec2tick(usec);
 
     outb(0x80, 0x43);
@@ -74,25 +66,16 @@ void udelay(LONG usec)
  **********************************************************/
 static const char str_IA32APIC[] = "IA32 default";
 
-AROS_UFH2(IPTR, _APIC_IA32_probe,
-    AROS_UFHA(struct GenericAPIC *,	hook,	                A0),
-    AROS_UFHA(struct KernBootPrivate *,	__KernBootPrivate,	A1))
+static IPTR _APIC_IA32_probe(const struct GenericAPIC *hook, struct KernBootPrivate *__KernBootPrivate)
 {
-    AROS_USERFUNC_INIT
-
     /*  Default to PIC(8259) interrupt routing model.  This gets overriden later if IOAPICs are enumerated */
     __KernBootPrivate->kbp_APIC_IRQ_Model = ACPI_IRQ_MODEL_PIC;
 
     return 1; /* should be called last. */
-
-    AROS_USERFUNC_EXIT
 } 
 
-AROS_UFH1(IPTR, _APIC_IA32_init,
-    AROS_UFHA(IPTR,	__APICBase,	A0))
+static IPTR _APIC_IA32_init(IPTR __APICBase)
 {
-    AROS_USERFUNC_INIT
-
     ULONG APIC_VAL, apic_ver, maxlvt;
 
     *(volatile ULONG *)(__APICBase + 0xE0) = 0xFFFFFFFF; /* Put the APIC into flat delivery mode */
@@ -153,7 +136,7 @@ AROS_UFH1(IPTR, _APIC_IA32_init,
     asm volatile ("movl %0,(%1)"::"r"(0),"r"((volatile ULONG *)(__APICBase + 0xb0)));
     
     asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"((volatile ULONG *)(__APICBase + 0x320)));
-    //*(volatile ULONG *)localAPIC = 0x000000fe;
+    // *(volatile ULONG *)localAPIC = 0x000000fe;
     D(bug("[Kernel] _APIC_IA32_init: APIC Timer config=%08x\n", *(volatile ULONG *)(__APICBase + 0x320)));
     
     D(bug("[Kernel] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
@@ -173,24 +156,18 @@ AROS_UFH1(IPTR, _APIC_IA32_init,
     for (i=0; i < 0x1000000; i++) asm volatile("nop;"); */
 
     return TRUE;
-
-    AROS_USERFUNC_EXIT
 } 
 
-AROS_UFH2(IPTR, _APIC_IA32_wake,
-    AROS_UFHA(IPTR,	wake_apicstartrip,	                A0),
-    AROS_UFHA(UBYTE,	wake_apicid,	                        D0))
+static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, struct PlatformData *pdata)
 {
-    AROS_USERFUNC_INIT
-
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
-    IPTR delay_time, ipisend_timeout, status_ipisend = 0, status_ipirecv = 0;
+    IPTR ipisend_timeout, status_ipisend = 0, status_ipirecv = 0;
     ULONG apic_ver, maxlvt, start_count, max_starts = 2;
-    IPTR __APICBase, _APICStackBase;
+    IPTR __APICBase;
+    APTR _APICStackBase;
 
-    UBYTE __thisAPICNo = core_APICGetNumber();
+    UBYTE __thisAPICNo = core_APICGetNumber(pdata);
 
-    __APICBase = KernelBase->kb_APIC_BaseMap[__thisAPICNo];
+    __APICBase = pdata->kb_APIC_BaseMap[__thisAPICNo];
 
     D(bug("[Kernel] _APIC_IA32_wake[%d](%d @ %p)\n", __thisAPICNo, wake_apicid, wake_apicstartrip));
     D(bug("[Kernel] _APIC_IA32_wake[%d] KernelBase @ %p, APIC No %d Base @ %p\n", __thisAPICNo, KernelBase, __thisAPICNo, __APICBase));
@@ -199,8 +176,8 @@ AROS_UFH2(IPTR, _APIC_IA32_wake,
     _APICStackBase = AllocMem(STACK_SIZE, MEMF_CLEAR);
     D(bug("[Kernel] _APIC_IA32_wake[%d]: stack allocated for APIC ID %d @ %p ..\n", __thisAPICNo, wake_apicid, _APICStackBase));
 
-    *(IPTR*)(wake_apicstartrip + 0x0018) = _APICStackBase + STACK_SIZE - SP_OFFSET;
-    *(IPTR*)(wake_apicstartrip + 0x0020) = kernel_cstart;
+    *(APTR *)(wake_apicstartrip + 0x0018) = _APICStackBase + STACK_SIZE - SP_OFFSET;
+    *(APTR *)(wake_apicstartrip + 0x0020) = kernel_cstart;
 
     D(bug("[Kernel] _APIC_IA32_wake[%d]:  ... and set\n", __thisAPICNo));
 
@@ -269,7 +246,7 @@ AROS_UFH2(IPTR, _APIC_IA32_wake,
 
         /* STARTUP IPI */
         *((volatile ULONG *)(__APICBase + 0x310)) = ((wake_apicid)<<24); /* Set the target APIC */
-        *((volatile ULONG *)(__APICBase + 0x300)) = APICICR_DM_STARTUP | (wake_apicstartrip>>12);
+        *((volatile ULONG *)(__APICBase + 0x300)) = APICICR_DM_STARTUP | ((IPTR)wake_apicstartrip >> 12);
 
         /* Allow the target APIC to accept the IPI */
         udelay(300);
@@ -312,15 +289,11 @@ AROS_UFH2(IPTR, _APIC_IA32_wake,
     }
 
     return (status_ipisend | status_ipirecv);
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(IPTR, _APIC_IA32_GetMSRAPICBase)
+static IPTR _APIC_IA32_GetMSRAPICBase(void)
 {
-    AROS_USERFUNC_INIT
-
-    IPTR  _apic_base = NULL;
+    IPTR _apic_base = 0;
 
     if (!(IN_USER_MODE))
     {
@@ -328,35 +301,29 @@ AROS_UFH0(IPTR, _APIC_IA32_GetMSRAPICBase)
     }
     else
     {
-        D(rkprintf("[Kernel] _APIC_IA32_GetMSRAPICBase: Called in UserMode\n"));
+        D(bug("[Kernel] _APIC_IA32_GetMSRAPICBase: Called in UserMode\n"));
         _apic_base = 0xfee00000;
     }
 
-    D(rkprintf("[Kernel] _APIC_IA32_GetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base));
+    D(bug("[Kernel] _APIC_IA32_GetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base));
 
     return _apic_base;
-
-    AROS_USERFUNC_EXIT
 }
 
-AROS_UFH1(IPTR, _APIC_IA32_GetID,
-    AROS_UFHA(IPTR,	_APICBase,	                A0))
+static IPTR _APIC_IA32_GetID(IPTR _APICBase)
 {
-    AROS_USERFUNC_INIT
-
     UBYTE _apic_id;
     
     _apic_id = (*(volatile ULONG *)(_APICBase + 0x20) & 0xFF000000) >> 24;
-    D(rkprintf("[Kernel] _APIC_IA32_GetID: APIC ID %d\n", _apic_id));
+    D(bug("[Kernel] _APIC_IA32_GetID: APIC ID %d\n", _apic_id));
 
-    return (IPTR)_apic_id;
-
-    AROS_USERFUNC_EXIT
+    return _apic_id;
 }
 
 /**********************************************************/
 
-static const struct GenericAPIC apic_ia32_default = {
+static const struct GenericAPIC apic_ia32_default =
+{
     name        : str_IA32APIC,
     probe       : (APTR)_APIC_IA32_probe,
     getbase     : (APTR)_APIC_IA32_GetMSRAPICBase,
@@ -373,65 +340,55 @@ static const struct GenericAPIC apic_ia32_default = {
 
 /**********************************************************/
 
-static const void * const probe_APIC[] =
-{ 
+static const struct GenericAPIC *probe_APIC[] =
+{
         &apic_ia32_default, /* must be last */
         NULL,
 };
 
 IPTR core_APICProbe(struct KernBootPrivate *__KernBootPrivate)
 {
-    int driver_count, retval, changed = 0;
+    int driver_count, changed = 0;
 
     __KernBootPrivate->kbp_APIC_Drivers = probe_APIC;
 
-    for ( driver_count = 0; !changed && probe_APIC[driver_count]; driver_count++ )
-    { 
-        if (retval = AROS_UFC2(IPTR, ((struct GenericAPIC *)probe_APIC[driver_count])->probe,
-                AROS_UFCA(struct GenericAPIC *, probe_APIC[driver_count], A0),
-                AROS_UFCA(struct KernBootPrivate *, __KernBootPrivate, A1)))
+    for (driver_count = 0; !changed && probe_APIC[driver_count]; driver_count++ )
+    {
+    	IPTR retval = probe_APIC[driver_count]->probe(probe_APIC[driver_count], __KernBootPrivate);
+
+    	if (retval)
         {
             changed = 1;
             __KernBootPrivate->kbp_APIC_DriverID = driver_count;
-        } 
+        }
     }
 
     if (!changed)
     {
-        rkprintf("[Kernel] core_APICProbe: No suitable APIC driver found.\n");
+        bug("[Kernel] core_APICProbe: No suitable APIC driver found.\n");
     }
     else
     {
-        rkprintf("[Kernel] core_APICProbe: Using APIC driver '%s'\n", ((struct GenericAPIC *)probe_APIC[__KernBootPrivate->kbp_APIC_DriverID])->name);
+        bug("[Kernel] core_APICProbe: Using APIC driver '%s'\n", ((struct GenericAPIC *)probe_APIC[__KernBootPrivate->kbp_APIC_DriverID])->name);
     }
 
     return changed;
 }
 
-UBYTE core_APICGetNumber()
+UBYTE core_APICGetNumber(struct PlatformData *pdata)
 {
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
     IPTR  __APICBase;
     UBYTE __APICLogicalID;
     UBYTE __APICNo;
 
-    __APICBase = AROS_UFC0(IPTR,
-                ((struct GenericAPIC *)KernelBase->kb_APIC_Drivers[KernelBase->kb_APIC_DriverID])->getbase);
+    __APICBase = pdata->kb_APIC_Drivers[pdata->kb_APIC_DriverID]->getbase();
+    __APICLogicalID = pdata->kb_APIC_Drivers[pdata->kb_APIC_DriverID]->getid(__APICBase);
 
-    __APICLogicalID = (UBYTE)AROS_UFC1(IPTR,
-                ((struct GenericAPIC *)KernelBase->kb_APIC_Drivers[KernelBase->kb_APIC_DriverID])->getid,
-                    AROS_UFCA(IPTR, __APICBase, A0));
-
-    for (__APICNo = 0; __APICNo < KernelBase->kb_APIC_Count; __APICNo++)
+    for (__APICNo = 0; __APICNo < pdata->kb_APIC_Count; __APICNo++)
     {
-        if ((KernelBase->kb_APIC_IDMap[__APICNo] & 0xFF) == __APICLogicalID)
+        if ((pdata->kb_APIC_IDMap[__APICNo] & 0xFF) == __APICLogicalID)
             return __APICNo;
     }
-    return -1;
-}
 
-UBYTE core_APICGetTotal()
-{
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
-    return KernelBase->kb_APIC_Count;
+    return -1;
 }

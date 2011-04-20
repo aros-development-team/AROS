@@ -1,6 +1,9 @@
 #include <asm/cpu.h>
 
+#include "kernel_base.h"
+#include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "apic.h"
 
 #define DMMU(x)
 
@@ -20,16 +23,12 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
     int i;
     struct PDE2M *pdes[] = { &PDE[0], &PDE[1], &PDE[2], &PDE[3] };
 
-    _APICBase = AROS_UFC0(IPTR,
-        (*(__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getbase));
+    _APICBase = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getbase();
+    _APICID   = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
 
-    _APICID = (UBYTE)AROS_UFC1(IPTR,
-        (*(__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid),
-                AROS_UFCA(IPTR, _APICBase, A0));
-    
     if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
     {
-        rkprintf("[Kernel] core_SetupMMU[%d]: Re-creating the MMU pages for first 4GB area\n", _APICID);
+        bug("[Kernel] core_SetupMMU[%d]: Re-creating the MMU pages for first 4GB area\n", _APICID);
 
         /* PML4 Entry - we need only the first out of 16 entries */
         PML4[0].p  = 1; /* present */
@@ -90,11 +89,11 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
         }
     }
 
-    rkprintf("[Kernel] core_SetupMMU[%d]: Registering New PML4\n", _APICID);
+    bug("[Kernel] core_SetupMMU[%d]: Registering New PML4\n", _APICID);
 
     wrcr(cr3, &PML4);
 
-    rkprintf("[Kernel] core_SetupMMU[%d]: PML4 @ %p\n", _APICID, &PML4);
+    bug("[Kernel] core_SetupMMU[%d]: PML4 @ %p\n", _APICID, &PML4);
 }
 
 static struct PTE Pages4K[32][512] __attribute__((used,aligned(4096)));

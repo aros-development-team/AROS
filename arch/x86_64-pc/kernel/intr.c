@@ -1,101 +1,59 @@
-#include <inttypes.h>
-#define DEBUG 0
-#include <aros/debug.h>
-
-#include <stdio.h>
 #include <asm/cpu.h>
 #include <asm/io.h>
-#include <asm/segments.h>
-#include <asm/tls.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
-
 #include <proto/exec.h>
 
+#include <inttypes.h>
+
+#include "kernel_base.h"
+#include "kernel_debug.h"
+#include "kernel_interrupts.h"
 #include "kernel_intern.h"
+#include "kernel_intr.h"
+#include "kernel_scheduler.h"
+#include "kernel_syscall.h"
+#include "apic.h"
+#include "xtpic.h"
 
-static void core_XTPIC_DisableIRQ(uint8_t irqnum);
-static void core_XTPIC_EnableIRQ(uint8_t irqnum);
+#define D(x)
+#define DSYSCALL(x)
+#define DTRAP(x)
+#define DUMP_CONTEXT
 
-AROS_LH4(void *, KrnAddIRQHandler,
-         AROS_LHA(uint8_t, irq, D0),
-         AROS_LHA(void *, handler, A0),
-         AROS_LHA(void *, handlerData, A1),
-         AROS_LHA(void *, handlerData2, A2),
-         struct KernelBase *, KernelBase, 7, Kernel)
-{
-    AROS_LIBFUNC_INIT
-    
-    struct ExecBase *SysBase = TLS_GET(SysBase);
-    struct IntrNode *handle = NULL;
-    D(bug("[Kernel] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
-    
-    if (irq >=0 && irq <= 0xff)
-    {
-        handle = AllocVec(sizeof(struct IntrNode), MEMF_PUBLIC|MEMF_CLEAR);
+/* Simulate SysBase access at address 8.
+ * Currently disabled (does not work with large code model
+ * Read access to zeropage is enabled.
+ * TODO: Move global SysBase away from zeropage.
+#define EMULATE_SYSBASE 8 */
 
-#warning TODO: Add IP range checking
+#define IRQ(x,y) \
+    IRQ##x##y##_intr
 
-        D(bug("[Kernel]   handle=%012p\n", handle));
-        
-        if (handle)
-        {
-            handle->in_Handler = handler;
-            handle->in_HandlerData = handlerData;
-            handle->in_HandlerData2 = handlerData2;
-            
-            Disable();
-            ADDHEAD(&KernelBase->kb_Intr[irq], &handle->in_Node);
-            Enable();
-            
-            if (KernelBase->kb_Intr[irq].lh_Type == KBL_XTPIC)
-                core_XTPIC_EnableIRQ(irq);
-        }
-    }
-    return handle;
-    
-    AROS_LIBFUNC_EXIT
-}
+#define IRQPROTO(x, y) \
+    void IRQ(x, y)(void)
 
-AROS_LH1(void, KrnRemIRQHandler,
-         AROS_LHA(void *, handle, A0),
-         struct KernelBase *, KernelBase, 8, Kernel)
-{
-    AROS_LIBFUNC_INIT
+#define IRQPROTO_16(x) \
+    IRQPROTO(x,0); IRQPROTO(x,1); IRQPROTO(x,2); IRQPROTO(x,3); \
+    IRQPROTO(x,4); IRQPROTO(x,5); IRQPROTO(x,6); IRQPROTO(x,7); \
+    IRQPROTO(x,8); IRQPROTO(x,9); IRQPROTO(x,a); IRQPROTO(x,b); \
+    IRQPROTO(x,c); IRQPROTO(x,d); IRQPROTO(x,e); IRQPROTO(x,f)
 
-    struct IntrNode *h = handle;
-    
-    Disable();
-    REMOVE(h);
-    Enable();
+#define IRQLIST_16(x) \
+    IRQ(x,0), IRQ(x,1), IRQ(x,2), IRQ(x,3), \
+    IRQ(x,4), IRQ(x,5), IRQ(x,6), IRQ(x,7), \
+    IRQ(x,8), IRQ(x,9), IRQ(x,a), IRQ(x,b), \
+    IRQ(x,c), IRQ(x,d), IRQ(x,e), IRQ(x,f)
 
-    FreeVec(h);
-    
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(void, KrnCli,
-         struct KernelBase *, KernelBase, 9, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    asm volatile("cli");
-    
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(void, KrnSti,
-         struct KernelBase *, KernelBase, 10, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    asm volatile("sti");
-    
-    AROS_LIBFUNC_EXIT
-}
-
+/* This generates prototypes for entry points */
+IRQPROTO_16(0x0);
+IRQPROTO_16(0x1);
+IRQPROTO_16(0x2);
+IRQPROTO(0x8, 0);
+IRQPROTO(0xf, e);
+extern void core_DefaultIRETQ(void);
 
 static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256)));
 const struct
@@ -104,112 +62,44 @@ const struct
     uint64_t base __attribute__((packed));
 } IDT_sel = {sizeof(IGATES)-1, (uint64_t)IGATES};
 
-#define STR_(x) #x
-#define STR(x) STR_(x)
-
-#define IRQ_NAME_(nr) nr##_intr(void)
-#define IRQ_NAME(nr) IRQ_NAME_(IRQ##nr)
-
-#define BUILD_IRQ(nr) \
-    void IRQ_NAME(nr); \
-    asm(".balign 8  ,0x90\n\t" \
-        ".globl IRQ" STR(nr) "_intr\n\t" \
-        ".type IRQ" STR(nr) "_intr,@function\n" \
-        "IRQ" STR(nr) "_intr: pushq $0; pushq $" #nr "\n\t" \
-        "jmp core_EnterInterrupt\n\t" \
-        ".size IRQ" STR(nr) "_intr, . - IRQ" STR(nr) "_intr" \
-    );
-
-#define BUILD_IRQ_ERR(nr) \
-    void IRQ_NAME(nr); \
-    asm(".balign 8  ,0x90\n\t" \
-        ".globl IRQ" STR(nr) "_intr\n\t" \
-        ".type IRQ" STR(nr) "_intr,@function\n" \
-        "IRQ" STR(nr) "_intr: pushq $" #nr "\n\t" \
-        "jmp core_EnterInterrupt\n\t" \
-        ".size IRQ" STR(nr) "_intr, . - IRQ" STR(nr) "_intr" \
-    );
-
-BUILD_IRQ(0x00)         // Divide-By-Zero Exception
-BUILD_IRQ(0x01)         // Debug Exception
-BUILD_IRQ(0x02)         // NMI Exception
-BUILD_IRQ(0x03)         // Breakpoint Exception
-BUILD_IRQ(0x04)         // Overflow Exception
-BUILD_IRQ(0x05)         // Bound-Range Exception
-BUILD_IRQ(0x06)         // Invalid-Opcode Exception
-BUILD_IRQ(0x07)         // Device-Not-Available Exception
-BUILD_IRQ_ERR(0x08)     // Double-Fault Exception
-BUILD_IRQ(0x09)         // Unused (used to be Coprocesor-Segment-Overrun)
-BUILD_IRQ_ERR(0x0a)     // Invalid-TSS Exception
-BUILD_IRQ_ERR(0x0b)     // Segment-Not-Present Exception
-BUILD_IRQ_ERR(0x0c)     // Stack Exception
-BUILD_IRQ_ERR(0x0d)     // General-Protection Exception
-BUILD_IRQ_ERR(0x0e)     // Page-Fault Exception
-BUILD_IRQ(0x0f)         // Reserved
-BUILD_IRQ(0x10)         // Floating-Point Exception
-BUILD_IRQ_ERR(0x11)     // Alignment-Check Exception
-BUILD_IRQ(0x12)         // Machine-Check Exception
-BUILD_IRQ(0x13)         // SIMD-Floating-Point Exception
-BUILD_IRQ(0x14) BUILD_IRQ(0x15) BUILD_IRQ(0x16) BUILD_IRQ(0x17) 
-BUILD_IRQ(0x18) BUILD_IRQ(0x19) BUILD_IRQ(0x1a) BUILD_IRQ(0x1b)
-BUILD_IRQ(0x1c) BUILD_IRQ(0x1d) BUILD_IRQ(0x1e) BUILD_IRQ(0x1f)
-
-#define B(x,y) BUILD_IRQ(x##y)
-#define B16(x) \
-    B(x,0) B(x,1) B(x,2) B(x,3) B(x,4) B(x,5) B(x,6) B(x,7) \
-    B(x,8) B(x,9) B(x,a) B(x,b) B(x,c) B(x,d) B(x,e) B(x,f)
-
-B16(0x2)
-BUILD_IRQ(0x80)
-BUILD_IRQ(0xfe) // APIC timer
-
-#define SAVE_REGS        \
-        "pushq %rax; pushq %rbp; pushq %rbx; pushq %rdi; pushq %rsi; pushq %rdx;"  \
-        "pushq %rcx; pushq %r8; pushq %r9; pushq %r10; pushq %r11; pushq %r12;"  \
-        "pushq %r13; pushq %r14; pushq %r15; mov %ds,%eax; pushq %rax;"
-        
-#define RESTORE_REGS    \
-        "popq %rax; mov %ax,%ds; mov %ax,%es; popq %r15; popq %r14; popq %r13;"  \
-        "popq %r12; popq %r11; popq %r10; popq %r9; popq %r8; popq %rcx;" \
-        "popq %rdx; popq %rsi; popq %rdi; popq %rbx; popq %rbp; popq %rax"
-
-asm(
-"                .balign 32,0x90      \n"
-"                .globl core_EnterInterrupt \n"
-"                .type core_EnterInterrupt,@function \n"
-"core_EnterInterrupt: \n\t" SAVE_REGS "\n"
-"                movl    $" STR(KERNEL_DS) ",%eax \n"
-"                mov     %ax,%ds \n"
-"                mov     %ax,%es \n"
-"                movq    %rsp,%rdi \n"
-"                call    core_IRQHandle \n"
-"                movq    %rsp,%rdi \n"
-"                jmp     core_ExitInterrupt \n"
-"                .size core_EnterInterrupt, .-core_EnterInterrupt"      
-); 
-
-asm(
-"                .balign 32,0x90      \n"
-"                .globl core_LeaveInterrupt \n"
-"                .type core_LeaveInterrupt,@function \n"
-"core_LeaveInterrupt: movq %rdi,%rsp \n\t" RESTORE_REGS "\n"                
-"                addq $16,%rsp \n"
-"                iretq \n"
-"                .size core_LeaveInterrupt, .-core_LeaveInterrupt"
-);
-
-#define IRQ(x,y) \
-    (const void (*)(void))IRQ##x##y##_intr
-
-#define IRQLIST_16(x) \
-    IRQ(x,0), IRQ(x,1), IRQ(x,2), IRQ(x,3), \
-    IRQ(x,4), IRQ(x,5), IRQ(x,6), IRQ(x,7), \
-    IRQ(x,8), IRQ(x,9), IRQ(x,a), IRQ(x,b), \
-    IRQ(x,c), IRQ(x,d), IRQ(x,e), IRQ(x,f)
-
-const void __attribute__((section(".text"))) (*interrupt[256])(void) = {
-    IRQLIST_16(0x0), IRQLIST_16(0x1), IRQLIST_16(0x2)
+const void *interrupt[256] =
+{
+    IRQLIST_16(0x0),
+    IRQLIST_16(0x1),
+    IRQLIST_16(0x2)
 };
+
+#ifdef DUMP_CONTEXT
+
+static void PrintContext(struct ExceptionContext *regs, unsigned long error_code)
+{
+    int i;
+    uint64_t *ptr;
+    struct Task *t = SysBase->ThisTask;
+
+    if (t)
+    {
+        bug("[Kernel]  %s %p '%s'\n", t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+        bug("[Kernel] SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
+
+        if (((void *)regs->rsp < t->tc_SPLower) || ((void *)regs->rsp > t->tc_SPUpper))
+            bug("[Kernel] Stack out of Bounds!\n");
+    }
+
+    bug("[Kernel] Error 0x%016lX\n", error_code);
+    PRINT_CPUCONTEXT(regs);
+
+    bug("[Kernel] Stack:\n");
+    ptr = (uint64_t *)regs->rsp;
+    for (i=0; i < 10; i++)
+        bug("[Kernel] %02x: %016p\n", i * sizeof(uint64_t), ptr[i]);
+}
+
+#else
+
+#define PrintContext(regs, err)
+
+#endif
 
 void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
 {
@@ -218,27 +108,23 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
     int i;
     uintptr_t off;
 
-    _APICBase = AROS_UFC0(IPTR,
-            ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getbase);
-
-    _APICID = AROS_UFC1(UBYTE,
-            ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
-                    AROS_UFCA(IPTR, _APICBase, A0));
+    _APICBase = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getbase();
+    _APICID   = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
 
     if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
     {
-        rkprintf("[Kernel] core_SetupIDT[%d] Setting all interrupt handlers to default value\n", _APICID);
+        bug("[Kernel] core_SetupIDT[%d] Setting all interrupt handlers to default value\n", _APICID);
 
         for (i=0; i < 256; i++)
         {
             if (interrupt[i])
                 off = (uintptr_t)interrupt[i];
             else if (i == 0x80)
-                off = (uintptr_t)&IRQ0x80_intr;
+                off = (uintptr_t)IRQ0x80_intr;
             else if (i == 0xfe)
-                off = (uintptr_t)&IRQ0xfe_intr;
+                off = (uintptr_t)IRQ0xfe_intr;
             else
-                off = (uintptr_t)&core_DefaultIRETQ;
+                off = (uintptr_t)core_DefaultIRETQ;
 
             IGATES[i].offset_low = off & 0xffff;
             IGATES[i].offset_mid = (off >> 16) & 0xffff;
@@ -250,442 +136,314 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
             IGATES[i].ist = 0;
         }
     }
-    rkprintf("[Kernel] core_SetupIDT[%d] Registering interrupt handlers ..\n", _APICID);
+    bug("[Kernel] core_SetupIDT[%d] Registering interrupt handlers ..\n", _APICID);
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
-
-void core_Cause(struct ExecBase *SysBase)
+/*
+ * Run IRQ handlers
+ * We manage both interrupts and exceptions in the same list,
+ * so we use own version of this function.
+ * It will return nonzero value if the list is not empty, this helps to manage XTPIC.
+ */
+static void *core_RunIRQHandlers(uint8_t irq, struct KernelBase *KernelBase)
 {
-    struct IntVector *iv = &SysBase->IntVects[INTB_SOFTINT];
+    irqhandler_t h = NULL;
+    struct IntrNode *in, *in2;
 
-    /* If the SoftInt vector in SysBase is set, call it. It will do the rest for us */
-    if (iv->iv_Code)
+    ForeachNodeSafe(&KernelBase->kb_Exceptions[irq], in, in2)
     {
-        AROS_UFC5(void, iv->iv_Code,
-            AROS_UFCA(ULONG, 0, D1),
-            AROS_UFCA(ULONG, 0, A0),
-            AROS_UFCA(APTR, 0, A1),
-            AROS_UFCA(APTR, iv->iv_Code, A5),
-            AROS_UFCA(struct ExecBase *, SysBase, A6)
-        );
+	h = in->in_Handler;
+	h(in->in_HandlerData, in->in_HandlerData2);
     }
+
+    return h;
 }
 
-static void core_APIC_AckIntr(uint8_t intnum)
+/*
+ * This table is used to translate x86 trap number
+ * to AmigaOS trap number to be passed to exec exception handler.
+ */
+static const char AmigaTraps[] =
 {
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
-    asm volatile ("movl %0,(%1)"::"r"(0),"r"(KernelBase->kb_APIC_BaseMap[0] + 0xb0));
-}
+     5,  9, -1,  4, 11, 2,
+     4,  0,  8, 11,  3, 3,
+     2,  8,  3, -1, 11, 3,
+    -1
+};
 
-static void core_XTPIC_DisableIRQ(uint8_t irqnum)
+/* CPU exceptions are processed here */
+void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
-    irqnum &= 15;
-    KernelBase->kb_XTPIC_Mask |= 1 << irqnum;
-
-    if (irqnum >= 8)
+#ifdef EMULATE_SYSBASE
+    if (irq_number == 0x0e)
     {
-        outb((KernelBase->kb_XTPIC_Mask >> 8) & 0xff, 0xA1);
-    }
-    else
-    {
-        outb(KernelBase->kb_XTPIC_Mask & 0xff, 0x21);
-    }
-}
+        uint64_t ptr = rdcr(cr2);
+	unsigned char *ip = (unsigned char *)regs->rip;
 
-static void core_XTPIC_EnableIRQ(uint8_t irqnum)
-{
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
-    irqnum &= 15;
-    KernelBase->kb_XTPIC_Mask &= ~(1 << irqnum);    
+	D(bug("[Kernel] Page fault exception\n"));
 
-    if (irqnum >= 8)
-    {
-        outb((KernelBase->kb_XTPIC_Mask >> 8) & 0xff, 0xA1);
-    }
-    else
-    {
-        outb(KernelBase->kb_XTPIC_Mask & 0xff, 0x21);
-    }
-}
-
-static void core_XTPIC_AckIntr(uint8_t intnum)
-{
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
-    intnum &= 15;
-    KernelBase->kb_XTPIC_Mask |= 1 << intnum;
-
-    if (intnum >= 8)
-    {
-        outb((KernelBase->kb_XTPIC_Mask >> 8) & 0xff, 0xA1);
-        outb(0x62, 0x20);
-        outb(0x20, 0xa0);
-    }
-    else
-    {
-        outb(KernelBase->kb_XTPIC_Mask & 0xff, 0x21);
-        outb(0x20, 0x20);
-    }
-}
-
-void core_IRQHandle(regs_t regs)
-{
-    struct ExecBase *SysBase = TLS_GET(SysBase);        // *(struct ExecBase **)4;
-    struct KernelBase *KernelBase = TLS_GET(KernelBase);
-    struct Task *t = NULL;
-    int die = 0;
-
-    if (SysBase)
-        t = SysBase->ThisTask;
-
-    if ((regs.irq_number < 0x20) && regs.irq_number != 0x0e)
-        rkprintf("IRQ %02x:", regs.irq_number);
-    
-    if (regs.irq_number == 0x03)        /* Debug */
-    {
-        rkprintf("[Kernel] INT3 debug fault!\n");
-
-        if (t)
+        if (ptr == EMULATE_SYSBASE)
         {
-            rkprintf("[Kernel]  %s %p '%s'\n",
-                     t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
-            rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
-            
-            if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
-                rkprintf("[Kernel] Stack out of Bounds!\n");
-        }
+            D(bug("[Kernel] ** Code at 0x%p is trying to access the SysBase at 0x%p.\n", ip, ptr));
 
-        rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
-                 regs.return_ss, regs.return_rsp, regs.return_rflags, 
-                 regs.return_cs, regs.return_rip, regs.error_code);
-
-        rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
-        rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
-        rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
-        rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
-        rkprintf("[Kernel]  *rsp=%016lx\n", *(uint64_t *)regs.return_rsp);
-
-
-        rkprintf("[Kenrel] Stack:\n");
-        int i;
-        uint64_t *ptr = (void*)regs.return_rsp;
-        for (i=0; i < 10; i++)
-        {
-            rkprintf("[Kernel]   %02x: %016p\n", i*8, ptr[i]);
-        }
-    }
-    else if (regs.irq_number == 0x06)        /* GPF */
-    {
-        rkprintf("[Kernel] UNDEFINED INSTRUCTION!\n");
-        
-        if (t)
-        {
-            rkprintf("[Kernel]  %s %p '%s'\n",
-                     t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
-            rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
-            
-            if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
-                rkprintf("[Kernel] Stack out of Bounds!\n");
-        }
-        
-        rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
-                 regs.return_ss, regs.return_rsp, regs.return_rflags, 
-                 regs.return_cs, regs.return_rip, regs.error_code);
-
-        rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
-        rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
-        rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
-        rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
-        die = 1;
-        
-        int i;
-        uint8_t *ptr = (uint8_t *)regs.return_rip;
-        
-        rkprintf("[Kernel]  ");
-        
-        for (i=0; i < 16; i++)
-            rkprintf("%02x ", ptr[i]);
-        
-        rkprintf("\n");
-    }
-    else if (regs.irq_number == 0x07)        /* GPF */
-    {
-        rkprintf("[Kernel] Device Not Available!\n");
-        
-        if (t)
-        {
-            rkprintf("[Kernel]  %s %p '%s'\n",
-                     t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
-            rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
-            
-            if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
-                rkprintf("[Kernel] Stack out of Bounds!\n");
-        }
-        
-        rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
-                 regs.return_ss, regs.return_rsp, regs.return_rflags, 
-                 regs.return_cs, regs.return_rip, regs.error_code);
-
-        rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
-        rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
-        rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
-        rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
-        die = 1;
-    }
-    else if (regs.irq_number == 0x0D)        /* GPF */
-    {
-        rkprintf("[Kernel] GENERAL PROTECTION FAULT!\n");
-        
-        if (t)
-        {
-            rkprintf("[Kernel]  %s %p '%s'\n",
-                     t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
-            rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
-            
-            if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
-                rkprintf("[Kernel] Stack out of Bounds!\n");
-        }
-        
-        rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
-                 regs.return_ss, regs.return_rsp, regs.return_rflags, 
-                 regs.return_cs, regs.return_rip, regs.error_code);
-
-        rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
-        rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
-        rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
-        rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
-        rkprintf("[Kernel]  *rsp=%016lx\n", *(uint64_t *)regs.return_rsp);
-
-        
-        die = 1;
-    }
-    else if (regs.irq_number == 0x0e)        /* Page fault */
-    {
-        void *ptr = rdcr(cr2);
-        unsigned char *ip = regs.return_rip;
-        int i;
-        
-        die = 1;
-        
-        if (ptr == (void*)8)
-        {
-//            rkprintf("[Kernel] ** Code at %012lx is trying to access the SysBase at 8UL.\n", regs.return_rip);
-            
-            if (   (ip[0] & 0xfb) == 0x48 &&
-                    ip[1]         == 0x8b && 
-                   (ip[2] & 0xc7) == 0x04 &&
-                    ip[3]         == 0x25
-               )
+            if ((ip[0] & 0xfb) == 0x48 &&
+                 ip[1]         == 0x8b && 
+                (ip[2] & 0xc7) == 0x04 &&
+                 ip[3]         == 0x25)
             {
                 int reg = ((ip[2] >> 3) & 0x07) | ((ip[0] & 0x04) << 1);
-                
+
                 switch(reg)
                 {
                     case 0:
-                        regs.rax = SysBase;
+                        regs->rax = (UQUAD)SysBase;
                         break;
                     case 1:
-                        regs.rcx = SysBase;
+                        regs->rcx = (UQUAD)SysBase;
                         break;
                     case 2:
-                        regs.rdx = SysBase;
+                        regs->rdx = (UQUAD)SysBase;
                         break;
                     case 3:
-                        regs.rbx = SysBase;
+                        regs->rbx = (UQUAD)SysBase;
                         break;
 //                    case 4:   /* Cannot put SysBase into rSP register */
-//                        regs.return_rsp = SysBase;
+//                        regs->rsp = (UQUAD)SysBase;
 //                        break;
                     case 5:
-                        regs.rbp = SysBase;
+                        regs->rbp = (UQUAD)SysBase;
                         break;
                     case 6:
-                        regs.rsi = SysBase;
+                        regs->rsi = (UQUAD)SysBase;
                         break;
                     case 7:
-                        regs.rdi = SysBase;
+                        regs->rdi = (UQUAD)SysBase;
                         break;
                     case 8:
-                        regs.r8 = SysBase;
+                        regs->r8 = (UQUAD)SysBase;
                         break;
                     case 9:
-                        regs.r9 = SysBase;
+                        regs->r9 = (UQUAD)SysBase;
                         break;
                     case 10:
-                        regs.r10 = SysBase;
+                        regs->r10 = (UQUAD)SysBase;
                         break;
                     case 11:
-                        regs.r11 = SysBase;
+                        regs->r11 = (UQUAD)SysBase;
                         break;
                     case 12:
-                        regs.r12 = SysBase;
+                        regs->r12 = (UQUAD)SysBase;
                         break;
                     case 13:
-                        regs.r13 = SysBase;
+                        regs->r13 = (UQUAD)SysBase;
                         break;
                     case 14:
-                        regs.r14 = SysBase;
+                        regs->r14 = (UQUAD)SysBase;
                         break;
                     case 15:
-                        regs.r15 = SysBase;
+                        regs->r15 = (UQUAD)SysBase;
                         break;
                 }
+
+                regs->rip += 8;
                 
-                regs.return_rip += 8;
-                
-                die = 0;
+                core_LeaveInterrupt(regs);
             }
-            else if (   (ip[0] & 0xfb) == 0x48 &&
-                    ip[1]         == 0x8b && 
-                   (ip[2] & 0xc7) == 0x05
-               )
+            else if ((ip[0] & 0xfb) == 0x48 &&
+                      ip[1]         == 0x8b && 
+                     (ip[2] & 0xc7) == 0x05)
             {
                 int reg = ((ip[2] >> 3) & 0x07) | ((ip[0] & 0x04) << 1);
-                
+
                 switch(reg)
                 {
                     case 0:
-                        regs.rax = SysBase;
+                        regs->rax = (UQUAD)SysBase;
                         break;
                     case 1:
-                        regs.rcx = SysBase;
+                        regs->rcx = (UQUAD)SysBase;
                         break;
                     case 2:
-                        regs.rdx = SysBase;
+                        regs->rdx = (UQUAD)SysBase;
                         break;
                     case 3:
-                        regs.rbx = SysBase;
+                        regs->rbx = (UQUAD)SysBase;
                         break;
 //                    case 4:   /* Cannot put SysBase into rSP register */
-//                        regs.return_rsp = SysBase;
+//                        regs->rsp = (UQUAD)SysBase;
 //                        break;
                     case 5:
-                        regs.rbp = SysBase;
+                        regs->rbp = (UQUAD)SysBase;
                         break;
                     case 6:
-                        regs.rsi = SysBase;
+                        regs->rsi = (UQUAD)SysBase;
                         break;
                     case 7:
-                        regs.rdi = SysBase;
+                        regs->rdi = (UQUAD)SysBase;
                         break;
                     case 8:
-                        regs.r8 = SysBase;
+                        regs->r8 = (UQUAD)SysBase;
                         break;
                     case 9:
-                        regs.r9 = SysBase;
+                        regs->r9 = (UQUAD)SysBase;
                         break;
                     case 10:
-                        regs.r10 = SysBase;
+                        regs->r10 = (UQUAD)SysBase;
                         break;
                     case 11:
-                        regs.r11 = SysBase;
+                        regs->r11 = (UQUAD)SysBase;
                         break;
                     case 12:
-                        regs.r12 = SysBase;
+                        regs->r12 = (UQUAD)SysBase;
                         break;
                     case 13:
-                        regs.r13 = SysBase;
+                        regs->r13 = (UQUAD)SysBase;
                         break;
                     case 14:
-                        regs.r14 = SysBase;
+                        regs->r14 = (UQUAD)SysBase;
                         break;
                     case 15:
-                        regs.r15 = SysBase;
+                        regs->r15 = (UQUAD)SysBase;
                         break;
                 }
                 
-                regs.return_rip += 7;
+                regs->rip += 7;
                 
-                die = 0;
+                core_LeaveInterrupt(regs);
             }
+                D(else bug("[Kernel] Instruction not recognized\n"));
         }
-        
-        if (die)
-        {
-            rkprintf("IRQ %02x:", regs.irq_number);
-            rkprintf("[Kernel] PAGE FAULT EXCEPTION! %016p\n",ptr);
 
-            if (t)
-            {
-                rkprintf("[Kernel]  %s %p '%s'\n",
-                         t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
-                rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
-                
-                if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
-                    rkprintf("[Kernel] Stack out of Bounds!\n");
-            }
+#ifdef DUMP_CONTEXT
+	unsigned int i;
 
-            rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
-                     regs.return_ss, regs.return_rsp, regs.return_rflags, 
-                     regs.return_cs, regs.return_rip, regs.error_code);
-            
-            rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
-            rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
-            rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
-            rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
-            rkprintf("[Kernel]  *rsp=%016lx\n", *(uint64_t *)regs.return_rsp);
-            
-            rkprintf("[Kernel]  Insn: ");
-            for (i = 0; i < 16; i++)
-                rkprintf("%02x ", ip[i]);
-            rkprintf("\n");
+        bug("[Kernel] PAGE FAULT accessing 0x%p\n", ptr);
+        bug("[Kernel] Insn: ");
+        for (i = 0; i < 16; i++)
+            bug("%02x ", ip[i]);
+        bug("\n");
+#endif
 
-	    for (;;); /* TODO: call exec handler, leading into Alert() */
-
-        }
+	/* The exception will now be passed on to handling code below */
     }
-    else if (regs.irq_number == 0x80) /* Syscall? */
+#endif
+
+    /* These exceptions are CPU traps */
+    if (irq_number < sizeof(AmigaTraps))
     {
-        switch (regs.rax)
+        D(bug("[Kernel] Trap exception %u\n", irq_number));
+
+	if (!krnRunExceptionHandlers(irq_number, regs))
+	{
+	    DTRAP(bug("[Kernel] Passing on to exec, Amiga trap %d\n", AmigaTraps[irq_number]));
+
+	    if (AmigaTraps[irq_number] != -1)
+	    {
+	    	/* Find out trap handler for caught task */
+	    	if (SysBase)
+	    	{
+	      	    void (*trapHandler)(ULONG, struct ExceptionContext *) = SysBase->TaskTrapCode;
+            	    struct Task *t = SysBase->ThisTask;
+
+		    DTRAP(bug("[Kernel] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
+
+            	    if (t)
+	    	    {
+		    	trapHandler = t->tc_TrapCode;
+		    	DTRAP(bug("[Kernel] Task trap handler 0x%p\n", trapHandler));
+	    	    }
+
+		    trapHandler(AmigaTraps[irq_number], regs);
+
+		    /* If the trap handler returned, we can continue */
+		    DTRAP(bug("[Kernel] Trap handler returned\n"));
+		    core_LeaveInterrupt(regs);
+		}
+	    }
+
+	    bug("[Kernel] UNHANDLED EXCEPTION %lu\n", irq_number);
+	    PrintContext(regs, error_code);
+
+	    while (1) asm volatile ("hlt");
+	}
+    }
+    else if (irq_number == 0x80)  /* Syscall? */
+    {
+        DSYSCALL(bug("[Kernel] Syscall %lu\n", regs->rax));
+
+	/* The following syscalls can be run in both supervisor and user mode */
+	switch (regs->rax)
+	{
+	case SC_REBOOT:
+	    /* TODO */
+	    bug("[Kernel] Soft reboot is not implemented yet\n");
+	    while (1) asm volatile ("hlt");
+
+	    break;
+	}
+
+	/* Scheduler can be called only from within user mode */
+        if (regs->ds != KERNEL_DS)
         {
+            DSYSCALL(bug("[Kernel] User-mode syscall\n"));
+
+	    /* Disable interrupts for a while */
+	    __asm__ __volatile__("cli; cld;");
+
+            switch (regs->rax)
+            {
             case SC_CAUSE:
-                core_Cause(SysBase);
-                break;
+	    	core_ExitInterrupt(regs);
+            	break;
+
+            case SC_SCHEDULE:
+            	DSYSCALL(bug("[Kernel] Schedule...\n"));
+            	if (!core_Schedule())
+                    break;
+            	/* Fallthrough */
+
+            case SC_SWITCH:
+            	DSYSCALL(bug("[Kernel] Switch...\n"));
+            	cpu_Switch(regs);
+            	/* Fallthrough */
 
             case SC_DISPATCH:
-                core_Dispatch(&regs);
-                break;
-                
-            case SC_SWITCH:
-                core_Switch(&regs);
-                break;
-            
-            case SC_SCHEDULE:
-                if (regs.ds != KERNEL_DS)
-                    core_Schedule(&regs);
-                break;
-        }
-    }
-    
-    if (KernelBase)
-    {
-        if (KernelBase->kb_Intr[regs.irq_number].lh_Type == KBL_APIC)
-            core_APIC_AckIntr(regs.irq_number);
-        
-        if (KernelBase->kb_Intr[regs.irq_number].lh_Type == KBL_XTPIC)
-            core_XTPIC_AckIntr(regs.irq_number);
-        
-        
-        if (!IsListEmpty(&KernelBase->kb_Intr[regs.irq_number]))
-        {
-            struct IntrNode *in, *in2;
-
-            ForeachNodeSafe(&KernelBase->kb_Intr[regs.irq_number], in, in2)
-            {
-                if (in->in_Handler)
-                    in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
+            	DSYSCALL(bug("[Kernel] Dispatch...\n"));
+                cpu_Dispatch(regs);
+            	break;
             }
-            
-            if (KernelBase->kb_Intr[regs.irq_number].lh_Type == KBL_XTPIC)
-                core_XTPIC_EnableIRQ(regs.irq_number);
         }
-    }
-    
-    while (die) asm volatile ("hlt");
-}
 
-asm(".text\n\t"
-    ".globl core_DefaultIRETQ\n\t"
-    ".type core_DefaultIRETQ,@function\n"
-"core_DefaultIRETQ: iretq");
+	DSYSCALL(bug("[Kernel] Returning from syscall...\n"));
+    }
+    else if (irq_number >= 0x20) /* Hardware IRQ */
+    {
+	if (KernelBase)
+    	{
+    	    switch (KernelBase->kb_Exceptions[irq_number].lh_Type)
+    	    {
+    	    case KBL_APIC:
+            	core_APIC_AckIntr(irq_number, KernelBase->kb_PlatformData);
+            	core_RunIRQHandlers(irq_number, KernelBase);
+            	break;
+
+            case KBL_XTPIC:
+            	core_XTPIC_AckIntr(irq_number, KernelBase->kb_PlatformData);
+            	if (core_RunIRQHandlers(irq_number, KernelBase))
+                    core_XTPIC_EnableIRQ(irq_number, KernelBase->kb_PlatformData);
+                break;
+	    }
+	}
+
+	if (SysBase && (regs->ds != KERNEL_DS))
+	{
+	    /* Disable interrupts for a while */
+	    __asm__ __volatile__("cli; cld;");
+
+	    core_ExitInterrupt(regs);
+	}
+    }
+
+    core_LeaveInterrupt(regs);
+}

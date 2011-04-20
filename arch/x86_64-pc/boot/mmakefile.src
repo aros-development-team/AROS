@@ -10,7 +10,7 @@ include $(TOP)/config/make.cfg
 # -------- x86_64-pc board support package --------
 
 #MM kernel-bsp-x86_64-pc : linklibs-bootconsole		 \
-#MM			   kernel-kernel-pc-x86_64-kobj  \
+#MM			   kernel-kernel-kobj		 \
 #MM			   kernel-exec-kobj		 \
 #MM			   kernel-ata-kobj		 \
 #MM			   kernel-timer-kobj		 \

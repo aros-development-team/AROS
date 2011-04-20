@@ -1,0 +1,2 @@
+USER_LIBDIR := $(GENDIR)/lib
+USER_LIBS   := bootconsole
