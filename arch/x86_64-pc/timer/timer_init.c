@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -25,25 +25,21 @@
 #include <asm/io.h>
 
 #include <aros/debug.h>
-#undef kprintf
-#include <proto/arossupport.h>
 
-//#include "timer_intern.h"
 #include LC_LIBDEFS_FILE
 
-/*AROS_UFP4(ULONG, VBlankInt,
-    AROS_UFPA(ULONG, dummy, A0),
-    AROS_UFPA(struct TimerBase *, TimerBase, A1),
-    AROS_UFPA(ULONG, dummy2, A5),
-    AROS_UFPA(struct ExecBase *, SysBase, A6)
-);*/
 void VBlankInt(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 
 /****************************************************************************************/
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    void *KernelBase = TLS_GET(KernelBase);
+    APTR KernelBase = OpenResource("kernel.resource");
+
+    /* We must have kernel.resource */
+    if (!KernelBase)
+    	return FALSE;
+
     /* Setup the timer.device data */
     LIBBASE->tb_CurrentTime.tv_secs = 0;
     LIBBASE->tb_CurrentTime.tv_micro = 0;
@@ -71,7 +67,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     LIBBASE->tb_prev_tick = 0xffff;
 
     /* Start up the interrupt server */
-    LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(0x20, VBlankInt, LIBBASE, SysBase);
+    LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(0, VBlankInt, LIBBASE, SysBase);
 
     /* VBlank EMU */
     
@@ -130,7 +126,7 @@ static int GM_UNIQUENAME(Open)
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-    void *KernelBase = TLS_GET(KernelBase);
+    APTR KernelBase = LIBBASE->tb_KernelBase;
 
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);

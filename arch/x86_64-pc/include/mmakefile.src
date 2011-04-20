@@ -1,9 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-INCLUDE_FILES := $(call WILDCARD, asm/*.[hi])
-
-%copy_includes mmake=includes-copy-pc-x86_64
-
-#MM- kernel-exec-includes-pc-x86_64 : includes-copy-pc-x86_64
-

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS ACPI Definitions.
@@ -71,19 +71,21 @@ struct acpi_table_sdt
 
 struct acpi_table_hook
 {
-    struct MinNode              h_MinNode;
-    IPTR	                    (*h_Entry)();     /* Main entry point */
-    IPTR	                    (*h_SubEntry)();  /* Secondary entry point */
-    unsigned long               phys_addr;
-    unsigned long               size;
+    struct MinNode 	h_MinNode;
+    IPTR	   	(*h_Entry)();     /* Main entry point */
+    IPTR	   	(*h_SubEntry)();  /* Secondary entry point */
+    struct PlatformData *data;
+    unsigned long	phys_addr;
+    unsigned long	size;
 };
 
 struct acpi_madt_entry_hook
 {
-    struct MinNode              h_MinNode;
-    IPTR	                    (*h_Entry)();     /* Main entry point */
-    IPTR	                    (*h_SubEntry)();  /* Secondary entry point */
-    struct acpi_table_entry_header     *header;
+    struct MinNode   		   h_MinNode;
+    IPTR	        	   (*h_Entry)();     /* Main entry point */
+    IPTR	        	   (*h_SubEntry)();  /* Secondary entry point */
+    struct PlatformData		   *data;
+    struct acpi_table_entry_header *header;
 };
 
 /********** ACPI structure definitions ****************/
@@ -441,5 +443,17 @@ AROS_UFP1(IPTR, ACPI_hook_Table_NMI_Src_Parse,
     AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
 AROS_UFP1(IPTR, ACPI_hook_Table_HPET_Parse,
     AROS_UFPA(struct acpi_table_hook *,	table_hook,	A0));
+
+/** ACPI Functions **/
+IPTR core_ACPIProbe(const struct TagItem *, struct KernBootPrivate *);
+ULONG core_ACPIInitialise(struct PlatformData *);
+int core_ACPIIsBlacklisted();
+IPTR core_ACPIRootSystemDescriptionPointerLocate();
+int core_ACPITableChecksum(void *, unsigned long);
+IPTR core_ACPITableSDTGet(struct acpi_table_rsdp *);
+int core_ACPITableParse(int, struct acpi_table_hook *);
+int core_ACPITableMADTParse(int, struct acpi_madt_entry_hook *);
+int core_ACPITableMADTFamParse(int, unsigned long, int, struct acpi_madt_entry_hook *);
+int core_ACPITableHeaderEarly(int, struct acpi_table_header **);
 
 #endif /* __AROS_ACPI_H__ */

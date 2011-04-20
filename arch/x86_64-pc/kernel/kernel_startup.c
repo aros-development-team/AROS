@@ -1,32 +1,31 @@
-#define DEBUG 1
-
-#include <aros/debug.h>
+#include <aros/atomic.h>
 #include <aros/multiboot.h>
 #include <asm/cpu.h>
 #include <asm/io.h>
-#include <asm/segments.h>
-#include <inttypes.h>
 #include <aros/symbolsets.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
-
 #include <utility/tagitem.h>
-
 #include <proto/arossupport.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include <bootconsole.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <inttypes.h>
+#include <string.h>
 
+#include "kernel_base.h"
+#include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "kernel_memory.h"
+#include "kernel_romtags.h"
+#include "acpi.h"
+#include "apic.h"
+#include "tls.h"
+
+#define D(x) x
 
 extern const unsigned long start64;
-
-struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struct TagItem *bootMsg);
 
 /* Common IBM PC memory layout */
 static const struct MemRegion PC_Memory[] =
@@ -37,6 +36,10 @@ static const struct MemRegion PC_Memory[] =
     {0x080000000, -1         , "Upper memory"  , 10, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK                                   },
     {0          , 0          , NULL            ,  0, 0                                                                  }
 };
+
+/* Boot-time global variables */
+struct KernBootPrivate *__KernBootPrivate = NULL;
+UBYTE vesa_hack = 0;
 
 /*
  * Small asm stub in the beginning.
@@ -49,7 +52,7 @@ asm(".section .aros.startup,\"ax\"\n\t"
     ".type start64,@function\n"
     "start64: movq tmp_stack_end(%rip),%rsp\n\t"
     "movq %rdi,%rbx\n\t"
-    "call __clear_bss\n\t"
+    "call clearBss\n\t"
     "movq %rbx,%rdi\n\t"
     "movq stack_end(%rip), %rsp\n\t"
     "movq target_address(%rip), %rsi\n\t"
@@ -58,20 +61,12 @@ asm(".section .aros.startup,\"ax\"\n\t"
     "\n\t.text\n\t"
 );
 
-struct KernBootPrivate *__KernBootPrivate = NULL;
-
-void __clear_bss(struct TagItem *msg)
+void clearBss(struct TagItem *msg)
 {
-    struct KernelBSS *bss = (struct KernelBSS *)LibGetTagData(KRN_KernelBss, 0, msg);
+    const struct KernelBSS *bss = (const struct KernelBSS *)LibGetTagData(KRN_KernelBss, 0, msg);
 
     if (bss)
-    {
-        while (bss->addr)
-        {
-            bzero((void *)bss->addr, bss->len);
-            bss++;
-        }
-    }
+    	__clear_bss(bss);
 }
 
 /* Print panic string and halt */
@@ -96,12 +91,8 @@ static void *RelocateTagData(unsigned char *dest, struct TagItem *tag, unsigned 
     return (void *)AROS_ROUNDUP2((IPTR)dest, sizeof(APTR));
 }
 
-static struct TagItem *BootMsg;
-static volatile UBYTE apicready = 0;
-UBYTE vesa_hack = 0;
-
 /* All CPUs start up from this point */
-void kernel_cstart(struct TagItem *msg, void *entry)
+void kernel_cstart(const struct TagItem *msg, void *entry)
 {
     IPTR _APICBase;
     UBYTE _APICID;
@@ -204,7 +195,7 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 	    vmode->y_resolution >>= 1;
 
 	    __KernBootPrivate->debug_y_resolution = vmode->y_resolution;
-	    __KernBootPrivate->debug_framebuffer  = (void *)vmode->phys_base + vmode->y_resolution * vmode->bytes_per_scanline;
+	    __KernBootPrivate->debug_framebuffer  = (void *)(unsigned long)vmode->phys_base + vmode->y_resolution * vmode->bytes_per_scanline;
 	}
     }
 
@@ -230,7 +221,7 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 
         /* Initialize the ACPI boot-time table parser. */
         __KernBootPrivate->kbp_ACPIRSDP = core_ACPIProbe(msg, __KernBootPrivate);
-        rkprintf("[Kernel] kernel_cstart[%d]: core_ACPIProbe() returned %p\n", _APICID, __KernBootPrivate->kbp_ACPIRSDP);
+        bug("[Kernel] kernel_cstart[%d]: core_ACPIProbe() returned %p\n", _APICID, __KernBootPrivate->kbp_ACPIRSDP);
     }
     else
     {
@@ -240,8 +231,8 @@ void kernel_cstart(struct TagItem *msg, void *entry)
                 ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
                         AROS_UFCA(IPTR, _APICBase, A0));
 
-        rkprintf("[Kernel] kernel_cstart[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase);
-        rkprintf("[Kernel] kernel_cstart[%d]: KernelBootPrivate @ %p\n", _APICID, __KernBootPrivate);
+        bug("[Kernel] kernel_cstart[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase);
+        bug("[Kernel] kernel_cstart[%d]: KernelBootPrivate @ %p\n", _APICID, __KernBootPrivate);
     }
     /* Prepare GDT */
     core_SetupGDT(__KernBootPrivate);
@@ -260,7 +251,6 @@ void kernel_cstart(struct TagItem *msg, void *entry)
     	 * Let's initialize the system now. Other CPUs will be launched
     	 * in kernel.resource normal init routine (kernel_init.c)
     	 */
-        UBYTE apictotal;
         struct MinList memList;
         struct MemHeader *mh, *mh2;
         struct mb_mmap *mmap = NULL;
@@ -273,7 +263,6 @@ void kernel_cstart(struct TagItem *msg, void *entry)
         UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
 
 	D(bug("[Kernel] kernel_cstart[%d] Launching on BSP\n", _APICID));
-	apicready = 1;
 
 	/* Obtain the needed data from the boot taglist */
         while ((tag = LibNextTagItem(&tstate)))
@@ -420,18 +409,6 @@ void kernel_cstart(struct TagItem *msg, void *entry)
 
 	D(bug("[Kernel] Done?! Still here?\n"));
 
-	apictotal = core_APICGetTotal();
-	D(bug("[Kernel] %u APICs detected\n", apictotal));
-	
-	if (apictotal > 1)
-    	{
-	    bug("[Kernel] Waiting for %d APICs to initialise ..\n", apictotal - 1);
-	    while (apicready < apictotal)
-	    {
-	    	DB2(bug("[Kernel] %d of %d APICs Ready ..\n", apicready, apictotal));
-	    }
-    	}
-
 	InitCode(RTF_SINGLETASK, 0);
 	InitCode(RTF_COLDSTART, 0);
 
@@ -442,12 +419,12 @@ void kernel_cstart(struct TagItem *msg, void *entry)
     {
 	/*
 	 * This is a secondary CPU. Currently it has nothing to do :-(
+	 * KernelBase is already set up by the primary core, so we can use it.
 	 */
-        UBYTE _APICNO   = core_APICGetNumber();
-        UBYTE apictotal = core_APICGetTotal();
+        UBYTE _APICNO = core_APICGetNumber(KernelBase->kb_PlatformData);
 
-        apicready += 1;
-        bug("[Kernel] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, apictotal);
+        AROS_ATOMIC_INC(KernelBase->kb_PlatformData->kb_APIC_Ready);
+        bug("[Kernel] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, KernelBase->kb_PlatformData->kb_APIC_Count);
     }
 
     while (1) asm volatile("hlt");
@@ -525,7 +502,7 @@ void core_SetupGDT(struct KernBootPrivate *__KernBootPrivate)
         (*(__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid),
                 AROS_UFCA(IPTR, _APICBase, A0));
 
-    D(rkprintf("[Kernel] core_SetupGDT(%d)\n", _APICID));
+    D(bug("[Kernel] core_SetupGDT(%d)\n", _APICID));
 
     if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
     {
@@ -615,15 +592,5 @@ void core_CPUSetup(IPTR _APICBase)
     bug("[Kernel] core_CPUSetup[%d]: Reloading the GDT and Task Register\n", _APICID);
     asm volatile ("lgdt %0"::"m"(GDT_sel));
     asm volatile ("ltr %w0"::"r"(TASK_SEG + (_APICID << 4)));
-    asm volatile ("mov %0,%%gs"::"a"(SEG_GS));    
-}
-
-AROS_LH0I(struct TagItem *, KrnGetBootInfo,
-         struct KernelBase *, KernelBase, 10, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    return BootMsg;
-    
-    AROS_LIBFUNC_EXIT
+    asm volatile ("mov %0,%%gs"::"a"(USER_GS));
 }
