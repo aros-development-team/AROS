@@ -681,8 +681,22 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLI
 %(module) : ERR := %(err)
 %(module) : OBJDIR := %(objdir)
 %(module) : LIBS := $(addprefix -l,%(uselibs)) -lautoinit -llibinit -L/usr/lib $(addprefix -l,%(usehostlibs))
-%(module) : %(objs) %(endobj) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
-	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) -noarosc"
+
+TMP_DEPLIBS  := $(addprefix lib,$(addsuffix .a, %(uselibs) autoinit libinit))
+TMP_LDFLAGS  :=
+USER_DEPLIBS :=
+
+ifneq ($(USER_LIBDIR),)
+    ALL_USERLIBS := $(notdir $(wildcard $(USER_LIBDIR)/lib*.a))
+    USER_DEPLIBS := $(addprefix $(USER_LIBDIR)/, $(filter $(ALL_USERLIBS),$(TMP_DEPLIBS)))
+    TMP_DEPLIBS  := $(filter-out $(ALL_USERLIBS),$(TMP_DEPLIBS))
+    TMP_LDFLAGS  := -L$(USER_LIBDIR)
+endif
+
+TMP_DEPLIBS := $(addprefix $(LIBDIR)/, $(TMP_DEPLIBS))
+
+%(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(TMP_USER_DEPLIBS)
+	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) $(TMP_LDFLAGS) -noarosc"
 
 %end
 #------------------------------------------------------------------------------
@@ -2516,11 +2530,12 @@ else
     KOBJ_STARTUP := %(startup)
 endif
 
-KOBJS       := $(KOBJ_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
-LDLIBS      := $(addprefix -l, %(uselibs))
-DEPDIRS     := $(dir %(file))
-DEPLIBS     := $(addprefix lib,$(addsuffix .a, %(uselibs)))
-TMP_LDFLAGS := -L$(LIBDIR)
+KOBJS        := $(KOBJ_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
+LDLIBS       := $(addprefix -l, %(uselibs))
+DEPDIRS      := $(dir %(file))
+DEPLIBS      := $(addprefix lib,$(addsuffix .a, %(uselibs)))
+USER_DEPLIBS :=
+TMP_LDFLAGS  := -L$(LIBDIR)
 
 ifneq ($(USER_LIBDIR),)
     ALL_USERLIBS := $(notdir $(wildcard $(USER_LIBDIR)/lib*.a))
@@ -2542,7 +2557,7 @@ endif
 #MM
 %(mmake)-quick : %(file)
 
-%(file): $(KOBJS) $(DEPDIRS) $(DEPLIBS)
+%(file): $(KOBJS) $(DEPDIRS) $(DEPLIBS) $(USER_DEPLIBS)
 	@$(ECHO) Linking $@...
 	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(NOSTARTUP_LDFLAGS) $(TMP_LDFLAGS) $(LDLIBS)
 
