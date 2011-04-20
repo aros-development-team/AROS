@@ -6,6 +6,7 @@
 #include <exec/alerts.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
+#include <exec/interrupts.h>
 #include <exec/tasks.h>
 #include <dos/dosextens.h>
 #include <graphics/clip.h>
@@ -120,6 +121,16 @@ int main(void) {
     DEFINE(lh_Head       , offsetof (struct List, lh_Head));
     DEFINE(lh_TailPred   , offsetof (struct List, lh_TailPred));
 
+    asm volatile("\n/* CPU context */" ::);
+#ifdef __x86_64__
+    DEFINE(ECF_SEGMENTS, ECF_SEGMENTS);
+
+    DEFINE(Flags , offsetof(struct ExceptionContext, Flags));
+    DEFINE(reg_ds, offsetof(struct ExceptionContext, ds));
+    DEFINE(reg_es, offsetof(struct ExceptionContext, es));
+    DEFINE(reg_fs, offsetof(struct ExceptionContext, fs));
+    DEFINE(reg_gs, offsetof(struct ExceptionContext, gs));
+#endif
 
 #ifdef UseExecstubs
     asm volatile("\n#define UseExecstubs 1" ::);
