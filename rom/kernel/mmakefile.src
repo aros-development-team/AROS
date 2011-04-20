@@ -12,8 +12,10 @@ endif
 USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
 	       -I$(SRCDIR)/rom/exec \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
-	       -D__AROS_EXEC_LIBRARY__
-USER_CFLAGS += $(PARANOIA_CFLAGS)
+	       -D__AROS_EXEC_LIBRARY__ $(PARANOIA_CFLAGS)
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
 
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
          dispatch getbootinfo getscheduler issuper mapglobal registermodule          \
@@ -27,6 +29,6 @@ FILES := kernel_init cpu_init kernel_cpu kernel_debug kernel_intr kernel_memory_
 
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource \
-  files="$(FILES) $(FUNCS)" uselibs=rom
+  files="$(FILES) $(FUNCS)" uselibs="rom $(USER_LIBS)"
 
 %common
