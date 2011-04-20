@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -66,23 +66,21 @@
 {
     AROS_LIBFUNC_INIT
 
-    UBYTE flag = SysBase->AttnResched;          /* Save state of scheduling attention */
-    
-    AROS_ATOMIC_OR(SysBase->AttnResched, 0x80);/* Set scheduling attention */
-    
+    AROS_ATOMIC_OR(SysBase->AttnResched, 0x80);	/* Set scheduling attention */
+
+    /*
+     * On classic Amiga(tm) hardware software interrupt will be postponed by the
+     * chipset if interrupts are disabled, and triggered automatically once interrupts
+     * are enabled again.
+     * On other machines we emulate this explicitly in our Enable() function.
+     * There we will check AttnResched value we just set.
+     */
     if (SysBase->TDNestCnt < 0)                 /* If task switching enabled */
     {
         if (SysBase->IDNestCnt < 0)             /* And interrupts enabled */
         {
-            KrnSchedule();
-        }
-        else if (!(flag & 0x80))                /* Generate software interrupt */
-        {
-#if 0
-#warning: "This is wrong!!!!!!!! It should cause the software interrupt only once interrupts are enabled again"
-#warning  "but this jumps directly to software interrupt, no matter if interrupts are enabled or not"
-            __asm__ ("movl $-3,%eax\n\tint $0x80");
-#endif
+            D(bug("[Reschedule] Calling scheduler, KernelBase 0x%p\n", KernelBase));
+            KrnSchedule();			/* Call scheduler */
         }
     }
 
