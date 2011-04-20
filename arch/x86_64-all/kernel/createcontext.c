@@ -44,6 +44,9 @@ AROS_LH0(void *, KrnCreateContext,
 	ctx->Flags |= ECF_SEGMENTS;
 	ctx->cs     = USER_CS;
 	ctx->ds     = USER_DS;
+	ctx->es     = USER_DS;
+	ctx->fs     = USER_DS;
+	ctx->gs     = USER_GS;
 	ctx->ss     = USER_DS;
 #endif
 
