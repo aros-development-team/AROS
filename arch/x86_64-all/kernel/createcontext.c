@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Create an empty usable CPU context, x86_64 version.
+    Lang: english
+*/
+
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
@@ -28,6 +36,18 @@ AROS_LH0(void *, KrnCreateContext,
         ctx->Flags  = ECF_FPX;
 	ctx->FXData = (struct FPXContext *)fpdata;
 
+	/* Set up default values for some registers */
+	ctx->rflags = 0x3202;
+
+/* These definitions may come from machine-specific kernel_cpu.h */
+#ifdef USER_CS
+	ctx->Flags |= ECF_SEGMENTS;
+	ctx->cs     = USER_CS;
+	ctx->ds     = USER_DS;
+	ctx->ss     = USER_DS;
+#endif
+
+	/* Init SSE context */
 	asm volatile(
 	    "	fxsave (%0)\n"
 	    "	fninit\n"
