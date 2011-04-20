@@ -695,7 +695,7 @@ endif
 
 TMP_DEPLIBS := $(addprefix $(LIBDIR)/, $(TMP_DEPLIBS))
 
-%(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(TMP_USER_DEPLIBS)
+%(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(USER_DEPLIBS)
 	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) $(TMP_LDFLAGS) -noarosc"
 
 %end
