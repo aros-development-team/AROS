@@ -198,18 +198,13 @@
         is already gone.
     */
 
-    if(task->tc_Node.ln_Pri>SysBase->ThisTask->tc_Node.ln_Pri&&
-       SysBase->ThisTask->tc_State==TS_RUN)
+    if (task->tc_Node.ln_Pri > SysBase->ThisTask->tc_Node.ln_Pri &&
+       SysBase->ThisTask->tc_State == TS_RUN)
     {
-        /* Are taskswitches allowed? (Don't count own Disable() here) */
-        if(SysBase->TDNestCnt>=0||SysBase->IDNestCnt>0)
-            /* No. Store it for later. */
-            SysBase->AttnResched|=0x80;
-        else
-        {
-            /* Force a reschedule. */
-            Reschedule(task);
-        }
+        D(bug("[AddTask] Rescheduling...\n"));
+
+        /* Reschedule() will take care about disabled task switching automatically */
+    	Reschedule(task);
     }
 
     Enable();
