@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-exec-includes-$(ARCH)-$(CPU) \
 #MM     includes-$(ARCH)-$(CPU)
 
-ALL_FUNCTIONS	:= \
+ALL_FUNCTIONS := \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \
 	addmemlist addport addresource addsemaphore addtail addtask alert alertstrings \
 	allocabs allocate allocentry allocmem allocpooled allocsignal \
@@ -32,11 +32,9 @@ ALL_FUNCTIONS	:= \
 	newaddtask avl vnewrawdofmt shutdowna useralert \
 	addresetcallback remresetcallback doresetcallbacks newcreatetaska
 
-
-INIT_FILE   := exec_init
-SYS_FILES   := prepareexecbase
-FILES	    := alertextra alert_cpu systemalert initkicktags \
-	       memory memory_nommu mungwall traphandler exec_debug exec_util
+INIT_FILES := exec_init prepareexecbase
+FILES	   := alertextra alert_cpu systemalert initkicktags \
+	      memory memory_nommu mungwall traphandler exec_debug exec_util
 
 # I need the private includes (for struct AROSCPUContext) and they
 # have to be first in the list
@@ -47,12 +45,9 @@ ifneq ($(FAMILY),)
 USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/exec \
 	       -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
 endif
-USER_CFLAGS += -I$(SRCDIR)/$(CURDIR)
-USER_CFLAGS += $(PARANOIA_CFLAGS)
+USER_CFLAGS += -I$(SRCDIR)/$(CURDIR) $(PARANOIA_CFLAGS)
 
-# As a hack the SYS_FILES are added as the initfile.
 %build_module mmake=kernel-exec \
   modname=exec modtype=library \
-  files="$(SYS_FILES) $(INIT_FILE) $(ALL_FUNCTIONS) $(FILES)" \
-  uselibs=$(DEPLIBS)
-
+  files="$(INIT_FILES) $(ALL_FUNCTIONS) $(FILES)" \
+  uselibs="arossupport rom"
