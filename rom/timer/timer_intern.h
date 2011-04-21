@@ -64,7 +64,8 @@ struct TimerBase
     ULONG                tb_ticks_sec;
     ULONG                tb_ticks_elapsed;
     ULONG                tb_prev_tick;
-    
+    ULONG		 tb_EClockFreq;
+
     struct timerequest   tb_vblank_timerequest; /* For vblank emulation */
 };
 

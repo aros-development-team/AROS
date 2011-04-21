@@ -41,21 +41,20 @@ void TimerIRQ(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    ULONG TimerPeriod = SysBase->ex_EClockFrequency;
-
+    LIBBASE->tb_EClockFreq = SysBase->ex_EClockFrequency;
     LIBBASE->tb_TimerIRQNum = -1;
 
-    if (KernelBase && TimerPeriod)
+    if (KernelBase && LIBBASE->tb_EClockFreq)
 	LIBBASE->tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
 
     if (LIBBASE->tb_TimerIRQNum == -1)
-	TimerPeriod = SysBase->VBlankFrequency;
+	LIBBASE->tb_EClockFreq = SysBase->VBlankFrequency;
 
     D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", LIBBASE->tb_TimerIRQNum, TimerPeriod));
 
     /* Calculate timer period in us */
     LIBBASE->tb_VBlankTime.tv_secs  = 0;
-    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / TimerPeriod;
+    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / LIBBASE->tb_EClockFreq;
 
     D(kprintf("Timer period: %ld secs, %ld micros\n",
 	LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
