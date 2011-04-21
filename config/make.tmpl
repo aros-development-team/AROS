@@ -1354,9 +1354,9 @@ BD_KBASE := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
 BD_SYMBOLS := $(BD_KBASE)
 
 ifeq ($(USER_LIBDIR),)
-    BD_LDFLAGS :=
+$(BD_KOBJ) : TMP_LDFLAGS :=
 else
-    BD_LDFLAGS := -L$(USER_LIBDIR)
+$(BD_KOBJ) : TMP_LDFLAGS := -L$(USER_LIBDIR)
 endif
 
 BD_KLIB := hiddstubs amiga arossupport rom arosm autoinit libinit
@@ -1365,7 +1365,7 @@ $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
 $(BD_KOBJ) : $(BD_OBJS) $(USER_OBJS) $(BD_ENDOBJS)
 	@$(ECHO) "Linking $@"
-	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(BD_LDFLAGS) $(addprefix -l,$(LINKLIBS))
+	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(TMP_LDFLAGS) $(addprefix -l,$(LINKLIBS))
 	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
 
 ## Dependency fine-tuning
