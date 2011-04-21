@@ -15,6 +15,8 @@
 
 /* misc */
 
+extern const char IRQ_Table[];
+
 struct irq_staticdata
 {
     OOP_Class *irqclass;

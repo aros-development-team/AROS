@@ -1,20 +1,16 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-MODNAME	:=  irq
-MODTYPE	:=  hidd
+FILES := irq_init irqclass irqtable
+STUBS := irq_stubs
 
-USER_CFLAGS :=	-DAROS_USE_OOP -I$(SRCDIR)/$(CURDIR)
-
-FILES       :=
-STUBS	    := $(MODNAME)_stubs
-
-INCLUDE_FILES := $(call WILDCARD, include/*.h)
-
-# When there is actually a hidd.irq class for here, generate the whole
-# lot.
+%build_module mmake=kernel-hidd-irq \
+  modname=irq modtype=hidd \
+  files=$(FILES) uselibs=oop
 
 %make_hidd_stubs hidd=irq
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
 #MM includes-copy
 %copy_includes path=hidd dir=include
