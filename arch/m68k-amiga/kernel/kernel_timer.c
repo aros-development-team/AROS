@@ -8,10 +8,11 @@
 #include <aros/symbolsets.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
-
 #include <hardware/cia.h>
 
-static int Timer_Init(APTR KernelBase)
+#include <kernel_base.h>
+
+static int Timer_Init(struct KernelBase *KernelBase)
 {
     volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
     UWORD todlo, todcnt;
@@ -49,6 +50,14 @@ static int Timer_Init(APTR KernelBase)
     	SysBase->PowerSupplyFrequency = 50;
     else
     	SysBase->PowerSupplyFrequency = 60;
+
+    /*
+     * Our VBlank is always enabled, it's from hardware
+     * TODO: move here frequency check from graphics.library
+     * custom part. Need to figure out how to pass chip flags
+     * on to graphics.library.
+     */
+    KernelBase->kb_VBlankEnable = 1;
 
     return TRUE;
 }
