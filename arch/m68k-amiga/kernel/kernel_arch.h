@@ -1,14 +1,12 @@
 /*
- * Machine-specific definitions.
- *
- * This file needs to be replaced for every machine. Hosted ports
- * may share the same file in arch/all-$(ARCH)/kernel/kernel_arch.h
- *
- * This file is just a sample providing necessary minimum.
+ * Machine-specific definitions for Amiga(tm) hardware.
  */
 
 /* Number of IRQs used in the machine. Needed by kernel_base.h */
 #define IRQ_COUNT 14
+
+/* We don't need to emulate VBlank, it's real hardware interrupt here */
+#define NO_VBLANK_EMU
 
 /*
  * Interrupt controller functions. Actually have the following prototypes:
