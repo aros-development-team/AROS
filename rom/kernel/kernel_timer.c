@@ -33,6 +33,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* This definition can come from machine-specific files */
+#ifndef NO_VBLANK_EMU
+
 static int Timer_Init(struct KernelBase *KernelBase)
 {
     char *args;
@@ -100,3 +103,5 @@ void core_TimerTick()
 	}
     }
 }
+
+#endif
