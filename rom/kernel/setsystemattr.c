@@ -50,9 +50,11 @@ AROS_LH2(int, KrnSetSystemAttr,
 
     switch (id)
     {
+#ifndef NO_VBLANK_EMU
     case KATTR_VBlankEnable:
 	KernelBase->kb_VBlankEnable = val;
 	break;
+#endif
 
     default:
 	return -1;
