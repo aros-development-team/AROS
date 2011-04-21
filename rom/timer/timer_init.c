@@ -26,6 +26,8 @@
 
 #include LC_LIBDEFS_FILE
 
+#define KernelBase LIBBASE->tb_KernelBase
+
 AROS_UFP4(ULONG, VBlankInt,
     AROS_UFPA(ULONG, dummy, A0),
     AROS_UFPA(struct TimerBase *, TimerBase, A1),
@@ -39,10 +41,10 @@ void TimerIRQ(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    APTR KernelBase = OpenResource("kernel.resource");
     ULONG TimerPeriod = SysBase->ex_EClockFrequency;
 
     LIBBASE->tb_TimerIRQNum = -1;
+
     if (KernelBase && TimerPeriod)
 	LIBBASE->tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
 
@@ -50,32 +52,28 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 	TimerPeriod = SysBase->VBlankFrequency;
 
     D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", LIBBASE->tb_TimerIRQNum, TimerPeriod));
-    LIBBASE->tb_KernelBase = KernelBase;
 
-    /* Setup the timer.device data */
-    LIBBASE->tb_CurrentTime.tv_secs = 0;
-    LIBBASE->tb_CurrentTime.tv_micro = 0;
-    LIBBASE->tb_VBlankTime.tv_secs = 0;
+    /* Calculate timer period in us */
+    LIBBASE->tb_VBlankTime.tv_secs  = 0;
     LIBBASE->tb_VBlankTime.tv_micro = 1000000 / TimerPeriod;
-    LIBBASE->tb_Elapsed.tv_secs = 0;
-    LIBBASE->tb_Elapsed.tv_micro = 0;
 
     D(kprintf("Timer period: %ld secs, %ld micros\n",
 	LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
 
-    /* Initialise the lists */
-    NEWLIST( &LIBBASE->tb_Lists[0] );
-    NEWLIST( &LIBBASE->tb_Lists[1] );
-    NEWLIST( &LIBBASE->tb_Lists[2] );
-    NEWLIST( &LIBBASE->tb_Lists[3] );
-    NEWLIST( &LIBBASE->tb_Lists[4] );
-    
     /* Start up the interrupt server */
     if (LIBBASE->tb_TimerIRQNum == -1)
     {
-	/* If we don't have periodic timer IRQ number from kernel.resource,
-	   we assume that exec VBlank is working and attach to it */
-	struct Interrupt *is = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC);
+	/*
+	 * If we don't have periodic timer IRQ number from
+	 * kernel.resource, we can possibly use exec VBlank
+	 */
+	struct Interrupt *is;
+
+        /* Check if VBlank works */
+	if (!KrnGetSystemAttr(KATTR_VBlankEnable))
+    	    return FALSE;
+
+	is = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC);
 	
 	if (is)
 	{
@@ -145,11 +143,7 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 	    FreeMem(LIBBASE->tb_TimerIRQHandle, sizeof(struct Interrupt));
 	}
 	else
-	{
-	    APTR KernelBase = LIBBASE->tb_KernelBase;
-
 	    KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
-	}
     }
     return TRUE;
 }
