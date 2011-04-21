@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 
-FILES := timer_init lowlevel
+FILES := common_init timer_init lowlevel
 FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
 
 #MM- kernel-timer : linklibs
