@@ -56,13 +56,15 @@
     AROS_LIBFUNC_INIT
 
     Disable();
+
     dest->ev_hi = (ULONG)(TimerBase->tb_ticks_total >> 32);
     dest->ev_lo = (ULONG)(TimerBase->tb_ticks_total & 0xffffffff);
+
     Enable();
 
     /* We could use SysBase->ex_EClockFrequency here, but we avoid it for
        the case if some dumb head attempts to change it */
-    return 1000000 / TimerBase->tb_VBlankTime.tv_micro;
+    return TimerBase->tb_EClockFreq;
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */
