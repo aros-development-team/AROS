@@ -15,7 +15,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-ata-kobj		 \
 #MM			   kernel-timer-kobj		 \
 #MM			   kernel-expansion-kobj	 \
-#MM			   kernel-pc-x86_64-irq-kobj	 \
+#MM			   kernel-hidd-irq-kobj		 \
 #MM			   kernel-pc-i386-kbd-kobj	 \
 #MM			   kernel-pc-i386-mouse-kobj	 \
 #MM			   kernel-pc-i386-serial-kobj	 \
