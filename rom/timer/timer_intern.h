@@ -2,42 +2,30 @@
 #define _TIMER_INTERN_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information about the timer.device and HIDD's
     Lang: english
 */
 
-#ifndef EXEC_TYPES_H
-#include <exec/types.h>
-#endif
-#ifndef EXEC_LISTS_H
+#include <exec/execbase.h>
 #include <exec/lists.h>
-#endif
-#ifndef EXEC_INTERRUPTS_H
 #include <exec/interrupts.h>
-#endif
-#ifndef EXEC_IO_H
 #include <exec/io.h>
-#endif
-#ifndef EXEC_DEVICES_H
 #include <exec/devices.h>
-#endif
-#ifndef DEVICES_TIMER_H
 #include <devices/timer.h>
-#endif
-#ifndef DOS_BPTR_H
 #include <dos/bptr.h>
-#endif
-
-#include <aros/system.h>
-#include <aros/libcall.h>
 #include <aros/asmcall.h>
 
-#define TL_VBLANK	0
-#define TL_WAITVBL	1
-#define TL_MICROHZ	2
+/*
+ * Obsolete. Old implementations still use these values
+ * as indexes. New implementations should use UNIT_MICROHZ
+ * or UNIT_VBLANK as indexes and nothing else.
+ */
+#define TL_MICROHZ	0
+#define TL_VBLANK	1
+#define TL_WAITVBL	2
 #define TL_ECLOCK	3
 #define TL_WAITECLOCK	4
 #define NUM_LISTS	5
@@ -57,19 +45,27 @@ struct TimerBase
     struct Interrupt	 tb_VBlankInt;		/* Used by older implementations, needs to be removed */
     struct timeval	 tb_VBlankTime;		/* Periodic timer interval */
 
-    /* Lists for waiting vblank, waituntil, microhz, eclock, waiteclock */
+    /* Request queues */
     struct MinList	 tb_Lists[NUM_LISTS];
 
-    UQUAD                tb_ticks_total;
+    /* EClock counter */
+    UQUAD                tb_ticks_total;	/* Effective EClock value */
     ULONG                tb_ticks_sec;
     ULONG                tb_ticks_elapsed;
     ULONG                tb_prev_tick;
-    ULONG		 tb_EClockFreq;
+    ULONG		 tb_eclock_rate;	/* EClock frequency */
 
+#ifdef USE_VBLANK_EMU
     struct timerequest   tb_vblank_timerequest; /* For vblank emulation */
+#endif
 };
 
 #define GetTimerBase(tb)	((struct TimerBase *)(tb))
 #define GetDevice(tb)		((struct Device *)(tb))
+
+BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase);
+void checkUnit(struct TimerBase *TimerBase, struct MinList *unit, struct ExecBase *SysBase);
+void EClockUpdate(struct TimerBase *TimerBase);
+void EClockSet(struct TimerBase *TimerBase);
 
 #endif /* _TIMER_INTERN_H */

@@ -1,11 +1,13 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AddTime() - add two timeval's together.
     Lang: english
 */
+
 #include <timer_intern.h>
+#include "timer_macros.h"
 
 /*****************************************************************************
 
@@ -55,15 +57,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    dest->tv_micro += src->tv_micro;
-    dest->tv_secs += src->tv_secs;
-    
-    /* Normalize the result. */
-    while(dest->tv_micro > 999999)
-    {
-	dest->tv_secs++;
-	dest->tv_micro -= 1000000;
-    }
+    ADDTIME(dest, src);
 
     AROS_LIBFUNC_EXIT
 } /* AddTime */

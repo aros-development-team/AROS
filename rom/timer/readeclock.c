@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ReadEClock() - read the base frequency of timers.
@@ -55,16 +55,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    Disable();
+    EClockUpdate(TimerBase);
 
+    Disable();
     dest->ev_hi = (ULONG)(TimerBase->tb_ticks_total >> 32);
     dest->ev_lo = (ULONG)(TimerBase->tb_ticks_total & 0xffffffff);
-
     Enable();
 
     /* We could use SysBase->ex_EClockFrequency here, but we avoid it for
        the case if some dumb head attempts to change it */
-    return TimerBase->tb_EClockFreq;
+    return TimerBase->tb_eclock_rate;
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */

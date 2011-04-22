@@ -1,12 +1,14 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetSysTime() - Find out what time it is.
     Lang: english
 */
-#include "timer_intern.h"
+
 #include <proto/exec.h>
+
+#include "timer_intern.h"
 
 /*****************************************************************************
 
@@ -51,22 +53,14 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
+    /* Query the hardware */
+    EClockUpdate(GetTimerBase(TimerBase));
 
     Disable();
-    dest->tv_secs = timerBase->tb_CurrentTime.tv_secs;
-    dest->tv_micro = timerBase->tb_CurrentTime.tv_micro;
-#if 0 /* Messes up (accelerates) time if called very often
-         in short period of time (Doom). */
-	 
-    timerBase->tb_CurrentTime.tv_micro += 1;
-    if(timerBase->tb_CurrentTime.tv_micro > 999999)
-    {
-	timerBase->tb_CurrentTime.tv_secs += 1;
-	/* MUST be zero since we are only adding 1 */
-	timerBase->tb_CurrentTime.tv_micro = 0;
-    }
-#endif
+
+    dest->tv_secs  = GetTimerBase(TimerBase)->tb_CurrentTime.tv_secs;
+    dest->tv_micro = GetTimerBase(TimerBase)->tb_CurrentTime.tv_micro;
+
     Enable();
 
     AROS_LIBFUNC_EXIT

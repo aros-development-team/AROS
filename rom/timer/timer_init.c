@@ -26,35 +26,75 @@
 
 #include LC_LIBDEFS_FILE
 
+#include "timer_macros.h"
+
 #define KernelBase LIBBASE->tb_KernelBase
 
-AROS_UFP4(ULONG, VBlankInt,
-    AROS_UFPA(ULONG, dummy, A0),
-    AROS_UFPA(struct TimerBase *, TimerBase, A1),
-    AROS_UFPA(ULONG, dummy2, A5),
-    AROS_UFPA(struct ExecBase *, SysBase, A6)
-);
-
 void TimerIRQ(struct TimerBase *TimerBase, struct ExecBase *SysBase);
+
+/* exec.library VBlank interrupt handler  */
+AROS_UFH4(static ULONG, VBlankInt,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(struct TimerBase *, TimerBase, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    /*
+     * First increment the current time. No need to Disable() here as
+     * there are no other interrupts that are allowed to interrupt us
+     * that can do anything with this.
+     */
+    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_VBlankTime);
+    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_VBlankTime);
+    TimerBase->tb_ticks_total++;
+
+    /*
+     * Now go to process requests.
+     * We are called at rather low rate, so don't bother and check both queues.
+     */
+    checkUnit(TimerBase, &TimerBase->tb_Lists[UNIT_MICROHZ], SysBase);
+    checkUnit(TimerBase, &TimerBase->tb_Lists[UNIT_VBLANK ], SysBase);
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+/* Another entry point, for kernel.resource */
+static void TimerTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
+{
+    /*
+     * We duplicate code here in order to make things
+     * a little bit faster.
+     */
+    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_VBlankTime);
+    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_VBlankTime);
+    TimerBase->tb_ticks_total++;
+
+    checkUnit(TimerBase, &TimerBase->tb_Lists[UNIT_MICROHZ], SysBase);
+    checkUnit(TimerBase, &TimerBase->tb_Lists[UNIT_VBLANK ], SysBase);
+}
 
 /****************************************************************************************/
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    LIBBASE->tb_EClockFreq = SysBase->ex_EClockFrequency;
+    LIBBASE->tb_eclock_rate = SysBase->ex_EClockFrequency;
     LIBBASE->tb_TimerIRQNum = -1;
 
-    if (KernelBase && LIBBASE->tb_EClockFreq)
+    if (KernelBase && LIBBASE->tb_eclock_rate)
 	LIBBASE->tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
 
     if (LIBBASE->tb_TimerIRQNum == -1)
-	LIBBASE->tb_EClockFreq = SysBase->VBlankFrequency;
+	LIBBASE->tb_eclock_rate = SysBase->VBlankFrequency;
 
-    D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", LIBBASE->tb_TimerIRQNum, TimerPeriod));
+    D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", LIBBASE->tb_TimerIRQNum, LIBBASE->tb_eclock_rate));
 
     /* Calculate timer period in us */
     LIBBASE->tb_VBlankTime.tv_secs  = 0;
-    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / LIBBASE->tb_EClockFreq;
+    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / LIBBASE->tb_eclock_rate;
 
     D(kprintf("Timer period: %ld secs, %ld micros\n",
 	LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
@@ -87,47 +127,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 	LIBBASE->tb_TimerIRQHandle = is;
     }
     else
-	LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(LIBBASE->tb_TimerIRQNum, TimerIRQ, LIBBASE, SysBase);
+	LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(LIBBASE->tb_TimerIRQNum, TimerTick, LIBBASE, SysBase);
 
     return LIBBASE->tb_TimerIRQHandle ? TRUE : FALSE;
-}
-
-/****************************************************************************************/
-
-static int GM_UNIQUENAME(Open)
-(
-    LIBBASETYPEPTR LIBBASE,
-    struct timerequest *tr,
-    ULONG unitNum,
-    ULONG flags
-)
-{
-    /*
-        Normally, we should check the length of the message and other
-        such things, however the RKM documents an example where the
-        length of the timerrequest isn't set, so we must not check
-        this.
-
-        This fixes bug SF# 741580
-    */
-
-    switch(unitNum)
-    {
-	case UNIT_VBLANK:
-	case UNIT_MICROHZ:
-	case UNIT_WAITUNTIL:
-	    tr->tr_node.io_Error = 0;
-	    tr->tr_node.io_Unit = (NULL + unitNum);
-	    tr->tr_node.io_Device = (struct Device *)LIBBASE;
-	    break;
-
-	case UNIT_ECLOCK:
-	case UNIT_WAITECLOCK:	
-	default:
-	    tr->tr_node.io_Error = IOERR_OPENFAIL;
-    }
-
-    return TRUE;
 }
 
 /****************************************************************************************/
@@ -150,5 +152,4 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 /****************************************************************************************/
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
-ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
