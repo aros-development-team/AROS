@@ -32,10 +32,10 @@
 	(dest)->tv_secs++;			\
 	(dest)->tv_micro -= 1000000;		\
     }						\
-    if ((dest)->tv_micro < src->tv_micro)	\
+    if ((dest)->tv_micro < (src)->tv_micro)	\
     {						\
-	dest->tv_micro += 1000000;		\
-	dest->tv_secs--;			\
+	(dest)->tv_micro += 1000000;		\
+	(dest)->tv_secs--;			\
     }						\
     (dest)->tv_micro -= (src)->tv_micro;	\
     (dest)->tv_secs  -= (src)->tv_secs;
