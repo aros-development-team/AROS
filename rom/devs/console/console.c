@@ -68,6 +68,7 @@ static const UWORD SupportedCommands[] =
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ConsoleDevice)
 {
     NEWLIST(&ConsoleDevice->unitList);
+    NEWLIST(&ConsoleDevice->sniphooks);
     InitSemaphore(&ConsoleDevice->unitListLock);
     InitSemaphore(&ConsoleDevice->consoleTaskLock);
     InitSemaphore(&ConsoleDevice->copyBufferLock);

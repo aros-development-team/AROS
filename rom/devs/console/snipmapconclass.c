@@ -83,7 +83,7 @@ static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
      insert <CSI> "0 v" and we're done. The console.handler will
      be responsible for the actual paste.
    */
-  if (FindPort(CONCLIP_PORTNAME) && ICU(o)->numStoredChars < CON_INPUTBUF_SIZE - 4) {
+  if ((!IsListEmpty(&ConsoleDevice->sniphooks) || FindPort(CONCLIP_PORTNAME)) && ICU(o)->numStoredChars < CON_INPUTBUF_SIZE - 4) {
     D(bug("Pasting to ConClip\n"));
     CopyMem("\x9b""0 v",ICU(o)->inputBuf + ICU(o)->numStoredChars,4);
     ICU(o)->numStoredChars += 4;

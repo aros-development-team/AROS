@@ -1,15 +1,28 @@
 
 #include <aros/debug.h>
 #include <proto/console.h>
+#include <proto/exec.h>
 
-AROS_LH0(LONG, GetConSnip,
-	struct Library *, ConsoleDevice, 9, Console)
+#include "console_gcc.h"
+
+AROS_LH0(APTR, GetConSnip,
+	struct ConsoleBase *, ConsoleDevice, 9, Console)
 
 {
     AROS_LIBFUNC_INIT
 
-    bug("GetConSnip unimplemented\n");
-    return 0;
-    
+    APTR data = NULL;
+
+    ObtainSemaphore(&ConsoleDevice->copyBufferLock);
+    if (ConsoleDevice->copyBuffer) {
+    	/* OS2-3.x C:conclip calls FreeVec(). NUL-terminated */
+    	data = AllocVec(ConsoleDevice->copyBufferSize + 1, MEMF_CLEAR);
+    	if (data)
+    	    CopyMem(ConsoleDevice->copyBuffer, data, ConsoleDevice->copyBufferSize);
+    }
+    ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
+
+    return data;
+
     AROS_LIBFUNC_EXIT
 }
