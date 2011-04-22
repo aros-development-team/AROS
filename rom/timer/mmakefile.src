@@ -4,11 +4,11 @@ include $(TOP)/config/make.cfg
 # Do not remove this! It allows to override timer_intern.h
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer $(PARANOIA_CFLAGS)
 
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/timer/make.opts
+
 FILES := common_init timer_init lowlevel ticks
 FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
-
-#MM- kernel-timer : linklibs
-#MM- kernel-timer-linklib : linklibs
 
 %build_module mmake=kernel-timer \
   modname=timer modtype=device \

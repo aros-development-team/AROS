@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: timer_init.c 37343 2011-03-04 14:58:09Z sonic $
+    $Id$
 
     Desc: Timer startup, common part
 */
