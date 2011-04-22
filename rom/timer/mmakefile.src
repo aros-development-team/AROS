@@ -1,9 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-# Do not remove this! It allows to override of timer_intern.h
-USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer
-USER_CFLAGS += $(PARANOIA_CFLAGS)
+# Do not remove this! It allows to override timer_intern.h
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer $(PARANOIA_CFLAGS)
 
 FILES := common_init timer_init lowlevel ticks
 FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
@@ -15,6 +14,4 @@ FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
   modname=timer modtype=device \
   files="$(FUNCS) $(FILES)"
 
-INCLUDE_FILES := include/timer.h
-
-# %copy_includes mmake=kernel-timer-includes path=hidd dir=include
+%common
