@@ -1,11 +1,13 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CmpTime() - compare two time values.
     Lang: english
 */
+
 #include <timer_intern.h>
+#include "timer_macros.h"
 
 /*****************************************************************************
 
@@ -55,19 +57,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG diff;
-
-    if(dest->tv_secs == src->tv_secs)
-	diff = src->tv_micro - dest->tv_micro;
-    else
-	diff = src->tv_secs - dest->tv_secs;
-
-    if (diff < 0)
-	return -1;
-    else if (diff > 0)
-	return 1;
-    else
-	return 0;
+    return CMPTIME(dest, src);
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */

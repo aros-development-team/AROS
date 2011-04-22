@@ -6,6 +6,6 @@ USER_INCLUDES := -I.. -I$(SRCDIR)/rom/timer
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
   arch=chrp-ppc-efika modulename=timer \
-  files="timer_init beginio getsystime lowlevel readeclock"
+  files="timer_init beginio getsystime lowlevel readeclock ticks"
 
 %common

@@ -13,6 +13,8 @@
 
 static int common_Init(struct TimerBase *LIBBASE)
 {
+    ULONG i;
+
     /* kernel.resource is optional for some implementations, so no check */
     LIBBASE->tb_KernelBase = OpenResource("kernel.resource");
 
@@ -23,11 +25,8 @@ static int common_Init(struct TimerBase *LIBBASE)
     LIBBASE->tb_Elapsed.tv_micro = 0;
 
     /* Initialise the lists */
-    NEWLIST( &LIBBASE->tb_Lists[0] );
-    NEWLIST( &LIBBASE->tb_Lists[1] );
-    NEWLIST( &LIBBASE->tb_Lists[2] );
-    NEWLIST( &LIBBASE->tb_Lists[3] );
-    NEWLIST( &LIBBASE->tb_Lists[4] );
+    for (i = 0; i < NUM_LISTS; i++)
+	NEWLIST(&LIBBASE->tb_Lists[i]);
 
     return TRUE;
 }
