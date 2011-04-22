@@ -4,6 +4,14 @@
 #include "bootstrap.h"
 #include "support.h"
 
+/* Segment registers */
+#define SEG_SUPER_CS    0x08
+#define SEG_SUPER_DS    0x10
+#define SEG_USER_CS32   0x18
+#define SEG_USER_CS64   0x28
+#define SEG_USER_DS     0x20
+#define SEG_TSS         0x30
+
 /* Global descriptor table */
 static struct
 {
