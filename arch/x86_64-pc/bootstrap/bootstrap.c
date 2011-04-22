@@ -13,7 +13,7 @@
 
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
-#include <asm/x86_64/cpu.h>
+#include <asm/cpu.h>
 
 #include <bootconsole.h>
 #include <stdlib.h>

@@ -12,11 +12,11 @@
 */
 
 /* Include the actual CPU-dependent definitions */
-#if defined __x86_64__
+#ifdef __x86_64__
 #  include <asm/x86_64/cpu.h>
-
-/* TODO: add other architectures */
-
+#endif
+#ifdef __i386__
+#  include <asm/i386/cpu.h>
 #endif
 
 /* Some default generic definitions. */
