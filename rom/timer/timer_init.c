@@ -51,11 +51,11 @@ AROS_UFH4(static ULONG, VBlankInt,
     TimerBase->tb_ticks_total++;
 
     /*
-     * Now go to process requests.
-     * We are called at rather low rate, so don't bother and check both queues.
+     * Now go to handle requests.
+     * We are called at rather low rate, so don't bother and process both units.
      */
-    checkUnit(TimerBase, &TimerBase->tb_Lists[UNIT_MICROHZ], SysBase);
-    checkUnit(TimerBase, &TimerBase->tb_Lists[UNIT_VBLANK ], SysBase);
+    handleMicroHZ(TimerBase, SysBase);
+    handleVBlank(TimerBase, SysBase);
 
     return 0;
 
@@ -73,8 +73,8 @@ static void TimerTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
     ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_VBlankTime);
     TimerBase->tb_ticks_total++;
 
-    checkUnit(TimerBase, &TimerBase->tb_Lists[UNIT_MICROHZ], SysBase);
-    checkUnit(TimerBase, &TimerBase->tb_Lists[UNIT_VBLANK ], SysBase);
+    handleMicroHZ(TimerBase, SysBase);
+    handleVBlank(TimerBase, SysBase);
 }
 
 /****************************************************************************************/

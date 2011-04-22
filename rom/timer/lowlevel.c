@@ -152,15 +152,15 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 	    }
 	    else
 	    {
-		/* Ok, we add this to the list. UNIT_WAITUNTIL is VBlank-based. */
-		addToWaitList(&TimerBase->tb_Lists[UNIT_VBLANK], timereq, SysBase);
+		/* Ok, we add this to the list */
+		addToWaitList(&TimerBase->tb_Lists[TL_WAITVBL], timereq, SysBase);
 
 		/*
 		 * If our request was added to the head of the list, we may need to
 		 * readjust our hardware interrupt (reset elapsed time).
 		 * This routine returns TRUE in order to indicate this.
 		 */
-		if (TimerBase->tb_Lists[UNIT_VBLANK].mlh_Head == (struct MinNode *)timereq)
+		if (TimerBase->tb_Lists[TL_WAITVBL].mlh_Head == (struct MinNode *)timereq)
 		    addedhead = TRUE;
 
 		replyit = FALSE;
@@ -180,7 +180,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 	    */
 	    ADDTIME(&timereq->tr_time, &TimerBase->tb_Elapsed);		    
 
-	    /* Slot it into the list */
+	    /* Slot it into the list. Use unit number as index. */
 	    addToWaitList(&TimerBase->tb_Lists[unitNum], timereq, SysBase);
 
 	    /* Indicate if HW need to be reprogrammed */
@@ -231,9 +231,9 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
     return addedhead;
 }
 
-/* Check a single unit and reply completed requests */
-void checkUnit(struct TimerBase *TimerBase, struct MinList *unit, struct ExecBase *SysBase)
+void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
+    struct MinList *unit = &TimerBase->tb_Lists[TL_MICROHZ];
     struct timerequest *tr, *next;
 
     /*
@@ -272,7 +272,7 @@ void checkUnit(struct TimerBase *TimerBase, struct MinList *unit, struct ExecBas
 		 * VBLANK queue is checked more rarely than MICROHZ, this helps to decrease
 		 * CPU usage.
 		 */
-		checkUnit(TimerBase, &TimerBase->tb_Lists[UNIT_VBLANK], SysBase);
+		handleVBlank(TimerBase, SysBase);
 
 		/*
 		 * Automatically requeue/reactivate request.
@@ -303,6 +303,59 @@ void checkUnit(struct TimerBase *TimerBase, struct MinList *unit, struct ExecBas
 	    */
 	    break;
 	}
+    }
+}
+
+void handleVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase)
+{
+    /*
+     * VBlank handler is the same as above, with two differences:
+     * 1. We don't check for VBlank emulation request.
+     * 2. VBlank unit consists of two list, not one. The second list
+     *    is UNIT_WAITUNTIL queue.
+     * We could use subroutines and save some space, but we prefer speed here.
+     */
+    struct timerequest *tr, *next;
+
+    /*
+     * Go through the "wait for x seconds" list and return requests
+     * that have completed. A completed request is one whose time
+     * is less than that of the elapsed time.
+     */
+    ForeachNodeSafe(&TimerBase->tb_Lists[TL_VBLANK], tr, next)
+    {
+	if (CMPTIME(&TimerBase->tb_Elapsed, &tr->tr_time) <= 0)
+	{
+	    /* This request has finished */
+	    REMOVE(tr);
+
+	    tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
+	    tr->tr_node.io_Error = 0;
+
+	    ReplyMsg(&tr->tr_node.io_Message);
+	}
+	else
+	    break;
+    }
+
+    /*
+     * The other this is the "wait until a specified time". Here a request
+     * is complete if the time we are waiting for is before the current time.
+     */
+    ForeachNodeSafe(&TimerBase->tb_Lists[TL_WAITVBL], tr, next)
+    {
+	if (CMPTIME(&TimerBase->tb_CurrentTime, &tr->tr_time) <= 0)
+	{
+	    /* This request has finished */
+	    REMOVE(tr);
+
+	    tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
+	    tr->tr_node.io_Error = 0;
+
+	    ReplyMsg(&tr->tr_node.io_Message);
+	}
+	else
+	    break;
     }
 }
 
