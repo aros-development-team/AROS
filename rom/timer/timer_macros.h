@@ -3,14 +3,43 @@
  * them saves us from function call overhead.
  */
 
+/* Add, then normalize */
 #define ADDTIME(dest, src)			\
     (dest)->tv_micro += (src)->tv_micro;	\
-    (dest)->tv_secs += (src)->tv_secs;		\
+    (dest)->tv_secs  += (src)->tv_secs;		\
     while((dest)->tv_micro > 999999)		\
     {						\
 	(dest)->tv_secs++;			\
 	(dest)->tv_micro -= 1000000;		\
     }
+
+
+/*
+ * Subtraction algorithm:
+ * 1. Normalize values
+ * 2. Check if wrap around will happen, when subtracting src->tv_micro
+ *    from dest->tv_micro. If yes, then normalize, by adding 1 sec to
+ *    micros and subtracting 1 sec from secs. Note: this check must be
+ *    before subtracting src timeval from dest timeval!
+ */
+#define SUBTIME(dest, src)			\
+    while ((src)->tv_micro > 999999)		\
+    {						\
+	(src)->tv_secs++;			\
+	(src)->tv_micro -= 1000000;		\
+    }						\
+    while ((dest)->tv_micro > 999999)		\
+    {						\
+	(dest)->tv_secs++;			\
+	(dest)->tv_micro -= 1000000;		\
+    }						\
+    if ((dest)->tv_micro < src->tv_micro)	\
+    {						\
+	dest->tv_micro += 1000000;		\
+	dest->tv_secs--;			\
+    }						\
+    (dest)->tv_micro -= (src)->tv_micro;	\
+    (dest)->tv_secs  -= (src)->tv_secs;
 
 static inline LONG CMPTIME(struct timeval *dest, struct timeval *src)
 {

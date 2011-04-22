@@ -1,11 +1,14 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SubTime - subtract two timevals from each other.
     Lang: english
 */
-#include <timer_intern.h>
+
+#include <devices/timer.h>
+
+#include "timer_macros.h"
 
 /*****************************************************************************
 
@@ -53,31 +56,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Normalize the terms */
-    while(src->tv_micro > 999999)
-    {
-	src->tv_secs++;
-	src->tv_micro -= 1000000;
-    }
-    while(dest->tv_micro > 999999)
-    {
-	dest->tv_secs++;
-	dest->tv_micro -= 1000000;
-    }
-
-    /* Check if wrap around will happen, when subtracting src->tv_micro
-       from dest->tv_micro. If yes, then normalize, by adding 1 sec to
-       micros and subtracting 1 sec from secs. Note: this check must be
-       done here, ie. before subtracting src timeval from dest timeval! */
-       
-    if(dest->tv_micro < src->tv_micro)
-    {
-	dest->tv_micro += 1000000;
-	dest->tv_secs--;
-    }
-
-    dest->tv_micro -= src->tv_micro;
-    dest->tv_secs -= src->tv_secs;
+    SUBTIME(dest, src);
 
     AROS_LIBFUNC_EXIT
     
