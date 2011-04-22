@@ -19,16 +19,13 @@
 #include <aros/asmcall.h>
 
 /*
- * Obsolete. Old implementations still use these values
- * as indexes. New implementations should use UNIT_MICROHZ
- * or UNIT_VBLANK as indexes and nothing else.
+ * First two of these correspond to UNIT_MICROHZ and UNIT_VBLANK.
+ * This is important.
  */
 #define TL_MICROHZ	0
 #define TL_VBLANK	1
 #define TL_WAITVBL	2
-#define TL_ECLOCK	3
-#define TL_WAITECLOCK	4
-#define NUM_LISTS	5
+#define NUM_LISTS	3
 
 struct TimerBase
 {
@@ -64,7 +61,8 @@ struct TimerBase
 #define GetDevice(tb)		((struct Device *)(tb))
 
 BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase);
-void checkUnit(struct TimerBase *TimerBase, struct MinList *unit, struct ExecBase *SysBase);
+void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase);
+void handleVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 void EClockUpdate(struct TimerBase *TimerBase);
 void EClockSet(struct TimerBase *TimerBase);
 
