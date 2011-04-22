@@ -932,6 +932,13 @@ char * charmapcon_get_selection(ULONG size,
   return buf;
 }
 
+struct ConClipData
+{
+    ULONG flags; /* always zero? */
+    ULONG size; /* does not include NUL termination */
+    APTR buffer; /* NUL-terminated string! */
+};
+
 /* FIXME: Belongs in snipmapcon - here temporary until refactored out
    selection code */
 static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
@@ -962,7 +969,8 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
   buf = charmapcon_get_selection(size,first,last,minx,maxx);
 
   /* If Conclip is running, we prefer using that */
-  if ((port = FindPort(CONCLIP_PORTNAME))) {
+  if (IsListEmpty(&ConsoleDevice->sniphooks) && (port = FindPort(CONCLIP_PORTNAME))) {
+    /* AROS conclip format */
     replyport.mp_Node.ln_Type	= NT_MSGPORT;
     replyport.mp_Node.ln_Name 	= NULL;
     replyport.mp_Node.ln_Pri 	= 0;
@@ -1007,6 +1015,24 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
   ConsoleDevice->copyBuffer = buf;
   if (ConsoleDevice->copyBuffer) ConsoleDevice->copyBufferSize = size;
   else ConsoleDevice->copyBufferSize = 0;
+
+  if (!IsListEmpty(&ConsoleDevice->sniphooks) && ConsoleDevice->copyBufferSize) {
+    /* OS2-3.x compatible conclip format */
+    struct Hook *conhook;
+    struct ConClipData ccd;
+    
+    ccd.flags = 0;
+    ccd.size = ConsoleDevice->copyBufferSize;
+    /* must be NUL-terminated */
+    ccd.buffer = AllocVec(ccd.size + 1, MEMF_CLEAR);
+    if (ccd.buffer) {
+      CopyMem(ConsoleDevice->copyBuffer, ccd.buffer, ccd.size);
+      ForeachNode(&ConsoleDevice->sniphooks, conhook) {
+        CALLHOOKPKT(conhook, NULL, &ccd);
+      }
+      FreeVec(ccd.buffer);
+    }
+  }
   ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
 }
 

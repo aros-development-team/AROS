@@ -296,9 +296,10 @@ struct ConsoleBase
 
      Access to the copyBuffer is protected by a semaphore.
   */
-  const char * copyBuffer;
-  ULONG copyBufferSize;
-  struct SignalSemaphore copyBufferLock;
+    const char * copyBuffer;
+    ULONG copyBufferSize;
+    struct SignalSemaphore copyBufferLock;
+    struct MinList sniphooks;
 
 };
 
