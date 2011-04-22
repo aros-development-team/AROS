@@ -13,7 +13,6 @@
 	(dest)->tv_micro -= 1000000;		\
     }
 
-
 /*
  * Subtraction algorithm:
  * 1. Normalize values
@@ -57,3 +56,17 @@ static inline LONG CMPTIME(struct timeval *dest, struct timeval *src)
     else
 	return 0;
 }
+
+/*
+ * Add 'diff' EClock ticks to timeval in 'time'.
+ * Fraction of second value is stored in in 'frac'.
+ * This macro relies on (CPU-specific) tick2usec() implementation
+ */
+#define INCTIME(time, frac, diff)		\
+    (frac) += diff;				\
+    if ((frac) >= TimerBase->tb_eclock_rate)	\
+    {						\
+        (frac) -= TimerBase->tb_eclock_rate;	\
+        (time).tv_secs++;			\
+    }						\
+    (time).tv_micro = tick2usec(frac);
