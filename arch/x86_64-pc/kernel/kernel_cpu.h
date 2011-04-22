@@ -18,6 +18,9 @@
 /* There are no private add-ons */
 #define AROSCPUContext ExceptionContext
 
+/* We have no VBlank emulation */
+#define NO_VBLANK_EMU
+
 /* User/supervisor mode switching */
 #define cpumode_t __unused char
 
