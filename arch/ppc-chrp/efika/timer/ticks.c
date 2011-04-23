@@ -78,3 +78,75 @@ void EClockSet(struct TimerBase *TimerBase)
 {
     TimerBase->tb_ticks_sec = usec2tick(TimerBase->tb_CurrentTime.tv_micro);
 }
+
+extern volatile slt_t *slice_timer;
+
+void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
+{
+    int32_t delay = 660000;  /* 50Hz in worst case */
+    struct timeval time;
+    struct timerequest *tr;
+    uint32_t current_time;
+
+    tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_WAITVBL]);
+
+    if (tr)
+    {
+        time.tv_micro = tr->tr_time.tv_micro;
+        time.tv_secs  = tr->tr_time.tv_secs;
+
+        SubTime(&time, &TimerBase->tb_CurrentTime);
+
+        if ((LONG)time.tv_secs < 0)
+        {
+            delay = 0;
+        }
+        else if (time.tv_secs == 0)
+        {
+//            if (time.tv_micro < 20000)
+//            {
+                if (delay > usec2tick(time.tv_micro))
+                    delay = usec2tick(time.tv_micro);
+//            }
+        }
+    }
+
+    tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_VBLANK]);
+
+    if (tr)
+    {
+        time.tv_micro = tr->tr_time.tv_micro;
+        time.tv_secs  = tr->tr_time.tv_secs;
+
+        SubTime(&time, &TimerBase->tb_Elapsed);
+
+        if ((LONG)time.tv_secs < 0)
+        {
+            delay = 0;
+        }
+        else if (time.tv_secs == 0)
+        {
+//            if (time.tv_micro < 20000)
+//            {
+                if (delay > usec2tick(time.tv_micro))
+                    delay = usec2tick(time.tv_micro);
+//            }
+        }
+    }
+
+    current_time = mftbl();
+    delay -= ((int32_t)(current_time - waste)) + corr;
+
+    if (delay < 256) delay = 256;
+
+    tbc_expected = current_time + delay;
+
+    /* Stop the timer */
+    outl(SLT_CF_INTRENA, &slice_timer->slt_cf);
+    /* Set the delay */
+    outl(delay, &slice_timer->slt_tc);
+    /* Let timer go */
+    outl(SLT_CF_INTRENA | SLT_CF_ENABLE, &slice_timer->slt_cf);
+    /* Clear interrupt request. */
+    outl(SLT_TS_ST, &slice_timer->slt_ts);
+}
