@@ -5,10 +5,21 @@
     Desc: Free memory allocated with AllocEntry().
     Lang: english
 */
-#include "exec_intern.h"
 #include <aros/libcall.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+#include "exec_debug.h"
+
+#ifndef DEBUG_FreeEntry
+#   define DEBUG_FreeEntry 0
+#endif
+#undef DEBUG
+#if DEBUG_FreeEntry
+#   define DEBUG 1
+#endif
+
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -49,7 +60,10 @@
 
     /* First free all blocks in the MemList */
     for(i=0;i<entry->ml_NumEntries;i++)
+    {
+        D(bug("[FreeEntry] Freeing size %d at 0x%p\n", entry->ml_ME[i].me_Length,entry->ml_ME[i].me_Addr));
 	FreeMem(entry->ml_ME[i].me_Addr,entry->ml_ME[i].me_Length);
+    }
 
     /* Then free the MemList itself */
     FreeMem(entry,sizeof(struct MemList)-sizeof(struct MemEntry)+
