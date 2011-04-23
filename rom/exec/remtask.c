@@ -58,7 +58,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct MemList *mb;
+    struct MemList *mb, *mbnext;
     struct ETask *et;
 
     /* A value of NULL means current task */
@@ -116,9 +116,12 @@
      * that the memory still can be physically accessed after being freed. This
      * is not going to be true after deploying memory protection.
      */
-    while((mb=(struct MemList *)RemHead(&task->tc_MemEntry))!=NULL)
+    ForeachNodeSafe(&task->tc_MemEntry, mb, mbnext)
+    {
+        DREMTASK("RemTask freeing MemList 0x%p", mb);
         /* Free one MemList node */
         FreeEntry(mb);
+    }
 
     /* Changing the task lists always needs a Disable(). */
     Disable();

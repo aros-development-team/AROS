@@ -82,6 +82,8 @@
     if (!task->tc_MemEntry.lh_Head)
         NEWLIST(&task->tc_MemEntry);
 
+    DADDTASK("NewAddTask MemEntry head: 0x%p", GetHead(&task->tc_MemEntry.lh_Head));
+
     /* Set node type to NT_TASK if not set to something else. */
     if(!task->tc_Node.ln_Type)
         task->tc_Node.ln_Type=NT_TASK;

@@ -76,12 +76,12 @@
 
     D(bug("NewAllocEntry $%lx num=%d\ttask=\"%s\"\n", entry, entry->ml_NumEntries, SysBase->ThisTask->tc_Node.ln_Name));
 
-#if DEBUG > 0
-    for(i = 0; i < entry->ml_NumEntries; i++)
-    {
-	kprintf("\treq $%lx\tsize $%lx\n", entry->ml_ME[i].me_Reqs, entry->ml_ME[i].me_Length);
-    }
-#endif
+    D(
+      for(i = 0; i < entry->ml_NumEntries; i++)
+      {
+          kprintf("\treq $%lx\tsize $%lx\n", entry->ml_ME[i].me_Reqs, entry->ml_ME[i].me_Length);
+      }
+    )
 
     /* Calculate size of a MemList with ml_NumEntries MemEntries. */
     mlsize = sizeof(struct MemList) - sizeof(struct MemEntry) +
@@ -149,6 +149,10 @@
 
 	/* Copy the Length field */
 	ret->ml_ME[i].me_Length = entry->ml_ME[i].me_Length;
+
+        D(bug("[NewAllocEntry] Allocated size %d at 0x%p\n",
+              ret->ml_ME[i].me_Length, ret->ml_ME[i].me_Addr
+        ));
     }
     
     /* Everything filled. Return OK. */
