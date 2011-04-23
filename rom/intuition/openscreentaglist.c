@@ -272,7 +272,7 @@
     if (tagList)
     {
         ns.Extension = tagList;
-        ns.Type |= NS_EXTENDED;
+        ns.Type |= NS_EXTENDED | SHOWTITLE;
     }
 
 #ifdef __MORPHOS__
