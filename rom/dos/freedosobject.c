@@ -48,6 +48,9 @@
 {
     AROS_LIBFUNC_INIT
 
+    if (ptr == NULL)
+    	return;
+
     switch(type)
     {
 	case DOS_FILEHANDLE:
