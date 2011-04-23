@@ -1777,6 +1777,10 @@ BD_ASMOBJS$(BDID) := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(
 BD_OBJS$(BDID)    := $(BD_COBJS$(BDID)) $(BD_ASMOBJS$(BDID))
 BD_DEPS$(BDID)    := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files))))
 
+ifneq (%(modulename),)
+BD_DEFLIBDEFSINC$(BDID) := -include $(GENDIR)/%(maindir)/include/%(modulename)_deflibdefs.h
+endif
+
 ifeq ($(TARGET),%(mainmmake)-%(arch))
 TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
 vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(files)))
@@ -1809,8 +1813,7 @@ $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 ifneq (%(modulename),)
-$(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags) -I$(GENDIR)/%(maindir) \
-                     -include $(GENDIR)/%(maindir)/include/%(modulename)_deflibdefs.h
+$(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags) -I$(GENDIR)/%(maindir) $(BD_DEFLIBDEFSINC$(BDID))
 else
 $(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
 endif
@@ -1820,7 +1823,7 @@ $(BD_OBJDIR$(BDID))/%.o : %.c
 endif
 
 ifeq (%(dflags),)
-$(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(cflags)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(cflags) $(BD_DEFLIBDEFSINC$(BDID))
 else
 $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
 endif
