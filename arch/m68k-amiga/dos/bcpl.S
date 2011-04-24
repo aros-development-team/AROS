@@ -538,12 +538,16 @@ BCPL closeDevice    /*  80, void, @IORequest */
 BCPL createproc     /*  84, MessagePort *, @segarray, lw_stack_size, pri, @name */
     movem.l	%d2-%d4/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
+    lsl.l	#2,%d2
     lsl.l	#2,%d4
     addq.l	#1,%d4
     move.l	%d4,%d0
     move.l	%d2,%d4
     move.l	%d3,%d2
-    move.l	%d1,%d3
+    /* get seglist from segarray */
+ 	lsl.l	#2,%d1
+ 	move.l	%a0@(16,%d1.l),%d3
+	/* TODO: Is it our or caller's job to free segarray? */
     move.l	%d0,%d1
     jsr		%a6@(23 * -6)	/* DOS/CreateProc() */
     movem.l	%sp@+,%d2-%d4/%a0-%a1/%a6
@@ -671,7 +675,7 @@ BCPL Delay          /* bc, void, ticks */
      */
 BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
     lea.l	%a1@(10*4), %a0
-    move.l      %a0, %a1@(0)	/* Set Message link */
+    move.l 	%a0, %a1@(0)	/* Set Message link */
     sub.l	%a0,%a0
     move.l	%a2@(GV_putPkt),%a4
     move.l	#(3*4 + 10 * 4 + 10 * 4), %d0
@@ -679,7 +683,7 @@ BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
     lsr.l	#2, %d1
     jsr		(%a5)
     move.l	%a2@(GV_taskwait),%a4
-    move.l      #(3*4 + 10 * 4 + 10 * 4), %d0
+    move.l	#(3*4 + 10 * 4 + 10 * 4), %d0
     jsr		(%a5)
     move.l	%a1@(4*4),%d1	/* dp_Res2 */
     movem.l	%a0-%a1/%a6,%sp@-
