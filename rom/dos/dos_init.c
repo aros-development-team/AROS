@@ -101,8 +101,8 @@ static int DosInit(struct DosLibrary *LIBBASE)
     dosinfo = AllocMem(sizeof(struct DosInfo), MEMF_PUBLIC|MEMF_CLEAR);
 
     /* Init the RootNode structure */
-    taskarray = AllocMem(sizeof(IPTR) + sizeof(APTR), MEMF_CLEAR);
-    taskarray[0] = 1;
+    taskarray = AllocMem(sizeof(IPTR) + sizeof(APTR) * 20, MEMF_CLEAR);
+    taskarray[0] = 20;
     LIBBASE->dl_Root->rn_TaskArray = MKBADDR(taskarray);
     LIBBASE->dl_Root->rn_Info      = MKBADDR(dosinfo);
 
