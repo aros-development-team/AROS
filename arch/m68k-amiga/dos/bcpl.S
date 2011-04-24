@@ -210,10 +210,7 @@ BCPL CreateProc     /* -48, MessagePort *, &name, pri, seg, stackbytes */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     jsr		%a6@(23 * -6)	/* DOS/CreateProc() */
-    tst.l	%d0
-    beq.s	0f
-    add.l	#92,%d0	/* &proc->pr_MsgPort */
-0:  movem.l	%sp@+,%a0-%a1/%a6
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPL IoErr          /* -44, long */
@@ -411,7 +408,9 @@ BCPL level          /*  44, LONG (or BPTR?) */
     BRTS
 
 BCPLd longcall       /*  48, LONG, level, label */
-    BRTS
+	move.l	%d1,%a1
+	move.l	%a1@(-4),%a4
+	jmp		%a0@(%d2.l)
 
 BCPL allocMem       /*  4c, BPTR, lwlength, reqs */
     movem.l	%a0-%a1/%a6,%sp@-
@@ -553,10 +552,7 @@ BCPL createproc     /*  84, MessagePort *, @segarray, lw_stack_size, pri, @name 
 	/* TODO: Is it our or caller's job to free segarray? */
     move.l	%d0,%d1
     jsr		%a6@(23 * -6)	/* DOS/CreateProc() */
-    tst.l	%d0
-    beq.s	0f
-    add.l	#92,%d0	/* &proc->pr_MsgPort */
-0:  movem.l	%sp@+,%d2-%d4/%a0-%a1/%a6
+    movem.l	%sp@+,%d2-%d4/%a0-%a1/%a6
     BRTS
 
 BCPL remProcess     /*  88, void */
