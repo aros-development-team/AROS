@@ -191,6 +191,12 @@ struct InterpreterState
     struct ShellBase *sb;
 };
 
+/* Use cli_CurrentInput == cli_StandardInput instead of cli_Interactive
+ * because AOS C:Execute only modifies cli_CurrentInput when executing scripts,
+ * it does not touch cli_Interactive.
+ */
+#define ISINTERACTIVE (!cli->cli_Background && cli->cli_CurrentInput == cli->cli_StandardInput)
+
 static void PrintBanner(struct DosLibrary *DOSBase)
 {
     PutStr
@@ -665,15 +671,17 @@ LONG interact(struct InterpreterState *is)
 
 	if(Redirection_init(&rd, is))
 	{
-	    if (cli->cli_Interactive)
+	    if (ISINTERACTIVE)
 	        printPrompt(is);
 
 	    moreLeft = readLine(&cl, cli->cli_CurrentInput, is);
 	    error = checkLine(&rd, &cl, is);
 	    Redirection_release(&rd, is);
 	    FreeVec(cl.line);
-	    D(bug("error=%d moreleft=%d interactive=%d background=%d\n", error, moreLeft, cli->cli_Interactive, cli->cli_Background));
-	    if (error && !cli->cli_Interactive) {
+	    D(bug("err=%d ml=%d iact=%d (%d) bg=%d stdin=%p cin=%p\n",
+	    	error, moreLeft, cli->cli_Interactive, ISINTERACTIVE, cli->cli_Background,
+	    	cli->cli_StandardInput, cli->cli_CurrentInput));
+	    if (error && !ISINTERACTIVE) {
 	    	if (IoErr() == ERROR_BREAK)
 		    PrintFault(ERROR_BREAK, "Shell");
 	    	moreLeft = FALSE;
@@ -686,7 +694,7 @@ LONG interact(struct InterpreterState *is)
 
 	    popInterpreterState(is);
 
-	    if (!cli->cli_Interactive)
+	    if (!ISINTERACTIVE)
 	    {
 		Close(cli->cli_CurrentInput);
 
@@ -708,7 +716,7 @@ LONG interact(struct InterpreterState *is)
 	}
     } while(moreLeft);
 
-    if (cli->cli_Interactive)
+    if (ISINTERACTIVE)
 	printFlush("Process %ld ending\n", is->cliNumber);
 
     return error;
@@ -832,7 +840,7 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
                to show what the command line looks like after arguments
                substitution. */
             BPTR echoOut = ( (rd->haveOutRD) || (rd->haveAppRD) ) ? rd->oldOut : Output();
-            if ( cli->cli_Interactive )
+            if (ISINTERACTIVE)
                 FPuts(echoOut, cl->line);
             else
             {
@@ -864,7 +872,7 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
 exit:
     FreeVec(filtered.CS_Buffer);
 
-    if (cli->cli_Interactive)
+    if (ISINTERACTIVE)
     {
         Flush(Output());
         Flush(Error());
