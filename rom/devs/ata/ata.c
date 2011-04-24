@@ -863,7 +863,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
               * so THIS is an OpenDevice().....
               */
              D(bug("[ATA++] Opening ATAPI device, unit %d\n", (b<<1)|d));
-             AROS_LVO_CALL3(void,
+             AROS_LVO_CALL3NR(void,
                    AROS_LCA(struct IORequest *, (struct IORequest *)(ios[count]), A1),
                    AROS_LCA(ULONG, (b << 1) | d, D0),
                    AROS_LCA(ULONG, 0, D1),
