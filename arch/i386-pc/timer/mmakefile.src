@@ -2,7 +2,8 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/timer
-USER_CFLAGS   += -DUSE_VBLANK_EMU
+
+include $(SRCDIR)/$(CURDIR)/make.opts
 
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \

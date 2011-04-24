@@ -2,7 +2,10 @@
 include $(TOP)/config/make.cfg
 
 # Do not remove this! It allows to override timer_intern.h
-USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer $(PARANOIA_CFLAGS)
+ifneq ($(AROS_TARGET_VARIANT),)
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/timer
+endif
+USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer $(PARANOIA_CFLAGS)
 
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/timer/make.opts
