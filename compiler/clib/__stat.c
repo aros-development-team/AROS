@@ -168,8 +168,7 @@ int __stat_from_path(const char *path, struct stat *sb)
         }
 
         strcpy(abspath, cwd);
-        strcat(abspath, "/");
-        strcat(abspath, mypath);
+        AddPart(abspath, mypath, len);
         FreeVec(mypath);
     }
     else
