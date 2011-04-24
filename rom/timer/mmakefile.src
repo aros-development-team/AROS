@@ -8,6 +8,9 @@ endif
 USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer $(PARANOIA_CFLAGS)
 
 # Allow to add architecture-specific options
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/timer/make.opts
+endif
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/timer/make.opts
 
 FILES := common_init timer_init lowlevel ticks
