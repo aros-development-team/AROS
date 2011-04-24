@@ -74,6 +74,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     	/* Provide alias for NewShell */
     	if (Stricmp(sh->sh_Name, "NewShell")==0) {
     	    AddSegment("NewCLI", MKBADDR(&scs->scs_Next), CMD_INTERNAL);
+    	    /* WB1.x C:Run wants this */
+    	    AddSegment("CLI", MKBADDR(&scs->scs_Next), CMD_INTERNAL);
     	}
     }
 
