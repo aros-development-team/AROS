@@ -563,13 +563,13 @@ $(OBJDIR)/%.o : %.c
 	%compile_q opt="$(CFLAGS)"
 
 $(OBJDIR32)/static/%.o : %.c
-	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_STATIC"
+	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_STATIC -DAROSC_LIB32"
 
 $(OBJDIR32)/rom/%.o : %.c
-	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_ROM"
+	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_ROM -DAROSC_LIB32"
 
 $(OBJDIR32)/%.o : %.c
-	%compile_q opt="$(CFLAGS32) $(CFLAGS)"
+	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_LIB32"
 
 # Need to copy these files in from the machine dependant build.
 $(OBJDIR)/shared/%jmp.o : $(OBJDIR)/%jmp.o
