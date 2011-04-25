@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES=m68k_exception kernel_cpu kernel_gdb
+FILES=m68k_exception kernel_cpu #kernel_gdb
 
 AFILES=issuper fpusavecontext fpurestorecontext
 
