@@ -20,7 +20,7 @@ USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
          dispatch getbootinfo getscheduler issuper mapglobal			     \
 	 remexceptionhandler remirqhandler schedule setprotection setscheduler sti   \
-	 switch unmapglobal virtualtophysical					     \
+	 switch unmapglobal virtualtophysical obtaininput releaseinput 		     \
 	 putchar maygetchar allocpages freepages getsystemattr setsystemattr	     \
 	 initmemory statmemory
 
