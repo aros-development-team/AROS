@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FUNCS       := registermodule unregistermodule decodelocation
 FILES       := debug_init
-STATICFUNCS := kdofmt kgetchar kmaygetchar kputstr
+STATICFUNCS := kdofmt kgetchar kmaygetchar kputstr _kprintf kvprintf
 
 USER_CFLAGS := -DHOST_OS_$(FAMILY)
 
