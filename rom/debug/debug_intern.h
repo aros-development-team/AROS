@@ -1,3 +1,7 @@
+#include <dos/bptr.h>
+#include <exec/libraries.h>
+#include <exec/semaphores.h>
+
 typedef struct
 {
     char *s_name;	/* Symbol name			*/
@@ -25,3 +29,15 @@ struct segment
     char *	   s_name;	/* Segment name			 */
     unsigned int   s_num;	/* Segment number	     	 */
 };
+
+struct DebugBase
+{
+    struct Library         db_Lib;
+    struct MinList         db_Modules;
+    struct ELF_ModuleInfo *db_KernelModules;
+    struct SignalSemaphore db_ModSem;
+    APTR		   db_KernelBase;
+};
+
+#define DBGBASE(x) ((struct DebugBase *)x)
+#define KernelBase DBGBASE(DebugBase)->db_KernelBase

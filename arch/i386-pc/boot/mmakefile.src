@@ -45,7 +45,7 @@ LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 KRSRCS  := battclock bootloader dosboot processor
-KLIBS   := boot aros dos graphics utility intuition keymap \
+KLIBS   := boot aros debug dos graphics utility intuition keymap \
       	   expansion oop layers partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil packet amberram cdrom afs sfs

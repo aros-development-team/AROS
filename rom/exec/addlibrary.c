@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a library to the public list of libraries.
@@ -9,6 +9,11 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include <string.h>
+
+#include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -68,6 +73,18 @@
 
     /* All done. */
     Permit();
+
+    /*
+     * When debug.library is added, open it and cache its base instantly.
+     * We do it because symbol lookup routines can be called in a system crash
+     * condition, where calling OpenLibrary() can be dangerous.
+     */
+    if (!strcmp(library->lib_Node.ln_Name, "debug.library"))
+    {
+    	DebugBase = OpenLibrary("debug.library", 0);
+
+    	DINIT("debug.library added, base 0x%p", DebugBase);
+    }
 
     AROS_COMPAT_SETD0(library);
     AROS_LIBFUNC_EXIT

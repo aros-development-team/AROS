@@ -1,18 +1,16 @@
-#include <aros/kernel.h>
+#define DEBUG 0
+#define DSYMS(x)
+
+#include <aros/debug.h>
 #include <aros/libcall.h>
 #include <dos/dosextens.h>
 #include <exec/lists.h>
+#include <libraries/debug.h>
 #include <proto/exec.h>
 
 #include <string.h>
 
-#include <kernel_base.h>
-#include <kernel_debug.h>
 #include "debug_intern.h"
-
-/* We use own implementation of bug(), so we don't need aros/debug.h */
-#define D(x)
-#define DSYMS(x)
 
 static inline char *getstrtab(struct sheader *sh)
 {
@@ -46,9 +44,9 @@ static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR val
 /*****************************************************************************
 
     NAME */
-#include <proto/kernel.h>
+#include <proto/debug.h>
 
-AROS_LH4(void, KrnRegisterModule,
+AROS_LH4(void, RegisterModule,
 
 /*  SYNOPSIS */
 	AROS_LHA(const char *, name, A0),
@@ -57,7 +55,7 @@ AROS_LH4(void, KrnRegisterModule,
 	AROS_LHA(APTR, debugInfo, A2),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 22, Kernel)
+	struct Library *, DebugBase, 5, Debug)
 
 /*  FUNCTION
 	Add information about the loaded executable module to the
@@ -92,7 +90,7 @@ AROS_LH4(void, KrnRegisterModule,
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[KRN] KrnRegisterModule(%s, 0x%p, %d)\n", name, segList, debugType));
+    D(bug("[Debug] RegisterModule(%s, 0x%p, %d)\n", name, segList, debugType));
 
     if (debugType == DEBUG_ELF)
     {
@@ -113,7 +111,7 @@ AROS_LH4(void, KrnRegisterModule,
             if (int_shstrndx == SHN_XINDEX)
             	int_shstrndx = sections[0].link;
 
-	    D(bug("[KRN] %d sections at 0x%p\n", int_shnum, sections));
+	    D(bug("[Debug] %d sections at 0x%p\n", int_shnum, sections));
 	    shstr = SHINDEX(int_shstrndx);
 
 	    strcpy(mod->m_name, name);
@@ -127,7 +125,7 @@ AROS_LH4(void, KrnRegisterModule,
 		{
 		    /* If we have string table, copy it */
 		    if ((sections[i].type == SHT_STRTAB) && (i != shstr) && (!mod->m_str)) {
-			D(bug("[KRN] Symbol name table of length %d in section %d\n", sections[i].size, i));
+			D(bug("[Debug] Symbol name table of length %d in section %d\n", sections[i].size, i));
 			mod->m_str = getstrtab(&sections[i]);
 		    }
 
@@ -137,7 +135,7 @@ AROS_LH4(void, KrnRegisterModule,
 			struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC);
 
 			if (seg) {
-			    D(bug("[KRN] Adding segment 0x%p\n", segList));
+			    D(bug("[Debug] Adding segment 0x%p\n", segList));
 
 			    seg->s_lowest  = sections[i].addr;
 			    seg->s_highest = sections[i].addr + sections[i].size - 1;
@@ -150,9 +148,10 @@ AROS_LH4(void, KrnRegisterModule,
 				seg->s_name = NULL;
 
 			    mod->m_segcnt++;
-			    ObtainSemaphore(&KernelBase->kb_ModSem);
-			    AddTail((struct List *)&KernelBase->kb_Modules, (struct Node *)seg);
-			    ReleaseSemaphore(&KernelBase->kb_ModSem);
+
+			    ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+			    AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)seg);
+			    ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 			}
 
 			/* Advance to next DOS segment */
@@ -202,11 +201,11 @@ AROS_LH4(void, KrnRegisterModule,
 
 			    if (idx == SHN_ABS) {
 				addsymbol(mod, sym, &st[j], (APTR)st[j].value);
-				DSYMS(bug("[KRN] Added ABS symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest));
+				DSYMS(bug("[Debug] Added ABS symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest));
 				sym++;
 			    } else if (sections[idx].addr && (sections[idx].flags & SHF_ALLOC)) {
 				addsymbol(mod, sym, &st[j], sections[idx].addr + st[j].value);
-				DSYMS(bug("[KRN] Added symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest));
+				DSYMS(bug("[Debug] Added symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest));
 				sym++;
 			    }
 			}

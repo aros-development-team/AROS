@@ -43,6 +43,7 @@ struct IntExecBase
     struct SignalSemaphore MemListSem;		/* Memory list protection semaphore			*/
     struct SignalSemaphore LowMemSem;		/* Lock for single-threading low memory handlers	*/
     APTR   KernelBase;				/* kernel.resource base      				*/
+    struct Library *DebugBase;			/* debug.library base					*/
     ULONG  PageSize;				/* Memory page size	     				*/
     ULONG  IntFlags;				/* Internal flags, see below 				*/
     struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   				*/
@@ -52,6 +53,7 @@ struct IntExecBase
 #define PrivExecBase(base) ((struct IntExecBase *)base)
 #define PD(base)   PrivExecBase(base)->PlatformData
 #define KernelBase PrivExecBase(SysBase)->KernelBase
+#define DebugBase  PrivExecBase(SysBase)->DebugBase
 
 /* IntFlags */
 #define EXECF_MungWall 0x0001

@@ -1,17 +1,16 @@
-#include <aros/kernel.h>
+#define DEBUG 0
+#define DSEGS(x)
+
+#include <aros/debug.h>
 #include <dos/bptr.h>
-#include <proto/arossupport.h>
+#include <libraries/debug.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
+#include <proto/utility.h>
 
 #include <inttypes.h>
 
-#include <kernel_base.h>
-#include <kernel_debug.h>
-
 #include "debug_intern.h"
-
-#define D(x)
-#define DSEGS(x)
 
 static void FindSymbol(module_t *mod, char **function, void **funstart, void **funend, void *addr)
 {
@@ -47,16 +46,16 @@ static void FindSymbol(module_t *mod, char **function, void **funstart, void **f
 /*****************************************************************************
 
     NAME */
-#include <proto/kernel.h>
+#include <proto/debug.h>
 
-AROS_LH2(int, KrnDecodeLocationA,
+AROS_LH2(int, DecodeLocationA,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, addr, A0),
 	AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 24, Kernel)
+	struct Library *, DebugBase, 7, Debug)
 
 /*  FUNCTION
 	Locate the given address in the list of registered modules and return
@@ -69,28 +68,28 @@ AROS_LH2(int, KrnDecodeLocationA,
 	       Resulting values will be placed into specified locations if the
 	       function succeeds.
 
-	    KDL_ModuleName     (char *) - Module name
-	    KDL_SegmentName    (char *) - Segment name. Can be NULL if there were
-					  no segment names provided for the module.
-	    KDL_SegmentPointer (BPTR)   - DOS pointer to the corresponding segment.
-					  Note that it will be different from
-					  KDL_SegmentStart value
+	    DL_ModuleName     (char *) - Module name
+	    DL_SegmentName    (char *) - Segment name. Can be NULL if there were
+					 no segment names provided for the module.
+	    DL_SegmentPointer (BPTR)   - DOS pointer to the corresponding segment.
+					 Note that it will be different from
+					 KDL_SegmentStart value
 	    
-	    KDL_SegmentNumber  (unsigned int) - Order number of the segment in the
-						module
-	    KDL_SegmentStart   (void *) - Start address of actual segment contents
-					  in memory.
-	    KDL_SegmentEnd     (void *) - End address of actual segment contents
-					  in memory.
+	    DL_SegmentNumber  (unsigned int) - Order number of the segment in the
+					       module
+	    DL_SegmentStart   (void *) - Start address of actual segment contents
+					 in memory.
+	    DL_SegmentEnd     (void *) - End address of actual segment contents
+					 in memory.
 	
 	    The following tags may return NULL values if there was no corresponding
 	    information provided for the module:
 
-	    KDL_SymbolName     (char *) - Symbol name (function or variable name)
-	    KDL_SymbolStart    (void *) - Start address of contents described by this
-					  symbol.
-	    KDL_SymbolEnd      (void *) - End address of contents described by this
-					  symbol.
+	    DL_SymbolName     (char *) - Symbol name (function or variable name)
+	    DL_SymbolStart    (void *) - Start address of contents described by this
+					 symbol.
+	    DL_SymbolEnd      (void *) - End address of contents described by this
+					 symbol.
 
     RESULT
 	Zero if lookup failed and no corresponding module found, nonzero
@@ -128,47 +127,48 @@ AROS_LH2(int, KrnDecodeLocationA,
     int ret = 0;
     int super;
 
-    D(bug("[KRN] KrnDecodeLocationA(0x%p)\n", addr));
+    D(bug("[Debug] DecodeLocationA(0x%p)\n", addr));
 
     /* Parse TagList */
-    while ((tag = LibNextTagItem(&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
-	switch (tag->ti_Tag) {
-	case KDL_ModuleName:
+	switch (tag->ti_Tag)
+	{
+	case DL_ModuleName:
 	    module = (char **)tag->ti_Data;
 	    break;
 
-	case KDL_SegmentName:
+	case DL_SegmentName:
 	    segment = (char **)tag->ti_Data;
 	    break;
 
-	case KDL_SegmentPointer:
+	case DL_SegmentPointer:
 	    secptr = (BPTR *)tag->ti_Data;
 	    break;
 
-	case KDL_SegmentNumber:
+	case DL_SegmentNumber:
 	    secnum = (unsigned int *)tag->ti_Data;
 	    break;
 
-	case KDL_SegmentStart:
+	case DL_SegmentStart:
 	    secstart = (void **)tag->ti_Data;
 	    break;
 
-	case KDL_SegmentEnd:
+	case DL_SegmentEnd:
 	    secend = (void **)tag->ti_Data;
 	    break;
 
-	case KDL_SymbolName:
+	case DL_SymbolName:
 	    function = (char **)tag->ti_Data;
 	    symaddr = addr;
 	    break;
 
-	case KDL_SymbolStart:
+	case DL_SymbolStart:
 	    funstart = (void **)tag->ti_Data;
 	    symaddr = addr;
 	    break;
 
-	case KDL_SymbolEnd:
+	case DL_SymbolEnd:
 	    funend = (void **)tag->ti_Data;
 	    symaddr = addr;
 	    break;
@@ -178,16 +178,16 @@ AROS_LH2(int, KrnDecodeLocationA,
     /* We can be called in supervisor mode. No semaphores in the case! */
     super = KrnIsSuper();
     if (!super)
-	ObtainSemaphoreShared(&KernelBase->kb_ModSem);
+	ObtainSemaphoreShared(&DBGBASE(DebugBase)->db_ModSem);
 
-    ForeachNode(&KernelBase->kb_Modules, seg)
+    ForeachNode(&DBGBASE(DebugBase)->db_Modules, seg)
     {
-        DSEGS(bug("[KRN] Checking segment 0x%p - 0x%p, num %u, module %s\n", seg->s_lowest, seg->s_highest, seg->s_num, seg->s_mod->m_name));
+        DSEGS(bug("[Debug] Checking segment 0x%p - 0x%p, num %u, module %s\n", seg->s_lowest, seg->s_highest, seg->s_num, seg->s_mod->m_name));
 
 	/* if address suits the segment bounds, you got it */
 	if ((seg->s_lowest <= addr) && (seg->s_highest >= addr))
 	{
-	    D(bug("[KRN] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", seg->s_mod->m_name, seg->s_num,
+	    D(bug("[Debug] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", seg->s_mod->m_name, seg->s_num,
 		   seg->s_name, seg->s_lowest, seg->s_highest));
 
 	    *module   = seg->s_mod->m_name;
@@ -206,16 +206,16 @@ AROS_LH2(int, KrnDecodeLocationA,
     }
 
     if (!super)
-	ReleaseSemaphore(&KernelBase->kb_ModSem);
+	ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
     /* Try to search kernel debug information if found nothing */
     if (!ret)
     {
     	struct ELF_ModuleInfo *kmod;
 
-	D(bug("[KRN] Checking kernel modules...\n"));
+	D(bug("[Debug] Checking kernel modules...\n"));
 
-    	for (kmod = KernelBase->kb_KernelModules; kmod; kmod = kmod->Next)
+    	for (kmod = DBGBASE(DebugBase)->db_KernelModules; kmod; kmod = kmod->Next)
     	{
 	    /* We understand only ELF here */
     	    if (kmod->Type == DEBUG_ELF)
@@ -235,7 +235,7 @@ AROS_LH2(int, KrnDecodeLocationA,
 
 		shstr = SHINDEX(int_shstrndx);
 
-		D(bug("[KRN] Module %s, %d sections at 0x%p\n", kmod->Name, int_shnum, sections));
+		D(bug("[Debug] Module %s, %d sections at 0x%p\n", kmod->Name, int_shnum, sections));
 
 		for (i=0; i < int_shnum; i++)
 	    	{
@@ -253,7 +253,7 @@ AROS_LH2(int, KrnDecodeLocationA,
 			    if (sections[shstr].type == SHT_STRTAB)
 				s_name = sections[shstr].addr + sections[i].name;
 
-			    D(bug("[KRN] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", kmod->Name, i, kseg->s_num,
+			    D(bug("[Debug] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", kmod->Name, i, kseg->s_num,
 				  s_name, s_lowest, s_highest));
 
 			    *module   = (char *)kmod->Name;
@@ -280,7 +280,7 @@ AROS_LH2(int, KrnDecodeLocationA,
 			if ((sections[i].type == SHT_STRTAB) && (i != shstr))
 			{
 			    m_str = sections[i].addr;
-			    D(bug("[KRN] Symbol name table of length %d in section %d at 0x%p\n", sections[i].size, i, m_str));
+			    D(bug("[Debug] Symbol name table of length %d in section %d at 0x%p\n", sections[i].size, i, m_str));
 			}
 		    }
 

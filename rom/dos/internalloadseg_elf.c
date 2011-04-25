@@ -11,24 +11,24 @@
 
 #define DEBUG 0
 
+#include <aros/asmcall.h>
 #include <aros/config.h>
-#include <aros/kernel.h>
+#include <aros/debug.h>
+#include <aros/macros.h>
 #include <exec/memory.h>
-#include <proto/exec.h>
 #include <dos/elf.h>
 #include <dos/dosasl.h>
+#include <libraries/debug.h>
 #include <proto/dos.h>
 #include <proto/arossupport.h>
-#include <proto/kernel.h>
-#include <aros/asmcall.h>
-#include "internalloadseg.h"
-#include "dos_intern.h"
+#include <proto/debug.h>
+#include <proto/exec.h>
 
-#include <aros/debug.h>
 #include <string.h>
 #include <stddef.h>
 
-#include <aros/macros.h>
+#include "internalloadseg.h"
+#include "dos_intern.h"
 
 struct hunk
 {
@@ -141,12 +141,12 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struc
 
 static void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase)
 {
-#ifdef KrnRegisterModule
-    if (KernelBase)
+    if (DebugBase)
     {
 	char buffer[512];
 
-	if (NameFromFH(file, buffer, sizeof(buffer))) {
+	if (NameFromFH(file, buffer, sizeof(buffer)))
+	{
 	    char *nameptr = buffer;
 	    struct ELF_DebugInfo dbg = {eh, sh};
 
@@ -158,10 +158,9 @@ static void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct she
 	    while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
     		nameptr--;
 #endif
-    	   KrnRegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
+    	   RegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
 	}
     }
-#endif
 }
 
 static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {

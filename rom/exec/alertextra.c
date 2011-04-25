@@ -1,14 +1,14 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Alert context parsing routines
     Lang: english
 */
 
-#include <aros/kernel.h>
 #include <exec/rawfmt.h>
-#include <proto/kernel.h>
+#include <libraries/debug.h>
+#include <proto/debug.h>
 
 #include "exec_intern.h"
 #include "exec_util.h"
@@ -16,10 +16,8 @@
 
 #define TRACE_DEPTH 10
 
-#ifdef KrnDecodeLocation
 static const char *modstring  = "\n0x%P %s Segment %lu %s + 0x%P";
 static const char *funstring  = "\n0x%P %s Function %s + 0x%P";
-#endif
 static const char *unknownstr = "\n0x%P Address not found";
 static const char *invalidstr = "\n0x%P Invalid stack frame address";
 
@@ -59,20 +57,17 @@ void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase)
 	    if (TypeOfMem(fp))
 	    {
 		APTR caller = NULL;
-#ifdef KrnDecodeLocation
 		char *modname, *segname, *symname;
 		void *segaddr, *symaddr;
 		unsigned int segnum;
-#endif
 
 		fp = UnwindFrame(fp, &caller);
 
-#ifdef KrnDecodeLocation
-		if (KrnDecodeLocation(caller,
-				      KDL_ModuleName , &modname, KDL_SegmentNumber, &segnum ,
-				      KDL_SegmentName, &segname, KDL_SegmentStart , &segaddr,
-				      KDL_SymbolName , &symname, KDL_SymbolStart  , &symaddr,
-				      TAG_DONE))
+		if (DebugBase && DecodeLocation(caller,
+				   		DL_ModuleName , &modname, DL_SegmentNumber, &segnum ,
+				   		DL_SegmentName, &segname, DL_SegmentStart , &segaddr,
+				   		DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
+				   		TAG_DONE))
 		{
 		    if (symaddr)
 		    {
@@ -90,7 +85,6 @@ void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase)
 		    }
 		}
 		else
-#endif
 		    buf = NewRawDoFmt(unknownstr, RAWFMTFUNC_STRING, buf, caller);
 	    }
 	    else
