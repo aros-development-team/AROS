@@ -54,6 +54,8 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
                 { TAG_DONE,       0           }
             };
 
+        SetConsoleTask(((struct FileHandle*)BADDR(cis))->fh_Type);
+
         if (!(Flags & BF_NO_STARTUP_SEQUENCE))
         {
             sseq = Open("S:Startup-Sequence", FMF_READ);
