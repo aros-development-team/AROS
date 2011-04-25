@@ -34,6 +34,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-dos-includes \
 #MM     kernel-boot-includes \
 #MM     kernel-bootloader-includes \
+#MM	kernel-debug-includes \
 #MM	kernel-hostlib-includes \
 #MM     kernel-graphics-includes \
 #MM     kernel-utility-includes \
