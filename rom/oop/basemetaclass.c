@@ -651,7 +651,6 @@ static struct IFMethod *basemeta_iterateifs(
 
 IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    ULONG method_offset = *msg & METHOD_MASK;
     struct IFMethod *ifm;
     IPTR ret;
     
