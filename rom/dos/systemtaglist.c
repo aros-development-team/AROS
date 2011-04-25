@@ -119,12 +119,15 @@
     LONG rc            = -1;
     LONG *cliNumPtr    = NULL;
     struct RootNode *rn = DOSBase->dl_Root;
+    struct MsgPort *ct = NULL;
 
     const struct TagItem *tags2 = tags;
     struct TagItem *newtags, *tag;
 
+    D(bug("SystemTagList('%s',%p)\n", command, tags));
     while ((tag = NextTagItem(&tags2)))
     {
+    	D(bug("Tag=%08x Data=%08x\n", tag->ti_Tag, tag->ti_Data));
         switch (tag->ti_Tag)
 	{
 	    case SYS_ScriptInput:
@@ -182,6 +185,8 @@
 
 	cis_opened = TRUE;
     }
+    if (IsInteractive(cis))
+    	ct = ((struct FileHandle*)BADDR(cis))->fh_Type;
 
     if (!cos)
     {
@@ -299,8 +304,9 @@
                 being handled by this function, don't close the Error stream
                 if it's the same as the caller's one.
             */
-			      ces != Error()                }, /* 13 */
-	    { TAG_END       , 0                             }  /* 14 */
+			      ces != Error()                }, /* 14 */
+	    { NP_ConsoleTask, (IPTR)ct                      }, /* 15 */
+	    { TAG_END       , 0                             }  /* 16 */
 	};
 
 	Tag filterList[] =

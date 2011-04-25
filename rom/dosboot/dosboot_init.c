@@ -377,8 +377,11 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
         /* Lock the boot device and add some default assigns */
         lock =  Lock(bootName, SHARED_LOCK);
-        if (lock)
-        	DOSBase->dl_SYSLock = DupLock(lock);
+        if (lock) {
+            DOSBase->dl_SYSLock = DupLock(lock);
+            DOSBase->dl_Root->rn_BootProc = ((struct FileLock*)BADDR(lock))->fl_Task;
+            SetFileSysTask(DOSBase->dl_Root->rn_BootProc);
+        }
 
         if ((lock != BNULL) && (DOSBase->dl_SYSLock != BNULL))
         {
