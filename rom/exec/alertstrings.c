@@ -7,7 +7,8 @@
 #include <exec/alerts.h>
 #include <exec/rawfmt.h>
 #include <exec/tasks.h>
-#include <proto/kernel.h>
+#include <libraries/debug.h>
+#include <proto/debug.h>
 
 #include "etask.h"
 #include "exec_intern.h"
@@ -472,10 +473,8 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
 static char *hdrstring = "Task : 0x%P - %s\n"
 			 "Error: 0x%08lx - ";
 static char *locstring = "PC   : 0x%P";
-#ifdef KrnDecodeLocation
 static char *modstring = "Module %s Segment %lu %s (0x%P) Offset 0x%P";
 static char *funstring = "Function %s (0x%P) Offset 0x%P";
-#endif
 
 STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
 {
@@ -492,22 +491,19 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 
 	if (iet->iet_AlertLocation)
 	{
-#ifdef KrnDecodeLocation
 	    char *modname, *segname, *symname;
 	    void *segaddr, *symaddr;
 	    unsigned int segnum;
-#endif
 
 	    buf[-1] = '\n';
 	    buf = NewRawDoFmt(locstring, RAWFMTFUNC_STRING, buf, iet->iet_AlertLocation);
 	    D(bug("[FormatAlert] Location string:\n%s\n", buffer));
 
-#ifdef KrnDecodeLocation
-	    if (KrnDecodeLocation(iet->iet_AlertLocation,
-				  KDL_ModuleName , &modname, KDL_SegmentNumber, &segnum ,
-				  KDL_SegmentName, &segname, KDL_SegmentStart , &segaddr,
-				  KDL_SymbolName , &symname, KDL_SymbolStart  , &symaddr,
-				  TAG_DONE))
+	    if (DebugBase && DecodeLocation(iet->iet_AlertLocation,
+				  	    DL_ModuleName , &modname, DL_SegmentNumber, &segnum ,
+				  	    DL_SegmentName, &segname, DL_SegmentStart , &segaddr,
+					    DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
+					    TAG_DONE))
 	    {
 	    	buf[-1] = '\n';
 	    
@@ -526,7 +522,6 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 		    buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, buf, symname, symaddr, iet->iet_AlertLocation - symaddr);
 		}
 	    }
-#endif
 	}
     }
 
