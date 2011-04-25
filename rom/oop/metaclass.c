@@ -26,7 +26,6 @@
 
 #include <aros/debug.h>
 
-#define MD(cl) ((struct metadata *)cl)
 #define IFI(cl) ((struct ifmeta_inst *)cl)
 
 /* Allocates and initializes the interface hashtable, and the methodtables */
@@ -734,7 +733,6 @@ struct Bucket *copyBucket(struct Bucket *old_b, APTR data, struct IntOOPBase *OO
 /* Expand method table in IFBucket up to num_methods entries */
 static BOOL expandbucket(struct IFBucket *b, ULONG num_methods)
 {
-    struct IFMethod *old = b->MethodTable;
     struct IFMethod *ifm = AllocVec(sizeof(struct IFMethod) * num_methods, MEMF_CLEAR);
 
     if (!ifm)

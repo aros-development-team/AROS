@@ -24,8 +24,6 @@
 
 #define UB(x) ((UBYTE *)x)
 
-#define MD(cl) ((struct metadata *)cl)
-
 #define IntCallMethod(cl, o, msg)					\
 {									\
     register struct IFMethod *ifm;					\
