@@ -170,34 +170,29 @@ bug("[AllocSpriteData] Bitmap contents:\n");			\
         }
 	
 	if (have_OldDataFormat) {
-	    /* A zero-height sprite is evidently legal on AOS */
+	    /* A zero-width/height sprite is evidently legal on AOS */
 	    UWORD height2 = height == 0 ? 1 : height;
-	    UWORD *s = (UWORD *)bitmap + 2;
-	    UWORD k;
+	    UWORD *p, *q, *s = (UWORD *)bitmap + 2;
+	    UWORD k, mask;
 
 	    InitBitMap(&old_bitmap, 2, 16, height2);
 	    planes_size = height2 * sizeof(UWORD) * 2;
 	    planes = AllocMem(planes_size, MEMF_CLEAR | MEMF_CHIP);
 	    if (!planes)
 		return NULL;
-	    if (height) {
-	    	UWORD *p, *q;
-	    	UWORD mask;
-		p = planes;
-		q = &planes[height];
-		mask = ~((1 << (16 - width)) - 1);
-		old_bitmap.Planes[0] = (PLANEPTR)p;
-		old_bitmap.Planes[1] = (PLANEPTR)q;
-
-		for (k = 0; k < height; ++k) {
-		    *p++ = AROS_WORD2BE(*s++ & mask);
-		    *q++ = AROS_WORD2BE(*s++ & mask);
-		}
-	    } else {
-	    	height = height2;
+	    p = planes;
+	    q = &planes[height2];
+	    mask = ~((1 << (16 - width)) - 1);
+	    old_bitmap.Planes[0] = (PLANEPTR)p;
+	    old_bitmap.Planes[1] = (PLANEPTR)q;
+	    for (k = 0; k < height; ++k) {
+		*p++ = AROS_WORD2BE(*s++ & mask);
+		*q++ = AROS_WORD2BE(*s++ & mask);
 	    }
+	    height = height2;
+	    width = 16;
 	    bsa.bsa_SrcBitMap = &old_bitmap;
-	    bsa.bsa_SrcWidth = 16;
+	    bsa.bsa_SrcWidth = width;
 	    bsa.bsa_SrcHeight = height;
 	} else {
 	    bsa.bsa_SrcBitMap   = bitmap;
