@@ -2,8 +2,9 @@
 include $(TOP)/config/make.cfg
 
 FUNCS := registermodule unregistermodule decodelocation
-
 FILES := debug_init
+
+USER_CFLAGS := -DHOST_OS_$(FAMILY)
 
 %build_module mmake=kernel-debug \
   modname=debug modtype=library \
