@@ -1,13 +1,18 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to format a string like printf().
 */
 
-#define __vcformat __vcformat
+/*
+ * This function is used by debug functions during early startup.
+ * Please keep it self-contained, at least when compiled with -DAROSC_ROM.
+ */
 
 /* Original source from libnix */
+#include <dos/bptr.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -22,8 +27,6 @@
 #include <math.h>
 #include <float.h>
 
-#include <aros/config.h>
-
 #ifndef AROSC_ROM
 #define FULL_SPECIFIERS
 #endif
@@ -32,7 +35,8 @@
 #   define BITSPERBYTE 8
 #endif
 
-#if (__WORDSIZE != 64) && (defined(AROSC_STATIC) || defined(AROSC_ROM))
+#if (__WORDSIZE == 64)
+/* On 64-bit machines long and long long are the same, so we don't need separate processing for long long */
 #undef AROS_HAVE_LONG_LONG
 #endif
 
@@ -57,6 +61,123 @@
 #define SIGNFLAG      16 /* '+' is set */
 
 const unsigned char *const __decimalpoint = ".";
+
+static size_t format_long(char *buffer, char type, unsigned long v)
+{
+    size_t size = 0;
+    char hex = 'a' - 10;
+    unsigned char mask  = 0;
+    unsigned char shift = 0;
+
+    switch (type)
+    {
+    case 'X':
+        hex = 'A' - 10;
+
+    case 'x':
+        shift   = 4;
+        mask    = 0x0F;
+        break;
+
+    case 'o':
+    	shift   = 3;
+    	mask    = 0x07;
+    	break;
+
+    default:	/* 'd' and 'u' */
+    	/* Use slow divide operations for decimal numbers */
+    	do
+    	{
+    	    char c = v % 10;
+
+            *--buffer = c + '0';
+            v /= 10;
+            size++;
+    	} while (v);
+
+    	return size;
+    }
+
+    /* Divisor is a power of 2, so use fast shifts for division */
+    do
+    {
+	char c = v & mask;
+
+	*--buffer = (c < 10) ? c + '0' : c + hex;
+	v >>= shift;
+	size++;
+    } while (v);
+
+    return size;
+}
+
+#ifdef AROS_HAVE_LONG_LONG
+
+/*
+ * This is the same as format_long(), but takes long long argument.
+ * This is used to process long long values on 32-bit machines. 64-bit
+ * operations are performed slower there, and may need to call libgcc routines.
+ */
+static size_t format_longlong(char *buffer, char type, unsigned long long v)
+{
+    size_t size = 0;
+    char hex = 'a' - 10;
+    unsigned char mask  = 0;
+    unsigned char shift = 0;
+
+    switch (type)
+    {
+    case 'X':
+        hex = 'A' - 10;
+
+    case 'x':
+        shift = 4;
+        mask = 0x0F;
+        break;
+
+    case 'o':
+    	shift = 3;
+    	mask  = 0x07;
+    	break;
+
+    default:
+/*
+ * FIXME: this is not compiled for $(GENDIR)/lib32/librom.a because this requires
+ * __umoddi3() and __udivdi3() from 32-bit version of libgcc which is not supplied
+ * with 64-bit AROS gcc.
+ * Perhaps these routines needs to be implemented explicitly for the bootstrap. Or
+ * this code needs to be rewritten without these division operations, implemenging
+ * decimal division explicitly.
+ * As a consequence, %llu and %lld do not work in x86-64 bootstrap. Use hexadecimal
+ * output or fix this.
+ */
+#ifndef AROSC_LIB32
+    	do
+    	{
+    	    char c = v % 10;
+
+            *--buffer = c + '0';
+            v /= 10;
+            size++;
+    	} while (v);
+#endif
+
+    	return size;
+    }
+
+    do
+    {
+	char c = v & mask;
+
+	*--buffer = (c < 10) ? c + '0' : c + hex;
+	v >>= shift;
+	size++;
+    } while (v);
+
+    return size;
+}
+
+#endif
 
 /*****************************************************************************
 
@@ -103,21 +224,14 @@ const unsigned char *const __decimalpoint = ".";
   {
     if(*format=='%')
     {
-      static const char flagc[]=
-      { '#','0','-',' ','+' };
-      static const char lowertabel[]=
-      { '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f' };
-      static const char uppertabel[]=
-      { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F' };
+      static const char flagc[] = { '#','0','-',' ','+' };
       size_t width=0,preci=ULONG_MAX,flags=0; /* Specifications */
       char type,subtype='i';
-#ifdef AROS_HAVE_LONG_LONG
       char lltype=0;
-#endif      
       char buffer1[2];		   /* Signs and that like */
       char buffer[REQUIREDBUFFER]; /* The body */
       char *buffer2=buffer;	   /* So we can set this to any other strings */
-      size_t size1=0,size2=0;	   /* How many chars in buffer? */
+      size_t size1 = 0, size2 = 0;/* How many chars in buffer? */
       const char *ptr=format+1;    /* pointer to format string */
       size_t i,pad;		   /* Some temporary variables */
 
@@ -157,139 +271,191 @@ const unsigned char *const __decimalpoint = ".";
 	}
       }
 
-      if(*ptr=='h'||*ptr=='l'||*ptr=='L'||*ptr=='z')
+      if (*ptr == 'h' || *ptr == 'l' || *ptr == 'L' || *ptr == 'z')
 	subtype=*ptr++;
 
-#ifdef AROS_HAVE_LONG_LONG
-      if(*ptr=='l'||*ptr=='q')
+      if (*ptr == 'l' || *ptr == 'q')
       {
-        lltype=1;
-        ptr++;
+          lltype = 1;
+          ptr++;
       }
-#endif
       
-      type=*ptr++;
+      type = *ptr++;
 
       switch(type)
-      { case 'd':
-	case 'i':
-	case 'o':
-	case 'p':
-	case 'u':
-	case 'x':
-	case 'X':
-	{
+      {
+      case 'd':
+      case 'i':
+      case 'o':
+      case 'p':
+      case 'u':
+      case 'x':
+      case 'X':
+      {
 #ifdef AROS_HAVE_LONG_LONG
-          unsigned long long v;
-#else
-          unsigned long v;
+          unsigned long long llv = 0;
 #endif
-	  const char *tabel;
-	  int base;
+          unsigned long v = 0;
 
-	  if(type=='p')
-	  { subtype='l'; /* This is written as %08lx (or %016lx on 64 bits) */
-	    type='x';
-	    if (!width)
-	        width = sizeof(void *) * 2;
-	    flags |= ZEROPADFLAG; }
-
-	  if(type=='d'||type=='i') /* These are signed */
+	  if (type=='p') /* This is written as 0x08lx (or 0x016lx on 64 bits) */
 	  {
-#ifdef AROS_HAVE_LONG_LONG
-            signed long long v2;
-#else
-            signed long v2;
-#endif
-	    if(subtype=='l')
-#ifdef AROS_HAVE_LONG_LONG
-            { if(lltype)
-	        v2=va_arg(args,signed long long);
-              else
-	        v2=va_arg(args,signed long); }
-#else
-	      v2=va_arg(args,signed long);
-#endif
-	    else if(subtype=='z')
-	      v2=va_arg(args,size_t);
-	    else
-	      v2=va_arg(args,signed int);
-	    if(v2<0)
-	    { buffer1[size1++]='-';
-	      v=-v2;
-	    }else
-	    { if(flags&SIGNFLAG)
-		buffer1[size1++]='+';
-	      else if(flags&BLANKFLAG)
-		buffer1[size1++]=' ';
-	      v=v2; }
-	  }else 		   /* These are unsigned */
-	  { if(subtype=='l')
-#ifdef AROS_HAVE_LONG_LONG
-            { if(lltype)
-	        v=va_arg(args,unsigned long long);
-              else
-	        v=va_arg(args,unsigned long); }
-#else
-	      v=va_arg(args,unsigned long);
-#endif
-	    else if(subtype=='z')
-	      v=va_arg(args,size_t);
-	    else
-	      v=va_arg(args,unsigned int);
-	    if(flags&ALTERNATEFLAG)
-	    { if(type=='o'&&(preci&&v))
-		buffer1[size1++]='0';
-	      if((type=='x'||type=='X')&&v)
-	      { buffer1[size1++]='0';
-		buffer1[size1++]=type; }
-	    }
+	      subtype = 'l';
+	      type = 'x';
+	      if (!width)
+	          width = sizeof(void *) * 2;
+	      flags |= ZEROPADFLAG;
 	  }
 
-	  buffer2=&buffer[sizeof(buffer)]; /* Calculate body string */
-	  base=type=='x'||type=='X'?16:(type=='o'?8:10);
-	  tabel=type!='X'?lowertabel:uppertabel;
-	  do
-	  { *--buffer2=tabel[v%base];
-	    v=v/base;
-	    size2++;
-	  }while(v);
-	  if(preci==ULONG_MAX) /* default */
-	    preci=0;
-	  else
-	    flags&=~ZEROPADFLAG;
-	  break;
-	}
-	case 'c':
-	  if(subtype=='l')
+	  if (type=='d' || type=='i') /* These are signed */
+	  {
+              signed long v2;
+
+	      if (subtype=='l')
+              {
 #ifdef AROS_HAVE_LONG_LONG
-            { if(lltype)
-	        *buffer2=va_arg(args,long long);
+              	  if (lltype)
+              	  {
+	              signed long long llv2;
+	              
+	              llv2 = va_arg(args, signed long long);
+	              if (llv2 < 0)
+	              {
+	            	  llv = - llv2;
+	              	  v2 = -1;	/* Assign a dummy value to v2 in order to process sign below */
+	              }
+	              else
+	              {
+	            	  llv = llv2;
+	             	  v2  = llv2 ? 1 : 0;
+	              }
+	          }
+                  else
+#endif
+		      v2=va_arg(args, signed long);
+	      }
+	      else if (subtype=='z')
+	          v2 = va_arg(args,size_t);
+	      else
+	          v2 = va_arg(args,signed int);
+
+	      if (v2 < 0)
+	      {
+	          buffer1[size1++]='-';
+	          v = -v2;
+	      }
+	      else
+	      {
+	          if (flags & SIGNFLAG)
+		      buffer1[size1++] = '+';
+		  else if (flags & BLANKFLAG)
+		      buffer1[size1++] = ' ';
+	      	  v = v2;
+	      }
+	  }
+	  else 		   /* These are unsigned */
+	  {
+	      if (subtype=='l')
+              {
+#ifdef AROS_HAVE_LONG_LONG
+                  if (lltype)
+	              llv = va_arg(args, unsigned long long);
+                  else
+#endif
+	              v = va_arg(args,unsigned long);
+	      }
+	      else if (subtype == 'z')
+	          v = va_arg(args, size_t);
+	      else
+	          v = va_arg(args, unsigned int);
+
+	      if (flags & ALTERNATEFLAG)
+	      {
+	          if (type == 'o' && preci && v)
+		      buffer1[size1++] = '0';
+	          if ((type == 'x' || type == 'X') && v)
+	          {
+	              buffer1[size1++] = '0';
+		      buffer1[size1++] = type;
+	          }
+	      }
+	  }
+
+	  buffer2 = &buffer[sizeof(buffer)]; /* Calculate body string */
+
+#ifdef AROS_HAVE_LONG_LONG
+	  /*
+	   * For long long type we have actual value in llv.
+	   * For long we have actual value in v.
+	   * This avoids slow 64-bit operations on 32-bit processors
+	   * when not needed.
+	   */
+	  if (lltype)
+	      size2 = format_longlong(buffer2, type, llv);
+	  else
+#endif
+	      size2 = format_long(buffer2, type, v);
+	  /* Position to the beginning of the string */
+	  buffer2 -= size2;
+
+	  if (preci == ULONG_MAX) /* default */
+	      preci = 0;
+	  else
+	      flags &= ~ZEROPADFLAG;
+	  break;
+      }
+
+      case 'c':
+	  if (subtype=='l')
+          {
+#ifdef AROS_HAVE_LONG_LONG
+              if (lltype)
+	          *buffer2 = va_arg(args, long long);
               else
-	        *buffer2=va_arg(args,long); }
+#endif
+	          *buffer2 = va_arg(args, long);
+	  }
+	  else
+	      *buffer2 = va_arg(args, int);
+
+	  size2 = 1;
+	  preci = 0;
+	  break;
+
+      case 's':
+	  buffer2 = va_arg(args, char *);
+	  if (!buffer2)
+	      buffer2 = "(null)";
+	  size2 = strlen(buffer2);
+	  size2 = size2 <= preci ? size2 : preci;
+	  preci = 0;
+	  break;
+
+      case 'b':
+      	  buffer2 = BADDR(va_arg(args, BPTR));
+      	  if (buffer2)
+#if AROS_FAST_BSTR
+	      size2 = strlen(buffer2);
 #else
-	    *buffer2=va_arg(args,long);
+	      size2 = *(unsigned char *)buffer2++;
 #endif
 	  else
-	    *buffer2=va_arg(args,int);
-	  size2=1;
-	  preci=0;
+	  {
+	      buffer2 = "(null)";
+	      size2 = 6;
+	  }
+
+	  size2 = size2 <= preci ? size2 : preci;
+	  preci = 0;
 	  break;
-	case 's':
-	  buffer2=va_arg(args,char *);
-	  if (!buffer2)
-	    buffer2="(null)";
-	  size2=strlen(buffer2);
-	  size2=size2<=preci?size2:preci;
-	  preci=0;
-	  break;
+
 #ifdef FULL_SPECIFIERS
-	case 'f':
-	case 'e':
-	case 'E':
-	case 'g':
-	case 'G':
-	{ double v;
+      case 'f':
+      case 'e':
+      case 'E':
+      case 'g':
+      case 'G':
+      {
+          double v;
 	  char killzeros=0,sign=0; /* some flags */
 	  int ex1,ex2; /* Some temporary variables */
 	  size_t size,dnum,dreq;
