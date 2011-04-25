@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal debugger.
@@ -9,6 +9,7 @@
 #include <aros/debug.h>
 #include <exec/interrupts.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <ctype.h>
 #include <string.h>
@@ -89,6 +90,15 @@ static char *NextWord(char *s)
     char comm[128];
     char *data;
     BOOL ignorelf = FALSE;
+
+#ifdef KrnObtainInput
+    /*
+     * Try to obtain debug input from the kernel.
+     * If it failed, we will hang up in RawMayGetChar(), so exit immediately.
+     */
+    if (!KrnObtainInput())
+    	return;
+#endif
 
     RawIOInit();
 
@@ -412,6 +422,11 @@ static char *NextWord(char *s)
 	else if (strcmp(comm, "QT") == 0 && strcmp(data, "00000000") == 0)
 	{
 	    kprintf("Quitting SAD...\n");
+
+#ifdef KrnReleaseInput
+	    /* Release debug input */
+	    KrnReleaseInput();
+#endif
 	    return;
 	}
 	else kprintf("?? Type HE for help\n");

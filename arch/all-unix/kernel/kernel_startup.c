@@ -49,7 +49,9 @@ static const char *kernel_functions[] = {
     "sigaction",
     "setitimer",
     "mprotect",
+    "read",
     "write",
+    "fcntl",
     "mmap",
     "munmap",
 #ifdef HOST_OS_linux

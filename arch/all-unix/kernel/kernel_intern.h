@@ -31,7 +31,9 @@ struct KernelInterface
     int     (*sigaction)(int signum, const struct sigaction *act, struct sigaction *oldact);
     int     (*setitimer)(int which, const struct itimerval *value, struct itimerval *ovalue);
     int     (*mprotect)(const void *addr, size_t len, int prot);
+    ssize_t (*read)(int fd, void *buf, size_t count);
     ssize_t (*write)(int fd, const void *buf, size_t count);
+    int	    (*fcntl)(int fd, int cmd, ...);
     void *  (*mmap)(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
     int     (*munmap)(void *addr, size_t length);
     int    *(*__error)(void);
