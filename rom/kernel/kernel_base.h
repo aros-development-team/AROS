@@ -17,9 +17,6 @@ struct KernelBase
     struct Node            kb_Node;
     struct List            kb_Exceptions[EXCEPTIONS_COUNT];
     struct List            kb_Interrupts[IRQ_COUNT];
-    struct MinList         kb_Modules;
-    struct ELF_ModuleInfo *kb_KernelModules;
-    struct SignalSemaphore kb_ModSem;
     unsigned char	   kb_VBlankEnable;
     unsigned int	   kb_VBlankTicks;
     unsigned int	   kb_TimerCount;

@@ -10,7 +10,6 @@
 */
 
 #include <aros/macros.h>
-#include <dos/elf.h>
 #include <utility/tagitem.h>
 
 /* Type of scheduler. See KrnGetScheduler()/KrnSetScheduler() functions. */
@@ -53,7 +52,7 @@ typedef enum
 #define KRN_MEMUpper          	(KRN_Dummy + 18) /* Amount of upper memory in bytes (PC-specific)	*/
 #define KRN_OpenFirmwareTree	(KRN_Dummy + 19) /* Pointer to OpenFirmware device tree structure	*/
 #define KRN_HostInterface	(KRN_Dummy + 20) /* Pointer to host OS interface structure (hosted)	*/
-#define KRN_DebugInfo		(KRN_Dummy + 21) /* (struct ELF_ModuleInfo *) - debug information	*/
+#define KRN_DebugInfo		(KRN_Dummy + 21) /* Kicksrart debug information, see debug.library	*/
 #define KRN_BootLoader          (KRN_Dummy + 22) /* Pointer to bootloader name string			*/
 
 /* Magic value passed by the bootstrap as second parameter */
@@ -65,38 +64,6 @@ struct KernelBSS
     void *addr;
     IPTR len;
 };
-
-struct ELF_ModuleInfo
-{
-    struct ELF_ModuleInfo *Next; /* Pointer to next module in list */
-    const char		  *Name; /* Pointer to module name	   */
-    unsigned short	   Type; /* DEBUG_ELF, for convenience	   */
-    struct elfheader	  *eh;	 /* ELF file header		   */
-    struct sheader	  *sh;	 /* ELF section header		   */
-};
-
-/* Known debug info types */
-#define DEBUG_NONE 0
-#define DEBUG_ELF  1
-
-/* ELF debug info */
-struct ELF_DebugInfo
-{
-    struct elfheader *eh;
-    struct sheader *sh;
-};
-
-/* Tags for KrnDecodeLocation() */
-#define KDL_Dummy		(TAG_USER + 0x03e00000)
-#define KDL_ModuleName		(KDL_Dummy + 1)
-#define KDL_SegmentName		(KDL_Dummy + 2)
-#define KDL_SegmentPointer	(KDL_Dummy + 3)
-#define KDL_SegmentNumber	(KDL_Dummy + 4)
-#define KDL_SegmentStart	(KDL_Dummy + 5)
-#define KDL_SegmentEnd		(KDL_Dummy + 6)
-#define KDL_SymbolName		(KDL_Dummy + 7)
-#define KDL_SymbolStart		(KDL_Dummy + 8)
-#define KDL_SymbolEnd		(KDL_Dummy + 9)
 
 /* Exception and IRQ handler types */
 typedef int (*exhandler_t)(void *ctx, void *data, void *data2);

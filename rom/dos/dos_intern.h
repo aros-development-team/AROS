@@ -50,10 +50,10 @@ AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
 struct IntDosBase
 {
     struct DosLibrary pub;
-    APTR	      KernelBase;
+    struct Library *debugBase;
 };
 
-#define KernelBase ((struct IntDosBase *)DOSBase)->KernelBase
+#define DebugBase ((struct IntDosBase *)DOSBase)->debugBase
 
 struct DAList
 {

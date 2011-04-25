@@ -1,12 +1,11 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialize the interface to the "hardware".
     Lang: english
 */
 
-#include <aros/config.h>
 #include <exec/types.h>
 #include <exec/interrupts.h>
 #include <exec/execbase.h>
@@ -211,16 +210,6 @@ static int InitCore(struct KernelBase *KernelBase)
     AROS_HOST_BARRIER
 #endif
     D(bug("[KRN] Memory page size is %u\n", KernelBase->kb_PageSize));
-
-#if AROS_MODULES_DEBUG
-    /*
-     * Provide a pointer to our modules list to the bootstrap.
-     * This is needed because gdb is actually debugging bootstrap
-     * and it can read debug information only from there
-     */
-    if (HostIFace->ModListPtr)
-	*HostIFace->ModListPtr = &KernelBase->kb_Modules;
-#endif
 
     /*
      * We allocate PlatformData separately from KernelBase because

@@ -1,4 +1,3 @@
-#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <proto/arossupport.h>
@@ -11,6 +10,9 @@
 #include <kernel_base.h>
 #include <kernel_debug.h>
 #include <kernel_timer.h>
+
+/* We have own bug(), so don't use aros/debug.h to avoid conflicts */
+#define D(x)
 
 /* Some globals we can't live without */
 struct TagItem *BootMsg = NULL;
@@ -36,11 +38,6 @@ static int Kernel_Init(struct KernelBase *kBase)
 
     for (i=0; i < IRQ_COUNT; i++)
         NEWLIST(&KernelBase->kb_Interrupts[i]);
-
-    NEWLIST(&KernelBase->kb_Modules);
-    InitSemaphore(&KernelBase->kb_ModSem);
-
-    KernelBase->kb_KernelModules = (struct ELF_ModuleInfo *)LibGetTagData(KRN_DebugInfo, 0, BootMsg);
 
     D(bug("[KRN] Kernel_Init() done\n"));
     return 1;

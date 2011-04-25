@@ -1,8 +1,8 @@
 /*
- Copyright (C) 2006-2010 The AROS Development Team. All rights reserved.
+ Copyright (C) 2006-2011 The AROS Development Team. All rights reserved.
  $Id$
  
- Desc: ELF32 loader extracted from our internal_load_seg_elf in dos.library.
+ Desc: ELF loader extracted from our internal_load_seg_elf in dos.library.
  Lang: English
  */
 
@@ -20,8 +20,7 @@
 #include <aros/config.h>
 #include <aros/kernel.h>
 #include <exec/execbase.h>
-#include <dos/bptr.h>
-#include <dos/elf.h>
+#include <libraries/debug.h>
 
 #include "elfloader32.h"
 #include "support.h"

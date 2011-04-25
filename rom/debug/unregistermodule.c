@@ -1,3 +1,4 @@
+#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <exec/lists.h>
@@ -5,25 +6,20 @@
 
 #include <string.h>
 
-#include <kernel_base.h>
-#include <kernel_debug.h>
 #include "debug_intern.h"
-
-/* We use own implementation of bug(), so we don't need aros/debug.h */
-#define D(x)
 
 /*****************************************************************************
 
     NAME */
-#include <proto/kernel.h>
+#include <proto/debug.h>
 
-AROS_LH1(void, KrnUnregisterModule,
+AROS_LH1(void, UnregisterModule,
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR, segList, A0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 23, Kernel)
+	struct Library *, DebugBase, 6, Debug)
 
 /*  FUNCTION
 	Remove previously registered module from the debug information database
@@ -53,38 +49,39 @@ AROS_LH1(void, KrnUnregisterModule,
     
     struct segment *seg;
 
-    D(bug("[KRN] KrnUnregisterModule(0x%p)\n", segList));
-    ObtainSemaphore(&KernelBase->kb_ModSem);
+    D(bug("[Debug] UnregisterModule(0x%p)\n", segList));
+    ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
     while (segList)
     {
-	ForeachNode(&KernelBase->kb_Modules, seg) {
+	ForeachNode(&DBGBASE(DebugBase)->db_Modules, seg)
+	{
 	    if (seg->s_seg == segList)
 	    {
 		module_t *mod = seg->s_mod;
 
-	        D(bug("[KRN] Removing segment 0x%p\n", segList));
+	        D(bug("[Debug] Removing segment 0x%p\n", segList));
 		Remove((struct Node *)seg);
 
 		/* If module's segment count reached 0, remove the whole
 		   module information */
 		if (--mod->m_segcnt == 0)
 		{
-		    D(bug("[KRN] Removing module %s\n", mod->m_name));
+		    D(bug("[Debug] Removing module %s\n", mod->m_name));
 
 		    /* Free associated symbols */
 		    if (mod->m_symbols) {
-			D(bug("[KRN] Removing symbol table 0x%p\n", mod->m_symbols));
+			D(bug("[Debug] Removing symbol table 0x%p\n", mod->m_symbols));
 			FreeVec(mod->m_symbols);
 		    }
 
 		    /* Free associated string tables */
 		    if (mod->m_str) {
-			D(bug("[KRN] Removing symbol name table 0x%p\n", mod->m_str));
+			D(bug("[Debug] Removing symbol name table 0x%p\n", mod->m_str));
 			FreeVec(mod->m_str);
 		    }
 		    if (mod->m_shstr) {
-			D(bug("[KRN] Removing section name table 0x%p\n", mod->m_str));
+			D(bug("[Debug] Removing section name table 0x%p\n", mod->m_str));
 			FreeVec(mod->m_shstr);
 		    }
 
@@ -101,7 +98,7 @@ AROS_LH1(void, KrnUnregisterModule,
 	segList = *(BPTR *)BADDR(segList);
     }
 
-    ReleaseSemaphore(&KernelBase->kb_ModSem);
+    ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
     AROS_LIBFUNC_EXIT
 }

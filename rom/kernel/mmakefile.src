@@ -18,9 +18,9 @@ USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
 
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
-         dispatch getbootinfo getscheduler issuper mapglobal registermodule          \
+         dispatch getbootinfo getscheduler issuper mapglobal			     \
 	 remexceptionhandler remirqhandler schedule setprotection setscheduler sti   \
-	 switch unmapglobal unregistermodule virtualtophysical decodelocation	     \
+	 switch unmapglobal virtualtophysical					     \
 	 putchar maygetchar allocpages freepages getsystemattr setsystemattr	     \
 	 initmemory statmemory
 

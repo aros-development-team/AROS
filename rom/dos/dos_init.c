@@ -181,7 +181,8 @@ static int DosInit(struct DosLibrary *LIBBASE)
 
 	AddLibrary((struct Library *)LIBBASE);
 
-	KernelBase = OpenResource("kernel.resource");
+	/* debug.library is optional, so don't check result */
+	DebugBase = OpenLibrary("debug.library", 0);
 
 	/* This is where we start the RTF_AFTERDOS residents */
 	D(bug("[DOS] DosInit: InitCode(RTF_AFTERDOS)\n"));
