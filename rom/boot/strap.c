@@ -361,7 +361,10 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     struct DeviceNode *devnode;
     struct PartitionType ptyp;
     LONG ppos;
-    TEXT *devname, *handler;
+    TEXT *devname;
+#ifndef __mc68000
+    TEXT *handler;
+#endif
     LONG bootable;
     struct FileSysEntry *fse;
 
