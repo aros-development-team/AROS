@@ -39,7 +39,6 @@
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
-#define DB2(x) ;
 
 #define SPECIALMODES 3
 #define NATIVEMODES (3 * 4 * SPECIALMODES)
@@ -709,7 +708,6 @@ VOID AmigaVideoCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct amigagfx_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  	    *tag;
     const struct TagItem    *tstate;
     tstate = msg->attrList;
