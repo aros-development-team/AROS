@@ -145,7 +145,9 @@ extern struct InputEvent *cxIHandler();
 	    }
 	    else
 	    {
-		myerr = CBERR_VERSION;
+		// Don't set error because Garshneblanker creates a broker
+		// with nb->nb_Port set to NULL
+		// myerr = CBERR_VERSION;
 	    }
 	}
 	else
