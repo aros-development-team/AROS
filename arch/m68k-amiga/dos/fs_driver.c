@@ -80,16 +80,18 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR lock, LONG mode, CON
     case REF_CONSOLE:
     	me = (struct Process *)FindTask(NULL);
     	port = me->pr_ConsoleTask;
-        /* CHECKME: 'lock' being passed is process' console file handle, not a lock. Is it correct to pass it on ? */
+    	/* console handler ACTION_FIND* ignores lock */
         break;
     }
 
     if (!port)
     {
-    	/* was NIL: */
+    	/* handler pointer not set, return NIL: handle */
     	SetIoErr(0);
     	handle->fh_Type = BNULL;
-        return DOSTRUE;
+    	/* NIL: is considered interactive */
+    	handle->fh_Port = (struct MsgPort*)DOSTRUE;
+    	return 0;
     }
 
     bstrname = C2BSTR(name);
