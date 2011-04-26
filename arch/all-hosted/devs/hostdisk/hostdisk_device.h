@@ -22,6 +22,7 @@ struct HostDiskBase
     STRPTR			DiskDevice;
     APTR			HostLibBase;
     APTR			KernelHandle;
+    APTR			PlatformData;
     struct HostInterface       *iface;
 };
 
