@@ -114,7 +114,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /*21 */    { NP_HomeDir 	  , TAGDATA_NOT_SPECIFIED     	},
     /*22 */    { NP_Path          , TAGDATA_NOT_SPECIFIED       }, /* Default: copy path from parent */
     /*23 */    { NP_NotifyOnDeath , (IPTR)FALSE                 },
-    /*24 */    { NP_ConsoleTask   , (IPTR)NULL                  },
+    /*24 */    { NP_ConsoleTask   , TAGDATA_NOT_SPECIFIED       },
 	       { TAG_END    	  , 0           	    	}
     };
 
@@ -417,7 +417,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_Task.tc_UserData = (APTR)defaults[14].ti_Data;
 
     /* Inherit pr_ConsoleTask and pr_FileSystemTask from parent */
-    if (defaults[24].ti_Data)
+    if (defaults[24].ti_Data != TAGDATA_NOT_SPECIFIED)
     	process->pr_ConsoleTask = (struct MsgPort*)defaults[24].ti_Data;
     else if (__is_process(me))
     	process->pr_ConsoleTask = me->pr_ConsoleTask;
