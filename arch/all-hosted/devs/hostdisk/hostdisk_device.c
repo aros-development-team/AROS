@@ -595,6 +595,8 @@ AROS_UFH3(LONG, unitentry,
 		    break;
 
 		case TD_GETGEOMETRY:
+		    DCMD(bug("hostdisk/unitentry: received TD_GETGEOMETRY\n"));
+
 		    err = Host_GetGeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
 		    break;
 

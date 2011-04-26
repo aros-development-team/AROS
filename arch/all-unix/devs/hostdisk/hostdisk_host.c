@@ -247,14 +247,14 @@ static const char *libcSymbols[] =
     "lseek",
 #ifdef HOST_OS_linux
     "__errno_location",
-    "__fxstat",
+    "__fxstat64",
 #else
 #ifdef HOST_OS_android
     "__errno",
 #else
     "__error",
 #endif
-    "fstat" INODE64_SUFFIX,
+    "fstat64" INODE64_SUFFIX,
 #endif
     NULL
 };
@@ -263,7 +263,7 @@ static BOOL CheckArch(const char *Component, const char *MyArch, const char *Sys
 {
     const char *arg[3] = {Component, MyArch, SystemArch};
 
-    D(bug("[Hostdisk] My architecture: %s, kernel architecture: %s\n", arg[1], arg[2]));
+    D(bug("hostdisk: My architecture: %s, kernel architecture: %s\n", arg[1], arg[2]));
 
     if (strcmp(arg[1], arg[2]))
     {
@@ -272,7 +272,8 @@ static BOOL CheckArch(const char *Component, const char *MyArch, const char *Sys
 	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
 	if (IntuitionBase)
 	{
-            struct EasyStruct es = {
+            struct EasyStruct es =
+            {
         	sizeof (struct EasyStruct),
         	0,
         	"Incompatible architecture",
@@ -289,7 +290,7 @@ static BOOL CheckArch(const char *Component, const char *MyArch, const char *Sys
 	return FALSE;
     }
 
-    D(bug("[Hostdisk] Architecture check done\n"));
+    D(bug("hostdisk: Architecture check done\n"));
     return TRUE;
 }
 
