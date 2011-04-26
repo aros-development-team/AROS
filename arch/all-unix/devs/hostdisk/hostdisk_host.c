@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #ifdef HOST_OS_ios
 
 #ifdef __arm__
@@ -34,6 +36,8 @@
 #include <devices/trackdisk.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
+#include <proto/intuition.h>
+#include <proto/kernel.h>
 
 #ifdef HOST_LONG_ALIGNED
 #pragma pack(4)
@@ -51,6 +55,9 @@ static ULONG error(int unixerr)
 {
     switch (unixerr)
     {
+    	case EBUSY:
+	    return TDERR_DriveInUse;
+
 	case EPERM:
 	    return TDERR_WriteProt;
 
@@ -72,6 +79,8 @@ ULONG Host_Open(struct unit *Unit)
     err = *hdskBase->errnoPtr;
 
     HostLib_Unlock();
+
+    D(bug("[Hostdisk] Host_Open(%s): Descriptor %d, error %d\n", Unit->filename, Unit->file, err));
 
     if (Unit->file == -1)
 	return error(err);
@@ -168,7 +177,44 @@ ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
 
 ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 {
-    return TDERR_NotSpecified;
+    struct HostDiskBase *hdskBase = Unit->hdskBase;
+    int res, err;
+
+/*  TODO: incomplete
+    if (Unit->flags & UNIT_DEVICE)
+    {
+
+    }
+    else */
+    {
+        struct stat st;
+
+	HostLib_Lock();
+
+	res = hdskBase->iface->fstat(Unit->file, &st);
+	err = *hdskBase->errnoPtr;
+
+	HostLib_Unlock();
+
+	D(bug("hostdisk: Image file length: %d\n", st.st_size));
+	if (res != -1)
+	{
+	    dg->dg_SectorSize   = 512;
+	    dg->dg_Heads        = 16;
+	    dg->dg_TrackSectors = 63;
+	    dg->dg_TotalSectors = st.st_size / dg->dg_SectorSize;
+	    dg->dg_Cylinders    = dg->dg_TotalSectors / (dg->dg_Heads * dg->dg_TrackSectors);
+	    dg->dg_CylSectors   = dg->dg_Heads * dg->dg_TrackSectors;
+	    dg->dg_BufMemType   = MEMF_PUBLIC;
+	    dg->dg_DeviceType   = DG_DIRECT_ACCESS;
+	    dg->dg_Flags        = 0; //DGF_REMOVABLE;
+
+	    return 0;
+	}
+    }
+
+    D(bug("hostdisk: Host_GetGeometry(): UNIX error %u\n", err));
+    return error(err);
 }
 
 extern const char Hostdisk_LibName[];
@@ -179,6 +225,7 @@ static const char *libcSymbols[] =
     "close",
     "read",
     "write",
+    "ioctl",
     "lseek",
 #ifdef HOST_OS_linux
     "__errno_location",
@@ -194,14 +241,60 @@ static const char *libcSymbols[] =
     NULL
 };
 
+static BOOL CheckArch(const char *Component, const char *MyArch, const char *SystemArch)
+{
+    const char *arg[3] = {Component, MyArch, SystemArch};
+
+    D(bug("[Hostdisk] My architecture: %s, kernel architecture: %s\n", arg[1], arg[2]));
+
+    if (strcmp(arg[1], arg[2]))
+    {
+	struct IntuitionBase *IntuitionBase;
+
+	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
+	if (IntuitionBase)
+	{
+            struct EasyStruct es = {
+        	sizeof (struct EasyStruct),
+        	0,
+        	"Incompatible architecture",
+		"Used version of %s is built for use\n"
+		"with %s architecture, but your\n"
+		"system architecture is %s.",
+        	"Ok",
+	    };
+
+	    EasyRequestArgs(NULL, &es, NULL, (IPTR *)arg);
+
+	    CloseLibrary(&IntuitionBase->LibNode);
+	}
+	return FALSE;
+    }
+
+    D(bug("[Hostdisk] Architecture check done\n"));
+    return TRUE;
+}
+
 static int Host_Init(struct HostDiskBase *hdskBase)
 {
     ULONG r;
+    STRPTR arch;
+    /*
+     * This device is disk-based and it can travel from disk to disk.
+     * In order to prevent unexplained crashes we check that system architecture
+     * is the architecture we were built for.
+     */
+    APTR KernelBase = OpenResource("kernel.resource");
+    
+    if (!KernelBase)
+    	return FALSE;
 
-    HostLibBase = OpenResource("hostlib.resource");
-    D(bug("[hostdisk] HostLibBase: 0x%p\n", HostLibBase));
-    if (!HostLibBase)
-	return FALSE;
+    arch = (STRPTR)KrnGetSystemAttr(KATTR_Architecture);
+    if (!arch)
+    	return FALSE;
+
+    if (!CheckArch(Hostdisk_LibName, AROS_ARCHITECTURE, arch))
+    	return FALSE;
 
     hdskBase->KernelHandle = HostLib_Open(LIBC_NAME, NULL);
     if (!hdskBase->KernelHandle)
@@ -212,24 +305,12 @@ static int Host_Init(struct HostDiskBase *hdskBase)
 	return FALSE;
 
     hdskBase->errnoPtr = hdskBase->iface->__error();
+
+    /* FIXME: this works only on Darwin. On Linux this should be /dev/sd%c, where %c is a...z */
     hdskBase->DiskDevice = "/dev/disk%ld";
 
     return TRUE;
 }
 
-static int Host_Cleanup(struct HostDiskBase *hdskBase)
-{
-    if (!HostLibBase)
-	return TRUE;
-
-    if (hdskBase->iface)
-	HostLib_DropInterface((APTR *)hdskBase->iface);
-
-    if (hdskBase->KernelHandle)
-	HostLib_Close(hdskBase->KernelHandle, NULL);
-
-    return TRUE;
-}
-
 ADD2INITLIB(Host_Init, 0);
-ADD2EXPUNGELIB(Host_Cleanup, 0);
+

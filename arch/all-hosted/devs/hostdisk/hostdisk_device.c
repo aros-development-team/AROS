@@ -5,20 +5,17 @@
 
 /****************************************************************************************/
 
+#include <aros/debug.h>
+#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <devices/trackdisk.h>
 #include <devices/newstyle.h>
-#include <exec/resident.h>
-#include <exec/errors.h>
-#include <exec/memory.h>
-#include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
+#include <exec/errors.h>
 #include <proto/dos.h>
-#include <aros/asmcall.h>
-#include <aros/libcall.h>
-#include <aros/symbolsets.h>
-
-#include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/hostlib.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -31,7 +28,10 @@
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR hdskBase)
 {
-    D(bug("hostdisk: in libinit func\n"));
+    HostLibBase = OpenResource("hostlib.resource");
+    D(bug("hostdisk: HostLibBase: 0x%p\n", HostLibBase));
+    if (!HostLibBase)
+	return FALSE;
 
     InitSemaphore(&hdskBase->sigsem);
     NEWLIST((struct List *)&hdskBase->units);
@@ -42,6 +42,20 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR hdskBase)
 
    D(bug("hostdisk: in libinit func. Returning %x (success) :-)\n", hdskBase));
    return TRUE;
+}
+
+static int HostDisk_Cleanup(struct HostDiskBase *hdskBase)
+{
+    if (!HostLibBase)
+	return TRUE;
+
+    if (hdskBase->iface)
+	HostLib_DropInterface((APTR *)hdskBase->iface);
+
+    if (hdskBase->KernelHandle)
+	HostLib_Close(hdskBase->KernelHandle, NULL);
+
+    return TRUE;
 }
 
 /****************************************************************************************/
@@ -188,7 +202,8 @@ static int GM_UNIQUENAME(Close)
 
 /****************************************************************************************/
 
-ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2INITLIB(GM_UNIQUENAME(Init), -5)
+ADD2EXPUNGELIB(HostDisk_Cleanup, -5);
 ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 

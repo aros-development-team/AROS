@@ -199,11 +199,6 @@ static int Host_Init(struct HostDiskBase *hdskBase)
 {
     ULONG r;
 
-    HostLibBase = OpenResource("hostlib.resource");
-    D(bug("[hostdisk] HostLibBase: 0x%p\n", HostLibBase));
-    if (!HostLibBase)
-	return FALSE;
-
     hdskBase->KernelHandle = HostLib_Open("kernel32.dll", NULL);
     if (!hdskBase->KernelHandle)
 	return FALSE;
@@ -217,19 +212,4 @@ static int Host_Init(struct HostDiskBase *hdskBase)
     return TRUE;
 }
 
-static int Host_Cleanup(struct HostDiskBase *hdskBase)
-{
-    if (!HostLibBase)
-	return TRUE;
-
-    if (hdskBase->iface)
-	HostLib_DropInterface((APTR *)hdskBase->iface);
-
-    if (hdskBase->KernelHandle)
-	HostLib_Close(hdskBase->KernelHandle, NULL);
-
-    return TRUE;
-}
-
 ADD2INITLIB(Host_Init, 0)
-ADD2EXPUNGELIB(Host_Cleanup, 0)
