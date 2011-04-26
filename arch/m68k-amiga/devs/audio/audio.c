@@ -529,6 +529,7 @@ AROS_LH1(void, beginio,
 
     D(bug("audio beginio %p:%d\n", io, io->ioa_Request.io_Command));
  
+    io->ioa_Request.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     if (processcommand(AudioBase, io)) {
     	/* TRUE = finished immediately */
    	if (!(io->ioa_Request.io_Flags & IOF_QUICK))

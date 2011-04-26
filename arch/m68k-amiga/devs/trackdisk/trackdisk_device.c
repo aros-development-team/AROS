@@ -259,6 +259,7 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
 
+    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     if (iotd->iotd_Req.io_Flags & IOF_QUICK) {
 	switch(iotd->iotd_Req.io_Command)
 	{
