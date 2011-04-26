@@ -46,7 +46,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return BADDR(((struct Process *)FindTask(NULL))->pr_FileSystemTask);
+    return ((struct Process *)FindTask(NULL))->pr_FileSystemTask;
 
     AROS_LIBFUNC_EXIT
 } /* GetFileSysTask */

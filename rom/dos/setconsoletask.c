@@ -56,7 +56,7 @@
     old = pr->pr_ConsoleTask;
     pr->pr_ConsoleTask = handler;
 
-    return BADDR(old);
+    return old;
 
     AROS_LIBFUNC_EXIT
 } /* SetConsoleTask */
