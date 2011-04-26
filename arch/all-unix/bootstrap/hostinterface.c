@@ -16,7 +16,7 @@
 /* gdb hooks from which it obtains modules list */
 
 /* This is needed in order to bring in definition of struct segment */
-#include "../../../rom/kernel/debug_intern.h"
+#include "../../../rom/debug/debug_intern.h"
 
 struct segment *seg = NULL;
 struct Resident *res = NULL;
