@@ -32,6 +32,7 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <devices/trackdisk.h>
+#include <exec/errors.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
 #include <proto/intuition.h>
@@ -191,38 +192,38 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
     int res, err;
+    struct stat st;
 
-/*  TODO: incomplete
     if (Unit->flags & UNIT_DEVICE)
     {
+	err = Host_DeviceGeometry(Unit, dg);
 
+	/* If this routine is not implemented, use fstat() (worst case) */
+	if (err != IOERR_NOCMD)
+	    return err;
     }
-    else */
+
+    HostLib_Lock();
+
+    res = hdskBase->iface->fstat(Unit->file, &st);
+    err = *hdskBase->errnoPtr;
+
+    HostLib_Unlock();
+
+    D(bug("hostdisk: Image file length: %d\n", st.st_size));
+    if (res != -1)
     {
-        struct stat st;
+	dg->dg_SectorSize   = 512;
+	dg->dg_Heads        = 16;
+	dg->dg_TrackSectors = 63;
+	dg->dg_TotalSectors = st.st_size / dg->dg_SectorSize;
+	dg->dg_CylSectors   = dg->dg_Heads * dg->dg_TrackSectors;
+	dg->dg_Cylinders    = dg->dg_TotalSectors / dg->dg_CylSectors;
+	dg->dg_BufMemType   = MEMF_PUBLIC;
+	dg->dg_DeviceType   = DG_DIRECT_ACCESS;
+	dg->dg_Flags        = 0; //DGF_REMOVABLE;
 
-	HostLib_Lock();
-
-	res = hdskBase->iface->fstat(Unit->file, &st);
-	err = *hdskBase->errnoPtr;
-
-	HostLib_Unlock();
-
-	D(bug("hostdisk: Image file length: %d\n", st.st_size));
-	if (res != -1)
-	{
-	    dg->dg_SectorSize   = 512;
-	    dg->dg_Heads        = 16;
-	    dg->dg_TrackSectors = 63;
-	    dg->dg_TotalSectors = st.st_size / dg->dg_SectorSize;
-	    dg->dg_Cylinders    = dg->dg_TotalSectors / (dg->dg_Heads * dg->dg_TrackSectors);
-	    dg->dg_CylSectors   = dg->dg_Heads * dg->dg_TrackSectors;
-	    dg->dg_BufMemType   = MEMF_PUBLIC;
-	    dg->dg_DeviceType   = DG_DIRECT_ACCESS;
-	    dg->dg_Flags        = 0; //DGF_REMOVABLE;
-
-	    return 0;
-	}
+	return 0;
     }
 
     D(bug("hostdisk: Host_GetGeometry(): UNIX error %u\n", err));
