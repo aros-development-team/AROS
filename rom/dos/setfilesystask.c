@@ -52,7 +52,7 @@
 
     old = pr->pr_FileSystemTask;
     pr->pr_FileSystemTask = task;
-    return BADDR(old);
+    return old;
 
     AROS_LIBFUNC_EXIT
 } /* SetFileSysTask */
