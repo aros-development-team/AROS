@@ -12,6 +12,8 @@
 #include <proto/expansion.h>
 #include <aros/asmcall.h>
 
+#define Z3SLOT 0x01000000
+
 /* do not touch. Ugly hack. UAE direct JIT versions need this */
 /* check UAE expansion.c for ugly details */
 AROS_UFH5(void, writeexpansion,
@@ -72,93 +74,92 @@ AROS_UFH5(void, writeexpansion,
 
 	UBYTE type = configDev->cd_Rom.er_Type & ERT_TYPEMASK;
 	BOOL memorydevice;
-	UBYTE *space;
-	ULONG align;
 	ULONG size = configDev->cd_BoardSize;
-	ULONG start, end, addr;
 	
-	D(bug("Configuring board: mfg=%d prod=%d size=%08x\n",
-	    configDev->cd_Rom.er_Manufacturer, configDev->cd_Rom.er_Product, size));
+	D(bug("Configuring board: mfg=%d prod=%d size=%08x type=%02x\n",
+	    configDev->cd_Rom.er_Manufacturer, configDev->cd_Rom.er_Product, size, configDev->cd_Rom.er_Type));
 
 	memorydevice = (configDev->cd_Rom.er_Type & ERTF_MEMLIST) != 0;
-	if (type == ERT_ZORROII) {
+	if (type == ERT_ZORROIII) {
+		UWORD prevslot;
+		UWORD endslot = 255;
+		UWORD slotsize = (size + 0x00ffffff) / Z3SLOT;
+		if (IntExpBase(ExpansionBase)->eb_z3Slot == 0)
+			IntExpBase(ExpansionBase)->eb_z3Slot = 0x40000000 / Z3SLOT;
+		prevslot = IntExpBase(ExpansionBase)->eb_z3Slot;
+		D(bug("size=%d prev=%d end=%d\n", slotsize, prevslot, endslot));
+		if (prevslot + slotsize <= endslot) {
+			ULONG startaddr = prevslot * Z3SLOT;
+			IntExpBase(ExpansionBase)->eb_z3Slot += slotsize;
+			configDev->cd_BoardAddr	 = (APTR)startaddr;
+			AROS_UFC5(void, writeexpansion,
+				AROS_UFCA(ULONG, board, A0),
+				AROS_UFCA(ULONG, configDev, A3),
+				AROS_UFCA(UBYTE, type, D0),
+	                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
+	                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
+	             	);
+			return TRUE;
+		}
+	} else {
+		ULONG start, end, addr, align;
+		UBYTE *space;
 		start = 0x00200000;
 		end   = 0x009FFFFF;
 		space = IntExpBase(ExpansionBase)->eb_z2Slots;
 		align = configDev->cd_BoardSize;
-	} else {
-		start = size > 0x20000000 ? 0x10000000 : 0x40000000;
-		end   = 0x7FFFFFFF;
-		space = IntExpBase(ExpansionBase)->eb_z3Slots;
-		align = 0x01000000;
-	}
-	if (!memorydevice && type == ERT_ZORROII) {
-		start = 0x00E90000;
-		end   = 0x00EFFFFF;
-		align = size;
-		/* Blizzard 128k expansion must be at 0x00EA0000
-		 * 128k boards must have even start address? */
-		if (size > E_SLOTSIZE)
-			start = 0x00EA0000;
-	}
-	D(bug("Configuration area %08x to %08x, block %08x\n", start, end, align));
-
-	for (addr = start; addr < end; addr += align) {
-		ULONG startaddr = addr;
-		UWORD offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
-		BYTE bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
-		UBYTE res = space[offset];
-		ULONG sizeleft = size;
-
-		if (res & (1 << bit))
-			continue;
-
-		// found free start address
-		if (size >= E_SLOTSIZE * SLOTSPERBYTE) {
-			// needs at least 1 byte and is always aligned to byte
-			while (space[offset] == 0 && sizeleft > 0 && offset <= end / (E_SLOTSIZE * SLOTSPERBYTE)) {
-				offset++;
-				sizeleft -= E_SLOTSIZE * SLOTSPERBYTE;
-			}
-		} else {
+		if (!memorydevice) {
+			start = 0x00E90000;
+			end   = 0x00EFFFFF;
+			align = size;
+			/* Blizzard 1240/1260 SCSI kit (128k rom) must be at 0x00EA0000
+		 	* Does this mean all >64k boards must be 128k aligned? */
+			if (size > E_SLOTSIZE)
+				start = 0x00EA0000;
+		}
+		for (addr = start; addr < end; addr += align) {
+			ULONG startaddr = addr;
+			UWORD offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
+			BYTE bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
+			UBYTE res = space[offset];
+			ULONG sizeleft = size;
+	
+			if (res & (1 << bit))
+				continue;
 			// bit by bit small board check (fits in one byte)
-			while ((res & (1 << bit)) == 0 && sizeleft > 0 && bit >= 0) {
+			while ((res & (1 << bit)) == 0 && sizeleft >= E_SLOTSIZE && bit >= 0) {
 				sizeleft -= E_SLOTSIZE;
 				bit--;
 			}
-		}
-		if (sizeleft > 0)
-			continue;
+			if (sizeleft > 0)
+				continue;
+
+			configDev->cd_BoardAddr	 = (APTR)startaddr;
+			AROS_UFC5(void, writeexpansion,
+				AROS_UFCA(ULONG, board, A0),
+				AROS_UFCA(ULONG, configDev, A3),
+				AROS_UFCA(UBYTE, type, D0),
+	                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
+	                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
+	             	);
 		
-		configDev->cd_BoardAddr	 = (APTR)startaddr;
-		AROS_UFC5(void, writeexpansion,
-			AROS_UFCA(ULONG, board, A0),
-			AROS_UFCA(ULONG, configDev, A3),
-			AROS_UFCA(UBYTE, type, D0),
-                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
-                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
-             	);
-		D(bug("Configured at %08x\n", configDev->cd_BoardAddr));
-		
-		// do not remove this, configDev->cd_BoardAddr
-		// might have changed inside writeexpansion
-		startaddr = (ULONG)configDev->cd_BoardAddr;
-		offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
-		bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
-		sizeleft = size;
-		// now allocate area we reserved
-		if (size >= E_SLOTSIZE * SLOTSPERBYTE) {
-			memset(space + offset, 0xff, sizeleft / (E_SLOTSIZE * SLOTSPERBYTE));
-		} else {
-			while (sizeleft > 0) {
+			// do not remove this, configDev->cd_BoardAddr
+			// might have changed inside writeexpansion
+			startaddr = (ULONG)configDev->cd_BoardAddr;
+			offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
+			bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
+			sizeleft = size;
+			// now allocate area we reserved
+			while (sizeleft >= E_SLOTSIZE) {
 				space[offset] |= 1 << bit;
 				sizeleft -= E_SLOTSIZE;
 				bit--;
 			}
+	
+			return TRUE;
 		}
-
-		return TRUE;
 	}
+
 	D(bug("Configuration failed!\n"));
 	if (!(configDev->cd_Flags & ERFF_NOSHUTUP)) {
 		configDev->cd_Flags |= CDF_SHUTUP;
