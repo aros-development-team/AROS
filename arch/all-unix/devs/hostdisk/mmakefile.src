@@ -7,6 +7,6 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" 
 	       -I$(SRCDIR)/arch/all-hosted/devs/hostdisk -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 %build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
-    arch=unix files="hostdisk_host"
+    arch=unix files="hostdisk_host geometry"
 
 %common
