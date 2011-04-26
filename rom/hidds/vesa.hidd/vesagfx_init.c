@@ -69,6 +69,8 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd_Gfx,
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
+    IID_Hidd_Compositing,
+    IID_Hidd_GC,
     IID_Hidd
 };
 
@@ -82,6 +84,7 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
     if (!GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
     	return FALSE;
 
+    xsd->cursor_visible = TRUE;
     InitSemaphore(&xsd->framebufferlock);
     InitSemaphore(&xsd->HW_acc);
 
@@ -103,6 +106,18 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
 	return FALSE;
     }
 
+    xsd->mid_BitMapStackChanged = OOP_GetMethodID(IID_Hidd_Compositing,
+        moHidd_Compositing_BitMapStackChanged);
+    xsd->mid_BitMapPositionChanged = OOP_GetMethodID(IID_Hidd_Compositing,
+        moHidd_Compositing_BitMapPositionChanged);
+    xsd->mid_BitMapRectChanged = OOP_GetMethodID(IID_Hidd_Compositing,
+        moHidd_Compositing_BitMapRectChanged);
+    xsd->mid_ValidateBitMapPositionChange =
+        OOP_GetMethodID(IID_Hidd_Compositing,
+        moHidd_Compositing_ValidateBitMapPositionChange);
+    xsd->mid_DisplayRectChanged = OOP_GetMethodID(IID_Hidd_Compositing,
+        moHidd_Compositing_DisplayRectChanged);
+
     gfxhidd = OOP_NewObject(LIBBASE->vsd.vesagfxclass, NULL, NULL);
     D(bug("[VESA] gfxhidd 0x%p\n", gfxhidd));
 
@@ -120,7 +135,7 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
 	D(bug("[VESA] AddDisplayDriver() result: %u\n", err));
 	if (!err)
 	{
-	    /* We use ourselves, and noone else */
+	    /* We use ourselves, and no one else does */
     	    LIBBASE->library.lib_OpenCnt = 1;
     	    res = TRUE;
 	}

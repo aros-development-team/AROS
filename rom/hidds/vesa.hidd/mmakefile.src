@@ -5,6 +5,7 @@ FILES	:=	\
 	vesagfx_init \
 	vesagfxclass \
 	hardware \
+	compositingclass \
 	bitmap
 
 %build_module mmake=kernel-hidd-vesa \

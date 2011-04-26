@@ -25,6 +25,7 @@
 
 #include "bitmap.h"
 #include "vesagfxclass.h"
+#include "compositing.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -59,6 +60,9 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_Depth, &depth);
 	OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel, &multi);
 	
+        data->compositing = (OOP_Object *)
+            GetTagData(aHidd_VesaGfxBitMap_CompositingHidd, 0, msg->attrList);
+
 	ASSERT (width != 0 && height != 0 && depth != 0);
 	/* 
 	   We must only create depths that are supported by the friend drawable
@@ -129,8 +133,7 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     if (data->DAC)
 	FreeMem(data->DAC, 768);
-    if (data->VideoData)
-    	FreeVec(data->VideoData);
+    FreeVec(data->VideoData);
 
     OOP_DoSuperMethod(cl, o, msg);
 
@@ -162,8 +165,11 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		*msg->storage = (IPTR)data->VideoData;
 		return;
 	}
-    } else if (IS_BM_ATTR(msg->attrID, idx)) {
-	switch (idx) {
+    }
+    else if (IS_BM_ATTR(msg->attrID, idx))
+    {
+	switch (idx)
+        {
 	case aoHidd_BitMap_Visible:
 	    *msg->storage = data->disp;
 	    return;
@@ -187,7 +193,6 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     ULONG   	    idx;
     LONG xoffset = data->xoffset;
     LONG yoffset = data->yoffset;
-    LONG limit;
 
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
@@ -199,44 +204,49 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             case aoHidd_BitMap_Visible:
 		D(bug("[VesaBitMap] Setting Visible to %d\n", tag->ti_Data));
 		data->disp = tag->ti_Data;
-		if (data->disp) {
+		if (data->disp)
+                {
 		    if (data->DAC)
 			DACLoad(XSD(cl), data->DAC, 0, 256);
 		}
 		break;
 	    case aoHidd_BitMap_LeftEdge:
 	        xoffset = tag->ti_Data;
-		/* Our bitmap can not be smaller than display size
-		   because of fakegfx.hidd limitations (it can't place
-		   cursor beyond bitmap edges). Otherwize Intuition
-		   will provide strange user experience (mouse cursor will
-		   disappear) */
-    		limit = data->disp_width - data->width;
-    		if (xoffset > 0)
-		    xoffset = 0;
-		else if (xoffset < limit)
-		    xoffset = limit;
 		break;
 	    case aoHidd_BitMap_TopEdge:
 	        yoffset = tag->ti_Data;
-		limit = data->disp_height - data->height;
-		if (yoffset > 0)
-		    yoffset = 0;
-		else if (yoffset < limit)
-		    yoffset = limit;
 		break;
 	    }
 	}
     }
 
-    if ((xoffset != data->xoffset) || (yoffset != data->yoffset)) {
-	D(bug("[VesaBitMap] Scroll to (%d, %d)\n", xoffset, yoffset));
-	data->xoffset = xoffset;
-	data->yoffset = yoffset;
+    if ((xoffset != data->xoffset) || (yoffset != data->yoffset))
+    {
+        /* If there was a change requested, validate it */
+        struct pHidd_Compositing_ValidateBitMapPositionChange vbpcmsg =
+        {
+            mID : XSD(cl)->mid_ValidateBitMapPositionChange,
+            bm : o,
+            newxoffset : &xoffset,
+            newyoffset : &yoffset
+        };
 
-	LOCK_FRAMEBUFFER(XSD(cl));
-	vesaDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
-	UNLOCK_FRAMEBUFFER(XSD(cl));
+        OOP_DoMethod(data->compositing, (OOP_Msg)&vbpcmsg);
+
+        if ((xoffset != data->xoffset) || (yoffset != data->yoffset))
+        {
+            /* If change passed validation, execute it */
+            struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
+            {
+                mID : XSD(cl)->mid_BitMapPositionChanged,
+                bm : o
+            };
+
+            data->xoffset = xoffset;
+            data->yoffset = yoffset;
+
+            OOP_DoMethod(data->compositing, (OOP_Msg)&bpcmsg);
+        }
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -254,7 +264,8 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 
     D(bug("[VesaBitMap] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
 
-    if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) {
+    if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
+    {
 	D(bug("[VesaBitMap] DoSuperMethod() failed\n"));
 	return FALSE;
     }
@@ -262,7 +273,8 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
     if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
 	return FALSE;
 
-    if (data->DAC) {
+    if (data->DAC)
+    {
 	for ( xc_i = msg->firstColor, col_i = 0;
     	      col_i < msg->numColors; 
 	      xc_i ++, col_i ++) {
@@ -288,10 +300,17 @@ VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Upda
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[VesaBitMap] UpdateRect(%d, %d, %d, %d), bitmap 0x%p\n", msg->x, msg->y, msg->width, msg->height, o));
-    if (data->disp) {
-	LOCK_FRAMEBUFFER(XSD(cl));
-        vesaDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);
-	UNLOCK_FRAMEBUFFER(XSD(cl));
-    }
+    D(bug("[VesaBitMap] UpdateRect(%d, %d, %d, %d), bitmap 0x%p\n",
+        msg->x, msg->y, msg->width, msg->height, o));
+    struct pHidd_Compositing_BitMapRectChanged compmsg =
+    {
+        mID : XSD(cl)->mid_BitMapRectChanged,
+        bm : o,
+        x : msg->x,
+        y : msg->y,
+        width : msg->width,
+        height : msg->height,
+    };
+
+    OOP_DoMethod(data->compositing, (OOP_Msg)&compmsg);
 }
