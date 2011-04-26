@@ -26,18 +26,33 @@ struct VesaGfx_data
     struct Interrupt ResetInterrupt;
 };
 
-#define ATTRBASES_NUM 7
+#define ATTRBASES_NUM 9
 
 struct VesaGfx_staticdata
 {
     OOP_Class 	    	    *vesagfxclass;
     OOP_Class 	    	    *bmclass;
+    OOP_Class 	    	    *compositingclass;
     OOP_Object      	    *vesagfxhidd;
-    OOP_Object       	    *visible;		/* Currently visible bitmap */
+    OOP_Object      	    *compositing;
+    OOP_Object      	    *gc;
     struct HWData   	    data;
     struct SignalSemaphore  framebufferlock;
     struct SignalSemaphore  HW_acc;
     OOP_AttrBase	    attrBases[ATTRBASES_NUM];
+    ULONG                   *cursor_pixels;
+    OOP_Object              *cursor_scratch_bm;
+    WORD                    cursor_x;
+    WORD                    cursor_y;
+    UWORD                   cursor_width;
+    UWORD                   cursor_height;
+    BOOL                    cursor_visible;
+
+    OOP_MethodID    mid_BitMapStackChanged;
+    OOP_MethodID    mid_BitMapPositionChanged;
+    OOP_MethodID    mid_BitMapRectChanged;
+    OOP_MethodID    mid_ValidateBitMapPositionChange;
+    OOP_MethodID    mid_DisplayRectChanged;
 };
 
 struct VesaGfxBase
@@ -57,6 +72,8 @@ struct VesaGfxBase
 #undef HiddGfxAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
+#undef HiddCompositingAttrBase
+#undef HiddGCAttrBase
 #undef HiddAttrBase
 
 /* These must stay in the same order as interfaces[] array in vesagfx_init.c */
@@ -66,6 +83,8 @@ struct VesaGfxBase
 #define HiddGfxAttrBase		  XSD(cl)->attrBases[3]
 #define HiddPixFmtAttrBase	  XSD(cl)->attrBases[4]
 #define HiddSyncAttrBase	  XSD(cl)->attrBases[5]
-#define HiddAttrBase		  XSD(cl)->attrBases[6]
+#define HiddCompositingAttrBase	  XSD(cl)->attrBases[6]
+#define HiddGCAttrBase		  XSD(cl)->attrBases[7]
+#define HiddAttrBase		  XSD(cl)->attrBases[8]
 
 #endif /* HIDD_VESAGFXCLASS_H */

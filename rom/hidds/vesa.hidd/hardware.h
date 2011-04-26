@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef HARDWARE_H
 #define HARDWARE_H
 
@@ -39,8 +44,9 @@ struct BitmapData;
 
 BOOL initVesaGfxHW(struct HWData *);
 void DACLoad(struct VesaGfx_staticdata *, UBYTE *, unsigned char, int);
-void ClearBuffer(struct HWData *data);
 void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
 		       LONG x1, LONG y1, LONG x2, LONG y2);
+void ClearBuffer(struct HWData *data);
+void ClearRect(struct HWData *data, WORD x, WORD y, WORD width, WORD height);
 
 #endif

@@ -117,22 +117,22 @@ void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
     y2 += data->yoffset;
 
     /* Clip the rectangle against physical display borders */
-    if ((x1 >= data->disp_width) || (x2 < 1) ||
-        (y1 >= data->disp_height) || (y2 < 1))
+    if ((x1 >= data->disp_width) || (x2 < 0) ||
+        (y1 >= data->disp_height) || (y2 < 0))
 	return;
     if (x1 < 0)
 	x1 = 0;
     if (y1 < 0)
 	y1 = 0;
-    if (x2 > data->disp_width)
-	x2 = data->disp_width;
-    if (y2 > data->disp_height)
-	y2 = data->disp_height;
+    if (x2 >= data->disp_width)
+	x2 = data->disp_width - 1;
+    if (y2 >= data->disp_height)
+	y2 = data->disp_height - 1;
 
     /* Calculate width and height */
-    w = x2 - x1;
-    h = y2 - y1;
-    /* Jump back to bitmap coordinatess (adjusted) */
+    w = x2 - x1 + 1;
+    h = y2 - y1 + 1;
+    /* Jump back to bitmap coordinates (adjusted) */
     sx = x1 - data->xoffset;
     sy = y1 - data->yoffset;
 
@@ -171,7 +171,7 @@ void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
     else
     {
 	/* this is a plain total fast rulez copy */
-	CopyMem(src, dst, w*h);
+	CopyMem(src, dst, w * h);
     }
 }
 
@@ -293,6 +293,22 @@ void ClearBuffer(struct HWData *data)
 
     p = (IPTR *)data->framebuffer;
     limit = (IPTR *)((IPTR)p + data->height * data->bytesperline);
+    while (p < limit)
+        *p++ = 0;
+}
+
+/*
+** ClearRect --
+**      clear part of the screen buffer
+**
+** TO DO: clear rectangles that aren't full width of screen
+*/
+void ClearRect(struct HWData *data, WORD x, WORD y, WORD width, WORD height)
+{
+    IPTR *p, *limit;
+
+    p = (IPTR *)((IPTR)data->framebuffer + y * data->bytesperline);
+    limit = (IPTR *)((IPTR)p + height * data->bytesperline);
     while (p < limit)
         *p++ = 0;
 }
