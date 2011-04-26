@@ -175,6 +175,10 @@ extern const char Hostdisk_LibName[];
 
 static const char *libcSymbols[] =
 {
+    "open",
+    "close",
+    "read",
+    "write",
     "lseek",
 #ifdef HOST_OS_linux
     "__errno_location",
