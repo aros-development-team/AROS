@@ -8,8 +8,8 @@ include $(TOP)/config/make.cfg
 #MM- systemdisk : systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- systemdisk-quick : systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
 
-#MM- bootiso : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT) bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-#MM- bootiso-quick : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)-quick bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+#MM- bootiso : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)
+#MM- bootiso-quick : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)-quick
 
 #MM boot : boot-$(ARCH)-$(CPU) boot-$(ARCH) boot-$(FAMILY)
 

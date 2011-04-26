@@ -1,9 +1,9 @@
-# Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+# Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
 
-#MM AROS : clean-errors AROS-$(ARCH)-$(CPU) test
+#MM AROS : clean-errors AROS-$(ARCH)-$(CPU)$(AROS_TARGET_SUFFIX) test
 AROS : checkerr
 	@$(NOP)
 
@@ -34,6 +34,7 @@ query :
 	@$(ECHO) "HOST_LDFLAGS   : $(HOST_LDFLAGS)"
 	@$(ECHO) "KERNEL_CC      : $(KERNEL_CC)"
 	@$(ECHO) "KERNEL_CFLAGS  : $(KERNEL_CFLAGS)"
+	@$(ECHO) "KERNEL_LD      : $(KERNEL_LD)"
 	@$(ECHO) "KERNEL_LDFLAGS : $(KERNEL_LDFLAGS)"
 	@$(ECHO) "TARGET_CC      : $(TARGET_CC)"
 	@$(ECHO) "TARGET_CFLAGS  : $(TARGET_CFLAGS)"
@@ -43,3 +44,4 @@ query :
 	@$(ECHO) "GENDIR         : $(GENDIR)"
 	@$(ECHO) "PORTSDIR       : $(PORTSDIR)"
 	@$(ECHO) "PORTSSOURCEDIR : $(PORTSSOURCEDIR)"
+	@$(ECHO) "CROSSTOOLSDIR  : $(CROSSTOOLSDIR)"
