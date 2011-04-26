@@ -124,9 +124,9 @@
 	library->lib_NegSize=negsize;
 	library->lib_PosSize=dataSize;
 
-	/* Create structure */
+	/* Create structure, do not clear struct Library */
 	if(structInit!=NULL)
-	    InitStruct(structInit,library,dataSize);
+	    InitStruct(structInit,library,0);
 
 	/* Call init vector */
 	if (libInit!=NULL)
