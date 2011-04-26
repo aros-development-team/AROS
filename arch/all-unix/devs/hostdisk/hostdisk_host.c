@@ -56,14 +56,17 @@ static ULONG error(int unixerr)
 {
     switch (unixerr)
     {
-    	case EBUSY:
-	    return TDERR_DriveInUse;
+    case 0:
+    	return 0;
 
-	case EPERM:
-	    return TDERR_WriteProt;
+    case EBUSY:
+	return TDERR_DriveInUse;
 
-	default:
-	    return TDERR_NotSpecified;
+    case EPERM:
+	return TDERR_WriteProt;
+
+    default:
+	return TDERR_NotSpecified;
     }
 }
 
@@ -201,8 +204,8 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 	err = Host_DeviceGeometry(Unit, dg);
 
 	/* If this routine is not implemented, use fstat() (worst case) */
-	if (err != IOERR_NOCMD)
-	    return err;
+	if (err != ENOSYS)
+	    return error(err);
     }
 
     HostLib_Lock();
@@ -223,7 +226,7 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 	dg->dg_Cylinders    = dg->dg_TotalSectors / dg->dg_CylSectors;
 	dg->dg_BufMemType   = MEMF_PUBLIC;
 	dg->dg_DeviceType   = DG_DIRECT_ACCESS;
-	dg->dg_Flags        = 0; //DGF_REMOVABLE;
+	dg->dg_Flags        = 0;
 
 	return 0;
     }
