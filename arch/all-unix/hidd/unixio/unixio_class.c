@@ -34,6 +34,7 @@
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 #include <hidd/unixio.h>
+#include <hidd/unixio_inline.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 
@@ -444,7 +445,7 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
 
     ObtainSemaphore(&data->sem);
 
-    retval = (APTR)data->SysIFace->open(msg->um_FileName, (int)msg->um_Flags, (int)msg->um_Mode);
+    retval = (APTR)(unsigned long)data->SysIFace->open(msg->um_FileName, (int)msg->um_Flags, (int)msg->um_Mode);
     AROS_HOST_BARRIER
 
     if (msg->um_ErrNoPtr)
@@ -506,7 +507,7 @@ int UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgClos
     {
     	ObtainSemaphore(&data->sem);
 
-    	ret = data->SysIFace->close((int)msg->um_FD);
+    	ret = data->SysIFace->close((long)msg->um_FD);
     	AROS_HOST_BARRIER
 
     	if (msg->um_ErrNoPtr)
@@ -574,7 +575,7 @@ IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgRead
 
     	do
 	{
-    	    retval = data->SysIFace->read((int)msg->um_FD, (void *)msg->um_Buffer, (size_t)msg->um_Count);
+    	    retval = data->SysIFace->read((long)msg->um_FD, (void *)msg->um_Buffer, (size_t)msg->um_Count);
     	    AROS_HOST_BARRIER
 
     	    err = *data->errnoPtr;
@@ -652,7 +653,7 @@ IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWri
 
     	do
 	{
-    	    retval = data->SysIFace->write((int)msg->um_FD, (const void *)msg->um_Buffer, (size_t)msg->um_Count);
+    	    retval = data->SysIFace->write((long)msg->um_FD, (const void *)msg->um_Buffer, (size_t)msg->um_Count);
     	    AROS_HOST_BARRIER
 
 	    err = *data->errnoPtr;
@@ -723,7 +724,7 @@ IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMs
     {
     	ObtainSemaphore(&data->sem);
 
-    	retval = data->SysIFace->ioctl((int)msg->um_FD, (int)msg->um_Request, msg->um_Param);
+    	retval = data->SysIFace->ioctl((long)msg->um_FD, (int)msg->um_Request, msg->um_Param);
     	AROS_HOST_BARRIER
 
     	if (msg->um_ErrNoPtr)

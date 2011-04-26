@@ -9,6 +9,6 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" 
 %build_module mmake=workbench-hidd-unix-parallel \
   modname=parallel modtype=hidd \
   files=$(FILES) \
-  uselibs="amiga hiddstubs oop rom"
+  uselibs="amiga oop rom"
 
 #MM workbench-hidd-unix-parallel : kernel-unixio
