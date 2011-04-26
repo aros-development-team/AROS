@@ -3,6 +3,9 @@ include $(TOP)/config/make.cfg
 
 # hostdisk_host.h is host-specific
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/devs/hostdisk
+ifneq ($(FAMILY),)
+USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/devs/hostdisk
+endif
 
 %build_module mmake=workbench-devs-hostdisk \
   modname=hostdisk modtype=device \

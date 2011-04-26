@@ -421,7 +421,7 @@ void eject(struct unit *unit, BOOL eject)
     if (eject)
     {
         Host_Close(unit);
-        unit->file = (BPTR)NULL;
+        unit->file = INVALID_HANDLE_VALUE;
     }
     else
     {
@@ -563,25 +563,31 @@ AROS_UFH3(LONG, unitentry,
 		    err = 0;
 		    iotd->iotd_Req.io_Actual = unit->changecount;
 		    break;
+
 		case TD_CHANGESTATE:
 		    err = 0;
-		    iotd->iotd_Req.io_Actual = unit->file == (BPTR)NULL;
+		    iotd->iotd_Req.io_Actual = (unit->file == INVALID_HANDLE_VALUE);
 		    break;
+
 		case TD_ADDCHANGEINT:
 		    addchangeint(unit, iotd);
 		    err = 0;
 		    break;
+
 		case TD_REMCHANGEINT:
 		    remchangeint(unit, iotd);
 		    err = 0;
 		    break;
+
 		case TD_GETGEOMETRY:
 		    err = Host_GetGeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
 		    break;
+
 		case TD_EJECT:
 		    eject(unit, iotd->iotd_Req.io_Length);
 		    err = 0;
 		    break;
+
 		case TD_PROTSTATUS:
 		    iotd->iotd_Req.io_Actual = (unit->flags & UNIT_READONLY) ? TRUE : FALSE;
 		    err = 0;
