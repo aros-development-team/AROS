@@ -19,8 +19,7 @@
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
 
-#define Z2SLOTS         256
-#define Z3SLOTS         2048
+#define Z2SLOTS         240
 #define SLOTSPERBYTE    8
 
 /* I got this info from the 1.3 include file libraries/expansionbase.h */
@@ -39,7 +38,7 @@ struct IntExpansionBase
     struct SignalSemaphore  eb_BindSemaphore;
 
     UBYTE                   eb_z2Slots[Z2SLOTS/SLOTSPERBYTE];
-    UBYTE                   eb_z3Slots[Z3SLOTS/SLOTSPERBYTE];
+    UWORD                   eb_z3Slot;
 };
 
 #define IntExpBase(eb)	((struct IntExpansionBase*)(eb))
