@@ -631,6 +631,14 @@ static void writeinitlib(FILE *out, struct config *cfg)
 		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n",
 		funccount
 	);
+	if (cfg->options & OPTION_SELFINIT)
+	{
+		fprintf(out,
+			"    ((struct Library*)lh)->lib_NegSize = vecsize;\n"
+			"    ((struct Library*)lh)->lib_PosSize = sizeof(LIBBASETYPE);\n"
+		);
+		
+	}
     }
     else
     {
