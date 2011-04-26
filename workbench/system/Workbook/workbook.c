@@ -136,6 +136,7 @@ ULONG WorkbookMain(void)
     if (wb->wb_OpenerSegList == BNULL)
     	goto error;
 
+    SetConsoleTask(NULL);
     rc = WB_Main(wb);
 
     UnLoadSeg(wb->wb_OpenerSegList);
