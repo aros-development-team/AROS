@@ -1,0 +1,13 @@
+include $(TOP)/config/make.cfg
+
+#MM- workbench-darwin-$(CPU) : workbench-devs-hostdisk
+
+USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)	\
+	       -I$(SRCDIR)/arch/all-unix/devs/hostdisk			\
+	       -I$(SRCDIR)/arch/all-hosted/devs/hostdisk		\
+	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+%build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
+    arch=darwin files="geometry"
+
+%common
