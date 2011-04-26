@@ -910,7 +910,9 @@ void *ASFS_GetData(struct ASFSBase *asfsbase)
     struct Process *proc;
     struct ProcNode *node;
 
-    proc = (struct Process *)FindTask(NULL);
+    /* Warning: Can't call FindTask() here because this function is called
+     * from a tc_Launch hook */
+    proc = (struct Process *)SysBase->ThisTask;
     node = (struct ProcNode *)asfsbase->process_list.lh_Head;
 
     while (node->ln.ln_Succ)
