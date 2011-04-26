@@ -423,6 +423,8 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     	process->pr_ConsoleTask = me->pr_ConsoleTask;
     if (__is_process(me))
     	process->pr_FileSystemTask = me->pr_FileSystemTask;
+    else
+    	process->pr_FileSystemTask = DOSBase->dl_Root->rn_BootProc;
 
     process->pr_CLI = MKBADDR(cli);
 
