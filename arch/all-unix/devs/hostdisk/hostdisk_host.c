@@ -23,6 +23,8 @@
  * instead of "stat" function which is available only on MacOS 10.6.
  */
 #define _DARWIN_NO_64_BIT_INODE
+/* This enables struct stat64 definition */
+#define _DARWIN_C_SOURCE
 #endif
 
 #ifndef INODE64_SUFFIX
@@ -68,7 +70,7 @@ static ULONG error(int unixerr)
 ULONG Host_Open(struct unit *Unit)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
-    struct stat st;
+    struct stat64 st;
     int err;
 
     D(bug("hostdisk: Host_Open(%s)\n", Unit->filename));
@@ -101,7 +103,7 @@ ULONG Host_Open(struct unit *Unit)
     Unit->flags = 0;
 
     HostLib_Lock();
-    err = hdskBase->iface->fstat(Unit->file, &st);
+    err = hdskBase->iface->fstat64(Unit->file, &st);
     HostLib_Unlock();
 
     if (err != -1)
@@ -192,7 +194,7 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
     int res, err;
-    struct stat st;
+    struct stat64 st;
 
     if (Unit->flags & UNIT_DEVICE)
     {
@@ -205,17 +207,17 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 
     HostLib_Lock();
 
-    res = hdskBase->iface->fstat(Unit->file, &st);
+    res = hdskBase->iface->fstat64(Unit->file, &st);
     err = *hdskBase->errnoPtr;
 
     HostLib_Unlock();
 
-    D(bug("hostdisk: Image file length: %d\n", st.st_size));
+    D(bug("hostdisk: Image file length: %ld\n", st.st_size));
     if (res != -1)
     {
-	dg->dg_SectorSize   = 512;
-	dg->dg_Heads        = 16;
-	dg->dg_TrackSectors = 63;
+	dg->dg_SectorSize   = DEF_SECTOR_SIZE;
+	dg->dg_Heads        = DEF_HEADS;
+	dg->dg_TrackSectors = DEF_TRACK_SECTORS;
 	dg->dg_TotalSectors = st.st_size / dg->dg_SectorSize;
 	dg->dg_CylSectors   = dg->dg_Heads * dg->dg_TrackSectors;
 	dg->dg_Cylinders    = dg->dg_TotalSectors / dg->dg_CylSectors;
