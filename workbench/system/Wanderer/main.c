@@ -23,6 +23,7 @@
 #include <proto/workbench.h>
 #endif
 #include <dos/dos.h>
+#include <proto/dos.h>
 
 #include "locale.h"
 #include "wanderer.h"
@@ -403,6 +404,9 @@ if (!initIconWindowClass())
 int main(void)
 {
     LONG             retval = RETURN_ERROR;
+
+    /* WB programs have NULL pr_ConsoleTask */
+    SetConsoleTask(NULL);
 
 #ifndef __AROS__
     if (initLibs())

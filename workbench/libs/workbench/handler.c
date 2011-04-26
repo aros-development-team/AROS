@@ -76,6 +76,7 @@ AROS_UFH3
     struct HandlerContext *hc            = &context;
     BOOL                   running       = TRUE;
     
+    SetConsoleTask(NULL);
     /*-- Initialization ----------------------------------------------------*/
     if (!Initialize()) return 20; // FIXME: report error to user somehow. displaybeep? alert?
     
