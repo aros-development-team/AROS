@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Parallel Unit hidd class implementation.
@@ -16,6 +16,7 @@
 
 /* the rest are Amiga includes */
 #define timeval aros_timeval
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -25,10 +26,10 @@
 #include <exec/memory.h>
 #include <exec/interrupts.h>
 #include <exec/lists.h>
-
 #include <utility/tagitem.h>
 #include <hidd/parallel.h>
 #include <hidd/unixio.h>
+#include <hidd/unixio_inline.h>
 
 #include <aros/symbolsets.h>
 

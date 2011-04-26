@@ -124,17 +124,6 @@ struct uioMsgRemInterrupt
 #define vHidd_UnixIO_RW         (vHidd_UnixIO_Read | vHidd_UnixIO_Write)
 #define vHidd_UnixIO_Error	0x10
 
-/* Stubs */
-IPTR Hidd_UnixIO_Wait(OOP_Object *h, ULONG fd, ULONG mode);
-
-int Hidd_UnixIO_OpenFile(OOP_Object *o, const char *filename, int flags, int mode, int *errno_ptr);
-int Hidd_UnixIO_CloseFile(OOP_Object *o, int fd, int *errno_ptr);
-int Hidd_UnixIO_ReadFile(OOP_Object *o, int fd, void *buffer, int count, int *errno_ptr);
-int Hidd_UnixIO_WriteFile(OOP_Object *o, int fd, const void *buffer, int count, int *errno_ptr);
-int Hidd_UnixIO_IOControlFile(OOP_Object *o, int fd, int request, void *param, int *errno_ptr);
-int Hidd_UnixIO_AddInterrupt(OOP_Object *o, struct uioInterrupt *interrupt);
-void Hidd_UnixIO_RemInterrupt(OOP_Object *o, struct uioInterrupt *interrupt);
-
 #endif /* HIDD_UNIXIO_H */
 
 

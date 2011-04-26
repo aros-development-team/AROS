@@ -32,4 +32,4 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" 
 
 %build_module mmake=workbench-libs-oss-unix-module modname=oss \
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
-    uselibs="amiga rom m oop hiddstubs"
+    uselibs="amiga rom m oop"
