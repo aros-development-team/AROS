@@ -33,6 +33,9 @@ typedef int file_t;
 #define LIBC_NAME "libc.so"
 #endif
 
+/* AROS includes don't define struct stat64, this shuts up warning when compiling host-independent part */
+struct stat64;
+
 struct HostInterface
 {
     int		   (*open)(char *path, int oflag, ...);
@@ -47,10 +50,10 @@ struct HostInterface
 #endif
     int		  *(*__error)(void);
 #ifdef HOST_OS_linux
-    int		   (*__fxstat)(int ver, int fd, struct stat *buf);
+    int		   (*__fxstat64)(int ver, int fd, struct stat64 *buf);
     #define fstat(fd, buf)  __fxstat(_STAT_VER, fd, buf)
 #else
-    int		   (*fstat)(int fd, struct stat *buf);
+    int		   (*fstat64)(int fd, struct stat64 *buf);
 #endif
 };
 
