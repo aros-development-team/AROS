@@ -507,7 +507,7 @@ static int relocate
                 if (offset & 0x02000000)
                     offset -= 0x04000000;
 
-                offset += s - (uint32_t)p;
+                offset += s - (ULONG)p;
 
                 offset >>= 2;
                 *p &= 0xff000000;
