@@ -1,13 +1,16 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM bootiso-chrp-ppc-efika: \
-#MM     boot \
-#MM     ub2lb-chrp-ppc-efika \
+#MM AROS-chrp-ppc-efika: \
 #MM     kernel-chrp-ppc-efika \
 #MM     kernel-chrp-ppc-irq \
 #MM     kernel-package-chrp-ppc-efika \
 #MM     workbench-complete
+
+#MM bootiso-chrp-ppc-efika: \
+#MM     boot \
+#MM     ub2lb-chrp-ppc-efika \
+#MM     AROS-chrp-ppc-efika
 
 #MM kernel-package-chrp-ppc-efika: \
 #MM     linklibs-clib \
