@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,8 +20,8 @@ LONG RequestList(struct List *, ULONG *);
 void typestrncpy(STRPTR, STRPTR, ULONG);
 void getSizeStr(STRPTR, ULONG);
 ULONG sizeStrToUL(STRPTR);
-#ifdef __AROS__
 UWORD strcpyESC(STRPTR dst, STRPTR fmt);
+#ifdef __AROS__
 #ifndef HDTB_HAVE_VARARGPROTOS
 LONG GetPartitionAttrsA(struct PartitionHandle *, IPTR, ... );
 LONG SetPartitionAttrsA(struct PartitionHandle *, IPTR, ... );
@@ -33,6 +33,7 @@ LONG GetPartitionAttrsA(struct PartitionHandle *, IPTR, ... ) __stackparm;
 LONG SetPartitionAttrsA(struct PartitionHandle *, IPTR, ... ) __stackparm;
 LONG GetPartitionTableAttrsA(struct PartitionHandle *, IPTR, ... ) __stackparm;
 #endif
-ULONG getAttrInfo(struct PartitionAttribute *, ULONG);
+ULONG getAttrInfo(const struct PartitionAttribute *, ULONG);
 UBYTE getBitNum(ULONG);
+
 #endif

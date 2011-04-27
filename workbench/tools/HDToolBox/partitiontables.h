@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,12 +13,13 @@
 
 struct HDTBPartition;
 
-struct PartitionTable {
-	struct PartitionAttribute *tattrlist; /* supported partition table attributes */
-	struct PartitionAttribute *pattrlist; /* supported partition attributes */
-	ULONG reserved;
-	ULONG max_partitions;
-	ULONG type;
+struct PartitionTable
+{
+    const struct PartitionAttribute *tattrlist; /* supported partition table attributes */
+    const struct PartitionAttribute *pattrlist; /* supported partition attributes */
+    ULONG reserved;
+    ULONG max_partitions;
+    ULONG type;
 };
 
 BOOL findPartitionTable(struct HDTBPartition *);
