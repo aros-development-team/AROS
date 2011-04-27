@@ -1,14 +1,13 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
+
+#include <proto/utility.h>
+
 #include "partition_support.h"
 #include "platform.h"
-
-#ifndef DEBUG
-#define DEBUG 1
-#endif
 #include "debug.h"
 
 /*****************************************************************************
@@ -21,7 +20,7 @@
 
 /*  SYNOPSIS */
    AROS_LHA(struct PartitionHandle *, root,       A1),
-   AROS_LHA(struct TagItem *,    taglist,       A2),
+   AROS_LHA(const struct TagItem *,   taglist,    A2),
 
 /*  LOCATION */
    struct Library *, PartitionBase, 13, Partition)
@@ -57,11 +56,40 @@
 
     if (root->table)
     {
-    struct PTFunctionTable *handler = root->table->handler;
+    	struct PTFunctionTable *handler = root->table->handler;
+    	struct TagItem *tag;
 
-        if (handler->getPartitionTableAttrs)
-            return handler->getPartitionTableAttrs(PartitionBase, root, taglist);
+    	while ((tag = NextTagItem(&taglist)))
+    	{
+    	    LONG sup;
+
+	    if (handler->getPartitionTableAttr)
+                sup = handler->getPartitionTableAttr(PartitionBase, root, tag);
+            else
+                sup = 0;
+
+	    if (!sup)
+	    {
+	        switch (tag->ti_Tag)
+	        {
+	        case PTT_TYPE:
+            	    *((LONG *)tag->ti_Data) = root->table->type;
+            	    break;
+
+		case PTT_MAXLEADIN:
+	        case PTT_RESERVED:
+	        case PTT_MAX_PARTITIONS:
+	            *((LONG *)taglist[0].ti_Data) = 0;
+	            break;
+	        }
+	    }
+	}
+
+        return 1;
     }
-    return 1;
+
+    /* There's no partition table here */
+    return 0;
+
     AROS_LIBFUNC_EXIT
 }

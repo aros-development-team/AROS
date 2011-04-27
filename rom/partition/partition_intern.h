@@ -23,4 +23,6 @@ struct PartitionBase_intern
     struct Library *dosBase;
 };
 
+#define PTYPE(x) ((struct PartitionType *)x)
+
 #endif /* PARTITION_INTERN_H */

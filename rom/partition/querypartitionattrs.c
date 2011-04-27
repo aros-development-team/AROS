@@ -1,17 +1,26 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
+
 #include "partition_support.h"
 #include "platform.h"
+
+/* This what we can always do */
+static const struct PartitionAttribute defaultPartitionAttrs[] =
+{
+    {PTA_GEOMETRY,  PLAM_READ},
+    {PTA_DOSENVEC,  PLAM_READ},
+    {PTA_DONE, 0}
+};
 
 /*****************************************************************************
 
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH1(struct PartitionAttribute *, QueryPartitionAttrs,
+   AROS_LH1(const struct PartitionAttribute *, QueryPartitionAttrs,
 
 /*  SYNOPSIS */
    AROS_LHA(struct PartitionHandle *, table,       A1),
@@ -47,11 +56,12 @@
 
     if (table->table)
     {
-    struct PTFunctionTable *handler = table->table->handler;
+    	struct PTFunctionTable *handler = table->table->handler;
 
-        if (handler->queryPartitionAttrs)
-            return handler->queryPartitionAttrs(PartitionBase);
+        return handler->partitionAttrs;
     }
-    return 0;
+
+    return defaultPartitionAttrs;
+
     AROS_LIBFUNC_EXIT
 }

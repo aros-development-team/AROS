@@ -3,6 +3,9 @@
     $Id: getpartitiontableattrs.c 38180 2011-04-12 12:32:14Z sonic $
 
 */
+
+#include <proto/utility.h>
+
 #include "partition_support.h"
 #include "platform.h"
 
@@ -12,11 +15,11 @@
 #include <utility/tagitem.h>
 #include <libraries/partition.h>
 
-   AROS_LH2(LONG, GetFileSystemAttrsA,
+   AROS_LH2(void, GetFileSystemAttrsA,
 
 /*  SYNOPSIS */
    AROS_LHA(struct Node *, handle, A1),
-   AROS_LHA(struct TagItem *, taglist, A2),
+   AROS_LHA(const struct TagItem *, taglist, A2),
 
 /*  LOCATION */
    struct Library *, PartitionBase, 21, Partition)
@@ -32,7 +35,7 @@
         FST_FSENTRY (struct FileSysEntry *) - Fill in the given struct FileSysEntry.
 
     RESULT
-    	Reserved. Do not inteprete it in any way.
+    	None.
 
     NOTES
     	Name is returned as a pointer to internally allocated string. You should copy
@@ -62,8 +65,19 @@
     AROS_LIBFUNC_INIT
 
     const struct FSFunctionTable *handler = ((struct FileSysHandle *)handle)->handler;
+    struct TagItem *tag;
 
-    return handler->getFileSystemAttrs(PartitionBase, (struct FileSysHandle *)handle, taglist);
+    while ((tag = NextTagItem(&taglist)))
+    {
+    	handler->getFileSystemAttr(PartitionBase, (struct FileSysHandle *)handle, tag);
+    	
+    	/*
+    	 * TODO: handler returns TRUE if it knows the attrubute and FALSE otherwise.
+    	 * If we ever have more partition table types which can handle embedded
+    	 * filesystem handlers, this can be expanded similar to GetPartitionAttrs(),
+    	 * and we will have some generic code here.
+    	 */
+    }
 
     AROS_LIBFUNC_EXIT
 }

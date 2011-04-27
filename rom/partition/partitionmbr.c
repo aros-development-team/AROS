@@ -453,93 +453,43 @@ struct MBRData *data;
     PartitionMBRFreeHandle(PartitionBase, ph);
 }
 
-static LONG PartitionMBRGetPartitionTableAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct TagItem *taglist
-    )
+static LONG PartitionMBRGetPartitionTableAttr(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *tag)
 {
-
-    while (taglist[0].ti_Tag != TAG_DONE)
+    switch (tag->ti_Tag)
     {
+    case PTT_RESERVED:
+        *((LONG *)tag->ti_Data) = root->de.de_BlocksPerTrack; /* One track */
+        return TRUE;
 
-        switch (taglist[0].ti_Tag)
-        {
-        case PTT_TYPE:
-            *((LONG *)taglist[0].ti_Data) = root->table->type;
-            break;
-        case PTT_RESERVED:
-            *((LONG *)taglist[0].ti_Data) =
-                root->de.de_BlocksPerTrack; /* One track */
-            break;
-        case PTT_MAX_PARTITIONS:
-            *((LONG *)taglist[0].ti_Data) = MBR_MAX_PARTITIONS;
-        }
-        taglist++;
+    case PTT_MAX_PARTITIONS:
+        *((LONG *)tag->ti_Data) = MBR_MAX_PARTITIONS;
+        return TRUE;
     }
+
     return 0;
 }
 
-static LONG PartitionMBRSetPartitionTableAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct TagItem *taglist
-    )
+static LONG PartitionMBRGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
 {
-
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
-
-        switch (taglist[0].ti_Tag)
-        {
-        }
-        taglist++;
-    }
-    return 0;
-}
-
-static LONG PartitionMBRGetPartitionAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph,
-        struct TagItem *taglist
-    )
-{
-
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
     struct MBRData *data = (struct MBRData *)ph->data;
 
-        switch (taglist[0].ti_Tag)
-        {
-        case PT_GEOMETRY:
-            {
-                struct DriveGeometry *dg = (struct DriveGeometry *)taglist[0].ti_Data;
-                CopyMem(&ph->dg, dg, sizeof(struct DriveGeometry));
-            }
-            break;
-        case PT_DOSENVEC:
-            CopyMem(&ph->de, (struct DosEnvec *)taglist[0].ti_Data, sizeof(struct DosEnvec));
-            break;
-        case PT_TYPE:
-            {
-            struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
+    switch (tag->ti_Tag)
+    {
+    case PT_TYPE:
+        PTYPE(tag->ti_Data)->id[0] = (LONG)data->entry->type;
+        PTYPE(tag->ti_Data)->id_len = 1;
+        return TRUE;
 
-                ptype->id[0] = (LONG)data->entry->type;
-                ptype->id_len = 1;
-            }
-            break;
-        case PT_POSITION:
-            *((LONG *)taglist[0].ti_Data) = (LONG)data->position;
-            break;
-        case PT_ACTIVE:
-            *((LONG *)taglist[0].ti_Data) = data->entry->status & 0x80 ? 1 : 0;
-            break;
-        }
-        taglist++;
+    case PT_POSITION:
+        *((LONG *)tag->ti_Data) = (LONG)data->position;
+        return TRUE;
+
+    case PT_ACTIVE:
+        *((LONG *)tag->ti_Data) = data->entry->status & 0x80 ? 1 : 0;
+        return TRUE;
     }
+
+    /* Everything else gets default values */
     return 0;
 }
 
@@ -617,11 +567,6 @@ static const struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
     {PTTA_DONE,           0}
 };
 
-static struct PartitionAttribute *PartitionMBRQueryPartitionTableAttrs(struct Library *PartitionBase)
-{
-    return (APTR)PartitionMBRPartitionTableAttrs;
-}
-
 static const struct PartitionAttribute PartitionMBRPartitionAttrs[]=
 {
     {PTA_GEOMETRY, PLAM_READ},
@@ -630,11 +575,6 @@ static const struct PartitionAttribute PartitionMBRPartitionAttrs[]=
     {PTA_ACTIVE,   PLAM_READ | PLAM_WRITE},
     {PTA_DONE,     0}
 };
-
-static struct PartitionAttribute *PartitionMBRQueryPartitionAttrs(struct Library *PartitionBase)
-{
-    return (APTR)PartitionMBRPartitionAttrs;
-}
 
 static ULONG PartitionMBRDestroyPartitionTable
     (
@@ -666,12 +606,12 @@ const struct PTFunctionTable PartitionMBR =
     PartitionMBRCreatePartitionTable,
     PartitionMBRAddPartition,
     PartitionMBRDeletePartition,
-    PartitionMBRGetPartitionTableAttrs,
-    PartitionMBRSetPartitionTableAttrs,
-    PartitionMBRGetPartitionAttrs,
+    PartitionMBRGetPartitionTableAttr,
+    NULL,
+    PartitionMBRGetPartitionAttr,
     PartitionMBRSetPartitionAttrs,
-    PartitionMBRQueryPartitionTableAttrs,
-    PartitionMBRQueryPartitionAttrs,
+    PartitionMBRPartitionTableAttrs,
+    PartitionMBRPartitionAttrs,
     PartitionMBRDestroyPartitionTable,
     NULL
 };
