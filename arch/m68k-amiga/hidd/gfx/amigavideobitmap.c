@@ -9,8 +9,6 @@
 
 /****************************************************************************************/
 
-#define __OOP_NOATTRBASES__
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
