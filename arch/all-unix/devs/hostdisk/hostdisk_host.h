@@ -27,10 +27,17 @@ typedef int file_t;
 
 #ifdef HOST_OS_darwin
 #define LIBC_NAME "libSystem.dylib"
+#define DISK_DEVICE "/dev/disk%ld"
+#define DISK_BASE   0
 #endif
 
 #ifndef LIBC_NAME
 #define LIBC_NAME "libc.so"
+#endif
+
+#ifndef DISK_DEVICE
+#define DISK_DEVICE "/dev/hd%lc"
+#define DISK_BASE   'a'
 #endif
 
 /* AROS includes don't define struct stat64, this shuts up warning when compiling host-independent part */

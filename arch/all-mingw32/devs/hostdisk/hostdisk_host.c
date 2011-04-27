@@ -142,9 +142,6 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 	    dg->dg_Cylinders    = geom.Cylinders;
 	    dg->dg_CylSectors   = dg->dg_TrackSectors * dg->dg_Heads;
 	    dg->dg_TotalSectors = dg->dg_CylSectors * dg->dg_Cylinders;
-	    dg->dg_BufMemType   = MEMF_PUBLIC;
-	    dg->dg_DeviceType   = DG_DIRECT_ACCESS;
-	    dg->dg_Flags        = 0; //DGF_REMOVABLE;
  
 	    D(bug("hostdisk: Sector size      : %u\n", dg->dg_SectorSize));
 	    D(bug("hostdisk: Heads            : %u\n", dg->dg_Heads));
@@ -156,23 +153,18 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
     }
     else
     {
+    	ULONG len64 = 0;
+
 	Forbid();
-	len = Unit->hdskBase->iface->GetFileSize(Unit->file, NULL);
+	len = Unit->hdskBase->iface->GetFileSize(Unit->file, &len64);
 	err = Unit->hdskBase->iface->GetLastError();
 	Permit();
 
 	D(bug("hostdisk: Image file length: %d\n", len));
 	if (len != -1)
 	{
-	    dg->dg_SectorSize   = 512;
-	    dg->dg_Heads        = 16;
-	    dg->dg_TrackSectors = 63;
-	    dg->dg_TotalSectors = len / dg->dg_SectorSize;
-	    dg->dg_Cylinders    = dg->dg_TotalSectors / (dg->dg_Heads * dg->dg_TrackSectors);
-	    dg->dg_CylSectors   = dg->dg_Heads * dg->dg_TrackSectors;
-	    dg->dg_BufMemType   = MEMF_PUBLIC;
-	    dg->dg_DeviceType   = DG_DIRECT_ACCESS;
-	    dg->dg_Flags        = 0; //DGF_REMOVABLE;
+	    dg->dg_TotalSectors = (len >> 9) | (len64 << 23); /* This relies on the fact that SectorSize == 512) */
+	    dg->dg_Cylinders    = dg->dg_TotalSectors;	      /* LBA, CylSectors == 1 */
 
 	    return 0;
 	}

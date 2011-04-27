@@ -412,7 +412,8 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
 
 /**************************************************************************/
 
-static void addchangeint(struct unit *unit, struct IOExtTD *iotd) {
+static void addchangeint(struct unit *unit, struct IOExtTD *iotd)
+{
     Forbid();
     AddTail((struct List *)&unit->changeints, (struct Node *)iotd);
     Permit();
@@ -420,10 +421,41 @@ static void addchangeint(struct unit *unit, struct IOExtTD *iotd) {
 
 /**************************************************************************/
 
-static void remchangeint(struct unit *unit, struct IOExtTD *iotd) {
+static void remchangeint(struct unit *unit, struct IOExtTD *iotd)
+{
     Forbid();
     Remove((struct Node *)iotd);
     Permit();
+}
+
+/**************************************************************************/
+
+static ULONG getgeometry(struct unit *Unit, struct DriveGeometry *dg)
+{
+    /*
+     * First set some common defaults.
+     * We can work with image file, which is LBA-oriented by nature.
+     * LBA addressing can be represented by flattened geometry, where Heads == TrackSectors == 1,
+     * i. e. one cylinder == one block (sector).
+     * Sector size is assumed to be 512 bytes (a common size for hard disk drives)
+     * Host-specific code can override this if possible.
+     *
+     * This gives us a limitation: we can's handle disks longer than 2TB.
+     * It's general AmigaOS limitation, currently inherited by all Amiga family
+     * of operating systems, this is determined by maximum block number that can
+     * fit into ULONG. In order to overcome this we need 64-bit block number.
+     * Perhaps we should completely go LBA in such a case.
+     */
+    dg->dg_SectorSize   = 512;
+    dg->dg_Heads        = 1;
+    dg->dg_TrackSectors = 1;
+    dg->dg_CylSectors   = 1;	/* Heads * TrackSectors */
+    dg->dg_BufMemType   = MEMF_PUBLIC;
+    dg->dg_DeviceType   = DG_DIRECT_ACCESS;
+    dg->dg_Flags        = 0;
+
+    /* Call host-specific processing */
+    return Host_GetGeometry(Unit, dg);
 }
 
 /**************************************************************************/
@@ -490,7 +522,9 @@ AROS_UFH3(LONG, unitentry,
     unit->port.mp_SigBit = AllocSignal(-1);
     unit->port.mp_Flags = PA_SIGNAL;
 
-    RawDoFmt(unit->hdskBase->DiskDevice, &unit->unitnum, (VOID_FUNC)putchr, &ptr);
+    /* Temporarily use err as a buffer */
+    err = unit->unitnum + unit->hdskBase->unitBase;
+    RawDoFmt(unit->hdskBase->DiskDevice, &err, (VOID_FUNC)putchr, &ptr);
 
     D(bug("hostdisk/unitentry: Trying to open \"%s\" ...\n", buf));
 
@@ -597,7 +631,7 @@ AROS_UFH3(LONG, unitentry,
 		case TD_GETGEOMETRY:
 		    DCMD(bug("hostdisk/unitentry: received TD_GETGEOMETRY\n"));
 
-		    err = Host_GetGeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
+		    err = getgeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
 		    break;
 
 		case TD_EJECT:

@@ -20,6 +20,7 @@ struct HostDiskBase
     struct MsgPort 		port;
     struct MinList 		units;
     STRPTR			DiskDevice;
+    ULONG			unitBase;
     APTR			HostLibBase;
     APTR			KernelHandle;
     struct HostInterface       *iface;
@@ -45,11 +46,6 @@ struct unit
 /* Unit flags */
 #define UNIT_READONLY 0x01
 #define UNIT_DEVICE   0x02
-
-/* Fallback geometry */
-#define DEF_SECTOR_SIZE   512
-#define DEF_HEADS	  16
-#define DEF_TRACK_SECTORS 63
 
 ULONG Host_Open(struct unit *Unit);
 void Host_Close(struct unit *Unit);
