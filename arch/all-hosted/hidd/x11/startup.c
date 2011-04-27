@@ -19,6 +19,7 @@
 #include <aros/symbolsets.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
+#include <graphics/gfxbase.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>

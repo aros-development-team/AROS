@@ -74,6 +74,7 @@ struct PartitionType
 #define PTT_RESERVED       (TAG_USER | 32L) /* ULONG - number of reserved blocks at
                                                        begining of a partition table */
 #define PTT_MAX_PARTITIONS (TAG_USER | 33L) /* ULONG - max number of partitions in table */
+#define PTT_STARTBLOCK	   (TAG_USER | 34L) /* ULONG - Absolute number of starting block of this logical disk */
 
 
 /* Tags for partitions */

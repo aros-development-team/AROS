@@ -14,24 +14,22 @@
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <exec/alerts.h>
+#include <hidd/graphics.h>
 #include <oop/oop.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/oop.h>
 #include <proto/alib.h>
-//#include <proto/arossupport.h>
 #include <devices/input.h>
-#ifndef INTUITION_CLASSES_H
-#   include <intuition/classes.h>
-#endif
+#include <intuition/classes.h>
 #include <intuition/pointerclass.h>
-#ifndef UTILITY_HOOKS_H
-#   include <utility/hooks.h>
-#endif
+#include <utility/hooks.h>
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
+
 #include LC_LIBDEFS_FILE
+
 #include "intuition_intern.h"
 #include "strgadgets.h" /* To get GlobalEditFunc prototype */
 #include "inputhandler.h"

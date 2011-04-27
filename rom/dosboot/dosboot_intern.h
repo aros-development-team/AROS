@@ -12,6 +12,7 @@
 #include <dos/dosextens.h>
 #include <exec/libraries.h>
 #include <exec/lists.h>
+#include <graphics/gfxbase.h>
 
 #include "gadgets.h"
 

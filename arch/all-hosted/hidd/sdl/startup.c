@@ -6,6 +6,7 @@
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <hidd/hidd.h>
+#include <graphics/gfxbase.h>
 #include <workbench/startup.h>
 #include <workbench/workbench.h>
 #include <proto/dos.h>

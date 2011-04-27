@@ -16,6 +16,7 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <graphics/driver.h>
+#include <graphics/gfxbase.h>
 #include <hidd/graphics.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
