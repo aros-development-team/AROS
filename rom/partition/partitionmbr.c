@@ -487,6 +487,14 @@ static LONG PartitionMBRGetPartitionAttr(struct Library *PartitionBase, struct P
     case PT_ACTIVE:
         *((LONG *)tag->ti_Data) = data->entry->status & 0x80 ? 1 : 0;
         return TRUE;
+
+    case PT_STARTBLOCK:
+	*((ULONG *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector);
+	return TRUE;
+
+    case PT_ENDBLOCK:
+	*((ULONG *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector) + AROS_LE2LONG(data->entry->count_sector) - 1;
+	return TRUE;
     }
 
     /* Everything else gets default values */
@@ -569,11 +577,13 @@ static const struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
 
 static const struct PartitionAttribute PartitionMBRPartitionAttrs[]=
 {
-    {PTA_GEOMETRY, PLAM_READ},
-    {PTA_TYPE,     PLAM_READ | PLAM_WRITE},
-    {PTA_POSITION, PLAM_READ | PLAM_WRITE},
-    {PTA_ACTIVE,   PLAM_READ | PLAM_WRITE},
-    {PTA_DONE,     0}
+    {PTA_GEOMETRY,  PLAM_READ},
+    {PTA_TYPE,      PLAM_READ | PLAM_WRITE},
+    {PTA_POSITION,  PLAM_READ | PLAM_WRITE},
+    {PTA_ACTIVE,    PLAM_READ | PLAM_WRITE},
+    {PT_STARTBLOCK, PLAM_READ},
+    {PT_ENDBLOCK,   PLAM_READ},
+    {PTA_DONE, 0}
 };
 
 static ULONG PartitionMBRDestroyPartitionTable

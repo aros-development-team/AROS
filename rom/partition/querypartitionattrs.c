@@ -12,6 +12,8 @@ static const struct PartitionAttribute defaultPartitionAttrs[] =
 {
     {PTA_GEOMETRY,  PLAM_READ},
     {PTA_DOSENVEC,  PLAM_READ},
+    {PT_STARTBLOCK, PLAM_READ},
+    {PT_ENDBLOCK,   PLAM_READ},
     {PTA_DONE, 0}
 };
 

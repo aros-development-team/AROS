@@ -14,15 +14,14 @@
 #include "partition_support.h"
 #include "partitionmbr.h"
 #include "platform.h"
-
-#ifndef DEBUG
-#define DEBUG 0
-#endif
 #include "debug.h"
 
-struct EBRData {
+struct EBRData
+{
     UBYTE type;
-    ULONG ebr_block_no;
+    ULONG ebr_block_no;	/* Home block of the record itself */
+    ULONG block_no;	/* Start partition block	   */
+    ULONG block_count;	/* Length of partition in blocks   */
 };
 
 static LONG PartitionEBRCheckPartitionTable
@@ -63,66 +62,57 @@ struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
     return 0;
 }
 
-static struct PartitionHandle *PartitionEBRNewHandle
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        UBYTE type,
-        ULONG block_no,
-        ULONG block_count,
-        ULONG ebr_block_no
-    )
+static struct PartitionHandle *PartitionEBRNewHandle(struct Library *PartitionBase, struct PartitionHandle *root,
+						     UBYTE type, ULONG block_no, ULONG block_count, ULONG ebr_block_no)
 {
-struct PartitionHandle *ph;
-ULONG cylsecs;
+    struct PartitionHandle *ph;
 
+    ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
+    if (ph != NULL)
     {
-        ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
-        if (ph != NULL)
-        {
         struct EBRData *data;
 
-            data = AllocMem(sizeof(struct EBRData), MEMF_PUBLIC);
-            if (data != NULL)
+        data = AllocMem(sizeof(struct EBRData), MEMF_PUBLIC);
+        if (data != NULL)
+        {
+            ULONG cylsecs = root->de.de_BlocksPerTrack * root->de.de_Surfaces;
+
+            data->type         = type;
+            data->ebr_block_no = ebr_block_no;
+            data->block_no     = block_no;
+            data->block_count  = block_count;
+
+            ph->root = root;
+            ph->bd   = root->bd;
+            ph->data = data;
+
+            /* Initialize DosEnvec */
+            CopyMemQuick(&root->de, &ph->de, sizeof(struct DosEnvec));
+
+            /* Check if partition starts and ends on a cylinder boundary */
+            if (block_no % cylsecs != 0 || block_count % cylsecs != 0)
             {
-                cylsecs = root->de.de_BlocksPerTrack*root->de.de_Surfaces;
-                data->type = type;
-                data->ebr_block_no = ebr_block_no;
-                ph->root = root;
-                ph->bd = root->bd;
-                ph->data = data;
-
-                /* Initialize DosEnvec */
-
-                /* Check if partition starts and ends on a cylinder boundary */
-                CopyMem(&root->de, &ph->de, sizeof(struct DosEnvec));
-                if (
-                        block_no % cylsecs != 0 ||
-                        block_count % cylsecs != 0
-                    )
-                {
-                    /* It doesn't. We could find the highest common factor of
-                       first_sector and count_sector here, but currently we
-                       simply use one block per cylinder */
-                    ph->de.de_Surfaces = 1;
-                    ph->de.de_BlocksPerTrack = 1;
-                    cylsecs = ph->de.de_BlocksPerTrack*ph->de.de_Surfaces;
-                }
-                ph->de.de_LowCyl = block_no / cylsecs;
-                ph->de.de_HighCyl = ph->de.de_LowCyl + block_count/cylsecs - 1;
-                ph->de.de_TableSize = 10; // only until de_HighCyl
-
-                /* Initialize DriveGeometry */
-                ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
-                ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
-                ph->dg.dg_Heads = ph->de.de_Surfaces;
-                ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
-                ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
-                ph->dg.dg_BufMemType = ph->de.de_BufMemType;
-                return ph;
+                /* It doesn't. Use LBA addressing */
+                ph->de.de_Surfaces       = 1;
+                ph->de.de_BlocksPerTrack = 1;
+                cylsecs = 1;
             }
-            FreeMem(ph, sizeof(struct PartitionHandle));
+
+            ph->de.de_LowCyl    = block_no / cylsecs;
+            ph->de.de_HighCyl   = ph->de.de_LowCyl + block_count/cylsecs - 1;
+            ph->de.de_TableSize = 10; // only until de_HighCyl
+
+            /* Initialize DriveGeometry */
+            ph->dg.dg_DeviceType   = DG_DIRECT_ACCESS;
+            ph->dg.dg_SectorSize   = ph->de.de_SizeBlock<<2;
+            ph->dg.dg_Heads        = ph->de.de_Surfaces;
+            ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
+            ph->dg.dg_Cylinders    = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+            ph->dg.dg_BufMemType   = ph->de.de_BufMemType;
+
+            return ph;
         }
+        FreeMem(ph, sizeof(struct PartitionHandle));
     }
     return NULL;
 }
@@ -432,6 +422,14 @@ static LONG PartitionEBRGetPartitionAttr(struct Library *PartitionBase, struct P
 
 	/* ??? We should never reach here */
         return 0;
+
+    case PT_STARTBLOCK:
+	*((ULONG *)tag->ti_Data) = data->block_no;
+	return TRUE;
+
+    case PT_ENDBLOCK:
+	*((ULONG *)tag->ti_Data) = data->block_no + data->block_count - 1;
+	return TRUE;
     }
 
     return 0;
@@ -481,12 +479,14 @@ static const struct PartitionAttribute PartitionEBRPartitionTableAttrs[]=
 
 static const struct PartitionAttribute PartitionEBRPartitionAttrs[]=
 {
-    {PTA_GEOMETRY, PLAM_READ},
-    {PTA_TYPE,     PLAM_READ | PLAM_WRITE},
-    {PTA_DOSENVEC, PLAM_READ | PLAM_WRITE},
-    {PTA_POSITION, PLAM_READ},
-    {PTA_LEADIN,   PLAM_READ},
-    {PTA_DONE,     0}
+    {PTA_GEOMETRY,  PLAM_READ},
+    {PTA_TYPE,      PLAM_READ | PLAM_WRITE},
+    {PTA_DOSENVEC,  PLAM_READ | PLAM_WRITE},
+    {PTA_POSITION,  PLAM_READ},
+    {PTA_LEADIN,    PLAM_READ},
+    {PT_STARTBLOCK, PLAM_READ},
+    {PT_ENDBLOCK,   PLAM_READ},
+    {PTA_DONE, 0}
 };
 
 static ULONG PartitionEBRDestroyPartitionTable

@@ -77,16 +77,18 @@ struct PartitionType
 
 
 /* Tags for partitions */
-#define PT_GEOMETRY  (TAG_USER |  1L) /* struct DriveGeometry * - geometry of partition */
-#define PT_DOSENVEC  (TAG_USER |  2L) /* struct DosEnvec * - partition layout info */
-#define PT_TYPE      (TAG_USER |  3L) /* struct PartitionType * - type of partition */
-#define PT_LEADIN    (TAG_USER |  4L) /* ULONG - number of reserved blocks
+#define PT_GEOMETRY   (TAG_USER |  1L) /* struct DriveGeometry * - geometry of partition */
+#define PT_DOSENVEC   (TAG_USER |  2L) /* struct DosEnvec * - partition layout info */
+#define PT_TYPE       (TAG_USER |  3L) /* struct PartitionType * - type of partition */
+#define PT_LEADIN     (TAG_USER |  4L) /* ULONG - number of reserved blocks
                                          preceding partition for metadata */
-#define PT_POSITION  (TAG_USER | 32L) /* ULONG - 1st partition, 2nd ... (Linux: hdX0, hdX1, ... */
-#define PT_ACTIVE    (TAG_USER | 33L) /* BOOL - MBR: set/get partition as active */
-#define PT_NAME      (TAG_USER | 34L) /* STRPTR - name of partition */
-#define PT_BOOTABLE  (TAG_USER | 35L) /* BOOL - partition is bootable */
-#define PT_AUTOMOUNT (TAG_USER | 36L) /* BOOL - partition will be auto mounted */
+#define PT_POSITION   (TAG_USER | 32L) /* ULONG - 1st partition, 2nd ... (Linux: hdX0, hdX1, ... */
+#define PT_ACTIVE     (TAG_USER | 33L) /* BOOL - MBR: set/get partition as active */
+#define PT_NAME       (TAG_USER | 34L) /* STRPTR - name of partition */
+#define PT_BOOTABLE   (TAG_USER | 35L) /* BOOL - partition is bootable */
+#define PT_AUTOMOUNT  (TAG_USER | 36L) /* BOOL - partition will be auto mounted */
+#define PT_STARTBLOCK (TAG_USER | 37L) /* ULONG - Number of partition's start block */
+#define PT_ENDBLOCK   (TAG_USER | 38L) /* ULONG - Number of partition's end block */
 
 /* Tags for filesystems */
 #define FST_ID		(TAG_USER | 1L)	/* ULONG 		 - filesystem ID   	*/
