@@ -1,11 +1,13 @@
 
 #define DEBUG 0
 
+#define __OOP_NOATTRBASES__
+
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <graphics/driver.h>
-#include <hidd/keyboard.h>
-#include <hidd/mouse.h>
+#include <graphics/gfxbase.h>
+#include <hidd/graphics.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>

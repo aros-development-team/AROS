@@ -1,6 +1,8 @@
 
 #define DEBUG 0
 
+#define __OOP_NOATTRBASES__
+
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <graphics/driver.h>
