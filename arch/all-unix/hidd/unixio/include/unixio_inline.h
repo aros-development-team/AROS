@@ -34,7 +34,6 @@ static inline OOP_MethodID Hidd_UnixIO_GetMethodBase(OOP_Object *obj)
 
 static inline IPTR __inline_Hidd_UnixIO_Wait(OOP_MethodID base, OOP_Object *o, ULONG fd, ULONG mode)
 {
-    struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsg p;
 	
     p.um_MethodID = base + moHidd_UnixIO_Wait;
@@ -49,7 +48,6 @@ static inline IPTR __inline_Hidd_UnixIO_Wait(OOP_MethodID base, OOP_Object *o, U
 
 static inline int __inline_Hidd_UnixIO_OpenFile(OOP_MethodID base, OOP_Object *o, const char *filename, int flags, int mode, int *errno_ptr)
 {
-    struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgOpenFile p;
 	
     p.um_MethodID = base + moHidd_UnixIO_OpenFile;
@@ -66,7 +64,6 @@ static inline int __inline_Hidd_UnixIO_OpenFile(OOP_MethodID base, OOP_Object *o
 
 static inline int __inline_Hidd_UnixIO_CloseFile(OOP_MethodID base, OOP_Object *o, int fd, int *errno_ptr)
 {
-    struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgCloseFile p;
 	
     p.um_MethodID = base + moHidd_UnixIO_CloseFile;
@@ -81,7 +78,6 @@ static inline int __inline_Hidd_UnixIO_CloseFile(OOP_MethodID base, OOP_Object *
 
 static inline int __inline_Hidd_UnixIO_ReadFile(OOP_MethodID base, OOP_Object *o, int fd, void *buffer, int count, int *errno_ptr)
 {
-    struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgReadFile p;
 	
     p.um_MethodID = base + moHidd_UnixIO_ReadFile;
@@ -98,7 +94,6 @@ static inline int __inline_Hidd_UnixIO_ReadFile(OOP_MethodID base, OOP_Object *o
 
 static inline int __inline_Hidd_UnixIO_WriteFile(OOP_MethodID base, OOP_Object *o, int fd, const void *buffer, int count, int *errno_ptr)
 {
-    struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgWriteFile p;
 	
     p.um_MethodID = base + moHidd_UnixIO_WriteFile;
@@ -115,7 +110,6 @@ static inline int __inline_Hidd_UnixIO_WriteFile(OOP_MethodID base, OOP_Object *
 
 static inline int __inline_Hidd_UnixIO_IOControlFile(OOP_MethodID base, OOP_Object *o, int fd, int request, void *param, int *errno_ptr)
 {
-    struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgIOControlFile p;
 
     p.um_MethodID = base + moHidd_UnixIO_IOControlFile;
@@ -132,7 +126,6 @@ static inline int __inline_Hidd_UnixIO_IOControlFile(OOP_MethodID base, OOP_Obje
 
 static inline int __inline_Hidd_UnixIO_AddInterrupt(OOP_MethodID base, OOP_Object *o, struct uioInterrupt *interrupt)
 {
-    struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgAddInterrupt p;
 
     p.um_MethodID = base + moHidd_UnixIO_AddInterrupt;
@@ -146,7 +139,6 @@ static inline int __inline_Hidd_UnixIO_AddInterrupt(OOP_MethodID base, OOP_Objec
 
 static inline void __inline_Hidd_UnixIO_RemInterrupt(OOP_MethodID base, OOP_Object *o, struct uioInterrupt *interrupt)
 {
-    struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgRemInterrupt p;
 
     p.um_MethodID = base + moHidd_UnixIO_RemInterrupt;

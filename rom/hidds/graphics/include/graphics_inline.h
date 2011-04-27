@@ -27,14 +27,18 @@
 #ifndef HiddGfxBase
 #define HiddGfxBase HIDD_Gfx_GetMethodBase(__obj)
 
-static inline OOP_MethodID HIDD_Gfx_GetMethodBase(OOP_Object *obj){
-    static OOP_MethodID GfxBase;
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+static inline OOP_MethodID HIDD_Gfx_GetMethodBase(OOP_Object *obj)
+{
+    static OOP_MethodID GfxMethodBase;
 
-    if(!GfxBase)
-	GfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    if (!GfxMethodBase)
+    {
+        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
 
-    return GfxBase;
+	GfxMethodBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    }
+
+    return GfxMethodBase;
 }
 
 #endif
@@ -45,7 +49,6 @@ static inline OOP_MethodID HIDD_Gfx_GetMethodBase(OOP_Object *obj){
 
 static inline OOP_Object * HIDD_Gfx_NewGC_(OOP_MethodID GfxBase, OOP_Object *obj, struct TagItem *tagList)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_NewGC p;
 
     p.mID      = GfxBase + moHidd_Gfx_NewGC;
@@ -61,7 +64,6 @@ static inline OOP_Object * HIDD_Gfx_NewGC_(OOP_MethodID GfxBase, OOP_Object *obj
 
 static inline void HIDD_Gfx_DisposeGC_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *gc)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_DisposeGC p;
     
     p.mID = GfxBase + moHidd_Gfx_DisposeGC;
@@ -77,7 +79,6 @@ static inline void HIDD_Gfx_DisposeGC_(OOP_MethodID GfxBase, OOP_Object *obj, OO
 
 static inline OOP_Object * HIDD_Gfx_NewBitMap_(OOP_MethodID GfxBase, OOP_Object *obj, struct TagItem *tagList)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_NewBitMap p;
 
     p.mID      = GfxBase + moHidd_Gfx_NewBitMap;
@@ -93,7 +94,6 @@ static inline OOP_Object * HIDD_Gfx_NewBitMap_(OOP_MethodID GfxBase, OOP_Object 
 
 static inline void HIDD_Gfx_DisposeBitMap_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *bitMap)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_DisposeBitMap p;
     
     p.mID    = GfxBase + moHidd_Gfx_DisposeBitMap;
@@ -110,7 +110,6 @@ static inline void HIDD_Gfx_DisposeBitMap_(OOP_MethodID GfxBase, OOP_Object *obj
 
 static inline OOP_Object * HIDD_Gfx_NewOverlay_(OOP_MethodID GfxBase, OOP_Object *obj, struct TagItem *tagList)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_NewOverlay p;
 
     p.mID      = GfxBase + moHidd_Gfx_NewOverlay;
@@ -127,7 +126,6 @@ static inline OOP_Object * HIDD_Gfx_NewOverlay_(OOP_MethodID GfxBase, OOP_Object
 
 static inline void HIDD_Gfx_DisposeOverlay_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *Overlay)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_DisposeOverlay p;
     
     p.mID     = GfxBase + moHidd_Gfx_DisposeOverlay;
@@ -145,7 +143,6 @@ static inline void HIDD_Gfx_DisposeOverlay_(OOP_MethodID GfxBase, OOP_Object *ob
 
 static inline HIDDT_ModeID * HIDD_Gfx_QueryModeIDs_(OOP_MethodID GfxBase, OOP_Object *obj, struct TagItem *queryTags)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_QueryModeIDs p;
     
     p.mID       = GfxBase + moHidd_Gfx_QueryModeIDs;
@@ -161,7 +158,6 @@ static inline HIDDT_ModeID * HIDD_Gfx_QueryModeIDs_(OOP_MethodID GfxBase, OOP_Ob
 
 static inline VOID HIDD_Gfx_ReleaseModeIDs_(OOP_MethodID GfxBase, OOP_Object *obj, HIDDT_ModeID *modeIDs)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_ReleaseModeIDs p;
     
     p.mID     = GfxBase + moHidd_Gfx_ReleaseModeIDs;
@@ -178,7 +174,6 @@ static inline VOID HIDD_Gfx_ReleaseModeIDs_(OOP_MethodID GfxBase, OOP_Object *ob
 
 static inline OOP_Object *    HIDD_Gfx_GetPixFmt_(OOP_MethodID GfxBase, OOP_Object *obj, HIDDT_StdPixFmt stdPixFmt)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_GetPixFmt p;
     
     p.mID       = GfxBase + moHidd_Gfx_GetPixFmt;
@@ -195,7 +190,6 @@ static inline OOP_Object *    HIDD_Gfx_GetPixFmt_(OOP_MethodID GfxBase, OOP_Obje
 
 static inline BOOL HIDD_Gfx_CheckMode_(OOP_MethodID GfxBase, OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object *sync, OOP_Object *pixFmt)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_CheckMode p;
 
     
@@ -214,7 +208,6 @@ static inline BOOL HIDD_Gfx_CheckMode_(OOP_MethodID GfxBase, OOP_Object *obj, HI
 
 static inline BOOL HIDD_Gfx_GetMode_(OOP_MethodID GfxBase, OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_GetMode p;
 
     p.mID       = GfxBase + moHidd_Gfx_GetMode;
@@ -232,7 +225,6 @@ static inline BOOL HIDD_Gfx_GetMode_(OOP_MethodID GfxBase, OOP_Object *obj, HIDD
 
 static inline HIDDT_ModeID HIDD_Gfx_NextModeID_(OOP_MethodID GfxBase, OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_NextModeID p;
 
     p.mID       = GfxBase + moHidd_Gfx_NextModeID;
@@ -251,7 +243,6 @@ static inline HIDDT_ModeID HIDD_Gfx_NextModeID_(OOP_MethodID GfxBase, OOP_Object
 
 static inline BOOL HIDD_Gfx_SetCursorShape_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *shape, LONG xoffset, LONG yoffset)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_SetCursorShape p;
 
     p.mID     = GfxBase + moHidd_Gfx_SetCursorShape;
@@ -270,7 +261,6 @@ static inline BOOL HIDD_Gfx_SetCursorShape_(OOP_MethodID GfxBase, OOP_Object *ob
 
 static inline BOOL HIDD_Gfx_SetCursorPos_(OOP_MethodID GfxBase, OOP_Object *obj, LONG x, LONG y)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_SetCursorPos p;
 
     p.mID = GfxBase + moHidd_Gfx_SetCursorPos;
@@ -292,7 +282,6 @@ static inline BOOL HIDD_Gfx_SetCursorPos_(OOP_MethodID GfxBase, OOP_Object *obj,
 
 static inline VOID HIDD_Gfx_SetCursorVisible_(OOP_MethodID GfxBase, OOP_Object *obj, BOOL visible)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_SetCursorVisible p;
 
     p.mID = GfxBase + moHidd_Gfx_SetCursorVisible;
@@ -315,7 +304,6 @@ static inline VOID HIDD_Gfx_SetCursorVisible_(OOP_MethodID GfxBase, OOP_Object *
 
 static inline BOOL HIDD_Gfx_SetMode_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *sync)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_SetMode p;
 
     p.mID = GfxBase + moHidd_Gfx_SetMode;
@@ -334,7 +322,6 @@ static inline BOOL HIDD_Gfx_SetMode_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_
 
 static inline OOP_Object *HIDD_Gfx_Show_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *bitMap, ULONG flags)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_Show p;
 
     p.mID = GfxBase + moHidd_Gfx_Show;
@@ -355,7 +342,6 @@ static inline OOP_Object *HIDD_Gfx_Show_(OOP_MethodID GfxBase, OOP_Object *obj, 
 
 static inline VOID HIDD_Gfx_CopyBox_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, OOP_Object *gc)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_CopyBox p;
     
     p.mID = GfxBase + moHidd_Gfx_CopyBox;
@@ -382,7 +368,6 @@ static inline VOID HIDD_Gfx_CopyBox_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_
 
 static inline ULONG HIDD_Gfx_ModeProperties_(OOP_MethodID GfxBase, OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_ModeProperties *props, ULONG propsLen)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_ModeProperties p;
     
     p.mID = GfxBase + moHidd_Gfx_ModeProperties;
@@ -403,7 +388,6 @@ static inline ULONG HIDD_Gfx_ModeProperties_(OOP_MethodID GfxBase, OOP_Object *o
 
 static inline ULONG HIDD_Gfx_ShowViewPorts_(OOP_MethodID GfxBase, OOP_Object *obj, struct HIDD_ViewPortData *data)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_ShowViewPorts p;
 
     p.mID = GfxBase + moHidd_Gfx_ShowViewPorts;
@@ -422,7 +406,6 @@ static inline ULONG HIDD_Gfx_ShowViewPorts_(OOP_MethodID GfxBase, OOP_Object *ob
 
 static inline OOP_Object *HIDD_Gfx_GetSync_(OOP_MethodID GfxBase, OOP_Object *obj, ULONG num)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_GetSync p;
 
     p.mID = GfxBase + moHidd_Gfx_GetSync;
@@ -441,7 +424,6 @@ static inline OOP_Object *HIDD_Gfx_GetSync_(OOP_MethodID GfxBase, OOP_Object *ob
 
 static inline BOOL HIDD_Gfx_GetGamma_(OOP_MethodID GfxBase, OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_Gamma p;
 
     p.mID = GfxBase + moHidd_Gfx_GetGamma;
@@ -462,7 +444,6 @@ static inline BOOL HIDD_Gfx_GetGamma_(OOP_MethodID GfxBase, OOP_Object *obj, UBY
 
 static inline BOOL HIDD_Gfx_SetGamma_(OOP_MethodID GfxBase, OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_Gamma p;
 
     p.mID = GfxBase + moHidd_Gfx_SetGamma;
@@ -483,7 +464,6 @@ static inline BOOL HIDD_Gfx_SetGamma_(OOP_MethodID GfxBase, OOP_Object *obj, UBY
 
 static inline BOOL HIDD_Gfx_QueryHardware3D_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *pixFmt)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_QueryHardware3D p;
 
     p.mID = GfxBase + moHidd_Gfx_QueryHardware3D;
@@ -502,7 +482,6 @@ static inline BOOL HIDD_Gfx_QueryHardware3D_(OOP_MethodID GfxBase, OOP_Object *o
 
 static inline BOOL HIDD_Gfx_GetMaxSpriteSize_(OOP_MethodID GfxBase, OOP_Object *obj, ULONG Type, ULONG *Width, ULONG *Height)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_GetMaxSpriteSize p;
 
     p.mID = GfxBase + moHidd_Gfx_GetMaxSpriteSize;
@@ -523,7 +502,6 @@ static inline BOOL HIDD_Gfx_GetMaxSpriteSize_(OOP_MethodID GfxBase, OOP_Object *
 
 static inline ULONG HIDD_Gfx_MakeViewPort_(OOP_MethodID GfxBase, OOP_Object *obj, struct HIDD_ViewPortData *data)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_MakeViewPort p;
 
     p.mID = GfxBase + moHidd_Gfx_MakeViewPort;
@@ -542,7 +520,6 @@ static inline ULONG HIDD_Gfx_MakeViewPort_(OOP_MethodID GfxBase, OOP_Object *obj
 
 static inline void HIDD_Gfx_CleanViewPort_(OOP_MethodID GfxBase, OOP_Object *obj, struct HIDD_ViewPortData *data)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_CleanViewPort p;
 
     p.mID = GfxBase + moHidd_Gfx_CleanViewPort;
@@ -561,7 +538,6 @@ static inline void HIDD_Gfx_CleanViewPort_(OOP_MethodID GfxBase, OOP_Object *obj
 
 static inline ULONG HIDD_Gfx_PrepareViewPorts_(OOP_MethodID GfxBase, OOP_Object *obj, struct HIDD_ViewPortData *data, struct View *view)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_Gfx_PrepareViewPorts p;
 
     p.mID = GfxBase + moHidd_Gfx_PrepareViewPorts;
@@ -578,14 +554,18 @@ static inline ULONG HIDD_Gfx_PrepareViewPorts_(OOP_MethodID GfxBase, OOP_Object 
 #ifndef HiddBitMapBase
 #define HiddBitMapBase HIDD_BitMap_GetMethodBase(__obj)
 
-static inline OOP_MethodID HIDD_BitMap_GetMethodBase(OOP_Object *obj){
-    static OOP_MethodID BitMapBase;
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+static inline OOP_MethodID HIDD_BitMap_GetMethodBase(OOP_Object *obj)
+{
+    static OOP_MethodID BitMapMethodBase;
 
-    if(!BitMapBase)
-	BitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
+    if (!BitMapMethodBase)
+    {
+        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
 
-    return BitMapBase;
+	BitMapMethodBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
+    }
+
+    return BitMapMethodBase;
 }
 
 #endif
@@ -597,7 +577,6 @@ static inline OOP_MethodID HIDD_BitMap_GetMethodBase(OOP_Object *obj){
 
 static inline BOOL HIDD_BM_SetColors_(OOP_MethodID BitMapBase, OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_SetColors p;
     
     p.mID = BitMapBase + moHidd_BitMap_SetColors;
@@ -617,7 +596,6 @@ static inline BOOL HIDD_BM_SetColors_(OOP_MethodID BitMapBase, OOP_Object *obj, 
 
 static inline ULONG HIDD_BM_PutPixel_(OOP_MethodID BitMapBase, OOP_Object *obj, WORD x, WORD y, HIDDT_Pixel val)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutPixel p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutPixel;
@@ -637,7 +615,6 @@ static inline ULONG HIDD_BM_PutPixel_(OOP_MethodID BitMapBase, OOP_Object *obj, 
 
 static inline ULONG HIDD_BM_DrawPixel_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, WORD x, WORD y)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawPixel p;
     
     p.mID = BitMapBase + moHidd_BitMap_DrawPixel;
@@ -657,7 +634,6 @@ static inline ULONG HIDD_BM_DrawPixel_(OOP_MethodID BitMapBase, OOP_Object *obj,
 
 static inline HIDDT_Pixel HIDD_BM_GetPixel_(OOP_MethodID BitMapBase, OOP_Object *obj, WORD x, WORD y)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_GetPixel p;
     
     p.mID = BitMapBase + moHidd_BitMap_GetPixel;
@@ -676,7 +652,6 @@ static inline HIDDT_Pixel HIDD_BM_GetPixel_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID HIDD_BM_DrawLine_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, WORD x1, WORD y1, WORD x2, WORD y2)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawLine p;
     
     p.mID = BitMapBase + moHidd_BitMap_DrawLine;
@@ -699,7 +674,6 @@ static inline VOID HIDD_BM_DrawLine_(OOP_MethodID BitMapBase, OOP_Object *obj, O
 
 static inline VOID HIDD_BM_DrawRect_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawRect p;
     
     p.mID = BitMapBase + moHidd_BitMap_DrawRect;
@@ -721,7 +695,6 @@ static inline VOID HIDD_BM_DrawRect_(OOP_MethodID BitMapBase, OOP_Object *obj, O
 
 static inline VOID HIDD_BM_FillRect_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawRect p;
     
     p.mID = BitMapBase + moHidd_BitMap_FillRect;
@@ -743,7 +716,6 @@ static inline VOID HIDD_BM_FillRect_(OOP_MethodID BitMapBase, OOP_Object *obj, O
 
 static inline VOID HIDD_BM_DrawEllipse_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, WORD rx, WORD ry)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawEllipse p;
     
     p.mID = BitMapBase + moHidd_BitMap_DrawEllipse;
@@ -765,7 +737,6 @@ static inline VOID HIDD_BM_DrawEllipse_(OOP_MethodID BitMapBase, OOP_Object *obj
 
 static inline VOID HIDD_BM_FillEllipse_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, WORD ry, WORD rx)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawEllipse p;
     
     p.mID = BitMapBase + moHidd_BitMap_FillEllipse;
@@ -787,7 +758,6 @@ static inline VOID HIDD_BM_FillEllipse_(OOP_MethodID BitMapBase, OOP_Object *obj
 
 static inline VOID HIDD_BM_DrawPolygon_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawPolygon p;
     
     p.mID = BitMapBase + moHidd_BitMap_DrawPolygon;
@@ -807,7 +777,6 @@ static inline VOID HIDD_BM_DrawPolygon_(OOP_MethodID BitMapBase, OOP_Object *obj
 
 static inline VOID HIDD_BM_FillPolygon_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawPolygon p;
     
     p.mID = BitMapBase + moHidd_BitMap_FillPolygon;
@@ -827,7 +796,6 @@ static inline VOID HIDD_BM_FillPolygon_(OOP_MethodID BitMapBase, OOP_Object *obj
 
 static inline VOID HIDD_BM_DrawText_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, STRPTR text, UWORD length)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawText p;
     
     p.mID = BitMapBase + moHidd_BitMap_DrawText;
@@ -849,7 +817,6 @@ static inline VOID HIDD_BM_DrawText_(OOP_MethodID BitMapBase, OOP_Object *obj, O
 
 static inline VOID HIDD_BM_FillText_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, STRPTR text, UWORD length)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_DrawText p;
     
     p.mID = BitMapBase + moHidd_BitMap_FillText;
@@ -871,7 +838,6 @@ static inline VOID HIDD_BM_FillText_(OOP_MethodID BitMapBase, OOP_Object *obj, O
 
 static inline VOID HIDD_BM_Clear_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_Clear p;
     
     p.mID = BitMapBase + moHidd_BitMap_Clear;
@@ -890,7 +856,6 @@ static inline VOID HIDD_BM_Clear_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_
 
 static inline VOID HIDD_BM_GetImage_(OOP_MethodID BitMapBase, OOP_Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_GetImage p;
     
     p.mID = BitMapBase + moHidd_BitMap_GetImage;
@@ -918,7 +883,6 @@ static inline VOID HIDD_BM_GetImage_(OOP_MethodID BitMapBase, OOP_Object *obj, U
 
 static inline VOID     HIDD_BM_PutImage_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutImage p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutImage;
@@ -944,7 +908,6 @@ static inline VOID     HIDD_BM_PutImage_(OOP_MethodID BitMapBase, OOP_Object *ob
 
 static inline VOID     HIDD_BM_PutAlphaImage_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutAlphaImage p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutAlphaImage;
@@ -969,7 +932,6 @@ static inline VOID     HIDD_BM_PutAlphaImage_(OOP_MethodID BitMapBase, OOP_Objec
 
 static inline VOID     HIDD_BM_PutTemplate_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *Template, ULONG modulo, WORD srcx, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutTemplate p;
     
     p.mID            = BitMapBase + moHidd_BitMap_PutTemplate;
@@ -994,7 +956,6 @@ static inline VOID     HIDD_BM_PutTemplate_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID     HIDD_BM_PutAlphaTemplate_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *alpha, ULONG modulo, WORD x, WORD y, WORD width, WORD height, BOOL invertalpha)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutAlphaTemplate p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutAlphaTemplate;
@@ -1020,7 +981,6 @@ static inline VOID     HIDD_BM_PutAlphaTemplate_(OOP_MethodID BitMapBase, OOP_Ob
 
 static inline VOID HIDD_BM_PutPattern_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *pattern, WORD patternsrcx, WORD patternsrcy, WORD patternheight, WORD patterndepth, HIDDT_PixelLUT *patternlut, BOOL invertpattern, UBYTE *mask, ULONG maskmodulo, WORD masksrcx, WORD x, WORD y, WORD width, WORD height)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutPattern p;
     
     p.mID           = BitMapBase + moHidd_BitMap_PutPattern;
@@ -1051,7 +1011,6 @@ static inline VOID HIDD_BM_PutPattern_(OOP_MethodID BitMapBase, OOP_Object *obj,
 
 static inline VOID	 HIDD_BM_BlitColorExpansion_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, OOP_Object *srcBitMap, WORD srcX, WORD srcY, WORD destX, WORD destY, UWORD width, UWORD height)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_BlitColorExpansion p;
     
     p.mID = BitMapBase + moHidd_BitMap_BlitColorExpansion;
@@ -1077,7 +1036,6 @@ static inline VOID	 HIDD_BM_BlitColorExpansion_(OOP_MethodID BitMapBase, OOP_Obj
 
 static inline HIDDT_Pixel HIDD_BM_MapColor_(OOP_MethodID BitMapBase, OOP_Object *obj, HIDDT_Color *color)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_MapColor p;
     
     p.mID = BitMapBase + moHidd_BitMap_MapColor;
@@ -1097,7 +1055,6 @@ static inline HIDDT_Pixel HIDD_BM_MapColor_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID HIDD_BM_UnmapPixel_(OOP_MethodID BitMapBase, OOP_Object *obj, HIDDT_Pixel pixel, HIDDT_Color *color)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_UnmapPixel p;
     
     p.mID = BitMapBase + moHidd_BitMap_UnmapPixel;
@@ -1118,7 +1075,6 @@ static inline VOID HIDD_BM_UnmapPixel_(OOP_MethodID BitMapBase, OOP_Object *obj,
 
 static inline VOID     HIDD_BM_PutImageLUT_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutImageLUT p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutImageLUT;
@@ -1144,7 +1100,6 @@ static inline VOID     HIDD_BM_PutImageLUT_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID HIDD_BM_PutTranspImageLUT_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut, UBYTE transparent)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutTranspImageLUT p;
     
     p.mID         = BitMapBase + moHidd_BitMap_PutTranspImageLUT;
@@ -1170,7 +1125,6 @@ static inline VOID HIDD_BM_PutTranspImageLUT_(OOP_MethodID BitMapBase, OOP_Objec
 
 static inline VOID     HIDD_BM_GetImageLUT_(OOP_MethodID BitMapBase, OOP_Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_GetImageLUT p;
     
     p.mID = BitMapBase + moHidd_BitMap_GetImageLUT;
@@ -1194,7 +1148,6 @@ static inline VOID     HIDD_BM_GetImageLUT_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline ULONG HIDD_BM_BytesPerLine_(OOP_MethodID BitMapBase, OOP_Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_BytesPerLine p;
 
     p.mID = BitMapBase + moHidd_BitMap_BytesPerLine;
@@ -1216,7 +1169,6 @@ static inline ULONG HIDD_BM_BytesPerLine_(OOP_MethodID BitMapBase, OOP_Object *o
 
 static inline VOID     HIDD_BM_ConvertPixels_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR *srcPixels, HIDDT_PixelFormat *srcPixFmt, ULONG srcMod, APTR *dstBuf, HIDDT_PixelFormat *dstPixFmt, ULONG dstMod, ULONG width, ULONG height, HIDDT_PixelLUT *pixlut)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_ConvertPixels p;
     
     p.mID = BitMapBase + moHidd_BitMap_ConvertPixels;
@@ -1246,7 +1198,6 @@ static inline VOID     HIDD_BM_ConvertPixels_(OOP_MethodID BitMapBase, OOP_Objec
 
 static inline VOID	HIDD_BM_FillMemRect8_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR dstBuf, WORD minX, WORD minY, WORD maxX, WORD maxY, ULONG dstMod, UBYTE fill)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_FillMemRect8 p;
     
     p.mID = BitMapBase + moHidd_BitMap_FillMemRect8;
@@ -1269,7 +1220,6 @@ static inline VOID	HIDD_BM_FillMemRect8_(OOP_MethodID BitMapBase, OOP_Object *ob
 
 static inline VOID	HIDD_BM_FillMemRect16_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR dstBuf, WORD minX, WORD minY, WORD maxX, WORD maxY, ULONG dstMod, UWORD fill)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_FillMemRect16 p;
     
     p.mID = BitMapBase + moHidd_BitMap_FillMemRect16;
@@ -1292,7 +1242,6 @@ static inline VOID	HIDD_BM_FillMemRect16_(OOP_MethodID BitMapBase, OOP_Object *o
 
 static inline VOID	HIDD_BM_FillMemRect24_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR dstBuf, WORD minX, WORD minY, WORD maxX, WORD maxY, ULONG dstMod, ULONG fill)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_FillMemRect24 p;
     
     p.mID = BitMapBase + moHidd_BitMap_FillMemRect24;
@@ -1315,7 +1264,6 @@ static inline VOID	HIDD_BM_FillMemRect24_(OOP_MethodID BitMapBase, OOP_Object *o
 
 static inline VOID	HIDD_BM_FillMemRect32_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR dstBuf, WORD minX, WORD minY, WORD maxX, WORD maxY, ULONG dstMod, ULONG fill)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_FillMemRect32 p;
     
     p.mID = BitMapBase + moHidd_BitMap_FillMemRect32;
@@ -1339,7 +1287,6 @@ static inline VOID	HIDD_BM_FillMemRect32_(OOP_MethodID BitMapBase, OOP_Object *o
 
 static inline VOID	HIDD_BM_InvertMemRect_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR dstBuf, WORD minX, WORD minY, WORD maxX, WORD maxY, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_InvertMemRect p;
     
     p.mID = BitMapBase + moHidd_BitMap_InvertMemRect;
@@ -1362,7 +1309,6 @@ static inline VOID	HIDD_BM_InvertMemRect_(OOP_MethodID BitMapBase, OOP_Object *o
 
 static inline VOID	HIDD_BM_CopyMemBox8_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_CopyMemBox8 p;
     
     p.mID = BitMapBase + moHidd_BitMap_CopyMemBox8;
@@ -1388,7 +1334,6 @@ static inline VOID	HIDD_BM_CopyMemBox8_(OOP_MethodID BitMapBase, OOP_Object *obj
 
 static inline VOID	HIDD_BM_CopyMemBox16_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_CopyMemBox16 p;
     
     p.mID = BitMapBase + moHidd_BitMap_CopyMemBox16;
@@ -1414,7 +1359,6 @@ static inline VOID	HIDD_BM_CopyMemBox16_(OOP_MethodID BitMapBase, OOP_Object *ob
 
 static inline VOID	HIDD_BM_CopyMemBox24_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_CopyMemBox24 p;
     
     p.mID = BitMapBase + moHidd_BitMap_CopyMemBox24;
@@ -1440,7 +1384,6 @@ static inline VOID	HIDD_BM_CopyMemBox24_(OOP_MethodID BitMapBase, OOP_Object *ob
 
 static inline VOID	HIDD_BM_CopyMemBox32_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_CopyMemBox32 p;
     
     p.mID = BitMapBase + moHidd_BitMap_CopyMemBox32;
@@ -1466,7 +1409,6 @@ static inline VOID	HIDD_BM_CopyMemBox32_(OOP_MethodID BitMapBase, OOP_Object *ob
 
 static inline VOID	HIDD_BM_CopyLUTMemBox16_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod, HIDDT_PixelLUT *pixlut)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_CopyLUTMemBox16 p;
     
     p.mID = BitMapBase + moHidd_BitMap_CopyLUTMemBox16;
@@ -1493,7 +1435,6 @@ static inline VOID	HIDD_BM_CopyLUTMemBox16_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_CopyLUTMemBox24_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod, HIDDT_PixelLUT *pixlut)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_CopyLUTMemBox24 p;
     
     p.mID = BitMapBase + moHidd_BitMap_CopyLUTMemBox24;
@@ -1520,7 +1461,6 @@ static inline VOID	HIDD_BM_CopyLUTMemBox24_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_CopyLUTMemBox32_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod, HIDDT_PixelLUT *pixlut)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_CopyLUTMemBox32 p;
     
     p.mID = BitMapBase + moHidd_BitMap_CopyLUTMemBox32;
@@ -1547,7 +1487,6 @@ static inline VOID	HIDD_BM_CopyLUTMemBox32_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_PutMem32Image8_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMem32Image8 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMem32Image8;
@@ -1571,7 +1510,6 @@ static inline VOID	HIDD_BM_PutMem32Image8_(OOP_MethodID BitMapBase, OOP_Object *
 
 static inline VOID	HIDD_BM_PutMem32Image16_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMem32Image16 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMem32Image16;
@@ -1595,7 +1533,6 @@ static inline VOID	HIDD_BM_PutMem32Image16_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_PutMem32Image24_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, APTR dst, WORD dstX, WORD dstY, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMem32Image24 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMem32Image24;
@@ -1619,7 +1556,6 @@ static inline VOID	HIDD_BM_PutMem32Image24_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_GetMem32Image8_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_GetMem32Image8 p;
     
     p.mID = BitMapBase + moHidd_BitMap_GetMem32Image8;
@@ -1643,7 +1579,6 @@ static inline VOID	HIDD_BM_GetMem32Image8_(OOP_MethodID BitMapBase, OOP_Object *
 
 static inline VOID	HIDD_BM_GetMem32Image16_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_GetMem32Image16 p;
     
     p.mID = BitMapBase + moHidd_BitMap_GetMem32Image16;
@@ -1667,7 +1602,6 @@ static inline VOID	HIDD_BM_GetMem32Image16_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_GetMem32Image24_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR src, WORD srcX, WORD srcY, APTR dst, UWORD width, UWORD height, ULONG srcMod, ULONG dstMod)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_GetMem32Image24 p;
     
     p.mID = BitMapBase + moHidd_BitMap_GetMem32Image24;
@@ -1691,7 +1625,6 @@ static inline VOID	HIDD_BM_GetMem32Image24_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_PutMemTemplate8_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *Template, ULONG modulo, WORD srcx, APTR dst, ULONG dstMod, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMemTemplate8 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMemTemplate8;
@@ -1718,7 +1651,6 @@ static inline VOID	HIDD_BM_PutMemTemplate8_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_PutMemTemplate16_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *Template, ULONG modulo, WORD srcx, APTR dst, ULONG dstMod, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMemTemplate16 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMemTemplate16;
@@ -1745,7 +1677,6 @@ static inline VOID	HIDD_BM_PutMemTemplate16_(OOP_MethodID BitMapBase, OOP_Object
 
 static inline VOID	HIDD_BM_PutMemTemplate24_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *Template, ULONG modulo, WORD srcx, APTR dst, ULONG dstMod, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMemTemplate24 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMemTemplate24;
@@ -1772,7 +1703,6 @@ static inline VOID	HIDD_BM_PutMemTemplate24_(OOP_MethodID BitMapBase, OOP_Object
 
 static inline VOID	HIDD_BM_PutMemTemplate32_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *Template, ULONG modulo, WORD srcx, APTR dst, ULONG dstMod, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMemTemplate32 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMemTemplate32;
@@ -1799,7 +1729,6 @@ static inline VOID	HIDD_BM_PutMemTemplate32_(OOP_MethodID BitMapBase, OOP_Object
 
 static inline VOID	HIDD_BM_PutMemPattern8_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *pattern, WORD patternsrcx, WORD patternsrcy, WORD patternheight, WORD patterndepth, HIDDT_PixelLUT *patternlut, BOOL invertpattern, UBYTE *mask, ULONG maskmodulo, WORD masksrcx, APTR dst, ULONG dstMod, WORD x, WORD y, WORD width, WORD height)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMemPattern8 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMemPattern8;
@@ -1832,7 +1761,6 @@ static inline VOID	HIDD_BM_PutMemPattern8_(OOP_MethodID BitMapBase, OOP_Object *
 
 static inline VOID	HIDD_BM_PutMemPattern16_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *pattern, WORD patternsrcx, WORD patternsrcy, WORD patternheight, WORD patterndepth, HIDDT_PixelLUT *patternlut, BOOL invertpattern, UBYTE *mask, ULONG maskmodulo, WORD masksrcx, APTR dst, ULONG dstMod, WORD x, WORD y, WORD width, WORD height)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMemPattern16 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMemPattern16;
@@ -1865,7 +1793,6 @@ static inline VOID	HIDD_BM_PutMemPattern16_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_PutMemPattern24_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *pattern, WORD patternsrcx, WORD patternsrcy, WORD patternheight, WORD patterndepth, HIDDT_PixelLUT *patternlut, BOOL invertpattern, UBYTE *mask, ULONG maskmodulo, WORD masksrcx, APTR dst, ULONG dstMod, WORD x, WORD y, WORD width, WORD height)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMemPattern24 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMemPattern24;
@@ -1898,7 +1825,6 @@ static inline VOID	HIDD_BM_PutMemPattern24_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline VOID	HIDD_BM_PutMemPattern32_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *gc, UBYTE *pattern, WORD patternsrcx, WORD patternsrcy, WORD patternheight, WORD patterndepth, HIDDT_PixelLUT *patternlut, BOOL invertpattern, UBYTE *mask, ULONG maskmodulo, WORD masksrcx, APTR dst, ULONG dstMod, WORD x, WORD y, WORD width, WORD height)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_PutMemPattern32 p;
     
     p.mID = BitMapBase + moHidd_BitMap_PutMemPattern32;
@@ -1931,7 +1857,6 @@ static inline VOID	HIDD_BM_PutMemPattern32_(OOP_MethodID BitMapBase, OOP_Object 
 
 static inline OOP_Object * HIDD_BM_SetColorMap_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *colorMap)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_SetColorMap p;
     
     p.mID = BitMapBase + moHidd_BitMap_SetColorMap;
@@ -1949,7 +1874,6 @@ static inline OOP_Object * HIDD_BM_SetColorMap_(OOP_MethodID BitMapBase, OOP_Obj
 
 static inline BOOL HIDD_BM_ObtainDirectAccess_(OOP_MethodID BitMapBase, OOP_Object *obj, UBYTE **addressReturn, ULONG *widthReturn, ULONG *heightReturn, ULONG *bankSizeReturn, ULONG *memSizeReturn)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_ObtainDirectAccess p;
 
     p.mID            = BitMapBase + moHidd_BitMap_ObtainDirectAccess;        
@@ -1971,7 +1895,6 @@ static inline BOOL HIDD_BM_ObtainDirectAccess_(OOP_MethodID BitMapBase, OOP_Obje
 
 static inline VOID HIDD_BM_ReleaseDirectAccess_(OOP_MethodID BitMapBase, OOP_Object *obj)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_ReleaseDirectAccess p;
 
     p.mID = BitMapBase + moHidd_BitMap_ReleaseDirectAccess;
@@ -1985,7 +1908,6 @@ static inline VOID HIDD_BM_ReleaseDirectAccess_(OOP_MethodID BitMapBase, OOP_Obj
 
 static inline VOID HIDD_BM_BitMapScale_(OOP_MethodID BitMapBase, OOP_Object *obj, OOP_Object *src, OOP_Object *dest, struct BitScaleArgs * bsa, OOP_Object *gc)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_BitMapScale p;
     
     p.mID = BitMapBase + moHidd_BitMap_BitMapScale;
@@ -2003,7 +1925,6 @@ static inline VOID HIDD_BM_BitMapScale_(OOP_MethodID BitMapBase, OOP_Object *obj
 
 static inline HIDDT_RGBConversionFunction HIDD_BM_SetRGBConversionFunction_(OOP_MethodID BitMapBase, OOP_Object *obj, HIDDT_StdPixFmt srcPixFmt, HIDDT_StdPixFmt dstPixFmt, HIDDT_RGBConversionFunction function)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_SetRGBConversionFunction p;
 
     p.mID       = BitMapBase + moHidd_BitMap_SetRGBConversionFunction;    
@@ -2020,7 +1941,6 @@ static inline HIDDT_RGBConversionFunction HIDD_BM_SetRGBConversionFunction_(OOP_
 
 static inline VOID HIDD_BM_UpdateRect_(OOP_MethodID BitMapBase, OOP_Object *obj, WORD x, WORD y, WORD width, WORD height)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_BitMap_UpdateRect p;
 
     p.mID    = BitMapBase + moHidd_BitMap_UpdateRect;
@@ -2035,14 +1955,18 @@ static inline VOID HIDD_BM_UpdateRect_(OOP_MethodID BitMapBase, OOP_Object *obj,
 #ifndef HiddGCBase
 #define HiddGCBase HIDD_GC_GetMethodBase(__obj)
 
-static inline OOP_MethodID HIDD_GC_GetMethodBase(OOP_Object *obj){
-    static OOP_MethodID GCBase;
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+static inline OOP_MethodID HIDD_GC_GetMethodBase(OOP_Object *obj)
+{
+    static OOP_MethodID GCMethodBase;
 
-    if(!GCBase)
-	GCBase = OOP_GetMethodID(IID_Hidd_GC, 0);
+    if (!GCMethodBase)
+    {
+        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
 
-    return GCBase;
+	GCMethodBase = OOP_GetMethodID(IID_Hidd_GC, 0);
+    }
+
+    return GCMethodBase;
 }
 #endif
 
@@ -2053,7 +1977,6 @@ static inline OOP_MethodID HIDD_GC_GetMethodBase(OOP_Object *obj){
 
 static inline VOID HIDD_GC_SetClipRect_(OOP_MethodID GCBase, OOP_Object *obj, LONG x1, LONG y1, LONG x2, LONG y2)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_GC_SetClipRect p;
 
     p.mID = GCBase + moHidd_GC_SetClipRect;        
@@ -2071,7 +1994,6 @@ static inline VOID HIDD_GC_SetClipRect_(OOP_MethodID GCBase, OOP_Object *obj, LO
 
 static inline VOID HIDD_GC_UnsetClipRect_(OOP_MethodID GCBase, OOP_Object *obj)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_GC_UnsetClipRect p;
     
     p.mID = GCBase + moHidd_GC_UnsetClipRect;
@@ -2082,14 +2004,18 @@ static inline VOID HIDD_GC_UnsetClipRect_(OOP_MethodID GCBase, OOP_Object *obj)
 #ifndef HiddPlanarBMBase
 #define HiddPlanarBMBase HIDD_PlanarBM_GetMethodBase(__obj)
 
-static inline OOP_MethodID HIDD_PlanarBM_GetMethodBase(OOP_Object *obj){
-    static OOP_MethodID PlanarBMBase;
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+static inline OOP_MethodID HIDD_PlanarBM_GetMethodBase(OOP_Object *obj)
+{
+    static OOP_MethodID PlanarBMMethodBase;
 
-    if(!PlanarBMBase)
-	PlanarBMBase = OOP_GetMethodID(IID_Hidd_PlanarBM, 0);
+    if (!PlanarBMMethodBase)
+    {
+        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
 
-    return PlanarBMBase;
+	PlanarBMMethodBase = OOP_GetMethodID(IID_Hidd_PlanarBM, 0);
+    }
+
+    return PlanarBMMethodBase;
 }
 #endif
 
@@ -2100,7 +2026,6 @@ static inline OOP_MethodID HIDD_PlanarBM_GetMethodBase(OOP_Object *obj){
 
 static inline BOOL HIDD_PlanarBM_SetBitMap_(OOP_MethodID PlanarBMBase, OOP_Object *obj, struct BitMap *bitMap)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_PlanarBM_SetBitMap p;
     
     p.mID    = PlanarBMBase + moHidd_PlanarBM_SetBitMap;
@@ -2115,7 +2040,6 @@ static inline BOOL HIDD_PlanarBM_SetBitMap_(OOP_MethodID PlanarBMBase, OOP_Objec
 
 static inline BOOL HIDD_PlanarBM_GetBitMap_(OOP_MethodID PlanarBMBase, OOP_Object *obj, struct BitMap *bitMap)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_PlanarBM_GetBitMap p;
 
     p.mID    = PlanarBMBase + moHidd_PlanarBM_GetBitMap;
@@ -2129,14 +2053,18 @@ static inline BOOL HIDD_PlanarBM_GetBitMap_(OOP_MethodID PlanarBMBase, OOP_Objec
 #ifndef HiddColorMapBase
 #define HiddColorMapBase HIDD_ColorMap_GetMethodBase(__obj)
 
-static inline OOP_MethodID HIDD_ColorMap_GetMethodBase(OOP_Object *obj){
-    static OOP_MethodID ColorMapBase;
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+static inline OOP_MethodID HIDD_ColorMap_GetMethodBase(OOP_Object *obj)
+{
+    static OOP_MethodID ColorMapMethodBase;
 
-    if(!ColorMapBase)
-	ColorMapBase = OOP_GetMethodID(IID_Hidd_ColorMap, 0);
+    if (!ColorMapMethodBase)
+    {
+        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
 
-    return ColorMapBase;
+	ColorMapMethodBase = OOP_GetMethodID(IID_Hidd_ColorMap, 0);
+    }
+
+    return ColorMapMethodBase;
 }
 #endif
 
@@ -2146,7 +2074,6 @@ static inline OOP_MethodID HIDD_ColorMap_GetMethodBase(OOP_Object *obj){
 
 static inline BOOL HIDD_CM_SetColors_(OOP_MethodID ColorMapBase, OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors, OOP_Object *pixFmt)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_ColorMap_SetColors p;
     
     p.mID        = ColorMapBase + moHidd_ColorMap_SetColors;
@@ -2164,7 +2091,6 @@ static inline BOOL HIDD_CM_SetColors_(OOP_MethodID ColorMapBase, OOP_Object *obj
 
 static inline HIDDT_Pixel HIDD_CM_GetPixel_(OOP_MethodID ColorMapBase, OOP_Object *obj, ULONG pixelNo)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_ColorMap_GetPixel p;
     
     p.mID     = ColorMapBase + moHidd_ColorMap_GetPixel;
@@ -2180,7 +2106,6 @@ static inline HIDDT_Pixel HIDD_CM_GetPixel_(OOP_MethodID ColorMapBase, OOP_Objec
 
 static inline BOOL HIDD_CM_GetColor_(OOP_MethodID ColorMapBase, OOP_Object *obj, ULONG colorNo, HIDDT_Color *colorReturn)
 {
-    struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
     struct pHidd_ColorMap_GetColor p;
     
     p.mID         = ColorMapBase + moHidd_ColorMap_GetColor;
