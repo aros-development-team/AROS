@@ -135,8 +135,7 @@ struct IconBase
     struct MinList          iconlists[ICONLIST_HASHSIZE];
     
     APTR                    ib_MemoryPool;
-    ULONG   	    	    ib_CRCTable[256];
-    BOOL    	    	    ib_CRCTableComputed;
+    ULONG   	    	    *ib_CRCTable;
     
     /* Global settings -----------------------------------------------------*/
     struct Screen          *ib_Screen;

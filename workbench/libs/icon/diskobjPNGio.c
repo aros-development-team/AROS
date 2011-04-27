@@ -654,6 +654,9 @@ STATIC VOID MakeCRCTable(struct IconBase *IconBase)
     unsigned long c;
     int n, k;
 
+    IconBase->ib_CRCTable = AllocMem(256 * sizeof(ULONG), MEMF_ANY);
+    if (!IconBase->ib_CRCTable)
+    	return;
     for (n = 0; n < 256; n++)
     {
 	c = (unsigned long) n;
@@ -666,9 +669,6 @@ STATIC VOID MakeCRCTable(struct IconBase *IconBase)
 	}
 	IconBase->ib_CRCTable[n] = c;
     }
-    
-    IconBase->ib_CRCTableComputed = TRUE;
-    
 }
 
 /****************************************************************************************/
@@ -677,13 +677,6 @@ STATIC ULONG UpdateCRC(ULONG crc, UBYTE *buf, ULONG len, struct IconBase *IconBa
 {
     ULONG c = crc;
     ULONG n;
-
-    ObtainSemaphore(&IconBase->iconlistlock);   
-    if (!IconBase->ib_CRCTableComputed)
-    {
-	MakeCRCTable(IconBase);
-    }
-    ReleaseSemaphore(&IconBase->iconlistlock);
 
     for (n = 0; n < len; n++)
     {
@@ -873,6 +866,13 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
     BOOL    	    	 done = FALSE;
     
     if (PNGBase == NULL)
+    	return FALSE;
+
+    ObtainSemaphore(&IconBase->iconlistlock);   
+    if (!IconBase->ib_CRCTable)
+	MakeCRCTable(IconBase);
+    ReleaseSemaphore(&IconBase->iconlistlock);
+    if (!IconBase->ib_CRCTable)
     	return FALSE;
 
     /* Write PNG header */
