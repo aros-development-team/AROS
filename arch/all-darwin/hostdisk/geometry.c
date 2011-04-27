@@ -38,19 +38,10 @@ ULONG Host_DeviceGeometry(struct unit *Unit, struct DriveGeometry *dg)
     D(bug("hostdisk: %u sectors per %u bytes\n", dg->dg_TotalSectors, dg->dg_SectorSize));
 
     /*
-     * Huh... Darwin claims they dropped CHS completely... But is it so good here ?
-     * FIXME: Partitions must end up on cylinder boundary to be processed correctly.
-     * But with this approach it's not guaranteed to be so. We could flatten the
-     * geometry to 1 head x 1 sector, this would give us one block per cylinder.
-     * This would do, but this would overflow ULONG block number.
+     * This is all we can do on Darwin. They dropped CHS completely,
+     * so we stay with LBA (CylSectors == 1)
      */
-    dg->dg_Heads        = DEF_HEADS;
-    dg->dg_TrackSectors = DEF_TRACK_SECTORS;
-    dg->dg_CylSectors   = dg->dg_Heads * dg->dg_TrackSectors;
-    dg->dg_Cylinders    = dg->dg_TotalSectors / dg->dg_CylSectors;
-    dg->dg_BufMemType   = MEMF_PUBLIC;
-    dg->dg_DeviceType   = DG_DIRECT_ACCESS;
-    dg->dg_Flags        = 0;
+    dg->dg_Cylinders = dg->dg_TotalSectors;
 
     return 0;
 }

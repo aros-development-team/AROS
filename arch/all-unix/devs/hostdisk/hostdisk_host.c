@@ -201,6 +201,7 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 
     if (Unit->flags & UNIT_DEVICE)
     {
+    	/* This routine returns UNIX error code, for simplicity */
 	err = Host_DeviceGeometry(Unit, dg);
 
 	/* If this routine is not implemented, use fstat() (worst case) */
@@ -218,15 +219,8 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
     D(bug("hostdisk: Image file length: %ld\n", st.st_size));
     if (res != -1)
     {
-	dg->dg_SectorSize   = DEF_SECTOR_SIZE;
-	dg->dg_Heads        = DEF_HEADS;
-	dg->dg_TrackSectors = DEF_TRACK_SECTORS;
 	dg->dg_TotalSectors = st.st_size / dg->dg_SectorSize;
-	dg->dg_CylSectors   = dg->dg_Heads * dg->dg_TrackSectors;
-	dg->dg_Cylinders    = dg->dg_TotalSectors / dg->dg_CylSectors;
-	dg->dg_BufMemType   = MEMF_PUBLIC;
-	dg->dg_DeviceType   = DG_DIRECT_ACCESS;
-	dg->dg_Flags        = 0;
+	dg->dg_Cylinders    = dg->dg_TotalSectors; /* LBA, CylSectors == 1 */
 
 	return 0;
     }
@@ -325,8 +319,8 @@ static int Host_Init(struct HostDiskBase *hdskBase)
 
     hdskBase->errnoPtr = hdskBase->iface->__error();
 
-    /* FIXME: this works only on Darwin. On Linux this should be /dev/sd%c, where %c is a...z */
-    hdskBase->DiskDevice = "/dev/disk%ld";
+    hdskBase->DiskDevice = DISK_DEVICE;
+    hdskBase->unitBase   = DISK_BASE;
 
     return TRUE;
 }
