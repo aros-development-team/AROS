@@ -1979,6 +1979,8 @@ enum
 #define IS_OVERLAY_ATTR(attr, idx) \
 	(((idx) = (attr) - HiddOverlayAttrBase) < num_Hidd_Overlay_Attrs)
 
+#ifndef __GRAPHICS_NOHIDDBASE__
 #include <hidd/graphics_inline.h>
+#endif
 
 #endif /* HIDD_GRAPHICS_H */
