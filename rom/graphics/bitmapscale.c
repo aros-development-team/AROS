@@ -13,8 +13,6 @@
 #include "gfxfuncsupport.h"
 #include "objcache.h"
 
-VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitScaleArgs *, OOP_Object *);
-
 /*****************************************************************************
 
     NAME */

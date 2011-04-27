@@ -228,6 +228,13 @@ struct GfxBase_intern
     struct Library	       *CyberGfxBase;
     struct Library	       *OOPBase;
     struct Library	       *UtilityBase;
+
+    /* Private HIDD method bases */
+    OOP_MethodID                HiddBitMapBase;
+    OOP_MethodID                HiddColorMapBase;
+    OOP_MethodID                HiddGCBase;
+    OOP_MethodID                HiddGfxBase;
+    OOP_MethodID                HiddPlanarBMBase;
 };
 
 
@@ -237,6 +244,15 @@ struct GfxBase_intern
 /* FIXME: Remove these #define xxxBase hacks
    Do not use this in new code !
 */
+#define HiddBitMapBase		(PrivGBase(GfxBase)->HiddBitMapBase)
+#define HiddColorMapBase	(PrivGBase(GfxBase)->HiddColorMapBase)
+#define HiddGCBase		(PrivGBase(GfxBase)->HiddGCBase)
+#define HiddGfxBase		(PrivGBase(GfxBase)->HiddGfxBase)
+#define HiddPlanarBMBase	(PrivGBase(GfxBase)->HiddPlanarBMBase)
+
+/* This must be included before defining OOPBase */
+#include <hidd/graphics_inline.h>
+
 /* struct Utilitybase is used in the following file so include it
    before defining Utilitybase
 */

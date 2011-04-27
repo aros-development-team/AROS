@@ -7,7 +7,8 @@ AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom waitblit
 #MM kernel-graphics-amiga-m68k : kernel-graphics-includes includes-asm_h-m68k
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/graphics \
-               -I$(SRCDIR)/rom/graphics
+               -I$(SRCDIR)/rom/graphics \
+               -D__GRAPHICS_NOHIDDBASE__
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
 
 %build_archspecific \
