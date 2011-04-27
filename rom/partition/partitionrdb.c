@@ -818,95 +818,38 @@ ULONG i;
     return 1;
 }
 
-LONG PartitionRDBGetPartitionTableAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct TagItem *taglist
-    )
+static LONG PartitionRDBGetPartitionTableAttr(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *tag)
 {
-
-    while (taglist[0].ti_Tag != TAG_DONE)
+    switch (tag->ti_Tag)
     {
-
-        switch (taglist[0].ti_Tag)
-        {
-        case PTT_TYPE:
-            *((LONG *)taglist[0].ti_Data) = root->table->type;
-            break;
-        case PTT_RESERVED:
-            *((LONG *)taglist[0].ti_Data) =
-                root->de.de_Surfaces*root->de.de_BlocksPerTrack*2; /* 2 cylinders */
-            break;
-        }
-        taglist++;
+    case PTT_RESERVED:
+        *((LONG *)tag->ti_Data) = (root->de.de_Surfaces * root->de.de_BlocksPerTrack) << 1; /* 2 cylinders */
+        return TRUE;
     }
+
     return 0;
 }
 
-LONG PartitionRDBSetPartitionTableAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct TagItem *taglist
-    )
+static LONG PartitionRDBGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
 {
-
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
-
-        switch (taglist[0].ti_Tag)
-        {
-        }
-        taglist++;
-    }
-    return 0;
-}
-
-LONG PartitionRDBGetPartitionAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph,
-        struct TagItem *taglist
-    )
-{
-
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
     struct PartitionBlock *data = (struct PartitionBlock *)ph->data;
 
-        switch (taglist[0].ti_Tag)
-        {
-        case PT_GEOMETRY:
-            {
-                struct DriveGeometry *dg = (struct DriveGeometry *)taglist[0].ti_Data;
-                CopyMem(&ph->dg, dg, sizeof(struct DriveGeometry));
-            }
-            break;
-        case PT_DOSENVEC:
-            CopyMem(&ph->de, (struct DosEnvec *)taglist[0].ti_Data, sizeof(struct DosEnvec));
-            break;
-        case PT_TYPE:
-            {
-            struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
-            ULONG dt = AROS_LONG2BE(ph->de.de_DosType);
+    switch (tag->ti_Tag)
+    {
+    case PT_TYPE:
+        *((ULONG *)tag->ti_Data) = AROS_LONG2BE(ph->de.de_DosType);
+        PTYPE(tag->ti_Data)->id_len = 4;
+        return TRUE;
 
-                CopyMem(&dt, ptype->id, 4);
-                ptype->id_len = 4;
-            }
-            break;
-        case PT_NAME:
-            CopyMem(ph->ln.ln_Name, (UBYTE *)taglist[0].ti_Data, 32);
-            break;
-        case PT_BOOTABLE:
-            *((LONG *)taglist[0].ti_Data) = (AROS_BE2LONG(data->pb_Flags) & PBFF_BOOTABLE) ? TRUE : FALSE;
-            break;
-        case PT_AUTOMOUNT:
-            *((LONG *)taglist[0].ti_Data) = (AROS_BE2LONG(data->pb_Flags) & PBFF_NOMOUNT) ? FALSE : TRUE;
-            break;
-        }
-        taglist++;
+    case PT_BOOTABLE:
+        *((LONG *)tag->ti_Data) = (AROS_BE2LONG(data->pb_Flags) & PBFF_BOOTABLE) ? TRUE : FALSE;
+        return TRUE;
+
+    case PT_AUTOMOUNT:
+        *((LONG *)tag->ti_Data) = (AROS_BE2LONG(data->pb_Flags) & PBFF_NOMOUNT) ? FALSE : TRUE;
+        return TRUE;
     }
+
     return 0;
 }
 
@@ -1055,11 +998,6 @@ const struct PartitionAttribute PartitionRDBPartitionTableAttrs[]=
     {PTTA_DONE,     0}
 };
 
-struct PartitionAttribute *PartitionRDBQueryPartitionTableAttrs(struct Library *PartitionBase)
-{
-    return (APTR)PartitionRDBPartitionTableAttrs;
-}
-
 const struct PartitionAttribute PartitionRDBPartitionAttrs[]=
 {
     /* TODO: implement write */
@@ -1071,11 +1009,6 @@ const struct PartitionAttribute PartitionRDBPartitionAttrs[]=
     {PTA_AUTOMOUNT, PLAM_READ | PLAM_WRITE},
     {PTA_DONE,      0}
 };
-
-struct PartitionAttribute *PartitionRDBQueryPartitionAttrs(struct Library *PartitionBase)
-{
-    return (APTR)PartitionRDBPartitionAttrs;
-}
 
 ULONG PartitionRDBDestroyPartitionTable
     (
@@ -1133,56 +1066,51 @@ BPTR PartitionRDBLoadFileSystem(struct PartitionBase_intern *PartitionBase, stru
 	return BNULL;
 }
 
-LONG PartitionRDBGetFileSystemAttrs(struct Library *PartitionBase, struct FileSysHandle *fn, const struct TagItem *taglist)
+static LONG PartitionRDBGetFileSystemAttr(struct Library *PartitionBase, struct FileSysHandle *fn, const struct TagItem *tag)
 {
-    struct TagItem *tag;
     struct FileSysEntry *fse;
     struct FileSysHeaderBlock *fhb = &((struct FileSysNode *)fn)->fhb;
 
-    while ((tag = NextTagItem(&taglist)))
+    switch (tag->ti_Tag)
     {
-        switch (tag->ti_Tag)
-        {
-        case FST_ID:
-            *((ULONG *)tag->ti_Data) = AROS_BE2LONG(fhb->fhb_DosType);
-            break;
+    case FST_ID:
+        *((ULONG *)tag->ti_Data) = AROS_BE2LONG(fhb->fhb_DosType);
+        return TRUE;
 
-        case FST_NAME:
-            *((STRPTR *)tag->ti_Data) = fhb->fhb_FileSysName;
-            break;
+    case FST_NAME:
+        *((STRPTR *)tag->ti_Data) = fhb->fhb_FileSysName;
+        return TRUE;
 
-	case FST_FSENTRY:
-	    fse = (struct FileSysEntry *)tag->ti_Data;
+    case FST_FSENTRY:
+	fse = (struct FileSysEntry *)tag->ti_Data;
 
-	    /* RDB filesystems are not prioritized */
-	    fse->fse_Node.ln_Pri = 0;
+	/* RDB filesystems are not prioritized */
+	fse->fse_Node.ln_Pri = 0;
 
-	    /*
-	     * Don't use CopyMem() or something like that.
-	     * First, you need to deal with endianess.
-	     * Second, some things are actually pointers, you need
-	     * to sign-extend them on 64 bits.
-	     */
-	    fse->fse_DosType    = AROS_BE2LONG(fhb->fhb_DosType);
-	    fse->fse_Version    = AROS_BE2LONG(fhb->fhb_Version);
-	    fse->fse_PatchFlags = AROS_BE2LONG(fhb->fhb_PatchFlags);
-	    fse->fse_Type	= AROS_BE2LONG(fhb->fhb_Type);
-	    fse->fse_Task	= AROS_BE2LONG(fhb->fhb_Task);
-	    fse->fse_Lock	= (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Lock);
-	    /* Just for convenience. This is expected to be zero. */
-	    fse->fse_Handler	= (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Handler);
-	    fse->fse_StackSize  = AROS_BE2LONG(fhb->fhb_StackSize);
-	    fse->fse_Priority	= AROS_BE2LONG(fhb->fhb_Priority);
-	    fse->fse_Startup	= (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Startup);
-	    /* Skip fse_SegList */
-	    fse->fse_GlobalVec	= (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_GlobalVec);
+	/*
+	 * Don't use CopyMem() or something like that.
+	 * First, you need to deal with endianess.
+	 * Second, some things are actually pointers, you need
+	 * to sign-extend them on 64 bits.
+	 */
+	fse->fse_DosType    = AROS_BE2LONG(fhb->fhb_DosType);
+	fse->fse_Version    = AROS_BE2LONG(fhb->fhb_Version);
+	fse->fse_PatchFlags = AROS_BE2LONG(fhb->fhb_PatchFlags);
+	fse->fse_Type	    = AROS_BE2LONG(fhb->fhb_Type);
+	fse->fse_Task	    = AROS_BE2LONG(fhb->fhb_Task);
+	fse->fse_Lock	    = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Lock);
+	/* Just for convenience. This is expected to be zero. */
+	fse->fse_Handler    = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Handler);
+	fse->fse_StackSize  = AROS_BE2LONG(fhb->fhb_StackSize);
+	fse->fse_Priority   = AROS_BE2LONG(fhb->fhb_Priority);
+	fse->fse_Startup    = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Startup);
+	/* Skip fse_SegList */
+	fse->fse_GlobalVec  = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_GlobalVec);
+	return TRUE;
 
-	    break;
-
-	case FST_VERSION:
-	    *((ULONG *)tag->ti_Data) = AROS_BE2LONG(fhb->fhb_Version);
-	    break;
-        }
+    case FST_VERSION:
+	*((ULONG *)tag->ti_Data) = AROS_BE2LONG(fhb->fhb_Version);
+	return TRUE;
     }
 
     return 0;
@@ -1199,12 +1127,12 @@ const struct PTFunctionTable PartitionRDB =
     PartitionRDBCreatePartitionTable,
     PartitionRDBAddPartition,
     PartitionRDBDeletePartition,
-    PartitionRDBGetPartitionTableAttrs,
-    PartitionRDBSetPartitionTableAttrs,
-    PartitionRDBGetPartitionAttrs,
+    PartitionRDBGetPartitionTableAttr,
+    NULL,
+    PartitionRDBGetPartitionAttr,
     PartitionRDBSetPartitionAttrs,
-    PartitionRDBQueryPartitionTableAttrs,
-    PartitionRDBQueryPartitionAttrs,
+    PartitionRDBPartitionTableAttrs,
+    PartitionRDBPartitionAttrs,
     PartitionRDBDestroyPartitionTable,
     PartitionRDBFindFileSystem
 };
@@ -1212,6 +1140,6 @@ const struct PTFunctionTable PartitionRDB =
 const struct FSFunctionTable FilesystemRDB =
 {
     PartitionRDBLoadFileSystem,
-    PartitionRDBGetFileSystemAttrs,
+    PartitionRDBGetFileSystemAttr,
     PartitionRDBFreeFileSystem
 };

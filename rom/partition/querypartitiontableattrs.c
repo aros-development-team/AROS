@@ -1,8 +1,9 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
+
 #include "partition_support.h"
 #include "platform.h"
 
@@ -11,7 +12,7 @@
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH1(struct PartitionAttribute *, QueryPartitionTableAttrs,
+   AROS_LH1(const struct PartitionAttribute *, QueryPartitionTableAttrs,
 
 /*  SYNOPSIS */
    AROS_LHA(struct PartitionHandle *, table,       A1),
@@ -47,11 +48,12 @@
 
     if (table->table)
     {
-    struct PTFunctionTable *handler = table->table->handler;
+    	struct PTFunctionTable *handler = table->table->handler;
 
-        if (handler->queryPartitionTableAttrs)
-            return handler->queryPartitionTableAttrs(PartitionBase);
+        return handler->partitionTableAttrs;
     }
-    return 0;
+
+    return NULL;
+
     AROS_LIBFUNC_EXIT
 }

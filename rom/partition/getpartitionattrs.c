@@ -1,14 +1,13 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
+
+#include <proto/utility.h>
+
 #include "partition_support.h"
 #include "platform.h"
-
-#ifndef DEBUG
-#define DEBUG 1
-#endif
 #include "debug.h"
 
 /*****************************************************************************
@@ -21,7 +20,7 @@
 
 /*  SYNOPSIS */
    AROS_LHA(struct PartitionHandle *, ph,       A1),
-   AROS_LHA(struct TagItem *,    taglist,       A2),
+   AROS_LHA(const struct TagItem *, taglist,    A2),
 
 /*  LOCATION */
    struct Library *, PartitionBase, 15, Partition)
@@ -57,33 +56,70 @@
 {
     AROS_LIBFUNC_INIT
 
+    LONG (*getPartitionAttr)(struct Library *, struct PartitionHandle *, struct TagItem *) = NULL;
+
+    struct TagItem *tag;
+
     if (ph->root)
     {
-    struct PTFunctionTable *handler = ph->root->table->handler;
+	struct PTFunctionTable *handler = ph->root->table->handler;
 
-        if (handler->getPartitionAttrs)
-            return handler->getPartitionAttrs(PartitionBase, ph, taglist);
+	getPartitionAttr = handler->getPartitionAttr;
     }
-    else
+
+    while ((tag = NextTagItem(&taglist)))
     {
-        /* we are the root partition */
-        while (taglist[0].ti_Tag != TAG_DONE)
-        {
-            switch (taglist[0].ti_Tag)
+    	LONG sup;
+
+	/* If we have partition handler, call its function first */
+        if (getPartitionAttr)
+            sup = getPartitionAttr(PartitionBase, ph, tag);
+        else
+            sup = FALSE;
+
+	if (!sup)
+	{
+	    /*
+	     * No handler (root partition) or the handler didn't process the attribute.
+	     * Return defaults.
+	     */
+            switch (tag->ti_Tag)
             {
             case PT_GEOMETRY:
-                {
-                struct DriveGeometry *dg = (struct DriveGeometry *)taglist[0].ti_Data;
-                    CopyMem(&ph->dg, dg, sizeof(struct DriveGeometry));
-                }
+                CopyMem(&ph->dg, (APTR)tag->ti_Data, sizeof(struct DriveGeometry));
                 break;
+
             case PT_DOSENVEC:
-                CopyMem(&ph->de, (struct DosEnvec *)taglist[0].ti_Data, sizeof(struct DosEnvec));
+                CopyMem(&ph->de, (APTR)tag->ti_Data, sizeof(struct DosEnvec));
                 break;
+                
+	    case PT_TYPE:
+	    	/* We have no type semantics */
+		PTYPE(tag->ti_Data)->id_len = 0;
+		break;
+
+	    case PT_LEADIN:
+	    case PT_POSITION:
+	    	*((ULONG *)tag->ti_Data) = 0;
+	    	break;
+
+	    case PT_ACTIVE:
+	    case PT_BOOTABLE:
+	    case PT_AUTOMOUNT:
+		*((BOOL *)tag->ti_Data) = FALSE;
+		break;
+
+	    case PT_NAME:
+	        if (ph->ln.ln_Name)
+	            strncpy((STRPTR)tag->ti_Data, ph->ln.ln_Name, 32);
+	        else
+	    	    ((STRPTR)tag->ti_Data)[0] = 0;
+	    	break;
             }
-            taglist++;
         }
     }
+
     return 0;
+
     AROS_LIBFUNC_EXIT
 }

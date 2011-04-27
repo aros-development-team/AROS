@@ -392,91 +392,48 @@ static void PartitionEBRDeletePartition
     PartitionEBRFreeHandle(PartitionBase, ph);
 }
 
-static LONG PartitionEBRGetPartitionTableAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct TagItem *taglist
-    )
+static LONG PartitionEBRGetPartitionTableAttr(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *taglist)
 {
-    while (taglist[0].ti_Tag != TAG_DONE)
+    switch (taglist[0].ti_Tag)
     {
-        switch (taglist[0].ti_Tag)
-        {
-        case PTT_TYPE:
-            *((LONG *)taglist[0].ti_Data) = root->table->type;
-            break;
-        case PTT_MAXLEADIN:
-            *((LONG *)taglist[0].ti_Data) = root->de.de_BlocksPerTrack;
-            break;
-        }
-        taglist++;
+    case PTT_MAXLEADIN:
+        *((LONG *)taglist[0].ti_Data) = root->de.de_BlocksPerTrack;
+        return TRUE;
     }
+
     return 0;
 }
 
-static LONG PartitionEBRSetPartitionTableAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct TagItem *taglist
-    )
+static LONG PartitionEBRGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
 {
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
-        switch (taglist[0].ti_Tag)
-        {
-        }
-        taglist++;
-    }
-    return 0;
-}
-
-static LONG PartitionEBRGetPartitionAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph,
-        struct TagItem *taglist
-    )
-{
-ULONG i;
-struct PartitionHandle *list_ph;
-
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
+    ULONG i;
+    struct PartitionHandle *list_ph;
     struct EBRData *data = (struct EBRData *)ph->data;
 
-        switch (taglist[0].ti_Tag)
-        {
-        case PT_GEOMETRY:
-            {
-                struct DriveGeometry *dg = (struct DriveGeometry *)taglist[0].ti_Data;
-                CopyMem(&ph->dg, dg, sizeof(struct DriveGeometry));
-            }
-            break;
-        case PT_DOSENVEC:
-            CopyMem(&ph->de, (struct DosEnvec *)taglist[0].ti_Data, sizeof(struct DosEnvec));
-            break;
-        case PT_TYPE:
-            {
-            struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
+    switch (tag->ti_Tag)
+    {
+    case PT_TYPE:
+        PTYPE(tag->ti_Data)->id[0]  = data->type;
+        PTYPE(tag->ti_Data)->id_len = 1;
+        return TRUE;
 
-                ptype->id[0] = data->type;
-                ptype->id_len = 1;
-            }
-            break;
-        case PT_POSITION:
-            i = 0;
-            ForeachNode(&ph->root->table->list, list_ph)
+    case PT_POSITION:
+        i = 0;
+
+        ForeachNode(&ph->root->table->list, list_ph)
+        {
+            if (list_ph == ph)
             {
-                if (list_ph == ph)
-                    *((LONG *)taglist[0].ti_Data) = i;
-                i++;
+                *((LONG *)tag->ti_Data) = i;
+                return TRUE;
             }
-            break;
+            i++;
         }
-        taglist++;
+
+	/* ??? We should never reach here */
+        return 0;
     }
+
     return 0;
 }
 
@@ -522,12 +479,6 @@ static const struct PartitionAttribute PartitionEBRPartitionTableAttrs[]=
     {PTTA_DONE,           0}
 };
 
-static struct PartitionAttribute *PartitionEBRQueryPartitionTableAttrs(
-    struct Library *PartitionBase)
-{
-    return (APTR)PartitionEBRPartitionTableAttrs;
-}
-
 static const struct PartitionAttribute PartitionEBRPartitionAttrs[]=
 {
     {PTA_GEOMETRY, PLAM_READ},
@@ -537,12 +488,6 @@ static const struct PartitionAttribute PartitionEBRPartitionAttrs[]=
     {PTA_LEADIN,   PLAM_READ},
     {PTA_DONE,     0}
 };
-
-static struct PartitionAttribute *PartitionEBRQueryPartitionAttrs(
-    struct Library *PartitionBase)
-{
-    return (APTR)PartitionEBRPartitionAttrs;
-}
 
 static ULONG PartitionEBRDestroyPartitionTable
     (
@@ -574,12 +519,12 @@ const struct PTFunctionTable PartitionEBR =
     PartitionEBRCreatePartitionTable,
     PartitionEBRAddPartition,
     PartitionEBRDeletePartition,
-    PartitionEBRGetPartitionTableAttrs,
-    PartitionEBRSetPartitionTableAttrs,
-    PartitionEBRGetPartitionAttrs,
+    PartitionEBRGetPartitionTableAttr,
+    NULL,
+    PartitionEBRGetPartitionAttr,
     PartitionEBRSetPartitionAttrs,
-    PartitionEBRQueryPartitionTableAttrs,
-    PartitionEBRQueryPartitionAttrs,
+    PartitionEBRPartitionTableAttrs,
+    PartitionEBRPartitionAttrs,
     PartitionEBRDestroyPartitionTable,
     NULL
 };

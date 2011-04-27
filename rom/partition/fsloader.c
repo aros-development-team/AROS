@@ -15,7 +15,7 @@
 #include "partition_support.h"
 #include "fsloader.h"
 
-static const UBYTE FSLoader_version[];
+extern const UBYTE Partition_LibID[];
 extern int Partition_End;
 
 AROS_UFP3(static APTR, FSLoader_Init,
@@ -40,13 +40,11 @@ const struct Resident FSLoader_resident =
     RTF_AFTERDOS,
     1,
     NT_PROCESS,
-    -121,	/* dos.library corresponds to -120 and is run manually. We can run next. */
+    -121,		 /* dos.library corresponds to -120 and is run manually. We can run next. */
     "FSLoader",
-    (UBYTE *)&FSLoader_version[6],
+    &Partition_LibID[6], /* This points to partition.library version string */
     FSLoader_Init
 };
-
-static const UBYTE FSLoader_version[] = "$VER: partition.library filesystem loader v1.0";
 
 AROS_UFH3(static APTR, FSLoader_Init,
 	  AROS_UFHA(void *, dummy1, D0),
