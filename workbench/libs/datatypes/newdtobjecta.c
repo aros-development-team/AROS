@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -111,7 +111,7 @@
     struct DataType  *DataType;
     APTR              Handle;
     ULONG             GroupID;
-    BPTR              lock = 0;
+    BPTR              lock = BNULL;
     struct IFFHandle *iff = NULL;
     Object           *dtobj = NULL;
     UBYTE            *BaseName = NULL;
@@ -198,7 +198,7 @@
 			    if(Handle == NULL)
 			    {
 				UnLock(lock);
-				lock = 0;
+				lock = BNULL;
 			    }
 			    
 			} /* if lock aquired */
@@ -312,7 +312,7 @@
 
     		    D(bug("datatypes.library/NewDTObjectA: NewObjectA returned %x\n", dtobj));
 		    
-		    lock = 0;
+		    lock = BNULL;
 		    iff = NULL;
 		    
 		} /* ObtainEngine okay */
@@ -328,7 +328,7 @@
 	{
     	    D(bug("datatypes.library/NewDTObjectA: dtobj is NULL. Cleaning up\n"));
 
-	    if(lock != 0)
+	    if(lock != BNULL)
 		UnLock(lock);
 	    
 	    if(iff != NULL)
