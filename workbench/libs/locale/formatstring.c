@@ -100,7 +100,21 @@ static inline APTR va_addr(va_list args, ULONG len)
 
 #else
 
-#define va_addr(args, len) stream_addr(&args, len)
+static inline APTR _va_addr(va_list *args, ULONG len)
+{
+    va_list ret = *args;
+
+    if (len <= sizeof(int))
+        *args += sizeof(int);
+    else if (len == sizeof(long))
+        *args += sizeof(long);
+    else
+        *args += sizeof(void *);
+
+    return ret;
+}
+
+#define va_addr(args, len) _va_addr(&args, len)
 
 #endif
 
@@ -235,7 +249,7 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
           ** Template format: %[arg_pos$][flags][width][.limit][length]type
           **
           ** arg_pos specifies the position of the argument in the dataStream
-          ** flags   only '-' is allowd
+          ** flags   only '-' is allowed
           ** width
           ** .limit
           ** datasize size of the datatype
