@@ -15,119 +15,147 @@
 #include <proto/oop.h>
 
 #ifndef HiddUnixIOMethodBase
-#define HiddUnixIOMethodBase Hidd_UnixIO_GetMethodBase(OOPBase)
+#define HiddUnixIOMethodBase Hidd_UnixIO_GetMethodBase(__obj)
 
-static inline OOP_MethodID Hidd_UnixIO_GetMethodBase(struct Library *OOPBase)
+static inline OOP_MethodID Hidd_UnixIO_GetMethodBase(OOP_Object *obj)
 {
     static OOP_MethodID base;
 
     if (!base)
+    {
+        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+
     	base = OOP_GetMethodID(IID_Hidd_UnixIO, 0);
+    }
 
     return base;
 }
 #endif
 
-static inline IPTR Hidd_UnixIO_Wait(OOP_Object *o, ULONG fd, ULONG mode)
+static inline IPTR __inline_Hidd_UnixIO_Wait(OOP_MethodID base, OOP_Object *o, ULONG fd, ULONG mode)
 {
     struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsg p;
 	
-    p.um_MethodID = HiddUnixIOMethodBase + moHidd_UnixIO_Wait;
+    p.um_MethodID = base + moHidd_UnixIO_Wait;
     p.um_Filedesc = fd;
     p.um_Mode	  = mode;
 
-    return OOP_DoMethod(o, (OOP_Msg)&p);
+    return OOP_DoMethod(o, &p.um_MethodID);
 }
 
-static inline int Hidd_UnixIO_OpenFile(OOP_Object *o, const char *filename, int flags, int mode, int *errno_ptr)
+#define Hidd_UnixIO_Wait(o, fd, mode) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_Wait(HiddUnixIOMethodBase, __obj, fd, mode); })
+
+static inline int __inline_Hidd_UnixIO_OpenFile(OOP_MethodID base, OOP_Object *o, const char *filename, int flags, int mode, int *errno_ptr)
 {
     struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgOpenFile p;
 	
-    p.um_MethodID = HiddUnixIOMethodBase + moHidd_UnixIO_OpenFile;
+    p.um_MethodID = base + moHidd_UnixIO_OpenFile;
     p.um_FileName = filename;
     p.um_Flags    = flags;
     p.um_Mode     = mode;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
+    return OOP_DoMethod(o, &p.um_MethodID);
 }
 
-static inline int Hidd_UnixIO_CloseFile(OOP_Object *o, int fd, int *errno_ptr)
+#define Hidd_UnixIO_OpenFile(o, filename, flags, mode, errno_ptr) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_OpenFile(HiddUnixIOMethodBase, __obj, filename, flags, mode, errno_ptr); })
+
+static inline int __inline_Hidd_UnixIO_CloseFile(OOP_MethodID base, OOP_Object *o, int fd, int *errno_ptr)
 {
     struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgCloseFile p;
 	
-    p.um_MethodID = HiddUnixIOMethodBase + moHidd_UnixIO_CloseFile;
+    p.um_MethodID = base + moHidd_UnixIO_CloseFile;
     p.um_FD 	  = (APTR)fd;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod(o, (OOP_Msg)&p);
+    return OOP_DoMethod(o, &p.um_MethodID);
 }
 
-static inline int Hidd_UnixIO_ReadFile(OOP_Object *o, int fd, void *buffer, int count, int *errno_ptr)
+#define Hidd_UnixIO_CloseFile(o, fd, errno_ptr) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_CloseFile(HiddUnixIOMethodBase, __obj, fd, errno_ptr); })
+
+static inline int __inline_Hidd_UnixIO_ReadFile(OOP_MethodID base, OOP_Object *o, int fd, void *buffer, int count, int *errno_ptr)
 {
     struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgReadFile p;
 	
-    p.um_MethodID = HiddUnixIOMethodBase + moHidd_UnixIO_ReadFile;
+    p.um_MethodID = base + moHidd_UnixIO_ReadFile;
     p.um_FD 	  = (APTR)fd;
     p.um_Buffer   = buffer;
     p.um_Count    = count;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod(o, (OOP_Msg)&p);
+    return OOP_DoMethod(o, &p.um_MethodID);
 }
 
-static inline int Hidd_UnixIO_WriteFile(OOP_Object *o, int fd, const void *buffer, int count, int *errno_ptr)
+#define Hidd_UnixIO_ReadFile(o, fd, buffer, count, errno_ptr) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_ReadFile(HiddUnixIOMethodBase, __obj, fd, buffer, count, errno_ptr); })
+
+static inline int __inline_Hidd_UnixIO_WriteFile(OOP_MethodID base, OOP_Object *o, int fd, const void *buffer, int count, int *errno_ptr)
 {
     struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgWriteFile p;
 	
-    p.um_MethodID = HiddUnixIOMethodBase + moHidd_UnixIO_WriteFile;
+    p.um_MethodID = base + moHidd_UnixIO_WriteFile;
     p.um_FD 	  = (APTR)fd;
     p.um_Buffer   = buffer;
     p.um_Count    = count;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod(o, (OOP_Msg)&p);
+    return OOP_DoMethod(o, &p.um_MethodID);
 }
 
-static inline int Hidd_UnixIO_IOControlFile(OOP_Object *o, int fd, int request, void *param, int *errno_ptr)
+#define Hidd_UnixIO_WriteFile(o, fd, buffer, count, errno_ptr) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_WriteFile(HiddUnixIOMethodBase, __obj, fd, buffer, count, errno_ptr); })
+
+static inline int __inline_Hidd_UnixIO_IOControlFile(OOP_MethodID base, OOP_Object *o, int fd, int request, void *param, int *errno_ptr)
 {
     struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgIOControlFile p;
 
-    p.um_MethodID = HiddUnixIOMethodBase + moHidd_UnixIO_IOControlFile;
+    p.um_MethodID = base + moHidd_UnixIO_IOControlFile;
     p.um_FD 	  = (APTR)fd;
     p.um_Request  = request;
     p.um_Param    = param;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
+    return OOP_DoMethod(o, &p.um_MethodID);
 }
 
-static inline int Hidd_UnixIO_AddInterrupt(OOP_Object *o, struct uioInterrupt *interrupt)
+#define Hidd_UnixIO_IOControlFile(o, fd, request, param, errno_ptr) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_IOControlFile(HiddUnixIOMethodBase, __obj, fd, request, param, errno_ptr); })
+
+static inline int __inline_Hidd_UnixIO_AddInterrupt(OOP_MethodID base, OOP_Object *o, struct uioInterrupt *interrupt)
 {
     struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgAddInterrupt p;
 
-    p.um_MethodID = HiddUnixIOMethodBase + moHidd_UnixIO_AddInterrupt;
+    p.um_MethodID = base + moHidd_UnixIO_AddInterrupt;
     p.um_Int	  = interrupt;
 
-    return OOP_DoMethod(o, (OOP_Msg)&p);
+    return OOP_DoMethod(o, &p.um_MethodID);
 }
 
-static inline void Hidd_UnixIO_RemInterrupt(OOP_Object *o, struct uioInterrupt *interrupt)
+#define Hidd_UnixIO_AddInterrupt(o, interrupt) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_AddInterrupt(HiddUnixIOMethodBase, __obj, interrupt); })
+
+static inline void __inline_Hidd_UnixIO_RemInterrupt(OOP_MethodID base, OOP_Object *o, struct uioInterrupt *interrupt)
 {
     struct Library *OOPBase = OOP_OCLASS(o)->OOPBasePtr;
     struct uioMsgRemInterrupt p;
 
-    p.um_MethodID = HiddUnixIOMethodBase + moHidd_UnixIO_RemInterrupt;
+    p.um_MethodID = base + moHidd_UnixIO_RemInterrupt;
     p.um_Int	  = interrupt;
 
-    OOP_DoMethod(o, (OOP_Msg)&p);
+    OOP_DoMethod(o, &p.um_MethodID);
 }
+
+#define Hidd_UnixIO_RemInterrupt(o, interrupt) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_RemInterrupt(HiddUnixIOMethodBase, __obj, interrupt); })
 
 #endif
