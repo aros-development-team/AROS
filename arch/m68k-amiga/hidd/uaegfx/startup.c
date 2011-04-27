@@ -4,6 +4,7 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <graphics/driver.h>
+#include <graphics/gfxbase.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>

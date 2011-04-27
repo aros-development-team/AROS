@@ -1,5 +1,3 @@
-#include <graphics/renderfunc.h>
-
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
@@ -13,7 +11,7 @@ AROS_LH9(LONG, WritePixels8,
 	 AROS_LHA(LONG, ystart, D2),
 	 AROS_LHA(LONG, xstop, D3),
 	 AROS_LHA(LONG, ystop, D4),
-	 AROS_LHA(HIDDT_PixelLUT *, pixlut, A2),
+	 AROS_LHA(APTR, pixlut, A2),
 	 AROS_LHA(BOOL, do_update, D5),
 	 struct GfxBase *, GfxBase, 182, Graphics)
 {
@@ -30,8 +28,8 @@ AROS_LH8(LONG, FillRectPenDrMd,
 	 AROS_LHA(LONG, y1, D1),
 	 AROS_LHA(LONG, x2, D2),
 	 AROS_LHA(LONG, y2, D3),
-    	 AROS_LHA(HIDDT_Pixel, pix, D4),
-	 AROS_LHA(HIDDT_DrawMode, drmd, D5),
+    	 AROS_LHA(ULONG, pix, D4),
+	 AROS_LHA(IPTR, drmd, D5),
 	 AROS_LHA(BOOL, do_update, D6),
 	 struct GfxBase *, GfxBase, 183, Graphics)
 {
@@ -46,7 +44,7 @@ AROS_LH6(ULONG, DoRenderFunc,
 	 AROS_LHA(struct RastPort *, rp, A0),
 	 AROS_LHA(Point *, src, A1),
 	 AROS_LHA(struct Rectangle *, rr, A2),
-	 AROS_LHA(RENDERFUNC, render_func, A3),
+	 AROS_LHA(VOID_FUNC, render_func, A3),
 	 AROS_LHA(APTR, funcdata, A4),
 	 AROS_LHA(BOOL, do_update, D0),
 	 struct GfxBase *, GfxBase, 184, Graphics)
@@ -70,7 +68,7 @@ AROS_LH6(LONG, DoPixelFunc,
 	 AROS_LHA(struct RastPort *, rp, A0),
 	 AROS_LHA(LONG, x, D0),
 	 AROS_LHA(LONG, y, D1),
-    	 AROS_LHA(PIXELFUNC, render_func, A1),
+    	 AROS_LHA(VOID_FUNC, render_func, A1),
 	 AROS_LHA(APTR, funcdata, A2),
 	 AROS_LHA(BOOL, do_update, D2),
 	 struct GfxBase *, GfxBase, 185, Graphics)

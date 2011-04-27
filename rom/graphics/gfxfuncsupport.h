@@ -195,6 +195,9 @@ struct gfx_driverdata
     UBYTE   	      dd_ClipRectangleFlags;    
 };
 
+typedef ULONG (*RENDERFUNC)(APTR, LONG, LONG, OOP_Object *, OOP_Object *, LONG, LONG, LONG, LONG, struct GfxBase *);
+typedef LONG (*PIXELFUNC)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *);
+
 /****************************************************************************************/
 
 OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase);
