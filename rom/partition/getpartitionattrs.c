@@ -115,6 +115,14 @@
 	        else
 	    	    ((STRPTR)tag->ti_Data)[0] = 0;
 	    	break;
+
+	    case PT_STARTBLOCK:
+	    	*((ULONG *)tag->ti_Data) = ph->de.de_LowCyl * ph->de.de_Surfaces * ph->de.de_BlocksPerTrack;
+	    	break;
+
+	    case PT_ENDBLOCK:
+	    	*((ULONG *)tag->ti_Data) = (ph->de.de_HighCyl + 1) * ph->de.de_Surfaces * ph->de.de_BlocksPerTrack - 1;
+	    	break;
             }
         }
     }
