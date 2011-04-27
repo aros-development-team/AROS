@@ -56,7 +56,7 @@ AROS_LH6(ULONG, DoRenderFunc,
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
         return -1;
 
-    res = do_render_func(rp, src, rr, render_func, funcdata, do_update, FALSE, GfxBase);
+    res = do_render_func(rp, src, rr, (void *)render_func, funcdata, do_update, FALSE, GfxBase);
 
     RELEASE_DRIVERDATA(rp, GfxBase);
     return res;
@@ -80,7 +80,7 @@ AROS_LH6(LONG, DoPixelFunc,
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
         return -1;
 
-    res = do_pixel_func(rp, x, y, render_func, funcdata, do_update, GfxBase);
+    res = do_pixel_func(rp, x, y, (void *)render_func, funcdata, do_update, GfxBase);
 
     RELEASE_DRIVERDATA(rp, GfxBase);
     return res;
