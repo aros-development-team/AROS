@@ -6,8 +6,6 @@
     Lang: English.
 */
 
-#define __OOP_NOATTRBASES__
-
 #include <exec/libraries.h>
 #include <exec/rawfmt.h>
 #include <exec/types.h>
