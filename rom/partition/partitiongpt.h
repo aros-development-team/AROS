@@ -15,13 +15,31 @@ struct GPTHeader
     UQUAD  BackupBlock;		/* Number of block where backup partition table is placed */
     UQUAD  DataStart;		/* Number of the first usable block for data		  */
     UQUAD  DataEnd;		/* Number of the last usable block for data		  */
-    uuid_t DiskID;		/* Disk UUID */
-    UQUAD  PartBlock;		/* Number if the first partition entry block		  */
+    uuid_t DiskID;		/* Disk unique ID					  */
+    UQUAD  StartBlock;		/* Number if the first partition entry block		  */
     ULONG  NumEntries;		/* Number of partitions in the table			  */
     ULONG  EntrySize;		/* Size of one entry					  */
     ULONG  PartCRC32;		/* CRC32 of the partition entries array			  */
 				/* The rest is reserved					  */
 };
 
-#define GPT_SIGNATURE   "EFI PART"
-#define GPT_HEADER_SIZE 92		/* sizeof(struct GPTHeader) gives 96 on x86-64 because of padding */
+#define GPT_SIGNATURE	   "EFI PART"
+#define GPT_MIN_HEADER_SIZE 92
+#define GPT_MAX_HEADER_SIZE 512
+
+struct GPTPartition
+{
+    uuid_t TypeID;	/* Partition type ID		*/
+    uuid_t PartitionID;	/* Partition unique ID		*/
+    UQUAD  StartBlock;	/* Number of the first block	*/
+    UQUAD  EndBlock;	/* Number of the last block	*/
+    ULONG  Flags0;	/* Flags			*/
+    ULONG  Flags1;
+    UBYTE  Name[72];	/* Name in UTF16-LE encoding	*/
+};
+
+/* Flags0 and Flags1, according to Microsoft(R) */
+#define GPT_PF0_SYSTEM   (1 << 0)
+#define GPT_PF1_READONLY (1 << 29)
+#define GPT_PF1_HIDDEN   (1 << 30)
+#define GPT_PF1_NOMOUNT  (1 << 31)

@@ -144,16 +144,9 @@ static LONG PartitionMBRCheckPartitionTable(struct Library *PartitionBase, struc
     return res;
 }
 
-static struct PartitionHandle *PartitionMBRNewHandle
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        UBYTE position,
-        struct PCPartitionTable *entry
-    )
+static struct PartitionHandle *PartitionMBRNewHandle(struct Library *PartitionBase, struct PartitionHandle *root, UBYTE position, struct PCPartitionTable *entry)
 {
-struct PartitionHandle *ph;
-ULONG cylsecs;
+    struct PartitionHandle *ph;
 
     if (entry->first_sector != 0)
     {
@@ -165,51 +158,15 @@ ULONG cylsecs;
             data = AllocMem(sizeof(struct MBRData), MEMF_PUBLIC);
             if (data)
             {
-                cylsecs = root->de.de_BlocksPerTrack*root->de.de_Surfaces;
-                data->entry = entry;
+                data->entry    = entry;
                 data->position = position;
-                ph->root = root;
-                ph->bd = root->bd;
                 ph->data = data;
 
-                /* initialize DosEnvec */
+                /* initialize DosEnvec and DriveGeometry */
+                initPartitionHandle(root, ph, AROS_LE2LONG(data->entry->first_sector), AROS_LE2LONG(data->entry->count_sector));
 
-                /* Check if partition starts and ends on a cylinder boundary */
-                CopyMem(&root->de, &ph->de, sizeof(struct DosEnvec));
-                if (
-                        (AROS_LE2LONG(data->entry->first_sector) % cylsecs != 0) ||
-                        (AROS_LE2LONG(data->entry->count_sector) % cylsecs != 0)
-                    )
-                {
-                    /* Treat each track as a cylinder if possible */
-                    ph->de.de_Surfaces = 1;
-                    cylsecs = ph->de.de_BlocksPerTrack*ph->de.de_Surfaces;
-                    if (
-       	                (AROS_LE2LONG(data->entry->first_sector) % cylsecs != 0) ||
-               	        (AROS_LE2LONG(data->entry->count_sector) % cylsecs != 0)
-                    )
-                    {
-                        /* We can't. We could find the highest common factor of
-                           first_sector and count_sector here, but currently we
-                           simply use one block per cylinder */
-                        ph->de.de_BlocksPerTrack = 1;
-                        cylsecs = ph->de.de_BlocksPerTrack*ph->de.de_Surfaces;
-                    }
-                }
-                ph->de.de_LowCyl = AROS_LE2LONG(data->entry->first_sector) / cylsecs;
-                ph->de.de_HighCyl =
-                    ph->de.de_LowCyl+
-                    (AROS_LE2LONG(data->entry->count_sector)/cylsecs)-1;
-                ph->de.de_TableSize = 10; // only until de_HighCyl
-                ph->ln.ln_Pri = MBR_MAX_PARTITIONS-1-position;
-
-                /* initialize DriveGeometry */
-                ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
-                ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
-                ph->dg.dg_Heads = ph->de.de_Surfaces;
-                ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
-                ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
-                ph->dg.dg_BufMemType = ph->de.de_BufMemType;
+		/* Set position as priority */
+                ph->ln.ln_Pri = MBR_MAX_PARTITIONS - 1 - position;
                 return ph;
             }
             FreeMem(ph, sizeof(struct PartitionHandle));
