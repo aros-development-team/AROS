@@ -71,72 +71,77 @@ struct FATBootSector {
     UBYTE bpb_signature[2];
 } __attribute__ ((__packed__));
 
-static LONG PartitionMBRCheckPartitionTable
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root
-    )
-{
-struct
+struct rootblock
 {
     union
     {
         struct MBR mbr;
         struct FATBootSector bs;
-        UBYTE space[root->de.de_SizeBlock << 2];
     }
     u;
-}
-blk;
-BOOL isfat = TRUE;
-ULONG sectorsize, clustersectors;
-struct PCPartitionTable *pcpt;
+};
 
-    if (readBlock(PartitionBase, root, 0, &blk) == 0)
+LONG MBRCheckPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root, void *buffer)
+{
+    struct rootblock *blk = buffer;
+    LONG res = 0;
+
+    if (readBlock(PartitionBase, root, 0, blk) == 0)
     {
         /* Check it doesn't look like a FAT boot sector */
+	ULONG sectorsize, clustersectors;
 
         /* Valid sector size: 512, 1024, 2048, 4096 */
-        sectorsize = AROS_LE2WORD(blk.u.bs.bpb_bytes_per_sect);
-        if (
-                sectorsize != 512 && sectorsize != 1024 && sectorsize != 2048 &&
-                sectorsize != 4096
-            )
-            isfat = FALSE;
+        sectorsize = AROS_LE2WORD(blk->u.bs.bpb_bytes_per_sect);
+        if (sectorsize != 512 && sectorsize != 1024 && sectorsize != 2048 && sectorsize != 4096)
+            res = 1;
 
         /* Valid bpb_sect_per_clust: 1, 2, 4, 8, 16, 32, 64, 128 */
-        clustersectors = blk.u.bs.bpb_sect_per_clust;
-        if (
-                (clustersectors & (clustersectors - 1)) != 0 ||
-                clustersectors == 0 || clustersectors > 128
-            )
-            isfat = FALSE;
+        clustersectors = blk->u.bs.bpb_sect_per_clust;
+        if ((clustersectors & (clustersectors - 1)) != 0 || clustersectors == 0 || clustersectors > 128)
+            res = 1;
 
         /* Valid cluster size: 512, 1024, 2048, 4096, 8192, 16k, 32k, 64k */
         if (clustersectors * sectorsize > 64 * 1024)
-            isfat = FALSE;
+            res = 1;
 
-        if (blk.u.bs.bpb_media < 0xF0)
-            isfat = FALSE;
+        if (blk->u.bs.bpb_media < 0xF0)
+            res = 1;
 
-        /* Check status bytes of all partition slots and block signature */
-        pcpt = blk.u.mbr.pcpt;
-        if (
-                (AROS_LE2WORD(blk.u.mbr.magic) == 0xAA55) &&
-                (((pcpt[0].status & 0x0F)==0) || (pcpt[0].status & 0x80)) &&
-                (((pcpt[1].status & 0x0F)==0) || (pcpt[1].status & 0x80)) &&
-                (((pcpt[2].status & 0x0F)==0) || (pcpt[2].status & 0x80)) &&
-                (((pcpt[3].status & 0x0F)==0) || (pcpt[3].status & 0x80))
-            )
-        {
-            if (root->root || isfat)
+	if (res)
+	{
+	    struct PCPartitionTable *pcpt = blk->u.mbr.pcpt;
+
+	    /* Check status bytes of all partition slots and block signature */
+            if ((AROS_LE2WORD(blk->u.mbr.magic) != MBR_MAGIC) ||
+                (!MBR_STATUS_VALID(pcpt[0].status)) || (!MBR_STATUS_VALID(pcpt[1].status)) || 
+            	(!MBR_STATUS_VALID(pcpt[2].status)) || (!MBR_STATUS_VALID(pcpt[3].status)))
             {
-                return 0;
+            	res = 0;
             }
-            return 1;
         }
     }
-    return 0;
+
+    return res;
+}
+
+static LONG PartitionMBRCheckPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
+{
+    LONG res;
+    void *blk;
+
+    /* MBR can be placed only in the root of the disk */
+    if (root->root)
+    	return 0;
+
+    blk = AllocMem(root->de.de_SizeBlock << 2, MEMF_ANY);    
+    if (!blk)
+    	return 0;
+
+    res = MBRCheckPartitionTable(PartitionBase, root, blk);
+
+    FreeMem(blk, root->de.de_SizeBlock << 2);
+    return res;
 }
 
 static struct PartitionHandle *PartitionMBRNewHandle
@@ -213,22 +218,17 @@ ULONG cylsecs;
     return NULL;
 }
 
-static LONG PartitionMBROpenPartitionTable
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root
-    )
+static LONG PartitionMBROpenPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
 {
-struct PartitionHandle *ph;
-struct MBR *mbr;
-UBYTE i;
+    struct PartitionHandle *ph;
+    struct MBR *mbr;
+    UBYTE i;
 
     mbr = AllocMem(root->de.de_SizeBlock<<2, MEMF_PUBLIC);
     if (mbr)
     {
         if (readBlock(PartitionBase, root, 0, mbr) == 0)
         {
-            NEWLIST(&root->table->list);
             root->table->data = mbr;
             for (i=0;i<4;i++)
             {

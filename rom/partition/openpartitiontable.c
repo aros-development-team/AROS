@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
+
 #include <exec/memory.h>
 #include <proto/exec.h>
+
 #include "partition_intern.h"
 #include "partition_support.h"
 #include "platform.h"
@@ -58,21 +60,22 @@
     {
         if (pst[0]->checkPartitionTable(PartitionBase, root))
         {
-            root->table = AllocMem
-                (
-                    sizeof(struct PartitionTableHandler),
-                    MEMF_PUBLIC | MEMF_CLEAR
-                );
+            root->table = AllocMem(sizeof(struct PartitionTableHandler), MEMF_PUBLIC | MEMF_CLEAR);
+
             if (root->table)
             {
-            LONG retval;
+            	LONG retval;
 
-                root->table->type = pst[0]->type;
-                root->table->handler = (APTR)*pst;
+	        NEWLIST(&root->table->list);
+
+                root->table->type    = pst[0]->type;
+                root->table->handler = (void *)pst[0];
+
                 retval = pst[0]->openPartitionTable(PartitionBase, root);
-                if (retval!=0)
+                if (retval)
                 {
                     FreeMem(root->table, sizeof(struct PartitionTableHandler));
+
                     root->table = NULL;
                 }
                 return retval;
@@ -81,5 +84,6 @@
         pst++;
     }
     return 1;
+
     AROS_LIBFUNC_EXIT
 }
