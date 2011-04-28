@@ -438,11 +438,12 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_Flags = (defaults[3].ti_Data  ? PRF_CLOSEINPUT    : 0) |
 		        (defaults[5].ti_Data  ? PRF_CLOSEOUTPUT   : 0) |
 		        (defaults[7].ti_Data  ? PRF_CLOSEERROR    : 0) |
+			(defaults[8].ti_Data  ? PRF_FREECURRDIR   : 0) |
 		        (defaults[13].ti_Data ? PRF_FREECLI       : 0) |
 	                (defaults[19].ti_Data ? PRF_SYNCHRONOUS   : 0) |
 			(defaults[20].ti_Data ? PRF_FREESEGLIST   : 0) |
 			(defaults[23].ti_Data ? PRF_NOTIFYONDEATH : 0) |
-		        PRF_FREEARGS | PRF_FREECURRDIR;
+		        PRF_FREEARGS;
     process->pr_ExitCode = (APTR)defaults[15].ti_Data;
     process->pr_ExitData = defaults[16].ti_Data;
     process->pr_Arguments = argptr;
