@@ -4,12 +4,11 @@
     
     Function to write module_stubs.c. Part of genmodule.
 */
-#include "archspecific.h"
 #include "genmodule.h"
 
 void writestubs(struct config *cfg)
 {
-    FILE *out, *outasm;
+    FILE *out;
     char line[256], *type, *name, *banner;
     struct functionhead *funclistit;
     struct stringlist *aliasesit;
@@ -36,19 +35,6 @@ void writestubs(struct config *cfg)
         "#undef __%s_NOLIBBASE__\n",
         banner, cfg->modulenameupper
     );
-
-    if (cfg->intcfg & CFG_GENASTUBS)
-    {
-	snprintf(line, 255, "%s/%s_astubs.S", cfg->gendir, cfg->modulename);
-	outasm = fopen(line, "w");
-	if (outasm==NULL)
-	{
-	    fprintf(stderr, "Could not write %s\n", line);
-	    exit(20);
-	}
-	fprintf(outasm, "%s", banner);
-	fprintf(outasm, STUBCODE_INIT);
-    }
     freeBanner(banner);
 
     if (cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
@@ -60,6 +46,7 @@ void writestubs(struct config *cfg)
     (
         out,
         "#include <exec/types.h>\n"
+	"#include <aros/cpu.h>\n"
         "#include <aros/libcall.h>\n"
         "\n"
     );
@@ -159,14 +146,9 @@ void writestubs(struct config *cfg)
 	    }
 	    else /* libcall==STACK */
 	    {
-		assert(cfg->intcfg & CFG_GENASTUBS);
-		
-		fprintf(outasm,
-			STUBCODE,
-			funclistit->name,
-			cfg->libbase,
-			-funclistit->lvo*LIB_VECTSIZE
-		 );
+		fprintf(out, "AROS_LIBFUNCSTUB(%s, %s, %d)\n",
+			funclistit->name, cfg->libbase,	funclistit->lvo
+		);
 	    }
 	
 	    for (aliasesit = funclistit->aliases;
@@ -174,13 +156,11 @@ void writestubs(struct config *cfg)
 		 aliasesit = aliasesit->next
 	    )
 	    {
-		assert(cfg->intcfg & CFG_GENASTUBS);
-		
-		fprintf(outasm, ALIASCODE, funclistit->name, aliasesit->s);
+		fprintf(out, "AROS_FUNCALIAS(%s, %s)\n",
+			funclistit->name, aliasesit->s
+		);
 	    }
 	}
     }
     fclose(out);
-    if (cfg->intcfg & CFG_GENASTUBS)
-	fclose(outasm);
 }

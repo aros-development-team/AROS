@@ -1371,7 +1371,6 @@ static void readsectionfunctionlist(struct config *cfg)
 		    exitfileerror(20, ".alias has to come after a function declaration\n");
 		
 		slist_append(&(*funclistptr)->aliases, s2);
-		cfg->intcfg |= CFG_GENASTUBS;
 	    }
 	    else if (strncmp(s, "function", 8) == 0)
 	    {
@@ -1602,7 +1601,6 @@ static void readsectionfunctionlist(struct config *cfg)
 	    { /* No registers specified */
 		for (i = 0; i < argcount; i++)
 		    funcaddarg(*funclistptr, args[i], NULL);
-		cfg->intcfg |= CFG_GENASTUBS;
 	    }
 	    else
 		exitfileerror(20, "wrong char '%c' at position %d\n", *s, (int)(s-line) + 1);

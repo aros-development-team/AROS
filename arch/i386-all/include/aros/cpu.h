@@ -83,32 +83,43 @@ struct JumpVec
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
 #define __AROS_INITVEC(lib,n)           __AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
-/*
-   Code to use to generate stub functions.
-   It must be *printed* with a function like printf in a file
-   to be compiled with gcc.
 
-   - The first parameter is the function name,
-   - The second parameter is the basename,
-   - The third parameter is the library vector to be called.
-     It's value must be computed by the stub generator with this code:
-     &(__AROS_GETJUMPVEC(0, n+1)->vec), where n is the library vector position in
-     the library vectors list.
+/* Macros for generating library stub functions and aliases. */
 
+/* Macro: AROS_LIBFUNCSTUB(functionname, libbasename, lvo)
+   This macro will generate code for a stub function for
+   the function 'functionname' of lirary with libbase
+   'libbasename' and 'lvo' number of the function in the
+   vector table. lvo has to be a constant value (not a variable)
+
+   Internals: a dummy function is used that will generate some
+   unused junk code but otherwise we can't pass input arguments
+   to the asm statement
 */
+#define __AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
+    void __ ## fname ## _ ## libbasename ## _wrapper(void) \
+    { \
+	asm volatile( \
+	    ".weak " #fname ";" \
+	    #fname " : " \
+	    "movl " #libbasename ",%%eax;" \
+	    "jmp *%c0(%%eax)" \
+	    : : "i" ((-lvo*LIB_VECTSIZE)) \
+	); \
+    }
+#define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
+    __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
 
-#define STUBCODE_INIT                                  \
-		"#define EMITSTUB(fname, bname, vec) " \
-		".weak fname ; "                       \
-		"fname : "                             \
-		"movl bname , %%eax; "                 \
-		"jmp *vec(%%eax);\n"                   \
-	        "#define EMITALIAS(fname, alias) "     \
-	        ".weak alias; .set alias, fname\n"
-#define STUBCODE                                       \
-		"EMITSTUB(%s, %s, %d)\n"
-#define ALIASCODE                                      \
-                "EMITALIAS(%s, %s)\n"
+/* Macro: AROS_FUNCALIAS(functionname, alias)
+   This macro will generate an alias 'alias' for function
+   'functionname'
+*/
+#define __AROS_FUNCALIAS(fname, alias) \
+    asm(".weak " #alias "\n" \
+	"\t.set " #alias "," #fname \
+    );
+#define AROS_FUNCALIAS(fname, alias) \
+    __AROS_FUNCALIAS(fname, alias)
 
 /*
    We want to activate the execstubs and preserve all registers
