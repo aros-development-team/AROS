@@ -79,7 +79,7 @@
 		case PTT_MAXLEADIN:
 	        case PTT_RESERVED:
 	        case PTT_MAX_PARTITIONS:
-	            *((LONG *)taglist[0].ti_Data) = 0;
+	            *((LONG *)tag->ti_Data) = 0;
 	            break;
 	        }
 	    }
