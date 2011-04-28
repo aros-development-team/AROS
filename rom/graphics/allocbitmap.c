@@ -259,7 +259,6 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 	/* Set size */
 	SET_BM_TAG( bm_tags, 0, Width,  sizex	);
 	SET_BM_TAG( bm_tags, 1, Height, sizey	);
-	SET_BM_TAG( bm_tags, 2, Depth,  depth	);
 
 	/* Set friend bitmap */
 	SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
@@ -272,9 +271,14 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 	    if (hiddmode == vHidd_ModeID_Invalid)
 		hiddmode = HIDD_BM_HIDDMODE(friend_bitmap);
 
+	    if (depth <= 8) /* CHECKME: only set depth if planar? */
+	    	depth = HIDD_BM_REALDEPTH(friend_bitmap);
+
 	    /* Obtain also GFX driver from friend bitmap */
 	    drv = HIDD_BM_DRVDATA(friend_bitmap);
 	}
+
+	SET_BM_TAG( bm_tags, 2, Depth,  depth	);
 
 	/* Now let's deal with pixelformat */
 	if (flags & BMF_SPECIALFMT)
