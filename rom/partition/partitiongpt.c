@@ -51,6 +51,19 @@ static void FromUTF16(char *to, char *from, ULONG len)
     }
 }
 
+static inline void uuid_from_le(uuid_t *to, uuid_t *id)
+{
+    to->time_low            = AROS_LE2LONG(id->time_low);
+    to->time_mid            = AROS_LE2WORD(id->time_mid);
+    to->time_hi_and_version = AROS_LE2WORD(id->time_hi_and_version);
+
+    to->clock_seq_hi_and_reserved = id->clock_seq_hi_and_reserved;
+    to->clock_seq_low             = id->clock_seq_low;
+
+    /* Do not replace it with CopyMem(), gcc optimizes this nicely */
+    memcpy(to->node, id->node, sizeof(id->node));
+}
+
 #ifdef DEBUG_UID
 
 static void PRINT_LE_UUID(uuid_t *id)
@@ -249,6 +262,37 @@ static LONG PartitionGPTOpenPartitionTable(struct Library *PartitionBase, struct
     return res;
 }
 
+static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
+{
+    struct GPTPartition *part = (APTR)ph + sizeof(struct GPTPartitionHandle);
+
+    switch (tag->ti_Tag)
+    {
+    case PT_TYPE:
+    	uuid_from_le((uuid_t *)tag->ti_Data, &part->TypeID);
+    	PTYPE(tag->ti_Data)->id_len = sizeof(uuid_t);
+        return TRUE;
+
+    case PT_BOOTABLE:
+    	*((ULONG *)tag->ti_Data) = (AROS_LE2LONG(part->Flags1) & GPT_PF1_AROS_BOOTABLE) ? TRUE : FALSE;
+        return TRUE;
+
+    case PT_AUTOMOUNT:
+	*((ULONG *)tag->ti_Data) = (AROS_LE2LONG(part->Flags1) & GPT_PF1_NOMOUNT) ? FALSE : TRUE;
+        return TRUE;
+
+    case PT_STARTBLOCK:
+	*((ULONG *)tag->ti_Data) = AROS_LE2LONG(part->StartBlock);
+    	return TRUE;
+
+    case PT_ENDBLOCK:
+	*((ULONG *)tag->ti_Data) = AROS_LE2LONG(part->EndBlock);
+    	return TRUE;
+    }
+
+    return 0;
+}
+
 static const struct PartitionAttribute PartitionGPTPartitionTableAttrs[]=
 {
     {PTTA_TYPE,           PLAM_READ},
@@ -280,7 +324,7 @@ const struct PTFunctionTable PartitionGPT =
     NULL,
     NULL,
     NULL,
-    NULL,
+    PartitionGPTGetPartitionAttr,
     NULL,
     PartitionGPTPartitionTableAttrs,
     PartitionGPTPartitionAttrs,
