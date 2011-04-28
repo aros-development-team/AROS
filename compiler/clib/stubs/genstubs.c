@@ -6,9 +6,8 @@
     Lang: english
 */
 
-#include "archspecific.h"
-
-#undef __const
+/* LVOs reserved by exec */
+#define LIB_RESERVED 4
 
 #include <stdio.h>
 #include <string.h>
@@ -36,7 +35,7 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
-    if (!strcmp(argv[1], "-list"))
+    if (strcmp(argv[1], "-list") == 0)
     {
  	for (n=0; syscalls[n].name; n++)
     	    printf("%s\n",syscalls[n].name);
@@ -45,19 +44,13 @@ int main(int argc, char *argv[])
     }
 
     for (n=0; syscalls[n].name != NULL; n++)
-	if (!strcmp(syscalls[n].name, argv[1]))
+	if (strcmp(syscalls[n].name, argv[1]) == 0)
 	{
-	    printf(STUBCODE_INIT);
-	    printf(STUBCODE,
-	           syscalls[n].name, "aroscbase",
-	           JUMPVEC(n)
+	    printf("#include <aros/cpu.h>\n"
+		   "\n"
+		   "AROS_LIBFUNCSTUB(%s, aroscbase, %d)\n",
+		   syscalls[n].name, n+1+LIB_RESERVED
 	    );
-	    if (syscalls[n].alias[0] != '\0' )
-	    {
-	        printf(ALIASCODE,
-		       syscalls[n].name, syscalls[n].alias
-		);
-	    }
 
 	    return 0;
 	}

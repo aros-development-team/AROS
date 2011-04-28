@@ -43,10 +43,8 @@ void writemakefile(struct config *cfg)
         fprintf(out, " %s_autoinit", cfg->modulename);
     fprintf(out, "\n");
 
-    fprintf(out, "%s_LINKLIBAFILES :=", cfg->modulename);
-    if ((cfg->options & OPTION_STUBS) && (cfg->intcfg & CFG_GENASTUBS))
-        fprintf(out, "%s_astubs\n", cfg->modulename);
-    fprintf(out, "\n");
+    /* Currently there are no asm files anymore */
+    fprintf(out, "%s_LINKLIBAFILES :=\n", cfg->modulename);
 
     fprintf(out, "%s_INCLUDES := ", cfg->modulename);
     if (cfg->options & OPTION_INCLUDES)

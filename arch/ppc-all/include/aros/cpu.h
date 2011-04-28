@@ -113,36 +113,47 @@ struct JumpVec
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
-/*
-   Code used to generate stub functions.
-   It must be *printed* with a function like printf into
-   a file to be compiled with gcc.
 
-   - The first parameter is the function name,
-   - The second parameter is the basename,
-     i.e. bname is the address of a pointer to the library base,
-   - The third parameter is the library vector to be called.
+/* Macros for generating library stub functions and aliases. */
 
-   It's value must be computed by the stub generator with this code:
-   &(__AROS_GETJUMPVEC(0, n+1)->vec), where n is the library vector position in
-   the library vectors list.
+/* Macro: AROS_LIBFUNCSTUB(functionname, libbasename, lvo)
+   This macro will generate code for a stub function for
+   the function 'functionname' of lirary with libbase
+   'libbasename' and 'lvo' number of the function in the
+   vector table. lvo has to be a constant value (not a variable)
 
+   Internals: a dummy function is used that will generate some
+   unused junk code but otherwise we can't pass input arguments
+   to the asm statement
 */
-#define STUBCODE_INIT                          \
-	"#define EMITSTUB(fname, bname, vec) " \
-	".globl fname; "                       \
-	"fname : "                             \
-	"lis   11,bname@ha; "                  \
-	"lwz   11,bname@l(11); "               \
-	"lwz   11,vec(11); "                   \
-	"mtctr 11; "                           \
-	"bctr;\n "                             \
-	"#define EMITALIAS(fname, alias) "     \
-	".weak alias; .set alias, fname\n"
-#define STUBCODE                               \
-	"EMITSTUB(%s, %s, %d) "
-#define ALIASCODE                              \
-        "EMITALIAS(%s, %s)\n"
+#define __AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
+    void __ ## fname ## _ ## libbasename ## _wrapper(void) \
+    { \
+	asm volatile( \
+	    ".globl " #fname "\n" \
+	    "\t" #fname ":\n" \
+	    "\tlis   11," #libbasename "@ha\n" \
+	    "\tlwz   11," #libbasename "@l(11)\n" \
+	    "\tlwz   11,%c0(11)\n" \
+	    "\tmtctr 11\n" \
+	    "\tbctr\n" \
+	    : : "i" ((-lvo*LIB_VECTSIZE)) \
+        ); \
+    }
+#define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
+    __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
+
+/* Macro: AROS_FUNCALIAS(functionname, alias)
+   This macro will generate an alias 'alias' for function
+   'functionname'
+*/
+#define __AROS_FUNCALIAS(fname, alias) \
+    asm(".weak " #alias "\n" \
+	"\t.set " #alias "," #fname \
+    );
+#define AROS_FUNCALIAS(fname, alias) \
+    __AROS_FUNCALIAS(fname, alias)
+
 /*
    No, we do not want to preserve the all registers in case of Semaphore and
    multitasking handling functions. It made sence on m68k native target. On all
