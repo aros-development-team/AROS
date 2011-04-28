@@ -168,7 +168,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
     	if (!table)
     	    return ERROR_NO_FREE_STORE;
 
-	res = readData(root, AROS_LE2QUAD(hdr->StartBlock), tablesize, table);
+	res = readDataFromBlock(root, AROS_LE2QUAD(hdr->StartBlock), tablesize, table);
 	if (!res)
 	{
 	    struct GPTPartition *p = table;

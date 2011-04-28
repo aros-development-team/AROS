@@ -69,7 +69,7 @@ LONG PartitionGetGeometry(struct Library *, struct IOExtTD *, struct DriveGeomet
 void PartitionNsdCheck(struct Library *, struct PartitionHandle *);
 ULONG getStartBlock(struct PartitionHandle *);
 LONG readBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
-LONG readData(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem);
+LONG readDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem);
 LONG PartitionWriteBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
 
 void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *ph, ULONG first_sector, ULONG count_sector);

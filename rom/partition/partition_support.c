@@ -99,11 +99,11 @@ ULONG start = 0;
 /* read a single block within partition ph */
 LONG readBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem)
 {
-    return readData(ph, block, ph->de.de_SizeBlock<<2, mem);
+    return readDataFromBlock(ph, block, ph->de.de_SizeBlock<<2, mem);
 }
 
 /* read 'size' bytes starting from 'block' within partition ph */
-LONG readData(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem)
+LONG readDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem)
 {
     UQUAD offset = (getStartBlock(ph) + block) * (ph->de.de_SizeBlock<<2);
     struct IOExtTD *ioreq;
