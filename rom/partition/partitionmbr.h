@@ -2,7 +2,7 @@
 #define PARTITIONMBR_H
 
 /*
-    Copyright © 2007, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -31,6 +31,11 @@ struct MBR {
    struct PCPartitionTable pcpt[4];
    UWORD magic;
 } __attribute__((packed));
+
+#define MBR_MAGIC 0xAA55
+#define MBR_STATUS_VALID(status) ((!(status & 0x0F)) || (status & 0x80))
+
+LONG MBRCheckPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root, void *buffer);
 
 void PartitionMBRSetGeometry
     (

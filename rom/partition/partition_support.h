@@ -62,6 +62,7 @@ extern const struct PTFunctionTable * const PartitionSupport[];
 extern const struct PTFunctionTable PartitionEBR;
 extern const struct PTFunctionTable PartitionMBR;
 extern const struct PTFunctionTable PartitionRDB;
+extern const struct PTFunctionTable PartitionGPT;
 extern const struct FSFunctionTable FilesystemRDB;
 
 LONG PartitionGetGeometry(struct Library *, struct IOExtTD *, struct DriveGeometry *);

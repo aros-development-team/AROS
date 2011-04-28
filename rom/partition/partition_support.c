@@ -1,9 +1,8 @@
 /*
-    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
-
 
 #include <proto/exec.h>
 #include <devices/newstyle.h>
@@ -11,14 +10,16 @@
 
 #include "partition_intern.h"
 #include "partition_support.h"
-
-#ifndef DEBUG
-#define DEBUG 1
-#endif
 #include "debug.h"
 
 const struct PTFunctionTable * const PartitionSupport[] =
-    {&PartitionRDB, &PartitionMBR, &PartitionEBR, 0};
+{
+    &PartitionRDB,
+    &PartitionGPT, /* The order of these two is important, GPT must be checked before MBR */
+    &PartitionMBR,
+    &PartitionEBR,
+    NULL
+};
 
 /* get geometry */
 LONG PartitionGetGeometry

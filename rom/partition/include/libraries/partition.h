@@ -61,6 +61,7 @@ struct PartitionType
 #define PHPTT_RDB     (1)
 #define PHPTT_MBR     (2)
 #define PHPTT_EBR     (3)
+#define PHPTT_GPT     (4)
 
 /* partition types */
 //nothing defined here ...
