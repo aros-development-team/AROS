@@ -43,3 +43,6 @@ struct GPTPartition
 #define GPT_PF1_READONLY (1 << 29)
 #define GPT_PF1_HIDDEN   (1 << 30)
 #define GPT_PF1_NOMOUNT  (1 << 31)
+
+/* AROS-specific flags */
+#define GPT_PF1_AROS_BOOTABLE (1 << 28)
