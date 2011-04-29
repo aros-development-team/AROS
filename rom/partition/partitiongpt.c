@@ -178,8 +178,8 @@ static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle
     	    crc = crc32(crc, (const Bytef *)hdr, hdrSize);
 
 	    D(bug("[GPT] Header CRC: calculated 0x%08X, expected 0x%08X\n", crc, orig_crc));
-	    if (crc == orig_crc)
-	    	return 1;
+
+	    return (crc == orig_crc) ? 1 : 2;
 	}
     }
     return 0;
@@ -210,7 +210,17 @@ static LONG PartitionGPTCheckPartitionTable(struct Library *PartitionBase, struc
     	if ((pcpt[0].type == MBRT_GPT) && (AROS_LE2LONG(pcpt[0].first_sector) == 1))
     	{
     	    res = GPTCheckHeader(PartitionBase, root, blk, 1);
-    	    /* TODO: handle backup header if something is wrong in the primary one */
+
+	    /* 2 is a special return code for "bad CRC" */
+    	    if (res == 2)
+    	    {
+		/* Try to read backup header */
+    	    	res = GPTCheckHeader(PartitionBase, root, blk, ((struct GPTHeader *)blk)->BackupBlock);
+
+		/* There's no third backup :( */
+    	    	if (res == 2)
+    	    	    res = 0;
+    	    }
     	}
     }
 
