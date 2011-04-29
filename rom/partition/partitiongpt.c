@@ -11,12 +11,13 @@
 #define DEBUG_UUID
 */
 
-#include <proto/exec.h>
-#include <proto/partition.h>
-
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <libraries/partition.h>
+#include <proto/exec.h>
+#include <proto/partition.h>
+#include <proto/utility.h>
+
 #include <zlib.h>
 
 #include "partition_support.h"
@@ -33,8 +34,25 @@ struct GPTPartitionHandle
     				/* Actual table entry follows */
 };
 
+#define GPTH(ph) ((struct GPTPartitionHandle *)ph)
+
 static const uuid_t GPT_Type_Unused = MAKE_UUID(0x00000000, 0x0000, 0x0000, 0x0000, 0x000000000000);
+/*
+ * This is a bit special.
+ * The first four bytes (time_low) hold DOS Type ID (for simple mapping),
+ * so we set them to zero here. We ignore it during comparison.
+ * I hope this won't create any signoficant problems. Even if some ID ever collides, it will
+ * unlikely collide with existing DOSTypes being used, so it can be blacklisted then.
+ */
 static const uuid_t GPT_Type_AROS   = MAKE_UUID(0x00000000, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5E);
+
+/*
+ * UTF16-LE conversion.
+ * Currently these are very basic routines which handle only Latin-1 character set.
+ * If needed, conversion can be performed using codesets.library (but don't forget
+ * that you can run early during system bootup and codesets.library won't be
+ * available by that time).
+ */
 
 static void FromUTF16(char *to, char *from, ULONG len)
 {
@@ -52,11 +70,41 @@ static void FromUTF16(char *to, char *from, ULONG len)
     }
 }
 
+static void ToUTF16(char *to, char *from, ULONG len)
+{
+    ULONG i;
+    
+    for (i = 0; i < len; i++)
+    {
+    	/* Currently we know only 7-bit ASCII characters */
+    	*to++ = *from;
+    	*to++ = 0;
+
+    	if (!*from++)
+    	    return;
+    }
+}
+
+/*
+ * Little-endian UUID conversion and comparison.
+ * We can't use uuid.library here because it's not available during
+ * system bootup. However, we are going to use it for generation.
+ */
 static inline void uuid_from_le(uuid_t *to, uuid_t *id)
 {
     to->time_low            = AROS_LE2LONG(id->time_low);
     to->time_mid            = AROS_LE2WORD(id->time_mid);
     to->time_hi_and_version = AROS_LE2WORD(id->time_hi_and_version);
+
+    /* Do not replace it with CopyMem(), gcc optimizes this nicely */
+    memcpy(&to->clock_seq_hi_and_reserved, &id->clock_seq_hi_and_reserved, 8);
+}
+
+static inline void uuid_to_le(uuid_t *to, uuid_t *id)
+{
+    to->time_low            = AROS_LONG2LE(id->time_low);
+    to->time_mid            = AROS_WORD2LE(id->time_mid);
+    to->time_hi_and_version = AROS_WORD2LE(id->time_hi_and_version);
 
     /* Do not replace it with CopyMem(), gcc optimizes this nicely */
     memcpy(&to->clock_seq_hi_and_reserved, &id->clock_seq_hi_and_reserved, 8);
@@ -74,7 +122,7 @@ static inline BOOL uuid_cmp_le(uuid_t *leid, uuid_t *id)
     return !memcmp(&leid->clock_seq_hi_and_reserved, &id->clock_seq_hi_and_reserved, 8);
 }
 
-/* For AROS we put DOS Type ID into first four bytes of UUID (time_low). So we mask them away. */
+/* For AROS we put DOS Type ID into first four bytes of UUID (time_low), so we ignore them. */
 static inline BOOL is_aros_uuid_le(uuid_t *leid)
 {
     if (AROS_LE2WORD(leid->time_mid) != GPT_Type_AROS.time_mid)
@@ -318,6 +366,45 @@ static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase, struct P
     return 0;
 }
 
+static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct PartitionHandle *ph, const struct TagItem *taglist)
+{
+    struct GPTPartition *part = (APTR)ph + sizeof(struct GPTPartitionHandle);
+    struct TagItem *tag;
+    struct TagItem *bootable = NULL;
+
+    while ((tag = NextTagItem(&taglist)))
+    {
+    	switch (tag->ti_Tag)
+    	{
+    	case PT_NAME:
+    	    strncpy(GPTH(ph)->name, (char *)tag->ti_Data, 36);
+    	    ToUTF16(part->Name, GPTH(ph)->name, 36);
+    	    break;
+
+    	case PT_TYPE:
+	    /* Foolproof check */
+    	    if (PTYPE(tag->ti_Data)->id_len == sizeof(uuid_t))
+	        uuid_to_le(&part->TypeID, (uuid_t *)tag->ti_Data);
+	    break;
+
+	case PT_BOOTABLE:
+	    bootable = tag;
+	    break;
+
+	case PT_AUTOMOUNT:
+	    if (tag->ti_Data)
+	    	part->Flags1 &= ~AROS_LONG2LE(GPT_PF1_NOMOUNT);
+	    else
+	  	part->Flags1 |= AROS_LONG2LE(GPT_PF1_NOMOUNT);
+	    break;
+
+	/* TODO: implement the rest (geometry, dosenvec, start/end block) */
+	}
+    }
+
+    return 0;
+}
+
 static const struct PartitionAttribute PartitionGPTPartitionTableAttrs[]=
 {
     {PTTA_TYPE,           PLAM_READ},
@@ -327,11 +414,11 @@ static const struct PartitionAttribute PartitionGPTPartitionTableAttrs[]=
 static const struct PartitionAttribute PartitionGPTPartitionAttrs[]=
 {
     {PTA_GEOMETRY,  PLAM_READ},
-    {PTA_TYPE,      PLAM_READ},
+    {PTA_TYPE,      PLAM_READ|PLAM_WRITE},
     {PTA_POSITION,  PLAM_READ},
-    {PTA_NAME,      PLAM_READ},
-    {PTA_BOOTABLE,  PLAM_READ},
-    {PTA_AUTOMOUNT, PLAM_READ},
+    {PTA_NAME,      PLAM_READ|PLAM_WRITE},
+    {PTA_BOOTABLE,  PLAM_READ|PLAM_WRITE},
+    {PTA_AUTOMOUNT, PLAM_READ|PLAM_WRITE},
     {PT_STARTBLOCK, PLAM_READ},
     {PT_ENDBLOCK,   PLAM_READ},
     {PTA_DONE, 0}
@@ -351,7 +438,7 @@ const struct PTFunctionTable PartitionGPT =
     NULL,
     NULL,
     PartitionGPTGetPartitionAttr,
-    NULL,
+    PartitionGPTSetPartitionAttrs,
     PartitionGPTPartitionTableAttrs,
     PartitionGPTPartitionAttrs,
     NULL,

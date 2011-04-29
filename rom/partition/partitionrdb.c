@@ -663,25 +663,23 @@ ULONG size;
     return block;
 }
 
-LONG PartitionRDBWritePartitionTable
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root
-    )
+static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
 {
-UBYTE buffer[4096];
-struct RDBData *data;
-struct PartitionHandle *ph;
-struct PartitionBlock *pblock;
-struct BadBlockNode *bn;
-struct FileSysNode *fn;
-ULONG block;
+    UBYTE buffer[4096];
+    struct RDBData *data;
+    struct PartitionHandle *ph;
+    struct PartitionBlock *pblock;
+    struct BadBlockNode *bn;
+    struct FileSysNode *fn;
+    ULONG block;
 
     if (sizeof(buffer) < (root->de.de_SizeBlock << 2))
 	return 0;
+
     data = root->table->data;
     block = data->rdbblock+1; /* RDB will be written at the end */
-    fillMem((UBYTE *)buffer, root->de.de_SizeBlock << 2, 0);
+
+    memset(buffer, 0, root->de.de_SizeBlock << 2);
 
     /* write bad blocks */
     bn = (struct BadBlockNode *)data->badblocklist.lh_Head;
@@ -853,23 +851,18 @@ static LONG PartitionRDBGetPartitionAttr(struct Library *PartitionBase, struct P
     return 0;
 }
 
-LONG PartitionRDBSetPartitionAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph,
-        struct TagItem *taglist
-    )
+static LONG PartitionRDBSetPartitionAttrs(struct Library *PartitionBase, struct PartitionHandle *ph, const struct TagItem *taglist)
 {
-
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
+    struct TagItem *tag;
     struct PartitionBlock *data = (struct PartitionBlock *)ph->data;
 
-        switch (taglist[0].ti_Tag)
+    while ((tag = NextTagItem(&taglist)))
+    {
+        switch (tag->ti_Tag)
         {
         case PT_DOSENVEC:
             {
-            struct DosEnvec *de = (struct DosEnvec *)taglist[0].ti_Data;
+            struct DosEnvec *de = (struct DosEnvec *)tag->ti_Data;
 
                 CopyMem(de, &ph->de, (de->de_TableSize+1)*sizeof(IPTR));
                 CopyHost2BEDosEnvec((SIPTR *)de, data->pb_Environment, de->de_TableSize+1);
@@ -877,7 +870,7 @@ LONG PartitionRDBSetPartitionAttrs
             break;
         case PT_TYPE:
             {
-            struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
+            struct PartitionType *ptype=(struct PartitionType *)tag->ti_Data;
             ULONG dt;
 
                 CopyMem(ptype->id, &dt, 4);
@@ -887,7 +880,7 @@ LONG PartitionRDBSetPartitionAttrs
             break;
         case PT_NAME:
             {
-            STRPTR name = (STRPTR)taglist[0].ti_Data;
+            STRPTR name = (STRPTR)tag->ti_Data;
             ULONG len = strlen(name);
 
                 CopyMem(name, ph->ln.ln_Name, len+1);
@@ -897,36 +890,29 @@ LONG PartitionRDBSetPartitionAttrs
             }
             break;
         case PT_BOOTABLE:
-            if (taglist[0].ti_Data)
+            if (tag->ti_Data)
                 data->pb_Flags = AROS_LONG2BE(AROS_BE2LONG(data->pb_Flags) | PBFF_BOOTABLE);
             else
                 data->pb_Flags = AROS_LONG2BE(AROS_BE2LONG(data->pb_Flags) & ~PBFF_BOOTABLE);
             break;
         case PT_AUTOMOUNT:
-            if (taglist[0].ti_Data)
+            if (tag->ti_Data)
                 data->pb_Flags = AROS_LONG2BE(AROS_BE2LONG(data->pb_Flags) & ~PBFF_NOMOUNT);
             else
                 data->pb_Flags = AROS_LONG2BE(AROS_BE2LONG(data->pb_Flags) | PBFF_NOMOUNT);
             break;
         }
-        taglist++;
     }
     return 0;
 }
 
-struct PartitionHandle *PartitionRDBAddPartition
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct TagItem *taglist
-    )
+struct PartitionHandle *PartitionRDBAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *taglist)
 {
-
-    if (findTagItem(PT_DOSENVEC, taglist) != NULL)
+    if (FindTagItem(PT_DOSENVEC, taglist) != NULL)
     {
-    struct PartitionBlock *pblock;
-    struct PartitionHandle *ph;
-    struct PartitionHandle *oph;
+ 	struct PartitionBlock *pblock;
+	struct PartitionHandle *ph;
+    	struct PartitionHandle *oph;
 
         ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
         if (ph)
@@ -962,7 +948,7 @@ struct PartitionHandle *PartitionRDBAddPartition
                     }
                     else
                         AddTail(&root->table->list, &ph->ln);
-                    if (findTagItem(PT_DOSENVEC, taglist) == NULL)
+                    if (FindTagItem(PT_DOSENVEC, taglist) == NULL)
                     {
                         ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
                         ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;

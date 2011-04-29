@@ -4,12 +4,12 @@
 
 */
 
-#include <proto/exec.h>
-#include <proto/partition.h>
-
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <libraries/partition.h>
+#include <proto/exec.h>
+#include <proto/partition.h>
+#include <proto/utility.h>
 
 #include "partition_support.h"
 #include "partitionmbr.h"
@@ -275,23 +275,18 @@ static LONG PartitionEBRCreatePartitionTable
     return 0;
 }
 
-static struct PartitionHandle *PartitionEBRAddPartition
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct TagItem *taglist
-    )
+static struct PartitionHandle *PartitionEBRAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *taglist)
 {
-struct TagItem *tag;
-struct EBRData *data;
-ULONG block_no = 0, new_block_no, new_block_count, ebr_track_no, ebr_block_no;
-struct PartitionHandle *ph, *new_ph, *head;
-struct DosEnvec *de;
-BOOL found = FALSE;
-struct PartitionType *ptype;
-LONG error = 0;
+    struct TagItem *tag;
+    struct EBRData *data;
+    ULONG block_no = 0, new_block_no, new_block_count, ebr_track_no, ebr_block_no;
+    struct PartitionHandle *ph, *new_ph, *head;
+    struct DosEnvec *de;
+    BOOL found = FALSE;
+    struct PartitionType *ptype;
+    LONG error = 0;
 
-    tag = findTagItem(PT_DOSENVEC, taglist);
+    tag = FindTagItem(PT_DOSENVEC, taglist);
     if (tag == NULL)
         error = 1;
 
@@ -299,7 +294,7 @@ LONG error = 0;
     {
         de = (struct DosEnvec *)tag->ti_Data;
 
-        tag = findTagItem(PT_TYPE, taglist);
+        tag = FindTagItem(PT_TYPE, taglist);
         if (tag == NULL)
             error = 1;
     }
@@ -357,12 +352,12 @@ static void PartitionEBRDeletePartition
     PartitionEBRFreeHandle(PartitionBase, ph);
 }
 
-static LONG PartitionEBRGetPartitionTableAttr(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *taglist)
+static LONG PartitionEBRGetPartitionTableAttr(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *tag)
 {
-    switch (taglist[0].ti_Tag)
+    switch (tag->ti_Tag)
     {
     case PTT_MAXLEADIN:
-        *((LONG *)taglist[0].ti_Data) = root->de.de_BlocksPerTrack;
+        *((LONG *)tag->ti_Data) = root->de.de_BlocksPerTrack;
         return TRUE;
     }
 
@@ -392,37 +387,25 @@ static LONG PartitionEBRGetPartitionAttr(struct Library *PartitionBase, struct P
     return 0;
 }
 
-static LONG PartitionEBRSetPartitionAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph,
-        struct TagItem *taglist
-    )
+static LONG PartitionEBRSetPartitionAttrs(struct Library *PartitionBase, struct PartitionHandle *ph, const struct TagItem *taglist)
 {
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
     struct EBRData *data = (struct EBRData *)ph->data;
+    struct TagItem *tag;
 
-        switch (taglist[0].ti_Tag)
+    while ((tag = NextTagItem(&taglist)))
+    {
+        switch (tag->ti_Tag)
         {
         case PT_DOSENVEC:
-            {
-// TO DO: move handle to new position in list
-            struct DosEnvec *de;
-                de = (struct DosEnvec *)taglist[0].ti_Data;
-                CopyMem(de, &ph->de, sizeof(struct DosEnvec));
-            }
+	    // TO DO: move handle to new position in list
+            CopyMem((struct DosEnvec *)tag->ti_Data, &ph->de, sizeof(struct DosEnvec));
             break;
         case PT_TYPE:
-            {
-            struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
-
-                data->type = ptype->id[0]; // fix
-            }
+            data->type = PTYPE(tag->ti_Data)->id[0]; // fix
             break;
         }
-        taglist++;
     }
+
     return 0;
 }
 

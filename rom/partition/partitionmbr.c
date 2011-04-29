@@ -4,20 +4,16 @@
 
 */
 
-#include <proto/exec.h>
-#include <proto/partition.h>
-
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <libraries/partition.h>
+#include <proto/exec.h>
+#include <proto/partition.h>
+#include <proto/utility.h>
 
 #include "partition_support.h"
 #include "partitionmbr.h"
 #include "platform.h"
-
-#ifndef DEBUG
-#define DEBUG 1
-#endif
 #include "debug.h"
 
 struct MBRData {
@@ -252,8 +248,10 @@ struct MBR *mbr;
         if (readBlock(PartitionBase, ph, 0, mbr) == 0)
         {
             ph->table->data = mbr;
-            fillMem((BYTE *)mbr->pcpt, sizeof(mbr->pcpt), 0);
+
+            memset(mbr->pcpt, 0, sizeof(mbr->pcpt));
             mbr->magic = AROS_WORD2LE(0xAA55);
+
             NEWLIST(&ph->table->list);
             return 0;
         }
@@ -335,25 +333,20 @@ ULONG sector, count;
     PartitionMBRSetGeometry(root, entry, sector, count, 0);
 }
 
-static struct PartitionHandle *PartitionMBRAddPartition
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct TagItem *taglist
-    )
+static struct PartitionHandle *PartitionMBRAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *taglist)
 {
-struct TagItem *tag;
+    struct TagItem *tag;
 
-    tag = findTagItem(PT_DOSENVEC, taglist);
+    tag = FindTagItem(PT_DOSENVEC, taglist);
+
     if (tag)
     {
-    struct PCPartitionTable *entry;
-    struct PartitionHandle *ph;
-    struct DosEnvec *de;
-    WORD pos = -1, i;
+    	struct PCPartitionTable *entry;
+    	struct PartitionHandle *ph;
+    	struct DosEnvec *de = (struct DosEnvec *)tag->ti_Data;
+    	WORD pos = -1, i;
 
-        de =  (struct DosEnvec *)tag->ti_Data;
-        tag = findTagItem(PT_POSITION, taglist);
+        tag = FindTagItem(PT_POSITION, taglist);
         if (tag != NULL)
             pos = tag->ti_Data;
         else
@@ -370,12 +363,12 @@ struct TagItem *tag;
         if (pos != -1)
         {
             entry = &((struct MBR *)root->table->data)->pcpt[pos];
-            tag = findTagItem(PT_ACTIVE, taglist);
+            tag = FindTagItem(PT_ACTIVE, taglist);
             if (tag)
                 entry->status = tag->ti_Data ? 0x80 : 0;
             else
                 entry->status = 0;
-            tag = findTagItem(PT_TYPE, taglist);
+            tag = FindTagItem(PT_TYPE, taglist);
             if (tag)
             {
             struct PartitionType *ptype = (struct PartitionType *)tag->ti_Data;
@@ -389,23 +382,20 @@ struct TagItem *tag;
             if (ph != NULL)
                 Enqueue(&root->table->list, &ph->ln);
             else
-                fillMem((BYTE *)entry, sizeof(struct PCPartitionTable), 0);
+                memset(entry, 0, sizeof(struct PCPartitionTable));
+
             return ph;
         }
     }
     return NULL;
 }
 
-static void PartitionMBRDeletePartition
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph
-    )
+static void PartitionMBRDeletePartition(struct Library *PartitionBase, struct PartitionHandle *ph)
 {
-struct MBRData *data;
+    struct MBRData *data = (struct MBRData *)ph->data;
 
-    data = (struct MBRData *)ph->data;
-    fillMem((BYTE *)data->entry, sizeof(struct PCPartitionTable), 0);
+    memset(data->entry, 0, sizeof(struct PCPartitionTable));
+
     Remove(&ph->ln);
     PartitionMBRFreeHandle(PartitionBase, ph);
 }
@@ -458,37 +448,26 @@ static LONG PartitionMBRGetPartitionAttr(struct Library *PartitionBase, struct P
     return 0;
 }
 
-static LONG PartitionMBRSetPartitionAttrs
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph,
-        struct TagItem *taglist
-    )
+static LONG PartitionMBRSetPartitionAttrs(struct Library *PartitionBase, struct PartitionHandle *ph, const struct TagItem *taglist)
 {
-
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
     struct MBRData *data = (struct MBRData *)ph->data;
+    struct TagItem *tag;
 
-        switch (taglist[0].ti_Tag)
+    while ((tag = NextTagItem(&taglist)))
+    {
+        switch (tag->ti_Tag)
         {
         case PT_DOSENVEC:
-            {
-            struct DosEnvec *de;
-                de = (struct DosEnvec *)taglist[0].ti_Data;
-                CopyMem(de, &ph->de, sizeof(struct DosEnvec));
-                PartitionMBRSetDosEnvec(ph->root, data->entry, de);
-            }
+            CopyMemQuick((struct DosEnvec *)tag->ti_Data, &ph->de, sizeof(struct DosEnvec));
+            PartitionMBRSetDosEnvec(ph->root, data->entry, (struct DosEnvec *)tag->ti_Data);
             break;
-        case PT_TYPE:
-            {
-            struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
 
-                data->entry->type = ptype->id[0];
-            }
+        case PT_TYPE:
+            data->entry->type = PTYPE(tag->ti_Data)->id[0];
             break;
+
         case PT_POSITION:
-            if (taglist[0].ti_Data != data->position)
+            if (tag->ti_Data != data->position)
             {
             struct PartitionHandle *node;
             struct PCPartitionTable *entry;
@@ -496,14 +475,14 @@ static LONG PartitionMBRSetPartitionAttrs
                 node = (struct PartitionHandle *)ph->root->table->list.lh_Head;
                 while (node->ln.ln_Succ)
                 {
-                    if (taglist[0].ti_Data == ((struct MBRData *)node->data)->position)
+                    if (tag->ti_Data == ((struct MBRData *)node->data)->position)
                         goto posbreak;
                     node = (struct PartitionHandle *)node->ln.ln_Succ;
                 }
-                data->position = taglist[0].ti_Data;
+                data->position = tag->ti_Data;
                 entry = &((struct MBR *)ph->root->table->data)->pcpt[data->position];
                 CopyMem(data->entry, entry, sizeof(struct PCPartitionTable));
-                fillMem((BYTE *)data->entry, sizeof(struct PCPartitionTable), 0);
+                memset(data->entry, 0, sizeof(struct PCPartitionTable));
                 data->entry = entry;
                 ph->ln.ln_Pri = MBR_MAX_PARTITIONS-1-data->position;
                 Remove(&ph->ln);
@@ -512,14 +491,14 @@ posbreak:
             ;
             }
             break;
+
         case PT_ACTIVE:
-            if (taglist[0].ti_Data)
+            if (tag->ti_Data)
                 data->entry->status |= 0x80;
             else
                 data->entry->status &= ~0x80;
             break;
         }
-        taglist++;
     }
     return 0;
 }
@@ -543,16 +522,11 @@ static const struct PartitionAttribute PartitionMBRPartitionAttrs[]=
     {PTA_DONE, 0}
 };
 
-static ULONG PartitionMBRDestroyPartitionTable
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root
-    )
+static ULONG PartitionMBRDestroyPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
 {
-struct MBR *mbr;
+    struct MBR *mbr = root->table->data;
 
-    mbr = root->table->data;
-    fillMem((BYTE *)mbr->pcpt, sizeof(mbr->pcpt), 0);
+    memset(mbr->pcpt, 0, sizeof(mbr->pcpt));
     /* deleting the magic value will invalidate the
      * partition table so it cannot be opened again
      */

@@ -158,7 +158,11 @@
 
 	    case PT_NAME:
 	        if (ph->ln.ln_Name)
-	            strncpy((STRPTR)tag->ti_Data, ph->ln.ln_Name, 32);
+	        {
+	            strncpy((STRPTR)tag->ti_Data, ph->ln.ln_Name, 31);
+	            /* Make sure that name is NULL-terminated */
+	            ((STRPTR)tag->ti_Data)[31] = 0;
+	        }
 	        else
 	    	    ((STRPTR)tag->ti_Data)[0] = 0;
 	    	break;
