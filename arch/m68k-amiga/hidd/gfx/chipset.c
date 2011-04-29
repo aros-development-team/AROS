@@ -19,7 +19,7 @@ static const UBYTE fetchstarts[] = { 3,2,1,0, 4,3,2,0, 5,4,3,0 };
 static const UBYTE fm_maxplanes[] = { 3,2,1,0, 3,3,2,0, 3,3,3,0 };
 
 /* reset to OCS defaults */
-void resetcustom(void)
+void resetcustom(struct amigavideo_staticdata *data)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     custom->fmode = 0x0000;
@@ -77,6 +77,24 @@ static void waitvblank(struct amigavideo_staticdata *data)
     UWORD fc = data->framecounter;
     while (fc == data->framecounter);
 }
+ 
+static void setnullsprite(struct amigavideo_staticdata *data)
+{
+    if (data->copper1_spritept) {
+    	UWORD *p = data->sprite_null;
+	data->copper1_spritept[0] = (UWORD)(((ULONG)p) >> 16);
+	data->copper1_spritept[2] = (UWORD)(((ULONG)p) >> 0);
+    }
+ }
+ 
+void resetsprite(struct amigavideo_staticdata *data)
+{
+    UWORD *sprite = data->sprite;
+    setnullsprite(data);
+    data->sprite = NULL;
+    FreeMem(sprite, data->spritedatasize);
+    data->sprite_width = data->sprite_height = 0;
+}
 
 void initcustom(struct amigavideo_staticdata *data)
 {
@@ -85,7 +103,8 @@ void initcustom(struct amigavideo_staticdata *data)
     UWORD vposr, val;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
-    resetcustom();
+    resetcustom(data);
+    resetsprite(data);
 
     data->gfxbase = (struct GfxBase*)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
 
@@ -135,6 +154,7 @@ void initcustom(struct amigavideo_staticdata *data)
     data->bplcon3 = ((data->res + 1) << 6) | 2; // spriteres + bordersprite
     
     data->gfxbase->copinit = (struct copinit*)data->copper1;
+    data->gfxbase->cia = OpenResource("ciab.resource");
 
     D(bug("Copperlist0 %p\n", data->copper1));
 
@@ -219,7 +239,9 @@ void resetmode(struct amigavideo_staticdata *data)
     FreeVec(data->copper2i.copper2);
     data->copper2i.copper2 = NULL;
 
-    resetcustom();
+    data->gfxbase->LOFlist = data->gfxbase->SHFlist = data->copper2_backup;
+
+    resetcustom(data);
 
     data->depth = 0;
 }
@@ -493,8 +515,11 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     if (data->interlace)
     	data->copper2i.copper2 = AllocVec(get_copper_list_length(data->aga, bm->depth), MEMF_CLEAR | MEMF_CHIP);
     createcopperlist(data, bm, &data->copper2, FALSE);
-    if (data->interlace)
+    data->gfxbase->LOFlist = data->copper2.copper2;
+    if (data->interlace) {
     	createcopperlist(data, bm, &data->copper2i, TRUE);
+    	data->gfxbase->SHFlist = data->copper2i.copper2;
+    }
  
     setfmode(data);
     setcopperscroll(data, bm);
@@ -510,24 +535,6 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     data->disp = bm;
     return 1;
  }
- 
-static void setnullsprite(struct amigavideo_staticdata *data)
-{
-    if (data->copper1_spritept) {
-    	UWORD *p = data->sprite_null;
-	data->copper1_spritept[0] = (UWORD)(((ULONG)p) >> 16);
-	data->copper1_spritept[2] = (UWORD)(((ULONG)p) >> 0);
-    }
- }
- 
-void resetsprite(struct amigavideo_staticdata *data)
-{
-    UWORD *sprite = data->sprite;
-    setnullsprite(data);
-    data->sprite = NULL;
-    FreeMem(sprite, data->spritedatasize);
-    data->sprite_width = data->sprite_height = 0;
-}
 
 BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, struct pHidd_Gfx_SetCursorShape *shape)
 {
