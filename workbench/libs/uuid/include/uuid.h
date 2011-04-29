@@ -20,7 +20,7 @@ typedef struct
     uint8_t  node[6];
 } uuid_t;
 
-#define MAKE_GUID(a, b, c, d, e)	\
+#define MAKE_UUID(a, b, c, d, e)	\
 {					\
     (a), (b), (c),			\
     ((d) >> 8) & 0xFF, (d) & 0xFF,	\
