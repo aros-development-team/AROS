@@ -10,7 +10,7 @@ CFILES		:= \
 
 AFILES		:= coldreboot corelow
 
-#MM kernel-exec-pc-i386 : kernel-exec-includes includes-asm_h-i386
+#MM kernel-exec-pc-i386 : kernel-kernel-includes kernel-exec-includes includes-asm_h-i386
 
 USER_CFLAGS 	:= -I$(SRCDIR)/rom/exec
 USER_AFLAGS 	:= -I$(SRCDIR)/rom/exec -I$(GENINCDIR)
