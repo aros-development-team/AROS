@@ -9,12 +9,23 @@
 #undef DEBUG
 #define DEBUG 1
 #define DEBUG_UUID
-*/
 #define NO_WRITE
+*/
+#define DREAD(x)
+#define DWRITE(x)
+
+/*
+ * Note that we use KPrintF() for debugging in some places.
+ * KPrintF() uses RawDoFmt() for formatting, which (if patched by locale.library)
+ * correctly supports %llu, unlike kprintf().
+ * This will change when i386 port gets kernel.resource. After this kprintf()
+ * will be moved to libdebug.a and rewritten to simply call KrnBug().
+ */
 
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <libraries/partition.h>
+#include <proto/debug.h>
 #include <proto/exec.h>
 #include <proto/partition.h>
 #include <proto/utility.h>
@@ -156,6 +167,10 @@ static void PRINT_LE_UUID(char *s, uuid_t *id)
 
 #endif
 
+#ifdef NO_WRITE
+#define writeDataFromBlock(root, blk, tablesize, table) 1
+#endif
+
 static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle *root, struct GPTHeader *hdr, UQUAD block)
 {
     /* Load the GPT header */
@@ -243,13 +258,13 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
     	ULONG entrysize = AROS_LE2LONG(hdr->EntrySize);
 	ULONG tablesize = AROS_ROUNDUP2(entrysize * cnt, root->de.de_SizeBlock << 2);
 
-	D(bug("[GPT] Read: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
+	DREAD(bug("[GPT] Read: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
 
 	table = AllocMem(tablesize, MEMF_ANY);
     	if (!table)
     	    return ERROR_NO_FREE_STORE;
 
-	D(bug("[GPT] Read: start block %llu\n", hdr->StartBlock));
+	DREAD(KPrintF("[GPT] Read: start block %llu\n", hdr->StartBlock));
 
 	res = readDataFromBlock(root, AROS_LE2QUAD(hdr->StartBlock), tablesize, table);
 	if (!res)
@@ -258,18 +273,18 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
 	    ULONG i;
 
 	    /* TODO: Check CRC of partition table, use backup if wrong */
-	    D(bug("[GPT] Adding partitions...\n"));
+	    DREAD(bug("[GPT] Adding partitions...\n"));
 	    err = 0;
 
 	    for (i = 0; i < cnt; i++)
     	    {
 	    	struct GPTPartitionHandle *gph;
 
-		PRINT_LE_UUID("Type     ", &p->TypeID);
-		PRINT_LE_UUID("Partition", &p->TypeID);
-		D(bug(  "[GPT] Blocks    %llu - %llu\n", AROS_LE2QUAD(p->StartBlock), AROS_LE2QUAD(p->EndBlock)));
-		D(bug(  "[GPT] Flags     0x%08X 0x%08X\n", AROS_LE2LONG(p->Flags0), AROS_LE2LONG(p->Flags1)));
-		D(bug(  "[GPT] Offset    0x%p\n", (APTR)p - (APTR)table));
+		DREAD(PRINT_LE_UUID("Type     ", &p->TypeID));
+		DREAD(PRINT_LE_UUID("Partition", &p->PartitionID));
+		DREAD(KPrintF("[GPT] Blocks    %llu - %llu\n", AROS_LE2QUAD(p->StartBlock), AROS_LE2QUAD(p->EndBlock)));
+		DREAD(KPrintF("[GPT] Flags     0x%08lX 0x%08lX\n", AROS_LE2LONG(p->Flags0), AROS_LE2LONG(p->Flags1)));
+		DREAD(KPrintF("[GPT] Offset    0x%p\n", (APTR)p - (APTR)table));
 
 		/*
 		 * Skip unused entries. NumEntries in the header holds total number of preallocated entries,
@@ -298,7 +313,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
 		    gph->entrySize     = entrysize;
 
 		    ADDTAIL(&root->table->list, gph);
-		    D(bug("[GPT] Added partition %u (%s), handle 0x%p\n", i, gph->name, gph));
+		    DREAD(bug("[GPT] Added partition %u (%s), handle 0x%p\n", i, gph->name, gph));
 		}
 		else
 		{
@@ -359,7 +374,7 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
     ULONG tablesize = AROS_ROUNDUP2(entrysize * cnt, root->de.de_SizeBlock << 2);
     struct GPTPartition *table;
 
-    D(bug("[GPT] Write: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
+    DWRITE(bug("[GPT] Write: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
 
     /* Allocate buffer for the whole table */
     table = AllocMem(tablesize, MEMF_CLEAR);
@@ -376,13 +391,7 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
 	 */
 	ForeachNode(&root->table->list, gph)
     	{
-	    D(bug("[GPT] Writing partition %s, handle 0x%p\n", gph->name, gph));
-
-	    PRINT_LE_UUID("Type     ", &p->TypeID);
-	    PRINT_LE_UUID("Partition", &p->TypeID);
-	    D(bug(  "[GPT] Blocks    %llu - %llu\n", AROS_LE2QUAD(p->StartBlock), AROS_LE2QUAD(p->EndBlock)));
-	    D(bug(  "[GPT] Flags     0x%08X 0x%08X\n", AROS_LE2LONG(p->Flags0), AROS_LE2LONG(p->Flags1)));
-	    D(bug(  "[GPT] Offset    0x%p\n", (APTR)p - (APTR)table));
+	    DWRITE(bug("[GPT] Writing partition %s, handle 0x%p\n", gph->name, gph));
 
     	    /*
     	     * Put our entry into the buffer.
@@ -391,17 +400,20 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
     	     */
     	    CopyMem(&gph[1], p, gph->entrySize);
 
+	    DWRITE(PRINT_LE_UUID("Type     ", &p->TypeID));
+	    DWRITE(PRINT_LE_UUID("Partition", &p->PartitionID));
+	    DWRITE(KPrintF("[GPT] Blocks    %llu - %llu\n", AROS_LE2QUAD(p->StartBlock), AROS_LE2QUAD(p->EndBlock)));
+	    DWRITE(KPrintF("[GPT] Flags     0x%08lX 0x%08lX\n", AROS_LE2LONG(p->Flags0), AROS_LE2LONG(p->Flags1)));
+	    DWRITE(KPrintF("[GPT] Offset    0x%p\n", (APTR)p - (APTR)table));
+
     	    /* Jump to next entry */
     	    p = (APTR)p + entrysize;
     	}
 
-	D(bug("[GPT] Write: start block %llu\n", hdr->StartBlock));
+	DWRITE(KPrintF("[GPT] Write: start block %llu\n", hdr->StartBlock));
 
-#ifdef NO_WRITE
-	res = 1;
-#else
 	res = writeDataFromBlock(root, AROS_LE2QUAD(hdr->StartBlock), tablesize, table);
-#endif
+	DWRITE(bug("[GPT] Write result: %u\n", res));
 
 	FreeMem(table, tablesize);
 
@@ -472,10 +484,16 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
 	    break;
 
 	case PT_AUTOMOUNT:
+	    D(bug("[GPT] Setting automount flag to %ld\n", tag->ti_Data));
+	    D(bug("[GPT] Partition handle 0x%p, flags 0x%08X\n", ph, part->Flags1));
+
 	    if (tag->ti_Data)
 	    	part->Flags1 &= ~AROS_LONG2LE(GPT_PF1_NOMOUNT);
 	    else
 	  	part->Flags1 |= AROS_LONG2LE(GPT_PF1_NOMOUNT);
+
+	    D(bug("[GPT] New flags: 0x%08X\n", part->Flags1));
+
 	    break;
 
 	/* TODO: implement the rest (geometry, dosenvec, start/end block) */
