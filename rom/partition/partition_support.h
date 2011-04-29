@@ -44,7 +44,7 @@ struct PTFunctionTable
     LONG        (*getPartitionTableAttr)   (struct Library *, struct PartitionHandle *, struct TagItem *);
     LONG        (*setPartitionTableAttrs)  (struct Library *, struct PartitionHandle *, struct TagItem *);
     LONG        (*getPartitionAttr)        (struct Library *, struct PartitionHandle *, struct TagItem *);
-    LONG        (*setPartitionAttrs)       (struct Library *, struct PartitionHandle *, struct TagItem *);
+    LONG        (*setPartitionAttrs)       (struct Library *, struct PartitionHandle *, const struct TagItem *);
     const struct PartitionAttribute *partitionTableAttrs;
     const struct PartitionAttribute *partitionAttrs;
     ULONG    	(*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
@@ -73,9 +73,6 @@ LONG readDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void
 LONG PartitionWriteBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
 
 void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *ph, ULONG first_sector, ULONG count_sector);
-
-struct TagItem *findTagItem(ULONG tag, struct TagItem *);
-void fillMem(BYTE *, LONG, BYTE);
 
 #define getGeometry PartitionGetGeometry
 #define writeBlock  PartitionWriteBlock

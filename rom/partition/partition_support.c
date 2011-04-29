@@ -205,20 +205,3 @@ void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *p
     ph->de.de_LowCyl    = first_sector / cylsecs;
     ph->de.de_HighCyl   = ph->de.de_LowCyl + ph->dg.dg_Cylinders - 1;
 }
-
-struct TagItem *findTagItem(ULONG tag, struct TagItem *taglist) {
-
-    while (taglist[0].ti_Tag != TAG_DONE)
-    {
-        if (taglist[0].ti_Tag == tag)
-            return &taglist[0];
-        taglist++;
-    }
-    return 0;
-}
-
-void fillMem(BYTE *mem, LONG size, BYTE fillbyte) {
-
-    while (size--)
-        mem[size]=fillbyte;
-}
