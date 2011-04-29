@@ -10,6 +10,7 @@
 #define DEBUG 1
 #define DEBUG_UUID
 */
+#define NO_WRITE
 
 #include <exec/memory.h>
 #include <exec/types.h>
@@ -135,12 +136,13 @@ static inline BOOL is_aros_uuid_le(uuid_t *leid)
 
 #ifdef DEBUG_UUID
 
-static void PRINT_LE_UUID(uuid_t *id)
+static void PRINT_LE_UUID(char *s, uuid_t *id)
 {
     unsigned int i;
 
-    bug("[GPT] UUID: 0x%08X-%04X-%04X-%02X%02X-", AROS_LE2LONG(id->time_low), AROS_LE2WORD(id->time_mid), AROS_LE2WORD(id->time_hi_and_version),
-    					          id->clock_seq_hi_and_reserved, id->clock_seq_low);
+    bug("[GPT] %s UUID: 0x%08X-%04X-%04X-%02X%02X-", s,
+        AROS_LE2LONG(id->time_low), AROS_LE2WORD(id->time_mid), AROS_LE2WORD(id->time_hi_and_version),
+    	id->clock_seq_hi_and_reserved, id->clock_seq_low);
 
     for (i = 0; i < sizeof(id->node); i++)
     	bug("%02X", id->node[i]);
@@ -150,7 +152,7 @@ static void PRINT_LE_UUID(uuid_t *id)
 
 #else
 
-#define PRINT_LE_UUID(id)
+#define PRINT_LE_UUID(s, id)
 
 #endif
 
@@ -241,11 +243,13 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
     	ULONG entrysize = AROS_LE2LONG(hdr->EntrySize);
 	ULONG tablesize = AROS_ROUNDUP2(entrysize * cnt, root->de.de_SizeBlock << 2);
 
-	D(bug("[GPT] %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
+	D(bug("[GPT] Read: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
 
 	table = AllocMem(tablesize, MEMF_ANY);
     	if (!table)
     	    return ERROR_NO_FREE_STORE;
+
+	D(bug("[GPT] Read: start block %llu\n", hdr->StartBlock));
 
 	res = readDataFromBlock(root, AROS_LE2QUAD(hdr->StartBlock), tablesize, table);
 	if (!res)
@@ -261,9 +265,15 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
     	    {
 	    	struct GPTPartitionHandle *gph;
 
-		PRINT_LE_UUID(&p->TypeID);
+		PRINT_LE_UUID("Type     ", &p->TypeID);
+		PRINT_LE_UUID("Partition", &p->TypeID);
+		D(bug(  "[GPT] Blocks    %llu - %llu\n", AROS_LE2QUAD(p->StartBlock), AROS_LE2QUAD(p->EndBlock)));
+		D(bug(  "[GPT] Flags     0x%08X 0x%08X\n", AROS_LE2LONG(p->Flags0), AROS_LE2LONG(p->Flags1)));
+		D(bug(  "[GPT] Offset    0x%p\n", (APTR)p - (APTR)table));
+
 		/*
-		 * Skip unused entries.
+		 * Skip unused entries. NumEntries in the header holds total number of preallocated entries,
+		 * not the number of used ones.
 		 * Normally GPT table has 128 preallocated entries, but only first of them are used.
 		 * Just in case, we allow gaps between used entries. However (tested with MacOS X Disk Utility)
 		 * partition editors seem to squeeze the table and do not leave empty entries when deleting
@@ -339,6 +349,66 @@ static LONG PartitionGPTOpenPartitionTable(struct Library *PartitionBase, struct
     	PartitionGPTClosePartitionTable(PartitionBase, root);
 
     return res;
+}
+
+static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
+{
+    struct GPTHeader *hdr = root->table->data;
+    ULONG cnt       = AROS_LE2LONG(hdr->NumEntries);
+    ULONG entrysize = AROS_LE2LONG(hdr->EntrySize);
+    ULONG tablesize = AROS_ROUNDUP2(entrysize * cnt, root->de.de_SizeBlock << 2);
+    struct GPTPartition *table;
+
+    D(bug("[GPT] Write: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
+
+    /* Allocate buffer for the whole table */
+    table = AllocMem(tablesize, MEMF_CLEAR);
+    if (table)
+    {
+	struct GPTPartition *p = table;
+	struct GPTPartitionHandle *gph;
+	LONG res;
+
+	/*
+	 * Collect our entries and build up the whole table.
+	 * At this point we are guaranteed to have no more entries than
+	 * can fit into reserved space. It's AddPartition()'s job to ensure this.
+	 */
+	ForeachNode(&root->table->list, gph)
+    	{
+	    D(bug("[GPT] Writing partition %s, handle 0x%p\n", gph->name, gph));
+
+	    PRINT_LE_UUID("Type     ", &p->TypeID);
+	    PRINT_LE_UUID("Partition", &p->TypeID);
+	    D(bug(  "[GPT] Blocks    %llu - %llu\n", AROS_LE2QUAD(p->StartBlock), AROS_LE2QUAD(p->EndBlock)));
+	    D(bug(  "[GPT] Flags     0x%08X 0x%08X\n", AROS_LE2LONG(p->Flags0), AROS_LE2LONG(p->Flags1)));
+	    D(bug(  "[GPT] Offset    0x%p\n", (APTR)p - (APTR)table));
+
+    	    /*
+    	     * Put our entry into the buffer.
+    	     * Use entry's own length, because if this entry is created by AddPartition(),
+    	     * it can be shorter than on-disk one (if someone uses extended length we don't know about).
+    	     */
+    	    CopyMem(&gph[1], p, gph->entrySize);
+
+    	    /* Jump to next entry */
+    	    p = (APTR)p + entrysize;
+    	}
+
+	D(bug("[GPT] Write: start block %llu\n", hdr->StartBlock));
+
+#ifdef NO_WRITE
+	res = 1;
+#else
+	res = writeDataFromBlock(root, AROS_LE2QUAD(hdr->StartBlock), tablesize, table);
+#endif
+
+	FreeMem(table, tablesize);
+
+	return res ? ERROR_WRITE_PROTECTED : 0;
+    }
+
+    return ERROR_NO_FREE_STORE;
 }
 
 static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
@@ -454,7 +524,7 @@ const struct PTFunctionTable PartitionGPT =
     PartitionGPTCheckPartitionTable,
     PartitionGPTOpenPartitionTable,
     PartitionGPTClosePartitionTable,
-    NULL,
+    PartitionGPTWritePartitionTable,
     NULL,
     NULL,
     NULL,

@@ -106,55 +106,38 @@ LONG readBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG 
 LONG readDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem)
 {
     UQUAD offset = (getStartBlock(ph) + block) * (ph->de.de_SizeBlock<<2);
-    struct IOExtTD *ioreq;
+    struct IOExtTD *ioreq = ph->bd->ioreq;
 
-    ioreq = ph->bd->ioreq;
     ioreq->iotd_Req.io_Command = ph->bd->cmdread;
     ioreq->iotd_Req.io_Length  = size;
     ioreq->iotd_Req.io_Data    = mem;
     ioreq->iotd_Req.io_Offset  = offset;
     ioreq->iotd_Req.io_Actual  = offset >> 32;
 
-    return DoIO((struct IORequest *)&ioreq->iotd_Req);
+    return DoIO((struct IORequest *)ioreq);
 }
 
 /*
-    write a block
-    block is within partition ph
+    write a single block within partition ph
 */
-LONG PartitionWriteBlock
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph,
-        ULONG block,
-        void *mem
-    )
+LONG PartitionWriteBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem)
 {
-struct IOExtTD *ioreq;
-#ifdef __AMIGAOS__
-ULONG lo, hi;
-#else
-UQUAD offset;
-#endif
+    return writeDataFromBlock(ph, block, ph->de.de_SizeBlock << 2, mem);
+}
 
-    ioreq = ph->bd->ioreq;
-    ioreq->iotd_Req.io_Command=ph->bd->cmdwrite;
-    ioreq->iotd_Req.io_Length=ph->de.de_SizeBlock<<2;
-    ioreq->iotd_Req.io_Data=mem;
-#ifdef __AMIGAOS__
-    lo = getStartBlock(ph)+block;
-    hi = lo>>16;  /* high 16 bits into "hi" */
-    lo &= 0xFFFF; /* low 16 bits stay in "lo" */
-    lo *= (ph->de.de_SizeBlock<<2); /* multiply lo part */
-    hi *= (ph->de.de_SizeBlock<<2); /* multiply hi part */
-    ioreq->iotd_Req.io_Offset = lo+(hi<<16); /* compose first low 32 bit */
-    ioreq->iotd_Req.io_Actual = hi>>16; /* high 32 bits (at least until bit 48 */
-#else
-    offset=(UQUAD)(getStartBlock(ph)+block)*(ph->de.de_SizeBlock<<2);
-    ioreq->iotd_Req.io_Offset=0xFFFFFFFF & offset;
-    ioreq->iotd_Req.io_Actual=offset>>32;
-#endif
-    return DoIO((struct IORequest *)&ioreq->iotd_Req);
+/* write 'size' bytes starting from 'block' within partition ph */
+LONG writeDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem)
+{
+    UQUAD offset = (getStartBlock(ph) + block) * (ph->de.de_SizeBlock<<2);
+    struct IOExtTD *ioreq = ph->bd->ioreq;
+
+    ioreq->iotd_Req.io_Command = ph->bd->cmdwrite;
+    ioreq->iotd_Req.io_Length  = size;
+    ioreq->iotd_Req.io_Data    = mem;
+    ioreq->iotd_Req.io_Offset  = offset;
+    ioreq->iotd_Req.io_Actual  = offset>>32;
+
+    return DoIO((struct IORequest *)&ioreq);
 }
 
 /*
