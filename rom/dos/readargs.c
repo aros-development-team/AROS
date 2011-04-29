@@ -593,7 +593,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         {
             if (flags[arg] & KEYWORD)
             {
-                /* /K/A argument, which inisits on keyword
+                /* /K/A argument, which insists on keyword
                  * being used, cannot be satisfied */
 
                 ERROR(ERROR_TOO_MANY_ARGS); /* yes, strange error number,
@@ -602,7 +602,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
             }
 
-            if (!multnum)
+            if (multnum == 0)
             {
                 /* No arguments left? Oh dear! */
                 ERROR(ERROR_REQUIRED_ARG_MISSING);
@@ -617,12 +617,12 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     {
         if (flags[arg] & MULTIPLE)
         {
-            if (flags[arg] & REQUIRED && !multnum)
+            if (flags[arg] & REQUIRED && multnum == 0)
             {
                 ERROR(ERROR_REQUIRED_ARG_MISSING);
             }
 
-            if (multnum)
+            if (multnum != 0)
             {
                 /* NULL terminate it. */
                 if (multnum >= multmax)
@@ -659,7 +659,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     }
 
     /* There are some arguments left? Return error. */
-    if (multnum && arg == numargs)
+    if (multnum != 0 && arg == numargs)
     {
         ERROR(ERROR_TOO_MANY_ARGS);
     }

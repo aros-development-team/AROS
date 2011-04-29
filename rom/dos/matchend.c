@@ -23,15 +23,15 @@
 	struct DosLibrary *, DOSBase, 139, Dos)
 
 /*  FUNCTION
-	Free the memory that was allocated by calls to MatchFirst() and
-	MatchNext()
+	Free the memory and file locks that were allocated by calls to
+	MatchFirst() and MatchNext().
 
     INPUTS
 	AP  - pointer to Anchor Path structure which had been passed to
               MatchFirst() before.
 
     RESULT
-	Allocated memory is returned and filelocks are freed.
+	None.
 
     NOTES
 

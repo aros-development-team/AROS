@@ -168,15 +168,15 @@ static BPTR LDLoad(struct Process *caller, STRPTR name, STRPTR basedir,
 
 	if (path) {
 	    if (!seglist) {
-		/* Nup, lets try the default directory as supplied. */
-		D(bug("[LDLoad] Trying defaultir\n"));
+		/* Nup, let's try the default directory as supplied. */
+		D(bug("[LDLoad] Trying defaultdir\n"));
 		path[delimPos] = ':';
 		seglist = LoadSeg(path);
 	    }
 	    FreeMem(path, pathLen);
 	}
     } else
-	seglist =LoadSeg(name);
+	seglist = LoadSeg(name);
 
     return seglist;
 }
@@ -194,7 +194,7 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase, struct L
 
     while(seg)
     {
-	STRPTR addr= (STRPTR)((IPTR)BADDR(seg)-sizeof(ULONG));
+	STRPTR addr = (STRPTR)((IPTR)BADDR(seg) - sizeof(ULONG));
 	ULONG size = *(ULONG *)addr;
 
 	for(
@@ -309,7 +309,7 @@ AROS_LH2(struct Library *, OpenLibrary,
     /*
 	We get the DOS semaphore to prevent the following:
 	- task 1 tries to open foobar.library, needs to load it from disk...
-	- task 1 Permit()'s (since its not doing list things)
+	- task 1 Permit()'s (since it's not doing list things)
 	- task switch (whilst LDDemon MAY get process next it might not)
 	- task 2 tries to open foobar.library, needs to load it from disk...
 	- it also requests LDDemon to open foobar.library, so it is now
@@ -323,10 +323,10 @@ AROS_LH2(struct Library *, OpenLibrary,
   	falemagn: I changed the implementation of all that.
 	          There's a list of "LDObjectNodes", that contain the name
 		  of the object being opened. Since the problem is that more
-		  processes can attempt to open the same device/library Instead of
+		  processes can attempt to open the same device/library. Instead of
 		  locking a global semaphore until the opening is done, we lock a
 		  per-object semaphore, so that others libraries/devices can be opened
-		  in the meantime. Before a deadlock could happen if there was a
+		  in the meantime. Before, a deadlock could happen if there was a
 		  situation like this:
 
 		  Process A opens L --------> LDDemon loads L and locks sem S
@@ -456,7 +456,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 		    struct Library *, library, 1,
 	        );
 
-	        D(bug("[LDCaller] libOpen() returned\n"));
+	        D(bug("[LDCaller] libOpen() returned 0x%lx\n", library));
 	    }
 	    else
 	       library = NULL;

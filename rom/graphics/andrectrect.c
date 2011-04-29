@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: (AROS only) Graphics function AndRectRect()
@@ -34,11 +34,11 @@
     INPUTS
     	rect1 - pointer to 1st Rectangle
 	rect2 - pointer to 2nd Rectangle
-	intersect -> pointer to rectangle which will hold result. May be NULL.
+	intersect - pointer to rectangle which will hold result. May be NULL.
 
     RESULT
-	TRUE if rect1 and rect2 do intersect. In this case intersect (unless NULL)
-	will contain the intersection rectangle.
+	TRUE if rect1 and rect2 do intersect. In this case intersect (unless
+	NULL) will contain the intersection rectangle.
 
 	FALSE if rect1 and rect2 do not overlap. "intersect" will
 	then be left unchanged.
