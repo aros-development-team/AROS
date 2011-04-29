@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -50,11 +50,14 @@
 
     if (root->table)
     {
-    struct PTFunctionTable *handler = root->table->handler;
+    	struct PTFunctionTable *handler = root->table->handler;
 
         if (handler->writePartitionTable)
             return handler->writePartitionTable(PartitionBase, root);
     }
-    return 1;
+
+    /* Can't write (no method) */
+    return ERROR_ACTION_NOT_KNOWN;
+
     AROS_LIBFUNC_EXIT
 }

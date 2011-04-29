@@ -8,7 +8,7 @@
 /*
 #undef DEBUG
 #define DEBUG 1
-#define DEBUG_UID
+#define DEBUG_UUID
 */
 
 #include <proto/exec.h>
@@ -33,7 +33,8 @@ struct GPTPartitionHandle
     				/* Actual table entry follows */
 };
 
-static const uuid_t GPT_Type_Unused = {0x00000000, 0x0000, 0x0000, 0x0000, 0x000000000000};
+static const uuid_t GPT_Type_Unused = MAKE_UUID(0x00000000, 0x0000, 0x0000, 0x0000, 0x000000000000);
+static const uuid_t GPT_Type_AROS   = MAKE_UUID(0x00000000, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5E);
 
 static void FromUTF16(char *to, char *from, ULONG len)
 {
@@ -57,14 +58,34 @@ static inline void uuid_from_le(uuid_t *to, uuid_t *id)
     to->time_mid            = AROS_LE2WORD(id->time_mid);
     to->time_hi_and_version = AROS_LE2WORD(id->time_hi_and_version);
 
-    to->clock_seq_hi_and_reserved = id->clock_seq_hi_and_reserved;
-    to->clock_seq_low             = id->clock_seq_low;
-
     /* Do not replace it with CopyMem(), gcc optimizes this nicely */
-    memcpy(to->node, id->node, sizeof(id->node));
+    memcpy(&to->clock_seq_hi_and_reserved, &id->clock_seq_hi_and_reserved, 8);
 }
 
-#ifdef DEBUG_UID
+static inline BOOL uuid_cmp_le(uuid_t *leid, uuid_t *id)
+{
+    if (AROS_LE2LONG(leid->time_low) != id->time_low)
+    	return FALSE;
+    if (AROS_LE2WORD(leid->time_mid) != id->time_mid)
+    	return FALSE;
+    if (AROS_LE2WORD(leid->time_hi_and_version) != id->time_hi_and_version)
+    	return FALSE;
+
+    return !memcmp(&leid->clock_seq_hi_and_reserved, &id->clock_seq_hi_and_reserved, 8);
+}
+
+/* For AROS we put DOS Type ID into first four bytes of UUID (time_low). So we mask them away. */
+static inline BOOL is_aros_uuid_le(uuid_t *leid)
+{
+    if (AROS_LE2WORD(leid->time_mid) != GPT_Type_AROS.time_mid)
+    	return 0;
+    if (AROS_LE2WORD(leid->time_hi_and_version) != GPT_Type_AROS.time_hi_and_version)
+    	return 0;
+
+    return !memcmp(&leid->clock_seq_hi_and_reserved, &GPT_Type_AROS.clock_seq_hi_and_reserved, 8);
+}
+
+#ifdef DEBUG_UUID
 
 static void PRINT_LE_UUID(uuid_t *id)
 {
@@ -184,14 +205,14 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
 
 		PRINT_LE_UUID(&p->TypeID);
 		/*
-		 * Stop at the first unused entry.
+		 * Skip unused entries.
 		 * Normally GPT table has 128 preallocated entries, but only first of them are used.
-		 * We assume that there are no gaps between used entries, and the first empty entry
-		 * is a terminator.
-		 * CHECKME: Is it correct ?
+		 * Just in case, we allow gaps between used entries. However (tested with MacOS X Disk Utility)
+		 * partition editors seem to squeeze the table and do not leave empty entries when deleting
+		 * partitions in the middle of the disk.
 		 */
 		if (!memcmp(&p->TypeID, &GPT_Type_Unused, sizeof(uuid_t)))
-		    break;
+		    continue;
 
 	    	gph = AllocVec(sizeof(struct GPTPartitionHandle) + entrysize, MEMF_CLEAR);
 		if (gph)
@@ -209,7 +230,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
 		    gph->entrySize     = entrysize;
 
 		    ADDTAIL(&root->table->list, gph);
-		    D(bug("[GPT] Added partition %u (%s)\n", i, gph->name));
+		    D(bug("[GPT] Added partition %u (%s), handle 0x%p\n", i, gph->name, gph));
 		}
 		else
 		{
@@ -274,7 +295,11 @@ static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase, struct P
         return TRUE;
 
     case PT_BOOTABLE:
-    	*((ULONG *)tag->ti_Data) = (AROS_LE2LONG(part->Flags1) & GPT_PF1_AROS_BOOTABLE) ? TRUE : FALSE;
+    	/* This extra flag is valid only for AROS partitions */
+    	if (is_aros_uuid_le(&part->TypeID))
+    	    *((ULONG *)tag->ti_Data) = (AROS_LE2LONG(part->Flags1) & GPT_PF1_AROS_BOOTABLE) ? TRUE : FALSE;
+    	else
+    	    *((ULONG *)tag->ti_Data) = FALSE;
         return TRUE;
 
     case PT_AUTOMOUNT:
@@ -303,7 +328,8 @@ static const struct PartitionAttribute PartitionGPTPartitionAttrs[]=
 {
     {PTA_GEOMETRY,  PLAM_READ},
     {PTA_TYPE,      PLAM_READ},
-    {PTA_NAME,      PLAM_READ},
+    {PTA_POSITION,  PLAM_READ},
+//    {PTA_NAME,      PLAM_READ},
     {PTA_BOOTABLE,  PLAM_READ},
     {PTA_AUTOMOUNT, PLAM_READ},
     {PT_STARTBLOCK, PLAM_READ},
