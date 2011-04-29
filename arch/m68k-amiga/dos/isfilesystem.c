@@ -62,7 +62,8 @@
     struct DevProc *dvp = NULL;
 
     /* console is never a filesystem */
-    if (Stricmp(devicename, "CONSOLE:") == 0 || Stricmp(devicename, "*") == 0) {
+    if (Stricmp(devicename, "CONSOLE:") == 0 || Stricmp(devicename, "*") == 0 ||
+    	Stricmp(devicename, "CON:") == 0 || Stricmp(devicename, "RAW:") == 0) {
     	SetIoErr(err);
         return code;
     }
