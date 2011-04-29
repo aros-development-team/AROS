@@ -907,7 +907,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	        data->width = attrs[AO(Width)];
 	    if (GOT_BM_ATTR(Height))
 	        data->height = attrs[AO(Height)];
-	    if (GOT_BM_ATTR(Height))
+	    if (GOT_BM_ATTR(Depth))
 	        data->reqdepth = attrs[AO(Depth)];
 	} /* if (ok) */
 
