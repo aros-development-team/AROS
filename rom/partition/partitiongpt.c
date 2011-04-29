@@ -329,7 +329,7 @@ static const struct PartitionAttribute PartitionGPTPartitionAttrs[]=
     {PTA_GEOMETRY,  PLAM_READ},
     {PTA_TYPE,      PLAM_READ},
     {PTA_POSITION,  PLAM_READ},
-//    {PTA_NAME,      PLAM_READ},
+    {PTA_NAME,      PLAM_READ},
     {PTA_BOOTABLE,  PLAM_READ},
     {PTA_AUTOMOUNT, PLAM_READ},
     {PT_STARTBLOCK, PLAM_READ},
