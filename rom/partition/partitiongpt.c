@@ -402,6 +402,19 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
 	}
     }
 
+    /*
+     * Now check bootable attribute.
+     * It is applicable only to AROS partitions, so we check it here,
+     * after possible type change.
+     */
+    if (bootable && is_aros_uuid_le(&part->TypeID))
+    {
+	if (bootable->ti_Data)
+	    part->Flags1 |= AROS_LONG2LE(GPT_PF1_AROS_BOOTABLE);
+	else
+	    part->Flags1 &= ~AROS_LONG2LE(GPT_PF1_AROS_BOOTABLE);
+    }
+
     return 0;
 }
 
