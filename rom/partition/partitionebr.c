@@ -371,8 +371,6 @@ static LONG PartitionEBRGetPartitionTableAttr(struct Library *PartitionBase, str
 
 static LONG PartitionEBRGetPartitionAttr(struct Library *PartitionBase, struct PartitionHandle *ph, struct TagItem *tag)
 {
-    ULONG i;
-    struct PartitionHandle *list_ph;
     struct EBRData *data = (struct EBRData *)ph->data;
 
     switch (tag->ti_Tag)
@@ -381,22 +379,6 @@ static LONG PartitionEBRGetPartitionAttr(struct Library *PartitionBase, struct P
         PTYPE(tag->ti_Data)->id[0]  = data->type;
         PTYPE(tag->ti_Data)->id_len = 1;
         return TRUE;
-
-    case PT_POSITION:
-        i = 0;
-
-        ForeachNode(&ph->root->table->list, list_ph)
-        {
-            if (list_ph == ph)
-            {
-                *((LONG *)tag->ti_Data) = i;
-                return TRUE;
-            }
-            i++;
-        }
-
-	/* ??? We should never reach here */
-        return 0;
 
     case PT_STARTBLOCK:
 	*((ULONG *)tag->ti_Data) = data->block_no;

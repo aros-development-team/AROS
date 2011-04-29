@@ -30,27 +30,48 @@
 
     INPUTS
     ph      - PartitionHandle
-    taglist - list of attributes; unknown tags are ignored
-        PT_DOSENVEC - struct DosEnvec *; get DosEnvec values
-        PT_TYPE     - struct PartitionType *           ; get partition type (MBR-PC)
-        PT_POSITION - ULONG *           ; position of partition (MBR-PC)
-        PT_ACTIVE   - LONG *           ; is partition active
-        PT_NAME     - STRPTR    ; get name of partition (max 31 Bytes + NULL-byte)
+    taglist - list of attributes, unknown tags are ignored:
+
+	PT_GEOMETRY   - struct DriveGeometry *	; Fill in DriveGeometry structure
+        PT_DOSENVEC   - struct DosEnvec *	; Fill in DosEnvec structure
+        PT_TYPE       - struct PartitionType *  ; Get partition type
+        PT_POSITION   - ULONG *           	; Get position (entry number) of partition within its table.
+        					; Returns -1 is there's no table (e. g. if used on disk root)
+        PT_ACTIVE     - LONG *           	; Get value of "active" flag (PC-MBR specific)
+        PT_BOOTABLE   - LONG *			; Get value of "bootable" flag
+        PT_AUTOMOUNT  - LONG *			; Get value of "automount" flag
+        PT_NAME       - STRPTR    		; Get name of partition (max 31 Bytes + NULL-byte)
+        PT_STARTBLOCK - ULONG *			; Get number of starting block for the partition (V2)
+        PT_ENDBLOCK   - ULONG *			; Get number of ending block for the partition (V2)
 
     RESULT
+    	Currently reserved, always zero.
 
     NOTES
+	Nested partition tables (e. g. RDB subpartitions on PC MBR drive) are treated as virtual disks.
+	In this case start and end block numbers are relative to the beginning of the virtual disk
+	(which is represented by parent partition containing the RDB itself), not absolute numbers.
+	The same applies to DriveGeomerty and geometry-related fields in DosEnvec structure.
+
+	Note that geometry data can be stored on disk in the partition table ifself (RDB for example), and
+	this way it can not match physical device's geometry (for example, if the disk was partitioned on
+	another operating system which used virtual geometry). In this case you might need to adjust these
+	data in order to mount the file system correctly (if absolute start/end blocks are not
+	cylinder-aligned).
+
+	Starting from V2, partition.library always provides default values for all attributes, even for those
+	not listed as readable in QueryPartitionAttrs() results.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+    	SetPartitionAttrs()
 
     INTERNALS
 
     HISTORY
-    21-02-02    first version
 
 *****************************************************************************/
 {
@@ -69,7 +90,7 @@
 
     while ((tag = NextTagItem(&taglist)))
     {
-    	LONG sup;
+    	ULONG sup;
 
 	/* If we have partition handler, call its function first */
         if (getPartitionAttr)
@@ -79,6 +100,8 @@
 
 	if (!sup)
 	{
+	    struct PartitionHandle *list_ph = NULL;
+
 	    /*
 	     * No handler (root partition) or the handler didn't process the attribute.
 	     * Return defaults.
@@ -99,15 +122,39 @@
 		break;
 
 	    case PT_LEADIN:
-	    case PT_POSITION:
-	    	*((ULONG *)tag->ti_Data) = 0;
-	    	break;
-
 	    case PT_ACTIVE:
 	    case PT_BOOTABLE:
 	    case PT_AUTOMOUNT:
-		*((BOOL *)tag->ti_Data) = FALSE;
-		break;
+	    	*((ULONG *)tag->ti_Data) = 0;
+	    	break;
+
+	    case PT_POSITION:
+  		D(bug("[GetPartitionAttrs] PT_POSITION(0x%p)\n", ph));
+
+		if (ph->root)
+		{
+	            ULONG i = 0;
+
+		    D(bug("[GetPartitionAttrs] Parent table 0x%p\n", ph->root->table));
+
+		    ForeachNode(&ph->root->table->list, list_ph)
+		    {
+		    	D(bug("[GetPartitionAttrs] Child handle 0x%p\n", list_ph));
+
+	            	if (list_ph == ph)
+        	    	{
+			    *((ULONG *)tag->ti_Data) = i;
+			    break;
+			}
+            	    	i++;
+            	    }
+            	}
+
+		/* If nothing was found, return -1 (means "not applicable") */
+            	if (list_ph != ph)
+            	    *((ULONG *)tag->ti_Data) = -1;
+
+            	break;
 
 	    case PT_NAME:
 	        if (ph->ln.ln_Name)
