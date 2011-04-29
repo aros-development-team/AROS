@@ -54,15 +54,6 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
-	11-08-96    iaint   Implemented as AROS function.
-	01-09-96    iaint   Updated the docs to give the same warnings
-			    as the autodocs.
-	05-09-96    iaint   Bit of optimisation (one variable :( )
-	23-01-97    iaint   Corrected NULL TagList handling.
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -87,7 +78,7 @@
 	    TAG_DONE TagItem
 
 	    newList is used here to save a variable. We don't need to do
-	    anything to the value of newList afterwards, since AllocateTagitems()
+	    anything to the value of newList afterwards, since AllocateTagItems()
 	    will take care of setting it to NULL if the allocation fails.
 	*/
 	tmp = tagList;

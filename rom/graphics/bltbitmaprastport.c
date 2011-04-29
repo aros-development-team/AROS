@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -169,7 +169,7 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
         OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 
     /* Get some info on the colormaps. We have to make sure
-       that we have the apropriate mapping tables set.
+       that we have the appropriate mapping tables set.
     */
 
     if (!int_bltbitmap(brd->srcbm

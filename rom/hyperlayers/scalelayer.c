@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -66,8 +66,6 @@ AROS_UFP3(struct Region *, ScaleLayerCallback,
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
@@ -91,12 +89,8 @@ AROS_UFP3(struct Region *, ScaleLayerCallback,
 
 
 
-
-
-
-
 /*
- * The ScaleLayer callback is doing the actul work of
+ * The ScaleLayer callback is doing the actual work of
  * scaling the layer.
  */
 AROS_UFH3(struct Region *, ScaleLayerCallback,

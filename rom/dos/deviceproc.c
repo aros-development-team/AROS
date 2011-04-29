@@ -2,7 +2,7 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: DeviceProc - Return a handle to a devices process.
+    Desc: DeviceProc - Return a handle to a device's process.
     Lang: english
 */
 #include "dos_intern.h"

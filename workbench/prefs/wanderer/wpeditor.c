@@ -1039,7 +1039,7 @@ struct WPEditor_ViewSettingsObject *WPEditor__FindViewSettingObjects(char * this
  *which is composed by an  imagebutton connected to a setting
  *window) which has "MSG_SELECT_WORKBENCH_BACKGROUND" as window 
  *title;
- *Image contained in MUIC_Popimage is going to inserted by a call
+ *Image contained in MUIC_Popimage is going to be inserted by a call
  *WPEditor__MUIM_PrefsEditor_ImportFH() during the initialization
  *of WPEditor Zune object and when these objects must be repainted;
  *If backfillsupport is TRUE a button labelled "Advanced" is 

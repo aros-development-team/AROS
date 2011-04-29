@@ -547,7 +547,7 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
 
     /* If it failed, we may be working with a framebuffer. First check if the bitmap
     is already displayed. If so, do nothing (because displaying the same bitmap twice may
-    cause some problems */
+    cause some problems) */
     if (vpd)
     {
         bitmap = vpd->vpe->ViewPort->RasInfo->BitMap;

@@ -2255,8 +2255,8 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
     ss.script = FALSE;
 
 /*
-  if ss->residentCommand isn't initialized as FALSE, it's value is rather
-  random ( loadCommand doesn't change it ) so unloadCommand almost always
+  if ss->residentCommand isn't initialized as FALSE, its value is rather
+  random (loadCommand doesn't change it) so unloadCommand almost always
   thinks that last Command was resident, and doesn't do an UnloadSeg...
 */
 

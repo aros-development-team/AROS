@@ -1153,7 +1153,7 @@ IPTR String__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 /**************************************************************************
- Returns wether object needs redrawing
+ Returns whether object needs redrawing
 **************************************************************************/
 static int String_HandleVanillakey(struct IClass *cl, Object * obj,
 			    unsigned char code, UWORD qual)
@@ -1840,7 +1840,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object * obj,
 
 
 /**************************************************************************
- MUIM_Export : to export an objects "contents" to a dataspace object.
+ MUIM_Export : to export an object's "contents" to a dataspace object.
 **************************************************************************/
 IPTR String__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
@@ -1869,7 +1869,7 @@ IPTR String__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg
 
 
 /**************************************************************************
- MUIM_Import : to import an objects "contents" from a dataspace object.
+ MUIM_Import : to import an object's "contents" from a dataspace object.
 **************************************************************************/
 IPTR String__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {

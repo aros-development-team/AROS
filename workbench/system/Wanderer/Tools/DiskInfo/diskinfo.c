@@ -207,7 +207,7 @@ Object *DiskInfo__OM_NEW
     {
 	dl = LockDosList(LDF_DEVICES|LDF_READ);
 	if (dl) {
-	    while((dl = NextDosEntry(dl, LDF_DEVICES)))
+	    while ((dl = NextDosEntry(dl, LDF_DEVICES)))
 	    {
 		if ((IPTR)dl->dol_Ext.dol_AROS.dol_Unit == volunit)
 		{
