@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     This file is part of the About program, which is distributed under
     the terms of version 2 of the GNU General Public License.
     
@@ -189,6 +189,8 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     STRPTR                 str_variant;
     STRPTR                 str_arosarch;
     STRPTR                 str_buildtype;
+    ULONG                  abiversion;
+    STRPTR                 str_abi;
     BOOL                   showLogotype;
     BPTR                   lock;
     APTR                   pool;
@@ -212,10 +214,13 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     ArosInquire(AI_ArosBuildDate, (IPTR) &str_builddate,
                 AI_ArosVariant, (IPTR) &str_variant,
                 AI_ArosArchitecture, (IPTR) &str_arosarch,
+                AI_ArosABIMajor, (IPTR) &abiversion,
                 TAG_DONE);
 
     str_buildtype = AllocPooled(pool, strlen(_(MSG_BUILD_TYPE)) + strlen(str_arosarch) + 1);
     sprintf(str_buildtype, _(MSG_BUILD_TYPE), str_arosarch);
+    str_abi = AllocPooled(pool, 7 + 1);
+    sprintf(str_abi, "ABI_V%d", abiversion);
 
     /* Initialize page labels ----------------------------------------------*/
     pages[0] = _(MSG_PAGE_AUTHORS);
@@ -264,6 +269,13 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
                         MUIA_Text_Contents, (IPTR) str_buildtype,
+                        MUIA_Weight,               0,
+                    End,
+
+                    Child, (IPTR) TextObject,
+                        MUIA_Font,                 MUIV_Font_Big,
+                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_Contents, (IPTR) str_abi,
                         MUIA_Weight,               0,
                     End,
 
