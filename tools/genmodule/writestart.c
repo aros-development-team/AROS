@@ -252,7 +252,7 @@ static void writedecl(FILE *out, struct config *cfg)
     
     for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
     {
-        /* For the main class basename is the same a the module basename */
+        /* For the main class basename is the same as the module basename */
         if (strcmp(classlistit->basename, cfg->basename) == 0)
         {
             if (classlistit->classptr_var == NULL)

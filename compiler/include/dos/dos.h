@@ -2,7 +2,7 @@
 #define DOS_DOS_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic DOS structures and constants
@@ -83,7 +83,7 @@ struct FileInfoBlock
 };
 
 /* Protection bits for files (fib_Protection). */
-/* Flags for owner (they a low-active, i.e. not set means the action is
+/* Flags for owner (they are active-low, i.e. not set means the action is
    allowed!) */
 #define FIBB_DELETE      0  /* File is deleteable. */
 #define FIBB_EXECUTE     1  /* File is executable (no scripts!). */

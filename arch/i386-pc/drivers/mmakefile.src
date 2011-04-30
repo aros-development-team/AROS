@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #
-# Rule's to create Kernel drivers for pc-i386
+# Rules to create Kernel drivers for pc-i386
 #
 
 #MM- kernel-pc-i386-drivers : \
@@ -22,7 +22,7 @@ include $(TOP)/config/make.cfg
 ##MM    kernel-pc-i386-usb-kobj
 
 #
-# Rule's to create Support drivers for pc-i386
+# Rules to create Support drivers for pc-i386
 # These are not needed as part of the kernel - and so get created seperately
 #
 

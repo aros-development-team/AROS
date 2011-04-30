@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -34,6 +34,7 @@
         can access it.
  
     INPUTS
+        dummy - unused.
         layer - pointer to layer to be locked
 
     RESULT
@@ -47,10 +48,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {

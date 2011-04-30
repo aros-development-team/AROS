@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -72,9 +72,9 @@
     RESULT
         Pointer to the newly created layer. NULL if layer could not be 
         created (Probably out of memory).
-        If the layer is created successful you must not free its shape.
+        If the layer is created successfully you must not free its shape.
         The shape is automatically freed when the layer is deleted.
-        
+
     NOTES
 
     EXAMPLE
