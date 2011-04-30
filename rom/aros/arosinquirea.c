@@ -30,7 +30,7 @@
 
 #define AROS_VERSION_MAJOR      1
 #define AROS_VERSION_MINOR      12
-#define AROS_ABI_VERSION_MAJOR  1		/* Change only value, name is used in external script */
+#define AROS_ABI_VERSION_MAJOR  -1      /* Change only value, name is used in external script */
 #define AROS_RELEASE_DATE       7560    /* in days since 1978-01-01 */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
@@ -95,7 +95,8 @@ IPTR kickbase(void);
         Return the target architecture.
 
     AI_ArosABIMajor IPTR
-        Update this whenever a new ABI is introduced in AROS.
+        Update this whenever a new ABI is introduced in AROS. Special value of
+        -1 means that the ABI is under development and subject to change.
 
 
     RESULT

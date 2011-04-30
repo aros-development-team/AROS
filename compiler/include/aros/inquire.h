@@ -39,7 +39,7 @@
     /* STRPTR */
 
 #define AI_ArosABIMajor     (AI_Base + 8)
-    /* ULONG: Major AROS ABI version, e.g. 1 */
+    /* LONG: Major AROS ABI version, e.g. 1 */
 
 /* Architecture specific tags */
 
