@@ -275,11 +275,9 @@ static VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * b
 {
     WORD        x, y;
     UBYTE       *pixarray = srcalpha;
-    ULONG       *xbuf;
-    UBYTE       *buf;
     HIDDT_Color color;
-    LONG        a_red, a_green, a_blue;
-    LONG        b_red = 0, b_green = 0, b_blue = 0;
+    LONG        fg_red, fg_green, fg_blue;
+    LONG        bg_red = 0, bg_green = 0, bg_blue = 0;
     WORD        type = 0;
 
     if (width <= 0 || height <= 0)
@@ -287,9 +285,9 @@ static VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * b
 
     HIDD_BM_UnmapPixel(bm, GC_FG(gc), &color);
 
-    a_red   = color.red >> 8;
-    a_green = color.green >> 8;
-    a_blue  = color.blue >> 8;
+    fg_red   = color.red >> 8;
+    fg_green = color.green >> 8;
+    fg_blue  = color.blue >> 8;
 
     if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
     {
@@ -304,19 +302,17 @@ static VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * b
         type = 4;
 
         HIDD_BM_UnmapPixel(bm, GC_BG(gc), &color);
-        b_red   = color.red >> 8;
-        b_green = color.green >> 8;
-        b_blue  = color.blue >> 8;
+        bg_red   = color.red >> 8;
+        bg_green = color.green >> 8;
+        bg_blue  = color.blue >> 8;
     }
 
     if (invertalpha) type++;
     
-    buf = bmdata->bo->map + destY * bmdata->pitch + destX * 4;
 
-    for(y = destY; y < destY + height; y++)
+    for(y = 0; y < height; y++)
     {
-
-        xbuf = (ULONG *)buf;
+        IPTR destaddr = (destX * 4) + ((destY + y) * bmdata->pitch) + (IPTR)bmdata->bo->map;
 
         switch(type)
         {
@@ -328,19 +324,33 @@ static VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * b
 
                 alpha = *pixarray++;
 
-                destpix = xbuf[x];
 
-                dst_red   = (destpix & 0x00FF0000) >> 16;
-                dst_green = (destpix & 0x0000FF00) >> 8;
-                dst_blue  = (destpix & 0x000000FF);
+                if (alpha != 0) /* If alpha=0, do not change the destination pixel at all. */
+                {
+                    if (alpha == 0xff) /* Full opacity. Do not read the destination pixel. */
+                    {
+                        dst_red = fg_red;
+                        dst_green = fg_green;
+                        dst_blue = fg_blue;
+                    }
+                    else
+                    {
+                        destpix = readl(destaddr);
 
-                dst_red   += do_alpha(alpha, a_red - dst_red);
-                dst_green += do_alpha(alpha, a_green - dst_green);
-                dst_blue  += do_alpha(alpha, a_blue - dst_blue);
+                        dst_red   = (destpix & 0x00FF0000) >> 16;
+                        dst_green = (destpix & 0x0000FF00) >> 8;
+                        dst_blue  = (destpix & 0x000000FF);
 
-                destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+                        dst_red   += do_alpha(alpha, fg_red - dst_red);
+                        dst_green += do_alpha(alpha, fg_green - dst_green);
+                        dst_blue  += do_alpha(alpha, fg_blue - dst_blue);
+                    }
 
-                xbuf[x] = destpix;
+                    destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+                    writel(destpix, destaddr);
+                }
+
+                destaddr += 4;
 
             } /* for(x = 0; x < msg->width; x++) */
             break;
@@ -353,21 +363,35 @@ static VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * b
 
                 alpha = (*pixarray++) ^ 255;
 
-                destpix = xbuf[x];
 
-                dst_red   = (destpix & 0x00FF0000) >> 16;
-                dst_green = (destpix & 0x0000FF00) >> 8;
-                dst_blue  = (destpix & 0x000000FF);
+                if (alpha != 0) /* If alpha=0, do not change the destination pixel at all. */
+                {
+                    if (alpha == 0xff) /* Full opacity. Do not read the destination pixel. */
+                    {
+                        dst_red = fg_red;
+                        dst_green = fg_green;
+                        dst_blue = fg_blue;
+                    }
+                    else
+                    {
+                        destpix = readl(destaddr);
 
-                dst_red   += do_alpha(alpha, a_red - dst_red);
-                dst_green += do_alpha(alpha, a_green - dst_green);
-                dst_blue  += do_alpha(alpha, a_blue - dst_blue);
+                        dst_red   = (destpix & 0x00FF0000) >> 16;
+                        dst_green = (destpix & 0x0000FF00) >> 8;
+                        dst_blue  = (destpix & 0x000000FF);
 
-                destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+                        dst_red   += do_alpha(alpha, fg_red - dst_red);
+                        dst_green += do_alpha(alpha, fg_green - dst_green);
+                        dst_blue  += do_alpha(alpha, fg_blue - dst_blue);
+                    }
 
-                xbuf[x] = destpix;
+                    destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+                    writel(destpix, destaddr);
+                }
 
-            } /* for(x = 0; x < msg->width; x++) */
+                destaddr += 4;
+
+            } /* for(x = 0; x < width; x++) */
             break;
 
             case 2: /* COMPLEMENT */
@@ -378,11 +402,17 @@ static VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * b
 
                 alpha = *pixarray++;
 
-                destpix = xbuf[x];
-                if (alpha >= 0x80) destpix = ~destpix;
-                xbuf[x] = destpix;
 
-            } /* for(x = 0; x < msg->width; x++) */
+                if (alpha >= 0x80) 
+                {
+                    destpix = readl(destaddr);
+                    destpix = ~destpix;
+                    writel(destpix, destaddr);
+                }
+
+                destaddr += 4;
+
+            } /* for(x = 0; x < width; x++) */
             break;
 
             case 3: /* COMPLEMENT | INVERSVID*/
@@ -393,11 +423,17 @@ static VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * b
 
                 alpha = *pixarray++;
 
-                destpix = xbuf[x];
-                if (alpha < 0x80) destpix = ~destpix;
-                xbuf[x] = destpix;
 
-            } /* for(x = 0; x < msg->width; x++) */
+                if (alpha < 0x80)
+                {
+                    destpix = readl(destaddr);
+                    destpix = ~destpix;
+                    writel(destpix, destaddr);
+                }
+
+                destaddr += 4;
+
+            } /* for(x = 0; x < width; x++) */
             break;
 
             case 4: /* JAM2 */
@@ -408,15 +444,18 @@ static VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * b
 
                 alpha = *pixarray++;
 
-                dst_red   = b_red   + ((a_red   - b_red)   * alpha) / 256;
-                dst_green = b_green + ((a_green - b_green) * alpha) / 256;
-                dst_blue  = b_blue  + ((a_blue  - b_blue)  * alpha) / 256;
+
+                dst_red   = bg_red   + ((fg_red   - bg_red)   * alpha) / 256;
+                dst_green = bg_green + ((fg_green - bg_green) * alpha) / 256;
+                dst_blue  = bg_blue  + ((fg_blue  - bg_blue)  * alpha) / 256;
 
                 destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
 
-                xbuf[x] = destpix;
+                writel(destpix, destaddr);
 
-            } /* for(x = 0; x < msg->width; x++) */
+                destaddr += 4;
+
+            } /* for(x = 0; x < width; x++) */
             break;
 
             case 5: /* JAM2 | INVERSVID */
@@ -427,24 +466,25 @@ static VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * b
 
                 alpha = (*pixarray++) ^ 255;
 
-                dst_red   = b_red   + ((a_red   - b_red)   * alpha) / 256;
-                dst_green = b_green + ((a_green - b_green) * alpha) / 256;
-                dst_blue  = b_blue  + ((a_blue  - b_blue)  * alpha) / 256;
+
+                dst_red   = bg_red   + ((fg_red   - bg_red)   * alpha) / 256;
+                dst_green = bg_green + ((fg_green - bg_green) * alpha) / 256;
+                dst_blue  = bg_blue  + ((fg_blue  - bg_blue)  * alpha) / 256;
 
                 destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
 
-                xbuf[x] = destpix;
+                writel(destpix, destaddr);
 
-            } /* for(x = 0; x < msg->width; x++) */
+                destaddr += 4;
+
+            } /* for(x = 0; x < width; x++) */
             break;
 
         } /* switch(type) */
 
-  
-        buf += bmdata->pitch;
         pixarray += srcpitch - width;
 
-    } /* for(y = msg->y; y < msg->y + msg->height; y++) */
+    } /* for(y = 0; y < height; y++) */
 }
 
 /* TEMP - FIXME HACK FOR PATCHRGBCONV */
