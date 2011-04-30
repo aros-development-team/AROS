@@ -1,6 +1,6 @@
 /*
  * Copyright 2009 Nouveau Project
- * Copyright (C) 2010, The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2011, The AROS Development Team. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -47,14 +47,7 @@ BOOL HiddNouveauWriteFromRAM(
         switch(dstBpp)
         {
         case 1:
-            {
-                struct pHidd_BitMap_CopyMemBox8 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox8, src, 0, 0, dst,
-                    0, 0, width, height, srcPitch, dstPitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
+            /* Not supported */
             break;
 
         case 2:
@@ -86,14 +79,7 @@ BOOL HiddNouveauWriteFromRAM(
         switch(dstBpp)
         {
         case 1:
-            {
-                struct pHidd_BitMap_PutMem32Image8 __m = 
-                {
-                    SD(cl)->mid_PutMem32Image8, src, dst,
-                    0, 0, width, height, srcPitch, dstPitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
+            /* Not supported */
             break;
 
         case 2:
@@ -291,14 +277,7 @@ BOOL HiddNouveauReadIntoRAM(
         switch(srcBpp)
         {
         case 1:
-            {
-                struct pHidd_BitMap_CopyMemBox8 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox8, src, 0, 0, dst,
-                    0, 0, width, height, srcPitch, dstPitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
+            /* Not supported */
             break;
 
         case 2:
@@ -330,14 +309,7 @@ BOOL HiddNouveauReadIntoRAM(
         switch(srcBpp)
         {
         case 1:
-            {
-                struct pHidd_BitMap_GetMem32Image8 __m = 
-                {
-                    SD(cl)->mid_GetMem32Image8, src, 0, 0, dst, 
-                    width, height, srcPitch, dstPitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
+            /* Not supported */
             break;
 
         case 2:

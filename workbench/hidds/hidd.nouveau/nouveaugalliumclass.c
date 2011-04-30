@@ -70,7 +70,7 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
             break;
     }
     
-    if ((NULL == bo) || (0 == pitch))
+    if ((bo == NULL) || (pitch == 0))
         return FALSE;
 
     switch(resource->format)
@@ -93,7 +93,7 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
         break;
     }
     
-    if (0 == depth)
+    if (depth == 0)
         return FALSE;
     
     /* Set all fields */
@@ -101,9 +101,7 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
     bmdata->width = resource->width0;
     bmdata->height = resource->height0;
     bmdata->depth = depth;
-    if (bmdata->depth <= 8)
-        bmdata->bytesperpixel = 1;
-    else if (bmdata->depth <= 16)
+    if (bmdata->depth == 16)
         bmdata->bytesperpixel = 2;
     else
         bmdata->bytesperpixel = 4;

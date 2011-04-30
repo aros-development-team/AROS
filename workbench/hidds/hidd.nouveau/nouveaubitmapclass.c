@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -176,86 +176,6 @@ static VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmda
                 }
 
                 destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-
-                writew(destpix, destaddr);
-            }
-
-            /* Advance pointers */
-            srcaddr += 4;
-            destaddr += 2;
-        }
-    }
-}
-
-/* NOTE: Assumes lock on bitmap is already made */
-/* NOTE: Assumes buffer is mapped */
-static VOID HIDDNouveauBitMapPutAlphaImage15(struct HIDDNouveauBitMapData * bmdata,
-    APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height)
-{
-    ULONG x,y;
-    
-    for(y = 0; y < height; y++)
-    {
-        /* Calculate line start addresses */
-        IPTR srcaddr = (srcpitch * y) + (IPTR)srcbuff;
-        IPTR destaddr = (destX * 2) + (bmdata->pitch * (destY + y)) + (IPTR)bmdata->bo->map;
-        
-        for (x = 0; x < width; x++)
-        {
-            UWORD       destpix;
-            ULONG       srcpix;
-            LONG        src_red, src_green, src_blue, src_alpha;
-            LONG        dst_red, dst_green, dst_blue;
-
-            /* Read RGBA pixel from input array */
-            srcpix = *(ULONG *)srcaddr;
-#if AROS_BIG_ENDIAN
-            src_red   = (srcpix & 0x00FF0000) >> 16;
-            src_green = (srcpix & 0x0000FF00) >> 8;
-            src_blue  = (srcpix & 0x000000FF);
-            src_alpha = (srcpix & 0xFF000000) >> 24;
-#else
-            src_red   = (srcpix & 0x0000FF00) >> 8;
-            src_green = (srcpix & 0x00FF0000) >> 16;
-            src_blue  = (srcpix & 0xFF000000) >> 24;
-            src_alpha = (srcpix & 0x000000FF);
-#endif
-
-            /*
-            * If alpha=0, do not change the destination pixel at all.
-            * This saves us unnecessary reads and writes to VRAM.
-            */
-            if (src_alpha != 0)
-            {
-                /*
-                * Full opacity. Do not read the destination pixel, as
-                * it's value does not matter anyway.
-                */
-                if (src_alpha == 0xff)
-                {
-                    dst_red = src_red;
-                    dst_green = src_green;
-                    dst_blue = src_blue;
-                    }
-                else
-                {
-                    /*
-                    * Alpha blending with source and destination pixels.
-                    * Get destination.
-                    */
-
-                    destpix = readw(destaddr);
-
-                    dst_red   = (destpix & 0x00007c00) >> 7;
-                    dst_green = (destpix & 0x000003e0) >> 2;
-                    dst_blue  = (destpix & 0x0000001f) << 3;
-
-                    dst_red   += do_alpha(src_alpha, src_red - dst_red);
-                    dst_green += do_alpha(src_alpha, src_green - dst_green);
-                    dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
-                }
-
-                destpix = (ULONG)(((dst_red << 7) & 0x7c00) | ((dst_green << 2) & 0x03e0) | ((dst_blue >> 3) & 0x001f));
 
                 writew(destpix, destaddr);
             }
@@ -917,7 +837,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
     switch(bmdata->bytesperpixel)
     {
     case(1):
-        writeb(msg->pixel, (APTR)addr);
+        /* Not supported */
         break;
     case(2):
         writew(msg->pixel, (APTR)addr);
@@ -954,7 +874,7 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
     switch(bmdata->bytesperpixel)
     {
     case(1):
-        pixel = readb((APTR)addr);
+        /* Not supported */
         break;
     case(2):
         pixel = readw((APTR)addr);
@@ -1113,7 +1033,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     {
         BOOL result = FALSE;
         
-        /* RAM->CPU->GART GART->GPU->VRAM */
+        /* VRAM->CPU->GART GART->GPU->RAM */
         UNMAP_BUFFER
 
         ObtainSemaphore(&carddata->gartsemaphore);
@@ -1134,7 +1054,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
 
     /* Fallback */
 
-    /* RAM->CPU->VRAM */
+    /* VRAM->CPU->RAM */
     {
     APTR srcBuff = NULL;
     
@@ -1159,42 +1079,31 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
 
     /* TODO: implement accelerated putalphaimage */
 
-    /*
-    * Treat each depth case separately
-    */
-    if (bmdata->bytesperpixel == 4)
+    LOCK_BITMAP
+    MAP_BUFFER
+
+    switch(bmdata->bytesperpixel)
     {
-        LOCK_BITMAP
-        MAP_BUFFER
-        HIDDNouveauBitMapPutAlphaImage32(bmdata, msg->pixels, msg->modulo, msg->x, 
-            msg->y, msg->width, msg->height);
-        UNLOCK_BITMAP
-        return;
-    }
-    else if (bmdata->bytesperpixel == 2)
-    {
-        if (bmdata->depth == 16)
+    case 1:
+        /* Not supported */
+        break;
+
+    case 2:
         {
-            LOCK_BITMAP
-            MAP_BUFFER
             HIDDNouveauBitMapPutAlphaImage16(bmdata, msg->pixels, msg->modulo, msg->x, 
                 msg->y, msg->width, msg->height);
-            UNLOCK_BITMAP
-            return;
         }
-        else if (bmdata->depth == 15)
+        break;
+
+    case 4:
         {
-            LOCK_BITMAP
-            MAP_BUFFER
-            HIDDNouveauBitMapPutAlphaImage15(bmdata, msg->pixels, msg->modulo, msg->x, 
+            HIDDNouveauBitMapPutAlphaImage32(bmdata, msg->pixels, msg->modulo, msg->x, 
                 msg->y, msg->width, msg->height);
-            UNLOCK_BITMAP
-            return;
         }
-    }
- 
-    /* Fallback to default method */    
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        break;
+    } /* switch(bmdata->bytesperpixel) */
+
+    UNLOCK_BITMAP
 }
 
 ULONG METHOD(NouveauBitMap, Hidd_BitMap, BytesPerLine)
@@ -1230,40 +1139,31 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
 
+    LOCK_BITMAP
+    MAP_BUFFER
+
     switch(bmdata->bytesperpixel)
     {
     case 1:
-        {
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        }
+        /* Not supported */
         break;
 
     case 2:
         {
-            LOCK_BITMAP
-            MAP_BUFFER
-
             HIDDNouveauBitMapPutAlphaTemplate16(bmdata, msg->gc, o, msg->invertalpha,
                 msg->alpha, msg->modulo, msg->x, msg->y, msg->width, msg->height);
-
-            UNLOCK_BITMAP
         }
         break;
 
     case 4:
         {
-            LOCK_BITMAP
-            MAP_BUFFER
-
             HIDDNouveauBitMapPutAlphaTemplate32(bmdata, msg->gc, o, msg->invertalpha,
                 msg->alpha, msg->modulo, msg->x, msg->y, msg->width, msg->height);
-
-            UNLOCK_BITMAP
         }
         break;
     } /* switch(bmdata->bytesperpixel) */
 
-    return;    
+    UNLOCK_BITMAP
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
@@ -1276,15 +1176,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
     switch(bmdata->bytesperpixel)
     {
     case 1:
-        {
-            struct pHidd_BitMap_PutMemTemplate8 __m = 
-            {
-                SD(cl)->mid_PutMemTemplate8, msg->gc, msg->template, msg->modulo,
-                msg->srcx, bmdata->bo->map, bmdata->pitch, msg->x, msg->y,
-                msg->width, msg->height, msg->inverttemplate
-            }, *m = &__m;
-            OOP_DoMethod(o, (OOP_Msg)m);
-        }
+        /* Not supported */
         break;
 
     case 2:
@@ -1325,17 +1217,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
     switch(bmdata->bytesperpixel)
     {
     case 1:
-        {
-            struct pHidd_BitMap_PutMemPattern8 __m = 
-            {
-                SD(cl)->mid_PutMemPattern8, msg->gc, msg->pattern, msg->patternsrcx,
-                msg->patternsrcy, msg->patternheight, msg->patterndepth, msg->patternlut,
-                msg->invertpattern, msg->mask, msg->maskmodulo, msg->masksrcx,
-                bmdata->bo->map, bmdata->pitch, msg->x, msg->y, msg->width,
-                msg->height
-            }, *m = &__m;
-            OOP_DoMethod(o, (OOP_Msg)m);
-        }
+        /* Not supported */
         break;
 
     case 2:
