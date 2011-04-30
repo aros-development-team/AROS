@@ -726,6 +726,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     bmdata->fbid = 0;
     bmdata->xoffset = 0;
     bmdata->yoffset = 0;
+    bmdata->bo = NULL;
     
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
@@ -758,14 +759,16 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     InitSemaphore(&bmdata->semaphore);
 
     /* Creation of buffer object */
-    /* FIXME: check result of call */
     nouveau_bo_new(SD(cl)->carddata.dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
             bmdata->pitch * bmdata->height,
             &bmdata->bo);
+    if (bmdata->bo == NULL)
+        goto exit_fail;
 
     bmdata->compositing = (OOP_Object *)GetTagData(aHidd_BitMap_Nouveau_CompositingHidd, 0, msg->attrList);
-    /* FIXME: check if compositing hidd was passed */
-    
+    if (bmdata->compositing == NULL)
+        goto exit_fail;
+
     /* TEMP - FIXME HACK FOR PATCHRGBCONV */
     /* Yes, it can be called more than once */
     if (!SD(cl)->rgbpatched)
@@ -780,9 +783,12 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
 
 exit_fail:
 
+    bug("[Nouveau]: Failed to create bitmap %dx%d %d %d\n", width, height, depth, stdfmt);
+
     if (o)
     {
-        /* TODO: dispose bitmap object */
+        OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+        OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
     }
 
     return NULL;
