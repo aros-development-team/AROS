@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <resources/processor.h>
 #include <string.h>
 
@@ -16,6 +19,8 @@ static void ReadVendorID(struct X86ProcessorInformation * info)
     info->Vendor = VENDOR_UNKNOWN;
     info->CPUIDHighestStandardFunction = 0x0;
     info->CPUIDHighestExtendedFunction = 0x0;
+    
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
     
     /* Reading CPU Vendor ID */
     ulongptr = (ULONG *)info->VendorID;
@@ -43,6 +48,8 @@ static void ReadBrandString(struct X86ProcessorInformation * info)
     ULONG eax, ebx, ecx, edx;
     ULONG * ulongptr = NULL;
     ULONG index = 0;
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
     
     /* Reading CPU Brand String */
     ulongptr = (ULONG *)info->BrandStringBuffer;
@@ -69,6 +76,8 @@ static ULONG AMDDeriveFamily(UBYTE basefamily, UBYTE extendedfamily)
     ULONG family = 0;
     ULONG ret;
 
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     if (basefamily == 0x0f) 
         family = basefamily + extendedfamily;
     else
@@ -92,7 +101,9 @@ static ULONG IntelDeriveFamily(UBYTE basefamily, UBYTE extendedfamily)
 {
     ULONG family = extendedfamily + basefamily;
     ULONG ret;
-    
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     switch(family)
     {
     case(4): ret = CPUFAMILY_INTEL_486; break;
@@ -109,7 +120,9 @@ static void ReadFamilyModelStepping(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
     UBYTE stepping, basefamily, extendedfamily, basemodel, extendedmodel;
-    
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     /* Reading Family/Model/Stepping */
     cpuid(0x00000001);
 
@@ -137,7 +150,9 @@ static void ReadFamilyModelStepping(struct X86ProcessorInformation * info)
 static void ReadFeaturesFlags(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
-   
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     /* Reading standard feature flags */
     cpuid(0x00000001);
 
@@ -194,7 +209,9 @@ static void AMDDeriveCacheInformation(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
     info->CacheLineSize = 0xff;
-   
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     /* Reading L1 information */
     cpuid(0x80000005);
 
@@ -216,6 +233,9 @@ static void AMDDeriveCacheInformation(struct X86ProcessorInformation * info)
 
 static void IntelDecodeCacheKeyValue(struct X86ProcessorInformation * info, UBYTE key)
 {
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     switch(key)
     {
     case(0x06): info->L1InstructionCacheSize = 8; info->CacheLineSize = min(32, info->CacheLineSize); break;
@@ -289,7 +309,9 @@ static void IntelDeriveCacheInformation(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
     info->CacheLineSize = 0xff;
-    
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     /* Reading Cache Information */
     cpuid(0x00000002);
     
@@ -351,6 +373,9 @@ static void IntelDeriveCacheInformation(struct X86ProcessorInformation * info)
 
 static void ReadCacheInformation(struct X86ProcessorInformation * info)
 {
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     info->L1DataCacheSize = 0;
     info->L1InstructionCacheSize = 0;
     info->L2CacheSize = 0;
@@ -367,6 +392,9 @@ static void ReadCacheInformation(struct X86ProcessorInformation * info)
 static void ReadMSRSupportInformation(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     info->APERFMPERF = FALSE;
 
     /* Check if MSR is supported */
@@ -384,6 +412,8 @@ static void ReadMSRSupportInformation(struct X86ProcessorInformation * info)
 
 VOID ReadProcessorInformation(struct X86ProcessorInformation * info)
 {
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     ReadVendorID(info);
     ReadBrandString(info);
     ReadFamilyModelStepping(info);

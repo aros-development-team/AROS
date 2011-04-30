@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
 
@@ -11,6 +14,8 @@
 
 LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 {
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     struct SystemProcessors * sysprocs = 
         AllocVec(sizeof(struct SystemProcessors), MEMF_ANY | MEMF_CLEAR);
 

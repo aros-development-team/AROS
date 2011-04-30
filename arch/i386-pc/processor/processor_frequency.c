@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <resources/processor.h>
 
@@ -45,13 +48,14 @@ static inline VOID rdmsr(ULONG msr, ULONG *retlo, ULONG *rethi)
 
 UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
 {
-   /* Check if APERF/MPERF is available */
-   
-   /* Notes: K10, K9 - rdmsr can be used to read current PState/cpufid/cpudid */
-   
-    if (!info->APERFMPERF)
-        return info->MaxCPUFrequency; /* Just return max. Should use PStates */
-    else
+D(bug("[processor.PCx86] :%s()\n", __PRETTY_FUNCTION__));
+
+    UQUAD retFreq = info->MaxCPUFrequency;
+    /*
+	Check if APERF/MPERF is available
+	Notes: K10, K9 - rdmsr can be used to read current PState/cpufid/cpudid
+    */
+    if (info->APERFMPERF)
     {
         ULONG eax, edx;
 
@@ -63,14 +67,14 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
         for(i = 0; i < 10; i++)
         {
             rdmsr(MSR_IA32_MPERF, &eax, &edx);
-            startmperf = (UQUAD)edx << 32 | eax;
+            startmperf = (UQUAD)(edx << 32) | eax;
             rdmsr(MSR_IA32_APERF, &eax, &edx);
-            startaperf = (UQUAD)edx << 32 | eax;
+            startaperf = (UQUAD)(edx << 32) | eax;
 
             rdmsr(MSR_IA32_MPERF, &eax, &edx);
-            endmperf = (UQUAD)edx << 32 | eax;
+            endmperf = (UQUAD)(edx << 32) | eax;
             rdmsr(MSR_IA32_APERF, &eax, &edx);
-            endaperf = (UQUAD)edx << 32 | eax;
+            endaperf = (UQUAD)(edx << 32) | eax;
 
             if ((startmperf > endmperf) || (startaperf > endaperf))
                 continue; /* Overflow error. Skip */
@@ -78,14 +82,26 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
             diffmperf += endmperf - startmperf;
             diffaperf += endaperf - startaperf;
         }
-        
-        /* Use ration between MPERF and APERF */
-        return info->MaxCPUFrequency * diffaperf / diffmperf;
+
+	D(bug("[processor.PCx86] %s: max: %x, diffa: %x, diffm %x\n", __PRETTY_FUNCTION__, info->MaxCPUFrequency, diffaperf, diffmperf));
+
+        /* Use ratio between MPERF and APERF */
+	retFreq = info->MaxCPUFrequency * diffaperf;
+	if (diffmperf)
+	    retFreq /= diffmperf;
     }
+    else
+    {
+	/* use PStates ?*/
+    }
+
+    return retFreq;
 }
 
 static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * info)
 {
+D(bug("[processor.PCx86] :%s()\n", __PRETTY_FUNCTION__));
+
     info->MaxCPUFrequency = 0;
     info->MaxFSBFrequency = 0;
 
@@ -228,6 +244,8 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
 
 static VOID ReadAMDMaxFrequencyInformation(struct X86ProcessorInformation * info)
 {
+D(bug("[processor.PCx86] :%s()\n", __PRETTY_FUNCTION__));
+
     info->MaxCPUFrequency = 0;
     info->MaxFSBFrequency = 0;
 
@@ -280,6 +298,8 @@ static VOID ReadAMDMaxFrequencyInformation(struct X86ProcessorInformation * info
 
 VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info)
 {
+D(bug("[processor.PCx86] :%s()\n", __PRETTY_FUNCTION__));
+
     info->MaxCPUFrequency = 0;
     info->MaxFSBFrequency = 0;
 

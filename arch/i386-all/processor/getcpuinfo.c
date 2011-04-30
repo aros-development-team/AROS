@@ -7,8 +7,8 @@
 */
 
 #define DEBUG 0
-
 #include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <resources/processor.h>
 #include <proto/utility.h>
@@ -56,6 +56,9 @@ static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct Tag
     struct TagItem * passedTag = NULL;
     struct X86ProcessorInformation * processor = NULL;
     ULONG selectedprocessor = 0;
+
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     struct SystemProcessors * sysprocs = (struct SystemProcessors *)ProcessorBase->Private1;
 
     /* If processor was not selected, fall back to legacy mode and report on
@@ -136,6 +139,8 @@ static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct Tag
 
 static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct TagItem * tag)
 {
+D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+
     switch(tag->ti_Tag)
     {
     case(GCIT_SupportsFPU):
