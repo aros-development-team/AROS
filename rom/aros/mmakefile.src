@@ -22,4 +22,4 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 #MM
 kernel-aros-create-abi-file :
 	$(MKDIR) $(AROS_PREFS)/Env-Archive
-	grep "#define AROS_ABI_VERSION_MAJOR" $(SRCDIR)/$(CURDIR)/arosinquirea.c | tr -d [:alpha:][:punct:][:space:] > $(AROS_PREFS)/Env-Archive/ABI
+	$(SED) -n 's/#define AROS_ABI_VERSION_MAJOR// p' < $(SRCDIR)/$(CURDIR)/arosinquirea.c | $(SED) -n 's/^ *//;s/[ */*].*//p' > $(AROS_PREFS)/Env-Archive/ABI

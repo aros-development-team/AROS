@@ -189,7 +189,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     STRPTR                 str_variant;
     STRPTR                 str_arosarch;
     STRPTR                 str_buildtype;
-    ULONG                  abiversion;
+    LONG                   abiversion;
     STRPTR                 str_abi;
     BOOL                   showLogotype;
     BPTR                   lock;
@@ -219,8 +219,14 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     str_buildtype = AllocPooled(pool, strlen(_(MSG_BUILD_TYPE)) + strlen(str_arosarch) + 1);
     sprintf(str_buildtype, _(MSG_BUILD_TYPE), str_arosarch);
-    str_abi = AllocPooled(pool, 7 + 1);
-    sprintf(str_abi, "ABI_V%d", abiversion);
+    if (abiversion != -1)
+    {
+        str_abi = AllocPooled(pool, 7 + 1);
+        sprintf(str_abi, "ABI_V%d", abiversion);
+    }
+    else
+        str_abi = "ABI_WIP";
+    
 
     /* Initialize page labels ----------------------------------------------*/
     pages[0] = _(MSG_PAGE_AUTHORS);
