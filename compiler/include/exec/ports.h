@@ -2,7 +2,7 @@
 #define EXEC_PORTS_H
 
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Message ports and messages
@@ -41,8 +41,8 @@ struct MsgPort
 
 #define PA_FASTCALL     4       /* AROS extension. Like PA_SOFTINT, calls an
                                    Interrupt in mp_SoftInt, but passes the
-                                   message as the third argument without doesn't
-                                   add it to the message list and so doesn't
+                                   message as the third argument without
+                                   adding it to the message list and so doesn't
                                    require any locking, task switching or
                                    Disable()/Enable() pairs */
 

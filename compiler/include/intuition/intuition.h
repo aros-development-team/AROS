@@ -2,7 +2,7 @@
 #define INTUITION_INTUITION_H
 
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Important defines and structures for intuition.library
@@ -586,7 +586,7 @@ struct NewWindow
     struct Gadget * FirstGadget;
     struct Image  * CheckMark;
     UBYTE	  * Title;
-    struct Screen * Screen;
+    struct Screen * Screen;    /* ignored if Type != CUSTOMSCREEN */
     struct BitMap * BitMap;
 
     WORD  MinWidth;

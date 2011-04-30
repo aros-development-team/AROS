@@ -2,7 +2,7 @@
 #define DOS_FILESYSTEM_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS specific structures and definitions for filesystems.
@@ -92,8 +92,9 @@ struct IFS_READ_WRITE
 #define FSA_SEEK 5
 struct IFS_SEEK
 {
-    /* Offset from position, specified as mode. This is filled by the
-       filehandler with the old position in the file. */
+    /* Offset from position specified by mode. This is filled by the
+       filehandler with the old position in the file. For FSA_SET_FILE_SIZE,
+       it is filled with the actual new size */
     QUAD io_Offset; 
     /* Seek mode as defined in <dos/dos.h> (OFFSET_#?). */
     LONG io_SeekMode;

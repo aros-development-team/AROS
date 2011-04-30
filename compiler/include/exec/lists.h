@@ -40,7 +40,7 @@ struct MinList
 
 
 /**************************************
-	       Makros
+	       Macros
 **************************************/
 #define IsListEmpty(l) \
 	( (((struct List *)l)->lh_TailPred) == (struct Node *)(l) )

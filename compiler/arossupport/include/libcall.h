@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,7 +41,7 @@
 	    arguments. Register names are written uppercase because they
 	    are preprocessor symbols.
 
-	Example: Define a Exec compatible RemHead function.
+	Example: Define an Exec-compatible RemHead function.
 
 	AROS_LH1I(struct Node *, RemHead,
 		struct List *, list, A0,
