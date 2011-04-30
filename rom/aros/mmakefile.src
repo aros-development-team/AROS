@@ -4,8 +4,8 @@
 #
 include $(TOP)/config/make.cfg
 
-#MM- kernel-aros : linklibs
-#MM- kernel-aros-kobj : linklibs
+#MM- kernel-aros : linklibs kernel-aros-create-abi-file
+#MM- kernel-aros-kobj : linklibs kernel-aros-create-abi-file
 
 #MM- kernel-aros-includes : \
 #MM-     kernel-exec-includes \
@@ -18,3 +18,7 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 %build_module mmake=kernel-aros \
   modname=aros modtype=library \
   files="aros_init arosinquirea"
+
+#MM
+kernel-aros-create-abi-file :
+	grep "#define AROS_ABI_VERSION_MAJOR" $(SRCDIR)/$(CURDIR)/arosinquirea.c | tr -d [:alpha:][:punct:][:space:] > $(AROSDIR)/ABI  
