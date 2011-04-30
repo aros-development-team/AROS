@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id: arosinquirea.c 38441 2011-04-30 06:01:45Z deadwood $
 
     Desc:
     Lang: english
@@ -21,12 +21,12 @@
 #undef kprintf
 
 /* Kickstart ROM location offsets */
-#define LOC_COOKIE	0x00
-#define LOC_ADDRESS	0x04
-#define LOC_MAJORV	0x0c
-#define LOC_MINORV	0x0e
-#define LOC_ROMSIZE	0x14		/* offset from end of ROM! */
-#define ROM_END 	0x1000000
+#define LOC_COOKIE  0x00
+#define LOC_ADDRESS 0x04
+#define LOC_MAJORV  0x0c
+#define LOC_MINORV  0x0e
+#define LOC_ROMSIZE 0x14    /* offset from end of ROM! */
+#define ROM_END     0x1000000
 
 #define AROS_VERSION_MAJOR 1
 #define AROS_VERSION_MINOR 12
@@ -43,62 +43,62 @@ IPTR kickbase(void);
     NAME */
 #include <aros/inquire.h>
 
-	AROS_LH1(ULONG, ArosInquireA,
+    AROS_LH1(ULONG, ArosInquireA,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct TagItem *, taglist, A0),
+    AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
 
-	struct ArosBase *, ArosBase, 5, Aros)
+    struct ArosBase *, ArosBase, 5, Aros)
 
 /*  FUNCTION
-	This function is used to query system characteristics not easily
-	queried with another function.
+    This function is used to query system characteristics not easily
+    queried with another function.
 
     INPUTS
-	tags -- taglist with appropriate queries. The tag's ti_Data field
-		should point to the location where the result of the query
-		is stored. Do not forget to clear the location before, as
-		queries not understood will be left untouched.
+    tags -- taglist with appropriate queries. The tag's ti_Data field
+        should point to the location where the result of the query
+        is stored. Do not forget to clear the location before, as
+        queries not understood will be left untouched.
 
-	AI_KickstartBase APTR
-	AI_KickstartSize ULONG
-	AI_KickstartVersion UWORD
-	AI_KickstartRevision UWORD
-		Only support these tags if we are on the native machine. On other machines this
-		call will not touch the storage space. Set the storage space to 0 if you want to
-		see if this call touches it.
+    AI_KickstartBase APTR
+    AI_KickstartSize ULONG
+    AI_KickstartVersion UWORD
+    AI_KickstartRevision UWORD
+        Only support these tags if we are on the native machine. On other machines this
+        call will not touch the storage space. Set the storage space to 0 if you want to
+        see if this call touches it.
 
-	AI_ArosVersion IPTR
-		aros.library version masquerades as AROS version. This means
-		that all aros modules must have the same major version number.
+    AI_ArosVersion IPTR
+        aros.library version masquerades as AROS version. This means
+        that all aros modules must have the same major version number.
 
-	AI_ArosReleaseMajor IPTR
-		Update this whenever a new AROS is released.
+    AI_ArosReleaseMajor IPTR
+        Update this whenever a new AROS is released.
 
-	AI_ArosReleaseMinor IPTR
-		Update this whenever a new AROS is released.
+    AI_ArosReleaseMinor IPTR
+        Update this whenever a new AROS is released.
 
-	AI_ArosReleaseDate IPTR
-		Update this whenever a new AROS is released.
+    AI_ArosReleaseDate IPTR
+        Update this whenever a new AROS is released.
 
-	AI_ArosBuildDate IPTR
-		Given in the format: <d>.<m>.<y>
+    AI_ArosBuildDate IPTR
+        Given in the format: <d>.<m>.<y>
 
-	AI_ArosVariant IPTR
-		Configure time variant name.
+    AI_ArosVariant IPTR
+        Configure time variant name.
 
-	AI_ArosArchitecture IPTR
-		Return the target architecture.
+    AI_ArosArchitecture IPTR
+        Return the target architecture.
 
 
     RESULT
-	All queries understood by this call will have appropriate values
-	assigned to the location a tag's ti_Data pointed to.
+    All queries understood by this call will have appropriate values
+    assigned to the location a tag's ti_Data pointed to.
 
-	This function will (for now) always return 0.
+    This function will (for now) always return 0.
 
     NOTES
 
@@ -107,7 +107,7 @@ IPTR kickbase(void);
     BUGS
 
     SEE ALSO
-	aros/arosbase.h
+    aros/arosbase.h
 
     INTERNALS
 
@@ -120,18 +120,18 @@ IPTR kickbase(void);
     IPTR data = 0;
 
 #   define SetData(tag,type,value)  \
-	D(bug("   Data was: %d\n", *((type *)(tag->ti_Data)))); \
-	(*((type *)(tag->ti_Data)) = value); \
-	D(bug("   Data is : %d\n", *((type *)(tag->ti_Data))))
+    D(bug("   Data was: %d\n", *((type *)(tag->ti_Data)))); \
+    (*((type *)(tag->ti_Data)) = value); \
+    D(bug("   Data is : %d\n", *((type *)(tag->ti_Data))))
 
     D(bug("ArosInquireA(taglist=%p)\n", taglist));
 
     while( (tag = NextTagItem((const struct TagItem**)&taglist)))
     {
-	D(bug("  tag = 0x%lx  data = 0x%lx\n", tag->ti_Tag, tag->ti_Data));
+        D(bug("  tag = 0x%lx  data = 0x%lx\n", tag->ti_Tag, tag->ti_Data));
 
-	switch(tag->ti_Tag)
-	{
+        switch(tag->ti_Tag)
+        {
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
         /*
@@ -195,17 +195,16 @@ IPTR kickbase(void);
         
         case AI_ArosArchitecture:
 #ifdef KrnGetSystemAttr
-	    if (ArosBase->aros_KernelBase)
-	    {
-		APTR KernelBase = ArosBase->aros_KernelBase;
-
-		data = KrnGetSystemAttr(KATTR_Architecture);
-	    }
+            if (ArosBase->aros_KernelBase)
+            {
+                APTR KernelBase = ArosBase->aros_KernelBase;
+                data = KrnGetSystemAttr(KATTR_Architecture);
+            }
 #else
-	    data = (IPTR)AROS_ARCHITECTURE;
+            data = (IPTR)AROS_ARCHITECTURE;
 #endif
-	    SetData(tag, IPTR, data);
-	    break;
+            SetData(tag, IPTR, data);
+            break;
         
         default:
             SetData (tag, IPTR, 0);
