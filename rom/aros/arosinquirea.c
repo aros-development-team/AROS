@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: arosinquirea.c 38441 2011-04-30 06:01:45Z deadwood $
+    $Id$
 
     Desc:
     Lang: english
@@ -28,9 +28,10 @@
 #define LOC_ROMSIZE 0x14    /* offset from end of ROM! */
 #define ROM_END     0x1000000
 
-#define AROS_VERSION_MAJOR 1
-#define AROS_VERSION_MINOR 12
-#define AROS_RELEASE_DATE  7560         /* in days since 1978-01-01 */
+#define AROS_VERSION_MAJOR      1
+#define AROS_VERSION_MINOR      12
+#define AROS_ABI_VERSION_MAJOR  1
+#define AROS_RELEASE_DATE       7560         /* in days since 1978-01-01 */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 /* Native AROS support functions */
@@ -92,6 +93,9 @@ IPTR kickbase(void);
 
     AI_ArosArchitecture IPTR
         Return the target architecture.
+
+    AI_ArosABIMajor IPTR
+        Update this whenever a new ABI is introduced in AROS.
 
 
     RESULT
@@ -191,6 +195,10 @@ IPTR kickbase(void);
         
         case AI_ArosVariant:
             SetData (tag, IPTR, (IPTR) VARIANT);
+            break;
+
+        case AI_ArosABIMajor:
+            SetData (tag, IPTR, AROS_ABI_VERSION_MAJOR);
             break;
         
         case AI_ArosArchitecture:
