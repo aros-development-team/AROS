@@ -26,6 +26,7 @@
 #if !defined(__AROS__)
 #include "nv04_pushbuf.h"
 #else
+#include <aros/debug.h>
 /* TEMP FIXME!! */
 #define PictFormatShort     LONG
 #define PictTransformPtr    APTR
@@ -48,8 +49,16 @@ typedef struct Picture * PicturePtr;
 
 #define PictOpSaturate      13
 
-#define PICT_FORMAT_A(x)        FALSE
+static BOOL PICT_FORMAT_A(int format)
+{
+    if ((format == PICT_a8r8g8b8) || (format == PICT_a1r5g5b5) || (format == PICT_a8))
+        return TRUE;
+
+    return FALSE;
+}
+
 #define nouveau_pixmap_bo(x)    (x->bo)
+#define exaGetPixmapPitch(x)    (x->pitch)
 #endif
 
 typedef struct nv_pict_surface_format {
@@ -273,12 +282,7 @@ NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit)
 	nv_pict_texture_format_t *fmt;
 	NV40EXA_STATE;
 
-#if !defined(__AROS__)
 	fmt = NV40_GetPictTextureFormat(pPict->format);
-#else
-    /* FIXME!!! */
-    fmt = NV40_GetPictTextureFormat(PICT_a8r8g8b8);
-#endif
 	if (!fmt)
 		return FALSE;
 
@@ -344,7 +348,7 @@ NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit)
 
 	state->unit[unit].width		= (float)pPix->width;
 	state->unit[unit].height	= (float)pPix->height;
-	state->unit[unit].transform	= NULL; /* FIXME pPict->transform; */
+	state->unit[unit].transform	= NULL; /* FIXME or maybe not FIXME? pPict->transform; */
 #endif
 	return TRUE;
 }
@@ -368,11 +372,7 @@ NV40_SetupSurface(ScrnInfoPtr pScrn, PixmapPtr pPix, PictFormatShort format)
 	OUT_RING  (chan, NV40TCL_RT_FORMAT_TYPE_LINEAR |
 		   NV40TCL_RT_FORMAT_ZETA_Z24S8 |
 		   fmt->card_fmt);
-#if !defined(__AROS__)
 	OUT_RING  (chan, exaGetPixmapPitch(pPix));
-#else
-	OUT_RING  (chan, pPix->pitch);
-#endif
 	if (OUT_RELOCl(chan, bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_WR))
 		return FALSE;
 
@@ -829,4 +829,43 @@ NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 //FIXME	NV30_UploadFragProg(pNv, &nv30_fp_yv12_bilinear, &next_hw_offset);
 
 	return TRUE;
+}
+
+/* TEMP */
+static BOOL runonce = TRUE;
+
+BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
+    ULONG drawmode)
+{
+    struct Picture sPict, dPict;
+    
+    sPict.format = PICT_x8r8g8b8;
+    dPict.format = PICT_x8r8g8b8;
+
+//if (runonce)
+{
+    BOOL result = FALSE;
+    ULONG maskX = 0; ULONG maskY = 0;
+    
+//    bug("SRC: %dx%d %d %d\n", srcdata->width, srcdata->height, srcdata->depth, srcdata->bytesperpixel);
+//    bug("DST: %dx%d %d %d\n", destdata->width, destdata->height, destdata->depth, destdata->bytesperpixel);
+    
+    result =  NV40EXAPrepareComposite(carddata, drawmode,
+        &sPict, NULL, &dPict, srcdata, NULL, destdata);
+//    bug("NV40EXAPrepareComposite EXECUTED -> %d!\n", result);
+  
+
+    NV40EXAComposite(carddata, destdata, srcX, srcY,
+				  maskX, maskY,
+				  destX , destY,
+				  width, height);
+
+//    bug("NV40EXAPrepareComposite EXECUTED -> ?");
+
+
+//    runonce = FALSE;
+}
+    return TRUE;
 }
