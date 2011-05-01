@@ -38,7 +38,7 @@ struct Picture
 
 typedef struct Picture * PicturePtr;
 
-
+#define PICT_UNKNOWN        0
 #define PICT_a8r8g8b8       1
 #define PICT_x8r8g8b8       2
 #define PICT_x8b8g8r8       3
@@ -831,8 +831,20 @@ NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 	return TRUE;
 }
 
-/* TEMP */
-static BOOL runonce = TRUE;
+/* AROS CODE */
+
+static VOID HIDDNouveauSelectPICTFormatFromBitMapData(struct Picture * pPict, 
+    struct HIDDNouveauBitMapData * bmdata)
+{
+    if (bmdata->depth == 32)
+        pPict->format = PICT_a8r8g8b8;
+    else if (bmdata->depth == 24)
+        pPict->format = PICT_x8r8g8b8;
+    else if (bmdata->depth == 16)
+        pPict->format = PICT_r5g6b5;
+    else
+        pPict->format = PICT_UNKNOWN;
+}
 
 BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
@@ -840,32 +852,19 @@ BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
     ULONG drawmode)
 {
     struct Picture sPict, dPict;
-    
-    sPict.format = PICT_x8r8g8b8;
-    dPict.format = PICT_x8r8g8b8;
-
-//if (runonce)
-{
-    BOOL result = FALSE;
     ULONG maskX = 0; ULONG maskY = 0;
+
+    HIDDNouveauSelectPICTFormatFromBitMapData(&sPict, srcdata);   
+    HIDDNouveauSelectPICTFormatFromBitMapData(&dPict, destdata);
+
+    if (NV40EXAPrepareComposite(carddata, drawmode,
+        &sPict, NULL, &dPict, srcdata, NULL, destdata))
+    {
+        NV40EXAComposite(carddata, destdata, srcX, srcY,
+				      maskX, maskY,
+				      destX , destY,
+				      width, height);
+    }
     
-//    bug("SRC: %dx%d %d %d\n", srcdata->width, srcdata->height, srcdata->depth, srcdata->bytesperpixel);
-//    bug("DST: %dx%d %d %d\n", destdata->width, destdata->height, destdata->depth, destdata->bytesperpixel);
-    
-    result =  NV40EXAPrepareComposite(carddata, drawmode,
-        &sPict, NULL, &dPict, srcdata, NULL, destdata);
-//    bug("NV40EXAPrepareComposite EXECUTED -> %d!\n", result);
-  
-
-    NV40EXAComposite(carddata, destdata, srcX, srcY,
-				  maskX, maskY,
-				  destX , destY,
-				  width, height);
-
-//    bug("NV40EXAPrepareComposite EXECUTED -> ?");
-
-
-//    runonce = FALSE;
-}
     return TRUE;
 }
