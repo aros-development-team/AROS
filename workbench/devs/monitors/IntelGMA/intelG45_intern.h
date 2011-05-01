@@ -1,9 +1,7 @@
 /*
- * intelG45_intern.h
- *
- *  Created on: Apr 14, 2010
- *      $Id$
- */
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #ifndef INTELG45_INTERN_H_
 #define INTELG45_INTERN_H_
@@ -13,32 +11,19 @@
 #include <exec/libraries.h>
 #include <exec/ports.h>
 #include <exec/memory.h>
-
 #include <devices/timer.h>
-
 #include <oop/oop.h>
-
 #include <hidd/graphics.h>
 #include <hidd/pci.h>
 #include <hidd/i2c.h>
 
 #include <stdint.h>
 
-#include LC_LIBDEFS_FILE
-
 #define CLID_Hidd_Gfx_IntelG45		"IntelGMA"
 #define IID_Hidd_Gfx_IntelG45		"IIntelGMA"
 #define IID_Hidd_IntelG45BitMap		"IIntelBitMap"
 
-extern OOP_AttrBase HiddPCIDeviceAttrBase;
-extern OOP_AttrBase HiddBitMapAttrBase;
-extern OOP_AttrBase HiddPixFmtAttrBase;
-extern OOP_AttrBase HiddSyncAttrBase;
-extern OOP_AttrBase HiddGfxAttrBase;
 extern OOP_AttrBase HiddGMABitMapAttrBase;
-extern OOP_AttrBase HiddI2CAttrBase;
-extern OOP_AttrBase HiddI2CDeviceAttrBase;
-extern OOP_AttrBase __IHidd_PlanarBM;
 
 struct Sync{
 	uint16_t width;
@@ -121,15 +106,31 @@ struct g45chip {
 	uint32_t		Stolen_size;
 };
 
-struct g45staticdata {
-	struct SignalSemaphore	HWLock;
-	struct SignalSemaphore	MultiBMLock;
-	struct MsgPort			MsgPort;
-	struct timerequest		tr;
+struct g45data
+{
+    /* TODO: Move object data here from staticdata */
+    ULONG empty;
+};
+
+struct i2cdata
+{
+    ULONG empty;
+};
+
+struct g45staticdata
+{
+    void *MemPool;
+    BOOL forced;
+    ULONG memsize;
+
+    /* The rest should be moved to object data */
+    struct SignalSemaphore	HWLock;
+    struct SignalSemaphore	MultiBMLock;
+    struct MsgPort		MsgPort;
+    struct timerequest		*tr;
 
     struct MemHeader	    CardMem;
 
-	void *					MemPool;
 
 	struct g45chip			Card;
 	uint16_t				ProductID;
@@ -171,18 +172,6 @@ struct g45staticdata {
 	intptr_t				CursorBase;
     BOOL					CursorVisible;
 
-	OOP_AttrBase			pciAttrBase;
-	OOP_AttrBase			gmaBitMapAttrBase;
-	OOP_AttrBase			bitMapAttrBase;
-	OOP_AttrBase			pixFmtAttrBase;
-	OOP_AttrBase			gfxAttrBase;
-	OOP_AttrBase			syncAttrBase;
-	OOP_AttrBase			i2cAttrBase;
-	OOP_AttrBase			i2cDeviceAttrBase;
-	OOP_AttrBase			planarAttrBase;
-	OOP_AttrBase			compositingAttrBase;
-	OOP_AttrBase			gcAttrBase;
-
     OOP_MethodID    mid_ReadLong;
     OOP_MethodID    mid_CopyMemBox8;
     OOP_MethodID    mid_CopyMemBox16;
@@ -212,11 +201,6 @@ struct g45staticdata {
 	LONG pointery;
 };
 
-struct intelg45base {
-	struct Library			g45_LibNode;
-	struct g45staticdata	g45_sd;
-};
-
 enum {
     aoHidd_GMABitMap_Drawable,
     aoHidd_BitMap_IntelG45_CompositingHidd,
@@ -229,10 +213,7 @@ enum {
 #define IS_BM_ATTR(attr, idx) (((idx)=(attr)-HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 #define IS_GMABM_ATTR(attr, idx) (((idx)=(attr)-HiddGMABitMapAttrBase) < num_Hidd_GMABitMap_Attrs)
 
-#undef BASE
-#define BASE(lib) ((struct intelg45base*)(lib))
-
-#define SD(cl) (&BASE(cl->UserData)->g45_sd)
+#define SD(cl) ((struct g45staticdata *)cl->UserData)
 
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
@@ -254,6 +235,12 @@ enum {
 
 #define LOCK_MULTI_BITMAP    { ObtainSemaphore(&sd->MultiBMLock); }
 #define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&sd->MultiBMLock); }
+
+extern const struct OOP_InterfaceDescr INTELG45_ifdescr[];
+extern const struct OOP_InterfaceDescr GMABM_ifdescr[];
+extern const struct OOP_InterfaceDescr INTELI2C_ifdescr[];
+
+int G45_Init(struct g45staticdata *sd);
 
 intptr_t G45_VirtualToPhysical(struct g45staticdata *sd, intptr_t virtual);
 void G45_AttachMemory(struct g45staticdata *sd, intptr_t physical, intptr_t virtual, intptr_t length);
