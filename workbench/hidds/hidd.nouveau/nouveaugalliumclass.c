@@ -77,9 +77,8 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
     {
     case PIPE_FORMAT_B8G8R8A8_UNORM:
     case PIPE_FORMAT_A8R8G8B8_UNORM:
-    /* Comment: Fall-through 32bit formats to 24bit formats. This is done on
-       purpose - blitting the resource should always be "solid". The fact
-       that resource has alpha channel should be disregarded when blitting */
+        depth = 32;
+        break;
     case PIPE_FORMAT_B8G8R8X8_UNORM:
     case PIPE_FORMAT_X8R8G8B8_UNORM:
         depth = 24;
@@ -230,11 +229,7 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
         {
             HIDDNouveauNV403DCopyBox(carddata, &srcdata, dstdata, 
                 msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
-                0x03 /* vHidd_GC_DrawMode_Copy */);
-            
-            /* TEMP: fire bitmap refresh on whole dest bitmap to see if we are
-               makig any changes at all */
-               //HIDD_BM_UpdateRect(bm, 0, 0, dstdata->width - 1, dstdata->height - 1);
+                BLENDOP_SOLID);
         }
         else
         {
