@@ -977,7 +977,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
     LOCK_BITMAP
 
     /* For larger transfers use GART */
-    if (((msg->width * msg->height) >= (64 * 64)) && (carddata->GART))
+    if (((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))
     {
         BOOL result = FALSE;
         
@@ -1037,7 +1037,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     LOCK_BITMAP
 
     /* For larger transfers use GART */
-    if (((msg->width * msg->height) >= (64 * 64)) && (carddata->GART))
+    if (((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))
     {
         BOOL result = FALSE;
         
