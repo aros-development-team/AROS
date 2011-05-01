@@ -37,10 +37,10 @@
 #define NOUVEAU_CREATE_PIXMAP_ZETA      0x10000000
 #define NOUVEAU_CREATE_PIXMAP_TILED     0x20000000
 #define NOUVEAU_CREATE_PIXMAP_SCANOUT   0x40000000
+#define NVAccelInitNV40TCL  HiddNouveauNVAccelInitNV40TCL
 #endif
 
 #if !defined(__AROS__)
-
 Bool
 nouveau_allocate_surface(ScrnInfoPtr scrn, int width, int height, int bpp,
 			 int usage_hint, int *pitch, struct nouveau_bo **bo)
@@ -702,16 +702,16 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 //		INIT_CONTEXT_OBJECT(M2MF_NVC0);
 
 	/* 3D init */
-//	switch (pNv->Architecture) {
+	switch (pNv->Architecture) {
 //	case NV_ARCH_C0:
 //		INIT_CONTEXT_OBJECT(3D_NVC0);
 //		break;
 //	case NV_ARCH_50:
 //		INIT_CONTEXT_OBJECT(NV50TCL);
 //		break;
-//	case NV_ARCH_40:
-//		INIT_CONTEXT_OBJECT(NV40TCL);
-//		break;
+	case NV_ARCH_40:
+		INIT_CONTEXT_OBJECT(NV40TCL);
+		break;
 //	case NV_ARCH_30:
 //		INIT_CONTEXT_OBJECT(NV30TCL);
 //		break;
@@ -719,9 +719,9 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 //	case NV_ARCH_10:
 //		INIT_CONTEXT_OBJECT(NV10TCL);
 //		break;
-//	default:
-//		break;
-//	}
+	default:
+		break;
+	}
 
 	return TRUE;
 }
@@ -751,8 +751,8 @@ void NVAccelFree(ScrnInfoPtr pScrn)
 	nouveau_grobj_free(&pNv->Nv2D);
 	nouveau_grobj_free(&pNv->NvMemFormat);
 //	nouveau_grobj_free(&pNv->NvSW);
-//	nouveau_grobj_free(&pNv->Nv3D);
+	nouveau_grobj_free(&pNv->Nv3D);
 
 //	nouveau_bo_ref(NULL, &pNv->tesla_scratch);
-//	nouveau_bo_ref(NULL, &pNv->shader_mem);
+	nouveau_bo_ref(NULL, &pNv->shader_mem);
 }

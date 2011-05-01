@@ -65,6 +65,7 @@ NOUVEAU_HIDD_SOURCES := \
             nouveaugalliumclass \
             nv_accel_common \
             nv04_accel \
+            nv40_accel \
             nv50_accel \
             nouveau_accel \
             nouveaui2c \
