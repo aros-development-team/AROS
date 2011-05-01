@@ -16,6 +16,8 @@
 #include "nouveau/nouveau_grobj.h"
 #include "nouveau/nouveau_pushbuf.h"
 
+#include "nouveau_class.h"
+
 #include LC_LIBDEFS_FILE
 
 #define CLID_Hidd_Gfx_Nouveau           "hidd.gfx.nouveau"
@@ -285,6 +287,15 @@ BOOL HiddNouveauNVAccelInitNV40TCL(struct CardData * carddata);
 
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
+
+/* Some overriding defines for AROS */
+#define Bool                BOOL
+#define ScrnInfoPtr         struct CardData *
+#define NVPTR(x)            x
+#define NVPtr               struct CardData *
+#define Architecture        architecture
+#define PixmapPtr           struct HIDDNouveauBitMapData *
+#define NVAccelInitNV40TCL  HiddNouveauNVAccelInitNV40TCL
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);

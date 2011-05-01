@@ -22,7 +22,6 @@
  */
 
 #include "nouveau_intern.h"
-#include "nouveau_class.h"
 #include "nv_rop.h"
 
 static BOOL HIDDNouveauNV502DSurfaceFormat(struct HIDDNouveauBitMapData * bmdata, 

@@ -24,20 +24,13 @@
 #include "nv04_pushbuf.h"
 #else
 #include "nouveau_intern.h"
+
 #include <aros/debug.h>
-#include "nouveau_class.h"
 
 /* Some overriding defines for AROS */
-#define Bool            BOOL
-#define ScrnInfoPtr     struct CardData *
-#define NVPTR(x)        x
-#define NVPtr           struct CardData *
-#define Architecture    architecture
-#define PixmapPtr       struct HIDDNouveauBitMapData *
 #define NOUVEAU_CREATE_PIXMAP_ZETA      0x10000000
 #define NOUVEAU_CREATE_PIXMAP_TILED     0x20000000
 #define NOUVEAU_CREATE_PIXMAP_SCANOUT   0x40000000
-#define NVAccelInitNV40TCL  HiddNouveauNVAccelInitNV40TCL
 #endif
 
 #if !defined(__AROS__)
