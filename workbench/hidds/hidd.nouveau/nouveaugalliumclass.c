@@ -225,9 +225,22 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
 
     if (carddata->architecture < NV_ARCH_50)
     {
-        HIDDNouveauNV04CopySameFormat(carddata, &srcdata, dstdata, 
-            msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
-            0x03 /* vHidd_GC_DrawMode_Copy */);
+        if (carddata->architecture == NV_ARCH_40)
+        {
+            HIDDNouveauNV403DCopyBox(carddata, &srcdata, dstdata, 
+                msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
+                0x03 /* vHidd_GC_DrawMode_Copy */);
+            
+            /* TEMP: fire bitmap refresh on whole dest bitmap to see if we are
+               makig any changes at all */
+               //HIDD_BM_UpdateRect(bm, 0, 0, dstdata->width - 1, dstdata->height - 1);
+        }
+        else
+        {
+            HIDDNouveauNV04CopySameFormat(carddata, &srcdata, dstdata, 
+                msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
+                0x03 /* vHidd_GC_DrawMode_Copy */);
+        }
     }
     else
     {
