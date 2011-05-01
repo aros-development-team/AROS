@@ -77,8 +77,9 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
     {
     case PIPE_FORMAT_B8G8R8A8_UNORM:
     case PIPE_FORMAT_A8R8G8B8_UNORM:
-        depth = 32;
-        break;
+    /* Comment: Fall-through 32bit formats to 24bit formats. This is done on
+       purpose - blitting the resource should always be "solid". The fact
+       that resource has alpha channel should be disregarded when blitting */
     case PIPE_FORMAT_B8G8R8X8_UNORM:
     case PIPE_FORMAT_X8R8G8B8_UNORM:
         depth = 24;
