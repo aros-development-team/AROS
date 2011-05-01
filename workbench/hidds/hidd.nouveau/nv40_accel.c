@@ -22,9 +22,10 @@
  */
 
 #include "nouveau_intern.h"
-#include "nouveau_class.h"
-//FIXME #include "nv30_shaders.h"
-//FIXME #include "nv04_pushbuf.h"
+#include "nv30_shaders.h"
+#if !defined(__AROS__)
+#include "nv04_pushbuf.h"
+#endif
 
 #if !defined(__AROS__)
 typedef struct nv_pict_surface_format {
@@ -79,6 +80,7 @@ NV40_GetPictSurfaceFormat(int format)
 
 	return NULL;
 }
+#endif
 
 enum {
 	NV40EXA_FPID_PASS_COL0 = 0,
@@ -122,6 +124,7 @@ NV40EXAHackupA8Shaders(ScrnInfoPtr pScrn)
 	}
 }
 
+#if !defined(__AROS__)
 #define _(r,tf,ts0x,ts0y,ts0z,ts0w,ts1x,ts1y,ts1z,ts1w)                        \
   {                                                                            \
   PICT_##r, NV40TCL_TEX_FORMAT_FORMAT_##tf,                                    \
@@ -603,17 +606,19 @@ NV40EXADoneComposite(PixmapPtr pdPix)
 
 #define NV40TCL_CHIPSET_4X_MASK 0x00000baf
 #define NV44TCL_CHIPSET_4X_MASK 0x00005450
-BOOL HiddNouveauNVAccelInitNV40TCL(struct CardData * carddata)
+Bool
+NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 {
-	struct nouveau_channel *chan = carddata->chan;
+	NVPtr pNv = NVPTR(pScrn);
+	struct nouveau_channel *chan = pNv->chan;
 	struct nouveau_grobj *curie;
 	uint32_t class = 0, chipset;
 	int next_hw_id = 0, next_hw_offset = 0, i;
 
-//FIXME	if (!nv40_fp_map_a8[0])
-//FIXME		NV40EXAHackupA8Shaders(pScrn);
+	if (!nv40_fp_map_a8[0])
+		NV40EXAHackupA8Shaders(pScrn);
 
-	chipset = carddata->dev->chipset;
+	chipset = pNv->dev->chipset;
 	if ((chipset & 0xf0) == NV_ARCH_40) {
 		chipset &= 0xf;
 		if (NV40TCL_CHIPSET_4X_MASK & (1<<chipset))
@@ -630,31 +635,31 @@ BOOL HiddNouveauNVAccelInitNV40TCL(struct CardData * carddata)
 	} else
 		return TRUE;
 
-	if (!carddata->Nv3D) {
-		if (nouveau_grobj_alloc(carddata->chan, Nv3D, class, &carddata->Nv3D))
+	if (!pNv->Nv3D) {
+		if (nouveau_grobj_alloc(pNv->chan, Nv3D, class, &pNv->Nv3D))
 			return FALSE;
 	}
-	curie = carddata->Nv3D;
+	curie = pNv->Nv3D;
 
-	if (!carddata->shader_mem) {
-		if (nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_GART |
+	if (!pNv->shader_mem) {
+		if (nouveau_bo_new(pNv->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_GART |
 				   NOUVEAU_BO_MAP, 0, 0x1000,
-				   &carddata->shader_mem)) {
+				   &pNv->shader_mem)) {
 //FIXME			xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
 //FIXME				   "Couldn't alloc fragprog buffer!\n");
-			nouveau_grobj_free(&carddata->Nv3D);
+			nouveau_grobj_free(&pNv->Nv3D);
 			return FALSE;
 		}
 	}
 
 	BEGIN_RING(chan, curie, NV40TCL_DMA_NOTIFY, 1);
-	OUT_RING  (chan, carddata->notify0->handle);
+	OUT_RING  (chan, pNv->notify0->handle);
 	BEGIN_RING(chan, curie, NV40TCL_DMA_TEXTURE0, 2);
-	OUT_RING  (chan, carddata->chan->vram->handle);
-	OUT_RING  (chan, carddata->chan->gart->handle);
+	OUT_RING  (chan, pNv->chan->vram->handle);
+	OUT_RING  (chan, pNv->chan->gart->handle);
 	BEGIN_RING(chan, curie, NV40TCL_DMA_COLOR0, 2);
-	OUT_RING  (chan, carddata->chan->vram->handle);
-	OUT_RING  (chan, carddata->chan->vram->handle);
+	OUT_RING  (chan, pNv->chan->vram->handle);
+	OUT_RING  (chan, pNv->chan->vram->handle);
 
 	/* voodoo */
 	BEGIN_RING(chan, curie, 0x1ea4, 3);
@@ -750,11 +755,11 @@ BOOL HiddNouveauNVAccelInitNV40TCL(struct CardData * carddata)
 	OUT_RING  (chan, (4095 << 16));
 	OUT_RING  (chan, (4095 << 16));
 
-//FIXME	NV40_UploadVtxProg(pNv, &nv40_vp_exa_render, &next_hw_id);
-//FIXME	for (i = 0; i < NV40EXA_FPID_MAX; i++) {
-//FIXME		NV30_UploadFragProg(pNv, nv40_fp_map[i], &next_hw_offset);
-//FIXME		NV30_UploadFragProg(pNv, nv40_fp_map_a8[i], &next_hw_offset);
-//FIXME	}
+	NV40_UploadVtxProg(pNv, &nv40_vp_exa_render, &next_hw_id);
+	for (i = 0; i < NV40EXA_FPID_MAX; i++) {
+		NV30_UploadFragProg(pNv, nv40_fp_map[i], &next_hw_offset);
+		NV30_UploadFragProg(pNv, nv40_fp_map_a8[i], &next_hw_offset);
+	}
 
 //FIXME	NV40_UploadVtxProg(pNv, &nv40_vp_video, &next_hw_id);
 //FIXME	NV30_UploadFragProg(pNv, &nv40_fp_yv12_bicubic, &next_hw_offset);

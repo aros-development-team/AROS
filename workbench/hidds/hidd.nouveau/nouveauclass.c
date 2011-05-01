@@ -4,7 +4,6 @@
 */
 
 #include "nouveau_intern.h"
-#include "nouveau_class.h"
 #include "compositing.h"
 
 #include <graphics/displayinfo.h>

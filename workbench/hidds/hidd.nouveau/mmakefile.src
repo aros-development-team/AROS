@@ -67,6 +67,7 @@ NOUVEAU_HIDD_SOURCES := \
             nv04_accel \
             nv40_accel \
             nv50_accel \
+            nv30_shaders \
             nouveau_accel \
             nouveaui2c \
             arosc_emul \
