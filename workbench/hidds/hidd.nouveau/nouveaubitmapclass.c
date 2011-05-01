@@ -1092,11 +1092,11 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData * carddata = &(SD(cl)->carddata);
 
     /* TODO: implement accelerated putalphaimage */
 
     LOCK_BITMAP
-    MAP_BUFFER
 
     switch(bmdata->bytesperpixel)
     {
@@ -1106,6 +1106,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
 
     case 2:
         {
+            MAP_BUFFER
+
             HIDDNouveauBitMapPutAlphaImage16(bmdata, msg->pixels, msg->modulo, msg->x, 
                 msg->y, msg->width, msg->height);
         }
@@ -1113,6 +1115,32 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
 
     case 4:
         {
+            if ((carddata->architecture == NV_ARCH_40)
+                && ((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))
+            {
+                BOOL result = FALSE;
+                
+                /* RAM->CPU->GART GART->GPU->VRAM */
+                UNMAP_BUFFER
+
+                ObtainSemaphore(&carddata->gartsemaphore);
+                
+                result = HiddNouveauNV40AccelARGBUpload3D(
+                            msg->pixels, msg->modulo,
+                            msg->x, msg->y, msg->width, msg->height, 
+                            cl, o);
+                
+                ReleaseSemaphore(&carddata->gartsemaphore);
+
+                if (result)
+                {
+                    UNLOCK_BITMAP;
+                    return;
+                }
+            }
+
+            MAP_BUFFER
+
             HIDDNouveauBitMapPutAlphaImage32(bmdata, msg->pixels, msg->modulo, msg->x, 
                 msg->y, msg->width, msg->height);
         }

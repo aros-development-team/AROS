@@ -47,7 +47,7 @@ typedef struct Picture * PicturePtr;
 #define PICT_r5g6b5         6
 #define PICT_a8             7
 
-#define PictOpSaturate      13
+#define PictOpSaturate      14
 
 static BOOL PICT_FORMAT_A(int format)
 {
@@ -210,7 +210,8 @@ NV40PictOp[] = {
 /* Atop        */ { 1, 1, SF(          DST_ALPHA), DF(ONE_MINUS_SRC_ALPHA) },
 /* AtopReverse */ { 1, 1, SF(ONE_MINUS_DST_ALPHA), DF(          SRC_ALPHA) },
 /* Xor         */ { 1, 1, SF(ONE_MINUS_DST_ALPHA), DF(ONE_MINUS_SRC_ALPHA) },
-/* Add         */ { 0, 0, SF(                ONE), DF(                ONE) }
+/* Add         */ { 0, 0, SF(                ONE), DF(                ONE) },
+/* OverAlpha   */ { 1, 0, SF(          SRC_ALPHA), DF(ONE_MINUS_SRC_ALPHA) }
 };
 
 static nv_pict_op_t *
@@ -846,10 +847,12 @@ static VOID HIDDNouveauSelectPICTFormatFromBitMapData(struct Picture * pPict,
         pPict->format = PICT_UNKNOWN;
 }
 
+/* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes buffer is not mapped */
 BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
-    ULONG drawmode)
+    ULONG blendop)
 {
     struct Picture sPict, dPict;
     ULONG maskX = 0; ULONG maskY = 0;
@@ -857,7 +860,7 @@ BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
     HIDDNouveauSelectPICTFormatFromBitMapData(&sPict, srcdata);   
     HIDDNouveauSelectPICTFormatFromBitMapData(&dPict, destdata);
 
-    if (NV40EXAPrepareComposite(carddata, drawmode,
+    if (NV40EXAPrepareComposite(carddata, blendop,
         &sPict, NULL, &dPict, srcdata, NULL, destdata))
     {
         NV40EXAComposite(carddata, destdata, srcX, srcY,

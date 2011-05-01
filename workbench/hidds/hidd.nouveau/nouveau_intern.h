@@ -253,10 +253,14 @@ BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
     ULONG maxY, ULONG drawmode, ULONG color);
 
+#define BLENDOP_SOLID           1
+#define BLENDOP_ALPHA_PREMULT   3
+#define BLENDOP_ALPHA           13
+
 BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
-    ULONG drawmode);
+    ULONG blendop);
 
 
 VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0, 
@@ -268,7 +272,8 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
 BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
     ULONG maxY, ULONG drawmode, ULONG color);
-    
+
+/* nouveau_accel.c */
 BOOL HiddNouveauWriteFromRAM(
     APTR src, ULONG srcPitch, HIDDT_StdPixFmt srcPixFmt,
     APTR dst, ULONG dstPitch,
@@ -276,6 +281,10 @@ BOOL HiddNouveauWriteFromRAM(
     OOP_Class *cl, OOP_Object *o);
 BOOL HiddNouveauNVAccelUploadM2MF(
     UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
+    OOP_Class *cl, OOP_Object *o);
+BOOL HiddNouveauNV40AccelARGBUpload3D(
+    UBYTE * srcpixels, ULONG srcpitch,
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);
 
@@ -288,6 +297,8 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);
+
+
 
 BOOL HiddNouveauNVAccelInitNV40TCL(struct CardData * carddata);
 

@@ -258,6 +258,107 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     return TRUE;
 }
 
+/* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes lock on GART object is already made */
+/* NOTE: Assumes buffer is not mapped */
+BOOL HiddNouveauNV40AccelARGBUpload3D(
+    UBYTE * srcpixels, ULONG srcpitch,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
+    OOP_Class *cl, OOP_Object *o)
+{
+    struct HIDDNouveauBitMapData srcdata;
+    struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(cl, o);
+    struct CardData * carddata = &(SD(cl)->carddata);
+    unsigned cpp = dstdata->bytesperpixel;
+    unsigned line_len = width * cpp;
+    /* Maximum DMA transfer */
+    unsigned line_count = carddata->GART->size / line_len;
+    char *src = (char *)srcpixels;
+
+    /* HW limitations */
+    if (line_count > 2047)
+        line_count = 2047;
+
+    while (height) {
+        char *dst;
+
+        if (line_count > height)
+            line_count = height;
+
+        /* Upload to GART */
+        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR))
+            return FALSE;
+        dst = carddata->GART->map;
+
+#if AROS_BIG_ENDIAN
+        {
+            /* Just use copy. Memory formats match */
+            struct pHidd_BitMap_CopyMemBox32 __m = 
+            {
+                SD(cl)->mid_CopyMemBox32, src, 0, 0, dst,
+                0, 0, width, height, srcpitch, line_len
+            }, *m = &__m;
+            OOP_DoMethod(o, (OOP_Msg)m);
+        }
+#else
+        {
+            /* Use ConvertPixels to convert that data to destination format */
+            APTR csrc = src;
+            APTR * psrc = &csrc;
+            APTR cdst = dst;
+            APTR * pdst = &cdst;
+            OOP_Object * dstPF = NULL;
+            OOP_Object * srcPF = NULL;
+            OOP_Object * gfxHidd = NULL;
+            struct pHidd_Gfx_GetPixFmt __gpfsrc =
+            {
+                SD(cl)->mid_GetPixFmt, vHidd_StdPixFmt_BGRA32
+            }, *gpfsrc = &__gpfsrc;
+            struct pHidd_Gfx_GetPixFmt __gpfdst =
+            {
+                SD(cl)->mid_GetPixFmt, vHidd_StdPixFmt_ARGB32
+            }, *gpfdst = &__gpfdst;
+
+            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
+            srcPF = (OOP_Object *)OOP_DoMethod(gfxHidd, (OOP_Msg)gpfsrc);
+            dstPF = (OOP_Object *)OOP_DoMethod(gfxHidd, (OOP_Msg)gpfdst);
+
+            {
+                struct pHidd_BitMap_ConvertPixels __m =
+                {
+                    SD(cl)->mid_ConvertPixels, 
+                    psrc, (HIDDT_PixelFormat *)srcPF, srcpitch,
+                    pdst, (HIDDT_PixelFormat *)dstPF, line_len,
+                    width, height, NULL
+                }, *m = &__m;            
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+        }
+#endif
+
+        src += srcpitch * line_count;
+        nouveau_bo_unmap(carddata->GART);
+        
+        /* Wrap GART */
+        srcdata.bo = carddata->GART;
+        srcdata.width = width;
+        srcdata.height = line_count;
+        srcdata.depth = 32;
+        srcdata.bytesperpixel = 4;
+        srcdata.pitch = line_len;
+
+        /* Render using 3D engine */
+        HIDDNouveauNV403DCopyBox(carddata,
+            &srcdata, dstdata,
+            0, 0, x, y, width, height, BLENDOP_ALPHA);
+
+        height -= line_count;
+        y += line_count;
+    }
+
+    return TRUE;
+}
+
 /* Assumes input and output buffers are lock-protected */
 /* Takes pixels from source buffer, converts them and puts them into RAM
    buffer. The source buffer can be in VRAM or GART or RAM */
