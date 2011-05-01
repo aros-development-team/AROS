@@ -6,6 +6,8 @@ FILES := intelG45_init intelG45_class intelG45_i2c intelG45_bitmap \
 
 EXEDIR := $(AROSDIR)/Devs/Monitors
 
+#MM- workbench-devs-monitors: devs-monitors-intelgma
+
 %build_prog mmake=devs-monitors-intelgma \
            progname=IntelGMA targetdir=$(EXEDIR) \
            files=$(FILES) uselibs="oop hiddstubs"
