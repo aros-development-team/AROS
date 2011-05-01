@@ -458,8 +458,8 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
 
     if (dims->height > scr->Height)
     {
-    	DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_calculatedims: Too high (requester %u, screen %u)\n", dims->height, scr->Height));
-        return FALSE;
+        DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_calculatedims: Too high (requester %u, screen %u)\n", dims->height, scr->Height));
+        dims->height = scr->Height;
     }
 
     /* calculate width of text-box */
@@ -514,8 +514,8 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
 
     if (dims->width > scr->Width)
     {
-    	DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_calculatedims: Too wide (requester %u, screen %u)\n", dims->width, scr->Width));
-        return FALSE;
+        DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_calculatedims: Too wide (requester %u, screen %u)\n", dims->width, scr->Width));
+        dims->width = scr->Width;
     }
 
     return TRUE;
