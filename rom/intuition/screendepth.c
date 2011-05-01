@@ -116,7 +116,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                     *current = IntuitionBase->FirstScreen,
                     *previous = NULL,
                     *prefamily = NULL;
-    struct Window   *win;
+    struct Window   *win = NULL;
 
     /* Find the screen in the list and check for family */
     while ( current && current!=screen )
@@ -144,8 +144,10 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
     {
         if ( ! (flags & SDEPTH_TOBACK) ) /* SDEPTH_TOFRONT is #defined as 0 */
         {
+            BOOL changed = FALSE;
             if ( previous ) /* I'm not the very first screen */
             {
+            	changed = TRUE;
                 if ( flags & SDEPTH_INFAMILY )
                 {
                     if ( GetPrivScreen(current)->SpecialFlags & SF_IsChild )
@@ -212,6 +214,8 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
             } /* if (previous) */
 
+	    if (!changed)
+		goto end;
 	    /* The screen has been made frontmost, activate its monitor */
 	    ActivateMonitor(GetPrivScreen(IntuitionBase->FirstScreen)->MonitorObject, -1, -1, IntuitionBase);
 	    IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
@@ -219,6 +223,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
         else if ( flags & SDEPTH_TOBACK )
         {
+            BOOL changed = FALSE;
             if ( flags & SDEPTH_INFAMILY )
             {
                 if ( GetPrivScreen(current)->SpecialFlags & SF_IsChild )
@@ -240,6 +245,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                         }
                         screen->NextScreen = current->NextScreen;
                         current->NextScreen = screen;
+                        changed = TRUE;
                     }
                 }
                 else if ( GetPrivScreen(current)->SpecialFlags & SF_IsParent )
@@ -267,6 +273,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                             current->NextScreen = screen;
                         }
                         screen->NextScreen = NULL;
+                        changed = TRUE;
                     }
                 }
                 else
@@ -287,6 +294,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                         }
                         current->NextScreen = screen;
                         screen->NextScreen = NULL;
+                        changed = TRUE;
                     }
                 }
 
@@ -324,6 +332,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                         }
                         last->NextScreen = family;
                         current->NextScreen = NULL;
+                        changed = TRUE;
                     }
 
                 } /* if ( GetPrivScreen(current)->SpecialFlags & (SF_IsChild|SF_IsParent) ) */
@@ -345,21 +354,22 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                         }
                         current->NextScreen = screen;
                         screen->NextScreen = NULL;
+                        changed = TRUE;
                     }
 
                 } /* current not SF_isChild | SF_IsParent */
 
             } /* ! SDEPTH_INFAMILY */
-
+            if (!changed)
+		goto end;
+	    /* We have just brought the screen to back. We want to stay on the current monitor,
+	       so we activate the frontmost screen on THIS monitor */
+	    IntuitionBase->ActiveScreen = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
         } /* if SDEPTH_TO_BACK */
-	/* We have just brought the screen to back. We want to stay on the current monitor,
-	   so we activate the frontmost screen on THIS monitor */
-	IntuitionBase->ActiveScreen = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
     } /* if (current) */
 
     RethinkDisplay();
 
-    win = NULL;
 #if 0 /* FIXME: backport, disabled */
     if (IntuitionBase->FirstScreen && GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_SCREENACTIVATION)
     {
@@ -394,7 +404,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
             GetPrivIBase(IntuitionBase)->DefaultPubScreen = IntuitionBase->FirstScreen;
         }
     }
-
+end:
     UnlockIBase(ilock);
 
     if (win)
