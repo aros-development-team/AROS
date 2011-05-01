@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RequestChoice CLI command
@@ -75,16 +75,11 @@
 
     HISTORY
 
-        08-Sep-1997     srittau     Use dynamic buffer for gadget-labels
-                                    Small changes/fixes
-
-        27-Jul-1997     laguest     Initial inclusion into the AROS tree
-
 ******************************************************************************/
 
 #include <proto/dos.h>
 #include <proto/exec.h>
-#include <proto/intuition.h>   /* This causes a spilled register error */
+#include <proto/intuition.h>
 
 #include <dos/dos.h>
 #include <dos/rdargs.h>
@@ -103,15 +98,13 @@
 #define ARG_PUBSCREEN   3
 #define TOTAL_ARGS      4
 
-/* To define whether a command line switch was set or not.
- */
-#define NOT_SET         0
-
-const TEXT version[] = "$VER: RequestChoice 41.1 (8.9.1997)\n";
+const TEXT version[] = "$VER: RequestChoice 41.2 (01.05.2011)\n";
 
 static char ERROR_HEADER[] = "RequestChoice";
 
-int Do_RequestChoice(STRPTR, STRPTR, STRPTR *, STRPTR);
+static int Do_RequestChoice(STRPTR, STRPTR, STRPTR *, STRPTR);
+static STRPTR FilterBodyText(STRPTR Body);
+static STRPTR ComposeGadgetText(STRPTR * Gadgets);
 
 int __nocommandline;
 
@@ -152,6 +145,7 @@ int Do_RequestChoice(STRPTR   Title,
     struct Screen     * Scr;
     struct EasyStruct   ChoiceES;
     STRPTR              GadgetText;
+    STRPTR              BodyText;
     LONG                Result;
     IPTR                args[1];
     int                 Return_Value;
@@ -161,6 +155,10 @@ int Do_RequestChoice(STRPTR   Title,
 
     GadgetText = ComposeGadgetText(Gadgets);
     if (!GadgetText)
+        return RETURN_FAIL;
+
+    BodyText = FilterBodyText(Body);
+    if (!BodyText)
         return RETURN_FAIL;
 
     /* Make sure we can open the requester on the specified screen.
@@ -174,7 +172,7 @@ int Do_RequestChoice(STRPTR   Title,
         ChoiceES.es_StructSize   = sizeof(struct EasyStruct);
         ChoiceES.es_Flags        = 0L;
         ChoiceES.es_Title        = Title;
-        ChoiceES.es_TextFormat   = Body;
+        ChoiceES.es_TextFormat   = BodyText;
         ChoiceES.es_GadgetFormat = GadgetText;
 
         /* Open the requester.
@@ -202,22 +200,41 @@ int Do_RequestChoice(STRPTR   Title,
     }
 
     FreeVec(GadgetText);
+    FreeVec(BodyText);
 
-    return (Return_Value);
+    return Return_Value;
 
 } /* Do_RequestChoice */
 
 
-STRPTR ComposeGadgetText(STRPTR * Gadgets)
+// Combine gadget strings and separate them by "|".
+// Replace all "%" by "%%" because EasyRequest
+// uses printf-like formatting.
+static STRPTR ComposeGadgetText(STRPTR * Gadgets)
 {
     STRPTR GadgetText, BufferPos;
     int    GadgetLength = 0;
     int    CurrentGadget;
+    int    PercentCnt = 0;
+    int    StrLen;
+    int    i;
 
     for (CurrentGadget = 0; Gadgets[CurrentGadget]; CurrentGadget++)
     {
-        GadgetLength += strlen(Gadgets[CurrentGadget]) + 1;
+        StrLen = strlen(Gadgets[CurrentGadget]);
+        GadgetLength +=  StrLen + 1;
+        
+        // Count "%"
+        for (i = 0; i < StrLen; i++)
+        {
+            if (Gadgets[CurrentGadget][i] == '%')
+            {
+                PercentCnt++;
+            }
+        }
     }
+
+    GadgetLength += PercentCnt;
 
     GadgetText = AllocVec(GadgetLength, MEMF_ANY);
     if (!GadgetText)
@@ -231,16 +248,85 @@ STRPTR ComposeGadgetText(STRPTR * Gadgets)
     for (CurrentGadget = 0; Gadgets[CurrentGadget]; CurrentGadget++)
     {
         int LabelLength = strlen(Gadgets[CurrentGadget]);
-        CopyMem(Gadgets[CurrentGadget], BufferPos, LabelLength);
+
+        for (i = 0; i < LabelLength; i++)
+        {
+            if (Gadgets[CurrentGadget][i] == '%')
+            {
+                *BufferPos = '%';
+                BufferPos++;
+                *BufferPos = '%';
+                BufferPos++;
+            }
+            else
+            {
+                *BufferPos = Gadgets[CurrentGadget][i];
+                BufferPos++;
+            }
+        }
         if (Gadgets[CurrentGadget + 1])
         {
-            BufferPos[LabelLength] = '|';
-            BufferPos += LabelLength + 1;
+            *BufferPos = '|';
+            BufferPos++;
         }
         else
-            BufferPos[LabelLength] = '\0';
+            *BufferPos = '\0';
     }
 
     return GadgetText;
 
 } /* ComposeGadgetText */
+
+
+// Replace % by %% because EasyRequest uses
+// printf-like formatting characters.
+// Result string must be freed with FreeVec().
+static STRPTR FilterBodyText(STRPTR Body)
+{
+    STRPTR GadgetText;
+    int    GadgetLength = 0;
+    int    StrLen;
+    int    PercentCnt = 0;
+    int    i, j;
+
+    if (!Body)
+        return NULL;
+
+    // Count % characters
+    StrLen = strlen(Body);
+    for (i = 0; i < StrLen; i++)
+    {
+        if (Body[i] == '%')
+        {
+            PercentCnt++;
+        }
+    }
+
+    GadgetLength = StrLen + PercentCnt + 1;
+
+    GadgetText = AllocVec(GadgetLength, MEMF_ANY);
+    if (!GadgetText)
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        PrintFault(IoErr(), ERROR_HEADER);
+        return NULL;
+    }
+
+    for (i = 0, j = 0; i < StrLen; i++)
+    {
+        if (Body[i] == '%')
+        {
+            GadgetText[j++] = '%';
+            GadgetText[j++] = '%';
+        }
+        else
+        {
+            GadgetText[j++] = Body[i];
+        }
+    }
+
+    GadgetText[j] = '\0';
+
+    return GadgetText;
+
+} /* FilterBodyText */
