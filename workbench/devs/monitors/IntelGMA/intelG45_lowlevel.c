@@ -1,30 +1,23 @@
 /*
- * intelG45_lowlevel.c
- *
- *  Created on: May 2, 2010
- *      $Id$
- */
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 0
+
 #include <aros/debug.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
-
 #include <utility/tagitem.h>
-
 #include <hidd/graphics.h>
 #include <hidd/i2c.h>
-
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 
 #include <stdint.h>
 #include <stdlib.h>
-
-
-#include LC_LIBDEFS_FILE
 
 #include "intelG45_intern.h"
 #include "intelG45_regs.h"
@@ -41,38 +34,36 @@ typedef struct {
 
 VOID delay_ms(struct g45staticdata *sd, uint32_t msec)
 {
-	/* Allocate a signal within this task context */
-
-	sd->tr.tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
-	sd->tr.tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
+	/* Take MsgPort over by current task */
+	sd->tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
+	sd->tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
 
 	/* Specify the request */
-	sd->tr.tr_node.io_Command = TR_ADDREQUEST;
-	sd->tr.tr_time.tv_secs = msec / 1000;
-	sd->tr.tr_time.tv_micro = 1000 * (msec % 1000);
+	sd->tr->tr_node.io_Command = TR_ADDREQUEST;
+	sd->tr->tr_time.tv_secs = msec / 1000;
+	sd->tr->tr_time.tv_micro = 1000 * (msec % 1000);
 
 	/* Wait */
-	DoIO((struct IORequest *)&sd->tr);
+	DoIO(&sd->tr->tr_node);
 
-	sd->tr.tr_node.io_Message.mn_ReplyPort->mp_SigTask = NULL;
+	sd->tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = NULL;
 }
 
 VOID delay_us(struct g45staticdata *sd, uint32_t usec)
 {
-	/* Allocate a signal within this task context */
-
-	sd->tr.tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
-	sd->tr.tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
+	/* Take MsgPort over by current task */
+	sd->tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
+	sd->tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
 
 	/* Specify the request */
-	sd->tr.tr_node.io_Command = TR_ADDREQUEST;
-	sd->tr.tr_time.tv_secs = usec / 1000000;
-	sd->tr.tr_time.tv_micro = (usec % 1000000);
+	sd->tr->tr_node.io_Command = TR_ADDREQUEST;
+	sd->tr->tr_time.tv_secs = usec / 1000000;
+	sd->tr->tr_time.tv_micro = (usec % 1000000);
 
 	/* Wait */
 	DoIO((struct IORequest *)&sd->tr);
 
-	sd->tr.tr_node.io_Message.mn_ReplyPort->mp_SigTask = NULL;
+	sd->tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = NULL;
 }
 
 static BOOL calc_pll_and_validate(GMA_PLL_t *pll)

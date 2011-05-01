@@ -42,12 +42,11 @@ struct HIDDCompositingData
     OOP_Object              *gc;            /* GC object used for drawing operations */
 };
 
+extern const struct OOP_InterfaceDescr Compositing_ifdescr[];
+
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
   
-#undef BASE
-#define BASE(lib)                   ((LIBBASETYPEPTR)(lib))
-
 //#define SD(cl)                      (&BASE(cl->UserData)->sd)
 
 #define LOCK_COMPOSITING_READ       { ObtainSemaphoreShared(&compdata->semaphore); }

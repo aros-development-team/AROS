@@ -4,24 +4,20 @@
 */
 
 #define DEBUG 0
+
 #include <aros/debug.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
-
 #include <utility/tagitem.h>
-
 #include <hidd/graphics.h>
 #include <hidd/i2c.h>
-
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 
 #include <stdint.h>
 #include <stdlib.h>
-
-#include LC_LIBDEFS_FILE
 
 #include "intelG45_intern.h"
 #include "intelG45_regs.h"
@@ -47,18 +43,6 @@ struct __ROP ROP_table[] = {
 };
 
 #define sd ((struct g45staticdata*)SD(cl))
-
-#undef HiddPCIDeviceAttrBase
-#undef HiddGfxAttrBase
-#undef HiddPixFmtAttrBase
-#undef HiddSyncAttrBase
-#undef HiddBitMapAttrBase
-#define HiddPCIDeviceAttrBase   (sd->pciAttrBase)
-#define HiddGMABitMapAttrBase   (sd->gmaBitMapAttrBase)
-#define HiddBitMapAttrBase  (sd->bitMapAttrBase)
-#define HiddPixFmtAttrBase  (sd->pixFmtAttrBase)
-#define HiddGfxAttrBase     (sd->gfxAttrBase)
-#define HiddSyncAttrBase    (sd->syncAttrBase)
 
 #define POINT_OUTSIDE_CLIP(gc, x, y)	\
 	(  (x) < GC_CLIPX1(gc)		\
@@ -2223,3 +2207,41 @@ VOID METHOD(GMABM, Hidd_BitMap, UpdateRect)
 }
 
 
+static const struct OOP_MethodDescr GMABM_Root_descr[] =
+{
+    {(OOP_MethodFunc)GMABM__Root__New	 , moRoot_New	 },
+    {(OOP_MethodFunc)GMABM__Root__Dispose, moRoot_Dispose},
+    {(OOP_MethodFunc)GMABM__Root__Get	 , moRoot_Get	 },
+    {(OOP_MethodFunc)GMABM__Root__Set	 , moRoot_Set	 },
+    {NULL				 , 0		 }
+};
+#define NUM_GMABM_Root_METHODS 4
+
+static const struct OOP_MethodDescr GMABM_Hidd_BitMap_descr[] =
+{
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutPixel	    , moHidd_BitMap_PutPixel	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__GetPixel	    , moHidd_BitMap_GetPixel	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__DrawPixel	    , moHidd_BitMap_DrawPixel	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__DrawLine	    , moHidd_BitMap_DrawLine	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__DrawEllipse	    , moHidd_BitMap_DrawEllipse	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__FillRect	    , moHidd_BitMap_FillRect	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__BytesPerLine	    , moHidd_BitMap_BytesPerLine       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__ObtainDirectAccess , moHidd_BitMap_ObtainDirectAccess },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__ReleaseDirectAccess, moHidd_BitMap_ReleaseDirectAccess},
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutImage           , moHidd_BitMap_PutImage	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutImageLUT	    , moHidd_BitMap_PutImageLUT	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutAlphaImage	    , moHidd_BitMap_PutAlphaImage      },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__GetImage	    , moHidd_BitMap_GetImage	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutTemplate	    , moHidd_BitMap_PutTemplate	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutPattern	    , moHidd_BitMap_PutPattern	       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__UpdateRect	    , moHidd_BitMap_UpdateRect	       },
+    {NULL					   	    , 0				       }
+};
+#define NUM_GMABM_Hidd_BitMap_METHODS 16
+
+const struct OOP_InterfaceDescr GMABM_ifdescr[] =
+{
+    {GMABM_Root_descr       , IID_Root       , NUM_GMABM_Root_METHODS       },
+    {GMABM_Hidd_BitMap_descr, IID_Hidd_BitMap, NUM_GMABM_Hidd_BitMap_METHODS},
+    {NULL		    , NULL	     , 0			    }
+};

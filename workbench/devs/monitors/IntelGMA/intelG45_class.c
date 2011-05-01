@@ -4,18 +4,15 @@
 */
 
 #define DEBUG 0
+
 #include <aros/debug.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
-
 #include <utility/tagitem.h>
-
 #include <hidd/graphics.h>
 #include <hidd/i2c.h>
-
 #include <graphics/displayinfo.h>
-
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -23,33 +20,11 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include LC_LIBDEFS_FILE
-
 #include "intelG45_intern.h"
 #include "intelG45_regs.h"
 #include "compositing.h"
 
 #define sd ((struct g45staticdata*)SD(cl))
-
-#undef HiddPCIDeviceAttrBase
-#undef HiddGMABitMapAttrBase
-#undef HiddBitMapAttrBase
-#undef HiddPixFmtAttrBase
-#undef HiddGfxAttrBase
-#undef HiddSyncAttrBase
-#undef HiddI2CAttrBase
-#undef HiddI2CDeviceAttrBase
-#undef HiddCompositingAttrBase
-
-#define HiddPCIDeviceAttrBase   (sd->pciAttrBase)
-#define HiddGMABitMapAttrBase   (sd->gmaBitMapAttrBase)
-#define HiddBitMapAttrBase  (sd->bitMapAttrBase)
-#define HiddPixFmtAttrBase  (sd->pixFmtAttrBase)
-#define HiddGfxAttrBase     (sd->gfxAttrBase)
-#define HiddSyncAttrBase    (sd->syncAttrBase)
-#define HiddI2CAttrBase         (sd->i2cAttrBase)
-#define HiddI2CDeviceAttrBase   (sd->i2cDeviceAttrBase)
-#define HiddCompositingAttrBase (sd->compositingAttrBase)
 
 #define MAX_MODE_NAME_LEN 30
 
@@ -1017,3 +992,32 @@ ULONG METHOD(INTELG45, Hidd_Gfx, ModeProperties)
 
     return len;
 }
+
+static const struct OOP_MethodDescr INTELG45_Root_descr[] =
+{
+    {(OOP_MethodFunc)INTELG45__Root__New, moRoot_New},
+    {(OOP_MethodFunc)INTELG45__Root__Get, moRoot_Get},
+    {(OOP_MethodFunc)INTELG45__Root__Set, moRoot_Set},
+    {NULL, 0}
+};
+#define NUM_INTELG45_Root_METHODS 3
+
+static const struct OOP_MethodDescr INTELG45_Hidd_Gfx_descr[] =
+{
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CopyBox         , moHidd_Gfx_CopyBox         },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__NewBitMap       , moHidd_Gfx_NewBitMap       },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorVisible, moHidd_Gfx_SetCursorVisible},
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorPos    , moHidd_Gfx_SetCursorPos    },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorShape  , moHidd_Gfx_SetCursorShape  },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__ShowViewPorts   , moHidd_Gfx_ShowViewPorts   },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__ModeProperties  , moHidd_Gfx_ModeProperties  },
+    {NULL, 0}
+};
+#define NUM_INTELG45_Hidd_Gfx_METHODS 7
+
+const struct OOP_InterfaceDescr INTELG45_ifdescr[] =
+{
+    {INTELG45_Root_descr    , IID_Root    , NUM_INTELG45_Root_METHODS    },
+    {INTELG45_Hidd_Gfx_descr, IID_Hidd_Gfx, NUM_INTELG45_Hidd_Gfx_METHODS},
+    {NULL		    , NULL	  , 0				 }
+};

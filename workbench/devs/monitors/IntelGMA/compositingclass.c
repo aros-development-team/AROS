@@ -13,29 +13,18 @@
     the drivers.
 */
 
+#define DEBUG 0
+
+#include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/oop.h>
+#include <proto/utility.h>
+
 /* Non generic part */
 #include "intelG45_intern.h"
 /* Non generic part */
 
 #include "compositing_intern.h"
-
-#include <proto/exec.h>
-#define DEBUG 0
-#include <aros/debug.h>
-#include <proto/oop.h>
-#include <proto/utility.h>
-
-#undef HiddSyncAttrBase
-#undef HiddBitMapAttrBase
-#undef HiddPixFmtAttrBase
-#undef HiddGCAttrBase
-#undef HiddCompositingAttrBase
-
-#define HiddSyncAttrBase        (SD(cl)->syncAttrBase)
-#define HiddBitMapAttrBase      (SD(cl)->bitMapAttrBase)
-#define HiddPixFmtAttrBase      (SD(cl)->pixFmtAttrBase)
-#define HiddGCAttrBase          (SD(cl)->gcAttrBase)
-#define HiddCompositingAttrBase (SD(cl)->compositingAttrBase)
 
 #define MAX(a,b) a > b ? a : b
 #define MIN(a,b) a < b ? a : b
@@ -102,7 +91,6 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
             account topedge */
         IPTR topedge;
         struct _Rectangle tmprect;
-        OOP_Class * cl = OOP_OCLASS(n->bm);
         
         OOP_GetAttr(n->bm, aHidd_BitMap_TopEdge, &topedge);
         /* Copy screen rect */
@@ -137,7 +125,6 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
 
 static VOID HIDDCompositingRecalculateDisplayedWidthHeight(struct HIDDCompositingData * compdata)
 {
-    OOP_Class * cl = OOP_OCLASS(compdata->screenbitmap);
     struct StackBitMapNode * n = NULL;
     IPTR displayedwidth, displayedheight;
 
@@ -160,8 +147,6 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
         c) create a mirroring bitmap that fits the mode
         d) switch mode (driver dependandant)
     */
-
-    OOP_Class * cl = OOP_OCLASS(bm);
     OOP_Object * sync = NULL;
     OOP_Object * pf = NULL;
     OOP_Object * fbbitmap = NULL;
@@ -261,28 +246,20 @@ static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingDa
     OOP_Object * screenbm = compdata->screenbitmap;
     IPTR screenbmwidth, screenbmheight, screenbmstdpixfmt;
     IPTR bmgfx, bmmodeid, bmwidth, bmheight, bmstdpixfmt;
-
+    IPTR pf;
     
     /* HINT: both bitmaps can have different classes */
-    {
-        OOP_Class * cl = OOP_OCLASS(screenbm);
-        IPTR pf;
-        OOP_GetAttr(screenbm, aHidd_BitMap_Width, &screenbmwidth);
-        OOP_GetAttr(screenbm, aHidd_BitMap_Height, &screenbmheight);
-        OOP_GetAttr(screenbm, aHidd_BitMap_PixFmt, &pf);
-        OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &screenbmstdpixfmt);
-    }
+    OOP_GetAttr(screenbm, aHidd_BitMap_Width, &screenbmwidth);
+    OOP_GetAttr(screenbm, aHidd_BitMap_Height, &screenbmheight);
+    OOP_GetAttr(screenbm, aHidd_BitMap_PixFmt, &pf);
+    OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &screenbmstdpixfmt);
 
-    {
-        OOP_Class * cl = OOP_OCLASS(bm);
-        IPTR pf;
-        OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &bmgfx);
-        OOP_GetAttr(bm, aHidd_BitMap_ModeID, &bmmodeid);
-        OOP_GetAttr(bm, aHidd_BitMap_Width, &bmwidth);
-        OOP_GetAttr(bm, aHidd_BitMap_Height, &bmheight);
-        OOP_GetAttr(bm, aHidd_BitMap_PixFmt, &pf);
-        OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &bmstdpixfmt);
-    }
+    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &bmgfx);
+    OOP_GetAttr(bm, aHidd_BitMap_ModeID, &bmmodeid);
+    OOP_GetAttr(bm, aHidd_BitMap_Width, &bmwidth);
+    OOP_GetAttr(bm, aHidd_BitMap_Height, &bmheight);
+    OOP_GetAttr(bm, aHidd_BitMap_PixFmt, &pf);
+    OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &bmstdpixfmt);
 
     /* If bm uses different instances of gfx hidd than screenbm(=composing), they cannot be composited */
     if (compdata->gfx != (OOP_Object *)bmgfx)
@@ -327,7 +304,6 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
 
     if (compdata->screenbitmap)
     {
-        OOP_Class * cl = OOP_OCLASS(bm);
         IPTR leftedge, topedge;
         struct _Rectangle srcrect;
         struct _Rectangle srcindstrect;
@@ -398,8 +374,8 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     {
         if (n->isscreenvisible)
         {
-            OOP_Class * cl = OOP_OCLASS(n->bm);
             IPTR width, height;
+
             OOP_GetAttr(n->bm, aHidd_BitMap_Width, &width);
             OOP_GetAttr(n->bm, aHidd_BitMap_Height, &height);
 
@@ -414,7 +390,6 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
        This will happen when there are bitmaps of different sizes composited */
     if (lastscreenvisibleline > 1)
     {
-        OOP_Class * cl = OOP_OCLASS(compdata->screenbitmap);
         IPTR viswidth;
 
         OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Width, &viswidth); 
@@ -593,4 +568,29 @@ VOID METHOD(Compositing, Hidd_Compositing, ValidateBitMapPositionChange)
     
     UNLOCK_COMPOSITING
 }
+
+
+static const struct OOP_MethodDescr Compositing_Root_descr[] =
+{
+    {(OOP_MethodFunc)Compositing__Root__New, moRoot_New},
+    {NULL, 0}
+};
+#define NUM_Compositing_Root_METHODS 1
+
+static const struct OOP_MethodDescr Compositing_Hidd_Compositing_descr[] =
+{
+    {(OOP_MethodFunc)Compositing__Hidd_Compositing__BitMapStackChanged, moHidd_Compositing_BitMapStackChanged},
+    {(OOP_MethodFunc)Compositing__Hidd_Compositing__BitMapRectChanged, moHidd_Compositing_BitMapRectChanged},
+    {(OOP_MethodFunc)Compositing__Hidd_Compositing__BitMapPositionChanged, moHidd_Compositing_BitMapPositionChanged},
+    {(OOP_MethodFunc)Compositing__Hidd_Compositing__ValidateBitMapPositionChange, moHidd_Compositing_ValidateBitMapPositionChange},
+    {NULL, 0}
+};
+#define NUM_Compositing_Hidd_Compositing_METHODS 4
+
+const struct OOP_InterfaceDescr Compositing_ifdescr[] =
+{
+    {Compositing_Root_descr, IID_Root, NUM_Compositing_Root_METHODS},
+    {Compositing_Hidd_Compositing_descr, IID_Hidd_Compositing, NUM_Compositing_Hidd_Compositing_METHODS},
+    {NULL, NULL}
+};
 
