@@ -47,6 +47,12 @@
 #define SetWrMsk(w,m)   SetWriteMask(w,m)
 #define BNDRYOFF(w)     {(w)->Flags &= ~AREAOUTLINE;}
 
+/* Some macros for copper lists */
+#define CINIT(c,n)      UCopperListInit(c,n);
+#define CMOVE(c,a,b)    { CMove(c,&a,b); CBump(c); }
+#define CWAIT(c,a,b)    { CWait(c,a,b); CBump(c); }
+#define CEND(c)         { CWAIT(c,10000,255); }
+
 /* Shortcuts */
 #define DrawCircle(rp,cx,cy,r)  DrawEllipse(rp,cx,cy,r,r);
 #define AreaCircle(rp,cx,cy,r)  AreaEllipse(rp,cx,cy,r,r);
@@ -81,6 +87,23 @@
        	(w)->Flags &= ~AREAOUTLINE; \
     } while (0)
 
+
+/* Some macros for copper lists */
+#define CINIT(c,n)      UCopperListInit(c,n)
+
+#define CMOVE(c,a,b)    do { \
+                            CMove(c,&a,b); \
+                            CBump(c); \
+                        } while (0)
+
+#define CWAIT(c,a,b)    do { \
+                            CWait(c,a,b); \
+                            CBump(c); \
+                        } while (0)
+
+#define CEND(c)         do { \
+                            CWAIT(c,10000,255); \
+                        } while (0)
 
 /* Shortcuts */
 #define DrawCircle(rp,cx,cy,r)  DrawEllipse(rp,cx,cy,r,r);
