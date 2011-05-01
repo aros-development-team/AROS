@@ -91,8 +91,9 @@ pixfmt_table[] =
 
 /****************************************************************************************/
 
-#define FUNCTION_READ   0
-#define FUNCTION_WRITE  1
+#define FUNCTION_READ           0
+#define FUNCTION_WRITE          1
+#define FUNCTION_WRITE_ALPHA    2
 
 struct RDArgs   *myargs;
 IPTR            args[NUM_ARGS];
@@ -168,6 +169,12 @@ static void getarguments(void)
             function = FUNCTION_READ;
             functionname = "ReadPixelArray";
         }
+
+        if (strcasecmp((STRPTR)args[ARG_FUNCTION], "WRITE_ALPHA") == 0)
+        {
+            function = FUNCTION_WRITE_ALPHA;
+            functionname = "WritePixelArrayAlpha";
+        }
     }
     
 }
@@ -214,10 +221,18 @@ static void action(void)
         t = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
         if (t >= 10 * 1000000) break;
         
-        if (function == FUNCTION_WRITE)
+        switch(function)
+        {
+        case(FUNCTION_WRITE_ALPHA):
+            WritePixelArrayAlpha((ULONG *)buffer + ( i % 1000000), 0, 0, width * 4, win->RPort, 0, 0, width, height, 0);
+            break;
+        case(FUNCTION_WRITE):
             WritePixelArray((ULONG *)buffer + ( i % 1000000), 0, 0, width * 4, win->RPort, 0, 0, width, height, pixfmt);
-        else
+            break;
+        case(FUNCTION_READ):
             ReadPixelArray(buffer, 0, 0, width * 4, win->RPort, 0, 0, width, height, pixfmt);
+            break;
+        }
     }
     
     printf("Function             : %s\n", functionname);
