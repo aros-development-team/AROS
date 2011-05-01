@@ -25,9 +25,33 @@
 #include "nv30_shaders.h"
 #if !defined(__AROS__)
 #include "nv04_pushbuf.h"
+#else
+/* TEMP FIXME!! */
+#define PictFormatShort     LONG
+#define PictTransformPtr    APTR
+
+struct Picture
+{
+    int format;
+};
+
+typedef struct Picture * PicturePtr;
+
+
+#define PICT_a8r8g8b8       1
+#define PICT_x8r8g8b8       2
+#define PICT_x8b8g8r8       3
+#define PICT_a1r5g5b5       4
+#define PICT_x1r5g5b5       5
+#define PICT_r5g6b5         6
+#define PICT_a8             7
+
+#define PictOpSaturate      13
+
+#define PICT_FORMAT_A(x)        FALSE
+#define nouveau_pixmap_bo(x)    (x->bo)
 #endif
 
-#if !defined(__AROS__)
 typedef struct nv_pict_surface_format {
 	int	 pict_fmt;
 	uint32_t card_fmt;
@@ -55,6 +79,7 @@ typedef struct nv40_exa_state {
 		float height;
 	} unit[2];
 } nv40_exa_state_t;
+/* FIXME !!!! STATIC AND SHARED STATE WILL NOT WORK */
 static nv40_exa_state_t exa_state;
 #define NV40EXA_STATE nv40_exa_state_t *state = &exa_state
 
@@ -80,7 +105,6 @@ NV40_GetPictSurfaceFormat(int format)
 
 	return NULL;
 }
-#endif
 
 enum {
 	NV40EXA_FPID_PASS_COL0 = 0,
@@ -124,7 +148,6 @@ NV40EXAHackupA8Shaders(ScrnInfoPtr pScrn)
 	}
 }
 
-#if !defined(__AROS__)
 #define _(r,tf,ts0x,ts0y,ts0z,ts0w,ts1x,ts1y,ts1z,ts1w)                        \
   {                                                                            \
   PICT_##r, NV40TCL_TEX_FORMAT_FORMAT_##tf,                                    \
@@ -250,7 +273,12 @@ NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit)
 	nv_pict_texture_format_t *fmt;
 	NV40EXA_STATE;
 
+#if !defined(__AROS__)
 	fmt = NV40_GetPictTextureFormat(pPict->format);
+#else
+    /* FIXME!!! */
+    fmt = NV40_GetPictTextureFormat(PICT_a8r8g8b8);
+#endif
 	if (!fmt)
 		return FALSE;
 
@@ -264,7 +292,7 @@ NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit)
 		       NV40TCL_TEX_FORMAT_DMA0, NV40TCL_TEX_FORMAT_DMA1))
 		return FALSE;
 
-	if (pPict->repeat) {
+/* FIXME	if (pPict->repeat) {
 		switch(pPict->repeatType) {
 		case RepeatPad:
 			OUT_RING  (chan, NV40TCL_TEX_WRAP_S_CLAMP | 
@@ -283,20 +311,21 @@ NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit)
 					 NV40TCL_TEX_WRAP_R_REPEAT);
 			break;
 		}
-	} else {
+	} else { */
 		OUT_RING  (chan, NV40TCL_TEX_WRAP_S_CLAMP_TO_BORDER |
 				 NV40TCL_TEX_WRAP_T_CLAMP_TO_BORDER |
 				 NV40TCL_TEX_WRAP_R_CLAMP_TO_BORDER);
-	}
+//	}
 	OUT_RING  (chan, NV40TCL_TEX_ENABLE_ENABLE);
 	OUT_RING  (chan, fmt->card_swz);
-	if (pPict->filter == PictFilterBilinear) {
+/* FIXME	if (pPict->filter == PictFilterBilinear) {
 		OUT_RING  (chan, NV40TCL_TEX_FILTER_MIN_LINEAR |
 				 NV40TCL_TEX_FILTER_MAG_LINEAR | 0x3fd6);
-	} else {
+	} else { */
 		OUT_RING  (chan, NV40TCL_TEX_FILTER_MIN_NEAREST |
 				 NV40TCL_TEX_FILTER_MAG_NEAREST | 0x3fd6);
-	}
+//	}
+#if !defined(__AROS__)
 	OUT_RING  (chan, (pPix->drawable.width << 16) | pPix->drawable.height);
 	OUT_RING  (chan, 0); /* border ARGB */
 	BEGIN_RING(chan, curie, NV40TCL_TEX_SIZE1(unit), 1);
@@ -306,6 +335,17 @@ NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit)
 	state->unit[unit].width		= (float)pPix->drawable.width;
 	state->unit[unit].height	= (float)pPix->drawable.height;
 	state->unit[unit].transform	= pPict->transform;
+#else
+	OUT_RING  (chan, (pPix->width << 16) | pPix->height);
+	OUT_RING  (chan, 0); /* border ARGB */
+	BEGIN_RING(chan, curie, NV40TCL_TEX_SIZE1(unit), 1);
+	OUT_RING  (chan, (1 << NV40TCL_TEX_SIZE1_DEPTH_SHIFT) |
+			 (uint32_t)pPix->pitch);
+
+	state->unit[unit].width		= (float)pPix->width;
+	state->unit[unit].height	= (float)pPix->height;
+	state->unit[unit].transform	= NULL; /* FIXME pPict->transform; */
+#endif
 	return TRUE;
 }
 
@@ -320,7 +360,7 @@ NV40_SetupSurface(ScrnInfoPtr pScrn, PixmapPtr pPix, PictFormatShort format)
 
 	fmt = NV40_GetPictSurfaceFormat(format);
 	if (!fmt) {
-		ErrorF("AIII no format\n");
+//FIXME		ErrorF("AIII no format\n");
 		return FALSE;
 	}
 
@@ -328,13 +368,18 @@ NV40_SetupSurface(ScrnInfoPtr pScrn, PixmapPtr pPix, PictFormatShort format)
 	OUT_RING  (chan, NV40TCL_RT_FORMAT_TYPE_LINEAR |
 		   NV40TCL_RT_FORMAT_ZETA_Z24S8 |
 		   fmt->card_fmt);
+#if !defined(__AROS__)
 	OUT_RING  (chan, exaGetPixmapPitch(pPix));
+#else
+	OUT_RING  (chan, pPix->pitch);
+#endif
 	if (OUT_RELOCl(chan, bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_WR))
 		return FALSE;
 
 	return TRUE;
 }
 
+#if !defined(__AROS__)
 static Bool
 NV40EXACheckCompositeTexture(PicturePtr pPict, PicturePtr pdPict, int op)
 {
@@ -412,16 +457,20 @@ NV40EXAStateCompositeReemit(struct nouveau_channel *chan)
 	NV40EXAPrepareComposite(pNv->alu, pNv->pspict, pNv->pmpict, pNv->pdpict,
 				pNv->pspix, pNv->pmpix, pNv->pdpix);
 }
+#endif
 
 Bool
-NV40EXAPrepareComposite(int op, PicturePtr psPict,
+NV40EXAPrepareComposite(ScrnInfoPtr pScrn,
+				int op, PicturePtr psPict,
 				PicturePtr pmPict,
 				PicturePtr pdPict,
 				PixmapPtr  psPix,
 				PixmapPtr  pmPix,
 				PixmapPtr  pdPix)
 {
+#if !defined(__AROS__)
 	ScrnInfoPtr pScrn = xf86Screens[psPix->drawable.pScreen->myNum];
+#endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
 	struct nouveau_grobj *curie = pNv->Nv3D;
@@ -435,8 +484,13 @@ NV40EXAPrepareComposite(int op, PicturePtr psPict,
 	blend = NV40_GetPictOpRec(op);
 
 	NV40_SetupBlend(pScrn, blend, pdPict->format,
+#if !defined(__AROS__)
 			(pmPict && pmPict->componentAlpha &&
 			 PICT_FORMAT_RGB(pmPict->format)));
+#else
+            /* FIXME probably */
+            FALSE);
+#endif
 
 	if (!NV40_SetupSurface(pScrn, pdPix, pdPict->format) ||
 	    !NV40EXATexture(pScrn, psPix, psPict, 0)) {
@@ -451,7 +505,12 @@ NV40EXAPrepareComposite(int op, PicturePtr psPict,
 			return FALSE;
 		}
 
+#if !defined(__AROS__)
 		if (pmPict->componentAlpha && PICT_FORMAT_RGB(pmPict->format)) {
+#else
+        /* FIXME probably */
+        if (FALSE) {
+#endif
 			if (blend->src_alpha)
 				fpid = NV40EXA_FPID_COMPOSITE_MASK_SA_CA;
 			else
@@ -482,14 +541,14 @@ NV40EXAPrepareComposite(int op, PicturePtr psPict,
 	BEGIN_RING(chan, curie, NV40TCL_TEX_CACHE_CTL, 1);
 	OUT_RING  (chan, 1);
 
-	pNv->alu = op;
-	pNv->pspict = psPict;
-	pNv->pmpict = pmPict;
-	pNv->pdpict = pdPict;
-	pNv->pspix = psPix;
-	pNv->pmpix = pmPix;
-	pNv->pdpix = pdPix;
-	chan->flush_notify = NV40EXAStateCompositeReemit;
+//	pNv->alu = op;
+//	pNv->pspict = psPict;
+//	pNv->pmpict = pmPict;
+//	pNv->pdpict = pdPict;
+//	pNv->pspix = psPix;
+//	pNv->pmpix = pmPix;
+//	pNv->pdpix = pdPix;
+//	chan->flush_notify = NV40EXAStateCompositeReemit;
 	return TRUE;
 }
 
@@ -500,14 +559,15 @@ static inline void
 NV40EXATransformCoord(PictTransformPtr t, int x, int y, float sx, float sy,
 					  float *x_ret, float *y_ret)
 {
+// FIXME NV40EXATransformCoord, t will be NULL anyhow
 	if (t) {
-		PictVector v;
+/*		PictVector v;
 		v.vector[0] = IntToxFixed(x);
 		v.vector[1] = IntToxFixed(y);
 		v.vector[2] = xFixed1;
 		PictureTransformPoint(t, &v);
 		*x_ret = xFixedToFloat(v.vector[0]) / sx;
-		*y_ret = xFixedToFloat(v.vector[1]) / sy;
+		*y_ret = xFixedToFloat(v.vector[1]) / sy;*/
 	} else {
 		*x_ret = (float)x / sx;
 		*y_ret = (float)y / sy;
@@ -529,17 +589,19 @@ NV40EXATransformCoord(PictTransformPtr t, int x, int y, float sx, float sy,
 } while(0)
 
 void
-NV40EXAComposite(PixmapPtr pdPix, int srcX , int srcY,
+NV40EXAComposite(ScrnInfoPtr pScrn, PixmapPtr pdPix, int srcX , int srcY,
 				  int maskX, int maskY,
 				  int dstX , int dstY,
 				  int width, int height)
 {
+#if !defined(__AROS__)
 	ScrnInfoPtr pScrn = xf86Screens[pdPix->drawable.pScreen->myNum];
+#endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
 	struct nouveau_grobj *curie = pNv->Nv3D;
-	float sX0, sX1, sX2, sY0, sY1, sY2;
-	float mX0, mX1, mX2, mY0, mY1, mY2;
+	float sX0=0.0f, sX1=0.0f, sX2=0.0f, sY0=0.0f, sY1=0.0f, sY2=0.0f;
+	float mX0=0.0f, mX1=0.0f, mX2=0.0f, mY0=0.0f, mY1=0.0f, mY2=0.0f;
 	NV40EXA_STATE;
 
 	WAIT_RING(chan, 64);
@@ -593,6 +655,7 @@ NV40EXAComposite(PixmapPtr pdPix, int srcX , int srcY,
 	OUT_RING  (chan, NV40TCL_BEGIN_END_STOP);
 }
 
+#if !defined(__AROS__)
 void
 NV40EXADoneComposite(PixmapPtr pdPix)
 {
