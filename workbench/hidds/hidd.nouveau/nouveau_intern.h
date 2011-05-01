@@ -121,6 +121,8 @@ struct CardData
     struct nouveau_grobj    *NvRectangle;
     struct nouveau_grobj    *NvMemFormat;
     struct nouveau_grobj    *Nv2D;
+    struct nouveau_grobj    *Nv3D;
+    struct nouveau_bo       *shader_mem;
     
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
     struct SignalSemaphore  gartsemaphore;
@@ -277,7 +279,9 @@ BOOL HiddNouveauReadIntoRAM(
 BOOL HiddNouveauNVAccelDownloadM2MF(
     UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
     ULONG x, ULONG y, ULONG width, ULONG height, 
-    OOP_Class *cl, OOP_Object *o);   
+    OOP_Class *cl, OOP_Object *o);
+
+BOOL HiddNouveauNVAccelInitNV40TCL(struct CardData * carddata);
 
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
