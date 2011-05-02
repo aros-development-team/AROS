@@ -298,21 +298,17 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);
 
-
-
-BOOL HiddNouveauNVAccelInitNV40TCL(struct CardData * carddata);
-
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
 
 /* Some overriding defines for AROS */
-#define Bool                BOOL
-#define ScrnInfoPtr         struct CardData *
-#define NVPTR(x)            x
-#define NVPtr               struct CardData *
-#define Architecture        architecture
-#define PixmapPtr           struct HIDDNouveauBitMapData *
-#define NVAccelInitNV40TCL  HiddNouveauNVAccelInitNV40TCL
+#define Bool                        BOOL
+#define ScrnInfoPtr                 struct CardData *
+#define NVPTR(x)                    x
+#define NVPtr                       struct CardData *
+#define Architecture                architecture
+#define PixmapPtr                   struct HIDDNouveauBitMapData *
+#define xf86DrvMsg(a, b, msg, ...)  
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);
