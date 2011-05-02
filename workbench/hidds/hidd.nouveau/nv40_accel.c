@@ -59,6 +59,7 @@ static BOOL PICT_FORMAT_A(int format)
 
 #define nouveau_pixmap_bo(x)    (x->bo)
 #define exaGetPixmapPitch(x)    (x->pitch)
+#define NV40EXA_STATE
 #endif
 
 typedef struct nv_pict_surface_format {
@@ -88,9 +89,10 @@ typedef struct nv40_exa_state {
 		float height;
 	} unit[2];
 } nv40_exa_state_t;
-/* FIXME !!!! STATIC AND SHARED STATE WILL NOT WORK */
+#if !defined(__AROS__)
 static nv40_exa_state_t exa_state;
 #define NV40EXA_STATE nv40_exa_state_t *state = &exa_state
+#endif
 
 static nv_pict_surface_format_t
 NV40SurfaceFormat[] = {
@@ -272,8 +274,13 @@ NV40_SetupBlend(ScrnInfoPtr pScrn, nv_pict_op_t *blend,
 	}
 }
 
+#if !defined(__AROS__)
 static Bool
 NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit)
+#else
+static Bool
+NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit, nv40_exa_state_t * state)
+#endif
 {
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
@@ -460,17 +467,26 @@ NV40EXAStateCompositeReemit(struct nouveau_channel *chan)
 }
 #endif
 
+#if !defined(__AROS__)
 Bool
-NV40EXAPrepareComposite(ScrnInfoPtr pScrn,
-				int op, PicturePtr psPict,
+NV40EXAPrepareComposite(int op, PicturePtr psPict,
 				PicturePtr pmPict,
 				PicturePtr pdPict,
 				PixmapPtr  psPix,
 				PixmapPtr  pmPix,
 				PixmapPtr  pdPix)
 {
-#if !defined(__AROS__)
 	ScrnInfoPtr pScrn = xf86Screens[psPix->drawable.pScreen->myNum];
+#else
+Bool
+NV40EXAPrepareComposite(int op, PicturePtr psPict,
+				PicturePtr pmPict,
+				PicturePtr pdPict,
+				PixmapPtr  psPix,
+				PixmapPtr  pmPix,
+				PixmapPtr  pdPix,
+				ScrnInfoPtr pScrn, nv40_exa_state_t * state)
+{
 #endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
@@ -494,14 +510,22 @@ NV40EXAPrepareComposite(ScrnInfoPtr pScrn,
 #endif
 
 	if (!NV40_SetupSurface(pScrn, pdPix, pdPict->format) ||
+#if !defined(__AROS__)
 	    !NV40EXATexture(pScrn, psPix, psPict, 0)) {
+#else
+	    !NV40EXATexture(pScrn, psPix, psPict, 0, state)) {
+#endif
 		MARK_UNDO(chan);
 		return FALSE;
 	}
 
 	NV40_LoadVtxProg(pScrn, &nv40_vp_exa_render);
 	if (pmPict) {
+#if !defined(__AROS__)
 		if (!NV40EXATexture(pScrn, pmPix, pmPict, 1)) {
+#else
+		if (!NV40EXATexture(pScrn, pmPix, pmPict, 1, state)) {
+#endif
 			MARK_UNDO(chan);
 			return FALSE;
 		}
@@ -589,14 +613,21 @@ NV40EXATransformCoord(PictTransformPtr t, int x, int y, float sx, float sy,
 	OUT_RING  (chan, ((dy)<<16)|(dx));                                     \
 } while(0)
 
+#if !defined(__AROS__)
 void
-NV40EXAComposite(ScrnInfoPtr pScrn, PixmapPtr pdPix, int srcX , int srcY,
+NV40EXAComposite(PixmapPtr pdPix, int srcX , int srcY,
 				  int maskX, int maskY,
 				  int dstX , int dstY,
 				  int width, int height)
 {
-#if !defined(__AROS__)
 	ScrnInfoPtr pScrn = xf86Screens[pdPix->drawable.pScreen->myNum];
+#else
+static void
+NV40EXAComposite(PixmapPtr pdPix, int srcX , int srcY,
+				  int maskX, int maskY,
+				  int dstX , int dstY,
+				  int width, int height, ScrnInfoPtr pScrn, nv40_exa_state_t * state)
+{
 #endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
@@ -690,8 +721,8 @@ NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 		else if (NV44TCL_CHIPSET_4X_MASK & (1<<chipset))
 			class = NV44TCL;
 		else {
-//FIXME			xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-//FIXME					"NV40EXA: Unknown chipset NV4%1x\n", chipset);
+			xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+					"NV40EXA: Unknown chipset NV4%1x\n", chipset);
 			return FALSE;
 		}
 	} else if ( (chipset & 0xf0) == 0x60) {
@@ -709,8 +740,8 @@ NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 		if (nouveau_bo_new(pNv->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_GART |
 				   NOUVEAU_BO_MAP, 0, 0x1000,
 				   &pNv->shader_mem)) {
-//FIXME			xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-//FIXME				   "Couldn't alloc fragprog buffer!\n");
+			xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+				   "Couldn't alloc fragprog buffer!\n");
 			nouveau_grobj_free(&pNv->Nv3D);
 			return FALSE;
 		}
@@ -855,18 +886,19 @@ BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
     ULONG blendop)
 {
     struct Picture sPict, dPict;
+    nv40_exa_state_t state;
     ULONG maskX = 0; ULONG maskY = 0;
 
     HIDDNouveauSelectPICTFormatFromBitMapData(&sPict, srcdata);   
     HIDDNouveauSelectPICTFormatFromBitMapData(&dPict, destdata);
 
-    if (NV40EXAPrepareComposite(carddata, blendop,
-        &sPict, NULL, &dPict, srcdata, NULL, destdata))
+    if (NV40EXAPrepareComposite(blendop,
+        &sPict, NULL, &dPict, srcdata, NULL, destdata, carddata, &state))
     {
-        NV40EXAComposite(carddata, destdata, srcX, srcY,
+        NV40EXAComposite(destdata, srcX, srcY,
 				      maskX, maskY,
 				      destX , destY,
-				      width, height);
+				      width, height, carddata, &state);
     }
     
     return TRUE;
