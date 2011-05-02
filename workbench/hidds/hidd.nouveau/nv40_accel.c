@@ -27,16 +27,27 @@
 #include "nv04_pushbuf.h"
 #else
 #include <aros/debug.h>
-/* TEMP FIXME!! */
+
 #define PictFormatShort     LONG
 #define PictTransformPtr    APTR
 
 struct Picture
 {
-    int format;
+    LONG format;
+    BOOL componentAlpha;
+    LONG filter;
+    BOOL repeat;
+    LONG repeatType;
 };
 
 typedef struct Picture * PicturePtr;
+
+#define PictFilterNearest   1
+#define PictFilterBilinear  2
+
+#define RepeatNormal        1
+#define RepeatReflect       2
+#define RepeatPad           3
 
 #define PICT_UNKNOWN        0
 #define PICT_a8r8g8b8       1
@@ -56,6 +67,8 @@ static BOOL PICT_FORMAT_A(int format)
 
     return FALSE;
 }
+#define PICT_FORMAT_RGB(x)  !PICT_FORMAT_A(x)
+
 
 #define nouveau_pixmap_bo(x)    (x->bo)
 #define exaGetPixmapPitch(x)    (x->pitch)
@@ -304,7 +317,7 @@ NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit, nv
 		       NV40TCL_TEX_FORMAT_DMA0, NV40TCL_TEX_FORMAT_DMA1))
 		return FALSE;
 
-/* FIXME	if (pPict->repeat) {
+	if (pPict->repeat) {
 		switch(pPict->repeatType) {
 		case RepeatPad:
 			OUT_RING  (chan, NV40TCL_TEX_WRAP_S_CLAMP | 
@@ -323,20 +336,20 @@ NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit, nv
 					 NV40TCL_TEX_WRAP_R_REPEAT);
 			break;
 		}
-	} else { */
+	} else {
 		OUT_RING  (chan, NV40TCL_TEX_WRAP_S_CLAMP_TO_BORDER |
 				 NV40TCL_TEX_WRAP_T_CLAMP_TO_BORDER |
 				 NV40TCL_TEX_WRAP_R_CLAMP_TO_BORDER);
-//	}
+	}
 	OUT_RING  (chan, NV40TCL_TEX_ENABLE_ENABLE);
 	OUT_RING  (chan, fmt->card_swz);
-/* FIXME	if (pPict->filter == PictFilterBilinear) {
+	if (pPict->filter == PictFilterBilinear) {
 		OUT_RING  (chan, NV40TCL_TEX_FILTER_MIN_LINEAR |
 				 NV40TCL_TEX_FILTER_MAG_LINEAR | 0x3fd6);
-	} else { */
+	} else {
 		OUT_RING  (chan, NV40TCL_TEX_FILTER_MIN_NEAREST |
 				 NV40TCL_TEX_FILTER_MAG_NEAREST | 0x3fd6);
-//	}
+	}
 #if !defined(__AROS__)
 	OUT_RING  (chan, (pPix->drawable.width << 16) | pPix->drawable.height);
 	OUT_RING  (chan, 0); /* border ARGB */
@@ -356,7 +369,7 @@ NV40EXATexture(ScrnInfoPtr pScrn, PixmapPtr pPix, PicturePtr pPict, int unit, nv
 
 	state->unit[unit].width		= (float)pPix->width;
 	state->unit[unit].height	= (float)pPix->height;
-	state->unit[unit].transform	= NULL; /* FIXME or maybe not FIXME? pPict->transform; */
+	state->unit[unit].transform	= NULL; /* Keep this NULL, we are doing simple blits */
 #endif
 	return TRUE;
 }
@@ -372,7 +385,7 @@ NV40_SetupSurface(ScrnInfoPtr pScrn, PixmapPtr pPix, PictFormatShort format)
 
 	fmt = NV40_GetPictSurfaceFormat(format);
 	if (!fmt) {
-//FIXME		ErrorF("AIII no format\n");
+		ErrorF("AIII no format\n");
 		return FALSE;
 	}
 
@@ -501,13 +514,8 @@ NV40EXAPrepareComposite(int op, PicturePtr psPict,
 	blend = NV40_GetPictOpRec(op);
 
 	NV40_SetupBlend(pScrn, blend, pdPict->format,
-#if !defined(__AROS__)
 			(pmPict && pmPict->componentAlpha &&
 			 PICT_FORMAT_RGB(pmPict->format)));
-#else
-            /* FIXME probably */
-            FALSE);
-#endif
 
 	if (!NV40_SetupSurface(pScrn, pdPix, pdPict->format) ||
 #if !defined(__AROS__)
@@ -530,12 +538,7 @@ NV40EXAPrepareComposite(int op, PicturePtr psPict,
 			return FALSE;
 		}
 
-#if !defined(__AROS__)
 		if (pmPict->componentAlpha && PICT_FORMAT_RGB(pmPict->format)) {
-#else
-        /* FIXME probably */
-        if (FALSE) {
-#endif
 			if (blend->src_alpha)
 				fpid = NV40EXA_FPID_COMPOSITE_MASK_SA_CA;
 			else
@@ -566,14 +569,16 @@ NV40EXAPrepareComposite(int op, PicturePtr psPict,
 	BEGIN_RING(chan, curie, NV40TCL_TEX_CACHE_CTL, 1);
 	OUT_RING  (chan, 1);
 
-//	pNv->alu = op;
-//	pNv->pspict = psPict;
-//	pNv->pmpict = pmPict;
-//	pNv->pdpict = pdPict;
-//	pNv->pspix = psPix;
-//	pNv->pmpix = pmPix;
-//	pNv->pdpix = pdPix;
-//	chan->flush_notify = NV40EXAStateCompositeReemit;
+#if !defined(__AROS__)
+	pNv->alu = op;
+	pNv->pspict = psPict;
+	pNv->pmpict = pmPict;
+	pNv->pdpict = pdPict;
+	pNv->pspix = psPix;
+	pNv->pmpix = pmPix;
+	pNv->pdpix = pdPix;
+	chan->flush_notify = NV40EXAStateCompositeReemit;
+#endif
 	return TRUE;
 }
 
@@ -584,15 +589,18 @@ static inline void
 NV40EXATransformCoord(PictTransformPtr t, int x, int y, float sx, float sy,
 					  float *x_ret, float *y_ret)
 {
-// FIXME NV40EXATransformCoord, t will be NULL anyhow
 	if (t) {
-/*		PictVector v;
+	/* Note: current t is always NULL in AROS. That is good enought for
+	   operations beeing done (simple blits with alpha) */
+#if !defined(__AROS__)
+		PictVector v;
 		v.vector[0] = IntToxFixed(x);
 		v.vector[1] = IntToxFixed(y);
 		v.vector[2] = xFixed1;
 		PictureTransformPoint(t, &v);
 		*x_ret = xFixedToFloat(v.vector[0]) / sx;
-		*y_ret = xFixedToFloat(v.vector[1]) / sy;*/
+		*y_ret = xFixedToFloat(v.vector[1]) / sy;
+#endif
 	} else {
 		*x_ret = (float)x / sx;
 		*y_ret = (float)y / sy;
@@ -865,9 +873,10 @@ NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 
 /* AROS CODE */
 
-static VOID HIDDNouveauSelectPICTFormatFromBitMapData(struct Picture * pPict, 
+static VOID HIDDNouveauFillPictureFromBitMapData(struct Picture * pPict, 
     struct HIDDNouveauBitMapData * bmdata)
 {
+    /* pPict->format */
     if (bmdata->depth == 32)
         pPict->format = PICT_a8r8g8b8;
     else if (bmdata->depth == 24)
@@ -876,6 +885,19 @@ static VOID HIDDNouveauSelectPICTFormatFromBitMapData(struct Picture * pPict,
         pPict->format = PICT_r5g6b5;
     else
         pPict->format = PICT_UNKNOWN;
+
+    /* pPict->componentAlpha - keep this always as FALSE, used when mask
+       bitmap would be present (which is not the case in AROS */
+    pPict->componentAlpha = FALSE;
+    
+    /* pPict->filter - keep this always as PictFilterNearest, unless you want
+       bi-linear (probably slower and might give weird effects */
+    pPict->filter = PictFilterNearest;
+    
+    /* pPict->repeat - keep this always as FALSE */
+    pPict->repeat = FALSE;
+    /* pPict->repeatType - value does not matter as long as repeat is FALSE */
+    pPict->repeatType = RepeatNormal;
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
@@ -889,8 +911,8 @@ BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
     nv40_exa_state_t state;
     ULONG maskX = 0; ULONG maskY = 0;
 
-    HIDDNouveauSelectPICTFormatFromBitMapData(&sPict, srcdata);   
-    HIDDNouveauSelectPICTFormatFromBitMapData(&dPict, destdata);
+    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);   
+    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
 
     if (NV40EXAPrepareComposite(blendop,
         &sPict, NULL, &dPict, srcdata, NULL, destdata, carddata, &state))

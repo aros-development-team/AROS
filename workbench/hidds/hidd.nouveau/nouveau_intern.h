@@ -308,7 +308,8 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
 #define NVPtr                       struct CardData *
 #define Architecture                architecture
 #define PixmapPtr                   struct HIDDNouveauBitMapData *
-#define xf86DrvMsg(a, b, msg, ...)  
+#define xf86DrvMsg(a, b, fmt, ...)  bug(fmt, ##__VA_ARGS__)
+#define ErrorF(msg)                 bug(msg)
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);
