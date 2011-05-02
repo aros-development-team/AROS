@@ -22,6 +22,7 @@
  */
 
 #include "nouveau_intern.h"
+#include "nouveau_class.h"
 #include "nv_rop.h"
 
 VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, ULONG clr1,

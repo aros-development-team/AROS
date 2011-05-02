@@ -19,11 +19,11 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#if !defined(__AROS__)
+
 #include "nv_include.h"
+#if !defined(__AROS__)
 #include "nv04_pushbuf.h"
 #else
-#include "nouveau_intern.h"
 
 #include <aros/debug.h>
 

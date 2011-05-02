@@ -22,7 +22,7 @@
  */
 
 #include "nouveau_intern.h"
-
+#include "nouveau_class.h"
 #include <proto/oop.h>
 
 #undef HiddBitMapAttrBase
