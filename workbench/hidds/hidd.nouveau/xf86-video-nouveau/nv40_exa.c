@@ -21,42 +21,12 @@
  * SOFTWARE.
  */
 
-#include "nouveau_intern.h"
+#include "nv_include.h"
 #include "nv30_shaders.h"
 #if !defined(__AROS__)
 #include "nv04_pushbuf.h"
 #else
 #include <aros/debug.h>
-
-#define PictFormatShort     LONG
-#define PictTransformPtr    APTR
-
-struct Picture
-{
-    LONG format;
-    BOOL componentAlpha;
-    LONG filter;
-    BOOL repeat;
-    LONG repeatType;
-};
-
-typedef struct Picture * PicturePtr;
-
-#define PictFilterNearest   1
-#define PictFilterBilinear  2
-
-#define RepeatNormal        1
-#define RepeatReflect       2
-#define RepeatPad           3
-
-#define PICT_UNKNOWN        0
-#define PICT_a8r8g8b8       1
-#define PICT_x8r8g8b8       2
-#define PICT_x8b8g8r8       3
-#define PICT_a1r5g5b5       4
-#define PICT_x1r5g5b5       5
-#define PICT_r5g6b5         6
-#define PICT_a8             7
 
 #define PictOpSaturate      14
 
@@ -68,10 +38,6 @@ static BOOL PICT_FORMAT_A(int format)
     return FALSE;
 }
 #define PICT_FORMAT_RGB(x)  !PICT_FORMAT_A(x)
-
-
-#define nouveau_pixmap_bo(x)    (x->bo)
-#define exaGetPixmapPitch(x)    (x->pitch)
 #define NV40EXA_STATE
 #endif
 

@@ -25,11 +25,7 @@
 
 #define NV_SHADER_MAX_PROGRAM_LENGTH 256
 
-#if !defined(__AROS__)
 #include "nv_include.h"
-#else
-#include "nouveau_intern.h"
-#endif
 
 typedef struct nv_shader {
 	uint32_t hw_id;
