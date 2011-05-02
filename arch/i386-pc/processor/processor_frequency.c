@@ -67,14 +67,14 @@ D(bug("[processor.PCx86] :%s()\n", __PRETTY_FUNCTION__));
         for(i = 0; i < 10; i++)
         {
             rdmsr(MSR_IA32_MPERF, &eax, &edx);
-            startmperf = (UQUAD)(edx << 32) | eax;
+            startmperf = (UQUAD)edx << 32 | eax;
             rdmsr(MSR_IA32_APERF, &eax, &edx);
-            startaperf = (UQUAD)(edx << 32) | eax;
+            startaperf = (UQUAD)edx << 32 | eax;
 
             rdmsr(MSR_IA32_MPERF, &eax, &edx);
-            endmperf = (UQUAD)(edx << 32) | eax;
+            endmperf = (UQUAD)edx << 32 | eax;
             rdmsr(MSR_IA32_APERF, &eax, &edx);
-            endaperf = (UQUAD)(edx << 32) | eax;
+            endaperf = (UQUAD)edx << 32 | eax;
 
             if ((startmperf > endmperf) || (startaperf > endaperf))
                 continue; /* Overflow error. Skip */
@@ -86,9 +86,10 @@ D(bug("[processor.PCx86] :%s()\n", __PRETTY_FUNCTION__));
 	D(bug("[processor.PCx86] %s: max: %x, diffa: %x, diffm %x\n", __PRETTY_FUNCTION__, info->MaxCPUFrequency, diffaperf, diffmperf));
 
         /* Use ratio between MPERF and APERF */
-	retFreq = info->MaxCPUFrequency * diffaperf;
 	if (diffmperf)
-	    retFreq /= diffmperf;
+	    retFreq = info->MaxCPUFrequency * diffaperf / diffmperf;
+	else
+	    retFreq = info->MaxCPUFrequency;
     }
     else
     {
