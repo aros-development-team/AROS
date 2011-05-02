@@ -830,9 +830,9 @@ NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 		NV30_UploadFragProg(pNv, nv40_fp_map_a8[i], &next_hw_offset);
 	}
 
-//FIXME	NV40_UploadVtxProg(pNv, &nv40_vp_video, &next_hw_id);
-//FIXME	NV30_UploadFragProg(pNv, &nv40_fp_yv12_bicubic, &next_hw_offset);
-//FIXME	NV30_UploadFragProg(pNv, &nv30_fp_yv12_bilinear, &next_hw_offset);
+	NV40_UploadVtxProg(pNv, &nv40_vp_video, &next_hw_id);
+	NV30_UploadFragProg(pNv, &nv40_fp_yv12_bicubic, &next_hw_offset);
+	NV30_UploadFragProg(pNv, &nv30_fp_yv12_bilinear, &next_hw_offset);
 
 	return TRUE;
 }
