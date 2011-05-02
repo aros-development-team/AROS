@@ -491,7 +491,7 @@ NV40EXAPrepareComposite(int op, PicturePtr psPict,
 {
 	ScrnInfoPtr pScrn = xf86Screens[psPix->drawable.pScreen->myNum];
 #else
-Bool
+static Bool
 NV40EXAPrepareComposite(int op, PicturePtr psPict,
 				PicturePtr pmPict,
 				PicturePtr pdPict,
@@ -921,7 +921,8 @@ BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
 				      maskX, maskY,
 				      destX , destY,
 				      width, height, carddata, &state);
+        return TRUE;
     }
     
-    return TRUE;
+    return FALSE;
 }

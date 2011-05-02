@@ -269,7 +269,7 @@ BOOL HiddNouveauNV40AccelARGBUpload3D(
     struct HIDDNouveauBitMapData srcdata;
     struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
-    unsigned cpp = dstdata->bytesperpixel;
+    unsigned cpp = 4; /* We are always getting ARGB buffer */
     unsigned line_len = width * cpp;
     /* Maximum DMA transfer */
     unsigned line_count = carddata->GART->size / line_len;
