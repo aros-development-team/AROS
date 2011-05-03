@@ -11,6 +11,7 @@
 #include <proto/partition.h>
 #include <proto/utility.h>
 
+#include "partition_types.h"
 #include "partition_support.h"
 #include "partitionmbr.h"
 #include "platform.h"
@@ -160,6 +161,10 @@ static struct PartitionHandle *PartitionMBRNewHandle(struct Library *PartitionBa
 
                 /* initialize DosEnvec and DriveGeometry */
                 initPartitionHandle(root, ph, AROS_LE2LONG(data->entry->first_sector), AROS_LE2LONG(data->entry->count_sector));
+
+		/* Map type ID to a DOSType */
+		ph->de.de_DosType   = MBR_FindDosType(data->entry->type);
+		ph->de.de_TableSize = 16;
 
 		/* Set position as priority */
                 ph->ln.ln_Pri = MBR_MAX_PARTITIONS - 1 - position;
@@ -464,6 +469,8 @@ static LONG PartitionMBRSetPartitionAttrs(struct Library *PartitionBase, struct 
 
         case PT_TYPE:
             data->entry->type = PTYPE(tag->ti_Data)->id[0];
+            /* Update DOSType according to a new type ID */
+            ph->de.de_DosType = MBR_FindDosType(data->entry->type);
             break;
 
         case PT_POSITION:
