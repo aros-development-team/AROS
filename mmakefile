@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM AROS : clean-errors AROS-$(ARCH)-$(CPU)$(AROS_TARGET_SUFFIX) test
+#MM AROS : clean-errors AROS-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) AROS-$(ARCH)-$(CPU) test
 AROS : checkerr
 	@$(NOP)
 
