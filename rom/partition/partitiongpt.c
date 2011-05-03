@@ -397,6 +397,16 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
     ULONG tablesize = AROS_ROUNDUP2(entrysize * cnt, root->de.de_SizeBlock << 2);
     struct GPTPartition *table;
 
+    /*
+     * TODO: Update legacy MBR data here when adding/moving is implemented. IntelMacs have
+     * legacy MBR filled in with copies of four first entries in GPT table if at least one
+     * FAT partition is defined on the drive (to support Windows XP).
+     * CHS data for these entries is always set to (c=1023, h=254, s=63), however start and end
+     * block numbers reflect the real position. Apple's disk utility always keeps these entries
+     * in sync with their respective GPT entries. We need to do the same. Also remember to keep
+     * boot code in sector 0.
+     */
+
     DWRITE(bug("[GPT] Write: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
 
     /* Allocate buffer for the whole table */
