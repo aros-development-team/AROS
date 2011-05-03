@@ -1,9 +1,7 @@
 /*
-    Copyright © 2007-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#define DEBUG 1
 
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
