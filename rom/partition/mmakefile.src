@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := \
+	partition_types \
 	partition_support \
 	partitionebr \
 	partitionmbr \

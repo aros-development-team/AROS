@@ -11,6 +11,7 @@
 #include <proto/partition.h>
 #include <proto/utility.h>
 
+#include "partition_types.h"
 #include "partition_support.h"
 #include "partitionmbr.h"
 #include "platform.h"
@@ -84,6 +85,10 @@ static struct PartitionHandle *PartitionEBRNewHandle(struct Library *PartitionBa
 
             /* Initialize DosEnvec and DriveGeometry */
             initPartitionHandle(root, ph, block_no, block_count);
+
+	    /* Map type ID to a DOSType */
+	    ph->de.de_DosType   = MBR_FindDosType(data->type);
+	    ph->de.de_TableSize = 16;
 
             return ph;
         }
@@ -402,6 +407,8 @@ static LONG PartitionEBRSetPartitionAttrs(struct Library *PartitionBase, struct 
             break;
         case PT_TYPE:
             data->type = PTYPE(tag->ti_Data)->id[0]; // fix
+            /* Update DOSType according to a new type ID */
+            ph->de.de_DosType = MBR_FindDosType(data->type);
             break;
         }
     }
