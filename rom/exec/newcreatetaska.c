@@ -132,6 +132,7 @@ static const struct newMemList MemTemplate =
 	case TASKTAG_NAME:
 	    taskname = (char *)tag->ti_Data;
 	    nml.nml_ME[2].me_Length = strlen(taskname) + 1;
+	    nml.nml_NumEntries = 3;
 	    break;
 
 	case TASKTAG_USERDATA:
@@ -176,9 +177,12 @@ static const struct newMemList MemTemplate =
 	newtask->tc_SPUpper = newtask->tc_SPReg;
 
 	NEWLIST(&newtask->tc_MemEntry);
-	AddHead(&newtask->tc_MemEntry, (struct Node *)ml);
+	AddHead(&newtask->tc_MemEntry, &ml->ml_Node);
 
-	/* TASKTAG_ARGx will be processed by PrepareContext() */
+	/*
+	 * TASKTAG_ARGx will be processed by PrepareContext()
+	 * TODO: process initpc and finalpc there too after ABI v1 transition
+	 */
 	task2 = NewAddTask (newtask, initpc, finalpc, tags);
 
 	if (!task2)
