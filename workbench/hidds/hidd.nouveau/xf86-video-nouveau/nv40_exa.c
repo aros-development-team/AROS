@@ -1,6 +1,5 @@
 /*
  * Copyright 2007 Ben Skeggs
- * Copyright 2011 The AROS Development Team. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,16 +27,6 @@
 #else
 #include <aros/debug.h>
 
-#define PictOpSaturate      14
-
-static BOOL PICT_FORMAT_A(int format)
-{
-    if ((format == PICT_a8r8g8b8) || (format == PICT_a1r5g5b5) || (format == PICT_a8))
-        return TRUE;
-
-    return FALSE;
-}
-#define PICT_FORMAT_RGB(x)  !PICT_FORMAT_A(x)
 #define NV40EXA_STATE
 #endif
 
@@ -839,35 +828,9 @@ NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 
 /* AROS CODE */
 
-static VOID HIDDNouveauFillPictureFromBitMapData(struct Picture * pPict, 
-    struct HIDDNouveauBitMapData * bmdata)
-{
-    /* pPict->format */
-    if (bmdata->depth == 32)
-        pPict->format = PICT_a8r8g8b8;
-    else if (bmdata->depth == 24)
-        pPict->format = PICT_x8r8g8b8;
-    else if (bmdata->depth == 16)
-        pPict->format = PICT_r5g6b5;
-    else
-        pPict->format = PICT_UNKNOWN;
-
-    /* pPict->componentAlpha - keep this always as FALSE, used when mask
-       bitmap would be present (which is not the case in AROS */
-    pPict->componentAlpha = FALSE;
-    
-    /* pPict->filter - keep this always as PictFilterNearest, unless you want
-       bi-linear (probably slower and might give weird effects */
-    pPict->filter = PictFilterNearest;
-    
-    /* pPict->repeat - keep this always as FALSE */
-    pPict->repeat = FALSE;
-    /* pPict->repeatType - value does not matter as long as repeat is FALSE */
-    pPict->repeatType = RepeatNormal;
-}
-
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes buffer is not mapped */
+/* NOTE: Allows different formats of source and destination */
 BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
