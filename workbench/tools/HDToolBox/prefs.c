@@ -1,25 +1,23 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <proto/icon.h>
 
 #include <dos/dos.h>
 #include <dos/rdargs.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <workbench/icon.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/icon.h>
+#include <proto/uuid.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 
-#define DEBUG 0
 #include "debug.h"
-
 #include "prefs.h"
 #include "devices.h"
 #include "hdtoolbox_support.h"
@@ -113,16 +111,90 @@ void getTableTypeList(struct List *list)
     }
 }
 
+static LONG parseType(struct TableTypeNode *ttn, ULONG id_len, char *ident, struct CSource *csrc, WORD line)
+{
+    if (ttn && id_len)
+    {
+        LONG res;
+        struct TypeNode *tn = AllocMem(sizeof(struct TypeNode), MEMF_PUBLIC | MEMF_CLEAR);
+
+        if (tn == NULL)
+	    return ERROR_NO_FREE_STORE;
+
+        tn->type.id_len = id_len;
+
+	switch (ttn->pti->pti_Type)
+	{
+	case PHPTT_GPT:
+	    UUID_Parse(ident, (uuid_t *)&tn->type.id);
+	    break;
+
+	default:
+            strcpyESC(tn->type.id, ident);
+            break;
+        }
+
+        res = ReadItem(ident, 256, csrc);
+
+        switch (res)
+        {
+        case ITEM_ERROR:
+            return IoErr();
+
+        case ITEM_EQUAL:
+            res = ReadItem(ident, 256, csrc);
+
+            switch (res)
+            {
+            case ITEM_ERROR:
+                return IoErr();
+        
+            case ITEM_QUOTED:
+                res = strlen(ident) + 1;
+
+                tn->ln.ln_Name = AllocVec(res, MEMF_PUBLIC | MEMF_CLEAR);
+                if (tn->ln.ln_Name == NULL)
+                    return ERROR_NO_FREE_STORE;
+
+                CopyMem(ident, tn->ln.ln_Name, res);
+                
+                break;
+
+            default:
+                printf("LINE %d: Quoted expression expected\n", line);
+                return 0;
+            }
+            break;
+
+       default:
+            printf("LINE %d: Unexpected item after table id\n", line);
+            return 0;
+        }
+
+        AddTail(ttn->typelist, &tn->ln);
+    }
+    else
+        printf("LINE %d: Missing partition table type or IDLen\n", line);
+
+    return 0;
+}
+
+enum SectionNum
+{
+    Section_Root,
+    Section_Devices,
+    Section_TableIDs
+};
+
 LONG parsePrefs(char *buffer, LONG size)
 {
     struct TableTypeNode *ttn=NULL;
-    struct TypeNode *tn;
     struct CSource csrc = {buffer, size, 0};
     struct DiskObject *hdtbicon=NULL;
     char ident[256];
     LONG res;
     ULONG id_len = 0;
-    WORD current = 0;
+    WORD current = Section_Root;
     WORD line = 1;
 
     D(bug("[HDToolBox] parsePrefs()\n"));
@@ -130,52 +202,67 @@ LONG parsePrefs(char *buffer, LONG size)
     while (csrc.CS_CurChr < csrc.CS_Length)
     {
         res = ReadItem(ident, 256, &csrc);
+
         switch (res)
         {
         case ITEM_ERROR:
             return IoErr();
         case ITEM_UNQUOTED:
             if (strcasecmp(ident, "[Devices]") == 0)
-                current = 1;
+                current = Section_Devices;
             else if (strcasecmp(ident, "[TableIDs]") == 0)
             {
-                current = 2;
+                current = Section_TableIDs;
                 ttn = NULL;
                 id_len = 0;
             }
             else
             {
-                if (current == 1)
+            	switch (current)
+            	{
+            	case Section_Devices:
                     addDeviceName(ident);
-                else if (current == 2)
-                {
+                    break;
+
+		case Section_TableIDs:
                     if (strcasecmp(ident, "TableType") == 0)
                     {
                         res = ReadItem(ident, 256, &csrc);
-                        if (res == ITEM_ERROR)
-                            return IoErr();
-                        else if (res == ITEM_EQUAL)
+                        
+                        switch (res)
                         {
+                        case ITEM_ERROR:
+                            return IoErr();
+
+                        case ITEM_EQUAL:
                             res = ReadItem(ident, 256, &csrc);
-                            if (res == ITEM_ERROR)
-                                return IoErr();
-                            else if (res == ITEM_QUOTED)
-                                ttn = findTableTypeNodeName(ident);
-                            else if (res == ITEM_UNQUOTED)
-                                ttn = findTableTypeNode(strtoul(ident, NULL, 0));
-                            else
+                            
+                            switch (res)
                             {
+                            case ITEM_ERROR:
+                                return IoErr();
+
+                            case ITEM_QUOTED:
+                                ttn = findTableTypeNodeName(ident);
+                                break;
+
+                            case ITEM_UNQUOTED:
+                                ttn = findTableTypeNode(strtoul(ident, NULL, 0));
+                                break;
+
+                            default:
                                 printf("LINE %d: Unexpected item in TableType\n", line);
                                 return 0;
                             }
+
                             if (ttn == 0)
                             {
                                 printf("LINE %d: Unknown Table %s\n", line, ident);
                                 return 0;
                             }
-                        }
-                        else
-                        {
+                            break;
+
+			default:
                             printf("LINE %d: Unexpected item after TableType\n", line);
                             return 0;
                         }
@@ -183,30 +270,36 @@ LONG parsePrefs(char *buffer, LONG size)
                     else if (strcasecmp(ident, "IDLen") == 0)
                     {
                         res = ReadItem(ident, 256, &csrc);
-                        if (res == ITEM_ERROR)
-                            return IoErr();
-                        else if (res == ITEM_EQUAL)
+
+                        switch (res)
                         {
+                        case ITEM_ERROR:
+                            return IoErr();
+
+                        case ITEM_EQUAL:
                             res = ReadItem(ident, 256, &csrc);
-                            if (res == ITEM_ERROR)
-                                return IoErr();
-                            else if (res == ITEM_UNQUOTED)
+                            
+                            switch (res)
                             {
+                            case ITEM_ERROR:
+                                return IoErr();
+
+                            case ITEM_UNQUOTED:
                                 id_len = strtoul(ident, NULL, 0);
                                 if (id_len == 0)
                                 {
                                     printf("LINE %d: Illegal value of IDLen\n", line);
                                     return 0;
                                 }
-                            }
-                            else
-                            {
+                                break;
+
+                            default:
                                 printf("LINE %d: Value in IDLen expected\n", line);
                                 return 0;
                             }
-                        }
-                        else
-                        {
+                            break;
+
+                        default:
                             printf("LINE %d: Unexpected item after IDLen\n", line);
                             return 0;
                         }
@@ -216,26 +309,32 @@ LONG parsePrefs(char *buffer, LONG size)
                         if (ttn && id_len)
                         {
                             res = ReadItem(ident, 256, &csrc);
-                            if (res == ITEM_ERROR)
-                                return IoErr();
-                            else if (res == ITEM_EQUAL)
+                            
+                            switch (res)
                             {
-                                res = ReadItem(ident, 256, &csrc);
-                                if (res == ITEM_ERROR)
+                            case ITEM_ERROR:
+                                return IoErr();
+                                break;
+
+                            case ITEM_EQUAL:
+                            	res = ReadItem(ident, 256, &csrc);
+                            	switch (res)
+                            	{
+                                case ITEM_ERROR:
                                     return IoErr();
-                                else if (res == ITEM_QUOTED)
-                                {
+
+                                case ITEM_QUOTED:
                                     ttn->defaulttype.id_len = id_len;
                                     strcpyESC(ttn->defaulttype.id, ident);
-                                }
-                                else
-                                {
+                                    break;
+
+                                default:
                                     printf("LINE %d: Unexpected expression after Default\n", line);
                                     return 0;
                                 }
-                            }
-                            else
-                            {
+                                break;
+
+                            default:
                                 printf("LINE %d: Unexpected item after IDLen\n", line);
                                 return 0;
                             }
@@ -248,59 +347,27 @@ LONG parsePrefs(char *buffer, LONG size)
                     }
                     else
                     {
-                        printf("LINE %d: Missing partition table type or IDLen\n", line);
-                        return 0;
+                    	res = parseType(ttn, id_len, ident, &csrc, line);
+                    	if (res)
+                    	    return res;
                     }
-                }
-                else
-                {
+        
+        	    break;
+
+		default:
                     printf("LINE %d: Unexpected item '%s' in prefs\n", line, ident);
                     return 0;
                 }
             }
             break;
+
         case ITEM_QUOTED:
-            if (ttn && id_len)
-            {
-                tn = AllocMem(sizeof(struct TypeNode), MEMF_PUBLIC | MEMF_CLEAR);
-                if (tn == NULL)
-                    return ERROR_NO_FREE_STORE;
-                tn->type.id_len = id_len;
-                strcpyESC(tn->type.id, ident);
-                res = ReadItem(ident, 256, &csrc);
-                if (res == ITEM_ERROR)
-                    return IoErr();
-                if (res == ITEM_EQUAL)
-                {
-                    res = ReadItem(ident, 256, &csrc);
-                    if (res == ITEM_ERROR)
-                        return IoErr();
-                    else if (res == ITEM_QUOTED)
-                    {
-                        tn->ln.ln_Name = AllocVec(strlen(ident)+1, MEMF_PUBLIC | MEMF_CLEAR);
-                        if (tn->ln.ln_Name == NULL)
-                            return ERROR_NO_FREE_STORE;
-                        strcpy(tn->ln.ln_Name, ident);
-                    }
-                    else
-                    {
-                        printf("LINE %d: Quoted expression expected\n", line);
-                        return 0;
-                    }
-                }
-                else
-                {
-                    printf("LINE %d: Unexpected item after table id\n", line);
-                    return 0;
-                }
-                AddTail(ttn->typelist, &tn->ln);
-            }
-            else
-            {
-                printf("LINE %d: Missing partition table type or IDLen\n", line);
-                return 0;
-            }
+	    res = parseType(ttn, id_len, ident, &csrc, line);
+	    if (res)
+	    	return res;
+
             break;
+
         case ITEM_NOTHING:
             line++;
             break;
