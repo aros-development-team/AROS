@@ -346,7 +346,7 @@ static struct fsIORequest *createiorequest(void)
 }
 #endif
 
-LONG initdeviceio(UBYTE *devicename, ULONG unit, ULONG flags, struct DosEnvec *de)
+LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de)
 {
     LONG errorcode=ERROR_NO_FREE_STORE;
 

@@ -11,7 +11,7 @@ LONG write(BLCK block, UBYTE *buffer, ULONG blocks);
 LONG readbytes(BLCK block, UBYTE *buffer, UWORD offsetinblock, UWORD bytes);
 LONG writebytes(BLCK block, UBYTE *buffer, UWORD offsetinblock, UWORD bytes);
 
-LONG initcachedio(UBYTE *devicename, ULONG unit, ULONG flags, struct DosEnvec *de);
+LONG initcachedio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de);
 void cleanupcachedio(void);
 
 LONG setiocache(ULONG lines, ULONG readahead, BYTE copyback);
