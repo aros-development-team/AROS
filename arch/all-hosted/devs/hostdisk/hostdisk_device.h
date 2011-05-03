@@ -17,8 +17,7 @@ struct HostDiskBase
 {
     struct Device 		device;
     struct SignalSemaphore 	sigsem;
-    struct MsgPort 		port;
-    struct MinList 		units;
+    struct List 		units;
     STRPTR			DiskDevice;
     ULONG			unitBase;
     APTR			HostLibBase;
@@ -31,21 +30,22 @@ struct HostDiskBase
 
 struct unit
 {
-    struct Message 		msg;
+    struct Node			n;
     struct HostDiskBase		*hdskBase;
-    STRPTR                      filename;
-    ULONG 			unitnum;
     ULONG			usecount;
-    struct MsgPort 		port;
+    struct MsgPort 		*port;
     file_t 			file;
     UBYTE			flags;
     ULONG			changecount;
     struct MinList 		changeints;
 };
 
+#define filename n.ln_Name
+
 /* Unit flags */
 #define UNIT_READONLY 0x01
 #define UNIT_DEVICE   0x02
+#define UNIT_FREENAME 0x04
 
 ULONG Host_Open(struct unit *Unit);
 void Host_Close(struct unit *Unit);
