@@ -231,6 +231,12 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
                 msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
                 BLENDOP_SOLID);
         }
+        else if (carddata->architecture == NV_ARCH_30)
+        {
+            HIDDNouveauNV303DCopyBox(carddata, &srcdata, dstdata, 
+                msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
+                BLENDOP_SOLID);
+        }
         else
         {
             HIDDNouveauNV04CopySameFormat(carddata, &srcdata, dstdata, 
