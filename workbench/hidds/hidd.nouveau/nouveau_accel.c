@@ -360,6 +360,12 @@ BOOL HiddNouveauAccelARGBUpload3D(
                 &srcdata, dstdata,
                 0, 0, x, y, width, height, BLENDOP_ALPHA);
             break;
+        case(NV_ARCH_20):
+        case(NV_ARCH_10):
+            HIDDNouveauNV103DCopyBox(carddata,
+                &srcdata, dstdata,
+                0, 0, x, y, width, height, BLENDOP_ALPHA);
+            break;
         }
 
         height -= line_count;
