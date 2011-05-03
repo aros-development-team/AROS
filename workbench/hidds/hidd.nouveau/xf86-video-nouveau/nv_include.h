@@ -36,6 +36,7 @@ typedef struct Picture * PicturePtr;
 #define PictFilterNearest   1
 #define PictFilterBilinear  2
 
+#define RepeatNone          0 /* This must be zero/FALSE, see nv10_exa for usage against ppict->repeat which is BOOL */
 #define RepeatNormal        1
 #define RepeatReflect       2
 #define RepeatPad           3
@@ -64,6 +65,7 @@ typedef struct Picture * PicturePtr;
 
 Bool NVAccelInitNV40TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV30TCL(ScrnInfoPtr pScrn);
+Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
 
 
 static inline BOOL PICT_FORMAT_A(int format)
@@ -100,7 +102,7 @@ static inline VOID HIDDNouveauFillPictureFromBitMapData(struct Picture * pPict,
     /* pPict->repeat - keep this always as FALSE */
     pPict->repeat = FALSE;
     /* pPict->repeatType - value does not matter as long as repeat is FALSE */
-    pPict->repeatType = RepeatNormal;
+    pPict->repeatType = RepeatNone;
 }
 
 #endif /* __NV_INCLUDE_H__ */
