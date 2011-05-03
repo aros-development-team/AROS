@@ -219,7 +219,7 @@ static const UWORD NSDSupported[] = {
 //  CMD_START,
     CMD_FLUSH,
     TD_MOTOR,
-//  TD_SEEK,
+    TD_SEEK,
     TD_FORMAT,
 //  TD_REMOVE,
     TD_CHANGENUM,
@@ -232,13 +232,13 @@ static const UWORD NSDSupported[] = {
 //  TD_EJECT,
     TD_READ64,
     TD_WRITE64,
-//  TD_SEEK64,
+    TD_SEEK64,
     TD_FORMAT64,
     TD_GETDRIVETYPE,
     NSCMD_DEVICEQUERY,
     NSCMD_TD_READ64,
     NSCMD_TD_WRITE64,
-//  NSCMD_TD_SEEK64,
+    NSCMD_TD_SEEK64,
     NSCMD_TD_FORMAT64,
     0
 };
@@ -264,13 +264,16 @@ AROS_LH1(void, beginio,
 
 	case CMD_READ:
 	case CMD_WRITE:
+	case TD_SEEK:
 	case TD_FORMAT:
 	case TD_READ64:
 	case TD_WRITE64:
 	case TD_FORMAT64:
+	case TD_SEEK64:
 	case NSCMD_TD_READ64:
 	case NSCMD_TD_WRITE64:
 	case NSCMD_TD_FORMAT64:
+	case NSCMD_TD_SEEK64:
 	case TD_CHANGENUM:
 	case TD_CHANGESTATE:
 	case TD_ADDCHANGEINT:
@@ -564,6 +567,21 @@ AROS_UFH3(LONG, unitentry,
 
  	    switch(iotd->iotd_Req.io_Command)
  	    {
+		/*
+		 * In fact these two commands make a little sense, but they exist,
+		 * so we honestly process them.
+		 */
+ 	    	case TD_SEEK:
+ 	    	    DCMD(bug("hostdisk/unitentry: received CMD_SEEK.\n"));
+ 	    	    err = Host_Seek(unit, iotd->iotd_Req.io_Offset);
+ 	    	    break;
+
+ 	    	case TD_SEEK64:
+ 	    	case NSCMD_TD_SEEK64:
+ 	    	    DCMD(bug("hostdisk/unitentry: received CMD_SEEK64.\n"));
+ 	    	    err = Host_Seek64(unit, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Actual);
+ 	    	    break;
+ 
  		case CMD_READ:
      		    DCMD(bug("hostdisk/unitentry: received CMD_READ.\n"));
 		    DREAD(bug("hostdisk/CMD_READ: offset = %u (0x%08X)  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
