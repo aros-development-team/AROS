@@ -22,7 +22,7 @@ FUNCS := \
 	alohaworkbench \
 	autorequest \
 	beginrefresh \
-	buildeasyrequestargs_aros \
+	buildeasyrequestargs \
 	buildsysrequest \
 	changedecorationa \
 	changescreenbuffer \
@@ -103,7 +103,7 @@ FUNCS := \
 	queryoverscan \
 	refreshgadgets \
 	refreshglist \
-	refreshwindowframe_aros \
+	refreshwindowframe \
 	releasegirport \
 	remakedisplay \
 	removeclass \
@@ -125,7 +125,7 @@ FUNCS := \
 	setdmrequest \
 	setedithook \
 	setgadgetattrsa \
-	setiprefs_aros \
+	setiprefs \
 	setmenustrip \
 	setmousequeue \
 	setpointer \
