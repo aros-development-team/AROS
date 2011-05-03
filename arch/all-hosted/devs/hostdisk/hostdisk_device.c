@@ -135,7 +135,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
     	    DOPEN(bug("hostdisk: in libopen func. Waiting for signal from unit task...\n"));
     	    Wait(SIGF_SINGLE);
 
-    	    DOPEN(bug("hostdisk: in libopen func. Received signal, unit error %u\n", iotr->iotd_Req.io_Error));
+    	    DOPEN(bug("hostdisk: in libopen func. Unit error %u, flags 0x%02X\n", iotd->iotd_Req.io_Error, unit->flags));
 	    if (!iotd->iotd_Req.io_Error)
 	    {
 		AddTail((struct List *)&hdskBase->units, &unit->n);
