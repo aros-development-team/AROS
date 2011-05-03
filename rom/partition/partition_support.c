@@ -137,7 +137,7 @@ LONG writeDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, voi
     ioreq->iotd_Req.io_Offset  = offset;
     ioreq->iotd_Req.io_Actual  = offset>>32;
 
-    return DoIO((struct IORequest *)&ioreq);
+    return DoIO((struct IORequest *)ioreq);
 }
 
 /*
