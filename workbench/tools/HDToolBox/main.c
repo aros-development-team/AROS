@@ -54,7 +54,9 @@ LONG initEnv(char *device)
     retval = initGUI();
     if (retval != ERR_NONE)
         return retval;
-    LoadPrefs("ENV:hdtoolbox.prefs");
+
+    LoadPrefs("S:hdtoolbox.prefs");
+
     return ERR_NONE;
 }
 

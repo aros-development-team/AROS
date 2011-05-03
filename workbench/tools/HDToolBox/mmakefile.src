@@ -22,14 +22,15 @@ USER_CFLAGS := -DHAVE_COOLIMAGES
 
 %build_prog mmake=workbench-tools-hdtoolbox \
     progname=HDToolBox targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui amiga arosc m"
+    files=$(FILES) uselibs="mui amiga uuid m"
 
 #MM
-workbench-tools-hdtoolbox-prefs : $(BINDIR)/Prefs/Env-Archive/hdtoolbox.prefs
+workbench-tools-hdtoolbox-prefs : $(BINDIR)/S/hdtoolbox.prefs
 
-$(BINDIR)/Prefs/Env-Archive/% : env-archive/% | $(BINDIR)/Prefs/Env-Archive
+$(BINDIR)/S/% : S/% | $(BINDIR)/S
+	@$(ECHO) Copying $@...
 	@$(CP) $< $@
 
-%rule_makedirs dirs=$(BINDIR)/Prefs/Env-Archive
+%rule_makedirs dirs=$(BINDIR)/S
 
-
+%common
