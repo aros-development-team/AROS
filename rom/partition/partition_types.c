@@ -3,6 +3,11 @@
 
 #include "partition_types.h"
 
+/*
+ * TODO: This should not be a hardcoded mapping, instead it should be loaded
+ * from some file, like DEVS:partition-types.
+ */
+
 static const uuid_t GPT_Type_HFSPlus      = MAKE_UUID(0x48465300, 0x0000, 0x11AA, 0xAA11, 0x00306543ECAC);
 static const uuid_t GPT_Type_FreeBSD_Boot = MAKE_UUID(0x83BD6B9D, 0x7F41, 0x11DC, 0xBE0B, 0x001560B84F0F);
 static const uuid_t GPT_Type_FreeBSD_Data = MAKE_UUID(0x516E7CB4, 0x6ECF, 0x11D6, 0x8FF8, 0x00022D09712B);
