@@ -83,7 +83,7 @@ nouveau_ratelimit(void)
 #if !defined(__AROS__)
 	return __ratelimit(&nouveau_ratelimit_state);
 #else
-IMPLEMENT("\n");
-return 0;
+static unsigned int counter = 0;
+return !(counter++ % 50);
 #endif
 }

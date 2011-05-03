@@ -2302,8 +2302,8 @@ diff -ur drm-orig/nouveau/nouveau_util.c drm/nouveau/nouveau_util.c
 +#if !defined(__AROS__)
  	return __ratelimit(&nouveau_ratelimit_state);
 +#else
-+IMPLEMENT("\n");
-+return 0;
++static unsigned int counter = 0;
++return !(counter++ % 50);
 +#endif
  }
 diff -ur drm-orig/nouveau/nouveau_volt.c drm/nouveau/nouveau_volt.c
