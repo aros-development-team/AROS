@@ -40,6 +40,8 @@
 	in that case.
 
     NOTES
+	Documented as returning ERROR_OBJECT_WRONG_TYPE if CLI structure
+	is not present but actually it fallbacks to NameFromLock().
 
     EXAMPLE
 
@@ -61,12 +63,7 @@
     BOOL ret = DOSTRUE;
 
     if (cli == NULL)
-    {
-	if (len >= 1)
-	    buf[0] = '\0';
-	me->pr_Result2 = ERROR_OBJECT_WRONG_TYPE;
-	return DOSFALSE;
-    }
+    	return NameFromLock(me->pr_CurrentDir, buf, len);
 
     cname = AROS_BSTR_ADDR(cli->cli_SetName);
     clen = (ULONG)AROS_BSTR_strlen(cli->cli_SetName);
