@@ -88,7 +88,10 @@ static const struct _dt {
 };
 #endif
 
-/* FIXME: this is really partition.library's job */
+/* 
+ * TODO: Check if DOSType lookup in partition.library really works
+ * and remove this table and related code.
+ */
 static const struct _pt {
     IPTR    part,type;
 } PartTypes[] = {
