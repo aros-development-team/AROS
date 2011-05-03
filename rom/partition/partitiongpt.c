@@ -23,7 +23,7 @@
  */
 
 #include <exec/memory.h>
-#include <exec/types.h>
+#include <libraries/iffparse.h>
 #include <libraries/partition.h>
 #include <proto/debug.h>
 #include <proto/exec.h>
@@ -46,17 +46,28 @@ struct GPTPartitionHandle
     				/* Actual table entry follows */
 };
 
+struct GPT_MapEntry
+{
+    ULONG DOSType;
+    const uuid_t *uuid;
+};
+
 #define GPTH(ph) ((struct GPTPartitionHandle *)ph)
 
-static const uuid_t GPT_Type_Unused = MAKE_UUID(0x00000000, 0x0000, 0x0000, 0x0000, 0x000000000000);
+/* Known UUIDs */
+static const uuid_t GPT_Type_Unused       = MAKE_UUID(0x00000000, 0x0000, 0x0000, 0x0000, 0x000000000000);
+static const uuid_t GPT_Type_HFSPlus      = MAKE_UUID(0x48465300, 0x0000, 0x11AA, 0xAA11, 0x00306543ECAC);
+static const uuid_t GPT_Type_FreeBSD_Boot = MAKE_UUID(0x83BD6B9D, 0x7F41, 0x11DC, 0xBE0B, 0x001560B84F0F);
+static const uuid_t GPT_Type_FreeBSD_Data = MAKE_UUID(0x516E7CB4, 0x6ECF, 0x11D6, 0x8FF8, 0x00022D09712B);
+static const uuid_t GPT_Type_NetBSD_FFS   = MAKE_UUID(0x49F48D5A, 0xB10E, 0x11DC, 0xB99B, 0x0019D1879648);
 /*
  * This is a bit special.
  * The first four bytes (time_low) hold DOS Type ID (for simple mapping),
  * so we set them to zero here. We ignore it during comparison.
- * I hope this won't create any signoficant problems. Even if some ID ever collides, it will
+ * I hope this won't create any significant problems. Even if some ID ever collides, it will
  * unlikely collide with existing DOSTypes being used, so it can be blacklisted then.
  */
-static const uuid_t GPT_Type_AROS   = MAKE_UUID(0x00000000, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5E);
+static const uuid_t GPT_Type_AROS         = MAKE_UUID(0x00000000, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5E);
 
 /*
  * UTF16-LE conversion.
@@ -122,7 +133,7 @@ static inline void uuid_to_le(uuid_t *to, uuid_t *id)
     memcpy(&to->clock_seq_hi_and_reserved, &id->clock_seq_hi_and_reserved, 8);
 }
 
-static inline BOOL uuid_cmp_le(uuid_t *leid, uuid_t *id)
+static inline BOOL uuid_cmp_le(uuid_t *leid, const uuid_t *id)
 {
     if (AROS_LE2LONG(leid->time_low) != id->time_low)
     	return FALSE;
@@ -170,6 +181,40 @@ static void PRINT_LE_UUID(char *s, uuid_t *id)
 #ifdef NO_WRITE
 #define writeDataFromBlock(root, blk, tablesize, table) 1
 #endif
+
+/*
+ * GPT UUID->DOSType map with several example entries.
+ * TODO: In fact this should be not a hardcoded table, it needs to
+ * be loaded from some file (like DEVS:filesystems-map) when dos.library starts up.
+ * This can be handled in FSLoader hook. MBR type conversion should also be handled
+ * in a similar way instead of being hardcoded in boot strap hook.
+ */
+const struct GPT_MapEntry GPTMap[] =
+{
+    {MAKE_ID('H', 'F', 'S', '+' ), &GPT_Type_HFSPlus     },
+    {MAKE_ID('B', 'S', 'D', '\1'), &GPT_Type_FreeBSD_Boot},
+    {MAKE_ID('B', 'S', 'D', '\1'), &GPT_Type_FreeBSD_Data},
+    {MAKE_ID('B', 'S', 'D', '\1'), &GPT_Type_NetBSD_FFS  },
+    {0, NULL}
+};
+
+static ULONG GPT_GetDosType(struct GPTPartition *p)
+{
+    if (is_aros_uuid_le(&p->TypeID))
+    	return AROS_LE2LONG(p->TypeID.time_low);
+    else
+    {
+        const struct GPT_MapEntry *m;
+        
+        for (m = GPTMap; m->DOSType; m++)
+        {
+            if (uuid_cmp_le(&p->TypeID, m->uuid))
+            	return m->DOSType;
+        }
+
+    	return 0;
+    }
+}
 
 static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle *root, struct GPTHeader *hdr, UQUAD block)
 {
@@ -304,6 +349,10 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
 		    UQUAD endblk   = AROS_LE2QUAD(p->EndBlock);
 
 		    initPartitionHandle(root, &gph->ph, startblk, endblk - startblk + 1);
+
+		    /* Map UUID to a DOSType */
+		    gph->ph.de.de_DosType   = GPT_GetDosType(p);
+		    gph->ph.de.de_TableSize = 16;
 
 		    /* Store the whole entry and convert name into ASCII form */
 		    CopyMem(p, &gph[1], entrysize);
@@ -476,7 +525,11 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
     	case PT_TYPE:
 	    /* Foolproof check */
     	    if (PTYPE(tag->ti_Data)->id_len == sizeof(uuid_t))
+    	    {
 	        uuid_to_le(&part->TypeID, (uuid_t *)tag->ti_Data);
+	        /* Update DOSType according to a new type ID */
+	        ph->de.de_DosType = GPT_GetDosType(part);
+	    }
 	    break;
 
 	case PT_BOOTABLE:
