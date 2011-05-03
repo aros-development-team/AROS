@@ -1098,7 +1098,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
 
     /* Try hardware method */
     if (
-        ((carddata->architecture == NV_ARCH_40) || (carddata->architecture == NV_ARCH_30))
+        ((carddata->architecture == NV_ARCH_40) || (carddata->architecture == NV_ARCH_30)
+        || (carddata->architecture == NV_ARCH_20) || (carddata->architecture == NV_ARCH_10))
         
         && (bmdata->bytesperpixel > 1)
         && ((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))

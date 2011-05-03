@@ -779,7 +779,7 @@ NV10EXAComposite(PixmapPtr pix_dst,
 		 int maskX, int maskY,
 		 int dstX, int dstY,
 		 int width, int height, 
-		 ScrnInfoPtr pScrn, PicturePtr mask, PicturePtr src)
+		 ScrnInfoPtr pScrn, PicturePtr src, PicturePtr mask)
 {
 #endif
 	NVPtr pNv = NVPTR(pScrn);
@@ -1096,7 +1096,7 @@ BOOL HIDDNouveauNV103DCopyBox(struct CardData * carddata,
         NV10EXAComposite(destdata, srcX, srcY,
 				      maskX, maskY,
 				      destX , destY,
-				      width, height, carddata, NULL, &sPict);
+				      width, height, carddata, &sPict, NULL);
         return TRUE;
     }
     

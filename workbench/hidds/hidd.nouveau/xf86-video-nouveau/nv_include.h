@@ -70,13 +70,45 @@ Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
 
 static inline BOOL PICT_FORMAT_A(int format)
 {
-    if ((format == PICT_a8r8g8b8) || (format == PICT_a1r5g5b5) || (format == PICT_a8))
+    switch(format)
+    {
+    case(PICT_a8r8g8b8):
+    case(PICT_a8b8g8r8):
+    case(PICT_a1r5g5b5):
+    case(PICT_a1b5g5r5):
+    case(PICT_a4r4g4b4):
+    case(PICT_a4b4g4r4):
+    case(PICT_a8):
         return TRUE;
+    }
 
     return FALSE;
 }
 
-#define PICT_FORMAT_RGB(x)  !PICT_FORMAT_A(x)
+static inline BOOL PICT_FORMAT_RGB(int format)
+{
+    switch(format)
+    {
+    case(PICT_a8r8g8b8):
+    case(PICT_x8r8g8b8):
+    case(PICT_x8b8g8r8):
+    case(PICT_a8b8g8r8):
+    case(PICT_a1r5g5b5):
+    case(PICT_x1r5g5b5):
+    case(PICT_a1b5g5r5):
+    case(PICT_x1b5g5r5):
+    case(PICT_x4r4g4b4):
+    case(PICT_a4r4g4b4):
+    case(PICT_x4b4g4r4):
+    case(PICT_a4b4g4r4):
+    case(PICT_r5g6b5):
+    case(PICT_b5g6r5):
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 
 static inline VOID HIDDNouveauFillPictureFromBitMapData(struct Picture * pPict, 
     struct HIDDNouveauBitMapData * bmdata)
