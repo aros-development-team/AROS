@@ -6,13 +6,11 @@
 /****************************************************************************************/
 
 #include <aros/debug.h>
-#include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 #include <devices/trackdisk.h>
 #include <devices/newstyle.h>
-#include <dos/dosextens.h>
-#include <dos/dostags.h>
 #include <exec/errors.h>
+#include <exec/rawfmt.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
@@ -34,11 +32,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR hdskBase)
 	return FALSE;
 
     InitSemaphore(&hdskBase->sigsem);
-    NEWLIST((struct List *)&hdskBase->units);
-    hdskBase->port.mp_Node.ln_Type = NT_MSGPORT;
-    hdskBase->port.mp_Flags = PA_SIGNAL;
-    hdskBase->port.mp_SigBit = SIGB_SINGLE;
-    NEWLIST((struct List *)&hdskBase->port.mp_MsgList);
+    NEWLIST(&hdskBase->units);
 
    D(bug("hostdisk: in libinit func. Returning %x (success) :-)\n", hdskBase));
    return TRUE;
@@ -60,108 +54,99 @@ static int HostDisk_Cleanup(struct HostDiskBase *hdskBase)
 
 /****************************************************************************************/
 
-AROS_UFP3(LONG, unitentry,
- AROS_UFPA(STRPTR, argstr, A0),
- AROS_UFPA(ULONG, arglen, D0),
- AROS_UFPA(struct ExecBase *, SysBase, A6));
- 
+static void unitentry(struct IOExtTD *iotd);
+
+static void freeUnit(struct unit *unit)
+{
+    if (unit->flags & UNIT_FREENAME)
+    	FreeVec(unit->n.ln_Name);
+    
+    FreeMem(unit, sizeof(struct unit));
+}
+
 /****************************************************************************************/
 
-static int GM_UNIQUENAME(Open)
-(
-    LIBBASETYPEPTR hdskBase,
-    struct IOExtTD *iotd,
-    ULONG unitnum,
-    ULONG flags
-)
+static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IPTR unitnum, ULONG flags)
 {
-    static const struct TagItem tags[] = 
-    {
-    	{ NP_Name	, (IPTR)"Host Disk Unit Process"}, 
-    	{ NP_Input	, 0 				}, 
-    	{ NP_Output	, 0 				}, 
-    	{ NP_Error	, 0 				}, 
-    	{ NP_CurrentDir	, 0 				}, 
-    	{ NP_Priority	, 0 				}, 
-    	{ NP_HomeDir	, 0 				}, 
-    	{ NP_CopyVars	, 0 				}, 
-    	{ NP_Entry	, (IPTR)unitentry		}, 
-    	{ TAG_END	, 0 				}
-    };
+    STRPTR unitname;
     struct unit *unit;
+    UBYTE unitflags = 0;
 
-    DOPEN(bug("hostdisk: in libopen func. Looking if unit is already open\n"));
+    if (unitnum < 1024)
+    {
+        ULONG len = strlen(hdskBase->DiskDevice) + 5;
+
+    	unitname = AllocVec(len, MEMF_ANY);
+    	if (!unitname)
+    	    return FALSE;
+
+    	unitflags = UNIT_FREENAME;
+    	NewRawDoFmt(hdskBase->DiskDevice, (VOID_FUNC)RAWFMTFUNC_STRING, unitname, unitnum);
+    }
+    else
+    	unitname = (STRPTR)unitnum;
+
+    DOPEN(bug("hostdisk: in libopen func. Looking if unit %s is already open\n", unitname));
 
     ObtainSemaphore(&hdskBase->sigsem);
 
-    for(unit = (struct unit *)hdskBase->units.mlh_Head;
-	unit->msg.mn_Node.ln_Succ != NULL;
-	unit = (struct unit *)unit->msg.mn_Node.ln_Succ)
-	if(unit->unitnum == unitnum)
-	{
-	    unit->usecount++;
-	    ReleaseSemaphore(&hdskBase->sigsem);
+    unit = (struct unit *)FindName(&hdskBase->units, unitname);
+
+    if (unit)
+    {
+	unit->usecount++;
+	ReleaseSemaphore(&hdskBase->sigsem);
 	    
-	    iotd->iotd_Req.io_Unit 		      = (struct Unit *)unit;
-	    iotd->iotd_Req.io_Error 		      = 0;
-	    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-   	   
-	    D(bug("hostdisk: in libopen func. Yep. Unit is already open\n"));
-	    
-	    return TRUE;
-	}
+	iotd->iotd_Req.io_Unit 		          = (struct Unit *)unit;
+	iotd->iotd_Req.io_Error 		  = 0;
+	iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+
+	DOPEN(bug("hostdisk: in libopen func. Yep. Unit is already open\n"));    
+	return TRUE;
+    }
 
     DOPEN(bug("hostdisk: in libopen func. No, it is not. So creating new unit ...\n"));
 
-    unit = (struct unit *)AllocMem(sizeof(struct unit),
-        MEMF_PUBLIC | MEMF_CLEAR);
-    if(unit != NULL)
+    unit = (struct unit *)AllocMem(sizeof(struct unit), MEMF_PUBLIC | MEMF_CLEAR);
+
+    if (unit != NULL)
     {
+    	struct Task *unitTask;
+
         DOPEN(bug("hostdisk: in libopen func. Allocation of unit memory okay. Setting up unit and calling CreateNewProc ...\n"));
 
-	unit->usecount 			= 1;
-	unit->hdskBase 			= hdskBase;
-	unit->unitnum 			= unitnum;
-	unit->msg.mn_ReplyPort 		= &hdskBase->port;
-	unit->msg.mn_Length 		= sizeof(struct unit);
-	unit->port.mp_Node.ln_Type 	= NT_MSGPORT;
-	unit->port.mp_Flags 	 	= PA_IGNORE;
-	unit->port.mp_SigTask 		= CreateNewProc((struct TagItem *)tags);
+	unit->n.ln_Name = unitname;
+	unit->usecount 	= 1;
+	unit->hdskBase 	= hdskBase;
+	unit->flags     = unitflags;
 	NEWLIST((struct List *)&unit->changeints);
 
-        DOPEN(bug("hostdisk: in libopen func. CreateNewProc called. Proc = %x\n", unit->port.mp_SigTask));
-	
-	if(unit->port.mp_SigTask != NULL)
+	iotd->iotd_Req.io_Unit = (struct Unit *)unit;
+	SetSignal(0, SIGF_SINGLE);
+	unitTask = NewCreateTask(TASKTAG_PC  , unitentry,
+				 TASKTAG_NAME, "Host Disk Unit Process",
+				 TASKTAG_ARG1, iotd,
+				 TAG_DONE);
+
+        DOPEN(bug("hostdisk: in libopen func. NewCreateTask() called. Task = 0x%p\n", unitTask));
+
+	if (unitTask)
 	{
-	    NEWLIST((struct List *)&unit->port.mp_MsgList);
+    	    DOPEN(bug("hostdisk: in libopen func. Waiting for signal from unit task...\n"));
+    	    Wait(SIGF_SINGLE);
 
-	    /* setup replyport to point to active task */
-	    hdskBase->port.mp_SigTask = FindTask(NULL);
-    	    SetSignal(0, SIGF_SINGLE);
-	    
-    	    DOPEN(bug("hostdisk: in libopen func. Sending startup msg\n"));
-	    PutMsg(&((struct Process *)unit->port.mp_SigTask)->pr_MsgPort, &unit->msg);
-
-    	    DOPEN(bug("hostdisk: in libopen func. Waiting for replymsg\n"));
-	    WaitPort(&hdskBase->port);
-	    (void)GetMsg(&hdskBase->port);
-    	    DOPEN(bug("hostdisk: in libopen func. Received replymsg\n"));
-	    
-	    if (unit->file != INVALID_HANDLE_VALUE)
+    	    DOPEN(bug("hostdisk: in libopen func. Received signal, unit error %u\n", iotr->iotd_Req.io_Error));
+	    if (!iotd->iotd_Req.io_Error)
 	    {
-		AddTail((struct List *)&hdskBase->units, &unit->msg.mn_Node);
-		iotd->iotd_Req.io_Unit = (struct Unit *)unit;
-		/* Set returncode */
-		iotd->iotd_Req.io_Error = 0;
+		AddTail((struct List *)&hdskBase->units, &unit->n);
 		ReleaseSemaphore(&hdskBase->sigsem);
 		return TRUE;
 	    }
-	    else
-		iotd->iotd_Req.io_Error = TDERR_NotSpecified;
 	}
 	else
 	    iotd->iotd_Req.io_Error = TDERR_NoMem;
-	FreeMem(unit, sizeof(struct unit));
+
+	freeUnit(unit);
     }
     else
 	iotd->iotd_Req.io_Error = TDERR_NoMem;
@@ -173,28 +158,23 @@ static int GM_UNIQUENAME(Open)
 
 /****************************************************************************************/
 
-static int GM_UNIQUENAME(Close)
-(
-    LIBBASETYPEPTR hdskBase,
-    struct IOExtTD *iotd
-)
+static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd)
 {
     struct unit *unit;
 
     ObtainSemaphore(&hdskBase->sigsem);
-    unit = (struct unit *)iotd->iotd_Req.io_Unit;
-    D(bug("hostdisk: close unit %u\n", unit->unitnum));
 
-    if(!--unit->usecount)
+    unit = (struct unit *)iotd->iotd_Req.io_Unit;
+    D(bug("hostdisk: close unit %s\n", unit->n.ln_Name));
+
+    if (!--unit->usecount)
     {
-	Remove(&unit->msg.mn_Node);
-	hdskBase->port.mp_SigTask = FindTask(NULL);
-	SetSignal(0, SIGF_SINGLE);
-	PutMsg(&unit->port, &unit->msg);
-	WaitPort(&hdskBase->port);
-	(void)GetMsg(&hdskBase->port);
-	FreeMem(unit, sizeof(struct unit));
+	Remove(&unit->n);
+
+	/* The task will free its unit structure itself */
+	Signal(unit->port->mp_SigTask, SIGBREAKF_CTRL_C);
     }
+
     ReleaseSemaphore(&hdskBase->sigsem);
 
     return TRUE;
@@ -282,8 +262,7 @@ AROS_LH1(void, beginio,
 	case TD_EJECT:
 	case TD_PROTSTATUS:
 	    /* Forward to unit thread */
-	    PutMsg(&((struct unit *)iotd->iotd_Req.io_Unit)->port, 
-		   &iotd->iotd_Req.io_Message);
+	    PutMsg(((struct unit *)iotd->iotd_Req.io_Unit)->port, &iotd->iotd_Req.io_Message);
 	    /* Not done quick */
 	    iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
 	    return;
@@ -488,85 +467,55 @@ void eject(struct unit *unit, BOOL eject)
     }
 }
 
-/**************************************************************************/
-
-AROS_UFH2(void, putchr, 
-    AROS_UFHA(UBYTE, chr, D0), 
-    AROS_UFHA(STRPTR *, p, A3)
-)
-{
-    AROS_USERFUNC_INIT
-    *(*p)++ = chr;
-    AROS_USERFUNC_EXIT
-}
-
 /****************************************************************************************/
 
-AROS_UFH3(LONG, unitentry,
- AROS_UFHA(STRPTR, argstr, A0),
- AROS_UFHA(ULONG, arglen, D0),
- AROS_UFHA(struct ExecBase *, SysBase, A6))
+static void unitentry(struct IOExtTD *iotd)
 {
-    AROS_USERFUNC_INIT
-    
-    UBYTE 		buf[10 + sizeof(LONG) * 8 * 301 / 1000 + 1];
-    STRPTR 		ptr = buf;
-    struct Process 	*me;
-    LONG 		err = 0L;
-    struct IOExtTD 	*iotd;
-    struct unit 	*unit;
+    LONG err = 0;
+    struct Task *me = FindTask(NULL);
+    struct Task *parent = me->tc_UnionETask.tc_ETask->et_Parent;
+    struct unit *unit = (struct unit *)iotd->iotd_Req.io_Unit;
 
     D(bug("hostdisk/unitentry: just started\n"));
-    
-    me = (struct Process *)FindTask(NULL);
 
-    WaitPort(&me->pr_MsgPort);
-    unit = (struct unit *)GetMsg(&me->pr_MsgPort);
-    unit->port.mp_SigBit = AllocSignal(-1);
-    unit->port.mp_Flags = PA_SIGNAL;
-
-    /* Temporarily use err as a buffer */
-    err = unit->unitnum + unit->hdskBase->unitBase;
-    RawDoFmt(unit->hdskBase->DiskDevice, &err, (VOID_FUNC)putchr, &ptr);
-
-    D(bug("hostdisk/unitentry: Trying to open \"%s\" ...\n", buf));
-
-    unit->filename = buf;
-    err = Host_Open(unit);
-    if(err)
+    unit->port = CreateMsgPort();
+    if (!unit->port)
     {
-/*
-#warning FIXME: Next line will produce a segfault -- uninitialized variable iotd
-	iotd->iotd_Req.io_Error = err;
-*/
-        D(bug("hostdisk/unitentry: open failed :-( Replying startup msg.\n"));
-
-	ReplyMsg(&unit->msg);
-	return 0;
+    	Signal(parent, SIGF_SINGLE);
+    	return;
     }
 
-    D(bug("hostdisk/unitentry: open okay :-) Replying startup msg.\n"));
+    D(bug("hostdisk/unitentry: Trying to open \"%s\" ...\n", unit->n.ln_Name));
 
-    ReplyMsg(&unit->msg);
+    err = Host_Open(unit);
+    if (err)
+    {
+        D(bug("hostdisk/unitentry: open failed :-(\n"));
+
+	iotd->iotd_Req.io_Error = err;
+
+	Signal(parent, SIGF_SINGLE);
+	return;
+    }
+
+    D(bug("hostdisk/unitentry: open okay :-)\n"));
+
+    iotd->iotd_Req.io_Error = 0;
+    Signal(parent, SIGF_SINGLE);
 
     D(bug("hostdisk/unitentry: Now entering main loop\n"));
 
     for(;;)
     {
-	while((iotd = (struct IOExtTD *)GetMsg(&unit->port)) != NULL)
+        ULONG portsig = 1 << unit->port->mp_SigBit;
+    	ULONG sigs = Wait(portsig | SIGBREAKF_CTRL_C);
+
+	if (sigs & portsig)
 	{
-	    if(&iotd->iotd_Req.io_Message == &unit->msg)
+	    while((iotd = (struct IOExtTD *)GetMsg(unit->port)) != NULL)
 	    {
-    		D(bug("hostdisk/unitentry: Received EXIT message.\n"));
-
-		Host_Close(unit);
-		Forbid();
-		ReplyMsg(&unit->msg);
-		return 0;
-	    }
-
- 	    switch(iotd->iotd_Req.io_Command)
- 	    {
+ 	    	switch(iotd->iotd_Req.io_Command)
+ 	    	{
 		/*
 		 * In fact these two commands make a little sense, but they exist,
 		 * so we honestly process them.
@@ -662,17 +611,27 @@ AROS_UFH3(LONG, unitentry,
 		    err = 0;
 		    break;
 		    
- 	    } /* switch(iotd->iotd_Req.io_Command) */
+ 	    	} /* switch(iotd->iotd_Req.io_Command) */
 	    
- 	    iotd->iotd_Req.io_Error = err;
- 	    ReplyMsg(&iotd->iotd_Req.io_Message);
+ 	    	iotd->iotd_Req.io_Error = err;
+ 	    	ReplyMsg(&iotd->iotd_Req.io_Message);
 	    
-	} /* while((iotd = (struct IOExtTD *)GetMsg(&unit->port)) != NULL) */
-	
-	WaitPort(&unit->port);
-	
+	    } /* while((iotd = (struct IOExtTD *)GetMsg(&unit->port)) != NULL) */
+
+	}
+
+	/* Process quit signal after our MsgPort is empty */
+	if (sigs & SIGBREAKF_CTRL_C)
+	{
+    	    D(bug("hostdisk/unitentry: Received EXIT signal.\n"));
+
+	    Host_Close(unit);
+
+	    freeUnit(unit);
+	    return;
+	}
+
     } /* for(;;) */
-    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

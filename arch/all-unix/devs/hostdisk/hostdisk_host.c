@@ -79,8 +79,6 @@ ULONG Host_Open(struct unit *Unit)
 
     D(bug("hostdisk: Host_Open(%s)\n", Unit->filename));
 
-    Unit->flags = 0;
-
     HostLib_Lock();
 
     Unit->file = hdskBase->iface->open(Unit->filename, O_RDWR, 0755, &err);

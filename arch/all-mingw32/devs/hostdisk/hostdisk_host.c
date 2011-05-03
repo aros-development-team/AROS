@@ -39,8 +39,11 @@ ULONG Host_Open(struct unit *Unit)
     if (Unit->file == (APTR)-1)
 	return TDERR_NotSpecified;
 
-//  Unit->flags = (attrs & FILE_ATTRIBUTE_READONLY) ? UNIT_READONLY : 0;
-    Unit->flags = 0;
+/*
+ * GetFileAttributes() on a device returns FILE_ATTRIBUTE_READONLY flag set,
+ * however we still can open the device for writing.
+    if (attrs & FILE_ATTRIBUTE_READONLY)
+    	Unit->flags |= UNIT_READONLY; */
     if (attrs & FILE_ATTRIBUTE_DEVICE)
 	Unit->flags |= UNIT_DEVICE;
 
