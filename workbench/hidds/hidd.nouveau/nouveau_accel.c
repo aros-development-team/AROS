@@ -261,7 +261,7 @@ BOOL HiddNouveauNVAccelUploadM2MF(
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
-BOOL HiddNouveauNV40AccelARGBUpload3D(
+BOOL HiddNouveauAccelARGBUpload3D(
     UBYTE * srcpixels, ULONG srcpitch,
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o)
@@ -348,9 +348,19 @@ BOOL HiddNouveauNV40AccelARGBUpload3D(
         srcdata.pitch = line_len;
 
         /* Render using 3D engine */
-        HIDDNouveauNV403DCopyBox(carddata,
-            &srcdata, dstdata,
-            0, 0, x, y, width, height, BLENDOP_ALPHA);
+        switch(carddata->architecture)
+        {
+        case(NV_ARCH_40):
+            HIDDNouveauNV403DCopyBox(carddata,
+                &srcdata, dstdata,
+                0, 0, x, y, width, height, BLENDOP_ALPHA);
+            break;
+        case(NV_ARCH_30):
+            HIDDNouveauNV303DCopyBox(carddata,
+                &srcdata, dstdata,
+                0, 0, x, y, width, height, BLENDOP_ALPHA);
+            break;
+        }
 
         height -= line_count;
         y += line_count;
