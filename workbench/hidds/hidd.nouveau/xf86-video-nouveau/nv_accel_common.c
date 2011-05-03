@@ -31,8 +31,6 @@
 #define NOUVEAU_CREATE_PIXMAP_ZETA      0x10000000
 #define NOUVEAU_CREATE_PIXMAP_TILED     0x20000000
 #define NOUVEAU_CREATE_PIXMAP_SCANOUT   0x40000000
-
-Bool NVAccelInitNV40TCL(ScrnInfoPtr pScrn);
 #endif
 
 #if !defined(__AROS__)
@@ -707,9 +705,9 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	case NV_ARCH_40:
 		INIT_CONTEXT_OBJECT(NV40TCL);
 		break;
-//	case NV_ARCH_30:
-//		INIT_CONTEXT_OBJECT(NV30TCL);
-//		break;
+	case NV_ARCH_30:
+		INIT_CONTEXT_OBJECT(NV30TCL);
+		break;
 //	case NV_ARCH_20:
 //	case NV_ARCH_10:
 //		INIT_CONTEXT_OBJECT(NV10TCL);
