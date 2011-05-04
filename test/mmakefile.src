@@ -77,7 +77,6 @@ COMMONTESTFILES := \
     consolemodes \
     examine \
     rwverify \
-    notify \
     setfilesize \
     timeport \
     getdeviceproc \
