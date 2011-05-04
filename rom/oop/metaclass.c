@@ -44,12 +44,8 @@ struct Bucket *copybucket(struct Bucket *old_b, APTR data, struct IntOOPBase *OO
 static struct IFBucket *createbucket(STRPTR interface_id, ULONG local_id ,ULONG num_methods);
 static BOOL expandbucket(struct IFBucket *b, ULONG num_methods);
 
-static ULONG calc_ht_entries(struct ifmeta_inst *cl
-		,OOP_Class *super
-		,struct OOP_InterfaceDescr *ifDescr
-		,struct IntOOPBase *OOPBase);
-
-
+static ULONG calc_ht_entries(struct ifmeta_inst *cl ,OOP_Class *super,
+			     const struct OOP_InterfaceDescr *ifDescr ,struct IntOOPBase *OOPBase);
 
 /*
    The metaclass is used to create class. That means,
@@ -68,7 +64,7 @@ static void dump_bucket(struct IFBucket *b)
 {
     ULONG i;
 
-    bug("[META] Bucket 0x%p with %u methods:\n", b, b->NumMethods);
+    bug("[META] Bucket 0x%p (%s) with %u methods:\n", b, b->GlobalInterfaceID, b->NumMethods);
 
     for (i = 0; i < b->NumMethods; i++)
     	bug("[META] Method ID 0x%08X function 0x%p\n", i, b->MethodTable[i].MethodFunc);
@@ -185,7 +181,7 @@ static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_all
     inst->data.iftable = NewHash(num_if, HT_INTEGER, OOPBase);
     if (inst->data.iftable)
     {
-    	struct OOP_InterfaceDescr *ifdescr;
+    	const struct OOP_InterfaceDescr *ifdescr;
 
     	D(bug("Got iftable\n"));
     	/* Save hashmask for use in method lookup */
@@ -234,8 +230,8 @@ static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_all
 		    goto failure;
 
 		/* Copy the interface */
-		D(bug("[META] Copying from superclass methods for if %s, basmetaroot %p, superif %p\n",
-			ifb->GlobalInterfaceID, OOPBase->ob_BaseMetaObject.inst.rootif, superif));
+		D(bug("[META] Copying from superclass methods for if %s, local ID 0x%08X, basmetaroot %p, superif %p\n",
+			ifb->GlobalInterfaceID, ifb->InterfaceID, OOPBase->ob_BaseMetaObject.inst.rootif, superif));
 	
 		CopyMemQuick(superif, ifb->MethodTable, sizeof(struct IFMethod) * num_methods);
 		InsertBucket(inst->data.iftable, (struct Bucket *)ifb, OOPBase);
@@ -500,61 +496,60 @@ loop:
 
 #define NUM_META_METHODS 5
 #define NUM_ROOT_METHODS 1
+
+static const struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1]=
+{
+    { (IPTR (*)())ifmeta_new,	moRoot_New		},
+    {  NULL, 0UL }
+};
+
+static struct OOP_MethodDescr meta_mdescr[NUM_META_METHODS + 1]=
+{
+    { (IPTR (*)())ifmeta_allocdisptabs,	MO_meta_allocdisptabs	},
+    { (IPTR (*)())ifmeta_freedisptabs,	MO_meta_freedisptabs	},
+    { (IPTR (*)())ifmeta_getifinfo,	MO_meta_getifinfo	},
+    { (IPTR (*)())ifmeta_iterateifs,	MO_meta_iterateifs	},
+    { (IPTR (*)())ifmeta_findmethod,	MO_meta_findmethod	},
+    {  NULL, 0 }
+};
+
+static const struct OOP_InterfaceDescr meta_descr[] =
+{
+    {root_mdescr, IID_Root, NUM_ROOT_METHODS},
+    {meta_mdescr, IID_Meta, NUM_META_METHODS},
+    {NULL, NULL, 0UL}
+};
+
 BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
 {
-    struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1]=
-    {
-    	{ (IPTR (*)())ifmeta_new,	moRoot_New		},
-	{  NULL, 0UL }
-    };
-
-    struct OOP_MethodDescr meta_mdescr[NUM_META_METHODS + 1]=
-    {
-    	{ (IPTR (*)())ifmeta_allocdisptabs,	MO_meta_allocdisptabs	},
-    	{ (IPTR (*)())ifmeta_freedisptabs,	MO_meta_freedisptabs	},
-    	{ (IPTR (*)())ifmeta_getifinfo,		MO_meta_getifinfo	},
-    	{ (IPTR (*)())ifmeta_iterateifs,	MO_meta_iterateifs	},
-    	{ (IPTR (*)())ifmeta_findmethod,	MO_meta_findmethod	},
-	{  NULL, 0UL }
-    };
-    
-
-    struct OOP_InterfaceDescr meta_descr[] =
-    {
-    	{root_mdescr, IID_Root, 1},
-    	{meta_mdescr, IID_Meta, NUM_META_METHODS},
-	{NULL, NULL, 0UL}
-    };
     
     struct ifmetaobject *imo = &(OOPBase->ob_IFMetaObject);
     struct P_meta_allocdisptabs adt_msg;
     OOP_Class *ifmeta_cl;
-    
+
     EnterFunc(bug("init_ifmetaclass()\n"));
 
     ifmeta_cl = &(imo->inst.base.public);
-    
+
     D(bug("Got ifmeta classptr 0x%p\n", ifmeta_cl));
-       
+
     imo->inst.base.public.superclass = BASEMETAPTR;
     imo->inst.base.public.OOPBasePtr = OOPBase;
-    
-    D(bug("Initialized ifmeta superclass\n"));
-    
+
+    D(bug("Initialized ifmeta superclass 0x%p\n", imo->inst.base.public.superclass));
+
     adt_msg.superclass = imo->inst.base.public.superclass;
     adt_msg.ifdescr = meta_descr;
-    
+
     /* allocdisptabs() must know the OOPBase */
     imo->inst.base.public.UserData		= (APTR)OOPBase;
     /* It must also have a valid DoSuperMethod(), more exatly
        the DoSuperMethod() of the BaseMeta class
     */
     imo->inst.base.public.cl_DoSuperMethod = BASEMETAPTR->cl_DoSuperMethod;
-    
-    
+
     D(bug("Allocating ifmeta disptabs\n"));
 
-    
     if (ifmeta_allocdisptabs(ifmeta_cl, (OOP_Object *)ifmeta_cl, &adt_msg))
     {
     	D(bug("ifmeta disptabs allocated\n"));
@@ -604,21 +599,16 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
 /* Calculates the number of interfaces the new class has
    ( == number of buckets in the hashtable)
 */
-static ULONG calc_ht_entries(struct ifmeta_inst *cl
-		,OOP_Class *super
-		,struct OOP_InterfaceDescr *ifDescr
-		,struct IntOOPBase *OOPBase)
+static ULONG calc_ht_entries(struct ifmeta_inst *cl ,OOP_Class *super,
+			     const struct OOP_InterfaceDescr *ifDescr, struct IntOOPBase *OOPBase)
 {
     ULONG num_if = 0;
-    
+
     EnterFunc(bug("calc_ht_entries(cl=%p, ifDescr=%p, super=%p)\n", cl, ifDescr, super));
 
-  
- 
     if (super)
     {
     	/* Get number of interfaces (method tables) in superclass */
-	
 
     	num_if = MD(super)->numinterfaces;
 	

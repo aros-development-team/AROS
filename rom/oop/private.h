@@ -40,7 +40,7 @@ struct P_meta_allocdisptabs
     OOP_Class *superclass;		    
     
     /* interface descruption table */
-    struct OOP_InterfaceDescr *ifdescr;
+    const struct OOP_InterfaceDescr *ifdescr;
     
 };
 

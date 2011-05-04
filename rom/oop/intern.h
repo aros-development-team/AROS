@@ -143,14 +143,17 @@ struct iid_bucket
 
 
 
-/* Definition of bucket for hashtable used to store
-** the interfaces (method tables)
-*/
+/*
+ * Definition of bucket for hashtable used to store
+ * the interfaces (method tables).
+ * InterfaceID must be an IPTR, because it's IPTR in generic struct Bucket
+ * (see hash.h)
+ */
 
 struct IFBucket
 {
     struct IFBucket *Next;
-    ULONG InterfaceID;
+    IPTR InterfaceID;
     STRPTR GlobalInterfaceID;
     struct IFMethod *MethodTable;
     ULONG NumMethods;

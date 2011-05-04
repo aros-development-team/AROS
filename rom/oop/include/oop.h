@@ -2,7 +2,7 @@
 #define OOP_OOP_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -109,9 +109,9 @@ struct _OOP_Object
 
 struct OOP_InterfaceDescr
 {
-    struct OOP_MethodDescr  *MethodTable;
-    STRPTR  	    	    InterfaceID;
-    ULONG   	    	    NumMethods; /* Number of methods in the methodtable */
+    const struct OOP_MethodDescr *MethodTable;
+    STRPTR InterfaceID;
+    ULONG  NumMethods; /* Number of methods in the methodtable */
 };
 
 typedef IPTR (*OOP_MethodFunc)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg);
@@ -119,7 +119,7 @@ typedef IPTR (*OOP_MethodFunc)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg);
 struct OOP_MethodDescr
 {
     OOP_MethodFunc MethodFunc;
-    ULONG   MethodIdx;
+    ULONG MethodIdx;
 };
 
 

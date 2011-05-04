@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP HIDD metaclass
@@ -32,16 +32,13 @@
 }
 
 
-static VOID get_info_on_ifs(OOP_Class *super
-			,struct OOP_InterfaceDescr *ifdescr
-			,ULONG 	*total_num_methods_ptr
-			,ULONG 	*total_num_ifs_ptr
-			,struct IntOOPBase *OOPBase);
+static VOID get_info_on_ifs(OOP_Class *super, const struct OOP_InterfaceDescr *ifdescr,
+			    ULONG *total_num_methods_ptr, ULONG *total_num_ifs_ptr, struct IntOOPBase *OOPBase);
 
 static IPTR HIDD_DoMethod(OOP_Object *o, OOP_Msg msg);
 static IPTR HIDD_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg);
 static IPTR HIDD_DoSuperMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg);
-static inline ULONG get_max_midx(struct OOP_MethodDescr *md);
+static inline ULONG get_max_midx(const struct OOP_MethodDescr *md);
 
 /*
    The metaclass is used to create class. That means,
@@ -179,14 +176,14 @@ static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_a
 	    IPTR iterval = 0UL;
 	    struct IFMethod *ifm;
 	    ULONG mtab_offset = 0;
-	    struct OOP_InterfaceDescr *ifdescr = msg->ifdescr;
+	    const struct OOP_InterfaceDescr *ifdescr = msg->ifdescr;
 
 	    ifinfo = data->ifinfo;
 	    
 	    while ((ifm = meta_iterateifs((OOP_Object *)msg->superclass, &iterval, &interface_id, &num_methods)))
 	    {
 	        ULONG copy_size;
-		struct OOP_InterfaceDescr *ifd;
+		const struct OOP_InterfaceDescr *ifd;
 		
 	    	/* Copy interface into dispatch tables */
     		copy_size = UB(&mtab[num_methods]) - UB(&mtab[0]);
@@ -260,7 +257,7 @@ static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_a
 	    D(bug("Find new interface\n"));
 	    for (; ifdescr->MethodTable != NULL; ifdescr ++)
 	    {
-	        struct OOP_MethodDescr *mdescr;
+	        const struct OOP_MethodDescr *mdescr;
 	    	ULONG current_idx;
 		
 	    	ifm = meta_getifinfo((OOP_Object *)msg->superclass, ifdescr->InterfaceID, &num_methods);
@@ -490,11 +487,9 @@ OOP_Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
 
 }
 
-static inline ULONG get_max_midx(struct OOP_MethodDescr *md)
+static inline ULONG get_max_midx(const struct OOP_MethodDescr *md)
 {
-
     ULONG max_midx = 0;
-
 	    
     for (; md->MethodFunc != NULL; md ++)
     {
@@ -509,11 +504,8 @@ static inline ULONG get_max_midx(struct OOP_MethodDescr *md)
 /************************
 **  get_info_on_ifs()  **
 ************************/
-static VOID get_info_on_ifs(OOP_Class *super
-			,struct OOP_InterfaceDescr *ifdescr
-			,ULONG *total_num_methods_ptr
-			,ULONG *total_num_ifs_ptr
-			,struct IntOOPBase *OOPBase)
+static VOID get_info_on_ifs(OOP_Class *super, const struct OOP_InterfaceDescr *ifdescr,
+			    ULONG *total_num_methods_ptr, ULONG *total_num_ifs_ptr, struct IntOOPBase *OOPBase)
 {
     ULONG num_methods;
     STRPTR interface_id;
@@ -527,7 +519,8 @@ static VOID get_info_on_ifs(OOP_Class *super
     /* Iterate all parent interfaces, counting methods and interfaces */
     while (meta_iterateifs((OOP_Object *)super, &iterval, &interface_id, &num_methods))
     {
-	struct OOP_InterfaceDescr *ifd;
+	const struct OOP_InterfaceDescr *ifd;
+
     	D(bug("if %s has %ld methods\n", interface_id, num_methods));
 	/* Check whether current class also supplies methods for this interface */
 	
