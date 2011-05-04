@@ -503,7 +503,7 @@ static const struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1]=
     {  NULL, 0UL }
 };
 
-static struct OOP_MethodDescr meta_mdescr[NUM_META_METHODS + 1]=
+static const struct OOP_MethodDescr meta_mdescr[NUM_META_METHODS + 1]=
 {
     { (IPTR (*)())ifmeta_allocdisptabs,	MO_meta_allocdisptabs	},
     { (IPTR (*)())ifmeta_freedisptabs,	MO_meta_freedisptabs	},
