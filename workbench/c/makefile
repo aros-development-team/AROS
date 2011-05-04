@@ -1,4 +1,4 @@
-CFLAGS = -O2
+CFLAGS = -O2 -DBNULL=NULL
 
 PURE_FILES = Assign.c Dir.c Copy.c
 FILES = Info.c
@@ -14,6 +14,11 @@ $(PURE_PROGS): %: %.c
 
 $(PROGS): %: %.c
 	gcc $(CFLAGS) $< -o $@
+
+Eval.o: evalParser.tab.c
+
+evalParser.tab.c: evalParser.y
+	$(YACC) $< -o $@
 
 clean:
 	Delete $(PURE_PROGS) $(PROGS)
