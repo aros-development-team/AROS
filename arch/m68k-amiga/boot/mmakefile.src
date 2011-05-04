@@ -176,6 +176,7 @@ $(BOOTDIR)/aros.elf.gz: $(DISTDIR)/aros-amiga-m68k-reloc.elf \
 	$(Q)$(TARGET_OBJCOPY) \
 	    --strip-unneeded \
 	    $< $(GENDIR)/$(CURDIR)/aros.elf
+	$(Q)$(MKDIR) $(BOOTDIR)
 	$(Q)gzip -c $(GENDIR)/$(CURDIR)/aros.elf >$@
 	$(Q)$(RM) -f $(GENDIR)/$(CURDIR)/aros.elf
 
