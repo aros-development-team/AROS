@@ -291,7 +291,7 @@ extern void aros_not_implemented ();
 			__AROS_LPAQUAD(a1) val; \
 			ULONG reg[2]; \
 		} _q1 = { .val = __AROS_LCAQUAD(a1) }; \
-	 	AROS_LC2D(t, n,  \
+	 	AROS_LC2##t(t, n,  \
 	 		AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \
 	 		AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \
 	 		bt, bn, o, s); \
@@ -307,7 +307,7 @@ extern void aros_not_implemented ();
 			__AROS_LPAQUAD(a2) val; \
 			ULONG reg[2]; \
 		} _q2 = { .val = __AROS_LCAQUAD(a2) }; \
-	 	AROS_LC4D(t, n,  \
+	 	AROS_LC4##t(t, n,  \
 	 		AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \
 	 		AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \
 	 		AROS_LCA(ULONG, _q2.reg[0], __AROS_LRAQUAD1(a2)), \
@@ -315,6 +315,13 @@ extern void aros_not_implemented ();
 	 		bt, bn, o, s); \
 	 })
 
+
+#define AROS_LC2double AROS_LC2D
+#define AROS_LC3double AROS_LC3D
+#define AROS_LC4double AROS_LC4D
+#define AROS_LC2LONG   AROS_LC2
+#define AROS_LC3LONG   AROS_LC3
+#define AROS_LC4LONG   AROS_LC4
 
 #   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \
 	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
