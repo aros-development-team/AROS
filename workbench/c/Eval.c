@@ -58,8 +58,8 @@
         LFORMAT     --  printf-like specification of what to write.
                         The possible swiches are:
                          
-                        %x  --  hexadecimal output
-                        %o  --  octal output
+                        %xd --  hexadecimal output, width digit d
+                        %od --  octal output, width digit d
                         %n  --  decimal output
                         %c  --  character output (the ANSI-character
                                 corresponding to the result value)
@@ -81,6 +81,7 @@
 
     HISTORY
 
+    04.05.2011  polluks width digit was missing
     01.01.2001  SDuvan  implemented (although a bit tired... happy new year!)
 
 ******************************************************************************/
@@ -99,7 +100,7 @@
 #include  <proto/exec.h>
 
 
-const TEXT version[] = "$VER: Eval 41.1 (1.1.2001)\n";
+const TEXT version[] = "$VER: Eval 41.2 (4.5.2011)\n";
 
 #define  ARG_TEMPLATE  "VALUE1/A,OP,VALUE2/M,TO/K,LFORMAT/K"
 enum 
@@ -244,12 +245,12 @@ void printLformat(STRPTR format, int value)
             {
             /* Hexadecimal display */
             case 'x':
-                printf("%x", value);
+                printf("%0*x", format[++i] - '0', value);
                 break;
 
             /* Octal display */
             case 'o':
-                printf("%o", value);
+                printf("%0*o", format[++i] - '0', value);
                 break;
 
             /* Integer display */
