@@ -78,7 +78,7 @@ struct Globals {
 
     LONG totalbuffers;                /* Number of buffers currently in use by filesystem! */
     struct MinList globalhandles;
-    struct fsNotifyRequest *notifyrequests;
+    struct NotifyRequest *notifyrequests;
 
     BYTE activitytimeractive;
     BYTE pendingchanges;  /* indicates that the commit timer is active and that there are pending changes. */

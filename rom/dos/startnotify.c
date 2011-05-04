@@ -1,16 +1,20 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English
 */
+
+#define DEBUG 1
+
 #include <dos/notify.h>
 #include <dos/exall.h>
 #include <proto/dos.h>
-#include "dos_intern.h"
 #include <aros/debug.h>
 #include <string.h>
+
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -68,6 +72,8 @@
     notify->nr_MsgCount = 0;
     notify->nr_FullName = NULL;
 
+    D(bug("[StartNotify] Request 0x%p, Name %s\n", notify, notify->nr_Name));
+
     /* turn the filename into a device and dir lock */
     if ((dvp = GetDeviceProc(notify->nr_Name, NULL)) == NULL)
         return DOSFALSE;
@@ -76,6 +82,8 @@
     InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
     iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
     iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
+
+    D(bug("[StartNotify] Device 0x%p (%s), unit 0x%p\n", iofs.IOFS.io_Device, iofs.IOFS.io_Device->dd_Library.lib_Node.ln_Name));
 
     /* remember the handler for EndNotify() */
     notify->nr_Handler = dvp->dvp_Port;
@@ -202,6 +210,8 @@
             FreeVec(notify->nr_FullName);
         return DOSFALSE;
     }
+
+    D(bug("[StartNotify] nr_Handler 0x%p\n", notify->nr_Handler));
 
     return DOSTRUE;
 

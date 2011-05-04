@@ -11,6 +11,7 @@
 #include <dos/dostags.h>
 #include <dos/exall.h>
 #include <dos/filehandler.h>
+#include <dos/notify.h>
 #include <exec/errors.h>
 #include <exec/interrupts.h>
 #include <exec/io.h>
@@ -75,36 +76,11 @@ LONG step(void);
 
 #define ID_BUSY         AROS_LONG2BE(MAKE_ID('B','U','S','Y'))
 
+/* Our own usage of NotifyRequest private data */
+#define nr_Next nr_Reserved[2]
+#define nr_Prev nr_Reserved[3]
 
 /* structs */
-
-struct fsNotifyRequest {
-  UBYTE *nr_Name;
-  UBYTE *nr_FullName;           /* set by dos - don't touch */
-  ULONG nr_UserData;            /* for application's use */
-  ULONG nr_Flags;
-
-  union {
-    struct {
-      struct MsgPort *nr_Port;  /* for SEND_MESSAGE */
-    } nr_Msg;
-
-    struct {
-      struct Task *nr_Task;     /* for SEND_SIGNAL */
-      UBYTE nr_SignalNum;       /* for SEND_SIGNAL */
-      UBYTE nr_pad[3];
-    } nr_Signal;
-  } nr_stuff;
-
-  ULONG nr_Reserved[2];         /* leave 0 for now */
-  struct fsNotifyRequest *next;
-  struct fsNotifyRequest *prev;
-
-  /* internal use by handlers */
-  ULONG nr_MsgCount;            /* # of outstanding msgs */
-  struct MsgPort *nr_Handler;   /* handler sent to (for EndNotify) */
-};
-
 #define SFSM_ADD_VOLUMENODE    (1)
 #define SFSM_REMOVE_VOLUMENODE (2)
 
@@ -210,7 +186,7 @@ void setchecksum(struct CacheBuffer *);
 
 void checknotifyforobject(struct CacheBuffer *cb,struct fsObject *o,UBYTE notifyparent);
 void checknotifyforpath(UBYTE *path,UBYTE notifyparent);
-void notify(struct fsNotifyRequest *nr);
+void notify(struct NotifyRequest *nr);
 UBYTE *fullpath(struct CacheBuffer *cbstart,struct fsObject *o);
 
 LONG initdisk(void);
@@ -2788,16 +2764,15 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
                 break;
               case ACTION_ADD_NOTIFY:
                 {
-                  struct fsNotifyRequest *nr;
+                  struct NotifyRequest *nr;
 
-                  nr=(struct fsNotifyRequest *)globals->packet->dp_Arg1;
+                  nr=(struct NotifyRequest *)globals->packet->dp_Arg1;
 
-                  nr->next=globals->notifyrequests;
-                  nr->prev=0;
-                  if(globals->notifyrequests!=0) {
-                    globals->notifyrequests->prev=nr;
-                  }
-                  globals->notifyrequests=nr;
+                  nr->nr_Next = (IPTR)globals->notifyrequests;
+                  nr->nr_Prev = 0;
+                  if (globals->notifyrequests)
+                    globals->notifyrequests->nr_Prev = (IPTR)nr;
+                  globals->notifyrequests = nr;
 
                   _DEBUG(("ACTION_ADD_NOTIFY: Starting notification on %s (flags 0x%08lx)\n",nr->nr_FullName,nr->nr_Flags));
 
@@ -2810,9 +2785,9 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
                 break;
               case ACTION_REMOVE_NOTIFY:
                 {
-                  struct fsNotifyRequest *nr;
+                  struct NotifyRequest *nr;
 
-                  nr=(struct fsNotifyRequest *)globals->packet->dp_Arg1;
+                  nr=(struct NotifyRequest *)globals->packet->dp_Arg1;
 
                   _DEBUG(("ACTION_REMOVE_NOTIFY: Removing notification of %s\n",nr->nr_FullName));
 
@@ -2823,18 +2798,16 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
                     nr->nr_MsgCount=0;
                   }
 
-                  if(nr->prev!=0) {
-                    nr->prev->next=nr->next;
-                  }
-                  else {
-                    globals->notifyrequests=nr->next;
-                  }
-                  if(nr->next!=0) {
-                    nr->next->prev=nr->prev;
-                  }
+                  if(nr->nr_Prev)
+                    ((struct NotifyRequest *)nr->nr_Prev)->nr_Next = nr->nr_Next;
+                  else
+                    globals->notifyrequests = (struct NotifyRequest *)nr->nr_Next;
 
-                  nr->next=0;
-                  nr->prev=0;
+                  if (nr->nr_Next)
+                    ((struct NotifyRequest *)nr->nr_Next)->nr_Prev = nr->nr_Prev;
+
+                  nr->nr_Next = 0;
+                  nr->nr_Prev = 0;
 
                   returnpacket(DOSTRUE,0);
                 }
@@ -3460,7 +3433,7 @@ struct DeviceList *usevolumenode(UBYTE *name, ULONG creationdate) {
     if(datestamptodate(&dol->dol_misc.dol_volume.dol_VolumeDate)==creationdate) {                  // Do volumes have same creation date?
       Forbid();
       if(dol->dol_misc.dol_volume.dol_LockList!=0 || ((struct DeviceList *)dol)->dl_unused!=0) {   // Is volume not in use?
-        struct fsNotifyRequest *nr;
+        struct NotifyRequest *nr;
         struct ExtFileLock *lock;
 
         /* Volume is not currently in use, so grab locklist & notifyrequests and patch fl_Task fields */
@@ -3468,7 +3441,7 @@ struct DeviceList *usevolumenode(UBYTE *name, ULONG creationdate) {
         _DEBUG(("usevolumenode: Found DosEntry with same date, and locklist!=0\n"));
 
         lock=(struct ExtFileLock *)BADDR(dol->dol_misc.dol_volume.dol_LockList);
-        nr=(struct fsNotifyRequest *)BADDR((((struct DeviceList *)dol)->dl_unused));
+        nr=(struct NotifyRequest *)BADDR((((struct DeviceList *)dol)->dl_unused));
         dol->dol_misc.dol_volume.dol_LockList=0;
         ((struct DeviceList *)dol)->dl_unused=0;
 
@@ -3488,7 +3461,7 @@ struct DeviceList *usevolumenode(UBYTE *name, ULONG creationdate) {
 #else
           nr->nr_Handler=&globals->mytask->pr_MsgPort;
 #endif
-          nr=nr->next;
+          nr = (struct NotifyRequest *)nr->nr_Next;
         }
 
         vn=(struct DeviceList *)dol;
@@ -4848,7 +4821,7 @@ UBYTE *fullpath(struct CacheBuffer *cbstart,struct fsObject *o) {
 
 
 void checknotifyforpath(UBYTE *path,UBYTE notifyparent) {
-  struct fsNotifyRequest *nr;
+  struct NotifyRequest *nr;
   UBYTE *s1,*s2;
   UBYTE *lastslash;
 
@@ -4895,7 +4868,7 @@ void checknotifyforpath(UBYTE *path,UBYTE notifyparent) {
       /* No else, if neither flag is set then do nothing. */
     }
 
-    nr=nr->next;
+    nr = (struct NotifyRequest *)nr->nr_Next;
   }
 }
 
@@ -4907,7 +4880,7 @@ void checknotifyforobject(struct CacheBuffer *cb,struct fsObject *o,UBYTE notify
 
 
 
-void notify(struct fsNotifyRequest *nr) {
+void notify(struct NotifyRequest *nr) {
 
   /* This function sends a Notify to the client indicated by the passed
      in notifyrequest structure. */

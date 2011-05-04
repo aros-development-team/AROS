@@ -613,8 +613,7 @@ D(bug("[SFS] the next one\n"));
             case FSA_ADD_NOTIFY:
                 packet.dp_Type = ACTION_ADD_NOTIFY;
                 packet.dp_Arg1 = (IPTR)BADDR(iofs->io_Union.io_NOTIFY.io_NotificationRequest);
-                ((APTR *)iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_Reserved)[0] =
-                    &asfshandle->device->rootfh;
+                iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_Reserved[0] = (IPTR)&asfshandle->device->rootfh;
                 sendPacket(asfsbase, &packet, asfshandle->device->taskmp);
                 if (packet.dp_Res1)
                     error = 0;

@@ -2,7 +2,7 @@
 #define DOS_NOTIFY_H
 
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Notification handling.
@@ -53,7 +53,7 @@ struct NotifyRequest
         } nr_Signal;
     } nr_stuff;
 
-    ULONG            nr_Reserved[4]; /* PRIVATE! Set to 0 for now. */
+    IPTR             nr_Reserved[4]; /* PRIVATE! Set to 0 for now. */
 
     ULONG            nr_MsgCount; /* Number of unreplied messages. */
 
