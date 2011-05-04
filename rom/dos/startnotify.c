@@ -6,8 +6,6 @@
     Lang: English
 */
 
-#define DEBUG 1
-
 #include <dos/notify.h>
 #include <dos/exall.h>
 #include <proto/dos.h>
