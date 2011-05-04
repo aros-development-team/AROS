@@ -225,7 +225,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                 D(bug("[IconVolumeList] %s: Checking Device '%s' @ %p (Device ", __PRETTY_FUNCTION__, dosname, dl));
 #if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
                 D(if (dl->dol_Ext.dol_AROS.dol_Device) bug("'%s' ", dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name));
-                D(bug("@ 0x%p, Unit @ 0x%p) Type: %d\n", dl->dol_Ext.dol_AROS.dol_Device, __DL_UNIT, dl->dol_Type));
+                D(bug("@ 0x%p, Unit @ 0x%p) Type: %d\n", dl->dol_Ext.dol_AROS.dol_Device, dl->dol_Ext.dol_AROS.dol_Unit, dl->dol_Type));
 #endif
 
 #if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
@@ -673,7 +673,10 @@ struct IconEntry *IconVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS
     this_Icon = (struct IconEntry *)DoSuperMethodA(CLASS, obj, (Msg) message);
     if ((this_Icon) && (this_Icon->ie_IconListEntry.type == ST_ROOT))
     {
-        if ((volPrivate = AllocMem(sizeof(struct VolumeIcon_Private), MEMF_CLEAR)) != NULL)
+        volPrivate = AllocMem(sizeof(struct VolumeIcon_Private), MEMF_CLEAR);
+        D(bug("[IconVolumeList] Allocated VolumeIcon_Private 0x%p\n", volPrivate));
+
+        if (volPrivate)
         {
             this_Icon->ie_IconListEntry.udata = volPrivate;
         }
