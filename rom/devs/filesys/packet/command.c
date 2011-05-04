@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -169,7 +169,8 @@ static struct ph_packet *packet_alloc(void) {
     return pkt;
 }
 
-void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase) {
+void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase)
+{
     struct ph_handle *handle, *root_handle = NULL;
     struct ph_packet *pkt;
     struct DosPacket *dp;
@@ -183,6 +184,9 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
     /* get our data back */
     handle = (struct ph_handle *) iofs->IOFS.io_Unit;
 
+    D(bug("[packet] Handle 0x%p, mount 0x%p\n", handle, handle->mount));
+    D(bug("[packet] Root handle 0x%p\n", handle->mount->root_handle));
+
     /* check for locks and volumes that have been transferred to a new DOS
      * device */
     if (handle->is_lock)
@@ -192,8 +196,9 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
     else if (handle->is_lock && lock != NULL)
         msgport = lock->fl_Task;
 
-    if (msgport != NULL && msgport != handle->msgport) {
-        D(bug("[packet] invalid lock handle detected. Updating...\n"));
+    if (msgport != NULL && msgport != handle->msgport)
+    {
+        D(bug("[packet] invalid lock handle detected (msgport 0x%p, expected 0x%p).\n", handle->msgport, msgport));
 
         /* find device node for this handle (we can't get it directly because
          * handle->mount is invalid) */
@@ -310,7 +315,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             }
 
             /* dos.lib buffer stuff, must be initialised this way */
-            new_handle->fh.fh_Pos = new_handle->fh.fh_End = (UBYTE *) -1;
+            new_handle->fh.fh_Pos = new_handle->fh.fh_End = -1;
 
             dp->dp_Arg1 = (IPTR) MKBADDR(&new_handle->fh);
             dp->dp_Arg2 = (IPTR) (handle->is_lock ? handle->actual : NULL);
@@ -718,7 +723,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             break;
 
         case FSA_ADD_NOTIFY:
-            D(bug("[packet] FSA_ADD_NOTIFY: nr 0x%08x name '%s'\n", 
+            D(bug("[packet] FSA_ADD_NOTIFY: nr 0x%p name '%s'\n", 
                   iofs->io_Union.io_NOTIFY.io_NotificationRequest,
                   iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_FullName));
 
@@ -727,12 +732,13 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                 (SIPTR) iofs->io_Union.io_NOTIFY.io_NotificationRequest;
 
             /* Store root handle in a private field so EndNotify() can send it back */
-            ((APTR *)iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_Reserved)[0] =
-                &handle->mount->root_handle;
+            iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_Reserved[0] = (IPTR)&handle->mount->root_handle;
+	    D(bug("[packet] Root handle set to 0x%p\n", &handle->mount->root_handle));
+
             break;
 
         case FSA_REMOVE_NOTIFY:
-            D(bug("[packet] FSA_REMOVE_NOTIFY: nr 0x%08x name '%s'\n", 
+            D(bug("[packet] FSA_REMOVE_NOTIFY: nr 0x%p name '%s'\n",
                   iofs->io_Union.io_NOTIFY.io_NotificationRequest,
                   iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_FullName));
 

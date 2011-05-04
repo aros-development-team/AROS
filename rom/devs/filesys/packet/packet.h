@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -12,7 +12,6 @@
 #ifndef _PACKET_HANDLER_H
 #define _PACKET_HANDLER_H 1
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/devices.h>

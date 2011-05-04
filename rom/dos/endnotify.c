@@ -1,14 +1,16 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English
 */
 
-#include "dos_intern.h"
+#include <aros/debug.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
+
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -56,6 +58,9 @@
 
     struct IOFileSys iofs;
 
+    D(bug("[EndNotify] Request 0x%p, Name %s\n", notify, notify->nr_Name));
+    D(bug("[EndNotify] Full name %s\n", notify->nr_FullName));
+
     /* set up the call */
     InitIOFS(&iofs, FSA_REMOVE_NOTIFY, DOSBase);
     iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
@@ -63,7 +68,9 @@
     /* get the device pointer and dir lock. The lock is only needed for
      * packet.handler, and has been stored by it during FSA_ADD_NOTIFY */
     iofs.IOFS.io_Device = (struct Device *) notify->nr_Handler;
-    iofs.IOFS.io_Unit = ((APTR *)notify->nr_Reserved)[0];
+    iofs.IOFS.io_Unit = (struct Unit *)notify->nr_Reserved[0];
+
+    D(bug("[EndNotify] Device 0x%p (%s), unit 0x%p\n", iofs.IOFS.io_Device, iofs.IOFS.io_Device->dd_Library.lib_Node.ln_Name, iofs.IOFS.io_Unit));
 
     /* go */
     do {
