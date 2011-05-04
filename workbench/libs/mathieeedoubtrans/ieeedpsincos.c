@@ -30,9 +30,9 @@
     HISTORY
 */
 
-AROS_LH2(double, IEEEDPSincos,
+AROS_LH1QUAD1(double, IEEEDPSincos,
     AROS_LHA(double *, z, A0),
-    AROS_LHA(double, y, D0),
+    AROS_LHAQUAD(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 9, MathIeeeDoubTrans
 )
 {
