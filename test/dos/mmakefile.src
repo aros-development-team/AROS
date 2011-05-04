@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES           := getenv namefromfh examinefh examinelock setfiledate output setenv
+FILES           := getenv namefromfh examinefh examinelock notify setfiledate output setenv
 PURE_FILES	:= exit
 EXEDIR          := $(AROS_TESTS)/dos
 
