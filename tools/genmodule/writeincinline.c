@@ -78,6 +78,7 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
 {
     struct functionarg *arglistit;
     int count, isvoid;
+    int narg=0,nquad=0;
     char *type;
     
     isvoid = strcmp(funclistit->type, "void") == 0
@@ -95,10 +96,13 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
     {
         type = getargtype(arglistit);
 	fprintf(out, "%s __arg%d, ", type, count);
+	if (strchr(arglistit->reg, '/') != NULL) {
+	    nquad++;
+	} else {
+	    narg++;
+	}
     }
-    if (funclistit->arguments == NULL
-	|| strchr(funclistit->arguments->reg, '/') == NULL
-    )
+    if (nquad==0)
     {
         fprintf(out,
                 "APTR __%s)\n"
@@ -124,38 +128,54 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
             free(type);
         }
     }
-    else
+    else /* nquad != 0 */
     {
-        fprintf(out,
-                "APTR __%s)\n"
-                "{\n"
-                "    %sAROS_LCQUAD%d%s(%s, %s,\n",
-                cfg->libbase,
-                (isvoid) ? "" : "return ",
-                funclistit->argcount, (isvoid) ? "NR" : "",
-                funclistit->type, funclistit->name
-        );
-         
+        if (narg) {
+	    fprintf(out,
+		    "APTR __%s)\n"
+		    "{\n"
+		    "    %sAROS_LC%dQUAD%d%s(%s, %s,\n",
+		    cfg->libbase,
+		    (isvoid) ? "" : "return ", narg,
+		    nquad, (isvoid) ? "NR" : "",
+		    funclistit->type, funclistit->name
+	    );
+	} else {
+       	    fprintf(out,
+		    "APTR __%s)\n"
+		    "{\n"
+		    "    %sAROS_LCQUAD%d%s(%s, %s,\n",
+		    cfg->libbase,
+		    (isvoid) ? "" : "return ",
+		    nquad, (isvoid) ? "NR" : "",
+		    funclistit->type, funclistit->name
+	    );
+	}
+  
 	for (arglistit = funclistit->arguments, count = 1;
 	     arglistit != NULL;
 	     arglistit = arglistit->next, count++
 	)
 	{
-	    if (strlen(arglistit->reg) != 5)
-	    {
-		fprintf(stderr, "Internal error: ../.. register format expected\n");
-		exit(20);
-	    }
+	    char *quad2 = strchr(arglistit->reg, '/');
+	 
 	    arglistit->reg[2] = 0;
-
 	    type = getargtype(arglistit);
 	    assert(type != NULL);
 	
-	    fprintf(out,
-		    "         AROS_LCAQUAD(%s, (__arg%d), %s, %s), \\\n",
-		    type, count, arglistit->reg, arglistit->reg+3
-	    );
-	    arglistit->reg[2] = '/';
+	    if (quad2 != NULL) {
+	    	*quad2 = 0;
+		fprintf(out,
+			"         AROS_LCAQUAD(%s, (__arg%d), %s, %s), \\\n",
+			type, count, arglistit->reg, quad2+1
+		);
+		*quad2 = '/';
+	    } else {
+		fprintf(out,
+			"         AROS_LCA(%s, (__arg%d), %s), \\\n",
+			type, count, arglistit->reg
+		);
+	    }
 	    free(type);
 	}
     }

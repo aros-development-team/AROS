@@ -116,6 +116,11 @@ typedef unsigned long (*ULONG_FUNC)(void);
     __AROS_LHAQUAD(a1),\
     __AROS_LHAQUAD(a2),\
     __AROS_LH_BASE(bt,bn))
+#define AROS_LH1QUAD1(t,n,a1,a2,bt,bn,o,s) \
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
+    __AROS_LHA(a1),\
+    __AROS_LHAQUAD(a2),\
+    __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(void) { \
@@ -485,6 +490,15 @@ typedef unsigned long (*ULONG_FUNC)(void);
     __AROS_LPAQUAD(a2),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
     __AROS_LCAQUAD(a1),\
+    __AROS_LCAQUAD(a2),\
+    __AROS_LC_BASE(bt,bn)))
+
+#define AROS_LC1QUAD1(t,n,a1,a2,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPAQUAD(a2),\
+    __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
     __AROS_LCAQUAD(a2),\
     __AROS_LC_BASE(bt,bn)))
 

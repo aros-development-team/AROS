@@ -1541,12 +1541,6 @@ static void readsectionfunctionlist(struct config *cfg)
 			c = *s;
 			if (c == '/')
 			{
-			    if (regcount > 1)
-			    {
-				if (strchr(regs[0], '/') == NULL)
-				    exitfileerror(20, "Either all arguments has to in two registers or none\n");
-			    }
-					
 			    s++;
 			    if (s[0] == s[-3] && s[1] == s[-2] + 1)
 			    {

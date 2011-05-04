@@ -322,8 +322,9 @@ int main(int argc, char **argv)
 	for (i = 0; i < GENCALL_MAX; i++)
 		aros_lc(i, 0);
 
-	/* For double return AROS_LC2D and AROS_LC4D */
+	/* For double return AROS_LC2D..AROS_LC4D */
 	aros_lc(2, 1);
+	aros_lc(3, 1);
 	aros_lc(4, 1);
 
 	for (i = 0; i < GENCALL_MAX; i++)
