@@ -1,15 +1,13 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English
 */
-#ifdef DEBUG
-#undef DEBUG
-#endif
-#define  DEBUG 0
+
 #include <aros/debug.h>
+
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -72,7 +70,6 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
     struct Process   *me = (struct Process *)FindTask(NULL);
     struct DosPacket *dp;
     struct MsgPort   *replyPort;
-    struct Message   *msg;
 
 #ifdef AROS_DOS_PACKETS
     if (port == NULL)

@@ -1,11 +1,13 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id: replypkt.c 30792 2009-03-07 22:40:04Z neil $
 
     Desc:
     Lang: english
 */
+
 #include <proto/exec.h>
+
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -46,10 +48,16 @@
 
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    dp->dp_Res1 = res1;
-    dp->dp_Res2 = res2;
-    dp->dp_Port = &me->pr_MsgPort;
-    ReplyMsg(dp->dp_Link);
+    internal_ReplyPkt(dp, &me->pr_MsgPort, res1, res2);
 
     AROS_LIBFUNC_EXIT
 } /* ReplyPkt */
+
+void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, LONG res1, LONG res2)
+{
+    dp->dp_Res1 = res1;
+    dp->dp_Res2 = res2;
+    dp->dp_Port = replyPort;
+
+    ReplyMsg(dp->dp_Link);
+}
