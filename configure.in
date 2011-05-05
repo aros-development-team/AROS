@@ -1166,8 +1166,8 @@ case "$target_os" in
 	aros_default_wbwidth=1024
 	aros_default_wbheight=600
 	aros_arch_libs="-laeabi"
-	aros_config_cflags="$aros_config_cflags -marm -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=hard -fno-asynchronous-unwind-tables -fno-exceptions -fno-strict-aliasing"
-	aros_config_aflags="$aros_config_aflags -marm -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=hard -fno-asynchronous-unwind-tables -fno-exceptions -fno-strict-aliasing"
+	aros_config_cflags="$aros_config_cflags -marm -march=armv7-a -mtune=cortex-a8 -mfpu=vfpv3 -mfloat-abi=hard -fno-asynchronous-unwind-tables -fno-exceptions -fno-strict-aliasing"
+	aros_config_aflags="$aros_config_aflags -marm -march=armv7-a -mtune=cortex-a8 -mfpu=vfpv3 -mfloat-abi=hard -fno-asynchronous-unwind-tables -fno-exceptions -fno-strict-aliasing"
 	;;
 	
     chrp)
