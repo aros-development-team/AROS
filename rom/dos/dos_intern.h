@@ -98,10 +98,23 @@ struct vfp
  ((struct FileHandle *)BADDR(f))->fh_Pos<((struct FileHandle *)BADDR(f))->fh_End? \
 *((struct FileHandle *)BADDR(f))->fh_Pos++=c,0:FPutC(f,c))
 
-void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport, struct DosLibrary *DOSBase);
+/* Packet emulator for IOFS */
+void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport);
+struct DosPacket *IOFS_GetPkt(struct IOFileSys *msg);
 
-struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
-				   struct DosLibrary *DOSBase);
+/* Packet I/O */
+struct DosPacket *allocdospacket(void);
+void freedospacket(struct DosPacket *dp);
+SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5);
+void internal_SendPkt(struct DosPacket *dp, struct MsgPort *port, struct MsgPort *replyport);
+struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort);
+
+#define dopacket5(base, res2, port, action, arg1, arg2, arg3, arg4, arg5) dopacket(res2, port, action, arg1, arg2, arg3, arg4, arg5)
+#define dopacket4(base, res2, port, action, arg1, arg2, arg3, arg4)       dopacket(res2, port, action, arg1, arg2, arg3, arg4, 0)
+#define dopacket3(base, res2, port, action, arg1, arg2, arg3)		  dopacket(res2, port, action, arg1, arg2, arg3, 0, 0)
+#define dopacket2(base, res2, port, action, arg1, arg2)			  dopacket(res2, port, action, arg1, arg2, 0, 0, 0)
+#define dopacket1(base, res2, port, action, arg1)			  dopacket(res2, port, action, arg1, 0, 0, 0, 0)
+#define dopacket0(base, res2, port, action)				  dopacket(res2, port, action, 0, 0, 0, 0, 0)
 
 extern APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase);
 extern void BCPL_Cleanup(struct Process *me);
@@ -276,28 +289,23 @@ LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary
 
 #ifdef AROS_FAST_BSTR
 
-#define CMPBSTR(x, y) Stricmp(BADDR(x), BADDR(y))
+#define CMPBSTR(x, y)       Stricmp(BADDR(x), BADDR(y))
 #define CMPNICBSTR(x, y, n) Strnicmp(x, BADDR(y), n)
+#define BSTR2C(s)	    ((STRPTR)BADDR(s))
 
 #else
 
 BOOL CMPBSTR(BSTR, BSTR);
 BOOL CMPNICBSTR(CONST_STRPTR, BSTR, UBYTE);
+char *BSTR2C(BSTR);
 
 #endif
 
 #ifdef AROS_DOS_PACKETS
 
 BSTR C2BSTR(CONST_STRPTR);
-char *BSTR2C(BSTR);
 BOOL CMPCBSTR(CONST_STRPTR, BSTR);
 BOOL CMPICBSTR(CONST_STRPTR, BSTR);
-SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5);
-SIPTR dopacket4(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4);
-SIPTR dopacket3(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3);
-SIPTR dopacket2(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2);
-SIPTR dopacket1(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1);
-SIPTR dopacket0(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action);
 void fixfib(struct FileInfoBlock*);
 
 struct PacketHelperStruct

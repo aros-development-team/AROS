@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -87,17 +87,7 @@
 	return AllocMem(sizeof(struct FileInfoBlock), MEMF_CLEAR);
 
     case DOS_STDPKT:
-        {
-            struct StandardPacket *sp = AllocMem(sizeof(struct StandardPacket), MEMF_CLEAR);
-
-            if (sp == NULL)
-                return NULL;
-
-            sp->sp_Pkt.dp_Link = &(sp->sp_Msg);
-            sp->sp_Msg.mn_Node.ln_Name = (char *) &(sp->sp_Pkt);
-
-            return (APTR) &(sp->sp_Pkt);
-        }
+    	return allocdospacket();
 
     case DOS_EXALLCONTROL:
 	return AllocMem(sizeof(struct InternalExAllControl), MEMF_CLEAR);
@@ -181,3 +171,17 @@ enomem:
 
     AROS_LIBFUNC_EXIT
 } /* AllocDosObject */
+
+/* Internal routines for packet allocation. Does not require DOSBase. */
+struct DosPacket *allocdospacket(void)
+{
+    struct StandardPacket *sp = AllocVec(sizeof(struct StandardPacket), MEMF_CLEAR);
+
+    if (sp == NULL)
+	return NULL;
+
+    sp->sp_Pkt.dp_Link = &sp->sp_Msg;
+    sp->sp_Msg.mn_Node.ln_Name = (char *)&sp->sp_Pkt;
+
+    return &sp->sp_Pkt;
+}
