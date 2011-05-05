@@ -8,8 +8,6 @@
 
 #ifndef AROS_DOS_PACKETS
 
-#define __DOS_NOLIBBASE__
-
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <dos/dosextens.h>
@@ -220,17 +218,21 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 
     	if (notify->nr_Handler->mp_Node.ln_Type != NT_DEVICE)
     	{
+    	    D(bug("[Pkt emu] NotifyRequest points to packet handler, using direct I/O\n"));
+
     	    /* Send a packet directly to the handler bypassing IOFS layer */
     	    dp->dp_Port               = replyport;
     	    dp->dp_Link->mn_ReplyPort = replyport;
 
-    	    PutMsg(&notify->nr_Handler, dp->dp_Link);
+    	    PutMsg(notify->nr_Handler, dp->dp_Link);
     	    return;
     	}
     }
 
     /* Have to rewrite this packet... */
     iofs = AllocMem(sizeof(struct IOFileSys), MEMF_CLEAR);
+    D(bug("[Pkt emu] Allocated request 0x%p\n", iofs));
+
     if (iofs != NULL)
     {
         struct FileHandle *fh;
@@ -267,7 +269,7 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    result = DoNameAsynch(iofs, BSTR2C((BSTR)dp->dp_Arg3));
 	    CurrentDir(oldCurDir);
 
-	    D(kprintf("Returned from DoNameAsynch(), result %u\n", result));
+	    D(kprintf("[Pkt emu] Returned from DoNameAsynch(), result %u\n", result));
 	    break;
 
 	case ACTION_FINDOUTPUT:     // Open() MODE_NEWFILE [*]
@@ -690,6 +692,8 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    iofs->IOFS.io_Device = (struct Device *)notify->nr_Handler;
 	    iofs->IOFS.io_Unit   = (struct Unit *)notify->nr_Reserved[0];
 
+	    D(bug("[Pkt emu] ACTION_REMOVE_NOTIFY: Device 0x%p, Unit 0x%p\n", notify->nr_Handler, notify->nr_Reserved[0]));
+
 	    iofs->io_Union.io_NOTIFY.io_NotificationRequest = notify;
 
 	    break;
@@ -780,14 +784,14 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    break; */
 
 	default:
-	    D(kprintf("Unknown packet type %d found in SendPkt()\n", dp->dp_Type));
+	    D(kprintf("[Pkt emu] Unknown packet type %d found in SendPkt()\n", dp->dp_Type));
 	    
 	    result = ERROR_ACTION_NOT_KNOWN;
 	}
 
 	if (!result)
 	{
-	    D(kprintf("Calling SendIO() with command %u\n", iofs->IOFS.io_Command));
+	    D(kprintf("[Pkt emu] Calling SendIO() with command %u\n", iofs->IOFS.io_Command));
 	    SendIO((struct IORequest *)iofs);
 	}
     }
@@ -797,7 +801,7 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
     if (result != 0)
     {
     	/* Error happened. We didn't forward the request to the handler, so reply it immediately */
-	D(kprintf("Error: %u\n", result));
+	D(kprintf("[Pkt emu] Error: %u\n", result));
 
 	FreeMem(iofs, sizeof(struct IOFileSys));
 	/* We don't have reply port, so set it to NULL */
@@ -818,6 +822,8 @@ struct DosPacket *IOFS_GetPkt(struct IOFileSys *iofs)
     struct DosPacket *packet = iofs->io_PacketEmulation;
     struct FileHandle *fh;
 /*  struct NotifyRequest *notify;*/
+
+    D(bug("[Pkt emu] Got request 0x%p\n", iofs));
 
     /* Convert AROS IOFileSys results back to DosPacket results */
     switch (iofs->IOFS.io_Command)
@@ -863,7 +869,7 @@ struct DosPacket *IOFS_GetPkt(struct IOFileSys *iofs)
     case FSA_READ:
     case FSA_WRITE:
 	packet->dp_Res1 = (IPTR)iofs->io_Union.io_READ_WRITE.io_Length;
-	D(kprintf("Packet (%p) length = %u", packet, packet->dp_Res1));
+	D(kprintf("[Pkt emu] Packet (%p) length = %u", packet, packet->dp_Res1));
 	packet->dp_Res2 = iofs->io_DosError;
 	break;
 
@@ -1016,7 +1022,7 @@ struct DosPacket *IOFS_GetPkt(struct IOFileSys *iofs)
     case FSA_READ_SOFTLINK:
     case FSA_FILE_MODE:
     default:
-	D(kprintf("Filesystem action %u not handled yet in WaitPkt()\n", iofs->IOFS.io_Command));
+	D(kprintf("[Pkt emu] Filesystem action %u not handled yet in WaitPkt()\n", iofs->IOFS.io_Command));
 	break;
     }
 

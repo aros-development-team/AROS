@@ -7,7 +7,7 @@ BCPL_AFILES  := bcpl bcpl_writef
 CFUNCS  := \
 	addbuffers changemode close  \
 	createdir deletefile duplock duplockfromfh \
-	endnotify errorreport exall exallend examine examinefh  \
+	errorreport exall exallend examine examinefh  \
 	exit exnext getdeviceproc info isfilesystem \
 	isinteractive namefrom namefromfh namefromlock \
 	parentdir parentoffh read rename \
