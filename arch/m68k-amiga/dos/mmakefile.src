@@ -12,7 +12,7 @@ CFUNCS  := \
 	isinteractive namefrom namefromfh namefromlock \
 	parentdir parentoffh read rename \
 	runhandler samedevice samelock sendpkt \
-	setprotection startnotify unlock write \
+	setprotection unlock write \
 	waitforchar lockrecord unlockrecord readlink makelink \
 	openfromlock pipe setfilesize setmode waitpkt setfiledate \
 	setcomment format inhibit relabel setowner abortpkt \

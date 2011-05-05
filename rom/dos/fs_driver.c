@@ -167,6 +167,26 @@ LONG fs_ChangeSignal(BPTR handle, struct Process *task, struct DosLibrary *DOSBa
     return iofs.io_DosError;
 }
 
+LONG fs_AddNotify(struct NotifyRequest *notify, struct DevProc *dvp, BPTR lock, struct DosLibrary *DOSBase)
+{
+    struct IOFileSys iofs;
+
+    /* If this is an assign, we use its lock */
+    if (dvp->dvp_Lock)
+    	lock = dvp->dvp_Lock;
+
+    /* prepare the notify request */
+    InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
+
+    iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
+    iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
+    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(lock))->fh_Unit;
+
+    DosDoIO(&iofs.IOFS);
+
+    return iofs.io_DosError;
+}
+
 BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary *DOSBase)
 {
     BPTR ret = BNULL;
