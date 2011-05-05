@@ -195,20 +195,53 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
      * not enough parameters or the wrong type etc. then
      * it is more difficult to translate the packet.
      */
-    struct IOFileSys  *iofs = AllocMem(sizeof(struct IOFileSys), MEMF_CLEAR);
-    struct FileHandle *fh;
-    BPTR               oldCurDir;
-    LONG               result; 
+    struct IOFileSys *iofs;
+    struct NotifyRequest *notify;
+    LONG result = 0;
 
+    /* First we check for some simple operations that doesn't require us to actually create IOFS request */
+    switch (dp->dp_Type)
+    {
+    case ACTION_FH_FROM_LOCK:
+    	/*
+    	 * This one is very simple. Since locks and filehandles are the same,
+    	 * we just reply with success and exit.
+    	 */
+	internal_ReplyPkt(dp, NULL, DOSTRUE, 0);
+	return;
+
+    case ACTION_REMOVE_NOTIFY:
+    	/*
+    	 * ACTION_REMOVE_NOTIFY implementation below relies on the fact
+    	 * that nr_Handler points to IOFS device. However with packet filesystems
+    	 * this may be not true. Here we catch such a case.
+    	 */
+    	notify = (struct NotifyRequest *)BADDR(dp->dp_Arg1);
+
+    	if (notify->nr_Handler->mp_Node.ln_Type != NT_DEVICE)
+    	{
+    	    /* Send a packet directly to the handler bypassing IOFS layer */
+    	    dp->dp_Port               = replyport;
+    	    dp->dp_Link->mn_ReplyPort = replyport;
+
+    	    PutMsg(&notify->nr_Handler, dp->dp_Link);
+    	    return;
+    	}
+    }
+
+    /* Have to rewrite this packet... */
+    iofs = AllocMem(sizeof(struct IOFileSys), MEMF_CLEAR);
     if (iofs != NULL)
     {
+        struct FileHandle *fh;
+	BPTR oldCurDir;
+
 	/*
 	 * Also attach the packet to the io request.
 	 * Will remain untouched by the driver.
 	 */
-
 	iofs->io_PacketEmulation = dp;
-    
+
 	/*
 	 * In case the packet is to be aborted 
 	 * I know which IORequest to use. The user will
@@ -216,60 +249,27 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	 */
 	dp->dp_Arg7 = (IPTR)iofs;
 
-
 	iofs->IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-	iofs->IOFS.io_Message.mn_ReplyPort = replyport;
-	iofs->IOFS.io_Message.mn_Length = sizeof(struct IOFileSys);
-	iofs->IOFS.io_Flags = 0;
-
-        /*
-         * Have to rewrite this packet...
-         */
+	iofs->IOFS.io_Message.mn_ReplyPort    = replyport;
+	iofs->IOFS.io_Message.mn_Length       = sizeof(struct IOFileSys);
+	iofs->IOFS.io_Flags                   = 0;
 
         switch (dp->dp_Type)
 	{
-	case ACTION_NIL:
-	case ACTION_READ_RETURN:
-	case ACTION_WRITE_RETURN:
-	case ACTION_TIMER:
-	    kprintf("This packet is a reserved one and should not be sent"
-		    " by you!\n");
-	    // Alert();
-	    return;
-	    
-	    // case ACTION_GET_BLOCK:
-	case ACTION_DISK_CHANGE:
-	case ACTION_DISK_TYPE:
-	case ACTION_EVENT:
-	case ACTION_SET_MAP:
-	    
-	    kprintf("This packet is obsolete. (ACTION type %d)\n",
-		    dp->dp_Type);
-	    return;
-
-
 	case ACTION_FINDINPUT:      // Open() MODE_OLDFILE [*]
 	    fh = (struct FileHandle *)dp->dp_Arg2;
-	    
-	    iofs->IOFS.io_Device = fh->fh_Device;
-	    
+
+	    iofs->IOFS.io_Device  = fh->fh_Device;
 	    iofs->IOFS.io_Command = FSA_OPEN_FILE;
 	    iofs->io_Union.io_OPEN_FILE.io_FileMode = FMF_WRITE | FMF_READ;
-	    
+
 	    oldCurDir = CurrentDir((BPTR)dp->dp_Arg2);
 	    result = DoNameAsynch(iofs, BSTR2C((BSTR)dp->dp_Arg3));
 	    CurrentDir(oldCurDir);
 
-	    if (result != 0)
-	    {
-		kprintf("Error: Didn't find file\n");
-		return;
-	    }
-	    
-	    kprintf("Returned from DoNameAsynch()\n");
-
+	    D(kprintf("Returned from DoNameAsynch(), result %u\n", result));
 	    break;
-	    
+
 	case ACTION_FINDOUTPUT:     // Open() MODE_NEWFILE [*]
 	    fh = (struct FileHandle *)dp->dp_Arg2;
 	    
@@ -282,14 +282,8 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    oldCurDir = CurrentDir((BPTR)dp->dp_Arg2);
 	    result = DoNameAsynch(iofs, BSTR2C((BSTR)dp->dp_Arg3));
 	    CurrentDir(oldCurDir);
-
-	    if (result != 0)
-	    {
-		return;
-	    }
-	    	    
-	    break;
-	    
+    
+	    break;	    
 
 	case ACTION_FINDUPDATE:     // Open() MODE_READWRITE [*]
 	    fh = (struct FileHandle *)dp->dp_Arg2;
@@ -303,12 +297,7 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    oldCurDir = CurrentDir((BPTR)dp->dp_Arg2);
 	    result = DoNameAsynch(iofs, BSTR2C((BSTR)dp->dp_Arg3));
 	    CurrentDir(oldCurDir);
-
-	    if (result != 0)
-	    {
-		return;
-	    }
-	    	    
+ 
 	    break;
 
 	case ACTION_READ:           // Read() [*]
@@ -322,7 +311,6 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    iofs->io_Union.io_READ_WRITE.io_Length = (LONG)dp->dp_Arg3;
 	    
 	    break;
-
 
 	case ACTION_WRITE:          // Write() [*]
 	    fh = (struct FileHandle *)dp->dp_Arg1;
@@ -376,18 +364,11 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	case ACTION_EXAMINE_FH:     // ExamineFH()
 	case ACTION_EXAMINE_OBJECT: // Examine() [*]  --  the same thing
 	                            //                    in AROS
-	    {
-		UBYTE *buffer = AllocVec(sizeof(struct ExAllData), 
-					 MEMF_PUBLIC | MEMF_CLEAR);
+	{
+	    UBYTE *buffer = AllocVec(sizeof(struct ExAllData), MEMF_PUBLIC | MEMF_CLEAR);
 
-		if (buffer == NULL)
-		{
-		    dp->dp_Res1 = DOSFALSE;
-		    dp->dp_Res2 = ERROR_NO_FREE_STORE;
-
-		    return;
-		}
-		
+	    if (buffer)
+	    {		
 		fh = (struct FileHandle *)dp->dp_Arg1;
 		
 		iofs->IOFS.io_Device = fh->fh_Device;
@@ -399,9 +380,12 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 		iofs->io_Union.io_EXAMINE.io_Mode = ED_OWNER;
 
 		/* A supplied FileInfoBlock (is a BPTR) is in dp_Arg2 */
-		
-		break;
 	    }
+	    else
+	    	result = ERROR_NO_FREE_STORE;
+
+	    break;
+	}
 	    
 	case ACTION_EXAMINE_NEXT:   // ExNext() [*]
 	    fh = (struct FileHandle *)dp->dp_Arg1;
@@ -482,13 +466,8 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    oldCurDir = CurrentDir((BPTR)dp->dp_Arg1);
 	    result = DoNameAsynch(iofs, "/");
 	    CurrentDir(oldCurDir);
-	    
-	    if (result != 0)
-	    {
-		return;
-	    }
 
-	    return;
+	    break;
 
 	case ACTION_SET_PROTECT:    // SetProtection()    [*]
 	    // STRPTR io_Filename;   /* The file to change. */
@@ -544,16 +523,12 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    result = DoNameAsynch(iofs, BSTR2C((BSTR)dp->dp_Arg2));
 	    CurrentDir(oldCurDir);
 
-	    if (result != 0)
-	    {
-		return;
-	    }
-	    	    
-	    dp->dp_Arg6 = (IPTR)AllocDosObject(DOS_FILEHANDLE, NULL);
+	    if (!result)
+	    {    	    
+	    	dp->dp_Arg6 = (IPTR)AllocDosObject(DOS_FILEHANDLE, NULL);
 
-	    if (dp->dp_Arg6 == (IPTR)NULL)
-	    {
-		return;
+	    	if (dp->dp_Arg6 == 0)
+	    	    result = ERROR_NO_FREE_STORE;
 	    }
 
 	    break;
@@ -575,16 +550,12 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    result = DoNameAsynch(iofs, "");
 	    CurrentDir(oldCurDir);
 
-	    if (result != 0)
+	    if (!result)
 	    {
-		return;
-	    }
-	    
-	    dp->dp_Arg6 = (IPTR)AllocDosObject(DOS_FILEHANDLE, NULL);
+		dp->dp_Arg6 = (IPTR)AllocDosObject(DOS_FILEHANDLE, NULL);
 
-	    if (dp->dp_Arg6 == (IPTR)NULL)
-	    {
-		return;
+	    	if (dp->dp_Arg6 == 0)
+	    	    result = ERROR_NO_FREE_STORE;
 	    }
 
 	    break;
@@ -620,12 +591,7 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    oldCurDir = CurrentDir((BPTR)dp->dp_Arg2);
 	    result = DoNameAsynch(iofs, BSTR2C((BSTR)dp->dp_Arg3));
 	    CurrentDir(oldCurDir);
-
-	    if (result != 0)
-	    {
-		return;
-	    }
-	    	    
+   	    
 	    break;
 
 	case ACTION_SAME_LOCK:      // SameLock() [*]
@@ -642,172 +608,131 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    break;
 	    
 	case ACTION_MAKE_LINK:      // MakeLink()
+	    if (dp->dp_Arg4 == LINK_SOFT)
 	    {
+		/* We want a soft-link. */
+		iofs->IOFS.io_Command = FSA_CREATE_SOFTLINK;
+		iofs->io_Union.io_CREATE_SOFTLINK.io_Reference = (STRPTR)dp->dp_Arg3;
+	    }
+	    else
+	    {
+		/* We want a hard-link. */
 		STRPTR name = BSTR2C(dp->dp_Arg2);
-	    
-		if (dp->dp_Arg4 == LINK_SOFT)
-		{
-		    /* We want a soft-link. */
-		    iofs->IOFS.io_Command = FSA_CREATE_SOFTLINK;
-		    iofs->io_Union.io_CREATE_SOFTLINK.io_Reference = (STRPTR)dp->dp_Arg3;
-		}
-		else
-		{
-		    /* We want a hard-link. */
-		    struct FileHandle *fh = (struct FileHandle *)BADDR((BPTR)dp->dp_Arg3);
-                    struct DevProc *dvp;
+                struct DevProc *dvp = GetDeviceProc(name, NULL);
 
-		    /* We check, if name and dest are on the same device. */
-                    if ((dvp = GetDeviceProc(name, NULL)) == NULL)
-		    {
-			/* TODO: Simulate packet return */
-			return;
-		    }
-		    
+		/* We check, if name and dest are on the same device. */
+                if (dvp)
+		{
+		    fh = (struct FileHandle *)BADDR((BPTR)dp->dp_Arg3);
+
 		    if (dvp->dvp_Port != (struct MsgPort *)fh->fh_Device)
-		    {
-                        FreeDeviceProc(dvp);
-			SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
-			
-			/* TODO: Simulate packet return */
-			return;
-		    }
+			result = ERROR_RENAME_ACROSS_DEVICES;
 
                     FreeDeviceProc(dvp);
 		    
 		    iofs->IOFS.io_Command = FSA_CREATE_HARDLINK;
 		    iofs->io_Union.io_CREATE_HARDLINK.io_OldFile = fh->fh_Unit;
 		}
-		
+		else
+		    result = ERROR_OBJECT_NOT_FOUND;
+
 		oldCurDir = CurrentDir((BPTR)dp->dp_Arg1);
 		DoNameAsynch(iofs, name);
 		CurrentDir(oldCurDir);
+
+		FreeCSTR(name);
 	    }
-	    
+
 	    break;
-	    
+
+/* TODO:
 	case ACTION_READ_LINK:      // ReadLink()
-	    /* TODO */
 	    break;
 	    
 	case ACTION_EXAMINE_ALL:    // ExAll()
-	    /* TODO */
-	    break;
-	    
+	    break; */
+
 	case ACTION_ADD_NOTIFY:     // StartNotify()
+	    notify = (struct NotifyRequest *)BADDR(dp->dp_Arg1);
+
+	    iofs->IOFS.io_Command = FSA_ADD_NOTIFY;
+	    iofs->io_Union.io_NOTIFY.io_NotificationRequest = notify;
+
+	    /* If full name is supplied, get its device and root unit */
+	    if (strchr(notify->nr_Name, ':') != NULL)
+		result = DoNameAsynch(iofs, notify->nr_Name);
+	    else
 	    {
-		struct NotifyRequest *notify = (struct NotifyRequest *)BADDR(dp->dp_Arg1);
-	        struct FileHandle *dir;
+	    	/* Otherwise use our current directory as a reference */
+	    	struct Process *me = (struct Process *)FindTask(NULL);
+		struct FileHandle *dir = __is_process(me) ? BADDR(me->pr_CurrentDir) : NULL;
 
-		iofs->IOFS.io_Command = FSA_ADD_NOTIFY;
-		iofs->io_Union.io_NOTIFY.io_NotificationRequest = notify;
-
-		notify->nr_MsgCount = 0;
-
-		if (strchr(notify->nr_Name, ':') != NULL)
+		if (dir)
 		{
-		    DoNameAsynch(iofs, notify->nr_Name);
-		}
-		else
-		{
-		    dir = BADDR(CurrentDir(BNULL));
-		    CurrentDir(MKBADDR(dir));	/* Set back the current dir */
-		    
-		    if (dir == NULL)
-		    {
-			return;
-		    }
 		    
 		    iofs->IOFS.io_Device = dir->fh_Device;
-		    iofs->IOFS.io_Unit = dir->fh_Unit;
-		    
-		    /* Save device for EndNotify() purposes */
-		    notify->nr_Handler = (struct MsgPort *) dir->fh_Device;
-	
-		    if (iofs->IOFS.io_Device == NULL)
-		    {
-			return;
-		    }
+		    iofs->IOFS.io_Unit   = dir->fh_Unit;
 		}
+
+		if (iofs->IOFS.io_Device == NULL)
+		    result = ERROR_OBJECT_NOT_FOUND;
 	    }
 
+	    notify->nr_MsgCount = 0;
+	    notify->nr_Handler  = (struct MsgPort *)iofs->IOFS.io_Device;
+
 	    break;
-	    
+
 	case ACTION_REMOVE_NOTIFY:  // EndNotify()
-	    {
-		struct NotifyRequest *notify = (struct NotifyRequest *)BADDR(dp->dp_Arg1);
+	    notify = (struct NotifyRequest *)BADDR(dp->dp_Arg1);
 
-		iofs->IOFS.io_Command = FSA_REMOVE_NOTIFY;
-		iofs->io_Union.io_NOTIFY.io_NotificationRequest = notify;
-		
-		if (strchr(notify->nr_Name, ':'))
-		{
-		    DoNameAsynch(iofs, notify->nr_Name);
-		}
-		else
-		{
-		    iofs->IOFS.io_Device = (struct Device *)notify->nr_Handler;
-		    
-		    if (iofs->IOFS.io_Device == NULL)
-		    {
-			return;
-		    }
-		}
-	    }
+	    iofs->IOFS.io_Command = FSA_REMOVE_NOTIFY;
+	    iofs->IOFS.io_Device = (struct Device *)notify->nr_Handler;
+	    iofs->IOFS.io_Unit   = (struct Unit *)notify->nr_Reserved[0];
+
+	    iofs->io_Union.io_NOTIFY.io_NotificationRequest = notify;
 
 	    break;
-	    
 
-	    /* The following five packets are only relative to the
-	       message port of the file system to send to. Therefore, 
-	       we fill in only partial information in the IOFileSys and
-	       hope for the best... Specifically, the device cannot
-	       use iofs->io_Device. TODO */
+	/*
+	 * The following five packets are only relative to the
+	 * message port of the file system to send to. Therefore, 
+	 * we fill in only partial information in the IOFileSys and
+	 * hope for the best... Specifically, the device cannot
+	 * use iofs->io_Device. TODO
 	case ACTION_RENAME_DISK:    // Relabel()
-	    /* TODO */
 	    break;
 
 	case ACTION_FORMAT:         // Format()
-	    /* TODO */
 	    break;
 	    
 	case ACTION_MORE_CACHE:     // AddBuffers()
-	    /* TODO */
 	    break;
 	    
 	case ACTION_INHIBIT:        // Inhibit()
-	    /* TODO */
 	    break;
 
 	case ACTION_IS_FILESYSTEM:  // IsFileSystem()
-	    /* TODO */
 	    break;
 
 	case ACTION_DISK_INFO:      // Info()
-	    /* TODO */
 	    break;
 
 	case ACTION_INFO:           // No associated function
-	    /* TODO */
 	    break;
 
 	case ACTION_CURRENT_VOLUME: // No associated function
-	    /* TODO */
 	    break;
 
 	case ACTION_PARENT_FH:      // ParentOfFH()
-	    /* TODO -- Should be the same as ACTION_PARENT? For some reason
+	       TODO -- Should be the same as ACTION_PARENT? For some reason
 	               ParentDir() and ParentOfFH() is implemented differently
-	               in AROS. Have to investigate this further. */
+	               in AROS. Have to investigate this further.
 	    break;
-	    
-	case ACTION_FH_FROM_LOCK:   // OpenFromLock()
-	    /* TODO: Have so simulate ReplyMsg() here */
-	    return;
 
 	case ACTION_SET_OWNER:      // SetOwner()
 	    // Unfortunately, I have no info regardning this packet.
-	    
+
 	    // iofs->IOFS.io_Command = FSA_SET_OWNER;
 	    // iofs->io_Union.io_SET_OWNER.io_UID = owner_info >> 16;
 	    // iofs->io_Union.io_SET_OWNER.io_GID = owner_info & 0xffff;
@@ -815,10 +740,9 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    break;
 
 	case ACTION_CHANGE_MODE:    // ChangeMode()
-	    /* TODO */
 	    break;
 
-	    /* I haven't looked into the following packets in detail */
+	    // I haven't looked into the following packets in detail
 	case ACTION_DIE:            // No associated function
 	    break;
 	    
@@ -833,45 +757,51 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 	    
 
 	    // ---  Console only packets  ------------------------------
-	    /* I think these should not be implemented as packets except
+	       I think these should not be implemented as packets except
 	       for ACTION_WAIT_CHAR which is not really a console only
-	       packet. Instead functions should be added to console.device */
+	       packet. Instead functions should be added to console.device
 
 	case ACTION_SCREEN_MODE:    // SetMode()
-	    /* TODO*/
-	    break;
-	    
-	case ACTION_CHANGE_SIGNAL:  // No associated function
-	    {
-	    	struct MsgPort *msgport;
-		struct Task    *task;
-		
-		fh = (struct FileHandle *)dp->dp_Arg1;
-    	    	msgport = (struct MsgPort *)dp->dp_Arg2;
-		task = msgport ? msgport->mp_SigTask : NULL;
-		
-		iofs->IOFS.io_Device = fh->fh_Device;
-		iofs->IOFS.io_Unit   = fh->fh_Unit;
+	    break; */
 
-		iofs->IOFS.io_Command = FSA_CHANGE_SIGNAL;
-		iofs->io_Union.io_CHANGE_SIGNAL.io_Task = task;
-	    }
+	case ACTION_CHANGE_SIGNAL:  // No associated function
+	    fh = (struct FileHandle *)dp->dp_Arg1;
+
+	    iofs->IOFS.io_Device  = fh->fh_Device;
+	    iofs->IOFS.io_Unit    = fh->fh_Unit;
+	    iofs->IOFS.io_Command = FSA_CHANGE_SIGNAL;
+
+	    iofs->io_Union.io_CHANGE_SIGNAL.io_Task = dp->dp_Arg2 ? ((struct MsgPort *)dp->dp_Arg2)->mp_SigTask : NULL;
+
 	    break;
-	    
+
+/* TODO
 	case ACTION_WAIT_CHAR:      // WaitForChar()	
-	    /* TODO */
-	    break;
+	    break; */
 
 	default:
 	    D(kprintf("Unknown packet type %d found in SendPkt()\n", dp->dp_Type));
-            dp->dp_Res1 = DOSFALSE;
-            dp->dp_Res2 = ERROR_ACTION_NOT_KNOWN;
-            PutMsg(replyport, dp->dp_Link);
-	    return;
+	    
+	    result = ERROR_ACTION_NOT_KNOWN;
 	}
 
-	D(kprintf("Calling SendIO() with command %u\n", iofs->IOFS.io_Command));
-	SendIO((struct IORequest *)iofs);
+	if (!result)
+	{
+	    D(kprintf("Calling SendIO() with command %u\n", iofs->IOFS.io_Command));
+	    SendIO((struct IORequest *)iofs);
+	}
+    }
+    else
+    	result = ERROR_NO_FREE_STORE;
+
+    if (result != 0)
+    {
+    	/* Error happened. We didn't forward the request to the handler, so reply it immediately */
+	D(kprintf("Error: %u\n", result));
+
+	FreeMem(iofs, sizeof(struct IOFileSys));
+	/* We don't have reply port, so set it to NULL */
+	internal_ReplyPkt(dp, NULL, DOSFALSE, result);
     }
 }
 
@@ -886,6 +816,8 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport)
 struct DosPacket *IOFS_GetPkt(struct IOFileSys *iofs)
 {
     struct DosPacket *packet = iofs->io_PacketEmulation;
+    struct FileHandle *fh;
+/*  struct NotifyRequest *notify;*/
 
     /* Convert AROS IOFileSys results back to DosPacket results */
     switch (iofs->IOFS.io_Command)
@@ -895,39 +827,39 @@ struct DosPacket *IOFS_GetPkt(struct IOFileSys *iofs)
  	packet->dp_Res2 = iofs->io_DosError;
 	break;
 
-	/* This FSA corrsponds to ACTION_LOCATE_OBJECT, ACTION_COPY_DIR and
-	   ACTION_COPY_DIR_FH */
+    /*
+     * This FSA corrsponds to ACTION_LOCATE_OBJECT, ACTION_COPY_DIR and
+     * ACTION_COPY_DIR_FH
+     */
     case FSA_OPEN:
+	fh = (struct FileHandle *)packet->dp_Arg6;
+
+	packet->dp_Res1 = (IPTR)MKBADDR(fh);
+	packet->dp_Res2 = iofs->io_DosError;
+
+	if (iofs->io_DosError != 0)
 	{
-	    struct FileHandle *fh = (struct FileHandle *)packet->dp_Arg6;
-
-	    packet->dp_Res1 = (IPTR)MKBADDR(fh);
-	    packet->dp_Res2 = iofs->io_DosError;
-
-	    if (iofs->io_DosError != 0)
-	    {
-		FreeDosObject(DOS_FILEHANDLE, fh);
-	    }
-
-	    fh->fh_Device = iofs->IOFS.io_Device;
-	    fh->fh_Unit   = iofs->IOFS.io_Unit;
-	    break;
+	    FreeDosObject(DOS_FILEHANDLE, fh);
 	}
-	
-	/* This corresponds to ACTION_FINDINPUT, ACTION_FINDOUTPUT,
-	   ACTION_FINDUPDATE which fortunately have the same return values */
+
+	fh->fh_Device = iofs->IOFS.io_Device;
+	fh->fh_Unit   = iofs->IOFS.io_Unit;
+	break;
+
+    /*
+     * This corresponds to ACTION_FINDINPUT, ACTION_FINDOUTPUT,
+     * ACTION_FINDUPDATE which fortunately have the same return values
+     */
     case FSA_OPEN_FILE:
-	{
-	    struct FileHandle *fh = (struct FileHandle *)BADDR(packet->dp_Arg1);
+	fh = (struct FileHandle *)BADDR(packet->dp_Arg1);
 
-	    fh->fh_Device = iofs->IOFS.io_Device;
-	    fh->fh_Unit   = iofs->IOFS.io_Unit;
+	fh->fh_Device = iofs->IOFS.io_Device;
+	fh->fh_Unit   = iofs->IOFS.io_Unit;
 
-	    packet->dp_Res1 = iofs->io_DosError == 0;
-	    packet->dp_Res2 = iofs->io_DosError;
-	    break;
-	}
-	
+	packet->dp_Res1 = iofs->io_DosError == 0;
+	packet->dp_Res2 = iofs->io_DosError;
+	break;
+
     case FSA_READ:
     case FSA_WRITE:
 	packet->dp_Res1 = (IPTR)iofs->io_Union.io_READ_WRITE.io_Length;
@@ -939,7 +871,6 @@ struct DosPacket *IOFS_GetPkt(struct IOFileSys *iofs)
 	packet->dp_Res1 = iofs->io_DosError == 0;
 	FreeDosObject(DOS_FILEHANDLE, (APTR)packet->dp_Arg1);
 	break;
-
 
     case FSA_EXAMINE:
 	{
@@ -996,60 +927,66 @@ struct DosPacket *IOFS_GetPkt(struct IOFileSys *iofs)
 	break;
 
     case FSA_REMOVE_NOTIFY:
-	{
-	    struct NotifyRequest *notify = iofs->io_Union.io_NOTIFY.io_NotificationRequest;
+/*
+ * CHECKME: This code was originally present here but i disabled it.
+ * Packet filesystems do not do this. There is a similar code in EndNotify(),
+ * however i expect this to be low-level operation which should not do more
+ * than packet filesystems do.
+ * So this is currently disabled.
+ *
+	notify = iofs->io_Union.io_NOTIFY.io_NotificationRequest;
 
-	    if (notify->nr_Flags & NRF_SEND_MESSAGE)
+	if ((notify->nr_Flags & NRF_SEND_MESSAGE) && notify->nr_MsgCount)
+	{
+	    struct Node          *tempNode;
+	    struct NotifyMessage *nm;
+
+	    Disable();
+
+	    ForeachNodeSafe(&notify->nr_stuff.nr_Msg.nr_Port->mp_MsgList, nm, tempNode)
 	    {
-		struct Node          *tempNode;
-		struct NotifyMessage *nm;
-		
-		Disable();
-		
-		ForeachNodeSafe(&notify->nr_stuff.nr_Msg.nr_Port->mp_MsgList,
-				nm, tempNode)
+		if (nm->nm_NReq == notify)
 		{
-		    if (notify->nr_MsgCount == 0)
-		    {
-			break;
-		    }
-		    
-		    if (nm->nm_NReq == notify)
-		    {
-			notify->nr_MsgCount--;
-			Remove((struct Node *)nm);
-			ReplyMsg((struct Message *)nm);		
-		    }
+		    Remove(&nm->mn_ExecMessage.mn_Node);
+		    ReplyMsg(&nm->nm_ExecMessage);
+
+		    if (--notify->nr_MsgCount == 0)
+		    	break;
 		}
-		
-		Enable();
 	    }
+
+	    Enable();
 	}
+ */
+	packet->dp_Res1 = iofs->io_DosError == 0;
+ 	packet->dp_Res2 = iofs->io_DosError;
 
 	break;
 
     case FSA_CREATE_DIR:
-	{
-	    struct FileHandle *fh = AllocDosObject(DOS_FILEHANDLE, NULL);
+	fh = AllocDosObject(DOS_FILEHANDLE, NULL);
 	    
-	    /* If the allocation operation failed, we are in trouble as we
-	       have to UnLock() the created directory -- this should be moved
-	       to SendPkt()! */
+	/*
+	 * If the allocation operation failed, we are in trouble as we
+	 * have to UnLock() the created directory -- this should be moved
+	 * to SendPkt()!
+	 */
 
-	    if (fh == NULL)
-	    {
-		/* Crash... well, we keep the lock for now */
+	if (fh == NULL)
+	{
+	    /* Crash... well, we keep the lock for now */
 		
-		packet->dp_Res1 = DOSFALSE;
-		packet->dp_Res2 = ERROR_NO_FREE_STORE;
-		break;
-	    }
-
+	    packet->dp_Res1 = DOSFALSE;
+	    packet->dp_Res2 = ERROR_NO_FREE_STORE;
+	}
+	else
+	{
 	    fh->fh_Unit   = iofs->IOFS.io_Unit;
 	    fh->fh_Device = iofs->IOFS.io_Device;
 	    packet->dp_Res1 = (IPTR)MKBADDR(fh);
-	    break;
 	}
+
+	break;
 
     case FSA_SAME_LOCK:
 	packet->dp_Res1 = (IPTR)(iofs->io_Union.io_SAME_LOCK.io_Same == LOCK_SAME);
@@ -1060,7 +997,7 @@ struct DosPacket *IOFS_GetPkt(struct IOFileSys *iofs)
 	/* TODO */
 	/* ExAll() seems to be flawed(?)... have to investigate this. */
 	break;
-	
+
     case FSA_DISK_INFO:
     case FSA_INHIBIT:
 	packet->dp_Res1 = iofs->io_DosError == 0;
@@ -1075,13 +1012,11 @@ struct DosPacket *IOFS_GetPkt(struct IOFileSys *iofs)
 	packet->dp_Res2 = iofs->io_Union.io_MORE_CACHE.io_NumBuffers;
 	break;
 
-
 	/* TODO */
     case FSA_READ_SOFTLINK:
     case FSA_FILE_MODE:
     default:
-	kprintf("Filesystem action %i not handled yet in WaitPkt()\n",
-		iofs->IOFS.io_Command);
+	D(kprintf("Filesystem action %u not handled yet in WaitPkt()\n", iofs->IOFS.io_Command));
 	break;
     }
 

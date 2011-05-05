@@ -108,6 +108,7 @@ void freedospacket(struct DosPacket *dp);
 SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5);
 void internal_SendPkt(struct DosPacket *dp, struct MsgPort *port, struct MsgPort *replyport);
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort);
+void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, LONG res1, LONG res2);
 
 #define dopacket5(base, res2, port, action, arg1, arg2, arg3, arg4, arg5) dopacket(res2, port, action, arg1, arg2, arg3, arg4, arg5)
 #define dopacket4(base, res2, port, action, arg1, arg2, arg3, arg4)       dopacket(res2, port, action, arg1, arg2, arg3, arg4, 0)
@@ -292,12 +293,15 @@ LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary
 #define CMPBSTR(x, y)       Stricmp(BADDR(x), BADDR(y))
 #define CMPNICBSTR(x, y, n) Strnicmp(x, BADDR(y), n)
 #define BSTR2C(s)	    ((STRPTR)BADDR(s))
+#define FreeCSTR(s)
 
 #else
 
 BOOL CMPBSTR(BSTR, BSTR);
 BOOL CMPNICBSTR(CONST_STRPTR, BSTR, UBYTE);
 char *BSTR2C(BSTR);
+
+#define FreeCSTR(s) FreeVec(s)
 
 #endif
 
