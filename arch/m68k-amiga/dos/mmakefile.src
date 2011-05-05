@@ -11,12 +11,11 @@ CFUNCS  := \
 	exit exnext getdeviceproc info isfilesystem \
 	isinteractive namefrom namefromfh namefromlock \
 	parentdir parentoffh read rename \
-	runhandler samedevice samelock sendpkt \
+	runhandler samedevice samelock \
 	setprotection unlock write \
 	waitforchar lockrecord unlockrecord readlink makelink \
-	openfromlock pipe setfilesize setmode waitpkt setfiledate \
-	setcomment format inhibit relabel setowner abortpkt \
-	replypkt
+	openfromlock pipe setfilesize setmode setfiledate \
+	setcomment format inhibit relabel setowner
 
 CFILES  := $(CFUNCS) \
 	fs_driver helper internalseek packethelper \

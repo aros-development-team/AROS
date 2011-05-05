@@ -1,12 +1,14 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
-#include "dos_intern.h"
+
 #include <proto/exec.h>
+
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -48,7 +50,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (NULL != (struct IORequest *)pkt->dp_Arg7) {
+#ifndef AROS_DOS_PACKETS
+    if (NULL != (struct IORequest *)pkt->dp_Arg7)
+    {
         if (0 == AbortIO((struct IORequest*)pkt->dp_Arg7)) 
         {
 	    /* TODO: Still have to decide where to finally free the
@@ -58,5 +62,9 @@
             pkt->dp_Arg7 = NULL;
         }
     }
+    
+    /* TODO: implement this for real packets (is it possible ar all) ? */
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* AbortPkt */

@@ -1,27 +1,28 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
-#include "dos_intern.h"
 #include <dos/dosextens.h>
 #include <dos/notify.h>
 #include <proto/exec.h>
 #include <exec/initializers.h>
-#include <string.h>
 #include <proto/utility.h>
+
+#include <string.h>
+
+#include "dos_intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(void, SendPkt,
+	AROS_LH3I(void, SendPkt,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct DosPacket *, dp, D1),
@@ -62,28 +63,50 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* If port address is NULL, the caller grabbed it manually from DosNode of IOFS handler.
-       Forward the packet to emulator. */
-    if (!port) {
+    internal_SendPkt(dp, port, replyport);
+
+    AROS_LIBFUNC_EXIT
+} /* SendPkt */
+
+void internal_SendPkt(struct DosPacket *dp, struct MsgPort *port, struct MsgPort *replyport)
+{
+    D(bug("[DOS] SendPkt(0x%p, 0x%p, 0x%p)\n", dp, port, replyport));
+
+#ifndef AROS_DOS_PACKETS
+    /*
+     * If port address is NULL, the caller grabbed it manually from DosNode of IOFS handler.
+     * Forward the packet to emulator.
+     */
+    if (!port)
+    {
         D(bug("[DOS] SendPkt(): port is NULL, using IOFS\n"));
-        IOFS_SendPkt(dp, replyport, DOSBase);
-        return;
-    }
-    /* This is a bit of magic. If the caller obtained port address from GetDeviceProc() result,
-       it will actually be a struct Device *. Fortinately both MsgPort and Device
-       have plain Node structure in the beginning. This means we can check node type. */
-    if (port->mp_Node.ln_Type == NT_DEVICE) {
-        D(bug("[DOS] SendPkt(): port is IOFS device, using IOFS\n"));
-        IOFS_SendPkt(dp, replyport, DOSBase);
+
+        IOFS_SendPkt(dp, replyport);
         return;
     }
 
-    /* If we are here, we are working with packet-style handler and attempt to send a packet directly.
-       However we have to be careful here. AROS still has long-standing misdesign problem (locks and handles
-       are the same things). In order to overcome this, an internal translation is performed by IOFS emulation layer.
-       The result of this is that we can't pass locks or handles to packet-style handlers directly, we still have to
-       push them through the emulator instead */
-    switch (dp->dp_Type) {
+    /*
+     * This is a bit of magic. If the caller obtained port address from GetDeviceProc() result,
+     * it will actually be a struct Device *. Fortinately both MsgPort and Device
+     * have plain Node structure in the beginning. This means we can check node type.
+     */
+    if (port->mp_Node.ln_Type == NT_DEVICE)
+    {
+        D(bug("[DOS] SendPkt(): port is IOFS device, using IOFS\n"));
+
+        IOFS_SendPkt(dp, replyport);
+        return;
+    }
+
+    /*
+     * If we are here, we are working with packet-style handler and attempt to send a packet directly.
+     * However we have to be careful here. AROS still has long-standing misdesign problem (locks and handles
+     * are the same things). In order to overcome this, an internal translation is performed by IOFS emulation layer.
+     * The result of this is that we can't pass locks or handles to packet-style handlers directly, we still have to
+     * push them through the emulator instead
+     */
+    switch (dp->dp_Type)
+    {
     case ACTION_FINDUPDATE:
     case ACTION_FINDINPUT:
     case ACTION_FINDOUTPUT:
@@ -118,25 +141,23 @@
     case ACTION_SET_PROTECT:
     case ACTION_INFO:
         D(bug("[DOS] SendPkt(): Packet requires lock/handle, using IOFS\n"));
-        IOFS_SendPkt(dp, replyport, DOSBase);
-        break;
-    /* All custom packets will be sent to packet-style handlers directly. Again, beware! You can't pass locks or
-       filehandles in their arguments because of translation done by IOFS layer. Theoretically you could do this
-       if you obtain these locks/handles also by direct packet I/O, not by OS functions. However this is not
-       (and will not be) supported by AROS API, because the situation with file locks is going to change in some
-       time. After this it should become possible to distinguish between true handles and locks and pass all packets
-       directly to handlers. */
-    default:
-        D(bug("[DOS] SendPkt(): pkt = $%lx, port = $%lx, replyport = $%lx\n",
-		      dp, port, replyport));
 
-        dp->dp_Port=replyport;
-        dp->dp_Link->mn_ReplyPort=replyport;
-
-        PutMsg(port, dp->dp_Link);
-        break;
+        IOFS_SendPkt(dp, replyport);
+        return;
     }
- 
-    AROS_LIBFUNC_EXIT
-} /* SendPkt */
 
+    /*
+     * All custom packets will be sent to packet-style handlers directly. Again, beware! You can't pass locks or
+     * filehandles in their arguments because of translation done by IOFS layer. Theoretically you could do this
+     * if you obtain these locks/handles also by direct packet I/O, not by OS functions. However this is not
+     * (and will not be) supported by AROS API, because the situation with file locks is going to change in some
+     * time. After this it should become possible to distinguish between true handles and locks and pass all packets
+     * directly to handlers.
+     */
+#endif
+
+    dp->dp_Port               = replyport;
+    dp->dp_Link->mn_ReplyPort = replyport;
+
+    PutMsg(port, dp->dp_Link);
+}

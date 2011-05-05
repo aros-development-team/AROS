@@ -17,7 +17,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH7(SIPTR, DoPkt,
+	AROS_LH7I(SIPTR, DoPkt,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct MsgPort *, port, D1),
@@ -57,68 +57,82 @@
 {
     AROS_LIBFUNC_INIT
 
-    /*
-     * First I create a regular dos packet and then let 
-     * SendPkt rewrite it.
-     */
+    return dopacket(NULL, port, action, arg1, arg2, arg3, arg4, arg5);
 
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * All Amiga kickstart versions accept most dos packet dos calls without dosbase in A6.
+ * So we have this internal routine here for compatibility purposes.
+ */
+SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5)
+{
     SIPTR res;
     struct Process   *me = (struct Process *)FindTask(NULL);
-    struct DosPacket *dp = (struct DosPacket *)AllocDosObject(DOS_STDPKT,
-							      NULL);
+    struct DosPacket *dp;
     struct MsgPort   *replyPort;
-    
-    BOOL i_am_process = TRUE;
-    
-    if (NULL == dp)
+    struct Message   *msg;
+
+#ifdef AROS_DOS_PACKETS
+    if (port == NULL)
     {
-	return FALSE;
+    	/* NIL: */
+    	D(bug("null port\n"));
+    	return TRUE;
     }
-    
-    D(bug("Allocated packet %p for action %ld\n", dp, action));
+#endif
+
+    /* First I create a regular dos packet */
+    dp = allocdospacket();
+    if (NULL == dp)
+    	return FALSE;
 
     if (__is_process(me))
-    {
 	replyPort = &me->pr_MsgPort;
-    }
     else
     {
-	/* Make sure that tasks can use DoPkt(). */
+	/*
+	 * Make sure that tasks can use DoPkt().
+	 * CHECKME: Is it really needed ?
+	 */
 	replyPort = CreateMsgPort();
 
 	if (NULL == replyPort)
 	{
-	    FreeDosObject(DOS_STDPKT, dp);
+	    freedospacket(dp);
 	    return FALSE;
 	}
-
-	i_am_process = FALSE;
     }
     
+    D(bug("dp=%x act=%d port=%x reply=%x proc=%d %x %x %x %x %x '%s'\n",
+    	  dp, action, port, replyPort, __is_process(me), arg1, arg2, arg3, arg4, arg5, me->pr_Task.tc_Node.ln_Name));
     dp->dp_Type = action;
     dp->dp_Arg1 = arg1;
     dp->dp_Arg2 = arg2;
     dp->dp_Arg3 = arg3;
     dp->dp_Arg4 = arg4;
     dp->dp_Arg5 = arg5;
-    
-    SendPkt(dp, port, replyPort);
-    
-    internal_WaitPkt(replyPort, DOSBase);
-    
-    SetIoErr(dp->dp_Res2);
+    dp->dp_Res1 = 0;
+    dp->dp_Res2 = 0;
+
+    internal_SendPkt(dp, port, replyPort);
+
+    /* Did we get different packet back? System is in unstable state. */
+    if (internal_WaitPkt(replyPort) != dp)
+    	Alert(AN_AsyncPkt);
+
+    D(bug("res1=%x res2=%x\n", dp->dp_Res1, dp->dp_Res2));
+
     res = dp->dp_Res1;
-    
-    if (FALSE == i_am_process)
-    {
+    if (res2)
+    	*res2 = dp->dp_Res2;
+
+    if (__is_process(me))
+	me->pr_Result2 = dp->dp_Res2;
+    else
 	DeleteMsgPort(replyPort);
-    }
-    
-    FreeDosObject(DOS_STDPKT, dp);
-    
+
+    freedospacket(dp);
     return res;
-
-    AROS_LIBFUNC_EXIT
-} /* DoPkt */
-
-
+}

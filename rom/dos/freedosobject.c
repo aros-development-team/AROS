@@ -66,7 +66,7 @@
 	    break;
 	    
 	case DOS_STDPKT:
-	    FreeMem((APTR)(ptr-(APTR)(&((struct StandardPacket *)0)->sp_Pkt)),sizeof(struct StandardPacket));
+	    freedospacket(ptr);
 	    break;
 	    
 	case DOS_EXALLCONTROL:
@@ -110,3 +110,8 @@
     }
     AROS_LIBFUNC_EXIT
 } /* FreeDosObject */
+
+void freedospacket(struct DosPacket *dp)
+{
+    FreeVec((APTR)(((APTR)dp)-(APTR)(&((struct StandardPacket *)0)->sp_Pkt))); 
+}
