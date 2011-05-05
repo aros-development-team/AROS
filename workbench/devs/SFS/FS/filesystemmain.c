@@ -3715,7 +3715,7 @@ LONG initdisk() {
         _DEBUG(("initdisk: Using new or old volumenode.\n"));
 
         if(errorcode==0) {    /* Reusing the found VolumeNode or using the new VolumeNode */
-#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
+#ifdef AROS_KERNEL
           vn->dl_Ext.dl_AROS.dl_Device = &globals->asfsbase->device;
           vn->dl_Ext.dl_AROS.dl_Unit = (struct Unit *)&globals->device->rootfh;
 #endif
