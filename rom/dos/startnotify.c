@@ -60,7 +60,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IOFileSys iofs;
+    LONG err;
     struct DevProc *dvp;
     UBYTE buf[MAXFILENAMELENGTH+1], *buf2, *p;
     ULONG len, len2;
@@ -76,20 +76,14 @@
     if ((dvp = GetDeviceProc(notify->nr_Name, NULL)) == NULL)
         return DOSFALSE;
 
-    /* prepare the notify request */
-    InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
-    iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
-    iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
-
-    D(bug("[StartNotify] Device 0x%p (%s), unit 0x%p\n", iofs.IOFS.io_Device, iofs.IOFS.io_Device->dd_Library.lib_Node.ln_Name));
-
     /* remember the handler for EndNotify() */
     notify->nr_Handler = dvp->dvp_Port;
 
     /* if no lock is returned by GetDeviceProc() (eg if the path is for a
      * device or volume root), then get the handler to resolve the name of the
      * device root lock */
-    if (dvp->dvp_Lock == BNULL) {
+    if (dvp->dvp_Lock == BNULL)
+    {
         UBYTE name[MAXFILENAMELENGTH+1], *src, *dst;
         struct FileInfoBlock *fib;
 
@@ -129,22 +123,18 @@
         *dst++ = ':';
         *dst++ = '\0';
 
-        /* use the root lock we just got as the relative lock */
-        iofs.IOFS.io_Unit = ((struct FileHandle *) BADDR(lock))->fh_Unit;
-
         FreeDosObject(DOS_FIB, fib);
     }
 
     /* otherwise we need to expand the name using the lock */
-    else {
+    else
+    {
         /* get the name */
-        if (NameFromLock(dvp->dvp_Lock, buf, sizeof(buf)) == DOSFALSE) {
+        if (NameFromLock(dvp->dvp_Lock, buf, sizeof(buf)) == DOSFALSE)
+        {
             FreeDeviceProc(dvp);
             return DOSFALSE;
         }
-
-        /* use the assign base lock as the relative lock */
-        iofs.IOFS.io_Unit = ((struct FileHandle *) BADDR(dvp->dvp_Lock))->fh_Unit;
     }
 
     len = strlen(buf);
@@ -172,7 +162,8 @@
 
     len2 = strlen(p);
 
-    if ((buf2 = AllocVec(len + len2 + 1, MEMF_PUBLIC)) == NULL) {
+    if ((buf2 = AllocVec(len + len2 + 1, MEMF_PUBLIC)) == NULL)
+    {
         SetIoErr(ERROR_NO_FREE_STORE);
 
         /* cleanup */
@@ -191,11 +182,10 @@
     notify->nr_FullName = buf2;
 
     /* send the request, with error reporting */
-    do {
-        DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, dvp->dvp_Port) == DOSFALSE);
-
-    SetIoErr(iofs.io_DosError);
+    do
+    {
+    	err = fs_AddNotify(notify, dvp, lock, DOSBase);
+    } while (err != 0 && ErrorReport(err, REPORT_LOCK, 0, notify->nr_Handler) == DOSFALSE);
 
     /* cleanup */
     if (lock != BNULL)
@@ -203,9 +193,12 @@
     FreeDeviceProc(dvp);
 
     /* something broke, clean up */
-    if (iofs.io_DosError != 0) {
+    if (err != 0)
+    {
         if (notify->nr_FullName != notify->nr_Name)
             FreeVec(notify->nr_FullName);
+
+        SetIoErr(err);
         return DOSFALSE;
     }
 

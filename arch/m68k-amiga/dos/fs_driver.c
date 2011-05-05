@@ -115,6 +115,14 @@ LONG fs_ChangeSignal(BPTR handle, struct Process *task, struct DosLibrary *DOSBa
     return error;
 }
 
+LONG fs_AddNotify(struct NotifyRequest *notify, struct DevProc *dvp, BPTR lock, struct DosLibrary *DOSBase)
+{
+    LONG err = 0;
+    LONG status = dopacket1(DOSBase, &err, notify->nr_Handler, ACTION_ADD_NOTIFY, (SIPTR)notify);
+
+    return status ? 0 : err;
+}
+
 BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary *DOSBase)
 {
     BPTR nfh;
