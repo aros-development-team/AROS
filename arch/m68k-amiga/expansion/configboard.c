@@ -126,12 +126,23 @@ AROS_UFH5(void, writeexpansion,
 	
 			if (res & (1 << bit))
 				continue;
-			// bit by bit small board check (fits in one byte)
-			while ((res & (1 << bit)) == 0 && sizeleft >= E_SLOTSIZE && bit >= 0) {
-				sizeleft -= E_SLOTSIZE;
-				bit--;
+
+			// found free start address
+			if (size >= E_SLOTSIZE * SLOTSPERBYTE) {
+				// needs at least 1 byte and is always aligned to byte
+				while (space[offset] == 0 && sizeleft >= E_SLOTSIZE && offset <= end / (E_SLOTSIZE * SLOTSPERBYTE)) {
+					offset++;
+					sizeleft -= E_SLOTSIZE * SLOTSPERBYTE;
+				}
+			} else {
+				// bit by bit small board check (fits in one byte)
+				while ((res & (1 << bit)) == 0 && sizeleft >= E_SLOTSIZE && bit >= 0) {
+					sizeleft -= E_SLOTSIZE;
+					bit--;
+				}
 			}
-			if (sizeleft > 0)
+
+			if (sizeleft >= E_SLOTSIZE)
 				continue;
 
 			configDev->cd_BoardAddr	 = (APTR)startaddr;
