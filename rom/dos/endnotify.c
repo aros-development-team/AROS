@@ -56,35 +56,26 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IOFileSys iofs;
-
-    D(bug("[EndNotify] Request 0x%p, Name %s\n", notify, notify->nr_Name));
-    D(bug("[EndNotify] Full name %s\n", notify->nr_FullName));
-
-    /* set up the call */
-    InitIOFS(&iofs, FSA_REMOVE_NOTIFY, DOSBase);
-    iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
-
-    /* get the device pointer and dir lock. The lock is only needed for
-     * packet.handler, and has been stored by it during FSA_ADD_NOTIFY */
-    iofs.IOFS.io_Device = (struct Device *) notify->nr_Handler;
-    iofs.IOFS.io_Unit = (struct Unit *)notify->nr_Reserved[0];
-
-    D(bug("[EndNotify] Device 0x%p (%s), unit 0x%p\n", iofs.IOFS.io_Device, iofs.IOFS.io_Device->dd_Library.lib_Node.ln_Name, iofs.IOFS.io_Unit));
-
-    /* go */
-    do {
-        DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, &iofs.IOFS.io_Unit->unit_MsgPort) == DOSFALSE);
+    /*
+     * Packet handlers love to replace nr_Handler of active requests with a pointer
+     * to own real message port. It's not possible to prevent this by (simple) external
+     * means.
+     * This is why we use packet I/O here on all architectures. If nr_Handler points
+     * to packet message port, the packet will be sent directly, bypassing IOFS layer.
+     * This is 100% safe because we don't pass any locks and/or filehandles here.
+     * If nr_Handler still points to IOFS device, packet I/O emulator will take care about
+     * this.
+     */
+    dopacket1(DOSBase, NULL, notify->nr_Handler, ACTION_REMOVE_NOTIFY, (SIPTR)notify);
 
     /* free fullname if it was built in StartNotify() */
     if (notify->nr_FullName != notify->nr_Name)
         FreeVec(notify->nr_FullName);
 
     /* if the filesystem has outstanding messages, they need to be replied */
-    if (notify->nr_Flags & NRF_SEND_MESSAGE &&
-	(notify->nr_Flags & NRF_WAIT_REPLY || notify->nr_MsgCount > 0)) {
-
+    if ((notify->nr_Flags & NRF_SEND_MESSAGE) &&
+	((notify->nr_Flags & NRF_WAIT_REPLY) || notify->nr_MsgCount > 0))
+    {
 	struct MsgPort *port = notify->nr_stuff.nr_Msg.nr_Port;
 	struct NotifyMessage *nm, *tmp;
 
@@ -114,8 +105,6 @@
         /* unlock the list */
 	Enable();
     }
-
-    SetIoErr(iofs.io_DosError);
 
     AROS_LIBFUNC_EXIT
 } /* EndNotify */
