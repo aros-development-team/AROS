@@ -7,6 +7,8 @@ STATICFUNCS := kdofmt kgetchar kmaygetchar kputstr _kprintf kvprintf
 
 USER_CFLAGS := -DHOST_OS_$(FAMILY)
 
+#MM- linklibs-core : kernel-debug-linklib
+
 %build_module mmake=kernel-debug \
   modname=debug modtype=library \
   files="$(FILES) $(FUNCS)" linklibfiles=$(STATICFUNCS) uselibs=rom
