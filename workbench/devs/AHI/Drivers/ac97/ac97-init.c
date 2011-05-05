@@ -129,6 +129,7 @@ static AROS_UFH3(void, Enumerator,
 	    ac97Base->mixer_set_reg(ac97Base, AC97_MASTER_VOL,	    0x0000);
 	    ac97Base->mixer_set_reg(ac97Base, AC97_HEADPHONE_VOL,   0x0000);
 	    ac97Base->mixer_set_reg(ac97Base, AC97_TONE,	    0x0f0f);
+	    ac97Base->mixer_set_reg(ac97Base, AC97_PCM_VOL,	    0x0000);
 
 	    D(bug("[ac97] Powerdown = %02x\n", ac97Base->mixer_get_reg(ac97Base, AC97_POWERDOWN)));
 	    D(bug("[ac97] GLOB_CNT = %08x\n", inl(ac97Base->dmabase + GLOB_CNT)));

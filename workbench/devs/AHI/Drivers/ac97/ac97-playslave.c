@@ -10,7 +10,7 @@
 #include "DriverData.h"
 #include "library.h"
 
-#define dd ((struct VoidData*) AudioCtrl->ahiac_DriverData)
+#define dd ((struct AC97Data *) AudioCtrl->ahiac_DriverData)
 
 /******************************************************************************
 ** The slave process **********************************************************
