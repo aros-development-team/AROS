@@ -109,10 +109,10 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
   OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
   
  
-  AudioCtrl->ahiac_DriverData = AllocVec( sizeof( struct VoidData ),
+  AudioCtrl->ahiac_DriverData = AllocVec( sizeof( struct AC97Data ),
 		 MEMF_CLEAR | MEMF_PUBLIC );
 
-#define dd ((struct VoidData*) AudioCtrl->ahiac_DriverData)
+#define dd ((struct AC97Data *) AudioCtrl->ahiac_DriverData)
 
 D(bug("AHI: AllocAudio: dd=%08x\n", dd));
 
@@ -437,7 +437,7 @@ _AHIsub_GetAttr( ULONG                   attribute,
       return FALSE;
 
     case AHIDB_Realtime:
-      return TRUE;             // This is not actually true
+      return TRUE;
 
     case AHIDB_Outputs:
       return 1;

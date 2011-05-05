@@ -1,5 +1,5 @@
-#ifndef AHI_Drivers_Void_DriverData_h
-#define AHI_Drivers_Void_DriverData_h
+#ifndef AHI_Drivers_AC97_DriverData_h
+#define AHI_Drivers_AC97_DriverData_h
 
 #include <exec/libraries.h>
 #include <dos/dos.h>
@@ -43,7 +43,7 @@ struct ac97Base
 #define DOSBase         ((struct DosLibrary*)ac97Base->dosbase)
 #define OOPBase		((struct OOPBase *)ac97Base->oopbase)
 
-struct VoidData
+struct AC97Data
 {
     struct DriverData   driverdata;
     UBYTE		flags;
@@ -92,4 +92,4 @@ struct VoidData
 #define GLOB_STA		0x30
 #define ACC_SEMA		0x34
 
-#endif /* AHI_Drivers_Void_DriverData_h */
+#endif /* AHI_Drivers_AC97_DriverData_h */
