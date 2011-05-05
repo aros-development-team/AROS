@@ -21,6 +21,7 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <graphics/driver.h>
+#include <graphics/gfxbase.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <proto/exec.h>
