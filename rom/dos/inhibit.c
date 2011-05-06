@@ -1,7 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
+
 #include <proto/exec.h>
 
 #include "dos_intern.h"
@@ -56,7 +57,7 @@
     LONG err;
 
     InitIOFS(&iofs, FSA_INHIBIT, DOSBase);
-    iofs.io_Union.io_INHIBIT.io_Inhibit = onoff == DOSTRUE ? TRUE : FALSE;
+    iofs.io_Union.io_INHIBIT.io_Inhibit = onoff ? TRUE : FALSE;
 
     /* get the device */
     if ((dvp = GetDeviceProc(name, NULL)) == NULL)
