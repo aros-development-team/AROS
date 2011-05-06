@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot your operating system.
@@ -120,7 +120,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
      * This means that we actually can open a display. If not, we enter emergency
      * shell on host's console.
      */
-    GfxBase = OpenLibrary("graphics.library", 36);
+    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 36);
     if (GfxBase)
     {
         if (NextDisplayInfo(INVALID_ID) != INVALID_ID)
@@ -151,8 +151,8 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
     rc = SystemTagList("", tags);
     if (rc != -1)
     {
-        cis  = NULL;
-        sseq = NULL;
+        cis  = BNULL;
+        sseq = BNULL;
     }
     else {
         PutStr("Cannot open boot console\n");
