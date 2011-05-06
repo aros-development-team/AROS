@@ -61,8 +61,8 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
         { SYS_Error,       0          }, /* 5 */
         { TAG_DONE,        0          }
     };
-    BPTR cis = 0;
-    BPTR sseq = 0;
+    BPTR cis  = BNULL;
+    BPTR sseq = BNULL;
     LONG rc = RETURN_FAIL;
     BOOL hidds_ok = FALSE;
     struct Process *me;
