@@ -16,9 +16,10 @@
 #include <dos/stdio.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
+
 #include "dos_intern.h"
 
-LONG InternalOpen(CONST_STRPTR name, LONG accessMode, 
+static LONG InternalOpen(CONST_STRPTR name, LONG accessMode, 
     struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
 
 #define MAX_SOFT_LINK_NESTING 16 /* Maximum level of soft links nesting */
@@ -99,7 +100,7 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 
 /* Try to open name recursively calling itself in case it's a soft link.
    Store result in handle. Return boolean value indicating result. */
-LONG InternalOpen(CONST_STRPTR name, LONG accessMode, 
+static LONG InternalOpen(CONST_STRPTR name, LONG accessMode, 
     struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase)
 {
     /* Get pointer to process structure */
@@ -158,12 +159,14 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 #endif
     else
     {
+        BPTR cur = BNULL;
+        struct DevProc *dvp = NULL;
     	STRPTR filename = strchr(name, ':');
 
 	if (!filename)
 	{
 	    /* No ':', pathname relative to current dir */
-            BPTR cur = me->pr_CurrentDir;
+            cur = me->pr_CurrentDir;
 
             if (!cur)
             	cur = DOSBase->dl_SYSLock;
@@ -181,8 +184,6 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 	}
     	else 
     	{
-            struct DevProc *dvp = NULL;
-
 	    filename++;
 	    do
 	    {
@@ -197,71 +198,36 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 
 	    if (error == ERROR_NO_MORE_ENTRIES)
         	error = ERROR_OBJECT_NOT_FOUND;
+        }
 
-	    if (error == ERROR_IS_SOFT_LINK)
+	if (error == ERROR_IS_SOFT_LINK)
+        {
+            STRPTR softname = ResolveSoftlink(cur, dvp, name, DOSBase);
+
+            if (softname)
             {
-            	ULONG buffer_size = 256;
-            	STRPTR softname;
-            	LONG continue_loop;
-            	LONG written;
+                /* All OK */
+                BPTR olddir = CurrentDir(cur ? cur : dvp->dvp_Lock);
 
-            	do
-            	{
-                    continue_loop = FALSE;
-                    if (!(softname = AllocVec(buffer_size, MEMF_ANY)))
-                    {
-                    	error2 = ERROR_NO_FREE_STORE;
-                    	break;
-                    }
+                ret = InternalOpen(softname, accessMode, handle, soft_nesting - 1, DOSBase);
+                error = ret ? 0 : IoErr();
 
-                    written = ReadLink(dvp->dvp_Port, dvp->dvp_Lock, name, softname, buffer_size);
-                    if (written == -1)
-                    {
-                    	/* An error occured */
-                    	error2 = IoErr();
-                    }
-                    else if (written == -2)
-                    {
-                    	/* If there's not enough space in the buffer, increase
-                       	   it and try again */
-                    	continue_loop = TRUE;
-                    	buffer_size *= 2;
-                    }
-                    else if (written >= 0)
-                    {
-                    	/* All OK */
-                    	BPTR olddir;
-
-                    	olddir = CurrentDir(dvp->dvp_Lock);
-                    	ret = InternalOpen(softname, accessMode, handle, soft_nesting - 1, DOSBase);
-                    	error2 = IoErr();
-                    	CurrentDir(olddir);
-                    }
-                    else
-                    	error2 = ERROR_UNKNOWN;
-
-                    FreeVec(softname);
-	        }
-            	while(continue_loop);
+                FreeVec(softname);
+                CurrentDir(olddir);
             }
-            FreeDeviceProc(dvp);
-	}
+            else
+            	error = IoErr();
+        }
+
+        FreeDeviceProc(dvp);
     }
 
-    if(!error)
+    if (!error)
     {
         if (IsInteractive(MKBADDR(handle)))
             SetVBuf(MKBADDR(handle), NULL, BUF_LINE, -1);
         
         return DOSTRUE;
-    }
-    else if(error == ERROR_IS_SOFT_LINK)
-    {
-	if(!ret)
-	    SetIoErr(error2);
-	else
-	    SetIoErr(0);
-	return ret;
     }
     else
     {
