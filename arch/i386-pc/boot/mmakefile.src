@@ -30,7 +30,6 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-isapnp-kobj \
 #MM     kernel-partition-kobj \
 #MM     kernel-fs-afs-kobj \
-##MM     kernel-cpu-pc-i386-kobj \
 #MM	kernel-pc-i386-drivers \
 #MM     kernel-workbench-devs-pc-i386 \
 #MM     kernel-usb-pc-i386 \
