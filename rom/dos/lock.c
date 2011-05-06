@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/dosextens.h>
@@ -16,10 +17,7 @@
 #include "dos_intern.h"
 #include "fs_driver.h"
 
-#define  DEBUG  0
-#include <aros/debug.h>
-
-LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
+static LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
     BPTR *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
 
 #define MAX_SOFT_LINK_NESTING 16 /* Maximum level of soft links nesting */
@@ -86,12 +84,13 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 
 /* Try to lock name recursively calling itself in case it's a soft link. 
    Store result in handle. Return boolean value indicating result. */
-LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
+static LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
     BPTR *handle, LONG soft_nesting, struct DosLibrary *DOSBase)
 {
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);
-    struct DevProc *dvp;
+    BPTR cur = BNULL;
+    struct DevProc *dvp = NULL;
     LONG ret = DOSFALSE;
     LONG error = 0;
     LONG error2 = 0;
@@ -109,8 +108,6 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     if (!filename)
     {
 	/* No ':' in the pathname, path is relative to current directory */
-	BPTR cur;
-
 	cur = me->pr_CurrentDir;
 	if (!cur)
 	    cur = DOSBase->dl_SYSLock;
@@ -125,7 +122,6 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     else 
     {
     	filename++;
-        dvp = NULL;
         do
         {
             if ((dvp = GetDeviceProc(name, dvp)) == NULL) 
@@ -144,69 +140,71 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
          */
         if (error == ERROR_NO_MORE_ENTRIES || !dvp)
             error = me->pr_Result2 = ERROR_OBJECT_NOT_FOUND;
+    }
 
-        if(error == ERROR_IS_SOFT_LINK)
+    if (error == ERROR_IS_SOFT_LINK)
+    {
+        ULONG buffer_size = 256;
+        STRPTR softname;
+        LONG continue_loop;
+        LONG written;
+
+	D(bug("[Lock] Softlink detected\n"));
+
+        do
         {
-            ULONG buffer_size = 256;
-            STRPTR softname;
-            LONG continue_loop;
-            LONG written;
+            continue_loop = FALSE;
 
-            do
+            if (!(softname = AllocVec(buffer_size, MEMF_PUBLIC)))
             {
-                continue_loop = FALSE;
-                if(!(softname = AllocVec(buffer_size, MEMF_PUBLIC)))
-                {
-                    error2 = ERROR_NO_FREE_STORE;
-                    break;
-                }
-
-                written = ReadLink(dvp->dvp_Port, dvp->dvp_Lock, name, softname, buffer_size);
-                if(written == -1)
-                {
-                    /* An error occured */
-                    error2 = IoErr();
-                }
-                else if(written == -2)
-                {
-                    /* If there's not enough space in the buffer, increase
-                       it and try again */
-                    continue_loop = TRUE;
-                    buffer_size *= 2;
-                }
-                else if(written >= 0)
-                {
-                    /* All OK */
-                    BPTR olddir;
-                    olddir = CurrentDir(dvp->dvp_Lock);
-                    ret = InternalLock(softname, accessMode, handle, soft_nesting - 1, DOSBase);
-                    error2 = IoErr();
-                    CurrentDir(olddir);
-                }
-                else
-                    error2 = ERROR_UNKNOWN;
-                
-                FreeVec(softname);
+                error2 = ERROR_NO_FREE_STORE;
+                break;
             }
-            while(continue_loop);
+
+	    D(bug("[Lock] Reading softlink %s...\n", name));
+            written = fs_ReadLink(cur, dvp, name, softname, buffer_size, DOSBase);
+
+            if (written == -1)
+            {
+                /* An error occured */
+                error2 = IoErr();
+                D(bug("[Lock] Error %d reading softlink\n"));
+            }
+            else if (written == -2)
+            {
+                /* If there's not enough space in the buffer, increase it and try again */
+                continue_loop = TRUE;
+                buffer_size <<= 1;
+
+                D(bug("[Lock] Increased buffer size up to %u\n", buffer_size));
+            }
+            else if (written >= 0)
+            {
+                /* All OK */
+                BPTR olddir = CurrentDir(cur ? cur : dvp->dvp_Lock);
+
+		D(bug("[Lock] Resolved path: %s\n", softname));
+
+                ret = InternalLock(softname, accessMode, handle, soft_nesting - 1, DOSBase);
+                error2 = IoErr();
+
+                D(bug("[Lock] Resolved lock result %d, error %d\n", ret, error2));
+
+                CurrentDir(olddir);
+            }
+            else
+                error2 = ERROR_UNKNOWN;
+                
+            FreeVec(softname);
         }
-
-        FreeDeviceProc(dvp);
+        while(continue_loop);
     }
 
-    if(!error)
-	return DOSTRUE;
-    else if (error == ERROR_IS_SOFT_LINK)
-    {
-	if(!ret)
-	    SetIoErr(error2);
-	else
-	    SetIoErr(0);
-	return ret;
-    }
-    else
-    {
-	SetIoErr(error);
-	return DOSFALSE;
-    }
+    FreeDeviceProc(dvp);
+
+    if (error ==  ERROR_IS_SOFT_LINK)
+    	error = ret ? 0 : error2;
+
+    SetIoErr(error);
+    return error ? DOSFALSE : DOSTRUE;
 }
