@@ -61,8 +61,8 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
         { SYS_Error,       0          }, /* 5 */
         { TAG_DONE,        0          }
     };
-    BPTR cis = NULL;
-    BPTR sseq = NULL;
+    BPTR cis = 0;
+    BPTR sseq = 0;
     LONG rc = RETURN_FAIL;
     BOOL hidds_ok = FALSE;
     struct Process *me;
@@ -93,16 +93,17 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
     	Alert(AT_DeadEnd | AN_BootStrap | AG_NoMemory);
     }
 
-    fh_stdin->fh_Device  =&emulbase->eb_device;
-    fh_stdin->fh_Unit    =emulbase->eb_stdin;
-    fh_stdout->fh_Device =&emulbase->eb_device;
-    fh_stdout->fh_Unit   =emulbase->eb_stdout;
-    SetVBuf(fh_stdin, NULL, BUF_LINE, -1);
-    SetVBuf(fh_stdout, NULL, BUF_LINE, -1);
+    fh_stdin->fh_Device  = &emulbase->eb_device;
+    fh_stdin->fh_Unit    = emulbase->eb_stdin;
+    fh_stdout->fh_Device = &emulbase->eb_device;
+    fh_stdout->fh_Unit   = emulbase->eb_stdout;
 
-    if(Input())
+    SetVBuf(MKBADDR(fh_stdin) , NULL, BUF_LINE, -1);
+    SetVBuf(MKBADDR(fh_stdout), NULL, BUF_LINE, -1);
+
+    if (Input())
     	Close(Input());
-    if(Output())
+    if (Output())
     	Close(Output());
 
     D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting input and output for DOS\n"));
@@ -114,17 +115,21 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
     D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting output for AROSSupport\n"));
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = fh_stdout;
 
-    /* The trick is to query if we have at least one display mode in the database.
-       This means that we actually can open a display. If not, we enter emergency
-       shell on host's console. */
+    /*
+     * This actually checks if we have at least one display mode in the database.
+     * This means that we actually can open a display. If not, we enter emergency
+     * shell on host's console.
+     */
     GfxBase = OpenLibrary("graphics.library", 36);
-    if (GfxBase) {
+    if (GfxBase)
+    {
         if (NextDisplayInfo(INVALID_ID) != INVALID_ID)
 	    hidds_ok = TRUE;
 	CloseLibrary(&GfxBase->LibNode);
     }
 
-    if (hidds_ok) {
+    if (hidds_ok)
+    {
         D(bug("[DOSBoot.hosted] __dosboot_Boot: Opening boot shell\n"));
         cis  = Open("CON:20/20///Boot Shell/AUTO", MODE_OLDFILE);
     } else
