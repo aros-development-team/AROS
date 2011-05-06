@@ -150,27 +150,32 @@ static ULONG AddDisplays(ULONG num, ULONG old)
 
 int main(void)
 {
-    BPTR olddir = NULL;
+    BPTR olddir = BNULL;
     STRPTR myname;
     struct DiskObject *icon;
     struct RDArgs *rdargs = NULL;
     ULONG old_displays;
     int res = RETURN_OK;
-    struct MyArgs args = {
+    struct MyArgs args =
+    {
 	1,
 	DEF_KEYMAP
     };
 
-    if (WBenchMsg) {
+    if (WBenchMsg)
+    {
         olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
 	myname = WBenchMsg->sm_ArgList[0].wa_Name;
-    } else {
+    }
+    else
+    {
 	struct Process *me = (struct Process *)FindTask(NULL);
     
-	if (me->pr_CLI) {
+	if (me->pr_CLI)
+	{
             struct CommandLineInterface *cli = BADDR(me->pr_CLI);
-	
-	    myname = cli->cli_CommandName;
+
+	    myname = AROS_BSTR_ADDR(cli->cli_CommandName);
 	} else
 	    myname = me->pr_Task.tc_Node.ln_Name;
     }
