@@ -107,7 +107,6 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     struct Process *me = (struct Process *)FindTask(NULL);
     LONG ret = DOSFALSE;
     LONG error = 0;
-    LONG error2 = 0;
     BPTR con, ast;
 
     D(bug("[Open] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\" FH: 0x%p\n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name, handle));
