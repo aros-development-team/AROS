@@ -9,6 +9,8 @@ srcdir		= @srcdir@
 DRIVER		= device.audio
 MODEFILE	= DEVICE
 
-OBJECTS		= device-init.o device-main.o device-playslave.o device-accel.o 
+OBJECTS		= device-init.o device-main.o device-playslave.o device-accel.o
+
+DEST		= Storage
 
 include ../Common/Makefile.common
