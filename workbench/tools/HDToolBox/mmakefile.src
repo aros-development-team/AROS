@@ -14,7 +14,8 @@ FILES = \
     ptclass \
     prefs
 
-EXEDIR = $(AROSDIR)/Tools
+EXEDIR      := $(AROSDIR)/Tools
+PREFSDIR    := $(BINDIR)/Prefs/Env-Archive
 USER_CFLAGS := -DHAVE_COOLIMAGES
 
 #MM- workbench-tools: workbench-tools-hdtoolbox
@@ -25,12 +26,12 @@ USER_CFLAGS := -DHAVE_COOLIMAGES
     files=$(FILES) uselibs="mui amiga uuid m"
 
 #MM
-workbench-tools-hdtoolbox-prefs : $(BINDIR)/S/hdtoolbox.prefs
+workbench-tools-hdtoolbox-prefs : $(PREFSDIR)/hdtoolbox.prefs
 
-$(BINDIR)/S/% : S/% | $(BINDIR)/S
+$(PREFSDIR)/% : Env-Archive/% | $(PREFSDIR)
 	@$(ECHO) Copying $@...
 	@$(CP) $< $@
 
-%rule_makedirs dirs=$(BINDIR)/S
+%rule_makedirs dirs=$(PREFSDIR)
 
 %common
