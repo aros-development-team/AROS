@@ -1,5 +1,7 @@
-/* avoid conflicts between our __unused define and the ones that might come in
-   via sys/stat.h */
+/*
+ * avoid conflicts between our __unused define and the ones that might come in
+ * via sys/stat.h
+ */
 #undef __unused
 
 #ifdef HOST_LONG_ALIGNED
@@ -58,7 +60,7 @@ struct HostInterface
     int		  *(*__error)(void);
 #ifdef HOST_OS_linux
     int		   (*__fxstat64)(int ver, int fd, struct stat64 *buf);
-    #define fstat(fd, buf)  __fxstat(_STAT_VER, fd, buf)
+    #define fstat64(fd, buf) __fxstat64(_STAT_VER, fd, buf)
 #else
     int		   (*fstat64)(int fd, struct stat64 *buf);
 #endif
