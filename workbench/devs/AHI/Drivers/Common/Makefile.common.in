@@ -36,8 +36,12 @@ ARFLAGS         = @ARFLAGS@
 
 SFDC		= @SFDC@
 
-# Do not link drivers wit any library by default
+# Do not link drivers with any library by default
 LIBS		= 
+
+ifeq ($(DEST),)
+  DEST := Devs
+endif
 
 INSTALL		= @INSTALL@
 INSTALL_PROGRAM	= @INSTALL_PROGRAM@
@@ -72,9 +76,9 @@ distclean:	clean
 maintainer-clean: distclean
 
 install:	all
-	$(INSTALL) -d $(PREFIX)/Devs/AHI $(PREFIX)/Devs/AudioModes
-	$(INSTALL_PROGRAM) $(DRIVER) $(PREFIX)/Devs/AHI/
-	$(INSTALL_DATA) $(MODEFILE) $(PREFIX)/Devs/AudioModes/
+	$(INSTALL) -d $(PREFIX)/$(DEST)/AHI $(PREFIX)/$(DEST)/AudioModes
+	$(INSTALL_PROGRAM) $(DRIVER) $(PREFIX)/$(DEST)/AHI/
+	$(INSTALL_DATA) $(MODEFILE) $(PREFIX)/$(DEST)/AudioModes/
 
 revup:
 	@rev=`cat $(srcdir)/version.rev` && echo `expr $$rev + 1` > $(srcdir)/version.rev
