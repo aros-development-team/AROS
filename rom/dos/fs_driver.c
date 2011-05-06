@@ -150,6 +150,25 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR ref, LONG accessMode
     return iofs.io_DosError;
 }
 
+LONG fs_ReadLink(BPTR parent, struct DevProc *dvp, CONST_STRPTR path, STRPTR buffer, ULONG size, struct DosLibrary *DOSBase)
+{
+    struct MsgPort *port;
+
+    if (parent)
+    {
+        struct FileHandle *fh = BADDR(parent);
+
+    	port = (struct MsgPort *)fh->fh_Device;
+    }
+    else
+    {
+        port   = dvp->dvp_Port;
+    	parent = dvp->dvp_Lock;
+    }
+
+    return ReadLink(port, parent, path, buffer, size);
+}
+
 LONG fs_ChangeSignal(BPTR handle, struct Process *task, struct DosLibrary *DOSBase)
 {
     struct IOFileSys iofs;

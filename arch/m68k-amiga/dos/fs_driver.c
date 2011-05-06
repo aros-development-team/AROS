@@ -105,6 +105,25 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR lock, LONG mode, CON
     return error;
 }
 
+LONG fs_ReadLink(BPTR parent, struct DevProc *dvp, CONST_STRPTR path, STRPTR buffer, ULONG size, struct DosLibrary *DOSBase)
+{
+    struct MsgPort *port;
+
+    if (parent)
+    {
+	struct FileLock *fl = BADDR(parent);
+
+    	port = fl->fl_Task;
+    }
+    else
+    {
+    	port   = dvp->dvp_Port;
+    	parent = dvp->dvp_Lock;
+    }
+
+    return ReadLink(port, parent, path, buffer, size);
+}
+
 LONG fs_ChangeSignal(BPTR handle, struct Process *task, struct DosLibrary *DOSBase)
 {
     LONG error = 0;
