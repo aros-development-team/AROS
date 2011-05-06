@@ -3814,7 +3814,7 @@ static void deinitdisk() {
 
       Forbid();
 
-#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
+#ifdef AROS_KERNEL
       globals->volumenode->dl_Ext.dl_AROS.dl_Unit = NULL;
 #endif
       globals->volumenode->dl_Task=0;
