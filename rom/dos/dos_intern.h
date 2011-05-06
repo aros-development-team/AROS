@@ -98,6 +98,9 @@ struct vfp
  ((struct FileHandle *)BADDR(f))->fh_Pos<((struct FileHandle *)BADDR(f))->fh_End? \
 *((struct FileHandle *)BADDR(f))->fh_Pos++=c,0:FPutC(f,c))
 
+/* Softlink handling */
+STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase);
+
 /* Packet emulator for IOFS */
 void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport);
 struct DosPacket *IOFS_GetPkt(struct IOFileSys *msg);

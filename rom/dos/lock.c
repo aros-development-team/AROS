@@ -93,7 +93,6 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     struct DevProc *dvp = NULL;
     LONG ret = DOSFALSE;
     LONG error = 0;
-    LONG error2 = 0;
     STRPTR filename;
 
     D(bug("[Lock] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\", \n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name));
@@ -144,67 +143,83 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 
     if (error == ERROR_IS_SOFT_LINK)
     {
-        ULONG buffer_size = 256;
-        STRPTR softname;
-        LONG continue_loop;
-        LONG written;
+        STRPTR softname = ResolveSoftlink(cur, dvp, name, DOSBase);
 
-	D(bug("[Lock] Softlink detected\n"));
-
-        do
+        if (softname)
         {
-            continue_loop = FALSE;
+            /* All OK */
+            BPTR olddir = CurrentDir(cur ? cur : dvp->dvp_Lock);
 
-            if (!(softname = AllocVec(buffer_size, MEMF_PUBLIC)))
-            {
-                error2 = ERROR_NO_FREE_STORE;
-                break;
-            }
+            ret = InternalLock(softname, accessMode, handle, soft_nesting - 1, DOSBase);
+            error = ret ? 0 : IoErr();
 
-	    D(bug("[Lock] Reading softlink %s...\n", name));
-            written = fs_ReadLink(cur, dvp, name, softname, buffer_size, DOSBase);
+            D(bug("[Lock] Resolve error %d\n", error));
 
-            if (written == -1)
-            {
-                /* An error occured */
-                error2 = IoErr();
-                D(bug("[Lock] Error %d reading softlink\n"));
-            }
-            else if (written == -2)
-            {
-                /* If there's not enough space in the buffer, increase it and try again */
-                continue_loop = TRUE;
-                buffer_size <<= 1;
-
-                D(bug("[Lock] Increased buffer size up to %u\n", buffer_size));
-            }
-            else if (written >= 0)
-            {
-                /* All OK */
-                BPTR olddir = CurrentDir(cur ? cur : dvp->dvp_Lock);
-
-		D(bug("[Lock] Resolved path: %s\n", softname));
-
-                ret = InternalLock(softname, accessMode, handle, soft_nesting - 1, DOSBase);
-                error2 = IoErr();
-
-                D(bug("[Lock] Resolved lock result %d, error %d\n", ret, error2));
-
-                CurrentDir(olddir);
-            }
-            else
-                error2 = ERROR_UNKNOWN;
-                
-            FreeVec(softname);
+	    FreeVec(softname);
+            CurrentDir(olddir);
         }
-        while(continue_loop);
+        else
+            error = IoErr();
     }
 
     FreeDeviceProc(dvp);
 
-    if (error ==  ERROR_IS_SOFT_LINK)
-    	error = ret ? 0 : error2;
+    if (error)
+    {
+    	SetIoErr(error);
+    	ret = DOSFALSE;
+    }
+    else
+    	ret = DOSTRUE;
 
-    SetIoErr(error);
-    return error ? DOSFALSE : DOSTRUE;
+    return ret;
+}
+
+STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase)
+{
+    ULONG buffer_size = 256;
+    STRPTR softname;
+    LONG continue_loop;
+    LONG written;
+
+    D(bug("[Softlink] Resolving softlink %s...\n", name));
+
+    do
+    {
+        continue_loop = FALSE;
+
+        if (!(softname = AllocVec(buffer_size, MEMF_PUBLIC)))
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            break;
+        }
+
+        written = fs_ReadLink(cur, dvp, name, softname, buffer_size, DOSBase);
+
+	switch (written)
+	{
+	case -1:
+            /* An error occured */
+            D(bug("[Softlink] Error %d reading softlink\n", IoErr()));
+            break;
+
+        case -2:
+            /* If there's not enough space in the buffer, increase it and try again */
+            continue_loop = TRUE;
+            buffer_size <<= 1;
+
+            D(bug("[Softlink] Increased buffer size up to %u\n", buffer_size));
+            break;
+
+	default:
+            /* All OK */
+            D(bug("[Softlink] Resolved path: %s\n", softname));
+            return softname;
+        }
+                
+        FreeVec(softname);
+    }
+    while(continue_loop);
+    
+    return NULL;
 }
