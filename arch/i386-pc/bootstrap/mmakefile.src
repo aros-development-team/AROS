@@ -17,18 +17,26 @@ setup-pc-i386 :
 $(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
 	@gzip -f $^
 	
-$(BINDIR)/boot/aros-pc-i386: setup-pc-i386 $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/kernel.bin.o 
-	$(KERNEL_LD) $(KERNEL_LDFLAGS) -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds \
-		-o $@ $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/kernel.bin.o -L$(LIBDIR) -lm -lrom -lm
+$(BINDIR)/boot/aros-pc-i386: setup-pc-i386 $(KOBJSDIR)/bootstrap.o \
+ $(TARGETDIR)/kernel.bin.o
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -Wl,-N,-e,kernel_bootstrap \
+		-Wl,-Map,$(OSGENDIR)/boot/aros.map \
+		-Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds \
+		-o $@ $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/kernel.bin.o \
+		-L$(LIBDIR) -lm -lrom -lm
 	$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
 
-$(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) $(KERNEL_LDFLAGS) -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -o $@ -L$(LIBDIR)  -lrom -lm
+$(KOBJSDIR)/bootstrap.o: \
+ $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+	$(KERNEL_LD) $(KERNEL_LDFLAGS) -r \
+		$(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -o $@ -L$(LIBDIR) \
+		-lrom -lm
 
 $(TARGETDIR)/kernel.bin.o: $(KOBJSDIR)/exec_library.o \
  $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/irq_hidd.o
-	$(TARGET_LD) $(LDFLAGS) -Map $(OSGENDIR)/boot/kernel.map \
-		-T $(SRCDIR)/$(CURDIR)/kernel.lds -o $(TARGETDIR)/kernel.bin \
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -Wl,-Map,$(OSGENDIR)/boot/kernel.map \
+		-Wl,-T,$(SRCDIR)/$(CURDIR)/kernel.lds \
+		-o $(TARGETDIR)/kernel.bin \
 		$(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o \
 		$(KOBJSDIR)/irq_hidd.o -L$(LIBDIR) -larossupport -lrom \
 		-larosm -lamiga -lautoinit -llibinit
