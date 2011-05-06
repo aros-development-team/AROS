@@ -77,7 +77,7 @@
     APTR *iface = (APTR *)emulbase->pdata.SysIFace;	\
 							\
     for (i = 0; libcSymbols[i]; i++)			\
-	bug("%s\t\t0x%P\n", libcSymbols[i], iface[i]);	\
+	bug("%s\t\t0x%p\n", libcSymbols[i], iface[i]);	\
 }
 #else
 #define DUMP_INTERFACE
@@ -133,7 +133,7 @@ static void SigIOHandler(struct emulbase *emulbase, void *unused)
 		req->io_Union.io_READ.io_Length = len;
 		req->io_DosError = 0;
 	    }
-	    DASYNC(bug("[emul] Replying request 0x%P, result %d, error %d\n", req, len, req->io_DosError));
+	    DASYNC(bug("[emul] Replying request 0x%p, result %d, error %d\n", req, len, req->io_DosError));
 	    ReplyMsg(&req->IOFS.io_Message);
 	}
 	DASYNC(bug("-"));
@@ -795,7 +795,7 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
     if (len == -2)
     {
 	/* There was no data available, perform an asynchronous read */
-	DREAD(bug("[emul] Putting request 0x%P to asynchronous queue\n", iofs));
+	DREAD(bug("[emul] Putting request 0x%p to asynchronous queue\n", iofs));
 
 	Disable();
 	AddTail((struct List *)&emulbase->pdata.readList, (struct Node *)iofs);
@@ -1205,7 +1205,7 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Entry
     struct stat st;
     LONG err;
 
-    DEXAM(bug("[emul] examine_entry(0x%P, %s, 0x%P, %u, %u)\n", fh, EntryName, ead, size, type));
+    DEXAM(bug("[emul] examine_entry(0x%p, %s, 0x%p, %u, %u)\n", fh, EntryName, ead, size, type));
 
     /* Return an error, if supplied type is not supported. */
     if(type>ED_OWNER)
@@ -1214,7 +1214,7 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Entry
     /* Check, if the supplied buffer is large enough. */
     next=(STRPTR)ead+sizes[type];
     end =(STRPTR)ead+size;
-    DEXAM(bug("[emul] ead 0x%P, next 0x%P, end 0x%P\n", ead, next, end));
+    DEXAM(bug("[emul] ead 0x%p, next 0x%p, end 0x%p\n", ead, next, end));
 
     if(next>end) /* > is correct. Not >= */
 	return ERROR_BUFFER_OVERFLOW;
@@ -1223,10 +1223,9 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Entry
     if (err)
     	return err;
 
-    DEXAM(bug("[emul] File mode: %o\n", st.st_mode));
-    DEXAM(bug("[emul] File size: %u\n", st.st_size));
-    DEXAM(bug("[emul] Filling in information\n"));
-    DEXAM(bug("[emul] ead 0x%P, next 0x%P, end 0x%P, size %u, type %u\n", ead, next, end, size, type));
+    DEXAM(KrnPrintf("[emul] File mode %o, size %u\n", st.st_mode, st.st_size));
+    DEXAM(KrnPrintf("[emul] Filling in information\n"));
+    DEXAM(KrnPrintf("[emul] ead 0x%p, next 0x%p, end 0x%p, size %u, type %u\n", ead, next, end, size, type));
 
     switch(type)
     {
@@ -1324,10 +1323,13 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
     	return ERROR_NO_MORE_ENTRIES;
 
     err = stat_entry(emulbase, fh, dir->d_name, &st);
-    if (err) {
+    if (err)
+    {
         DEXAM(bug("stat_entry() failed for %s\n", dir->d_name));
         return err;
     }
+
+    DEXAM(KrnPrintf("[emul] File mode %o, size %u\n", st.st_mode, st.st_size));
 
     FIB->fib_OwnerUID	= st.st_uid;
     FIB->fib_OwnerGID	= st.st_gid;
@@ -1348,7 +1350,9 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
     {
 	FIB->fib_DirEntryType = ST_FILE;
     }
-    
+
+    DEXAM(bug("[emul] DirentryType %d\n", FIB->fib_DirEntryType));
+
     /* fast copying of the filename */
     src  = dir->d_name;
     dest = FIB->fib_FileName;
@@ -1535,7 +1539,7 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
 {
     char *res;
 
-    DMOUNT(bug("[emul] GetCurrentDir(0x%P, %u)\n", path, len)); 
+    DMOUNT(bug("[emul] GetCurrentDir(0x%p, %u)\n", path, len)); 
 
     ObtainSemaphore(&emulbase->pdata.sem);
 
