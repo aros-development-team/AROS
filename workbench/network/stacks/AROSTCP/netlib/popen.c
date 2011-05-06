@@ -293,8 +293,9 @@ char *mktemp(char * template)
 
     if (*++cp != 0) {
         *cp = 'A';
-        while (lock = Lock(template, ACCESS_READ)) {
-	    UnLock(Lock);
+        while (lock = Lock(template, ACCESS_READ))
+        {
+	    UnLock(lock);
             if (*cp == 'Z') {
                 *template = 0;
                 break;
