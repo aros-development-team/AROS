@@ -34,8 +34,8 @@ FUNCS := \
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \
 #MM    includes-copy
-#MM kernel-partition : linklibs-core
-#MM kernel-partition-kobj : linklibs-core
+#MM kernel-partition : linklibs-core core-linklibs
+#MM kernel-partition-kobj : linklibs-core core-linklibs
 
 USER_CFLAGS := -DDEBUG=0 \
 	       $(PARANOIA_CFLAGS)
