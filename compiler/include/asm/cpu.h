@@ -18,6 +18,9 @@
 #ifdef __i386__
 #  include <asm/i386/cpu.h>
 #endif
+#ifdef __arm__
+#  include <asm/arm/cpu.h>
+#endif
 
 /* Some default generic definitions. */
 #ifndef HALT
