@@ -561,7 +561,6 @@ ifeq (%(detach),yes)
 endif
 
 # Make a list of the lib files this program depends on.
-ifneq (%(uselibs),)
 # In LDFLAGS remove white space between -L and directory
 TMP_DIRS := $(subst -L ,-L,$(strip %(ldflags)))
 # Filter out only the libdirs and remove -L
@@ -576,9 +575,6 @@ TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
 TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
 )
-else
-TMP_DEPLIBS :=
-endif
 
 ifeq (%(linker),target)
 %(prog) : CMD:=$(TARGET_CC)
@@ -621,7 +617,6 @@ ifeq (%(detach),yes)
 endif
 
 # Make a list of the lib files the programs depend on.
-ifneq (%(uselibs),)
 # In LDFLAGS remove white space between -L and directory
 TMP_DIRS := $(subst -L ,-L,$(strip %(ldflags)))
 # Filter out only the libdirs and remove -L
@@ -629,16 +624,13 @@ TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
 # Add trailing /
 TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
 # Add normal linklib path
-TMP_DIRS += $(LIBDIR)/lib/
+TMP_DIRS += $(LIBDIR)/
 # add lib and .a to static linklib names
 TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
 # search for the linklibs in the given path, ignore ones not found
 TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
 )
-else
-TMP_DEPLIBS :=
-endif
 
 $(addprefix %(targetdir)/,%(progs)) : LDFLAGS:= %(ldflags) $(TMP_EXTRA_LDFLAGS)
 $(addprefix %(targetdir)/,%(progs)) : LIBS:= $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
@@ -674,29 +666,33 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLI
 # The -noarosc flag is added so that modules are not linked with arosc.library
 # (see /config/specs.in file)
 %define rule_linkmodule module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
-    uselibs= usehostlibs=
+    ldflags=$(LDFLAGS) uselibs= usehostlibs=
+
+TMP_LDFLAGS  := %(ldflags)
+# Make a list of the lib files the programs depend on.
+# In LDFLAGS remove white space between -L and directory
+TMP_DIRS := $(subst -L ,-L,$(strip $(TMP_LDFLAGS)))
+# Filter out only the libdirs and remove -L
+TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
+# Add trailing /
+TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
+# Add normal linklib path
+TMP_DIRS += $(LIBDIR)/
+# add lib and .a to static linklib names
+TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+# search for the linklibs in the given path, ignore ones not found
+TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
+    $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
+)
 
 %(module) : OBJS := %(objs)
 %(module) : ENDTAG := %(endobj)
 %(module) : ERR := %(err)
 %(module) : OBJDIR := %(objdir)
+%(module) : LDFLAGS := $(TMP_LDFLAGS)
 %(module) : LIBS := $(addprefix -l,%(uselibs)) -lautoinit -llibinit -L/usr/lib $(addprefix -l,%(usehostlibs))
-
-TMP_DEPLIBS  := $(addprefix lib,$(addsuffix .a, %(uselibs) autoinit libinit))
-TMP_LDFLAGS  :=
-USER_DEPLIBS :=
-
-ifneq ($(USER_LIBDIR),)
-    ALL_USERLIBS := $(notdir $(wildcard $(USER_LIBDIR)/lib*.a))
-    USER_DEPLIBS := $(addprefix $(USER_LIBDIR)/, $(filter $(ALL_USERLIBS),$(TMP_DEPLIBS)))
-    TMP_DEPLIBS  := $(filter-out $(ALL_USERLIBS),$(TMP_DEPLIBS))
-    TMP_LDFLAGS  := -L$(USER_LIBDIR)
-endif
-
-TMP_DEPLIBS := $(addprefix $(LIBDIR)/, $(TMP_DEPLIBS))
-
 %(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(USER_DEPLIBS)
-	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) $(TMP_LDFLAGS) -noarosc"
+	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) -noarosc"
 
 %end
 #------------------------------------------------------------------------------
@@ -1118,9 +1114,10 @@ BD_KLIB := hiddstubs amiga arossupport rom arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
+$(BD_KOBJ) : USER_LDFLAGS := $(USER_LDFLAGS)
 $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 	@$(ECHO) "Linking $@"
-	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
+	@$(AROS_LD) -Ur -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
 	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
 
 
@@ -1353,19 +1350,14 @@ BD_KBASE := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
 
 BD_SYMBOLS := $(BD_KBASE)
 
-ifeq ($(USER_LIBDIR),)
-$(BD_KOBJ) : TMP_LDFLAGS :=
-else
-$(BD_KOBJ) : TMP_LDFLAGS := -L$(USER_LIBDIR)
-endif
-
 BD_KLIB := hiddstubs amiga arossupport rom arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
+$(BD_KOBJ) : USER_LDFLAGS:=$(USER_LDFLAGS)
 $(BD_KOBJ) : $(BD_OBJS) $(USER_OBJS) $(BD_ENDOBJS)
 	@$(ECHO) "Linking $@"
-	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(TMP_LDFLAGS) $(addprefix -l,$(LINKLIBS))
+	@$(AROS_LD) -Ur -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
 	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
 
 ## Dependency fine-tuning
@@ -2512,7 +2504,8 @@ PKG_DEPS  := $(addprefix $(PKGDIR)/, $(PKG_FILES))
 #MM
 %(mmake)-quick : %(file)
 
-%(file): $(PKG_DIR) $(PKG_DEPS)
+%(file): PKG_FILES := $(PKG_FILES)
+%(file): $(PKG_DEPS) | $(PKG_DIR)
 	@$(ECHO) Packaging $@...
 	@$(SRCDIR)/tools/package/pkg c $@ $(PKGDIR) $(PKG_FILES)
 
@@ -2524,7 +2517,8 @@ GLOB_MKDIRS += $(PKG_DIR)
 # Links a kickstart module in ELF format
 # Arguments are similar to make_package
 
-%define link_kickstart mmake=/A file=/A classes= devs= handlers= hidds= libs= res= startup= uselibs= map=
+%define link_kickstart mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
+    startup= uselibs= ldflags=$(LDFLAGS) map=
 
 KOBJ_CLASSES  := $(addprefix $(KOBJSDIR)/, $(addsuffix _class.o, %(classes)))
 KOBJ_DEVICES  := $(addprefix $(KOBJSDIR)/, $(addsuffix _device.o, %(devs)))
@@ -2540,24 +2534,28 @@ else
 endif
 
 KOBJS        := $(KOBJ_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
-LDLIBS       := $(addprefix -l, %(uselibs))
-DEPDIRS      := $(dir %(file))
-DEPLIBS      := $(addprefix lib,$(addsuffix .a, %(uselibs)))
-USER_DEPLIBS :=
-TMP_LDFLAGS  := -L$(LIBDIR)
 
-ifneq ($(USER_LIBDIR),)
-    ALL_USERLIBS := $(notdir $(wildcard $(USER_LIBDIR)/lib*.a))
-    USER_DEPLIBS := $(addprefix $(USER_LIBDIR)/, $(filter $(ALL_USERLIBS),$(DEPLIBS)))
-    DEPLIBS      := $(filter-out $(ALL_USERLIBS),$(DEPLIBS))
-    TMP_LDFLAGS  := -L$(USER_LIBDIR) $(TMP_LDFLAGS)
-endif
+TMP_LDFLAGS := %(ldflags)
 
-DEPLIBS := $(addprefix $(LIBDIR)/, $(DEPLIBS))
+# Make a list of the lib files this program depends on.
+# In LDFLAGS remove white space between -L and directory
+TMP_DIRS := $(subst -L ,-L,$(strip $(TMP_LDFLAGS)))
+# Filter out only the libdirs and remove -L
+TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
+# Add trailing /
+TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
+# Add normal linklib path
+TMP_DIRS += $(LIBDIR)/
+# add lib and .a to static linklib names
+TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+# search for the linklibs in the given path, ignore ones not found
+TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
+    $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
+)
 
 ifneq (%(map),)
     TMP_LDFLAGS += $(GENMAP) %(map)
-    DEPDIRS     += $(dir %(map))
+    TMP_DIRS    += $(dir %(map))
 endif
 
 #MM
@@ -2566,9 +2564,12 @@ endif
 #MM
 %(mmake)-quick : %(file)
 
-%(file): $(KOBJS) $(DEPDIRS) $(DEPLIBS) $(USER_DEPLIBS)
+%(file): KOBJS := $(KOBJS)
+%(file): LDFLAGS := $(TMP_LDFLAGS) $(NOSTARTUP_LDFLAGS)
+%(file): LDLIBS := $(addprefix -l, %(uselibs))
+%(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
 	@$(ECHO) Linking $@...
-	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(NOSTARTUP_LDFLAGS) $(TMP_LDFLAGS) $(LDLIBS)
+	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
 
 GLOB_MKDIRS += $(DEPDIRS)
 
