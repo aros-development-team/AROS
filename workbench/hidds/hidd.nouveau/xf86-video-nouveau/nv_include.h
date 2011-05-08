@@ -18,7 +18,7 @@
 #define Architecture                architecture
 #define PixmapPtr                   struct HIDDNouveauBitMapData *
 #define xf86DrvMsg(a, b, fmt, ...)  bug(fmt, ##__VA_ARGS__)
-#define ErrorF(msg)                 bug(msg)
+#define ErrorF(msg, ...)            bug(msg, ##__VA_ARGS__)
 #define PictFormatShort             LONG
 #define PictTransformPtr            APTR
 
@@ -44,25 +44,33 @@ typedef struct Picture * PicturePtr;
 #define PICT_UNKNOWN        0
 #define PICT_a8r8g8b8       1
 #define PICT_x8r8g8b8       2
-#define PICT_x8b8g8r8       3
-#define PICT_a8b8g8r8       4
-#define PICT_a1r5g5b5       5
-#define PICT_x1r5g5b5       6
-#define PICT_a1b5g5r5       7
-#define PICT_x1b5g5r5       8
-#define PICT_x4r4g4b4       9
-#define PICT_a4r4g4b4       10
-#define PICT_x4b4g4r4       11
-#define PICT_a4b4g4r4       12
-#define PICT_r5g6b5         13
-#define PICT_b5g6r5         14
-#define PICT_a8             15
+#define PICT_a8b8g8r8       3
+#define PICT_x8b8g8r8       4
+#define PICT_b8g8r8a8       5
+#define PICT_b8g8r8x8       6
+#define PICT_a2b10g10r10    7
+#define PICT_x2b10g10r10    8
+#define PICT_a2r10g10b10    9
+#define PICT_x2r10g10b10    10
+#define PICT_a1r5g5b5       11
+#define PICT_x1r5g5b5       12
+#define PICT_a1b5g5r5       13
+#define PICT_x1b5g5r5       14
+#define PICT_x4r4g4b4       15
+#define PICT_a4r4g4b4       16
+#define PICT_x4b4g4r4       17
+#define PICT_a4b4g4r4       18
+#define PICT_r5g6b5         19
+#define PICT_b5g6r5         20
+#define PICT_a8             21
+
 
 #define nouveau_pixmap_bo(x)    (x->bo)
 #define exaGetPixmapPitch(x)    (x->pitch)
 
 #define PictOpSaturate      14
 
+Bool NVAccelInitNV50TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV40TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV30TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
@@ -74,6 +82,9 @@ static inline BOOL PICT_FORMAT_A(int format)
     {
     case(PICT_a8r8g8b8):
     case(PICT_a8b8g8r8):
+    case(PICT_b8g8r8a8):
+    case(PICT_a2b10g10r10):
+    case(PICT_a2r10g10b10):
     case(PICT_a1r5g5b5):
     case(PICT_a1b5g5r5):
     case(PICT_a4r4g4b4):
@@ -93,6 +104,12 @@ static inline BOOL PICT_FORMAT_RGB(int format)
     case(PICT_x8r8g8b8):
     case(PICT_x8b8g8r8):
     case(PICT_a8b8g8r8):
+    case(PICT_b8g8r8a8):
+    case(PICT_b8g8r8x8):
+    case(PICT_a2b10g10r10):
+    case(PICT_x2b10g10r10):
+    case(PICT_a2r10g10b10):
+    case(PICT_x2r10g10b10):
     case(PICT_a1r5g5b5):
     case(PICT_x1r5g5b5):
     case(PICT_a1b5g5r5):

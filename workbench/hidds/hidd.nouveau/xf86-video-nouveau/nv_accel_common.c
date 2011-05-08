@@ -699,9 +699,9 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 //	case NV_ARCH_C0:
 //		INIT_CONTEXT_OBJECT(3D_NVC0);
 //		break;
-//	case NV_ARCH_50:
-//		INIT_CONTEXT_OBJECT(NV50TCL);
-//		break;
+	case NV_ARCH_50:
+		INIT_CONTEXT_OBJECT(NV50TCL);
+		break;
 	case NV_ARCH_40:
 		INIT_CONTEXT_OBJECT(NV40TCL);
 		break;
@@ -729,7 +729,7 @@ void NVAccelFree(ScrnInfoPtr pScrn)
 #endif
 
 	nouveau_notifier_free(&pNv->notify0);
-//	nouveau_notifier_free(&pNv->vblank_sem);
+	nouveau_notifier_free(&pNv->vblank_sem);
 
 	nouveau_grobj_free(&pNv->NvContextSurfaces);
 //	nouveau_grobj_free(&pNv->NvContextBeta1);
@@ -743,9 +743,9 @@ void NVAccelFree(ScrnInfoPtr pScrn)
 //	nouveau_grobj_free(&pNv->NvImageFromCpu);
 	nouveau_grobj_free(&pNv->Nv2D);
 	nouveau_grobj_free(&pNv->NvMemFormat);
-//	nouveau_grobj_free(&pNv->NvSW);
+	nouveau_grobj_free(&pNv->NvSW);
 	nouveau_grobj_free(&pNv->Nv3D);
 
-//	nouveau_bo_ref(NULL, &pNv->tesla_scratch);
+	nouveau_bo_ref(NULL, &pNv->tesla_scratch);
 	nouveau_bo_ref(NULL, &pNv->shader_mem);
 }
