@@ -7,10 +7,24 @@
 */
 
 #include <inttypes.h>
-#include <asm/arm/cpu.h>
+#include <asm/cpu.h>
 #include "boot.h"
+#include "serialdebug.h"
+#include "atags.h"
 
-__startup void bootstrap(uintptr_t a0, uintptr_t a1, uintptr_t a2)
+static void parse_atags(struct tag *tags)
+{
+	struct tag *t = NULL;
+
+	kprintf("Parsing ATAGS\n");
+
+	for_each_tag(t, tags)
+	{
+		kprintf("  %08x: \n\r", t->hdr.tag, t->hdr.size);
+	}
+}
+
+__startup void bootstrap(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 {
 	uint32_t tmp;
 
@@ -22,7 +36,9 @@ __startup void bootstrap(uintptr_t a0, uintptr_t a1, uintptr_t a2)
 
     fmxr(cr8, fmrx(cr8) | 1 << 30);
 
+    kprintf("AROS for EfikaMX bootstrap\n\r");
 
+    parse_atags(atags);
+
+    while(1);
 }
-
-
