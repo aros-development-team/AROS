@@ -2553,6 +2553,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
 )
 
+TMP_DIRS += $(dir %(file))
 ifneq (%(map),)
     TMP_LDFLAGS += $(GENMAP) %(map)
     TMP_DIRS    += $(dir %(map))
@@ -2571,7 +2572,7 @@ endif
 	@$(ECHO) Linking $@...
 	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
 
-GLOB_MKDIRS += $(DEPDIRS)
+GLOB_MKDIRS += $(TMP_DIRS)
 
 %end
 
