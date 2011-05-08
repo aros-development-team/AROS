@@ -137,7 +137,7 @@ ULONG RdArgs(BSTR format, BPTR args, ULONG max_arg)
  * pull in arosc.library.
  *
  * We can't use AllocVec, since it's only
- * been around since KS v46
+ * been around since KS v36
  */
 void *malloc(int size)
 {
@@ -537,8 +537,7 @@ __startup static AROS_ENTRY(int, startup,
 
     /* See if we're already running on AROS.
      */
-    struct Library *sbl = (APTR)SysBase;
-    if (sbl->lib_Version > 40)
+    if (OpenResource("kernel.resource"))
     	return RETURN_OK;
 
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
