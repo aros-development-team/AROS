@@ -1,4 +1,4 @@
-# Copyright © 2004-2009, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2011, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -34,6 +34,6 @@ FILES := main \
 
 %build_prog mmake=workbench-system-wanderer-app \
     progname=Wanderer targetdir=$(AROS_WANDERER) files=$(FILES) \
-    uselibs="mui arossupport amiga rom m" detach=yes
+    uselibs="mui arossupport amiga m" detach=yes
 
 %common

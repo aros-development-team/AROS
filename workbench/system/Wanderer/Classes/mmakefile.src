@@ -1,9 +1,9 @@
-# Copyright Â© 2008, The AROS Development Team. All rights reserved.
+# Copyright © 2008-2011, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
 
-USER_LIBS   := amiga rom m mui
+USER_LIBS   := amiga m mui
 
 #MM-  workbench-system-wanderer-classes : \
 ##MM  wanderer-classes-icon \
