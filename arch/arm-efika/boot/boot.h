@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: boot.h
     Lang: english
@@ -11,7 +11,6 @@
 
 #include <inttypes.h>
 
-#define __startup __attribute__((section(".aros.startup")))
-#define __used __attribute__((used))
+void kprintf(const char *format, ...);
 
 #endif /* BOOT_H_ */

@@ -2,8 +2,8 @@
 include $(TOP)/config/make.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
-FILES           := boot 
-USER_CFLAGS       := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
+FILES           := boot serialdebug
+USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
 
 #MM arosboot-efika: 
 arosboot-efika: $(AROSDIR)/arosboot
@@ -11,18 +11,19 @@ arosboot-efika: $(AROSDIR)/arosboot
 $(AROSDIR)/arosboot: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 		$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -L$(LIBDIR) -lm -lrom -lm -laeabi -o $@
 		objcopy -O binary $@ $@.bin
-		mkimage -A arm -O linux -T kernel -C none -a 0x90008000 -e 0x90008000 -n "AROS Boot" -d $@.bin $(AROSDIR)/uImage-aros
+		gzip $@.bin
+		mv $@.bin.gz $@.bin
+		mkimage -A arm -O linux -T kernel -C gzip -a 0x90008000 -e 0x90008000 -n "AROS Boot" -d $@.bin $(AROSDIR)/uImage-aros
 
 #MM
 clean ::
 		-$(RM) $(TESTS)
-#
-#$(TARGETDIR)/%.o : %.c
-#		%compile_q opt="$(CFLAGS) $(MY_CFLAGS)"
-#
-#$(TARGETDIR)/%.o : %.S
-#		%compile_q opt="$(CFLAGS) $(MY_CFLAGS)"
-#
+
+$(TARGETDIR)/%.o : %.c
+		%compile_q 
+
+$(TARGETDIR)/%.o : %.S
+		%compile_q 
 
 $(TARGETDIR)/%.d : %.c
 		%mkdepend_q
