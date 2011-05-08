@@ -4,7 +4,7 @@ include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 
 #MM hidd-nouveau : hidd-i2c hidd-agp hidd-gallium
 
-GALLIUM_NVIDIA_SOURCES = \
+GALLIUM_NOUVEUA_SOURCES = \
             drivers/nouveau/nouveau_screen \
             drivers/nvfx/nv04_2d \
             drivers/nvfx/nvfx_buffer \
@@ -52,11 +52,22 @@ GALLIUM_NVIDIA_SOURCES = \
             drivers/nv50/nv50_transfer \
             drivers/nv50/nv50_vbo \
 
+XF86_NOUVEAU_SOURCES = \
+            nv_accel_common \
+            nv50_accel \
+            nv40_exa \
+            nv30_shaders \
+            nv30_exa \
+            nv10_exa \
+            nv50_exa \
+            nouveau_exa \
+
 GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
 
 # WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
 
 DRM_PATH = $(SRCDIR)/$(CURDIR)/drm/
+XF86_NOUVEAU_PATH = $(SRCDIR)/$(CURDIR)/xf86-video-nouveau/
 
 NOUVEAU_HIDD_SOURCES := \
             nouveauclass \
@@ -70,18 +81,12 @@ NOUVEAU_HIDD_SOURCES := \
             arosc_emul \
             hack_patchrgbconv \
             compositingclass \
-            xf86-video-nouveau/nv_accel_common \
-            xf86-video-nouveau/nv50_accel \
-            xf86-video-nouveau/nv40_exa \
-            xf86-video-nouveau/nv30_shaders \
-            xf86-video-nouveau/nv30_exa \
-            xf86-video-nouveau/nv10_exa \
-            xf86-video-nouveau/nv50_exa \
-            $(addprefix $(DRM_PATH),$(AROS_DRM_CORE_SOURCES))       \
-            $(addprefix $(DRM_PATH),$(AROS_DRM_NVIDIA_SOURCES))     \
-            $(addprefix $(DRM_PATH),$(AROS_LIBDRM_CORE_SOURCES))    \
-            $(addprefix $(DRM_PATH),$(AROS_LIBDRM_NVIDIA_SOURCES))  \
-            $(addprefix $(GALLIUM_PATH), $(GALLIUM_NVIDIA_SOURCES)) \
+            $(addprefix $(DRM_PATH),$(AROS_DRM_CORE_SOURCES))           \
+            $(addprefix $(DRM_PATH),$(AROS_DRM_NVIDIA_SOURCES))         \
+            $(addprefix $(DRM_PATH),$(AROS_LIBDRM_CORE_SOURCES))        \
+            $(addprefix $(DRM_PATH),$(AROS_LIBDRM_NVIDIA_SOURCES))      \
+            $(addprefix $(GALLIUM_PATH), $(GALLIUM_NOUVEUA_SOURCES))    \
+            $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
 
 USER_INCLUDES := \
                 -I$(DRM_PATH)/drm                           \
@@ -92,7 +97,7 @@ USER_INCLUDES := \
                 -I$(AROS_DEVELOPMENT)/include/gallium       \
                 -I$(GALLIUM_PATH)/include                   \
                 -I$(DRM_PATH)/libdrm                        \
-                -I$(SRCDIR)/$(CURDIR)/xf86-video-nouveau    \
+                -I$(XF86_NOUVEAU_PATH)                      \
 
 USER_CFLAGS := -std=gnu99
 

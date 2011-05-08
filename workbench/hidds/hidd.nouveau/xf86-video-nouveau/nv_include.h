@@ -74,6 +74,7 @@ Bool NVAccelInitNV50TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV40TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV30TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
+Bool nv50_style_tiled_pixmap(PixmapPtr ppix, ScrnInfoPtr pScrn);
 
 
 static inline BOOL PICT_FORMAT_A(int format)
