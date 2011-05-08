@@ -112,7 +112,9 @@ struct CardData
     ULONG                   architecture;
     struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
     struct nouveau_channel  *chan;
+
     struct nouveau_notifier *notify0;
+    struct nouveau_notifier *vblank_sem;
     
     struct nouveau_grobj    *NvImageBlit;
     struct nouveau_grobj    *NvContextSurfaces;
@@ -122,7 +124,9 @@ struct CardData
     struct nouveau_grobj    *NvMemFormat;
     struct nouveau_grobj    *Nv2D;
     struct nouveau_grobj    *Nv3D;
+    struct nouveau_grobj    *NvSW;
     struct nouveau_bo       *shader_mem;
+    struct nouveau_bo       *tesla_scratch;
     
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
     struct SignalSemaphore  gartsemaphore;

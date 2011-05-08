@@ -26,6 +26,7 @@
 #if !defined(__AROS__)
 #include "compiler.h"
 #include "xf86_OSproc.h"
+#endif
 
 /* Debug output */
 #define NOUVEAU_MSG(fmt,args...) ErrorF(fmt, ##args)
@@ -40,7 +41,6 @@
 #define NOUVEAU_FALLBACK(fmt,args...) do {    \
 	return FALSE;                         \
 } while(0)
-#endif
 #endif
 
 #define NOUVEAU_ALIGN(x,bytes) (((x) + ((bytes) - 1)) & ~((bytes) - 1))
