@@ -288,10 +288,6 @@ BOOL HiddNouveauWriteFromRAM(
     APTR dst, ULONG dstPitch,
     ULONG width, ULONG height,
     OOP_Class *cl, OOP_Object *o);
-BOOL HiddNouveauNVAccelUploadM2MF(
-    UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
-    OOP_Class *cl, OOP_Object *o);
 BOOL HiddNouveauAccelARGBUpload3D(
     UBYTE * srcpixels, ULONG srcpitch,
     ULONG x, ULONG y, ULONG width, ULONG height, 
@@ -304,6 +300,11 @@ BOOL HiddNouveauReadIntoRAM(
     OOP_Class *cl, OOP_Object *o);
 BOOL HiddNouveauNVAccelDownloadM2MF(
     UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
+    OOP_Class *cl, OOP_Object *o);
+
+BOOL HiddNouveauNVAccelUploadM2MF(
+    UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);
 
