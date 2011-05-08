@@ -155,23 +155,40 @@ NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 
 	return TRUE;
 }
+#endif
 
+#if !defined(__AROS__)
 static inline Bool
 NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 		  const char *src, int src_pitch)
 {
 	ScrnInfoPtr pScrn = xf86Screens[pdpix->drawable.pScreen->myNum];
+#else
+static inline Bool
+NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
+		  const char *src, int src_pitch, 
+		  ScrnInfoPtr pScrn, HIDDT_StdPixFmt srcPixFmt, OOP_Class *cl, OOP_Object *o)
+{
+#endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
 	struct nouveau_grobj *m2mf = pNv->NvMemFormat;
 	struct nouveau_bo *bo = nouveau_pixmap_bo(pdpix);
+#if !defined(__AROS__)
 	unsigned cpp = pdpix->drawable.bitsPerPixel / 8;
+#else
+	unsigned cpp = pdpix->bytesperpixel;
+#endif
 	unsigned line_len = w * cpp;
 	unsigned dst_offset = 0, dst_pitch = 0, linear = 0;
 	/* Maximum DMA transfer */
 	unsigned line_count = pNv->GART->size / line_len;
 
+#if !defined(__AROS__)
 	if (!nv50_style_tiled_pixmap(pdpix)) {
+#else
+	if (!nv50_style_tiled_pixmap(pdpix, pScrn)) {
+#endif
 		linear     = 1;
 		dst_pitch  = exaGetPixmapPitch(pdpix);
 		dst_offset += (y * dst_pitch) + (x * cpp);
@@ -192,6 +209,7 @@ NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 		if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR))
 			return FALSE;
 		dst = pNv->GART->map;
+#if !defined(__AROS__)
 		if (src_pitch == line_len) {
 			memcpy(dst, src, src_pitch * line_count);
 			src += src_pitch * line_count;
@@ -202,6 +220,15 @@ NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 				dst += line_len;
 			}
 		}
+#else
+        (void)i;
+        HiddNouveauWriteFromRAM(
+            (APTR)src, src_pitch, srcPixFmt,
+            dst, line_len,
+            w, line_count,
+            cl, o);
+        src += src_pitch * line_count;
+#endif
 		nouveau_bo_unmap(pNv->GART);
 
 		if (MARK_RING(chan, 32, 6))
@@ -224,8 +251,13 @@ NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 				BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_OUT, 7);
 				OUT_RING  (chan, 0);
 				OUT_RING  (chan, bo->tile_mode << 4);
+#if !defined(__AROS__)
 				OUT_RING  (chan, pdpix->drawable.width * cpp);
 				OUT_RING  (chan, pdpix->drawable.height);
+#else
+				OUT_RING  (chan, pdpix->width * cpp);
+				OUT_RING  (chan, pdpix->height);
+#endif
 				OUT_RING  (chan, 1);
 				OUT_RING  (chan, 0);
 				OUT_RING  (chan, (y << 16) | (x * cpp));
@@ -271,6 +303,7 @@ NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 	return TRUE;
 }
 
+#if !defined(__AROS__)
 static int
 nouveau_exa_mark_sync(ScreenPtr pScreen)
 {
@@ -603,3 +636,22 @@ nouveau_exa_init(ScreenPtr pScreen)
 	return TRUE;
 }
 #endif
+
+
+/* AROS CODE */
+
+/* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes lock on GART object is already made */
+/* NOTE: Assumes buffer is not mapped */
+BOOL HiddNouveauNVAccelUploadM2MF(
+    UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
+    OOP_Class *cl, OOP_Object *o)
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData * carddata = &(SD(cl)->carddata);
+
+    return NVAccelUploadM2MF(bmdata, x, y, width, height,
+		  srcpixels, srcpitch, 
+		  carddata, srcPixFmt, cl, o);
+}
