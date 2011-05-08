@@ -89,7 +89,8 @@ void writestubs(struct config *cfg)
                     fprintf(out,
                             ")\n"
                             "{\n"
-                            "    return AROS_LC%d%s(%s, %s,\n",
+                            "    %sAROS_LC%d%s(%s, %s,\n",
+                            (isvoid) ? "" : "return ",
                             funclistit->argcount, (isvoid) ? "NR" : "",
                             funclistit->type, funclistit->name
                     );
@@ -116,7 +117,8 @@ void writestubs(struct config *cfg)
                         fprintf(out,
                                 ") \\\n"
                                 "{\n"
-                                "    return AROS_LCQUAD%d%s(%s, %s, \\\n",
+                                "    %sAROS_LCQUAD%d%s(%s, %s, \\\n",
+                                (isvoid) ? "" : "return ",
                                 funclistit->argcount, (isvoid) ? "NR" : "",
                                 funclistit->type, funclistit->name
                         );
@@ -126,7 +128,8 @@ void writestubs(struct config *cfg)
                         fprintf(out,
                                 ") \\\n"
                                 "{\n"
-                                "    return AROS_LC%dQUAD%d%s(%s, %s, \\\n",
+                                "    %sAROS_LC%dQUAD%d%s(%s, %s, \\\n",
+                                (isvoid) ? "" : "return ",
                                 nargs, nquad, (isvoid) ? "NR" : "",
                                 funclistit->type, funclistit->name
                         );
