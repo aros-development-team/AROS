@@ -56,7 +56,6 @@ static struct nv50_exa_state exa_state;
 	struct nouveau_grobj *eng2d = pNv->Nv2D; (void)eng2d;          \
 	struct nouveau_grobj *tesla = pNv->Nv3D; (void)tesla;
 
-#define nv50_style_tiled_pixmap(x)  FALSE
 #endif
 
 #define BF(f) NV50TCL_BLEND_FUNC_SRC_RGB_##f
@@ -492,7 +491,11 @@ NV50EXARenderTarget(PixmapPtr ppix, PicturePtr ppict, ScrnInfoPtr pScrn)
 	unsigned format;
 
 	/*XXX: Scanout buffer not tiled, someone needs to figure it out */
+#if !defined(__AROS__)
 	if (!nv50_style_tiled_pixmap(ppix))
+#else
+	if (!nv50_style_tiled_pixmap(ppix, pScrn))
+#endif
 		NOUVEAU_FALLBACK("pixmap is scanout buffer\n");
 
 	switch (ppict->format) {
@@ -618,7 +621,11 @@ NV50EXATexture(PixmapPtr ppix, PicturePtr ppict, unsigned unit, ScrnInfoPtr pScr
 	uint32_t mode;
 
 	/*XXX: Scanout buffer not tiled, someone needs to figure it out */
+#if !defined(__AROS__)
 	if (!nv50_style_tiled_pixmap(ppix))
+#else
+	if (!nv50_style_tiled_pixmap(ppix, pScrn))
+#endif
 		NOUVEAU_FALLBACK("pixmap is scanout buffer\n");
 
 	BEGIN_RING(chan, tesla, NV50TCL_TIC_ADDRESS_HIGH, 3);
