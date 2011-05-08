@@ -41,23 +41,40 @@ NVAccelMemcpyRect(char *dst, const char *src, int height, int dst_pitch,
 
 	return TRUE;
 }
+#endif
 
+#if !defined(__AROS__)
 static inline Bool
 NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 		    char *dst, unsigned dst_pitch)
 {
 	ScrnInfoPtr pScrn = xf86Screens[pspix->drawable.pScreen->myNum];
+#else
+static inline Bool
+NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
+		    char *dst, unsigned dst_pitch,
+		    ScrnInfoPtr pScrn, HIDDT_StdPixFmt dstPixFmt, OOP_Class *cl, OOP_Object *o)
+{
+#endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
 	struct nouveau_grobj *m2mf = pNv->NvMemFormat;
 	struct nouveau_bo *bo = nouveau_pixmap_bo(pspix);
+#if !defined(__AROS__)
 	unsigned cpp = pspix->drawable.bitsPerPixel / 8;
+#else
+	unsigned cpp = pspix->bytesperpixel;
+#endif
 	unsigned line_len = w * cpp;
 	unsigned src_offset = 0, src_pitch = 0, linear = 0;
 	/* Maximum DMA transfer */
 	unsigned line_count = pNv->GART->size / line_len;
 
+#if !defined(__AROS__)
 	if (!nv50_style_tiled_pixmap(pspix)) {
+#else
+	if (!nv50_style_tiled_pixmap(pspix, pScrn)) {
+#endif
 		linear     = 1;
 		src_pitch  = exaGetPixmapPitch(pspix);
 		src_offset += (y * src_pitch) + (x * cpp);
@@ -91,8 +108,13 @@ NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 				BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_IN, 7);
 				OUT_RING  (chan, 0);
 				OUT_RING  (chan, bo->tile_mode << 4);
+#if !defined(__AROS__)
 				OUT_RING  (chan, pspix->drawable.width * cpp);
 				OUT_RING  (chan, pspix->drawable.height);
+#else
+				OUT_RING  (chan, pspix->width * cpp);
+				OUT_RING  (chan, pspix->height);
+#endif
 				OUT_RING  (chan, 1);
 				OUT_RING  (chan, 0);
 				OUT_RING  (chan, (y << 16) | (x * cpp));
@@ -135,6 +157,7 @@ NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 			return FALSE;
 		}
 		src = pNv->GART->map;
+#if !defined(__AROS__)
 		if (dst_pitch == line_len) {
 			memcpy(dst, src, dst_pitch * line_count);
 			dst += dst_pitch * line_count;
@@ -145,6 +168,15 @@ NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 				dst += dst_pitch;
 			}
 		}
+#else
+        (void)i;
+        HiddNouveauReadIntoRAM(
+            src, line_len,
+            dst, dst_pitch, dstPixFmt,
+            w, line_count,
+            cl, o);
+        dst += dst_pitch * line_count;
+#endif
 		nouveau_bo_unmap(pNv->GART);
 
 		if (linear)
@@ -155,7 +187,6 @@ NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 
 	return TRUE;
 }
-#endif
 
 #if !defined(__AROS__)
 static inline Bool
@@ -652,6 +683,21 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     struct CardData * carddata = &(SD(cl)->carddata);
 
     return NVAccelUploadM2MF(bmdata, x, y, width, height,
-		  srcpixels, srcpitch, 
-		  carddata, srcPixFmt, cl, o);
+		  srcpixels, srcpitch, carddata, srcPixFmt, cl, o);
 }
+
+/* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes lock on GART object is already made */
+/* NOTE: Assumes buffer is not mapped */
+BOOL HiddNouveauNVAccelDownloadM2MF(
+    UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
+    OOP_Class *cl, OOP_Object *o)  
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData * carddata = &(SD(cl)->carddata);
+
+    return NVAccelDownloadM2MF(bmdata, x, y, width, height,
+		    dstpixels, dstpitch, carddata, dstPixFmt, cl, o);
+}
+
