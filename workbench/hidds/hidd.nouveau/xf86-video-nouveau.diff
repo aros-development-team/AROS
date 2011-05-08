@@ -1,25 +1,261 @@
+diff -ur ./xf86-video-nouveau-src/nouveau_exa.c ./xf86-video-nouveau/nouveau_exa.c
+--- ./xf86-video-nouveau-src/nouveau_exa.c	2011-03-23 09:14:36.000000000 +0100
++++ ./xf86-video-nouveau/nouveau_exa.c	2011-05-07 21:30:39.000000000 +0200
+@@ -21,6 +21,7 @@
+  */
+ 
+ #include "nv_include.h"
++#if !defined(__AROS__)
+ #include "nv04_pushbuf.h"
+ #include "exa.h"
+ 
+@@ -40,23 +41,40 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
++#if !defined(__AROS__)
+ static inline Bool
+ NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
+ 		    char *dst, unsigned dst_pitch)
+ {
+ 	ScrnInfoPtr pScrn = xf86Screens[pspix->drawable.pScreen->myNum];
++#else
++static inline Bool
++NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
++		    char *dst, unsigned dst_pitch,
++		    ScrnInfoPtr pScrn, HIDDT_StdPixFmt dstPixFmt, OOP_Class *cl, OOP_Object *o)
++{
++#endif
+ 	NVPtr pNv = NVPTR(pScrn);
+ 	struct nouveau_channel *chan = pNv->chan;
+ 	struct nouveau_grobj *m2mf = pNv->NvMemFormat;
+ 	struct nouveau_bo *bo = nouveau_pixmap_bo(pspix);
++#if !defined(__AROS__)
+ 	unsigned cpp = pspix->drawable.bitsPerPixel / 8;
++#else
++	unsigned cpp = pspix->bytesperpixel;
++#endif
+ 	unsigned line_len = w * cpp;
+ 	unsigned src_offset = 0, src_pitch = 0, linear = 0;
+ 	/* Maximum DMA transfer */
+ 	unsigned line_count = pNv->GART->size / line_len;
+ 
++#if !defined(__AROS__)
+ 	if (!nv50_style_tiled_pixmap(pspix)) {
++#else
++	if (!nv50_style_tiled_pixmap(pspix, pScrn)) {
++#endif
+ 		linear     = 1;
+ 		src_pitch  = exaGetPixmapPitch(pspix);
+ 		src_offset += (y * src_pitch) + (x * cpp);
+@@ -90,8 +108,13 @@
+ 				BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_IN, 7);
+ 				OUT_RING  (chan, 0);
+ 				OUT_RING  (chan, bo->tile_mode << 4);
++#if !defined(__AROS__)
+ 				OUT_RING  (chan, pspix->drawable.width * cpp);
+ 				OUT_RING  (chan, pspix->drawable.height);
++#else
++				OUT_RING  (chan, pspix->width * cpp);
++				OUT_RING  (chan, pspix->height);
++#endif
+ 				OUT_RING  (chan, 1);
+ 				OUT_RING  (chan, 0);
+ 				OUT_RING  (chan, (y << 16) | (x * cpp));
+@@ -134,6 +157,7 @@
+ 			return FALSE;
+ 		}
+ 		src = pNv->GART->map;
++#if !defined(__AROS__)
+ 		if (dst_pitch == line_len) {
+ 			memcpy(dst, src, dst_pitch * line_count);
+ 			dst += dst_pitch * line_count;
+@@ -144,6 +168,15 @@
+ 				dst += dst_pitch;
+ 			}
+ 		}
++#else
++        (void)i;
++        HiddNouveauReadIntoRAM(
++            src, line_len,
++            dst, dst_pitch, dstPixFmt,
++            w, line_count,
++            cl, o);
++        dst += dst_pitch * line_count;
++#endif
+ 		nouveau_bo_unmap(pNv->GART);
+ 
+ 		if (linear)
+@@ -155,22 +188,38 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static inline Bool
+ NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
+ 		  const char *src, int src_pitch)
+ {
+ 	ScrnInfoPtr pScrn = xf86Screens[pdpix->drawable.pScreen->myNum];
++#else
++static inline Bool
++NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
++		  const char *src, int src_pitch, 
++		  ScrnInfoPtr pScrn, HIDDT_StdPixFmt srcPixFmt, OOP_Class *cl, OOP_Object *o)
++{
++#endif
+ 	NVPtr pNv = NVPTR(pScrn);
+ 	struct nouveau_channel *chan = pNv->chan;
+ 	struct nouveau_grobj *m2mf = pNv->NvMemFormat;
+ 	struct nouveau_bo *bo = nouveau_pixmap_bo(pdpix);
++#if !defined(__AROS__)
+ 	unsigned cpp = pdpix->drawable.bitsPerPixel / 8;
++#else
++	unsigned cpp = pdpix->bytesperpixel;
++#endif
+ 	unsigned line_len = w * cpp;
+ 	unsigned dst_offset = 0, dst_pitch = 0, linear = 0;
+ 	/* Maximum DMA transfer */
+ 	unsigned line_count = pNv->GART->size / line_len;
+ 
++#if !defined(__AROS__)
+ 	if (!nv50_style_tiled_pixmap(pdpix)) {
++#else
++	if (!nv50_style_tiled_pixmap(pdpix, pScrn)) {
++#endif
+ 		linear     = 1;
+ 		dst_pitch  = exaGetPixmapPitch(pdpix);
+ 		dst_offset += (y * dst_pitch) + (x * cpp);
+@@ -191,6 +240,7 @@
+ 		if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR))
+ 			return FALSE;
+ 		dst = pNv->GART->map;
++#if !defined(__AROS__)
+ 		if (src_pitch == line_len) {
+ 			memcpy(dst, src, src_pitch * line_count);
+ 			src += src_pitch * line_count;
+@@ -201,6 +251,15 @@
+ 				dst += line_len;
+ 			}
+ 		}
++#else
++        (void)i;
++        HiddNouveauWriteFromRAM(
++            (APTR)src, src_pitch, srcPixFmt,
++            dst, line_len,
++            w, line_count,
++            cl, o);
++        src += src_pitch * line_count;
++#endif
+ 		nouveau_bo_unmap(pNv->GART);
+ 
+ 		if (MARK_RING(chan, 32, 6))
+@@ -223,8 +282,13 @@
+ 				BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_OUT, 7);
+ 				OUT_RING  (chan, 0);
+ 				OUT_RING  (chan, bo->tile_mode << 4);
++#if !defined(__AROS__)
+ 				OUT_RING  (chan, pdpix->drawable.width * cpp);
+ 				OUT_RING  (chan, pdpix->drawable.height);
++#else
++				OUT_RING  (chan, pdpix->width * cpp);
++				OUT_RING  (chan, pdpix->height);
++#endif
+ 				OUT_RING  (chan, 1);
+ 				OUT_RING  (chan, 0);
+ 				OUT_RING  (chan, (y << 16) | (x * cpp));
+@@ -270,6 +334,7 @@
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static int
+ nouveau_exa_mark_sync(ScreenPtr pScreen)
+ {
+@@ -350,11 +415,18 @@
+ 	nouveau_bo_ref(NULL, &nvpix->bo);
+ 	free(nvpix);
+ }
++#endif
+ 
++#if !defined(__AROS__)
+ bool
+ nv50_style_tiled_pixmap(PixmapPtr ppix)
+ {
+ 	ScrnInfoPtr pScrn = xf86Screens[ppix->drawable.pScreen->myNum];
++#else
++Bool
++nv50_style_tiled_pixmap(PixmapPtr ppix, ScrnInfoPtr pScrn)
++{
++#endif
+ 	NVPtr pNv = NVPTR(pScrn);
+ 
+ 	return pNv->Architecture >= NV_ARCH_50 &&
+@@ -362,6 +434,7 @@
+ 		 NOUVEAU_BO_TILE_LAYOUT_MASK);
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ nouveau_exa_download_from_screen(PixmapPtr pspix, int x, int y, int w, int h,
+ 				 char *dst, int dst_pitch)
+@@ -593,3 +666,38 @@
+ 	pNv->EXADriverPtr = exa;
+ 	return TRUE;
+ }
++#endif
++
++
++/* AROS CODE */
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes lock on GART object is already made */
++/* NOTE: Assumes buffer is not mapped */
++BOOL HiddNouveauNVAccelUploadM2MF(
++    UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
++    ULONG x, ULONG y, ULONG width, ULONG height, 
++    OOP_Class *cl, OOP_Object *o)
++{
++    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
++    struct CardData * carddata = &(SD(cl)->carddata);
++
++    return NVAccelUploadM2MF(bmdata, x, y, width, height,
++		  srcpixels, srcpitch, carddata, srcPixFmt, cl, o);
++}
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes lock on GART object is already made */
++/* NOTE: Assumes buffer is not mapped */
++BOOL HiddNouveauNVAccelDownloadM2MF(
++    UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
++    ULONG x, ULONG y, ULONG width, ULONG height, 
++    OOP_Class *cl, OOP_Object *o)  
++{
++    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
++    struct CardData * carddata = &(SD(cl)->carddata);
++
++    return NVAccelDownloadM2MF(bmdata, x, y, width, height,
++		    dstpixels, dstpitch, carddata, dstPixFmt, cl, o);
++}
++
 diff -ur ./xf86-video-nouveau-src/nouveau_local.h ./xf86-video-nouveau/nouveau_local.h
 --- ./xf86-video-nouveau-src/nouveau_local.h	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nouveau_local.h	2011-05-03 10:27:48.000000000 +0200
-@@ -23,6 +23,7 @@
++++ ./xf86-video-nouveau/nouveau_local.h	2011-05-07 16:16:56.000000000 +0200
+@@ -23,8 +23,10 @@
  #ifndef __NOUVEAU_LOCAL_H__
  #define __NOUVEAU_LOCAL_H__
  
 +#if !defined(__AROS__)
  #include "compiler.h"
  #include "xf86_OSproc.h"
- 
-@@ -40,6 +41,7 @@
- 	return FALSE;                         \
- } while(0)
- #endif
 +#endif
  
- #define NOUVEAU_ALIGN(x,bytes) (((x) + ((bytes) - 1)) & ~((bytes) - 1))
- 
+ /* Debug output */
+ #define NOUVEAU_MSG(fmt,args...) ErrorF(fmt, ##args)
 diff -ur ./xf86-video-nouveau-src/nv10_exa.c ./xf86-video-nouveau/nv10_exa.c
 --- ./xf86-video-nouveau-src/nv10_exa.c	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nv10_exa.c	2011-05-03 13:55:37.000000000 +0200
++++ ./xf86-video-nouveau/nv10_exa.c	2011-05-03 14:51:06.000000000 +0200
 @@ -28,7 +28,9 @@
  #endif
  
@@ -879,9 +1115,399 @@ diff -ur ./xf86-video-nouveau-src/nv40_exa.c ./xf86-video-nouveau/nv40_exa.c
 +    
 +    return FALSE;
 +}
+diff -ur ./xf86-video-nouveau-src/nv50_accel.c ./xf86-video-nouveau/nv50_accel.c
+--- ./xf86-video-nouveau-src/nv50_accel.c	2011-03-23 09:14:36.000000000 +0100
++++ ./xf86-video-nouveau/nv50_accel.c	2011-05-07 16:16:56.000000000 +0200
+@@ -23,6 +23,7 @@
+ #include "nv_include.h"
+ #include "nv50_accel.h"
+ 
++#if !defined(__AROS__)
+ void
+ NV50SyncToVBlank(PixmapPtr ppix, BoxPtr box)
+ {
+@@ -52,6 +53,7 @@
+ 	BEGIN_RING(chan, nvsw, 0x0068, 1);
+ 	OUT_RING  (chan, 0x11111111);
+ }
++#endif
+ 
+ Bool
+ NVAccelInitNV50TCL(ScrnInfoPtr pScrn)
+diff -ur ./xf86-video-nouveau-src/nv50_accel.h ./xf86-video-nouveau/nv50_accel.h
+--- ./xf86-video-nouveau-src/nv50_accel.h	2011-03-23 09:14:36.000000000 +0100
++++ ./xf86-video-nouveau/nv50_accel.h	2011-05-07 16:16:56.000000000 +0200
+@@ -1,7 +1,9 @@
+ #ifndef __NV50_ACCEL_H__
+ #define __NV50_ACCEL_H__
+ 
++#if !defined(__AROS__)
+ #include "nv04_pushbuf.h"
++#endif
+ 
+ /* "Tesla scratch buffer" offsets */
+ #define PVP_OFFSET  0x00000000 /* Vertex program */
+diff -ur ./xf86-video-nouveau-src/nv50_exa.c ./xf86-video-nouveau/nv50_exa.c
+--- ./xf86-video-nouveau-src/nv50_exa.c	2011-03-23 09:14:36.000000000 +0100
++++ ./xf86-video-nouveau/nv50_exa.c	2011-05-07 20:26:40.000000000 +0200
+@@ -22,9 +22,11 @@
+  */
+ 
+ #include "nv_include.h"
++#if !defined(__AROS__)
+ #include "nv_rop.h"
+ 
+ #include "nv04_pushbuf.h"
++#endif
+ #include "nv50_accel.h"
+ #include "nv50_texture.h"
+ 
+@@ -37,6 +39,7 @@
+ 		float height;
+ 	} unit[2];
+ };
++#if !defined(__AROS__)
+ static struct nv50_exa_state exa_state;
+ 
+ #define NV50EXA_LOCALS(p)                                              \
+@@ -46,6 +49,14 @@
+ 	struct nouveau_grobj *eng2d = pNv->Nv2D; (void)eng2d;          \
+ 	struct nouveau_grobj *tesla = pNv->Nv3D; (void)tesla;          \
+ 	struct nv50_exa_state *state = &exa_state; (void)state
++#else
++#define NV50EXA_LOCALS(p)                                              \
++	NVPtr pNv = NVPTR(pScrn);                                      \
++	struct nouveau_channel *chan = pNv->chan; (void)chan;          \
++	struct nouveau_grobj *eng2d = pNv->Nv2D; (void)eng2d;          \
++	struct nouveau_grobj *tesla = pNv->Nv3D; (void)tesla;
++
++#endif
+ 
+ #define BF(f) NV50TCL_BLEND_FUNC_SRC_RGB_##f
+ 
+@@ -71,8 +82,10 @@
+ /* AtopReverse */ { 1, 1, BF(ONE_MINUS_DST_ALPHA), BF(          SRC_ALPHA) },
+ /* Xor         */ { 1, 1, BF(ONE_MINUS_DST_ALPHA), BF(ONE_MINUS_SRC_ALPHA) },
+ /* Add         */ { 0, 0, BF(                ONE), BF(                ONE) },
++/* OverAlpha   */ { 1, 0, BF(          SRC_ALPHA), BF(ONE_MINUS_SRC_ALPHA) },
+ };
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV50EXA2DSurfaceFormat(PixmapPtr ppix, uint32_t *fmt)
+ {
+@@ -463,16 +476,26 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV50EXARenderTarget(PixmapPtr ppix, PicturePtr ppict)
++#else
++static Bool
++NV50EXARenderTarget(PixmapPtr ppix, PicturePtr ppict, ScrnInfoPtr pScrn)
++#endif
+ {
+ 	NV50EXA_LOCALS(ppix);
+ 	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
+ 	unsigned format;
+ 
+ 	/*XXX: Scanout buffer not tiled, someone needs to figure it out */
++#if !defined(__AROS__)
+ 	if (!nv50_style_tiled_pixmap(ppix))
++#else
++	if (!nv50_style_tiled_pixmap(ppix, pScrn))
++#endif
+ 		NOUVEAU_FALLBACK("pixmap is scanout buffer\n");
+ 
+ 	switch (ppict->format) {
+@@ -505,14 +528,20 @@
+ 	OUT_RING  (chan, bo->tile_mode << 4);
+ 	OUT_RING  (chan, 0x00000000);
+ 	BEGIN_RING(chan, tesla, NV50TCL_RT_HORIZ(0), 2);
++#if !defined(__AROS__)
+ 	OUT_RING  (chan, ppix->drawable.width);
+ 	OUT_RING  (chan, ppix->drawable.height);
++#else
++	OUT_RING  (chan, ppix->width);
++	OUT_RING  (chan, ppix->height);
++#endif
+ 	BEGIN_RING(chan, tesla, NV50TCL_RT_ARRAY_MODE, 1);
+ 	OUT_RING  (chan, 0x00000001);
+ 
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV50EXACheckTexture(PicturePtr ppict, PicturePtr pdpict, int op)
+ {
+@@ -572,13 +601,19 @@
+ 
+ 	return TRUE;
+ }
++#endif
+ 
+ #define _(X1,X2,X3,X4,FMT) (NV50TIC_0_0_TYPER_UNORM | NV50TIC_0_0_TYPEG_UNORM | NV50TIC_0_0_TYPEB_UNORM | NV50TIC_0_0_TYPEA_UNORM | \
+ 			    NV50TIC_0_0_MAP##X1 | NV50TIC_0_0_MAP##X2 | NV50TIC_0_0_MAP##X3 | NV50TIC_0_0_MAP##X4 | \
+ 			    NV50TIC_0_0_FMT_##FMT)
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV50EXATexture(PixmapPtr ppix, PicturePtr ppict, unsigned unit)
++#else
++static Bool
++NV50EXATexture(PixmapPtr ppix, PicturePtr ppict, unsigned unit, ScrnInfoPtr pScrn, struct nv50_exa_state * state)
++#endif
+ {
+ 	NV50EXA_LOCALS(ppix);
+ 	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
+@@ -586,7 +621,11 @@
+ 	uint32_t mode;
+ 
+ 	/*XXX: Scanout buffer not tiled, someone needs to figure it out */
++#if !defined(__AROS__)
+ 	if (!nv50_style_tiled_pixmap(ppix))
++#else
++	if (!nv50_style_tiled_pixmap(ppix, pScrn))
++#endif
+ 		NOUVEAU_FALLBACK("pixmap is scanout buffer\n");
+ 
+ 	BEGIN_RING(chan, tesla, NV50TCL_TIC_ADDRESS_HIGH, 3);
+@@ -678,8 +717,13 @@
+ 		       NOUVEAU_BO_HIGH | NOUVEAU_BO_OR, mode, mode))
+ 		return FALSE;
+ 	OUT_RING  (chan, 0x00300000);
++#if !defined(__AROS__)
+ 	OUT_RING  (chan, ppix->drawable.width);
+ 	OUT_RING  (chan, (1 << NV50TIC_0_5_DEPTH_SHIFT) | ppix->drawable.height);
++#else
++	OUT_RING  (chan, ppix->width);
++	OUT_RING  (chan, (1 << NV50TIC_0_5_DEPTH_SHIFT) | ppix->height);
++#endif
+ 	OUT_RING  (chan, 0x03000000);
+ 	OUT_RING  (chan, 0x00000000);
+ 
+@@ -736,12 +780,19 @@
+ 	OUT_RING  (chan, 0x00000000);
+ 	OUT_RING  (chan, 0x00000000);
+ 
++#if !defined(__AROS__)
+ 	state->unit[unit].width = ppix->drawable.width;
+ 	state->unit[unit].height = ppix->drawable.height;
+ 	state->unit[unit].transform = ppict->transform;
++#else
++	state->unit[unit].width = ppix->width;
++	state->unit[unit].height = ppix->height;
++	state->unit[unit].transform = NULL; /* Keep this NULL, we are doing simple blits */
++#endif
+ 	return TRUE;
+ }
+ 
++#if !defined(__AROS__)
+ static Bool
+ NV50EXACheckBlend(int op)
+ {
+@@ -749,9 +800,15 @@
+ 		NOUVEAU_FALLBACK("unsupported blend op %d\n", op);
+ 	return TRUE;
+ }
++#endif
+ 
++#if !defined(__AROS__)
+ static void
+ NV50EXABlend(PixmapPtr ppix, PicturePtr ppict, int op, int component_alpha)
++#else
++static void
++NV50EXABlend(PixmapPtr ppix, PicturePtr ppict, int op, int component_alpha, ScrnInfoPtr pScrn)
++#endif
+ {
+ 	NV50EXA_LOCALS(ppix);
+ 	struct nv50_blend_op *b = &NV50EXABlendOp[op];
+@@ -793,6 +850,7 @@
+ 	}
+ }
+ 
++#if !defined(__AROS__)
+ Bool
+ NV50EXACheckComposite(int op,
+ 		      PicturePtr pspict, PicturePtr pmpict, PicturePtr pdpict)
+@@ -829,11 +887,20 @@
+ 	NV50EXAPrepareComposite(pNv->alu, pNv->pspict, pNv->pmpict, pNv->pdpict,
+ 				pNv->pspix, pNv->pmpix, pNv->pdpix);
+ }
++#endif
+ 
++#if !defined(__AROS__)
+ Bool
+ NV50EXAPrepareComposite(int op,
+ 			PicturePtr pspict, PicturePtr pmpict, PicturePtr pdpict,
+ 			PixmapPtr pspix, PixmapPtr pmpix, PixmapPtr pdpix)
++#else
++static Bool
++NV50EXAPrepareComposite(int op,
++			PicturePtr pspict, PicturePtr pmpict, PicturePtr pdpict,
++			PixmapPtr pspix, PixmapPtr pmpix, PixmapPtr pdpix,
++			ScrnInfoPtr pScrn, struct nv50_exa_state * state)
++#endif
+ {
+ 	NV50EXA_LOCALS(pspix);
+ 	const unsigned shd_flags = NOUVEAU_BO_VRAM | NOUVEAU_BO_RD;
+@@ -844,13 +911,22 @@
+ 	BEGIN_RING(chan, eng2d, 0x0110, 1);
+ 	OUT_RING  (chan, 0);
+ 
++#if !defined(__AROS__)
+ 	if (!NV50EXARenderTarget(pdpix, pdpict)) {
++#else
++	if (!NV50EXARenderTarget(pdpix, pdpict, pScrn)) {
++#endif
+ 		MARK_UNDO(chan);
+ 		NOUVEAU_FALLBACK("render target invalid\n");
+ 	}
+ 
++#if !defined(__AROS__)
+ 	NV50EXABlend(pdpix, pdpict, op, pmpict && pmpict->componentAlpha &&
+ 		     PICT_FORMAT_RGB(pmpict->format));
++#else
++	NV50EXABlend(pdpix, pdpict, op, pmpict && pmpict->componentAlpha &&
++		     PICT_FORMAT_RGB(pmpict->format), pScrn);
++#endif
+ 
+ 	BEGIN_RING(chan, tesla, NV50TCL_VP_ADDRESS_HIGH, 2);
+ 	if (OUT_RELOCh(chan, pNv->tesla_scratch, PVP_OFFSET, shd_flags) ||
+@@ -866,13 +942,21 @@
+ 		return FALSE;
+ 	}
+ 
++#if !defined(__AROS__)
+ 	if (!NV50EXATexture(pspix, pspict, 0)) {
++#else
++	if (!NV50EXATexture(pspix, pspict, 0, pScrn, state)) {
++#endif
+ 		MARK_UNDO(chan);
+ 		NOUVEAU_FALLBACK("src picture invalid\n");
+ 	}
+ 
+ 	if (pmpict) {
++#if !defined(__AROS__)
+ 		if (!NV50EXATexture(pmpix, pmpict, 1)) {
++#else
++		if (!NV50EXATexture(pmpix, pmpict, 1, pScrn, state)) {
++#endif
+ 			MARK_UNDO(chan);
+ 			NOUVEAU_FALLBACK("mask picture invalid\n");
+ 		}
+@@ -910,6 +994,7 @@
+ 	BEGIN_RING(chan, tesla, NV50TCL_BIND_TIC(2), 1);
+ 	OUT_RING  (chan, 0x203);
+ 
++#if !defined(__AROS__)
+ 	pNv->alu = op;
+ 	pNv->pspict = pspict;
+ 	pNv->pmpict = pmpict;
+@@ -918,6 +1003,7 @@
+ 	pNv->pmpix = pmpix;
+ 	pNv->pdpix = pdpix;
+ 	chan->flush_notify = NV50EXAStateCompositeResubmit;
++#endif
+ 	return TRUE;
+ }
+ 
+@@ -928,6 +1014,9 @@
+ 		 float *x_ret, float *y_ret)
+ {
+ 	if (t) {
++	/* Note: current t is always NULL in AROS. That is good enought for
++	   operations beeing done (simple blits with alpha) */
++#if !defined(__AROS__)
+ 		PictVector v;
+ 
+ 		v.vector[0] = IntToxFixed(x);
+@@ -936,18 +1025,25 @@
+ 		PictureTransformPoint(t, &v);
+ 		*x_ret = xFixedToFloat(v.vector[0]) / sx;
+ 		*y_ret = xFixedToFloat(v.vector[1]) / sy;
++#endif
+ 	} else {
+ 		*x_ret = (float)x / sx;
+ 		*y_ret = (float)y / sy;
+ 	}
+ }
+ 
++#if !defined(__AROS__)
+ void
+ NV50EXAComposite(PixmapPtr pdpix, int sx, int sy, int mx, int my,
+ 		 int dx, int dy, int w, int h)
++#else
++static void
++NV50EXAComposite(PixmapPtr pdpix, int sx, int sy, int mx, int my,
++		 int dx, int dy, int w, int h, ScrnInfoPtr pScrn, struct nv50_exa_state * state)
++#endif
+ {
+ 	NV50EXA_LOCALS(pdpix);
+-	float sX0, sX1, sX2, sY0, sY1, sY2;
++	float sX0=0.0f, sX1=0.0f, sX2=0.0f, sY0=0.0f, sY1=0.0f, sY2=0.0f;
+ 
+ 	WAIT_RING (chan, 64);
+ 	BEGIN_RING(chan, tesla, NV50TCL_SCISSOR_HORIZ(0), 2);
+@@ -967,7 +1063,7 @@
+ 			 &sX2, &sY2);
+ 
+ 	if (state->have_mask) {
+-		float mX0, mX1, mX2, mY0, mY1, mY2;
++		float mX0=0.0f, mX1=0.0f, mX2=0.0f, mY0=0.0f, mY1=0.0f, mY2=0.0f;
+ 
+ 		NV50EXATransform(state->unit[1].transform, mx, my + (h * 2),
+ 				 state->unit[1].width, state->unit[1].height,
+@@ -992,6 +1088,7 @@
+ 	OUT_RING  (chan, 0);
+ }
+ 
++#if !defined(__AROS__)
+ void
+ NV50EXADoneComposite(PixmapPtr pdpix)
+ {
+@@ -999,4 +1096,34 @@
+ 
+ 	chan->flush_notify = NULL;
+ }
++#endif
+ 
++/* AROS CODE */
++
++/* NOTE: Assumes lock on bitmap is already made */
++/* NOTE: Assumes buffer is not mapped */
++/* NOTE: Allows different formats of source and destination */
++BOOL HIDDNouveauNV503DCopyBox(struct CardData * carddata,
++    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
++    ULONG blendop)
++{
++    struct Picture sPict, dPict;
++    struct nv50_exa_state state;
++    ULONG maskX = 0; ULONG maskY = 0;
++
++    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);   
++    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
++
++    if (NV50EXAPrepareComposite(blendop,
++        &sPict, NULL, &dPict, srcdata, NULL, destdata, carddata, &state))
++    {
++        NV50EXAComposite(destdata, srcX, srcY,
++				      maskX, maskY,
++				      destX , destY,
++				      width, height, carddata, &state);
++        return TRUE;
++    }
++    
++    return FALSE;
++}
 diff -ur ./xf86-video-nouveau-src/nv_accel_common.c ./xf86-video-nouveau/nv_accel_common.c
 --- ./xf86-video-nouveau-src/nv_accel_common.c	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nv_accel_common.c	2011-05-03 13:25:59.000000000 +0200
++++ ./xf86-video-nouveau/nv_accel_common.c	2011-05-07 16:16:56.000000000 +0200
 @@ -21,8 +21,19 @@
   */
  
@@ -891,13 +1517,13 @@ diff -ur ./xf86-video-nouveau-src/nv_accel_common.c ./xf86-video-nouveau/nv_acce
 +#else
 +
 +#include <aros/debug.h>
-+
+ 
 +/* Some overriding defines for AROS */
 +#define NOUVEAU_CREATE_PIXMAP_ZETA      0x10000000
 +#define NOUVEAU_CREATE_PIXMAP_TILED     0x20000000
 +#define NOUVEAU_CREATE_PIXMAP_SCANOUT   0x40000000
 +#endif
- 
++
 +#if !defined(__AROS__)
  Bool
  nouveau_allocate_surface(ScrnInfoPtr scrn, int width, int height, int bpp,
@@ -1045,7 +1671,7 @@ diff -ur ./xf86-video-nouveau-src/nv_accel_common.c ./xf86-video-nouveau/nv_acce
  
  	/* General engine objects */
  	if (pNv->Architecture < NV_ARCH_C0)
-@@ -632,35 +673,35 @@
+@@ -632,32 +673,32 @@
  	/* 2D engine */
  	if (pNv->Architecture < NV_ARCH_50) {
  		INIT_CONTEXT_OBJECT(ContextSurfaces);
@@ -1083,19 +1709,13 @@ diff -ur ./xf86-video-nouveau-src/nv_accel_common.c ./xf86-video-nouveau/nv_acce
 -	case NV_ARCH_C0:
 -		INIT_CONTEXT_OBJECT(3D_NVC0);
 -		break;
--	case NV_ARCH_50:
--		INIT_CONTEXT_OBJECT(NV50TCL);
--		break;
 +//	case NV_ARCH_C0:
 +//		INIT_CONTEXT_OBJECT(3D_NVC0);
 +//		break;
-+//	case NV_ARCH_50:
-+//		INIT_CONTEXT_OBJECT(NV50TCL);
-+//		break;
- 	case NV_ARCH_40:
- 		INIT_CONTEXT_OBJECT(NV40TCL);
+ 	case NV_ARCH_50:
+ 		INIT_CONTEXT_OBJECT(NV50TCL);
  		break;
-@@ -682,27 +723,29 @@
+@@ -682,22 +723,24 @@
  {
  	NVPtr pNv = NVPTR(pScrn);
  
@@ -1105,8 +1725,7 @@ diff -ur ./xf86-video-nouveau-src/nv_accel_common.c ./xf86-video-nouveau/nv_acce
 +#endif
  
  	nouveau_notifier_free(&pNv->notify0);
--	nouveau_notifier_free(&pNv->vblank_sem);
-+//	nouveau_notifier_free(&pNv->vblank_sem);
+ 	nouveau_notifier_free(&pNv->vblank_sem);
  
  	nouveau_grobj_free(&pNv->NvContextSurfaces);
 -	nouveau_grobj_free(&pNv->NvContextBeta1);
@@ -1125,18 +1744,11 @@ diff -ur ./xf86-video-nouveau-src/nv_accel_common.c ./xf86-video-nouveau/nv_acce
 +//	nouveau_grobj_free(&pNv->NvImageFromCpu);
  	nouveau_grobj_free(&pNv->Nv2D);
  	nouveau_grobj_free(&pNv->NvMemFormat);
--	nouveau_grobj_free(&pNv->NvSW);
-+//	nouveau_grobj_free(&pNv->NvSW);
- 	nouveau_grobj_free(&pNv->Nv3D);
- 
--	nouveau_bo_ref(NULL, &pNv->tesla_scratch);
-+//	nouveau_bo_ref(NULL, &pNv->tesla_scratch);
- 	nouveau_bo_ref(NULL, &pNv->shader_mem);
- }
+ 	nouveau_grobj_free(&pNv->NvSW);
 diff -ur ./xf86-video-nouveau-src/nv_include.h ./xf86-video-nouveau/nv_include.h
 --- ./xf86-video-nouveau-src/nv_include.h	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nv_include.h	2011-05-03 13:58:46.000000000 +0200
-@@ -1,84 +1,140 @@
++++ ./xf86-video-nouveau/nv_include.h	2011-05-07 20:25:36.000000000 +0200
+@@ -1,84 +1,158 @@
  #ifndef __NV_INCLUDE_H__
  #define __NV_INCLUDE_H__
 +/*
@@ -1233,7 +1845,7 @@ diff -ur ./xf86-video-nouveau-src/nv_include.h ./xf86-video-nouveau/nv_include.h
 +#define Architecture                architecture
 +#define PixmapPtr                   struct HIDDNouveauBitMapData *
 +#define xf86DrvMsg(a, b, fmt, ...)  bug(fmt, ##__VA_ARGS__)
-+#define ErrorF(msg)                 bug(msg)
++#define ErrorF(msg, ...)            bug(msg, ##__VA_ARGS__)
 +#define PictFormatShort             LONG
 +#define PictTransformPtr            APTR
 +
@@ -1259,28 +1871,37 @@ diff -ur ./xf86-video-nouveau-src/nv_include.h ./xf86-video-nouveau/nv_include.h
 +#define PICT_UNKNOWN        0
 +#define PICT_a8r8g8b8       1
 +#define PICT_x8r8g8b8       2
-+#define PICT_x8b8g8r8       3
-+#define PICT_a8b8g8r8       4
-+#define PICT_a1r5g5b5       5
-+#define PICT_x1r5g5b5       6
-+#define PICT_a1b5g5r5       7
-+#define PICT_x1b5g5r5       8
-+#define PICT_x4r4g4b4       9
-+#define PICT_a4r4g4b4       10
-+#define PICT_x4b4g4r4       11
-+#define PICT_a4b4g4r4       12
-+#define PICT_r5g6b5         13
-+#define PICT_b5g6r5         14
-+#define PICT_a8             15
++#define PICT_a8b8g8r8       3
++#define PICT_x8b8g8r8       4
++#define PICT_b8g8r8a8       5
++#define PICT_b8g8r8x8       6
++#define PICT_a2b10g10r10    7
++#define PICT_x2b10g10r10    8
++#define PICT_a2r10g10b10    9
++#define PICT_x2r10g10b10    10
++#define PICT_a1r5g5b5       11
++#define PICT_x1r5g5b5       12
++#define PICT_a1b5g5r5       13
++#define PICT_x1b5g5r5       14
++#define PICT_x4r4g4b4       15
++#define PICT_a4r4g4b4       16
++#define PICT_x4b4g4r4       17
++#define PICT_a4b4g4r4       18
++#define PICT_r5g6b5         19
++#define PICT_b5g6r5         20
++#define PICT_a8             21
++
 +
 +#define nouveau_pixmap_bo(x)    (x->bo)
 +#define exaGetPixmapPitch(x)    (x->pitch)
 +
 +#define PictOpSaturate      14
 +
++Bool NVAccelInitNV50TCL(ScrnInfoPtr pScrn);
 +Bool NVAccelInitNV40TCL(ScrnInfoPtr pScrn);
 +Bool NVAccelInitNV30TCL(ScrnInfoPtr pScrn);
 +Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
++Bool nv50_style_tiled_pixmap(PixmapPtr ppix, ScrnInfoPtr pScrn);
 +
 +
 +static inline BOOL PICT_FORMAT_A(int format)
@@ -1289,6 +1910,9 @@ diff -ur ./xf86-video-nouveau-src/nv_include.h ./xf86-video-nouveau/nv_include.h
 +    {
 +    case(PICT_a8r8g8b8):
 +    case(PICT_a8b8g8r8):
++    case(PICT_b8g8r8a8):
++    case(PICT_a2b10g10r10):
++    case(PICT_a2r10g10b10):
 +    case(PICT_a1r5g5b5):
 +    case(PICT_a1b5g5r5):
 +    case(PICT_a4r4g4b4):
@@ -1308,6 +1932,12 @@ diff -ur ./xf86-video-nouveau-src/nv_include.h ./xf86-video-nouveau/nv_include.h
 +    case(PICT_x8r8g8b8):
 +    case(PICT_x8b8g8r8):
 +    case(PICT_a8b8g8r8):
++    case(PICT_b8g8r8a8):
++    case(PICT_b8g8r8x8):
++    case(PICT_a2b10g10r10):
++    case(PICT_x2b10g10r10):
++    case(PICT_a2r10g10b10):
++    case(PICT_x2r10g10b10):
 +    case(PICT_a1r5g5b5):
 +    case(PICT_x1r5g5b5):
 +    case(PICT_a1b5g5r5):
