@@ -241,8 +241,10 @@ enum DMAObjects
 #define NV_ARCH_50  0x50
 #define NV_ARCH_C0  0xC0
 
-BOOL NVAccelCommonInit(struct CardData * carddata);
-VOID NVAccelFree(struct CardData * carddata);
+/* nv_accel_common.c */
+BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata);
+VOID HIDDNouveauAccelFree(struct CardData * carddata);
+
 BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNouveauBitMapData * bmdata, LONG *fmt_ret);
 
 VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, ULONG clr1,
