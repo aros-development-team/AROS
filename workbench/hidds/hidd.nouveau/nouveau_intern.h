@@ -61,8 +61,8 @@ struct HIDDNouveauBitMapData
     ULONG   height;         /* Height of bitmap in pixels */
     ULONG   width;          /* Width of bitmap in pixels */
     ULONG   pitch;          /* Width of single data row in bytes */
-    UBYTE   bytesperpixel;  /* In bytes */
-    UBYTE   depth;          /* In bits */
+    UBYTE   bytesperpixel;  /* In bytes, how many bytes to store a pixel */
+    UBYTE   depth;          /* In bits, how many bits used to represt the color */
     BOOL    displayable;    /* Can bitmap be displayed on screen */
     
     /* Information connected with display */

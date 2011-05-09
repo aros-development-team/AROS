@@ -1096,10 +1096,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
 
     LOCK_BITMAP
 
-    /* Try hardware method */
+    /* Try hardware method NV10-NV40*/
     if (
-        ((carddata->architecture == NV_ARCH_40) || (carddata->architecture == NV_ARCH_30)
-        || (carddata->architecture == NV_ARCH_20) || (carddata->architecture == NV_ARCH_10))
+        ((carddata->architecture >= NV_ARCH_10) && (carddata->architecture <= NV_ARCH_40))
         
         && (bmdata->bytesperpixel > 1)
         && ((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))
@@ -1123,6 +1122,26 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
             UNLOCK_BITMAP;
             return;
         }
+    }
+    
+    /* Try optimization for NV50 */
+    if (
+        (carddata->architecture >= NV_ARCH_50)
+        
+        && (bmdata->bytesperpixel > 1)
+        && ((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))
+    {
+        /* Hardware method is not currently possible for NV50 as the implementation
+           relies on tiled bitmaps. AROS uses linear bitmaps for all card families.
+           The optimization in this case is to use base class implementation,
+           which does GetImage->Process->PutImage. Since all NV50 cards are
+           PCI-E based, the greatest limiting factor - VRAM->RAM download speed in
+           not a problem (1,1 Gbps on my GF8300). This approach is actually faster
+           than "per-pixel" functions below by order of 10. */
+           
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        UNLOCK_BITMAP;
+        return;
     }
 
     /* Fallback to software method */
