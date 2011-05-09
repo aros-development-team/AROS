@@ -106,7 +106,7 @@ struct config
     /* The names of the fields in the custom library base for storing internal
      * information
      */
-    char *sysbase_field, *seglist_field, *rootbase_field, *oopbase_field;
+    char *sysbase_field, *seglist_field, *rootbase_field;
 
     /* Some additional options, see optionsflags enum above */
     enum optionflags options;

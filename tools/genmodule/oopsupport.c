@@ -33,16 +33,6 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         "\n"
     );
 
-    fprintf(out,
-	    "#ifdef GM_OOPBASE_FIELD\n"
-	    "#   ifdef OOPBase\n"
-	    "#       undef OOPBase\n"
-	    "#   endif\n"
-	    "#   define OOPBase GM_OOPBASE_FIELD(LIBBASE)\n"
-	    "#endif\n"
-	    "\n"
-    );
-		
     if (cl->classdatatype == NULL)
 	fprintf(out, "#   define %s_DATA_SIZE (0)\n", cl->basename);
     else
