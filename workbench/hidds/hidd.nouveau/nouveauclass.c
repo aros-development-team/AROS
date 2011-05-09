@@ -465,7 +465,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
                 /* Initialize acceleration objects */
             
-                ret = NVAccelCommonInit(carddata);
+                ret = HIDDNouveauAccelCommonInit(carddata);
                 /* TODO: Check ret, how to handle ? */
             }
             else
@@ -529,7 +529,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
 }
 
 /* FIXME: IMPLEMENT DISPOSE - calling nouveau_close(), freeing cursor bo, gart bo, 
-    selectedconnector, gfxdata->compositing */
+    selectedconnector, gfxdata->compositing, HIDDNouveauAccelFree */
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 

@@ -673,32 +673,42 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	/* 2D engine */
 	if (pNv->Architecture < NV_ARCH_50) {
 		INIT_CONTEXT_OBJECT(ContextSurfaces);
-//		INIT_CONTEXT_OBJECT(ContextBeta1);
-//		INIT_CONTEXT_OBJECT(ContextBeta4);
+#if !defined(__AROS__)
+		INIT_CONTEXT_OBJECT(ContextBeta1);
+		INIT_CONTEXT_OBJECT(ContextBeta4);
+#endif
 		INIT_CONTEXT_OBJECT(ImagePattern);
 		INIT_CONTEXT_OBJECT(RasterOp);
 		INIT_CONTEXT_OBJECT(Rectangle);
 		INIT_CONTEXT_OBJECT(ImageBlit);
-//		INIT_CONTEXT_OBJECT(ScaledImage);
-//		INIT_CONTEXT_OBJECT(ClipRectangle);
-//		INIT_CONTEXT_OBJECT(ImageFromCpu);
+#if !defined(__AROS__)
+		INIT_CONTEXT_OBJECT(ScaledImage);
+		INIT_CONTEXT_OBJECT(ClipRectangle);
+		INIT_CONTEXT_OBJECT(ImageFromCpu);
+#endif
 	} else
 	if (pNv->Architecture < NV_ARCH_C0) {
 		INIT_CONTEXT_OBJECT(2D_NV50);
 	} else {
-//		INIT_CONTEXT_OBJECT(2D_NVC0);
+#if !defined(__AROS__)
+		INIT_CONTEXT_OBJECT(2D_NVC0);
+#endif
 	}
 
 	if (pNv->Architecture < NV_ARCH_C0)
 		INIT_CONTEXT_OBJECT(MemFormat);
-//	else
-//		INIT_CONTEXT_OBJECT(M2MF_NVC0);
+#if !defined(__AROS__)
+	else
+		INIT_CONTEXT_OBJECT(M2MF_NVC0);
+#endif
 
 	/* 3D init */
 	switch (pNv->Architecture) {
-//	case NV_ARCH_C0:
-//		INIT_CONTEXT_OBJECT(3D_NVC0);
-//		break;
+#if !defined(__AROS__)
+	case NV_ARCH_C0:
+		INIT_CONTEXT_OBJECT(3D_NVC0);
+		break;
+#endif
 	case NV_ARCH_50:
 		INIT_CONTEXT_OBJECT(NV50TCL);
 		break;
@@ -732,15 +742,19 @@ void NVAccelFree(ScrnInfoPtr pScrn)
 	nouveau_notifier_free(&pNv->vblank_sem);
 
 	nouveau_grobj_free(&pNv->NvContextSurfaces);
-//	nouveau_grobj_free(&pNv->NvContextBeta1);
-//	nouveau_grobj_free(&pNv->NvContextBeta4);
+#if !defined(__AROS__)
+	nouveau_grobj_free(&pNv->NvContextBeta1);
+	nouveau_grobj_free(&pNv->NvContextBeta4);
+#endif
 	nouveau_grobj_free(&pNv->NvImagePattern);
 	nouveau_grobj_free(&pNv->NvRop);
 	nouveau_grobj_free(&pNv->NvRectangle);
 	nouveau_grobj_free(&pNv->NvImageBlit);
-//	nouveau_grobj_free(&pNv->NvScaledImage);
-//	nouveau_grobj_free(&pNv->NvClipRectangle);
-//	nouveau_grobj_free(&pNv->NvImageFromCpu);
+#if !defined(__AROS__)
+	nouveau_grobj_free(&pNv->NvScaledImage);
+	nouveau_grobj_free(&pNv->NvClipRectangle);
+	nouveau_grobj_free(&pNv->NvImageFromCpu);
+#endif
 	nouveau_grobj_free(&pNv->Nv2D);
 	nouveau_grobj_free(&pNv->NvMemFormat);
 	nouveau_grobj_free(&pNv->NvSW);
@@ -748,4 +762,17 @@ void NVAccelFree(ScrnInfoPtr pScrn)
 
 	nouveau_bo_ref(NULL, &pNv->tesla_scratch);
 	nouveau_bo_ref(NULL, &pNv->shader_mem);
+}
+
+
+/* AROS CODE */
+
+BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata)
+{
+    return NVAccelCommonInit(carddata);
+}
+
+VOID HIDDNouveauAccelFree(struct CardData * carddata)
+{
+    NVAccelFree(carddata);
 }
