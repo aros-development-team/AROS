@@ -17,6 +17,8 @@
  * Also - no AROS specific code can go in here! We have to run
  * on AOS 1.3 and up.
  */
+#define DEBUG 0
+
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
@@ -25,6 +27,23 @@
 
 #define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
 #define NO_SYSBASE_REMAP
+
+#if DEBUG
+#define AROS_DEBUG_H
+#include <stdio.h>
+#include <string.h>
+static inline void bug(const char *fmt, ...)
+{
+    static char buff[256];
+    va_list args;
+
+    va_start(args, fmt);
+    vsnprintf(buff, sizeof(buff), fmt, args);
+    va_end(args);
+
+    Write(Output(), buff, strlen(buff));
+}
+#endif
 #include <rom/dos/internalloadseg_elf.c>
 
 struct DosLibrary *DOSBase;
