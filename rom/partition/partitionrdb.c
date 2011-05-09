@@ -1046,8 +1046,8 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
 
 BPTR PartitionRDBLoadFileSystem(struct PartitionBase_intern *PartitionBase, struct FileSysHandle *fn)
 {
-    if (PartitionBase->dosBase)
-    	return LoadFS((struct FileSysNode *)fn, (struct DosLibrary *)PartitionBase->dosBase);
+    if (PartitionBase->pb_DOSBase)
+    	return LoadFS((struct FileSysNode *)fn, (struct DosLibrary *)PartitionBase->pb_DOSBase);
     else
 	return BNULL;
 }

@@ -16,6 +16,10 @@
 
 static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 {
+    /* REMOVE ONCE ABIv1 HAS STABILIZED */
+    if (!(LIBBASE->pb_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY)))
+    	return FALSE;
+
     LIBBASE->partbase.tables =  (struct PartitionTableInfo **)PartitionSupport;
     NewList(&LIBBASE->bootList);
 
@@ -24,7 +28,7 @@ static int PartitionInit(LIBBASETYPEPTR LIBBASE)
      * It fill fail if we are in kickstart, partition.library is initialized
      * long before dos.library.
      */
-    LIBBASE->dosBase = OpenLibrary("dos.library", 36);
+    LIBBASE->pb_DOSBase = OpenLibrary("dos.library", 36);
 
     return TRUE;
 }
@@ -42,8 +46,11 @@ static int PartitionCleanup(struct PartitionBase_intern *base)
     if (!IsListEmpty(&base->bootList))
     	return FALSE;
 
-    if (base->dosBase)
-    	CloseLibrary(base->dosBase);
+    if (base->pb_DOSBase)
+    	CloseLibrary(base->pb_DOSBase);
+
+    /* REMOVE ONCE ABIv1 HAS STABILIZED */
+    CloseLibrary(base->pb_UtilityBase);
 
     return TRUE;
 }
