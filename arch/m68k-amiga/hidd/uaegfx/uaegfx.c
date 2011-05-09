@@ -26,16 +26,15 @@
 
 #include <aros/symbolsets.h>
 
+#include LC_LIBDEFS_FILE
+
 #include "uaegfx.h"
 #include "uaegfxbitmap.h"
 #include "uaertg.h"
 
-#include LC_LIBDEFS_FILE
-
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
-#define DB2(x) ;
 
 #define SIZE_RESLIST 4
 #define SIZE_PFLIST 19
@@ -520,7 +519,6 @@ VOID UAEGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    struct gfx_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  	    *tag;
     const struct TagItem    *tstate;
 
@@ -549,7 +547,6 @@ VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 OOP_Object *UAEGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    struct gfx_data *data = OOP_INST_DATA(cl, o);
 
     if (msg->bitMap) {
     	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
@@ -570,7 +567,7 @@ ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHi
     OOP_Object *bm = NULL;
     struct ViewPort *vp = NULL;
     struct ViewPort *vpi = NULL;
-    struct IntuitionBase *ib = (struct IntuitionBase*)csd->IntuitionBase;
+    struct IntuitionBase *ib = (struct IntuitionBase*)csd->cs_IntuitionBase;
 
     if (vpd) {
     	bm = vpd->Bitmap;
@@ -718,7 +715,7 @@ BOOL UAEGFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 }
 
 
-static void freeattrbases(struct uaegfx_staticdata *csd)
+static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct uaegfx_staticdata *csd)
 {
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
     OOP_ReleaseAttrBase(IID_Hidd_UAEGFXBitMap);
@@ -743,6 +740,21 @@ AROS_UFH4(APTR, rtg_vblank,
 
 }
 
+static int openall(struct uaegfx_staticdata *csd)
+{
+    if ((csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
+    	if ((csd->cs_OOPBase = OpenLibrary("oop.library", 0))) {
+    	    if ((csd->cs_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
+    	    	return TRUE;
+    	    }
+    	    CloseLibrary(csd->cs_OOPBase);
+    	}
+    	CloseLibrary(csd->cs_UtilityBase);
+    }
+    return FALSE;
+}
+
+
 BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 {
     struct uaegfx_staticdata *csd = &LIBBASE->csd;
@@ -750,6 +762,9 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     ULONG size;
     struct Interrupt *intr;
     struct Node *node;
+
+    if (!openall(csd))
+    	return FALSE;
 
     D(bug("Init_UAEGFXClass\n"));
     csd->uaeromvector = (APTR)(0xf00000 + 0xff60);
@@ -851,19 +866,21 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
     __IHidd_PixFmt	= OOP_ObtainAttrBase(IID_Hidd_PixFmt);
     __IHidd_ColorMap 	= OOP_ObtainAttrBase(IID_Hidd_ColorMap);
+
+    HiddBitMapBase	= OOP_GetMethodID(IID_Hidd_BitMap, 0);
+    HiddColorMapBase	= OOP_GetMethodID(IID_Hidd_ColorMap, 0);
+    HiddGfxBase		= OOP_GetMethodID(IID_Hidd_Gfx, 0);
     
     if (!__IHidd_BitMap || !__IHidd_UAEGFXBitmap || !__IHidd_GC ||
     	!__IHidd_Sync || !__IHidd_Gfx || !__IHidd_PixFmt || !__IHidd_ColorMap)
     {
     	D(bug("Init_UAEGFXClass fail\n"));
-    	freeattrbases(csd);
+    	freeattrbases(LIBBASE, csd);
     	return FALSE;
     }
-    
-    csd->IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
+
     return TRUE;
 }
-
 
 static int Expunge_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 {
@@ -871,8 +888,12 @@ static int Expunge_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     D(bug("Expunge_UAEGFXClass\n"));
     if (csd->boardinfo != NULL)
     	FreeVec(csd->boardinfo);
-    freeattrbases(csd);
+    freeattrbases(LIBBASE, csd);
+    CloseLibrary(LIBBASE->csd.cs_IntuitionBase);
+    CloseLibrary(LIBBASE->csd.cs_OOPBase);
+    CloseLibrary(LIBBASE->csd.cs_UtilityBase);
     return TRUE;
 }
 
+ADD2INIT(Init_UAEGFXClass, 0);
 ADD2EXPUNGELIB(Expunge_UAEGFXClass, 1)

@@ -1,7 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := -D__OOP_NOATTRBASES__
+USER_CFLAGS := -D__OOP_NOATTRBASES__ -D__GRAPHICS_NOHIDDBASE__ \
+	       -D__OOP_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module mmake=kernel-amiga-m68k-uaegfx \
     modname=uaegfx modtype=hidd \
