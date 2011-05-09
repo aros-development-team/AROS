@@ -1543,7 +1543,7 @@ static void determine_frequencies(struct HDAudioChip *card)
         {
             set_frequency_info(&(card->frequencies[freqs]), i);
             
-            if (card->frequencies[freqs].frequency == 44100)
+            if (card->frequencies[freqs].frequency == 44100 && !default_freq_found)
             {
                 card->selected_freq_index = freqs; // set default freq index to 44100 Hz
                 default_freq_found = TRUE;
