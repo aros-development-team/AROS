@@ -18,7 +18,7 @@
 
 #include <string.h>
 
-static char *allocPath(char *str);
+static char *allocPath(char *str, APTR WorkbenchBase);
 
 /*****************************************************************************
 
@@ -108,7 +108,7 @@ static char *allocPath(char *str);
                     for (i = 0; i < numfiles; i++)
                     {
                         wb->wa_Name = FilePart(files[i]);
-                        char *path = allocPath(files[i]);
+                        char *path = allocPath(files[i], WorkbenchBase);
                         if (path)
                         {
                             wb->wa_Lock = Lock(path, SHARED_LOCK);
@@ -163,7 +163,7 @@ static char *allocPath(char *str);
 
 /*****************************************************************************/
 
-static char *allocPath(char *str)
+static char *allocPath(char *str, APTR WorkbenchBase)
 {
     char *s0, *s1, *s;
     int  l;

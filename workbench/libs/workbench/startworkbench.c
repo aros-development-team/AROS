@@ -50,13 +50,12 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    APTR DOSBase;
     IPTR rc = FALSE;
   
     /* Start Workbook, if we have it. */
     D(bug("StartWorkbench: ptr = %p\n", ptr));
     Forbid();
-    if (!WorkbenchBase->wb_WBStarted && (DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS))) {
+    if (!WorkbenchBase->wb_WBStarted) {
     	struct Segment *seg;
     	BPTR wbseg = 0;
 
@@ -80,7 +79,6 @@
      	    	WorkbenchBase->wb_WBStarted = TRUE;
      	    }
     	}
-    	CloseLibrary(DOSBase);
     }
     Permit();
     return rc;
