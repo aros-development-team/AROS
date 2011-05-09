@@ -86,12 +86,12 @@ static BOOL   HandleProject(STRPTR name, LONG isDefaultIcon, struct DiskObject *
     D(bug("[WBLIB] OpenWorkbenchObjectA: name = %s\n", name));
     D(bug("[WBLIB] OpenWorkbenchObjectA: isDefaultIcon = %ld\n", isDefaultIcon));
 
-    if( j_uae_running() && is_68k(name) ) 
+    if( j_uae_running() && is_68k(name, WorkbenchBase) ) 
     {
 
         D(bug("[WBLIB] OpenWorkbenchObjectA: forward %s to uae\n", name));
 
-        forward_to_uae(tags, name);
+        forward_to_uae(tags, name, WorkbenchBase);
         success = TRUE;
     }
     else 

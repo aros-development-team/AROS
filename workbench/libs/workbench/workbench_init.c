@@ -44,13 +44,44 @@ D(bug("[WBLIB] WBInit: Using %d Bytes for DefaultStackSize\n", WorkbenchBase->wb
     return TRUE;
 }
 
+/* REMOVE THESE CALLS ONCE ABIv1 STABALIZES */
+static BOOL openall(LIBBASETYPEPTR LIBBASE)
+{
+    if ((UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
+    	if ((DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS))) {
+    	    if ((IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
+    	    	if ((IconBase = TaggedOpenLibrary(TAGGEDOPEN_ICON))) {
+    	    	    return TRUE;
+    	    	}
+    	    	CloseLibrary(IntuitionBase);
+    	    }
+    	    CloseLibrary(DOSBase);
+    	}
+    	CloseLibrary(UtilityBase);
+    }
+    return FALSE;
+}
+
+static void closeall(LIBBASETYPEPTR LIBBASE)
+{
+    CloseLibrary(IconBase);
+    CloseLibrary(IntuitionBase);
+    CloseLibrary(DOSBase);
+    CloseLibrary(UtilityBase);
+}
+
 static int WBOpen(LIBBASETYPEPTR LIBBASE)
 {
+    D(bug("[WBLIB] Open\n"));
     ObtainSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
 
-    if (!(WorkbenchBase->wb_Initialized))
+    while (!(WorkbenchBase->wb_Initialized))
     {
         struct CommandLineInterface *cli;
+
+        /* Initialize the libraries */
+        if (!openall(LIBBASE))
+            break;
         
         /* Duplicate the search path ---------------------------------------*/
         if ((cli = Cli()) != NULL)
@@ -78,8 +109,8 @@ static int WBOpen(LIBBASETYPEPTR LIBBASE)
         }
         else
         {
-            // FIXME: free resources
-            return FALSE;
+            closeall(LIBBASE);
+            break;
         }
         
         WorkbenchBase->wb_Initialized = TRUE;
@@ -87,7 +118,7 @@ static int WBOpen(LIBBASETYPEPTR LIBBASE)
 
     ReleaseSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
 
-    return TRUE;
+    return WorkbenchBase->wb_Initialized;
 } /* L_OpenLib */
 
 ADD2INITLIB(WBInit, 0);

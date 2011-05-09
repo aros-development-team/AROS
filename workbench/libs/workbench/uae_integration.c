@@ -61,7 +61,7 @@ BOOL j_uae_running(void)
  *
  * (Amiga 68k executables start with 0x00 0x00 0x03 0xf3)
  **************************************************************************/
-BOOL is_68k(STRPTR filename) 
+BOOL is_68k(STRPTR filename, APTR WorkbenchBase)
 {
     BPTR  fh;
     UBYTE begin[4];
@@ -89,7 +89,7 @@ BOOL is_68k(STRPTR filename)
  *
  * count number of TagItems
  **************************************************************************/
-static ULONG tag_list_nr(const struct TagItem *tstate) 
+static ULONG tag_list_nr(const struct TagItem *tstate, APTR WorkbenchBase)
 {
     ULONG count;
 
@@ -130,7 +130,7 @@ static STRPTR str_dup_vec(void *mempool, char *in)
  *
  * clone the TagList in and also clone all strings, in points to
  **************************************************************************/
-struct TagItem *tag_list_clone(void *mempool, const struct TagItem *in) 
+struct TagItem *tag_list_clone(void *mempool, const struct TagItem *in, APTR WorkbenchBase) 
 {
 
     ULONG   nr;
@@ -139,7 +139,7 @@ struct TagItem *tag_list_clone(void *mempool, const struct TagItem *in)
     char   *name_from_lock;
     struct TagItem *tag;
 
-    nr=tag_list_nr(in);
+    nr=tag_list_nr(in, WorkbenchBase);
 
     if(!nr) 
     {
@@ -205,7 +205,7 @@ struct TagItem *tag_list_clone(void *mempool, const struct TagItem *in)
  * Errorhandling is completely up to J-UAE!
  * J-UAE has to free all message resources!
  **************************************************************************/
-void forward_to_uae(struct TagItem *argsTagList, char *name)
+void forward_to_uae(struct TagItem *argsTagList, char *name, APTR WorkbenchBase)
 {
 
     struct MsgPort              *port;
@@ -224,7 +224,7 @@ void forward_to_uae(struct TagItem *argsTagList, char *name)
 	msg->mempool=pool;
 	if(msg) 
 	{
-	    msg->tags   =tag_list_clone(pool, argsTagList);
+	    msg->tags   =tag_list_clone(pool, argsTagList, WorkbenchBase);
 	    msg->ln_Name=str_dup_vec(pool, name);
 
 	    /* now ensure, that the port stays alive */
