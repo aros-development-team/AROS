@@ -72,7 +72,7 @@ static BOOL HIDDNouveauNV50AcquireSurface2D(struct CardData * carddata,
     bo_flags  = NOUVEAU_BO_VRAM;
     bo_flags |= issrc ? NOUVEAU_BO_RD : NOUVEAU_BO_WR;
 
-    if(!bo->tile_flags) {
+    if(!(bo->tile_flags & NOUVEAU_BO_TILE_LAYOUT_MASK)) {
         BEGIN_RING(chan, eng2d, mthd, 2);
         OUT_RING  (chan, fmt);
         OUT_RING  (chan, 1);
