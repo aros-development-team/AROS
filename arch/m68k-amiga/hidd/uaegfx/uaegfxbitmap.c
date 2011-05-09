@@ -270,7 +270,6 @@ ADD2EXPUNGELIB(UAEGFXBitmap_Expunge, 0);
 BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
-    struct uaegfx_staticdata *csd = CSD(cl);
 
     *msg->addressReturn = data->VideoData;
     *msg->widthReturn = data->width;
@@ -284,13 +283,11 @@ BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
 VOID UAEGFXBitmap__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
-    struct uaegfx_staticdata *csd = CSD(cl);
     data->locked--;
 }
 
 BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
-    struct bm_data *data = OOP_INST_DATA(cl, o);
     struct uaegfx_staticdata *csd = CSD(cl);
     WORD i, j;
     UBYTE *clut;
@@ -384,6 +381,7 @@ ULONG UAEGFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 VOID UAEGFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
+    struct uaegfx_staticdata *csd = CSD(cl);
 
     switch(msg->pixFmt)
     {
@@ -528,6 +526,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutImage *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
+    struct uaegfx_staticdata *csd = CSD(cl);
 
     switch(msg->pixFmt)
     {
@@ -672,6 +671,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_BitMap_PutImageLUT *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
+    struct uaegfx_staticdata *csd = CSD(cl);
 
     switch(data->bytesperpixel)
     {
@@ -725,21 +725,6 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 	    break;
 
     } /* switch(data->bytesperpix) */	    
-}
-
-/****************************************************************************************/
-
-VOID UAEGFXBitmap__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
-				   struct pHidd_BitMap_GetImageLUT *msg)
-{
-    WORD    	    	    x, y, d;
-    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
-    UBYTE   	    	    **plane;
-    ULONG   	    	    planeoffset;
-    struct bm_data    *data = OOP_INST_DATA(cl, o);
-
-//bug("gettimagelut\n");
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/

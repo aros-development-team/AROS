@@ -16,6 +16,15 @@
 #define __IHidd_Attr		(csd->hiddAttrBase)
 #define __IHidd_ColorMap	(csd->hiddColorMapAttrBase)
 
+#define HiddBitMapBase		(csd->hiddBitMapBase)
+#define HiddColorMapBase	(csd->hiddColorMapBase)
+#define HiddGfxBase		(csd->hiddGfxBase)
+
+#include <hidd/graphics_inline.h>
+
+#define OOPBase     ((csd)->cs_OOPBase)
+#define UtilityBase ((csd)->cs_UtilityBase)
+
 struct RTGMode
 {
 	struct Node node;
@@ -38,10 +47,16 @@ struct uaegfx_staticdata
 	OOP_AttrBase hiddGfxAttrBase;
 	OOP_AttrBase hiddAttrBase;
 	OOP_AttrBase hiddColorMapAttrBase;
+
+	OOP_MethodID hiddBitMapBase;
+	OOP_MethodID hiddColorMapBase;
+	OOP_MethodID hiddGfxBase;
 	
 	struct List rtglist;
-	struct Library *IntuitionBase;
 	struct Library *CardBase;
+	struct Library *cs_IntuitionBase;
+	struct Library *cs_UtilityBase;
+	struct Library *cs_OOPBase;
 	struct bm_data *disp;
 	APTR uaeromvector;
 	ULONG rgbformat;
@@ -71,6 +86,7 @@ struct UAEGFXclbase
     struct Library        library;
     
     struct uaegfx_staticdata csd;
+    IPTR                  cs_SegList;
 };
 
 #undef CSD

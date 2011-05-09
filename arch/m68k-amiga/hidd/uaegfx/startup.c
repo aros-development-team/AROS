@@ -1,8 +1,6 @@
 
 #define DEBUG 0
 
-#define __OOP_NOATTRBASES__
-
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <graphics/driver.h>
@@ -22,6 +20,7 @@ static int UAEGFX_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct GfxBase *GfxBase;
     OOP_Object *gfxhidd;
+    struct uaegfx_staticdata *csd = &LIBBASE->csd;
  	
     D(bug("************************* UAEGFX_Init ******************************\n"));
     if (!Init_UAEGFXClass(LIBBASE))
