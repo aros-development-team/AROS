@@ -22,7 +22,6 @@
 
 #include <hidd/graphics_inline.h>
 
-#define OOPBase     ((csd)->cs_OOPBase)
 #define UtilityBase ((csd)->cs_UtilityBase)
 
 struct RTGMode
@@ -56,7 +55,6 @@ struct uaegfx_staticdata
 	struct Library *CardBase;
 	struct Library *cs_IntuitionBase;
 	struct Library *cs_UtilityBase;
-	struct Library *cs_OOPBase;
 	struct bm_data *disp;
 	APTR uaeromvector;
 	ULONG rgbformat;

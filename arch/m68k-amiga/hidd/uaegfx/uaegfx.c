@@ -743,11 +743,8 @@ AROS_UFH4(APTR, rtg_vblank,
 static int openall(struct uaegfx_staticdata *csd)
 {
     if ((csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
-    	if ((csd->cs_OOPBase = OpenLibrary("oop.library", 0))) {
-    	    if ((csd->cs_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
-    	    	return TRUE;
-    	    }
-    	    CloseLibrary(csd->cs_OOPBase);
+    	if ((csd->cs_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
+    	    return TRUE;
     	}
     	CloseLibrary(csd->cs_UtilityBase);
     }
@@ -890,7 +887,6 @@ static int Expunge_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     	FreeVec(csd->boardinfo);
     freeattrbases(LIBBASE, csd);
     CloseLibrary(LIBBASE->csd.cs_IntuitionBase);
-    CloseLibrary(LIBBASE->csd.cs_OOPBase);
     CloseLibrary(LIBBASE->csd.cs_UtilityBase);
     return TRUE;
 }
