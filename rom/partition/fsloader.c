@@ -60,10 +60,10 @@ AROS_UFH3(static APTR, FSLoader_Init,
     	return NULL;
 
     /* We should really have dos.library online now */
-    PartitionBase->dosBase = OpenLibrary("dos.library", 36);
-    D(bug("[FSLoader] DOSBase 0x%p\n", PartitionBase->dosBase));
+    PartitionBase->pb_DOSBase = OpenLibrary("dos.library", 36);
+    D(bug("[FSLoader] DOSBase 0x%p\n", PartitionBase->pb_DOSBase));
 
-    if (PartitionBase->dosBase)
+    if (PartitionBase->pb_DOSBase)
     {
     	ForeachNodeSafe(&PartitionBase->bootList, bfs, bfs2)
     	{
@@ -103,7 +103,7 @@ static struct FileSysEntry *FindResidentFS(struct FileSysResource *fsr, ULONG do
 
 ULONG AddFS(struct Library *PartitionBase, struct FileSysHandle *fs)
 {
-    struct DosLibrary *DOSBase = (struct DosLibrary *)((struct PartitionBase_intern *)PartitionBase)->dosBase;
+    struct DosLibrary *DOSBase = (struct DosLibrary *)((struct PartitionBase_intern *)PartitionBase)->pb_DOSBase;
     struct FileSysResource *fsr;
     struct FileSysEntry *fsrnode;
     ULONG dostype;

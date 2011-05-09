@@ -55,7 +55,7 @@
     AROS_LIBFUNC_INIT
 
     /* If dos.library is available, load the filesystem immediately */
-    if (((struct PartitionBase_intern *)PartitionBase)->dosBase)
+    if (((struct PartitionBase_intern *)PartitionBase)->pb_DOSBase)
     	return AddFS(PartitionBase, (struct FileSysHandle *)handle);    
 
     /* Otherwise we need to queue it to the FSLoader hook (if not already done) */
