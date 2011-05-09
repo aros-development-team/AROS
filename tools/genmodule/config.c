@@ -581,7 +581,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		"superclass_field", "residentpri", "options", "sysbase_field",
 		"seglist_field", "rootbase_field", "classptr_field", "classptr_var",
 		"classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
-		"initpri", "type", "getidfunc", "addromtag", "oopbase_field"
+		"initpri", "type", "getidfunc", "addromtag"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -963,11 +963,6 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    case 27: /* addromtag */
 	    	cfg->addromtag = strdup(s);
 	    	break;
-	    case 28: /* oopbase_field */
-		if (inclass)
-		    exitfileerror(20, "oopbase_field not valid config option when in a class section\n");
-		cfg->oopbase_field = strdup(s);
-		break;
 		    }
 	}
 	else /* Line starts with ## */
