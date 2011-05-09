@@ -9,8 +9,6 @@
                 Original file was created by digulla.
 */
 
-#define DEBUG 0
-
 #include <aros/asmcall.h>
 #include <aros/config.h>
 #include <aros/debug.h>
