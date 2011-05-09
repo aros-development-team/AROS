@@ -77,7 +77,7 @@ ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
     if (card_num >= card_base->cards_found ||
         card_base->driverdatas[card_num] == NULL)
     {
-        DebugPrintF("no date for card = %ld\n", card_num);
+        DebugPrintF("no data for card = %ld\n", card_num);
         Req("No HDAudioChip for card %ld.", card_num);
         return AHISF_ERROR;
     }
@@ -106,12 +106,17 @@ ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
     
         dev = card->pci_dev;
         
+        //bug("AudioCtrl->ahiac_MixFreq = %lu\n", AudioCtrl->ahiac_MixFreq);
+        if (AudioCtrl->ahiac_MixFreq < card->frequencies[0].frequency)
+            AudioCtrl->ahiac_MixFreq = card->frequencies[0].frequency;
+
         card->selected_freq_index = 0;
         for (i = 1; i < card->nr_of_frequencies; i++)
         {
             if ((ULONG) card->frequencies[i].frequency >= AudioCtrl->ahiac_MixFreq)
             {
-                if ((AudioCtrl->ahiac_MixFreq - (LONG) card->frequencies[i - 1].frequency) < ((LONG) card->frequencies[i].frequency - AudioCtrl->ahiac_MixFreq))
+                if ((AudioCtrl->ahiac_MixFreq - (LONG) card->frequencies[i - 1].frequency)
+                    < ((LONG) card->frequencies[i].frequency - AudioCtrl->ahiac_MixFreq))
                 {
                     card->selected_freq_index = i - 1;
                     break;
