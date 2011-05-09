@@ -1,6 +1,6 @@
 diff -ur ./xf86-video-nouveau-src/nouveau_exa.c ./xf86-video-nouveau/nouveau_exa.c
 --- ./xf86-video-nouveau-src/nouveau_exa.c	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nouveau_exa.c	2011-05-07 21:30:39.000000000 +0200
++++ ./xf86-video-nouveau/nouveau_exa.c	2011-05-08 09:44:19.000000000 +0200
 @@ -21,6 +21,7 @@
   */
  
@@ -241,7 +241,7 @@ diff -ur ./xf86-video-nouveau-src/nouveau_exa.c ./xf86-video-nouveau/nouveau_exa
 +
 diff -ur ./xf86-video-nouveau-src/nouveau_local.h ./xf86-video-nouveau/nouveau_local.h
 --- ./xf86-video-nouveau-src/nouveau_local.h	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nouveau_local.h	2011-05-07 16:16:56.000000000 +0200
++++ ./xf86-video-nouveau/nouveau_local.h	2011-05-08 09:44:19.000000000 +0200
 @@ -23,8 +23,10 @@
  #ifndef __NOUVEAU_LOCAL_H__
  #define __NOUVEAU_LOCAL_H__
@@ -1117,7 +1117,7 @@ diff -ur ./xf86-video-nouveau-src/nv40_exa.c ./xf86-video-nouveau/nv40_exa.c
 +}
 diff -ur ./xf86-video-nouveau-src/nv50_accel.c ./xf86-video-nouveau/nv50_accel.c
 --- ./xf86-video-nouveau-src/nv50_accel.c	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nv50_accel.c	2011-05-07 16:16:56.000000000 +0200
++++ ./xf86-video-nouveau/nv50_accel.c	2011-05-08 09:44:19.000000000 +0200
 @@ -23,6 +23,7 @@
  #include "nv_include.h"
  #include "nv50_accel.h"
@@ -1136,7 +1136,7 @@ diff -ur ./xf86-video-nouveau-src/nv50_accel.c ./xf86-video-nouveau/nv50_accel.c
  NVAccelInitNV50TCL(ScrnInfoPtr pScrn)
 diff -ur ./xf86-video-nouveau-src/nv50_accel.h ./xf86-video-nouveau/nv50_accel.h
 --- ./xf86-video-nouveau-src/nv50_accel.h	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nv50_accel.h	2011-05-07 16:16:56.000000000 +0200
++++ ./xf86-video-nouveau/nv50_accel.h	2011-05-08 09:44:19.000000000 +0200
 @@ -1,7 +1,9 @@
  #ifndef __NV50_ACCEL_H__
  #define __NV50_ACCEL_H__
@@ -1149,7 +1149,7 @@ diff -ur ./xf86-video-nouveau-src/nv50_accel.h ./xf86-video-nouveau/nv50_accel.h
  #define PVP_OFFSET  0x00000000 /* Vertex program */
 diff -ur ./xf86-video-nouveau-src/nv50_exa.c ./xf86-video-nouveau/nv50_exa.c
 --- ./xf86-video-nouveau-src/nv50_exa.c	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nv50_exa.c	2011-05-07 20:26:40.000000000 +0200
++++ ./xf86-video-nouveau/nv50_exa.c	2011-05-08 09:44:19.000000000 +0200
 @@ -22,9 +22,11 @@
   */
  
@@ -1507,7 +1507,7 @@ diff -ur ./xf86-video-nouveau-src/nv50_exa.c ./xf86-video-nouveau/nv50_exa.c
 +}
 diff -ur ./xf86-video-nouveau-src/nv_accel_common.c ./xf86-video-nouveau/nv_accel_common.c
 --- ./xf86-video-nouveau-src/nv_accel_common.c	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nv_accel_common.c	2011-05-07 16:16:56.000000000 +0200
++++ ./xf86-video-nouveau/nv_accel_common.c	2011-05-09 20:19:59.000000000 +0200
 @@ -21,8 +21,19 @@
   */
  
@@ -1671,51 +1671,50 @@ diff -ur ./xf86-video-nouveau-src/nv_accel_common.c ./xf86-video-nouveau/nv_acce
  
  	/* General engine objects */
  	if (pNv->Architecture < NV_ARCH_C0)
-@@ -632,32 +673,32 @@
+@@ -632,32 +673,42 @@
  	/* 2D engine */
  	if (pNv->Architecture < NV_ARCH_50) {
  		INIT_CONTEXT_OBJECT(ContextSurfaces);
--		INIT_CONTEXT_OBJECT(ContextBeta1);
--		INIT_CONTEXT_OBJECT(ContextBeta4);
-+//		INIT_CONTEXT_OBJECT(ContextBeta1);
-+//		INIT_CONTEXT_OBJECT(ContextBeta4);
++#if !defined(__AROS__)
+ 		INIT_CONTEXT_OBJECT(ContextBeta1);
+ 		INIT_CONTEXT_OBJECT(ContextBeta4);
++#endif
  		INIT_CONTEXT_OBJECT(ImagePattern);
  		INIT_CONTEXT_OBJECT(RasterOp);
  		INIT_CONTEXT_OBJECT(Rectangle);
  		INIT_CONTEXT_OBJECT(ImageBlit);
--		INIT_CONTEXT_OBJECT(ScaledImage);
--		INIT_CONTEXT_OBJECT(ClipRectangle);
--		INIT_CONTEXT_OBJECT(ImageFromCpu);
-+//		INIT_CONTEXT_OBJECT(ScaledImage);
-+//		INIT_CONTEXT_OBJECT(ClipRectangle);
-+//		INIT_CONTEXT_OBJECT(ImageFromCpu);
++#if !defined(__AROS__)
+ 		INIT_CONTEXT_OBJECT(ScaledImage);
+ 		INIT_CONTEXT_OBJECT(ClipRectangle);
+ 		INIT_CONTEXT_OBJECT(ImageFromCpu);
++#endif
  	} else
  	if (pNv->Architecture < NV_ARCH_C0) {
  		INIT_CONTEXT_OBJECT(2D_NV50);
  	} else {
--		INIT_CONTEXT_OBJECT(2D_NVC0);
-+//		INIT_CONTEXT_OBJECT(2D_NVC0);
++#if !defined(__AROS__)
+ 		INIT_CONTEXT_OBJECT(2D_NVC0);
++#endif
  	}
  
  	if (pNv->Architecture < NV_ARCH_C0)
  		INIT_CONTEXT_OBJECT(MemFormat);
--	else
--		INIT_CONTEXT_OBJECT(M2MF_NVC0);
-+//	else
-+//		INIT_CONTEXT_OBJECT(M2MF_NVC0);
++#if !defined(__AROS__)
+ 	else
+ 		INIT_CONTEXT_OBJECT(M2MF_NVC0);
++#endif
  
  	/* 3D init */
  	switch (pNv->Architecture) {
--	case NV_ARCH_C0:
--		INIT_CONTEXT_OBJECT(3D_NVC0);
--		break;
-+//	case NV_ARCH_C0:
-+//		INIT_CONTEXT_OBJECT(3D_NVC0);
-+//		break;
++#if !defined(__AROS__)
+ 	case NV_ARCH_C0:
+ 		INIT_CONTEXT_OBJECT(3D_NVC0);
+ 		break;
++#endif
  	case NV_ARCH_50:
  		INIT_CONTEXT_OBJECT(NV50TCL);
  		break;
-@@ -682,22 +723,24 @@
+@@ -682,22 +733,28 @@
  {
  	NVPtr pNv = NVPTR(pScrn);
  
@@ -1728,26 +1727,42 @@ diff -ur ./xf86-video-nouveau-src/nv_accel_common.c ./xf86-video-nouveau/nv_acce
  	nouveau_notifier_free(&pNv->vblank_sem);
  
  	nouveau_grobj_free(&pNv->NvContextSurfaces);
--	nouveau_grobj_free(&pNv->NvContextBeta1);
--	nouveau_grobj_free(&pNv->NvContextBeta4);
-+//	nouveau_grobj_free(&pNv->NvContextBeta1);
-+//	nouveau_grobj_free(&pNv->NvContextBeta4);
++#if !defined(__AROS__)
+ 	nouveau_grobj_free(&pNv->NvContextBeta1);
+ 	nouveau_grobj_free(&pNv->NvContextBeta4);
++#endif
  	nouveau_grobj_free(&pNv->NvImagePattern);
  	nouveau_grobj_free(&pNv->NvRop);
  	nouveau_grobj_free(&pNv->NvRectangle);
  	nouveau_grobj_free(&pNv->NvImageBlit);
--	nouveau_grobj_free(&pNv->NvScaledImage);
--	nouveau_grobj_free(&pNv->NvClipRectangle);
--	nouveau_grobj_free(&pNv->NvImageFromCpu);
-+//	nouveau_grobj_free(&pNv->NvScaledImage);
-+//	nouveau_grobj_free(&pNv->NvClipRectangle);
-+//	nouveau_grobj_free(&pNv->NvImageFromCpu);
++#if !defined(__AROS__)
+ 	nouveau_grobj_free(&pNv->NvScaledImage);
+ 	nouveau_grobj_free(&pNv->NvClipRectangle);
+ 	nouveau_grobj_free(&pNv->NvImageFromCpu);
++#endif
  	nouveau_grobj_free(&pNv->Nv2D);
  	nouveau_grobj_free(&pNv->NvMemFormat);
  	nouveau_grobj_free(&pNv->NvSW);
+@@ -706,3 +763,16 @@
+ 	nouveau_bo_ref(NULL, &pNv->tesla_scratch);
+ 	nouveau_bo_ref(NULL, &pNv->shader_mem);
+ }
++
++
++/* AROS CODE */
++
++BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata)
++{
++    return NVAccelCommonInit(carddata);
++}
++
++VOID HIDDNouveauAccelFree(struct CardData * carddata)
++{
++    NVAccelFree(carddata);
++}
 diff -ur ./xf86-video-nouveau-src/nv_include.h ./xf86-video-nouveau/nv_include.h
 --- ./xf86-video-nouveau-src/nv_include.h	2011-03-23 09:14:36.000000000 +0100
-+++ ./xf86-video-nouveau/nv_include.h	2011-05-07 20:25:36.000000000 +0200
++++ ./xf86-video-nouveau/nv_include.h	2011-05-09 20:20:03.000000000 +0200
 @@ -1,84 +1,158 @@
  #ifndef __NV_INCLUDE_H__
  #define __NV_INCLUDE_H__
