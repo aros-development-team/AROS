@@ -206,13 +206,26 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
             if (softname)
             {
                 /* All OK */
-                BPTR olddir = CurrentDir(cur ? cur : dvp->dvp_Lock);
+                BPTR olddir = BNULL;
 
-                ret = InternalOpen(softname, accessMode, handle, soft_nesting - 1, DOSBase);
-                error = ret ? 0 : IoErr();
+            	if (dvp)
+            	{
+                    olddir = me->pr_CurrentDir;
+            	    error = RootDir(dvp, DOSBase);
+            	}
+            	else
+            	    error = 0;
+
+            	if (!error)
+            	{
+                    ret = InternalOpen(softname, accessMode, handle, soft_nesting - 1, DOSBase);
+                    error = ret ? 0 : IoErr();
+
+                    if (olddir)
+                    	UnLock(CurrentDir(olddir));
+                }
 
                 FreeVec(softname);
-                CurrentDir(olddir);
             }
             else
             	error = IoErr();

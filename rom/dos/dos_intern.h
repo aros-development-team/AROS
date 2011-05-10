@@ -100,6 +100,7 @@ struct vfp
 
 /* Softlink handling */
 STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase);
+LONG RootDir(struct DevProc *dvp, struct DosLibrary *DOSBase);
 
 /* Packet emulator for IOFS */
 void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport);

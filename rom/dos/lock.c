@@ -6,6 +6,9 @@
     Lang: English
 */
 
+#define DEBUG 0
+#define DLINK(x)
+
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
@@ -147,16 +150,33 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 
         if (softname)
         {
-            /* All OK */
-            BPTR olddir = CurrentDir(cur ? cur : dvp->dvp_Lock);
+            BPTR olddir = BNULL;
 
-            ret = InternalLock(softname, accessMode, handle, soft_nesting - 1, DOSBase);
-            error = ret ? 0 : IoErr();
+            /*
+             * ResolveSoftLink() gives us path relative to either 'cur' lock
+             * (if on current volume), or 'dvp' volume root (if on different volume).
+             * In the latter case we need to change current directory to volume's root
+             * in order to follow the link correctly.
+             */
+            if (dvp)
+            {
+                olddir = me->pr_CurrentDir;
+            	error = RootDir(dvp, DOSBase);
+            }
+            else
+            	error = 0;
 
-            D(bug("[Lock] Resolve error %d\n", error));
+            if (!error)
+            {
+            	ret = InternalLock(softname, accessMode, handle, soft_nesting - 1, DOSBase);
+            	error = ret ? 0 : IoErr();
+            	D(bug("[Lock] Resolve error %d\n", error));
+
+		if (olddir)
+            	    UnLock(CurrentDir(olddir));
+            }
 
 	    FreeVec(softname);
-            CurrentDir(olddir);
         }
         else
             error = IoErr();
@@ -175,6 +195,10 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     return ret;
 }
 
+/*
+ * Resolve a softlink.
+ * Returns AllocVec()ed buffer with softlink contents.
+ */
 STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
     ULONG buffer_size = 256;
@@ -182,13 +206,13 @@ STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct 
     LONG continue_loop;
     LONG written;
 
-    D(bug("[Softlink] Resolving softlink %s...\n", name));
+    DLINK(bug("[Softlink] Resolving softlink %s...\n", name));
 
     do
     {
         continue_loop = FALSE;
 
-        if (!(softname = AllocVec(buffer_size, MEMF_PUBLIC)))
+        if (!(softname = AllocVec(buffer_size, MEMF_PUBLIC|MEMF_CLEAR)))
         {
             SetIoErr(ERROR_NO_FREE_STORE);
             break;
@@ -200,7 +224,7 @@ STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct 
 	{
 	case -1:
             /* An error occured */
-            D(bug("[Softlink] Error %d reading softlink\n", IoErr()));
+            DLINK(bug("[Softlink] Error %d reading softlink\n", IoErr()));
             break;
 
         case -2:
@@ -208,18 +232,33 @@ STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct 
             continue_loop = TRUE;
             buffer_size <<= 1;
 
-            D(bug("[Softlink] Increased buffer size up to %u\n", buffer_size));
+            DLINK(bug("[Softlink] Increased buffer size up to %u\n", buffer_size));
             break;
 
 	default:
             /* All OK */
-            D(bug("[Softlink] Resolved path: %s\n", softname));
+            DLINK(bug("[Softlink] Resolved path: %s\n", softname));
             return softname;
         }
                 
         FreeVec(softname);
     }
     while(continue_loop);
-    
+
     return NULL;
+}
+
+/* Change to root directory of the specified device */
+LONG RootDir(struct DevProc *dvp, struct DosLibrary *DOSBase)
+{
+    BPTR lock = BNULL;
+    LONG error;
+
+    /* We already have a DeviceProc structure, so just use internal routine. */
+    error = fs_LocateObject(&lock, BNULL, dvp, "", SHARED_LOCK, DOSBase);
+
+    if (!error)
+    	CurrentDir(lock);
+
+    return error;
 }
