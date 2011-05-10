@@ -300,7 +300,8 @@
 
 #define CTRL_C          (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
 
-#define  DEBUG  0
+#define DEBUG 0
+#define D(x)
 
 /* Enabled softlinks check for testing. Define this to 0 in case of problems.
    Pavel Fedin <sonic_amiga@rambler.ru> */
@@ -1217,9 +1218,7 @@ __startup static AROS_ENTRY(int, Start,
     AROS_USERFUNC_EXIT
 }
 
-/* FIXME: Remove these #define xxxBase hacks
-   Do not use this in new code !
-*/
+/* This code is pure and has library bases in explicitly allocated data structure */
 #define SysBase cd->SysBase
 #define DOSBase cd->DOSBase
 
@@ -1338,63 +1337,78 @@ void PatCopy(STRPTR name, struct CopyData *cd)
 
                 if (cd->Flags & COPYFLAG_ALL)
                 {
+                    BOOL enter;
+
 #if USE_SOFTLINKCHECK
 
-                    BOOL enter = TRUE;
-                    BPTR dirlock, lock;
-
-                    dirlock = CurrentDir(APath->ap_Current->an_Lock);
-                    lock = Lock(APath->ap_Info.fib_FileName, ACCESS_READ);
-                    if (lock)
-                        UnLock(lock);
-                    else
-                    {
-                        struct DevProc *dvp;
-                        LONG ioerr = IoErr();
-
-                        if (ioerr == ERROR_OBJECT_NOT_FOUND &&
-                            (dvp = GetDeviceProc("", NULL)))
-                        {
 #define BUFFERSIZE 512
-                            UBYTE *buffer = AllocMem(BUFFERSIZE, MEMF_PUBLIC);
+		    if (APath->ap_Info.fib_DirEntryType == ST_SOFTLINK)
+		    {
+                        UBYTE *buffer = AllocMem(BUFFERSIZE, MEMF_PUBLIC);
 
-                            if (buffer)
+			D(Printf("%s is a softlink\n", APath->ap_Info.fib_FileName));
+			enter = FALSE;
+			doit = FALSE;
+    
+                        if (buffer)
+                        {
+                    	    BPTR dirlock, lock;
+                            struct DevProc *dvp = GetDeviceProc("", NULL);
+
+                            dirlock = CurrentDir(APath->ap_Current->an_Lock);
+                            if (ReadLink(dvp->dvp_Port, APath->ap_Current->an_Lock, APath->ap_Info.fib_FileName, buffer, BUFFERSIZE - 1) > 0)
                             {
-                                if (ReadLink(dvp->dvp_Port, dvp->dvp_Lock, APath->ap_Info.fib_FileName, buffer, BUFFERSIZE - 1) > 0)
+                                BOOL link_ok = FALSE;
+
+                                buffer[BUFFERSIZE - 1] = '\0';
+                                D(Printf("Softlink target: %s\n", buffer));
+
+                                lock = Lock(buffer, SHARED_LOCK);
+                                if (lock)
                                 {
-                                    if (!(cd->Flags & COPYFLAG_QUIET))
-                                    {
-                                        buffer[BUFFERSIZE - 1] = '\0';
+                                    struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 
-                                        Printf("Warning: Skipping dangling softlink %s -> %s\n",
-                                               APath->ap_Info.fib_FileName, buffer);
-                                    }
+				    if (fib)
+				    {
+                                    	if (Examine(lock, fib))
+                    	    	    	{
+                    	    	            link_ok = TRUE;
+                    	    	    	    D(Printf("Target type: %ld\n", fib->fib_DirEntryType));
 
-                                    enter = FALSE;
+                    	    	    	    if (fib->fib_DirEntryType > 0)
+                    	    	    	    	enter = TRUE;
+                    	    	    	    else
+                    	    	    	        /*
+                    	    	    	         * FIXME: This currently just prevents treating symlinks to files as
+                    	    	    	         * directories during copying.
+                    	    	    	         * DoWork() should be extended to handle symlinks correctly. BTW, how exactly ?
+                    	    	    	         */
+                    	    	    	    	doit = FALSE;
+                    	    	    	}
+                    	    	    	FreeDosObject(DOS_FIB, fib);
+                    	    	    }
+                    	    	    UnLock(lock);
                                 }
 
-                                FreeMem(buffer, BUFFERSIZE);
+                                if (!link_ok)
+                                {
+                                    Printf("Warning: Skipping dangling softlink %s -> %s\n",
+                                               APath->ap_Info.fib_FileName, buffer);
+                                }
+                            	FreeDeviceProc(dvp);
                             }
-
-                            FreeDeviceProc(dvp);
+                            FreeMem(buffer, BUFFERSIZE);
                         }
-
-                        SetIoErr(ioerr);
-                    }
-                    CurrentDir(dirlock);
+		    }
+		    else
+#endif /* USE_SOFTLINKCHECK */
+		    	enter = TRUE;
 
                     if (enter)
                     {
                         APath->ap_Flags |= APF_DODIR;
                         deep = 1;
                     }
-
-#else /* USE_SOFTLINKCHECK */
-
-                    APath->ap_Flags |= APF_DODIR;
-                    deep = 1;
-
-#endif /* USE_SOFTLINKCHECK */
                 }
             }
             else if (!cd->Pattern || MatchPatternNoCase(cd->Pattern, APath->ap_Info.fib_FileName))
@@ -1413,7 +1427,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
 #if USE_ALWAYSVERBOSE
             cd->Flags |= COPYFLAG_VERBOSE;
 #endif
-            Printf("%s - ", name);
+            Printf("%s - ", APath->ap_Info.fib_FileName);
             PrintFault(ioerr, NULL);
             SetIoErr(ioerr);
 
