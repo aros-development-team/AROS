@@ -7,7 +7,11 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)	\
 	       -I$(SRCDIR)/arch/all-hosted/devs/hostdisk		\
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
+# Dash after darwin is intentional. It stands for empty $(AROS_TARGET_VARIANT)
+# in $(ARCH)-$(AROS_TARGET_VARIANT) expression.
+# iOS SDK doesn't have disk IOCTL definitions, so no geometry routines.
+
 %build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
-    arch=darwin files="geometry"
+    arch=darwin- files="geometry"
 
 %common

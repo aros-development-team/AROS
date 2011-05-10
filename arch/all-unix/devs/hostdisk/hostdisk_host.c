@@ -16,6 +16,8 @@
 #define INODE64_SUFFIX "$INODE64"
 #endif
 
+/* Correspondingly, there's no struct stat64. Use struct stat instead. */
+#define stat64 stat
 #else
 
 /* 
@@ -24,8 +26,8 @@
  */
 #define _DARWIN_NO_64_BIT_INODE
 /* This enables struct stat64 definition */
-#define _DARWIN_C_SOURCE
-#define _LARGEFILE64_SOURCE
+#define _DARWIN_C_SOURCE	/* For Darwin */
+#define _LARGEFILE64_SOURCE	/* For Linux */
 #endif
 
 #ifndef INODE64_SUFFIX
