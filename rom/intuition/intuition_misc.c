@@ -953,32 +953,27 @@ ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relr
 
 /**********************************************************************************/
 
-/* FIXME: Probably sucks. I have no clue about this hash stuff */
+/* Use the FNV-1 hash function over the object's pointer.
+ * http://en.wikipedia.org/wiki/Fowler-Noll-Vo_hash_function
+ */
 LONG CalcResourceHash(APTR resource)
 {
-    LONG l1, l2, l3, l4, hash;
-#if __WORDSIZE == 64
-    LONG l5, l6, l7, l8;
+    const ULONG FNV1_32_Offset = 2166136261UL;
+    const ULONG FNV1_32_Prime  = 16777619UL;
+    IPTR data = (IPTR)resource;
+    ULONG hash;
+    int i;
 
-    l5 = (((IPTR)resource) >> 32) & 0xFF;
-    l6 = (((IPTR)resource) >> 40) & 0xFF;
-    l7 = (((IPTR)resource) >> 48) & 0xFF;
-    l8 = (((IPTR)resource) >> 56) & 0xFF;
-#endif
-    
-    l1 = ((IPTR)resource) & 0xFF;
-    l2 = (((IPTR)resource) >> 8) & 0xFF;
-    l3 = (((IPTR)resource) >> 16) & 0xFF;
-    l4 = (((IPTR)resource) >> 24) & 0xFF;
-   
-    hash = (l1 + l2 + l3 + l4
-#if __WORDSIZE == 64
-	    + l5 + l6 + l7 + l8
-#endif
-	    ) % RESOURCELIST_HASHSIZE;
-
-    return hash;
+    hash = FNV1_32_Offset;
+    for (i = 0; i < AROS_SIZEOFPTR; i++) {
+    	    hash *= FNV1_32_Prime;
+    	    hash ^= data & 0xff;
+    	    data >>= 8;
+    }
+    	
+    return hash & (RESOURCELIST_HASHSIZE-1);
 }
+
 /**********************************************************************************/
 
 void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase)
