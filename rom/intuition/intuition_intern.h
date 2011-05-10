@@ -390,7 +390,11 @@ struct Color32
 
 struct IntScreen;
 
+#ifdef __mc68000
+#define RESOURCELIST_HASHSIZE 	32	/* Smaller hash for memory limited m68k */
+#else
 #define RESOURCELIST_HASHSIZE 	256
+#endif
 
 #define RESOURCE_WINDOW     	1
 #define RESOURCE_SCREEN	    	2
