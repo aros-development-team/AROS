@@ -1007,6 +1007,7 @@ case "$target_os" in
 		aros_arch_libs="-laeabi"
 		aros_default_wbdepth=8
 		gcc_target_cpu="arm"
+		aros_kernel_ld="ld -arch arm"
 		target_tool_prefix="arm-apple-darwin10-" 
                 export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
 		;;
@@ -1019,7 +1020,7 @@ case "$target_os" in
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
                	aros_ios_sdk="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/SDKs/$aros_ios_platform$aros_ios_sdk.sdk"
-		target_tool_flags="$target_tool_flags --sysroot $aros_ios_sdk"
+		target_tool_flags="$target_tool_flags -isysroot $aros_ios_sdk"
 		aros_kernel_includes="-isystem $aros_ios_sdk/usr/include"
 		need_x11=no
 		# This is here because it may depend on iOS or SDK version
