@@ -43,7 +43,11 @@
 #define ICONDUPA_JustLoadedFromDisk ICONA_Reserved1
 
 /* This must be a power of 2 */
+#ifdef __mc68000
+#define ICONLIST_HASHSIZE 32	/* Save space on small memory m68k machines */
+#else
 #define ICONLIST_HASHSIZE 256
+#endif
 
 /****************************************************************************************/
 
