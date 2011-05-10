@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #include <proto/expansion.h>
 #include <exec/memory.h>
