@@ -118,6 +118,7 @@ asm (".chip 68060\n"
  		/* PCR is 68060 only */
 	"	dc.l 0x4e7a0808\n" // movec	%pcr,%d0\n"
 		/* 68060 */
+	"	move.l	%d0,%a0@\n" // save PCR
 	"	move.w	#0x0001,%d0\n"
  		/* enable supercalar, enable FPU */
  	"	dc.l 0x4e7b0808\n" // movec	%d0,%pcr\n"
@@ -139,7 +140,7 @@ asm (
 );
 
 /* Detect CPU and FPU model */
-static ULONG cpu_detect(void)
+static ULONG cpu_detect(ULONG *pcr)
 {
 	volatile APTR *trap = NULL;
 	APTR old_trap8, old_trap4, old_trap11;
@@ -151,11 +152,13 @@ static ULONG cpu_detect(void)
 	trap[4] = cpu_detect_trap_illg;
 	old_trap11 = trap[11];
 	trap[11] = cpu_detect_trap_f;
+	*pcr = 0;
 	asm volatile (
+		"move.l %1,%%a0\n"
 		"moveq #0,%%d0\n"
 		"move.w	%%sr,%%d1\n"
 		"move.w	%%d0,%0\n"
-		: "=m" (cpuret) : : "%d0", "%d1" );
+		: "=m" (cpuret) : "m" (pcr) : "%d0", "%d1", "%a0" );
 	trap[4] = cpu_detect_trap_fpu;
 	asm volatile (
 		"illegal\n" /* supervisor mode */
@@ -423,7 +426,7 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	};
 	struct MemHeader *mh;
 	LONG oldLastAlert[4];
-	ULONG oldmem;
+	ULONG oldmem, pcr;
 	APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
 	APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
 	/* We can't use the global 'SysBase' symbol, since
@@ -554,7 +557,7 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
             SysBase->LastAlert[i] = oldLastAlert[i];
 
 	/* Determine CPU model */
-	SysBase->AttnFlags |= cpu_detect();
+	SysBase->AttnFlags |= cpu_detect(&pcr);
 
 #ifdef AROS_SERIAL_DEBUG
 	DEBUGPUTS(("CPU: "));
@@ -585,6 +588,8 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	else
 		DEBUGPUTS(("-"));
 	DEBUGPUTS(("\n"));
+	if (pcr)
+		DEBUGPUTHEX(("PCR", pcr));
 #endif
 
 	/* Inject code for GetCC, depending on CPU model */
