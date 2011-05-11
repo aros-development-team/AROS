@@ -172,10 +172,17 @@ static void PRINT_LE_UUID(char *s, uuid_t *id)
 #define writeDataFromBlock(root, blk, tablesize, table) 1
 #endif
 
-static ULONG GPT_GetDosType(struct GPTPartition *p)
+static void GPT_PatchDosEnvec(struct DosEnvec *de, struct GPTPartition *p)
 {
+    ULONG type   = 0;
+    LONG bootpri = 0;
+
     if (is_aros_uuid_le(&p->TypeID))
-    	return AROS_LE2LONG(p->TypeID.time_low);
+    {
+    	type    = AROS_LE2LONG(p->TypeID.time_low);
+    	/* This casting is needed for proper sign expansion */
+    	bootpri = (BYTE)(AROS_LE2LONG(p->Flags1) & GPT_PF1_AROS_BOOTPRI);
+    }
     else
     {
         const struct TypeMapping *m;
@@ -183,11 +190,15 @@ static ULONG GPT_GetDosType(struct GPTPartition *p)
         for (m = PartTypes; m->DOSType; m++)
         {
             if (m->uuid && uuid_cmp_le(&p->TypeID, m->uuid))
-            	return m->DOSType;
+            {
+            	type = m->DOSType;
+            	break;
+            }
         }
-
-    	return 0;
     }
+    
+    setDosType(de, type);
+    de->de_BootPri = bootpri;
 }
 
 static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle *root, struct GPTHeader *hdr, UQUAD block)
@@ -325,7 +336,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
 		    initPartitionHandle(root, &gph->ph, startblk, endblk - startblk + 1);
 
 		    /* Map UUID to a DOSType */
-		    setDosType(&gph->ph.de, GPT_GetDosType(p));
+		    GPT_PatchDosEnvec(&gph->ph.de, p);
 
 		    /* Store the whole entry and convert name into ASCII form */
 		    CopyMem(p, &gph[1], entrysize);
@@ -511,7 +522,7 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
     	    {
 	        uuid_to_le(&part->TypeID, (uuid_t *)tag->ti_Data);
 	        /* Update DOSType according to a new type ID */
-	        setDosType(&ph->de, GPT_GetDosType(part));
+	        GPT_PatchDosEnvec(&ph->de, part);
 	    }
 	    break;
 

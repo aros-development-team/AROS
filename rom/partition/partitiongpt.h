@@ -46,3 +46,4 @@ struct GPTPartition
 
 /* AROS-specific flags */
 #define GPT_PF1_AROS_BOOTABLE (1 << 28)
+#define GPT_PF1_AROS_BOOTPRI  0x000000FF	/* Mask for boot priority */
