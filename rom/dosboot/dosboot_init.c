@@ -6,25 +6,32 @@
     Lang: english
 */
 
-#define AROS_BOOT_CHECKSIG
+
 #ifdef __mc68000
 /*
  * Load DEVS:system-configuration only on m68k.
  * Setup pre-2.0 boot disk colors and mouse cursors (for example)
  */
 #define USE_SYSTEM_CONFIGURATION
+
+#else
+
+/*
+ * Don't check for boot signature on m68k.
+ * Original boot disks don't have it.
+ */
+#define AROS_BOOT_CHECKSIG ":AROS.boot"
+/* Alternate variant: check if Shell is loadable
+#define AROS_BOOT_CHECKEXEC ":C/Shell" */
+
 #endif
 
-# define  DEBUG 0
-# include <aros/debug.h>
-
+#include <aros/debug.h>
 #include <aros/macros.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
-
 #include <proto/exec.h>
 #include <proto/dos.h>
-
 #include <exec/types.h>
 #include <exec/nodes.h>
 #include <exec/lists.h>
@@ -39,7 +46,6 @@
 #include <devices/trackdisk.h>
 
 #include <string.h>
-#include <stdio.h>
 
 #ifdef USE_SYSTEM_CONFIGURATION
 
@@ -103,114 +109,120 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
 static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
 {
     BPTR lock;
-    BOOL            result = FALSE;
-    STRPTR          buffer;
-    LONG            bufferLength;
+    BOOL result = FALSE;
+    STRPTR buffer;
+    LONG nameLength, bufferLength;
 
     D(bug("[DOSBoot] __dosboot_IsBootable('%s')\n", deviceName));
-
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
-
-    {
-    	bufferLength = strlen(deviceName) + 1 + 1;
-        /* bootable if we can lock the device */
-    	buffer = AllocMem(bufferLength, MEMF_ANY);
-    	if (!buffer)
-    	    return FALSE;
-    	sprintf(buffer, "%s:", deviceName);
-        if ((lock = Lock(buffer, SHARED_LOCK)))
-            result = TRUE;
-        UnLock(lock);
-        lock = 0;
-    }
-
-#else
+    
+    nameLength = strlen(deviceName);
 
 #if defined(AROS_BOOT_CHECKSIG)
-#define AROSBOOTSIG_FILE ":AROS.boot"
 
-    LONG readsize;
-    struct FileInfoBlock abfile_fib;
-   
-    bufferLength = strlen(deviceName) + sizeof(AROSBOOTSIG_FILE) + 1;
+    bufferLength = nameLength + sizeof(AROS_BOOT_CHECKSIG) + 1;
 
     if ((buffer = AllocMem(bufferLength, MEMF_ANY)) == NULL)
     {
         Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
     }
 
-    strcpy(buffer, deviceName);
-    strcat(buffer, AROSBOOTSIG_FILE);
+    CopyMem(deviceName, buffer, nameLength);
+    strcpy(&buffer[nameLength], AROS_BOOT_CHECKSIG);
+    D(bug("[DOSBoot] Opening '%s'...\n", buffer));
 
-    if ((lock = Open(buffer, MODE_OLDFILE)) == 0)
-    {
-        D(bug("[DOSBoot] __dosboot_IsBootable: Failed to open '%s'\n", buffer));
-        goto cleanup;
-    }
+    lock = Open(buffer, MODE_OLDFILE);
 
-    D(bug("[DOSBoot] __dosboot_IsBootable: Opened '%s'\n", buffer));
     FreeMem(buffer, bufferLength);
     buffer = NULL;
 
-    if (ExamineFH(lock, &abfile_fib))
+    if (lock)
     {
-        bufferLength = abfile_fib.fib_Size + 1;
+        LONG readsize;
+	struct FileInfoBlock *abfile_fib;
 
-        if ((buffer = AllocMem(bufferLength, MEMF_ANY)) == NULL)
-        {
-            Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
-        }
-        D(bug("[DOSBoot] __dosboot_IsBootable: Allocated %d bytes for Buffer @ %p\n", bufferLength, buffer));
-        if ((readsize = Read(lock, buffer, (bufferLength - 1))) != -1)
-        {
-            char *sigptr = NULL;
+	D(bug("[DOSBoot] Opened succesfully\n"));
 
-            if (readsize != 0)
-                buffer[readsize] = '\0';
-            else
-                buffer[bufferLength - 1] = '\0';
+	abfile_fib = AllocDosObject(DOS_FIB, NULL);
+	if (abfile_fib)
+	{
+    	    if (ExamineFH(lock, abfile_fib))
+    	    {
+            	bufferLength = abfile_fib->fib_Size + 1;
 
-            D(bug("[DOSBoot] __dosboot_IsBootable: Buffer contains '%s'\n", buffer));
-            if ((sigptr = strstr(buffer, AROS_CPU)) != 0)
-            {
-                D(bug("[DOSBoot] __dosboot_IsBootable: Signature '%s' found\n", sigptr));
-                result = TRUE;
+        	buffer = AllocMem(bufferLength, MEMF_ANY);
+        	D(bug("[DOSBoot] Allocated %d bytes for Buffer @ %p\n", bufferLength, buffer));
+
+		if (!buffer)
+        	{
+            	    Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
+        	}
+
+	        if ((readsize = Read(lock, buffer, (bufferLength - 1))) != -1)
+        	{
+            	    char *sigptr = NULL;
+
+            	    if (readsize != 0)
+            	    {
+                	buffer[readsize] = '\0';
+
+            	    	D(bug("[DOSBoot] __dosboot_IsBootable: Buffer contains '%s'\n", buffer));
+            	    	if ((sigptr = strstr(buffer, AROS_CPU)) != 0)
+            	    	{
+                	    D(bug("[DOSBoot] __dosboot_IsBootable: Signature '%s' found\n", AROS_CPU));
+                	    result = TRUE;
+                	}
+                    }
+            	}
             }
+            FreeDosObject(DOS_FIB, abfile_fib);
         }
+    	Close(lock);
     }
-    Close(lock);
-    lock = BNULL;
 
-#else
-#define SHELL_FILE ":C/Shell"
+#elif defined(AROS_BOOT_CHECKEXEC)
 
-    BPTR seglist;
-    
-    bufferLength = strlen(deviceName) + sizeof(SHELL_FILE) + 1;
+    bufferLength = nameLength + sizeof(AROS_BOOT_CHECKEXEC) + 1;
 
     if ((buffer = AllocMem(bufferLength, MEMF_PUBLIC)) == NULL)
     {
         Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
     }
 
-    strcpy(buffer, deviceName);
-    strcat(buffer, SHELL_FILE);
+    CopyMem(deviceName, buffer, nameLength);
+    strcpy(&buffer[nameLength], AROS_BOOT_CHECKEXEC);
 
-    D(bug("[DOSBoot] __dosboot_IsBootable: "
-        "Trying to load '%s' as an executable\n", buffer));
+    D(bug("[DOSBoot] __dosboot_IsBootable: Trying to load '%s' as an executable\n", buffer));
 
-    if ((seglist = LoadSeg(buffer)) == (BPTR)NULL)
+    if ((lock = LoadSeg(buffer)))
     {
-        D(bug("[DOSBoot] __dosboot_IsBootable: could not load '%s'\n", buffer));
-        goto cleanup;
+	D(bug("[DOSBoot] Success!\n"));
+
+    	result = TRUE;
+    	UnLoadSeg(lock);
     }
 
-    UnLoadSeg(seglist);
-    result = TRUE;
-#endif
+#else
 
+    /* bootable if we can lock the device */
+    bufferLength = nameLength + 2;
 
-cleanup:
+    buffer = AllocMem(bufferLength, MEMF_ANY);
+    if (buffer)
+    {
+    	CopyMem(deviceName, buffer, nameLength);
+    	buffer[nameLength    ] = ':';
+    	buffer[nameLength + 1] = 0;
+    	D(bug("[DOSBoot] __dosboot_IsBootable: Trying to lock '%s'...\n", buffer));
+
+    	if ((lock = Lock(buffer, SHARED_LOCK)))
+    	{
+    	    D(bug("[DOSBoot] Success!\n"));
+
+            result = TRUE;
+            UnLock(lock);
+    	}
+    }
+
 #endif
 
     if (buffer != NULL ) FreeMem(buffer, bufferLength);
@@ -267,13 +279,13 @@ AROS_UFH3(void, __dosboot_BootProcess,
     }
 
     /**** Try to mount all filesystems in the MountList ****************************/
-    D(bug("[DOSBoot] __dosboot_BootProcess: Checking expansion.library/MountList for useable nodes:\n"));
+    D(bug("[DOSBoot] Checking expansion.library/MountList for usable nodes...\n"));
 
     ForeachNode(&ExpansionBase->MountList, bootNode)
     {
     	struct DeviceNode *dn = bootNode->bn_DeviceNode;
 
-        D(bug("[DOSBoot] __dosboot_BootProcess: BootNode: %p, bn_DeviceNode: %p, Name '%b', Priority %4d\n",
+        D(bug("[DOSBoot] BootNode: %p, bn_DeviceNode: %p, Name '%b', Priority %4d...",
                 bootNode, dn, dn->dn_Name, bootNode->bn_Node.ln_Pri));
         /*
          * Try to mount the filesystem. If it succeeds, mark the BootNode
@@ -282,11 +294,14 @@ AROS_UFH3(void, __dosboot_BootProcess,
         if (__dosboot_Mount(dn, DOSBase))
         {
             bootNode->bn_Flags |= BNF_MOUNTED;
-            D(bug("[DOSBoot] __dosboot_BootProcess: Marked '%b' as useable\n", dn->dn_Name));
+            D(bug("Succesfully mounted\n", dn->dn_Name));
         }
         else
+        {
             /* Since this is our private flag, make sure that noone has ocassionally set it */
             bootNode->bn_Flags &= ~BNF_MOUNTED;
+            D(bug("Failed to mount\n", dn->dn_Name));
+        }
     }
 
     LIBBASE->delayTicks = 500;
@@ -299,18 +314,20 @@ AROS_UFH3(void, __dosboot_BootProcess,
             struct DeviceNode *dn = bootNode->bn_DeviceNode;
             STRPTR deviceName = AROS_BSTR_ADDR(dn->dn_Name);
 
-            D(bug("[DOSBoot] __dosboot_BootProcess: Trying '%s' ...\n", deviceName));
+	    if (bootNode->bn_Flags & BNF_MOUNTED)
+	    {
+            	DB2(bug("[DOSBoot] Trying to boot from '%s' (priority %d)...\n", deviceName, bootNode->bn_Node.ln_Pri));
 
-            /*
-             * Check if the mounted filesystem is bootable. If it's not,
-             * it's probably some kind of transient error (ie. no disk
-             * in drive or wrong disk) so we will retry after some time.
-             */
-            if ((bootNode->bn_Flags & BNF_MOUNTED) && (bootNode->bn_Node.ln_Pri != -128)
-		&& __dosboot_IsBootable(deviceName, DOSBase))
-            {
-                LIBBASE->db_BootDevice = deviceName;
-                break;
+            	/*
+             	 * Check if the mounted filesystem is bootable. If it's not,
+             	 * it's probably some kind of transient error (ie. no disk
+             	 * in drive or wrong disk) so we will retry after some time.
+             	 */
+            	if ((bootNode->bn_Node.ln_Pri != -128) && __dosboot_IsBootable(deviceName, DOSBase))
+            	{
+                    LIBBASE->db_BootDevice = deviceName;
+                    break;
+                }
             }
         }
 
@@ -321,9 +338,9 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	    if (!bootScreen)
 		bootScreen = NoBootMediaScreen(LIBBASE);
 
-            D(kprintf("No bootable disk was found.\n"));
-            D(kprintf("Please insert a bootable disk in any drive.\n"));
-            D(kprintf("Retrying in 3 seconds...\n"));
+            DB2(kprintf("No bootable disk was found.\n"));
+            DB2(kprintf("Please insert a bootable disk in any drive.\n"));
+            DB2(kprintf("Retrying in 3 seconds...\n"));
 
 	    for (t = 0; t < 150; t += LIBBASE->delayTicks)
 	    {
@@ -343,11 +360,11 @@ AROS_UFH3(void, __dosboot_BootProcess,
                 {
 		    struct DeviceNode *dn = bootNode->bn_DeviceNode;
 		    
-		    D(bug("[DOSBoot] __dosboot_BootProcess: Trying to mount '%b' ...\n", dn->dn_Name));
+		    DB2(bug("[DOSBoot] Trying to mount new device '%b' ...\n", dn->dn_Name));
                     if (__dosboot_Mount(dn, DOSBase))
 		    {
                         bootNode->bn_Flags |= BNF_MOUNTED;
-                        D(bug("[DOSBoot] __dosboot_BootProcess: Late marked '%b' as useable\n", dn->dn_Name));
+                        DB2(bug("[DOSBoot] Mounted succesfully\n", dn->dn_Name));
                     }
                 }
             }
