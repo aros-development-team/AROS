@@ -139,7 +139,7 @@ clean:
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2inline clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2pragma clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/sfdc clean SRCDIR=$(SRCDIR) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/setver clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/setrev clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	-@$(RM) $(ARCHDIR) Makefile config.cache config.status config.log \
 		mmake.cache mmake.config rom/mmakefile config/make.cfg \
 		$(AROS_DEVELOPMENT)/include/aros/config.h \
