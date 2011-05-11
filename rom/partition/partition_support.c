@@ -184,7 +184,10 @@ void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *p
     ph->dg.dg_BufMemType   = ph->de.de_BufMemType;
 
     /* Set start/end cylinder in DosEnvec */
-    ph->de.de_TableSize = 10;	/* only fields up to de_HighCyl are valid (CHECKME: is it correct ?) */
     ph->de.de_LowCyl    = first_sector / cylsecs;
     ph->de.de_HighCyl   = ph->de.de_LowCyl + ph->dg.dg_Cylinders - 1;
+
+    /* Fix up DosEnvec size if necessary */
+    if (ph->de.de_TableSize < DE_BUFMEMTYPE)
+        ph->de.de_TableSize = DE_BUFMEMTYPE;
 }
