@@ -141,26 +141,6 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
 }
 
 /*
- * Run IRQ handlers
- * We manage both interrupts and exceptions in the same list,
- * so we use own version of this function.
- * It will return nonzero value if the list is not empty, this helps to manage XTPIC.
- */
-static void *core_RunIRQHandlers(uint8_t irq, struct KernelBase *KernelBase)
-{
-    irqhandler_t h = NULL;
-    struct IntrNode *in, *in2;
-
-    ForeachNodeSafe(&KernelBase->kb_Exceptions[irq], in, in2)
-    {
-	h = in->in_Handler;
-	h(in->in_HandlerData, in->in_HandlerData2);
-    }
-
-    return h;
-}
-
-/*
  * This table is used to translate x86 trap number
  * to AmigaOS trap number to be passed to exec exception handler.
  */
@@ -421,21 +401,32 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     {
 	if (KernelBase)
     	{
-    	    switch (KernelBase->kb_Exceptions[irq_number].lh_Type)
+	    /* From CPU's point of view, IRQs are exceptions starting from 0x20. */
+    	    irq_number -= 0x20;
+
+    	    switch (KernelBase->kb_Interrupts[irq_number].lh_Type)
     	    {
     	    case KBL_APIC:
             	core_APIC_AckIntr(irq_number, KernelBase->kb_PlatformData);
-            	core_RunIRQHandlers(irq_number, KernelBase);
+            	krnRunIRQHandlers(irq_number);
             	break;
 
             case KBL_XTPIC:
             	core_XTPIC_AckIntr(irq_number, KernelBase->kb_PlatformData);
-            	if (core_RunIRQHandlers(irq_number, KernelBase))
+            	krnRunIRQHandlers(irq_number);
+
+            	if (!IsListEmpty(&KernelBase->kb_Interrupts[irq_number]))
                     core_XTPIC_EnableIRQ(irq_number, KernelBase->kb_PlatformData);
+
                 break;
+
+            default:
+            	krnRunIRQHandlers(irq_number);
+            	break;
 	    }
 	}
 
+	/* Upon exit from the lowest-level hardware IRQ we run the task scheduler */
 	if (SysBase && (regs->ds != KERNEL_DS))
 	{
 	    /* Disable interrupts for a while */
@@ -446,4 +437,10 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     }
 
     core_LeaveInterrupt(regs);
+}
+
+void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
+{
+    if (KernelBase->kb_Interrupts[irq].lh_Type == KBL_XTPIC)
+            core_XTPIC_EnableIRQ(irq, KernelBase->kb_PlatformData);
 }

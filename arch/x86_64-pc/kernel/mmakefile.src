@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FUNCS    := addirqhandler remirqhandler
+FUNCS    :=
 FILES    := kernel_startup platform_init kernel_cpu kernel_debug kernel_memory intr apic acpi_tables acpi_parsers mmu xtpic
 ASMFILES := core_interrupts cli sti issuper
 
