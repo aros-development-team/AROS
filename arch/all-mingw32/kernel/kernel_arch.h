@@ -19,5 +19,5 @@
 #define IRQ_COUNT 1
 
 /* We have no interrupt controller */
-#define ictl_enable_irq(irq)
-#define ictl_disable_irq(irq)
+#define ictl_enable_irq(irq, base)
+#define ictl_disable_irq(irq, base)

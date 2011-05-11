@@ -59,7 +59,7 @@ AROS_LH1(void, KrnRemIRQHandler,
         REMOVE(h);
         if (IsListEmpty(&KernelBase->kb_Interrupts[irq]))
         {
-        	ictl_disable_irq(irq);
+        	ictl_disable_irq(irq, KernelBase);
         }
         Enable();
 
