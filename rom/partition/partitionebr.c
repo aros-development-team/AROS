@@ -87,8 +87,7 @@ static struct PartitionHandle *PartitionEBRNewHandle(struct Library *PartitionBa
             initPartitionHandle(root, ph, block_no, block_count);
 
 	    /* Map type ID to a DOSType */
-	    ph->de.de_DosType   = MBR_FindDosType(data->type);
-	    ph->de.de_TableSize = 16;
+	    setDosType(&ph->de, MBR_FindDosType(data->type));
 
             return ph;
         }
@@ -408,7 +407,7 @@ static LONG PartitionEBRSetPartitionAttrs(struct Library *PartitionBase, struct 
         case PT_TYPE:
             data->type = PTYPE(tag->ti_Data)->id[0]; // fix
             /* Update DOSType according to a new type ID */
-            ph->de.de_DosType = MBR_FindDosType(data->type);
+            setDosType(&ph->de, MBR_FindDosType(data->type));
             break;
         }
     }

@@ -325,8 +325,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
 		    initPartitionHandle(root, &gph->ph, startblk, endblk - startblk + 1);
 
 		    /* Map UUID to a DOSType */
-		    gph->ph.de.de_DosType   = GPT_GetDosType(p);
-		    gph->ph.de.de_TableSize = 16;
+		    setDosType(&gph->ph.de, GPT_GetDosType(p));
 
 		    /* Store the whole entry and convert name into ASCII form */
 		    CopyMem(p, &gph[1], entrysize);
@@ -512,7 +511,7 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
     	    {
 	        uuid_to_le(&part->TypeID, (uuid_t *)tag->ti_Data);
 	        /* Update DOSType according to a new type ID */
-	        ph->de.de_DosType = GPT_GetDosType(part);
+	        setDosType(&ph->de, GPT_GetDosType(part));
 	    }
 	    break;
 
