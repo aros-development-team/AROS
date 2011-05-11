@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -72,13 +72,17 @@
                         {
                             if (ph->dg.dg_DeviceType != DG_CDROM)
                             {
-                                ph->de.de_SizeBlock = ph->dg.dg_SectorSize>>2;
-                                ph->de.de_Surfaces = ph->dg.dg_Heads;
-                                ph->de.de_SectorPerBlock = 1;
+                                ph->de.de_SizeBlock      = ph->dg.dg_SectorSize>>2;
+                                ph->de.de_Surfaces       = ph->dg.dg_Heads;
                                 ph->de.de_BlocksPerTrack = ph->dg.dg_TrackSectors;
-                                ph->de.de_HighCyl = ph->dg.dg_Cylinders-1;
-                                ph->de.de_NumBuffers = 20;
-                                ph->de.de_BufMemType = ph->dg.dg_BufMemType;
+                                ph->de.de_HighCyl        = ph->dg.dg_Cylinders-1;
+                                ph->de.de_BufMemType     = ph->dg.dg_BufMemType;
+
+                                /* The followin are common defaults */
+                                ph->de.de_TableSize      = DE_BUFMEMTYPE;
+                                ph->de.de_SectorPerBlock = 1;
+                                ph->de.de_NumBuffers     = 20;
+
                                 PartitionNsdCheck(PartitionBase, ph);
                                 return ph;
                             }
