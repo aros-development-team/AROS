@@ -75,6 +75,7 @@ struct uaegfx_staticdata
 	UWORD dwidth, dheight;
 	ULONG dmodeid;
 
+	struct ViewPort *viewport;
     void (*acb)(void *data, void *bm);
     APTR acbdata;
 };
