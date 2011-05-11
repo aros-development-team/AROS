@@ -33,18 +33,18 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     D(bug("[Kernel] Kernel_Init: Post-exec init. KernelBase @ %p\n", LIBBASE));
 
-    for (i = 0; i < EXCEPTIONS_COUNT; i++)
+    for (i = 0; i < IRQ_COUNT; i++)
     {
         switch(i)
         {
-            case 0x20 ... 0x2f:
-                LIBBASE->kb_Exceptions[i].lh_Type = KBL_XTPIC;
+            case 0x00 ... 0x0f:
+                LIBBASE->kb_Interrupts[i].lh_Type = KBL_XTPIC;
                 break;
-            case 0xfe:
-                LIBBASE->kb_Exceptions[i].lh_Type = KBL_APIC;
+            case 0xde:
+                LIBBASE->kb_Interrupts[i].lh_Type = KBL_APIC;
                 break;
             default:
-                LIBBASE->kb_Exceptions[i].lh_Type = KBL_INTERNAL;
+                LIBBASE->kb_Interrupts[i].lh_Type = KBL_INTERNAL;
                 break;
         }
     }
