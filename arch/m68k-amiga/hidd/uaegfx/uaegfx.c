@@ -543,45 +543,43 @@ VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     }
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
-
-OOP_Object *UAEGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+#if 0
+ULONG UAEGFXCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
 
-    if (msg->bitMap) {
-    	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
-        OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
-	if (csd->acb)
-	    csd->acb(csd->acbdata, NULL);
-    } else {
-    	SetDisplay(csd, FALSE);
-    	SetSwitch(csd, FALSE);
-    }
-    return msg->bitMap;
-}    	   
+    csd->vpe = NULL;
+    if (!msg)
+    	return MVP_OK;
+    bug("makeviewport %p\n", msg->Data->vpe);
+    csd->vpe = msg->Data->vpe;
+    return MVP_OK;
+}
 
-ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+void UAEGFXCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CleanViewPort *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    struct HIDD_ViewPortData *vpd = msg->Data;
-    OOP_Object *bm = NULL;
-    struct ViewPort *vp = NULL;
-    struct ViewPort *vpi = NULL;
+
+    csd->vpe = NULL;
+    bug("cleanviewport\n");
+}
+#endif
+
+static void doshow(struct uaegfx_staticdata *csd, OOP_Object *bm, struct ViewPort *vp, BOOL offonly)
+{
     struct IntuitionBase *ib = (struct IntuitionBase*)csd->cs_IntuitionBase;
+    struct ViewPort *vpi = NULL;
 
-    if (vpd) {
-    	bm = vpd->Bitmap;
-    	if (vpd->vpe)
-    	    vp = vpd->vpe->ViewPort;
-    }
     if (ib->FirstScreen)
     	vpi = &ib->FirstScreen->ViewPort;
-
-    D(bug("RTGShowViewPorts vpd=%p bm=%p v=%p vpi=%p\n", vpd, bm, vp, vpi));
 
     if (bm && vpi == vp) {
     	/* we are topmost screen -> show our display */
     	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
+    	
+    	if (offonly)
+    	    return;
+
         OOP_SetAttrs(bm, (struct TagItem *)tags);
 
 	if (csd->acb)
@@ -596,7 +594,51 @@ ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHi
     	SetDisplay(csd, FALSE);
     	SetSwitch(csd, FALSE);
     }
+}
 
+ULONG UAEGFXCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+    struct HIDD_ViewPortData *vpd = msg->Data;
+    OOP_Object *bm = NULL;
+    struct ViewPort *vp = NULL;
+
+    if (vpd) {
+    	bm = vpd->Bitmap;
+    	if (vpd->vpe)
+    	    vp = vpd->vpe->ViewPort;
+    }
+    csd->viewport = vp;
+    doshow(csd, bm, vp, FALSE);
+
+    bug("PrepareViewPorts viewport=%p\n", csd->viewport);
+    return MCOP_OK;
+}
+
+OOP_Object *UAEGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+    struct ViewPort *vp = NULL;
+
+    vp = csd->viewport;
+    bug("show %p %p\n", msg->bitMap, vp);
+    //doshow(csd, msg->bitMap, vp, FALSE);
+    return msg->bitMap;
+}    	   
+
+ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+    struct HIDD_ViewPortData *vpd = msg->Data;
+    OOP_Object *bm = NULL;
+    struct ViewPort *vp = NULL;
+
+    if (vpd) {
+    	bm = vpd->Bitmap;
+    	if (vpd->vpe)
+    	    vp = vpd->vpe->ViewPort;
+    }
+    doshow(csd, bm, vp, FALSE);
     return TRUE;
 }
 
@@ -891,5 +933,4 @@ static int Expunge_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     return TRUE;
 }
 
-ADD2INIT(Init_UAEGFXClass, 0);
 ADD2EXPUNGELIB(Expunge_UAEGFXClass, 1)

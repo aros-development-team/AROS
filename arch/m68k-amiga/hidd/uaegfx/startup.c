@@ -20,7 +20,7 @@ static int UAEGFX_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct GfxBase *GfxBase;
     OOP_Object *gfxhidd;
- 	
+
     D(bug("************************* UAEGFX_Init ******************************\n"));
     if (!Init_UAEGFXClass(LIBBASE))
     	return FALSE;

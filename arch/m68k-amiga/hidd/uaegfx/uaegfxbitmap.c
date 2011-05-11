@@ -164,8 +164,6 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
 		    D(bug("%dx%dx%d (%dx%d) BF=%08x\n", dwidth, dheight, depth, width, height, data->rgbformat));
 
-		    if (dwidth == csd->dwidth && dheight == csd->dheight && modeid == csd->dmodeid && data->disp && csd->disp == data)
-		    	break;
 		    csd->dwidth = dwidth;
 		    csd->dheight = dheight;
 		    csd->dmodeid = modeid;
