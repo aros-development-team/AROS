@@ -44,7 +44,7 @@ makedirs:
 tools : makedirs mmake $(TOOLLIB) $(GENMF) $(ARCHTOOL) $(ELF2HUNK) \
 	$(FLEXCAT) $(CREATEDTDESC) $(ILBMTOC) $(ILBMTOICON) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
-	$(FD2INLINE) $(FD2PRAGMA) $(SFDC)
+	$(FD2INLINE) $(FD2PRAGMA) $(SFDC) $(SETREV)
 
 $(TOOLLIB) : $(wildcard $(SRCDIR)/tools/toollib/*.[ch])
 	@$(ECHO) Building toollib...
@@ -102,6 +102,10 @@ $(SFDC) : $(SRCDIR)/tools/sfdc/*.pl
 	@$(ECHO) Building sfdc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/sfdc SRCDIR=$(SRCDIR) TOP=$(TOP)
 
+$(SETREV) : $(SRCDIR)/tools/setrev/setrev.c
+	@$(ECHO) Building setrev...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/setrev SRCDIR=$(SRCDIR) TOP=$(TOP)
+
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
 
@@ -135,6 +139,7 @@ clean:
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2inline clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2pragma clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/sfdc clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/setver clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	-@$(RM) $(ARCHDIR) Makefile config.cache config.status config.log \
 		mmake.cache mmake.config rom/mmakefile config/make.cfg \
 		$(AROS_DEVELOPMENT)/include/aros/config.h \
