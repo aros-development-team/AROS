@@ -90,7 +90,7 @@ AROS_LH4(void *, KrnAddIRQHandler,
 
             ADDHEAD(&KernelBase->kb_Interrupts[irq], &handle->in_Node);
 
-            ictl_enable_irq(irq);
+            ictl_enable_irq(irq, KernelBase);
 
             Enable();
         }
