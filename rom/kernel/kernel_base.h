@@ -4,6 +4,9 @@
 #include <exec/semaphores.h>
 #include <aros/kernel.h>
 
+/* Early declaration for ictl functions */
+struct KernelBase;
+
 /* These two specify IRQ_COUNT and EXCEPTIONS_COUNT */
 #include <kernel_arch.h>
 #include <kernel_cpu.h>
@@ -15,7 +18,7 @@ struct PlatformData;
 struct KernelBase
 {
     struct Node            kb_Node;
-    struct List            kb_Exceptions[EXCEPTIONS_COUNT];
+    struct MinList         kb_Exceptions[EXCEPTIONS_COUNT];
     struct List            kb_Interrupts[IRQ_COUNT];
     unsigned char	   kb_VBlankEnable;
     unsigned int	   kb_VBlankTicks;
