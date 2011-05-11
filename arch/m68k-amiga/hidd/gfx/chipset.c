@@ -261,10 +261,14 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     }
     if (x < 0)
     	x = 0;
-    copptr[1] = 0x0a81; //(y << 8) + (x + 1);
-    copptr[3] = 0x40c1; //((y + (bm->rows >> data->interlace)) << 8) + ((x + 1 + (bm->width >> data->res)) & 0x00ff);
-    copptr[5] = data->ddfstrt;
-    copptr[7] = data->ddfstop;
+    yend = y + (bm->height >> data->interlace);
+    if (yend > 312)
+    	yend = 312;
+    copptr[1] = (y << 8) | 0x0081; //(y << 8) + (x + 1);
+    copptr[3] = (yend << 8) | 0x0c1; //((y + (bm->rows >> data->interlace)) << 8) + ((x + 1 + (bm->width >> data->res)) & 0x00ff);
+    copptr[5] = ((y >> 8) & 7) | (((yend >> 8) & 7) << 8) | 0x2000;
+    copptr[7] = data->ddfstrt;
+    copptr[9] = data->ddfstop;
 
     copbpl = c2d->copper2_bpl;
     for (i = 0; i < bm->depth; i++) {
@@ -279,7 +283,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     }
 
     scroll = bm->leftedge & ((16 << data->fmode_bpl) - 1);
-    copptr[9] = (scroll & 0x0f) | ((scroll & 0x0f) << 4) | ((scroll >> 4) << 10) | ((scroll >> 4) << 14);
+    copptr[11] = (scroll & 0x0f) | ((scroll & 0x0f) << 4) | ((scroll >> 4) << 10) | ((scroll >> 4) << 14);
 
     yend = y + data->height + yscroll;
     if (yend > 312)
@@ -366,6 +370,8 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     *c++ = 0x008e;
     *c++ = 0;
     *c++ = 0x0090;
+    *c++ = 0;
+    *c++ = 0x01e4;
     *c++ = 0;
     *c++ = 0x0092;
     *c++ = 0;
