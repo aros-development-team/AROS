@@ -74,6 +74,7 @@ LONG PartitionWriteBlock(struct Library *, struct PartitionHandle *, ULONG, void
 LONG writeDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem);
 
 void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *ph, ULONG first_sector, ULONG count_sector);
+void setDosType(struct DosEnvec *de, ULONG type);
 
 #define getGeometry PartitionGetGeometry
 #define writeBlock  PartitionWriteBlock

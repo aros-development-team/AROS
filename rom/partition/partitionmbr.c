@@ -163,8 +163,7 @@ static struct PartitionHandle *PartitionMBRNewHandle(struct Library *PartitionBa
                 initPartitionHandle(root, ph, AROS_LE2LONG(data->entry->first_sector), AROS_LE2LONG(data->entry->count_sector));
 
 		/* Map type ID to a DOSType */
-		ph->de.de_DosType   = MBR_FindDosType(data->entry->type);
-		ph->de.de_TableSize = 16;
+		setDosType(&ph->de, MBR_FindDosType(data->entry->type));
 
 		/* Set position as priority */
                 ph->ln.ln_Pri = MBR_MAX_PARTITIONS - 1 - position;
@@ -470,7 +469,7 @@ static LONG PartitionMBRSetPartitionAttrs(struct Library *PartitionBase, struct 
         case PT_TYPE:
             data->entry->type = PTYPE(tag->ti_Data)->id[0];
             /* Update DOSType according to a new type ID */
-            ph->de.de_DosType = MBR_FindDosType(data->entry->type);
+            setDosType(&ph->de, MBR_FindDosType(data->entry->type));
             break;
 
         case PT_POSITION:

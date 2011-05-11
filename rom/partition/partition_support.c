@@ -191,3 +191,21 @@ void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *p
     if (ph->de.de_TableSize < DE_BUFMEMTYPE)
         ph->de.de_TableSize = DE_BUFMEMTYPE;
 }
+
+/* Set DOSType and some defaults according to it */
+void setDosType(struct DosEnvec *de, ULONG type)
+{
+    de->de_DosType = type;
+
+    switch (type)
+    {
+    case ID_DOS_DISK:
+    case ID_FFS_DISK:
+    case ID_INTER_FFS_DISK:
+    case ID_SFS_BE_DISK:
+    	de->de_TableSize      = DE_BOOTBLOCKS;
+    	de->de_SectorPerBlock = 1;
+    	de->de_Reserved       = 2;
+    	de->de_BootBlocks     = 2;
+    }
+}
