@@ -195,8 +195,17 @@ void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *p
 /* Set DOSType and some defaults according to it */
 void setDosType(struct DosEnvec *de, ULONG type)
 {
-    de->de_DosType = type;
+    de->de_TableSize      = DE_DOSTYPE;
+    de->de_SectorPerBlock = 1;
+    de->de_DosType        = type;
+    /*
+     * These two are actually device-dependent. However there's no way
+     * to obtain them, so just fill in defaults.
+     */
+    de->de_MaxTransfer    = 0x00200000;
+    de->de_Mask           = 0x7ffffffe;
 
+    /* Some more filesystem-specific defaults */
     switch (type)
     {
     case ID_DOS_DISK:
@@ -204,7 +213,6 @@ void setDosType(struct DosEnvec *de, ULONG type)
     case ID_INTER_FFS_DISK:
     case ID_SFS_BE_DISK:
     	de->de_TableSize      = DE_BOOTBLOCKS;
-    	de->de_SectorPerBlock = 1;
     	de->de_Reserved       = 2;
     	de->de_BootBlocks     = 2;
     }
