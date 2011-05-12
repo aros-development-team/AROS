@@ -177,11 +177,8 @@ static BPTR LDLoad(struct Process *caller, STRPTR name, STRPTR basedir,
     return seglist;
 }
 
-/*
-  Library *LDInit(seglist, DOSBase)
-    Initialise the library.
-*/
-static struct Library *LDInit(BPTR seglist, struct List *list, struct ExecBase *SysBase)
+/* Initialise the loaded module */
+static struct Library *LDInit(BPTR seglist, struct ExecBase *SysBase)
 {
     BPTR seg = seglist;
 
@@ -206,24 +203,21 @@ static struct Library *LDInit(BPTR seglist, struct List *list, struct ExecBase *
 		&& res->rt_MatchTag == res )
 	    {
 		struct Library *lib;
-		struct Node *node;
 
 		D(bug("[LDInit] Calling InitResident(%p) on %s\n", res, res->rt_Name));
-		/* AOS compatibility hack. Ramlib ignores InitResident() return code.
-		 * After InitResident() it checks if lib/dev appeared in exec lib/dev list.
-		 */
+
 		Forbid();
 		lib = InitResident(res, seglist);
-		node = FindName(list, res->rt_Name);
 		Permit();
-		D(bug("[LDInit] Done calling InitResident(%p) on %s, seg %p node %p\n", res, res->rt_Name, lib, node));
 
-		return (struct Library*)node;
+		D(bug("[LDInit] Done calling InitResident(%p) on %s, node %p\n", res, res->rt_Name, lib))
+		return lib;
 	    }
 	}
 	seg = *(BPTR *)BADDR(seg);
     }
     D(bug("[LDInit] Couldn't find Resident for %p\n", seglist));
+
     return NULL;
 }
 
@@ -281,7 +275,7 @@ static struct LDObjectNode *LDNewObjectNode(STRPTR name, struct ExecBase *SysBas
     return NULL;
 }
 
-static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, UBYTE type, STRPTR dir, struct List *list, struct ExecBase *SysBase)
+static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPTR dir, struct List *list, struct ExecBase *SysBase)
 {
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     /*  We use FilePart() because the liblist is built from resident IDs,
@@ -407,7 +401,12 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, UBYTE
 
 	if (ldd.ldd_Return)
 	{
-	    tmplib = LDInit(ldd.ldd_Return, list, SysBase);
+	    /* 
+	     * AOS compatibility hack. Ramlib ignores InitResident() return code.
+	     * After InitResident() it checks if lib/dev appeared in exec lib/dev list.
+	     */
+	    LDInit(ldd.ldd_Return, SysBase);
+	    tmplib = (struct Library *)FindName(list, stripped_libname);
 	    if (!tmplib)
 	    	UnLoadSeg(ldd.ldd_Return);
 	}
@@ -424,7 +423,7 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, UBYTE
          */
 	struct Resident *resident = FindResident(stripped_libname);
 
-	if (resident && (resident->rt_Type == type) && (resident->rt_Version >= version))
+	if (resident && (resident->rt_Type == list->lh_Type) && (resident->rt_Version >= version))
 	    InitResident(resident, BNULL);
     }
 
@@ -470,7 +469,7 @@ AROS_LH2(struct Library *, OpenLibrary,
     AROS_LIBFUNC_INIT
 
     struct Library *library;
-    struct LDObjectNode *object = LDRequestObject(libname, version, NT_LIBRARY, "libs", &SysBase->LibList, SysBase);
+    struct LDObjectNode *object = LDRequestObject(libname, version, "libs", &SysBase->LibList, SysBase);
 
     if (!object)
     	return NULL;
@@ -496,7 +495,7 @@ AROS_LH4(LONG, OpenDevice,
 
     struct LDObjectNode *object;
 
-    object = LDRequestObject(devname, 0, NT_DEVICE, "devs", &SysBase->DeviceList, SysBase);
+    object = LDRequestObject(devname, 0, "devs", &SysBase->DeviceList, SysBase);
     if (object)
     {
     	/* Call exec.library/OpenDevice(), it will do the job */
