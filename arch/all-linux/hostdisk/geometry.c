@@ -94,6 +94,8 @@ static int deviceProbe(struct HostDiskBase *hdskBase)
     D(bug("hostdisk: /dev/hda check result: %d\n", res));
     if (res == -1)
 	hdskBase->DiskDevice = "/dev/sd%lc";
+
+    return TRUE;
 }
 
 ADD2INITLIB(deviceProbe, 10);
