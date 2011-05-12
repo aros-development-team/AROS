@@ -85,7 +85,6 @@ void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase)
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase);
 APTR UnwindFrame(APTR fp, APTR *caller);
 
-VOID Exec_CrashHandler(void);
 ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase);
 void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase);
 void Exec_DoResetCallbacks(struct IntExecBase *SysBase);

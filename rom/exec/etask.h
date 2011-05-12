@@ -39,6 +39,7 @@ struct IntETask
     UQUAD	 	iet_private1;
     ULONG	 	iet_AlertCode;		/* Alert code for crash handler		 */
     UBYTE		iet_AlertType;		/* Type of the alert context		 */
+    UBYTE		iet_AlertFlags;		/* See below				 */
     APTR	 	iet_AlertLocation;	/* Alert location for crash handler	 */
     APTR		iet_AlertStack;		/* Frame pointer for stack backtrace	 */
     struct AlertContext iet_AlertData;		/* Extra data coming with the crash	 */
@@ -48,22 +49,23 @@ struct IntETask
 				(task))->tc_UnionETask.tc_ETask))
 #define IntETask(etask)	    ((struct IntETask *)(etask))
 
+/* iet_AlertFlags */
+#define AF_Alert    0x01	/* The task is in alert state	  */
+#define AF_Location 0x02	/* iet_AlertLocation is filled in */
+
 /*
  * This macro resets crash status of the task:
- * - iet_AlertCode serves as an actual indicator of crash status.
- *   If we enter Alert() with iet_AlertCode already set, this is
+ * - AF_Alert flag serves as an actual indicator of crash status.
+ *   If we enter Alert() with this flag already set, this is
  *   considered a nested alert and is directed to supervisor-mode routine.
- * - iet_AlertType specifies type of alert context (if any). We make sure
- *   it is clear so as next time Alert() will not display old information.
- * - iet_AlertLocation can also be set only once. It is either set explicitly
+ * - AF_Location flag can also be set only once. It is either set explicitly
  *   before calling Alert(), or it is set by Alert() routine itself. So we clear
  *   it in order for Alert() to be able to remember it if task ever alerts again.
- * - iet_AlertStack is always used in pair with iet_AlertLocation, so there's no
- *   need to clear it.
+ * - iet_AlertType specifies type of alert context (if any). We make sure
+ *   it is clear so as next time Alert() will not display old information.
  */
 #define ResetETask(etask)		\
-    (etask)->iet_AlertCode = 0;		\
-    (etask)->iet_AlertType = AT_NONE;	\
-    (etask)->iet_AlertLocation = NULL;
+    (etask)->iet_AlertType  = AT_NONE;	\
+    (etask)->iet_AlertFlags = 0;
 
 #endif /* _ETASK_H */

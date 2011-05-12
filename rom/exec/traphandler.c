@@ -15,6 +15,17 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
+/* User-mode code where the task jumps to */
+static void Exec_CrashHandler(void)
+{
+    struct Task *task = FindTask(NULL);
+    struct IntETask *iet = GetIntETask(task);
+
+    iet->iet_AlertFlags &= ~AF_Alert;	/* Makes Alert() attempting to bring up Intuition requester */
+
+    Alert(iet->iet_AlertCode);
+}
+
 /* In original AmigaOS the trap handler is entered in supervisor mode with the
  * following on the supervisor stack:
  *  0(sp).l = trap#
@@ -44,11 +55,11 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 	/* Get internal task structure */
         iet = GetIntETask(task);
 	/*
-	 * Protection against double-crash. If the alert code is already specified, we have
+	 * Protection against double-crash. If the task is already in alert state,  we have
 	 * a second crash during processing the first one. Then we just pick up initial alert code
 	 * and call Alert() with it in supervisor mode.
 	 */
-	if (iet->iet_AlertCode)
+	if (iet->iet_AlertFlags & AF_Alert)
 	    trapNum = iet->iet_AlertCode;
 	/*
 	 * Workaround for i386-native. There trap handler already runs in user mode (BAD!),
@@ -62,15 +73,14 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 	     * Otherwise we can try to send the crash to user level.
 	     *
 	     * First mark crash condition, and also specify alert code for user-level handler.
-	     * If we double-crash while jumping to user mode, we will know this (iet_AlertCode will
+	     * If we double-crash while jumping to user mode, we will know this (ETF_Alert will
 	     * already be set)
 	     */
-	    iet->iet_AlertCode = trapNum;
-
-	    /* Location is our PC, where we crashed */
-	    iet->iet_AlertLocation = (APTR)ctx->PC;
-	    /* Remember also stack frame for backtrace */
-	    iet->iet_AlertStack = (APTR)ctx->FP;
+	    iet->iet_AlertType     = AT_CPU;
+	    iet->iet_AlertFlags    = AF_Alert|AF_Location;
+	    iet->iet_AlertCode     = trapNum;
+	    iet->iet_AlertLocation = (APTR)ctx->PC;    /* Location is our PC, where we crashed */
+	    iet->iet_AlertStack    = (APTR)ctx->FP;    /* Remember also stack frame for backtrace */
 
 	    /*
 	     * This is a CPU alert. We've got a full CPU context, so we remember it
@@ -78,7 +88,6 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 	     * Note that we store only GPR part of the context. We don't copy
 	     * attached FPU data (if any). This can be considered TODO.
 	     */
-	    iet->iet_AlertType = AT_CPU;
 	    CopyMem(ctx, &iet->iet_AlertData, sizeof(struct ExceptionContext));
 
             /*

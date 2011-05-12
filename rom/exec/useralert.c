@@ -95,8 +95,8 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
      * and proceed with arch-specific Alert().
      * Since this is a double-crash, we may append AT_DeadEnd flag if our situation has become unrecoverable.
      */
-    D(bug("[UserAlert] Task alert state: 0x%08X\n", iet->iet_AlertCode));
-    if (iet->iet_AlertCode)
+    D(bug("[UserAlert] Task alert state: 0x%02X\n", iet->iet_AlertFlags));
+    if (iet->iet_AlertFlags & AF_Alert)
     {
         /*
 	 * Some more logic here. Nested AN_SysScrnType should not make original alert deadend.
@@ -108,15 +108,16 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
 	else
 	    return iet->iet_AlertCode | (alertNum & AT_DeadEnd);
     }
-    
+
     /*
      * Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
      * in order to indicate crash condition
      */
-    iet->iet_AlertCode = alertNum;
+    iet->iet_AlertFlags |= AF_Alert;
+    iet->iet_AlertCode   = alertNum;
     /*
      * AN_SysScrnType is somewhat special. We remember it in the ETask (just in case),
-     * but propagate it to supervisor mode immetiately. We do it because this error
+     * but propagate it to supervisor mode immediately. We do it because this error
      * means we don't have any display modes, so we won't be able to bring up the requester.
      */
     if (alertNum == AN_SysScrnType)
