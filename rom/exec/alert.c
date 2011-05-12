@@ -74,9 +74,11 @@
 	iet = GetIntETask(task);
 
 	/* Do we already have location set? */
-	if (!iet->iet_AlertLocation)
+	if (!(iet->iet_AlertFlags & AF_Location))
 	{
 	    /* If no, the location is where we were called from */
+	    iet->iet_AlertFlags |= AF_Location;
+
 	    if (supervisor && ((alertNum & ~AT_DeadEnd) == AN_StackProbe))
 	    {
 	    	/*
