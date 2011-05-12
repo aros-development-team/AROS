@@ -11,6 +11,8 @@
 #include <proto/exec.h>
 #include "intuition_intern.h"
 
+#define MAX_PUDDLE_SIZE	(16 * 1024)	/* Maximimum puddle size */
+
 /*****************************************************************************
  
     NAME */
@@ -125,6 +127,8 @@
             
             if (iclass != NULL)
 	    {
+	    	int perpuddle;
+
                 /* Initialize fields */
 		iclass->cl_Super      = superClassPtr;
 		iclass->cl_ID	      = classID;
@@ -135,12 +139,23 @@
                 iclass->cl_ObjectSize = iclass->cl_InstOffset 
                                       + iclass->cl_InstSize
                                       + sizeof(struct _Object);
+
+		/* Try to limit the puddle to MAX_PUDDLE_SIZE.
+		 * This comes in to play, for example, with
+		 * picture.library, where 32 instances of the
+		 * picture class is a whopping 280K.
+		 */
+                perpuddle = MAX_PUDDLE_SIZE / iclass->cl_ObjectSize;
+                if (perpuddle == 0)
+                    perpuddle = 1;
+                if (perpuddle > 32)
+                    perpuddle = 32;
                 
                 /* Initialize memory subsystem */
                 iclass->cl_MemoryPool = CreatePool
                 (
                     MEMF_ANY | MEMF_CLEAR | MEMF_SEM_PROTECTED, 
-                    32 * iclass->cl_ObjectSize, iclass->cl_ObjectSize
+                    perpuddle * iclass->cl_ObjectSize, iclass->cl_ObjectSize
                 );
                    
                 if (iclass->cl_MemoryPool != NULL)
