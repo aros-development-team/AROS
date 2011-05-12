@@ -37,6 +37,11 @@ static inline WORD max(WORD a, WORD b)
     return (a > b) ? a : b;
 }
 
+struct wbWindow_Icon {
+    struct MinNode wbwiNode;
+    Object *wbwiObject;
+};
+
 struct wbWindow {
     STRPTR         Path;
     BPTR           Lock;
@@ -53,6 +58,9 @@ struct wbWindow {
     /* Temporary path buffer */
     TEXT           PathBuffer[PATH_MAX];
     TEXT           ScreenTitle[256];
+
+    /* List of icons in this window */
+    struct MinList IconList;
 };
 
 #define WBWF_USERPORT   (1 << 0)    /* Window has a custom port */
@@ -165,62 +173,64 @@ AROS_UFH3(ULONG, wbIgnoreInfo_Hook,
     AROS_USERFUNC_EXIT
 }
 
-static void wbAddFiles(Class *cl, Object *obj, CONST_STRPTR path)
+static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
+    struct wbWindow_Icon *wbwi;
+
+    wbwi = AllocMem(sizeof(*wbwi), MEMF_ANY);
+    if (!wbwi) {
+	DisposeObject(iobj);
+    } else {
+	wbwi->wbwiObject = iobj;
+	AddTail((struct List *)&my->IconList, (struct Node *)&wbwi->wbwiNode);
+	DoMethod(my->Set, OM_ADDMEMBER, iobj);
+    }
+}
+
+static void wbAddFiles(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbWindow *my = INST_DATA(cl, obj);
     struct ExAllControl *eac;
     struct ExAllData *ead;
-    BPTR lock;
     const ULONG eadSize = sizeof(struct ExAllData) + 1024;
 
-    lock = Lock(path, SHARED_LOCK);
-    if (lock != BNULL) {
-    	STRPTR text,cp;
-    	ULONG size = sizeof(my->PathBuffer);
-    	text = &my->PathBuffer[0];
-    	cp = stpcpy(text, path);
+    ead = AllocVec(eadSize, MEMF_CLEAR);
+    if (ead != NULL) {
+	eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
+	if (eac != NULL) {
+	    struct Hook hook;
+	    BOOL more = TRUE;
 
-    	ead = AllocVec(eadSize, MEMF_CLEAR);
-    	if (ead != NULL) {
-    	    eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-    	    if (eac != NULL) {
-    	    	struct Hook hook;
-    	    	BOOL more = TRUE;
+	    hook.h_Entry = (APTR)wbIgnoreInfo_Hook;
 
-    	    	hook.h_Entry = (APTR)wbIgnoreInfo_Hook;
+	    eac->eac_MatchFunc = &hook;
+	    while (more) {
+		struct ExAllData *tmp = ead;
+		int i;
 
-    	    	eac->eac_MatchFunc = &hook;
-    		while (more) {
-    		    struct ExAllData *tmp = ead;
-    		    int i;
-
-    		    more = ExAll(lock, ead, eadSize, ED_NAME, eac);
-    		    for (i = 0; i < eac->eac_Entries; i++, tmp=tmp->ed_Next) {
-    		    	*cp = 0;
-    		    	AddPart(text, tmp->ed_Name, size);
-    			Object *iobj = NewObject(WBIcon, NULL,
-    					   WBIA_File, text,
-    					   WBIA_Label, tmp->ed_Name,
-    					   TAG_END);
-    			if (iobj != NULL)
-    			    DoMethod(my->Set, OM_ADDMEMBER, iobj);
-    		    }
-    		}
-    		FreeDosObject(DOS_EXALLCONTROL, eac);
-    	    }
-    	    FreeVec(ead);
-    	}
-    	UnLock(lock);
-    } else {
-    	D(bug("Can't lock %s\n", path));
+		more = ExAll(my->Lock, ead, eadSize, ED_NAME, eac);
+		for (i = 0; i < eac->eac_Entries; i++, tmp=tmp->ed_Next) {
+		    Object *iobj = NewObject(WBIcon, NULL,
+				       WBIA_Lock, my->Lock,
+				       WBIA_File, tmp->ed_Name,
+				       WBIA_Label, tmp->ed_Name,
+				       TAG_END);
+		    if (iobj != NULL)
+			wbwiAppend(cl, obj, iobj);
+		}
+	    }
+	    FreeDosObject(DOS_EXALLCONTROL, eac);
+	}
+	FreeVec(ead);
     }
 }
 
 static void wbAddVolumeIcons(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
-    struct wbWindow *my = INST_DATA(cl, obj);
     struct DosList *dl;
     char text[NAME_MAX];
 
@@ -243,7 +253,7 @@ static void wbAddVolumeIcons(Class *cl, Object *obj)
     	    	    TAG_END);
     	    D(bug("Volume: %s => %p\n", text, iobj));
     	    if (iobj)
-        	DoMethod(my->Set, OM_ADDMEMBER, iobj);
+    	    	wbwiAppend(cl, obj, iobj);
         }
         UnLockDosList(LDF_VOLUMES | LDF_READ);
     }
@@ -252,7 +262,6 @@ static void wbAddVolumeIcons(Class *cl, Object *obj)
 static void wbAddAppIcons(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
-    struct wbWindow *my = INST_DATA(cl, obj);
     struct DiskObject *icon;
     char text[NAME_MAX];
 
@@ -263,9 +272,8 @@ static void wbAddAppIcons(Class *cl, Object *obj)
         Object *iobj = NewObject(WBIcon, NULL,
         	              WBIA_Icon, icon,
         	              TAG_END);
-        if (iobj != NULL) {
-        	DoMethod(my->Set, OM_ADDMEMBER, iobj);
-        }
+        if (iobj != NULL)
+            wbwiAppend(cl, obj, iobj);
     }
 }
 
@@ -339,6 +347,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     ULONG idcmp;
     IPTR rc = 0;
     APTR vis;
+    struct wbWindow_Icon *wbwi;
 
     rc = DoSuperMethodA(cl, obj, (Msg)ops);
     if (rc == 0)
@@ -346,6 +355,8 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 
     obj = (Object *)rc;
     my = INST_DATA(cl, obj);
+
+    NEWLIST(&my->IconList);
 
     path = (CONST_STRPTR)GetTagData(WBWA_Path, (IPTR)NULL, ops->ops_AttrList);
     if (path == NULL) {
@@ -467,11 +478,11 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 
     D(bug("BUSY....\n"));
     SetWindowPointer(my->Window, WA_BusyPointer, TRUE, TAG_END);
-    if (my->Path == NULL) {
+    if (my->Lock == BNULL) {
     	wbAddVolumeIcons(cl, obj);
     	wbAddAppIcons(cl, obj);
     } else
-    	wbAddFiles(cl, obj, my->Path);
+    	wbAddFiles(cl, obj);
     SetWindowPointer(my->Window, WA_BusyPointer, FALSE, TAG_END);
     D(bug("Not BUSY....\n"));
 
@@ -506,6 +517,11 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     return rc;
 
 error:
+    while ((wbwi = (APTR)GetHead(&my->IconList))) {
+    	Remove((struct Node *)wbwi);
+    	FreeMem(wbwi, sizeof(*wbwi));
+    }
+
     if (my->Set)
     	DisposeObject(my->Set);
 
@@ -526,6 +542,7 @@ static IPTR WBWindowDispose(Class *cl, Object *obj, Msg msg)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbWindow *my = INST_DATA(cl, obj);
+    struct wbWindow_Icon *wbwi;
 
     ClearMenuStrip(my->Window);
     FreeMenus(my->Menu);
@@ -552,6 +569,12 @@ static IPTR WBWindowDispose(Class *cl, Object *obj, Msg msg)
     	ModifyIDCMP(my->Window, 0);
 
     	Permit();
+    }
+
+    /* We won't need our list of icons anymore */
+    while ((wbwi = (APTR)GetHead(&my->IconList))) {
+    	Remove((struct Node *)wbwi);
+    	FreeMem(wbwi, sizeof(*wbwi));
     }
 
     /* As a side effect, this will close all the
@@ -679,6 +702,24 @@ static void NewCLI(struct WorkbookBase *wb, BPTR lock)
     }
 }
 
+static IPTR WBWindowForSelectedIcons(Class *cl, Object *obj, IPTR MethodID)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
+    struct wbWindow_Icon *wbwi;
+    IPTR rc = 0;
+
+    ForeachNode(&my->IconList, wbwi) {
+    	IPTR selected = FALSE;
+
+    	GetAttr(GA_Selected, wbwi->wbwiObject, &selected);
+    	if (selected)
+    	    rc |= DoMethodA(wbwi->wbwiObject, (Msg)&MethodID);
+    }
+
+    return rc;
+}
+
 // WBWM_MENUPICK
 static IPTR WBWindowMenuPick(Class *cl, Object *obj, struct wbwm_MenuPick *wbwmp)
 {
@@ -698,6 +739,39 @@ static IPTR WBWindowMenuPick(Class *cl, Object *obj, struct wbwm_MenuPick *wbwmp
     	break;
     case WBMENU_ID(WBMENU_WB_SHELL):
     	NewCLI(wb, my->Lock);
+    	break;
+    case WBMENU_ID(WBMENU_IC_OPEN):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Open);
+    	break;
+    case WBMENU_ID(WBMENU_IC_COPY):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Copy);
+    	break;
+    case WBMENU_ID(WBMENU_IC_RENAME):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Rename);
+    	break;
+    case WBMENU_ID(WBMENU_IC_INFO):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Info);
+    	break;
+    case WBMENU_ID(WBMENU_IC_SNAPSHOT):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Snapshot);
+    	break;
+    case WBMENU_ID(WBMENU_IC_UNSNAPSHOT):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Unsnapshot);
+    	break;
+    case WBMENU_ID(WBMENU_IC_LEAVE_OUT):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Leave_Out);
+    	break;
+    case WBMENU_ID(WBMENU_IC_PUT_AWAY):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Put_Away);
+    	break;
+    case WBMENU_ID(WBMENU_IC_DELETE):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Delete);
+    	break;
+    case WBMENU_ID(WBMENU_IC_FORMAT):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Format);
+    	break;
+    case WBMENU_ID(WBMENU_IC_EMPTY_TRASH):
+    	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Empty_Trash);
     	break;
     default:
     	rc = FALSE;

@@ -27,6 +27,7 @@
 #include "classes.h"
 
 struct wbIcon {
+    BPTR               Lock;
     STRPTR             File;
     struct DiskObject *Icon;
     STRPTR             Label;
@@ -76,12 +77,15 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
     my = INST_DATA(cl, obj);
 
     my->File = NULL;
+    my->Lock = (BPTR)GetTagData(WBIA_Lock, (IPTR)BNULL, ops->ops_AttrList);
     my->Icon = (struct DiskObject *)GetTagData(WBIA_Icon, (IPTR)NULL, ops->ops_AttrList);
     if (my->Icon != NULL) {
     	if (my->Icon->do_Gadget.GadgetText != NULL &&
     	    my->Icon->do_Gadget.GadgetText->IText != NULL)
     	    label = my->Icon->do_Gadget.GadgetText->IText;
     } else {
+    	BPTR oldLock;
+
 	file = (CONST_STRPTR)GetTagData(WBIA_File, (IPTR)NULL, ops->ops_AttrList);
 	if (file == NULL)
 	    goto error;
@@ -92,7 +96,9 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
 
 	strcpy(my->File, file);
 
+	oldLock = CurrentDir(my->Lock);
 	my->Icon = GetDiskObjectNew(my->File);
+	CurrentDir(oldLock);
 	if (my->Icon == NULL)
 	    goto error;
 
@@ -217,15 +223,8 @@ static IPTR wbIconGoActive(Class *cl, Object *obj, struct gpInput *gpi)
 
     my->LastActive = gpi->gpi_IEvent->ie_TimeStamp;
 
-    if (dclicked) {
-    	struct TagItem tags[] = {
-    	    { NP_Seglist,     (IPTR)wb->wb_OpenerSegList },
-    	    { NP_Arguments,   (IPTR)my->File },
-    	    { NP_FreeSeglist, FALSE },
-    	    { TAG_END, 0 },
-    	};
-    	CreateNewProc(tags);
-    }
+    if (dclicked)
+    	DoMethod(obj, WBIM_Open);
 
     return GMR_MEACTIVE;
 }
@@ -248,20 +247,111 @@ static IPTR wbIconHandleInput(Class *cl, Object *obj, struct gpInput *gpi)
     return GMR_MEACTIVE;
 }
 
+// WBIM_Open
+static IPTR wbIconOpen(Class *cl, Object *obj, Msg msg)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbIcon *my = INST_DATA(cl, obj);
+
+    struct TagItem tags[] = {
+	{ NP_Seglist,     (IPTR)wb->wb_OpenerSegList },
+	{ NP_CurrentDir,  (IPTR)my->Lock },
+	{ NP_Arguments,   (IPTR)my->File },
+	{ NP_FreeSeglist, FALSE },
+	{ TAG_END, 0 },
+    };
+    CreateNewProc(tags);
+
+    return TRUE;
+}
+
+// WBIM_Copy
+static IPTR wbIconCopy(Class *cl, Object *obj, Msg msg)
+{
+    return FALSE;
+}
+
+// WBIM_Rename
+static IPTR wbIconRename(Class *cl, Object *obj, Msg msg)
+{
+    return FALSE;
+}
+
+// WBIM_Info
+static IPTR wbIconInfo(Class *cl, Object *obj, Msg msg)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbIcon *my = INST_DATA(cl, obj);
+
+    return WBInfo(my->Lock, my->File, NULL);
+}
+
+// WBIM_Snapshot
+static IPTR wbIconSnapshot(Class *cl, Object *obj, Msg msg)
+{
+    return FALSE;
+}
+
+// WBIM_Unsnapshot
+static IPTR wbIconUnsnapshot(Class *cl, Object *obj, Msg msg)
+{
+    return FALSE;
+}
+
+// WBIM_Leave_Out
+static IPTR wbIconLeaveOut(Class *cl, Object *obj, Msg msg)
+{
+    return FALSE;
+}
+
+// WBIM_Put_Away
+static IPTR wbIconPutAway(Class *cl, Object *obj, Msg msg)
+{
+    return FALSE;
+}
+
+// WBIM_Delete
+static IPTR wbIconDelete(Class *cl, Object *obj, Msg msg)
+{
+    return FALSE;
+}
+
+// WBIM_Format
+static IPTR wbIconFormat(Class *cl, Object *obj, Msg msg)
+{
+    return FALSE;
+}
+
+// WBIM_Empty_Trash
+static IPTR wbIconEmptyTrash(Class *cl, Object *obj, Msg msg)
+{
+    return FALSE;
+}
 
 static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
 {
     IPTR rc = 0;
 
     switch (msg->MethodID) {
-    case OM_NEW:     rc = wbIconNew(cl, obj, (APTR)msg); break;
-    case OM_DISPOSE: rc = wbIconDispose(cl, obj, (APTR)msg); break;
-    case OM_GET:     rc = wbIconGet(cl, obj, (APTR)msg); break;
-    case GM_RENDER:  rc = wbIconRender(cl, obj, (APTR)msg); break;
-    case GM_GOACTIVE: rc = wbIconGoActive(cl, obj, (APTR)msg); break;
-    case GM_GOINACTIVE: rc = wbIconGoInactive(cl, obj, (APTR)msg); break;
-    case GM_HANDLEINPUT: rc = wbIconHandleInput(cl, obj, (APTR)msg); break;
-    default:         rc = DoSuperMethodA(cl, obj, msg); break;
+    case OM_NEW:           rc = wbIconNew(cl, obj, (APTR)msg); break;
+    case OM_DISPOSE:       rc = wbIconDispose(cl, obj, (APTR)msg); break;
+    case OM_GET:           rc = wbIconGet(cl, obj, (APTR)msg); break;
+    case GM_RENDER:        rc = wbIconRender(cl, obj, (APTR)msg); break;
+    case GM_GOACTIVE:      rc = wbIconGoActive(cl, obj, (APTR)msg); break;
+    case GM_GOINACTIVE:    rc = wbIconGoInactive(cl, obj, (APTR)msg); break;
+    case GM_HANDLEINPUT:   rc = wbIconHandleInput(cl, obj, (APTR)msg); break;
+    case WBIM_Open:        rc = wbIconOpen(cl, obj, msg); break;
+    case WBIM_Copy:        rc = wbIconCopy(cl, obj, msg); break;
+    case WBIM_Rename:      rc = wbIconRename(cl, obj, msg); break;
+    case WBIM_Info:        rc = wbIconInfo(cl, obj, msg); break;
+    case WBIM_Snapshot:    rc = wbIconSnapshot(cl, obj, msg); break;
+    case WBIM_Unsnapshot:  rc = wbIconUnsnapshot(cl, obj, msg); break;
+    case WBIM_Leave_Out:   rc = wbIconLeaveOut(cl, obj, msg); break;
+    case WBIM_Put_Away:    rc = wbIconPutAway(cl, obj, msg); break;
+    case WBIM_Delete:      rc = wbIconDelete(cl, obj, msg); break;
+    case WBIM_Format:      rc = wbIconFormat(cl, obj, msg); break;
+    case WBIM_Empty_Trash: rc = wbIconEmptyTrash(cl, obj, msg); break;
+    default:               rc = DoSuperMethodA(cl, obj, msg); break;
     }
 
     return rc;
