@@ -8,7 +8,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-dosboot-pkg		\
 #MM	kernel-fs-afs-pkg		\
 #MM	workbench-devs-cdvdfs-pkg	\
-#MM	workbench-devs-sfs-pkg		\
+#MM	kernel-fs-sfs-pkg		\
 #MM	kernel-partition-pkg
 
 PKG_RSRC     := bootloader dosboot
