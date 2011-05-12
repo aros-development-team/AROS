@@ -22,6 +22,14 @@
 
 #include "globals.h"
 
+static inline ULONG MULU64(ULONG m1, ULONG m2, ULONG *res_hi)
+{
+    unsigned long long res = (UQUAD)m1 * (UQUAD)m2;
+
+    *res_hi = res >> 32;
+    return res;
+}
+
 extern LONG getbuffer(UBYTE **tempbuffer, ULONG *maxblocks);
 extern LONG req(UBYTE *fmt, UBYTE *gads, ... );
 extern void starttimeout(void);
@@ -274,12 +282,19 @@ void changegeometry(struct DosEnvec *de)
     /* Absolute offset on the entire disk are expressed in Sectors;
        Offset relative to the start of the partition are expressed in Blocks */
 
-    sectorspercilinder=de->de_Surfaces*de->de_BlocksPerTrack;            // 32 bit
+    sectorspercilinder = de->de_Surfaces*de->de_BlocksPerTrack;           // 32 bit
 
-    globals->sector_low=sectorspercilinder*de->de_LowCyl;             // Needed for SCSI direct
-    globals->sector_high=sectorspercilinder*(de->de_HighCyl+1);       // Exclusive
+    /* Get bounds of our device */
+    globals->sector_low  = sectorspercilinder * de->de_LowCyl;
+    globals->sector_high = sectorspercilinder * (de->de_HighCyl+1);
 
-    if(globals->sector_low==0)
+    /*
+     * If our device starts from sector 0, we assume we are serving the whole device.
+     * In this case this can be a removable drive, and we may need to query the drive
+     * about its current geometry (this way we can support floppies where geometry may
+     * vary (DD or HD)
+     */
+    if (globals->sector_low == 0)
     {
         ULONG totalsectors=0,sectorsize=0;
 
@@ -302,26 +317,11 @@ void changegeometry(struct DosEnvec *de)
         }
     }
 
-    globals->sectors_total=globals->sector_high-globals->sector_low;
-//   sectors_total=sectorspercilinder*(de->de_HighCyl+1-de->de_LowCyl);   /* 32 bit */
-
-    globals->blocks_total=globals->sectors_total/globals->sectors_block;
-
-    #ifdef __AROS__
-    {
-        UQUAD bytelow = ((UQUAD)globals->sector_low) * ((UQUAD)globals->bytes_sector);
-        UQUAD bytehigh = ((UQUAD)globals->sector_high) * ((UQUAD)globals->bytes_sector);
-        
-        globals->byte_low  = bytelow & (UQUAD)0x00000000ffffffff;
-        globals->byte_lowh = bytelow >> 32;
-    
-        globals->byte_high  = bytehigh & (UQUAD)0x00000000ffffffff;
-        globals->byte_highh = bytehigh >> 32;
-    }
-    #else
-    globals->byte_lowh  = MULU64(globals->sector_low, globals->bytes_sector, &globals->byte_low);
-    globals->byte_highh = MULU64(globals->sector_high, globals->bytes_sector, &globals->byte_high);
-    #endif
+    /* Set some more characteristics */
+    globals->sectors_total = globals->sector_high - globals->sector_low;
+    globals->blocks_total  = globals->sectors_total / globals->sectors_block;
+    globals->byte_lowh     = MULU64(globals->sector_low, globals->bytes_sector, &globals->byte_low);
+    globals->byte_highh    = MULU64(globals->sector_high, globals->bytes_sector, &globals->byte_high);
 }
 
 #ifdef DEBUGCODE

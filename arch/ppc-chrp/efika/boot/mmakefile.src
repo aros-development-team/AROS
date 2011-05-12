@@ -49,7 +49,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-fs-nil \
 #MM     kernel-partition \
 #MM     workbench-devs-cdvdfs \
-#MM     workbench-devs-sfs \
+#MM     kernel-fs-sfs \
 #MM     kernel-fs-amberram \
 #MM     kernel-hidd-graphics \
 #MM     kernel-hidd-kbd \

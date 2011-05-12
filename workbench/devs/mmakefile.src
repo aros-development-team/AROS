@@ -34,14 +34,7 @@ include $(TOP)/config/make.cfg
 #MM    workbench-fs-pipefs-quick \
 #MM    workbench-fs-xpipe-quick
 
-#MM- workbench-devs-pc-i386 : \
-#MM	   workbench-devs-sfs-kobj \
-#MM    workbench-devs-cdvdfs-kobj
-
-#MM- workbench-devs-pc-x86_64 : \
-#MM	   workbench-devs-sfs \
-#MM	   workbench-devs-cdvdfs \
-#MM    hidd-usb
+#MM- workbench-devs-pc-x86_64 : hidd-usb
 
 # DISABLED: rootfs.handler
 
