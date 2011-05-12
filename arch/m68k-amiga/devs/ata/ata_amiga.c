@@ -16,7 +16,7 @@
 
 void ata_insw(APTR address, IPTR port, ULONG count)
 {
-    volatile UWORD *addr = (UWORD*)port;
+    volatile UWORD *addr = (UWORD*)(port & ~3);
     UWORD *dst = address;
     count /= 2;
     while (count-- != 0)
@@ -29,7 +29,7 @@ void ata_insl(APTR address, IPTR port, ULONG count)
 
 void ata_outsw(APTR address, IPTR port, ULONG count)
 {
-    volatile UWORD *addr = (UWORD*)port;
+    volatile UWORD *addr = (UWORD*)(port & ~3);
     UWORD *dst = address;
     count /= 2;
     while (count-- != 0)
@@ -77,7 +77,7 @@ static BOOL custom_check(APTR addr)
     return iscustom;
 }  	
 
-static UBYTE *getport(void)
+static UBYTE *getport(BOOL quickdetect)
 {
     UBYTE id, status;
     UBYTE *port = NULL;
@@ -87,16 +87,18 @@ static UBYTE *getport(void)
     if (id) {
         port = (UBYTE*)GAYLE_BASE_1200;
     } else {
-    	gfx = (struct GfxBase*)OpenLibrary("graphics.library", 0);
+    	gfx = (struct GfxBase*)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     	// in AGA this area is never custom mirror but lets make sure..
-    	if (!custom_check(0xdd2000) && (gfx->ChipRevBits0 & GFXF_AA_ALICE)) {
+    	if (!custom_check((APTR)0xdd2000) && (gfx->ChipRevBits0 & GFXF_AA_ALICE)) {
             port = (UBYTE*)GAYLE_BASE_4000;
         }
-        CloseLibrary(gfx);
+        CloseLibrary((struct Library*)gfx);
     }
-    D(bug("[ATA--] Gayle ID=%02x. Possible IDE port=%08x\n", id, port));
+    D(bug("[ATA--] Gayle ID=%02x. Possible IDE port=%08x\n", id, (ULONG)port & ~3));
     if (port == NULL)
     	return NULL;
+    if (quickdetect)
+    	return port;
 
     status = ata_in(ata_Status, (IPTR)port);
     D(bug("[ATA--] Status=%02x\n", status));
@@ -112,7 +114,7 @@ static UBYTE *getport(void)
 
 BOOL ata_ishardware(void)
 {
-    return getport() != NULL;
+    return getport(TRUE) != NULL;
 }
 
 void ata_Scan(struct ataBase *base)
@@ -124,7 +126,7 @@ void ata_Scan(struct ataBase *base)
         0
     };
 
-    port = getport();
+    port = getport(FALSE);
     if (!port)
     	return;
 
@@ -144,7 +146,7 @@ void ata_configure(struct ataBase *base)
     base->ata_Poll = FALSE;
 }
 
-AROS_UFH4(APTR, IDE_Handler,
+AROS_UFH4(APTR, IDE_Handler_A1200,
     AROS_UFHA(ULONG, dummy, A0),
     AROS_UFHA(void *, data, A1),
     AROS_UFHA(ULONG, dummy2, A5),
@@ -160,10 +162,29 @@ AROS_UFH4(APTR, IDE_Handler,
     	    ata_HandleIRQ(b);
     	    b = (struct ata_Bus*)b->ab_Node.mln_Succ;
     	}
-    	if (base->a4000)
-    	    irqmask = *base->gayleirqbase;
-    	else
-    	    *base->gayleirqbase = irqmask & ~GAYLE_IRQ_IDE;
+	*base->gayleirqbase = irqmask & ~GAYLE_IRQ_IDE;
+    }
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH4(APTR, IDE_Handler_A4000,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(void *, data, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    struct ataBase *base = data;
+    UWORD irqmask = *((UWORD*)base->gayleirqbase);
+    if (irqmask & (GAYLE_IRQ_IDE << 8)) {
+     	struct ata_Bus *b = (struct ata_Bus*)base->ata_Buses.mlh_Head;
+    	while (b->ab_Node.mln_Succ) {
+    	    ata_HandleIRQ(b);
+    	    b = (struct ata_Bus*)b->ab_Node.mln_Succ;
+    	}
     }
     return 0;
 
@@ -179,17 +200,18 @@ int ata_CreateInterrupt(struct ata_Bus *bus)
 
     if (base->a4000) {
         base->gaylebase = (UBYTE*)GAYLE_BASE_4000;
-        base->gayleirqbase = (UBYTE*)GAYLE_BASE_4000 + GAYLE_IRQ_4000;
+        base->gayleirqbase = (UBYTE*)GAYLE_IRQ_4000;
+	irq->is_Code = (APTR)IDE_Handler_A4000;
     } else {
-        gayleintbase = (UBYTE*)GAYLE_BASE_1200 + GAYLE_INT_1200;
+        gayleintbase = (UBYTE*)GAYLE_INT_1200;
         base->gaylebase = (UBYTE*)GAYLE_BASE_1200;
-        base->gayleirqbase = (UBYTE*)GAYLE_BASE_1200 + GAYLE_IRQ_1200;
+        base->gayleirqbase = (UBYTE*)GAYLE_IRQ_1200;
+	irq->is_Code = (APTR)IDE_Handler_A1200;
     }
     	
     irq->is_Node.ln_Pri = 20;
     irq->is_Node.ln_Type = NT_INTERRUPT;
     irq->is_Node.ln_Name = "AT-IDE";
-    irq->is_Code = (APTR)IDE_Handler;
     irq->is_Data = base;
     AddIntServer(INTB_PORTS, irq);
     
