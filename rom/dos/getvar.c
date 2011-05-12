@@ -11,6 +11,8 @@
 #include <proto/exec.h>
 #include "dos_intern.h"
 
+static LONG getvar_from(const char *name, const char *volume, STRPTR buffer, LONG size, LONG flags, struct DosLibrary *DOSBase);
+
 /*****************************************************************************
 
     NAME */
@@ -167,78 +169,22 @@
 	
 	if ((flags & 0xff) == LV_VAR && !(flags & GVF_LOCAL_ONLY))
 	{
-	    BPTR file;
-	    LONG i;
-	    
+	    LONG ret;
+
 	    /* as standard: look for the file in ENV: if no path is
-	       given in the variable */
-	    UBYTE filebuf[256] = "ENV:";
-	    
-	    AddPart(filebuf, name, 256);
-	    D(bug("GetVar: Global variable: %s\n", filebuf));
-	    file = Open(filebuf, MODE_OLDFILE);
+	     * given in the variable
+	     */
+	    ret = getvar_from(name, "ENV:", buffer, size, flags, DOSBase);
 
-	    if (file) /* file could be opened */
-	    {
-		ULONG fSize;
-		struct FileInfoBlock fib;
-		
-		if (ExamineFH(file, &fib))
-		{
-		    /* fSize now contains the size of variable. */
-		    fSize = fib.fib_Size;
-		}
-		else
-		{
-		    D(bug("GetVar: can't find size\n"));
+	    if (ret >= 0)
+	    	return size;
 
-		    return -1;
-		}
-		
-		/* We return the number of bytes actually read. */
-		i = Read(file, buffer, size);
-		Close(file);
+	    /* If not found in ENV:, look in ENVARC: */
+	    ret = getvar_from(name, "ENVARC:", buffer, size, flags, DOSBase);
 
-		/* were we supposed to stop after the first "\n"?
-		   = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM */
-		if (0 == (flags & GVF_BINARY_VAR))
-		{
-		    int j = 0;
-		    /* lets search for the first '\n' (if any) in the
-		     * string and replace it by '\0'. */
-		    while ((buffer[j] != '\n') && (j < i))
-		    {
-			j++;
-		    }
-		    
-		    if (j == size)
-		    {
-			j = size - 1;
-		    }
+	    if (ret >= 0)
+	    	return size;
 
-		    buffer[j]= '\0'; /* mark end of string */
-		    size = j;
-		}
-		else if (0 == (flags & GVF_DONT_NULL_TERM))
-		{
-		    if (i == size)
-		    {
-			i = size - 1;
-		    }
-
-		    buffer[i] = 0x0; /* mark end of string */
-		    size = i;
-		}
-		else
-		{
-		    size = i;
-		}
-		
-		SetIoErr(fSize);
-		D(bug("GetVar: return %d\n", size));
-
-		return size;
-	    } /* open(file) */
 	} /* ! local file only */
     } /* name and buffer */
     
@@ -250,3 +196,84 @@
 
     AROS_LIBFUNC_EXIT
 } /* GetVar */
+
+
+static LONG getvar_from(const char *name, const char *volume, STRPTR buffer, LONG size, LONG flags, struct DosLibrary *DOSBase)
+{
+    BPTR file;
+    LONG i;
+    
+    UBYTE filebuf[256];
+
+    strncpy(filebuf, volume, sizeof(filebuf));
+    /* Just being paranoid here */
+    filebuf[sizeof(filebuf)-1]=0;
+    
+    AddPart(filebuf, name, 256);
+    D(bug("GetVar: Global variable: %s\n", filebuf));
+    file = Open(filebuf, MODE_OLDFILE);
+
+    if (file) /* file could be opened */
+    {
+	ULONG fSize;
+	struct FileInfoBlock fib;
+
+	if (ExamineFH(file, &fib))
+	{
+	    /* fSize now contains the size of variable. */
+	    fSize = fib.fib_Size;
+	}
+	else
+	{
+	    D(bug("GetVar: can't find size\n"));
+
+	    return -1;
+	}
+
+	/* We return the number of bytes actually read. */
+	i = Read(file, buffer, size);
+	Close(file);
+
+	/* were we supposed to stop after the first "\n"?
+	   = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM */
+	if (0 == (flags & GVF_BINARY_VAR))
+	{
+	    int j = 0;
+	    /* lets search for the first '\n' (if any) in the
+	     * string and replace it by '\0'. */
+	    while ((buffer[j] != '\n') && (j < i))
+	    {
+		j++;
+	    }
+    
+	    if (j == size)
+	    {
+		j = size - 1;
+	    }
+
+	    buffer[j]= '\0'; /* mark end of string */
+	    size = j;
+	}
+	else if (0 == (flags & GVF_DONT_NULL_TERM))
+	{
+	    if (i == size)
+	    {
+		i = size - 1;
+	    }
+
+	    buffer[i] = 0x0; /* mark end of string */
+	    size = i;
+	}
+	else
+	{
+	    size = i;
+	}
+
+	SetIoErr(fSize);
+	D(bug("GetVar: return %d\n", size));
+
+	return size;
+    } /* open(file) */
+
+    return -1;
+}
