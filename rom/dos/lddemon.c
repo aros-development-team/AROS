@@ -5,30 +5,27 @@
     Loader for shared libraries and devices.
 */
 
+#include <aros/asmcall.h>
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <exec/errors.h>
-#include <exec/libraries.h>
 #include <exec/devices.h>
 #include <exec/ports.h>
-#include <exec/lists.h>
 #include <exec/alerts.h>
 #include <exec/tasks.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
-#include <aros/asmcall.h>
-#define DEBUG 0
-#include <aros/debug.h>
-
 #include <proto/exec.h>
 #include <proto/dos.h>
+
+#include <stddef.h>
+#include <string.h>
+
 #include "dos_intern.h"
 #include LC_LIBDEFS_FILE
-
-#include <string.h>
-#include <stddef.h>
 
 #undef SysBase
 
@@ -61,10 +58,9 @@ struct LDDMsg
     struct MsgPort	 ldd_ReplyPort;	    /* Callers ReplyPort */
 
     STRPTR		 ldd_Name;	    /* Name of thing to load */
-    ULONG		 ldd_Version;	    /* Version of thing to load */
 
     STRPTR		 ldd_BaseDir;	    /* Base directory to load from */
-    struct Library *	 ldd_Return;	    /* The result */
+    BPTR		 ldd_Return;	    /* Loaded seglist */
 };
 
 #include <libcore/compiler.h>
@@ -185,7 +181,7 @@ static BPTR LDLoad(struct Process *caller, STRPTR name, STRPTR basedir,
   Library *LDInit(seglist, DOSBase)
     Initialise the library.
 */
-static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase, struct List *list, struct ExecBase *SysBase)
+static struct Library *LDInit(BPTR seglist, struct List *list, struct ExecBase *SysBase)
 {
     BPTR seg = seglist;
 
@@ -222,15 +218,12 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase, struct L
 		Permit();
 		D(bug("[LDInit] Done calling InitResident(%p) on %s, seg %p node %p\n", res, res->rt_Name, lib, node));
 
-		if( node == NULL )
-		    UnLoadSeg(seglist);
 		return (struct Library*)node;
 	    }
 	}
 	seg = *(BPTR *)BADDR(seg);
     }
     D(bug("[LDInit] Couldn't find Resident for %p\n", seglist));
-    UnLoadSeg(seglist);
     return NULL;
 }
 
@@ -288,22 +281,15 @@ static struct LDObjectNode *LDNewObjectNode(STRPTR name, struct ExecBase *SysBas
     return NULL;
 }
 
-static VOID LDDestroyObjectNode(struct LDObjectNode *object, struct ExecBase *SysBase)
+static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, UBYTE type, STRPTR dir, struct List *list, struct ExecBase *SysBase)
 {
-    FreeVec(object->ldon_Node.ln_Name);
-    FreeVec(object);
-}
-
-AROS_LH2(struct Library *, OpenLibrary,
-    AROS_LHA(STRPTR, libname, A1),
-    AROS_LHA(ULONG, version, D0),
-    struct ExecBase *, SysBase, 0, Dos)
-{
-    AROS_LIBFUNC_INIT
-
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
-    struct Library *library, *tmplib;
-    STRPTR stripped_libname;
+    /*  We use FilePart() because the liblist is built from resident IDs,
+	and contain no path. Eg. The user can request gadgets/foo.gadget,
+	but the resident only contains foo.gadget
+    */
+    STRPTR stripped_libname = FilePart(libname);
+    struct Library *tmplib;
     struct LDObjectNode *object;
 
     /*
@@ -346,14 +332,8 @@ AROS_LH2(struct Library *, OpenLibrary,
 
                  Hopefully this won't happen anymore now.
     */
-
-
-    /*  We use FilePart() because the liblist is built from resident IDs,
-	and contain no path. Eg. The user can request gadgets/foo.gadget,
-	but the resident only contains foo.gadget
-    */
-    stripped_libname = FilePart(libname);
     ObtainSemaphore(&DOSBase->dl_LDObjectsListSigSem);
+
     object = (struct LDObjectNode *)FindName(&DOSBase->dl_LDObjectsList, stripped_libname);
     if (!object)
     {
@@ -393,95 +373,67 @@ AROS_LH2(struct Library *, OpenLibrary,
     if (!object)
         return NULL;
 
-
     ObtainSemaphore(&object->ldon_SigSem);
 
-    /* Call the EXEC's OpenLibrary function */
-    library = ExecOpenLibrary(stripped_libname, version);
+    /* Try to find the resident in the list */
+    tmplib = (struct Library *)FindName(list, stripped_libname);
 
-    if( library == NULL )
+    if (!tmplib)
     {
-	/* Use stack for now, this could be a security hole */
+	/* Try to load from disk if not found */
 	struct LDDMsg ldd;
 
-	ldd.ldd_ReplyPort.mp_SigBit = SIGB_SINGLE;
-	ldd.ldd_ReplyPort.mp_SigTask = FindTask(NULL);
-	NEWLIST(&ldd.ldd_ReplyPort.mp_MsgList);
-	ldd.ldd_ReplyPort.mp_Flags = PA_SIGNAL;
+	ldd.ldd_ReplyPort.mp_SigBit       = SIGB_SINGLE;
+	ldd.ldd_ReplyPort.mp_SigTask      = FindTask(NULL);
+	ldd.ldd_ReplyPort.mp_Flags        = PA_SIGNAL;
 	ldd.ldd_ReplyPort.mp_Node.ln_Type = NT_MSGPORT;
 
+	NEWLIST(&ldd.ldd_ReplyPort.mp_MsgList);
+
 	ldd.ldd_Msg.mn_Node.ln_Type = NT_MESSAGE;
+	ldd.ldd_Msg.mn_Length       = sizeof(struct LDDMsg);
+	ldd.ldd_Msg.mn_ReplyPort    = &ldd.ldd_ReplyPort;
 
-	ldd.ldd_Msg.mn_Length = sizeof(struct LDDMsg);
-	ldd.ldd_Msg.mn_ReplyPort = &ldd.ldd_ReplyPort;
-
-	ldd.ldd_Name = libname;
-	ldd.ldd_Version = version;
-	ldd.ldd_BaseDir = "libs";
+	ldd.ldd_Name    = libname;
+	ldd.ldd_BaseDir = dir;
 
     	SetSignal(0, SIGF_SINGLE);
-	D(bug("[LDCaller] Sending request for %s v%ld\n", libname, version));
+	D(bug("[LDCaller] Sending request for %s\n", name));
+
 	PutMsg(DOSBase->dl_LDDemonPort, (struct Message *)&ldd);
 	WaitPort(&ldd.ldd_ReplyPort);
-	D(bug("[LDCaller] Returned\n"));
 
-	library = LDInit(MKBADDR(ldd.ldd_Return), DOSBase, &SysBase->LibList, SysBase);
+	D(bug("[LDCaller] Returned 0x%p\n", ldd.ldd_Return));
 
-        if( library != NULL )
-        {
-	    /*
-	        We have to Forbid() here because we need to look through the list
-	        again, we also need to call the libOpen vector, which wants us
-	        under a Forbidden state.
-
-		falemagn: well, it doesn't want us under a Forbidden state, it just
-		          wants to be single threaded, and it is, in fact, so no
-			  need for Forbid()/Permit() around open. I Hope... :)
-
-	    */
-	    Forbid();
-	    tmplib = (struct Library *)FindName(&SysBase->LibList, stripped_libname);
-	    Permit();
-
-	    if( tmplib != NULL )
-	        library = tmplib;
-
-	    if(library->lib_Version >= version)
-	    {
-	        D(bug("[LDCaller] Calling libOpen() of %s\n",
-    		        library->lib_Node.ln_Name));
-
-	        library = AROS_LVO_CALL1(struct Library *,
-		    AROS_LCA(ULONG, version, D0),
-		    struct Library *, library, 1,
-	        );
-
-	        D(bug("[LDCaller] libOpen() returned 0x%lx\n", library));
-	    }
-	    else
-	       library = NULL;
-	}
-    }
-
-    if (library == NULL)
-    {
-        /*
-	    the library is not on disk so
-	    check Resident List
-        */
-
-	struct Resident *resident;
-
-	resident = FindResident(stripped_libname);
-	if (resident)
+	if (ldd.ldd_Return)
 	{
-	    if (resident->rt_Version >= version)
-	    {
-		if (InitResident(resident, BNULL))
-		    library = ExecOpenLibrary(stripped_libname, version);
-	    }
+	    tmplib = LDInit(ldd.ldd_Return, list, SysBase);
+	    if (!tmplib)
+	    	UnLoadSeg(ldd.ldd_Return);
 	}
     }
+
+    if (!tmplib)
+    {
+        /* 
+         * The library is not on disk so check Resident List.
+         * It can be there if it is resident but was flushed.
+         * Check also rt_Type because OpenDevice might hit
+         * resident packet handler instead of IOFS one and this
+         * would cause problems then.
+         */
+	struct Resident *resident = FindResident(stripped_libname);
+
+	if (resident && (resident->rt_Type == type) && (resident->rt_Version >= version))
+	    InitResident(resident, BNULL);
+    }
+
+    return object;
+}
+
+static void LDReleaseObject(struct LDObjectNode *object, struct ExecBase *SysBase)
+{
+    struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
 
     /*
 	Release the semaphore here, after calling Open vector. This
@@ -490,15 +442,43 @@ AROS_LH2(struct Library *, OpenLibrary,
 	and recursive OpenLibrary calls (Semaphores nest when obtained
 	several times in a row by the same task).
     */
+
     ObtainSemaphore(&DOSBase->dl_LDObjectsListSigSem);
+
     if (--(object->ldon_AccessCount) == 0)
     {
         Remove((struct Node *)object);
-        LDDestroyObjectNode(object, SysBase);
+        /*
+         * CHECKME: In LDRequestObject() we obtain the object semaphore also on a new object.
+         * So shouldn't we release it here too ?
+         */
+         
+        FreeVec(object->ldon_Node.ln_Name);
+    	FreeVec(object);
     }
     else
        ReleaseSemaphore(&object->ldon_SigSem);
+
     ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
+}
+
+AROS_LH2(struct Library *, OpenLibrary,
+    AROS_LHA(STRPTR, libname, A1),
+    AROS_LHA(ULONG, version, D0),
+    struct ExecBase *, SysBase, 0, Dos)
+{
+    AROS_LIBFUNC_INIT
+
+    struct Library *library;
+    struct LDObjectNode *object = LDRequestObject(libname, version, NT_LIBRARY, "libs", &SysBase->LibList, SysBase);
+
+    if (!object)
+    	return NULL;
+
+    /* Call the EXEC's OpenLibrary function */
+    library = ExecOpenLibrary(object->ldon_Node.ln_Name, version);
+
+    LDReleaseObject(object, SysBase);
 
     return library;
 
@@ -514,131 +494,23 @@ AROS_LH4(LONG, OpenDevice,
 {
     AROS_LIBFUNC_INIT
 
-    struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
-    struct Device *tmpdev;
-    STRPTR stripped_devname;
     struct LDObjectNode *object;
 
-    iORequest->io_Error  = IOERR_OPENFAIL;
-    iORequest->io_Device = NULL;
-
-    /*	We use FilePart() because the liblist is built from resident IDs,
-	which contain no path. Eg. The user can request gadgets/foo.gadget,
-	but the resident only contains foo.gadget
-    */
-
-    stripped_devname = FilePart(devname);
-
-    ObtainSemaphore(&DOSBase->dl_LDObjectsListSigSem);
-    object = (struct LDObjectNode *)FindName(&DOSBase->dl_LDObjectsList, stripped_devname);
-
-    if (!object)
-    {
-        object = LDNewObjectNode(stripped_devname, SysBase);
-	if (object)
-	{
-	    AddTail(&DOSBase->dl_LDObjectsList, (struct Node*)object);
-	}
-    }
-
+    object = LDRequestObject(devname, 0, NT_DEVICE, "devs", &SysBase->DeviceList, SysBase);
     if (object)
     {
-    	object->ldon_AccessCount += 1;
-    }
-#if CHECK_DEPENDENCY
-    else
-    {
-	struct Task  *curtask = FindTask(0);
-	struct ETask *et      = GetETask(curtask);
-
-	if (et)
-	{
-	    while (curtask && curtask != object->ldon_FirstLocker)
-     		curtask = et->et_Parent;
-
-	    if (curtask)
-	    {
-		bug("[LDCaller] Circular dependency found!\n");
-	        object = NULL;
-	    }
-        }
-    }
-#endif
-    ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
-
-    if (!object)
-        return IOERR_OPENFAIL;
-
-    ObtainSemaphore(&object->ldon_SigSem);
-
-    ExecOpenDevice(stripped_devname, unitNumber, iORequest, flags);
-
-    if (iORequest->io_Error)
-    {
-	/* Use stack for now, this could be a security hole */
-	struct LDDMsg ldd;
-
-	ldd.ldd_ReplyPort.mp_SigBit = SIGB_SINGLE;
-	ldd.ldd_ReplyPort.mp_SigTask = FindTask(NULL);
-	NEWLIST(&ldd.ldd_ReplyPort.mp_MsgList);
-	ldd.ldd_ReplyPort.mp_Flags = PA_SIGNAL;
-	ldd.ldd_ReplyPort.mp_Node.ln_Type = NT_MSGPORT;
-
-	ldd.ldd_Msg.mn_Node.ln_Type = NT_MESSAGE;
-	ldd.ldd_Msg.mn_Length = sizeof(struct LDDMsg);
-	ldd.ldd_Msg.mn_ReplyPort = &ldd.ldd_ReplyPort;
-
-	ldd.ldd_Name = devname;
-	ldd.ldd_BaseDir = "devs";
-
-	SetSignal(0, SIGF_SINGLE);
-	D(bug("[LDCaller] Sending request for %s\n", devname));
-	PutMsg(DOSBase->dl_LDDemonPort, (struct Message *)&ldd);
-	WaitPort(&ldd.ldd_ReplyPort);
-	D(bug("[LDCaller] Returned\n"));
-
-	iORequest->io_Device = (struct Device *)LDInit(MKBADDR(ldd.ldd_Return), DOSBase, &SysBase->DeviceList, SysBase);
-
-	if(iORequest->io_Device)
-        {
-	    Forbid();
-	    tmpdev = (struct Device *)FindName(&SysBase->DeviceList, stripped_devname);
-	    Permit();
-
-	    if(tmpdev != NULL)
-	        iORequest->io_Device = tmpdev;
-
-	    iORequest->io_Error = 0;
-	    iORequest->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-
-  	    D(bug("[LDCaller] Calling devOpen() of %s unit %ld\n",
-		    iORequest->io_Device->dd_Library.lib_Node.ln_Name, unitNumber));
-
-	    AROS_LVO_CALL3NR(void,
-	        AROS_LCA(struct IORequest *, iORequest, A1),
-	        AROS_LCA(IPTR, unitNumber, D0),
-	        AROS_LCA(ULONG, flags, D1),
-	        struct Device *, iORequest->io_Device, 1,
-	    );
-
-	    D(bug("[LDCaller] devOpen() returned\n"));
-
-	    if (iORequest->io_Error)
-	        iORequest->io_Device = NULL;
-        }
-    }
-
-    ObtainSemaphore(&DOSBase->dl_LDObjectsListSigSem);
-    if (--(object->ldon_AccessCount) == 0)
-    {
-        Remove((struct Node *)object);
-        LDDestroyObjectNode(object, SysBase);
+    	/* Call exec.library/OpenDevice(), it will do the job */
+    	ExecOpenDevice(object->ldon_Node.ln_Name, unitNumber, iORequest, flags);
+    	LDReleaseObject(object, SysBase);
     }
     else
-       ReleaseSemaphore(&object->ldon_SigSem);
-    ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
+    {
+        iORequest->io_Error  = IOERR_OPENFAIL;
+	iORequest->io_Device = NULL;
+	iORequest->io_Unit   = NULL;
+    }
 
-    D(bug("%s", iORequest->io_Error?"[LDCaller] Couldn't open the device\n":""));
+    D(bug("[LDCaller] Open result: %d\n", iORequest->io_Error));
 
     return iORequest->io_Error;
 
@@ -816,13 +688,9 @@ AROS_UFH3(void, LDDemon,
 	WaitPort(DOSBase->dl_LDDemonPort);
 	while( (ldd = (struct LDDMsg *)GetMsg(DOSBase->dl_LDDemonPort)) )
 	{
-	    BPTR libSeg;
+	    D(bug("[LDDemon] Got a request for %s in %s\n", ldd->ldd_Name, ldd->ldd_BaseDir));
 
-	    D(bug("[LDDemon] Got a request for %s in %s\n",
-		    ldd->ldd_Name, ldd->ldd_BaseDir));
-
-	    libSeg = LDLoad(ldd->ldd_ReplyPort.mp_SigTask, ldd->ldd_Name, ldd->ldd_BaseDir, DOSBase, SysBase);
-	    ldd->ldd_Return = BADDR(libSeg);
+	    ldd->ldd_Return = LDLoad(ldd->ldd_ReplyPort.mp_SigTask, ldd->ldd_Name, ldd->ldd_BaseDir, DOSBase, SysBase);
 
 	    D(bug("[LDDemon] Replying with %p as result\n", ldd->ldd_Return));
 	    ReplyMsg((struct Message *)ldd);
