@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a device.
     Lang: english
 */
-#include <aros/config.h>
+
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/devices.h>
 #include <exec/io.h>
@@ -13,20 +14,6 @@
 #include <aros/libcall.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>
-
-#include "exec_debug.h"
-#ifndef DEBUG_OpenDevice
-#   define DEBUG_OpenDevice 0
-#endif
-#undef DEBUG
-#if DEBUG_OpenDevice
-#   define DEBUG 1
-#endif
-#include <aros/debug.h>
-#undef kprintf
-
-char *const timername = "timer.device";
-char *const inputname = "input.device";
 
 /*****************************************************************************
 
@@ -82,47 +69,51 @@ char *const inputname = "input.device";
 {
     AROS_LIBFUNC_INIT
 
-    struct Device *device;
-    BYTE ret=IOERR_OPENFAIL;
+    /*
+     * Kludge for compatibility with V40 kickstart. DO NOT depend on this!
+     * See TaggedOpenLibrary() for more info.
+     */
+    switch ((IPTR)devName)
+    {
+    case 0:
+    	devName = "timer.device";
+    	break;
 
-    D(bug("OpenDevice $%lx $%lx $%lx %ld (\"%s\") by \"%s\"\n", devName, unitNumber, iORequest,
-	flags, (devName > (STRPTR)1) ? devName : (UBYTE *)"(null)", SysBase->ThisTask->tc_Node.ln_Name));
+    case 1:
+        devName = "input.device";
+        break;
+    }
+
+    D(bug("[exec] OpenDevice(\"%s\", %ld, 0x%p, %d) by \"%s\"\n", devName, unitNumber, iORequest,
+    	  flags, SysBase->ThisTask->tc_Node.ln_Name));
 
     /* Arbitrate for the device list */
     Forbid();
 
-    /*
-	Kludge for compatibility with V40 kickstart. DO NOT depend on this!
-	See TaggedOpenLibrary() for more info.
-    */
-    if	   (devName == (STRPTR)0) devName = timername;
-    else if(devName == (STRPTR)1) devName = inputname;
-
     /* Look for the device in our list */
-    device=(struct Device *)FindName(&SysBase->DeviceList,devName);
+    iORequest->io_Unit   = NULL;
+    iORequest->io_Device = (struct Device *)FindName(&SysBase->DeviceList, devName);
+    D(bug("[OpenDevice] Found resident 0x%p\n", iORequest->io_Device));
 
     /* Something found ? */
-    if(device!=NULL)
+    if (iORequest->io_Device)
     {
-	/* Init iorequest */
-	iORequest->io_Error=0;
-	iORequest->io_Device=device;
-	iORequest->io_Unit = NULL;
+	iORequest->io_Error = 0;
 
 	/* Call Open vector. */
 	AROS_LVO_CALL3NR(void,
 	    AROS_LCA(struct IORequest *,iORequest,A1),
 	    AROS_LCA(IPTR, unitNumber,D0),
 	    AROS_LCA(ULONG,flags,D1),
-	    struct Device *, device, 1, dev
-	);
+	    struct Device *, iORequest->io_Device, 1, dev);
 
 	/* Check for error */
-	ret=iORequest->io_Error;
-	if(ret)
+	if (iORequest->io_Error)
 	    /* Mark request as non-open */
 	    iORequest->io_Device=NULL;
     }
+    else
+    	iORequest->io_Error = IOERR_OPENFAIL;
 
     /*
      *	We cannot handle loading devices from disk. But thankfully this is
@@ -132,7 +123,11 @@ char *const inputname = "input.device";
 
     /* All done. */
     Permit();
-    return ret;
+
+    D(bug("[OpenDevice] Returning device 0x%p, unit 0x%p, error %d\n", iORequest->io_Device, iORequest->io_Unit, iORequest->io_Error));
+
+    return iORequest->io_Error;
+
     AROS_LIBFUNC_EXIT
 } /* OpenDevice */
 
