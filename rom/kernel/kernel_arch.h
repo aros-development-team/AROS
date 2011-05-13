@@ -17,5 +17,5 @@
  * void ictl_disable_irq(uint8_t num);
  */
 
-#define ictl_enable_irq(irq)
-#define ictl_disable_irq(irq)
+#define ictl_enable_irq(irq, base)
+#define ictl_disable_irq(irq, base)
