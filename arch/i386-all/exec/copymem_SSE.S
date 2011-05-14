@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,10 +39,6 @@
     INTERNALS
 	The source and destination area *ARE* allowed to overlap.
 
-    HISTORY
-	wooohooo! i **love** assembly code
-	my pipelining ain't best, but this code should perform well
-
 ******************************************************************************/
 #include "aros/i386/asm.h"
 #include <aros/config.h>
@@ -51,6 +47,10 @@
 	.globl  AROS_SLIB_ENTRY(CopyMem_SSE,Exec)
 	_FUNCTION(AROS_SLIB_ENTRY(CopyMem_SSE,Exec))
 AROS_SLIB_ENTRY(CopyMem_SSE,Exec):
+	movl	12(%esp),%eax
+	cmpl	$4096,%eax
+	jl	Exec_CopyMem	/* non-SSE version is faster for small copies */
+
 	pushl	%edi
 	pushl	%esi
 	pushl	%ecx
@@ -58,49 +58,9 @@ AROS_SLIB_ENTRY(CopyMem_SSE,Exec):
 	movl	16(%esp),%esi
 	movl	20(%esp),%edi
 	movl	24(%esp),%eax
-	cmpl	$64,%eax	    /* first, verify if it makes any sense at all to bring cannons */
-	jge	.fast_copy
 
 	/*
-	** set count register. check direction
-	*/
-	movl	%eax,%ecx
-	cmp	%edi,%esi
-	jl	.copy_reverse
-
-	/*
-	** copy forward
-	*/
-	prefetchnta (%esi)
-	prefetchnta 32(%esi)
-	cld
-	rep	movsb
-	jmp	.copy_done
-
-.copy_reverse:
-	/*
-	** copy reverse
-	*/
-	add	%eax,%edi
-	add	%eax,%esi
-	sub	$1,%esi
-	sub	$1,%edi
-	prefetchnta -32(%esi)
-	prefetchnta -64(%esi)
-	std
-	rep	movsb
-	cld
-
-.copy_done:
-	popl	%ecx
-	popl	%esi
-	popl	%edi
-	ret
-
-.fast_copy:
-
-	/*
-	** okay, so the user wants to copy at least 64 bytes. 
+	** okay, so the user wants to copy at least 4096 bytes.
 	** let's go!
 	*/
 	pushl   %ebx
