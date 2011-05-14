@@ -12,7 +12,6 @@ FILES := \
 EXEDIR := $(AROS_TESTS)/threads
 
 #MM test-threads : workbench-libs-thread
-#MM- test : test-threads
 
 %build_progs mmake=test-threads \
     files=$(FILES) targetdir=$(EXEDIR) \
