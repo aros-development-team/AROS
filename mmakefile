@@ -39,6 +39,7 @@ query :
 	@$(ECHO) "TARGET_CC      : $(TARGET_CC)"
 	@$(ECHO) "TARGET_CFLAGS  : $(TARGET_CFLAGS)"
 	@$(ECHO) "TARGET_LDFLAGS : $(TARGET_LDFLAGS)"
+	@$(ECHO) "TARGET_CXX     : $(TARGET_CXX)"
 	@$(ECHO)
 	@$(ECHO) "SRCDIR         : $(SRCDIR)"
 	@$(ECHO) "GENDIR         : $(GENDIR)"

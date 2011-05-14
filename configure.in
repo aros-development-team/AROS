@@ -45,12 +45,12 @@ if test "$host_os" = "mingw32" ; then
 fi
 
 #don't know where else to put this...
-AC_MSG_CHECKING([Building AROS in .. ])
+AC_MSG_CHECKING([building AROS in])
 AROS_BUILDDIR=`${PWDCMD-pwd}`
 AROS_BUILDDIR_UNIX=${PWD}
 AC_MSG_RESULT($AROS_BUILDDIR)
 
-AC_MSG_CHECKING([AROS Source in .. ])
+AC_MSG_CHECKING([AROS source in])
 srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 SRCDIR=${srcpwd}
 AC_MSG_RESULT($SRCDIR)
@@ -645,18 +645,11 @@ aros_debug_cflags="$aros_symbols_debug $aros_messages_debug"
 aros_debug_aflags=""
 aros_debug_ldflags="$aros_symbols_debug"
 
-aros_crosstools="no"
-
 #-----------------------------------------------------------------------------
 #   Checking if we should build crosstools..
 AC_MSG_CHECKING([whether to build crosstools])
 AC_ARG_ENABLE(crosstools,AC_HELP_STRING([--enable-crosstools],[Build cross-compiler toolchains if necessary (default=no).]),crosstools="$enableval",crosstools="no")
-if test "$crosstools" != "" -a "$crosstools" != "no"; then
-    AC_MSG_RESULT(yes)
-	aros_crosstools="yes"
-else
-    AC_MSG_RESULT(no)
-fi
+AC_MSG_RESULT($crosstools)
 
 #-----------------------------------------------------------------------------
 #   Checking for distcc and ccache.
@@ -734,7 +727,11 @@ target_bootloader="none"
 # Prefix for toolchain used to build bootstrap. For hosted ports, this should be a toolchain for target host OS.
 # (i. e. when building mingw32-i386 port this should be set to "i386-mingw32-").
 # For native ports this toolchain is used to build a bootloader and second-level bootstrap (if present).
-target_tool_prefix=${target_cpu}-elf-
+if test "$crosstools" != "yes"; then
+    target_tool_prefix=${target_cpu}-elf-
+else
+    target_tool_prefix=${target_cpu}-aros-
+fi
 
 #-----------------------------------------------------------------------------
 # Additional options for some specific targets
@@ -1353,6 +1350,21 @@ case "$target_os" in
 esac
 
 #-----------------------------------------------------------------------------
+AC_MSG_CHECKING([where to install or search for cross tools binaries])
+AC_ARG_WITH(crosstools,AC_HELP_STRING([--with-crosstools=DIR],[Where to install or search for cross tools binaries]),with_crosstools=$withval,with_crosstools="default")
+if test "$with_crosstools" = "default"; then
+    AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
+else
+    AROS_CROSSTOOLSDIR="$with_crosstools"
+fi
+AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
+
+if test "$crosstools" != "yes" -a "$with_crosstools" != "default"; then
+    use_aros_gcc=yes
+    PATH=$AROS_CROSSTOOLSDIR:$PATH
+    target_tool_prefix=${target_cpu}-aros-
+fi
+
 AC_MSG_CHECKING([what specific AROS gcc version to use])
 AC_ARG_WITH(aros-gcc,AC_HELP_STRING([--with-aros-gcc=VERSION],[Use aros-gcc-VERSION for building AROS]),aros_gcc_version="$withval",aros_gcc_version="$use_aros_gcc")
 case "$aros_gcc_version" in
@@ -1365,12 +1377,12 @@ no)
 esac
 AC_MSG_RESULT($aros_gcc_version)
 
-if test "$aros_gcc_version" != "none"; then
-    if test "$aros_gcc_version" != "default"; then
+if test "$aros_gcc_version" != "none" -o "$crosstools" = "yes"; then
+    if test "$aros_gcc_version" != "default" -a "$aros_gcc_version" != "none"; then
 	aros_target_cc="$aros_target_cpu-aros-gcc-$aros_gcc_version"
 	aros_target_cxx="$aros_target_cpu-aros-g++-$aros_gcc_version"
     else
-    	aros_target_cc="$aros_target_cpu-aros-gcc"
+	aros_target_cc="$aros_target_cpu-aros-gcc"
 	aros_target_cxx="$aros_target_cpu-aros-g++"
     fi
 
@@ -1390,7 +1402,7 @@ if test "$gcc_target_cpu" != ""; then
     gcc_target_cpu="-D__${gcc_target_cpu}__"
 fi
 
-AC_MSG_CHECKING([Where to download sourcecode for external ports])
+AC_MSG_CHECKING([where to download sourcecode for external ports])
 AC_ARG_WITH(portssources,AC_HELP_STRING([--with-portssources=DIR],[Where to download sourcecode for external ports]),with_portssrcdir=$withval,with_portssrcdir="default")
 if test "$with_portssrcdir" = "default"; then
     AROS_PORTSSRCDIR="$AROS_BUILDDIR_UNIX/bin/Sources"
@@ -1450,6 +1462,11 @@ if test "$aros_host_arch" == "darwin" ; then
     fi
 fi
 
+# I want to have this information in configure output, although it might be
+# misleading, e.g. for darwin hosted you cannot compile target code without a
+# cross compiler, but here it says no.
+echo "checking wether we are (AROS style) cross compiling... $cross_compiling"
+
 # Set prefix for target compiler etc. if we're cross-compiling
 # (should possibly be earlier but needs to be after AC_PROG_CC)
 if test "$cross_compiling" = "yes" ; then
@@ -1460,8 +1477,12 @@ if test "$cross_compiling" = "yes" ; then
         CC="$CC-$target_tool_version"
         CPP="$CC-$target_tool_version"
     fi
-    AC_PATH_PROG(CC,$CC)
-    AROS_REQUIRED(gcc,$CC)
+    if test "$crosstools" != "yes" ; then
+        AC_PATH_PROG(CC,$CC)
+        AROS_REQUIRED(gcc,$CC)
+    else
+        CC=$AROS_CROSSTOOLSDIR/$CC
+    fi
 fi
 CC="$CC $target_tool_flags"
 
@@ -1471,8 +1492,14 @@ CC="$CC $target_tool_flags"
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wno-pointer-sign])
 save_cflags="$CFLAGS"
-CFLAGS="$CFLAGS -Wno-pointer-sign"
-AC_TRY_COMPILE(,, use_no_sign_warning="yes", use_no_sign_warning="no")
+if test "$crosstools" != "yes" ; then
+    CFLAGS="$CFLAGS -Wno-pointer-sign"
+    AC_TRY_COMPILE(,, use_no_sign_warning="yes", use_no_sign_warning="no")
+else
+    # we do know it is supported for the smallest version of gcc we are going to build
+    # we assume it's also supported by later versions
+    use_no_sign_warning=yes
+fi
 AC_MSG_RESULT($use_no_sign_warning)
 if test "x-$use_no_sign_warning" = "x-yes" ; then
     aros_config_cflags="$aros_config_cflags -Wno-pointer-sign"
@@ -1541,27 +1568,43 @@ if test "$crosstools" != "yes"; then
 	AROS_REQUIRED(c++,$aros_target_cxx)
     fi
 else
-    dnl Cancel preinstalled C++ compiler because it will be built as part of crosstools
-    aros_target_cxx=""
+    aros_target_cc=$AROS_CROSSTOOLSDIR/$aros_target_cc
+    aros_target_cxx=$AROS_CROSSTOOLSDIR/$aros_target_cxx
+    aros_target_as_ln=$AROS_CROSSTOOLSDIR/$aros_target_as
+    aros_target_ar_ln=$AROS_CROSSTOOLSDIR/$aros_target_ar
+    aros_target_nm_ln=$AROS_CROSSTOOLSDIR/$aros_target_nm
+    aros_target_objcopy_ln=$AROS_CROSSTOOLSDIR/$aros_target_objcopy
+    aros_target_objdump_ln=$AROS_CROSSTOOLSDIR/$aros_target_objdump
+    aros_target_ranlib_ln=$AROS_CROSSTOOLSDIR/$aros_target_ranlib
+    aros_target_strip_ln=$AROS_CROSSTOOLSDIR/$aros_target_strip
+
+    aros_kernel_ld=$AROS_CROSSTOOLSDIR/$aros_target_ld
+
+    crosstools_target=tools-crosstools
 fi
 
 orig_target_cc=$aros_kernel_cc
 orig_target_ld=$aros_kernel_ld
 
-if test "$aros_target_cc" != ""; then
-    AC_PATH_PROG(aros_target_cc,$aros_target_cc)
-    AROS_REQUIRED(gcc,$aros_target_cc)
+if test "$crosstools" != "yes"; then
+    if test "$aros_target_cc" != ""; then
+        AC_PATH_PROG(aros_target_cc,$aros_target_cc)
+        AROS_REQUIRED(gcc,$aros_target_cc)
+        orig_target_cc=$aros_target_cc
+    fi
+    if test "$aros_target_ld" != ""; then
+        AC_PATH_PROG(aros_target_ld,$aros_target_ld)
+        AROS_REQUIRED(ld,$aros_target_ld)
+        orig_target_ld=$aros_target_ld
+    fi
+else
     orig_target_cc=$aros_target_cc
-fi
-if test "$aros_target_ld" != ""; then
-    AC_PATH_PROG(aros_target_ld,$aros_target_ld)
-    AROS_REQUIRED(ld,$aros_target_ld)
     orig_target_ld=$aros_target_ld
 fi
 
 # Build crosstools if we have no C++ - temporary thing 
-if test "$aros_target_cxx" = ""; then
-    crosstools_target=tools-crosstools
+if test "$aros_target_cxx" = "" -a "$crosstools" != "yes"; then
+    crosstools_cxx_target=tools-crosstools
 fi
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
@@ -1599,8 +1642,15 @@ AC_SUBST(aros_target_detach_ldflags,-detach)
 AC_SUBST(aros_target_nostdlib_ldflags,-nostdlib)
 
 # Target tools
-if test "$GCC" = "yes"; then
-    aros_target_cc_path=`$orig_target_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
+if test "$crosstools" != "yes"; then
+    if test "$GCC" = "yes"; then
+        aros_target_cc_path=`$orig_target_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
+    fi
+else
+    # We do not know which gcc version we are going to build and what we need to know
+    # here is different for different versions so this will be set later during the
+    # build of crosstools.
+    aros_target_cc_path=@aros_target_cc_path@
 fi
 aros_target_cc="${prefix}-gcc"
 aros_target_as="${prefix}-as"
@@ -1674,39 +1724,46 @@ if test "$aros_kernel_includes" != "" ; then
     aros_kernel_includes="$aros_kernel_includes $aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes"
 fi
 
-dnl find out about the target cc's include path
-AC_MSG_CHECKING([for the target compiler's include path])
-if test "$aros_target_cc_includes" = "" ; then
-    #try to guess where the directory is
-    aros_target_cc_includes=`dirname \`${orig_target_cc} -print-libgcc-file-name\``/include
-    if ! test -d $aros_target_cc_includes; then
-        #the directory doesn't exist, we need to do some more work
-        aros_target_cc_includes=${PWD}/${aros_gendir}/cc_include
+if test "$crosstools" != "yes"; then
+    dnl find out about the target cc's include path
+    AC_MSG_CHECKING([for the target compiler's include path])
+    if test "$aros_target_cc_includes" = "" ; then
+	#try to guess where the directory is
+	aros_target_cc_includes=`dirname \`${orig_target_cc} -print-libgcc-file-name\``/include
+	if ! test -d $aros_target_cc_includes; then
+	    #the directory doesn't exist, we need to do some more work
+	    aros_target_cc_includes=${PWD}/${aros_gendir}/cc_include
 	
-	#these are the headers we're looling for
-	headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
-	         stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
-		 zutil.h"
+	    #these are the headers we're looking for
+	    headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
+		    stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
+		    zutil.h"
 
-        dirs=
-	for h in $headers; do
-	    #which other headers each of the above headers needs?
-	    deps=$(echo "#include <$h>" | \
-	           $orig_target_cc -E -M - 2>/dev/null | \
-		   sed 's/^.*://; s/\\$/ /g; s/[[ \t]]\+/ /g')
+	    dirs=
+	    for h in $headers; do
+		#which other headers each of the above headers needs?
+		deps=$(echo "#include <$h>" | \
+		    $orig_target_cc -E -M - 2>/dev/null | \
+		    sed 's/^.*://; s/\\$/ /g; s/[[ \t]]\+/ /g')
 	    
-            #copy all the needed headers to a directory beneath gendir
-	    for d in $deps; do
-	        h=$(basename $d)
-	        dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
+		#copy all the needed headers to a directory beneath gendir
+		for d in $deps; do
+		    h=$(basename $d)
+		    dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
 		                                sed -n "s,^.*/include\(/.*\),\1,p")
-		! test -d $dir && mkdir -p $dir
-		! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
+		    ! test -d $dir && mkdir -p $dir
+		    ! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
+		done
 	    done
-	done	    
+	fi
     fi
+    AC_MSG_RESULT($aros_target_cc_includes)
+else
+    # We do not know which gcc version we are going to build and what we need to know
+    # here is different for different versions so this will be set later during the
+    # build of crosstools.
+    aros_target_cc_includes=@aros_target_cc_includes@
 fi
-AC_MSG_RESULT($aros_target_cc_includes)
 
 #
 # For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
@@ -1717,7 +1774,13 @@ save_cc="$CC"
 save_cflags="$CFLAGS"
 CFLAGS="-iquote."
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
-AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+if test "x-$crosstools" != "x-yes"; then
+    AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+else
+    # we do know it is supported for the smallest version of gcc we are going to build
+    # we assume it's also supported by later versions
+    has_iquote=yes
+fi
 AC_MSG_RESULT($has_iquote)
 if test "x-$has_iquote" = "x-yes" ; then
     host_cflags_iquote=-iquote
@@ -1731,10 +1794,22 @@ kernel_cflags_iquote_end=$host_cflags_iquote_end
 if test "x-$cross_compiling" = "x-yes"; then
     CC="$aros_kernel_cc"
     AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
-    AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
+    if test "x-$crosstools" != "x-yes"; then
+	AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
+    else
+	# we do know it is supported for the smallest version of gcc we are going to build
+	# we assume it's also supported by later versions
+	use_no_stack_protector=yes
+    fi
     AC_MSG_RESULT($use_no_stack_protector)
     AC_MSG_CHECKING([whether ${CC} accepts -iquote])
-    AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+    if test "x-$crosstools" != "x-yes"; then
+	AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+    else
+	# we do know it is supported for the smallest version of gcc we are going to build
+	# we assume it's also supported by later versions
+	has_iquote=yes
+    fi
     AC_MSG_RESULT($has_iquote)
     if test "x-$has_iquote" = "x-yes" ; then
         kernel_cflags_iquote=-iquote
@@ -1749,7 +1824,13 @@ aros_cflags_iquote_end=$kernel_cflags_iquote_end
 if test "$orig_target_cc" != "$aros_kernel_cc"; then
     CC="$orig_target_cc"
     AC_MSG_CHECKING([whether ${CC} accepts -iquote])
-    AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+    if test "x-$crosstools" != "x-yes"; then
+	AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+    else
+	# we do know it is supported for the smallest version of gcc we are going to build
+	# we assume it's also supported by later versions
+	has_iquote=yes
+    fi
     AC_MSG_RESULT($has_iquote)
     if test "x-$has_iquote" = "x-yes" ; then
         aros_cflags_iquote=-iquote
@@ -2073,6 +2154,7 @@ AC_SUBST(aros_flavour_uc)
 AC_SUBST(AROS_BUILDDIR)
 AC_SUBST(AROS_BUILDDIR_UNIX)
 AC_SUBST(SRCDIR)
+AC_SUBST(AROS_CROSSTOOLSDIR)
 AC_SUBST(AROS_PORTSSRCDIR)
 
 # Host related
@@ -2154,6 +2236,7 @@ AC_SUBST(aros_target_genmap)
 AC_SUBST(aros_target_strip_flags)
 
 AC_SUBST(crosstools_target)
+AC_SUBST(crosstools_cxx_target)
 
 # Graphics Related
 AC_SUBST(x11_hidd_target)

@@ -87,11 +87,12 @@ CC		:= $(TARGET_CC)
 AS		:= $(TARGET_AS)
 
 # Optional components
-X11_HIDD_TARGET    := @x11_hidd_target@
-SDL_HIDD_TARGET    := @sdl_hidd_target@
-PCI_HIDD_TARGET    := @pci_hidd_target@
-OSS_LIBRARY_TARGET := @oss_library_target@
-CROSSTOOLS_TARGET  := @crosstools_target@
+X11_HIDD_TARGET       := @x11_hidd_target@
+SDL_HIDD_TARGET       := @sdl_hidd_target@
+PCI_HIDD_TARGET       := @pci_hidd_target@
+OSS_LIBRARY_TARGET    := @oss_library_target@
+CROSSTOOLS_TARGET     := @crosstools_target@
+CROSSTOOLS_CXX_TARGET := @crosstools_cxx_target@
 
 HOST_X11_CFLAGS := $(addprefix -I,@aros_host_x11_includes@)
 HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@) -lX11
