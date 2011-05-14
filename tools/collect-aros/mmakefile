@@ -11,12 +11,17 @@ development-collect-aros-quick :
 	USER_CFLAGS="-nix -O2 -D_HAVE_LIBIBERTY_ -D_NATIVE_" HOST_LDFLAGS="-lbfd -liberty -lz"
 	$(STRIP) $(AROS_DEVELOPMENT)/bin/collect-aros
 
+collect-aros-installflag := $(CROSSTOOLSDIR)/.installflag-collect-aros
+
 #MM tools-crosstools-collect-aros : tools-crosstools-binutils
 .PHONY : tools-crosstools-collect-aros
 tools-crosstools-collect-aros : tools-crosstools-collect-aros-quick
 
 #MM
 tools-crosstools-collect-aros-quick :
-	$(MAKE)	COLLECT-AROS=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros USER_CFLAGS="-D_CROSS_"
-	$(HOST_STRIP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros
-	$(CP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-collect-aros
+	@$(IF) ! $(TEST) -f $(collect-aros-installflag) ; then \
+	       $(MAKE) COLLECT-AROS=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros USER_CFLAGS="-D_CROSS_" \
+	    && $(HOST_STRIP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros \
+	    && $(CP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-collect-aros \
+	    && $(TOUCH) $(CROSSTOOLSDIR) $(collect-aros-installflag) ; \
+	fi

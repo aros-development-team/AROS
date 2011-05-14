@@ -165,7 +165,7 @@ $(CPP_SOURCES) : workbench-libs-glu-module-cpp-gendir
 workbench-libs-glu-module-cpp-gendir : 
 	@$(MKDIR) $(OBJDIR)/cpp
 
-#MM- workbench-libs-glu-module-cpp : $(CROSSTOOLS_TARGET)
+#MM- workbench-libs-glu-module-cpp : $(CROSSTOOLS_CXX_TARGET)
 
 #MM
 workbench-libs-glu-module-cpp : $(CC_SOURCES) $(CPP_SOURCES)

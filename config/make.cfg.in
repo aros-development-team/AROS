@@ -28,7 +28,7 @@ include $(GENDIR)/config/target.cfg
 include $(HOSTGENDIR)/config/host.cfg
 
 # Cross tools installation directory.
-CROSSTOOLSDIR        := $(TOOLDIR)/crosstools
+CROSSTOOLSDIR        := @AROS_CROSSTOOLSDIR@
 
 # Files downloaded from the net are put here
 PORTSSOURCEDIR       := @AROS_PORTSSRCDIR@
