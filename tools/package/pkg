@@ -71,9 +71,7 @@ def readFile( file ):
 def writeFile( file, path, data ):
     'writeFile( file, path, data ) -> None'
     
-    file.write( struct.pack( PKG_FILE_PATHLENGTH_FORMAT, len( path ) ) )
-    file.write( path + "\0")
-    file.write( struct.pack( PKG_FILE_DATALENGTH_FORMAT, len( data ) ) )
+    file.write( struct.pack( "!I" + str( ( len( path ) + 4 ) & ~3 ) + "sI", -1 + ( ( len( path ) + 4 ) & ~3 ), path, len( data ) ) )
     file.write( data )
 
 
