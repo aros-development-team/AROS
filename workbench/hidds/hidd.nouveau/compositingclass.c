@@ -535,7 +535,7 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapPositionChanged)
 {
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
 
-    LOCK_COMPOSITING_READ
+    LOCK_COMPOSITING_WRITE
 
     /* Check is passed bitmap is in stack, ignore if not */
     if (HIDDCompositingIsBitMapOnStack(compdata, msg->bm) != NULL)
