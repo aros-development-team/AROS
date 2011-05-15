@@ -1,7 +1,7 @@
 /*
     Copyright © 2003, The AROS Development Team. 
     All rights reserved.
-    
+
     $Id$
 */
 
@@ -92,9 +92,9 @@ int open_libs(void)
 {
     if (open_muimaster())
     {
-	return 1;
+        return 1;
     }
-    
+
     return 0;
 }
 
@@ -112,7 +112,7 @@ void close_libs(void)
 *****************************************************************/
 Object *MakeLabel(STRPTR str)
 {
-  return (MUI_MakeObject(MUIO_Label, str, 0));
+    return (MUI_MakeObject(MUIO_Label, str, 0));
 }
 
 
