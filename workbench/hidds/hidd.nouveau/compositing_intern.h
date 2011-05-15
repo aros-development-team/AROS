@@ -49,6 +49,13 @@ struct HIDDCompositingData
     
     OOP_Object              *gfx;           /* GFX driver object */
     OOP_Object              *gc;            /* GC object used for drawing operations */
+
+    /* Attr bases */
+    OOP_AttrBase    pixFmtAttrBase;
+    OOP_AttrBase    syncAttrBase;
+    OOP_AttrBase    bitMapAttrBase;
+    OOP_AttrBase    gcAttrBase;
+    OOP_AttrBase    compositingAttrBase;
 };
 
 #define METHOD(base, id, name) \
