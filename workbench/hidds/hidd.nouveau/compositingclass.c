@@ -118,19 +118,9 @@ static VOID HIDDCompositingRecalculateDisplayedWidthHeight(struct HIDDCompositin
 
 static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdata, OOP_Object * bm)
 {
-    /* 
-        Desctiption: 
-        a) take incomming top bitmap
-        b) read its mode and sizes,
-        c) create a mirroring bitmap that fits the mode
-        d) switch mode (driver dependandant)
-    */
-
     OOP_Object * sync = NULL;
     OOP_Object * pf = NULL;
-    OOP_Object * fbbitmap = NULL;
     IPTR modeid, hdisp, vdisp, e, depth;
-    struct TagItem bmtags[5];
 
     OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
 
@@ -150,75 +140,51 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
         return FALSE;
     }
 
-    /* Set the pointer to top and screen bitmap */
-    compdata->topbitmap     = bm;
+    /* Set the pointer to top bitmap */
+    compdata->topbitmap = bm;
 
     /* If the mode is already visible do nothing */
     if (modeid == compdata->screenmodeid)
         return TRUE;
-    
-    /* Get width and height of mode */
-    struct pHidd_Gfx_GetMode __getmodemsg = 
+
+    /* The mode is different. Need to prepare information needed for compositing */
     {
-        modeID:     modeid,
-        syncPtr:    &sync,
-        pixFmtPtr:  &pf,
-    }, *getmodemsg = &__getmodemsg;
-
-    getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
-    OOP_DoMethod(compdata->gfx, (OOP_Msg)getmodemsg);
-
-    OOP_GetAttr(sync, aHidd_Sync_HDisp, &hdisp);
-    OOP_GetAttr(sync, aHidd_Sync_VDisp, &vdisp);
-    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-
-    /* Create a new bitmap that will be used for framebuffer */
-    bmtags[0].ti_Tag = aHidd_BitMap_Width;          bmtags[0].ti_Data = hdisp;
-    bmtags[1].ti_Tag = aHidd_BitMap_Height;         bmtags[1].ti_Data = vdisp;
-    bmtags[2].ti_Tag = aHidd_BitMap_Displayable;    bmtags[2].ti_Data = TRUE;
-    bmtags[3].ti_Tag = aHidd_BitMap_ModeID;         bmtags[3].ti_Data = modeid;
-    bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
-    
-    fbbitmap = HIDD_Gfx_NewBitMap(compdata->gfx, bmtags);
-    if (fbbitmap)
-    {
-        BOOL ret = HIDDNouveauSwitchToVideoMode(fbbitmap);
-        if (ret)
+        /* Get width and height of mode */
+        struct pHidd_Gfx_GetMode __getmodemsg = 
         {
-            struct TagItem gctags[] =
-            {
-                { aHidd_GC_Foreground, (HIDDT_Pixel)0x99999999 }, 
-                { TAG_DONE, TAG_DONE }
-            };
-
-
-            /* Dispose the previous compositedbitmap */
-            if (compdata->compositedbitmap)
-                HIDD_Gfx_DisposeBitMap(compdata->gfx, compdata->compositedbitmap);
-
-            /* Store bitmap/mode information */ 
-            compdata->screenmodeid      = modeid;
-            compdata->compositedbitmap  = fbbitmap;
-            compdata->screenrect.MinX   = 0;
-            compdata->screenrect.MinY   = 0;
-            compdata->screenrect.MaxX   = hdisp - 1;
-            compdata->screenrect.MaxY   = vdisp - 1;
-            
-            /* Get gray foregound */
-            if (depth < 24) gctags[0].ti_Data = (HIDDT_Pixel)0x9492;
-            OOP_SetAttrs(compdata->gc, gctags);
-            
-            return TRUE;
-        }
-        else
+            modeID:     modeid,
+            syncPtr:    &sync,
+            pixFmtPtr:  &pf,
+        }, *getmodemsg = &__getmodemsg;
+        struct TagItem gctags[] =
         {
-            /* Dispose fbbitmap */
-            HIDD_Gfx_DisposeBitMap(compdata->gfx, fbbitmap);
-            return FALSE;
-        }
+            { aHidd_GC_Foreground, (HIDDT_Pixel)0x99999999 }, 
+            { TAG_DONE, TAG_DONE }
+        };
+
+
+        getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
+        OOP_DoMethod(compdata->gfx, (OOP_Msg)getmodemsg);
+
+        OOP_GetAttr(sync, aHidd_Sync_HDisp, &hdisp);
+        OOP_GetAttr(sync, aHidd_Sync_VDisp, &vdisp);
+        OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+
+        /* Store mode information */ 
+        compdata->screenmodeid              = modeid;
+        compdata->screenrect.MinX           = 0;
+        compdata->screenrect.MinY           = 0;
+        compdata->screenrect.MaxX           = hdisp - 1;
+        compdata->screenrect.MaxY           = vdisp - 1;
+        compdata->modeschanged              = TRUE;
+        
+        /* Get gray foregound */
+        if (depth < 24) gctags[0].ti_Data = (HIDDT_Pixel)0x9492;
+        
+        OOP_SetAttrs(compdata->gc, gctags);
     }
 
-    return FALSE;
+    return TRUE;
 }
 
 static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingData * compdata, OOP_Object * bm)
@@ -368,6 +334,71 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     }
 }
 
+/*  
+
+There are several cases that needs to be handled in this code. They are documented
+below. Please read it before making changes.
+etb     = existing topbitmap
+ntb     = new top bitmap
+sb      = screen bitmap
+cb      = composited bitmap
+fs      = covers full screen
+nfs     = not covers full screen
+mA      = mode "A"
+mB      = mode "B"
+disp()  = dispose
+new()   = new
+
+The resulting mode is always that of screen bitmap as set in "effect" column.
+The composited bitmap always matches the resulting screen mode or is NULL.
+
+| exiting screen situation          | change         | effect                               |
+| USE CASE: SWITCHING BETWEEN FULL SCREEN SCREENS - SAME MODE                               |
+| etb->fs, mA, sb==etb, cb==NULL    | ntb->fs, mA    | sb==ntb, cb==NULL                    |
+| etb->fs, mA, sb==etb, cb!=NULL    | ntb->fs, mA    | sb==ntb, cb!=NULL                    |
+| USE CASE: SWITCHING BETWEEN FULL SCREEN AND NOT FULL SCREEN SCREENS - SAME MODE           |
+| etb->fs, mA, sb==etb, cb==NULL    | ntb->nfs, mA   | new(cb), sb==cb, cb!=NULL            |
+| etb->fs, mA, sb==etb, cb!=NULL    | ntb->nfs, mA   | sb==cb, cb!=NULL                     |
+| USE CASE: SWITCHING BETWEEN NOT FULL SCREEN AND FULL SCREEN SCREENS - SAME MODE           |
+| etb->nfs, mA, sb==cb, cb==NULL    | NOT POSSIBLE                                          |
+| etb->nfs, mA, sb==cb, cb!=NULL    | ntb->fs, mA    | sb==ntb, cb!=NULL                    |
+| USE CASE: SWITCHING BETWEEN NOT FULL SCREEN AND NOT FULL SCREEN SCREENS - SAME MODE       |
+| etb->nfs, mA, sb==cb, cb==NULL    | NOT POSSIBLE                                          |
+| etb->nfs, mA, sb==cb, cb!=NULL    | ntb->nfs, mA   | sb==cb, cb!=NULL                     |
+
+
+| USE CASE: SWITCHING BETWEEN FULL SCREEN SCREENS - DIFFERENT MODES                         |
+| etb->fs, mA, sb==etb, cb==NULL    | ntb->fs, mB    | sb==ntb, cb==NULL                    |
+| etb->fs, mA, sb==etb, cb!=NULL    | ntb->fs, mB    | disp(cb), sb==ntb, cb==NULL          |
+| USE CASE: SWITCHING BETWEEN FULL SCREEN AND NOT FULL SCREEN SCREENS - DIFFERENT MODES     |
+| etb->fs, mA, sb==etb, cb==NULL    | ntb->nfs, mB   | new(cb), sb==cb, cb!=NULL            |
+| etb->fs, mA, sb==etb, cb!=NULL    | ntb->nfs, mB   | disp(cb), new(cb), sb==cb, cb!=NULL  |
+| USE CASE: SWITCHING BETWEEN NOT FULL SCREEN AND FULL SCREEN SCREENS - DIFFERENT MODES     |
+| etb->nfs, mA, sb==cb, cb==NULL    | NOT POSSIBLE                                          |
+| etb->nfs, mA, sb==cb, cb!=NULL    | ntb->fs, mB    | disp(cb), sb==ntb, cb==NULL          |
+| USE CASE: SWITCHING BETWEEN NOT FULL SCREEN AND NOT FULL SCREEN SCREENS - DIFFERENT MODES |
+| etb->nfs, mA, sb==cb, cb==NULL    | NOT POSSIBLE                                          |
+| etb->nfs, mA, sb==cb, cb!=NULL    | ntb->nfs, mB   | disp(cb), new(cb), sb==cb, cb!=NULL  |
+
+
+| USE CASE: DRAGGING SCREEN DOWN                                                            |
+| etb->fs, mA, sb==etb, cb==NULL    | ntb->nfs, mA   | new(cb), sb==cb                      |
+| etb->fs, mA, sb==etb, cb!=NULL    | ntb->nfs, mA   | sb==cb                               |
+| USE CASE: DRAGGING SCREEN UP                                                              |
+| etb->nfs, mA, sb==cb, cb!=NULL    | ntb->fs, mA    | sb==etb                              |
+| etb->nfs, mA, sb==cb, cb==NULL    | NOT POSSIBLE                                          |
+
+Resulting rules (order matters):
+
+(a) if ((cb!=NULL) && (etb->mode!=ntb->mode)) {dispose(cb), cb=NULL}
+(b) if ((ntb->nfs) && (cb==NULL)) new(cb)
+(c) if (ntb->nsf) sb=cb 
+(d) if (ntb->fs) sb=ntb
+
+Additional rule (FIXME: does not include scrolling in case of ntb->fs):
+(e) if (oldsb!=sb) modeswitch(sb)
+    
+*/
 static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compdata)
 {
     /* If the topbitmap covers the complete screen, show it instead of 
@@ -375,13 +406,39 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
        screen bitmap -> composited bitmap. Not copying improves performance */
     IPTR topedge;
     OOP_Object * oldscreenbitmap = compdata->screenbitmap;
+    OOP_Object * oldcompositedbitmap = NULL;
     
     OOP_GetAttr(compdata->topbitmap, aHidd_BitMap_TopEdge, &topedge);
+
+    /* (a) */
+    if ((compdata->compositedbitmap) && (compdata->modeschanged))
+    {
+        oldcompositedbitmap = compdata->compositedbitmap;
+        compdata->modeschanged = FALSE;
+        compdata->compositedbitmap = NULL;
+    }
+
     
     /* This condition is enought as compositing allows only dragging screen down
        and not up/left/right */
     if (topedge > 0)
     {
+        /* (b) */
+        if (compdata->compositedbitmap == NULL)
+        {
+            struct TagItem bmtags[5];
+            
+            /* Create a new bitmap that will be used for compositing */
+            bmtags[0].ti_Tag = aHidd_BitMap_Width;          bmtags[0].ti_Data = compdata->screenrect.MaxX + 1;
+            bmtags[1].ti_Tag = aHidd_BitMap_Height;         bmtags[1].ti_Data = compdata->screenrect.MaxY + 1;
+            bmtags[2].ti_Tag = aHidd_BitMap_Displayable;    bmtags[2].ti_Data = TRUE;
+            bmtags[3].ti_Tag = aHidd_BitMap_ModeID;         bmtags[3].ti_Data = compdata->screenmodeid;
+            bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
+
+            compdata->compositedbitmap = HIDD_Gfx_NewBitMap(compdata->gfx, bmtags);
+        }
+        
+        /* (c) */
         if (oldscreenbitmap != compdata->compositedbitmap)
         {
             compdata->screenbitmap = compdata->compositedbitmap;
@@ -392,15 +449,24 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
         }
     }
     else
+    {
+        /* (d) */
         compdata->screenbitmap = compdata->topbitmap;
+    }
 
     D(bug("[Compositing] Toggle oldscr 0x%x, top 0x%x, comp 0x%x, scr 0x%x\n", 
         oldscreenbitmap, compdata->topbitmap, compdata->compositedbitmap, 
         compdata->screenbitmap));
 
     /* If the screenbitmap changed, show the new screenbitmap */
+    /* (e) */
     if (oldscreenbitmap != compdata->screenbitmap)
         HIDDNouveauSwitchToVideoMode(compdata->screenbitmap);
+
+    /* (a) - disposing of oldcompositingbitmap needs to happen after mode switch 
+       since it could have been the current screenbitmap */
+    if (oldcompositedbitmap)
+        HIDD_Gfx_DisposeBitMap(compdata->gfx, oldcompositedbitmap);
 }
 
 static VOID HIDDCompositingPurgeBitMapStack(struct HIDDCompositingData * compdata)
@@ -443,6 +509,7 @@ OOP_Object *METHOD(Compositing, Root, New)
         compdata->topbitmap         = NULL;
         compdata->screenbitmap      = NULL;
         compdata->screenmodeid      = vHidd_ModeID_Invalid;
+        compdata->modeschanged      = FALSE;
         InitSemaphore(&compdata->semaphore);
         
         /* Obtain Attr bases - make this class self-contained */
