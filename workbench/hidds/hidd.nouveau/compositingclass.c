@@ -89,7 +89,7 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
         /* Intersect both to make sure values are withint screen limit */
         if (AndRectRect(&tmprect, &compdata->screenrect, &n->screenvisiblerect))
         {
-            lastscreenvisibleline = n->screenvisiblerect.MinY;
+            lastscreenvisibleline = n->screenvisiblerect.MinY - 1;
             n->isscreenvisible = TRUE;
         }
         else
