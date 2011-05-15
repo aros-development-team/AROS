@@ -72,6 +72,9 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
     ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
     struct StackBitMapNode * n = NULL;
     
+    /* This function assumes bitmapstack is in correct Z order: 
+       from top most to bottom most */
+    
     ForeachNode(&compdata->bitmapstack, n)
     {
         /*  Stack bitmap bounding boxes equal screen bounding box taking into
@@ -95,7 +98,7 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
         else
             n->isscreenvisible = FALSE;
 
-        D(bug("[Compositing] Bitmap %x, visible %d, (%d, %d) , (%d, %d)\n", 
+        D(bug("[Compositing] Bitmap 0x%x, visible %d, (%d, %d) , (%d, %d)\n", 
             n->bm, n->isscreenvisible, 
             n->screenvisiblerect.MinX, n->screenvisiblerect.MinY, 
             n->screenvisiblerect.MaxX, n->screenvisiblerect.MaxY));
@@ -150,7 +153,6 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
 
     /* Set the pointer to top and screen bitmap */
     compdata->topbitmap     = bm;
-    compdata->screenbitmap  = bm;
 
     /* If the mode is already visible do nothing */
     if (modeid == compdata->screenmodeid)
@@ -198,7 +200,6 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
             /* Store bitmap/mode information */ 
             compdata->screenmodeid      = modeid;
             compdata->compositedbitmap  = fbbitmap;
-            compdata->screenbitmap      = compdata->compositedbitmap;
             compdata->screenrect.MinX   = 0;
             compdata->screenrect.MinY   = 0;
             compdata->screenrect.MaxX   = hdisp - 1;
@@ -396,6 +397,10 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
     else
         compdata->screenbitmap = compdata->topbitmap;
 
+    D(bug("[Compositing] Toggle oldscr 0x%x, top 0x%x, comp 0x%x, scr 0x%x\n", 
+        oldscreenbitmap, compdata->topbitmap, compdata->compositedbitmap, 
+        compdata->screenbitmap));
+
     /* If the screenbitmap changed, show the new screenbitmap */
     if (oldscreenbitmap != compdata->screenbitmap)
         HIDDNouveauSwitchToVideoMode(compdata->screenbitmap);
@@ -459,6 +464,9 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     struct HIDD_ViewPortData * vpdata;
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
 
+    D(bug("[Compositing] BitMapStackChanged, topbitmap: 0x%x\n", 
+        msg->data->Bitmap));
+
     LOCK_COMPOSITING_WRITE
         
     /* Free all items which are already on the list */
@@ -483,6 +491,7 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     /* Copy bitmaps pointers to our stack */
     for (vpdata = msg->data; vpdata; vpdata = vpdata->Next)
     {
+        D(bug("Compositing] Testing bitmap: %x\n", vpdata->Bitmap));
         /* Check if the passed bitmap can be composited together with screen
            bitmap */
         if (HIDDCompositingCanCompositeWithScreenBitMap(compdata, vpdata->Bitmap))

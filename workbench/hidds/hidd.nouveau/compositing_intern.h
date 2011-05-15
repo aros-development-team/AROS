@@ -34,7 +34,7 @@ struct HIDDCompositingData
     OOP_Object              *compositedbitmap;
     
     /* Pointer to actuall screen bitmap - either compositedbitmap or topbitmap. 
-       Never NULL after call to HIDDCompositingTopBitMapChanged */
+       Can only be set in HIDDCompositingToggleCompositing */
     OOP_Object              *screenbitmap;
 
     /* Pointer to top bitmap on stack */

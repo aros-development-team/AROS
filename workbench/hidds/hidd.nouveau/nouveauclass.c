@@ -226,7 +226,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
     selectedconnector = (drmModeConnectorPtr)gfxdata->selectedconnector;
 
-    D(bug("[Nouveau] HIDDNouveauSwitchToVideoMode\n"));
+    D(bug("[Nouveau] HIDDNouveauSwitchToVideoMode, bm: 0x%x\n", bm));
     
     /* We should be able to get modeID from the bitmap */
     OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
