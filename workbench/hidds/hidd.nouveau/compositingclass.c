@@ -24,17 +24,18 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
+
+#undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
-#undef HiddPixFmtAttrBase
 #undef HiddGCAttrBase
 #undef HiddCompositingAttrBase
 
-#define HiddSyncAttrBase        (SD(cl)->syncAttrBase)
-#define HiddBitMapAttrBase      (SD(cl)->bitMapAttrBase)
-#define HiddPixFmtAttrBase      (SD(cl)->pixFmtAttrBase)
-#define HiddGCAttrBase          (SD(cl)->gcAttrBase)
-#define HiddCompositingAttrBase (SD(cl)->compositingAttrBase)
+#define HiddPixFmtAttrBase      (compdata->pixFmtAttrBase)
+#define HiddSyncAttrBase        (compdata->syncAttrBase)
+#define HiddBitMapAttrBase      (compdata->bitMapAttrBase)
+#define HiddGCAttrBase          (compdata->gcAttrBase)
+#define HiddCompositingAttrBase (compdata->compositingAttrBase)
 
 #define MAX(a,b) a > b ? a : b
 #define MIN(a,b) a < b ? a : b
@@ -81,7 +82,6 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
             account topedge */
         IPTR topedge;
         struct _Rectangle tmprect;
-        OOP_Class * cl = OOP_OCLASS(n->bm);
         
         OOP_GetAttr(n->bm, aHidd_BitMap_TopEdge, &topedge);
         /* Copy screen rect */
@@ -126,7 +126,6 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
         d) switch mode (driver dependandant)
     */
 
-    OOP_Class * cl = OOP_OCLASS(bm);
     OOP_Object * sync = NULL;
     OOP_Object * pf = NULL;
     OOP_Object * fbbitmap = NULL;
@@ -161,9 +160,9 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
     /* Get width and height of mode */
     struct pHidd_Gfx_GetMode __getmodemsg = 
     {
-        modeID:	modeid,
-        syncPtr:	&sync,
-        pixFmtPtr:	&pf,
+        modeID:     modeid,
+        syncPtr:    &sync,
+        pixFmtPtr:  &pf,
     }, *getmodemsg = &__getmodemsg;
 
     getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
@@ -229,10 +228,7 @@ static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingDa
     IPTR screenbmwidth, screenbmheight, screenbmstdpixfmt;
     IPTR bmgfx, bmmodeid, bmwidth, bmheight, bmstdpixfmt;
 
-    
-    /* HINT: both bitmaps can have different classes */
     {
-        OOP_Class * cl = OOP_OCLASS(screenbm);
         IPTR pf;
         OOP_GetAttr(screenbm, aHidd_BitMap_Width, &screenbmwidth);
         OOP_GetAttr(screenbm, aHidd_BitMap_Height, &screenbmheight);
@@ -241,7 +237,6 @@ static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingDa
     }
 
     {
-        OOP_Class * cl = OOP_OCLASS(bm);
         IPTR pf;
         OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &bmgfx);
         OOP_GetAttr(bm, aHidd_BitMap_ModeID, &bmmodeid);
@@ -296,7 +291,6 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
 
     if (compdata->compositedbitmap)
     {
-        OOP_Class * cl = OOP_OCLASS(bm);
         IPTR leftedge, topedge;
         struct _Rectangle srcrect;
         struct _Rectangle srcindstrect;
@@ -349,7 +343,6 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     {
         if (n->isscreenvisible)
         {
-            OOP_Class * cl = OOP_OCLASS(n->bm);
             IPTR width, height;
             OOP_GetAttr(n->bm, aHidd_BitMap_Width, &width);
             OOP_GetAttr(n->bm, aHidd_BitMap_Height, &height);
@@ -376,7 +369,6 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
        compositedbitmap. This removes the need for copying 
        screen bitmap -> composited bitmap. Not copying improves performance */
     IPTR topedge;
-    OOP_Class * cl = OOP_OCLASS(compdata->topbitmap);
     OOP_Object * oldscreenbitmap = compdata->screenbitmap;
     
     OOP_GetAttr(compdata->topbitmap, aHidd_BitMap_TopEdge, &topedge);
@@ -430,6 +422,16 @@ OOP_Object *METHOD(Compositing, Root, New)
     if(o)
     {
         struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
+        
+        struct OOP_ABDescr attrbases[] = 
+        {
+        { IID_Hidd_PixFmt,          &compdata->pixFmtAttrBase },
+        { IID_Hidd_Sync,            &compdata->syncAttrBase },
+        { IID_Hidd_BitMap,          &compdata->bitMapAttrBase },
+        { IID_Hidd_GC,              &compdata->gcAttrBase },
+        { IID_Hidd_Compositing,     &compdata->compositingAttrBase },
+        { NULL, NULL }
+        };
 
         NEWLIST(&compdata->bitmapstack);
         compdata->compositedbitmap  = NULL;
@@ -438,12 +440,16 @@ OOP_Object *METHOD(Compositing, Root, New)
         compdata->screenmodeid      = vHidd_ModeID_Invalid;
         InitSemaphore(&compdata->semaphore);
         
-        compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositing_GfxHidd, 0, msg->attrList);
-        
-        if (compdata->gfx != NULL)
+        /* Obtain Attr bases - make this class self-contained */
+        if (OOP_ObtainAttrBases(attrbases))
         {
-            /* Create GC object that will be used for drawing operations */
-            compdata->gc = HIDD_Gfx_NewGC(compdata->gfx, NULL);
+            compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositing_GfxHidd, 0, msg->attrList);
+            
+            if (compdata->gfx != NULL)
+            {
+                /* Create GC object that will be used for drawing operations */
+                compdata->gc = HIDD_Gfx_NewGC(compdata->gfx, NULL);
+            }
         }
         
         if ((compdata->gfx == NULL) || (compdata->gc == NULL))
