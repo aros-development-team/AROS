@@ -104,18 +104,12 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
 
 static VOID HIDDCompositingRecalculateDisplayedWidthHeight(struct HIDDCompositingData * compdata)
 {
-    /* FIXME : this can be taken from compdata->screenrect */
-    OOP_Class * cl = OOP_OCLASS(compdata->compositedbitmap);
     struct StackBitMapNode * n = NULL;
-    IPTR displayedwidth, displayedheight;
 
-    OOP_GetAttr(compdata->compositedbitmap, aHidd_BitMap_Width, &displayedwidth);
-    OOP_GetAttr(compdata->compositedbitmap, aHidd_BitMap_Height, &displayedheight);
-    
     ForeachNode(&compdata->bitmapstack, n)
     {
-        n->displayedwidth   = displayedwidth;
-        n->displayedheight  = displayedheight;
+        n->displayedwidth   = compdata->screenrect.MaxX + 1;
+        n->displayedheight  = compdata->screenrect.MaxY + 1;
     }
 }
 
@@ -154,8 +148,9 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
         return FALSE;
     }
 
-    /* Set the pointer to top bitmap */
-    compdata->topbitmap = bm;
+    /* Set the pointer to top and screen bitmap */
+    compdata->topbitmap     = bm;
+    compdata->screenbitmap  = bm;
 
     /* If the mode is already visible do nothing */
     if (modeid == compdata->screenmodeid)
@@ -369,14 +364,8 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
        This will happen when there are bitmaps of different sizes composited */
     if (lastscreenvisibleline > 1)
     {
-        /* FIXME: why not use compdata->screenrect ? */
-        OOP_Class * cl = OOP_OCLASS(compdata->compositedbitmap);
-        IPTR viswidth;
-
-        OOP_GetAttr(compdata->compositedbitmap, aHidd_BitMap_Width, &viswidth); 
-
         HIDD_BM_FillRect(compdata->compositedbitmap, 
-            compdata->gc, 0, 0, viswidth - 1, lastscreenvisibleline - 1);
+            compdata->gc, 0, 0, compdata->screenrect.MaxX, lastscreenvisibleline - 1);
     }
 }
 
