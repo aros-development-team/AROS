@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. 
+    Copyright © 2003-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -35,10 +35,9 @@ LONG xget(Object * obj, ULONG attr);
 #define SimpleText(text) TextObject, MUIA_Text_Contents, (IPTR) text, End
 
 
-struct Library *MUIMasterBase;
-
-
 #ifndef __AROS__
+
+struct Library *MUIMasterBase;
 
 /* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
 #include "muimaster_intern.h"
@@ -65,25 +64,18 @@ int open_muimaster(void)
     return 1;
 }
 
-void close_muimaster(void)
-{
-}
-
 #else
 
 int open_muimaster(void)
 {
-    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0))) return 1;
-    return 0;
-}
-
-void close_muimaster(void)
-{
-    if (MUIMasterBase) CloseLibrary(MUIMasterBase);
+    return 1;
 }
 
 #endif
 
+void close_muimaster(void)
+{
+}
 
 /****************************************************************
  Open needed libraries
@@ -97,6 +89,7 @@ int open_libs(void)
 
     return 0;
 }
+
 
 /****************************************************************
  Close opened libraries

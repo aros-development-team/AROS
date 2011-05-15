@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team.
+    Copyright © 2003-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -20,7 +20,7 @@ Object *BT_1, *BT_2, *BT_3;
 
 
 /****************************************************************
- Allocalte resources for gui
+ Allocate resources for gui
 *****************************************************************/
 
 BOOL init_gui(void)
@@ -28,7 +28,7 @@ BOOL init_gui(void)
     app = ApplicationObject,
               MUIA_Application_Title      , (IPTR) "HVGroup",
               MUIA_Application_Version    , (IPTR) "$VER: HVGroup 0.1 (14.01.03)",
-              MUIA_Application_Copyright  , (IPTR) "© 2003, The AROS Development Team",
+              MUIA_Application_Copyright  , (IPTR) "© 2003-2011, The AROS Development Team",
               MUIA_Application_Author     , (IPTR) "The AROS Development Team",
               MUIA_Application_Description, (IPTR) "Layout with HGroup + VGroup",
               MUIA_Application_Base       , (IPTR) "HVGroup",
@@ -127,7 +127,7 @@ void loop(void)
             if(sigs & SIGBREAKF_CTRL_D){break;}
         }
     }
-} /* loop(void)*/
+} /* loop(void) */
 
 
 /****************************************************************
@@ -154,4 +154,6 @@ int main(int argc, char *argv[])
 
         close_libs();
     }
+
+    return RETURN_OK;
 } /* main(int argc, char *argv[]) */
