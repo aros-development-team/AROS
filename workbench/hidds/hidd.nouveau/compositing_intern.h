@@ -29,9 +29,17 @@ struct StackBitMapNode
 
 struct HIDDCompositingData
 {
-    OOP_Object              *compositedbitmap;  /* Bitmap to which all screen bitmaps are composited */
-    OOP_Object              *screenbitmap;      /* Pointer to actuall screen bitmap - either compositedbitmap or topbitmap */
-    OOP_Object              *topbitmap;         /* Pointer to top bitmap on stack */
+    /* Bitmap to which all screen bitmaps are composited. Height/Width always 
+       matches visible mode */
+    OOP_Object              *compositedbitmap;
+    
+    /* Pointer to actuall screen bitmap - either compositedbitmap or topbitmap. 
+       Never NULL after call to HIDDCompositingTopBitMapChanged */
+    OOP_Object              *screenbitmap;
+
+    /* Pointer to top bitmap on stack */
+    OOP_Object              *topbitmap;
+
     HIDDT_ModeID            screenmodeid;   /* ModeID of currently visible mode */
     struct _Rectangle       screenrect;     /* Dimensions of currently visible mode */
 
