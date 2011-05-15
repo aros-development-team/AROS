@@ -42,6 +42,7 @@ struct HIDDCompositingData
 
     HIDDT_ModeID            screenmodeid;   /* ModeID of currently visible mode */
     struct _Rectangle       screenrect;     /* Dimensions of currently visible mode */
+    BOOL                    modeschanged;   /* TRUE if new top bitmap has different mode than current screenmodeid */
 
     struct List             bitmapstack;
     
