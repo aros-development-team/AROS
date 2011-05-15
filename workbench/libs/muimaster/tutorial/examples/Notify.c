@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team.
+    Copyright © 2003-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -27,7 +27,7 @@ BOOL init_gui(void)
     app = ApplicationObject,
               MUIA_Application_Title      , (IPTR) "Notify",
               MUIA_Application_Version    , (IPTR) "$VER: HelloZune 0.1 (14.01.03)",
-              MUIA_Application_Copyright  , (IPTR) "© 2003, The AROS Development Team",
+              MUIA_Application_Copyright  , (IPTR) "© 2003-2011, The AROS Development Team",
               MUIA_Application_Author     , (IPTR) "The AROS Development Team",
               MUIA_Application_Description, (IPTR) "How to use MUIM_Notify",
               MUIA_Application_Base       , (IPTR) "NOTIFY",
@@ -116,7 +116,7 @@ void loop(void)
             if(sigs & SIGBREAKF_CTRL_D){break;}
         }
     }
-} /* loop(void)*/
+} /* loop(void) */
 
 
 /****************************************************************
@@ -143,4 +143,6 @@ int main(int argc, char *argv[])
 
         close_libs();
     }
+
+    return RETURN_OK;
 } /* main(int argc, char *argv[]) */
