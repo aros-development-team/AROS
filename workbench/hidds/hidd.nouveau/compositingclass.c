@@ -395,7 +395,7 @@ Resulting rules (order matters):
 (c) if (ntb->nsf) sb=cb 
 (d) if (ntb->fs) sb=ntb
 
-Additional rule (FIXME: does not include scrolling in case of ntb->fs):
+Additional rule:
 (e) if (oldsb!=sb) modeswitch(sb)
     
 */
@@ -414,14 +414,13 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
     if ((compdata->compositedbitmap) && (compdata->modeschanged))
     {
         oldcompositedbitmap = compdata->compositedbitmap;
-        compdata->modeschanged = FALSE;
         compdata->compositedbitmap = NULL;
     }
 
     
     /* This condition is enought as compositing allows only dragging screen down
        and not up/left/right */
-    if (topedge > 0)
+    if ((LONG)topedge > (LONG)0) /* Explicitly cast to get signed comparison */
     {
         /* (b) */
         if (compdata->compositedbitmap == NULL)
@@ -454,8 +453,8 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
         compdata->screenbitmap = compdata->topbitmap;
     }
 
-    D(bug("[Compositing] Toggle oldscr 0x%x, top 0x%x, comp 0x%x, scr 0x%x\n", 
-        oldscreenbitmap, compdata->topbitmap, compdata->compositedbitmap, 
+    D(bug("[Compositing] Toggle te %d, oldscr 0x%x, top 0x%x, comp 0x%x, scr 0x%x\n",
+        topedge, oldscreenbitmap, compdata->topbitmap, compdata->compositedbitmap, 
         compdata->screenbitmap));
 
     /* If the screenbitmap changed, show the new screenbitmap */
@@ -467,6 +466,9 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
        since it could have been the current screenbitmap */
     if (oldcompositedbitmap)
         HIDD_Gfx_DisposeBitMap(compdata->gfx, oldcompositedbitmap);
+
+    /* Handled */
+    compdata->modeschanged = FALSE;
 }
 
 static VOID HIDDCompositingPurgeBitMapStack(struct HIDDCompositingData * compdata)
@@ -620,9 +622,19 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapPositionChanged)
         if (compdata->topbitmap == msg->bm)
             HIDDCompositingToggleCompositing(compdata);
 
-        /* Redraw bitmap stack - compensate change of visible rects resulting
-           from move of bitmap */
-        HIDDCompositingRedrawVisibleScreen(compdata);
+        /* If compositing is not active and top bitmap has changed, execute scroll */
+        if ((compdata->screenbitmap == compdata->topbitmap)
+            && (compdata->topbitmap == msg->bm))
+        {
+            
+            HIDDNouveauSwitchToVideoMode(compdata->screenbitmap);
+        }
+        else
+        {
+            /* Redraw bitmap stack - compensate change of visible rects resulting
+               from move of bitmap */
+            HIDDCompositingRedrawVisibleScreen(compdata);
+        }
     }
     
     UNLOCK_COMPOSITING
