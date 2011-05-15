@@ -192,7 +192,7 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
             };
 
 
-            /* Dispose the previous screenbitmap */
+            /* Dispose the previous compositedbitmap */
             if (compdata->compositedbitmap)
                 HIDD_Gfx_DisposeBitMap(compdata->gfx, compdata->compositedbitmap);
 
@@ -223,15 +223,17 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
 
 static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingData * compdata, OOP_Object * bm)
 {
-    /* FIXME: what to do here when it will be possible to have NULL compositedbitmat */
-    OOP_Object * screenbm = compdata->compositedbitmap;
+    OOP_Object * screenbm = compdata->topbitmap; /* Tread top bitmap as screen bitmap */
     IPTR screenbmwidth, screenbmheight, screenbmstdpixfmt;
     IPTR bmgfx, bmmodeid, bmwidth, bmheight, bmstdpixfmt;
 
     {
         IPTR pf;
-        OOP_GetAttr(screenbm, aHidd_BitMap_Width, &screenbmwidth);
-        OOP_GetAttr(screenbm, aHidd_BitMap_Height, &screenbmheight);
+        /* These two values cannot be obtained from topbitmap width/height, because
+           those can be larger than screen mode values and we are interested exaclty
+           in screen mode height/width */
+        screenbmwidth   = compdata->screenrect.MaxX + 1;
+        screenbmheight  = compdata->screenrect.MaxY + 1;
         OOP_GetAttr(screenbm, aHidd_BitMap_PixFmt, &pf);
         OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &screenbmstdpixfmt);
     }
@@ -335,6 +337,9 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     struct StackBitMapNode * n = NULL;
     ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
     
+    /* Calculations are performed regardless if compositedbitmap is beeing show.
+       Gfx operations are only performed if compositedbitmap is beeing show */
+    
     /* Recalculate visible rects per screen */
     HIDDCompositingRecalculateVisibleRects(compdata);
     
@@ -356,7 +361,7 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     /* Clean up area revealed by drag */
     /* TODO: Find all areas which might have been releaved, not only top - 
        This will happen when there are bitmaps of different sizes composited */
-    if (lastscreenvisibleline > 1)
+    if ((compdata->screenbitmap == compdata->compositedbitmap) && (lastscreenvisibleline > 1))
     {
         HIDD_BM_FillRect(compdata->compositedbitmap, 
             compdata->gc, 0, 0, compdata->screenrect.MaxX, lastscreenvisibleline - 1);
