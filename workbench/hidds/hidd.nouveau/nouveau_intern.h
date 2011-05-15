@@ -294,13 +294,21 @@ BOOL HiddNouveauAccelARGBUpload3D(
     UBYTE * srcpixels, ULONG srcpitch,
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);
-
 BOOL HiddNouveauReadIntoRAM(
     APTR src, ULONG srcPitch, 
     APTR dst, ULONG dstPitch, HIDDT_StdPixFmt dstPixFmt,
     ULONG width, ULONG height,
     OOP_Class *cl, OOP_Object *o);
-
+VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
+    APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height);
+VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
+    APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height);
+VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
+    OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
+    UBYTE * srcalpha, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height);
+VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
+    OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
+    UBYTE * srcalpha, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height);
 
 /* nouveau_exa.c */
 BOOL HiddNouveauNVAccelUploadM2MF(
