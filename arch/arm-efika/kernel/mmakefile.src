@@ -1,15 +1,17 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := kernel_startup
+FILES := kernel_startup kernel_debug
 
 #MM kernel-efika-arm: setup-efika-arm kernel-kernel-kobj 
 kernel-efika-arm: $(BINDIR)/boot/aros-efikamx
 
 $(BINDIR)/boot/aros-efikamx: $(KOBJSDIR)/kernel_resource.o
-	%mkdirs_q $(OSGENDIR)/boot
-	%mkdirs_q $(BINDIR)/boot
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o -L$(LIBDIR) -larossupport -lrom -larosm -lautoinit -llibinit -laeabi
+		%mkdirs_q $(OSGENDIR)/boot
+		%mkdirs_q $(BINDIR)/boot
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o -L$(LIBDIR) -larossupport -lrom -larosm -lautoinit -llibinit -laeabi
+		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
+	
 
 #MM kernel-kernel-efika-arm : includes
 #MM kernel-kernel-efika-arm-kobj : includes
