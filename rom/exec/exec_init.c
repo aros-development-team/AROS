@@ -191,12 +191,13 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
 
+    D(bug("[exec] Boot task: MemList 0x%p, task 0x%p\n", ml, t));
+
     ml->ml_NumEntries = 1;
     ml->ml_ME[0].me_Addr = t;
     ml->ml_ME[0].me_Length = sizeof(struct Task);
 
     NEWLIST(&t->tc_MemEntry);
-    NEWLIST(&((struct Process *)t)->pr_MsgPort.mp_MsgList);
 
     AddHead(&t->tc_MemEntry,&ml->ml_Node);
 
@@ -216,6 +217,8 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
 
+    D(bug("[exec] ETask 0x%p\n", t->tc_UnionETask.tc_ETask));
+
     /* Initialise the ETask data. */
     InitETask(t, t->tc_UnionETask.tc_ETask);
 
@@ -225,6 +228,8 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	DINIT("Not enough memory for first task context");
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
+
+    D(bug("[exec] CPU context 0x%p\n", GetIntETask(t)->iet_Context));
 
     SysBase->ThisTask = t;
     SysBase->Elapsed = SysBase->Quantum;
