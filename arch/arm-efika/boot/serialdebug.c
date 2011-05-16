@@ -1,5 +1,5 @@
 /*
- * $Id:$
+ * $Id$
  *
  *  Created on: Nov 8, 2009
  *      Author: misc
@@ -9,16 +9,18 @@
 #include <stdio.h>
 #include "serialdebug.h"
 
-inline void putByte(uint8_t chr)
-{
-	volatile uint32_t *uart = (uint32_t *)UART1_BASE_ADDR;
-	uart[0x10] = chr;
-}
-
 inline void waitBusy()
 {
 	volatile uint32_t *uart = (uint32_t *)UART1_BASE_ADDR;
 	while(!(uart[0x98 / 4] & (1 << 3)));
+}
+
+inline void putByte(uint8_t chr)
+{
+	volatile uint32_t *uart = (uint32_t *)UART1_BASE_ADDR;
+	uart[0x10] = chr;
+	if (chr == '\n')
+		uart[0x10] = '\r';
 }
 
 void putBytes(const char *str)
