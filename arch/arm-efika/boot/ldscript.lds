@@ -2,7 +2,9 @@ FORCE_COMMON_ALLOCATION
 
 SECTIONS
 {
-    . = 0x90008000;
+    . = 0x91000000;
+    
+    __bootstrap_start = . ;
     
     .text ALIGN(4096) :
     {
@@ -62,4 +64,6 @@ SECTIONS
     }
     
     _end = . ;
+    
+    __bootstrap_end = . ;
 }

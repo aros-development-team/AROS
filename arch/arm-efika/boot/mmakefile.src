@@ -2,18 +2,55 @@
 include $(TOP)/config/make.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
-FILES           := boot serialdebug
+FILES           := boot serialdebug elf support
 USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
 
-#MM arosboot-efika: 
-arosboot-efika: $(AROSDIR)/arosboot
+#MM arosboot-efika: \
+#MM	   kernel-efika-arm \
+#MM    kernel-package-efika-arm
 
-$(AROSDIR)/arosboot: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-		$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -L$(LIBDIR) -lm -lrom -lm -laeabi -o $@
+#MM kernel-package-efika-arm: \
+#MM     linklibs-clib \
+#MM		kernel-oop \
+#MM     hidd-i2c
+
+PKG_LIBS     := oop
+PKG_RSRC     := 
+PKG_DEVS     := 
+PKG_HANDLERS := 
+PKG_HIDDS    := i2c
+PKG_USB      := 
+PKG_USB_PSD  := 
+
+MODULES := \
+	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
+	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
+	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
+	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD)))
+
+kernel-package-efika-arm:
+	$(RM) -rf $(BINDIR)/boot/modules
+	%mkdirs_q $(BINDIR)/boot/modules
+	@mv $(MODULES) $(BINDIR)/boot/modules/
+	$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/modules
+	mkimage -A arm -O linux -T ramdisk -C none -n "AROS rom" -d $(BINDIR)/boot/kernel.pkg $(AROSDIR)/boot/uInitrd-aros
+
+arosboot-efika: $(AROSDIR)/boot/arosboot
+
+$(AROSDIR)/boot/arosboot: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/kernel.bin.o
+		$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/kernel.bin.o -L$(LIBDIR) -lm -lrom -lm -laeabi -o $@
 		objcopy -O binary $@ $@.bin
 		gzip $@.bin
 		mv $@.bin.gz $@.bin
-		mkimage -A arm -O linux -T kernel -C gzip -a 0x90008000 -e 0x90008000 -n "AROS Boot" -d $@.bin $(AROSDIR)/uImage-aros
+		mkimage -A arm -O linux -T kernel -C gzip -a 0x91000000 -e 0x91000000 -n "AROS Boot" -d $@.bin $(AROSDIR)/boot/uImage-aros
+
+$(TARGETDIR)/kernel.bin.o: $(AROSDIR)/boot/aros-efikamx
+		cp $(AROSDIR)/boot/aros-efikamx $(TARGETDIR)/kernel.bin
+		cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm kernel.bin -o $@
+		 
 
 #MM
 clean ::
