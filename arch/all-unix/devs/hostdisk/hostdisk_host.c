@@ -130,9 +130,12 @@ void Host_Close(struct unit *Unit)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
 
+    D(bug("hostdisk: Close device %s\n", Unit->n.ln_Name));
+    D(bug("hostdisk: HostLibBase 0x%p, close() 0x%p\n", HostLibBase, hdskBase->iface->close));
+
     HostLib_Lock();
 
-    Unit->hdskBase->iface->close(Unit->file);
+    hdskBase->iface->close(Unit->file);
     AROS_HOST_BARRIER
 
     HostLib_Unlock();
