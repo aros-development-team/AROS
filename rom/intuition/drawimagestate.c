@@ -168,6 +168,7 @@
             {
                 struct BitMap bitmap;
                 int depth;
+                int imagedepth = image->Depth;
 
     	    #if 0
                 /* The "8" (instead of image->Depth) seems to be correct,
@@ -192,8 +193,12 @@
 
                 for(d = 0; d < depth; d++)
                 {
-                    if (planepick & shift)
+                    /* Don't use more planes than image->depth. This solves
+                       corrupt images of Garshneblanker's FlyingToaster which
+                       uses a PlanePick of 0xff. */
+                    if ((imagedepth > 0) && (planepick & shift))
                     {
+                        imagedepth--;
                         bitmap.Planes[d] = (PLANEPTR)(image->ImageData + (y++) * x);
                     }
                     else
