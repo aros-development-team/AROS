@@ -148,14 +148,6 @@ do                                  \
 /* For other purposes just change the values directly in the struct.	*/
 #define SetDriverData(rp,dd) RP_DRIVERDATA(rp) = dd
 
-#define NUMPIX 50000
-#define PIXELBUF_SIZE (NUMPIX * 4)
-
-#define NUMLUTPIX (PIXELBUF_SIZE)
-
-#define LOCK_PIXBUF ObtainSemaphore(&(PrivGBase(GfxBase)->pixbuf_sema));
-#define ULOCK_PIXBUF ReleaseSemaphore(&(PrivGBase(GfxBase)->pixbuf_sema));
-
 #define LOCK_BLIT ObtainSemaphore(&(PrivGBase(GfxBase)->blit_sema));
 #define ULOCK_BLIT ReleaseSemaphore(&(PrivGBase(GfxBase)->blit_sema));
 
