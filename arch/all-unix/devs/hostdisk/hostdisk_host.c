@@ -195,7 +195,7 @@ ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
      */
     HostLib_Lock();
 
-    res = LSeek(Unit->file, pos, 0, SEEK_SET);
+    res = LSeek(Unit->file, pos, pos_hi, SEEK_SET);
     AROS_HOST_BARRIER
 
     HostLib_Unlock();
