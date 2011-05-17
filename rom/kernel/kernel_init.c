@@ -83,8 +83,12 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
 
     vecsize = ((vecsize - 1) / sizeof(IPTR) + 1) * sizeof(IPTR);
 
-    /* Allocate memory with full access in user mode (-1 flags) */
-    mem = krnAllocMem(vecsize + sizeof(struct KernelBase), -1);
+    /*
+     * Allocate memory with RW access in user mode
+     * NOTE: The current code suggests that krnAllocMem() clears the allocated memory.
+     * Take care about this when implementing own allocator.
+     */
+    mem = krnAllocMem(vecsize + sizeof(struct KernelBase), MAP_Readable|MAP_Writable);
     if (!mem)
          return NULL;
 
