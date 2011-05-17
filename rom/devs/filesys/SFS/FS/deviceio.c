@@ -1,4 +1,7 @@
-/* #define DEBUG 1 */
+/*
+#define DEBUG 1
+#define DEBUGCODE
+*/
 
 #include <devices/scsidisk.h>
 #include <devices/trackdisk.h>
@@ -22,12 +25,12 @@
 
 #include "globals.h"
 
-static inline ULONG MULU64(ULONG m1, ULONG m2, ULONG *res_hi)
+static inline ULONG MULU64(ULONG m1, ULONG m2, ULONG *res_lo)
 {
     unsigned long long res = (UQUAD)m1 * (UQUAD)m2;
 
-    *res_hi = res >> 32;
-    return res;
+    *res_lo = res;
+    return res >> 32;
 }
 
 extern LONG getbuffer(UBYTE **tempbuffer, ULONG *maxblocks);
@@ -264,12 +267,13 @@ void changegeometry(struct DosEnvec *de)
     ULONG sectorspercilinder;
     UWORD bs;
 
-    globals->sectors_block=de->de_SectorPerBlock;
+    globals->sectors_block = de->de_SectorPerBlock;
+    globals->bytes_sector  = de->de_SizeBlock<<2;
+    globals->bytes_block   = globals->bytes_sector * de->de_SectorPerBlock;
 
-    globals->bytes_sector=de->de_SizeBlock<<2;
-    globals->bytes_block=globals->bytes_sector*de->de_SectorPerBlock;
+    _DEBUG(("%u sectors per block, %u bytes per sector, %u bytes per block\n", globals->sectors_block, globals->bytes_sector, globals->bytes_block));
 
-    bs=globals->bytes_block;
+    bs = globals->bytes_block;
 
     globals->shifts_block=0;
     while((bs>>=1)!=0)
@@ -277,7 +281,7 @@ void changegeometry(struct DosEnvec *de)
         globals->shifts_block++;
     }
 
-    globals->mask_block=globals->bytes_block-1;
+    globals->mask_block = globals->bytes_block-1;
 
     /* Absolute offset on the entire disk are expressed in Sectors;
        Offset relative to the start of the partition are expressed in Blocks */
@@ -287,6 +291,8 @@ void changegeometry(struct DosEnvec *de)
     /* Get bounds of our device */
     globals->sector_low  = sectorspercilinder * de->de_LowCyl;
     globals->sector_high = sectorspercilinder * (de->de_HighCyl+1);
+
+    _DEBUG(("%u sectors per cylinder, start sector %u, end sector %u\n", sectorspercilinder, globals->sector_low, globals->sector_high));
 
     /*
      * If our device starts from sector 0, we assume we are serving the whole device.
@@ -322,6 +328,9 @@ void changegeometry(struct DosEnvec *de)
     globals->blocks_total  = globals->sectors_total / globals->sectors_block;
     globals->byte_lowh     = MULU64(globals->sector_low, globals->bytes_sector, &globals->byte_low);
     globals->byte_highh    = MULU64(globals->sector_high, globals->bytes_sector, &globals->byte_high);
+
+    _DEBUG(("Total: %u sectors, %u blocks\n", globals->sectors_total, globals->blocks_total));
+    _DEBUG(("Start offset 0x%08X%08X, end offset 0x%08X%08X\n", globals->byte_lowh, globals->byte_low, globals->byte_highh, globals->byte_high));
 }
 
 #ifdef DEBUGCODE
@@ -570,25 +579,24 @@ void setiorequest(struct fsIORequest *fsi, UWORD action, UBYTE *buffer, ULONG bl
 {
     struct IOStdReq *ioreq=fsi->ioreq;
 
+    _DEBUG(("setiorequest(0x%p, %u, %u)\n", buffer, blockoffset, blocks));
+
     fsi->next=0;
     fsi->action=action;
 
-    if(globals->scsidirect==TRUE) {
+    _DEBUG(("Use DirectSCSI: %d\n", globals->scsidirect));
+
+    if (globals->scsidirect==TRUE)
+    {
         ioreq->io_Command=HD_SCSICMD;
         ioreq->io_Length=sizeof(struct SCSICmd);
         ioreq->io_Data=&fsi->scsicmd;
 
-        fsi->scsicmd.scsi_Data      = (UWORD *)buffer;
-        fsi->scsicmd.scsi_Length    = blocks<<globals->shifts_block;
-        fsi->scsicmd.scsi_Command   = (UBYTE *)&fsi->scsi10cmd;
-        fsi->scsicmd.scsi_CmdLength = sizeof(struct SCSI10Cmd);
-
-        if(action==DIO_READ) {
-            fsi->scsicmd.scsi_Flags=SCSIF_READ;
-        }
-        else {
-            fsi->scsicmd.scsi_Flags=0;
-        }
+        fsi->scsicmd.scsi_Data        = (UWORD *)buffer;
+        fsi->scsicmd.scsi_Length      = blocks<<globals->shifts_block;
+        fsi->scsicmd.scsi_Command     = (UBYTE *)&fsi->scsi10cmd;
+        fsi->scsicmd.scsi_CmdLength   = sizeof(struct SCSI10Cmd);
+        fsi->scsicmd.scsi_Flags       = (action == DIO_READ) ? SCSIF_READ : 0;
         fsi->scsicmd.scsi_SenseData   = NULL;
         fsi->scsicmd.scsi_SenseLength = 0;
         fsi->scsicmd.scsi_SenseActual = 0;
@@ -606,12 +614,13 @@ void setiorequest(struct fsIORequest *fsi, UWORD action, UBYTE *buffer, ULONG bl
             *ptr=blocks*globals->sectors_block;
         }
     }
-    else {
-        ULONG start=(blockoffset<<globals->shifts_block)+globals->byte_low;
-        ULONG starthigh=(blockoffset>>(32-globals->shifts_block))+globals->byte_lowh;            /* High offset */
+    else
+    {
+        ULONG start = (blockoffset << globals->shifts_block) + globals->byte_low;
+        ULONG starthigh = (blockoffset >> (32 - globals->shifts_block)) + globals->byte_lowh;            /* High offset */
 
-        if(start < globals->byte_low) {
-            starthigh+=1;     /* Add X bit :-) */
+        if (start < globals->byte_low) {
+            starthigh += 1;     /* Add X bit :-) */
         }
 
         ioreq->io_Data    = buffer;
@@ -633,11 +642,15 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
        the partition.  Check those and the Mask before calling this
        function. */
 
-    if((errorcode=getbuffer(&tempbuffer, &maxblocks))!=0) {
-        return(errorcode);
+    if ((errorcode = getbuffer(&tempbuffer, &maxblocks)) != 0)
+    {
+    	_DEBUG(("Buffered transfer: getbuffer() error %d\n", errorcode));
+
+        return errorcode;
     }
 
-    while(blocklength!=0) {
+    while(blocklength!=0)
+    {
         ULONG blocks=blocklength>maxblocks ? maxblocks : blocklength;
 
         setiorequest(&globals->fsioreq, action, tempbuffer, blockoffset, blocks);
@@ -653,9 +666,13 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
         starttimeout();
         globals->retries=MAX_RETRIES;
 
-        while((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq))!=0) {
-            if((errorcode=
-                handleioerror(errorcode, action, globals->fsioreq.ioreq))!=0) {
+        while ((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq)) != 0)
+        {
+	    _DEBUG(("Buffered transfer: I/O error %d\n", errorcode));
+
+            if ((errorcode = handleioerror(errorcode, action, globals->fsioreq.ioreq)) != 0)
+            {
+                _DEBUG(("Buffered transfer: SFS error %d\n", errorcode));
                 return(errorcode);
             }
         }
@@ -758,18 +775,26 @@ static LONG asynctransfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG 
 
 LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
 {
-    _TDEBUG(("TRANSFER: %ld, buf=0x%08lx, block=%ld, blocks=%ld -", action, buffer, blockoffset, blocklength));
+    _TDEBUG(("TRANSFER: %ld, buf=0x%08lx, block=%ld, blocks=%ld...\n", action, buffer, blockoffset, blocklength));
 
-    if(blockoffset < globals->blocks_total && blockoffset+blocklength <= globals->blocks_total) {
-        ULONG maxblocks=globals->blocks_maxtransfer;
+    if ((blockoffset < globals->blocks_total) && (blockoffset + blocklength <= globals->blocks_total))
+    {
+        ULONG maxblocks = globals->blocks_maxtransfer;
         LONG errorcode;
 
-        if(((IPTR)buffer & ~globals->mask_mask)!=0) {   // Buffered transfer needed?
-            return(transfer_buffered(action, buffer, blockoffset, blocklength));
+	_DEBUG(("MaxTransfer: %d\n", maxblocks));
+
+	// Buffered transfer needed?
+        if (((IPTR)buffer & ~globals->mask_mask) !=0 )
+        {
+            _DEBUG(("Buffer 0x%p, mask 0x%p. Buffered transfer needed.\n", buffer, globals->mask_mask));
+
+            return transfer_buffered(action, buffer, blockoffset, blocklength);
         }
 
-        while(blocklength!=0) {
-            ULONG blocks=blocklength>maxblocks ? maxblocks : blocklength;
+        while (blocklength!=0)
+        {
+            ULONG blocks = (blocklength > maxblocks) ? maxblocks : blocklength;
 
             setiorequest(&globals->fsioreq, action, buffer, blockoffset, blocks);
 
@@ -780,10 +805,15 @@ LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
             starttimeout();
             globals->retries=MAX_RETRIES;
 
-            while((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq))!=0) {
-                if((errorcode=handleioerror(errorcode, action,
-                    globals->fsioreq.ioreq))!=0) {
-                    return(errorcode);
+            while ((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq)) != 0)
+            {
+            	_DEBUG(("Direct transfer: I/O error %d\n", errorcode));
+
+                if ((errorcode=handleioerror(errorcode, action, globals->fsioreq.ioreq)) != 0)
+                {
+	            _DEBUG(("Direct transfer: SFS error %d\n", errorcode));
+
+                    return errorcode;
                 }
             }
 
@@ -792,11 +822,13 @@ LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
             buffer+=blocks<<globals->shifts_block;
         }
 
+	_DEBUG(("..."));
         _TDEBUG(("\n"));
 
         return(0);
     }
-    else {
+    else
+    {
         req("This volume tried to access a block\noutside its partition.\n(blockoffset = %ld, blocklength = %ld)\n", "Ok", blockoffset, blocklength);
         return(ERROR_OUTSIDE_PARTITION);
     }
