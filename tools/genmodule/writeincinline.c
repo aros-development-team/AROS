@@ -377,7 +377,7 @@ writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 		varargname
 	);
 	for (arglistit = funclistit->arguments, count = 1;
-	     arglistit != NULL && arglistit->next != NULL;
+	     arglistit != NULL && arglistit->next != NULL && arglistit->next->next != NULL;
 	     arglistit = arglistit->next, count++
 	)
 	{
@@ -389,7 +389,7 @@ writeinlinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 		cfg->basename, varargname, cfg->libbase
 	);
 	for (arglistit = funclistit->arguments, count = 1;
-	     arglistit != NULL && arglistit->next != NULL;
+	     arglistit != NULL && arglistit->next != NULL && arglistit->next->next != NULL;
 	     arglistit = arglistit->next, count++
 	)
 	{
