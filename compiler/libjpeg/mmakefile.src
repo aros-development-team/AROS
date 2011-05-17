@@ -14,13 +14,13 @@ LIBSOURCES := jaricom jcapimin jcapistd jcarith jccoefct jccolor \
 		
 # memmgr back ends: compile only one of these into a working library
 # SYSDEPSOURCES= jmemansi jmemname jmemnobs jmemdos jmemmac
-SYSDEPSOURCES := jmemnobs
+SYSDEPSOURCES := jmemamiga
 
 FILES := $(LIBSOURCES) $(SYSDEPSOURCES)
 
 INCLUDE_FILES	:= jpeglib.h jversion.h jinclude.h jconfig.h jmorecfg.h jerror.h
 
-USER_CFLAGS	:= -O2
+USER_CFLAGS	:= -DNO_GETENV
 
 #MM- linklibs-core : linklibs-jpeg
 #MM- linklibs: linklibs-jpeg
