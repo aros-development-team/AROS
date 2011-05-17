@@ -6,6 +6,8 @@
     Lang: English
 */
 
+#include <aros/asmcall.h>
+
 #include "dos_intern.h"
 
 AROS_UFP2(ULONG, BCPL_Exit,
@@ -25,6 +27,15 @@ AROS_LH1(void, Exit,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_UFP7(ULONG, DOS_CallEntry_A6,
+	AROS_UFPA(STRPTR, argptr, A0),
+	AROS_UFPA(ULONG,  argsize, D0),
+	AROS_UFPA(LONG_FUNC, entry, A3),
+	AROS_UFPA(APTR, globvec, A2),
+	AROS_UFPA(APTR, splower, A1),
+	AROS_UFPA(APTR, returnaddr, A4),
+	AROS_UFPA(APTR, a6, A6));
+
 /*
  * Call BCPL-compatible entry point. BCPL ABI requires the following:
  * D0 - Length of arg string
@@ -38,43 +49,18 @@ AROS_LH1(void, Exit,
  * support both the BCPL style (A6 is SysBase) and CreateProcess
  * style (A6 is BCPL_rts)
  */
-static ULONG CallEntry_A6(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me, APTR a6)
+static inline ULONG CallEntry_A6(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me, APTR a6)
 {
-    ULONG ret;
-    APTR pr_GlobVec = me->pr_GlobVec;
-    APTR tc_SPLower = me->pr_Task.tc_SPLower;
-
-    __asm__ __volatile__(
-	"move.l %%sp,%%a0\n\t"
-	"movem.l %%d2-%%d7/%%a2-%%a6,%%a0@-\n\t"
-	"move.l %4,%%d0\n\t"            /* stksize = %a0 - tc_SPLower */
-	"neg.l  %%d0\n\t"
-	"lea.l  %%a0@(%%d0),%%a1\n\t"
-	"move.l %%a1,%%a0@-\n\t"        /* sp+ 8 = stksize  */
-	"lea.l  %%a0@,%%a2\n\t"         /* Save address of return address */
-	"move.l %%a2,%1\n\t"
-	"move.l #0f,%%a0@-\n\t"         /* sp+ 4 = return address */
-	"move.l %2,%%a0@-\n\t"          /* sp+ 0 = address to go to */
-	"move.l %%a0,%%d1\n\t"
-	"move.l %3,%%a2\n\t"            /* A2 - Global Vector */
-	"move.l %4,%%a1\n\t"            /* A1 - BCPL frame */
-	"move.l %5,%%a0\n\t"            /* A0 - Argptr */
-	"move.l %6,%%d0\n\t"            /* D0 - Argsize */
-	"move.l %7,%%a6\n\t"            /* A6 - BCPL rts routine or sysbase */
-	"move.l %%d1,%%sp\n\t"
-	"lea.l  BCPL_jsr,%%a5\n\t"      /* A5 - BCPL jsr routine */
-	"rts    \n\t"
-	"0:\n\t"
-	"addq.l  #4,%%sp\n\t"
-	"movem.l %%sp@+,%%d2-%%d7/%%a2-%%a6\n\t"
-	"move.l  %%d0,%0"
-	: "=g" (ret), "=m"(me->pr_ReturnAddr)
-	: "m" (entry), "m"(pr_GlobVec), "m"(tc_SPLower),
-	  "m" (argptr), "m" (argsize), "m"(a6)
-	: "cc", "memory", "%d0", "%d1", "%a0", "%a1", "%a2", "%a3" );
-
-    return ret;
+    return AROS_UFC7(ULONG, DOS_CallEntry_A6,
+	    AROS_UFCA(STRPTR, argptr, A0),
+	    AROS_UFCA(ULONG,  argsize, D0),
+	    AROS_UFCA(LONG_FUNC, entry, A3),
+	    AROS_UFCA(APTR, me->pr_GlobVec, A2),
+	    AROS_UFCA(APTR, me->pr_Task.tc_SPLower, A1),
+	    AROS_UFCA(APTR, &me->pr_ReturnAddr, A4),
+	    AROS_UFCA(APTR, a6, A6));
 }
+
 /*
  * This entry code is used by CreateNewProc(). It supposes that it calls
  * normal C code and follows AROS ABI conventions by putting SysBase into A6.
