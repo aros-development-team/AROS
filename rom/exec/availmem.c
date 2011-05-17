@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tell how much memory is available.
@@ -70,7 +70,7 @@
     ret = nommu_AvailMem(attributes, SysBase);
 
     if (attributes & MEMF_CLEAR)
-	MungWall_Scan(NULL, SysBase);
+	MungWall_Scan(NULL, NULL, NULL, SysBase);
 
     return ret;
     AROS_LIBFUNC_EXIT

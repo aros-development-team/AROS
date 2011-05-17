@@ -509,7 +509,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
  * Our chunks remember from which pool they came, so we don't need a pointer to pool
  * header here. This will save us from headaches in future FreeMem() implementation.
  */
-void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
+void InternalFreePooled(APTR memory, IPTR memSize, APTR caller, APTR stack, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
     APTR freeStart;
@@ -525,7 +525,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
     mh = *((struct MemHeader **)freeStart);
 
     /* Check walls first */
-    freeStart = MungWall_Check(freeStart, freeSize, SysBase);
+    freeStart = MungWall_Check(freeStart, freeSize, caller, stack, SysBase);
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
 	freeSize += MUNGWALL_TOTAL_SIZE;
 

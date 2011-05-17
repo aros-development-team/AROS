@@ -39,6 +39,12 @@ void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase)
 
 	break;
 
+    case AT_MUNGWALL:
+    	buf = Alert_AddString(buf, "\nMungwall data:\n");
+    	buf = FormatMWContext(buf, &iet->iet_AlertData.u.amw, SysBase);
+
+    	break;
+
     /* TODO: add more types (memory manager is the first candidate) */
 
     }
