@@ -12,6 +12,7 @@
 #define output printf
 
 static BOOL trash = FALSE;
+static BOOL leak  = FALSE;
 
 static void AccessTest(ULONG *ptr)
 {
@@ -24,6 +25,7 @@ static void AccessTest(ULONG *ptr)
 
 int main(int argc, char **argv)
 {
+    int i;
     APTR block0, start, block1;
 
     /*
@@ -31,8 +33,13 @@ int main(int argc, char **argv)
      * It's not adviced to do this without mungwall enabled.
      * The actual purpose of this is to test mungwall functionality.
      */
-    if ((argc > 1) && (!strcmp(argv[1], "trash")))
-    	trash = TRUE;
+    for (i = 1; i < argc; i++)
+    {
+        if (!strcmp(argv[i], "trash"))
+	    trash = TRUE;
+	else if (!strcmp(argv[i], "leak"))
+	    leak = TRUE;
+    }
 
     /* We Forbid() in order to see how our allocations influence free memory size */
     Forbid();
@@ -45,9 +52,12 @@ int main(int argc, char **argv)
     
     AccessTest(block0 + 256 * 1024);
  
-    output("Freeing the block...\n");
-    FreeMem(block0, 256 * 1024);
-    output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    if (!leak)
+    {
+    	output("Freeing the block...\n");
+    	FreeMem(block0, 256 * 1024);
+    	output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    }
 
     start = block0 + 1027;	/* Add some none-round displacement to make the life harder */
     output("Now trying AllocAbs() 4 KB at 0x%p\n", start);
@@ -56,9 +66,12 @@ int main(int argc, char **argv)
 
     AccessTest(start + 4096);
 
-    output("Freeing the block...\n");
-    FreeMem(block1, 4096 + start - block1);
-    output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    if (!leak)
+    {
+    	output("Freeing the block...\n");
+    	FreeMem(block1, 4096 + start - block1);
+    	output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    }
 
     output("Now repeat this AllocAbs(), but free using our requested start address...\n");
     block1 = AllocAbs(4096, start);
@@ -68,9 +81,12 @@ int main(int argc, char **argv)
     {
 	AccessTest(start + 4096);
 
-	output("Freeing the block...\n");
-	FreeMem(start, 4096);
-	output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+	if (!leak)
+	{
+	    output("Freeing the block...\n");
+	    FreeMem(start, 4096);
+	    output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+	}
     }
     
     Permit();
