@@ -1,0 +1,18 @@
+# $Id: mmakefile.src 33802 2010-07-13 17:44:31Z weissms $
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
+	       -I$(SRCDIR)/arch/all-$(ARCH)/kernel
+ifneq ($(FAMILY),)
+USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
+endif
+USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
+	       -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) \
+	       -D__AROS_EXEC_LIBRARY__
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel \
+  files="createcontext" \
+  arch=ppc
+
+%common
