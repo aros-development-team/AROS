@@ -21,7 +21,8 @@ CFILES  := $(CFUNCS) \
 	fs_driver helper internalseek packethelper \
 	$(BCPL_CFILES)
 
-AFILES := $(BCPL_AFILES)
+AFILES := callentry \
+	  $(BCPL_AFILES)
 
 #MM kernel-dos-amiga-m68k : kernel-dos-includes includes-asm_h-m68k
 
