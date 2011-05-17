@@ -37,5 +37,5 @@ struct MungwallHeader
 #define mwh_pool	u.s.pool
 
 APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, struct ExecBase *SysBase);
-APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase);
-void MungWall_Scan(APTR pool, struct ExecBase *SysBase);
+APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, APTR caller, APTR stack, struct ExecBase *SysBase);
+void MungWall_Scan(APTR pool, APTR caller, APTR stack, struct ExecBase *SysBase);

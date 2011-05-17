@@ -1,14 +1,17 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: MungWall memory anti-trashing checker
     Lang: english
 */
 
+#include <exec/alerts.h>
+#include <exec/rawfmt.h>
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "etask.h"
 #include "memory.h"
 #include "mungwall.h"
 
@@ -23,15 +26,13 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
 {
     if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res)
     {
-    	struct MungwallHeader *header;
+    	struct MungwallHeader *header = res;
 
 	D(bug("[MungWall] Allocated %u bytes at 0x%p\n", origSize, res + MUNGWALL_BLOCK_SHIFT));
 
         /* Save orig byteSize before wall (there is one room of MUNGWALLHEADER_SIZE
 	   bytes before wall for such stuff (see above).
 	*/
-
-	header = (struct MungwallHeader *)res;
 
 	header->mwh_magicid   = MUNGWALL_HEADER_ID;
 	header->mwh_allocsize = origSize;
@@ -60,6 +61,96 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
     return res;
 }
 
+char *FormatMWContext(char *buffer, struct MungwallContext *ctx, struct ExecBase *SysBase)
+{
+    buffer = NewRawDoFmt("Block at 0x%p, size %lu", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, (APTR)ctx->hdr + MUNGWALL_BLOCK_SHIFT, ctx->hdr->mwh_allocsize) - 1;
+
+    if (ctx->bad_id)
+    	buffer = NewRawDoFmt("\nMUNGWALL_HEADER_ID mismatch\n", (VOID_FUNC)RAWFMTFUNC_STRING, buffer) - 1;
+
+    if (ctx->freeSize)
+    	buffer = NewRawDoFmt("\nFreeMem size %lu mismatch\n", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->freeSize) - 1;
+
+    if (ctx->pre_start)
+    	buffer = NewRawDoFmt("\nPre-wall broken at 0x%p - 0x%p\n", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->pre_start, ctx->pre_end) - 1;
+
+    if (ctx->post_start)
+    	buffer = NewRawDoFmt("\nPost-wall broken at 0x%p - 0x%p\n", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->post_start, ctx->post_end) - 1;
+
+    return buffer;
+}
+
+static APTR CheckWall(UBYTE *ptr, UBYTE fill, IPTR size, APTR *endptr)
+{
+    APTR start = NULL;
+    APTR end   = NULL;
+
+    while (size--)
+    {
+	if (*ptr != fill)
+	{
+	    if (!start)
+	    	start = ptr;
+
+	    end = ptr;
+	}
+
+	ptr++;
+    }
+
+    *endptr = end;
+    return start;
+}
+
+static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, APTR caller, APTR stack, struct ExecBase *SysBase)
+{
+    struct MungwallContext mwdata;
+    BOOL fault = FALSE;
+
+    mwdata.bad_id = (header->mwh_magicid != MUNGWALL_HEADER_ID);
+    if (mwdata.bad_id)
+        fault = TRUE;
+
+    if (byteSize && (header->mwh_allocsize != byteSize))
+    {
+    	mwdata.freeSize = byteSize;
+	fault = TRUE;
+    }
+    else
+	mwdata.freeSize = 0;
+
+    mwdata.pre_start = CheckWall((UBYTE *)header + MUNGWALLHEADER_SIZE, 0xDB, MUNGWALL_SIZE, &mwdata.pre_end);
+    if (mwdata.pre_start)
+    	fault = TRUE;
+
+    mwdata.post_start = CheckWall((UBYTE *)header + MUNGWALL_BLOCK_SHIFT + header->mwh_allocsize, 0xDB,
+	    	      		 MUNGWALL_SIZE + AROS_ROUNDUP2(header->mwh_allocsize, MEMCHUNK_TOTAL) - header->mwh_allocsize,
+	    	      		 &mwdata.post_end);
+    if (mwdata.post_start)
+    	fault = TRUE;
+
+    if (fault)
+    {
+    	/* Set mungwall alert context and throw an alert */
+    	struct Task *me = FindTask(NULL);
+    	struct IntETask *iet = GetIntETask(me);
+
+	if (caller)
+	{
+    	    iet->iet_AlertFlags   |= AF_Location;
+    	    iet->iet_AlertLocation = caller;
+    	    iet->iet_AlertStack    = stack;
+    	}
+
+    	mwdata.hdr = header;
+
+	iet->iet_AlertType = AT_MUNGWALL;
+	CopyMem(&mwdata, &iet->iet_AlertData, sizeof(mwdata));
+
+    	Alert(AN_MemoryInsane);
+    }
+}
+
 /*
  * Check integrity of walls around the specified block.
  *
@@ -69,7 +160,7 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
  *
  * Returns address of the raw block (what really needs to be deallocated)
  */
-APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
+APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, APTR caller, APTR stack, struct ExecBase *SysBase)
 {
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
@@ -77,48 +168,23 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
 
 	D(bug("[MungWall] Freeing %u bytes at 0x%p\n", byteSize, memoryBlock));
 
-	/* Align size to the requirements (needed because of AllocAbs) */
-	byteSize+=(IPTR)memoryBlock&(MEMCHUNK_TOTAL-1);
-
-	/* Align the block as well (needed because of AllocAbs) */
-	memoryBlock=(APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock,MEMCHUNK_TOTAL);
+	/* Align size and block to the requirements (needed because of AllocAbs) */
+	byteSize += (IPTR)memoryBlock & (MEMCHUNK_TOTAL - 1);
+	memoryBlock = (APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock, MEMCHUNK_TOTAL);
 
 	/* Take address of mungwall header */
-	header = (struct MungwallHeader *)(memoryBlock - MUNGWALL_BLOCK_SHIFT);
+	header = memoryBlock - MUNGWALL_BLOCK_SHIFT;
 
-	if (header->mwh_magicid != MUNGWALL_HEADER_ID)
-	{
-	    struct Task *__t = FindTask(NULL);	\
-	    kprintf("\x07" "MUNGWALL_HEADER_ID mismatch mem = %p "
-		    "allocsize = %lu  freesize = %lu   Task: 0x%p, Name: %s\n", \
-		    memoryBlock,
-		    header->mwh_allocsize,
-		    byteSize,
-		    __t,
-		    __t->tc_Node.ln_Name);\
-	}
-
-	if (header->mwh_allocsize != byteSize)
-	{
-	    struct Task *__t = FindTask(NULL);	\
-	    kprintf("\x07" "FreeMem size mismatches AllocMem size mem = %p "
-		    "allocsize = %lu  freesize = %lu   Task: 0x%x, Name: %s\n", \
-		    memoryBlock,
-		    header->mwh_allocsize,
-		    byteSize,
-		    __t,
-		    __t->tc_Node.ln_Name);\
-	}
-
-	CHECK_WALL((UBYTE *)header + MUNGWALLHEADER_SIZE, 0xDB, MUNGWALL_SIZE);
-	CHECK_WALL((UBYTE *)memoryBlock + byteSize, 0xDB,
-		MUNGWALL_SIZE + AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL) - byteSize);
-
-    	/* Remove from PrivExecBase->AllocMemList */
-
+    	/*
+    	 * Remove from PrivExecBase->AllocMemList.
+    	 * Do it before checking, otherwise AvailMem() can hit into it and cause a deadlock
+    	 * while the alert is displayed.
+    	 */
 	Forbid();
     	Remove((struct Node *)&header->mwh_node);
 	Permit();
+
+	CheckHeader(header, byteSize, caller, stack, SysBase);
 
 	/* Fill block with weird stuff to esploit bugs in applications
 	 *
@@ -147,7 +213,7 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
  * Scan the whole allocations list, optionally removing entries
  * belonging to a particular pool.
  */
-void MungWall_Scan(APTR pool, struct ExecBase *SysBase)
+void MungWall_Scan(APTR pool, APTR caller, APTR stack, struct ExecBase *SysBase)
 {
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
@@ -156,28 +222,11 @@ void MungWall_Scan(APTR pool, struct ExecBase *SysBase)
 	ULONG	    	    	 alloccount = 0;
 	IPTR	    	    	 allocsize = 0;
 
-	/*
-	 * Do not print summary if called from within DeletePool().
-	 * Otherwise it gets really slow.
-	 */
-	if (!pool)
-	    kprintf("\n=== MUNGWALL MEMORY CHECK ============\n");
-
 	Forbid();
 
 	ForeachNodeSafe(&PrivExecBase(SysBase)->AllocMemList, allocnode, tmp)
 	{
-	    if (allocnode->mwh_magicid != MUNGWALL_HEADER_ID)
-	    {
-		kprintf(" #%05x BAD MUNGWALL_HEADER_ID mem = %p allocsize = %lu\n",
-			alloccount,
-			(APTR)allocnode + MUNGWALL_BLOCK_SHIFT,
-			allocnode->mwh_allocsize);
-	    }
-
-	    CHECK_WALL((UBYTE *)allocnode + MUNGWALLHEADER_SIZE, 0xDB, MUNGWALL_SIZE);
-	    CHECK_WALL((UBYTE *)allocnode + MUNGWALL_BLOCK_SHIFT + allocnode->mwh_allocsize, 0xDB,
-		       MUNGWALL_SIZE + AROS_ROUNDUP2(allocnode->mwh_allocsize, MEMCHUNK_TOTAL) - allocnode->mwh_allocsize);
+	    CheckHeader(allocnode, 0, caller, stack, SysBase);
 
 	    if (pool && (allocnode->mwh_pool == pool))
 	    {
@@ -195,8 +244,5 @@ void MungWall_Scan(APTR pool, struct ExecBase *SysBase)
 	}
 
 	Permit();
-
-	if (!pool)
-	    kprintf("\n Num allocations: %u   Memory allocated %lu\n", alloccount, allocsize);
     }
 }

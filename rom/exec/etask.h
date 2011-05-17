@@ -2,7 +2,7 @@
 #define _ETASK_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal description of the ETask structure
@@ -12,9 +12,12 @@
 #include <exec/interrupts.h>
 #include <exec/tasks.h>
 
+#include "mungwallextra.h"
+
 /* Known alert context types */
-#define AT_NONE 0x00
-#define AT_CPU  0x01
+#define AT_NONE     0x00
+#define AT_CPU      0x01
+#define AT_MUNGWALL 0x02
 
 /* Alert data. Can have different contents, depending on what actually happened */
 struct AlertContext
@@ -22,6 +25,7 @@ struct AlertContext
     union
     {
 	struct ExceptionContext acpu;
+	struct MungwallContext	amw;
     } u;
 };
 

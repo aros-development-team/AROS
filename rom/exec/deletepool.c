@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Delete a memory pool including all its memory.
@@ -63,8 +63,10 @@
 	 * We are going to deallocate the whole pool.
 	 * Scan mungwall's allocations list and remove all chunks
 	 * belonging to the pool.
+	 * Provide also return address and caller's stack frame. This is needed for
+	 * mungwall alerts.
 	 */
-	MungWall_Scan(pool, SysBase);
+	MungWall_Scan(pool, __builtin_return_address(0), __builtin_frame_address(1), SysBase);
 
 	/*
 	 * Free the list of puddles.
