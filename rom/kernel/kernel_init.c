@@ -15,7 +15,7 @@
 #include <kernel_memory.h>
 
 /* We have own bug(), so don't use aros/debug.h to avoid conflicts */
-#define D(x) x
+#define D(x)
 
 static const UBYTE version[];
 extern const char LIBEND;
