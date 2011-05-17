@@ -411,6 +411,12 @@ void doColdCapture(void)
 
 void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
+	struct TagItem bootmsg[] = {
+#ifdef AROS_SERIAL_DEBUG
+	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode" },
+#endif
+	    { TAG_END },
+	};
 	volatile APTR *trap;
 	int i;
 	BOOL wasvalid;
@@ -531,7 +537,7 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	 */
 	DEBUGPUTHEX(("[prep SysBase]", (ULONG)mh));
 	Early_ScreenCode(CODE_EXEC_CHECK);
-	if (!krnPrepareExecBase(kickrom, mh, NULL))
+	if (!krnPrepareExecBase(kickrom, mh, bootmsg))
 	    Early_Alert(AT_DeadEnd | AG_MakeLib | AO_ExecLib);
 
 	/* From here on, we can reference SysBase */
