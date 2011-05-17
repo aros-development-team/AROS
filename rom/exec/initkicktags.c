@@ -6,16 +6,17 @@
     Lang: english
 */
 
+#if AROS_SERIAL_DEBUG
+#define PRINT_LIST
+#define DEBUG 1
+#endif
+
 #include <aros/debug.h>
 #include <exec/resident.h>
 #include <proto/exec.h>
 
 #include "exec_intern.h"
 #include "memory.h"
-
-#if AROS_SERIAL_DEBUG
-#define PRINT_LIST
-#endif
 
 #ifdef __mc68000__
 #define NEXTRESIDENT(list) \
@@ -126,7 +127,9 @@ static void AddToResidentList(IPTR *list)
     if (!newlist)
     	return;
     tmplist = CopyResidents(SysBase->ResModules, newlist, NULL);
-    D(bug("KickTag residents:\n"));
+#ifdef PRINT_LIST
+    bug("KickTag residents:\n");
+#endif
     CopyResidents(list, tmplist, SysBase->ResModules);
     SortResidents(newlist);
     /* Redirect InitCode() loop to new list */
