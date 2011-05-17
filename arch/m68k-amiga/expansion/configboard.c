@@ -93,8 +93,8 @@ AROS_UFH5(void, writeexpansion,
 			IntExpBase(ExpansionBase)->eb_z3Slot += slotsize;
 			configDev->cd_BoardAddr	 = (APTR)startaddr;
 			AROS_UFC5(void, writeexpansion,
-				AROS_UFCA(ULONG, board, A0),
-				AROS_UFCA(ULONG, configDev, A3),
+				AROS_UFCA(APTR,  board, A0),
+				AROS_UFCA(APTR,  configDev, A3),
 				AROS_UFCA(UBYTE, type, D0),
 	                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
 	                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
@@ -147,8 +147,8 @@ AROS_UFH5(void, writeexpansion,
 
 			configDev->cd_BoardAddr	 = (APTR)startaddr;
 			AROS_UFC5(void, writeexpansion,
-				AROS_UFCA(ULONG, board, A0),
-				AROS_UFCA(ULONG, configDev, A3),
+				AROS_UFCA(APTR,  board, A0),
+				AROS_UFCA(APTR,  configDev, A3),
 				AROS_UFCA(UBYTE, type, D0),
 	                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
 	                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
