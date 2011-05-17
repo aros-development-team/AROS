@@ -275,13 +275,15 @@ void changegeometry(struct DosEnvec *de)
 
     bs = globals->bytes_block;
 
-    globals->shifts_block=0;
-    while((bs>>=1)!=0)
+    globals->shifts_block = 0;
+    while ((bs >>= 1) !=0 )
     {
         globals->shifts_block++;
     }
 
     globals->mask_block = globals->bytes_block-1;
+    
+    _DEBUG(("Block shift: %u, mask: 0x%08X\n", globals->shifts_block, globals->mask_block));
 
     /* Absolute offset on the entire disk are expressed in Sectors;
        Offset relative to the start of the partition are expressed in Blocks */
@@ -775,7 +777,7 @@ static LONG asynctransfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG 
 
 LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
 {
-    _TDEBUG(("TRANSFER: %ld, buf=0x%08lx, block=%ld, blocks=%ld...\n", action, buffer, blockoffset, blocklength));
+    _TDEBUG(("TRANSFER: %ld, buf=0x%p, block=%ld, blocks=%ld...\n", action, buffer, blockoffset, blocklength));
 
     if ((blockoffset < globals->blocks_total) && (blockoffset + blocklength <= globals->blocks_total))
     {
