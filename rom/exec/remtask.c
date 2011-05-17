@@ -90,13 +90,7 @@
     et = GetETask(task);
     if(et != NULL)
     {
-#ifdef KrnDeleteContext
-	/*
-	 * x86-64-pc still doesn't have KrnDeleteContext(). It keeps
-	 * track of CPU context area in tc_MemEntry list.
-	 */
         KrnDeleteContext(((struct IntETask *)et)->iet_Context);
-#endif
 	CleanupETask(task, et);
     }
 
