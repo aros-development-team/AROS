@@ -12,9 +12,10 @@ AROS_LH0I(void *, KrnCreateContext,
     struct ExceptionContext *ctx;
     cpumode_t mode = goSuper();
 
-    ctx = krnAllocMem(sizeof(struct AROSCPUContext));
+    /* Our context is not accessible in user mode */
+    ctx = krnAllocMem(sizeof(struct AROSCPUContext), 0);
 
-    /* Initialize the storage if needed */
+    /* Initialize the context */
     if (ctx)
     {
         ULONG i;

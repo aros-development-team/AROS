@@ -75,7 +75,7 @@ AROS_LH4(void *, KrnAddIRQHandler,
         /* Go to supervisor mode */
         (void)goSuper();
 
-        handle = krnAllocMem(sizeof(struct IntrNode));
+        handle = krnAllocMem(sizeof(struct IntrNode), 0);
         D(bug("[KRN] handle=%012p\n", handle));
 
         if (handle)

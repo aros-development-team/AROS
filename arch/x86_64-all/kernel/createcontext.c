@@ -23,9 +23,9 @@ AROS_LH0(void *, KrnCreateContext,
     /*
      * Allocate common data block and FPU data block in one chunk.
      * On native ports AROSCPUContext can be simply #define'd to ExceptionContext,
-     * so we refer struct AROSCPUContext only for size calculation.
+     * so we refer to struct AROSCPUContext only for size calculation.
      */
-    ctx = krnAllocMem(KernelBase->kb_ContextSize);
+    ctx = krnAllocMem(KernelBase->kb_ContextSize, 0);
     if (ctx)
     {
     	UBYTE current_xmm[512+15];

@@ -16,5 +16,5 @@ void mmap_InitMemory(struct mb_mmap *mmap, unsigned long len, struct MinList *me
 		     IPTR klo, IPTR khi, const struct MemRegion *reg);
 
 /* We use common exec memory allocator */
-#define krnAllocMem(len) AllocMem(len, MEMF_PUBLIC|MEMF_CLEAR)
+#define krnAllocMem(len, super) AllocMem(len, MEMF_PUBLIC|MEMF_CLEAR)
 #define krnFreeMem(addr, len) FreeMem(addr, len)
