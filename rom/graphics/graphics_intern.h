@@ -219,9 +219,7 @@ struct GfxBase_intern
     APTR    	    	    	driverdatapool;
     struct MinList  	    	driverdatalist[DRIVERDATALIST_HASHSIZE];
 
-    /* Pixelbuffer, needed for some operations */
-    ULONG                      *pixel_buf;
-    struct SignalSemaphore      pixbuf_sema;
+    /* Semaphores */
     struct SignalSemaphore      blit_sema;
 
     /* Private library bases */

@@ -257,8 +257,7 @@ int driver_init(struct GfxBase * GfxBase)
     if (!OpenLibrary("graphics.hidd", 0))
         return FALSE;
 
-    /* Initialize the semaphore used for the chunky buffer */
-    InitSemaphore(&(PrivGBase(GfxBase)->pixbuf_sema));
+    /* Initialize the semaphores */
     InitSemaphore(&(PrivGBase(GfxBase)->blit_sema));
     
     /* Init the needed attrbases */
@@ -280,39 +279,34 @@ int driver_init(struct GfxBase * GfxBase)
 	__IHidd_Gfx      &&
 	__IHidd_FakeGfxHidd)
     {
-	PrivGBase(GfxBase)->pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
-	if (PrivGBase(GfxBase)->pixel_buf) {
+	/* Init display mode database */
+	InitSemaphore(&CDD(GfxBase)->displaydb_sem);
+	CDD(GfxBase)->invalid_id = INVALID_ID;
+	CDD(GfxBase)->last_id = AROS_RTG_MONITOR_ID;
 
-	    /* Init display mode database */
-	    InitSemaphore(&CDD(GfxBase)->displaydb_sem);
-	    CDD(GfxBase)->invalid_id = INVALID_ID;
-	    CDD(GfxBase)->last_id = AROS_RTG_MONITOR_ID;
+	/* Init memory driver */
+	CDD(GfxBase)->memorygfx = OOP_NewObject(NULL, CLID_Hidd_Gfx, NULL);
+	DEBUG_INIT(bug("[driver_init] Memory driver object 0x%p\n", CDD(GfxBase)->memorygfx));
+	if (CDD(GfxBase)->memorygfx) {
+	    struct TagItem bm_create_tags[] = {
+		{ aHidd_BitMap_GfxHidd	, (IPTR)CDD(GfxBase)->memorygfx },
+		{ aHidd_PlanarBM_AllocPlanes, FALSE				 },
+		{ TAG_DONE			, 0UL				 }
+	    };
 
-	    /* Init memory driver */
-	    CDD(GfxBase)->memorygfx = OOP_NewObject(NULL, CLID_Hidd_Gfx, NULL);
-	    DEBUG_INIT(bug("[driver_init] Memory driver object 0x%p\n", CDD(GfxBase)->memorygfx));
-	    if (CDD(GfxBase)->memorygfx) {
-		struct TagItem bm_create_tags[] = {
-		    { aHidd_BitMap_GfxHidd	, (IPTR)CDD(GfxBase)->memorygfx },
-		    { aHidd_PlanarBM_AllocPlanes, FALSE				 },
-		    { TAG_DONE			, 0UL				 }
-		};
+	    CDD(GfxBase)->planarbm_cache = create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
+	    DEBUG_INIT(bug("[driver_init] Planar bitmap cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
+	    if (CDD(GfxBase)->planarbm_cache) {
+		struct TagItem gc_create_tags[] = { { TAG_DONE, 0UL } };
 
-	    	CDD(GfxBase)->planarbm_cache = create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
-		DEBUG_INIT(bug("[driver_init] Planar bitmap cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
-		if (CDD(GfxBase)->planarbm_cache) {
-		    struct TagItem gc_create_tags[] = { { TAG_DONE, 0UL } };
-
-		    CDD(GfxBase)->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, gc_create_tags, GfxBase);
-		    DEBUG_INIT(bug("[driver_init] GC cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
-		    if (CDD(GfxBase)->gc_cache)
-		        ReturnInt("driver_init", int, TRUE);
-		    delete_object_cache(CDD(GfxBase)->planarbm_cache, GfxBase);
-		    
-		}
-		OOP_DisposeObject(CDD(GfxBase)->memorygfx);
+		CDD(GfxBase)->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, gc_create_tags, GfxBase);
+		DEBUG_INIT(bug("[driver_init] GC cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
+		if (CDD(GfxBase)->gc_cache)
+		    ReturnInt("driver_init", int, TRUE);
+		delete_object_cache(CDD(GfxBase)->planarbm_cache, GfxBase);
+		
 	    }
-	    FreeMem(PrivGBase(GfxBase)->pixel_buf, PIXELBUF_SIZE);
+	    OOP_DisposeObject(CDD(GfxBase)->memorygfx);
 	}
     }
 

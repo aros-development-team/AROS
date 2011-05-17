@@ -12,6 +12,14 @@
 #include "gfxfuncsupport.h"
 #include <hardware/blit.h>
 
+/* Nominal size of the pixel conversion buffer
+ */
+#ifdef __mc68000
+#define NUMPIX 4096 	/* Not that much room to spare */
+#else
+#define NUMPIX 100000
+#endif
+
 struct bltmask_render_data
 {
     struct render_special_info rsi;
@@ -181,6 +189,7 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     LONG    	    	    	lines_done, lines_per_step, doing_lines;
     BOOL    	    	    	pal_to_true = FALSE;
     ULONG			pixfmt = vHidd_StdPixFmt_Native32;
+    UBYTE			*srcbuf;
 
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;
@@ -223,14 +232,26 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     	return width * height;
     }
 
-    lines_per_step = (NUMPIX / (width * 2 * sizeof(HIDDT_Pixel)));
-    if (lines_per_step)
-    {
-    	UBYTE *srcbuf, *destbuf;
-	
-	LOCK_PIXBUF
+    /* Based on the NUMPIX advice, figure out how many
+     * lines per step we can allocate
+     */
+    lines_per_step = NUMPIX / (width * sizeof(HIDDT_Pixel));
+    if (lines_per_step == 0)
+    	lines_per_step = 1;
 
-    	srcbuf = (UBYTE *)PrivGBase(GfxBase)->pixel_buf;
+    /* Allocate a temporary buffer */
+    srcbuf = AllocMem(2 * lines_per_step * width * sizeof(HIDDT_Pixel), MEMF_ANY);
+
+    /* Try line-at-a-time if we can't allocate a big buffer */
+    if (!srcbuf && lines_per_step > 1) {
+    	lines_per_step = 1;
+    	srcbuf = AllocMem(2 * lines_per_step * width * sizeof(HIDDT_Pixel), MEMF_ANY);
+    }
+
+    if (srcbuf)
+    {
+    	UBYTE *destbuf;
+	
 	destbuf = srcbuf;
 	destbuf += lines_per_step * width * sizeof(HIDDT_Pixel);
 	
@@ -319,8 +340,9 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 			     
 	} /* for(lines_done = 0; lines_done != height; lines_done += doing_lines) */
 
-	ULOCK_PIXBUF
-	
+    	/* Free our temporary buffer */
+    	FreeMem(srcbuf, 2 * lines_per_step * width * sizeof(HIDDT_Pixel));
+
     } /* if (lines_per_step) */
     else
     {
