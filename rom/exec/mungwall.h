@@ -21,6 +21,7 @@ struct MungwallHeader
 	{
     	    struct  MinNode 	node;
 	    ULONG   	    	magicid;
+	    BOOL		fault;
     	    IPTR   	    	allocsize;
 	    APTR		pool;
 	} s;
@@ -33,6 +34,7 @@ struct MungwallHeader
 
 #define mwh_node    	u.s.node
 #define mwh_magicid 	u.s.magicid
+#define mwh_fault	u.s.fault
 #define mwh_allocsize 	u.s.allocsize
 #define mwh_pool	u.s.pool
 

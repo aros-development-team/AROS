@@ -35,6 +35,7 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
 	*/
 
 	header->mwh_magicid   = MUNGWALL_HEADER_ID;
+	header->mwh_fault     = FALSE;
 	header->mwh_allocsize = origSize;
 	header->mwh_pool      = pool;
 
@@ -105,31 +106,34 @@ static APTR CheckWall(UBYTE *ptr, UBYTE fill, IPTR size, APTR *endptr)
 static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, APTR caller, APTR stack, struct ExecBase *SysBase)
 {
     struct MungwallContext mwdata;
-    BOOL fault = FALSE;
+
+    /* Do not report the fault twice on the same header */
+    if (header->mwh_fault)
+    	return;
 
     mwdata.bad_id = (header->mwh_magicid != MUNGWALL_HEADER_ID);
     if (mwdata.bad_id)
-        fault = TRUE;
+        header->mwh_fault = TRUE;
 
     if (byteSize && (header->mwh_allocsize != byteSize))
     {
     	mwdata.freeSize = byteSize;
-	fault = TRUE;
+	header->mwh_fault = TRUE;
     }
     else
 	mwdata.freeSize = 0;
 
     mwdata.pre_start = CheckWall((UBYTE *)header + MUNGWALLHEADER_SIZE, 0xDB, MUNGWALL_SIZE, &mwdata.pre_end);
     if (mwdata.pre_start)
-    	fault = TRUE;
+    	header->mwh_fault = TRUE;
 
     mwdata.post_start = CheckWall((UBYTE *)header + MUNGWALL_BLOCK_SHIFT + header->mwh_allocsize, 0xDB,
 	    	      		 MUNGWALL_SIZE + AROS_ROUNDUP2(header->mwh_allocsize, MEMCHUNK_TOTAL) - header->mwh_allocsize,
 	    	      		 &mwdata.post_end);
     if (mwdata.post_start)
-    	fault = TRUE;
+    	header->mwh_fault = TRUE;
 
-    if (fault)
+    if (header->mwh_fault)
     {
     	/* Set mungwall alert context and throw an alert */
     	struct Task *me = FindTask(NULL);
@@ -148,6 +152,15 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, APTR calle
 	CopyMem(&mwdata, &iet->iet_AlertData, sizeof(mwdata));
 
     	Alert(AN_MemoryInsane);
+    	
+    	/*
+    	 * Our entry can be freed by another process while we are sitting in Alert().
+    	 * This is 100% safe as long as we don't touch the entry after Alert().
+    	 * Well, potentally dangerous case is list iteration in MungWall_Scan().
+    	 * What to do then? Use a semaphore? Won't do because of RemTask(NULL),
+    	 * during which SysBase->ThisTask becomes garbage, thus a semaphore can't
+    	 * be used.
+    	 */
     }
 }
 
@@ -181,8 +194,11 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, APTR caller, APTR stack, st
     	 * while the alert is displayed.
     	 */
 	Forbid();
-    	Remove((struct Node *)&header->mwh_node);
+    	Remove((struct Node *)header);
 	Permit();
+
+	/* Reset fault state in order to see who is freeing the bad entry */
+	header->mwh_fault = FALSE;
 
 	CheckHeader(header, byteSize, caller, stack, SysBase);
 
@@ -215,32 +231,31 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, APTR caller, APTR stack, st
  */
 void MungWall_Scan(APTR pool, APTR caller, APTR stack, struct ExecBase *SysBase)
 {
+    D(bug("[Mungwall] Scan(), caller 0x%p\n", caller));
+
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
 	struct MungwallHeader 	*allocnode;
 	struct MungwallHeader	*tmp;
-	ULONG	    	    	 alloccount = 0;
-	IPTR	    	    	 allocsize = 0;
 
 	Forbid();
 
 	ForeachNodeSafe(&PrivExecBase(SysBase)->AllocMemList, allocnode, tmp)
 	{
-	    CheckHeader(allocnode, 0, caller, stack, SysBase);
-
 	    if (pool && (allocnode->mwh_pool == pool))
 	    {
 		/*
 		 * If pool address is given, remove entries belonging to it.
-		 * They are considered freed, so we don't count them.
+		 * It's DeletePool() and they are going to be freed.
+		 * Additionally we reset fault state on them. This will cause
+		 * one more alert and we can track where the memory was freed.
+	         * This will give us a hint on who was owning it.
 		 */
-		Remove((struct Node *)&allocnode->mwh_node);
+		Remove((struct Node *)allocnode);
+	    	allocnode->mwh_fault = FALSE;
 	    }
-	    else
-	    {
-		allocsize += allocnode->mwh_allocsize;
-		alloccount++;
-	    }
+
+	    CheckHeader(allocnode, 0, caller, stack, SysBase);
 	}
 
 	Permit();
