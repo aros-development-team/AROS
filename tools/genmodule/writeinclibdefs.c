@@ -14,9 +14,20 @@ void writeinclibdefs(struct config *cfg)
     char *_libbasetype = (cfg->libbasetype==NULL) ? "struct Library" : cfg->libbasetype;
     char residentflags[256];
     struct classinfo *classlistit;
+    unsigned int funccount;
+    struct functionhead *funclistit = cfg->funclist;
+
+    if (funclistit == NULL)
+	funccount = cfg->firstlvo-1;
+    else
+    {
+	while (funclistit->next != NULL)
+	    funclistit = funclistit->next;
+	    
+	funccount = funclistit->lvo;
+    }
 
     residentflags[0] = 0;
-    
 	
     if (cfg->residentpri >= 105)
 	strcpy(residentflags, "RTF_SINGLETASK");
@@ -73,7 +84,8 @@ void writeinclibdefs(struct config *cfg)
         "#define LIBEND           GM_UNIQUENAME(End)\n"
         "#define LIBFUNCTABLE     GM_UNIQUENAME(FuncTable)\n"
         "#define RESIDENTPRI      %d\n"
-        "#define RESIDENTFLAGS    %s\n",
+        "#define RESIDENTFLAGS    %s\n"
+        "#define FUNCTIONS_COUNT  %u\n",
         cfg->basename,
         cfg->libbase, _libbasetype, _libbasetype,
         cfg->modulename, cfg->suffix,
@@ -83,7 +95,8 @@ void writeinclibdefs(struct config *cfg)
         cfg->datestring, cfg->copyright[0] != '\0' ? " " : "", cfg->copyright,
         cfg->copyright,
         cfg->residentpri,
-        residentflags
+        residentflags,
+        funccount
     );
 
     for (linelistit = cfg->cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
