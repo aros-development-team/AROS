@@ -50,7 +50,7 @@ LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqTy
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 	    }
 #endif
-	    CloseLibrary(IntuitionBase);
+	    CloseLibrary((struct Library *)IntuitionBase);
 	}
 	else
 	{
