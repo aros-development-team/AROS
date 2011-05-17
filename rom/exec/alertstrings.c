@@ -470,11 +470,11 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
     return buf;
 }
 
-static char *hdrstring = "Task : 0x%P - %s\n"
-			 "Error: 0x%08lx - ";
-static char *locstring = "PC   : 0x%P";
-static char *modstring = "Module %s Segment %lu %s (0x%P) Offset 0x%P";
-static char *funstring = "Function %s (0x%P) Offset 0x%P";
+static const char hdrstring[] = "Task : 0x%P - %s\n"
+			        "Error: 0x%08lx - ";
+static const char locstring[] = "PC   : 0x%P";
+static const char modstring[] = "Module %s Segment %lu %s (0x%P) Offset 0x%P";
+static const char funstring[] = "Function %s (0x%P) Offset 0x%P";
 
 STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
 {
@@ -489,7 +489,7 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
     {
 	struct IntETask *iet = GetIntETask(task);
 
-	if (iet->iet_AlertLocation)
+	if (iet->iet_AlertFlags & AF_Location)
 	{
 	    char *modname, *segname, *symname;
 	    void *segaddr, *symaddr;
