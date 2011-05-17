@@ -27,7 +27,7 @@ void *malloc(ULONG size)
 
     size = (size + sizeof(size_t) - 1) & ~(sizeof(size_t) - 1);
 
-    mem = krnAllocMem(size);
+    mem = krnAllocMem(size, -1);
     *(mem++) = size;
     return mem;
 }

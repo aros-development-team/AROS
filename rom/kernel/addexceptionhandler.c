@@ -82,7 +82,8 @@ AROS_LH4(void *, KrnAddExceptionHandler,
         /* Go to supervisor mode */
         (void)goSuper();
 
-        handle = krnAllocMem(sizeof(struct IntrNode));
+	/* Allocate protected memory, accessible only in supervisor mode */
+        handle = krnAllocMem(sizeof(struct IntrNode), 0);
         D(bug("[KRN] handle=%012p\n", handle));
 
         if (handle)

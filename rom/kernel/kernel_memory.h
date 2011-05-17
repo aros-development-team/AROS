@@ -11,5 +11,11 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
-#define krnAllocMem(len) AllocMem(len, MEMF_PUBLIC|MEMF_CLEAR)
+/*
+ * 'access' parameter in krnAllocMem() is reserved to provide
+ * user-mode access flags. When set to '0' the memory is supposed to be
+ * accessible only in supervisor mode.
+ */
+
+#define krnAllocMem(len, access) AllocMem(len, MEMF_PUBLIC|MEMF_CLEAR)
 #define krnFreeMem(addr, len) FreeMem(addr, len)
