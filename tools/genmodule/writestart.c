@@ -601,23 +601,12 @@ static void writeinitlib(FILE *out, struct config *cfg)
     
     if (!(cfg->options & OPTION_RESAUTOINIT))
     {
-	unsigned int funccount;
-	struct functionhead *funclistit = cfg->funclist;
-	if (funclistit == NULL)
-	    funccount = cfg->firstlvo-1;
-	else
-	{
-	    while (funclistit->next != NULL)
-		funclistit = funclistit->next;
-	    
-	    funccount = funclistit->lvo;
-	}
 	fprintf(out,
 		"    int vecsize;\n"
 		"    struct Node *n;\n"
 		"    char *mem;\n"
 		"\n"
-		"    vecsize = %u*LIB_VECTSIZE;\n"
+		"    vecsize = FUNCTIONS_COUNT * LIB_VECTSIZE;\n"
 		"    if (vecsize > 0)\n"
 		"        vecsize = ((vecsize-1)/sizeof(IPTR) + 1)*sizeof(IPTR);\n"
 		"    mem = AllocMem(vecsize+sizeof(LIBBASETYPE), MEMF_PUBLIC|MEMF_CLEAR);\n"
@@ -628,8 +617,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 		"    n->ln_Type = NT_RESOURCE;\n"
 		"    n->ln_Pri = RESIDENTPRI;\n"
 		"    n->ln_Name = (char *)GM_UNIQUENAME(LibName);\n"
-		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n",
-		funccount
+		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n"
 	);
 	if (cfg->options & OPTION_SELFINIT)
 	{
@@ -1113,7 +1101,7 @@ writefunctable(FILE *out,
 	       struct config *cfg
 )
 {
-    struct functionhead *funclistit;
+    struct functionhead *funclistit = cfg->funclist;
     struct functionarg *arglistit;
     unsigned int lvo;
     int i;
@@ -1156,7 +1144,6 @@ writefunctable(FILE *out,
 	    );
 	    lvo++;
 	}
-	funclistit = cfg->funclist;
     }
     else /* NORESIDENT */
     {
@@ -1165,7 +1152,6 @@ writefunctable(FILE *out,
 	    int neednull = 0;
 	    struct functionhead *funclistit2;
 	
-	    funclistit = cfg->funclist;
 	    if (funclistit->lvo != 1)
 	    {
 		fprintf(stderr, "Module without a generated resident structure has to provide the Open function (LVO==1)\n");
@@ -1241,6 +1227,13 @@ writefunctable(FILE *out,
 	    else
 		fprintf(out, "    &%s_null,\n", cfg->modulename);
 	    lvo++;
+	}
+	else
+	{
+	    fprintf(out,
+		    "\n"
+		    "const APTR GM_UNIQUENAME(FuncTable)[]=\n"
+		    "{\n");
 	}
     }
 
