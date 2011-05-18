@@ -66,6 +66,8 @@ static const struct OOP_ABDescr attrbases[] =
     {NULL, NULL }
 };
 
+const TEXT version_string[] = "$VER: IntelGMA 2.1 (18.5.2011)\n";
+
 extern struct WBStartup *WBenchMsg;
 int __nocommandline = 1;
 
