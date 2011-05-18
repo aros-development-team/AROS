@@ -43,11 +43,12 @@
 
 /****************************************************************************************/
 
-#define ARG_TEMPLATE    "WIDTH=W/N/K,HEIGHT=H/N/K,MODE=P/K"
+#define ARG_TEMPLATE    "WIDTH=W/N/K,HEIGHT=H/N/K,LEN=W/N/K,MODE=P/K"
 #define ARG_W           0
 #define ARG_H           1
-#define ARG_MODE        2
-#define NUM_ARGS        3
+#define ARG_LEN         2
+#define ARG_MODE        3
+#define NUM_ARGS        4
 
 /****************************************************************************************/
 
@@ -56,6 +57,7 @@ IPTR            args[NUM_ARGS];
 UBYTE           s[256];
 LONG            width = 1280;
 LONG            height = 720;
+LONG            linelen = 100;
 STRPTR          functionname = "Text";
 struct Window   *win;
 
@@ -86,6 +88,8 @@ static void getarguments(void)
     if (args[ARG_W]) width = *(LONG *)args[ARG_W];
 
     if (args[ARG_H]) height = *(LONG *)args[ARG_H];
+    
+    if (args[ARG_LEN]) linelen = *(LONG *)args[ARG_LEN];
 
  /*   if (args[ARG_FUNCTION])
     {
@@ -112,7 +116,6 @@ static void action(void)
     LONG t, i, bpp;
     QUAD q;
     STRPTR buffer = NULL;
-    ULONG bufferlen;
     
     struct TextExtent extend;
     
@@ -139,12 +142,11 @@ static void action(void)
     CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
     
     /* Generate random buffer */
-    buffer = AllocVec(100, MEMF_PUBLIC | MEMF_CLEAR);
-    for (i = 0; i < 99; i++)
-        buffer[i] = i + 60;
+    buffer = AllocVec(linelen + 1, MEMF_PUBLIC | MEMF_CLEAR);
+    for (i = 0; i < linelen; i++)
+        buffer[i] = 60 + (rand() % 40);
     
-    bufferlen = strlen(buffer);
-    TextExtent(win->RPort, buffer, bufferlen, &extend);
+    TextExtent(win->RPort, buffer, linelen, &extend);
     
     for(i = 0; ; i++)
     {
@@ -156,7 +158,7 @@ static void action(void)
             for (ULONG x = 0; x < width; x += extend.te_Width)
             {
                 Move(win->RPort, x, y);
-                Text(win->RPort, buffer, bufferlen);
+                Text(win->RPort, buffer, linelen);
             }
     }
     
