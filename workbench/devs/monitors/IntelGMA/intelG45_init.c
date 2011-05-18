@@ -44,13 +44,65 @@ static const char __attribute__((used)) __greet[] = "!!! This driver is sponsore
 
 static BOOL IsCompatible(UWORD product_id)
 {
-    return product_id == 0x2582
+    return
+//        || product_id == 0x0042
+//        || product_id == 0x0046
+//        || product_id == 0x0102
+//        || product_id == 0x0106
+//        || product_id == 0x010a
+//        || product_id == 0x0112
+//        || product_id == 0x0116
+//        || product_id == 0x0122
+//        || product_id == 0x0126
+//        || product_id == 0x2562
+//        || product_id == 0x2572
+        product_id == 0x2582
+        || product_id == 0x258a
+        || product_id == 0x2592
         || product_id == 0x2772
         || product_id == 0x27a2
-        || product_id == 0x27a6
         || product_id == 0x27ae
+//        || product_id == 0x2972
+//        || product_id == 0x2982
+//        || product_id == 0x2992
+//        || product_id == 0x29a2
+//        || product_id == 0x29b2
+//        || product_id == 0x29c2
+//        || product_id == 0x29d2
         || product_id == 0x2a02
-        || product_id == 0x2a42;
+        || product_id == 0x2a12
+        || product_id == 0x2a42
+        || product_id == 0x2e02
+        || product_id == 0x2e12
+        || product_id == 0x2e22
+        || product_id == 0x2e32
+        || product_id == 0x2e42
+        || product_id == 0x2e92
+//        || product_id == 0x3577
+//        || product_id == 0x3582
+//        || product_id == 0x358e
+//        || product_id == 0xa001
+//        || product_id == 0xa011
+        ;
+}
+
+static BOOL NeedsPhysicalCursor(UWORD product_id)
+{
+    /* TRUE if one of i830, i85x, i915G(M), i945G(M) */
+    return product_id == 0x258a
+        || product_id == 0x2592
+        || product_id == 0x2772
+        || product_id == 0x27a2
+        || product_id == 0x27ae
+        || product_id == 0x3577
+        || product_id == 0x3582
+        || product_id == 0x358e;
+}
+
+static BOOL HasQuadBARs(UWORD product_id)
+{
+    return product_id > 0x2800
+        && product_id < 0xa000;
 }
 
 static ULONG GetGATTSize(struct g45staticdata *sd)
@@ -230,7 +282,7 @@ AROS_UFH3(void, Enumerator,
     	OOP_SetAttrs(pciDevice, attrs);
     	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *)&driver);
 
-        if (ProductID >= 0x2800)
+        if (HasQuadBARs(ProductID))
         {
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &mmio_base);
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &window_base);
@@ -372,10 +424,10 @@ AROS_UFH3(void, Enumerator,
 
     	/* Reserve some memory for HW cursor */
     	sd->CursorImage =  ((intptr_t)Allocate(&sd->CardMem, 64*64*4)) - (intptr_t)sd->Card.Framebuffer;
-        if (ProductID >= 0x2800)
-            sd->CursorBase = sd->CursorImage;
-        else
+        if (NeedsPhysicalCursor(ProductID))
             sd->CursorBase = G45_VirtualToPhysical(sd, sd->CursorImage);
+        else
+            sd->CursorBase = sd->CursorImage;
 
     	D(bug("[GMA] Using ARGB cursor at graphics address %08x (physical address %08x)\n",
     			sd->CursorImage, sd->CursorBase));

@@ -54,6 +54,12 @@ struct pRoot_Dispose {
     OOP_MethodID mID;
 };
 
+static BOOL CanAccelerateBlits(UWORD product_id)
+{
+    return product_id >= 0x2582
+        && product_id <= 0x27ae;
+}
+
 OOP_Object *METHOD(GMABM, Root, New)
 {
 	EnterFunc(bug("[GMABitMap] Bitmap::New()\n"));
@@ -114,7 +120,8 @@ OOP_Object *METHOD(GMABM, Root, New)
 
 		if (displayable) bm->displayable = TRUE; else bm->displayable = FALSE;
 		//bm->compositing = sd->compositing;
-        bm->compositing = (OOP_Object *)GetTagData(aHidd_BitMap_IntelG45_CompositingHidd, 0, msg->attrList);
+        bm->compositing = (OOP_Object *)
+            GetTagData(aHidd_BitMap_IntelG45_CompositingHidd, 0, msg->attrList);
         /* FIXME: check if compositing hidd was passed */
 
         if (displayable)
@@ -1259,7 +1266,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
      * draw (many blits of height=1 instead of one single blit).
      * Therefore, many many the cache flushes kill the expected performance significantly. */
 
-    if (sd->ProductID < 0x2800 && bm->fbgfx && bm->bpp == 4
+    if (CanAccelerateBlits(sd->ProductID) && bm->fbgfx && bm->bpp == 4
         && (msg->pixFmt == vHidd_StdPixFmt_Native
         || msg->pixFmt == vHidd_StdPixFmt_Native32
         || msg->pixFmt == vHidd_StdPixFmt_BGRA32
@@ -1476,7 +1483,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 				break;
 
 			default:
-				if (sd->ProductID < 0x2800 && bm->bpp == 4)
+				if (CanAccelerateBlits(sd->ProductID) && bm->bpp == 4)
 				{
 			    	/* Get image width aligned to 4K page boundary */
 			    	uint32_t line_width = (msg->width * bm->bpp + 4095) & ~4095;
@@ -1619,7 +1626,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImageLUT)
     	{
     		LOCK_HW
 
-    		if (bm->bpp == 4 && sd->ProductID < 0x2800)
+            if (bm->bpp == 4 && CanAccelerateBlits(sd->ProductID))
     		{
     			/* Get two buffers in different GTT regions and _surely_ in different CPU cache lines */
     			uint32_t *buffer_1 = (uint32_t *)(((intptr_t)pages + 4095) & ~4095);
@@ -1745,7 +1752,7 @@ VOID METHOD(GMABM, Hidd_BitMap, GetImage)
 			DO_FLUSH();
 			UNLOCK_HW
 
-        if (bm->bpp == 4 && sd->ProductID < 0x2800
+        if (bm->bpp == 4 && CanAccelerateBlits(sd->ProductID)
             && (msg->pixFmt == vHidd_StdPixFmt_Native
             || msg->pixFmt == vHidd_StdPixFmt_Native32))
 		{
