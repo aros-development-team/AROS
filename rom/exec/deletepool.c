@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 #include "mungwall.h"
 
@@ -66,7 +67,7 @@
 	 * For mungwall we provide also called function name, return address and caller's stack frame.
 	 * This will be displayed in alerts.
 	 */
-	MungWall_Scan(pool, "DeletePool", __builtin_return_address(0), __builtin_frame_address(1), SysBase);
+	MungWall_Scan(pool, "DeletePool", __builtin_return_address(0), CALLER_FRAME, SysBase);
 
 	/*
 	 * Free the list of puddles.

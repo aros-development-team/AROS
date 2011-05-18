@@ -26,22 +26,21 @@ static const char *invalidstr = "\n0x%P Invalid stack frame address";
  * The supplied buffer pointer points to the end of already existing
  * text, so we start every our line with '\n'.
  */
-void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase)
+void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)
 {
-    struct IntETask *iet = GetIntETask(task);
     char *buf = buffer;
-    
-    switch (iet->iet_AlertType)
+
+    switch (type)
     {
     case AT_CPU:
 	buf = Alert_AddString(buf, "\nCPU context:\n");
-	buf = FormatCPUContext(buf, &iet->iet_AlertData.u.acpu, SysBase);
+	buf = FormatCPUContext(buf, data, SysBase);
 
 	break;
 
     case AT_MUNGWALL:
     	buf = Alert_AddString(buf, "\nMungwall data:\n");
-    	buf = FormatMWContext(buf, &iet->iet_AlertData.u.amw, SysBase);
+    	buf = FormatMWContext(buf, data, SysBase);
 
     	break;
 
@@ -50,9 +49,9 @@ void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase)
     }
 
     /* If we have AlertStack, compose a backtrace */
-    if (iet->iet_AlertStack)
+    if (stack)
     {
-	APTR fp = iet->iet_AlertStack;
+	APTR fp = stack;
 	ULONG i;
 
 	buf = Alert_AddString(buf, "\nStack trace:");

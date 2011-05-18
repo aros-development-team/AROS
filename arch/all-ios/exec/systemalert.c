@@ -16,14 +16,13 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-
-void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase)
+void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)
 {
     UBYTE *buf;
 
     buf = Alert_AddString(PrivExecBase(SysBase)->AlertBuffer, Alert_GetTitle(alertNum));
     *buf++ = '\n';
-    FormatAlert(buf, alertNum, SysBase->ThisTask, SysBase);
+    FormatAlert(buf, alertNum, SysBase->ThisTask, location, type, SysBase);
 
     /* Display an alert via our UIKit helper */
     PD(SysBase).DisplayAlert(PrivExecBase(SysBase)->AlertBuffer);

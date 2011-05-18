@@ -63,22 +63,39 @@
 {
     AROS_LIBFUNC_INIT
 
+    Exec_ExtAlert(alertNum, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
+
+    AROS_LIBFUNC_EXIT
+}
+
+static const ULONG contextSizes[] =
+{
+    0,
+    sizeof(struct ExceptionContext),
+    sizeof(struct MungwallContext),
+};
+
+void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)
+{
     struct Task *task = SysBase->ThisTask;
     struct IntETask *iet = NULL;
     int supervisor = KrnIsSuper();
 
     D(bug("[exec] Alert 0x%08X\n", alertNum));
 
-    if (task)
+    if (task && (task->tc_State != TS_REMOVED))
     {
 	iet = GetIntETask(task);
 
 	/* Do we already have location set? */
-	if (!(iet->iet_AlertFlags & AF_Location))
+	if (iet->iet_AlertFlags & AF_Location)
 	{
-	    /* If no, the location is where we were called from */
-	    iet->iet_AlertFlags |= AF_Location;
-
+	    /* If yes, pick it up */
+	    location = iet->iet_AlertLocation;
+	    stack    = iet->iet_AlertStack;
+	}
+	else
+	{
 	    if (supervisor && ((alertNum & ~AT_DeadEnd) == AN_StackProbe))
 	    {
 	    	/*
@@ -87,26 +104,45 @@
 	    	 */
 		struct ExceptionContext *ctx = iet->iet_Context;
 
-		iet->iet_AlertLocation = (APTR)ctx->PC;
-	    	iet->iet_AlertStack    = (APTR)ctx->FP;
+		location = (APTR)ctx->PC;
+	    	stack    = (APTR)ctx->FP;
+	    	type     = AT_CPU;
+	    	data     = ctx;
 	    }
-	    else
-	    {
-	    	iet->iet_AlertLocation = __builtin_return_address(0);
-	    	/*
-	    	 * And backtrace starts at caller's frame.
-	    	 * On ARM we don't have frame pointer so we can't do backtrace.
-	    	 * __builtin_frame_address(1) will return garbage, so don't do this.
-	    	 */
-#ifdef __arm__
-	    	iet->iet_AlertStack = NULL;
-#else
-	    	iet->iet_AlertStack = __builtin_frame_address(1);
-#endif
-	    	D(bug("[Alert] Previous frame 0x%p, caller 0x%p\n", iet->iet_AlertStack, iet->iet_AlertLocation));
-	    }
+
+	    /* Set location */
+	    iet->iet_AlertFlags   |= AF_Location;	    
+	    iet->iet_AlertLocation = location;
+	    iet->iet_AlertStack    = stack;
+
+	    D(bug("[Alert] Previous frame 0x%p, caller 0x%p\n", iet->iet_AlertStack, iet->iet_AlertLocation));
 	}
+
+	/*
+	 * Set the data if specified.
+	 * This can happen only on the first call, since we can recurse only into Alert(),
+	 * not into ExtAlert() directly.
+	 */
+	if (data)
+	{
+	    iet->iet_AlertType = type;
+	    CopyMem(data, &iet->iet_AlertData, contextSizes[type]);
+	}
+	else
+	    type = iet->iet_AlertType;
+
+	/*
+	 * At this point iet_AlertData is guaranteed to be set
+	 * either by caller or by us.
+	 */
+	data = type ? &iet->iet_AlertData : NULL;	
     }
+    else
+    	/*
+    	 * If we have no task, or the task is being removed,
+    	 * we can't use the user-mode routine.
+    	 */
+    	supervisor = TRUE;
 
     /*
      * If we are running in user mode we should first try to report a problem
@@ -124,7 +160,7 @@
      * system and user-friendly) way to post alerts.
      */
     Disable();
-    Exec_SystemAlert(alertNum, SysBase);
+    Exec_SystemAlert(alertNum, location, stack, type, data, SysBase);
     Enable();
 
     /*
@@ -143,6 +179,4 @@
 	ColdReboot();
 	ShutdownA(SD_ACTION_COLDREBOOT);
     }
-
-    AROS_LIBFUNC_EXIT
 }

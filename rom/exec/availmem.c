@@ -15,6 +15,7 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 #include "mungwall.h"
 
@@ -70,7 +71,7 @@
     ret = nommu_AvailMem(attributes, SysBase);
 
     if (attributes & MEMF_CLEAR)
-	MungWall_Scan(NULL, "AvailMem", __builtin_return_address(0), __builtin_frame_address(1), SysBase);
+	MungWall_Scan(NULL, "AvailMem", __builtin_return_address(0), CALLER_FRAME, SysBase);
 
     return ret;
     AROS_LIBFUNC_EXIT

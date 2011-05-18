@@ -18,14 +18,14 @@
 #include "exec_util.h"
 
 
-void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase)
+void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)
 {
     UBYTE *buf;
 
     buf = Alert_AddString(PrivExecBase(SysBase)->AlertBuffer, Alert_GetTitle(alertNum));
     *buf++ = '\n';
-    buf = FormatAlert(buf, alertNum, SysBase->ThisTask, SysBase);
-    FormatAlertExtra(buf, SysBase->ThisTask, SysBase);
+    buf = FormatAlert(buf, alertNum, SysBase->ThisTask, location, type, SysBase);
+    FormatAlertExtra(buf, stack, type, data, SysBase);
 
     /*
      * Explicitly disable task switching.
