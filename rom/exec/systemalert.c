@@ -94,7 +94,7 @@ static inline void PrintFrame(struct ExecBase *SysBase)
  *
  * Note that we use shared buffer in SysBase for alert text.
  */
-void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase)
+void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)
 {
     char *buf;
 
@@ -104,7 +104,7 @@ void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase)
     PrintCentered(Alert_GetTitle(alertNum), SysBase);
 
     /* Get the alert text */
-    FormatAlert(PrivExecBase(SysBase)->AlertBuffer, alertNum, SysBase->ThisTask, SysBase);
+    FormatAlert(PrivExecBase(SysBase)->AlertBuffer, alertNum, SysBase->ThisTask, location, type, SysBase);
 
     /* Print first two lines (task and error) centered */
     buf = PrintCentered(PrivExecBase(SysBase)->AlertBuffer, SysBase);
@@ -119,7 +119,9 @@ void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase)
 
     PrintFrame(SysBase);
 
-    FormatAlertExtra(PrivExecBase(SysBase)->AlertBuffer, SysBase->ThisTask, SysBase);
+    FormatAlertExtra(PrivExecBase(SysBase)->AlertBuffer, stack, type, data, SysBase);
+
+    /* Skip the leading '\n' provided by FormatAlertExtra() */
     buf = &PrivExecBase(SysBase)->AlertBuffer[1];
     while (*buf)
 	RawPutChar(*buf++);

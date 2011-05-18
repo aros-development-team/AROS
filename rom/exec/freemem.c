@@ -5,6 +5,7 @@
     Desc: Free memory allocated by AllocMem()
     Lang: english
 */
+
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -15,19 +16,8 @@
 #include <exec/memheaderext.h>
 #include <proto/exec.h>
 
-#include "exec_debug.h"
-
-#ifndef DEBUG_FreeMem
-#   define DEBUG_FreeMem 0
-#endif
-#undef DEBUG
-#if DEBUG_FreeMem
-#   define DEBUG 1
-#endif
-
-#include <stdlib.h>
-
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 #include "mungwall.h"
 
@@ -78,7 +68,7 @@
 
     RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 
-    memoryBlock = MungWall_Check(memoryBlock, byteSize, "FreeMem", __builtin_return_address(0), __builtin_frame_address(1), SysBase);
+    memoryBlock = MungWall_Check(memoryBlock, byteSize, "FreeMem", __builtin_return_address(0), CALLER_FRAME, SysBase);
 
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
         byteSize += MUNGWALL_TOTAL_SIZE;

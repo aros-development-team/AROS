@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 
 /*****************************************************************************
@@ -56,7 +57,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    InternalFreePooled(memory, memSize, "FreePooled", __builtin_return_address(0), __builtin_frame_address(1), SysBase);
+    InternalFreePooled(memory, memSize, "FreePooled", __builtin_return_address(0), CALLER_FRAME, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* FreePooled */

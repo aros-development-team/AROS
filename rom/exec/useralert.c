@@ -27,6 +27,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 
         if (buffer)
         {
+     	    struct IntETask *iet = GetIntETask(task);
 	    char *buf, *end;
 	    struct EasyStruct es = {
         	sizeof (struct EasyStruct),
@@ -37,7 +38,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
             };
 
 	    buf = Alert_AddString(buffer, startstring);
-	    buf = FormatAlert(buf, alertNum, task, SysBase);
+	    buf = FormatAlert(buf, alertNum, task, iet->iet_AlertLocation, iet->iet_AlertType, SysBase);
 	    end = buf;
 	    buf = Alert_AddString(buf, endstring);
 	    *buf = 0;
@@ -52,8 +53,8 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 
 	    if (choice == 1)
 	    {
-		/* 'More' has been pressed. Append full alert data */
-		FormatAlertExtra(end, task, SysBase);
+    		/* 'More' has been pressed. Append full alert data */
+		FormatAlertExtra(end, iet->iet_AlertStack, iet->iet_AlertType, &iet->iet_AlertData, SysBase);
 
 		/* Re-post the alert, without 'More...' this time */
 		es.es_GadgetFormat += MORE_SKIP;

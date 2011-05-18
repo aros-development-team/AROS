@@ -86,6 +86,13 @@
         Remove(&task->tc_Node);         
     }
 
+    /*
+     * The task is being removed.
+     * This is an important signal for Alert() which will not attempt to use
+     * the context which is being deleted, for example.
+     */
+    task->tc_State = TS_REMOVED;
+
     /* Uninitialize ETask structure */
     et = GetETask(task);
     if(et != NULL)
@@ -93,14 +100,6 @@
         KrnDeleteContext(((struct IntETask *)et)->iet_Context);
 	CleanupETask(task, et);
     }
-
-    /*
-     * The task has been removed.
-     * We intentionally set this before FreeEntry() in order to give a warning
-     * to mungwall which will not fill freed memory with pattern if it's our
-     * current task. See TODO below.
-     */
-    task->tc_State = TS_REMOVED;
 
     /*
      * Free all memory in the tc_MemEntry list.

@@ -141,21 +141,8 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, const char
 
     if (header->mwh_fault)
     {
-    	/* Set mungwall alert context and throw an alert */
-    	struct Task *me = FindTask(NULL);
-    	struct IntETask *iet = GetIntETask(me);
-
-    	iet->iet_AlertFlags   |= AF_Location;
-    	iet->iet_AlertLocation = caller;
-    	iet->iet_AlertStack    = stack;
-
-    	mwdata.hdr      = header;
-    	mwdata.freeFunc = function;
-
-	iet->iet_AlertType = AT_MUNGWALL;
-	CopyMem(&mwdata, &iet->iet_AlertData, sizeof(mwdata));
-
-    	Alert(AN_MemoryInsane);
+    	/* Throw an alert with context */
+    	Exec_ExtAlert(AN_MemoryInsane, caller, stack, &mwdata, AT_MUNGWALL, SysBase);
 
     	/*
     	 * Our entry can be freed by another process while we are sitting in Alert().

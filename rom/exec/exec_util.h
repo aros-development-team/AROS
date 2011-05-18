@@ -34,23 +34,25 @@
 #define FP a[6]
 #else
 #define FP a[5]
+#define CALLER_FRAME NULL
 #endif
 #endif
 #ifdef __powerpc__
 #define PC ip
 #define FP gpr[1]
 #endif
-#ifdef __ppc__
-#define PC ip
-#define FP gpr[1]
-#endif
 #ifdef __arm__
 #define PC pc
 #define FP lr
+#define CALLER_FRAME NULL
 #endif
 
 #ifndef PC
 #error unsupported CPU type
+#endif
+
+#ifndef CALLER_FRAME
+#define CALLER_FRAME __builtin_frame_address(1)
 #endif
 
 #ifndef EXEC_TASKS_H
@@ -80,16 +82,17 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase);
 STRPTR Alert_AddString(STRPTR dest, CONST_STRPTR src);
 STRPTR Alert_GetTitle(ULONG alertNum);
 STRPTR Alert_GetString(ULONG alertnum, STRPTR buf);
-STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase);
+STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, APTR location, UBYTE type, struct ExecBase *SysBase);
 STRPTR FormatTask(STRPTR buffer, const char *text, struct Task *, struct ExecBase *SysBase);
 STRPTR FormatLocation(STRPTR buf, const char *text, APTR location, struct ExecBase *SysBase);
 
-void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase);
+void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase);
 APTR UnwindFrame(APTR fp, APTR *caller);
 
+void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
 ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase);
-void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase);
+void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
 void Exec_DoResetCallbacks(struct IntExecBase *SysBase);
 
 APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,

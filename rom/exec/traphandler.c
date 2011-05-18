@@ -45,15 +45,19 @@ static void Exec_CrashHandler(void)
 void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 {
     struct Task *task = SysBase->ThisTask;
-    struct IntETask *iet;
 
     /* Our situation is deadend */
     trapNum |= AT_DeadEnd;
 
-    if (task)
+    /*
+     * We must have a valid task in order to be able
+     * to display a requester in user mode.
+     */
+    if (task && (task->tc_State != TS_REMOVED))
     {
 	/* Get internal task structure */
-        iet = GetIntETask(task);
+        struct IntETask *iet = GetIntETask(task);
+
 	/*
 	 * Protection against double-crash. If the task is already in alert state,  we have
 	 * a second crash during processing the first one. Then we just pick up initial alert code
@@ -61,6 +65,7 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 	 */
 	if (iet->iet_AlertFlags & AF_Alert)
 	    trapNum = iet->iet_AlertCode;
+
 	/*
 	 * Workaround for i386-native. There trap handler already runs in user mode (BAD!),
 	 * and it gets NULL as context pointer (this port saves CPU context in own format,
@@ -100,5 +105,5 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 	}
     }
 
-    Alert(trapNum);
+    Exec_ExtAlert(trapNum, ctx ? (APTR)ctx->PC : NULL, ctx ? (APTR)ctx->FP : NULL, AT_CPU, ctx, SysBase);
 } /* TrapHandler */

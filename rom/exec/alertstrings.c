@@ -461,7 +461,7 @@ static const char hdrstring[] =   "Task : 0x%P - %s";
 static const char errstring[] = "\nError: 0x%08lx - ";
 static const char locstring[] = "\nPC   : 0x%P";
 
-STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
+STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, APTR location, UBYTE type, struct ExecBase *SysBase)
 {
     char *buf;
 
@@ -471,16 +471,12 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
     *buf = 0;
     D(bug("[FormatAlert] Header:\n%s\n", buffer));
 
-    if (task)
+    /* For AT_CPU alerts NULL location is also valid */
+    if (location || (type == AT_CPU))
     {
-	struct IntETask *iet = GetIntETask(task);
+	buf = FormatLocation(buf, locstring, location, SysBase);
 
-	if (iet->iet_AlertFlags & AF_Location)
-	{
-	    buf = FormatLocation(buf, locstring, iet->iet_AlertLocation, SysBase);
-
-	    D(bug("[FormatAlert] Location string:\n%s\n", buffer));
-	}
+	D(bug("[FormatAlert] Location string:\n%s\n", buffer));
     }
 
     return buf;
