@@ -2,7 +2,7 @@
 #define COMMODITIES_PARSE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -231,9 +231,8 @@ pix_S pix_Highmap[]=
 	{"ESCAPE",
 	0x45},
 
-	{"F1",
-	0x50},
-
+	/* The keys F10 to F12 must appear before F1 to F9
+	   in this table or the parsing will fail */
 	{"F10",
 	0x59},
 
@@ -242,6 +241,9 @@ pix_S pix_Highmap[]=
 
 	{"F12",
 	0x6f},
+
+	{"F1",
+	0x50},
 
 	{"F2",
 	0x51},
