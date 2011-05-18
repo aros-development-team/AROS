@@ -1,3 +1,8 @@
+/*
+    Copyright © 2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/debug.h>
 #include <dos/dosextens.h>
 #include <hidd/graphics.h>
@@ -73,6 +78,8 @@ int main(void)
     IPTR args[2] = {0};
     int ret = RETURN_FAIL;
 
+    memset(&sd, 0, sizeof(sd));
+
     /* 
      * Open libraries manually, otherwise they will be closed
      * when this subroutine exits. Driver needs them.
@@ -130,7 +137,7 @@ int main(void)
 
 	str = FindToolType(icon->do_ToolTypes, "GMA_MEM=");
 	if (str)
-	    sd.memsize = atoi(&str[8]);
+	    sd.memsize = atoi(str);
     }
 
     if (!WBenchMsg)
@@ -150,8 +157,6 @@ int main(void)
     /* Obtain attribute bases first */
     if (OOP_ObtainAttrBases(attrbases))
     {
-	memset(&sd, 0, sizeof(sd));
-
 	struct TagItem INTELG45_tags[] =
 	{
 	    {aMeta_SuperID	 , (IPTR)CLID_Hidd_Gfx         },
