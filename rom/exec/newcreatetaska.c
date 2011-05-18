@@ -172,7 +172,11 @@ static const struct newMemList MemTemplate =
 	newtask->tc_Flags    = flags;
 	newtask->tc_UserData = userdata;
 
-	newtask->tc_SPReg   = (APTR)((IPTR)ml->ml_ME[1].me_Addr + nml.nml_ME[1].me_Length);
+	/*
+	 * On some architectures (PPC) stack frames must be preallocated.
+	 * SP_OFFSET is subtracted in order to take care of this.
+	 */
+	newtask->tc_SPReg   = ml->ml_ME[1].me_Addr + nml.nml_ME[1].me_Length - SP_OFFSET;
 	newtask->tc_SPLower = ml->ml_ME[1].me_Addr;
 	newtask->tc_SPUpper = newtask->tc_SPReg;
 
