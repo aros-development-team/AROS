@@ -2,6 +2,7 @@
 #define MDEBUG 1
 
 #include <aros/debug.h>
+#include <exec/memory.h>
 
 #define MUNGWALL_HEADER_ID 0x1ADEBCA1
 
@@ -21,7 +22,7 @@ struct MungwallHeader
  * Total size of mungwall header needs to be a multiple of MEMCHUNK_TOTAL
  * for keeping proper alignment.
  */
-#define MUNGWALLHEADER_SIZE  (AROS_ROUNDUP2(sizeof(struct MungwallHeader), sizeof(struct MemChunk)))
+#define MUNGWALLHEADER_SIZE  (AROS_ROUNDUP2(sizeof(struct MungwallHeader), MEMCHUNK_TOTAL))
 #define MUNGWALL_BLOCK_SHIFT (MUNGWALLHEADER_SIZE + MUNGWALL_SIZE)
 #define MUNGWALL_TOTAL_SIZE  (MUNGWALLHEADER_SIZE + MUNGWALL_SIZE * 2)
 

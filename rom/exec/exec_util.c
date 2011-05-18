@@ -406,6 +406,9 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 {
     struct Task *t;
 
+    if (!task)
+	return FALSE;
+
     Forbid();
 
     if (task == SysBase->ThisTask)
