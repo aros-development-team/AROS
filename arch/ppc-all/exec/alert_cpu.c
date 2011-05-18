@@ -55,7 +55,9 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
 APTR UnwindFrame(APTR fp, APTR *caller)
 {
     APTR *sp = fp;
+    
+    sp      = sp[0];	/* Go to previous frame first			*/
+    *caller = sp[1];	/* Caller address is stored in *caller's* frame */
 
-    *caller = sp[1];	/* Fill in caller address		*/
-    return sp[0];	/* Return pointer to the previous frame */
+    return sp;
 }
