@@ -68,6 +68,39 @@ static struct StackBitMapNode * HIDDCompositingIsBitMapOnStack(struct HIDDCompos
     return NULL;
 }
 
+static VOID HIDDCompositingValidateBitMapPositionChange(struct HIDDCompositingData * compdata, OOP_Object * bm,
+    LONG * newxoffset, LONG * newyoffset)
+{
+    struct StackBitMapNode * n = NULL;
+
+    /* Check if passed bitmap is in stack, ignore if not */
+    if ((n = HIDDCompositingIsBitMapOnStack(compdata, bm)) != NULL)
+    {
+        IPTR width, height;
+        LONG limit;
+        
+        OOP_GetAttr(bm, aHidd_BitMap_Width, &width);
+        OOP_GetAttr(bm, aHidd_BitMap_Height, &height);
+        
+        /* Check x position */
+        limit = n->displayedwidth - width;
+        if (*(newxoffset) > 0)
+            *(newxoffset) = 0;
+
+        if (*(newxoffset) < limit)
+            *(newxoffset) = limit;
+
+        /* Check y position */
+        limit = n->displayedheight - height;
+        if (*(newyoffset) > n->displayedheight - 15) /* Limit for drag */
+            *(newyoffset) = n->displayedheight - 15;
+
+        if (*(newyoffset) < limit) /* Limit for scroll */
+            *(newyoffset) = limit;
+    }
+}
+
+
 static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * compdata)
 {
     ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
@@ -102,17 +135,6 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
             n->bm, n->isscreenvisible, 
             n->screenvisiblerect.MinX, n->screenvisiblerect.MinY, 
             n->screenvisiblerect.MaxX, n->screenvisiblerect.MaxY));
-    }
-}
-
-static VOID HIDDCompositingRecalculateDisplayedWidthHeight(struct HIDDCompositingData * compdata)
-{
-    struct StackBitMapNode * n = NULL;
-
-    ForeachNode(&compdata->bitmapstack, n)
-    {
-        n->displayedwidth   = compdata->screenrect.MaxX + 1;
-        n->displayedheight  = compdata->screenrect.MaxY + 1;
     }
 }
 
@@ -543,6 +565,7 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 {
     struct HIDD_ViewPortData * vpdata;
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
+    struct StackBitMapNode * n = NULL;
 
     D(bug("[Compositing] BitMapStackChanged, topbitmap: 0x%x\n", 
         msg->data->Bitmap));
@@ -576,18 +599,32 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
            bitmap */
         if (HIDDCompositingCanCompositeWithScreenBitMap(compdata, vpdata->Bitmap))
         {
-            struct StackBitMapNode * n = AllocMem(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
+            n = AllocMem(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
+
             n->bm               = vpdata->Bitmap;
             n->isscreenvisible  = FALSE;
-            n->displayedwidth   = 0;
-            n->displayedheight  = 0;
+            n->displayedwidth   = compdata->screenrect.MaxX + 1;
+            n->displayedheight  = compdata->screenrect.MaxY + 1;
             AddTail(&compdata->bitmapstack, (struct Node *)n);
         }
     }
-
-    /* Set displayedwidth/displayedheight on all screen bitmaps */
-    HIDDCompositingRecalculateDisplayedWidthHeight(compdata);
     
+    /* Validate bitmap offsets - they might not match the compositing rules taking
+       new displayedwidth/displayedheight values */
+    ForeachNode(&compdata->bitmapstack, n)
+    {
+        LONG newxoffset, newyoffset;
+        IPTR val;
+        OOP_GetAttr(n->bm, aHidd_BitMap_TopEdge, &val);newyoffset = (LONG)val;
+        OOP_GetAttr(n->bm, aHidd_BitMap_LeftEdge, &val);newxoffset = (LONG)val;
+        
+        HIDDCompositingValidateBitMapPositionChange(compdata, n->bm, 
+            &newxoffset, &newyoffset);
+
+        /* Override offsets without checks present in bitmap Set method */
+        HIDDNouveauSetOffsets(n->bm, newxoffset, newyoffset);
+    }
+
     /* Toogle compositing based on screen positions */
     HIDDCompositingToggleCompositing(compdata);
 
@@ -643,35 +680,11 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapPositionChanged)
 VOID METHOD(Compositing, Hidd_Compositing, ValidateBitMapPositionChange)
 {
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
-    struct StackBitMapNode * n = NULL;
 
     LOCK_COMPOSITING_READ
     
-    /* Check if passed bitmap is in stack, ignore if not */
-    if ((n = HIDDCompositingIsBitMapOnStack(compdata, msg->bm)) != NULL)
-    {
-        IPTR width, height;
-        LONG limit;
-        
-        OOP_GetAttr(msg->bm, aHidd_BitMap_Width, &width);
-        OOP_GetAttr(msg->bm, aHidd_BitMap_Height, &height);
-        
-        /* Check x position */
-        limit = n->displayedwidth - width;
-        if (*(msg->newxoffset) > 0)
-            *(msg->newxoffset) = 0;
-
-        if (*(msg->newxoffset) < limit)
-            *(msg->newxoffset) = limit;
-
-        /* Check y position */
-        limit = n->displayedheight - height;
-        if (*(msg->newyoffset) > n->displayedheight - 15) /* Limit for drag */
-            *(msg->newyoffset) = n->displayedheight - 15;
-
-        if (*(msg->newyoffset) < limit) /* Limit for scroll */
-            *(msg->newyoffset) = limit;
-    }
+    HIDDCompositingValidateBitMapPositionChange(compdata, msg->bm, 
+        msg->newxoffset, msg->newyoffset);
     
     UNLOCK_COMPOSITING
 }

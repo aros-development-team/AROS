@@ -322,6 +322,7 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
 
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
+VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset);
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);

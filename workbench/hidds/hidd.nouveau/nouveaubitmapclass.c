@@ -20,6 +20,14 @@
 #define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
 #define HiddBitMapNouveauAttrBase   (SD(cl)->bitMapNouveauAttrBase)
 
+VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset)
+{
+    OOP_Class * cl = OOP_OCLASS(bm);
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
+    bmdata->xoffset = newxoffset;
+    bmdata->yoffset = newyoffset;
+}
+
 /* TEMP - FIXME HACK FOR PATCHRGBCONV */
 void HACK_PATCHRGBCONV(OOP_Object * bitmap);
 /* TEMP - FIXME HACK FOR PATCHRGBCONV */
@@ -202,8 +210,7 @@ VOID METHOD(NouveauBitMap, Root, Set)
                 bm : o
             };
 
-            bmdata->xoffset = newxoffset;
-            bmdata->yoffset = newyoffset;
+            HIDDNouveauSetOffsets(o, newxoffset, newyoffset);
         
             OOP_DoMethod(bmdata->compositing, (OOP_Msg)&bpcmsg);
         }
