@@ -36,19 +36,22 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/cybergraphics.h>
+#include <proto/diskfont.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <aros/debug.h>
 
 /****************************************************************************************/
 
-#define ARG_TEMPLATE    "WIDTH=W/N/K,HEIGHT=H/N/K,LEN=W/N/K,MODE=P/K"
+#define ARG_TEMPLATE    "WIDTH=W/N/K,HEIGHT=H/N/K,LEN=W/N/K,MODE=P/K,ANTIALIAS/S"
 #define ARG_W           0
 #define ARG_H           1
 #define ARG_LEN         2
 #define ARG_MODE        3
-#define NUM_ARGS        4
+#define ARG_ANTIALIAS   4
+#define NUM_ARGS        5
 
 /****************************************************************************************/
 
@@ -59,7 +62,9 @@ LONG            width = 1280;
 LONG            height = 720;
 LONG            linelen = 100;
 STRPTR          modename = "JAM1";
+STRPTR          aa = "NON-ANTIALIASED";
 LONG            mode = JAM1;
+BOOL            antialias = FALSE;
 
 struct Window   *win;
 
@@ -112,6 +117,9 @@ static void getarguments(void)
             mode = COMPLEMENT;
             modename = "COMPLEMENT";
         }
+        
+        antialias = (BOOL)args[ARG_ANTIALIAS];
+        if (antialias) aa = "ANTIALIASED";
     }
     
 }
@@ -148,17 +156,38 @@ static void action(void)
     Delay(2 * 50);
     
     CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
+
+    /* Set text mode */
+    SetAPen(win->RPort, 1);
+    SetDrMd(win->RPort, mode);
     
+    if (antialias)
+    {
+        struct TextAttr ta;
+        struct TextFont * font;
+        ta.ta_Name = "Vera Sans.font";
+        ta.ta_YSize = 15;
+        ta.ta_Style = 0;
+        ta.ta_Flags = 0;
+        
+        font = OpenDiskFont(&ta);
+        
+        if (font != NULL)
+            SetFont(win->RPort, font);
+        else
+        {
+            CloseWindow(win);
+            printf("Failed to set antialiazed font\n");
+            return;
+        }
+    }
+
     /* Generate random buffer */
     buffer = AllocVec(linelen + 1, MEMF_PUBLIC | MEMF_CLEAR);
     for (i = 0; i < linelen; i++)
         buffer[i] = 60 + (rand() % 40);
-    
+
     TextExtent(win->RPort, buffer, linelen, &extend);
-    
-    /* Set text mode */
-    SetAPen(win->RPort, 1);
-    SetDrMd(win->RPort, mode);
     
     for(i = 0; ; i++)
     {
@@ -174,7 +203,7 @@ static void action(void)
             }
     }
     
-    printf("Mode                 : %s\n", modename);
+    printf("Mode                 : %s, %s\n", modename, aa);
     printf("Elapsed time         : %d us (%f s)\n", t, (double)t / 1000000);
     printf("Blits                : %d\n", i);
     printf("Blits/sec            : %f\n", i * 1000000.0 / t);
