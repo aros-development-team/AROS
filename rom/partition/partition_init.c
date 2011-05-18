@@ -35,13 +35,6 @@ static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 
 static int PartitionCleanup(struct PartitionBase_intern *base)
 {
-    /*
-     * If we are resident in kickstart, we won't have a seglist.
-     * In this case we prevent expunging, otherwise we can't come up again.
-     */
-    if (!base->segList)
-    	return FALSE;
-
     /* If there's something in our boot list, we can't quit without losing it */
     if (!IsListEmpty(&base->bootList))
     	return FALSE;
@@ -50,7 +43,8 @@ static int PartitionCleanup(struct PartitionBase_intern *base)
     	CloseLibrary(base->pb_DOSBase);
 
     /* REMOVE ONCE ABIv1 HAS STABILIZED */
-    CloseLibrary(base->pb_UtilityBase);
+    if (base->pb_UtilityBase)
+	CloseLibrary(base->pb_UtilityBase);
 
     return TRUE;
 }
