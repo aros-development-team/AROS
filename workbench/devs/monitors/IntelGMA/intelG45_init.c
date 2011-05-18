@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -326,7 +326,8 @@ AROS_UFH3(void, Enumerator,
         if (extra_mem_size != 0)
         {
             /* Get memory */
-            uintptr_t phys_memory = AllocMem(extra_mem_size + 4095, MEMF_REVERSE);
+            uintptr_t phys_memory =
+                (uintptr_t)AllocMem(extra_mem_size + 4095, MEMF_REVERSE);
             D(bug("[GMA] Got %08x\n", phys_memory));
 
             /* Align it to the page size boundary (we allocated one page
