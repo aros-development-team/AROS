@@ -44,7 +44,7 @@ AROS_LH6(ULONG, DoRenderFunc,
 	 AROS_LHA(struct RastPort *, rp, A0),
 	 AROS_LHA(Point *, src, A1),
 	 AROS_LHA(struct Rectangle *, rr, A2),
-	 AROS_LHA(VOID_FUNC, render_func, A3),
+	 AROS_LHA(APTR, render_func, A3),
 	 AROS_LHA(APTR, funcdata, A4),
 	 AROS_LHA(BOOL, do_update, D0),
 	 struct GfxBase *, GfxBase, 184, Graphics)
@@ -56,7 +56,7 @@ AROS_LH6(ULONG, DoRenderFunc,
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
         return -1;
 
-    res = do_render_func(rp, src, rr, (void *)render_func, funcdata, do_update, FALSE, GfxBase);
+    res = do_render_func(rp, src, rr, render_func, funcdata, do_update, FALSE, GfxBase);
 
     RELEASE_DRIVERDATA(rp, GfxBase);
     return res;
@@ -68,7 +68,7 @@ AROS_LH6(LONG, DoPixelFunc,
 	 AROS_LHA(struct RastPort *, rp, A0),
 	 AROS_LHA(LONG, x, D0),
 	 AROS_LHA(LONG, y, D1),
-    	 AROS_LHA(VOID_FUNC, render_func, A1),
+    	 AROS_LHA(APTR, render_func, A1),
 	 AROS_LHA(APTR, funcdata, A2),
 	 AROS_LHA(BOOL, do_update, D2),
 	 struct GfxBase *, GfxBase, 185, Graphics)
@@ -80,7 +80,7 @@ AROS_LH6(LONG, DoPixelFunc,
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
         return -1;
 
-    res = do_pixel_func(rp, x, y, (void *)render_func, funcdata, do_update, GfxBase);
+    res = do_pixel_func(rp, x, y, render_func, funcdata, do_update, GfxBase);
 
     RELEASE_DRIVERDATA(rp, GfxBase);
     return res;
