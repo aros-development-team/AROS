@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -368,7 +368,7 @@ ULONG do_pixel_func(struct RastPort *rp
 			    );
                             if (do_update)
                             {
-                                HIDD_BM_UpdateRect(bm_obj, x, y, 1, 1);
+                                HIDD_BM_UpdateRect(bm_obj, absx, absy, 1, 1);
                             }
 			    
 			    RELEASE_HIDD_BM(bm_obj, bm);
