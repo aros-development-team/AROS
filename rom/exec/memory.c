@@ -363,7 +363,7 @@ void FreeMemHeader(APTR addr, struct ExecBase *SysBase)
  * can contain puddles from both CHIP and FAST memory. This is done in
  * order to provide a single system default pool for all types of memory.
  */
-APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct ExecBase *SysBase)
+APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, const char *function, APTR caller, struct ExecBase *SysBase)
 {
     struct ProtectedPool *pool = poolHeader + MEMHEADER_TOTAL;
     APTR ret = NULL;
@@ -490,7 +490,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
     if (ret)
     {
 	/* Build munge walls if requested */
-	ret = MungWall_Build(ret, pool, origSize, flags, SysBase);
+	ret = MungWall_Build(ret, pool, origSize, flags, function, caller, SysBase);
 
 	/* Remember where we were allocated from */
 	*((struct MemHeader **)ret) = mh;
@@ -509,7 +509,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
  * Our chunks remember from which pool they came, so we don't need a pointer to pool
  * header here. This will save us from headaches in future FreeMem() implementation.
  */
-void InternalFreePooled(APTR memory, IPTR memSize, APTR caller, APTR stack, struct ExecBase *SysBase)
+void InternalFreePooled(APTR memory, IPTR memSize, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
     APTR freeStart;
@@ -525,7 +525,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, APTR caller, APTR stack, stru
     mh = *((struct MemHeader **)freeStart);
 
     /* Check walls first */
-    freeStart = MungWall_Check(freeStart, freeSize, caller, stack, SysBase);
+    freeStart = MungWall_Check(freeStart, freeSize, function, caller, stack, SysBase);
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
 	freeSize += MUNGWALL_TOTAL_SIZE;
 

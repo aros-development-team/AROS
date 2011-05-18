@@ -68,7 +68,7 @@
     D(bug("AllocPooled 0x%P memsize %u by \"%s\"\n", poolHeader, memSize, SysBase->ThisTask->tc_Node.ln_Name));
 
     /* Allocate from the specified pool with flags stored in pool header */
-    return InternalAllocPooled(poolHeader, memSize, pool->Requirements, SysBase);
+    return InternalAllocPooled(poolHeader, memSize, pool->Requirements, "AllocPooled", __builtin_return_address(0), SysBase);
 
     AROS_LIBFUNC_EXIT
     

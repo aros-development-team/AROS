@@ -68,8 +68,8 @@ void InternalFreeMem(APTR location, IPTR byteSize, struct ExecBase *SysBase);
 APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase);
 void FreeMemHeader(APTR addr, struct ExecBase *SysBase);
 
-APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct ExecBase *SysBase);
-void InternalFreePooled(APTR memory, IPTR memSize, APTR caller, APTR stack, struct ExecBase *SysBase);
+APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, const char *function, APTR caller, struct ExecBase *SysBase);
+void InternalFreePooled(APTR memory, IPTR memSize, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase);
 
 ULONG checkMemHandlers(struct checkMemHandlersState *cmhs, struct ExecBase *SysBase);
 

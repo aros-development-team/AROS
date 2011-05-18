@@ -78,7 +78,7 @@
 
     RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 
-    memoryBlock = MungWall_Check(memoryBlock, byteSize, __builtin_return_address(0), __builtin_frame_address(1), SysBase);
+    memoryBlock = MungWall_Check(memoryBlock, byteSize, "FreeMem", __builtin_return_address(0), __builtin_frame_address(1), SysBase);
 
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
         byteSize += MUNGWALL_TOTAL_SIZE;

@@ -10,8 +10,9 @@
 #include <exec/rawfmt.h>
 #include <proto/exec.h>
 
-#include "exec_intern.h"
 #include "etask.h"
+#include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 #include "mungwall.h"
 
@@ -22,7 +23,7 @@
  * 'res' is a pointer to the beginning of a raw memory block (inside which walls will be constructed)
  * 'origSize' is ORIGINAL allocation size (before adding mungwall size)
  */
-APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, struct ExecBase *SysBase)
+APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, const char *function, APTR caller, struct ExecBase *SysBase)
 {
     if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res)
     {
@@ -38,6 +39,9 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
 	header->mwh_fault     = FALSE;
 	header->mwh_allocsize = origSize;
 	header->mwh_pool      = pool;
+	header->mwh_AllocFunc = function;
+	header->mwh_Owner     = FindTask(NULL);
+	header->mwh_Caller    = caller;
 
 	/* Skip to the start of the pre-wall */
         res += MUNGWALLHEADER_SIZE;
@@ -64,19 +68,22 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
 
 char *FormatMWContext(char *buffer, struct MungwallContext *ctx, struct ExecBase *SysBase)
 {
-    buffer = NewRawDoFmt("Block at 0x%p, size %lu", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, (APTR)ctx->hdr + MUNGWALL_BLOCK_SHIFT, ctx->hdr->mwh_allocsize) - 1;
+    buffer = NewRawDoFmt("In %s, block at 0x%p, size %lu", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->freeFunc, (APTR)ctx->hdr + MUNGWALL_BLOCK_SHIFT, ctx->hdr->mwh_allocsize) - 1;
+    buffer = NewRawDoFmt("\nAllocated using %s ", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->hdr->mwh_AllocFunc) - 1;
+    buffer = FormatTask(buffer, "by task 0x%p (%s)", ctx->hdr->mwh_Owner, SysBase);
+    buffer = FormatLocation(buffer, " at 0x%p", ctx->hdr->mwh_Caller, SysBase);
 
-    if (ctx->bad_id)
-    	buffer = NewRawDoFmt("\nMUNGWALL_HEADER_ID mismatch\n", (VOID_FUNC)RAWFMTFUNC_STRING, buffer) - 1;
+    if (ctx->hdr->mwh_magicid != MUNGWALL_HEADER_ID)
+    	buffer = NewRawDoFmt("\nMUNGWALL_HEADER_ID mismatch", (VOID_FUNC)RAWFMTFUNC_STRING, buffer) - 1;
 
     if (ctx->freeSize)
-    	buffer = NewRawDoFmt("\nFreeMem size %lu mismatch\n", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->freeSize) - 1;
+    	buffer = NewRawDoFmt("\nFreeMem size %lu mismatch", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->freeSize) - 1;
 
     if (ctx->pre_start)
-    	buffer = NewRawDoFmt("\nPre-wall broken at 0x%p - 0x%p\n", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->pre_start, ctx->pre_end) - 1;
+    	buffer = NewRawDoFmt("\nPre-wall broken at 0x%p - 0x%p", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->pre_start, ctx->pre_end) - 1;
 
     if (ctx->post_start)
-    	buffer = NewRawDoFmt("\nPost-wall broken at 0x%p - 0x%p\n", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->post_start, ctx->post_end) - 1;
+    	buffer = NewRawDoFmt("\nPost-wall broken at 0x%p - 0x%p", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->post_start, ctx->post_end) - 1;
 
     return buffer;
 }
@@ -103,7 +110,7 @@ static APTR CheckWall(UBYTE *ptr, UBYTE fill, IPTR size, APTR *endptr)
     return start;
 }
 
-static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, APTR caller, APTR stack, struct ExecBase *SysBase)
+static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase)
 {
     struct MungwallContext mwdata;
 
@@ -111,8 +118,7 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, APTR calle
     if (header->mwh_fault)
     	return;
 
-    mwdata.bad_id = (header->mwh_magicid != MUNGWALL_HEADER_ID);
-    if (mwdata.bad_id)
+    if (header->mwh_magicid != MUNGWALL_HEADER_ID)
         header->mwh_fault = TRUE;
 
     if (byteSize && (header->mwh_allocsize != byteSize))
@@ -139,20 +145,18 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, APTR calle
     	struct Task *me = FindTask(NULL);
     	struct IntETask *iet = GetIntETask(me);
 
-	if (caller)
-	{
-    	    iet->iet_AlertFlags   |= AF_Location;
-    	    iet->iet_AlertLocation = caller;
-    	    iet->iet_AlertStack    = stack;
-    	}
+    	iet->iet_AlertFlags   |= AF_Location;
+    	iet->iet_AlertLocation = caller;
+    	iet->iet_AlertStack    = stack;
 
-    	mwdata.hdr = header;
+    	mwdata.hdr      = header;
+    	mwdata.freeFunc = function;
 
 	iet->iet_AlertType = AT_MUNGWALL;
 	CopyMem(&mwdata, &iet->iet_AlertData, sizeof(mwdata));
 
     	Alert(AN_MemoryInsane);
-    	
+
     	/*
     	 * Our entry can be freed by another process while we are sitting in Alert().
     	 * This is 100% safe as long as we don't touch the entry after Alert().
@@ -173,7 +177,7 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, APTR calle
  *
  * Returns address of the raw block (what really needs to be deallocated)
  */
-APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, APTR caller, APTR stack, struct ExecBase *SysBase)
+APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase)
 {
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
@@ -200,7 +204,7 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, APTR caller, APTR stack, st
 	/* Reset fault state in order to see who is freeing the bad entry */
 	header->mwh_fault = FALSE;
 
-	CheckHeader(header, byteSize, caller, stack, SysBase);
+	CheckHeader(header, byteSize, function, caller, stack, SysBase);
 
 	/* Fill block with weird stuff to esploit bugs in applications
 	 *
@@ -229,14 +233,14 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, APTR caller, APTR stack, st
  * Scan the whole allocations list, optionally removing entries
  * belonging to a particular pool.
  */
-void MungWall_Scan(APTR pool, APTR caller, APTR stack, struct ExecBase *SysBase)
+void MungWall_Scan(APTR pool, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase)
 {
-    D(bug("[Mungwall] Scan(), caller 0x%p\n", caller));
-
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
 	struct MungwallHeader 	*allocnode;
 	struct MungwallHeader	*tmp;
+
+	D(bug("[Mungwall] Scan(), caller %s\n", function));
 
 	Forbid();
 
@@ -255,7 +259,7 @@ void MungWall_Scan(APTR pool, APTR caller, APTR stack, struct ExecBase *SysBase)
 	    	allocnode->mwh_fault = FALSE;
 	    }
 
-	    CheckHeader(allocnode, 0, caller, stack, SysBase);
+	    CheckHeader(allocnode, 0, function, caller, stack, SysBase);
 	}
 
 	Permit();

@@ -115,7 +115,7 @@
     RT_Add (RTT_MEMORY, res, origSize);
 #endif  
 
-    res = MungWall_Build(res, NULL, origSize, requirements, SysBase);
+    res = MungWall_Build(res, NULL, origSize, requirements, "AllocMem", __builtin_return_address(0), SysBase);
 
     /* Set DOS error if called from a process */
     if (res == NULL)

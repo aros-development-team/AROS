@@ -63,10 +63,10 @@
 	 * We are going to deallocate the whole pool.
 	 * Scan mungwall's allocations list and remove all chunks
 	 * belonging to the pool.
-	 * Provide also return address and caller's stack frame. This is needed for
-	 * mungwall alerts.
+	 * For mungwall we provide also called function name, return address and caller's stack frame.
+	 * This will be displayed in alerts.
 	 */
-	MungWall_Scan(pool, __builtin_return_address(0), __builtin_frame_address(1), SysBase);
+	MungWall_Scan(pool, "DeletePool", __builtin_return_address(0), __builtin_frame_address(1), SysBase);
 
 	/*
 	 * Free the list of puddles.
