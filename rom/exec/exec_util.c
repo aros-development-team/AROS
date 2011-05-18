@@ -401,3 +401,37 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
     
     Permit();
 }
+
+BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
+{
+    struct Task *t;
+
+    Forbid();
+
+    if (task == SysBase->ThisTask)
+    {
+    	Permit();
+    	return TRUE;
+    }
+
+    ForeachNode(&SysBase->TaskReady, t)
+    {
+    	if (task == t)
+    	{
+    	    Permit();
+    	    return TRUE;
+    	}
+    }
+
+    ForeachNode(&SysBase->TaskWait, t)
+    {
+    	if (task == t)
+    	{
+    	    Permit();
+    	    return TRUE;
+    	}
+    }
+    
+    Permit();
+    return FALSE;
+}

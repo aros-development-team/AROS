@@ -422,19 +422,6 @@ STRPTR Alert_GetTitle(ULONG alertNum)
         return "Recoverable Alert!";
 }
 
-STRPTR Alert_GetTaskName(struct Task *task)
-{
-    STRPTR tname;
-
-    /* Find out the task name. The node type must be correct. */
-    if (task && ((task->tc_Node.ln_Type == NT_TASK) || (task->tc_Node.ln_Type == NT_PROCESS))
-       && (task->tc_Node.ln_Name != NULL))
-        tname = task->tc_Node.ln_Name;
-    else
-        tname = "--task not found--";
-    return tname;
-}
-
 /* Decode the alert number, and try and work out what string to get */
 STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
 {
@@ -470,19 +457,18 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
     return buf;
 }
 
-static const char hdrstring[] = "Task : 0x%P - %s\n"
-			        "Error: 0x%08lx - ";
-static const char locstring[] = "PC   : 0x%P";
-static const char modstring[] = "Module %s Segment %lu %s (0x%P) Offset 0x%P";
-static const char funstring[] = "Function %s (0x%P) Offset 0x%P";
+static const char hdrstring[] =   "Task : 0x%P - %s";
+static const char errstring[] = "\nError: 0x%08lx - ";
+static const char locstring[] = "\nPC   : 0x%P";
 
 STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
 {
     char *buf;
 
-    buf = NewRawDoFmt(hdrstring, RAWFMTFUNC_STRING, buffer, task, Alert_GetTaskName(task), alertNum);
-    buf = Alert_GetString(alertNum, --buf);
-    *buf++ = 0;
+    buf = FormatTask(buffer, hdrstring, task, SysBase);
+    buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, buf, task, alertNum) - 1;
+    buf = Alert_GetString(alertNum, buf);
+    *buf = 0;
     D(bug("[FormatAlert] Header:\n%s\n", buffer));
 
     if (task)
@@ -491,40 +477,57 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 
 	if (iet->iet_AlertFlags & AF_Location)
 	{
-	    char *modname, *segname, *symname;
-	    void *segaddr, *symaddr;
-	    unsigned int segnum;
+	    buf = FormatLocation(buf, locstring, iet->iet_AlertLocation, SysBase);
 
-	    buf[-1] = '\n';
-	    buf = NewRawDoFmt(locstring, RAWFMTFUNC_STRING, buf, iet->iet_AlertLocation);
 	    D(bug("[FormatAlert] Location string:\n%s\n", buffer));
-
-	    if (DebugBase && DecodeLocation(iet->iet_AlertLocation,
-				  	    DL_ModuleName , &modname, DL_SegmentNumber, &segnum ,
-				  	    DL_SegmentName, &segname, DL_SegmentStart , &segaddr,
-					    DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
-					    TAG_DONE))
-	    {
-	    	buf[-1] = '\n';
-	    
-		if (!segname)
-		    segname = "- unknown -";
-
-		buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, buf, modname, segnum, segname, segaddr, iet->iet_AlertLocation - segaddr);
-
-		if (symaddr)
-		{
-		    buf[-1] = '\n';
-
-		    if (!symname)
-			symname = "- unknown -";
-
-		    buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, buf, symname, symaddr, iet->iet_AlertLocation - symaddr);
-		}
-	    }
 	}
     }
 
-    /* Here buf points to the character AFTER null terminator */
-    return buf - 1;
+    return buf;
+}
+
+STRPTR FormatTask(STRPTR buffer, const char *text, struct Task *task, struct ExecBase *SysBase)
+{
+    STRPTR taskName;
+
+    if (Exec_CheckTask(task, SysBase))
+    	taskName = task->tc_Node.ln_Name;
+    else
+    	taskName = "-- task not found -- ";
+    
+    return NewRawDoFmt(text, RAWFMTFUNC_STRING, buffer, task, taskName) - 1;
+}
+
+static const char modstring[] = "\nModule %s Segment %lu %s (0x%P) Offset 0x%P";
+static const char funstring[] = "\nFunction %s (0x%P) Offset 0x%P";
+
+STRPTR FormatLocation(STRPTR buf, const char *text, APTR location, struct ExecBase *SysBase)
+{
+    char *modname, *segname, *symname;
+    void *segaddr, *symaddr;
+    unsigned int segnum;
+
+    buf = NewRawDoFmt(text, RAWFMTFUNC_STRING, buf, location) - 1;
+
+    if (DebugBase && DecodeLocation(location,
+				    DL_ModuleName , &modname, DL_SegmentNumber, &segnum ,
+				    DL_SegmentName, &segname, DL_SegmentStart , &segaddr,
+				    DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
+				    TAG_DONE))
+   {	    
+	if (!segname)
+	    segname = "- unknown -";
+
+	buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, buf, modname, segnum, segname, segaddr, location - segaddr) - 1;
+
+	if (symaddr)
+	{
+	    if (!symname)
+		symname = "- unknown -";
+
+	    buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, buf, symname, symaddr, location - symaddr) - 1;
+	}
+    }
+    
+    return buf;
 }

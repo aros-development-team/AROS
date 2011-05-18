@@ -90,7 +90,7 @@
      * We also specify MEMF_CLEAR because we do not want to destroy original
      * memory contents.
      */
-    return MungWall_Build(ret, NULL, origSize + location - ret, MEMF_CLEAR, SysBase);
+    return MungWall_Build(ret, NULL, origSize + location - ret, MEMF_CLEAR, "AllocAbs", __builtin_return_address(0), SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* AllocAbs */

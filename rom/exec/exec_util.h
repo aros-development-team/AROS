@@ -75,11 +75,14 @@ struct Task *Exec_FindTaskByID(ULONG id, struct ExecBase *SysBase);
 struct ETask *Exec_FindChild(ULONG id, struct ExecBase *SysBase);
 struct IntETask *FindETask(struct List *, ULONG id, struct ExecBase *SysBase);
 
+BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase);
+
 STRPTR Alert_AddString(STRPTR dest, CONST_STRPTR src);
 STRPTR Alert_GetTitle(ULONG alertNum);
-STRPTR Alert_GetTaskName(struct Task *task);
 STRPTR Alert_GetString(ULONG alertnum, STRPTR buf);
 STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase);
+STRPTR FormatTask(STRPTR buffer, const char *text, struct Task *, struct ExecBase *SysBase);
+STRPTR FormatLocation(STRPTR buf, const char *text, APTR location, struct ExecBase *SysBase);
 
 void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase);
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase);

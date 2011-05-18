@@ -70,7 +70,7 @@
     ret = nommu_AvailMem(attributes, SysBase);
 
     if (attributes & MEMF_CLEAR)
-	MungWall_Scan(NULL, NULL, NULL, SysBase);
+	MungWall_Scan(NULL, "AvailMem", __builtin_return_address(0), __builtin_frame_address(1), SysBase);
 
     return ret;
     AROS_LIBFUNC_EXIT

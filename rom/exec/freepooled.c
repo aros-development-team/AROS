@@ -56,7 +56,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    InternalFreePooled(memory, memSize, __builtin_return_address(0), __builtin_frame_address(1), SysBase);
+    InternalFreePooled(memory, memSize, "FreePooled", __builtin_return_address(0), __builtin_frame_address(1), SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* FreePooled */
