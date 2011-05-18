@@ -58,7 +58,9 @@ UBYTE           s[256];
 LONG            width = 1280;
 LONG            height = 720;
 LONG            linelen = 100;
-STRPTR          functionname = "Text";
+STRPTR          modename = "JAM1";
+LONG            mode = JAM1;
+
 struct Window   *win;
 
 /****************************************************************************************/
@@ -91,20 +93,26 @@ static void getarguments(void)
     
     if (args[ARG_LEN]) linelen = *(LONG *)args[ARG_LEN];
 
- /*   if (args[ARG_FUNCTION])
+    if (args[ARG_MODE])
     {
-        if (strcasecmp((STRPTR)args[ARG_FUNCTION], "READ") == 0)
+        if (strcasecmp((STRPTR)args[ARG_MODE], "JAM1") == 0)
         {
-            function = FUNCTION_READ;
-            functionname = "ReadPixelArray";
+            mode = JAM1;
+            modename = "JAM1";
         }
 
-        if (strcasecmp((STRPTR)args[ARG_FUNCTION], "WRITE_ALPHA") == 0)
+        if (strcasecmp((STRPTR)args[ARG_MODE], "JAM2") == 0)
         {
-            function = FUNCTION_WRITE_ALPHA;
-            functionname = "WritePixelArrayAlpha";
+            mode = JAM2;
+            modename = "JAM2";
         }
-    }*/
+
+        if (strcasecmp((STRPTR)args[ARG_MODE], "COMPLEMENT") == 0)
+        {
+            mode = COMPLEMENT;
+            modename = "COMPLEMENT";
+        }
+    }
     
 }
 
@@ -148,6 +156,10 @@ static void action(void)
     
     TextExtent(win->RPort, buffer, linelen, &extend);
     
+    /* Set text mode */
+    SetAPen(win->RPort, 1);
+    SetDrMd(win->RPort, mode);
+    
     for(i = 0; ; i++)
     {
         CurrentTime(&tv_end.tv_secs, &tv_end.tv_micro);
@@ -162,7 +174,7 @@ static void action(void)
             }
     }
     
-    printf("Function             : %s\n", functionname);
+    printf("Mode                 : %s\n", modename);
     printf("Elapsed time         : %d us (%f s)\n", t, (double)t / 1000000);
     printf("Blits                : %d\n", i);
     printf("Blits/sec            : %f\n", i * 1000000.0 / t);
