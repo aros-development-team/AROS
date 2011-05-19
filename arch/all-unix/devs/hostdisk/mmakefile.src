@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-#MM- workbench-darwin-$(CPU) : workbench-devs-hostdisk
+#MM- workbench-unix : workbench-devs-hostdisk
 
 USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)		\
