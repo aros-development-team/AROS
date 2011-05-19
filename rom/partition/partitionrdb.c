@@ -77,7 +77,7 @@ static AROS_UFH4(LONG, ReadFunc,
     	    size = fsr->size - fsr->offset;
     	if (size > 0) {
     	    UBYTE *inbuf = (UBYTE*)(fsr->fsn->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
-	    CopyMemQuick(inbuf, outbuf, size);
+	    CopyMem(inbuf, outbuf, size);
 	}
 
 	outsize += size;
@@ -223,7 +223,7 @@ static void AddFS(struct RDBData *data)
 	    if (seg) {
     	    	D(bug("RDB fs %08x %d.%d '%s' seg=%08x added\n",
     	    	    dostype, version >> 16, version & 0xffff, &node->fhb.fhb_FileSysName, seg));
-    	    	CopyMemQuick(&node->fhb.fhb_DosType, &fsrnode->fse_DosType, sizeof(struct FileSysEntry) - sizeof(struct Node));
+    	    	CopyMem(&node->fhb.fhb_DosType, &fsrnode->fse_DosType, sizeof(struct FileSysEntry) - sizeof(struct Node));
     	    	fsrnode->fse_SegList = seg;
     	    	AddHead(&fsr->fsr_FileSysEntries, &fsrnode->fse_Node);
     	    }
