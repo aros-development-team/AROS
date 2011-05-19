@@ -653,20 +653,30 @@ void mainloop(void) {
             const struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
             struct TagItem *tag;
 
-            while((tag=NextTagItem(&taglist))) {
-              switch(tag->ti_Tag) {
+            while((tag=NextTagItem(&taglist)))
+            {
+              switch(tag->ti_Tag)
+              {
               case ASQ_START_BYTEH:
-                tag->ti_Data=globals->byte_lowh;
+                tag->ti_Data = globals->byte_low >> 32;
                 break;
+
               case ASQ_START_BYTEL:
-                tag->ti_Data=globals->byte_low;
+              	/*
+              	 * Explicitly cast to ULONG here because on 64 bits
+              	 * ti_Data is 64-bit wide, and this can confuse programs.
+              	 */
+                tag->ti_Data = (ULONG)globals->byte_low;
                 break;
+
               case ASQ_END_BYTEH:
-                tag->ti_Data=globals->byte_highh;
+                tag->ti_Data = globals->byte_high >> 32;
                 break;
+
               case ASQ_END_BYTEL:
-                tag->ti_Data=globals->byte_high;
+                tag->ti_Data = (ULONG)globals->byte_high;
                 break;
+
               case ASQ_DEVICE_API:
                 tag->ti_Data=deviceapiused();
                 break;
@@ -1111,11 +1121,10 @@ void mainloop(void) {
 
               rb->be_datecreated=L2BE(currentdate);
 
-              rb->be_firstbyteh=L2BE(globals->byte_lowh);
-              rb->be_firstbyte=L2BE(globals->byte_low);
-
-              rb->be_lastbyteh=L2BE(globals->byte_highh);
-              rb->be_lastbyte=L2BE(globals->byte_high);
+              rb->be_firstbyteh = L2BE(globals->byte_low >> 32);
+              rb->be_firstbyte  = L2BE(globals->byte_low);
+              rb->be_lastbyteh  = L2BE(globals->byte_high >> 32);
+              rb->be_lastbyte   = L2BE(globals->byte_high);
 
               rb->be_totalblocks=L2BE(globals->blocks_total);
               rb->be_blocksize=L2BE(globals->bytes_block);
@@ -3314,13 +3323,15 @@ void outputcachebuffer(struct CacheBuffer *cb) {
 
 
 
-LONG readroots(void) {
+LONG readroots(void)
+{
   struct CacheBuffer *cb1;
   struct CacheBuffer *cb2;
   struct fsRootBlock *rb1;
   struct fsRootBlock *rb2;
   WORD rb1okay=TRUE;
   WORD rb2okay=TRUE;
+  UQUAD first, last;
   LONG errorcode;
 
   if((errorcode=readcachebuffer(&cb1,0))!=0) {
@@ -3366,14 +3377,28 @@ LONG readroots(void) {
     }
     */
 
-    if(rb1->be_blocksize!=L2BE(globals->bytes_block)) {
-  _DEBUG(("bad size in rb1!\n"));
+    /* Check sizes stored in rootblock */
+    if ((rb1->be_blocksize != L2BE(globals->bytes_block)) || (rb1->be_totalblocks!=L2BE(globals->blocks_total)))
+    {
+      _DEBUG(("bad size in rb1!\n"));
       return(ERROR_NOT_A_DOS_DISK);
     }
 
-    if(rb1->be_firstbyteh!=L2BE(globals->byte_lowh) || rb1->be_firstbyte!=L2BE(globals->byte_low) || rb1->be_lastbyteh!=L2BE(globals->byte_highh) || rb1->be_lastbyte!=L2BE(globals->byte_high) || rb1->be_totalblocks!=L2BE(globals->blocks_total)) {
-  _DEBUG(("bad value in rb1!\n"));
-      return(ERROR_NOT_A_DOS_DISK);
+    /*
+     * Historically SFS rootblock holds absolute start and end positions on the disk in bytes.
+     * They are used for validation and nothing else.
+     * However, a situation is possible when for example someone takes an image of SFS partition
+     * and then tries to mount it.
+     * In order to make it working we compare lengths, not positions. If length is okay, the rootblock
+     * is assumed to be okay.
+     */
+    first  = ((UQUAD)BE2L(rb1->be_firstbyteh) << 32) | BE2L(rb1->be_firstbyte);
+    last   = ((UQUAD)BE2L(rb1->be_lastbyteh)  << 32) | BE2L(rb1->be_lastbyte);
+
+    if (last - first != globals->byte_high - globals->byte_low)
+    {
+  	_DEBUG(("bad value in rb1!\n"));
+      	return ERROR_NOT_A_DOS_DISK;
     }
 
     if(rb1->be_version!=BE2W(STRUCTURE_VERSION)) {
