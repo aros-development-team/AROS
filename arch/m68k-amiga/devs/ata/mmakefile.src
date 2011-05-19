@@ -1,9 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS     := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/devs/ata -I$(SRCDIR)/rom/devs/ata
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/devs/ata -I$(SRCDIR)/rom/devs/ata
 
-FILES := ata ata_init lowlevel dma_generic ata_amiga
+FILES := ata ata_init lowlevel dma_generic ata_amiga timer
 
 %build_module mmake=kernel-amiga-m68k-ata \
   modname=ata modtype=device \
