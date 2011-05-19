@@ -1,85 +1,54 @@
 /*
  * tap - TUN/TAP network driver for AROS
  * Copyright (c) 2007 Robert Norris. All rights reserved.
- * Copyright © 2010, The AROS Development Team. All rights reserved.
+ * Copyright (c) 2010-2011 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  */
 
-#include <exec/memory.h>
+#include <hidd/unixio_inline.h>
+#include <proto/alib.h>
+#include <proto/oop.h>
 
 #include "tap.h"
 
-#include <proto/alib.h>
-#include <proto/hostlib.h>
-
-#include <fcntl.h>
-
-static const char *libc_symbols[] = {
-    "open",
-    "close",
-    "ioctl",
-    "fcntl",
-    "poll",
-    "read",
-    "write",
-    "getpid",
-#ifdef HOST_OS_linux
-    "__errno_location",
-#else
-    "__error",
-#endif
-    NULL
-};
-
-static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TAPBase)
+static int GM_UNIQUENAME(init)(LIBBASETYPEPTR LIBBASE)
 {
-    ULONG i;
+    int i;
+
+    LIBBASE->UnixIOAttrBase = OOP_ObtainAttrBase(IID_Hidd_UnixIO);
+    if (!LIBBASE->UnixIOAttrBase)
+	return FALSE;
 
     D(bug("[tap] in init\n"));
 
-    KernelBase = OpenResource("kernel.resource");
-    if (!KernelBase)
-	return FALSE;
-
-    HostLibBase = OpenResource("hostlib.resource");
-    if (!HostLibBase)
-	return FALSE;
-
-    TAPBase->LibCHandle = HostLib_Open(LIBC_NAME, NULL);
-    if (!TAPBase->LibCHandle)
-	return FALSE;
-
-    TAPBase->TAPIFace = (struct LibCInterface *)HostLib_GetInterface(TAPBase->LibCHandle, libc_symbols, &i);
-    if ((!TAPBase->TAPIFace) || i)
-	return FALSE;
-
-    InitSemaphore(&TAPBase->sem);
-    TAPBase->aros_pid = TAPBase->TAPIFace->getpid();
-    TAPBase->errnoPtr = TAPBase->TAPIFace->__error();
+    LIBBASE->unixio = OOP_NewObjectTags(NULL, CLID_Hidd_UnixIO,
+					aHidd_UnixIO_Opener, MOD_NAME_STRING,
+					aHidd_UnixIO_Architecture, AROS_ARCHITECTURE,
+					TAG_DONE);
+    if (LIBBASE->unixio == NULL)
+    {
+        kprintf("[tap] couldn't create unixio object\n");
+        return FALSE;
+    }
 
     for (i = 0; i < MAX_TAP_UNITS; i ++)
-    {
-        TAPBase->unit[i].num = i;
-    }
+        LIBBASE->unit[i].num = i;
 
     return TRUE;
 }
 
-static int GM_UNIQUENAME(expunge)(LIBBASETYPEPTR TAPBase) {
+static int GM_UNIQUENAME(expunge)(LIBBASETYPEPTR LIBBASE)
+{
     D(bug("[tap] in expunge\n"));
-
-    if (!HostLibBase)
-	return TRUE;
 
     /* XXX kill the tasks and free memory, just in case */
 
-    if (TAPBase->TAPIFace)
-	HostLib_DropInterface ((APTR *)TAPBase->TAPIFace);
+    /* We don't need to dispose a unixio object, it's a singletone. */
 
-    if (TAPBase->LibCHandle)
-	HostLib_Close(TAPBase->LibCHandle, NULL);
+    if (LIBBASE->UnixIOAttrBase)
+	OOP_ReleaseAttrBase(IID_Hidd_UnixIO);
 
     return TRUE;
 }
@@ -95,63 +64,9 @@ static const ULONG tx_tags[] = {
     S2_CopyFromBuff32
 };
 
-struct newMemList
-{
-  struct Node	  nml_Node;
-  UWORD 	  nml_NumEntries;
-  struct MemEntry nml_ME[2];
-};
+extern void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit);
 
-#define IOTASK_STACKSIZE 16384
-
-static struct Task *CreateIOTask(struct tap_base *TAPBase, struct tap_unit *unit)
-{
-    struct Task     * newtask;
-    struct newMemList nml =
-    {
-	{ NULL, NULL},
-	2,
-	{
-	    { { MEMF_CLEAR|MEMF_PUBLIC }, sizeof(struct Task) },
-	    { { MEMF_CLEAR	       }, IOTASK_STACKSIZE    }
-        }
-    };
-    struct MemList  *ml;
-
-    if (NewAllocEntry((struct MemList *)&nml, &ml, NULL))
-    {
-	struct Task *t;
-
-	newtask = ml->ml_ME[0].me_Addr;
-
-	newtask->tc_Node.ln_Type = NT_TASK;
-	newtask->tc_Node.ln_Pri  = 0; /* Priority */
-	newtask->tc_Node.ln_Name = unit->iotask_name;
-
-	newtask->tc_SPReg   = (APTR)((IPTR)ml->ml_ME[1].me_Addr + IOTASK_STACKSIZE);
-	newtask->tc_SPLower = ml->ml_ME[1].me_Addr;
-	newtask->tc_SPUpper = newtask->tc_SPReg;
-
-	D(bug("[tap] IOTask stack %p - %p, SP %p\n", newtask->tc_SPLower, newtask->tc_SPUpper, newtask->tc_SPReg));
-
-	NewList (&newtask->tc_MemEntry);
-	AddHead (&newtask->tc_MemEntry, (struct Node *)ml);
-
-	t = NewAddTaskTags(newtask, tap_iotask, NULL, TASKTAG_ARG1, TAPBase, TASKTAG_ARG2, unit, TAG_DONE);
-	if (!t)
-	{
-	    FreeEntry (ml);
-	    newtask = NULL;
-	}
-    }
-    else
-	newtask=NULL;
-
-    return newtask;
-} /* CreateTask */
-
-static int GM_UNIQUENAME(open)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req, ULONG unitnum, ULONG flags)
-{
+static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, ULONG unitnum, ULONG flags) {
     struct TagItem *tags;
     BYTE error = 0;
     struct tap_unit *unit;
@@ -177,7 +92,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req, U
         kprintf("[tap] request for unit %d, which is out of range (0..%d)\n", unitnum, MAX_TAP_UNITS-1);
         error = IOERR_OPENFAIL;
     }
-    unit = &(TAPBase->unit[unitnum]);
+    unit = &(LIBBASE->unit[unitnum]);
 
     /* allocate storage for opener state */
     if (error == 0) {
@@ -192,6 +107,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req, U
 
     /* prepare the opener port and buffer management functions */
     if (error == 0) {
+        int i;
 
         /* pending read requests get queued up in here */
         NEWLIST(&(opener->read_pending.mp_MsgList));
@@ -214,11 +130,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req, U
         D(bug("[tap] [%d] refcount is 0, opening device\n", unit->num));
 
         /* open the tun/tap device */
-	ObtainSemaphore(&TAPBase->sem);
-	fd = TAPBase->TAPIFace->open(TAP_DEV_NODE, O_RDWR, 0);
-	ioerr = *TAPBase->errnoPtr;
-	ReleaseSemaphore(&TAPBase->sem);
-
+        fd = Hidd_UnixIO_OpenFile(LIBBASE->unixio, TAP_DEV_NODE, O_RDWR, 0, &ioerr);
         if (fd < 0) {
             kprintf("[tap] couldn't open '" TAP_DEV_NODE "' (%d)\n", ioerr);
             error = IOERR_OPENFAIL;
@@ -232,37 +144,23 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req, U
             ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
             strncpy(ifr.ifr_name, unit->name, IFNAMSIZ);
 
-	    ObtainSemaphore(&TAPBase->sem);
-	    error = TAPBase->TAPIFace->ioctl(fd, TUNSETIFF, &ifr);
-	    ioerr = *TAPBase->errnoPtr;
-	    ReleaseSemaphore(&TAPBase->sem);
-
-	    if (error == -1) {
+            if ((Hidd_UnixIO_IOControlFile(LIBBASE->unixio, fd, TUNSETIFF, &ifr, &ioerr)) < 0)
+	    {
                 kprintf("[tap] couldn't perform TUNSETIFF on TAP device (%d)\n", ioerr);
                 error = IOERR_OPENFAIL;
             }
 
-            else
-	    {
-		/*
-		 * Own the file descriptor and enable SIGIO.
-		 * tap device has a quirk: this works only when it
-		 * was permormed AFTER TUNSETIFF ioctl.
-		 */
-		ObtainSemaphore(&TAPBase->sem);
-		TAPBase->TAPIFace->fcntl(fd, F_SETOWN, TAPBase->aros_pid);
-		i = TAPBase->TAPIFace->fcntl(fd, F_GETFL);
-		i |= O_ASYNC;
-		TAPBase->TAPIFace->fcntl(fd, F_SETFL, i);
-		ReleaseSemaphore(&TAPBase->sem);
-
+            else {
                 unit->fd = fd;
+
                 kprintf("[tap] unit %d attached to %s\n", unit->num, unit->name);
             }
         }
 
         /* its good, time to create our unit */
-        if (error == 0) {
+        if (error == 0)
+	{
+	    char iotask_name[32];
 
             /* we're faking a 10Mbit ethernet card here */
             unit->info.SizeAvailable = unit->info.SizeSupplied = sizeof(struct Sana2DeviceQuery);
@@ -294,11 +192,16 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req, U
             unit->iosyncport = CreateMsgPort();
 
             /* make a unique name for this unit */
-            __sprintf(unit->iotask_name, TAP_TASK_FORMAT, (int) unit->num);
+            __sprintf(iotask_name, TAP_TASK_FORMAT, unit->num);
 
             /* make it fly */
-	    unit->iotask = CreateIOTask(TAPBase, unit);
-            
+            unit->iotask = NewCreateTask(TASKTAG_PC  , tap_iotask,
+                                         TASKTAG_NAME, iotask_name,
+                                         TASKTAG_PRI , 50,
+                                         TASKTAG_ARG1, LIBBASE,
+					 TASKTAG_ARG2, unit,
+                                         TAG_DONE);
+
             /* wait until its ready to go */
             WaitPort(unit->iosyncport);
             ReplyMsg(GetMsg(unit->iosyncport));
@@ -342,11 +245,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req, U
 
             /* close the nic */
             if (unit->fd > 0)
-	    {
-		ObtainSemaphore(&TAPBase->sem);
-		TAPBase->TAPIFace->close(unit->fd);
-		ReleaseSemaphore(&TAPBase->sem);
-	    }
+                Hidd_UnixIO_CloseFile(LIBBASE->unixio, unit->fd, NULL);
 
             /* fastest way to kill it */
             memset(unit, 0, sizeof(struct tap_unit));
@@ -364,8 +263,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req, U
     return (error == 0) ? TRUE : FALSE;
 }
 
-static int GM_UNIQUENAME(close)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req)
-{
+static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) {
     struct tap_unit *unit = (struct tap_unit *) req->ios2_Req.io_Unit;
     struct tap_opener *opener = (struct tap_opener *) req->ios2_BufferManagement;
     struct tap_tracker *tracker, *tracker_next;
@@ -392,11 +290,7 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR TAPBase, struct IOSana2Req *req)
 
         /* close the nic */
         if (unit->fd > 0)
-	{
-	    ObtainSemaphore(&TAPBase->sem);
-	    TAPBase->TAPIFace->close(unit->fd);
-	    ReleaseSemaphore(&TAPBase->sem);
-	}
+            Hidd_UnixIO_CloseFile(LIBBASE->unixio, unit->fd, NULL);
 
         /* XXX return outstanding requests? */
 
@@ -425,6 +319,7 @@ ADD2INITLIB(GM_UNIQUENAME(init),0)
 ADD2EXPUNGELIB(GM_UNIQUENAME(expunge),0)
 ADD2OPENDEV(GM_UNIQUENAME(open),0)
 ADD2CLOSEDEV(GM_UNIQUENAME(close),0)
+ADD2LIBS("unixio.hidd", 0, static struct Library *, unixioBase);
 
 AROS_LH1(void, begin_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR, LIBBASE, 5, tap_device) {
     AROS_LIBFUNC_INIT

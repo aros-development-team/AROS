@@ -7,6 +7,6 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AR
     modname=tap modtype=device \
     moduledir=Devs/Networks \
     files="init command iotask" \
-    uselibs="oop amiga rom m hiddstubs"
+    uselibs="oop amiga rom"
 
 %common

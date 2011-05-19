@@ -1,13 +1,13 @@
 /*
  * tap - TUN/TAP network driver for AROS
  * Copyright (c) 2007 Robert Norris. All rights reserved.
- * Copyright © 2010, The AROS Development Team. All rights reserved.
+ * Copyright (c) 2010-2011 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  */
 
-#include <proto/kernel.h>
+#include <hidd/unixio_inline.h>
 
 #include <signal.h>
 
@@ -29,11 +29,7 @@ static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
     D(bug("[tap] [io:%d] got a packet\n", unit->num));
 
     /* Try to read the packet */
-    ObtainSemaphore(&TAPBase->sem);
-    nread = TAPBase->TAPIFace->read(unit->fd, buf, ETH_FRAME_LEN);
-    ioerr = *TAPBase->errnoPtr;
-    ReleaseSemaphore(&TAPBase->sem);
-
+    nread = Hidd_UnixIO_ReadFile(TAPBase->unixio, unit->fd, buf, ETH_FRAME_LEN, &ioerr);
     if (nread == -1)
     {
         D(bug("[tap] [io:%d] read failed (%d)\n", unit->num, ioerr));
@@ -237,11 +233,7 @@ static void tap_send(struct tap_base *TAPBase, struct tap_unit *unit)
         D(bug("[tap] [io:%d] packet type: 0x%04x\n", unit->num, AROS_BE2WORD(eth->h_proto)));
 
         /* got a viable buffer, send it out */
-	ObtainSemaphore(&TAPBase->sem);
-	nwritten = TAPBase->TAPIFace->write(unit->fd, buf, packet_length);
-	ioerr = *TAPBase->errnoPtr;
-	ReleaseSemaphore(&TAPBase->sem);
-
+	nwritten = Hidd_UnixIO_WriteFile(TAPBase->unixio, unit->fd, buf, packet_length, &ioerr);
         if (nwritten < 0) {
             D(bug("[tap] [io:%d] write failed (%d)\n", unit->num, ioerr));
             req->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
@@ -276,9 +268,9 @@ static void tap_send(struct tap_base *TAPBase, struct tap_unit *unit)
     ReplyMsg((APTR) req);
 };
 
-static void SigIOHandler(struct tap_unit *unit, void *unused)
+static void IOHandler(int fd, int mode, struct tap_unit *unit)
 {
-    D(bug("[tap] SIGIO received\n"));
+    D(bug("[tap] IO interrupt received\n"));
     Signal(unit->iotask, 1 << unit->io_signal);
 }
 
@@ -287,8 +279,8 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 {
     struct MsgPort *reply_port;
     struct Message *msg;
-    ULONG write_signal_mask, abort_signal_mask, io_signal_mask, signal_mask, signaled;
-    APTR irq;
+    ULONG write_signal_mask, abort_signal_mask, io_signal_mask, signal_mask;
+    ULONG signaled = 0;
     short write_flag = 0;
 
     D(bug("[tap] [io:%d] iotask starting up\n", unit->num));
@@ -309,9 +301,11 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
     D(bug("[tap] signal mask 0x%08X\n", signal_mask));
 
     /* start waiting for read events */
-    /* XXX check for failure */
-    irq = KrnAddIRQHandler(SIGIO, SigIOHandler, unit, NULL);
-    D(bug("[tap] IRQ handle %p\n", irq));
+    unit->irq.fd          = unit->fd;
+    unit->irq.mode        = vHidd_UnixIO_RW;
+    unit->irq.handler     = IOHandler;
+    unit->irq.handlerData = unit;
+    Hidd_UnixIO_AddInterrupt(TAPBase->unixio, &unit->irq);
 
     reply_port = CreateMsgPort();
     msg = (struct Message *) AllocVec(sizeof(struct Message), MEMF_PUBLIC | MEMF_CLEAR);
@@ -327,31 +321,22 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 
     while (1)
     {
-	struct pollfd pfd;
-
-	pfd.fd = unit->fd;
+	int events;
 
 	do
 	{
-	    int res;
+	    events = Hidd_UnixIO_Poll(TAPBase->unixio, unit->fd, vHidd_UnixIO_Read | write_flag, NULL);
 
-	    pfd.events = POLLIN|write_flag;
-	    pfd.revents = 0;
-
-	    ObtainSemaphore(&TAPBase->sem);
-	    res = TAPBase->TAPIFace->poll(&pfd, 1, 0);
-	    ReleaseSemaphore(&TAPBase->sem);
-
-	    if (res < 0)
+	    if (events == -1)
 		continue;
 
-	    if (pfd.revents & POLLIN)
+	    if (events & vHidd_UnixIO_Read)
 	    {
 		D(bug("[tap] [io:%d] ready for read\n", unit->num));
 		tap_receive(TAPBase, unit);
 	    }
 
-	    if (pfd.revents & POLLOUT)
+	    if (events & vHidd_UnixIO_Write)
 	    {
         	D(bug("[tap] [io:%d] ready for write\n", unit->num));
         	tap_send(TAPBase, unit);
@@ -361,7 +346,7 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 		    write_flag = 0;
 		}
             }
-	} while (pfd.revents & (POLLIN|POLLOUT));
+	} while (events);
 
         D(bug("[tap] [io:%d] waiting for an event\n", unit->num));
 
@@ -371,9 +356,9 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
         if (signaled & write_signal_mask)
 	{
 	    D(bug("[tap] [io:%d] write requested, enabling\n", unit->num));
-            write_flag = POLLOUT;
+            write_flag = vHidd_UnixIO_Write;
         }
-        
+
         if (signaled & abort_signal_mask) {
             D(bug("[tap] [io:%d] iotask received abort signal\n", unit->num));
             break;
@@ -384,7 +369,7 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 
     D(bug("[tap] [io:%d] iotask exiting\n", unit->num));
 
-    KrnRemIRQHandler(irq);
+    Hidd_UnixIO_RemInterrupt(TAPBase->unixio, &unit->irq);
 
     FreeSignal(unit->abort_signal);
     FreeSignal(unit->io_signal);
