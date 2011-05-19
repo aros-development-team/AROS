@@ -150,4 +150,18 @@ static inline void __inline_Hidd_UnixIO_RemInterrupt(OOP_MethodID base, OOP_Obje
 #define Hidd_UnixIO_RemInterrupt(o, interrupt) \
     ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_RemInterrupt(HiddUnixIOMethodBase, __obj, interrupt); })
 
+static inline int __inline_Hidd_UnixIO_Poll(OOP_MethodID base, OOP_Object *o, int fd, int mode, int *errno_ptr)
+{
+    struct uioMsgPoll p;
+
+    p.um_MethodID = base + moHidd_UnixIO_Poll;
+    p.um_FD       = (APTR)fd;
+    p.um_Mode     = mode;
+
+    return OOP_DoMethod(o, &p.um_MethodID);
+}
+
+#define Hidd_UnixIO_Poll(o, fd, mode, errno_ptr) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_Poll(HiddUnixIOMethodBase, __obj, fd, mode, errno_ptr); })
+
 #endif
