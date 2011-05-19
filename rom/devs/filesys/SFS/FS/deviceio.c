@@ -328,11 +328,11 @@ void changegeometry(struct DosEnvec *de)
     /* Set some more characteristics */
     globals->sectors_total = globals->sector_high - globals->sector_low;
     globals->blocks_total  = globals->sectors_total / globals->sectors_block;
-    globals->byte_lowh     = MULU64(globals->sector_low, globals->bytes_sector, &globals->byte_low);
-    globals->byte_highh    = MULU64(globals->sector_high, globals->bytes_sector, &globals->byte_high);
+    globals->byte_low      = (UQUAD)globals->sector_low  * globals->bytes_sector;
+    globals->byte_high     = (UQUAD)globals->sector_high * globals->bytes_sector;
 
     _DEBUG(("Total: %u sectors, %u blocks\n", globals->sectors_total, globals->blocks_total));
-    _DEBUG(("Start offset 0x%08X%08X, end offset 0x%08X%08X\n", globals->byte_lowh, globals->byte_low, globals->byte_highh, globals->byte_high));
+    _DEBUG(("Start offset 0x%llu, end offset 0x%llu\n", globals->byte_low, globals->byte_high));
 }
 
 #ifdef DEBUGCODE
@@ -397,7 +397,9 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
                         /* If the partition's high byte is beyond the 4 GB border we will
                            try and detect a 64-bit device. */
 
-                        if(globals->byte_highh!=0) {  /* Check for 64-bit support (NSD/TD64/SCSI direct) */
+                        if (globals->byte_high >> 32 != 0)
+                        {
+                            /* Check for 64-bit support (NSD/TD64/SCSI direct) */
                             struct NSDeviceQueryResult nsdqr;
                             UWORD *cmdcheck;
 
@@ -618,18 +620,14 @@ void setiorequest(struct fsIORequest *fsi, UWORD action, UBYTE *buffer, ULONG bl
     }
     else
     {
-        ULONG start = (blockoffset << globals->shifts_block) + globals->byte_low;
-        ULONG starthigh = (blockoffset >> (32 - globals->shifts_block)) + globals->byte_lowh;            /* High offset */
-
-        if (start < globals->byte_low) {
-            starthigh += 1;     /* Add X bit :-) */
-        }
+    	ULONG startblock = globals->sector_low / globals->sectors_block;
+    	UQUAD startoffset = (UQUAD)(startblock + blockoffset) << globals->shifts_block;
 
         ioreq->io_Data    = buffer;
         ioreq->io_Command = action==DIO_WRITE ? globals->cmdwrite : globals->cmdread;
         ioreq->io_Length  = blocks<<globals->shifts_block;
-        ioreq->io_Offset  = start;
-        ioreq->io_Actual  = starthigh;
+        ioreq->io_Offset  = startoffset;
+        ioreq->io_Actual  = startoffset >> 32;
     }
 }
 
@@ -657,9 +655,8 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
 
         setiorequest(&globals->fsioreq, action, tempbuffer, blockoffset, blocks);
 
-        if(action==DIO_WRITE) {
-            CopyMem(buffer, tempbuffer, blocks<<globals->shifts_block);
-        }
+        if (action==DIO_WRITE)
+            CopyMemQuick(buffer, tempbuffer, blocks<<globals->shifts_block);
 
       /* We're about to do a physical disk access.  (Re)set timeout.  Since
          the drive's motor will be turned off with the timeout as well we
@@ -679,9 +676,8 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
             }
         }
 
-        if(action==DIO_READ) {
-            CopyMem(tempbuffer, buffer, blocks<<globals->shifts_block);
-        }
+        if (action==DIO_READ)
+            CopyMemQuick(tempbuffer, buffer, blocks<<globals->shifts_block);
 
         blocklength-=blocks;
         blockoffset+=blocks;

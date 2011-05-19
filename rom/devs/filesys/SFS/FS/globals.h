@@ -10,7 +10,8 @@
 #include "asfsbase.h"
 #include "aros_stuff.h"
 
-struct Globals {
+struct Globals
+{
     struct ASFSBase *asfsbase;
     struct ASFSDeviceInfo *device;
     struct ExecBase *sysBase;
@@ -125,16 +126,14 @@ struct Globals {
     ULONG blocks_total;               /* size of the partition in blocks */
     ULONG blocks_maxtransfer; /* max. blocks which may be transfered to the device at once (limits io_Length) */
     
-    ULONG byte_low;                   /* the byte offset of our partition on the disk */
-    ULONG byte_lowh;                  /* high 32 bits */
-    ULONG byte_high;                  /* the byte offset of the end of our partition (excluding) on the disk */
-    ULONG byte_highh;                 /* high 32 bits */
+    UQUAD byte_low;                   /* the byte offset of our partition on the disk */
+    UQUAD byte_high;                  /* the byte offset of the end of our partition (excluding) on the disk */
     
     ULONG bytes_block;                /* size of a block in bytes */
     ULONG bytes_sector;               /* size of a sector in bytes */
     
     ULONG mask_block;
-    ULONG mask_mask;       /* mask as specified by mountlist */
+    IPTR  mask_mask;       /* mask as specified by mountlist */
     
     ULONG bufmemtype;   /* default value */
     
