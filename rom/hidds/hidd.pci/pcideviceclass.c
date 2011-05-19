@@ -1,13 +1,12 @@
 /*
-    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI device class
     Lang: English
 */
 
-#define DEBUG 0
-#define DEBUG_CONFIG
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <hidd/pci.h>
@@ -287,6 +286,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 		dev->bus, dev->dev, dev->sub,
 		dev->VendorID, dev->ProductID,
 		dev->strClass, dev->strSubClass, dev->strInterface));
+      	    D(bug("[PCIDevice] > IRQ %u INT %u\n", dev->IRQLine, dev->INTLine));
 
             // print out a warning to the user in case the interrupt line is not assigned by BIOS
             if (dev->INTLine == 255)
@@ -318,14 +318,6 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 			dev->dev, dev->sub, i);
 		}
 	    }
-
-#ifdef DEBUG_CONFIG
-	    for (i = 0; i < 6; i++)
-	        bug("[PCIDevice] Base %u addr 0x%p, size %ld\n", dev->BaseReg[i].addr, dev->BaseReg[i].size);
-	    bug("[PCIDevice] ROM     addr 0x%p, size %d\n", (IPTR)dev->RomBase, dev->RomSize);
-      	    bug("[PCIDevice] IRQ %u INT %u\n", dev->IRQLine, dev->INTLine);
-#endif
-
 	}
     }
 
