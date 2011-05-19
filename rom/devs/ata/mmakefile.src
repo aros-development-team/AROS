@@ -4,7 +4,16 @@ include $(TOP)/config/make.cfg
 # allow override of ata.h in arch-specific directory
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/devs/ata -I$(SRCDIR)/rom/devs/ata
 
+BUS_DRIVERS := bus_pci
+
+# Allow to add architecture-specific options
+ifeq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/ata/make.opts
+else
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/ata/make.opts
+endif
+
 %build_module mmake=kernel-ata \
   modname=ata modtype=device \
-  files="ata_init lowlevel ata dma_generic timer" \
+  files="ata_init lowlevel ata dma_generic timer $(BUS_DRIVERS)" \
   uselibs="rom oop"
