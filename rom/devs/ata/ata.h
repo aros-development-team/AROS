@@ -34,6 +34,7 @@ Lang: English
  * 2009-02-21  M. Schulz           ata_in/ata_out declared as functions, if no PCI-io operations are defined.
  * 2009-10-07  M. Weiss            Rely on definition of AROS_PCI_IO_FUNCS to check if PCI-io operations are defined.
  * 2011-04-05  P. Fedin		   Store PCI HIDD attribute and method bases in ata.device base
+ * 2011-05-19  P. Fedin		   The Big rework. Separated bus-specific code. Made 64-bit-friendly.
  */
 
 #include <exec/types.h>
@@ -51,10 +52,12 @@ Lang: English
 #include <devices/timer.h>
 #include <devices/cd.h>
 #include <aros/bootloader.h>
-#include "include/scsicmds.h"
 
 #include <hidd/irq.h>
 #include <asm/io.h>
+
+#include "include/scsicmds.h"
+#include "ata_bus.h"
 
 #define MAX_DEVICEBUSES		2
 #define MAX_BUSUNITS		2
@@ -101,34 +104,26 @@ struct ataBase
     */
    struct Task            *ata_Daemon;
 
-    struct List		ata__legacybuses;
-    struct List		ata__probedbuses;
-    int 		ata__buscount;
    /*
     * list of all buses - we may have more than just 4
     */
    struct MinList          ata_Buses;
+   int		 	   ata__buscount;
 
    /*
-    * flags
+    * Arguments and flags
     */
    UBYTE                   ata_32bit;
    UBYTE                   ata_NoMulti;
    UBYTE                   ata_NoDMA;
    UBYTE                   ata_Poll;
    UBYTE                   ata_NoSubclass;
-   UBYTE                   ata_ScanFlags;
+   STRPTR		   ata_CmdLine;
 
-#define ATA_SCANPCI		(1 << 0)
-#define ATA_SCANLEGACY		(1 << 1)
    /*
     * memory pool
     */
    APTR                    ata_MemPool;
-   
-   /* Method and attribute bases */
-   OOP_AttrBase		   HiddPCIDeviceAttrBase;
-   OOP_MethodID		   HiddPCIDriverMethodBase;
 };
 
 /*
@@ -161,6 +156,10 @@ struct ata_Bus
 
    /* functions go here */
    void                   (*ab_HandleIRQ)(struct ata_Unit* unit, UBYTE status);
+   
+   /* Bus driver stuff */
+   const struct ata_BusDriver *ab_Driver;
+   APTR			       ab_DriverData;
 };
 
 /* Device types */
@@ -307,8 +306,8 @@ struct ata_Unit
    BYTE        (*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
    BYTE        (*au_Identify)(struct ata_Unit *);
 
-   VOID                (*au_ins)(APTR, UWORD, ULONG);
-   VOID                (*au_outs)(APTR, UWORD, ULONG);
+   VOID                (*au_ins)(APTR, UWORD, ULONG, APTR);
+   VOID                (*au_outs)(APTR, UWORD, ULONG, APTR);
 
    /* If a HW driver is used with this unit, it may store its data here */
    APTR                au_DriverData;
@@ -374,11 +373,13 @@ typedef enum
 #define AB_DiscChanged          29     /* disc changed */
 #define AB_Removable            28     /* media removable */
 #define AB_80Wire               27     /* has an 80-wire cable */
+#define AB_NoDMA		26
 
 #define AF_DiscPresent          (1 << AB_DiscPresent)
 #define AF_DiscChanged          (1 << AB_DiscChanged)
 #define AF_Removable            (1 << AB_Removable)
 #define AF_80Wire               (1 << AB_80Wire)
+#define AF_NoDMA		(1 << AB_NoDMA)
 
 /* ATA/ATAPI registers */
 #define ata_Error           1
@@ -393,16 +394,12 @@ typedef enum
 #define ata_AltStatus       0x2
 #define ata_AltControl      0x2
 
-#if defined(__i386__) || defined(__x86_64__)
-#define ata_out(val, offset, port)  outb((val), (offset)+(port))
-#define ata_in(offset, port)        inb((offset)+(port))
-#define ata_outl(val, offset, port) outl((val), (offset)+(port))
-#else
-void ata_out(UBYTE val, UWORD offset, IPTR port);
-UBYTE ata_in(UWORD offset, IPTR port);
-void ata_outl(ULONG val, UWORD offset, IPTR port);
-#endif
+#define ATA_OUT(val, offset, port)  unit->au_Bus->ab_Driver->ata_out((val), (offset), (port), unit->au_Bus->ab_DriverData)
+#define ATA_IN(offset, port)        unit->au_Bus->ab_Driver->ata_in((offset), (port), unit->au_Bus->ab_DriverData)
+#define ATA_OUTL(val, offset, port) unit->au_Bus->ab_Driver->ata_outl((val), (offset), (port), unit->au_Bus->ab_DriverData)
 
+#define BUS_OUT(val, offset, port)  bus->ab_Driver->ata_out((val), (offset), (port), bus->ab_DriverData)
+#define BUS_IN(offset, port)        bus->ab_Driver->ata_in((offset), (port), bus->ab_DriverData)
 
 #define atapi_Error         1
 #define atapi_Features      1
@@ -499,7 +496,6 @@ ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
 int ata_InitBusTask(struct ata_Bus *, struct SignalSemaphore*);
 int ata_InitDaemonTask(struct ataBase *);
 void ata_HandleIRQ(struct ata_Bus *bus);
-UBYTE ata_ReadStatus(struct ata_Bus *bus);
 
 BOOL dma_SetupPRD(struct ata_Unit *, APTR, ULONG, BOOL);
 BOOL dma_SetupPRDSize(struct ata_Unit *, APTR, ULONG, BOOL);
@@ -510,6 +506,9 @@ VOID dma_Cleanup(APTR adr, ULONG len, BOOL read);
 BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u);
 BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u);
 BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
+
+void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG flags,
+		     const struct ata_BusDriver *driver, APTR driverData, struct ataBase *ATABase);
 
 #define ATAPI_SS_EJECT  0x02
 #define ATAPI_SS_LOAD   0x03
@@ -522,50 +521,6 @@ struct atapi_StartStop
     UBYTE   flags;
     UBYTE   pad2[7];
 };
-
-#if 0
-/*
-    Arch specific things to access IO space of drive. Shouldn't be here. Really.
-*/
-static inline ULONG inl(UWORD port)
-{
-    ULONG val;
-    asm volatile ("inl %w1,%0":"=a"(val):"Nd"(port));
-
-    return val;
-}
-
-static inline UWORD inw(UWORD port)
-{
-    UWORD val;
-    asm volatile ("inw %w1,%0":"=a"(val):"Nd"(port));
-
-    return val;
-}
-
-static inline UBYTE inb(UWORD port)
-{
-    UBYTE val;
-    asm volatile ("inb %w1,%0":"=a"(val):"Nd"(port));
-
-    return val;
-}
-
-static inline VOID outl(ULONG val, UWORD port)
-{
-    asm volatile ("outl %0,%w1"::"a"(val),"Nd"(port));
-}
-
-static inline VOID outw(UWORD val, UWORD port)
-{
-    asm volatile ("outw %0,%w1"::"a"(val),"Nd"(port));
-}
-
-static inline VOID outb(UBYTE val, UWORD port)
-{
-    asm volatile ("outb %0,%w1"::"a"(val),"Nd"(port));
-}
-#endif
 
 #endif // _ATA_H
 

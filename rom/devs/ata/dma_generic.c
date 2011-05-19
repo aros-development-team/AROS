@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2004-2009, The AROS Development Team. All rights reserved
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -21,6 +21,7 @@
  *                                 PRD should be set in little endian mode up (at least I guess so...)
  * 2008-04-07  M. Schulz           Once PRD is ready one has to clear data caches. PRD might still be in cache only on
  *                                 writeback systems otherwise 
+ * 2011-05-19  P. Fedin		   The Big rework. Separated bus-specific code. Made 64-bit-friendly.
  */
 
 #define DEBUG 0
@@ -145,12 +146,12 @@ BOOL dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL read)
 
     prd_phys = (IPTR)CachePreDMA(unit->au_Bus->ab_PRD, &length, DMA_ReadFromRAM);
 
-    ata_outl(prd_phys, dma_PRD, unit->au_DMAPort);
+    ATA_OUTL(prd_phys, dma_PRD, unit->au_DMAPort);
 
     if (read)
-        ata_out(DMA_WRITE, dma_Command, unit->au_DMAPort); /* inverse logic */
+        ATA_OUT(DMA_WRITE, dma_Command, unit->au_DMAPort); /* inverse logic */
     else
-        ata_out(DMA_READ, dma_Command, unit->au_DMAPort);
+        ATA_OUT(DMA_READ, dma_Command, unit->au_DMAPort);
     return TRUE;
 }
 
@@ -174,12 +175,12 @@ VOID dma_Cleanup(APTR addr, ULONG len, BOOL read)
 VOID dma_StartDMA(struct ata_Unit *unit)
 {
     D(bug("[ATA%02ld] dma_StartDMA()\n", unit->au_UnitNum));
-    ata_out(ata_in(dma_Command, unit->au_DMAPort) | DMA_START, dma_Command, unit->au_DMAPort);
+    ATA_OUT(ATA_IN(dma_Command, unit->au_DMAPort) | DMA_START, dma_Command, unit->au_DMAPort);
 }
 
 VOID dma_StopDMA(struct ata_Unit *unit)
 {
     D(bug("[ATA%02ld] dma_StopDMA()\n", unit->au_UnitNum));
-    ata_out(ata_in(dma_Command, unit->au_DMAPort) & ~DMA_START, dma_Command, unit->au_DMAPort);
+    ATA_OUT(ATA_IN(dma_Command, unit->au_DMAPort) & ~DMA_START, dma_Command, unit->au_DMAPort);
 }
 

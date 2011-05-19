@@ -5,6 +5,9 @@ USER_CFLAGS     := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/devs/ata -I$(SRCDIR)/rom/devs
 
 FILES := ata ata_init lowlevel dma_generic ata_amiga
 
-%build_archspecific \
-    mainmmake=kernel-ata maindir=rom/devs/ata arch=amiga-m68k \
-    files="$(FILES)" modulename=ata
+%build_module mmake=kernel-amiga-m68k-ata \
+  modname=ata modtype=device \
+  files="$(FILES)" \
+  uselibs="rom"
+
+%common

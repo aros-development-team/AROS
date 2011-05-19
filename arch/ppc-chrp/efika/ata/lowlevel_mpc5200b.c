@@ -1,14 +1,23 @@
 #define DEBUG 0
+
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <asm/io.h>
 #include <asm/mpc5200b.h>
+#include <exec/exec.h>
+#include <exec/tasks.h>
+#include <exec/memory.h>
+#include <exec/nodes.h>
+#include <utility/utility.h>
+#include <proto/exec.h>
+#include <proto/timer.h>
+#include <proto/openfirmware.h>
 
 UBYTE *mbar;
 
 volatile ata_5k2_t *ata_5k2;
 
-void ata_out(UBYTE val, UWORD offset, IPTR port)
+static void ata_out(UBYTE val, UWORD offset, IPTR port, APTR data)
 {
 	while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
 
@@ -21,7 +30,7 @@ void ata_out(UBYTE val, UWORD offset, IPTR port)
 	outl((ULONG)val << 24, &mbar[port + offset * 4]);
 }
 
-UBYTE ata_in(UWORD offset, IPTR port)
+static UBYTE ata_in(UWORD offset, IPTR port, APTR data)
 {
 	while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
 
@@ -34,14 +43,14 @@ UBYTE ata_in(UWORD offset, IPTR port)
 	return inl(&mbar[port + offset * 4]) >> 24;
 }
 
-void ata_outl(ULONG val, UWORD offset, IPTR port)
+static void ata_outl(ULONG val, UWORD offset, IPTR port, APTR data)
 {
 	while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
 
 	outl_le(val, &mbar[port + offset * 4]);
 }
 
-VOID ata_insw(APTR address, UWORD port, ULONG count)
+static VOID ata_insw(APTR address, UWORD port, ULONG count, APTR data)
 {
     UWORD *addr = address;
     volatile UWORD *p = (UWORD*)(&mbar[port]);
@@ -62,12 +71,7 @@ VOID ata_insw(APTR address, UWORD port, ULONG count)
 	asm volatile("sync");
 }
 
-VOID ata_insl(APTR address, UWORD port, ULONG count)
-{
-    ata_insw(address, port, count);
-}
-
-VOID ata_outsw(APTR address, UWORD port, ULONG count)
+static VOID ata_outsw(APTR address, UWORD port, ULONG count, APTR data)
 {
     UWORD *addr = address;
     volatile UWORD *p = (UWORD*)(&mbar[port]);
@@ -88,12 +92,7 @@ VOID ata_outsw(APTR address, UWORD port, ULONG count)
 	asm volatile("sync");
 }
 
-VOID ata_outsl(APTR address, UWORD port, ULONG count)
-{
-    ata_outsw(address, port, count);
-}
-
-void ata_400ns()
+static void ata_400ns()
 {
 	register ULONG tick_old, tick;
 
@@ -103,3 +102,138 @@ void ata_400ns()
 		asm volatile("mftbl %0":"=r"(tick));
 	} while(tick < (tick_old + 15));
 }
+
+static const struct ata_BusDriver mpc_driver = 
+{
+    ata_out,
+    ata_in,
+    ata_outl,
+    ata_insw,
+    ata_outsw,
+    ata_insw,	/* These are intentionally the same as 16-bit routines */
+    ata_outsw
+};
+
+static int ata_mpc_init(struct ataBase *LIBBASE)
+{
+    int i;
+    /*
+     * I've decided to use memory pools again. Alloc everything needed from
+     * a pool, so that we avoid memory fragmentation.
+     */
+    LIBBASE->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
+    if (LIBBASE->ata_MemPool == NULL)
+        return FALSE;
+
+    void *OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key = OF_OpenKey("/builtin");
+    if (key)
+    {
+    	void *prop = OF_FindProperty(key, "reg");
+    	if (prop)
+    	{
+    		intptr_t *m_ = OF_GetPropValue(prop);
+			mbar = (UBYTE *)*m_;
+			ata_5k2 = (ata_5k2_t *)(*m_ + 0x3a00);
+
+    		D(bug("[ATA] MBAR located at %08x\n", mbar));
+    	}
+
+    	/* Get the bus frequency for Efika */
+    	prop = OF_FindProperty(key, "bus-frequency");
+    	if (prop)
+    	{
+    		bus_frequency = *(uint32_t *)OF_GetPropValue(prop);
+    		D(bug("[ATA] bus frequency: %d\n", bus_frequency));
+    	}
+    }
+
+    key = OF_OpenKey("/builtin/ata");
+    if (key)
+    {
+    	void *prop = OF_FindProperty(key, "reg");
+		if (prop)
+		{
+			ata_5k2 = *(ata_5k2_t **)OF_GetPropValue(prop);
+
+			D(bug("[ATA] ATA registers at %08x\n", ata_5k2));
+		}
+    }
+
+    key = OF_OpenKey("/builtin/ata/bestcomm-task");
+    if (key)
+    {
+    	void *prop = OF_FindProperty(key, "taskid");
+		if (prop)
+		{
+			bestcomm_taskid = *(uint32_t *)OF_GetPropValue(prop);
+
+			D(bug("[ATA] ATA uses bestcomm task %d\n", bestcomm_taskid));
+		}
+    }
+
+    key = OF_OpenKey("/builtin/sram");
+    if (key)
+    {
+    	void *prop = OF_FindProperty(key, "reg");
+    	if (prop)
+    	{
+    		sram = *(void **)OF_GetPropValue(prop);
+    	}
+    	D(bug("[ATA] SRAM at %08x\n", sram));
+    }
+
+    key = OF_OpenKey("/builtin/bestcomm");
+    if (key)
+    {
+    	void *prop = OF_FindProperty(key, "reg");
+    	if (prop)
+    	{
+    		bestcomm = *(void **)OF_GetPropValue(prop);
+    	}
+    	D(bug("[ATA] bestcomm at %08x\n", bestcomm));
+    }
+
+    D(bug("[ATA] ata_config=%08x\n", inl(&ata_5k2->ata_config)));
+    D(bug("[ATA] ata_status=%08x\n", inl(&ata_5k2->ata_status)));
+    D(bug("[ATA] ata_pio1=%08x\n", inl(&ata_5k2->ata_pio1)));
+    D(bug("[ATA] ata_pio2=%08x\n", inl(&ata_5k2->ata_pio2)));
+
+    /* Disable XLB pipelining... */
+    D(bug("[ATA] xlb_config=%08x\n", inl(mbar+0x1f40)));
+    outl(inl(mbar + 0x1f40) | 0x80000000, mbar + 0x1f40);
+
+    outl(0, &ata_5k2->ata_invalid);
+    outl(0xc3000000, &ata_5k2->ata_config);
+
+    for (i=0; i < 100 / 4; i++)
+    	ata_400ns();
+
+	/* Hacky timing pokes */
+    outl(0x03000000, &ata_5k2->ata_config);
+    outl(132 << 16, &ata_5k2->ata_invalid);
+
+    /* PIO2 timing table. Replace it by correct calculations soon !!! */
+
+#warning TODO: Set the timings in right way!
+
+    outl(0x21270e00, &ata_5k2->ata_pio1);
+    outl(0x03050600, &ata_5k2->ata_pio2);
+
+    bestcomm_init();
+
+    /*
+     * store library pointer so we can use it later
+     */
+    LIBBASE->ata_NoSubclass = TRUE;
+
+    /*
+     * FIXME: This code uses static data variables.
+     * Move them into DriverData instead.
+     */
+    ata_RegisterBus(0x3a60, 0x3a5c - 8, MPC5200B_ATA, 0, AF_NoDMA, &mpc_driver, NULL, LIBBASE);
+
+    return TRUE;
+}
+
+ADD2INITLIB(ata_mpc_init, 20)
