@@ -42,6 +42,7 @@ enum {
     moHidd_UnixIO_ReadFile,
     moHidd_UnixIO_AddInterrupt,
     moHidd_UnixIO_RemInterrupt,
+    moHidd_UnixIO_Poll,
     num_Hidd_UnixIO_Methods
 };
 
@@ -116,6 +117,14 @@ struct uioMsgRemInterrupt
 {
     STACKULONG	         um_MethodID;
     struct uioInterrupt *um_Int;
+};
+
+struct uioMsgPoll
+{
+    STACKULONG  um_MethodID;
+    APTR        um_FD;
+    STACKULONG  um_Mode;
+    int        *um_ErrNoPtr;
 };
 
 /* I/O mode flags */

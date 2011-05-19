@@ -101,6 +101,35 @@
 
 *****************************************************************************************/
 
+static int poll_fd(int fd, int req_mode, struct uio_data *ud)
+{
+    struct pollfd pfd = {fd, 0, 0};
+    int mode = 0;
+    int res;
+
+    if (req_mode & vHidd_UnixIO_Read)
+	pfd.events |= POLLIN;
+    if (req_mode & vHidd_UnixIO_Write)
+	pfd.events |= POLLOUT;
+
+    res = ud->SysIFace->poll(&pfd, 1, 0);
+    AROS_HOST_BARRIER
+
+    if (res > 0)
+    {
+	if (pfd.revents & POLLIN)
+	    mode |= vHidd_UnixIO_Read;
+	if (pfd.revents & POLLOUT)
+	    mode |= vHidd_UnixIO_Write;
+	if (pfd.revents & (POLLERR|POLLHUP))
+	    mode |= vHidd_UnixIO_Error;
+    }
+    else if (res < 0)
+	mode = -1;
+
+    return mode;
+}
+
 static void SigIO_IntServer(struct uio_data *ud, void *unused)
 {
     struct uioInterrupt *intnode;
@@ -109,24 +138,10 @@ static void SigIO_IntServer(struct uio_data *ud, void *unused)
     for (intnode = (struct uioInterrupt *)ud->intList.mlh_Head; intnode->Node.mln_Succ;
     	 intnode = (struct uioInterrupt *)intnode->Node.mln_Succ)
     {
-    	struct pollfd pfd = {intnode->fd, 0, 0};
+ 	int mode = poll_fd(intnode->fd, intnode->mode, ud);
 
-	if (intnode->mode & vHidd_UnixIO_Read)
-	    pfd.events |= POLLIN;
-	if (intnode->mode & vHidd_UnixIO_Write)
-	    pfd.events |= POLLOUT;
-
-	if (ud->SysIFace->poll(&pfd, 1, 0) > 0)
+	if (mode > 0)
 	{
-	    int mode = 0;
-
-	    if (pfd.revents & POLLIN)
-	    	mode |= vHidd_UnixIO_Read;
-	    if (pfd.revents & POLLOUT)
-	    	mode |= vHidd_UnixIO_Write;
-	    if (pfd.revents & (POLLERR|POLLHUP))
-	    	mode |= vHidd_UnixIO_Error;
-
 	    D(bug("[UnixIO] Events 0x%02X for fd %d\n", mode, intnode->fd));
 
 	    intnode->handler(intnode->fd, mode, intnode->handlerData);
@@ -173,8 +188,7 @@ static BOOL CheckArch(struct uio_data *data, STRPTR Component, STRPTR MyArch)
     return TRUE;
 }
 
-#define KernelBase  LIBBASE->KernelBase
-#define HostLibBase LIBBASE->HostLibBase
+#define HostLibBase data->HostLibBase
 
 #undef HiddUnixIOAttrBase
 #define HiddUnixIOAttrBase data->UnixIOAB
@@ -285,7 +299,7 @@ OOP_Object *UXIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     }
 
     /* We are a true singletone */
-    ObtainSemaphore(&data->sem);
+    HostLib_Lock();
 
     if (!data->obj)
     {
@@ -293,7 +307,7 @@ OOP_Object *UXIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     	data->obj = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 
-    ReleaseSemaphore(&data->sem);
+    HostLib_Unlock();
 
     ReturnPtr("UnixIO::New", OOP_Object *, data->obj);
 }
@@ -443,7 +457,7 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
 
     D(bug("[UnixIO] OpenFile(%s, 0x%04X, %o)\n", msg->um_FileName, msg->um_Flags, msg->um_Mode));
 
-    ObtainSemaphore(&data->sem);
+    HostLib_Lock();
 
     retval = (APTR)(unsigned long)data->SysIFace->open(msg->um_FileName, (int)msg->um_Flags, (int)msg->um_Mode);
     AROS_HOST_BARRIER
@@ -451,7 +465,7 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
     if (msg->um_ErrNoPtr)
     	*msg->um_ErrNoPtr = *data->errnoPtr;
 
-    ReleaseSemaphore(&data->sem);
+    HostLib_Unlock();
 
     D(bug("[UnixIO] FD is %d, errno is %d\n", retval, *data->errnoPtr));
 
@@ -505,7 +519,7 @@ int UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgClos
 
     if (msg->um_FD != (APTR)-1)
     {
-    	ObtainSemaphore(&data->sem);
+    	HostLib_Lock();
 
     	ret = data->SysIFace->close((long)msg->um_FD);
     	AROS_HOST_BARRIER
@@ -513,7 +527,7 @@ int UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgClos
     	if (msg->um_ErrNoPtr)
     	    *msg->um_ErrNoPtr = *data->errnoPtr;
 
-    	ReleaseSemaphore(&data->sem);
+    	HostLib_Unlock();
     }
 
     return ret;
@@ -571,7 +585,7 @@ IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgRead
 
     if (msg->um_FD != (APTR)-1)
     {
-    	ObtainSemaphore(&data->sem);
+    	HostLib_Lock();
 
     	do
 	{
@@ -586,7 +600,7 @@ IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgRead
 
 	} while((err == EINTR) || (err == EAGAIN));
 
-	ReleaseSemaphore(&data->sem);
+	HostLib_Unlock();
     }
 
     if (msg->um_ErrNoPtr)
@@ -649,7 +663,7 @@ IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWri
 
     if (msg->um_FD != (APTR)-1)
     {
-	ObtainSemaphore(&data->sem);
+	HostLib_Lock();
 
     	do
 	{
@@ -664,7 +678,7 @@ IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWri
 
 	} while((retval < 1) && ((err == EINTR) || (err == EAGAIN) || (err == 0)));
 	
-	ReleaseSemaphore(&data->sem);
+	HostLib_Unlock();
     }
 
     if (msg->um_ErrNoPtr)
@@ -722,7 +736,7 @@ IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMs
 
     if (msg->um_FD != (APTR)-1)
     {
-    	ObtainSemaphore(&data->sem);
+    	HostLib_Lock();
 
     	retval = data->SysIFace->ioctl((long)msg->um_FD, (int)msg->um_Request, msg->um_Param);
     	AROS_HOST_BARRIER
@@ -730,7 +744,7 @@ IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMs
     	if (msg->um_ErrNoPtr)
 	    *msg->um_ErrNoPtr = *data->errnoPtr;
 
-	ReleaseSemaphore(&data->sem);
+	HostLib_Unlock();
     }
 
     return retval;
@@ -798,7 +812,7 @@ int UXIO__Hidd_UnixIO__AddInterrupt(OOP_Class *cl, OOP_Object *o, struct uioMsgA
     Enable();
 
     /* Now own the filedescriptor and enable SIGIO on it */
-    ObtainSemaphore(&data->sem);
+    HostLib_Lock();
 
     res = data->SysIFace->fcntl(msg->um_Int->fd, F_SETOWN, data->aros_PID);
     AROS_HOST_BARRIER
@@ -812,7 +826,7 @@ int UXIO__Hidd_UnixIO__AddInterrupt(OOP_Class *cl, OOP_Object *o, struct uioMsgA
     }
     err = *data->errnoPtr;
 
-    ReleaseSemaphore(&data->sem);
+    HostLib_Unlock();
 
     if (res != -1)
     	return 0;
@@ -875,6 +889,61 @@ void UXIO__Hidd_UnixIO__RemInterrupt(OOP_Class *cl, OOP_Object *o, struct uioMsg
      */
 }
 
+/*****************************************************************************************
+
+    NAME
+        moHidd_UnixIO_Poll
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct uioMsgPoll *msg);
+
+        int Hidd_UnixIO_Poll(OOP_Object *obj, int fd, int mode, int *errno_ptr);
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Check current status of UNIX file descriptor or -1 if an error occured.
+
+    INPUTS
+        obj	  - A pointer to a UnixIO object.
+        fd        - A file descriptor to check.
+        mode      - Mask of modes we are interested in.
+	errno_ptr - An optional pointer to a location where error code (a value of UNIX
+		    errno variable) will be written.
+
+    RESULT
+	Current set of filedescriptor modes.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
+ULONG UXIO__Hidd_UnixIO__Poll(OOP_Class *cl, OOP_Object *o, struct uioMsgPoll *msg)
+{
+    struct uio_data *data = UD(cl);
+    int ret;
+ 
+    HostLib_Lock();
+
+    ret = poll_fd((int)msg->um_FD, msg->um_Mode, data);
+    if (msg->um_ErrNoPtr)
+	*msg->um_ErrNoPtr = *data->errnoPtr;
+
+    HostLib_Unlock();
+
+    return ret;
+}
+
 /* This is the initialisation code for the HIDD class itself. */
 
 static const char *libc_symbols[] = {
@@ -893,6 +962,11 @@ static const char *libc_symbols[] = {
 #endif
     NULL
 };
+
+#undef HostLibBase
+
+#define KernelBase  LIBBASE->KernelBase
+#define HostLibBase LIBBASE->uio_csd.HostLibBase
 
 static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
 {
@@ -931,7 +1005,6 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
     if (!LIBBASE->irqHandle)
     	return FALSE;
 
-    InitSemaphore(&LIBBASE->uio_csd.sem);
     NewList((struct List *)&LIBBASE->uio_csd.intList);
 
     LIBBASE->uio_csd.errnoPtr = LIBBASE->uio_csd.SysIFace->__error();
