@@ -393,6 +393,12 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       {
         D(bug("HUNK_END\n"));
         ++curhunk;
+        /* DOSBase == NULL: Called from RDB filesystem loader which does not
+         * know filesystem's original size. Exit if last HUNK_END. This can't
+         * be done normally because it would break overlayed executables.
+         */
+        if (!DOSBase && curhunk > last)
+            goto done;
       }
       break;
 
