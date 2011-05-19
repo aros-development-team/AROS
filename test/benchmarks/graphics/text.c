@@ -132,6 +132,7 @@ static void action(void)
     LONG t, i, bpp;
     QUAD q;
     STRPTR buffer = NULL;
+    ULONG x,y;
     
     struct TextExtent extend;
     
@@ -195,8 +196,8 @@ static void action(void)
         t = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
         if (t >= 10 * 1000000) break;
 
-        for (ULONG y = i % extend.te_Height; y < height; y += extend.te_Height)
-            for (ULONG x = 0; x < width; x += extend.te_Width)
+        for (y = i % extend.te_Height; y < height; y += extend.te_Height)
+            for (x = 0; x < width; x += extend.te_Width)
             {
                 Move(win->RPort, x, y);
                 Text(win->RPort, buffer, linelen);
