@@ -223,11 +223,6 @@ static int ata_mpc_init(struct ataBase *LIBBASE)
     bestcomm_init();
 
     /*
-     * store library pointer so we can use it later
-     */
-    LIBBASE->ata_NoSubclass = TRUE;
-
-    /*
      * FIXME: This code uses static data variables.
      * Move them into DriverData instead.
      */
