@@ -51,10 +51,6 @@ Lang: English
 #include <devices/newstyle.h>
 #include <devices/timer.h>
 #include <devices/cd.h>
-#include <aros/bootloader.h>
-
-#include <hidd/irq.h>
-#include <asm/io.h>
 
 #include "include/scsicmds.h"
 #include "ata_bus.h"
@@ -117,7 +113,6 @@ struct ataBase
    UBYTE                   ata_NoMulti;
    UBYTE                   ata_NoDMA;
    UBYTE                   ata_Poll;
-   UBYTE                   ata_NoSubclass;
    STRPTR		   ata_CmdLine;
 
    /*
@@ -146,7 +141,7 @@ struct ata_Bus
    struct ata_Unit         *ab_Units[MAX_BUSUNITS];    /* Units on the bus */
    struct ata_Unit         *ab_SelectedUnit;    /* Currently selected unit */
 
-   HIDDT_IRQ_Handler       *ab_IntHandler;
+   APTR			   ab_IntHandler;
    ULONG                   ab_IntCnt;
 
    struct Task             *ab_Task;       /* Bus task handling all not-immediate transactions */
@@ -308,9 +303,6 @@ struct ata_Unit
 
    VOID                (*au_ins)(APTR, UWORD, ULONG, APTR);
    VOID                (*au_outs)(APTR, UWORD, ULONG, APTR);
-
-   /* If a HW driver is used with this unit, it may store its data here */
-   APTR                au_DriverData;
 
    ULONG               au_UnitNum;     /* Unit number as coded by device */
    ULONG               au_Flags;       /* Unit flags, see below */

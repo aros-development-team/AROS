@@ -924,7 +924,6 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
 }
 
 static void TaskCode(struct ata_Bus *, struct Task*, struct SignalSemaphore*);
-static void ata_Interrupt(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 /*
  * Make a task for given bus alive.
@@ -989,41 +988,6 @@ int ata_InitBusTask(struct ata_Bus *bus, struct SignalSemaphore *ready)
     return (t != NULL);
 }
 
-static int CreateInterrupt(struct ata_Bus *bus)
-{
-    struct OOP_Object *o;
-    int retval = 0;
-
-    if (bus->ab_IntHandler)
-    {
-        /*
-            Prepare nice interrupt for our bus. Even if interrupt sharing is enabled,
-            it should work quite well
-        */
-        bus->ab_IntHandler->h_Node.ln_Pri = 10;
-        bus->ab_IntHandler->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
-        bus->ab_IntHandler->h_Code = ata_Interrupt;
-        bus->ab_IntHandler->h_Data = bus;
-
-        o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-        if (o)
-        {
-            struct pHidd_IRQ_AddHandler __msg__ = {
-                mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
-                handlerinfo:    bus->ab_IntHandler,
-                id:             bus->ab_IRQ,
-            }, *msg = &__msg__;
-
-            if (OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg))
-                retval = 1;
-
-            OOP_DisposeObject((OOP_Object *)o);
-        }
-    }
-
-    return retval;
-}
-
 /*
     Bus task body. It doesn't really do much. It receives simply all IORequests
     in endless loop and calls proper handling function. The IO is Semaphore-
@@ -1057,7 +1021,8 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
     /*
      * set up irq handler now. all irqs are disabled, so prepare them one by one
      */
-    if (!CreateInterrupt(bus))
+    bus->ab_IntHandler = bus->ab_Driver->CreateInterrupt(bus);
+    if (!bus->ab_IntHandler)
     {
         D(bug("[ATA  ] Something wrong with creating interrupt?\n"));
     }
@@ -1114,13 +1079,6 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
             bus->ab_Flags &= ~(UNITF_INTASK | UNITF_ACTIVE);
         }
     }
-}
-
-static void ata_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
-{
-    struct ata_Bus *bus = (struct ata_Bus *)irq->h_Data;
-
-    ata_HandleIRQ(bus);
 }
 
 /* vim: set ts=4 sw=4 :*/
