@@ -11,19 +11,13 @@ FILES	:= pci_init pcidriverclass pcideviceclass pciclass pciutil
 #MM kernel-pci-kobj : kernel-pci-ids
 
 #MM
-includes-copy : $(AROS_INCLUDES)/hidd/pci.h $(GENINCDIR)/hidd/pci.h $(AROS_INCLUDES)/libraries/pci.h $(GENINCDIR)/libraries/pci.h
+includes-copy : $(AROS_INCLUDES)/hidd/pci.h $(GENINCDIR)/hidd/pci.h
 
 $(AROS_INCLUDES)/hidd/pci.h: include/pci_hidd.h
 	$(CP) $< $(AROS_INCLUDES)/hidd/pci.h
 
 $(GENINCDIR)/hidd/pci.h: include/pci_hidd.h
 	$(CP) $< $(GENINCDIR)/hidd/pci.h
-
-$(AROS_INCLUDES)/libraries/pci.h: include/pci_lib.h
-	$(CP) $<  $(AROS_INCLUDES)/libraries/pci.h
-
-$(GENINCDIR)/libraries/pci.h: include/pci_lib.h
-	$(CP) $<  $(GENINCDIR)/libraries/pci.h
 
 #MM
 kernel-pci-ids : $(AROS_DEVS)/pci.ids

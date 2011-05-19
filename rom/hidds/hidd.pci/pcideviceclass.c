@@ -6,12 +6,13 @@
     Lang: English
 */
 
+#define DEBUG 0
+#define DEBUG_CONFIG
+
 #include <exec/types.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
-
 #include <utility/tagitem.h>
-
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -19,13 +20,9 @@
 #include "pci.h"
 #include "pciutil.h"
 
-#define DEBUG 1
 #include <aros/debug.h>
 
-#ifdef HiddPCIDeviceAttrBase
 #undef HiddPCIDeviceAttrBase
-#endif // HiddPCIDeviceAttrBase
-
 #define	HiddPCIDeviceAttrBase	(PSD(cl)->hiddPCIDeviceAB)
 
 static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
@@ -212,7 +209,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	/*
 	    Get all information passed by pci class calling OOP_NewObject()
 	*/
-	while((tag = NextTagItem((struct TagItem **)&tags)))
+	while((tag = NextTagItem(&tags)))
 	{
 	    ULONG idx;
 
@@ -290,11 +287,10 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 		dev->bus, dev->dev, dev->sub,
 		dev->VendorID, dev->ProductID,
 		dev->strClass, dev->strSubClass, dev->strInterface));
-        // print out a warning to the user in case the interrupt line is not assigned by BIOS
-        if(dev->INTLine == 255)
-        {
-            bug("[PCIDevice] WARNING: Interrupt line is not assigned! Device may freeze or malfunction at use!\n");
-        }
+
+            // print out a warning to the user in case the interrupt line is not assigned by BIOS
+            if (dev->INTLine == 255)
+                bug("[PCIDevice] WARNING: Interrupt line is not assigned! Device may freeze or malfunction at use!\n");
     
 	    /* Read two first base addresses */
 	    for (i = 0; i < 2; i++)
@@ -322,6 +318,14 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 			dev->dev, dev->sub, i);
 		}
 	    }
+
+#ifdef DEBUG_CONFIG
+	    for (i = 0; i < 6; i++)
+	        bug("[PCIDevice] Base %u addr 0x%p, size %ld\n", dev->BaseReg[i].addr, dev->BaseReg[i].size);
+	    bug("[PCIDevice] ROM     addr 0x%p, size %d\n", (IPTR)dev->RomBase, dev->RomSize);
+      	    bug("[PCIDevice] IRQ %u INT %u\n", dev->IRQLine, dev->INTLine);
+#endif
+
 	}
     }
 
@@ -585,7 +589,9 @@ static void dispatch_capability(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *
     *msg->storage = findCapabilityOffset(cl, o, capability);
 }
 
-const static void (*Dispatcher[num_Hidd_PCIDevice_Attrs])(OOP_Class *, OOP_Object *, struct pRoot_Get *) __attribute__((section(".rodata"))) =
+typedef void (*dispatcher_t)(OOP_Class *, OOP_Object *, struct pRoot_Get *);
+
+static const dispatcher_t Dispatcher[num_Hidd_PCIDevice_Attrs] =
 {
     [aoHidd_PCIDevice_Driver]	    = dispatch_generic,
     [aoHidd_PCIDevice_Bus]	    = dispatch_generic,
@@ -744,7 +750,7 @@ void PCIDev__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
     tags = msg->attrList;
 
-    while ((tag = NextTagItem((struct TagItem **)&tags)))
+    while ((tag = NextTagItem(&tags)))
     {
 	if (IS_PCIDEV_ATTR(tag->ti_Tag, idx))
 	{
