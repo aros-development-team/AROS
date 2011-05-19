@@ -8,10 +8,13 @@
 #include <exec/tasks.h>
 #include <exec/memory.h>
 #include <exec/nodes.h>
+#include <hidd/irq.h>
 #include <utility/utility.h>
 #include <proto/exec.h>
 #include <proto/timer.h>
 #include <proto/openfirmware.h>
+
+#include "ata.h"
 
 UBYTE *mbar;
 
@@ -103,6 +106,56 @@ static void ata_400ns()
 	} while(tick < (tick_old + 15));
 }
 
+/* FIXME: Use kernel.resource IRQ API instead of this old crap */
+static void ata_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+{
+    /*
+     * Our interrupt handler should call this function.
+     * It's our problem how to store bus pointer. Here we use h_Data for it.
+     */
+    ata_HandleIRQ(irq->h_Data);
+}
+
+/* Actually a quick hack. Proper implementation really needs HIDDizing this code. */
+static APTR CreateInterrupt(struct ata_Bus *bus)
+{
+    HIDDT_IRQ_Handler *IntHandler = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_PUBLIC);
+
+    if (IntHandler)
+    {
+        OOP_Object *o;
+
+        /*
+            Prepare nice interrupt for our bus. Even if interrupt sharing is enabled,
+            it should work quite well
+        */
+        IntHandler->h_Node.ln_Pri = 10;
+        IntHandler->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
+        IntHandler->h_Code = ata_Interrupt;
+        IntHandler->h_Data = bus;
+
+        o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
+        if (o)
+        {
+            struct pHidd_IRQ_AddHandler msg =
+            {
+                mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
+                handlerinfo:    IntHandler,
+                id:             bus->ab_IRQ,
+            };
+            int retval = OOP_DoMethod(o, &msg.mID);
+
+            OOP_DisposeObject(o);
+            
+            if (retval)
+            	return IntHandler;
+        }
+    }
+
+    FreeMem(IntHandler, sizeof(HIDDT_IRQ_Handler));
+    return NULL;
+}
+
 static const struct ata_BusDriver mpc_driver = 
 {
     ata_out,
@@ -111,7 +164,8 @@ static const struct ata_BusDriver mpc_driver =
     ata_insw,
     ata_outsw,
     ata_insw,	/* These are intentionally the same as 16-bit routines */
-    ata_outsw
+    ata_outsw,
+    CreateInterrupt
 };
 
 static int ata_mpc_init(struct ataBase *LIBBASE)

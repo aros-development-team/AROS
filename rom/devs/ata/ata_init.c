@@ -42,8 +42,7 @@
  * 2011-05-19  P. Fedin		   The Big Rework. Separated bus-specific code. Made 64-bit-friendly.
  */
 
-#define DEBUG 1
-
+#include <aros/bootloader.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <exec/exec.h>
@@ -185,7 +184,6 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG 
     ab->ab_Timeout      = 0;
     ab->ab_Units[0]     = NULL;
     ab->ab_Units[1]     = NULL;
-    ab->ab_IntHandler   = (HIDDT_IRQ_Handler *)AllocVecPooled(ATABase->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
     ab->ab_Task         = NULL;
     ab->ab_HandleIRQ    = NULL;
     ab->ab_Driver       = driver;
