@@ -1,5 +1,3 @@
-#define DEBUG 1
-
 /*
  * Define struct stat64 on Linux.
  * Define this before anything, since AROS includes
