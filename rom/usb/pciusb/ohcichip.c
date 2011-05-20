@@ -104,7 +104,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
         KPRINTF(1, ("Nothing to do!\n"));
         return;
     }
-    otd = (struct OhciTD *) (donehead - hc->hc_PCIVirtualAdjust - 16);
+    otd = (struct OhciTD *) ((IPTR)donehead - hc->hc_PCIVirtualAdjust - 16);
     KPRINTF(10, ("DoneHead=%08lx, OTD=%08lx, Frame=%ld\n", donehead, otd, READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
     do
     {
@@ -117,7 +117,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
             {
                 break;
             }
-            otd = (struct OhciTD *) ((READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
+            otd = (struct OhciTD *) ((IPTR)(READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
             continue;
         }
         CacheClearE(&oed->oed_EPCaps, 16, CACRF_InvalidateD);
@@ -132,16 +132,22 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
             len = otd->otd_Length;
         }
 
+	/*
+	 * CHECKME: ioreq was previously assigned AFTER the following check.
+	 * However the check may use ioreq value itself, and it caused 'ioreq may be used uninitialized'
+	 * warning. I hope this fix is correct.
+	 */
+        ioreq = oed->oed_IOReq;
+
         if (len)
         {
             epcaps = READMEM32_LE(&oed->oed_EPCaps);
             direction_in = ((epcaps & OECM_DIRECTION) == OECF_DIRECTION_TD)
                         ? (ioreq->iouh_SetupData.bmRequestType & URTF_IN)
                         : (epcaps & OECF_DIRECTION_IN);
-            CachePostDMA(READMEM32_LE(&otd->otd_BufferEnd) - len + 1, &len, direction_in ? 0 : DMA_ReadFromRAM);
+            CachePostDMA((APTR)(IPTR)READMEM32_LE(&otd->otd_BufferEnd) - len + 1, &len, direction_in ? 0 : DMA_ReadFromRAM);
         }
 
-        ioreq = oed->oed_IOReq;
         KPRINTF(1, ("Examining TD %08lx for ED %08lx (IOReq=%08lx), Status %08lx, len=%ld\n", otd, oed, ioreq, ctrlstatus, len));
         if(!ioreq)
         {
@@ -150,7 +156,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
             {
                 break;
             }
-            otd = (struct OhciTD *) ((READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
+            otd = (struct OhciTD *) ((IPTR)(READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
             continue;
         }
         ioreq->iouh_Actual += len;
@@ -252,7 +258,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
             break;
         }
         KPRINTF(1, ("NextTD=%08lx\n", otd->otd_NextTD));
-        otd = (struct OhciTD *) ((READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
+        otd = (struct OhciTD *) ((IPTR)(READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
         KPRINTF(1, ("NextOTD = %08lx\n", otd));
     } while(TRUE);
 
@@ -274,6 +280,8 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
 
                 KPRINTF(10, ("Reloading Bulk transfer at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length));
                 otd = oed->oed_FirstTD;
+                
+                /* 64 FIXME: iouh_Data can lie outside of 32-bit memory. Handle this! */
                 phyaddr = (ULONG) pciGetPhysical(hc, &(((UBYTE *) ioreq->iouh_Data)[actual]));
                 do
                 {
@@ -282,7 +290,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
                     {
                         len = OHCI_PAGE_SIZE;
                     }
-                    if((!otd->otd_Succ) && (actual + len == ioreq->iouh_Length) && (!ioreq->iouh_Flags & UHFF_NOSHORTPKT) && ((actual % ioreq->iouh_MaxPktSize) == 0))
+                    if((!otd->otd_Succ) && (actual + len == ioreq->iouh_Length) && (!(ioreq->iouh_Flags & UHFF_NOSHORTPKT)) && ((actual % ioreq->iouh_MaxPktSize) == 0))
                     {
                         // special case -- zero padding would not fit in this run,
                         // and next time, we would forget about it. So rather abort
@@ -299,7 +307,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
                     }
                     if(len)
                     {
-                        WRITEMEM32_LE(&otd->otd_BufferPtr, CachePreDMA(phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
+                        WRITEMEM32_LE(&otd->otd_BufferPtr, CachePreDMA((APTR)(IPTR)phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
                         phyaddr += len - 1;
                         WRITEMEM32_LE(&otd->otd_BufferEnd, phyaddr);
                         phyaddr++;
@@ -310,7 +318,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
                     CacheClearE(&otd->otd_Ctrl, 16, CACRF_ClearD);
                     actual += len;
                     otd = otd->otd_Succ;
-                } while(otd && ((actual < ioreq->iouh_Length) || (len && (ioreq->iouh_Dir == UHDIR_OUT) && (actual == ioreq->iouh_Length) && (!ioreq->iouh_Flags & UHFF_NOSHORTPKT) && ((actual % ioreq->iouh_MaxPktSize) == 0))));
+                } while(otd && ((actual < ioreq->iouh_Length) || (len && (ioreq->iouh_Dir == UHDIR_OUT) && (actual == ioreq->iouh_Length) && (!(ioreq->iouh_Flags & UHFF_NOSHORTPKT)) && ((actual % ioreq->iouh_MaxPktSize) == 0))));
                 oed->oed_Continue = (actual < ioreq->iouh_Length);
                 predotd->otd_NextTD = hc->hc_OhciTermTD->otd_Self;
 
@@ -437,6 +445,8 @@ void ohciScheduleCtrlTDs(struct PCIController *hc) {
         setupotd->otd_Length = 0; // don't increase io_Actual for that transfer
         CONSTWRITEMEM32_LE(&setupotd->otd_Ctrl, OTCF_PIDCODE_SETUP|OTCF_CC_INVALID|OTCF_NOINT);
         len = 8;
+        
+        /* 64 FIXME: Handle SetupData which is outside of 32-bit memory */
         WRITEMEM32_LE(&setupotd->otd_BufferPtr, (ULONG) CachePreDMA(pciGetPhysical(hc, &ioreq->iouh_SetupData), &len, DMA_ReadFromRAM));
         WRITEMEM32_LE(&setupotd->otd_BufferEnd, (ULONG) pciGetPhysical(hc, ((UBYTE *) (&ioreq->iouh_SetupData)) + 7));
 
@@ -448,6 +458,7 @@ void ohciScheduleCtrlTDs(struct PCIController *hc) {
         predotd = setupotd;
         if(ioreq->iouh_Length)
         {
+            /* 64 FIXME: Handle iouh_Data outside of 32-bit space */
             phyaddr = (ULONG) pciGetPhysical(hc, ioreq->iouh_Data);
             actual = 0;
             do
@@ -469,7 +480,7 @@ void ohciScheduleCtrlTDs(struct PCIController *hc) {
                 dataotd->otd_Length = len;
                 KPRINTF(1, ("TD with %ld bytes\n", len));
                 WRITEMEM32_LE(&dataotd->otd_Ctrl, ctrl);
-                WRITEMEM32_LE(&dataotd->otd_BufferPtr, CachePreDMA(phyaddr, &len, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? 0 : DMA_ReadFromRAM));
+                WRITEMEM32_LE(&dataotd->otd_BufferPtr, CachePreDMA((APTR)(IPTR)phyaddr, &len, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? 0 : DMA_ReadFromRAM));
                 phyaddr += len - 1;
                 WRITEMEM32_LE(&dataotd->otd_BufferEnd, phyaddr);
 
@@ -610,6 +621,7 @@ void ohciScheduleIntTDs(struct PCIController *hc) {
         oed->oed_TailPtr = hc->hc_OhciTermTD->otd_Self;
 
         predotd = NULL;
+        /* 64 FIXME: 32-bit data */
         phyaddr = (ULONG) pciGetPhysical(hc, ioreq->iouh_Data);
         actual = 0;
         do
@@ -639,7 +651,7 @@ void ohciScheduleIntTDs(struct PCIController *hc) {
             CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
             if(len)
             {
-                WRITEMEM32_LE(&otd->otd_BufferPtr, CachePreDMA(phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
+                WRITEMEM32_LE(&otd->otd_BufferPtr, CachePreDMA((APTR)(IPTR)phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
                 phyaddr += len - 1;
                 WRITEMEM32_LE(&otd->otd_BufferEnd, phyaddr);
                 phyaddr++;
@@ -765,6 +777,7 @@ void ohciScheduleBulkTDs(struct PCIController *hc) {
         oed->oed_TailPtr = hc->hc_OhciTermTD->otd_Self;
 
         predotd = NULL;
+        /* 64 FIXME */
         phyaddr = (ULONG) pciGetPhysical(hc, ioreq->iouh_Data);
         actual = 0;
         do
@@ -799,7 +812,7 @@ void ohciScheduleBulkTDs(struct PCIController *hc) {
             CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
             if(len)
             {
-                WRITEMEM32_LE(&otd->otd_BufferPtr, CachePreDMA(phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
+                WRITEMEM32_LE(&otd->otd_BufferPtr, CachePreDMA((APTR)(IPTR)phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
                 phyaddr += len - 1;
                 WRITEMEM32_LE(&otd->otd_BufferEnd, phyaddr);
                 phyaddr++;
@@ -811,7 +824,7 @@ void ohciScheduleBulkTDs(struct PCIController *hc) {
             CacheClearE(&otd->otd_Ctrl, 16, CACRF_ClearD);
 
             predotd = otd;
-        } while((actual < ioreq->iouh_Length) || (len && (ioreq->iouh_Dir == UHDIR_OUT) && (actual == ioreq->iouh_Length) && (!ioreq->iouh_Flags & UHFF_NOSHORTPKT) && ((actual % ioreq->iouh_MaxPktSize) == 0)));
+        } while((actual < ioreq->iouh_Length) || (len && (ioreq->iouh_Dir == UHDIR_OUT) && (actual == ioreq->iouh_Length) && (!(ioreq->iouh_Flags & UHFF_NOSHORTPKT)) && ((actual % ioreq->iouh_MaxPktSize) == 0)));
 
         if(!actual)
         {
@@ -1047,11 +1060,12 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw) {
 
         	if(hc->hc_OhciDoneQueue)
         	{
-        		struct OhciTD *donetd = (struct OhciTD *) (donehead - hc->hc_PCIVirtualAdjust - 16);
+        		struct OhciTD *donetd = (struct OhciTD *) ((IPTR)donehead - hc->hc_PCIVirtualAdjust - 16);
+
         		CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
         		while(donetd->otd_NextTD)
         		{
-        			donetd = (struct OhciTD *) (donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - 16);
+        			donetd = (struct OhciTD *) ((IPTR)donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - 16);
         			CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
         		}
         		WRITEMEM32_LE(&donetd->otd_NextTD, hc->hc_OhciDoneQueue);
@@ -1115,15 +1129,15 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
     hc->hc_PCIMem = (APTR) memptr;
-    if(memptr) {
-
+    if (memptr)
+    {
         // PhysicalAddress - VirtualAdjust = VirtualAddress
         // VirtualAddress  + VirtualAdjust = PhysicalAddress
-        hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
+        hc->hc_PCIVirtualAdjust = pciGetPhysical(hc, memptr) - (APTR)memptr;
         KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
 
         // align memory
-        memptr = (UBYTE *) ((((ULONG) hc->hc_PCIMem) + OHCI_HCCA_ALIGNMENT) & (~OHCI_HCCA_ALIGNMENT));
+        memptr = (UBYTE *) (((IPTR)hc->hc_PCIMem + OHCI_HCCA_ALIGNMENT) & (~OHCI_HCCA_ALIGNMENT));
         hc->hc_OhciHCCA = (struct OhciHCCA *) memptr;
         KPRINTF(10, ("HCCA 0x%08lx\n", hc->hc_OhciHCCA));
         memptr += OHCI_HCCA_SIZE;
@@ -1135,11 +1149,11 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
         do {
             // minimal initalization
             oed->oed_Succ = (oed + 1);
-            WRITEMEM32_LE(&oed->oed_Self, (ULONG) (&oed->oed_EPCaps) + hc->hc_PCIVirtualAdjust);
+            WRITEMEM32_LE(&oed->oed_Self, (IPTR)(&oed->oed_EPCaps) + hc->hc_PCIVirtualAdjust);
             oed++;
         } while(--cnt);
         oed->oed_Succ = NULL;
-        WRITEMEM32_LE(&oed->oed_Self, (ULONG) (&oed->oed_EPCaps) + hc->hc_PCIVirtualAdjust);
+        WRITEMEM32_LE(&oed->oed_Self, (IPTR)(&oed->oed_EPCaps) + hc->hc_PCIVirtualAdjust);
         memptr += sizeof(struct OhciED) * OHCI_ED_POOLSIZE;
 
         // build up TD pool
@@ -1148,11 +1162,11 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
         cnt = OHCI_TD_POOLSIZE - 1;
         do {
             otd->otd_Succ = (otd + 1);
-            WRITEMEM32_LE(&otd->otd_Self, (ULONG) (&otd->otd_Ctrl) + hc->hc_PCIVirtualAdjust);
+            WRITEMEM32_LE(&otd->otd_Self, (IPTR)(&otd->otd_Ctrl) + hc->hc_PCIVirtualAdjust);
             otd++;
         } while(--cnt);
         otd->otd_Succ = NULL;
-        WRITEMEM32_LE(&otd->otd_Self, (ULONG) (&otd->otd_Ctrl) + hc->hc_PCIVirtualAdjust);
+        WRITEMEM32_LE(&otd->otd_Self, (IPTR)(&otd->otd_Ctrl) + hc->hc_PCIVirtualAdjust);
         memptr += sizeof(struct OhciTD) * OHCI_TD_POOLSIZE;
 
         // terminating ED
@@ -1302,7 +1316,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
         CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_BULK_ED, 0);
         CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_DONEHEAD, 0);
 
-        WRITEREG32_LE(hc->hc_RegBase, OHCI_HCCA, (ULONG) pciGetPhysical(hc, hc->hc_OhciHCCA));
+        WRITEREG32_LE(hc->hc_RegBase, OHCI_HCCA, (IPTR)pciGetPhysical(hc, hc->hc_OhciHCCA));
 
         CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, OISF_ALL_INTS);
         CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTDIS, OISF_ALL_INTS);
