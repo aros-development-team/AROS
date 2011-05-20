@@ -456,7 +456,7 @@ struct pHidd_PCIDriver_FreePCIMem
 };
 
 /* Prototypes for stubs */
-VOID HIDD_PCI_EnumDevices(OOP_Object *obj, struct Hook *hook, const struct TagItem *requirements);
+VOID HIDD_PCI_EnumDevices(OOP_Object *obj, struct Hook *callback, const struct TagItem *requirements);
 VOID HIDD_PCI_AddHardwareDriver(OOP_Object *obj, OOP_Class *driver);
 APTR HIDD_PCIDriver_CPUtoPCI(OOP_Object *obj, APTR address);
 APTR HIDD_PCIDriver_PCItoCPU(OOP_Object *obj, APTR address);

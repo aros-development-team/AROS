@@ -55,7 +55,7 @@ BOOL HIDD_PCI_RemHardwareDriver(OOP_Object *obj, OOP_Class *driver)
     return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
-VOID HIDD_PCI_EnumDevices(OOP_Object *obj, struct Hook *callback, struct TagItem *requirements)
+VOID HIDD_PCI_EnumDevices(OOP_Object *obj, struct Hook *callback, const struct TagItem *requirements)
 {
     STATIC_MID;
     struct pHidd_PCI_EnumDevices p, *msg = &p;
