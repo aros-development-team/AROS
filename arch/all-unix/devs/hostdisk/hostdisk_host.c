@@ -50,6 +50,12 @@
 /* Prevents struct timeval redefinition */
 #define timeval sys_timeval
 
+/*
+ * avoid conflicts between our __unused define and the ones that might come in
+ * via fcntl.h
+ */
+#undef __unused
+
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
