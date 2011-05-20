@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Base PCI driver class
@@ -9,28 +9,20 @@
     Has to be checked soon ;)
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
-
 #include <utility/tagitem.h>
-
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
-
 #include <aros/symbolsets.h>
 
 #include "pci.h"
 
-#define DEBUG 1
-#include <aros/debug.h>
-
-#ifdef HiddPCIDriverAttrBase
 #undef HiddPCIDriverAttrBase
-#endif // HiddPCIDriverAttrBase
-
 #define	HiddPCIDriverAttrBase	(PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase (PSD(cl)->hiddAB)
 
@@ -260,7 +252,7 @@ VOID PCIDrv__Hidd_PCIDriver__UnmapPCI(OOP_Class *cl, OOP_Object *o,
 APTR PCIDrv__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_AllocPCIMem *msg)
 {
-    APTR memory = AllocVec(msg->Size + 4096 + AROS_ALIGN(sizeof(APTR)), MEMF_CLEAR);
+    APTR memory = AllocVec(msg->Size + 4096 + AROS_ALIGN(sizeof(APTR)), MEMF_31BIT|MEMF_CLEAR);
     IPTR diff;
     
     diff = (IPTR)memory - (AROS_ROUNDUP2((IPTR)memory + sizeof(APTR), 4096));
