@@ -42,11 +42,11 @@ extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
  * ram testing requires disabled data caches.
  */
 
-void __attribute__((interrupt)) cpu_detect_trap_fpu(void);
+void __attribute__((interrupt)) cpu_detect_fpu_asm(void);
 asm (".chip 68060\n"
 	"	.text\n"
-	"	.globl cpu_detect_trap_fpu\n"
-	"cpu_detect_trap_fpu:\n"
+	"	.globl cpu_detect_fpu_asm\n"
+	"cpu_detect_fpu_asm:\n"
 	"	move.l %sp,%a1\n"
 	"	lea %sp@(-60),%sp\n"
 	"	move.l %sp,%a0\n"
@@ -55,29 +55,29 @@ asm (".chip 68060\n"
 	"	move.w #0x8000,%d0\n"
 	"	move.b (%a0),%d0\n"
 	"	move.l %a1,%sp\n"
-	"	addq.l	#2,%sp@(2)\n" /* skip illegal */
-	"	or.w	#0x2000,%sp@\n" /* ensure we return in supervisor mode */
-	"	rte\n" /* return to cpu_detect() */
+	"	rts\n" /* return to cpu_detect() */
 );
 
-void __attribute__((interrupt)) cpu_detect_trap_f(void);
+void __attribute__((interrupt)) fpu_detect_trap_f(void);
 asm (
 	"	.text\n"
-	"	.globl cpu_detect_trap_f\n"
-	"cpu_detect_trap_f:\n"
+	"	.globl fpu_detect_trap_f\n"
+	"fpu_detect_trap_f:\n"
 	"	move.l %a1,%sp\n"
-	"	addq.l	#2,%sp@(2)\n" /* skip illegal */
 	"	moveq #0,%d0\n"
-	"	or.w	#0x2000,%sp@\n" /* ensure we return in supervisor mode */
-	"	rte\n" /* return to cpu_detect() */
+	"	rts\n" /* return to cpu_detect() */
 );
 
-void __attribute__((interrupt)) cpu_detect_trap_priv(void);
+void __attribute__((interrupt)) cpu_detect_asm(void);
 asm (".chip 68060\n"
 	"	.text\n"
-	"	.globl cpu_detect_trap_priv\n"
-	"cpu_detect_trap_priv:\n"
-	"	move.w	#0x2001,%d0\n"
+	"	.globl cpu_detect_asm\n"
+	"cpu_detect_asm:\n"
+	"	move.l	%sp,%a1\n"
+	"	moveq	#0,%d0\n"
+		/* VBR is 68010+ */
+	"	movec	%vbr,%d1\n"
+	"	move.w	#0x0001,%d0\n"
  		/* CACR is 68020+ */
 	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
 		/* 68020+ or better */
@@ -97,14 +97,14 @@ asm (".chip 68060\n"
 	"	btst	#8,%d0\n"
 	"	bne.s	1f\n" /* yes, it is 68030 */
 		/* 68020 */
-	"	move.w	#0x2003,%d0\n"
-	"	illegal\n"
+	"	move.w	#0x0003,%d0\n"
+	"	bra cpu_detect_trap_illg\n"
 		/* 68030 */
 	"1:	move.w	#0x0001,%d0\n"
 		/* disable data cache, bad idea without correct MMU tables */
 	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
-	"	move.w	#0x2007,%d0\n"
-	"	illegal\n"
+	"	move.w	#0x0007,%d0\n"
+	"	bra cpu_detect_trap_illg\n"
 		/* 68040 or 68060 */
 	"0:	moveq	#0,%d0\n"
 		/* set transparent translation registers,
@@ -116,7 +116,7 @@ asm (".chip 68060\n"
 	"	move.l	#0x00ffe000,%d0\n"
 	"	movec	%d0,%dtt1\n"
 	"	movec	%d0,%itt0\n"
-	"	move.w	#0x200f,%d0\n"
+	"	move.w	#0x000f,%d0\n"
  		/* PCR is 68060 only */
 	"	dc.l 0x4e7a0808\n" // movec	%pcr,%d0\n"
 		/* 68060 */
@@ -127,8 +127,8 @@ asm (".chip 68060\n"
 		/* enable code cache, store buffer and branch cache */
 	"	move.l	#0x0080a000,%d0\n"
 	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
-	"	move.w	#0x208f,%d0\n"
-	"	illegal\n"
+	"	move.w	#0x008f,%d0\n"
+	"	bra cpu_detect_trap_illg\n"
 );
 
 void __attribute__((interrupt)) cpu_detect_trap_illg(void);
@@ -136,39 +136,34 @@ asm (
 	"	.text\n"
 	"	.globl cpu_detect_trap_illg\n"
 	"cpu_detect_trap_illg:\n"
-	"	addq.l	#8,%sp\n" /* remove illegal instruction stack frame */
-	"	addq.l	#2,%sp@(2)\n" /* skip move sr,d0 */
-	"	or.w	#0x2000,%sp@\n" /* ensure we return in supervisor mode */
-	"	rte\n" /* return to cpu_detect() */
+	"	move.l %a1,%sp\n" /* remove exception stack frame */
+	"	rts\n" /* return to cpu_detect() */
 );
 
 /* Detect CPU and FPU model */
 static ULONG cpu_detect(ULONG *pcr)
 {
 	volatile APTR *trap = NULL;
-	APTR old_trap8, old_trap4, old_trap11;
+	APTR old_trap4, old_trap11;
 	UWORD cpuret, fpuret;
 
-	old_trap8 = trap[8];
-	trap[8] = cpu_detect_trap_priv;
 	old_trap4 = trap[4];
 	trap[4] = cpu_detect_trap_illg;
-	old_trap11 = trap[11];
-	trap[11] = cpu_detect_trap_f;
+
 	*pcr = 0;
 	asm volatile (
 		"move.l %1,%%a0\n"
-		"moveq #0,%%d0\n"
-		"move.w	#0,%%sr\n"	/* Switch to user mode */
-		"move.w	%%sr,%%d1\n"
+		"bsr cpu_detect_asm\n"
 		"move.w	%%d0,%0\n"
-		: "=m" (cpuret) : "m" (pcr) : "%d0", "%d1", "%a0" );
-	trap[4] = cpu_detect_trap_fpu;
+		: "=m" (cpuret) : "m" (pcr) : "%d0", "%d1", "%a0", "%a1" );
+
+	old_trap11 = trap[11];
+	trap[11] = fpu_detect_trap_f;
 	asm volatile (
-		"illegal\n" /* supervisor mode */
+		"bsr cpu_detect_fpu_asm\n"
 		"move.w	%%d0,%0\n"
 		: "=m" (fpuret) : : "%d0", "%a0", "%a1" );
-	trap[8] = old_trap8;
+
 	trap[4] = old_trap4;
 	trap[11] = old_trap11;
 
