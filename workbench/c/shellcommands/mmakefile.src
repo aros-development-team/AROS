@@ -30,7 +30,6 @@ FILES	:= \
     Run \
     Set \
     Setenv \
-    Shell \
     Skip \
     Stack \
     Status \
@@ -91,7 +90,6 @@ FILES := \
 	 Run \
 	 Set \
 	 Setenv \
-	 Shell \
 	 Skip \
 	 Stack \
 	 Unset \
