@@ -40,18 +40,13 @@ rom_init:
 0:
 
 	/* temp system stack */
-	lea.l	_ss_end,%sp	/* Safe, but tiny, 'trap' stack */
+	lea.l	_ss_end,%sp	/* System stack */
 	lea.l	_ss,%a5		/* Put the memory bank array at the bottom of the stack */
-	/* temp user stack */
-	lea.l	%sp@(-0x100),%a0
-	move.l	%a0,%usp
 
 	/* Do we have a Gayle? */
 	sub.l	%a6,%a6
 	jsr		Exec_ReadGayle
 1:	move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
-
-	move.w	#0,%sr		/* Go to user mode */
 
 	/* Memory region array is put into the
 	 * system stack from the bottom up, so
