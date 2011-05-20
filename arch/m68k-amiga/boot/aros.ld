@@ -16,9 +16,12 @@ INCLUDE ../../../bin/amiga-m68k/gen/rom_objs.ld
                                   *(.eh_frame)
                                   _rom_end = .;   
                                 } >valid
-  .bss                        : {  _bss = .;
+  .bss                        : { _ss = .;
+                                  . = . + 0x800;
+                                  _ss_end = .;
+                                  _bss = .;
                                   *(.bss)
-                                  _bss_end = ALIGN(16);        } >valid
+                                  _bss_end = ALIGN(.,32);        } >valid
 
   /* This should cause angry complaints if .data exists
    * We don't want .data, and we don't need it.

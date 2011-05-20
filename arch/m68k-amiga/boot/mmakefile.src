@@ -50,7 +50,7 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 FILES=start early debug
 AFILES=rom_entry rom_init superstack_swap
 
-ROMLOC_bss := 0x0002000  # Sadly, we need to consume Chip RAM for the ROM BSS.
+ROMLOC_bss := 0x0001000  # Sadly, we need to consume Chip RAM for the ROM BSS.
 
 ROMLOC_rom := 0x0f80000
 

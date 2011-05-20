@@ -40,11 +40,11 @@ rom_init:
 0:
 
 	/* temp system stack */
-	move.l	#0x1000,%a5	/* Safe, but tiny, 'trap' stack */
-	move.l	%a5,%sp
+	lea.l	_ss_end,%sp	/* Safe, but tiny, 'trap' stack */
+	lea.l	_ss,%a5		/* Put the memory bank array at the bottom of the stack */
 	/* temp user stack */
-	sub.w	#0x100,%a5
-	move.l	%a5,%usp
+	lea.l	%sp@(-0x100),%a0
+	move.l	%a0,%usp
 
 	/* Do we have a Gayle? */
 	sub.l	%a6,%a6
@@ -106,19 +106,19 @@ rom_init:
 	move.l	#0x00040000,%d0
 	bsr		.L_memtest
 	beq	chipfault
-	/* adjust to skip the first 4k for trap
+
+	/* adjust to skip the combined system stack and bss
 	 */
-	move.l	#0x1000,%a5@(-8)
-	sub.l	#0x1000,%a5@(-4)
+	lea.l	_bss_end,%a0
+	move.l	%a0,%a5@(-8)
+	move.l	%a0,%d0
+	sub.l	%d0,%a5@(-4)
 
 	/* end of memory region list */
 	clr.l	%a5@+
 	clr.l	%a5@
 
-	move.l	%sp,%a5
-	lea.l	%sp@(-0x700),%a0
-	move.l	%sp,%sp@-
-	move.l	%a0,%sp@-
+	lea.l	_ss,%a5
 	move.l	%a5,%sp@-	/* memory bank array */
 	jsr		exec_boot
 
