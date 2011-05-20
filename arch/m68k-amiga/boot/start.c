@@ -292,6 +292,8 @@ extern BYTE _ext_start;
 extern BYTE _ext_end;
 extern BYTE _bss;
 extern BYTE _bss_end;
+extern BYTE _ss;
+extern BYTE _ss_end;
 
 /* Protect the 'ROM' if it is actually in RAM.
  */
@@ -409,7 +411,7 @@ void doColdCapture(void)
     SysBase->ColdCapture = ColdCapture;
 }
 
-void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
+void exec_boot(ULONG *membanks)
 {
 	struct TagItem bootmsg[] = {
 #ifdef AROS_SERIAL_DEBUG
@@ -527,6 +529,10 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	Early_ScreenCode(CODE_RAM_CHECK);
 
 	mh = addmemoryregion(membanks[0], membanks[1]);
+	if (mh == NULL) {
+	    DEBUGPUTS(("Can't create initial memory header!\n"));
+	    Early_Alert(AT_DeadEnd | AG_NoMemory);
+	}
 
 	/* NOTE: mh *must* have, as its first mc, a chunk
 	 *       big enough for krnRomTagScanner, and at
@@ -555,8 +561,8 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
     	    SysBase->KickCheckSum = KickCheckSum;
     	}
 
-        SysBase->SysStkUpper    = (APTR)ss_stack_upper;
-        SysBase->SysStkLower    = (APTR)ss_stack_lower;
+        SysBase->SysStkUpper    = (APTR)&_ss_end;
+        SysBase->SysStkLower    = (APTR)&_ss;
 
         /* Mark what the last alert was */
         for (i = 0; i < 4; i++)
