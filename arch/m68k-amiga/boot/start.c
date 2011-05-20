@@ -56,6 +56,7 @@ asm (".chip 68060\n"
 	"	move.b (%a0),%d0\n"
 	"	move.l %a1,%sp\n"
 	"	addq.l	#2,%sp@(2)\n" /* skip illegal */
+	"	or.w	#0x2000,%sp@\n" /* ensure we return in supervisor mode */
 	"	rte\n" /* return to cpu_detect() */
 );
 
@@ -67,6 +68,7 @@ asm (
 	"	move.l %a1,%sp\n"
 	"	addq.l	#2,%sp@(2)\n" /* skip illegal */
 	"	moveq #0,%d0\n"
+	"	or.w	#0x2000,%sp@\n" /* ensure we return in supervisor mode */
 	"	rte\n" /* return to cpu_detect() */
 );
 
@@ -136,6 +138,7 @@ asm (
 	"cpu_detect_trap_illg:\n"
 	"	addq.l	#8,%sp\n" /* remove illegal instruction stack frame */
 	"	addq.l	#2,%sp@(2)\n" /* skip move sr,d0 */
+	"	or.w	#0x2000,%sp@\n" /* ensure we return in supervisor mode */
 	"	rte\n" /* return to cpu_detect() */
 );
 
@@ -156,6 +159,7 @@ static ULONG cpu_detect(ULONG *pcr)
 	asm volatile (
 		"move.l %1,%%a0\n"
 		"moveq #0,%%d0\n"
+		"move.w	#0,%%sr\n"	/* Switch to user mode */
 		"move.w	%%sr,%%d1\n"
 		"move.w	%%d0,%0\n"
 		: "=m" (cpuret) : "m" (pcr) : "%d0", "%d1", "%a0" );
@@ -260,7 +264,7 @@ extern void SuperstackSwap(void);
 /* This calls the register-ABI library
  * routine Exec/InitCode, for use in NewStackSwap()
  */
-static LONG doInitCode(ULONG startClass, ULONG version)
+static LONG doInitCode(void)
 {
 	/* Attempt to allocate a new supervisor stack */
 	do {
@@ -281,7 +285,7 @@ static LONG doInitCode(ULONG startClass, ULONG version)
 	    Supervisor((ULONG_FUNC)SuperstackSwap);
 	} while(0);
 
-	InitCode(startClass, version);
+	InitCode(RTF_COLDSTART, 0);
 
 	return 0;
 }
@@ -367,26 +371,9 @@ static BOOL InitKickMem(struct ExecBase *SysBase)
     return TRUE;
 }
 
-/* Ugh. BSS. Maybe move this to Trap[12]? */
-static APTR ColdCapture;
-
-/* SysBase is already in A6 */
-void superColdCapture(void);
-asm (
-    	".global superColdCapture\n"
-    "superColdCapture:\n"
-    	"move.l ColdCapture,%a0\n"
-    	"movem.l %d2-%d7/%a2-%a6,%sp@-\n"
-    	"move.l #0f,%a5\n"
-    	"jmp (%a0)\n"
-    	"0:\n"
-    	"movem.l %sp@+,%d2-%d7/%a2-%a6\n"
-    	"rte\n"
-    );
-
 void doColdCapture(void)
 {
-    ColdCapture = SysBase->ColdCapture;
+    APTR ColdCapture = SysBase->ColdCapture;
     if (ColdCapture == NULL)
     	return;
 
@@ -407,7 +394,17 @@ void doColdCapture(void)
      * strange. It's in supervisor mode, requires
      * the return location in A5, and SysBase in A6.
      */
-    Supervisor((ULONG_FUNC)superColdCapture);
+    asm volatile (
+    	"move.l %0,%%a0\n"
+    	"move.l %1,%%a6\n"
+    	"move.l #0f,%%a5\n"
+    	"jmp (%%a0)\n"
+    	"0:\n"
+    	:
+    	: "m" (ColdCapture), "m" (SysBase)
+    	: "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7",
+    	  "a0", "a1", "a2", "a3", "a4", "a5", "a6");
+
     SysBase->ColdCapture = ColdCapture;
 }
 
@@ -656,7 +653,6 @@ void exec_boot(ULONG *membanks)
 
 	/* Set privilege violation trap - we
 	 * need this to support the Exec/Supervisor call
-	 * that we'll be using in doColdCapture.
 	 */
 	trap[8] = Exec_Supervisor_Trap;
 
@@ -668,9 +664,13 @@ void exec_boot(ULONG *membanks)
 
 	oldmem = AvailMem(MEMF_FAST);
 
-	/* Ok, let's start the system */
+	/* Ok, let's start the system. We have to
+	 * do this in Supervisor context, since some
+	 * expansions ROMs (Cyperstorm PPC) expect it.
+	 */
 	DEBUGPUTS(("[start] InitCode(RTF_SINGLETASK, 0)\n"));
 	InitCode(RTF_SINGLETASK, 0);
+
 	/* Autoconfig ram expansions are now configured */
 
 	/* If oldSysBase is not NULL, that means that it
@@ -733,23 +733,28 @@ void exec_boot(ULONG *membanks)
 
 	/* Attempt to allocate a real stack, and switch to it. */
 	do {
-	    struct StackSwapStruct sss;
-	    struct StackSwapArgs ssa;
-	    const ULONG size = AROS_STACKSIZE * sizeof(ULONG);
+	    const ULONG size = AROS_STACKSIZE;
+	    IPTR *usp;
 	
-	    sss.stk_Lower = AllocMem(size, MEMF_PUBLIC);
-	    if (sss.stk_Lower == NULL) {
+	    usp = AllocMem(size * sizeof(IPTR), MEMF_PUBLIC);
+	    if (usp == NULL) {
 		DEBUGPUTS(("Can't allocate a new stack for Exec... Strange.\n"));
 	    	Early_Alert(CODE_ALLOC_FAIL);
 		break;
 	    }
-	    sss.stk_Upper = sss.stk_Lower + size;
-	    sss.stk_Pointer = sss.stk_Upper;
 
-	    ssa.Args[0] = RTF_COLDSTART;
-	    ssa.Args[1] = 0;
+	    SysBase->ThisTask->tc_SPUpper = &usp[size];
+	    SysBase->ThisTask->tc_SPLower = usp;
 
-	    NewStackSwap(&sss, doInitCode, &ssa);
+	    /* Leave supervisor mode */
+	    asm volatile (
+	    	"move.l %0,%%usp\n"
+	    	"move.w #0,%%sr\n"
+	    	"jmp %1@\n"
+	    	:
+	    	: "a" (&usp[size-3]),
+	    	  "a" (doInitCode)
+	    	:);
 	} while (0);
 
 	/* We shouldn't get here */
