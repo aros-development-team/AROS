@@ -1,9 +1,10 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Benchmark for: 
           cybergraphics.library/WritePixelArray
+          cybergraphics.library/WritePixelArrayAlpha
           cybergraphics.library/ReadPixelArray
     Lang: English
 */
@@ -22,7 +23,7 @@
     RESULT
 
     NOTES
-        By default 
+        By default, WritePixelArray() is tested.
     BUGS
 
     INTERNALS
@@ -44,7 +45,7 @@
 
 /****************************************************************************************/
 
-#define ARG_TEMPLATE    "WIDTH=W/N/K,HEIGHT=H/N/K,PIXELFMT=P/K,FUNCTION=P/K"
+#define ARG_TEMPLATE    "WIDTH=W/N/K,HEIGHT=H/N/K,PIXELFMT=P/K,FUNCTION=F/K"
 #define ARG_W           0
 #define ARG_H           1
 #define ARG_PIXFMT      2
