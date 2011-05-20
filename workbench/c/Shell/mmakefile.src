@@ -5,14 +5,18 @@
 include $(TOP)/config/make.cfg
 
 FILES := Shell
+EXE := Shell
 
 USER_CLAGS = -pedantic
 
-##MM- workbench-c : workbench-c-shellcommands
-##MM- workbench-c-quick : workbench-c-shell-quick
-##MM- workbench-c-shell : includes linklibs workbench-libs-dos-catalogs
+#MM- workbench-c : workbench-c-shell
 
-# FIXME buil_progs adds debug symbols, but build_prog does not
-%build_progs mmake=workbench-c-shell	\
+#MM- workbench-c-quick : workbench-c-shell-quick
+
+#MM  workbench-c-shell : includes linklibs workbench-libs-dos-catalogs
+
+%build_prog mmake=workbench-c-shell	progname=$(EXE) \
     files=$(FILES) targetdir=$(AROS_C)	\
     usestartup="no" uselibs="rom"
+
+%common
