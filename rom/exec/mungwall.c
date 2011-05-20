@@ -142,7 +142,7 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, const char
     if (header->mwh_fault)
     {
     	/* Throw an alert with context */
-    	Exec_ExtAlert(AN_MemoryInsane, caller, stack, &mwdata, AT_MUNGWALL, SysBase);
+    	Exec_ExtAlert(AN_MemoryInsane, caller, stack, AT_MUNGWALL, &mwdata, SysBase);
 
     	/*
     	 * Our entry can be freed by another process while we are sitting in Alert().
