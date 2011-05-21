@@ -1017,14 +1017,16 @@ BOOL HiddNouveauAccelAPENUpload3D(
 
         /* Draw data into GART */
         for (srcy = 0; srcy < line_count; srcy++)
+        {
             for (srcx = 0; srcx < width; srcx++)
             {
-                ULONG * pos = (ULONG *)(dst + (srcy * line_len) + (srcx * cpp));
-                *pos = srcpenrgb | (src[(srcy * srcpitch) + srcx] << 24);
+                ULONG * pos = (ULONG *)(dst + (srcx * cpp));
+                *pos = srcpenrgb | (src[srcx] << 24);
             }
+            src += srcpitch;
+            dst += line_len;
+        }
         
-
-        src += srcpitch * line_count;
         nouveau_bo_unmap(carddata->GART);
         
         HiddNouveau3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
