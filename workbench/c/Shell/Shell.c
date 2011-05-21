@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     The shell program.
@@ -83,7 +83,6 @@
 #include <aros/shcommands.h>
 
 #include "Shell.h"
-#include "Shell_inline.h" /* inline functions */
 
 AROS_SH1(Shell, 41.3,
 	 AROS_SHA(STRPTR, , COMMAND, /F, NULL))

@@ -1,17 +1,15 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef SHELL_H
 #define SHELL_H 1
 
-#ifndef DOS_DOS_H
+#include <dos/dosextens.h>
 #include <dos/dos.h>	/* for BPTR		*/
-#endif
-#ifndef BUFFER_H
+
 #include "buffer.h"
-#endif
 
 #define FILE_MAX 256 /* max length of file name */
 #define LINE_MAX 512 /* max length of full command line */
@@ -76,6 +74,8 @@ typedef struct _ShellState
  * Output:   LONG  --  error code or 0 if everything went OK
  */
 LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand);
+
+LONG convertLineDot(ShellState *ss, Buffer *in);
 
 /* Function: executeLine
  *
@@ -195,5 +195,11 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out);
 LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out);
 LONG convertVar(ShellState *ss, Buffer *in, Buffer *out);
 LONG l2a(LONG x, STRPTR buf); /* long to ascii */
+
+void cliEcho(ShellState *ss, CONST_STRPTR args);
+LONG cliLen(CONST_STRPTR s);
+BOOL cliNan(CONST_STRPTR s);
+void cliPrompt(ShellState *ss);
+void cliVarNum(CONST_STRPTR name, LONG value);
 
 #endif
