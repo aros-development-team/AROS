@@ -50,7 +50,12 @@ LONG            height = 720;
 /* COMMON */
 static void printresults(LONG timems, LONG blits)
 {
-    printf("%.2f|\n", blits * 1000000.0 / timems);
+    LONG bpp; QUAD q;
+
+    bpp = GetCyberMapAttr(win->WScreen->RastPort.BitMap, CYBRMATTR_BPPIX);
+    q = ((QUAD)width) * ((QUAD)height) * ((QUAD)bpp) * ((QUAD)blits) * ((QUAD)1000000) / (QUAD)timems;
+
+    printf("%.2f|%d|\n", (blits * 1000000.0 / timems), (LONG)(q / 1048576));
 }
 
 static void cleanup(STRPTR msg, ULONG retcode)
@@ -442,13 +447,16 @@ static void detectsystem()
     /* Detect screen properties */
     {
         struct Screen * screen = IntuitionBase->FirstScreen;
-        LONG depth = 0, width = 0, height = 0;
+        LONG sdepth = 0, swidth = 0, sheight = 0;
 
-        width = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_WIDTH);
-        height = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_HEIGHT);
-        depth = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_DEPTH);
+        swidth = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_WIDTH);
+        sheight = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_HEIGHT);
+        sdepth = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_DEPTH);
+        
+        if (width > swidth) width = swidth;
+        if (height > sheight) height = sheight;
 
-        printf("|Screen information| %dx%dx%d|\n", width, height, depth);
+        printf("|Screen information| %dx%dx%d|\n", swidth, sheight, sdepth);
     }
 
     printf("\n\n");
@@ -485,6 +493,7 @@ static void textbenchmark(LONG optmode, BOOL optantialias, LONG optlen)
 static void textbenchmarkset()
 {
     printf("*Text benchmark %dx%d*\n", width, height);
+    printf("||Test||Blits/s||MB/s||\n");
     textbenchmark(JAM1,         FALSE,  100);
     textbenchmark(JAM2,         FALSE,  100);
     textbenchmark(COMPLEMENT,   FALSE,  100);
@@ -533,6 +542,7 @@ static void pixelarraybenchmark(LONG optpixfmt, LONG optfunction)
 static void pixelarraybenchmarkset()
 {
     printf("*PixelArray benchmark %dx%d*\n", width, height);
+    printf("||Test||Blits/s||MB/s||\n");
     pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_WRITE);
     pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE);
     pixelarraybenchmark(RECTFMT_RGBA,   FUNCTION_WRITE);
