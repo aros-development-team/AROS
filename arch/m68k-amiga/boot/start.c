@@ -399,8 +399,6 @@ void doColdCapture(void)
     	: "m" (ColdCapture), "m" (SysBase)
     	: "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7",
     	  "a0", "a1", "a2", "a3", "a4", "a5", "a6");
-
-    SysBase->ColdCapture = ColdCapture;
 }
 
 void exec_boot(ULONG *membanks)
@@ -517,6 +515,8 @@ void exec_boot(ULONG *membanks)
 	__clear_bss(&kbss[0]);
 	DEBUGPUTHEX(("BSS lower", (ULONG)&_bss));
 	DEBUGPUTHEX(("BSS upper", (ULONG)&_bss_end - 1));
+	DEBUGPUTHEX(("SS  lower", (ULONG)&_ss));
+	DEBUGPUTHEX(("SS  upper", (ULONG)&_ss_end - 1));
 
 	Early_ScreenCode(CODE_RAM_CHECK);
 
@@ -643,6 +643,12 @@ void exec_boot(ULONG *membanks)
 			SysBase->MaxExtMem = size ? (APTR)(((0xc00000 + (size + 0xffff)) & 0xffff0000)) : 0;
 	}
 
+	/* Now that we have a valid SysBase,
+	 * we can call ColdCapture
+	 */
+	if (wasvalid)
+	    doColdCapture();
+
 	/* Seal up SysBase's critical variables */
 	SetSysBaseChkSum();
 
@@ -650,12 +656,6 @@ void exec_boot(ULONG *membanks)
 	 * need this to support the Exec/Supervisor call
 	 */
 	trap[8] = Exec_Supervisor_Trap;
-
-	/* Now that we have a valid SysBase,
-	 * we can call ColdCapture
-	 */
-	if (wasvalid)
-	    doColdCapture();
 
 	oldmem = AvailMem(MEMF_FAST);
 
@@ -683,11 +683,10 @@ void exec_boot(ULONG *membanks)
 	    SysBase->KickMemPtr   = oldSysBase->KickMemPtr; 
 	    SysBase->KickTagPtr   = oldSysBase->KickTagPtr;
 	    SysBase->KickCheckSum = oldSysBase->KickCheckSum;
+	    doColdCapture();
 	    /* Re-seal SysBase */
 	    SetSysBaseChkSum();
 	    wasvalid = TRUE;
-
-	    doColdCapture();
 	}
 
 	/* Before we allocate anything else, we need to
