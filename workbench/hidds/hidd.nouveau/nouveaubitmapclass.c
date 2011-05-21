@@ -525,6 +525,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
 
         if (result)
         {
+            MAP_BUFFER; /* FIXME: This is needed to flush execution buffer, atrifact otherwise */
             UNLOCK_BITMAP;
             return;
         }
@@ -666,6 +667,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
                     msg->x, msg->y, msg->width, msg->height, cl, o);
 
                 ReleaseSemaphore(&carddata->gartsemaphore);
+                MAP_BUFFER; /* FIXME: This is needed to flush execution buffer, atrifact otherwise */
                 UNLOCK_BITMAP
 
                 if (result) return;
