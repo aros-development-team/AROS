@@ -24,7 +24,7 @@ FILES := \
 
 EXE := Shell
 
-USER_CLAGS = -pedantic
+USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 #MM- workbench-c : workbench-c-shell
 

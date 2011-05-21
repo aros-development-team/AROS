@@ -53,7 +53,7 @@ static AROS_UFP3 (APTR, Init,
 
 static const TEXT handler_name[] = HANDLER_NAME;
 static const TEXT version_string[] =
-   HANDLER_NAME " " STR(VERSION) "." STR(REVISION) " (" __DATE__ ")\n";
+   HANDLER_NAME " " STR(VERSION) "." STR(REVISION) " (" ADATE ")\n";
 static const TEXT dev_name[] = "RAM";
 
 extern const TEXT dos_name[];

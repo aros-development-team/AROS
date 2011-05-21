@@ -8,6 +8,7 @@ include $(TOP)/config/make.cfg
 #
 USER_CFLAGS :=  -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/exec -I$(GENDIR)/rom/exec	\
 	-D__mb_cur_max=MB_CUR_MAX		\
+	-DADATE="\"$(shell date '+%d.%m.%Y')\"" \
 	-DEFTYPE=EINVAL -fno-builtin
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 

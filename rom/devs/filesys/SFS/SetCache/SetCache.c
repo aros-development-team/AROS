@@ -7,11 +7,7 @@
 #include "../FS/packets.h"
 #include "../FS/query.h"
 
-#ifdef __AROS__
-#define __AMIGADATE__  "(" __DATE__ ")"
-#endif
-
-static const char version[]={"\0$VER: SetCache 1.2 " __AMIGADATE__ "\r\n"};
+static const char version[]={"\0$VER: SetCache 1.2 " ADATE "\r\n"};
 
 int main()
 {

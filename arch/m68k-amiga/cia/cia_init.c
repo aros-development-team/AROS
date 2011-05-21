@@ -68,7 +68,7 @@ AROS_LD1(WORD, SetICR,
 #define RESIDENT_DATE     "6.11.2010"
 
 static const char resident_name[] = RESIDENT_NAME;
-static const char resident_id[]   = "\0$VER:" RESIDENT_NAME " " STR(RESIDENT_VERSION) "." STR(RESIDENT_REVISION) " (" __DATE__ ")";
+static const char resident_id[]   = "\0$VER:" RESIDENT_NAME " " STR(RESIDENT_VERSION) "." STR(RESIDENT_REVISION) " (" ADATE ")";
 
 static AROS_UFP4 (APTR, Cia_Handler,
     AROS_UFPA(ULONG, dummy, A0),

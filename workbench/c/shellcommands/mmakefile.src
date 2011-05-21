@@ -39,7 +39,9 @@ FILES	:= \
     Why
 
 USER_CFLAGS := -I$(SRCDIR)/rom/dos \
-	       -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h
+	       -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h \
+		   -DADATE="\"$(shell date "+%d.%m.%Y")\""
+
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 #MM- workbench-c : workbench-c-shellcommands
@@ -61,7 +63,9 @@ $(OBJDIR)/NewCLI.o : $(OBJDIR)/NewShell.o
 
 USER_CFLAGS := -I$(SRCDIR)/rom/dos \
 	       -include $(SRCDIR)/workbench/c/shellcommands/shcommands_embedded.h \
-	       -D__NOLIBBASE__
+	       -D__NOLIBBASE__ \
+		   -DADATE="\"$(shell date "+%d.%m.%Y")\""
+
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 OBJDIR := $(OBJDIR).kernel

@@ -1,6 +1,8 @@
 # $Id: mmakefile.src 36646 2011-01-17 13:48:43Z neil $
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
 %build_module_simple mmake=kernel-amiga-m68k-wbtag \
     modname=wbtag modtype=resource \
     files="wbtag" uselibs="rom"
