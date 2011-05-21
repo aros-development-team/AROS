@@ -27,6 +27,7 @@
 
 ******************************************************************************/
 
+#include <cybergraphx/cybergraphics.h>
 #include <proto/exec.h>
 #include <devices/timer.h>
 #include <proto/diskfont.h>
@@ -36,6 +37,7 @@
 #include <resources/processor.h>
 #include <proto/processor.h>
 #include <proto/oop.h>
+#include <proto/cybergraphics.h>
 #include <hidd/pci.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,37 +68,11 @@ STRPTR          consttext = "The AROS Development Team. All rights reserved.";
 LONG            mode = JAM1;
 BOOL            antialias = FALSE;
 LONG            linelen = 100;
+LONG            function = 0;
+LONG            pixfmt = RECTFMT_ARGB;
 
 #include "text.c"
-
-static void textbenchmark(LONG optmode, BOOL optantialias, LONG optlen)
-{
-    STRPTR modestr = "UNKNOWN";
-    STRPTR aastr = "UNKNOWN";
-    TEXT lenstr[10] = {0};
-    
-    switch(optmode)
-    {
-    case(JAM1): modestr = "JAM1"; break;
-    case(JAM2): modestr = "JAM2"; break;
-    case(COMPLEMENT): modestr = "COMPLEMENT"; break;
-    }
-    mode = optmode;
-    
-    if (optantialias)
-        aastr = "ANTIALIASED";
-    else
-        aastr = "NON-ANTIALIASED";
-    antialias = optantialias;
-    
-    sprintf(lenstr, "LEN %d", optlen);
-    linelen = optlen;
-    
-    printf("|%s, %s, %s|", modestr, aastr, lenstr);
-    
-    action();
-}
-
+#include "pixelarray.c"
 
 /* PCI Vendor/Product name translaction. Taken from PCITool */
 
@@ -463,12 +439,52 @@ static void detectsystem()
     /* Detect video card device */
     listvideocards();
     
+    /* Detect screen properties */
+    {
+        struct Screen * screen = IntuitionBase->FirstScreen;
+        LONG depth = 0, width = 0, height = 0;
+
+        width = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_WIDTH);
+        height = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_HEIGHT);
+        depth = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_DEPTH);
+
+        printf("|Screen information| %dx%dx%d|\n", width, height, depth);
+    }
+
     printf("\n\n");
+}
+
+static void textbenchmark(LONG optmode, BOOL optantialias, LONG optlen)
+{
+    STRPTR modestr = "UNKNOWN";
+    STRPTR aastr = "UNKNOWN";
+    TEXT lenstr[10] = {0};
+    
+    switch(optmode)
+    {
+    case(JAM1): modestr = "JAM1"; break;
+    case(JAM2): modestr = "JAM2"; break;
+    case(COMPLEMENT): modestr = "COMPLEMENT"; break;
+    }
+    mode = optmode;
+    
+    if (optantialias)
+        aastr = "ANTIALIASED";
+    else
+        aastr = "NON-ANTIALIASED";
+    antialias = optantialias;
+    
+    sprintf(lenstr, "LEN %d", optlen);
+    linelen = optlen;
+    
+    printf("|%s, %s, %s|", modestr, aastr, lenstr);
+    
+    action_text();
 }
 
 static void textbenchmarkset()
 {
-    printf("*Text benchmark*\n");
+    printf("*Text benchmark %dx%d*\n", width, height);
     textbenchmark(JAM1,         FALSE,  100);
     textbenchmark(JAM2,         FALSE,  100);
     textbenchmark(COMPLEMENT,   FALSE,  100);
@@ -481,11 +497,60 @@ static void textbenchmarkset()
     textbenchmark(JAM1,         TRUE,   5);
     textbenchmark(JAM2,         TRUE,   5);
     textbenchmark(COMPLEMENT,   TRUE,   5);
+    printf("\n\n");
+}
+
+static void pixelarraybenchmark(LONG optpixfmt, LONG optfunction)
+{
+    STRPTR functionstr = "UNKNOWN";
+    STRPTR pixfmtstr = "UNKNOWN";
+    LONG i;
+    
+    switch(optfunction)
+    {
+    case(FUNCTION_WRITE): functionstr = "WritePixelAlpha"; break;
+    case(FUNCTION_READ): functionstr = "ReadPixelAlpha"; break;
+    case(FUNCTION_WRITE_ALPHA): functionstr = "WritePixelArrayAlpha"; break;
+    }
+    
+    for(i = 0; pixfmt_table[i].name; i++)
+    {
+        if (pixfmt_table[i].id == optpixfmt)
+        {
+            pixfmtstr = pixfmt_table[i].name;
+            break;
+        }
+    }
+
+    pixfmt = optpixfmt;
+    function = optfunction;
+    
+    printf("| %s %s|", functionstr, pixfmtstr);
+    
+    action_pixelarray();
+}
+
+static void pixelarraybenchmarkset()
+{
+    printf("*PixelArray benchmark %dx%d*\n", width, height);
+    pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_WRITE);
+    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE);
+    pixelarraybenchmark(RECTFMT_RGBA,   FUNCTION_WRITE);
+    pixelarraybenchmark(RECTFMT_RGB16PC,FUNCTION_WRITE);
+    pixelarraybenchmark(RECTFMT_LUT8,   FUNCTION_WRITE);
+    pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_READ);
+    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_READ);
+    pixelarraybenchmark(RECTFMT_RGBA,   FUNCTION_READ);
+    pixelarraybenchmark(RECTFMT_RGB16PC,FUNCTION_READ);
+    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE_ALPHA);
+    printf("\n\n");
 }
 
 int main(void)
 {
     detectsystem();
+
+    pixelarraybenchmarkset();
 
     textbenchmarkset();
 

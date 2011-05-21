@@ -153,7 +153,7 @@ static void printresults(LONG t, LONG i)
 
 /****************************************************************************************/
 
-static void action(void)
+static void action_text(void)
 {
     struct timeval tv_start, tv_end;
     LONG t, i;
@@ -245,7 +245,7 @@ static void action(void)
 int main(void)
 {
     getarguments();
-    action();
+    action_text();
     cleanup(NULL, 0);
     
     return 0;

@@ -30,6 +30,7 @@
 
 ******************************************************************************/
 
+#if !defined(ONLY_BENCH_CODE)
 #include <cybergraphx/cybergraphics.h>
 #include <devices/timer.h>
 
@@ -53,6 +54,7 @@
 #define NUM_ARGS        4
 
 /****************************************************************************************/
+#endif /* #if !defined(ONLY_BENCH_CODE) */
 
 #define P(x) {#x, x}
 
@@ -96,6 +98,7 @@ pixfmt_table[] =
 #define FUNCTION_WRITE          1
 #define FUNCTION_WRITE_ALPHA    2
 
+#if !defined(ONLY_BENCH_CODE)
 struct RDArgs   *myargs;
 IPTR            args[NUM_ARGS];
 UBYTE           s[256];
@@ -179,14 +182,39 @@ static void getarguments(void)
     }
     
 }
+/****************************************************************************************/
+static void printresults(LONG t, LONG i)
+{
+    LONG bpp;
+    QUAD q;
+
+    printf("Function             : %s\n", functionname);
+    printf("Pixel format         : %s   Width: %d   Height %d\n\n", 
+        pixfmt_table[pixfmt_index].name, width, height);
+    printf("Elapsed time         : %d us (%f s)\n", t, (double)t / 1000000);
+    printf("Blits                : %d\n", i);
+    printf("Blits/sec            : %f\n", i * 1000000.0 / t);
+    printf("Time/blit            : %f us (%f s) (%d%% of 25Hz Frame)\n", 
+        (double)t / i,
+        (double)t / i / 1000000.0,
+        (LONG)(100.0 * ((double)t / i) / (1000000.0 / 25.0)));
+    
+    bpp = GetCyberMapAttr(win->WScreen->RastPort.BitMap, CYBRMATTR_BPPIX);
+    printf("\nScreen Bytes Per Pixel: %d\n", bpp);
+    printf("Area size in Pixels   : %d\n", width * height);
+    printf("Area size in Bytes    : %d\n", width * height * bpp);
+   
+    q = ((QUAD)width) * ((QUAD)height) * ((QUAD)bpp) * ((QUAD)i) * ((QUAD)1000000) / (QUAD)t;
+    printf("Bytes/sec to gfx card : %lld (%lld MB)\n", q, q / 1048576);
+}
 
 /****************************************************************************************/
+#endif /* !defined(ONLY_BENCH_CODE) */
 
-static void action(void)
+static void action_pixelarray(void)
 {
     struct timeval tv_start, tv_end;
-    LONG t, i, bpp;
-    QUAD q;
+    LONG t, i;
     APTR buffer;
     
     win = OpenWindowTags(NULL, WA_Borderless, TRUE,
@@ -236,37 +264,22 @@ static void action(void)
         }
     }
     
-    printf("Function             : %s\n", functionname);
-    printf("Pixel format         : %s   Width: %d   Height %d\n\n", 
-        pixfmt_table[pixfmt_index].name, width, height);
-    printf("Elapsed time         : %d us (%f s)\n", t, (double)t / 1000000);
-    printf("Blits                : %d\n", i);
-    printf("Blits/sec            : %f\n", i * 1000000.0 / t);
-    printf("Time/blit            : %f us (%f s) (%d%% of 25Hz Frame)\n", 
-        (double)t / i,
-        (double)t / i / 1000000.0,
-        (LONG)(100.0 * ((double)t / i) / (1000000.0 / 25.0)));
-    
-    bpp = GetCyberMapAttr(win->WScreen->RastPort.BitMap, CYBRMATTR_BPPIX);
-    printf("\nScreen Bytes Per Pixel: %d\n", bpp);
-    printf("Area size in Pixels   : %d\n", width * height);
-    printf("Area size in Bytes    : %d\n", width * height * bpp);
-   
-    q = ((QUAD)width) * ((QUAD)height) * ((QUAD)bpp) * ((QUAD)i) * ((QUAD)1000000) / (QUAD)t;
-    printf("Bytes/sec to gfx card : %lld (%lld MB)\n", q, q / 1048576);
+    printresults(t, i);
     
     FreeMem(buffer, width * height * 4);
     
     CloseWindow(win);
 }
 
+#if !defined(ONLY_BENCH_CODE)
 /****************************************************************************************/
 
 int main(void)
 {
     getarguments();
-    action();
+    action_pixelarray();
     cleanup(NULL, 0);
     
     return 0;
 }
+#endif
