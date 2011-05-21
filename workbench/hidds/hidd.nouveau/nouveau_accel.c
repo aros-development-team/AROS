@@ -744,6 +744,120 @@ BOOL HiddNouveauWriteFromRAM(
     return TRUE;
 }
 
+/* Assumes input and output buffers are lock-protected */
+/* Takes pixels from source buffer, converts them and puts them into RAM
+   buffer. The source buffer can be in VRAM or GART or RAM */
+BOOL HiddNouveauReadIntoRAM(
+    APTR src, ULONG srcPitch, 
+    APTR dst, ULONG dstPitch, HIDDT_StdPixFmt dstPixFmt,
+    ULONG width, ULONG height,
+    OOP_Class *cl, OOP_Object *o)
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    UBYTE srcBpp = bmdata->bytesperpixel;
+
+    switch(dstPixFmt)
+    {
+    case vHidd_StdPixFmt_Native:
+        switch(srcBpp)
+        {
+        case 1:
+            /* Not supported */
+            break;
+
+        case 2:
+            {
+                struct pHidd_BitMap_CopyMemBox16 __m = 
+                {
+                    SD(cl)->mid_CopyMemBox16, src, 0, 0, dst,
+                    0, 0, width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        case 4:
+            {
+                struct pHidd_BitMap_CopyMemBox32 __m = 
+                {
+                    SD(cl)->mid_CopyMemBox32, src, 0, 0, dst,
+                    0, 0, width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        } /* switch(data->bytesperpixel) */
+        break;
+
+    case vHidd_StdPixFmt_Native32:
+        switch(srcBpp)
+        {
+        case 1:
+            /* Not supported */
+            break;
+
+        case 2:
+            {
+                struct pHidd_BitMap_GetMem32Image16 __m = 
+                {
+                    SD(cl)->mid_GetMem32Image16, src, 0, 0, dst, 
+                    width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        case 4:
+            {
+                struct pHidd_BitMap_CopyMemBox32 __m = 
+                {
+                    SD(cl)->mid_CopyMemBox32, src, 0, 0, dst,
+                    0, 0, width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        } /* switch(data->bytesperpixel) */
+        break;
+    default:
+        {
+            /* Use ConvertPixels to convert that data to destination format */
+            APTR csrc = src;
+            APTR * psrc = &csrc;
+            APTR cdst = dst;
+            APTR * pdst = &cdst;
+            OOP_Object * dstPF = NULL;
+            OOP_Object * srcPF = NULL;
+            OOP_Object * gfxHidd = NULL;
+            struct pHidd_Gfx_GetPixFmt __gpf =
+            {
+                SD(cl)->mid_GetPixFmt, dstPixFmt
+            }, *gpf = &__gpf;
+            
+            OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&srcPF);
+            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
+            dstPF = (OOP_Object *)OOP_DoMethod(gfxHidd, (OOP_Msg)gpf);
+
+            {
+                struct pHidd_BitMap_ConvertPixels __m =
+                {
+                    SD(cl)->mid_ConvertPixels, 
+                    psrc, (HIDDT_PixelFormat *)srcPF, srcPitch,
+                    pdst, (HIDDT_PixelFormat *)dstPF, dstPitch,
+                    width, height, NULL
+                }, *m = &__m;            
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+        }
+        
+        break;
+    }
+
+    return TRUE;
+}
+
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
@@ -861,115 +975,82 @@ BOOL HiddNouveauAccelARGBUpload3D(
     return TRUE;
 }
 
-/* Assumes input and output buffers are lock-protected */
-/* Takes pixels from source buffer, converts them and puts them into RAM
-   buffer. The source buffer can be in VRAM or GART or RAM */
-BOOL HiddNouveauReadIntoRAM(
-    APTR src, ULONG srcPitch, 
-    APTR dst, ULONG dstPitch, HIDDT_StdPixFmt dstPixFmt,
-    ULONG width, ULONG height,
+/* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes lock on GART object is already made */
+/* NOTE: Assumes buffer is not mapped */
+BOOL HiddNouveauAccelAPENUpload3D(
+    UBYTE * srcalpha, ULONG srcpitch, ULONG srcpenrgb,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
-    UBYTE srcBpp = bmdata->bytesperpixel;
+    struct HIDDNouveauBitMapData srcdata;
+    struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(cl, o);
+    struct CardData * carddata = &(SD(cl)->carddata);
+    unsigned cpp = 4; /* We are always getting ARGB buffer */
+    unsigned line_len = width * cpp;
+    /* Maximum DMA transfer */
+    unsigned line_count = carddata->GART->size / line_len;
+    char *src = (char *)srcalpha;
 
-    switch(dstPixFmt)
-    {
-    case vHidd_StdPixFmt_Native:
-        switch(srcBpp)
-        {
-        case 1:
-            /* Not supported */
-            break;
+    /* HW limitations */
+    if (line_count > 2047)
+        line_count = 2047;
 
-        case 2:
+    while (height) {
+        char *dst;
+        ULONG srcy, srcx;
+
+        if (line_count > height)
+            line_count = height;
+
+        /* Upload to GART */
+        if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR))
+            return FALSE;
+        dst = carddata->GART->map;
+
+        /* Draw data into GART */
+        for (srcy = 0; srcy < line_count; srcy++)
+            for (srcx = 0; srcx < width; srcx++)
             {
-                struct pHidd_BitMap_CopyMemBox16 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox16, src, 0, 0, dst,
-                    0, 0, width, height, srcPitch, dstPitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
+                ULONG * pos = (ULONG *)(dst + (srcy * line_len) + (srcx * cpp));
+                *pos = srcpenrgb | (src[(srcy * srcpitch) + srcx] << 24);
             }
-            break;
-
-        case 4:
-            {
-                struct pHidd_BitMap_CopyMemBox32 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox32, src, 0, 0, dst,
-                    0, 0, width, height, srcPitch, dstPitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        } /* switch(data->bytesperpixel) */
-        break;
-
-    case vHidd_StdPixFmt_Native32:
-        switch(srcBpp)
-        {
-        case 1:
-            /* Not supported */
-            break;
-
-        case 2:
-            {
-                struct pHidd_BitMap_GetMem32Image16 __m = 
-                {
-                    SD(cl)->mid_GetMem32Image16, src, 0, 0, dst, 
-                    width, height, srcPitch, dstPitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 4:
-            {
-                struct pHidd_BitMap_CopyMemBox32 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox32, src, 0, 0, dst,
-                    0, 0, width, height, srcPitch, dstPitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        } /* switch(data->bytesperpixel) */
-        break;
-    default:
-        {
-            /* Use ConvertPixels to convert that data to destination format */
-            APTR csrc = src;
-            APTR * psrc = &csrc;
-            APTR cdst = dst;
-            APTR * pdst = &cdst;
-            OOP_Object * dstPF = NULL;
-            OOP_Object * srcPF = NULL;
-            OOP_Object * gfxHidd = NULL;
-            struct pHidd_Gfx_GetPixFmt __gpf =
-            {
-                SD(cl)->mid_GetPixFmt, dstPixFmt
-            }, *gpf = &__gpf;
-            
-            OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&srcPF);
-            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
-            dstPF = (OOP_Object *)OOP_DoMethod(gfxHidd, (OOP_Msg)gpf);
-
-            {
-                struct pHidd_BitMap_ConvertPixels __m =
-                {
-                    SD(cl)->mid_ConvertPixels, 
-                    psrc, (HIDDT_PixelFormat *)srcPF, srcPitch,
-                    pdst, (HIDDT_PixelFormat *)dstPF, dstPitch,
-                    width, height, NULL
-                }, *m = &__m;            
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-        }
         
-        break;
+
+        src += srcpitch * line_count;
+        nouveau_bo_unmap(carddata->GART);
+        
+        /* Wrap GART */
+        srcdata.bo = carddata->GART;
+        srcdata.width = width;
+        srcdata.height = line_count;
+        srcdata.depth = 32;
+        srcdata.bytesperpixel = 4;
+        srcdata.pitch = line_len;
+
+        /* Render using 3D engine */
+        switch(carddata->architecture)
+        {
+        case(NV_ARCH_40):
+            HIDDNouveauNV403DCopyBox(carddata,
+                &srcdata, dstdata,
+                0, 0, x, y, width, height, BLENDOP_ALPHA);
+            break;
+        case(NV_ARCH_30):
+            HIDDNouveauNV303DCopyBox(carddata,
+                &srcdata, dstdata,
+                0, 0, x, y, width, height, BLENDOP_ALPHA);
+            break;
+        case(NV_ARCH_20):
+        case(NV_ARCH_10):
+            HIDDNouveauNV103DCopyBox(carddata,
+                &srcdata, dstdata,
+                0, 0, x, y, width, height, BLENDOP_ALPHA);
+            break;
+        }
+
+        height -= line_count;
+        y += line_count;
     }
 
     return TRUE;

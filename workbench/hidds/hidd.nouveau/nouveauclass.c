@@ -8,6 +8,7 @@
 
 #include <graphics/displayinfo.h>
 #include <proto/utility.h>
+#include <nouveau_drm.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -422,6 +423,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
             gfxdata->selectedconnector = selectedconnector;
             carddata->dev = dev;
             ULONG gartsize = 0;
+            UQUAD value;
             
             /* Check chipset architecture */
             switch (carddata->dev->chipset & 0xf0) 
@@ -455,6 +457,13 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 /* TODO: report error, how to handle it? */
                 return NULL;
             }
+            
+            nouveau_device_get_param(carddata->dev, NOUVEAU_GETPARAM_BUS_TYPE, &value);
+            if (value == NV_PCIE)
+                carddata->IsPCIE = TRUE;
+            else
+                carddata->IsPCIE = FALSE;
+            
 
             if (carddata->architecture != NV_ARCH_C0)
             {

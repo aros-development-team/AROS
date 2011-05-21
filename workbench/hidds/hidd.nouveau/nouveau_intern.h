@@ -110,6 +110,7 @@ struct CardData
 {
     /* Card controlling objects */
     ULONG                   architecture;
+    BOOL                    IsPCIE;
     struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
     struct nouveau_channel  *chan;
 
@@ -290,14 +291,18 @@ BOOL HiddNouveauWriteFromRAM(
     APTR dst, ULONG dstPitch,
     ULONG width, ULONG height,
     OOP_Class *cl, OOP_Object *o);
-BOOL HiddNouveauAccelARGBUpload3D(
-    UBYTE * srcpixels, ULONG srcpitch,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
-    OOP_Class *cl, OOP_Object *o);
 BOOL HiddNouveauReadIntoRAM(
     APTR src, ULONG srcPitch, 
     APTR dst, ULONG dstPitch, HIDDT_StdPixFmt dstPixFmt,
     ULONG width, ULONG height,
+    OOP_Class *cl, OOP_Object *o);
+BOOL HiddNouveauAccelARGBUpload3D(
+    UBYTE * srcpixels, ULONG srcpitch,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
+    OOP_Class *cl, OOP_Object *o);
+BOOL HiddNouveauAccelAPENUpload3D(
+    UBYTE * srcalpha, ULONG srcpitch, ULONG srcpenrgb,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);
 VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
     APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height);
