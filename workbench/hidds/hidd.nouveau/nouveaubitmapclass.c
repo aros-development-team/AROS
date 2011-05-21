@@ -608,6 +608,29 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, ReleaseDirectAccess)
     UNLOCK_BITMAP
 }
 
+#define COMPLEMENT_JAM2_DECISION_BLOCK                                              \
+    else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)                          \
+    {                                                                               \
+        /* COMPLEMENT - read & write. Base method uses GetImage/PutImage.           \
+           It is better to use it, if GetImage is fast(==PCIE) */                   \
+        if (GART_TRANSFER_ALLOWED(msg->width, msg->height) && (carddata->IsPCIE))   \
+        {                                                                           \
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);                                 \
+            return;                                                                 \
+        }                                                                           \
+    }                                                                               \
+    else                                                                            \
+    {                                                                               \
+        /* JAM2 - only write. Base method uses PutImage. It is                      \
+           better to use it, if it is accelerated */                                \
+        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))                         \
+        {                                                                           \
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);                                 \
+            return;                                                                 \
+        }                                                                           \
+    }                                                                               \
+
+
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
@@ -657,26 +680,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
             }
         }
     }
-    else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
-    {
-        /* COMPLEMENT - read & write. Base method uses GetImage/PutImage. 
-           It is better to use it, if GetImage is fast(==PCIE) */
-        if (GART_TRANSFER_ALLOWED(msg->width, msg->height) && (carddata->IsPCIE))
-        {
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            return;
-        }
-    }
-    else
-    {
-        /* JAM2 - only write. Base method uses PutImage. It is 
-           better to use it, if it is accelerated */
-        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
-        {
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            return;
-        }
-    }
+    COMPLEMENT_JAM2_DECISION_BLOCK 
 
     /* This is software fallback */
     LOCK_BITMAP
@@ -717,26 +721,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
         /* JAM1 - read & write. Base method uses GetImage/PutImage.
            For now fall through. TODO: Use 3D alpha blended */
     }
-    else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
-    {
-        /* COMPLEMENT - read & write. Base method uses GetImage/PutImage. 
-           It is better to use it, if PutImage is fast(==PCIE) */
-        if (GART_TRANSFER_ALLOWED(msg->width, msg->height) && (carddata->IsPCIE))
-        {
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            return;
-        }
-    }
-    else
-    {
-        /* JAM2 - only write. Base method uses PutImage. It is 
-           better to use it, if it is accelerated */
-        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
-        {
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            return;
-        }
-    }
+    COMPLEMENT_JAM2_DECISION_BLOCK
 
     /* This is software fallback */
     LOCK_BITMAP
