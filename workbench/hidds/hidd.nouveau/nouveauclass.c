@@ -32,6 +32,7 @@
 
 #define MAX_BITMAP_WIDTH    4096
 #define MAX_BITMAP_HEIGHT   4096
+#define GART_BUFFER_SIZE    (12 * 1024 * 1024)
 
 /* HELPER FUNCTIONS */
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
@@ -488,11 +489,11 @@ OOP_Object * METHOD(Nouveau, Root, New)
             /* TODO: Check return, hot to handle */
             
             /* Allocate GART scratch buffer */
-            if (carddata->dev->vm_gart_size > (16 * 1024 * 1024))
-                gartsize = 16 * 1024 * 1024;
+            if (carddata->dev->vm_gart_size > GART_BUFFER_SIZE)
+                gartsize = GART_BUFFER_SIZE;
             else
                 /* always leave 512kb for other things like the fifos */
-                gartsize = carddata->dev->vm_gart_size - 512*1024;
+                gartsize = carddata->dev->vm_gart_size - 512 * 1024;
 
             /* This can fail */
             nouveau_bo_new(carddata->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP,
