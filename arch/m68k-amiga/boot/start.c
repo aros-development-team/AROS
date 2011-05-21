@@ -299,6 +299,10 @@ extern BYTE _ss_end;
 static void protectROM(struct MemHeader *mh)
 {
     APTR tmp;
+
+    APTR ss_start = &_ss;
+    ULONG ss_len = &_ss_end - &_ss;
+
     APTR bss_start = &_bss;
     ULONG bss_len = &_bss_end - &_bss;
 
@@ -309,6 +313,8 @@ static void protectROM(struct MemHeader *mh)
     ULONG ext_len = &_ext_end - &_ext_start;
 
     DEBUGPUTHEX(("Protect: ", (IPTR)mh));
+    tmp = Early_AllocAbs(mh, ss_start, ss_len);
+    DEBUGPUTHEX(("     ss: ", (IPTR)tmp));
     tmp = Early_AllocAbs(mh, bss_start, bss_len);
     DEBUGPUTHEX(("    bss: ", (IPTR)tmp));
     tmp = Early_AllocAbs(mh, rom_start, rom_len);
@@ -348,17 +354,16 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
 static BOOL InitKickMem(struct ExecBase *SysBase)
 {
     struct MemList *ml = SysBase->KickMemPtr;
+    DEBUGPUTHEX(("KickMemPtr: ", (IPTR)ml));
     while (ml) {
 	int i;
+	DEBUGPUTHEX(("NumEntries: ", ml->ml_NumEntries));
 	for (i = 0; i < ml->ml_NumEntries; i++) {
+	    DEBUGPUTHEX(("      Addr: ", (IPTR)ml->ml_ME[i].me_Addr));
+	    DEBUGPUTHEX(("       Len: ", ml->ml_ME[i].me_Length));
 	    /* Use the non-mungwalling AllocAbs */
-	    if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase)) {
-	    	DEBUGPUTHEX(("KickMemPtr: ", (IPTR)ml));
-	    	DEBUGPUTHEX(("     Index: ", i));
-	    	DEBUGPUTHEX(("      Addr: ", (IPTR)ml->ml_ME[i].me_Addr));
-	    	DEBUGPUTHEX(("       Len: ", ml->ml_ME[i].me_Length));
+	    if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase))
 		return FALSE;
-	    }
 	}
 	ml = (struct MemList*)ml->ml_Node.ln_Succ;
     }
