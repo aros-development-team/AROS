@@ -719,7 +719,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
     if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
     {
         /* JAM1 - read & write. Base method uses GetImage/PutImage.
-           For now fall through. TODO: Use 3D alpha blended */
+           Use software fallback. It performs only limited writes and thus it
+           is faster than base method. */
     }
     COMPLEMENT_JAM2_DECISION_BLOCK
 
