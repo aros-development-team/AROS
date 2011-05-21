@@ -38,7 +38,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
     
     D(bug("[DOSBoot] __dosboot_Boot()\n"));
 
-    cis = Open("CON:////Boot Shell/AUTO", FMF_READ);
+    cis = Open("CON:////Boot Shell/AUTO", MODE_OLDFILE);
     if (cis)
     {
         BPTR sseq = BNULL;
@@ -58,7 +58,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
 
         if (!(Flags & BF_NO_STARTUP_SEQUENCE))
         {
-            sseq = Open("S:Startup-Sequence", FMF_READ);
+            sseq = Open("S:Startup-Sequence", MODE_OLDFILE);
             tags[5].ti_Data = (IPTR)sseq;
 
             D(bug("[DOSBoot] __dosboot_Boot: Open Startup Sequence = %d\n", sseq));
@@ -100,17 +100,14 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
         }
 
         rc = SystemTagList("", tags);
-        if (rc != -1)
-        {
-            cis  = BNULL;
-            sseq = BNULL;
-        }
-        else
-            rc = RETURN_FAIL;
+        if (rc == -1)
+            Alert(AN_BootError);
+        cis  = BNULL;
+        sseq = BNULL;
         if (sseq != BNULL)
             Close(sseq);
     } else
-	kprintf("Cannot open boot console\n");
+        Alert(AN_NoWindow);
 
     /* We get here when the Boot Shell Window is left with EndShell/EndCli.
        There's no RemTask() here, otherwise the process cleanup routines
