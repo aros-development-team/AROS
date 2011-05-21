@@ -987,7 +987,7 @@ BOOL HiddNouveauAccelARGBUpload3D(
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
 BOOL HiddNouveauAccelAPENUpload3D(
-    UBYTE * srcalpha, ULONG srcpitch, ULONG srcpenrgb,
+    UBYTE * srcalpha, BOOL srcinvertalpha, ULONG srcpitch, ULONG srcpenrgb,
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o)
 {
@@ -1016,15 +1016,31 @@ BOOL HiddNouveauAccelAPENUpload3D(
         dst = carddata->GART->map;
 
         /* Draw data into GART */
-        for (srcy = 0; srcy < line_count; srcy++)
+        if (srcinvertalpha) /* Keep condition outside loop to improve performance */
         {
-            for (srcx = 0; srcx < width; srcx++)
+            for (srcy = 0; srcy < line_count; srcy++)
             {
-                ULONG * pos = (ULONG *)(dst + (srcx * cpp));
-                *pos = srcpenrgb | (src[srcx] << 24);
+                for (srcx = 0; srcx < width; srcx++)
+                {
+                    ULONG * pos = (ULONG *)(dst + (srcx * cpp));
+                    *pos = srcpenrgb | ((src[srcx] << 24) ^ 255);
+                }
+                src += srcpitch;
+                dst += line_len;
             }
-            src += srcpitch;
-            dst += line_len;
+        }
+        else
+        {
+            for (srcy = 0; srcy < line_count; srcy++)
+            {
+                for (srcx = 0; srcx < width; srcx++)
+                {
+                    ULONG * pos = (ULONG *)(dst + (srcx * cpp));
+                    *pos = srcpenrgb | (src[srcx] << 24);
+                }
+                src += srcpitch;
+                dst += line_len;
+            }
         }
         
         nouveau_bo_unmap(carddata->GART);

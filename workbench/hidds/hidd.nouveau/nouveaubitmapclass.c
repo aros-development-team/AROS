@@ -638,7 +638,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
                 
                 ObtainSemaphore(&carddata->gartsemaphore);
                 
-                result = HiddNouveauAccelAPENUpload3D(msg->alpha, msg->modulo, (fg_red << 16) | (fg_green << 8) | fg_blue, 
+                result = HiddNouveauAccelAPENUpload3D(msg->alpha, msg->invertalpha,
+                    msg->modulo, (fg_red << 16) | (fg_green << 8) | fg_blue, 
                     msg->x, msg->y, msg->width, msg->height, cl, o);
 
                 ReleaseSemaphore(&carddata->gartsemaphore);
