@@ -301,7 +301,7 @@ BOOL HiddNouveauAccelARGBUpload3D(
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);
 BOOL HiddNouveauAccelAPENUpload3D(
-    UBYTE * srcalpha, ULONG srcpitch, ULONG srcpenrgb,
+    UBYTE * srcalpha, BOOL srcinvertalpha, ULONG srcpitch, ULONG srcpenrgb,
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);
 VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
