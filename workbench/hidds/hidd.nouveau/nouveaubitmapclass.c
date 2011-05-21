@@ -20,6 +20,8 @@
 #define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
 #define HiddBitMapNouveauAttrBase   (SD(cl)->bitMapNouveauAttrBase)
 
+#define GART_TRANSFER_ALLOWED(width, height)    ((((width) * (height)) >= (32 * 32)) && (carddata->GART))
+
 VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
@@ -381,7 +383,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
     LOCK_BITMAP
 
     /* For larger transfers use GART */
-    if (((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))
+    if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
     {
         BOOL result = FALSE;
         
@@ -441,7 +443,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     LOCK_BITMAP
 
     /* For larger transfers use GART */
-    if (((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))
+    if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
     {
         BOOL result = FALSE;
         
@@ -505,7 +507,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
         ((carddata->architecture >= NV_ARCH_10) && (carddata->architecture <= NV_ARCH_40))
         
         && (bmdata->bytesperpixel > 1)
-        && ((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))
+        && (GART_TRANSFER_ALLOWED(msg->width, msg->height)))
     {
         BOOL result = FALSE;
         
@@ -533,7 +535,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
         (carddata->architecture >= NV_ARCH_50)
         
         && (bmdata->bytesperpixel > 1)
-        && ((msg->width * msg->height) >= (32 * 32)) && (carddata->GART))
+        && (GART_TRANSFER_ALLOWED(msg->width, msg->height)))
     {
         /* Hardware method is not currently possible for NV50 as the implementation
            relies on tiled bitmaps. AROS uses linear bitmaps for all card families.
@@ -609,6 +611,34 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, ReleaseDirectAccess)
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData * carddata = &(SD(cl)->carddata);
+
+    /* Select execution method based on hardware and buffer size */
+    if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
+    {
+        /* JAM1 - read & write. Base method uses GetImage/PutImage.
+           For now fall through. TODO: Use 3D alpha blended */
+    }
+    else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
+    {
+        /* COMPLEMENT - read & write. Base method uses GetImage/PutImage. 
+           FIXME: Is it better to use it? */
+        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
+        {
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            return;
+        }
+    }
+    else
+    {
+        /* JAM2 - only write. Base method uses PutImage. It is 
+           better to use it, if it is accelerated */
+        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
+        {
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            return;
+        }
+    }
 
     LOCK_BITMAP
     MAP_BUFFER
@@ -640,6 +670,34 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData * carddata = &(SD(cl)->carddata);
+
+    /* Select execution method based on hardware and buffer size */
+    if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
+    {
+        /* JAM1 - read & write. Base method uses GetImage/PutImage.
+           For now fall through. TODO: Use 3D alpha blended */
+    }
+    else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
+    {
+        /* COMPLEMENT - read & write. Base method uses GetImage/PutImage. 
+           FIXME: Is it better to use it? */
+        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
+        {
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            return;
+        }
+    }
+    else
+    {
+        /* JAM2 - only write. Base method uses PutImage. It is 
+           better to use it, if it is accelerated */
+        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
+        {
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            return;
+        }
+    }
 
     LOCK_BITMAP
     MAP_BUFFER
