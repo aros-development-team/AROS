@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES       := primitives pixelarray text
+FILES       := primitives pixelarray text gfxbench
 EXEDIR      := $(AROS_TESTS)/benchmarks/graphics
 
 #MM- test-benchmarks : test-benchmarks-graphics

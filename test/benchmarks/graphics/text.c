@@ -28,6 +28,7 @@
 
 ******************************************************************************/
 
+#if !defined(ONLY_BENCH_CODE)
 #include <cybergraphx/cybergraphics.h>
 #include <devices/timer.h>
 
@@ -148,6 +149,7 @@ static void printresults(LONG t, LONG i)
     q = ((QUAD)width) * ((QUAD)height) * ((QUAD)bpp) * ((QUAD)i) * ((QUAD)1000000) / (QUAD)t;
     printf("Bytes/sec to gfx card : %lld (%lld MB)\n", q, q / 1048576);
 }
+#endif /* !defined(ONLY_BENCH_CODE) */
 
 /****************************************************************************************/
 
@@ -237,6 +239,7 @@ static void action(void)
     FreeVec(buffer);
 }
 
+#if !defined(ONLY_BENCH_CODE)
 /****************************************************************************************/
 
 int main(void)
@@ -247,3 +250,4 @@ int main(void)
     
     return 0;
 }
+#endif
