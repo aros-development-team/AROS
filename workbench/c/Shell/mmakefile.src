@@ -4,7 +4,24 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := Shell
+FILES := \
+	Shell \
+	buffer \
+	cliEcho \
+	cliLen \
+	cliNan \
+	cliPrompt \
+	cliVarNum \
+	convertArg \
+	convertBackTicks \
+	convertLineDot \
+	convertRedir \
+	convertVar \
+	convertLine \
+	interpreter \
+	redirection \
+	readLine
+
 EXE := Shell
 
 USER_CLAGS = -pedantic

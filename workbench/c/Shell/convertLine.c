@@ -1,11 +1,19 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
  */
 
 #include <exec/lists.h>
+
 #include <proto/alib.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+
+#include <string.h>
+
 #include "Shell.h"
+
+#include <aros/debug.h>
 
 static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *),
 			LONG a, ShellState *ss, Buffer *in, Buffer *out)

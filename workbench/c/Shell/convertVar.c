@@ -1,10 +1,15 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
  */
 
+#include <proto/dos.h>
+
 #include <ctype.h>
+
 #include "Shell.h"
+
+#include <aros/debug.h>
 
 /* environment variables handling (locals and globals) */
 LONG convertVar(ShellState *ss, Buffer *in, Buffer *out)

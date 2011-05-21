@@ -1,10 +1,16 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
  */
 
+#include <proto/dos.h>
+
 #include <stdio.h>
+
 #include "buffer.h"
+#include "Shell.h"
+
+#include <aros/debug.h>
 
 // TODO:  remove these comments when fixed and validated
 // TODO:  C++ style comments should be avoided
