@@ -65,6 +65,7 @@ STRPTR          modename = "JAM1";
 STRPTR          aa = "NON-ANTIALIASED";
 LONG            mode = JAM1;
 BOOL            antialias = FALSE;
+STRPTR          consttext = "The AROS Development Team. All rights reserved.";
 
 struct Window   *win;
 
@@ -133,6 +134,7 @@ static void action(void)
     QUAD q;
     STRPTR buffer = NULL;
     ULONG x,y;
+    ULONG consttextlen = strlen(consttext);
     
     struct TextExtent extend;
     
@@ -183,10 +185,10 @@ static void action(void)
         }
     }
 
-    /* Generate random buffer */
+    /* Generate repetetive content buffer */
     buffer = AllocVec(linelen + 1, MEMF_PUBLIC | MEMF_CLEAR);
     for (i = 0; i < linelen; i++)
-        buffer[i] = 60 + (rand() % 40);
+        buffer[i] = consttext[i % consttextlen];
 
     TextExtent(win->RPort, buffer, linelen, &extend);
     
