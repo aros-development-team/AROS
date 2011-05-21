@@ -858,6 +858,42 @@ BOOL HiddNouveauReadIntoRAM(
     return TRUE;
 }
 
+static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata, 
+    struct HIDDNouveauBitMapData * dstdata, ULONG gartpitch,
+    ULONG x, ULONG y, ULONG width, ULONG height)
+{
+    struct HIDDNouveauBitMapData srcdata;
+
+    /* Wrap GART */
+    srcdata.bo = carddata->GART;
+    srcdata.width = width;
+    srcdata.height = height;
+    srcdata.depth = 32;
+    srcdata.bytesperpixel = 4;
+    srcdata.pitch = gartpitch;
+
+    /* Render using 3D engine */
+    switch(carddata->architecture)
+    {
+    case(NV_ARCH_40):
+        HIDDNouveauNV403DCopyBox(carddata,
+            &srcdata, dstdata,
+            0, 0, x, y, width, height, BLENDOP_ALPHA);
+        break;
+    case(NV_ARCH_30):
+        HIDDNouveauNV303DCopyBox(carddata,
+            &srcdata, dstdata,
+            0, 0, x, y, width, height, BLENDOP_ALPHA);
+        break;
+    case(NV_ARCH_20):
+    case(NV_ARCH_10):
+        HIDDNouveauNV103DCopyBox(carddata,
+            &srcdata, dstdata,
+            0, 0, x, y, width, height, BLENDOP_ALPHA);
+        break;
+    }
+}
+
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
@@ -866,7 +902,6 @@ BOOL HiddNouveauAccelARGBUpload3D(
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData srcdata;
     struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
     unsigned cpp = 4; /* We are always getting ARGB buffer */
@@ -938,35 +973,8 @@ BOOL HiddNouveauAccelARGBUpload3D(
 
         src += srcpitch * line_count;
         nouveau_bo_unmap(carddata->GART);
-        
-        /* Wrap GART */
-        srcdata.bo = carddata->GART;
-        srcdata.width = width;
-        srcdata.height = line_count;
-        srcdata.depth = 32;
-        srcdata.bytesperpixel = 4;
-        srcdata.pitch = line_len;
 
-        /* Render using 3D engine */
-        switch(carddata->architecture)
-        {
-        case(NV_ARCH_40):
-            HIDDNouveauNV403DCopyBox(carddata,
-                &srcdata, dstdata,
-                0, 0, x, y, width, height, BLENDOP_ALPHA);
-            break;
-        case(NV_ARCH_30):
-            HIDDNouveauNV303DCopyBox(carddata,
-                &srcdata, dstdata,
-                0, 0, x, y, width, height, BLENDOP_ALPHA);
-            break;
-        case(NV_ARCH_20):
-        case(NV_ARCH_10):
-            HIDDNouveauNV103DCopyBox(carddata,
-                &srcdata, dstdata,
-                0, 0, x, y, width, height, BLENDOP_ALPHA);
-            break;
-        }
+        HiddNouveau3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
 
         height -= line_count;
         y += line_count;
@@ -983,7 +991,6 @@ BOOL HiddNouveauAccelAPENUpload3D(
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData srcdata;
     struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
     unsigned cpp = 4; /* We are always getting ARGB buffer */
@@ -1020,34 +1027,7 @@ BOOL HiddNouveauAccelAPENUpload3D(
         src += srcpitch * line_count;
         nouveau_bo_unmap(carddata->GART);
         
-        /* Wrap GART */
-        srcdata.bo = carddata->GART;
-        srcdata.width = width;
-        srcdata.height = line_count;
-        srcdata.depth = 32;
-        srcdata.bytesperpixel = 4;
-        srcdata.pitch = line_len;
-
-        /* Render using 3D engine */
-        switch(carddata->architecture)
-        {
-        case(NV_ARCH_40):
-            HIDDNouveauNV403DCopyBox(carddata,
-                &srcdata, dstdata,
-                0, 0, x, y, width, height, BLENDOP_ALPHA);
-            break;
-        case(NV_ARCH_30):
-            HIDDNouveauNV303DCopyBox(carddata,
-                &srcdata, dstdata,
-                0, 0, x, y, width, height, BLENDOP_ALPHA);
-            break;
-        case(NV_ARCH_20):
-        case(NV_ARCH_10):
-            HIDDNouveauNV103DCopyBox(carddata,
-                &srcdata, dstdata,
-                0, 0, x, y, width, height, BLENDOP_ALPHA);
-            break;
-        }
+        HiddNouveau3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
 
         height -= line_count;
         y += line_count;
