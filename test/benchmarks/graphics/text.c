@@ -21,7 +21,7 @@
     RESULT
 
     NOTES
-        By default 
+
     BUGS
 
     INTERNALS
@@ -126,12 +126,35 @@ static void getarguments(void)
 }
 
 /****************************************************************************************/
+static void printresults(LONG t, LONG i)
+{
+    LONG bpp;
+    QUAD q;
+
+    printf("Mode                 : %s, %s\n", modename, aa);
+    printf("Elapsed time         : %d us (%f s)\n", t, (double)t / 1000000);
+    printf("Blits                : %d\n", i);
+    printf("Blits/sec            : %f\n", i * 1000000.0 / t);
+    printf("Time/blit            : %f us (%f s) (%d%% of 25Hz Frame)\n", 
+        (double)t / i,
+        (double)t / i / 1000000.0,
+        (LONG)(100.0 * ((double)t / i) / (1000000.0 / 25.0)));
+    
+    bpp = GetCyberMapAttr(win->WScreen->RastPort.BitMap, CYBRMATTR_BPPIX);
+    printf("\nScreen Bytes Per Pixel: %d\n", bpp);
+    printf("Area size in Pixels   : %d\n", width * height);
+    printf("Area size in Bytes    : %d\n", width * height * bpp);
+   
+    q = ((QUAD)width) * ((QUAD)height) * ((QUAD)bpp) * ((QUAD)i) * ((QUAD)1000000) / (QUAD)t;
+    printf("Bytes/sec to gfx card : %lld (%lld MB)\n", q, q / 1048576);
+}
+
+/****************************************************************************************/
 
 static void action(void)
 {
     struct timeval tv_start, tv_end;
-    LONG t, i, bpp;
-    QUAD q;
+    LONG t, i;
     STRPTR buffer = NULL;
     ULONG x,y;
     ULONG consttextlen = strlen(consttext);
@@ -205,23 +228,9 @@ static void action(void)
                 Text(win->RPort, buffer, linelen);
             }
     }
-    
-    printf("Mode                 : %s, %s\n", modename, aa);
-    printf("Elapsed time         : %d us (%f s)\n", t, (double)t / 1000000);
-    printf("Blits                : %d\n", i);
-    printf("Blits/sec            : %f\n", i * 1000000.0 / t);
-    printf("Time/blit            : %f us (%f s) (%d%% of 25Hz Frame)\n", 
-        (double)t / i,
-        (double)t / i / 1000000.0,
-        (LONG)(100.0 * ((double)t / i) / (1000000.0 / 25.0)));
-    
-    bpp = GetCyberMapAttr(win->WScreen->RastPort.BitMap, CYBRMATTR_BPPIX);
-    printf("\nScreen Bytes Per Pixel: %d\n", bpp);
-    printf("Area size in Pixels   : %d\n", width * height);
-    printf("Area size in Bytes    : %d\n", width * height * bpp);
-   
-    q = ((QUAD)width) * ((QUAD)height) * ((QUAD)bpp) * ((QUAD)i) * ((QUAD)1000000) / (QUAD)t;
-    printf("Bytes/sec to gfx card : %lld (%lld MB)\n", q, q / 1048576);
+
+    printresults(t, i);    
+
     
     CloseWindow(win);
     
