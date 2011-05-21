@@ -8,11 +8,7 @@
 #include "../FS/packets.h"
 #include "../FS/query.h"
 
-#ifdef __AROS__
-#define __AMIGADATE__  "(" __DATE__ ")"
-#endif
-
-static const char version[]={"\0$VER: SFSquery 1.0 " __AMIGADATE__ "\r\n"};
+static const char version[]={"\0$VER: SFSquery 1.0 " ADATE "\r\n"};
 
 LONG main() {
   struct RDArgs *readarg;

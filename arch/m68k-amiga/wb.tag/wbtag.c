@@ -21,7 +21,7 @@
 #define VERSION 40
 #define REVISION 1
 const TEXT WBTAG_NAME[] = NAME;
-const TEXT WBTAG_VERSION_STRING[] = NAME " " STR(VERSION) "." STR(REVISION) " (" __DATE__ ")\n";
+const TEXT WBTAG_VERSION_STRING[] = NAME " " STR(VERSION) "." STR(REVISION) " (" ADATE ")\n";
 
 extern void Init(void);
 void InitX(void)

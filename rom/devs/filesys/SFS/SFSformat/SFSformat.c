@@ -10,11 +10,7 @@
 
 #include "../FS/packets.h"
 
-#ifdef __AROS__
-#define __AMIGADATE__  "(" __DATE__ ")"
-#endif 
-
-static const char version[]={"\0$VER: SFSformat 1.1 " __AMIGADATE__ "\r\n"};
+static const char version[]={"\0$VER: SFSformat 1.1 " ADATE "\r\n"};
 
 LONG main()
 {

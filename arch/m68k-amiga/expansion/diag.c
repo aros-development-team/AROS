@@ -27,7 +27,7 @@ static AROS_UFP3 (APTR, Init,
 
 static const TEXT name_string[] = NAME;
 static const TEXT version_string[] =
-   NAME " " STR(VERSION) "." STR(REVISION) " (" __DATE__ ")\n";
+   NAME " " STR(VERSION) "." STR(REVISION) " (" ADATE ")\n";
 
 const struct Resident rom_tag =
 {

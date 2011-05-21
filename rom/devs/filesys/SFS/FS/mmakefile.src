@@ -19,14 +19,15 @@ FILES := adminspaces \
 
 MODULE_FILES := arosdevice arosmain
 
-USER_CFLAGS := -DSFS_BE
+USER_CFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_prog mmake=kernel-fs-sfs-packet \
     progname=sfs.handler targetdir=$(AROS_DEVS) \
     files="$(FILES)" usestartup=no uselibs="arossupport rom m"
 
-USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
+USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS) \
+               -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module mmake=kernel-fs-sfs \
 	modname=sfs modtype=device modsuffix=handler \
