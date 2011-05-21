@@ -613,17 +613,54 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
 
-    /* Select execution method based on hardware and buffer size */
+    /* Select acceleration method based on hardware and buffer size */
     if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
     {
         /* JAM1 - read & write. Base method uses GetImage/PutImage.
-           For now fall through. TODO: Use 3D alpha blended */
+           Use 3D alpha blending where possible */
+        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
+        {
+            /* These cards support 3D alpha blending */
+            if ((carddata->architecture >= NV_ARCH_10) && (carddata->architecture <= NV_ARCH_40))
+            {
+                BOOL result = FALSE;
+                HIDDT_Color color;
+                LONG fg_red, fg_green, fg_blue;
+
+                HIDD_BM_UnmapPixel(o, GC_FG(msg->gc), &color);
+
+                fg_red   = color.red >> 8;
+                fg_green = color.green >> 8;
+                fg_blue  = color.blue >> 8;
+                
+                LOCK_BITMAP
+                UNMAP_BUFFER
+                
+                ObtainSemaphore(&carddata->gartsemaphore);
+                
+                result = HiddNouveauAccelAPENUpload3D(msg->alpha, msg->modulo, (fg_red << 16) | (fg_green << 8) | fg_blue, 
+                    msg->x, msg->y, msg->width, msg->height, cl, o);
+
+                ReleaseSemaphore(&carddata->gartsemaphore);
+                UNLOCK_BITMAP
+
+                if (result) return;
+            }
+            
+            /* These cards don't support 3D alpha blending (yet), but they are all
+               PCIE so GetImage is fast */
+            if (carddata->architecture >= NV_ARCH_50)
+            {
+                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                return;
+            }
+        }
     }
     else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
     {
         /* COMPLEMENT - read & write. Base method uses GetImage/PutImage. 
-           FIXME: Is it better to use it? */
-        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
+           It is better to use it, if GetImage is fast(==PCIE) */
+        if (GART_TRANSFER_ALLOWED(msg->width, msg->height) && (carddata->IsPCIE))
         {
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
             return;
@@ -640,6 +677,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
         }
     }
 
+    /* This is software fallback */
     LOCK_BITMAP
     MAP_BUFFER
 
@@ -681,8 +719,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
     else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
     {
         /* COMPLEMENT - read & write. Base method uses GetImage/PutImage. 
-           FIXME: Is it better to use it? */
-        if (GART_TRANSFER_ALLOWED(msg->width, msg->height))
+           It is better to use it, if PutImage is fast(==PCIE) */
+        if (GART_TRANSFER_ALLOWED(msg->width, msg->height) && (carddata->IsPCIE))
         {
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
             return;
@@ -699,6 +737,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
         }
     }
 
+    /* This is software fallback */
     LOCK_BITMAP
     MAP_BUFFER
 
