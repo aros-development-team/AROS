@@ -383,7 +383,7 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
 
 		Permit();
 		*residentCommand = TRUE;
-		return residentSeg->seg_Seg;
+		return MKBADDR(residentSeg);
 	    }
 	}
 
@@ -505,6 +505,8 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 	ULONG sigmask;
 	BYTE sigbit;
 
+	BPTR seglist = residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg : module;
+
 	STRPTR dst = cmd, src;
 	LONG len = 0;
 
@@ -535,11 +537,11 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 	SetIoErr(0); /* Clear error before we execute this command */
 	SetSignal(0, SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
 
-	cli->cli_Module = module;
+	cli->cli_Module = seglist;
 	pr->pr_Task.tc_Node.ln_Name = command;
 
 	mem_before = FindVar("__debug_mem", LV_VAR) ? AvailMem(MEMF_ANY) : 0;
-	cli->cli_ReturnCode = RunCommand(module, defaultStack, cmd, len);
+	cli->cli_ReturnCode = RunCommand(seglist, defaultStack, cmd, len);
 
 	/*
 	    Check if running the command has changed signal bits of the Shell
