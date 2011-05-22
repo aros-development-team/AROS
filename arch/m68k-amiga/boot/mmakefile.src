@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-link-amiga-m68k : \
 #MM     kernel-objs \
+#MM     kernel-debug-kobj \
 #MM     kernel-amiga-m68k-devs \
 #MM     kernel-amiga-m68k-kbd-kobj \
 #MM     kernel-amiga-m68k-mouse-kobj \
@@ -55,7 +56,7 @@ ROMLOC_bss := 0x0001000  # Sadly, we need to consume Chip RAM for the ROM BSS.
 
 ROMLOC_rom := 0x0f80000
 
-KLIBS   := exec aros dos utility oop expansion boot mathffp partition
+KLIBS   := exec aros dos utility oop expansion boot mathffp partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram # pipefs xpipe
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx

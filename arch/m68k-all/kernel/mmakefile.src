@@ -21,3 +21,5 @@ USER_AFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel arch=m68k \
   files="$(FILES)" asmfiles="$(AFILES)" compiler=kernel
+
+%common
