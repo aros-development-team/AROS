@@ -70,7 +70,7 @@ AROS_LD1(WORD, SetICR,
 static const char resident_name[] = RESIDENT_NAME;
 static const char resident_id[]   = "\0$VER:" RESIDENT_NAME " " STR(RESIDENT_VERSION) "." STR(RESIDENT_REVISION) " (" ADATE ")";
 
-static AROS_UFP4 (APTR, Cia_Handler,
+AROS_UFP4 (APTR, Cia_Handler,
     AROS_UFPA(ULONG, dummy, A0),
     AROS_UFPA(void *, data, A1),
     AROS_UFPA(ULONG, dummy2, A5),
@@ -108,7 +108,7 @@ static struct CIABase *InitResource(char *Name, struct ExecBase *SysBase)
 {
     struct CIABase *base;
 
-    base = (struct CIABase *)MakeLibrary((APTR)Cia_FuncTable, NULL, NULL, sizeof(struct CIABase), NULL);
+    base = (struct CIABase *)MakeLibrary((APTR)Cia_FuncTable, NULL, NULL, sizeof(struct CIABase), 0);
 
     if (base) {
 	base->lib.lib_Node.ln_Type = NT_RESOURCE;
