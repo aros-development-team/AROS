@@ -39,4 +39,12 @@ USER_CFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
     files=$(FILES) targetdir=$(AROS_C)	\
     usestartup="no" uselibs="rom"
 
+USER_CFLAGS += -DUSE_EMBEDDED_COMMANDS
+OBJDIR := $(OBJDIR).kernel
+
+%build_module mmake=kernel-shell \
+  modname=shell modtype=resource \
+  files="shell_init $(FILES)" \
+  uselibs="rom"
+
 %common
