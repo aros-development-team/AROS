@@ -429,6 +429,7 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
     if (file)
     {
 	commandSeg = LoadSeg(commandName);
+	err = IoErr();
 
 	if (commandSeg)
 	{
