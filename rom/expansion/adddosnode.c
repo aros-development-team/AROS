@@ -136,8 +136,9 @@
 	}
 
 	CloseLibrary((struct Library *)DOSBase);
+    } else {
+    	return AddBootNode(bootPri, flags, deviceNode, NULL);
     }
-
     return ok;
 
     AROS_LIBFUNC_EXIT
