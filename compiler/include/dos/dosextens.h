@@ -407,7 +407,8 @@ struct DosList
             LONG    dol_StackSize;
             LONG    dol_Priority;
             BPTR    dol_Startup;
-            BPTR    dol_NoAROS3[2];
+            BPTR	dol_SegList;
+            BPTR	dol_GlobVec;
         } dol_handler;
           /* See struct DeviceList below. */
         struct {
