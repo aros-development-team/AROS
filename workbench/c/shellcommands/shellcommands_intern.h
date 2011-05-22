@@ -13,7 +13,7 @@
 #include <exec/libraries.h>
 #include <dos/dosextens.h>
 
-#include "shcommands_embedded.h"
+#include <aros/shcommands.h>
 
 struct ShellCommandsBase {
     struct Library sc_Lib;

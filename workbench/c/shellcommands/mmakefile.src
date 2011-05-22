@@ -62,10 +62,9 @@ $(OBJDIR)/NewCLI.o : $(OBJDIR)/NewShell.o
 
 
 USER_CFLAGS := -I$(SRCDIR)/rom/dos \
-	       -include $(SRCDIR)/workbench/c/shellcommands/shcommands_embedded.h \
 	       -D__NOLIBBASE__ \
 		   -DADATE="\"$(shell date "+%d.%m.%Y")\""
-
+USER_CFLAGS += -DUSE_EMBEDDED_COMMANDS
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 OBJDIR := $(OBJDIR).kernel
