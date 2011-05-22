@@ -73,9 +73,9 @@ typedef struct _ShellState
  *
  * Output:   LONG  --  error code or 0 if everything went OK
  */
-LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand);
+LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APTR DOSBase);
 
-LONG convertLineDot(ShellState *ss, Buffer *in);
+LONG convertLineDot(ShellState *ss, Buffer *in, APTR DOSBase);
 
 /* Function: executeLine
  *
@@ -86,7 +86,7 @@ LONG convertLineDot(ShellState *ss, Buffer *in);
  *
  * Output:   LONG  --  error code or 0 if everything went OK
  */
-LONG executeLine(ShellState *ss, STRPTR commandArgs);
+LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase);
 
 /* Function: readLine
  *
@@ -100,7 +100,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs);
  *
  * Output:   LONG --  DOS error code
  */
-BOOL readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft);
+BOOL readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APTR DOSBase);
 
 /* Function: checkLine
  *
@@ -113,7 +113,7 @@ BOOL readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft);
  *
  * Output:   LONG --  DOS error code
  */
-LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo);
+LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase);
 
 /* Function: releaseFiles
  *
@@ -136,7 +136,7 @@ void releaseFiles(ShellState *ss);
  *
  * Output:   LONG  --  error code
  */
-LONG interact(ShellState *ss, BOOL isBootShell);
+LONG interact(ShellState *ss, BOOL isBootShell, APTR DOSBase);
 
 
 /* Function: Redirection_release
@@ -147,7 +147,7 @@ LONG interact(ShellState *ss, BOOL isBootShell);
  *
  * Output:   --
  */
-void Redirection_release(ShellState *ss);
+void Redirection_release(ShellState *ss, APTR DOSBase);
 
 /* Function: Redirection_init
  *
@@ -170,7 +170,7 @@ LONG Redirection_init(ShellState *ss);
  *
  * Output:   --
  */
-void setPath(BPTR lock);
+void setPath(BPTR lock, APTR DOSBase);
 
 /* Function: cliPrompt
  *
@@ -180,7 +180,7 @@ void setPath(BPTR lock);
  *
  * Output:   --
  */
-void cliPrompt(ShellState *ss);
+void cliPrompt(ShellState *ss, APTR DOSBase);
 
 /* Other internal functions
  *
@@ -190,16 +190,15 @@ void initDefaultInterpreterState(ShellState *ss);
 void popInterpreterState(ShellState *ss);
 LONG pushInterpreterState(ShellState *ss);
 
-LONG convertArg(ShellState *ss, Buffer *in, Buffer *out);
-LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out);
-LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out);
-LONG convertVar(ShellState *ss, Buffer *in, Buffer *out);
+LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase);
+LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase);
+LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase);
+LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase);
 LONG l2a(LONG x, STRPTR buf); /* long to ascii */
 
-void cliEcho(ShellState *ss, CONST_STRPTR args);
+void cliEcho(ShellState *ss, CONST_STRPTR args, APTR DOSBase);
 LONG cliLen(CONST_STRPTR s);
 BOOL cliNan(CONST_STRPTR s);
-void cliPrompt(ShellState *ss);
-void cliVarNum(CONST_STRPTR name, LONG value);
+void cliVarNum(CONST_STRPTR name, LONG value, APTR DOSBase);
 
 #endif

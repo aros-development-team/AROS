@@ -15,8 +15,8 @@
 
 #include <aros/debug.h>
 
-static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *),
-			LONG a, ShellState *ss, Buffer *in, Buffer *out)
+static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, APTR DOSBase),
+			LONG a, ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 {
     LONG c, p = 0, error, n = in->len;
 
@@ -33,7 +33,7 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *),
 	}
 	else if (c == a)
 	{
-	    if ((error = (*convertItem)(ss, in, out)))
+	    if ((error = (*convertItem)(ss, in, out, DOSBase)))
 		return error;
 	}
 	else
@@ -44,7 +44,7 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *),
     return 0;
 }
 
-static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out)
+static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 {
     LONG c, p = 0, error, n = in->len;
     BOOL quoted = FALSE;
@@ -69,7 +69,7 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out)
 	    bufferCopy(in, out, 1);
 	else if (c == '<' || c == '>')
 	{
-	    if ((error = convertRedir(ss, in, out)))
+	    if ((error = convertRedir(ss, in, out, DOSBase)))
 		return error;
 	}
 	else
@@ -81,13 +81,13 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out)
 }
 
 static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
-			 struct List *aliased)
+			 struct List *aliased, APTR DOSBase)
 {
     STRPTR command = ss->command + 2;
     TEXT buf[FILE_MAX];
     LONG i;
 
-    switch (bufferReadItem(command, FILE_MAX, in))
+    switch (bufferReadItem(command, FILE_MAX, in, DOSBase))
     {
     case ITEM_QUOTED: /* no alias expansion */
 	if (in->cur < in->len)
@@ -110,7 +110,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
 	TEXT cmd[FILE_MAX];
 	LONG error;
 
-	switch (bufferReadItem(cmd, FILE_MAX, &a))
+	switch (bufferReadItem(cmd, FILE_MAX, &a, DOSBase))
 	{
 	case ITEM_QUOTED:
 	case ITEM_UNQUOTED:
@@ -131,7 +131,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
 	a.cur = 0;
 
 	/* vars substitution */
-	if ((error = convertLoop(convertVar, '$', ss, &a, &b)))
+	if ((error = convertLoop(convertVar, '$', ss, &a, &b, DOSBase)))
 	    goto endReadAlias;
 
 	/* alias foo bar1 [] bar2 */
@@ -149,7 +149,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
 	    bufferCopy(&b, &a, b.len - b.cur);
 	}
 
-	error = readCommandR(ss, &a, out, aliased);
+	error = readCommandR(ss, &a, out, aliased, DOSBase);
 
 endReadAlias:
 	bufferFree(&a);
@@ -160,13 +160,13 @@ endReadAlias:
     return bufferCopy(in, out, in->len - in->cur);
 }
 
-static LONG readCommand(ShellState *ss, Buffer *in, Buffer *out)
+static LONG readCommand(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 {
     struct List aliased;
 
     NewList(&aliased);
 
-    return readCommandR(ss, in, out, &aliased);
+    return readCommandR(ss, in, out, &aliased, DOSBase);
 }
 
 /* The shell has the following semantics when it comes to command lines:
@@ -177,7 +177,7 @@ static LONG readCommand(ShellState *ss, Buffer *in, Buffer *out)
    should be substituted for the command text. Aliasing only applies to
    commands and not to options, for instance. Variables (set by SetEnv or Set)
    may be referenced by prepending a '$' to the variable name. */
-LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand)
+LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APTR DOSBase)
 {
     LONG c = in->buf[in->cur], error;
 
@@ -185,7 +185,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand)
 	return 0;
 
     if (c == ss->dot) /* .dot command at start of line */
-	return convertLineDot(ss, in);
+	return convertLineDot(ss, in, DOSBase);
 
     /* Vars and BackTicks can't be properly handled by using FindItem() as
        it wouldn't find them when they aren't surrounded with blank spaces,
@@ -205,23 +205,23 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand)
      */
 
     /* PASS 1: `backticks` substitution */
-    if ((error = convertLoop(convertBackTicks, '`', ss, in, out)))
+    if ((error = convertLoop(convertBackTicks, '`', ss, in, out, DOSBase)))
 	return error;
 
     /* PASS 2: <args> substitution & CLI# <$$>*/
-    if ((error = convertLoop(convertArg, ss->bra, ss, out, in)))
+    if ((error = convertLoop(convertArg, ss->bra, ss, out, in, DOSBase)))
 	return error;
 
     /* PASS 3: ${vars} substitution */
-    if ((error = convertLoop(convertVar, '$', ss, in, out)))
+    if ((error = convertLoop(convertVar, '$', ss, in, out, DOSBase)))
 	return error;
 
     /* PASS 4: command & aliases */
-    if ((error = readCommand(ss, out, in)))
+    if ((error = readCommand(ss, out, in, DOSBase)))
 	return error;
 
     *haveCommand = TRUE;
 
     /* PASS 5: redirections */
-    return convertLoopRedir(ss, in, out);
+    return convertLoopRedir(ss, in, out, DOSBase);
 }

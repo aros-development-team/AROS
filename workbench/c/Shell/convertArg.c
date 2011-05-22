@@ -7,7 +7,7 @@
 #include "Shell.h"
 
 /* subsitute one script argument and leaves the input after .ket */
-LONG convertArg(ShellState *ss, Buffer *in, Buffer *out)
+LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 {
     STRPTR s = in->buf + in->cur;
     STRPTR p = s;
@@ -24,7 +24,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out)
     }
 
     if (*p == '<' && *q == '>') /* Run <>NIL: ... */
-	return convertRedir(ss, in, out);
+	return convertRedir(ss, in, out, DOSBase);
 
     for (; *q != ss->ket && *q != ss->dollar && *q != '\0'; ++q)
     {
@@ -33,7 +33,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out)
 	case '"':
 	case ' ':
 	    if (*p == '<') /* input redirection */
-		return convertRedir(ss, in, out);
+		return convertRedir(ss, in, out, DOSBase);
 
 	    bufferAppend(s, q - s, out);
 	    return 0;

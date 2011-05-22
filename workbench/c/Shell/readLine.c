@@ -13,7 +13,7 @@
 
 #include <aros/debug.h>
 
-BOOL readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft)
+BOOL readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APTR DOSBase)
 {
     BPTR fh = cli->cli_CurrentInput;
     STRPTR buf = out->buf; /* pre-allocated by caller */

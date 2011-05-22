@@ -9,7 +9,7 @@
 
 #include "Shell.h"
 
-void cliPrompt(ShellState *ss)
+void cliPrompt(ShellState *ss, APTR DOSBase)
 {
     struct CommandLineInterface *cli = Cli();
     BSTR prompt = cli->cli_Prompt;

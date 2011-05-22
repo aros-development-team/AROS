@@ -24,7 +24,7 @@ LONG bufferCopy(Buffer *in, Buffer *out, ULONG size);
 
 void bufferFree(Buffer *b);
 
-LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in);
+LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in, APTR DOSBase);
 
 void bufferReset(Buffer *b);
 

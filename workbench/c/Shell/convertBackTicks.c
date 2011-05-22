@@ -22,10 +22,10 @@
 /* BackTicks handling... like V45, we allow several embedded
  * commands, while V40 only allows one per line.
  */
-LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out)
+LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 {
     Buffer embedIn = {0}, embedOut = {0}; /* TODO pre-alloc */
-    LONG c, error = 0, n = in->len, p = 0;
+    LONG c = 0, error = 0, n = in->len, p = 0;
     TEXT buf[512] = SHELL_EMBED;
     ShellState ess = {0};
 
@@ -82,7 +82,7 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out)
     /* Embedded command isn't echo'ed, but its result will be integrated
        in final command line, which will be echo'ed if the var is set. */
     D(bug("[Shell] embedded command: %s\n", embedIn.buf));
-    if ((error = checkLine(&ess, &embedIn, &embedOut, FALSE)) == 0)
+    if ((error = checkLine(&ess, &embedIn, &embedOut, FALSE, DOSBase)) == 0)
     {
 	LONG i, len = -1, size;
 
@@ -109,7 +109,7 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out)
     }
 
 cleanup:
-    Redirection_release(&ess);
+    Redirection_release(&ess, DOSBase);
     /* TODO: delete generated file */
 freebufs:
     bufferFree(&embedIn);

@@ -64,7 +64,7 @@ void bufferFree(Buffer *b)
     b->mem = 0;
 }
 
-LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in)
+LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in, APTR DOSBase)
 {
     struct CSource tin = { in->buf, in->len, in->cur };
     LONG ret = ReadItem(buf, size, &tin);

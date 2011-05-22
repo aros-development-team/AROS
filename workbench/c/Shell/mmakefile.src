@@ -24,7 +24,10 @@ FILES := \
 
 EXE := Shell
 
-USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+USER_CFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
+	       -D__DOS_NOLIBBASE__
 
 #MM- workbench-c : workbench-c-shell
 

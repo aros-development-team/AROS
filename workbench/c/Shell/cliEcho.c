@@ -6,7 +6,7 @@
 #include <proto/dos.h>
 #include "Shell.h"
 
-void cliEcho(ShellState *ss, CONST_STRPTR args)
+void cliEcho(ShellState *ss, CONST_STRPTR args, APTR DOSBase)
 {
     struct LocalVar *lv;
     BPTR echoOut;
