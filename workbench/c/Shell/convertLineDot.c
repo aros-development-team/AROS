@@ -36,7 +36,7 @@ static LONG getArgumentIdx(ShellState *ss, STRPTR name, LONG len)
     return i;
 }
 
-static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
+static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len, APTR DOSBase)
 {
     struct SArg *a;
     LONG i, result;
@@ -45,7 +45,7 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
     in->cur += len;
     i = in->cur;
 
-    if ((result = bufferReadItem(buf, sizeof(buf), in)) == ITEM_UNQUOTED)
+    if ((result = bufferReadItem(buf, sizeof(buf), in, DOSBase)) == ITEM_UNQUOTED)
     {
 	len = in->cur - i;
 
@@ -56,7 +56,7 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
 	a = ss->args + i;
 	i = ++in->cur;
 
-	switch (bufferReadItem(buf, sizeof(buf), in))
+	switch (bufferReadItem(buf, sizeof(buf), in, DOSBase))
 	{
 	case ITEM_QUOTED:
 	case ITEM_UNQUOTED:
@@ -80,7 +80,7 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
     return ERROR_REQUIRED_ARG_MISSING;
 }
 
-static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in)
+static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in, APTR DOSBase)
 {
     struct CommandLineInterface *cli = Cli();
     LONG error, i, j, len;
@@ -171,7 +171,7 @@ static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in)
     return 0;
 }
 
-LONG convertLineDot(ShellState *ss, Buffer *in)
+LONG convertLineDot(ShellState *ss, Buffer *in, APTR DOSBase)
 {
     STRPTR s = in->buf + in->cur;
     TEXT *res = NULL;
@@ -190,13 +190,13 @@ LONG convertLineDot(ShellState *ss, Buffer *in)
 	s += 4;
     }
     else if (strncasecmp(s, "key ", 4) == 0)
-	return dotKey(ss, s + 4, in);
+	return dotKey(ss, s + 4, in, DOSBase);
     else if (strncasecmp(s, "k ", 2) == 0)
-	return dotKey(ss, s + 2, in);
+	return dotKey(ss, s + 2, in, DOSBase);
     else if (strncasecmp(s, "def ", 4) == 0)
-	return dotDef(ss, s + 4, in, 5);
+	return dotDef(ss, s + 4, in, 5, DOSBase);
     else if (strncasecmp(s, "default ", 8) == 0)
-	return dotDef(ss, s + 4, in, 9);
+	return dotDef(ss, s + 4, in, 9, DOSBase);
     else if (strncasecmp(s, "dol ", 4) == 0)
     {
 	res = &ss->dollar;
@@ -235,14 +235,14 @@ LONG convertLineDot(ShellState *ss, Buffer *in)
     else if (*s == 'k' || *s == 'K')
     {
 	if (*++s == ' ') /* .k */
-	    return dotKey(ss, ++s, in);
+	    return dotKey(ss, ++s, in, DOSBase);
 
 	if (*s == 'e' || *s == 'E')
 	{
 	    if (*++s == 'y' || *s == 'Y') /* .key */
 	    {
 		if (*++s == ' ')
-		    return dotKey(ss, ++s, in);
+		    return dotKey(ss, ++s, in, DOSBase);
 	    }
 	    else if (*s == 't' || *s == 'T') /* .ket */
 		if (*++s == ' ')
@@ -256,14 +256,14 @@ LONG convertLineDot(ShellState *ss, Buffer *in)
 	    if (*++s == 'f' || *s == 'F')
 	    {
 		if (*++s == ' ') /* .def */
-		    return dotDef(ss, ++s, in, 5);
+		    return dotDef(ss, ++s, in, 5, DOSBase);
 
 		if (*s == 'a' || *s == 'A')
 		    if (*++s == 'u' || *s == 'U')
 			if (*++s == 'l' || *s == 'L')
 			    if (*++s == 't' || *s == 'T')
 				if (*++s == ' ') /* .default */
-				    return dotDef(ss, ++s, in, 9);
+				    return dotDef(ss, ++s, in, 9, DOSBase);
 	    }
 	}
 	else if (*s == 'o' || *s == 'O')

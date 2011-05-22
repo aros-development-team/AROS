@@ -12,7 +12,7 @@ LONG Redirection_init(ShellState *ss)
     return 0;
 }
 
-void Redirection_release(ShellState *ss)
+void Redirection_release(ShellState *ss, APTR DOSBase)
 {
     /* Close redirection files and install regular input and output streams */
     if (ss->newIn)

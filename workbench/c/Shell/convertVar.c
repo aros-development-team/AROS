@@ -12,7 +12,7 @@
 #include <aros/debug.h>
 
 /* environment variables handling (locals and globals) */
-LONG convertVar(ShellState *ss, Buffer *in, Buffer *out)
+LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 {
     STRPTR p = in->buf + in->cur;
     STRPTR s = p + 1;

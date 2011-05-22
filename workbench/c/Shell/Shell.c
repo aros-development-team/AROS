@@ -96,10 +96,10 @@ AROS_SH1(Shell, 41.3,
     LONG error;
 
     D(bug("[Shell] executing\n"));
-    setPath(BNULL);
+    setPath(BNULL, DOSBase);
 
     ss.cliNumber = me->pr_TaskNum;
-    cliVarNum("process", ss.cliNumber);
+    cliVarNum("process", ss.cliNumber, DOSBase);
 
     isBootShell = (strcmp(me->pr_Task.tc_Node.ln_Name, "Boot Shell") == 0);
 
@@ -116,15 +116,15 @@ AROS_SH1(Shell, 41.3,
 	if ((error = Redirection_init(&ss)) == 0)
 	{
 	    D(bug("[Shell] running command: %s\n", cmdline));
-	    error = checkLine(&ss, &in, &out, TRUE);
-	    Redirection_release(&ss);
+	    error = checkLine(&ss, &in, &out, TRUE, DOSBase);
+	    Redirection_release(&ss, DOSBase);
 
 	    bufferFree(&in);
 	    bufferFree(&out);
 	}
     }
     else
-	error = interact(&ss, isBootShell);
+	error = interact(&ss, isBootShell, DOSBase);
 
     D(bug("[Shell] exiting, error = %d\n", error));
     return error ? RETURN_FAIL : RETURN_OK;
@@ -133,7 +133,7 @@ AROS_SH1(Shell, 41.3,
 }
 
 /* First we execute the script, then we interact with the user */
-LONG interact(ShellState *ss, BOOL isBootShell)
+LONG interact(ShellState *ss, BOOL isBootShell, APTR DOSBase)
 {
     struct CommandLineInterface *cli = Cli();
     Buffer in = {0}, out = {0};
@@ -170,15 +170,15 @@ LONG interact(ShellState *ss, BOOL isBootShell)
     do {
 	if ((error = Redirection_init(ss)) == 0)
 	{
-	    cliPrompt(ss);
+	    cliPrompt(ss, DOSBase);
 
 	    bufferReset(&in); /* reuse allocated buffers */
 	    bufferReset(&out);
 
-	    error = readLine(cli, &in, &moreLeft);
+	    error = readLine(cli, &in, &moreLeft, DOSBase);
 
 	    if (error == 0 && in.len > 0)
-		error = checkLine(ss, &in, &out, TRUE);
+		error = checkLine(ss, &in, &out, TRUE, DOSBase);
 
 	    if (!cli->cli_Interactive) /* stop script ? */
 	    {
@@ -192,7 +192,7 @@ LONG interact(ShellState *ss, BOOL isBootShell)
 		}
 	    }
 
-	    Redirection_release(ss);
+	    Redirection_release(ss, DOSBase);
 	}
 
 	if (moreLeft)
@@ -232,23 +232,23 @@ LONG interact(ShellState *ss, BOOL isBootShell)
 }
 
 /* Take care of one command line */
-LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
+LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
 {
     struct CommandLineInterface *cli = Cli();
     BOOL haveCommand = FALSE;
     LONG result;
 
-    if ((result = convertLine(ss, in, out, &haveCommand)) == 0)
+    if ((result = convertLine(ss, in, out, &haveCommand, DOSBase)) == 0)
     {
 	/* Only a comment or dot command ? */
 	if (haveCommand == FALSE)
 	    goto exit;
 
 	if (echo)
-	    cliEcho(ss, out->buf);
+	    cliEcho(ss, out->buf, DOSBase);
 
 	/* OK, we've got a command. Let's execute it! */
-	result = executeLine(ss, out->buf);
+	result = executeLine(ss, out->buf, DOSBase);
 
 	SelectInput(cli->cli_StandardInput);
 	SelectOutput(cli->cli_StandardOutput);
@@ -263,8 +263,8 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
 exit:
     /* FIXME error handling is bullshit */
 
-    cliVarNum("RC", cli->cli_ReturnCode);
-    cliVarNum("Result2", cli->cli_Result2);
+    cliVarNum("RC", cli->cli_ReturnCode, DOSBase);
+    cliVarNum("Result2", cli->cli_Result2, DOSBase);
 
     if (cli->cli_Interactive)
     {
@@ -286,7 +286,8 @@ exit:
  * Output:   --
  */
 static void unloadCommand(ShellState *ss, BPTR commandSeg,
-			  BOOL homeDirChanged, BOOL residentCommand)
+			  BOOL homeDirChanged, BOOL residentCommand,
+			  APTR DOSBase)
 {
     struct CommandLineInterface *cli = Cli();
 
@@ -325,7 +326,8 @@ static void unloadCommand(ShellState *ss, BPTR commandSeg,
  *                     error
  */
 static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
-			BOOL *homeDirChanged, BOOL *residentCommand)
+			BOOL *homeDirChanged, BOOL *residentCommand,
+			APTR DOSBase)
 {
     struct CommandLineInterface *cli = Cli();
     BPTR oldCurDir;
@@ -437,7 +439,7 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
 }
 
 /* Execute one command */
-LONG executeLine(ShellState *ss, STRPTR commandArgs)
+LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 {
     struct CommandLineInterface *cli = Cli();
     STRPTR command = ss->command + 2;
@@ -448,7 +450,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs)
 
     D(bug("[Shell] executeLine: %s %s\n", command, commandArgs));
     module = loadCommand(ss, command, &scriptLock,
-			 &homeDirChanged, &residentCommand);
+			 &homeDirChanged, &residentCommand, DOSBase);
 
     /* Set command name even if we couldn't load the command to be able to
        report errors correctly */
@@ -533,7 +535,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs)
 
 	D(bug("[Shell] returned %d: %s\n", cli->cli_ReturnCode, command));
 	pr->pr_Task.tc_Node.ln_Name = oldtaskname;
-	unloadCommand(ss, module, homeDirChanged, residentCommand);
+	unloadCommand(ss, module, homeDirChanged, residentCommand, DOSBase);
 
 	cli->cli_Result2 = IoErr();
     }
@@ -562,7 +564,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs)
 		    {
 			if (fib->fib_DirEntryType > 0)
 			{
-			    setPath(lock);
+			    setPath(lock, DOSBase);
 			    lock = CurrentDir(lock);
 			}
 			else
@@ -587,7 +589,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs)
     return error;
 }
 
-void setPath(BPTR lock)
+void setPath(BPTR lock, APTR DOSBase)
 {
     BPTR dir;
     STRPTR buf;

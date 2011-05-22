@@ -8,7 +8,7 @@
 #include "buffer.h"
 #include "Shell.h"
 
-LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out)
+LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 {
     STRPTR s = in->buf + in->cur;
     BOOL newIn = FALSE, newOut = FALSE;
@@ -40,7 +40,7 @@ LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out)
 
     in->cur = s - in->buf;
 
-    switch (bufferReadItem(file, FILE_MAX, in))
+    switch (bufferReadItem(file, FILE_MAX, in, DOSBase))
     {
     case ITEM_QUOTED:
     case ITEM_UNQUOTED:
