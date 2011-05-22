@@ -1,0 +1,13 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES=debug_gdb
+
+USER_CFLAGS += -I$(SRCDIR)/rom/debug
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
+%build_archspecific \
+  mainmmake=kernel-debug maindir=rom/debug arch=m68k \
+  files="$(FILES)"
+
+%common
