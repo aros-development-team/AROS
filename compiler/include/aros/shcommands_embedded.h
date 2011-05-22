@@ -10,10 +10,9 @@
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
 
-/* This defines SHCOMMANDS_EMBEDDED_H, along with
- * many of the macros we will be using.
+/* This defines many of the macros we will be using.
  */
-#include <aros/shcommands.h>
+#include <aros/shcommands_notembedded.h>
 
 DECLARESET(SHCOMMANDS)
 

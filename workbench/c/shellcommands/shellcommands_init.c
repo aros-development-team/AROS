@@ -14,6 +14,7 @@
 #include <proto/utility.h>	/* For Stricmp */
 
 #include <aros/symbolsets.h>
+#include <aros/shcommands.h>
 
 #include "shellcommands_intern.h"
 
