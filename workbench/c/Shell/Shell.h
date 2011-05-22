@@ -136,7 +136,7 @@ void releaseFiles(ShellState *ss);
  *
  * Output:   LONG  --  error code
  */
-LONG interact(ShellState *ss, BOOL isBootShell, APTR DOSBase);
+LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase);
 
 
 /* Function: Redirection_release
@@ -200,5 +200,7 @@ void cliEcho(ShellState *ss, CONST_STRPTR args, APTR DOSBase);
 LONG cliLen(CONST_STRPTR s);
 BOOL cliNan(CONST_STRPTR s);
 void cliVarNum(CONST_STRPTR name, LONG value, APTR DOSBase);
+
+BOOL isInteractive(struct CommandLineInterface *cli);
 
 #endif

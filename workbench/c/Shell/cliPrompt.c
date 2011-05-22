@@ -17,7 +17,7 @@ void cliPrompt(ShellState *ss, APTR DOSBase)
     BPTR output = Output();
     ULONG i;
 
-    if (!cli->cli_Interactive)
+    if (!isInteractive(cli))
 	return;
 
     for (i = 0; i < length; i++)
