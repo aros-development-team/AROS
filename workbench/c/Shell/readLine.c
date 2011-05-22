@@ -37,7 +37,7 @@ BOOL readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APT
 	    else if (c == '\n') /* empty line */
 	    {
 		comment = FALSE;
-		if (cli->cli_Interactive == FALSE)
+		if (isInteractive(cli) == FALSE)
 		    continue;
 	    }
 	    else if (comment || c == ' ' || c == '\t') /* leading spaces */

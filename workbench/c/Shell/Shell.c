@@ -70,6 +70,7 @@
 #include <dos/stdio.h>
 #include <exec/libraries.h>
 #include <exec/lists.h>
+#include <libraries/expansionbase.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -84,6 +85,26 @@
 
 #include "Shell.h"
 
+static void PrintBanner(struct DosLibrary *DOSBase)
+{
+    PutStr
+    (
+	"AROS - The AROS Research Operating System\n"
+	"Copyright © 1995-2011, The AROS Development Team. "
+	"All rights reserved.\n"
+	"AROS is licensed under the terms of the "
+	"AROS Public License (APL),\n"
+	"a copy of which you should have received "
+	"with this distribution.\n"
+	"Visit http://www.aros.org/ for more information.\n"
+    );
+}
+
+BOOL isInteractive(struct CommandLineInterface *cli)
+{
+    return !cli->cli_Background && cli->cli_CurrentInput == cli->cli_StandardInput;
+}
+
 AROS_SH1(Shell, 41.3,
 	 AROS_SHA(STRPTR, , COMMAND, /F, NULL))
 {
@@ -92,8 +113,9 @@ AROS_SH1(Shell, 41.3,
     struct Process *me = (struct Process *)FindTask(NULL);
     STRPTR cmdline = SHArg(COMMAND);
     ShellState ss = {0};
-    BOOL isBootShell;
     LONG error;
+    BOOL isBootShell;
+    BOOL isBannerDone;
 
     D(bug("[Shell] executing\n"));
     setPath(BNULL, DOSBase);
@@ -102,11 +124,19 @@ AROS_SH1(Shell, 41.3,
     cliVarNum("process", ss.cliNumber, DOSBase);
 
     isBootShell = (strcmp(me->pr_Task.tc_Node.ln_Name, "Boot Shell") == 0);
+    isBannerDone = FALSE;
 
     initDefaultInterpreterState(&ss);
 
-    if (isBootShell)
-	SetPrompt("%N> ");
+    if (isBootShell) {
+    	struct ExpansionBase *ExpansionBase = (struct ExpansionBase*)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
+        SetPrompt("%N> ");
+	if (ExpansionBase && !(ExpansionBase->Flags & EBF_SILENTSTART)) {
+	    PrintBanner(DOSBase);
+	    isBannerDone = TRUE;
+	}
+	CloseLibrary((struct Library *)ExpansionBase);
+    }
 
     if (cmdline && cmdline[0] != '\0')
     {
@@ -124,7 +154,7 @@ AROS_SH1(Shell, 41.3,
 	}
     }
     else
-	error = interact(&ss, isBootShell, DOSBase);
+	error = interact(&ss, isBootShell, isBannerDone, DOSBase);
 
     D(bug("[Shell] exiting, error = %d\n", error));
     return error ? RETURN_FAIL : RETURN_OK;
@@ -133,7 +163,7 @@ AROS_SH1(Shell, 41.3,
 }
 
 /* First we execute the script, then we interact with the user */
-LONG interact(ShellState *ss, BOOL isBootShell, APTR DOSBase)
+LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase)
 {
     struct CommandLineInterface *cli = Cli();
     Buffer in = {0}, out = {0};
@@ -145,17 +175,8 @@ LONG interact(ShellState *ss, BOOL isBootShell, APTR DOSBase)
 	SetVBuf(Output(), NULL, BUF_FULL, -1);
 	if (isBootShell)
 	{
-	    PutStr
-	    (
-		"AROS - The AROS Research Operating System\n"
-		"Copyright © 1995-2011, The AROS Development Team. "
-		"All rights reserved.\n"
-		"AROS is licensed under the terms of the "
-		"AROS Public License (APL),\n"
-		"a copy of which you should have received "
-		"with this distribution.\n"
-		"Visit http://www.aros.org/ for more information.\n"
-	    );
+	    if (!isBannerDone)
+	        PrintBanner(DOSBase);
 	}
 	else
 	    Printf("New Shell process %ld\n", ss->cliNumber);
@@ -180,14 +201,14 @@ LONG interact(ShellState *ss, BOOL isBootShell, APTR DOSBase)
 	    if (error == 0 && in.len > 0)
 		error = checkLine(ss, &in, &out, TRUE, DOSBase);
 
-	    if (!cli->cli_Interactive) /* stop script ? */
+	    if (!isInteractive(cli)) /* stop script ? */
 	    {
 		if (error || (cli->cli_ReturnCode >= cli->cli_FailLevel))
 		    moreLeft = FALSE;
 
 		if (CheckSignal(SIGBREAKF_CTRL_D))
 		{
-		    PutStr("SHELL: ***Break\n");
+		    PrintFault(ERROR_BREAK, "Shell");
 		    moreLeft = FALSE;
 		}
 	    }
@@ -200,7 +221,7 @@ LONG interact(ShellState *ss, BOOL isBootShell, APTR DOSBase)
 
 	popInterpreterState(ss);
 
-	if (cli->cli_Interactive)
+	if (isInteractive(cli))
 	{
 	    Printf("Process %ld ending\n", ss->cliNumber);
 	    Flush(Output());
@@ -336,6 +357,7 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
     struct Segment *residentSeg;
     BOOL absolutePath = strpbrk(commandName, "/:") != NULL;
     BPTR file;
+    LONG err = 0;
 
     /* We check the resident lists only if we do not have an absolute path */
     if (!absolutePath)
@@ -372,6 +394,7 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
     CurrentDir(oldCurDir);
 
     file = Open(commandName, MODE_OLDFILE);
+    err = IoErr();
 
     if (!file)
     {
@@ -417,23 +440,32 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
 		*homeDirChanged = TRUE; /* TODO merge */
 	    }
 	}
-	else
-	{
-	    struct FileInfoBlock fib;
-	    if (Examine(file, &fib) && fib.fib_Protection & FIBF_SCRIPT)
+	/* Do not attempt to execute corrupted executables (BAD_HUNK)
+	 * Do not swallow original error code */
+	if (!commandSeg && err == ERROR_NOT_EXECUTABLE) {
+	    struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+	    if (fib && ExamineFH(file, fib) && (fib->fib_Protection & FIBF_SCRIPT))
 	    {
 		commandSeg = LoadSeg("C:Execute");
-		if (commandSeg)
+		if (commandSeg) {
 		    *scriptLock = Lock(commandName, SHARED_LOCK);
+		    if (*scriptLock == BNULL) {
+		    	UnLoadSeg(commandSeg);
+		    	commandSeg = BNULL;
+		    }
+		}
 	    }
 	    else
-		SetIoErr(ERROR_FILE_NOT_OBJECT);
+		err = ERROR_FILE_NOT_OBJECT;
+	    FreeDosObject(DOS_FIB, fib);
 	}
 
 	Close(file);
-    }
+    } else
+    	err = IoErr();
 
     CurrentDir(oldCurDir);
+    SetIoErr(err);
 
     return commandSeg;
 }
@@ -446,9 +478,14 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
     BOOL homeDirChanged = FALSE, residentCommand = FALSE;
     BPTR module, scriptLock = BNULL;
     LONG error = 0;
-    TEXT cmd[4096];
+    TEXT *cmd;
 
     D(bug("[Shell] executeLine: %s %s\n", command, commandArgs));
+
+    cmd = AllocVec(4096 * sizeof(TEXT), MEMF_ANY);
+    if (!cmd)
+    	return ERROR_NO_FREE_STORE;
+
     module = loadCommand(ss, command, &scriptLock,
 			 &homeDirChanged, &residentCommand, DOSBase);
 
@@ -473,8 +510,10 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 	if (scriptLock)
 	{
 	    *dst++ = '"';
-	    if (NameFromLock(scriptLock, dst, FILE_MAX) == 0)
-		return IoErr(); /* bad FS handler ? */
+	    if (NameFromLock(scriptLock, dst, FILE_MAX) == 0) {
+	    	error = IoErr(); /* bad FS handler ? */
+	    	goto errexit;
+	    }
 	    while (*dst != '\0')
 	    {
 		++dst;
@@ -542,8 +581,10 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
     else
     {
 	/* Implicit CD ? */
-	if (ss->newIn || ss->newOut)
-	    return ERROR_TOO_MANY_ARGS;
+	if (ss->newIn || ss->newOut) {
+	    error = ERROR_TOO_MANY_ARGS;
+	    goto errexit;
+	}
 
 	/* SFS returns ERROR_INVALID_COMPONENT_NAME if you try to open "" */
 	error = IoErr();
@@ -585,7 +626,8 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 	    PrintFault(error, command);
 	}
     }
-
+errexit:
+    FreeVec(cmd);
     return error;
 }
 
