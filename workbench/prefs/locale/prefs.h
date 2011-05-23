@@ -22,6 +22,7 @@ BOOL Prefs_ImportFH(BPTR fh);
 BOOL Prefs_ExportFH(BPTR fh);
 BOOL Prefs_SaveCharset(BOOL envarc);
 BOOL Prefs_Default(VOID);
+BOOL Prefs_LoadCountry(STRPTR name, struct CountryPrefs *country);
 
 /*********************************************************************************************/
 

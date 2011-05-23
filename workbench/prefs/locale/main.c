@@ -24,7 +24,7 @@
 //#define DEBUG 1
 #include <aros/debug.h>
 
-#define VERSION "$VER: Locale 2.1 (06.09.2010) AROS Dev Team"
+#define VERSION "$VER: Locale 2.2 (24.05.2011) AROS Dev Team"
 
 /*********************************************************************************************/
 

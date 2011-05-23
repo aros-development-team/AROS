@@ -217,6 +217,7 @@ STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
     if(GET(data->country, MUIA_Country_Countryname, &tmp))
     {
         strncpy(localeprefs.lp_CountryName, tmp, 32);
+        Prefs_LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
     }
 
     if(GET(data->language, MUIA_Language_Preferred, &preferred))
