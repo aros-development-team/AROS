@@ -705,3 +705,4 @@ static int ata_pci_Scan(struct ataBase *base)
  * All bus scanners must run between them.
  */
 ADD2INITLIB(ata_pci_Scan, 30)
+ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)

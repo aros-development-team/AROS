@@ -437,5 +437,4 @@ ADD2INITLIB(ata_init, 0)
 ADD2INITLIB(ata_Scan, 127)
 ADD2OPENDEV(open, 0)
 ADD2CLOSEDEV(close, 0)
-ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)
 /* vim: set ts=8 sts=4 et : */
