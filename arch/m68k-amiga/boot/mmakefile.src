@@ -62,13 +62,15 @@ ROMLOC_ss  := 0x0000800
 
 # The BSS should be located as close as possible to the start of
 # MEMF_CHIP memory for the in-ROM version, to maximize the 
-# contigous available memory.
+# contigous available memory. It must physically abut the MemHeader,
+# so that mh->mh_First is *after* the .bss, otherwise krnRomTagScanner
+# will not be able to allocate any memory.
 #
 # This turns out to be:
 #
-# ChipRamStart + sizeof(MemHeader) + sizeof(MemChunk)
-#       0x1000 +       0x20        +      0x8
-ROMLOC_bss := 0x0001028
+# ChipRamStart + sizeof(MemHeader)
+#       0x1000 +       0x20
+ROMLOC_bss := 0x0001020
 
 ROMLOC_rom := 0x0f80000
 
