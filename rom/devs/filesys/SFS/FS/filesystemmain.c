@@ -225,7 +225,7 @@ void mainloop(void);
 #define MINOR_VERSION (84)
 
 #ifdef __GNUC__
-static const char ver_version[]={"\0$VER: " PROGRAMNAMEVER " 1.84 " ADATE "\r\n"};
+const char ver_version[]="\0$VER: " PROGRAMNAMEVER " 1.84 (" ADATE ")\r\n";
 #else
 static const char ver_version[]={"\0$VER: " PROGRAMNAMEVER " 1.84 " __AMIGADATE__ "\r\n"};
 static const struct Resident resident={RTC_MATCHWORD,&resident,&resident+sizeof(struct Resident),0,1,0,-81,PROGRAMNAME,&ver_version[7],0};

@@ -40,7 +40,7 @@ ULONG dw=900, dh=600;  /* Defrag width & height */
 
 ULONG *bitmap;
 
-static const char version[]={"\0$VER: SFSdefragmentGUI 1.2 " ADATE "\r\n"};
+const char version[]="\0$VER: SFSdefragmentGUI 1.2 (" ADATE ")\r\n";
 
 struct DefragmentStep {
   ULONG id;       // id of the step ("MOVE", "DONE" or 0)

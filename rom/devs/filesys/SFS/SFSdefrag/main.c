@@ -36,12 +36,12 @@
 #include "locale.h"
 
 #define APPNAME "SFSdefrag"
-#define VERSION "sfsdefrag 0.1 (29.11.05) ©AROS Dev Team"
+#define VERSION "sfsdefrag 0.1 (29.11.2005) ©AROS Dev Team"
 
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #define MAX(x,y) ((x)>(y)?(x):(y))
 
-static const char version[] = "$VER: " VERSION "\n";
+const char version[] = "$VER: " VERSION "\n";
 
 struct DefragmentStep {
   ULONG id;       // id of the step ("MOVE", "DONE" or 0)

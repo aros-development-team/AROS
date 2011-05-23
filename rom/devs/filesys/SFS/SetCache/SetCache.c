@@ -7,7 +7,7 @@
 #include "../FS/packets.h"
 #include "../FS/query.h"
 
-static const char version[]={"\0$VER: SetCache 1.2 " ADATE "\r\n"};
+const char version[]="\0$VER: SetCache 1.2 (" ADATE ")\r\n";
 
 int main()
 {
