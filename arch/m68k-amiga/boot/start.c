@@ -321,6 +321,8 @@ static void protectROM(struct MemHeader *mh)
     DEBUGPUTHEX(("    rom: ", (IPTR)tmp));
     tmp = Early_AllocAbs(mh, ext_start, ext_len);
     DEBUGPUTHEX(("    ext: ", (IPTR)tmp));
+    DEBUGPUTHEX(("  First: ", (IPTR)mh->mh_First));
+    DEBUGPUTHEX(("  Bytes: ", (IPTR)mh->mh_First->mc_Bytes));
 }
 
 static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size)
@@ -535,17 +537,23 @@ void exec_boot(ULONG *membanks)
 	 *       big enough for krnRomTagScanner, and at
 	 *       least one other chunk big enough for the
 	 *       initial SysBase.
-	 *
+	 */
+	DEBUGPUTHEX(("[SysBase mh]", (ULONG)mh));
+	if (mh->mh_First->mc_Bytes < 64*1024) {
+	    DEBUGPUTHEX(("FATAL: SysBase mh's first chunk is too small", mh->mh_First->mc_Bytes));
+	    Early_Alert(AT_DeadEnd | AG_NoMemory);
+	}
+
+	/*
 	 * Call the SysBase initialization.
 	 */
-	DEBUGPUTHEX(("[prep SysBase]", (ULONG)mh));
 	Early_ScreenCode(CODE_EXEC_CHECK);
 	if (!krnPrepareExecBase(kickrom, mh, bootmsg))
 	    Early_Alert(AT_DeadEnd | AG_MakeLib | AO_ExecLib);
 
 	/* From here on, we can reference SysBase */
 #undef SysBase
-	DEBUGPUTHEX(("[new  SysBase]", (ULONG)SysBase));
+	DEBUGPUTHEX(("[SysBase at]", (ULONG)SysBase));
 
     	if (wasvalid) {
     	    SysBase->ColdCapture = ColdCapture;
