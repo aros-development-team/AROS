@@ -6,8 +6,6 @@
     Lang: English
 */
 
-#define DEBUG 1
-
 #include <exec/types.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
