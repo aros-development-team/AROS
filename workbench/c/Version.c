@@ -882,9 +882,9 @@ void printverstring(void)
 			Printf("%s%s%s%s%s%s%s\n",
 			       (IPTR) parsedver.pv_name, (IPTR) (*parsedver.pv_name ? " " : ""),
 			       (IPTR) parsedver.pv_vername, (IPTR) parsedver.pv_revname,
-			       (IPTR) (parsedver.pv_datestr ? parsedver.pv_datestr : ""),
-			       (IPTR) (parsedver.pv_extralf ? parsedver.pv_extralf : "\n"),
-			       (IPTR) (parsedver.pv_extrastr ? parsedver.pv_extrastr : ""));
+			       (IPTR) (parsedver.pv_datestr ? (IPTR)parsedver.pv_datestr : (IPTR)""),
+			       (IPTR) (parsedver.pv_extralf ? (IPTR)parsedver.pv_extralf : (IPTR)"\n"),
+			       (IPTR) (parsedver.pv_extrastr ? (IPTR)parsedver.pv_extrastr : (IPTR)""));
 		}
 		else
 		{
