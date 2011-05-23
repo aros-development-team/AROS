@@ -102,12 +102,11 @@ rom_init:
 	bsr		.L_memtest
 	beq	chipfault
 
-	/* adjust to skip the combined system stack and bss
+	/* Adjust to skip the first 4K bytes of
+	 * Chip RAM. It's reserved for the Trap area.
 	 */
-	lea.l	_bss_end,%a0
-	move.l	%a0,%a5@(-8)
-	move.l	%a0,%d0
-	sub.l	%d0,%a5@(-4)
+	move.l	#0x1000,%a5@(-8)
+	sub.l	#0x1000,%a5@(-4)
 
 	/* end of memory region list */
 	clr.l	%a5@+

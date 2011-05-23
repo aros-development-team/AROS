@@ -52,7 +52,23 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 FILES=start early debug
 AFILES=rom_entry rom_init superstack_swap
 
-ROMLOC_bss := 0x0001000  # Sadly, we need to consume Chip RAM for the ROM BSS.
+# Sadly, we need to consume Chip RAM for the initial SS and the ROM BSS.
+# The initial System Stack is located at 0x800-0x1000, but is only
+# used until RTF_COLDSTART.
+#
+# Right before RTF_COLDSTART, a new SS will be allocated from the fastest
+# available RAM, and this 0x800-0x1000 area will be ignored.
+ROMLOC_ss  := 0x0000800
+
+# The BSS should be located as close as possible to the start of
+# MEMF_CHIP memory for the in-ROM version, to maximize the 
+# contigous available memory.
+#
+# This turns out to be:
+#
+# ChipRamStart + sizeof(MemHeader) + sizeof(MemChunk)
+#       0x1000 +       0x20        +      0x8
+ROMLOC_bss := 0x0001028
 
 ROMLOC_rom := 0x0f80000
 
@@ -133,6 +149,7 @@ $(DISTDIR)/aros-amiga-m68k.elf: $(DISTDIR)/aros-amiga-m68k-reloc.elf
 	$(Q)$(KERNEL_LD) -o $@ \
 	    --section-start .rom=$(ROMLOC_rom) \
 	    --section-start .ext=$(ROMLOC_ext) \
+	    --section-start .ss=$(ROMLOC_ss) \
 	    --section-start .bss=$(ROMLOC_bss) \
 	    $<
 

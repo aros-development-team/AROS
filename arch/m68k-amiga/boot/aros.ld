@@ -16,12 +16,23 @@ INCLUDE ../../../bin/amiga-m68k/gen/rom_objs.ld
                                   *(.eh_frame)
                                   _rom_end = .;   
                                 } >valid
-  .bss                        : { _ss = .;
+  /* SS, typically at 0x800-0x1000. Since MEMF_CHIP RAM starts at
+   * 0x1000, this is a good place for it. Only used until after
+   * all expansion ROMs have been run, at which point we'll allocate
+   * a faster location for it.
+   */
+  .ss                         : {
+                                  _ss = .;
                                   . = . + 0x800;
                                   _ss_end = .;
+                                 } >valid
+
+  /* BSS, typically at 0x2000 */
+  .bss                        : {
                                   _bss = .;
                                   *(.bss)
-                                  _bss_end = ALIGN(.,32);        } >valid
+                                  _bss_end = .;
+                                 } >valid
 
   /* This should cause angry complaints if .data exists
    * We don't want .data, and we don't need it.
