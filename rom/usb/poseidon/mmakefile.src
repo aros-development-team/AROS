@@ -24,7 +24,7 @@ USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 %build_module mmake=kernel-usb-poseidon \
     modname=poseidon modtype=library \
     files="$(FUNCS) $(FILES)" \
-    uselibs="amiga rom"
+    uselibs="amiga rom debug"
 
 
 %build_progs mmake=kernel-usb-shelltools \

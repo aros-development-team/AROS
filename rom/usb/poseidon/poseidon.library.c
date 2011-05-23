@@ -69,7 +69,7 @@ const char GM_UNIQUENAME(libname)[]     = MOD_NAME_STRING;
 /* LibInit */
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR ps)
 {
-    KPRINTF(10, ("libInit ps: 0x%08lx SysBase: 0x%08lx\n",
+    KPRINTF(10, ("libInit ps: 0x%p SysBase: 0x%p\n",
                  ps, SysBase));
 
     ps->ps_StackInit = FALSE;
@@ -141,7 +141,7 @@ static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
 {
     struct PsdIFFContext *pic;
 
-    KPRINTF(10, ("libOpen ps: 0x%08lx\n", ps));
+    KPRINTF(10, ("libOpen ps: 0x%p\n", ps));
     ObtainSemaphore(&ps->ps_ReentrantLock);
     if(!ps->ps_StackInit)
     {
@@ -199,7 +199,7 @@ static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
                     if(tmpstr)
                     {
                         tmpstr[strlen(tmpstr)-2] = 0;
-                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Welcome to %s (%08lx)!", tmpstr, ps->ps_ReleaseVersion);
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Welcome to %s (%p)!", tmpstr, ps->ps_ReleaseVersion);
                         psdFreeVec(tmpstr);
                     } else {
                         psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Welcome to %s", VERSION_STRING);
@@ -234,7 +234,7 @@ int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR ps)
     struct PsdUsbClass *puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
     struct PsdErrorMsg *pem = (struct PsdErrorMsg *) ps->ps_ErrorMsgs.lh_Head;
     struct PsdIFFContext *pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
-    KPRINTF(10, ("libExpunge ps: 0x%08lx\n", ps));
+    KPRINTF(10, ("libExpunge ps: 0x%p\n", ps));
     while(phw->phw_Node.ln_Succ)
     {
         psdRemHardware(phw);
@@ -289,13 +289,13 @@ int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR ps)
     DeletePool(ps->ps_SemaMemPool);
     DeletePool(ps->ps_MemPool);
 
-    KPRINTF(1, ("libExpunge: closelibrary utilitybase 0x%08lx\n",
+    KPRINTF(1, ("libExpunge: closelibrary utilitybase 0x%p\n",
                 UtilityBase));
     CloseLibrary((struct Library *) UtilityBase);
 
     CloseLibrary(DOSBase);
 
-    KPRINTF(1, ("libExpunge: removing library node 0x%08lx\n",
+    KPRINTF(1, ("libExpunge: removing library node 0x%p\n",
                 &ps->ps_Library.lib_Node));
     Remove(&ps->ps_Library.lib_Node);
 
@@ -357,7 +357,7 @@ AROS_LH1(void, psdFreeVec,
     AROS_LIBFUNC_INIT
     ULONG size;
 
-    KPRINTF(1, ("psdFreeVec(%08lx)\n", pmem));
+    KPRINTF(1, ("psdFreeVec(%p)\n", pmem));
     if(pmem)
     {
         size = ((ULONG *) pmem)[-1];
@@ -380,7 +380,7 @@ void pDebugSemaInfo(LIBBASETYPEPTR ps, struct PsdSemaInfo *psi)
 {
     struct PsdReadLock *prl;
     psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                   "Semaphore %08lx %s (Excl/SharedLockCount %ld/%ld) (Owner: %s):",
+                   "Semaphore %p %s (Excl/SharedLockCount %ld/%ld) (Owner: %s):",
                    psi->psi_LockSem,
                    psi->psi_LockSem->pls_Node.ln_Name,
                    psi->psi_LockSem->pls_ExclLockCount,
@@ -391,7 +391,7 @@ void pDebugSemaInfo(LIBBASETYPEPTR ps, struct PsdSemaInfo *psi)
     while(prl->prl_Node.ln_Succ)
     {
         psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                           "  Waiting Task: %08lx (%s) %s",
+                           "  Waiting Task: %p (%s) %s",
                            prl->prl_Task, prl->prl_Task->tc_Node.ln_Name,
                            prl->prl_IsExcl ? "Excl" : "Shared");
         prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
@@ -400,7 +400,7 @@ void pDebugSemaInfo(LIBBASETYPEPTR ps, struct PsdSemaInfo *psi)
     while(prl->prl_Node.ln_Succ)
     {
         psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                       "  Readlock Task: %08lx (%s), Count %ld",
+                       "  Readlock Task: %p (%s), Count %ld",
                        prl->prl_Task, prl->prl_Task->tc_Node.ln_Name,
                        prl->prl_Count);
         prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
@@ -488,7 +488,7 @@ void pLockSemExcl(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
             // sole readlock promotion case
             if((pls->pls_SharedLockCount == 1) && ((struct PsdReadLock *) pls->pls_ReadLocks.lh_Head)->prl_Task == thistask)
             {
-                KPRINTF(1, ("Promoting read lock (%08lx) to write lock!\n", thistask));
+                KPRINTF(1, ("Promoting read lock (%p) to write lock!\n", thistask));
                 break;
             }
         }
@@ -529,7 +529,7 @@ void pLockSemShared(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
     {
         if(prl->prl_Task == thistask)
         {
-            KPRINTF(1, ("Increasing ReadLock (%08lx) count to %ld\n", thistask, prl->prl_Count));
+            KPRINTF(1, ("Increasing ReadLock (%p) count to %ld\n", thistask, prl->prl_Count));
             prl->prl_Count++;
             Permit();
             return;
@@ -540,14 +540,14 @@ void pLockSemShared(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
     // this is a new readlock, generate context
     if(!(prl = (struct PsdReadLock *) AllocPooled(ps->ps_SemaMemPool, sizeof(struct PsdReadLock))))
     {
-        KPRINTF(20, ("No mem for shared lock! context (%08lx) on %08lx\n", thistask, pls));
+        KPRINTF(20, ("No mem for shared lock! context (%p) on %p\n", thistask, pls));
         // try exclusive lock as fallback (needs no memory)
         Permit();
         pLockSemExcl(ps, pls);
         return;
     }
 
-    KPRINTF(1, ("New ReadLockShared context (%08lx) on %08lx\n", thistask, pls));
+    KPRINTF(1, ("New ReadLockShared context (%p) on %p\n", thistask, pls));
     prl->prl_Task = thistask;
     prl->prl_Count = 0;
     prl->prl_IsExcl = FALSE;
@@ -596,7 +596,7 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
             Permit();
             psdDebugSemaphores();
             psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Attempt to unlock exclusive semaphore %08lx not owned by task %s!",
+                           "Attempt to unlock exclusive semaphore %p not owned by task %s!",
                            pls, thistask->tc_Node.ln_Name);
             return;
 
@@ -615,7 +615,7 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
             Permit();
             psdDebugSemaphores();
             psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Attempt to unlock (free) semaphore %08lx once too often by task %s!",
+                           "Attempt to unlock (free) semaphore %p once too often by task %s!",
                            pls, thistask->tc_Node.ln_Name);
             return;
         }
@@ -632,7 +632,7 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
                     return;
                 }
                 // remove read lock, it's no longer needed
-                KPRINTF(1, ("Removing read lock context (%08lx) on %08lx!\n", thistask, pls));
+                KPRINTF(1, ("Removing read lock context (%p) on %p!\n", thistask, pls));
                 Remove(&prl->prl_Node);
                 FreePooled(ps->ps_SemaMemPool, prl, sizeof(struct PsdReadLock));
                 gotit = TRUE;
@@ -647,7 +647,7 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
             Permit();
             psdDebugSemaphores();
             psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Attempt to unlock (shared) semaphore %08lx once too often by task %s!",
+                           "Attempt to unlock (shared) semaphore %p once too often by task %s!",
                            pls, thistask->tc_Node.ln_Name);
             return;
         }
@@ -677,7 +677,7 @@ AROS_LH0(void, psdDebugSemaphores,
     struct PsdSemaInfo *psi;
 
     psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                   "Debug Semaphores (%08lx)", thistask);
+                   "Debug Semaphores (%p)", thistask);
 
     Forbid();
     // search for context
@@ -697,7 +697,7 @@ AROS_LH0(void, psdLockReadPBase,
          LIBBASETYPEPTR, ps, 8, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(2, ("psdLockReadPBase(%08lx)\n", FindTask(NULL)));
+    KPRINTF(2, ("psdLockReadPBase(%p)\n", FindTask(NULL)));
     pLockSemShared(ps, &ps->ps_Lock);
     AROS_LIBFUNC_EXIT
 }
@@ -708,7 +708,7 @@ AROS_LH0(void, psdLockWritePBase,
          LIBBASETYPEPTR, ps, 7, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(2, ("psdLockWritePBase(%08lx)\n", FindTask(NULL)));
+    KPRINTF(2, ("psdLockWritePBase(%p)\n", FindTask(NULL)));
     pLockSemExcl(ps, &ps->ps_Lock);
     AROS_LIBFUNC_EXIT
 }
@@ -719,7 +719,7 @@ AROS_LH0(void, psdUnlockPBase,
          LIBBASETYPEPTR, ps, 9, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(2, ("psdUnlockPBase(%08lx)\n", FindTask(NULL)));
+    KPRINTF(2, ("psdUnlockPBase(%p)\n", FindTask(NULL)));
     pUnlockSem(ps, &ps->ps_Lock);
     AROS_LIBFUNC_EXIT
 }
@@ -743,7 +743,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
     struct List reclaims;
     BOOL moveowner;
 
-    XPRINTF(10, ("Borrowing locks from %08lx (%s) to %08lx (%s)!\n",
+    XPRINTF(10, ("Borrowing locks from %p (%s) to %p (%s)!\n",
                   thistask, thistask->tc_Node.ln_Name, task, task->tc_Node.ln_Name));
 
     Forbid();
@@ -818,7 +818,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                         pls->pls_ExclLockCount = 0;
                         pls->pls_Owner = NULL;
                         Signal(task, SIGF_SINGLE);
-                        XPRINTF(10, ("Waiting lock %08lx transfer\n", pls));
+                        XPRINTF(10, ("Waiting lock %p transfer\n", pls));
                     }
                     moveowner = FALSE;
                     break;
@@ -833,7 +833,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                     pbl->pbl_ExclLockCount = pls->pls_ExclLockCount;
                     AddTail(&borrows, &pbl->pbl_Node);
                     pls->pls_Owner = task;
-                    XPRINTF(10, ("Lock %08lx transfer\n", pls));
+                    XPRINTF(10, ("Lock %p transfer\n", pls));
                 }
             }
         }
@@ -867,7 +867,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                                 Signal(task, SIGF_SINGLE);
                             }
                             moveowner = FALSE;
-                            XPRINTF(10, ("Waiting shared lock %08lx transfer\n", pls));
+                            XPRINTF(10, ("Waiting shared lock %p transfer\n", pls));
                             break;
                         }
                         prl2 = (struct PsdReadLock *) prl2->prl_Node.ln_Succ;
@@ -895,7 +895,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                                     // just increase lockcount, so a split occurs automatically
                                     prl2->prl_Count += pbl->pbl_Count;
                                 }
-                                XPRINTF(10, ("Already locked %08lx transfer\n", pls));
+                                XPRINTF(10, ("Already locked %p transfer\n", pls));
                                 moveowner = FALSE;
                                 break;
                             }
@@ -910,7 +910,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                             pbl->pbl_Count = prl->prl_Count;
                             AddTail(&borrows, &pbl->pbl_Node);
                             prl->prl_Task = task;
-                            XPRINTF(10, ("Std lock %08lx transfer\n", pls));
+                            XPRINTF(10, ("Std lock %p transfer\n", pls));
                         }
                     }
                     break;
@@ -1128,7 +1128,7 @@ AROS_LH3(LONG, psdGetAttrsA,
     ULONG count = 0;
     ULONG *packtab = NULL;
 
-    KPRINTF(1, ("psdGetAttrsA(%ld, %08lx, %08lx)\n", type, psdstruct, tags));
+    KPRINTF(1, ("psdGetAttrsA(%ld, %p, %p)\n", type, psdstruct, tags));
 
     if(type <= PGA_LAST)
     {
@@ -1253,7 +1253,7 @@ AROS_LH3(LONG, psdSetAttrsA,
     BOOL powercalc = FALSE;
     LONG res;
 
-    KPRINTF(1, ("psdSetAttrsA(%ld, %08lx, %08lx)\n", type, psdstruct, tags));
+    KPRINTF(1, ("psdSetAttrsA(%ld, %p, %p)\n", type, psdstruct, tags));
 
     if(type <= PGA_LAST)
     {
@@ -1513,7 +1513,7 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
     KPRINTF(1, ("TDNestCnt=%ld\n", SysBase->TDNestCnt));
     if((nt = AddTask(nt, initpc, NULL)))
     {
-        XPRINTF(10, ("Started task %08lx (%s)\n", nt, name));
+        XPRINTF(10, ("Started task %p (%s)\n", nt, name));
         return(nt);
     }
     FreeEntry(newmemlist);
@@ -1725,7 +1725,7 @@ AROS_LH3(struct PsdEndpoint *, psdFindEndpointA,
     struct TagItem *ti;
     BOOL takeit;
 
-    KPRINTF(2, ("psdFindEndpointA(%08lx, %08lx, %08lx)\n", pif, pep, tags));
+    KPRINTF(2, ("psdFindEndpointA(%p, %p, %p)\n", pif, pep, tags));
     if(!pep)
     {
         pep = (struct PsdEndpoint *) pif->pif_EPs.lh_Head;
@@ -1842,7 +1842,7 @@ AROS_LH3(struct PsdInterface *, psdFindInterfaceA,
     BOOL isalt = FALSE;
     struct PsdInterface *oldpif = NULL;
 
-    KPRINTF(2, ("psdFindInterfaceA(%08lx, %08lx, %08lx)\n", pd, pif, tags));
+    KPRINTF(2, ("psdFindInterfaceA(%p, %p, %p)\n", pd, pif, tags));
     if(!pif)
     {
         pc = pd->pd_CurrentConfig;
@@ -2076,7 +2076,7 @@ AROS_LH3(struct PsdDescriptor *, psdFindDescriptorA,
     struct TagItem *ti;
     BOOL takeit;
 
-    KPRINTF(2, ("psdFindDescriptorA(%08lx, %08lx, %08lx)\n", pd, pdd, tags));
+    KPRINTF(2, ("psdFindDescriptorA(%p, %p, %p)\n", pd, pdd, tags));
     if(!pdd)
     {
         pdd = (struct PsdDescriptor *) pd->pd_Descriptors.lh_Head;
@@ -2157,7 +2157,7 @@ void pFreeBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
     struct PsdHardware *phw = pd->pd_Hardware;
     struct PsdConfig *pc;
     struct PsdInterface *pif;
-    KPRINTF(3, (" FreeBindings(%08lx)\n", pd));
+    KPRINTF(3, (" FreeBindings(%p)\n", pd));
 
     /* move device to list of dead devices first
        This caused a lot of trouble as it could
@@ -2261,7 +2261,7 @@ AROS_LH1(void, psdFreeDevice,
     struct PsdRTIsoHandler *prt;
     struct PsdRTIsoHandler *nextprt;
 
-    KPRINTF(3, (" FreeDevice(%08lx)\n", pd));
+    KPRINTF(3, (" FreeDevice(%p)\n", pd));
 
     /* move device to list of dead devices first
        This caused a lot of trouble as it could
@@ -2314,7 +2314,7 @@ AROS_LH1(struct PsdDevice *, psdAllocDevice,
 {
     AROS_LIBFUNC_INIT
     struct PsdDevice *pd;
-    KPRINTF(2, ("psdAllocDevice(%08lx)\n", phw));
+    KPRINTF(2, ("psdAllocDevice(%p)\n", phw));
     if((pd = psdAllocVec(sizeof(struct PsdDevice))))
     {
         pd->pd_Hardware = phw;
@@ -2352,7 +2352,7 @@ AROS_LH1(void, psdLockReadDevice,
          LIBBASETYPEPTR, ps, 17, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(2, ("psdLockReadDevice(%08lx, %08lx)\n", pd, FindTask(NULL)));
+    KPRINTF(2, ("psdLockReadDevice(%p, %p)\n", pd, FindTask(NULL)));
     pLockSemShared(ps, &pd->pd_Lock);
     AROS_LIBFUNC_EXIT
 }
@@ -2364,7 +2364,7 @@ AROS_LH1(void, psdLockWriteDevice,
          LIBBASETYPEPTR, ps, 18, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(2, ("psdLockWriteDevice(%08lx, %08lx)\n", pd, FindTask(NULL)));
+    KPRINTF(2, ("psdLockWriteDevice(%p, %p)\n", pd, FindTask(NULL)));
     pLockSemExcl(ps, &pd->pd_Lock);
     AROS_LIBFUNC_EXIT
 }
@@ -2376,7 +2376,7 @@ AROS_LH1(void, psdUnlockDevice,
          LIBBASETYPEPTR, ps, 19, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(2, ("psdUnlockDevice(%08lx, %08lx)\n", pd, FindTask(NULL)));
+    KPRINTF(2, ("psdUnlockDevice(%p, %p)\n", pd, FindTask(NULL)));
     pUnlockSem(ps, &pd->pd_Lock);
     AROS_LIBFUNC_EXIT
 }
@@ -2420,7 +2420,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
     STRPTR cbuf;
     LONG ioerr;
     UWORD widechar;
-    KPRINTF(1, ("psdGetStringDescriptor(%08lx, %ld)\n", pp, idx));
+    KPRINTF(1, ("psdGetStringDescriptor(%p, %ld)\n", pp, idx));
 
     buf[0] = 0;
     if(!pd->pd_LangIDArray)
@@ -2874,7 +2874,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     ULONG *chnk;
     UBYTE dummybuf[8];
 
-    KPRINTF(2, ("psdEnumerateDevice(%08lx)\n", pp));
+    KPRINTF(2, ("psdEnumerateDevice(%p)\n", pp));
 
     psdLockWriteDevice(pd);
     if(pAllocDevAddr(pd))
@@ -3197,7 +3197,7 @@ AROS_LH1(struct PsdDevice *, psdGetNextDevice,
     AROS_LIBFUNC_INIT
     struct PsdHardware *phw;
 
-    KPRINTF(1, ("psdGetNextDevice(%08lx)\n", pd));
+    KPRINTF(1, ("psdGetNextDevice(%p)\n", pd));
     if(pd)
     {
         /* Is there another device node in the current hardware? */
@@ -3240,7 +3240,7 @@ AROS_LH1(BOOL, psdSuspendBindings,
     IPTR suspendable;
     BOOL force = FALSE;
 
-    KPRINTF(5, ("psdSuspendBindings(%08lx)\n", pd));
+    KPRINTF(5, ("psdSuspendBindings(%p)\n", pd));
     if(pd)
     {
         if(ps->ps_GlobalCfg->pgc_ForceSuspend && (pd->pd_CurrentConfig->pc_Attr & USCAF_REMOTE_WAKEUP))
@@ -3359,7 +3359,7 @@ AROS_LH1(BOOL, psdSuspendDevice,
     APTR binding;
     BOOL res = FALSE;
 
-    KPRINTF(5, ("psdSuspendDevice(%08lx)\n", pd));
+    KPRINTF(5, ("psdSuspendDevice(%p)\n", pd));
     if(pd)
     {
         if(pd->pd_Flags & PDFF_SUSPENDED)
@@ -3411,7 +3411,7 @@ AROS_LH1(BOOL, psdResumeBindings,
     BOOL res = FALSE;
     BOOL rescan = FALSE;
 
-    KPRINTF(5, ("psdResumeBindings(%08lx)\n", pd));
+    KPRINTF(5, ("psdResumeBindings(%p)\n", pd));
     if(pd)
     {
         // ask existing bindings to resume -- if they don't support it, rebind
@@ -3472,7 +3472,7 @@ AROS_LH1(BOOL, psdResumeDevice,
     APTR binding;
     BOOL res = FALSE;
 
-    KPRINTF(5, ("psdResumeDevice(%08lx)\n", pd));
+    KPRINTF(5, ("psdResumeDevice(%p)\n", pd));
     if(pd)
     {
         if(!(pd->pd_Flags & PDFF_SUSPENDED))
@@ -3513,7 +3513,7 @@ AROS_LH2(struct PsdDevice *, psdFindDeviceA,
     AROS_LIBFUNC_INIT
     struct TagItem *ti;
     BOOL takeit;
-    KPRINTF(2, ("psdFindDeviceA(%08lx, %08lx)\n", pd, tags));
+    KPRINTF(2, ("psdFindDeviceA(%p, %p)\n", pd, tags));
     while((pd = psdGetNextDevice(pd)))
     {
         takeit = TRUE;
@@ -3654,7 +3654,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
     struct PsdDevice *pd = NULL;
     struct PsdPipe *pp;
     struct MsgPort *mp;
-    KPRINTF(2, ("psdEnumerateHardware(%08lx)\n", phw));
+    KPRINTF(2, ("psdEnumerateHardware(%p)\n", phw));
 
     if((mp = CreateMsgPort()))
     {
@@ -3705,7 +3705,7 @@ AROS_LH1(void, psdRemHardware,
     struct PsdDevice *pd;
     ULONG cnt;
 
-    KPRINTF(5, ("FreeHardware(%08lx)\n", phw));
+    KPRINTF(5, ("FreeHardware(%p)\n", phw));
 
     pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
     while(pd->pd_Node.ln_Succ)
@@ -3759,7 +3759,7 @@ AROS_LH1(void, psdRemHardware,
         Wait(1L<<phw->phw_ReadySignal);
     }
     //FreeSignal(phw->phw_ReadySignal);
-    KPRINTF(1, ("FreeHardware(%08lx) freevec name\n", phw));
+    KPRINTF(1, ("FreeHardware(%p) freevec name\n", phw));
     psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                    "Removed hardware %s/%ld. Bye bye!",
                    phw->phw_DevName, phw->phw_Unit);
@@ -3770,7 +3770,7 @@ AROS_LH1(void, psdRemHardware,
     psdFreeVec(phw->phw_Copyright);
     psdFreeVec(phw);
     psdSendEvent(EHMB_REMHARDWARE, phw, NULL);
-    KPRINTF(1, ("FreeHardware(%08lx) done\n", phw));
+    KPRINTF(1, ("FreeHardware(%p) done\n", phw));
     AROS_LIBFUNC_EXIT
 }
 /* \\\ */
@@ -3878,7 +3878,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
     struct PsdPipe *pp;
     struct PsdDevice *hubpd;
 
-    KPRINTF(2, ("psdAllocPipe(%08lx, %08lx, %08lx)\n", pd, mp, pep));
+    KPRINTF(2, ("psdAllocPipe(%p, %p, %p)\n", pd, mp, pep));
     if(!mp || !pd)
     {
         return(NULL);
@@ -3998,7 +3998,7 @@ AROS_LH1(void, psdFreePipe,
     {
         return;
     }
-    KPRINTF(2, ("psdFreePipe(%08lx)\n", pp));
+    KPRINTF(2, ("psdFreePipe(%p)\n", pp));
     pd = pp->pp_Device;
 
     if(pp->pp_Msg.mn_Node.ln_Type == NT_MESSAGE)
@@ -4033,7 +4033,7 @@ AROS_LH5(void, psdPipeSetup,
     AROS_LIBFUNC_INIT
     struct UsbSetupData *usd = &pp->pp_IOReq.iouh_SetupData;
 
-    KPRINTF(1, ("psdSetupPipe(%08lx, (%02lx %02lx %04lx %04lx))\n",
+    KPRINTF(1, ("psdSetupPipe(%p, (%02lx %02lx %04lx %04lx))\n",
                 pp, rt, rq, val, idx));
     usd->bmRequestType = rt;
     usd->bRequest = rq;
@@ -4052,7 +4052,7 @@ AROS_LH3(LONG, psdDoPipe,
 {
     AROS_LIBFUNC_INIT
     struct PsdDevice *pd = pp->pp_Device;
-    KPRINTF(200, ("psdDoPipe(%08lx, %08lx, %ld)\n", pp, data, len));
+    KPRINTF(200, ("psdDoPipe(%p, %p, %ld)\n", pp, data, len));
 
     if(pd->pd_Flags & PDFF_CONNECTED)
     {
@@ -4091,7 +4091,7 @@ AROS_LH3(void, psdSendPipe,
 {
     AROS_LIBFUNC_INIT
     struct PsdDevice *pd = pp->pp_Device;
-    KPRINTF(200, ("psdSendPipe(%08lx, %08lx, %ld)\n", pp, data, len));
+    KPRINTF(200, ("psdSendPipe(%p, %p, %ld)\n", pp, data, len));
     if(pd->pd_Flags & PDFF_CONNECTED)
     {
         if(pd->pd_Flags & PDFF_SUSPENDED)
@@ -4129,7 +4129,7 @@ AROS_LH1(void, psdAbortPipe,
     AROS_LIBFUNC_INIT
     struct PsdPipe *npp;
 
-    KPRINTF(5, ("psdAbortPipe(%08lx)\n", pp));
+    KPRINTF(5, ("psdAbortPipe(%p)\n", pp));
     if(pp->pp_Msg.mn_Node.ln_Type != NT_MESSAGE)
     {
         KPRINTF(5, ("Nothing to abort %02lx\n", pp->pp_IOReq.iouh_Req.io_Message.mn_Node.ln_Type));
@@ -4160,12 +4160,12 @@ AROS_LH1(LONG, psdWaitPipe,
     ULONG sigs = 0;
     struct PsdDevice *pd = pp->pp_Device;
     LONG ioerr;
-    KPRINTF(5, ("psdWaitPipe(%08lx)\n", pp));
+    KPRINTF(5, ("psdWaitPipe(%p)\n", pp));
     while(pp->pp_Msg.mn_Node.ln_Type == NT_MESSAGE)
     {
         KPRINTF(5, ("ln_Type = %02lx\n", pp->pp_Msg.mn_Node.ln_Type));
         sigs |= Wait(1L<<pp->pp_MsgPort->mp_SigBit);
-        KPRINTF(5, ("sigs = %08lx\n", sigs));
+        KPRINTF(5, ("sigs = %p\n", sigs));
     }
 #if 1 // broken?
     Forbid();
@@ -4207,7 +4207,7 @@ AROS_LH1(LONG, psdWaitPipe,
                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);*/
            }
     }
-    KPRINTF(200, ("psdWaitPipe(%08lx)=%ld\n", pp, ioerr));
+    KPRINTF(200, ("psdWaitPipe(%p)=%ld\n", pp, ioerr));
     --pd->pd_IOBusyCount;
     GetSysTime((APTR) &pd->pd_LastActivity);
 
@@ -4240,7 +4240,7 @@ AROS_LH1(struct PsdPipe *, psdCheckPipe,
          LIBBASETYPEPTR, ps, 71, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(5, ("psdCheckPipe(%08lx)\n", pp));
+    KPRINTF(5, ("psdCheckPipe(%p)\n", pp));
     if(pp->pp_Msg.mn_Node.ln_Type == NT_MESSAGE)
     {
         return(NULL);
@@ -4256,7 +4256,7 @@ AROS_LH1(ULONG, psdGetPipeActual,
          LIBBASETYPEPTR, ps, 31, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(1, ("psdGetPipeActual(%08lx)\n", pp));
+    KPRINTF(1, ("psdGetPipeActual(%p)\n", pp));
     return(pp->pp_IOReq.iouh_Actual);
     AROS_LIBFUNC_EXIT
 }
@@ -4268,7 +4268,7 @@ AROS_LH1(LONG, psdGetPipeError,
          LIBBASETYPEPTR, ps, 32, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(1, ("psdGetPipeError(%08lx)\n", pp));
+    KPRINTF(1, ("psdGetPipeError(%p)\n", pp));
     return((LONG) pp->pp_IOReq.iouh_Req.io_Error);
     AROS_LIBFUNC_EXIT
 }
@@ -4285,7 +4285,7 @@ AROS_LH2(struct PsdPipeStream *, psdOpenStreamA,
     AROS_LIBFUNC_INIT
     struct PsdPipeStream *pps;
 
-    KPRINTF(2, ("psdOpenStream(%08lx, %08lx)\n", pep, tags));
+    KPRINTF(2, ("psdOpenStream(%p, %p)\n", pep, tags));
     if(!pep)
     {
         return(NULL);
@@ -4333,7 +4333,7 @@ AROS_LH1(void, psdCloseStream,
     struct PsdPipe *pp;
     ULONG cnt;
 
-    KPRINTF(2, ("psdCloseStream(%08lx)\n", pps));
+    KPRINTF(2, ("psdCloseStream(%p)\n", pps));
     if(!pps)
     {
         return;
@@ -4390,7 +4390,7 @@ AROS_LH3(LONG, psdStreamRead,
     ULONG tcnt;
     UBYTE cchar;
 
-    KPRINTF(2, ("psdStreamRead(%08lx, %08lx, %ld)\n", pps, buffer, length));
+    KPRINTF(2, ("psdStreamRead(%p, %p, %ld)\n", pps, buffer, length));
     if(!pps)
     {
         return(-1);
@@ -4415,7 +4415,7 @@ AROS_LH3(LONG, psdStreamRead,
                 /* check for incoming packets */
                 while((pp = (struct PsdPipe *) GetMsg(pps->pps_MsgPort)))
                 {
-                    KPRINTF(1, ("PktBack(%08lx, %08lx, %ld/%ld)=%ld\n",
+                    KPRINTF(1, ("PktBack(%p, %p, %ld/%ld)=%ld\n",
                             pp, pp->pp_IOReq.iouh_Data, pp->pp_IOReq.iouh_Actual,
                             pp->pp_IOReq.iouh_Length, pp->pp_IOReq.iouh_Req.io_Error));
 
@@ -4469,20 +4469,20 @@ AROS_LH3(LONG, psdStreamRead,
                     remlen = pp->pp_IOReq.iouh_Actual - pps->pps_Offset;
                     if(length < remlen)
                     {
-                        KPRINTF(1, ("PktBit(%08lx, %08lx, %ld)\n", pp, buffer, length));
+                        KPRINTF(1, ("PktBit(%p, %p, %ld)\n", pp, buffer, length));
                         remlen = length;
                     } else {
-                        KPRINTF(1, ("PktRem(%08lx, %08lx, %ld)\n", pp, buffer, remlen));
+                        KPRINTF(1, ("PktRem(%p, %p, %ld)\n", pp, buffer, remlen));
                     }
                     /* copy packet */
                     if(pp->pp_Flags & PFF_INPLACE)
                     {
-                        KPRINTF(1, ("PktRemIP(%08lx, %08lx, %ld)\n", pp, buffer, remlen));
+                        KPRINTF(1, ("PktRemIP(%p, %p, %ld)\n", pp, buffer, remlen));
                     } else {
                         if(pps->pps_TermArray)
                         {
                             /* EOF Mode */
-                            KPRINTF(1, ("PktCpyEOF(%08lx, %08lx, %ld)\n", pp, buffer, remlen));
+                            KPRINTF(1, ("PktCpyEOF(%p, %p, %ld)\n", pp, buffer, remlen));
                             bufptr = buffer;
                             srcptr = &(((UBYTE *) pp->pp_IOReq.iouh_Data)[pps->pps_Offset]);
                             tarrptr = pps->pps_TermArray;
@@ -4519,7 +4519,7 @@ AROS_LH3(LONG, psdStreamRead,
                                 } while(--cnt);
                             }
                         } else {
-                            KPRINTF(1, ("PktCpy(%08lx, %08lx, %ld)\n", pp, buffer, remlen));
+                            KPRINTF(1, ("PktCpy(%p, %p, %ld)\n", pp, buffer, remlen));
                             /* quick non-eof mode */
                             CopyMem(&(((UBYTE *) pp->pp_IOReq.iouh_Data)[pps->pps_Offset]), buffer, remlen);
                         }
@@ -4557,7 +4557,7 @@ AROS_LH3(LONG, psdStreamRead,
                         pp->pp_Flags |= PFF_INPLACE;
                         Remove(&pp->pp_Msg.mn_Node);
                         remlen = length - (length % pp->pp_IOReq.iouh_MaxPktSize);
-                        KPRINTF(1, ("OutFast(%08lx, %08lx, %ld/%ld)\n",
+                        KPRINTF(1, ("OutFast(%p, %p, %ld/%ld)\n",
                                 pp, buffer, remlen, length));
                         psdSendPipe(pp, buffer, remlen);
                         pps->pps_ReqBytes += remlen;
@@ -4571,11 +4571,11 @@ AROS_LH3(LONG, psdStreamRead,
                     Remove(&pp->pp_Msg.mn_Node);
                     if((pps->pps_Flags & PSFF_READAHEAD) || (remlen % pp->pp_IOReq.iouh_MaxPktSize))
                     {
-                        KPRINTF(1, ("OutSlow(%08lx, %08lx, %ld)\n",
+                        KPRINTF(1, ("OutSlow(%p, %p, %ld)\n",
                                 pp, &pps->pps_Buffer[pp->pp_Num * pps->pps_BufferSize], pps->pps_BufferSize));
                         remlen = pps->pps_BufferSize;
                     } else {
-                        KPRINTF(1, ("OutExact(%08lx, %08lx, %ld)\n",
+                        KPRINTF(1, ("OutExact(%p, %p, %ld)\n",
                                 pp, &pps->pps_Buffer[pp->pp_Num * pps->pps_BufferSize], remlen));
                     }
                     psdSendPipe(pp, &pps->pps_Buffer[pp->pp_Num * pps->pps_BufferSize], remlen);
@@ -4589,9 +4589,9 @@ AROS_LH3(LONG, psdStreamRead,
                 if(!term)
                 {
                     sigmask = (1UL<<pps->pps_MsgPort->mp_SigBit)|pps->pps_AbortSigMask;
-                    KPRINTF(1, ("WaitPort (%08lx)\n", sigmask));
+                    KPRINTF(1, ("WaitPort (%p)\n", sigmask));
                     sigmask = Wait(sigmask);
-                    KPRINTF(1, ("Wait back (%08lx)\n", sigmask));
+                    KPRINTF(1, ("Wait back (%p)\n", sigmask));
                     if(sigmask & pps->pps_AbortSigMask)
                     {
                         KPRINTF(1, ("Aborted!\n"));
@@ -4653,7 +4653,7 @@ AROS_LH3(LONG, psdStreamWrite,
     ULONG tcnt;
     UBYTE cchar;
 
-    KPRINTF(2, ("psdStreamWrite(%08lx, %08lx, %ld)\n", pps, buffer, length));
+    KPRINTF(2, ("psdStreamWrite(%p, %p, %ld)\n", pps, buffer, length));
     if(!pps)
     {
         return(-1);
@@ -4674,7 +4674,7 @@ AROS_LH3(LONG, psdStreamWrite,
     }
     if((tarrptr = pps->pps_TermArray)) /* EOF Mode */
     {
-       KPRINTF(1, ("EOFSearch(%08lx, %ld)\n", buffer, length));
+       KPRINTF(1, ("EOFSearch(%p, %ld)\n", buffer, length));
        srcptr = buffer;
        cnt = length;
        length = 0;
@@ -4729,11 +4729,11 @@ AROS_LH3(LONG, psdStreamWrite,
                             remlen = pps->pps_BytesPending + length;
                             remlen = remlen - (remlen % pp->pp_IOReq.iouh_MaxPktSize);
                             remlen -= pps->pps_BytesPending;
-                            KPRINTF(1, ("PendOptCpy(%08lx, %ld+%ld/%ld)\n", buffer, pps->pps_BytesPending, remlen, length));
+                            KPRINTF(1, ("PendOptCpy(%p, %ld+%ld/%ld)\n", buffer, pps->pps_BytesPending, remlen, length));
                         } else {
                             /* just calculate amount to copy to the next boundary */
                             remlen = pp->pp_IOReq.iouh_MaxPktSize - remlen;
-                            KPRINTF(1, ("PendOneCpy(%08lx, %ld+%ld/%ld)\n", buffer, pps->pps_BytesPending, remlen, length));
+                            KPRINTF(1, ("PendOneCpy(%p, %ld+%ld/%ld)\n", buffer, pps->pps_BytesPending, remlen, length));
                         }
                         CopyMem(buffer, &pps->pps_Buffer[pps->pps_BytesPending], remlen);
                         pps->pps_BytesPending += remlen;
@@ -4741,7 +4741,7 @@ AROS_LH3(LONG, psdStreamWrite,
                         buffer += remlen;
                         length -= remlen;
                     } else {
-                        KPRINTF(1, ("PendAdd(%08lx, %ld+%ld)\n", buffer, pps->pps_BytesPending, length));
+                        KPRINTF(1, ("PendAdd(%p, %ld+%ld)\n", buffer, pps->pps_BytesPending, length));
                         /* only a few bytes, see if we can fit them */
                         CopyMem(buffer, &pps->pps_Buffer[pps->pps_BytesPending], length);
                         pps->pps_BytesPending += length;
@@ -4809,7 +4809,7 @@ AROS_LH3(LONG, psdStreamWrite,
                 if(length >= pp->pp_IOReq.iouh_MaxPktSize)
                 {
                     remlen = length - (length % pp->pp_IOReq.iouh_MaxPktSize);
-                    KPRINTF(1, ("BulkFlush(%08lx, %ld/%ld)\n", buffer, remlen, length));
+                    KPRINTF(1, ("BulkFlush(%p, %ld/%ld)\n", buffer, remlen, length));
                     Remove(&pp->pp_Msg.mn_Node);
                     psdSendPipe(pp, buffer, remlen);
                     pps->pps_ActivePipe = pp;
@@ -4851,7 +4851,7 @@ AROS_LH3(LONG, psdStreamWrite,
                 /* buffer remaining bytes */
                 if(length)
                 {
-                    KPRINTF(1, ("BufAdd(%08lx, %ld)\n", buffer, length));
+                    KPRINTF(1, ("BufAdd(%p, %ld)\n", buffer, length));
                     /* only a few bytes left, so lets buffer them */
                     CopyMem(buffer, &pps->pps_Buffer[pps->pps_BytesPending], length);
                     pps->pps_BytesPending += length;
@@ -4860,7 +4860,7 @@ AROS_LH3(LONG, psdStreamWrite,
             } else {
                 /* plain writing */
                 /* start sending out requests */
-                KPRINTF(1, ("PlainWrite(%08lx, %ld)\n", buffer, length));
+                KPRINTF(1, ("PlainWrite(%p, %ld)\n", buffer, length));
                 Remove(&pp->pp_Msg.mn_Node);
                 psdSendPipe(pp, buffer, length);
                 pps->pps_ActivePipe = pp;
@@ -4915,7 +4915,7 @@ AROS_LH1(LONG, psdStreamFlush,
     LONG ioerr;
     LONG ret = FALSE;
 
-    KPRINTF(2, ("psdStreamFlush(%08lx)\n", pps));
+    KPRINTF(2, ("psdStreamFlush(%p)\n", pps));
     if(!pps)
     {
         return(-1);
@@ -4987,7 +4987,7 @@ AROS_LH1(LONG, psdGetStreamError,
          LIBBASETYPEPTR, ps, 77, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(1, ("psdGetStreamError(%08lx)\n", pps));
+    KPRINTF(1, ("psdGetStreamError(%p)\n", pps));
     if(pps)
     {
         return((LONG) pps->pps_Error);
@@ -5011,7 +5011,7 @@ AROS_LH2(struct PsdRTIsoHandler *, psdAllocRTIsoHandlerA,
     struct PsdPipe *pp;
     LONG ioerr;
 
-    KPRINTF(2, ("psdAllocRTIso(%08lx, %08lx)\n", pep, tags));
+    KPRINTF(2, ("psdAllocRTIso(%p, %p)\n", pep, tags));
     if(!pep)
     {
         return(NULL);
@@ -5230,7 +5230,7 @@ AROS_LH1(void, psdRemClass,
          LIBBASETYPEPTR, ps, 36, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(5, ("psdRemClass(%08lx)\n", puc));
+    KPRINTF(5, ("psdRemClass(%p)\n", puc));
     psdLockWritePBase();
     Remove(&puc->puc_Node);
     psdUnlockPBase();
@@ -5327,7 +5327,7 @@ AROS_LH4(struct PsdErrorMsg *, psdAddErrorMsgA,
             if((pem->pem_Msg = psdCopyStrFmtA(fmtstr, fmtdata)))
             {
 		if (ps->ps_Flags & PSF_KLOG)
-		    kprintf("[%s] %s\n", origin, pem->pem_Msg);
+		    KPrintF("[%s] %s\n", origin, pem->pem_Msg);
 
                 if(pOpenDOS(ps))
                 {
@@ -5426,7 +5426,7 @@ AROS_LH3(LONG, psdDoHubMethodA,
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
-    KPRINTF(2, ("psdDoHubMethodA(%08lx)\n", pd));
+    KPRINTF(2, ("psdDoHubMethodA(%p)\n", pd));
 
     if(pd)
     {
@@ -5459,7 +5459,7 @@ AROS_LH1(struct PsdAppBinding *, psdClaimAppBindingA,
 
     APTR binding;
 
-    KPRINTF(2, ("psdClaimAppBindingA(%08lx)\n", tags));
+    KPRINTF(2, ("psdClaimAppBindingA(%p)\n", tags));
 
     tmppab.pab_Device = NULL;
     tmppab.pab_ReleaseHook = NULL;
@@ -5538,7 +5538,7 @@ AROS_LH1(void, psdReleaseAppBinding,
     struct PsdUsbClass *puc;
     APTR binding;
 
-    KPRINTF(2, ("psdReleaseAppBinding(%08lx)\n", pab));
+    KPRINTF(2, ("psdReleaseAppBinding(%p)\n", pab));
 
     if(pab)
     {
@@ -5568,7 +5568,7 @@ AROS_LH1(void, psdReleaseDevBinding,
     struct PsdDevice *hubpd;
     APTR binding;
 
-    KPRINTF(5, ("psdReleaseDevBinding(%08lx)\n", pd));
+    KPRINTF(5, ("psdReleaseDevBinding(%p)\n", pd));
     if(pd->pd_DevBinding)
     {
         hubpd = pd->pd_Hub;
@@ -5596,7 +5596,7 @@ AROS_LH1(void, psdReleaseIfBinding,
     struct PsdDevice *hubpd;
     APTR binding;
 
-    KPRINTF(5, ("psdReleaseIfBinding(%08lx)\n", pif));
+    KPRINTF(5, ("psdReleaseIfBinding(%p)\n", pif));
     if(pif->pif_IfBinding && pif->pif_ClsBinding)
     {
         hubpd = pif->pif_Config->pc_Device->pd_Hub;
@@ -5972,7 +5972,7 @@ AROS_LH1(struct PsdAppBinding *, psdHubClaimAppBindingA,
     struct PsdInterface *pif;
 
     BOOL hasbinding = FALSE;
-    KPRINTF(2, ("psdHubClaimAppBindingA(%08lx)\n", tags));
+    KPRINTF(2, ("psdHubClaimAppBindingA(%p)\n", tags));
 
     if((pab = psdAllocVec(sizeof(struct PsdAppBinding))))
     {
@@ -6026,7 +6026,7 @@ AROS_LH1(void, psdHubReleaseDevBinding,
     APTR binding;
     struct PsdAppBinding *pab;
 
-    KPRINTF(5, ("psdHubReleaseDevBinding(%08lx)\n", pd));
+    KPRINTF(5, ("psdHubReleaseDevBinding(%p)\n", pd));
     if(pd)
     {
         psdLockWriteDevice(pd);
@@ -6068,7 +6068,7 @@ AROS_LH1(void, psdHubReleaseIfBinding,
     struct PsdDevice *pd;
     APTR binding;
 
-    KPRINTF(5, ("psdHubReleaseIfBinding(%08lx)\n", pif));
+    KPRINTF(5, ("psdHubReleaseIfBinding(%p)\n", pif));
 
     if(pif)
     {
@@ -6103,7 +6103,7 @@ AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
     AROS_LIBFUNC_INIT
     struct PsdEventHook *peh = NULL;
 
-    KPRINTF(5, ("psdAddEventHandler(%08lx, %08lx)\n", mp, msgmask));
+    KPRINTF(5, ("psdAddEventHandler(%p, %p)\n", mp, msgmask));
 
     if(mp)
     {
@@ -6129,7 +6129,7 @@ AROS_LH1(void, psdRemEventHandler,
     AROS_LIBFUNC_INIT
     struct Message *msg;
 
-    KPRINTF(5, ("psdRemEventHandler(%08lx)\n", peh));
+    KPRINTF(5, ("psdRemEventHandler(%p)\n", peh));
     if(!peh)
     {
         return;
@@ -6159,7 +6159,7 @@ AROS_LH3(void, psdSendEvent,
     struct PsdEventHook *peh;
     ULONG msgmask = (1L<<ehmt);
 
-    KPRINTF(1, ("psdSendEvent(%08lx, %08lx, %08lx)\n", ehmt, param1, param2));
+    KPRINTF(1, ("psdSendEvent(%p, %p, %p)\n", ehmt, param1, param2));
 
     pGarbageCollectEvents(ps);
     ObtainSemaphore(&ps->ps_ReentrantLock);
@@ -6199,7 +6199,7 @@ AROS_LH2(BOOL, psdReadCfg,
     ULONG chlen;
     ULONG *buf = formdata;
     BOOL res = TRUE;
-    KPRINTF(10, ("psdReadCfg(%08lx, %08lx)\n", pic, formdata));
+    KPRINTF(10, ("psdReadCfg(%p, %p)\n", pic, formdata));
 
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     if(!pic)
@@ -6377,7 +6377,7 @@ AROS_LH1(APTR, psdWriteCfg,
     ULONG len;
     APTR buf = NULL;
 
-    KPRINTF(10, ("psdWriteCfg(%08lx)\n", pic));
+    KPRINTF(10, ("psdWriteCfg(%p)\n", pic));
 
     pLockSemShared(ps, &ps->ps_ConfigLock);
     if(!pic)
@@ -6411,7 +6411,7 @@ AROS_LH2(struct PsdIFFContext *, psdFindCfgForm,
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *subpic;
 
-    KPRINTF(160, ("psdFindCfgForm(%08lx, %08lx)\n", pic, formid));
+    KPRINTF(160, ("psdFindCfgForm(%p, %p)\n", pic, formid));
     pLockSemShared(ps, &ps->ps_ConfigLock);
     if(!pic)
     {
@@ -6445,7 +6445,7 @@ AROS_LH1(struct PsdIFFContext *, psdNextCfgForm,
 {
     AROS_LIBFUNC_INIT
     ULONG formid;
-    KPRINTF(160, ("psdNextCfgForm(%08lx)\n", pic));
+    KPRINTF(160, ("psdNextCfgForm(%p)\n", pic));
 
     if(!pic)
     {
@@ -6476,7 +6476,7 @@ AROS_LH1(struct PsdIFFContext *, psdAllocCfgForm,
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
-    KPRINTF(10, ("psdAllocCfgForm(%08lx)\n", formid));
+    KPRINTF(10, ("psdAllocCfgForm(%p)\n", formid));
     if((pic = psdAllocVec(sizeof(struct PsdIFFContext))))
     {
         NewList(&pic->pic_SubForms);
@@ -6501,7 +6501,7 @@ AROS_LH1(void, psdRemCfgForm,
          LIBBASETYPEPTR, ps, 56, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(10, ("psdRemCfgForm(%08lx)\n", pic));
+    KPRINTF(10, ("psdRemCfgForm(%p)\n", pic));
 
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     if(!pic)
@@ -6529,7 +6529,7 @@ AROS_LH2(struct PsdIFFContext *, psdAddCfgEntry,
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *res;
 
-    KPRINTF(10, ("psdAddCfgEntry(%08lx, %08lx)\n", pic, formdata));
+    KPRINTF(10, ("psdAddCfgEntry(%p, %p)\n", pic, formdata));
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     if(!pic)
     {
@@ -6557,7 +6557,7 @@ AROS_LH2(BOOL, psdRemCfgChunk,
     AROS_LIBFUNC_INIT
     BOOL res = FALSE;
 
-    KPRINTF(10, ("psdRemCfgChunk(%08lx, %08lx)\n", pic, chnkid));
+    KPRINTF(10, ("psdRemCfgChunk(%p, %p)\n", pic, chnkid));
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     if(!pic)
     {
@@ -6604,7 +6604,7 @@ AROS_LH2(APTR, psdGetCfgChunk,
     ULONG *chnk;
     ULONG *res = NULL;
 
-    KPRINTF(10, ("psdGetCfgChunk(%08lx, %08lx)\n", pic, chnkid));
+    KPRINTF(10, ("psdGetCfgChunk(%p, %p)\n", pic, chnkid));
 
     pLockSemShared(ps, &ps->ps_ConfigLock);
     if(!pic)
@@ -6929,7 +6929,7 @@ AROS_LH2(BOOL, psdSetClsCfg,
     struct PsdIFFContext *pic;
     BOOL result = FALSE;
 
-    KPRINTF(10, ("psdSetClsCfg(%s, %08lx)\n", owner, form));
+    KPRINTF(10, ("psdSetClsCfg(%s, %p)\n", owner, form));
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     pic = psdFindCfgForm(NULL, IFFFORM_CLASSCFG);
     while(pic)
@@ -7035,7 +7035,7 @@ AROS_LH4(BOOL, psdSetUsbDevCfg,
     ULONG ilen = 0;
     BOOL result = FALSE;
 
-    KPRINTF(10, ("psdSetUsbDevCfg(%s, %s, %s, %08lx)\n", owner, devid, ifid, form));
+    KPRINTF(10, ("psdSetUsbDevCfg(%s, %s, %s, %p)\n", owner, devid, ifid, form));
     if(ifid)
     {
         ilen = strlen(ifid);
@@ -7254,7 +7254,7 @@ AROS_LH3(struct PsdIFFContext *, psdGetUsbDevCfg,
         pic = psdNextCfgForm(pic);
     }
     pUnlockSem(ps, &ps->ps_ConfigLock);
-    KPRINTF(1, ("Result %08lx\n", cpic));
+    KPRINTF(1, ("Result %p\n", cpic));
     return(cpic);
     AROS_LIBFUNC_EXIT
 }
@@ -7475,7 +7475,7 @@ AROS_LH3(BOOL, psdAddStringChunk,
 {
     AROS_LIBFUNC_INIT
     BOOL res;
-    KPRINTF(10, ("psdAddStringChunk(%08lx, %08lx, %s)\n", pic, chunkid, str));
+    KPRINTF(10, ("psdAddStringChunk(%p, %p, %s)\n", pic, chunkid, str));
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     res = pAddStringChunk(ps, pic, chunkid, str);
     pUnlockSem(ps, &ps->ps_ConfigLock);
@@ -7493,7 +7493,7 @@ AROS_LH3(BOOL, psdMatchStringChunk,
 {
     AROS_LIBFUNC_INIT
     BOOL res;
-    KPRINTF(10, ("psdMatchStringChunk(%08lx, %08lx, %s)\n", pic, chunkid, str));
+    KPRINTF(10, ("psdMatchStringChunk(%p, %p, %s)\n", pic, chunkid, str));
     pLockSemShared(ps, &ps->ps_ConfigLock);
     res = pMatchStringChunk(ps, pic, chunkid, str);
     pUnlockSem(ps, &ps->ps_ConfigLock);
@@ -7510,7 +7510,7 @@ AROS_LH2(STRPTR, psdGetStringChunk,
 {
     AROS_LIBFUNC_INIT
     STRPTR str;
-    KPRINTF(10, ("psdGetStringChunk(%08lx, %08lx)\n", pic, chunkid));
+    KPRINTF(10, ("psdGetStringChunk(%p, %p)\n", pic, chunkid));
     pLockSemShared(ps, &ps->ps_ConfigLock);
     str = pGetStringChunk(ps, pic, chunkid);
     pUnlockSem(ps, &ps->ps_ConfigLock);
@@ -7525,7 +7525,7 @@ AROS_LH2(STRPTR, psdGetStringChunk,
 struct PsdIFFContext * pAllocForm(LIBBASETYPEPTR ps, struct PsdIFFContext *parent, ULONG formid)
 {
     struct PsdIFFContext *pic;
-    KPRINTF(10, ("pAllocForm(%08lx, %08lx)\n", parent, formid));
+    KPRINTF(10, ("pAllocForm(%p, %p)\n", parent, formid));
     if((pic = psdAllocVec(sizeof(struct PsdIFFContext))))
     {
         NewList(&pic->pic_SubForms);
@@ -7552,7 +7552,7 @@ struct PsdIFFContext * pAllocForm(LIBBASETYPEPTR ps, struct PsdIFFContext *paren
 void pFreeForm(LIBBASETYPEPTR ps, struct PsdIFFContext *pic)
 {
     struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
-    KPRINTF(10, ("pFreeForm(%08lx)\n", pic));
+    KPRINTF(10, ("pFreeForm(%p)\n", pic));
     Remove(&pic->pic_Node);
     while(subpic->pic_Node.ln_Succ)
     {
@@ -7569,7 +7569,7 @@ ULONG pGetFormLength(struct PsdIFFContext *pic)
 {
     ULONG len = (5 + pic->pic_ChunksLen) & ~1UL;
     struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
-    //KPRINTF(10, ("pGetFormLength(%08lx)\n", pic));
+    //KPRINTF(10, ("pGetFormLength(%p)\n", pic));
     while(subpic->pic_Node.ln_Succ)
     {
         len += pGetFormLength(subpic);
@@ -7587,13 +7587,13 @@ APTR pFindCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chnkid)
     ULONG *buf = pic->pic_Chunks;
     ULONG len = pic->pic_ChunksLen;
     ULONG chlen;
-    KPRINTF(10, ("pFindCfgChunk(%08lx, %08lx)\n", pic, chnkid));
+    KPRINTF(10, ("pFindCfgChunk(%p, %p)\n", pic, chnkid));
 
     while(len)
     {
         if(AROS_LONG2BE(*buf) == chnkid)
         {
-            KPRINTF(10, ("Found at %08lx\n", buf));
+            KPRINTF(10, ("Found at %p\n", buf));
             return(buf);
         }
         chlen = (AROS_LONG2BE(buf[1]) + 9) & ~1UL;
@@ -7611,7 +7611,7 @@ BOOL pRemCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chnkid)
     ULONG *buf = pic->pic_Chunks;
     ULONG len = pic->pic_ChunksLen;
     ULONG chlen;
-    KPRINTF(10, ("pRemCfgChunk(%08lx, %08lx)\n", pic, chnkid));
+    KPRINTF(10, ("pRemCfgChunk(%p, %p)\n", pic, chnkid));
 
     while(len)
     {
@@ -7643,7 +7643,7 @@ struct PsdIFFContext * pAddCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic
     ULONG *buf = chunk;
     ULONG *newbuf;
     struct PsdIFFContext *subpic;
-    KPRINTF(10, ("pAddCfgChunk(%08lx, %08lx)\n", pic, chunk));
+    KPRINTF(10, ("pAddCfgChunk(%p, %p)\n", pic, chunk));
     if(AROS_LONG2BE(*buf) == ID_FORM)
     {
         buf++;
@@ -7703,7 +7703,7 @@ struct PsdIFFContext * pAddCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic
 ULONG * pInternalWriteForm(struct PsdIFFContext *pic, ULONG *buf)
 {
     struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
-    //KPRINTF(10, ("pInternalWriteForm(%08lx, %08lx)", pic, buf));
+    //KPRINTF(10, ("pInternalWriteForm(%p, %p)", pic, buf));
     *buf++ = AROS_LONG2BE(ID_FORM);
     *buf++ = AROS_LONG2BE(pic->pic_FormLength);
     *buf++ = AROS_LONG2BE(pic->pic_FormID);
@@ -7729,7 +7729,7 @@ ULONG pCalcCfgCRC(struct PsdIFFContext *pic)
     ULONG crc = pic->pic_FormID;
     UWORD *ptr;
 
-    //KPRINTF(10, ("pInternalWriteForm(%08lx, %08lx)", pic, buf));
+    //KPRINTF(10, ("pInternalWriteForm(%p, %p)", pic, buf));
     if(pic->pic_ChunksLen)
     {
         len = pic->pic_ChunksLen>>1;
@@ -8212,7 +8212,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                             case UDT_OTHERSPEED_QUALIFIER:
                             case UDT_INTERFACE_POWER:
                             case UDT_OTG:
-                                //psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Skipping descriptor %02lx (pc=%08lx, pif=%08lx altpif=%08lx).", dbuf[1], pc, pif, altif);
+                                //psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Skipping descriptor %02lx (pc=%p, pif=%p altpif=%p).", dbuf[1], pc, pif, altif);
                                 KPRINTF(1, ("Skipping unknown descriptor %ld.\n", dbuf[1]));
                                 break;
 
@@ -8671,12 +8671,12 @@ AROS_UFH1(void, pQuickForwardRequest,
     {
         if(pp->pp_AbortPipe)
         {
-            KPRINTF(2, ("Abort pipe %08lx\n", pp->pp_AbortPipe));
+            KPRINTF(2, ("Abort pipe %p\n", pp->pp_AbortPipe));
             AbortIO((struct IORequest *) &pp->pp_AbortPipe->pp_IOReq);
             ReplyMsg(&pp->pp_Msg);
-            KPRINTF(2, ("Replying evil pipe %08lx\n", pp));
+            KPRINTF(2, ("Replying evil pipe %p\n", pp));
         } else {
-            KPRINTF(1, ("Forwarding pipe %08lx\n", pp));
+            KPRINTF(1, ("Forwarding pipe %p\n", pp));
             pp->pp_IOReq.iouh_UserData = pp;
             SendIO((struct IORequest *) &pp->pp_IOReq);
             ++phw->phw_MsgCount;
@@ -8696,7 +8696,7 @@ AROS_UFH1(void, pQuickReplyRequest,
 
     while((ioreq = (struct IOUsbHWReq *) RemHead(&msgport->mp_MsgList)))
     {
-        KPRINTF(1, ("Replying pipe %08lx\n", ioreq->iouh_UserData));
+        KPRINTF(1, ("Replying pipe %p\n", ioreq->iouh_UserData));
         ReplyMsg(&((struct PsdPipe *) ioreq->iouh_UserData)->pp_Msg);
         --phw->phw_MsgCount;
     }
@@ -8852,12 +8852,12 @@ AROS_UFH0(void, pDeviceTask)
                 {
                     if(pp->pp_AbortPipe)
                     {
-                        KPRINTF(2, ("Abort pipe %08lx\n", pp->pp_AbortPipe));
+                        KPRINTF(2, ("Abort pipe %p\n", pp->pp_AbortPipe));
                         AbortIO((struct IORequest *) &pp->pp_AbortPipe->pp_IOReq);
                         ReplyMsg(&pp->pp_Msg);
-                        KPRINTF(2, ("Replying evil pipe %08lx\n", pp));
+                        KPRINTF(2, ("Replying evil pipe %p\n", pp));
                     } else {
-                        KPRINTF(1, ("Forwarding pipe %08lx\n", pp));
+                        KPRINTF(1, ("Forwarding pipe %p\n", pp));
                         pp->pp_IOReq.iouh_UserData = pp;
                         SendIO((struct IORequest *) &pp->pp_IOReq);
                         ++phw->phw_MsgCount;
@@ -8865,7 +8865,7 @@ AROS_UFH0(void, pDeviceTask)
                 }
                 while((ioreq = (struct IOUsbHWReq *) GetMsg(&phw->phw_DevMsgPort)))
                 {
-                    KPRINTF(1, ("Replying pipe %08lx\n", ioreq->iouh_UserData));
+                    KPRINTF(1, ("Replying pipe %p\n", ioreq->iouh_UserData));
                     ReplyMsg(&((struct PsdPipe *) ioreq->iouh_UserData)->pp_Msg);
                     --phw->phw_MsgCount;
                 }
@@ -8895,7 +8895,7 @@ AROS_UFH0(void, pDeviceTask)
                 }
                 while((ioreq = (struct IOUsbHWReq *) GetMsg(&phw->phw_DevMsgPort)))
                 {
-                    KPRINTF(1, ("Replying pipe %08lx\n", ioreq->iouh_UserData));
+                    KPRINTF(1, ("Replying pipe %p\n", ioreq->iouh_UserData));
                     ReplyMsg(&((struct PsdPipe *) ioreq->iouh_UserData)->pp_Msg);
                     --phw->phw_MsgCount;
                 }
