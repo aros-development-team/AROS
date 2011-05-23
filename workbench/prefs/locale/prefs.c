@@ -166,7 +166,7 @@ STATIC VOID FixLocaleEndianess(struct LocalePrefs *localeprefs)
 
 /*********************************************************************************************/
 
-STATIC BOOL Prefs_LoadCountry(STRPTR name, struct CountryPrefs *country)
+BOOL Prefs_LoadCountry(STRPTR name, struct CountryPrefs *country)
 {
     static struct CountryPrefs  loadcountry;
     struct IFFHandle           *iff;
@@ -466,6 +466,7 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
     if (use || save)
     {
+        Prefs_LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
         fh = Open(PREFS_PATH_ENV, MODE_NEWFILE);
         if (fh)
         {
