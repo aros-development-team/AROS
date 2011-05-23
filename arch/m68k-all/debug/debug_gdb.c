@@ -59,4 +59,4 @@ static int Debug_GdbInit(struct DebugBase *DebugBase)
 	return TRUE;
 }
 
-ADD2INIT(Debug_GdbInit, 10)
+ADD2INITLIB(Debug_GdbInit, 1)
