@@ -518,8 +518,6 @@ void exec_boot(ULONG *membanks)
 	/* Clear alert marker */
 	trap[0] = 0;
 
-	/* Clear the BSS. */
-	__clear_bss(&kbss[0]);
 	DEBUGPUTHEX(("BSS lower", (ULONG)&_bss));
 	DEBUGPUTHEX(("BSS upper", (ULONG)&_bss_end - 1));
 	DEBUGPUTHEX(("SS  lower", (ULONG)&_ss));
@@ -532,6 +530,9 @@ void exec_boot(ULONG *membanks)
 	    DEBUGPUTS(("Can't create initial memory header!\n"));
 	    Early_Alert(AT_DeadEnd | AG_NoMemory);
 	}
+
+	/* Clear the BSS. */
+	__clear_bss(&kbss[0]);
 
 	/* NOTE: mh *must* have, as its first mc, a chunk
 	 *       big enough for krnRomTagScanner, and at
