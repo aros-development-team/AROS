@@ -40,6 +40,11 @@
 #include <proto/usbclass.h>
 #include <proto/timer.h>
 
+#ifdef __AROS__
+#include <aros/bootloader.h>
+#include <proto/bootloader.h>
+#endif
+
 #define NewList(list) NEWLIST(list)
 
 #define min(x,y) (((x) < (y)) ? (x) : (y))
@@ -72,8 +77,31 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR ps)
 
 #define UtilityBase ps->ps_UtilityBase
 
-    if(UtilityBase)
+    if (UtilityBase)
     {
+#ifdef __AROS__
+    	APTR BootLoaderBase = OpenResource("bootloader.resource");
+
+    	if (BootLoaderBase)
+    	{
+            struct List *args = GetBootInfo(BL_Args);
+
+	    if (args)
+            {
+            	struct Node *node;
+
+            	for (node = args->lh_Head; node->ln_Succ; node = node->ln_Succ)
+            	{
+                    if (stricmp(node->ln_Name, "usbdebug") == 0)
+                    {
+                    	ps->ps_Flags = PSF_KLOG;
+                    	break;
+                    }
+                }
+            }
+        }
+#endif
+
         NewList(&ps->ps_Hardware);
         NewList(&ps->ps_Classes);
         NewList(&ps->ps_ErrorMsgs);
@@ -5298,6 +5326,9 @@ AROS_LH4(struct PsdErrorMsg *, psdAddErrorMsgA,
         {
             if((pem->pem_Msg = psdCopyStrFmtA(fmtstr, fmtdata)))
             {
+		if (ps->ps_Flags & PSF_KLOG)
+		    kprintf("[%s] %s\n", origin, pem->pem_Msg);
+
                 if(pOpenDOS(ps))
                 {
                     DateStamp(&pem->pem_DateStamp);
