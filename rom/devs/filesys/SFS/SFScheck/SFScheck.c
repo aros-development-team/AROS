@@ -40,7 +40,7 @@ extern ULONG __asm MULU64(register __d0 ULONG,register __d1 ULONG,register __a0 
 extern WORD __asm COMPRESSFROMZERO(register __a0 UWORD *,register __a1 UBYTE *,register __d0 ULONG);
 
 
-static const char version[]={"\0$VER: SFScheck 1.3 " __AMIGADATE__ "\r\n"};
+const char version[]="\0$VER: SFScheck 1.3 (" ADATE ")\r\n";
 
 
 LONG read2(ULONG block);

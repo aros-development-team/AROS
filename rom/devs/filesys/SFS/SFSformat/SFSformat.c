@@ -10,7 +10,7 @@
 
 #include "../FS/packets.h"
 
-static const char version[]={"\0$VER: SFSformat 1.1 " ADATE "\r\n"};
+const char version[]="\0$VER: SFSformat 1.1 (" ADATE ")\r\n";
 
 LONG main()
 {

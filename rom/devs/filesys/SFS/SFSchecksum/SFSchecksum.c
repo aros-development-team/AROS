@@ -15,7 +15,7 @@ extern WORD __asm COMPRESSFROMZERO(register __a0 UWORD *,register __a1 UBYTE *,r
 
 void setchecksum(void *cb);
 
-static const char version[]={"\0$VER: SFSchecksum 1.0 " __AMIGADATE__ "\r\n"};
+const char version[]="\0$VER: SFSchecksum 1.0 (" ADATE ")\r\n";
 
 ULONG bytes_block;                /* size of a block in bytes */
 
