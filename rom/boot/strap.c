@@ -377,8 +377,8 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
      */
 
     D(bug("[Boot] AddPartitionVolume\n"));
-    pp = AllocVec(sizeof(struct DosEnvec) + sizeof(IPTR) * 4,
-        MEMF_PUBLIC | MEMF_CLEAR);
+    pp = AllocVec(sizeof(struct DosEnvec) + sizeof(IPTR) * 4, MEMF_PUBLIC | MEMF_CLEAR);
+
     if (pp)
     {
         attrs = QueryPartitionAttrs(table);
@@ -474,6 +474,10 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
         pp[4 + DE_LOWCYL] += i;
         pp[4 + DE_HIGHCYL] += i;
 
+#ifdef FORCE_BOOTABLE
+	bootable = TRUE;
+#endif
+
 	/*
 	 * Do not check for handlers because m68k-amiga does not
 	 * have them if filesystem in DosType[] has been loaded from RDB
@@ -526,11 +530,10 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
             	    devnode->dn_Priority = fse->fse_Priority;
           	if (fse->fse_PatchFlags & 256)
             	    devnode->dn_GlobalVec = fse->fse_GlobalVec;
-	    
+
                 AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, 0, devnode, 0);
-                D(bug("[Boot] AddBootNode(%s,0x%lx,%p)\n",
-                    AROS_DOSDEVNAME(devnode),
-                    pp[4 + DE_DOSTYPE], fse));
+                D(bug("[Boot] AddBootNode(%b, 0x%p, 0x%p)\n",  devnode-->dn_Name, pp[4 + DE_DOSTYPE], fse));
+
                 return;
 	    }
 	}
