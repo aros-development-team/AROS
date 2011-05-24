@@ -466,7 +466,7 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, APTR locatio
     char *buf;
 
     buf = FormatTask(buffer, hdrstring, task, SysBase);
-    buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, buf, task, alertNum) - 1;
+    buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, buf, alertNum) - 1;
     buf = Alert_GetString(alertNum, buf);
     *buf = 0;
     D(bug("[FormatAlert] Header:\n%s\n", buffer));
