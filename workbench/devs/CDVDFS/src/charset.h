@@ -1,3 +1,4 @@
-void InitUnicodeTable(void);
-BOOL ReadUnicodeTable(STRPTR name);
+void InitCharset(void);
+int UTF16ToSystem(char *from, char *to, unsigned char len);
+
 

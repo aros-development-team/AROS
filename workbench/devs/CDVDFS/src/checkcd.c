@@ -80,7 +80,7 @@ void Check_723 (void *p_buf, int p_offset)
   t_ulong m = buf[3] + (buf[2] << 8);
   if (l != m) {
     printf ("ERROR: %s, sector %lu, offset %d - not recorded according to 7.2.3\n",
-            g_check_name, g_check_sector, p_offset);
+	    g_check_name, g_check_sector, p_offset);
   }
 }
 
@@ -93,7 +93,7 @@ void Check_733 (void *p_buf, int p_offset)
   t_ulong m = buf[7] + (buf[6] << 8) + (buf[5] << 16) + (buf[4] << 24);
   if (l != m) {
     printf ("ERROR: %s, sector %lu, offset %d - not recorded according to 7.3.3\n",
-            g_check_name, g_check_sector, p_offset);
+	    g_check_name, g_check_sector, p_offset);
   }
 }
 
@@ -121,27 +121,27 @@ void Check_Optional_Path_Tables (void)
     for (;;) {
     
       if (!Read_Chunk (global->g_cd, loc1)) {
-        printf ("ERROR: illegal sector %lu\n", loc1);
-        exit (1);
+	printf ("ERROR: illegal sector %lu\n", loc1);
+	exit (1);
       }
       buf1 = global->g_cd->buffer;
     
       if (!Read_Chunk (global->g_cd, loc2)) {
-        printf ("ERROR: illegal sector %lu\n", loc2);
-        exit (1);
+	printf ("ERROR: illegal sector %lu\n", loc2);
+	exit (1);
       }
       buf2 = global->g_cd->buffer;
 
       if (memcmp (buf1, buf2, remain > 2048 ? 2048 : remain) != 0) {
-        printf ("ERROR: %c path table and optional %c path table differ"
+	printf ("ERROR: %c path table and optional %c path table differ"
 		" in sectors %lu and %lu\n",
 		i ? 'M' : 'L', i ? 'M' : 'L', loc1, loc2);
       }
 
       if (remain > 2048)
-        remain -= 2048;
+	remain -= 2048;
       else
-        break;
+	break;
 
       loc1++, loc2++;
     }
@@ -203,19 +203,19 @@ void Compare_L_And_M_Path_Table (void)
 
     if (buf1[1] != buf2[1])
       printf ("ERROR: Extended attribute record lengths differ in L and M"
-              " path table at offset %lu\n", offset1);
+	      " path table at offset %lu\n", offset1);
 
     if (memcmp (buf1+8, buf2+8, buf1[0]) != 0)
       printf ("ERROR: directory identifiers differ in L and M path table "
-              "at offset %lu\n", offset1);
+	      "at offset %lu\n", offset1);
 
     if (GET731 (buf1+2) != GET732 (buf2+2))
       printf ("ERROR: extent locations differ in L and M path table at"
-              " offset %lu\n", offset1);
+	      " offset %lu\n", offset1);
 
     if (GET721 (buf1+6) != GET722 (buf2+6))
       printf ("ERROR: parent directory numbers differ in L and M path table at"
-              " offset %lu\n", offset1);
+	      " offset %lu\n", offset1);
 
     g_path_table_records++;
   }
@@ -257,13 +257,13 @@ void Compare_Path_Table_With_Directory_Records (void)
     obj = Iso_Create_Directory_Obj (vol, pos);
     if (!obj || !CDROM_Info (obj, &info)) {
       printf ("\nERROR: cannot get information for directory at location %lu\n"
-              "(Path table offset = %lu)\n", pos, tmp);
+	      "(Path table offset = %lu)\n", pos, tmp);
       exit (10);
     }
     if (info.name_length != buf[0] ||
-        Strnicmp ((UBYTE*) info.name, (UBYTE*) buf+8, info.name_length) != 0) {
+	Strnicmp ((UBYTE*) info.name, (UBYTE*) buf+8, info.name_length) != 0) {
       printf ("\nERROR: names in path table and directory record differ for "
-              "directory at location %lu\n", pos);
+	      "directory at location %lu\n", pos);
       printf ("Name in path table = ");
       fwrite (buf+8, 1, info.name_length, stdout);
       printf ("\nName in directory record = ");
@@ -271,7 +271,7 @@ void Compare_Path_Table_With_Directory_Records (void)
       putchar ('\n');
     } else if (!warn_case && memcmp (info.name, buf+8, info.name_length) != 0) {
       printf ("\nWARNING: Directory names in path table and directory records "
-              "differ in case.\n");
+	      "differ in case.\n");
       warn_case = 1;
     }
     Close_Object (obj);
@@ -362,7 +362,7 @@ void Check_Subdirectory (CDROM_OBJ *p_home, char *p_name)
 
     while (Examine_Next (obj, &info, &offset)) {
       if (info.directory_f) {
-        char *name = malloc (strlen (p_name) + info.name_length + 2);
+	char *name = malloc (strlen (p_name) + info.name_length + 2);
 	int len;
 	if (!name) {
 	  fprintf (stderr, "out of memory\n");
@@ -414,6 +414,8 @@ void Cleanup (void)
   if (global->g_cd)
     Cleanup_CDROM (global->g_cd);
 
+  if (global->CodesetsBase)
+    CloseLibrary(global->CodesetsBase);
   if (UtilityBase)
     CloseLibrary ((struct Library *)UtilityBase);
 }
@@ -450,16 +452,6 @@ int Get_Device_And_Unit (void)
     global->g_memory_type = MEMF_FAST;
   }
 
-  len = GetVar ((UBYTE *) "CDROM_UNICODETABLE", (UBYTE *) global->g_unicodetable_name,
-		sizeof (global->g_unicodetable_name), 0);
-  if (len < 0)
-    len = 0;
-  if (len >= sizeof (global->g_unicodetable_name)) {
-    fprintf (stderr, "CDROM_UNICODETABLE too long\n");
-    exit (1);
-  }
-  global->g_unicodetable_name[len] = 0;
-
   return 1;
 }
 
@@ -471,7 +463,7 @@ int main (int argc, char *argv[])
   atexit (Cleanup);
 
   if (!(UtilityBase = (struct UtilityBase *)
-         OpenLibrary ("utility.library", 37))) {
+	 OpenLibrary ("utility.library", 37))) {
     fprintf (stderr, "cannot open utility.library\n");
     exit (1);
   }
@@ -495,9 +487,8 @@ int main (int argc, char *argv[])
     exit (1);
   }
 
-  InitUnicodeTable();
-  if (global->g_unicodetable_name[0])
-    ReadUnicodeTable(global->g_unicodetable_name);
+  global->CodesetsBase = NULL;
+  InitCharset();
 
   global->g_cd = Open_CDROM (global->g_device, global->g_unit, global->g_memory_type,
   		   STD_BUFFERS, FILE_BUFFERS);

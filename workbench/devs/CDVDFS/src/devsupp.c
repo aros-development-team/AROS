@@ -129,7 +129,7 @@ int OpenCDRom() {
 		Display_Error
 		(
 			"Cannot open \"%s\" unit %ld",
-			global->g_device, global->g_unit
+			(IPTR)global->g_device, global->g_unit
 		);
      break;
 	case CDROMERR_BLOCKSIZE:
@@ -143,25 +143,24 @@ int OpenCDRom() {
 
 int Get_Startup(struct FileSysStartupMsg *fssm) {
 	enum {
-          ARG_RETRY,
-          ARG_LOWERCASE,
-          ARG_MAYBELOWERCASE,
-          ARG_ROCKRIDGE,
+	  ARG_RETRY,
+	  ARG_LOWERCASE,
+	  ARG_MAYBELOWERCASE,
+	  ARG_ROCKRIDGE,
 	  ARG_JOLIET,
-          ARG_MACTOISO,
-          ARG_CONVERTSPACES,
-          ARG_SHOWVERSION,
-          ARG_HFSFIRST,
-          ARG_FILEBUFFERS,
-          ARG_DATAEXT,
-          ARG_RESOURCEEXT,
-          ARG_SCANINTERVAL,
-          ARG_PLAYCDDA,
-          ARG_XPOS,
-          ARG_YPOS,
-	  ARG_UNICODETABLE,
-          ARGCOUNT
-        };
+	  ARG_MACTOISO,
+	  ARG_CONVERTSPACES,
+	  ARG_SHOWVERSION,
+	  ARG_HFSFIRST,
+	  ARG_FILEBUFFERS,
+	  ARG_DATAEXT,
+	  ARG_RESOURCEEXT,
+	  ARG_SCANINTERVAL,
+	  ARG_PLAYCDDA,
+	  ARG_XPOS,
+	  ARG_YPOS,
+	  ARGCOUNT
+	};
 
 	STRPTR Args[ARGCOUNT] = {0};
 	STRPTR Index;
@@ -172,12 +171,12 @@ int Get_Startup(struct FileSysStartupMsg *fssm) {
 
 	if (fssm != (struct FileSysStartupMsg *)-1)
 	{
-                len = AROS_BSTR_strlen(fssm->fssm_Device);
+		len = AROS_BSTR_strlen(fssm->fssm_Device);
 		if (len<sizeof(global->g_device))
 		{
-                        de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
+			de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
 			CopyMem(AROS_BSTR_ADDR(fssm->fssm_Device), global->g_device, len);
-                	global->g_device[len] = 0;
+			global->g_device[len] = 0;
 			global->g_unit = fssm->fssm_Unit;
 			global->g_std_buffers = de->de_NumBuffers;
 			global->g_file_buffers = de->de_NumBuffers;
@@ -199,7 +198,6 @@ int Get_Startup(struct FileSysStartupMsg *fssm) {
 			global->g_play_cdda_command[0] = 0;
 			global->g_xpos = NO_ICON_POSITION;
 			global->g_ypos = NO_ICON_POSITION;
-			global->g_unicodetable_name[0] = 0;
 
 			if (de->de_Control) {
 			  /* Get the contents of the control field. */
@@ -268,8 +266,7 @@ int Get_Startup(struct FileSysStartupMsg *fssm) {
 					  "FB=FILEBUFFERS/K/N,"
 					  "DE=DATAEXT/K,RE=RESOURCEEXT/K,"
 					  "SI=SCANINTERVAL/K/N,PC=PLAYCDDA/K,"
-					  "X=XPOS/K/N,Y=YPOS/K/N,"
-					  "UT=UNICODETABLE/K",
+					  "X=XPOS/K/N,Y=YPOS/K/N,",
 					  (LONG *) Args, ArgsPtr)) {
 			      result = TRUE;
 
@@ -325,21 +322,11 @@ int Get_Startup(struct FileSysStartupMsg *fssm) {
 			      if (Args[ARG_YPOS])
 			        global->g_ypos = *(LONG *) (Args[ARG_YPOS]);
 
-			      if (Args[ARG_UNICODETABLE]) {
-				len = strlen((char *) (Args[ARG_UNICODETABLE]));
-
-				if (len >= sizeof (global->g_unicodetable_name)) {
-				  Display_Error ("UNICODETABLE table name too long");
-			 	  result = FALSE;
-			        } else
-				  strcpy (global->g_unicodetable_name, (char *) (Args[ARG_UNICODETABLE]));
-			      }
-
 			      FreeArgs(ArgsPtr);
 			    } else {
 			      Fault(IoErr (), (UBYTE *) "", LocalBuffer, sizeof (LocalBuffer));
 			      Display_Error ("Error while parsing \"Control\" field in Mountlist:\n%s",
-					     LocalBuffer + 2);
+					     (IPTR)LocalBuffer + 2);
 			    }
 
 			    FreeDosObject (DOS_RDARGS, ArgsPtr);
@@ -351,7 +338,6 @@ int Get_Startup(struct FileSysStartupMsg *fssm) {
 			BUG(dbprintf("Use joliet: %ld\n", global->g_use_joliet);)
 			BUG(dbprintf("Force lowercase: %ld\n", global->g_map_to_lowercase);)
 			BUG(dbprintf("Allow lowercase: %ld\n", global->g_maybe_map_to_lowercase);)
-			BUG(dbprintf("Unicode table: %s\n", global->g_unicodetable_name);)
 		}
 	}
 	if (result)
@@ -383,14 +369,6 @@ int Handle_Control_Packet (ULONG p_type, IPTR p_par1, IPTR p_par2)
     break;
   case CDCMD_RESOURCEEXT:
     strcpy (global->g_resource_fork_extension, (char *) p_par1);
-    break;
-  case CDCMD_UNICODETABLE:
-    if (p_par1)
-      strcpy(global->g_unicodetable_name, (char *)p_par1);
-    else
-      global->g_unicodetable_name[0] = 0;
-    if (global->PrefsProc)
-      Signal(global->PrefsProc, SIGBREAKF_CTRL_D);
     break;
   default:
     return 999;
@@ -509,7 +487,7 @@ void dbinit (void)
 
     if (CreateNewProcTags (
 			   NP_Entry, debugmain,
-        		   NP_Name, "DEV_DB",
+			   NP_Name, "DEV_DB",
 			   NP_Priority, task->tc_Node.ln_Pri+1,
 			   NP_StackSize, 4096,
 			   TAG_DONE)) {
