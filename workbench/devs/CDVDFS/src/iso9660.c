@@ -394,7 +394,7 @@ int Names_Equal(VOLUME *volume, directory_record *dir, char *p_name)
     }
 
     if (volume->protocol == PRO_ROCK
-        && !(buf[len-2] == ';' && buf[len-1] == '1'))
+	&& !(buf[len-2] == ';' && buf[len-1] == '1'))
     {
 	D(bug("[CDVDFS]\t-> Not Equal\n"));
 	return FALSE;
@@ -442,14 +442,14 @@ directory_record *Get_Directory_Record
     if (len)
     {
 	CopyMem(p_volume->cd->buffer + (p_offset & 2047), p_volume->buffer, len);
-	D(
+	D({
 	    int x;
 	    directory_record *dr = (directory_record*)p_volume->buffer;
 	    bug("[CDVDFS]\tEntry: >");
 	    for (x=0; x<dr->file_id_length; x++)
 		bug("%c", dr->file_id[x]);
 	    bug("<\n");
-	 );
+	 });
     }
     else
     {

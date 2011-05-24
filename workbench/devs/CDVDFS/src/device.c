@@ -242,6 +242,8 @@ ULONG signals;
     global->DosProc = (PROC *) FindTask(NULL);
     global->DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",37);
     global->UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library",37);
+	global->CodesetsBase = NULL;
+	
     global->Dback = CreateMsgPort();
 
 #if !defined(NDEBUG) || defined(DEBUG_SECTORS)
@@ -253,11 +255,11 @@ ULONG signals;
      */
 
     if (global->DOSBase && global->Dback)
-        dbinit();
+	dbinit();
 #endif
     global->DevList = NULL;
     global->PrefsProc = NULL;
-    InitUnicodeTable();
+	global->uniCodeset = NULL;
 
     WaitPort(&global->DosProc->pr_MsgPort);         /*  Get Startup Packet  */
     msg = GetMsg(&global->DosProc->pr_MsgPort);
@@ -308,12 +310,12 @@ ULONG signals;
 #endif
 #define DOSBase global->DOSBase
 
-            BUG2(dbuninit();)
+	    BUG2(dbuninit();)
 	    Close_Intui ();
 	    if (global->Dback)
 		DeleteMsgPort(global->Dback);
-            if (global->UtilityBase)
-                CloseLibrary((struct Library *)global->UtilityBase);
+	    if (global->UtilityBase)
+		CloseLibrary((struct Library *)global->UtilityBase);
 	    CloseLibrary ((struct Library *)DOSBase);
 	}
 	return 0;		        /*  exit process	        */
@@ -385,6 +387,9 @@ ULONG signals;
     BUG2(Delay (50);)
     BUG2(dbuninit();)
     DeleteMsgPort(global->Dback);
+
+    if (global->CodesetsBase)
+	CloseLibrary(global->CodesetsBase);
     CloseLibrary((struct Library *)global->UtilityBase);
     CloseLibrary((struct Library *)DOSBase);
     return 0;
@@ -424,17 +429,17 @@ UBYTE   notdone = 1;
 		/* retry opening the SCSI device (every 2 seconds): */
 		if (!global->g_cd && (global->g_time & 1))
 		{
-                        BUG(dbprintf("Device is closed, attempting to open\n");)
+			BUG(dbprintf("Device is closed, attempting to open\n");)
 			Get_Startup((struct FileSysStartupMsg *)-1);
 		}
 		if (global->g_cd)
 		{
 			/* icon retry (every second): */
 			if (global->g_retry_show_cdda_icon)
-                        {
-                                BUG(dbprintf("Showing CDDA icon\n");)
+			{
+				BUG(dbprintf("Showing CDDA icon\n");)
 				Show_CDDA_Icon ();
-                        }
+			}
 			/* diskchange check: */
 			if (global->g_scan_interval)
 			{
@@ -453,7 +458,7 @@ UBYTE   notdone = 1;
 	if (signals & global->g_app_sigbit)
 	{
 	struct Message *msg;
-                BUG(dbprintf("CDDA icon double-clicked\n");)
+		BUG(dbprintf("CDDA icon double-clicked\n");)
 		while ((msg = GetMsg (global->g_app_port)))
 		{
 			ReplyMsg (msg);
@@ -1642,7 +1647,7 @@ void Send_Event (int p_inserted)
   if (InputPort)
   {
     InputRequest = (struct IOStdReq *)
-        CreateIORequest (InputPort, sizeof (struct IOStdReq));
+	CreateIORequest (InputPort, sizeof (struct IOStdReq));
     if (InputRequest)
     {
       if (!OpenDevice ((UBYTE *) "input.device", 0,

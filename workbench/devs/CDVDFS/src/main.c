@@ -68,6 +68,8 @@ void Cleanup (void)
   if (global->g_cd)
     Cleanup_CDROM (global->g_cd);
 
+  if (global->CodesetsBase)
+    CloseLibrary(global->CodesetsBase);
   if (UtilityBase)
     CloseLibrary ((struct Library*) UtilityBase);
 }
@@ -179,7 +181,7 @@ void Find_Block_Starting_With (CDROM *p_cd, int p_val)
     for (i=0; i<4; i++) {
       cmp = p_cd->buffer[i<<9] * 256 + p_cd->buffer[(i<<9)+1];
       if (cmp == p_val)
-        printf ("sector %lu, block %d\n", sec, i);
+	printf ("sector %lu, block %d\n", sec, i);
     }
     sec++;
   }
@@ -321,11 +323,11 @@ void Show_Directory (CDROM *p_cd, uint32_t p_location, uint32_t p_length)
     if (cnt < p_length) {
       printf ("------------------------------------------------------------\n");
       if (pos >= 2048) {
-        if (!Read_Chunk (p_cd, ++p_location)) {
-          fprintf (stderr, "cannot read sector %lu\n", p_location);
-          exit (1);
-        }
-        pos = 0;
+	if (!Read_Chunk (p_cd, ++p_location)) {
+	  fprintf (stderr, "cannot read sector %lu\n", p_location);
+	  exit (1);
+	}
+	pos = 0;
       }
     }
   }
@@ -402,7 +404,7 @@ void Try_To_Open (CDROM *p_cd, char *p_directory, char *p_name)
   } else {
     if (!(home = Open_Top_Level_Directory (vol))) {
       fprintf (stderr, "cannot open home directory;"
-                       " iso_errno = %d\n", global->iso_errno);
+		       " iso_errno = %d\n", global->iso_errno);
       Close_Volume (vol);
       exit (1);
     }
@@ -411,17 +413,17 @@ void Try_To_Open (CDROM *p_cd, char *p_directory, char *p_name)
   if (obj) {
     CDROM_INFO info;
     printf ("%s '%s' found, location = %lu\n",
-            obj->symlink_f ? "Symbolic link" :
-            obj->directory_f ? "Directory" : "File",
+	    obj->symlink_f ? "Symbolic link" :
+	    obj->directory_f ? "Directory" : "File",
     	    p_name, Location (obj));
     printf ("Protection bits: 0x%08lX\n", obj->protection);
     if (obj->symlink_f) {
       char linkname[256];
       printf ("Link to ");
       if (Get_Link_Name (obj, linkname, sizeof (linkname)))
-        printf ("'%s'\n", linkname);
+	printf ("'%s'\n", linkname);
       else
-        printf ("unknown file or directory\n");
+	printf ("unknown file or directory\n");
     }
     if (Full_Path_Name (obj, pathname, sizeof (pathname)))
       printf ("Full path name: %s\n", pathname);
@@ -439,11 +441,11 @@ void Try_To_Open (CDROM *p_cd, char *p_directory, char *p_name)
     if (p_directory == (char *) -1) {
       parent = Find_Parent (obj);
       if (parent) {
-        printf ("parent found, location = %lu\n",
+	printf ("parent found, location = %lu\n",
 	        Location (parent));
-        Close_Object (parent);
+	Close_Object (parent);
       } else
-        printf ("parent not found, iso_errno = %d\n", global->iso_errno);
+	printf ("parent not found, iso_errno = %d\n", global->iso_errno);
     }
     Close_Object (obj);
   } else {
@@ -475,7 +477,7 @@ void Show_File_Contents (CDROM *p_cd, char *p_name)
 
   if (!(home = Open_Top_Level_Directory (vol))) {
     fprintf (stderr, "cannot open top level directory;"
-                     " iso_errno = %d\n", global->iso_errno);
+		     " iso_errno = %d\n", global->iso_errno);
     Close_Volume (vol);
     exit (1);
   }
@@ -484,11 +486,11 @@ void Show_File_Contents (CDROM *p_cd, char *p_name)
     for (;;) {
       cnt = Read_From_File (obj, buffer, THEBUFSIZE);
       if (cnt == -1) {
-        fprintf (stderr, "cannot read from file!\n");
+	fprintf (stderr, "cannot read from file!\n");
 	break;
       }
       if (cnt == 0)
-        break;
+	break;
       fwrite (buffer, cnt, 1, stdout);
     }
 
@@ -525,20 +527,20 @@ void Print_System_Use_Fields (CDROM *p_cd, directory_record *p_dir,
     slen = buf[system_use_pos+2];
     /* look for continuation area: */
     if (buf[system_use_pos] == 'C' &&
-        buf[system_use_pos+1] == 'E') {
+	buf[system_use_pos+1] == 'E') {
       uint32_t newloc, offset;
       printf ("/ ");
       memcpy (&newloc, buf + system_use_pos + 8, 4);
       memcpy (&offset, buf + system_use_pos + 16, 4);
       memcpy (&length, buf + system_use_pos + 24, 4);
       if (!Read_Chunk (p_cd, newloc))
-        return;
+	return;
       buf = p_cd->buffer;
       system_use_pos = offset;
       continue;
     /* look for system use field terminator: */
     } else if (buf[system_use_pos] == 'S' &&
-        buf[system_use_pos+1] == 'T') {
+	buf[system_use_pos+1] == 'T') {
       printf ("ST");
       break;
     } else if  (buf[system_use_pos] == 'S' &&
@@ -550,12 +552,12 @@ void Print_System_Use_Fields (CDROM *p_cd, directory_record *p_dir,
       printf (") ");
     } else {
       if (p_long)
-        printf ("   ");
+	printf ("   ");
       putchar (buf[system_use_pos]);
       putchar (buf[system_use_pos+1]);
       putchar (' ');
       if (p_long) {
-        int i;
+	int i;
 	for (i=0; i < slen-2; i++) {
 	  if (i && (i & 15) == 0)
 	    printf ("\n      ");
@@ -587,12 +589,12 @@ void Show_Subdirectory (CDROM_OBJ *p_home, char *p_name, int p_long_info,
      directory_record *dir = info.suppl_info;
       fwrite (info.name, info.name_length, 1, stdout);
       if (info.symlink_f)
-        printf (" (symbolic link)");
+	printf (" (symbolic link)");
       else if (info.directory_f)
-        printf (" (dir)");
+	printf (" (dir)");
       printf ("\n");
       if (p_long_info && dir) {
-        printf ("   %02d.%02d.%02d %02d:%02d:%02d  ",
+	printf ("   %02d.%02d.%02d %02d:%02d:%02d  ",
 		(int) dir->day,
 		(int) dir->month,
 		(int) dir->year,
@@ -603,12 +605,12 @@ void Show_Subdirectory (CDROM_OBJ *p_home, char *p_name, int p_long_info,
 	printf ("loc=%lu  ", dir->extent_loc);
 	Show_Flags (dir->flags);
 	putchar ('\n');
-        if (dir->ext_attr_length)
+	if (dir->ext_attr_length)
 	  printf ("   contains extended attribute record\n");
 	if (dir->gap_size)
 	  printf ("   is recorded in interleaved mode\n");
 	if (vol->protocol == PRO_ROCK)
-          Print_System_Use_Fields (vol->cd, dir,
+	  Print_System_Use_Fields (vol->cd, dir,
 	  			   ((t_iso_vol_info *) vol->vol_info)->skip,
 				   p_long_info == 2);
       }
@@ -626,7 +628,7 @@ void Show_Subdirectory (CDROM_OBJ *p_home, char *p_name, int p_long_info,
       uint32_t offset = 0;
     
       while (Examine_Next (obj, &info, &offset)) {
-        if (info.directory_f) {
+	if (info.directory_f) {
 	  char *name = malloc (strlen (p_name) + info.name_length + 2);
 	  int len;
 	  if (!name) {
@@ -643,7 +645,7 @@ void Show_Subdirectory (CDROM_OBJ *p_home, char *p_name, int p_long_info,
 	  printf ("\n%s:\n", name);
 	  Show_Subdirectory (p_home, name, p_long_info, TRUE);
 	  free (name);
-        }
+	}
       }
       Close_Object (obj);
     } else {
@@ -669,7 +671,7 @@ void Show_Dir_Contents (CDROM *p_cd, char *p_name, int p_rock_ridge,
 
   if (!(home = Open_Top_Level_Directory (vol))) {
     fprintf (stderr, "cannot open top level directory;"
-                     " iso_errno = %d\n", global->iso_errno);
+		     " iso_errno = %d\n", global->iso_errno);
     Close_Volume (vol);
     exit (1);
   }
@@ -701,15 +703,15 @@ void Show_Sectors (CDROM *p_cd, int p_sector, int p_cnt)
     for (off=0, i=0; i<128; i++) {
       printf ("%02x:%03x0: ", s, i);
       for (j=0; j<16; j++)
-        printf ("%02x ", (int) p_cd->buffer[off++]);
+	printf ("%02x ", (int) p_cd->buffer[off++]);
       off -= 16;
       putchar (' ');
       for (j=0; j<16; j++) {
-        unsigned char c = p_cd->buffer[off++];
-        if (32<=c && c<=127)
-          putchar (c);
-        else
-          putchar ('.');
+	unsigned char c = p_cd->buffer[off++];
+	if (32<=c && c<=127)
+	  putchar (c);
+	else
+	  putchar ('.');
       }
       putchar ('\n');
     }
@@ -747,16 +749,6 @@ int Get_Device_And_Unit (void)
     fprintf (stderr, "using fastmem\n");
     global->g_memory_type = MEMF_FAST;
   }
-
-  len = GetVar ((UBYTE *) "CDROM_UNICODETABLE", (UBYTE *) global->g_unicodetable_name,
-		sizeof (global->g_unicodetable_name), 0);
-  if (len < 0)
-    len = 0;
-  if (len >= sizeof (global->g_unicodetable_name)) {
-    fprintf (stderr, "CDROM_UNICODETABLE too long\n");
-    exit (1);
-  }
-  global->g_unicodetable_name[len] = 0;
 
   return 1;
 }
@@ -878,7 +870,7 @@ void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
       leaf = (t_leaf_record *) ((char *) node + ((short *) node)[255-i]);
       cp = (char *) leaf + leaf->length + 1;
       if ((leaf->length & 1) == 0)
-        cp++;
+	cp++;
       printf ("Parent ID = 0x%08lx, '", leaf->parent_id);
       memcpy (buf, leaf->name, leaf->name_length);
       Convert_Mac_Characters (buf, leaf->name_length);
@@ -886,11 +878,11 @@ void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
       printf ("'  (");
       switch (*cp) {
       case 1:
-        printf ("directory 0x%08lx)\n", *(t_ulong *)(cp+6));
+	printf ("directory 0x%08lx)\n", *(t_ulong *)(cp+6));
 	break;
       case 2:
-        file = (t_file_record *) cp;
-        printf ("file 0x%08lx)\n\tdata length %lu, "
+	file = (t_file_record *) cp;
+	printf ("file 0x%08lx)\n\tdata length %lu, "
 		"data extents %u-%u/%u-%u/%u-%u\n",
 		file->FlNum,
 		file->LgLen,
@@ -906,16 +898,16 @@ void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
 	printf ("\tfirst alloc blk for resource fork: %u\n", file->RStBlk);
 	break;
       case 3:
-        thread = (t_dir_thread_record *) cp;
-        printf ("directory thread 0x%08lu '", thread->ParID);
+	thread = (t_dir_thread_record *) cp;
+	printf ("directory thread 0x%08lu '", thread->ParID);
 	fwrite (thread->CName, thread->CNameLen, 1, stdout);
 	printf ("')\n");
 	break;
       case 4:
-        printf ("file thread)\n");
+	printf ("file thread)\n");
 	break;
       default:
-        printf ("unknown)\n");
+	printf ("unknown)\n");
 	break;
       }
     }
@@ -981,7 +973,7 @@ int main (int argc, char *argv[])
     Usage ();
 
   if (!(UtilityBase = (struct UtilityBase *)
-         OpenLibrary ((UBYTE *) "utility.library", 37))) {
+	 OpenLibrary ((UBYTE *) "utility.library", 37))) {
     fprintf (stderr, "cannot open utility.library\n");
     exit (1);
   }
@@ -1004,9 +996,9 @@ int main (int argc, char *argv[])
       );
     exit (1);
   }
-  InitUnicodeTable();
-  if (global->g_unicodetable_name[0])
-    ReadUnicodeTable(global->g_unicodetable_name);
+
+  global->CodesetsBase = NULL;
+  InitCharset();
 
   global->g_cd = Open_CDROM (global->g_device, global->g_unit, global->g_memory_type,
   		   STD_BUFFERS, 0);

@@ -1,102 +1,78 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
+#include <proto/codesets.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "debug.h"
 #include "globals.h"
 #include "charset.h"
 #include "aros_stuff.h"
 
 extern struct Globals *global;
 
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-#ifdef DOSBase
-#	undef DOSBase
-#endif
-#define DOSBase global->DOSBase
+#define SysBase      global->SysBase
+#define CodesetsBase global->CodesetsBase
 
-static ULONG readLine(BPTR fh, char *buf, ULONG size)
+void InitCharset(void)
 {
-  char *c;
-
-  if((c = FGets(fh, buf, size)) == NULL)
-    return FALSE;
-
-  for(; *c; c++)
-  {
-    if(*c == '\n' || *c == '\r')
+    if (!CodesetsBase)
     {
-      *c = '\0';
-      break;
+	CodesetsBase = OpenLibrary("codesets.library", 0);
+	BUG(dbprintf("[CDVDFS] CodesetsBase 0x%p\n", CodesetsBase));
+
+	if (CodesetsBase)
+	{
+	    global->uniCodeset = CodesetsFindA("UTF-16", NULL);
+	    BUG(dbprintf("[CDVDFS] Unicode codeset: 0x%p\n", global->uniCodeset));
+	}
     }
-  }
-
-  return TRUE;
 }
 
-void InitUnicodeTable(void)
+int UTF16ToSystem(char *from, char *to, unsigned char len)
 {
-	int i;
+    ULONG l = -1;
 
-	for (i = 0; i < 65536; i++)
-		global->g_unicode_table[i] = (i < 256) ? i : '_';
+    if (global->uniCodeset)
+    {
+	char *str;
+	struct TagItem tags[5];
+
+	/*
+	 * I have to fill in tags in this weird way because otherwise
+	 * MorphOS gcc v2.95.3 generates memcpy() call here, and we have
+	 * no global SysBase variable.
+	 * And i can't use -lcodesets because it also requires global
+	 * CodesetsBase.
+	 * Please don't change this.
+	 */
+	tags[0].ti_Tag  = CSA_SourceCodeset;
+	tags[0].ti_Data = (IPTR)global->uniCodeset;
+	tags[1].ti_Tag  = CSA_Source;
+	tags[1].ti_Data = (IPTR)from;
+	tags[2].ti_Tag  = CSA_SourceLen;
+	tags[2].ti_Data = len;
+	tags[3].ti_Tag  = CSA_DestLenPtr;
+	tags[3].ti_Data = (IPTR)&l;
+	tags[4].ti_Tag  = TAG_DONE;
+
+	/*
+	 * Unfortunately codesets.library does not allow
+	 * to specify CSA_Dest and CSA_DestLen to
+	 * CodesetsConvertA(), so we have to do this copy-deallocate
+	 * operation.
+	 */
+	str = CodesetsConvertStrA(tags);
+	if (str)
+	{
+	    CopyMem(str, to, l);
+	    CodesetsFreeA(str, NULL);
+	}
+    }
+
+    return l;
 }
 
-// Reads a coding table
-BOOL ReadUnicodeTable(STRPTR name)
-{
-  BPTR fh;
-
-  fh = Open(name, MODE_OLDFILE);
-  if (fh)
-  {
-      int i, n;
-      char buf[512];
-
-      while(readLine(fh, buf, 512*sizeof(char)))
-      {
-	if(!isdigit(*buf))
-          continue;
-        else
-        {
-          char *p = buf;
-          int fmt2 = 0;
-
-          if((*p=='=') || (fmt2 = ((*p=='0') || (*(p+1)=='x'))))
-          {
-            p++;
-            p += fmt2;
-
-            i = strtol((const char *)p,(char **)&p,16);
-	    if(i>=0 && i<256)
-            {
-              while(isspace(*p)) p++;
-
-              if(!strnicmp(p, "U+", 2))
-              {
-                p += 2;
-		n = strtol((const char *)p,(char **)&p,16);
-              }
-              else
-              {
-		if(*p!='#')
-		  n = strtol((const char *)p,(char **)&p,0);
-		else
-		  n = -1;
-              }
-	      if (n >= 0 && n < 65536)
-		global->g_unicode_table[n] = i;
-            }
-          }
-        }
-      }
-      Close(fh);
-  }
-  return fh ? TRUE : FALSE;
-}

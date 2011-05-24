@@ -29,7 +29,7 @@ LDFLAGS2	= -noixemul
 OS=$(shell uname)
 ifeq "$(OS)" "MorphOS"
 LDLIBS1 =
-KILLDEV = KillDevice
+KILLDEV = KillDevice RemCDFS
 else
 LDLIBS1 = -lamiga
 KILLDEV =
@@ -73,6 +73,10 @@ KillDevice:	KillDevice.c
 		$(CC) $(CFLAGS) $(LDFLAGS1) -o $@ KillDevice.c
 		$(STRIP) $@
 
+RemCDFS: remcdfs.c
+		$(CC) $(CFLAGS) $(LDFLAGS1) -o $@ $<
+		$(STRIP) $@
+
 # dependencies
 
 iso9660.o:	iso9660.c cdrom.h iso9660.h rock.h generic.h
@@ -107,4 +111,4 @@ dist:           all
 # delete all nifty stuff
 
 clean:
-		-$(RM) *.o cdrom cdrom-handler cdcontrol checkcd KillDevice
+		-$(RM) *.o cdrom cdrom-handler cdcontrol checkcd KillDevice RemCDFS

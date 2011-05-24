@@ -6,19 +6,12 @@
 
 #include "debug.h"
 #include "globals.h"
-#include "charset.h"
 #include "prefs.h"
 #include "aros_stuff.h"
 
 extern struct Globals *global;
 
-#ifdef SysBase
-#	undef SysBase
-#endif
 #define SysBase global->SysBase
-#ifdef DOSBase
-#	undef DOSBase
-#endif
 #define DOSBase global->DOSBase
 
 void SAVEDS Prefs_Process (void)
@@ -27,22 +20,34 @@ void SAVEDS Prefs_Process (void)
 
     BUG(dbprintf("Prefs handler process started\n");)
     PutMsg(global->Dback, &global->DummyMsg);
-    do {
-	InitUnicodeTable();
-	if (global->g_unicodetable_name[0]) {
-	    BUG(dbprintf("Loading character set translation table: %s\n", global->g_unicodetable_name);)
-	    ReadUnicodeTable(global->g_unicodetable_name);
-	}
-	    BUG(else dbprintf("Character set conversion table reset to default\n");)
-	Sigset = Wait(SIGBREAKF_CTRL_D|SIGBREAKF_CTRL_C);
+
+    do
+    {
+	/*
+	 * Init character set translation only from within here
+	 * because this can trigger loading some files from disk,
+	 * which in turn can trigger new requests to our handler.
+	 */
+	InitCharset();
+
+	/*
+	 * TODO:
+	 * 1. In future this process will be responsible for reading
+	 *    preferences file from disk.
+	 * 2. For AROS we need some way to trigger late codesets.library
+	 *    initialization. CDVDFS is mounder before SYS: is available.
+	 */
+			  
+	Sigset = Wait(SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D);
     } while (!(Sigset & SIGBREAKF_CTRL_C));
+
     Forbid();
     PutMsg(global->Dback,&global->DummyMsg);	      /*  Kill handshake  */
 }
 
 struct TagItem PrefsProcTags[] = {
-	{NP_Entry, Prefs_Process},
-	{NP_Name, "CDVDFS prefs monitor"},
+	{NP_Entry, (IPTR)Prefs_Process},
+	{NP_Name, (IPTR)"CDVDFS prefs monitor"},
 	{NP_StackSize, 4096},
 #ifdef __MORPHOS__
 	{NP_CodeType, CODETYPE_PPC},
