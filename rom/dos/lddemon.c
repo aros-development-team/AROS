@@ -210,7 +210,7 @@ static struct Library *LDInit(BPTR seglist, struct ExecBase *SysBase)
 		lib = InitResident(res, seglist);
 		Permit();
 
-		D(bug("[LDInit] Done calling InitResident(%p) on %s, node %p\n", res, res->rt_Name, lib))
+		D(bug("[LDInit] Done calling InitResident(%p) on %s, node %p\n", res, res->rt_Name, lib));
 		return lib;
 	    }
 	}
