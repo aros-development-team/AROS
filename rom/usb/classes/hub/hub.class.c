@@ -14,7 +14,7 @@ static const STRPTR libname = MOD_NAME_STRING;
 
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
 {
-    KPRINTF(10, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
+    KPRINTF(10, ("libInit nh: 0x%p SysBase: 0x%p\n", nh, SysBase));
 
     nh->nh_UtilityBase = OpenLibrary("utility.library", 39);
 
@@ -35,7 +35,7 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
 
 static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh)
 {
-    KPRINTF(10, ("libExpunge nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
+    KPRINTF(10, ("libExpunge nh: 0x%p SysBase: 0x%p\n", nh, SysBase));
     CloseLibrary(UtilityBase);
     nh->nh_UtilityBase = NULL;
     return TRUE;
@@ -57,7 +57,7 @@ struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *n
     struct Library *ps;
     IPTR devclass;
 
-    KPRINTF(1, ("nepHubAttemptDeviceBinding(%08lx)\n", pd));
+    KPRINTF(1, ("nepHubAttemptDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
@@ -83,7 +83,7 @@ struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh
     char buf[64];
     struct Task *tmptask;
 
-    KPRINTF(1, ("nepHubAttemptDeviceBinding(%08lx)\n", pd));
+    KPRINTF(1, ("nepHubAttemptDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
@@ -94,7 +94,7 @@ struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh
         {
             nch->nch_HubBase = nh;
             nch->nch_Device = pd;
-            psdSafeRawDoFmt(buf, 64, "hub.class<%08lx>", nch);
+            psdSafeRawDoFmt(buf, 64, "hub.class<%p>", nch);
             nch->nch_ReadySignal = SIGB_SINGLE;
             nch->nch_ReadySigTask = FindTask(NULL);
             SetSignal(0, SIGF_SINGLE);
@@ -132,7 +132,7 @@ void GM_UNIQUENAME(usbReleaseDeviceBinding)(struct NepHubBase *nh, struct NepCla
     struct Library *ps;
     STRPTR devname;
 
-    KPRINTF(1, ("nepHubReleaseDeviceBinding(%08lx)\n", nch));
+    KPRINTF(1, ("nepHubReleaseDeviceBinding(%p)\n", nch));
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         Forbid();
@@ -176,7 +176,7 @@ AROS_LH3(LONG, usbGetAttrsA,
     struct TagItem *ti;
     LONG count = 0;
 
-    KPRINTF(1, ("nepHubGetAttrsA(%ld, %08lx, %08lx)\n", type, usbstruct, tags));
+    KPRINTF(1, ("nepHubGetAttrsA(%ld, %p, %p)\n", type, usbstruct, tags));
     switch(type)
     {
         case UGA_CLASS:
@@ -522,7 +522,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
                     }
                     if((!ioerr) || (ioerr == UHIOERR_TIMEOUT))
                     {
-                        KPRINTF(2, ("Port changed at %08lx, Numports=%ld!\n", nch->nch_PortChanges[0], nch->nch_NumPorts));
+                        KPRINTF(2, ("Port changed at %p, Numports=%ld!\n", nch->nch_PortChanges[0], nch->nch_NumPorts));
 
                         if(nch->nch_PortChanges[0] & 1)
                         {
@@ -991,7 +991,7 @@ void GM_UNIQUENAME(nFreeHub)(struct NepClassHub *nch)
             psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                            "My death killed device '%s' at port %ld!",
                            devname, num);
-            KPRINTF(1, ("FreeDevice %08lx\n", pd));
+            KPRINTF(1, ("FreeDevice %p\n", pd));
             psdFreeDevice(pd);
             psdSendEvent(EHMB_REMDEVICE, pd, NULL);
             (nch->nch_Downstream)[num-1] = NULL;
@@ -1111,6 +1111,11 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
     BOOL washighspeed = FALSE;
     BOOL islowspeed = FALSE;
 
+    KPRINTF(1, ("Configuring port %ld of hub 0x%p\n", port, nch));
+
+    uhps.wPortStatus = 0xDEAD;
+    uhps.wPortChange = 0xDA1A;
+
     psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_OTHER,
                  USR_GET_STATUS, UFS_PORT_CONNECTION, (ULONG) port);
     ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhps, sizeof(struct UsbPortStatus));
@@ -1118,6 +1123,8 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
     uhps.wPortChange = AROS_WORD2LE(uhps.wPortChange);
     if(!ioerr)
     {
+    	KPRINTF(1, ("Status 0x%04x, change 0x%04x\n", uhps.wPortStatus, uhps.wPortChange));
+
         if(uhps.wPortStatus & UPSF_PORT_ENABLE)
         {
             psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
