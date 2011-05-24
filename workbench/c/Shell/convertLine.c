@@ -36,6 +36,11 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, AP
 	    if ((error = (*convertItem)(ss, in, out, DOSBase)))
 		return error;
 	}
+	else if (c == ';')
+	{
+	     /* rest of line is comment, ignore it */
+	     break;
+	}
 	else
 	    bufferCopy(in, out, 1);
     }
