@@ -165,10 +165,10 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
 
 	/* ugly hack */
 
+	fhinput->fh_Pos = 0;
     	if (size > 0)
     	{
 	    CopyMem(argptr, BADDR(fhinput->fh_Buf), size);
-	    fhinput->fh_Pos = 0;
 
 	    /*
 	     * Append EOL if there's no one.
@@ -177,14 +177,6 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
 	    if (((UBYTE *)BADDR(fhinput->fh_Buf))[size - 1] != '\n')
 	    	((UBYTE *)BADDR(fhinput->fh_Buf))[size++] = '\n';
 	}
-	else
-	    /*
-	     * Inject EOF if the string is empty.
-	     * This is for the same purpose as appending EOL above, but looks more consistent.
-	     * CHECKME: are these things correct at all?
-	     */
-	    fhinput->fh_Pos = fhinput->fh_Pos + 1;
-
-        fhinput->fh_End = size;
+	fhinput->fh_End = size;
     }
 }
