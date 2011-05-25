@@ -449,7 +449,7 @@ IPTR IControlEditor__OM_NEW
                             Child, HSpace(0),
                         End,
                         Child, Label1(_(MSG_META_DRAG)),
-                        Child, metadragobj = MUI_NewObject("HotKeyString.mcc",
+                        Child, metadragobj = MUI_NewObject("HotkeyString.mcc",
                             MUIA_Frame, MUIV_Frame_String,
                         TAG_DONE),
                     End,

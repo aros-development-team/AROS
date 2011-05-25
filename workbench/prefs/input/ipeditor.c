@@ -245,7 +245,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             	Child, (IPTR)MUI_MakeObject(MUIO_HSpace, 0),
                             End,
                             Child, (IPTR)Label1(__(MSG_GAD_KEY_SWITCH_KEY)),
-                            Child, (IPTR)(switchKey = MUI_NewObject("HotKeyString.mcc",
+                            Child, (IPTR)(switchKey = MUI_NewObject("HotkeyString.mcc",
                                 StringFrame,
                                 MUIA_Disabled, TRUE,
                             TAG_DONE)),
