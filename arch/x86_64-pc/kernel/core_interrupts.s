@@ -92,15 +92,15 @@ core_EnterInterrupt:			// At this point two UQUADs for segment registers are
 	movq	reg_gs(%rdi), %rsi	// Error number - second argument
 	movq	reg_fs(%rdi), %rdx	// IRQ number - third argument
 	xorq	%rax, %rax		// Zero-pad segments
-	mov	%ds, %eax		// Now save segment registers
+	mov	%ds, %ax		// Now save segment registers
 	movq	%rax, reg_ds(%rdi)
-	mov	%es, %eax
+	mov	%es, %ax
 	movq	%rax, reg_es(%rdi)
-	mov	%fs, %eax
+	mov	%fs, %ax
 	movq	%rax, reg_fs(%rdi)
-	mov	%gs, %eax
+	mov	%gs, %ax
 	movq	%rax, reg_gs(%rdi)
-	movl    $KERNEL_DS, %eax	// We are supervisor now
+	mov	$KERNEL_DS, %ax		// We are supervisor now
 	mov     %ax, %ds
 	mov     %ax, %es
 	jmp	core_IRQHandle		// Proceed to C handler
@@ -111,16 +111,16 @@ core_EnterInterrupt:			// At this point two UQUADs for segment registers are
 
 core_LeaveInterrupt:
 	movl	Flags(%rdi), %eax	// Test if the context contains segment registers
-	test	%eax, ECF_SEGMENTS
+	test	$ECF_SEGMENTS, %eax
 	je	noSegments
 	movq	reg_ds(%rdi), %rax	// Restore segment registers if present
-	mov	%eax, %ds
+	mov	%ax, %ds
 	movq	reg_es(%rdi), %rax
-	mov	%eax, %es
+	mov	%ax, %es
 	movq	reg_fs(%rdi), %rax
-	mov	%eax, %fs
+	mov	%ax, %fs
 	movq	reg_gs(%rdi), %rax
-	mov	%eax, %gs
+	mov	%ax, %gs
 noSegments:
 	movq	%rdi, %rsp		// Load context pointer into SP, we will pop everything
 	popq	%rax			// These were flags, just remove them
