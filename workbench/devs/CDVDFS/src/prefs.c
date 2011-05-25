@@ -4,6 +4,7 @@
 #include <proto/exec.h>
 #include <string.h>
 
+#include "charset.h"
 #include "debug.h"
 #include "globals.h"
 #include "prefs.h"
@@ -66,9 +67,8 @@ void Prefs_Init (void)
 
 void Prefs_Uninit (void)
 {
-    MSG killmsg;
-
-    if (global->PrefsProc) {
+    if (global->PrefsProc)
+    {
 	Signal(global->PrefsProc, SIGBREAKF_CTRL_C);
 	WaitPort(global->Dback);	    /*	He's dead jim!      */
 	GetMsg(global->Dback);
