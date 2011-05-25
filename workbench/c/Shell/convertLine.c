@@ -58,6 +58,7 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBa
 
     for (; in->cur < n; p = c)
     {
+	D(bug("[convertLoopRedir] cur %u\n", in->cur));
 	c = in->buf[in->cur];
 
 	if (p == '*')
@@ -75,10 +76,23 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBa
 	else if (c == '<' || c == '>')
 	{
 	    if ((error = convertRedir(ss, in, out, DOSBase)))
+	    {
+		D(bug("[convertLoopRedir] convertRedir(%s) error %u\n", in->buf, error));
 		return error;
+	    }
 	}
 	else
 	    bufferCopy(in, out, 1);
+
+	/*
+	 * CHECKME: This allows at least to boot up AROS. Without this Assign THEME: ${SYS/theme.var}
+	 * causes error 205 because in->len is greater than real string length.
+	 * However there are still problems with:
+	 * a) 'If EXISTS ENV:SYS/Packages'. The block is executed even when the file is missing.
+	 * b) 'Prompt' in shell-startup gives 'unmatched quotes' error.
+	 */
+	if (c == 0)
+	    break;
     }
 
     in->cur = n;
@@ -211,22 +225,39 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
 
     /* PASS 1: `backticks` substitution */
     if ((error = convertLoop(convertBackTicks, '`', ss, in, out, DOSBase)))
+    {
+	D(bug("[convertLine] Error %u parsing aliases\n", error));
 	return error;
+    }
 
     /* PASS 2: <args> substitution & CLI# <$$>*/
     if ((error = convertLoop(convertArg, ss->bra, ss, out, in, DOSBase)))
+    {
+	D(bug("[convertLine] Error %u parsing aliases\n", error));
 	return error;
+    }
 
     /* PASS 3: ${vars} substitution */
     if ((error = convertLoop(convertVar, '$', ss, in, out, DOSBase)))
+    {
+	D(bug("[convertLine] Error %u parsing variable\n", error));
 	return error;
+    }
 
     /* PASS 4: command & aliases */
     if ((error = readCommand(ss, out, in, DOSBase)))
+    {
+	D(bug("[convertLine] Error %u parsing aliases\n", error));
 	return error;
+    }
 
     *haveCommand = TRUE;
 
     /* PASS 5: redirections */
-    return convertLoopRedir(ss, in, out, DOSBase);
+    error = convertLoopRedir(ss, in, out, DOSBase);
+    if (error)
+    {
+	D(bug("[convertLine] Error %u parsing redirect\n", error));
+    }
+    return error;
 }
