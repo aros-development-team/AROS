@@ -5,6 +5,7 @@
 
 #include "debug.h"
 #include "iso9660.h"
+#include "charset.h"
 #include "joliet.h"
 #include "globals.h"
 #include "aros_stuff.h"
