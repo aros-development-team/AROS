@@ -91,6 +91,7 @@ core_EnterInterrupt:			// At this point two UQUADs for segment registers are
 	movq    %rsp, %rdi		// Supply context pointer to core_IRQHandle (first argument)
 	movq	reg_gs(%rdi), %rsi	// Error number - second argument
 	movq	reg_fs(%rdi), %rdx	// IRQ number - third argument
+	xorq	%rax, %rax		// Zero-pad segments
 	mov	%ds, %eax		// Now save segment registers
 	movq	%rax, reg_ds(%rdi)
 	mov	%es, %eax
