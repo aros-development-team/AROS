@@ -1,0 +1,89 @@
+ This document describes AROS kickstart command line options understood by various components.
+ TODO: this list is very incomplete.
+
+ kernel.resource
+==============================================================================================
+
+ vblank=N
+
+ Set emulated VBlank frequency to N hz.
+ Applicable: All hosted.
+----------------------------------------------------------------------------------------------
+
+ eclock=N
+
+ Set emulated EClock frequency to N hz. N is rounded down to the nearest integer
+multiple of vblank. EClock is the system's master timer which is used by timer.device
+to measure time intervals. The greater this value is, the more precise is time measurement
+but more CPU load is caused by AROS.
+ Applicable: All hosted
+-----------------------------------------------------------------------------------------------
+
+ debug=<debug output string>
+
+ Specify debug output channel. Debug output string has the following format:
+<driver>:<arguments>
+ Applicable: x86-64-pc, i386-pc.
+
+ Currently available drivers are:
+
+   memory - circular buffer in memory. Implemented only on i386-pc.
+   serial - serial port. Arguments have the following format: <port>[@<baud>], where <port>
+   	    is either onboard serial port number (0 - 4) or base I/O address of a custom port.
+   	    Default to 0@115200. Arguments are implemented only on x86-64-pc.
+------------------------------------------------------------------------------------------------
+
+ vesahack
+
+ Patch VESA framebuffer descriptor in order to enforce VESA display driver into split-screen mode.
+The display occupied only upper half of the framebuffer, while lower half is used for on-screen debug
+output.
+ Applicable: x86-64-pc
+------------------------------------------------------------------------------------------------
+
+ exec.library
+================================================================================================
+
+ mungwall
+ 
+ Enable mungwall - anti-memory-trashing guard.
+ Applicable: all except PowerPC native.
+------------------------------------------------------------------------------------------------
+
+ sysdebug=<flags>
+
+ Enable various categories of runtime debug output. Categories are either separated by commas
+without spaces, or can include spaces if taken into quotes.
+
+ Available categories are:
+ 
+ initresident  - trace InitResident() function
+ initcode      - trace InitCode(), modules discovery, and related early startup
+ findresident  - trace FindResident() function
+ createlibrary - trace internal modules initialization
+ setfunction   - trace SetFunction() calls
+ addtask       - trace task creation
+ remtask       - trace task disposal
+ init          - early system initialization. Also used by intuition.library for some tracing.
+ all           - a shortcut for "all together".
+
+ Examples:
+ 
+ sysdebug=initcode,setfunction
+ sysdebug="init initcode addtask"
+
+ poseidon.library
+================================================================================================
+
+ usbdebug
+
+ Duplicate Poseidon debug log in AROS debug output.
+------------------------------------------------------------------------------------------------
+
+ pciusb.device
+================================================================================================
+
+ forceusbpower
+
+ Force power on all OHCI USB ports to ON and disable overcurrent detection. Known to be needed on
+Intel MacMini. Try this if your USB doesn't work.
