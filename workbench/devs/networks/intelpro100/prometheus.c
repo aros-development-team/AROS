@@ -69,7 +69,7 @@ ULONG GetPrometheusCount(struct DevBase *base)
 /****i* intelpro100.device/AllocPrometheusCard *****************************
 *
 *   NAME
-*	AllocPrometheusCard -- Create a unit.
+*	AllocPrometheusCard -- Take control of a card.
 *
 *   SYNOPSIS
 *	context = AllocPrometheusCard(index)
@@ -142,7 +142,7 @@ struct BusContext *AllocPrometheusCard(ULONG index, struct DevBase *base)
 /****i* intelpro100.device/FreePrometheusCard ******************************
 *
 *   NAME
-*	FreePrometheusCard
+*	FreePrometheusCard -- Release a card.
 *
 *   SYNOPSIS
 *	FreePrometheusCard(context)

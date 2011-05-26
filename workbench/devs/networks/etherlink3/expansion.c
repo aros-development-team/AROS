@@ -121,12 +121,12 @@ ULONG GetExpansionCount(struct DevBase *base)
 /****i* etherlink3.device/AllocExpansionCard *******************************
 *
 *   NAME
-*	AllocExpansionCard -- Get card from system.
+*	AllocExpansionCard -- Take control of a card.
 *
 *   SYNOPSIS
-*	unit = AllocExpansionCard(index)
+*	context = AllocExpansionCard(index)
 *
-*	struct DevPCI *AllocExpansionCard(ULONG);
+*	struct BusContext *AllocExpansionCard(ULONG);
 *
 ****************************************************************************
 *
@@ -188,7 +188,7 @@ struct BusContext *AllocExpansionCard(ULONG index, struct DevBase *base)
 /****i* etherlink3.device/FreeExpansionCard ********************************
 *
 *   NAME
-*	FreeExpansionCard
+*	FreeExpansionCard -- Release a card.
 *
 *   SYNOPSIS
 *	FreeExpansionCard(context)

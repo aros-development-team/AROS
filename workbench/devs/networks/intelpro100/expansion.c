@@ -104,12 +104,12 @@ ULONG GetExpansionCount(struct DevBase *base)
 /****i* intelpro100.device/AllocExpansionCard ******************************
 *
 *   NAME
-*	AllocExpansionCard
+*	AllocExpansionCard -- Take control of a card.
 *
 *   SYNOPSIS
-*	unit = AllocExpansionCard(index)
+*	context = AllocExpansionCard(index)
 *
-*	struct DevPCI *AllocExpansionCard(ULONG);
+*	struct BusContext *AllocExpansionCard(ULONG);
 *
 ****************************************************************************
 *
@@ -164,7 +164,7 @@ struct BusContext *AllocExpansionCard(ULONG index, struct DevBase *base)
 /****i* intelpro100.device/FreeExpansionCard *******************************
 *
 *   NAME
-*	FreeExpansionCard
+*	FreeExpansionCard -- Release a card.
 *
 *   SYNOPSIS
 *	FreeExpansionCard(context)

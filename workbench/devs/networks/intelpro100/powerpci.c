@@ -69,7 +69,7 @@ ULONG GetPowerPCICount(struct DevBase *base)
 /****i* intelpro100.device/AllocPowerPCICard *******************************
 *
 *   NAME
-*	AllocPowerPCICard
+*	AllocPowerPCICard -- Take control of a card.
 *
 *   SYNOPSIS
 *	context = AllocPowerPCICard(index)
@@ -134,7 +134,7 @@ struct BusContext *AllocPowerPCICard(ULONG index, struct DevBase *base)
 /****i* intelpro100.device/FreePowerPCICard ********************************
 *
 *   NAME
-*	FreePowerPCICard
+*	FreePowerPCICard -- Release a card.
 *
 *   SYNOPSIS
 *	FreePowerPCICard(context)

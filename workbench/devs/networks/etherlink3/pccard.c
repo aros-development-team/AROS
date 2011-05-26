@@ -337,7 +337,7 @@ VOID DeletePCCardUnit(struct DevUnit *unit, struct DevBase *base)
 *	AllocCard -- Get card from system.
 *
 *   SYNOPSIS
-*	unit = AllocCard()
+*	context = AllocCard()
 *
 *	struct BusContext *AllocCard();
 *
@@ -428,7 +428,7 @@ static struct BusContext *AllocCard(struct DevBase *base)
 /****i* etherlink3.device/FreeCard *****************************************
 *
 *   NAME
-*	FreeCard
+*	FreeCard -- Release a card.
 *
 *   SYNOPSIS
 *	FreeCard(context)
