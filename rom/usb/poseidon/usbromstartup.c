@@ -1,18 +1,51 @@
 /* Very basic bootstrap for Poseidon in AROS kernel for enabling of USB booting and HID devices.
  * PsdStackloader should be started during startup-sequence nonetheless */
 
+#include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
-
-#include LC_LIBDEFS_FILE
-
+#include <exec/resident.h>
 #include <proto/poseidon.h>
 #include <proto/exec.h>
 
-#include <string.h>
-
-int usbromstartup_init(void)
+int __startup usbromstartup_entry(void)
 {
+    return -1;
+}
+
+static const char name[];
+static const char version[];
+static const UBYTE endptr;
+
+AROS_UFP3(static IPTR, usbromstartup_init,
+    AROS_UFHA(ULONG, dummy, D0),
+    AROS_UFHA(BPTR, seglist, A0),
+    AROS_UFHA(struct ExecBase *, SysBase, A6));
+
+const struct Resident usbHook =
+{
+    RTC_MATCHWORD,
+    (struct Resident *)&usbHook,
+    (APTR)&endptr,
+    RTF_COLDSTART,
+    41,
+    NT_TASK,
+    35,
+    name,
+    &version[5],
+    (APTR)usbromstartup_init
+};
+
+static const char name[] = "Poseidon ROM starter";
+static const char version[] = "$VER:Poseidon ROM startup v41.1";
+
+AROS_UFH3(static IPTR, usbromstartup_init,
+    AROS_UFHA(ULONG, dummy, D0),
+    AROS_UFHA(BPTR, seglist, A0),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
     struct Library *ps;
     struct PsdHardware *phw;
     ULONG cnt = 0;
@@ -53,7 +86,7 @@ int usbromstartup_init(void)
             psdGetAttrs(PGA_USBCLASS, msdclass, UCA_UseCount, &usecount, TAG_END);
             if(usecount > 0)
             {
-                psdAddErrorMsg(RETURN_OK, MOD_NAME_STRING,
+                psdAddErrorMsg(RETURN_OK, (STRPTR)name,
                                "Delaying further execution by %ld second(s) (boot delay).",
                                bootdelay);
                 if(bootdelay > 1)
@@ -61,13 +94,15 @@ int usbromstartup_init(void)
                     psdDelayMS((bootdelay-1)*1000);
                 }
             } else {
-                psdAddErrorMsg(RETURN_OK, MOD_NAME_STRING, "Boot delay skipped, no mass storage devices found.");
+                psdAddErrorMsg(RETURN_OK, (STRPTR)name, "Boot delay skipped, no mass storage devices found.");
             }
         }
 
         CloseLibrary(ps);
     }
-    return(0);
+    return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
-ADD2INITLIB(usbromstartup_init, 0)
+static const UBYTE endptr = 0;
