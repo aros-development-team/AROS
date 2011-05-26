@@ -13,7 +13,7 @@
 
 #include "dosboot_intern.h"
 
-void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags)
+void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
     LONG rc;
     BPTR cis = BNULL;

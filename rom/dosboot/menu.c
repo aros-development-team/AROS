@@ -327,13 +327,19 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
 	{
             ForeachNode(list,node)
 	    {
-                if (0 == strcmp(node->ln_Name, "bootmenu")) {
+                if (0 == stricmp(node->ln_Name, "bootmenu"))
+                {
                     D(bug("[BootMenu] bootmenu_Init: Forced with bootloader argument\n"));
                     WantBootMenu = TRUE;
                 }
-
-		if (0 == strcmp(node->ln_Name, "nomonitors"))
+		else if (0 == stricmp(node->ln_Name, "nomonitors"))
+		{
 		    LIBBASE->BootFlags |= BF_NO_DISPLAY_DRIVERS;
+		}
+		else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
+		{
+		    LIBBASE->db_BootDevice = &node->ln_Name[11];
+		}
             }
         }
     }
