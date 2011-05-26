@@ -14,9 +14,19 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define ABC    0x80
+#define ABNC   0x40
+#define ANBC   0x20
+#define ANBNC  0x10
+#define NABC   0x08
+#define NABNC  0x04
+#define NANBC  0x02
+#define NANBNC 0x01
+
 static void startblitter(struct amigavideo_staticdata *data, UWORD w, UWORD h)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+
     if (data->ecs_agnus) {
     	custom->bltsizv = h;
     	custom->bltsizh = w;
@@ -207,7 +217,8 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct amigabm_data *bm, 
     WORD width, height;
     UBYTE i;
     
-    //D(bug("fillrect(%dx%d,%dx%d,%d,%d)\n", x1, y1, x2, y2, pixel, mode));
+    D(bug("fillrect(%dx%d,%dx%d,%d,%d)\n", x1, y1, x2, y2, pixel, mode));
+    D(bug("bm = %dx%dx%d bpr=%d\n", bm->width, bm->height, bm->depth, bm->bytesperrow));
 
     if (fill_minterm[mode] == 0 || USE_BLITTER == 0)
     	return FALSE;
@@ -263,23 +274,18 @@ struct pHidd_BitMap_PutTemplate
 };
 #endif
 
-static const UBYTE tmpl_minterm[] = { 0, 0, 0, 0, 0, 0 };
 // A-DAT = edge masking
 // B     = template
 // C     = destination
 // D     = destination
 
-// 0 = JAM1:			FG=1: /AC + AB FG=0: /AC + A/B
-// 1 = JAM1 | INVERSVID: 	FG=0: /AC + AB FG=1: /AC + A/B
-// 2 = COMPLEMENT:		/AC + AB/C
-// 3 = COMPLEMENT | INVERSIVD:	/AC + A/B/C
-// 4 = JAM2:			/AC + (FG=0: A/B) (FG=1: AB) + (BG=0: A
-// 5 = JAM2 | INVERSVID:	/AC
 BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct pHidd_BitMap_PutTemplate *tmpl)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = data->gfxbase;
     OOP_Object *gc = tmpl->gc;
+    HIDDT_Pixel	fgpen = GC_FG(tmpl->gc);
+    HIDDT_Pixel bgpen = GC_BG(tmpl->gc);
 
     UBYTE type, i;
     BYTE shift;
@@ -295,7 +301,9 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
     WORD srcx = tmpl->srcx;
     WORD srcx2 = srcx + tmpl->width - 1;
 
-return FALSE;
+    if (USE_BLITTER == 0)
+    	return FALSE;
+
     if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
     	type = 0;
     else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
@@ -305,14 +313,18 @@ return FALSE;
     if (tmpl->inverttemplate)
     	type++;
 
-    srcoffset = 0;
-    dstoffset = bm->bytesperrow * dstx + dsty / 16;
+    D(bug("puttemplate: %x x=%d y=%d w=%d h=%d type=%d fg=%d bg=%d\n",
+	tmpl->Template, tmpl->x, tmpl->y, tmpl->width, tmpl->height, type, fgpen, bgpen));
 
-    srcwidth = srcx2 / 16 + 1;
+    srcoffset = 0;
+    dstoffset = bm->bytesperrow * dsty + (dstx / 16) * 2;
+
+    srcwidth = srcx2 / 16;
     dstwidth = dstx2 / 16 - dstx / 16 + 1;
  
     dstx &= 15;
     dstx2 &= 15;
+    srcx &= 15;
     srcx2 &= 15;
  
     shift = dstx - srcx;
@@ -359,18 +371,71 @@ return FALSE;
     custom->bltbmod = tmpl->modulo - width * 2;
     custom->bltcmod = bm->bytesperrow - width * 2;
     custom->bltdmod = bm->bytesperrow - width * 2;
-    custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftb;
-    custom->bltcon0 = 0x0700 | tmpl_minterm[type] | shifta;
     custom->bltadat = 0xffff;
     
     for (i = 0; i < bm->depth; i++) {
+    	UBYTE minterm;
+    	UWORD chmask, shiftbv;
+    	UBYTE fg, bg, tg;
+
     	if (bm->planes[i] == (UBYTE*)0x00000000 || bm->planes[i] == (UBYTE*)0xffffffff)
   	    continue;
+
+  	fg = fgpen & 1;
+  	bg = bgpen & 1;
+  	chmask = 0x0700;
+  	shiftbv = shiftb;
+ 
+ 	/* not guaranteed to be correct, last time I played with minterms
+ 	 * was something like 20 years ago..
+ 	 */
+  	switch (type)
+  	{
+  	    case 0: // JAM1:
+  	    minterm = (NABC | NANBC) | (fg ? ABC | ABNC | ANBC : ANBC);
+  	    break;
+  	    case 1: // JAM1 | INVERSVID
+ 	    minterm = (NABC | NANBC) | (fg ? ANBC | ANBNC | ABC : ABC);
+  	    break;
+  	    case 2: // COMPLEMENT:
+  	    minterm = (NABC | NANBC) | (ANBC | ABNC);
+  	    break;
+  	    case 3: // COMPLEMENT | INVERSVID:
+  	    minterm = (NABC | NANBC) | (ABC | ANBNC);
+  	    break;
+   	    case 5: // JAM2 | INVERSVID
+   	    tg = fg;
+   	    fg = bg;
+   	    bg = tg;
+ 	    case 4: // JAM2
+  	    if (fg && bg) {
+  	    	minterm = (NABC | NANBC) | (ABC | ABNC);
+  	    	chmask = 0x0300;
+  	    	shiftbv = 0;
+  	    } else if (!fg && !bg) {
+  	    	minterm = (NABC | NANBC);
+  	    	chmask = 0x0300;
+  	    	shiftbv = 0;
+   	    } else if (fg) {
+  	    	minterm = (NABC | NANBC) | (ABC | ABNC);
+  	    } else {
+  	    	minterm = (NABC | NANBC) | (ANBC | ANBNC);
+  	    }
+  	    break;
+  	    minterm = 0x0a | (fg ? 0x30 : 0) | (bg ? 0xc0 : 0);
+  	    break;
+  	}
+  	
     	WaitBlit();
+	custom->bltcon0 = shifta | chmask | minterm;
+	custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftbv;
+	custom->bltbdat = 0xffff;
 	custom->bltbpt = (APTR)(tmpl->Template + srcoffset);
     	custom->bltcpt = (APTR)(bm->planes[i] + dstoffset);
     	custom->bltdpt = (APTR)(bm->planes[i] + dstoffset);
     	startblitter(data, width, height);
+  	fgpen >>= 1;
+  	bgpen >>= 1;
     }
 
     WaitBlit();
