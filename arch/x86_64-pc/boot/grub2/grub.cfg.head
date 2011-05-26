@@ -1,9 +1,0 @@
-if loadfont /boot/grub/unicode.pf2 ; then
-	insmod /boot/grub/vbe.mod
-	insmod /boot/grub/gfxterm.mod
-	set gfxmode=640x480
-	terminal_output gfxterm
-	insmod /boot/grub/png.mod
-	background_image /boot/grub/splash.png
-fi
-

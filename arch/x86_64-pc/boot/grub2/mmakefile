@@ -11,11 +11,11 @@ bootloader-grub2-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg
 bootloader-grub2gfx-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg
 
 ifeq ($(AROS_TARGET_VARIANT),efi)
-    HEAD := grub-efi.cfg.head
+    FILE := grub-efi.cfg
 else
-    HEAD := grub.cfg.head
+    FILE := grub.cfg
 endif
 
-$(BINDIR)/boot/grub/grub.cfg: $(HEAD) grub.cfg.tail
-	@$(ECHO) Writing $@...
-	@$(CAT) $^ >$@
+$(BINDIR)/boot/grub/grub.cfg: $(FILE)
+	@$(ECHO) Copying $@...
+	@$(CP) $< $@
