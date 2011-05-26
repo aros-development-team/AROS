@@ -25,6 +25,8 @@
 #include <hidd/graphics.h>
 #include <aros/symbolsets.h>
 
+#define CMDDEBUGUNIMP(x) ;
+#define CMDDEBUGPIXEL(x) ;
 #define DEBUG 0
 #define DB2(x) ;
 #define DEBUG_TEXT(x)
@@ -305,7 +307,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 	    }
         }
     }
-    //bug("putpixel %dx%d %x\n", msg->x, msg->y, msg->pixel);
+    CMDDEBUGPIXEL(bug("PutPixel: %dx%d %x\n", msg->x, msg->y, msg->pixel));
 }
 
 /****************************************************************************************/
@@ -342,7 +344,8 @@ ULONG AmigaVideoBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 	    }
 	}
     }
-    //bug("getpixel %dx%d=%x\n", msg->x, msg->y, retval);
+    CMDDEBUGPIXEL(bug("GetPixel: %dx%d=%x\n", msg->x, msg->y, retval));
+    volatile ULONG *c = 0x110; *c = 0x123;
     return retval; 
 }
 
@@ -373,6 +376,7 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
     	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     } else {
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	CMDDEBUGUNIMP(bug("DrawLine\n"));
     }
 }
 
@@ -387,6 +391,8 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     ULONG   	    	    planeoffset;
     struct amigabm_data   *data;  
     
+    CMDDEBUGUNIMP(bug("PutImageLUT\n"));
+
     data = OOP_INST_DATA(cl, o);
     
     planeoffset = msg->y * data->bytesperrow + msg->x / 8;
@@ -458,6 +464,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	return;
     }
+    CMDDEBUGUNIMP(bug("PutImage\n"));
     
     planeoffset = msg->y * data->bytesperrow + msg->x / 8;
     
@@ -578,8 +585,10 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
-    if (!blit_fillrect(csd, data, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode))
+    if (!blit_fillrect(csd, data, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode)) {
+ 	CMDDEBUGUNIMP(bug("FillRect\n"));
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
 }
 
 /****************************************************************************************/
@@ -589,10 +598,11 @@ VOID AmigaVideoBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
-    D(bug("puttemplate: %x x=%d y=%d w=%d h=%d srcx=%d modulo=%d invert=%d\n",
-    	msg->Template, msg->x, msg->y, msg->width, msg->height, msg->srcx, msg->inverttemplate));
-    if (!blit_puttemplate(csd, data, msg))
+    if (!blit_puttemplate(csd, data, msg)) {
+	CMDDEBUGUNIMP(bug("PutTemplate: %x x=%d y=%d w=%d h=%d srcx=%d modulo=%d invert=%d\n",
+    	    msg->Template, msg->x, msg->y, msg->width, msg->height, msg->srcx, msg->inverttemplate));
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
 }
 
 
@@ -607,6 +617,7 @@ VOID AmigaVideoBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct 
 BOOL AmigaVideoBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_PlanarBM_SetBitMap *msg)
 {
+    CMDDEBUGUNIMP(bug("SetBitMap\n"));
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -615,5 +626,6 @@ BOOL AmigaVideoBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 BOOL AmigaVideoBM__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_PlanarBM_GetBitMap *msg)
 {
+    CMDDEBUGUNIMP(bug("GetBitMap\n"));
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

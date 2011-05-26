@@ -811,7 +811,7 @@ ULONG AmigaVideoCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct 
 {
     struct HIDD_ViewPortData *vpd = msg->Data;
     
-    bug("AmigaVideoCl__Hidd_Gfx__MakeViewPort vp=%p bm=%p vpe=%p\n", vpd->vpe->ViewPort, vpd->Bitmap, vpd->vpe);
+    D(bug("AmigaVideoCl__Hidd_Gfx__MakeViewPort vp=%p bm=%p vpe=%p\n", vpd->vpe->ViewPort, vpd->Bitmap, vpd->vpe));
     /* TODO: implement this correctly */
     return MVP_OK;
 }
@@ -821,7 +821,7 @@ void AmigaVideoCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct 
     struct HIDD_ViewPortData *vpd = msg->Data;
     struct ViewPort *vp = vpd->vpe->ViewPort;
 
-    bug("AmigaVideoCl__Hidd_Gfx__CleanViewPort vp=%p bm=%p vpe=%p\n", vpd->vpe->ViewPort, vpd->Bitmap, vpd->vpe);
+    D(bug("AmigaVideoCl__Hidd_Gfx__CleanViewPort vp=%p bm=%p vpe=%p\n", vpd->vpe->ViewPort, vpd->Bitmap, vpd->vpe));
     /* It's safe to call these functions on NULL pointers */
     FreeCopList(vp->ClrIns);
     FreeCopList(vp->DspIns);
