@@ -4,7 +4,6 @@
  */
 
 #include <exec/lists.h>
-
 #include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -58,7 +57,7 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBa
 
     for (; in->cur < n; p = c)
     {
-	D(bug("[convertLoopRedir] cur %u\n", in->cur));
+	DB2(bug("[convertLoopRedir] cur %u\n", in->cur));
 	c = in->buf[in->cur];
 
 	if (p == '*')
@@ -90,9 +89,11 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBa
 	 * However there are still problems with:
 	 * a) 'If EXISTS ENV:SYS/Packages'. The block is executed even when the file is missing.
 	 * b) 'Prompt' in shell-startup gives 'unmatched quotes' error.
+	 * UPD: Works on Darwin 64-bit. If this check is disabled, everything works correctly.
+	 * Symptoms described here pop up on Linux PPC. Needs retesting.
 	 */
-	if (c == 0)
-	    break;
+/*	if (c == 0)
+	    break;*/
     }
 
     in->cur = n;
@@ -255,9 +256,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
 
     /* PASS 5: redirections */
     error = convertLoopRedir(ss, in, out, DOSBase);
-    if (error)
-    {
-	D(bug("[convertLine] Error %u parsing redirect\n", error));
-    }
+    D(bug("[convertLine] Error %u parsing redirect\n", error));
+
     return error;
 }
