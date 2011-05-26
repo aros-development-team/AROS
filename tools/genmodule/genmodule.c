@@ -52,7 +52,11 @@ int main(int argc, char **argv)
 
 	writefunclist(cfg);
 	break;
-	
+
+    case WRITEFD:
+	writefd(cfg);
+	break;
+
     default:
 	fprintf(stderr, "Internal error in main: Unhandled command type\n");
 	exit(20);

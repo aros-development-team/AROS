@@ -1,3 +1,6 @@
+#ifndef GENMODULE_H
+#define GENMODULE_H
+
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 
@@ -23,3 +26,6 @@ void writeend(struct config *);
 void writeautoinit(struct config *);
 void writestubs(struct config *);
 void writefunclist(struct config *);
+void writefd(struct config *);
+
+#endif
