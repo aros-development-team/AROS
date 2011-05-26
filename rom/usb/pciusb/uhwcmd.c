@@ -1,13 +1,14 @@
 /* uhwcmd.c - pciusb.device by Chris Hodges
 */
 
-#include "uhwcmd.h"
 #include <devices/usb_hub.h>
-#include <strings.h>
-
 #include <proto/utility.h>
 #include <proto/exec.h>
 #include <proto/timer.h>
+
+#include <strings.h>
+
+#include "uhwcmd.h"
 
 #define NewList NEWLIST
 
@@ -33,6 +34,7 @@ void SureCause(struct PCIDevice *base, struct Interrupt *interrupt)
 {
     /* this is a workaround for the original Cause() function missing tailed calls */
     Disable();
+
     if((interrupt->is_Node.ln_Type == NT_SOFTINT) || (interrupt->is_Node.ln_Type == NT_USER))
     {
         // signal tailed call
@@ -223,7 +225,7 @@ WORD cmdReset(struct IOUsbHWReq *ioreq,
               struct PCIUnit *unit,
               struct PCIDevice *base)
 {
-    KPRINTF(10, ("CMD_RESET ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("CMD_RESET ioreq: 0x%p\n", ioreq));
 
     uhwDelayMS(1, unit);
     uhwGetUsbState(ioreq, unit, base);
@@ -253,7 +255,7 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq,
                  struct PCIUnit *unit,
                  struct PCIDevice *base)
 {
-    KPRINTF(10, ("UHCMD_USBRESET ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_USBRESET ioreq: 0x%p\n", ioreq));
 
     /* FIXME */
     uhwGetUsbState(ioreq, unit, base);
@@ -286,7 +288,7 @@ WORD cmdUsbResume(struct IOUsbHWReq *ioreq,
                   struct PCIUnit *unit,
                   struct PCIDevice *base)
 {
-    KPRINTF(10, ("UHCMD_USBRESUME ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_USBRESUME ioreq: 0x%p\n", ioreq));
 
     /* FIXME */
     uhwGetUsbState(ioreq, unit, base);
@@ -315,7 +317,7 @@ WORD cmdUsbSuspend(struct IOUsbHWReq *ioreq,
                    struct PCIUnit *unit,
                    struct PCIDevice *base)
 {
-    KPRINTF(10, ("UHCMD_USBSUSPEND ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_USBSUSPEND ioreq: 0x%p\n", ioreq));
 
     /* FIXME */
     uhwGetUsbState(ioreq, unit, base);
@@ -344,7 +346,7 @@ WORD cmdUsbOper(struct IOUsbHWReq *ioreq,
                 struct PCIUnit *unit,
                 struct PCIDevice *base)
 {
-    KPRINTF(10, ("UHCMD_USBOPER ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_USBOPER ioreq: 0x%p\n", ioreq));
 
     /* FIXME */
     uhwGetUsbState(ioreq, unit, base);
@@ -376,7 +378,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     struct TagItem *tag;
     ULONG count = 0;
 
-    KPRINTF(10, ("UHCMD_QUERYDEVICE ioreq: 0x%08lx, taglist: 0x%08lx\n", ioreq, taglist));
+    KPRINTF(10, ("UHCMD_QUERYDEVICE ioreq: 0x%p, taglist: 0x%p\n", ioreq, taglist));
 
     if((tag = FindTagItem(UHA_State, taglist)))
     {
@@ -1491,7 +1493,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
 {
     struct PCIController *hc;
 
-    KPRINTF(10, ("UHCMD_CONTROLXFER ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_CONTROLXFER ioreq: 0x%p\n", ioreq));
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
     {
@@ -1518,7 +1520,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
     Enable();
     SureCause(base, &hc->hc_CompleteInt);
 
-    KPRINTF(10, ("UHCMD_CONTROLXFER processed ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_CONTROLXFER processed ioreq: 0x%p\n", ioreq));
     return(RC_DONTREPLY);
 }
 /* \\\ */
@@ -1543,7 +1545,7 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq,
 {
     struct PCIController *hc;
 
-    KPRINTF(10, ("UHCMD_BULKXFER ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_BULKXFER ioreq: 0x%p\n", ioreq));
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
     {
@@ -1569,7 +1571,7 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq,
     Enable();
     SureCause(base, &hc->hc_CompleteInt);
 
-    KPRINTF(10, ("UHCMD_BULKXFER processed ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_BULKXFER processed ioreq: 0x%p\n", ioreq));
     return(RC_DONTREPLY);
 }
 /* \\\ */
@@ -1594,7 +1596,7 @@ WORD cmdIsoXFer(struct IOUsbHWReq *ioreq,
 {
     struct PCIController *hc;
 
-    KPRINTF(10, ("UHCMD_ISOXFER ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_ISOXFER ioreq: 0x%p\n", ioreq));
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
     {
@@ -1620,7 +1622,7 @@ WORD cmdIsoXFer(struct IOUsbHWReq *ioreq,
     Enable();
     SureCause(base, &hc->hc_CompleteInt);
 
-    KPRINTF(10, ("UHCMD_ISOXFER processed ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_ISOXFER processed ioreq: 0x%p\n", ioreq));
     return(RC_DONTREPLY);
 }
 /* \\\ */
@@ -1645,7 +1647,7 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
 {
     struct PCIController *hc;
 
-    KPRINTF(10, ("UHCMD_INTXFER ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_INTXFER ioreq: 0x%p\n", ioreq));
     //uhwDelayMS(1000, unit); /* Wait 200 ms */
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
@@ -1673,7 +1675,7 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
     Enable();
     SureCause(base, &hc->hc_CompleteInt);
 
-    KPRINTF(10, ("UHCMD_INTXFER processed ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("UHCMD_INTXFER processed ioreq: 0x%p\n", ioreq));
     return(RC_DONTREPLY);
 }
 /* \\\ */
@@ -1698,7 +1700,7 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
     struct PCIController *hc;
     UWORD devadrep;
 
-    KPRINTF(10, ("CMD_FLUSH ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(10, ("CMD_FLUSH ioreq: 0x%p\n", ioreq));
 
     Disable();
     cmpioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;
@@ -1816,7 +1818,7 @@ WORD cmdNSDeviceQuery(struct IOStdReq *ioreq,
 
     query = (struct my_NSDeviceQueryResult *) ioreq->io_Data;
 
-    KPRINTF(10, ("NSCMD_DEVICEQUERY ioreq: 0x%08lx query: 0x%08lx\n", ioreq, query));
+    KPRINTF(10, ("NSCMD_DEVICEQUERY ioreq: 0x%p query: 0x%p\n", ioreq, query));
 
     /* NULL ptr?
        Enough data?
@@ -1885,7 +1887,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
     UWORD devadrep;
     BOOL foundit = FALSE;
 
-    KPRINTF(10, ("cmdAbort(%08lx)\n", ioreq));
+    KPRINTF(10, ("cmdAbort(%p)\n", ioreq));
 
     Disable();
     cmpioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;
@@ -2026,7 +2028,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
     Enable();
     if(!foundit)
     {
-        KPRINTF(20, ("WARNING, could not abort unknown IOReq %08lx\n", ioreq));
+        KPRINTF(20, ("WARNING, could not abort unknown IOReq %p\n", ioreq));
     }
     return(foundit);
 }
@@ -2096,7 +2098,7 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
             (ioreq->iouh_SetupData.wValue == AROS_WORD2LE(UFS_PORT_RESET)))
     {
         // a hub will be enumerating a device on this host controller soon!
-        KPRINTF(10, ("Hub RESET caught, assigning Dev0 to %08lx!\n", hc));
+        KPRINTF(10, ("Hub RESET caught, assigning Dev0 to %p!\n", hc));
         unit->hu_DevControllers[0] = hc;
     }
 }
@@ -2121,7 +2123,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
     ULONG ctrlstatus;
     BOOL causeint;
 
-    //KPRINTF(1, ("NakTimeoutInt()\n"));
+    KPRINTF(1, ("Enter NakTimeoutInt(0x%p)\n", unit));
 
     // check for port status change for UHCI and frame rollovers and NAK Timeouts
     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
@@ -2150,7 +2152,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                         uqh = (struct UhciQH *) ioreq->iouh_DriverPrivate1;
                         if(uqh)
                         {
-                            KPRINTF(1, ("Examining IOReq=%08lx with UQH=%08lx\n", ioreq, uqh));
+                            KPRINTF(1, ("Examining IOReq=%p with UQH=%p\n", ioreq, uqh));
                             devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
                             linkelem = READMEM32_LE(&uqh->uqh_Element);
                             if(linkelem & UHCI_TERMINATE)
@@ -2159,18 +2161,18 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                                 if(framecnt > unit->hu_NakTimeoutFrame[devadrep])
                                 {
                                     // give the thing the chance to exit gracefully
-                                    KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
+                                    KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
                                     causeint = TRUE;
                                 }
                             } else {
-                                utd = (struct UhciTD *) ((linkelem & UHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16); // struct UhciTD starts 16 before physical TD
+                                utd = (struct UhciTD *) (((IPTR)linkelem & UHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16); // struct UhciTD starts 16 before physical TD
                                 ctrlstatus = READMEM32_LE(&utd->utd_CtrlStatus);
                                 if(ctrlstatus & UTCF_ACTIVE)
                                 {
                                     if(framecnt > unit->hu_NakTimeoutFrame[devadrep])
                                     {
                                         // give the thing the chance to exit gracefully
-                                        KPRINTF(20, ("NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
+                                        KPRINTF(20, ("NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
                                         ctrlstatus &= ~UTCF_ACTIVE;
                                         WRITEMEM32_LE(&utd->utd_CtrlStatus, ctrlstatus);
                                         causeint = TRUE;
@@ -2179,7 +2181,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                                     if(framecnt > unit->hu_NakTimeoutFrame[devadrep])
                                     {
                                         // give the thing the chance to exit gracefully
-                                        KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
+                                        KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
                                         causeint = TRUE;
                                     }
                                 }
@@ -2219,17 +2221,17 @@ AROS_UFH1(void, uhwNakTimeoutInt,
 
                             devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
                             ctrlstatus = READMEM32_LE(&oed->oed_HeadPtr);
-                            KPRINTF(1, ("Examining IOReq=%08lx with OED=%08lx HeadPtr=%08lx\n", ioreq, oed, ctrlstatus));
+                            KPRINTF(1, ("Examining IOReq=%p with OED=%p HeadPtr=%08lx\n", ioreq, oed, ctrlstatus));
                             if(framecnt > unit->hu_NakTimeoutFrame[devadrep])
                             {
                                 if(ctrlstatus & OEHF_HALTED)
                                 {
                                     // give the thing the chance to exit gracefully
-                                    KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
+                                    KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
                                     causeint = TRUE;
                                 } else {
                                     // give the thing the chance to exit gracefully
-                                    KPRINTF(20, ("NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
+                                    KPRINTF(20, ("NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
                                     ctrlstatus |= OEHF_HALTED;
                                     WRITEMEM32_LE(&oed->oed_HeadPtr, ctrlstatus);
                                     ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
@@ -2265,7 +2267,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                             eqh = (struct EhciQH *) ioreq->iouh_DriverPrivate1;
                             if(eqh)
                             {
-                                KPRINTF(1, ("Examining IOReq=%08lx with EQH=%08lx\n", ioreq, eqh));
+                                KPRINTF(1, ("Examining IOReq=%p with EQH=%p\n", ioreq, eqh));
                                 devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
                                 ctrlstatus = READMEM32_LE(&eqh->eqh_CtrlStatus);
                                 if(ctrlstatus & ETCF_ACTIVE)
@@ -2273,7 +2275,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                                     if(framecnt > unit->hu_NakTimeoutFrame[devadrep])
                                     {
                                         // give the thing the chance to exit gracefully
-                                        KPRINTF(20, ("NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
+                                        KPRINTF(20, ("NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
                                         ctrlstatus &= ~ETCF_ACTIVE;
                                         ctrlstatus |= ETSF_HALTED;
                                         WRITEMEM32_LE(&eqh->eqh_CtrlStatus, ctrlstatus);
@@ -2282,7 +2284,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                                 } else {
                                     if(ctrlstatus & ETCF_READYINTEN)
                                     {
-                                        KPRINTF(10, ("INT missed?!? Manually causing it! %08lx, IOReq=%08lx\n",
+                                        KPRINTF(10, ("INT missed?!? Manually causing it! %08lx, IOReq=%p\n",
                                                      ctrlstatus, ioreq));
                                         causeint = TRUE;
                                     }
@@ -2307,6 +2309,8 @@ AROS_UFH1(void, uhwNakTimeoutInt,
 
     unit->hu_NakTimeoutReq.tr_time.tv_micro = 150*1000;
     SendIO((APTR) &unit->hu_NakTimeoutReq);
+
+    KPRINTF(1, ("Exit NakTimeoutInt(0x%p)\n", unit));
 
     AROS_USERFUNC_EXIT
 }

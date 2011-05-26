@@ -213,14 +213,14 @@ struct PCIDevice
     OOP_Object         *hd_IRQHidd;
     OOP_AttrBase        hd_HiddAB;
     OOP_AttrBase        hd_HiddPCIDeviceAB;
-    OOP_AttrBase        hd_HiddUSBDeviceAB;
-    OOP_AttrBase        hd_HiddUSBHubAB;
-    OOP_AttrBase        hd_HiddUSBDrvAB;
 
     BOOL                hd_ScanDone;      /* PCI scan done? */
     APTR                hd_MemPool;       /* Memory Pool */
 
 	struct List         hd_Units;         /* List of units */
 };
+
+/* hd_Flags */
+#define HDF_FORCEPOWER	0x01
 
 #endif /* PCIUSB_H */
