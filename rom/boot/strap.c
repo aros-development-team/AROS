@@ -381,13 +381,18 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
 
     if (pp)
     {
+    	ULONG pttype = PHPTT_UNKNOWN;
+
+    	GetPartitionTableAttrsTags(table, PTT_TYPE, &pttype, TAG_DONE);
+
         attrs = QueryPartitionAttrs(table);
         while ((attrs->attribute != PTA_DONE) && (attrs->attribute != PTA_NAME))
             attrs++;  /* look for name attr */
         if (attrs->attribute != PTA_DONE)
         {
-	    D(bug("[Boot] RDB partition\n"));
-            /* partition has a name => RDB partition */
+	    D(bug("[Boot] RDB/GPT partition\n"));
+
+            /* partition has a name => RDB/GPT partition */
 	    tags[0] = PT_NAME;
 	    tags[1] = (IPTR)name;
 	    tags[2] = PT_DOSENVEC;
@@ -397,14 +402,19 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
 	    tags[6] = TAG_DONE;
 	    GetPartitionAttrs(pn, (struct TagItem *)tags);
 	    D(bug("[Boot] Partition name: %s bootable: %d\n", name, bootable));
-	    /* BHFormat complains if this bit is not set, and it's really wrong to have it unset. So we explicitly set it here.
-	       Pavel Fedin <sonic_amiga@rambler.ru> */
+
+	    /*
+	     * CHECKME: This should not be needed at all. Partition.library knows what it does,
+	     * and it knows DosEnvec size. RDB partitions should have complete DosEnvec. GPT
+	     * partitions (also processed here) have only fields up to de_DosType filled in,
+	     * and this is correctly reflected in the DosEnvec.
             pp[4 + DE_TABLESIZE] = DE_BOOTBLOCKS;
-	    pp[4 + DE_BUFMEMTYPE] |= MEMF_PUBLIC;
+             */
         }
         else
         {
 	    D(bug("[Boot] MBR partition\n"));
+
             /* partition doesn't have a name => MBR partition */
 	    tags[0] = PT_POSITION;
 	    tags[1] = (IPTR)&ppos;
@@ -435,15 +445,19 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
                 name[i++] = '0' + (UBYTE)(ppos / 10);
             name[i++] = '0' + (UBYTE)(ppos % 10);
             name[i] = '\0';
-	    D(bug("[Boot] Partition name: %s type: %lu bootable: %d\n", name, ptyp.id[0], bootable));
+	    D(bug("[Boot] Partition name: %s type: %u\n", name, ptyp.id[0]));
+
+            /*
+             * FIXME: These MBR-related DosEnvec patches should already be correctly done
+             * by partition.library. Test this and remove the unneeded code from here.
+             */
+
             /* set DOSTYPE based on the partition type */
             pp[4 + DE_DOSTYPE] = MatchPartType(ptyp.id[0]);
             /* set some common DOSENV fields */
             pp[4 + DE_TABLESIZE] = DE_BOOTBLOCKS;
             pp[4 + DE_NUMBUFFERS] = 20;
             pp[4 + DE_BUFMEMTYPE] = MEMF_PUBLIC;
-            pp[4 + DE_MAXTRANSFER] = 0x00200000;
-            pp[4 + DE_MASK] = 0x7ffffffe;
             /* set some fs specific fields */
             switch(ptyp.id[0])
             {
@@ -458,10 +472,41 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
             }
         }
 
+	if (pttype != PHPTT_RDB)
+	{
+	    /*
+	     * Only RDB partitions can store the complete DosEnvec.
+	     * For other partition types partition.library puts some defaults
+	     * into these fields, however they do not have anything to do with
+	     * real values, which are device-dependent.
+	     * However, the device itself knows them. Here we inherit these settings
+	     * from the original DeviceNode which represents the whole drive.
+	     * Note that we don't change DosEnvec size. If these fields are not included,
+	     * it will stay this way.
+	     * Copy members only if they are present in device's DosEnvec.
+	     */
+	    struct DosEnvec *devenv = BADDR(fssm->fssm_Environ);
+
+	    if (devenv->de_TableSize >= DE_MAXTRANSFER)
+	    {
+	        pp[4 + DE_MAXTRANSFER] = devenv->de_MaxTransfer;
+
+	    	if (devenv->de_TableSize >= DE_MASK)
+	            pp[4 + DE_MASK] = devenv->de_Mask;
+	    }
+        }
+
+        /*
+         * BHFormat complains if this bit is not set, and it's really wrong to have it unset.
+         * So we explicitly set it here. Pavel Fedin <pavel.fedin@mail.ru>
+	 */
+	pp[4 + DE_BUFMEMTYPE] |= MEMF_PUBLIC;
+
         pp[0] = (IPTR)name;
         pp[1] = (IPTR)AROS_BSTR_ADDR(fssm->fssm_Device);
         pp[2] = fssm->fssm_Unit;
         pp[3] = fssm->fssm_Flags;
+
         i = GetOffset(PartitionBase, pn);
         blockspercyl = pp[4 + DE_BLKSPERTRACK] * pp[4 + DE_NUMHEADS];
         if (i % blockspercyl != 0)
@@ -473,10 +518,6 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
         i /= blockspercyl;
         pp[4 + DE_LOWCYL] += i;
         pp[4 + DE_HIGHCYL] += i;
-
-#ifdef FORCE_BOOTABLE
-	bootable = TRUE;
-#endif
 
 	/*
 	 * Do not check for handlers because m68k-amiga does not
