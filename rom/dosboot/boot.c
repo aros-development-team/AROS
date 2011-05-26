@@ -1,16 +1,12 @@
 /*
-    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot your operating system.
     Lang: english
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
-
-#include <aros/bootloader.h>
-#include <exec/types.h>
 #include <exec/alerts.h>
 #include <exec/libraries.h>
 #include <exec/devices.h>
@@ -20,14 +16,12 @@
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <utility/tagitem.h>
-
-#include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
 #include "dosboot_intern.h"
 
-void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags)
+void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
     LONG rc = RETURN_FAIL;
     BPTR cis = BNULL;
@@ -65,35 +59,23 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
         }
         else
         {
-            /* If poseidon is enabled, ensure that ENV: exists to avoid missing volume requester.
+            /*
+             * If we have poseidon, ensure that ENV: exists to avoid missing volume requester.
              * You could think we should check for this in bootmenu.resource because there we
              * select to boot without startup sequence but there might be other places to do this
              * selection in the future.
              */
-
-            if (BootLoaderBase)
+            struct Library *psdBase = OpenLibrary("poseidon.library", 0);
+            
+            if (psdBase)
             {
-                /* TODO: create something like ExistsBootArg("enableusb") in bootloader.resource */
-                struct List *list = GetBootInfo(BL_Args);
-                BOOL enable = FALSE;
-                if (list)
-                {
-                    struct Node *node;
-                    ForeachNode(list, node)
-                    {
-                        if (stricmp(node->ln_Name, "enableusb") == 0)
-                        {
-                            enable = TRUE;
-                        }
-                    }
-                }
-                
-                if (enable)
-                {
-                    BPTR lock = CreateDir("RAM:ENV");
-                    if (lock)
-                        AssignLock("ENV", lock);
-                }
+            	BPTR lock;
+            	
+            	CloseLibrary(psdBase);
+            	
+            	lock = CreateDir("RAM:ENV");
+                if (lock)
+                    AssignLock("ENV", lock);
             }
 
             tags[5].ti_Tag = TAG_IGNORE;

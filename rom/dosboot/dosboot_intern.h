@@ -49,7 +49,7 @@ struct DOSBootBase
 
 void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase);
 BOOL __dosboot_InitHidds(struct DosLibrary *dosBase);
-void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags);
+void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags);
 
 struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase);
 struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase);

@@ -30,10 +30,6 @@
 #include <aros/macros.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <exec/types.h>
-#include <exec/nodes.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <exec/alerts.h>
@@ -41,9 +37,10 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <dos/filehandler.h>
-#include <dos/filesystem.h>
 #include <libraries/expansionbase.h>
-#include <devices/trackdisk.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
 
 #include <string.h>
 
@@ -90,11 +87,16 @@ static void load_system_configuration(struct DosLibrary *DOSBase)
  * then adds it to DOSList only if succeeded.
  * This helps to get rid of non-functional DeviceNodes because of missing handlers.
  */
-static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
+static struct MsgPort *__dosboot_Mount(struct BootNode *bootNode, struct DosLibrary * DOSBase)
 {
-    /* RunHandler() is a private dos.library function */
-    struct MsgPort *rc = RunHandler(dn, NULL);
+    struct DeviceNode *dn = bootNode->bn_DeviceNode;
+    struct MsgPort *rc;
 
+    D(bug("[DOSBoot] Mounting BootNode: %p, bn_DeviceNode: %p, Name '%b', Priority %4d...",
+          bootNode, dn, dn->dn_Name, bootNode->bn_Node.ln_Pri));
+
+    /* RunHandler() is a private dos.library function */
+    rc = RunHandler(dn, NULL);
     if (rc)
     {
         if (!AddDosEntry((struct DosList *) dn))
@@ -102,8 +104,18 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
             kprintf("Mounting node 0x%p (%b) failed at AddDosEntry() -- maybe it was already added by someone else!\n", dn, dn->dn_Name);
             Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
         }
+
+        bootNode->bn_Flags |= BNF_MOUNTED;
+        D(bug("Succesfully mounted %b\n", dn->dn_Name));
     }
-    return rc ? TRUE : FALSE;
+    else
+    {
+        /* Since this is our private flag, make sure that noone has ocassionally set it */
+        bootNode->bn_Flags &= ~BNF_MOUNTED;
+        D(bug("Failed to mount %b\n", dn->dn_Name));
+    }
+
+    return rc;
 }
 
 static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
@@ -251,16 +263,16 @@ AROS_UFH3(void, __dosboot_BootProcess,
 {
     AROS_USERFUNC_INIT
 
-    struct ExpansionBase        *ExpansionBase = NULL;
-    struct DosLibrary           *DOSBase       = NULL;
-    LIBBASETYPEPTR              LIBBASE        = FindTask(NULL)->tc_UserData;
-
-    struct BootNode             *bootNode      = NULL;
-    struct Node                 *tmpNode       = NULL;
-    STRPTR                      bootName;
-    LONG                        bootNameLength;
-    BPTR                        lock;
-    APTR                        BootLoaderBase = OpenResource("bootloader.resource");
+    struct ExpansionBase *ExpansionBase;
+    struct DosLibrary *DOSBase;
+    struct UtilityBase *UtilityBase;
+    LIBBASETYPEPTR LIBBASE = FindTask(NULL)->tc_UserData;
+    struct BootNode *bootNode = NULL;
+    struct Node *tmpNode = NULL;
+    STRPTR BootDevice = NULL;
+    STRPTR bootName;
+    LONG bootNameLength;
+    BPTR lock;
     struct Screen *bootScreen = NULL;
 
     D(bug("[DOSBoot] __dosboot_BootProcess()\n"));
@@ -278,60 +290,66 @@ AROS_UFH3(void, __dosboot_BootProcess,
         Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
     }
 
+    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 36);
+    if (!UtilityBase)
+    {
+        D(bug("[DOSBoot] __dosboot_BootProcess: Failed to open utility.library.\n"));
+        Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_UtilityLib);
+    }
+
     /**** Try to mount all filesystems in the MountList ****************************/
     D(bug("[DOSBoot] Checking expansion.library/MountList for usable nodes...\n"));
 
     ForeachNode(&ExpansionBase->MountList, bootNode)
     {
-    	struct DeviceNode *dn = bootNode->bn_DeviceNode;
-
-        D(bug("[DOSBoot] BootNode: %p, bn_DeviceNode: %p, Name '%b', Priority %4d...",
-                bootNode, dn, dn->dn_Name, bootNode->bn_Node.ln_Pri));
-        /*
-         * Try to mount the filesystem. If it succeeds, mark the BootNode
-         *  as mounted.
-         */
-        if (__dosboot_Mount(dn, DOSBase))
-        {
-            bootNode->bn_Flags |= BNF_MOUNTED;
-            D(bug("Succesfully mounted\n", dn->dn_Name));
-        }
-        else
-        {
-            /* Since this is our private flag, make sure that noone has ocassionally set it */
-            bootNode->bn_Flags &= ~BNF_MOUNTED;
-            D(bug("Failed to mount\n", dn->dn_Name));
-        }
+        /* Try to mount the filesystem. If it succeeds, it marks the BootNode as mounted. */
+        __dosboot_Mount(bootNode, DOSBase);
     }
 
     LIBBASE->delayTicks = 500;
 
     /**** Try to find a bootable filesystem ****************************************/
-    while (LIBBASE->db_BootDevice == NULL)
-    {
+    while (BootDevice == NULL)
+    {	
         ForeachNode(&ExpansionBase->MountList, bootNode)
         {
-            struct DeviceNode *dn = bootNode->bn_DeviceNode;
-            STRPTR deviceName = AROS_BSTR_ADDR(dn->dn_Name);
-
 	    if (bootNode->bn_Flags & BNF_MOUNTED)
 	    {
+	        struct DeviceNode *dn = bootNode->bn_DeviceNode;
+	        STRPTR deviceName = AROS_BSTR_ADDR(dn->dn_Name);
+
             	DB2(bug("[DOSBoot] Trying to boot from '%s' (priority %d)...\n", deviceName, bootNode->bn_Node.ln_Pri));
+
+		if (UtilityBase && LIBBASE->db_BootDevice)
+		{
+		    /*
+		     * If we have boot device specified in either command line or boot menu,
+		     * we can boot up only from it regardless of its priority. Ignore everything else.
+		     */
+		    if (Stricmp(LIBBASE->db_BootDevice, deviceName))
+		    	continue;
+		}
+		else
+		{
+		    /* Devices marked as not bootable will have priority == -128 */
+		    if (bootNode->bn_Node.ln_Pri == -128)
+		    	continue;
+		}
 
             	/*
              	 * Check if the mounted filesystem is bootable. If it's not,
              	 * it's probably some kind of transient error (ie. no disk
              	 * in drive or wrong disk) so we will retry after some time.
              	 */
-            	if ((bootNode->bn_Node.ln_Pri != -128) && __dosboot_IsBootable(deviceName, DOSBase))
+            	if (__dosboot_IsBootable(deviceName, DOSBase))
             	{
-                    LIBBASE->db_BootDevice = deviceName;
+                    BootDevice = deviceName;
                     break;
                 }
             }
         }
 
-        if (!(LIBBASE->db_BootDevice))
+        if (!BootDevice)
         {
             ULONG t;
 
@@ -344,7 +362,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
 	    for (t = 0; t < 150; t += LIBBASE->delayTicks)
 	    {
-
 	        Delay(LIBBASE->delayTicks);
 	        anim_Animate(bootScreen, DOSBootBase);
 	    }
@@ -356,17 +373,8 @@ AROS_UFH3(void, __dosboot_BootProcess,
              */
             ForeachNode(&ExpansionBase->MountList, bootNode)
             {
-                if (!(bootNode->bn_Flags & BNF_MOUNTED))
-                {
-		    struct DeviceNode *dn = bootNode->bn_DeviceNode;
-		    
-		    DB2(bug("[DOSBoot] Trying to mount new device '%b' ...\n", dn->dn_Name));
-                    if (__dosboot_Mount(dn, DOSBase))
-		    {
-                        bootNode->bn_Flags |= BNF_MOUNTED;
-                        DB2(bug("[DOSBoot] Mounted succesfully\n", dn->dn_Name));
-                    }
-                }
+                if (!(bootNode->bn_Flags & BNF_MOUNTED))		    
+                    __dosboot_Mount(bootNode, DOSBase);
             }
         }
     }
@@ -377,17 +385,17 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	CloseBootScreen(bootScreen, LIBBASE);
     }
 
-    if (LIBBASE->db_BootDevice != NULL)
+    if (BootDevice != NULL)
     {
         /* Construct the complete device name of the boot device */
-        bootNameLength = strlen(LIBBASE->db_BootDevice) + 2;
+        bootNameLength = strlen(BootDevice) + 2;
 
         if ((bootName = AllocMem(bootNameLength, MEMF_ANY|MEMF_CLEAR)) == NULL)
         {
             Alert(AT_DeadEnd | AG_NoMemory | AO_DOSLib | AN_StartMem);
         }
 
-        strcpy(bootName, LIBBASE->db_BootDevice);
+        strcpy(bootName, BootDevice);
         strcat(bootName, ":");
 
         D(bug("[DOSBoot] __dosboot_BootProcess: Booting from device '%s'\n", bootName));
@@ -449,10 +457,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
         {
             if (!(bootNode->bn_Flags & BNF_MOUNTED))
             {
-            	struct DeviceNode *dn = bootNode->bn_DeviceNode;
-
-                D(bug("[DOSBoot] __dosboot_BootProcess: Retrying node: %p, DevNode: %p, Name = %s\n", bootNode, dn, dn->dn_Name));
-                if( !__dosboot_Mount(dn, DOSBase))
+                if (!__dosboot_Mount(bootNode, DOSBase))
                 {
                     Forbid();
                     REMOVE( bootNode );
@@ -464,7 +469,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
         /* We don't need expansion.library any more */
 	D(bug("[DOSBoot] Closing expansion.library\n"));
-        CloseLibrary( (struct Library *) ExpansionBase );
+        CloseLibrary((struct Library *)ExpansionBase );
 
 #if !(mc68000)
         /* Initialize HIDDs */
@@ -476,8 +481,11 @@ AROS_UFH3(void, __dosboot_BootProcess,
 #endif
         /* We now call the system dependant boot - should NEVER return! */
 	D(bug("[DOSBoot] Calling bootstrap code\n"));
-        __dosboot_Boot(BootLoaderBase, DOSBase, LIBBASE->BootFlags);
+        __dosboot_Boot(DOSBase, LIBBASE->BootFlags);
     }
+
+    CloseLibrary((struct Library *)UtilityBase);
+    CloseLibrary((struct Library *)DOSBase);
 
     AROS_USERFUNC_EXIT
 }

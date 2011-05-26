@@ -31,7 +31,7 @@ struct emulbase
     APTR eb_stderr;
 };
 
-void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags)
+void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. We do this by calling the submain()
