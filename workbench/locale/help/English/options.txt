@@ -71,6 +71,39 @@ without spaces, or can include spaces if taken into quotes.
  
  sysdebug=initcode,setfunction
  sysdebug="init initcode addtask"
+------------------------------------------------------------------------------------------------
+
+ Boot Strap
+================================================================================================
+
+ bootdelay=N
+ 
+ Delay for N seconds during startup. The delay will be performed before searching partitions
+on present drives.
+------------------------------------------------------------------------------------------------
+
+ dosboot.resource
+================================================================================================
+
+ bootmenu
+ 
+ Force enter early startup control
+------------------------------------------------------------------------------------------------
+
+ nomonitors
+ 
+ Do not load disk-based display drivers
+------------------------------------------------------------------------------------------------
+ 
+ bootdevice=<DEV>
+ 
+ Explicitly tell which device to boot from. If you specify something here, AROS will boot up only
+from this device. Do not add ':' at the end.
+
+ Example:
+ 
+ bootdevice=DH1
+------------------------------------------------------------------------------------------------
 
  poseidon.library
 ================================================================================================
