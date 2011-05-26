@@ -69,7 +69,7 @@ ULONG GetOpenPCICount(struct DevBase *base)
 /****i* intelpro100.device/AllocOpenPCICard ********************************
 *
 *   NAME
-*	AllocOpenPCICard -- Create a unit.
+*	AllocOpenPCICard -- Take control of a card.
 *
 *   SYNOPSIS
 *	context = AllocOpenPCICard(index)
@@ -139,7 +139,7 @@ struct BusContext *AllocOpenPCICard(ULONG index, struct DevBase *base)
 /****i* intelpro100.device/FreeOpenPCICard *********************************
 *
 *   NAME
-*	FreeOpenPCICard
+*	FreeOpenPCICard -- Release a card.
 *
 *   SYNOPSIS
 *	FreeOpenPCICard(context)

@@ -69,7 +69,7 @@ ULONG GetPrometheusCount(struct DevBase *base)
 /****i* etherlink3.device/AllocPrometheusCard ******************************
 *
 *   NAME
-*	AllocPrometheusCard -- Get card from system.
+*	AllocPrometheusCard -- Take control of a card.
 *
 *   SYNOPSIS
 *	context = AllocPrometheusCard(index)
@@ -143,7 +143,7 @@ struct BusContext *AllocPrometheusCard(ULONG index, struct DevBase *base)
 /****i* etherlink3.device/FreePrometheusCard *******************************
 *
 *   NAME
-*	FreePrometheusCard
+*	FreePrometheusCard -- Release a card.
 *
 *   SYNOPSIS
 *	FreePrometheusCard(context)
