@@ -729,6 +729,36 @@ $(TMP_TARGET) : $(TMP_DEPS)
 %end
 #------------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------
+# Generate the _lib.fd file for a module.
+%define rule_genmodule_fd modname=/A modtype=/A modsuffix= conffile= targetdir=
+
+TMP_TARGET := %(modname)_lib.fd
+TMP_DEPS := $(GENMODULE)
+TMP_OPTS := 
+ifneq (%(conffile),)
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+else
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(modsuffix),)
+    TMP_OPTS += -s %(modsuffix)
+endif
+ifneq (%(targetdir),)
+    TMP_OPTS += -d %(targetdir)
+    TMP_TARGET := %(targetdir)/$(TMP_TARGET)
+endif
+
+$(TMP_TARGET) : OPTS := $(TMP_OPTS)
+$(TMP_TARGET) : MODNAME := %(modname)
+$(TMP_TARGET) : MODTYPE := %(modtype)
+$(TMP_TARGET) : $(TMP_DEPS)
+	@$(ECHO) "Generating $(notdir $@)"
+	@$(GENMODULE) $(OPTS) writefd $(MODNAME) $(MODTYPE)
+%end
+#------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
 # Generate a Makefile.%(modname) with the genmodule program and include this
@@ -1151,7 +1181,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 
 # Define metamake targets and their dependencies
 #MM- includes-all : %(mmake)-includes
-#MM %(mmake) : %(mmake)-includes core-linklibs
+#MM %(mmake) : %(mmake)-includes core-linklibs %(mmake)-fd
 #MM %(mmake)-kobj : %(mmake)-includes core-linklibs
 #MM %(mmake)-kobj-quick : %(mmake)-includes-quick
 #MM %(mmake)-pkg : %(mmake)-includes core-linklibs
@@ -1162,13 +1192,15 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 #MM     includes-generate-deps
 #MM %(mmake)-includes-quick
 #MM %(mmake)-includes-dirs
+#MM %(mmake)-fd
 #MM %(mmake)-makefile
 #MM %(mmake)-clean
 
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
     %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-pkg %(mmake)-pkg-quick %(mmake)-linklib
+    %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-pkg %(mmake)-pkg-quick \
+    %(mmake)-linklib %(mmake)-fd
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
@@ -1256,6 +1288,19 @@ GLOB_MKDIRS += %(objdir)/include
 %rule_genmodule_files modname=%(modname) modtype=%(modtype) \
 		      modsuffix=%(modsuffix) targetdir=%(objdir) \
 		      conffile=%(conffile)
+
+
+## Create FD file
+BD_FDDIR := $(AROS_DEVELOPMENT)/fd
+%(mmake)-fd : $(BD_FDDIR)/%(modname)_lib.fd
+
+%rule_genmodule_fd modname=%(modname) modtype=%(modtype) \
+                   modsuffix=%(modsuffix) targetdir=$(BD_FDDIR) conffile=%(conffile)
+
+$(BD_FDDIR)/%(modname)_lib.fd : | $(BD_FDDIR)
+
+GLOB_MKDIRS += $(BD_FDDIR)
+
 
 ## Compilation
 ##
