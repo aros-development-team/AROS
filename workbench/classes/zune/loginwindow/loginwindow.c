@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     
     $Id$
 */
@@ -318,12 +318,12 @@ Object *LoginWindow__OM_NEW
 
         WindowContents, (IPTR) VGroup,
             Child, (IPTR) HGroup,
-                Child, (IPTR) imageGroup = VGroup,
+                Child, (IPTR) (imageGroup = VGroup,
                     MUIA_Weight,  0,
                     Child, (IPTR) HVSpace,
                     Child, (IPTR) img_logo,
                     Child, (IPTR) HVSpace,
-                End,
+                End),
                 Child, (IPTR) VGroup,
                     Child, (IPTR) RectangleObject,
                         MUIA_Weight, 50,
@@ -335,36 +335,36 @@ Object *LoginWindow__OM_NEW
                         MUIA_Weight, 50,
                     End,
 
-                    Child, (IPTR) imageGroup = HGroup,
+                    Child, (IPTR) (imageGroup = HGroup,
                         MUIA_Weight,  0,
                         Child, (IPTR) img_user,
-                        Child, (IPTR) nameUser = StringObject,
+                        Child, (IPTR) (nameUser = StringObject,
 			    StringFrame,
 		            MUIA_String_Contents, (IPTR) user,
 			    MUIA_String_AdvanceOnCR, TRUE,
 			    MUIA_CycleChain, TRUE,
-		        End,
-                    End,
+		        End),
+                    End),
 
-                    Child, (IPTR) passUser = StringObject,
+                    Child, (IPTR) (passUser = StringObject,
 			StringFrame,
 		        MUIA_String_Contents,	(IPTR) pass,
                         MUIA_String_Secret,     TRUE,
 			MUIA_String_AdvanceOnCR,TRUE,
 			MUIA_CycleChain,	TRUE,
-		    End,
+		    End),
 
-    	    	    Child, (IPTR) logonMethod = PoplistObject,
+    	    	    Child, (IPTR) (logonMethod = PoplistObject,
 		        MUIA_Popstring_String, (IPTR) StringObject, StringFrame, MUIA_String_Contents, (IPTR) logonString, End,
 		        MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
                         MUIA_Poplist_Array,     (IPTR) authmethodList,
-                    End,
+                    End),
 
                     Child, (IPTR) HGroup,
                         MUIA_Group_SameWidth, TRUE,
                         MUIA_Weight,             0,
-                        Child, (IPTR) okButton   = ImageButton(_(MSG_OK), "THEME:Images/Gadgets/Preferences/Test.png"),
-                        Child, (IPTR) cancelButton = ImageButton(_(MSG_RESUME), "THEME:Images/Gadgets/Preferences/Revert.png"),
+                        Child, (IPTR) (okButton   = ImageButton(_(MSG_OK), "THEME:Images/Gadgets/Preferences/Test.png")),
+                        Child, (IPTR) (cancelButton = ImageButton(_(MSG_RESUME), "THEME:Images/Gadgets/Preferences/Revert.png")),
                     End,
                 End,
             End,
