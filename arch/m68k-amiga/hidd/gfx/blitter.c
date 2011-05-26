@@ -422,8 +422,6 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
   	    	minterm = (NABC | NANBC) | (ANBC | ANBNC);
   	    }
   	    break;
-  	    minterm = 0x0a | (fg ? 0x30 : 0) | (bg ? 0xc0 : 0);
-  	    break;
   	}
   	
     	WaitBlit();
