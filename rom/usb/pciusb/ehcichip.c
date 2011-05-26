@@ -1,8 +1,9 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved
     $Id$
 */
 
+#include <proto/exec.h>
 #include <proto/oop.h>
 #include <hidd/pci.h>
 
@@ -279,7 +280,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                         WRITEMEM32_LE(&etd->etd_BufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
                         phyaddr += len;
                         eqh->eqh_Actual += len;
-                        zeroterm = (len && (ioreq->iouh_Dir == UHDIR_OUT) && (eqh->eqh_Actual == ioreq->iouh_Length) && (!ioreq->iouh_Flags & UHFF_NOSHORTPKT) && ((eqh->eqh_Actual % ioreq->iouh_MaxPktSize) == 0));
+                        zeroterm = (len && (ioreq->iouh_Dir == UHDIR_OUT) && (eqh->eqh_Actual == ioreq->iouh_Length) && (!(ioreq->iouh_Flags & UHFF_NOSHORTPKT)) && ((eqh->eqh_Actual % ioreq->iouh_MaxPktSize) == 0));
                         predetd = etd;
                         etd = etd->etd_Succ;
                         if((!etd) && zeroterm)
@@ -946,7 +947,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
             eqh->eqh_Actual += len;
 
             predetd = etd;
-        } while((eqh->eqh_Actual < ioreq->iouh_Length) || (len && (ioreq->iouh_Dir == UHDIR_OUT) && (eqh->eqh_Actual == ioreq->iouh_Length) && (!ioreq->iouh_Flags & UHFF_NOSHORTPKT) && ((eqh->eqh_Actual % ioreq->iouh_MaxPktSize) == 0)));
+        } while((eqh->eqh_Actual < ioreq->iouh_Length) || (len && (ioreq->iouh_Dir == UHDIR_OUT) && (eqh->eqh_Actual == ioreq->iouh_Length) && (!(ioreq->iouh_Flags & UHFF_NOSHORTPKT)) && ((eqh->eqh_Actual % ioreq->iouh_MaxPktSize) == 0)));
 
         if(!etd)
         {

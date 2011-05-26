@@ -12,6 +12,20 @@
 #endif
 #include "pciusb.h"
 
+#if (__WORDSIZE == 64)
+
+APTR usbGetBuffer(APTR data, ULONG len, UWORD dir);
+void usbReleaseBuffer(APTR buffer, APTR data, ULONG len, UWORD dir);
+
+#else
+
+/* On 32-bit systems we don't need mirroring */
+
+#define usbGetBuffer(data, len, dir) data
+#define usbReleaseBuffer(buffer, data, len, dir)
+
+#endif
+
 struct Unit *Open_Unit(struct IOUsbHWReq *ioreq, LONG unitnr, struct PCIDevice *base);
 void Close_Unit(struct PCIDevice *base, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
 
@@ -205,7 +219,9 @@ static inline struct OhciED * ohciAllocED(struct PCIController *hc)
 /* /// "ohciFreeED()" */
 static inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed)
 {
-    oed->oed_IOReq = NULL;
+    oed->oed_IOReq     = NULL;
+    oed->oed_Buffer    = NULL;
+    oed->oed_SetupData = NULL;
     oed->oed_Succ = hc->hc_OhciEDPool;
     hc->hc_OhciEDPool = oed;
 }

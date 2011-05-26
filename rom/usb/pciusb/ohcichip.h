@@ -220,12 +220,13 @@ struct OhciED
     struct OhciED  *oed_Succ;
     struct OhciED  *oed_Pred;
     ULONG           oed_Self;       /* LE PHYSICAL pointer to self */
+    /* On 64 bits a padding will be inserted here */
     struct IOUsbHWReq *oed_IOReq;   /* IO Request this belongs to */
 
     struct OhciTD  *oed_FirstTD;    /* First TD */
-    ULONG           oed_Continue;   /* Flag for fragmented bulk transfer */
-    ULONG           oed_Unused1;
-    ULONG           oed_Unused2;
+    IPTR            oed_Continue;   /* Flag for fragmented bulk transfer */
+    APTR	    oed_Buffer;	    /* Mirror buffer for data outside of DMA-accessible area */
+    struct UsbSetupData *oed_SetupData; /* Mirror buffer for setup packet */
 
     /* HC data, aligned to 16 bytes */
     ULONG           oed_EPCaps;     /* LE MaxPacketSize and other stuff */
@@ -237,9 +238,9 @@ struct OhciED
 struct OhciTD
 {
     struct OhciTD  *otd_Succ;
-    ULONG           otd_Length;     /* Length of transfer */
-    //struct OhciTD  *otd_Pred;
+    IPTR            otd_Length;     /* Length of transfer */
     ULONG           otd_Self;       /* LE PHYSICAL pointer to self */
+    /* On 64 bits a padding will be inserted here */
     struct OhciED  *otd_ED;         /* Pointer to parent ED this TD belongs to */
 
     /* HC data, aligned to 16 bytes */

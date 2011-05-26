@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES :=    pci_aros uhcichip ohcichip ehcichip xhcichip dev uhwcmd debug
+FILES := pci_aros buffer uhcichip ohcichip ehcichip xhcichip dev uhwcmd debug
 
 WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
 
@@ -15,6 +15,6 @@ kernel-usb-pciusb-directories ::
     modname=pciusb modtype=device \
     moduledir=Devs/USBHardware \
     files="$(FILES)" \
-    uselibs="rom oop hiddstubs"
+    uselibs="rom oop hiddstubs debug"
 
 %common

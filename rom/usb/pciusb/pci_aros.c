@@ -4,28 +4,20 @@
 #include "uhwcmd.h"
 
 #include <inttypes.h>
+#include <string.h>
 
+#include <aros/bootloader.h>
 #include <aros/symbolsets.h>
-
 #include <exec/types.h>
 #include <oop/oop.h>
-
 #include <devices/timer.h>
-
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <hidd/irq.h>
-
+#include <proto/bootloader.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
-
-// FIXME due to the data structures defined in uhcichip.h, ohcichip.h and ehcichip.h,
-// and their alignments, the use of 64 bit pointers will break these alignments.
-// Moreover, to correctly support 64 bit, the PCI card needs to be 64 bit capable.
-// otherwise the data needs to be copied from and to 32 bit space. Such mechanisms
-// are currently not implemented in pciusb.device at all.
-#warning "pciusb.device currently will NOT work under 64 bit! Don't try this!"
 
 #define NewList NEWLIST
 
@@ -63,42 +55,54 @@ AROS_UFH3(void, pciEnumerator,
 
     devid = (bus<<16)|dev;
 
+    KPRINTF(10, ("Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline));
+
     if(intline == 255)
     {
         // we can't work without the correct interrupt line
         // BIOS needs plug & play os option disabled. Alternatively AROS must support APIC reconfiguration
         KPRINTF(200, ("ERROR: PCI card has no interrupt line assigned by BIOS, disable Plug & Play OS!\n"));
     }
-
-#if defined(__powerpc__)
-    else if((hcitype == HCITYPE_OHCI))
-#elif defined(USB3) 
-    else if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI) || (hcitype == HCITYPE_XHCI))
-#else
-    else if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI))
-#endif
+    else
     {
-        KPRINTF(10, ("Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline));
+    	switch (hcitype)
+    	{
+    	case HCITYPE_OHCI:
+#ifndef __powerpc__	/* It was not from me. Perhaps on PPC these drivers suffer from CPU cache problems? (sonic) */
+#ifndef __x86_64__	/* Not 64-bit-ready yet - sonic */
+    	case HCITYPE_EHCI:
+    	case HCITYPE_UHCI:
+#endif
+#endif
+#ifdef USB3
+    	case HCITYPE_XHCI:
+#endif
+	    KPRINTF(10, ("Setting up device...\n"));
 
-        hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
-        if(hc)
-        {
-            hc->hc_Device = hd;
-            hc->hc_DevID = devid;
-            hc->hc_HCIType = hcitype;
-            hc->hc_PCIDeviceObject = pciDevice;
-            hc->hc_PCIIntLine = intline;
+            hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
+            if (hc)
+            {
+            	hc->hc_Device = hd;
+            	hc->hc_DevID = devid;
+            	hc->hc_HCIType = hcitype;
+            	hc->hc_PCIDeviceObject = pciDevice;
+            	hc->hc_PCIIntLine = intline;
 
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *) &hc->hc_PCIDriverObject);
+            	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *) &hc->hc_PCIDriverObject);
 
-            NewList(&hc->hc_CtrlXFerQueue);
-            NewList(&hc->hc_IntXFerQueue);
-            NewList(&hc->hc_IsoXFerQueue);
-            NewList(&hc->hc_BulkXFerQueue);
-            NewList(&hc->hc_TDQueue);
-            NewList(&hc->hc_PeriodicTDQueue);
-            NewList(&hc->hc_OhciRetireQueue);
-            AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
+            	NewList(&hc->hc_CtrlXFerQueue);
+            	NewList(&hc->hc_IntXFerQueue);
+            	NewList(&hc->hc_IsoXFerQueue);
+            	NewList(&hc->hc_BulkXFerQueue);
+            	NewList(&hc->hc_TDQueue);
+            	NewList(&hc->hc_PeriodicTDQueue);
+            	NewList(&hc->hc_OhciRetireQueue);
+            	AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
+            }
+            break;
+
+        default:
+            KPRINTF(10, ("Unsupported HCI type %ld\n", hcitype));
         }
     }
 
@@ -115,12 +119,12 @@ BOOL pciInit(struct PCIDevice *hd)
     UWORD ohcicnt;
     UWORD uhcicnt;
 
-    KPRINTF(10, ("*** pciInit(%08lx) ***\n", hd));
-    if(sizeof(IPTR) > 4)
+    KPRINTF(10, ("*** pciInit(%p) ***\n", hd));
+/*  if(sizeof(IPTR) > 4)
     {
         KPRINTF(200, ("I said the pciusb.device is not 64bit compatible right now. Go away!\n"));
         return FALSE;
-    }
+    }*/
 
     NewList(&hd->hd_TempHCIList);
 
@@ -143,9 +147,6 @@ BOOL pciInit(struct PCIDevice *hd)
         {
             { (STRPTR) IID_Hidd,            &hd->hd_HiddAB },
             { (STRPTR) IID_Hidd_PCIDevice,  &hd->hd_HiddPCIDeviceAB },
-//            { (STRPTR) IID_Hidd_USBDevice,  &hd->hd_HiddUSBDeviceAB },
-//            { (STRPTR) IID_Hidd_USBHub,     &hd->hd_HiddUSBHubAB },
-//            { (STRPTR) IID_Hidd_USBDrv,     &hd->hd_HiddUSBDrvAB },
             { NULL, NULL }
         };
 
@@ -157,13 +158,7 @@ BOOL pciInit(struct PCIDevice *hd)
 
         OOP_ObtainAttrBases(attrbases);
 
-#if defined(__powerpc__)
-        KPRINTF(20, ("Searching for OHCI devices...\n"));
-#elif defined(USB3)
-        KPRINTF(20, ("Searching for (U/O/E/X)HCI devices...\n"));
-#else
-        KPRINTF(20, ("Searching for (U/O/E)HCI devices...\n"));
-#endif
+        KPRINTF(20, ("Searching for devices...\n"));
 
         HIDD_PCI_EnumDevices(hd->hd_PCIHidd, &findHook, (struct TagItem *) &tags);
     } else {
@@ -322,7 +317,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #endif
     STRPTR prodname;
 
-    KPRINTF(10, ("*** pciAllocUnit(%08lx) ***\n", hu));
+    KPRINTF(10, ("*** pciAllocUnit(%p) ***\n", hu));
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
@@ -417,10 +412,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             }
             usb30ports = hc->hc_NumPorts;
         }
-        else if(hc->hc_HCIType == HCITYPE_EHCI)
-#else
-        if(hc->hc_HCIType == HCITYPE_EHCI)
+        else
 #endif
+        if(hc->hc_HCIType == HCITYPE_EHCI)
         {
             ehcicnt++;
             if(usb20ports)
@@ -578,7 +572,7 @@ void pciFreeUnit(struct PCIUnit *hu)
             { TAG_DONE, 0UL },
     };
 
-    KPRINTF(10, ("*** pciFreeUnit(%08lx) ***\n", hu));
+    KPRINTF(10, ("*** pciFreeUnit(%p) ***\n", hu));
 
     // put em offline
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
@@ -634,7 +628,7 @@ void pciExpunge(struct PCIDevice *hd)
     struct PCIController *hc;
     struct PCIUnit *hu;
 
-    KPRINTF(10, ("*** pciExpunge(%08lx) ***\n", hd));
+    KPRINTF(10, ("*** pciExpunge(%p) ***\n", hd));
 
     hu = (struct PCIUnit *) hd->hd_Units.lh_Head;
     while(((struct Node *) hu)->ln_Succ)
@@ -656,9 +650,6 @@ void pciExpunge(struct PCIDevice *hd)
         {
             { (STRPTR) IID_Hidd,            &hd->hd_HiddAB },
             { (STRPTR) IID_Hidd_PCIDevice,  &hd->hd_HiddPCIDeviceAB },
-//            { (STRPTR) IID_Hidd_USBDevice,  &hd->hd_HiddUSBDeviceAB },
-//            { (STRPTR) IID_Hidd_USBHub,     &hd->hd_HiddUSBHubAB },
-//            { (STRPTR) IID_Hidd_USBDrv,     &hd->hd_HiddUSBDrvAB },
             { NULL, NULL }
         };
 
@@ -680,3 +671,36 @@ APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)
     return(HIDD_PCIDriver_CPUtoPCI(hc->hc_PCIDriverObject, virtaddr));
 }
 /* \\\ */
+
+/*
+ * Process some AROS-specific arguments.
+ * 'usbpoweron' helps to bring up USB ports on IntelMac,
+ * whose firmware sets them up incorrectly.
+ */
+static int getArguments(struct PCIDevice *base)
+{
+    APTR BootLoaderBase = OpenResource("bootloader.resource");
+
+    if (BootLoaderBase)
+    {
+        struct List *args = GetBootInfo(BL_Args);
+
+	if (args)
+        {
+            struct Node *node;
+
+            for (node = args->lh_Head; node->ln_Succ; node = node->ln_Succ)
+            {
+                if (stricmp(node->ln_Name, "forceusbpower") == 0)
+                {
+                    base->hd_Flags = HDF_FORCEPOWER;
+                    break;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+ADD2INITLIB(getArguments, 10)

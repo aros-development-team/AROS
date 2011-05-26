@@ -1,8 +1,9 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved
     $Id$
 */
 
+#include <proto/exec.h>
 #include <proto/oop.h>
 #include <hidd/pci.h>
 
