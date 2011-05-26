@@ -1,4 +1,4 @@
-dnl Copyright Â© 1997-2011, The AROS Development Team. All rights reserved.
+dnl Copyright © 1997-2011, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -468,7 +468,7 @@ dnl The target configuration section is responsible for setting up all
 dnl the paths for includes, and tools required to build AROS to some
 dnl particular target.
 
-aros_config_cflags="-Wall -Werror-implicit-function-declaration"
+aros_config_cflags="-Wall -Werror-implicit-function-declaration -Wno-uninitialized -Wno-parentheses"
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
 
@@ -700,7 +700,7 @@ AC_ARG_WITH(paranoia,AC_HELP_STRING([--with-paranoia=FLAGS],[CC flags to enable 
 if test "$paranoia_flags" = "default"; then
 	paranoia_flags=""
 else if test "$paranoia_flags" = "yes"; then
-	paranoia_flags="-Wall -Werror"
+	paranoia_flags="-Werror"
 fi fi
 AC_MSG_RESULT($paranoia_flags)
 aros_paranoia_cflags="$paranoia_flags"
@@ -1202,7 +1202,6 @@ case "$target_os" in
 		aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin -Wno-volatile-register-var -DAROS_DOS_PACKETS"
 		aros_config_aflags="$aros_config_aflags -${gcc_target_cpu}"
 		aros_paranoia_cflags="$aros_paranoia_cflags -Wno-volatile-register-var"
-		aros_debug_cflags="$aros_debug_cflags -Wall -Wno-volatile-register-var"
 		target_tool_prefix="m68k-elf-"
 		# Needed to get the correct multilib
 		aros_config_ldflags="-${gcc_target_cpu}"
@@ -1297,7 +1296,7 @@ case "$target_os" in
 		aros_shared_aflags=""
 		aros_shared_ldflags="-Wl,-rpath,./lib -shared"
 		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
+		aros_debug_cflags="$aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
 		aros_debug_aflags=""
 		aros_debug_ldflags="$aros_symbols_debug"
 		aros_mungwall_debug="0"
@@ -1330,7 +1329,7 @@ case "$target_os" in
 		aros_shared_aflags=""
 		aros_shared_ldflags="-Wl,-rpath,./lib -shared"
 		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000"
+		aros_debug_cflags="$aros_symbols_debug $aros_messages_debug -mc68000"
 		aros_debug_aflags=""
 		aros_debug_ldflags="$aros_symbols_debug"
 		aros_mungwall_debug="0"
