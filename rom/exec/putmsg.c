@@ -1,14 +1,18 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Send a message to a port.
     Lang: english
 */
-#include "exec_intern.h"
+
+#include <aros/debug.h>
 #include <aros/libcall.h>
 #include <exec/ports.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -60,19 +64,7 @@
      * locked, so we have to check it before anything */
     if (port->mp_Flags & PA_FASTCALL)
     {
-        if (port->mp_SoftInt == NULL || ((struct Interrupt *) port->mp_SoftInt)->is_Code == NULL)
-            return;
-
-        ASSERT_VALID_PTR(port->mp_SoftInt);
-        ASSERT_VALID_PTR(((struct Interrupt *) port->mp_SoftInt)->is_Code);
-
-        /* call the "interrupt" with the message as an argument */
-        AROS_UFC4(void, ((struct Interrupt *) port->mp_SoftInt)->is_Code,
-            AROS_UFCA(APTR,              ((struct Interrupt *) port->mp_SoftInt)->is_Data, A1),
-            AROS_UFCA(ULONG_FUNC,        (ULONG_FUNC)((struct Interrupt *) port->mp_SoftInt)->is_Code, A5),
-            AROS_UFCA(struct Message *,  message,                                          D0),
-            AROS_UFCA(struct ExecBase *, SysBase,                                          A6));
-
+        FastPutMsg(port, message, SysBase);
         return;
     }
 
@@ -85,10 +77,35 @@
     /* Set the node type to NT_MESSAGE == sent message. */
     message->mn_Node.ln_Type=NT_MESSAGE;
 
+    InternalPutMsg(port, message, SysBase);
+
+    /* All done. */
+    Enable();
+    AROS_LIBFUNC_EXIT
+} /* PutMsg() */
+
+void FastPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase)
+{
+    if (port->mp_SoftInt == NULL || ((struct Interrupt *) port->mp_SoftInt)->is_Code == NULL)
+        return;
+
+    ASSERT_VALID_PTR(port->mp_SoftInt);
+    ASSERT_VALID_PTR(((struct Interrupt *) port->mp_SoftInt)->is_Code);
+
+    /* call the "interrupt" with the message as an argument */
+    AROS_UFC4(void, ((struct Interrupt *) port->mp_SoftInt)->is_Code,
+             AROS_UFCA(APTR, ((struct Interrupt *) port->mp_SoftInt)->is_Data, A1),
+	     AROS_UFCA(ULONG_FUNC, (ULONG_FUNC)((struct Interrupt *) port->mp_SoftInt)->is_Code, A5),
+             AROS_UFCA(struct Message *,  message, D0),
+             AROS_UFCA(struct ExecBase *, SysBase, A6));
+}
+
+void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase)
+{
     /* Add it to the message list. */
     AddTail(&port->mp_MsgList,&message->mn_Node);
 
-    if(port->mp_SigTask)
+    if (port->mp_SigTask)
     {
 	ASSERT_VALID_PTR(port->mp_SigTask);
 
@@ -101,6 +118,8 @@
 		break;
 
 	    case PA_SOFTINT:
+	    	D(bug("PutMsg: PA_SOFTINT, port 0x%p, msg 0x%p, int %s\n", port, message, ((struct Interrupt *)port->mp_SoftInt)->is_Node.ln_Name));
+
 		/* Raise a software interrupt */
 		Cause((struct Interrupt *)port->mp_SoftInt);
 		break;
@@ -117,9 +136,4 @@
                 break;
 	}
     }
-
-    /* All done. */
-    Enable();
-    AROS_LIBFUNC_EXIT
-} /* PutMsg() */
-
+}
