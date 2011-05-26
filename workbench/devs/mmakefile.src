@@ -34,8 +34,6 @@ include $(TOP)/config/make.cfg
 #MM    workbench-fs-pipefs-quick \
 #MM    workbench-fs-xpipe-quick
 
-#MM- workbench-devs-pc-x86_64 : hidd-usb
-
 # DISABLED: rootfs.handler
 
 #MM- includes-generate : \
