@@ -21,8 +21,11 @@ AROS_LH0I(void *, KrnCreateContext,
         ULONG i;
 
 	/*
-	 * Sys V PPC ABI says r2 is reserved so we copy the
-	 * current one and it will never be changed again
+	 * Sys V PPC ABI says r2 is reserved for TOC or SDATA2.
+	 * Here we copy the current value and it will never be
+	 * changed again. It is not needed for AROS but can be
+	 * needed for host OS. It is known to be needed for Linux
+	 * and won't harm anywhere else.
 	 */
 	__asm__ __volatile__ ("stw 2,%0":"=m"(ctx->gpr[2])::"memory");
 
