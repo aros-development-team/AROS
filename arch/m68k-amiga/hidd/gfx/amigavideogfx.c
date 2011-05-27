@@ -809,7 +809,7 @@ VOID AmigaVideoCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, stru
 
 ULONG AmigaVideoCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)
 {
-    struct HIDD_ViewPortData *vpd = msg->Data;
+    D(struct HIDD_ViewPortData *vpd = msg->Data);
     
     D(bug("AmigaVideoCl__Hidd_Gfx__MakeViewPort vp=%p bm=%p vpe=%p\n", vpd->vpe->ViewPort, vpd->Bitmap, vpd->vpe));
     /* TODO: implement this correctly */
