@@ -177,13 +177,13 @@ static LONG getvar_from(const char *name, const char *volume, STRPTR buffer, LON
 	    ret = getvar_from(name, "ENV:", buffer, size, flags, DOSBase);
 
 	    if (ret >= 0)
-	    	return size;
+	    	return ret;
 
 	    /* If not found in ENV:, look in ENVARC: */
 	    ret = getvar_from(name, "ENVARC:", buffer, size, flags, DOSBase);
 
 	    if (ret >= 0)
-	    	return size;
+	    	return ret;
 
 	} /* ! local file only */
     } /* name and buffer */
