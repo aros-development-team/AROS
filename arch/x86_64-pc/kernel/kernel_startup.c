@@ -1,4 +1,7 @@
+#define MDEBUG 1
+
 #include <aros/atomic.h>
+#include <aros/debug.h>
 #include <aros/multiboot.h>
 #include <asm/cpu.h>
 #include <asm/io.h>
@@ -23,8 +26,6 @@
 #include "apic.h"
 #include "tls.h"
 
-#define D(x) x
-
 extern const unsigned long start64;
 
 /* Common IBM PC memory layout */
@@ -37,9 +38,13 @@ static const struct MemRegion PC_Memory[] =
     {0          , 0          , NULL            ,  0, 0                                                                  }
 };
 
-/* Boot-time global variables */
+/*
+ * Boot-time global variables.
+ * They have initial values, so they go to .data section and survive accross warm reboots.
+ * SysBase is intentionally put into .rodata. This way we prevent it from being modified.
+ */
 struct KernBootPrivate *__KernBootPrivate = NULL;
-UBYTE vesa_hack = 0;
+struct ExecBase * __attribute__((section(".rodata"))) SysBase = NULL;
 
 /*
  * Small asm stub in the beginning.
@@ -304,9 +309,6 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
             panic();
         }
 
-	/* Make kickstart code area read-only */
-        core_ProtKernelArea(addr, khi - addr, 1, 0, 1);
-
         /* Setup the 8259 */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0xa0)); /* Initialization sequence for 8259A-2 */
@@ -337,12 +339,10 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 	mh2 = (struct MemHeader *)mh->mh_Node.ln_Succ;
 
 	/*
-	 * SysBase will be put to address 8 by krnPrepareExecBase().
-	 * We want to track down all accesses to invalid addresses, especially
-	 * dereferencing NULL pointers. So we fill zero page with 0xEE values in
-	 * order to get trapped soon after that.
+	 * Fill zero page with garbage in order to detect accesses to it in supervisor mode.
+	 * For user mode we will disable all access to it.
 	 */
-	memset(NULL, 0xEE, PAGE_SIZE);
+	MUNGE_BLOCK(NULL, 0xABADCAFE, PAGE_SIZE);
 
 	/*
 	 * TODO: We may have SysBase validation code instead of this.
@@ -359,6 +359,11 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
             panic();
         }
 
+	D(bug("[Kernel] Created SysBase at 0x%p (pointer at 0x%p), MemHeader 0x%p\n", SysBase, &SysBase, mh));
+
+	/* Block all access to zero page */
+	core_ProtKernelArea(0, PAGE_SIZE, 0, 0, 0);
+
 	/*
 	 * Now we have working exec.library memory allocator.
 	 * Move console mirror buffer away from unused memory.
@@ -370,17 +375,16 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 	    fb_SetMirror(mirror);
 	}
 
-	D(bug("[Kernel] Created SysBase at 0x%p, MemHeader 0x%p\n", SysBase, mh));
-
 	/* Store important private data */
 	__KernBootPrivate->kbp_LowMem = mh;
 	TLS_SET(SysBase, SysBase);
 
-	/*
-    	 * At this point SysBase is put into 8ULL by PrepareExecBase().
-    	 * Set the whole page to read-only.
-    	 */
-	core_ProtKernelArea(0, PAGE_SIZE, 1, 0, 1);
+	/* 
+	 * Make kickstart code area read-only.
+	 * We do it only after ExecBase creation because SysBase is put
+	 * into .rodata. This way we prevent it from ocassional modification by buggy software.
+	 */
+        core_ProtKernelArea(addr, khi - addr, 1, 0, 1);
 
 	/* Transfer the rest of memory list into SysBase */
 	D(bug("[Kernel] Transferring memory list into SysBase...\n"));
