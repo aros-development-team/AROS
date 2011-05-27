@@ -26,14 +26,24 @@ static inline ULONG tick2usec(ULONG tick)
 
 static ULONG usec2tick(ULONG usec)
 {
-    ULONG ret;
+    /*
+     * This is important!!! EAX must be set to zero at input.
+     * Previously asm construction here was written as:
+     *		asm volatile("movl $0,%%eax; divl %2":"=a"(ret),"+d"(usec):"m"(TIMER_RPROK));
+     * On x86-64 this caused dereferencing a NULL pointer. gcc v4.5.2 generated the
+     * following code:
+     * 		mov    $0x0,%rax	; This is a symbol reference, not actual zero.
+     *		mov    $0x0,%eax	; Here our asm begins. This is real zero.
+     *		divl   (%rax)
+     * I. e. is used RAX to store address of TIMER_RPROK without knowing about it
+     * being clobbered by the asm sequence itself.
+     * Adding :"eax" to the clobberlist caused "impossible constraint" error,
+     * so i made EAX to be both input and output operand and initialize it to zero in C.
+     */
+    ULONG ret = 0;
 
-//  gcc 4.3.1 with -O2: Following doesn't work properly, probably because it
-//                      doesn't tell about edx trashing.
-//
-//    asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(TIMER_RPROK));
-//
-    asm volatile("movl $0,%%eax; divl %2":"=a"(ret),"+d"(usec):"m"(TIMER_RPROK));
+    /* Actually this seems to be usec * 4294967296 / 3599597124 */
+    asm volatile("divl %2":"+a"(ret),"+d"(usec):"m"(TIMER_RPROK));
     return ret;
 }
 

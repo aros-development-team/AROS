@@ -3,7 +3,9 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/timer
 
-include $(SRCDIR)/$(CURDIR)/make.opts
+# make.opts moved to arch/all-pc/timer. It's used for i386-pc too.
+# TODO: Merge the rest of the code
+USER_CFLAGS += -DUSE_VBLANK_EMU
 
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
