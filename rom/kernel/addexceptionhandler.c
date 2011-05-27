@@ -113,6 +113,10 @@ int krnRunExceptionHandlers(uint8_t exception, void *ctx)
     struct IntrNode *in, *in2;
     int ret = 0;
 
+    /* We can be called really early. Protect against this. */
+    if (!KernelBase)
+    	return 0;
+
     ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
     {
 	exhandler_t h = in->in_Handler;

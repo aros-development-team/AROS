@@ -25,3 +25,27 @@ static inline void core_Cause(unsigned char n, unsigned int mask)
 		  AROS_UFCA(APTR, iv->iv_Code, A5),
 		  AROS_UFCA(struct ExecBase *, SysBase, A6));
 }
+
+/* Call exec trap handler, if possible */
+static inline int core_Trap(ULONG code, void *regs)
+{
+    /* exec.library Alert() is inoperative without KernelBase */
+    if (SysBase && KernelBase)
+    {
+	void (*trapHandler)(ULONG, void *) = SysBase->TaskTrapCode;
+        struct Task *t = SysBase->ThisTask;
+
+        if (t)
+	{
+	    if (t->tc_TrapCode)
+		trapHandler = t->tc_TrapCode;
+	}
+
+	if (trapHandler)
+	{
+	    trapHandler(code, regs);
+	    return 1;
+	}
+    }
+    return 0;
+}
