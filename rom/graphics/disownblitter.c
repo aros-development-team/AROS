@@ -6,9 +6,15 @@
     Lang: english
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <graphics/gfxbase.h>
 #include <exec/tasks.h>
+
+#include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -52,28 +58,24 @@
 
   AROS_LIBFUNC_INIT
 
-  Forbid();
-
-  GfxBase -> BlitOwner = NULL;
-  
-  if (NULL == GfxBase->  blthd &&
-      NULL == GfxBase->bsblthd)
-  {
-     if(!IsListEmpty(&GfxBase->BlitWaitQ))
-     {
-       /* make that task ready again! */
-       struct Task * first = (struct Task *)RemHead(&GfxBase->BlitWaitQ);
-       first->tc_State = TS_READY;
-       /* Put it into the correct list of tasks */
-       Reschedule(first);
-     }
-  } 
-  else
-  {
-    /* let the interrupt handler start the queued blitter requests */
+  if (GfxBase->BlitOwner != FindTask(NULL)) {
+      D(bug("DisownBlitter: Owned by Task %p, but Task %p is releasing it!\n",
+      	      GfxBase->BlitOwner, FindTask(NULL)));
   }
-  
-  Permit();
+
+  if (NULL != GfxBase->  blthd &&
+      NULL != GfxBase->bsblthd)
+  {
+    D(bug("DisownBlitter: OOPS! Disowning while queued enties are in play!\n"));
+  }
+
+  Disable();
+  GfxBase->BlitOwner = NULL;
+  Enable();
+
+  ULOCK_BLIT;
+
+  D(bug("DisownBlitter: Released by Task %p\n", FindTask(NULL)));
 
   AROS_LIBFUNC_EXIT
 } /* DisownBlitter */

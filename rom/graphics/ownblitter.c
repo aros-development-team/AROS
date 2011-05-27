@@ -6,10 +6,16 @@
     Lang: english
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <graphics/gfxbase.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
+
+#include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -60,74 +66,16 @@
   
   me  = FindTask(NULL);
 
-  Forbid();
+  D(bug("OwnBlitter: Request by Task %p)\n", me));
+  LOCK_BLIT;
   
   /* test whether a task is using the blitter. Even if the blitter is
      used by the queued blits now the BlitOwner entry must not be NULL!
    */
-  
-  if (NULL == GfxBase->BlitOwner)
-  {
-    /* nobody is using the blitter right now, so I can use it */
-    GfxBase->BlitOwner=me;
-  }
-  else
-  {
-    BOOL first = TRUE;
-    /* the blitter is used. I have to set this task asleep and queue
-       it into the BlitWaitQ. 
-    */
-    
-    /* Repeat this as long as there is somebody else using the blitter.
-       This is necessary as when the other task calls DisownBlitter() it
-       might take a while until this task gets to run again and 
-       yet another taks might issue QBlit() in the meantime and the blitter 
-       might be busy with that. So this task will have to wait again.
-       However at the first call this task is put to the end of the waiting
-       list and after that it is always put at the very front.
-    */
-    while (NULL != GfxBase->BlitOwner)
-    {
-      /* force this task to sleep */
-    
-      BYTE old_TDNestCnt = SysBase->TDNestCnt;
-      SysBase->TDNestCnt=-1;
-
-      /* 
-         Move it to the waiting list in the GfxBase structure.
-         It will be moved to the ready list by the blitterinterrupt 
-         handler. 
-      */
-      if (first)
-      {
-        AddTail(&GfxBase->BlitWaitQ, &me->tc_Node);
-        /* The next time I will put this task  at the beginning
-           of the list, if necessary. 
-        */
-        first = FALSE;
-      }
-      else
-      {
-        AddHead(&GfxBase->BlitWaitQ, &me->tc_Node);
-      }
-      
-      /* Switch to the next ready task. */
-      Switch();
-      /*
-        OK. Somebody awakened me. This means that I the task might now
-        have full control over the blitter. Checking is in the while-loop.
-      */
-    
-      /* Restore TDNestCnt. */
-      SysBase->TDNestCnt=old_TDNestCnt;
-    } /* while () */
-    /* I am the owner now !! */
-    Disable();
-    GfxBase -> BlitOwner = me;
-    Enable();
-  }
-  
-  Permit();
+  Disable();
+  GfxBase->BlitOwner = me;
+  Enable();
+  D(bug("OwnBlitter: Now owned by Task %p\n", me));
 
   AROS_LIBFUNC_EXIT
 } /* OwnBlitter */
