@@ -345,7 +345,6 @@ ULONG AmigaVideoBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 	}
     }
     CMDDEBUGPIXEL(bug("GetPixel: %dx%d=%x\n", msg->x, msg->y, retval));
-    volatile ULONG *c = 0x110; *c = 0x123;
     return retval; 
 }
 
