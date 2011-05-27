@@ -30,7 +30,8 @@
 	Error stream handle.
 
     NOTES
-	This function is AROS specific
+	This function is AROS specific and deprecated. Use AmigaOS4-compatible
+	ErrorOutput() from libamiga.a. It will be removed in ABI v1.
 
     EXAMPLE
 
