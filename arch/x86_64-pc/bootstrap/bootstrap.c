@@ -93,8 +93,6 @@ struct TagItem64 *tag = &km[0];
 
 static unsigned char __stack[65536] __attribute__((used));
 
-static const char default_mod_name[] = "<unknown>";
-
 /*
  * External modules.
  * 
@@ -160,16 +158,16 @@ static int find_modules(struct multiboot *mb, const struct module *m)
         for (i=0; i < mb->mods_count; i++, mod++)
         {
             char *p = (char *)mod->mod_start;
+            const char *name = __bs_remove_path((char *)mod->cmdline);
 
             if (p[0] == 0x7f && p[1] == 'E' && p[2] == 'L' && p[3] == 'F')
             {
                 /* 
                  * The loaded file is an ELF object. It may be put directly into our list of modules
                  */
-                const char *s = default_mod_name;
-                struct module *mo = module_prepare(s, m, &count);
+                struct module *mo = module_prepare(name, m, &count);
 
-                mo->name = s;
+                mo->name = name;
                 mo->address = (void*)mod->mod_start;
 
                 D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->name, mo->address));
@@ -182,7 +180,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                  */
                 void *file = p + 8;
 
-                D(kprintf("[BOOT] * package %s @ %p:\n", __bs_remove_path((char *)mod->cmdline), mod->mod_start));
+                D(kprintf("[BOOT] * package %s @ %p:\n", name, mod->mod_start));
 
                 while (file < (void*)mod->mod_end)
                 {
