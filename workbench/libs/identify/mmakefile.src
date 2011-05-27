@@ -17,7 +17,7 @@ FILES := library \
 #MM     kernel-utility-includes \
 #MM     includes-copy
 
-#MM workbench-libs-identify : workbench-libs-identify-test linklibs
+#MM workbench-libs-identify : linklibs
 
 #MM workbench-libs-identify-test : workbench-libs-identify includes linklibs
 
