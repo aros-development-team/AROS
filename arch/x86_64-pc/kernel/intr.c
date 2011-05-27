@@ -314,39 +314,25 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     {
         D(bug("[Kernel] Trap exception %u\n", irq_number));
 
-	if (!krnRunExceptionHandlers(irq_number, regs))
+	if (krnRunExceptionHandlers(irq_number, regs))
+	    core_LeaveInterrupt(regs);
+
+	DTRAP(bug("[Kernel] Passing on to exec, Amiga trap %d\n", AmigaTraps[irq_number]));
+
+	if (AmigaTraps[irq_number] != -1)
 	{
-	    DTRAP(bug("[Kernel] Passing on to exec, Amiga trap %d\n", AmigaTraps[irq_number]));
-
-	    if (AmigaTraps[irq_number] != -1)
+	    if (core_Trap(AmigaTraps[irq_number], regs))
 	    {
-	    	/* Find out trap handler for caught task */
-	    	if (SysBase)
-	    	{
-	      	    void (*trapHandler)(ULONG, struct ExceptionContext *) = SysBase->TaskTrapCode;
-            	    struct Task *t = SysBase->ThisTask;
-
-		    DTRAP(bug("[Kernel] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
-
-            	    if (t)
-	    	    {
-		    	trapHandler = t->tc_TrapCode;
-		    	DTRAP(bug("[Kernel] Task trap handler 0x%p\n", trapHandler));
-	    	    }
-
-		    trapHandler(AmigaTraps[irq_number], regs);
-
-		    /* If the trap handler returned, we can continue */
-		    DTRAP(bug("[Kernel] Trap handler returned\n"));
-		    core_LeaveInterrupt(regs);
-		}
+		/* If the trap handler returned, we can continue */
+		DTRAP(bug("[Kernel] Trap handler returned\n"));
+		core_LeaveInterrupt(regs);
 	    }
-
-	    bug("[Kernel] UNHANDLED EXCEPTION %lu\n", irq_number);
-	    PrintContext(regs, error_code);
-
-	    while (1) asm volatile ("hlt");
 	}
+
+	bug("[Kernel] UNHANDLED EXCEPTION %lu\n", irq_number);
+	PrintContext(regs, error_code);
+
+	while (1) asm volatile ("hlt");
     }
     else if (irq_number == 0x80)  /* Syscall? */
     {
