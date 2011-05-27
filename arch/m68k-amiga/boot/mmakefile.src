@@ -35,7 +35,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-alerthook-kobj \
 #MM     workbench-libs-mathffp-kobj \
 #MM     kernel-amiga-m68k-audio-kobj \
-#MM     kernel-amiga-m68k-ata-kobj \
+#MM     kernel-ata-kobj \
 #MM     kernel-shell-kobj \
 #MM     kernel-filesystem-kobj
 
