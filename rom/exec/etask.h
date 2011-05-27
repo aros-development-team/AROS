@@ -68,7 +68,7 @@ struct IntETask
  * - iet_AlertType specifies type of alert context (if any). We make sure
  *   it is clear so as next time Alert() will not display old information.
  */
-static inline ResetETask(struct IntETask *etask)
+static inline void ResetETask(struct IntETask *etask)
 {
     etask->iet_AlertType  = AT_NONE;
     etask->iet_AlertFlags = 0;
