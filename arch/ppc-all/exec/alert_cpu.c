@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 1
+
 #include <exec/rawfmt.h>
 #include <proto/exec.h>
 
@@ -55,9 +57,10 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
 APTR UnwindFrame(APTR fp, APTR *caller)
 {
     APTR *sp = fp;
-    
-    sp      = sp[0];	/* Go to previous frame first			*/
-    *caller = sp[1];	/* Caller address is stored in *caller's* frame */
+
+    sp = sp[0];	/* Go to previous frame first */
+    if (sp)
+    	*caller = sp[1]; /* Caller address is stored in *caller's* frame */
 
     return sp;
 }
