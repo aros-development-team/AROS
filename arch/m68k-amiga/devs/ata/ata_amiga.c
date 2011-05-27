@@ -7,53 +7,70 @@
 #include <proto/exec.h>
 #include <graphics/gfxbase.h>
 #include <hardware/custom.h>
+#include <hardware/intbits.h>
+#include <aros/symbolsets.h>
 
 #include "ata.h"
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+#define GAYLE_BASE_4000 0xdd2022 /* 0xdd2020.W, 0xdd2026.B, 0xdd202a.B ... (argh!) */
+#define GAYLE_IRQ_4000  0xdd3020
 
-#include <hardware/intbits.h>
+#define GAYLE_BASE_1200 0xda0000 /* 0xda0000.W, 0xda0004.B, 0xda0008.B ... */
+#define GAYLE_IRQ_1200  0xda9000
+#define GAYLE_INT_1200  0xdaa000
 
-void ata_insw(APTR address, IPTR port, ULONG count)
+#define GAYLE_IRQ_IDE	0x80
+#define GAYLE_INT_IDE	0x80
+
+struct amiga_driverdata
 {
-    volatile UWORD *addr = (UWORD*)(port & ~3);
+    struct ata_Bus *bus;
+    struct Interrupt ideint;
+    UBYTE *gaylebase;
+    UBYTE *gayleirqbase;
+    BOOL a4000;
+};
+
+static void ata_insw(APTR address, UWORD port, ULONG count, void *data)
+{
+    struct amiga_driverdata *ddata = data;
+    volatile UWORD *addr = (UWORD*)(ddata->gaylebase + (port & ~3));
     UWORD *dst = address;
+
     count /= 2;
     while (count-- != 0)
         *dst++ = *addr;
 }
 
-void ata_insl(APTR address, IPTR port, ULONG count)
+static void ata_outsw(APTR address, UWORD port, ULONG count, APTR data)
 {
-}
-
-void ata_outsw(APTR address, IPTR port, ULONG count)
-{
-    volatile UWORD *addr = (UWORD*)(port & ~3);
+    struct amiga_driverdata *ddata = data;
+    volatile UWORD *addr = (UWORD*)(ddata->gaylebase + (port & ~3));
     UWORD *dst = address;
+
     count /= 2;
     while (count-- != 0)
         *addr = *dst++;
 }
 
-void ata_outsl(APTR address, IPTR port, ULONG count)
+static void ata_outl(ULONG val, UWORD offset, IPTR port, APTR data)
 {
 }
 
-void ata_out(UBYTE val, UWORD offset, IPTR port)
+static void ata_out(UBYTE val, UWORD offset, IPTR port, APTR data)
 {
-    volatile UBYTE *addr = (UBYTE*)port;
+    struct amiga_driverdata *ddata = data;
+    volatile UBYTE *addr = (UBYTE*)(ddata->gaylebase + port);
+
     addr[offset * 4] = val;
 }
 
-UBYTE ata_in(UWORD offset, IPTR port)
+static UBYTE ata_in(UWORD offset, IPTR port, APTR data)
 {
-    volatile UBYTE *addr = (UBYTE*)port;
-    return addr[offset * 4];
-}
+    struct amiga_driverdata *ddata = data;
+    volatile UBYTE *addr = (UBYTE*)(ddata->gaylebase + port);
 
-void ata_outl(ULONG val, UWORD offset, IPTR port)
-{
+    return addr[offset * 4];
 }
 
 static BOOL custom_check(APTR addr)
@@ -77,7 +94,7 @@ static BOOL custom_check(APTR addr)
     return iscustom;
 }  	
 
-static UBYTE *getport(BOOL quickdetect)
+static UBYTE *getport(struct amiga_driverdata *ddata)
 {
     UBYTE id, status;
     UBYTE *port = NULL;
@@ -94,56 +111,20 @@ static UBYTE *getport(BOOL quickdetect)
         }
         CloseLibrary((struct Library*)gfx);
     }
-    D(bug("[ATA--] Gayle ID=%02x. Possible IDE port=%08x\n", id, (ULONG)port & ~3));
+    D(bug("[ATA] Gayle ID=%02x. Possible IDE port=%08x\n", id, (ULONG)port & ~3));
     if (port == NULL)
     	return NULL;
-    if (quickdetect)
-    	return port;
 
-    status = ata_in(ata_Status, (IPTR)port);
-    D(bug("[ATA--] Status=%02x\n", status));
+    status = ata_in(ata_Status, (IPTR)port, ddata);
+    D(bug("[ATA] Status=%02x\n", status));
     // BUSY and DRDY both active or ERROR/DATAREQ = no drive(s) = do not install driver
     if (((status & (ATAF_BUSY | ATAF_DRDY)) == (ATAF_BUSY | ATAF_DRDY))
     	|| (status & (ATAF_ERROR | ATAF_DATAREQ))) {
-    	D(bug("[ATA--] Drives not detected\n"));
+    	D(bug("[ATA] Drives not detected\n"));
     	return NULL;
     }
-    /* we may have drives */
+    /* we may have connected drives */
     return port;
-}
-
-BOOL ata_ishardware(void)
-{
-    return getport(TRUE) != NULL;
-}
-
-void ata_Scan(struct ataBase *base)
-{
-    UBYTE *port;
-    EnumeratorArgs Args=
-    {
-        base,
-        0
-    };
-
-    port = getport(FALSE);
-    if (!port)
-    	return;
-
-    if (port == (UBYTE*)GAYLE_BASE_4000)
-    	base->a4000 = TRUE;
-    base->gaylebase = port;
-
-    ata_RegisterBus((IPTR)base->gaylebase, (IPTR)(base->gaylebase + 0x1010), 2, 0, 0, &Args);
-    ata_scanstart(base);
-}
-
-void ata_configure(struct ataBase *base)
-{
-    base->ata_32bit = FALSE;
-    base->ata_NoMulti = FALSE;
-    base->ata_NoDMA = TRUE;
-    base->ata_Poll = FALSE;
 }
 
 AROS_UFH4(APTR, IDE_Handler_A1200,
@@ -154,15 +135,12 @@ AROS_UFH4(APTR, IDE_Handler_A1200,
 {
     AROS_USERFUNC_INIT
 
-    struct ataBase *base = data;
-    UBYTE irqmask = *base->gayleirqbase;
+    struct amiga_driverdata *ddata = data;
+    UBYTE irqmask = *ddata->gayleirqbase;
     if (irqmask & GAYLE_IRQ_IDE) {
-     	struct ata_Bus *b = (struct ata_Bus*)base->ata_Buses.mlh_Head;
-    	while (b->ab_Node.mln_Succ) {
-    	    ata_HandleIRQ(b);
-    	    b = (struct ata_Bus*)b->ab_Node.mln_Succ;
-    	}
-	*base->gayleirqbase = irqmask & ~GAYLE_IRQ_IDE;
+	ata_HandleIRQ(ddata->bus);
+	/* Clear interrupt */
+	*ddata->gayleirqbase = irqmask & ~GAYLE_IRQ_IDE;
     }
     return 0;
 
@@ -177,48 +155,76 @@ AROS_UFH4(APTR, IDE_Handler_A4000,
 {
     AROS_USERFUNC_INIT
 
-    struct ataBase *base = data;
-    UWORD irqmask = *((UWORD*)base->gayleirqbase);
-    if (irqmask & (GAYLE_IRQ_IDE << 8)) {
-     	struct ata_Bus *b = (struct ata_Bus*)base->ata_Buses.mlh_Head;
-    	while (b->ab_Node.mln_Succ) {
-    	    ata_HandleIRQ(b);
-    	    b = (struct ata_Bus*)b->ab_Node.mln_Succ;
-    	}
-    }
+    struct amiga_driverdata *ddata = data;
+    /* A4000 interrupt clears when register is read */
+    UWORD irqmask = *((UWORD*)ddata->gayleirqbase);
+    if (irqmask & (GAYLE_IRQ_IDE << 8))
+	ata_HandleIRQ(ddata->bus);
     return 0;
 
     AROS_USERFUNC_EXIT
 }
 
-
-int ata_CreateInterrupt(struct ata_Bus *bus)
+static APTR ata_CreateInterrupt(struct ata_Bus *bus)
 {
-    struct ataBase *base = bus->ab_Base;
-    struct Interrupt *irq = &base->ideint;
+    struct amiga_driverdata *ddata = bus->ab_DriverData;
+    struct Interrupt *irq = &ddata->ideint;
     volatile UBYTE *gayleintbase = NULL;
 
-    if (base->a4000) {
-        base->gaylebase = (UBYTE*)GAYLE_BASE_4000;
-        base->gayleirqbase = (UBYTE*)GAYLE_IRQ_4000;
+    if (ddata->a4000) {
 	irq->is_Code = (APTR)IDE_Handler_A4000;
     } else {
         gayleintbase = (UBYTE*)GAYLE_INT_1200;
-        base->gaylebase = (UBYTE*)GAYLE_BASE_1200;
-        base->gayleirqbase = (UBYTE*)GAYLE_IRQ_1200;
 	irq->is_Code = (APTR)IDE_Handler_A1200;
     }
-    	
+    ddata->bus = bus;
+
     irq->is_Node.ln_Pri = 20;
     irq->is_Node.ln_Type = NT_INTERRUPT;
     irq->is_Node.ln_Name = "AT-IDE";
-    irq->is_Data = base;
+    irq->is_Data = ddata;
     AddIntServer(INTB_PORTS, irq);
     
     if (gayleintbase)
         *gayleintbase |= GAYLE_INT_IDE;
 
-    return 1;
+    return irq;
 }
 
-#endif
+static const struct ata_BusDriver amiga_driver = 
+{
+    ata_out,
+    ata_in,
+    ata_outl,
+    ata_insw,
+    ata_outsw,
+    ata_insw,	/* These are intentionally the same as 16-bit routines */
+    ata_outsw,
+    ata_CreateInterrupt
+};
+
+static int ata_amiga_init(struct ataBase *LIBBASE)
+{
+    struct amiga_driverdata *ddata;
+
+    ddata = AllocMem(sizeof(struct amiga_driverdata), MEMF_CLEAR);
+    if (!ddata)
+    	return FALSE;
+
+    ddata->gaylebase = getport(ddata);
+    if (ddata->gaylebase) {
+	if (ddata->gaylebase == (UBYTE*)GAYLE_BASE_4000) {
+	    ddata->a4000 = TRUE;
+	    ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_4000;
+	} else {
+	    ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_1200;
+	}
+	LIBBASE->ata_NoDMA = TRUE;
+	ata_RegisterBus(0, 0x1010, 2, 0, 0, &amiga_driver, ddata, LIBBASE);
+	return TRUE;
+    }
+    FreeMem(ddata, sizeof(struct amiga_driverdata));
+    return FALSE;
+}
+
+ADD2INITLIB(ata_amiga_init, 20)
