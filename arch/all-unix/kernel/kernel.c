@@ -50,34 +50,16 @@
     sa.sa_handler = (SIGHANDLER_T)h ## _gate;
 #endif
 
-static void core_Trap(int sig, regs_t *regs)
+static void core_TrapHandler(int sig, regs_t *regs)
 {
-    void (*trapHandler)(unsigned long, struct AROSCPUContext *) = NULL;
     struct SignalTranslation *s;
+    short amigaTrap;
     struct AROSCPUContext ctx;
 
     /* Just for completeness */
     krnRunIRQHandlers(sig);
 
     bug("[KRN] Trap signal %d, SysBase %p, KernelBase %p\n", sig, SysBase, KernelBase);
-
-    /* Find out trap handler for caught task */
-    if (SysBase)
-    {
-	struct Task *t = SysBase->ThisTask;
-
-        if (t)
-	{
-	    bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
-	    trapHandler = t->tc_TrapCode;
-	}
-	else
-	    bug("[KRN] No task\n");
-
-	if (!trapHandler)
-	    trapHandler = SysBase->TaskTrapCode;
-    }
-
     PRINT_SC(regs);
 
     /* Translate UNIX trap number to CPU and exec trap numbers */
@@ -88,26 +70,30 @@ static void core_Trap(int sig, regs_t *regs)
     }
 
     /*
-     * Initialize all context area to zero, this is important since it may include pointers to FPU state buffers.
-     * TODO: FPU state also can be interesting for debuggers, we need to prepare space for it too. Needs to be
-     * enclosed in some macros.
+     * Trap handler expects struct ExceptionContext, so we have to convert regs_t to it.
+     * But first initialize all context area to zero, this is important since it may include
+     * pointers to FPU state buffers.
+     * TODO: FPU state also can be interesting for debuggers, we need to prepare space for it
+     * too. Needs to be enclosed in some macros.
      */
     memset(&ctx, 0, sizeof(ctx));
-
-    /* Trap handler expects struct ExceptionContext, so we have to convert regs_t to it */
     SAVEREGS(&ctx, regs);
 
+    amigaTrap = s->AmigaTrap;
     if (s->CPUTrap != -1)
     {
 	if (krnRunExceptionHandlers(s->CPUTrap, &ctx))
 	    /* Do not call exec trap handler */
-	    trapHandler = NULL;
+	    amigaTrap = -1;
     }
 
-    if (trapHandler && (s->AmigaTrap != -1))
-	/* Call our trap handler. Note that we may return, this means that the handler has
-	   fixed the problem somehow and we may safely continue */
-	trapHandler(s->AmigaTrap, &ctx);
+    /*
+     * Call exec trap handler if needed.
+     * Note that it may return, this means that the it has
+     * fixed the problem somehow and we may safely continue.
+     */
+    if (amigaTrap != -1)
+    	core_Trap(amigaTrap, &ctx);
 
     /* Trap handler(s) have possibly modified the context, so
        we convert it back before returning */
@@ -185,7 +171,7 @@ static void core_IRQ(int sig, regs_t *sc)
  * systems initial signal handler, which simply calls
  * sighandler(int signum, regs_t sigcontext)
 */
-GLOBAL_SIGNAL_INIT(core_Trap)
+GLOBAL_SIGNAL_INIT(core_TrapHandler)
 GLOBAL_SIGNAL_INIT(core_SysCall)
 GLOBAL_SIGNAL_INIT(core_IRQ)
 
@@ -238,7 +224,7 @@ static int InitCore(struct KernelBase *KernelBase)
      * These ones we consider as processor traps.
      * They are not be blocked by KrnCli()
      */
-    SETHANDLER(sa, core_Trap);
+    SETHANDLER(sa, core_TrapHandler);
     for (s = sigs; s->sig != -1; s++)
     {
 	KernelIFace.sigaction(s->sig, &sa, NULL);
