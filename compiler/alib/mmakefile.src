@@ -54,6 +54,7 @@ FILES	:= \
     dosupernew \
     drawbevelbox \
     easyrequest \
+    erroroutput \
     extendfonttags \
     fastrand \
     freeievents \
