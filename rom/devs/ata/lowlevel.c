@@ -1406,7 +1406,7 @@ void common_DetectXferModes(struct ata_Unit* unit)
 
 #define SWAP_LE_WORD(x) (x) = AROS_LE2WORD((x))
 #define SWAP_LE_LONG(x) (x) = AROS_LE2LONG((x))
-#define SWAP_LE_QUAD(x) (x) = AROS_LE2LONG((x)>>32) | AROS_LE2LONG((x) & 0xffffffff) << 32
+#define SWAP_LE_QUAD(x) (x) = AROS_LE2LONG((x) >> 32) | (((QUAD)(AROS_LE2LONG((x) & 0xffffffff))) << 32)
 
 BYTE ata_Identify(struct ata_Unit* unit)
 {
