@@ -54,6 +54,7 @@
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
 #include <dos/bptr.h>
+#include <dos/dosextens.h>
 #include <dos/filehandler.h>
 
 #include <proto/exec.h>
@@ -140,7 +141,7 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                     AROS_BSTR_setstrlen(devnode->dn_Handler, len);
 
                     D(bug("[ATA>>]:-ata_RegisterVolume: '%s' with StartCyl=%d, EndCyl=%d .. ",
-                          &(devnode->dn_Ext.dn_AROS.dn_DevName[0]), StartCyl, EndCyl));
+                          AROS_DOSDEVNAME(devnode), StartCyl, EndCyl));
                     AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
                     D(bug("done\n"));
                     
