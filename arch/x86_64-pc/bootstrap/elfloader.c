@@ -6,7 +6,7 @@
     Lang: English
 */
 
-//#define DEBUG
+/* #define DEBUG */
 
 #include <aros/kernel.h>
 #include <dos/elf.h>
@@ -25,6 +25,8 @@
  */
 char *ptr_ro = (char*)KERNEL_TARGET_ADDRESS;
 char *ptr_rw = (char*)KERNEL_TARGET_ADDRESS;
+unsigned long long SysBase_ptr = 0;
+
 struct _bss_tracker {
     unsigned long long addr;
     unsigned long long len;
@@ -148,7 +150,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
     unsigned int numrel = (unsigned long)shrel->size / (unsigned long)shrel->entsize;
     unsigned int i;
 
-    struct symbol *SysBase_sym = (void*)0;
+    struct symbol *SysBase_sym = NULL;
 
     D(kprintf("[ELF Loader] performing %d relocations, target address %p%p\n", 
               numrel, (unsigned long)(virt >> 32), (unsigned long)virt));
@@ -164,34 +166,55 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
         {
             case SHN_UNDEF:
                 D(kprintf("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
-			  name, (char *)sh[eh->shstrndx].addr + toreloc->name));
+			  name, (unsigned long)sh[eh->shstrndx].addr + toreloc->name));
                 return 0;
 
             case SHN_COMMON:
                 D(kprintf("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
-                      	  name, (char *)sh[eh->shstrndx].addr + toreloc->name));
+                      	  name, (unsigned long)sh[eh->shstrndx].addr + toreloc->name));
 
                 return 0;
 
             case SHN_ABS:
-                if (SysBase_sym == (void*)0)
+                if (SysBase_sym == NULL)
                 {
                     if (strcmp(name, "SysBase") == 0)
-                    {
                         SysBase_sym = sym;
-                        goto SysBase_yes;
-                    }
-                    else
-                        goto SysBase_no;
                 }
-                else if (SysBase_sym == sym)
-SysBase_yes:	    s = 8ULL;			/* Global SysBase address is 8 on 64-bit machines */
+
+                if (SysBase_sym == sym)
+                {
+		    if (!SysBase_ptr)
+		    {
+		    	SysBase_ptr = 8; /* Default global SysBase address is 8 on 64-bit machines */
+		    	D(kprintf("[ELF Loader] SysBase pointer set to default 0x%016llx\n", SysBase_ptr));
+		    }
+
+	    	    s = SysBase_ptr;
+		}
                 else
-SysBase_no:	    s = sym->value;
+		    s = sym->value;
                 break;
 
             default:
                 s = (unsigned long long)sh[sym->shindex].addr + virt + sym->value;
+
+		if (!SysBase_ptr)
+		{
+		    /*
+		     * The first global data symbol named SysBase becomes global SysBase.
+		     * The idea behind: the first module (kernel.resource) contains global
+		     * SysBase variable and all other modules are linked to it.
+		     */
+                    if (sym->info == ELF_S_INFO(STB_GLOBAL, STT_OBJECT))
+                    {
+                    	if (strcmp(name, "SysBase") == 0)
+                    	{
+                    	    SysBase_ptr = s;
+                    	    D(kprintf("[ELF Loader] SysBase pointer set to 0x%016llx\n", SysBase_ptr));
+                    	}
+                    }
+                }
         }
 
         switch (ELF_R_TYPE(rel->info))
@@ -201,7 +224,7 @@ SysBase_no:	    s = sym->value;
                 break;
 
             case R_X86_64_PC32: /* PC relative 32 bit signed */
-                *p = s + rel->addend - (unsigned long)((unsigned long long)p + virt);
+                *p = s + rel->addend - ((unsigned long)p + virt);
                 break;
 
             case R_X86_64_32:
@@ -230,7 +253,7 @@ void load_elf_file(void *file, unsigned long long virt)
     long i;
     int addr_displayed = 0;
     
-    D(kprintf("[ELF Loader] Loading ELF module from address %p\n", (unsigned int)file));
+    D(kprintf("[ELF Loader] Loading ELF module from address %p\n", file));
     
     /* Check the header of ELF file */
     if
@@ -260,11 +283,13 @@ void load_elf_file(void *file, unsigned long long virt)
             {
                 kprintf("[ELF Loader] Error at loading of the hunk!\n");
             }
+#ifndef DEBUG
             else if (!addr_displayed)
             {
-                kprintf("%p", sh[i].addr);
+                kprintf("0x%016X", sh[i].addr);
                 addr_displayed = 1;
             }
+#endif
         }	
     }
 
@@ -281,4 +306,3 @@ void load_elf_file(void *file, unsigned long long virt)
         }
     }
 }
-
