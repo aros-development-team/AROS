@@ -146,9 +146,5 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
         /* Well, stop if the user wants so (or if the reboot didn't work at all) */
         Wait(0);
     }
-
-    /* Otherwise clear crash status and return happily */
-    ResetETask(iet);
-
     return 0;
 }

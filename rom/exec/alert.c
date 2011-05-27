@@ -63,7 +63,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    Exec_ExtAlert(alertNum, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
+    Exec_ExtAlert(alertNum, __builtin_return_address(0), CALLER_FRAME, AT_NONE, NULL, SysBase);
 
     AROS_LIBFUNC_EXIT
 }
@@ -118,24 +118,18 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
 	    D(bug("[Alert] Previous frame 0x%p, caller 0x%p\n", iet->iet_AlertStack, iet->iet_AlertLocation));
 	}
 
-	/*
-	 * Set the data if specified.
-	 * This can happen only on the first call, since we can recurse only into Alert(),
-	 * not into ExtAlert() directly.
-	 */
-	if (data)
+	/* If this is not a nested call, set the supplementary data if specified */
+	if (data && !(iet->iet_AlertFlags & AF_Alert))
 	{
 	    iet->iet_AlertType = type;
 	    CopyMem(data, &iet->iet_AlertData, contextSizes[type]);
 	}
 	else
+	{
+	    /* Either no data or already present */
 	    type = iet->iet_AlertType;
-
-	/*
-	 * At this point iet_AlertData is guaranteed to be set
-	 * either by caller or by us.
-	 */
-	data = type ? &iet->iet_AlertData : NULL;	
+	    data = &iet->iet_AlertData;
+	}	
     }
     else
     	/*
@@ -152,8 +146,19 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
     {
         alertNum = Exec_UserAlert(alertNum, SysBase);
 	if (!alertNum)
+	{
+	    /*
+	     * UserAlert() succeeded and the user decided to continue the task.
+	     * Clear crash status and return happily
+	     */
+    	    ResetETask(iet);
 	    return;
+	}
     }
+
+    /* Hint for SystemAlert() - if AlertType is AT_NONE, we don't have AlertData */
+    if (type == AT_NONE)
+	data = NULL;
 
     /*
      * We're here if Intuition failed. Use safe (but not so
@@ -163,15 +168,6 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
     Exec_SystemAlert(alertNum, location, stack, type, data, SysBase);
     Enable();
 
-    /*
-     * We succesfully displayed an alert in supervisor mode.
-     * Clear alert status by clearing respective fields in ETask.
-     */
-    if (iet)
-    {
-	ResetETask(iet);
-    }
-
     if (alertNum & AT_DeadEnd)
     {
 	/* Um, we have to do something here in order to prevent the
@@ -179,4 +175,11 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
 	ColdReboot();
 	ShutdownA(SD_ACTION_COLDREBOOT);
     }
+
+    /*
+     * We succesfully displayed an alert in supervisor mode.
+     * Clear alert status by clearing respective fields in ETask.
+     */
+    if (iet)
+	ResetETask(iet);
 }
