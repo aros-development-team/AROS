@@ -71,12 +71,13 @@
 #include <exec/libraries.h>
 #include <exec/lists.h>
 #include <libraries/expansionbase.h>
+#include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 
 #include <ctype.h>
 
-// #define  DEBUG  1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define SH_GLOBAL_SYSBASE 1
@@ -228,6 +229,7 @@ LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase)
 	    break;
 	}
 
+	D(bug("[Shell] Closing CLI input 0x%p\n", cli->cli_CurrentInput));
 	Close(cli->cli_CurrentInput);
 
 	if (AROS_BSTR_strlen(cli->cli_CommandFile))
@@ -242,8 +244,10 @@ LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase)
 	cli->cli_CurrentInput = cli->cli_StandardInput;
 	cli->cli_Interactive = TRUE;
 	moreLeft = TRUE;
+
+	D(bug("[Shell] Flushig output 0x%p, error 0x%p\n", Output(), ErrorOutput()));
 	Flush(Output());
-	Flush(Error());
+	Flush(ErrorOutput());
     } while (moreLeft);
 
     bufferFree(&in);
