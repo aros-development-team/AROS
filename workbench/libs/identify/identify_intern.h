@@ -1,12 +1,32 @@
 #ifndef IDENDIFY_INTERN_H
 #define IDENDIFY_INTERN_H
 
+/*
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+    Lang: english
+*/
+
 #include <exec/types.h>
 #include <exec/libraries.h>
 
 #include <proto/exec.h>
 
 #define STRBUFSIZE (30)
+
+struct FuncNode
+{
+    struct Node nd;
+    ULONG offset;
+};
+
+struct LibNode
+{
+    struct Node nd;
+    struct List funcList;
+};
 
 struct HardwareBuffer
 {
@@ -54,6 +74,7 @@ struct IdentifyBaseIntern
     struct SignalSemaphore sem;
     BOOL dirtyflag;
     struct HardwareBuffer hwb;
+    struct List libList;
 };
 
 #endif

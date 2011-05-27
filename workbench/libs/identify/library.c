@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -21,6 +21,7 @@ static int InitFunc(struct IdentifyBaseIntern *lh)
     IdentifyBase = (struct Library *)lh;
 
     lh->dirtyflag = TRUE;
+    NEWLIST(&lh->libList);
     InitSemaphore(&lh->sem);
 
     return TRUE;
