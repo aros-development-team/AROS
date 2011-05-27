@@ -82,18 +82,6 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBa
 	}
 	else
 	    bufferCopy(in, out, 1);
-
-	/*
-	 * CHECKME: This allows at least to boot up AROS. Without this Assign THEME: ${SYS/theme.var}
-	 * causes error 205 because in->len is greater than real string length.
-	 * However there are still problems with:
-	 * a) 'If EXISTS ENV:SYS/Packages'. The block is executed even when the file is missing.
-	 * b) 'Prompt' in shell-startup gives 'unmatched quotes' error.
-	 * UPD: Works on Darwin 64-bit. If this check is disabled, everything works correctly.
-	 * Symptoms described here pop up on Linux PPC. Needs retesting.
-	 */
-/*	if (c == 0)
-	    break;*/
     }
 
     in->cur = n;
