@@ -58,7 +58,7 @@ struct IntETask
 #define AF_Location 0x02	/* iet_AlertLocation is filled in */
 
 /*
- * This macro resets crash status of the task:
+ * This function resets crash status of the task:
  * - AF_Alert flag serves as an actual indicator of crash status.
  *   If we enter Alert() with this flag already set, this is
  *   considered a nested alert and is directed to supervisor-mode routine.
@@ -68,8 +68,10 @@ struct IntETask
  * - iet_AlertType specifies type of alert context (if any). We make sure
  *   it is clear so as next time Alert() will not display old information.
  */
-#define ResetETask(etask)		\
-    (etask)->iet_AlertType  = AT_NONE;	\
-    (etask)->iet_AlertFlags = 0;
+static inline ResetETask(struct IntETask *etask)
+{
+    etask->iet_AlertType  = AT_NONE;
+    etask->iet_AlertFlags = 0;
+}
 
 #endif /* _ETASK_H */
