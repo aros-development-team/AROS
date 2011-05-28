@@ -158,6 +158,17 @@ static void idexpansion(void)
     printf("ManufStr %s\n", buffer);
 }
 
+static void idfunction(void)
+{
+    puts("\nIdFunction");
+    puts("-----------");
+    TEXT buffer[30];
+    printf("result %d\n", IdFunctionTags("identify", 30, IDTAG_FuncNameStr, buffer, IDTAG_StrLength, 30, TAG_DONE));
+    printf("FuncNameStr %s\n", buffer);
+    printf("result %d\n", IdFunctionTags("identify", 36, IDTAG_FuncNameStr, buffer, IDTAG_StrLength, 30, TAG_DONE));
+    printf("FuncNameStr %s\n", buffer);
+}
+
 int main(void)
 {
     idhardwarenum();
@@ -166,6 +177,7 @@ int main(void)
     idestimateformatsize();
     idalert();
     idexpansion();
+    idfunction();
 
     return 0;
 }

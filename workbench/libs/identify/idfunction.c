@@ -11,17 +11,18 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "identify_intern.h"
 #include "identify.h"
 
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 
 
 static struct LibNode *searchLibrary(struct List *libList, CONST_STRPTR libname);
-static BOOL addFuncNode(struct List *funcList, CONST_STRPTR line, ULONG offset);
-static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname);
+static BOOL addFuncNode(struct List *funcList, CONST_STRPTR line, ULONG offset, struct IdentifyBaseIntern *libBase);
+static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname, struct IdentifyBaseIntern *libBase);
 static CONST_STRPTR searchFunction(struct LibNode *libNode, ULONG offset);
 
 
@@ -65,9 +66,10 @@ static CONST_STRPTR searchFunction(struct LibNode *libNode, ULONG offset);
 
     struct TagItem *tag;
     const struct TagItem *tags;
-    CONST_STRPTR funcNameStr = NULL;
+    STRPTR funcNameStr = NULL;
     ULONG strLength = 0;
     struct LibNode *libNode;
+    LONG retVal = IDERR_OKAY;
 
     for (tags = taglist; (tag = NextTagItem(&tags)); )
     {
@@ -86,26 +88,34 @@ static CONST_STRPTR searchFunction(struct LibNode *libNode, ULONG offset);
     if (funcNameStr == NULL || strLength == 0)
         return IDERR_NOLENGTH;
 
+    offset = abs(offset);
+    if (offset % 6)
+        return IDERR_OFFSET;
+
+    ObtainSemaphore(&IdentifyBase->sem);
+
     libNode = searchLibrary(&IdentifyBase->libList, libname);
     if (!libNode)
     {
-        libNode = loadFD(&IdentifyBase->libList, libname);
+        libNode = loadFD(&IdentifyBase->libList, libname, IdentifyBase);
     }
 
     if (libNode)
     {
-        funcNameStr = searchFunction(libNode, offset);
+        strlcpy(funcNameStr, searchFunction(libNode, offset), strLength);
         if (funcNameStr == NULL)
         {
-            return IDERR_OFFSET;
+            retVal = IDERR_OFFSET;
         }
     }
     else
     {
-        return IDERR_NOFD;
+        retVal = IDERR_NOFD;
     }
 
-    return IDERR_OKAY;
+    ReleaseSemaphore(&IdentifyBase->sem);
+
+    return retVal;
 
     AROS_LIBFUNC_EXIT
 } /* IdFunction */
@@ -142,38 +152,51 @@ static struct LibNode *searchLibrary(struct List *libList, CONST_STRPTR libname)
     return NULL;
 }
 
-static BOOL addFuncNode(struct List *funcList, CONST_STRPTR line, ULONG offset)
+static BOOL addFuncNode(struct List *funcList, CONST_STRPTR line, ULONG offset, struct IdentifyBaseIntern *libBase)
 {
     D(bug("[idfunction/addFuncNode] funcList %p line %s offset %u\n", funcList, line, offset));
 
-    struct FuncNode *newNode = AllocVec(sizeof (struct FuncNode), MEMF_CLEAR);
+    struct FuncNode *newNode = AllocVecPooled(libBase->poolMem, sizeof (struct FuncNode));
     if (newNode)
     {
-        // TODO: copy only function name
-        STRPTR name = AllocVec(strlen(line) + 1, MEMF_ANY);
+        memset(newNode, 0, sizeof (struct FuncNode));
+        int len;
+
+        STRPTR bracket = strchr(line, '(');
+        if (bracket)
+        {
+            len = (IPTR)bracket - (IPTR)line;
+        }
+        else
+        {
+            len = strlen(line);
+        }
+
+        STRPTR name = AllocVecPooled(libBase->poolMem, len + 1);
         if (name)
         {
             newNode->nd.ln_Name = name;
-            strcpy(newNode->nd.ln_Name, line);
+            strlcpy(newNode->nd.ln_Name, line, len + 1);
             newNode->offset = offset;
             AddTail(funcList, (struct Node *)newNode);
-            D(bug("[idfunction/addFuncNode] funcnode %p created\n", newNode));
+            D(bug("[idfunction/addFuncNode] funcnode %p name %s offset %u created\n", newNode, newNode->nd.ln_Name, newNode->offset));
             return TRUE;
         }
         else
         {
-            FreeVec(newNode);
+            FreeVecPooled(libBase->poolMem, newNode);
         }
     }
     D(bug("[idfunction/addFuncNode] failed to create funcnode\n"));
     return FALSE;
 }
 
-static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname)
+static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname, struct IdentifyBaseIntern *libBase)
 {
     struct LibNode *retVal = NULL;
     struct LibNode *newNode = NULL;
     STRPTR fileName = NULL;
+    STRPTR libNameStripped = NULL;
     BPTR fileHandle = BNULL;
     TEXT buffer[256];
     ULONG offset = 0;
@@ -191,18 +214,23 @@ static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname)
         len = strlen(libname);
     }
 
-    fileName = AllocVec(len + 30, MEMF_ANY);
+    libNameStripped = AllocVecPooled(libBase->poolMem, len + 1);
+    if (libNameStripped == NULL)
+    {
+        D(bug("[idfunction/loadFD] out of mem for libNameStripped\n"));
+        goto bailout;
+    }
+    strlcpy(libNameStripped, libname, len + 1);
+
+    fileName = AllocVecPooled(libBase->poolMem, len + 30);
     if (fileName == NULL)
     {
         D(bug("[idfunction/loadFD] out of mem for filename\n"));
         goto bailout;
     }
+    sprintf(fileName, "Development:fd/%s_lib.fd", libNameStripped);
 
-    strcpy(fileName, "Development:fd/");
-    strncat(fileName, libname, len);
-    strcat(fileName, "_lib.fd");
-
-    D(bug("[idfunction/loadFD] filename %s len %u\n", fileName, len));
+    D(bug("[idfunction/loadFD] libnamestripped %s filename %s\n", libNameStripped, fileName));
 
     fileHandle = Open(fileName, MODE_OLDFILE);
     if (fileHandle == NULL)
@@ -211,12 +239,14 @@ static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname)
         goto bailout;
     }
 
-    newNode = AllocVec(sizeof (struct LibNode), MEMF_CLEAR);
+    newNode = AllocVecPooled(libBase->poolMem, sizeof (struct LibNode));
     if (newNode == NULL)
     {
         D(bug("[idfunction/loadFD] out of mem for LibNode\n"));
         goto bailout;
     }
+
+    newNode->nd.ln_Name = libNameStripped;
 
     NEWLIST(&newNode->funcList);
 
@@ -235,11 +265,11 @@ static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname)
                 D(bug("[idfunction/loadFD] ##bias\n"));
                 LONG value;
                 StrToLong(buffer + 6, &value);
-                offset += value;
+                offset = value;
             }
             else if (strncmp(buffer, "##end", 5) == 0) 
             {
-                D(bug("[idfunction/loadFD] ##break\n"));
+                D(bug("[idfunction/loadFD] ##end\n"));
                 break;
             }
             else
@@ -249,22 +279,22 @@ static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname)
         }
         else
         {
-            BOOL success = addFuncNode(&newNode->funcList, buffer, offset);
+            addFuncNode(&newNode->funcList, buffer, offset, libBase);
+            offset += 6;
         }
     }
     AddTail(libList, (struct Node *)newNode);
+    retVal = newNode;
 
 bailout:
     if (fileHandle) Close(fileHandle);
-    FreeVec(fileName);
+    FreeVecPooled(libBase->poolMem, fileName);
     return retVal;
 }
 
 static CONST_STRPTR searchFunction(struct LibNode *libNode, ULONG offset)
 {
     struct FuncNode *node;
-
-    offset = abs(offset);
 
     D(bug("[idfunction/searchFunction] libNode %p offset %u\n", libNode, offset));
 

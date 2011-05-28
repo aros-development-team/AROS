@@ -14,6 +14,8 @@
 
 #include "identify_intern.h"
 
+// Global library base so that we can call library functions,
+// e.g. IdFormatString calls IdHardware.
 struct Library *IdentifyBase;
 
 static int InitFunc(struct IdentifyBaseIntern *lh)
@@ -23,12 +25,17 @@ static int InitFunc(struct IdentifyBaseIntern *lh)
     lh->dirtyflag = TRUE;
     NEWLIST(&lh->libList);
     InitSemaphore(&lh->sem);
+    lh->poolMem = CreatePool(MEMF_ANY, 1024, 1024);
+    if (!lh->poolMem)
+        return FALSE;
 
     return TRUE;
 }
 
 static int ExpungeFunc(struct IdentifyBaseIntern *lh)
 {
+    DeletePool(lh->poolMem);
+    lh->poolMem = NULL;
     return TRUE;
 }
 
