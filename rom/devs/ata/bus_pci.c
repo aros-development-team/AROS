@@ -206,7 +206,7 @@ static VOID ata_outsw(APTR address, UWORD port, ULONG count, APTR data)
 static VOID ata_outsl(APTR address, UWORD port, ULONG count, APTR data)
 {
     if (count & 2)
-        ata_outsw(address, port, count);
+        ata_outsw(address, port, count, data);
     else
     {
         ULONG *addr = address;
