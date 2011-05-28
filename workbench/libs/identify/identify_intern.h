@@ -72,6 +72,7 @@ struct IdentifyBaseIntern
     struct Library base;
 
     struct SignalSemaphore sem;
+    APTR poolMem;
     BOOL dirtyflag;
     struct HardwareBuffer hwb;
     struct List libList;
