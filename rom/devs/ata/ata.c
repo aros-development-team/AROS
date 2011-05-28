@@ -477,7 +477,10 @@ static void cmd_GetGeometry(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         dg->dg_TrackSectors             = unit->au_Sectors;
         dg->dg_BufMemType               = MEMF_PUBLIC;
         dg->dg_DeviceType               = unit->au_DevType;
-        dg->dg_Flags                    = (unit->au_Flags & AF_Removable) ? DGF_REMOVABLE : 0;
+        if (dg->dg_DeviceType != DG_DIRECT_ACCESS)
+            dg->dg_Flags                    = (unit->au_Flags & AF_Removable) ? DGF_REMOVABLE : 0;
+        else
+            dg->dg_Flags                = 0;
         dg->dg_Reserved                 = 0;
 
         IOStdReq(io)->io_Actual = sizeof(struct DriveGeometry);
