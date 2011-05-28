@@ -6,6 +6,6 @@ USER_INCLUDES := -I.. -I$(SRCDIR)/rom/devs/ata
 %build_archspecific \
   mainmmake=kernel-ata maindir=rom/devs/ata \
   arch=amiga-m68k \
-  files="ata_amiga dma_generic" 
+  files="ata_amiga bus_pci dma_generic" 
 
 %common
