@@ -52,6 +52,7 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     memset(data, 0, sizeof (*data));
 
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)p_pf);
+    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     /* Get some dimensions of the bitmap */
@@ -284,6 +285,8 @@ VOID CBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 VOID CBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+    APTR dst_pixels, src_pixels;
+    OOP_Object *srcpf;
 
     switch(msg->pixFmt)
     {
@@ -406,11 +409,144 @@ VOID CBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 	    break;
 	    
 	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    break;
-	    
+            src_pixels = msg->pixels;
+            dst_pixels = data->buffer + msg->y * data->bytesperrow
+                + msg->x * data->bytesperpixel;
+            srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+
+            HIDD_BM_ConvertPixels(o, &src_pixels,
+                (HIDDT_PixelFormat *)srcpf, msg->modulo, &dst_pixels,
+                BM_PIXFMT(o), data->bytesperrow, msg->width, msg->height,
+                NULL);
+
     } /* switch(msg->pixFmt) */
 
+}
+
+/**************************************************************************/
+
+int static inline
+__attribute__((always_inline, const)) do_alpha(int a, int v)
+{
+    int tmp = a * v;
+    return (tmp + (tmp >> 8) + 0x80) >> 8;
+}
+
+VOID CBM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_BitMap_PutAlphaImage *msg)
+{
+    struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+    HIDDT_StdPixFmt pixFmt = BM_PIXFMT(o)->stdpixfmt;
+    WORD x, y, src_step, dst_step;
+    UBYTE *p, *q;
+    UBYTE src_red, src_green, src_blue, src_alpha;
+    UBYTE dst_red, dst_green, dst_blue;
+
+    switch(pixFmt)
+    {
+        case vHidd_StdPixFmt_BGR032:
+
+            p = msg->pixels;
+            q = data->buffer + msg->y * data->bytesperrow
+                + msg->x * data->bytesperpixel;
+            src_step = msg->modulo - msg->width * 4;
+            dst_step = data->bytesperrow - data->bytesperpixel * msg->width;
+
+            for(y = 0; y < msg->height; y++)
+            {
+                for(x = 0; x < msg->width; x++)
+                {
+                    src_alpha = *p++;
+                    src_red   = *p++;
+                    src_green = *p++;
+                    src_blue  = *p++;
+
+                    switch(src_alpha)
+                    {
+                    case 0:
+                        q += 4;
+                        break;
+
+                    case 0xff:
+                        *q++ = src_blue;
+                        *q++ = src_green;
+                        *q++ = src_red;
+                        *q++ = 0;
+                        break;
+
+                    default:
+                        dst_blue = *q;
+                        dst_blue += do_alpha(src_alpha, src_blue - dst_blue);
+                        *q++ = dst_blue;
+
+                        dst_green = *q;
+                        dst_green += do_alpha(src_alpha, src_green - dst_green);
+                        *q++ = dst_green;
+
+                        dst_red = *q;
+                        dst_red  += do_alpha(src_alpha, src_red - dst_red);
+                        *q++ = dst_red;
+
+                        *q++ = 0;
+                    }
+                }
+                p += src_step;
+                q += dst_step;
+            }
+            break;
+
+        case vHidd_StdPixFmt_RGB16_LE:
+
+            p = msg->pixels;
+            q = data->buffer + msg->y * data->bytesperrow
+                + msg->x * data->bytesperpixel;
+            src_step = msg->modulo - msg->width * 4;
+            dst_step = data->bytesperrow - data->bytesperpixel * msg->width;
+
+            for(y = 0; y < msg->height; y++)
+            {
+                for(x = 0; x < msg->width; x++)
+                {
+                    src_alpha = *p++;
+                    src_red   = *p++;
+                    src_green = *p++;
+                    src_blue  = *p++;
+
+                    switch(src_alpha)
+                    {
+                    case 0:
+                        q += 2;
+                        break;
+
+                    case 0xff:
+                        *q++ = (src_green << 3) & 0xe0 | src_blue >> 3;
+                        *q++ = src_red & 0xf8 | src_green >> 5;
+                        break;
+
+                    default:
+                        dst_blue = *q;
+                        dst_red = *(q + 1);
+                        dst_green = dst_red << 5 | dst_blue >> 3 & 0x1c;
+                        dst_blue <<= 3;
+                        dst_red &= 0xf8;
+
+                        dst_blue += do_alpha(src_alpha, src_blue - dst_blue);
+                        dst_green += do_alpha(src_alpha, src_green - dst_green);
+                        dst_red  += do_alpha(src_alpha, src_red - dst_red);
+
+                        *q++ = (dst_green << 3) & 0xe0 | dst_blue >> 3;
+                        *q++ = dst_red & 0xf8 | dst_green >> 5;
+                    }
+                }
+                p += src_step;
+                q += dst_step;
+            }
+            break;
+
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+    }
 }
 
 /****************************************************************************************/
@@ -418,6 +554,8 @@ VOID CBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 VOID CBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+    APTR src_pixels, dst_pixels;
+    OOP_Object *dstpf;
 
     switch(msg->pixFmt)
     {
@@ -540,8 +678,14 @@ VOID CBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 	    break;
 	    
 	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    break;
+            src_pixels = data->buffer + msg->y * data->bytesperrow
+                + msg->x * data->bytesperpixel;
+            dst_pixels = msg->pixels;
+            dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+
+            HIDD_BM_ConvertPixels(o, &src_pixels, BM_PIXFMT(o),
+                data->bytesperrow, &dst_pixels, (HIDDT_PixelFormat *)dstpf,
+                msg->modulo, msg->width, msg->height, NULL);
 	    
     } /* switch(msg->pixFmt) */
 	    

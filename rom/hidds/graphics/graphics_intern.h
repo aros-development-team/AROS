@@ -82,6 +82,7 @@ struct planarbm_data
 
 struct chunkybm_data
 {
+    OOP_Object *gfxhidd;       /* Cached driver object */
     UBYTE *buffer;
     ULONG bytesperrow;
     ULONG bytesperpixel;
@@ -292,7 +293,7 @@ struct class_static_data
     OOP_Class            *gcclass;      /* graphics context class */
     OOP_Class		 *colormapclass; /* colormap class	  */
     
-    OOP_Class		 *pixfmtclass;	/* descring bitmap pixel formats */
+    OOP_Class		 *pixfmtclass;	/* describing bitmap pixel formats */
     OOP_Class		 *syncclass;	/* describing gfxmode sync times */
     
     

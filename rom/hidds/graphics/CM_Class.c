@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics colormap class implementation.
@@ -152,7 +152,7 @@ VOID CM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 	    
 	    default:
-	    	D(bug("!!! Unknow colormap attr in ColorMap::Get()\n"));
+	    	D(bug("!!! Unknown colormap attr in ColorMap::Get()\n"));
 		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
@@ -174,7 +174,7 @@ static inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelForma
     HIDDT_Pixel blue    = color->blue;
     HIDDT_Pixel alpha   = color->alpha;
 
-    /* This code assumes that sizeof(HIDDT_Pixel) is a multimple of sizeof(col->#?)
+    /* This code assumes that sizeof(HIDDT_Pixel) is a multiple of sizeof(col->#?),
        which should be true for most (all?) systems. (I have never heard of any
        system with for example 3 byte types.)
     */

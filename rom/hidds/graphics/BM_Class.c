@@ -2468,7 +2468,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
     bpp = getpixfmtbpp(cl, o, msg->pixFmt);
     if (-1 == bpp)
     {
-	D(bug("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", msg->pixFmt));
+	D(bug("!!! INVALID PIXFMT IN BitMap::GetImage(): %d !!!\n", msg->pixFmt));
 	return;
     }
 
@@ -2827,45 +2827,56 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
 		LONG	    dst_red, dst_green, dst_blue;
 		
     	    	srcpix = *pixarray++;
-    	    #if AROS_BIG_ENDIAN		
-		src_red   = (srcpix & 0x00FF0000) >> 16;
-		src_green = (srcpix & 0x0000FF00) >> 8;
-		src_blue  = (srcpix & 0x000000FF);
-		src_alpha = (srcpix & 0xFF000000) >> 24;
-	    #else
-		src_red   = (srcpix & 0x0000FF00) >> 8;
-		src_green = (srcpix & 0x00FF0000) >> 16;
-		src_blue  = (srcpix & 0xFF000000) >> 24;
-		src_alpha = (srcpix & 0x000000FF);
-	    #endif
-		
-		destpix = xbuf[x];
-    	    #if AROS_BIG_ENDIAN		
-		dst_red   = (destpix & 0x00FF0000) >> 16;
-		dst_green = (destpix & 0x0000FF00) >> 8;
-		dst_blue  = (destpix & 0x000000FF);
-	    #else
-		dst_red   = (destpix & 0x0000FF00) >> 8;
-		dst_green = (destpix & 0x00FF0000) >> 16;
-		dst_blue  = (destpix & 0xFF000000) >> 24;
-	    #endif
-		
-		dst_red   += do_alpha(src_alpha, src_red - dst_red);
-		dst_green += do_alpha(src_alpha, src_green - dst_green);
-		dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
 
-    	    #if AROS_BIG_ENDIAN
-	    	destpix &= 0xFF000000;
-		destpix |= (dst_red << 16) + (dst_green << 8) + (dst_blue);
-    	    #else
-	    	destpix &= 0x000000FF;
-		destpix |= (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
-	    #endif
-	    		
-		xbuf[x] = destpix;
-		
-	    } /* for(x = 0; x < msg->width; x++) */
-    	
+#if AROS_BIG_ENDIAN
+                if ((srcpix & 0xFF000000) == 0xFF000000)
+                    xbuf[x] = srcpix;
+                else if ((srcpix & 0xFF000000) != 0)
+#else
+                if ((srcpix & 0xFF) == 0xFF)
+                    xbuf[x] = srcpix;
+                else if ((srcpix & 0xFF) != 0)
+#endif
+                {
+#if AROS_BIG_ENDIAN
+                    src_red   = (srcpix & 0x00FF0000) >> 16;
+                    src_green = (srcpix & 0x0000FF00) >> 8;
+                    src_blue  = (srcpix & 0x000000FF);
+                    src_alpha = (srcpix & 0xFF000000) >> 24;
+#else
+                    src_red   = (srcpix & 0x0000FF00) >> 8;
+                    src_green = (srcpix & 0x00FF0000) >> 16;
+                    src_blue  = (srcpix & 0xFF000000) >> 24;
+                    src_alpha = (srcpix & 0x000000FF);
+#endif
+
+                    destpix = xbuf[x];
+#if AROS_BIG_ENDIAN
+                    dst_red   = (destpix & 0x00FF0000) >> 16;
+                    dst_green = (destpix & 0x0000FF00) >> 8;
+                    dst_blue  = (destpix & 0x000000FF);
+#else
+                    dst_red   = (destpix & 0x0000FF00) >> 8;
+                    dst_green = (destpix & 0x00FF0000) >> 16;
+                    dst_blue  = (destpix & 0xFF000000) >> 24;
+#endif
+
+                    dst_red   += do_alpha(src_alpha, src_red - dst_red);
+                    dst_green += do_alpha(src_alpha, src_green - dst_green);
+                    dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
+
+#if AROS_BIG_ENDIAN
+                    destpix &= 0xFF000000;
+                    destpix |= (dst_red << 16) + (dst_green << 8) + (dst_blue);
+#else
+                    destpix &= 0x000000FF;
+                    destpix |= (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
+#endif
+
+                    xbuf[x] = destpix;
+                }
+            } /* for(x = 0; x < msg->width; x++) */
+
 	    if (PIXBUF_TIME_TO_END_PROCESS)
 	    {
 	    	LONG height = PIXBUF_LINES_TO_PROCESS;
@@ -4010,7 +4021,7 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 
     } /* for(y = 0; y < msg->height; y++) */
 
-    if (linebuf) FreeVec(linebuf);
+    FreeVec(linebuf);
 
     ReturnVoid("BitMap::PutImageLUT");
 }
@@ -4627,8 +4638,8 @@ HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
     HIDDT_Pixel blue	= msg->color->blue;
     HIDDT_Pixel alpha   = msg->color->alpha;
     
-    /* This code assumes that sizeof (HIDDT_Pixel is a multimple of sizeof(col->#?)
-       which should be true for most (all ?) systems. (I have never heard
+    /* This code assumes that sizeof(HIDDT_Pixel) is a multiple of sizeof(col->#?),
+       which should be true for most (all?) systems. I have never heard
        of any system with for example 3 byte types.
     */
 
@@ -4732,7 +4743,7 @@ VOID BM__Hidd_BitMap__UnmapPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 
     }
 
-    /* Unnecesart, but ... */
+    /* Unnecessary, but... */
     msg->color->pixval	= msg->pixel;
 }
 
@@ -5074,7 +5085,7 @@ BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o,
 
     if (GOT_BM_ATTR(PixFmtTags))
     {
-    	/* Allready a pixfmt registered ? */
+    	/* Already a pixfmt registered? */
 
 	pf = HIDD_Gfx_RegisterPixFmt(data->gfxhidd, (struct TagItem *)attrs[AO(PixFmtTags)]);
 	if (NULL == pf)
