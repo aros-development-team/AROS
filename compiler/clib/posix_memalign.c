@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function posix_memalign().
@@ -72,15 +72,17 @@
         return EINVAL;
 
     /* allocate enough space to satisfy the alignment and save some info */
-    mem = AllocPooled(__mempool, size + alignment + AROS_ALIGN(sizeof(size_t)) + AROS_ALIGN(sizeof(void *)));
+    mem = AllocPooled(__mempool, AROS_ALIGN(sizeof(size_t)) + sizeof(void *)
+        + AROS_ALIGN(sizeof(size_t)) + alignment + size);
     if (mem == NULL)
         return ENOMEM;
 
-    /* store the size for free(). it will add sizeof(size_t) itself */
+    /* store the size for free(). it will add AROS_ALIGN(sizeof(size_t))
+     * itself */
     *((size_t *) mem) = size + alignment + AROS_ALIGN(sizeof(void *));
     mem += AROS_ALIGN(sizeof(size_t));
 
-    /* if its already aligned correctly, then we just use it as-is */
+    /* if it's already aligned correctly, then we just use it as-is */
     if (((IPTR) mem & (alignment-1)) == 0) {
         *memptr = mem;
         return 0;
@@ -88,16 +90,23 @@
 
     orig = mem;
 
-    /* move forward to an even alignment boundary */
+    /* Make room for a pointer to original malloc()-style allocation, and
+     * a magic value */
+    mem += sizeof(void *) + AROS_ALIGN(sizeof(size_t));
+
+    /* move forward to an even alignment boundary (if we get here, requested
+     * alignment is greater than AROS_WORSTALIGN) */
     mem = (UBYTE *) (((IPTR) mem + alignment - 1) & -alignment);
+    *memptr = mem;
 
     /* store a magic number in the place that free() will look for the
      * allocation size, so it can handle this specially */
-    ((size_t *) mem)[-1] = MEMALIGN_MAGIC;
+    mem -= AROS_ALIGN(sizeof(size_t *));
+    *((size_t *) mem) = MEMALIGN_MAGIC;
 
     /* then store the original pointer before it, for free() to find */
-    ((void **) &(((size_t *) mem)[-1]))[-1] = orig;
+    mem -= sizeof(void *);
+    *((void **) mem) = orig;
 
-    *memptr = mem;
     return 0;
 } /* posix_memalign */
