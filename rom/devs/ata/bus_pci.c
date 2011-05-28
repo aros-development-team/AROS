@@ -177,7 +177,7 @@ static VOID ata_insw(APTR address, UWORD port, ULONG count, APTR data)
 static VOID ata_insl(APTR address, UWORD port, ULONG count, APTR data)
 {
     if (count & 2)
-        ata_insw(address, port, count);
+        ata_insw(address, port, count, data);
     else
     {
         ULONG *addr = address;

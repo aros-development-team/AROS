@@ -63,6 +63,7 @@
 
 #define DEBUG 0
 // use #define xxx(a) D(a) to enable particular sections.
+#if DEBUG
 #define DIRQ(a) D(a)
 #define DIRQ_MORE(a)
 #define DUMP(a) D(a)
@@ -70,6 +71,15 @@
 #define DATA(a) D(a)
 #define DATAPI(a) D(a)
 #define DINIT(a) (a)
+#else
+#define DIRQ(a)      do { } while (0)
+#define DIRQ_MORE(a) do { } while (0)
+#define DUMP(a)      do { } while (0)
+#define DUMP_MORE(a) do { } while (0)
+#define DATA(a)      do { } while (0)
+#define DATAPI(a)    do { } while (0)
+#define DINIT(a)     do { } while (0)
+#endif
 
 #include <aros/debug.h>
 #include <exec/types.h>
@@ -113,6 +123,7 @@ static BYTE atapi_Eject(struct ata_Unit *);
 
 static void common_SetBestXferMode(struct ata_Unit* unit);
 
+#if DEBUG
 static void dump(APTR mem, ULONG len)
 {
     register int i, j = 0;
@@ -139,6 +150,7 @@ static void dump(APTR mem, ULONG len)
         bug("\n");
     }
 }
+#endif
 
 static void ata_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 {
