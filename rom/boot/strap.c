@@ -573,7 +573,7 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
             	    devnode->dn_GlobalVec = fse->fse_GlobalVec;
 
                 AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, 0, devnode, 0);
-                D(bug("[Boot] AddBootNode(%b, 0x%p, 0x%p)\n",  devnode->dn_Name, pp[4 + DE_DOSTYPE], fse));
+                D(bug("[Boot] AddBootNode(%b, 0x%p, 0x%p)\n",  devnode-->dn_Name, pp[4 + DE_DOSTYPE], fse));
 
                 return;
 	    }
@@ -659,10 +659,9 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
 
 	    if (pt)
             {
-            	/* Check even removable devices for partition tables.
-            	 * This is required for Compact Flash support
-            	 */
-                res = CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
+            	/* don't check removable devices for partition tables */
+            	if (!IsRemovable(SysBase, pt->bd->ioreq))
+                    res = CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
 
            	CloseRootPartition(pt);
            }
