@@ -28,7 +28,17 @@ void writefd(struct config *cfg)
 	else
 	{
 	    fprintf(out, "##base _%s\n", cfg->libbase);
-	    fprintf(out, "##bias %u\n", cfg->firstlvo * 6);
+	    
+	    if (cfg->modtype == DEVICE)
+	    {
+		/* because of BeginIO/EndIO */
+		/* FIXME: do we need special handling for other module types, too? */
+		fprintf(out, "##bias %u\n", (cfg->firstlvo - 2) * 6);
+	    }
+	    else
+	    {
+		fprintf(out, "##bias %u\n", cfg->firstlvo * 6);
+	    }
 
 	    fprintf(out, "*\n"
 			 "* Automatically generated from '%s'.\n"
@@ -100,6 +110,6 @@ void writefd(struct config *cfg)
     } /* cfg->funclist != NULL */
     else
     {
-        remove(line);
+	remove(line);
     }
 }
