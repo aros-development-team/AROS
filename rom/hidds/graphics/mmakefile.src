@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 
 FILES       := graphics_init GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels memblit	\
-	       pixfmt sync
+	       pixfmt sync rgbconv
 
 USER_CFLAGS      := -DAROS_USE_OOP
 USER_CFLAGS      += $(PARANOIA_CFLAGS)

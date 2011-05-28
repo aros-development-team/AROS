@@ -589,7 +589,7 @@ typedef struct
     HIDDT_Pixel     clut_mask;
     UBYTE   	    clut_shift;
 
-    HIDDT_StdPixFmt stdpixfmt;		/* Number of corresponging standard format */
+    HIDDT_StdPixFmt stdpixfmt;		/* Number of corresponding standard format */
     ULONG   	    flags;		/* Flags, see below */
 	
 } HIDDT_PixelFormat;
@@ -1539,7 +1539,8 @@ struct _hidd_bitmap_protected
 };
 
 
-#define BM_PIXFMT(bm) (HIDDT_PixelFormat *)(((struct _hidd_bitmap_protected *)bm)->pixfmt)
+#define BM_PIXFMT(bm) \
+ ((HIDDT_PixelFormat *)(((struct _hidd_bitmap_protected *)bm)->pixfmt))
 #define BM_DEPTH(bm)	BM_PIXFMT(bm)->depth
 
 
