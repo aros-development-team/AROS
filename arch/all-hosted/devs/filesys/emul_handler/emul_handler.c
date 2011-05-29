@@ -410,24 +410,27 @@ static LONG create_softlink(struct emulbase * emulbase,
                             struct filehandle *handle, const char *name, const char *ref)
 {
     LONG error;
-    char *src, *dest;
+    char *dest;
 
     DLINK(bug("[emul] Creating softlink %s to file %s\n", name, ref));
     DLINK(bug("[emul] Handle 0x%p, pathname %s\n", handle, handle->hostname));
     error = makefilename(emulbase, &dest, NULL, handle, name);
     if (!error)
     {
-	DLINK(bug("[emul] Link host name: %s\n", dest));
-	error = makefilename(emulbase, &src, NULL, handle, ref);
-	if (!error)
+        char *src = AllocVecPooled(emulbase->mempool, strlen(ref)+1);
+	if (src)
 	{
-	    DLINK(bug("[emul] File host name: %s\n", src));
-	    error = DoSymLink(emulbase, dest, src);
+	    strcpy(src, ref);
+	    DLINK(bug("[emul] Link host name: %s\n", dest));
+	    error = DoSymLink(emulbase, src, dest);
 	    DLINK(bug("[emul] Error: %d\n", error));
 
-	    FreeVecPooled(emulbase->mempool, dest);
+	    FreeVecPooled(emulbase->mempool, src);
 	}
-	FreeVecPooled(emulbase->mempool, src);
+	else
+	    error = ERROR_NO_FREE_STORE;
+
+	FreeVecPooled(emulbase->mempool, dest);
     }
 
     return error;
@@ -470,8 +473,10 @@ static LONG read_softlink(struct emulbase *emulbase,
     char *filename = NULL;
     long l = strlen(link) + 1;
 
+    DLINK(bug("read_softlink: link %s len %d\n", link, l));
+
     /* don't mess with link itself */
-    ln = AllocPooled(emulbase->mempool, l);
+    ln = AllocVecPooled(emulbase->mempool, l);
 
     if (!ln)
         return ERROR_NO_FREE_STORE;
@@ -482,13 +487,16 @@ static LONG read_softlink(struct emulbase *emulbase,
     if (!ret)
     {
         int targetlen = DoReadLink(emulbase, filename, buffer, *size, &ret);
+        DLINK(bug("read_softlink: targetlen %d\n", targetlen));
 
         FreeVecPooled(emulbase->mempool, filename);
 
-	if (targetlen < 0)
-	    *size = targetlen;
-	else
-	{
+        if (targetlen < 0)
+            *size = targetlen;
+        else
+        {
+            buffer[targetlen] = '\0';
+            DLINK(bug("read_softlink: buffer after DoReadLink %s\n", buffer));
             if (strchr(buffer, ':') == NULL)
             {
                 STRPTR source = FilePart(ln);
@@ -497,21 +505,19 @@ static LONG read_softlink(struct emulbase *emulbase,
                 *source = '\0';
                 if (strlen(ln) + targetlen >= *size)
                 {
+                    DLINK(bug("read_softlink: buffer too small %d>=%u\n", strlen(ln) + targetlen, *size));
                     /* Buffer was too small */
                     *size = -2;
                 }
                 else
                 {
-                    char* target;
-
                     /* copy buffer to create resolved link path in it */
-                    targetlen++;
-                    target = AllocVecPooled(emulbase->mempool, targetlen);
+                    char* target = AllocVecPooled(emulbase->mempool, targetlen);
                     if (target)
                     {
-                    	CopyMem(buffer, target, targetlen);
-                    	if (shrink(target))
-                    	{
+                        strcpy(target, buffer);
+                        if (shrink(target))
+                        {
                             strcpy(buffer, ln);
                             strcat(buffer, target);
                             *size = strlen(buffer);
@@ -519,12 +525,19 @@ static LONG read_softlink(struct emulbase *emulbase,
 
                         FreeVecPooled(emulbase->mempool, target);
                     }
+                    else
+                        ret = ERROR_NO_FREE_STORE;
                 }
+            }
+            else
+            {
+                *size = targetlen >= *size ? -2 : strlen(buffer);
             }
         }
     }
 
-    FreePooled(emulbase->mempool, ln, l);
+    DLINK(if (!ret) bug("read_softlink: buffer %s\n", buffer));
+    FreeVecPooled(emulbase->mempool, ln);
 
     return ret;
 }
@@ -944,9 +957,13 @@ AROS_LH1(void, beginio,
 			 , iofs->io_Union.io_SET_DATE.io_Filename, &iofs->io_Union.io_SET_DATE.io_Date);
 	break;
 
+    case FSA_SET_OWNER:
+        /* pretend to have changed owner, avoids tons of error messages from e.g. tar */
+        error = 0;
+        break;
+
 /* FIXME: not supported yet
     case FSA_SET_COMMENT:
-    case FSA_SET_OWNER:
     case FSA_MORE_CACHE:
     case FSA_MOUNT_MODE:
     case FSA_WAIT_CHAR:
