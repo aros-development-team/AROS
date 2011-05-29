@@ -161,6 +161,11 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
         D(bug("[Compositing] Invalid ModeID\n"));
         return FALSE;
     }
+    
+    /* Invalidate screen bitmap if it is set to "previous" top bitmap, since this
+       "previous" top bitmap is already gone at this point */
+    if (compdata->screenbitmap == compdata->topbitmap)
+        compdata->screenbitmap = NULL;
 
     /* Set the pointer to top bitmap */
     compdata->topbitmap = bm;
@@ -193,12 +198,12 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 
         /* Store mode information */ 
-        compdata->screenmodeid              = modeid;
-        compdata->screenrect.MinX           = 0;
-        compdata->screenrect.MinY           = 0;
-        compdata->screenrect.MaxX           = hdisp - 1;
-        compdata->screenrect.MaxY           = vdisp - 1;
-        compdata->modeschanged              = TRUE;
+        compdata->screenmodeid      = modeid;
+        compdata->screenrect.MinX   = 0;
+        compdata->screenrect.MinY   = 0;
+        compdata->screenrect.MaxX   = hdisp - 1;
+        compdata->screenrect.MaxY   = vdisp - 1;
+        compdata->modeschanged      = TRUE;
         
         /* Get gray foregound */
         if (depth < 24) gctags[0].ti_Data = (HIDDT_Pixel)0x9492;
