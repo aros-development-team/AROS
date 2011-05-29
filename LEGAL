@@ -19,7 +19,8 @@ GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
   [workbench/classes/zune/betterstring]
 + Classes/Zune/TextEditor.mc* [workbench/classes/zune/texteditor]
 + Libs/codesets.library [workbench/libs/codesetslib]
-+ AmberRAM (linked in some AROS kernels) [workbench/devs/AmberRAM]
++ [rom/devs/filesys/AmberRAM]
++ [rom/devs/filesys/SFS]
 
 
 The following components are distributed under the terms of version 3.0 of the
@@ -42,7 +43,6 @@ GNU General Public License, as specified in the file "LICENSE.GPL":
 + [tools/mkfsaffs]
 + [tools/adflib]
 + [workbench/devs/AHI] (as it is needed to compile AROS)
-+ [workbench/devs/SFS] (linked in some AROS kernels)
 
 
 The following components are distributed under the terms various different
@@ -59,6 +59,6 @@ relevant "LEGAL" files that accompanies these components' sources.
 + Development/Lib/libfreetype2(|shared).a, Libs/freetype2.library [workbench/libs/freetype]
 + Fonts/TrueType/#?.ttf [workbench/fonts/truetype/bitstream]
 + [tools/fd2pragma]
-+ [workbench/hidds/hidd.nouveau/drm]
++ [workbench/hidds/hidd.nouveau]
 + [workbench/libs/mesa]
 + C/OpenURL Prefs/OpenURL Libs/OpenURL [workbench/libs/openurllib]
