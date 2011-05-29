@@ -1,0 +1,29 @@
+:Per-directory license information:
+
+(a)--ROOT
+(x)----drm
+(b)-------drm
+(c)-------drm-aros
+(d)-------libdrm
+(e)----xf86-video-nouveau
+
+(a) 
+All files in *this directory* are licensed under APL license.
+
+(b) 
+All files in *this directory and its subdirectories* are dual licensed GPL-MIT. 
+MIT license is selected as applicable for AROS port.
+
+(c) 
+The following files in *this directory* are licensed under MIT license:
+    drm_linux_lists.h
+All other files in *this directory and its subdirectories* are licensed under 
+APL license.
+
+(d)
+All files in *this directory and its subdirectories* are licensed under MIT 
+license.
+
+(e)
+All files in *this directory and its subdirectories* are licensed under MIT 
+license.
