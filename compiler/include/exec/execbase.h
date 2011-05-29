@@ -127,8 +127,12 @@ struct ExecBase
 #define AFF_68882   (1L<<5)
 #define AFB_FPU40        6
 #define AFF_FPU40   (1L<<6)
-#define AFB_PRIVATE      15 /* PRIVATE */
+#define AFB_ADDR32       14 /* AROS extension, CPU has 32-bit addressing */
+#define AFF_ADDR32  (1L<<14)
+#define AFB_PRIVATE      15 /* Private, AOS sets this if any FPU type detected */
 #define AFF_PRIVATE (1L<<15)
+#define AFB_FPU     AFB_PRIVATE
+#define AFF_FPU     AFF_PRIVATE
 
 /* Cache */
 #define CACRF_EnableI       (1L<<0)
