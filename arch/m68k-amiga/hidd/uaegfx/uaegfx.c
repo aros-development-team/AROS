@@ -802,15 +802,19 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     struct Interrupt *intr;
     struct Node *node;
 
-    if (!openall(csd))
+    if (!(SysBase->AttnFlags & AFF_68020) || !(SysBase->AttnFlags & AFF_ADDR32))
     	return FALSE;
 
-    D(bug("Init_UAEGFXClass\n"));
     csd->uaeromvector = (APTR)(0xf00000 + 0xff60);
     if ((gl(csd->uaeromvector) & 0xff00ffff) != 0xa0004e75) {
     	D(bug("UAE boot ROM entry point not found. UAEGFX not enabled.\n"));
     	return FALSE;
     }
+
+    D(bug("Init_UAEGFXClass\n"));
+    if (!openall(csd))
+    	return FALSE;
+
     csd->boardinfo = AllocVec(PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last, MEMF_CLEAR | MEMF_PUBLIC);
     if (!csd->boardinfo)
     	return FALSE;
