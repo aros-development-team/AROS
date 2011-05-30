@@ -96,6 +96,15 @@
 #define STT_LOPROC	13
 #define STT_HIPROC	15
 
+#define STB_LOCAL	0
+#define STB_GLOBAL	1
+#define STB_WEAK	2
+#define STB_LOOS	10
+#define STB_GNU_UNIQUE	10
+#define STB_HIOS	12
+#define STB_LOPROC	13
+#define STB_HIPROC	15
+
 #define SHN_UNDEF       0
 #define SHN_LORESERVE   0xff00
 #define SHN_ABS         0xfff1
@@ -218,6 +227,10 @@ struct symbol
 #define ELF_R_INFO(sym, type) (((sym) << 8) + ((type) & 0xff))
 
 #endif
+
+#define ELF_S_BIND(val)		((val) >> 4)
+#define ELF_S_TYPE(val)		((val) & 0xF)
+#define ELF_S_INFO(bind, type)	(((bind) << 4) + ((type) & 0xF))
 
 struct rel
 {
