@@ -12,13 +12,11 @@
 #include "cachebuffers_protos.h"
 #include "debug.h"
 #include "cachedio_protos.h"
+#include "req_protos.h"
 #include "support_protos.h"
 
 #include "globals.h"
 
-extern LONG req(UBYTE *fmt, UBYTE *gads, ... );
-extern LONG req_unusual(UBYTE *fmt, ... );
-extern void dreq(UBYTE *fmt, ... );
 extern void outputcachebuffer(struct CacheBuffer *cb);
 
 extern void setchecksum(struct CacheBuffer *);

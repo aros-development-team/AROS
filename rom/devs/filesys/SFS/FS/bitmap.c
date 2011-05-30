@@ -10,14 +10,11 @@
 #include "debug.h"
 #include "objects.h"
 #include "transactions_protos.h"
-
+#include "req_protos.h"
 #include "globals.h"
 
 extern LONG readcachebuffercheck(struct CacheBuffer **,ULONG,ULONG);
 extern void setchecksum(struct CacheBuffer *);
-
-extern LONG req_unusual(UBYTE *fmt, ... );
-
 
 LONG getfreeblocks(ULONG *returned_freeblocks) {
   struct CacheBuffer *cb;

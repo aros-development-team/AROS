@@ -9,11 +9,10 @@
 #include "fs.h"
 #include "transactions_protos.h"
 #include "asmsupport.h"
-
+#include "req_protos.h"
 #include "globals.h"
 
 extern LONG readcachebuffercheck(struct CacheBuffer **,ULONG,ULONG);
-extern LONG req(UBYTE *fmt, UBYTE *gads, ... );
 
 LONG allocadminspace(struct CacheBuffer **returned_cb) {
   struct CacheBuffer *cb;

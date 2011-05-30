@@ -53,7 +53,7 @@
 #include "query.h"
 #include "support_protos.h"
 #include "transactions_protos.h"
-
+#include "req_protos.h"
 
 #include <string.h>
 
@@ -154,8 +154,6 @@ static struct DosPacket *getpacket(struct Process *);
 static struct DosPacket *waitpacket(struct Process *);
 static void returnpacket(SIPTR,LONG);
 static void sdlhtask(void);
-
-LONG request(UBYTE *,UBYTE *,UBYTE *,APTR, ... );
 
 /* Prototypes of cachebuffer related functions */
 
@@ -278,9 +276,6 @@ LONG start(void)
 #endif
 
 void request2(UBYTE *text);
-LONG req(UBYTE *fmt, UBYTE *gads, ... );
-LONG req_unusual(UBYTE *fmt, ... );
-void dreq(UBYTE *fmt, ... );
 
 // #define STARTDEBUG
 
@@ -3149,7 +3144,8 @@ void invalidatecaches() {
 }
 
 
-void dreq(UBYTE *fmt, ... ) {
+void dreqArgs(UBYTE *fmt, APTR params)
+{
   APTR args[4];
   UBYTE *fmt2;
 
@@ -3163,31 +3159,16 @@ void dreq(UBYTE *fmt, ... ) {
       _DEBUG(("\nREQUESTER\n\n"));
       RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s",args,putChProc,fmt2);
 
-      {
-        struct EasyStruct es;
-        ULONG *args=(ULONG *)&fmt;
-
-        args++;
-
-        es.es_StructSize=sizeof(struct EasyStruct);
-        es.es_Flags=0;
-        es.es_Title=PROGRAMNAME;
-        es.es_TextFormat=fmt2;
-        es.es_GadgetFormat="Continue|No more requesters";
-
-        if(EasyRequestArgs(0,&es,0,args)==0) {
-          globals->debugreqs=FALSE;
-        }
-      }
+      if (requestArgs(PROGRAMNAME, fmt2, "Continue|No more requesters", params) == 0)
+        globals->debugreqs=FALSE;
 
       FreeVec(fmt2);
     }
   }
 }
 
-
-
-LONG req(UBYTE *fmt, UBYTE *gads, ... ) {
+LONG reqArgs(UBYTE *fmt, UBYTE *gads, APTR params)
+{
   APTR args[5];
   APTR *arg=args;
   UBYTE *fmt2;
@@ -3223,28 +3204,15 @@ LONG req(UBYTE *fmt, UBYTE *gads, ... ) {
       RawDoFmt("Device %s: (%s, unit %ld)\n\n%s",args,putChProc,fmt2);
     }
 
-    {
-      struct EasyStruct es;
-      APTR args=&gads+1;
-
-      es.es_StructSize=sizeof(struct EasyStruct);
-      es.es_Flags=0;
-      es.es_Title=PROGRAMNAME " request";
-      es.es_TextFormat=fmt2;
-      es.es_GadgetFormat=gads;
-
-      gadget=EasyRequestArgs(0,&es,0,args);
-    }
-
+    gadget = requestArgs(PROGRAMNAME " request", fmt2, gads, params);
     FreeVec(fmt2);
   }
 
   return(gadget);
 }
 
-
-
-LONG req_unusual(UBYTE *fmt, ... ) {
+LONG req_unusualArgs(UBYTE *fmt, APTR params)
+{
   APTR args[5];
   UBYTE *fmt2;
   LONG gadget=0;
@@ -3264,35 +3232,19 @@ LONG req_unusual(UBYTE *fmt, ... ) {
   if((fmt2=AllocVec(strlen(fmt)+400,0))!=0) {
 
     RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s\n\n%s",args,putChProc,fmt2);
-
-    {
-      struct EasyStruct es;
-      APTR args=&fmt;
-
-      args++;
-
-      es.es_StructSize=sizeof(struct EasyStruct);
-      es.es_Flags=0;
-      es.es_Title=PROGRAMNAME " request";
-      es.es_TextFormat=fmt2;
-      es.es_GadgetFormat="Continue";
-
-      gadget=EasyRequestArgs(0,&es,0,args);
-    }
-
+    gadget = requestArgs(PROGRAMNAME " request", fmt2, "Continue", params);
     FreeVec(fmt2);
   }
 
   return(gadget);
 }
 
-
 void request2(UBYTE *text) {
   request(PROGRAMNAME, text, "Ok", 0);
 }
 
-
-LONG request(UBYTE *title,UBYTE *fmt,UBYTE *gads,APTR arg1, ... ) {
+LONG requestArgs(UBYTE *title, UBYTE *fmt, UBYTE *gads, APTR params)
+{
   struct EasyStruct es;
 
   es.es_StructSize=sizeof(struct EasyStruct);
@@ -3301,10 +3253,8 @@ LONG request(UBYTE *title,UBYTE *fmt,UBYTE *gads,APTR arg1, ... ) {
   es.es_TextFormat=fmt;
   es.es_GadgetFormat=gads;
 
-  return(EasyRequestArgs(0,&es,0,&arg1));
+  return EasyRequestArgs(0, &es, 0, params);
 }
-
-
 
 void outputcachebuffer(struct CacheBuffer *cb) {
   ULONG *a;

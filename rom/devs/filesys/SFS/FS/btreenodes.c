@@ -9,12 +9,11 @@
 #include "adminspaces_protos.h"
 #include "cachebuffers_protos.h"
 #include "debug.h"
-
+#include "req_protos.h"
 #include "globals.h"
 
 extern void setchecksum(struct CacheBuffer *);
 extern LONG readcachebuffercheck(struct CacheBuffer **,ULONG,ULONG);
-extern void dreq(UBYTE *fmt, ... );
 extern void outputcachebuffer(struct CacheBuffer *cb);
 
 /*

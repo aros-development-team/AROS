@@ -8,6 +8,7 @@
 #include "cachedio_protos.h"
 #include "deviceio.h"
 #include "deviceio_protos.h"
+#include "req_protos.h"
 
 #define removem(n)    (n)->mln_Succ->mln_Pred=(n)->mln_Pred; (n)->mln_Pred->mln_Succ=(n)->mln_Succ
 #define addtailm(l,n) (n)->mln_Succ=(l)->mlh_TailPred->mln_Succ; (l)->mlh_TailPred->mln_Succ=(n); (n)->mln_Pred=(l)->mlh_TailPred; (l)->mlh_TailPred=(n)
@@ -16,8 +17,6 @@
 #include "debug.h"
 
 #include "globals.h"
-
-extern void dreq(UBYTE *fmt, ... );
 
 static LONG copybackiocache(struct IOCache *ioc);
 
