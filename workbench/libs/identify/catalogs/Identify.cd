@@ -1,0 +1,686 @@
+;****************************************************************
+;*                                                              *
+;*          identify.library       Catalog Descriptor           *
+;*                                                              *
+;****************************************************************
+;*
+;*      (C) 1996-97  Richard Körber  -- All Rights Reserved
+;*
+;****************************************************************
+;
+;   ** IMPORTANT NOTES FOR TRANSLATORS **
+;
+;       · Nr. 0 must always be preserved
+;       · Do NOT change the sequence of '%' parameters
+;       · Do NOT change the order of the entries
+;       · Obey the minimum and maximum length
+;       · Note that some lines have trailing spaces
+;
+;
+;================================================================
+;       MISCELLANEOUS STRINGS (1..)
+;================================================================
+;
+MSG_BYTE                (1//)
+%ld
+MSG_KBYTE               (//)
+%ld.%cKB
+MSG_MBYTE               (//)
+%ld.%cMB
+MSG_GBYTE               (//)
+%ld.%cGB
+;
+;================================================================
+;       BOARD CLASSES (100..)
+;================================================================
+;  Keep these strings as short as ever possible.
+;
+MSG_EXP_UNKNOWN         (100//49)
+(unknown)
+MSG_EXP_MISC            (//49)
+expansion
+;
+MSG_EXP_TURBO           (//49)
+accelerator
+MSG_EXP_TURBORAM        (//49)
+accelerator RAM
+MSG_EXP_TURBOHD         (//49)
+accelerator HD controller
+MSG_EXP_TURBOIDE        (//49)
+accelerator IDE controller
+MSG_EXP_TURBOSCSIHD     (//49)
+accelerator SCSI host adapter
+;
+MSG_EXP_NET             (//49)
+network
+MSG_EXP_ARCNET          (//49)
+ArcNet
+MSG_EXP_ETHERNET        (//49)
+Ethernet
+;
+MSG_EXP_AUDIO           (//49)
+audio
+MSG_EXP_VIDEO           (//49)
+video
+MSG_EXP_MULTIMEDIA      (//49)
+multimedia
+MSG_EXP_DSP             (//49)
+DSP
+;
+MSG_EXP_BUSBRIDGE       (//49)
+ISA bus bridge
+MSG_EXP_BRIDGE          (//49)
+PC bridge
+;
+MSG_EXP_EMULATOR        (//49)
+emulator
+MSG_EXP_MACEMU          (//49)
+Macintosh emulator
+MSG_EXP_ATARIEMU        (//49)
+Atari emulator
+;
+MSG_EXP_GFX             (//49)
+graphics
+MSG_EXP_GFXRAM          (//49)
+graphics RAM
+;
+MSG_EXP_HD              (//49)
+HD controller
+MSG_EXP_HDRAM           (//49)
+HD controller RAM
+MSG_EXP_IDEHD           (//49)
+IDE controller
+MSG_EXP_IDEHDRAM        (//49)
+IDE controller RAM
+MSG_EXP_SCSIHD          (//49)
+SCSI host adapter
+MSG_EXP_RAMSCSIHD       (//49)
+SCSI host adapter RAM
+MSG_EXP_CDROM           (//49)
+CD-ROM interface
+;
+MSG_EXP_MODEM           (//49)
+internal modem
+MSG_EXP_ISDN            (//49)
+internal ISDN
+;
+MSG_EXP_MULTIIO         (//49)
+multi I/O
+MSG_EXP_SERIAL          (//49)
+multi serial
+MSG_EXP_PARALLEL        (//49)
+multi parallel
+MSG_EXP_SCANIF          (//49)
+scanner interface
+MSG_EXP_TABLET          (//49)
+drawing tablet interface
+;
+MSG_EXP_RAM             (//49)
+RAM expansion
+MSG_EXP_FLASHROM        (//49)
+Flash ROM
+;
+MSG_EXP_SCSIIDE         (//49)
+SCSI/IDE controller
+MSG_EXP_RAMFPU          (//49)
+RAM expansion / FPU
+;
+MSG_EXP_GUESS           (//49)
+(guessed)
+MSG_EXP_KICKSTART       (//49)
+KickStart
+;
+MSG_EXP_RAM32           (//49)
+32bit RAM expansion
+MSG_EXP_TURBOANDRAM     (//49)
+accelerator / RAM exp.
+MSG_EXP_ACCESS          (//49)
+access control
+MSG_EXP_INTERFACE       (//49)
+interface
+MSG_EXP_MFMHD           (//49)
+MFM HD controller
+MSG_EXP_FLOPPY          (//49)
+floppy disk interface
+;
+;================================================================
+;       ALERT GENERAL ERROR (1024..)
+;================================================================
+;
+MSG_ALERT_RECOVERY      (1024//49)
+Recoverable
+MSG_ALERT_DEADEND       (//49)
+Deadend
+MSG_ALERT_UNKNOWN       (//49)
+Unknown
+;
+MSG_AG_BADPARM          (//49)
+Bad parameter
+MSG_AG_CLOSEDEV         (//49)
+Cannot close device
+MSG_AG_CLOSELIB         (//49)
+Cannot close library
+MSG_AG_GENERAL          (//49)
+General fault
+MSG_AG_IOERROR          (//49)
+I/O error
+MSG_AG_MAKELIB          (//49)
+Cannot make library
+MSG_AG_NOMEMORY         (//49)
+No memory
+MSG_AG_NOSIGNAL         (//49)
+No signal
+MSG_AG_OPENDEV          (//49)
+Cannot open device
+MSG_AG_OPENLIB          (//49)
+Cannot open library
+MSG_AG_OPENRES          (//49)
+Cannot open resource
+MSG_AG_PROCCREATE       (//49)
+Process creation failed
+;
+;================================================================
+;       ALERT ERROR (2048..)
+;================================================================
+;
+MSG_ACPU_ADDRESSERR     (2048//49)
+Illegal address access
+MSG_ACPU_AUTOVEC1       (//49)
+AutoVector Level 1 interrupt error
+MSG_ACPU_AUTOVEC2       (//49)
+AutoVector Level 2 interrupt error
+MSG_ACPU_AUTOVEC3       (//49)
+AutoVector Level 3 interrupt error
+MSG_ACPU_AUTOVEC4       (//49)
+AutoVector Level 4 interrupt error
+MSG_ACPU_AUTOVEC5       (//49)
+AutoVector Level 5 interrupt error
+MSG_ACPU_AUTOVEC6       (//49)
+AutoVector Level 6 interrupt error
+MSG_ACPU_AUTOVEC7       (//49)
+AutoVector Level 7 interrupt error
+MSG_ACPU_BUSERR         (//49)
+Hardware bus fault/access error
+MSG_ACPU_CHK            (//49)
+Check instruction error
+MSG_ACPU_COPRVIOL       (//49)
+Coprocessor protocol violation
+MSG_ACPU_DIVZERO        (//49)
+Divide by zero
+MSG_ACPU_FORMAT         (//49)
+Stack frame format error
+MSG_ACPU_FPCPBRANCH     (//49)
+FPCP branch or set on unordered condition
+MSG_ACPU_FPCPDIVZERO    (//49)
+FPCP divide by zero
+MSG_ACPU_FPCPINEXACT    (//49)
+FPCP inexact result
+MSG_ACPU_FPCPOPERROR    (//49)
+FPCP operand error
+MSG_ACPU_FPCPOVER       (//49)
+FPCP overflow
+MSG_ACPU_FPCPUNDER      (//49)
+FPCP underflow
+MSG_ACPU_UNIMPLDTYPE    (//49)
+FPCP unimplemented data type
+MSG_ACPU_INSTERR        (//49)
+Illegal instruction
+MSG_ACPU_LINEA          (//49)
+Line 1010 Emulator error
+MSG_ACPU_LINEF          (//49)
+Line 1111 Emulator error
+MSG_ACPU_MMUACCVIOL     (//49)
+PMMU access level violation
+MSG_ACPU_MMUCONFIG      (//49)
+PMMU configuration
+MSG_ACPU_MMUILLEGAL     (//49)
+PMMU illegal configuration
+MSG_ACPU_NAN            (//49)
+FPCP signaling NAN
+MSG_ACPU_PRIVERR        (//49)
+Privilege violation error
+MSG_ACPU_SPURIOUS       (//49)
+Spurious interrupt error
+MSG_ACPU_TRACE          (//49)
+Trace error
+MSG_ACPU_TRAPV          (//49)
+TrapV instruction error
+MSG_AN_ADDSWGADGET      (//49)
+Add SW gadgets, no memory
+MSG_AN_ASYNCPKT         (//49)
+Unexpected packet received
+MSG_AN_AUDIODEV         (//49)
+Audio device trouble
+MSG_AN_BADCHKSUM        (//49)
+Invalid checksum
+MSG_AN_BADEXPANSIONFREE (//49)
+Freeed free region
+MSG_AN_BADFREEADDR      (//49)
+Memory header not located
+MSG_AN_BADGADGET        (//49)
+Recovery form of AN_GadgetType
+MSG_AN_BADINITFUNC      (//49)
+Invalid init packet for cli/shell
+MSG_AN_BADMESSAGE       (//49)
+Bad Message received by IDCMP
+MSG_AN_BADOVERLAY       (//49)
+Bad overlay
+MSG_AN_BADQUICKINT      (//49)
+An uninitialized quick interrupt has happened
+MSG_AN_BADSEGLIST       (//49)
+Overlays are illegal for library segments
+MSG_AN_BADSEMAPHORE     (//49)
+An attempt was made to use old msg semaphores
+MSG_AN_BADSTATE         (//49)
+Bad State Return entering Intuition
+MSG_AN_BASECHKSUM       (//49)
+Execbase checksum bad
+MSG_AN_BITMAP           (//49)
+Bitmap corrupt
+MSG_AN_BLTBITMAP        (//49)
+BltBitMap, no memory
+MSG_AN_BOGUSEXCPT       (//49)
+Illegal 68k exception taken
+MSG_AN_BOOTERROR        (//49)
+Boot code returned an error
+MSG_AN_BOOTSTRAP        (//49)
+Bootstrap trouble
+MSG_AN_CIARSRC          (//49)
+cia.resource trouble
+MSG_AN_CONSOLEDEV       (//49)
+colsole.device trouble
+MSG_AN_CREATEPORT       (//49)
+Create port, no memory
+MSG_AN_DISKBLKSEQ       (//49)
+Disk block sequence error
+MSG_AN_DISKCOPY         (//49)
+DiskCopy trouble
+MSG_AN_DISKERROR        (//49)
+Disk Error
+MSG_AN_DISKFONTLIB      (//49)
+diskfont.library trouble
+MSG_AN_DISKRSRC         (//49)
+disk.resource trouble
+MSG_AN_DOSLIB           (//49)
+dos.library trouble
+MSG_AN_DRHASDISK        (//49)
+Get unit: already has disk
+MSG_AN_DRINTNOACT       (//49)
+Interrupt: no active unit
+MSG_AN_ENDTASK          (//49)
+EndTask didn't
+MSG_AN_EXCPTVECT        (//49)
+68000 exception vector checksum
+MSG_AN_EXECLIB          (//49)
+exec.library trouble
+MSG_AN_EXPANSIONLIB     (//49)
+expansion.library trouble
+MSG_AN_FILERECLOSED     (//49)
+A filehandle was closed more than once
+MSG_AN_FREETWICE        (//49)
+Freeing memory that is already free
+MSG_AN_FREEVEC          (//49)
+Freevec failed
+MSG_AN_GADGETTYPE       (//49)
+Unknown gadget type
+MSG_AN_GADTOOLS         (//49)
+gadtools.library trouble
+MSG_AN_GAMEPORTDEV      (//49)
+gameport.device trouble
+MSG_AN_GFXFREEERROR     (//49)
+Error freeing graphics
+MSG_AN_GFXNEWERROR      (//49)
+New graphics error
+MSG_AN_GFXNOLCM         (//49)
+Emergency memory not available
+MSG_AN_GFXNOMEM         (//49)
+Graphics out of memory
+MSG_AN_GFXNOMEMMSPC     (//49)
+MonitorSpec alloc, no memory
+MSG_AN_GRAPHICSLIB      (//49)
+graphics.library trouble
+MSG_AN_ICONLIB          (//49)
+icon.library trouble
+MSG_AN_INITAPTR         (//49)
+InitStruct() of an APTR source
+MSG_AN_INTRMEM          (//49)
+No memory for interrupt servers
+MSG_AN_INTUITION        (//49)
+intuition.library trouble
+MSG_AN_IOAFTERCLOSE     (//49)
+IO attempted on closed IORequest
+MSG_AN_IOUSEDTWICE      (//49)
+Attempt to reuse active IORequest
+MSG_AN_ISEMORDER        (//49)
+Intuition obtained a sem in bad order
+MSG_AN_ITEMALLOC        (//49)
+Item plane alloc, no memory
+MSG_AN_ITEMBOXTOP       (//49)
+Item box top < RelZero
+MSG_AN_KEYBOARDDEV      (//49)
+keyboard.device trouble
+MSG_AN_KEYFREE          (//49)
+Key already free
+MSG_AN_KEYRANGE         (//49)
+Key out of range
+MSG_AN_LAYERSLIB        (//49)
+layers.library trouble
+MSG_AN_LAYERSNOMEM      (//49)
+Layers out of memory
+MSG_AN_LIBCHKSUM        (//49)
+Library checksum failure
+MSG_AN_LONGFRAME        (//49)
+Long frame, no memory
+MSG_AN_MAKEVPORT        (//49)
+MakeVPort, no memory
+MSG_AN_MATHLIB          (//49)
+math.library trouble
+MSG_AN_MEMCORRUPT       (//49)
+Corrupt memory list detected in FreeMem
+MSG_AN_MEMORYINSANE     (//49)
+Sanity check on memory list failed
+MSG_AN_MISCRSRC         (//49)
+misc.resource trouble
+MSG_AN_NOCONSOLE        (//49)
+Couldn't open the Console Device
+MSG_AN_NOFONTS          (//49)
+No fonts available
+MSG_AN_NOISEM           (//49)
+Intuition skipped obtaining a semaphore
+MSG_AN_NOWINDOW         (//49)
+Console can't open initial window
+MSG_AN_OBSOLETEFONT     (//49)
+Unsupported font description used
+MSG_AN_OPENSCREEN       (//49)
+Open screen, no memory
+MSG_AN_OPENSCRNRAST     (//49)
+Open screen, raster alloc, no memory
+MSG_AN_OPENWINDOW       (//49)
+Open window, no memory
+MSG_AN_PLANEALLOC       (//49)
+Plane alloc, no memory
+MSG_AN_QPKTFAIL         (//49)
+Qpkt failure
+MSG_AN_RAMLIB           (//49)
+ramlib trouble
+MSG_AN_REGIONMEMORY     (//49)
+Regions, memory not available
+MSG_AN_SEMCORRUPT       (//49)
+A semaphore is in an illegal state
+MSG_AN_SHORTFRAME       (//49)
+Short frame, no memory
+MSG_AN_STACKPROBE       (//49)
+Stack appears to extend out of range
+MSG_AN_STARTMEM         (//49)
+No memory at startup
+MSG_AN_SUBALLOC         (//49)
+Sub alloc, no memory
+MSG_AN_SYSSCRNTYPE      (//49)
+Open sys screen, unknown type
+MSG_AN_TDCALIBSEEK      (//49)
+Calibrate: seek error
+MSG_AN_TDDELAY          (//49)
+Delay: error on timer wait
+MSG_AN_TEXTTMPRAS       (//49)
+Text, no memory for TmpRas
+MSG_AN_TIMERDEV         (//49)
+timer.device trouble
+MSG_AN_TMBADREQ         (//49)
+Bad request
+MSG_AN_TMBADSUPPLY      (//49)
+Power supply -- no 50/60hz ticks
+MSG_AN_TRACKDISKDEV     (//49)
+trackdisk.device trouble
+MSG_AN_UTILITYLIB       (//49)
+utility.library trouble
+MSG_AN_WBBADIOMSG       (//49)
+Bad IO message (hacker code?)
+MSG_AN_WBBADSTARTUPMSG2 (//49)
+Bad startup message 2
+MSG_AN_WBRELAYOUTTOOLMENU (//49)
+GadTools broke?
+MSG_AN_WEIRDECHO        (//49)
+Weird echo causing incomprehension
+MSG_AN_WORKBENCH        (//49)
+Workbench trouble
+MSG_AN_LAWBREAKER       (//49)
+LawBreaker demonstration alert
+MSG_AN_NOALERT          (//49)
+No alert occured
+MSG_ACPU_EMUINTR        (//49)
+Emulator interrupt
+MSG_ACPU_UNIMPLEA       (//49)
+Unimplemented effective address
+MSG_ACPU_UNIMPLII       (//49)
+Unimplemented integer instruction
+;
+;================================================================
+;       HARDWARE STRINGS (4096..)
+;================================================================
+;
+MSG_HW_VERSION          (4096//20)
+V%ld.%ld
+MSG_HW_NOVERSION        (//20)
+N/A
+MSG_HW_NONE             (//49)
+None
+MSG_HW_FOUND            (//49)
+Found
+;
+MSG_HW_AMIGA1000        (4500//49)
+Amiga 1000
+MSG_HW_OCSAMIGA         (//49)
+Amiga (OCS)
+MSG_HW_ECSAMIGA         (//49)
+Amiga (ECS)
+MSG_HW_AMIGA500         (//49)
+Amiga 500
+MSG_HW_AMIGA2000        (//49)
+Amiga 2000
+MSG_HW_AMIGA3000        (//49)
+Amiga 3000
+MSG_HW_CDTV             (//49)
+CDTV
+MSG_HW_AMIGA600         (//49)
+Amiga 600
+MSG_HW_CD32             (//49)
+CD32
+MSG_HW_AMIGA1200        (//49)
+Amiga 1200
+MSG_HW_AMIGA4000        (//49)
+Amiga 4000
+MSG_HW_DRACO            (//49)
+DraCo
+MSG_HW_UAE              (//49)
+UAE
+MSG_HW_AMIGA4000T       (//49)
+Amiga 4000 T
+MSG_HW_AMIGAXL          (//49)
+AmigaXL
+;
+MSG_HW_68000            (5000//49)
+68000
+MSG_HW_68010            (//49)
+68010
+MSG_HW_68020            (//49)
+68020
+MSG_HW_68030            (//49)
+68030
+MSG_HW_68EC030          (//49)
+68EC030
+MSG_HW_68040            (//49)
+68040
+MSG_HW_68LC040          (//49)
+68LC040
+MSG_HW_68060            (//49)
+68060
+MSG_HW_68LC060          (//49)
+68LC060
+;
+MSG_HW_68881            (//49)
+68881
+MSG_HW_68882            (//49)
+68882
+;
+MSG_HW_68851            (//49)
+68851
+;
+MSG_HW_AMIGAOS          (5500//49)
+AmigaOS
+MSG_HW_EGS              (//49)
+EGS
+MSG_HW_RETINA           (//49)
+Retina
+MSG_HW_GRAFFITI         (//49)
+Graffiti
+MSG_HW_TIGA             (//49)
+TIGA
+MSG_HW_PROBENCH         (//49)
+ProBench
+MSG_HW_PICASSO          (//49)
+Picasso
+MSG_HW_CYBERGRAPHX      (//49)
+CyberGraphX
+MSG_HW_CGX3             (//49)
+CyberGraphX 3
+MSG_HW_PICASSO96        (//49)
+Picasso96
+MSG_HW_CGX4             (//49)
+CyberGraphX 4
+;
+MSG_HW_AUDAMIGAOS       (5700//49)
+AmigaOS
+MSG_HW_MAESTIX          (//49)
+Maestix
+MSG_HW_TOCCATA          (//49)
+Toccata
+MSG_HW_PRELUDE          (//49)
+Prelude
+MSG_HW_AHI              (//49)
+AHI
+MSG_HW_MACROAUDIO       (//49)
+MacroAudio
+;
+MSG_HW_OS_UNKNOWN       (6000//49)
+Bad OS
+MSG_HW_OS_36            (//49)
+2.0
+MSG_HW_OS_37            (//49)
+2.04
+MSG_HW_OS_38            (//49)
+2.1
+MSG_HW_OS_39            (//49)
+3.0
+MSG_HW_OS_40            (//49)
+3.1
+MSG_HW_OS_44            (//49)
+3.5
+MSG_HW_OS_45            (//49)
+3.9
+;
+;GARY
+MSG_HW_NORMAL           (6500//49)
+Normal
+MSG_HW_ENHANCED         (//49)
+Enhanced
+;
+;RAMSEY
+MSG_HW_REVD             (6600//49)
+D
+MSG_HW_REVF             (//49)
+F
+;
+MSG_HW_OCS              (6700//49)
+OCS
+MSG_HW_ECS              (//49)
+ECS
+MSG_HW_AGA              (//49)
+AGA
+MSG_HW_ALTAIS           (//49)
+Altais
+MSG_HW_NECS             (//49)
+Nearly ECS
+;
+MSG_HW_PPCFOUND         (7000//49)
+Found
+MSG_HW_602              (//49)
+602
+MSG_HW_603              (//49)
+603
+MSG_HW_603E             (//49)
+603e
+MSG_HW_603P             (//49)
+603p
+MSG_HW_604              (//49)
+604
+MSG_HW_604E             (//49)
+604e
+MSG_HW_620              (//49)
+620
+;
+MSG_HW_RAMCAS_NORMAL    (7200//49)
+Normal
+MSG_HW_RAMCAS_DOUBLE    (//49)
+Double
+;
+MSG_HW_TCPIP_NONE       (7300//49)
+None
+MSG_HW_TCPIP_AMITCP     (//49)
+AmiTCP/IP
+MSG_HW_TCPIP_MIAMI      (//49)
+Miami
+MSG_HW_TCPIP_TERMITE    (//49)
+TermiteTCP
+MSG_HW_TCPIP_GENESIS    (//49)
+GENESiS
+MSG_HW_TCPIP_MIAMIDX    (//49)
+MiamiDx
+;
+MSG_HW_PPCOS_NONE       (7400//49)
+None
+MSG_HW_PPCOS_POWERUP    (//49)
+PowerUp
+MSG_HW_PPCOS_WARPOS     (//49)
+WarpOS
+;
+MSG_HW_AGNUS_NONE       (7500//49)
+None
+MSG_HW_AGNUS_UNKNOWN    (//49)
+Unknown
+MSG_HW_AGNUS_8361       (//49)
+Agnus 8361
+MSG_HW_AGNUS_8367       (//49)
+Agnus 8367
+MSG_HW_AGNUS_8370       (//49)
+Agnus 8370
+MSG_HW_AGNUS_8371       (//49)
+Agnus 8371
+MSG_HW_AGNUS_8372_R4    (//49)
+Agnus 8372 Rev. 1-4
+MSG_HW_AGNUS_8372_R5    (//49)
+Agnus 8372 Rev. 5
+MSG_HW_AGNUS_8374_R2    (//49)
+Alice 8374 Rev. 1-2
+MSG_HW_AGNUS_8374_R3    (//49)
+Alice 8374 Rev. 3-4
+;
+MSG_HW_AMODE_NONE       (7600//49)
+None
+MSG_HW_AMODE_NTSC       (//49)
+NTSC
+MSG_HW_AMODE_PAL        (//49)
+PAL
+;
+MSG_HW_DENISE_NONE      (7700//49)
+None
+MSG_HW_DENISE_UNKNOWN   (//49)
+Unknown
+MSG_HW_DENISE_8362      (//49)
+Denise 8362
+MSG_HW_DENISE_8373      (//49)
+Denise 8373
+MSG_HW_DENISE_8364      (//49)
+Lisa 8364
+;
+;================================================================
+;

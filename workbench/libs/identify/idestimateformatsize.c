@@ -41,18 +41,31 @@ static STRPTR finddollar(TEXT *t);
         struct IdentifyBaseIntern *, IdentifyBase, 12, Identify)
 
 /*  FUNCTION
+        Estimates the size of the buffer that will contain the output
+        of the format string when used on IdFormatString().
 
     INPUTS
+        String  -- (STRPTR) Format string
+        Tags    -- (struct TagItem *) Tags, currently NULL or TAG_DONE.
 
     RESULT
+        Length  -- (ULONG) Length of the buffer size that will
+                   be able to hold the entire result.
+
+    TAGS
+        None yet.
 
     NOTES
+        The returned size will be large enough to contain the result
+        of a IdFormatString(). It is not necessarily the size of the
+        resulting buffer (the result length of IdFormatString()).
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        IdHardware(), IdFormatString()
 
     INTERNALS
 

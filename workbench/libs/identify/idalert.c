@@ -44,12 +44,41 @@
         struct IdentifyBaseIntern *, IdentifyBase, 7, Identify)
 
 /*  FUNCTION
+        Get a human readable description of the alert ('Guru') code.
 
     INPUTS
+        Code    -- (ULONG) alert code, as defined in exec/alerts.h
+
+        TagList -- (struct TagItem *) tags that describe further
+                   options.
 
     RESULT
+        Error   -- (LONG) error code, or 0 if everything went fine.
+
+    TAGS
+        IDTAG_DeadStr   -- (STRPTR) Alert type string (deadend or
+                           recoverable). You may skip this tag if you do not
+                           want to get the string.
+
+        IDTAG_SubsysStr -- (STRPTR) String of the subsystem that caused
+                           the alert (CPU, exec.library, ...). You may skip this tag
+                           if you do not want to get the string.
+
+        IDTAG_GeneralStr-- (STRPTR) General alert cause. You  may skip
+                           this tag if you do not want to get the string.
+
+        IDTAG_SpecStr   -- (STRPTR) Specified alert cause. You may skip
+                           this tag if you do not want to get the string.
+
+        IDTAG_StrLength -- (UWORD) Maximum length of the string buffer,
+                           including termination. Defaults to 50.
+
+        IDTAG_Localize  -- [V8] (BOOL) FALSE to get English strings
+                           only, TRUE for localized strings. This is useful for
+                           applications with English as only language. Defaults to TRUE.
 
     NOTES
+        This function isn't implemented.
 
     EXAMPLE
 

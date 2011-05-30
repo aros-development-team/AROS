@@ -50,18 +50,190 @@
         struct IdentifyBaseIntern *, IdentifyBase, 9, Identify)
 
 /*  FUNCTION
+        Gets information about the current system environment. The result
+        is returned numerical. This function is fully DraCo compatible!
+
+        Once a information has been read, it will be cached internally, so
+        changes will be ignored. Use IdHardwareUpdate() to clear the cache
+        contents.
 
     INPUTS
+        Type    -- (ULONG) Information type. These types are known
+                   (see include file and NOTE for detailed description):
+
+                   IDHW_SYSTEM     -- What system is used?
+                   (include file: IDSYS_...)
+
+                   IDHW_CPU        -- What kind of CPU is available?
+                   (include file: IDCPU_...)
+
+                   IDHW_FPU        -- What kind of FPU is available?
+                   (include file: IDFPU_...)
+
+                   IDHW_MMU        -- What kind of MMU is available?
+                   (include file: IDMMU_...)
+
+                   IDHW_OSVER      -- What OS version is used?
+                   (version, revision)
+
+                   IDHW_EXECVER    -- What exec version is used?
+                   (version, revision)
+
+                   IDHW_WBVER      -- What WorkBench version is used?
+                   (version, revision; 0 if not available)
+
+                   IDHW_ROMSIZE    -- Size of AmigaOS ROM
+                   (size in bytes)
+
+                   IDHW_CHIPSET    -- What Chipset is available?
+                   (include file: IDCS_...)
+
+                   IDHW_GFXSYS     -- What Graphic OS is used?
+                   (include file: IDGOS_...)
+
+                   IDHW_CHIPRAM    -- Size of complete Chip RAM
+                   (size in bytes)
+
+                   IDHW_FASTRAM    -- Size of complete Fast RAM
+                   (size in bytes)
+
+                   IDHW_RAM        -- Size of complete System RAM
+                   (size in bytes)
+
+                   IDHW_SETPATCHVER -- Version of current SetPatch
+                   (version, revision; 0 if not available)
+
+                   IDHW_AUDIOSYS   -- What Audio OS is used?
+                   (include file: IDAOS_...)
+
+                   IDHW_OSNR       -- What AmigaOS is used?
+                   (include file: IDOS_...)
+
+                   IDHW_VMMCHIPRAM -- Size of virtual Chip RAM
+                   (size in bytes)
+
+                   IDHW_VMMFASTRAM -- Size of virtual Fast RAM
+                   (size in bytes)
+
+                   IDHW_VMMRAM     -- Size of total virtual RAM
+                   (size in bytes)
+
+                   IDHW_PLNCHIPRAM -- Size of non-virtual Chip RAM
+                   (size in bytes)
+
+                   IDHW_PLNFASTRAM -- Size of non-virtual Fast RAM
+                   (size in bytes)
+
+                   IDHW_PLNRAM     -- Size of total non-virtual RAM
+                   (size in bytes)
+
+                   IDHW_VBR        -- Vector Base Register contents
+                   (address)
+
+                   IDHW_LASTALERT  -- Last Alert code
+                   (ULONG, 0xFFFFFFFF: no last alert yet)
+
+                   IDHW_VBLANKFREQ -- VBlank frequency (see execbase.h)
+                   (ULONG, Unit Hertz)
+
+                   IDHW_POWERFREQ  -- Power supply frequency (see execbase.h)
+                   (ULONG, Unit Hertz)
+
+                   IDHW_ECLOCK     -- System E clock frequency
+                   (ULONG, Unit Hertz)
+
+                   IDHW_SLOWRAM    -- A500/A2000 "Slow" RAM expansion
+                   (size in bytes)
+
+                   IDHW_GARY       -- GARY revision
+                   (include file: IDGRY_...)
+
+                   IDHW_RAMSEY     -- RAMSEY revision
+                   (include file: IDRSY_...)
+
+                   IDHW_BATTCLOCK  -- Battery backed up clock present?
+                   (BOOL)
+
+                   IDHW_CHUNKYPLANAR -- [V7] Chunky to planar hardware present?
+                   (BOOL)
+
+                   IDHW_POWERPC    -- [V7] PowerPC CPU present?
+                   (include file: IDPPC_...)
+
+                   IDHW_PPCCLOCK   -- [V7] PowerPC processor clock
+                   (ULONG clock in MHz units, or 0: not available)
+
+                   IDHW_CPUREV     -- [V8] Revision of the main processor
+                   (LONG revision or -1 if not available)
+
+                   IDHW_CPUCLOCK   -- [V8] CPU clock
+                   (ULONG clock in MHz units)
+
+                   IDHW_FPUCLOCK   -- [V8] FPU clock, if available
+                   (ULONG clock in MHz units, or 0: not available)
+
+                   IDHW_RAMACCESS  -- [V8] Access time of the main board RAM
+                   (ULONG in ns units, or 0: not available)
+
+                   IDHW_RAMWIDTH   -- [V8] Width of the main board RAM
+                   (ULONG in bit, or 0: not available)
+
+                   IDHW_RAMCAS     -- [V8] CAS mode of the main board RAM
+                   (include file: IDCAS_...)
+
+                   IDHW_RAMBANDWIDTH -- [V8] Bandwidth of the main board RAM
+                   (ULONG in times, or 0: not available)
+
+                   IDHW_TCPIP      -- [V9] Used TCP/IP stack
+                   (include file: IDTCP_...)
+
+                   IDHW_PPCOS      -- [V9] Used PowerPC OS
+                   (include file: IDPOS_...)
+
+                   IDHW_AGNUS      -- [V9] Agnus chip type and revision
+                   (include file: IDAG_...)
+
+                   IDHW_AGNUSMODE  -- [V9] Agnus chip mode
+                   (include file: IDAM_...)
+
+                   IDHW_DENISE     -- [V10] Denise chip type
+                   (include file: IDDN_...)
+
+                   IDHW_DENISEREV  -- [V10] Denise chip revision
+                   (LONG, -1 means not available)
+
+        TagList -- (struct TagItem *) tags that describe further
+                   options. You may provide NULL.
+
+    TAGS
+        None yet.
 
     RESULT
+        Result        -- (ULONG) Numerical result containing the desired
+                information.
 
     NOTES
+        Some results are nonsense on AROS.
+
+        If you queried a version, you'll find the version in the *lower*
+        UWORD (because it is more important) and the revision in the
+        *upper* UWORD.
+
+        All memory sizes are always in bytes.
+
+        Boolean results are ==0 for FALSE, !=0 for TRUE.
+
+        If you have to look up the result in the include file, you might
+        also get a numerical result that is beyond the maximum value you'll
+        find there. Be prepared for it! In this case, just print "not known"
+        or anything similar, or use the IdHardware() result.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        IdHardware(), IdHardwareUpdate()
 
     INTERNALS
 
