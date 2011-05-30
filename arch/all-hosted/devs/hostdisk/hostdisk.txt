@@ -45,8 +45,9 @@ Surfaces	= 1
 BlocksPerTrack	= 1
 LowCyl		= 0
 HighCyl		= 10559031
-Reserved	= 0
+Reserved	= 2
 Activate	= 1
+DosType         = 0x53465300
 
  This is the file i use to mount DH0: partition for native AROS on my IntelMac.
 Please do not copy it 1:1, hard disk filesystems are not capable of detecting
