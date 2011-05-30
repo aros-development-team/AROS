@@ -123,7 +123,6 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
 #endif
 
         case TR_GETSYSTIME:
-            EClockUpdate(TimerBase);
             GetSysTime(&timereq->tr_time);
         
             if(!(timereq->tr_node.io_Flags & IOF_QUICK))
