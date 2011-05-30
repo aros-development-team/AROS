@@ -9,8 +9,8 @@
 #undef DEBUG
 #define DEBUG 1
 #define DEBUG_UUID
-#define NO_WRITE
 */
+#define NO_WRITE
 #define DREAD(x)
 #define DWRITE(x)
 
