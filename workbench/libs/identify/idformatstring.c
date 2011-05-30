@@ -106,18 +106,106 @@ static LONG findcommand(TEXT *);
         struct IdentifyBaseIntern *, IdentifyBase, 11, Identify)
 
 /*  FUNCTION
+        The buffer will be filled with the format string until
+        the format string terminates or the buffer size is reached.
+
+        The format string may contain format tags, which are
+        surrounded by dollar signs. Doing so, the printf formattings
+        are kept for a following printf.
+
+        Format tags are case sensitive!
+
+        If you want to write a dollar sign, then double it: '$$'.
+
+        These format tags are known:
+
+                $SYSTEM$
+                $CPU$
+                $FPU$
+                $MMU$
+                $OSVER$
+                $EXECVER$
+                $WBVER$
+                $ROMSIZE$
+                $CHIPSET$
+                $GFXSYS$
+                $CHIPRAM$
+                $FASTRAM$
+                $RAM$
+                $SETPATCHVER$
+                $AUDIOSYS$
+                $OSNR$
+                $VMMCHIPRAM$
+                $VMMFASTRAM$
+                $VMMRAM$
+                $PLNCHIPRAM$
+                $PLNFASTRAM$
+                $PLNRAM$
+                $VBR$
+                $LASTALERT$
+                $VBLANKFREQ$
+                $POWERFREQ$
+                $ECLOCK$
+                $SLOWRAM$
+                $GARY$
+                $RAMSEY$
+                $BATTCLOCK$
+                $CHUNKYPLANAR$
+                $POWERPC$
+                $PPCCLOCK$
+                $CPUREV$
+                $CPUCLOCK$
+                $FPUCLOCK$
+                $RAMACCESS$
+                $RAMWIDTH$
+                $RAMCAS$
+                $RAMBANDWIDTH$
+                $TCPIP$
+                $PPCOS$
+                $AGNUS$
+                $AGNUSMODE$
+                $DENISE$
+                $DENISEREV$
+                $EMULATED$
+                $XLVERSION$
+                $HOSTOS$
+                $HOSTVERS$
+                $HOSTMACHINE$
+                $HOSTCPU$
+                $HOSTSPEED$
+
+        For their meanings, see the include file.
 
     INPUTS
+        String  -- (STRPTR) Format string
+
+        Buffer  -- (STRPTR) Buffer to be filled with the result
+                   until the format string terminates or the buffer
+                   size is reached.
+
+        Length  -- (ULONG) Length of the buffer, including the
+                   null termination.
+
+        Tags    -- (struct TagItem *) For future compatibility.
+                   You must provide NULL or a pointer to TAG_DONE.
+
+    TAGS
 
     RESULT
+        Length  -- (ULONG) Length of the buffer that really
+                   has been used.
 
     NOTES
+        Remember that, unlike RawDoFmt(), the format tags must be
+        surrounded, i.e. started and ended, by a dollar sign '$'.
 
     EXAMPLE
+        "Your CPU is a $CPU$ with $CPUCLOCK$ MHz"
 
     BUGS
 
     SEE ALSO
+        IdHardware(), IdEstimateFormatSize()
 
     INTERNALS
 

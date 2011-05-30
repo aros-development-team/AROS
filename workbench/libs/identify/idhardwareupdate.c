@@ -40,6 +40,21 @@
         struct IdentifyBaseIntern *, IdentifyBase, 10, Identify)
 
 /*  FUNCTION
+        Once a hardware information has been evaluated, the result will be
+        stored in an internal cache. All subsequent queries return the cache
+        contents, irregarding of any changes.
+
+        This function invalidates the cache and forces identify to re-check
+        ALL hardware features. Useful if e.g. the amount of memory has changed
+        after VMM has been started.
+
+        Use this function wisely. DO NOT call it just to make sure to get the
+        latest information, let the user decide to do so. Also, DO NOT call
+        it when you will only query hardware information that will for sure
+        not change while run-time, e.g. CPU.
+
+        IDHW_VBR, IDHW_LASTALERT and IDHW_TCPIP are NOT cached, so there is
+        absolutely no need to call IdHardwareUpdate() just to check them out.
 
     INPUTS
 
@@ -50,8 +65,11 @@
     EXAMPLE
 
     BUGS
+        Calling this function in identify V8.0 will lead to a system crash.
+        This has been fixed in V8.1.
 
     SEE ALSO
+        IdHardware(), IdHardwareNum()
 
     INTERNALS
 

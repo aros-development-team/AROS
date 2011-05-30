@@ -58,16 +58,50 @@ static CONST_STRPTR searchFunction(struct LibNode *libNode, ULONG offset);
         struct IdentifyBaseIntern *, IdentifyBase, 8, Identify)
 
 /*  FUNCTION
+        Decodes the offset of the provided library name into function name.
+
+        This function requires the .fd files in a drawer with 'FD:' assigned
+        to it. All files must have the standard file name format, e.g.
+        'exec_lib.fd'.
+
+        The appropriate .fd file will be scanned. The result will be
+        cached until the identify.library is removed from system.
 
     INPUTS
+        LibName -- (STRPTR) name of the function's library, device
+                   or resource. All letters behind the point (and
+                   the point itself) are optional. The name is
+                   case sensitive.
+
+                   Examples: 'exec.library', 'dos', 'cia.resource'.
+
+        Offset  -- (LONG) offset of the function. It must be a
+                   multiple of 6. You do not need to provide the
+                   minus sign.
+
+                   Examples: -456, 60
+
+        TagList -- (struct TagItem *) tags that describe further
+                   options.
 
     RESULT
+        Error   -- (LONG) error code, or 0 if everything went fine.
+
+   TAGS
+        IDTAG_FuncNameStr   -- (STRPTR) Buffer where the function name
+                               will be copied into.
+
+        IDTAG_StrLength     -- (UWORD) Maximum length of the string buffer,
+                               including termination. Defaults to 50.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+        Every line in the .fd file must have a maximum of 254 characters.
+        Otherwise the internal offset table may be corrupted (but the
+        system won't be harmed). Anyhow, this should be no problem.
 
     SEE ALSO
 

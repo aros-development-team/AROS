@@ -1,0 +1,147 @@
+;****************************************************************
+;*                                                              *
+;*          identify.library Tools    Catalog Descriptor        *
+;*                                                              *
+;****************************************************************
+;*
+;*      (C) 1996-97  Richard Körber  -- All Rights Reserved
+;*
+;****************************************************************
+;
+;   ** IMPORTANT NOTES FOR TRANSLATORS **
+;
+;       · Nr. 0 must always be preserved
+;       · Do NOT change the sequence of '%' parameters
+;       · Do NOT change the order of the entries
+;       · Obey the minimum and maximum length
+;       · Note that some lines have trailing spaces
+;
+;
+;================================================================
+;       COMMON STRINGS (1..)
+;================================================================
+;
+MSG_NOIDENTIFY (1//)
+Needs identify.library V%ld or higher!\n
+;
+;
+;
+;================================================================
+;       LISTEXP STRINGS (1000..)
+;================================================================
+;
+MSG_LISTEXP_HAIL (1000//)
+-- ListExp V%s -- Richard Koerber <%s>\n\
+ (ListExp is a part of the Identify package, see AmiNet util/libs)\n\n
+;
+MSG_LISTEXP_HELP (//)
+Template:\n\n\
+  FULL/S\t\tlist all current commodities\n\
+  MID=MANUFID/K/N\tinformation about manufacturer\n\
+  PID=PRODID/K/N\tand it's product\n\n\
+Please read the doc file for further details.\n
+;
+MSG_LISTEXP_OVERFLOW (//)
+Bad range! (ManufID=0..65535 ProdID=0..255)\n\n
+;
+MSG_LISTEXP_SPECBOARD (//)
+ Manufacturer: %s\n\
+ Product:      %s\n\
+ Class:        %s\n\n
+;
+MSG_LISTEXP_HARDWARE (//)
+** HARDWARE **\n\
+\n\
+System:  %s\n\
+CPU:     %s/%s (Rev %s), FPU=%s/%s, MMU=%s\n
+;
+MSG_LISTEXP_POWERPC (//)
+PowerPC: %s/%s (running %s)\n
+;
+MSG_LISTEXP_HARDWARE2 (//)
+Chipset: %s (RAMSEY %s, GARY %s, CHUNKY %s) VBR=%s\n\
+Agnus:   %s (Mode: %s)\n\
+Denise:  %s (Rev: %s)\n\
+AmigaOS: %s (%s, BoingBag %s, SetPatch %s)\n\
+         Exec %s   Workbench %s\n\
+Support: GraphicOS: %s, AudioOS: %s, TCP/IP: %s\n\
+Clock:   Power %s, VBlank %s, E-Clock %s\n\
+RAM:     Motherboard %s bit, %s, %s CAS, %sx Bandwidth\n\
+\n\
+Memory:\t\t   CHIP\t   FAST\t  TOTAL\tROM = %s\tSLOW = %s\n\
+\t  PLAIN\t%7s\t%7s\t%7s\n\
+\tVIRTUAL\t%7s\t%7s\t%7s\n\
+\t  TOTAL\t%7s\t%7s\t%7s\n\n\n
+;
+MSG_LISTEXP_LISTTITLE (//)
+** EXPANSIONS **\n\n\
+Nr ID      Address  Size Manufacturer         Product\n\
+----------------------------------------------------------------------------\n
+;
+MSG_LISTEXP_BOARDLINE (//)
+%2ld %04lx.%02lx %08lx %3ld%lc %-20s %s %s\n
+;
+MSG_LISTEXP_CXTITLE (//)
+\n\n** COMMODITIES **\n\n\
+Name                     Title\n\
+----------------------------------------------------------------------------\n
+;
+MSG_LISTEXP_CXLINE (//)
+%-24s %-40s\n
+;
+MSG_LISTEXP_EMULATED (//)
+         -- emulated system detected --\n\
+AmigaXL: Version %s\n\
+Host:    OS: %s (Version %s), %s\n\
+         CPU: %s/%s\n
+;
+;
+;
+;================================================================
+;       GURU STRINGS (2000..)
+;================================================================
+;
+MSG_GURU_HAIL (2000//)
+-- Guru V%s -- Richard Koerber <%s>\n\n
+;
+MSG_GURU_HELP (//)
+Template:\n\n\
+  GURU\t\tguru code to be analyzed\n\
+  LASTALERT/S\tanalyze last system alert\n\n\
+Please read the doc file for further details.\n
+;
+MSG_GURU_BADCODE (//)
+This is not a valid Guru code...\n\n
+;
+MSG_GURU_RESULT (//)
+ Alert Code: %08lx\n\
+ Type:       %s\n\
+ Subsystem:  %s\n\
+ General:    %s\n\
+ Specified:  %s\n\n
+;
+MSG_GURU_NOLAST (//)
+No Guru occured yet...\n\n
+;
+;
+;
+;================================================================
+;       FUNC STRINGS (1000..)
+;================================================================
+;
+MSG_FUNC_HAIL (3000//)
+-- Function V%s -- Richard Koerber <%s>\n\n
+;
+MSG_FUNC_HELP (//)
+Template:\n\n\
+  LN=LIBNAME/A\tname of the library\n\
+  O=OFFSET/N/A\toffset of the function\n\n\
+Please read the doc file for further details.\n
+;
+MSG_FUNC_RESULT (//)
+ Library:    %s\n\
+ Offset:     %ld\n\
+ Function:   %s\n\n
+;
+;================================================================
+;
