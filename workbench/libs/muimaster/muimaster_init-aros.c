@@ -1,11 +1,10 @@
 /*
-    Copyright © 2002-2010, The AROS Development Team. 
+    Copyright © 2002-2011, The AROS Development Team. 
     All rights reserved.
     
     $Id$
 */
 
-#include <proto/bootloader.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -18,7 +17,6 @@
 #include <aros/symbolsets.h>
 
 #include <dos/dos.h>
-#include <aros/bootloader.h>
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -32,54 +30,39 @@ static struct TextAttr topaz8Attr =
 
 static int MUIMasterInit(LIBBASETYPEPTR lh)
 {
-    /* if poseidon is enabled, wait until ENV: exists
+    /*
+     * if poseidon is present, wait until ENV: exists
      * to avoid missing volume requester
      */
-    APTR BootLoaderBase;
-    if ((BootLoaderBase = OpenResource("bootloader.resource")))
+    struct Library *psdBase = OpenLibrary("poseidon.library", 0);
+    
+    if (psdBase)
     {
-        /* TODO: create something like ExistsBootArg("enableusb") in bootloader.resource */
-        struct List *list = GetBootInfo(BL_Args);
-        BOOL enable = FALSE;
-        if (list)
-        {
-            struct Node *node;
-            ForeachNode(list, node)
-            {
-                if (stricmp(node->ln_Name, "enableusb") == 0)
-                {
-                    enable = TRUE;
-                }
-            }
-        }
+        struct DevProc* dp      = NULL;
+        struct Process* me      = (struct Process *) FindTask(NULL);
+        APTR            win     = me->pr_WindowPtr; /* backup old value */
+        ULONG           cnt     = 0;
+        const ULONG     max_cnt = 19;  /* 10s   */
+        const ULONG     ticks   = 25; /* 0.5s */
 
-        if (enable)
+	CloseLibrary(psdBase);
+
+        me->pr_WindowPtr = (APTR) -1; /* disable requester */
+        while (TRUE)
         {
-            struct DevProc* dp      = NULL;
-            struct Process* me      = (struct Process *) FindTask(NULL);
-            APTR            win     = me->pr_WindowPtr; /* backup old value */
-            ULONG           cnt     = 0;
-            const ULONG     max_cnt = 19;  /* 10s   */
-            const ULONG     ticks   = 25; /* 0.5s */
-            
-            me->pr_WindowPtr = (APTR) -1; /* disable requester */
-            while (TRUE)
+            dp = GetDeviceProc("ENV:", dp);
+            if (dp)
+                break;
+            else if (cnt > max_cnt)
             {
-                dp = GetDeviceProc("ENV:", dp);
-                if (dp)
-                    break;
-                else if (cnt > max_cnt)
-                {
-                    bug("No ENV: after %d second%s\n",
-                        (ticks * cnt) / TICKS_PER_SECOND, cnt > 1 ? "s" : "");
-                    break;
-                }
-                Delay(ticks);
-                cnt++;
+                D(bug("No ENV: after %d second%s\n", (ticks * cnt) / TICKS_PER_SECOND, cnt > 1 ? "s" : ""));
+                break;
             }
-            me->pr_WindowPtr = win; /* restore to old value */
-            FreeDeviceProc(dp);
+            Delay(ticks);
+            cnt++;
         }
+        me->pr_WindowPtr = win; /* restore to old value */
+        FreeDeviceProc(dp);
     }
     
     MUIMasterBase = (struct Library *)lh;
