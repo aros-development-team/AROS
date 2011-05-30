@@ -48,6 +48,14 @@ rom_init:
 	jsr		Exec_ReadGayle
 1:	move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
 
+	/* Check is this is a 32-bit CPU. If not, skip
+	 * these high-memory tests.
+	 */
+	jsr	cpu_detect_32bit
+	tst.b	%d0
+	bne	detect_24bit_memory
+
+detect_32bit_memory:
 	/* Memory region array is put into the
 	 * system stack from the bottom up, so
 	 * we check the non-autoconfig memory areas
@@ -86,6 +94,7 @@ rom_init:
 	move.l	%d7,%a5@+
 .a3000noram:
 
+detect_24bit_memory:
 	/* slow ram */
 	move.l	#0x00c00000,%a0
 	move.l	#0x00d80000,%a1
