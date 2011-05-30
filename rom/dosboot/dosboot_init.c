@@ -387,6 +387,8 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
     if (BootDevice != NULL)
     {
+	struct Library *psdBase;
+
         /* Construct the complete device name of the boot device */
         bootNameLength = strlen(BootDevice) + 2;
 
@@ -426,6 +428,24 @@ AROS_UFH3(void, __dosboot_BootProcess,
         else
         {
             Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
+        }
+
+        /*
+         * If we have poseidon, ensure that ENV: exists to avoid missing volume requester.
+         * We do it before other assigns because as soon as LIBS: is available it will open
+         * muimaster.library and run popup GUI task.
+         */
+        psdBase = OpenLibrary("poseidon.library", 0);
+            
+        if (psdBase)
+        {
+            BPTR lock;
+            	
+            CloseLibrary(psdBase);
+
+            lock = CreateDir("RAM:ENV");
+            if (lock)
+                AssignLock("ENV", lock);
         }
 
         AddBootAssign("SYS:C", "C");

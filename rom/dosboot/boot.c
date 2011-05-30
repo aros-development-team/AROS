@@ -36,59 +36,37 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     if (cis)
     {
         BPTR sseq = BNULL;
-
         struct TagItem tags[] =
-            {
-                { SYS_Asynch,      TRUE       }, /* 0 */
-                { SYS_Background,  FALSE      }, /* 1 */
-                { SYS_Input,       (IPTR)cis  }, /* 2 */
-                { SYS_Output,      (IPTR)NULL }, /* 3 */
-                { SYS_Error,       (IPTR)NULL }, /* 4 */
-                { SYS_ScriptInput, (IPTR)NULL }, /* 5 */
-                { TAG_DONE,       0           }
-            };
+        {
+            { SYS_Asynch,      TRUE      }, /* 0 */
+            { SYS_Background,  FALSE     }, /* 1 */
+            { SYS_Input,       (IPTR)cis }, /* 2 */
+            { SYS_Output,      0	 }, /* 3 */
+            { SYS_Error,       0	 }, /* 4 */
+            { TAG_DONE,	       0	 }, /* 5 */
+            { TAG_DONE,        0         }
+        };
 
         SetConsoleTask(((struct FileHandle*)BADDR(cis))->fh_Type);
 
         if (!(Flags & BF_NO_STARTUP_SEQUENCE))
-        {
             sseq = Open("S:Startup-Sequence", MODE_OLDFILE);
+
+	if (sseq)
+	{
+            tags[5].ti_Tag  = SYS_ScriptInput;
             tags[5].ti_Data = (IPTR)sseq;
 
             D(bug("[DOSBoot] __dosboot_Boot: Open Startup Sequence = %d\n", sseq));
-        }
-        else
-        {
-            /*
-             * If we have poseidon, ensure that ENV: exists to avoid missing volume requester.
-             * You could think we should check for this in bootmenu.resource because there we
-             * select to boot without startup sequence but there might be other places to do this
-             * selection in the future.
-             */
-            struct Library *psdBase = OpenLibrary("poseidon.library", 0);
-            
-            if (psdBase)
-            {
-            	BPTR lock;
-            	
-            	CloseLibrary(psdBase);
-            	
-            	lock = CreateDir("RAM:ENV");
-                if (lock)
-                    AssignLock("ENV", lock);
-            }
-
-            tags[5].ti_Tag = TAG_IGNORE;
         }
 
         rc = SystemTagList("", tags);
         if (rc == -1)
             Alert(AN_BootError);
-        cis  = BNULL;
-        sseq = BNULL;
-        if (sseq != BNULL)
-            Close(sseq);
-    } else
+
+	/* Don't need to close sseq here. Shell will take care of it. */
+    }
+    else
         Alert(AN_NoWindow);
 
     /* We get here when the Boot Shell Window is left with EndShell/EndCli.
