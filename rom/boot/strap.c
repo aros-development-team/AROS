@@ -573,7 +573,7 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
             	    devnode->dn_GlobalVec = fse->fse_GlobalVec;
 
                 AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, 0, devnode, 0);
-                D(bug("[Boot] AddBootNode(%b, 0x%p, 0x%p)\n",  devnode-->dn_Name, pp[4 + DE_DOSTYPE], fse));
+                D(bug("[Boot] AddBootNode(%b, 0x%p, 0x%p)\n",  devnode->dn_Name, pp[4 + DE_DOSTYPE], fse));
 
                 return;
 	    }
