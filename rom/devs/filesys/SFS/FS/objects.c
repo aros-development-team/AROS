@@ -17,12 +17,10 @@
 #include "nodes_protos.h"
 #include "support_protos.h"
 #include "transactions_protos.h"
-
+#include "req_protos.h"
 #include "globals.h"
 
 #include <string.h>
-
-extern LONG req(UBYTE *fmt, UBYTE *gads, ... );
 
 extern UBYTE *fullpath(struct CacheBuffer *cbstart,struct fsObject *o);
 extern LONG readcachebuffercheck(struct CacheBuffer **,ULONG,ULONG);

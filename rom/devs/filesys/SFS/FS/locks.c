@@ -7,15 +7,13 @@
 
 #include "locks.h"
 #include "locks_protos.h"
-
 #include "debug.h"
 #include "fs.h"
 #include "objects_protos.h"
+#include "req_protos.h"
 #include "support_protos.h"
 
 #include "globals.h"
-
-extern LONG req(UBYTE *fmt, UBYTE *gads, ... );
 
 void freeglobalhandle(struct GlobalHandle *gh);
 

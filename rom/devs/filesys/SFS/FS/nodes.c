@@ -9,16 +9,13 @@
 #include "adminspaces_protos.h"
 #include "cachebuffers_protos.h"
 #include "debug.h"
+#include "req_protos.h"
 #include "support_protos.h"
-
 #include "globals.h"
 
 
 extern LONG readcachebuffercheck(struct CacheBuffer **,ULONG,ULONG);
 extern void setchecksum(struct CacheBuffer *);
-
-extern LONG req(UBYTE *fmt, UBYTE *gads, ... );
-extern LONG req_unusual(UBYTE *fmt, ... );
 
 LONG parentnodecontainer(BLCK noderoot, struct CacheBuffer **io_cb) {
   BLCK childblock=(*io_cb)->blckno;

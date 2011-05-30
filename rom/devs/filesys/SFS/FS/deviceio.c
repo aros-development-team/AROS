@@ -20,10 +20,9 @@
 
 #include "deviceio.h"
 #include "deviceio_protos.h"
-
 #include "debug.h"
-
 #include "globals.h"
+#include "req_protos.h"
 
 static inline ULONG MULU64(ULONG m1, ULONG m2, ULONG *res_lo)
 {
@@ -34,7 +33,6 @@ static inline ULONG MULU64(ULONG m1, ULONG m2, ULONG *res_lo)
 }
 
 extern LONG getbuffer(UBYTE **tempbuffer, ULONG *maxblocks);
-extern LONG req(UBYTE *fmt, UBYTE *gads, ... );
 extern void starttimeout(void);
 
 /* The purpose of the deviceio code is to provide a layer which
