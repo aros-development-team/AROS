@@ -29,42 +29,7 @@ static struct TextAttr topaz8Attr =
 /****************************************************************************************/
 
 static int MUIMasterInit(LIBBASETYPEPTR lh)
-{
-    /*
-     * if poseidon is present, wait until ENV: exists
-     * to avoid missing volume requester
-     */
-    struct Library *psdBase = OpenLibrary("poseidon.library", 0);
-    
-    if (psdBase)
-    {
-        struct DevProc* dp      = NULL;
-        struct Process* me      = (struct Process *) FindTask(NULL);
-        APTR            win     = me->pr_WindowPtr; /* backup old value */
-        ULONG           cnt     = 0;
-        const ULONG     max_cnt = 19;  /* 10s   */
-        const ULONG     ticks   = 25; /* 0.5s */
-
-	CloseLibrary(psdBase);
-
-        me->pr_WindowPtr = (APTR) -1; /* disable requester */
-        while (TRUE)
-        {
-            dp = GetDeviceProc("ENV:", dp);
-            if (dp)
-                break;
-            else if (cnt > max_cnt)
-            {
-                D(bug("No ENV: after %d second%s\n", (ticks * cnt) / TICKS_PER_SECOND, cnt > 1 ? "s" : ""));
-                break;
-            }
-            Delay(ticks);
-            cnt++;
-        }
-        me->pr_WindowPtr = win; /* restore to old value */
-        FreeDeviceProc(dp);
-    }
-    
+{   
     MUIMasterBase = (struct Library *)lh;
     
     InitSemaphore(&MUIMB(lh)->ZuneSemaphore);
