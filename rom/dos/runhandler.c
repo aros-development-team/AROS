@@ -66,6 +66,24 @@
 	fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);
 	if (fssm != NULL)
 	{
+#if __WORDSIZE > 32
+	    if (fssm->fssm_Environ)
+	    {
+		/*
+		 * EXPERIMENTAL: Fix up BufMemType on 64 bits.
+		 * Many software sets Mask to 0x7FFFFFFF, assuming 31-bit memory, with BufMemType = PUBLIC.
+		 * This is perfectly true on 32-bit architectures, where addresses from 0x80000000 and up
+		 * belong to MMIO, however on 64 bits we might have memory beyond this address.
+		 * And AllocMem(MEMF_PUBLIC) would prefer to return that memory. This might screw up
+		 * filesystems expecting AllocMem() to return memory fully corresponding to the mask.
+		 */
+	    	struct DosEnvec *de = BADDR(fssm->fssm_Environ);
+
+		if ((de->de_TableSize >= DE_MASK) && (!(de->de_Mask & 0x7FFFFFFF)))
+	    	    de->de_BufMemType |= MEMF_31BIT;
+	    }
+#endif
+
 	    iofs.io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
 	    iofs.io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
 	    iofs.io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
