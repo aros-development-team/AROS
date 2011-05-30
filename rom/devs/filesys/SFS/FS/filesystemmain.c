@@ -131,7 +131,7 @@ void initGlobals()
     globals->cmdread = CMD_READ;
     globals->cmdwrite = CMD_WRITE;
     globals->blocks_maxtransfer = 1048576;
-    globals->mask_mask = 0xFFFFFFFF;
+    globals->mask_mask = -1;
     globals->bufmemtype = MEMF_PUBLIC;
     globals->transactionpool = 0;
     globals->compressbuffer = 0;
