@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2008 The AROS Development Team
+    (C) 1995-2011 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
@@ -570,11 +570,11 @@ void InitParams(IPTR *params)
 */
 
   vec->de_HighCyl	 = 79;
-  vec->de_NumBuffers	 = 20; /* On AmigaOS 3.9 it's 5 */
+  vec->de_NumBuffers	 = 20;	/* On AmigaOS 3.9 it's 5 */
   vec->de_BufMemType	 = 3;
   vec->de_Baud		 = 1200;
   vec->de_MaxTransfer	 = 0x7fffffff;
-  vec->de_Mask		 = 0xfffffffe;
+  vec->de_Mask		 = -2;	/* 0xfffffffe, sign-extended on 64 bits */
   vec->de_DosType	 = ID_DOS_DISK;
 
   StackSize		 = 8192;
