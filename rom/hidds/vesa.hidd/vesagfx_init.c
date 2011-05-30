@@ -6,8 +6,6 @@
     Lang: english
 */
 
-#define DEBUG 1
-
 #define __OOP_NOATTRBASES__
 
 #include <proto/exec.h>
