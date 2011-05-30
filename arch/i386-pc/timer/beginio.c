@@ -83,8 +83,15 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
     ULONG unitNum;
     BOOL replyit = FALSE;
 
+/*
+ *  Enabling timer is redundant, the same outb is done in EClockUpdate already.
+ *  We really do want to limit accessing the IO ports here, since it eats a lot
+ *  of cycles!
+ */
+#if 0
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     EClockUpdate(TimerBase);
+#endif
 
     timereq->tr_node.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     timereq->tr_node.io_Error = 0;
@@ -141,7 +148,9 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
             replyit = TRUE;
             break;
         
-        case TR_ADDREQUEST:             
+        case TR_ADDREQUEST:
+    	    /* Update EClock before comparing time! */
+	    EClockUpdate(TimerBase);
             switch(unitNum)
             {
                 case UNIT_WAITUNTIL:
