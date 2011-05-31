@@ -445,6 +445,14 @@ MSG_AN_WORKBENCH        (//49)
 Workbench trouble
 MSG_AN_LAWBREAKER       (//49)
 LawBreaker demonstration alert
+MSG_AN_AROS             (//49)
+AROS trouble
+MSG_AN_OOP              (//49)
+OOP trouble
+MSG_AN_HIDD             (//49)
+HIDD trouble
+MSG_AN_HIDDNOROOT       (//49)
+Could not create root device
 MSG_AN_NOALERT          (//49)
 No alert occured
 MSG_ACPU_EMUINTR        (//49)
