@@ -87,6 +87,10 @@
 #define R_ARM_PREL31	  42
 #define R_ARM_MOVW_ABS_NC 43
 #define R_ARM_MOVT_ABS	  44
+#define R_ARM_THM_CALL	10
+#define R_ARM_THM_JUMP24	30
+#define R_ARM_THM_MOVW_ABS_NC	47
+#define R_ARM_THM_MOVT_ABS		48
 
 #define STT_NOTYPE	0
 #define STT_OBJECT      1

@@ -377,7 +377,7 @@ static int relocate
   	    default:
 		s = (IPTR)sh[SHINDEX(shindex)].addr + sym->value;
  	}
-
+#define __arm__
         switch (ELF_R_TYPE(rel->info))
         {
             #if defined(__i386__)
@@ -505,6 +505,13 @@ static int relocate
                 if (offset & 0x02000000)
                     offset -= 0x04000000;
 
+                if (offset >= 0x02000000 ||
+                	offset <= -0x02000000)
+                {
+                	bug("[ELF Loader] Relocation type %d %d out of range!\n", i, ELF_R_TYPE(rel->info));
+                	SetIoErr(ERROR_BAD_HUNK);
+                	return 0;
+                }
                 offset += s - (ULONG)p;
 
                 offset >>= 2;
@@ -512,6 +519,78 @@ static int relocate
                 *p |= offset & 0x00ffffff;
             }
             break;
+
+    	    case R_ARM_THM_CALL:
+    	    case R_ARM_THM_JUMP24:
+    	    {
+    	    	ULONG upper,lower,sign,j1,j2;
+    	    	LONG offset;
+
+    	    	upper = *((UWORD *)p);
+    	    	lower = *((UWORD *)p+1);
+
+    	    	sign = (upper >> 10) & 1;
+    	    	j1 = (lower >> 13) & 1;
+    	    	j2 = (lower >> 11) & 1;
+
+    	    	offset = (sign << 24) | ((~(j1 ^ sign) & 1) << 23) |
+    	    			((~(j2 ^ sign) & 1) << 22) |
+    	    			((upper & 0x03ff) << 12) |
+    	    			((lower & 0x07ff) << 1);
+
+    	    	if (offset & 0x01000000)
+    	    		offset -= 0x02000000;
+
+                if (offset >= 0x01000000 ||
+                	offset <= -0x01000000)
+                {
+                	bug("[ELF Loader] Relocation type %d %d out of range!\n", i, ELF_R_TYPE(rel->info));
+                	SetIoErr(ERROR_BAD_HUNK);
+                	return 0;
+                }
+    	    	offset += s - (ULONG)p;
+
+    	    	sign = (offset >> 24) & 1;
+    	    	j1 = sign ^ (~(offset >> 23) & 1);
+    	    	j2 = sign ^ (~(offset >> 22) & 1);
+
+    	    	*(UWORD *)p = (UWORD)((upper & 0xf800) | (sign << 10) |
+    	    			((offset >> 12) & 0x03ff));
+    	    	*((UWORD *)p + 1) = (UWORD)((lower & 0xd000) |
+    	    			(j1 << 13) | (j2 << 11) | ((offset >> 1) & 0x07ff));
+
+    	    }
+    	    break;
+
+    	    case R_ARM_THM_MOVW_ABS_NC:
+    	    case R_ARM_THM_MOVT_ABS:
+    	    {
+    	    	ULONG upper,lower;
+    	    	LONG offset;
+
+    	    	upper = *((UWORD *)p);
+    	    	lower = *((UWORD *)p+1);
+
+    	    	offset = ((upper & 0x000f) << 12) |
+    	    			((upper & 0x0400) << 1) |
+    	    			((lower & 0x7000) >> 4) |
+    	    			(lower & 0x00ff);
+
+    	    	offset = (offset ^ 0x8000) - 0x8000;
+
+    	    	offset += s;
+
+    	    	if (ELF_R_TYPE(rel->info) == R_ARM_THM_MOVT_ABS)
+    	    		offset >>= 16;
+
+    	    	*(UWORD *)p = (UWORD)((upper & 0xfbf0) |
+    	    			((offset & 0xf000) >> 12) |
+    	    			((offset & 0x0800) >> 1));
+    	    	*((UWORD *)p + 1) = (UWORD)((lower & 0x8f00) |
+    	    			((offset & 0x0700)<< 4) |
+    	    			(offset & 0x00ff));
+    	    }
+    	    break;
 
     	    case R_ARM_MOVW_ABS_NC:
     	    case R_ARM_MOVT_ABS:
