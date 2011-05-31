@@ -356,5 +356,5 @@ static CONST_STRPTR searchFunction(struct LibNode *libNode, ULONG offset)
             return node->nd.ln_Name;
         }
     }
-    return NULL;
+    return ""; // FIXME: should we check that offset doesn't exceed highest LVO?
 }
