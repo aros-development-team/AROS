@@ -377,7 +377,7 @@ static int relocate
   	    default:
 		s = (IPTR)sh[SHINDEX(shindex)].addr + sym->value;
  	}
-#define __arm__
+
         switch (ELF_R_TYPE(rel->info))
         {
             #if defined(__i386__)
