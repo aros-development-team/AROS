@@ -12,17 +12,35 @@ FILES := library \
     idhardwareupdate \
 	locale
 
-#MM workbench-libs-identify-includes : \
+#MM- workbench-libs-identify : \
+#MM     workbench-libs-identify-lib \
+#MM     workbench-libs-identify-test \
+#MM     workbench-libs-identify-tools
+
+#MM- workbench-libs-identify-quick : \
+#MM     workbench-libs-identify-lib-quick \
+#MM     workbench-libs-identify-test-quick \
+#MM     workbench-libs-identify-tools-quick
+
+#MM- workbench-libs-identify-clean : \
+#MM     workbench-libs-identify-lib-clean \
+#MM     workbench-libs-identify-test-clean \
+#MM     workbench-libs-identify-tools-clean
+
+#MM  workbench-libs-identify-lib : \
+#MM    workbench-libs-identify-includes linklibs \
+#MM    workbench-libs-identify-catalogs
+
+#MM- workbench-libs-identify-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
 #MM     kernel-utility-includes \
 #MM     includes-copy
 
-#MM workbench-libs-identify : linklibs workbench-libs-identify-catalogs
+#MM workbench-libs-identify-test : \
+#MM    workbench-libs-identify-lib includes linklibs
 
-#MM workbench-libs-identify-test : workbench-libs-identify includes linklibs
-
-%build_module mmake=workbench-libs-identify \
+%build_module mmake=workbench-libs-identify-lib \
     modname=identify modtype=library \
     files="$(FILES)" \
     uselibs="rom"
