@@ -9,7 +9,8 @@ FILES := library \
     idfunction  \
     idhardware  \
     idhardwarenum  \
-    idhardwareupdate
+    idhardwareupdate \
+	locale
 
 #MM workbench-libs-identify-includes : \
 #MM     kernel-exec-includes \
@@ -17,7 +18,7 @@ FILES := library \
 #MM     kernel-utility-includes \
 #MM     includes-copy
 
-#MM workbench-libs-identify : linklibs
+#MM workbench-libs-identify : linklibs workbench-libs-identify-catalogs
 
 #MM workbench-libs-identify-test : workbench-libs-identify includes linklibs
 
