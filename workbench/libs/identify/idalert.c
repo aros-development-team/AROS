@@ -84,7 +84,7 @@ const struct
     {AG_CloseLib,   MSG_AG_CLOSELIB   }, // $00090000 Usually too many closes
     {AG_CloseDev,   MSG_AG_CLOSEDEV   }, // $000A0000 or a mismatched close
     {AG_ProcCreate, MSG_AG_PROCCREATE }, // $000B0000 Process creation failed
-    {-1, 0}
+    {-1,            0                 }
 };
 
 const struct
@@ -227,8 +227,12 @@ const struct
     {AN_DiskCopy,     MSG_AN_DISKCOPY         }, // $32000000
     {AN_GadTools,     MSG_AN_GADTOOLS         }, // $33000000
     {AN_UtilityLib,   MSG_AN_UTILITYLIB       }, // $34000000
-    {0x35000000,      MSG_AN_LAWBREAKER       }, // $35000000
-    {-1,              0                       },
+    {AN_Unknown,      MSG_AN_LAWBREAKER       }, // $35000000
+    {AN_Aros,         MSG_AN_AROS             }, // $40000000
+    {AN_OOP,          MSG_AN_OOP              }, // $41000000
+    {AN_Hidd,         MSG_AN_HIDD             }, // $42000000
+    {AN_HiddNoRoot,   MSG_AN_HIDDNOROOT       }, // $C2000001 /* Could not create root device */
+    {-1,              0                       }
 };
 
 const struct
@@ -263,6 +267,9 @@ const struct
     {AO_Workbench,   "Workbench"             }, // $00008031
     {AO_DiskCopy,    "DiskCopy"              }, // $00008032
     {AO_GadTools,    "gadtools"              }, // $00008033
+    {AO_ArosLib,     "aros.library"          }, // $00008040
+    {AO_OOPLib,      "oop.library"           }, // $00008041
+    {AO_HiddLib,     "hidd.library"          }, // $00008042
     {-1,             NULL                    }
 };
 
@@ -433,6 +440,8 @@ const struct
 
     if (specstr)
     {
+        *specstr = '\0'; // because of strlcat()
+
         found = FALSE;
 
         // search for object
