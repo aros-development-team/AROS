@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -989,12 +989,12 @@ void ReadWirelessPrefs(CONST_STRPTR directory)
                 else if (strncmp(tok.token, "scan_ssid=", 10) == 0)
                 {
                     tstring = strchr(tok.token, '=') + 1;
-                    SetHidden(net, *tstring == 1);
+                    SetHidden(net, *tstring == '1');
                 }
                 else if (strncmp(tok.token, "mode=", 5) == 0)
                 {
                     tstring = strchr(tok.token, '=') + 1;
-                    SetAdHoc(net, *tstring == 1);
+                    SetAdHoc(net, *tstring == '1');
                 }
             }
         }
