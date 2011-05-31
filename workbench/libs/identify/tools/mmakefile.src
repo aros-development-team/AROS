@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 #MM workbench-libs-identify-tools-catalogs \
 #MM workbench-libs-identify-lib includes linklibs
 
-FILES := Guru
+FILES := Function Guru
 
 %build_progs mmake=workbench-libs-identify-tools \
     files=$(FILES) targetdir=$(AROS_C) \
