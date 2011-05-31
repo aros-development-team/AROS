@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-libs-identify-tools : \
 #MM workbench-libs-identify-tools-catalogs \
-#MM workbench-libs-identify includes linklibs
+#MM workbench-libs-identify-lib includes linklibs
 
 FILES := Guru
 
