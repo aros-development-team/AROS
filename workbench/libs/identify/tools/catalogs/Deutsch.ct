@@ -6,7 +6,7 @@
 ;
 ## version $VER: IdentifyTools.catalog 0.0 ()
 ## codeset 0
-## language 
+## language Deutsch
 ;
 MSG_NOIDENTIFY
 Benötigt identify.library V%ld oder höher!\n\
