@@ -23,7 +23,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define QUICKRETRYRCNT 10 // re-read retries before reseeking
+#define QUICKRETRYRCNT 8 // re-read retries before reseeking, must be power of 2
 
 #define ioStd(x)  ((struct IOStdReq *)x)
 
@@ -97,6 +97,10 @@ static void td_setdirection(UBYTE dir, struct TDU *tdu, struct TrackDiskBase *td
         tdb->ciab->ciaprb |= 0x02;
     else
         tdb->ciab->ciaprb &= ~0x02;
+    if (dir != tdb->td_lastdir) {
+        td_wait(tdb, 18);
+        tdb->td_lastdir = dir;
+    }    
 }
 
 static void td_step(struct TDU *tdu, struct TrackDiskBase *tdb, UBYTE delay)
@@ -142,11 +146,12 @@ UBYTE td_getprotstatus(struct TDU *tdu, struct TrackDiskBase *tdb)
     return v;
 }
 
-int td_recalibrate(struct TDU *tdu, struct TrackDiskBase *tdb)
+BOOL td_recalibrate(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-    int steps = 80 + 15;
+    BYTE steps = 80 + 15;
     td_select(tdu, tdb);
     td_setside(0, tdu, tdb);
+    td_wait(tdb, tdu->pub.tdu_CalibrateDelay);
     if (td_istrackzero(tdu, tdb)) {
         // step to cyl 1 if current cyl == 0
         td_setdirection(0, tdu, tdb);
@@ -158,31 +163,27 @@ int td_recalibrate(struct TDU *tdu, struct TrackDiskBase *tdb)
     td_wait(tdb, tdu->pub.tdu_SettleDelay);
     while (!td_istrackzero(tdu, tdb)) {
         if (steps < 0) // drive is broken?
-            return 0;
+            return FALSE;
         td_step(tdu, tdb, tdu->pub.tdu_CalibrateDelay);
         steps--;
     }
     td_wait(tdb, tdu->pub.tdu_SettleDelay);
     tdu->pub.tdu_CurrTrk = 0;
-    return 1;
+    return TRUE;
 }
 
-static int td_seek2(struct TDU *tdu, UBYTE cyl, UBYTE side, struct TrackDiskBase *tdb, int nowait)
+static UBYTE td_seek2(struct TDU *tdu, UBYTE cyl, UBYTE side, struct TrackDiskBase *tdb, BOOL nowait)
 {
-    int dir;
+    UBYTE dir;
     D(bug("seek=%d/%d\n", cyl, side));
     td_setside(side, tdu, tdb);
     if (tdu->pub.tdu_CurrTrk / 2 == cyl)
-        return 1;
+        return 0;
     if (tdu->pub.tdu_CurrTrk / 2 > cyl || cyl == 0xff)
         dir = 1;
     else
         dir = 0;
     td_setdirection(dir, tdu, tdb);
-    if (dir != tdu->tdu_lastdir) {
-        td_wait(tdb, 18);
-        tdu->tdu_lastdir = dir;
-    }    
     while (cyl != tdu->pub.tdu_CurrTrk / 2) {
         td_step(tdu, tdb, tdu->pub.tdu_StepDelay);
         if (tdu->pub.tdu_CurrTrk / 2 > cyl && tdu->pub.tdu_CurrTrk >= 2)
@@ -195,17 +196,16 @@ static int td_seek2(struct TDU *tdu, UBYTE cyl, UBYTE side, struct TrackDiskBase
     td_wait_start(tdb, tdu->pub.tdu_SettleDelay);
     if (!nowait)
         td_wait_end(tdb);
-    return 1;
+    return 0;
 }
-int td_seek(struct TDU *tdu, int cyl, int side, struct TrackDiskBase *tdb)
+UBYTE td_seek(struct TDU *tdu, int cyl, int side, struct TrackDiskBase *tdb)
 {
-    return td_seek2(tdu, cyl, side, tdb, 0);
+    return td_seek2(tdu, cyl, side, tdb, FALSE);
 }
-int td_seek_nowait(struct TDU *tdu, int cyl, int side, struct TrackDiskBase *tdb)
+UBYTE td_seek_nowait(struct TDU *tdu, int cyl, int side, struct TrackDiskBase *tdb)
 {
-    return td_seek2(tdu, cyl, side, tdb, 1);
+    return td_seek2(tdu, cyl, side, tdb, TRUE);
 }
-
 
 // 0 = no disk, 1 = disk inserted
 UBYTE td_getDiskChange(struct TDU *tdu, struct TrackDiskBase *tdb)
@@ -233,9 +233,9 @@ static int checkbuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
     return 0;
 }
 
-static ULONG td_readwritetrack(UBYTE track, UBYTE write, struct TDU *tdu, struct TrackDiskBase *tdb)
+static UBYTE td_readwritetrack(UBYTE track, UBYTE write, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-    ULONG err = 0;
+    UBYTE err = 0;
     ULONG sigs;
     UWORD dsklen = 0x8000 | ((DISK_BUFFERSIZE / 2) * (tdu->tdu_hddisk ? 2 : 1)) | (write ? 0x4000 : 0);
 
@@ -500,10 +500,10 @@ static UBYTE td_readbuffer(UBYTE track, struct TDU *tdu, struct TrackDiskBase *t
 	return ret;
 }
 
-static int maybe_flush(struct TDU *tdu, struct TrackDiskBase *tdb, int track)
+static UBYTE maybe_flush(struct TDU *tdu, struct TrackDiskBase *tdb, int track)
 {
 	if (tdb->td_buffer_unit != tdu->tdu_UnitNum || tdb->td_buffer_track != track) {
-		int err = 0;
+		UBYTE err = 0;
 		err = td_flush(tdu, tdb);
 		td_clear(tdb);
 		return err;
@@ -511,9 +511,9 @@ static int maybe_flush(struct TDU *tdu, struct TrackDiskBase *tdb, int track)
 	return 0;
 }
 
-int td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
+UBYTE td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-	ULONG err;
+	UBYTE err;
 	APTR data;
 	ULONG len, offset;
 	WORD totalretries;
@@ -585,7 +585,11 @@ int td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 		if (sectorsdone < totalsectorsneeded) {
 			// errors, force re-read
 			tdb->td_buffer_unit = -1;
-			totalretries--;
+			// couldn't decode any sectors = reseek immediately
+			if (tdb->td_sectorbits == 0) 
+				totalretries = (totalretries - 1) & ~(QUICKRETRYRCNT - 1);
+			else
+				totalretries--;
 			continue;
 		}
 		
@@ -603,11 +607,11 @@ int td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 	return err;
 }
 
-static int td_write2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
+static UBYTE td_write2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
 	APTR data;
 	ULONG len, offset;
-	ULONG err;
+	UBYTE err;
  
 	if (checkbuffer(tdu, tdb))
 		return TDERR_NoMem;
@@ -655,9 +659,9 @@ static int td_write2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase
 	return err;
 }
 
-int td_write(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
+UBYTE td_write(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-    ULONG err;
+    UBYTE err;
     if (tdu->tdu_DiskIn == TDU_NODISK)
         return TDERR_DiskChanged;
     if (!td_getprotstatus(tdu, tdb)) {
@@ -675,10 +679,10 @@ void td_clear(struct TrackDiskBase *tdb)
 	tdb->td_dirty = 0;
 }
 
-int td_flush(struct TDU *tdu, struct TrackDiskBase *tdb)
+UBYTE td_flush(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
 	WORD totalretries;
-	BYTE lasterr, err;
+	UBYTE lasterr, err;
 
 	if (tdb->td_buffer_unit != tdu->tdu_UnitNum)
 		return 0;
@@ -721,11 +725,11 @@ int td_flush(struct TDU *tdu, struct TrackDiskBase *tdb)
 	return err;
 }
 
-static int td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
+static UBYTE td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
     APTR data;
     ULONG len, offset;
-    ULONG err = 0;
+    UBYTE err = 0;
 
     if (checkbuffer(tdu, tdb))
         return TDERR_NoMem;
@@ -757,9 +761,9 @@ static int td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBas
     return err;
 }
 
-int td_format(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
+UBYTE td_format(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-    ULONG err;
+    UBYTE err;
     if (tdu->tdu_DiskIn == TDU_NODISK)
 	return TDERR_DiskChanged;
     if (!td_getprotstatus(tdu, tdb)) {
