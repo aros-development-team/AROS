@@ -249,6 +249,7 @@ static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd)
 {
     otd->otd_ED = NULL;
     otd->otd_Succ = hc->hc_OhciTDPool;
+    otd->otd_NextTD = 0; // Protect against looped TD list in ocassion of TD reuse ("Rogue TD" state)
     hc->hc_OhciTDPool = otd;
 }
 /* \\\ */
