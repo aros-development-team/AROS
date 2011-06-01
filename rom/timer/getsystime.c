@@ -53,11 +53,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Query the hardware */
-    EClockUpdate(GetTimerBase(TimerBase));
-
     Disable();
 
+    /* Query the hardware */
+    EClockUpdate(GetTimerBase(TimerBase));
     dest->tv_secs  = GetTimerBase(TimerBase)->tb_CurrentTime.tv_secs;
     dest->tv_micro = GetTimerBase(TimerBase)->tb_CurrentTime.tv_micro;
 
