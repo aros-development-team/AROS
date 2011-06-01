@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Exec utility functions.
@@ -278,9 +278,7 @@ Exec_InitETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
     NEWLIST(&et->et_Children);
 
     /* Initialise the message list */
-    NEWLIST(&et->et_TaskMsgPort.mp_MsgList);
-    et->et_TaskMsgPort.mp_Flags = PA_SIGNAL;
-    et->et_TaskMsgPort.mp_Node.ln_Type = NT_MSGPORT;
+    InitMsgPort(&et->et_TaskMsgPort);
     et->et_TaskMsgPort.mp_SigTask = task;
     et->et_TaskMsgPort.mp_SigBit = SIGB_CHILD;
 

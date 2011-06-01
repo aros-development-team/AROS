@@ -101,6 +101,18 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 void FastPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
 void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
 
+LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *SysBase);
+
+static inline void InitMsgPort(struct MsgPort *ret)
+{
+    /* Set port to type 'signalling' */
+    ret->mp_Flags = PA_SIGNAL;
+    /* Set port to type MsgPort */
+    ret->mp_Node.ln_Type = NT_MSGPORT;
+    /* Clear the list of messages */
+    NEWLIST(&ret->mp_MsgList);
+}
+
 /*
  *  Pseudo-functions, including SysBase for nicer calling...
  */

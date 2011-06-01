@@ -1,15 +1,17 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new message port.
     Lang: english
 */
+
 #include <exec/memory.h>
 #include <exec/ports.h>
 #include <exec/execbase.h>
-#include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -55,23 +57,13 @@
 
 	/* Allocate a signal bit */
 	sb=AllocSignal(-1);
-	if(sb!=-1)
+	if (sb != -1)
 	{
-	    /* Initialize messageport structure. First set signal bit. */
+	    /* Initialize messageport structure */
+	    InitMsgPort(ret);
+	    /* Set signal bit. */
 	    ret->mp_SigBit=sb;
-
-	    /* Clear the list of messages */
-	    ret->mp_MsgList.lh_Head=(struct Node *)&ret->mp_MsgList.lh_Tail;
-	    /* ret->mp_MsgList.lh_Tail=NULL; */
-	    ret->mp_MsgList.lh_TailPred=(struct Node *)&ret->mp_MsgList.lh_Head;
-
-	    /* Set port to type 'signalling' */
-	    ret->mp_Flags=PA_SIGNAL;
-
-	    /* Set port to type MsgPort */
-	    ret->mp_Node.ln_Type = NT_MSGPORT;
-
-	    /* Finally set task to send the signal to. */
+	    /* Set task to send the signal to. */
 	    ret->mp_SigTask=SysBase->ThisTask;
 
 	    /* Now the port is ready for use. */
