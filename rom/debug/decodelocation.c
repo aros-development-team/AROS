@@ -253,7 +253,7 @@ AROS_LH2(int, DecodeLocationA,
 			    if (sections[shstr].type == SHT_STRTAB)
 				s_name = sections[shstr].addr + sections[i].name;
 
-			    D(bug("[Debug] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", kmod->Name, i, kseg->s_num,
+			    D(bug("[Debug] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", kmod->Name, i,
 				  s_name, s_lowest, s_highest));
 
 			    *module   = (char *)kmod->Name;
