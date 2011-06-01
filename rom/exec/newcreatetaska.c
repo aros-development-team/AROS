@@ -136,7 +136,8 @@ static const struct newMemList MemTemplate =
 	case TASKTAG_NAME:
 	    taskname = (char *)tag->ti_Data;
 	    nml.nml_ME[2].me_Length = strlen(taskname) + 1;
-	    nml.nml_NumEntries = 3;
+	    if (nml.nml_NumEntries < 3)
+	    	nml.nml_NumEntries = 3;
 	    break;
 
 	case TASKTAG_USERDATA:
@@ -149,7 +150,8 @@ static const struct newMemList MemTemplate =
 
 	case TASKTAG_TASKMSGPORT:
 	    msgPortPtr = (struct MsgPort **)tag->ti_Data;
-	    nml.nml_NumEntries = 4;
+	    if (nml.nml_NumEntries < 4)
+	    	nml.nml_NumEntries = 4;
 	    break;
 
 	case TASKTAG_FLAGS:
@@ -178,7 +180,7 @@ static const struct newMemList MemTemplate =
 	newtask->tc_Node.ln_Pri  = pri;
 	newtask->tc_Node.ln_Name = name;
 
-	if (nml.nml_NumEntries = 4)
+	if (nml.nml_NumEntries == 4)
 	{
 	    /*
 	     * The caller asked us to create an MsgPort for the task.
@@ -193,11 +195,14 @@ static const struct newMemList MemTemplate =
 	     * Allocate a signal for the port.
 	     * Set tc_SigAlloc early for AllocTaskSignal() to work.
 	     */
-	    newtask->tc_SigAlloc=SysBase->TaskSigAlloc;
+	    newtask->tc_SigAlloc = SysBase->TaskSigAlloc;
 	    sig = AllocTaskSignal(newtask, -1, SysBase);
 
 	    if (sig == -1)
+	    {
+		DADDTASK("NewCreateTaskA: Failed to allocate a signal for MsgPort");
 	    	goto fail;
+	    }
 
 	    InitMsgPort(mp);
 	    mp->mp_SigBit  = sig;
