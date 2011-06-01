@@ -1,7 +1,9 @@
-#ifndef __DEBUG_H__
-#define __DEBUG_H__
+#undef DB
+#undef KPRINTF
 
+#ifndef DB_LEVEL
 #define DB_LEVEL 200
+#endif
 
 //#define DEBUG 1
 
@@ -18,7 +20,7 @@
 
 #ifdef DEBUG
 #define KPRINTF(l, x) do { if ((l) >= DB_LEVEL) \
-     { KPrintF("%s:%s/%lu: ", __FILE__, __FUNCTION__, __LINE__); KPrintF x;} } while (0)
+     { KPrintF("%s/%lu: ", __FUNCTION__, __LINE__); KPrintF x;} } while (0)
 #define DB(x) x
    void dumpmem(void *mem, unsigned long int len);
 #else /* !DEBUG */
@@ -27,5 +29,3 @@
 #define DB(x)
 
 #endif /* DEBUG */
-
-#endif /* __DEBUG_H__ */
