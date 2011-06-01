@@ -3,6 +3,10 @@
     $Id$
 */
 
+/* Enable debug level 1000, keeps an eye on TD DoneQueue consistency */
+#define DEBUG 1
+#define DB_LEVEL 1000
+
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <hidd/pci.h>
@@ -16,6 +20,40 @@
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
 #undef HiddAttrBase
 #define HiddAttrBase (hd->hd_HiddAB)
+
+#ifdef DEBUG_TD
+
+static void PrintTD(const char *txt, ULONG ptd, struct PCIController *hc)
+{
+    KPrintF("%s TD list:", txt);
+
+    while (ptd)
+    {
+    	struct OhciTD *otd = (struct OhciTD *)((IPTR)ptd - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
+
+    	KPrintF(" 0x%p", otd);
+    	ptd = READMEM32_LE(&otd->otd_NextTD);
+    }
+    RawPutChar('\n');
+}
+
+static void PrintED(const char *txt, struct OhciED *oed, struct PCIController *hc)
+{
+    KPrintF("%s ED 0x%p: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n", txt, oed,
+                     READMEM32_LE(&oed->oed_EPCaps),
+                     READMEM32_LE(&oed->oed_HeadPtr),
+                     READMEM32_LE(&oed->oed_TailPtr),
+                     READMEM32_LE(&oed->oed_NextED));
+
+    PrintTD(txt, READMEM32_LE(&oed->oed_HeadPtr) & OHCI_PTRMASK, hc);
+}
+
+#else
+
+#define PrintTD(txt, ptd, hc)
+#define PrintED(txt, oed, hc)
+
+#endif
 
 static AROS_UFH3(void, OhciResetHandler,
                  AROS_UFHA(struct PCIController *, hc, A1),
@@ -105,7 +143,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
     ULONG epcaps;
     BOOL direction_in;
     BOOL updatetree = FALSE;
-    ULONG donehead;
+    ULONG donehead, nexttd;
     BOOL retire;
 
     KPRINTF(1, ("Checking for work done...\n"));
@@ -120,18 +158,25 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
     }
     otd = (struct OhciTD *) ((IPTR)donehead - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
     KPRINTF(10, ("DoneHead=%08lx, OTD=%p, Frame=%ld\n", donehead, otd, READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
+    PrintTD("Done", donehead, hc); /* CHECKME: This can give inconsistent printout on cache-incoherent hardware */
     do
     {
         CacheClearE(&otd->otd_Ctrl, 16, CACRF_InvalidateD);
         oed = otd->otd_ED;
         if(!oed)
         {
-            KPRINTF(200, ("Came across a rogue TD that already has been freed!\n"));
-            if(!otd->otd_NextTD)
+            /*
+             * WATCH OUT!!! Rogue TD is a very bad thing!!!
+             * If you see this, there's definitely a bug in DoneQueue processing flow.
+             * See below for the complete description.
+             */
+            KPRINTF(1000, ("Came across a rogue TD 0x%p that already has been freed!\n", otd));
+            nexttd = READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK;
+            if(!nexttd)
             {
                 break;
             }
-            otd = (struct OhciTD *) ((IPTR)(READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
+            otd = (struct OhciTD *) ((IPTR)nexttd - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
             continue;
         }
         CacheClearE(&oed->oed_EPCaps, 16, CACRF_InvalidateD);
@@ -160,18 +205,43 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
         KPRINTF(1, ("Examining TD %p for ED %p (IOReq=%p), Status %08lx, len=%ld\n", otd, oed, ioreq, ctrlstatus, len));
         if(!ioreq)
         {
-            KPRINTF(200, ("Came across a rogue IOReq that already has been replied!\n"));
-            if(!otd->otd_NextTD)
+            /* You should never see this (very weird inconsistency), but who knows... */
+            KPRINTF(1000, ("Came across a rogue IOReq that already has been replied! TD 0x%p, ED 0x%p\n", otd, oed));
+            nexttd = READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK;
+            if(!nexttd)
             {
                 break;
             }
-            otd = (struct OhciTD *) ((IPTR)(READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
+            otd = (struct OhciTD *) ((IPTR)nexttd - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
             continue;
         }
         ioreq->iouh_Actual += len;
-        retire = (ioreq->iouh_Actual == ioreq->iouh_Length);
+/*
+ * CHECKME: This condition may get triggered on control transfers even if terminating TD is not processed yet.
+ *          (got triggered by MacMini's keyboard, when someone sends control ED with no data payload,
+ *	    and some other ED is being done meanwhile (its final packet generated an interrupt).
+ *	    In this case the given control ED can be partially done (setup TD is done, term TD is not).
+ *	    iouh_Length is 0, and the whole ED is retired, while still being processed by the HC. Next time
+ *	    its terminator TD arrives into done queue.
+ *	    This can cause weird things like looping TD list on itself. My modification of ohciFreeTD()
+ *	    explicitly clears NextTD to avoid keeping dangling value there, however the problem still can
+ *	    appear if this TD is quickly reused by another request.
+ *	    Final TDs have OTCM_DELAYINT fields set to zero. HC processes TDs in order, so if we receive
+ *	    the final TD, we assume the whole ED's list has been processed.
+ *	    This means it should be safe to simply disable this check.
+ *	    If this doesn't work for some reason, we need a more complex check which makes sure that all TDs
+ *	    are really done (or ED is halted). This can be done by checking OTCM_COMPLETIONCODE field against
+ *	    OTCF_CC_INVALID value.
+ *						Pavel Fedin <pavel.fedin@mail.ru>
+	retire = (ioreq->iouh_Actual == ioreq->iouh_Length);
+        if (retire)
+        {
+            KPRINTF(10, ("TD 0x%p Data transfer done (%lu bytes)\n", otd, ioreq->iouh_Length));
+        } */
+        retire = FALSE;
         if((ctrlstatus & OTCM_DELAYINT) != OTCF_NOINT)
         {
+            KPRINTF(10, ("TD 0x%p Terminator detected\n", otd));
             retire = TRUE;
         }
         switch((ctrlstatus & OTCM_COMPLETIONCODE)>>OTCS_COMPLETIONCODE)
@@ -182,6 +252,13 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
             case (OTCF_CC_CRCERROR>>OTCS_COMPLETIONCODE):
                 KPRINTF(200, ("CRC Error!\n"));
                 ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
+                /*
+                 * CHECKME: Do we really need to set retire flag here?
+                 *	    Critical errors are always accompanied by OEHF_HALTED bit.
+                 *	    But what if HC thinks it's recoverable error and continues
+                 *	    working on this ED? In this case early retirement happens,
+                 *	    causing bad things. See long explanation above.
+                 */
                 retire = TRUE;
                 break;
 
@@ -262,12 +339,13 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
             AddHead(&hc->hc_OhciRetireQueue, &ioreq->iouh_Req.io_Message.mn_Node);
         }
 
-        if(!otd->otd_NextTD)
+	nexttd = READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK;
+        KPRINTF(1, ("NextTD=0x%08lx\n", nexttd));
+        if(!nexttd)
         {
             break;
         }
-        KPRINTF(1, ("NextTD=%p\n", otd->otd_NextTD));
-        otd = (struct OhciTD *) ((IPTR)(READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
+        otd = (struct OhciTD *) ((IPTR)nexttd - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
         KPRINTF(1, ("NextOTD = %p\n", otd));
     } while(TRUE);
 
@@ -290,7 +368,6 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
                 KPRINTF(10, ("Reloading Bulk transfer at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length));
                 otd = oed->oed_FirstTD;
 
-                /* 64 FIXME: iouh_Data can lie outside of 32-bit memory. Handle this! */
                 phyaddr = (IPTR)pciGetPhysical(hc, oed->oed_Buffer + actual);
                 do
                 {
@@ -343,6 +420,8 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
                 WRITEMEM32_LE(&oed->oed_HeadPtr, ctrlstatus);
                 CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
 
+		PrintED("Continued bulk", oed, hc);
+
                 oldenables = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
                 oldenables |= OCSF_BULKENABLE;
                 WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, oldenables);
@@ -357,6 +436,8 @@ void ohciHandleFinishedTDs(struct PCIController *hc) {
                 devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
                 unit->hu_DevBusyReq[devadrep] = NULL;
                 unit->hu_DevDataToggle[devadrep] = (ctrlstatus & OEHF_DATA1) ? TRUE : FALSE;
+
+		PrintED("Completed", oed, hc);
 
                 ohciFreeEDContext(hc, oed);
                 if(ioreq->iouh_Req.io_Command == UHCMD_INTXFER)
@@ -456,7 +537,6 @@ void ohciScheduleCtrlTDs(struct PCIController *hc) {
         CONSTWRITEMEM32_LE(&setupotd->otd_Ctrl, OTCF_PIDCODE_SETUP|OTCF_CC_INVALID|OTCF_NOINT);
         len = 8;
 
-        /* 64 FIXME: Handle SetupData which is outside of 32-bit memory */
         /* CHECKME: As i can understand, setup packet is always sent TO the device. Is this true? */
         oed->oed_SetupData = usbGetBuffer(&ioreq->iouh_SetupData, len, UHDIR_OUT);
         WRITEMEM32_LE(&setupotd->otd_BufferPtr, (IPTR) CachePreDMA(pciGetPhysical(hc, oed->oed_SetupData), &len, DMA_ReadFromRAM));
@@ -470,7 +550,6 @@ void ohciScheduleCtrlTDs(struct PCIController *hc) {
         predotd = setupotd;
         if (ioreq->iouh_Length)
         {
-            /* 64 FIXME: Handle iouh_Data outside of 32-bit space */
             oed->oed_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
             phyaddr = (IPTR)pciGetPhysical(hc, oed->oed_Buffer);
             actual = 0;
@@ -566,11 +645,7 @@ void ohciScheduleCtrlTDs(struct PCIController *hc) {
         CacheClearE(&oed->oed_Pred->oed_EPCaps, 16, CACRF_ClearD);
         SYNC;
 
-        KPRINTF(5, ("ED: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n",
-                     READMEM32_LE(&oed->oed_EPCaps),
-                     READMEM32_LE(&oed->oed_HeadPtr),
-                     READMEM32_LE(&oed->oed_TailPtr),
-                     READMEM32_LE(&oed->oed_NextED)));
+	PrintED("Control", oed, hc);
 
         oldenables = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
         if(!(oldenables & OCSF_CTRLENABLE))
@@ -636,24 +711,25 @@ void ohciScheduleIntTDs(struct PCIController *hc) {
         oed->oed_TailPtr = hc->hc_OhciTermTD->otd_Self;
 
         predotd = NULL;
-        /* 64 FIXME: 32-bit data */
         oed->oed_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
         phyaddr = (IPTR)pciGetPhysical(hc, oed->oed_Buffer);
         actual = 0;
         do
         {
             otd = ohciAllocTD(hc);
-            if(!otd)
+            if (predotd)
+            	predotd->otd_Succ = otd;
+            if (!otd)
             {
-                predotd->otd_Succ = NULL;
                 break;
             }
             otd->otd_ED = oed;
-            if(predotd)
+            if (predotd)
             {
-                predotd->otd_Succ = otd;
                 predotd->otd_NextTD = otd->otd_Self;
-            } else {
+            }
+            else
+            {
                 WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(&otd->otd_Self)|(unit->hu_DevDataToggle[devadrep] ? OEHF_DATA1 : 0));
                 oed->oed_FirstTD = otd;
             }
@@ -663,7 +739,7 @@ void ohciScheduleIntTDs(struct PCIController *hc) {
                 len = OHCI_PAGE_SIZE;
             }
             otd->otd_Length = len;
-            KPRINTF(1, ("TD with %ld bytes\n", len));
+            KPRINTF(1, ("Control TD 0x%p with %ld bytes\n", otd, len));
             CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
             if(len)
             {
@@ -727,11 +803,7 @@ void ohciScheduleIntTDs(struct PCIController *hc) {
         CacheClearE(&intoed->oed_EPCaps, 16, CACRF_ClearD);
         SYNC;
 
-        KPRINTF(5, ("ED: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n",
-                     READMEM32_LE(&oed->oed_EPCaps),
-                     READMEM32_LE(&oed->oed_HeadPtr),
-                     READMEM32_LE(&oed->oed_TailPtr),
-                     READMEM32_LE(&oed->oed_NextED)));
+        PrintED("Int", oed, hc);
         Enable();
 
         ioreq = (struct IOUsbHWReq *) hc->hc_IntXFerQueue.lh_Head;
@@ -788,7 +860,6 @@ void ohciScheduleBulkTDs(struct PCIController *hc) {
         oed->oed_TailPtr = hc->hc_OhciTermTD->otd_Self;
 
         predotd = NULL;
-        /* 64 FIXME */
         oed->oed_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
         phyaddr = (IPTR)pciGetPhysical(hc, oed->oed_Buffer);
         actual = 0;
@@ -876,12 +947,7 @@ void ohciScheduleBulkTDs(struct PCIController *hc) {
         SYNC;
 
         KPRINTF(10, ("Activating BULK at %ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
-
-        KPRINTF(5, ("ED: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n",
-                     READMEM32_LE(&oed->oed_EPCaps),
-                     READMEM32_LE(&oed->oed_HeadPtr),
-                     READMEM32_LE(&oed->oed_TailPtr),
-                     READMEM32_LE(&oed->oed_NextED)));
+        PrintED("Bulk", oed, hc);
 
         oldenables = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
         if(!(oldenables & OCSF_BULKENABLE))
@@ -1065,7 +1131,7 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         }
         if(intr & OISF_DONEHEAD)
         {
-        	KPRINTF(10, ("DoneHead %ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
+        	KPRINTF(10, ("DoneHead Frame=%ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
 
         	if(hc->hc_OhciDoneQueue)
         	{
@@ -1079,6 +1145,8 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         		}
         		WRITEMEM32_LE(&donetd->otd_NextTD, hc->hc_OhciDoneQueue);
         		CacheClearE(&donetd->otd_Ctrl, 16, CACRF_ClearD);
+        
+        		KPRINTF(10, ("Attached old DoneHead 0x%p to TD 0x%p\n", hc->hc_OhciDoneQueue, donetd));
         	}
         	hc->hc_OhciDoneQueue = donehead;
 
