@@ -383,13 +383,13 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
 static BOOL InitKickMem(struct ExecBase *SysBase)
 {
     struct MemList *ml = SysBase->KickMemPtr;
-    DEBUGPUTHEX(("KickMemPtr: ", (IPTR)ml));
+    DEBUGPUTHEX(("KickMemPtr", (IPTR)ml));
     while (ml) {
 	int i;
-	DEBUGPUTHEX(("NumEntries: ", ml->ml_NumEntries));
+	DEBUGPUTHEX(("NumEntries", ml->ml_NumEntries));
 	for (i = 0; i < ml->ml_NumEntries; i++) {
-	    DEBUGPUTHEX(("      Addr: ", (IPTR)ml->ml_ME[i].me_Addr));
-	    DEBUGPUTHEX(("       Len: ", ml->ml_ME[i].me_Length));
+	    DEBUGPUTHEX(("      Addr", (IPTR)ml->ml_ME[i].me_Addr));
+	    DEBUGPUTHEX(("       Len", ml->ml_ME[i].me_Length));
 	    /* Use the non-mungwalling AllocAbs */
 	    if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase))
 		return FALSE;
