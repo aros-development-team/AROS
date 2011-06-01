@@ -280,7 +280,7 @@ static int ata_mpc_init(struct ataBase *LIBBASE)
      * FIXME: This code uses static data variables.
      * Move them into DriverData instead.
      */
-    ata_RegisterBus(0x3a60, 0x3a5c - 8, MPC5200B_ATA, 0, AF_NoDMA, &mpc_driver, NULL, LIBBASE);
+    ata_RegisterBus(0x3a60, 0x3a5c - 8, MPC5200B_ATA, 0, FALSE, &mpc_driver, NULL, LIBBASE);
 
     return TRUE;
 }

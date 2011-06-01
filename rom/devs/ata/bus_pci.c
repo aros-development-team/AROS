@@ -58,7 +58,7 @@ struct ata_ProbedBus
     IPTR 	atapb_IOAlt;
     IPTR 	atapb_INTLine;
     IPTR 	atapb_DMABase;
-    ULONG	atapb_Flags;
+    BOOL	atapb_80wire;
 };
 
 #define ATABUSNODEPRI_PROBED		50
@@ -538,7 +538,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 		probedbus->atapb_INTLine = INTLine;
 		if (DMABase != 0)
 		    probedbus->atapb_DMABase = DMABase + (x << 3);
-		probedbus->atapb_Flags = AF_80Wire;
+		probedbus->atapb_80wire = TRUE;
 
 		if (isLegacy)
 		{
@@ -666,8 +666,8 @@ static int ata_pci_Scan(struct ataBase *base)
 		probedbus->atapb_IOBase  = legacybus->atalb_IOBase;
 		probedbus->atapb_IOAlt   = legacybus->atalb_IOAlt;
 		probedbus->atapb_INTLine = legacybus->atalb_INTLine;
-		probedbus->atapb_DMABase = (IPTR)NULL;
-		probedbus->atapb_Flags   = 0;
+		probedbus->atapb_DMABase = 0;
+		probedbus->atapb_80wire  = FALSE;
 		probedbus->atapb_Node.ln_Pri = ATABUSNODEPRI_LEGACY - (Args.ata__buscount++);
 		D(bug("[PCI-ATA] ata_Scan: Adding Legacy Bus - IO: %x:%x\n",
 		    probedbus->atapb_IOBase, probedbus->atapb_IOAlt));
@@ -691,7 +691,7 @@ static int ata_pci_Scan(struct ataBase *base)
 	 * On x86 this value is ignored, see I/O functions.
 	 */
 	ata_RegisterBus(probedbus->atapb_IOBase, probedbus->atapb_IOAlt, probedbus->atapb_INTLine,
-			probedbus->atapb_DMABase, probedbus->atapb_Flags,
+			probedbus->atapb_DMABase, probedbus->atapb_80wire,
 			&pci_driver, (APTR)0xe8000000, base);
 
 	FreeMem(probedbus, sizeof(struct ata_ProbedBus));

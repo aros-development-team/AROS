@@ -28,7 +28,6 @@
  * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
  */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -706,6 +705,8 @@ AROS_LH1(void, BeginIO,
     }
     else
     {
+    	D(bug("[ATA%02ld] Fast command\n"));
+    
         /* Immediate command. Mark unit as active and do the command directly */
         unit->au_Unit.unit_flags |= UNITF_ACTIVE;
         Enable();
@@ -762,65 +763,17 @@ AROS_LH1(ULONG, GetBlkSize,
 }
 
 /*
-    The daemon of ata.device first opens all ATAPI devices and then enters
-    endless loop. Every 2 seconds it tells ATAPI units to check the media
-    presence. In case of any state change they will rise user-specified
-    functions.
-*/
-static void DaemonCode(LIBBASETYPEPTR LIBBASE);
-
-/* Create the daemon task */
-int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
-{
-    struct Task     *t;
-    struct MemList  *ml;
-
-    struct TagItem tags[] = {
-        { TASKTAG_ARG1,     (IPTR)LIBBASE },
-        { TAG_DONE, 0 }
-    };
-
-    /* Get some memory */
-    t = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
-    ml = AllocMem(sizeof(struct MemList) + sizeof(struct MemEntry), MEMF_PUBLIC | MEMF_CLEAR);
-
-    if (t && ml)
-    {
-        UBYTE *sp = AllocMem(STACK_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
-        t->tc_SPLower = sp;
-        t->tc_SPUpper = sp + STACK_SIZE;
-        t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET;
-
-        ml->ml_NumEntries = 2;
-        ml->ml_ME[0].me_Addr = t;
-        ml->ml_ME[0].me_Length = sizeof(struct Task);
-        ml->ml_ME[1].me_Addr = sp;
-        ml->ml_ME[1].me_Length = STACK_SIZE;
-
-        NEWLIST(&t->tc_MemEntry);
-        AddHead(&t->tc_MemEntry, &ml->ml_Node);
-
-        t->tc_Node.ln_Name = "ATA.daemon";
-        t->tc_Node.ln_Type = NT_TASK;
-        t->tc_Node.ln_Pri  = TASK_PRI - 1;  /* The daemon should have a little bit lower Pri as handler tasks */
-
-        LIBBASE->ata_Daemon = t;
-
-        NewAddTask(t, DaemonCode, NULL, tags);
-    }
-
-    return (t != NULL);
-}
-
-/*
- * The daemon tries to send HD_SCSICMD+1 command (internal testchanged
- * command) to all ATAPI devices in the system. They should already handle
- * the command further.
+ * The daemon of ata.device first opens all ATAPI devices and then enters
+ * endless loop. Every 2 seconds it tells ATAPI units to check the media
+ * presence. In case of any state change they will rise user-specified
+ * functions.
+ * The check is done by sending HD_SCSICMD+1 command (internal testchanged
+ * command). ATAPI units should already handle the command further.
  */
 void DaemonCode(LIBBASETYPEPTR LIBBASE)
 {
     struct MsgPort *myport;     // Message port used with ata.device
-	struct IORequest *timer;	// timer
+    struct IORequest *timer;	// timer
     struct IOStdReq *ios[64];   // Placeholder for unit messages
     int count = 0,b,d;
     struct ata_Bus *bus;
@@ -830,8 +783,8 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
     /*
      * Prepare message ports and timer.device's request
      */
-    myport      = CreateMsgPort();
-    timer = ata_OpenTimer();
+    myport = CreateMsgPort();
+    timer  = ata_OpenTimer();
     bus         = (struct ata_Bus*)LIBBASE->ata_Buses.mlh_Head;
 
     /*
@@ -908,6 +861,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
         /*
          * check / trigger all buses waiting for an irq
          */
+        DB2(bug("[ATA++] Checking timeouts...\n"));
         ForeachNode(&LIBBASE->ata_Buses, bus)
         {
             if (bus->ab_Timeout >= 0)
@@ -922,73 +876,11 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
         /*
          * And then hide and wait for 1 second
          */
+        DB2(bug("[ATA++] 1 second delay, timer 0x%p...\n", timer));
         ata_WaitTO(timer, 1, 0, 0);
+
+        DB2(bug("[ATA++] Delay completed\n"));
     }
-}
-
-static void TaskCode(struct ata_Bus *, struct Task*, struct SignalSemaphore*);
-
-/*
- * Make a task for given bus alive.
- */
-int ata_InitBusTask(struct ata_Bus *bus, struct SignalSemaphore *ready)
-{
-    struct Task     *t;
-    struct MemList  *ml;
-
-    struct TagItem tags[] = {
-        { TASKTAG_ARG1,     (IPTR)bus },
-        { TASKTAG_ARG2,     (IPTR)FindTask(0) },
-        { TASKTAG_ARG3,     (IPTR)ready },
-        { TAG_DONE, 0 }
-    };
-
-    /*
-        Need some memory. I don't know however, whether it wouldn't be better
-        to take some RAM from device's memory pool.
-    */
-    t = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
-    ml = AllocMem(sizeof(struct MemList) + 2*sizeof(struct MemEntry), MEMF_PUBLIC | MEMF_CLEAR);
-
-    if (t && ml)
-    {
-        /* Setup stack */
-        UBYTE *sp = AllocMem(STACK_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
-        t->tc_SPLower = sp;
-        t->tc_SPUpper = sp + STACK_SIZE;
-        t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET;
-
-        /* Message port receiving all the IO requests */
-        bus->ab_MsgPort = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
-        NEWLIST(&bus->ab_MsgPort->mp_MsgList);
-        bus->ab_MsgPort->mp_Node.ln_Type = NT_MSGPORT;
-        bus->ab_MsgPort->mp_Flags        = PA_SIGNAL;
-        bus->ab_MsgPort->mp_SigBit       = SIGBREAKB_CTRL_F;
-        bus->ab_MsgPort->mp_SigTask      = t;
-        bus->ab_MsgPort->mp_Node.ln_Name = "ATA[PI] Subsystem";
-
-        /* Tell the System which memory regions are to be freed upon a task completion */
-        ml->ml_NumEntries = 3;
-        ml->ml_ME[0].me_Addr = t;
-        ml->ml_ME[0].me_Length = sizeof(struct Task);
-        ml->ml_ME[1].me_Addr = sp;
-        ml->ml_ME[1].me_Length = STACK_SIZE;
-        ml->ml_ME[2].me_Addr = bus->ab_MsgPort;
-        ml->ml_ME[2].me_Length = sizeof(struct MsgPort);
-
-        NEWLIST(&t->tc_MemEntry);
-        AddHead(&t->tc_MemEntry, &ml->ml_Node);
-
-        t->tc_Node.ln_Name = "ATA[PI] Subsystem";
-        t->tc_Node.ln_Type = NT_TASK;
-        t->tc_Node.ln_Pri  = TASK_PRI;
-
-        /* Wake up the task */
-        NewAddTask(t, TaskCode, NULL, tags);
-        Wait(SIGBREAKF_CTRL_C);
-    }
-
-    return (t != NULL);
 }
 
 /*
@@ -996,7 +888,7 @@ int ata_InitBusTask(struct ata_Bus *bus, struct SignalSemaphore *ready)
     in endless loop and calls proper handling function. The IO is Semaphore-
     protected within a bus.
 */
-static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphore *ssem)
+void BusTaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphore *ssem)
 {
     ULONG sig;
     int iter;
