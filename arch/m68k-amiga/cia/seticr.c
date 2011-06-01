@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: SetICR() function.
     Lang: english
@@ -29,9 +29,8 @@ AROS_LH1(WORD, SetICR,
      
     // I think this needs to return interrupt=active status
     // if called inside CIA interrupt handler
+    CiaBase->active_mask |= CiaBase->hw->ciaicr & 0x1f;
     old = CiaBase->active_mask | CiaBase->executing_mask;
-
-    CiaBase->active_mask |= CiaBase->hw->ciaicr;
     if (mask & 0x80)
         CiaBase->active_mask |= mask & 0x1f;
     else
