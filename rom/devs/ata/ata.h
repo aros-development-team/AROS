@@ -365,13 +365,11 @@ typedef enum
 #define AB_DiscChanged          29     /* disc changed */
 #define AB_Removable            28     /* media removable */
 #define AB_80Wire               27     /* has an 80-wire cable */
-#define AB_NoDMA		26
 
 #define AF_DiscPresent          (1 << AB_DiscPresent)
 #define AF_DiscChanged          (1 << AB_DiscChanged)
 #define AF_Removable            (1 << AB_Removable)
 #define AF_80Wire               (1 << AB_80Wire)
-#define AF_NoDMA		(1 << AB_NoDMA)
 
 /* ATA/ATAPI registers */
 #define ata_Error           1
@@ -485,8 +483,6 @@ BYTE ata_Identify(struct ata_Unit*);
 BYTE atapi_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
 ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
 
-int ata_InitBusTask(struct ata_Bus *, struct SignalSemaphore*);
-int ata_InitDaemonTask(struct ataBase *);
 void ata_HandleIRQ(struct ata_Bus *bus);
 
 BOOL dma_SetupPRD(struct ata_Unit *, APTR, ULONG, BOOL);
@@ -499,8 +495,11 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u);
 BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u);
 BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
 
-void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG flags,
+void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, BOOL has80Wire,
 		     const struct ata_BusDriver *driver, APTR driverData, struct ataBase *ATABase);
+
+void BusTaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphore *ssem);
+void DaemonCode(struct ataBase *LIBBASE);
 
 #define ATAPI_SS_EJECT  0x02
 #define ATAPI_SS_LOAD   0x03

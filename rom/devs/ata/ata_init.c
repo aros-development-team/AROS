@@ -103,24 +103,26 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                 dosdevname[2] += unit->au_UnitNum % 10;
             else
                 dosdevname[2] = 'A' - 10 + unit->au_UnitNum;
-            pp[0] = (IPTR)dosdevname;
-            pp[1] = (IPTR)MOD_NAME_STRING;
-            pp[2] = unit->au_UnitNum;
-            pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
-            pp[DE_SIZEBLOCK + 4] = 1 << (unit->au_SectorShift - 2);
-            pp[DE_NUMHEADS + 4] = unit->au_Heads;
+        
+            pp[0] 		    = (IPTR)dosdevname;
+            pp[1]		    = (IPTR)MOD_NAME_STRING;
+            pp[2]		    = unit->au_UnitNum;
+            pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
+            pp[DE_SIZEBLOCK    + 4] = 1 << (unit->au_SectorShift - 2);
+            pp[DE_NUMHEADS     + 4] = unit->au_Heads;
             pp[DE_SECSPERBLOCK + 4] = 1;
             pp[DE_BLKSPERTRACK + 4] = unit->au_Sectors;
             pp[DE_RESERVEDBLKS + 4] = 2;
-            pp[DE_LOWCYL + 4] = StartCyl;
-            pp[DE_HIGHCYL + 4] = EndCyl;
-            pp[DE_NUMBUFFERS + 4] = 10;
-            pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
-            pp[DE_MAXTRANSFER + 4] = 0x00200000;
-            pp[DE_MASK + 4] = 0x7FFFFFFE;
-            pp[DE_BOOTPRI + 4] = ((!unit->au_DevType) ? 0 : 10);
-            pp[DE_DOSTYPE + 4] = 0x444F5301;
-            pp[DE_BOOTBLOCKS + 4] = 2;
+            pp[DE_LOWCYL       + 4] = StartCyl;
+            pp[DE_HIGHCYL      + 4] = EndCyl;
+            pp[DE_NUMBUFFERS   + 4] = 10;
+            pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC | MEMF_31BIT;
+            pp[DE_MAXTRANSFER  + 4] = 0x00200000;
+            pp[DE_MASK         + 4] = 0x7FFFFFFE;
+            pp[DE_BOOTPRI      + 4] = ((!unit->au_DevType) ? 0 : 10);
+            pp[DE_DOSTYPE      + 4] = 0x444F5301;
+            pp[DE_BOOTBLOCKS   + 4] = 2;
+        
             devnode = MakeDosNode(pp);
 
             if (devnode)
@@ -156,7 +158,22 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     return FALSE;
 }
 
-void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG flags,
+/*
+ * This routine needs to be called by bus probe code in order to register a device.
+ * IOBase     - base address of primary I/O registers on your bus.
+ * IOAlt      - base address of secondary I/O register bank. Zero if no secondary bank
+ *	        is present. (IDE splitter on Amiga(tm), for example).
+ * DMABase    - base address of DMA controller on your bus. Zero if DMA is not supported.
+ * has80Wire  - TRUE if your drive is connected using 80-wire cable. Enables high-speed
+ *	        UDMA modes (where appropriate).
+ * driver     - structure holding pointers to I/O functions (for speedup)
+ * driverData - driver-specific data, whatever it needs.
+ *
+ * TODO: Actually implement handling of IOAlt == 0
+ *
+ * When a HIDD subsystem is implemented, these parameters will become HIDD attributes.
+ */
+void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, BOOL has80Wire,
 		     const struct ata_BusDriver *driver, APTR driverData, struct ataBase *ATABase)
 {
     /*
@@ -194,9 +211,9 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG 
     D(bug("[ATA>>] ata_RegisterBus: IRQ %d, IO: %x:%x, DMA: %x\n", INTLine, IOBase, IOAlt, DMABase));
 
     if (ATABase->ata_NoDMA)
-	flags |= AF_NoDMA;
+	DMABase = 0;
 
-    if (!(flags & AF_NoDMA))
+    if (DMABase)
     {
     	/* Allocate DMA PRD. Due to the nature of PCI bus it must be in 32-bit memory. */
     	ab->ab_PRD = AllocMem((PRD_MAX + 1) * 2 * sizeof(struct PRDEntry), MEMF_PUBLIC|MEMF_CLEAR|MEMF_31BIT);
@@ -209,7 +226,7 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG 
        	else
        	{
        	    D(bug("[ATA>>] Failed to allocate DMA PRD! Disabling DMA for the bus.\n"));
-       	    flags |= AF_NoDMA;
+       	    DMABase = 0;
        	}
     }
 
@@ -224,7 +241,7 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG 
             ab->ab_Units[i] = AllocVecPooled(ATABase->ata_MemPool,
                 sizeof(struct ata_Unit));
             ab->ab_Units[i]->au_DMAPort = DMABase;
-            ab->ab_Units[i]->au_Flags = flags;
+            ab->ab_Units[i]->au_Flags = has80Wire ? AF_80Wire : 0;
             ata_init_unit(ab, i);
         }
     }
@@ -247,13 +264,25 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG 
 static int ata_Scan(struct ataBase *base)
 {
     struct SignalSemaphore ssem;
-    struct Node* node;
+    struct ata_Bus* node;
+    struct Task *parent = FindTask(NULL);
 
     D(bug("[ATA--] ata_Scan: Initialising Bus Tasks..\n"));
     InitSemaphore(&ssem);
     ForeachNode(&base->ata_Buses, node)
     {
-        ata_InitBusTask((struct ata_Bus*)node, &ssem);
+    	NewCreateTask(TASKTAG_PC	 , BusTaskCode,
+    		      TASKTAG_NAME	 , "ATA[PI] Subsystem",
+    		      TASKTAG_STACKSIZE  , STACK_SIZE,
+    		      TASKTAG_PRI	 , TASK_PRI,
+    		      TASKTAG_TASKMSGPORT, &node->ab_MsgPort,
+    		      TASKTAG_ARG1 	 , node,
+        	      TASKTAG_ARG2	 , parent,
+        	      TASKTAG_ARG3	 , &ssem,
+        	      TAG_DONE);
+
+	/* Initial handshake */
+        Wait(SIGBREAKF_CTRL_C);
     }
 
     /*
@@ -269,7 +298,12 @@ static int ata_Scan(struct ataBase *base)
     D(bug("[ATA--] ata_Scan: Finished\n"));
 
     /* Try to setup daemon task looking for diskchanges */
-    ata_InitDaemonTask(base);
+    NewCreateTask(TASKTAG_PC       , DaemonCode,
+                  TASKTAG_NAME     , "ATA.daemon",
+                  TASKTAG_STACKSIZE, STACK_SIZE,
+                  TASKTAG_PRI      , TASK_PRI - 1,	/* The daemon should have a little bit lower Pri as handler tasks */
+                  TASKTAG_ARG1     , base,
+                  TAG_DONE);
 
     return TRUE;
 }
