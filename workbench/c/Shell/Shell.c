@@ -521,15 +521,12 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 	    	error = IoErr(); /* bad FS handler ? */
 	    	goto errexit;
 	    }
-	    while (*dst != '\0')
-	    {
-		++dst;
-		++len;
-	    }
+	    while (*++dst != '\0');
+
 	    *dst++ = '"';
 	    *dst++ = ' ';
 	    UnLock(scriptLock);
-	    len += 2;
+	    len = dst - cmd;
 	}
 
 	src = commandArgs;
