@@ -50,7 +50,6 @@ struct TDU
     UBYTE	tdu_flags;
     BOOL    tdu_hddisk;			/* HD disk inserted */
     BOOL    tdu_broken;			/* recalibrate didn't find TRACK0, drive ignored */
-    UBYTE	tdu_lastdir;		/* last step direction */
     UBYTE	tdu_sectors;		/* number of sectors per track */
     BOOL    tdu_selected;
 };
@@ -75,11 +74,11 @@ struct TrackDiskBase
     volatile struct CIA 	*ciaa;
     volatile struct CIA 	*ciab;
     ULONG					td_IntBit;
-    ULONG					td_TmoBit;
     BOOL					td_nomount;
     BOOL					td_supportHD;
     WORD					td_buffer_track;
     BYTE					td_buffer_unit;		/* buffer contains this unit's track */
+    UBYTE					td_lastdir;		/* last step direction */
     BOOL					td_dirty;
 };
 

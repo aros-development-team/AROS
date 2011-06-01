@@ -240,7 +240,7 @@ static BOOL TD_PerformIO(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	case TD_SEEK:
     	    td_select(tdu, tdb);
 	    temp = (iotd->iotd_Req.io_Offset >> 10) / (tdu->tdu_hddisk ? 22 : 11);
-	    iotd->iotd_Req.io_Error = td_seek (tdu, temp >> 1, temp & 1, tdb);
+	    iotd->iotd_Req.io_Error = td_seek(tdu, temp >> 1, temp & 1, tdb);
 	    break;
 	default:
 	    /* Not supported */
@@ -310,13 +310,19 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
     D(bug("[TDTask] TD_DevTask: struct TaskData @ %p\n", td));
 
     tdb->td_IntBit = AllocSignal(-1);
-    tdb->td_TmoBit = AllocSignal(-1);
     tdb->td_TimerMP = CreateMsgPort();
     tdb->td_TimerMP2 = CreateMsgPort();
     tdb->td_TimerIO = (struct timerequest *) CreateIORequest(tdb->td_TimerMP, sizeof(struct timerequest));
     tdb->td_TimerIO2 = (struct timerequest *) CreateIORequest(tdb->td_TimerMP2, sizeof(struct timerequest));
-    OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tdb->td_TimerIO, 0);
-    OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)tdb->td_TimerIO2, 0);
+    if (tdb->td_IntBit == -1)
+     	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_NoSignal);
+    if (!tdb->td_TimerMP || !tdb->td_TimerMP2 || !tdb->td_TimerIO || !tdb->td_TimerIO2)
+    	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_NoMemory);
+    if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tdb->td_TimerIO, 0))
+    	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_OpenDev);
+    if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)tdb->td_TimerIO2, 0))
+    	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_OpenDev);
+    	
 
     NEWLIST(&tdb->td_druport.mp_MsgList);
     tdb->td_dru.dru_Message.mn_ReplyPort = &tdb->td_druport;
@@ -348,7 +354,7 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 		D(bug("DF%d initialized\n", i));
 	    tdu->tdu_DiskIn = td_getDiskChange(tdu, tdb) ? TDU_DISK : TDU_NODISK;
 	    tdu->tdu_ProtStatus = td_getprotstatus(tdu,tdb);
-	    tdu->tdu_hddisk = ishd (GetUnitID(i));
+	    tdu->tdu_hddisk = ishd(GetUnitID(i));
 	    tdu->tdu_sectors = tdu->tdu_hddisk ? 22 : 11;
 	    td_deselect(tdu, tdb);
 	    giveunit(tdb);
@@ -453,7 +459,7 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
     /* Find the current task */
     me = FindTask(NULL);
     
-	D(bug("TD: Creating devicetask...\n"));
+    D(bug("TD: Creating devicetask...\n"));
 
     if (t && ml)
     {
