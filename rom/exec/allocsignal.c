@@ -1,14 +1,17 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate a signal
     Lang: english
 */
+
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -55,12 +58,18 @@
     AROS_LIBFUNC_INIT
 
     struct Task *ThisTask;
+
+    /* Cast signalNum to BYTE for AOS/68k compatibility. Apps may set up only D0.b */
+    return AllocTaskSignal(FindTask(NULL), (BYTE)signalNum, SysBase);
+
+    AROS_LIBFUNC_EXIT
+} /* AllocSignal() */
+
+LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *SysBase)
+{
     ULONG mask;
     ULONG mask1;
 
-    signalNum = (BYTE)signalNum; /* AOS/68k compatibility. Apps may set up only D0.b */
-    
-    ThisTask = FindTask(NULL);
     mask = ThisTask->tc_SigAlloc;
 
     /* Will any signal do? */
@@ -115,6 +124,4 @@
     Enable();
 
     return signalNum;
-    AROS_LIBFUNC_EXIT
-} /* AllocSignal() */
-
+}

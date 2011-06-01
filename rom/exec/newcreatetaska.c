@@ -13,12 +13,13 @@
 #include <string.h>
 
 #include "exec_debug.h"
+#include "exec_util.h"
 
 struct newMemList
 {
     struct Node	    nml_Node;
     UWORD 	    nml_NumEntries;
-    struct MemEntry nml_ME[3];
+    struct MemEntry nml_ME[4];
 };
 
 static const struct newMemList MemTemplate =
@@ -26,12 +27,12 @@ static const struct newMemList MemTemplate =
     { 0, },
     2,
     {
-	{{MEMF_CLEAR|MEMF_PUBLIC}, sizeof(struct Task)}, /* Task descriptor itself */
-	{{MEMF_CLEAR		}, AROS_STACKSIZE     }, /* Task's stack	   */
-	{{MEMF_CLEAR|MEMF_PUBLIC}, 0		      }  /* Task name		   */
+	{{MEMF_CLEAR|MEMF_PUBLIC}, sizeof(struct Task)	 }, /* Task descriptor itself */
+	{{MEMF_CLEAR		}, AROS_STACKSIZE     	 }, /* Task's stack	      */
+	{{MEMF_CLEAR|MEMF_PUBLIC}, 0		      	 }, /* Task name	      */
+	{{MEMF_PUBLIC		}, sizeof(struct MsgPort)}  /* Task's MsgPort	      */
     }
 };
-
 
 /*****************************************************************************
 
@@ -70,6 +71,9 @@ static const struct newMemList MemTemplate =
 					   entry function. The arguments are supplied in
 					   C-standard way.
 	  TASKTAG_FLAGS        (ULONG)   - Initial value for tc_Flags.
+	  TASKTAG_TASKMSGPORT  (struct MsgPort **)
+	  				 - Create a message port for the task and place its
+	  				   address into the location specified by ti_Data.
 	  TASKTAG_TCBEXTRASIZE (ULONG)   - Value which will be added to sizeof(struct Task)
 					   in order to determine final size of task structure.
 					   Can be used for appending user data to task structure.
@@ -95,12 +99,12 @@ static const struct newMemList MemTemplate =
 {
     AROS_LIBFUNC_INIT
 
-    struct Task     * newtask,
-		    * task2;
+    struct Task * newtask;
     struct newMemList nml = MemTemplate;
     struct MemList  * ml;
     const struct TagItem *tstate = tags;
     struct TagItem *tag;
+    struct MsgPort **msgPortPtr = NULL;
     ULONG *errPtr    = NULL;
     APTR   initpc    = NULL;
     APTR   finalpc   = SysBase->TaskExitCode;
@@ -143,6 +147,11 @@ static const struct newMemList MemTemplate =
 	    pri = tag->ti_Data;
 	    break;
 
+	case TASKTAG_TASKMSGPORT:
+	    msgPortPtr = (struct MsgPort **)tag->ti_Data;
+	    nml.nml_NumEntries = 4;
+	    break;
+
 	case TASKTAG_FLAGS:
 	    flags = tag->ti_Data;
 	    break;
@@ -157,6 +166,7 @@ static const struct newMemList MemTemplate =
 
     if (NewAllocEntry((struct MemList *)&nml, &ml, NULL))
     {
+    	struct Task *task2 = NULL;
 	APTR name = ml->ml_ME[2].me_Addr;
 
 	if (taskname)
@@ -167,6 +177,36 @@ static const struct newMemList MemTemplate =
 	newtask->tc_Node.ln_Type = NT_TASK;
 	newtask->tc_Node.ln_Pri  = pri;
 	newtask->tc_Node.ln_Name = name;
+
+	if (nml.nml_NumEntries = 4)
+	{
+	    /*
+	     * The caller asked us to create an MsgPort for the task.
+	     * We can't reuse ETask's one because it's used for notifications about child tasks.
+	     * We don't check against msgPortPtr == NULL because in future we can have MorphOS-compatible
+	     * GetTaskAttr().
+	     */
+	    struct MsgPort *mp = ml->ml_ME[3].me_Addr;
+	    LONG sig;
+
+	    /*
+	     * Allocate a signal for the port.
+	     * Set tc_SigAlloc early for AllocTaskSignal() to work.
+	     */
+	    newtask->tc_SigAlloc=SysBase->TaskSigAlloc;
+	    sig = AllocTaskSignal(newtask, -1, SysBase);
+
+	    if (sig == -1)
+	    	goto fail;
+
+	    InitMsgPort(mp);
+	    mp->mp_SigBit  = sig;
+	    mp->mp_SigTask = newtask;
+
+	    /* Return port address */
+	    if (msgPortPtr)
+	    	*msgPortPtr = mp;
+	}
 
 	/* FIXME: NewAddTask() will reset flags to 0 */
 	newtask->tc_Flags    = flags;
@@ -189,7 +229,7 @@ static const struct newMemList MemTemplate =
 	 */
 	task2 = NewAddTask (newtask, initpc, finalpc, tags);
 
-	if (!task2)
+fail:	if (!task2)
 	{
 	    FreeEntry (ml);
 	    newtask = NULL;
