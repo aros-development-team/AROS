@@ -144,6 +144,9 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 	case UNIT_WAITUNTIL:
 	    Disable();
 
+	    /* Query the hardware first */
+	    EClockUpdate(TimerBase);
+
 	    if (CMPTIME(&TimerBase->tb_CurrentTime, &timereq->tr_time) <= 0)
 	    {
 		timereq->tr_time.tv_secs = timereq->tr_time.tv_micro = 0;
@@ -173,6 +176,10 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 	case UNIT_VBLANK:
 	case UNIT_MICROHZ:
 	    Disable();
+
+	    /* Query the hardware first */
+	    EClockUpdate(TimerBase);
+
 
 	    /*
 	     * Adjust the time request to be relative to the
@@ -288,6 +295,7 @@ void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 		continue;
 	    }
 #endif
+	    D(bug("[Timer] Replying msg 0x%p\n", tr));
 
 	    tr->tr_time.tv_secs  = 0;
 	    tr->tr_time.tv_micro = 0;

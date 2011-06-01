@@ -18,19 +18,32 @@ AROS_LH1(void, BeginIO,
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[Timer] BeginIO(0x%p)\n", timereq));
+    D(bug("[Timereq 0x%p] unit %ld, command %d\n", timereq, timereq->tr_node.io_Unit, timereq->tr_node.io_Command));
 
-    EClockUpdate(TimerBase);
+#if DEBUG
+    if (timereq->tr_node.io_Command == TR_ADDREQUEST)
+    {
+	bug("[Timereq 0x%p] Request time %d sec %d usec\n", timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro);
+    }
+#endif
 
     if (common_BeginIO(timereq, TimerBase))
     {
-	D(bug("[BeginIO] Updating hardware interrupt request\n"));
+	D(bug("[Timereq 0x%p] Updating hardware interrupt request\n", timereq));
 
-	outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
+//	outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
+	Disable();
 	Timer0Setup(TimerBase);
+	Enable();
     }
 
-    D(bug("[Timer] BeginIO() done\n", timereq));
+#if DEBUG
+    if (timereq->tr_node.io_Command == TR_ADDREQUEST)
+    {
+    	bug("[Timereq 0x%p] Request time %d sec %d usec\n", timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro);
+    	bug("[Timereq 0x%p] Elapsed time %d sec %d usec\n", timereq, TimerBase->tb_Elapsed.tv_secs, TimerBase->tb_Elapsed.tv_micro);
+    }
+#endif
 
     AROS_USERFUNC_EXIT
 }

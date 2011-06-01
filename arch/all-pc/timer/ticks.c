@@ -6,12 +6,17 @@
     Lang: english
 */
 
-#include <exec/types.h>
-#include <proto/exec.h>
 #include <asm/io.h>
+#include <proto/exec.h>
 
 #include "ticks.h"
 #include "timer_macros.h"
+
+/*
+ * This code uses two channels of the PIT for simplicity:
+ * Channel 0 - sends IRQ 0 on terminal count. We use it as alarm clock.
+ * Channel 2 is used as EClock counter. It counts all the time and is never reloaded.
+ */
 
 const ULONG TIMER_RPROK = 3599597124UL;
 
@@ -51,8 +56,6 @@ void EClockUpdate(struct TimerBase *TimerBase)
 {
     ULONG time, diff;
 
-    Disable();
-    
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     /* Latch the current time value */
 
@@ -61,6 +64,10 @@ void EClockUpdate(struct TimerBase *TimerBase)
     time = inb(0x42);
     time += inb(0x42) << 8;
 
+    /*
+     * Calculate difference and add it to our current EClock value.
+     * PIT counters actually count backwards. This is why everything here looks reversed.
+     */
     diff = (TimerBase->tb_prev_tick - time);
 
     if (time > TimerBase->tb_prev_tick)
@@ -72,8 +79,6 @@ void EClockUpdate(struct TimerBase *TimerBase)
     TimerBase->tb_ticks_total += diff;
     INCTIME(TimerBase->tb_CurrentTime, TimerBase->tb_ticks_sec, diff);
     INCTIME(TimerBase->tb_Elapsed, TimerBase->tb_ticks_elapsed, diff);
-
-    Enable();
 }
 
 void EClockSet(struct TimerBase *TimerBase)
@@ -105,8 +110,8 @@ void Timer0Setup(struct TimerBase *TimerBase)
         time.tv_secs  = tr->tr_time.tv_secs;
 
         EClockUpdate(TimerBase);
-        SUBTIME(&time, &TimerBase->tb_CurrentTime);
-    
+        SUBTIME(&time, &TimerBase->tb_Elapsed);
+
     	if ((LONG)time.tv_secs < 0)
 	{
 	    delay = 0;
@@ -121,7 +126,7 @@ void Timer0Setup(struct TimerBase *TimerBase)
     }
 
     if (delay < 2) delay = 2;
-    
+
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     outb(0x38, 0x43);   /* Binary, mode 4, LSB&MSB */
     outb(delay & 0xff, 0x40);
