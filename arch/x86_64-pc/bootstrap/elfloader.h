@@ -6,7 +6,9 @@
     $Id$
 */
 
-void load_elf_file(void *, unsigned long long);
+unsigned long long DebugInfo_ptr;
+
+void load_elf_file(const char *Name, void *file, unsigned long long virt);
 void *kernel_lowest();
 void *kernel_highest();
 void set_base_address(void *, void *);

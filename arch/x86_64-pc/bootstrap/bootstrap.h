@@ -47,6 +47,18 @@ struct TagItem64
     unsigned long long ti_Data;
 };
 
+/* Kickstart module debug information (pointed to by KRN_DebugInfo ti_Data) */
+struct ELF_ModuleInfo64
+{
+    unsigned long long Next;
+    unsigned long long Name;
+    unsigned short     Type;
+    unsigned short     Pad0;	/* On i386 we have different alignment, so do explicit padding */
+    unsigned int       Pad1;
+    unsigned long long eh;
+    unsigned long long sh;
+};
+
 /* A pointer used for building boot taglist */
 extern struct TagItem64 *tag;
 
