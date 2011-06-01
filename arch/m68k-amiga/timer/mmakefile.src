@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := timer_init abortio beginio readeclock lowlevel getsystime
+FILES := timer_init abortio beginio readeclock lowlevel getsystime common_init ticks
 
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer \
                  -I$(SRCDIR)/rom/timer
