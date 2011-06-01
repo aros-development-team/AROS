@@ -77,8 +77,42 @@ ULONG sub64(struct timeval *larger, struct timeval *smaller)
 	return 0xffffffff;
 }
 
+void addmicro(struct TimerBase *TimerBase, struct timeval *tv)
+{
+	ULONG old;
+	UBYTE lo, hi;
+	UWORD val;
+	
+        add64(tv, &TimerBase->tb_micro_count);
+
+	if (!TimerBase->tb_micro_on)
+		return;
+	if (IsListEmpty(&TimerBase->tb_Lists[UNIT_MICROHZ])) {
+		TimerBase->tb_micro_on = FALSE;
+		return;
+	}
+	/* add (tb_micro_started - current counter value) */
+	for (;;) {
+		hi = *TimerBase->tb_micro_hi;
+		lo = *TimerBase->tb_micro_lo;
+		if (hi == *TimerBase->tb_micro_hi)
+			break;
+	}
+	val = (hi << 8) | lo;
+
+	if (val > TimerBase->tb_micro_started)
+		val = TimerBase->tb_micro_started;
+	else
+		val = TimerBase->tb_micro_started - val;
+
+    	old = tv->tv_micro;
+	tv->tv_micro += val;
+	if (old > tv->tv_micro)
+		tv->tv_secs++;
+}
+
 // Disabled state assumed
-void CheckTimer(struct TimerBase *TimerBase, ULONG unitnum)
+void CheckTimer(struct TimerBase *TimerBase, UWORD unitnum)
 {
 	if (unitnum == UNIT_VBLANK) {
 		TimerBase->tb_vblank_on = TRUE;
@@ -90,15 +124,14 @@ void CheckTimer(struct TimerBase *TimerBase, ULONG unitnum)
 			D(bug("ciaint_timer kickstarted\n"));
 		} else {
 			UBYTE lo, hi;
+			UWORD val;
 			// already active but new item was added to head
-			for (;;) {
-				hi = *TimerBase->tb_micro_hi;
-				lo = *TimerBase->tb_micro_lo;
-				if (hi == *TimerBase->tb_micro_hi)
-					break;
-			}
+			*TimerBase->tb_micro_cr = 0x08;
+			hi = *TimerBase->tb_micro_hi;
+			lo = *TimerBase->tb_micro_lo;
+			val = (hi << 8) | lo;
 			// how long have we already waited?
-			TimerBase->tb_micro_started -= (hi << 8) | lo;
+			TimerBase->tb_micro_started -= val;
 			// force interrupt now
 			D(bug("ciaint_timer restarted\n"));
 		}
@@ -119,13 +152,18 @@ ULONG GetEClock(struct TimerBase *TimerBase)
 			break;
 		// lo wraparound, try again
 	}
-	val = (hi << 8) | lo;
-	// pending interrupt?
 	diff = 0;
+	// pending interrupt? Re-read counter */
 	if (SetICR(TimerBase->tb_eclock_res, 0) & (1 << TimerBase->tb_eclock_intbit)) {
-		if (val > ECLOCK_BASE / 2)
-			diff = ECLOCK_BASE;
+		diff = ECLOCK_BASE;
+		for (;;) {
+			hi = *TimerBase->tb_eclock_hi;
+			lo = *TimerBase->tb_eclock_lo;
+			if (hi == *TimerBase->tb_eclock_hi)
+				break;
+		}
 	}
+	val = (hi << 8) | lo;
 	diff += ECLOCK_BASE - val;
 	return diff;
 }

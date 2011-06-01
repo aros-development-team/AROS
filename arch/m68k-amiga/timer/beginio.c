@@ -18,7 +18,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static void timer_addToWaitList(struct TimerBase *TimerBase, ULONG unit, struct timerequest *tr);
+static void timer_addToWaitList(struct TimerBase *TimerBase, UWORD unit, struct timerequest *tr);
 
 #define NEWSTYLE_DEVICE 1
 
@@ -124,8 +124,8 @@ AROS_LH1(void, BeginIO,
         	}
                 case UNIT_MICROHZ:
                     convertunits(TimerBase, &timereq->tr_time, UNIT_MICROHZ);
-                    add64(&timereq->tr_time, &TimerBase->tb_micro_count);
                     Disable();
+                    addmicro(TimerBase, &timereq->tr_time);
                     timer_addToWaitList(TimerBase, UNIT_MICROHZ, timereq);
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
@@ -141,8 +141,8 @@ AROS_LH1(void, BeginIO,
                     replyit = FALSE;
                     break;
                 case UNIT_ECLOCK:
-               	    add64(&timereq->tr_time, &TimerBase->tb_micro_count);
 	            Disable();
+                    addmicro(TimerBase, &timereq->tr_time);
                     timer_addToWaitList(TimerBase, UNIT_MICROHZ, timereq);
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
@@ -156,7 +156,7 @@ AROS_LH1(void, BeginIO,
                     replyit = FALSE;
                     break;
                 default:
-                    replyit = FALSE;
+                    replyit = TRUE;
                     timereq->tr_node.io_Error = IOERR_NOCMD;
                     break;
             } /* switch(unitNum) */
@@ -191,19 +191,20 @@ AROS_LH1(void, BeginIO,
 } /* BeginIO */
 
 
-static void timer_addToWaitList(struct TimerBase *TimerBase, ULONG unit, struct timerequest *iotr)
+static void timer_addToWaitList(struct TimerBase *TimerBase, UWORD unit, struct timerequest *iotr)
 {
     /* We are disabled, so we should take as little time as possible. */
     struct timerequest *tr;
     BOOL added = FALSE, first = TRUE;
     struct MinList *list = &TimerBase->tb_Lists[unit];
 
-    // wait at least 1 vblank
     if (unit == UNIT_VBLANK) {
+	// always wait at least 1 full vblank
 	if (equ64(&iotr->tr_time, &TimerBase->tb_vb_count))
 	    inc64(&iotr->tr_time);
+	inc64(&iotr->tr_time);
     }
-
+ 
     ForeachNode(list, tr) {
     	/* If the time in the new request is less than the next request */
     	if(CmpTime(&tr->tr_time, &iotr->tr_time) < 0) {
@@ -223,7 +224,7 @@ static void timer_addToWaitList(struct TimerBase *TimerBase, ULONG unit, struct 
     if(!added)
     	AddTail((struct List *)list, (struct Node *)iotr);
 
-    /* recalculate timers list was empty or was added to head of list */
+    /* recalculate timers, list was empty or was added to head of list */
     if (!added || first)
 	CheckTimer(TimerBase, unit);   
 

@@ -68,10 +68,18 @@
     Disable();
     if(timereq->tr_node.io_Message.mn_Node.ln_Type != NT_REPLYMSG)
     {
-		timereq->tr_node.io_Error = IOERR_ABORTED;
-		Remove((struct Node *)timereq);
-		ReplyMsg((struct Message *)timereq);
-		ret = 0;
+    	ULONG unit = (ULONG)timereq->tr_node.io_Unit;
+	timereq->tr_node.io_Error = IOERR_ABORTED;
+	Remove((struct Node *)timereq);
+	if (unit == UNIT_WAITUNTIL || unit == UNIT_VBLANK) {
+	    if (IsListEmpty(&TimerBase->tb_Lists[UNIT_VBLANK]))
+	    	TimerBase->tb_vblank_on = FALSE;
+	} else {
+	    if (IsListEmpty(&TimerBase->tb_Lists[UNIT_MICROHZ]))
+	    	TimerBase->tb_micro_on = FALSE;
+	}
+	ReplyMsg((struct Message *)timereq);
+	ret = 0;
     }
     Enable();
 
