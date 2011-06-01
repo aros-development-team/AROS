@@ -391,27 +391,31 @@ static void prepare_message(void *kick_base)
     D(kprintf("[BOOT] Kickstart 0x%p - 0x%p (entry 0x%p), protection 0x%p - 0x%p\n", kernel_lowest(), kernel_highest(), kick_base,
     	      &_prot_lo, &_prot_hi));
 
-    tag->ti_Tag = KRN_KernelBase;
+    tag->ti_Tag  = KRN_KernelBase;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long)kick_base;
     tag++;
 
-    tag->ti_Tag = KRN_KernelLowest;
+    tag->ti_Tag  = KRN_KernelLowest;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long)kernel_lowest();
     tag++;
 
-    tag->ti_Tag = KRN_KernelHighest;
+    tag->ti_Tag  = KRN_KernelHighest;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long)kernel_highest();
     tag++;
 
-    tag->ti_Tag = KRN_KernelBss;
+    tag->ti_Tag  = KRN_KernelBss;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long)__bss_track;
     tag++;
 
-    tag->ti_Tag = KRN_ProtAreaStart;
+    tag->ti_Tag  = KRN_DebugInfo;
+    tag->ti_Data = KERNEL_OFFSET | DebugInfo_ptr;
+    tag++;
+
+    tag->ti_Tag  = KRN_ProtAreaStart;
     tag->ti_Data = (unsigned long)&_prot_lo;
     tag++;
 
-    tag->ti_Tag = KRN_ProtAreaEnd;
+    tag->ti_Tag  = KRN_ProtAreaEnd;
     tag->ti_Data = (unsigned long)&_prot_hi;
     tag++;
 
@@ -598,7 +602,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     for (m = mod; module_count > 0; module_count--, m++)
     {
         kprintf("[BOOT] Loading %s... ", m->name);
-        load_elf_file(m->address, 0);
+        load_elf_file(m->name, m->address, 0);
         kprintf("\n");
     }
 

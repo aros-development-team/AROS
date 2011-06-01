@@ -10,6 +10,7 @@
 
 #include <aros/kernel.h>
 #include <dos/elf.h>
+#include <libraries/debug.h>
 
 #include <string.h>
 
@@ -23,9 +24,12 @@
  * Keeping both areas of memory separate reduces the memory waste when more modules are
  * loaded. Moreover, the whole RO range may be marked for MMU as read-only at once. 
  */
-char *ptr_ro = (char*)KERNEL_TARGET_ADDRESS;
-char *ptr_rw = (char*)KERNEL_TARGET_ADDRESS;
-unsigned long long SysBase_ptr = 0;
+void *ptr_ro = (void *)KERNEL_TARGET_ADDRESS;
+void *ptr_rw = (void *)KERNEL_TARGET_ADDRESS;
+unsigned long long DebugInfo_ptr = 0;
+
+static unsigned long long SysBase_ptr = 0;
+static struct ELF_ModuleInfo64 *prev_mod = (struct ELF_ModuleInfo64 *)&DebugInfo_ptr;
 
 struct _bss_tracker {
     unsigned long long addr;
@@ -134,6 +138,12 @@ static int load_hunk(void *file, struct sheader *sh)
     }
     
     return 1;
+}
+
+static void *copy_data(const void *src, void *addr, unsigned long len)
+{
+    __bs_memcpy(addr, src, len);
+    return addr + len;
 }
 
 /* Perform relocations of given section */
@@ -246,13 +256,14 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
     return 1;
 }
 
-void load_elf_file(void *file, unsigned long long virt)
+void load_elf_file(const char *Name, void *file, unsigned long long virt)
 {
     struct elfheader eh;
     struct sheader *sh;
     long i;
     int addr_displayed = 0;
-    
+    struct ELF_ModuleInfo64 *mod;
+
     D(kprintf("[ELF Loader] Loading ELF module from address %p\n", file));
     
     /* Check the header of ELF file */
@@ -270,13 +281,8 @@ void load_elf_file(void *file, unsigned long long virt)
     /* Iterate over the section header in order to prepare memory and eventually load some hunks */
     for (i=0; i < eh.shnum; i++)
     {
-        /* Load the symbol and string tables */
-        if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB)
-        {
-            sh[i].addr = (unsigned long)load_block(file, sh[i].offset, sh[i].size);
-        }
-        /* Does the section require memoy allcation? */
-        else if (sh[i].flags & SHF_ALLOC)
+        /* Load allocated sections, symbol and string tables */
+        if ((sh[i].flags & SHF_ALLOC)  || (sh[i].type == SHT_STRTAB) || (sh[i].type == SHT_SYMTAB))
         {
             /* Yup, it does. Load the hunk */
             if (!load_hunk(file, &sh[i]))
@@ -305,4 +311,29 @@ void load_elf_file(void *file, unsigned long long virt)
             }
         }
     }
+
+    /* Align our pointer */
+    ptr_ro = (char *)(((unsigned long)ptr_ro + sizeof(unsigned long long)) & ~(sizeof(unsigned long long) - 1));
+
+    /* Allocate module descriptor */
+    mod = ptr_ro;
+    ptr_ro += sizeof(struct ELF_ModuleInfo64);
+    mod->Next = 0;
+    mod->Type = DEBUG_ELF;
+
+    /* Copy ELF header */
+    mod->eh  = (unsigned long)ptr_ro;
+    ptr_ro = copy_data(&eh, ptr_ro, sizeof(struct elfheader));
+
+    /* Copy section header */
+    mod->sh = (unsigned long)ptr_ro;
+    ptr_ro = copy_data(sh, ptr_ro, eh.shnum * eh.shentsize);
+
+    /* Copy module name */
+    mod->Name = (unsigned long)ptr_ro;
+    ptr_ro = copy_data(Name, ptr_ro, strlen(Name) + 1);
+
+    /* Link the module descriptor with previous one */
+    prev_mod->Next = (unsigned long)mod;
+    prev_mod = mod;
 }
