@@ -39,7 +39,7 @@ static void reloclist(struct List *l)
  */
 struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
 {
-    ULONG totalsize, i;
+    ULONG totalsize, i, oldIntFlags;
     struct ExecBase *oldsb = SysBase, *newsb;
 	
     APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
@@ -99,7 +99,14 @@ struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
 	InitSemaphore(&PrivExecBase(newsb)->LowMemSem);
 
 	SysBase = newsb;
+
+	/* We need to temporarily disable MungWall, because
+	 * it wasn't on when we were allocated.
+	 */
+	oldIntFlags = PrivExecBase(oldsb)->IntFlags;
+	PrivExecBase(SysBase)->IntFlags &=  ~EXECF_MungWall;
 	FreeMem((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, totalsize);
+	PrivExecBase(SysBase)->IntFlags = oldIntFlags;
 
 	if (oldSysBase) {
     		SysBase->ColdCapture = ColdCapture;
