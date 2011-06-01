@@ -73,7 +73,8 @@ struct TimerBase
 };
 
 ULONG GetEClock(struct TimerBase *TimerBase);
-void CheckTimer(struct TimerBase *TimerBase, ULONG unitnum);
+void CheckTimer(struct TimerBase *TimerBase, UWORD unitnum);
+void addmicro(struct TimerBase *TimerBase, struct timeval *tv);
 BOOL cmp64(struct timeval *tv1, struct timeval *tv2);
 ULONG sub64(struct timeval *larger, struct timeval *smaller);
 void add64(struct timeval *dst, struct timeval *src);

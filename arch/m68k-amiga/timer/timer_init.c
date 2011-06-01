@@ -191,7 +191,7 @@ static int GM_UNIQUENAME(Open)
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
     Disable();
-    RemIntServer(&LIBBASE->tb_vbint, INTB_VERTB);
+    RemIntServer(INTB_VERTB, &LIBBASE->tb_vbint);
     RemICRVector(LIBBASE->tb_micro_res, LIBBASE->tb_micro_intbit, &LIBBASE->tb_ciaint_timer);
     RemICRVector(LIBBASE->tb_eclock_res, LIBBASE->tb_eclock_intbit, &LIBBASE->tb_ciaint_eclock);
     Enable();
