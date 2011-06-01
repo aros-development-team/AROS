@@ -439,7 +439,7 @@ ULONG Convert_RGB16_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue;
+    UBYTE src_red, src_blue;
 
     src_step = srcMod - width * 2;
     dst_step = dstMod - width * 2;
@@ -468,7 +468,7 @@ ULONG Convert_RGB16LE_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue;
+    UBYTE src_red, src_blue;
 
     src_step = srcMod - width * 2;
     dst_step = dstMod - width * 2;
