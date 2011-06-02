@@ -219,6 +219,10 @@ static inline struct OhciED * ohciAllocED(struct PCIController *hc)
 /* /// "ohciFreeED()" */
 static inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed)
 {
+    oed->oed_HeadPtr   = 0;	// Protect against ocassional reuse
+    oed->oed_TailPtr   = 0;
+    SYNC;
+
     oed->oed_IOReq     = NULL;
     oed->oed_Buffer    = NULL;
     oed->oed_SetupData = NULL;
@@ -247,9 +251,11 @@ static inline struct OhciTD * ohciAllocTD(struct PCIController *hc)
 /* /// "ohciFreeTD()" */
 static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd)
 {
+    otd->otd_NextTD = 0; // Protect against looped TD list in ocassion of TD reuse ("Rogue TD" state)
+    SYNC;
+
     otd->otd_ED = NULL;
     otd->otd_Succ = hc->hc_OhciTDPool;
-    otd->otd_NextTD = 0; // Protect against looped TD list in ocassion of TD reuse ("Rogue TD" state)
     hc->hc_OhciTDPool = otd;
 }
 /* \\\ */
