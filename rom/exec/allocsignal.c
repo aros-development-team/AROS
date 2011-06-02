@@ -57,8 +57,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *ThisTask;
-
     /* Cast signalNum to BYTE for AOS/68k compatibility. Apps may set up only D0.b */
     return AllocTaskSignal(FindTask(NULL), (BYTE)signalNum, SysBase);
 
