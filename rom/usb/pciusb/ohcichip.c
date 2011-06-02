@@ -39,13 +39,17 @@ static void PrintTD(const char *txt, ULONG ptd, struct PCIController *hc)
 
 static void PrintED(const char *txt, struct OhciED *oed, struct PCIController *hc)
 {
+    struct OhciTD *otd;
+
     KPrintF("%s ED 0x%p: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n", txt, oed,
                      READMEM32_LE(&oed->oed_EPCaps),
                      READMEM32_LE(&oed->oed_HeadPtr),
                      READMEM32_LE(&oed->oed_TailPtr),
                      READMEM32_LE(&oed->oed_NextED));
 
-    PrintTD(txt, READMEM32_LE(&oed->oed_HeadPtr) & OHCI_PTRMASK, hc);
+    KPrintF("...TD list:", hc, txt, oed);
+    for (otd = oed->oed_FirstTD; otd; otd = otd->otd_Succ)
+    	KPrintF(" 0x%p", otd);
 }
 
 #else
