@@ -318,8 +318,8 @@ static VOID __HandleLaunch_WB
         {NP_HomeDir,    (IPTR)home                      },
         {NP_StackSize,  stacksize                       },
         {NP_Priority,   priority                        },
-        {NP_Input,      BNULL                           },
-        {NP_Output,     BNULL                           },
+        {NP_Input,      (IPTR)BNULL                     },
+        {NP_Output,     (IPTR)BNULL                     },
         {TAG_DONE,      0                               }
     };
 
