@@ -9,6 +9,7 @@
 #include <strings.h>
 
 #include "uhwcmd.h"
+#include "ohciproto.h"
 
 #define NewList NEWLIST
 
@@ -1983,7 +1984,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                         {
                             foundit = TRUE;
                             unit->hu_DevBusyReq[devadrep] = NULL;
-                            ohciFreeEDContext(hc, (struct OhciED *) ioreq->iouh_DriverPrivate1);
+                            ohciAbortED(hc, ioreq->iouh_DriverPrivate1);
                             break;
                         }
                         cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
