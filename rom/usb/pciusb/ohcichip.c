@@ -15,6 +15,7 @@
 #include <stddef.h>
 
 #include "uhwcmd.h"
+#include "ohciproto.h"
 
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
@@ -1163,6 +1164,15 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
     /* Unlock interrupts  */
     WRITEREG32_LE(&hc->hc_RegBase, OHCI_INTEN, OISF_MASTERENABLE);
+}
+
+void ohciAbortED(struct PCIController *hc, struct OhciED *oed)
+{
+    /*
+     * TODO: implement this correctly, eliminating race condition between us and HC.
+     * If the ED is being run by the HC at the moment, we end up badly.
+     */
+    ohciFreeEDContext(hc, oed);
 }
 
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {

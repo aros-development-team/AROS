@@ -1,11 +1,6 @@
 /* pci_aros.c - pci access abstraction for AROS by Chris Hodges
 */
 
-#include "uhwcmd.h"
-
-#include <inttypes.h>
-#include <string.h>
-
 #include <aros/bootloader.h>
 #include <aros/symbolsets.h>
 #include <exec/types.h>
@@ -18,6 +13,12 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
+
+#include <inttypes.h>
+#include <string.h>
+
+#include "uhwcmd.h"
+#include "ohciproto.h"
 
 #define NewList NEWLIST
 
