@@ -240,10 +240,13 @@ void ata_IRQSignalTask(struct ata_Bus *bus)
     Signal(bus->ab_Task, 1UL << bus->ab_SleepySignal);
 }
 
+/* PIO-only: IDE doublers don't have real AltStatus register.
+ * Do not assume reading AltStatus does not clear interrupt request.
+ */
 void ata_HandleIRQ(struct ata_Bus *bus)
 {
     struct ata_Unit *unit = ata_GetSelectedUnit(bus);
-    UBYTE status = ata_ReadAltStatus(bus);
+    UBYTE status;
     BOOL for_us = FALSE;
 
     /*
@@ -257,11 +260,14 @@ void ata_HandleIRQ(struct ata_Bus *bus)
          * just DMA interrupts. However, if there's no DMA port, we have
          * to rely on the busy flag, which is incompatible with IRQ sharing.
          */
-        if (unit->au_DMAPort != 0)
+        if (unit->au_DMAPort != 0) {
+            status = ata_ReadAltStatus(bus);
             for_us =
                 (ATA_IN(dma_Status, unit->au_DMAPort) & DMAF_Interrupt) != 0;
-        else
+        } else {
+	    status = ata_ReadStatus(bus);
             for_us = (status & ATAF_BUSY) == 0;
+        }
     }
 
     if (for_us)
@@ -270,10 +276,11 @@ void ata_HandleIRQ(struct ata_Bus *bus)
          * Acknowledge interrupt (note that the DMA interrupt bit should be
          * cleared for all interrupt types)
          */
-        if (unit->au_DMAPort != 0)
+        if (unit->au_DMAPort != 0) {
             ATA_OUT(ATA_IN(dma_Status, unit->au_DMAPort) |
                 DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
-        status = ata_ReadStatus(bus);
+            status = ata_ReadStatus(bus);
+        }
 
         /*
          * ok, we have a routine to handle any form of transmission etc.
@@ -288,8 +295,9 @@ void ata_HandleIRQ(struct ata_Bus *bus)
         /*
          * if we got *here* then device is most likely not expected to have an irq.
          */
+        status = ata_ReadAltStatus(bus);
         bug("[ATA%02ld] IRQ: Checking busy flag: ", unit->au_UnitNum);
-
+	
         if (0 == (ATAF_BUSY & status))
         {
             bug("device ready. Dumping details:\n");
@@ -2245,7 +2253,9 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
         default:
             if (0 == (ata_ReadStatus(bus) & 0xfe))
                 return DEV_NONE;
-            BUS_OUT(ATA_EXECUTE_DIAG, ata_Command, port);
+            /* ATA_EXECUTE_DIAG is executed by both devices, do it only once */
+            if (bus->ab_Dev[0] == DEV_UNKNOWN || bus->ab_Dev[0] >= DEV_ATAPI)
+                BUS_OUT(ATA_EXECUTE_DIAG, ata_Command, port);
 
             ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
             while (ata_ReadStatus(bus) & ATAF_BUSY)
