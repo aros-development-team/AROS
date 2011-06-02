@@ -50,6 +50,7 @@ static void PrintED(const char *txt, struct OhciED *oed, struct PCIController *h
     KPrintF("...TD list:", hc, txt, oed);
     for (otd = oed->oed_FirstTD; otd; otd = otd->otd_Succ)
     	KPrintF(" 0x%p", otd);
+    RawPutChar('\n');
 }
 
 #else
