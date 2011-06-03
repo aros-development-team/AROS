@@ -333,6 +333,12 @@ AROS_LH2(int, DecodeLocationA,
 			    }
 			}
 		    }
+
+		    /* Symbol not found */
+		    *function = NULL;
+		    *funstart = NULL;
+		    *funend   = NULL;
+
 		    break;
 		}
 	    }
