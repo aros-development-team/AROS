@@ -25,14 +25,20 @@
 #include <proto/utility.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "identify_intern.h"
 #include "identify.h"
+#include "locale.h"
+
+#include <aros/debug.h>
 
 static CONST_STRPTR handle_version(TEXT *buffer, Tag tag);
 static CONST_STRPTR handle_size(TEXT *buffer, Tag tag);
 static CONST_STRPTR handle_freq(TEXT *buffer, Tag tag);
 static CONST_STRPTR handle_number(TEXT *buffer, Tag tag);
+static CONST_STRPTR handle_address(TEXT *buffer, Tag tag);
+static CONST_STRPTR handle_hex(TEXT *buffer, Tag tag);
 static CONST_STRPTR handle_avail(Tag tag, BOOL null4na);
 static CONST_STRPTR handle_notavail(BOOL null4na);
 
@@ -268,7 +274,20 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             break;
 
         case IDHW_CPU:
-            result = "68000"; // FIXME
+            #if defined __i386__
+            return "i386";
+            #elif defined __x86_64__
+            return "x86_64";
+            #elif defined __mc68000__
+            return _(MSG_HW_68000);
+            #elif defined __powerpc__
+            return "ppc";
+            #elif defined __arm__
+            return "arm";
+            #else
+            return "unknown";
+            #endif
+
             break;
 
         case IDHW_FPU:
@@ -296,11 +315,11 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             break;
 
         case IDHW_CHIPSET:
-            result = "OCS";
+            result = _(MSG_HW_OCS);
             break;
 
         case IDHW_GFXSYS:
-            result = "CyberGraphX";
+            result = _(MSG_HW_CYBERGRAPHX);
             break;
 
         case IDHW_CHIPRAM:
@@ -320,23 +339,23 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             break;
 
         case IDHW_AUDIOSYS:
-            result = "AHI";
+            result = _(MSG_HW_AHI);
             break;
 
         case IDHW_OSNR:
-            result = "AROS";
+            result = _(MSG_HW_OS_40);
             break;
 
         case IDHW_VMMCHIPRAM:
-            result = "0 Bytes";
+            result = "0";
             break;
 
         case IDHW_VMMFASTRAM:
-            result = "0 Bytes";
+            result = "0";
             break;
 
         case IDHW_VMMRAM:
-            result = "0 Bytes";
+            result = "0";
             break;
 
         case IDHW_PLNCHIPRAM:
@@ -352,11 +371,13 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             break;
 
         case IDHW_VBR:
-            result = "0x00000000";
+            IdentifyBase->hwb.buf_VBR[0] = '\0'; // not buffered
+            result = handle_address(IdentifyBase->hwb.buf_VBR, IDHW_VBR);
             break;
 
         case IDHW_LASTALERT:
-            result = "0x00000000";
+            IdentifyBase->hwb.buf_LastAlert[0] = '\0'; // not buffered
+            result = handle_hex(IdentifyBase->hwb.buf_LastAlert, IDHW_LASTALERT);
             break;
 
         case IDHW_VBLANKFREQ:
@@ -364,7 +385,7 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             break;
 
         case IDHW_POWERFREQ:
-            result = "0 Hz";
+            result = handle_freq(IdentifyBase->hwb.buf_PowerFreq, IDHW_POWERFREQ);
             break;
 
         case IDHW_ECLOCK:
@@ -392,11 +413,7 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             break;
 
         case IDHW_POWERPC:
-            #ifdef __powerpc__
-                result = "Found";
-            #else
-                result = handle_notavail(null4na);
-            #endif
+            result = handle_notavail(null4na);
             break;
 
         case IDHW_PPCCLOCK:
@@ -428,11 +445,11 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             ULONG num = IdHardwareNum(IDHW_RAMCAS, NULL);
             if (num == 2)
             {
-                result = "Double";
+                result = _(MSG_HW_RAMCAS_DOUBLE);
             }
             else
             {
-                result = "Normal";
+                result = _(MSG_HW_RAMCAS_NORMAL);
             }
             break;
         }
@@ -442,23 +459,23 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             break;
 
         case IDHW_TCPIP:
-            result = "AmiTCP/IP";
+            result = _(MSG_HW_TCPIP_AMITCP);
             break;
 
         case IDHW_PPCOS:
-            result = "None";
+            result = _(MSG_HW_PPCOS_NONE);
             break;
 
         case IDHW_AGNUS:
-            result = "None";
+            result = _(MSG_HW_AGNUS_NONE);
             break;
 
         case IDHW_AGNUSMODE:
-            result = "None";
+            result = _(MSG_HW_AMODE_NONE);
             break;
 
         case IDHW_DENISE:
-            result = "None";
+            result = _(MSG_HW_DENISE_NONE);
             break;
 
         case IDHW_DENISEREV:
@@ -488,11 +505,11 @@ static CONST_STRPTR handle_version(TEXT *buffer, Tag tag)
         {
             ULONG version = num & 0xffff;
             ULONG revision = num >> 16;
-            snprintf(buffer, STRBUFSIZE, "V%u.%u", version, revision);
+            snprintf(buffer, STRBUFSIZE, _(MSG_HW_VERSION), version, revision);
         }
         else
         {
-            sprintf(buffer, "N/A");
+            strlcpy(buffer, _(MSG_HW_NOVERSION), STRBUFSIZE);
         }
     }
     return result;
@@ -501,27 +518,31 @@ static CONST_STRPTR handle_version(TEXT *buffer, Tag tag)
 static CONST_STRPTR handle_size(TEXT *buffer, Tag tag)
 {
     CONST_STRPTR result = buffer;
-    STRPTR unit = "";
+    CONST_STRPTR format;
 
     if (*buffer == '\0')
     {
         UQUAD num = IdHardwareNum(tag, NULL);
-        if (num > 1024 * 1024 * 1024)
+        if (num < 1000)
         {
-            num = num / 1024 / 1024 / 1024;
-            unit = "GB";
+            format = _(MSG_BYTE);
         }
-        else if (num > 1024 * 1024)
+        else if (num < 1000 * 1000)
+        {
+            num /= 1024;
+            format = _(MSG_KBYTE);
+        }
+        else if (num < 1000 * 1000 * 1000)
         {
             num = num / 1024 / 1024;
-            unit = "MB";
+            format = _(MSG_MBYTE);
         }
-        else if (num > 1024)
+        else
         {
-            num = num / 1024;
-            unit = "KB";
+            num = num / 1024 / 1024 / 1024;
+            format = _(MSG_GBYTE);
         }
-        snprintf(buffer, STRBUFSIZE, "%lu %s", (long unsigned int)num, unit);
+        snprintf(buffer, STRBUFSIZE, format, (long unsigned int)num, '0');
     }
     return result;
 }
@@ -552,12 +573,38 @@ static CONST_STRPTR handle_number(TEXT *buffer, Tag tag)
     return result;
 }
 
+static CONST_STRPTR handle_address(TEXT *buffer, Tag tag)
+{
+    CONST_STRPTR result = buffer;
+    if (*buffer == '\0')
+    {
+        ULONG num = IdHardwareNum(tag, NULL);
+        {
+            snprintf(buffer, STRBUFSIZE, "0x%08x", num);
+        }
+    }
+    return result;
+}
+
+static CONST_STRPTR handle_hex(TEXT *buffer, Tag tag)
+{
+    CONST_STRPTR result = buffer;
+    if (*buffer == '\0')
+    {
+        ULONG num = IdHardwareNum(tag, NULL);
+        {
+            snprintf(buffer, STRBUFSIZE, "%08x", num);
+        }
+    }
+    return result;
+}
+
 static CONST_STRPTR handle_avail(Tag tag, BOOL null4na)
 {
     ULONG num = IdHardwareNum(tag, NULL);
     if (num)
     {
-        return "Found";
+        return _(MSG_HW_FOUND);
     }
     else
     {
@@ -568,7 +615,7 @@ static CONST_STRPTR handle_avail(Tag tag, BOOL null4na)
 static CONST_STRPTR handle_notavail(BOOL null4na)
 {
     if (null4na == FALSE)
-        return "None";
+        return _(MSG_HW_NONE);
     else
         return NULL;
 }

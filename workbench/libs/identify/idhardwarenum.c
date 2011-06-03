@@ -209,8 +209,8 @@
         None yet.
 
     RESULT
-        Result        -- (ULONG) Numerical result containing the desired
-                information.
+        Result -- (ULONG) Numerical result containing the desired
+                  information.
 
     NOTES
         Some results are nonsense on AROS.
@@ -252,8 +252,19 @@
             return IDSYS_AROS;
 
         case IDHW_CPU:
-            return IDCPU_68000; // FIXME: original identify.library assumes
-                                // there's always a X68.
+            #if defined __i386__
+            return IDCPU_i386;
+            #elif defined __x86_64__
+            return IDCPU_x86_64;
+            #elif defined __mc68000__
+            return IDCPU_68000;
+            #elif defined __powerpc__
+            return IDCPU_ppc;
+            #elif defined __arm__
+            return IDCPU_arm;
+            #else
+            return IDCPU_unknown;
+            #endif
 
         case IDHW_FPU:
             return IDFPU_NONE;
@@ -281,7 +292,7 @@
                 (((struct Library *)SysBase)->lib_Revision << 16);
 
         case IDHW_WBVER:
-            return 0;
+            return 40; // i.e. OS3.1
 
         case IDHW_ROMSIZE:
         {
@@ -312,7 +323,7 @@
             return IDAOS_AHI;
 
         case IDHW_OSNR:
-            return IDOS_UNKNOWN;
+            return IDOS_3_1;
 
         case IDHW_VMMCHIPRAM:
             return 0;
@@ -336,7 +347,7 @@
             return 0;
 
         case IDHW_LASTALERT:
-            return -1;
+            return SysBase->LastAlert[0];
 
         case IDHW_VBLANKFREQ:
             return SysBase->VBlankFrequency;
@@ -370,11 +381,7 @@
             return GfxBase->ChunkyToPlanarPtr ? FALSE : TRUE;
 
         case IDHW_POWERPC:
-            #ifdef __powerpc__
-                return IDPPC_OTHER;
-            #else
-                return IDPPC_NONE;
-            #endif
+            return IDPPC_NONE;
 
         case IDHW_PPCCLOCK:
             return 0;
@@ -399,15 +406,15 @@
 
         case IDHW_RAMCAS:
             if (GfxBase->MemType & 2)
-                return 2;
+                return IDCAS_DOUBLE;
             else
-                return 1;
+                return IDCAS_NORMAL;
 
         case IDHW_RAMBANDWIDTH:
             return 0;
 
         case IDHW_TCPIP:
-            return IDTCP_AMITCP; // FIXME: AROSTCP ?
+            return IDTCP_AMITCP;
 
         case IDHW_PPCOS:
             return IDPOS_NONE;
@@ -423,6 +430,30 @@
 
         case IDHW_DENISEREV:
             return -1;
+
+        case IDHW_BOINGBAG:
+            return 0;
+
+        case IDHW_EMULATED:
+            return 0;
+
+        case IDHW_XLVERSION:
+            return 0;
+
+        case IDHW_HOSTOS:
+            return 0;
+
+        case IDHW_HOSTVERS:
+            return 0;
+
+        case IDHW_HOSTMACHINE:
+            return 0;
+
+        case IDHW_HOSTCPU:
+            return 0;
+
+        case IDHW_HOSTSPEED:
+            return 0;
     }
 
     return 0;
