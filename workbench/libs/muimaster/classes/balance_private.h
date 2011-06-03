@@ -1,6 +1,10 @@
 #ifndef _BALANCE_PRIVATE_H_
 #define _BALANCE_PRIVATE_H_
 
+#include <exec/types.h>
+#include <intuition/classusr.h>
+#include <libraries/mui.h>
+
 typedef enum
 {
     NOT_CLICKED,

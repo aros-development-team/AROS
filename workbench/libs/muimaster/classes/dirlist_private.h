@@ -1,6 +1,10 @@
 #ifndef _DIRLIST_PRIVATE_H_
 #define _DIRLIST_PRIVATE_H_
 
+#include <exec/types.h>
+#include <utility/hooks.h>
+#include <dos/dos.h>
+
 struct Dirlist_DATA
 {
     struct Hook construct_hook;

@@ -1,6 +1,8 @@
 #ifndef _RADIO_PRIVATE_H_
 #define _RADIO_PRIVATE_H_
 
+#include <intuition/classusr.h>
+
 /*** Instance data **********************************************************/
 struct Radio_DATA
 {

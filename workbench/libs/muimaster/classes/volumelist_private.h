@@ -1,6 +1,8 @@
 #ifndef _VOLUMELIST_PRIVATE_H_
 #define _VOLUMELIST_PRIVATE_H_
 
+#include <utility/hooks.h>
+
 struct Volumelist_DATA
 {
     struct Hook construct_hook;

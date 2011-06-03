@@ -1,6 +1,10 @@
 #ifndef _SCROLLGROUP_PRIVATE_H_
 #define _SCROLLGROUP_PRIVATE_H_
 
+#include <exec/types.h>
+#include <intuition/classusr.h>
+#include <utility/hooks.h>
+
 /*** Instance data **********************************************************/
 struct Scrollgroup_DATA
 {
