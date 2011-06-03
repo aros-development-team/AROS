@@ -98,11 +98,11 @@ static inline int *__get_h_errno_ptr(struct Library *SocketBase)
 {
     int *ptr;
     struct TagItem tags[] = {
-    	{SBTM_GETVAL(SBTC_HERRNOLONGPTR), &ptr},
+    	{SBTM_GETVAL(SBTC_HERRNOLONGPTR), (STACKIPTR)&ptr},
     	{TAG_DONE			, 0   }
     };
 
-    SocketBaseTagList(&tags);
+    SocketBaseTagList(tags);
     return ptr;
 }
 
