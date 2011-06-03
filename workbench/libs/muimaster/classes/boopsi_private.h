@@ -1,6 +1,10 @@
 #ifndef _BOOPSI_PRIVATE_H_
 #define _BOOPSI_PRIVATE_H_
 
+#include <exec/types.h>
+#include <intuition/classusr.h>
+#include <libraries/mui.h>
+
 /*** Instance data **********************************************************/
 struct Boopsi_DATA
 {

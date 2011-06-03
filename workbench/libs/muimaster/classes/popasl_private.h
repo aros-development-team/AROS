@@ -1,6 +1,10 @@
 #ifndef _POPASL_PRIVATE_H_
 #define _POPASL_PRIVATE_H_
 
+#include <exec/types.h>
+#include <utility/hooks.h>
+#include <utility/tagitem.h>
+
 /*** Instance data **********************************************************/
 struct Popasl_DATA
 {

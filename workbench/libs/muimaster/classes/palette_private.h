@@ -1,6 +1,9 @@
 #ifndef _PALETTE_PRIVATE_H_
 #define _PALETTE_PRIVATE_H_
 
+#include <utility/hooks.h>
+#include <libraries/mui.h>
+
 /*** Instance data **********************************************************/
 struct MUI_PaletteData
 {
