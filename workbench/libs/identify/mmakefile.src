@@ -10,7 +10,7 @@ FILES := library \
     idhardware  \
     idhardwarenum  \
     idhardwareupdate \
-	locale
+    locale
 
 #MM- workbench-libs-identify : \
 #MM     workbench-libs-identify-lib \
