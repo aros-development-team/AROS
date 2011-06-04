@@ -33,7 +33,7 @@ static inline OOP_MethodID HIDD_Gfx_GetMethodBase(OOP_Object *obj)
 
     if (!GfxMethodBase)
     {
-        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+        struct Library *OOPBase = (struct Library *)OOP_OCLASS(obj)->OOPBasePtr;
 
 	GfxMethodBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
     }
@@ -560,7 +560,7 @@ static inline OOP_MethodID HIDD_BitMap_GetMethodBase(OOP_Object *obj)
 
     if (!BitMapMethodBase)
     {
-        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+        struct Library *OOPBase = (struct Library *)OOP_OCLASS(obj)->OOPBasePtr;
 
 	BitMapMethodBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
     }
@@ -1961,7 +1961,7 @@ static inline OOP_MethodID HIDD_GC_GetMethodBase(OOP_Object *obj)
 
     if (!GCMethodBase)
     {
-        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+        struct Library *OOPBase = (struct Library *)OOP_OCLASS(obj)->OOPBasePtr;
 
 	GCMethodBase = OOP_GetMethodID(IID_Hidd_GC, 0);
     }
@@ -2010,7 +2010,7 @@ static inline OOP_MethodID HIDD_PlanarBM_GetMethodBase(OOP_Object *obj)
 
     if (!PlanarBMMethodBase)
     {
-        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+        struct Library *OOPBase = (struct Library *)OOP_OCLASS(obj)->OOPBasePtr;
 
 	PlanarBMMethodBase = OOP_GetMethodID(IID_Hidd_PlanarBM, 0);
     }
@@ -2059,7 +2059,7 @@ static inline OOP_MethodID HIDD_ColorMap_GetMethodBase(OOP_Object *obj)
 
     if (!ColorMapMethodBase)
     {
-        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+        struct Library *OOPBase = (struct Library *)OOP_OCLASS(obj)->OOPBasePtr;
 
 	ColorMapMethodBase = OOP_GetMethodID(IID_Hidd_ColorMap, 0);
     }
