@@ -1,12 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FUNCS := meminfo \
-	 readdata \
-	 setprotection \
-	 writedata \
-	 deletedata \
-	 getitemlist
+FUNCS := meminfonvd \
+	 readnvddata \
+	 setnvdprotection \
+	 writenvddata \
+	 deletenvddata \
+	 getnvditemlist
 
 #MM workbench-libs-nvdisk-includes : \
 #MM     kernel-exec-includes \

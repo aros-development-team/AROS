@@ -16,7 +16,7 @@
 #include <libraries/nonvolatile.h>
 
 
-AROS_LH1(BOOL, MemInfo,
+AROS_LH1(BOOL, MemInfoNVD,
 
 /*  SYNOPSIS */
 

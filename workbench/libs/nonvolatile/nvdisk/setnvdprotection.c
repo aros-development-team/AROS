@@ -16,7 +16,7 @@
 #include <libraries/nonvolatile.h>
 
 
-AROS_LH3(BOOL, SetProtection,
+AROS_LH3(BOOL, SetNVDProtection,
 
 /*  SYNOPSIS */
 
