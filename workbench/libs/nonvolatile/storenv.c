@@ -100,7 +100,7 @@ AROS_LH5(LONG, StoreNV,
 
     //    kprintf("Calling writedata");
     
-    retval = WriteData(appName, itemName, data, length*10);
+    retval = WriteNVDData(appName, itemName, data, length*10);
 
     if(killRequesters)
 	me->pr_WindowPtr = oldReq;
