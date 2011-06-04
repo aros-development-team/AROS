@@ -151,10 +151,6 @@ AMA_WindowID: A windowID to use when I alloc AMA_Buffer for you if
 /* #define AMA_Buffer              (AMA_Dummy + 0x0042) */
 /* #define AMA_WindowID            (AMA_Dummy + 0x0043) */
 
-#ifdef __cplusplus
-}
-#endif
-
 /**********************************************************************/
 /*****                  AROS/Mesa API Functions                   *****/
 /**********************************************************************/
@@ -168,4 +164,9 @@ GLAPI void                  GLAPIENTRY AROSMesaMakeCurrent(AROSMesaContext amesa
 GLAPI void                  GLAPIENTRY AROSMesaSwapBuffers(AROSMesaContext amesa);
 GLAPI AROSMesaProc          GLAPIENTRY AROSMesaGetProcAddress(const GLubyte * procname);
 GLAPI AROSMesaContext       GLAPIENTRY AROSMesaGetCurrentContext();
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* AROSMESA_H */
