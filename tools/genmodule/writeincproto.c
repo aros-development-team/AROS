@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Function to write proto/modulename.h. Part of genmodule.
 */
@@ -8,7 +8,7 @@
 void writeincproto(struct config *cfg)
 {
     FILE *out;
-    char line[256], *banner;
+    char line[256], define[256], *banner;
     struct linelist *linelistit;
     
     snprintf(line, 255, "%s/proto/%s.h", cfg->gendir, cfg->modulename);
@@ -49,6 +49,17 @@ void writeincproto(struct config *cfg)
     );
     freeBanner(banner);
 
+    // define name must not start with a digit
+    // this solves a problem with proto/8svx.h
+    if (isdigit(cfg->modulenameupper[0]))
+    {
+	snprintf(define, sizeof define, "X%s", cfg->modulenameupper);
+    }
+    else
+    {
+	strncpy(define, cfg->modulenameupper, sizeof define);
+    }
+
     fprintf(out,
 	    "#if !defined(NOLIBINLINE) && !defined(%s_NOLIBINLINE)\n"
 	    "#   include <inline/%s.h>\n"
@@ -57,8 +68,8 @@ void writeincproto(struct config *cfg)
 	    "#endif\n"
 	    "\n"
 	    "#endif /* PROTO_%s_H */\n",
-	    cfg->modulenameupper, cfg->modulename,
-	    cfg->modulenameupper, cfg->modulename,
+	    define, cfg->modulename,
+	    define, cfg->modulename,
             cfg->modulenameupper
     );
     fclose(out);
