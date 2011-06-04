@@ -6644,7 +6644,7 @@ rm -f conftest.mmap conftest.txt
 
 
 
-aros_config_cflags="-Wall -Werror-implicit-function-declaration -Wno-uninitialized -Wno-parentheses"
+aros_config_cflags="-Wall -Werror-implicit-function-declaration -Wno-uninitialized"
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
 

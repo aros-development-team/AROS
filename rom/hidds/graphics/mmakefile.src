@@ -10,7 +10,7 @@ FILES       := graphics_init GraphicsClass BM_Class CM_Class GC_Class  \
 	       pixfmt sync rgbconv
 
 USER_CFLAGS      := -DAROS_USE_OOP
-USER_CFLAGS      += $(PARANOIA_CFLAGS)
+USER_CFLAGS      += $(PARANOIA_CFLAGS) -Wno-parentheses
 
 %build_module mmake=kernel-hidd-graphics \
   modname=graphics modtype=hidd \
