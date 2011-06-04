@@ -34,16 +34,16 @@
  *
  */
 
-#include <sys/types/uid_t.h>
-#include <sys/types/gid_t.h>
-#include <sys/types/pid_t.h>
+#include <aros/types/uid_t.h>
+#include <aros/types/gid_t.h>
+#include <aros/types/pid_t.h>
 
 #ifndef _MODE_T
 #define _MODE_T unsigned short 
 typedef _MODE_T mode_t;
 #endif
 
-#include <sys/types/time_t.h>
+#include <aros/types/time_t.h>
 
 #ifndef NULL
 #define	NULL 0L
