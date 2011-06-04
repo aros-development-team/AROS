@@ -18,7 +18,7 @@
 #include <exec/memory.h>
 
 
-AROS_LH2(APTR, ReadData,
+AROS_LH2(APTR, ReadNVDData,
 
 /*  SYNOPSIS */
 

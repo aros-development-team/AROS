@@ -20,7 +20,7 @@
 
 static int cxbug; /* For cxref bug */
 
-AROS_LH2(BOOL, DeleteData,
+AROS_LH2(BOOL, DeleteNVDData,
 
 /*  SYNOPSIS */
 

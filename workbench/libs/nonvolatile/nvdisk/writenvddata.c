@@ -16,7 +16,7 @@
 #include <libraries/nonvolatile.h>
 
 
-AROS_LH4(LONG, WriteData,
+AROS_LH4(LONG, WriteNVDData,
 
 /*  SYNOPSIS */
 

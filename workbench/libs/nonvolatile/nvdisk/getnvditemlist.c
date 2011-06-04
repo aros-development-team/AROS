@@ -25,7 +25,7 @@
 void FreeAll(struct MinList *ml, struct Library *nvdBase);
 
 
-AROS_LH1(struct MinList *, GetItemList,
+AROS_LH1(struct MinList *, GetNVDItemList,
 
 /*  SYNOPSIS */
 
