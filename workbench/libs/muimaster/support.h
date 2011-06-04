@@ -34,6 +34,10 @@
 
 struct MUI_RenderInfo;
 struct IntuiMessage;
+struct Region;
+struct Rectangle;
+struct Object;
+struct Library;
 
 #define mui_alloc(x) AllocVec(x,MEMF_CLEAR)
 #define mui_alloc_struct(x) ((x *)AllocVec(sizeof(x),MEMF_CLEAR))
