@@ -21,7 +21,7 @@ USER_LDFLAGS := -L$(AROS_DEVELOPMENT)/lib
 EXEDIR := $(AROS_TESTS)/cplusplus
 OBJDIR := $(GENDIR)/$(CURDIR)
 
-FILES := exception
+FILES := exception headertest
 
 EXES := $(addprefix $(EXEDIR)/,$(notdir $(FILES)))
 OBJS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(FILES))))
