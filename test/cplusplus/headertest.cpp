@@ -645,7 +645,11 @@
 #include <limits.h>
 #include <linklibs/coolimages.h>
 #include <locale.h>
-#include <math.h>
+
+// There is an incompatibility between ANSI math and AROS math.
+// Disabled for now to get rid of a lot of compiler errors.
+//#include <math.h>
+
 #include <memory.h>
 
 #include <midi/camd.h>
