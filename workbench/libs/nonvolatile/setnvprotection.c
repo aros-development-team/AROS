@@ -82,7 +82,7 @@ AROS_LH4(BOOL, SetNVProtection,
     if(killRequesters)
 	me->pr_WindowPtr = (APTR)-1;
 
-    result = SetProtection(appName, itemName, mask);
+    result = SetNVDProtection(appName, itemName, mask);
 
     if(killRequesters)
 	me->pr_WindowPtr = oldReq;

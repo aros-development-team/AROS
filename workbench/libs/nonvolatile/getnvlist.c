@@ -78,7 +78,7 @@ AROS_LH2(struct MinList *, GetNVList,
     if(killRequesters)
 	me->pr_WindowPtr = (APTR)-1;
 
-    list = GetItemList(appName);
+    list = GetNVDItemList(appName);
 
     if(killRequesters)
 	me->pr_WindowPtr = oldReq;

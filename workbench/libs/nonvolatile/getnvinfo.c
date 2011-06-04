@@ -66,7 +66,7 @@ AROS_LH1(struct NVInfo *, GetNVInfo,
 	me->pr_WindowPtr = (APTR)-1;
 
     /* Try to get the information from the HIDD */
-    if(MemInfo(info))
+    if(MemInfoNVD(info))
     {
 	/* Round down to nearest 10 bytes */
 	info->nvi_MaxStorage  = (info->nvi_MaxStorage/10)*10;

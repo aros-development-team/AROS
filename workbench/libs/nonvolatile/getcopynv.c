@@ -73,7 +73,7 @@ AROS_LH3(APTR, GetCopyNV,
     if(killRequesters)
 	me->pr_WindowPtr = (APTR)-1;
 
-    result = ReadData(appName, itemName);
+    result = ReadNVDData(appName, itemName);
 
     if(killRequesters)
 	me->pr_WindowPtr = oldReq;

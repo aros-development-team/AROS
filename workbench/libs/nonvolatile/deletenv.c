@@ -85,7 +85,7 @@ AROS_LH3(BOOL, DeleteNV,
 
     D(bug("Calling DeleteData()\n"));
 
-    result = DeleteData(appName, itemName);
+    result = DeleteNVDData(appName, itemName);
 
     if(killRequesters)
 	me->pr_WindowPtr = oldReq;
