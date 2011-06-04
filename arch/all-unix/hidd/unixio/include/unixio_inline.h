@@ -23,7 +23,7 @@ static inline OOP_MethodID Hidd_UnixIO_GetMethodBase(OOP_Object *obj)
 
     if (!base)
     {
-        struct Library *OOPBase = OOP_OCLASS(obj)->OOPBasePtr;
+        struct Library *OOPBase = (struct Library *)OOP_OCLASS(obj)->OOPBasePtr;
 
     	base = OOP_GetMethodID(IID_Hidd_UnixIO, 0);
     }
@@ -40,7 +40,7 @@ static inline IPTR __inline_Hidd_UnixIO_Wait(OOP_MethodID base, OOP_Object *o, U
     p.um_Filedesc = fd;
     p.um_Mode	  = mode;
 
-    return OOP_DoMethod(o, &p.um_MethodID);
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
 
 #define Hidd_UnixIO_Wait(o, fd, mode) \
@@ -56,7 +56,7 @@ static inline int __inline_Hidd_UnixIO_OpenFile(OOP_MethodID base, OOP_Object *o
     p.um_Mode     = mode;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod(o, &p.um_MethodID);
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
 
 #define Hidd_UnixIO_OpenFile(o, filename, flags, mode, errno_ptr) \
@@ -70,7 +70,7 @@ static inline int __inline_Hidd_UnixIO_CloseFile(OOP_MethodID base, OOP_Object *
     p.um_FD 	  = (APTR)fd;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod(o, &p.um_MethodID);
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
 
 #define Hidd_UnixIO_CloseFile(o, fd, errno_ptr) \
@@ -86,7 +86,7 @@ static inline int __inline_Hidd_UnixIO_ReadFile(OOP_MethodID base, OOP_Object *o
     p.um_Count    = count;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod(o, &p.um_MethodID);
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
 
 #define Hidd_UnixIO_ReadFile(o, fd, buffer, count, errno_ptr) \
@@ -102,7 +102,7 @@ static inline int __inline_Hidd_UnixIO_WriteFile(OOP_MethodID base, OOP_Object *
     p.um_Count    = count;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod(o, &p.um_MethodID);
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
 
 #define Hidd_UnixIO_WriteFile(o, fd, buffer, count, errno_ptr) \
@@ -118,7 +118,7 @@ static inline int __inline_Hidd_UnixIO_IOControlFile(OOP_MethodID base, OOP_Obje
     p.um_Param    = param;
     p.um_ErrNoPtr = errno_ptr;
 
-    return OOP_DoMethod(o, &p.um_MethodID);
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
 
 #define Hidd_UnixIO_IOControlFile(o, fd, request, param, errno_ptr) \
@@ -131,7 +131,7 @@ static inline int __inline_Hidd_UnixIO_AddInterrupt(OOP_MethodID base, OOP_Objec
     p.um_MethodID = base + moHidd_UnixIO_AddInterrupt;
     p.um_Int	  = interrupt;
 
-    return OOP_DoMethod(o, &p.um_MethodID);
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
 
 #define Hidd_UnixIO_AddInterrupt(o, interrupt) \
@@ -144,7 +144,7 @@ static inline void __inline_Hidd_UnixIO_RemInterrupt(OOP_MethodID base, OOP_Obje
     p.um_MethodID = base + moHidd_UnixIO_RemInterrupt;
     p.um_Int	  = interrupt;
 
-    OOP_DoMethod(o, &p.um_MethodID);
+    OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
 
 #define Hidd_UnixIO_RemInterrupt(o, interrupt) \
@@ -158,7 +158,7 @@ static inline int __inline_Hidd_UnixIO_Poll(OOP_MethodID base, OOP_Object *o, in
     p.um_FD       = (APTR)fd;
     p.um_Mode     = mode;
 
-    return OOP_DoMethod(o, &p.um_MethodID);
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
 
 #define Hidd_UnixIO_Poll(o, fd, mode, errno_ptr) \
