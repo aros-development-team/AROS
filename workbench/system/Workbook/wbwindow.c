@@ -685,6 +685,7 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbWindow *my = INST_DATA(cl, obj);
 
+    SetAttrs(my->Set, WBSA_MaxWidth, my->Window->Width - (my->Window->BorderLeft + my->Window->BorderRight));
     wbRedimension(cl, obj);
     BeginRefresh(my->Window);
     RefreshWindowFrame(my->Window);
