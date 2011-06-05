@@ -531,7 +531,7 @@ error:
     if (my->Path)
     	FreeVec(my->Path);
 
-    if (my->Lock == BNULL)
+    if (my->Lock != BNULL)
     	UnLock(my->Lock);
 
     DoSuperMethod(cl, obj, OM_DISPOSE, 0);
@@ -588,7 +588,7 @@ static IPTR WBWindowDispose(Class *cl, Object *obj, Msg msg)
     if (my->Path)
     	FreeVec(my->Path);
 
-    if (my->Lock)
+    if (my->Lock != BNULL)
     	UnLock(my->Lock);
 
     return DoSuperMethodA(cl, obj, msg);
@@ -731,11 +731,13 @@ static IPTR WBWindowMenuPick(Class *cl, Object *obj, struct wbwm_MenuPick *wbwmp
 
     switch (WBMENU_ITEM_ID(item)) {
     case WBMENU_ID(WBMENU_WN_OPEN_PARENT):
-    	lock = ParentDir(my->Lock);
-    	if (NameFromLock(lock, my->PathBuffer, sizeof(my->PathBuffer))) {
-    	    OpenWorkbenchObject(my->PathBuffer, TAG_END);
-    	}
-    	UnLock(lock);
+    	if (my->Lock != BNULL) {
+	    lock = ParentDir(my->Lock);
+	    if (NameFromLock(lock, my->PathBuffer, sizeof(my->PathBuffer))) {
+		OpenWorkbenchObject(my->PathBuffer, TAG_END);
+	    }
+	    UnLock(lock);
+	}
     	break;
     case WBMENU_ID(WBMENU_WB_SHELL):
     	NewCLI(wb, my->Lock);
