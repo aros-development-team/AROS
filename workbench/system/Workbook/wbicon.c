@@ -255,7 +255,7 @@ static IPTR wbIconOpen(Class *cl, Object *obj, Msg msg)
 
     struct TagItem tags[] = {
 	{ NP_Seglist,     (IPTR)wb->wb_OpenerSegList },
-	{ NP_CurrentDir,  (IPTR)my->Lock },
+	{ NP_CurrentDir,  (IPTR)DupLock(my->Lock) },
 	{ NP_Arguments,   (IPTR)my->File },
 	{ NP_FreeSeglist, FALSE },
 	{ TAG_END, 0 },
