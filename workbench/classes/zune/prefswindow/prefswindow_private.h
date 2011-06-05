@@ -9,6 +9,9 @@
     $Id$
 */
 
+#include <intuition/classusr.h>
+#include <libraries/locale.h>
+
 /*** Instance data **********************************************************/
 struct PrefsWindow_DATA
 {

@@ -9,6 +9,7 @@
     $Id$
 */
 
+#include <intuition/classusr.h>
 #include <libraries/locale.h>
 #include <libraries/asl.h>
 
