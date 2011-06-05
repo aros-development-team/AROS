@@ -512,6 +512,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     	}
     }
 
+    SetAttrs(my->Set, WBSA_MaxWidth, my->Window->Width - (my->Window->BorderLeft + my->Window->BorderRight));
     RefreshGadgets(my->Window->FirstGadget, my->Window, NULL);
 
     return rc;

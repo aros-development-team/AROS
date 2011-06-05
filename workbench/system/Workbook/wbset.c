@@ -26,8 +26,15 @@
 #include "workbook_intern.h"
 #include "classes.h"
 
+struct wbSetNode {
+    struct MinNode sn_Node;
+    Object        *sn_Object;      /* Gadget object */
+};
+
 struct wbSet {
-    LONG           NumItems;
+    WORD MaxWidth;
+    struct List FixedObjects;
+    struct List AutoObjects;
 };
 
 static void wbGABox(struct WorkbookBase *wb, Object *obj, struct IBox *box)
@@ -40,43 +47,210 @@ static void wbGABox(struct WorkbookBase *wb, Object *obj, struct IBox *box)
     box->Height = gadget->Height;
 }
 
-static IPTR WBSetAddMember(Class *cl, Object *obj, struct opMember *opm)
+static void rearrange(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbSet *my = INST_DATA(cl, obj);
-    struct IBox box, ibox;
-    Object *iobj = opm->opam_Object;
-    IPTR rc;
+    struct wbSetNode *node;
+    struct IBox sbox;
+    WORD CurrRight, CurrBottom;
     struct TagItem tags[3] = {
     	{ GA_Width, },
     	{ GA_Height, },
     	{ TAG_END, },
     };
 
-    wbGABox(wb, obj, &box);
-    wbGABox(wb, iobj, &ibox);
-
-    if (1 || ibox.Left == NO_ICON_POSITION ||
-    	ibox.Top == NO_ICON_POSITION) {
-
-    	ibox.Top  = (my->NumItems / 8) * 80;
-    	ibox.Left = (my->NumItems % 8) * 80;
-
-    	SetAttrs(iobj, GA_Left, ibox.Left, GA_Top, ibox.Top, TAG_END);
+    /* First, remove all autoobjects from the superclass */
+    ForeachNode(&my->AutoObjects, node) {
+    	DoSuperMethod(cl, obj, OM_REMMEMBER, node->sn_Object);
     }
 
-    D(bug("My  box: %dx%d @%d,%d\n", box.Width, box.Height, box.Left, box.Top));
-    D(bug("My ibox: %dx%d @%d,%d\n", ibox.Width, ibox.Height, ibox.Left, ibox.Top));
+    /* Find the set size with just the fixed objects */
+    wbGABox(wb, obj, &sbox);
 
-    my->NumItems++;
-    rc = DoSuperMethodA(cl, obj, (Msg)opm);
+    /* Set the start of the auto area to be
+     * immediately below the fixed objects.
+     */
+    CurrRight = 0;
+    CurrBottom = sbox.Top + sbox.Height;
 
-    /* Notify when our size changes */
+    /* For each item in the auto list, add it to the right */
+    ForeachNode(&my->AutoObjects, node) {
+    	Object *iobj = node->sn_Object;
+    	struct IBox ibox;
+
+    	wbGABox(wb, iobj, &ibox);
+
+    	ibox.Top  = CurrBottom;
+    	ibox.Left = CurrRight;
+    	CurrRight += ibox.Width;
+
+    	if (CurrRight > my->MaxWidth) {
+    	    wbGABox(wb, obj, &sbox);
+    	    CurrRight = 0;
+    	    CurrBottom = sbox.Top + sbox.Height;
+    	}
+
+    	D(bug("New icon position: @%d,%d\n", ibox.Left, ibox.Top));
+
+    	SetAttrs(iobj, GA_Left, ibox.Left, GA_Top, ibox.Top, TAG_END);
+
+    	DoSuperMethod(cl, obj, OM_ADDMEMBER, iobj);
+    }
+
+    /* Notify that our size changed */
     GetAttr(GA_Width, obj, &tags[0].ti_Data);
     GetAttr(GA_Height, obj, &tags[1].ti_Data);
     DoMethod(obj, OM_NOTIFY, tags, NULL, 0);
+}
+
+// OM_ADDMEMBER
+static IPTR WBSetAddMember(Class *cl, Object *obj, struct opMember *opm)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    Object *iobj = opm->opam_Object;
+    struct IBox ibox;
+    struct wbSet *my = INST_DATA(cl, obj);
+    struct wbSetNode *node;
+    IPTR rc;
+
+    node = AllocMem(sizeof(*node), MEMF_ANY);
+    node->sn_Object = iobj;
+
+    /* Get bounding box of item to add */
+    wbGABox(wb, iobj, &ibox);
+
+    if (ibox.Left == ~0 ||
+    	ibox.Top == ~0) {
+    	AddHead(&my->AutoObjects, (struct Node *)&node->sn_Node);
+    } else {
+    	AddHead(&my->FixedObjects, (struct Node *)&node->sn_Node);
+    }
+
+    rc = DoSuperMethodA(cl, obj, (Msg)opm);
+
+    /* Recalculate the set's positions */
+    rearrange(cl, obj);
 
     return rc;
+}
+
+static IPTR WBSetRemMember(Class *cl, Object *obj, struct opMember *opm)
+{
+    Object *iobj = opm->opam_Object;
+    struct wbSet *my = INST_DATA(cl, obj);
+    struct wbSetNode *node, *next;
+    IPTR rc;
+
+    rc = DoSuperMethodA(cl, obj, (Msg)opm);
+
+    ForeachNodeSafe(&my->FixedObjects, node, next) {
+    	if (node->sn_Object == iobj) {
+    	    Remove((struct Node *)node);
+    	    FreeMem(node, sizeof(*node));
+    	}
+    }
+
+    ForeachNodeSafe(&my->AutoObjects, node, next) {
+    	if (node->sn_Object == iobj) {
+    	    Remove((struct Node *)node);
+    	    FreeMem(node, sizeof(*node));
+    	}
+    }
+
+    /* Recalculate the set's positions */
+    rearrange(cl, obj);
+
+    return rc;
+}
+
+// OM_NEW
+static IPTR WBSetNew(Class *cl, Object *obj, struct opSet *ops)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbSet *my;
+    IPTR rc;
+
+    rc = DoSuperMethodA(cl, obj, (Msg)ops);
+    if (rc == 0)
+    	return 0;
+
+    my = INST_DATA(cl, rc);
+
+    my->MaxWidth = (WORD)GetTagData(WBSA_MaxWidth, 0, ops->ops_AttrList);
+
+    NEWLIST(&my->FixedObjects);
+    NEWLIST(&my->AutoObjects);
+
+    return rc;
+}
+
+static IPTR WBSetGet(Class *cl, Object *obj, struct opGet *opg)
+{
+    struct wbSet *my = INST_DATA(cl, obj);
+    IPTR rc = TRUE;
+
+    switch (opg->opg_AttrID) {
+    case WBSA_MaxWidth:
+    	*(opg->opg_Storage) = (IPTR)my->MaxWidth;
+    	break;
+    default:
+    	rc = DoSuperMethodA(cl, obj, (Msg)opg);
+    	break;
+    }
+
+    return rc;
+}
+
+// OM_SET/OM_UPDATE
+static IPTR WBSetUpdate(Class *cl, Object *obj, struct opUpdate *opu)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbSet *my = INST_DATA(cl, obj);
+    IPTR rc;
+    struct TagItem *tag;
+    const struct TagItem *tstate;
+
+    rc = DoSuperMethodA(cl, obj, (Msg)opu);
+
+    if ((opu->MethodID == OM_UPDATE) && (opu->opu_Flags & OPUF_INTERIM))
+    	return rc;
+
+    tstate = opu->opu_AttrList;
+    while ((tag = NextTagItem(&tstate))) {
+    	switch (tag->ti_Tag) {
+    	case WBSA_MaxWidth:
+    	    my->MaxWidth = (WORD)tag->ti_Data;
+    	    rearrange(cl, obj);
+    	    rc |= TRUE;
+    	default:
+    	    break;
+    	}
+    }
+
+    return rc;
+}
+
+
+
+// OM_DISPOSE
+static IPTR WBSetDispose(Class *cl, Object *obj, Msg msg)
+{
+    struct wbSet *my = INST_DATA(cl, obj);
+    struct wbSetNode *node, *next;
+
+    /* Remove all the nodes */
+    ForeachNodeSafe(&my->FixedObjects, node, next) {
+    	Remove((struct Node *)node);
+    	FreeMem(node, sizeof(*node));
+    }
+
+    ForeachNodeSafe(&my->AutoObjects, node, next) {
+    	Remove((struct Node *)node);
+    	FreeMem(node, sizeof(*node));
+    }
+
+    return DoSuperMethodA(cl, obj, msg);
 }
 
 // GM_RENDER
@@ -101,7 +275,13 @@ static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
     IPTR rc = 0;
 
     switch (msg->MethodID) {
+    case OM_NEW:        rc = WBSetNew(cl, obj, (APTR)msg); break;
+    case OM_DISPOSE:    rc = WBSetDispose(cl, obj, (APTR)msg); break;
+    case OM_GET:        rc = WBSetGet(cl, obj, (APTR)msg); break;
+    case OM_SET:        rc = WBSetUpdate(cl, obj, (APTR)msg); break;
+    case OM_UPDATE:     rc = WBSetUpdate(cl, obj, (APTR)msg); break;
     case OM_ADDMEMBER:  rc = WBSetAddMember(cl, obj, (APTR)msg); break;
+    case OM_REMMEMBER:  rc = WBSetRemMember(cl, obj, (APTR)msg); break;
     case GM_RENDER: rc = WBSetRender(cl, obj, (APTR)msg); break;
     default:        rc = DoSuperMethodA(cl, obj, msg); break;
     }
