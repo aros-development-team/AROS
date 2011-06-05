@@ -97,6 +97,7 @@ Class *WBVirtual_MakeClass(struct WorkbookBase *wb);
 
 /* Attributes */
 #define WBSA_Dummy               (TAG_USER | 0x40430000)
+#define WBSA_MaxWidth            (WBSA_Dummy + 1)
 
 /* Methods */
 
