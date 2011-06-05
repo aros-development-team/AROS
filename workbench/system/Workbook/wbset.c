@@ -71,7 +71,7 @@ static void rearrange(Class *cl, Object *obj)
     /* Set the start of the auto area to be
      * immediately below the fixed objects.
      */
-    CurrRight = 0;
+    CurrRight = sbox.Left;
     CurrBottom = sbox.Top + sbox.Height;
 
     /* For each item in the auto list, add it to the right */
@@ -81,15 +81,16 @@ static void rearrange(Class *cl, Object *obj)
 
     	wbGABox(wb, iobj, &ibox);
 
-    	ibox.Top  = CurrBottom;
-    	ibox.Left = CurrRight;
-    	CurrRight += ibox.Width;
-
-    	if (CurrRight > my->MaxWidth) {
+    	if ((CurrRight + ibox.Width) < my->MaxWidth) {
+    	    ibox.Left = CurrRight;
+    	    CurrRight += ibox.Width;
+    	} else {
     	    wbGABox(wb, obj, &sbox);
-    	    CurrRight = 0;
+    	    ibox.Left = sbox.Left;
+    	    CurrRight = sbox.Left;
     	    CurrBottom = sbox.Top + sbox.Height;
     	}
+    	ibox.Top  = CurrBottom;
 
     	D(bug("New icon position: @%d,%d\n", ibox.Left, ibox.Top));
 
