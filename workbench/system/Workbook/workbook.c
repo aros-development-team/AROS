@@ -66,6 +66,7 @@ exit:
 }
 
 #undef WorkbenchBase
+#undef DOSBase
 
 AROS_ENTRY(LONG, wbOpener,
 	AROS_UFHA(STRPTR, argstr, A0),
@@ -75,10 +76,24 @@ AROS_ENTRY(LONG, wbOpener,
     AROS_USERFUNC_INIT
 
     APTR WorkbenchBase = OpenLibrary("workbench.library", 0);
+    APTR DOSBase = OpenLibrary("dos.library", 0);
 
-    if (WorkbenchBase) {
-	OpenWorkbenchObject(argstr, TAG_END);
+    if (WorkbenchBase && DOSBase) {
+    	/* Convert from relative to absolute path */
+    	BPTR lock = Lock(argstr, SHARED_LOCK);
+    	TEXT buffer[1024];
+    	BOOL ok;
+
+    	if (lock != BNULL) {
+    	    ok = NameFromLock(lock, buffer, sizeof(buffer)-1);
+    	    UnLock(lock);
+
+    	    if (ok)
+    	    	OpenWorkbenchObject(buffer, TAG_END);
+    	}
     }
+
+    CloseLibrary(DOSBase);
     CloseLibrary(WorkbenchBase);
 
     return 0;
@@ -90,6 +105,7 @@ AROS_ENTRY(LONG, wbOpener,
 ULONG WorkbookMain(void)
 {
     struct WorkbookBase *wb;
+    APTR DOSBase;
     int rc = RETURN_ERROR;
 
     wb = NULL;
@@ -101,6 +117,8 @@ ULONG WorkbookMain(void)
     wb->wb_DOSBase = OpenLibrary("dos.library", 0);
     if (wb->wb_DOSBase == NULL)
     	goto error;
+
+    DOSBase = wb->wb_DOSBase;
 
     wb->wb_IntuitionBase = OpenLibrary("intuition.library",0);
     if (wb->wb_IntuitionBase == NULL)
