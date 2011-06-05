@@ -337,6 +337,16 @@ const struct TagItem set2window[] = {
 	{ TAG_END, 0 },
 };
 
+static void wbFixBorders(struct Window *win)
+{
+    int bb, br;
+
+    bb = 16 - win->BorderBottom;
+    br = 16 - win->BorderRight;
+
+    win->BorderBottom += bb;
+    win->BorderRight += br;
+}
 
 static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 {
@@ -396,6 +406,13 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     } else {
     	struct DiskObject *icon;
     	struct NewWindow *nwin = NULL;
+    	struct TagItem extra[] = {
+    	    { WA_Left, 64 },
+    	    { WA_Top, 64 },
+    	    { WA_Width, 200, },
+    	    { WA_Height, 150, },
+    	    { TAG_MORE, (IPTR)ops->ops_AttrList },
+    	};
 
     	icon = GetDiskObjectNew(my->Path);
     	if (icon == NULL)
@@ -404,6 +421,8 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     	if (icon->do_DrawerData) {
     	    nwin = &icon->do_DrawerData->dd_NewWindow;
     	    D(bug("%s: NewWindow %p\n", __func__, nwin));
+    	    extra[0].ti_Tag = TAG_MORE;
+    	    extra[0].ti_Data = (IPTR)ops->ops_AttrList;
     	}
 
     	idcmp |= IDCMP_NEWSIZE | IDCMP_CLOSEWINDOW;
@@ -425,7 +444,10 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     			WA_NewLookMenus, TRUE,
     			WA_AutoAdjust, TRUE,
     			WA_PubScreen, NULL,
-    			TAG_MORE, ops->ops_AttrList );
+    			TAG_MORE, (IPTR)&extra[0] );
+
+    	if (my->Window)
+    	    wbFixBorders(my->Window);
 
     	FreeDiskObject(icon);
     }
