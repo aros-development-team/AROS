@@ -54,10 +54,10 @@ void wbIcon_Update(Class *cl, Object *obj)
     w = (rect.MaxX - rect.MinX) + 1;
     h = (rect.MaxY - rect.MinY) + 1;
 
-//    D(bug("%s: %dx%d @%d,%d\n", my->File, (int)w, (int)h, (int)my->Icon->do_CurrentX, (int)my->Icon->do_CurrentY));
+    D(bug("%s: %dx%d @%d,%d\n", my->File, (int)w, (int)h, (WORD)my->Icon->do_CurrentX, (WORD)my->Icon->do_CurrentY));
     SetAttrs(obj,
-    	GA_Left, my->Icon->do_CurrentX,
-    	GA_Top, my->Icon->do_CurrentY,
+    	GA_Left, (my->Icon->do_CurrentX == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentX,
+    	GA_Top, (my->Icon->do_CurrentY == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentY,
     	GA_Width, w,
     	GA_Height, h,
     	TAG_END);
@@ -154,12 +154,11 @@ static IPTR wbIconDispose(Class *cl, Object *obj, Msg msg)
 static IPTR wbIconGet(Class *cl, Object *obj, struct opGet *opg)
 {
     struct wbIcon *my = INST_DATA(cl, obj);
-    IPTR rc = FALSE;
+    IPTR rc = TRUE;
 
     switch (opg->opg_AttrID) {
     case WBIA_File:
     	*(opg->opg_Storage) = (IPTR)my->File;
-    	rc = TRUE;
     	break;
     default:
     	rc = DoSuperMethodA(cl, obj, (Msg)opg);
