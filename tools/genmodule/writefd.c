@@ -13,6 +13,8 @@ void writefd(struct config *cfg)
     struct functionhead *funclistit;
     struct functionarg *arglistit;
     unsigned int lvo;
+    char *variable;
+    int i;
 
     snprintf(line, 255, "%s/%s_lib.fd", cfg->gendir, cfg->modulename);
 
@@ -75,8 +77,14 @@ void writefd(struct config *cfg)
 			if (arglistit != funclistit->arguments)
 			    fprintf(out, ",");
 
-			/* FIXME: only the argument name should be printed */
-			fprintf(out, "%s", arglistit->arg);
+			/* Print only variable name */
+			variable = arglistit->arg + strlen(arglistit->arg) - 1;
+			while ((variable >= arglistit->arg) &&
+			      (isalnum(*variable) || (*variable == '_')))
+			{
+			    variable--;
+			}
+			fprintf(out, "%s", variable + 1);
 		    }
 		    fprintf(out, ")(");
 		
@@ -89,7 +97,11 @@ void writefd(struct config *cfg)
 			if (arglistit != funclistit->arguments)
 			    fprintf(out, ",");
 
-			fprintf(out, "%s", arglistit->reg);
+			/* Print register name in lower case */
+			for (i = 0; i < strlen(arglistit->reg); i++)
+			{
+			    fputc(tolower(arglistit->reg[i]), out);
+			}
 		    }
 		    fprintf(out, ")\n");
 
