@@ -210,10 +210,11 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, BOOL h
     D(bug("[ATA>>] ata_RegisterBus: Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
     D(bug("[ATA>>] ata_RegisterBus: IRQ %d, IO: %x:%x, DMA: %x\n", INTLine, IOBase, IOAlt, DMABase));
 
-    if (ATABase->ata_NoDMA)
-	DMABase = 0;
-
-    if (DMABase)
+    /*
+     * DMABase is also used for reporting interrupt status, so NoDMA == TRUE
+     * is not equal to DMABase == 0.
+     */
+    if (DMABase && (!ATABase->ata_NoDMA))
     {
     	/* Allocate DMA PRD. Due to the nature of PCI bus it must be in 32-bit memory. */
     	ab->ab_PRD = AllocMem((PRD_MAX + 1) * 2 * sizeof(struct PRDEntry), MEMF_PUBLIC|MEMF_CLEAR|MEMF_31BIT);
