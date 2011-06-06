@@ -277,7 +277,7 @@ AROS_LH1(void, beginio,
     /* Not done quick */
     iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
     /* Forward to devicetask */
-    PutMsg(&TDBase->td_TaskData->td_Port, &iotd->iotd_Req.io_Message);
+    PutMsg(&TDBase->td_Port, &iotd->iotd_Req.io_Message);
 
     AROS_LIBFUNC_EXIT
 }
@@ -293,10 +293,9 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_EXIT
 }
 
-
-static void TD_DevTask(struct TrackDiskBase *tdb)
+static void TD_DevTask(struct Task *parent, struct TrackDiskBase *tdb)
 {
-    struct TaskData		*td;
+    struct Task                 *me;
     struct IOExtTD		*iotd;
     struct TDU			*tdu;
     ULONG			tasig,tisig,sigs,i;
@@ -305,7 +304,15 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 
     D(bug("[TDTask] TD_DevTask(tdb=%p)\n", tdb));
 
-    td = tdb->td_TaskData;
+    me = FindTask(0);
+
+    /* Init MsgPort */
+    NEWLIST(&tdb->td_Port.mp_MsgList);
+    tdb->td_Port.mp_Node.ln_Type  = NT_MSGPORT;
+    tdb->td_Port.mp_Flags = PA_SIGNAL;
+    tdb->td_Port.mp_SigBit = SIGBREAKB_CTRL_F;
+    tdb->td_Port.mp_SigTask = me;
+    tdb->td_Port.mp_Node.ln_Name = "trackdisk.device";
 
     D(bug("[TDTask] TD_DevTask: struct TaskData @ %p\n", td));
 
@@ -327,7 +334,7 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
     NEWLIST(&tdb->td_druport.mp_MsgList);
     tdb->td_dru.dru_Message.mn_ReplyPort = &tdb->td_druport;
     tdb->td_druport.mp_SigBit = AllocSignal(-1);
-    tdb->td_task = FindTask(0);
+    tdb->td_task = me;
     tdb->td_druport.mp_SigTask = tdb->td_task;
 
     inter = &tdb->td_dru.dru_DiscBlock;
@@ -361,11 +368,11 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 	}
     }
 
-    tasig = 1L << td->td_Port.mp_SigBit;
+    tasig = 1L << tdb->td_Port.mp_SigBit;
     tisig = 1L << tdb->td_TimerMP->mp_SigBit;
 
     /* Reply to startup message */
-    Signal(td->td_Task.tc_UserData,SIGBREAKF_CTRL_F);
+    Signal(parent, SIGBREAKF_CTRL_F);
 
     tdb->td_TimerIO->tr_node.io_Command = TR_ADDREQUEST;
     tdb->td_TimerIO->tr_time.tv_secs = 2;
@@ -380,9 +387,9 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 	/* If unit was not active process message */
 	if (sigs & tasig) {
 	    /* We received a message. Deal with it */
-	    while((iotd = (struct IOExtTD *)GetMsg(&td->td_Port)) != NULL) {
+	    while((iotd = (struct IOExtTD *)GetMsg(&tdb->td_Port)) != NULL) {
 		/* Execute command */
-		if (TD_PerformIO( iotd, tdb)) {
+		if (TD_PerformIO(iotd, tdb)) {
 		    /* Finish message */
 		    ReplyMsg((struct Message *)iotd);
 		}
@@ -442,76 +449,24 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 
 ULONG TD_InitTask(struct TrackDiskBase *tdb)
 {
-    struct  TaskData *t;
-    struct  MemList *ml;
-    struct  Task *me;
+    struct Task *t;
 
-    /* Allocate Task Data structure */
-    t = AllocMem(sizeof(struct TaskData), MEMF_PUBLIC|MEMF_CLEAR);
-    /* Allocate Stack space */
-    if (t && !(t->td_Stack = AllocMem(STACK_SIZE, MEMF_PUBLIC|MEMF_CLEAR))) {
-        FreeMem(t, sizeof(struct TaskData));
-        t = NULL;
-    }
-    /* Allocate MemEntry for this task */
-    ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-
-    /* Find the current task */
-    me = FindTask(NULL);
-    
     D(bug("TD: Creating devicetask...\n"));
 
-    if (t && ml)
-    {
-		/* Save stack info into task structure */
-		t->td_Task.tc_SPLower = t->td_Stack;
-		t->td_Task.tc_SPUpper = t->td_Stack + STACK_SIZE;
-		t->td_Task.tc_SPReg = (BYTE*)t->td_Task.tc_SPUpper - SP_OFFSET - sizeof(APTR);
-	
-		/* Init MsgPort */
-		NEWLIST(&t->td_Port.mp_MsgList);
-		t->td_Port.mp_Node.ln_Type  = NT_MSGPORT;
-		t->td_Port.mp_Flags 	    = PA_SIGNAL;
-		t->td_Port.mp_SigBit 	    = SIGBREAKB_CTRL_F;
-		t->td_Port.mp_SigTask 	    = &t->td_Task;
-		t->td_Port.mp_Node.ln_Name = "trackdisk.device";
-	
-		/* Init MemList */
-		ml->ml_NumEntries = 1;
-		ml->ml_ME[0].me_Addr = t;
-		ml->ml_ME[0].me_Length = sizeof(struct TaskData);
-		NEWLIST(&t->td_Task.tc_MemEntry);
-		AddHead(&t->td_Task.tc_MemEntry, &ml->ml_Node);
-	
-		/* Init Task structure */
-		t->td_Task.tc_Node.ln_Name = "trackdisk.task";
-		t->td_Task.tc_Node.ln_Type = NT_TASK;
-		t->td_Task.tc_Node.ln_Pri  = 5;
-		t->td_Task.tc_UserData = me;
-	
-		tdb->td_TaskData = t;
-	
-	    struct TagItem task_Tags[] = {
-	        { TASKTAG_ARG1, (STACKIPTR)tdb },
-	        { TAG_DONE,     (STACKIPTR)0   },
-	    };
-		/* Add task to system task list */
-	    NewAddTask(&t->td_Task, &TD_DevTask, NULL, task_Tags );
-	
-		/* Wait until started */
-		Wait(SIGBREAKF_CTRL_F);
-	
-		D(bug("done\n"));
-	
-		return 1;
-    } else {
-        if (t) {
-            if (t->td_Stack)
-            	FreeMem(t->td_Stack, STACK_SIZE);
-            FreeMem(t, sizeof(struct TaskData));
-        }
-        if (ml)
-            FreeMem(ml, sizeof(struct MemList));
+    t = NewCreateTask(
+	TASKTAG_PC, TD_DevTask,
+	TASKTAG_NAME, "trackdisk.device",
+	TASKTAG_PRI, 5,
+	TASKTAG_ARG1, FindTask(0),
+	TASKTAG_ARG2, tdb,
+	TAG_DONE);
+    if (t) {
+	/* Wait until started */
+	Wait(SIGBREAKF_CTRL_F);
+
+	D(bug("done\n"));
+
+	return 1;
     }
 
     D(bug("failed\n"));
