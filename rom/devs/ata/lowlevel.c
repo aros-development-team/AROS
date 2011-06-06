@@ -1293,7 +1293,7 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
     int iter;
     int max = AB_XFER_UDMA6;
 
-    if ((unit->au_DMAPort == 0)
+    if (unit->au_Bus->ab_Base->ata_NoDMA || (unit->au_DMAPort == 0)
         || (   !(unit->au_Drive->id_MWDMASupport & 0x0700)
             && !(unit->au_Drive->id_UDMASupport  & 0x7f00)))
     {
