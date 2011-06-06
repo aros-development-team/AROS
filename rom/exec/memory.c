@@ -456,27 +456,20 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, const char 
 
 	/* Got it? */
 	if (ret != NULL)
+    {
+         /*
+          * If this is not the first MemHeader and it has some free space,
+          * move it forward (so that the next allocation will attempt to use it first).
+          */
+        if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
         {
-            /*
-	     * If this is not the first MemHeader and it has some free space,
-	     * move it forward (so that the next allocation will attempt to use it first).
-	     * We use Enqueue() because we still sort MemHeaders according to their priority
-	     * (which they inherit from system MemHeaders).
-	     *
-	     * TODO: implement own Enqueue() routine with secondary sorting by mh_Free.
-	     * This will allow to implement best-match algorithm (so that puddles with
-	     * smaller free space will be picked up first). This way the smallest allocations
-	     * will reuse smallest chunks instead of fragmenting large ones.
-	     */
-            if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
-            {
-		D(bug("[InternalAllocPooled] Re-sorting puddle list\n"));
-                Remove(&mh->mh_Node);
-                Enqueue((struct List *)&pool->pool.PuddleList, &mh->mh_Node);
-            }
-
-            break;
+            D(bug("[InternalAllocPooled] Re-sorting puddle list\n"));
+            Remove(&mh->mh_Node);
+            AddHead((struct List *)&pool->pool.PuddleList, (struct Node *)&mh->mh_Node);
         }
+
+        break;
+    }
 
 	/* No. Try next MemHeader */
 	mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
