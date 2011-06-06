@@ -10,6 +10,7 @@
 */
 
 #include <exec/types.h>
+#include <intuition/classusr.h>
 
 /*** Instance data **********************************************************/
 struct AboutWindow_DATA

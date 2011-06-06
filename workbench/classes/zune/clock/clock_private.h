@@ -3,6 +3,9 @@
 
 #include <exec/types.h>
 #include <utility/date.h>
+#include <libraries/mui.h>
+#include <intuition/intuition.h>
+#include <graphics/gfx.h>
 
 /*** Instance data **********************************************************/
 struct Clock_DATA

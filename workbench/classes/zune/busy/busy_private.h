@@ -3,6 +3,7 @@
 
 #include <exec/types.h>
 #include <utility/date.h>
+#include <libraries/mui.h>
 
 /*** Instance data **********************************************************/
 struct Busy_DATA
