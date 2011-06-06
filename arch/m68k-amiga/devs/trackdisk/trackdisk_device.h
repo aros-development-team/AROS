@@ -26,13 +26,6 @@
 /* something */
 #define TDUF_WRITE      (1<<0)
 
-struct TaskData
-{
-    struct MsgPort      td_Port;                // MessagePort
-    struct Task         td_Task;                // Task Structure
-    APTR                td_Stack;   // Keep stack here
-};
-
 #define TDU_NODISK	0x00
 #define TDU_DISK	0x01
 
@@ -66,6 +59,7 @@ struct TrackDiskBase
     struct DiskBase 		*td_DiskBase;
     struct DiscResourceUnit td_dru;
     struct MsgPort			td_druport;
+    struct MsgPort		    td_Port;			// MessagePort
     struct Task				*td_task;
     APTR					td_DMABuffer;		/* Buffer for DMA accesses */
     UBYTE					*td_DataBuffer;
