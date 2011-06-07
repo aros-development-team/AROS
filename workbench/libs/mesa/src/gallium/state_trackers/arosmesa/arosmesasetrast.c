@@ -62,7 +62,6 @@
             /* Do standard rast port selection */
             AROSMesaSelectRastPort(amesa, tagList);
 
-            /* TODO: what about left/right/top/bottom/width/height tags - keep those values intact? */
             /* Do standard initialization */
             AROSMesaStandardInit(amesa, tagList); 
 
