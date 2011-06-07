@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information for utility.library.
@@ -128,9 +128,11 @@ union memaccess
     UBYTE   ub;
     UWORD   uw;
     ULONG   ul;
+    IPTR    up;
     BYTE    sb;
     WORD    sw;
     LONG    sl;
+    SIPTR   sp;
 };
 
 #endif

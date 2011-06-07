@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Pack a TagList into a structure.
@@ -125,7 +125,13 @@
 	switch((*packTable >> 24) & 0x98)
 	{
 	    case (PKCTRL_ULONG >> 24):
-		memptr->ul = ti->ti_Data;
+#if __WORDSIZE > 32
+		/* EXPERIMENTAL: bitOff == 1 specifies full IPTR on 64 bits */
+	    	if (bitOff == 1)
+		    memptr->up = ti->ti_Data;
+		else
+#endif
+		    memptr->ul = ti->ti_Data;
 		break;
 
 	    case (PKCTRL_UWORD >> 24):
@@ -137,7 +143,12 @@
 		break;
 
 	    case (PKCTRL_LONG >> 24):
-		memptr->sl = ti->ti_Data;
+#if __WORDSIZE > 32
+	    	if (bitOff == 1)
+	    	    memptr->sp = ti->ti_Data;
+	    	else
+#endif
+		    memptr->sl = ti->ti_Data;
 		break;
 
 	    case (PKCTRL_WORD >> 24):

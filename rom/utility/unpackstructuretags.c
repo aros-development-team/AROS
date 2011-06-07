@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: UnpackStructureTags - unpack structure to values in TagList.
@@ -102,7 +102,13 @@
 	switch(*packTable & 0x98000000)
 	{
 	    case PKCTRL_ULONG:
-		*(IPTR *)ti->ti_Data = (IPTR)memptr->ul;
+#if __WORDSIZE > 32
+		/* EXPERIMENTAL: use bitOff as "full IPTR flag" on 64 bits */
+	    	if (bitOff == 1)
+		    *(IPTR *)ti->ti_Data = (IPTR)memptr->up;
+		else
+#endif
+		    *(IPTR *)ti->ti_Data = (IPTR)memptr->ul;
 		break;
 
 	    case PKCTRL_UWORD:
@@ -114,7 +120,12 @@
 		break;
 
 	    case PKCTRL_LONG:
-		*(IPTR *)ti->ti_Data = (IPTR)memptr->sl;
+#if __WORDSIZE > 32
+	    	if (bitOff == 1)
+		    *(IPTR *)ti->ti_Data = (IPTR)memptr->sp;
+		else
+#endif
+		    *(IPTR *)ti->ti_Data = (IPTR)memptr->sl;
 		break;
 
 	    case PKCTRL_WORD:

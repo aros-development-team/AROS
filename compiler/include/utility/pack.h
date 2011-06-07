@@ -2,7 +2,7 @@
 #define UTILITY_PACK_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Used for (Un)PackTagItems()
@@ -45,6 +45,15 @@
 #else
  #define PK_WORDOFFSET(flag) ((flag) < 0x0100 ? 0 : 1)
  #define PK_LONGOFFSET(flag) ((flag) < 0x0100 ? 0 : (flag) < 0x010000 ? 1 : (flag) < 0x01000000 ? 2 : 3)
+#endif
+
+/* Full IPTR (or SIPTR) value. Makes difference on 64 bits. */
+#if __WORDSIZE > 32
+ #define PKCTRL_IPTR  (PKCTRL_ULONG | 0x00002000)
+ #define PKCTRL_SIPTR (PKCTRL_LONG  | 0x00002000)
+#else
+ #define PKCTRL_IPTR  PKCTRL_ULONG
+ #define PKCTRL_SIPTR PKCTRL_LONG
 #endif
 
 #define PK_CALCOFFSET(type,field) ((IPTR)(&((struct type *)0)->field))
