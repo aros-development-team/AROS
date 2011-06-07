@@ -36,8 +36,8 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 			SetCurrentBinding(&cb, sizeof(cb));
 			while (romptr < romend - sizeof (struct Resident*)) {
 				res = (struct Resident*)romptr;
-				if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res && res->rt_Pri < 105) {
-					D(bug("initresident %x '%s'\n", res, res->rt_Name));
+				if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res) {
+					D(bug("Diag InitResident %x (%d %02x '%s')\n", res, res->rt_Pri, res->rt_Flags, res->rt_Name));
 					InitResident(res, BNULL);
 					break; /* must not keep looking */
 				} else {
