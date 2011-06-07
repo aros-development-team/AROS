@@ -67,6 +67,8 @@
 
 static ULONG error(int unixerr)
 {
+    D(bug("hostdisk: UNIX error %d\n", unixerr));
+
     switch (unixerr)
     {
     case 0:
@@ -90,6 +92,7 @@ ULONG Host_Open(struct unit *Unit)
     int err;
 
     D(bug("hostdisk: Host_Open(%s)\n", Unit->filename));
+    Unit->flags = 0;
 
     HostLib_Lock();
 
@@ -101,6 +104,7 @@ ULONG Host_Open(struct unit *Unit)
     {
 	/* This allows to work on Darwin, at least in read-only mode */
         D(bug("hostdisk: EBUSY, retrying with read-only access\n", Unit->filename, Unit->file, err));
+        Unit->flags = UNIT_READONLY;
 
         Unit->file = hdskBase->iface->open(Unit->filename, O_RDONLY, 0755, &err);
 	AROS_HOST_BARRIER
@@ -115,8 +119,6 @@ ULONG Host_Open(struct unit *Unit)
 
 	return error(err);
     }
-
-    Unit->flags = 0;
 
     HostLib_Lock();
     err = hdskBase->iface->fstat64(Unit->file, &st);
@@ -151,7 +153,9 @@ LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
     int ret, err;
-    
+
+    D(bug("hostdisk: Read %u bytes\n", size));
+
     HostLib_Lock();
 
     ret = hdskBase->iface->read(Unit->file, buf, size);
@@ -170,6 +174,8 @@ LONG Host_Write(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
     int ret, err;
+
+    D(bug("hostdisk: Write %u bytes\n", size));
 
     HostLib_Lock();
 
@@ -194,6 +200,8 @@ ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
     int res;
+
+    D(bug("hostdisk: Seek to block 0x%08X%08X (%llu)\n", pos_hi, pos, (((UQUAD)pos_hi) << 32) + pos));
 
     /*
      * Host OS is usually not reentrant.
