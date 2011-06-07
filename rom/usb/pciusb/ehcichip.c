@@ -1072,7 +1072,7 @@ void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw) {
     {
         WRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, intr);
         //KPRINTF(1, ("INT=%04lx\n", intr));
-        if(!hc->hc_Online)
+        if (!(hc->hc_Flags & HCF_ONLINE))
         {
             return;
         }

@@ -62,8 +62,8 @@ void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         /* Clear (RW1C) Event Interrupt (EINT) */
         opreg_writel(XHCI_USBSTS, XHCF_STS_EINT);
 
-        if(hc->hc_Online) {
-
+        if (hc->hc_Flags & HCF_ONLINE)
+        {
             if(intr & XHCF_STS_HSE) {
                 KPRINTF(1000, ("Host System Error (HSE)!\n"));
             }

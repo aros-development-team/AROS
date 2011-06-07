@@ -1982,10 +1982,16 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                     {
                         if(ioreq == cmpioreq)
                         {
-                            foundit = TRUE;
-                            unit->hu_DevBusyReq[devadrep] = NULL;
-                            ohciAbortED(hc, ioreq->iouh_DriverPrivate1);
-                            break;
+                            /*
+                             * Request's ED is in use by the HC, as well as its TDs and
+                             * data buffers.
+                             * Schedule abort on the HC driver and reply the request
+                             * only when done. However return success.
+                             */
+	                    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                            ohciAbortRequest(hc, ioreq);
+                            Enable();
+                            return TRUE;
                         }
                         cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
                     }
@@ -1999,6 +2005,10 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                         {
                             foundit = TRUE;
                             unit->hu_DevBusyReq[devadrep] = NULL;
+                            /*
+                             * CHECKME: Perhaps immediate freeing can cause issues similar to OHCI.
+                             * Should synchronized abort routine be implemented here too ?
+                             */
                             ehciFreeAsyncContext(hc, (struct EhciQH *) ioreq->iouh_DriverPrivate1);
                             break;
                         }
@@ -2027,7 +2037,13 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
     Enable();
-    if(!foundit)
+
+    if (foundit)
+    {
+        ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+        TermIO(ioreq, base);
+    }
+    else
     {
         KPRINTF(20, ("WARNING, could not abort unknown IOReq %p\n", ioreq));
     }
@@ -2117,7 +2133,6 @@ AROS_UFH1(void, uhwNakTimeoutInt,
     struct UhciQH *uqh;
     struct UhciTD *utd;
     struct EhciQH *eqh;
-    struct OhciED *oed;
     UWORD devadrep;
     UWORD cnt;
     ULONG linkelem;
@@ -2130,7 +2145,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
-        if(!hc->hc_Online)
+        if (!(hc->hc_Flags & HCF_ONLINE))
         {
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
             continue;
@@ -2205,10 +2220,13 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                 ioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
                 while(((struct Node *) ioreq)->ln_Succ)
                 {
+                    // Remember the successor because ohciAbortRequest() will move the request to another list
+                    struct IOUsbHwReq *succ = (struct IOUsbHWReq *)ioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
+
                     if(ioreq->iouh_Flags & UHFF_NAKTIMEOUT)
                     {
-                        oed = (struct OhciED *) ioreq->iouh_DriverPrivate1;
-                        if(oed)
+                        KPRINTF(1, ("Examining IOReq=%p with OED=%p\n", ioreq, ioreq->iouh_DriverPrivate1));
+                        if (ioreq->iouh_DriverPrivate1)
                         {
                             KPRINTF(1, ("CTRL=%04lx, CMD=%01lx, F=%ld, hccaDH=%08lx, hcDH=%08lx, CH=%08lx, CCH=%08lx, IntEn=%08lx\n",
                                          READREG32_LE(hc->hc_RegBase, OHCI_CONTROL),
@@ -2221,33 +2239,16 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                                          READREG32_LE(hc->hc_RegBase, OHCI_INTEN)));
 
                             devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-                            ctrlstatus = READMEM32_LE(&oed->oed_HeadPtr);
-                            KPRINTF(1, ("Examining IOReq=%p with OED=%p HeadPtr=%08lx\n", ioreq, oed, ctrlstatus));
                             if(framecnt > unit->hu_NakTimeoutFrame[devadrep])
                             {
-                                if(ctrlstatus & OEHF_HALTED)
-                                {
-                                    // give the thing the chance to exit gracefully
-                                    KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
-                                    causeint = TRUE;
-                                } else {
-                                    // give the thing the chance to exit gracefully
-                                    KPRINTF(20, ("NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
-                                    ctrlstatus |= OEHF_HALTED;
-                                    WRITEMEM32_LE(&oed->oed_HeadPtr, ctrlstatus);
-                                    ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
-                                    unit->hu_DevBusyReq[devadrep] = NULL;
-                                    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                                    ohciFreeEDContext(hc, oed);
-                                    KPRINTF(1, ("Old Toggle %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]));
-                                    unit->hu_DevDataToggle[devadrep] = (ctrlstatus & OEHF_DATA1) ? TRUE : FALSE;
-                                    KPRINTF(1, ("Toggle now %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]));
-                                    ReplyMsg(&ioreq->iouh_Req.io_Message);
-                                }
+                            	// give the thing the chance to exit gracefully
+                            	KPRINTF(200, ("HC 0x%p NAK timeout %ld > %ld, IOReq=%p\n", hc, framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
+				ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
+                            	ohciAbortRequest(hc, ioreq);
                             }
                         }
                     }
-                    ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
+                    ioreq = succ;
                 }
                 break;
             }
