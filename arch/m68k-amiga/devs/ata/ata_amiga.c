@@ -173,7 +173,7 @@ static UBYTE *getport(struct amiga_driverdata *ddata)
 	altport[ata_AltControl * 4] = 2;
 	v2 = altport[ata_AltControl * 4];
 	altport[ata_AltControl * 4] = v3;
-	if ((v1 == 0 && v2 == 2) || (v1 == 0xff && v2 == 0xff) || (v1 == 0 && v2 == 0)) {
+	if ((v1 == 0 && v2 == 2) || (v1 == 0xff && v2 == 0xff)) {
     	    ddata->doubler = 2;
 	    D(bug("[ATA] IDE doubler detected\n"));
 	} else {
