@@ -16,7 +16,7 @@ const char devname[]     = MOD_NAME_STRING;
 
 static int devInit(LIBBASETYPEPTR base)
 {
-    KPRINTF(10, ("devInit base: 0x%08lx SysBase: 0x%08lx\n",
+    KPRINTF(10, ("devInit base: 0x%p SysBase: 0x%p\n",
                  base, SysBase));
 
     base->hd_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library", 39);
@@ -57,7 +57,7 @@ static int devInit(LIBBASETYPEPTR base)
  */
 static int devOpen(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq, ULONG unit, ULONG flags)
 {
-    KPRINTF(10, ("devOpen ioreq: 0x%08lx unit: %ld flags: 0x%08lx base: 0x%08lx\n",
+    KPRINTF(10, ("devOpen ioreq: 0x%p unit: %ld flags: 0x%08lx base: 0x%p\n",
                ioreq, unit, flags, base));
 
     KPRINTF(10, ("devOpen: openCnt = %ld\n", base->hd_Library.lib_OpenCnt));
@@ -99,7 +99,7 @@ static int devOpen(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq, ULONG unit, UL
 
 static int devClose(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq)
 {
-    KPRINTF(10, ("devClose ioreq: 0x%08lx base: 0x%08lx\n", ioreq, base));
+    KPRINTF(10, ("devClose ioreq: 0x%p base: 0x%p\n", ioreq, base));
 
     Close_Unit(base, (struct PCIUnit *) ioreq->iouh_Req.io_Unit, ioreq);
 
@@ -115,7 +115,7 @@ static int devExpunge(LIBBASETYPEPTR base)
 
     DeletePool(base->hd_MemPool);
 
-    KPRINTF(5, ("devExpunge: closelibrary utilitybase 0x%08lx\n",
+    KPRINTF(5, ("devExpunge: closelibrary utilitybase 0x%p\n",
                 UtilityBase));
     CloseLibrary((struct Library *) UtilityBase);
     return TRUE;
@@ -243,15 +243,13 @@ AROS_LH1(LONG, devAbortIO,
 {
     AROS_LIBFUNC_INIT
 
-    KPRINTF(1, ("devAbortIO ioreq: 0x%08lx\n", ioreq));
+    KPRINTF(50, ("devAbortIO ioreq: 0x%p, command %ld, status %ld\n", ioreq, ioreq->iouh_Req.io_Command, ioreq->iouh_Req.io_Message.mn_Node.ln_Type));
 
     /* Is it pending? */
     if(ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)
     {
         if(cmdAbortIO(ioreq, base))
         {
-            ioreq->iouh_Req.io_Error = IOERR_ABORTED;
-            TermIO(ioreq, base);
             return(0);
         }
     }

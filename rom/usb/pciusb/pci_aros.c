@@ -96,6 +96,7 @@ AROS_UFH3(void, pciEnumerator,
             	NewList(&hc->hc_IsoXFerQueue);
             	NewList(&hc->hc_BulkXFerQueue);
             	NewList(&hc->hc_TDQueue);
+            	NewList(&hc->hc_AbortQueue);
             	NewList(&hc->hc_PeriodicTDQueue);
             	NewList(&hc->hc_OhciRetireQueue);
             	AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
@@ -324,11 +325,12 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     {
 #if 0 // FIXME this needs to be replaced by something AROS supports
         PCIXObtainBoard(hc->hc_BoardObject);
-        hc->hc_BoardAllocated = PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, (ULONG) hd->hd_Library.lib_Node.ln_Name);
-        allocgood &= hc->hc_BoardAllocated;
-        if(!hc->hc_BoardAllocated)
+        if (PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, (ULONG) hd->hd_Library.lib_Node.ln_Name))
+            hc->hc_Flags |= HCF_BOARD_ALLOCATED;
+        else
         {
             KPRINTF(20, ("Couldn't allocate board, already allocated by %s\n", PCIXGetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER)));
+            allocgood = FALSE;
         }
         PCIXReleaseBoard(hc->hc_BoardObject);
 #endif
@@ -381,9 +383,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         {
 #if 0
             PCIXObtainBoard(hc->hc_BoardObject);
-            if(hc->hc_BoardAllocated)
+            if (hc->hc_Flags & HCF_ALLOCATED)
             {
-                hc->hc_BoardAllocated = FALSE;
+                hc->hc_Flags &= ~HCF_ALLOCATED;
                 PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, 0);
             }
             PCIXReleaseBoard(hc->hc_BoardObject);
@@ -502,7 +504,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
-        hc->hc_Online = TRUE;
+    	hc->hc_Flags |= HCF_ONLINE;
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
@@ -579,7 +581,7 @@ void pciFreeUnit(struct PCIUnit *hu)
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
-        hc->hc_Online = FALSE;
+        hc->hc_Flags &= ~HCF_ONLINE;
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
@@ -614,7 +616,7 @@ void pciFreeUnit(struct PCIUnit *hu)
 #if 0
 
         PCIXObtainBoard(hc->hc_BoardObject);
-        hc->hc_BoardAllocated = FALSE;
+        hc->hc_Flags &= ~HCF_ALLOCATED;
         PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, 0);
         PCIXReleaseBoard(hc->hc_BoardObject);
 #endif

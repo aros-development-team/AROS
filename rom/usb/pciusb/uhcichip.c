@@ -972,7 +972,7 @@ void uhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw) {
             WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET|UHCF_GLOBALRESET|UHCF_MAXPACKET64|UHCF_CONFIGURE);
             //WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
         }
-        if(!hc->hc_Online)
+        if (!(hc->hc_Flags & HCF_ONLINE))
         {
             return;
         }

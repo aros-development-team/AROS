@@ -1,13 +1,5 @@
-void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed);
-void ohciUpdateIntTree(struct PCIController *hc);
-void ohciHandleFinishedTDs(struct PCIController *hc);
-void ohciScheduleCtrlTDs(struct PCIController *hc);
-void ohciScheduleIntTDs(struct PCIController *hc);
-void ohciScheduleBulkTDs(struct PCIController *hc);
 void ohciUpdateFrameCounter(struct PCIController *hc);
-void ohciCompleteInt(struct PCIController *hc);
-void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
-void ohciAbortED(struct PCIController *hc, struct OhciED *oed);
+void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu);
 void ohciFree(struct PCIController *hc, struct PCIUnit *hu);
 
@@ -31,8 +23,8 @@ static inline struct OhciED * ohciAllocED(struct PCIController *hc)
 /* /// "ohciFreeED()" */
 static inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed)
 {
-    oed->oed_HeadPtr   = 0;	// Protect against ocassional reuse
-    oed->oed_TailPtr   = 0;
+    oed->oed_HeadPtr = oed->oed_TailPtr;	// Protect against ocassional reuse
+    CONSTWRITEMEM32_LE(&oed->oed_EPCaps, OECF_SKIP);
     SYNC;
 
     oed->oed_IOReq     = NULL;
@@ -71,3 +63,34 @@ static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd)
     hc->hc_OhciTDPool = otd;
 }
 /* \\\ */
+
+static inline void ohciDisableED(struct OhciED *oed)
+{
+    ULONG ctrlstatus;
+
+    // disable ED
+    ctrlstatus = READMEM32_LE(&oed->oed_EPCaps);
+    ctrlstatus |= OECF_SKIP;
+    WRITEMEM32_LE(&oed->oed_EPCaps, ctrlstatus);
+
+    // unlink from schedule
+    oed->oed_Succ->oed_Pred = oed->oed_Pred;
+    oed->oed_Pred->oed_Succ = oed->oed_Succ;
+    oed->oed_Pred->oed_NextED = oed->oed_Succ->oed_Self;
+    oed->oed_IOReq = NULL;
+    CacheClearE(&oed->oed_Pred->oed_EPCaps, 16, CACRF_ClearD);
+    SYNC;
+}
+
+static inline void ohciDisableInt(struct PCIController *hc, ULONG mask)
+{
+    WRITEREG32_LE(hc->hc_RegBase, OHCI_INTDIS, mask);
+    hc->hc_PCIIntEnMask &= ~mask;
+}
+
+static inline void ohciEnableInt(struct PCIController *hc, ULONG mask)
+{
+    WRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, mask); // Clear potential dangling status
+    hc->hc_PCIIntEnMask |= mask;
+    WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, mask);
+}

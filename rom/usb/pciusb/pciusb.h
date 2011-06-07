@@ -120,8 +120,7 @@ struct PCIController
     UWORD                 hc_FunctionNum;
     UWORD                 hc_HCIType;
     UWORD                 hc_NumPorts;
-    BOOL                  hc_BoardAllocated;
-    BOOL                  hc_Online;
+    UWORD		  hc_Flags;		/* See below */
 
     volatile APTR         hc_RegBase;
 
@@ -180,6 +179,7 @@ struct PCIController
 
     ULONG                 hc_FrameCounter;
     struct List           hc_TDQueue;
+    struct List		  hc_AbortQueue;
     struct List           hc_PeriodicTDQueue;
     struct List           hc_CtrlXFerQueue;
     struct List           hc_IntXFerQueue;
@@ -198,6 +198,12 @@ struct PCIController
 
 };
 
+/* hc_Flags */
+#define HCF_ALLOCATED	0x0001	/* PCI board allocated		 */
+#define HCF_ONLINE	0x0002	/* Online	    		 */
+#define HCF_STOP_BULK	0x0004	/* Bulk transfers stopped	 */
+#define HCF_STOP_CTRL   0x0008  /* Control transfers stopped	 */
+#define HCF_ABORT	0x0010  /* Aborted requests available	 */
 
 /* The device node - private
 */
