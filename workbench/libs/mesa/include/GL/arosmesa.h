@@ -103,6 +103,7 @@ GLAPI void                  GLAPIENTRY AROSMesaSwapBuffers(AROSMesaContext amesa
 GLAPI AROSMesaProc          GLAPIENTRY AROSMesaGetProcAddress(const GLubyte * procname);
 GLAPI AROSMesaContext       GLAPIENTRY AROSMesaGetCurrentContext();
 GLAPI void                  GLAPIENTRY AROSMesaSetRast(AROSMesaContext amesa, struct TagItem *tagList);
+GLAPI void                  GLAPIENTRY AROSMesaGetConfig(AROSMesaContext amesa, GLenum pname, GLint* params);
 
 #ifdef __cplusplus
 }
