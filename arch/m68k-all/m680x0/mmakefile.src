@@ -1,0 +1,19 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := init
+AFILES := m68k_060sp
+
+USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -mc68020
+
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-all/m680x0
+
+%build_module mmake=kernel-m680x0 \
+   modname=m680x0 modtype=resource \
+   files="$(FILES)"
+
+%build_archspecific \
+ mainmmake=kernel-m680x0 maindir=arch/m68k-all/m680x0 arch=m68k \
+ asmfiles="$(AFILES)" 
+
+%common
