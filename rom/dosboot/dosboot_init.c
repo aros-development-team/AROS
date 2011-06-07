@@ -435,8 +435,8 @@ AROS_UFH3(void, __dosboot_BootProcess,
          * We do it before other assigns because as soon as LIBS: is available it will open
          * muimaster.library and run popup GUI task.
          */
-        psdBase = OpenLibrary("poseidon.library", 0);
-            
+	psdBase = OpenLibrary("poseidon.library", 0);
+
         if (psdBase)
         {
             BPTR lock;
@@ -445,7 +445,17 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
             lock = CreateDir("RAM:ENV");
             if (lock)
-                AssignLock("ENV", lock);
+            {
+            	/*
+            	 * CreateDir() returns exclusive lock, while AssignLock() will work correctly
+            	 * only with shared one.
+            	 * CHECKME: Is it the same in original AmigaOS(tm), or AssignLock() needs fixing?
+            	 */
+            	if (ChangeMode(CHANGE_LOCK, lock, SHARED_LOCK))
+                    AssignLock("ENV", lock);
+                else
+                    UnLock(lock);
+            }
         }
 
         AddBootAssign("SYS:C", "C");
