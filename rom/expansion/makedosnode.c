@@ -126,7 +126,7 @@
     {
         return NULL;
     }
-    CopyMemQuick(de, newde, desize);
+    CopyMem(de, newde, desize);
         
     dn = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR | MEMF_PUBLIC);
     
@@ -164,7 +164,7 @@
     {
 	strLen2 = 0;
     }
-    sz2 = AROS_BSTR_MEMSIZE4LEN(strLen2);
+    sz2 = AROS_BSTR_MEMSIZE4LEN(strLen2 + 1);
 
     s1 = AllocVec(sz1 + sz2, MEMF_CLEAR | MEMF_PUBLIC);
     
@@ -194,7 +194,8 @@
     }
     
     AROS_BSTR_setstrlen(bs1, strLen1 > 255 ? 255 : strLen1);
-    AROS_BSTR_setstrlen(bs2, strLen2 > 255 ? 255 : strLen2);
+    /* fssm_Device is a BSTR that includes terminating NULL in BSTR length byte! */
+    AROS_BSTR_setstrlen(bs2, strLen2 + 1 > 255 ? 255 : strLen2 + 1);
 
     /* Strings are done, now the FileSysStartupMsg */
     fssm->fssm_Unit = ((IPTR *)parmPacket)[2];
@@ -207,6 +208,7 @@
     dn->dn_Type = DLT_DEVICE;
     dn->dn_Name = bs1;
     dn->dn_Priority = 10;
+    dn->dn_StackSize = 4000;
 #ifndef AROS_DOS_PACKETS
     dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(bs1);
 #endif
