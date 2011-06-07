@@ -2,12 +2,15 @@ SetClock LOAD
 
 FailAt 21
 
-Makedir RAM:Clipboards RAM:ENV RAM:ENV/SYS
+Makedir RAM:Clipboards
 If NOT EXISTS RAM:T
     Makedir RAM:T
 EndIf
+If NOT EXISTS RAM:ENV
+    Makedir RAM:ENV
+    Assign ENV: RAM:ENV
+EndIf
 
-Assign ENV:     RAM:ENV
 Assign T:       RAM:T
 Assign CLIPS:   RAM:Clipboards
 
