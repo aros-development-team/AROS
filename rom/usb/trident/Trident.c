@@ -170,9 +170,9 @@ BOOL GetToolTypes(void)
                             if(currtype & TMPL_NUMERIC)
                             {
                                 *numargsptr = atoi(bufpos);
-                                *argsptr = (LONG) numargsptr++;
+                                *argsptr = (IPTR) numargsptr++;
                             } else {
-                                *argsptr = (LONG) bufpos;
+                                *argsptr = (IPTR) bufpos;
                             }
                         }
                     }
