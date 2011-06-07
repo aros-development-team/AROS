@@ -74,8 +74,22 @@ VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList)
 
 BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
 {
-    GLint requestedwidth = 0, requestedheight = 0;
-    GLint requestedright = 0, requestedbottom = 0;
+    LONG requestedwidth = 0, requestedheight = 0;
+    LONG requestedright = 0, requestedbottom = 0;
+    LONG defaultleft = 0, defaulttop = 0;
+    LONG defaultright = 0, defaultbottom = 0;
+
+    /* Set the defaults based on window information */    
+    if (amesa->window)
+    {
+        if(!(amesa->window->Flags & WFLG_GIMMEZEROZERO))
+        {
+            defaultleft     = amesa->window->BorderLeft;
+            defaulttop      = amesa->window->BorderTop;
+            defaultright    = amesa->window->BorderRight;
+            defaultbottom   = amesa->window->BorderBottom;
+        }
+    }
 
     D(bug("[AROSMESA] AROSMesaStandardInit(amesa @ %x, taglist @ %x)\n", amesa, tagList));
     D(bug("[AROSMESA] AROSMesaStandardInit: Using RastPort @ %x\n", amesa->visible_rp));
@@ -84,9 +98,10 @@ BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
 
     D(bug("[AROSMESA] AROSMesaStandardInit: Cloned RastPort @ %x\n", amesa->visible_rp));
 
-    /* We assume left and top are given or set to 0 */
-    amesa->left = GetTagData(AMA_Left, 0, tagList);
-    amesa->top = GetTagData(AMA_Top, 0, tagList);
+    /* We assume left and top are given or if there is a window, set to border left/top 
+       or if there is no window set to 0 */
+    amesa->left = GetTagData(AMA_Left, defaultleft, tagList);
+    amesa->top = GetTagData(AMA_Top, defaulttop, tagList);
     
     requestedright = GetTagData(AMA_Right, -1, tagList);
     requestedbottom = GetTagData(AMA_Bottom, -1, tagList);
@@ -110,7 +125,7 @@ BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
             if (requestedright < 0) requestedright = 0;
         }
         else
-            requestedright = 0;
+            requestedright = defaultright; /* Set the default here, not in GetDataData */
     }
     amesa->right = requestedright;
     
@@ -124,7 +139,7 @@ BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
             if (requestedbottom < 0) requestedbottom = 0;
         }
         else
-            requestedbottom = 0;
+            requestedbottom = defaultbottom; /* Set the default here, not in GetDataData */
     }
     amesa->bottom = requestedbottom;
     
@@ -135,8 +150,6 @@ BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
     D(bug("[AROSMESA] AROSMesaStandardInit: Context Base dimensions set -:\n"));
     D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->visible_rp_width        = %d\n", amesa->visible_rp_width));
     D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->visible_rp_height       = %d\n", amesa->visible_rp_height));
-    D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->width                   = %d\n", amesa->width));
-    D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->height                  = %d\n", amesa->height));
     D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->left                    = %d\n", amesa->left));
     D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->right                   = %d\n", amesa->right));
     D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->top                     = %d\n", amesa->top));
