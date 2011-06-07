@@ -89,6 +89,7 @@
                 break;
             case GL_DEPTH_BITS:
                 *params = depthbits;
+                break;
             case GL_STENCIL_BITS:
                 *params = stencilbits;
                 break;
