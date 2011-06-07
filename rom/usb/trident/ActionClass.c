@@ -2500,7 +2500,7 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
     data->IconDisplayHook.h_Entry = (APTR) IconListDisplayHook;
     data->PrefsDisplayHook.h_Entry = (APTR) PrefsListDisplayHook;
 
-    aimeemsg = aimeelyrics[(((ULONG) aimeelyrics) / 333) & 31];
+    aimeemsg = aimeelyrics[(((IPTR) aimeelyrics) / 333) & 31];
 
     /* get current global config */
     psdGetAttrs(PGA_STACK, NULL, PA_GlobalConfig, &stackcfg, TAG_END);
