@@ -104,7 +104,10 @@
 		break;
 	    }
 	}
-        
+#ifdef AROS_DOS_PACKETS /* is this #define needed? */
+	if(deviceNode->dn_SegList == BNULL && deviceNode->dn_Handler == BNULL && deviceNode->dn_Task == NULL)
+	    deviceNode->dn_SegList = DOSBase->dl_Root->rn_FileHandlerSegment;
+#endif
 	/* We should add the filesystem to the DOS device list. It will
 	   be usable from this point onwards.
 
