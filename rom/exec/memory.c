@@ -357,6 +357,38 @@ void FreeMemHeader(APTR addr, struct ExecBase *SysBase)
 }
 
 /*
+ * This is our own Enqueue() version. Currently the only differece is that
+ * we insert our node before the first node with LOWER OR EQUAL priority,
+ * so that for nodes with equal priority it will be LIFO, not FIFO queue.
+ * This speeds up the allocator.
+ * TODO: implement secondary sorting by mh_Free. This will allow to
+ * implement best-match algorithm (so that puddles with smaller free space
+ * will be picked up first). This way the smallest allocations will reuse
+ * smallest chunks instead of fragmenting large ones.
+ */
+static void EnqueueMemHeader(struct MinList *list, struct MemHeader *mh)
+{
+    struct MemHeader *next;
+
+    /* Look through the list */
+    ForeachNode (list, next)
+    {
+	/*
+	    Look for the first MemHeader with a lower or equal pri as the node
+	    we have to insert into the list.
+	*/
+	if (mh->mh_Node.ln_Pri >= next->mh_Node.ln_Pri)
+	    break;
+    }
+
+    /* Insert the node before next */
+    mh->mh_Node.ln_Pred		   = next->mh_Node.ln_Pred;
+    mh->mh_Node.ln_Succ		   = &next->mh_Node;
+    next->mh_Node.ln_Pred->ln_Succ = &mh->mh_Node;
+    next->mh_Node.ln_Pred          = &mh->mh_Node;
+}
+
+/*
  * Allocate memory with given physical properties from the given pool.
  * Our pools can be mixed. This means that different puddles from the
  * pool can have different physical flags. For example the same pool
@@ -456,20 +488,24 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, const char 
 
 	/* Got it? */
 	if (ret != NULL)
-    {
-         /*
-          * If this is not the first MemHeader and it has some free space,
-          * move it forward (so that the next allocation will attempt to use it first).
-          */
-        if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
-        {
-            D(bug("[InternalAllocPooled] Re-sorting puddle list\n"));
-            Remove(&mh->mh_Node);
-            AddHead((struct List *)&pool->pool.PuddleList, (struct Node *)&mh->mh_Node);
-        }
+   	{
+            /*
+	     * If this is not the first MemHeader and it has some free space,
+	     * move it forward (so that the next allocation will attempt to use it first).
+	     * IMPORTANT: We use modification of Enqueue() because we still sort MemHeaders
+	     * according to their priority (which they inherit from system MemHeaders).
+	     * This allows us to have mixed pools (e. g. with both CHIP and FAST regions). This
+	     * will be needed in future for memory protection.
+	     */
+            if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
+            {
+            	D(bug("[InternalAllocPooled] Re-sorting puddle list\n"));
+            	Remove(&mh->mh_Node);
+            	EnqueueMemHeader(&pool->pool.PuddleList, mh);
+            }
 
-        break;
-    }
+            break;
+    	}
 
 	/* No. Try next MemHeader */
 	mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
