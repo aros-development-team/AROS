@@ -9128,7 +9128,7 @@ static const ULONG PsdBasePT[] =
 {
     PACK_STARTTABLE(PA_Dummy),
     PACK_ENTRY(PA_Dummy, PA_ConfigRead, PsdBase, ps_ConfigRead, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(PA_Dummy, PA_GlobalConfig, PsdBase, ps_GlobalCfg, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PA_Dummy, PA_GlobalConfig, PsdBase, ps_GlobalCfg, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(PA_Dummy, PA_MemPoolUsage, PsdBase, ps_MemAllocated, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
     PACK_ENTRY(PA_Dummy, PA_CurrConfigHash, PsdBase, ps_ConfigHash, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
     PACK_ENTRY(PA_Dummy, PA_SavedConfigHash, PsdBase, ps_SavedConfigHash, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
@@ -9142,8 +9142,8 @@ static const ULONG PsdErrorMsgPT[] =
 {
     PACK_STARTTABLE(EMA_Dummy),
     PACK_ENTRY(EMA_Dummy, EMA_Level, PsdErrorMsg, pem_Level, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(EMA_Dummy, EMA_Origin, PsdErrorMsg, pem_Origin, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(EMA_Dummy, EMA_Msg, PsdErrorMsg, pem_Msg, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EMA_Dummy, EMA_Origin, PsdErrorMsg, pem_Origin, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EMA_Dummy, EMA_Msg, PsdErrorMsg, pem_Msg, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
 
@@ -9151,9 +9151,9 @@ static const ULONG PsdErrorMsgPT[] =
 static const ULONG PsdUsbClassPT[] =
 {
     PACK_STARTTABLE(UCA_Dummy),
-    PACK_ENTRY(UCA_Dummy, UCA_ClassBase, PsdUsbClass, puc_ClassBase, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(UCA_Dummy, UCA_ClassName, PsdUsbClass, puc_ClassName, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(UCA_Dummy, UCA_FullPath, PsdUsbClass, puc_FullPath, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(UCA_Dummy, UCA_ClassBase, PsdUsbClass, puc_ClassBase, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(UCA_Dummy, UCA_ClassName, PsdUsbClass, puc_ClassName, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(UCA_Dummy, UCA_FullPath, PsdUsbClass, puc_FullPath, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(UCA_Dummy, UCA_UseCount, PsdUsbClass, puc_UseCnt, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
@@ -9162,12 +9162,12 @@ static const ULONG PsdUsbClassPT[] =
 static const ULONG PsdHardwarePT[] =
 {
     PACK_STARTTABLE(HA_Dummy),
-    PACK_ENTRY(HA_Dummy, HA_DeviceName, PsdHardware, phw_DevName, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_DeviceName, PsdHardware, phw_DevName, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(HA_Dummy, HA_DeviceUnit, PsdHardware, phw_Unit, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(HA_Dummy, HA_ProductName, PsdHardware, phw_ProductName, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(HA_Dummy, HA_Manufacturer, PsdHardware, phw_Manufacturer, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(HA_Dummy, HA_Description, PsdHardware, phw_Description, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(HA_Dummy, HA_Copyright, PsdHardware, phw_Copyright, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_ProductName, PsdHardware, phw_ProductName, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_Manufacturer, PsdHardware, phw_Manufacturer, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_Description, PsdHardware, phw_Description, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_Copyright, PsdHardware, phw_Copyright, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(HA_Dummy, HA_Version, PsdHardware, phw_Version, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(HA_Dummy, HA_Revision, PsdHardware, phw_Revision, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(HA_Dummy, HA_DriverVersion, PsdHardware, phw_DriverVers, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
@@ -9181,8 +9181,8 @@ static const ULONG PsdDevicePT[] =
     PACK_ENTRY(DA_Dummy, DA_Address, PsdDevice, pd_DevAddr, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DA_Dummy, DA_NumConfigs, PsdDevice, pd_NumCfgs, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DA_Dummy, DA_CurrConfig, PsdDevice, pd_CurrCfg, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DA_Dummy, DA_Config, PsdDevice, pd_CurrentConfig, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DA_Dummy, DA_HubDevice, PsdDevice, pd_Hub, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_Config, PsdDevice, pd_CurrentConfig, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_HubDevice, PsdDevice, pd_Hub, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
     PACK_ENTRY(DA_Dummy, DA_UsbVersion, PsdDevice, pd_USBVers, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DA_Dummy, DA_Class, PsdDevice, pd_DevClass, PKCTRL_WORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DA_Dummy, DA_SubClass, PsdDevice, pd_DevSubClass, PKCTRL_WORD|PKCTRL_UNPACKONLY),
@@ -9191,17 +9191,17 @@ static const ULONG PsdDevicePT[] =
     PACK_ENTRY(DA_Dummy, DA_MaxPktSize0, PsdDevice, pd_MaxPktSize0, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DA_Dummy, DA_ProductID, PsdDevice, pd_ProductID, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DA_Dummy, DA_Version, PsdDevice, pd_DevVers, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DA_Dummy, DA_Manufacturer, PsdDevice, pd_MnfctrStr, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DA_Dummy, DA_ProductName, PsdDevice, pd_ProductStr, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(DA_Dummy, DA_OrigProductName, PsdDevice, pd_OldProductStr, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DA_Dummy, DA_SerialNumber, PsdDevice, pd_SerNumStr, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DA_Dummy, DA_Hardware, PsdDevice, pd_Hardware, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DA_Dummy, DA_Binding, PsdDevice, pd_DevBinding, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(DA_Dummy, DA_BindingClass, PsdDevice, pd_ClsBinding, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(DA_Dummy, DA_LangIDArray, PsdDevice, pd_LangIDArray, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Manufacturer, PsdDevice, pd_MnfctrStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_ProductName, PsdDevice, pd_ProductStr, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_OrigProductName, PsdDevice, pd_OldProductStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_SerialNumber, PsdDevice, pd_SerNumStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Hardware, PsdDevice, pd_Hardware, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Binding, PsdDevice, pd_DevBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_BindingClass, PsdDevice, pd_ClsBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_LangIDArray, PsdDevice, pd_LangIDArray, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DA_Dummy, DA_CurrLangID, PsdDevice, pd_CurrLangID, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(DA_Dummy, DA_IDString, PsdDevice, pd_IDString, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DA_Dummy, DA_CloneCount, PsdDevice, pd_CloneCount, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_IDString, PsdDevice, pd_IDString, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_CloneCount, PsdDevice, pd_CloneCount, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DA_Dummy, DA_AtHubPortNumber, PsdDevice, pd_HubPort, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
     PACK_ENTRY(DA_Dummy, DA_PowerDrained, PsdDevice, pd_PowerDrain, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DA_Dummy, DA_PowerSupply, PsdDevice, pd_PowerSupply, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
@@ -9233,10 +9233,10 @@ static const ULONG PsdConfigPT[] =
     PACK_STARTTABLE(CA_Dummy),
     PACK_ENTRY(CA_Dummy, CA_ConfigNum, PsdConfig, pc_CfgNum, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(CA_Dummy, CA_MaxPower, PsdConfig, pc_MaxPower, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(CA_Dummy, CA_ConfigName, PsdConfig, pc_CfgStr, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(CA_Dummy, CA_ConfigName, PsdConfig, pc_CfgStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(CA_Dummy, CA_NumInterfaces, PsdConfig, pc_NumIfs, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(CA_Dummy, CA_Attrs, PsdConfig, pc_Attr, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(CA_Dummy, CA_Device, PsdConfig, pc_Device, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(CA_Dummy, CA_Device, PsdConfig, pc_Device, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_WORDBIT(CA_Dummy, CA_SelfPowered, PsdConfig, pc_Attr, PKCTRL_BIT|PKCTRL_PACKUNPACK, USCAF_SELF_POWERED),
     PACK_WORDBIT(CA_Dummy, CA_RemoteWakeup, PsdConfig, pc_Attr, PKCTRL_BIT|PKCTRL_UNPACKONLY, USCAF_REMOTE_WAKEUP),
     PACK_ENDTABLE
@@ -9246,14 +9246,14 @@ static const ULONG PsdConfigPT[] =
 static const ULONG PsdDescriptorPT[] =
 {
     PACK_STARTTABLE(DDA_Dummy),
-    PACK_ENTRY(DDA_Dummy, DDA_Device, PsdDescriptor, pdd_Device, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DDA_Dummy, DDA_Config, PsdDescriptor, pdd_Config, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DDA_Dummy, DDA_Interface, PsdDescriptor, pdd_Interface, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DDA_Dummy, DDA_Endpoint, PsdDescriptor, pdd_Endpoint, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DDA_Dummy, DDA_Name, PsdDescriptor, pdd_Name, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_Device, PsdDescriptor, pdd_Device, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_Config, PsdDescriptor, pdd_Config, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_Interface, PsdDescriptor, pdd_Interface, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_Endpoint, PsdDescriptor, pdd_Endpoint, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_Name, PsdDescriptor, pdd_Name, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DDA_Dummy, DDA_DescriptorType, PsdDescriptor, pdd_Type, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DDA_Dummy, DDA_CS_SubType, PsdDescriptor, pdd_CSSubType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(DDA_Dummy, DDA_DescriptorData, PsdDescriptor, pdd_Data, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_DescriptorData, PsdDescriptor, pdd_Data, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(DDA_Dummy, DDA_DescriptorLength, PsdDescriptor, pdd_Length, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
@@ -9268,11 +9268,11 @@ static const ULONG PsdInterfacePT[] =
     PACK_ENTRY(IFA_Dummy, IFA_Class, PsdInterface, pif_IfClass, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(IFA_Dummy, IFA_SubClass, PsdInterface, pif_IfSubClass, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(IFA_Dummy, IFA_Protocol, PsdInterface, pif_IfProto, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(IFA_Dummy, IFA_InterfaceName, PsdInterface, pif_IfStr, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(IFA_Dummy, IFA_Config, PsdInterface, pif_Config, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(IFA_Dummy, IFA_Binding, PsdInterface, pif_IfBinding, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(IFA_Dummy, IFA_BindingClass, PsdInterface, pif_ClsBinding, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(IFA_Dummy, IFA_IDString, PsdInterface, pif_IDString, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_InterfaceName, PsdInterface, pif_IfStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_Config, PsdInterface, pif_Config, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_Binding, PsdInterface, pif_IfBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(IFA_Dummy, IFA_BindingClass, PsdInterface, pif_ClsBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(IFA_Dummy, IFA_IDString, PsdInterface, pif_IDString, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
 
@@ -9287,7 +9287,7 @@ static const ULONG PsdEndpointPT[] =
     PACK_ENTRY(EA_Dummy, EA_NumTransMuFrame, PsdEndpoint, pep_NumTransMuFr, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(EA_Dummy, EA_SyncType, PsdEndpoint, pep_SyncType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(EA_Dummy, EA_UsageType, PsdEndpoint, pep_UsageType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(EA_Dummy, EA_Interface, PsdEndpoint, pep_Interface, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_Interface, PsdEndpoint, pep_Interface, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_WORDBIT(EA_Dummy, EA_IsIn, PsdEndpoint, pep_Direction, PKCTRL_BIT|PKCTRL_UNPACKONLY, 1),
     PACK_ENDTABLE
 };
@@ -9296,7 +9296,7 @@ static const ULONG PsdEndpointPT[] =
 static const ULONG PsdPipePT[] =
 {
     PACK_STARTTABLE(PPA_Dummy),
-    PACK_ENTRY(PPA_Dummy, PPA_Endpoint, PsdPipe, pp_Endpoint, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PPA_Dummy, PPA_Endpoint, PsdPipe, pp_Endpoint, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
     PACK_ENTRY(PPA_Dummy, PPA_Error, PsdPipe, pp_IOReq.iouh_Req.io_Error, PKCTRL_BYTE|PKCTRL_UNPACKONLY),
     PACK_ENTRY(PPA_Dummy, PPA_Actual, PsdPipe, pp_IOReq.iouh_Actual, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
     PACK_ENTRY(PPA_Dummy, PPA_EndpointNum, PsdPipe, pp_IOReq.iouh_Endpoint, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
@@ -9314,10 +9314,10 @@ static const ULONG PsdPipePT[] =
 static const ULONG PsdAppBindingPT[] =
 {
     PACK_STARTTABLE(ABA_Dummy),
-    PACK_ENTRY(ABA_Dummy, ABA_ReleaseHook, PsdAppBinding, pab_ReleaseHook, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(ABA_Dummy, ABA_Device, PsdAppBinding, pab_Device, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(ABA_Dummy, ABA_UserData, PsdAppBinding, pab_UserData, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(ABA_Dummy, ABA_Task, PsdAppBinding, pab_Task, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(ABA_Dummy, ABA_ReleaseHook, PsdAppBinding, pab_ReleaseHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(ABA_Dummy, ABA_Device, PsdAppBinding, pab_Device, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(ABA_Dummy, ABA_UserData, PsdAppBinding, pab_UserData, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(ABA_Dummy, ABA_Task, PsdAppBinding, pab_Task, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
     PACK_ENTRY(ABA_Dummy, ABA_ForceRelease, PsdAppBinding, pab_ForceRelease, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
     PACK_ENDTABLE
 };
@@ -9327,8 +9327,8 @@ static const ULONG PsdEventNotePT[] =
 {
     PACK_STARTTABLE(ENA_Dummy),
     PACK_ENTRY(ENA_Dummy, ENA_EventID, PsdEventNote, pen_Event, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(ENA_Dummy, ENA_Param1, PsdEventNote, pen_Param1, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(ENA_Dummy, ENA_Param2, PsdEventNote, pen_Param2, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(ENA_Dummy, ENA_Param1, PsdEventNote, pen_Param1, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(ENA_Dummy, ENA_Param2, PsdEventNote, pen_Param2, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
 
@@ -9362,15 +9362,15 @@ static const ULONG PsdGlobalCfgPT[] =
 static const ULONG PsdPipeStreamPT[] =
 {
     PACK_STARTTABLE(PSA_Dummy),
-    PACK_ENTRY(PSA_Dummy, PSA_MessagePort, PsdPipeStream, pps_MsgPort, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PSA_Dummy, PSA_MessagePort, PsdPipeStream, pps_MsgPort, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
     PACK_ENTRY(PSA_Dummy, PSA_NumPipes, PsdPipeStream, pps_NumPipes, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
     PACK_ENTRY(PSA_Dummy, PSA_BufferSize, PsdPipeStream, pps_BufferSize, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
     PACK_ENTRY(PSA_Dummy, PSA_NakTimeoutTime, PsdPipeStream, pps_NakTimeoutTime, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
     PACK_ENTRY(PSA_Dummy, PSA_BytesPending, PsdPipeStream, pps_BytesPending, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
     PACK_ENTRY(PSA_Dummy, PSA_Error, PsdPipeStream, pps_Error, PKCTRL_LONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(PSA_Dummy, PSA_TermArray, PsdPipeStream, pps_TermArray, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PSA_Dummy, PSA_TermArray, PsdPipeStream, pps_TermArray, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
     PACK_ENTRY(PSA_Dummy, PSA_AbortSigMask, PsdPipeStream, pps_AbortSigMask, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(PSA_Dummy, PSA_ActivePipe, PsdPipeStream, pps_ActivePipe, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PSA_Dummy, PSA_ActivePipe, PsdPipeStream, pps_ActivePipe, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_WORDBIT(PSA_Dummy, PSA_AsyncIO, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_ASYNCIO),
     PACK_WORDBIT(PSA_Dummy, PSA_ShortPktTerm, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_SHORTTERM),
     PACK_WORDBIT(PSA_Dummy, PSA_ReadAhead, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_READAHEAD),
@@ -9387,11 +9387,11 @@ static const ULONG PsdPipeStreamPT[] =
 static const ULONG PsdRTIsoHandlerPT[] =
 {
     PACK_STARTTABLE(RTA_Dummy),
-    PACK_ENTRY(RTA_Dummy, RTA_InRequestHook, PsdRTIsoHandler, prt_RTIso.urti_InReqHook, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(RTA_Dummy, RTA_OutRequestHook, PsdRTIsoHandler, prt_RTIso.urti_OutReqHook, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(RTA_Dummy, RTA_InDoneHook, PsdRTIsoHandler, prt_RTIso.urti_InDoneHook, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(RTA_Dummy, RTA_OutDoneHook, PsdRTIsoHandler, prt_RTIso.urti_OutDoneHook, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
-    PACK_ENTRY(RTA_Dummy, RTA_ReleaseHook, PsdRTIsoHandler, prt_ReleaseHook, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_InRequestHook, PsdRTIsoHandler, prt_RTIso.urti_InReqHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_OutRequestHook, PsdRTIsoHandler, prt_RTIso.urti_OutReqHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_InDoneHook, PsdRTIsoHandler, prt_RTIso.urti_InDoneHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_OutDoneHook, PsdRTIsoHandler, prt_RTIso.urti_OutDoneHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_ReleaseHook, PsdRTIsoHandler, prt_ReleaseHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
     PACK_ENTRY(RTA_Dummy, RTA_OutPrefetchSize, PsdRTIsoHandler, prt_RTIso.urti_OutPrefetch, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
     PACK_ENDTABLE
 };

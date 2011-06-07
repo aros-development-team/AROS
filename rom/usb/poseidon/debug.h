@@ -1,7 +1,10 @@
-#ifndef __DEBUG_H__
-#define __DEBUG_H__
+#undef XPRINTF
+#undef KPRINTF
+#undef DB
 
+#ifndef DB_LEVEL
 #define DB_LEVEL 1
+#endif
 
 //#define DEBUG 1
 
@@ -36,5 +39,3 @@
 #define DB(x)
 
 #endif /* DEBUG */
-
-#endif /* __DEBUG_H__ */
