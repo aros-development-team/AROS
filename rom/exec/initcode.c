@@ -81,10 +81,12 @@
 
 	    if ((res->rt_Version >= version) && (res->rt_Flags & startClass))
 	    {
-		DINITCODE("calling InitResident(\"%s\", NULL)", res->rt_Name);
+		DINITCODE("calling InitResident (%d %02x \"%s\")",
+		    res->rt_Pri, res->rt_Flags, res->rt_Name);
 		InitResident(res, BNULL);
 	    }
-	    	D(else bug("NOT calling InitResident(\"%s\", NULL)\n", res->rt_Name);)
+	    	D(else bug("NOT calling InitResident (%d %02x \"%s\")\n",
+		    res->rt_Pri, res->rt_Flags, res->rt_Name));
 	}
     }
 
