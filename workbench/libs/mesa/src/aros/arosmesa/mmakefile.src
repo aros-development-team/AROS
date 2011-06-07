@@ -39,6 +39,7 @@ AROSMESA_SOURCES = \
             gallium/state_trackers/arosmesa/arosmesa_funcs \
             gallium/state_trackers/arosmesa/arosmesa_init \
             gallium/state_trackers/arosmesa/arosmesagetopenglstatetrackerapi \
+            gallium/state_trackers/arosmesa/arosmesasetrast \
 
 GLSL_LIBGLCPP_SOURCES = \
             glcpp/glcpp-lex.c \

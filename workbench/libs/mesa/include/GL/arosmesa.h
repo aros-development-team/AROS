@@ -1,5 +1,5 @@
 /*
-    Copyright 2009, The AROS Development Team. All rights reserved.
+    Copyright 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -164,6 +164,7 @@ GLAPI void                  GLAPIENTRY AROSMesaMakeCurrent(AROSMesaContext amesa
 GLAPI void                  GLAPIENTRY AROSMesaSwapBuffers(AROSMesaContext amesa);
 GLAPI AROSMesaProc          GLAPIENTRY AROSMesaGetProcAddress(const GLubyte * procname);
 GLAPI AROSMesaContext       GLAPIENTRY AROSMesaGetCurrentContext();
+GLAPI void                  GLAPIENTRY AROSMesaSetRast(AROSMesaContext amesa, struct TagItem *tagList);
 
 #ifdef __cplusplus
 }
