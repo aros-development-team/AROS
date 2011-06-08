@@ -562,11 +562,6 @@ ADD2EXPUNGELIB(X11OnBM_Expunge, 0);
 
 #if X11SOFTMOUSE
 
-#undef LOCK_X11
-#undef UNLOCK_X11
-#define LOCK_X11 ObtainSemaphore (&xsd->x11sema);
-#define UNLOCK_X11 ReleaseSemaphore(&xsd->x11sema);
-
 /****************************************************************************************/
 
 static void init_empty_cursor(Window w, GC gc, struct x11_staticdata *xsd)

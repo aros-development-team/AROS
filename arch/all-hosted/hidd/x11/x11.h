@@ -2,21 +2,17 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
     Lang: English.
 */
 
-
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-
-#ifndef OOP_OOP_H
-#   include <oop/oop.h>
-#endif
+#include <exec/libraries.h>
+#include <exec/semaphores.h>
+#include <oop/oop.h>
+#include <proto/hostlib.h>
 
 #define timeval sys_timeval
 #ifndef _XLIB_H_
@@ -28,12 +24,7 @@
 #endif
 #undef timeval
 
-#ifndef EXEC_SEMAPHORES_H
-#   include <exec/semaphores.h>
-#endif
-
 #include "xshm.h"
-
 #include "x11_hostlib.h"
 
 /***** X11Mouse HIDD *******************/
@@ -146,7 +137,6 @@ struct x11_staticdata
     BOOL	   	     havetable;
 
     struct SignalSemaphore   sema; /* Protecting this whole struct */
-    struct SignalSemaphore   x11sema;
     
     /* This port is used for asking the x11 task for notifications
        on when some event occurs, for example MapNotify
@@ -268,13 +258,15 @@ int X11_Init(struct x11_staticdata *xsd);
 #undef XSD
 #define XSD(cl)     	(&((struct x11clbase *)cl->UserData)->xsd)
 
-/* This lock has two uses:
-- Making X calls threadsafe.
-- In the bitmap class, protecting the bimtap X GC from changes
-from other tasks
-*/
+/*
+ * This lock has two uses:
+ * - Making X calls threadsafe.
+ * - In the bitmap class, protecting the bimtap X GC from changes from other tasks
+ * Since X makes intensive use of malloc(), and can interfere not only with other X calls,
+ * but with all other host OS calls, we use global lock provided by hostlib.resource.
+ */
 
-#define LOCK_X11 ObtainSemaphore (&XSD(cl)->x11sema);
-#define UNLOCK_X11 ReleaseSemaphore(&XSD(cl)->x11sema);
+#define LOCK_X11   HostLib_Lock();
+#define UNLOCK_X11 HostLib_Unlock();
 
 #endif /* HIDD_X11_H */
