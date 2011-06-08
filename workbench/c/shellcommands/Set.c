@@ -134,7 +134,7 @@ AROS_SHA(STRPTR, ,STRING, /F, NULL))
                                  VarLength
                     );
 
-                    Buffer2[VarLength] = NULL;
+                    Buffer2[VarLength] = 0;
 
 		    OutArgs[0] = (IPTR)SetNode->lv_Node.ln_Name;
                     OutArgs[1] = (IPTR)&Buffer2[0];
