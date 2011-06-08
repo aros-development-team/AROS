@@ -83,7 +83,7 @@ AROS_UFH3(void, Pulse,
 
 		if (conductor->cdt_Flags & CONDUCTF_EXTERNAL)
 		{
-		    if (!conductor->cdt_Flags & CONDUCTF_GOTTICK)
+		    if (!(conductor->cdt_Flags & CONDUCTF_GOTTICK))
 		    {
 			continue;
 		    }
