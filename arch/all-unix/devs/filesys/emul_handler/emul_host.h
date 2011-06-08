@@ -114,7 +114,6 @@ struct Emul_PlatformData
     struct LibCInterface   *SysIFace;
     int			   *errnoPtr;	/* Pointer to host's errno		 */
     int			    my_pid;	/* AROS process ID			 */
-    struct SignalSemaphore  sem;	/* Semaphore to single-thread libc calls */
     struct MinList	    readList;	/* Asynchronous read queue		 */
 };
 
