@@ -381,7 +381,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_Task.tc_Node.ln_Name = name;
     process->pr_Task.tc_Node.ln_Pri = defaults[11].ti_Data;
     process->pr_Task.tc_SPLower = stack;
-    process->pr_Task.tc_SPUpper = stack + process->pr_StackSize;
+    process->pr_Task.tc_SPUpper = stack + process->pr_StackSize - SP_OFFSET;
 
     D(bug("[createnewproc] Starting process %s\n", name));
     D(bug("[createnewproc] Stack: 0x%p - 0x%p\n", process->pr_Task.tc_SPLower, process->pr_Task.tc_SPUpper));
