@@ -74,41 +74,9 @@ static const struct newMemList MemTemplate =
 
 ******************************************************************************/
 {
-    struct Task     * newtask,
-		    * task2;
-    struct newMemList nml;
-    struct MemList  * ml;
-
-    nml = MemTemplate;
-
-    stacksize = AROS_ALIGN(stacksize);
-    nml.nml_ME[1].me_Length = stacksize;
-
-    if (NewAllocEntry((struct MemList *)&nml, &ml, NULL))
-    {
-	newtask = ml->ml_ME[0].me_Addr;
-
-	newtask->tc_Node.ln_Type = NT_TASK;
-	newtask->tc_Node.ln_Pri  = pri;
-	newtask->tc_Node.ln_Name = name;
-
-	newtask->tc_SPReg   = (APTR)((IPTR)ml->ml_ME[1].me_Addr + stacksize);
-	newtask->tc_SPLower = ml->ml_ME[1].me_Addr;
-	newtask->tc_SPUpper = newtask->tc_SPReg;
-
-	NewList (&newtask->tc_MemEntry);
-	AddHead (&newtask->tc_MemEntry, (struct Node *)ml);
-
-	task2 = (struct Task *)AddTask (newtask, initpc, 0);
-
-	if (SysBase->LibNode.lib_Version>36 && !task2)
-	{
-	    FreeEntry (ml);
-	    newtask = NULL;
-	}
-    }
-    else
-	newtask=NULL;
-
-    return newtask;
+    return NewCreateTask(TASKTAG_NAME, name,
+    		         TASKTAG_PRI, pri,
+    		         TASKTAG_PC, initpc,
+    		         TASKTAG_STACKSIZE, stacksize,
+    		         TAG_END);
 } /* CreateTask */
