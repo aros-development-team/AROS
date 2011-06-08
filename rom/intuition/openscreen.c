@@ -1032,9 +1032,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             DEBUG_OPENSCREEN(dprintf("OpenScreen: set SA_Colors 0x%lx\n",colors));
             for(; colors->ColorIndex != (WORD)~0; colors++)
             {
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB4 Viewport 0x%lx Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
-                                         screen->Screen.ViewPort,
-                                         colors,
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB4 Viewport 0x%p Index %d R 0x%x G 0x%x B 0x%x\n",
+                                         &screen->Screen.ViewPort,
+                                         colors->ColorIndex,
                                          colors->Red,
                                          colors->Green,
                                          colors->Blue));
@@ -1068,7 +1068,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         //intui68k filters this
         screen->Screen.Flags = (ns.Type & ~NS_EXTENDED);
 
-        /* Temporary hack */
+        /* Temporary hack, only used to set size of system gadgets */
         if (ns.Width >= 500 || ns.Height >= 300)
             screen->Screen.Flags |= SCREENHIRES;
 
