@@ -57,7 +57,8 @@ struct IntExecBase
 #define DebugBase  PrivExecBase(SysBase)->DebugBase
 
 /* IntFlags */
-#define EXECF_MungWall 0x0001
+#define EXECF_MungWall   0x0001	/* This flag can't be changed at runtime */
+#define EXECF_StackSnoop 0x0002
 
 #if UseLVOs
 extern void __AROS_InitExecBase (void);

@@ -54,6 +54,8 @@
         happen with TF_ETASK set - currenty not implemented).
 
     NOTES
+    	This is AROS-specific function which is going to be private in ABI v1.
+    	Use MorphOS-compatible NewCreateTaskA() in your applications.
 
     EXAMPLE
 
@@ -113,6 +115,14 @@
     task->tc_Flags |= TF_ETASK;
 
     /*
+     * EXECF_StackSnoop can be set or reset at runtime.
+     * However task's stack is either snooped or not, it's problematic
+     * to turn it on at runtime. So we initialize it when the task starts up.
+     */
+    if (PrivExecBase(SysBase)->IntFlags & EXECF_StackSnoop)
+    	task->tc_Flags |= TF_STACKCHK;
+
+    /*
      *  We don't add this to the task memory, it isn't free'd by
      *  RemTask(), rather by somebody else calling ChildFree().
      *  Alternatively, an orphaned task will free its own ETask.
@@ -145,7 +155,7 @@
 #endif
     DADDTASK("NewAddTask: SPLower: 0x%p SPUpper: 0x%p SP: 0x%p", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
 
-#if AROS_STACK_DEBUG
+    if (task->tc_Flags & TF_STACKCHK)
     {
         UBYTE *startfill, *endfill;
 
@@ -162,7 +172,6 @@
             *startfill++ = 0xE1;
         }
     }
-#endif
 
     /* Default finalizer? */
     if(finalPC==NULL)

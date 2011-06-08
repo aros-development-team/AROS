@@ -70,7 +70,10 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	xchgl	%ecx,             stk_Upper(%ebx)
 	movl    %ecx,             tc_SPUpper(%edx)
 
-#if AROS_STACK_DEBUG
+	movb	tc_Flags(%edx), %cx
+	test	$TF_STACKCHK, %cx
+	je	noStackSnoop
+
 	/* Fill [stk_Lower .. stk_Pointer - 16] with 0xE1 */
 
 	pushl	%edi
@@ -98,8 +101,8 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 
 	popl	%eax
 	popl	%edi
-#endif
 
+noStackSnoop:
 	/* We need to restore %ebx before swapping stack pointers, so
 	   put its content in a register whose content doesn't matter
 	   anymore to us, like %edx.  */

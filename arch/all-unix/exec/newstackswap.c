@@ -21,6 +21,7 @@
 #include "exec_intern.h"
 
 #include <signal.h>
+#include <string.h>
 
 static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
 {
@@ -72,6 +73,9 @@ AROS_LH3(IPTR, NewStackSwap,
     ucx.uc_stack.ss_size  = (size_t)sss->stk_Pointer - (size_t)sss->stk_Lower;
     ucx.uc_stack.ss_flags = SS_ONSTACK;
     ucx.uc_link           = &ucx_return;
+
+    if (me->tc_Flags & TF_STACKCHK)
+    	memset(ucx.uc_stack.ss_sp, 0xE1, ucx.uc_stack.ss_size);
 
     D(bug("[NewStackSwap] Prepared stack: 0x%p - 0x%p (size %u bytes)\n", sss->stk_Lower, sss->stk_Pointer, ucx.uc_stack.ss_size));
 
