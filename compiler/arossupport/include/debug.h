@@ -225,17 +225,9 @@
    
 #define MUNGWALL_SIZE (32 * 1)
 
-#if AROS_SIZEOFULONG == 4
-#    define MEMFILL_FREE	0xDEADBEEFL
-#    define MEMFILL_ALLOC	0xC0DEDBADL
-#    define MEMFILL_WALL	0xABADC0DEL
-#elif AROS_SIZEOFULONG == 8
-#    define MEMFILL_FREE	0xDEADBEEFDEADBEEFL
-#    define MEMFILL_ALLOC	0xC0DEDBADC0DEDBADL
-#    define MEMFILL_WALL	0xABADC0DEABADC0DEL
-#else
-#    error sizeof ULONG is neither 4 nor 8 in this architecture
-#endif
+#define MEMFILL_FREE	0xDEADBEEFL
+#define MEMFILL_ALLOC	0xC0DEDBADL
+#define MEMFILL_WALL	0xABADC0DEL
 
 #undef MUNGE_BLOCK
 #undef BUILD_WALL
@@ -338,20 +330,24 @@
 #undef CHECK_STACK
 #if AROS_STACK_DEBUG
 /*
-   I don't want to care about word length here because ULONG is a part of IPTR and
-   ULONG test will do here on 64-bit machines too.
-   
-   TODO: This doesn't work for 'Reversed' stack (growing upwards). If someone will ever
-   work on such an architecture (SPARC ???) he'll have to fix it.
-*/
+ * This works if stack snooping is turned on. One way to do it is to boot AROS
+ * with "stacksnoop" command line argument.
+ * I don't want to care about word length here because ULONG is a part of IPTR and
+ * ULONG test will do here on 64-bit machines too.
+ *
+ * TODO: This doesn't work for 'Reversed' stack (growing upwards). If someone will ever
+ * work on such an architecture (SPARC ???) he'll have to fix it.
+ */
 #define CHECK_STACK							\
 {									\
     struct Task *me = FindTask(NULL);					\
-									\
-    ULONG *stktop = me->tc_SPLower;					\
+    if (me->tc_Flags & TF_STACKCHK)					\
+    {									\
+    	ULONG *stktop = me->tc_SPLower;					\
     									\
-    if (stktop && (*stktop != 0xE1E1E1E1))				\
-        bug("STACK OVERFLOW in %s, line %d\n", __FILE__, __LINE__);	\
+    	if (stktop && (*stktop != 0xE1E1E1E1))				\
+            bug("STACK OVERFLOW in %s, line %d\n", __FILE__, __LINE__);	\
+    }									\
 }
 #else
 #define CHECK_STACK
