@@ -10,7 +10,10 @@
  */
 #define IRQ_TIMER krnTimerIRQ()
 
-/* UNIX virtualizer needs large stack. Signal handling demands it. */
+/*
+ * Explicitly provide large stack size for KrnGetSystemAttr()
+ * UNIX virtualizer needs large stack. Signal handling demands it.
+ */
 #undef AROS_STACKSIZE
 #define AROS_STACKSIZE 40960
 
