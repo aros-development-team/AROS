@@ -10,6 +10,10 @@
  */
 #define IRQ_TIMER krnTimerIRQ()
 
+/* UNIX virtualizer needs large stack. Signal handling demands it. */
+#undef AROS_STACKSIZE
+#define AROS_STACKSIZE 40960
+
 /* We have no interrupt controller */
 #define ictl_enable_irq(irq, base)
 #define ictl_disable_irq(irq, base)
