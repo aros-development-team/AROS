@@ -8,6 +8,7 @@ FILES := \
 	all-tests \
 	arguments \
 	chdir \
+	exit \
 	strchr \
 	stpblk \
 	spawnv \
