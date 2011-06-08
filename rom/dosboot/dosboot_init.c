@@ -531,7 +531,6 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
         { NP_Output,            (IPTR) NULL                     },
         { NP_WindowPtr,         -1                              },
         { NP_CurrentDir,        (IPTR) NULL                     },
-        { NP_StackSize,         AROS_STACKSIZE * 2              },
         { NP_Cli,               (IPTR) 0                        },
         { TAG_END,                                              }
     };
