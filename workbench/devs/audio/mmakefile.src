@@ -6,6 +6,8 @@ FILES := libfunctions audio_commands objpoollite audio_esys
 #MM- workbench-devs-complete : workbench-devs-audio
 #MM- workbench-devs-audio : includes linklibs workbench-devs-AHI
 
+USER_CFLAGS := -I$(SRCDIR)/workbench/devs/AHI/Include/C
+
 %build_module mmake=workbench-devs-audio \
     modname=audio modtype=device \
     files="$(FILES)" uselibs="hiddstubs rom"
