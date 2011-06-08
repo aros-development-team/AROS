@@ -50,6 +50,12 @@ output.
  Applicable: all except PowerPC native.
 ------------------------------------------------------------------------------------------------
 
+ stacksnoop
+
+ Enable support for stack usage snooping.
+ Applicable: all hosted, m68k and x86-64 native.
+------------------------------------------------------------------------------------------------
+
  sysdebug=<flags>
 
  Enable various categories of runtime debug output. Categories are either separated by commas
