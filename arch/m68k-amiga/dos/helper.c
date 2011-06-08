@@ -53,24 +53,19 @@ BOOL CMPCBSTR(CONST_STRPTR s1, BSTR s2)
 
 BOOL CMPICBSTR(CONST_STRPTR s1, BSTR s2)
 {
-	UBYTE tmp[256];
-	UBYTE *ss2 = BADDR(s2);
-	LONG len = strlen(s1);
-	if (len != ss2[0])
-		return TRUE;
-	memcpy(tmp, ss2 + 1, len);
-	tmp[len] = 0;
-	return stricmp(s1, tmp);
+	int length = strlen(s1);
+
+	if (length != AROS_BSTR_strlen(s2))
+	    return TRUE;
+
+	return strnicmp(s1, AROS_BSTR_ADDR(s2), length);
 }
+
 BOOL CMPNICBSTR(CONST_STRPTR s1, BSTR s2, UBYTE length)
 {
-	UBYTE tmp[256];
-	UBYTE *ss2 = BADDR(s2);
-	if (ss2[0] < length || strlen(s1) < length)
+	if (AROS_BSTR_strlen(s2) < length || strlen(s1) < length)
 		return TRUE;
-	memcpy(tmp, ss2 + 1, ss2[0]);
-	tmp[ss2[0]] = 0;
-	return strnicmp(s1, tmp, length);
+	return strnicmp(s1, AROS_BSTR_ADDR(s2), length);
 }
 
 void BSTR2CINLINE(char *s)
