@@ -67,15 +67,6 @@
 	.set	retaddr, 0
 
 setjmp:
-#if OLDJMP
-	move.l	env(%sp),%a0		/* save area pointer */
-	move.l	retaddr(%sp),(%a0)+	/* save old PC (return address) */
-	lea	env(%sp),%a1		/* adjust saved SP since we won't rts */
-	move.l	%a1,(%a0)+		/* save old SP */
-	movem.l	%d2-%d7/%a2-%a6,(%a0)	/* save remaining non-scratch regs */
-	clr.l	%d0			/* return 0 */
-	rts
-#else
 	/* New version adapted from libnix instead of ixemul.
          * Note the slightly different register save order.
          */
@@ -84,7 +75,6 @@ setjmp:
 	movem.l	%d2-%d7/%a2-%a6/%sp,(%a0)	/* store all registers except scratch */
 	moveq.l	#0,%d0			/* return 0 */
 	rts
-#endif
 
 /*
 	The jmp_buf is filled as follows (d0/d1/a0/a1 are not saved):
