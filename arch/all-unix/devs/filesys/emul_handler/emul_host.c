@@ -246,7 +246,6 @@ static int host_startup(struct emulbase *emulbase)
     emulbase->eb_stdout = CreateStdHandle(STDOUT_FILENO);
     emulbase->eb_stderr = CreateStdHandle(STDERR_FILENO);
 
-    InitSemaphore(&emulbase->pdata.sem);
     NEWLIST(&emulbase->pdata.readList);
     emulbase->pdata.my_pid   = emulbase->pdata.SysIFace->getpid();
     AROS_HOST_BARRIER
@@ -418,12 +417,12 @@ static void timestamp2datestamp(struct emulbase *emulbase, time_t *timestamp, st
     struct ClockData date;
     struct tm *tm;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     tm = emulbase->pdata.SysIFace->localtime(timestamp);
     AROS_HOST_BARRIER
     
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     date.year  = tm->tm_year + 1900;
     date.month = tm->tm_mon + 1;
@@ -694,7 +693,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 
     DOPEN(bug("[emul] Opening host name: %s\n", fh->hostname));
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     r = nocase_lstat(emulbase->pdata.SysIFace, fh->hostname, &st);
     /* File name case is already adjusted here, so after this we can call UNIX functions directly */
@@ -749,14 +748,14 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     	/* Object is a softlink */
 	ret = ERROR_IS_SOFT_LINK;
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return ret;
 }
 
 void DoClose(struct emulbase *emulbase, struct filehandle *current)
 {
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     switch(current->type)
     {
@@ -772,7 +771,7 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
 	break;
     }
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 }
 
 LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
@@ -783,14 +782,14 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 
     DREAD(bug("[emul] Reading %u bytes from fd %d\n", iofs->io_Union.io_READ.io_Length, (int)fh->fd));
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     len = TryRead(emulbase->pdata.SysIFace, (IPTR)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
     DREAD(bug("[emul] Result: %d\n", len));
     if (len == -1)
 	error = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     if (len == -2)
     {
@@ -801,7 +800,7 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 	AddTail((struct List *)&emulbase->pdata.readList, (struct Node *)iofs);
 	Enable();
 
-	ObtainSemaphore(&emulbase->pdata.sem);
+	HostLib_Lock();
 
 	/* Own the filedescriptor and enable SIGIO on it */
 	emulbase->pdata.SysIFace->fcntl((IPTR)fh->fd, F_SETOWN, emulbase->pdata.my_pid);
@@ -817,7 +816,7 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 	emulbase->pdata.SysIFace->kill(emulbase->pdata.my_pid, SIGIO);
 	AROS_HOST_BARRIER
 
-	ReleaseSemaphore(&emulbase->pdata.sem);
+	HostLib_Unlock();
 	*async = TRUE;
 	return 0;
     }
@@ -834,14 +833,14 @@ LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
     int len;
     LONG error = 0;
     
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     len = emulbase->pdata.SysIFace->write((IPTR)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
     AROS_HOST_BARRIER
     if (len == -1)
 	error = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
  
     if (!error)
     	iofs->io_Union.io_READ.io_Length = len;
@@ -870,7 +869,7 @@ LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
 	mode = SEEK_END;
     }
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     res = LSeek((IPTR)file, 0, SEEK_CUR);
     AROS_HOST_BARRIER
@@ -890,7 +889,7 @@ LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
     if (res == -1)
 	error = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     if (!error)
 	*Offset = oldpos;
@@ -903,7 +902,7 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
 
     protect = prot_a2u(protect);
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     ret = nocase_mkdir(emulbase->pdata.SysIFace, fh->hostname, protect);
     if (!ret)
@@ -916,7 +915,7 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
     if ((ret == -1) || (fh->fd == NULL))
         ret = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return ret;
 }
@@ -926,7 +925,7 @@ LONG DoDelete(struct emulbase *emulbase, char *name)
     LONG ret;
     struct stat st;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     ret = nocase_lstat(emulbase->pdata.SysIFace, name, &st);
 
@@ -947,7 +946,7 @@ LONG DoDelete(struct emulbase *emulbase, char *name)
     if (ret)
 	ret = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return ret;
 }
@@ -956,13 +955,13 @@ LONG DoChMod(struct emulbase *emulbase, char *filename, ULONG prot)
 {
     LONG ret;
     
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     ret = nocase_chmod(emulbase->pdata.SysIFace, filename, prot_a2u(prot));
     if (ret)
         ret = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
     
     return ret;
 }
@@ -971,13 +970,13 @@ LONG DoHardLink(struct emulbase *emulbase, char *fn, char *oldfile)
 {
     LONG error;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     error = nocase_link(emulbase->pdata.SysIFace, oldfile, fn);
     if (error)
         error = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return error;
 }
@@ -986,13 +985,13 @@ LONG DoSymLink(struct emulbase *emulbase, char *dest, char *src)
 {
     LONG error;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     error = nocase_symlink(emulbase->pdata.SysIFace, dest, src);
     if (error)
         error = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return error;
 }
@@ -1001,7 +1000,7 @@ int DoReadLink(struct emulbase *emulbase, char *filename, char *buffer, ULONG si
 {
     int res;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     res = nocase_readlink(emulbase->pdata.SysIFace, filename, buffer, size);
     if (res == -1)
@@ -1010,7 +1009,7 @@ int DoReadLink(struct emulbase *emulbase, char *filename, char *buffer, ULONG si
         /* Buffer was too small */
         res = -2;
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return res;
 }
@@ -1019,13 +1018,13 @@ LONG DoRename(struct emulbase *emulbase, char *filename, char *newfilename)
 {
     LONG error;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     error = nocase_rename(emulbase->pdata.SysIFace, filename, newfilename);
     if (error)
 	error = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return error;
 }
@@ -1035,7 +1034,7 @@ LONG DoSetDate(struct emulbase *emulbase, char *name, struct DateStamp *date)
     struct utimbuf times;
     LONG res;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     times.actime = datestamp2timestamp(emulbase->pdata.SysIFace, date);
     times.modtime = times.actime;
@@ -1044,7 +1043,7 @@ LONG DoSetDate(struct emulbase *emulbase, char *name, struct DateStamp *date)
     if (res < 0)
         res = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return res;
 }
@@ -1054,7 +1053,7 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
     off_t absolute = 0;
     LONG err = 0;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     switch (io_SEEK->io_SeekMode) {
     case OFFSET_BEGINNING:
@@ -1093,7 +1092,7 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
 	    err = err_u2a(emulbase);
     }
        
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     if (!err)
         io_SEEK->io_Offset = absolute;
@@ -1104,12 +1103,12 @@ BOOL DoGetType(struct emulbase *emulbase, void *fd)
 {
     int ret;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
     
     ret = emulbase->pdata.SysIFace->isatty((IPTR)fd);
     AROS_HOST_BARRIER
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return ret;
 }
@@ -1119,14 +1118,14 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
     struct statfs buf;
     LONG err;
     
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     err = emulbase->pdata.SysIFace->statfs(path, &buf);
     AROS_HOST_BARRIER
     if (err)
     	err = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     if (!err)
     {
@@ -1142,12 +1141,12 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
 
 LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh)
 {
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     emulbase->pdata.SysIFace->rewinddir(fh->fd);
     AROS_HOST_BARRIER
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     /* Directory search position has been reset */
     fh->ph.dirpos = 0;
@@ -1181,14 +1180,14 @@ static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR 
   
     DEXAM(bug("[emul] Full name: %s\n", name));
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     err = emulbase->pdata.SysIFace->lstat(name, st);
     AROS_HOST_BARRIER
     if (err)
 	err = err_u2a(emulbase);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     if (FoundName)
     {
@@ -1301,7 +1300,7 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
     if (fh->type != FHD_DIRECTORY)
     	return ERROR_OBJECT_WRONG_TYPE;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     /*
      * First of all we have to go to the position where Examine() or
@@ -1317,7 +1316,7 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
     /* hm, let's read the data now! */
     dir = ReadDir(emulbase, fh, &FIB->fib_DiskKey);
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     if (!dir)
     	return ERROR_NO_MORE_ENTRIES;
@@ -1393,7 +1392,7 @@ LONG examine_all(struct emulbase *emulbase,
 
     for(;;)
     {
-	ObtainSemaphore(&emulbase->pdata.sem);
+	HostLib_Lock();
 
 #ifndef HOST_OS_android
 	oldpos = emulbase->pdata.SysIFace->telldir(fh->fd);
@@ -1406,7 +1405,7 @@ LONG examine_all(struct emulbase *emulbase,
 	if (!dir)
 	    error = err_u2a(emulbase);
 
-	ReleaseSemaphore(&emulbase->pdata.sem);
+	HostLib_Unlock();
 
 	if (!dir)
 	    break;
@@ -1437,12 +1436,12 @@ LONG examine_all(struct emulbase *emulbase,
 #ifdef HOST_OS_android
 	eac->eac_LastKey--;
 #else
-	ObtainSemaphore(&emulbase->pdata.sem);
+	HostLib_Lock();
 
 	emulbase->pdata.SysIFace->seekdir(fh->fd, oldpos);
 	AROS_HOST_BARRIER
 
-	ReleaseSemaphore(&emulbase->pdata.sem);
+	HostLib_Unlock();
 #endif
 	/* Examination will continue from the current position */
 	return 0;
@@ -1465,7 +1464,7 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
     BOOL do_endpwent = FALSE;
 #endif
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     /* "~<name>" means home of user <name> */
     if ((sp[1] == '\0') || (sp[1] == '/'))
@@ -1530,7 +1529,7 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
     }
 #endif
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     return newunixpath;
 }
@@ -1541,12 +1540,12 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
 
     DMOUNT(bug("[emul] GetCurrentDir(0x%p, %u)\n", path, len)); 
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     res = emulbase->pdata.SysIFace->getcwd(path, len);
     AROS_HOST_BARRIER
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     DMOUNT(bug("[emul] getcwd() returned %s\n", res));
     return res ? TRUE : FALSE;
@@ -1559,12 +1558,12 @@ int CheckDir(struct emulbase *emulbase, char *path)
 
     DMOUNT(bug("[emul] CheckDir(%s)\n", path));
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    HostLib_Lock();
 
     res = emulbase->pdata.SysIFace->stat(path, &st);
     AROS_HOST_BARRIER
 
-    ReleaseSemaphore(&emulbase->pdata.sem);
+    HostLib_Unlock();
 
     DMOUNT(bug("[emul] Result: %d, mode: %o\n", res, st.st_mode));
     if ((!res) && S_ISDIR(st.st_mode))
