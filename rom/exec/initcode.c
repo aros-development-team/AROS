@@ -81,7 +81,7 @@
 
 	    if ((res->rt_Version >= version) && (res->rt_Flags & startClass))
 	    {
-		DINITCODE("calling InitResident (%d %02x \"%s\")",
+		DINITCODE("calling InitResident (%ld %02lx \"%s\")",
 		    res->rt_Pri, res->rt_Flags, res->rt_Name);
 		InitResident(res, BNULL);
 	    }
