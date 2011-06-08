@@ -134,7 +134,7 @@ AROS_SHA(STRPTR, ,DIR, ,NULL))
     }
     else
     {
-	dir = CurrentDir(NULL);
+	dir = CurrentDir(BNULL);
 
 	for(i = 256;;i += 256)
 	{
