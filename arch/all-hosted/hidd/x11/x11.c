@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
@@ -198,7 +198,9 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 			XWindowChanges xwc;
 			XSizeHints sizehint;
     	    	    	BOOL replymsg = TRUE;
+#if DELAY_XWIN_MAPPING
 			struct xwinnode *node;
+#endif
 
 			xwc.width  = nmsg->width;
 			xwc.height = nmsg->height;
@@ -631,55 +633,23 @@ failexit:
 struct Task *create_x11task( struct x11task_params *params)
 {
     struct Task *task;
-    APTR    	 stack;
-    
-    task = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
+
+    task = NewCreateTask(TASKTAG_PC       , x11task_entry,
+    			 TASKTAG_STACKSIZE, XTASK_STACKSIZE,
+    			 TASKTAG_NAME     , XTASK_NAME,
+    			 TASKTAG_PRI	  , XTASK_PRIORITY,
+    			 TASKTAG_ARG1	  , params,
+    			 TAG_DONE);
     if (task)
     {
-    	NEWLIST(&task->tc_MemEntry);
-    	task->tc_Node.ln_Type =NT_TASK;
-    	task->tc_Node.ln_Name = XTASK_NAME;
-    	task->tc_Node.ln_Pri  = XTASK_PRIORITY;
-
-    	stack = AllocMem(XTASK_STACKSIZE, MEMF_PUBLIC);
-    	if(stack != NULL)
-    	{
-	    struct TagItem tags[] =
-	    {
-	    	 {TASKTAG_ARG1, (IPTR)params},
-		 {TAG_DONE  	    	    }
-	    };
-	    
-	    task->tc_SPLower = stack;
-	    task->tc_SPUpper = (UBYTE *)stack + XTASK_STACKSIZE;
-
-    	#if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper-SP_OFFSET;
-    	#else
-	    task->tc_SPReg = (UBYTE *)task->tc_SPLower+SP_OFFSET;
-    	#endif
-	    
-	    /* You have to clear signals first. */
-	    SetSignal(0, params->ok_signal | params->fail_signal);
-
-	    if(NewAddTask(task, x11task_entry, NULL, tags) != NULL)
-	    {
-	    	/* Everything went OK. Wait for task to initialize */
-		ULONG sigset;
+	/* Everything went OK. Wait for task to initialize */
+	ULONG sigset;
 		
-
-		sigset = Wait( params->ok_signal | params->fail_signal );
-		if (sigset & params->ok_signal)
-		{
-		    return task;
-		}
-		
-	    }	
-	    FreeMem(stack, XTASK_STACKSIZE);
-	    
-    	}
-        FreeMem(task,sizeof(struct Task));
-	
+	sigset = Wait( params->ok_signal | params->fail_signal );
+	if (sigset & params->ok_signal)
+	{
+	    return task;
+	}
     }
     return NULL;
 }

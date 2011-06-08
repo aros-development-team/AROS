@@ -1050,10 +1050,9 @@ static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 
 static int x11gfx_init(LIBBASETYPEPTR LIBBASE) 
 {
-    D(bug("[X11] Initializing semaphores: 0x%P, 0x%P\n", &LIBBASE->xsd.sema, &LIBBASE->xsd.x11sema));
+    D(bug("[X11] Initializing semaphore 0x%p\n", &LIBBASE->xsd.sema));
 
     InitSemaphore(&LIBBASE->xsd.sema);
-    InitSemaphore(&LIBBASE->xsd.x11sema);
 
     return OOP_ObtainAttrBases(attrbases);
 }
