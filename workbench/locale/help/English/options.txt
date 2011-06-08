@@ -52,7 +52,9 @@ output.
 
  stacksnoop
 
- Enable support for stack usage snooping.
+ Enable support for stack usage snooping. This means that before the task is run (or when the stack
+is swapped), stack area will be filled with 0xE1 value. By checking how many bytes at the top of
+stack contain this value, you can determine how much of stack space was used by the task.
  Applicable: all hosted, m68k and x86-64 native.
 ------------------------------------------------------------------------------------------------
 
