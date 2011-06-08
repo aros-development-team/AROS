@@ -73,6 +73,9 @@ AROS_LH1(intptr_t, KrnGetSystemAttr,
     case KATTR_TimerIRQ:
 	return IRQ_TIMER;
 
+    case KATTR_MinStack:
+    	return AROS_STACKSIZE;
+
     default:
 	return -1;
     }
