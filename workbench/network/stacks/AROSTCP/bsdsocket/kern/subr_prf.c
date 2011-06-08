@@ -103,12 +103,12 @@ panic(const char *fmt,...)
 {
   struct EasyStruct panicES = {
     sizeof( struct EasyStruct),
-    NULL,
+    0,
     "TCP/IP PANIC",
     "panic: %s" ,
     "Shut Down TCP/IP"
   };
-  static in_panic = 0;
+  static int in_panic = 0;
   struct CSource cs;
   char buffer[PANICBUFFERSIZE];
   va_list ap;
@@ -292,6 +292,7 @@ vlog(unsigned long level, const char *tag, const char *fmt, va_list ap)
 ******************************************************************************
 *
 */
+#ifndef __AROS__
 int 
 printf(const char *fmt, ...)
 {
@@ -332,6 +333,7 @@ printf(const char *fmt, ...)
     return 0;
 #endif
 }
+#endif
 
 /****i* bsdsocket.library/sprintf ******************************************
 *
@@ -570,6 +572,7 @@ int csprintf(struct CSource *cs, const char *fmt, ...)
   return len;
 }
 
+#ifndef __AROS__
 int vsprintf(char *buf, const char *fmt, va_list ap)
 {
   struct CSource cs;
@@ -591,6 +594,7 @@ int sprintf(char *buf, const char *fmt, ...)
   va_end(ap);
   return len;
 }
+#endif
 
 char *
 csprintn(u_long n, int base, char *buf, int buflen)
