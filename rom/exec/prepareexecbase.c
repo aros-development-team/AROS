@@ -274,6 +274,11 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 	if (opts)
 	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
 
+	opts = strstr(args, "stacksnoop");
+	if (opts)
+	    PrivExecBase(SysBase)->IntFlags = EXECF_StackSnoop;
+
+
 	/*
 	 * Parse system runtime debug flags.
 	 * These are public. In future they will be editable by prefs program.

@@ -41,12 +41,13 @@ AROS_LH3(IPTR, NewStackSwap,
 	_PUSH(sp, args->Args[i]);
     }
 
-#if AROS_STACK_DEBUG
-    UBYTE* startfill = sss->stk_Lower;
+    if (task->tc_Flags & TF_STACKCHK)
+    {
+    	UBYTE* startfill = sss->stk_Lower;
 
-    while (startfill < (UBYTE *)sp)
-	*startfill++ = 0xE1;
-#endif
+    	while (startfill < (UBYTE *)sp)
+	    *startfill++ = 0xE1;
+    }
 
     /*
      * We need to Disable() before changing limits and SP, otherwise
