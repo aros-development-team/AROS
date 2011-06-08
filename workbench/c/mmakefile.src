@@ -41,7 +41,6 @@ FILES := \
     Rename \
     RequestChoice \
     RequestFile \
-    RequestString \
     ResList \
     Search \
     SetClock \
