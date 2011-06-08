@@ -306,3 +306,12 @@ void krnSysCall(unsigned char n)
     KernelIFace.raise(SIGUSR1);
     AROS_HOST_BARRIER
 }
+
+/*
+ * This little function is used by base code in rom/kernel
+ * to get correct signal number, defined in host OS headers.
+ */
+int krnTimerIRQ(void)
+{
+    return SIGALRM;
+}
