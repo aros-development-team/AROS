@@ -33,6 +33,33 @@ AROS_SLIB_ENTRY(StackSwap, Exec):
                 xchgq   %rcx, stk_Upper(%rbx)
                 movq    %rcx, tc_SPUpper(%rax)
 
+		movb	tc_Flags(%rax), %cl
+		test	$TF_STACKCHK, %cl
+		je	noStackSnoop
+
+		/* Fill [stk_Lower .. stk_Pointer - 16] with 0xE1 */
+
+		/* Destination register = %rdi = NEW SPLower.
+		   Which was already swapped above, so to be found
+		   in task->tc_SPLower */
+		movq	tc_SPLower(%rax), %rdi
+
+		/* %rcx = count register = NEW SP register - NEW SP_Lower - 16 */
+		movq	stk_Pointer(%rbx), %rcx
+		subq	$16, %rcx
+		subq	%rdi, %rcx
+
+		/* byte value to store */
+		movb	$0xE1, %al
+
+		/* direction to store: forward */
+		cld
+
+		/* do the store operation: put %rcx times %al into memory starting at %rdi. */
+		rep
+		stosb
+
+noStackSnoop:
                 /* StackSwap -> %rdi */
                 movq    %rbx, %rdi
                 popq    %rbx
