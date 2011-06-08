@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new Amiga task
@@ -9,24 +9,6 @@
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
-
-struct newMemList
-{
-  struct Node	  nml_Node;
-  UWORD 	  nml_NumEntries;
-  struct MemEntry nml_ME[2];
-};
-
-static const struct newMemList MemTemplate =
-{
-    { 0, },
-    2,
-    {
-	{ { MEMF_CLEAR|MEMF_PUBLIC }, sizeof(struct Task) },
-	{ { MEMF_CLEAR		   }, 0 		  }
-    }
-};
-
 
 /*****************************************************************************
 
