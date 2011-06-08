@@ -93,8 +93,9 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     struct StackSwapStruct sss;
     BPTR oldinput = BNULL;
 
-    if(stacksize < AROS_STACKSIZE)
-	stacksize = AROS_STACKSIZE;
+    /* Make sure we have minimal stack requested by kernel.resource */
+    if (stacksize < PrivDosBase(DOSBase)->StackSize)
+	stacksize = PrivDosBase(DOSBase)->StackSize;
 
     stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY);
     if(stack==NULL)

@@ -6,7 +6,7 @@
     Lang: english
 */
 
-
+#include <aros/kernel.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -14,6 +14,7 @@
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <aros/symbolsets.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
@@ -25,6 +26,11 @@
 #include <aros/debug.h>
 #include LC_LIBDEFS_FILE
 #include "dos_intern.h"
+
+/* Kludge for old PPC native kernels */
+#ifndef KrnGetSystemAttr
+#define KrnGetSystemAttr(x) AROS_STACKSIZE
+#endif
 
 #ifdef __mc68000
 
@@ -95,6 +101,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
     IPTR * taskarray;
     struct DosInfo *dosinfo;
     struct FileSysResource *fsr;
+    APTR KernelBase;
 
     LIBBASE->dl_Root = (struct RootNode *)AllocMem(sizeof(struct RootNode),
                                                    MEMF_PUBLIC|MEMF_CLEAR);
@@ -148,6 +155,13 @@ static int DosInit(struct DosLibrary *LIBBASE)
     /* Initialize for the fools that illegally used this field */
     LIBBASE->dl_UtilityBase   = OpenLibrary("utility.library", 0);
     LIBBASE->dl_IntuitionBase = NULL;
+
+    /* Query kernel.resource about minimum stack size */
+    KernelBase = OpenResource("kernel.resource");
+    if (!KernelBase)
+    	return FALSE;
+
+    PrivDosBase(LIBBASE)->StackSize = KrnGetSystemAttr(KATTR_MinStack);
 
     PatchDOS(LIBBASE);
 
