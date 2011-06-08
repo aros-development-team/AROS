@@ -22,8 +22,8 @@
 	AROS_LH5(struct Library *, MakeLibrary,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR,       funcInit,   A0),
-	AROS_LHA(APTR,       structInit, A1),
+	AROS_LHA(CONST_APTR, funcInit,   A0),
+	AROS_LHA(CONST_APTR, structInit, A1),
 	AROS_LHA(ULONG_FUNC, libInit,    A2),
 	AROS_LHA(ULONG,      dataSize,   D0),
 	AROS_LHA(BPTR,       segList,    D1),

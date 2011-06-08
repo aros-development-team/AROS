@@ -19,7 +19,7 @@
 	AROS_LH3(void, InitStruct,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR,  initTable, A1),
+	AROS_LHA(CONST_APTR,  initTable, A1),
 	AROS_LHA(APTR,  memory,    A2),
 	AROS_LHA(ULONG, size,      D0),
 
