@@ -70,17 +70,6 @@
 	.set	val, env+4
 	.set	retaddr, 0
 longjmp:
-#ifdef OLDJMP
-	move.l	env(%sp),%a0		/* save area pointer */
-	move.l	val(%sp),%d0
-	jne	okret
-	moveq.l	#1,%d0			/* make sure it isn't 0 */
-okret:
-	move.l	4(%a0),%sp		/* restore SP */
-	move.l	0(%a0),(%sp)		/* restore PC */
-	movem.l	8(%a0),%d2-%d7/%a2-%a6	/* restore remaining non-scratch regs */
-	rts
-#else
 	/* New version adapted from libnix instead of ixemul.
          * Note the slightly different register save order.
          */
@@ -94,7 +83,6 @@ okret:
 	move.l	(%a0)+,(%sp)		/* set return address */
 	movem.l	(%a0),%d2-%d7/%a2-%a6	/* restore all registers except scratch and sp */
 	rts
-#endif
 
 /*
 	The jmp_buf is filled as follows (d0/d1/a0/a1 are not saved):
