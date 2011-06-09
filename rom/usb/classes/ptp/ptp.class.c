@@ -5,9 +5,6 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
-#warning "PTP.class is currently not 64 bit compatible as it uses the fib_DiskKey LONG field for storing a pointer."
-#warning "Also dp_Res1 and dp_Res2 of DOS packets are not 64 bit types, how is this going to work for locks then?"
-
 #include "debug.h"
 
 #include "ptp.class.h"
@@ -2987,7 +2984,7 @@ struct FileLock * nCreateLock(struct NepClassPTP *nch, struct DosPacket *dp, str
     }
     KPRINTF(10, ("CreateLock: FL=%08lx for %08lx: '%s' (%s)\n", fl, poi, poi->poi_Name, (lockmode == ACCESS_READ) ? "READ" : "WRITE"));
     fl->fl_Link = nch->nch_VolEntry->dol_misc.dol_volume.dol_LockList;
-    fl->fl_Key = (LONG) poi;
+    fl->fl_Key = (IPTR) poi;
     fl->fl_Access = lockmode;
     fl->fl_Task = nch->nch_DOSMsgPort;
     fl->fl_Volume = MKBADDR(nch->nch_VolEntry);
@@ -3336,7 +3333,7 @@ void nHandleDOSPackets(struct NepClassPTP *nch)
                     {
                         break;
                     }
-                    fh->fh_Arg1 = (LONG) pfh;
+                    fh->fh_Arg1 = (IPTR)pfh;
                     break;
                 } else {
                     if(dp->dp_Action == ACTION_FINDINPUT)
@@ -3448,7 +3445,7 @@ void nHandleDOSPackets(struct NepClassPTP *nch)
                     break;
                 }
                 pfh->pfh_Flags |= PTPF_NEWFILE|PTPF_MODIFIED;
-                fh->fh_Arg1 = (LONG) pfh;
+                fh->fh_Arg1 = (IPTR) pfh;
                 AddTail((struct List *) &parentdir->poi_Children, (struct Node *) poi);
                 break;
 
@@ -3567,7 +3564,7 @@ void nHandleDOSPackets(struct NepClassPTP *nch)
                     nFreeLock(nch, fl);
                 }
                 pfh->pfh_SeekPos = 0;
-                fh->fh_Arg1 = (LONG) pfh;
+                fh->fh_Arg1 = (IPTR)pfh;
                 break;
 
             case ACTION_END:
@@ -3877,10 +3874,10 @@ void nHandleDOSPackets(struct NepClassPTP *nch)
                             break;
                         }
                         KPRINTF(1, ("Child: %s\n", poi->poi_Name));
-                        fib->fib_DiskKey = (ULONG) poi;
+                        fib->fib_DiskKey = (IPTR) poi;
                     } else {
                         KPRINTF(5, ("Examine (%08lx): '%s'\n", poi, poi->poi_Name));
-                        fib->fib_DiskKey = (ULONG) &poi->poi_Children;
+                        fib->fib_DiskKey = (IPTR) &poi->poi_Children;
                     }
                 } else {
                     pfh = (struct PTPFileHandle *) dp->dp_Arg1;

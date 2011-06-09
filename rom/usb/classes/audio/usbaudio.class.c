@@ -1947,10 +1947,10 @@ void nAddAudioModes(struct NepClassAudio *nch)
             tags->ti_Data = nam->nam_AHIModeID;
             tags++;
             tags->ti_Tag = AHIDB_Name;
-            tags->ti_Data = (ULONG) ahimodename;
+            tags->ti_Data = (IPTR) ahimodename;
             tags++;
             tags->ti_Tag = AHIDB_Driver;
-            tags->ti_Data = (ULONG) "usbaudio";
+            tags->ti_Data = (IPTR) "usbaudio";
             tags++;
             /*tags->ti_Tag = AHIDB_DriverBaseName;
             tags->ti_Data = (ULONG) "";
@@ -1971,7 +1971,7 @@ void nAddAudioModes(struct NepClassAudio *nch)
             tags->ti_Data = FALSE;
             tags++;
             tags->ti_Tag = AHIDB_NepAudioMode;
-            tags->ti_Data = (ULONG) nam;
+            tags->ti_Data = (IPTR) nam;
             tags++;
             tags->ti_Tag = TAG_END;
             AHI_AddAudioMode(nam->nam_Tags);
@@ -2247,7 +2247,7 @@ AROS_UFH0(void, nGUITask)
 
             WindowContents, VGroup,
                 Child, ColGroup(2), GroupFrameT("Global Settings"),
-                    Child, Label((ULONG) "None"),
+                    Child, Label((IPTR) "None"),
                     Child, HSpace(0),
                     End,
                 Child, VSpace(0),

@@ -491,7 +491,7 @@ AROS_UFH0(void, nGUITask)
                 Child, VGroup, GroupFrameT("Firmware Upgrade/Download"),
                     Child, HGroup,
                         MUIA_ShowMe, nch->nch_DFUStatus.bState >= STATE_DFU_IDLE,
-                        Child, Label((ULONG) "Firmware file:"),
+                        Child, Label((IPTR) "Firmware file:"),
                         Child, PopaslObject,
                             MUIA_Popstring_String, nch->nch_FWFileObj = StringObject,
                                 StringFrame,

@@ -483,9 +483,9 @@ BOOL nLoadClassConfig(struct NepEthBase *nh)
     cdc->cdc_MACAddress[0] = 0x00;
     cdc->cdc_MACAddress[1] = 0xff;
     cdc->cdc_MACAddress[2] = 0xff;
-    cdc->cdc_MACAddress[3] = ((ULONG) cdc)>>20;
-    cdc->cdc_MACAddress[4] = ((ULONG) cdc)>>12;
-    cdc->cdc_MACAddress[5] = ((ULONG) cdc)>>4;
+    cdc->cdc_MACAddress[3] = ((IPTR) cdc)>>20;
+    cdc->cdc_MACAddress[4] = ((IPTR) cdc)>>12;
+    cdc->cdc_MACAddress[5] = ((IPTR) cdc)>>4;
     ncp->ncp_UsingDefaultCfg = TRUE;
     /* try to load default config */
     pic = psdGetClsCfg(libname);
@@ -1380,7 +1380,7 @@ AROS_UFH0(void, nGUITask)
             WindowContents, VGroup,
                 Child, ColGroup(2), GroupFrameT(ncp->ncp_Interface ? "Device Settings" : "Default Device Settings"),
                     //Child, HSpace(0),
-                    Child, Label((ULONG) "Default MAC Address:"),
+                    Child, Label((IPTR) "Default MAC Address:"),
                     Child, ncp->ncp_MACAddressObj = StringObject,
                         StringFrame,
                         MUIA_CycleChain, 1,
@@ -1389,7 +1389,7 @@ AROS_UFH0(void, nGUITask)
                         MUIA_String_MaxLen, 18,
                         MUIA_String_Accept, "0123456789abcdefABCDEF:",
                         End,
-                    Child, Label((ULONG) "Default " DEVNAME " Unit:"),
+                    Child, Label((IPTR) "Default " DEVNAME " Unit:"),
                     Child, ncp->ncp_UnitObj = StringObject,
                         StringFrame,
                         MUIA_CycleChain, 1,

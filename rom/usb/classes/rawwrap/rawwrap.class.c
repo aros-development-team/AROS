@@ -719,7 +719,7 @@ AROS_UFH0(void, nRawWrapTask)
                                                psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                                 if(ioreq)
                                 {
-                                    if((ULONG) ioreq == (ULONG) -1)
+                                    if (ioreq == (APTR)-1)
                                     {
                                         ncp->ncp_ShortPktRead = TRUE;
                                     } else {
@@ -740,7 +740,7 @@ AROS_UFH0(void, nRawWrapTask)
                             
                             if(ioreq)
                             {
-                                if((ULONG) ioreq == (ULONG) -1)
+                                if (ioreq == (APTR)-1)
                                 {
                                     if(len)
                                     {
@@ -976,7 +976,7 @@ AROS_UFH0(void, nRawWrapTask)
             KPRINTF(1, ("Aborting pending read...\n"));
             psdAbortPipe(ncp->ncp_EPInPipe);
             psdWaitPipe(ncp->ncp_EPInPipe);
-            if((ULONG) ioreq != (ULONG) -1)
+            if (ioreq != (APTR)-1)
             {
                 ioreq->io_Error = IOERR_ABORTED;
                 ReplyMsg((struct Message *) ioreq);
@@ -1243,7 +1243,7 @@ AROS_UFH0(void, nGUITask)
                         MUIA_Disabled, ncp->ncp_Interface ? TRUE : FALSE,
                         Child, HSpace(0),
                         Child, ColGroup(2),
-                            Child, Label((ULONG) "Bind to Vendor/Unknown Interfaces:"),
+                            Child, Label((IPTR) "Bind to Vendor/Unknown Interfaces:"),
                             Child, HGroup,
                                 Child, ncp->ncp_BindVendorObj = ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
@@ -1256,7 +1256,7 @@ AROS_UFH0(void, nGUITask)
                                     End,
                                 Child, HSpace(0),
                                 End,
-                            Child, Label((ULONG) "Bind to all interfaces:"),
+                            Child, Label((IPTR) "Bind to all interfaces:"),
                             Child, HGroup,
                                 Child, ncp->ncp_BindAllObj = ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
@@ -1274,7 +1274,7 @@ AROS_UFH0(void, nGUITask)
                         End,
                     Child, ColGroup(2), GroupFrameT(ncp->ncp_Interface ? "Device Settings" : "Default Device Settings"),
                         //Child, HSpace(0),
-                        Child, Label((ULONG) "Default " DEVNAME " Unit:"),
+                        Child, Label((IPTR) "Default " DEVNAME " Unit:"),
                         Child, HGroup,
                             Child, ncp->ncp_UnitObj = StringObject,
                                 StringFrame,
@@ -1284,7 +1284,7 @@ AROS_UFH0(void, nGUITask)
                                 MUIA_String_Accept, "0123456789",
                                 End,
                             Child, HSpace(0),
-                            Child, Label((ULONG) "Exclusive access:"),
+                            Child, Label((IPTR) "Exclusive access:"),
                             Child, ncp->ncp_UnitExclObj = ImageObject, ImageButtonFrame,
                                 MUIA_Background, MUII_ButtonBack,
                                 MUIA_CycleChain, 1,
@@ -1295,7 +1295,7 @@ AROS_UFH0(void, nGUITask)
                                 MUIA_ShowSelState, FALSE,
                                 End,
                             End,
-                        Child, Label((ULONG) "Out NAK Timeout:"),
+                        Child, Label((IPTR) "Out NAK Timeout:"),
                         Child, ncp->ncp_OutNakTimeoutObj = SliderObject, SliderFrame,
                             MUIA_CycleChain, 1,
                             MUIA_Numeric_Min, 0,
@@ -1303,7 +1303,7 @@ AROS_UFH0(void, nGUITask)
                             MUIA_Numeric_Value, ncp->ncp_CDC->cdc_OutNakTimeout,
                             MUIA_Numeric_Format, "%ld00ms",
                             End,
-                        Child, Label((ULONG) "In NAK Timeout:"),
+                        Child, Label((IPTR) "In NAK Timeout:"),
                         Child, ncp->ncp_InNakTimeoutObj = SliderObject, SliderFrame,
                             MUIA_CycleChain, 1,
                             MUIA_Numeric_Min, 0,
@@ -1311,14 +1311,14 @@ AROS_UFH0(void, nGUITask)
                             MUIA_Numeric_Value, ncp->ncp_CDC->cdc_InNakTimeout,
                             MUIA_Numeric_Format, "%ld00ms",
                             End,
-                        Child, Label((ULONG) "In Buffer Mode:"),
+                        Child, Label((IPTR) "In Buffer Mode:"),
                         Child, HGroup,
                             Child, ncp->ncp_InBufferModeObj = CycleObject,
                                 MUIA_CycleChain, 1,
                                 MUIA_Cycle_Entries, BufferModeStrings,
                                 MUIA_Cycle_Active, ncp->ncp_CDC->cdc_InBufferMode,
                                 End,
-                            Child, Label((ULONG) "Buffer Size:"),
+                            Child, Label((IPTR) "Buffer Size:"),
                             Child, ncp->ncp_InBufferSizeObj = SliderObject, SliderFrame,
                                 MUIA_CycleChain, 1,
                                 MUIA_Numeric_Min, 1,
@@ -1327,7 +1327,7 @@ AROS_UFH0(void, nGUITask)
                                 MUIA_Numeric_Format, "%ldKB",
                                 End,
                             End,
-                        Child, Label((ULONG) "Short Reads Terminate:"),
+                        Child, Label((IPTR) "Short Reads Terminate:"),
                         Child, HGroup,
                             Child, ncp->ncp_ShortReadTermObj = ImageObject, ImageButtonFrame,
                                 MUIA_Background, MUII_ButtonBack,
