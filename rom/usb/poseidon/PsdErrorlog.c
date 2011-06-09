@@ -18,7 +18,7 @@
 #define ARGS_SIZEOF   3
 
 static const char *template = "NOFLUSH/S,DEBUG/S,NOTIMESTAMPS=NOTS/S";
-static const char *version = "$VER: PsdErrorlog 4.0 (28.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char *version = "$VER: PsdErrorlog 4.0 (28.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 

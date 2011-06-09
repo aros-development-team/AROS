@@ -19,7 +19,7 @@
 #define ARGS_SIZEOF   3
 
 static const char *template = "SHOWROOT/S,QUICK/S,STRINGS/S";
-static const char *version = "$VER: PsdDevLister 4.0 (03.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char *version = "$VER: PsdDevLister 4.0 (03.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 
