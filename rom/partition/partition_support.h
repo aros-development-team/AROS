@@ -72,6 +72,7 @@ LONG readBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
 LONG readDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem);
 LONG PartitionWriteBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
 LONG writeDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem);
+LONG deviceError(LONG err);
 
 void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *ph, ULONG first_sector, ULONG count_sector);
 void setDosType(struct DosEnvec *de, ULONG type);
