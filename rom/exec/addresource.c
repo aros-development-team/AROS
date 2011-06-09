@@ -17,12 +17,9 @@
 #include "exec_debug.h"
 #include "exec_intern.h"
 
-/* Kludge for old kernels (PPC native) */
+/* Kludge for old kernels */
 #ifndef KrnStatMemory
 #define KrnStatMemory(...)
-#endif
-#ifndef KrnGetSystemAttr
-#define KrnGetSystemAttr(x) AROS_STACKSIZE
 #endif
 
 /*****************************************************************************
@@ -103,9 +100,6 @@
 	 */
 	if (!PrivExecBase(SysBase)->PageSize)
 	    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
-
-	PrivExecBase(SysBase)->StackSize = KrnGetSystemAttr(KATTR_MinStack);
-	DINIT("Minimum stack size: %lu", PrivExecBase(SysBase)->StackSize);
 
 	/* We print the notice here because kprintf() works only after KernelBase is set up */
 	if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)

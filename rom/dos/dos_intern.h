@@ -51,11 +51,9 @@ struct IntDosBase
 {
     struct DosLibrary pub;
     struct Library *debugBase;
-    ULONG StackSize;
 };
 
-#define PrivDosBase(base) ((struct IntDosBase *)base)
-#define DebugBase PrivDosBase(DOSBase)->debugBase
+#define DebugBase ((struct IntDosBase *)DOSBase)->debugBase
 
 struct DAList
 {
