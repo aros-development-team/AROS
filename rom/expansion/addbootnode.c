@@ -135,6 +135,8 @@
 	}
 	if((bn = AllocMem(sizeof(struct BootNode), MEMF_CLEAR|MEMF_PUBLIC)))
 	{
+	    APTR DOSBase;
+
 	    bn->bn_Node.ln_Name = (STRPTR)configDev;
 	    bn->bn_Node.ln_Type = NT_BOOTNODE;
 	    bn->bn_Node.ln_Pri = bootPri;
@@ -143,6 +145,12 @@
 	    Forbid();
 	    Enqueue( &ExpansionBase->MountList, (struct Node *)bn );
 	    Permit();
+
+	    /* Don't call AddDosNode() if dos is not yet available, it would recurse and fail with duplicate device */
+	    DOSBase = OpenLibrary("dos.library", 0);
+	    if (!DOSBase)
+		return TRUE;
+	    CloseLibrary(DOSBase);
 	}
 	else
 	    return FALSE;
