@@ -309,6 +309,11 @@ void load_elf_file(const char *Name, void *file, unsigned long long virt)
             {
                 kprintf("[ELF Loader] Relocation error!\n");
             }
+            /*
+             * Flush relocs after they are processed, in order not to pass
+             * bogus sections to debug.library
+             */
+            sh[i].addr = 0;
         }
     }
 
