@@ -113,8 +113,6 @@ static const struct newMemList MemTemplate =
     ULONG  pri	     = 0;
     ULONG  flags     = 0;
 
-    nml.nml_ME[1].me_Length = PrivExecBase(SysBase)->StackSize;
-
     while ((tag = LibNextTagItem(&tstate)))
     {
 	switch (tag->ti_Tag)
@@ -166,15 +164,6 @@ static const struct newMemList MemTemplate =
  	}
     }
 
-    /*
-     * TODO: When AROS_STACKSIZE is made smaller in aros/cpu.h, handle
-     * minimum stack size here. Stack size should not become less than
-     * PrivExecBase(SysBase)->StackSize, otherwise the code can easily
-     * crash on hosted AROS because host OS may demand increased stack
-     * for exception (signal) handlers.
-     * Currently this modification would unnecessarily increase stack
-     * usage in unwanted places (for example ata.device uses 16K stack).
-     */
     DADDTASK("NewCreateTaskA: name %s\n", taskname ? taskname : "<NULL>");
 
     if (NewAllocEntry((struct MemList *)&nml, &ml, NULL))

@@ -99,7 +99,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* 6 */    { NP_Error   	  , TAGDATA_NOT_SPECIFIED    	},
     /* 7 */    { NP_CloseError	  , 1           	    	},
     /* 8 */    { NP_CurrentDir	  , TAGDATA_NOT_SPECIFIED    	},
-    /* 9 */    { NP_StackSize	  , PrivDosBase(DOSBase)->StackSize},
+    /* 9 */    { NP_StackSize	  , AROS_STACKSIZE    	        },
     /*10 */    { NP_Name    	  , (IPTR)"New Process" 	},
     /*11 */    { NP_Priority	  , me->pr_Task.tc_Node.ln_Pri 	},
     /*12 */    { NP_Arguments	  , (IPTR)NULL  	    	},
@@ -140,7 +140,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     	    LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 
 	    D(bug("[createnewproc] Parent stack: %u (0x%08X)\n", parentstack, parentstack));
-	    if (parentstack > defaults[9].ti_Data)
+	    if (parentstack > AROS_STACKSIZE)
 	    {
 	        defaults[9].ti_Data = parentstack;
 	    }
@@ -198,9 +198,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
      */
     process->pr_StackSize = defaults[9].ti_Data;
     /* We need a minimum stack to handle interrupt contexts */
-    if (process->pr_StackSize < PrivDosBase(DOSBase)->StackSize)
+    if (process->pr_StackSize < AROS_STACKSIZE)
     {
-	process->pr_StackSize = PrivDosBase(DOSBase)->StackSize;
+	process->pr_StackSize = AROS_STACKSIZE;
     }
 
     stack = AllocMem(process->pr_StackSize, MEMF_PUBLIC);
