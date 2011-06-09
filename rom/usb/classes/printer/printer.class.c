@@ -970,7 +970,7 @@ AROS_UFH0(void, nGUITask)
                     MUIA_ShowMe, FALSE,
                     End, */
                 Child, ColGroup(2), GroupFrameT("Global Settings"),
-                    Child, Label((ULONG) "Epson Init Sequence:"),
+                    Child, Label((IPTR) "Epson Init Sequence:"),
                     Child, HGroup,
                         Child, nh->nh_EpsonInitObj = ImageObject, ImageButtonFrame,
                             MUIA_Background, MUII_ButtonBack,
@@ -983,7 +983,7 @@ AROS_UFH0(void, nGUITask)
                             End,
                         Child, HSpace(0),
                         End,
-                    Child, Label((ULONG) "Enable SoftReset:"),
+                    Child, Label((IPTR) "Enable SoftReset:"),
                     Child, HGroup,
                         Child, nh->nh_SoftResetObj = ImageObject, ImageButtonFrame,
                             MUIA_Background, MUII_ButtonBack,

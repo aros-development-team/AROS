@@ -1021,7 +1021,7 @@ AROS_UFH0(void, nGUITask)
 
             WindowContents, VGroup,
                 Child, ColGroup(2), GroupFrameT("Global Settings"),
-                    Child, Label((ULONG) "None"),
+                    Child, Label((IPTR) "None"),
                     Child, HSpace(0),
                     End,
                 Child, VSpace(0),
