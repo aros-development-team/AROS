@@ -140,6 +140,24 @@ LONG writeDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, voi
     return DoIO((struct IORequest *)ioreq);
 }
 
+LONG deviceError(LONG err)
+{
+    switch (err)
+    {
+    case 0:
+    	return 0;
+
+    case TDERR_WriteProt:
+    	return ERROR_DISK_WRITE_PROTECTED;
+
+    case TDERR_SeekError:
+    	return ERROR_SEEK_ERROR;
+    
+    default:
+    	return ERROR_NOT_A_DOS_DISK;
+    }
+}
+
 /*
  * Initialize partition handle based on parent's data.
  * Geometry will be inherited from parent and adjusted if needed

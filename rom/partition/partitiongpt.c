@@ -10,7 +10,7 @@
 #define DEBUG 1
 #define DEBUG_UUID
 */
-#define NO_WRITE
+
 #define DREAD(x)
 #define DWRITE(x)
 
@@ -37,6 +37,9 @@
 #include "partitionmbr.h"
 #include "platform.h"
 #include "debug.h"
+
+/* Some error code that collides with neither trackdisk.device not dos.library error codes */
+#define ERROR_BAD_CRC 255
 
 struct GPTPartitionHandle
 {
@@ -169,7 +172,12 @@ static void PRINT_LE_UUID(char *s, uuid_t *id)
 #endif
 
 #ifdef NO_WRITE
-#define writeDataFromBlock(root, blk, tablesize, table) 1
+#define writeDataFromBlock(root, blk, tablesize, table) TDERR_WriteProt
+#define PartitionWriteBlock(base, root, blk, mem) TDERR_WriteProt
+#endif
+#ifdef SIM_WRITE
+#define writeDataFromBlock(root, blk, tablesize, table) 0
+#define PartitionWriteBlock(base, root, blk, mem) 0
 #endif
 
 static void GPT_PatchDosEnvec(struct DosEnvec *de, struct GPTPartition *p)
@@ -207,12 +215,14 @@ static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle
     if (!readBlock(PartitionBase, root, block, hdr))
     {
     	ULONG hdrSize = AROS_LE2LONG(hdr->HeaderSize);
+    	UQUAD currentblk = AROS_LE2QUAD(hdr->CurrentBlock);
 
 	D(bug("[GPT] Header size: specified %u, expected %u\n", hdrSize, GPT_MIN_HEADER_SIZE));
+	DREAD(KPrintF("[GPT] Read: Header block %llu, backup block %llu\n", currentblk, AROS_LE2QUAD(hdr->BackupBlock)));
 
 	/* Check signature, header size, and current block number */
     	if ((!memcmp(hdr->Signature, GPT_SIGNATURE, sizeof(hdr->Signature))) &&
-    	    (hdrSize >= GPT_MIN_HEADER_SIZE) && (AROS_LE2LONG(hdr->CurrentBlock) == block))
+    	    (hdrSize >= GPT_MIN_HEADER_SIZE) && (currentblk == block))
     	{
     	    /*
     	     * Use zlib routine for CRC32.
@@ -259,13 +269,15 @@ static LONG PartitionGPTCheckPartitionTable(struct Library *PartitionBase, struc
     	    res = GPTCheckHeader(PartitionBase, root, blk, 1);
 
 	    /* 2 is a special return code for "bad CRC" */
-    	    if (res == 2)
+    	    if (res == ERROR_BAD_CRC)
     	    {
 		/* Try to read backup header */
-    	    	res = GPTCheckHeader(PartitionBase, root, blk, ((struct GPTHeader *)blk)->BackupBlock);
+		UQUAD block = AROS_LE2QUAD(((struct GPTHeader *)blk)->BackupBlock);
+
+    	    	res = GPTCheckHeader(PartitionBase, root, blk, block);
 
 		/* There's no third backup :( */
-    	    	if (res == 2)
+    	    	if (res == ERROR_BAD_CRC)
     	    	    res = 0;
     	    }
     	}
@@ -280,13 +292,18 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
     LONG res;
     LONG err = ERROR_NOT_A_DOS_DISK;
 
-    res = readBlock(PartitionBase, root, block, hdr);
-    if (!res)
+    DREAD(KPrintF("[GPT] Read: header block %llu\n", block));
+    res = GPTCheckHeader(PartitionBase, root, hdr, block);
+    if (res == 2)
+    	return ERROR_BAD_CRC;
+
+    if (res == 1)
     {
 	struct GPTPartition *table;
         ULONG cnt       = AROS_LE2LONG(hdr->NumEntries);
     	ULONG entrysize = AROS_LE2LONG(hdr->EntrySize);
 	ULONG tablesize = AROS_ROUNDUP2(entrysize * cnt, root->de.de_SizeBlock << 2);
+	UQUAD startblk, endblk;
 
 	DREAD(bug("[GPT] Read: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
 
@@ -294,69 +311,80 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
     	if (!table)
     	    return ERROR_NO_FREE_STORE;
 
-	DREAD(KPrintF("[GPT] Read: start block %llu\n", hdr->StartBlock));
+	startblk = AROS_LE2QUAD(hdr->StartBlock);
 
-	res = readDataFromBlock(root, AROS_LE2QUAD(hdr->StartBlock), tablesize, table);
+	DREAD(KPrintF("[GPT] Read: start block %llu\n", startblk));
+	res = readDataFromBlock(root, startblk, tablesize, table);
 	if (!res)
 	{
-	    struct GPTPartition *p = table;
-	    ULONG i;
+	    ULONG orig_crc = AROS_LE2LONG(hdr->PartCRC32);
+    	    ULONG crc = crc32(0L, Z_NULL, 0);
 
-	    /* TODO: Check CRC of partition table, use backup if wrong */
-	    DREAD(bug("[GPT] Adding partitions...\n"));
-	    err = 0;
+    	    crc = crc32(crc, (const Bytef *)table, entrysize * cnt);
+	    D(bug("[GPT] Data CRC: calculated 0x%08X, expected 0x%08X\n", crc, orig_crc));
 
-	    for (i = 0; i < cnt; i++)
-    	    {
-	    	struct GPTPartitionHandle *gph;
+	    if (crc == orig_crc)
+	    {
+	    	struct GPTPartition *p = table;
+	    	ULONG i;
 
-		DREAD(PRINT_LE_UUID("Type     ", &p->TypeID));
-		DREAD(PRINT_LE_UUID("Partition", &p->PartitionID));
-		DREAD(KPrintF("[GPT] Blocks    %llu - %llu\n", AROS_LE2QUAD(p->StartBlock), AROS_LE2QUAD(p->EndBlock)));
-		DREAD(KPrintF("[GPT] Flags     0x%08lX 0x%08lX\n", AROS_LE2LONG(p->Flags0), AROS_LE2LONG(p->Flags1)));
-		DREAD(KPrintF("[GPT] Offset    0x%p\n", (APTR)p - (APTR)table));
+		DREAD(bug("[GPT] Adding partitions...\n"));
+	    	err = 0;
 
-		/*
-		 * Skip unused entries. NumEntries in the header holds total number of preallocated entries,
-		 * not the number of used ones.
-		 * Normally GPT table has 128 preallocated entries, but only first of them are used.
-		 * Just in case, we allow gaps between used entries. However (tested with MacOS X Disk Utility)
-		 * partition editors seem to squeeze the table and do not leave empty entries when deleting
-		 * partitions in the middle of the disk.
-		 */
-		if (!memcmp(&p->TypeID, &GPT_Type_Unused, sizeof(uuid_t)))
-		    continue;
+	    	for (i = 0; i < cnt; i++)
+    	    	{
+	    	    struct GPTPartitionHandle *gph;
 
-	    	gph = AllocVec(sizeof(struct GPTPartitionHandle) + entrysize, MEMF_CLEAR);
-		if (gph)
-		{
-		    UQUAD startblk = AROS_LE2QUAD(p->StartBlock);
-		    UQUAD endblk   = AROS_LE2QUAD(p->EndBlock);
+	    	    startblk = AROS_LE2QUAD(p->StartBlock);
+		    endblk   = AROS_LE2QUAD(p->EndBlock);
 
-		    initPartitionHandle(root, &gph->ph, startblk, endblk - startblk + 1);
+		    /*
+		     * Skip unused entries. NumEntries in the header holds total number of preallocated entries,
+		     * not the number of used ones.
+		     * Normally GPT table has 128 preallocated entries, but only first of them are used.
+		     * Just in case, we allow gaps between used entries. However (tested with MacOS X Disk Utility)
+		     * partition editors seem to squeeze the table and do not leave empty entries when deleting
+		     * partitions in the middle of the disk.
+		     */
+		    if (!memcmp(&p->TypeID, &GPT_Type_Unused, sizeof(uuid_t)))
+		    	continue;
 
-		    /* Map UUID to a DOSType */
-		    GPT_PatchDosEnvec(&gph->ph.de, p);
+		    DREAD(PRINT_LE_UUID("Type     ", &p->TypeID));
+		    DREAD(PRINT_LE_UUID("Partition", &p->PartitionID));
+		    DREAD(KPrintF("[GPT] Blocks    %llu - %llu\n", startblk, endblk));
+		    DREAD(KPrintF("[GPT] Flags     0x%08lX 0x%08lX\n", AROS_LE2LONG(p->Flags0), AROS_LE2LONG(p->Flags1)));
+		    DREAD(KPrintF("[GPT] Offset    0x%p\n", (APTR)p - (APTR)table));
 
-		    /* Store the whole entry and convert name into ASCII form */
-		    CopyMem(p, &gph[1], entrysize);
-		    FromUTF16(gph->name, p->Name, 36);
+	    	    gph = AllocVec(sizeof(struct GPTPartitionHandle) + entrysize, MEMF_CLEAR);
+		    if (gph)
+		    {
+		    	initPartitionHandle(root, &gph->ph, startblk, endblk - startblk + 1);
 
-		    gph->ph.ln.ln_Name = gph->name;
-		    gph->entrySize     = entrysize;
+		    	/* Map UUID to a DOSType */
+		    	GPT_PatchDosEnvec(&gph->ph.de, p);
 
-		    ADDTAIL(&root->table->list, gph);
-		    DREAD(bug("[GPT] Added partition %u (%s), handle 0x%p\n", i, gph->name, gph));
-		}
-		else
-		{
-	    	    err = ERROR_NO_FREE_STORE;
-	    	    break;
-	    	}
+		    	/* Store the whole entry and convert name into ASCII form */
+		    	CopyMem(p, &gph[1], entrysize);
+		    	FromUTF16(gph->name, p->Name, 36);
 
-		/* Jump to next entry, skip 'entrysize' bytes */
-    	    	p = (APTR)p + entrysize;
+		    	gph->ph.ln.ln_Name = gph->name;
+		    	gph->entrySize     = entrysize;
+
+		    	ADDTAIL(&root->table->list, gph);
+		    	DREAD(bug("[GPT] Added partition %u (%s), handle 0x%p\n", i, gph->name, gph));
+		    }
+		    else
+		    {
+	    	    	err = ERROR_NO_FREE_STORE;
+	    	    	break;
+	    	    }
+
+		    /* Jump to next entry, skip 'entrysize' bytes */
+    	    	    p = (APTR)p + entrysize;
+    	    	}
     	    }
+    	    else
+    	    	err = ERROR_BAD_CRC;
     	}
 
     	FreeMem(table, tablesize);
@@ -392,11 +420,55 @@ static LONG PartitionGPTOpenPartitionTable(struct Library *PartitionBase, struct
     /* Read primary GPT table */
     res = GPTReadPartitionTable(PartitionBase, root, root->table->data, 1);
 
+    if (res == ERROR_BAD_CRC)
+    {
+    	/* If CRC failed, read backup table */
+    	struct GPTHeader *hdr = root->table->data;
+    	UQUAD block = AROS_LE2QUAD(hdr->BackupBlock);
+
+    	res = GPTReadPartitionTable(PartitionBase, root, hdr, block);
+
+	/* There's no third backup... */
+    	if (res == ERROR_BAD_CRC)
+    	    res = ERROR_NOT_A_DOS_DISK;
+    }
+
     /* Cleanup if reading failed */
     if (res)
     	PartitionGPTClosePartitionTable(PartitionBase, root);
 
     return res;
+}
+
+static LONG GPTWriteTable(struct Library *PartitionBase, struct PartitionHandle *root, struct GPTHeader *hdr, struct GPTPartition *table,
+			   UQUAD headerblk, UQUAD backupblk, UQUAD startblk, ULONG tablesize)
+{
+    LONG res;
+    ULONG crc = crc32(0L, Z_NULL, 0);
+
+    hdr->CurrentBlock = AROS_QUAD2LE(headerblk);
+    hdr->BackupBlock  = AROS_QUAD2LE(backupblk);
+    hdr->StartBlock   = AROS_QUAD2LE(startblk);
+    hdr->HeaderCRC32  = 0;
+
+    /* We modify the header, so we have to recalculate its CRC */
+    crc = crc32(crc, (const Bytef *)hdr, AROS_LE2LONG(hdr->HeaderSize));
+    hdr->HeaderCRC32 = AROS_LONG2LE(crc);
+    DWRITE(bug("[GPT] New header CRC 0x%08X\n", crc));
+
+    DWRITE(KPrintF("[GPT] Write data: start block %llu\n", startblk));
+    res = writeDataFromBlock(root, startblk, tablesize, table);
+
+    DWRITE(bug("[GPT] Write result: %u\n", res));
+    if (res == 0)
+    {
+        DWRITE(KPrintF("[GPT] Write header: start block %llu\n", headerblk));
+	res = PartitionWriteBlock(PartitionBase, root, headerblk, hdr);
+
+	DWRITE(bug("[GPT] Write result: %u\n", res));
+    }
+
+    return deviceError(res);
 }
 
 static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
@@ -423,8 +495,10 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
     table = AllocMem(tablesize, MEMF_CLEAR);
     if (table)
     {
+	ULONG crc = crc32(0L, Z_NULL, 0);
 	struct GPTPartition *p = table;
 	struct GPTPartitionHandle *gph;
+	UQUAD backup;
 	LONG res;
 
 	/*
@@ -453,14 +527,26 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
     	    p = (APTR)p + entrysize;
     	}
 
-	DWRITE(KPrintF("[GPT] Write: start block %llu\n", hdr->StartBlock));
+	crc = crc32(crc, (const Bytef *)table, entrysize * cnt);
+	hdr->PartCRC32 = AROS_LONG2LE(crc);
+	DWRITE(bug("[GPT] New data CRC 0x%08X\n", crc));
 
-	res = writeDataFromBlock(root, AROS_LE2QUAD(hdr->StartBlock), tablesize, table);
-	DWRITE(bug("[GPT] Write result: %u\n", res));
+	/* First we attempt to write a backup table. It's placed in the end. */
+	backup = root->dg.dg_TotalSectors - 1;
+	res = GPTWriteTable(PartitionBase, root, hdr, table, backup, 1, backup - tablesize, tablesize);
+
+	if (!res)
+	{
+	    /*
+	     * And only if succeeded, write a primary one.
+	     * This gives us a chance to discard writing if something goes wrong with disk/device/whatever.
+	     */
+	    res = GPTWriteTable(PartitionBase, root, hdr, table, 1, backup, 2, tablesize);
+	}
 
 	FreeMem(table, tablesize);
 
-	return res ? ERROR_WRITE_PROTECTED : 0;
+	return res;
     }
 
     return ERROR_NO_FREE_STORE;
