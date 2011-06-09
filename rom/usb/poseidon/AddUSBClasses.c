@@ -20,7 +20,7 @@
 #define ARGS_SIZEOF   2
 
 static const char *template = "QUIET/S,REMOVE/S";
-static const char *version = "$VER: AddUSBClasses 1.7 (03.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char *version = "$VER: AddUSBClasses 1.7 (03.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 
