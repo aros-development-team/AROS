@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: 
@@ -12,17 +12,16 @@
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-
-#include <aros/debug.h>
+#include <proto/debug.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-#define ARG_TEMPLATE "TASK/K,STDOUT/S"
+#define ARG_TEMPLATE "TASK/K,DEBUG/S"
 
 #define ARG_TASK    0
-#define ARG_STDOUT  1
+#define ARG_DEBUG   1
 #define NUM_ARGS    2
 
 static struct RDArgs *MyArgs;
@@ -31,7 +30,6 @@ static char s[256];
 
 static UBYTE outbuffer[20000];
 static LONG outbuffer_size;
-static BOOL to_stdout;
 
 static void Cleanup(char *msg)
 {
@@ -50,11 +48,6 @@ static void Cleanup(char *msg)
     exit(rc);
 }
 
-static void OpenLibs(void)
-{
-
-}
-
 static void GetArguments(void)
 {
     if (!(MyArgs = ReadArgs(ARG_TEMPLATE,Args,0)))
@@ -62,8 +55,6 @@ static void GetArguments(void)
     	Fault(IoErr(),0,s,255);
 	Cleanup(s);
     }
-    
-    if (Args[ARG_STDOUT]) to_stdout = TRUE;
 }
 
 static int out (const UBYTE * fmt, ...)
@@ -72,15 +63,14 @@ static int out (const UBYTE * fmt, ...)
     int		 result;
 
     va_start (ap, fmt);
-    if (to_stdout)
-    {
-    	result = vsprintf(&outbuffer[outbuffer_size], fmt, ap);
-	outbuffer_size += result;
-    }
-    else
-    {
-    	result = vkprintf(fmt, ap);
-    }
+
+    result = vsprintf(&outbuffer[outbuffer_size], fmt, ap);
+
+    if (Args[ARG_DEBUG])
+    	KPutStr(&outbuffer[outbuffer_size]);
+
+    outbuffer_size += result;
+
     va_end (ap);
 
     return result;
@@ -148,12 +138,13 @@ static void Action(void)
     
     Enable();
     
-    if (to_stdout) puts(outbuffer);
+    puts(outbuffer);
 }
+
+ULONG __nocommandline = 1;
 
 int main(void)
 {
-    OpenLibs();
     GetArguments();
     Action();
     Cleanup(0);
