@@ -82,7 +82,7 @@ USER_CFLAGS     += $(PARANOIA_CFLAGS)
 
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga arosc m"
+    uselibs="arossupport amiga arosc m debug"
 
 %build_progs mmake=workbench-c-pure \
     files=$(PURE_FILES) targetdir=$(AROS_C) \
