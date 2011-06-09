@@ -46,7 +46,8 @@ rom_init:
 	/* Do we have a Gayle? */
 	sub.l	%a6,%a6
 	jsr		Exec_ReadGayle
-1:	move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
+	moveq	#0,%d6
+	move.b  %d0,%d6         /* Save for later - %d6.b is Gayle ID */
 
 	/* Memory region array is put into the
 	 * system stack from the bottom up, so
@@ -60,6 +61,10 @@ rom_init:
 	move.l	#0x7f000000,%a1
 	move.l	#0x00100000,%d0
 	bsr		.L_memtest
+	bmi.s	.no32bit
+
+	/* set 32-bit supported flag */
+	bset	#31,%d6
 
 	/* mainboard ram (A3000) */
 	/* end is static 0x08000000, start addr is end - (size of ram) */
@@ -86,6 +91,7 @@ rom_init:
 	move.l	%d7,%a5@+
 .a3000noram:
 
+.no32bit:
 	/* slow ram */
 	move.l	#0x00c00000,%a0
 	move.l	#0x00d80000,%a1
@@ -113,6 +119,7 @@ rom_init:
 	clr.l	%a5@
 
 	lea.l	_ss,%a5
+	move.l	%d6,%sp@-	/* flags */
 	move.l	%a5,%sp@-	/* memory bank array */
 	jsr		exec_boot
 
@@ -159,7 +166,7 @@ MemoryTest:
 	cmp.l	%a1@,%d1
 	bne.s	.L_memtest_32bitok	/* check again, maybe 0 already had our test value */
 	move.l	%d2,0.w				/* restore saved value */
-	moveq	#0,%d1
+	moveq	#-1,%d1
 	bra		.L_memtest_none		/* 24-bit CPU, do not test this range */
 .L_memtest_32bitok:
 	move.l	%d2,0.w				/* restore saved value */

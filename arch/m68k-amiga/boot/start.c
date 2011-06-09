@@ -68,29 +68,6 @@ asm (
 	"	rts\n" /* return to cpu_detect() */
 );
 
-/* detect CPU addressing capability (24 or 32-bit) */
-ULONG __attribute__((interrupt)) cpu_detect_32bit(void);
-asm (	"	.text\n"
-	"	.globl cpu_detect_32bit\n"
-	"cpu_detect_32bit:\n"
-	"	lea	0x08000000,%a0\n"
-	"	move.l	0.w,%d0\n"	/* save old */
-	"	move.l	#0xfecaf00d,%d1\n"
-	"	move.l	%d1,0.w\n"
-	"	nop\n"			/* force 68040/060 bus cycle to finish */
-	"	cmp.l	%a0@,%d1\n"
-	"	bne.s	2f\n"		/* different? no mirror */
-	"	not.l	%d1\n"
-	"	move.l	%d1,0.w\n"
-	"	nop\n"
-	"	cmp.l	%a0@,%d1\n"
-	"	bne.s	2f\n"		/* check again, maybe 0 already had our test value */
-	"	moveq	#0,%d1\n"
-	"2:	move.l	%d0,0.w\n"	/* restore saved value */
-	"	move.l	%d1,%d0\n"
-	"	rts\n"
-);
-
 void __attribute__((interrupt)) cpu_detect_asm(void);
 asm (".chip 68060\n"
 	"	.text\n"
@@ -191,8 +168,6 @@ static ULONG cpu_detect(ULONG *pcr)
 	trap[11] = old_trap11;
 
 	cpuret &= 0xff;
-	if (cpu_detect_32bit())
-		cpuret |= AFF_ADDR32;
 
 	if (fpuret) {
 		cpuret |= AFF_FPU;
@@ -435,7 +410,7 @@ void doColdCapture(void)
     	  "a0", "a1", "a2", "a3", "a4", "a5", "a6");
 }
 
-void exec_boot(ULONG *membanks)
+void exec_boot(ULONG *membanks, ULONG flags)
 {
 	struct TagItem bootmsg[] = {
 #ifdef AROS_SERIAL_DEBUG
@@ -603,6 +578,8 @@ void exec_boot(ULONG *membanks)
 
 	/* Determine CPU model */
 	SysBase->AttnFlags |= cpu_detect(&pcr);
+	if (flags & (1 << 31))
+		SysBase->AttnFlags |= AFF_ADDR32;
 
 #ifdef AROS_SERIAL_DEBUG
 	DEBUGPUTS(("CPU: "));
