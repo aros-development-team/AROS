@@ -41,7 +41,7 @@ AROS_LH3(IPTR, NewStackSwap,
 	_PUSH(sp, args->Args[i]);
     }
 
-    if (task->tc_Flags & TF_STACKCHK)
+    if (t->tc_Flags & TF_STACKCHK)
     {
     	UBYTE* startfill = sss->stk_Lower;
 
