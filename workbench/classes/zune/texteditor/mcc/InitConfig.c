@@ -131,7 +131,7 @@ void InitConfig(struct InstData *data, Object *obj)
 
   if(isFlagClear(data->flags, FLG_OwnBackground))
   {
-    LONG background = MUII_BACKGROUND;
+    IPTR background = MUII_BACKGROUND;
 
     data->backgroundcolor = 0;
     data->fastbackground = TRUE;
@@ -150,7 +150,7 @@ void InitConfig(struct InstData *data, Object *obj)
       else if(bg_setting[0] != '\0')
         data->fastbackground = FALSE;
 
-      background = setting;
+      background = (IPTR)setting;
     }
     set(obj, MUIA_Background, background);
   }
