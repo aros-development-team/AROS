@@ -26,11 +26,13 @@
 #include <graphics/gfxbase.h>
 #include <aros/inquire.h>
 #include <resources/battclock.h>
+#include <resources/processor.h>
 
 #include <proto/exec.h>
 #include <proto/aros.h>
 #include <proto/graphics.h>
 #include <proto/battclock.h>
+#include <proto/processor.h>
 
 #include "identify_intern.h"
 #include "identify.h"
@@ -390,8 +392,20 @@
             return -1;
 
         case IDHW_CPUCLOCK:
-            return 0;
-
+        {
+            IPTR speed = 0;
+            APTR ProcessorBase = OpenResource(PROCESSORNAME);
+            if (ProcessorBase)
+            {
+                struct TagItem tags [] = 
+                {
+                    { GCIT_ProcessorSpeed, &speed },
+                    { TAG_DONE }
+                };
+                GetCPUInfo(tags);
+            }
+            return speed / 1000000;
+        }
         case IDHW_FPUCLOCK:
             return 0;
 

@@ -22,7 +22,10 @@
  * $Id$
  */
 
+#include <resources/processor.h>
+
 #include <proto/utility.h>
+#include <proto/processor.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -36,6 +39,7 @@
 static CONST_STRPTR handle_version(TEXT *buffer, Tag tag);
 static CONST_STRPTR handle_size(TEXT *buffer, Tag tag);
 static CONST_STRPTR handle_freq(TEXT *buffer, Tag tag);
+static CONST_STRPTR handle_mhz(TEXT *buffer, Tag tag);
 static CONST_STRPTR handle_number(TEXT *buffer, Tag tag);
 static CONST_STRPTR handle_address(TEXT *buffer, Tag tag);
 static CONST_STRPTR handle_hex(TEXT *buffer, Tag tag);
@@ -274,22 +278,27 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             break;
 
         case IDHW_CPU:
-            #if defined __i386__
-            return "i386";
-            #elif defined __x86_64__
-            return "x86_64";
-            #elif defined __mc68000__
-            return _(MSG_HW_68000);
-            #elif defined __powerpc__
-            return "ppc";
-            #elif defined __arm__
-            return "arm";
-            #else
-            return "unknown";
-            #endif
-
+        {
+            STRPTR cpu = NULL;
+            APTR ProcessorBase = OpenResource(PROCESSORNAME);
+    
+            if (ProcessorBase)
+            {
+                struct TagItem tags [] = 
+                {
+                    { GCIT_ModelString, (IPTR)&cpu },
+                    { 0, (IPTR)NULL }
+                };
+                GetCPUInfo(tags);
+            }
+            else
+            {
+                cpu = "unknown";
+            }
+            strlcpy(IdentifyBase->hwb.buf_CPU, cpu, STRBUFSIZE);
+            result = IdentifyBase->hwb.buf_CPU;
             break;
-
+        }
         case IDHW_FPU:
             result = handle_notavail(null4na);
             break;
@@ -425,7 +434,7 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
             break;
 
         case IDHW_CPUCLOCK:
-            result = "0 MHz";
+            result = handle_mhz(IdentifyBase->hwb.buf_CPUClock, IDHW_CPUCLOCK);
             break;
 
         case IDHW_FPUCLOCK:
@@ -555,6 +564,19 @@ static CONST_STRPTR handle_freq(TEXT *buffer, Tag tag)
         ULONG num = IdHardwareNum(tag, NULL);
         {
             snprintf(buffer, STRBUFSIZE, "%u Hz", num);
+        }
+    }
+    return result;
+}
+
+static CONST_STRPTR handle_mhz(TEXT *buffer, Tag tag)
+{
+    CONST_STRPTR result = buffer;
+    if (*buffer == '\0')
+    {
+        ULONG num = IdHardwareNum(tag, NULL);
+        {
+            snprintf(buffer, STRBUFSIZE, "%u MHz", num);
         }
     }
     return result;
