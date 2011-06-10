@@ -279,24 +279,41 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
 
         case IDHW_CPU:
         {
-            STRPTR cpu = NULL;
+            IPTR cpu = 0;
             APTR ProcessorBase = OpenResource(PROCESSORNAME);
     
             if (ProcessorBase)
             {
                 struct TagItem tags [] = 
                 {
-                    { GCIT_ModelString, (IPTR)&cpu },
-                    { 0, (IPTR)NULL }
+                    { GCIT_Family, (IPTR)&cpu },
+                    { TAG_DONE }
                 };
                 GetCPUInfo(tags);
+                switch(cpu)
+                {
+                    case CPUFAMILY_60X: result = "60X"; break;
+                    case CPUFAMILY_7X0: result = "7X0"; break;
+                    case CPUFAMILY_74XX: result = "74XX"; break;
+                    case CPUFAMILY_4XX: result = "4XX"; break;
+                    case CPUFAMILY_AMD_K5: result = "AMD_K5"; break;
+                    case CPUFAMILY_AMD_K6: result = "AMD_K6"; break;
+                    case CPUFAMILY_AMD_K7: result = "AMD_K7"; break;
+                    case CPUFAMILY_AMD_K8: result = "AMD_K8"; break;
+                    case CPUFAMILY_AMD_K9: result = "ADM_K9"; break;
+                    case CPUFAMILY_AMD_K10: result = "AMD_K10"; break;
+                    case CPUFAMILY_INTEL_486: result = "INTEL_486"; break;
+                    case CPUFAMILY_INTEL_PENTIUM: result = "INTEL_PENTIUM"; break;
+                    case CPUFAMILY_INTEL_PENTIUM_PRO: result = "INTEL_PENTIUM_PRO"; break;
+                    case CPUFAMILY_INTEL_PENTIUM4: result = "INTEL_PENTIUM4"; break;
+                    case CPUFAMILY_MOTOROLA_68000: result = "MOTOROLA_68000"; break;
+                    default: result = "unknown"; break;
+                }
             }
             else
             {
-                cpu = "unknown";
+                result = "unknown";
             }
-            strlcpy(IdentifyBase->hwb.buf_CPU, cpu, STRBUFSIZE);
-            result = IdentifyBase->hwb.buf_CPU;
             break;
         }
         case IDHW_FPU:
