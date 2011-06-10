@@ -14,7 +14,7 @@ void writefd(struct config *cfg)
     struct functionarg *arglistit;
     unsigned int lvo;
     char *variable;
-    int i;
+    char *lower;
 
     snprintf(line, 255, "%s/%s_lib.fd", cfg->gendir, cfg->modulename);
 
@@ -98,9 +98,9 @@ void writefd(struct config *cfg)
 			    fprintf(out, ",");
 
 			/* Print register name in lower case */
-			for (i = 0; i < strlen(arglistit->reg); i++)
+			for (lower = arglistit->reg; *lower != '\0'; lower++)
 			{
-			    fputc(tolower(arglistit->reg[i]), out);
+			    fputc(tolower(*lower), out);
 			}
 		    }
 		    fprintf(out, ")\n");
