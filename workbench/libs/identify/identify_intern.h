@@ -67,7 +67,6 @@ struct HardwareBuffer
     TEXT buf_EClock[STRBUFSIZE];
     TEXT buf_SlowRAM[STRBUFSIZE];
     TEXT buf_PPCClock[STRBUFSIZE];
-    TEXT buf_CPU[STRBUFSIZE];
     TEXT buf_CPURev[STRBUFSIZE];
     TEXT buf_CPUClock[STRBUFSIZE];
     TEXT buf_FPUClock[STRBUFSIZE];
