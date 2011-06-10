@@ -85,7 +85,7 @@ VOID UpdateCPUInformation()
     }
 }
 
-/* Updated information which will not change through life od application */
+/* Updated information which will not change through life of application */
 VOID UpdateCPUStaticInformation()
 {
     ULONG i;
