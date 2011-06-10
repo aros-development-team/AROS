@@ -48,6 +48,7 @@ struct PartitionHandle
     struct DosEnvec de;              /* info about HD/partition including */
                                     /* position within root->dg */
                                     /* (de_Surfaces==root->dg.Heads,...!!!) */
+    UBYTE buffer[4096];
 };
 
 struct PartitionType
