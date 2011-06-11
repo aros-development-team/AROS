@@ -2,7 +2,7 @@
 #define __VFORK_H
 
 /*
-    Copyright © 2008-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,7 +16,7 @@ struct vfork_data
 {
     struct vfork_data *prev;
     jmp_buf vfork_jump;
-    
+
     struct Task *parent;
     jmp_buf startup_jmp_buf;
 
@@ -29,6 +29,7 @@ struct vfork_data
     int parent_cd_changed;
     BPTR parent_cd_lock;
     BPTR parent_curdir;
+    struct __env_item *parent_env_list;
     struct arosc_privdata *ppriv;
 
     struct Task *child;
