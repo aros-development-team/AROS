@@ -122,13 +122,28 @@ AROS_LH1(void, ConfigChain,
 		romtaginit(ExpansionBase);
 		return;
 	}
+	/* Try to guess if we have Z3 based machine.
+	 * Not all Z3 boards appear in Z2 region.
+	 *
+	 * Ignores original baseAddr by design.
+	 */
+	BOOL maybeZ3 = (SysBase->AttnFlags & AFF_ADDR32);
 	D(bug("configchain\n"));
 	for(;;) {
+		BOOL gotrom = FALSE;
 		if (!configDev)
 			configDev = AllocConfigDev();
 		if (!configDev)
 			break;
-		if (!ReadExpansionRom(baseAddr, configDev)) {
+		if (maybeZ3) {
+			baseAddr = (APTR)EZ3_EXPANSIONBASE;
+			gotrom = ReadExpansionRom(baseAddr, configDev);
+		}
+		if (!gotrom) {
+			baseAddr = (APTR)E_EXPANSIONBASE;
+			gotrom = ReadExpansionRom(baseAddr, configDev);
+		}
+		if (!gotrom) {
 			FreeConfigDev(configDev);
 			break;
 		}

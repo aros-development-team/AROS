@@ -46,10 +46,15 @@
 {
     AROS_LIBFUNC_INIT
 
+	UWORD loffset;
 	volatile UBYTE *p = (UBYTE*)board;
 
 	offset *= 4;
-	p[offset + 2] = byte << 4;
+	if (((ULONG)board) & 0xff000000)
+		loffset = 0x100;
+	else
+		loffset = 0x002;
+	p[offset + loffset] = byte << 4;
 	p[offset] = byte;
 
     AROS_LIBFUNC_EXIT
