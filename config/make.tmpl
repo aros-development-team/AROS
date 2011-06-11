@@ -1641,9 +1641,9 @@ endif
 	      cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
 %rule_assemble basename=% targetdir=%(objdir) \
 	      aflags=$(BD_AFLAGS)
-endif
 
 %rule_link_linklib libname=%(libname) objs=$(BD_OBJS) libdir=%(libdir)
+endif
 
 %include_deps depstargets=%(mmake) deps=$(BD_DEPS)
 
