@@ -91,7 +91,8 @@ AROS_UFH5(void, writeexpansion,
 		if (prevslot + slotsize <= endslot) {
 			ULONG startaddr = prevslot * Z3SLOT;
 			IntExpBase(ExpansionBase)->eb_z3Slot += slotsize;
-			configDev->cd_BoardAddr	 = (APTR)startaddr;
+			configDev->cd_BoardAddr = (APTR)startaddr;
+			configDev->cd_Flags |= CDF_CONFIGME;
 			AROS_UFC5(void, writeexpansion,
 				AROS_UFCA(APTR,  board, A0),
 				AROS_UFCA(APTR,  configDev, A3),
@@ -145,7 +146,8 @@ AROS_UFH5(void, writeexpansion,
 			if (sizeleft >= E_SLOTSIZE)
 				continue;
 
-			configDev->cd_BoardAddr	 = (APTR)startaddr;
+			configDev->cd_BoardAddr = (APTR)startaddr;
+			configDev->cd_Flags |= CDF_CONFIGME;
 			AROS_UFC5(void, writeexpansion,
 				AROS_UFCA(APTR,  board, A0),
 				AROS_UFCA(APTR,  configDev, A3),
