@@ -67,6 +67,10 @@
 		(ReadExpansionByte(board, 6 + 3) << 0));
 	rom->er_InitDiagVec = ~((ReadExpansionByte(board, 10) << 8) |
 		ReadExpansionByte(board, 10 + 1));
+	rom->er_Reserved0c = ~ReadExpansionByte(board, 12);
+	rom->er_Reserved0d = ~ReadExpansionByte(board, 13);
+	rom->er_Reserved0e = ~ReadExpansionByte(board, 14);
+	rom->er_Reserved0f = ~ReadExpansionByte(board, 15);
 	
 	if (rom->er_Reserved03 != 0)
 		return FALSE;
@@ -91,8 +95,8 @@
 	configDev->cd_BoardSize = size;
 	configDev->cd_BoardAddr	 = board;
 	
-	D(bug("Found board: mfg=%d prod=%d size=%08x serial=%08x diag=%p\n",
-		rom->er_Manufacturer, rom->er_Product, size, rom->er_SerialNumber, rom->er_InitDiagVec));
+	D(bug("Found board %p: mfg=%d prod=%d size=%08x serial=%08x diag=%p\n",
+		board, rom->er_Manufacturer, rom->er_Product, size, rom->er_SerialNumber, rom->er_InitDiagVec));
 	
 	return TRUE;
 
