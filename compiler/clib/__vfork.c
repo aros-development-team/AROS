@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -300,6 +300,10 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     udata->parent_mempool = udata->ppriv->acpd_mempool;
     udata->ppriv->acpd_mempool = udata->cpriv->acpd_mempool;
 
+    /* Remember and switch env var list */
+    udata->parent_env_list = udata->ppriv->acpd_env_list;
+    udata->ppriv->acpd_env_list = udata->cpriv->acpd_env_list;
+
     /* Remember and switch fd descriptor table */
     udata->parent_acpd_fd_mempool = udata->ppriv->acpd_fd_mempool;
     udata->parent_acpd_numslots = udata->ppriv->acpd_numslots;
@@ -314,7 +318,7 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     __cd_changed = udata->cpriv->acpd_cd_changed;
     __cd_lock = udata->cpriv->acpd_cd_lock;
     udata->parent_curdir = CurrentDir(((struct Process *)udata->child)->pr_CurrentDir);
-    
+
     /* Pretend to be running as the child created by vfork */
     udata->ppriv->acpd_flags |= PRETEND_CHILD;
 
@@ -324,7 +328,7 @@ static void parent_enterpretendchild(struct vfork_data *udata)
 static void child_takeover(struct vfork_data *udata)
 {
     D(bug("child_takeover(%x): entered\n", udata));
-            
+
     /* Set current dir to parent's current dir */
     __cd_changed = udata->ppriv->acpd_cd_changed;
     __cd_lock = udata->ppriv->acpd_cd_lock;
@@ -339,6 +343,9 @@ static void parent_leavepretendchild(struct vfork_data *udata)
 
     /* Restore parent's malloc mempool */
     udata->ppriv->acpd_mempool = udata->parent_mempool;
+
+    /* Restore parent's env var list */
+    udata->ppriv->acpd_env_list = udata->parent_env_list;
 
     /* Restore parent's old fd_array */
     udata->ppriv->acpd_fd_mempool = udata->parent_acpd_fd_mempool;
@@ -357,4 +364,3 @@ static void parent_leavepretendchild(struct vfork_data *udata)
 
     D(bug("parent_leavepretendchild: leaving\n"));
 }
-
