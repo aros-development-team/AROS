@@ -22,6 +22,10 @@
 
 static APTR _mempool;
 
+#if defined(__AROS__)
+#undef GLOBAL
+#endif
+
 #define JPEG_INTERNALS
 #include "jinclude.h"
 #include "jpeglib.h"
