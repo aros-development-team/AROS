@@ -65,12 +65,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    if( bindingSize < sizeof(struct CurrentBinding) )
-	return 0;
+    if( bindingSize > sizeof(struct CurrentBinding) )
+	bindingSize = sizeof(struct CurrentBinding);
 
     CopyMem(&IntExpBase(ExpansionBase)->eb_CurrentBinding,
 	    currentBinding,
-	    sizeof(struct CurrentBinding));
+	    bindingSize);
 
     return sizeof(struct CurrentBinding);
 
