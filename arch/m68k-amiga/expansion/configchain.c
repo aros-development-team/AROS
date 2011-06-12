@@ -24,33 +24,32 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 	struct Node *node;
 	// look for possible romtags in expansion ROM image and InitResident() them if found
 	D(bug("romtaginit\n"));
+	ObtainConfigBinding();
 	ForeachNode(&IntExpBase(ExpansionBase)->eb_BoardList, node) {
 		struct ConfigDev *configDev = (struct ConfigDev*)node;
-		if (configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == DAC_CONFIGTIME) {
+		if (configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == DAC_CONFIGTIME && (configDev->cd_Flags & CDF_CONFIGME)) {
 			struct Resident *res;
 			UWORD *romptr = (UWORD*)configDev->cd_Rom.er_DiagArea;
-			UWORD *romend = (UWORD*)(((UBYTE*)configDev->cd_Rom.er_DiagArea) + configDev->cd_Rom.er_DiagArea->da_Size);
+			UWORD *romend = (UWORD*)(((UBYTE*)configDev->cd_Rom.er_DiagArea) + configDev->cd_Rom.er_DiagArea->da_Size - sizeof(struct Resident));
 			struct CurrentBinding cb = {
 			    .cb_ConfigDev = configDev
 			};
 			SetCurrentBinding(&cb, sizeof(cb));
-			while (romptr < romend - sizeof (struct Resident*)) {
+			while (romptr <= romend) {
 				res = (struct Resident*)romptr;
 				if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res) {
-					D(bug("Diag InitResident %x (%d %02x '%s')\n", res, res->rt_Pri, res->rt_Flags, res->rt_Name));
+					D(bug("Diag board %08x InitResident %08x (%d %02x '%s')\n",
+						configDev->cd_BoardAddr, res, res->rt_Pri, res->rt_Flags, res->rt_Name));
 					InitResident(res, BNULL);
 					break; /* must not keep looking */
-				} else {
-					romptr += 1;
 				}
+				romptr++;
 			}
 		}
 	}
+	ReleaseConfigBinding();
 	D(bug("romtaginit done\n"));
 }
-
-extern UBYTE _rom_start;
-extern UBYTE _ext_start;
 
 AROS_UFP3(ULONG, MemoryTest,
     AROS_UFPA(APTR, startaddr, A0),
