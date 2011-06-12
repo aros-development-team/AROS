@@ -100,6 +100,7 @@ AROS_UFH5(void, writeexpansion,
 	                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
 	                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
 	             	);
+	             	D(bug("-> configured, %p - %p\n", startaddr, startaddr + configDev->cd_BoardSize - 1));
 			return TRUE;
 		}
 	} else {
@@ -155,6 +156,7 @@ AROS_UFH5(void, writeexpansion,
 	                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
 	                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
 	             	);
+	             	D(bug("-> configured, %p - %p\n", startaddr, startaddr + configDev->cd_BoardSize - 1));
 		
 			// do not remove this, configDev->cd_BoardAddr
 			// might have changed inside writeexpansion

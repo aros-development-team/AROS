@@ -54,23 +54,11 @@
 
 	struct ExpansionRom *rom = &configDev->cd_Rom;
 	ULONG size;
+	UBYTE cnt;
 	
-	rom->er_Type = ReadExpansionByte(board, 0);
-	rom->er_Product = ~ReadExpansionByte(board, 1);
-	rom->er_Flags = ~ReadExpansionByte(board, 2);
-	rom->er_Reserved03 = ~ReadExpansionByte(board, 3);
-	rom->er_Manufacturer = ~((ReadExpansionByte(board, 4) << 8) |
-		ReadExpansionByte(board, 4 + 1));
-	rom->er_SerialNumber = ~((ReadExpansionByte(board, 6) << 24) |
-		(ReadExpansionByte(board, 6 + 1) << 16) |
-		(ReadExpansionByte(board, 6 + 2) << 8) |
-		(ReadExpansionByte(board, 6 + 3) << 0));
-	rom->er_InitDiagVec = ~((ReadExpansionByte(board, 10) << 8) |
-		ReadExpansionByte(board, 10 + 1));
-	rom->er_Reserved0c = ~ReadExpansionByte(board, 12);
-	rom->er_Reserved0d = ~ReadExpansionByte(board, 13);
-	rom->er_Reserved0e = ~ReadExpansionByte(board, 14);
-	rom->er_Reserved0f = ~ReadExpansionByte(board, 15);
+	for (cnt = 0; cnt < sizeof(struct ExpansionRom); cnt++)
+		((UBYTE*)rom)[cnt] = ~ReadExpansionByte(board, cnt);
+	rom->er_Type = ~rom->er_Type;
 	
 	if (rom->er_Reserved03 != 0)
 		return FALSE;
@@ -93,7 +81,7 @@
 			size = 32768 << mem; // 1M/2M/4M
 	}
 	configDev->cd_BoardSize = size;
-	configDev->cd_BoardAddr	 = board;
+	configDev->cd_BoardAddr = board;
 	
 	D(bug("Found board %p: mfg=%d prod=%d size=%08x serial=%08x diag=%p\n",
 		board, rom->er_Manufacturer, rom->er_Product, size, rom->er_SerialNumber, rom->er_InitDiagVec));

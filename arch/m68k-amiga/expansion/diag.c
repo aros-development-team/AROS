@@ -46,7 +46,7 @@ const struct Resident rom_tag =
 static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ExecBase *sb, struct ConfigDev *configDev, UBYTE whenflag)
 {
 	struct DiagArea *diag = configDev->cd_Rom.er_DiagArea;
-	UWORD offset = DAC_CONFIGTIME ? diag->da_DiagPoint : diag->da_BootPoint;
+	UWORD offset = whenflag == DAC_CONFIGTIME ? diag->da_DiagPoint : diag->da_BootPoint;
 	APTR code = (APTR)(((UBYTE*)diag) + offset);
 	BOOL ret;
 	
