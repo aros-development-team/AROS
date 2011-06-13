@@ -1372,7 +1372,7 @@ diff -ruN gcc-4.2.4/gcc/config/aros.h gcc-4.2.4.aros/gcc/config/aros.h
 +
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
-+  "-lamiga -larossupport %{!noarosc:-larosc} -lm"
++  "-lamiga %{!noarosc:-larosc} -larossupport -lm"
 +
 +#undef STANDARD_INCLUDE_DIR
 +#define STANDARD_INCLUDE_DIR "/include"
