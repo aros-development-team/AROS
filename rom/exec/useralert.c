@@ -9,10 +9,10 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-static char *startstring = "Program failed\n";
-static char *endstring   = "\nWait for disk activity to finish.";
-static char *deadend_buttons     = "More...|Suspend|Reboot";
-static char *recoverable_buttons = "More...|Continue";
+static const char startstring[] = "Program failed\n";
+static const char endstring[]   = "\nWait for disk activity to finish.";
+static const char deadend_buttons[]     = "More...|Suspend|Reboot";
+static const char recoverable_buttons[] = "More...|Continue";
 
 #define MORE_SKIP 8
 
