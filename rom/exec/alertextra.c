@@ -16,10 +16,10 @@
 
 #define TRACE_DEPTH 10
 
-static const char *modstring  = "\n0x%P %s Segment %lu %s + 0x%P";
-static const char *funstring  = "\n0x%P %s Function %s + 0x%P";
-static const char *unknownstr = "\n0x%P Address not found";
-static const char *invalidstr = "\n0x%P Invalid stack frame address";
+static const char modstring[]  = "\n0x%P %s Segment %lu %s + 0x%P";
+static const char funstring[]  = "\n0x%P %s Function %s + 0x%P";
+static const char unknownstr[] = "\n0x%P Address not found";
+static const char invalidstr[] = "\n0x%P Invalid stack frame address";
 
 /*
  * Make a readable text out of task's alert context
