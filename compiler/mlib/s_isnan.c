@@ -32,6 +32,8 @@
 
 /* FreeBSD has this in libc */
 #ifdef __AROS__
+#include <sys/cdefs.h>
+
 int
 __isnan(double d)
 {
