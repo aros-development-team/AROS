@@ -147,7 +147,7 @@ AROS_LH1(void, ConfigChain,
 			break;
 		}
 		if (ConfigBoard(baseAddr, configDev)) {
-			AddTail(&IntExpBase(ExpansionBase)->eb_BoardList, &configDev->cd_Node);
+			AddConfigDev(configDev);
 			configDev = NULL;
 		}
 	}
