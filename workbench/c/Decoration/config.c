@@ -36,7 +36,7 @@ static void GetIntegers(STRPTR v, LONG *v1, LONG *v2)
     c = SkipChars(v);
     if (c)
     {
-        cnt = sscanf(c, "%s %s", va1, va2);
+        cnt = sscanf(c, "%31s %31s", va1, va2);
         if (cnt == 1)
         {
             *v1 = -1;
@@ -53,7 +53,8 @@ static void GetIntegers(STRPTR v, LONG *v1, LONG *v2)
 static void GetTripleIntegers(STRPTR v, LONG *v1, LONG *v2, LONG *v3)
 {
     STRPTR ch;
-    LONG a, b, c;
+    unsigned int a, b;
+    int c;
     LONG cnt;
     ch = SkipChars(v);
     if (ch)
@@ -71,7 +72,7 @@ static void GetTripleIntegers(STRPTR v, LONG *v1, LONG *v2, LONG *v3)
 static void GetColors(STRPTR v, LONG *v1, LONG *v2)
 {
     STRPTR ch;
-    LONG a, b;
+    unsigned int a, b;
     LONG cnt;
     ch = SkipChars(v);
     if (ch)

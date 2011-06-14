@@ -195,12 +195,12 @@ static int WriteTiledImageShape(BOOL fill, struct Window *win, struct NewLUT8Ima
     return x;
 }
 
-static void getrightgadgetsdimensions(struct windecor_data *data, struct Window *win, int *xs, int *xe)
+static void getrightgadgetsdimensions(struct windecor_data *data, struct Window *win, LONG *xs, LONG *xe)
 {
     struct Gadget *g;
 
-    int     x0 = 1000000;
-    int     x1 = 0;
+    LONG    x0 = 1000000;
+    LONG    x1 = 0;
     UWORD   type;
 
     for (g = win->FirstGadget; g; g = g->NextGadget)
@@ -237,13 +237,13 @@ static void getrightgadgetsdimensions(struct windecor_data *data, struct Window 
     *xe = x1;
 }
 
-static void getleftgadgetsdimensions(struct windecor_data *data, struct Window *win, int *xs, int *xe)
+static void getleftgadgetsdimensions(struct windecor_data *data, struct Window *win, LONG *xs, LONG *xe)
 {
     struct Gadget *g;
 
-    int w = 0;
-    int x0 = 1000000;
-    int x1 = 0;
+    LONG w = 0;
+    LONG x0 = 1000000;
+    LONG x1 = 0;
     for (g = win->FirstGadget; g; g = g->NextGadget)
     {
         w++;
