@@ -47,7 +47,7 @@ static void td_wait(struct TrackDiskBase *tdb, UWORD millis)
     td_wait_end(tdb);
 }
 
-static UBYTE drvmask[] = { ~0x08, ~0x10, ~0x20, ~0x40 };
+static UBYTE const drvmask[] = { ~0x08, ~0x10, ~0x20, ~0x40 };
 void td_select(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
     UBYTE tmp;
