@@ -2,6 +2,7 @@
 #define	_SYS_SOCKET_H_
 
 #ifndef _SYS_TYPES_H_
+#define __BSD_VISIBLE 1
 #include <sys/types.h>
 #endif
 
