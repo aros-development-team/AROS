@@ -25,7 +25,7 @@
 #define SET_BM_TAG(tags, idx, tag, val)	\
     SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
 
-static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
+static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 {
     vHidd_StdPixFmt_LUT8,
     vHidd_StdPixFmt_RGB15,
