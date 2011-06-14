@@ -21,6 +21,8 @@
 #include <aros/debug.h>
 
 #include <string.h>
+#include <stdio.h>	/* For snprintf */
+#include <limits.h>	/* For PATH_MAX */
 
 #define	DEBUG_INITLOCALE(x)	;
 
@@ -52,10 +54,14 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 {
     struct Library *lang = NULL;
     ULONG mask = 0;
-    UBYTE fileBuf[512];
+    STRPTR fileBuf;
     int i = 0;
 
     DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Locale 0x%lx\n",il));
+
+    fileBuf = AllocMem(PATH_MAX, MEMF_ANY);
+    if (!fileBuf)
+    	return;
 
     while(lang == NULL && i < 10)
     {
@@ -83,9 +89,8 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
     if (ret != 0)
 	{
-    	    #warning FIXME: watch out for buffer overflows here!
-	    strcpy(fileBuf, lName);
-	    strcat(fileBuf, ".language");
+	    snprintf(fileBuf, PATH_MAX, "%s.language", lName);
+	    fileBuf[PATH_MAX-1] = 0;
 	    
     	    /* Try and open the specified language */
     	    lang = OpenLibrary(fileBuf, 0);
@@ -98,9 +103,8 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     		    MOSSYS:LOCALE/Languages/xxx.language
 		*/
 		
-		strcpy(fileBuf, "MOSSYS:LOCALE/Languages/");
-		AddPart(fileBuf, lName, 512);
-		strcat(fileBuf, ".language");
+		snprintf(fileBuf, PATH_MAX, "MOSSYS:LOCALE/Languages/%s.language", lName);
+		fileBuf[PATH_MAX-1] = 0;
 		
 		{ APTR oldwinptr;
 		  struct Process *me=(struct Process *)FindTask(NULL);
@@ -119,22 +123,20 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     		    LOCALE:Languages/xxx.language
 		*/
 		
-		strcpy(fileBuf, "LOCALE:Languages/");
-		AddPart(fileBuf, lName, 512);
-		strcat(fileBuf, ".language");
+		snprintf(fileBuf, PATH_MAX, "LOCALE:Languages/%s.language", lName);
+		fileBuf[PATH_MAX-1] = 0;
 		
 		lang = OpenLibrary(fileBuf, 0);
 	    }
 	    
-    	    if((lang == NULL) && ((((struct Process *)FindTask(NULL))->pr_HomeDir) != NULL))
+    	    if((lang == NULL) && ((((struct Process *)FindTask(NULL))->pr_HomeDir) != BNULL))
     	    {
 		/*
     		    Ok, so we are still NULL, lets then try for
     		    PROGDIR:Languages/xxx.language
 		*/
-		strcpy(fileBuf, "PROGDIR:Languages/");
-		AddPart(fileBuf, lName, 512);
-		strcat(fileBuf, ".language");
+		snprintf(fileBuf, PATH_MAX, "PROGDIR:Languages/%s.language", lName);
+		fileBuf[PATH_MAX-1] = 0;
 
 		lang = OpenLibrary(fileBuf, 0);
 	    }
@@ -202,6 +204,8 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     il->il_DosCatalog = OpenCatalogA((struct Locale *)il, "System/Libs/dos.catalog", NULL);
 
     DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: DosCatalog 0x%lx\n",il->il_DosCatalog));
+
+    FreeMem(fileBuf, PATH_MAX);
 }
 
 /* InitLocale(IntLocale *, LocalePrefs *)
