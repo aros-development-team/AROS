@@ -678,7 +678,7 @@ LONG mysprintf(struct ClassBase *cb, STRPTR buf, LONG len, STRPTR format,...)
    va_start(ap, format);
    memset(buf, 0, len);
    buf[len-1] = 127;
-   VNewRawDoFmt(format, mysprintf_hook, buf, ap);
+   VNewRawDoFmt(format, (VOID_FUNC)mysprintf_hook, buf, ap);
    buf[len-1] = 0;
    va_end(ap);
    return strlen(buf);
