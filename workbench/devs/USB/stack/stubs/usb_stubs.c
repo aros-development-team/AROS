@@ -442,7 +442,7 @@ OOP_Object *HIDD_USBHub_GetChild(OOP_Object *obj, uint8_t port)
     p.mID = static_mid;
     p.port = port;
 
-    return OOP_DoMethod(obj, &p.mID);
+    return (OOP_Object *)OOP_DoMethod(obj, &p.mID);
 
 }
 
