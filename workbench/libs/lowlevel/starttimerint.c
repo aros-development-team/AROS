@@ -43,7 +43,7 @@
 {
   AROS_LIBFUNC_INIT
 
-#warning TODO: Write lowlevel/StartTimerInt()
+    /* TODO: Write lowlevel/StartTimerInt() */
     aros_print_not_implemented ("lowlevel/StartTimerInt");
 
     return;

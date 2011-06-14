@@ -41,8 +41,8 @@
 {
   AROS_LIBFUNC_INIT
 
-#warning TODO: Write lowlevel/ReadJoyPort()
-    //aros_print_not_implemented ("lowlevel/ReadJoyPort");
+    /* TODO: Write lowlevel/ReadJoyPort() */
+    // aros_print_not_implemented ("lowlevel/ReadJoyPort");
 
     return JP_TYPE_NOTAVAIL; // return failure until implemented
 

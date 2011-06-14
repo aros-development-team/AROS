@@ -43,7 +43,7 @@
 {
   AROS_LIBFUNC_INIT
 
-#warning TODO: Write lowlevel/ElapsedTime()
+    /* TODO: Write lowlevel/ElapsedTime() */
     aros_print_not_implemented ("lowlevel/ElapsedTime");
 
     return 0L;

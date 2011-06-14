@@ -42,7 +42,7 @@
 {
   AROS_LIBFUNC_INIT
 
-#warning TODO: Write lowlevel/QueryKeys()
+    /* TODO: Write lowlevel/QueryKeys() */
     aros_print_not_implemented ("lowlevel/QueryKeys");
 
     return;

@@ -41,7 +41,7 @@
 {
   AROS_LIBFUNC_INIT
 
-#warning TODO: Write lowlevel/RemTimerInt()
+    /* TODO: Write lowlevel/RemTimerInt() */
     aros_print_not_implemented ("lowlevel/RemTimerInt");
 
     if (intHandle)
