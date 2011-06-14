@@ -10,7 +10,7 @@
 #define TOPAZ_8_BASELINE 6
 
 /* Perhaps this should be localized */
-static const char *title = "Program alert: ";
+static const char title[] = "Program alert: ";
 
 static struct IntuiText *displayalert_makebody(STRPTR string, struct TextAttr *font)
 {

@@ -2192,8 +2192,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                      (ie->ie_Code == RAWKEY_LEFT)  ||
                      (ie->ie_Code == RAWKEY_RIGHT)))
                 {
-                    static BYTE xmap[] = { 0, 0, 1, -1};
-                    static BYTE ymap[] = {-1, 1, 0,  0};
+                    static BYTE const xmap[] = { 0, 0, 1, -1};
+                    static BYTE const ymap[] = {-1, 1, 0,  0};
                     WORD        shift;
 
                     shift = (iihdata->ActQualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) ? 40 : 1;
