@@ -22,7 +22,7 @@
 	AROS_LH1(BOOL, OOP_ObtainAttrBases,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct OOP_ABDescr *, abd, A0),
+	AROS_LHA(const struct OOP_ABDescr *, abd, A0),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 18, OOP)
