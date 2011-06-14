@@ -50,7 +50,7 @@ static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ExecBase *sb
 	APTR code = (APTR)(((UBYTE*)diag) + offset);
 	BOOL ret;
 	
-	// call autoconfig ROM da_DiagPoint or bootpoint da_BootPoint
+	// call autoconfig ROM da_DiagPoint or da_BootPoint
 	D(bug("Call boot rom @%p board %p diag %p configdev %p\n",
 		code, configDev->cd_BoardAddr, diag, configDev));
 	ret = AROS_UFC5(BOOL, code,
