@@ -384,7 +384,7 @@ void Check_Subdirectory (CDROM_OBJ *p_home, char *p_name)
     printf ("ERROR: Object '%s': iso_errno = %d\n", p_name, global->iso_errno);
   }
 
-  printf ("  %*s\r", strlen (p_name), "");
+  printf ("  %*s\r", (int)strlen (p_name), "");
 }
 
 void Check_Directories (void)

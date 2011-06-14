@@ -46,7 +46,7 @@
 
 /* Number of seconds betweem 01-Jan-1904 and 01-Jan-1978: */
 
-#define TIME_DIFF ((74 * 365 + 19) * 24 * 60 * 60)
+#define TIME_DIFF ((74UL * 365 + 19) * 24 * 60 * 60)
 
 extern struct Globals *global;
 
@@ -513,7 +513,7 @@ t_leaf_record_pos leaf;
 CDROM_OBJ *obj;
 char name[50];
 char type;
-t_bool data_fork;
+t_bool data_fork = FALSE;
 
 	if (!HFS_Find_Leaf_Record(p_volume, &leaf, p_parent))
 		return NULL;
