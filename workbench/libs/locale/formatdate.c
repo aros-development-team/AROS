@@ -128,7 +128,9 @@ static const ULONG dayspermonth[13] =
 	return;
     }
 
-#warning Amiga2Date will fail around year 2114, because then the numer of seconds since 1978 dont fit in a 32 bit variable anymore!
+/* TODO: Amiga2Date will fail around year 2114, because then the
+ *       number of seconds since 1978 won't fit in a 32 bit variable anymore!
+ */
    
     Amiga2Date(date->ds_Days*86400 + date->ds_Minute*60 + date->ds_Tick / 50,
 	       &cData);
@@ -194,8 +196,7 @@ static const ULONG dayspermonth[13] =
 		break;
 		
 	    case 'j':
-	        /* TODO */
-#warning Julian date not tested.
+	        /* TODO: Julian date not tested. */
 		/* Julian date is DDD (1 - 366)*/
 		PrintDigits(
 		    cData.mday + dayspermonth[cData.month],
