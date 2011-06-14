@@ -196,9 +196,9 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     	fh->timerreq = (struct timerequest*)CreateIORequest(fh->timermp, sizeof(struct timerequest));
    	OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)fh->timerreq, 0);
 
-	fh->intuibase = OpenLibrary("intuition.library", 0);
-	fh->dosbase = OpenLibrary("dos.library", 0);
-	fh->utilbase = OpenLibrary("utility.library", 0);
+	fh->intuibase = (APTR)OpenLibrary("intuition.library", 0);
+	fh->dosbase = (APTR)OpenLibrary("dos.library", 0);
+	fh->utilbase = (APTR)OpenLibrary("utility.library", 0);
 	Forbid();
     	fh->inputbase = (struct Device *)FindName(&SysBase->DeviceList, "input.device");
     	Permit();
@@ -341,8 +341,8 @@ LONG CONMain(void)
 			fh->flags &= ~FHFLG_ASYNCCONSOLEREAD;
 			if (waitingdp) {
 				replypkt(waitingdp, DOSTRUE);
-				AbortIO(fh->timerreq);
-				WaitIO(fh->timerreq);
+				AbortIO((struct IORequest *)fh->timerreq);
+				WaitIO((struct IORequest *)fh->timerreq);
 				waitingdp = NULL;
 			}
 			D(bug("IO_READ %d\n", fh->conreadio->io_Actual));
@@ -463,7 +463,7 @@ LONG CONMain(void)
 					fh->timerreq->tr_node.io_Command = TR_ADDREQUEST;
 					fh->timerreq->tr_time.tv_secs = sec;
 					fh->timerreq->tr_time.tv_micro = usec;
-					SendIO((struct IORquest*)fh->timerreq);
+					SendIO((struct IORequest *)fh->timerreq);
 					waitingdp = dp;
 				    }
  				    startread(fh);
@@ -500,8 +500,8 @@ end:
 	if (fh) {
     		struct Message *msg, *next_msg;
 		if (waitingdp) {
-			AbortIO(fh->timerreq);
-			WaitIO(fh->timerreq);
+			AbortIO((struct IORequest *)fh->timerreq);
+			WaitIO((struct IORequest *)fh->timerreq);
 			replypkt(waitingdp, DOSFALSE);
 		}
 		ForeachNodeSafe(&fh->pendingReads, msg, next_msg)

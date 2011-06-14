@@ -396,9 +396,9 @@ static void DoScan(struct filehandle *fh, struct completioninfo *ci)
 
 static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
 {
-    static char *oktext = "Ok";
-    static char *canceltext = "Cancel";
-    static char *titletext = "Select filename";
+    static const char oktext[] = "Ok";
+    static const char canceltext[] = "Cancel";
+    static const char titletext[] = "Select filename";
     
     struct RastPort 	temprp;
     struct DrawInfo 	*dri;
