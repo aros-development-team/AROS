@@ -594,7 +594,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
                 "    SysBase = sysBase;\n"
                 "#endif\n"
                 "#ifdef GM_SYSBASE_FIELD\n"
-                "    GM_SYSBASE_FIELD(lh) = sysBase;\n"
+                "    GM_SYSBASE_FIELD(lh) = (APTR)sysBase;\n"
                 "#endif\n"
         );
     }
