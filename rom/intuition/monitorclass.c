@@ -120,7 +120,7 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
 
 /***********************************************************************************/
 
-static BYTE pixelformats[] = {
+static BYTE const pixelformats[] = {
     -1,
     -1,
     -1,
