@@ -44,7 +44,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("Getting location\n"));
 
-    if(locFile != NULL)
+    if(locFile != BNULL)
     {
 	D(bug("Location file exists!\n"));
 	
@@ -76,7 +76,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 		    
 	    D(bug("Got lock = %p\n", nvdBase->nvd_location));
 
-	    if(nvdBase->nvd_location != NULL)
+	    if(nvdBase->nvd_location != BNULL)
 	    {
 		error = FALSE;
 	    }

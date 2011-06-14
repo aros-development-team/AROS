@@ -18,7 +18,7 @@
 #include <proto/dos.h>
 #include <libraries/nonvolatile.h>
 
-static int cxbug; /* For cxref bug */
+//static int cxbug; /* For cxref bug */
 
 AROS_LH2(BOOL, DeleteNVDData,
 
@@ -71,7 +71,7 @@ AROS_LH2(BOOL, DeleteNVDData,
 
     D(bug("Entering DeleteData()"));
 
-    if(lock == NULL)
+    if(lock == BNULL)
     {
 	D(bug("Could not lock directory %s", appName));
 	CurrentDir(oldCDir);
