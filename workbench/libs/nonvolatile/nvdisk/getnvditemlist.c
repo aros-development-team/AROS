@@ -96,7 +96,7 @@ AROS_LH1(struct MinList *, GetNVDItemList,
 
     lock = Lock(appName, SHARED_LOCK);
 
-    if(lock != NULL)
+    if(lock != BNULL)
     {
 	if(Examine(lock, fib))
 	{
