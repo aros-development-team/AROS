@@ -69,6 +69,20 @@ ziparc()
     cd      $oldpwd
 }
 
+lhaarc()
+{
+    archdir=$(dirname $1)
+    archname=$(basename $1)
+    oldpwd=$(pwd)
+    
+    makedir $archdir
+    execute lha -aq -x=\*/.svn/\* $1 $2
+    cd      $archdir
+    echo    ">>> md5sum $archname >$archname.md5"
+    md5sum  $archname >$archname.md5
+    cd      $oldpwd
+}
+
 resetl()
 {
     LOG_THIS=/dev/null
