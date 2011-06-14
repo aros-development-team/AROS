@@ -221,9 +221,9 @@ struct header
 		return NULL;
 	    }
 	    
-	    if ((MyProcess->pr_HomeDir) != NULL)
+	    if ((MyProcess->pr_HomeDir) != BNULL)
 	    {
-		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: HomeDir !=NULL..try progdir\n"));
+		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: HomeDir != BNULL..try progdir\n"));
 		strcpy(filename, "PROGDIR:Catalogs");
 		DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
 		AddPart(filename, language, FILENAMESIZE);
