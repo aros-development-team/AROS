@@ -307,7 +307,7 @@ draw_vs_create_varient_generic( struct draw_vertex_shader *vs,
    emit.nr_elements = key->nr_outputs;
    emit.output_stride = key->output_stride;
    for (i = 0; i < key->nr_outputs; i++) {
-      if (key->element[i].out.format != EMIT_1F_PSIZE)
+      if ((int)key->element[i].out.format != (int)EMIT_1F_PSIZE)
       {      
          emit.element[i].type = TRANSLATE_ELEMENT_NORMAL;
          emit.element[i].input_format = PIPE_FORMAT_R32G32B32A32_FLOAT;
