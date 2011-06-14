@@ -73,7 +73,7 @@ int __nocommandline = 1;
 
 int main(void)
 {
-    BPTR olddir = NULL;
+    BPTR olddir = BNULL;
     STRPTR myname;
     struct DiskObject *icon;
     struct RDArgs *rdargs = NULL;
@@ -122,7 +122,7 @@ int main(void)
 	{
             struct CommandLineInterface *cli = BADDR(me->pr_CLI);
 	
-	    myname = cli->cli_CommandName;
+	    myname = AROS_BSTR_ADDR(cli->cli_CommandName);
 	}
 	else
 	    myname = me->pr_Task.tc_Node.ln_Name;
@@ -230,10 +230,10 @@ int main(void)
 			    {
 				struct CommandLineInterface *cli = BADDR(me->pr_CLI);
 
-				cli->cli_Module = NULL;
+				cli->cli_Module = BNULL;
 			    }
 			    else  
-				me->pr_SegList = NULL;
+				me->pr_SegList = BNULL;
 
 			    /* 
 			     * Note also that we don't close needed libraries and

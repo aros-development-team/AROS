@@ -467,7 +467,7 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
     void *ptr;
 	OOP_Object *gc = msg->gc;
 
-    HIDDT_Pixel     	    	    src, dest, val;
+    HIDDT_Pixel     	    	    src, dest = 0, val;
     HIDDT_DrawMode  	    	    mode;
     HIDDT_Pixel     	    	    writeMask;
 
