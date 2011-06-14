@@ -172,7 +172,7 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
         uint16_t vstart, uint16_t vend, uint16_t vtotal, uint32_t flags)
 {
 	bug("[GMA] InitMode %dx%dx%d @ %dHz\n", hdisp, vdisp, depth, ((pixelclock / (uint32_t)htotal) * 1000) / ((uint32_t)vtotal));
-	GMA_PLL_t clock, t;
+	GMA_PLL_t clock = { 0 }, t = { 0 };
 	uint32_t err = pixelclock;
 
 	clock.PixelClock = 0;

@@ -328,8 +328,8 @@ static VOID G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr,
 
 				description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
 				snprintf(description, MAX_MODE_NAME_LEN, "GMA: %dx%d@%d N",
-					ha, va, ((pixel * 10 / (uint32_t)(ha + hb)) * 1000)
-					/ ((uint32_t)(va + vb)));
+					ha, va, (int)(((pixel * 10 / (uint32_t)(ha + hb)) * 1000)
+					/ ((uint32_t)(va + vb))));
 
 				PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, poolptr);
 
