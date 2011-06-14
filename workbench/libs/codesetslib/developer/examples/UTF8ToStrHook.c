@@ -54,7 +54,7 @@ struct CodesetsIFace* ICodesets = NULL;
 
 HOOKPROTONH(destFunc, ULONG, struct convertMsg* msg, STRPTR buf)
 {
-    printf("[%3d] [%s]\n",msg->len,buf);
+    printf("[%3d] [%s]\n",(int)msg->len,buf);
 
     if(msg->state == CSV_End)
       printf("\n");
