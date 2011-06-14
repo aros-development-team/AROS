@@ -516,14 +516,16 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 #define N_TD_SEEK64     2
 #define N_TD_FORMAT64   3
 
-static void (*map64[])(struct IORequest *, LIBBASETYPEPTR) = {
+typedef void (*mapfunc)(struct IORequest *, LIBBASETYPEPTR);
+
+static mapfunc const map64[]= {
     [N_TD_READ64]   = cmd_Read64,
     [N_TD_WRITE64]  = cmd_Write64,
     [N_TD_SEEK64]   = cmd_Reset,
     [N_TD_FORMAT64] = cmd_Write64
 };
 
-static void (*map32[])(struct IORequest *, LIBBASETYPEPTR) = {
+static mapfunc const map32[] = {
     [CMD_INVALID]   = cmd_Invalid,
     [CMD_RESET]     = cmd_Reset,
     [CMD_READ]      = cmd_Read32,
@@ -555,7 +557,7 @@ static void (*map32[])(struct IORequest *, LIBBASETYPEPTR) = {
     [HD_SCSICMD+1]  = cmd_TestChanged,
 };
 
-static const UWORD NSDSupported[] = {
+static UWORD const NSDSupported[] = {
     CMD_RESET,
     CMD_READ,
     CMD_WRITE,
