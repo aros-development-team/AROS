@@ -41,7 +41,7 @@
 {
   AROS_LIBFUNC_INIT
 
-#warning TODO: Write lowlevel/GetKey()
+    /* TODO: Write lowlevel/GetKey() */
     aros_print_not_implemented ("lowlevel/GetKey");
 
     return 0xFF; // return "no key pressed" until implemented

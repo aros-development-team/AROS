@@ -41,7 +41,7 @@
 {
   AROS_LIBFUNC_INIT
 
-#warning TODO: Write lowlevel/RemKBInt()
+    /* TODO: Write lowlevel/RemKBInt() */
     aros_print_not_implemented ("lowlevel/RemKBInt");
 
     if (intHandle)

@@ -43,7 +43,7 @@
 {
   AROS_LIBFUNC_INIT
 
-#warning TODO: Write lowlevel/AddKBInt()
+    /* TODO: Write lowlevel/AddKBInt() */
     aros_print_not_implemented ("lowlevel/AddKBInt");
 
     return NULL; // return failure until implemented

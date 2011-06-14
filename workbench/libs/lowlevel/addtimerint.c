@@ -43,7 +43,7 @@
 {
   AROS_LIBFUNC_INIT
 
-#warning TODO: Write lowlevel/AddTimerInt()
+    /* TODO: Write lowlevel/AddTimerInt() */
     aros_print_not_implemented ("lowlevel/AddTimerInt");
 
     return NULL; // return failure until implemented
