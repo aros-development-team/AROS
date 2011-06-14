@@ -5,6 +5,8 @@ FILES := con_task support completion
 
 #MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
 
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 %build_module mmake=kernel-fs-con \
     modname=con modtype=device modsuffix=handler \
     conffile=console.conf files="con_handler $(FILES)" uselibs="rom"
