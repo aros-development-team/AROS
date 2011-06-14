@@ -11,7 +11,7 @@
 
 #include "mathieeesingbas_intern.h"
 
-#define SetFunc(a,b) SetFunction((struct Library *)lh, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,MathIeeeSingBas))
+#define SetFunc(a,b) SetFunction(lh, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,MathIeeeSingBas))
 
 extern void AROS_SLIB_ENTRY(Mul_6888x,MathIeeeSingBas)(void);
 extern void AROS_SLIB_ENTRY(Div_6888x,MathIeeeSingBas)(void);
@@ -22,7 +22,7 @@ extern void AROS_SLIB_ENTRY(Abs_6888x,MathIeeeSingBas)(void);
 extern void AROS_SLIB_ENTRY(Fix_6888x,MathIeeeSingBas)(void);
 extern void AROS_SLIB_ENTRY(Flt_6888x,MathIeeeSingBas)(void);
 
-static int IEEESP_Init(struct MathIeeeSingBasBase *lh)
+static int IEEESP_Init(struct Library *lh)
 {
     if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_68040)) {
 	SetFunc(5, Fix_6888x);
