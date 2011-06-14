@@ -227,8 +227,8 @@ static int GM_UNIQUENAME(Open)
 	    InitSemaphore(&CBUn->cu_UnitLock);
 
 	    /* Construct clipboard unit filename. */
-	    cb_sprintf(CBBase, CBUn->cu_clipFilename, "%s%lu", CBBase->cb_ClipDir,
-		       unitnum);
+	    cb_sprintf(CBBase, CBUn->cu_clipFilename, "%s%lu", (IPTR)CBBase->cb_ClipDir,
+		       (IPTR)unitnum);
 
 	    CBUn->cu_Satisfy.sm_Unit = unitnum;
 		
