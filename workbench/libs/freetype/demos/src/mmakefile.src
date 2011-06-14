@@ -16,12 +16,14 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES		:= -I$(SRCDIR)/$(CURDIR)/../graph -I$(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/../../src/base -I$(SRCDIR)/$(CURDIR)/../../config
 
+USER_CFLAGS += -Wno-switch
+
 %build_prog mmake=workbench-libs-freetype-demos-ftstring \
     progname=ftstring targetdir=$(BINDIR)/Demos/FreeType \
     files="ftstring common ftcommon" \
     uselibs="freetype2 freetypegraph arossupport amiga arosc m"
 
-USER_CFLAGS		:= -DFT2_BUILD_LIBRARY
+USER_CFLAGS += -DFT2_BUILD_LIBRARY
 
 %build_prog mmake=workbench-libs-freetype-demos-ftview \
     progname=ftview targetdir=$(BINDIR)/Demos/FreeType \
