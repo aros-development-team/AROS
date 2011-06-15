@@ -33,17 +33,15 @@ copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
 copy    $BUILD_BASE/AROS/distfiles/ $PACKAGE
 
 archive $ARCHIVE $PACKAGE
+move    $PACKAGE AROS
 
 printi "Creating AROS/"$BUILDTARGET" boot package..."
 PACKAGE=$BASENAME-$BUILDTARGET-boot
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.lha
 
-cd      $PACKAGE
-move    AROS $BUILD_BASE/AROS/bin/amiga-m68k
-move    distfiles/* ./
-delete  distfiles
+move    $BUILD_BASE/AROS/distfiles $PACKAGE
 
-lhaarc $ARCHIVE $PACKAGE
+lhaarc  $ARCHIVE $PACKAGE
 
 cd      $ROOT
 resetl
