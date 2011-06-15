@@ -76,7 +76,7 @@ lhaarc()
     oldpwd=$(pwd)
     
     makedir $archdir
-    execute lha -aq -x=\*/.svn/\* $1 $2
+    execute lha -a -x=\*/.svn/\* $1 $2
     cd      $archdir
     echo    ">>> md5sum $archname >$archname.md5"
     md5sum  $archname >$archname.md5
