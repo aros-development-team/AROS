@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <proto/exec.h>
 #include <proto/oop.h>
 #include <hidd/pci.h>
 
