@@ -34,154 +34,6 @@ extern void __clear_bss(const struct KernelBSS *bss);
 
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 
-/* detect CPU and FPU type, enable code cache (if supported)
- * does not enable data caches, it is bad idea on real 68030 hardware
- * without correct MMU tables (for example chip ram must be non-cacheable)
- * 68040/060 data caches will be enabled later (transparent translation
- * registers can be used to disable data caching in low ram, even on EC models)
- * ram testing requires disabled data caches.
- */
-
-void __attribute__((interrupt)) cpu_detect_fpu_asm(void);
-asm (".chip 68060\n"
-	"	.text\n"
-	"	.globl cpu_detect_fpu_asm\n"
-	"cpu_detect_fpu_asm:\n"
-	"	move.l %sp,%a1\n"
-	"	lea %sp@(-60),%sp\n"
-	"	move.l %sp,%a0\n"
-	"	clr.b (%a0)\n"
-	"	fsave (%a0)\n"
-	"	move.w #0x8000,%d0\n"
-	"	move.b (%a0),%d0\n"
-	"	move.l %a1,%sp\n"
-	"	rts\n" /* return to cpu_detect() */
-);
-
-void __attribute__((interrupt)) fpu_detect_trap_f(void);
-asm (
-	"	.text\n"
-	"	.globl fpu_detect_trap_f\n"
-	"fpu_detect_trap_f:\n"
-	"	move.l %a1,%sp\n"
-	"	moveq #0,%d0\n"
-	"	rts\n" /* return to cpu_detect() */
-);
-
-void __attribute__((interrupt)) cpu_detect_asm(void);
-asm (".chip 68060\n"
-	"	.text\n"
-	"	.globl cpu_detect_asm\n"
-	"cpu_detect_asm:\n"
-	"	move.l	%sp,%a1\n"
-	"	moveq	#0,%d0\n"
-		/* VBR is 68010+ */
-	"	movec	%vbr,%d1\n"
-	"	move.w	#0x0001,%d0\n"
- 		/* CACR is 68020+ */
-	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
-		/* 68020+ or better */
-	"       move.l	#0x00008000,%d0\n"
- 		/* enable 68040/060 code cache */
-	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
-	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
- 		/* bit 15 still set? */
-	"	tst.w	%d0\n"
- 		/* yes, it is 68040 or 68060 */
-	"	bmi.s	0f\n"
- 		/* enable 68020/030 code cache and 68030 data cache */
- 	"	move.w	#0x0101,%d0\n"
-	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
-	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
- 		/* data cache bit still set? */
-	"	btst	#8,%d0\n"
-	"	bne.s	1f\n" /* yes, it is 68030 */
-		/* 68020 */
-	"	move.w	#0x0003,%d0\n"
-	"	bra cpu_detect_trap_illg\n"
-		/* 68030 */
-	"1:	move.w	#0x0001,%d0\n"
-		/* disable data cache, bad idea without correct MMU tables */
-	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
-	"	move.w	#0x0007,%d0\n"
-	"	bra cpu_detect_trap_illg\n"
-		/* 68040 or 68060 */
-	"0:	moveq	#0,%d0\n"
-		/* set transparent translation registers,
-		 * allow data caching only in 32-bit fast,
-		 * code caching allowed everywhere */
-	"	movec	%d0,%itt1\n"
-	"	move.l	#0x0000e040,%d0\n"
-	"	movec	%d0,%dtt0\n"
-	"	move.l	#0x00ffe000,%d0\n"
-	"	movec	%d0,%dtt1\n"
-	"	movec	%d0,%itt0\n"
-	"	move.w	#0x000f,%d0\n"
- 		/* PCR is 68060 only */
-	"	dc.l 0x4e7a0808\n" // movec	%pcr,%d0\n"
-		/* 68060 */
-	"	move.l	%d0,%a0@\n" // save PCR
-	"	move.w	#0x0001,%d0\n"
- 		/* enable supercalar, enable FPU */
- 	"	dc.l 0x4e7b0808\n" // movec	%d0,%pcr\n"
-		/* enable code cache, store buffer and branch cache */
-	"	move.l	#0x0080a000,%d0\n"
-	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
-	"	move.w	#0x008f,%d0\n"
-	"	bra cpu_detect_trap_illg\n"
-);
-
-void __attribute__((interrupt)) cpu_detect_trap_illg(void);
-asm (
-	"	.text\n"
-	"	.globl cpu_detect_trap_illg\n"
-	"cpu_detect_trap_illg:\n"
-	"	move.l %a1,%sp\n" /* remove exception stack frame */
-	"	rts\n" /* return to cpu_detect() */
-);
-
-/* Detect CPU and FPU model */
-static ULONG cpu_detect(ULONG *pcr)
-{
-	volatile APTR *trap = NULL;
-	APTR old_trap4, old_trap11;
-	UWORD cpuret, fpuret;
-
-	old_trap4 = trap[4];
-	trap[4] = cpu_detect_trap_illg;
-
-	*pcr = 0;
-	asm volatile (
-		"move.l %1,%%a0\n"
-		"bsr cpu_detect_asm\n"
-		"move.w	%%d0,%0\n"
-		: "=m" (cpuret) : "m" (pcr) : "%d0", "%d1", "%a0", "%a1" );
-
-	old_trap11 = trap[11];
-	trap[11] = fpu_detect_trap_f;
-	asm volatile (
-		"bsr cpu_detect_fpu_asm\n"
-		"move.w	%%d0,%0\n"
-		: "=m" (fpuret) : : "%d0", "%a0", "%a1" );
-
-	trap[4] = old_trap4;
-	trap[11] = old_trap11;
-
-	cpuret &= 0xff;
-
-	if (fpuret) {
-		cpuret |= AFF_FPU;
-		if (cpuret & (AFF_68040 | AFF_68060))
-			cpuret |= AFF_FPU40;
-			// AFF_68881 | AFF_68882 set only if 040/060 math emulation running
-		else if ((fpuret & 0x00ff) <= 0x1f)
-			cpuret |= AFF_68881;
-		else
-			cpuret |= AFF_68881 | AFF_68882;
-	}
-	return cpuret;
-}
-
 #define _AS_STRING(x)	#x
 #define AS_STRING(x)	_AS_STRING(x)
 	
@@ -410,7 +262,7 @@ void doColdCapture(void)
     	  "a0", "a1", "a2", "a3", "a4", "a5", "a6");
 }
 
-void exec_boot(ULONG *membanks, ULONG flags)
+void exec_boot(ULONG *membanks, ULONG *cpu)
 {
 	struct TagItem bootmsg[] = {
 #ifdef AROS_SERIAL_DEBUG
@@ -433,7 +285,7 @@ void exec_boot(ULONG *membanks, ULONG flags)
 	};
 	struct MemHeader *mh;
 	LONG oldLastAlert[4];
-	ULONG oldmem, pcr;
+	ULONG oldmem;
 	APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
 	APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
 	/* We can't use the global 'SysBase' symbol, since
@@ -576,10 +428,20 @@ void exec_boot(ULONG *membanks, ULONG flags)
         for (i = 0; i < 4; i++)
             SysBase->LastAlert[i] = oldLastAlert[i];
 
-	/* Determine CPU model */
-	SysBase->AttnFlags |= cpu_detect(&pcr);
-	if (flags & (1 << 31))
+	/* Convert CPU/FPU flags to AttnFlags */
+	SysBase->AttnFlags = (UWORD)cpu[0];
+	if (SysBase->AttnFlags & (AFF_68030 | AFF_68040 | AFF_68060))
 		SysBase->AttnFlags |= AFF_ADDR32;
+	if (cpu[0] & 0xffff0000) {
+		SysBase->AttnFlags |= AFF_FPU;
+		if (SysBase->AttnFlags & (AFF_68040 | AFF_68060))
+			SysBase->AttnFlags |= AFF_FPU40;
+			// AFF_68881 | AFF_68882 set only if 040/060 math emulation running
+		else if (((cpu[0] >> 16) & 0xff) <= 0x1f)
+			SysBase->AttnFlags |= AFF_68881;
+		else
+			SysBase->AttnFlags |= AFF_68881 | AFF_68882;
+	}
 
 #ifdef AROS_SERIAL_DEBUG
 	DEBUGPUTS(("CPU: "));
@@ -589,16 +451,15 @@ void exec_boot(ULONG *membanks, ULONG flags)
 		DEBUGPUTS(("68040"));
 	else if (SysBase->AttnFlags & AFF_68030)
 		DEBUGPUTS(("68030"));
-	else if (SysBase->AttnFlags & AFF_68020)
-		DEBUGPUTS(("68020"));
-	else if (SysBase->AttnFlags & AFF_68010)
+	else if (SysBase->AttnFlags & AFF_68020) {
+		if (SysBase->AttnFlags & AFF_ADDR32)
+			DEBUGPUTS(("68020"));
+		else
+			DEBUGPUTS(("68EC020"));
+	} else if (SysBase->AttnFlags & AFF_68010)
 		DEBUGPUTS(("68010"));
 	else
 		DEBUGPUTS(("68000"));
-	if (SysBase->AttnFlags & AFF_ADDR32)
-		DEBUGPUTS((" 32bit"));
-	else
-		DEBUGPUTS((" 24bit"));
 	DEBUGPUTS((" FPU: "));
 	if (SysBase->AttnFlags & AFF_FPU40) {
 		if (SysBase->AttnFlags & AFF_68060)
@@ -614,8 +475,8 @@ void exec_boot(ULONG *membanks, ULONG flags)
 	else
 		DEBUGPUTS(("-"));
 	DEBUGPUTS(("\n"));
-	if (pcr)
-		DEBUGPUTHEX(("PCR", pcr));
+	if (cpu[1])
+		DEBUGPUTHEX(("PCR", cpu[1]));
 #endif
 
 	/* Inject code for GetCC, depending on CPU model */
