@@ -81,20 +81,22 @@ AROS_UFH5(void, writeexpansion,
 
 	memorydevice = (configDev->cd_Rom.er_Type & ERTF_MEMLIST) != 0;
 	if (type == ERT_ZORROIII) {
-		UWORD prevslot;
+		UWORD prevslot, newslot;
 		UWORD endslot = 255;
 		UWORD slotsize = (size + 0x00ffffff) / Z3SLOT;
 		if (IntExpBase(ExpansionBase)->eb_z3Slot == 0)
 			IntExpBase(ExpansionBase)->eb_z3Slot = 0x40000000 / Z3SLOT;
 		prevslot = IntExpBase(ExpansionBase)->eb_z3Slot;
-		D(bug("size=%d prev=%d end=%d\n", slotsize, prevslot, endslot));
-		if (prevslot + slotsize <= endslot) {
-			ULONG startaddr = prevslot * Z3SLOT;
+		// handle alignment
+		newslot = (prevslot + slotsize - 1) & ~(slotsize - 1);
+		D(bug("size=%d prev=%d new=%d end=%d\n", slotsize, prevslot, newslot, endslot));
+		if (newslot + slotsize <= endslot) {
+			ULONG startaddr = newslot * Z3SLOT;
 			configDev->cd_BoardAddr = (APTR)startaddr;
 			configDev->cd_SlotAddr = IntExpBase(ExpansionBase)->eb_z3Slot;
 			configDev->cd_SlotSize = slotsize;
 			configDev->cd_Flags |= CDF_CONFIGME;
-			IntExpBase(ExpansionBase)->eb_z3Slot += slotsize;
+			IntExpBase(ExpansionBase)->eb_z3Slot = newslot + slotsize;
 			AROS_UFC5(void, writeexpansion,
 				AROS_UFCA(APTR,  board, A0),
 				AROS_UFCA(APTR,  configDev, A3),
@@ -106,22 +108,17 @@ AROS_UFH5(void, writeexpansion,
 			return TRUE;
 		}
 	} else {
-		ULONG start, end, addr, align;
+		ULONG start, end, addr, step;
 		UBYTE *space;
 		start = 0x00200000;
 		end   = 0x009FFFFF;
 		space = IntExpBase(ExpansionBase)->eb_z2Slots;
-		align = configDev->cd_BoardSize;
+		step = 0x00010000;
 		if (!memorydevice) {
 			start = 0x00E90000;
 			end   = 0x00EFFFFF;
-			align = size;
-			/* Blizzard 1240/1260 SCSI kit (128k rom) must be at 0x00EA0000
-		 	* Does this mean all >64k boards must be 128k aligned? */
-			if (size > E_SLOTSIZE)
-				start = 0x00EA0000;
 		}
-		for (addr = start; addr < end; addr += align) {
+		for (addr = start; addr < end; addr += step) {
 			ULONG startaddr = addr;
 			UWORD offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
 			BYTE bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
@@ -130,6 +127,16 @@ AROS_UFH5(void, writeexpansion,
 	
 			if (res & (1 << bit))
 				continue;
+
+			if (size < 4 * 1024 * 1024) {
+				// handle alignment, 128k boards must be 128k aligned and so on..
+				if ((startaddr & (size - 1)) != 0)
+					continue;
+			} else {
+				// 4M and 8M boards have different alignment requirements
+				if (startaddr != 0x00200000 && startaddr != 0x00600000)
+					continue;
+			}
 
 			// found free start address
 			if (size >= E_SLOTSIZE * SLOTSPERBYTE) {
