@@ -400,9 +400,12 @@ static void setcpu(void)
 	"move.w	296(%a0),%d1\n"
 	"moveq	#0,%d0\n"
 	"btst	#0,%d1\n"
-	"beq.s	novbr\n"
+	"beq.s	cpudone\n"
+	/* clear VBR */
 	"movec	%d0,%vbr\n"
-"novbr:	moveq	#1,%d0\n"
+	"btst	#1,%d1\n"
+	"beq.s	cpudone\n"
+	/* disable caches */
 	"movec	%d0,%cacr\n"
 	"btst	#3,%d1\n"
 	"beq.s	not040\n"
