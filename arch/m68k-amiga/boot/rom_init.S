@@ -1,5 +1,5 @@
 	.text
-
+	.chip 68060
 	.align 4 
 
 	reset
@@ -40,14 +40,14 @@ rom_init:
 0:
 
 	/* temp system stack */
-	lea.l	_ss_end,%sp	/* System stack */
-	lea.l	_ss,%a5		/* Put the memory bank array at the bottom of the stack */
+	lea.l	_ss_end,%sp		/* System stack */
+	lea.l	_ss,%a5	/* Put the memory bank array at the bottom of the stack */
 
-	/* Do we have a Gayle? */
-	sub.l	%a6,%a6
-	jsr		Exec_ReadGayle
-	moveq	#0,%d6
-	move.b  %d0,%d6         /* Save for later - %d6.b is Gayle ID */
+	move.l	%a5,%a4	/* Space for CPU/FPU data array */
+	addq.l	#8,%a5
+	move.l	%a4,%a0
+	bsr		cpu_detect
+	move.l	%a4@,%d6
 
 	/* Memory region array is put into the
 	 * system stack from the bottom up, so
@@ -56,16 +56,32 @@ rom_init:
 	 * up the system stack in A5.
 	 */
 
+	btst	#1,%d6		/* AttnFlags AFB_68020 */
+	beq.s	.skip32bit
+
 	/* cpu slot ram (A3000/A4000) */
 	move.l	#0x08000000,%a0
 	move.l	#0x7f000000,%a1
 	move.l	#0x00100000,%d0
 	bsr		.L_memtest
-	bmi.s	.no32bit
+	bpl.s	.mbramtest
 
-	/* set 32-bit supported flag */
-	bset	#31,%d6
+	/* We have 68EC020 if N-flag set and AttnFlags = AFB_68020
+	 * but we ignore set N-flag if CPU is not 68020 because some
+	 * accelerator boards mirror unmapped 32-bit address space
+	 * to 24-bit space */
+    move.w	%d6,%d0
+    and.w	#0x8f,%d0
+	/* CPU=68020? */
+    cmp.w	#2,%d0
+    bne.s	.skip32bit
+	/* set AttnFlags AFB_ADDR32 */
+	or.w	#0x4000,%a4@(2)
+	bra.s	.skip32bit
 
+.mbramtest:
+	/* set AttnFlags AFB_ADDR32 */
+	or.w	#0x4000,%a4@(2)
 	/* mainboard ram (A3000) */
 	/* end is static 0x08000000, start addr is end - (size of ram) */
 	move.l	%a5,%a6
@@ -91,11 +107,14 @@ rom_init:
 	move.l	%d7,%a5@+
 .a3000noram:
 
-.no32bit:
+.skip32bit:
+	/* Do we have a Gayle? */
+	sub.l	%a6,%a6
+	jsr		Exec_ReadGayle
 	/* slow ram */
 	move.l	#0x00c00000,%a0
 	move.l	#0x00d80000,%a1
-	tst.b	%d6
+	tst.b	%d0
 	bne.s	0f
 	move.l	#0x00dc0000,%a1
 0:	move.l	#0x00040000,%d0
@@ -119,7 +138,8 @@ rom_init:
 	clr.l	%a5@
 
 	lea.l	_ss,%a5
-	move.l	%d6,%sp@-	/* flags */
+	move.l	%a5,%sp@-	/* CPU/FPU data array */
+	addq.l	#8,%a5
 	move.l	%a5,%sp@-	/* memory bank array */
 	jsr		exec_boot
 
@@ -155,21 +175,32 @@ MemoryTest:
 	/* test if 32bit address mirrors address zero */
 	move.l	%d1,%a1
 	move.l	0.w,%d2				/* save old */
+	move.l	0x100.w,%d3
 	move.l	#0xfecaf00d,%d1
 	move.l	%d1,0.w
-	nop		/* force 68040/060 bus cycle to finish */
+	nop
+	not.w	%d1
+	move.l	%d1,0x100.w			/* write something else, some bus types "remember" old value */
+	not.w	%d1
+	nop							/* force 68040/060 bus cycle to finish */
 	cmp.l	%a1@,%d1
 	bne.s	.L_memtest_32bitok	/* different? no mirror */
 	move.l	#0xcafed00d,%d1
 	move.l	%d1,0.w
 	nop
+	not.w	%d1
+	move.l	%d1,0x100.w
+	not.w	%d1
+	nop
 	cmp.l	%a1@,%d1
 	bne.s	.L_memtest_32bitok	/* check again, maybe 0 already had our test value */
 	move.l	%d2,0.w				/* restore saved value */
+	move.l	%d3,0x100.w
 	moveq	#-1,%d1
 	bra		.L_memtest_none		/* 24-bit CPU, do not test this range */
 .L_memtest_32bitok:
 	move.l	%d2,0.w				/* restore saved value */
+	move.l	%d3,0x100.w
 .L_memtest_24bitaddr:
 
 	/* a0 = tested address, d0 = max size, d1 = current size */
@@ -248,4 +279,107 @@ MemoryTest:
 .L_memtest_none:
 	move.l	%d1,%d0
 	rts
+
+
+/* detect CPU and FPU type, enable code cache (if supported)
+ * does not enable data caches, it is bad idea on real 68030 hardware
+ * without correct MMU tables (for example chip ram must be non-cacheable)
+ * 68040/060 data caches will be enabled later (transparent translation
+ * registers can be used to disable data caching in low ram, even on EC models)
+ * ram testing requires disabled data caches.
+ *
+ */
+
+cpu_detect:
+	move.l	%d0,0x100
+	move.l	%a0,%a2
+	clr.l	%a2@(4)
+	lea		%pc@(cpu_detect_trap_illg),%a1
+	move.l	%a1,4*4.w	/* illegal instruction */
+	lea		%pc@(fpu_detect_trap_f),%a1
+	move.l	%a1,11*4.w	/* f-line */
+	bsr		cpu_detect_asm
+	move.w	%d0,%d2
+	bsr		cpu_detect_fpu_asm
+	swap	%d2
+	move.w	%d0,%d2
+	swap	%d2
+	move.l	%d2,%a2@
+	rts
+
+cpu_detect_fpu_asm:
+	move.l	%sp,%a1
+	lea		%sp@(-60),%sp
+	move.l	%sp,%a0
+	clr.b	(%a0)
+	fsave	(%a0)
+	move.w	#0x8000,%d0
+	move.b	(%a0),%d0
+	move.l	%a1,%sp
+	rts		/* return to cpu_detect */
+
+fpu_detect_trap_f:
+	move.l	%a1,%sp
+	moveq	#0,%d0
+	rts		/* return to cpu_detect */
+
+cpu_detect_asm:
+	move.l	%sp,%a1
+	moveq	#0,%d0
+	/* VBR is 68010+ */
+	dc.l 	0x4e7a1801	// movec	%vbr,%d1
+	move.w	#0x0001,%d0
+ 	/* CACR is 68020+ */
+	dc.l	0x4e7a0002 // movec	%cacr,%d0
+	/* 68020+ or better */
+	move.l	#0x00008000,%d0
+ 	/* enable 68040/060 code cache */
+	dc.l	0x4e7b0002 // movec	%d0,%cacr
+	dc.l	0x4e7a0002 // movec	%cacr,%d0
+ 	/* bit 15 still set? */
+	tst.w	%d0
+ 	/* yes, it is 68040 or 68060 */
+	bmi.s	0f
+ 	/* enable 68020/030 code cache and 68030 data cache */
+ 	move.w	#0x0101,%d0
+	dc.l	0x4e7b0002 // movec	%d0,%cacr
+	dc.l	0x4e7a0002 // movec	%cacr,%d0
+ 	/* data cache bit still set? */
+	btst	#8,%d0
+	bne.s	1f /* yes, it is 68030 */
+	/* 68020 */
+	move.w	#0x0003,%d0
+	bra cpu_detect_trap_illg
+	/* 68030 */
+1:	move.w	#0x0001,%d0
+	/* disable data cache, bad idea without correct MMU tables */
+	dc.l	0x4e7b0002 // movec	%d0,%cacr
+	move.w	#0x0007,%d0
+	bra cpu_detect_trap_illg
+	/* 68040 or 68060 */
+0:	moveq	#0,%d0
+	/* set transparent translation registers,
+	 * allow data caching only in 32-bit fast,
+	 * code caching allowed everywhere */
+	dc.l	0x4e7b0005	// movec	%d0,%itt1
+	move.l	#0x0000e040,%d0
+	dc.l	0x4e7b0006	// movec	%d0,%dtt0
+	move.l	#0x00ffe000,%d0
+	dc.l	0x4e7b0007	// movec	%d0,%dtt1
+	dc.l	0x4e7b0004	// movec	%d0,%itt0
+	move.w	#0x000f,%d0
+ 	/* PCR is 68060 only */
+	dc.l 0x4e7a0808 // movec	%pcr,%d0
+	/* 68060 */
+	move.l	%d0,%a2@(4) // save PCR
+	move.w	#0x0001,%d0
+ 	/* enable supercalar, enable FPU */
+ 	dc.l 0x4e7b0808 // movec	%d0,%pcr
+	/* enable code cache, store buffer and branch cache */
+	move.l	#0x0080a000,%d0
+	dc.l 0x4e7b0002 // movec	%d0,%cacr
+	move.w	#0x008f,%d0
+cpu_detect_trap_illg:
+	move.l %a1,%sp	/* remove exception stack frame */
+	rts				/* return to cpu_detect() */
 
