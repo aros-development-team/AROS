@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -119,7 +119,7 @@
 #define MAX_SFS_SIZE (124L * 1024)
 #define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
 
-const TEXT version_string[] = "$VER: Partition 41.3 (27.3.2010)";
+const TEXT version_string[] = "$VER: Partition 41.4 (16.6.2011)";
 
 static const struct PartitionType dos3 = { "DOS\3", 4 };
 #if AROS_BIG_ENDIAN
@@ -377,7 +377,7 @@ int main(void)
             sysSize > MAX_SIZE(sysType))
             sysSize = MAX_SIZE(sysType);
         if ((ARG(MAXWORK) &&
-            (highCyl - lowCyl  + 1)
+            (highCyl - lowCyl + 1)
             - MBsToCylinders(sysSize, &parent->de) + 1 >
             MBsToCylinders(MAX_SIZE(workType), &parent->de)) ||
             workSize > MAX_SIZE(workType))
@@ -574,6 +574,7 @@ static struct PartitionHandle *CreateMBRPartition
     struct PartitionType    type        = {{id},  1};
     struct PartitionHandle *partition;
     IPTR reserved, leadIn = 0;
+    ULONG maxcyl;
     
     GetPartitionAttrsTags
     (
@@ -605,9 +606,10 @@ static struct PartitionHandle *CreateMBRPartition
             (parentDG.dg_Heads * parentDG.dg_TrackSectors) + 1;
     }
 
-    if (highcyl == 0)
+    maxcyl = parentDE.de_HighCyl - parentDE.de_LowCyl;
+    if (highcyl == 0 || highcyl > maxcyl)
     {
-        highcyl = parentDE.de_HighCyl;
+        highcyl = maxcyl;
     }
     
     CopyMem(&parentDE, &partitionDE, sizeof(struct DosEnvec));
@@ -638,6 +640,7 @@ static struct PartitionHandle *CreateRDBPartition
     struct DosEnvec         parentDE    = {0},
                             partitionDE = {0};
     struct PartitionHandle *partition;
+    ULONG maxcyl;
         
     GetPartitionAttrsTags
     (
@@ -662,9 +665,10 @@ static struct PartitionHandle *CreateRDBPartition
             / (parentDG.dg_Heads * parentDG.dg_TrackSectors) + 1;
     }
     
-    if (highcyl == 0)
+    maxcyl = parentDE.de_HighCyl - parentDE.de_LowCyl;
+    if (highcyl == 0 || highcyl > maxcyl)
     {
-        highcyl = parentDE.de_HighCyl - parentDE.de_LowCyl;
+        highcyl = maxcyl;
     }
     
     CopyMem(&parentDE, &partitionDE, sizeof(struct DosEnvec));
@@ -680,7 +684,7 @@ static struct PartitionHandle *CreateRDBPartition
     partitionDE.de_NumBuffers     = 100;
     partitionDE.de_MaxTransfer    = 0xFFFFFF;
     partitionDE.de_Mask           = 0xFFFFFFFE;
-            
+
     D(bug("[C:Partition] SizeBlock %ld\n", partitionDE.de_SizeBlock ));
     D(bug("[C:Partition] Surfaces %ld\n", partitionDE.de_Surfaces));
     D(bug("[C:Partition] BlocksPerTrack %ld\n", partitionDE.de_BlocksPerTrack));
