@@ -481,6 +481,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     hu->hu_RootHub11Ports = usb11ports;
     hu->hu_RootHub20Ports = usb20ports;
 #if defined(USB3)
+// FIXME: This is probably wrong as well... 
     hu->hu_RootHub30Ports = usb30ports;
     hu->hu_RootHubPorts = (usb11ports > usb20ports) ? ((usb11ports > usb30ports) ? usb11ports : usb30ports) : ((usb30ports > usb20ports) ? usb30ports : usb20ports);
 #else

@@ -26,7 +26,27 @@ const struct UsbStdDevDesc RHDevDesc = { sizeof(struct UsbStdDevDesc), UDT_DEVIC
 const struct UsbStdCfgDesc RHCfgDesc = { 9, UDT_CONFIGURATION, WORD2LE(9+9+7), 1, 1, 3, USCAF_ONE|USCAF_SELF_POWERED, 0 };
 const struct UsbStdIfDesc  RHIfDesc  = { 9, UDT_INTERFACE, 0, 0, 1, HUB_CLASSCODE, 0, 0, 4 };
 const struct UsbStdEPDesc  RHEPDesc  = { 7, UDT_ENDPOINT, URTF_IN|1, USEAF_INTERRUPT, WORD2LE(8), 255 };
-const struct UsbHubDesc    RHHubDesc = { 9, UDT_HUB, 0, WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), 0, 1, 1, 0 };
+const struct UsbHubDesc    RHHubDesc = { 9,                                              // 0 Number of bytes in this descriptor, including this byte
+                                         UDT_HUB,                                        // 1 Descriptor Type, value: 29H for hub descriptor
+                                         0,                                              // 2 Number of downstream facing ports that this hub supports
+                                         WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP),   // 3 wHubCharacteristics
+                                         0,                                              // 5 bPwrOn2PwrGood
+                                         1,                                              // 6 bHubContrCurrent
+                                         1,                                              // 7 DeviceRemovable (size is variable)
+                                         0                                               // x PortPwrCtrlMask (size is variable)
+                                       };
+#if defined(USB3)
+const struct UsbSSHubDesc  RHSSHubDesc = { 12,                                           // 0 Number of bytes in this descriptor, including this byte. (12 bytes)
+                                           UDT_SSHUB,                                    // 1 Descriptor Type, value: 2AH for SuperSpeed hub descriptor
+                                           0,                                            // 2 Number of downstream facing ports that this hub supports. The maximum number of ports of ports a hub can support is 15
+                                           WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), // 3 wHubCharacteristics
+                                           0,                                            // 5 bPwrOn2PwrGood
+                                           1,                                            // 6 bHubContrCurrent
+                                           0,                                            // 7 bHubHdrDecLat
+                                           0,                                            // 8 wHubDelay
+                                           1                                             // 10 DeviceRemovable
+                                         };
+#endif
 
 const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", "Standard Config", "Hub interface" };
 
@@ -1376,6 +1396,29 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 case USR_GET_DESCRIPTOR:
                     switch(val>>8)
                     {
+//FIXME: Add USB3.0 hub descriptor support
+                        #if defined(USB3) 
+                        case UDT_SSHUB:
+                        {
+                            ULONG hubdesclen = 12;
+                            ULONG powergood = 1;
+
+                            struct UsbSSHubDesc *uhd = (struct UsbSSHubDesc *) ioreq->iouh_Data;
+                            KPRINTF(1, ("RH: Get(SS)HubDescriptor (%ld)\n", len));
+
+                            ioreq->iouh_Actual = hubdesclen;
+                            CopyMem((APTR) &RHSSHubDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                            if(ioreq->iouh_Length)
+                            {
+                                uhd->bLength = hubdesclen;
+                            }
+
+                            uhd->bNbrPorts = unit->hu_RootHubPorts;
+
+                            return(0);
+                        }
+                        #endif
                         case UDT_HUB:
                         {
                             ULONG hubdesclen = 9;
