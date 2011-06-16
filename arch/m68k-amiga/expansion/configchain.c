@@ -30,7 +30,7 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 		if (configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == DAC_CONFIGTIME && (configDev->cd_Flags & CDF_CONFIGME)) {
 			struct Resident *res;
 			UWORD *romptr = (UWORD*)configDev->cd_Rom.er_DiagArea;
-			UWORD *romend = (UWORD*)(((UBYTE*)configDev->cd_Rom.er_DiagArea) + configDev->cd_Rom.er_DiagArea->da_Size - sizeof(struct Resident));
+			UWORD *romend = (UWORD*)(((UBYTE*)configDev->cd_Rom.er_DiagArea) + configDev->cd_Rom.er_DiagArea->da_Size - 26); // 26 = real sizeof(struct Resident)!
 			struct CurrentBinding cb = {
 			    .cb_ConfigDev = configDev
 			};
