@@ -33,7 +33,7 @@ extern void AROS_SLIB_ENTRY(Log10_6888x,MathIeeeDoubTrans)(void);
 
 static int IEEEDPT_Init(struct MathIeeeDoubTransBase *lh)
 {
-    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_68040)) {
+    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40)) {
 	SetFunc(5, ATan_6888x);
 	SetFunc(6, Sin_6888x);
 	SetFunc(7, Cos_6888x);

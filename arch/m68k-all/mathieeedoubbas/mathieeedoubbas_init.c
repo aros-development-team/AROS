@@ -24,7 +24,7 @@ extern void AROS_SLIB_ENTRY(Flt_6888x,MathIeeeDoubBas)(void);
 
 static int IEEEDP_Init(struct MathIeeeDoubBasBase *lh)
 {
-    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_68040)) {
+    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40)) {
 	SetFunc(5, Fix_6888x);
 	SetFunc(6, Flt_6888x);
 	//SetFunc(7, Cmp_6888x); use software
