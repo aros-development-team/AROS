@@ -42,7 +42,7 @@
 
 /* HUB class specific descriptors */
 #define UDT_HUB               0x29
-#define UDT_HUBSS             0x2a  /* SuperSpeed hub descriptor */
+#define UDT_SSHUB             0x2a  /* SuperSpeed hub descriptor */
 
 /* Usb Class Specific Descriptor: Hub Descriptor */
 struct  UsbHubDesc
@@ -55,6 +55,20 @@ struct  UsbHubDesc
     UBYTE bHubContrCurrent;    /* Maximum current requirements of the Hub Controller in mA. */
     UBYTE DeviceRemovable;     /* Variable Size! Indicates if a port has a removable (0) device attached, Bit n<-> Port n */
     UBYTE PortPwrCtrlMask;     /* Variable Size! Obsolete (USB1.0) */
+};
+
+/* Usb Class Specific Descriptor: SuperSpeed Hub Descriptor */
+struct  UsbSSHubDesc
+{
+    UBYTE bLength;             /* Number of bytes in this descriptor, including this byte */
+    UBYTE bDescriptorType;     /* Descriptor Type, value:  2AH for SuperSpeed hub descriptor */
+    UBYTE bNbrPorts;           /* Number of downstream ports that this hub supports */
+    UWORD wHubCharacteristics; /* Hub flags */
+    UBYTE bPwrOn2PwrGood;      /* Time (in 2ms intervals) for power-good on port */
+    UBYTE bHubContrCurrent;    /* */
+    UBYTE bHubHdrDecLat;       /* Hub Packet Header Decode Latency */
+    UWORD wHubDelay;           /* */
+    UWORD DeviceRemovable;     /* Indicates if a port has a removable device attached */
 };
 
 /* Flags for wHubCharacteristics */
