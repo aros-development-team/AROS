@@ -86,7 +86,7 @@ static int deviceProbe(struct HostDiskBase *hdskBase)
     int res;
 
     HostLib_Lock();
-    res = hdskBase->iface->fstat64("/dev/hda", &st);
+    res = hdskBase->iface->stat64("/dev/hda", &st);
     HostLib_Unlock();
 
     D(bug("hostdisk: /dev/hda check result: %d\n", res));

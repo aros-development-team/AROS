@@ -64,6 +64,7 @@ struct HostInterface
 #else
     int		   (*fstat64)(int fd, struct stat64 *buf);
 #endif
+    int		   (*stat64)(const char *path, struct stat64 *buf);
 };
 
 #ifdef HOST_LONG_ALIGNED
