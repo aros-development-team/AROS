@@ -319,7 +319,8 @@ AROS_UFH3(void, select_function,
 	{
 	    snprintf(buf, 79, "%ld (%c)", val2, (int)val + 'A' - 1);
 	}
-	else snprintf(buf, 79, _(MSG_NA));
+	else strncpy(buf, _(MSG_NA), 79);
+	buf[79] = 0;
 	set(IRQLine, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.IRQ, buf); //Save Debug Info
 
