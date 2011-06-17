@@ -30,7 +30,7 @@ int main(void)
 	return 20;
     }
 
-    printf("Port created %x, waiting for message\n", port);
+    printf("Port created %p, waiting for message\n", port);
     WaitPort(port);
     msg = (struct RexxMsg *)GetMsg(port);
     puts("Got a message");
@@ -61,13 +61,13 @@ int main(void)
     }
     else
     {
-	printf("Length string: %d\n", strlen(value));
+	printf("Length string: %d\n", (int)strlen(value));
 	printf("Value of A: %s\n", value);
     }
     
     SetRexxVar(msg, "A", "2", 1);
     msg->rm_Result1 = RC_OK;
-    msg->rm_Result2 = NULL;
+    msg->rm_Result2 = 0;
     ReplyMsg((struct Message *)msg);
     DeletePort(port);
     CloseLibrary(RexxSysBase);
