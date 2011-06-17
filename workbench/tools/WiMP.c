@@ -779,10 +779,10 @@ AROS_UFH3(void, update_info_func,
 		    sprintf(buffer, "%d", win->MaxHeight);
 		    set(info_win_maxheight_gad, MUIA_Text_Contents, buffer);
 
-		    sprintf(buffer, "0x%08x", win->Flags);
+		    sprintf(buffer, "0x%08x", (unsigned int)win->Flags);
 		    set(info_win_flags_gad, MUIA_Text_Contents, buffer);
 
-		    sprintf(buffer, "0x%08x", win->IDCMPFlags);
+		    sprintf(buffer, "0x%08x", (unsigned int)win->IDCMPFlags);
 		    set(info_win_idcmp_gad, MUIA_Text_Contents, buffer);
 
 		    set(info_win_title_gad, MUIA_Text_Contents, win->Title);
