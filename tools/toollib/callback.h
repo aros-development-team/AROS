@@ -7,7 +7,7 @@
 */
 
 typedef void * CBD;
-typedef int (*CB) (void * obj, int, CBD);
+typedef int (*CB) (void * obj, const void *data, CBD);
 
 #define CallCB(cb,obj,cmd,data)     ((*(cb))(obj,cmd,data))
 

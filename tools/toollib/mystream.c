@@ -30,12 +30,12 @@ Str_Puts (MyStream * ms, const char * str, CBD data)
     int c;
 
     if (ms->puts)
-	c = CallCB (ms->puts, ms, (int)str, data);
+	c = CallCB (ms->puts, ms, str, data);
     else
     {
 	c = 0;
 
-	while (*str && (c = Str_Put(ms,*str,data)) > 0)
+	while (*str && (c = Str_Put(ms,NULL + *str,data)) > 0)
 	    str ++;
     }
 
