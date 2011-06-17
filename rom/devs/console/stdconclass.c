@@ -510,7 +510,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	Console_UnRenderCursor(o);
 
 	SetAPen( rp, CU(o)->cu_BgPen );
-#warning LockLayers problem here ?
+/* FIXME: LockLayers problem here ? */
     	ScrollRaster(rp
 		, 0
 		, YRSIZE * params[0]
@@ -535,7 +535,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	Console_UnRenderCursor(o);
 
 	SetAPen( rp, CU(o)->cu_BgPen );
-#warning LockLayers problem here ?    
+/* FIXME: LockLayers problem here ?     */
     	ScrollRaster(rp
 		, 0
 		, -YRSIZE * params[0]

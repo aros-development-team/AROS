@@ -1178,8 +1178,8 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o, struct P_Console_Hand
   if (e->ie_Class == IECLASS_GADGETDOWN)
     {
       /* We pass 0 from consoletask if the mouse wheel is being used */
-      if ((ULONG)e->ie_EventAddress == 1) data->activeGad = (APTR)&(data->prop->up);
-      else if ((ULONG)e->ie_EventAddress == 2) data->activeGad = (APTR)&(data->prop->down);
+      if ((IPTR)e->ie_EventAddress == 1) data->activeGad = (APTR)&(data->prop->up);
+      else if ((IPTR)e->ie_EventAddress == 2) data->activeGad = (APTR)&(data->prop->down);
       else data->activeGad = e->ie_EventAddress;
     }
     

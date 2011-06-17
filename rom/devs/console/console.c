@@ -127,7 +127,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ConsoleDevice)
 
 	    if(NewAddTask(task, consoleTaskEntry, NULL, tags) != NULL)
 	    {
-		return ConsoleDevice;
+		return TRUE;
 		/* ALL OK */
 	    }
 	    

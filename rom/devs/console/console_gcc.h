@@ -175,7 +175,7 @@ struct intPasteData
 {
     struct MinNode node;
     struct intConUnit * unit;
-    const char * pasteBuffer;
+    STRPTR pasteBuffer;
     ULONG pasteBufferSize;
 };
 

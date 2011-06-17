@@ -52,8 +52,6 @@ static Object *snipmapcon_new(Class *cl, Object *o, struct opSet *msg)
 
 static VOID snipmapcon_dispose(Class *cl, Object *o, Msg msg)
 {
-    struct snipmapcondata *data= INST_DATA(cl, o);
-
     DoSuperMethodA(cl, o, msg);
 }
 
@@ -102,7 +100,7 @@ static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
 	    {
 	      CopyMem((APTR)ConsoleDevice->copyBuffer,p->pasteBuffer,ConsoleDevice->copyBufferSize);
 	      p->pasteBufferSize = ConsoleDevice->copyBufferSize;
-	      AddTail((struct List *)&ICU(o)->pasteData,p);
+	      AddTail((struct List *)&ICU(o)->pasteData,(struct Node *)p);
 	    }
 	}
     }
@@ -111,7 +109,7 @@ static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
 
 static VOID snipmapcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
 {
-    IPTR *params = msg->Params;
+    EnterFunc(IPTR *params = msg->Params);
     EnterFunc(bug("SnipMapCon::DoCommand(o=%p, cmd=%d, params=%p) x=%d, y=%d, ymax=%d\n",
 		  o, msg->Command, params,XCP,YCP, CHAR_YMAX(o)));
 

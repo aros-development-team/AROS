@@ -67,7 +67,7 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct Con
 {
     IPTR param_tab[MAX_COMMAND_PARAMS];
 
-    BYTE command;
+    BYTE command = 0;
     UBYTE numparams;
     UBYTE *orig_write_str, *write_str;
     LONG written, orig_towrite;
@@ -615,13 +615,13 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 
 	    if (next_can_be_commandid)
 	    {
-#warning Should also do a MinParams compare
+/* FIXME: Should also do a MinParams compare */
 		if (num_params <= maxparams) /* Valid command ? */
 		{
 
 		    /* Assure that there are not to many separators in a command  */
 		    if ((num_separators_found < maxparams)
-#warning 0-param commands can be moved to special-command-handlin in string2command()
+/* FIXME: 0-param commands can be moved to special-command-handlin in string2command() */
 		       || ((num_separators_found == 0) && (maxparams == 0)))
 		    {
 			cmd = csi2command[idx].Command;
