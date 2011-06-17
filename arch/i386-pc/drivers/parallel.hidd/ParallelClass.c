@@ -30,11 +30,13 @@
 
 static OOP_AttrBase HiddParallelUnitAB;
 
+#if 0
 static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_ParallelUnit, &HiddParallelUnitAB },
     { NULL,	NULL }
 };
+#endif
 
 /*** HIDDParallel::NewUnit() *********************************************************/
 
