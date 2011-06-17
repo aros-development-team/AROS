@@ -814,11 +814,11 @@ AROS_UFH3(LONG, pipefsproc,
 
 		    if (fn->type > 0)
 		    {
-			msg->iofs->io_DirPos = (LONG)GetHead(&((struct dirnode *)fn)->files);
+			msg->iofs->io_DirPos = (IPTR)GetHead(&((struct dirnode *)fn)->files);
                     }
 		    else
 		    {
-			msg->iofs->io_DirPos = (LONG)fn;
+			msg->iofs->io_DirPos = (IPTR)fn;
     		    }
 
 		    switch(type)
