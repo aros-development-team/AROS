@@ -82,7 +82,6 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     APTR    	    callback = NULL;
     APTR    	    callbackdata = NULL;
     BOOL    	    has_kbd_hidd = FALSE, reset_success;
-    UBYTE           status;
     int last_code;
     
     EnterFunc(bug("Kbd::New()\n"));
@@ -567,7 +566,7 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
 
 #define SysBase (*(struct ExecBase **)4UL)
 
-#warning This should go somewhere higher but D(bug()) is not possible there
+/* FIXME: This should go somewhere higher but D(bug()) is not possible there */
 #undef D
 #undef BUG
 #define D(x)
