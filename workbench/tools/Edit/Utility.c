@@ -102,7 +102,7 @@ void ParseArgs(StartUpArgs *res, int nb, char **argv)
 		struct WBArg *new;
 		if((new = (void *) AllocVec(sizeof(*new)*(--nb), MEMF_PUBLIC | MEMF_CLEAR)))
 		{
-			BPTR cwd = (BPTR) CurrentDir( NULL ); /* No need to UnLock so */
+			BPTR cwd = (BPTR) CurrentDir( BNULL ); /* No need to UnLock so */
 			res->sa_ArgLst = (APTR) new;
 			res->sa_NbArgs = nb;
 			res->sa_Free   = 1;

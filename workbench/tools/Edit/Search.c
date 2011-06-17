@@ -393,7 +393,7 @@ void FindPattern( Project p, BYTE dir )
 		}
 
 	/* No pattern entered! Avoid short-circuit evaluation */
-	if( !p->ccp.select & setup_winsearch(p, 0) )
+	if( !p->ccp.select && setup_winsearch(p, 0) )
 		ThrowError(swin, ErrMsg(ERR_NOSEARCHTEXT));
 }
 
@@ -459,7 +459,7 @@ void ReplacePattern( Project p )
 		}
 	}
 	else /* No pattern given yet! */
-		if( !p->ccp.select & setup_winsearch(p, 1) )
+		if( !p->ccp.select && setup_winsearch(p, 1) )
 			ThrowError(swin, ErrMsg(ERR_NOSEARCHTEXT));
 }
 
@@ -545,7 +545,7 @@ void ReplaceAllPat( Project p )
 	}
 
 	/* No pattern entered! */
-	if( !p->ccp.select & setup_winsearch(p, 1) )
+	if( !p->ccp.select && setup_winsearch(p, 1) )
 		ThrowError(swin, ErrMsg(ERR_NOSEARCHTEXT));
 }
 
@@ -617,12 +617,14 @@ char HilitePattern(Project p, STRPTR pattern, BYTE direction, BYTE quiet)
 
 	if(quiet < FULLY_QUIET)
 	{
+		ULONG tmp;
+
 		/* A pattern has been found, move cursor at beginning */
 		p->nbrwc = x2pos(ln,search - ln->stream);
 
 		/* Does the keyword remain on visible area? */
-		search = (STRPTR)p->nbl; p->nbl = nbl;
-		nb = center_vert( p ); p->nbl = (LONG)search;
+		tmp = p->nbl; p->nbl = nbl;
+		nb = center_vert( p ); p->nbl = tmp;
 
 		if(quiet != VERB_BUT_NO_HIDE_CURS) inv_curs(p,FALSE);
 		set_cursor_line(p, nbl, nb);
@@ -681,12 +683,14 @@ void match_bracket( Project p )
 
 	if(i==0) ThrowError(Wnd, ErrMsg(ERR_NOBRACKET));
 	else {
-		LINE *ln;   register STRPTR search, cch;
+		LINE *ln;   register STRPTR search;
+		UBYTE cch;
+		ULONG tmp;
 		WORD  nest; register LONG   nb, nbl;
 
 		/* Can't use HilitePattern because of nested char */
 		ln     = p->edited;
-		cch    = (UBYTE *)Brackets[ NbBrak-i ];
+		cch    = Brackets[ NbBrak-i ];
 		i      = (i <= (NbBrak>>1) ? 1 : -1);
 		search = ln->stream + p->nbc + i;
 		nb     = (i>0 ? ln->size - p->nbc - 1 : p->nbc);
@@ -715,8 +719,8 @@ void match_bracket( Project p )
 		p->nbrwc = x2pos(ln,search - ln->stream);
 
 		/* Does the bracket remain on visible area? */
-		search = (UBYTE *)p->nbl; p->nbl = nbl;
-		nb = center_vert( p ); p->nbl = (LONG)search;
+		tmp = p->nbl; p->nbl = nbl;
+		nb = center_vert( p ); p->nbl = tmp;
 
 		inv_curs(p,FALSE);
 		set_cursor_line(p, nbl, nb);
