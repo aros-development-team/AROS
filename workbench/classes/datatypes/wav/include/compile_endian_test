@@ -1,0 +1,1 @@
+vc -o test.exe endian_test.c -lm
