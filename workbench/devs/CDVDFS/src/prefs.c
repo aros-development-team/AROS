@@ -53,7 +53,7 @@ struct TagItem PrefsProcTags[] = {
 #ifdef __MORPHOS__
 	{NP_CodeType, CODETYPE_PPC},
 #endif
-	TAG_DONE
+	{ TAG_DONE }
 };
 
 void Prefs_Init (void)

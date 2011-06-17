@@ -95,7 +95,7 @@ static int GM_UNIQUENAME(Open)
 	PutMsg(&acdrbase->port, &iofs->IOFS.io_Message);
 	WaitPort(&acdrbase->rport);
 	(void)GetMsg(&acdrbase->rport);
-	if (iofs->io_DosError == NULL)
+	if (iofs->io_DosError == 0)
 	{
 		iofs->IOFS.io_Device = &acdrbase->device;
 		iofs->IOFS.io_Error = 0;

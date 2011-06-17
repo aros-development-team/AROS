@@ -94,7 +94,9 @@ char *g_iconname = "CD-DA";
 #define SysBase global->SysBase
 
 void Init_Intui() {
+#ifndef AROS_KERNEL
 struct IconBase *IconBase=NULL;
+#endif
 
 	global->IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
 #ifndef AROS_KERNEL
