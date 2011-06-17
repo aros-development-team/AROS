@@ -179,7 +179,7 @@ void Cleanup(CONST_STRPTR msg)
 
     FreeArguments();
     
-    if (cd != NULL)
+    if (cd != BNULL)
         CurrentDir(cd); /* restore current directory */
     
     CloseLibs();
@@ -621,7 +621,7 @@ static void OpenDTO(void)
 	        if (lock)
 	        {
 		    struct DataType *dtn;
-		    if ((dtn = ObtainDataTypeA(DTST_FILE, lock, NULL)))
+		    if ((dtn = ObtainDataTypeA(DTST_FILE, (APTR)lock, NULL)))
 		    {
 			if (!Stricmp(dtn->dtn_Header->dth_Name, "directory"))
 			{
