@@ -124,7 +124,7 @@ void *params;
 		string = collect_strings(current->next, LINEFEED, level);
 		show_abort(string);
 		FreeVec(string);
-		if (preferences.transcriptstream != NULL)
+		if (preferences.transcriptstream != BNULL)
 		{
 		    Write(preferences.transcriptstream, "Aborting script.\n", 17);
 		}
@@ -962,7 +962,7 @@ void *params;
 		    clip = strip_quotes(current->arg);
 		    i = database_keyword(clip);
 		    FreeVec(clip);
-#warning TODO: compute return values for "database"
+/* TODO: compute return values for "database" */
 		    switch (i)
 		    {
 			case _VBLANK :
@@ -1175,7 +1175,7 @@ void *params;
 		break;
 
 	    case _EXECUTE: /* Execute an AmigaDOS script */
-#warning TODO: Check me for correctness
+/* TODO: Check me for correctness */
 		if (current->next != NULL)
 		{
 		int success = 0;
@@ -1203,9 +1203,9 @@ void *params;
 		    if (preferences.pretend == 0 || safe)
 		    {
 			infile = Open(string, MODE_OLDFILE);
-			if(infile != NULL)
+			if(infile != BNULL)
 			{
-			    if (preferences.transcriptstream != NULL)
+			    if (preferences.transcriptstream != BNULL)
 			    {
 				Write(preferences.transcriptstream, "Started AmigaDOS script: \"", 26);
 				Write(preferences.transcriptstream, string, strlen(string));
@@ -1238,7 +1238,7 @@ void *params;
 		break;
 
 	    case _RUN: /* Execute a command line */
-#warning TODO: Check me for correctness
+/* TODO: Check me for correctness */
 		if (current->next != NULL)
 		{
 		BPTR seg;
@@ -1265,7 +1265,7 @@ void *params;
 			}
 			if (get_var_int("@user-level") >= GetPL(parameter, _CONFIRM).intval)
 			{
-			    if ((seg = LoadSeg(string)) == NULL)
+			    if ((seg = LoadSeg(string)) == BNULL)
 			    {
 				/* Couldn't load file -- set @ioerr and handle trap/onerror */
 				i = IoErr();
@@ -1276,7 +1276,7 @@ void *params;
 				error = DOSERROR;
 				traperr("Couldn't load binary %s\n", string);
 			    }
-			    if (preferences.transcriptstream != NULL)
+			    if (preferences.transcriptstream != BNULL)
 			    {
 				Write(preferences.transcriptstream, "Started program: \"", 18);
 				Write(preferences.transcriptstream, string, strlen(string));
@@ -1284,7 +1284,7 @@ void *params;
 			    }
 #define STACKSIZE 10000
 			    current->parent->intval = RunCommand(seg, STACKSIZE, clip, j);
-#warning FIXME: is @ioerr set if command not run?
+/* FIXME: is @ioerr set if command not run? */
 			    set_variable("@ioerr", NULL, IoErr());
 			    UnLoadSeg(seg);
 			}
@@ -1319,7 +1319,7 @@ void *params;
 		break;
 
 	    case _DELETE: /* Delete file */
-#warning TODO: Implement (optional) and (delopts)
+/* TODO: Implement (optional) and (delopts) */
 		if (current->next != NULL)
 		{
 		int success = -1, usrconfirm = FALSE;
@@ -1376,7 +1376,7 @@ void *params;
 		break;
 
 	    case _MAKEDIR: /* Create directory */
-#warning TODO: Implement (infos)
+/* TODO: Implement (infos) */
 		if (current->next != NULL)
 		{
 		BPTR success = 0;
@@ -1436,7 +1436,7 @@ void *params;
 		break;
 
 	    case _EXISTS:
-#warning TODO: Implement (noreq)
+/* TODO: Implement (noreq) */
 		if (current->next != NULL)
 		{
 		struct stat sb;
@@ -1569,12 +1569,12 @@ void *params;
 			traperr("<%s> requires two string arguments!\n", current->arg);
 		    }
 
-		    if ((lock1 = Lock(file1, SHARED_LOCK)) == NULL)
+		    if ((lock1 = Lock(file1, SHARED_LOCK)) == BNULL)
 		    {
 			error = DOSERROR;
 			traperr("File not found <%s>\n", file1);
 		    }
-		    if ((lock2 = Lock(file2, SHARED_LOCK)) == NULL)
+		    if ((lock2 = Lock(file2, SHARED_LOCK)) == BNULL)
 		    {
 			error = DOSERROR;
 			traperr("File not found <%s>\n", file2);
@@ -1643,7 +1643,7 @@ void *params;
 		    {
 			GetString(current->arg);
 			current->parent->intval = -1;
-			if ((lock = Lock(string, SHARED_LOCK)) != NULL)
+			if ((lock = Lock(string, SHARED_LOCK)) != BNULL)
 			{
 			    if (Info(lock, &infodata) != FALSE)
 			    {
@@ -1701,7 +1701,7 @@ void *params;
 		    char buffer[1024] = {0};
 			string = strip_quotes(current->arg);
 
-#warning FIXME: flag must be one of GVF_GLOBAL_ONLY or GVF_LOCAL_ONLY???
+/* FIXME: flag must be one of GVF_GLOBAL_ONLY or GVF_LOCAL_ONLY??? */
 			i = GetVar(string, buffer, 1023, 0);
 
 			FreeVec(string);
@@ -1763,7 +1763,7 @@ void *params;
 			    GetString(current->arg);
 			}
 			lock = Lock(string, SHARED_LOCK);
-			if ( lock != NULL )
+			if ( lock != BNULL )
 			{
 			    if (preferences.pretend == 0 || safe)
 			    {
@@ -1792,7 +1792,7 @@ void *params;
 			if (preferences.pretend == 0 || safe)
 			{
 			    /* Remove Assign */
-			    AssignLock(string,NULL);
+			    AssignLock(string, BNULL);
 			    current->parent->intval = 1;
 			}
 		    }
@@ -2183,7 +2183,7 @@ DMSG("   %s\n",ret);
       /* Here are all tags, first the ones which have to be executed */
 	    case _DELOPTS: /* unset copying/deleting options if we are called global */
 		/* as parameter to a function we have got an ignore=1 before */
-#warning FIXME: (delopts) is only local
+/* FIXME: (delopts) is only local */
 		if (current->parent->ignore == 0)
 		{
 		    /* Read in strings */
@@ -2194,7 +2194,7 @@ DMSG("   %s\n",ret);
 		    for (i = 0 ; i < parameter->intval ; i++)
 		    {
 			/* These are mutually exclusive */
-#warning FIXME: How are (fail-)strings interpreted in "delopts" ?
+/* FIXME: How are (fail-)strings interpreted in "delopts" ? */
 			if (strcasecmp(parameter->arg[i], "fail") == 0)
 			{
 			}
@@ -2222,7 +2222,7 @@ DMSG("   %s\n",ret);
 
 	    case _OPTIONAL: /* set copying/deleting options if we are called global */
 		/* as parameter to a function we have got an ignore=1 before */
-#warning FIXME: (optional) is only local
+/* FIXME: (optional) is only local */
 		if (current->parent->ignore == 0)
 		{
 		    /* Read in strings */
@@ -2955,7 +2955,7 @@ int i, changed = 0, cont = 0;
     tmpuserstartup = Open("S:User-Startup.tmp", MODE_NEWFILE);
     if (!tmpuserstartup)
     {
-#warning TODO: Complain more smoothly...
+/* TODO: Complain more smoothly... */
 	fprintf(stderr, "Could not open S:User-Startup for writing!");
 	exit(-1);
     }
@@ -3017,7 +3017,7 @@ int i, changed = 0, cont = 0;
     Close(userstartup);
 
     DeleteFile("S:User-Startup");
-#warning FIXME: Check correctness of Rename()
+/* FIXME: Check correctness of Rename() */
 /*
     IMO both arguments to Rename() should contain S:, check again if
     Rename() is proven to work as expected

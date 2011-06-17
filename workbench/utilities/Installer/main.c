@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
     }
 
     inputfile = Open(filename, MODE_OLDFILE);
-    if (inputfile == NULL)
+    if (inputfile == BNULL)
     {
 #ifdef DEBUG
 	fprintf(stderr, "Error opening script <%s>\n",filename);
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     }
 
     preferences.welcome = FALSE;
-    preferences.transcriptstream = NULL;
+    preferences.transcriptstream = BNULL;
     preferences.pretend = 0;
 
     if (argc)
@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
     {
 	/* open transcript file */
 	preferences.transcriptstream = Open(preferences.transcriptfile, MODE_NEWFILE);
-	if (preferences.transcriptstream == NULL)
+	if (preferences.transcriptstream == BNULL)
 	{
 	    PrintFault(IoErr(), INSTALLER_NAME);
 	    cleanup();

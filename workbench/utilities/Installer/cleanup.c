@@ -32,7 +32,7 @@ void free_script(ScriptArg *first)
 
 void cleanup()
 {
-    if (preferences.transcriptstream != NULL)
+    if (preferences.transcriptstream != BNULL)
     {
 	Close(preferences.transcriptstream);
     }
