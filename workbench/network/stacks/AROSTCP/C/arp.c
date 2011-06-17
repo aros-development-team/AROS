@@ -176,8 +176,6 @@ struct Library * SocketBase;
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
 extern int errno;
-#warning "TODO: NicJA - h_errno should be extern .."
-int h_errno;
 
 static int file(char *name);
 static int set(int argc, char **argv);
@@ -310,7 +308,7 @@ set(int argc, char **argv)
   if (sin->sin_addr.s_addr == -1) {
     if (!(hp = gethostbyname(host))) {
       fprintf(stderr, "arp: %s: ", host);
-#warning "TODO: NicJA - Implement herror()"
+/* TODO: NicJA - Implement herror() */
 #if !defined(__AROS__)
       herror((char *)NULL);
 #endif
@@ -367,7 +365,7 @@ get(char *host)
   if (sin->sin_addr.s_addr == -1) {
     if (!(hp = gethostbyname(host))) {
       fprintf(stderr, "arp: %s: ", host);
-#warning "TODO: NicJA - Implement herror()"
+/* TODO: NicJA - Implement herror() */
 #if !defined(__AROS__)
       herror((char *)NULL);
 #endif
@@ -411,7 +409,7 @@ delete(char *host)
   if (sin->sin_addr.s_addr == -1) {
     if (!(hp = gethostbyname(host))) {
       fprintf(stderr, "arp: %s: ", host);
-#warning "TODO: NicJA - Implement herror()"
+/* TODO: NicJA - Implement herror() */
 #if !defined(__AROS__)
       herror((char *)NULL);
 #endif
@@ -462,7 +460,7 @@ dump(char *host)
     if (!(hp = gethostbyname(host)) &&
 	!(np = getnetbyname(host))) {
       fprintf(stderr, "arp: %s: ", host);
-#warning "TODO: NicJA - Implement herror()"
+/* TODO: NicJA - Implement herror() */
 #if !defined(__AROS__)
       herror((char *)NULL);
 #endif
