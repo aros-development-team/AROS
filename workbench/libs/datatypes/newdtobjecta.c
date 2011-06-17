@@ -212,7 +212,7 @@
 			else
 			{
     			    D(bug("datatypes.library/NewDTObjectA: AllocIFF okay\n"));
-			    if((iff->iff_Stream = (IPTR)OpenClipboard((ULONG)name)))
+			    if((iff->iff_Stream = (IPTR)OpenClipboard((IPTR)name)))
 			    {
     				D(bug("datatypes.library/NewDTObjectA: OpenClipBoard okay\n"));
 
