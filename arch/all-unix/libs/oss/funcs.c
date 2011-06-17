@@ -411,7 +411,7 @@ BOOL OSS_SetWriteRate(int rate, int *used_rate)
 BOOL OSS_MMap(APTR *mapped_address, int len, BOOL read, BOOL write)
 {
 #if 1
-#warning "Can't use mmap yet!"
+/* FIXME: Can't use mmap yet! */
     kprintf("\n=== Dont' call OSS_MMap! Not implemented yet! ===\n\n");
     return FALSE;
 #else      
@@ -451,7 +451,7 @@ BOOL OSS_MMap(APTR *mapped_address, int len, BOOL read, BOOL write)
 void OSS_MUnmap(APTR mapped_address, int len)
 {
 #if 1
-#warning "Can't use munmap yet!"
+/* FIXME: Can't use munmap yet! */
     kprintf("\n=== Dont' call OSS_MUnmap! Not implemented yet! ===\n\n");
 #else
     if ((audio_fd >= 0) && (mapped_address != MAP_FAILED))
