@@ -82,7 +82,9 @@ const struct Resident RomTag =
   12,                      /* priority */
   (BYTE *) ResName,
   (BYTE *) IDString,
-  (APTR) &InitTable
+  (APTR) &InitTable,
+  0,
+  0
 };
 
 
