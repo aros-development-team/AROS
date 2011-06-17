@@ -1,0 +1,10 @@
+# DataType Description for WAVE
+Name=WAVE
+Version=$VER: WAVE 1.1 (24.01.2011)
+BaseName=wave
+Pattern=#?
+Mask=0x52 0x49 0x46 0x46
+GroupID=musi
+ID=wave
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
