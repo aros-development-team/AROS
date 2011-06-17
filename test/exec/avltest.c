@@ -71,7 +71,7 @@ AROS_UFH2S(LONG, keycmp_int,
 {
 	AROS_USERFUNC_INIT;
 
-	int key = (int)avlkey;
+	int key = (int)(IPTR)avlkey;
 	const struct testnode *n = (const struct testnode *)avlnode;
 
 	return n->key - key;
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 	n->key = i;
 
 	printf("Add node %d\n", i);
-	AVL_AddNode(&root, &n->node, nodecmp_int2);
+	AVL_AddNode(&root, &n->node, (AVLNODECOMP)nodecmp_int2);
     }
 
     dumporder(root);
@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 
     printf("remove by key\n");
     for (i = 0;i<10;i++) {
-	AVL_RemNodeByKey(&root, (AVLKey)i, keycmp_int);
+	AVL_RemNodeByKey(&root, (AVLKey)(IPTR)i, keycmp_int);
     }
 
     dumporder(root);
@@ -200,7 +200,7 @@ int main(int argc, char **argv)
     }
 
     for (i =0;i<20;i++) {
-	struct testnode *n = (struct testnode *)AVL_FindNextNodeByKey(root, (AVLKey)i, keycmp_int);
+	struct testnode *n = (struct testnode *)AVL_FindNextNodeByKey(root, (AVLKey)(IPTR)i, keycmp_int);
 	int next;
 
 	printf("next node %d = %d\n", i, n ? n->key : -1);
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 
     printf("remove by key\n");
     for (i = 0;i<10;i++) {
-	AVL_RemNodeByKey(&root, (AVLKey)i, keycmp_int);
+	AVL_RemNodeByKey(&root, (AVLKey)(IPTR)i, keycmp_int);
     }
 
     dumporder(root);
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
     }
 
     for (i=0;i<RCOUNT;i++) {
-	AVL_RemNodeByKey(&root, (AVLKey)shuffle[i], keycmp_int);
+	AVL_RemNodeByKey(&root, (AVLKey)(IPTR)shuffle[i], keycmp_int);
 	if ((i % 256) == 0)
 	    checkbalance(root);
     }

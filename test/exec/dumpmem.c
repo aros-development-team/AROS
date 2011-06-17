@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
     struct RDArgs           *rda;
     char                    outpstring[sizeof(unsigned int)*6];
-    unsigned int            offset,start_address,dump_size;
+    IPTR                    offset,start_address,dump_size;
     BOOL                    line_end;
     int                     PROGRAM_ERROR = RETURN_OK;
     char                    *ERROR_TEXT,*HELPTXT;
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
                 if ( PROGRAM_ERROR != RETURN_FAIL )
                 {
                     if (serial_out) kprintf("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", (void *)start_address, (dump_size * sizeof(unsigned int))); /* use kprintf so it is output on serial.. */
-                    else printf("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", (void *)start_address, (dump_size * sizeof(unsigned int))); /* use kprintf so it is output on serial.. */
+                    else printf("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", (void *)start_address, (int)(dump_size * sizeof(unsigned int))); /* use kprintf so it is output on serial.. */
 
                     for ( offset = 0 ; offset < dump_size ; offset += sizeof(unsigned int) )
                     {
@@ -122,8 +122,8 @@ int main(int argc, char **argv)
                         
                         if ( ( (offset/sizeof(unsigned int) ) % 6) == 0 ) 
                         {
-                            if (serial_out) kprintf("0x%8.8X        ",start_address+offset);
-                            else printf("0x%8.8X        ",start_address+offset);
+                            if (serial_out) kprintf("0x%8.8llX        ",(unsigned long long)(start_address+offset));
+                            else printf("0x%8.8llX        ",(unsigned long long)(start_address+offset));
                         }
                         
                         if (serial_out) kprintf("%8.8X", (unsigned int)((IPTR *)start_address+offset)[0]); /* use kprintf so it is output on serial.. */
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
     }	
     else ERROR_TEXT = HELPTXT;
 
-    if (ERROR_TEXT) printf( ERROR_TEXT );
+    if (ERROR_TEXT) puts( ERROR_TEXT );
     return PROGRAM_ERROR;
 }
 

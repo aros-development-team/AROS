@@ -19,10 +19,10 @@ int main(void)
     /* We Forbid() in order to see how our allocations influence free memory size */
     Forbid();
 
-    output("Available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    output("Available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
     
     pool = CreatePool(MEMF_ANY, 4096, 4096);
-    output("Created pool 0x%p, available memory: %u bytes\n", pool, AvailMem(MEMF_ANY));
+    output("Created pool 0x%p, available memory: %lu bytes\n", pool, (unsigned long)AvailMem(MEMF_ANY));
 
     if (!pool)
     {
@@ -31,7 +31,7 @@ int main(void)
 	return 1;
     }
 
-    output("Available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    output("Available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 
     output("Allocating 200 small chunks...\n");
     for (i = 0; i < 200; i++)
@@ -43,7 +43,7 @@ int main(void)
 	    break;
 	}
     }
-    output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 
     output("Now freeing them...\n");
     for (i = 0; i < 200; i++)
@@ -52,29 +52,29 @@ int main(void)
 	    break;
 	FreePooled(pool, chunks[i], 50);
     }
-    output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 
     output("Now allocating the whole puddle...\n");
     chunks[0] = AllocPooled(pool, 4096);
-    output("Allocated at 0x%p, available memory: %u bytes\n", chunks[0], AvailMem(MEMF_ANY));
+    output("Allocated at 0x%p, available memory: %lu bytes\n", chunks[0], (unsigned long)AvailMem(MEMF_ANY));
 
     output("Now allocating a BIG chunk...\n");
     chunks[1] = AllocPooled(pool, 16384);
-    output("Allocated at 0x%p, available memory: %u bytes\n", chunks[1], AvailMem(MEMF_ANY));
+    output("Allocated at 0x%p, available memory: %lu bytes\n", chunks[1], (unsigned long)AvailMem(MEMF_ANY));
 
     output("Freeing both chunks...\n");
     FreePooled(pool, chunks[0], 4096);
     FreePooled(pool, chunks[1], 16384);
 
-    output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 
     output("Now attempting to re-allocate big chunk...\n");
     chunks[1] = AllocPooled(pool, 16384);
-    output("Allocated at 0x%p, available memory: %u bytes\n", chunks[1], AvailMem(MEMF_ANY));
+    output("Allocated at 0x%p, available memory: %lu bytes\n", chunks[1], (unsigned long)AvailMem(MEMF_ANY));
     
     output("Freeing the whole pool...\n");
     DeletePool(pool);
-    output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
     
     Permit();
     return 0;

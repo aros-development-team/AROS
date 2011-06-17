@@ -130,8 +130,8 @@ int AddDummy(void)
     D(bug("*** at %s:%d\n", __FUNCTION__, __LINE__));
 
     dummylib = MakeLibrary(function_array,NULL,
-			   (ULONG (* const )())LIB_init,
-			   sizeof(struct DummyBase),NULL);
+			   (ULONG_FUNC)LIB_init,
+			   sizeof(struct DummyBase),BNULL);
 
     D(bug("*** at %s:%d\n", __FUNCTION__, __LINE__));
     if (dummylib)
