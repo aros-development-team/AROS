@@ -399,7 +399,7 @@
             {
                 struct TagItem tags [] = 
                 {
-                    { GCIT_ProcessorSpeed, &speed },
+                    { GCIT_ProcessorSpeed, (IPTR)&speed },
                     { TAG_DONE }
                 };
                 GetCPUInfo(tags);

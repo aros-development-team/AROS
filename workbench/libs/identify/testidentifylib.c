@@ -7,53 +7,53 @@ static void idhardwarenum(void)
 {
     puts("\nIdHardwareNum");
     puts("-------------");
-    printf("System              %u\n", IdHardwareNum(IDHW_SYSTEM, NULL));
-    printf("CPU                 %u\n", IdHardwareNum(IDHW_CPU, NULL));
-    printf("FPU                 %u\n", IdHardwareNum(IDHW_FPU, NULL));
-    printf("MMU                 %u\n", IdHardwareNum(IDHW_MMU, NULL));
-    printf("OSVER               %u\n", IdHardwareNum(IDHW_OSVER, NULL));
-    printf("EXECVER             %u\n", IdHardwareNum(IDHW_EXECVER, NULL));
-    printf("WBVER               %u\n", IdHardwareNum(IDHW_WBVER, NULL));
-    printf("ROMSIZE             %u\n", IdHardwareNum(IDHW_ROMSIZE, NULL));
-    printf("CHIPSET             %u\n", IdHardwareNum(IDHW_CHIPSET, NULL));
-    printf("GFXSYS              %u\n", IdHardwareNum(IDHW_GFXSYS, NULL));
-    printf("CHIPRAM             %u\n", IdHardwareNum(IDHW_CHIPRAM, NULL));
-    printf("FASTRAM             %u\n", IdHardwareNum(IDHW_FASTRAM, NULL));
-    printf("RAM                 %u\n", IdHardwareNum(IDHW_RAM, NULL));
-    printf("SETPATCHVER         %u\n", IdHardwareNum(IDHW_SETPATCHVER, NULL));
-    printf("AUDIOSYS            %u\n", IdHardwareNum(IDHW_AUDIOSYS, NULL));
-    printf("OSNR                %u\n", IdHardwareNum(IDHW_OSNR, NULL));
-    printf("VMMCHIPRAM          %u\n", IdHardwareNum(IDHW_VMMCHIPRAM, NULL));
-    printf("VMMFASTRAM          %u\n", IdHardwareNum(IDHW_VMMFASTRAM, NULL));
-    printf("VMMRAM              %u\n", IdHardwareNum(IDHW_VMMRAM, NULL));
-    printf("PLNCHIPRAM          %u\n", IdHardwareNum(IDHW_PLNCHIPRAM, NULL));
-    printf("PLNFASTRAM          %u\n", IdHardwareNum(IDHW_PLNFASTRAM, NULL));
-    printf("PLNRAM              %u\n", IdHardwareNum(IDHW_PLNRAM, NULL));
-    printf("VBR                 %u\n", IdHardwareNum(IDHW_VBR, NULL));
-    printf("LASTALERT           %u\n", IdHardwareNum(IDHW_LASTALERT, NULL));
-    printf("VBLANKFREQ          %u\n", IdHardwareNum(IDHW_VBLANKFREQ, NULL));
-    printf("POWERFREQ           %u\n", IdHardwareNum(IDHW_POWERFREQ, NULL));
-    printf("ECLOCK              %u\n", IdHardwareNum(IDHW_ECLOCK, NULL));
-    printf("SLOWRAM             %u\n", IdHardwareNum(IDHW_SLOWRAM, NULL));
-    printf("GARY                %u\n", IdHardwareNum(IDHW_GARY, NULL));
-    printf("RAMSEY              %u\n", IdHardwareNum(IDHW_RAMSEY, NULL));
-    printf("BATTCLOCK           %u\n", IdHardwareNum(IDHW_BATTCLOCK, NULL));
-    printf("CHUNKYPLANAR        %u\n", IdHardwareNum(IDHW_CHUNKYPLANAR, NULL));
-    printf("POWERPC             %u\n", IdHardwareNum(IDHW_POWERPC, NULL));
-    printf("PPCCLOCK            %u\n", IdHardwareNum(IDHW_PPCCLOCK, NULL));
-    printf("CPUREV              %u\n", IdHardwareNum(IDHW_CPUREV, NULL));
-    printf("CPUCLOCK            %u\n", IdHardwareNum(IDHW_CPUCLOCK, NULL));
-    printf("FPUCLOCK            %u\n", IdHardwareNum(IDHW_FPUCLOCK, NULL));
-    printf("RAMACCESS           %u\n", IdHardwareNum(IDHW_RAMACCESS, NULL));
-    printf("RAMWIDTH            %u\n", IdHardwareNum(IDHW_RAMWIDTH, NULL));
-    printf("RAMCAS              %u\n", IdHardwareNum(IDHW_RAMCAS, NULL));
-    printf("RAMBANDWIDTH        %u\n", IdHardwareNum(IDHW_RAMBANDWIDTH, NULL));
-    printf("TCPIP               %u\n", IdHardwareNum(IDHW_TCPIP, NULL));
-    printf("PPCOS               %u\n", IdHardwareNum(IDHW_PPCOS, NULL));
-    printf("AGNUS               %u\n", IdHardwareNum(IDHW_AGNUS, NULL));
-    printf("AGNUSMODE           %u\n", IdHardwareNum(IDHW_AGNUSMODE, NULL));
-    printf("DENISE              %u\n", IdHardwareNum(IDHW_DENISE, NULL));
-    printf("DENISEREV           %u\n", IdHardwareNum(IDHW_DENISEREV, NULL));
+    printf("System              %u\n", (unsigned int)IdHardwareNum(IDHW_SYSTEM, NULL));
+    printf("CPU                 %u\n", (unsigned int)IdHardwareNum(IDHW_CPU, NULL));
+    printf("FPU                 %u\n", (unsigned int)IdHardwareNum(IDHW_FPU, NULL));
+    printf("MMU                 %u\n", (unsigned int)IdHardwareNum(IDHW_MMU, NULL));
+    printf("OSVER               %u\n", (unsigned int)IdHardwareNum(IDHW_OSVER, NULL));
+    printf("EXECVER             %u\n", (unsigned int)IdHardwareNum(IDHW_EXECVER, NULL));
+    printf("WBVER               %u\n", (unsigned int)IdHardwareNum(IDHW_WBVER, NULL));
+    printf("ROMSIZE             %u\n", (unsigned int)IdHardwareNum(IDHW_ROMSIZE, NULL));
+    printf("CHIPSET             %u\n", (unsigned int)IdHardwareNum(IDHW_CHIPSET, NULL));
+    printf("GFXSYS              %u\n", (unsigned int)IdHardwareNum(IDHW_GFXSYS, NULL));
+    printf("CHIPRAM             %u\n", (unsigned int)IdHardwareNum(IDHW_CHIPRAM, NULL));
+    printf("FASTRAM             %u\n", (unsigned int)IdHardwareNum(IDHW_FASTRAM, NULL));
+    printf("RAM                 %u\n", (unsigned int)IdHardwareNum(IDHW_RAM, NULL));
+    printf("SETPATCHVER         %u\n", (unsigned int)IdHardwareNum(IDHW_SETPATCHVER, NULL));
+    printf("AUDIOSYS            %u\n", (unsigned int)IdHardwareNum(IDHW_AUDIOSYS, NULL));
+    printf("OSNR                %u\n", (unsigned int)IdHardwareNum(IDHW_OSNR, NULL));
+    printf("VMMCHIPRAM          %u\n", (unsigned int)IdHardwareNum(IDHW_VMMCHIPRAM, NULL));
+    printf("VMMFASTRAM          %u\n", (unsigned int)IdHardwareNum(IDHW_VMMFASTRAM, NULL));
+    printf("VMMRAM              %u\n", (unsigned int)IdHardwareNum(IDHW_VMMRAM, NULL));
+    printf("PLNCHIPRAM          %u\n", (unsigned int)IdHardwareNum(IDHW_PLNCHIPRAM, NULL));
+    printf("PLNFASTRAM          %u\n", (unsigned int)IdHardwareNum(IDHW_PLNFASTRAM, NULL));
+    printf("PLNRAM              %u\n", (unsigned int)IdHardwareNum(IDHW_PLNRAM, NULL));
+    printf("VBR                 %u\n", (unsigned int)IdHardwareNum(IDHW_VBR, NULL));
+    printf("LASTALERT           %u\n", (unsigned int)IdHardwareNum(IDHW_LASTALERT, NULL));
+    printf("VBLANKFREQ          %u\n", (unsigned int)IdHardwareNum(IDHW_VBLANKFREQ, NULL));
+    printf("POWERFREQ           %u\n", (unsigned int)IdHardwareNum(IDHW_POWERFREQ, NULL));
+    printf("ECLOCK              %u\n", (unsigned int)IdHardwareNum(IDHW_ECLOCK, NULL));
+    printf("SLOWRAM             %u\n", (unsigned int)IdHardwareNum(IDHW_SLOWRAM, NULL));
+    printf("GARY                %u\n", (unsigned int)IdHardwareNum(IDHW_GARY, NULL));
+    printf("RAMSEY              %u\n", (unsigned int)IdHardwareNum(IDHW_RAMSEY, NULL));
+    printf("BATTCLOCK           %u\n", (unsigned int)IdHardwareNum(IDHW_BATTCLOCK, NULL));
+    printf("CHUNKYPLANAR        %u\n", (unsigned int)IdHardwareNum(IDHW_CHUNKYPLANAR, NULL));
+    printf("POWERPC             %u\n", (unsigned int)IdHardwareNum(IDHW_POWERPC, NULL));
+    printf("PPCCLOCK            %u\n", (unsigned int)IdHardwareNum(IDHW_PPCCLOCK, NULL));
+    printf("CPUREV              %u\n", (unsigned int)IdHardwareNum(IDHW_CPUREV, NULL));
+    printf("CPUCLOCK            %u\n", (unsigned int)IdHardwareNum(IDHW_CPUCLOCK, NULL));
+    printf("FPUCLOCK            %u\n", (unsigned int)IdHardwareNum(IDHW_FPUCLOCK, NULL));
+    printf("RAMACCESS           %u\n", (unsigned int)IdHardwareNum(IDHW_RAMACCESS, NULL));
+    printf("RAMWIDTH            %u\n", (unsigned int)IdHardwareNum(IDHW_RAMWIDTH, NULL));
+    printf("RAMCAS              %u\n", (unsigned int)IdHardwareNum(IDHW_RAMCAS, NULL));
+    printf("RAMBANDWIDTH        %u\n", (unsigned int)IdHardwareNum(IDHW_RAMBANDWIDTH, NULL));
+    printf("TCPIP               %u\n", (unsigned int)IdHardwareNum(IDHW_TCPIP, NULL));
+    printf("PPCOS               %u\n", (unsigned int)IdHardwareNum(IDHW_PPCOS, NULL));
+    printf("AGNUS               %u\n", (unsigned int)IdHardwareNum(IDHW_AGNUS, NULL));
+    printf("AGNUSMODE           %u\n", (unsigned int)IdHardwareNum(IDHW_AGNUSMODE, NULL));
+    printf("DENISE              %u\n", (unsigned int)IdHardwareNum(IDHW_DENISE, NULL));
+    printf("DENISEREV           %u\n", (unsigned int)IdHardwareNum(IDHW_DENISEREV, NULL));
 }
 
 static void idhardware(void)
@@ -113,7 +113,7 @@ static void idformatstringtst(STRPTR format, ULONG len)
 {
     TEXT buffer[50] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
     LONG result = IdFormatString(format, buffer, len, NULL);
-    printf("result %d string %s\n", result, buffer);
+    printf("result %d string %s\n", (int)result, buffer);
 }
 
 static void idformatstring(void)
@@ -133,10 +133,10 @@ static void idestimateformatsize(void)
 {
     puts("\nIdEstimateFormatSize");
     puts("--------------------");
-    printf("result %d\n", IdEstimateFormatSize("abcdef", NULL));
-    printf("result %d\n", IdEstimateFormatSize("abc$$def", NULL));
-    printf("result %d\n", IdEstimateFormatSize("abc$AUDIOSYS$def", NULL));
-    printf("result %d\n", IdEstimateFormatSize("abc$AUDYS$def", NULL));
+    printf("result %d\n", (int)IdEstimateFormatSize("abcdef", NULL));
+    printf("result %d\n", (int)IdEstimateFormatSize("abc$$def", NULL));
+    printf("result %d\n", (int)IdEstimateFormatSize("abc$AUDIOSYS$def", NULL));
+    printf("result %d\n", (int)IdEstimateFormatSize("abc$AUDYS$def", NULL));
 }
 
 static void idalert(void)
@@ -147,11 +147,11 @@ static void idalert(void)
     TEXT buffer2[30];
     TEXT buffer3[30];
     TEXT buffer4[30];
-    printf("result %d\n", IdAlertTags(0x82010007, IDTAG_DeadStr, buffer1, IDTAG_SubsysStr, buffer2, IDTAG_GeneralStr, buffer3, IDTAG_SpecStr, buffer4, IDTAG_StrLength, 30, TAG_DONE));
+    printf("result %d\n", (int)IdAlertTags(0x82010007, IDTAG_DeadStr, buffer1, IDTAG_SubsysStr, buffer2, IDTAG_GeneralStr, buffer3, IDTAG_SpecStr, buffer4, IDTAG_StrLength, 30, TAG_DONE));
     printf("DeadStr %s SubsysStr %s GeneralStr %s SpecStr %s\n", buffer1, buffer2, buffer3, buffer4);
-    printf("result %d\n", IdAlertTags(0x8400000C, IDTAG_DeadStr, buffer1, IDTAG_SubsysStr, buffer2, IDTAG_GeneralStr, buffer3, IDTAG_SpecStr, buffer4, IDTAG_StrLength, 30, TAG_DONE));
+    printf("result %d\n", (int)IdAlertTags(0x8400000C, IDTAG_DeadStr, buffer1, IDTAG_SubsysStr, buffer2, IDTAG_GeneralStr, buffer3, IDTAG_SpecStr, buffer4, IDTAG_StrLength, 30, TAG_DONE));
     printf("DeadStr %s SubsysStr %s GeneralStr %s SpecStr %s\n", buffer1, buffer2, buffer3, buffer4);
-    printf("result %d\n", IdAlertTags(0x04010003, IDTAG_DeadStr, buffer1, IDTAG_SubsysStr, buffer2, IDTAG_GeneralStr, buffer3, IDTAG_SpecStr, buffer4, IDTAG_StrLength, 30, TAG_DONE));
+    printf("result %d\n", (int)IdAlertTags(0x04010003, IDTAG_DeadStr, buffer1, IDTAG_SubsysStr, buffer2, IDTAG_GeneralStr, buffer3, IDTAG_SpecStr, buffer4, IDTAG_StrLength, 30, TAG_DONE));
     printf("DeadStr %s SubsysStr %s GeneralStr %s SpecStr %s\n", buffer1, buffer2, buffer3, buffer4);
 }
 
@@ -160,7 +160,7 @@ static void idexpansion(void)
     puts("\nIdExpansion");
     puts("-----------");
     TEXT buffer[30];
-    printf("result %d\n", IdExpansionTags(IDTAG_ManufStr, buffer, IDTAG_StrLength, 30, TAG_DONE));
+    printf("result %d\n", (int)IdExpansionTags(IDTAG_ManufStr, buffer, IDTAG_StrLength, 30, TAG_DONE));
     printf("ManufStr %s\n", buffer);
 }
 
@@ -169,9 +169,9 @@ static void idfunction(void)
     puts("\nIdFunction");
     puts("-----------");
     TEXT buffer[30];
-    printf("result %d\n", IdFunctionTags("identify", 30, IDTAG_FuncNameStr, buffer, IDTAG_StrLength, 30, TAG_DONE));
+    printf("result %d\n", (int)IdFunctionTags("identify", 30, IDTAG_FuncNameStr, buffer, IDTAG_StrLength, 30, TAG_DONE));
     printf("FuncNameStr %s\n", buffer);
-    printf("result %d\n", IdFunctionTags("identify", 36, IDTAG_FuncNameStr, buffer, IDTAG_StrLength, 30, TAG_DONE));
+    printf("result %d\n", (int)IdFunctionTags("identify", 36, IDTAG_FuncNameStr, buffer, IDTAG_StrLength, 30, TAG_DONE));
     printf("FuncNameStr %s\n", buffer);
 }
 

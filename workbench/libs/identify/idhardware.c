@@ -580,7 +580,7 @@ static CONST_STRPTR handle_freq(TEXT *buffer, Tag tag)
     {
         ULONG num = IdHardwareNum(tag, NULL);
         {
-            snprintf(buffer, STRBUFSIZE, "%u Hz", num);
+            snprintf(buffer, STRBUFSIZE, "%u Hz", (unsigned int)num);
         }
     }
     return result;
@@ -593,7 +593,7 @@ static CONST_STRPTR handle_mhz(TEXT *buffer, Tag tag)
     {
         ULONG num = IdHardwareNum(tag, NULL);
         {
-            snprintf(buffer, STRBUFSIZE, "%u MHz", num);
+            snprintf(buffer, STRBUFSIZE, "%u MHz", (unsigned int)num);
         }
     }
     return result;
@@ -606,7 +606,7 @@ static CONST_STRPTR handle_number(TEXT *buffer, Tag tag)
     {
         ULONG num = IdHardwareNum(tag, NULL);
         {
-            snprintf(buffer, STRBUFSIZE, "%u", num);
+            snprintf(buffer, STRBUFSIZE, "%u", (unsigned int)num);
         }
     }
     return result;
@@ -619,7 +619,7 @@ static CONST_STRPTR handle_address(TEXT *buffer, Tag tag)
     {
         ULONG num = IdHardwareNum(tag, NULL);
         {
-            snprintf(buffer, STRBUFSIZE, "0x%08x", num);
+            snprintf(buffer, STRBUFSIZE, "0x%08x", (unsigned int)num);
         }
     }
     return result;
@@ -632,7 +632,7 @@ static CONST_STRPTR handle_hex(TEXT *buffer, Tag tag)
     {
         ULONG num = IdHardwareNum(tag, NULL);
         {
-            snprintf(buffer, STRBUFSIZE, "%08x", num);
+            snprintf(buffer, STRBUFSIZE, "%08x", (unsigned int)num);
         }
     }
     return result;

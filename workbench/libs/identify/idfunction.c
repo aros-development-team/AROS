@@ -283,7 +283,7 @@ static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname, struct
     D(bug("[idfunction/loadFD] libnamestripped %s filename %s\n", libNameStripped, fileName));
 
     fileHandle = Open(fileName, MODE_OLDFILE);
-    if (fileHandle == NULL)
+    if (fileHandle == BNULL)
     {
         D(bug("[idfunction/loadFD] failed to open file\n"));
         goto bailout;
