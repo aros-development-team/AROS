@@ -21,7 +21,9 @@
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 	MA 02111-1307, USA.
 */
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #if DEBUG > 0
@@ -113,7 +115,7 @@ struct RTL8169Base {
     ULONG               rtl8169b_UnitCount;
     struct List         rtl8169b_Units;
     
-    #warning "TODO: move into a config block"
+    /* TODO: move into a config block */
     /* Maximum events (Rx packets, etc.) to handle at each interrupt. */
     int 		rtl8169b_MaxIntWork;
     
@@ -255,7 +257,7 @@ struct RTL8169Unit {
     ULONG                   rtl8169u_special_stats[STAT_COUNT];
 
     char                    *rtl8169u_rtl_cardname;
-    char                    *rtl8169u_rtl_chipname;
+    const char              *rtl8169u_rtl_chipname;
     ULONG                   rtl8169u_rtl_chipcapabilities;
     
     ULONG                   rtl8169u_rtl_LinkSpeed;
@@ -363,29 +365,29 @@ enum netdev_state_t
     __LINK_STATE_LINKWATCH_PENDING
 };
 
-static inline int test_bit(int nr, const volatile unsigned long *addr)
+static inline int test_bit(int nr, const volatile ULONG *addr)
 {
     return ((1UL << (nr & 31)) & (addr[nr >> 5])) != 0;
 }
 
-static inline void set_bit(int nr, volatile unsigned long *addr)
+static inline void set_bit(int nr, volatile ULONG *addr)
 {
     addr[nr >> 5] |= 1UL << (nr & 31);
 }
 
-static inline void clear_bit(int nr, volatile unsigned long *addr)
+static inline void clear_bit(int nr, volatile ULONG *addr)
 {
     addr[nr >> 5] &= ~(1UL << (nr & 31));
 }
 
-static inline int test_and_set_bit(int nr, volatile unsigned long *addr)
+static inline int test_and_set_bit(int nr, volatile ULONG *addr)
 {
     int oldbit = test_bit(nr, addr);
     set_bit(nr, addr);
     return oldbit;
 }
 
-static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
+static inline int test_and_clear_bit(int nr, volatile ULONG *addr)
 {
     int oldbit = test_bit(nr, addr);
     clear_bit(nr, addr);

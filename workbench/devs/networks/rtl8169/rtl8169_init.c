@@ -70,7 +70,7 @@ AROS_UFH3(void, PCI_Enumerator,
 
     if ((LIBBASE->rtl8169b_UnitCount < MAX_UNITS) && ((unit = CreateUnit(LIBBASE, pciDevice, RevisionID)) != NULL))
     {
-	    AddTail(&LIBBASE->rtl8169b_Units, &unit->rtl8169u_Node);
+	    AddTail(&LIBBASE->rtl8169b_Units, (struct Node *)&unit->rtl8169u_Node);
     }
     else if (LIBBASE->rtl8169b_UnitCount < MAX_UNITS)
     {

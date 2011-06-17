@@ -212,7 +212,7 @@ void RTL8169_Rx_Process(struct RTL8169Unit *unit)
 		else
 		{
 			len = rx_size;
-	        frame = (UBYTE *) AROS_LE2LONG(desc->addr);
+	        frame = (APTR)(IPTR)AROS_LE2LONG(desc->addr);
 
             RTLD(bug("[%s] RTL8169_RX_Process: frame @ %p, len=%d, pool index=%d\n", unit->rtl8169u_name, frame, len, cur_rx))
 
@@ -373,18 +373,18 @@ AROS_UFH3(void, RTL8169_TX_IntF,
 				{
 					packet_size += ETH_PACKET_DATA;
 					CopyMem(request->ios2_DstAddr,
-							&((struct eth_frame *) np->TxDescArray[nr].addr)->eth_packet_dest,
+							&((struct eth_frame *)(IPTR)np->TxDescArray[nr].addr)->eth_packet_dest,
 							ETH_ADDRESSSIZE);
 					CopyMem(unit->rtl8169u_dev_addr,
-							&((struct eth_frame *) np->TxDescArray[nr].addr)->eth_packet_source,
+							&((struct eth_frame *)(IPTR)np->TxDescArray[nr].addr)->eth_packet_source,
 							ETH_ADDRESSSIZE);
-					((struct eth_frame *) np->TxDescArray[nr].addr)->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
+					((struct eth_frame *)(IPTR)np->TxDescArray[nr].addr)->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
 	
-					buffer = &((struct eth_frame *) np->TxDescArray[nr].addr)->eth_packet_data;
+					buffer = (APTR)&((struct eth_frame *)(IPTR)np->TxDescArray[nr].addr)->eth_packet_data;
 				}
 				else
 				{
-					buffer = np->TxDescArray[nr].addr;
+					buffer = (APTR)(IPTR)np->TxDescArray[nr].addr;
 				}
 				if (packet_size < TX_BUF_SIZE)
 				{
@@ -408,8 +408,8 @@ AROS_UFH3(void, RTL8169_TX_IntF,
 	                RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmission.",
 	                         unit->rtl8169u_name,
 	                         nr,
-	                         np->TxDescArray[nr].addr,
-	                         AROS_BE2WORD(((struct eth_frame *) np->TxDescArray[nr].addr)->eth_packet_type)))
+	                         (APTR)(IPTR)np->TxDescArray[nr].addr,
+	                         AROS_BE2WORD(((struct eth_frame *)(IPTR)np->TxDescArray[nr].addr)->eth_packet_type)))
 
 					RTLD( int j;
 						for (j = 0; j < 64; j++)
@@ -418,7 +418,7 @@ AROS_UFH3(void, RTL8169_TX_IntF,
 							{
 								bug("\n%03x:", j);
 							}
-							bug(" %02x", ((unsigned char*) np->TxDescArray[nr].addr)[j]);
+							bug(" %02x", ((unsigned char*)(IPTR)np->TxDescArray[nr].addr)[j]);
 						}
 						bug("\n");)
 
@@ -1014,18 +1014,18 @@ struct RTL8169Unit *CreateUnit(struct RTL8169Base *RTL8169DeviceBase, OOP_Object
 #if defined(RTL_DEBUG)
     BOOL doDebug = TRUE;
 #else
-    #warning "TODO: Get option to debug from somewhere .."
+    /* TODO: Get option to debug from somewhere .. */
     BOOL doDebug = FALSE;
 #endif
 	
-    RTLD(bug("[rtl8169] CreateUnit()\n"))
-
     if ((unit = AllocMem(sizeof(struct RTL8169Unit), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
     {
 		IPTR mmiobase, mmiolen, type;
 		// IPTR DeviceID;
 		OOP_Object *driver;
 		BOOL mmioerror = FALSE;
+
+		RTLD(bug("[rtl8169] CreateUnit()\n"))
 
 		if (doDebug)
 		{
@@ -1099,7 +1099,7 @@ struct RTL8169Unit *CreateUnit(struct RTL8169Base *RTL8169DeviceBase, OOP_Object
 		NEWLIST(&unit->rtl8169u_type_trackers);
 
 		OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &unit->rtl8169u_IRQ);
-		OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &unit->rtl8169u_BaseIO);
+		OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, (IPTR *)&unit->rtl8169u_BaseIO);
 		OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base1, &mmiobase);
 		OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size1, &mmiolen);
 		OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type1, &type);
@@ -1153,10 +1153,10 @@ struct RTL8169Unit *CreateUnit(struct RTL8169Base *RTL8169DeviceBase, OOP_Object
 	        return NULL;
 		}
 
-        #warning "TODO: how do we set memory write invalidate for PCI devices on AROS ?"
+        /* TODO: how do we set memory write invalidate for PCI devices on AROS ? */
 
 	    unit->rtl8169u_SizeMem = R8169_REGS_SIZE;
-	    unit->rtl8169u_BaseMem = (IPTR)HIDD_PCIDriver_MapPCI(driver, (APTR)mmiobase, unit->rtl8169u_SizeMem);
+	    unit->rtl8169u_BaseMem = HIDD_PCIDriver_MapPCI(driver, (APTR)mmiobase, unit->rtl8169u_SizeMem);
 
 		if (unit->rtl8169u_BaseMem != NULL)
 		{
