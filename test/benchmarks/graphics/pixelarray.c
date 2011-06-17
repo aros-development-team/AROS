@@ -190,22 +190,22 @@ static void printresults(LONG t, LONG i)
 
     printf("Function             : %s\n", functionname);
     printf("Pixel format         : %s   Width: %d   Height %d\n\n", 
-        pixfmt_table[pixfmt_index].name, width, height);
-    printf("Elapsed time         : %d us (%f s)\n", t, (double)t / 1000000);
-    printf("Blits                : %d\n", i);
+        pixfmt_table[pixfmt_index].name, (int)width, (int)height);
+    printf("Elapsed time         : %d us (%f s)\n", (int)t, (double)t / 1000000);
+    printf("Blits                : %d\n", (int)i);
     printf("Blits/sec            : %f\n", i * 1000000.0 / t);
     printf("Time/blit            : %f us (%f s) (%d%% of 25Hz Frame)\n", 
         (double)t / i,
         (double)t / i / 1000000.0,
-        (LONG)(100.0 * ((double)t / i) / (1000000.0 / 25.0)));
+        (int)(100.0 * ((double)t / i) / (1000000.0 / 25.0)));
     
     bpp = GetCyberMapAttr(win->WScreen->RastPort.BitMap, CYBRMATTR_BPPIX);
-    printf("\nScreen Bytes Per Pixel: %d\n", bpp);
-    printf("Area size in Pixels   : %d\n", width * height);
-    printf("Area size in Bytes    : %d\n", width * height * bpp);
+    printf("\nScreen Bytes Per Pixel: %d\n", (int)bpp);
+    printf("Area size in Pixels   : %d\n", (int)(width * height));
+    printf("Area size in Bytes    : %d\n", (int)(width * height * bpp));
    
     q = ((QUAD)width) * ((QUAD)height) * ((QUAD)bpp) * ((QUAD)i) * ((QUAD)1000000) / (QUAD)t;
-    printf("Bytes/sec to gfx card : %lld (%lld MB)\n", q, q / 1048576);
+    printf("Bytes/sec to gfx card : %lld (%lld MB)\n", (long long)q, (long long)q / 1048576);
 }
 
 /****************************************************************************************/

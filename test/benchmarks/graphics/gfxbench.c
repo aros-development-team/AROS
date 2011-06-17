@@ -55,7 +55,7 @@ static void printresults(LONG timems, LONG blits)
     bpp = GetCyberMapAttr(win->WScreen->RastPort.BitMap, CYBRMATTR_BPPIX);
     q = ((QUAD)width) * ((QUAD)height) * ((QUAD)bpp) * ((QUAD)blits) * ((QUAD)1000000) / (QUAD)timems;
 
-    printf("%.2f|%d|\n", (blits * 1000000.0 / timems), (LONG)(q / 1048576));
+    printf("%.2f|%d|\n", (blits * 1000000.0 / timems), (int)(q / 1048576));
 }
 
 static void cleanup(STRPTR msg, ULONG retcode)
@@ -228,7 +228,7 @@ static LONG getDeviceIndex(LONG vendorIndex, UWORD deviceID)
 
 static void pciids_Open(void)
 {
-    APTR fh;
+    BPTR fh;
     LONG size;
 
     fh = Open("DEVS:pci.ids", MODE_OLDFILE);
@@ -342,7 +342,7 @@ AROS_UFH3(void, Enumerator,
     pciids_GetDeviceName(vendorid, productid, product, 100);
 
     printf("|Video card|0x%x:0x%x %s %s", 
-        (LONG)vendorid, (LONG)productid, vendor, product);
+        (unsigned)vendorid, (unsigned)productid, vendor, product);
     if (agpcap) printf(" AGP");
     if (pciecap) printf(" PCIe");
     printf("|\n");
@@ -416,7 +416,7 @@ static void detectsystem()
         
         GetCPUInfo(tags);
         
-        printf("|Processor count|%d|\n", processorcount);
+        printf("|Processor count|%d|\n", (int)processorcount);
 
         for (i = 0; i < processorcount; i++)
         {
@@ -435,11 +435,11 @@ static void detectsystem()
 
             frequency /= 1000000;
             
-            printf("|Processor #%d|%s - %d Mhz|\n", i, modelstr, (LONG)frequency);
+            printf("|Processor #%d|%s - %d Mhz|\n", (int)i, modelstr, (int)frequency);
         }
     }
     
-    printf("|Available memory|%dkB|\n", (AvailMem(MEMF_ANY) / 1024));
+    printf("|Available memory|%dkB|\n", (int)(AvailMem(MEMF_ANY) / 1024));
     
     /* Detect video card device */
     listvideocards();
@@ -456,7 +456,7 @@ static void detectsystem()
         if (width > swidth) width = swidth;
         if (height > sheight) height = sheight;
 
-        printf("|Screen information| %dx%dx%d|\n", swidth, sheight, sdepth);
+        printf("|Screen information| %dx%dx%d|\n", (int)swidth, (int)sheight, (int)sdepth);
     }
 
     printf("\n\n");
@@ -482,7 +482,7 @@ static void textbenchmark(LONG optmode, BOOL optantialias, LONG optlen)
         aastr = "NON-ANTIALIASED";
     antialias = optantialias;
     
-    sprintf(lenstr, "LEN %d", optlen);
+    sprintf(lenstr, "LEN %d", (int)optlen);
     linelen = optlen;
     
     printf("|%s, %s, %s|", modestr, aastr, lenstr);
@@ -492,7 +492,7 @@ static void textbenchmark(LONG optmode, BOOL optantialias, LONG optlen)
 
 static void textbenchmarkset()
 {
-    printf("*Text benchmark %dx%d*\n", width, height);
+    printf("*Text benchmark %dx%d*\n", (int)width, (int)height);
     printf("||Test||Blits/s||MB/s||\n");
     textbenchmark(JAM1,         FALSE,  100);
     textbenchmark(JAM2,         FALSE,  100);
@@ -541,7 +541,7 @@ static void pixelarraybenchmark(LONG optpixfmt, LONG optfunction)
 
 static void pixelarraybenchmarkset()
 {
-    printf("*PixelArray benchmark %dx%d*\n", width, height);
+    printf("*PixelArray benchmark %dx%d*\n", (int)width, (int)height);
     printf("||Test||Blits/s||MB/s||\n");
     pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_WRITE);
     pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE);
