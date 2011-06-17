@@ -251,9 +251,9 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
       {
          tcb = next_tcb;
          next_tcb = tcb + TCB_SIZE / sizeof(ULONG);
-         tcb[PROCB_NEXT] = MakeLELong((ULONG)next_tcb);
+         tcb[PROCB_NEXT] = MakeLELong((ULONG)(IPTR)next_tcb);
       }
-      tcb[PROCB_NEXT] = MakeLELong((ULONG)unit->tcbs);
+      tcb[PROCB_NEXT] = MakeLELong((ULONG)(IPTR)unit->tcbs);
       unit->last_tcb = tcb;
 
       /* Construct RX ring */
@@ -262,12 +262,12 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
       {
          rcb = next_rcb;
          next_rcb = rcb + RCB_SIZE / sizeof(ULONG);
-         rcb[PROCB_NEXT] = MakeLELong((ULONG)next_rcb);
+         rcb[PROCB_NEXT] = MakeLELong((ULONG)(IPTR)next_rcb);
          rcb[PROCB_RXINFO] =
             MakeLELong(ETH_MAXPACKETSIZE << PROCB_RXINFOB_BUFFERSIZE);
       }
       rcb[PROCB_CONTROL] = MakeLELong(PROCB_CONTROLF_SUSPEND);
-      rcb[PROCB_NEXT] = MakeLELong((ULONG)unit->rcbs);
+      rcb[PROCB_NEXT] = MakeLELong((ULONG)(IPTR)unit->rcbs);
       unit->last_rcb = rcb;
       dma_size = RCB_SIZE * RX_SLOT_COUNT;
       CachePreDMA(unit->rcbs, &dma_size, 0);
@@ -461,7 +461,7 @@ static VOID InitialiseAdapter(struct DevUnit *unit, struct DevBase *base)
 
    /* Set up statistics dump area */
 
-   unit->LELongOut(unit->card, PROREG_GENPTR, (ULONG)unit->stats_buffer);
+   unit->LELongOut(unit->card, PROREG_GENPTR, (ULONG)(IPTR)unit->stats_buffer);
    unit->LEWordOut(unit->card, PROREG_COMMAND, PRO_CUCMD_SETSTATSBUFFER);
    while(unit->LEWordIn(unit->card, PROREG_COMMAND) != 0);
 
@@ -499,13 +499,13 @@ VOID ConfigureAdapter(struct DevUnit *unit, struct DevBase *base)
 
    /* Set MAC address */
 
-   tcb = (ULONG *)LELong(unit->last_tcb[PROCB_NEXT]);
+   tcb = (ULONG *)(IPTR)LELong(unit->last_tcb[PROCB_NEXT]);
    tcb[PROCB_CONTROL] = MakeLELong(PROACT_SETADDRESS);
    CopyMem(&unit->address, tcb + PROCB_ADDRESS, ETH_ADDRESSSIZE);
 
    /* Set other parameters */
 
-   tcb = (ULONG *)LELong(tcb[PROCB_NEXT]);
+   tcb = (ULONG *)(IPTR)LELong(tcb[PROCB_NEXT]);
    tcb[PROCB_CONTROL] =
       MakeLELong(PROACT_CONFIGURE | PROCB_CONTROLF_SUSPEND);
    unit->phy_info = ReadEEPROM(unit, PROROM_PHYINFO0, base);
@@ -528,7 +528,7 @@ VOID ConfigureAdapter(struct DevUnit *unit, struct DevBase *base)
 
    /* Go online */
 
-   unit->LELongOut(unit->card, PROREG_GENPTR, (ULONG)unit->tcbs);
+   unit->LELongOut(unit->card, PROREG_GENPTR, (ULONG)(IPTR)unit->tcbs);
    unit->LEWordOut(unit->card, PROREG_COMMAND, PRO_CUCMD_START);
    while(unit->LEWordIn(unit->card, PROREG_COMMAND) != 0);
    GoOnline(unit, base);
@@ -1093,7 +1093,7 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
 
    base = unit->device;
    last_rcb = unit->last_rcb;
-   rcb = (ULONG *)LELong(last_rcb[PROCB_NEXT]);
+   rcb = (ULONG *)(IPTR)LELong(last_rcb[PROCB_NEXT]);
 
    dma_size = RCB_SIZE;
    CachePostDMA(rcb, &dma_size, 0);
@@ -1187,7 +1187,7 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
          unit->LEWordOut(unit->card, PROREG_COMMAND, PRO_RUCMD_RESUME);
 
       last_rcb = rcb;
-      rcb = (ULONG *)LELong(rcb[PROCB_NEXT]);
+      rcb = (ULONG *)(IPTR)LELong(rcb[PROCB_NEXT]);
    }
 
    /* Return */
@@ -1384,13 +1384,13 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
    while(proceed && !IsMsgPortEmpty(port))
    {
       last_tcb = unit->last_tcb;
-      tcb = (ULONG *)LELong(last_tcb[PROCB_NEXT]);
+      tcb = (ULONG *)(IPTR)LELong(last_tcb[PROCB_NEXT]);
 
       /* Ensure there are at least two free CBs available (two are needed
          for setting the multicast filter) and that neither the TX nor the
          multicast buffer is currently in use */
 
-      if((ULONG *)LELong(((ULONG *)LELong(tcb[PROCB_NEXT]))[PROCB_NEXT])
+      if((ULONG *)(IPTR)LELong(((ULONG *)(IPTR)LELong(tcb[PROCB_NEXT]))[PROCB_NEXT])
          != unit->first_tcb
          && (unit->flags & (UNITF_TXBUFFERINUSE | UNITF_MCASTBUFFERINUSE))
          == 0)
@@ -1425,7 +1425,7 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
                MakeLELong(PROACT_TX | PROCB_CONTROLF_SUSPEND
                | PROCB_CONTROLF_INT | PROCB_CONTROLF_FLEXIBLE);
             fragment = tcb + PROCB_EXTFRAGS;
-            tcb[PROCB_FRAGMENTS] = MakeLELong((ULONG)fragment);
+            tcb[PROCB_FRAGMENTS] = MakeLELong((ULONG)(IPTR)fragment);
 
             /* Write packet header */
 
@@ -1436,7 +1436,7 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
                   MakeLELong(2 << PROCB_TXINFOB_FRAGCOUNT
                   | 1 << PROCB_TXINFOB_THRESHOLD
                   | PROCB_TXINFOF_EOF);
-               fragment[PROFRAG_ADDR] = MakeLELong((ULONG)buffer);
+               fragment[PROFRAG_ADDR] = MakeLELong((ULONG)(IPTR)buffer);
                fragment[PROFRAG_LEN] = MakeLELong(ETH_HEADERSIZE);
 
                p = (UWORD *)buffer;
@@ -1492,7 +1492,7 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
             {
                dma_size = data_size;
                CachePreDMA(buffer, &dma_size, DMA_ReadFromRAM);
-               fragment[PROFRAG_ADDR] = MakeLELong((ULONG)buffer);
+               fragment[PROFRAG_ADDR] = MakeLELong((ULONG)(IPTR)buffer);
                fragment[PROFRAG_LEN] = MakeLELong(data_size);
             }
          }
@@ -1507,9 +1507,9 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
                mcast_cb = unit->multicast_cb;
                mcast_cb[PROCB_CONTROL] = MakeLELong(PROACT_SETMCAST);
                mcast_cb[PROCB_NEXT] = tcb[PROCB_NEXT];
-               tcb[PROCB_NEXT] = MakeLELong((ULONG)mcast_cb);
+               tcb[PROCB_NEXT] = MakeLELong((ULONG)(IPTR)mcast_cb);
                unit->link_cb = tcb;
-               tcb = (ULONG *)LELong(mcast_cb[PROCB_NEXT]);
+               tcb = (ULONG *)(IPTR)LELong(mcast_cb[PROCB_NEXT]);
                tcb[PROCB_CONTROL] = MakeLELong(PROACT_CONFIGURE
                   | PROCB_CONTROLF_SUSPEND | PROCB_CONTROLF_INT);
                FillConfigData(unit, tcb, base);
@@ -1613,7 +1613,7 @@ static VOID TXEndInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
 
    for(tcb = unit->first_tcb;
       (tcb[PROCB_CONTROL] & MakeLELong(PROCB_CONTROLF_DONE)) != 0;
-      tcb = (ULONG *)LELong(tcb[PROCB_NEXT]))
+      tcb = (ULONG *)(IPTR)LELong(tcb[PROCB_NEXT]))
    {
       action = LELong(tcb[PROCB_CONTROL]) & PROCB_CONTROLF_ACTION;
 
@@ -1628,7 +1628,7 @@ static VOID TXEndInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
             /* Mark end of DMA */
 
             data_size = packet_size = request->ios2_DataLength;
-            fragment = (ULONG *)LELong(tcb[PROCB_FRAGMENTS]);
+            fragment = (ULONG *)(IPTR)LELong(tcb[PROCB_FRAGMENTS]);
 
             if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
             {
@@ -1636,7 +1636,7 @@ static VOID TXEndInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
                fragment += PRO_FRAGLEN;
             }
 
-            buffer = (UBYTE *)LELong(fragment[PROFRAG_ADDR]);
+            buffer = (UBYTE *)(IPTR)LELong(fragment[PROFRAG_ADDR]);
             dma_size = data_size;
             CachePostDMA(buffer, &dma_size, DMA_ReadFromRAM);
 
@@ -1661,7 +1661,7 @@ static VOID TXEndInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
 
             if(unit->link_cb != NULL)
             {
-               unit->link_cb[PROCB_NEXT] = MakeLELong((ULONG)tcb);
+               unit->link_cb[PROCB_NEXT] = MakeLELong((ULONG)(IPTR)tcb);
                unit->flags &= ~UNITF_MCASTBUFFERINUSE;
                unit->link_cb = NULL;
             }
