@@ -360,7 +360,7 @@ void ProcessPackets(void) {
                 D(bug("[fat] CURRENT_VOLUME: lock 0x%08x\n",
                       pkt->dp_Arg1));
 
-                res = (LONG)((fl) ? fl->fl_Volume : ((glob->sb != NULL) ? MKBADDR(glob->sb->doslist) : NULL));
+                res = (IPTR)((fl) ? fl->fl_Volume : ((glob->sb != NULL) ? MKBADDR(glob->sb->doslist) : BNULL));
                 break;
             }
 
@@ -473,7 +473,7 @@ void ProcessPackets(void) {
             case ACTION_DISK_CHANGE: { /* internal */
                 struct DosList *vol = (struct DosList *)pkt->dp_Arg2;
                 struct VolumeInfo *vol_info =
-                    vol->dol_misc.dol_volume.dol_LockList;
+                    BADDR(vol->dol_misc.dol_volume.dol_LockList);
                 ULONG type = pkt->dp_Arg3;
 
                 D(bug("[fat] DISK_CHANGE [INTERNAL]\n"));
@@ -544,7 +544,7 @@ void ProcessPackets(void) {
                 CopyMem(glob->sb->volume.name + 1, glob->sb->doslist->dol_Name,
                     glob->sb->volume.name[0] + 1);
 #else
-                CopyMem(glob->sb->volume.name, glob->sb->doslist->dol_Name,
+                CopyMem(glob->sb->volume.name, BADDR(glob->sb->doslist->dol_Name),
                     glob->sb->volume.name[0] + 2);
 #endif
 
