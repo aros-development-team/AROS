@@ -28,6 +28,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#undef HiddMouseAB
 #define HiddMouseAB	(MSD(cl)->hiddMouseAB)
 
 /* defines for buttonstate */
@@ -47,7 +48,7 @@ int     mouse_DetectPNP(struct mouse_data *, OOP_Object *);
 void    handle_events(UBYTE proto, struct mouse_data *);
 
 /* mouse_usleep - sleep for usec microseconds */
-#warning: Incompatible with BOCHS busy loop! Change to precise timer.device!
+/* FIXME: Incompatible with BOCHS busy loop! Change to precise timer.device! */
 
 #define TIMER_RPROK 3599597124UL
 
@@ -100,7 +101,7 @@ int test_mouse_serial(OOP_Class *cl, OOP_Object *o)
                 Because we don't have timed IO operations yet, we will use busy
                 loops. Be carefull with BOCHS!! It will not understand this!!
             */
-#warning: Chang busy loop for BOCHS!!!!
+           /* FIXME: Change busy loop for BOCHS!!!! */
 
             /* Allocate ring buffer */
 
@@ -463,7 +464,7 @@ static int mouse_pnpparse(pnpid_t *id, char *buf, int len)
 
 /* name/val mapping */
 
-static symtab_t *gettoken(symtab_t *tab, char *s, int len)
+static symtab_t *gettoken(const symtab_t *tab, const char *s, int len)
 {
     int i;
 
@@ -472,7 +473,7 @@ static symtab_t *gettoken(symtab_t *tab, char *s, int len)
         if (strncmp(tab[i].name, s, len) == 0)
             break;
     }
-    return &tab[i];
+    return (symtab_t *)&tab[i];
 }
 
 static symtab_t *mouse_pnpproto(pnpid_t *id)

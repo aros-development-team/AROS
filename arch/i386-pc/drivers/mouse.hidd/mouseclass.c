@@ -40,7 +40,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#warning "TODO: Remove all .data from file !"
+/* TODO: Remove all .data from file ! */
 
 #ifdef HiddMouseAB
 #undef HiddMouseAB
