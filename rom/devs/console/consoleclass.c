@@ -447,7 +447,7 @@ static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetD
 	    msg->Params[1] = XCCP + 1;
 	    break;
 
-#warning Autodocs state commands in between here, has params RKRM: Devs saye the do not
+/* FIXME: Autodocs state commands in between here, has params RKRM: Devs saye the do not */
 	case C_CURSOR_HTAB:
 	case C_DELETE_CHAR:
 	case C_SCROLL_UP:
@@ -582,7 +582,7 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
 #undef ConsoleDevice
 #define ConsoleDevice ((struct ConsoleBase *)OCLASS(o)->cl_UserData)
 
-#warning Currently dead code
+/* FIXME: Currently dead code */
 VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr)
 {
     EnterFunc(bug("normalizecoords(o=%p, x=%d, y=%d)\n",

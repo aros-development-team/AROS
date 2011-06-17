@@ -52,7 +52,7 @@ static VOID answer_requests(APTR unit,struct ConsoleBase *ConsoleDevice)
 static ULONG pasteData(struct intConUnit * icu, struct ConsoleBase * ConsoleDevice)
 {
   /* Check if we have data to paste to the input buffer */
-  struct intPasteData * pd = GetHead(&icu->pasteData);
+  struct intPasteData * pd = (struct intPasteData *)GetHead(&icu->pasteData);
   if (pd)
     {
       ULONG tocopy = MIN(pd->pasteBufferSize - icu->pasteBufferPos
@@ -69,7 +69,7 @@ static ULONG pasteData(struct intConUnit * icu, struct ConsoleBase * ConsoleDevi
       if (icu->pasteBufferPos >= pd->pasteBufferSize)
 	{
 	  FreeMem(pd->pasteBuffer, pd->pasteBufferSize);
-	  Remove(pd);
+	  Remove((struct Node *)pd);
 	  FreeMem(pd,sizeof(struct intPasteData));
 	  icu->pasteBufferPos = 0;
 	}
@@ -168,15 +168,13 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 		*/
 		if (checkconunit(cdihmsg->unit, ConsoleDevice))
 		{
-		  BOOL toWrite = pasteData(ICU(cdihmsg->unit), ConsoleDevice);
-
 		    switch(cdihmsg->ie.ie_Class)
  		    {
 		    	case IECLASS_CLOSEWINDOW:
-			#warning this is a hack. It would actually be up to the
-			#warning console.device user (CON: handler for example) to
-			#warning activate CLOSEWINDOW raw events (SET RAW EVENTS cmd)
-			#warning and then look out for this in the input stream (CMD_READ)
+			/* this is a hack. It would actually be up to the */
+			/* console.device user (CON: handler for example) to */
+			/* activate CLOSEWINDOW raw events (SET RAW EVENTS cmd) */
+			/* and then look out for this in the input stream (CMD_READ) */
 			    /* fall through */
 			  
 		    case IECLASS_RAWKEY:
@@ -194,7 +192,7 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 			  {
 			    e.ie_EventAddress = 
 			      (cdihmsg->ie.ie_Code == RAWKEY_NM_WHEEL_UP) ? 
-			      1 : 2;
+			      (APTR)1 : (APTR)2;
 			    e.ie_Class = IECLASS_GADGETDOWN; 
 			    Console_HandleGadgets(cdihmsg->unit, &e);
 			    e.ie_Class = IECLASS_GADGETUP;
@@ -330,7 +328,7 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 	
     } /* forever */
     
-#warning FIXME: Do cleanup here
+/* FIXME: Do cleanup here */
     
 }
 

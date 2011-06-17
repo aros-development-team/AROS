@@ -28,7 +28,7 @@ struct charmap_line * charmap_dispose_line(struct charmap_line * line)
 
 VOID charmap_dispose_lines(struct charmap_line * line)
 {
-  while (line = charmap_dispose_line(line));
+  while ((line = charmap_dispose_line(line)));
 }
 
 struct charmap_line * charmap_newline(struct charmap_line * next, struct charmap_line * prev)

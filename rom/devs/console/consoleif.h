@@ -134,7 +134,7 @@ struct P_Console_GetDefaultParams
 	p.MethodID = M_Console_DoCommand;		\
 	p.Command = cmd;				\
 	p.NumParams = numparams;			\
-	p.Params = params;				\
+	p.Params = (IPTR *)params;			\
 	DoMethodA((o), (Msg)&p);			\
 })
 
