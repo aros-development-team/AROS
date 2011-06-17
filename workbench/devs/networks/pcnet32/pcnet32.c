@@ -116,6 +116,7 @@ static inline void pci_push(UBYTE *base)
     readl(base);
 }
 
+#if 0
 static void pcn32_start_rx(struct net_device *dev)
 {
     // struct fe_priv *np = get_pcnpriv(dev);
@@ -123,7 +124,7 @@ static void pcn32_start_rx(struct net_device *dev)
 
 D(bug("%s: pcn32_start_rx\n", dev->pcnu_name));
     // Already running? Stop it.
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void pcn32_stop_rx(struct net_device *dev)
@@ -131,7 +132,7 @@ static void pcn32_stop_rx(struct net_device *dev)
     // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: pcn32_stop_rx\n", dev->pcnu_name));
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void pcn32_start_tx(struct net_device *dev)
@@ -139,7 +140,7 @@ static void pcn32_start_tx(struct net_device *dev)
     // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: pcn32_start_tx()\n", dev->pcnu_name));
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void pcn32_stop_tx(struct net_device *dev)
@@ -147,7 +148,7 @@ static void pcn32_stop_tx(struct net_device *dev)
     // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: pcn32_stop_tx()\n", dev->pcnu_name));
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void pcn32_txrx_reset(struct net_device *dev)
@@ -157,6 +158,7 @@ static void pcn32_txrx_reset(struct net_device *dev)
 
 D(bug("%s: pcn32_txrx_reset()\n", dev->pcnu_name));
 }
+#endif
 
 /*
  * pcn32_set_multicast: dev->set_multicast function
@@ -200,8 +202,8 @@ D(bug("%s: Chipset RESET\n", dev->pcnu_name));
                     dev->pcnu_PCIDriver,
                     sizeof(struct rx_ring_desc) * (RX_RING_SIZE + TX_RING_SIZE));
 
-    np->fep_pcnet_init_block->rx_ring = AROS_LONG2LE(np->ring_addr);
-    np->fep_pcnet_init_block->tx_ring = AROS_LONG2LE(&((struct rx_ring_desc *)np->ring_addr)[RX_RING_SIZE]);
+    np->fep_pcnet_init_block->rx_ring = AROS_LONG2LE((IPTR)np->ring_addr);
+    np->fep_pcnet_init_block->tx_ring = AROS_LONG2LE((IPTR)&((struct rx_ring_desc *)np->ring_addr)[RX_RING_SIZE]);
 
 D(bug("%s: Allocated IO Rings [%d x Tx @ %x : %x] [%d x Rx @ %x : %x]\n",
   dev->pcnu_name,
@@ -232,7 +234,7 @@ static void pcn32_drain_tx(struct net_device *dev)
     // struct fe_priv *np = get_pcnpriv(dev);
     int i;
     for (i = 0; i < TX_RING_SIZE; i++) {
-#warning "TODO: pcn32_drain_tx does nothing atm."
+/* TODO: pcn32_drain_tx does nothing atm. */
 //        np->fep_pcnet_init_block->tx_ring[i].FlagLen = 0;
     }
 }
@@ -242,7 +244,7 @@ static void pcn32_drain_rx(struct net_device *dev)
     // struct fe_priv *np = get_pcnpriv(dev);
     int i;
     for (i = 0; i < RX_RING_SIZE; i++) {
-#warning "TODO: pcn32_drain_rx does nothing atm."
+/* TODO: pcn32_drain_rx does nothing atm. */
 //        np->fep_pcnet_init_block->rx_ring[i].FlagLen = 0;
     }
 }
@@ -303,7 +305,6 @@ static void pcnet32_set_mac(struct net_device *dev)
 static int pcnet32_open(struct net_device *dev)
 {
    struct fe_priv *np = get_pcnpriv(dev);
-   UBYTE *base = get_hwbase(dev);
    int ret, oom, i;
 
    oom = 0;
