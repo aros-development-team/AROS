@@ -85,7 +85,7 @@ static IPTR ClassDispatch (Class *cl, Object *obj, Msg msg) {
 }
 */
 
-IPTR WAV__DTM_WRITE(Class *cl, Object *obj, struct dtWrite *msg)
+IPTR WAVE__DTM_WRITE(Class *cl, Object *obj, struct dtWrite *msg)
 {
     IPTR retval = FALSE;
 
@@ -490,7 +490,7 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
     return(Error);
 }
 
-IPTR WAV__OM_NEW (Class *cl, Object *obj, Msg msg)
+IPTR WAVE__OM_NEW (Class *cl, Object *obj, Msg msg)
 {
     IPTR retval = (IPTR)DoSuperMethodA(cl, obj, msg);
     if (retval) 
