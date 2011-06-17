@@ -56,6 +56,7 @@
     AROS_LIBFUNC_INIT
 
     ULONG retval = (ULONG)-1;
+    IPTR tmp;
     struct DimensionInfo info;
 
     if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_DIMS, DisplayModeID) == sizeof(info)) {
@@ -85,7 +86,8 @@
 	    break;
 
 	case CYBRIDATTR_BPPIX:
-	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
+	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &tmp);
+	    retval = tmp;
 	    break;
 
 	default:
