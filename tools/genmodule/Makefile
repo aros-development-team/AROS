@@ -4,7 +4,7 @@
 #   Desc: Makefile to create genmodule
 #
 
-USER_CFLAGS := -Wall -Wunused -O2
+USER_CFLAGS := -Wall -Werror -Wunused -O2
 
 -include $(TOP)/config/make.cfg
 include Makefile.deps
