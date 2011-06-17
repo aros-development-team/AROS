@@ -130,7 +130,7 @@ struct Screen *prevScreen=NULL;
 UWORD __chip fakePointerData[]={0,0,0,0,0};
 
 struct IFFHandle *iff=NULL;   /*IFF handle*/
-BPTR pL=NULL;                 /*Playlist file pointer*/
+BPTR pL=BNULL;                /*Playlist file pointer*/
 BOOL masking,print,toFront,printPics;
 #ifdef __AROS__
 struct WBStartup *WBenchMsg = NULL;
@@ -253,8 +253,8 @@ int main(int argc, char ** argv)
       if(WBenchMsg->sm_NumArgs==1)
       {
          EasyRequest(NULL,&erError1Line,NULL,
-                     (ULONG) "2View V1.50 (March 24, 1992)",
-                     (ULONG) "Written by Dave Schreiber");
+                     (IPTR) "2View V1.50 (March 24, 1992)",
+                     (IPTR) "Written by Dave Schreiber");
          cleanup();
          exit(0);
       }
@@ -298,7 +298,7 @@ int main(int argc, char ** argv)
       {
          pL=Open(playListFilename,MODE_OLDFILE);   /*Open the playlist*/
 
-         if(pL==NULL)   /*If we couldn't open the playlist, abort*/
+         if(pL==BNULL)   /*If we couldn't open the playlist, abort*/
          {
             printError("Can't open playlist");
             cleanup();
@@ -375,7 +375,7 @@ int main(int argc, char ** argv)
          /*We're finished with this run of pictures*/
       if(playList)         /*Close playlist, if open*/
          Close(pL);
-      pL=NULL;
+      pL=BNULL;
 
       if(!loop && !printPics) /*If the loop flag wasn't given, exit*/
          ExitFlag=TRUE;
