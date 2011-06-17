@@ -134,7 +134,7 @@ AROS_UFHA(struct Interface *, entry, A1))
     if (entry)
     {
         static char unitbuffer[20];
-        sprintf(unitbuffer, "%d", entry->unit);
+        sprintf(unitbuffer, "%d", (int)entry->unit);
         *array++ = entry->name;
         *array++ = entry->up ? "*" : "";
         *array++ = entry->ifDHCP ? (STRPTR)"DHCP" : entry->IP;
@@ -498,10 +498,10 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_Path, (IPTR)"AROSTCP/arostcp.prefs",
 
         Child, RegisterGroup((IPTR)NetworkTabs),
-            Child, VGroup,
+            Child, (IPTR)VGroup,
                 Child, (IPTR)(HGroup,
                     GroupFrame,
-                    Child, ListviewObject,
+                    Child, (IPTR)ListviewObject,
                         MUIA_Listview_List, (IPTR)(interfaceList = (Object *)ListObject,
                             ReadListFrame,
                             MUIA_List_Title, TRUE,
@@ -568,10 +568,10 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End),
             End,
 
-            Child, VGroup,
+            Child, (IPTR)VGroup,
                 Child, (IPTR)(HGroup,
                     GroupFrame,
-                    Child, ListviewObject,
+                    Child, (IPTR)ListviewObject,
                         MUIA_Listview_List, (IPTR)(networkList = (Object *)ListObject,
                             ReadListFrame,
                             MUIA_List_Title, TRUE,
@@ -686,11 +686,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_Window_Title, __(MSG_IFWINDOW_TITLE),
         MUIA_Window_ID, MAKE_ID('I', 'P', 'W', 'I'),
         MUIA_Window_CloseGadget, FALSE,
-        WindowContents, VGroup,
+        WindowContents, (IPTR)VGroup,
             GroupFrame,
-            Child, HGroup,
+            Child, (IPTR)HGroup,
                 Child, (IPTR)HVSpace,
-                Child, ImageObject,
+                Child, (IPTR)ImageObject,
                     MUIA_Image_Spec, (IPTR)"3:Images:interface",
                     MUIA_FixWidth, 52,
                     MUIA_FixHeight, 48,
@@ -745,7 +745,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_CycleChain, 1,
                 End),
             End,
-            Child, HGroup,
+            Child, (IPTR)HGroup,
                 Child, (IPTR)(applyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
                 Child, (IPTR)(closeButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
             End,
@@ -757,7 +757,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_Window_ID, MAKE_ID('W', 'I', 'F', 'I'),
         MUIA_Window_CloseGadget, FALSE,
         MUIA_Window_SizeGadget, TRUE,
-        WindowContents, VGroup,
+        WindowContents, (IPTR)VGroup,
             GroupFrame,
 #if 0 // Awaiting an appropriate image
             Child, HGroup,
@@ -802,7 +802,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR)HVSpace,
                 End,
             End,
-            Child, HGroup,
+            Child, (IPTR)HGroup,
                 Child, (IPTR)(netApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
                 Child, (IPTR)(netCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
             End,
