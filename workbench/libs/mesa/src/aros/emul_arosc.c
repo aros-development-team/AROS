@@ -135,7 +135,7 @@ copy:
 char *getenv (const char *name)
 { 
     /* This function is not thread-safe */
-    static TEXT buff[128] = {NULL};
+    static TEXT buff[128] = { 0 };
     
     D(bug("arosc_emul_getenv: %s\n", name));
 
@@ -158,14 +158,16 @@ int usleep (useconds_t usec)
     return 0;
 }
 
-void abort (void)
+__noreturn void abort (void)
 {
     IMPLEMENT();
+    for (;;);
 }
 
-void exit (int code)
+__noreturn void exit (int code)
 {
     IMPLEMENT();
+    for (;;);
 }
 	
 int puts (const char * str)

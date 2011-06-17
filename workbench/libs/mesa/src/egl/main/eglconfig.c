@@ -233,7 +233,7 @@ _eglValidateConfig(const _EGLConfig *conf, EGLBoolean for_matching)
 
    /* check attributes by their types */
    for (i = 0; i < ARRAY_SIZE(_eglValidationTable); i++) {
-      EGLint mask;
+      EGLint mask = 0;
 
       attr = _eglValidationTable[i].attr;
       val = _eglGetConfigKey(conf, attr);
@@ -672,7 +672,7 @@ _eglSortConfigs(const _EGLConfig **configs, EGLint count,
 }
 
 
-static int
+static EGLint 
 _eglFallbackCompare(const _EGLConfig *conf1, const _EGLConfig *conf2,
                    void *priv_data)
 {

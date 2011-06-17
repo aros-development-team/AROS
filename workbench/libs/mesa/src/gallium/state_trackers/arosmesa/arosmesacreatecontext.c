@@ -44,8 +44,8 @@
 
 *****************************************************************************/
 {
-  AROS_SLOWSTACKTAGS_PRE(Tag1)
-  retval = (IPTR)AROSMesaCreateContext(AROS_SLOWSTACKTAGS_ARG(Tag1));
+  AROS_SLOWSTACKTAGS_PRE_AS(Tag1, AROSMesaContext)
+  retval = AROSMesaCreateContext(AROS_SLOWSTACKTAGS_ARG(Tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
