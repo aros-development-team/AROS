@@ -297,10 +297,10 @@ void ParseArgs(void)
 	STRPTR args[2] = {(STRPTR)FALSE, (STRPTR)FALSE};
 	struct RDArgs * rda;
 	rda = ReadArgs("FOLLOW/S,LENS/S",(IPTR *)args, NULL);
-	if (TRUE == (ULONG)args[0]) {
+	if (TRUE == (IPTR)args[0]) {
 		follow = TRUE;
 	}
-	if (TRUE == (ULONG)args[1]) {
+	if (TRUE == (IPTR)args[1]) {
 		do_lens = TRUE;
 	}
 	

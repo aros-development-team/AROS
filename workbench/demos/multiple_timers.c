@@ -92,7 +92,7 @@ if ((TimerMP = CreatePort(0,0)))
                         {
                         TimerIO[x]->tr_time.tv_secs   = seconds[x];
                         TimerIO[x]->tr_time.tv_micro  = microseconds[x];
-                        printf("\nInitializing TimerIO[%ld]",x);
+                        printf("\nInitializing TimerIO[%ld]",(long)x);
                         }
 
                     printf("\n\nSending multiple requests\n\n");
@@ -113,7 +113,7 @@ if ((TimerMP = CreatePort(0,0)))
                           TimerMSG=GetMsg(TimerMP);
                           for (x=0;x<3;x++)
                               if (TimerMSG==(struct Message *)TimerIO[x])
-                                  printf("Request %ld finished %s\n",x,position[--allin]);
+                                  printf("Request %ld finished %s\n",(long)x,position[--allin]);
                           }
 
                     FreeMem(TimerIO[2],sizeof(struct timerequest));

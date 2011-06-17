@@ -647,8 +647,8 @@ int main (int argc, char ** argv)
 
 		printf ("Key %s %3ld + Qual %08lx=\""
 		    , (im->Code & 0x8000) ? "up  " : "down"
-		    , (LONG)(im->Code & 0xFF)
-		    , (LONG)im->Qualifier
+		    , (long)(im->Code & 0xFF)
+		    , (unsigned long)im->Qualifier
 		);
 
 		if (len < 0)

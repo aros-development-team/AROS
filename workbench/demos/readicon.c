@@ -49,7 +49,7 @@ void DoWindow (struct DiskObject * dobj)
     }
 
     win = OpenWindowTags (NULL
-	, WA_Title,	    (ULONG)"Show an icon"
+	, WA_Title,	    (IPTR)"Show an icon"
 	, WA_DragBar,       TRUE
 	, WA_CloseGadget,   TRUE
 	, WA_DepthGadget,   TRUE
@@ -86,7 +86,7 @@ void DoWindow (struct DiskObject * dobj)
 	if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
 	{
 	    /* D("Got msg\n"); */
-	    printf("Got msg %lx\n", im->Class);
+	    printf("Got msg %lx\n", (long)im->Class);
 	    
 	    switch (im->Class)
 	    {
@@ -174,7 +174,7 @@ int main (int argc, char ** argv)
 		, dobj->do_Gadget.Flags
 		, dobj->do_Gadget.Activation
 		, dobj->do_Gadget.GadgetType
-		, dobj->do_StackSize
+		, (long)dobj->do_StackSize
 	    );
 
 	    if (dobj->do_Gadget.GadgetRender)

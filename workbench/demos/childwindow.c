@@ -178,7 +178,7 @@ int main(int argc, char **argv)
     
     rda = ReadArgs("INVISIBLE/S", (IPTR *)args, NULL);
 
-    if (TRUE == (ULONG)args[0])
+    if (TRUE == (IPTR)args[0])
     {
 	visible = FALSE;
     }

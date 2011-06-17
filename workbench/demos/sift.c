@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 		 * Set up IFF_File for Clipboard I/O.
 		 */
 		if (!(iff->iff_Stream =
-				(ULONG) OpenClipboard (PRIMARY_CLIP)))
+				(IPTR) OpenClipboard (PRIMARY_CLIP)))
 			{
 			puts ("Clipboard open failed.");
 			goto bye;

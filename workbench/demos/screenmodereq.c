@@ -173,14 +173,14 @@ static void showrequester(char *msg, struct TagItem *tags)
 	if (AslRequest(sm, NULL))
 	{
 	    printf("\n-------------------------------------------------------\n\n");
-	    printf("DisplayID     = 0x%08lx\n", sm->sm_DisplayID);
-	    printf("DisplayWidth  = %ld\n", sm->sm_DisplayWidth);
-	    printf("DisplayHeight = %ld\n", sm->sm_DisplayHeight);
+	    printf("DisplayID     = 0x%08lx\n", (long)sm->sm_DisplayID);
+	    printf("DisplayWidth  = %ld\n", (long)sm->sm_DisplayWidth);
+	    printf("DisplayHeight = %ld\n", (long)sm->sm_DisplayHeight);
 	    printf("DisplayDepth  = %d\n", sm->sm_DisplayDepth);
 	    printf("OverscanType  = %d\n", sm->sm_OverscanType);
 	    printf("AutoScroll    = %d\n", sm->sm_AutoScroll);
-	    printf("BitMapWidth   = %ld\n", sm->sm_BitMapWidth);
-	    printf("BitMapHeight  = %ld\n", sm->sm_BitMapHeight);
+	    printf("BitMapWidth   = %ld\n", (long)sm->sm_BitMapWidth);
+	    printf("BitMapHeight  = %ld\n", (long)sm->sm_BitMapHeight);
 	    
 	} else printf("\nRequester was aborted\n");
 	FreeAslRequest(sm);

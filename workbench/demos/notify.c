@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
     
     lock = Lock("Ram Disk:", SHARED_LOCK);
 
-    if (lock == NULL)
+    if (lock == BNULL)
     {
 	printf("Could not lock Ram Disk:\n");
 	exit(1);
