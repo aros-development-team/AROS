@@ -166,8 +166,8 @@ struct PCN32Unit {
     void                    (*write_csr)(APTR, int, UWORD); /* pcn32: */
     UWORD                   (*read_bcr)(APTR, int);         /* pcn32: */
     void                    (*write_bcr)(APTR, int, UWORD); /* pcn32: */
-    UWORD                   (*read_rap)(APTR, int);         /* pcn32: */
-    void                    (*write_rap)(APTR, int, UWORD); /* pcn32: */
+    UWORD                   (*read_rap)(APTR);              /* pcn32: */
+    void                    (*write_rap)(APTR, UWORD);      /* pcn32: */
     void                    (*reset)(APTR);                 /* pcn32: */
 /* Card Funcs */
     void                    (*initialize)(struct PCN32Unit *);
@@ -192,7 +192,7 @@ struct PCN32Unit {
     IPTR	                  pcnu_DeviceID;
     IPTR                    pcnu_DriverFlags;
     IPTR                    pcnu_IRQ;
-    IPTR                    pcnu_BaseMem;
+    APTR                    pcnu_BaseMem;
     IPTR                    pcnu_SizeMem;
     IPTR	                  pcnu_BaseIO;
 
@@ -248,29 +248,29 @@ enum netdev_state_t
         __LINK_STATE_LINKWATCH_PENDING
 };
 
-static inline int test_bit(int nr, const volatile unsigned long *addr)
+static inline int test_bit(int nr, const volatile ULONG *addr)
 {
     return ((1UL << (nr & 31)) & (addr[nr >> 5])) != 0;
 }
 
-static inline void set_bit(int nr, volatile unsigned long *addr)
+static inline void set_bit(int nr, volatile ULONG *addr)
 {
     addr[nr >> 5] |= 1UL << (nr & 31);
 }
 
-static inline void clear_bit(int nr, volatile unsigned long *addr)
+static inline void clear_bit(int nr, volatile ULONG *addr)
 {
     addr[nr >> 5] &= ~(1UL << (nr & 31));
 }
 
-static inline int test_and_set_bit(int nr, volatile unsigned long *addr)
+static inline int test_and_set_bit(int nr, volatile ULONG *addr)
 {
     int oldbit = test_bit(nr, addr);
     set_bit(nr, addr);
     return oldbit;
 }
 
-static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
+static inline int test_and_clear_bit(int nr, volatile ULONG *addr)
 {
     int oldbit = test_bit(nr, addr);
     clear_bit(nr, addr);
@@ -384,8 +384,8 @@ struct pcnet32_init_block { //  - The PCnet32 32-bit initialisation block.
     UWORD   reserved;
     ULONG   filter[2];
     /* Recieve and Transmit ring base */
-    struct rx_ring_desc *rx_ring;
-    struct tx_ring_desc *tx_ring;
+    ULONG   rx_ring;
+    ULONG   tx_ring;
 }; // pcnet32_init_block
 
 struct fe_priv {
@@ -402,7 +402,7 @@ struct fe_priv {
     ULONG   desc_ver;
     struct SignalSemaphore  lock;
 
-    IPTR     ring_addr;
+    APTR     ring_addr;
    
     struct   eth_frame *rx_buffer;
     struct   eth_frame *tx_buffer;

@@ -547,7 +547,7 @@ D(bug("%s: PCN32_TX_Int: packet %d:%d [type = %d] queued for transmission.", uni
                   ((struct tx_ring_desc *)np->ring_addr)[nr + RX_RING_SIZE].PacketBuffer = AROS_LONG2LE((IPTR)&np->tx_buffer[nr]);
                   ((struct tx_ring_desc *)np->ring_addr)[nr + RX_RING_SIZE].BufferStatus = AROS_WORD2LE(0x8300);
                 
-                  unit->write_csr(unit->pcnu_BaseMem,0, ((1 << 6)|(1 << 3))); /* .. And trigger an imediate Tx poll */
+                  unit->write_csr((APTR)unit->pcnu_BaseMem,0, ((1 << 6)|(1 << 3))); /* .. And trigger an imediate Tx poll */
 D(bug("%s: PCN32_TX_Int: send poll triggered.\n", unit->pcnu_name));
                }
 
@@ -628,7 +628,7 @@ D(bug("%s: PCN32_TX_End_Int: looking at TxRing packet %d:, Flags 0x%x\n",
       if ((Flags & (1 << 15))==0)
       {
 D(bug("%s: PCN32_TX_End_Int: TxRing packet %d owned by us\n", unit->pcnu_name, i));
-#warning "TODO: We should report send errors here .."
+/* TODO: We should report send errors here .. */
 
          if (Flags & (1 << 14))
          {
@@ -1059,7 +1059,7 @@ D(bug("[pcnet32] CreateUnit()\n"));
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,   &base);
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0,   &len);
 
-        unit->pcnu_BaseMem = (IPTR)HIDD_PCIDriver_MapPCI(driver, (APTR)base, len);
+        unit->pcnu_BaseMem = HIDD_PCIDriver_MapPCI(driver, (APTR)base, len);
         unit->pcnu_SizeMem = len;
 
         if (unit->pcnu_BaseMem)
@@ -1228,7 +1228,7 @@ D(bug("%s: PCnet chip version %x [%x]\n", unit->pcnu_name, i, unit->pcnu_pcnet_c
                              unit->pcnu_pcnet_chipname = "PCnet/Home 79c978";
                              unit->pcnu_pcnet_supported |= support_fdx;
 
-#warning "TODO: PCnet/Home needs extra set up .."
+/* TODO: PCnet/Home needs extra set up .. */
                              break;
                           default:
 D(bug("%s: ERROR - Unsupported Chipset (unknown revision)\n", unit->pcnu_name));
