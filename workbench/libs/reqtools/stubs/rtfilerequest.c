@@ -23,7 +23,7 @@ extern struct ReqToolsBase * ReqToolsBase;
 /*  SYNOPSIS */
 	struct rtFileRequester * filereq,
 	char *file,
-	char *title,
+	const char *title,
 	Tag tag1, 
 	...)
 

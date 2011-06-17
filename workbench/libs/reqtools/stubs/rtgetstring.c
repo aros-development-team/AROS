@@ -23,7 +23,7 @@ extern struct ReqToolsBase * ReqToolsBase;
 /*  SYNOPSIS */
 	UBYTE *buffer,
 	ULONG maxchars,
-	char *title,
+	const char *title,
 	struct rtReqInfo *reqinfo,
 	Tag tag1, 
 	...)

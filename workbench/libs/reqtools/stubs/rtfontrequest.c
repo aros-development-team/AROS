@@ -22,7 +22,7 @@ extern struct ReqToolsBase * ReqToolsBase;
 
 /*  SYNOPSIS */
 	struct rtFontRequester *fontreq,
-	char *title,
+	const char *title,
 	Tag tag1, 
 	...)
 
