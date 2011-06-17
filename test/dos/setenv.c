@@ -14,7 +14,7 @@ int main(void)
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
        if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", len);
+               printf("error getvar %d\n", (int)len);
        printf("test getvar '%s'\n", buffer);
 
        val="";
@@ -22,7 +22,7 @@ int main(void)
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
        if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", len);
+               printf("error getvar %d\n", (int)len);
        printf("test1 getvar '%s'\n", buffer);
 
        val="abc";
@@ -30,7 +30,7 @@ int main(void)
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
        if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", len);
+               printf("error getvar %d\n", (int)len);
        printf("test2 getvar '%s'\n", buffer);
 
        val="";
@@ -38,7 +38,7 @@ int main(void)
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
        if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", len);
+               printf("error getvar %d\n", (int)len);
        printf("test3 getvar '%s'\n", buffer);
 
        val="";
@@ -46,7 +46,7 @@ int main(void)
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
        if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", len);
+               printf("error getvar %d\n", (int)len);
        printf("test4 getvar '%s'\n", buffer);
 
        return 0;

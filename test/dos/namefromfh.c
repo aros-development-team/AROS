@@ -6,7 +6,7 @@ int main(void)
     TEXT buffer[512];
     BPTR fh = Open("__TEST__", MODE_NEWFILE);
     
-    if (fh != NULL)
+    if (fh != BNULL)
     {
         if (NameFromFH(fh, buffer, 512))
         {
