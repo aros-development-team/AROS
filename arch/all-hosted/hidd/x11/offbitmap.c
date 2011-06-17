@@ -145,7 +145,7 @@ OOP_Object *X11OffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     }
     else
     {
-    	#warning "Need this because of stipple bug in XFree86 :-("
+    	/* Need this because of stipple bug in XFree86 :-( */
 	width += 32;
     }
     

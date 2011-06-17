@@ -406,7 +406,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     pftags[11].ti_Data = XSD(cl)->depth;
     pftags[12].ti_Data = vHidd_StdPixFmt_Native;
     
-    #warning Do better than this
+    /* FIXME: Do better than this */
 
     /* We assume chunky */
     pftags[15].ti_Data = vHidd_BitMapType_Chunky;

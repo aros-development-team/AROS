@@ -108,6 +108,7 @@ static ULONG LoadKeyCode2RawKeyTable(STRPTR filename)
     return displays;
 }
 
+#if 0
 /* This function uses library open count as displays count */
 static ULONG AddDisplays(ULONG num, ULONG old)
 {
@@ -147,6 +148,7 @@ static ULONG AddDisplays(ULONG num, ULONG old)
     
     return i;
 }
+#endif
 
 int main(void)
 {
@@ -216,9 +218,11 @@ int main(void)
  *	   a) It should be somehow integrated with clipboard.device
  *         b) Several X11 displays might mean several clipboards (if they run on different
  *	      X servers).
- *
+ */
+#if 0
     if (old_displays)
-        AddDisplays(args.displays, old_displays); */
+        AddDisplays(args.displays, old_displays);
+#endif
 
     if (rdargs)
         FreeArgs(rdargs);

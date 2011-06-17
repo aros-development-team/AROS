@@ -249,7 +249,8 @@ static struct _keytable english_keytable[] =
 };
 
 /****************************************************************************************/
-                        
+              
+#if 0
 /* German keyboard */
 static struct _keytable german_keytable[] =
 {
@@ -314,8 +315,10 @@ static struct _keytable german_keytable[] =
         
     {0, -1 }
 };
+#endif
 
-/* Itialian keyboard */
+#if 0
+/* Italian keyboard */
 static struct _keytable italian_keytable[] =
 {
     {XK_Control_L,	0x63 }, /* left CTRL = control */	
@@ -382,6 +385,7 @@ static struct _keytable italian_keytable[] =
         
     {0, -1 }
 };
+#endif
 
 /****************************************************************************************/
 
