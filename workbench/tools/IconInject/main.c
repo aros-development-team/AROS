@@ -48,7 +48,7 @@ int main(int argc, char **argv)
             }
             else
             {
-#warning "TODO: Check if the name is a device and append disk.."
+/* "TODO: Check if the name is a device and append disk.." */
                 if ((IISourceIcon = AllocVec(strlen(IIArgList->sourceIcon) + 1, MEMF_CLEAR)) != NULL)
                     CopyMem(IIArgList->sourceIcon, IISourceIcon, strlen(IIArgList->sourceIcon) - 5);
             }
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
             }
             else
             {
-#warning "TODO: Check if the name is a device and append disk.."
+/* "TODO: Check if the name is a device and append disk.." */
                 if ((IITargetIcon = AllocVec(strlen(IIArgList->targetIcon) + 1, MEMF_CLEAR)) != NULL)
                     CopyMem(IIArgList->targetIcon, IITargetIcon, strlen(IIArgList->targetIcon) - 5);
             }
