@@ -224,7 +224,7 @@ static int GM_UNIQUENAME(Open)
     }
     
     Forbid();
-    AddTail((struct List*)&KBBase->kb_kbunits, &((struct KBUnit*)(ioreq->io_Unit))->node);
+    AddTail((struct List*)&KBBase->kb_kbunits, (struct Node *)&((struct KBUnit*)(ioreq->io_Unit))->node);
     Permit();
 
     return TRUE;
