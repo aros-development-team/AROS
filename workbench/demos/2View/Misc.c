@@ -30,7 +30,7 @@
 #include <proto/dos.h>
 #include <proto/alib.h>
 
-BPTR StdErr=NULL;   /*'Standard error' for AmigaDOS IO functions*/
+BPTR StdErr=BNULL;   /*'Standard error' for AmigaDOS IO functions*/
 
 /*These are defined in 2View.c, but this file needs to reference them*/
 
@@ -272,12 +272,12 @@ void printError(char *fmt,...)
 
    va_end (args);
 
-   if(StdErr==NULL)
+   if(StdErr==BNULL)
       StdErr=Open("CONSOLE:",MODE_OLDFILE);
 
-   /* If we can't open StdErr, or Output()==NULL (meaning we're running */
+   /* If we can't open StdErr, or Output()==BNULL (meaning we're running */
    /* Workbench), put up a requester */
-   if(StdErr==NULL || Output()==NULL)
+   if(StdErr==BNULL || Output()==BNULL)
    {
       EasyRequest(NULL,&erError1Line,NULL,(IPTR)error,(IPTR)"Exiting...");
    }
@@ -298,7 +298,7 @@ void cleanup()
 #endif
 
       /*Close the standard-error file if opened*/
-   if(StdErr!=NULL)
+   if(StdErr!=BNULL)
       Close(StdErr);
 
       /*Close a previous screen and window, if open*/
@@ -316,7 +316,7 @@ void cleanup()
    if(iff!=NULL)
       FreeIFF(iff);
 
-   if(pL!=NULL)
+   if(pL!=BNULL)
       Close(pL);
 
    if(IFFParseBase!=NULL)
@@ -422,7 +422,7 @@ UBYTE interpretDRNG(UBYTE *cycleTable,DRNG *drng,UBYTE *rate)
    DIndex *index;
 
       /*Skip past true-color values*/
-   index=(DIndex *)((ULONG)drng+sizeof(DRNG)+4*drng->ntrue);
+   index=(DIndex *)((IPTR)drng+sizeof(DRNG)+4*drng->ntrue);
 
       /*Colors won't cycle if rate is zero, so return 0*/
    if(drng->rate==0)
@@ -438,7 +438,7 @@ UBYTE interpretDRNG(UBYTE *cycleTable,DRNG *drng,UBYTE *rate)
    for(pos=0;pos<drng->nregs;pos++)
    {
       cycleTable[pos]=index->index;
-      index=(DIndex *)((ULONG)index+sizeof(DIndex));
+      index=(DIndex *)((IPTR)index+sizeof(DIndex));
    }
 
       /*Return the number of colors that are cycling*/

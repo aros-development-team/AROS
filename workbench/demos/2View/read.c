@@ -87,7 +87,7 @@ int ReadILBM (struct IFFHandle * iff,
     int t,x,bit,byte,row,pen = 0,lastpen;
 
     printf ("ReadILBM iff=%p win=%p Size=%ldx%ld Depth=%d %s%s\n",
-	iff, window, Width, Height, Depth,
+	iff, window, (long)Width, (long)Height, Depth,
 	Compression ? "C":"",
 	masking ? "M":""
     );
