@@ -34,6 +34,21 @@
 #define INODE64_SUFFIX
 #endif
 
+/* Prevents struct timeval redefinition */
+#define timeval sys_timeval
+
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#ifdef __linux__
+#define stat64 stat
+#endif
+
+#undef timeval
+
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <devices/trackdisk.h>
@@ -46,19 +61,6 @@
 #ifdef HOST_LONG_ALIGNED
 #pragma pack(4)
 #endif
-
-/* Prevents struct timeval redefinition */
-#define timeval sys_timeval
-
-/*
- * avoid conflicts between our __unused define and the ones that might come in
- * via fcntl.h
- */
-#undef __unused
-
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #pragma pack()
 
@@ -266,6 +268,7 @@ static const char *libcSymbols[] =
 #ifdef HOST_OS_linux
     "__errno_location",
     "__fxstat64",
+    "__xstat64",
 #else
 #ifdef HOST_OS_android
     "__errno",
@@ -273,6 +276,7 @@ static const char *libcSymbols[] =
     "__error",
 #endif
     "fstat64" INODE64_SUFFIX,
+    "stat64" INODE64_SUFFIX,
 #endif
     NULL
 };
