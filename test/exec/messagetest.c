@@ -32,7 +32,7 @@ static void entry(void)
 	    int i;
 	    for(i=0;i<10;i++)
 	    {
-		msg->mn_Node.ln_Name=(char *)i;
+		msg->mn_Node.ln_Name=(char *)(IPTR)i;
 		PutMsg(port1,msg);
 		WaitPort(port2);
 		GetMsg(port2);
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 
 			    WaitPort(port1);
 			    msg=GetMsg(port1);
-			    printf("%d\n",(int)msg->mn_Node.ln_Name);
+			    printf("%d\n",(int)(IPTR)msg->mn_Node.ln_Name);
 			    ReplyMsg(msg);
 			}
 

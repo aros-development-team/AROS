@@ -44,11 +44,11 @@ int main(int argc, char **argv)
     /* We Forbid() in order to see how our allocations influence free memory size */
     Forbid();
 
-    output("Available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    output("Available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 
     output("Allocating 256 KB...\n");
     block0 = AllocMem(256 * 1024, MEMF_ANY);
-    output("Allocated at 0x%p, available memory: %u bytes\n", block0, AvailMem(MEMF_ANY));
+    output("Allocated at 0x%p, available memory: %lu bytes\n", block0, (unsigned long)AvailMem(MEMF_ANY));
     
     AccessTest(block0 + 256 * 1024);
  
@@ -56,13 +56,13 @@ int main(int argc, char **argv)
     {
     	output("Freeing the block...\n");
     	FreeMem(block0, 256 * 1024);
-    	output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    	output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
     }
 
     start = block0 + 1027;	/* Add some none-round displacement to make the life harder */
     output("Now trying AllocAbs() 4 KB at 0x%p\n", start);
     block1 = AllocAbs(4096, start);
-    output("Allocated at 0x%p, available memory: %u bytes\n", block1, AvailMem(MEMF_ANY));
+    output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
 
     AccessTest(start + 4096);
 
@@ -70,12 +70,12 @@ int main(int argc, char **argv)
     {
     	output("Freeing the block...\n");
     	FreeMem(block1, 4096 + start - block1);
-    	output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    	output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
     }
 
     output("Now repeat this AllocAbs(), but free using our requested start address...\n");
     block1 = AllocAbs(4096, start);
-    output("Allocated at 0x%p, available memory: %u bytes\n", block1, AvailMem(MEMF_ANY));
+    output("Allocated at 0x%p, available memory: %lu bytes\n", block1, (unsigned long)AvailMem(MEMF_ANY));
 
     if (block1)
     {
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 	{
 	    output("Freeing the block...\n");
 	    FreeMem(start, 4096);
-	    output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+	    output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 	}
     }
     
