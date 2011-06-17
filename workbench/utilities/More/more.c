@@ -265,7 +265,7 @@ static void GetArguments(int argc, char **argv)
 	{
 	    parentlock = startup->sm_ArgList[1].wa_Lock;
 	    filename   = startup->sm_ArgList[1].wa_Name;
-	    if ((parentlock == NULL) || (filename == NULL))
+	    if ((parentlock == BNULL) || (filename == NULL))
 		Cleanup(NULL);
 
 	    oldlock = CurrentDir(parentlock);
