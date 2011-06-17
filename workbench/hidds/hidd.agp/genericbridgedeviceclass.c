@@ -91,7 +91,7 @@ VOID Wbinvd(); /* Implemented in assembler */
 VOID flushcpucache()
 {
     /* Don't use clflush here. Both linux and BSD codes use full wbinvd */
-    Supervisor(Wbinvd);
+    Supervisor((ULONG_FUNC)Wbinvd);
 }
 
 AROS_UFH3(void, HiddAgpPciDevicesEnumerator,
