@@ -189,7 +189,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     STRPTR                 str_variant;
     STRPTR                 str_arosarch;
     STRPTR                 str_buildtype;
-    LONG                   abiversion;
+    IPTR                   abiversion;
     STRPTR                 str_abi;
     BOOL                   showLogotype;
     BPTR                   lock;
