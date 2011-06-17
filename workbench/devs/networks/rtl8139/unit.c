@@ -194,13 +194,13 @@ RTLD(bug("[%s] RTL8139_RX_Process: Oversized Ethernet Frame\n", unit->rtl8139u_n
 			np->cur_rx = 0;
 			BYTEOUT(base + RTLr_ChipCmd, CmdTxEnb);
 
-			rtl8139nic_set_rxmode(RTL8139DeviceBase);
+			rtl8139nic_set_rxmode(unit);
 			BYTEOUT(base + RTLr_ChipCmd, CmdRxEnb | CmdTxEnb);
 		}
 		else if (rx_status & RxStatusOK)
 		{
 			len = rx_size - ETH_CRCSIZE;
-			frame = (UBYTE *)(np->rx_buffer + ring_offset + ETH_CRCSIZE);
+			frame = (APTR)(np->rx_buffer + ring_offset + ETH_CRCSIZE);
 RTLD(bug("[%s] RTL8139_RX_Process: frame @ %p, len=%d\n", unit->rtl8139u_name, frame, len))
 
 			/* got a valid packet - forward it to the network core */
@@ -211,7 +211,7 @@ RTLD(bug("[%s] RTL8139_RX_Process: frame @ %p, len=%d\n", unit->rtl8139u_name, f
 				overspill = (ring_offset + rx_size) - np->rx_buf_len;
 RTLD(bug("[%s] RTL8139_RX_Process: WRAPPED Frame! (%d bytes overspill)\n", unit->rtl8139u_name, overspill))
 				len = len - overspill;
-#warning "TODO: We need to copy the wrapped buffer into a temp buff to pass to listeners!"
+/* TODO: We need to copy the wrapped buffer into a temp buff to pass to listeners! */
 			}
 			
 			RTLD( int j;
@@ -351,7 +351,7 @@ AROS_UFH3(void, RTL8139_TX_IntF,
 						ETH_ADDRESSSIZE);
 				((struct eth_frame *)np->tx_buf[nr])->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
 
-				buffer = &((struct eth_frame *) np->tx_buf[nr])->eth_packet_data;
+				buffer = (UBYTE *)&((struct eth_frame *) (IPTR) np->tx_buf[nr])->eth_packet_data;
 			}
 			else
 			{
@@ -391,7 +391,7 @@ RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmiss
 #endif
 
 				/* Set the ring details for the packet */
-				LONGOUT(base + RTLr_TxAddr0 + (nr << 2), np->tx_buf[nr]);
+				LONGOUT(base + RTLr_TxAddr0 + (nr << 2), (IPTR)np->tx_buf[nr]);
 				LONGOUT(base + RTLr_TxStatus0 + (nr << 2), np->tx_flag |
 														   (packet_size >= ETH_ZLEN ?
 														    packet_size : ETH_ZLEN));
@@ -497,7 +497,7 @@ RTLD(bug("[%s] RTL8139_IntHandlerF()!!!!!!!\n", unit->rtl8139u_name))
 			link_changed = (CSCRval & CSCR_LinkChangeBit);
 
 RTLD(bug("[%s] RTL8139_IntHandlerF: Link Change : %d\n", unit->rtl8139u_name, link_changed))
-#warning "TODO: Disable/Enable interface on link change"
+/* TODO: Disable/Enable interface on link change */
 
 			if (CSCRval & CSCR_LinkOKBit) {
 
@@ -845,7 +845,7 @@ struct RTL8139Unit *CreateUnit(struct RTL8139Base *RTL8139DeviceBase, OOP_Object
 #if defined(RTL_DEBUG)
 	BOOL doDebug = TRUE;
 #else
-#warning "TODO: Get option to debug from somewhere .."
+/* TODO: Get option to debug from somewhere .. */
 	BOOL doDebug = FALSE;
 #endif
 	
@@ -905,7 +905,7 @@ RTLD(bug("[%s] CreateUnit:   INT:%d, base1:0x%p, base0:0x%p, size0:%d\n", unit->
 																   unit->rtl8139u_IRQ, unit->rtl8139u_BaseIO,
 																   base, len))
 
-		unit->rtl8139u_BaseMem = (IPTR)HIDD_PCIDriver_MapPCI(driver, (APTR)base, len);
+		unit->rtl8139u_BaseMem = HIDD_PCIDriver_MapPCI(driver, (APTR)base, len);
 		unit->rtl8139u_SizeMem = len;
 
 		if (unit->rtl8139u_BaseMem)

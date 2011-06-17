@@ -133,7 +133,7 @@ D(bug("[rtl8139] PCI_Enumerator: Found %s NIC [%s], PCI_ID %04x:%04x Rev:%d\n", 
 		
 		if ((unit = CreateUnit(LIBBASE, pciDevice, CardCapabilities, CardName, CardChipName)) != NULL)
 		{
-            AddTail(&LIBBASE->rtl8139b_Units, &unit->rtl8139u_Node);
+            AddTail(&LIBBASE->rtl8139b_Units, (struct Node *)&unit->rtl8139u_Node);
         }
         else
         {
