@@ -4,8 +4,6 @@
 
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS += $(PARANOIA_CFLAGS)
-
 FILES := \
     mui_allocaslrequesttags \
     mui_aslrequesttags \

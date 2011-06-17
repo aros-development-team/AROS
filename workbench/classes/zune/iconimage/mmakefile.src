@@ -1,8 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := $(PARANOIA_CFLAGS)
-
 FILES         := iconimage
 INCLUDE_FILES := iconimage.h
 

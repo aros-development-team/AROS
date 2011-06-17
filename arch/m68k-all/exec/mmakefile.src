@@ -11,7 +11,7 @@ AFILES=newstackswap stackswap \
        cacheclearu_ cachepostdma_ cachepredma_ \
        setsr cachecontrol
 
-USER_CFLAGS := -I$(SRCDIR)/rom/exec $(PARANOIA_CFLAGS)
+USER_CFLAGS := -I$(SRCDIR)/rom/exec
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
 
 %build_archspecific \

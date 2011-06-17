@@ -120,8 +120,6 @@ FILES	:= \
 #MM- linklibs: linklibs-amiga 
 #MM linklibs-amiga : includes includes-copy kernel-aros-includes
 
-USER_CFLAGS += $(PARANOIA_CFLAGS)
-
 %build_linklib mmake=linklibs-amiga libname=amiga files="$(FILES)"
 
 %common

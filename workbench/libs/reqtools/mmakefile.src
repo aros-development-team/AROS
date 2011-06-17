@@ -48,8 +48,6 @@ FUNCS := \
 #MM      includes-copy
 #MM- workbench-libs-reqtools : linklibs workbench-libs-reqtools-catalogs
 
-USER_CFLAGS += $(PARANOIA_CFLAGS)
-
 %build_module mmake=workbench-libs-reqtools \
     modname=reqtools modtype=library \
     files="reqtools_init $(FUNCS) $(FILES)" \

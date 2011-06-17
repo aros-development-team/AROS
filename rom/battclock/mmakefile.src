@@ -11,7 +11,6 @@ ifneq ($(FAMILY),)
     USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/battclock
 endif
 USER_INCLUDES += -I$(SRCDIR)/rom/battclock
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 #MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
 #MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)

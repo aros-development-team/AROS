@@ -6,8 +6,6 @@ include $(TOP)/config/make.cfg
 
 FUNCTIONS := allocunit freeunit getunit getunitid giveunit readunitid
 
-USER_CFLAGS += $(PARANOIA_CFLAGS)
-
 %build_module mmake=kernel-disk \
     modname=disk modtype=resource \
     files="disk_init disk_intern_init $(FUNCTIONS)"

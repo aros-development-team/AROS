@@ -27,7 +27,6 @@ clean ::
 
 FILES	:= mouseclass
 STUBS	:= mouse_stubs
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module mmake=kernel-hidd-mouse \
     modname=mouse modtype=hidd \

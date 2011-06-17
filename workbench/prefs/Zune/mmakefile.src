@@ -10,8 +10,6 @@ systemp
 
 EXEDIR := $(AROS_PREFS)
 
-USER_CFLAGS := $(PARANOIA_CFLAGS)
-
 #MM- workbench-prefs : workbench-prefs-zune
 #MM workbench-prefs-zune : includes linklibs workbench-prefs-zune-catalogs
 

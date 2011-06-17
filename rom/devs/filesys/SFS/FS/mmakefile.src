@@ -20,7 +20,6 @@ FILES := adminspaces \
 MODULE_FILES := arosdevice arosmain
 
 USER_CFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_prog mmake=kernel-fs-sfs-packet \
     progname=sfs.handler targetdir=$(AROS_DEVS) \

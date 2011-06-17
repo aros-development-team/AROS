@@ -55,7 +55,6 @@ FUNCS := \
 #MM     includes-copy
 
 USER_CFLAGS := -D__UTILITY_NOLIBBASE__ -D__GRAPHICS_NOLIBBASE__
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module mmake=kernel-layers \
   modname=layers modtype=library \

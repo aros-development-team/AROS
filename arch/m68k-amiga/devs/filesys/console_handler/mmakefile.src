@@ -5,8 +5,6 @@ FILES := resident con_handler con_task support completion
 
 #MM- kernel-fs-amiga : includes linklibs kernel-fs-con-linklib
 
-USER_CFLAGS += $(PARANOIA_CFLAGS)
-
 %build_archspecific \
     mainmmake=kernel-fs-con maindir=rom/devs/filesys/console_handler arch=amiga-m68k \
     files="$(FILES)" modulename=con

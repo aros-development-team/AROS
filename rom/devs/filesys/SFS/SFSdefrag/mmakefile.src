@@ -7,7 +7,6 @@ FILES = main support locale
 EXEDIR = $(AROSDIR)/Tools
 
 USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/../FS
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 #MM workbench-devs-sfs-c-sfsdefrag : includes symlinks \
 #MM workbench-devs-sfs-c-sfsdefrag-catalogs \

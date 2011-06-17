@@ -2,7 +2,6 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DAROS_USE_OOP
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module mmake=kernel-hidd \
   modname=hiddclass modtype=hidd \

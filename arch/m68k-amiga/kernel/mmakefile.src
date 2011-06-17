@@ -10,7 +10,7 @@ USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
 	       -I$(SRCDIR)/rom/kernel \
 	       -I$(GENINCDIR) -I$(BINDIR)/Development/include \
 	       -I$(SRCDIR)/rom/exec \
-	       $(PARANOIA_CFLAGS) -DPARANOIA_STACK
+	       -DPARANOIA_STACK
 
 USER_AFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
                -I$(SRCDIR)/arch/$(CPU)-all/kernel \

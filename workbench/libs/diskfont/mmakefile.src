@@ -18,8 +18,6 @@ FUNCS	:=  opendiskfont	\
 #MM     includes-copy
 #MM- workbench-libs-diskfont : linklibs
 
-USER_CFLAGS += $(PARANOIA_CFLAGS)
-
 %build_module mmake=workbench-libs-diskfont \
     modname=diskfont modtype=library \
     files="diskfont_init $(FUNCS) $(FILES)" \

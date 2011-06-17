@@ -41,8 +41,6 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
-USER_CFLAGS := $(PARANOIA_CFLAGS)
-
 USELIBS := amiga arossupport rom arosm autoinit libinit \
 	   hiddstubs 
 LIBS    := $(addprefix -l,$(USELIBS))

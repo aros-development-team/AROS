@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 # Do not remove this! It allows to override timer_intern.h
-USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer $(PARANOIA_CFLAGS)
+USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer -I$(SRCDIR)/rom/timer
 
 # Allow to add architecture-specific options
 # -DUSE_VBLANK_EMU needs to be defined in make.opts if needed, because

@@ -5,8 +5,7 @@ FILES := nil_handler
 
 #MM- kernel-fs-nil : includes linklibs kernel-fs-nil-linklib
 
-USER_CFLAGS := -I$(SRCDIR)/rom/devs/filesys/nil_handler \
-	       $(PARANOIA_CFLAGS)
+USER_CFLAGS := -I$(SRCDIR)/rom/devs/filesys/nil_handler
 
 %build_archspecific \
     mainmmake=kernel-fs-nil maindir=rom/devs/filesys/nil_handler arch=amiga-m68k \

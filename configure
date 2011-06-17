@@ -630,7 +630,6 @@ crosstools_cxx_target
 crosstools_target
 aros_target_strip_flags
 aros_target_genmap
-aros_paranoia_cflags
 aros_debug_ldflags
 aros_debug_aflags
 aros_debug_cflags
@@ -6635,7 +6634,7 @@ rm -f conftest.mmap conftest.txt
 
 
 
-aros_config_cflags="-Wall -Werror-implicit-function-declaration -Wno-uninitialized"
+aros_config_cflags="-Wall -Werror-implicit-function-declaration"
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
 
@@ -7061,11 +7060,11 @@ fi
 if test "$paranoia_flags" = "default"; then
 	paranoia_flags=""
 else if test "$paranoia_flags" = "yes"; then
-	paranoia_flags="-Werror"
+	paranoia_flags="-Wall -Werror"
 fi fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $paranoia_flags" >&5
 $as_echo "$paranoia_flags" >&6; }
-aros_paranoia_cflags="$paranoia_flags"
+aros_config_cflags="$aros_config_cflags $paranoia_flags"
 
 #-----------------------------------------------------------------------------
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what target variant to enable" >&5
@@ -7660,7 +7659,6 @@ case "$target_os" in
 		gcc_target_cpu="m68000"
 		aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin -Wno-volatile-register-var -DAROS_DOS_PACKETS -Os"
 		aros_config_aflags="$aros_config_aflags -${gcc_target_cpu}"
-		aros_paranoia_cflags="$aros_paranoia_cflags -Wno-volatile-register-var"
 		target_tool_prefix="m68k-elf-"
 		# Needed to get the correct multilib
 		aros_config_ldflags="-${gcc_target_cpu}"
@@ -11020,7 +11018,6 @@ $as_echo "$dbus" >&6; }
 
 
 # Target Related
-
 
 
 

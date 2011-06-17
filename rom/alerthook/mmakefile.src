@@ -2,7 +2,6 @@
 include $(TOP)/config/make.cfg
 
 #MM- kernel-alerthook : includes linklibs kernel-bootloader-includes
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module_simple mmake=kernel-alerthook \
   modname=alert modtype=hook \
