@@ -77,7 +77,7 @@
 	if (mask & (1<<i))
 	{
 	    /* Convert int to string */
-	    sprintf(number, "%ld", (LONG)msgptr->rm_Args[i]);
+	    sprintf(number, "%ld", (long)msgptr->rm_Args[i]);
 	    args[i] = (STRPTR)CreateArgstring(number, strlen(number));
 	    
 	    /* Clean up if error in CreateArgstring */
