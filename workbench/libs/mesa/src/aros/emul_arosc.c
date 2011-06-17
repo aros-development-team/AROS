@@ -425,6 +425,26 @@ int fscanf (FILE * fh,const char * format, ...)
     IMPLEMENT();
     return 0;
 }
+
+static struct exit_list {
+    struct exit_list *next;
+    void (*func)(void);
+} *exit_list = NULL;
+
+int atexit(void (*function)(void))
+{
+    struct exit_list *el;
+
+    el = malloc(sizeof(*el));
+    if (el == NULL)
+    	return -1;
+
+    el->next = exit_list;
+    el->func = function;
+    exit_list = el;
+
+    return 0;
+}
 	
 int __init_emul(void)
 {
@@ -441,6 +461,14 @@ int __init_emul(void)
 
 void __exit_emul(void)
 {
+    while (exit_list) {
+    	struct exit_list *el = exit_list->next;
+
+    	exit_list->func();
+    	free(exit_list);
+    	exit_list = el;
+    }
+
     /* malloc/calloc/realloc/free */
     if (__mempool)
     {
