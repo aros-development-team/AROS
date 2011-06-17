@@ -210,7 +210,7 @@ VOID    WriteErr( VOID );
 VOID    OpenFile( VOID );
 VOID    SaveAs( VOID );
 VOID    CreateIcon( STRPTR );
-LONG    GetFilename( STRPTR, STRPTR, ULONG );
+LONG    GetFilename( STRPTR, CONST_STRPTR, ULONG );
 LONG    LoadConfig( STRPTR );
 LONG    SaveConfig( STRPTR );
 
@@ -763,7 +763,7 @@ struct TagItem RTTags[] =
 
 
 LONG
-GetFilename( STRPTR file, STRPTR hail, ULONG flags )
+GetFilename( STRPTR file, CONST_STRPTR hail, ULONG flags )
 {
     RTTags[ TAG_FLAGS  ].ti_Data = flags;
     RTTags[ TAG_WINDOW ].ti_Data = (IPTR)WindowPtr;

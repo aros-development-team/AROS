@@ -2,9 +2,9 @@
 
 VOID	InitLocale( VOID );
 VOID	FreeLocale( VOID );
-STRPTR	GetString( STRPTR );
+CONST_STRPTR	GetString( CONST_STRPTR );
 VOID	LocalizeMenus( struct NewMenu * );
-VOID	LocalizeLabels( STRPTR * );
+VOID	LocalizeLabels( CONST_STRPTR * );
 
 ULONG	EasyReq( STRPTR, STRPTR, APTR );
 ULONG	LocEZReq( STRPTR, STRPTR, ... );
