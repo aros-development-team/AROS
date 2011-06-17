@@ -90,7 +90,9 @@ int main()
         if (f != results[i])
             printf("RESULT FAILURE @ %s, should be %f was %f\n", str, results[i], f);
         if ((float_end - str) != ptroffset[i])
-            printf("OFFSET FAILURE @ %s, should be %d was %d\n", str, ptroffset[i], (float_end - str));
+            printf("OFFSET FAILURE @ %s, should be %d was %d\n", str, ptroffset[i], (int)(float_end - str));
         i++;
     }
+
+    return 0;
 }
