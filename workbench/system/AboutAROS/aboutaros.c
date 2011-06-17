@@ -200,7 +200,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     if (pool == NULL) return NULL;
 
     /* Check if the logotype is available ----------------------------------*/
-    if ((lock = Lock(LOGOTYPE_IMAGE, ACCESS_READ)) != NULL)
+    if ((lock = Lock(LOGOTYPE_IMAGE, ACCESS_READ)) != BNULL)
     {
         showLogotype = TRUE;
         UnLock(lock);
@@ -222,7 +222,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     if (abiversion != -1)
     {
         str_abi = AllocPooled(pool, 7 + 1);
-        sprintf(str_abi, "ABI_V%d", abiversion);
+        sprintf(str_abi, "ABI_V%d", (int)abiversion);
     }
     else
         str_abi = "ABI_WIP";
