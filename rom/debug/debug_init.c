@@ -43,7 +43,7 @@ static int Debug_Init(struct DebugBase *DebugBase)
     DebugBase->db_KernelModules = (struct ELF_ModuleInfo *)GetTagData(KRN_DebugInfo, 0, bootMsg);
 
 #if AROS_MODULES_DEBUG
-    HostIFace = GetTagData(KRN_HostInterface, 0, bootMsg);
+    HostIFace = (APTR)GetTagData(KRN_HostInterface, 0, bootMsg);
     /*
      * Provide a pointer to our modules list to the bootstrap.
      * This is needed because gdb is actually debugging bootstrap
