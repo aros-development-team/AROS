@@ -50,7 +50,7 @@ Object *MakeFreeLLabel(int num);
 Object *MakeButton(int num);
 Object *MakeString(int maxlen,int num);
 Object *MakeCheck(int num);
-Object *MakeCycle(char **array,int num);
+Object *MakeCycle(CONST_STRPTR *array,int num);
 Object *MakeSlider(int min,int max,int num);
 Object *MakePalette(void);
 BOOL TestPubScreen(char *name);

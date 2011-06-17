@@ -55,9 +55,9 @@ CONST_STRPTR GetStr(int num)
 
 /****************************************************************************************/
 
-VOID LocalizeStringArray(char **array)
+VOID LocalizeStringArray(CONST_STRPTR *array)
 {
-    char **x;
+    CONST_STRPTR *x;
     for (x = array; *x; x++)
         *x = GetStr((int)*x);
 }
@@ -102,7 +102,7 @@ VOID ExitLocale(VOID)
 
 IPTR xget(Object *obj, IPTR attribute)
 {
-    IPTR x;
+    IPTR x = 0;
     get(obj, attribute, &x);
     return x;
 }
@@ -196,7 +196,7 @@ Object *MakeString(int maxlen,int num)
 
 /****************************************************************************************/
 
-Object *MakeCycle(char **array, int num)
+Object *MakeCycle(CONST_STRPTR *array, int num)
 {
     Object *obj = MUI_MakeObject(MUIO_Cycle, GetStr(num), array);
     if (obj)

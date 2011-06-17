@@ -102,7 +102,7 @@ CONST_STRPTR getfilename(Object *win, CONST_STRPTR title, BOOL save)
 {
     static char buf[512];
     struct FileRequester *req;
-    struct Window *w;
+    struct Window *w = NULL;
     static LONG left = -1, top = -1, width = -1, height = -1;
     Object *app = (Object *)xget(win, MUIA_ApplicationObject);
     char *res = NULL;

@@ -30,7 +30,7 @@ VOID EditPanel_Init(VOID);
 VOID EditPanel_Exit(VOID);
 
 extern struct NewMenu PaletteMenu[];
-extern char *CYA_EditPages[];
-extern char *CYA_Overscan[];
+extern CONST_STRPTR CYA_EditPages[];
+extern CONST_STRPTR CYA_Overscan[];
 
 #endif

@@ -127,7 +127,7 @@ LONG ScreenList_DisplayFunc(struct Hook *hook, char **array, struct MUI_PubScree
             if (!GetDisplayInfoData(0, (UBYTE *)&ni, sizeof(ni), DTAG_NAME, desc->DisplayID))
                 strcpy(ni.Name, GetStr(MSG_LIST_UNKNOWNMODE));
 
-            sprintf(buf2, "\33O[%08lx]", data->inormal[TestPubScreen(desc->Name) ? 1 : 0]);
+            sprintf(buf2, "\33O[%08lx]", (unsigned long)(IPTR)data->inormal[TestPubScreen(desc->Name) ? 1 : 0]);
         }
 
         *array++ = buf2;
