@@ -44,7 +44,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-void parallelunit_io(int fd, int mode, struct HIDDParallelUnitData *data);
+void parallelunit_io(int fd, int mode, void *ptr);
 
 static char * unitname[] =
 {
@@ -237,8 +237,10 @@ UWORD UXParUnit__Hidd_ParallelUnit__GetStatus(OOP_Class *cl, OOP_Object *o, stru
 
 #define READBUFFER_SIZE 513
 
-void parallelunit_io(int fd, int mode, struct HIDDParallelUnitData *data)
+void parallelunit_io(int fd, int mode, void *ptr)
 {
+    struct HIDDParallelUnitData *data = ptr;
+
     if (mode & vHidd_UnixIO_Read)
     {
     	ssize_t len;
