@@ -492,7 +492,7 @@ done:
         /* overlay executable */
         h[3] = (ULONG)fh;
         h[4] = (ULONG)overlaytable;
-        h[5] = MKBADDR(hunktab);
+        h[5] = (ULONG)MKBADDR(hunktab);
         D(bug("overlay loaded!\n"));
         return (BPTR)(-(LONG)MKBADDR(h));
 #endif
