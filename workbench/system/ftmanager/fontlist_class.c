@@ -217,7 +217,7 @@ void ScanDirTask(void)
 	BPTR olddir;
 	FT_Library ftlibrary;
 
-#warning FIXME: Possible thread race conflicts not checked !!!
+	// FIXME: Possible thread race conflicts not checked !!!
         void *test = GetIntETask(parent)->iet_acpd;
         GetIntETask(FindTask(NULL))->iet_acpd = test;
 
