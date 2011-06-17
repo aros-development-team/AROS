@@ -618,7 +618,7 @@ static void RethinkAction(void)
     if (ki)
     {
 	Object *str = NULL;
-    	IPTR val;
+    	IPTR val = 0;
 	
 	get(cmdcycle, MUIA_Cycle_Active, &val);
     	ki->action = val;
@@ -641,7 +641,7 @@ static void RethinkAction(void)
 	
 	if (str)
 	{
-	    STRPTR s;
+	    STRPTR s = "";
 	    
 	    get(str, MUIA_String_Contents, &s);
 	    
@@ -696,7 +696,7 @@ static void DelKey(void)
 static void StringToKey(void)
 {
     struct KeyInfo *ki = NULL;
-    STRPTR  	    text;
+    STRPTR  	    text = "";
 
     DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&ki);
     if (!ki) return;
@@ -1064,7 +1064,7 @@ static void FreeToolTypes(UBYTE **ttypes)
 
 static struct DiskObject *LoadProgIcon(BPTR *icondir, STRPTR iconname)
 {
-    struct DiskObject *progicon;
+    struct DiskObject *progicon = NULL;
     
     if (wbstartup)
     {
@@ -1102,7 +1102,7 @@ static void SaveSettings(void)
     struct DiskObject 	 *progicon;
     UBYTE   	    	**ttypes, **old_ttypes;
     UBYTE   	    	  iconname[256];
-    BPTR    	    	  icondir = NULL;
+    BPTR    	    	  icondir = BNULL;
 
     progicon = LoadProgIcon(&icondir, iconname);
         
@@ -1143,7 +1143,7 @@ static void LoadSettings(void)
 {
     struct DiskObject *progicon;
     UBYTE   	       iconname[256];
-    BPTR    	       icondir = NULL;
+    BPTR    	       icondir = BNULL;
     UBYTE   	      **ttypes, *tt;
     
     progicon = LoadProgIcon(&icondir, iconname);
