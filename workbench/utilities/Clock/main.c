@@ -70,7 +70,7 @@ void Cleanup(CONST_STRPTR message)
 	if
         ( 
                IntuitionBase != NULL 
-            && ((struct Process *) FindTask(NULL))->pr_CLI == NULL
+            && ((struct Process *) FindTask(NULL))->pr_CLI == BNULL
         )
 	{
 	    ShowMessage("Clock", message, MSG(MSG_OK));     
