@@ -52,7 +52,7 @@ int main(int argc, char **argv)
                 BPTR cd   = CurrentDir(parent);
                 BPTR lock = Lock(name, ACCESS_WRITE);
                 
-                if (lock != NULL)
+                if (lock != BNULL)
                 {
                     STRPTR buffer = AllocateNameFromLock(lock);
                     

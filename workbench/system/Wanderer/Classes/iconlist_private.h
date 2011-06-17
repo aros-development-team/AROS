@@ -23,7 +23,7 @@ struct ListViewModeAttribs
     BYTE			lmva_SortColumn;
     BYTE			lmva_LastSelectedColumn;
 
-#warning "TODO: Convert Column arrays into a list .."
+    /* TODO: Convert Column arrays into a list ... */
 #define NUM_COLUMNS 6
     LONG    	    	    	lmva_ColumnPos[NUM_COLUMNS];
     LONG    	    	    	lmva_ColumnMaxWidth[NUM_COLUMNS];
@@ -120,7 +120,7 @@ struct IconList_DATA
     struct IconViewModeAttribs    *icld_IVMAttribs;
     struct ListViewModeAttribs    *icld_LVMAttribs;
 
-#warning "TODO: move config options to a seperate struct"
+    /* TODO: move config options to a seperate struct */
     /* IconList configuration settings ... */
     ULONG                         icld_LabelPen;		
     ULONG                         icld_LabelShadowPen;

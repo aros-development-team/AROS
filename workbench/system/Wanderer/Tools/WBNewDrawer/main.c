@@ -57,7 +57,7 @@ int main(int argc, char **argv)
         Cleanup(_(MSG_NEEDS_MORE_ARGS));
 
     dirlock = startup->sm_ArgList[1].wa_Lock;
-    if (dirlock == NULL)
+    if (dirlock == BNULL)
         Cleanup(_(MSG_INVALID_LOCK));
 
     oldlock = CurrentDir(dirlock);
@@ -244,12 +244,12 @@ static CONST_STRPTR SelectDefaultName(STRPTR basename)
             if (number == 0)
                 strcpy(buffer, basename);
             else
-                sprintf(buffer,"%s_%d", basename, number);
+                sprintf(buffer,"%s_%d", basename, (int)number);
 
             test = Lock(buffer, ACCESS_READ);
             UnLock(test);
             number++;
-        } while ((number < 10) && (test != NULL));
+        } while ((number < 10) && (test != BNULL));
     }
     else
     {

@@ -693,6 +693,8 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
 
     if (quit) return TRUE;
 
+    created = FALSE;
+
     display.userdata = userdata;
     delDisplay.userdata = userdata;
 

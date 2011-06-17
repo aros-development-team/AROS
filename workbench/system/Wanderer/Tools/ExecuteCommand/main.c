@@ -40,7 +40,7 @@ void cleanup(CONST_STRPTR message)
 int main(int argc, char **argv)
 {
     Object *application;
-    BPTR    parent  = NULL;
+    BPTR    parent  = BNULL;
     STRPTR  initial = NULL;
     
     if (!ExecuteCommand_Initialize()) cleanup(_(MSG_ERROR_CLASSES));

@@ -149,7 +149,7 @@ HOOKPROTO(IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc, void, APTR *o
 
     if (prefs)
     {
-        IPTR attrib_Current, attrib_Prefs, prefs_Processing = 0;
+        IPTR attrib_Current = 0, attrib_Prefs, prefs_Processing = 0;
         BOOL options_changed = FALSE;
 
         D(bug("[Wanderer:VolumeList] %s: Setting IconList options ..\n", __PRETTY_FUNCTION__));
@@ -522,8 +522,8 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
 			struct FileInfoBlock	*lofFIB = AllocDosObject(DOS_FIB, NULL);
 			if (lofFIB)
 			{
-			    BPTR		lofLock = (BPTR)NULL;
-			    if ((lofLock = Lock(bdrp_fullfile, SHARED_LOCK)) != NULL)
+			    BPTR		lofLock = BNULL;
+			    if ((lofLock = Lock(bdrp_fullfile, SHARED_LOCK)) != BNULL)
 			    {
 				char	*tmpbdrp_file = NULL;
 				int	tmpbdrp_len = strlen(bdrp_fullfile) + 128;
@@ -1377,7 +1377,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
 		_volumeIcon__FSNotifyHandler->fshn_Node.ln_Name         	= this_Icon->ie_IconNode.ln_Name;
 		volPrivate->vip_FSNotifyRequest.nr_Name				= _volumeIcon__FSNotifyHandler->fshn_Node.ln_Name;
 		volPrivate->vip_FSNotifyRequest.nr_Flags			= NRF_SEND_MESSAGE;
-		volPrivate->vip_FSNotifyRequest.nr_stuff.nr_Msg.nr_Port		= _volumeIcon__FSNotifyPort;
+		volPrivate->vip_FSNotifyRequest.nr_stuff.nr_Msg.nr_Port		= (struct MsgPort *)_volumeIcon__FSNotifyPort;
 		_volumeIcon__FSNotifyHandler->HandleFSUpdate			= IconWindowVolumeList__HandleFSUpdate;
 
 		if (StartNotify(&volPrivate->vip_FSNotifyRequest))

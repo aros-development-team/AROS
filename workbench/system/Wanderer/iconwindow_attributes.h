@@ -42,7 +42,7 @@
 #define ICONWINDOW_ACTION_DIRUP                                 4
 #define ICONWINDOW_ACTION_APPWINDOWDROP                         5
 
-#warning "TODO: ImageBackFills Attributes etc should be in an own file"
+/* TODO: ImageBackFills Attributes etc should be in an own file */
 /*** Identifier Base ********************************************************/
 #define MUIB_IconWindowExt                                      (MUIB_IconWindow    | 0x0f000000)
 #define MUIB_IconWindowExt_ImageBackFill                        (MUIB_IconWindowExt | 0x100000)
@@ -62,14 +62,14 @@
 #define IconWindowExt_ImageBackFill_TileMode_Float              1        // Default (moves with window scrolling)
 #define IconWindowExt_ImageBackFill_TileMode_Fixed              2        // Tile's are fixed in the background
 
-#warning "TODO: NetworkBrowser Attributes etc should be in an own file"
+/* TODO: NetworkBrowser Attributes etc should be in an own file */
 /*** Identifier Base ********************************************************/
 #define MUIB_IconWindowExt_NetworkBrowser                       (MUIB_IconWindowExt | 0x300000)
 
 #define MUIA_IconWindowExt_NetworkBrowser_Show                  (MUIB_IconWindowExt_NetworkBrowser | 0x00000001) /* ISG */
 /*** Variables **************************************************************/
 
-#warning "TODO: UserFiles Attributes etc should be in an own file"
+/* TODO: UserFiles Attributes etc should be in an own file */
 /*** Identifier Base ********************************************************/
 #define MUIB_IconWindowExt_UserFiles                            (MUIB_IconWindowExt | 0x400000)
 

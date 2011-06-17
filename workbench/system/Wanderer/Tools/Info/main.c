@@ -84,7 +84,7 @@ static Object *list, *editor, *liststr;
 BOOL file_altered = FALSE;
 BOOL icon_altered = FALSE;
 
-#warning "TODO: Use UQUAD for size"
+/* TODO: Use UQUAD for size */
 void getReadableSize(UBYTE *buf, ULONG size)
 {
     UQUAD d;
@@ -180,7 +180,7 @@ void getReadableSize(UBYTE *buf, ULONG size)
 ULONG calculateDirectorySize(struct DirScanProcess *scan, ULONG base, CONST_STRPTR directory)
 {
     UBYTE	*buffer = NULL;
-    BPTR	directoryLock = NULL;
+    BPTR	directoryLock = BNULL;
     ULONG	directorySize = 0;
     BOOL	loop = TRUE;
 
@@ -523,7 +523,7 @@ D(bug("[WBINFO/Getversion] Name %s\n", name));
     TEXT tmpfilename[40];
     int nr = 0;
     int i;
-    BPTR output = NULL;
+    BPTR output = BNULL;
     BPTR restored_cd = (BPTR)-1;
 
     if (name == NULL)
@@ -560,11 +560,11 @@ D(bug("[WBINFO/Getversion] Can't find non-existing tmpfile"));
         {
             Close(output);
         }
-    } while (output != NULL);
+    } while (output != BNULL);
 
     D(bug("[WBInfo/Getversion] tmpfilename %s\n", tmpfilename));
     output = Open(tmpfilename, MODE_NEWFILE);
-    if (output == NULL)
+    if (output == BNULL)
     {
 D(bug("[WBInfo/Getversion] Can't create tmpfile\n"));
         goto exit;
@@ -587,7 +587,7 @@ D(bug("[WBInfo/Getversion] SystemTags failed\n"));
     // Seek didn't work for me on RAM-Disk, so we reopen the file
     Close(output);
     output = Open(tmpfilename, MODE_OLDFILE);
-    if (output == NULL)
+    if (output == BNULL)
     {
 D(bug("[WBInfo/GetVersion] Can't open tmpfile\n"));
         goto exit;
@@ -860,7 +860,7 @@ D(bug("[WBInfo] scan file\n"));
 D(bug("[WBInfo] file has icon\n"));
         type = (char *) typeNames[icon->do_Type];
 D(bug("[WBInfo] icon type is: %s\n", type));
-        sprintf(stack, "%d", icon->do_StackSize);
+        sprintf(stack, "%d", (int)icon->do_StackSize);
         if (icon->do_DefaultTool)
             sprintf(deftool, "%s", icon->do_DefaultTool);
         else
