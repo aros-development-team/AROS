@@ -26,9 +26,9 @@
 #define ARGS_UNIT           7
 #define ARGS_SIZEOF         8
 
-static const char *prgname = "UPSTool";
+const char UPSTool_prgname[] = "UPSTool";
 static const char *template = "RAW/K,ID/S,QUERY/S,TOGGLEBEEPER=TG/S,SHUTDOWN/S,STARTBATTERYTEST=STARTBT/S,STOPBATTERYTEST=STOPBT/S,UNIT/N/K";
-static const char *version = "$VER: UPSTool 1.0 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char UPSTool_version[] = "$VER: UPSTool 1.0 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 

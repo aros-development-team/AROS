@@ -514,7 +514,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc) {
                 }
                 WRITEMEM32_LE(&datautd->utd_CtrlStatus, ctrlstatus);
 #if 1
-#warning "this workaround for a VIA babble bug will potentially overwrite innocent memory (very rarely), but will avoid the host controller dropping dead completely."
+/* FIXME: This workaround for a VIA babble bug will potentially overwrite innocent memory (very rarely), but will avoid the host controller dropping dead completely. */
                 if((len < ioreq->iouh_MaxPktSize) && (ioreq->iouh_SetupData.bmRequestType & URTF_IN))
                 {
                     WRITEMEM32_LE(&datautd->utd_Token, token|((ioreq->iouh_MaxPktSize-1)<<UTTS_TRANSLENGTH)); // no masking need here as len is always >= 1

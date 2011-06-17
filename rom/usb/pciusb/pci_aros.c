@@ -300,7 +300,9 @@ void pciStrcat(STRPTR d, STRPTR s)
 /* /// "pciAllocUnit()" */
 BOOL pciAllocUnit(struct PCIUnit *hu)
 {
+#if 0
     struct PCIDevice *hd = hu->hu_Device;
+#endif
     struct PCIController *hc;
 
     BOOL allocgood = TRUE;

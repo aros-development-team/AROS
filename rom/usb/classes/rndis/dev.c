@@ -507,7 +507,9 @@ WORD cmdGetStationAddress(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
 
 WORD cmdConfigInterface(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
 {
+#if 0
     UWORD cnt;
+#endif
 
     KPRINTF(1, ("S2_CONFIGINTERFACE ioreq: 0x%08lx\n", ioreq));
 

@@ -8,7 +8,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-static const char *version = "$VER: PsdStackloader 4.0 (03.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char *psd_version = "$VER: PsdStackloader 4.0 (03.06.09) by Chris Hodges <chrisly@platon42.de>";
 
 int main(void)
 {

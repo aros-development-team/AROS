@@ -1,7 +1,9 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
+#ifndef DB_LEVEL
 #define DB_LEVEL 200
+#endif
 
 //#define DEBUG 1
 
