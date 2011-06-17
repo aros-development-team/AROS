@@ -376,7 +376,7 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
     BPTR fh;
     ULONG retval;
     
-    fh = NULL;
+    fh = BNULL;
     if (name)
     {
 	fh = Open( name, MODE_NEWFILE );
