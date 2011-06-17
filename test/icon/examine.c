@@ -45,10 +45,10 @@ int main(int argc, char **argv)
                 "Tooltypes:     %s\n\n",
                 argv[1], isDefault ? "yes" : "no",
                 typeNames[icon->do_Type], icon->do_Type, icon->do_DefaultTool,
-                icon->do_CurrentX, icon->do_CurrentX, 
-                icon->do_CurrentY, icon->do_CurrentY,
+                (long)icon->do_CurrentX, (unsigned long)icon->do_CurrentX, 
+                (long)icon->do_CurrentY, (unsigned long)icon->do_CurrentY,
                 icon->do_DrawerData != NULL ? "yes" : "no",
-                icon->do_StackSize,
+                (long)icon->do_StackSize,
                 icon->do_ToolTypes != NULL ? "yes" : "no"
             );
             
