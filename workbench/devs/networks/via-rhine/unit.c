@@ -210,7 +210,7 @@ D(bug("%s: VIARHINE_RX_IntF: buffer %d @ %x is for us\n", unit->rhineu_name, i, 
         /* the packet is for us - get it */
 
         /* got a valid packet - forward it to the network core */
-        frame = (struct eth_frame *)np->rx_desc[i].addr;
+        frame = (struct eth_frame *)(IPTR)np->rx_desc[i].addr;
         is_orphan = TRUE;
 
         /* Dump contents of frame if DEBUG enabled */
@@ -345,7 +345,7 @@ D(bug("%s: VIARHINE_TX_IntF()\n", unit->rhineu_name));
 rhine_nexttx:
 			if (try_count >= (TX_BUFFERS * 3))
 			{
-#warning "TODO: We should probably report that we couldnt send the packet here.."
+/* TODO: We should probably report that we couldnt send the packet here.. */
 D(bug("%s: VIARHINE_TX_IntF: Send FAILED! no free Tx buffer(s)\n", unit->rhineu_name));
 				break;
 			}
@@ -368,14 +368,14 @@ D(bug("%s: VIARHINE_TX_IntF: Buffer %d in use!\n", unit->rhineu_name, nr));
 		   if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
 		   {
 			  packet_size += ETH_PACKET_DATA;
-			  CopyMem(request->ios2_DstAddr, &((struct eth_frame *)np->tx_desc[nr].addr)->eth_packet_dest, ETH_ADDRESSSIZE);
-			  CopyMem(unit->rhineu_dev_addr, &((struct eth_frame *)np->tx_desc[nr].addr)->eth_packet_source, ETH_ADDRESSSIZE);
-			  ((struct eth_frame *)np->tx_desc[nr].addr)->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
+			  CopyMem(request->ios2_DstAddr, &((struct eth_frame *)(IPTR)np->tx_desc[nr].addr)->eth_packet_dest, ETH_ADDRESSSIZE);
+			  CopyMem(unit->rhineu_dev_addr, &((struct eth_frame *)(IPTR)np->tx_desc[nr].addr)->eth_packet_source, ETH_ADDRESSSIZE);
+			  ((struct eth_frame *)(IPTR)np->tx_desc[nr].addr)->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
 
-			  buffer = (UBYTE *)&((struct eth_frame *)np->tx_desc[nr].addr)->eth_packet_data;
+			  buffer = (UBYTE *)&((struct eth_frame *)(IPTR)np->tx_desc[nr].addr)->eth_packet_data;
 		   }
 		   else
-			  buffer = (UBYTE *)np->tx_desc[nr].addr;
+			  buffer = (UBYTE *)(IPTR)np->tx_desc[nr].addr;
 
 		   if (!opener->tx_function(buffer, request->ios2_Data, data_size))
 		   {
@@ -387,7 +387,7 @@ D(bug("%s: VIARHINE_TX_IntF: Buffer %d in use!\n", unit->rhineu_name, nr));
 		   }
 
 		   /* Now the packet is already in TX buffer, update flags for NIC */
-D(bug("%s: VIARHINE_TX_IntF: packet %d  @ %x [type = %d] queued for transmission.", unit->rhineu_name, nr, np->tx_desc[nr].addr, ((struct eth_frame *)np->tx_desc[nr].addr)->eth_packet_type));
+D(bug("%s: VIARHINE_TX_IntF: packet %d  @ %x [type = %d] queued for transmission.", unit->rhineu_name, nr, np->tx_desc[nr].addr, ((struct eth_frame *)(IPTR)np->tx_desc[nr].addr)->eth_packet_type));
 			  Disable();
 			  /* DEBUG? Dump frame if so */
 #ifdef DEBUG
@@ -396,7 +396,7 @@ D(bug("%s: VIARHINE_TX_IntF: packet %d  @ %x [type = %d] queued for transmission
 				   for (j=0; j<64; j++) {
 					  if ((j%16) == 0)
 						  D(bug("\n%03x:", j));
-					  D(bug(" %02x", ((unsigned char*)np->tx_desc[nr].addr)[j]));
+					  D(bug(" %02x", ((unsigned char*)(IPTR)np->tx_desc[nr].addr)[j]));
 				 }
 				  D(bug("\n"));
 			  }
