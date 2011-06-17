@@ -34,13 +34,6 @@ conflicts between AROS includes and system includes */
 
 /****************************************************************************************/
 
-static void dummy_func()
-{
-	return;
-}
-
-/****************************************************************************************/
-
 #if USE_XSHM
 
 /****************************************************************************************/
@@ -54,7 +47,6 @@ static void dummy_func()
 #include <proto/hostlib.h>
 
 static void *xext_handle = NULL;
-static void *shm_handle = NULL;
 
 static struct {
     Status (*XShmDetach) ( Display* , XShmSegmentInfo* );
@@ -116,7 +108,7 @@ ADD2EXPUNGELIB(xext_hostlib_expunge, 1)
 
 void *init_shared_mem(Display *display)
 {
-    #warning "Also check if this is a local display"
+    /* TODO: Also check if this is a local display */
     
     XShmSegmentInfo *shminfo;
     int     	     xshm_major, xshm_minor;

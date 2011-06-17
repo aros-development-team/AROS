@@ -617,7 +617,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     } /* Forever */
     
 failexit:
-    #warning "Also try to free window node list ?"
+    /* Also try to free window node list ? */
 
     if (xsd->x11task_notify_port)
     {
