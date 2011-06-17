@@ -17,7 +17,7 @@
 #undef kprintf
 
 /* */
-#define SetFunc(a,b) SetFunction((struct Library *)lh, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,MathIeeeDoubBas))
+#define SetFunc(a,b) SetFunction((struct Library *)lh, (LONG)(a * -LIB_VECTSIZE), AROS_SLIB_ENTRY(b,MathIeeeDoubBas))
 
 extern QUAD MathIeeeDoubBas_FPU_IEEEDPFix(); 
 extern QUAD MathIeeeDoubBas_FPU_IEEEDPFlt();
