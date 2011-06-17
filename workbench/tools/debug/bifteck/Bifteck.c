@@ -61,7 +61,7 @@ LONG main(VOID)
     /* Get buffer */
 
     Forbid();
-    data = (struct Data *)FindSemaphore("bifteck");
+    data = (struct LogData *)FindSemaphore("bifteck");
     Permit();
 
     if (read_args != NULL && data != NULL)
@@ -140,7 +140,7 @@ static TEXT GetLogChar(struct LogData *data, struct LogBlock **block,
 
     if (*pos == (*block)->length)
     {
-        *block = (struct Block *)(*block)->node.mln_Succ;
+        *block = (struct LogBlock *)(*block)->node.mln_Succ;
         *pos = 0;
     }
 
