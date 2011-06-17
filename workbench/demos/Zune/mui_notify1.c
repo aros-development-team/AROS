@@ -69,7 +69,7 @@ void closemuimaster(void)
 int main (void)
 {
     Object *obj;
-    ULONG val;
+    ULONG val = 0;
 
     if (!openmuimaster()) return 20;
 
@@ -79,7 +79,7 @@ int main (void)
     {
         set(obj, MUIA_UserData, 21);
         get(obj, MUIA_UserData, &val);
-        printf("object UserData = %ld (should be 21)\n", val);
+        printf("object UserData = %ld (should be 21)\n", (long)val);
 
         DoMethod(obj, MUIM_Notify, MUIA_UserData, MUIV_EveryTime, MUIV_Notify_Self,
                  3, MUIM_Set, MUIA_ObjectID, 19);
@@ -87,16 +87,16 @@ int main (void)
 
         set(obj, MUIA_ObjectID, 12);
         get(obj, MUIA_ObjectID, &val);
-        printf("id = %ld (should be 12)\n", val);
+        printf("id = %ld (should be 12)\n", (long)val);
 
         set(obj, MUIA_UserData, 22);
         get(obj, MUIA_ObjectID, &val);
-        printf("id = %ld (should be 19) after notification\n", val);
+        printf("id = %ld (should be 19) after notification\n", (long)val);
 
 	set(obj, MUIA_ObjectID, 14);
 	set(obj, MUIA_UserData, 22);
 	get(obj, MUIA_ObjectID, &val);
-        printf("id = %ld (should be 14) after notification\n", val);
+        printf("id = %ld (should be 14) after notification\n", (long)val);
 
         MUI_DisposeObject(obj);
     }

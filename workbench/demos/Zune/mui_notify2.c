@@ -124,7 +124,7 @@ struct MUIP_Test_GetBoth { ULONG MsgID; int *x; int *y;};
 /*
  * Constructor of Test object.
  */
-static ULONG
+static IPTR
 Test_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TestData *data;
@@ -151,7 +151,7 @@ Test_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /*
      * Return newly constructed object.
      */
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 
@@ -159,7 +159,7 @@ Test_New(struct IClass *cl, Object *obj, struct opSet *msg)
  * Setting public attributes. The tags in the message may not be ours,
  * so do't forget to pass them to the super class.
  */
-static ULONG 
+static IPTR
 Test_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TestData       *data = INST_DATA(cl, obj);
@@ -192,7 +192,7 @@ Test_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * Getting public attributes.
  */
-static ULONG
+static IPTR
 Test_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct TestData *data = INST_DATA(cl, obj);
@@ -219,7 +219,7 @@ Test_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /*
  * Special get method to get both attributes.
  */
-static ULONG 
+static IPTR
 Test_GetBoth(struct IClass *cl, Object *obj, struct MUIP_Test_GetBoth *msg)
 {
     struct TestData *data = INST_DATA(cl, obj);
@@ -233,7 +233,7 @@ Test_GetBoth(struct IClass *cl, Object *obj, struct MUIP_Test_GetBoth *msg)
 /*
  * Print attributes value.
  */
-static ULONG 
+static IPTR
 Test_Print(struct IClass *cl, Object *obj, struct MUIP_Test_Print *msg)
 {
     struct TestData *data = INST_DATA(cl, obj);
@@ -312,7 +312,7 @@ struct ExtendedTestData {
 /*
  * Constructor of ExtendedTest object.
  */
-static ULONG
+static IPTR
 ExtendedTest_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct ExtendedTestData *data;
@@ -347,14 +347,14 @@ ExtendedTest_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /*
      * Return newly constructed object.
      */
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 
 /*
  * Recalculate sum and average.
  */
-static ULONG
+static IPTR
 ExtendedTest_Update(struct IClass *cl, Object *obj,
 		    struct MUIP_ExtendedTest_Update *noMsg)
 {
@@ -373,7 +373,7 @@ ExtendedTest_Update(struct IClass *cl, Object *obj,
 /*
  * Print values.
  */
-static ULONG
+static IPTR
 ExtendedTest_Print(struct IClass *cl, Object *obj,
 		   struct MUIP_ExtendedTest_Print *noMsg)
 {
