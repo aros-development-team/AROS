@@ -172,7 +172,7 @@ void discover_interfaces (state)
 
       gifconf_again:
 #ifdef SOCKET_IS_NOT_A_FILE
-	i = IoctlSocket(sock, SIOCGIFCONF, &ic);
+	i = IoctlSocket(sock, SIOCGIFCONF, (char *)&ic);
 #else
 	i = ioctl(sock, SIOCGIFCONF, &ic);
 #endif
@@ -246,7 +246,7 @@ void discover_interfaces (state)
 		   deal with. */
 		strcpy (ifr.ifr_name, ifp -> ifr_name);
 #ifdef SOCKET_IS_NOT_A_FILE
-		if (IoctlSocket (sock, SIOCGIFFLAGS, &ifr) < 0)
+		if (IoctlSocket (sock, SIOCGIFFLAGS, (char *)&ifr) < 0)
 #else
 		if (ioctl (sock, SIOCGIFFLAGS, &ifr) < 0)
 #endif

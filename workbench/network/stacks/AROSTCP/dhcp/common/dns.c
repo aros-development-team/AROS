@@ -713,8 +713,8 @@ isc_result_t ddns_update_a (struct data_string *ddns_fwd_name,
 	result = minires_nupdate (&resolver_state, ISC_LIST_HEAD (updqueue));
 
 	if (result != ISC_R_SUCCESS) {
-		if (result == YXRRSET || result == YXDOMAIN ||
-		    result == NXRRSET || result == NXDOMAIN)
+		if (result == (isc_result_t)YXRRSET || result == (isc_result_t)YXDOMAIN ||
+		    result == (isc_result_t)NXRRSET || result == (isc_result_t)NXDOMAIN)
 			log_error ("Forward map from %.*s to %s already in use",
 				   (int)ddns_fwd_name -> len,
 				   (const char *)ddns_fwd_name -> data,

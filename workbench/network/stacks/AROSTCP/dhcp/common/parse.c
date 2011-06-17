@@ -1813,7 +1813,6 @@ int parse_executable_statement (result, cfile, lose, case_context)
 		if (token != NAME && token != NUMBER_OR_NAME) {
 			parse_warn (cfile,
 				    "%s can't be a variable name", val);
-		      badunset:
 			skip_to_semi (cfile);
 			*lose = 1;
 			return 0;
@@ -3285,7 +3284,6 @@ int parse_non_binary (expr, cfile, lose, context)
 					parse_warn
 						(cfile,
 						 "expecting dns expression.");
-			      badnstrans:
 				expression_dereference (expr, MDL);
 				*lose = 1;
 				return 0;

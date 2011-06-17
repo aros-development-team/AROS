@@ -111,7 +111,7 @@ static const char rcsid[] = "$Id$";
 int trace_mr_socket (int, int, int);
 int trace_mr_connect (int s, struct sockaddr *, SOCKLEN_T);
 ssize_t trace_mr_read (int, void *, size_t);
-ssize_t trace_mr_send (int, void *, size_t, int);
+ssize_t trace_mr_send (int, const void *, size_t, int);
 int trace_mr_close (int);
 int trace_mr_bind (int, struct sockaddr *, SOCKLEN_T);
 int trace_mr_select (int, fd_set *, fd_set *, fd_set *, struct timeval *);
@@ -583,7 +583,7 @@ bug("DONT HAVE writev\n");
 					statp->_flags |= RES_F_CONN;
 				}
                               if (send(statp->_sock,
-				       (const char*)buf, (unsigned)buflen, 0)
+				       buf, (unsigned)buflen, 0)
 				  != buflen) {
 					Perror(statp, stderr, "send", errno);
 					badns |= (1 << ns);

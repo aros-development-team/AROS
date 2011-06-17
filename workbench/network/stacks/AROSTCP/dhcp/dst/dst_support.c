@@ -155,7 +155,7 @@ dst_s_conv_bignum_b64_to_u8(const char **buf,
 	}
 	bp = strchr(*buf, '\n');	/* find length of input line */
 	if (bp != NULL)
-		*bp = (u_char) NULL;
+		*bp = 0;
 
 	blen = b64_pton(*buf, bstr, sizeof(bstr));
 	if (blen <= 0) {
