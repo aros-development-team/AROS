@@ -194,7 +194,7 @@ void RTL8168_Rx_Process(struct RTL8168Unit *unit)
 	    RTLD(bug("[%s] RTL8168_Rx_Process: Rx ERROR, status = %08x\n",
 		    unit->rtl8168u_name, status))
 
-#warning "TODO: record rx errors .."
+/* TODO: record rx errors .. */
 /*	    RTLDEV->stats.rx_errors++;
 
 	    if (status & (RxRWT | RxRUNT))
@@ -208,7 +208,7 @@ void RTL8168_Rx_Process(struct RTL8168Unit *unit)
 	{
 	    int pkt_size = (status & 0x00003FFF) - ETH_CRCSIZE;
 
-	    frame = (UBYTE *)(desc->addr);
+	    frame = (APTR)(IPTR)desc->addr;
 	    RTLD(bug("[%s] RTL8168_Rx_Process: frame @ %p, pkt_size=%d\n", unit->rtl8168u_name, frame, pkt_size))
 
 	    /* got a valid packet - forward it to the network core */
@@ -349,18 +349,18 @@ AROS_UFH3(void, RTL8168_TX_IntF,
 	    }
 
 	    if ((!(AROS_LE2LONG(np->TxDescArray[nr].opts1) & DescOwn)) &&
-		((np->TxDescArray[nr].addr = AllocMem(packet_size, MEMF_CLEAR | MEMF_PUBLIC)) != NULL))
+		((np->TxDescArray[nr].addr = (IPTR)AllocMem(packet_size, MEMF_CLEAR | MEMF_PUBLIC)) != 0))
 	    {
 		if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
 		{
-		    CopyMem(request->ios2_DstAddr, &((struct eth_frame *)np->TxDescArray[nr].addr)->eth_packet_dest, ETH_ADDRESSSIZE);
-		    CopyMem(unit->rtl8168u_dev_addr, &((struct eth_frame *)np->TxDescArray[nr].addr)->eth_packet_source, ETH_ADDRESSSIZE);
-		    ((struct eth_frame *)np->TxDescArray[nr].addr)->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
+		    CopyMem(request->ios2_DstAddr, &((struct eth_frame *)(IPTR)np->TxDescArray[nr].addr)->eth_packet_dest, ETH_ADDRESSSIZE);
+		    CopyMem(unit->rtl8168u_dev_addr, &((struct eth_frame *)(IPTR)np->TxDescArray[nr].addr)->eth_packet_source, ETH_ADDRESSSIZE);
+		    ((struct eth_frame *)(IPTR)np->TxDescArray[nr].addr)->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
 
-		    buffer = &((struct eth_frame *)np->TxDescArray[nr].addr)->eth_packet_data;
+		    buffer = (APTR)&((struct eth_frame *)(IPTR)np->TxDescArray[nr].addr)->eth_packet_data;
 		}
 		else
-		    buffer = np->TxDescArray[nr].addr;
+		    buffer = (APTR)(IPTR)np->TxDescArray[nr].addr;
 
 		if (!opener->tx_function(buffer, request->ios2_Data, data_size))
 		{
@@ -375,8 +375,8 @@ AROS_UFH3(void, RTL8168_TX_IntF,
 		if (error == 0)
 		{
 		    RTLD(
-			    APTR packet = np->TxDescArray[nr].addr;
-			    bug("[%s] RTL8168_TX_IntF: packet %d  @ %p [type = %d] queued for transmission.\n", unit->rtl8168u_name, nr, np->TxDescArray[nr].addr, AROS_BE2WORD(((struct eth_frame *)packet)->eth_packet_type))
+			    APTR packet = (APTR)(IPTR)np->TxDescArray[nr].addr;
+			    bug("[%s] RTL8168_TX_IntF: packet %d  @ %p [type = %d] queued for transmission.\n", unit->rtl8168u_name, nr, (APTR)(IPTR)np->TxDescArray[nr].addr, AROS_BE2WORD(((struct eth_frame *)packet)->eth_packet_type))
 			)
 
 		    RTLDP(
@@ -399,7 +399,7 @@ AROS_UFH3(void, RTL8168_TX_IntF,
 		    np->TxDescArray[nr].opts1 = AROS_LONG2LE(DescOwn | FirstFrag | LastFrag | packet_size | (RingEnd * !((nr + 1) % NUM_TX_DESC)));
 		    np->TxDescArray[nr].opts2 = AROS_LONG2LE(0);
 
-#warning "TODO: Perhaps set the Tx Poll bit after we leave the while loop .."
+/* TODO: Perhaps set the Tx Poll bit after we leave the while loop .. */
 		    RTL_W8(base + (TxPoll), NPQ);	/* set polling bit */
 		}
 
@@ -478,7 +478,7 @@ static void RTL8168_Tx_Cleanup(struct net_device *unit)
 		break;
 
 	packet_size = status & 0x3FFF;
-	tracker = FindTypeStats(unit->rtl8168u_device, unit, &unit->rtl8168u_type_trackers, ((struct eth_frame *)np->TxDescArray[entry].addr)->eth_packet_type);
+	tracker = FindTypeStats(unit->rtl8168u_device, unit, &unit->rtl8168u_type_trackers, ((struct eth_frame *)(IPTR)np->TxDescArray[entry].addr)->eth_packet_type);
 	if(tracker != NULL)
 	{
 		tracker->stats.PacketsSent++;
@@ -601,7 +601,6 @@ RTLD(bug("[%s] RTL8168_IntHandlerF: Too much work at interrupt!\n", unit->rtl816
 	RTL_W16(base + (IntrStatus), 0xffff);
     }
 
-out:
     RTL_W16(base + (IntrMask), np->intr_mask);
 
     return;
@@ -956,7 +955,7 @@ struct RTL8168Unit *CreateUnit(struct RTL8168Base *RTL8168DeviceBase, OOP_Object
 #if defined(RTL_DEBUG)
     BOOL doDebug = TRUE;
 #else
-#warning "TODO: Get option to debug from somewhere .."
+/* TODO: Get option to debug from somewhere .. */
     BOOL doDebug = FALSE;
 #endif
 	
@@ -1006,7 +1005,7 @@ RTLD(bug("[rtl8168] CreateUnit: Unit allocated @ 0x%p\n", unit))
 	NEWLIST(&unit->rtl8168u_type_trackers);
 
 	OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &unit->rtl8168u_IRQ);
-	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &unit->rtl8168u_BaseIO);
+	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, (IPTR *)&unit->rtl8168u_BaseIO);
 	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &mmiobase);
 	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2,  &mmiolen);
 	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type2,  &type);
@@ -1036,10 +1035,10 @@ RTLD(bug("[%s] CreateUnit: Invalid MMIO Reg size (%d, expected %d)\n", unit->rtl
             return NULL;
 	}
 
-#warning "TODO: how do we set memory write invalidate for PCI devices on AROS?"
+/* TODO: how do we set memory write invalidate for PCI devices on AROS? */
 
 	unit->rtl8168u_SizeMem = R8168_REGS_SIZE;
-	unit->rtl8168u_BaseMem = (IPTR)HIDD_PCIDriver_MapPCI(driver, (APTR)mmiobase, unit->rtl8168u_SizeMem);
+	unit->rtl8168u_BaseMem = HIDD_PCIDriver_MapPCI(driver, (APTR)mmiobase, unit->rtl8168u_SizeMem);
 
 	if (unit->rtl8168u_BaseMem != NULL)
 	{

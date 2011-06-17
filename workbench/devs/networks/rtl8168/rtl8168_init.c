@@ -70,7 +70,7 @@ D(bug("[rtl8168] PCI_Enumerator: Found RTL8168 NIC Rev:%d\n", RevisionID));
 
     if ((LIBBASE->rtl8168b_UnitCount < MAX_UNITS) && ((unit = CreateUnit(LIBBASE, pciDevice, RevisionID)) != NULL))
     {
-	AddTail(&LIBBASE->rtl8168b_Units, &unit->rtl8168u_Node);
+	AddTail(&LIBBASE->rtl8168b_Units, (struct Node *)&unit->rtl8168u_Node);
     }
     else if (LIBBASE->rtl8168b_UnitCount < MAX_UNITS)
     {
