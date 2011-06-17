@@ -43,7 +43,7 @@ static VOID FontPrefs2FontString
     snprintf
     (
         buffer, buffersize, "%.*s/%d",
-        strlen(fp->fp_TextAttr.ta_Name) - 5 /* strlen(".font") */,
+        (int)strlen(fp->fp_TextAttr.ta_Name) - 5 /* strlen(".font") */,
         fp->fp_TextAttr.ta_Name, fp->fp_TextAttr.ta_YSize
     );
 }

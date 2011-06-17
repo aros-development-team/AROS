@@ -47,7 +47,7 @@ static IPTR Stringify__MUIM_Numeric_Stringify(Class  * cl, Object * obj, Msg msg
     }
     else if (data->Type == STRINGIFY_RepeatDelay)
     {
-        sprintf((char *)data->buf,"%ldms", 20 + 20 * m->value);
+        sprintf((char *)data->buf,"%ldms", 20 + 20 * (long)m->value);
     }
     else if (data->Type == STRINGIFY_DoubleClickDelay)
     {

@@ -75,7 +75,7 @@ struct SerEditor_DATA
 {
     int i;
 
-    CONST_STRPTR ParityLabels[5];
+    CONST_STRPTR ParityLabels[6];
     Object *child;
     Object *baudrate;
     Object *stopbits;
@@ -140,7 +140,7 @@ Object *SerEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     #endif
 
         VGroup,
-            Child, ColGroup(2),
+            Child, (IPTR)ColGroup(2),
                 Child, (IPTR)Label1(_(MSG_GAD_BAUDRATE)),
                 Child, (IPTR)(data->baudrate = (Object *)CycleObject,
                     MUIA_Cycle_Entries, (IPTR)BaudrateLabels,

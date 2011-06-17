@@ -204,7 +204,7 @@ BOOL Prefs_ImportFH(BPTR fh, struct FontPrefs fp[])
 
                     if (error < 0)
                     {
-                        printf("Error: ReadChunkBytes() returned %d!\n", error);
+                        printf("Error: ReadChunkBytes() returned %d!\n", (int)error);
                     }
 
                     FileFontPrefs2FontPrefs(&ffp, &fp[i]);
@@ -213,14 +213,14 @@ BOOL Prefs_ImportFH(BPTR fh, struct FontPrefs fp[])
                 }
                 else
                 {
-                    printf("ParseIFF() failed, returncode %d!\n", error);
+                    printf("ParseIFF() failed, returncode %d!\n", (int)error);
                     success = FALSE;
                     break;
                 }
             }
             else
             {
-                printf("StopChunk() failed, returncode %d!\n", error);
+                printf("StopChunk() failed, returncode %d!\n", (int)error);
                 success = FALSE;
             }
         }
@@ -274,7 +274,7 @@ BOOL Prefs_ExportFH(BPTR fh, struct FontPrefs fp[])
 
                 if (error != 0) // TODO: We need some error checking here!
                 {
-                    printf("error: PushChunk() = %d\n", error);
+                    printf("error: PushChunk() = %d\n", (int)error);
                 }
 
                 convertEndian(&fp[i]); // Convert to m68k endian
@@ -287,7 +287,7 @@ BOOL Prefs_ExportFH(BPTR fh, struct FontPrefs fp[])
 
                 if (error != 0) // TODO: We need some error checking here!
                 {
-                    printf("error: PopChunk() = %d\n", error);
+                    printf("error: PopChunk() = %d\n", (int)error);
                 }
             }
 
