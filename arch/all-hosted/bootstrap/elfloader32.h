@@ -9,6 +9,9 @@
 
 typedef int (*kernel_entry_fun_t)(struct TagItem *, ULONG);
 
+struct KernelBSS;
+struct ELF_ModuleInfo;
+
 int AddKernelFile(char *name);
 void FreeKernelList(void);
 int GetKernelSize(size_t *ro_size, size_t *rw_size);
