@@ -1359,9 +1359,9 @@ IPTR __regargs Sound_GET( Class *cl, Object *o, struct opGet *opg )
 				{
 					ULONG	*superMethods = NULL;
 					
-					DoSuperMethod( cl, o, OM_GET, DTA_Methods, (ULONG) &superMethods );
+					DoSuperMethod( cl, o, OM_GET, DTA_Methods, (IPTR) &superMethods );
 					
-					data = (ULONG) ( cb->cb_Methods = CopyDTMethods( superMethods, Methods, NULL ) );
+					data = (IPTR) ( cb->cb_Methods = CopyDTMethods( superMethods, Methods, NULL ) );
 					
 					dbug( kprintf( "CopyDTMethods returned %08lx\n", data ); )
 				}
@@ -3216,28 +3216,28 @@ void PlayerProc( void )
 							else
 							{
 								UWORD	leftvol, rightvol;
-								ULONG	oldmask = (ULONG) ioa->ioa_Request.io_Unit;
+								ULONG	oldmask = (ULONG)(IPTR) ioa->ioa_Request.io_Unit;
 								
 								CalcPanVol( id->Volume, id->Panning, &leftvol, &rightvol );
 								/*
 								ioa->ioa_Request.io_Command = CMD_STOP;
 								DoIO( &ioa->ioa_Request );*/
 								
-								ioa->ioa_Request.io_Unit = (struct Unit *) ( oldmask & LEFT_MASK );
+								ioa->ioa_Request.io_Unit = (struct Unit *) (IPTR) ( oldmask & LEFT_MASK );
 								ioa->ioa_Period	= Freq2Period( id->Frequency );
 								ioa->ioa_Volume	= leftvol;
 								ioa->ioa_Request.io_Flags 	= 0;
 								ioa->ioa_Request.io_Command = ADCMD_PERVOL;
 								DoIO( &ioa->ioa_Request );
 								
-								ioa->ioa_Request.io_Unit = (struct Unit *) ( oldmask & RIGHT_MASK );
+								ioa->ioa_Request.io_Unit = (struct Unit *) (IPTR) ( oldmask & RIGHT_MASK );
 								ioa->ioa_Period	= Freq2Period( id->Frequency );
 								ioa->ioa_Volume	= rightvol;
 								ioa->ioa_Request.io_Flags 	= 0;
 								ioa->ioa_Request.io_Command = ADCMD_PERVOL;
 								DoIO( &ioa->ioa_Request );
 								
-								ioa->ioa_Request.io_Unit = (struct Unit *) oldmask;
+								ioa->ioa_Request.io_Unit = (struct Unit *) (IPTR) oldmask;
 								
 								Forbid();
 								ioaudio[ AUDIO_LEFT ]->ioa_Volume =
@@ -3381,7 +3381,7 @@ void PlayerProc( void )
 								
 								for( i = 0; i < sizeof( ChMap ); i++ )
 								{
-									if( (ULONG) ioa->ioa_Request.io_Unit == (ULONG) ChMap[i] )
+									if( (LONG) (IPTR) ioa->ioa_Request.io_Unit == (ULONG) ChMap[i] )
 									{
 										break;
 									}
@@ -3404,9 +3404,9 @@ void PlayerProc( void )
 								}
 								
 								ioaudio[ AUDIO_LEFT   ]->ioa_Request.io_Unit =
-								ioaudio[ AUDIO_LEFT2 ]->ioa_Request.io_Unit = (struct Unit *) ( (ULONG) ioa->ioa_Request.io_Unit & LEFT_MASK );
+								ioaudio[ AUDIO_LEFT2 ]->ioa_Request.io_Unit = (struct Unit *) ( (IPTR)ioa->ioa_Request.io_Unit & LEFT_MASK );
 								ioaudio[ AUDIO_RIGHT   ]->ioa_Request.io_Unit =
-								ioaudio[ AUDIO_RIGHT2 ]->ioa_Request.io_Unit = (struct Unit *) ( (ULONG) ioa->ioa_Request.io_Unit & RIGHT_MASK );
+								ioaudio[ AUDIO_RIGHT2 ]->ioa_Request.io_Unit = (struct Unit *) ( (IPTR)ioa->ioa_Request.io_Unit & RIGHT_MASK );
 								
 								sample = id->Sample;
 								length = id->SampleLength;
@@ -3640,7 +3640,7 @@ void PlayerProc( void )
 								
 								if( id->SampleType == SDTST_M8S )
 								{
-									if( (ULONG) sample&3 || (ULONG) buf&3 || samples&3 )
+									if( ((IPTR)sample)&3 || ((IPTR)buf)&3 || ((IPTR)samples)&3 )
 									{
 										CopyMem( sample, buf, samples );
 									}
@@ -3911,7 +3911,7 @@ void PlayerProcAHI( void )
 								transfer = buffersize;
 							}
 							
-							if( (ULONG)id->Sample&3 || (ULONG)dst&3 || transfer&3 )
+							if( ((IPTR)id->Sample)&3 || ((IPTR)dst)&3 || ((IPTR)transfer)&3 )
 							{
 								CopyMem( id->Sample, dst, transfer );
 							}
