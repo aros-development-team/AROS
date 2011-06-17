@@ -513,7 +513,7 @@ void ProcessEvents (struct inputbase *InputDevice)
 	    /* Wheel events come in as IECLASS_NEWMOUSE, so fix ie_Class and ie_Qualifier) */
 	    if (gpdie->ie_Class == IECLASS_NEWMOUSE)
 	    {
-	    	#warning "The NewMouse standard seems to send both a IECLASS_NEWMOUSE and a IECLASS_RAWKEY event"
+	    	/* The NewMouse standard seems to send both a IECLASS_NEWMOUSE and a IECLASS_RAWKEY event */
 	    	gpdie->ie_Class     = IECLASS_RAWKEY;
 	    	gpdie->ie_Qualifier = InputDevice->ActQualifier & KEY_QUALIFIERS;
 	    }
