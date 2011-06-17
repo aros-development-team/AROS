@@ -289,7 +289,7 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 	    fh->vi = (void *)GetVisualInfo(fh->window->WScreen, TAG_END);
 	    D(bug("VisualInfo 0x%p\n", fh->vi));
 	    if (fh->vi) {
-	        fh->menu = CreateMenus(&default_nm,TAG_END);
+	        fh->menu = CreateMenus((struct NewMenu *)default_nm,TAG_END);
 	        if (fh->menu) {
 	            if (LayoutMenus(fh->menu, fh->vi, TAG_END)) {
 		        SetMenuStrip(fh->window, fh->menu);
@@ -1093,7 +1093,6 @@ AROS_UFH3(VOID, conTaskEntry,
 	if (sigs & conreadmask)
 	{
 	    struct TimedReq *treq, *treq1;
-	    UBYTE c;
 	    WORD inp;
 
 	    /* console.device read request completed */
