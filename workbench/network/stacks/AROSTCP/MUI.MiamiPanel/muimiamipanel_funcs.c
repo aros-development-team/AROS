@@ -31,7 +31,7 @@ extern void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG 
 	AROS_LHA(STRPTR, screen, A3),
 	AROS_LHA(LONG, xo, D1),
 	AROS_LHA(LONG, yo, D2),
-	AROS_LHA(ULONG, sigbit, A4),
+	AROS_LHA(IPTR, sigbit, A4),
 
 /*  LOCATION */
 	struct Library *, MiamiPanelBase, 5, MiamiPanel)

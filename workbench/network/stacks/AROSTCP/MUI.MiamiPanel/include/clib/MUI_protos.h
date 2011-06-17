@@ -14,7 +14,7 @@ AROS_LP8(LONG, MiamiPanelInit,
          AROS_LPA(STRPTR, screen, A3),
          AROS_LPA(LONG, xo, D1),
          AROS_LPA(LONG, yo, D2),
-         AROS_LPA(ULONG, sigbit, A4),
+         AROS_LPA(IPTR, sigbit, A4),
          LIBBASETYPEPTR, MiamiPanelBase, 5, MiamiPanel
 );
 AROS_LP0(void, MiamiPanelCleanup,
