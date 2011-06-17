@@ -60,7 +60,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
        open, too, ... and I don't like to OpenDevice just for Peek-
        Qualifier */
 
-#warning InputDevice open hack. Hope this is not a problem since it is only used for PeekQualifier
+/* InputDevice open hack. Hope this is not a problem since it is only used for PeekQualifier */
     Forbid();
     conbase->inputbase = (struct Device *)FindName(&SysBase->DeviceList, "input.device");
     Permit();
@@ -91,7 +91,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
 	       i equals 1 when dn_DevName is "RAW", and 0 otherwise. This
 	       tells con_task that it has to start in RAW mode
 	     */   
-	    dn->dn_Ext.dn_AROS.dn_Unit		= (struct Unit *)i;
+	    dn->dn_Ext.dn_AROS.dn_Unit		= (struct Unit *)(IPTR)i;
 
 	    dn->dn_Ext.dn_AROS.dn_Device	= &conbase->device;
 	    dn->dn_Handler	= NULL;
@@ -151,7 +151,7 @@ ADD2OPENDEV(GM_UNIQUENAME(Open),0)
 static LONG open_con(struct conbase *conbase, struct IOFileSys *iofs)
 {
     struct filehandle 	    *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-    STRPTR  	    	    filename = iofs->io_Union.io_OPEN.io_Filename;
+    CONST_STRPTR	    filename = iofs->io_Union.io_OPEN.io_Filename;
 #if DEBUG
     ULONG   	    	    mode = iofs->io_Union.io_OPEN.io_FileMode;
 #endif
@@ -259,7 +259,7 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_FILE_MODE:
-#warning FIXME: not supported yet
+/* FIXME: not supported yet */
 	    error=ERROR_ACTION_NOT_KNOWN;
 	    break;
 
@@ -267,7 +267,7 @@ AROS_LH1(void, beginio,
 	{
 	    /* In AmigaOS this functionality is provided by ACTION_DISK_INFO */
 	    struct InfoData *inf = iofs->io_Union.io_INFO.io_Info;
-	    struct filehandle *fh = iofs->IOFS.io_Unit;
+	    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 
 	    inf->id_NumSoftErrors = 0;
 	    inf->id_UnitNumber    = CONU_SNIPMAP;
