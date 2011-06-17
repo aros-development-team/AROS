@@ -207,6 +207,7 @@ egl_g3d_st_framebuffer_validate(struct st_framebuffer_iface *stfbi,
    struct pipe_resource *textures[NUM_NATIVE_ATTACHMENTS];
    uint attachment_mask = 0;
    unsigned i;
+   int w, h;
 
    for (i = 0; i < count; i++) {
       int natt;
@@ -234,9 +235,11 @@ egl_g3d_st_framebuffer_validate(struct st_framebuffer_iface *stfbi,
    }
 
    if (!gsurf->native->validate(gsurf->native, attachment_mask,
-         &gsurf->sequence_number, textures, &gsurf->base.Width,
-         &gsurf->base.Height))
+         &gsurf->sequence_number, textures, &w, &h)) {
+      gsurf->base.Width = w;
+      gsurf->base.Height = h;
       return FALSE;
+   }
 
    for (i = 0; i < count; i++) {
       struct pipe_resource *tex;

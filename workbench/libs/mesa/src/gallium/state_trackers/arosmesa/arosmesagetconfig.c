@@ -65,7 +65,7 @@
     {
         case(PIPE_FORMAT_B5G6R5_UNORM): rbbits = 5; gbits = 6; abits = 0; break;
         case(PIPE_FORMAT_B8G8R8A8_UNORM): rbbits = 8; gbits = 8; abits = 8; break;
-        deafult: rbbits = -1; gbits = -1; abits = 1;
+        default: rbbits = -1; gbits = -1; abits = 1;
     }
 
     if (amesa)

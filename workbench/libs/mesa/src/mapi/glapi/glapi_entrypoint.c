@@ -309,10 +309,12 @@ fill_in_entrypoint_offset(_glapi_proc entrypoint, GLuint offset)
 
 #else /* USE_*_ASM */
 
+#if defined(PTHREADS) || defined(GLX_USE_TLS)
 static void
 init_glapi_relocs( void )
 {
 }
+#endif
 
 
 _glapi_proc

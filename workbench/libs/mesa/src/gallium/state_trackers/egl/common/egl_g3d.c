@@ -101,7 +101,7 @@ egl_g3d_add_screens(_EGLDriver *drv, _EGLDisplay *dpy)
 {
    struct egl_g3d_display *gdpy = egl_g3d_display(dpy);
    const struct native_connector **native_connectors;
-   EGLint num_connectors, i;
+   int num_connectors, i;
 
    native_connectors =
       gdpy->native->modeset->get_connectors(gdpy->native, &num_connectors, NULL);
@@ -115,7 +115,7 @@ egl_g3d_add_screens(_EGLDriver *drv, _EGLDisplay *dpy)
       const struct native_connector *nconn = native_connectors[i];
       struct egl_g3d_screen *gscr;
       const struct native_mode **native_modes;
-      EGLint num_modes, j;
+      int num_modes, j;
 
       /* TODO support for hotplug */
       native_modes =

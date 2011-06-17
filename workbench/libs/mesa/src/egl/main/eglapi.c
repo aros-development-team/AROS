@@ -1167,7 +1167,7 @@ eglQueryModeStringMESA(EGLDisplay dpy, EGLModeMESA mode)
 EGLDisplay EGLAPIENTRY
 eglGetDRMDisplayMESA(int fd)
 {
-   _EGLDisplay *dpy = _eglFindDisplay(_EGL_PLATFORM_DRM, (void *) fd);
+   _EGLDisplay *dpy = _eglFindDisplay(_EGL_PLATFORM_DRM, (void *) (IPTR) fd);
    return _eglGetDisplayHandle(dpy);
 }
 

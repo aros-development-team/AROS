@@ -1548,7 +1548,7 @@ void talloc_disable_null_tracking(void)
 void talloc_enable_leak_report(void)
 {
 	talloc_enable_null_tracking();
-//TODO FIXME	atexit(talloc_report_null);
+	atexit(talloc_report_null);
 }
 
 /*
@@ -1557,7 +1557,7 @@ void talloc_enable_leak_report(void)
 void talloc_enable_leak_report_full(void)
 {
 	talloc_enable_null_tracking();
-//TODO FIXME	atexit(talloc_report_null_full);
+	atexit(talloc_report_null_full);
 }
 
 /* 
@@ -1942,7 +1942,7 @@ void *talloc_autofree_context(void)
 	if (autofree_context == NULL) {
 		autofree_context = _talloc_named_const(NULL, 0, "autofree_context");
 		talloc_set_destructor(autofree_context, talloc_autofree_destructor);
-//TODO FIXME		atexit(talloc_autofree);
+		atexit(talloc_autofree);
 	}
 	return autofree_context;
 }

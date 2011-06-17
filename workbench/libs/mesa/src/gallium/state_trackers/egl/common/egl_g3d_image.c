@@ -212,8 +212,12 @@ egl_g3d_create_image(_EGLDriver *drv, _EGLDisplay *dpy, _EGLContext *ctx,
       break;
 #ifdef EGL_MESA_drm_image
    case EGL_DRM_BUFFER_MESA:
+      /* FIXME64: buffer cannot be used as name on
+       *        64 bit machines that permit memory
+       *        allocation above 2^32
+       */
       ptex = egl_g3d_reference_drm_buffer(dpy,
-            (EGLint) buffer, &gimg->base, attribs);
+            (EGLint) (IPTR) buffer, &gimg->base, attribs);
       break;
 #endif
    default:
