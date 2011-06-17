@@ -649,7 +649,7 @@ AROS_LH2(LONG, New_SystemTagList,
     if (patches[PATCH_SystemTagList].enabled)
     {
 	char optstr[20];
-	sprintf(optstr, "%d", result);
+	sprintf(optstr, "%d", (int)result);
 	main_output("SystemTagList", command, optstr, result != -1, TRUE);
     }
 
