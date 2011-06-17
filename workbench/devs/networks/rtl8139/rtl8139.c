@@ -167,7 +167,7 @@ static int mdio_read(struct net_device *unit, int phy_id, int location)
 		return location < 8 && mii_2_8139_map[location] ? WORDIN(base + mii_2_8139_map[location]) : 0;
 	}
 
-	mdio_sync(base + RTLr_MII_SMI);
+	mdio_sync((IPTR)base + RTLr_MII_SMI);
 
 	// Shift the read command bits out
 	for (i = 15; i >= 0; i--) 
@@ -193,6 +193,7 @@ static int mdio_read(struct net_device *unit, int phy_id, int location)
 	return (retval >> 1) & 0xffff;
 }
 
+#if 0
 static void rtl8139nic_start_rx(struct net_device *unit)
 {
 	// struct fe_priv *np = get_pcnpriv(unit);
@@ -200,7 +201,7 @@ static void rtl8139nic_start_rx(struct net_device *unit)
 
 RTLD(bug("[%s] rtl8139nic_start_rx\n", unit->rtl8139u_name))
 	// Already running? Stop it.
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void rtl8139nic_stop_rx(struct net_device *unit)
@@ -208,7 +209,7 @@ static void rtl8139nic_stop_rx(struct net_device *unit)
 	// UBYTE *base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8139nic_stop_rx\n", unit->rtl8139u_name))
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void rtl8139nic_start_tx(struct net_device *unit)
@@ -216,7 +217,7 @@ static void rtl8139nic_start_tx(struct net_device *unit)
 	// UBYTE *base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8139nic_start_tx()\n", unit->rtl8139u_name))
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void rtl8139nic_stop_tx(struct net_device *unit)
@@ -224,7 +225,7 @@ static void rtl8139nic_stop_tx(struct net_device *unit)
 	// UBYTE *base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8139nic_stop_tx()\n", unit->rtl8139u_name))
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void rtl8139nic_txrx_reset(struct net_device *unit)
@@ -234,6 +235,7 @@ static void rtl8139nic_txrx_reset(struct net_device *unit)
 
 RTLD(bug("[%s] rtl8139nic_txrx_reset()\n", unit->rtl8139u_name))
 }
+#endif
 
 /*
  * rtl8139nic_set_multicast: unit->set_multicast function
@@ -266,11 +268,11 @@ static void rtl8139nic_get_mac(struct net_device *unit, char * addr, BOOL fromRO
 RTLD(bug("[%s] rtl8139nic_get_mac()\n",unit->rtl8139u_name))
 	if (fromROM)
 	{
-		int addr_len = read_eeprom(base, 0, 8) == 0x8129 ? 8 : 6;
+		int addr_len = read_eeprom((IPTR)base, 0, 8) == 0x8129 ? 8 : 6;
 		int mac_add = 0;
 		for (i = 0; i < 3; i++)
 		{
-			UWORD mac_curr = read_eeprom(base, i + 7, addr_len);
+			UWORD mac_curr = read_eeprom((IPTR)base, i + 7, addr_len);
 			addr[mac_add++] = mac_curr & 0xff;
 			addr[mac_add++] = (mac_curr >> 8) & 0xff;
 		}
@@ -386,7 +388,7 @@ static void rtl8139nic_drain_tx(struct net_device *unit)
 
 //	for (i = 0; i < NUM_TX_DESC; i++)
 //	{
-#warning "TODO: rtl8139nic_drain_tx does nothing atm."
+/* TODO: rtl8139nic_drain_tx does nothing atm. */
 //	}
 }
 
@@ -397,7 +399,7 @@ static void rtl8139nic_drain_rx(struct net_device *unit)
 
 //	for (i = 0; i < RX_RING_SIZE; i++)
 //	{
-#warning "TODO: rtl8139nic_drain_rx does nothing atm."
+/* TODO: rtl8139nic_drain_rx does nothing atm. */
 //	}
 }
 
@@ -452,7 +454,7 @@ int rtl8139nic_set_rxmode(struct net_device *unit)
 
 RTLD(bug("[%s] rtl8139nic_set_rxmode(flags %x)\n", unit->rtl8139u_name, unit->rtl8139u_flags))
 
-#warning "TODO: Fix set_rxmode.. doesnt load multicast list atm .."
+/* TODO: Fix set_rxmode.. doesnt load multicast list atm .. */
 	if (unit->rtl8139u_flags & IFF_PROMISC)
 	{
 RTLD(bug("[%s] rtl8139nic_set_rxmode: Mode: PROMISC\n",unit->rtl8139u_name))
@@ -603,7 +605,7 @@ RTLD(bug("[%s] rtl8139nic_open: Setting %s%s-duplex based on auto-neg partner ab
 		// Lock
 		BYTEOUT(base + RTLr_Cfg9346, 0x00);
 		udelay(10);
-		LONGOUT(base + RTLr_RxBuf, np->rx_buffer);
+		LONGOUT(base + RTLr_RxBuf, (IPTR)np->rx_buffer);
 
 		//Start the chips Tx/Rx processes
 		LONGOUT(base + RTLr_RxMissed, 0);
