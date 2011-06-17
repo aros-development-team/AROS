@@ -237,6 +237,10 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
     /* make a fresh new packet */
     pkt = packet_alloc();
+    if (pkt == NULL) {
+        iofs->io_DosError = ERROR_NO_FREE_STORE;
+        goto reply;
+    }
     dp = &(pkt->dp);
 
     /* hook the iofs up to the packet so we can find it on return
