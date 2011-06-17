@@ -133,7 +133,7 @@ static int PCSer_InitAttrs(LIBBASETYPEPTR LIBBASE)
 
     __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
 
-    ReturnInt("PCSer_InitAttrs", ULONG, __IHidd_SerialUnitAB != NULL);
+    ReturnInt("PCSer_InitAttrs", ULONG, __IHidd_SerialUnitAB != 0);
 }
 
 
@@ -141,7 +141,7 @@ static int PCSer_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
     EnterFunc(bug("PCSer_ExpungeAttrs\n"));
 
-    OOP_ReleaseAttrBase(__IHidd_SerialUnitAB);
+    OOP_ReleaseAttrBase((STRPTR)__IHidd_SerialUnitAB);
 	
     ReturnInt("PCSer_ExpungeAttrs", int, TRUE);
 }
