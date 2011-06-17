@@ -83,7 +83,7 @@ static WORD         imagetransparray[4];
 
 /*********************************************************************************************/
 
-static void InitImagePal(ULONG *pal, WORD numcols, WORD index)
+static void InitImagePal(const ULONG *pal, WORD numcols, WORD index)
 {
     WORD i;
 
@@ -105,7 +105,7 @@ static void InitImagePal(ULONG *pal, WORD numcols, WORD index)
 
 #if MENUPOPUP3D_PACKED || MENUPOPUPCLASSIC_PACKED ||MENUPULLDOWN3D_PACKED || MENUPULLDOWNCLASSIC_PACKED
 
-static UBYTE *unpack_byterun1(UBYTE *source, UBYTE *dest, LONG unpackedsize)
+static const UBYTE *unpack_byterun1(const UBYTE *source, UBYTE *dest, LONG unpackedsize)
 {
     UBYTE r;
     BYTE c;

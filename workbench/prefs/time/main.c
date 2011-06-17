@@ -275,7 +275,7 @@ static ULONG ButtonLayoutFunc(struct Hook *hook, Object *obj, struct MUI_LayoutM
 
 static void YearFunc(struct Hook *hook, Object *obj, IPTR *param)
 {
-    IPTR year;
+    IPTR year = 1978;
     
     get(obj, MUIA_String_Integer, &year);
     
@@ -337,12 +337,12 @@ static void ActiveFunc(struct Hook *hook, Object *obj, IPTR *param)
 
 static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
 {
-    struct ClockData *cd;
+    struct ClockData *cd = NULL;
     UBYTE s[3];
 
     get(obj, MUIA_Clock_Time, &cd);
 
-    if (*param == 0)
+    if (cd && *param == 0)
     {
 	sprintf(s, "%02d", cd->hour);
 	nnset(hourobj, MUIA_String_Contents, s);

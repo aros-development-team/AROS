@@ -54,7 +54,7 @@ static struct Hook SelectHook = { .h_Entry = SelectFunc };
 
 AROS_UFH3(IPTR, DisplayFunc,
 AROS_UFHA(struct Hook *, hook, A0),
-AROS_UFHA(char **, array, A2),
+AROS_UFHA(CONST_STRPTR *, array, A2),
 AROS_UFHA(STRPTR, entry, A1))
 {
     AROS_USERFUNC_INIT

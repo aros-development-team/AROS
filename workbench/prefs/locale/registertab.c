@@ -211,7 +211,7 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
 STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
 {
     char *tmp;
-    char **preferred;
+    char **preferred = NULL;
     ULONG i;
 
     if(GET(data->country, MUIA_Country_Countryname, &tmp))
