@@ -126,7 +126,7 @@ main(int argc, char *argv[])
 		case 'f':		/* file to log */
 			if (freopen(optarg, "r", stdin) == NULL)
 			{
-#warning "TODO: NicJA - we dont have err()"
+/* TODO: NicJA - we dont have err() */
 #if !defined(__AROS__)
 				err(1, "%s", optarg);
 #else
@@ -157,7 +157,7 @@ main(int argc, char *argv[])
 	argv += optind;
 
 	/* setup for logging */
-#warning "TODO: NicJA - openlog() & getlogin()??"
+/* TODO: NicJA - openlog() & getlogin()?? */
 #if !defined(__AROS__)
 	openlog(tag ? tag : getlogin(), logflags, 0);
 #else
@@ -218,7 +218,7 @@ logmessage(int pri, char *host, char *buf)
 		hints.ai_socktype = SOCK_DGRAM;
 		error = getaddrinfo(host, "syslog", &hints, &res);
 		if (error == EAI_SERVICE) {
-#warning "TODO: NicJA - We dont have warnx()"
+/* TODO: NicJA - We dont have warnx() */
 #if !defined(__AROS__)
 			warnx("syslog/udp: unknown service");	/* not fatal */
 #endif
@@ -226,7 +226,7 @@ logmessage(int pri, char *host, char *buf)
 		}
 		if (error)
       {
-#warning "TODO: NicJA - We dont have errx()"
+/* TODO: NicJA - We dont have errx() */
 #if !defined(__AROS__)
 			errx(1, "%s: %s", gai_strerror(error), host);
 #endif
@@ -236,7 +236,7 @@ logmessage(int pri, char *host, char *buf)
 		socks = malloc(maxs * sizeof(struct socks));
 		if (!socks)
       {
-#warning "TODO: NicJA - We dont have errx()"
+/* TODO: NicJA - We dont have errx() */
 #if !defined(__AROS__)
 			errx(1, "couldn't allocate memory for sockets");
 #endif
@@ -254,7 +254,7 @@ logmessage(int pri, char *host, char *buf)
 		freeaddrinfo(res);
 		if (nsock <= 0)
 		{
-#warning "TODO: NicJA - We dont have errx()"
+/* TODO: NicJA - We dont have errx() */
 #if !defined(__AROS__)
 			errx(1, "socket");
 #endif
@@ -271,7 +271,7 @@ logmessage(int pri, char *host, char *buf)
 	if ((len = asprintf(&line, "<%d>%s", pri, buf)) == -1)
 #endif
 	{
-#warning "TODO: NicJA - We dont have errx()"
+/* TODO: NicJA - We dont have errx() */
 #if !defined(__AROS__)
 		errx(1, "asprintf");
 #endif
@@ -288,21 +288,23 @@ logmessage(int pri, char *host, char *buf)
 	if (lsent != len) {
 		if (lsent == -1)
 	   {
-#warning "TODO: NicJA - We dont have warn()"
+/* TODO: NicJA - We dont have warn() */
 #if !defined(__AROS__)
 			warn ("sendto");
 #endif
 	   }
 		else
 	   {
-#warning "TODO: NicJA - We dont have warnx()"
+/* TODO: NicJA - We dont have warnx() */
 #if !defined(__AROS__)
 			warnx ("sendto: short send - %d bytes", lsent);
 #endif
 	   }
 	}
 
+#ifndef __AROS__
 	free(line);
+#endif
 }
 
 /*
@@ -320,7 +322,7 @@ pencode(char *s)
 		fac = decode(save, facilitynames);
 		if (fac < 0)
 	   {
-#warning "TODO: NicJA - We dont have errx()"
+/* TODO: NicJA - We dont have errx() */
 #if !defined(__AROS__)
 			errx(1, "unknown facility name: %s", save);
 #endif
@@ -334,7 +336,7 @@ pencode(char *s)
 	lev = decode(s, prioritynames);
 	if (lev < 0)
 	   {
-#warning "TODO: NicJA - We dont have errx()"
+/* TODO: NicJA - We dont have errx() */
 #if !defined(__AROS__)
 		errx(1, "unknown priority name: %s", save);
 #endif

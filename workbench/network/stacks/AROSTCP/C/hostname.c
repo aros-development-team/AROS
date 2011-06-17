@@ -38,7 +38,7 @@
 #if !defined(__AROS__)
 # include <err.h>
 #else
-# warning "TODO: We dont have <err.h>"
+/* TODO: We dont have <err.h> */
 #endif
 #include <netdb.h>
 #include <stdio.h>

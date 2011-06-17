@@ -314,6 +314,8 @@ int main(argc, argv)
 		}
 	usage(*argv);
 	/* NOTREACHED */
+
+	return 0;
 }
 
 /*
@@ -443,7 +445,7 @@ routename(sa)
 		if (cp)
 			strcpy(line, cp);
 		else {
-#define C(x)	((x) & 0xff)
+#define C(x)	((unsigned int)((x) & 0xff))
 			in.s_addr = ntohl(in.s_addr);
 			(void) sprintf(line, "%u.%u.%u.%u", C(in.s_addr >> 24),
 			   C(in.s_addr >> 16), C(in.s_addr >> 8), C(in.s_addr));
