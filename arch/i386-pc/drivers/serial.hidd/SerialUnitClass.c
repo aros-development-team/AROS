@@ -344,8 +344,6 @@ BOOL PCSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, str
 /******* SerialUnit::SendBreak() **********************************/
 BYTE PCSerUnit__Hidd_SerialUnit__SendBreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
-  struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
-  
   return SerErr_LineErr;
 }
 
