@@ -238,7 +238,7 @@
 
 #define __gethostbyname2_WB(__MiamiBase, __arg1, __arg2) \
         AROS_LC2(struct hostent *, gethostbyname2, \
-                  AROS_LCA(char *, (__arg1), A0), \
+                  AROS_LCA(const char *, (__arg1), A0), \
                   AROS_LCA(LONG, (__arg2), D0), \
         struct Library *, (__MiamiBase), 41, Miami)
 

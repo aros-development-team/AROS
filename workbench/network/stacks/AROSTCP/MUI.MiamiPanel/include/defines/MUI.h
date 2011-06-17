@@ -23,7 +23,7 @@
                   AROS_LCA(STRPTR,(__arg5),A3), \
                   AROS_LCA(LONG,(__arg6),D1), \
                   AROS_LCA(LONG,(__arg7),D2), \
-                  AROS_LCA(ULONG,(__arg8),A4), \
+                  AROS_LCA(IPTR,(__arg8),A4), \
         struct Library *, (__MiamiPanelBase), 5, MiamiPanel)
 
 #define MiamiPanelInit(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) \

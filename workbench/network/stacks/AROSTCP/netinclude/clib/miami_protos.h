@@ -123,7 +123,7 @@ AROS_LP3(int, inet_pton,
          LIBBASETYPEPTR, MiamiBase, 40, Miami
 );
 AROS_LP2(struct hostent *, gethostbyname2,
-         AROS_LPA(char *, name, A0),
+         AROS_LPA(const char *, name, A0),
          AROS_LPA(LONG, family, D0),
          LIBBASETYPEPTR, MiamiBase, 41, Miami
 );
