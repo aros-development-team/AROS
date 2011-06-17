@@ -125,7 +125,7 @@ AROS_UFH3(IPTR, SizeListviewRenderFunc,
      	    	
 		if (node)
 		{
-		    sprintf(s, "%ld", (LONG)node->ln_Name);
+		    sprintf(s, "%ld", (long)node->ln_Name);
 
     	    	    numfit = TextFit(rp,
 				     s,
@@ -764,7 +764,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		}
 		else
 		{
-	    	    li[i].text = GetString((LONG)li[i].text, GetIR(iforeq)->ir_Catalog, AslBase);
+	    	    li[i].text = GetString((IPTR)li[i].text, GetIR(iforeq)->ir_Catalog, AslBase);
 		}
 		str[i2++] = li[i].text;
 	    }
@@ -1166,7 +1166,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
 			if ((node = FindListNode(&udata->ActiveFont->SizeList, (WORD)active)))
 			{
-			    FOSetSizeString((LONG)node->ln_Name, ld, AslBase);
+			    FOSetSizeString((IPTR)node->ln_Name, ld, AslBase);
 			    FOUpdatePreview(ld, AslBase);
 			    
 			    if (imsg->Code) /* TRUE if double clicked */

@@ -552,7 +552,7 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{
 	    if (li[i].doit)
 	    {
-	    	li[i].text = GetString((LONG)li[i].text, GetIR(ismreq)->ir_Catalog, AslBase);
+	    	li[i].text = GetString((IPTR)li[i].text, GetIR(ismreq)->ir_Catalog, AslBase);
 		str[i2++] = li[i].text;
 	    }
 	}

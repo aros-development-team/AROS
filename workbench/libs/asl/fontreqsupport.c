@@ -48,7 +48,7 @@ static WORD FOCompareFontNodes(struct IntFontReq *iforeq, struct Node *node1,
 static WORD FOCompareSizeNodes(struct IntFontReq *iforeq, struct Node *node1,
 			   struct Node *node2, struct AslBase_intern *AslBase)
 {
-    return ((LONG)node1->ln_Name) - ((LONG)node2->ln_Name);
+    return ((IPTR)node1->ln_Name) - ((IPTR)node2->ln_Name);
 }
 
 /*****************************************************************************************/
@@ -518,7 +518,7 @@ void FOActivateFont(struct LayoutData *ld, WORD which, LONG size, struct AslBase
 	ForeachNode(&fontnode->SizeList, node)
 	{
 	    MARK_UNSELECTED(node);
-	    if ((LONG)node->ln_Name == size)
+	    if ((IPTR)node->ln_Name == size)
 	    {
 	    	size_tags[1].ti_Data = size_tags[2].ti_Data = sizelvindex;
 	    }
@@ -560,7 +560,7 @@ void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *As
     	which = 0;
 	ForeachNode(&udata->ActiveFont->SizeList, node)
 	{
-	    if ((LONG)node->ln_Name == size)
+	    if ((IPTR)node->ln_Name == size)
 	    {
 	    	found = TRUE;
 		break;
@@ -576,7 +576,7 @@ void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *As
     
     SetGadgetAttrsA((struct Gadget *)udata->SizeListview, ld->ld_Window, NULL, size_tags);
 
-    if (node) FOSetSizeString((LONG)node->ln_Name, ld, AslBase);    
+    if (node) FOSetSizeString((IPTR)node->ln_Name, ld, AslBase);    
 
     FOUpdatePreview(ld, AslBase);
 }
