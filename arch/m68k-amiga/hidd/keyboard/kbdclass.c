@@ -138,7 +138,6 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
     if (o)
     {
-	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
 	struct Interrupt *inter = &XSD(cl)->kbint;
         struct kbd_data *data = OOP_INST_DATA(cl, o);
         
