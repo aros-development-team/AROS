@@ -41,19 +41,19 @@ struct Gadget *sizegad, *immsortgad, *popgad, *mingad, *maxgad, *defposgad;
 struct Gadget *testgad, *noledgad, *deffontgad, *fkeysgad, *dowheelgad;
 
 
-UBYTE *DefaultPosLabels[] =
+CONST_STRPTR DefaultPosLabels[] =
 {
     MSG_POINTER, MSG_CENTERWIN, MSG_CENTERSCR, MSG_TOPLEFTWIN, MSG_TOPLEFTSCR,
     NULL
 };
 
-UBYTE *TypeLabels[] =
+CONST_STRPTR TypeLabels[] =
 {
     MSG_FILEREQ, MSG_FONTREQ, MSG_PALETTEREQ, MSG_SCRMODEREQ, MSG_VOLUMEREQ, MSG_OTHERREQ,
     NULL
 };
 
-STRPTR WheelLabels[] =
+CONST_STRPTR WheelLabels[] =
 {
     MSG_WHEEL_NONE, MSG_WHEEL_SIMPLE, MSG_WHEEL_FANCY,
     NULL
@@ -150,20 +150,20 @@ static struct NewGadget NewGadget;
 static struct IntuiText IntuiText;
 
 
-STRPTR Column1Text[] =
+CONST_STRPTR Column1Text[] =
 {
     MSG_POPSCREEN, MSG_DEFAULTFONT, MSG_FKEYS,
     MSG_IMMEDIATESORT, MSG_DRAWERSFIRST, MSG_DRAWERSMIXED, MSG_LED, MSG_MMB_PARENT,
     NULL
 };
 
-STRPTR SaveUseCancel[] =
+CONST_STRPTR SaveUseCancel[] =
 {
     MSG_SAVE, MSG_USE, MSG_CANCEL,
     NULL
 };
 
-STRPTR PositionOffset[] =
+CONST_STRPTR PositionOffset[] =
 {
     MSG_POSITION, MSG_OFFSET,
     NULL
@@ -171,7 +171,7 @@ STRPTR PositionOffset[] =
 
 
 static VOID
-InitNewGadget( WORD x, LONG y, WORD w, WORD h, STRPTR str, UWORD id)
+InitNewGadget( WORD x, LONG y, WORD w, WORD h, CONST_STRPTR str, UWORD id)
 {
     NewGadget.ng_LeftEdge   = x;
     NewGadget.ng_TopEdge    = y;
@@ -183,7 +183,7 @@ InitNewGadget( WORD x, LONG y, WORD w, WORD h, STRPTR str, UWORD id)
 
 
 LONG
-ArrayWidth_Localize( STRPTR *array )
+ArrayWidth_Localize( CONST_STRPTR *array )
 {
     LONG width, len;
 
@@ -191,7 +191,7 @@ ArrayWidth_Localize( STRPTR *array )
 
     while( *array )
     {
-	IntuiText.IText = GetString( *array );
+	IntuiText.IText = (UBYTE *)GetString( *array );
 	len = IntuiTextLength( &IntuiText );
 
 	if( len > width )
@@ -207,7 +207,7 @@ ArrayWidth_Localize( STRPTR *array )
 
 
 LONG
-ArrayWidth( STRPTR *array)
+ArrayWidth( CONST_STRPTR *array)
 {
     LONG width, len;
 
@@ -215,7 +215,7 @@ ArrayWidth( STRPTR *array)
 
     while( *array )
     {
-	IntuiText.IText = *array;
+	IntuiText.IText = (UBYTE *)*array;
 	len = IntuiTextLength( &IntuiText );
 
 	if( len > width )
@@ -280,7 +280,7 @@ long OpenPrefsWindow (void)
     struct TextAttr 	*font;
     struct ReqDefaults 	*filereqdefs = &RTPrefs.ReqDefaults[RTPREF_FILEREQ];
     ULONG 		flags = RTPrefs.Flags;
-    char 		*str;
+    CONST_STRPTR	str;
     int 		offy, col1, fontht, top, scrwidth, scrheight, spacing;
     int 		len, left, intgadwidth, col1ht, col2ht, proptop, len2;
     int 		width, winwidth, dis;
@@ -291,10 +291,10 @@ long OpenPrefsWindow (void)
     LocalizeLabels( TypeLabels );
     LocalizeLabels( WheelLabels );
 
-    GeneralText.IText = GetString( MSG_GENERAL );
-    FileReqText.IText = GetString( MSG_FILEREQUESTER );
-    DefSizeText.IText = GetString( MSG_SIZE );
-    NrOfEntriesText.IText = GetString( MSG_NR_OF_ENTRIES );
+    GeneralText.IText = (UBYTE *)GetString( MSG_GENERAL );
+    FileReqText.IText = (UBYTE *)GetString( MSG_FILEREQUESTER );
+    DefSizeText.IText = (UBYTE *)GetString( MSG_SIZE );
+    NrOfEntriesText.IText = (UBYTE *)GetString( MSG_NR_OF_ENTRIES );
 
     /* Layout vars */
     spacing = rtGetVScreenSize( Screen, ( ULONG * ) &scrwidth, ( ULONG * ) &scrheight );
@@ -427,7 +427,7 @@ retryopenwin:
     BevelLeft = left;
 
     str = GetString (MSG_REQUESTER);
-    IntuiText.IText = str;
+    IntuiText.IText = (UBYTE *)str;
     len = IntuiTextLength (&IntuiText);
     InitNewGadget (left + len + 8, top, ArrayWidth (TypeLabels) + 36, fontht + 6, str, REQTYPE_GADID);
     NewGadget.ng_Flags = PLACETEXT_LEFT|NG_HIGHLABEL;
@@ -463,7 +463,7 @@ retryopenwin:
     if (width > winwidth) winwidth = width;
 
     str = GetString (MSG_MIN);
-    IntuiText.IText = str;
+    IntuiText.IText = (UBYTE *)str;
     len = IntuiTextLength (&IntuiText);
     InitNewGadget (left + len + 8, top, intgadwidth, fontht + 6, str, MINENTRIES_GADID);
 #ifdef __AROS__	
@@ -476,7 +476,7 @@ retryopenwin:
 								TAG_END);
 
     str = GetString (MSG_MAX);
-    IntuiText.IText = str;
+    IntuiText.IText = (UBYTE *)str;
     len = IntuiTextLength (&IntuiText);
     NewGadget.ng_LeftEdge += intgadwidth + 16 + len + 8;
     NewGadget.ng_GadgetText = str;

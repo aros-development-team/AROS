@@ -46,19 +46,19 @@ FreeLocale( VOID )
 }
 
 
-STRPTR
-GetString( STRPTR idstr )
+CONST_STRPTR
+GetString( CONST_STRPTR idstr )
 {
-    STRPTR local;
+    CONST_STRPTR local;
 
     local = idstr + 2;
 
     if( LocaleBase )
     {
-	return( ( STRPTR ) GetCatalogStr( Catalog, ( ( UBYTE ) idstr[ 0 ] << 8 ) | idstr[ 1 ], local ) );
+	return GetCatalogStr( Catalog, ( ( UBYTE ) idstr[ 0 ] << 8 ) | idstr[ 1 ], local );
     }
 
-    return( local );
+    return local;
 }
 
 VOID
@@ -91,9 +91,9 @@ LocalizeMenus( struct NewMenu *nm )
 
 
 VOID
-LocalizeLabels( STRPTR *labels )
+LocalizeLabels( CONST_STRPTR *labels )
 {
-    STRPTR local;
+    CONST_STRPTR local;
 
     while( *labels )
     {
@@ -108,7 +108,7 @@ static struct EasyStruct EZ;
 
 
 ULONG
-EasyReq( STRPTR str, STRPTR gadtxt, APTR args )
+EasyReq( CONST_STRPTR str, CONST_STRPTR gadtxt, APTR args )
 {
     if( ReqToolsBase )
     {
@@ -135,7 +135,7 @@ EasyReq( STRPTR str, STRPTR gadtxt, APTR args )
 
 
 ULONG
-LocEZReq( STRPTR str, STRPTR gadtxt, ... )
+LocEZReq( CONST_STRPTR str, CONST_STRPTR gadtxt, ... )
 {
     return( EasyReq( GetString( str ), GetString( gadtxt ), &gadtxt + 1 ) );
 }
