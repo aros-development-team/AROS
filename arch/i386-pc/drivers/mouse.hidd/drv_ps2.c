@@ -274,10 +274,10 @@ struct mouse_data *data = OOP_INST_DATA(cl, o);
 
 void getps2State(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_Event *event)
 {
+#if 0
 struct mouse_data *data = OOP_INST_DATA(cl, o);
 UBYTE ack;
 
-#if 0
 /* The following doesn't seem to do anything useful */
 	mouse_write(KBD_OUTCMD_DISABLE);
 	/* switch to remote mode */
