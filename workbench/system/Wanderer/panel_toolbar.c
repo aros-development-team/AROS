@@ -97,7 +97,7 @@ struct panel_ToolBar_DATA
 /* Expand a passed in env: string to its full location */
 /* Wanderer doesnt free this mem at the moment but should 
    incase it is every closed */
-static STRPTR ExpandEnvName(STRPTR env_path)
+STRPTR ExpandEnvName(CONST_STRPTR env_path)
 {
     BOOL     ok = FALSE;
     char     tmp_envbuff[1024];
@@ -121,8 +121,12 @@ static STRPTR ExpandEnvName(STRPTR env_path)
         }     
     }
 
-    //We couldnt expand it so just use as is ..
-    return env_path;
+    // We couldn't expand it so just use as is, but the
+    // caller is expecting a newly allocated string...
+    fullpath = AllocVec(strlen(env_path) + 1, MEMF_PUBLIC);
+    CopyMem(env_path, fullpath, strlen(env_path) + 1);
+
+    return fullpath;
 }
 ///
 
@@ -156,12 +160,12 @@ HOOKPROTO(panelToolBar__HookFunc_LocationStringFunc, void, APTR *obj, APTR param
     /* Only change dir if it is a valid directory/volume */
     if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return;
 
         GET(panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIA_String_Contents, &str);
 
-#warning "TODO: Signal that it is a wrong path"
+/* TODO: Signal that it is a wrong path */
         /* so that the user understands (here where we abort with return) */
 
         fib = AllocDosObject(DOS_FIB, NULL);
@@ -228,13 +232,13 @@ IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
     SETUP_ICONWINDOW_INST_DATA;
 
     panelToolBarFSNotifyPort = GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
-    panelToolBarFSNotifyList = GetTagData(MUIA_Wanderer_FileSysNotifyList, (IPTR) NULL, message->ops_AttrList);
+    panelToolBarFSNotifyList = (APTR)GetTagData(MUIA_Wanderer_FileSysNotifyList, (IPTR) NULL, message->ops_AttrList);
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return 0;
 
         extension_PrefsData = AllocVec(TOOLBAR_PREFSSIZE, MEMF_CLEAR);
@@ -247,7 +251,7 @@ IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
             _prefsNotifyHandler->fshn_Node.ln_Name                      = ExpandEnvName(extension_PrefsFile);
             panelToolBar__PrefsNotifyRequest.nr_Name                    = _prefsNotifyHandler->fshn_Node.ln_Name;
             panelToolBar__PrefsNotifyRequest.nr_Flags                   = NRF_SEND_MESSAGE;
-            panelToolBar__PrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port    = panelToolBarFSNotifyPort;
+            panelToolBar__PrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port    = (struct MsgPort *)panelToolBarFSNotifyPort;
             _prefsNotifyHandler->HandleFSUpdate                         = panelToolBar__HandleFSUpdate;
 
             if (StartNotify(&panelToolBar__PrefsNotifyRequest))
@@ -301,7 +305,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
             return 0;
 
         panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate;
-        panelToolBarPrivate->iwp_Node.ln_Name = extension_Name;
+        panelToolBarPrivate->iwp_Node.ln_Name = (char *)extension_Name;
 
         /* Create the "ToolBar" panel object .. */
         panel_ToolBar = MUI_NewObject(MUIC_Group,
@@ -434,7 +438,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
 }
 ///
 
-IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, struct opSet *message)
+IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, Msg msg)
 {
     SETUP_ICONWINDOW_INST_DATA;
 
@@ -442,9 +446,9 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, struct opSet *message)
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return 0;
         
         if (panelToolBar__PrefsNotificationObject)
@@ -478,9 +482,9 @@ IPTR panelToolBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return rv;
 
         switch (message->opg_AttrID)
@@ -504,9 +508,9 @@ IPTR panelToolBar__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return rv;
 
         while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
@@ -533,7 +537,7 @@ IPTR panelToolBar__Init()
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
     panelToolBar__Extension.iwe_Node.ln_Pri = PANELTOOLBAR_PRIORITY;
-    panelToolBar__Extension.iwe_Node.ln_Name = extension_Name;
+    panelToolBar__Extension.iwe_Node.ln_Name = (char *)extension_Name;
     panelToolBar__Extension.iwe_Setup = panelToolBar__Setup;
     panelToolBar__Extension.iwe_Cleanup = panelToolBar__Cleanup;
     panelToolBar__Extension.iwe_Set = panelToolBar__OM_SET;

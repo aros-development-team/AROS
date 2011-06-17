@@ -139,7 +139,7 @@ HOOKPROTO(IconWindowDrawerList__HookFunc_ProcessIconListPrefsFunc, void, APTR *o
 
     if (prefs)
     {
-        IPTR attrib_Current, attrib_Prefs, prefs_Processing = 0;
+        IPTR attrib_Current = 0, attrib_Prefs, prefs_Processing = 0;
         BOOL options_changed = FALSE;
 
         D(bug("[Wanderer:DrawerList] %s: Setting IconList options ..\n", __PRETTY_FUNCTION__));
@@ -434,7 +434,7 @@ Object *IconWindowDrawerList__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         if (_newIconList__FSNotifyPort != 0)
         {
             struct IconWindowDrawerList_DATA *drawerlist_data = (struct IconWindowDrawerList_DATA *)data;
-            drawerlist_data->iwidld_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port = _newIconList__FSNotifyPort;
+            drawerlist_data->iwidld_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port = (struct MsgPort *)_newIconList__FSNotifyPort;
             D(bug("[Wanderer:DrawerList] %s: FS Notify Port @ 0x%p\n", __PRETTY_FUNCTION__, _newIconList__FSNotifyPort));
         }
     }
@@ -663,7 +663,7 @@ IPTR IconWindowDrawerList__MUIM_Setup
         {
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_Name                 = directory_path;
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
-            drawerlist_data->iwidld_DrawerNotifyRequest.nr_UserData             = self;
+            drawerlist_data->iwidld_DrawerNotifyRequest.nr_UserData             = (IPTR)self;
 
             if (StartNotify(&drawerlist_data->iwidld_DrawerNotifyRequest))
             {
@@ -879,7 +879,7 @@ ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
     OM_GET,                        struct opGet *,
     MUIM_Setup,                    Msg,
     MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg
+    MUIM_DrawBackground,           struct MUIP_DrawBackground *
 );
 #else
 ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
@@ -890,6 +890,6 @@ ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
     OM_GET,                        struct opGet *,
     MUIM_Setup,                    Msg,
     MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg
+    MUIM_DrawBackground,           struct MUIP_DrawBackground *
 );
 #endif

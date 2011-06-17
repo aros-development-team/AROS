@@ -180,7 +180,7 @@ HOOKPROTO(IconWindow__HookFunc_ProcessBackgroundFunc, void, APTR *obj, APTR para
         GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);
         if (!prefs_Processing)
         {
-#warning "TODO: We arent in prefs-processing so cause an update!"
+            /* TODO: We arent in prefs-processing so cause an update! */
         }
     }
 

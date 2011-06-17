@@ -29,7 +29,7 @@ ULONG EntryElementCount(struct List *entry_List)
 	return count;
 }
 
-BOOL EntryElementRegister(struct List *entry_List, ULONG entry_ID, char *entry_Name)
+BOOL EntryElementRegister(struct List *entry_List, ULONG entry_ID, CONST_STRPTR entry_Name)
 {
 	struct EntryElement__Entry	*current_Node = NULL;
 	IPTR                        element_NameLen = strlen(entry_Name) ;
@@ -60,7 +60,7 @@ void EntryElementRemove(struct List *entry_List, ULONG entry_ID)
 	{
 		if (current_Node->EE_E_ID == (IPTR)entry_ID)
 		{
-#warning "todo: remove the elements node and free its storage"
+/* TODO: remove the elements node and free its storage */
 		}
 	}
 }

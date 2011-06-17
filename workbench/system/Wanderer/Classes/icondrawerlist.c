@@ -118,7 +118,7 @@ Read icons in
 static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
 {
     struct IconDrawerList_DATA  *data = INST_DATA(CLASS, obj);
-    BPTR                        lock = NULL, tmplock = NULL;
+    BPTR                        lock = BNULL, tmplock = BNULL;
     char                        filename[256];
     char                        namebuffer[512];
     ULONG                       list_DisplayFlags = 0;
@@ -343,7 +343,7 @@ IPTR IconDrawerList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *mes
     switch (message->opg_AttrID)
     {
         case MUIA_IconDrawerList_Drawer: STORE = (IPTR)data->drawer; return 1;
-#warning "TODO: Get the version/revision from our config.."
+        /* TODO: Get the version/revision from our config.. */
         case MUIA_Version:                              STORE = (IPTR)1; return 1;
         case MUIA_Revision:                             STORE = (IPTR)3; return 1;
     }

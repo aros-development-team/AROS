@@ -18,7 +18,7 @@ struct EntryElement__Entry
 };
 
 #if !defined(HAVE_ELEMENTFUNCS)
-extern BOOL EntryElementRegister(struct List *entry_List, ULONG entry_ID, char * entry_Name);
+extern BOOL EntryElementRegister(struct List *entry_List, ULONG entry_ID, CONST_STRPTR entry_Name);
 extern ULONG EntryElementCount(struct List *entry_List);
 extern void EntryElementRemove(struct List *entry_List, ULONG entry_ID);
 extern IPTR EntryElementFindNode(struct List *entry_List, ULONG entry_ID);

@@ -42,7 +42,7 @@ void cleanup(CONST_STRPTR message)
 int main(int argc, char **argv)
 {
     Object *application;
-    BPTR  initial = NULL;
+    BPTR  initial = BNULL;
 
     Locale_Initialize();
 

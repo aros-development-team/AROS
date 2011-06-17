@@ -236,14 +236,14 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
                 {
                     sprintf(
                         d->Buffer, "%s %ld   %s %.2f kBytes   %s %.2f kBytes", 
-                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1024.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1024.0
+                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), (long)d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1024.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1024.0
                     );
                 }
                 else
                 {
                     sprintf(
                         d->Buffer, "%s %ld   %s %.2f MBytes   %s %.2f kBytes", 
-                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1048576.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1024.0
+                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), (long)d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1048576.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1024.0
                     );
                 }
             }
@@ -253,14 +253,14 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
                 {
                     sprintf(
                         d->Buffer, "%s %ld   %s %.2f kBytes   %s %.2f MBytes", 
-                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1024.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1048576.0
+                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), (long)d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1024.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1048576.0
                     );
                 }
                 else
                 {
                     sprintf(
                         d->Buffer, "%s %ld   %s %.2f MBytes   %s %.2f MBytes", 
-                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1048576.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1048576.0
+                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), (long)d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1048576.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1048576.0
                     );
                 }
             }
@@ -948,10 +948,13 @@ STRPTR GetUserScreenTitle(Object *self)
 {
   /*Work in progress :-)
    */
-    char *screentitlestr;
+    char *screentitlestr = NULL;
     int screentitleleng;
 
     GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);   
+
+    if (screentitlestr == NULL)
+        screentitlestr = "";
 
     screentitleleng = strlen(screentitlestr);
 
@@ -1374,7 +1377,7 @@ D(bug("[Wanderer] %s: ICONLIST_DISP_SHOWINFO\n", __PRETTY_FUNCTION__));
             drawericon->do_DrawerData->dd_Flags = 2;
         }
 
-#warning "TODO: Icon sort flags are only really for text list mode ... fix"
+        /* TODO: Icon sort flags are only really for text list mode ... fix */
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
         if (sort_bits & MUIV_IconList_Sort_ByDate)
         {
@@ -1879,7 +1882,7 @@ attemptlock:
 	    
 D(bug("[Wanderer] %s: Trying with '%s'\n", __PRETTY_FUNCTION__, file));
 
-            if ((lock = Lock(file, ACCESS_READ)) == NULL)
+            if ((lock = Lock(file, ACCESS_READ)) == BNULL)
 	    {
 D(bug("[Wanderer] %s: couldnt lock '%s'\n", __PRETTY_FUNCTION__, file));
 		if ((strlen(file) > 5)
@@ -1910,7 +1913,7 @@ D(bug("[Wanderer] %s: Calling WBInfo(name = '%s' parent lock = 0x%p)\n", __PRETT
 
 		UnLock(parent);
 	    }
-	    if (file != entry->ile_IconEntry->ie_IconNode.ln_Name)
+	    if ((char *)file != entry->ile_IconEntry->ie_IconNode.ln_Name)
 	    {
 		FreeVec(file);
 	    }
@@ -2022,7 +2025,7 @@ D(bug("[Wanderer] %s: Updating .backdrop file for volume '%s'.. \n", __PRETTY_FU
 	    if ((bdrp_file = AllocVec(strlen(entryVolume) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 	    {
 		struct List bdrp_Entries;
-		BPTR 	bdrp_lock = NULL;
+		BPTR 	bdrp_lock = BNULL;
 		BOOL	bdrp_changed = FALSE;
 		char	*linebuf = NULL;
 
@@ -2225,7 +2228,7 @@ D(bug("[Wanderer] %s: Processing entries in .backdrop file for '%s' ..\n", __PRE
 	if ((bdrp_file = AllocVec(strlen(paivNode->paiv_Node.ln_Name) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 	{
 	    struct List bdrp_Entries;
-	    BPTR 	bdrp_lock = NULL;
+	    BPTR 	bdrp_lock = BNULL;
 	    BOOL	bdrp_changed = FALSE;
 	    char	*linebuf = NULL;
 
@@ -3398,7 +3401,7 @@ D(bug("[Wanderer] %s: Really handing control to Zune ..\n", __PRETTY_FUNCTION__)
         return RETURN_OK;
     }
     
-#warning "TODO: Report an error if we fail to create the Workbench's window ..."
+    /* TODO: Report an error if we fail to create the Workbench's window ... */
     
     return RETURN_ERROR;
 }
@@ -3455,7 +3458,7 @@ D(bug("[Wanderer] %s: Unlocking access to screen @ %x\n", __PRETTY_FUNCTION__, d
                 }
                 else
                 {
-#warning "TODO: We need to handle the possiblity that we fail to lock the pubscreen..."
+/* TODO: We need to handle the possiblity that we fail to lock the pubscreen... */
 D(bug("[Wanderer] %s: Couldnt Lock WB Screen!!\n", __PRETTY_FUNCTION__));
                 }
                 break;

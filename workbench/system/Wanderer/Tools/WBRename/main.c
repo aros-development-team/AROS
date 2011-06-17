@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 
     parentlock = startup->sm_ArgList[1].wa_Lock;
     oldname    = startup->sm_ArgList[1].wa_Name;
-    if ((parentlock == NULL) || (oldname == NULL))
+    if ((parentlock == BNULL) || (oldname == NULL))
 	   Cleanup(_(MSG_INVALID_LOCK));
 
     oldlock = CurrentDir(parentlock);

@@ -725,7 +725,7 @@ D(bug("[IconVolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
     switch (message->opg_AttrID)
     {
-#warning "TODO: Get the version/revision from our config.."
+        /* TODO: Get the version/revision from our config.. */
         case MUIA_Version:                              STORE = (IPTR)1; return 1;
         case MUIA_Revision:                             STORE = (IPTR)3; return 1;
     }

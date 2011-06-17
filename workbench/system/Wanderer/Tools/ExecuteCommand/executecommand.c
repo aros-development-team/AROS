@@ -52,7 +52,7 @@ Object *ExecuteCommand__OM_NEW
     struct ExecuteCommand_DATA *data           = NULL;
     const struct TagItem       *tstate         = message->ops_AttrList,
                                *tag            = NULL;
-    BPTR                        parent         = NULL;
+    BPTR                        parent         = BNULL;
     BOOL                        unlockParent   = FALSE;
     CONST_STRPTR                initial        = NULL;
     BOOL                        freeInitial    = FALSE;
@@ -79,9 +79,9 @@ Object *ExecuteCommand__OM_NEW
     }
     
     /* Setup parameters ----------------------------------------------------*/
-    if (parent == NULL)
+    if (parent == BNULL)
     {
-        if ((parent = Lock("RAM:", ACCESS_READ)) != NULL)
+        if ((parent = Lock("RAM:", ACCESS_READ)) != BNULL)
         {
             unlockParent = TRUE;
         }
@@ -205,7 +205,7 @@ IPTR ExecuteCommand__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
     struct ExecuteCommand_DATA *data = INST_DATA(CLASS, self);
     
-    if (data->ecd_UnlockParent && data->ecd_Parent != NULL)
+    if (data->ecd_UnlockParent && data->ecd_Parent != BNULL)
     {
         UnLock(data->ecd_Parent);
     }
@@ -253,8 +253,8 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
     }
     else
     {
-        BPTR   console, cd = NULL;
-        STRPTR command;
+        BPTR   console, cd = BNULL;
+        STRPTR command = NULL;
         
         GET(data->ecd_CommandString, MUIA_String_Contents, &command);
         
@@ -283,9 +283,9 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                 console = Open("CON:////Command Output/CLOSE/AUTO/WAIT", MODE_OLDFILE);
             }
             
-            if (console != NULL)
+            if (console != BNULL)
             {
-                BPTR searchPath = NULL;
+                BPTR searchPath = BNULL;
                 
                 WorkbenchControl
                 (
@@ -294,7 +294,7 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                     TAG_DONE
                 );
                 
-                if (data->ecd_Parent != NULL) cd = CurrentDir(data->ecd_Parent);
+                if (data->ecd_Parent != BNULL) cd = CurrentDir(data->ecd_Parent);
                 
                 if
                 (
@@ -335,7 +335,7 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                     Close(console);
                 }
                 
-                if (cd != NULL) CurrentDir(cd);
+                if (cd != BNULL) CurrentDir(cd);
             }
             else
             {

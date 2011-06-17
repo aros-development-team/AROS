@@ -25,7 +25,7 @@
 int main(void)
 {
     Object *application, *window;
-    BPTR OldDir, NewDir;
+    BPTR OldDir = BNULL, NewDir;
 
     int rc = RETURN_OK;
 D(bug("[WPEditor.exe] Starting...\n"));

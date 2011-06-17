@@ -50,7 +50,7 @@
 #include "wpeditor.h"
 #include "entryelements.h"
 
-#warning "TODO: Include the wandererprefs definitions in a better way .."
+/* "TODO: Include the wandererprefs definitions in a better way .." */
 #include "../../system/Wanderer/wandererprefs.h"
 #include "../../system/Wanderer/Classes/iconlist_attributes.h"
 #include "../../system/Wanderer/iconwindow_attributes.h"
@@ -69,14 +69,14 @@ struct WPEditor_ViewSettingsObject
     char		        *wpedbo_ViewName;
     Object		        *wpedbo_ImageSpecObject;
     Object		        *wpedbo_AdvancedOptionsObject;
-    IPTR		        *wpedbo_Type;
+    IPTR		        wpedbo_Type;
 
-#warning "TODO: Replace _wpeditor_intern_IconTextRenderModeNames and co. with per view list"
+/* "TODO: Replace _wpeditor_intern_IconTextRenderModeNames and co. with per view list" */
     IPTR                *wpedbo_LabelRenderModeNames;
     IPTR                *wpedbo_LabelRenderModeEntries;
     IPTR                wpedbo_LabelRenderModeCount;
 
-#warning "TODO: Replace _wpeditor_intern_IconListModeNames and co. with per view list"
+/* "TODO: Replace _wpeditor_intern_IconListModeNames and co. with per view list" */
     IPTR                *wpedbo_ListModeNames;
     IPTR                *wpedbo_ListModeEntries;
     IPTR                wpedbo_ListModeCount;
@@ -183,7 +183,7 @@ static struct List   _wpeditor_intern_ViewSettings;
 
 /*** Misc Helper functions **************************************************/
 /* 32bit replacements for utility.library tag funcs */
-struct TagItem32 *  NextTag32Item(struct TagItem32 ** tagListPtr)
+struct TagItem32 *  NextTag32Item(const struct TagItem32 ** tagListPtr)
 {
 	if(!(*tagListPtr)) return NULL;
 
@@ -212,7 +212,7 @@ struct TagItem32 *  NextTag32Item(struct TagItem32 ** tagListPtr)
 	}
 }
 
-struct TagItem32 * FindTag32Item(ULONG tagValue, struct TagItem32 *tagList)
+struct TagItem32 * FindTag32Item(ULONG tagValue, const struct TagItem32 *tagList)
 {
 	struct TagItem32       *tag;
 	const struct TagItem32 *tagptr = tagList;
@@ -226,7 +226,7 @@ struct TagItem32 * FindTag32Item(ULONG tagValue, struct TagItem32 *tagList)
 
 }
 
-IPTR GetTag32Data(ULONG tagValue, ULONG defaultVal, struct TagItem32 *tagList)
+IPTR GetTag32Data(ULONG tagValue, ULONG defaultVal, const struct TagItem32 *tagList)
 {
 	struct TagItem32 *ti = NULL;
 
@@ -455,7 +455,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: ERROR: Unknown Re
 			if (success == FALSE)
 			{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindowExt_ImageBackFill_BGRenderMode TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 			}
 			else if (success == TRUE)
 			{
@@ -472,7 +472,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindo
 					if (success == FALSE)
 					{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindowExt_ImageBackFill_BGXOffset TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 					}
 					else if (success == TRUE)
 					{
@@ -483,7 +483,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindo
 					if (success == FALSE)
 					{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindowExt_ImageBackFill_BGYOffset TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 					}
 					else if (success == TRUE)
 					{
@@ -503,7 +503,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: Tile Mode '%s'\n"
 					if (success == FALSE)
 					{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindowExt_ImageBackFill_BGTileMode TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 					}
 					else if (success == TRUE)
 					{
@@ -517,7 +517,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindo
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_IconListMode TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -528,7 +528,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_Mode TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -539,7 +539,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_MaxLineLen TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -551,7 +551,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_MultiLineOnFocus TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -562,7 +562,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_MultiLine TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -573,7 +573,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_Icon_HorizontalSpacing TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -584,7 +584,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_Icon_VerticalSpacing TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -595,7 +595,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_Icon_ImageSpacing TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -606,7 +606,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_HorizontalPadding TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -617,7 +617,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_VerticalPadding TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -628,7 +628,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_BorderWidth TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -639,7 +639,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
 		if (success == FALSE)
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_BorderHeight TAG - Adding ..\n"));
-#warning "TODO: Allocate extra storage for our tags.."
+/* "TODO: Allocate extra storage for our tags.." */
 		}
 		else if (success == TRUE)
 		{
@@ -723,7 +723,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ 0x%p reports image
 
 	IPTR  this_Background_type = (IPTR)(ImageSelector_Spec[0] - 48);
 
-	_viewSettings_Current->wpedbo_Type = (APTR) this_Background_type;
+	_viewSettings_Current->wpedbo_Type = this_Background_type;
 	data->wped_ViewSettings_Current = _viewSettings_Current;
 
 	if (_viewSettings_Current->wpedbo_AdvancedOptionsObject)
@@ -761,7 +761,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Existing options @ 0x%p\n",
 					if ((strcmp(_viewSettings_Current->wpedbo_ViewName, "Workbench")) == 0)
 					{
 						DRAWMODEENTRY = EntryElementFindNode(&data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_AdvancedViewRenderModes, IconWindowExt_ImageBackFill_RenderMode_Scale);
-						newBG_RenderModes[newBG_RenderModeCount] = GetEntryElementName(DRAWMODEENTRY);
+						newBG_RenderModes[newBG_RenderModeCount] = (APTR)GetEntryElementName(DRAWMODEENTRY);
 						newBG_RenderModePages[newBG_RenderModeCount++] = 0;
 
 D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: DrawMode %d = '%s'\n", newBG_RenderModeCount -1, newBG_RenderModes[newBG_RenderModeCount-1]));
@@ -770,7 +770,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: DrawMode %d = '%s'\n", newB
 				case 0:
 				{
 					DRAWMODEENTRY = EntryElementFindNode(&data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_AdvancedViewRenderModes, IconWindowExt_ImageBackFill_RenderMode_Tiled);
-					newBG_RenderModes[newBG_RenderModeCount] = GetEntryElementName(DRAWMODEENTRY);
+					newBG_RenderModes[newBG_RenderModeCount] = (APTR)GetEntryElementName((IPTR)DRAWMODEENTRY);
 					newBG_RenderModePages[newBG_RenderModeCount++] = 1;
 
 					IPTR old_bg_tilemodes = (IPTR)data->wped_ViewSettings_Current->wpedbo_BFTileModeNames;
@@ -791,8 +791,8 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Allocated %d TileModes  - A
 
 					ForeachNode(&data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_AdvancedViewTileModes, tilelist_entry)
 					{
-						data->wped_ViewSettings_Current->wpedbo_BFTileModeNames[BFTileModeCount] = GetEntryElementName(tilelist_entry);
-						data->wped_ViewSettings_Current->wpedbo_BFTileModeEntries[BFTileModeCount] = tilelist_entry;
+						data->wped_ViewSettings_Current->wpedbo_BFTileModeNames[BFTileModeCount] = GetEntryElementName((IPTR)tilelist_entry);
+						data->wped_ViewSettings_Current->wpedbo_BFTileModeEntries[BFTileModeCount] = (IPTR)tilelist_entry;
 						BFTileModeCount++;
 					}
 
@@ -971,7 +971,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Allocated %d RenderModes  -
 
 			for (BFRenderModeCount = 0; BFRenderModeCount < data->wped_ViewSettings_Current->wpedbo_BFRenderModeCount; BFRenderModeCount++)
 			{
-				data->wped_ViewSettings_Current->wpedbo_BFRenderModeNames[BFRenderModeCount] = newBG_RenderModes[BFRenderModeCount];
+				data->wped_ViewSettings_Current->wpedbo_BFRenderModeNames[BFRenderModeCount] = (IPTR)newBG_RenderModes[BFRenderModeCount];
 				data->wped_ViewSettings_Current->wpedbo_BFRenderModePages[BFRenderModeCount] = newBG_RenderModePages[BFRenderModeCount];
 				data->wped_ViewSettings_Current->wpedbo_BFRenderModeEntries[BFRenderModeCount] = EntryElementFindNamedNode(&data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_AdvancedViewRenderModes, newBG_RenderModes[BFRenderModeCount]);
 			}
@@ -1597,7 +1597,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
 
-#warning "TODO: Replace with propper font selectors"
+/* "TODO: Replace with propper font selectors" */
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICONLABELFONT)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_LabelFontObj);
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICONINFOFONT)));	
@@ -1734,7 +1734,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ 0x%p\n", advanced
 		data->wped_Hook_CloseAdvancedOptions.h_Entry  = ( HOOKFUNC )WandererPrefs_Hook_CloseAdvancedOptionsFunc;
 
 		//-- Setup notifications -------------------------------------------
-#warning "TODO: The toolbar class will become an external module to wanderer with its own prefs"
+/* "TODO: The toolbar class will become an external module to wanderer with its own prefs" */
 #if defined(DEBUG_TOOLBARINTERNAL)
 		/*	Enhanced navigation depends on the toolbar class for
 			control - so we disable it if the toolbar isnt available! */
@@ -2345,7 +2345,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Prepare 'global' Wanderer
 			struct TagItem32	*_wp_GlobalTags = AllocVec((256 * sizeof(struct TagItem32)), MEMF_ANY|MEMF_CLEAR);
 			ULONG              _wp_GlobalTagCounter = 0;
                         /* helper to convert to little endian */
-			STACKED IPTR       	ti_Data;
+			STACKED IPTR       	ti_Data = 0;
 
                         // save navigation bahaviour
                         _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindow_WindowNavigationMethod);

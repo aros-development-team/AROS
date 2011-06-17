@@ -20,7 +20,7 @@
 #define blit_MODE_Blit				1
 #define blit_MODE_Clip				2
 
-#warning "TODO: Make Floating/Fixed tiles preference settable"
+/* TODO: Make Floating/Fixed tiles preference settable */
 #define  TILE_MODE_FLOAT            0
 #define  TILE_MODE_FIX              1
 

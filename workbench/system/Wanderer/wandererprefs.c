@@ -268,10 +268,10 @@ D(bug("[Wanderer:Prefs] ProcessUserScreenTitle('%s')\n", screentitle_Template));
 
   screentitle_TemplateLen = strlen(screentitle_Template);
 
-  if (screentitle_TemplateLen < 1)
+  if (screentitle_TemplateLen > sizeof(temp)-1)
   {
 D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen = %d\n", screentitle_TemplateLen));   
-    return (STRPTR) screentitle_TemplateLen;
+    return (STRPTR)NULL;
   }
   
   strcpy(temp, screentitle_Template);
@@ -334,7 +334,7 @@ D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen =
                 AI_ArosReleaseMinor, (IPTR)&rev,
                 TAG_DONE
               );
-            sprintf(infostr, "%d.%d", ver, rev);
+            sprintf(infostr, "%d.%d", (int)ver, (int)rev);
             CloseLibrary(AROSBase);
             found = TRUE;
           }
@@ -490,7 +490,7 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     D(bug("[Wanderer:Prefs]:New()\n"));
 
     _wandererPrefs__FSNotifyPort = GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
-    _wandererPrefs__FSNotifyList = GetTagData(MUIA_Wanderer_FileSysNotifyList, (IPTR) NULL, message->ops_AttrList);
+    _wandererPrefs__FSNotifyList = (APTR)GetTagData(MUIA_Wanderer_FileSysNotifyList, (IPTR) NULL, message->ops_AttrList);
 
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
  
@@ -503,10 +503,10 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         /* Setup notification on prefs file --------------------------------*/
         if (_wandererPrefs__FSNotifyList && ((wandererPrefs_PrefsNotifyHandler = AllocMem(sizeof(struct Wanderer_FSHandler), MEMF_CLEAR)) != NULL))
         {
-            wandererPrefs_PrefsNotifyHandler->fshn_Node.ln_Name         = ExpandEnvName(wandererPrefs_PrefsFile);
+            wandererPrefs_PrefsNotifyHandler->fshn_Node.ln_Name         = (char *)ExpandEnvName(wandererPrefs_PrefsFile);
             data->wpd_PrefsNotifyRequest.nr_Name                        = wandererPrefs_PrefsNotifyHandler->fshn_Node.ln_Name;
             data->wpd_PrefsNotifyRequest.nr_Flags                       = NRF_SEND_MESSAGE;
-            data->wpd_PrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port        = _wandererPrefs__FSNotifyPort;
+            data->wpd_PrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port        = (struct MsgPort *)_wandererPrefs__FSNotifyPort;
             wandererPrefs_PrefsNotifyHandler->HandleFSUpdate            = WandererPrefs__HandleFSUpdate;
 
             if (StartNotify(&data->wpd_PrefsNotifyRequest))
@@ -625,7 +625,7 @@ BOOL WandererPrefs_ProccessGlobalChunk(Class *CLASS, Object *self, struct TagIte
   BOOL cont = TRUE;
 
 D(bug("[Wanderer:Prefs] WandererPrefs_ProccessGlobalChunk()\n"));
-#warning "TODO: fix problems with endian-ness?"
+/* TODO: fix problems with endian-ness? */
 
   for (i = 0; i < tag_count; i++)
   {
@@ -638,13 +638,13 @@ D(bug("[Wanderer:Prefs] WandererPrefs_ProccessGlobalChunk()\n"));
       }
       else if (AROS_LE2LONG(global_chunk[i].ti_Tag) == MUIA_WandererPrefs_DefaultStack)
       {
-#warning "TODO: We should have an option to set the DefaultStackSize in wanderers prefs, and push it onto workbench.library"
+/* TODO: We should have an option to set the DefaultStackSize in wanderers prefs, and push it onto workbench.library */
           struct TagItem wbca_Tags[] =
           {
                 { WBCTRLA_SetDefaultStackSize, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data)      },
                 { TAG_DONE, 0                                                                   }
           };
-#warning "TODO: What should we use for the name arg in WorkbenchControlA"
+/* TODO: What should we use for the name arg in WorkbenchControlA */
           WorkbenchControlA("", wbca_Tags);
       }
       else
@@ -725,7 +725,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs_ProccessViewSettingsChunk()\n"));
 D(bug("[Wanderer:Prefs] WandererPrefs_ProccessViewSettingsChunk: Updating Existing node @ 0x%p\n", _viewSettings_Node));
     if (_viewSettings_Node->wpbn_Background)
 		FreeVec((APTR)_viewSettings_Node->wpbn_Background);
-#warning "TODO: Free any Cached backgrounds here .."		
+    /* TODO: Free any Cached backgrounds here .. */
   }
   else
   {
@@ -748,7 +748,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs_ProccessViewSettingsChunk: Creating new no
 D(bug("[Wanderer:Prefs] WandererPrefs_ProccessViewSettingsChunk: NAME BACKGROUND= %s\n",_viewSettings_Chunk));
   SET(_viewSettings_Node->wpbn_NotifyObject, MUIA_Background, _viewSettings_Chunk);
 
-#warning "TODO: Cache backgrounds here .."
+/* TODO: Cache backgrounds here .. */
 
   if (chunk_size > (strlen(_viewSettings_Chunk) + 1))
   {
@@ -977,7 +977,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotify
 ///
 
 ///NextTag32Item()
-#warning "TODO: Replace with propper 64bit check"
+/* TODO: Replace with propper 64bit check */
 /* 32bit replacements for utility.library tag funcs */
 struct TagItem32 *  NextTag32Item(struct TagItem32 ** tagListPtr)
 {

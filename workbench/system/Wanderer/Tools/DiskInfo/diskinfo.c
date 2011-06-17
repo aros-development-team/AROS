@@ -76,7 +76,7 @@ Object *DiskInfo__OM_NEW
     struct DiskInfo_DATA	*data           = NULL;
     const struct TagItem	*tstate         = message->ops_AttrList;
     struct TagItem		*tag            = NULL;
-    BPTR                        initial        = NULL;
+    BPTR                        initial         = BNULL;
     Object			*window,
 				*volnameobj, *voliconobj, *volusegaugeobj, *volusedobj, *volfreeobj,
 				*grp, *grpformat;
@@ -91,13 +91,15 @@ Object *DiskInfo__OM_NEW
     STRPTR                      status = NULL;
     STRPTR			dosdevname = "";
     STRPTR			filesystem = NULL;
-    STRPTR			fstype = NULL;
-    STRPTR			fshandler = NULL;
     STRPTR                      volicon = NULL;
     STRPTR			handlertype = "";
     STRPTR			deviceinfo = "";
- 
+
+#ifndef AROS_DOS_PACKETS
+    STRPTR			fstype = NULL;
+    STRPTR			fshandler = NULL;
     struct DosList	        *dl, *dn;
+#endif
     BOOL                        disktypefound = FALSE;
 
     static struct InfoData id;
@@ -134,7 +136,7 @@ Object *DiskInfo__OM_NEW
                 initial = (BPTR) tag->ti_Data;
                 D(bug("[DiskInfo] %s: initial lock @ 0x%p\n", __PRETTY_FUNCTION__, initial));
                 break;
-#warning "TODO: Remove MUIA_DiskInfo_Aspect"
+/* TODO: Remove MUIA_DiskInfo_Aspect */
             case MUIA_DiskInfo_Aspect:
                 aspect = tag->ti_Data;
                 D(bug("[DiskInfo] %s: aspect: %d\n", __PRETTY_FUNCTION__, aspect));
@@ -143,7 +145,7 @@ Object *DiskInfo__OM_NEW
     }
     
     /* Initial lock is required */
-    if (initial == NULL)
+    if (initial == BNULL)
     {
         return NULL;
     }
@@ -165,9 +167,9 @@ Object *DiskInfo__OM_NEW
     D(bug("[DiskInfo] %s: Volume '%s'\n", __PRETTY_FUNCTION__, volname));
 
     /* find the volumes doslist information .. */
-    IPTR volunit = 0;
     filesystem = _(MSG_UNKNOWN);
 #ifndef AROS_DOS_PACKETS
+    IPTR volunit = 0;
     dl = LockDosList(LDF_VOLUMES|LDF_READ);
     if (dl) {
 	dn = FindDosEntry(dl, volname, LDF_VOLUMES);
@@ -219,7 +221,7 @@ Object *DiskInfo__OM_NEW
 		    if (fsstartup != NULL)
 		    {
 			deviceinfo = AllocVec(strlen((UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device)) + (fsstartup->fssm_Unit/10 + 1) + 7, MEMF_CLEAR);
-			sprintf(deviceinfo,"%s %s %d", (UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device), _(MSG_UNIT), fsstartup->fssm_Unit);
+			sprintf(deviceinfo,"%s %s %d", (UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device), _(MSG_UNIT), (int)fsstartup->fssm_Unit);
 		    }
 		    D(bug("[DiskInfo] %s: Handler '%s'\n", __PRETTY_FUNCTION__, fshandler));
 		    break;
@@ -260,7 +262,7 @@ Object *DiskInfo__OM_NEW
         FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
         percent = FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
         FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
-        sprintf(blocksize, "%d %s", id.id_BytesPerBlock, _(MSG_BYTES));
+        sprintf(blocksize, "%d %s", (int)id.id_BytesPerBlock, _(MSG_BYTES));
 
         switch (id.id_DiskState)
 	{
@@ -312,7 +314,7 @@ Object *DiskInfo__OM_NEW
                     Child, (IPTR) (grp = (Object *)VGroup,
 			Child, (IPTR) HVSpace,
                         Child, (IPTR) ColGroup(2),
-#warning "TODO: Build this list only when data is realy available, and localise"
+/* TODO: Build this list only when data is realy available, and localise */
                             Child, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, (IPTR) __(MSG_DOSDEVICE),
@@ -532,7 +534,7 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
     struct DiskInfo_DATA *data = INST_DATA(CLASS, self);
     struct NotifyMessage *npMessage = NULL;
     static struct InfoData id;
-    BPTR fsdevlock = NULL;
+    BPTR fsdevlock = BNULL;
     BOOL di_Quit = FALSE;
 
     D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
@@ -543,7 +545,7 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
 	{
 	    D(bug("[DiskInfo] %s: FS notification recieved\n", __PRETTY_FUNCTION__));
 
-	    if ((fsdevlock = Lock(data->dki_DOSDev, SHARED_LOCK)) != NULL)
+	    if ((fsdevlock = Lock(data->dki_DOSDev, SHARED_LOCK)) != BNULL)
 	    {
 		/* Extract volume info from InfoData */
 		if (Info(fsdevlock, &id) == DOSTRUE)
@@ -591,7 +593,7 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
     }
     if (di_Quit)
     {
-#warning "TODO: set MUIV_Application_ReturnID_Quit"
+/* TODO: set MUIV_Application_ReturnID_Quit */
     }
     return (IPTR)NULL;
 }

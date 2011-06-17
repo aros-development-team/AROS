@@ -93,9 +93,9 @@ ULONG FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperb
     }
     
     if (!showPercentage)
-        sprintf(buffer, "%.1f%s  (%d %s)", internalsize, suffixes[divcount], blocks, _(MSG_BLOCKS) );
+        sprintf(buffer, "%.1f%s  (%d %s)", internalsize, suffixes[divcount], (int)blocks, _(MSG_BLOCKS) );
     else
-        sprintf(buffer, "%.1f%s  (%d %s, %d%%)", internalsize, suffixes[divcount], blocks, _(MSG_BLOCKS), percentage);
+        sprintf(buffer, "%.1f%s  (%d %s, %d%%)", internalsize, suffixes[divcount], (int)blocks, _(MSG_BLOCKS), (int)percentage);
     
     return percentage;
 }
