@@ -5,7 +5,6 @@ struct rtl8169_priv *get_pcnpriv(struct net_device *unit);
 
 void rtl8169_set_magic_reg(struct net_device *unit, unsigned mac_version)
 {
-    struct rtl8169_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
 	struct
 	{

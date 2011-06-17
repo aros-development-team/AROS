@@ -302,6 +302,7 @@ void rtl_phy_write(struct net_device *unit, struct phy_reg *regs, int len)
 	}
 }
 
+#if 0
 static void rtl8169_PHYPowerUP(struct net_device *unit)
 {
 	RTLD(bug("[%s] rtl8169_PHYPowerUP()\n", unit->rtl8169u_name))
@@ -309,6 +310,7 @@ static void rtl8169_PHYPowerUP(struct net_device *unit)
     mdio_write(unit, 0x1F, 0x0000);
     mdio_write(unit, 0x0E, 0x0000);
 }
+#endif
 
 void rtl8169_write_gmii_reg_bit(struct net_device *unit, int reg,
 				                       int bitnum, int bitval)
@@ -597,35 +599,37 @@ static int rtl8169_set_speed_xmii(struct net_device *unit,
 	return 0;
 }
 
+#if 0
 static void rtl8169_start_rx(struct net_device *unit)
 {
     RTLD(bug("[%s] rtl8169_start_rx\n", unit->rtl8169u_name))
     // Already running? Stop it.
-    #warning "TODO: Handle starting/stopping Rx"
+    /* TODO: Handle starting/stopping Rx */
 }
 
 static void rtl8169_stop_rx(struct net_device *unit)
 {
     RTLD(bug("[%s] rtl8169_stop_rx\n", unit->rtl8169u_name))
-    #warning "TODO: Handle starting/stopping Rx"
+    /* TODO: Handle starting/stopping Rx */
 }
 
 static void rtl8169_start_tx(struct net_device *unit)
 {
     RTLD(bug("[%s] rtl8169_start_tx()\n", unit->rtl8169u_name))
-    #warning "TODO: Handle starting/stopping Tx"
+    /* TODO: Handle starting/stopping Tx */
 }
 
 static void rtl8169_stop_tx(struct net_device *unit)
 {
     RTLD(bug("[%s] rtl8169_stop_tx()\n", unit->rtl8169u_name))
-    #warning "TODO: Handle starting/stopping Tx"
+    /* TODO: Handle starting/stopping Tx */
 }
 
 static void rtl8169_txrx_reset(struct net_device *unit)
 {
     RTLD(bug("[%s] rtl8169_txrx_reset()\n", unit->rtl8169u_name))
 }
+#endif
 
 /*
  * rtl8169_SetMulticast: unit->set_multicast function
@@ -917,7 +921,7 @@ static void rtl8169_drain_tx(struct net_device *unit)
     // struct rtl8169_priv *np = get_pcnpriv(unit);
     // int i;
 //    for (i = 0; i < NUM_TX_DESC; i++) {
-    #warning "TODO: rtl8169_drain_tx does nothing atm."
+    /* TODO: rtl8169_drain_tx does nothing atm. */
 //    }
 }
 
@@ -926,7 +930,7 @@ static void rtl8169_drain_rx(struct net_device *unit)
     // struct rtl8169_priv *np = get_pcnpriv(unit);
     // int i;
 //    for (i = 0; i < RX_RING_SIZE; i++) {
-    #warning "TODO: rtl8169_drain_rx does nothing atm."
+    /* TODO: rtl8169_drain_rx does nothing atm. */
 //    }
 }
 
@@ -1049,10 +1053,10 @@ void rtl_set_rx_tx_desc_registers(struct net_device *unit)
 	 * register to be written before TxDescAddrLow to work.
 	 * Switching from MMIO to I/O access fixes the issue as well.
 	 */
-    RTL_W32(base + (TxDescStartAddrHigh), ((UQUAD) np->TxPhyAddr >> 32));
-    RTL_W32(base + (TxDescStartAddrLow), ((UQUAD) np->TxPhyAddr & DMA_32BIT_MASK));
-    RTL_W32(base + (RxDescAddrHigh), ((UQUAD) np->RxPhyAddr >> 32));
-    RTL_W32(base + (RxDescAddrLow), ((UQUAD) np->RxPhyAddr & DMA_32BIT_MASK));
+    RTL_W32(base + (TxDescStartAddrHigh), ((UQUAD) (IPTR)np->TxPhyAddr >> 32));
+    RTL_W32(base + (TxDescStartAddrLow), ((UQUAD) (IPTR)np->TxPhyAddr & DMA_32BIT_MASK));
+    RTL_W32(base + (RxDescAddrHigh), ((UQUAD) (IPTR)np->RxPhyAddr >> 32));
+    RTL_W32(base + (RxDescAddrLow), ((UQUAD) (IPTR)np->RxPhyAddr & DMA_32BIT_MASK));
 }
 
 void rtl_set_rx_tx_config_registers(struct net_device *unit)
@@ -1130,6 +1134,7 @@ void rtl_set_rx_mode(struct net_device *unit)
 	RTL_W32(base + RxConfig, tmp);
 }
 
+#if 0
 static unsigned int rtl8169_XMIILinkOK(struct net_device *unit)
 {
     // struct rtl8169_priv *np = get_pcnpriv(unit);
@@ -1139,6 +1144,7 @@ static unsigned int rtl8169_XMIILinkOK(struct net_device *unit)
 
     return RTL_R8(base + (PHYstatus)) & LinkStatus;
 }
+#endif
 
 void rtl8169_CheckLinkStatus(struct net_device *unit)
 {
@@ -1206,7 +1212,7 @@ static ULONG rtl8169_TxFill(struct net_device *unit, ULONG start, ULONG end)
     	    continue;
         }
     
-    	if ((np->TxDescArray[i].addr = HIDD_PCIDriver_AllocPCIMem(unit->rtl8169u_PCIDriver, TX_BUF_SIZE)) == NULL)
+    	if ((np->TxDescArray[i].addr = (IPTR)HIDD_PCIDriver_AllocPCIMem(unit->rtl8169u_PCIDriver, TX_BUF_SIZE)) == 0)
     	{
     	    break;
         }  
@@ -1247,7 +1253,7 @@ static ULONG rtl8169_RxFill(struct net_device *unit, ULONG start, ULONG end)
     	    continue;
         }
     
-    	if ((np->RxDescArray[i].addr = HIDD_PCIDriver_AllocPCIMem(unit->rtl8169u_PCIDriver, np->rx_buf_sz)) == NULL)
+    	if ((np->RxDescArray[i].addr = (IPTR)HIDD_PCIDriver_AllocPCIMem(unit->rtl8169u_PCIDriver, np->rx_buf_sz)) == 0)
     	{
     	    break;
         }
