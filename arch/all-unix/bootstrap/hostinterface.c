@@ -1,11 +1,11 @@
+#include <stdarg.h>
+#include <stdio.h>
+
 #include <aros/config.h>
 #include <aros/kernel.h>
 #include <exec/lists.h>
 #include <exec/resident.h>
 #include <dos/bptr.h>
-
-#include <stdarg.h>
-#include <stdio.h>
 
 #include "hostinterface.h"
 
