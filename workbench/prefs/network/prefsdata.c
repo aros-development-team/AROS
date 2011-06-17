@@ -144,7 +144,7 @@ BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
 {
     /* Will create directory even if top level directory does not exist */
 
-    BPTR lock = NULL;
+    BPTR lock = BNULL;
     ULONG lastdirseparator = 0;
     ULONG dirpathlen = strlen(dirpath);
     STRPTR tmpdirpath = AllocVec(dirpathlen + 2, MEMF_CLEAR | MEMF_PUBLIC);
@@ -162,18 +162,18 @@ BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
         tmpdirpath[lastdirseparator] = '\0'; /* cut */
 
         /* Unlock any lock from previous interation. Last iteration lock will be returned. */
-        if (lock != NULL)
+        if (lock != BNULL)
         {
             UnLock(lock);
-            lock = NULL;
+            lock = BNULL;
         }
 
         /* Check if directory exists */
         lock = Lock(tmpdirpath, SHARED_LOCK);
-        if (lock == NULL)
+        if (lock == BNULL)
         {
             lock = CreateDir(tmpdirpath);
-            if (lock == NULL)
+            if (lock == BNULL)
                 break; /* Error with creation */
         }
 
@@ -183,12 +183,12 @@ BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
 
     FreeVec(tmpdirpath);
 
-    if (lock == NULL)
+    if (lock == BNULL)
         return FALSE;
     else
     {
         UnLock(lock);
-        lock = NULL;
+        lock = BNULL;
         return TRUE;
     }
 }
@@ -299,7 +299,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         fprintf
         (
             ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s %s\n",
-            GetName(iface), GetDevice(iface), GetUnit(iface),
+            GetName(iface), GetDevice(iface), (int)GetUnit(iface),
             (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
             (GetIfDHCP(iface) ? (CONST_STRPTR)"DHCP" : GetIP(iface)),
             GetMask(iface),
@@ -411,7 +411,7 @@ BOOL WriteMobilePrefs(CONST_STRPTR destdir)
     if (!ConfFile) return FALSE;
 
     if( strlen(GetMobile_devicename()) > 0 ) fprintf(ConfFile, "DEVICE %s\n" ,GetMobile_devicename() );
-    fprintf(ConfFile, "UNIT %d\n" ,GetMobile_unit() );
+    fprintf(ConfFile, "UNIT %d\n" , (int)GetMobile_unit() );
     if( strlen(GetMobile_username()) > 0 ) fprintf(ConfFile, "USERNAME %s\n" ,GetMobile_username() );
     if( strlen(GetMobile_password()) > 0 ) fprintf(ConfFile, "PASSWORD %s\n" ,GetMobile_password() );
 
@@ -431,7 +431,7 @@ BOOL WriteMobilePrefs(CONST_STRPTR destdir)
 #define BUFSIZE 2048
 BOOL CopyFile(CONST_STRPTR srcfile, CONST_STRPTR dstfile)
 {
-    BPTR from = NULL, to = NULL;
+    BPTR from = BNULL, to = BNULL;
     TEXT buffer[BUFSIZE];
 
     if ((from = Open(srcfile, MODE_OLDFILE)))
@@ -659,14 +659,14 @@ BOOL AddFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
     TEXT srcfile[srcfilelen];
     ULONG dstfilelen = strlen(dstdir) + 4 + strlen(filename) + 1;
     TEXT dstfile[dstfilelen];
-    BPTR dstlock = NULL;
+    BPTR dstlock = BNULL;
 
     CombinePath3P(srcfile, srcfilelen, srcdir, "db", filename);
     CombinePath3P(dstfile, dstfilelen, dstdir, "db", filename);
 
     /* Check if the destination file already exists. If yes, do not copy */
     dstlock = Lock(dstfile, SHARED_LOCK);
-    if (dstlock != NULL)
+    if (dstlock != BNULL)
     {
         UnLock(dstlock);
         return TRUE;
