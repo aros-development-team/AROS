@@ -6,39 +6,39 @@
 #include <unistd.h>
 #include "test.h"
 
-BPTR lockin = NULL, lockout = NULL;
+BPTR lockin = BNULL, lockout = BNULL;
 
 int main() 
 {
     char *pathin, *pathout = NULL;
 
     pathin = "SYS:";
-    TEST( (lockin = Lock( pathin, SHARED_LOCK )) != NULL ); 
+    TEST( (lockin = Lock( pathin, SHARED_LOCK )) != BNULL ); 
     TEST( chdir( pathin ) == 0 );
     pathout  = getcwd( NULL, 0 );
-    TEST( (lockout = Lock( pathin, SHARED_LOCK )) != NULL );
+    TEST( (lockout = Lock( pathin, SHARED_LOCK )) != BNULL );
     TEST( SameLock( lockin, lockout ) == LOCK_SAME );
     free( pathout ); pathout = NULL;
-    UnLock( lockin ); lockin = NULL;
-    UnLock( lockout ); lockout = NULL;
+    UnLock( lockin ); lockin = BNULL;
+    UnLock( lockout ); lockout = BNULL;
   
     pathin = "SYS:Tools";
-    TEST( (lockin = Lock( pathin, SHARED_LOCK )) != NULL ); 
+    TEST( (lockin = Lock( pathin, SHARED_LOCK )) != BNULL ); 
     TEST( chdir( pathin ) == 0 );
     pathout  = getcwd( NULL, 0 );
-    TEST( (lockout = Lock( pathin, SHARED_LOCK )) != NULL );
+    TEST( (lockout = Lock( pathin, SHARED_LOCK )) != BNULL );
     TEST( SameLock( lockin, lockout ) == LOCK_SAME );
     free( pathout ); pathout = NULL;
-    UnLock( lockin ); lockin = NULL;
-    UnLock( lockout ); lockout = NULL;
+    UnLock( lockin ); lockin = BNULL;
+    UnLock( lockout ); lockout = BNULL;
   
     return OK;
 }
 
 void cleanup() 
 {
-    if ( lockin != NULL )
+    if ( lockin != BNULL )
         UnLock( lockin );
-    if ( lockout != NULL )
+    if ( lockout != BNULL )
         UnLock( lockout );
 }

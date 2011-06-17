@@ -73,7 +73,7 @@ int main()
        way */
     int counter = 0;
     struct Process *procs[NPROCS];
-    APTR ids[NPROCS];
+    ULONG ids[NPROCS];
     struct TagItem tags[] =
     {
 	{ NP_Entry,         (IPTR) entry     },
@@ -91,7 +91,7 @@ int main()
 	procs[i] = CreateNewProc(tags);
 	TEST((procs[i]));
 	ids[i] = GetETask(procs[i])->et_UniqueID;
-	Signal(procs[i], SIGBREAKF_CTRL_C);
+	Signal((struct Task *)procs[i], SIGBREAKF_CTRL_C);
     }
     
     for(i = 0; i < NPROCS; i++)

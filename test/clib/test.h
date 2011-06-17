@@ -6,7 +6,7 @@ void cleanup( void );
 #define FAIL 5  /* Some of the tests failed */
 
 /* Testing macro */
-#define TEST(x) if( !x )                                                           \
+#define TEST(x) if( !(x) )                                                           \
     	    	{                                                                  \
                     printf( "Test FAILED in %s, line %d.\n", __FILE__, __LINE__ ); \
 		    cleanup();                                                     \
