@@ -50,7 +50,11 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 # Main ROM (0xf80000 - 0xffffff)
 FILES=start early debug
-AFILES=rom_entry rom_init superstack_swap
+AFILES=rom_entry rom_init cpu_detect superstack_swap
+
+# USe -m68000 when compiling .S files, as we will need the
+# expanded instruction set to detect alterate CPUs
+USER_AFLAGS := -m68060
 
 # Sadly, we need to consume Chip RAM for the initial SS and the ROM BSS.
 # The initial System Stack is located at 0x800-0x1000, but is only
@@ -168,10 +172,10 @@ clean ::
 	-$(RM) $(TESTS)
 
 $(KOBJSDIR)/%.o : %.c
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec -I$(SRCDIR)/rom/exec -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(USER_CFLAGS) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec -I$(SRCDIR)/rom/exec -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel"
 
 $(KOBJSDIR)/%.o : %.S
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(AFLAGS) $(USER_AFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel"
 
 $(KOBJSDIR)/%.d : %.c
 	%mkdepend_q
