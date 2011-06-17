@@ -16,9 +16,11 @@
 
 # if __WORDSIZE == 64
 #  define __PRI64_PREFIX	"l"
+#  define __PRIMAX_PREFIX	"l"
 #  define __PRIPTR_PREFIX	"l"
 # else
 #  define __PRI64_PREFIX	"ll"
+#  define __PRIMAX_PREFIX	"l"
 #  define __PRIPTR_PREFIX
 # endif
 
@@ -122,12 +124,12 @@
 
 
 /* Macros for printing `intmax_t' and `uintmax_t'.  */
-# define PRIdMAX	__PRI64_PREFIX "d"
-# define PRIiMAX	__PRI64_PREFIX "i"
-# define PRIoMAX	__PRI64_PREFIX "o"
-# define PRIuMAX	__PRI64_PREFIX "u"
-# define PRIxMAX	__PRI64_PREFIX "x"
-# define PRIXMAX	__PRI64_PREFIX "X"
+# define PRIdMAX	__PRIMAX_PREFIX "d"
+# define PRIiMAX	__PRIMAX_PREFIX "i"
+# define PRIoMAX	__PRIMAX_PREFIX "o"
+# define PRIuMAX	__PRIMAX_PREFIX "u"
+# define PRIxMAX	__PRIMAX_PREFIX "x"
+# define PRIXMAX	__PRIMAX_PREFIX "X"
 
 
 /* Macros for printing `intptr_t' and `uintptr_t'.  */
