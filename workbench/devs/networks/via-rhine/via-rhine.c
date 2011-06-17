@@ -122,6 +122,7 @@ static int mdio_read(struct net_device *dev, int phy_id, int location)
 	return WORDIN(base + VIAR_MIIData);
 }
 
+#if 0
 static void viarhinenic_start_rx(struct net_device *dev)
 {
     // struct fe_priv *np = get_pcnpriv(dev);
@@ -129,7 +130,7 @@ static void viarhinenic_start_rx(struct net_device *dev)
 
 D(bug("%s: viarhinenic_start_rx\n", dev->rhineu_name));
     // Already running? Stop it.
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void viarhinenic_stop_rx(struct net_device *dev)
@@ -137,7 +138,7 @@ static void viarhinenic_stop_rx(struct net_device *dev)
     // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: viarhinenic_stop_rx\n", dev->rhineu_name));
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void viarhinenic_start_tx(struct net_device *dev)
@@ -145,7 +146,7 @@ static void viarhinenic_start_tx(struct net_device *dev)
     // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: viarhinenic_start_tx()\n", dev->rhineu_name));
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void viarhinenic_stop_tx(struct net_device *dev)
@@ -153,7 +154,7 @@ static void viarhinenic_stop_tx(struct net_device *dev)
     // UBYTE *base = get_hwbase(dev);
 
 D(bug("%s: viarhinenic_stop_tx()\n", dev->rhineu_name));
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void viarhinenic_txrx_reset(struct net_device *dev)
@@ -163,6 +164,7 @@ static void viarhinenic_txrx_reset(struct net_device *dev)
 
 D(bug("%s: viarhinenic_txrx_reset()\n", dev->rhineu_name));
 }
+#endif
 
 /*
  * viarhinenic_set_multicast: dev->set_multicast function
@@ -243,7 +245,7 @@ static void viarhinenic_drain_tx(struct net_device *dev)
     // struct fe_priv *np = get_pcnpriv(dev);
     int i;
     for (i = 0; i < TX_BUFFERS; i++) {
-#warning "TODO: viarhinenic_drain_tx does nothing atm."
+/* TODO: viarhinenic_drain_tx does nothing atm. */
     }
 }
 
@@ -252,7 +254,7 @@ static void viarhinenic_drain_rx(struct net_device *dev)
     // struct fe_priv *np = get_pcnpriv(dev);
     int i;
     for (i = 0; i < RX_BUFFERS; i++) {
-#warning "TODO: viarhinenic_drain_rx does nothing atm."
+/* TODO: viarhinenic_drain_rx does nothing atm. */
     }
 }
 
@@ -374,11 +376,11 @@ D(bug("%s: viarhinenic_open: Tx Ring buffers allocated @ %x\n", dev->rhineu_name
 			np->tx_desc[i].tx_status = 0;
 			np->tx_desc[i].desc_length = 0;
 			np->tx_desc[i].addr = (IPTR)(np->tx_buffer + (i * BUFFER_SIZE));
-			np->tx_desc[i].next = &np->tx_desc[i + 1];
+			np->tx_desc[i].next = (IPTR)&np->tx_desc[i + 1];
 D(bug("%s: viarhinenic_open: Tx Ring %d @ %x, Buffer = %x\n",dev->rhineu_name,
                         i, &np->tx_desc[i], np->tx_desc[i].addr));
 		}
-		np->tx_desc[i-1].next = &np->tx_desc[0];
+		np->tx_desc[i-1].next = (IPTR)&np->tx_desc[0];
 	}
 
     np->rx_buffer = HIDD_PCIDriver_AllocPCIMem(
@@ -397,11 +399,11 @@ D(bug("%s: viarhinenic_open: Rx Ring buffers allocated @ %x\n", dev->rhineu_name
 			np->rx_desc[i].rx_status = DescOwn;
 			np->rx_desc[i].desc_length = MAX_FRAME_SIZE;
 			np->rx_desc[i].addr = (IPTR)( np->rx_buffer + (i * BUFFER_SIZE));
-			np->rx_desc[i].next = &np->rx_desc[i + 1];
+			np->rx_desc[i].next = (IPTR)&np->rx_desc[i + 1];
 D(bug("%s: viarhinenic_open: Rx Ring %d @ %x, Buffer = %x\n",dev->rhineu_name,
                         i, &np->rx_desc[i], np->rx_desc[i].addr));
 		}
-		np->rx_desc[i-1].next = &np->rx_desc[0];
+		np->rx_desc[i-1].next = (IPTR)&np->rx_desc[0];
 	}
 
    if (oom == 0)
@@ -414,8 +416,8 @@ D(bug("%s: viarhinenic_open: Allocated IO Buffers [ %d x Tx @ %x] [ %d x Rx @ %x
 D(bug("%s: viarhinenic_open: copied MAC address\n",dev->rhineu_name));
 
 		//Set up Frame Buffer Ring Descriptors
-		LONGOUT(base + VIAR_TxRingPtr, &np->tx_desc[0]);
-		LONGOUT(base + VIAR_RxRingPtr, &np->rx_desc[0]);
+		LONGOUT(base + VIAR_TxRingPtr, (IPTR)&np->tx_desc[0]);
+		LONGOUT(base + VIAR_RxRingPtr, (IPTR)&np->rx_desc[0]);
 
 D(bug("%s: viarhinenic_open: Frame Buffer Ring Descriptors set\n",dev->rhineu_name));
 	   
