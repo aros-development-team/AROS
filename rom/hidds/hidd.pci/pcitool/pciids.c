@@ -191,7 +191,7 @@ static LONG getSubDeviceIndex(LONG deviceIndex, UWORD subVendorID, UWORD subDevi
 
 void pciids_Open(void)
 {
-    APTR fh;
+    BPTR fh;
     LONG size;
 
     fh = Open("DEVS:pci.ids", MODE_OLDFILE);

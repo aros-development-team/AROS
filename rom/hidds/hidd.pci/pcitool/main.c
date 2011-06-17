@@ -317,7 +317,7 @@ AROS_UFH3(void, select_function,
 	OOP_GetAttr(obj, aHidd_PCIDevice_INTLine, (APTR)&val2);
 	if (val)
 	{
-	    snprintf(buf, 79, "%ld (%lc)", val2, val + 'A' - 1);
+	    snprintf(buf, 79, "%ld (%c)", val2, (int)val + 'A' - 1);
 	}
 	else snprintf(buf, 79, _(MSG_NA));
 	set(IRQLine, MUIA_Text_Contents, buf);
