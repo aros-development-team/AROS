@@ -1069,7 +1069,7 @@ static void RethinkLasso(Object *obj, struct TextIconList_DATA *data)
     LONG oy1 = data->old_lasso_rect.MinY;
     LONG oy2 = data->old_lasso_rect.MaxY;
     LONG y1, y2;
-    LONG x1, x2;
+    LONG x1 = 0, x2 = 0;
     LONG numdirty = 0;
     BOOL lasso_hot;
     
@@ -1165,7 +1165,8 @@ static void RethinkLasso(Object *obj, struct TextIconList_DATA *data)
 static IPTR TextIconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TextIconList_DATA    *data;
-    struct TagItem  	    	*tag, *tags;
+    struct TagItem  	    	*tag;
+    const struct TagItem	*tags;
     LONG    	    	    	 i;
     
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
@@ -1249,7 +1250,8 @@ static IPTR TextIconList_Dispose(struct IClass *cl, Object *obj, Msg msg)
 static IPTR TextIconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TextIconList_DATA *data = INST_DATA(cl, obj);
-    struct TagItem  	     *tag, *tags;
+    struct TagItem  	     *tag;
+    const struct TagItem     *tags;
     LONG    	    	      oldleft = data->view_x, oldtop = data->view_y;
     
     /* parse initial taglist */
@@ -2374,7 +2376,7 @@ static IPTR TextIconList_Add(struct IClass *cl, Object *obj, struct MUIP_TextIco
     }
     else
     {
-    	sprintf(GetTextIconEntryText(data, entry, INDEX_SIZE), "%ld", entry->fib.fib_Size);
+    	sprintf(GetTextIconEntryText(data, entry, INDEX_SIZE), "%ld", (long)entry->fib.fib_Size);
     }
     
     dt.dat_Stamp    = entry->fib.fib_Date;
@@ -2510,8 +2512,8 @@ IPTR TextIconListview_Layout_Function(struct Hook *hook, Object *obj, struct MUI
 		    /* Now place the objects between (0,0,lm->lm_Layout.Width-1,lm->lm_Layout.Height-1)
 		    */
 
-		    LONG virt_width;
-		    LONG virt_height;
+		    LONG virt_width = 0;
+		    LONG virt_height = 0;
 		    LONG vert_width = _minwidth(data->vert);
 		    LONG horiz_height = _minheight(data->horiz);
 		    LONG lay_width = lm->lm_Layout.Width;
@@ -2585,8 +2587,8 @@ IPTR TextIconListview_Layout_Function(struct Hook *hook, Object *obj, struct MUI
 IPTR TextIconListview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
     struct TextIconListview_DATA *data = (struct TextIconListview_DATA *)hook->h_Data;
-    int type = (int)msg[0];
-    LONG val = (LONG)msg[1];
+    int type = (int)(IPTR)msg[0];
+    LONG val = (LONG)(IPTR)msg[1];
 
     switch (type)
     {
@@ -2691,7 +2693,7 @@ IPTR TextIconListview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR TextIconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct TextIconListview_DATA *data = INST_DATA(cl, obj);
-    IPTR top,left,width,height,viswidth,visheight;
+    IPTR top = 0,left = 0,width = 0,height = 0,viswidth = 0,visheight = 0;
 
     get(data->texticonlist, MUIA_TextIconList_Left, &left);
     get(data->texticonlist, MUIA_TextIconList_Top, &top);

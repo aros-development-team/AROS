@@ -56,7 +56,7 @@ static IPTR AddFunc(struct Hook *hook, Object *caller, void *data)
 
 static IPTR MutateFunc(struct Hook *hook, Object *caller, void *data)
 {
-    LONG active;
+    LONG active = 0;
     char **entry;
     get(list, MUIA_List_Active, &active);
     if (active == MUIV_List_Active_Off)
