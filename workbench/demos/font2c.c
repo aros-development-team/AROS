@@ -368,7 +368,7 @@ static VOID print_long_array(ULONG *array, ULONG len, FILE *fh)
 	if ((i & 0x03) == 0)
 	    fprintf(fh, "\n\t");
 	    
-    	fprintf(fh,"0x%.8lx, ", *array ++);
+    	fprintf(fh,"0x%.8lx, ", (unsigned long)(*array ++));
 	
     }
     /* print last entry without ',' at the end */
@@ -376,7 +376,7 @@ static VOID print_long_array(ULONG *array, ULONG len, FILE *fh)
     if ((i & 0x03) == 0)
 	fprintf(fh, "\n\t");
 	
-    fprintf(fh, "0x%.8lx\n", *array);
+    fprintf(fh, "0x%.8lx\n", (unsigned long)(*array));
     fprintf(fh, "};");
 
     return;

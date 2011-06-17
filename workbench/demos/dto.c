@@ -69,7 +69,7 @@ void PrintErrorMsg (ULONG errnum, STRPTR name)
     else
 	Fault (errnum, NULL, errbuff, sizeof (errbuff));
 
-    printf ("%s\nerror #%ld\n", errbuff, errnum);
+    printf ("%s\nerror #%ld\n", errbuff, (long)errnum);
 }
 
 /*****************************************************************************/
@@ -97,13 +97,13 @@ int main (int argc, char **argv)
     ULONG tidata;
     ULONG errnum;
 
-    ULONG options[NUM_OPTS];
+    IPTR options[NUM_OPTS];
     struct RDArgs *rdargs;
 
     /* Parse the arguments.  Note that this simple example assumes
      * that it was started from the shell. */
     memset (options, 0, sizeof (options));
-    if ((rdargs = ReadArgs (TEMPLATE, (LONG *)options, NULL)))
+    if ((rdargs = ReadArgs (TEMPLATE, options, NULL)))
     {
 	/* Open DataTypes */
 	if ((DataTypesBase = OpenLibrary ("datatypes.library", 39)))
@@ -135,10 +135,10 @@ int main (int argc, char **argv)
 			printf ("opened \"%s\"\n", name);
 
 		    /* Show the mode ID */
-		    printf ("mode ID %08lx\n", modeid);
+		    printf ("mode ID %08lx\n", (unsigned long)modeid);
 
 		    /* Display the nominal size */
-		    printf ("nominal width %ld, height %ld\n", nomwidth, nomheight);
+		    printf ("nominal width %ld, height %ld\n", (long)nomwidth, (long)nomheight);
 		}
 
 		/* Ask the object what kind of environment it needs */
@@ -151,13 +151,13 @@ int main (int argc, char **argv)
 
 		if (DoDTMethodA (dto, NULL, NULL, (Msg) &dtf) && fri.fri_Dimensions.Depth)
 		{
-		    printf ("PropertyFlags : 0x%lx\n", fri.fri_PropertyFlags);
+		    printf ("PropertyFlags : 0x%lx\n", (unsigned long)fri.fri_PropertyFlags);
 		    printf ("RedBits       : 0x%x\n", fri.fri_RedBits);
 		    printf ("GreenBits     : 0x%x\n", fri.fri_GreenBits);
 		    printf ("BlueBits      : 0x%x\n", fri.fri_BlueBits);
-		    printf ("Width         : %ld\n", (ULONG) fri.fri_Dimensions.Width);
-		    printf ("Height        : %ld\n", (ULONG) fri.fri_Dimensions.Height);
-		    printf ("Depth         : %ld\n", (ULONG) fri.fri_Dimensions.Depth);
+		    printf ("Width         : %ld\n", (long) fri.fri_Dimensions.Width);
+		    printf ("Height        : %ld\n", (long) fri.fri_Dimensions.Height);
+		    printf ("Depth         : %ld\n", (long) fri.fri_Dimensions.Depth);
 		    printf ("Screen        : 0x%p\n", fri.fri_Screen);
 		    printf ("ColorMap      : 0x%p\n", fri.fri_ColorMap);
 
@@ -170,7 +170,7 @@ int main (int argc, char **argv)
 
 		    if ((fri.fri_PropertyFlags == 0) && (modeid & 0x800) && (modeid != INVALID_ID))
 		    {
-			printf ("ModeID=0x%08lx\n", modeid);
+			printf ("ModeID=0x%08lx\n", (unsigned long)modeid);
 			useScreen = TRUE;
 		    }
 		}

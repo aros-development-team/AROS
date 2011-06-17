@@ -122,11 +122,11 @@ show_time(mytimeval.tv_secs);
 
 printf("Now do three TR_GETSYSTIMEs in a row (notice how the microseconds increase)\n\n");
 get_sys_time( &mytimeval );
-printf("First TR_GETSYSTIME \t%ld.%ld\n",mytimeval.tv_secs, mytimeval.tv_micro);
+printf("First TR_GETSYSTIME \t%ld.%ld\n",(long) mytimeval.tv_secs, (long) mytimeval.tv_micro);
 get_sys_time( &mytimeval );
-printf("Second TR_GETSYSTIME \t%ld.%ld\n",mytimeval.tv_secs, mytimeval.tv_micro);
+printf("Second TR_GETSYSTIME \t%ld.%ld\n",(long) mytimeval.tv_secs, (long) mytimeval.tv_micro);
 get_sys_time( &mytimeval );
-printf("Third TR_GETSYSTIME \t%ld.%ld\n",mytimeval.tv_secs, mytimeval.tv_micro);
+printf("Third TR_GETSYSTIME \t%ld.%ld\n",(long) mytimeval.tv_secs, (long) mytimeval.tv_micro);
 
 printf( "\nResetting to former time\n" );
 set_new_time( oldtimeval.tv_secs );
@@ -276,5 +276,5 @@ hrs=hrs%24;
 
 /* Display the time */
 printf("*   Hour Minute Second  (Days since Jan.1,1978)\n");
-printf("*%5ld:%5ld:%5ld      (%6ld )\n\n",hrs,mins,secs,days);
+printf("*%5ld:%5ld:%5ld      (%6ld )\n\n",(long)hrs,(long)mins,(long)secs,(long)days);
 }      /* end of main */

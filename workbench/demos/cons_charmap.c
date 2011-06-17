@@ -211,7 +211,7 @@ int main()
 {
 
 	SHORT i;
-	SHORT status;
+	APTR  status;
 	SHORT problem;
 	SHORT error;
 	problem = 0;
@@ -220,7 +220,7 @@ int main()
 		{ problem = 1; goto cleanup1; }
         if((DiskfontBase=OpenLibrary("diskfont.library",0))==NULL) 
 		{ problem = 2; goto cleanup2; }
-        if((IntuitionBase=OpenLibrary("intuition.library",0))==NULL) 
+        if((IntuitionBase=(APTR)OpenLibrary("intuition.library",0))==NULL) 
 		{ problem = 3; goto cleanup3; }
         if((GfxBase=OpenLibrary("graphics.library",0))==NULL) 
 		{ problem = 4; goto cleanup4; }
