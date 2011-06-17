@@ -544,7 +544,7 @@ void handle_pref( void )
 				
 				if (item)
 				{
-				    if( handle_pref_menu((ULONG)GTMENUITEM_USERDATA(item))) return;
+				    if( handle_pref_menu((IPTR)GTMENUITEM_USERDATA(item))) return;
 				}
 				break;				
 			}
