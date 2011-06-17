@@ -55,8 +55,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-extern int h_errno;
-
 #include <net/if.h>
 #include <net/if_dl.h>
 #include <net/route.h>
@@ -71,6 +69,10 @@ extern int h_errno;
 #define VA_DOTDOTDOT ...
 #define va_dcl
 #define VA_start(list, last) va_start (list, last)
+
+#if __WORDSIZE == 64
+#define PTRSIZE_64BIT
+#endif
 
 #define SOCKLEN_T LONG
 #define INADDR_LOOPBACK 0x7f000001

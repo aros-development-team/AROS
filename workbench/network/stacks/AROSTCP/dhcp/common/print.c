@@ -311,7 +311,7 @@ void dump_raw (buf, len)
 			lbuf[54]=' ';
 			lbuf[55]=' ';
 			lbuf[73]='\0';
-			log_info (lbuf);
+			log_info ("%s", lbuf);
 		  }
 		  memset(lbuf, ' ', 79);
 		  lbuf [79] = 0;
@@ -335,7 +335,7 @@ void dump_raw (buf, len)
 	lbuf[54]=' ';
 	lbuf[55]=' ';
 	lbuf[73]='\0';
-	log_info (lbuf);
+	log_info ("%s", lbuf);
 }
 
 void hash_dump (table)

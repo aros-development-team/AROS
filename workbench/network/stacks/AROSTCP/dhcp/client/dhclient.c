@@ -30,10 +30,8 @@
  * fault and not Elliot's.
  */
 
-#ifndef lint
-static char ocopyright[] =
+const char dhcp_ocopyright[] =
 "$Id$ Copyright (c) 2004-2005 Internet Systems Consortium.  All rights reserved.\n";
-#endif /* not lint */
 
 #include "dhcpd.h"
 #include "version.h"
@@ -143,7 +141,6 @@ int main (argc, argv, envp)
 	omapi_object_t *listener;
 	isc_result_t result;
 	int persist = 0;
-	int omapi_port;
 	int no_dhclient_conf = 0;
 	int no_dhclient_db = 0;
 	int no_dhclient_pid = 0;
@@ -356,9 +353,9 @@ int main (argc, argv, envp)
 
 	if (!quiet) {
 		log_info ("%s %s", message, DHCP_VERSION);
-		log_info (copyright);
-		log_info (arr);
-		log_info (url);
+		log_info ("%s", copyright);
+		log_info ("%s", arr);
+		log_info ("%s", url);
 		log_info ("%s", "");
 	} else
 		log_perror = 0;
@@ -571,9 +568,9 @@ int main (argc, argv, envp)
 static void usage ()
 {
 	log_info ("%s %s", message, DHCP_VERSION);
-	log_info (copyright);
-	log_info (arr);
-	log_info (url);
+	log_info ("%s", copyright);
+	log_info ("%s", arr);
+	log_info ("%s", url);
 
 	log_error ("Usage: dhclient [-1dqr] [-nw] [-p <port>] %s",
 		   "[-s server]");
@@ -733,7 +730,6 @@ void state_selecting (cpp)
 			picked = lp;
 			picked -> next = (struct client_lease *)0;
 		} else {
-		      freeit:
 			destroy_client_lease (lp);
 		}
 	}
@@ -792,7 +788,6 @@ void dhcpack (packet)
 	struct client_lease *lease;
 	struct option_cache *oc;
 	struct data_string ds;
-	int i;
 	
 	/* If we're not receptive to an offer right now, or if the offer
 	   has an unrecognizable transaction id, then just drop it. */
@@ -946,8 +941,6 @@ void dhcpack (packet)
 void bind_lease (client)
 	struct client_state *client;
 {
-	struct interface_info *ip = client -> interface;
-
 	/* Remember the medium. */
 	client -> new -> medium = client -> medium;
 
@@ -1016,7 +1009,6 @@ void state_bound (cpp)
 	void *cpp;
 {
 	struct client_state *client = cpp;
-	int i;
 	struct option_cache *oc;
 	struct data_string ds;
 
@@ -1059,7 +1051,6 @@ void state_stop (cpp)
 	void *cpp;
 {
 	struct client_state *client = cpp;
-	int i;
 
 	/* Cancel all timeouts. */
 	cancel_timeout (state_selecting, client);
@@ -1176,8 +1167,6 @@ void dhcpoffer (packet)
 	int i;
 	int stop_selecting;
 	const char *name = packet -> packet_type ? "DHCPOFFER" : "BOOTREPLY";
-	struct iaddrlist *ap;
-	struct option_cache *oc;
 	char obuf [1024];
 	
 #ifdef DEBUG_PACKET
@@ -2000,7 +1989,6 @@ void make_discover (client, lease)
 	struct client_lease *lease;
 {
 	unsigned char discover = DHCPDISCOVER;
-	int i;
 	struct option_state *options = (struct option_state *)0;
 
 	memset (&client -> packet, 0, sizeof (client -> packet));
@@ -2064,9 +2052,6 @@ void make_request (client, lease)
 	struct client_lease *lease;
 {
 	unsigned char request = DHCPREQUEST;
-	int i, j;
-	unsigned char *tmp, *digest;
-	unsigned char *old_digest_loc;
 	struct option_cache *oc;
 
 	memset (&client -> packet, 0, sizeof (client -> packet));
@@ -2154,7 +2139,6 @@ void make_decline (client, lease)
 	struct client_lease *lease;
 {
 	unsigned char decline = DHCPDECLINE;
-	int i;
 	struct option_cache *oc;
 
 	struct option_state *options = (struct option_state *)0;
@@ -2210,7 +2194,6 @@ void make_release (client, lease)
 	struct client_lease *lease;
 {
 	unsigned char request = DHCPRELEASE;
-	int i;
 	struct option_cache *oc;
 
 	struct option_state *options = (struct option_state *)0;
@@ -2267,8 +2250,6 @@ void make_release (client, lease)
 void destroy_client_lease (lease)
 	struct client_lease *lease;
 {
-	int i;
-
 	if (lease -> server_name)
 		dfree (lease -> server_name, MDL);
 	if (lease -> filename)
@@ -2331,8 +2312,6 @@ void write_lease_option (struct option_cache *oc,
 {
 	const char *name, *dot;
 	struct data_string ds;
-	int status;
-	struct client_state *client;
 
 	memset (&ds, 0, sizeof ds);
 
@@ -2363,9 +2342,7 @@ int write_client_lease (client, lease, rewrite, makesure)
 	int i;
 	struct tm *t;
 	static int leases_written;
-	struct option_cache *oc;
 	struct data_string ds;
-	pair *hash;
 	int errors = 0;
 	char *s;
 
@@ -2865,14 +2842,13 @@ int interface_bind (struct client_state *client)
 			log_debug ("New hostname: %s", new_hostname_data.data);
 			sethostname (new_hostname_data.data, new_hostname_data.len);
 		}
-/*		if (new_routes) {
-			***TODO*** add new static routes
-		}*/
+		if (new_routes) {
+			/* TODO: add new static routes */
+		}
 	        if (new_dns) {
 			ClearDynNameServ();
 			if (new_dns_data.data) {
 				struct sockaddr_in ns_addr;
-				unsigned char *errstr;
 				u_long *addrs = (u_long *)new_dns_data.data;
 				int len = new_dns_data.len/4;
 				ns_addr.sin_len = sizeof(ns_addr);
@@ -2925,8 +2901,6 @@ void interface_release (struct client_state *client)
 */
 void interface_stop (struct client_state *client)
 {
-	unsigned char *errstr;
-
 	log_debug ("STOP %s", client->interface->name);
 	ifdeconfig (client->interface->name);
 	delroute (INADDR_ANY);
@@ -3619,7 +3593,7 @@ void client_dns_update_timeout (void *cp)
 
 isc_result_t client_dns_update (struct client_state *client, int addp, int ttl)
 {
-	struct data_string ddns_fqdn, ddns_fwd_name,
+	struct data_string ddns_fwd_name,
 	       ddns_dhcid, client_identifier;
 	struct option_cache *oc;
 	int ignorep;

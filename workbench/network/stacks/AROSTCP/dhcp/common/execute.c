@@ -283,7 +283,6 @@ int execute_statements (result, packet, lease, client_state,
 					binding -> next = (*scope) -> bindings;
 					(*scope) -> bindings = binding;
 				    } else {
-				       badalloc:
 					dfree (binding, MDL);
 					binding = (struct binding *)0;
 				    }
