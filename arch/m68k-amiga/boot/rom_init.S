@@ -1,5 +1,5 @@
 	.text
-	.chip 68060
+	.chip 68000
 	.align 4 
 
 	reset
@@ -46,7 +46,7 @@ rom_init:
 	move.l	%a5,%a4	/* Space for CPU/FPU data array */
 	addq.l	#8,%a5
 	move.l	%a4,%a0
-	bsr		cpu_detect
+	bsr		_cpu_detect
 	move.l	%a4@,%d6
 
 	/* Memory region array is put into the
@@ -279,107 +279,4 @@ MemoryTest:
 .L_memtest_none:
 	move.l	%d1,%d0
 	rts
-
-
-/* detect CPU and FPU type, enable code cache (if supported)
- * does not enable data caches, it is bad idea on real 68030 hardware
- * without correct MMU tables (for example chip ram must be non-cacheable)
- * 68040/060 data caches will be enabled later (transparent translation
- * registers can be used to disable data caching in low ram, even on EC models)
- * ram testing requires disabled data caches.
- *
- */
-
-cpu_detect:
-	move.l	%d0,0x100
-	move.l	%a0,%a2
-	clr.l	%a2@(4)
-	lea		%pc@(cpu_detect_trap_illg),%a1
-	move.l	%a1,4*4.w	/* illegal instruction */
-	lea		%pc@(fpu_detect_trap_f),%a1
-	move.l	%a1,11*4.w	/* f-line */
-	bsr		cpu_detect_asm
-	move.w	%d0,%d2
-	bsr		cpu_detect_fpu_asm
-	swap	%d2
-	move.w	%d0,%d2
-	swap	%d2
-	move.l	%d2,%a2@
-	rts
-
-cpu_detect_fpu_asm:
-	move.l	%sp,%a1
-	lea		%sp@(-60),%sp
-	move.l	%sp,%a0
-	clr.b	(%a0)
-	fsave	(%a0)
-	move.w	#0x8000,%d0
-	move.b	(%a0),%d0
-	move.l	%a1,%sp
-	rts		/* return to cpu_detect */
-
-fpu_detect_trap_f:
-	move.l	%a1,%sp
-	moveq	#0,%d0
-	rts		/* return to cpu_detect */
-
-cpu_detect_asm:
-	move.l	%sp,%a1
-	moveq	#0,%d0
-	/* VBR is 68010+ */
-	dc.l 	0x4e7a1801	// movec	%vbr,%d1
-	move.w	#0x0001,%d0
- 	/* CACR is 68020+ */
-	dc.l	0x4e7a0002 // movec	%cacr,%d0
-	/* 68020+ or better */
-	move.l	#0x00008000,%d0
- 	/* enable 68040/060 code cache */
-	dc.l	0x4e7b0002 // movec	%d0,%cacr
-	dc.l	0x4e7a0002 // movec	%cacr,%d0
- 	/* bit 15 still set? */
-	tst.w	%d0
- 	/* yes, it is 68040 or 68060 */
-	bmi.s	0f
- 	/* enable 68020/030 code cache and 68030 data cache */
- 	move.w	#0x0101,%d0
-	dc.l	0x4e7b0002 // movec	%d0,%cacr
-	dc.l	0x4e7a0002 // movec	%cacr,%d0
- 	/* data cache bit still set? */
-	btst	#8,%d0
-	bne.s	1f /* yes, it is 68030 */
-	/* 68020 */
-	move.w	#0x0003,%d0
-	bra cpu_detect_trap_illg
-	/* 68030 */
-1:	move.w	#0x0001,%d0
-	/* disable data cache, bad idea without correct MMU tables */
-	dc.l	0x4e7b0002 // movec	%d0,%cacr
-	move.w	#0x0007,%d0
-	bra cpu_detect_trap_illg
-	/* 68040 or 68060 */
-0:	moveq	#0,%d0
-	/* set transparent translation registers,
-	 * allow data caching only in 32-bit fast,
-	 * code caching allowed everywhere */
-	dc.l	0x4e7b0005	// movec	%d0,%itt1
-	move.l	#0x0000e040,%d0
-	dc.l	0x4e7b0006	// movec	%d0,%dtt0
-	move.l	#0x00ffe000,%d0
-	dc.l	0x4e7b0007	// movec	%d0,%dtt1
-	dc.l	0x4e7b0004	// movec	%d0,%itt0
-	move.w	#0x000f,%d0
- 	/* PCR is 68060 only */
-	dc.l 0x4e7a0808 // movec	%pcr,%d0
-	/* 68060 */
-	move.l	%d0,%a2@(4) // save PCR
-	move.w	#0x0001,%d0
- 	/* enable supercalar, enable FPU */
- 	dc.l 0x4e7b0808 // movec	%d0,%pcr
-	/* enable code cache, store buffer and branch cache */
-	move.l	#0x0080a000,%d0
-	dc.l 0x4e7b0002 // movec	%d0,%cacr
-	move.w	#0x008f,%d0
-cpu_detect_trap_illg:
-	move.l %a1,%sp	/* remove exception stack frame */
-	rts				/* return to cpu_detect() */
 
