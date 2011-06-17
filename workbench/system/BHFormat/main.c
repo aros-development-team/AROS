@@ -733,7 +733,7 @@ static BOOL bTransferCylinder(
 
 	if( DoIO((struct IORequest *)piosDisk) != 0 )
 	{
-	    const char * pszCommand;
+	    const char * pszCommand = NULL;
 	    switch(piosDisk->io_Command)
 	    {
 	    case NSCMD_TD_FORMAT64:
