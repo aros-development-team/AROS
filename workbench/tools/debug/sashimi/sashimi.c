@@ -110,19 +110,23 @@ STATIC const STRPTR ShellTemplate =
 /****************************************************************************/
 
 /* Eat me */
-#define COOKIE 0x08021999
+#if __WORDSIZE == 64
+#define COOKIE 0x08021999569fd030ULL
+#else
+#define COOKIE 0x08021999UL
+#endif
 
 struct SashimiResource
 {
-    struct Library    sr_Library;            /* Global link */
+    struct Library   sr_Library;            /* Global link */
     UWORD            sr_Pad;                /* Long word alignment */
 
-    ULONG            sr_Cookie;            /* Magic marker */
-    APTR            sr_PointsToCookie;    /* Points back to cookie */
+    IPTR             sr_Cookie;            /* Magic marker */
+    APTR             sr_PointsToCookie;    /* Points back to cookie */
     ULONG            sr_CreatedWhen;        /* When exactly was this data structure created? */
 
     struct Task *    sr_Owner;            /* Current owner of the patches */
-    LONG            sr_OwnerSigBit;
+    LONG             sr_OwnerSigBit;
     ULONG            sr_OwnerSigMask;    /* Signal mask to send when a new line is in the buffer. */
 
     ULONG            sr_FIFOTotalSize;    /* Number of bytes allocated for the buffer */
@@ -448,11 +452,11 @@ AddSashimiResource(ULONG bufferSize,struct SashimiResource ** resourcePtr)
 
         sr->sr_Library.lib_Node.ln_Name    = (char *)SashimiResourceName;
         sr->sr_Library.lib_Node.ln_Type    = NT_RESOURCE;
-        sr->sr_Owner                    = FindTask(NULL);
-        sr->sr_FIFOTotalSize            = bufferSize;
-        sr->sr_Cookie                    = COOKIE;
-        sr->sr_PointsToCookie            = &sr->sr_Cookie;
-        sr->sr_CreatedWhen                = now.tv_secs;
+        sr->sr_Owner                       = FindTask(NULL);
+        sr->sr_FIFOTotalSize               = bufferSize;
+        sr->sr_Cookie                      = COOKIE;
+        sr->sr_PointsToCookie              = &sr->sr_Cookie;
+        sr->sr_CreatedWhen                 = now.tv_secs;
 
         sr->sr_OwnerSigBit = AllocSignal(-1);
         if(sr->sr_OwnerSigBit != -1)
@@ -636,8 +640,8 @@ Recover(const STRPTR fileName)
     struct SashimiResource * sr = NULL;
     APTR allocated = NULL;
     struct MemHeader * mh;
-    ULONG * start;
-    ULONG * end;
+    IPTR * start;
+    IPTR * end;
     BOOL success;
 
     Printf("Trying to recover old Sashimi buffer... ");
@@ -650,8 +654,8 @@ Recover(const STRPTR fileName)
         mh->mh_Node.ln_Succ != NULL ;
         mh = (struct MemHeader *)mh->mh_Node.ln_Succ)
     {
-        start    = (ULONG *)mh->mh_Lower;
-        end        = (ULONG *)mh->mh_Upper;
+        start    = (IPTR *)mh->mh_Lower;
+        end        = (IPTR *)mh->mh_Upper;
 
         do
         {
@@ -659,14 +663,14 @@ Recover(const STRPTR fileName)
             if(start[0] == COOKIE)
             {
                 /* Then look for the pointer back to it. */
-                if(start[1] == (ULONG)start)
+                if(start[1] == (IPTR)start)
                 {
                     /* Unless we don't have a resource pointer
                      * yet, compare the creation times and take
                      * only the latest buffer.
                      */
                     if(sr == NULL || start[2] > sr->sr_CreatedWhen)
-                        sr = (struct SashimiResource *)((ULONG)start - offsetof(struct SashimiResource,sr_Cookie));
+                        sr = (struct SashimiResource *)((IPTR)start - offsetof(struct SashimiResource,sr_Cookie));
                 }
             }
         }
