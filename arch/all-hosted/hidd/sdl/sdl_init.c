@@ -23,7 +23,7 @@ int sdl_hidd_init(LIBBASETYPEPTR LIBBASE) {
     D(bug("[sdl] hidd init\n"));
 
     SDL_VERSION(&cver);
-    rver = S(SDL_Linked_Version);
+    rver = SP(SDL_Linked_Version);
 
     kprintf("sdl.hidd: using SDL version %d.%d.%d\n", rver->major, rver->minor, rver->patch);
 

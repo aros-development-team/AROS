@@ -142,9 +142,9 @@ int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
     sync = SIGF_BLIT;
     SetSignal(0, sync);
 
-    if (NewAddTask(task, sdl_event_task, NULL, TAGLIST(TASKTAG_ARG1, FindTask(NULL),
-                                                       TASKTAG_ARG2, sync,
-                                                       TASKTAG_ARG3, LIBBASE)) == NULL) {
+    if (NewAddTask(task, sdl_event_task, NULL, TAGLIST(TASKTAG_ARG1, (IPTR)FindTask(NULL),
+                                                       TASKTAG_ARG2, (IPTR)sync,
+                                                       TASKTAG_ARG3, (IPTR)LIBBASE)) == NULL) {
         D(bug("[sdl] new task creation failed\n"));
         FreeMem(stack, AROS_STACKSIZE);
         FreeMem(task, sizeof(struct Task));

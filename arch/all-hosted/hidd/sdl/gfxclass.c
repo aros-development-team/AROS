@@ -48,7 +48,7 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     char driver[128] = "";
 #endif
     Uint32 surftype;
-    SDL_Rect **modes;
+    const SDL_Rect **modes;
     struct TagItem *pftags;
     int nmodes, i;
     APTR tagpool;
@@ -59,7 +59,7 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     S(SDL_VideoDriverName, driver, sizeof(driver));
     kprintf("sdlgfx: using %s driver\n", driver);
 #endif
-    info = S(SDL_GetVideoInfo);
+    info = SP(SDL_GetVideoInfo);
     pixfmt = info->vfmt;
     D(bug("[sdl] window manager: %savailable\n", info->wm_available ? "" : "not "));
     D(bug("[sdl] hardware surfaces: %savailable\n", info->hw_available ? "" : "not "));
@@ -209,14 +209,14 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         );
     }
 
-    modes = S(SDL_ListModes, NULL, surftype | LIBBASE->use_fullscreen ? SDL_FULLSCREEN : 0);
+    modes = SP(SDL_ListModes, NULL, surftype | LIBBASE->use_fullscreen ? SDL_FULLSCREEN : 0);
     D(bug("[sdl] available modes:"));
     if (modes == NULL) {
         D(bug(" none\n"));
         nmodes = 0;
     }
     else {
-        if (modes == (SDL_Rect **) -1) {
+        if (modes == (const SDL_Rect **) -1) {
             D(bug(" (default)"));
             modes = default_modes;
         }
@@ -291,7 +291,7 @@ VOID SDLGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
 
     D(bug("[sdl] SDLGfx::Dispose\n"));
     
-    s = S(SDL_GetVideoSurface);
+    s = SP(SDL_GetVideoSurface);
     if (s != NULL) {
         D(bug("[sdl] freeing existing video surface\n"));
         SV(SDL_FreeSurface, s);
@@ -466,7 +466,7 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 	OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
 
 	/* Set up new onscreen surface */
-        s = S(SDL_SetVideoMode, width, height, depth,
+        s = SP(SDL_SetVideoMode, width, height, depth,
               (LIBBASE->use_hwsurface  ? SDL_HWSURFACE | SDL_HWPALETTE : SDL_SWSURFACE) |
               (LIBBASE->use_fullscreen ? SDL_FULLSCREEN                : 0) |
               SDL_ANYFORMAT);

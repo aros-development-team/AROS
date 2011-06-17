@@ -52,9 +52,17 @@ extern struct sdl_funcs sdl_funcs;
 #define S(name, ...) \
     ({ \
         Forbid(); \
-        APTR __sdlret = (APTR)sdl_funcs.name(__VA_ARGS__); \
+        int __sdlret = sdl_funcs.name(__VA_ARGS__); \
         Permit(); \
         __sdlret; \
+    })
+
+#define SP(name, ...) \
+    ({ \
+        Forbid(); \
+        const void *__sdlret = sdl_funcs.name(__VA_ARGS__); \
+        Permit(); \
+        (void *)__sdlret; \
     })
 
 #define SV(name, ...) \
