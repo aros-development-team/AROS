@@ -70,7 +70,7 @@ static void DumpState(struct MemHeader *mh)
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     IPTR p;
 
-    printf("Page map (%u total):\n", head->size);
+    printf("Page map (%u total):\n", (unsigned)head->size);
 
     for (p = 0; p < head->size; p++)
         printf(P_STATUS(head->map[p]) ? "#" : ".");
@@ -103,11 +103,11 @@ int main(void)
 	       "kernel.resource memory allocator will not work!\n");
 	return 1;
     }
-    printf("System page size: %u (0x%08X)\n", page, page);
+    printf("System page size: %u (0x%08X)\n", (unsigned)page, (unsigned)page);
 
     TestLength = PAGES_NUM * page;
     TestArea = AllocMem(TestLength, MEMF_ANY);
-    printf("Allocated test region (%u bytes) at 0x%p\n", TestLength, TestArea);
+    printf("Allocated test region (%u bytes) at 0x%p\n", (unsigned)TestLength, TestArea);
     if (!TestArea)
     {
 	printf("Failed to allocate test region!\n");
