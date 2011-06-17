@@ -334,7 +334,7 @@ Project create_projects(Project ins_after, APTR args, ULONG nb)
 {
 	Project new;
 	STRPTR  pattern;
-	APTR    cwd = (APTR) CurrentDir( NULL );
+	APTR    cwd = (APTR) CurrentDir( BNULL );
 
 	if(nb > 0)
 	{

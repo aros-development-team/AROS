@@ -202,7 +202,7 @@ void recalc_sigbits(void)
 CONST_STRPTR GetMenuText(ULONG MenuID)
 {
 	struct NewMenu *nm;
-	for(nm = newmenu; nm->nm_UserData != (APTR)MenuID; nm++);
+	for(nm = newmenu; (IPTR)nm->nm_UserData != MenuID; nm++);
 	return nm->nm_Label;
 }
 

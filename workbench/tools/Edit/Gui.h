@@ -58,6 +58,7 @@ extern struct Scroll *  Prop;
 extern struct RastPort *RP,RPT;
 extern struct gv        gui;
 extern struct pens      pen;
+struct _project;
 
 long            setup       ( void );
 void            load_pens   ( void );
@@ -65,7 +66,7 @@ void            free_prop   ( struct Scroll * );
 void            adjust_win  ( struct Window *, BYTE PrjBar );
 struct Scroll * add_prop    ( struct Window * );
 CONST_STRPTR    GetMenuText ( ULONG );
-void            prop_adj    ( Project );
+void            prop_adj    ( struct _project *p);
 void            clear_brcorner( void );
 void            CloseMainWnd( BOOL );
 void            recalc_sigbits(void);

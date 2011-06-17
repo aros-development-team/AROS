@@ -292,9 +292,9 @@ static char buffer[ MAX(sizeof(Path),sizeof(prefs)) ];
 /*** Save current configuration to restore it later if desired ***/
 void save_config( char ConfigFile )
 {
-#warning "CHECKME: = or ==?"
+/* CHECKME: = or ==? */
 
-	if(edit_file = ConfigFile)
+	if ((edit_file = ConfigFile))
 		CopyMem(Path, buffer, sizeof(Path));
 	else
 		CopyMem(&prefs, buffer, sizeof(prefs));

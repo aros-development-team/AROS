@@ -43,7 +43,7 @@ UBYTE SzOp[] = {
 void init_macros( void )
 {
 	TmplLen = strlen(
-#warning "FIXME: Missing buffer overflow check!"
+/* "FIXME: Missing buffer overflow check!" */
 	strcpy(NewTmpl, ErrMsg(WARN_REC)));
 	strcat(NewTmpl, "  "); TmplLen += 2;
 	strcat(NewTmpl, InfoTmpl);

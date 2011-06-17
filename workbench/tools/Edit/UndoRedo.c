@@ -135,7 +135,7 @@ void flush_undo_buf( JBuf jb )
 	/* Free the rollback segments */
 	for(jd = (RBOps)jb->rbseg; jd; prev = jd->prev, FreeVec(jd), jd = prev);
 	/* Reset struct fields to 0 */
-	memset(jb, 0, (ULONG) &((JBuf)0L)->rbtype);
+	memset(jb, 0, (IPTR)&((JBuf)0L)->rbtype);
 }
 
 /*** Register a character added in the buffer ***/

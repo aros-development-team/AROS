@@ -150,14 +150,14 @@ APTR open_prefs(STRPTR file, UBYTE mode)
 				{
 					/* First: search in local directory */
 					CopyMem(File, Path, sizeof(File)-1);
-					if(NULL == (fh = Open( Path, MODE_OLDFILE )))
+					if(BNULL == (fh = Open( Path, MODE_OLDFILE )))
 					{
 						/* Otherwise, look in directory ENVARC */
 						CopyMem(ENV, Path,sizeof(ENV)-1);
 						CopyMem(File,Path+sizeof(ENV)-1,sizeof(File)-1);
 						fh = Open( Path, MODE_OLDFILE );
 					}
-				} else if(NULL != (fh = Open( file, MODE_OLDFILE )))
+				} else if(BNULL != (fh = Open( file, MODE_OLDFILE )))
 					strcpy(Path, file);
 				break;
 			case MODE_SAVE:

@@ -244,7 +244,7 @@ void dispatch_events()
 							   							   
 							UWORD nextselect = Item->NextSelect;
 							
-							MenuId = (ULONG)GTMENUITEM_USERDATA( Item );
+							MenuId = (IPTR)GTMENUITEM_USERDATA( Item );
 							handle_menu( MenuId );
 
 							if(record) reg_act_com(MAC_ACT_COM_MENU, MenuId, msgbuf.Qualifier);
