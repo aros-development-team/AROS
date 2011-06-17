@@ -268,8 +268,9 @@ static void tap_send(struct tap_base *TAPBase, struct tap_unit *unit)
     ReplyMsg((APTR) req);
 };
 
-static void IOHandler(int fd, int mode, struct tap_unit *unit)
+static void IOHandler(int fd, int mode, void *data)
 {
+    struct tap_unit *unit = data;
     D(bug("[tap] IO interrupt received\n"));
     Signal(unit->iotask, 1 << unit->io_signal);
 }

@@ -149,8 +149,9 @@ static void SigIO_IntServer(struct uio_data *ud, void *unused)
     }
 }
 
-static void WaitIntHandler(int fd, int mode, struct UnixIO_Waiter *w)
+static void WaitIntHandler(int fd, int mode, void *data)
 {
+    struct UnixIO_Waiter *w = data;
     Signal(w->task, 1 << w->signal);
 }
 
@@ -935,7 +936,7 @@ ULONG UXIO__Hidd_UnixIO__Poll(OOP_Class *cl, OOP_Object *o, struct uioMsgPoll *m
  
     HostLib_Lock();
 
-    ret = poll_fd((int)msg->um_FD, msg->um_Mode, data);
+    ret = poll_fd((int)(IPTR)msg->um_FD, msg->um_Mode, data);
     if (msg->um_ErrNoPtr)
 	*msg->um_ErrNoPtr = *data->errnoPtr;
 
