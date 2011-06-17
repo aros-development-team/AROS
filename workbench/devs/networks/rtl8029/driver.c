@@ -1188,7 +1188,7 @@ void BoardShutdown(struct UnitData *ud)
 ///
 /// GetPacketHeader()
 
-ULONG GetPacketHeader(ULONG ne, UBYTE page)
+ULONG GetPacketHeader(IPTR ne, UBYTE page)
   {
     ULONG hdr;
 
@@ -1207,7 +1207,7 @@ ULONG GetPacketHeader(ULONG ne, UBYTE page)
 /// GetPacket()
 
 /*GetPacket(volatile struct Ne2000 *ne, UBYTE startpage, UWORD len, UWORD *buffer)*/
-VOID GetPacket(ULONG ne, UBYTE startpage, UWORD len, UWORD *buffer)
+VOID GetPacket(IPTR ne, UBYTE startpage, UWORD len, UWORD *buffer)
   {
     UWORD count;
 
