@@ -23,6 +23,7 @@
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
+#if 0
 static OOP_AttrBase HiddIRQAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
@@ -30,6 +31,7 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_IRQ,	&HiddIRQAttrBase	},
     { NULL, NULL }
 };
+#endif
 
 /*** HIDDIRQ::AddHandler() ***************************************/
 
@@ -79,6 +81,10 @@ BOOL PCIrq__Hidd_IRQ__AddHandler(OOP_Class *cl, OOP_Object *obj, struct pHidd_IR
 	    case vHidd_IRQ_HDD2:
 		irqnum = 15;
 		break;
+
+	    default:
+	    	irqnum = -1;
+	    	break;
 	}
     }
 
@@ -113,9 +119,10 @@ VOID PCIrq__Hidd_IRQ__RemHandler(OOP_Class *cl, OOP_Object *obj, struct pHidd_IR
 
 /*** HIDDIRQ::CauseIRQ() *****************************************/
 
+struct pHidd_CauseIRQ;
 VOID PCIrq__Hidd_IRQ__CauseIRQ(OOP_Class *cl, OOP_Object *obj, struct pHidd_CauseIRQ *msg)
 {
     EnterFunc(bug("HIDDIRQ::CauseIRQ()\n"));
-#warning TODO: Write CauseIRQ method
+    /* TODO: Write CauseIRQ method */
     ReturnVoid("HIDDIRQ::CauseIRQ");
 }
