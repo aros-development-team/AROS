@@ -110,7 +110,7 @@ VOID AllocateProc(struct IOAudio *audioio, ETASK *eta)
                     D(bug("NEWD: after combination %d\n", actual));
                     setup_Units(actual, key, pri, eta);
                     audioio->ioa_Request.io_Unit
-                            = (struct Unit*) ((ULONG) actual);
+                            = (struct Unit*) ((IPTR) actual);
                     audioio->ioa_Request.io_Error = IONOERROR;
                     audioio->ioa_AllocKey = key;
 
@@ -178,7 +178,7 @@ VOID AllocateProc(struct IOAudio *audioio, ETASK *eta)
                  */
 
                 setup_Units(actual, key, pri, eta);
-                audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) actual);
+                audioio->ioa_Request.io_Unit = (struct Unit*) ((IPTR) actual);
                 audioio->ioa_Request.io_Error = IONOERROR;
                 audioio->ioa_AllocKey = key;
 
@@ -418,7 +418,7 @@ VOID _CMD_RESET(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived CMD_RESET from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -440,7 +440,7 @@ VOID _CMD_RESET(struct IOAudio *audioio, ETASK *eta)
         } while (unit);
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) ((IPTR) final);
     audioio->ioa_Request.io_Error = error;
     Signal(audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigTask, 1
             << audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigBit);
@@ -524,7 +524,7 @@ VOID _ADCMD_FREE(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived CMD_FREE from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -557,7 +557,7 @@ VOID _ADCMD_FREE(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Now i reply CMD_FREE from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) (IPTR) final;
     audioio->ioa_Request.io_Error = error;
 
     //Signal(audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigTask,STOLEN_SIG);
@@ -1105,8 +1105,8 @@ VOID TaskBody( VOID)
                         {
                             if (--unit->eu_actcycles == 0)
                             {
-                                ULONG tmpunit =
-                                        (ULONG) ioaudioreq->ioa_Request.io_Unit;
+                                IPTR tmpunit =
+                                        (IPTR) ioaudioreq->ioa_Request.io_Unit;
                                 tmpunit |= 1 << unit->eu_id;
                                 ioaudioreq->ioa_Request.io_Unit
                                         = (APTR) tmpunit;
@@ -1286,7 +1286,7 @@ VOID _ADCMD_LOCK(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived ADCMD_LOCK from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -1313,7 +1313,7 @@ VOID _ADCMD_LOCK(struct IOAudio *audioio, ETASK *eta)
         error = ADIOERR_NOALLOCATION;
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) (IPTR) final;
     audioio->ioa_Request.io_Error = error;
     Signal(ematsys->ts_calltask, STOLEN_SIG);
 }
@@ -1360,7 +1360,7 @@ VOID _ADCMD_FINISH(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived ADCMD_FINISH from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -1384,7 +1384,7 @@ VOID _ADCMD_FINISH(struct IOAudio *audioio, ETASK *eta)
         error = ADIOERR_NOALLOCATION;
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) (IPTR) final;
     audioio->ioa_Request.io_Error = error;
     Signal(audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigTask, 1
             << audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigBit);
@@ -1425,7 +1425,7 @@ VOID _ADCMD_PERVOL(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived ADCMD_PERVOL from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -1449,7 +1449,7 @@ VOID _ADCMD_PERVOL(struct IOAudio *audioio, ETASK *eta)
         error = ADIOERR_NOALLOCATION;
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) (IPTR) final;
     audioio->ioa_Request.io_Error = error;
     Signal(audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigTask, STOLEN_SIG);
 }
@@ -1518,7 +1518,7 @@ void audio_WAITCYCLE(struct IOAudio *audioio)
     D(bug("NEWD: Arrived ADCMD_WAITCYCLE from IOAudio (%x), unit(%d)\n",
             audioio, audioio->ioa_Request.io_Unit));
 
-    unit = (ULONG) audioio->ioa_Request.io_Unit;
+    unit = (IPTR) audioio->ioa_Request.io_Unit;
 
     PutMsg(global_eta->et_portunits, (struct Message*) audioio); // For the ADCMD_WAITCYCLE only one unit accepted but i send it to the allunit msgport.
     Wait(1 << audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigBit);
@@ -1531,7 +1531,7 @@ void audio_WAITCYCLE(struct IOAudio *audioio)
         }
         else
         {
-            if ((ULONG) unit != (ULONG) audioio->ioa_Request.io_Unit) // If the value changed it isn't waiting for anyone so please reply.
+            if (unit != (IPTR) audioio->ioa_Request.io_Unit) // If the value changed it isn't waiting for anyone so please reply.
             {
                 ReplyMsg(&audioio->ioa_Request.io_Message);
             }
@@ -1550,7 +1550,7 @@ VOID _ADCMD_WAITCYCLE(struct IOAudio *audioio, ETASK *eta)
     UBYTE unit, chan; // For the CMD_READ only one unit accepted.
     EUNIT *channel;
 
-    unit = (ULONG) audioio->ioa_Request.io_Unit;
+    unit = (IPTR) audioio->ioa_Request.io_Unit;
     chan = writechn[unit & 15];
 
     if ((channel = eta->et_units[chan]))
@@ -1562,7 +1562,7 @@ VOID _ADCMD_WAITCYCLE(struct IOAudio *audioio, ETASK *eta)
 
             if (channel->eu_usingme) // Yes there is a wave in execution.
             {
-                ULONG tmpunit = (ULONG) audioio->ioa_Request.io_Unit;
+                IPTR tmpunit = (IPTR) audioio->ioa_Request.io_Unit;
                 tmpunit |= (1 << channel->eu_id);
                 audioio->ioa_Request.io_Unit = (APTR) tmpunit;
 
@@ -1577,7 +1577,7 @@ VOID _ADCMD_WAITCYCLE(struct IOAudio *audioio, ETASK *eta)
             }
             else // No, no wave in execution.
             {
-                ULONG tmpunit = (ULONG) audioio->ioa_Request.io_Unit;
+                IPTR tmpunit = (IPTR) audioio->ioa_Request.io_Unit;
                 tmpunit &= ~(1 << channel->eu_id);
                 audioio->ioa_Request.io_Unit = (APTR) tmpunit;
 
@@ -1597,7 +1597,7 @@ VOID _ADCMD_WAITCYCLE(struct IOAudio *audioio, ETASK *eta)
                 audioio->ioa_Data = NULL;
             }
 
-            ULONG tmpunit = (ULONG) audioio->ioa_Request.io_Unit;
+            IPTR tmpunit = (IPTR) audioio->ioa_Request.io_Unit;
             tmpunit |= (1 << channel->eu_id);
             audioio->ioa_Request.io_Unit = (APTR) tmpunit;
 
@@ -1609,7 +1609,7 @@ VOID _ADCMD_WAITCYCLE(struct IOAudio *audioio, ETASK *eta)
         }
     }
 
-    ULONG tmpunit = (ULONG) audioio->ioa_Request.io_Unit;
+    IPTR tmpunit = (IPTR) audioio->ioa_Request.io_Unit;
     tmpunit &= ~(1 << channel->eu_id);
     audioio->ioa_Request.io_Unit = (APTR) tmpunit;
 
@@ -1652,7 +1652,7 @@ VOID _CMD_START(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived CMD_START from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -1678,7 +1678,7 @@ VOID _CMD_START(struct IOAudio *audioio, ETASK *eta)
         error = ADIOERR_NOALLOCATION;
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) ((IPTR) final);
     audioio->ioa_Request.io_Error = error;
     Signal(ematsys->ts_calltask, STOLEN_SIG);
 }
@@ -1725,7 +1725,7 @@ VOID _CMD_STOP(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived CMD_STOP from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -1764,7 +1764,7 @@ VOID _CMD_STOP(struct IOAudio *audioio, ETASK *eta)
         error = ADIOERR_NOALLOCATION;
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) (IPTR) final;
     audioio->ioa_Request.io_Error = error;
     Signal(ematsys->ts_calltask, STOLEN_SIG);
 }
@@ -1825,7 +1825,7 @@ VOID _CMD_READ(struct IOAudio *audioio, ETASK *eta)
     UBYTE unit, chan; // For the CMD_READ only one unit accepted.
     EUNIT *channel;
 
-    unit = (ULONG) audioio->ioa_Request.io_Unit;
+    unit = (IPTR) audioio->ioa_Request.io_Unit;
     chan = writechn[unit & 15];
 
     if ((channel = eta->et_units[chan]))
@@ -1846,7 +1846,7 @@ VOID _CMD_READ(struct IOAudio *audioio, ETASK *eta)
                     audioio->ioa_Data = NULL;
                 }
 
-                ULONG tmpunit = (ULONG) audioio->ioa_Request.io_Unit;
+                IPTR tmpunit = (IPTR) audioio->ioa_Request.io_Unit;
                 tmpunit |= (1 << channel->eu_id);
                 audioio->ioa_Request.io_Unit = (APTR) tmpunit;
 
@@ -1859,7 +1859,7 @@ VOID _CMD_READ(struct IOAudio *audioio, ETASK *eta)
         }
     }
 
-    ULONG tmpunit = (ULONG) audioio->ioa_Request.io_Unit;
+    IPTR tmpunit = (IPTR) audioio->ioa_Request.io_Unit;
     tmpunit &= ~(1 << channel->eu_id);
     audioio->ioa_Request.io_Unit = (APTR) tmpunit;
 
@@ -1936,7 +1936,7 @@ VOID _CMD_FLUSH(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived CMD_FLUSH from IOAudio (%x), unit(%d), replyport(%x)\n",
         audioio, audioio->ioa_Request.io_Unit, audioio->ioa_Request.io_Message.mn_ReplyPort));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -1963,7 +1963,7 @@ VOID _CMD_FLUSH(struct IOAudio *audioio, ETASK *eta)
         error = ADIOERR_NOALLOCATION;
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) (IPTR) final;
     audioio->ioa_Request.io_Error = error;
     Signal(ematsys->ts_calltask, STOLEN_SIG);
 }
@@ -2047,7 +2047,7 @@ void audio_WRITE(struct IOAudio *audioio)
 
     D(bug("NEWDD: Received ADCMD_WRITE from task %x\n", FindTask(NULL)));
 
-    unit = (ULONG) audioio->ioa_Request.io_Unit;
+    unit = (IPTR) audioio->ioa_Request.io_Unit;
     chan = writechn[unit & 15];
 
     oldtask = audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigTask;
@@ -2226,7 +2226,7 @@ VOID _CMD_CLEAR(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived CMD_CLEAR from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -2250,7 +2250,7 @@ VOID _CMD_CLEAR(struct IOAudio *audioio, ETASK *eta)
         error = ADIOERR_NOALLOCATION;
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) (IPTR) final;
     audioio->ioa_Request.io_Error = error;
     Signal(audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigTask, 1
             << audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigBit);
@@ -2290,7 +2290,7 @@ VOID _CMD_UPDATE(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived CMD_UPDATE from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -2314,7 +2314,7 @@ VOID _CMD_UPDATE(struct IOAudio *audioio, ETASK *eta)
         error = ADIOERR_NOALLOCATION;
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) (IPTR) final;
     audioio->ioa_Request.io_Error = error;
     Signal(audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigTask, 1
             << audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigBit);
@@ -2355,7 +2355,7 @@ VOID _ADCMD_SETPREC(struct IOAudio *audioio, ETASK *eta)
     D(bug("NEWD: Arrived ADCMD_SETPREC from IOAudio (%x), unit(%d)\n", audioio,
             audioio->ioa_Request.io_Unit));
 
-    if ((unit = (((ULONG) audioio->ioa_Request.io_Unit) & 15)))
+    if ((unit = (((IPTR) audioio->ioa_Request.io_Unit) & 15)))
     {
         do
         {
@@ -2381,7 +2381,7 @@ VOID _ADCMD_SETPREC(struct IOAudio *audioio, ETASK *eta)
         error = ADIOERR_NOALLOCATION;
     }
 
-    audioio->ioa_Request.io_Unit = (struct Unit*) ((ULONG) final);
+    audioio->ioa_Request.io_Unit = (struct Unit*) (IPTR) final;
     audioio->ioa_Request.io_Error = error;
     Signal(audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigTask, 1
             << audioio->ioa_Request.io_Message.mn_ReplyPort->mp_SigBit);
