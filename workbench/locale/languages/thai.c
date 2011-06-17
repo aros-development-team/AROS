@@ -156,7 +156,7 @@ AROS_LH0(BPTR, close, struct Language *, language, 2, language)
 	    return AROS_LC0(BPTR, expunge, struct Language *, language, 3, language);
 	}
     }
-    return NULL;
+    return BNULL;
     AROS_LIBFUNC_EXIT
 }
 
@@ -275,7 +275,7 @@ const STRPTR __thai_strings[] =
 	of Locale->CalendarType.
     */
 
-#warning: stegerg: I think this must always start with Sunday and not what comment above says
+    // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
     "วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี",
     "วันศุกร์", "วันเสาร์",
