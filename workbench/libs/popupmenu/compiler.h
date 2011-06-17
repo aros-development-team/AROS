@@ -159,7 +159,6 @@ Therefore ASM must be used. */
 #     define REGARGS
 #     define STDARGS
 #     define ALIGNED
-#     define register
 #     define __saveds
 #     define __asm
 #     define chip

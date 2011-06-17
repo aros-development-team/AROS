@@ -102,7 +102,7 @@ struct PrefsImage *PM_Image_Get(ULONG type, struct PopupMenu *item)
 UWORD PM_Image_Draw(struct PM_Window *w, ULONG type, WORD l, struct DrawInfo *dri, ULONG state, struct PopupMenu *item)
 {
 #if 1
-#warning "trying to get rid of global p"
+    	/* TODO: Check this code that is trying to get rid of global p */
     	struct PM_Root *p = w->p;
 #endif
 

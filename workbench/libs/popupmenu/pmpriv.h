@@ -136,7 +136,7 @@
 #define SCREENMOUSEY(p)		p->RootWnd->WScreen->MouseY
 
 #ifdef __AROS__
-#warning "FIXME: Pens"
+/* FIXME: Pens */
 #define MENUSHINEPEN 	    SHINEPEN
 #define MENUSHADOWPEN 	    SHADOWPEN
 #define MENUTEXTPEN 	    TEXTPEN
@@ -455,7 +455,6 @@ extern APTR MemPool;
 //
 // Lib funcs
 //
-
 APTR __saveds ASM PM_OpenPopupMenuA(register __a1 struct Window *prevwnd GNUCREG(a1),
     register __a2 struct TagItem *tags GNUCREG(a2));
       // register __a6 struct PopupMenuBase *l GNUCREG(a6));
@@ -490,7 +489,6 @@ struct PopupMenu * __saveds ASM PM_FindItem(register __a1 struct PopupMenu *pm G
 
 BOOL __saveds ASM PM_ItemChecked(register __a1 struct PopupMenu *pm GNUCREG(a1),
     register __d1 ULONG id GNUCREG(d1));
-
 
 #endif
 ///

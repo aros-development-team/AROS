@@ -13,8 +13,12 @@
 //
 
 /// Input handler
+#ifdef __AROS__
+struct InputEvent *myhandler(struct InputEvent *ev, struct MsgPort *port)
+#else
 struct InputEvent * __saveds ASM myhandler(register __a0 struct InputEvent *ev GNUCREG(a0),
     register __a1 struct MsgPort *port GNUCREG(a1))
+#endif
 {
     struct InputEvent *evnt=ev;
 
