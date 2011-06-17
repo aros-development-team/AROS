@@ -107,7 +107,7 @@ int main(int argc, char **argv)
         waitMessage();
     }
     else
-        printf("Error %d\n", error);
+        printf("Error %d\n", (int)error);
 
     uninitEnv();
     CleanupLocale();

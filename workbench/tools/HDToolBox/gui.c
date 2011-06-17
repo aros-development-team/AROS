@@ -3,7 +3,7 @@
     $Id$
 */
 
-#warning "TODO: fs support"
+/* "TODO: fs support" */
 
 #include <proto/alib.h>
 #include <proto/dos.h>
@@ -1592,7 +1592,7 @@ AROS_UFH3(void, lv_click,
         switch (iln->ln.ln_Type)
         {
         case LNT_Device:
-            sprintf(str, "%s: %d", MSG(WORD_Units),countNodes(&iln->list, LNT_Harddisk));
+            sprintf(str, "%s: %d", MSG(WORD_Units),(int)countNodes(&iln->list, LNT_Harddisk));
             DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
             enableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
             if (iln->change_count > 0)
@@ -1624,7 +1624,7 @@ AROS_UFH3(void, lv_click,
                     ttn = findTableTypeNode(partition->table->type);
                     strcat(str, ttn->pti->pti_Name);
                     DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
-                    sprintf(str, "%s: %d", MSG(WORD_Partitions), countNodes(&iln->list, LNT_Partition));
+                    sprintf(str, "%s: %d", MSG(WORD_Partitions), (int)countNodes(&iln->list, LNT_Partition));
                     DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
                 }
                 else
@@ -2264,7 +2264,7 @@ LONG initGUI(void)
         (IPTR)partitiontypegadgets.hexid, 2,
         MUIM_CallHook, (IPTR)&hook_buttons
     );
-#warning "FIXME: notify doesn't work"
+/* "FIXME: notify doesn't work" */
     DoMethod
     (
         partitiontypegadgets.ok,

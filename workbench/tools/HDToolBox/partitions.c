@@ -30,7 +30,7 @@ void setPartitionName(struct HDTBPartition *pnode)
     D(bug("[HDToolBox] setPartitionName()\n"));
 
     if (pnode->pos != -1)
-        sprintf(pnode->listnode.ln.ln_Name, "Partition %d", pnode->pos);
+        sprintf(pnode->listnode.ln.ln_Name, "Partition %d", (int)pnode->pos);
     else
     {
         sprintf
@@ -280,8 +280,8 @@ struct PartitionHandle *AddPartitionA(struct PartitionHandle *root, IPTR tag, ..
 {
 //    D(bug("[HDToolBox] AddPartitionA()\n"));
 #ifdef __AROS__
-    AROS_SLOWSTACKMETHODS_PRE(tag)
-    retval = (IPTR)AddPartition(root, (struct TagItem *)AROS_SLOWSTACKMETHODS_ARG(tag));
+    AROS_SLOWSTACKMETHODS_PRE_AS(tag, struct PartitionHandle *)
+    retval = AddPartition(root, (struct TagItem *)AROS_SLOWSTACKMETHODS_ARG(tag));
     AROS_SLOWSTACKMETHODS_POST
 #else
     return AddPartition(root, (struct TagItem *)&tag);
