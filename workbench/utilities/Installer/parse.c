@@ -152,7 +152,7 @@ char **mclip;
 				    case BACKSLASH: /* BACKSLASH */
 					 buffer[i-1] = BACKSLASH;
 					 break;
-#warning TODO: convert missing '\\' masqueraded symbols
+/* TODO: convert missing '\\' masqueraded symbols */
 				    case 'h': /* H.TAB */
 				    case 'v': /* V.TAB */
 				    case 'b': /* BACKSPACE */

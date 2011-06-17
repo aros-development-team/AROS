@@ -107,7 +107,7 @@ void DelContents(Object *obj)
 	}
 
 #define TRANSSCRIPT()						\
-    if ( preferences.transcriptstream != NULL )			\
+    if ( preferences.transcriptstream != BNULL )		\
     {								\
     int len = 0;						\
     char *out;							\
@@ -617,7 +617,7 @@ char **mxlabels;
 		    {
 		    char *helptext;
 
-#warning TODO: help/about for Installer
+/* TODO: help/about for Installer */
 			helptext = AllocVec(512 * sizeof(char), MEMF_PUBLIC);
 			sprintf(helptext, ABOUT_INSTALLER, INSTALLER_VERSION, INSTALLER_REVISION);
 			helpwin(ABOUT_ON_INSTALLER, helptext);
@@ -672,7 +672,7 @@ char **mxlabels;
 			{
 			char *helptext;
 
-#warning TODO: help for logfile-requester
+/* TODO: help for logfile-requester */
 			  helptext = AllocVec(512 * sizeof(char), MEMF_PUBLIC);
 			  sprintf(helptext, LOG_HELP, preferences.transcriptfile);
 			  helpwin(HELP_ON_LOGFILES, helptext);
@@ -688,7 +688,7 @@ char **mxlabels;
 	    switch (logval)
 	    {
 		case 0: /* Log to file */
-#warning TODO: Handle Logging output selection
+/* TODO: Handle Logging output selection */
 		    break;
 		case 1: /* Log to printer */
 		    FreeVec(preferences.transcriptfile);
@@ -869,7 +869,7 @@ int i, m;
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-    if ( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != BNULL )
     {
 	Write(preferences.transcriptstream, "Ask Question: Result was \"", 26);
 	Write(preferences.transcriptstream, mxlabels[retval], strlen(mxlabels[retval]));
@@ -985,7 +985,7 @@ char minmax[MAXARGSIZE];
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-    if ( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != BNULL )
     {
     char tmpbuf[MAXARGSIZE];
 	Write(preferences.transcriptstream, "Ask Number: Result was \"", 24);
@@ -1043,7 +1043,7 @@ int i;
 
 	if (wc)
 	{
-	char *str;
+	    char *str = "";
 	    AddContents(wc);
 
 	    while (running)
@@ -1082,7 +1082,7 @@ int i;
     }
     retval = addquotes(string);
     FreeVec(string);
-    if ( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != BNULL )
     {
 	Write(preferences.transcriptstream, "Ask String: Result was ", 23);
 	Write(preferences.transcriptstream, retval, strlen(retval));
@@ -1190,7 +1190,7 @@ int i, max = 0;
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-    if ( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != BNULL )
     {
 	Write(preferences.transcriptstream, "Ask Choice: Result was \"", 24);
 	Write(preferences.transcriptstream, mxlabels[retval], strlen(mxlabels[retval]));
@@ -1220,7 +1220,7 @@ char *retval, *string;
     }
     string = GetPL(pl, _DEFAULT).arg[0];
 
-#warning TODO: write whole function request_dir()
+/* TODO: write whole function request_dir() */
 
     retval = addquotes(string);
 
@@ -1242,7 +1242,7 @@ char *retval, *string;
     }
     string = GetPL(pl, _DEST).arg[0];
 
-#warning TODO: write whole function request_disk()
+/* TODO: write whole function request_disk() */
 
     retval = addquotes(string);
 
@@ -1264,7 +1264,7 @@ char *retval, *string;
     }
     string = GetPL(pl, _DEFAULT).arg[0];
 
-#warning TODO: write whole function request_file()
+/* TODO: write whole function request_file() */
 
     retval = addquotes(string);
 
@@ -1394,7 +1394,7 @@ BOOL j;
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-    if ( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != BNULL )
     {
 	Write(preferences.transcriptstream, "Ask Options: Result was \"", 24);
 	j = FALSE;
