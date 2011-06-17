@@ -182,7 +182,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 		        D(bug("[Floppy] Disabled with bootloader argument\n"));
 			return FALSE;
 		    }
-		    TDBase->td_nomount = strstr(&node->ln_Name[7], "nomount");
+		    TDBase->td_nomount = (strstr(&node->ln_Name[7], "nomount") != NULL);
 		}
 	    }
 	}
@@ -610,7 +610,7 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
 	tdb->td_TaskData = t;
 
     struct TagItem task_Tags[] = {
-        { TASKTAG_ARG1,             tdb },
+        { TASKTAG_ARG1,             (IPTR)tdb },
         { TAG_DONE,                 0   },
     };
 	/* Add task to system task list */
