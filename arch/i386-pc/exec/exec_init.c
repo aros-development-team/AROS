@@ -257,7 +257,7 @@ const struct Resident Exec_resident __text=
 {
     RTC_MATCHWORD,          /* Magic value used to find resident */
     &Exec_resident,         /* Points to Resident itself */
-    &LIBEND,                /* Where could we find next Resident? */
+    (APTR)&LIBEND,          /* Where could we find next Resident? */
     0,                      /* There are no flags!! */
     VERSION_NUMBER,         /* Version */
     NT_LIBRARY,             /* Type */
@@ -476,17 +476,17 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
         if (mbinfo->flags & MB_FLAGS_LDRNAME)
         {
             arosmb->flags |= MB_FLAGS_LDRNAME;
-            snprintf(arosmb->ldrname,29,"%s",mbinfo->loader_name);
+            snprintf(arosmb->ldrname,29,"%s",(char *)mbinfo->loader_name);
         }
         if (mbinfo->flags & MB_FLAGS_CMDLINE)
         {
             arosmb->flags |= MB_FLAGS_CMDLINE;
-            snprintf(arosmb->cmdline,199,"%s",mbinfo->cmdline);
+            snprintf(arosmb->cmdline,199,"%s",(char *)mbinfo->cmdline);
         }
         if (mbinfo->flags & MB_FLAGS_MMAP)
         {
             arosmb->flags |= MB_FLAGS_MMAP;
-            arosmb->mmap_addr = (struct mb_mmap *)((ULONG)(0x1000 + sizeof(struct arosmb)));
+            arosmb->mmap_addr = ((IPTR)(0x1000 + sizeof(struct arosmb)));
             arosmb->mmap_len = mbinfo->mmap_length;
             memcpy((void *)arosmb->mmap_addr,(void *)mbinfo->mmap_addr,mbinfo->mmap_length);
         }
@@ -510,7 +510,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     }
     rkprintf("Done\n");
 
-#warning "TODO: WE MUST PARSE THE BIOS MEMORY MAP HERE AND PROTECT NECESSARY STRUCTS (i.e ACPI stores its data in the last few meg of physical ram..)"
+/* TODO: WE MUST PARSE THE BIOS MEMORY MAP HERE AND PROTECT NECESSARY STRUCTS (i.e ACPI stores its data in the last few meg of physical ram..) */
 
     /* save the RSP PTR */
     get_ACPI_RSDPTR(arosmb);
@@ -606,7 +606,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     if (!exec_check_base())
     {
         ULONG   negsize = 0;             /* size of vector table */
-        void  **fp      = LIBFUNCTABLE;  /* pointer to a function in the table */
+        void **fp = (void **)LIBFUNCTABLE;  /* pointer to a function in the table */
         
         rkprintf("Reallocating ExecBase...");
         /*
@@ -696,7 +696,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     ExecBase->MaxLocMem = (IPTR)locmem;
     ExecBase->MaxExtMem = (APTR)extmem;
 
-#warning "TODO: Write first step of alert.hook here!!!"
+/* TODO: Write first step of alert.hook here!!! */
 
     /*
      * Initialize exec lists. This is done through information table which consist
@@ -762,7 +762,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
 
     /* Build the jumptable */
     ExecBase->LibNode.lib_NegSize =
-        Exec_MakeFunctions(ExecBase, LIBFUNCTABLE, NULL, ExecBase);
+        Exec_MakeFunctions(ExecBase, (APTR)LIBFUNCTABLE, NULL, ExecBase);
 
     rkprintf("OK\n");
 
@@ -815,13 +815,13 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     InternalAllocAbs((APTR)kernel_lowest, kernel_highest - kernel_lowest, ExecBase);
 
     /* Protect bootup stack from being allocated */
-    InternalAllocAbs(0x90000, 0x3000, SysBase);
+    InternalAllocAbs((APTR)0x90000, 0x3000, SysBase);
 
     /* Protect ACPI & other spaces returned by GRUB loader  */
 
     /* Protect the RSD PTR which is always in the first MB for later use */
     if(arosmb->acpirsdp)
-        InternalAllocAbs(arosmb->acpirsdp, arosmb->acpilength, ExecBase);
+        InternalAllocAbs((APTR)arosmb->acpirsdp, arosmb->acpilength, ExecBase);
 
 /*
     // tcheko : GRUB returns end of uppermem (fastmem) always lower than ACPI table data
@@ -919,7 +919,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
         }
     }
 
-#warning "TODO: Write CPU detailed detection scheme. Patch proper functions??"
+/* TODO: Write CPU detailed detection scheme. Patch proper functions?? */
 
     Init_Traps();
     irqSetup();
@@ -982,7 +982,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
 
         AddHead(&t->tc_MemEntry,&ml->ml_Node);
 
-        t->tc_Node.ln_Name = exec_name;
+        t->tc_Node.ln_Name = (char *)exec_name;
         t->tc_Node.ln_Pri = 0;
         t->tc_Node.ln_Type = NT_TASK;
         t->tc_State = TS_RUN;
@@ -1201,7 +1201,7 @@ void get_ACPI_RSDPTR(struct arosmb* mb)
         { 
             
             /* We have the signature, let's check the checksum*/ 
-        	k = j + (((struct ACPI_TABLE_TYPE_RSDP*)j)->revision < 2)?20:36;		/* revision is stored at index 15 */
+        	k = j + ((((struct ACPI_TABLE_TYPE_RSDP*)j)->revision < 2)?20:36);		/* revision is stored at index 15 */
 
 	        for (; j < k; sum += *(j++));
 	        
@@ -1223,7 +1223,7 @@ void get_ACPI_RSDPTR(struct arosmb* mb)
 
 
 
-#warning "TODO: We should use info from BIOS here."
+/* TODO: We should use info from BIOS here. */
 int exec_RamCheck_dma(struct arosmb *arosmb)
 {
     ULONG   volatile *ptr,tmp;
@@ -1461,7 +1461,7 @@ ULONG **exec_RomTagScanner(struct ExecBase *SysBase, struct TagItem *tags)
 
                     if (node)
                     {
-                        node->node.ln_Name  = res->rt_Name;
+                        node->node.ln_Name  = (char *)res->rt_Name;
                         node->node.ln_Pri   = res->rt_Pri;
                         node->module        = res;
 
@@ -1489,7 +1489,7 @@ ULONG **exec_RomTagScanner(struct ExecBase *SysBase, struct TagItem *tags)
      * Now, we will have to analyze used-defined RomTags (via KickTagPtr and
      * KickMemPtr)
      */
-#warning "TODO: Implement external modules!"
+/* TODO: Implement external modules! */
 
     /*
      * Everything is done now. Allocate buffer for normal RomTag and convert
@@ -1528,7 +1528,7 @@ struct vbe_mode my_vbe_mode;
 
 unsigned char setupVesa(struct multiboot *mbinfo)
 {
-    char *str = mbinfo->cmdline;
+    char *str = (char *)mbinfo->cmdline;
     char *vesa = strstr(str, "vesa=");
     short r;
     unsigned char palwidth = 0;
@@ -1569,16 +1569,16 @@ unsigned char setupVesa(struct multiboot *mbinfo)
         else
             vfreq = 60;
 
-        rkprintf("[VESA] module (@ %p) size=%d\n", &_binary_vesa_start, &_binary_vesa_size);
+        rkprintf("[VESA] module (@ %p) size=%ld\n", &_binary_vesa_start, (long)&_binary_vesa_size);
         memcpy((void *)0x1000, vesa_start, vesa_size);
         rkprintf("[VESA] Module installed\n");
 
-        rkprintf("[VESA] BestModeMatch for %dx%dx%d = ", x, y, d);
+        rkprintf("[VESA] BestModeMatch for %ldx%ldx%ld = ", x, y, d);
         mode = findMode(x, y, d, vfreq, prioritise_depth);
 
         getModeInfo(mode);
 
-	rkprintf("%x\n",mode);
+	rkprintf("%lx\n",mode);
 	if (modeinfo->mode_attributes & 0x80)
 	    setmode = mode | 0x4000;
 	else

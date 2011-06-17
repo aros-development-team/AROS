@@ -86,7 +86,7 @@ static ULONG *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
 
     /* Push fallBack address */
 
-    *--sp = fallBack;
+    *--sp = (IPTR)fallBack;
     
 
     /* We have to prepare whole context right now so Dispatch()
@@ -126,7 +126,7 @@ AROS_LH4(BOOL, PrepareContext,
     AROS_LIBFUNC_EXIT
 }
 
-#warning This needs to be fixed/updated if the way library params are passed is changed
+/* FIXME: This needs to be fixed/updated if the way library params are passed is changed */
 
 BOOL Exec_PrepareContext_FPU(struct Task *task, APTR entryPoint, APTR fallBack, struct TagItem *tagList, struct ExecBase *SysBase)
 {

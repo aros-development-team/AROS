@@ -46,7 +46,9 @@ BUILD_TRAP(0x11)
 BUILD_TRAP(0x12)
 BUILD_TRAP(0x13)
 
-const void (*traps[0x14])(void) __text =
+typedef asmlinkage void (*trap_type)(void);
+
+const trap_type traps[0x14] __text =
 {
 	TRAP0x00_trap,
 	TRAP0x01_trap,
@@ -70,7 +72,8 @@ const void (*traps[0x14])(void) __text =
 	TRAP0x13_trap
 };
 
-static const struct { long long a; } *idt_base = (struct { long long a; } *)0x100;
+typedef struct { long long a; } dummy_double;
+static const dummy_double *idt_base = (const dummy_double *)0x100;
 
 #define _set_gate(gate_addr,type,dpl,addr) \
 do { \

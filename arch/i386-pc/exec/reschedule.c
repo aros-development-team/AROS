@@ -73,7 +73,7 @@ void Exec_Permit_Supervisor();
     {
 	if (SysBase->IDNestCnt < 0)	    	/* And interrupts enabled */
 	{
-	    Supervisor(Exec_Permit_Supervisor);
+	    Supervisor((ULONG_FUNC)Exec_Permit_Supervisor);
 	}
 	else if (!(flag & 0x80))		/* Generate software interrupt */
 	{
