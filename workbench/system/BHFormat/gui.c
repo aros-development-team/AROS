@@ -310,7 +310,7 @@ struct SFormatEntry* SelectDevice(void)
 		    MUIA_Text_Contents, (IPTR)_(MSG_SELECTDEVICE),
 		End),
 		Child, (IPTR)(list = (Object *)ListviewObject,
-		    MUIA_Listview_List, ListObject,
+		    MUIA_Listview_List, (IPTR)ListObject,
 			InputListFrame,
 			MUIA_List_ConstructHook, (IPTR)&list_consfunc_hook,
 			MUIA_List_DestructHook, (IPTR)&list_desfunc_hook,
@@ -688,9 +688,9 @@ int rcGuiMain(void)
 			MUIA_FixHeightTxt, (IPTR)"|",
 		    End),
 		    Child, (IPTR)(HGroup,
-		    	Child, RectangleObject, End,
+		    	Child, (IPTR)RectangleObject, End,
 		    	Child, (IPTR)(btn_stop = SimpleButton( _(MSG_BTN_STOP) )),
-		    	Child, RectangleObject, End,
+		    	Child, (IPTR)RectangleObject, End,
 		    End),
 		End), /* VGroup */
 	    End), /* Window */
