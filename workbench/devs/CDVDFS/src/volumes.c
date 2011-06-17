@@ -149,7 +149,7 @@ int Reinstall_Locks (void)
         BUG(dbprintf ("(FAILED) ]\n");)
 	continue;
       }
-      ptr->lock->fl_Link = (IPTR)obj;
+      ptr->lock->fl_Link = (BPTR)obj;
     }
   }
   return result;

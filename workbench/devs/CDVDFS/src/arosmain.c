@@ -178,7 +178,7 @@ void AddFileSystemTask(struct ACDRBase *acdrbase, struct IOFileSys *iofs)
     } /* if (device) */
     else
     {
-#warning "maybe use another error here"
+	/* TODO: maybe use another error here */
 	iofs->io_DosError = ERROR_NO_FREE_STORE;
     }
     
@@ -309,19 +309,8 @@ D(bug("[acdr] openfile: %s, %lx, %lx\n", iofs->io_Union.io_OPEN_FILE.io_Filename
                     new = AllocMem(sizeof(struct ACDRHandle), MEMF_PUBLIC | MEMF_CLEAR);
                     if (new)
                     {
-                    struct FileHandle fh=
-                    {
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-                        0,{0,0},
-#endif
-                        0,
-                        (UBYTE *)-1,(UBYTE *)-1,
-                        0,0,0,0,0
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-                        ,0
-#endif
-                    };
-		    
+                        struct FileHandle fh = { };
+
                         packet.dp_Arg1 = (IPTR)MKBADDR(&fh);
                         packet.dp_Arg2 =
                             (acdrhandle ==  &acdrhandle->device->rootfh) ?
@@ -617,7 +606,7 @@ D(bug("[acdr] examine: name=%s ([0]=%x)\n", ead->ed_Name, ead->ed_Name[0]));
                     0 :
                     (IPTR)MKBADDR(acdrhandle->handle);
                 packet.dp_Arg2 = 0;
-#warning "VERY FIXME: READ_LINK missing parameter"
+                /* FIXME: READ_LINK missing parameter */
                 packet.dp_Arg3 = (IPTR)iofs->io_Union.io_READ_SOFTLINK.io_Buffer;
                 packet.dp_Arg4 = (IPTR)iofs->io_Union.io_READ_SOFTLINK.io_Size;
                 sendPacket(acdrbase, &packet, acdrhandle->device->taskmp);
@@ -640,7 +629,7 @@ D(bug("[acdr] examine: name=%s ([0]=%x)\n", ead->ed_Name, ead->ed_Name[0]));
                     (IPTR)MKBADDR(acdrhandle->handle);
                 packet.dp_Arg2 =(IPTR)MKBADDR(iofs->io_Union.io_RENAME.io_Filename);
                 packet.dp_Arg3 = 0;
-#warning "VERY FIXME: RENAME missing parameter"
+                /* FIXME: RENAME missing parameter */
                 packet.dp_Arg4 = (IPTR)MKBADDR(iofs->io_Union.io_RENAME.io_NewName);
                 sendPacket(acdrbase, &packet, acdrhandle->device->taskmp);
                 if (packet.dp_Res1)
@@ -672,7 +661,7 @@ D(bug("[acdr] examine: name=%s ([0]=%x)\n", ead->ed_Name, ead->ed_Name[0]));
                     (IPTR)MKBADDR(acdrhandle->handle);
                 packet.dp_Arg3 =
                     (IPTR)MKBADDR(iofs->io_Union.io_SET_COMMENT.io_Filename);
-#warning "TODO: check if really BSTR"
+                /* TODO: check if really BSTR */
                 packet.dp_Arg4 = (IPTR)iofs->io_Union.io_SET_COMMENT.io_Comment;
                 sendPacket(acdrbase, &packet, acdrhandle->device->taskmp);
                 if (packet.dp_Res1)
@@ -721,7 +710,7 @@ D(bug("[acdr] examine: name=%s ([0]=%x)\n", ead->ed_Name, ead->ed_Name[0]));
                 {
                     if (global->DevList && (iofs->io_Union.io_INHIBIT.io_Inhibit == DOSFALSE))
                     {
-#warning "I hope volumenode is always valid"
+                        /* FIXME: I hope volumenode is always valid */
                         global->DevList->dl_Ext.dl_AROS.dl_Device = iofs->IOFS.io_Device;
                         global->DevList->dl_Ext.dl_AROS.dl_Unit = (struct Unit *)&acdrhandle->device->rootfh;
                     }

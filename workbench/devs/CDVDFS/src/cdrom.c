@@ -318,7 +318,7 @@ int Read_Chunk(CDROM *p_cd, long p_sector)
      */
     if (loc==p_cd->buffers_cnt)
     {
-	uint32_t oldest_tick = ULONG_MAX;
+	uint32_t oldest_tick = UINT_MAX;
 	uint32_t tick;
 
 	for (loc=0, i=0; i<p_cd->buffers_cnt; i++)

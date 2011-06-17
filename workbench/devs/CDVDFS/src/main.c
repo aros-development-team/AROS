@@ -146,8 +146,8 @@ void Show_Directory_Record (directory_record *p_dir)
   char buf[256];
 
   printf ("Extended Attr Record Length: %d\n", (int) p_dir->ext_attr_length);
-  printf ("Location of Extent:          %lu\n", p_dir->extent_loc);
-  printf ("Data Length:                 %lu\n", p_dir->data_length);
+  printf ("Location of Extent:          %lu\n", (unsigned long)p_dir->extent_loc);
+  printf ("Data Length:                 %lu\n", (unsigned long)p_dir->data_length);
   printf ("Recording Date and Time:     %02d.%02d.19%02d %02d:%02d:%02d %+d\n",
   	  (int) p_dir->day, (int) p_dir->month, (int) p_dir->year,
 	  (int) p_dir->hour, (int) p_dir->minute, (int) p_dir->second,
@@ -181,7 +181,7 @@ void Find_Block_Starting_With (CDROM *p_cd, int p_val)
     for (i=0; i<4; i++) {
       cmp = p_cd->buffer[i<<9] * 256 + p_cd->buffer[(i<<9)+1];
       if (cmp == p_val)
-	printf ("sector %lu, block %d\n", sec, i);
+	printf ("sector %lu, block %d\n", (unsigned long)sec, i);
     }
     sec++;
   }
@@ -218,15 +218,15 @@ void Show_Primary_Volume_Descriptor (CDROM *p_cd)
     printf ("Rock Ridge extensions available, skip size = %d\n", skip);
   
   if (protocol == PRO_ISO || protocol == PRO_JOLIET)
-    printf ("Data track offset = %lu\n", offset);
+    printf ("Data track offset = %lu\n", (unsigned long)offset);
 
   if (protocol == PRO_JOLIET)
-    printf ("Joliet SVD offset = %lu\n", svd_offset);
+    printf ("Joliet SVD offset = %lu\n", (unsigned long)svd_offset);
 
   if (protocol == PRO_ISO || protocol == PRO_ROCK || protocol == PRO_JOLIET) {
 
     if (!Read_Chunk (p_cd, 16 + offset)) {
-      fprintf (stderr, "cannot read sector %lu\n", 16 + offset);
+      fprintf (stderr, "cannot read sector %lu\n", 16 + (unsigned long)offset);
       exit (1);
     }
 
@@ -237,13 +237,13 @@ void Show_Primary_Volume_Descriptor (CDROM *p_cd)
     printf ("Volume Descriptor Version:       %d\n", (int) pvd->version);
     printf ("System Identifier:               %s\n", MKSTR (pvd->system_id,32,buf));
     printf ("Volume Identifier:               %s\n", MKSTR (pvd->volume_id,32,buf));
-    printf ("Volume Space Size:               %lu\n", pvd->space_size);
+    printf ("Volume Space Size:               %lu\n", (unsigned long) pvd->space_size);
     printf ("Volume Set Size:                 %hu\n", pvd->set_size);
     printf ("Volume Sequence Number:          %hu\n", pvd->sequence);
     printf ("Logical Block Size:              %hu\n", pvd->block_size);
-    printf ("Path Table Size:                 %lu\n", pvd->path_size);
-    printf ("Location of Occ of M Path Table: %lu\n", pvd->table);
-    printf ("Location of Occ of Opt M Path T: %lu\n", pvd->opt_table);
+    printf ("Path Table Size:                 %lu\n", (unsigned long) pvd->path_size);
+    printf ("Location of Occ of M Path Table: %lu\n", (unsigned long) pvd->table);
+    printf ("Location of Occ of Opt M Path T: %lu\n", (unsigned long) pvd->opt_table);
     printf ("Volume Set Identifier:           %s\n",
   					MKSTR (pvd->volume_set_id,128,buf));  
     printf ("Publisher Identifier:            %s\n",
@@ -272,33 +272,33 @@ void Show_Primary_Volume_Descriptor (CDROM *p_cd)
     printf ("--- MacHFS: ---\n");
     printf ("Master directory block located at block %d\n", blk);
     printf ("Volume signature:               0x%hx\n", mdb.SigWord);
-    printf ("Date/Time of creation:          %lu\n", mdb.CrDate);
-    printf ("Date/Time of last modification: %lu\n", mdb.LsMod);
+    printf ("Date/Time of creation:          %lu\n", (unsigned long)mdb.CrDate);
+    printf ("Date/Time of last modification: %lu\n", (unsigned long)mdb.LsMod);
     printf ("Volume attributes:              0x%hx\n", mdb.Atrb);
     printf ("Number of files in root dir:    %u\n", mdb.NmFls);
-    printf ("Allocation block size:          %lu bytes\n", mdb.AlBlkSiz);
+    printf ("Allocation block size:          %lu bytes\n", (unsigned long)mdb.AlBlkSiz);
     printf ("Loc of first allocation block:  %u\n", mdb.AlBlSt);
     printf ("Volume name:                    %s\n",
     				MKSTR ((char *) mdb.VolName, mdb.VolNameLen,buf));
-    printf ("Number of files in volume:      %lu\n", mdb.FilCnt);
-    printf ("Number of dirs in volume:       %lu\n", mdb.DirCnt);
+    printf ("Number of files in volume:      %lu\n", (unsigned long)mdb.FilCnt);
+    printf ("Number of dirs in volume:       %lu\n", (unsigned long)mdb.DirCnt);
     printf ("Size of catalog file:           %lu allocation blocks\n",
-    						mdb.CTFlSize);
+    						(unsigned long)mdb.CTFlSize);
     printf ("Extent record for catalog file:\n");
     printf ("  1. allocation block: %10lu   length: %10lu\n",
-    				mdb.CTExtRec[0].StABN, mdb.CTExtRec[0].NumABlks);
+    				(unsigned long)mdb.CTExtRec[0].StABN, (unsigned long)mdb.CTExtRec[0].NumABlks);
     printf ("  2. allocation block: %10lu   length: %10lu\n",
-    				mdb.CTExtRec[1].StABN, mdb.CTExtRec[1].NumABlks);
+    				(unsigned long)mdb.CTExtRec[1].StABN, (unsigned long)mdb.CTExtRec[1].NumABlks);
     printf ("  3. allocation block: %10lu   length: %10lu\n",
-    				mdb.CTExtRec[2].StABN, mdb.CTExtRec[2].NumABlks);
+    				(unsigned long)mdb.CTExtRec[2].StABN, (unsigned long)mdb.CTExtRec[2].NumABlks);
     if (!HFS_Get_Header_Node (p_cd, blk, &mdb, &hdr))
       printf ("*** Cannot read header node!!!\n");
     printf ("Header node:\n");
     printf ("Depth of tree:                  %u\n", hdr.Depth);
-    printf ("Number of root node:            %lu\n", hdr.Root);
-    printf ("Number of leaf records in tree: %lu\n", hdr.NRecs);
-    printf ("Number of first leaf node:      %lu\n", hdr.FNode);
-    printf ("Number of last leaf node:       %lu\n", hdr.LNode);
+    printf ("Number of root node:            %lu\n", (unsigned long)hdr.Root);
+    printf ("Number of leaf records in tree: %lu\n", (unsigned long)hdr.NRecs);
+    printf ("Number of first leaf node:      %lu\n", (unsigned long)hdr.FNode);
+    printf ("Number of last leaf node:       %lu\n", (unsigned long)hdr.LNode);
   }
 }
 
@@ -308,7 +308,7 @@ void Show_Directory (CDROM *p_cd, uint32_t p_location, uint32_t p_length)
   int pos = 0;
   
   if (!Read_Chunk (p_cd, p_location)) {
-    fprintf (stderr, "cannot read sector %lu\n", p_location);
+    fprintf (stderr, "cannot read sector %lu\n", (unsigned long)p_location);
     exit (1);
   }
 
@@ -324,7 +324,7 @@ void Show_Directory (CDROM *p_cd, uint32_t p_location, uint32_t p_length)
       printf ("------------------------------------------------------------\n");
       if (pos >= 2048) {
 	if (!Read_Chunk (p_cd, ++p_location)) {
-	  fprintf (stderr, "cannot read sector %lu\n", p_location);
+	  fprintf (stderr, "cannot read sector %lu\n", (unsigned long)p_location);
 	  exit (1);
 	}
 	pos = 0;
@@ -357,10 +357,10 @@ void Check_Protocol (CDROM *p_cd)
     printf ("Rock Ridge protocol, skip length = %d\n", skip);
     break;
   case PRO_ISO:
-    printf ("ISO-9660 protocol, offset = %lu\n", offset);
+    printf ("ISO-9660 protocol, offset = %lu\n", (unsigned long)offset);
     break;
   case PRO_JOLIET:
-    printf ("Joliet protocol, offset = %lu SVD offset = %lu\n", offset, svd_offset);
+    printf ("Joliet protocol, offset = %lu SVD offset = %lu\n", (unsigned long)offset, (unsigned long)svd_offset);
     break;
   case PRO_HFS:
     printf ("Macintosh HFS protocol\n");
@@ -415,8 +415,8 @@ void Try_To_Open (CDROM *p_cd, char *p_directory, char *p_name)
     printf ("%s '%s' found, location = %lu\n",
 	    obj->symlink_f ? "Symbolic link" :
 	    obj->directory_f ? "Directory" : "File",
-    	    p_name, Location (obj));
-    printf ("Protection bits: 0x%08lX\n", obj->protection);
+    	    p_name, (unsigned long)Location (obj));
+    printf ("Protection bits: 0x%08lX\n", (unsigned long)obj->protection);
     if (obj->symlink_f) {
       char linkname[256];
       printf ("Link to ");
@@ -442,7 +442,7 @@ void Try_To_Open (CDROM *p_cd, char *p_directory, char *p_name)
       parent = Find_Parent (obj);
       if (parent) {
 	printf ("parent found, location = %lu\n",
-	        Location (parent));
+	        (unsigned long)Location (parent));
 	Close_Object (parent);
       } else
 	printf ("parent not found, iso_errno = %d\n", global->iso_errno);
@@ -601,8 +601,8 @@ void Show_Subdirectory (CDROM_OBJ *p_home, char *p_name, int p_long_info,
 		(int) dir->hour,
 		(int) dir->minute,
 		(int) dir->second);
-	printf ("%lu  ", dir->data_length);
-	printf ("loc=%lu  ", dir->extent_loc);
+	printf ("%lu  ", (unsigned long)dir->data_length);
+	printf ("loc=%lu  ", (unsigned long)dir->extent_loc);
 	Show_Flags (dir->flags);
 	putchar ('\n');
 	if (dir->ext_attr_length)
@@ -799,12 +799,12 @@ void Show_Table_Of_Contents (CDROM *p_cd)
   len = hdr.length / 8;
   for (i=0; i<len; i++) {
     if (toc[i].track_number == 0xAA)
-      printf ("Lead-out track at address %lu\n", toc[i].address);
+      printf ("Lead-out track at address %lu\n", (unsigned long)toc[i].address);
     else
       printf ("Track %d: %s track, start address %lu\n",
     	      (int) toc[i].track_number,
 	      (toc[i].flags & 4) ? "data" : "audio",
-	      toc[i].address);
+	      (unsigned long)toc[i].address);
   }
 }
 
@@ -830,76 +830,76 @@ void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
 
   node = HFS_Get_Node (p_cd, blk, &mdb, p_node);
   if (!node) {
-    fprintf (stderr, "cannot find node %lu\n", p_node);
+    fprintf (stderr, "cannot find node %lu\n", (unsigned long)p_node);
     return;
   }
   
   switch (node->Type) {
   case 0:
     printf ("Index node:\n");
-    printf ("Fwd=%lu Bwd=%lu Level=%d\n", node->FLink, node->BLink,
+    printf ("Fwd=%lu Bwd=%lu Level=%d\n", (unsigned long)node->FLink, (unsigned long)node->BLink,
     	    (int) node->NHeight);
     idx = (t_idx_record *) ((char *) node + 0xe);
     for (i=0; i<node->NRecs; i++, idx++) {
-      printf ("Parent ID = 0x%08lx, '", idx->parent_id);
+      printf ("Parent ID = 0x%08lx, '", (unsigned long)idx->parent_id);
       fwrite (idx->name, idx->name_length, 1, stdout);
-      printf ("', pointer = %lu\n", idx->pointer);
+      printf ("', pointer = %lu\n", (unsigned long)idx->pointer);
     }
     break;
   case 1:
     printf ("Header node:\n");
-    printf ("Fwd=%lu Bwd=%lu Level=%d\n", node->FLink, node->BLink,
+    printf ("Fwd=%lu Bwd=%lu Level=%d\n", (unsigned long)node->FLink, (unsigned long)node->BLink,
     	    (int) node->NHeight);
     hdr = (t_hdr_node *) node;
-    printf ("Depth of tree:                  %u\n", hdr->Depth);
-    printf ("Number of root node:            %lu\n", hdr->Root);
-    printf ("Number of leaf records in tree: %lu\n", hdr->NRecs);
-    printf ("Number of first leaf node:      %lu\n", hdr->FNode);
-    printf ("Number of last leaf node:       %lu\n", hdr->LNode);
+    printf ("Depth of tree:                  %u\n", (unsigned)hdr->Depth);
+    printf ("Number of root node:            %lu\n", (unsigned long)hdr->Root);
+    printf ("Number of leaf records in tree: %lu\n", (unsigned long)hdr->NRecs);
+    printf ("Number of first leaf node:      %lu\n", (unsigned long)hdr->FNode);
+    printf ("Number of last leaf node:       %lu\n", (unsigned long)hdr->LNode);
     break;
   case 2:
     printf ("Map node:\n");
-    printf ("Fwd=%lu Bwd=%lu Level=%d\n", node->FLink, node->BLink,
+    printf ("Fwd=%lu Bwd=%lu Level=%d\n", (unsigned long)node->FLink, (unsigned long)node->BLink,
     	    (int) node->NHeight);
     break;
   case 0xff:
     printf ("Leaf node:\n");
-    printf ("Fwd=%lu Bwd=%lu Level=%d\n", node->FLink, node->BLink,
+    printf ("Fwd=%lu Bwd=%lu Level=%d\n", (unsigned long)node->FLink, (unsigned long)node->BLink,
     	    (int) node->NHeight);
     for (i=0; i<node->NRecs; i++) {
       leaf = (t_leaf_record *) ((char *) node + ((short *) node)[255-i]);
       cp = (char *) leaf + leaf->length + 1;
       if ((leaf->length & 1) == 0)
 	cp++;
-      printf ("Parent ID = 0x%08lx, '", leaf->parent_id);
+      printf ("Parent ID = 0x%08lx, '", (unsigned long)leaf->parent_id);
       memcpy (buf, leaf->name, leaf->name_length);
       Convert_Mac_Characters (buf, leaf->name_length);
       fwrite (buf, leaf->name_length, 1, stdout);
       printf ("'  (");
       switch (*cp) {
       case 1:
-	printf ("directory 0x%08lx)\n", *(t_ulong *)(cp+6));
+	printf ("directory 0x%08lx)\n", (unsigned long)*(t_ulong *)(cp+6));
 	break;
       case 2:
 	file = (t_file_record *) cp;
 	printf ("file 0x%08lx)\n\tdata length %lu, "
 		"data extents %u-%u/%u-%u/%u-%u\n",
-		file->FlNum,
-		file->LgLen,
-		file->ExtRec[0].StABN, file->ExtRec[0].NumABlks,
-		file->ExtRec[1].StABN, file->ExtRec[1].NumABlks,
-		file->ExtRec[2].StABN, file->ExtRec[2].NumABlks);
+		(unsigned long)file->FlNum,
+		(unsigned long)file->LgLen,
+		(unsigned)file->ExtRec[0].StABN, (unsigned)file->ExtRec[0].NumABlks,
+		(unsigned)file->ExtRec[1].StABN, (unsigned)file->ExtRec[1].NumABlks,
+		(unsigned)file->ExtRec[2].StABN, (unsigned)file->ExtRec[2].NumABlks);
 	printf ("\tresource length %lu, resource extents %u-%u/%u-%u/%u-%u\n",
-		file->RLgLen,
-		file->RExtRec[0].StABN, file->RExtRec[0].NumABlks,
-		file->RExtRec[1].StABN, file->RExtRec[1].NumABlks,
-		file->RExtRec[2].StABN, file->RExtRec[2].NumABlks);
+		(unsigned long)file->RLgLen,
+		(unsigned) file->RExtRec[0].StABN, (unsigned) file->RExtRec[0].NumABlks,
+		(unsigned) file->RExtRec[1].StABN, (unsigned) file->RExtRec[1].NumABlks,
+		(unsigned) file->RExtRec[2].StABN, (unsigned) file->RExtRec[2].NumABlks);
 	printf ("\tfirst alloc blk for data fork: %u\n", file->StBlk);
 	printf ("\tfirst alloc blk for resource fork: %u\n", file->RStBlk);
 	break;
       case 3:
 	thread = (t_dir_thread_record *) cp;
-	printf ("directory thread 0x%08lu '", thread->ParID);
+	printf ("directory thread 0x%08lu '", (unsigned long)thread->ParID);
 	fwrite (thread->CName, thread->CNameLen, 1, stdout);
 	printf ("')\n");
 	break;
@@ -939,7 +939,7 @@ void Find_Offset_Of_Last_Session (CDROM *p_cd)
   if (!Find_Last_Session (p_cd, &last)) {
     fprintf (stderr, "cannot determine offset of last session\n");
   } else {
-    printf ("offset of last session: %lu\n", last);
+    printf ("offset of last session: %lu\n", (unsigned long)last);
   }
 }
 

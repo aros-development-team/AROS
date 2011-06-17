@@ -80,7 +80,7 @@ void Check_723 (void *p_buf, int p_offset)
   t_ulong m = buf[3] + (buf[2] << 8);
   if (l != m) {
     printf ("ERROR: %s, sector %lu, offset %d - not recorded according to 7.2.3\n",
-	    g_check_name, g_check_sector, p_offset);
+	    g_check_name, (unsigned long)g_check_sector, p_offset);
   }
 }
 
@@ -93,7 +93,7 @@ void Check_733 (void *p_buf, int p_offset)
   t_ulong m = buf[7] + (buf[6] << 8) + (buf[5] << 16) + (buf[4] << 24);
   if (l != m) {
     printf ("ERROR: %s, sector %lu, offset %d - not recorded according to 7.3.3\n",
-	    g_check_name, g_check_sector, p_offset);
+	    g_check_name, (unsigned long)g_check_sector, p_offset);
   }
 }
 
@@ -121,13 +121,13 @@ void Check_Optional_Path_Tables (void)
     for (;;) {
     
       if (!Read_Chunk (global->g_cd, loc1)) {
-	printf ("ERROR: illegal sector %lu\n", loc1);
+	printf ("ERROR: illegal sector %lu\n", (unsigned long)loc1);
 	exit (1);
       }
       buf1 = global->g_cd->buffer;
     
       if (!Read_Chunk (global->g_cd, loc2)) {
-	printf ("ERROR: illegal sector %lu\n", loc2);
+	printf ("ERROR: illegal sector %lu\n", (unsigned long)loc2);
 	exit (1);
       }
       buf2 = global->g_cd->buffer;
@@ -135,7 +135,7 @@ void Check_Optional_Path_Tables (void)
       if (memcmp (buf1, buf2, remain > 2048 ? 2048 : remain) != 0) {
 	printf ("ERROR: %c path table and optional %c path table differ"
 		" in sectors %lu and %lu\n",
-		i ? 'M' : 'L', i ? 'M' : 'L', loc1, loc2);
+		i ? 'M' : 'L', i ? 'M' : 'L', (unsigned long)loc1, (unsigned long)loc2);
       }
 
       if (remain > 2048)
@@ -156,7 +156,7 @@ void Get_Path_Table_Record (t_uchar *p_buf, t_ulong p_loc, t_ulong *p_offset)
   int len;
 
   if (!Read_Chunk (global->g_cd, sector)) {
-    printf ("ERROR: illegal sector %lu\n", sector);
+    printf ("ERROR: illegal sector %lu\n", (unsigned long)sector);
     exit (1);
   }
   len = global->g_cd->buffer[*p_offset & 2047] + 8;
@@ -167,7 +167,7 @@ void Get_Path_Table_Record (t_uchar *p_buf, t_ulong p_loc, t_ulong *p_offset)
     int part1_len = 2048 - (*p_offset & 2047);
     memcpy (p_buf, global->g_cd->buffer + (*p_offset & 2047), part1_len);
     if (!Read_Chunk (global->g_cd, sector+1)) {
-      printf ("ERROR: illegal sector %lu\n", sector+1);
+      printf ("ERROR: illegal sector %lu\n", (unsigned long)(sector+1));
       exit (1);
     }
     memcpy (p_buf + part1_len, global->g_cd->buffer, len - part1_len);
@@ -197,25 +197,25 @@ void Compare_L_And_M_Path_Table (void)
 
     if (offset1 != offset2) {
       printf ("ERROR: Length mismatch in L and M path table at offset %lu\n",
-      	      tmp);
+      	      (unsigned long)tmp);
       return;
     }
 
     if (buf1[1] != buf2[1])
       printf ("ERROR: Extended attribute record lengths differ in L and M"
-	      " path table at offset %lu\n", offset1);
+	      " path table at offset %lu\n", (unsigned long)offset1);
 
     if (memcmp (buf1+8, buf2+8, buf1[0]) != 0)
       printf ("ERROR: directory identifiers differ in L and M path table "
-	      "at offset %lu\n", offset1);
+	      "at offset %lu\n", (unsigned long)offset1);
 
     if (GET731 (buf1+2) != GET732 (buf2+2))
       printf ("ERROR: extent locations differ in L and M path table at"
-	      " offset %lu\n", offset1);
+	      " offset %lu\n", (unsigned long)offset1);
 
     if (GET721 (buf1+6) != GET722 (buf2+6))
       printf ("ERROR: parent directory numbers differ in L and M path table at"
-	      " offset %lu\n", offset1);
+	      " offset %lu\n", (unsigned long)offset1);
 
     g_path_table_records++;
   }
@@ -257,13 +257,13 @@ void Compare_Path_Table_With_Directory_Records (void)
     obj = Iso_Create_Directory_Obj (vol, pos);
     if (!obj || !CDROM_Info (obj, &info)) {
       printf ("\nERROR: cannot get information for directory at location %lu\n"
-	      "(Path table offset = %lu)\n", pos, tmp);
+	      "(Path table offset = %lu)\n", (unsigned long)pos, (unsigned long)tmp);
       exit (10);
     }
     if (info.name_length != buf[0] ||
 	Strnicmp ((UBYTE*) info.name, (UBYTE*) buf+8, info.name_length) != 0) {
       printf ("\nERROR: names in path table and directory record differ for "
-	      "directory at location %lu\n", pos);
+	      "directory at location %lu\n", (unsigned long)pos);
       printf ("Name in path table = ");
       fwrite (buf+8, 1, info.name_length, stdout);
       printf ("\nName in directory record = ");

@@ -267,7 +267,7 @@ int Get_Startup(struct FileSysStartupMsg *fssm) {
 					  "DE=DATAEXT/K,RE=RESOURCEEXT/K,"
 					  "SI=SCANINTERVAL/K/N,PC=PLAYCDDA/K,"
 					  "X=XPOS/K/N,Y=YPOS/K/N,",
-					  (LONG *) Args, ArgsPtr)) {
+					  (IPTR *) Args, ArgsPtr)) {
 			      result = TRUE;
 
 			      global->g_retry_mode = (Args[ARG_RETRY] != NULL);
