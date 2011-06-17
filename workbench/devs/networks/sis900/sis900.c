@@ -517,7 +517,7 @@ D(bug("[%s]  sis900_reset_phy(phy:%d)\n", unit->sis900u_name, phy_addr));
 static int sis900_mii_probe(struct net_device *unit)
 {
 	UWORD poll_bit = MII_STAT_LINK, status = 0;
-#warning "TODO: Replace jiffies"
+/* TODO: Replace jiffies */
 #define jiffies 10
 	// unsigned long timeout = jiffies + 5 * HZ;
 	int phy_addr;
@@ -604,7 +604,7 @@ D(bug("[%s]: sis900_mii_probe: No MII transceivers found!\n", unit->sis900u_name
 			poll_bit ^= (mdio_read(unit, unit->cur_phy, MII_STATUS) & poll_bit);
 //			if (time_after_eq(jiffies, timeout)) {
 //D(bug("[%s]: sis900_mii_probe: reset phy and link down now\n", unit->sis900u_name));
-#warning "TODO: Return -ETIME!"
+/* TODO: Return -ETIME! */
 				//return -ETIME;
 //                return 0;
 //			}
@@ -628,35 +628,37 @@ D(bug("[%s]: sis900_mii_probe: No MII transceivers found!\n", unit->sis900u_name
 	return 1;
 }
 
+#if 0
 static void sis900func_start_rx(struct net_device *unit)
 {
 D(bug("[%s]: sis900func_start_rx\n", unit->sis900u_name));
     // Already running? Stop it.
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void sis900func_stop_rx(struct net_device *unit)
 {
 D(bug("[%s]: sis900func_stop_rx\n", unit->sis900u_name));
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void sis900func_start_tx(struct net_device *unit)
 {
 D(bug("[%s]: sis900func_start_tx()\n", unit->sis900u_name));
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void sis900func_stop_tx(struct net_device *unit)
 {
 D(bug("[%s]: sis900func_stop_tx()\n", unit->sis900u_name));
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void sis900func_txrx_reset(struct net_device *unit)
 {
 D(bug("[%s]: sis900func_txrx_reset()\n", unit->sis900u_name));
 }
+#endif
 
 /**
  *	sis900_get_mac_addr - Get MAC address for stand alone SiS900 model
@@ -878,7 +880,7 @@ static void sis900func_drain_tx(struct net_device *unit)
 {
     int i;
     for (i = 0; i < NUM_TX_DESC; i++) {
-#warning "TODO: sis900func_drain_tx does nothing atm."
+/* TODO: sis900func_drain_tx does nothing atm. */
     }
 }
 
@@ -886,7 +888,7 @@ static void sis900func_drain_rx(struct net_device *unit)
 {
     int i;
     for (i = 0; i < NUM_RX_DESC; i++) {
-#warning "TODO: sis900func_drain_rx does nothing atm."
+/* TODO: sis900func_drain_rx does nothing atm. */
     }
 }
 
@@ -1143,19 +1145,19 @@ D(bug("[%s]: sis900_init_tx_ring()\n", unit->sis900u_name));
 			allocate = 0;
 		}
 
-		unit->tx_ring[i].link = unit->tx_ring_dma +
+		unit->tx_ring[i].link = (IPTR)unit->tx_ring_dma +
 			((i+1)%NUM_TX_DESC)*sizeof(BufferDesc);
 		unit->tx_ring[i].cmdsts = 0;
 		if (framebuffer)
 		{
 			unit->tx_buffers[i] = framebuffer;
-			unit->tx_ring[i].bufptr = HIDD_PCIDriver_CPUtoPCI(unit->sis900u_PCIDriver, framebuffer);
+			unit->tx_ring[i].bufptr = (IPTR)HIDD_PCIDriver_CPUtoPCI(unit->sis900u_PCIDriver, framebuffer);
 		}
 D(bug("[%s]: sis900_init_tx_ring: Buffer %d @ %p\n", unit->sis900u_name, i, framebuffer));
 	}
 
 	/* load Transmit Descriptor Register */
-	LONGOUT(ioaddr + txdp, unit->tx_ring_dma);
+	LONGOUT(ioaddr + txdp, (IPTR)unit->tx_ring_dma);
 //	if (netif_msg_hw(unit))
 D(bug("[%s]: sis900_init_tx_ring: TX descriptor register loaded with: %8.8x\n",unit->sis900u_name, LONGIN(ioaddr + txdp)));
 }
@@ -1188,20 +1190,20 @@ D(bug("[%s]: sis900_init_rx_ring()\n", unit->sis900u_name));
 			   buffer */
 			allocate = 0;
 		}
-		unit->rx_ring[i].link = unit->rx_ring_dma +
+		unit->rx_ring[i].link = (IPTR)unit->rx_ring_dma +
 			((i+1)%NUM_RX_DESC)*sizeof(BufferDesc);
 		unit->rx_ring[i].cmdsts = RX_BUF_SIZE;
 		if (framebuffer)
 		{
 			unit->rx_buffers[i] = framebuffer;
-			unit->rx_ring[i].bufptr = HIDD_PCIDriver_CPUtoPCI(unit->sis900u_PCIDriver, framebuffer);
+			unit->rx_ring[i].bufptr = (IPTR)HIDD_PCIDriver_CPUtoPCI(unit->sis900u_PCIDriver, framebuffer);
 		}
 D(bug("[%s]: sis900_init_rx_ring: Buffer %d @ %p\n", unit->sis900u_name, i, framebuffer));
 	}
 	unit->dirty_rx = (unsigned int) (i - NUM_RX_DESC);
 
 	/* load Receive Descriptor Register */
-	LONGOUT(ioaddr + rxdp, unit->rx_ring_dma);
+	LONGOUT(ioaddr + rxdp, (IPTR)unit->rx_ring_dma);
 //	if (netif_msg_hw(sis_priv))
 D(bug("[%s]: sis900_init_rx_ring: RX descriptor register loaded with: %8.8x\n",unit->sis900u_name, LONGIN(ioaddr + rxdp)));
 }
@@ -1231,7 +1233,7 @@ D(bug("[%s]: set_rx_mode()\n", unit->sis900u_name));
 	else
 		table_entries = 8;
 
-#warning "TODO: Fix multicast settings"
+/* TODO: Fix multicast settings */
 	//if (unit->sis900u_ifflags & IFF_PROMISC) {
 		// Accept any kinds of packets
 		rx_mode = RFPromiscuous;
