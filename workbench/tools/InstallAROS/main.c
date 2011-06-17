@@ -1798,7 +1798,7 @@ IPTR Install__MUIM_IC_Install
 			{
 createdirfaild:
 				D(bug("[INSTALLER] Failed to create %s dir!!\n",envDstDir));
-#warning TODO: Should prompt on failure to try again/continue anyhow/exit.
+/* TODO: Should prompt on failure to try again/continue anyhow/exit */
 				goto localecopydone;
 				//data->inst_success = MUIV_Inst_Failed;
 				//return 0;
