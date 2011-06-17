@@ -10,7 +10,6 @@ FILES := dosboot_init inithidds boot menu gadgets bootscreen bootanim bootconfig
 
 USER_INCLUDES := -I$(SRCDIR)/rom/devs -I$(GENDIR)/$(CURDIR)
 USER_CFLAGS := -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module mmake=kernel-dosboot \
   modname=dosboot modtype=resource \

@@ -49,7 +49,7 @@ FUNCS := \
 #MM	workbench-datatypes-png-includes \
 #MM- workbench-libs-icon : linklibs
 
-USER_CFLAGS := -D__NOLIBBASE__ $(PARANOIA_CFLAGS)
+USER_CFLAGS := -D__NOLIBBASE__
 
 %build_module mmake=workbench-libs-icon \
     modname=icon modtype=library \

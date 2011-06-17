@@ -45,7 +45,7 @@ ifneq ($(FAMILY),)
 USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/exec \
 	       -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
 endif
-USER_CFLAGS += -I$(SRCDIR)/$(CURDIR) $(PARANOIA_CFLAGS)
+USER_CFLAGS += -I$(SRCDIR)/$(CURDIR)
 
 %build_module mmake=kernel-exec \
   modname=exec modtype=library \

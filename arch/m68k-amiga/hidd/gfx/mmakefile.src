@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS += $(PARANOIA_CFLAGS) -D__OOP_NOATTRBASES__
+USER_CFLAGS += -D__OOP_NOATTRBASES__
 
 %build_module mmake=kernel-amiga-m68k-amigavideo \
     modname=amigavideo modtype=hidd \

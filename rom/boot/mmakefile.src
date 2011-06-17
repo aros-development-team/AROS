@@ -6,7 +6,6 @@ include $(TOP)/config/make.cfg
 # modules would go in here.
 
 #MM- kernel-boot : includes linklibs kernel-bootloader-includes
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module_simple mmake=kernel-boot \
   modname=boot modtype=library \

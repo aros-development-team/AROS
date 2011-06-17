@@ -42,8 +42,6 @@ USER_CFLAGS := -I$(SRCDIR)/rom/dos \
 	       -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h \
 		   -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
-USER_CFLAGS += $(PARANOIA_CFLAGS)
-
 #MM- workbench-c : workbench-c-shellcommands
 #MM- workbench-c-quick : workbench-c-shellcommands-quick
 #MM- workbench-c-shellcommands : includes linklibs workbench-libs-dos-catalogs
@@ -65,7 +63,6 @@ USER_CFLAGS := -I$(SRCDIR)/rom/dos \
 	       -D__NOLIBBASE__ \
 		   -DADATE="\"$(shell date "+%d.%m.%Y")\""
 USER_CFLAGS += -DUSE_EMBEDDED_COMMANDS
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 OBJDIR := $(OBJDIR).kernel
 

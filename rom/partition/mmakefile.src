@@ -38,8 +38,7 @@ FUNCS := \
 #MM kernel-partition-kobj : linklibs-core core-linklibs
 
 USER_CFLAGS := -DDEBUG=0 \
-	       -D__UTILITY_NOLIBBASE__ \
-	       $(PARANOIA_CFLAGS)
+	       -D__UTILITY_NOLIBBASE__
 
 %build_module mmake=kernel-partition \
     modname=partition modtype=library \

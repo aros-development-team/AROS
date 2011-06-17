@@ -28,8 +28,7 @@ AFILES := callentry \
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
                -I$(SRCDIR)/rom/dos \
-               -D__DOS_NOLIBBASE__ \
-               $(PARANOIA_CFLAGS)
+               -D__DOS_NOLIBBASE__
 
 USER_AFLAGS := -I$(GENINCDIR)
 

@@ -46,8 +46,6 @@ DEBUG_CFLAGS	:= @aros_debug_cflags@
 DEBUG_AFLAGS	:= @aros_debug_aflags@
 DEBUG_LDFLAGS	:= @aros_debug_ldflags@
 
-PARANOIA_CFLAGS	:= @aros_paranoia_cflags@
-
 NOSTDINC_CFLAGS   := @aros_target_nostdinc_cflags@
 KERNEL_IQUOTE     := @kernel_cflags_iquote@
 KERNEL_IQUOTE_END := @kernel_cflags_iquote_end@

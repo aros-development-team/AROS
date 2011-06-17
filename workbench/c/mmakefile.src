@@ -72,7 +72,6 @@ PURE_FILES := \
 #   ISApnp
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/dos -DADATE="\"$(shell date "+%d.%m.%Y")\""
-USER_CFLAGS     += $(PARANOIA_CFLAGS)
 
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick

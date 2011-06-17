@@ -5,8 +5,7 @@ FILES := main arosdevice
 
 #MM- kernel-fs-afs : includes linklibs kernel-fs-afs-linklib
 
-USER_CFLAGS := -I$(SRCDIR)/rom/devs/filesys/afs \
-	       $(PARANOIA_CFLAGS)
+USER_CFLAGS := -I$(SRCDIR)/rom/devs/filesys/afs
 
 %build_archspecific \
     mainmmake=kernel-fs-afs maindir=rom/devs/filesys/afs arch=amiga-m68k \

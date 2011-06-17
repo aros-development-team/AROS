@@ -3,8 +3,6 @@
 
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := $(PARANOIA_CFLAGS)
-
 FILES         := calendar
 INCLUDE_FILES := calendar.h
 

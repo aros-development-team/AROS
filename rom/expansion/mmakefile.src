@@ -18,8 +18,6 @@ FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 #MM      kernel-exec-includes \
 #MM      kernel-dos-includes
 
-USER_CFLAGS := $(PARANOIA_CFLAGS)
-
 %build_module mmake=kernel-expansion \
   modname=expansion modtype=library \
   files="expansion_init $(FUNCS)" \

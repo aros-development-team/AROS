@@ -7,8 +7,6 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := -I$(SRCDIR)
 USER_AFLAGS := -I$(GENINCDIR) -Os
 
-USER_CFLAGS += $(PARANOIA_CFLAGS)
-
 #MM- workbench-c : workbench-c-$(AROS_TARGET_CPU)
 #MM- workbench-c-quick : workbench-c-$(AROS_TARGET_CPU)-quick
 

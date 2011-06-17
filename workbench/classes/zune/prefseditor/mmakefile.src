@@ -3,8 +3,6 @@
 
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := $(PARANOIA_CFLAGS)
-
 FILES         := prefseditor support
 INCLUDE_FILES := prefseditor.h
 

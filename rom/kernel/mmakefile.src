@@ -12,7 +12,7 @@ endif
 USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
 	       -I$(SRCDIR)/rom/exec \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
-	       -D__AROS_EXEC_LIBRARY__ $(PARANOIA_CFLAGS)
+	       -D__AROS_EXEC_LIBRARY__
 
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts

@@ -4,7 +4,6 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
-USER_CFLAGS += $(PARANOIA_CFLAGS)
 USER_LIBS   := amiga rom m mui
 
 #MM- workbench-libs-muimaster : \

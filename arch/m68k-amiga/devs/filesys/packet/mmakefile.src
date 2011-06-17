@@ -5,8 +5,7 @@ FILES := init command
 
 #MM- kernel-fs-packet : includes linklibs kernel-fs-packet-linklib
 
-USER_CFLAGS := -I$(SRCDIR)/rom/devs/filesys/packet \
-	       $(PARANOIA_CFLAGS)
+USER_CFLAGS := -I$(SRCDIR)/rom/devs/filesys/packet
 
 %build_archspecific \
     mainmmake=kernel-fs-packet maindir=rom/devs/filesys/packet arch=amiga-m68k \

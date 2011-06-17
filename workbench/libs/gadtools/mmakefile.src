@@ -36,8 +36,7 @@ FUNCS	:=  createcontext \
 #MM     includes-copy
 #MM- workbench-libs-gadtools : linklibs
 
-USER_CFLAGS := -D__NOLIBBASE__ \
-	       $(PARANOIA_CFLAGS)
+USER_CFLAGS := -D__NOLIBBASE__
 
 %build_module mmake=workbench-libs-gadtools \
     modname=gadtools modtype=library \

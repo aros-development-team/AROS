@@ -13,8 +13,6 @@ FILES :=        \
 	detach  \
 	nixmain
 
-USER_CFLAGS += $(PARANOIA_CFLAGS)
-
 OBJS  := $(addprefix $(LIBDIR)/,$(addsuffix .o,$(FILES)))
 DEPS  := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .d,$(FILES)))
 
