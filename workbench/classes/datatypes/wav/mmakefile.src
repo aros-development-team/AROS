@@ -28,10 +28,10 @@ FILES := \
 
 broke :=   init
 
-#MM workbench-datatypes-wav : includes linklibs linklibs-gsm
+#MM workbench-datatypes-wave : includes linklibs linklibs-gsm
 
 USER_CFLAGS := -DGSM610_SUPPORT -DG72X_SUPPORT -I$(SRCDIR)/$(CURDIR)/include
 
-%build_module mmake=workbench-datatypes-wav \
-    modname=wav modtype=datatype \
+%build_module mmake=workbench-datatypes-wave \
+    modname=wave modtype=datatype \
     files=$(FILES) uselibs="gsm amiga rom"
