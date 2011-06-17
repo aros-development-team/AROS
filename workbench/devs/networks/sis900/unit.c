@@ -349,7 +349,7 @@ D(bug("[%s]: SiS900_TX_IntF()\n", unit->sis900u_name));
 				CopyMem(unit->sis900u_dev_addr, &((struct eth_frame *)unit->tx_buffers[entry])->eth_packet_source, ETH_ADDRESSSIZE);
 				((struct eth_frame *)unit->tx_buffers[entry])->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
 
-				buffer = &((struct eth_frame *)unit->tx_buffers[entry])->eth_packet_data;
+				buffer = (UBYTE *)&((struct eth_frame *)(IPTR)unit->tx_buffers[entry])->eth_packet_data;
 			}
 			else
 				buffer = unit->tx_buffers[entry];
@@ -436,7 +436,7 @@ D(bug("[%s]: SiS900_TX_IntF: Packet Queued.\n", unit->sis900u_name));
  */
 static void SiS900_TimeoutHandlerF(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
-    struct SiS900Unit *unit = (struct SiS900Unit *) irq->h_Data;
+    // struct SiS900Unit *unit = (struct SiS900Unit *) irq->h_Data;
     // struct timeval time;
     // struct Device *TimerBase = unit->sis900u_TimerSlowReq->tr_node.io_Device;
 
@@ -820,7 +820,7 @@ D(bug("[SiS900] CreateUnit: Unit allocated @ %x\n", unit));
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_RevisionID, &RevisionID);
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&driver);
 
-#warning "TODO: Get the host bridge revision!!"
+/* TODO: Get the host bridge revision!! */
 /*        // save our host bridge revision
         dev = pci_get_device(PCI_VENDOR_ID_SI, PCI_DEVICE_ID_SI_630, NULL);
         if (dev) {

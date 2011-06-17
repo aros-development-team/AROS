@@ -88,7 +88,7 @@ D(bug("[SiS900] PCI_Enumerator: Found %s NIC, PCI_ID %04x:%04x Rev:%d\n", CardNa
 
         if ((unit = CreateUnit(LIBBASE, pciDevice, CardName, CardChipName)))
         {
-            AddTail(&LIBBASE->sis900b_Units, &unit->sis900u_Node);
+            AddTail(&LIBBASE->sis900b_Units, (struct Node *)&unit->sis900u_Node);
         }
         else
         {
