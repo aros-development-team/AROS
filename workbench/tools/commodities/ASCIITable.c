@@ -316,7 +316,7 @@ IPTR ASCIITable__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         for (i = 0 ; i < 192 ; i++)
         {
             code = (i < 96) ? i + 32 : i + 64;
-            sprintf(data->shorthelp[i], "%c\n%d\n0x%x", code, code, code);
+            sprintf(data->shorthelp[i], "%c\n%d\n0x%x", (int)code, (int)code, (unsigned int)code);
             set((Object *)key_group_tags[i].ti_Data, MUIA_ShortHelp, data->shorthelp[i]);
             DoMethod
             (
@@ -575,7 +575,7 @@ static void MakeGUI(void)
         SubWindow, (IPTR)(wnd = (Object *)WindowObject,
             MUIA_Window_Title, (IPTR)wintitle,
             MUIA_Window_ID, MAKE_ID('A', 'I', 'T', 'B'),
-            WindowContents, ASCIITableObject,
+            WindowContents, (IPTR)ASCIITableObject,
             End,
         End),
     End;
