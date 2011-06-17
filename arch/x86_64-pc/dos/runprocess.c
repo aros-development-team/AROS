@@ -54,7 +54,6 @@
 
 **************************************************************************/
 {
-    APTR               *sp;
     IPTR	       ret;
     register IPTR      *retptr = &ret;
     APTR 	      oldReturnAddr;
