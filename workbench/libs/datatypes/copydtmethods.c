@@ -117,7 +117,7 @@
 	met++;
     }
     
-    *newmets = ~0UL;
+    *newmets = ~0;
 
     return newM;
 
