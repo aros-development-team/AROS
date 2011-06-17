@@ -238,10 +238,10 @@ short findMode(int x, int y, int d, int vfreq, BOOL prioritise_depth)
             {
                 /* Check if current mode is the best so far at the desired
                  * depth, or has a higher depth than previously found */
-                if (bestmode == 0xffff || match < bestmatch
-                    && modeinfo.bits_per_pixel == bestd
-                    || bestd < d && modeinfo.bits_per_pixel > bestd
-                    && modeinfo.bits_per_pixel <= d)
+                if (bestmode == 0xffff || (match < bestmatch
+                    && modeinfo.bits_per_pixel == bestd)
+                    || (bestd < d && modeinfo.bits_per_pixel > bestd
+                    && modeinfo.bits_per_pixel <= d))
                 {
                     bestmode = modes[i];
                     bestmatch = match;
@@ -254,7 +254,7 @@ short findMode(int x, int y, int d, int vfreq, BOOL prioritise_depth)
                  * so far to that requested, or is equally close as the
                  * previous best but has closer colour depth */
                 if (bestmode == 0xffff || match < bestmatch
-                    || match == bestmatch && matchd < bestmatchd)
+                    || (match == bestmatch && matchd < bestmatchd))
                 {
                     bestmode = modes[i];
                     bestmatch = match;

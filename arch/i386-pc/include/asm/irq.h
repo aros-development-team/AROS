@@ -115,11 +115,11 @@ struct irqServer
 
 struct irqDescriptor
 {
-    unsigned int            id_status;      /* IRQ status. See below for details */
-    struct irqController    *id_handler;    /* how to do emable/disable */
-    struct irqServer        *id_server;     /* Server pointer */
-    unsigned int            id_depth;       /* Disable depth for nested IRQs */
-    unsigned int            id_count;       /* IRQ counter */
+    unsigned int                id_status;      /* IRQ status. See below for details */
+    const struct irqController  *id_handler;    /* how to do emable/disable */
+    struct irqServer            *id_server;     /* Server pointer */
+    unsigned int                 id_depth;       /* Disable depth for nested IRQs */
+    unsigned int                 id_count;       /* IRQ counter */
     unsigned int id_unused[3];
 };
 

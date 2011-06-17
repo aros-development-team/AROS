@@ -85,7 +85,7 @@ void Exec_Permit_Supervisor();
 	    Clear the Switch() pending flag.
 	*/
 
-	if (IN_USER_MODE) Supervisor(Exec_Permit_Supervisor);
+	if (IN_USER_MODE) Supervisor((ULONG_FUNC)Exec_Permit_Supervisor);
     }
     
     AROS_LIBFUNC_EXIT

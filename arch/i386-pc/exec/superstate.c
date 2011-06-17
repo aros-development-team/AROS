@@ -51,7 +51,6 @@ void exec_SuperState(); /* defined in corelow.S */
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    APTR retval;
     /*  Again see a real implementation for more information.
 
 	You will have to change into supervisor mode, and then change the
@@ -62,7 +61,7 @@ void exec_SuperState(); /* defined in corelow.S */
        stack, so it could be used to say that this function does
        nothing.
     */    
-    return (APTR)Supervisor(exec_SuperState);
+    return (APTR)Supervisor((ULONG_FUNC)exec_SuperState);
 
     AROS_LIBFUNC_EXIT
 } /* SuperState() */

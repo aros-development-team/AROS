@@ -42,7 +42,7 @@ AROS_LH0(void, Enable,
 	   
 	if ((SysBase->TDNestCnt < 0) && (SysBase->AttnResched & 0x80))
 	{
-	    if (IN_USER_MODE) Supervisor(Exec_Permit_Supervisor);	    
+	    if (IN_USER_MODE) Supervisor((ULONG_FUNC)Exec_Permit_Supervisor);	    
 	}
 	
 	if (SysBase->SysFlags & SFF_SoftInt)

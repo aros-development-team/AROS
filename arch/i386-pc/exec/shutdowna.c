@@ -53,7 +53,7 @@
 
     if (action == SD_ACTION_COLDREBOOT)
     {
-        Exec_DoResetCallbacks(SysBase);
+        Exec_DoResetCallbacks((struct IntExecBase *)SysBase);
         outb(0xFE, 0x64);
         Wait(0);
     }

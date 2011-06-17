@@ -78,7 +78,7 @@ void Exec_Wbinvd();
     AROS_LIBFUNC_INIT
 
     if (caches & CACRF_ClearD)
-        Supervisor(Exec_Wbinvd);
+        Supervisor((ULONG_FUNC)Exec_Wbinvd);
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */

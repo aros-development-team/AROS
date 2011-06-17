@@ -194,7 +194,7 @@ int	get_irq_list(char *buf);
 	}
 	else if (strcmp(comm, "SI") == 0)
 	{
-	    char buf[512];
+//	    char buf[512];
 	    
 	    kprintf("Available interrupts:\n");
 	    
