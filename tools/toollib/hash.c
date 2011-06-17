@@ -139,7 +139,7 @@ void Hash_Traverse (Hash * hash, CB tp, CBD userdata)
     {
 	for (node=hash->Nodes[t]; node; node=node->Next)
 	{
-	    CallCB (tp, (void *)node->key, (int)node->data, userdata);
+	    CallCB (tp, (void *)node->key, node->data, userdata);
 	}
     }
 
@@ -158,7 +158,7 @@ void Hash_Delete (Hash * hash, CB dnp, CBD userdata)
 	    next=next->Next;
 
 	    if (dnp)
-		CallCB (dnp, (void *)node->key, (int)node->data, userdata);
+		CallCB (dnp, (void *)node->key, node->data, userdata);
 
 	    xfree (node);
 	}
