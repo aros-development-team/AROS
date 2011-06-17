@@ -49,7 +49,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct OOP_ABDescr *d;
+    const struct OOP_ABDescr *d;
     
     for (d = abd; d->interfaceID; d ++)
     {
