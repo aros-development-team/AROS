@@ -294,7 +294,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
         while (1) {
             /* build a new tail if necessary */
             if (cur != seq) {
-                sprintf(tail, "~%lu", seq);
+                sprintf(tail, "~%lu", (unsigned long)seq);
                 while (left + strlen(tail) > 8) left--;
                 CopyMem(tail, &basis[left], strlen(tail));
                 cur = seq;

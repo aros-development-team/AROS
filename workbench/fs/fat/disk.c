@@ -77,7 +77,7 @@ void FillDiskInfo (struct InfoData *id) {
         else
                 id->id_DiskType = ID_NO_DISK_PRESENT;
 
-        id->id_VolumeNode = NULL;
+        id->id_VolumeNode = BNULL;
         id->id_InUse = DOSFALSE;
     }
 }
@@ -126,7 +126,7 @@ void DoDiskInsert(void) {
 
                 D(bug("\tFound old volume.\n"));
 
-                vol_info = dl->dol_misc.dol_volume.dol_LockList;
+                vol_info = BADDR(dl->dol_misc.dol_volume.dol_LockList);
 
 #if 0 /* no point until we match volumes by serial number */
                 /* update name */
@@ -193,14 +193,14 @@ void DoDiskInsert(void) {
                     }
 
                     if ((newvol = AllocVecPooled(pool, sizeof(struct DosList)))) {
-                        newvol->dol_Next = NULL;
+                        newvol->dol_Next = BNULL;
                         newvol->dol_Type = DLT_VOLUME;
                         newvol->dol_Task = glob->ourport;
-                        newvol->dol_Lock = NULL;
+                        newvol->dol_Lock = BNULL;
 
                         CopyMem(&sb->volume.create_time, &newvol->dol_misc.dol_volume.dol_VolumeDate, sizeof(struct DateStamp));
 
-                        newvol->dol_misc.dol_volume.dol_LockList = vol_info;
+                        newvol->dol_misc.dol_volume.dol_LockList = MKBADDR(vol_info);
 
                         newvol->dol_misc.dol_volume.dol_DiskType =
                             (sb->type == 12) ? ID_FAT12_DISK :
@@ -208,14 +208,14 @@ void DoDiskInsert(void) {
                             (sb->type == 32) ? ID_FAT32_DISK :
                             ID_FAT12_DISK;
 
-                        if ((newvol->dol_Name = AllocVecPooled(pool, 13))) {
+                        if ((newvol->dol_Name = MKBADDR(AllocVecPooled(pool, 13)))) {
 #ifdef AROS_FAST_BPTR
                             /* ReadFATSuper() sets a null byte after the
                              * string, so this should be fine */
                             CopyMem(sb->volume.name + 1, newvol->dol_Name,
                                 sb->volume.name[0] + 1);
 #else
-                            CopyMem(sb->volume.name, newvol->dol_Name,
+                            CopyMem(sb->volume.name, BADDR(newvol->dol_Name),
                                 sb->volume.name[0] + 2);
 #endif
 

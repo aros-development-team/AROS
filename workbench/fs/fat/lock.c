@@ -220,7 +220,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
     }
 
     /* now setup the file lock */
-    fl->fl_Link = NULL;
+    fl->fl_Link = BNULL;
     fl->fl_Key = 0;
     fl->fl_Access = access;
     fl->fl_Task = glob->ourport;
@@ -263,7 +263,7 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock) {
         sizeof(struct ExtFileLock))) == NULL)
         return ERROR_NO_FREE_STORE;
 
-    fl->fl_Link = NULL;
+    fl->fl_Link = BNULL;
     fl->fl_Key = 0;
     fl->fl_Access = SHARED_LOCK;
     fl->fl_Task = glob->ourport;
