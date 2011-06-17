@@ -48,11 +48,11 @@ void PrintNum(ULONG num)
 	    }
 	}
 
-        printf("%d.%d %s", num, x, fmt);
+        printf("%d.%d %s", (int)num, (int)x, fmt);
     }
     else 
     {
-        printf("%d K", num);
+        printf("%d K", (int)num);
     }
 }
 
@@ -149,9 +149,9 @@ static VOID PrintProcessorInformation()
         }       
 
 
-        printf("PROCESSOR %d:\t[%s/%s] %s (%u Mhz)\n", i + 1, 
+        printf("PROCESSOR %d:\t[%s/%s] %s (%u Mhz)\n", (int)i + 1, 
             architecturestring, endiannessstring, modelstring,
-            (ULONG)(cpuspeed / 1000000));
+            (unsigned int)(cpuspeed / 1000000));
     }
 }
 
