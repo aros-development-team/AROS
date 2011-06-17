@@ -709,7 +709,7 @@ APTR PM_DoPopup(struct PM_Window *a)
 	    #if 0
                 } else if((a->NextWindow = PM_SetupSubWindow(a, p, a->SubMenuToOpen))) {
 	    #else
-	    	#warning "CHECKME: trying to avoid global p"
+	    	/* TODO: Need to check this code to avoid global p */
                 } else if((a->NextWindow = PM_SetupSubWindow(a, a->p, a->SubMenuToOpen))) {
 	    #endif
                     PM_DoPopup(a->NextWindow);
@@ -926,7 +926,7 @@ APTR __saveds ASM PM_OpenPopupMenuA(register __a1 struct Window *prevwnd GNUCREG
         const struct TagItem    *tstate;
         struct TagItem          *tag;
 #if 1
-#warning "trying to get rid of global p"
+        /* TODO: Check this code that is trying to get rid of global p */
     	struct PM_Root	    	*p;
 #endif
 	
@@ -1124,7 +1124,7 @@ LONG __saveds ASM PM_InsertMenuItemA(register __a0 struct PopupMenu *base GNUCRE
     const struct TagItem *tstate;
     LONG count=0;
     ULONG method=0; // insertion method
-    struct PopupMenu *pointer, *pm;
+    struct PopupMenu *pointer = NULL, *pm;
 
     if(!base) return 0;
 
