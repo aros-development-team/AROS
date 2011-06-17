@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     
     fh = Lock(argv[1], SHARED_LOCK);
     
-    if (fh != NULL)
+    if (fh != BNULL)
     {
         struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
         
@@ -24,11 +24,11 @@ int main(int argc, char **argv)
             {
                 printf("Got FIB:\n");
 		printf("Filename   = %s\n"    , fib->fib_FileName);
-		printf("Protection = 0x%08X\n", fib->fib_Protection);
+		printf("Protection = 0x%08X\n", (unsigned)fib->fib_Protection);
             }
             else
             {
-                printf("Examine() failed, ioerr = %d\n", IoErr());
+                printf("Examine() failed, ioerr = %d\n", (int)IoErr());
             }
             FreeDosObject(DOS_FIB, fib);
         }

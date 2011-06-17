@@ -18,7 +18,7 @@ int main(int argc, char **argv)
     arg = !stricmp(argv[2], "ON");
     ret = Inhibit(argv[1], arg);
 
-    printf("Inhibit(%d) returned %d\n", arg, ret);
+    printf("Inhibit(%d) returned %d\n", (int)arg, (int)ret);
 
     return 0;
 }

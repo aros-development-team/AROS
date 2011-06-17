@@ -21,13 +21,13 @@ int main(int argc, char *argv[])
 	    return 20;
 	}
 	
-	printf("IoErr() says the len of the value of the var '%s' is: %ld\n", argv[1], len);
+	printf("IoErr() says the len of the value of the var '%s' is: %ld\n", argv[1], (long)len);
 	
 	
 	len = GetVar(argv[1], buf, len+1, GVF_BINARY_VAR);
 	
 	printf("GetVar() says the len of the value of the var '%s' is: %ld - its value is '%s'\n",
-	       argv[1], len, buf);
+	       argv[1], (long)len, buf);
 	
 	free(buf);
 	

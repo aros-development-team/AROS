@@ -14,11 +14,11 @@ int main(int argc, char **argv)
 
     fh = Open(argv[1], MODE_OLDFILE);
 
-    if (fh != NULL)
+    if (fh != BNULL)
     {
         struct FileInfoBlock *fib;
 
-	printf("IsInteractive: %d\n", IsInteractive(fh));
+	printf("IsInteractive: %d\n", (int)IsInteractive(fh));
 	
 	fib = AllocDosObject(DOS_FIB, NULL);
         if (fib != NULL)
@@ -27,11 +27,11 @@ int main(int argc, char **argv)
             {
                 printf("Got FIB:\n");
 		printf("Filename   = %s\n"    , fib->fib_FileName);
-		printf("Protection = 0x%08X\n", fib->fib_Protection);
+		printf("Protection = 0x%08X\n", (unsigned)fib->fib_Protection);
 	    }
             else
             {
-                printf("examinefh failed, ioerr = %d\n", IoErr());
+                printf("examinefh failed, ioerr = %d\n", (int)IoErr());
             }
             FreeDosObject(DOS_FIB, fib);
         }
