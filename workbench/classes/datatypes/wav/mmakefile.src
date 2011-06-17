@@ -1,0 +1,37 @@
+#   $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+include $(TOP)/config/make.cfg
+
+G72XFILES := \
+    wave_g72x \
+    g72x/g72x \
+    g72x/g721 \
+    g72x/g723_16 \
+    g72x/g723_24 \
+    g72x/g723_40 \
+    bitpack_msb
+
+GSMFILES := \
+    wave_gsm610
+
+FILES := \
+    wave_class \
+    decoders \
+    wave_ieee_float \
+    wave_pcm \
+    wave_ima_adpcm \
+    wave_ms_adpcm \
+    wave_alaw \
+    $(G72XFILES) \
+    $(GSMFILES) \
+    bitpack \
+    bitpack_lsb
+
+broke :=   init
+
+#MM workbench-datatypes-wav : includes linklibs linklibs-gsm
+
+USER_CFLAGS := -DGSM610_SUPPORT -DG72X_SUPPORT -I$(SRCDIR)/$(CURDIR)/include
+
+%build_module mmake=workbench-datatypes-wav \
+    modname=wav modtype=datatype \
+    files=$(FILES) uselibs="gsm amiga rom"

@@ -1,0 +1,30 @@
+#   $Id: mmakefile.src 37793 2011-03-26 21:40:53Z verhaegs $
+#
+include $(TOP)/config/make.cfg
+
+FILES := \
+    add		\
+    code		\
+    decode	\
+    long_term     \
+    lpc		\
+    preprocess	\
+    rpe		\
+    gsm_destroy	\
+    gsm_decode	\
+    gsm_encode	\
+    gsm_create	\
+    gsm_option    \
+    short_term    \
+    table
+
+#MM linklibs-gsm : includes
+#MM includes-copy
+
+%copy_includes
+
+USER_CFLAGS := -DHAVE_UNISTD_H
+
+%build_linklib mmake=linklibs-gsm libname=gsm files=$(FILES)
+
+%common
