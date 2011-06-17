@@ -144,7 +144,7 @@ socreate(dom, aso, type, proto)
 	so->so_proto = prp;
 	error =
 	    (*prp->pr_usrreq)(so, PRU_ATTACH,
-		(struct mbuf *)0, (struct mbuf *)proto, (struct mbuf *)0);
+		(struct mbuf *)0, (struct mbuf *)(long)proto, (struct mbuf *)0);
 	if (error) {
 		so->so_state |= SS_NOFDREF;
 		sofree(so);
@@ -677,7 +677,7 @@ soreceive(so, paddr, uio, mp0, controlp, flagsp)
 	if (flags & MSG_OOB) {
 		m = m_get(M_WAIT, MT_DATA);
 		error = (*pr->pr_usrreq)(so, PRU_RCVOOB,
-		    m, (struct mbuf *)(flags & MSG_PEEK), (struct mbuf *)0);
+		    m, (struct mbuf *)(long)(flags & MSG_PEEK), (struct mbuf *)0);
 		if (error)
 			goto bad;
 
@@ -939,7 +939,7 @@ dontblock:
 		}
 		if (pr->pr_flags & PR_WANTRCVD && so->so_pcb)
 			(*pr->pr_usrreq)(so, PRU_RCVD, (struct mbuf *)0,
-			    (struct mbuf *)flags, /* (struct mbuf *)0, */
+			    (struct mbuf *)(long)flags, /* (struct mbuf *)0, */
 			    (struct mbuf *)0); /* BUG! One extra arg! */
 	}
 	if (flagsp)

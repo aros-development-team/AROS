@@ -226,7 +226,7 @@ raw_usrreq(struct socket *so,
 			error = EACCES;
 			break;
 		}
-		error = raw_attach(so, (int)nam);
+		error = raw_attach(so, (long)nam);
 		break;
 
 	/*

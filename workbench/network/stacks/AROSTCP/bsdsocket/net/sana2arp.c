@@ -246,7 +246,7 @@ arptimer()
   struct sana_softc *ssc;
   register struct arptable *atab;
   register struct arptab *at, *oldest;
-  register i;
+  register int i;
 
   for (ssc = ssq; ssc; ssc = ssc->ss_next) {
     if (!(atab = ssc->ss_arp.table))
@@ -764,7 +764,7 @@ static const char *digits = "0123456789ABCDEF";
  */
 static char *sana_sprintf(register u_char *ap, int len)
 {
-  register i;
+  register int i;
   static char addrbuf[17*3];
   register unsigned char *cp = addrbuf;
 

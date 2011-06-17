@@ -48,6 +48,7 @@
 
 #include <net/route.h>
 #include <net/if.h>
+#include <net/if_protos.h>
 #include <net/pfil.h>
 
 #include <netinet/in.h>
@@ -79,19 +80,15 @@ static void ip_mloopback
  * The mbuf chain containing the packet will be freed.
  * The mbuf opt, if present, will not be freed.
  */
-#ifdef ENABLE_MULTICAST
-int ip_output(m0, opt, ro, flags, imo)
-#else
-int ip_output(m0, opt, ro, flags)
-#endif
-	struct mbuf *m0;
+int	STKARGFUN ip_output(void *args, ...)
+{
+	struct mbuf *m0 = args;
 	struct mbuf *opt;
 	struct route *ro;
 	int flags;
 #ifdef ENABLE_MULTICAST
 	struct ip_moptions *imo;
 #endif
-{
 	register struct ip *ip, *mhip;
 	register struct ifnet *ifp;
 	register struct mbuf *m = m0;
@@ -100,6 +97,16 @@ int ip_output(m0, opt, ro, flags)
 	struct route iproute;
 	struct sockaddr_in *dst;
 	struct in_ifaddr *ia;
+	va_list va;
+
+	va_start(va, args);
+	opt = va_arg(va, struct mbuf *);
+	ro  = va_arg(va, struct route *);
+	flags = va_arg(va, int);
+#ifdef ENABLE_MULTICAST
+	imo = v_arg(va, struct ip_moptions *);
+#endif
+	va_end(va);
 
 #ifdef	DIAGNOSTIC
 	if ((m->m_flags & M_PKTHDR) == 0)
@@ -280,7 +287,7 @@ int ip_output(m0, opt, ro, flags)
 	 * and verify user is allowed to send
 	 * such a packet.
 	 */
-#warning "TODO: NicJA - Function proto changed?? needs reflected in protos/netinet/in_protos.h"
+/* TODO: NicJA - Function proto changed?? needs reflected in protos/netinet/in_protos.h */
 #if !defined(__AROS__)
 	if (in_broadcast(dst->sin_addr, ifp)) {
 #else
@@ -303,7 +310,9 @@ int ip_output(m0, opt, ro, flags)
 	} else
 		m->m_flags &= ~M_BCAST;
 
+#ifdef ENABLE_MULTICAST
 sendit:
+#endif
 	/* Run through list of hooks */
         pfil_run_hooks(m, ifp, MIAMIPFBPT_IP);
 

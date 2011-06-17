@@ -219,7 +219,7 @@
 
 #define __inet_aton_WB(__MiamiBase, __arg1, __arg2) \
         AROS_LC2(int, inet_aton, \
-                  AROS_LCA(char *, (__arg1), A0), \
+                  AROS_LCA(const char *, (__arg1), A0), \
                   AROS_LCA(void *, (__arg2), A2), \
         struct Library *, (__MiamiBase), 39, Miami)
 

@@ -33,7 +33,7 @@ struct SysLogPacket
 {
    struct Message    Msg;
    ULONG             Level;
-   ULONG             Time;
+   IPTR              Time;
    STRPTR            Tag;
    STRPTR            String;
 };

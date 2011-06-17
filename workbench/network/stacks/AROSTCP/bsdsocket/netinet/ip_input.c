@@ -70,6 +70,7 @@
 #include <sys/synch.h>
 
 #include <net/if.h>
+#include <net/if_protos.h>
 #include <net/route.h>
 #include <net/pfil.h>
 

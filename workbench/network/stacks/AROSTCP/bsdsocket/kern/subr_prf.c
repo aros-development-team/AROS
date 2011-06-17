@@ -139,7 +139,7 @@ panic(const char *fmt,...)
    * Open a local IntuitionBase for the EasyRequest()
    */
   if ((IntuitionBase = OpenLibrary("intuition.library", 37L)) != NULL) {
-    EasyRequest(NULL, &panicES, NULL, (ULONG)buffer);
+    EasyRequest(NULL, &panicES, NULL, (IPTR)buffer);
     CloseLibrary(IntuitionBase);
     IntuitionBase = NULL;
   }

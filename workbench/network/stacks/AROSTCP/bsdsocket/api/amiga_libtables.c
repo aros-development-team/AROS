@@ -46,14 +46,14 @@ f_void ExecLibraryList_funcTable[] = {
   (f_void)FUNCARRAY_32BIT_NATIVE,
 #endif
   AROS_SLIB_ENTRY(Open, ELL),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
 #endif
   AROS_SLIB_ENTRY(Expunge, ELL),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
@@ -173,20 +173,20 @@ f_void UserLibrary_funcTable[] = {
 #ifdef __MORPHOS__
   (f_void)FUNCARRAY_32BIT_NATIVE,
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* Open() */
 #endif
   AROS_SLIB_ENTRY(Close, UL),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* Expunge() */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
@@ -252,61 +252,61 @@ f_void UserLibrary_funcTable[] = {
 
 #if defined(__CONFIG_ROADSHOW__)
   /* Roadshow extensions  */
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	    /* Reserved1()  */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	    /* Reserved2()  */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	    /* Reserved3()  */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	    /* Reserved4()  */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	    /* Reserved5()  */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	    /* Reserved6()  */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	    /* Reserved7()  */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	    /* Reserved8()  */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	    /* Reserved9()  */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else

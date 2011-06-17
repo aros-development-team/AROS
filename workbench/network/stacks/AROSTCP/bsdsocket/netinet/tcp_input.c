@@ -134,7 +134,7 @@ tcp_reass(tp, ti, m)
         if (ti == 0)
                 goto present;
 
-        m->m_pkthdr.header = ti;
+        m->m_pkthdr.header = (caddr_t)ti;
 
         /*
          * Find a segment which begins after this one does.
@@ -237,11 +237,10 @@ present:
  * TCP input routine, follows pages 65-76 of the
  * protocol specification dated September, 1981 very closely.
  */
-void
-tcp_input(m, iphlen)
-	register struct mbuf *m;
-	int iphlen;
+void tcp_input(void *arg, ...)
 {
+	register struct mbuf *m = arg;
+	int iphlen;
 	register struct tcpiphdr *ti;
 	register struct inpcb *inp;
 	caddr_t optp = NULL;
@@ -261,6 +260,12 @@ tcp_input(m, iphlen)
 #ifdef TCPDEBUG
 	short ostate = 0;
 #endif
+	va_list va;
+
+	va_start(va, arg);
+	iphlen = va_arg(va, int);
+	va_end(va);
+
 
 	bzero((char *)&to, sizeof(to));
 

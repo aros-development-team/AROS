@@ -102,7 +102,7 @@ static void sana_ip_read(struct sana_softc *ssc, struct IOIPReq *req);
 static void sana_arp_read(struct sana_softc *ssc, struct IOIPReq *req);
 static void sana_online(struct sana_softc *ssc, struct IOIPReq *req);
 static void free_written_packet(struct sana_softc *ssc, struct IOIPReq *req);
-static long sana_query(struct sana_softc *ssc, struct TagItem *tag);
+static int sana_query(struct ifnet *ifn, struct TagItem *tag);
 
 /*
  * Initialize Sana-II interface
@@ -755,7 +755,7 @@ D(bug("[ATCP-SANA] sana_up('%s%d')\n", ssc->ss_if.if_name, ssc->ss_if.if_unit));
 
     if ((req->ios2_Req.io_Error) && (req->ios2_WireError != S2WERR_UNIT_ONLINE)) {
       sana2perror("S2_ONLINE", req);
-      gui_set_interface_state,(&ssc->ss_if, MIAMIPANELV_AddInterface_State_Offline);
+      gui_set_interface_state(&ssc->ss_if, MIAMIPANELV_AddInterface_State_Offline);
     } else {
       __log(LOG_NOTICE, "%s%d is now online.", ssc->ss_name, ssc->ss_if.if_unit);
       sana_restore(ssc);
@@ -872,7 +872,7 @@ sana_read(struct sana_softc *ssc, struct IOIPReq *req,
       req->ioip_s2.ios2_Req.io_Command = S2_ONEVENT;
       req->ioip_s2.ios2_WireError = S2EVENT_ONLINE;
       req->ioip_dispatch = sana_online;
-      BeginIO(req);
+      BeginIO((struct IORequest *)req);
       req = NULL;
       ssc->ss_if.if_flags &= ~IFF_UP;
       gui_set_interface_state(&ssc->ss_if, MIAMIPANELV_AddInterface_State_Offline);
@@ -985,7 +985,7 @@ sana_online(struct sana_softc *ssc, struct IOIPReq *req)
     sana2perror("sana_online", (struct IOSana2Req *)req);
     req->ioip_s2.ios2_Req.io_Command = S2_ONEVENT;
     req->ioip_s2.ios2_WireError = S2EVENT_ONLINE;
-    BeginIO(req);
+    BeginIO((struct IORequest *)req);
   } else {
     /* Aborted -- probably because "ifconfig xxx/0 down" */
     ssc->ss_eventsent--;
@@ -1167,8 +1167,10 @@ free_written_packet(struct sana_softc *ssc, struct IOIPReq *req)
 /*
  * SANA-II-dependent part of QueryInterfaceTagList()
  */
-long sana_query(struct sana_softc *ssc, struct TagItem *tag)
+int sana_query(struct ifnet *ifn, struct TagItem *tag)
 {
+	struct sana_softc *ssc = (struct sana_softc *)ifn;
+
 	switch (tag->ti_Tag)
 	{
 	case IFQ_DeviceName:

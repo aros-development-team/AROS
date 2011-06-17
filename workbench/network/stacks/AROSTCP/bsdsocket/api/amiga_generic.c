@@ -84,7 +84,7 @@ static inline int itimerfix(struct timeval *tv)
 /*
  * ffs() copied directly from bsdss/server/kern/subr_xxx.c
  */
-static inline int ffs(register long mask)
+static inline int ffs(int mask)
 {
   register int bit;
 
@@ -199,7 +199,7 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
     goto Return;
   }
   error = ((*so->so_proto->pr_usrreq)(so, PRU_CONTROL, 
-	  (struct mbuf *)cmd, (struct mbuf *)data, (struct mbuf *)0));
+	  (struct mbuf *)(long)cmd, (struct mbuf *)data, (struct mbuf *)0));
 
  Return:
   ReleaseSyscallSemaphore(libPtr);
@@ -223,7 +223,7 @@ AROS_LH3(LONG, IoctlSocket,
 /*
  *  Semaphore to prevent select buffers from simultaneous modifications
  */
-struct SignalSemaphore select_semaphore = { 0 };
+struct SignalSemaphore select_semaphore = { };
 
 struct newselbuf {
   int s_state;

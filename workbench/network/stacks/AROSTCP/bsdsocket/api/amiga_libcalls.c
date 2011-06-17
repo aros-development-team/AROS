@@ -97,10 +97,10 @@ char * __Inet_NtoA(ULONG s_addr, struct SocketBase *libPtr)
   CHECK_TASK2();
   sprintf(libPtr->inet_ntoa,
 	  "%ld.%ld.%ld.%ld", 
-	  (s_addr>>24) & 0xff, 
-	  (s_addr>>16) & 0xff, 
-	  (s_addr>>8) & 0xff, 
-	  s_addr & 0xff);
+	  (long)(s_addr>>24) & 0xff, 
+	  (long)(s_addr>>16) & 0xff, 
+	  (long)(s_addr>>8) & 0xff, 
+	  (long)s_addr & 0xff);
   return ((char *)libPtr->inet_ntoa);
 }
 AROS_LH1(char *, Inet_NtoA,
@@ -122,7 +122,7 @@ AROS_LH1(char *, Inet_NtoA,
  * cannot distinguish between failure and a local broadcast address.
  */
 
-LONG __inet_aton(STRPTR cp,  struct in_addr * addr)
+LONG __inet_aton(CONST_STRPTR cp,  struct in_addr * addr)
 {
 	register u_long val, base, n;
 	register char c;

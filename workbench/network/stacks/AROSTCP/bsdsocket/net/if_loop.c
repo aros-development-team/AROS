@@ -117,7 +117,7 @@ loattach()
 
 void loconfig()
 {
-	struct ifreq ifr = {0};
+	struct ifreq ifr = { };
 	ifr.ifr_addr.sa_len = sizeof(struct sockaddr_in);
 	ifr.ifr_addr.sa_family = AF_INET;
 	((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr = htonl(0x7F000001);
@@ -167,8 +167,8 @@ looutput(ifp, m, dst, rt)
 		break;
 #endif
 	default:
-		printf("lo%ld: can't handle af%ld\n", ifp->if_unit,
-			dst->sa_family);
+		printf("lo%ld: can't handle af%ld\n", (long)ifp->if_unit,
+			(long)dst->sa_family);
 		m_freem(m);
 		return (EAFNOSUPPORT);
 	}

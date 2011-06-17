@@ -96,7 +96,7 @@ tcp_usrreq(so, req, m, nam, control)
 #endif
 
 	if (req == PRU_CONTROL)
-		return (in_control(so, (int)m, (caddr_t)nam,
+		return (in_control(so, (long)m, (caddr_t)nam,
 			(struct ifnet *)control));
 	if (control && control->m_len) {
 		m_freem(control);
@@ -322,7 +322,7 @@ tcp_usrreq(so, req, m, nam, control)
 		}
 		m->m_len = 1;
 		*mtod(m, caddr_t) = tp->t_iobc;
-		if (((int)nam & MSG_PEEK) == 0)
+		if (((long)nam & MSG_PEEK) == 0)
 			tp->t_oobflags ^= (TCPOOB_HAVEDATA | TCPOOB_HADDATA);
 		break;
 
@@ -360,7 +360,7 @@ tcp_usrreq(so, req, m, nam, control)
 	 * routine for tracing's sake.
 	 */
 	case PRU_SLOWTIMO:
-		tp = tcp_timers(tp, (int)nam);
+		tp = tcp_timers(tp, (long)nam);
 #ifdef TCPDEBUG
 		req |= (int)nam << 8;		/* for debug's sake */
 #endif

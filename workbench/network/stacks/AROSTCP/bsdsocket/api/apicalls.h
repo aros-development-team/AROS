@@ -50,17 +50,17 @@ typedef VOID (* f_void)(APTR args, ...);
 
 
 extern LONG __CloseSocket(LONG, struct SocketBase *);
-extern LONG __connect(LONG, struct sockaddr *, LONG, struct SocketBase *);
+extern LONG __connect(LONG, const struct sockaddr *, LONG, struct SocketBase *);
 extern LONG __recv(LONG, char *, LONG, LONG, struct SocketBase *);
-extern LONG __send(LONG, char *, LONG, LONG, struct SocketBase *);
-extern LONG __sendto(LONG, char *, LONG, LONG, struct sockaddr *, LONG, struct SocketBase *);
+extern LONG __send(LONG, const char *, LONG, LONG, struct SocketBase *);
+extern LONG __sendto(LONG, const char *, LONG, LONG, struct sockaddr *, LONG, struct SocketBase *);
 extern LONG __socket(LONG, LONG, LONG, struct SocketBase *);
 extern LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr);
 extern LONG __WaitSelect(ULONG, fd_set *, fd_set *, fd_set *, struct timeval *, ULONG *, struct SocketBase *);
 extern struct hostent * __gethostbyaddr(UBYTE *, int, int, struct SocketBase *);
 extern LONG __gethostname(STRPTR, LONG, struct SocketBase *);
 extern LONG __SetErrnoPtr(VOID *, UBYTE, struct SocketBase *);
-extern LONG __inet_aton(STRPTR cp,  struct in_addr * addr);
+extern LONG __inet_aton(CONST_STRPTR cp,  struct in_addr * addr);
 extern char * __Inet_NtoA(ULONG, struct SocketBase *);
 #define __inet_ntoa __Inet_NtoA
 extern REGARGFUN void SetSysLogPort(void);

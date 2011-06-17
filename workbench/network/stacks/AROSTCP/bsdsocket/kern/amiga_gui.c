@@ -96,14 +96,14 @@ long callback(long code, long count, va_list args)
 	case MIAMIPANELV_CallBack_Code_UnitOffline:
 		nstr = getarg(args, ULONG);
 		InternalProc++;
-		if (!(CreateNewProcTags(NP_Entry, (LONG)&gui_async_op,
-				  NP_Name, "AROSTCP interface control",
+		if (!(CreateNewProcTags(NP_Entry, (IPTR)&gui_async_op,
+				  NP_Name, (IPTR)"AROSTCP interface control",
 #ifdef __MORPHOS__
 			          NP_CodeType, CODETYPE_PPC,
 			          NP_PPC_Arg1, code,
 			          NP_PPC_Arg2, nstr,
 #else
-#warning "TODO: Implement passing arguments to gui_async_op()"
+/* TODO: Implement passing arguments to gui_async_op() */
 #endif
 				  TAG_DONE)))
 			InternalProc--;
@@ -148,7 +148,7 @@ void gui_open()
 	char ifname[IFNAMSIZ+2];
 	long ifstate;
   	char ifspeed[7];
-	char i;
+	int  i;
 
 #if defined(__AROS__)
 D(bug("[AROSTCP](amiga_gui.c) gui_open()\n"));
@@ -184,7 +184,7 @@ D(bug("[AROSTCP](amiga_gui.c) gui_open: Attempting to use '%s'\n", panel_path));
 			if (gui_show[i])
 				showflags |= 1<<i;
 		/* Screen is always default */
-		if (MiamiPanelInit((MiamiPanelCallBackType *)&callback, (MiamiPanelCallBackType *)&callback, showflags, gui_cnf.PanelFont, NULL, panelx, panely, &guimask)) {
+		if (MiamiPanelInit((IPTR)&callback, (IPTR)&callback, showflags, gui_cnf.PanelFont, NULL, panelx, panely, (IPTR)&guimask)) {
 			DGUI(KPrintF("Panel initialized, signals = 0x%08lx\n", guimask);)
 			GUI_Running = 1;
 			for (ifp = ifnet; ifp; ifp = ifp->if_next) {
@@ -348,7 +348,7 @@ D(bug("[AROSTCP](amiga_gui.c) gui_set_interface_state()\n"));
 	if (GUI_Running) {
 		if (msg = (struct SysLogPacket *)GetLogMsg(&logReplyPort)) {
 			msg->Level = LOG_GUIMSG | GUICMD_SET_INTERFACE_STATE;
-			msg->Time = (ULONG)ifp;
+			msg->Time = (IPTR)ifp;
 			msg->Tag = (STRPTR)state;
 			PutMsg(logPort, (struct Message *)msg);
 		}

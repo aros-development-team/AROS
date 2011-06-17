@@ -69,7 +69,7 @@
 
 #ifndef va_set
 #define va_set(ap, args)	\
-  ap = args;
+  ap = (va_list)args;
 #endif
 
 extern const char * const __sys_errlist[];
@@ -98,7 +98,7 @@ AROS_LH0(LONG, Errno,
 LONG __SetErrnoPtr(VOID *err_p, UBYTE size, struct SocketBase *libPtr)
 {
   if (size == 4 || size == 2 || size == 1) {
-    if (size & 0x1 || !((ULONG)err_p & 0x1)) {	/* either odd size or address even */
+    if (size & 0x1 || !((IPTR)err_p & 0x1)) {	/* either odd size or address even */
       libPtr->errnoSize = size;
       libPtr->errnoPtr = err_p;
       return 0;
@@ -127,7 +127,7 @@ AROS_LH2(LONG, SetErrnoPtr,
 AROS_LH3(VOID, Syslog,
    AROS_LHA(ULONG, pri, D0),
    AROS_LHA(const char *, fmt, A0),
-   AROS_LHA(LONG *, ap, A1),
+   AROS_LHA(IPTR *, ap, A1),
    struct SocketBase *, libPtr, 26, UL)
 {
   AROS_LIBFUNC_INIT
@@ -259,7 +259,7 @@ AROS_LH0(LONG, getdtablesize,
 static int getLastSockFd(struct SocketBase *libPtr)
 {
   int bit, lastmlong = (libPtr->dTableSize - 1) / NFDBITS;
-  unsigned long *smaskp, cmask, rmask;
+  ULONG *smaskp, cmask, rmask;
 
   for (smaskp = (ULONG *)(libPtr->dTable + libPtr->dTableSize + lastmlong);
        lastmlong >= 0; smaskp--, lastmlong--)
@@ -325,9 +325,17 @@ setdtablesize(struct SocketBase * libPtr, UWORD size)
 }
 
 
+#define CASE_IPTR(code, baseField)\
+ case (code << SBTB_CODE): /* get */ \
+  *tagData = (IPTR)libPtr->baseField;\
+  break;\
+ case (code << SBTB_CODE) | SBTF_SET: /* set */\
+  *(ULONG *)&libPtr->baseField = *tagData;\
+  break
+
 #define CASE_LONG(code, baseField)\
  case (code << SBTB_CODE): /* get */ \
-  *tagData = (ULONG)libPtr->baseField;\
+  *tagData = (LONG)libPtr->baseField;\
   break;\
  case (code << SBTB_CODE) | SBTF_SET: /* set */\
   *(ULONG *)&libPtr->baseField = *tagData;\
@@ -638,8 +646,8 @@ AROS_LH1(ULONG, SocketBaseTagList,
 {
   AROS_LIBFUNC_INIT
   ULONG errIndex = 1;
-  ULONG tag;
-  ULONG *tagData;
+  IPTR  tag;
+  IPTR  *tagData;
   short tmp;
   UWORD utmp;
 
@@ -648,11 +656,10 @@ AROS_LH1(ULONG, SocketBaseTagList,
   CHECK_TASK();
 
   while((tag = tags->ti_Tag) != TAG_END) {
-    if ((LONG)tag < 0) {		/* TAG_USER is the sign bit */
-
+    if (tag & TAG_USER) {		/* TAG_USER is the sign bit */
       /* get pointer to the actual data */
       tagData = ((UWORD)tag & SBTF_REF) ?
-	(ULONG *)tags->ti_Data : &tags->ti_Data;
+	(IPTR *)tags->ti_Data : &tags->ti_Data;
 
 #ifdef DEBUG_EVENTS
      if (((UWORD)tag & ~(SBTF_REF)) == ((SBTC_SIGEVENTMASK << SBTB_CODE) | SBTF_SET))
@@ -670,32 +677,32 @@ AROS_LH1(ULONG, SocketBaseTagList,
       CASE_LONG( SBTC_SIGEVENTMASK, sigEventMask );
 
       case (SBTC_ERRNO << SBTB_CODE): /* get */ 
-	*tagData = (ULONG)readErrnoValue(libPtr);
+	*tagData = (IPTR)readErrnoValue(libPtr);
 	break;
       case (SBTC_ERRNO << SBTB_CODE) | SBTF_SET: /* set */
         writeErrnoValue(libPtr, *tagData);
 	break;
 
       case (SBTC_HERRNO << SBTB_CODE): /* get */ 
-	*tagData = (ULONG)*libPtr->hErrnoPtr;
+	*tagData = (IPTR)*libPtr->hErrnoPtr;
 	break;
       case (SBTC_HERRNO << SBTB_CODE) | SBTF_SET: /* set */
-        *libPtr->hErrnoPtr = (LONG) *tagData;
+        *libPtr->hErrnoPtr = (IPTR) *tagData;
 	break;
 
       case (SBTC_DTABLESIZE << SBTB_CODE): /* get */
-	*tagData = (ULONG)libPtr->dTableSize;
+	*tagData = (IPTR)libPtr->dTableSize;
 	break;
       case (SBTC_DTABLESIZE << SBTB_CODE) | SBTF_SET: /* set */
 	if ((tmp = (WORD)*tagData) > 0)
 	  setdtablesize(libPtr, tmp);
 	break;
 
-      CASE_LONG( SBTC_FDCALLBACK,   fdCallback );
+      CASE_IPTR( SBTC_FDCALLBACK,   fdCallback );
 
       CASE_BYTE( SBTC_LOGSTAT,      LogStat );
 
-      CASE_LONG( SBTC_LOGTAGPTR,    LogTag );
+      CASE_IPTR( SBTC_LOGTAGPTR,    LogTag );
       
       case (SBTC_LOGFACILITY << SBTB_CODE): /* get */
 	*tagData = (ULONG)libPtr->LogFacility;
@@ -717,35 +724,35 @@ AROS_LH1(ULONG, SocketBaseTagList,
 	/* get index */
 	utmp = (UWORD)*tagData;
 	/* return string pointer */
-	*tagData = (ULONG)((utmp >= __sys_nerr) ?
+	*tagData = (IPTR)((utmp >= __sys_nerr) ?
 			   strErr : __sys_errlist[utmp]);
 	break;
       case SBTC_HERRNOSTRPTR << SBTB_CODE:
 	/* get index */
 	utmp = (UWORD)*tagData;
 	/* return string pointer */
-	*tagData = (ULONG)((utmp >= h_nerr) ?
+	*tagData = (IPTR)((utmp >= h_nerr) ?
 			   strErr : h_errlist[utmp]);
 	break;
       case SBTC_IOERRNOSTRPTR << SBTB_CODE:
 	/* get index */
 	utmp = (UWORD)*tagData;
 	/* return string pointer */
-	*tagData = (ULONG)((utmp >= io_nerr) ? 
+	*tagData = (IPTR)((utmp >= io_nerr) ? 
 			   strErr : io_errlist[utmp]);
 	break;
       case SBTC_S2ERRNOSTRPTR << SBTB_CODE:
 	/* get index */
 	utmp = (UWORD)*tagData;
 	/* return string pointer */
-	*tagData = (ULONG)((utmp >= sana2io_nerr) ?
+	*tagData = (IPTR)((utmp >= sana2io_nerr) ?
 			   strErr : sana2io_errlist[utmp]);
 	break;
       case SBTC_S2WERRNOSTRPTR << SBTB_CODE:
 	/* get index */
 	utmp = (UWORD)*tagData;
 	/* return string pointer */
-	*tagData = (ULONG)((utmp >= sana2wire_nerr) ?
+	*tagData = (IPTR)((utmp >= sana2wire_nerr) ?
 			   strErr : sana2wire_errlist[utmp]);
 	break;
 
@@ -762,10 +769,10 @@ AROS_LH1(ULONG, SocketBaseTagList,
 	  return errIndex;
         break;
 
-      CASE_LONG( SBTC_HERRNOLONGPTR, hErrnoPtr );
+      CASE_IPTR( SBTC_HERRNOLONGPTR, hErrnoPtr );
       
       case (SBTC_RELEASESTRPTR << SBTB_CODE): /* get */
-	*tagData = (ULONG)&version[6];
+	*tagData = (IPTR)&version[6];
 	break;
 
 #ifdef notyet

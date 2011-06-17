@@ -103,10 +103,7 @@ udp_init()
 	udbinfo.hashbase = phashinit(UDBHASHSIZE, M_PCB, &udbinfo.hashsize);
 }
 
-void
-udp_input(m, iphlen)
-	register struct mbuf *m;
-	int iphlen;
+void udp_input(void *args, ...)
 {
 	register struct ip *ip;
 	register struct udphdr *uh;
@@ -114,6 +111,13 @@ udp_input(m, iphlen)
 	struct mbuf *opts = 0;
 	int len;
 	struct ip save_ip;
+	register struct mbuf *m = args;
+	int iphlen;
+	va_list va;
+
+	va_start(va, args);
+	iphlen = va_arg(va, int);
+	va_end(va);
 
 	udpstat.udps_ipackets++;
 
@@ -375,11 +379,12 @@ udp_notify(inp, _errno)
 }
 
 void
-udp_ctlinput(cmd, sa, ip)
+udp_ctlinput(cmd, sa, arg)
 	int cmd;
 	struct sockaddr *sa;
-	register struct ip *ip;
+	void *arg;
 {
+	register struct ip *ip = arg;
 	register struct udphdr *uh;
 
 	if (!PRC_IS_REDIRECT(cmd) &&
@@ -394,15 +399,23 @@ udp_ctlinput(cmd, sa, ip)
 }
 
 int
-udp_output(inp, m, addr, control)
-	register struct inpcb *inp;
+udp_output(void *arg, ...)
+{
+	register struct inpcb *inp = arg;
 	register struct mbuf *m;
 	struct mbuf *addr, *control;
-{
 	register struct udpiphdr *ui;
 	register int len = m->m_pkthdr.len;
 	struct in_addr laddr;
 	int s = 0, error = 0;
+	va_list va;
+
+	va_start(va, arg);
+	m       = va_arg(va, struct mbuf *);
+	addr    = va_arg(va, struct mbuf *);
+	control = va_arg(va, struct mbuf *);
+	va_end(va);
+
 
 	if (control)
 		m_freem(control);		/* XXX */
@@ -498,7 +511,7 @@ udp_usrreq(so, req, m, addr, control)
 	int s;
 
 	if (req == PRU_CONTROL)
-		return (in_control(so, (int)m, (caddr_t)addr,
+		return (in_control(so, (long)m, (caddr_t)addr,
 			(struct ifnet *)control));
 	if (inp == NULL && req != PRU_ATTACH) {
 		error = EINVAL;

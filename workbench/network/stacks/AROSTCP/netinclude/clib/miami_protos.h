@@ -112,13 +112,13 @@ AROS_LP4(STRPTR, inet_ntop,
          LIBBASETYPEPTR, MiamiBase, 38, Miami
 );
 AROS_LP2(int, inet_aton,
-         AROS_LPA(char *, strptr, A0),
+         AROS_LPA(const char *, strptr, A0),
          AROS_LPA(void *, addrptr, A2),
          LIBBASETYPEPTR, MiamiBase, 39, Miami
 );
 AROS_LP3(int, inet_pton,
          AROS_LPA(LONG, family, D0),
-         AROS_LPA(char *, strptr, A0),
+         AROS_LPA(const char *, strptr, A0),
          AROS_LPA(void *, addrptr, A1),
          LIBBASETYPEPTR, MiamiBase, 40, Miami
 );

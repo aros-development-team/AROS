@@ -183,17 +183,17 @@ AROS_LP1(unsigned long, inet_network,
          LIBBASETYPEPTR, SocketBase, 34, BSDSocket
 );
 AROS_LP1(struct hostent *, gethostbyname,
-         AROS_LPA(char *, name, A0),
+         AROS_LPA(const char *, name, A0),
          LIBBASETYPEPTR, SocketBase, 35, BSDSocket
 );
 AROS_LP3(struct hostent *, gethostbyaddr,
-         AROS_LPA(char *, addr, A0),
+         AROS_LPA(const void *, addr, A0),
          AROS_LPA(int, len, D0),
          AROS_LPA(int, type, D1),
          LIBBASETYPEPTR, SocketBase, 36, BSDSocket
 );
 AROS_LP1(struct netent *, getnetbyname,
-         AROS_LPA(char *, name, A0),
+         AROS_LPA(const char *, name, A0),
          LIBBASETYPEPTR, SocketBase, 37, BSDSocket
 );
 AROS_LP2(struct netent *, getnetbyaddr,
@@ -222,7 +222,7 @@ AROS_LP1(struct protoent *, getprotobynumber,
 AROS_LP3(void, vsyslog,
          AROS_LPA(int, level, D0),
          AROS_LPA(const char *, format, A0),
-         AROS_LPA(LONG *, args, A1),
+         AROS_LPA(IPTR *, args, A1),
          LIBBASETYPEPTR, SocketBase, 43, BSDSocket
 );
 AROS_LP2(int, Dup2Socket,

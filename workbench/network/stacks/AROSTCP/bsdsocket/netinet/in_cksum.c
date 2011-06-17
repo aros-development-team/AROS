@@ -119,7 +119,7 @@ in_cksum(m, len)
 		/*
 		 * Force to even boundary.
 		 */
-		if ((1 & (int) w) && (mlen > 0)) {
+		if ((1 & (long) w) && (mlen > 0)) {
 			REDUCE;
 			sum <<= 8;
 			s_util.c[0] = *(u_char *)w;

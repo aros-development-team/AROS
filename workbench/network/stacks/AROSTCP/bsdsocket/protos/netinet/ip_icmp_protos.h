@@ -7,8 +7,7 @@ void icmp_error(struct mbuf * n,
                int code,
                struct in_addr dest);
 
-void STKARGFUN icmp_input(register struct mbuf * m,
-			  int hlen);
+void icmp_input(void *arg, ...);
 
 void icmp_reflect(struct mbuf * m);
 

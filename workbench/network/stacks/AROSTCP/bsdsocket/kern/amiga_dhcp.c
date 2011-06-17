@@ -7,6 +7,8 @@
 #include <net/if.h>
 #include <net/if_sana.h>
 
+#include <stdio.h>	// for sprintf
+
 extern UBYTE dhclient_path[];
 extern struct ifnet *ifnet;
 extern struct Library *logDOSBase;
@@ -22,8 +24,9 @@ void run_dhclient(struct ifnet *ifp)
 
 	if (!ifp->if_data.ifi_aros_dhcp_pid) {
 		DDHCP(KPrintF("Starting DHCP client for %s%u\n", ifp->if_name, ifp->if_unit);)
-		sprintf(ifp->if_data.ifi_aros_dhcp_args, "-q %s%u", ifp->if_name,
+		snprintf(ifp->if_data.ifi_aros_dhcp_args, sizeof(ifp->if_data.ifi_aros_dhcp_args), "-q %s%u", ifp->if_name,
 			ifp->if_unit);
+		ifp->if_data.ifi_aros_dhcp_args[sizeof(ifp->if_data.ifi_aros_dhcp_args)-1] = 0;
 		seglist = LoadSeg(dhclient_path);
 		DDHCP(KPrintF("seglist = 0x%08lx\n", seglist);)
 		if (seglist) {
@@ -38,12 +41,12 @@ void run_dhclient(struct ifnet *ifp)
 			DDHCP(KPrintF("dhclient pid = 0x%08lx\n", ifp->if_data.ifi_aros_dhcp_pid);)
 			if (!ifp->if_data.ifi_aros_dhcp_pid) {
 				UnLoadSeg(seglist);
-				seglist = NULL;
+				seglist = BNULL;
 			}
 		}
 		if (!seglist)
 			error_request("Unable to start DHCP client for the interface %s%u",
-				ifp->if_name, ifp->if_unit);
+				(IPTR)ifp->if_name, (IPTR)ifp->if_unit);
 	}
 }
 

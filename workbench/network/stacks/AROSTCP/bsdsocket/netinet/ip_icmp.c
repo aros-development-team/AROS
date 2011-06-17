@@ -190,11 +190,9 @@ struct in_ifaddr *ifptoia();
 /*
  * Process a received ICMP message.
  */
-void STKARGFUN
-icmp_input(m, hlen)
-	register struct mbuf *m;
-	int hlen;
+void icmp_input(void *arg, ...)
 {
+	register struct mbuf *m = arg;
 	register struct icmp *icp;
 	register struct ip *ip = mtod(m, struct ip *);
 	int icmplen = ip->ip_len;
@@ -203,7 +201,13 @@ icmp_input(m, hlen)
 	int code;
 	extern u_char ip_protox[];
 	extern struct in_addr in_makeaddr();
+	int hlen;
+	va_list va;
 
+
+	va_start(va, arg);
+	hlen = va_arg(va, int);
+	va_end(va);
 	/*
 	 * Locate icmp structure in mbuf, and check
 	 * that not corrupted and of at least minimum length.

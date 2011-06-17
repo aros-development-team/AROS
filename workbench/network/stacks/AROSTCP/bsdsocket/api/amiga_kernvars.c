@@ -34,6 +34,8 @@ struct kernel_var kvars[] = {
 	{ NULL , NULL }
 };
 
+struct MiamiBase;
+
 AROS_LH1(void *, FindKernelVar,
          AROS_LHA(STRPTR, name, A0),
          struct MiamiBase *, MiamiBase, 59, Miami

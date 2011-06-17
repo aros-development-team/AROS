@@ -45,7 +45,7 @@
  */
  
 #define	SLEEP_QUEUE_SIZE	32	/* power of 2 */
-#define	SLEEP_HASH(x)	(((int)(x)>>5) & (SLEEP_QUEUE_SIZE - 1))
+#define	SLEEP_HASH(x)	(((IPTR)(x)>>5) & (SLEEP_QUEUE_SIZE - 1))
 
 queue_head_t	sleep_queue[SLEEP_QUEUE_SIZE];
 
@@ -428,7 +428,7 @@ D(bug("[AROSTCP](kern_synch.c) wakeup()\n"));
  * Note that InitSemaphore() requires the signalSemaphore to be initialized
  * to zero (here done statically).
  */
-struct SignalSemaphore spl_semaphore = { 0 };
+struct SignalSemaphore spl_semaphore = { };
 
 /*
  * spl_level holds the current pseudo priority level.

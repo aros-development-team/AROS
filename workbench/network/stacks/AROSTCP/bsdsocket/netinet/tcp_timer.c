@@ -101,7 +101,7 @@ tcp_slowtimo()
 {
 	register struct inpcb *ip, *ipnxt;
 	register struct tcpcb *tp;
-	register int i;
+	register long i;
 	int s;
 
 	s = splnet();
@@ -125,7 +125,7 @@ tcp_slowtimo()
 			if (tp->t_timer[i] && --tp->t_timer[i] == 0) {
 				if (tcp_usrreq(tp->t_inpcb->inp_socket,
 				    PRU_SLOWTIMO, (struct mbuf *)0,
-				    (struct mbuf *)i, (struct mbuf *)0) == NULL)
+				    (struct mbuf *)i, (struct mbuf *)0) == 0)
 					goto tpgone;
 			}
 		}

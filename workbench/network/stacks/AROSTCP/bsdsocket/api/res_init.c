@@ -196,7 +196,7 @@ D(bug("[AROSTCP](res_init.c) res_update_db: Failed to allocate array for nsaddr_
   }
   ReleaseSemaphore(&DynDB.dyn_Lock);
   /* Terminale the array */
-  state->nsaddr_list[n].s_addr = NULL;
+  state->nsaddr_list[n].s_addr = 0;
   /* Remember NetDB update count */
   state->dbserial = ndb_Serial;
   state->options = opts;

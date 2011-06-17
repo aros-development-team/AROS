@@ -317,7 +317,7 @@ D(bug("[AROSTCP](res_send.c) res_send: Failed to create socket\n"));
 			 * as we wish to receive answers from the first
 			 * server to respond.
 			 */
-#warning "TODO*: see comment here .."
+/* TODO*: see comment here .. */
 			/* This piece of code still behaves slightly wrong in
 			   case of ECONNREFUSED error. On next retry socket will
 			   be in disconnected state and instead of getting

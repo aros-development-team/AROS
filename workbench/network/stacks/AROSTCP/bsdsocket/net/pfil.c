@@ -94,7 +94,7 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr)
 	for (pfh = (struct packet_filter_hook *)pfil_list.mlh_Head;
 	     pfh->pfil_link.mln_Succ;
 	     pfh = (struct packet_filter_hook *)pfh->pfil_link.mln_Succ) {
-#warning "TODO: NicJA - Where is CHECK_POINTER() !!!!"
+/* TODO: NicJA - Where is CHECK_POINTER() !!!! */
 #if !defined(__AROS__)
 	     CHECK_POINTER(pfh);
 #endif
@@ -104,7 +104,7 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr)
 	     DPF(kprintf("Function: 0x%08lx\n", pfh->pfil_hook->h_Entry);)
 	     DPF(kprintf("CPU type: %ld\n", pfh->pfil_hooktype);)
 	     if (pfh->pfil_if == ifp) {
-		pfil_func = pfh->pfil_hook->h_Entry;
+		pfil_func = (APTR)pfh->pfil_hook->h_Entry;
 		DPF(kprintf("Executing packet filter routine: 0x%08lx\n", pfil_func);)
 		switch (pfh->pfil_hooktype) {
 		case MIAMICPU_M68KREG:

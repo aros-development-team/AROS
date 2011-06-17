@@ -303,7 +303,6 @@ struct tcpcb *
 tcp_close(tp)
 	register struct tcpcb *tp;
 {
-	register struct tcpiphdr *t;
 	struct inpcb *inp = tp->t_inpcb;
 	struct socket *so = inp->inp_socket;
 	register struct mbuf *q;
@@ -435,11 +434,12 @@ tcp_notify(inp, error)
 }
 
 void
-tcp_ctlinput(cmd, sa, ip)
+tcp_ctlinput(cmd, sa, arg)
 	int cmd;
 	struct sockaddr *sa;
-	register struct ip *ip;
+	void *arg;
 {
+	register struct ip *ip = arg;
 	register struct tcphdr *th;
 	void (*notify) __P((struct inpcb *, int)) = tcp_notify;
 

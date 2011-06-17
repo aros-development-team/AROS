@@ -60,7 +60,7 @@ extern struct Task *AROSTCP_Task;
 extern struct DosLibrary *DOSBase;
 
 extern void REGARGFUN stuffchar();
-extern int logname_changed(void *p, LONG new);
+extern int logname_changed(void *p, IPTR new);
 
 static struct SysLogPacket *log_poll(void);
 static void log_task(void);
@@ -133,14 +133,14 @@ D(bug("[AROSTCP](amiga_log.c) log_init()\n"));
 D(Printf("Creating NETTRACE process...");)
         
 #ifdef __MORPHOS__
-	if (CreateNewProcTags(NP_Entry, (LONG)&log_task,
-			      NP_Name, (LONG)LOG_TASK_NAME,
+	if (CreateNewProcTags(NP_Entry, (IPTR)&log_task,
+			      NP_Name, (IPTR)LOG_TASK_NAME,
 			      NP_Priority, LOG_TASK_PRI,
                   NP_CodeType,CODETYPE_PPC,
 			      TAG_DONE, NULL))
 #else
-	if (CreateNewProcTags(NP_Entry, (LONG)&log_task,
-			      NP_Name, (LONG)LOG_TASK_NAME,
+	if (CreateNewProcTags(NP_Entry, (IPTR)&log_task,
+			      NP_Name, (IPTR)LOG_TASK_NAME,
 			      NP_Priority, LOG_TASK_PRI,
 			      TAG_DONE, NULL))
 #endif
@@ -441,12 +441,12 @@ D(bug("[AROSTCP](amiga_log.c) log_task()\n"));
 }
 
 #ifdef CONSOLE_SYSLOG
-static BPTR confile = NULL;
+static BPTR confile = BNULL;
 static BOOL conopenfail = FALSE;
 static BOOL conwritefail = FALSE;
 #endif
 
-static BPTR logfile = NULL;
+static BPTR logfile = BNULL;
 static BOOL fileopenfail = FALSE;
 static BOOL filewritefail = FALSE;
 
@@ -544,8 +544,8 @@ void log_msg(struct SysLogPacket *msg)
 #endif
       if (LOG_PRI(msg->Level) <= log_cnf.log_filter) {
       /* If log file is not open, open it */
-  	while (logfile == NULL) {
-  	  if ((logfile = logOpen(logfilename)) == NULL) {
+  	while (logfile == BNULL) {
+  	  if ((logfile = logOpen(logfilename)) == BNULL) {
   	    if (!fileopenfail) /* log only once */
   	      __log(LOG_ERR,"Opening log file '%s' failed", logfilename);
   	    if (logfilename == logfiledefname) {
@@ -557,7 +557,7 @@ void log_msg(struct SysLogPacket *msg)
   	    fileopenfail = filewritefail = FALSE;
   	  }
   	}
-  	if (logfile != NULL) {
+  	if (logfile != BNULL) {
   	  int error = FPuts(logfile, buffer) == -1;
   	  if ((!error) && msg->Tag)
   	    error = FPrintf(logfile, "%s: ", msg->Tag) == -1;
@@ -584,7 +584,7 @@ struct SysLogPacket *log_poll()
   /* Process all messages */
   while (msg = (struct SysLogPacket *)GetMsg(logPort)) {
 
-    if (msg == gui_timerio)
+    if (msg == (struct SysLogPacket *)gui_timerio)
 	gui_process_refresh();
     else {
       DNETTRACE(KPrintF("Message level = 0x%08lx\n", msg->Level);)
@@ -711,7 +711,7 @@ D(bug("[AROSTCP](amiga_log.c) logOpen()\n"));
  * DosBase used by these functions is the one of the NETTRACE, and is
  * not initialized at that time!
  */
-int logname_changed(void *p, LONG new)
+int logname_changed(void *p, IPTR new)
 {
 #if defined(__AROS__)
 D(bug("[AROSTCP](amiga_log.c) logname_changed()\n"));
@@ -720,9 +720,9 @@ D(bug("[AROSTCP](amiga_log.c) logname_changed()\n"));
      /*
       * logfile may be non-NULL only if the NETTRACE is already initialized
       */
-    if (logfile != NULL) {
+    if (logfile != BNULL) {
       Close(logfile);
-      logfile = NULL;
+      logfile = BNULL;
     }
     fileopenfail = filewritefail = FALSE;
     /*
@@ -736,7 +736,7 @@ D(bug("[AROSTCP](amiga_log.c) logname_changed()\n"));
     
     if (confile) { /* only if NETTRACE is already initialized */
       Close(confile);
-      confile = NULL;
+      confile = BNULL;
     }
     conopenfail = conwritefail = FALSE;
     /*

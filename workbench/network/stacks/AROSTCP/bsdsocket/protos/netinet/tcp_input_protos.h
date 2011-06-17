@@ -6,8 +6,7 @@ int tcp_reass(register struct tcpcb * tp,
               register struct tcpiphdr * ti,
               struct mbuf * m);
 
-void STKARGFUN tcp_input(register struct mbuf * m,
-			 int iphlen);
+void tcp_input(void *args, ...);
 
 void tcp_dooptions(struct tcpcb * tp,
                   struct mbuf * om,

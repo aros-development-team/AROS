@@ -298,8 +298,10 @@ done:
 	}
 	if (error)
 		rtstat.rts_badredirect++;
-	else
-		(stat && (*stat)++);
+	else {
+		if (stat)
+		    (*stat)++;
+	}
 	rt_missmsg(RTM_REDIRECT, dst, gateway, netmask, src, flags, error);
 }
 

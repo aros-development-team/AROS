@@ -321,7 +321,7 @@ void	 tcp_canceltimers __P((struct tcpcb *));
 struct tcpcb *
 	 tcp_close __P((struct tcpcb *));
 int	 tcp_connect __P((struct tcpcb *, struct mbuf *));
-void	 tcp_ctlinput __P((int, struct sockaddr *, struct ip *));
+void	 tcp_ctlinput __P((int, struct sockaddr *, void *));
 int	 tcp_ctloutput __P((int, struct socket *, int, int, struct mbuf **));
 struct tcpcb *
 	 tcp_disconnect __P((struct tcpcb *));
@@ -334,7 +334,7 @@ void	 tcp_fasttimo __P((void));
 struct rmxp_tao *
 	 tcp_gettaocache __P((struct inpcb *));
 void	 tcp_init __P((void));
-void	 tcp_input __P((struct mbuf *, int));
+void	 tcp_input __P((void *arg, ...));
 void	 tcp_mss __P((struct tcpcb *, int));
 int	 tcp_mssopt __P((struct tcpcb *));
 struct tcpcb *

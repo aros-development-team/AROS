@@ -97,10 +97,9 @@ struct	sockproto ripproto = { PF_INET };
  * for raw_input routine, then pass them along with
  * mbuf chain.
  */
-void STKARGFUN
-rip_input(m)
-	struct mbuf *m;
+void rip_input(void *arg, ...)
 {
+	struct mbuf *m = arg;
 	register struct ip *ip = mtod(m, struct ip *);
 
 	ripproto.sp_protocol = ip->ip_p;
@@ -118,15 +117,20 @@ rip_input(m)
  * Tack on options user may have setup with control call.
  */
 #define	satosin(sa)	((struct sockaddr_in *)(sa))
-int STKARGFUN
-rip_output(m, so)
-	register struct mbuf *m;
-	struct socket *so;
+int rip_output(void *arg, ...)
 {
 	register struct ip *ip;
-	register struct raw_inpcb *rp = sotorawinpcb(so);
+	register struct raw_inpcb *rp;
 	register struct sockaddr_in *sin;
+	register struct mbuf *m = arg;
+	struct socket *so;
+	va_list va;
 
+	va_start(va, arg);
+	so = va_arg(va, struct socket *);
+	va_end(va);
+
+	rp = sotorawinpcb(so);
 	/*
 	 * If the user handed us a complete IP packet, use it.
 	 * Otherwise, allocate an mbuf for a header and fill it in.
