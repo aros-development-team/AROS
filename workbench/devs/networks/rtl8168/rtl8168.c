@@ -963,7 +963,7 @@ RTLD(bug("[%s] rtl8168nic_SetSpeedXMII()\n", unit->rtl8168u_name))
     return 0;
 }
 
-
+#if 0
 static void rtl8168nic_start_rx(struct net_device *unit)
 {
     // struct rtl8168_priv *np = get_pcnpriv(unit);
@@ -971,7 +971,7 @@ static void rtl8168nic_start_rx(struct net_device *unit)
 
 RTLD(bug("[%s] rtl8168nic_start_rx\n", unit->rtl8168u_name))
     // Already running? Stop it.
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void rtl8168nic_stop_rx(struct net_device *unit)
@@ -979,7 +979,7 @@ static void rtl8168nic_stop_rx(struct net_device *unit)
     // APTR base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8168nic_stop_rx\n", unit->rtl8168u_name))
-#warning "TODO: Handle starting/stopping Rx"
+/* TODO: Handle starting/stopping Rx */
 }
 
 static void rtl8168nic_start_tx(struct net_device *unit)
@@ -987,7 +987,7 @@ static void rtl8168nic_start_tx(struct net_device *unit)
     // APTR base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8168nic_start_tx()\n", unit->rtl8168u_name))
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void rtl8168nic_stop_tx(struct net_device *unit)
@@ -995,7 +995,7 @@ static void rtl8168nic_stop_tx(struct net_device *unit)
     // APTR base = get_hwbase(unit);
 
 RTLD(bug("[%s] rtl8168nic_stop_tx()\n", unit->rtl8168u_name))
-#warning "TODO: Handle starting/stopping Tx"
+/* TODO: Handle starting/stopping Tx */
 }
 
 static void rtl8168nic_txrx_reset(struct net_device *unit)
@@ -1005,6 +1005,7 @@ static void rtl8168nic_txrx_reset(struct net_device *unit)
 
 RTLD(bug("[%s] rtl8168nic_txrx_reset()\n", unit->rtl8168u_name))
 }
+#endif
 
 /*
  * rtl8168nic_SetMulticast: unit->set_multicast function
@@ -1026,7 +1027,7 @@ RTLD(bug("[%s] rtl8168nic_SetMulticast()\n", unit->rtl8168u_name))
 
 static void rtl8168nic_DeInit(struct net_device *unit)
 {
-#warning "TODO: Clean up / DeInit hardware"
+/* TODO: Clean up / DeInit hardware */
 }
 
 static void rtl8168nic_GetMACAddr(struct net_device *unit, char *addr, BOOL fromROM)
@@ -1183,7 +1184,7 @@ static void rtl8168nic_drain_tx(struct net_device *unit)
     // struct rtl8168_priv *np = get_pcnpriv(unit);
     // int i;
 //    for (i = 0; i < NUM_TX_DESC; i++) {
-#warning "TODO: rtl8168nic_drain_tx does nothing atm."
+/* TODO: rtl8168nic_drain_tx does nothing atm. */
 //    }
 }
 
@@ -1192,7 +1193,7 @@ static void rtl8168nic_drain_rx(struct net_device *unit)
     // struct rtl8168_priv *np = get_pcnpriv(unit);
     // int i;
 //    for (i = 0; i < RX_RING_SIZE; i++) {
-#warning "TODO: rtl8168nic_drain_rx does nothing atm."
+/* TODO: rtl8168nic_drain_rx does nothing atm. */
 //    }
 }
 
@@ -1372,10 +1373,10 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 	unit->rtl8168u_intr_mask &= ~RxDescUnavail;
     }
 
-    RTL_W32(base + (TxDescStartAddrLow), ((UQUAD) np->TxPhyAddr & DMA_32BIT_MASK));
-    RTL_W32(base + (TxDescStartAddrHigh), ((UQUAD) np->TxPhyAddr >> 32));
-    RTL_W32(base + (RxDescAddrLow), ((UQUAD) np->RxPhyAddr & DMA_32BIT_MASK));
-    RTL_W32(base + (RxDescAddrHigh), ((UQUAD) np->RxPhyAddr >> 32));
+    RTL_W32(base + (TxDescStartAddrLow), ((UQUAD) (IPTR)np->TxPhyAddr & DMA_32BIT_MASK));
+    RTL_W32(base + (TxDescStartAddrHigh), ((UQUAD) (IPTR)np->TxPhyAddr >> 32));
+    RTL_W32(base + (RxDescAddrLow), ((UQUAD) (IPTR)np->RxPhyAddr & DMA_32BIT_MASK));
+    RTL_W32(base + (RxDescAddrHigh), ((UQUAD) (IPTR)np->RxPhyAddr >> 32));
 
     /* Set Rx Config register */
     rtl8168nic_SetRxMode(unit);
@@ -2174,7 +2175,7 @@ static ULONG rtl8168nic_RxFill(struct net_device *unit, ULONG start, ULONG end)
 	if (np->RxDescArray[i].addr)
 	    continue;
 
-	if ((np->RxDescArray[i].addr = HIDD_PCIDriver_AllocPCIMem(unit->rtl8168u_PCIDriver, np->rx_buf_sz)) == NULL)
+	if ((np->RxDescArray[i].addr = (IPTR)HIDD_PCIDriver_AllocPCIMem(unit->rtl8168u_PCIDriver, np->rx_buf_sz)) == 0)
 	    break;
 
 //	RTLD(bug("[%s] rtl8168nic_RxFill: Rx Buffer %d Allocated @ %p\n", unit->rtl8168u_name, i, np->RxDescArray[i].addr))
