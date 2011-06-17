@@ -1502,7 +1502,7 @@ BOOL nPTPGetDeviceInfo(struct NepClassPTP *nch)
         if(buf)
         {
             tmpptr += 2+4+2;
-            tmpptr += (*tmpptr++)<<1; // skip VendorExtensionDesc;
+            tmpptr += (*tmpptr)<<1; // skip VendorExtensionDesc;
             tmpptr += 2;
             cnt = *tmpptr++;
             cnt |= (*tmpptr++)<<8;
@@ -1623,13 +1623,13 @@ BOOL nPTPGetDeviceInfo(struct NepClassPTP *nch)
                         TAG_END);
 
             manustr = nGetPimaStr(nch, tmpptr, devmanuname);
-            tmpptr += (*tmpptr++)<<1; // skip Manufacturer
+            tmpptr += (*tmpptr)<<1; // skip Manufacturer
             modelstr = nGetPimaStr(nch, tmpptr, devname);
-            tmpptr += (*tmpptr++)<<1; // skip Model
+            tmpptr += (*tmpptr)<<1; // skip Model
             devversstr = nGetPimaStr(nch, tmpptr, "?.??");
-            tmpptr += (*tmpptr++)<<1; // skip Device Version
+            tmpptr += (*tmpptr)<<1; // skip Device Version
             sernumstr = nGetPimaStr(nch, tmpptr, "<none>");
-            tmpptr += (*tmpptr++)<<1; // skip Serial Number
+            tmpptr += (*tmpptr)<<1; // skip Serial Number
 
             // filter model for volume name
             cnt = 30;
@@ -1893,18 +1893,18 @@ struct PTPObjectInfo * nPTPGetObjectInfo(struct NepClassPTP *nch, ULONG objhandl
         } else {
             poi->poi_Name = nPsdStrToNStr(nch, psdCopyStrFmt("Object_%08lx", poi->poi_StorageID));
         }
-        bufptr += (*bufptr++)<<1; // skip Filename
+        bufptr += (*bufptr)<<1; // skip Filename
         nConvertPimaDate(nch, &poi->poi_CapDate, bufptr);
-        bufptr += (*bufptr++)<<1; // skip Capture Date
+        bufptr += (*bufptr)<<1; // skip Capture Date
         nConvertPimaDate(nch, &poi->poi_ModDate, bufptr);
-        bufptr += (*bufptr++)<<1; // skip Modification Date
+        bufptr += (*bufptr)<<1; // skip Modification Date
         if(*bufptr)
         {
             poi->poi_Keywords = nGetPimaStr(nch, bufptr, NULL);
         } else {
             poi->poi_Keywords = NULL;
         }
-        bufptr += (*bufptr++)<<1; // skip Keywords
+        bufptr += (*bufptr)<<1; // skip Keywords
 
         poi->poi_NameHash = nCalcNameHash(nch, poi->poi_Name);
 
@@ -2236,7 +2236,7 @@ struct PTPStorageInfo * nPTPGetStorageInfo(struct NepClassPTP *nch, ULONG storag
         } else {
             psi->psi_StorageDesc = nPsdStrToNStr(nch, psdCopyStrFmt("Storage_%08lx", psi->psi_StorageID));
         }
-        bufptr += (*bufptr++)<<1; // skip Storage Descriptor
+        bufptr += (*bufptr)<<1; // skip Storage Descriptor
 
         if(*bufptr)
         {
@@ -2244,7 +2244,7 @@ struct PTPStorageInfo * nPTPGetStorageInfo(struct NepClassPTP *nch, ULONG storag
         } else {
             psi->psi_VolumeName = nPsdStrToNStr(nch, psdCopyStrFmt("Volume_%08lx", psi->psi_StorageID));
         }
-        bufptr += (*bufptr++)<<1; // skip Volume Name
+        bufptr += (*bufptr)<<1; // skip Volume Name
 
         KPRINTF(10, ("StorageID %08lx: %s (%s), StorageType=%04lx, FSType=%04lx, Caps=%04lx\n",
                      psi->psi_StorageID, psi->psi_VolumeName, psi->psi_StorageDesc,
@@ -4385,60 +4385,60 @@ AROS_UFH0(void, nGUITask)
     }
 
     nch->nch_App = ApplicationObject,
-        MUIA_Application_Title      , libname,
-        MUIA_Application_Version    , VERSION_STRING,
-        MUIA_Application_Copyright  , "©2008-2009 Chris Hodges",
-        MUIA_Application_Author     , "Chris Hodges <chrisly@platon42.de>",
-        MUIA_Application_Description, "Settings for the ptp.class",
-        MUIA_Application_Base       , "PTP",
-        MUIA_Application_HelpFile   , "HELP:Poseidon.guide",
-        MUIA_Application_Menustrip  , MenustripObject,
-            Child, MenuObjectT("Project"),
-                Child, nch->nch_AboutMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "About...",
-                    MUIA_Menuitem_Shortcut, "?",
-                    End,
+        MUIA_Application_Title      , (IPTR)libname,
+        MUIA_Application_Version    , (IPTR)VERSION_STRING,
+        MUIA_Application_Copyright  , (IPTR)"©2008-2009 Chris Hodges",
+        MUIA_Application_Author     , (IPTR)"Chris Hodges <chrisly@platon42.de>",
+        MUIA_Application_Description, (IPTR)"Settings for the ptp.class",
+        MUIA_Application_Base       , (IPTR)"PTP",
+        MUIA_Application_HelpFile   , (IPTR)"HELP:Poseidon.guide",
+        MUIA_Application_Menustrip  , (IPTR)MenustripObject,
+            Child, (IPTR)MenuObjectT((IPTR)"Project"),
+                Child, (IPTR)(nch->nch_AboutMI = MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR)"About...",
+                    MUIA_Menuitem_Shortcut, (IPTR)"?",
+                    End),
                 End,
-            Child, MenuObjectT("Settings"),
-                Child, nch->nch_UseMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "Save",
-                    MUIA_Menuitem_Shortcut, "S",
+            Child, (IPTR)MenuObjectT((IPTR)"Settings"),
+                Child, (IPTR)(nch->nch_UseMI = MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR)"Save",
+                    MUIA_Menuitem_Shortcut, (IPTR)"S",
+                    End),
+                Child, (IPTR)(nch->nch_SetDefaultMI = MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR)"Save as Default",
+                    MUIA_Menuitem_Shortcut, (IPTR)"D",
+                    End),
+                Child, (IPTR)MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR)NM_BARLABEL,
                     End,
-                Child, nch->nch_SetDefaultMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "Save as Default",
-                    MUIA_Menuitem_Shortcut, "D",
-                    End,
-                Child, MenuitemObject,
-                    MUIA_Menuitem_Title, NM_BARLABEL,
-                    End,
-                Child, nch->nch_MUIPrefsMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "MUI Settings",
-                    MUIA_Menuitem_Shortcut, "M",
-                    End,
+                Child, (IPTR)(nch->nch_MUIPrefsMI = MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR)"MUI Settings",
+                    MUIA_Menuitem_Shortcut, (IPTR)"M",
+                    End),
                 End,
             End,
 
-        SubWindow, nch->nch_MainWindow = WindowObject,
+        SubWindow, (IPTR)(nch->nch_MainWindow = WindowObject,
             MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-            MUIA_Window_Title, libname,
-            MUIA_HelpNode, libname,
+            MUIA_Window_Title, (IPTR)libname,
+            MUIA_HelpNode, (IPTR)libname,
 
-            WindowContents, VGroup,
-                Child, VGroup, GroupFrameT("PTP Settings"),
-                    Child, HGroup,
-                        Child, Label((ULONG) "DOS Device Name:"),
-                        Child, nch->nch_DOSNameObj = StringObject,
+            WindowContents, (IPTR)VGroup,
+                Child, (IPTR)VGroup, GroupFrameT((IPTR)"PTP Settings"),
+                    Child, (IPTR)HGroup,
+                        Child, (IPTR)Label((IPTR) "DOS Device Name:"),
+                        Child, (IPTR)(nch->nch_DOSNameObj = StringObject,
                             StringFrame,
                             MUIA_CycleChain, 1,
                             MUIA_String_AdvanceOnCR, TRUE,
-                            MUIA_String_Contents, nch->nch_CDC->cdc_DOSName,
-                            MUIA_String_Reject, "/ :?#*",
+                            MUIA_String_Contents, (IPTR)nch->nch_CDC->cdc_DOSName,
+                            MUIA_String_Reject, (IPTR)"/ :?#*",
                             MUIA_String_MaxLen, 31,
-                            End,
+                            End),
                         End,
-                    Child, ColGroup(2),
-                        Child, Label((ULONG) "Always fully load and cache objects:"),
-                        Child, nch->nch_NoPartObjObj = ImageObject, ImageButtonFrame,
+                    Child, (IPTR)ColGroup(2),
+                        Child, (IPTR)Label((IPTR) "Always fully load and cache objects:"),
+                        Child, (IPTR)(nch->nch_NoPartObjObj = ImageObject, ImageButtonFrame,
                             MUIA_Background, MUII_ButtonBack,
                             MUIA_CycleChain, 1,
                             MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -4446,9 +4446,9 @@ AROS_UFH0(void, nGUITask)
                             MUIA_Image_FreeVert, TRUE,
                             MUIA_Selected, nch->nch_CDC->cdc_NoPartObj,
                             MUIA_ShowSelState, FALSE,
-                            End,
-                        Child, Label((ULONG) "Try to detect MTP devices:"),
-                        Child, nch->nch_EnableMTPObj = ImageObject, ImageButtonFrame,
+                            End),
+                        Child, (IPTR)Label((IPTR) "Try to detect MTP devices:"),
+                        Child, (IPTR)(nch->nch_EnableMTPObj = ImageObject, ImageButtonFrame,
                             MUIA_Disabled, nch->nch_Interface ? TRUE : FALSE,
                             MUIA_Background, MUII_ButtonBack,
                             MUIA_CycleChain, 1,
@@ -4457,34 +4457,34 @@ AROS_UFH0(void, nGUITask)
                             MUIA_Image_FreeVert, TRUE,
                             MUIA_Selected, nch->nch_CDC->cdc_EnableMTP,
                             MUIA_ShowSelState, FALSE,
-                            End,
+                            End),
                         End,
                     End,
-                Child, VSpace(0),
-                Child, HGroup,
+                Child, (IPTR)VSpace(0),
+                Child, (IPTR)HGroup,
                     MUIA_Group_SameWidth, TRUE,
-                    Child, nch->nch_UseObj = TextObject, ButtonFrame,
-                        MUIA_ShowMe, nch->nch_Interface,
+                    Child, (IPTR)(nch->nch_UseObj = TextObject, ButtonFrame,
+                        MUIA_ShowMe, (IPTR)nch->nch_Interface,
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
-                        MUIA_Text_Contents, "\33c Save ",
-                        End,
-                    Child, nch->nch_SetDefaultObj = TextObject, ButtonFrame,
+                        MUIA_Text_Contents, (IPTR)"\33c Save ",
+                        End),
+                    Child, (IPTR)(nch->nch_SetDefaultObj = TextObject, ButtonFrame,
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
-                        MUIA_Text_Contents, nch->nch_Interface ? "\33c Save as Default " : "\33c Save Defaults ",
-                        End,
-                    Child, nch->nch_CloseObj = TextObject, ButtonFrame,
+                        MUIA_Text_Contents, (IPTR)(nch->nch_Interface ? "\33c Save as Default " : "\33c Save Defaults "),
+                        End),
+                    Child, (IPTR)(nch->nch_CloseObj = TextObject, ButtonFrame,
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
-                        MUIA_Text_Contents, "\33c Use ",
-                        End,
+                        MUIA_Text_Contents, (IPTR)"\33c Use ",
+                        End),
                     End,
                 End,
-            End,
+            End),
         End;
 
     if(!nch->nch_App)

@@ -23,9 +23,9 @@
 #define ARGS_UNIT     6
 #define ARGS_SIZEOF   7
 
-static const char *prgname = "DRadioTool";
+const char DRadioTool_prgname[] = "DRadioTool";
 static const char *template = "ON/S,OFF/S,FREQ/K/N,SCAN/S,AUTO/S,SIGNAL/S,UNIT/N/K";
-static const char *version = "$VER: DRadioTool 1.1 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char DRadioTool_version[] = "$VER: DRadioTool 1.1 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 

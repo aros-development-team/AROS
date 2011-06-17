@@ -843,7 +843,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                             {
                                                 UWORD uhcihciport = unit->hu_PortNum11[idx - 1];
                                                 UWORD uhciportreg = uhcihciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
-                                                ULONG uhcinewval = READREG16_LE(chc->hc_RegBase, uhciportreg);
+                                                ULONG __unused uhcinewval = READREG16_LE(chc->hc_RegBase, uhciportreg);
 
                                                 KPRINTF(10, ("UHCI Port status before handover=%04lx\n", uhcinewval));
                                                 break;
@@ -853,7 +853,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                             {
                                                 UWORD ohcihciport = unit->hu_PortNum11[idx - 1];
                                                 UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
-                                                ULONG ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
+                                                ULONG __unused ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
 
                                                 KPRINTF(10, ("OHCI Port status before handover=%08lx\n", ohcioldval));
                                                 KPRINTF(10, ("Powering Port (%s)\n", ohcioldval & OHPF_PORTPOWER ? "already" : "ok"));
@@ -1090,7 +1090,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         case HCITYPE_OHCI:
                         {
                             UWORD portreg = OHCI_PORTSTATUS + (hciport<<2);
-                            ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
+                            ULONG __unused oldval = READREG32_LE(hc->hc_RegBase, portreg);
 
                             switch(val)
                             {
@@ -2264,7 +2264,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                 while(((struct Node *) ioreq)->ln_Succ)
                 {
                     // Remember the successor because ohciAbortRequest() will move the request to another list
-                    struct IOUsbHwReq *succ = (struct IOUsbHWReq *)ioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
+                    struct IOUsbHWReq *succ = (struct IOUsbHWReq *)ioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
 
                     if(ioreq->iouh_Flags & UHFF_NAKTIMEOUT)
                     {

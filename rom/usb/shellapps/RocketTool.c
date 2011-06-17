@@ -31,9 +31,9 @@
 #define ARGS_UNIT     7
 #define ARGS_SIZEOF   8
 
-static const char *prgname = "RocketTool";
+const char RocketTool_prgname[] = "RocketTool";
 static const char *template = "LEFT/S,RIGHT/S,UP/S,DOWN/S,FIRE/S,TIME/N/K,JOYPORT/N/K,UNIT/N/K";
-static const char *version = "$VER: RocketTool 1.1 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char RocketTool_version[] = "$VER: RocketTool 1.1 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 

@@ -32,9 +32,9 @@
 #define ARGS_UNIT     10
 #define ARGS_SIZEOF   11
 
-static const char *prgname = "PencamTool";
+const char PencamTool_prgname[] = "PencamTool";
 static const char *template = "TO/A,PICNUM/N,INTERVAL/N,UPTO/N/K,NOBEEP/S,GAMMA/K,SHARPEN/S,TEXT/K,FONT/K,FONTSIZE/N/K,UNIT/N/K";
-static const char *version = "$VER: PencamTool 1.7 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char PencamTool_version[] = "$VER: PencamTool 1.7 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 

@@ -2211,63 +2211,63 @@ AROS_UFH0(void, nGUITask)
     }
 
     nh->nh_App = ApplicationObject,
-        MUIA_Application_Title      , libname,
-        MUIA_Application_Version    , VERSION_STRING,
-        MUIA_Application_Copyright  , "©2008-2009 Chris Hodges",
-        MUIA_Application_Author     , "Chris Hodges <chrisly@platon42.de>",
-        MUIA_Application_Description, "Settings for the usbaudio.class",
-        MUIA_Application_Base       , "USBAUDIO",
-        MUIA_Application_HelpFile   , "HELP:Poseidon.guide",
-        MUIA_Application_Menustrip  , MenustripObject,
-            Child, MenuObjectT("Project"),
-                Child, nh->nh_AboutMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "About...",
-                    MUIA_Menuitem_Shortcut, "?",
-                    End,
+        MUIA_Application_Title      , (IPTR)libname,
+        MUIA_Application_Version    , (IPTR)VERSION_STRING,
+        MUIA_Application_Copyright  , (IPTR)"©2008-2009 Chris Hodges",
+        MUIA_Application_Author     , (IPTR)"Chris Hodges <chrisly@platon42.de>",
+        MUIA_Application_Description, (IPTR)"Settings for the usbaudio.class",
+        MUIA_Application_Base       , (IPTR)"USBAUDIO",
+        MUIA_Application_HelpFile   , (IPTR)"HELP:Poseidon.guide",
+        MUIA_Application_Menustrip  , (IPTR)MenustripObject,
+            Child, (IPTR)MenuObjectT((IPTR)"Project"),
+                Child, (IPTR)(nh->nh_AboutMI = MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR)"About...",
+                    MUIA_Menuitem_Shortcut, (IPTR)"?",
+                    End),
                 End,
-            Child, MenuObjectT("Settings"),
-                Child, nh->nh_UseMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "Save",
-                    MUIA_Menuitem_Shortcut, "S",
+            Child, (IPTR)MenuObjectT((IPTR)"Settings"),
+                Child, (IPTR)(nh->nh_UseMI = MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR)"Save",
+                    MUIA_Menuitem_Shortcut, (IPTR)"S",
+                    End),
+                Child, (IPTR)MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR)NM_BARLABEL,
                     End,
-                Child, MenuitemObject,
-                    MUIA_Menuitem_Title, NM_BARLABEL,
-                    End,
-                Child, nh->nh_MUIPrefsMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "MUI Settings",
-                    MUIA_Menuitem_Shortcut, "M",
-                    End,
+                Child, (IPTR)(nh->nh_MUIPrefsMI = MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR)"MUI Settings",
+                    MUIA_Menuitem_Shortcut, (IPTR)"M",
+                    End),
                 End,
             End,
 
-        SubWindow, nh->nh_MainWindow = WindowObject,
+        SubWindow, (IPTR)(nh->nh_MainWindow = WindowObject,
             MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-            MUIA_Window_Title, libname,
-            MUIA_HelpNode, libname,
+            MUIA_Window_Title, (IPTR)libname,
+            MUIA_HelpNode, (IPTR)libname,
 
-            WindowContents, VGroup,
-                Child, ColGroup(2), GroupFrameT("Global Settings"),
-                    Child, Label((IPTR) "None"),
-                    Child, HSpace(0),
+            WindowContents, (IPTR)VGroup,
+                Child, (IPTR)ColGroup(2), (IPTR)GroupFrameT((IPTR)"Global Settings"),
+                    Child, (IPTR)Label((IPTR) "None"),
+                    Child, (IPTR)HSpace(0),
                     End,
-                Child, VSpace(0),
-                Child, HGroup,
+                Child, (IPTR)VSpace(0),
+                Child, (IPTR)HGroup,
                     MUIA_Group_SameWidth, TRUE,
-                    Child, nh->nh_UseObj = TextObject, ButtonFrame,
+                    Child, (IPTR)(nh->nh_UseObj = TextObject, ButtonFrame,
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
-                        MUIA_Text_Contents, "\33c Save ",
-                        End,
-                    Child, nh->nh_CloseObj = TextObject, ButtonFrame,
+                        MUIA_Text_Contents, (IPTR)"\33c Save ",
+                        End),
+                    Child, (IPTR)(nh->nh_CloseObj = TextObject, ButtonFrame,
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
-                        MUIA_Text_Contents, "\33c Use ",
-                        End,
+                        MUIA_Text_Contents, (IPTR)"\33c Use ",
+                        End),
                     End,
                 End,
-            End,
+            End),
         End;
 
     if(!nh->nh_App)
@@ -2960,8 +2960,8 @@ AROS_UFH3(void, nRec8BitMono,
     BYTE *srcptr = hook->h_Data;
     do
     {
-        // here's a compiler warning, but it's actually okay this way
-        *tarptr++ = *tarptr++ = *srcptr++;
+        *tarptr++ = *srcptr;
+        *tarptr++ = *srcptr++;
     } while(--cnt);
     
     AROS_USERFUNC_EXIT
@@ -2998,8 +2998,9 @@ AROS_UFH3(void, nRec16BitMono,
     UWORD *srcptr = hook->h_Data;
     do
     {
-        // here's a compiler warning, but it's actually okay this way
-        *tarptr++ = *tarptr++ = AROS_WORD2LE(*srcptr);
+        WORD src = AROS_WORD2LE(*srcptr);
+        *tarptr++ = src;
+        *tarptr++ = src;
         srcptr++;
     } while(--cnt);
     
@@ -3040,8 +3041,9 @@ AROS_UFH3(void, nRec24BitMono,
     srcptr++;
     do
     {
-        // here's a compiler warning, but it's actually okay this way
-        *tarptr++ = *tarptr++ = *srcptr|(srcptr[1]<<8);
+        UWORD src = *srcptr|(srcptr[1]<<8);
+        *tarptr++ = src;
+        *tarptr++ = src;
         srcptr += 3;
     } while(--cnt);
     
@@ -3082,8 +3084,9 @@ AROS_UFH3(void, nRec32BitMono,
     srcptr++;
     do
     {
-        // here's a compiler warning, but it's actually okay this way
-        *tarptr++ = *tarptr++ = AROS_WORD2LE(*srcptr);
+        UWORD src = AROS_WORD2LE(*srcptr);
+        *tarptr++ = src;
+        *tarptr++ = src;
         srcptr += 2;
     } while(--cnt);
     

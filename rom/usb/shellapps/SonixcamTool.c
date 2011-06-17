@@ -30,9 +30,9 @@
 #define ARGS_UNIT     8
 #define ARGS_SIZEOF   9
 
-static const char *prgname = "SonixcamTool";
+const char SonixcamTool_prgname[] = "SonixcamTool";
 static const char *template = "TO/A,INTERVAL/N,UPTO/N/K,GAMMA/K,SHARPEN/S,TEXT/K,FONT/K,FONTSIZE/N/K,UNIT/N/K";
-static const char *version = "$VER: SonixcamTool 1.3 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char SonixcamTool_version[] = "$VER: SonixcamTool 1.3 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 

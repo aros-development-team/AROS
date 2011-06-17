@@ -24,9 +24,9 @@
 #define ARGS_UNIT           5
 #define ARGS_SIZEOF         6
 
-static const char *prgname = "PowManTool";
+const char PowManTool_prgname[] = "PowManTool";
 static const char *template = "SOCKET=OUTLET/N,ON/S,OFF/S,TOGGLE/S,STATUS/S,UNIT/N/K";
-static const char *version = "$VER: PowManTool 1.0 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
+const char PowManTool_version[] = "$VER: PowManTool 1.0 (12.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 

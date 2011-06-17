@@ -59,7 +59,7 @@ VOID LocalizeStringArray(CONST_STRPTR *array)
 {
     CONST_STRPTR *x;
     for (x = array; *x; x++)
-        *x = GetStr((int)*x);
+        *x = GetStr((int)(IPTR)*x);
 }
 
 /****************************************************************************************/
@@ -68,7 +68,7 @@ VOID LocalizeNewMenu(struct NewMenu *nm)
 {
     for ( ; nm->nm_Type != NM_END; nm++)
         if (nm->nm_Label != NM_BARLABEL)
-            nm->nm_Label = GetStr((int)nm->nm_Label);
+            nm->nm_Label = GetStr((int)(IPTR)nm->nm_Label);
 }
 
 /****************************************************************************************/
