@@ -21,7 +21,7 @@ extern struct ReqToolsBase * ReqToolsBase;
 	LONG rtPaletteRequest (
 
 /*  SYNOPSIS */
-	char *title,
+	const char *title,
 	struct rtReqInfo *reqinfo,
 	Tag tag1, 
 	...)

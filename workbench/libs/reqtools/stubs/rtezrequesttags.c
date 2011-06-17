@@ -21,8 +21,8 @@ extern struct ReqToolsBase * ReqToolsBase;
 	ULONG rtEZRequestTags (
 
 /*  SYNOPSIS */
-	char *bodyfmt,
-	char *gadfmt,
+	const char *bodyfmt,
+	const char *gadfmt,
 	struct rtReqInfo *reqinfo,
 	APTR argarray,
 	Tag tag1, 
