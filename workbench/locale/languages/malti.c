@@ -105,11 +105,11 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language),
     */
     language->library.lib_Node.ln_Type = NT_LIBRARY;
     language->library.lib_Node.ln_Pri = -120;
-    language->library.lib_Node.ln_Name = name;
+    language->library.lib_Node.ln_Name = (char *)name;
     language->library.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
     language->library.lib_Version = LANGVER;
     language->library.lib_Revision = LANGREV;
-    language->library.lib_IdString = &version[7];
+    language->library.lib_IdString = (APTR)&version[7];
 
     language->seglist = segList;
     language->sysbase = SysBase;
@@ -154,7 +154,7 @@ AROS_LH0(BPTR, close, struct Language *, language, 2, language)
             return AROS_LC0(BPTR, expunge, struct Language *, language, 3, language);
         }
     }
-    return NULL;
+    return BNULL;
     AROS_LIBFUNC_EXIT
 }
 
