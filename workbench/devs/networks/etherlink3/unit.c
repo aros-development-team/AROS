@@ -309,15 +309,15 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
          {
             upd = next_upd;
             next_upd = upd + UPD_SIZE / sizeof(ULONG);
-            upd[EL3UPD_NEXT] = MakeLELong((ULONG)next_upd);
+            upd[EL3UPD_NEXT] = MakeLELong((ULONG)(IPTR)next_upd);
             upd[EL3UPD_STATUS] = 0;
             fragment = upd + EL3UPD_FIRSTFRAG;
-            fragment[EL3FRAG_ADDR] = MakeLELong((ULONG)buffer);
+            fragment[EL3FRAG_ADDR] = MakeLELong((ULONG)(IPTR)buffer);
             fragment[EL3FRAG_LEN] =
                MakeLELong(EL3FRAG_LENF_LAST | ETH_MAXPACKETSIZE);
             buffer += ETH_MAXPACKETSIZE;
          }
-         upd[EL3UPD_NEXT] = MakeLELong((ULONG)unit->upds);
+         upd[EL3UPD_NEXT] = MakeLELong((ULONG)(IPTR)unit->upds);
          unit->next_upd = unit->upds;
 
          dma_size = UPD_SIZE * RX_SLOT_COUNT;
@@ -828,7 +828,7 @@ VOID ConfigureAdapter(struct DevUnit *unit, struct DevBase *base)
    /* Go online */
 
    if((unit->capabilities & EL3ROM_CAPABILITIESF_FULLMASTER) != 0)
-      unit->LELongOut(unit->card, EL3REG_UPLIST, (ULONG)unit->upds);
+      unit->LELongOut(unit->card, EL3REG_UPLIST, (ULONG)(IPTR)unit->upds);
    GoOnline(unit, base);
 
    /* Return */
@@ -1944,7 +1944,7 @@ static VOID DMARXInt(REG(a1, struct DevUnit *unit),
       & EL3UPD_STATUSF_COMPLETE) != 0)
    {
       fragment = upd + EL3UPD_FIRSTFRAG;
-      buffer = (UBYTE *)LELong(fragment[EL3FRAG_ADDR]);
+      buffer = (UBYTE *)(IPTR)LELong(fragment[EL3FRAG_ADDR]);
 
       dma_size = ETH_MAXPACKETSIZE;
       CachePostDMA(buffer, &dma_size, 0);
@@ -2027,7 +2027,7 @@ static VOID DMARXInt(REG(a1, struct DevUnit *unit),
       dma_size = ETH_MAXPACKETSIZE;
       CachePreDMA(buffer, &dma_size, 0);
 
-      upd = (ULONG *)LELong(upd[EL3UPD_NEXT]);
+      upd = (ULONG *)(IPTR)LELong(upd[EL3UPD_NEXT]);
    }
 
    dma_size = UPD_SIZE * RX_SLOT_COUNT;
@@ -2108,7 +2108,7 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
          if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
          {
             buffer = unit->headers + ETH_HEADERSIZE * slot;
-            fragment[EL3FRAG_ADDR] = MakeLELong((ULONG)buffer);
+            fragment[EL3FRAG_ADDR] = MakeLELong((ULONG)(IPTR)buffer);
             fragment[EL3FRAG_LEN] = MakeLELong(ETH_HEADERSIZE);
 
             p = (UWORD *)buffer;
@@ -2154,7 +2154,7 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
 
          if(error == 0)
          {
-            fragment[EL3FRAG_ADDR] = MakeLELong((ULONG)buffer);
+            fragment[EL3FRAG_ADDR] = MakeLELong((ULONG)(IPTR)buffer);
             fragment[EL3FRAG_LEN] =
                MakeLELong(EL3FRAG_LENF_LAST | data_size);
             dma_size = data_size;
@@ -2162,17 +2162,17 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
 
             /* Pass packet to adapter */
 
-            last_dpd = (ULONG *)unit->LELongIn(unit->card, EL3REG_DOWNLIST);
+            last_dpd = (ULONG *)(IPTR)unit->LELongIn(unit->card, EL3REG_DOWNLIST);
             if(last_dpd != NULL)
             {
                unit->LEWordOut(unit->card, EL3REG_COMMAND,
                   EL3CMD_DOWNSTALL);
                while((unit->LEWordIn(unit->card, EL3REG_STATUS)
                   & EL3REG_STATUSF_CMDINPROGRESS) != 0);
-               while((next_dpd = (ULONG *)LELong(last_dpd[EL3DPD_NEXT]))
+               while((next_dpd = (ULONG *)(IPTR)LELong(last_dpd[EL3DPD_NEXT]))
                   != NULL)
                   last_dpd = next_dpd;
-               last_dpd[EL3DPD_NEXT] = MakeLELong((ULONG)dpd);
+               last_dpd[EL3DPD_NEXT] = MakeLELong((ULONG)(IPTR)dpd);
                dma_size = DPD_SIZE * TX_SLOT_COUNT;
                CachePreDMA(unit->dpds, &dma_size, 0);
                unit->LEWordOut(unit->card, EL3REG_COMMAND,
@@ -2182,7 +2182,7 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
             {
                dma_size = DPD_SIZE * TX_SLOT_COUNT;
                CachePreDMA(unit->dpds, &dma_size, 0);
-               unit->LELongOut(unit->card, EL3REG_DOWNLIST, (ULONG)dpd);
+               unit->LELongOut(unit->card, EL3REG_DOWNLIST, (ULONG)(IPTR)dpd);
             }
 
             unit->tx_in_slot = new_slot;
@@ -2241,7 +2241,7 @@ static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
    /* Find out which packets have completed */
 
    base = unit->device;
-   dpd = (UPINT *)unit->LELongIn(unit->card, EL3REG_DOWNLIST);
+   dpd = (ULONG *)(IPTR)unit->LELongIn(unit->card, EL3REG_DOWNLIST);
    if(dpd != NULL)
       new_out_slot = (dpd - unit->dpds) / (sizeof(ULONG) * DPD_SIZE);
    else
@@ -2266,13 +2266,13 @@ static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
 
       if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
       {
-         buffer = (APTR)LELong(fragment[EL3FRAG_ADDR]);
+         buffer = (APTR)(IPTR)LELong(fragment[EL3FRAG_ADDR]);
          dma_size = ETH_HEADERSIZE;
          CachePostDMA(buffer, &dma_size, DMA_ReadFromRAM);
          fragment += EL3_FRAGLEN;
       }
 
-      buffer = (APTR)LELong(fragment[EL3FRAG_ADDR]);
+      buffer = (APTR)(IPTR)LELong(fragment[EL3FRAG_ADDR]);
       dma_size = data_size;
       CachePostDMA(buffer, &dma_size, DMA_ReadFromRAM);
 
