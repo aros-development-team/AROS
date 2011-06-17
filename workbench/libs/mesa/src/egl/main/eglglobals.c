@@ -38,7 +38,7 @@ _eglAddAtExitCall(void (*func)(void))
       _eglLockMutex(_eglGlobal.Mutex);
 
       if (!registered) {
-//TODO FIXME         atexit(_eglAtExit);
+         atexit(_eglAtExit);
          registered = EGL_TRUE;
       }
 
