@@ -157,8 +157,6 @@ static void setunit(struct IOAudio *io, UBYTE num)
 
 static BOOL ADCMD_ALLOCATE_f(struct AudioBase *ab, struct IOAudio *io)
 {
-    HEADER
-
     D(bug("ADCMD_ALLOCATE %02x %04x\n", mask, key));
     allocaudio(ab, io);
     if (io->ioa_Request.io_Error == 0)
