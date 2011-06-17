@@ -700,7 +700,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     	for(i = 0; i < 3; i++)
 	{
-	    li[i].text = GetString((LONG)li[i].text, GetIR(ifreq)->ir_Catalog, AslBase);
+	    li[i].text = GetString((IPTR)li[i].text, GetIR(ifreq)->ir_Catalog, AslBase);
 	}
 	
 	/* Drawer label is always there */

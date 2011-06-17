@@ -40,7 +40,7 @@ void LocalizeMenus(struct NewMenu *nm, struct Catalog *catalog, struct AslBase_i
     {
 	if (actnm->nm_Label != NM_BARLABEL)
 	{
-	    LONG  id   = (LONG)actnm->nm_Label;
+	    IPTR  id   = (IPTR)actnm->nm_Label;
 	    STRPTR str = GetString(id, catalog, AslBase);
 	    
 	    switch(actnm->nm_Type)

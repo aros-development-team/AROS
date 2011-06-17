@@ -116,7 +116,7 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 			continue;
 		}
 #else
-		if (CallHookPkt(ismreq->ism_FilterFunc, ld->ld_Req, (APTR)displayid) == 0)
+		if (CallHookPkt(ismreq->ism_FilterFunc, ld->ld_Req, (APTR)(IPTR)displayid) == 0)
 		    continue;     
 #endif
 	    }
