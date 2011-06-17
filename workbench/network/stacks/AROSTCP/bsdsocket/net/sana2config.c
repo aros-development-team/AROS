@@ -85,6 +85,7 @@ D(bug("[AROSTCP] ssconfig_free()\n"));
   FreeVec(config);
 }
 
+#if 0
 static int
 getconfs(BPTR iffh, UBYTE *buf)
 {
@@ -136,6 +137,7 @@ D(bug("[AROSTCP] getconfs()\n"));
   buf[0] = '\0';
   return IoErr();
 }
+#endif
 
 /*
  * Default configuration as per hardware type

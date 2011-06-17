@@ -143,7 +143,7 @@ D(bug("[AROSTCP](amiga_main.c) main: AROSTCP_Task @ 0x%p\n",AROSTCP_Task));
   /*
    * Get a lock on the 'db' directory so we don't need an assign.
    */
-   BPTR  db_path_lock = NULL;
+   BPTR  db_path_lock = BNULL;
 
    char tmpconfigpath[1024];
 
@@ -182,7 +182,7 @@ D(bug("[AROSTCP](amiga_main.c) main: Directory tree root: %s\n", interfaces_path
 /* NicJA : Allow user specified config location (from Env: variable) */
 	if (GetVar("AROSTCP/Config", tmpconfigpath, 1024, GVF_GLOBAL_ONLY) != -1)
 	{
-   	db_path_lock = NULL;
+   	db_path_lock = BNULL;
 #if defined(__AROS__)
 D(bug("[AROSTCP](amiga_main.c) main: Env: Var AROSTCP/Config set.\n"));
 D(bug("[AROSTCP](amiga_main.c) main: Attempting to use '%s' for config location..\n", tmpconfigpath));
@@ -198,8 +198,8 @@ D(bug("[AROSTCP](amiga_main.c) main: successfully locked config dir '%s'\n", tmp
         strcpy(config_path, tmpconfigpath);
      	  //UnLock(db_path_lock);
       }
-#warning "TODO: NicJA - Attempt to create chosen config location"
-#warning "TODO: NicJA - and copy defaults if it doesnt currently exist and is possible?"
+/* TODO: NicJA - Attempt to create chosen config location */
+/* TODO: NicJA - and copy defaults if it doesnt currently exist and is possible? */
 	}
 
   AddPart(interfaces_path, _FILE_SANA2CONFIG, FILENAME_MAX);
@@ -486,7 +486,7 @@ D(bug("[AROSTCP](amiga_main.c) deinit_all()\n"));
 /*
  * Notification function for taskname
  */ 
-int taskname_changed(void *p, LONG new)
+int taskname_changed(void *p, IPTR new)
 {
   UBYTE *newname = (UBYTE *)new;
 

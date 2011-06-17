@@ -316,7 +316,7 @@
 
 #define __gethostbyname_WB(__SocketBase, __arg1) \
         AROS_LC1(struct hostent *, gethostbyname, \
-                  AROS_LCA(char *,(__arg1),A0), \
+                  AROS_LCA(const char *,(__arg1),A0), \
         struct Library *, (__SocketBase), 35, BSDSocket)
 
 #define gethostbyname(arg1) \
@@ -324,7 +324,7 @@
 
 #define __gethostbyaddr_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(struct hostent *, gethostbyaddr, \
-                  AROS_LCA(char *,(__arg1),A0), \
+                  AROS_LCA(const void *,(__arg1),A0), \
                   AROS_LCA(int,(__arg2),D0), \
                   AROS_LCA(int,(__arg3),D1), \
         struct Library *, (__SocketBase), 36, BSDSocket)
@@ -387,7 +387,7 @@
         AROS_LC3NR(void, vsyslog, \
                   AROS_LCA(int,(__arg1),D0), \
                   AROS_LCA(const char *,(__arg2),A0), \
-                  AROS_LCA(LONG *,(__arg3),A1), \
+                  AROS_LCA(IPTR *,(__arg3),A1), \
         struct Library *, (__SocketBase), 43, BSDSocket)
 
 #define vsyslog(arg1, arg2, arg3) \
@@ -660,7 +660,7 @@
 
 #define __inet_aton_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(LONG, inet_aton, \
-                  AROS_LCA(STRPTR,(__arg1),A0), \
+                  AROS_LCA(CONST_STRPTR,(__arg1),A0), \
                   AROS_LCA(struct in_addr *,(__arg2),A1), \
         struct Library *, (__SocketBase), 95, BSDSocket)
 

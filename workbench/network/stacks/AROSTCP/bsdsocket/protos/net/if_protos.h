@@ -29,7 +29,7 @@ void if_slowtimo(void);
 struct ifnet * ifunit(register char * name);
 
 int ifioctl(struct socket * so,
-            int cmd,
+            long cmd,
             caddr_t data);
 
 void ifupdown(struct ifnet *ifp, int up);

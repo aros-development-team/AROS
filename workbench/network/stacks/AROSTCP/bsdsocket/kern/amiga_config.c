@@ -188,8 +188,8 @@ getvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 	  ULONG s_addr = 
 	    ((struct in_addr *)variables[var].value)[index].s_addr;
 	  vlen = sprintf(Buffer, "%ld.%ld.%ld.%ld", 	  
-			 (s_addr>>24) & 0xff, (s_addr>>16) & 0xff, 
-			 (s_addr>>8) & 0xff, s_addr & 0xff);
+			 (long)(s_addr>>24) & 0xff, (long)(s_addr>>16) & 0xff, 
+			 (long)(s_addr>>8) & 0xff, (long)s_addr & 0xff);
 	  value = Buffer;
 	}
 	break;
@@ -320,7 +320,7 @@ setvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 	}
 	strcpy(value, Buffer);
 	if (variables[var].notify) 
-	  if (!(*variables[var].notify)(dp, (LONG) value)) {
+	  if (!(*variables[var].notify)(dp, (IPTR) value)) {
 	    bsd_free(value, M_CFGVAR);
 	    *errstrp = ERR_VALUE;
 	    return RETURN_WARN;
@@ -353,6 +353,8 @@ setvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 	 */
 	*(LONG *)dp = vlen;
 	break;
+      default:
+      	goto reterr;
       }
     }
   }
@@ -434,7 +436,7 @@ D(bug("[AROSTCP](amiga_config.c) parsefile('%s')\n",name));
         if (retval == RETURN_OK)
           continue;
         if (retval != RETURN_WARN) { /* severe error */
-          error_request("Fatal configuration error in file %s at line %ld, col %ld\n%s\nAROSTCP will quit", name, line, arg.CS_CurChr, *errstrp);
+          error_request("Fatal configuration error in file %s at line %ld, col %ld\n%s\nAROSTCP will quit", (IPTR)name, (IPTR)line, (IPTR)arg.CS_CurChr, (IPTR)*errstrp);
           break;
         }
 
@@ -443,7 +445,7 @@ D(bug("[AROSTCP](amiga_config.c) parsefile('%s')\n",name));
 D(bug("[AROSTCP](amiga_config.c) parsefile: %s: line %ld, col %ld: %s",
 	       name, line, arg.CS_CurChr, *errstrp));
 #endif
-	    error_request("Configuration error in file %s at line %ld, col %ld\n%s", name, line, arg.CS_CurChr, *errstrp);
+	    error_request("Configuration error in file %s at line %ld, col %ld\n%s", (IPTR)name, (IPTR)line, (IPTR)arg.CS_CurChr, (IPTR)*errstrp);
 	    retval = RETURN_OK;
       }
       /* Check file error */ 
@@ -460,7 +462,7 @@ D(bug("[AROSTCP](amiga_config.c) parsefile: %s: line %ld, col %ld: %s",
       retval = RETURN_ERROR;
     }
     if (!fh)
-      error_request("Unable to open configuration file\n%s", *errstrp);
+      error_request("Unable to open configuration file\n%s", (IPTR)*errstrp);
 
     FreeMem(buf, CONFIGLINELEN);
   } else {

@@ -118,7 +118,7 @@ typedef union {
 /*
  * longword align given pointer (i.e. divides by 4)
  */
-#define ALIGN(p) (((u_int)(p) + (sizeof(long) - 1)) &~ (sizeof (long) -1))
+#define ALIGN(p) (((long)(p) + (sizeof(long) - 1)) &~ (sizeof (long) -1))
 
 #define MAXALIASES	35
 #define MAXADDRS	35  
@@ -539,10 +539,10 @@ D(bug("[AROSTCP](gethostnameadr.c) __gethostbyaddr()\n"));
   qbuf = (caddr_t)(buf + 1);
   
   (void)sprintf(qbuf, "%lu.%lu.%lu.%lu.in-addr.arpa",
-		((unsigned)addr[3] & 0xff),
-		((unsigned)addr[2] & 0xff),
-		((unsigned)addr[1] & 0xff),
-		((unsigned)addr[0] & 0xff));
+		((unsigned long)addr[3] & 0xff),
+		((unsigned long)addr[2] & 0xff),
+		((unsigned long)addr[1] & 0xff),
+		((unsigned long)addr[0] & 0xff));
   n = res_query(libPtr, qbuf, C_IN, T_PTR, (char *)buf, sizeof (querybuf));
 
   if (n >= 0) {

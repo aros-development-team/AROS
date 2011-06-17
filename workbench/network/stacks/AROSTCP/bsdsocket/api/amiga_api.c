@@ -177,7 +177,7 @@ D(bug("[AROSTCP](amiga_api.c) ELL_Open()\n[AROSTCP](amiga_api.c) ELL_Open: versi
 #endif
 					     NULL,
 					     sizeof(struct SocketBase),
-					     NULL);
+					     BNULL);
 #if defined(__AROS__)
   
   ((struct Library *)newBase)->lib_Node.ln_Type = NT_LIBRARY;
@@ -302,7 +302,7 @@ D(bug("[AROSTCP](amiga_api.c) __ELL_Expunge()\n"));
     Remove((struct Node *)libPtr);
 #endif
     
-    freestart = (void *)((ULONG)libPtr - (ULONG)libPtr->lib_NegSize);
+    freestart = (void *)((IPTR)libPtr - (IPTR)libPtr->lib_NegSize);
     size = libPtr->lib_NegSize + libPtr->lib_PosSize;
     FreeMem(freestart, size);
 
@@ -405,7 +405,7 @@ D(bug("[AROSTCP](amiga_api.c) __UL_Close: Closing proc 0x%lx base 0x%lx\n", libP
 
   res_cleanup_db(&libPtr->res_state);
 
-  freestart = (void *)((ULONG)libPtr - (ULONG)libPtr->libNode.lib_NegSize);
+  freestart = (void *)((IPTR)libPtr - (IPTR)libPtr->libNode.lib_NegSize);
   size = libPtr->libNode.lib_NegSize + libPtr->libNode.lib_PosSize;
   bzero(freestart, size);
   FreeMem(freestart, size);
@@ -457,7 +457,7 @@ D(bug("[AROSTCP](amiga_api.c) api_init()\n"));
 #endif
 				 NULL,
 				 sizeof(struct Library),
-				 NULL);
+				 BNULL);
 #if defined(__AROS__)
   ((struct Library *)MasterSocketBase)->lib_Node.ln_Type = NT_LIBRARY;
   ((struct Library *)MasterSocketBase)->lib_Node.ln_Name = (APTR)SOCLIBNAME;
@@ -480,7 +480,7 @@ D(bug("[AROSTCP](amiga_api.c) api_init: Created master library base: 0x%p\n", Ma
 #endif
 				NULL,
 				sizeof(struct Library),
-				NULL);
+				BNULL);
 #if defined(__AROS__)
   ((struct Library *)MasterMiamiBase)->lib_Node.ln_Type = NT_LIBRARY;
   ((struct Library *)MasterMiamiBase)->lib_Node.ln_Name = (APTR)MIAMILIBNAME;

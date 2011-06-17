@@ -48,7 +48,7 @@ f_void Miami_InitFuncTable[]=
 	AROS_SLIB_ENTRY(Open, Miami),
     AROS_SLIB_ENTRY(Close, Miami),
 	AROS_SLIB_ENTRY(Expunge, ELL),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
@@ -115,20 +115,20 @@ f_void	Miami_UserFuncTable[] =
 	FUNCARRAY_BEGIN,
 	FUNCARRAY_32BIT_NATIVE,
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Open() is never called */
 #endif
 	AROS_SLIB_ENTRY(Close, Miami),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Expunge() is never called */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
@@ -137,7 +137,7 @@ f_void	Miami_UserFuncTable[] =
 	AROS_SLIB_ENTRY(MiamiSysCtl, Miami),
 	AROS_SLIB_ENTRY(SetSysLogPort, Miami),
 	AROS_SLIB_ENTRY(Miami_QueryInterfaceTagList, Miami),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
@@ -161,44 +161,44 @@ f_void	Miami_UserFuncTable[] =
 	AROS_SLIB_ENTRY(ClearDynDomain, Miami),
 	AROS_SLIB_ENTRY(MiamiOpenSSL, Miami),
 	AROS_SLIB_ENTRY(MiamiCloseSSL, Miami),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
 #endif
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
   AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
 #endif
 	AROS_SLIB_ENTRY(MiamiSetSocksConn, Miami),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
@@ -206,7 +206,7 @@ f_void	Miami_UserFuncTable[] =
 #endif
 	AROS_SLIB_ENTRY(MiamiIsOnline, Miami),
 	AROS_SLIB_ENTRY(MiamiOnOffline, Miami),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
@@ -231,7 +231,7 @@ f_void	Miami_UserFuncTable[] =
 	AROS_SLIB_ENTRY(MiamiSupportedCPUs, Miami),
 	AROS_SLIB_ENTRY(MiamiGetFdCallback, Miami),
 	AROS_SLIB_ENTRY(MiamiSetFdCallback, Miami),
-#warning "TODO: NicJA - LIB_Null??"
+/* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else

@@ -152,7 +152,7 @@ out:
 }
 
 AROS_LH1(void, if_freenameindex,
-         AROS_LHA(struct if_nameindex *, *ptr, D0),
+         AROS_LHA(struct if_nameindex **, ptr, D0),
          struct MiamiBase *, MiamiBase, 49, Miami
 )
 {

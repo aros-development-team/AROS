@@ -87,7 +87,7 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: MiamiLIB_Open()\n"));
 #endif
 					     NULL,
 					     sizeof(struct MiamiBase),
-					     NULL);
+					     BNULL);
 #if defined(__AROS__)
 	((struct Library *)MiamiBase)->lib_Node.ln_Type = NT_LIBRARY;
 	((struct Library *)MiamiBase)->lib_Node.ln_Name = (APTR)MIAMILIBNAME;
@@ -103,7 +103,7 @@ D(bug("[AROSTCP](miami_api.c) MiamiLIB_Open: Created MIAMI user library base: 0x
 		for (i = (WORD *)((struct Library *)MiamiBase + 1); i < (WORD *)(MiamiBase + 1); i++)
 			*i = 0;
 		MiamiBase->Lib.lib_OpenCnt = 1;
-		SocketBase = OpenLibrary("bsdsocket.library", VERSION);
+		SocketBase = (APTR)OpenLibrary("bsdsocket.library", VERSION);
 		if (SocketBase) {
 			D(__log(LOG_DEBUG,"miami.library opened: SocketBase = 0x%p, MiamiBase = 0x%p", (IPTR)SocketBase, (IPTR)MiamiBase);)
 			MasterBase->lib_OpenCnt++;
@@ -451,7 +451,7 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: inet_pton()\n"));
 }
 
 AROS_LH2(struct hostent *, gethostbyname2,
-         AROS_LHA(char *, name, A0),
+         AROS_LHA(const char *, name, A0),
          AROS_LHA(LONG, family, D0),
          struct MiamiBase *, MiamiBase, 41, Miami
 )
@@ -757,7 +757,7 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: MiamiGetCredentials()\n"));
 		UserGroupBase = OpenLibrary("usergroup.library",4);
 
 	DSYSCALLS(__log(LOG_DEBUG,"MiamiGetCredentials(): UserGroupBase = 0x%p", (IPTR)UserGroupBase);)
-#warning "TODO: uncomment the following lines once we have a working usergroups.library implemenetation"
+/* TODO: uncomment the following lines once we have a working usergroups.library implemenetation */
 //		if (UserGroupBase)
 //		return getcredentials(NULL);
 

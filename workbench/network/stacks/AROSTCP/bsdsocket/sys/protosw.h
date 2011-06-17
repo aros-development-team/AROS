@@ -93,8 +93,8 @@ struct protosw {
 	short	pr_protocol;		/* protocol number */
 	short	pr_flags;		/* see below */
 /* protocol-protocol hooks */
-	void	(* STKARGFUN pr_input)(APTR args, ...);		/* input to protocol (from below) */
-	int	(* STKARGFUN pr_output)(APTR args, ...);		/* output to protocol (from above) */
+	void	(*pr_input)(void *args, ...);		/* input to protocol (from below) */
+	int	(*pr_output)(void *args, ...);		/* output to protocol (from above) */
 	void	(*pr_ctlinput)(int cmd,	/* control input (from below) */
 			       struct sockaddr *sa, void *arg);
 	int	(*pr_ctloutput)(int req, /* control output (from above) */

@@ -208,7 +208,7 @@ extern LONG mb_read_stats(struct CSource *args, UBYTE **errstrp, struct CSource 
 # MBUF Configuration
 #
 MBC=MBUF_CONF ;	1 ;	Memory buffer configuration.
-extern struct mbconf mbconf; int mb_check_conf(void *pt, LONG new);
+extern struct mbconf mbconf; int mb_check_conf(void *pt, IPTR new);
 { VAR_LONG, VF_TABLE|VF_RCONF,   KW_MBUF_CONF, &mbconf, mb_check_conf }
 I=INITIAL ;	2 ;	Number of mbuf chunks to allocate initially.
 CH=CHUNK ;	2 ;	Number of mbufs to allocate at a time.
@@ -252,7 +252,7 @@ GUICONTROL ;	2 ; Panel control buttons
 #{ VAR_INET, VF_RW, NULL, &ns_1.sin_addr, NULL }
 #
 TASKNAME ;	1 ;	Name of @AMITCP task.
-extern STRPTR taskname; int taskname_changed(void *pt, LONG new);
+extern STRPTR taskname; int taskname_changed(void *pt, IPTR new);
 { VAR_STRP, VF_RCONF, NULL, &taskname, taskname_changed }
 #
 NTH=NTHBASE ;	1 ;	Current @AMITCP has nth @LIB base currently in memory.
@@ -296,7 +296,7 @@ extern ULONG tcp_recvspace;
 { VAR_LONG, VF_RW, NULL, (LONG*)&tcp_recvspace, NULL }
 #
 CON=CONSOLENAME ;	1 ;	Filename for the log console.
-extern STRPTR consolename ;	 int logname_changed(void *pt, LONG new);
+extern STRPTR consolename ;	 int logname_changed(void *pt, IPTR new);
 { VAR_STRP, VF_RW, NULL, &consolename, logname_changed }
 #
 LOGF=LOGFILENAME ;	1 ;	Filename for the log file.

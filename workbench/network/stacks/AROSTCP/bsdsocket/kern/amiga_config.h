@@ -67,7 +67,7 @@ enum var_type
 
 typedef LONG 
   (*var_f)(struct CSource *args, UBYTE **errstrp, struct CSource *res);
-typedef int (*notify_f)(void *pt, LONG new);
+typedef int (*notify_f)(void *pt, IPTR new);
 
 /* Configurable variable structure */
 struct cfg_variable {

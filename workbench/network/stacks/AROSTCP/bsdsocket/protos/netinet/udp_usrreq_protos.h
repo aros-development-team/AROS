@@ -4,8 +4,7 @@ udp_usrreq.c
 
 void udp_init(void);
 
-void STKARGFUN udp_input(register struct mbuf * m,
-			 int iphlen);
+void udp_input(void *args, ...);
 
 struct mbuf * udp_saveopt(caddr_t p,
                           register int size,
@@ -16,12 +15,9 @@ void udp_notify(register struct inpcb * inp,
 
 void udp_ctlinput(int cmd,
                  struct sockaddr * sa,
-                 register struct ip * ip);
+                 void *arg);
 
-int udp_output(register struct inpcb * inp,
-               register struct mbuf * m,
-               struct mbuf * addr,
-               struct mbuf * control);
+int udp_output(void *args, ...);
 
 int udp_usrreq(struct socket * so,
                int req,

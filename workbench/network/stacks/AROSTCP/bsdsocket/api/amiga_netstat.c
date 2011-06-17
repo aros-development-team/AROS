@@ -8,7 +8,7 @@
 #include <net/if_protos.h>
 #include <netinet/in.h>
 
-long __QueryInterfaceTagList(STRPTR name, struct TagItem *tags, struct SocketBase * libPtr)
+long __QueryInterfaceTagList(STRPTR name, const struct TagItem *tags, struct SocketBase * libPtr)
 {
 	struct TagItem *tag;
 	struct ifnet *ifp;

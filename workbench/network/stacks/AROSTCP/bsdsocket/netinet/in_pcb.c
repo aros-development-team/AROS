@@ -50,6 +50,7 @@
 
 #include <net/route.h>
 #include <net/if.h>
+#include <net/if_protos.h>
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -96,7 +97,7 @@ in_pcbbind(inp, nam)
 //	struct proc *p = curproc;		/* XXX */
 	u_short lport = 0;
 	int wild = 0, reuseport = (so->so_options & SO_REUSEPORT);
-	int error;
+//	int error;
 
 	if (in_ifaddr == 0)
 		return (EADDRNOTAVAIL);
@@ -181,7 +182,6 @@ in_pcbladdr(inp, nam, plocal_sin)
 	struct sockaddr_in **plocal_sin;
 {
 	struct in_ifaddr *ia;
-	struct sockaddr_in *ifaddr = 0;
 	register struct sockaddr_in *sin = mtod(nam, struct sockaddr_in *);
 
 	if (nam->m_len != sizeof (*sin))

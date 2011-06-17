@@ -51,7 +51,8 @@
 extern struct ifnet *iface_make(struct ssconfig *ifc);
 
 LONG read_netdb(struct NetDataBase *ndb, UBYTE *fname,
-  const UBYTE** errstrp, struct CSource *res, int prefixindex, ULONG flags);
+                UBYTE** errstrp, struct CSource *res,
+                int prefixindex, ULONG flags);
 
 /*
  * Global pointer for the NetDataBase
@@ -137,7 +138,7 @@ LONG adddomainent(struct NetDataBase *ndb,
 LONG addrcent(struct NetDataBase *ndb,
 		    struct RDArgs *rdargs, UBYTE **errstrp, struct CSource *res, ULONG flags);
 LONG addaccessent(struct NetDataBase *ndb,
-		  struct RDArgs *rdargs, const UBYTE **errstrp, struct CSource *res, ULONG flags);
+		  struct RDArgs *rdargs, UBYTE **errstrp, struct CSource *res, ULONG flags);
 LONG addndbent(struct NetDataBase *ndb,
 	       struct RDArgs *rdargs, UBYTE **errstrp, struct CSource *res, ULONG ifflags);
 
@@ -221,7 +222,7 @@ D(bug("[AROSTCP](amiga_netdb.c) free_netdb( 0x%p )\n", ndb));
 }
 
 #ifdef DEBUG
-static char * zap;
+static UBYTE * zap;
 static size_t zap_size;
 #endif
 
@@ -477,8 +478,10 @@ D(bug("[AROSTCP](amiga_netdb.c) addservent()\n"));
   if (rdargs = ReadArgs(NETDBTEMPLATE, Args, rdargs)) {
     /* convert port number */
     UBYTE *s_proto = (UBYTE*)Args[KNDB_DATA];
-    if ((plen = StrToLong(s_proto, &Args[KNDB_DATA])) > 0 &&
+    LONG tmp;
+    if ((plen = StrToLong(s_proto, &tmp)) > 0 &&
 	s_proto[plen++] == '/') {
+      Args[KNDB_DATA] = tmp;
       int protonamelen = strlen(s_proto = s_proto + plen) + 1;
       sn = node_alloc(sizeof (*sn) + protonamelen,
 		      (UBYTE*)Args[KNDB_NAME], 
@@ -687,16 +690,16 @@ D(bug("[AROSTCP](amiga_netdb.c) addrtent()\n"));
 #endif
   
   if (rdargs = ReadArgs(ROUTE_TEMPLATE, Args, rdargs)) {
-    if (!(strcmp(strupr(Args[KRT_DEST]), "DEFAULT"))){
+    if (!(strcmp(strupr((APTR)Args[KRT_DEST]), "DEFAULT"))){
       ((struct sockaddr_in *)&route.rt_dst)->sin_addr.s_addr = 0;
       route.rt_dst.sa_family = AF_INET;
       route.rt_dst.sa_len = sizeof(struct sockaddr_in);
     } else {
-      if (!(setaddr((struct sockaddr_in *)&route.rt_dst, Args[KRT_DEST], AF_INET)))
+      if (!(setaddr((struct sockaddr_in *)&route.rt_dst, (APTR)Args[KRT_DEST], AF_INET)))
         goto bad;
     }
     
-    if (setaddr((struct sockaddr_in *)&route.rt_gateway, Args[KRT_GATE], AF_INET)) {
+    if (setaddr((struct sockaddr_in *)&route.rt_gateway, (APTR)Args[KRT_GATE], AF_INET)) {
       route.rt_flags = RTF_UP | RTF_GATEWAY;
       if (Args[KRT_HOST])
         route.rt_flags |= RTF_HOST;
@@ -729,7 +732,7 @@ addnameservent(struct NetDataBase *ndb,
 D(bug("[AROSTCP](amiga_netdb.c) addnameservent()\n"));
 #endif
 
-#warning "TODO: NicJA - Where does CHECK_POINTER() Come from?"
+/* TODO: NicJA - Where does CHECK_POINTER() Come from? */
 #if !defined(__AROS__)
   CHECK_POINTER(ndb);
 #endif
@@ -758,7 +761,7 @@ D(bug("[AROSTCP](amiga_netdb.c) addnameservent: couldnt allocate entry\n"));
   nsn->nsn_EntSize = sizeof (nsn->nsn_Ent);
   nsn->nsn_Ent.ns_addr.s_addr = ns_addr.s_addr;
 
-#warning "TODO: NicJA - Where does CHECK_POINTER() Come from?"
+/* TODO: NicJA - Where does CHECK_POINTER() Come from? */
 #if !defined(__AROS__)
   CHECK_POINTER(nsn);
 #endif
@@ -850,7 +853,7 @@ D(bug("[AROSTCP](amiga_netdb.c) addrcent()\n"));
 LONG
 addaccessent(struct NetDataBase *ndb,
 	     struct RDArgs *rdargs,
-	     const UBYTE **errstrp, struct CSource *res, ULONG ifflags)
+	     UBYTE **errstrp, struct CSource *res, ULONG ifflags)
 {
   LONG retval = RETURN_WARN;
   IPTR Args[ACCARGS] = { 0 };
@@ -1008,7 +1011,7 @@ D(bug("[AROSTCP](amiga_netdb.c) addndbent()\n"));
  */
 LONG 
 read_netdb(struct NetDataBase *ndb, UBYTE *fname, 
-	  const UBYTE** errstrp, struct CSource *res, int prefixindex, ULONG flags)
+	   UBYTE** errstrp, struct CSource *res, int prefixindex, ULONG flags)
 {
   LONG warnval = RETURN_OK;
   LONG retval = RETURN_OK, ioerr = 0;
@@ -1090,12 +1093,12 @@ D(bug("[AROSTCP](amiga_netdb.c) read_netdb: parsing line: %s, prefixindex=%ld\n"
 	    continue;
 	  if (retval != RETURN_WARN) { /* severe error */
 	    error_request("Fatal error in NetDB file %s at line %ld, col %ld\n%s\nAROSTCP will quit",
-		fname, line, rdargs->RDA_Source.CS_CurChr, *errstrp);
+		(IPTR)fname, (IPTR)line, (IPTR)rdargs->RDA_Source.CS_CurChr, (IPTR)*errstrp);
 	    break;
 	  }
 	  /* Log the error */
 	  error_request("Error in NetDB file %s at line %ld, col %ld\n%s",
-		fname, line, rdargs->RDA_Source.CS_CurChr, *errstrp);
+		(IPTR)fname, (IPTR)line, (IPTR)rdargs->RDA_Source.CS_CurChr, (IPTR)*errstrp);
 	  __log(LOG_WARNING, "NetDB(%s) line %ld: %s before col %ld\n",
 	      fname, line, *errstrp, rdargs->RDA_Source.CS_CurChr);
 
@@ -1120,7 +1123,7 @@ D(bug("[AROSTCP](amiga_netdb.c) read_netdb: ioerror\n"));
       retval = RETURN_ERROR;
     }
     if ((!fh) && (ndb_Lock.ss_NestCount == 1))
-	error_request("Unable to open NetDB file %s\n%s", fname, *errstrp);
+	error_request("Unable to open NetDB file %s\n%s", (IPTR)fname, (IPTR)*errstrp);
     
     /* return old current directory */
     if (lock) {
@@ -1168,7 +1171,7 @@ D(bug("[AROSTCP](amiga_netdb.c) do_netdb()\n"));
     LOCK_W_NDB(NDB);
 
     retval = addndbent(NDB, rdargs, errstrp, res, 0);
-#warning TODO: set flags here
+/* TODO: set flags here */
 
     UNLOCK_NDB(NDB);
     
@@ -1255,7 +1258,7 @@ D(bug("[AROSTCP](amiga_netdb.c) reset_netdb()\n"));
   }
 
   retval = read_netdb(newnetdb, netdbname, errstrp, res, -1, 0);
-#warning TODO: set flags here
+/* TODO: set flags here */
 
   if (retval == RETURN_OK) {
     setup_accesscontroltable(newnetdb);

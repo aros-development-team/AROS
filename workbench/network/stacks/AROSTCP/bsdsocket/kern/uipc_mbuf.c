@@ -150,10 +150,10 @@ D(bug("[AROSTCP](uipc_mbuf.c) mb_read_stats()\n"));
 #endif
 
   for(i = 0; i < MTCOUNT; i++) {
-    p += sprintf(p, "%ld ", mbstat.m_mtypes[i]);
+    p += sprintf(p, "%ld ", (long)mbstat.m_mtypes[i]);
     total += mbstat.m_mtypes[i];
   }
-  p += sprintf(p, "%ld", total);
+  p += sprintf(p, "%ld", (long)total);
 
 #if defined(__AROS__)
 D(bug("[AROSTCP](uipc_mbuf.c) mb_read_stats: %s\n", res->CS_Buffer));
@@ -164,7 +164,7 @@ D(bug("[AROSTCP](uipc_mbuf.c) mb_read_stats: %s\n", res->CS_Buffer));
 }
 
 int 
-mb_check_conf(void *dp, LONG newvalue)
+mb_check_conf(void *dp, IPTR newvalue)
 {
 #if defined(__AROS__)
 D(bug("[AROSTCP](uipc_mbuf.c) mb_check_conf(0x%08x, %d)\n", dp, newvalue));
@@ -770,7 +770,7 @@ m_adj(struct mbuf *mp, int req_len)
 {
 	register int len = req_len;
 	register struct mbuf *m;
-	register count;
+	register int count;
 #if defined(__AROS__)
 D(bug("[AROSTCP](uipc_mbuf.c) m_adj()\n"));
 #endif

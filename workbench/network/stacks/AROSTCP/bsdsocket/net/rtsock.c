@@ -700,7 +700,7 @@ extern	struct domain routedomain;		/* or at least forward */
 
 struct protosw routesw[] = {
 { SOCK_RAW,	&routedomain,	0,		PR_ATOMIC|PR_ADDR,
-  (void (*)(APTR args, ...))raw_input,	route_output,	raw_ctlinput,	0,
+  (void (*)(APTR args, ...))raw_input,	route_output,	(APTR)raw_ctlinput,	0,
   route_usrreq,
   raw_init,	0,		0,		        0,
 }

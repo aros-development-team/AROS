@@ -77,7 +77,7 @@ rexx_init(void)
        bsd_malloc(sizeof(D_REXX_ERROR_NAME) + 3, M_CFGVAR, M_WAITOK)) &&
 #endif
       (UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)) &&
-      (RexxSysBase = OpenLibrary("rexxsyslib.library", 0L))) {
+      (RexxSysBase = (APTR)OpenLibrary("rexxsyslib.library", 0L))) {
     ARexxPort = CreateMsgPort();
     if (ARexxPort) {
 #ifdef DEBUG
@@ -143,7 +143,7 @@ void rexx_deinit(void)
        * Reply to all messages received with error code set.
        */
       while(rmsg = (struct RexxMsg *)GetMsg(ARexxPort)){
-	SetRexxVar((struct Message *)rmsg, REXX_ERROR_NAME, 
+	SetRexxVar(rmsg, REXX_ERROR_NAME, 
 		   errstr, strlen(errstr));
 	if (rmsg != REXX_RETURN_ERROR){
 	  rmsg->rm_Result2 = 0;
@@ -154,7 +154,7 @@ void rexx_deinit(void)
       DeleteMsgPort(ARexxPort);
       ARexxPort = NULL;
     }
-    CloseLibrary(RexxSysBase);
+    CloseLibrary((APTR)RexxSysBase);
     RexxSysBase = NULL;
   }
   if (UtilityBase) {
@@ -188,12 +188,12 @@ BOOL rexx_poll(void)
     rmsg->rm_Result1 = rmsg->rm_Result2 = 0;
 
     if (error = parseline(&csarg, &errstr, &result)) {
-      SetRexxVar((struct Message*)rmsg, REXX_ERROR_NAME,
+      SetRexxVar(rmsg, REXX_ERROR_NAME,
 		 errstr, (long)strlen(errstr));
       rmsg->rm_Result1 = error;
     } else {
       if (rmsg->rm_Action & (1L << RXFB_RESULT)) {
-	rmsg->rm_Result2 = (LONG)
+	rmsg->rm_Result2 = (IPTR)
 	  CreateArgstring(result.CS_Buffer, (LONG)strlen(result.CS_Buffer));
       }
     }

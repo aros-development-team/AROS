@@ -158,7 +158,7 @@ D(bug("[AROSTCP](res_query.c) res_query: [res_mkquery] Failed\n"));
 			goto Return;
 	}
 
-#warning "TODO: NicJA - Where is CHECK_POINTER() !!!!"
+/* TODO: NicJA - Where is CHECK_POINTER() !!!! */
 #if !defined(__AROS__)
 	CHECK_POINTER(buf);
 #endif

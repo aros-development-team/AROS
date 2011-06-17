@@ -2,10 +2,7 @@
 ip_output.c
  */
 
-int STKARGFUN ip_output(struct mbuf * m0,
-			struct mbuf * opt,
-			struct route * ro,
-			int flags);
+int ip_output(void *args,...);
 
 struct mbuf * ip_insertoptions(register struct mbuf * m,
                                struct mbuf * opt,

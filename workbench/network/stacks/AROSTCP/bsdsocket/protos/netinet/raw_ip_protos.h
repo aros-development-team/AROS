@@ -2,10 +2,9 @@
 raw_ip.c
  */
 
-void STKARGFUN rip_input(struct mbuf * m);
+void rip_input(void *args, ...);
 
-int STKARGFUN rip_output(register struct mbuf * m,
-               struct socket * so);
+int rip_output(void *args,...);
 
 int rip_ctloutput(int op,
                   struct socket * so,

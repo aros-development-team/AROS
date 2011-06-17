@@ -86,7 +86,7 @@ void if_down(register struct ifnet *);
 void if_qflush(register struct ifqueue *);
 void if_slowtimo(void);
 struct ifnet *ifunit(register char *);
-int ifioctl(struct socket *, int, caddr_t);
+int ifioctl(struct socket *, long, caddr_t);
 int ifconf(int, caddr_t);
 
 /* Compatibility with AmiTCP/IP 2 */
@@ -173,7 +173,7 @@ if_attach(ifp)
 	unitname = sprint_d((u_int)ifp->if_unit, workbuf, sizeof(workbuf));
 	namelen = strlen(ifp->if_name);
         unitlen = strlen(unitname);
-#define _offsetof(t, m) ((int)((caddr_t)&((t *)0)->m))
+#define _offsetof(t, m) ((IPTR)((caddr_t)&((t *)0)->m))
 	socksize = _offsetof(struct sockaddr_dl, sdl_data[0]) +
 			       unitlen + namelen + ifp->if_addrlen;
 #define ROUNDUP(a) (1 + (((a) - 1) | (sizeof(long) - 1)))
@@ -520,7 +520,7 @@ ifunit(char *name)
 int
 ifioctl(so, cmd, data)
 	struct socket *so;
-	int cmd;
+	long cmd;
 	caddr_t data;
 {
 	register struct ifnet *ifp;

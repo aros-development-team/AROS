@@ -105,7 +105,7 @@ struct mcluster {
  *              WARNING: cannot be used with clusters
  */
 #define mtod(m,t)	((t)((m)->m_data))
-#define	dtom(x)		((struct mbuf *)((int)(x) & ~(MSIZE-1)))
+#define	dtom(x)		((struct mbuf *)((long)(x) & ~(MSIZE-1)))
 
 /* header at beginning of each mbuf: */
 struct m_hdr {
@@ -409,7 +409,7 @@ extern int             max_protohdr;	/* largest protocol header */
 extern int             max_hdr;		/* largest link+protocol header */
 extern int             max_datalen;	/* MHLEN - max_hdr */
 
-int mb_check_conf(void *dp, LONG newvalue);
+int mb_check_conf(void *dp, IPTR newvalue);
 
 BOOL mbinit(void);
 void mbdeinit(void);
