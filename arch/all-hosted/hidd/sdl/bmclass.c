@@ -44,7 +44,7 @@ static void load_icon(LIBBASETYPEPTR SDLGfxBase) {
     unsigned char *data, *pixel;
     int i;
 
-    icon = S(SDL_CreateRGBSurface, SDL_SWSURFACE, icon_width, icon_height, 24, icon_red_mask, icon_green_mask, icon_blue_mask, 0);
+    icon = SP(SDL_CreateRGBSurface, SDL_SWSURFACE, icon_width, icon_height, 24, icon_red_mask, icon_green_mask, icon_blue_mask, 0);
 
     LOCK(icon);
 
@@ -112,7 +112,7 @@ OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
             SV(SDL_WM_SetIcon, icon, NULL);
         }
 
-        s = S(SDL_SetVideoMode, width, height, depth,
+        s = SP(SDL_SetVideoMode, width, height, depth,
                                 (LIBBASE->use_hwsurface  ? SDL_HWSURFACE | SDL_HWPALETTE : SDL_SWSURFACE) |
                                 (LIBBASE->use_fullscreen ? SDL_FULLSCREEN                : 0) |
                                 SDL_ANYFORMAT);
@@ -128,7 +128,7 @@ OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
         D(bug("[sdl] creating new offscreen surface; masks: red 0x%08x green 0x%08x blue 0x%08x alpha 0x%08x\n", red_mask, green_mask, blue_mask, alpha_mask));
 
-        s = S(SDL_CreateRGBSurface, SDL_SWSURFACE, width, height, depth, red_mask, green_mask, blue_mask, alpha_mask);
+        s = SP(SDL_CreateRGBSurface, SDL_SWSURFACE, width, height, depth, red_mask, green_mask, blue_mask, alpha_mask);
     }
 
     if (s == NULL) {
@@ -395,7 +395,7 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     DPUTIMAGE(bug("[sdl] source format: depth %d red 0x%08x green 0x%08x blue 0x%08x alpha 0x%08x\n", depth, red_mask, green_mask, blue_mask, alpha_mask));
 
-    s = S(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, depth, msg->modulo, red_mask, green_mask, blue_mask, alpha_mask);
+    s = SP(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, depth, msg->modulo, red_mask, green_mask, blue_mask, alpha_mask);
     if (native32) {
         DPUTIMAGE(bug("[sdl] native32 format, setting pixel width to 4 bytes\n"));
         s->format->BytesPerPixel = 4;
@@ -461,7 +461,7 @@ VOID SDLBitMap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     D(bug("[sdl] target format: depth %d red 0x%08x green 0x%08x blue 0x%08x alpha 0x%08x\n", depth, red_mask, green_mask, blue_mask, alpha_mask));
 
-    s = S(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, depth, msg->modulo, red_mask, green_mask, blue_mask, alpha_mask);
+    s = SP(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, depth, msg->modulo, red_mask, green_mask, blue_mask, alpha_mask);
     if (native32) {
         D(bug("[sdl] native32 format, setting pixel width to 4 bytes\n"));
         s->format->BytesPerPixel = 4;
@@ -672,9 +672,9 @@ VOID SDLBitMap__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o, struct 
     D(bug("[sdl] SDLBitMap::PutAlphaImage\n"));
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    s = S(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, 32, msg->modulo, 0xff0000, 0xff00, 0xff, 0xff000000);
+    s = SP(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, 32, msg->modulo, 0xff0000, 0xff00, 0xff, 0xff000000);
 #else
-    s = S(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, 32, msg->modulo, 0xff00, 0xff0000, 0xff000000, 0xff);
+    s = SP(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, 32, msg->modulo, 0xff00, 0xff0000, 0xff000000, 0xff);
 #endif
 
     srect.x = 0;
