@@ -443,7 +443,7 @@ AROS_UFH3(void, Enumerator,
     	sd->Engine2DOwner = NULL;
 
     	sd->HardwareStatusPage = (void*)(((intptr_t)AllocPooled(sd->MemPool, 4096 + 4095) + 4095) & ~4095);
-    	writel((ULONG)sd->HardwareStatusPage, sd->Card.MMIO + 0x2080);
+    	writel((LONG)(IPTR)sd->HardwareStatusPage, sd->Card.MMIO + 0x2080);
 
 //    	sd->HardwareStatusPage = (APTR)readl(sd->Card.MMIO + 0x2080);
     	D(bug("[GMA] Hardware status page: %08x\n", readl(sd->Card.MMIO + 0x2080)));
