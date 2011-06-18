@@ -560,9 +560,9 @@ static int I2C_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[I2C] Base Class destruction\n"));
 
-    OOP_ReleaseAttrBase((STRPTR)IID_Hidd_I2CDevice);
-    OOP_ReleaseAttrBase((STRPTR)IID_Hidd_I2C);
-    OOP_ReleaseAttrBase((STRPTR)IID_Hidd);
+    OOP_ReleaseAttrBase(IID_Hidd_I2CDevice);
+    OOP_ReleaseAttrBase(IID_Hidd_I2C);
+    OOP_ReleaseAttrBase(IID_Hidd);
 
     return TRUE;
 }
@@ -571,9 +571,9 @@ static int I2C_InitClass(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[I2C] base class initialization\n"));
 
-    LIBBASE->sd.hiddI2CAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C);
-    LIBBASE->sd.hiddI2CDeviceAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2CDevice);
-    LIBBASE->sd.hiddAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd);
+    LIBBASE->sd.hiddI2CAB = OOP_ObtainAttrBase(IID_Hidd_I2C);
+    LIBBASE->sd.hiddI2CDeviceAB = OOP_ObtainAttrBase(IID_Hidd_I2CDevice);
+    LIBBASE->sd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
 
     if (LIBBASE->sd.hiddI2CAB && LIBBASE->sd.hiddI2CDeviceAB && LIBBASE->sd.hiddAB)
     {
