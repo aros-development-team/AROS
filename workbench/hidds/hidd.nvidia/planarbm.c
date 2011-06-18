@@ -87,7 +87,7 @@ OOP_Object *NVPlanBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
     data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
     
-    #warning Fix this hack
+    /* TODO: Fix this hack */
     /* Because this class is used to emulate Amiga bitmaps, we
        have to see if it should have late initalisation
     */
