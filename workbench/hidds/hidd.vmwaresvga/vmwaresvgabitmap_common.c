@@ -19,7 +19,7 @@
 VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg) 
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-    ULONG   	    	width, height;
+    IPTR    	    	width, height;
 
     D(bug("[VMWareSVGA] Clear()\n"));
 
@@ -34,7 +34,7 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
     writeVMWareSVGAFIFO(data->data, 0);
     writeVMWareSVGAFIFO(data->data, width);
     writeVMWareSVGAFIFO(data->data, height);
-    syncVMWareSVGAFIFO(data);
+    syncVMWareSVGAFIFO(data->data);
 }
 #endif
 
@@ -129,7 +129,9 @@ STATIC VOID putpixel(struct BitmapData *data, LONG x, LONG y, HIDDT_Pixel pixel)
 VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+#ifdef OnBitmap
     struct Box box;
+#endif
 
     putpixel(data, msg->x, msg->y, msg->pixel);
 #ifdef OnBitmap
@@ -177,7 +179,9 @@ VOID MNAME_BM(DrawPixel)(OOP_Class *cl,OOP_ Object *o, struct pHidd_BitMap_DrawP
 VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+#ifdef OnBitmap
     struct Box box;
+#endif
     ULONG offset;
     ULONG restadd;
     UBYTE *buffer;
@@ -299,7 +303,9 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
 VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+#ifdef OnBitmap
     struct Box box;
+#endif
     ULONG offset;
     ULONG restadd;
     UBYTE *buffer;
@@ -363,12 +369,12 @@ VOID MNAME_BM(GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Get
 
 VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
+#ifdef OnBitmap
     struct BitmapData *data =OOP_INST_DATA(cl, o);
     struct HWData *hw;
     HIDDT_Pixel pixel;
     HIDDT_DrawMode mode;
 
-#ifdef OnBitmap
     pixel = GC_FG(msg->gc);
     mode = GC_DRMD(msg->gc);
     hw = data->data;
@@ -442,7 +448,9 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
 VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+#ifdef OnBitmap
     struct Box box;
+#endif
     ULONG cemd;
     HIDDT_Pixel fg;
     HIDDT_Pixel bg;
@@ -496,7 +504,7 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         switch (idx)
         {
         case aoHidd_VMWareSVGABitMap_Drawable:
-            *msg->storage = (ULONG)data->VideoData;
+            *msg->storage = (IPTR)data->VideoData;
             break;
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

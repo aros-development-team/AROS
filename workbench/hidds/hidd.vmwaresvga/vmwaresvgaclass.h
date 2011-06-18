@@ -26,7 +26,7 @@ struct VMWareSVGA_staticdata {
 	OOP_Object *vmwaresvgahidd;
 	OOP_Object *card;
 	OOP_Object *pcihidd;
-	struct bitmap_data *visible;
+	struct BitmapData *visible;
 	VOID	(*activecallback)(APTR, OOP_Object *, BOOL);
 	APTR	callbackdata;
 	struct MouseData mouse;
