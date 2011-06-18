@@ -23,7 +23,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct OOP_IClass  *, classPtr, A0),
-	AROS_LHA(UBYTE          *, classID, A1),
+	AROS_LHA(CONST_STRPTR    , classID, A1),
 	AROS_LHA(struct TagItem *, tagList, A2),
 
 /*  LOCATION */
@@ -72,7 +72,7 @@
 
 // bug("OOP_NewObject(class=%s, classptr=%p, tags=%p)\n", classID, classPtr, tagList);    
     EnterFunc(bug("OOP_NewObject(classPtr=%p, classID=%s, tagList=%p)\n",
-    		classPtr, ((classID != NULL) ? classID : (UBYTE *)"(null)"), tagList));
+    		classPtr, ((classID != NULL) ? classID : "(null)"), tagList));
     
     if (!classPtr)
     {

@@ -20,7 +20,7 @@
 	AROS_LH1(VOID, OOP_ReleaseAttrBase,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR  	, interfaceID, A0),
+	AROS_LHA(CONST_STRPTR	, interfaceID, A0),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 9, OOP)

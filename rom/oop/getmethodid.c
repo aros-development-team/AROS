@@ -20,7 +20,7 @@
 	AROS_LH2(OOP_MethodID, OOP_GetMethodID,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR  	, interfaceID, A0),
+	AROS_LHA(CONST_STRPTR  	, interfaceID, A0),
 	AROS_LHA(ULONG  	, methodOffset, D0),
 
 /*  LOCATION */

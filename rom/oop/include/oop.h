@@ -54,7 +54,7 @@ typedef OOP_MethodID * OOP_Msg;
 
 struct OOP_ABDescr
 {
-    STRPTR  	    interfaceID;
+    CONST_STRPTR     interfaceID;
     OOP_AttrBase    *attrBase;
 };
 
@@ -110,7 +110,7 @@ struct _OOP_Object
 struct OOP_InterfaceDescr
 {
     const struct OOP_MethodDescr *MethodTable;
-    STRPTR InterfaceID;
+    CONST_STRPTR InterfaceID;
     ULONG  NumMethods; /* Number of methods in the methodtable */
 };
 
