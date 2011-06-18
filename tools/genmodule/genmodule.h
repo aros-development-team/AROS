@@ -27,5 +27,6 @@ void writeautoinit(struct config *);
 void writestubs(struct config *);
 void writefunclist(struct config *);
 void writefd(struct config *);
+void writeskel(struct config *cfg);
 
 #endif

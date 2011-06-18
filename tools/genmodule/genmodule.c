@@ -57,6 +57,10 @@ int main(int argc, char **argv)
 	writefd(cfg);
 	break;
 
+    case WRITESKEL:
+	writeskel(cfg);
+	break;
+
     default:
 	fprintf(stderr, "Internal error in main: Unhandled command type\n");
 	exit(20);
