@@ -1,6 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+## We must use *at least* -O1 when compiling Exec/NewStackSwap,
+## or else we get a separate _inline_Exec_StackSwap, which
+## will contain a 'LEAVE' instruction that will result in
+## StackSwap leaving on the same stack that it entered.
+USER_CFLAGS   := -O1
+
 USER_AFLAGS   := -I$(GENINCDIR)
 USER_INCLUDES := -I$(SRCDIR)/rom/exec
 

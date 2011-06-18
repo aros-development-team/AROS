@@ -55,8 +55,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG *	retptr;
-    ULONG	ret;
+    IPTR  *	retptr;
+    IPTR 	ret;
 
     retptr = &ret;
 
