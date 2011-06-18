@@ -101,7 +101,7 @@ struct JumpVec
 };
 
 /* Use these to access a vector table */
-#define LIB_VECTSIZE			(sizeof (struct JumpVec))
+#define LIB_VECTSIZE			((int)sizeof (struct JumpVec))
 #define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(long)(n)])
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GETJUMPVEC(lib,n)->vec)
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
