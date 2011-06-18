@@ -16,7 +16,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->driversemaphore);
     LIBBASE->driver = NULL;
     LIBBASE->drivermodule = NULL;
-    LIBBASE->galliumAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
+    LIBBASE->galliumAttrBase = OOP_ObtainAttrBase(IID_Hidd_Gallium);
 
     if (!LIBBASE->galliumAttrBase)
         return FALSE;
@@ -30,7 +30,7 @@ static int Expunge(LIBBASETYPEPTR LIBBASE)
         OOP_DisposeObject(LIBBASE->driver);
 
     if (LIBBASE->galliumAttrBase)
-        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
+        OOP_ReleaseAttrBase(IID_Hidd_Gallium);
 
     if (LIBBASE->drivermodule)
         CloseLibrary(LIBBASE->drivermodule);
