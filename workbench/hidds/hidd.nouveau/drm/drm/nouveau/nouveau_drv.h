@@ -1502,7 +1502,12 @@ extern void nv_wo32(struct nouveau_gpuobj *, u32 offset, u32 val);
  * Logging
  * Argument d is (struct drm_device *).
  */
-#if !defined(__AROS__)
+#ifdef __AROS__
+#define DRM_UT_DRIVER DEBUG
+#define DRM_UT_KMS    DEBUG
+#define drm_debug     DEBUG
+extern const char *pci_name(OOP_Object *pdev);
+#endif
 
 #define NV_PRINTK(level, d, fmt, arg...) \
 	printk(level "[" DRM_NAME "] " DRIVER_NAME " %s: " fmt, \
@@ -1529,30 +1534,6 @@ extern void nv_wo32(struct nouveau_gpuobj *, u32 offset, u32 val);
 	if (drm_debug & DRM_UT_KMS)                                            \
 		NV_PRINTK(KERN_DEBUG, d, fmt, ##arg);                          \
 } while (0)
-#endif
-
-#else
-
-#define NV_PRINTK(level, d, fmt, arg...) \
-    { (void)d; bug("[" DRM_NAME "] " DRIVER_NAME " " fmt, ##arg); }
-#ifndef NV_DEBUG_NOTRACE
-#define NV_DEBUG(d, fmt, arg...) do {                                          \
-        D(NV_PRINTK(KERN_DEBUG, d, "%s:%d - " fmt, __func__,             \
-              __LINE__, ##arg));                                    \
-} while (0)
-#define NV_DEBUG_KMS(d, fmt, arg...) do {                                          \
-        D(NV_PRINTK(KERN_DEBUG, d, "%s:%d - " fmt, __func__,             \
-              __LINE__, ##arg));                                    \
-} while (0)
-#else
-#define NV_DEBUG(d, fmt, arg...) do {                                          \
-        D(NV_PRINTK(KERN_DEBUG, d, fmt, ##arg));                          \
-} while (0)
-#define NV_DEBUG_KMS(d, fmt, arg...) do {                                          \
-        D(NV_PRINTK(KERN_DEBUG, d, fmt, ##arg));                          \
-} while (0)
-#endif
-
 #endif
 
 #define NV_ERROR(d, fmt, arg...) NV_PRINTK(KERN_ERR, d, fmt, ##arg)

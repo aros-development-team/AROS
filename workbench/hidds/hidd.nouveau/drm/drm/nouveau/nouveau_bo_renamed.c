@@ -47,7 +47,7 @@ nouveau_bo_del_ttm(struct ttm_buffer_object *bo)
 	struct drm_device *dev = dev_priv->dev;
 	struct nouveau_bo *nvbo = nouveau_bo(bo);
 
-	if (unlikely(nvbo->gem))
+	if (unlikely(nvbo->gem != NULL))
 		DRM_ERROR("bo %p still attached to GEM object\n", bo);
 
 	nv10_mem_put_tile_region(dev, nvbo->tile, NULL);
@@ -84,7 +84,7 @@ nouveau_bo_fixup_align(struct nouveau_bo *nvbo, u32 flags,
 			}
 		}
 	} else {
-		if (likely(dev_priv->chan_vm)) {
+		if (likely(dev_priv->chan_vm != NULL)) {
 			if (!(flags & TTM_PL_FLAG_TT) &&  *size > 256 * 1024)
 				*page_shift = dev_priv->chan_vm->lpg_shift;
 			else
@@ -1086,7 +1086,7 @@ nouveau_bo_fence(struct nouveau_bo *nvbo, struct nouveau_fence *fence)
 {
 	struct nouveau_fence *old_fence;
 
-	if (likely(fence))
+	if (likely(fence != NULL))
 		nouveau_fence_ref(fence);
 
 	spin_lock(&nvbo->bo.bdev->fence_lock);

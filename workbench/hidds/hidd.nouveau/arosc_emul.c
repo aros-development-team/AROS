@@ -5,6 +5,9 @@
 
 #include <aros/symbolsets.h>
 #include <proto/dos.h>
+#include <proto/oop.h>
+
+#include <hidd/pci.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -135,15 +138,33 @@ char *getenv (const char *name)
     return NULL;
 }
 
+const char *pci_name(OOP_Object *pdev)
+{
+    static char name[16];
+    IPTR bus = 0, dev = 0, sub = 0;
+    OOP_GetAttr(pdev, aHidd_PCIDevice_Bus, &bus);
+    OOP_GetAttr(pdev, aHidd_PCIDevice_Bus, &dev);
+    OOP_GetAttr(pdev, aHidd_PCIDevice_Bus, &sub);
+    snprintf(name, sizeof(name), "%x:%2x.%x\n",
+    	    (unsigned)bus, (unsigned)dev, (unsigned)sub);
+    name[sizeof(name)-1] = 0;
+    return name;
+}
+
+struct timeval;
+struct timezone;
+
 int gettimeofday (struct timeval * tv,struct timezone * tz)
 {
     IMPLEMENT();
     return 0;
 }
 
-void abort (void)
+__noreturn void abort (void)
 {
     IMPLEMENT();
+    Alert(AT_DeadEnd | AO_HiddLib);
+    for (;;);
 }
 
 /* File operations */

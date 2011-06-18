@@ -106,7 +106,7 @@ nouveau_fence_update(struct nouveau_channel *chan)
 		fence->signalled = true;
 		list_del(&fence->entry);
 
-		if (unlikely(fence->work))
+		if (unlikely(fence->work != NULL))
 			fence->work(fence->priv, true);
 
 		kref_put(&fence->refcount, nouveau_fence_del);
@@ -191,7 +191,7 @@ nouveau_fence_work(struct nouveau_fence *fence,
 		   void (*work)(void *priv, bool signalled),
 		   void *priv)
 {
-	BUG_ON(fence->work);
+	BUG_ON(fence->work != NULL);
 
 	spin_lock(&fence->channel->fence.lock);
 
@@ -598,7 +598,7 @@ nouveau_fence_channel_fini(struct nouveau_channel *chan)
 		fence->signalled = true;
 		list_del(&fence->entry);
 
-		if (unlikely(fence->work))
+		if (unlikely(fence->work != NULL))
 			fence->work(fence->priv, false);
 
 		kref_put(&fence->refcount, nouveau_fence_del);

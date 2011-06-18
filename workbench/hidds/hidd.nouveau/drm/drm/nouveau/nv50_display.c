@@ -957,7 +957,9 @@ nv50_display_error_handler(struct drm_device *dev)
 static void
 nv50_display_isr(struct drm_device *dev)
 {
+#if !defined(__AROS__)
 	struct nv50_display *disp = nv50_display(dev);
+#endif
 	uint32_t delayed = 0;
 
 	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_DISPLAY) {
