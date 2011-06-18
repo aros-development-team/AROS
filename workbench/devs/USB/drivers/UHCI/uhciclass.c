@@ -1219,8 +1219,8 @@ static int UHCI_InitClass(LIBBASETYPEPTR LIBBASE)
     int i;
     D(bug("[UHCI] InitClass\n"));
 
-    HiddUHCIAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Drv_USB_UHCI);
-    LIBBASE->sd.irq = OOP_NewObject(NULL, (STRPTR)CLID_Hidd_IRQ, NULL);
+    HiddUHCIAttrBase = OOP_ObtainAttrBase(IID_Drv_USB_UHCI);
+    LIBBASE->sd.irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
 
     if (HiddUHCIAttrBase)
     {
@@ -1239,7 +1239,7 @@ static int UHCI_InitClass(LIBBASETYPEPTR LIBBASE)
             tags[0].ti_Data = LIBBASE->sd.iobase[i];
             tags[1].ti_Data = (IPTR)LIBBASE->sd.uhciDevice[i];
             tags[2].ti_Data = (IPTR)LIBBASE->sd.uhciPCIDriver[i];
-            LIBBASE->sd.uhciDevice[i] = OOP_NewObject(NULL, (STRPTR)CLID_Drv_USB_UHCI, tags);
+            LIBBASE->sd.uhciDevice[i] = OOP_NewObject(NULL, CLID_Drv_USB_UHCI, tags);
             HIDD_USB_AttachDriver(LIBBASE->sd.usb, LIBBASE->sd.uhciDevice[i]);
         }
     }
@@ -1251,7 +1251,7 @@ static int UHCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[UHCI] ExpungeClass\n"));
 
-    OOP_ReleaseAttrBase((STRPTR)IID_Drv_USB_UHCI);
+    OOP_ReleaseAttrBase(IID_Drv_USB_UHCI);
 
     return TRUE;
 }
