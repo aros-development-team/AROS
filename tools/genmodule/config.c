@@ -42,7 +42,7 @@ freeBanner(char *banner)
 const static char usage[] =
     "\n"
     "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-n]\n"
-    "       {writefiles|writemakefile|writeincludes|writelibdefs|writefunclist|writefd} modname modtype\n"
+    "       {writefiles|writemakefile|writeincludes|writelibdefs|writefunclist|writefd|writeskel} modname modtype\n"
 ;
 
 static void readconfig(struct config *);
@@ -146,6 +146,10 @@ struct config *initconfig(int argc, char **argv)
     else if (strcmp(argv[optind], "writefd") == 0)
     {
 	cfg->command = WRITEFD;
+    }
+    else if (strcmp(argv[optind], "writeskel") == 0)
+    {
+	cfg->command = WRITESKEL;
     }
     else
     {
