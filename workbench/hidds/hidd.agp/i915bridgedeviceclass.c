@@ -64,22 +64,22 @@ BOOL METHOD(i915BridgeDevice, Hidd_AGPBridgeDevice, CreateGattTable)
     registersaddr &= 0xfff80000;
     
     /* TODO: PCI MAP: agpsd->intelgatttable = (gatttableaddr, gatttablesize) */
-    i915bddata->gatttable = (ULONG*)gatttableaddr;
+    i915bddata->gatttable = (ULONG*)(IPTR)gatttableaddr;
     
     /* TODO: PCI MAP: agpsd->intelregs = (registersaddr, 128 * 4096) */
-    i915bddata->regs = (UBYTE*)registersaddr;
+    i915bddata->regs = (UBYTE*)(IPTR)registersaddr;
     
 //    ???? = (ULONG*)(readl(i915bddata->intelregs + GFX_INTEL_I810_PGETBL_CTL) & 0xfffff000);
 
     D(bug("[AGP] [Intel 915] Intel GATT table 0x%x, Regs 0x%x\n",
-        (ULONG)i915bddata->gatttable, (ULONG)i915bddata->regs));
+        (ULONG)(IPTR)i915bddata->gatttable, (ULONG)(IPTR)i915bddata->regs));
 
     flushcpucache();
     
     /* Create scratch page */
     i915bddata->scratchmembuffer = AllocVec(4096 * 2, MEMF_PUBLIC | MEMF_CLEAR);
     i915bddata->scratchmem = (ULONG*)(ALIGN((IPTR)i915bddata->scratchmembuffer, 4096));
-    D(bug("[AGP] [Intel 915] Created scratch memory at 0x%x\n", (ULONG)i915bddata->scratchmem));
+    D(bug("[AGP] [Intel 915] Created scratch memory at 0x%x\n", (ULONG)(IPTR)i915bddata->scratchmem));
     
     /* TODO: Detect the amount of stolen memory */
     i915bddata->firstgattentry = 0;
@@ -198,7 +198,7 @@ VOID METHOD(i915BridgeDevice, Hidd_AGPBridgeDevice, UnBindMemory)
     /* Remove entries from GATT table */
     for(i = 0; i < msg->size / 4096; i++)
     {
-        writel((ULONG)i915bddata->scratchmem, i915bddata->gatttable + msg->offset + i);
+        writel((ULONG)(IPTR)i915bddata->scratchmem, i915bddata->gatttable + msg->offset + i);
     }
     
     readl(i915bddata->gatttable + msg->offset + i - 1); /* PCI posting */
@@ -322,7 +322,7 @@ BOOL METHOD(i915BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     entries = i915bddata->bridgeapersize * 1024 * 1024 / 4096;
     for (i = i915bddata->firstgattentry; i < entries; i++)
     {
-        writel((ULONG)i915bddata->scratchmem, i915bddata->gatttable + i);
+        writel((ULONG)(IPTR)i915bddata->scratchmem, i915bddata->gatttable + i);
     }
     readl(i915bddata->gatttable + i - 1);   /* PCI Posting. */
     

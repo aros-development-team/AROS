@@ -18,10 +18,10 @@ static int AgpHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
         OOP_DisposeObject(LIBBASE->sd.bridgedevice);
 
     if (LIBBASE->sd.hiddAGPBridgeDeviceAB)
-        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_AGPBridgeDevice);
+        OOP_ReleaseAttrBase(IID_Hidd_AGPBridgeDevice);
 
     if (LIBBASE->sd.hiddPCIDeviceAB)
-        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_PCIDevice);
+        OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
 
     if (LIBBASE->sd.pcibus)
         OOP_DisposeObject(LIBBASE->sd.pcibus);
@@ -33,8 +33,8 @@ static int AgpHidd_InitLib(LIBBASETYPEPTR LIBBASE)
 {
     LIBBASE->sd.bridgedevice = NULL;
 
-    LIBBASE->sd.hiddAGPBridgeDeviceAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_AGPBridgeDevice);
-    LIBBASE->sd.hiddPCIDeviceAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_PCIDevice);
+    LIBBASE->sd.hiddAGPBridgeDeviceAB = OOP_ObtainAttrBase(IID_Hidd_AGPBridgeDevice);
+    LIBBASE->sd.hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
     LIBBASE->sd.pcibus = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL); 
 

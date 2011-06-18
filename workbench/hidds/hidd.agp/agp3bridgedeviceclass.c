@@ -102,7 +102,7 @@ BOOL METHOD(Agp3BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 
     /* Set GATT pointer */
     writeconfiglong(bridgedev, bridgeagpcap + AGP_GATT_CTRL_LO_REG,
-        (ULONG)gbddata->gatttable);
+        (ULONG)(IPTR)gbddata->gatttable);
     D(bug("[AGP] Set GATT pointer to 0x%x\n", (ULONG)gbddata->gatttable));
     
     /* Enabled GART and GATT */
