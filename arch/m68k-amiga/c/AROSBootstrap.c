@@ -48,6 +48,8 @@ static inline void bug(const char *fmt, ...)
 
 struct DosLibrary *DOSBase;
 
+static struct List mlist;
+
 /* KS 1.3 (and earlier) don't have a dos.library with
  * niceties such as VFPrintf nor ReadArgs.
  *
@@ -74,7 +76,7 @@ static void bcplWrapper(void)
     );
 }
 
-ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4, const IPTR *arg, int args)
+static ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4, const IPTR *arg, int args)
 {
     struct Process *pr = (APTR)FindTask(NULL);
     APTR  func;
@@ -131,9 +133,22 @@ static void FreeBSTR(BSTR bstr)
     FreeMem(BADDR(bstr), 256+1);
 }
 
+static UBYTE *ConvertBSTR(BSTR bname)
+{
+    UBYTE *name = BADDR(bname);
+    UBYTE *s = AllocMem(256 + 1, MEMF_CLEAR);
+    if (!s)
+    	return NULL;
+    CopyMem(name + 1, s, name[0]);
+    return s;
+}
 
+static void FreeString(UBYTE *cstr)
+{
+    FreeMem(cstr, 256+1);
+}
 
-void WriteF(const char *fmt, ...)
+static void WriteF(const char *fmt, ...)
 {
    IPTR *args = (IPTR *)&fmt;
    BSTR bfmt = AllocBSTR(fmt);
@@ -146,7 +161,7 @@ void WriteF(const char *fmt, ...)
 /* For KS < 2.0, we need to call the BCPL ReadArgs,
  * since DOS/ReadArgs doesn't exist.
  */
-ULONG RdArgs(BSTR format, BPTR args, ULONG max_arg)
+static ULONG RdArgs(BSTR format, BPTR args, ULONG max_arg)
 {
     return doBCPL(BCPL_RdArgs, format, args, max_arg, 0, NULL, 0);
 }
@@ -214,6 +229,98 @@ off_t lseek(int fd, off_t offset, int whence)
     return Seek((BPTR)fd, 0, OFFSET_CURRENT);       
 }
 
+static AROS_UFH4(LONG, aosRead,
+	AROS_UFHA(BPTR,  file, D1),
+	AROS_UFHA(void *, buf, D2),
+	AROS_UFHA(LONG,  size, D3),
+	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    return Read(file, buf, (unsigned)size);
+
+    AROS_USERFUNC_EXIT
+}
+static AROS_UFH4(LONG, aosSeek,
+	AROS_UFHA(BPTR,  file, D1),
+	AROS_UFHA(LONG,   pos, D2),
+	AROS_UFHA(LONG,  mode, D3),
+	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+{
+    AROS_USERFUNC_INIT
+    int whence;
+    LONG ret;
+    LONG oldpos;
+
+    switch (mode) {
+    case OFFSET_CURRENT  : whence = SEEK_CUR; break;
+    case OFFSET_END      : whence = SEEK_END; break;
+    case OFFSET_BEGINNING: whence = SEEK_SET; break;
+    default: return -1;
+    }
+
+    oldpos = (LONG)Seek(file, 0, SEEK_CUR);
+
+    ret = (LONG)Seek(file, (z_off_t)pos, whence);
+    if (ret < 0)
+    	return -1;
+
+    return oldpos;
+
+    AROS_USERFUNC_EXIT
+}
+static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
+{
+    struct MemList *ml;
+
+    /* Clear bits 15-0, we're setting memory class explicitly */
+    flags &= ~0x7fff;
+
+    if (SysBase->LibNode.lib_Version >= 36) {
+    	flags |= MEMF_LOCAL | MEMF_REVERSE;
+    } else {
+    	flags |= MEMF_CHIP;
+    }
+
+    size += sizeof(struct MemList);
+    ml = AllocMem(size, flags);
+    if (ml == NULL) {
+    	WriteF("AOS: Failed to allocate %N bytes of type %X4\n", size, flags);
+    } else {
+	ml->ml_NumEntries = 1;
+	ml->ml_ME[0].me_Addr = (APTR)ml;
+	ml->ml_ME[0].me_Length = size;
+    	AddTail(&mlist, (struct Node*)ml);
+    }
+    return &ml[1];
+}
+
+static AROS_UFH3(APTR, aosAlloc,
+	AROS_UFHA(ULONG, size, D0),
+	AROS_UFHA(ULONG, flags, D1),
+	AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+    
+    return aosAllocMem(size, flags, SysBase);
+
+    AROS_USERFUNC_EXIT
+}
+static AROS_UFH3(void, aosFree,
+	AROS_UFHA(APTR, addr, A1),
+	AROS_UFHA(ULONG, size, D0),
+	AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+    
+    addr -= sizeof(struct MemList);
+    size += sizeof(struct MemList);
+    Remove((struct Node*)addr);
+    FreeMem(addr, size);
+
+    AROS_USERFUNC_EXIT
+}
+
 /* Backcalls for InternalLoadSeg_ELF
  * using the gzip backend.
  */
@@ -229,7 +336,6 @@ static AROS_UFH4(LONG, elfRead,
 
     AROS_USERFUNC_EXIT
 }
-
 static AROS_UFH4(LONG, elfSeek,
 	AROS_UFHA(BPTR,  file, D1),
 	AROS_UFHA(LONG,   pos, D2),
@@ -258,7 +364,6 @@ static AROS_UFH4(LONG, elfSeek,
 
     AROS_USERFUNC_EXIT
 }
-
 static AROS_UFH3(APTR, elfAlloc,
 	AROS_UFHA(ULONG, size, D0),
 	AROS_UFHA(ULONG, flags, D1),
@@ -284,7 +389,6 @@ static AROS_UFH3(APTR, elfAlloc,
 
     AROS_USERFUNC_EXIT
 }
-
 static AROS_UFH3(void, elfFree,
 	AROS_UFHA(APTR, addr, A1),
 	AROS_UFHA(ULONG, size, D0),
@@ -297,9 +401,10 @@ static AROS_UFH3(void, elfFree,
     AROS_USERFUNC_EXIT
 }
 
-static BPTR ROMLoad(BSTR filename)
+static BPTR ROMLoad(BSTR bfilename)
 {
     gzFile gzf;
+    UBYTE *filename;
     BPTR rom = BNULL;
     SIPTR funcarray[] = {
     	(SIPTR)elfRead,
@@ -307,22 +412,92 @@ static BPTR ROMLoad(BSTR filename)
     	(SIPTR)elfFree,
     	(SIPTR)elfSeek,
     };
-
-    if ((gzf = gzopen(AROS_BSTR_ADDR(filename), "rb"))) {
+    filename = ConvertBSTR(bfilename);
+    if (!filename)
+    	return BNULL;
+    if ((gzf = gzopen(filename, "rb"))) {
     	gzbuffer(gzf, 65536);
 
-    	WriteF("Loading %S into RAM...\n", filename);
+    	WriteF("Loading '%S' into RAM...\n", bfilename);
     	rom = InternalLoadSeg_ELF((BPTR)gzf, BNULL, funcarray, NULL, DOSBase);
     	if (rom == BNULL) {
-    	    WriteF("%S: Can't parse\n", filename);
+    	    WriteF("'%S': Can't parse\n", bfilename);
     	}
 
     	gzclose_r(gzf);
     } else {
-    	WriteF("%S: Can't open\n", filename);
+    	WriteF("'%S': Can't open\n", bfilename);
     }
-
+    FreeString(filename);
     return rom;
+}
+
+static struct Resident *LoadFindResident(BPTR seglist)
+{
+    while (seglist) {
+    	ULONG *ptr = BADDR(seglist);
+    	UWORD *res;
+    	LONG len = ptr[-1] * 4;
+    	
+ 	res = (UWORD*)(ptr + 1);
+    	while (len >= 26) {
+    	    if (*res == 0x4afc && ((ULONG*)(res + 1))[0] == (ULONG)res)
+    	    	return (struct Resident*)res;
+    	    res++;
+    	    len -= 2;
+    	}
+    	seglist = *((BPTR*)BADDR(seglist));
+    }
+    return NULL;	    	
+}
+
+static struct Resident **LoadResidents(ULONG *namearray)
+{
+    UBYTE rescnt, i;
+    struct Resident **reslist = NULL;
+    SIPTR funcarray[] = {
+    	(SIPTR)aosRead,
+    	(SIPTR)aosAlloc,
+    	(SIPTR)aosFree,
+    	(SIPTR)aosSeek,
+    };
+    rescnt = 0;
+    for (i = 0; namearray[i]; i++) {
+	struct Resident *resident;
+	LONG stack;
+	BPTR handle;
+	BPTR seglist = BNULL;
+	BPTR bname;
+    	UBYTE *name;
+    	
+    	bname = (BPTR)namearray[i];
+    	name = ConvertBSTR(bname);
+    	if (name) {
+	    handle = Open(name, MODE_OLDFILE);
+	    if (handle) {
+		seglist = InternalLoadSeg(handle, BNULL, (LONG_FUNC*)funcarray, &stack);
+		Close(handle);
+	    }
+	    if (seglist) {
+		WriteF("Loaded '%S'\n", bname);
+		resident = LoadFindResident(seglist);
+		if (resident) {
+		    if (!reslist) {
+			reslist = aosAllocMem(100 * sizeof(struct Resident*), MEMF_CLEAR, SysBase);
+			if (!reslist)
+			    return NULL;
+		    }
+		    WriteF("Resident structure found @%X8\n", resident);
+		    reslist[rescnt++] = resident;
+		}
+	    } else {
+		WriteF("Failed to load '%S'\n", bname);
+	    }
+	    FreeString(name);
+	}
+    }
+    reslist[rescnt] = 0;
+    return reslist;
 }
 
 #define FAKEBASE 0x200
@@ -484,7 +659,7 @@ static void rebootcode(void)
     );
 }
 
-APTR entry;
+APTR entry, kicktags;
 
 static void supercode(void)
 {
@@ -522,8 +697,28 @@ static void supercode(void)
     sysbase->ChkSum = GetSysBaseChkSum(sysbase) ^ 0xffff;
 
     /* Propogate the existing OS's Kick Data */
-    sysbase->KickMemPtr = (APTR)SysBase->KickMemPtr;
-    sysbase->KickTagPtr = (APTR)SysBase->KickTagPtr;
+    if (mlist.lh_Head->ln_Succ) {
+    	sysbase->KickMemPtr = (APTR)mlist.lh_Head;
+    	mlist.lh_TailPred->ln_Succ = SysBase->KickMemPtr;
+    } else {
+	sysbase->KickMemPtr = (APTR)SysBase->KickMemPtr;
+    }
+    if (kicktags) {
+    	sysbase->KickTagPtr = kicktags;
+    	if (SysBase->KickTagPtr) {
+	     ULONG *p = kicktags;
+	     while (*p)
+		p++;
+	     *p = 0x80000000 | (ULONG)SysBase->KickTagPtr;
+	}
+    } else {
+    	sysbase->KickTagPtr = SysBase->KickTagPtr;
+    }
+    if (SysBase->KickTagPtr) {
+ 	sysbase->KickTagPtr = kicktags;
+    } else {
+	sysbase->KickTagPtr = kicktags;
+    }
     sysbase->KickCheckSum = (APTR)mySumKickData(sysbase);
 
     traps[1] = (IPTR)sysbase;
@@ -532,7 +727,7 @@ static void supercode(void)
     reboot();
 }
 
-void BootROM(BPTR romlist)
+void BootROM(BPTR romlist, struct Resident **reslist)
 {
     APTR GfxBase;
 
@@ -543,6 +738,7 @@ void BootROM(BPTR romlist)
     }
 
     entry = BADDR(romlist)+sizeof(ULONG);
+    kicktags = reslist;
 
     /* We're off in the weeds now. */
     Disable();
@@ -561,7 +757,8 @@ __startup static AROS_ENTRY(int, startup,
      */
     if (OpenResource("kernel.resource"))
     	return RETURN_OK;
-
+    	
+    NEWLIST(&mlist);
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
@@ -570,7 +767,7 @@ __startup static AROS_ENTRY(int, startup,
     	ULONG *args = NULL;
 
     	if ((name = AllocBSTR("aros.elf.gz")) &&
-    	    (format = AllocBSTR("FILE")) &&
+    	    (format = AllocBSTR(",,,,,,,,,")) && /* this can't be the best way.. */
     	    (args = AllocMem(sizeof(ULONG) * 100, MEMF_ANY))) {
 	    args[0] = name;
 
@@ -582,9 +779,15 @@ __startup static AROS_ENTRY(int, startup,
 
 		ROMSegList = ROMLoad(args[0]);
 		if (ROMSegList != BNULL) {
+		    struct Resident **ResidentList;
 		    WriteF("Successfully loaded ROM\n");
 
-		    BootROM(ROMSegList);
+		    ResidentList = LoadResidents(&args[1]);
+
+		    WriteF("Booting...\n");
+		    Delay(50);
+
+		    BootROM(ROMSegList, ResidentList);
 
 		    UnLoadSeg(ROMSegList);
 		} else {
@@ -595,12 +798,9 @@ __startup static AROS_ENTRY(int, startup,
 	    }
 	}
 
-    	if (name != BNULL)
-    	    FreeBSTR(name);
-    	if (format != BNULL)
-    	    FreeBSTR(format);
-    	if (args != BNULL)
-    	    FreeMem(args, sizeof(ULONG) * 100);
+   	FreeBSTR(name);
+    	FreeBSTR(format);
+    	FreeMem(args, sizeof(ULONG) * 100);
     	CloseLibrary((APTR)DOSBase);
     }
 
