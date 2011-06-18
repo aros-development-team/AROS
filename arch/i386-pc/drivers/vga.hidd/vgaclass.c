@@ -384,7 +384,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
     	if ((msg->srcY > msg->destY) || ((msg->srcY == msg->destY) && (msg->srcX >= msg->destX)))
 	{
-	    if ((phase = ((LONG)s_start & 3L)))
+	    if ((phase = ((IPTR)s_start & 3L)))
 	    {
 		phase = 4 - phase;
 		if (phase > width) phase = width;
@@ -397,7 +397,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	    s_start += (cnt - 1) * data->bpr + width;
 	    d_start += (cnt - 1) * ddata->bpr + width;
 
-	    phase = ((LONG)s_start & 3L);
+	    phase = ((IPTR)s_start & 3L);
 	    if (phase > width) phase = width;
 	    width -= phase;
 	    
@@ -770,7 +770,7 @@ void draw_mouse(struct vga_staticdata *xsd)
     	    {
     		for (x_i = 0, x = xsd->mouseX; x_i < xsd->mouseW; x_i++, x++)
 		{
-		    ptr = (char *)(0xa0000 + (x + (y * width)) / 8);
+		    ptr = (char *)(IPTR)(0xa0000 + (x + (y * width)) / 8);
 		    pix = 0x8000 >> (x % 8);
     
 		    fg = (char)*data++;
