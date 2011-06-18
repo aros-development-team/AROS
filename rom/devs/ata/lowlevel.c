@@ -1640,7 +1640,7 @@ BYTE ata_Identify(struct ata_Unit* unit)
             ULONG sec = unit->au_Capacity48;
 
             if (sec < unit->au_Capacity48)
-                sec = ~0ul;
+                sec = ~((ULONG)0);
 
             if (sec < unit->au_Capacity)
                 sec = unit->au_Capacity;
