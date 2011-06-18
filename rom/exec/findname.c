@@ -18,7 +18,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct List *, list, A0),
-	AROS_LHA(const UBYTE *, name, A1),
+	AROS_LHA(CONST_STRPTR, name, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 46, Exec)
