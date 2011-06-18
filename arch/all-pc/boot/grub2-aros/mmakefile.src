@@ -8,7 +8,7 @@ include $(TOP)/config/make.cfg
 ##MM- AROS-pc-$(CPU) : grub2-aros-quick
 #MM- arch-common-grub2 : grub2-aros-quick
 
-EXCL_FLAGS := -Werror-implicit-function-declaration
+EXCL_FLAGS := -Werror -Werror-implicit-function-declaration
 
 # remove the -s & --strip-all flags, just in case
 # ... to no strip grub_mod_init or something from modules
