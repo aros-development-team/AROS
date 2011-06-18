@@ -110,79 +110,88 @@ AROS_UFH5(void, writeexpansion,
 	} else {
 		ULONG start, end, addr, step;
 		UBYTE *space;
-		start = 0x00200000;
-		end   = 0x009FFFFF;
-		space = IntExpBase(ExpansionBase)->eb_z2Slots;
-		step = 0x00010000;
-		if (!memorydevice) {
-			start = 0x00E90000;
-			end   = 0x00EFFFFF;
-		}
-		for (addr = start; addr < end; addr += step) {
-			ULONG startaddr = addr;
-			UWORD offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
-			BYTE bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
-			UBYTE res = space[offset];
-			ULONG sizeleft = size;
-	
-			if (res & (1 << bit))
+		UBYTE area;
+		
+		for (area = 0; area < 2; area++) {
+			
+			if (area == 0 && (size >= 8 * E_SLOTSIZE || memorydevice))
 				continue;
-
-			if (size < 4 * 1024 * 1024) {
-				// handle alignment, 128k boards must be 128k aligned and so on..
-				if ((startaddr & (size - 1)) != 0)
-					continue;
+			
+			if (area == 0) {
+				start = 0x00E90000;
+				end   = 0x00EFFFFF;
 			} else {
-				// 4M and 8M boards have different alignment requirements
-				if (startaddr != 0x00200000 && startaddr != 0x00600000)
-					continue;
+				start = 0x00200000;
+				end   = 0x009FFFFF;
 			}
-
-			// found free start address
-			if (size >= E_SLOTSIZE * SLOTSPERBYTE) {
-				// needs at least 1 byte and is always aligned to byte
-				while (space[offset] == 0 && sizeleft >= E_SLOTSIZE && offset <= end / (E_SLOTSIZE * SLOTSPERBYTE)) {
-					offset++;
-					sizeleft -= E_SLOTSIZE * SLOTSPERBYTE;
+			space = IntExpBase(ExpansionBase)->eb_z2Slots;
+			step = 0x00010000;
+			for (addr = start; addr < end; addr += step) {
+				ULONG startaddr = addr;
+				UWORD offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
+				BYTE bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
+				UBYTE res = space[offset];
+				ULONG sizeleft = size;
+		
+				if (res & (1 << bit))
+					continue;
+	
+				if (size < 4 * 1024 * 1024) {
+					// handle alignment, 128k boards must be 128k aligned and so on..
+					if ((startaddr & (size - 1)) != 0)
+						continue;
+				} else {
+					// 4M and 8M boards have different alignment requirements
+					if (startaddr != 0x00200000 && startaddr != 0x00600000)
+						continue;
 				}
-			} else {
-				// bit by bit small board check (fits in one byte)
-				while ((res & (1 << bit)) == 0 && sizeleft >= E_SLOTSIZE && bit >= 0) {
+	
+				// found free start address
+				if (size >= E_SLOTSIZE * SLOTSPERBYTE) {
+					// needs at least 1 byte and is always aligned to byte
+					while (space[offset] == 0 && sizeleft >= E_SLOTSIZE && offset <= end / (E_SLOTSIZE * SLOTSPERBYTE)) {
+						offset++;
+						sizeleft -= E_SLOTSIZE * SLOTSPERBYTE;
+					}
+				} else {
+					// bit by bit small board check (fits in one byte)
+					while ((res & (1 << bit)) == 0 && sizeleft >= E_SLOTSIZE && bit >= 0) {
+						sizeleft -= E_SLOTSIZE;
+						bit--;
+					}
+				}
+	
+				if (sizeleft >= E_SLOTSIZE)
+					continue;
+	
+				configDev->cd_BoardAddr = (APTR)startaddr;
+				configDev->cd_Flags |= CDF_CONFIGME;
+				configDev->cd_SlotAddr = (startaddr >> 16);
+				configDev->cd_SlotSize = size >> 16;
+				AROS_UFC5(void, writeexpansion,
+					AROS_UFCA(APTR,  board, A0),
+					AROS_UFCA(APTR,  configDev, A3),
+					AROS_UFCA(UBYTE, type, D0),
+		                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
+		                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
+		             	);
+		             	D(bug("-> configured, %p - %p\n", startaddr, startaddr + configDev->cd_BoardSize - 1));
+			
+				// do not remove this, configDev->cd_BoardAddr
+				// might have changed inside writeexpansion
+				startaddr = (ULONG)configDev->cd_BoardAddr;
+				offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
+				bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
+				sizeleft = size;
+				// now allocate area we reserved
+				while (sizeleft >= E_SLOTSIZE) {
+					space[offset] |= 1 << bit;
 					sizeleft -= E_SLOTSIZE;
 					bit--;
 				}
-			}
-
-			if (sizeleft >= E_SLOTSIZE)
-				continue;
-
-			configDev->cd_BoardAddr = (APTR)startaddr;
-			configDev->cd_Flags |= CDF_CONFIGME;
-			configDev->cd_SlotAddr = (startaddr >> 16);
-			configDev->cd_SlotSize = size >> 16;
-			AROS_UFC5(void, writeexpansion,
-				AROS_UFCA(APTR,  board, A0),
-				AROS_UFCA(APTR,  configDev, A3),
-				AROS_UFCA(UBYTE, type, D0),
-	                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
-	                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
-	             	);
-	             	D(bug("-> configured, %p - %p\n", startaddr, startaddr + configDev->cd_BoardSize - 1));
 		
-			// do not remove this, configDev->cd_BoardAddr
-			// might have changed inside writeexpansion
-			startaddr = (ULONG)configDev->cd_BoardAddr;
-			offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
-			bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
-			sizeleft = size;
-			// now allocate area we reserved
-			while (sizeleft >= E_SLOTSIZE) {
-				space[offset] |= 1 << bit;
-				sizeleft -= E_SLOTSIZE;
-				bit--;
+				return TRUE;
 			}
-	
-			return TRUE;
 		}
 	}
 
