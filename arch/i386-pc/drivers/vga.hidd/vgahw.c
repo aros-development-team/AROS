@@ -434,7 +434,7 @@ void vgaRefreshPixel(struct bitmap_data *data, unsigned int x, unsigned int y)
 
     ptr = (char *)(data->VideoData + srcx + (srcy * data->bpr));
     fg = *ptr;
-    ptr2 = (char *)(0xa0000 + (x + (y * data->disp_width)) / 8);
+    ptr2 = (char *)(IPTR)(0xa0000 + (x + (y * data->disp_width)) / 8);
     pix = 0x8000 >> (x % 8);
 
     outw(0x3c4,0x0f02);
@@ -514,7 +514,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, struct Box *pbox)
        coordinate may be not LONG-aligned, we probably have to copy
        some BYTEs before we reach LONG border. phase is a number
        of these bytes */
-    phase = (LONG)dst & 3L;
+    phase = (IPTR)dst & 3L;
     if (phase) {
 	    phase = 4 - phase;
 	    if(phase > width) phase = width;
