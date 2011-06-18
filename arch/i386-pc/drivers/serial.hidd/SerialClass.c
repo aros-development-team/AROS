@@ -141,7 +141,7 @@ static int PCSer_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
     EnterFunc(bug("PCSer_ExpungeAttrs\n"));
 
-    OOP_ReleaseAttrBase((STRPTR)__IHidd_SerialUnitAB);
+    OOP_ReleaseAttrBase(IID_Hidd_SerialUnit);
 	
     ReturnInt("PCSer_ExpungeAttrs", int, TRUE);
 }
