@@ -85,8 +85,8 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 	}
 
 	/* If buffer doesn't fit into DMA page realloc it */
-	if (( (((ULONG)unit->td_DMABuffer + DP_SECTORS*512) & 0xffff0000) -
-		    ((ULONG)unit->td_DMABuffer&0xffff0000) ) != 0)
+	if (( (((ULONG)(IPTR)unit->td_DMABuffer + DP_SECTORS*512) & 0xffff0000) -
+		    ((ULONG)(IPTR)unit->td_DMABuffer&0xffff0000) ) != 0)
 	{
 	    APTR buffer;
 
