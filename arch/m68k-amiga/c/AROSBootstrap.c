@@ -22,6 +22,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
+#include <exec/resident.h>
 
 #include <zlib.h>
 
@@ -441,8 +442,13 @@ static struct Resident *LoadFindResident(BPTR seglist)
     	
  	res = (UWORD*)(ptr + 1);
     	while (len >= 26) {
-    	    if (*res == 0x4afc && ((ULONG*)(res + 1))[0] == (ULONG)res)
-    	    	return (struct Resident*)res;
+    	    if (*res == RTC_MATCHWORD && ((ULONG*)(res + 1))[0] == (ULONG)res) {
+    	    	struct Resident *r = (struct Resident*)res;
+    	    	/* Set RTF_COLDSTART if no initialization flags set */
+    	    	if (!(r->rt_Flags & (RTF_COLDSTART | RTF_SINGLETASK | RTF_AFTERDOS)))
+    	    	    r->rt_Flags |= RTF_COLDSTART;
+    	    	return r;
+    	    }
     	    res++;
     	    len -= 2;
     	}
@@ -713,11 +719,6 @@ static void supercode(void)
 	}
     } else {
     	sysbase->KickTagPtr = SysBase->KickTagPtr;
-    }
-    if (SysBase->KickTagPtr) {
- 	sysbase->KickTagPtr = kicktags;
-    } else {
-	sysbase->KickTagPtr = kicktags;
     }
     sysbase->KickCheckSum = (APTR)mySumKickData(sysbase);
 
