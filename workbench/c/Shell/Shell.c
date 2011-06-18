@@ -229,9 +229,6 @@ LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase)
 	    break;
 	}
 
-	D(bug("[Shell] Closing CLI input 0x%p\n", cli->cli_CurrentInput));
-	Close(cli->cli_CurrentInput);
-
 	if (AROS_BSTR_strlen(cli->cli_CommandFile))
 	{
 	    DeleteFile(AROS_BSTR_ADDR(cli->cli_CommandFile));
@@ -241,11 +238,14 @@ LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase)
 	if (cli->cli_Background)
 	    break;
 
+	D(bug("[Shell] Closing CLI input 0x%p\n", cli->cli_CurrentInput));
+	Close(cli->cli_CurrentInput);
+
 	cli->cli_CurrentInput = cli->cli_StandardInput;
 	cli->cli_Interactive = TRUE;
 	moreLeft = TRUE;
 
-	D(bug("[Shell] Flushig output 0x%p, error 0x%p\n", Output(), ErrorOutput()));
+	D(bug("[Shell] Flushing output 0x%p, error 0x%p\n", Output(), ErrorOutput()));
 	Flush(Output());
 	Flush(ErrorOutput());
     } while (moreLeft);
