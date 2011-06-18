@@ -370,14 +370,14 @@ BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, CreateGattTable)
 
     
     gbddata->gatttablebuffer = AllocVec(tablesize + 4096, MEMF_PUBLIC | MEMF_CLEAR);
-    gbddata->gatttable = (ULONG *)(ALIGN((ULONG)gbddata->gatttablebuffer, 4096));
+    gbddata->gatttable = (ULONG *)(ALIGN((IPTR)gbddata->gatttablebuffer, 4096));
     
     D(bug("[AGP] Created GATT table size %d at 0x%x\n", tablesize, 
         (ULONG)gbddata->gatttable));
     
     for (i = 0; i < entries; i++)
     {
-        writel((ULONG)gbddata->scratchmem, gbddata->gatttable + i);
+        writel((ULONG)(IPTR)gbddata->scratchmem, gbddata->gatttable + i);
         readl(gbddata->gatttable + i);	/* PCI Posting. */
     }
     
@@ -593,7 +593,7 @@ VOID METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, UnBindMemory)
     /* Remove entries from GATT table */
     for(i = 0; i < msg->size / 4096; i++)
     {
-        writel((ULONG)gbddata->scratchmem, gbddata->gatttable + msg->offset + i);
+        writel((ULONG)(IPTR)gbddata->scratchmem, gbddata->gatttable + msg->offset + i);
     }
     
     readl(gbddata->gatttable + msg->offset + i - 1); /* PCI posting */

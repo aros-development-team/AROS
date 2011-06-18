@@ -146,9 +146,9 @@ BOOL METHOD(VIABridgeDevice, Hidd_AGPBridgeDevice, Initialize)
         
     /* Set GATT pointer */
     writeconfiglong(bridgedev, AGP_VIA_GATT_BASE, 
-        (((ULONG)gbddata->gatttable) & 0xfffff000) | 3);
+        (((ULONG)(IPTR)gbddata->gatttable) & 0xfffff000) | 3);
     D(bug("[AGP] [VIA] Set GATT pointer to 0x%x\n", 
-        (((ULONG)gbddata->gatttable) & 0xfffff000) | 3));
+        (((ULONG)(IPTR)gbddata->gatttable) & 0xfffff000) | 3));
 
     gbddata->state = STATE_INITIALIZED;
 

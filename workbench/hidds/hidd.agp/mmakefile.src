@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 #MM- workbench-hidds: hidd-agp-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 #MM- hidd-agp-pc-i386 : hidd-agp
+#MM- hidd-agp-pc-x86_64 : hidd-agp
 
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
@@ -24,5 +25,8 @@ FILES := init agpclass genericbridgedeviceclass agp3bridgedeviceclass \
 
 %build_archspecific mainmmake=hidd-agp asmfiles=wbinvd \
     maindir=$(CURDIR) arch=i386 modulename=agp
+
+%build_archspecific mainmmake=hidd-agp asmfiles=wbinvd \
+    maindir=$(CURDIR) arch=x86_64 modulename=agp
 
 %common

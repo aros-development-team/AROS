@@ -146,9 +146,9 @@ BOOL METHOD(VIAAgp3BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 
     /* Set GATT pointer */
     writeconfiglong(bridgedev, AGP_VIA_AGP3_GATT_BASE, 
-        ((ULONG)gbddata->gatttable) & 0xfffff000);
+        ((ULONG)(IPTR)gbddata->gatttable) & 0xfffff000);
     D(bug("[AGP] [VIA] Set GATT pointer to 0x%x\n", 
-        ((ULONG)gbddata->gatttable) & 0xfffff000));
+        ((ULONG)(IPTR)gbddata->gatttable) & 0xfffff000));
     
     /* Enabled GART and GATT */
     /* 1. Enable GTLB in RX90<7>, all AGP aperture access needs to fetch

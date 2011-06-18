@@ -117,11 +117,11 @@ BOOL METHOD(i845BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     /* Getting GART base */
     gbddata->bridgeaperbase = (IPTR)readconfiglong(bridgedev, AGP_APER_BASE);
     gbddata->bridgeaperbase &= (~0x0fUL) /* PCI_BASE_ADDRESS_MEM_MASK */;
-    D(bug("[AGP] [Intel 845] Reading aperture base: 0x%x\n", (ULONG)gbddata->bridgeaperbase));
+    D(bug("[AGP] [Intel 845] Reading aperture base: 0x%x\n", (ULONG)(IPTR)gbddata->bridgeaperbase));
 
     /* Set GATT pointer */
-    writeconfiglong(bridgedev, AGP_INTEL_GATT_BASE, (ULONG)gbddata->gatttable);
-    D(bug("[AGP] [Intel 845] Set GATT pointer to 0x%x\n", (ULONG)gbddata->gatttable));
+    writeconfiglong(bridgedev, AGP_INTEL_GATT_BASE, (ULONG)(IPTR)gbddata->gatttable);
+    D(bug("[AGP] [Intel 845] Set GATT pointer to 0x%x\n", (ULONG)(IPTR)gbddata->gatttable));
     
     /* Control register */
     writeconfiglong(bridgedev, AGP_INTEL_CTRL, 0x00000000);

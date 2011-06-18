@@ -134,8 +134,8 @@ BOOL METHOD(SiSBridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     D(bug("[AGP] [SiS] Reading aperture base: 0x%x\n", (ULONG)gbddata->bridgeaperbase));
     
     /* Set GATT pointer */
-    writeconfiglong(bridgedev, AGP_SIS_GATT_BASE, (ULONG)gbddata->gatttable);
-    D(bug("[AGP] [SiS] Set GATT pointer to 0x%x\n", (ULONG)gbddata->gatttable));
+    writeconfiglong(bridgedev, AGP_SIS_GATT_BASE, (ULONG)(IPTR)gbddata->gatttable);
+    D(bug("[AGP] [SiS] Set GATT pointer to 0x%x\n", (ULONG)(IPTR)gbddata->gatttable));
     
     /* Enable GART */
     temp = readconfigbyte(bridgedev, AGP_SIS_APER_SIZE);
