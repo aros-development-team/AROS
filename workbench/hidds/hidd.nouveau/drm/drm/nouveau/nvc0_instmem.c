@@ -118,7 +118,7 @@ nvc0_instmem_init(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_instmem_engine *pinstmem = &dev_priv->engine.instmem;
-	struct pci_dev *pdev = dev->pdev;
+	struct pci_dev *pdev = (struct pci_dev *)dev->pdev;
 	struct nvc0_instmem_priv *priv;
 	struct nouveau_vm *vm = NULL;
 	int ret;

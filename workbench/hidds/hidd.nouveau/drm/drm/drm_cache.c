@@ -95,7 +95,7 @@ drm_clflush_pages(struct page *pages[], unsigned long num_pages)
     /* TODO: Detect if cpu has clflush. Use it if present */
 #if !defined(HOSTED_BUILD)
     VOID HACK_Wbinvd(); /* Implemented in assembler */
-    Supervisor(HACK_Wbinvd);
+    Supervisor((ULONG_FUNC)HACK_Wbinvd);
 #endif
 #else
 	printk(KERN_ERR "Architecture has no drm_cache.c support\n");

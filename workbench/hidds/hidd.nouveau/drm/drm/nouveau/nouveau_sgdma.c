@@ -25,7 +25,6 @@ nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
 		       struct page **pages, struct page *dummy_read_page)
 {
 	struct nouveau_sgdma_be *nvbe = (struct nouveau_sgdma_be *)be;
-	struct drm_device *dev = nvbe->dev;
 
 	NV_DEBUG(nvbe->dev, "num_pages = %ld\n", num_pages);
 
