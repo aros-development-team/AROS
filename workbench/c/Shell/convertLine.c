@@ -149,6 +149,14 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
 
 	bufferReset(&a);
 	bufferCopy(&b, &a, i);
+
+	if ( (in->buf[in->cur] != '\0') && (in->buf[1 + in->cur] != '\0') )
+	    /*
+	     * We need a separator here, between the command
+	     * and its first argument
+	     */
+	    bufferAppend(" ", 1, &a);
+
 	bufferCopy(in, &a, in->len - in->cur);
 
 	if (i < b.len)
