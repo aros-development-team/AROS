@@ -216,7 +216,7 @@ _060_real_bsun:
 */
 
 _060_real_fline:
-	bra		jmp_exception
+	bra		jmp_exception_old_fline
 
 /*
 #
@@ -237,7 +237,7 @@ _060_real_fline:
 */
 
 _060_real_fpu_disabled:
-	bra		jmp_exception
+	bra		jmp_exception_old_fline
 
 /*
 #
@@ -262,6 +262,7 @@ _060_real_trap:
 ##################################
 */
 
+#if 0
 _060_fpsp_snan:
 	bral	FP_CALL_TOP+0x80+0x00
 
@@ -288,6 +289,7 @@ _060_fpsp_unsupp:
 
 _060_fpsp_effadd:
 	bral	FP_CALL_TOP+0x80+0x40
+#endif
 
 /*
 #############################################################################
@@ -300,33 +302,33 @@ _060_fpsp_effadd:
 */
 
 FP_CALL_TOP:
-	.long	_060_real_bsun
-	.long	_060_real_snan
-	.long	_060_real_operr
-	.long	_060_real_ovfl
-	.long	_060_real_unfl
-	.long	_060_real_dz
-	.long	_060_real_inex
-	.long	_060_real_fline
-	.long	_060_real_fpu_disabled
-	.long	_060_real_trap
-	.long	_060_real_trace
-	.long	_060_real_access
-	.long	_060_fpsp_done
+	.long	_060_real_bsun - FP_CALL_TOP
+	.long	_060_real_snan - FP_CALL_TOP
+	.long	_060_real_operr - FP_CALL_TOP
+	.long	_060_real_ovfl - FP_CALL_TOP
+	.long	_060_real_unfl - FP_CALL_TOP
+	.long	_060_real_dz - FP_CALL_TOP
+	.long	_060_real_inex - FP_CALL_TOP
+	.long	_060_real_fline - FP_CALL_TOP
+	.long	_060_real_fpu_disabled - FP_CALL_TOP
+	.long	_060_real_trap - FP_CALL_TOP
+	.long	_060_real_trace - FP_CALL_TOP
+	.long	_060_real_access - FP_CALL_TOP
+	.long	_060_fpsp_done - FP_CALL_TOP
 
 	.long	0x00000000,0x00000000,0x00000000
 
-	.long	_060_imem_read
-	.long	_060_dmem_read
-	.long	_060_dmem_write
-	.long	_060_imem_read_word
-	.long	_060_imem_read_long
-	.long	_060_dmem_read_byte
-	.long	_060_dmem_read_word
-	.long	_060_dmem_read_long
-	.long	_060_dmem_write_byte
-	.long	_060_dmem_write_word
-	.long	_060_dmem_write_long
+	.long	_060_imem_read - FP_CALL_TOP
+	.long	_060_dmem_read - FP_CALL_TOP
+	.long	_060_dmem_write - FP_CALL_TOP
+	.long	_060_imem_read_word - FP_CALL_TOP
+	.long	_060_imem_read_long - FP_CALL_TOP
+	.long	_060_dmem_read_byte - FP_CALL_TOP
+	.long	_060_dmem_read_word - FP_CALL_TOP
+	.long	_060_dmem_read_long - FP_CALL_TOP
+	.long	_060_dmem_write_byte - FP_CALL_TOP
+	.long	_060_dmem_write_word - FP_CALL_TOP
+	.long	_060_dmem_write_long - FP_CALL_TOP
 
 	.long	0x00000000
 
