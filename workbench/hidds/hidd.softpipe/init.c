@@ -16,16 +16,16 @@ static int SoftpipeHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
         CloseLibrary(LIBBASE->sd.SoftpipeCyberGfxBase);
 
     if (LIBBASE->sd.hiddGalliumAB)
-        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
+        OOP_ReleaseAttrBase(IID_Hidd_Gallium);
 
     return TRUE;
 }
 
 static int SoftpipeHidd_InitLib(LIBBASETYPEPTR LIBBASE)
 {
-    LIBBASE->sd.SoftpipeCyberGfxBase = OpenLibrary((STRPTR)"cybergraphics.library",0);
+    LIBBASE->sd.SoftpipeCyberGfxBase = OpenLibrary("cybergraphics.library",0);
 
-    LIBBASE->sd.hiddGalliumAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
+    LIBBASE->sd.hiddGalliumAB = OOP_ObtainAttrBase(IID_Hidd_Gallium);
 
     if (LIBBASE->sd.SoftpipeCyberGfxBase && LIBBASE->sd.hiddGalliumAB)
         return TRUE;
