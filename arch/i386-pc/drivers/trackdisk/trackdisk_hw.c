@@ -408,7 +408,7 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
 		/* Set DMA up */
 		clear_dma_ff(TD_DMA);
 		// Should place some cache flush in future (when cache implemented)
-		set_dma_addr(TD_DMA, (ULONG)(TDBase->td_Units[unitnum]->td_DMABuffer));
+		set_dma_addr(TD_DMA, (ULONG)(IPTR)(TDBase->td_Units[unitnum]->td_DMABuffer));
 		set_dma_count(TD_DMA, DP_SECTORS*512);
 		set_dma_mode(TD_DMA, (mode == FD_READ) ? DMA_MODE_READ : DMA_MODE_WRITE);
 		enable_dma(TD_DMA);
@@ -654,7 +654,7 @@ int td_formattrack(struct TDU *unit, UBYTE cyl, UBYTE hd, struct TrackDiskBase *
 		/* Set DMA up */
 		clear_dma_ff(TD_DMA);
 		// Should place some cache flush in future (when cache implemented)
-		set_dma_addr(TD_DMA, (ULONG)unit->td_DMABuffer);
+		set_dma_addr(TD_DMA, (ULONG)(IPTR)unit->td_DMABuffer);
 		set_dma_count(TD_DMA, DP_SECTORS*512);
 		set_dma_mode(TD_DMA, DMA_MODE_WRITE);
 		enable_dma(TD_DMA);
