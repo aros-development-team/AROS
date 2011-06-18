@@ -13,14 +13,14 @@
 static int GalliumHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 {
     if (LIBBASE->sd.galliumAttrBase)
-        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
+        OOP_ReleaseAttrBase(IID_Hidd_Gallium);
 
     return TRUE;
 }
 
 static int GalliumHidd_InitLib(LIBBASETYPEPTR LIBBASE)
 {
-    LIBBASE->sd.galliumAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
+    LIBBASE->sd.galliumAttrBase = OOP_ObtainAttrBase(IID_Hidd_Gallium);
 
     if (LIBBASE->sd.galliumAttrBase)
         return TRUE;
