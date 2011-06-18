@@ -2546,7 +2546,7 @@ AROS_UFH1(void, subLibPlayerIntV4,
     if(!nam->nam_Unit->nch_DenyRequests)
     {
         CallHookPkt(audioctrl->ahiac_MixerFunc, nam->nam_AudioCtrl, nam->nam_AHIBuffer);
-        CallHookPkt(&nam->nam_SamConvHook, nam->nam_USBBuffer[bufnum], (APTR) nam->nam_AudioCtrl->ahiac_BuffSamples);
+        CallHookPkt(&nam->nam_SamConvHook, nam->nam_USBBuffer[bufnum], (APTR) (IPTR) nam->nam_AudioCtrl->ahiac_BuffSamples);
         nam->nam_NextBufR = bufnum;
         nam->nam_NextBufW = 1 - bufnum;
     }
@@ -2572,7 +2572,7 @@ AROS_UFH1(void, subLibPlayerIntV6,
     if(!(skipit || nam->nam_Unit->nch_DenyRequests))
     {
         CallHookPkt(audioctrl->ahiac_MixerFunc, nam->nam_AudioCtrl, nam->nam_AHIBuffer);
-        CallHookPkt(&nam->nam_SamConvHook, nam->nam_USBBuffer[bufnum], (APTR) nam->nam_AudioCtrl->ahiac_BuffSamples);
+        CallHookPkt(&nam->nam_SamConvHook, nam->nam_USBBuffer[bufnum], (APTR) (IPTR) nam->nam_AudioCtrl->ahiac_BuffSamples);
         nam->nam_NextBufR = bufnum;
         nam->nam_NextBufW = 1 - bufnum;
     }
@@ -2724,7 +2724,7 @@ AROS_UFH3(void, nInDoneHook,
     nam->nam_RecMsg.ahirm_Type = AHIST_S16S;
     nam->nam_RecMsg.ahirm_Buffer = nam->nam_AHIBuffer;
     nam->nam_RecMsg.ahirm_Length = cnt;
-    CallHookPkt(&nam->nam_SamConvHook, nam->nam_AHIBuffer, (APTR) cnt);
+    CallHookPkt(&nam->nam_SamConvHook, nam->nam_AHIBuffer, (APTR) (IPTR) cnt);
 
     CallHookPkt(nam->nam_AudioCtrl->ahiac_SamplerFunc, nam->nam_AudioCtrl, &nam->nam_RecMsg);
     
