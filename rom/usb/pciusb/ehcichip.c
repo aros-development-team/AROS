@@ -255,7 +255,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                     KPRINTF(10, ("Reloading BULK at %ld/%ld\n", eqh->eqh_Actual, ioreq->iouh_Length));
                     // reload
                     ctrlstatus = (ioreq->iouh_Dir == UHDIR_IN) ? (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_IN) : (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_OUT);
-                    phyaddr = (ULONG) pciGetPhysical(hc, &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]));
+                    phyaddr = (IPTR) pciGetPhysical(hc, &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]));
                     predetd = etd = eqh->eqh_FirstTD;
 
                     CONSTWRITEMEM32_LE(&eqh->eqh_CurrTD, EHCI_TERMINATE);
@@ -529,7 +529,7 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         setupetd->etd_Length = 8;
 
         CONSTWRITEMEM32_LE(&setupetd->etd_CtrlStatus, (8<<ETSS_TRANSLENGTH)|ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_SETUP);
-        phyaddr = (ULONG) pciGetPhysical(hc, &ioreq->iouh_SetupData);
+        phyaddr = (IPTR) pciGetPhysical(hc, &ioreq->iouh_SetupData);
         WRITEMEM32_LE(&setupetd->etd_BufferPtr[0], phyaddr);
         WRITEMEM32_LE(&setupetd->etd_BufferPtr[1], (phyaddr + 8) & EHCI_PAGE_MASK); // theoretically, setup data may cross one page
         setupetd->etd_BufferPtr[2] = 0; // clear for overlay bits
@@ -538,7 +538,7 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         predetd = setupetd;
         if(ioreq->iouh_Length)
         {
-            phyaddr = (ULONG) pciGetPhysical(hc, ioreq->iouh_Data);
+            phyaddr = (IPTR) pciGetPhysical(hc, ioreq->iouh_Data);
             do
             {
                 dataetd = ehciAllocTD(hc);
@@ -742,7 +742,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             ctrlstatus |= ETCF_DATA1;
         }
         predetd = NULL;
-        phyaddr = (ULONG) pciGetPhysical(hc, ioreq->iouh_Data);
+        phyaddr = (IPTR) pciGetPhysical(hc, ioreq->iouh_Data);
         do
         {
             etd = ehciAllocTD(hc);
@@ -905,7 +905,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
             ctrlstatus |= ETCF_DATA1;
         }
         predetd = NULL;
-        phyaddr = (ULONG) pciGetPhysical(hc, ioreq->iouh_Data);
+        phyaddr = (IPTR) pciGetPhysical(hc, ioreq->iouh_Data);
         do
         {
             if((eqh->eqh_Actual >= EHCI_TD_BULK_LIMIT) && (eqh->eqh_Actual < ioreq->iouh_Length))
@@ -1197,11 +1197,11 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
     if(memptr) {
         // PhysicalAddress - VirtualAdjust = VirtualAddress
         // VirtualAddress  + VirtualAdjust = PhysicalAddress
-        hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
+        hc->hc_PCIVirtualAdjust = ((IPTR) pciGetPhysical(hc, memptr)) - ((IPTR) memptr);
         KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
 
         // align memory
-        memptr = (UBYTE *) ((((ULONG) hc->hc_PCIMem) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
+        memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
         hc->hc_EhciFrameList = (ULONG *) memptr;
         KPRINTF(10, ("FrameListBase 0x%08lx\n", hc->hc_EhciFrameList));
         memptr += sizeof(APTR) * EHCI_FRAMELIST_SIZE;
@@ -1213,13 +1213,13 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         do {
             // minimal initalization
             eqh->eqh_Succ = (eqh + 1);
-            WRITEMEM32_LE(&eqh->eqh_Self, (ULONG) (&eqh->eqh_NextQH) + hc->hc_PCIVirtualAdjust + EHCI_QUEUEHEAD);
+            WRITEMEM32_LE(&eqh->eqh_Self, (IPTR) (&eqh->eqh_NextQH) + hc->hc_PCIVirtualAdjust + EHCI_QUEUEHEAD);
             CONSTWRITEMEM32_LE(&eqh->eqh_NextTD, EHCI_TERMINATE);
             CONSTWRITEMEM32_LE(&eqh->eqh_AltNextTD, EHCI_TERMINATE);
             eqh++;
         } while(--cnt);
         eqh->eqh_Succ = NULL;
-        WRITEMEM32_LE(&eqh->eqh_Self, (ULONG) (&eqh->eqh_NextQH) + hc->hc_PCIVirtualAdjust + EHCI_QUEUEHEAD);
+        WRITEMEM32_LE(&eqh->eqh_Self, (IPTR) (&eqh->eqh_NextQH) + hc->hc_PCIVirtualAdjust + EHCI_QUEUEHEAD);
         CONSTWRITEMEM32_LE(&eqh->eqh_NextTD, EHCI_TERMINATE);
         CONSTWRITEMEM32_LE(&eqh->eqh_AltNextTD, EHCI_TERMINATE);
         memptr += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
@@ -1231,11 +1231,11 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         do
         {
             etd->etd_Succ = (etd + 1);
-            WRITEMEM32_LE(&etd->etd_Self, (ULONG) (&etd->etd_NextTD) + hc->hc_PCIVirtualAdjust);
+            WRITEMEM32_LE(&etd->etd_Self, (IPTR) (&etd->etd_NextTD) + hc->hc_PCIVirtualAdjust);
             etd++;
         } while(--cnt);
         etd->etd_Succ = NULL;
-        WRITEMEM32_LE(&etd->etd_Self, (ULONG) (&etd->etd_NextTD) + hc->hc_PCIVirtualAdjust);
+        WRITEMEM32_LE(&etd->etd_Self, (IPTR) (&etd->etd_NextTD) + hc->hc_PCIVirtualAdjust);
         memptr += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
 
         // empty async queue head
@@ -1342,7 +1342,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
 
         // we use the operational registers as RegBase.
-        hc->hc_RegBase = (APTR) ((ULONG) pciregbase + READREG16_LE(pciregbase, EHCI_CAPLENGTH));
+        hc->hc_RegBase = (APTR) ((IPTR) pciregbase + READREG16_LE(pciregbase, EHCI_CAPLENGTH));
         KPRINTF(10, ("RegBase = 0x%08lx\n", hc->hc_RegBase));
 
         KPRINTF(10, ("Resetting EHCI HC\n"));
@@ -1409,7 +1409,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT, 0);
 
-        WRITEREG32_LE(hc->hc_RegBase, EHCI_PERIODICLIST, (ULONG) pciGetPhysical(hc, hc->hc_EhciFrameList));
+        WRITEREG32_LE(hc->hc_RegBase, EHCI_PERIODICLIST, (IPTR) pciGetPhysical(hc, hc->hc_EhciFrameList));
         WRITEREG32_LE(hc->hc_RegBase, EHCI_ASYNCADDR, AROS_LONG2LE(hc->hc_EhciAsyncQH->eqh_Self));
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, EHSF_ALL_INTS);
 
