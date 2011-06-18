@@ -351,7 +351,8 @@ BOOL METHOD(ATI, Hidd_Gfx, SetCursorShape)
     }
     else
     {
-        ULONG       width, height, x;
+        IPTR        width, height;
+        ULONG       x;
         ULONG       save1=0, save2=0;
 
         volatile ULONG       *curimg = (ULONG*)((IPTR)sd->Card.CursorStart + (IPTR)sd->Card.FrameBuffer);
