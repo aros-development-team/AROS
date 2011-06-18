@@ -59,7 +59,7 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
     {
         atiBitMap *bm = OOP_INST_DATA(cl, o);
 
-        ULONG width, height, depth;
+        IPTR width, height, depth;
         UBYTE bytesPerPixel;
         ULONG fb;
 
@@ -73,7 +73,7 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
 
         OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
         OOP_GetAttr(o, aHidd_BitMap_Height, &height);
-        OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
+        OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
         fb = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 
@@ -119,8 +119,6 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
         	int __tmp;
         	for (__tmp=0; __tmp < height; __tmp++)
         		bm->addresses[__tmp] = (void*)(bm->framebuffer + sd->Card.FrameBuffer + __tmp*bm->pitch);
-
-            ULONG pitch64 = ((bm->pitch)) >> 6;
 
             switch(depth)
             {
@@ -189,8 +187,8 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
 
                 if (modeid != vHidd_ModeID_Invalid)
                 {
-                    ULONG pixel;
-                    ULONG hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
+                    IPTR  pixel;
+                    IPTR  hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
 
                     /* Get Sync and PixelFormat properties */
                     struct pHidd_Gfx_GetMode __getmodemsg = {
@@ -762,7 +760,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPixel)
         if (sd->Card.Busy)
         {
             LOCK_HW
-#warning TODO: NVSync(sd)
+/* TODO: NVSync(sd) */
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
@@ -808,7 +806,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPixel)
         if (sd->Card.Busy)
         {
             LOCK_HW
-#warning TODO: NVSync(sd)
+/* TODO: NVSync(sd) */
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
@@ -944,7 +942,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawEllipse)
         if (sd->Card.Busy)
         {
             LOCK_HW
-#warning TODO: NVSync(sd)
+/* TODO: NVSync(sd) */
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
@@ -1053,7 +1051,7 @@ HIDDT_Pixel METHOD(ATIOnBM, Hidd_BitMap, GetPixel)
         if (sd->Card.Busy)
         {
             LOCK_HW
-#warning TODO: NVSync(sd)
+/* TODO: NVSync(sd) */
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
@@ -1176,7 +1174,7 @@ void METHOD(ATIOnBM, Hidd_BitMap, BlitColorExpansion)
 
     }
     else
-    	OOP_DoSuperMethod(cl, o, msg);
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     UNLOCK_BITMAP
 
@@ -1209,7 +1207,7 @@ BOOL METHOD(ATIOnBM, Hidd_BitMap, ObtainDirectAccess)
         if (sd->Card.Busy)
         {
             LOCK_HW
-#warning TODO: NVSync(sd)
+/* TODO: NVSync(sd) */
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
@@ -1382,11 +1380,8 @@ VOID METHOD(ATIOffBM, Hidd_BitMap, PutAlphaImage)
 VOID METHOD(ATIOnBM, Hidd_BitMap, PutAlphaImage)
 {
     atiBitMap *bm = OOP_INST_DATA(cl, o);
-    BOOL done = FALSE;
 
     LOCK_BITMAP
-
-    IPTR VideoData = bm->framebuffer;
 
     /* Try to PutAlphaImage with 2D engine first */
     if (bm->fbgfx)
@@ -1394,7 +1389,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutAlphaImage)
     	ULONG x_add = (msg->modulo - msg->width * 4) >> 2;
     	UWORD height = msg->height;
     	UWORD bw = msg->width;
-        ULONG *pixarray = msg->pixels;
+        ULONG *pixarray = (ULONG *)msg->pixels;
         ULONG y = msg->y;
         ULONG x;
 
@@ -1812,10 +1807,9 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
 
 				default:
 				{
-					OOP_Object *dstpf;
-					OOP_Object *srcpf;
+					HIDDT_PixelFormat *dstpf, *srcpf;
 
-					srcpf = HIDD_Gfx_GetPixFmt(sd->AtiObject, msg->pixFmt);
+					srcpf = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(sd->AtiObject, msg->pixFmt);
 			        OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstpf);
 
 			        if (bm->bpp == 4)
@@ -1830,7 +1824,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
 			        		ULONG width = bw;
 			        		APTR _src = src;
 
-			        		HIDD_BM_ConvertPixels(o, &_src, srcpf, msg->modulo, &line, dstpf, msg->modulo, msg->width, 1, NULL);
+			        		HIDD_BM_ConvertPixels(o, &_src, srcpf, msg->modulo, (void **)&line, dstpf, msg->modulo, msg->width, 1, NULL);
 
 			        		line = (ULONG*)sd->cpuscratch;
 
@@ -1890,7 +1884,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
 			        		ULONG width = bw;
 			        		APTR _src = src;
 
-			        		HIDD_BM_ConvertPixels(o, &_src, srcpf, msg->modulo, &line, dstpf, msg->modulo, msg->width, 1, NULL);
+			        		HIDD_BM_ConvertPixels(o, &_src, srcpf, msg->modulo, (void **)&line, dstpf, msg->modulo, msg->width, 1, NULL);
 
 			        		line = (ULONG*)sd->cpuscratch;
 
@@ -1953,7 +1947,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
 			if (sd->Card.Busy)
 			{
 				LOCK_HW
-#warning TODO: NVSync(sd)
+/* TODO: NVSync(sd) */
 				RADEONWaitForIdleMMIO(sd);
 				UNLOCK_HW
 			}
@@ -2113,7 +2107,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
         if (sd->Card.Busy)
         {
             LOCK_HW
-#warning TODO: NVSync(sd)
+/* TODO: NVSync(sd) */
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
@@ -2278,7 +2272,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutTemplate)
         if (sd->Card.Busy)
         {
             LOCK_HW
-#warning TODO: NVSync(sd)
+/* TODO: NVSync(sd) */
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
@@ -2373,7 +2367,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPattern)
         if (sd->Card.Busy)
         {
             LOCK_HW
-#warning TODO: NVSync(sd)
+/* TODO: NVSync(sd) */
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }

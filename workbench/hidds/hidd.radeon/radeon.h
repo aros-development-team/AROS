@@ -267,7 +267,7 @@ struct Card {
     BOOL            cursorVisible;
     BOOL            IsAtomBios;
     BOOL            IsMobility;
-#warning TODO: Remove IsSecondary! Clone screens instead
+/* TODO: Remove IsSecondary! Clone screens instead */
     BOOL            IsSecondary;
     BOOL            HasSecondary;
     BOOL            R300CGWorkaround;

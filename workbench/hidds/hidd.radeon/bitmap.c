@@ -57,7 +57,7 @@ ULONG bfcnto(ULONG v)
 {
     ULONG const w = v - ((v >> 1) & 0x55555555);                    // temp
     ULONG const x = (w & 0x33333333) + ((w >> 2) & 0x33333333);     // temp
-    ULONG const c = ((x + (x >> 4) & 0xF0F0F0F) * 0x1010101) >> 24; // count
+    ULONG const c = ((x + ((x >> 4) & 0xF0F0F0F)) * 0x1010101) >> 24; // count
 
     return c;
 }
@@ -89,7 +89,8 @@ LONG bmffo(ULONG *bitmap, ULONG longs, LONG bitoffset)
 
     while (longs-- > 0) {
         if (*scan++ != 0) {
-            return (bfffo(*--scan,0) + ((scan - bitmap) << 5));
+            scan--;
+            return (bfffo(*scan,0) + ((scan - bitmap) << 5));
         }
     }
 
@@ -118,7 +119,8 @@ LONG bmffz(ULONG *bitmap, ULONG longs, LONG bitoffset)
 
     while (longs-- > 0) {
         if (*scan++ != 0xFFFFFFFF) {
-            return (bfffz(*--scan,0) + ((scan - bitmap) << 5));
+            scan--;
+            return (bfffz(*scan,0) + ((scan - bitmap) << 5));
         }
     }
 
@@ -342,7 +344,7 @@ void mh_Free(struct MemHeaderExt *mhe, APTR  mem,  ULONG  size)
 {
 }
 
-void *mh_AllocAbs(struct MemHeaderExt *mhe, APTR  mem,  ULONG  size)
+void *mh_AllocAbs(struct MemHeaderExt *mhe, ULONG size, APTR  mem)
 {
 	return NULL;
 }
@@ -354,7 +356,7 @@ void *mh_ReAlloc(struct MemHeaderExt *mhe, APTR  old,  ULONG  size)
 
 ULONG mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 {
-	struct ati_staticdata *sd = mhe->mhe_UserData;
+	struct ati_staticdata *sd = (APTR)mhe->mhe_UserData;
 	ULONG size = 0;
 
 //	Forbid();
@@ -365,7 +367,7 @@ ULONG mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 		size = sd->Card.FbUsableSize;
 	else if (flags & MEMF_LARGEST)
 	{
-		ULONG ptr, newptr;
+		ULONG ptr;
 
 		ptr = bmffz(sd->CardMemBmp, sd->CardMemSize, 0);
 
@@ -415,7 +417,7 @@ void BitmapInit(struct ati_staticdata *sd)
     	sd->managedMem.mhe_Avail = mh_Avail;
 
     	Disable();
-    	AddTail(&SysBase->MemList, &sd->managedMem);
+    	AddTail(&SysBase->MemList, (struct Node *)&sd->managedMem);
     	Enable();
     }
 

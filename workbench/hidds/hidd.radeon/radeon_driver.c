@@ -1099,6 +1099,7 @@ struct RADEONInt10Save {
     ULONG MPP_TB_CONFIG;
 };
 
+#if 0
 static void RADEONPreInt10Save(struct ati_staticdata *sd, void **pPtr)
 {
     ULONG CardTmp;
@@ -1161,6 +1162,7 @@ static void RADEONPostInt10Check(struct ati_staticdata *sd, void *ptr)
         OUTREG(RADEON_MPP_TB_CONFIG, CardTmp);
     }
 }
+#endif
 
 static void RADEONGetPanelInfo(struct ati_staticdata *sd)
 {
@@ -1169,7 +1171,6 @@ static void RADEONGetPanelInfo(struct ati_staticdata *sd)
 static void RADEONGetClockInfo(struct ati_staticdata *sd)
 {
     RADEONPLLRec *pll = &sd->Card.pll;
-    double min_dotclock;
 
     if (RADEONGetClockInfoFromBIOS(sd)) {
         if (pll->reference_div < 2) {
@@ -1320,10 +1321,9 @@ RADEONMonitorType RADEONDisplayDDCConnected(struct ati_staticdata *sd, RADEONDDC
 
 static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
 {
-    const char *s;
-    BOOL ignore_edid = TRUE;
-    int i = 0, second = 0, max_mt;
+    int i = 0, max_mt;
 
+#if DEBUG
     const char *MonTypeName[7] =
     {
         "AUTO",
@@ -1394,6 +1394,7 @@ static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
         "Digital",
         "Unsupported"
     };
+#endif
 
     max_mt = 5;
 
@@ -2228,7 +2229,7 @@ void DPMS(struct ati_staticdata *sd, HIDDT_DPMSLevel level)
                 if (sd->Card.Type >= R200) {
                     OUTREGP (RADEON_FP2_GEN_CNTL, 0, ~RADEON_FP2_DVO_EN);
                 }
-            } else if (sd->Card.Type == MT_CRT) {
+            } else if (sd->Card.MonType2 == MT_CRT) {
                 RADEONDacPowerSet(sd, FALSE, !sd->Card.ReversedDAC);
             }
         } else {
@@ -2268,8 +2269,6 @@ void DPMS(struct ati_staticdata *sd, HIDDT_DPMSLevel level)
 
 BOOL RADEONInit(struct ati_staticdata *sd)
 {
-    APTR int10_save = NULL;
-
     sd->Card.IsSecondary = FALSE;
 
 //    RADEONPreInt10Save(sd, &int10_save);
@@ -2479,7 +2478,7 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
 
 VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp)
 {
-    APTR ptr = (APTR)(bmp + sd->Card.FrameBuffer);
+//    APTR ptr = (APTR)(bmp + sd->Card.FrameBuffer);
     ULONG size = (((width * bpp + 63) & ~63) * height + 1023) & ~1023;
 
     LOCK_HW
