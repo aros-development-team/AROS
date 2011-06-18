@@ -226,7 +226,7 @@ _060_real_unlock_page:
 # (2) EXAMPLE PACKAGE ENTRY CODE #
 ##################################
 */
-
+#if 0
 _060_isp_unimp:
 	bral	I_CALL_TOP+0x80+0x00
 
@@ -250,7 +250,7 @@ _060_isp_cas_terminate:
 
 _060_isp_cas_restart:
 	bral	I_CALL_TOP+0x80+0x38
-
+#endif
 |############################################################################
 
 /*
@@ -262,31 +262,31 @@ _060_isp_cas_restart:
 */
 
 I_CALL_TOP:
-	.long	_060_real_chk-I_CALL_TOP
-	.long	_060_real_divbyzero-I_CALL_TOP
-	.long	_060_real_trace-I_CALL_TOP
-	.long	_060_real_access-I_CALL_TOP
-	.long	_060_isp_done-I_CALL_TOP
+	.long	_060_real_chk - I_CALL_TOP
+	.long	_060_real_divbyzero - I_CALL_TOP
+	.long	_060_real_trace - I_CALL_TOP
+	.long	_060_real_access - I_CALL_TOP
+	.long	_060_isp_done - I_CALL_TOP
 
-	.long	_060_real_cas-I_CALL_TOP
-	.long	_060_real_cas2-I_CALL_TOP
-	.long	_060_real_lock_page-I_CALL_TOP
-	.long	_060_real_unlock_page-I_CALL_TOP
+	.long	_060_real_cas - I_CALL_TOP
+	.long	_060_real_cas2 - I_CALL_TOP
+	.long	_060_real_lock_page - I_CALL_TOP
+	.long	_060_real_unlock_page - I_CALL_TOP
 
 	.long	0x00000000,0x00000000,0x00000000,0x00000000
 	.long	0x00000000,0x00000000,0x00000000
 
-	.long	_060_imem_read-I_CALL_TOP
-	.long	_060_dmem_read-I_CALL_TOP
-	.long	_060_dmem_write-I_CALL_TOP
-	.long	_060_imem_read_word-I_CALL_TOP
-	.long	_060_imem_read_long-I_CALL_TOP
-	.long	_060_dmem_read_byte-I_CALL_TOP
-	.long	_060_dmem_read_word-I_CALL_TOP
-	.long	_060_dmem_read_long-I_CALL_TOP
-	.long	_060_dmem_write_byte-I_CALL_TOP
-	.long	_060_dmem_write_word-I_CALL_TOP
-	.long	_060_dmem_write_long-I_CALL_TOP
+	.long	_060_imem_read - I_CALL_TOP
+	.long	_060_dmem_read - I_CALL_TOP
+	.long	_060_dmem_write - I_CALL_TOP
+	.long	_060_imem_read_word - I_CALL_TOP
+	.long	_060_imem_read_long - I_CALL_TOP
+	.long	_060_dmem_read_byte - I_CALL_TOP
+	.long	_060_dmem_read_word - I_CALL_TOP
+	.long	_060_dmem_read_long - I_CALL_TOP
+	.long	_060_dmem_write_byte - I_CALL_TOP
+	.long	_060_dmem_write_word - I_CALL_TOP
+	.long	_060_dmem_write_long - I_CALL_TOP
 
 	.long	0x00000000
 	.long	0x00000000,0x00000000,0x00000000,0x00000000

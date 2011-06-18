@@ -7,6 +7,8 @@
 
 #include "m680x0_intern.h"
 
+extern void sp060_init(void);
+
 static int M680x0Init(struct M680x0Base *M680x0Base)
 {
     if (!(SysBase->AttnFlags & (AFF_68040 | AFF_68060)))
@@ -17,6 +19,7 @@ static int M680x0Init(struct M680x0Base *M680x0Base)
     	return FALSE; /* no FPU, don't bother with missing instruction emulation */
 
     /* initialize emulation here */
+    sp060_init();
 
     /* emulation installed, full 68881/68882 now supported  */
     SysBase->AttnFlags |= AFF_68881 | AFF_68882;

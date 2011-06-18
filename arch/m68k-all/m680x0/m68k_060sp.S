@@ -1,7 +1,102 @@
 
 #include "aros/m68k/asm.h"
 
+	.text
+
 #include "060sp/copyright.S"
+
+	.balign 4
+
+	.globl sp060_init
+sp060_init:
+	movem.l	%a5/%a6,%sp@-
+	move.l	4.w,%a6
+	lea		%pc@(super),%a5
+	jsr		%a6@(-0x1e)
+	movem.l	%sp@+,%a5/%a6
+	rts
+super:
+	movec	%vbr,%a0
+	/* floating point */
+	lea		%pc@(FP_CALL_TOP+0x80+0x30),%a1	// _060_fpsp_fline
+	move.l	11*4(%a0),56*4(%a0)		/* save old f-line */
+	move.l	%a1,11*4(%a0)
+	lea		%pc@(FP_CALL_TOP+0x80+0x00),%a1 // _060_fpsp_snan
+	move.l	%a1,54*4(%a0)
+	lea		%pc@(FP_CALL_TOP+0x80+0x08),%a1 // _060_fpsp_operr
+	move.l	%a1,52*4(%a0)
+	lea		%pc@(FP_CALL_TOP+0x80+0x10),%a1 // _060_fpsp_ovfl
+	move.l	%a1,53*4(%a0)
+	lea		%pc@(FP_CALL_TOP+0x80+0x18),%a1 // _060_fpsp_unfl
+	move.l	%a1,51*4(%a0)
+	lea		%pc@(FP_CALL_TOP+0x80+0x20),%a1 // _060_fpsp_dz
+	move.l	%a1,50*4(%a0)
+	lea		%pc@(FP_CALL_TOP+0x80+0x28),%a1 // _060_fpsp_inex
+	move.l	%a1,49*4(%a0)
+	lea		%pc@(FP_CALL_TOP+0x80+0x38),%a1	// _060_fpsp_unsupp
+	move.l	%a1,55*4(%a0)
+	lea		%pc@(FP_CALL_TOP+0x80+0x40),%a1	// _060_fpsp_effadd
+	move.l	%a1,60*4(%a0)
+	/* integer */
+	lea		%pc@(I_CALL_TOP+0x80+0x00),%a1	// _060_isp_unimp
+	move.l	%a1,61*4(%a0)
+	
+	rte
+
+#if 0
+_060_isp_unimp:
+	bral	I_CALL_TOP+0x80+0x00
+
+_060_isp_cas:
+	bral	I_CALL_TOP+0x80+0x08
+
+_060_isp_cas2:
+	bral	I_CALL_TOP+0x80+0x10
+
+_060_isp_cas_finish:
+	bral	I_CALL_TOP+0x80+0x18
+
+_060_isp_cas2_finish:
+	bral	I_CALL_TOP+0x80+0x20
+
+_060_isp_cas_inrange:
+	bral	I_CALL_TOP+0x80+0x28
+
+_060_isp_cas_terminate:
+	bral	I_CALL_TOP+0x80+0x30
+
+_060_isp_cas_restart:
+	bral	I_CALL_TOP+0x80+0x38
+#endif
+
+#if 0
+_060_fpsp_snan:
+	bral	FP_CALL_TOP+0x80+0x00
+
+_060_fpsp_operr:
+	bral	FP_CALL_TOP+0x80+0x08
+
+_060_fpsp_ovfl:
+	bral	FP_CALL_TOP+0x80+0x10
+
+_060_fpsp_unfl:
+	bral	FP_CALL_TOP+0x80+0x18
+
+_060_fpsp_dz:
+	bral	FP_CALL_TOP+0x80+0x20
+
+_060_fpsp_inex:
+	bral	FP_CALL_TOP+0x80+0x28
+
+_060_fpsp_fline:
+	bral	FP_CALL_TOP+0x80+0x30
+
+_060_fpsp_unsupp:
+	bral	FP_CALL_TOP+0x80+0x38
+
+_060_fpsp_effadd:
+	bral	FP_CALL_TOP+0x80+0x40
+#endif
 
 jmp_exception:
 	/* exception stack frame is ready, jump to correct exception vector */
@@ -15,6 +110,16 @@ jmp_exception:
 	move.l	%d1,%sp@(8)
 	movem.l	%sp@+,%d0-%d1
 	rts
+
+jmp_exception_old_fline:
+	clr.l	%sp@-
+	move.l	%a0,%sp@-
+	movec	%vbr,%a0
+	/* 0xE0 = old f-line storage */
+	move.l	%a0@(56*4),%sp@(4)
+	move.l	%sp@+,%a0
+	rts
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # MOTOROLA MICROPROCESSOR & MEMORY TECHNOLOGY GROUP
