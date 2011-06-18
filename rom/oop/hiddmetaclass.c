@@ -56,7 +56,7 @@ struct hiddmeta_inst
 	struct if_info
 	{
 	    /* The globally unique ID of the interface */
-	    STRPTR interface_id;
+	    CONST_STRPTR interface_id;
 	    ULONG num_methods;
 	    ULONG mtab_offset;
 	    
@@ -171,7 +171,7 @@ static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_a
 	    /* Iterate through all parent interfaces, copying relevant info
 	       into our own dispatch tables.
 	    */
-	    STRPTR interface_id;
+	    CONST_STRPTR interface_id;
 	    ULONG num_methods;
 	    IPTR iterval = 0UL;
 	    struct IFMethod *ifm;
@@ -508,7 +508,7 @@ static VOID get_info_on_ifs(OOP_Class *super, const struct OOP_InterfaceDescr *i
 			    ULONG *total_num_methods_ptr, ULONG *total_num_ifs_ptr, struct IntOOPBase *OOPBase)
 {
     ULONG num_methods;
-    STRPTR interface_id;
+    CONST_STRPTR interface_id;
     IPTR iterval = 0UL;
     EnterFunc(bug("get_info_on_ifs(super=%s, ifdescr=%p, OOPBase=%p\n",
     	super->ClassNode.ln_Name, ifdescr, OOPBase));

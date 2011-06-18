@@ -69,7 +69,7 @@ IDs at a time */
 
 struct IDDescr
 {
-    STRPTR ID;
+    CONST_STRPTR ID;
     ULONG *Storage;
 };
 
@@ -117,13 +117,13 @@ OOP_Class *init_interfaceclass(struct Library *OOPBase);
 OOP_Class *init_hiddmetaclass(struct IntOOPBase *OOPBase);
 
 /* support.c */
-BOOL hasinterface(OOP_Class *cl, STRPTR interface_id);
-struct IFMethod *findinterface(OOP_Class *cl, STRPTR interface_id);
-struct IFMethod *findmethod(OOP_Class *cl, STRPTR interface_id, ULONG method_offset);
-BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
-BOOL init_mi_methodbase(STRPTR interface_id, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
-VOID release_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase);
-VOID obtain_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase);
+BOOL hasinterface(OOP_Class *cl, CONST_STRPTR interface_id);
+struct IFMethod *findinterface(OOP_Class *cl, CONST_STRPTR interface_id);
+struct IFMethod *findmethod(OOP_Class *cl, CONST_STRPTR interface_id, ULONG method_offset);
+BOOL init_methodbase(CONST_STRPTR interface_id, ULONG methodbase, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
+BOOL init_mi_methodbase(CONST_STRPTR interface_id, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
+VOID release_idbucket(CONST_STRPTR interface_id, struct IntOOPBase *OOPBase);
+VOID obtain_idbucket(CONST_STRPTR interface_id, struct IntOOPBase *OOPBase);
 /*****************
 **  Structures  **
 *****************/
@@ -135,7 +135,7 @@ VOID obtain_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase);
 struct iid_bucket
 {
     struct iid_bucket *next;
-    STRPTR interface_id;
+    STRPTR interface_id;	/* Not CONST, since it is expected to be freed */
     ULONG  methodbase;
     ULONG  attrbase;
     ULONG refcount;
@@ -154,7 +154,7 @@ struct IFBucket
 {
     struct IFBucket *Next;
     IPTR InterfaceID;
-    STRPTR GlobalInterfaceID;
+    CONST_STRPTR GlobalInterfaceID;
     struct IFMethod *MethodTable;
     ULONG NumMethods;
 };

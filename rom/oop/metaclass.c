@@ -41,7 +41,7 @@ VOID freebucket(struct Bucket *b, struct IntOOPBase *OOPBase);
 struct Bucket *copybucket(struct Bucket *old_b, APTR data, struct IntOOPBase *OOPBase);
 
 /* Internal */
-static struct IFBucket *createbucket(STRPTR interface_id, ULONG local_id ,ULONG num_methods);
+static struct IFBucket *createbucket(CONST_STRPTR interface_id, ULONG local_id ,ULONG num_methods);
 static BOOL expandbucket(struct IFBucket *b, ULONG num_methods);
 
 static ULONG calc_ht_entries(struct ifmeta_inst *cl ,OOP_Class *super,
@@ -193,7 +193,7 @@ static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_all
 	    /* Copy parent interfaces into the new class */
 	    struct IFMethod *superif;
 	    struct P_meta_iterateifs ii_msg;
-	    STRPTR interface_id;
+	    CONST_STRPTR interface_id;
 	    ULONG num_methods;
 
 	    /* must be initialized to zero */
@@ -657,7 +657,7 @@ static ULONG calc_ht_entries(struct ifmeta_inst *cl ,OOP_Class *super,
 **  createbucket()  **
 *********************/
 /* Creates a new interface bucket */
-static struct IFBucket *createbucket(STRPTR interface_id, ULONG local_id, ULONG num_methods)
+static struct IFBucket *createbucket(CONST_STRPTR interface_id, ULONG local_id, ULONG num_methods)
 {
     /* Allocate bucket */
     struct IFBucket *ifb;

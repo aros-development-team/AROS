@@ -190,7 +190,7 @@
 	aoMeta_ID
 
     SYNOPSIS
-        [I..], STRPTR
+        [I..], CONST_STRPTR
 
     LOCATION
 	Meta
@@ -206,7 +206,7 @@
 	aoMeta_SuperID
 
     SYNOPSIS
-    	[I..], STRPTR
+    	[I..], CONST_STRPTR
 
     LOCATION
 	Meta
@@ -268,7 +268,7 @@
 	struct InterfaceDescr
 	{
     		struct MethodDescr *MethodTable;
-    		STRPTR InterfaceID;
+    		CONST_STRPTR InterfaceID;
     		ULONG NumMethods;
 	};
 
@@ -347,7 +347,7 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     struct metadata *data;
 
     struct OOP_InterfaceDescr *ifdescr = NULL;
-    STRPTR superid = NULL, clid = "-- private class -- ";
+    CONST_STRPTR superid = NULL, clid = "-- private class -- ";
     struct metadata *superptr = NULL;
     struct TagItem *tag, *tstate;
     ULONG instsize = (ULONG)-1L;
@@ -375,7 +375,7 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    
 	    case aoMeta_SuperID:
 		/* ID of superclass */
-		superid = (STRPTR)tag->ti_Data;
+		superid = (CONST_STRPTR)tag->ti_Data;
 	        D(bug("Got superID: %s\n", superid));
 		break;
 		    
@@ -387,7 +387,7 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		    
 	    case aoMeta_ID:
 		/* The new class' ID */
-		clid = (STRPTR)tag->ti_Data;
+		clid = (CONST_STRPTR)tag->ti_Data;
 	        D(bug("Got classID: %s\n", clid));
 		break;
 		    
@@ -502,7 +502,7 @@ static VOID basemeta_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct metadata *data = OOP_INST_DATA(cl, o);
     IPTR iterval = 0UL;
-    STRPTR interface_id = NULL;
+    CONST_STRPTR interface_id = NULL;
     ULONG num_methods = 0UL;
     
     if (data->public.ClassNode.ln_Name)

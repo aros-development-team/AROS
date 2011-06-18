@@ -47,7 +47,7 @@ VOID meta_freedisptabs(OOP_Object *o)
 }
 
 
-struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, STRPTR *interface_id_ptr, ULONG *num_methods_ptr)
+struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, CONST_STRPTR *interface_id_ptr, ULONG *num_methods_ptr)
 {
     STATIC_MID;
     struct P_meta_iterateifs p;
@@ -63,7 +63,7 @@ struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, STRPTR *inter
 	
 }
 
-struct IFMethod *meta_getifinfo(OOP_Object *o, STRPTR interface_id, ULONG *num_methods_ptr)
+struct IFMethod *meta_getifinfo(OOP_Object *o, CONST_STRPTR interface_id, ULONG *num_methods_ptr)
 {
     STATIC_MID;
     struct P_meta_getifinfo p;

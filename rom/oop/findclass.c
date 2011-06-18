@@ -22,7 +22,7 @@
 	AROS_LH1(APTR, OOP_FindClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, classID, A0),
+	AROS_LHA(CONST_STRPTR, classID, A0),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 22, OOP)

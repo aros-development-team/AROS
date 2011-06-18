@@ -56,7 +56,7 @@ BOOL GetIDs(struct IDDescr *idDescr, struct IntOOPBase *OOPBase)
 **  hasinterface()  **
 *********************/
 
-BOOL hasinterface(OOP_Class *cl, STRPTR interface_id)
+BOOL hasinterface(OOP_Class *cl, CONST_STRPTR interface_id)
 {
     ULONG num_methods = 0UL;
     return  (meta_getifinfo((OOP_Object *)cl, interface_id, &num_methods) != NULL) ? TRUE : FALSE;
@@ -65,7 +65,7 @@ BOOL hasinterface(OOP_Class *cl, STRPTR interface_id)
 /**********************
 **  findinterface()  **
 **********************/
-struct IFMethod *findinterface(OOP_Class *cl, STRPTR interface_id)
+struct IFMethod *findinterface(OOP_Class *cl, CONST_STRPTR interface_id)
 {
     ULONG num_methods = 0UL;
     
@@ -78,7 +78,7 @@ struct IFMethod *findinterface(OOP_Class *cl, STRPTR interface_id)
 /* Intializes a methodbase to be used for the classes supporting multiple
    interfaces (MI), ie. objects of th IFMeta class.
 */
-BOOL init_mi_methodbase(STRPTR interface_id, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase)
+BOOL init_mi_methodbase(CONST_STRPTR interface_id, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase)
 {
    ULONG mbase;
    BOOL success;
@@ -107,7 +107,7 @@ BOOL init_mi_methodbase(STRPTR interface_id, ULONG *methodbase_ptr, struct IntOO
    to the ID hashtable
 */
 
-BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase)
+BOOL init_methodbase(CONST_STRPTR interface_id, ULONG methodbase, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase)
 {
     BOOL inited = FALSE;
     struct iid_bucket *idb = NULL;
@@ -180,7 +180,7 @@ BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_pt
 }
 
 /* Release a interface bucket */
-VOID release_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase)
+VOID release_idbucket(CONST_STRPTR interface_id, struct IntOOPBase *OOPBase)
 {
     /* Look up ID */
     struct iid_bucket *idb;
@@ -213,7 +213,7 @@ VOID release_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase)
    Calling this function MUST ONLY be used for IFs
    that are known to exist in the IID table
 */
-VOID obtain_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase)
+VOID obtain_idbucket(CONST_STRPTR interface_id, struct IntOOPBase *OOPBase)
 {
     struct iid_bucket *idb;
     struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
