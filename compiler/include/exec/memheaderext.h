@@ -19,7 +19,7 @@ struct MemHeaderExt
     /* Let an external 'driver' manage this memory
        region opaquely.  */
        
-    APTR  * mhe_UserData;
+    APTR  mhe_UserData;
     
     APTR  (* mhe_Alloc)   (struct MemHeaderExt *, ULONG size, ULONG *flags);
     VOID  (* mhe_Free)    (struct MemHeaderExt *, APTR  mem,  ULONG  size);
