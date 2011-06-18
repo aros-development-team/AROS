@@ -77,7 +77,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 	NEWLIST(&unit->tdu_Listeners);
 
 	/* Alloc memory for track buffering */
-	unit->td_DMABuffer=AllocMem(DP_SECTORS*512,MEMF_CLEAR|MEMF_CHIP);
+	unit->td_DMABuffer=AllocMem(DP_SECTORS*512,MEMF_CLEAR | MEMF_CHIP | MEMF_24BITDMA);
 
 	if (!unit->td_DMABuffer)
 	{
@@ -90,7 +90,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 	{
 	    APTR buffer;
 
-	    buffer = AllocMem(DP_SECTORS*512, MEMF_CLEAR | MEMF_CHIP);
+	    buffer = AllocMem(DP_SECTORS*512, MEMF_CLEAR | MEMF_CHIP | MEMF_24BITDMA);
 	    if (!buffer)
 	    {
 		Alert(AT_DeadEnd | AO_TrackDiskDev | AG_NoMemory);
