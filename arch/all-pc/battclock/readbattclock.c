@@ -68,7 +68,7 @@
     AROS_LIBFUNC_INIT
 
     struct ClockData date;        
-#warning HACK: asm statements do not work with a single variable
+// HACK: asm statements do not work with a single variable
     struct __myyear { UWORD year; } myyear;
 //    UWORD  year;
     ULONG  secs;
