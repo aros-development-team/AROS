@@ -119,6 +119,12 @@ AROS_LH1(void, ConfigChain,
 	if (baseAddr == 0) {
 		// called by strap
 		romtaginit(ExpansionBase);
+
+		// enable 68040+ data caches, not the right place but
+		// we can't enable them until all boot roms have been
+		// initialized and memory detections done
+		if (SysBase->AttnFlags & (AFF_68040 | AFF_68060))
+			CacheControl(CACRF_EnableD, CACRF_EnableD);
 		return;
 	}
 	/* Try to guess if we have Z3 based machine.

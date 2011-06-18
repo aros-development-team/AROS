@@ -148,12 +148,6 @@ static AROS_UFH3 (APTR, Init,
 
    callroms(eb, DAC_CONFIGTIME);
 
-   // enable 68040+ data caches, not the right place but
-   // we can't enable them until all boot roms have been
-   // initialized and memory detections done
-   if (SysBase->AttnFlags & (AFF_68040 | AFF_68060))
-	CacheControl(CACRF_EnableD, CACRF_EnableD);
-
    AROS_USERFUNC_EXIT
 
    return NULL;
