@@ -89,7 +89,7 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         {aHidd_PixFmt_BitMapType,       0       }, /* 15 */
         {TAG_DONE,                      0UL     }
     };
-#warning "TODO: Probe available sync modes"
+    /* TODO: Probe available sync modes */
 #define VMWARESVGA_SYNCMODES   5
     sync_modes = VMWARESVGA_SYNCMODES;
     sync_count = sync_modes * XSD(cl)->data.displaycount;
@@ -282,7 +282,7 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct
             if (stdpf == vHidd_StdPixFmt_Unknown)
             {
                 OOP_Object *friend;
-                friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, NULL, msg->attrList);
+                friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, (IPTR)NULL, msg->attrList);
                 if (friend != NULL)
                 {
                     OOP_Class *friend_class = NULL;
@@ -513,10 +513,13 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
         OOP_Object *colmap;
         HIDDT_StdPixFmt pixfmt;
         HIDDT_Color color;
-        OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &data->mouse.width);
-        OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &data->mouse.height);
+        IPTR tmp;
+        OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &tmp);
+        data->mouse.width = tmp;
+        OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &tmp);
+        data->mouse.height = tmp;
         OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (IPTR *)&pfmt);
-        OOP_GetAttr(pfmt, aHidd_PixFmt_StdPixFmt, &pixfmt);
+        OOP_GetAttr(pfmt, aHidd_PixFmt_StdPixFmt, (IPTR *)&pixfmt);
         OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
         data->mouse.oopshape = msg->shape;
 #if 0
@@ -591,15 +594,13 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
 
 BOOL VMWareSVGA__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
-    struct Box box;
-
     XSD(cl)->mouse.x = msg->x;
     XSD(cl)->mouse.y = msg->y;
     if (XSD(cl)->mouse.x<0)
         XSD(cl)->mouse.x=0;
     if (XSD(cl)->mouse.y<0)
         XSD(cl)->mouse.y=0;
-#warning "check visible width/height"
+    /* TODO: check visible width/height */
     moveCursorVMWareSVGA(&XSD(cl)->data, msg->x, msg->y);
     return TRUE;
 }

@@ -67,8 +67,6 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         OOP_Object *pf;
         IPTR width, height, depth;
         HIDDT_ModeID modeid;
-        OOP_Object *sync;
-        ULONG pixelc;
 
         data = OOP_INST_DATA(cl, o);
         /* clear all data  */
@@ -122,8 +120,6 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct BitmapData *data = OOP_INST_DATA(cl, o);
-
     EnterFunc(bug("VMWareSVGA.BitMap::Dispose()\n")); 
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("VMWareSVGA.BitMap::Dispose");

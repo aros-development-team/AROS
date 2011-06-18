@@ -54,7 +54,7 @@ VOID initVMWareSVGAFIFO(struct HWData *data)
 
     vmwareWriteReg(data, SVGA_REG_CONFIG_DONE, 0);		//Stop vmware from reading the fifo
 
-    fifo = data->mmiobase = vmwareReadReg(data, SVGA_REG_MEM_START);
+    fifo = data->mmiobase = (APTR)(IPTR)vmwareReadReg(data, SVGA_REG_MEM_START);
     data->mmiosize = vmwareReadReg(data, SVGA_REG_MEM_SIZE) & ~3;
 
     if (data->capabilities & SVGA_CAP_EXTENDED_FIFO)
@@ -76,7 +76,7 @@ VOID syncVMWareSVGAFIFO(struct HWData *data)
 {
     vmwareWriteReg(data, SVGA_REG_SYNC, 1);
     while (vmwareReadReg(data, SVGA_REG_BUSY) != 0);
-#warning "maybe wait (delay) some time"
+    /* FIXME: maybe wait (delay) some time */
 }
 
 VOID writeVMWareSVGAFIFO(struct HWData *data, ULONG val)
@@ -102,7 +102,6 @@ VOID writeVMWareSVGAFIFO(struct HWData *data, ULONG val)
 
 BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
 {
-    ULONG *ba;
     ULONG id;
 
     id = getVMWareSVGAID(data);
@@ -145,7 +144,7 @@ BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
     }
 
     data->vramsize = vmwareReadReg(data, SVGA_REG_VRAM_SIZE);
-    data->vrambase = vmwareReadReg(data, SVGA_REG_FB_START);
+    data->vrambase = (APTR)(IPTR)vmwareReadReg(data, SVGA_REG_FB_START);
     data->pseudocolor = vmwareReadReg(data, SVGA_REG_PSEUDOCOLOR);
 
     D(bug("[VMWareSVGA] Init: VRAM at 0x%08x size %d\n",data->vrambase, data->vramsize));
@@ -230,12 +229,11 @@ VOID defineCursorVMWareSVGA(struct HWData *data, struct MouseData *mouse)
 {
     int i;
     ULONG *cshape = mouse->shape;
-    struct Box box;
     ULONG andmask[SVGA_PIXMAP_SIZE(mouse->width, mouse->height, data->bitsperpixel)];
-    ULONG *a;
-    ULONG *b;
+    ULONG *a, *b;
+    UWORD *aw, *bw;
 
-#warning "convert mouse shape to current depth"
+    /* TODO: convert mouse shape to current depth */
     writeVMWareSVGAFIFO(data, SVGA_CMD_DEFINE_CURSOR);
     writeVMWareSVGAFIFO(data, 1);
     writeVMWareSVGAFIFO(data, 0); /* hot x value */
@@ -246,16 +244,19 @@ VOID defineCursorVMWareSVGA(struct HWData *data, struct MouseData *mouse)
     writeVMWareSVGAFIFO(data, data->bitsperpixel); /* bits per pixel */
     b = cshape;
     a = andmask;
+    aw = (UWORD *)a;
+    bw = (UWORD *)b;
     for (i = 0; i<(SVGA_PIXMAP_SIZE(mouse->width, mouse->height, data->bitsperpixel)*2);i++)
     {
-        *((UWORD *)a) = *((UWORD *)b) ? 0 : ~0;
+        *aw = *bw ? 0 : ~0;
         
-        a = ((UWORD *)a) + 1;
-        b = ((UWORD *)b) + 1;
+        aw++;
+        bw++;
     }
     a = andmask;
-    for (i = 0; i<SVGA_PIXMAP_SIZE(mouse->width, mouse->height, data->bitsperpixel);i++)
+    for (i = 0; i<SVGA_PIXMAP_SIZE(mouse->width, mouse->height, data->bitsperpixel);i++) {
         writeVMWareSVGAFIFO(data, *a++);
+    }
     for (i = 0; i<SVGA_PIXMAP_SIZE(mouse->width, mouse->height, data->bitsperpixel);i++)
         writeVMWareSVGAFIFO(data, *cshape++);
     syncVMWareSVGAFIFO(data);

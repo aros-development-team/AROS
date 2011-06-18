@@ -130,14 +130,14 @@ failure:
     D(bug("[VMWareSVGA] Init: No VMWare SVGA Adaptor Found\n"));
     if (HiddPCIDeviceAttrBase != 0)
     {
-        OOP_ReleaseAttrBase(HiddPCIDeviceAttrBase);
+        OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
         HiddPCIDeviceAttrBase = 0;
     }
 
     if (xsd->pcihidd != NULL)
     {
         OOP_DisposeObject(xsd->pcihidd);
-        xsd->pcihidd;
+        xsd->pcihidd = NULL;
     }
 
     OOP_ReleaseAttrBases(abd);
