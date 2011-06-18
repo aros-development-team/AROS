@@ -84,7 +84,7 @@ asm (".code16           \n"
  */
 static void leave_32bit_mode()
 {
-    unsigned int v1, v2, v3, v4;
+    unsigned int v1, v2;
     asm volatile ("lgdt %0"::"m"(smp_gdt64_sel));
 
     asm volatile ("outb %b0,%w1"::"a"('b'),"Nd"(0x3f8));

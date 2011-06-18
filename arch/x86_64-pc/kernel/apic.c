@@ -30,6 +30,12 @@
 
 extern int kernel_cstart(struct TagItem *msg, void *entry);
 
+#if 1
+/*  FIXME: udelay doesn't work - fix! */
+void udelay(LONG usec)
+{
+}
+#else
 static ULONG usec2tick(ULONG usec)
 {
     ULONG ret, timer_rpr = 3599597124UL;
@@ -39,7 +45,6 @@ static ULONG usec2tick(ULONG usec)
  
 void udelay(LONG usec)
 {
-/*  FIXME: udelay doesn't work - fix!
 
     int tick_start, tick;
     usec = usec2tick(usec);
@@ -57,9 +62,9 @@ void udelay(LONG usec)
         usec -= (tick_start - tick);
         if (tick > tick_start) usec -= 0x10000;
         tick_start = tick;
-    }*/
+    }
 }
-
+#endif
 
 /**********************************************************
                             HOOKS

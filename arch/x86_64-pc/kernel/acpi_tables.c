@@ -136,6 +136,7 @@ static const struct acpi_sdtsigids *core_ACPIGetSDTSigFromID(int _id)
     return NULL;
 };
 
+#if 0
 static const struct acpi_sdtsigids *core_ACPIGetSDTSigFromSTR(char *_id_str)
 {
     int id;
@@ -150,6 +151,7 @@ static const struct acpi_sdtsigids *core_ACPIGetSDTSigFromSTR(char *_id_str)
 
     return NULL;
 };
+#endif
 
 #ifdef DUMP_TABLES
 
@@ -275,7 +277,7 @@ int core_ACPITableMADTFamParse(int id, unsigned long madt_size, int entry_id, st
             count++;
 
             entry_handler->header = entry;
-            AROS_UFC1(IPTR, entry_handler->h_Entry, AROS_UFCA(struct Hook *, entry_handler, A0));
+            AROS_UFC1(IPTR, entry_handler->h_Entry, AROS_UFCA(struct Hook *, (struct Hook *)entry_handler, A0));
         }
         entry = (struct acpi_table_entry_header *)((unsigned long)entry + entry->length);
     }
@@ -307,7 +309,7 @@ int core_ACPITableParse(int id, struct acpi_table_hook * header_handler)
 
         header_handler->phys_addr = header_tmp->pa;
         header_handler->size = header_tmp->size;
-        AROS_UFC1 ( IPTR, header_handler->h_Entry, AROS_UFCA(struct Hook *, header_handler, A0) );
+        AROS_UFC1 ( IPTR, header_handler->h_Entry, AROS_UFCA(struct Hook *, (struct Hook *)header_handler, A0) );
         
         count++;
     }
@@ -539,37 +541,37 @@ ULONG core_ACPIInitialise(struct PlatformData *pdata)
         .data    = pdata
     };
 
-    struct acpi_table_hook ACPI_TableParse_LAPIC_Addr_Ovr_hook =
+    struct acpi_madt_entry_hook ACPI_TableParse_LAPIC_Addr_Ovr_hook =
     {
         .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
         .data    = pdata
     };
 
-    struct acpi_table_hook ACPI_TableParse_LAPIC_hook =
+    struct acpi_madt_entry_hook ACPI_TableParse_LAPIC_hook =
     {
         .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Parse,
         .data    = pdata
     };
 
-    struct acpi_table_hook ACPI_TableParse_LAPIC_NMI_hook =
+    struct acpi_madt_entry_hook ACPI_TableParse_LAPIC_NMI_hook =
     {
         .h_Entry = (APTR)ACPI_hook_Table_LAPIC_NMI_Parse,
         .data    = pdata
     };
 
-    struct acpi_table_hook ACPI_TableParse_IOAPIC_hook =
+    struct acpi_madt_entry_hook ACPI_TableParse_IOAPIC_hook =
     {
         .h_Entry = (APTR)ACPI_hook_Table_IOAPIC_Parse,
         .data    = pdata
     };
 
-    struct acpi_table_hook ACPI_TableParse_Int_Src_Ovr_hook =
+    struct acpi_madt_entry_hook ACPI_TableParse_Int_Src_Ovr_hook =
     {
         .h_Entry = (APTR)ACPI_hook_Table_Int_Src_Ovr_Parse,
         .data    = pdata
     };
 
-    struct acpi_table_hook ACPI_TableParse_NMI_Src_hook =
+    struct acpi_madt_entry_hook ACPI_TableParse_NMI_Src_hook =
     {
         .h_Entry = (APTR)ACPI_hook_Table_NMI_Src_Parse,
         .data    = pdata
@@ -611,13 +613,13 @@ ULONG core_ACPIInitialise(struct PlatformData *pdata)
     bug("[Kernel] core_ACPIInitialise: ACPI found %d APICs, System Total APICs: %d\n", result, pdata->kb_APIC_Count);
     if ( !result )
     { 
-#warning "TODO: Cleanup to allow fallback to MPS.."
+        /* TODO: Cleanup to allow fallback to MPS.. */
         bug("[Kernel] core_ACPIInitialise: ERROR - No LAPIC entries present\n");
         return 0;
     }
     else if (result < 0)
     {
-#warning "TODO: Cleanup to allow fallback to MPS.."
+        /* TODO: Cleanup to allow fallback to MPS.. */
         bug("[Kernel] core_ACPIInitialise: ERROR - Error parsing LAPIC entry\n");
         return result;
     }
@@ -626,7 +628,7 @@ ULONG core_ACPIInitialise(struct PlatformData *pdata)
     D(bug("[Kernel] core_ACPIInitialise: core_ACPITableMADTParse(ACPI_MADT_LAPIC_NMI) returned %p\n", result));
     if ( result < 0 )
     {
-#warning "TODO: Cleanup to allow fallback to MPS.."
+        /* TODO: Cleanup to allow fallback to MPS.. */
         bug("[Kernel] core_ACPIInitialise: ERROR - Error parsing LAPIC NMI entry\n");
         return result;
     }
@@ -650,14 +652,14 @@ ULONG core_ACPIInitialise(struct PlatformData *pdata)
     }
 
     /* Build a default routing table for legacy (ISA) interrupts. */
-#warning "TODO: implement legacy irq config.."
+    /* TODO: implement legacy irq config.. */
     bug("[Kernel] core_ACPIInitialise: Configuring Legacy IRQs .. Skipped (UNIMPLEMENTED) ..\n");
 
     result = core_ACPITableMADTParse(ACPI_MADT_INT_SRC_OVR, &ACPI_TableParse_Int_Src_Ovr_hook);
     bug("[Kernel] core_ACPIInitialise: core_ACPITableMADTParse(ACPI_MADT_INT_SRC_OVR) returned %p\n", result);
     if (result < 0)
     {
-#warning "TODO: Cleanup to allow fallback to MPS.."
+        /* TODO: Cleanup to allow fallback to MPS.. */
         bug("[Kernel] core_ACPIInitialise: ERROR - Error parsing interrupt source overrides entry\n");
         return result;
     }
@@ -666,7 +668,7 @@ ULONG core_ACPIInitialise(struct PlatformData *pdata)
     bug("[Kernel] core_ACPIInitialise: core_ACPITableMADTParse(ACPI_MADT_NMI_SRC) returned %p\n", result);
     if (result < 0)
     {
-#warning "TODO: Cleanup to allow fallback to MPS.."
+        /* TODO: Cleanup to allow fallback to MPS.. */
         bug("[Kernel] core_ACPIInitialise: ERROR - Error parsing NMI SRC entry\n");
         return result;
     }
@@ -678,7 +680,7 @@ ULONG core_ACPIInitialise(struct PlatformData *pdata)
     {
         pdata->kb_SMP_Config = 1;
         bug("[Kernel] core_ACPIInitialise: SMP APICs Configured from ACPI\n");
-#warning "TODO: implement check for clustered apic's.."
+        /* TODO: implement check for clustered apic's.. */
         //core_APICClusteredCheck();
     }
 
