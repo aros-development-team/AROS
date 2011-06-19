@@ -13,7 +13,6 @@
 
 	.globl _cpu_detect
 _cpu_detect:
-	move.l	%d0,0x100
 	move.l	%a0,%a2
 	clr.l	%a2@(4)
 	lea		%pc@(cpu_detect_trap_illg),%a1
