@@ -3,10 +3,18 @@
 
 #include <sys/types.h>
 
+#if !defined(__AROS__)
 #if defined(__X86__)
 #define CPU_IS_LITTLE_ENDIAN 1
 #else
 #undef CPU_IS_LITTLE_ENDIAN
+#endif
+#else
+#if defined(__i386__) || defined(__x86_64__)
+#define CPU_IS_LITTLE_ENDIAN 1
+#else
+#undef CPU_IS_LITTLE_ENDIAN
+#endif
 #endif
 
 // generic C routines
@@ -41,15 +49,15 @@
 #define write_be32(P,V) *(ULONG *)(P)=nat2be32(V)
 #define write_be64(P,V) *(UQUAD *)(P)=nat2be64(V)
 
-#define endian64(A) \
-endian32((UQUAD)(A) >> 32)+((UQUAD)endian32(A) << 32)
+#define endian16(A) \
+( ( ((UWORD)(A)&0xFF00)>>8 )+( ((UWORD)(A)&0xFF)<<8 ) )
 
 #define endian32(A) \
 ( ( ((ULONG)(A)&0xFF000000)>>24 )+( ((ULONG)(A)&0xFF0000)>>8 )+( ((ULONG)(A)&0xFF00)<<8 ) \
 +( ((ULONG)(A)&0xFF)<<24 ) )
 
-#define endian16(A) \
-( ( ((UWORD)(A)&0xFF00)>>8 )+( ((UWORD)(A)&0xFF)<<8 ) )
+#define endian64(A) \
+endian32((UQUAD)(A) >> 32)+((UQUAD)endian32(A) << 32)
 
 #if defined(__M68K__) && defined(__VBCC__) // use VBCC/m68k inline asm
 
