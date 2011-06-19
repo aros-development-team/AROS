@@ -437,8 +437,40 @@ static BPTR ROMLoad(BSTR bfilename)
     return rom;
 }
 
-static struct Resident *LoadFindResident(BPTR seglist)
+/* Patch "picasso96/<driver>.chip" -> "<driver>.chip" so that OpenLibrary() finds it */
+static void RTGPatch(struct Resident *r, BPTR seg)
 {
+    BOOL patched = FALSE;
+    WORD len = strlen(r->rt_Name);
+    const UBYTE *name = r->rt_Name + len - 5;
+    if (len > 5 && (!stricmp(name, ".card") || !stricmp(name, ".chip"))) {
+    	BPTR seglist = seg;
+	while (seglist) {
+	    ULONG *ptr = BADDR(seglist);
+	    LONG len = ptr[-1] * 4;
+	    UBYTE *p = (UBYTE*)(ptr + 1);
+    	    while (len > 0) {
+    	    	if (len > 16 && !strnicmp(p, "libs:picasso96/", 15)) {
+    	    	    memmove(p, p + 15, strlen(p + 15) + 1);
+    	    	    patched = TRUE;
+    	    	}
+    	    	else if (len > 10 && !strnicmp(p, "picasso96/", 10)) {
+    	    	    memmove(p, p + 10, strlen(p + 10) + 1);
+    	    	    patched = TRUE;
+    	    	}
+    	    	len--;
+    	    	p++;
+    	    }
+	    seglist = *((BPTR*)BADDR(seglist));
+	}
+    }
+    if (patched)
+    	WriteF("Library path patched\n");
+}
+
+static struct Resident *LoadFindResident(BPTR seg)
+{
+    BPTR seglist = seg;
     while (seglist) {
     	ULONG *ptr = BADDR(seglist);
     	UWORD *res;
@@ -453,6 +485,7 @@ static struct Resident *LoadFindResident(BPTR seglist)
     	    	    r->rt_Flags |= RTF_COLDSTART;
     	    	if (r->rt_Pri < 10)
     	    	    r->rt_Pri = 10;
+    	    	RTGPatch(r, seg);
     	    	return r;
     	    }
     	    res++;
@@ -540,7 +573,7 @@ static UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
      return sum;
 }
 
-static ULONG mySumKickData(struct ExecBase *sysbase)
+static ULONG mySumKickData(struct ExecBase *sysbase, BOOL output)
 {
     ULONG chksum = 0;
     BOOL isdata = FALSE;
@@ -551,8 +584,12 @@ static ULONG mySumKickData(struct ExecBase *sysbase)
 	{
    	    chksum += (ULONG)*list;
 #if 0
-   	    WriteF("%X8 %X8 %8X\n", list, *list, chksum);
+	    if (output) {
+	    	WriteF("%X8 %X8\n", list, *list);
+	    	WriteF("CHK %X8\n", chksum);
+	    }
 #endif
+
             /* on amiga, if bit 31 is set then this points to another list of
              * modules rather than pointing to a single module. bit 31 is
              * inconvenient on architectures where code may be loaded above
@@ -575,12 +612,17 @@ static ULONG mySumKickData(struct ExecBase *sysbase)
 	    ULONG *p = (ULONG*)ml;
 	    for (i = 0; i < sizeof(struct MemList) / sizeof(ULONG); i++)
 	    	chksum += p[i];
+
 #if 0
-   	    WriteF("ML %X8\n", ml);
-   	    WriteF("ADDR %X8\n", ml->ml_ME[0].me_Un.meu_Addr);
-   	    WriteF("LEN %X8\n", ml->ml_ME[0].me_Length);
-   	    WriteF("CHK %X8\n", chksum);
+	    if (output) {
+		WriteF("ML    %X8 %X8\n", ml, chksum);
+		WriteF("NODE0 %X8 %X8\n", p[0], p[1]);
+		WriteF("NODE2 %X8 %X8\n", p[2], p[3]);
+		WriteF("ADDR  %X8 %X8\n", ml->ml_ME[0].me_Un.meu_Addr, ml->ml_ME[0].me_Length);
+		WriteF("DATA0 %X8 %X8\n", p[6], p[7]);
+	    }
 #endif
+
 	    ml = (struct MemList*)ml->ml_Node.ln_Succ;
 	    isdata = TRUE;
 	}
@@ -666,15 +708,12 @@ void coldcapturecode(void)
     );
 }
 
-/* We have to copy the reboot code, as it must be in
- * MEMF_LOCAL RAM, otherwise the jmp after the
- * reset will vanish.
- *
- * DO NOT CALL THIS FUNCTION DIRECTLY!
+/* Official reboot code from HRM 
+ * All CPUs have at least 1 word prefetch,
+ * jmp (a0) has been prefetched even if
+ * reset disables all memory
  */
-#define REBOOTBASE (12 * sizeof(ULONG))	/* Unused m68k exception vectors 12 and 13*/
-#define REBOOTSIZE (4 * sizeof(UWORD))
-static void rebootcode(void)
+static void doreboot(void)
 {
     asm volatile (
 	"lea 0x01000000,%a0\n"
@@ -692,7 +731,6 @@ static void supercode(void)
 {
     ULONG *fakesys, *coldcapture, *coldcapturep;
     struct ExecBase *sysbase;
-    void (*reboot)(void) = (APTR)REBOOTBASE;
     ULONG *traps = 0;
     ULONG len;
 
@@ -704,7 +742,6 @@ static void supercode(void)
     coldcapturep = (ULONG*)coldcapturecode;
     len = *coldcapturep++;
     memcpy (coldcapture, coldcapturep, len);
-    memcpy (rebootcode, (APTR)reboot, REBOOTSIZE);
 
     *fakesys++ = traps[31]; // Level 7
     *fakesys++ = 0x4ef9 | (COLDCAPTURE >> 16);
@@ -741,29 +778,22 @@ static void supercode(void)
     } else {
     	sysbase->KickTagPtr = SysBase->KickTagPtr;
     }
-    sysbase->KickCheckSum = (APTR)mySumKickData(sysbase);
+    sysbase->KickCheckSum = (APTR)mySumKickData(sysbase, FALSE);
 
     traps[1] = (IPTR)sysbase;
     // TODO: add custom cacheclear, can't call CacheClearU() because it may not work
     // anymore and KS 1.x does not even have it
-    reboot();
+    doreboot();
 }
 
 void BootROM(BPTR romlist, struct Resident **reslist)
 {
     APTR GfxBase;
 
-    if ((GfxBase = OpenLibrary("graphics.library", 0))) {
-    	LoadView(NULL);
-    	WaitTOF();
-    	WaitTOF();
-    	CloseLibrary(GfxBase);
-    }
-
     entry = BADDR(romlist)+sizeof(ULONG);
     kicktags = reslist;
 
-#if 0 
+#if 0
      /* Debug testing code */
     if (mlist.lh_Head->ln_Succ) {
     	SysBase->KickMemPtr = (APTR)mlist.lh_Head;
@@ -772,11 +802,18 @@ void BootROM(BPTR romlist, struct Resident **reslist)
     if (kicktags) {
     	SysBase->KickTagPtr = kicktags;
     }
-    SysBase->KickCheckSum = (APTR)mySumKickData(SysBase);
+    mySumKickData(SysBase, TRUE);
     SysBase->KickTagPtr = 0;
     SysBase->KickMemPtr = 0;
     Delay(200);
 #endif
+
+    if ((GfxBase = OpenLibrary("graphics.library", 0))) {
+    	LoadView(NULL);
+    	WaitTOF();
+    	WaitTOF();
+    	CloseLibrary(GfxBase);
+    }
 
     /* We're off in the weeds now. */
     Disable();
