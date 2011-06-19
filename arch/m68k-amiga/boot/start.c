@@ -150,6 +150,16 @@ extern BYTE _ss_end;
 
 /* Protect the 'ROM' if it is actually in RAM.
  */
+static APTR protectAlloc(struct MemHeader *mh, APTR start, ULONG length, const UBYTE *name)
+{
+    APTR tmp = Early_AllocAbs(mh, start, length);
+    DEBUGPUTS(("* "));
+    DEBUGPUTS((name));
+    DEBUGPUTHEX(("\nStart  ", (ULONG)start));
+    DEBUGPUTHEX(("End    ", (ULONG)start + length - 1));
+    DEBUGPUTHEX(("Size   ", length));
+    return tmp;
+}
 static void protectROM(struct MemHeader *mh)
 {
     APTR tmp;
@@ -166,17 +176,13 @@ static void protectROM(struct MemHeader *mh)
     APTR ext_start = &_ext_start;
     ULONG ext_len = &_ext_end - &_ext_start;
 
-    DEBUGPUTHEX(("Protect: ", (IPTR)mh));
-    tmp = Early_AllocAbs(mh, ss_start, ss_len);
-    DEBUGPUTHEX(("     ss: ", (IPTR)tmp));
-    tmp = Early_AllocAbs(mh, bss_start, bss_len);
-    DEBUGPUTHEX(("    bss: ", (IPTR)tmp));
-    tmp = Early_AllocAbs(mh, rom_start, rom_len);
-    DEBUGPUTHEX(("    rom: ", (IPTR)tmp));
-    tmp = Early_AllocAbs(mh, ext_start, ext_len);
-    DEBUGPUTHEX(("    ext: ", (IPTR)tmp));
-    DEBUGPUTHEX(("  First: ", (IPTR)mh->mh_First));
-    DEBUGPUTHEX(("  Bytes: ", (IPTR)mh->mh_First->mc_Bytes));
+    DEBUGPUTHEX(("Protect", (IPTR)mh));
+    tmp = protectAlloc(mh, ss_start, ss_len, "SS");
+    tmp = protectAlloc(mh, bss_start, bss_len, "BSS");
+    tmp = protectAlloc(mh, rom_start, rom_len, "ROM");
+    tmp = protectAlloc(mh, ext_start, ext_len, "EXT");
+    DEBUGPUTHEX(("First  ", (IPTR)mh->mh_First));
+    DEBUGPUTHEX(("Bytes  ", (IPTR)mh->mh_First->mc_Bytes));
 }
 
 static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size)
@@ -226,6 +232,54 @@ static BOOL InitKickMem(struct ExecBase *SysBase)
 
     return TRUE;
 }
+#if 0 // debug stuff, do not remove
+static ULONG SumKickDataX(struct ExecBase *sb)
+{
+    ULONG chksum = 0;
+    BOOL isdata = FALSE;
+    struct ExecBase *sysbase = sb;
+
+    if (sysbase->KickTagPtr) {
+    	IPTR *list = sysbase->KickTagPtr;
+ 	while(*list)
+	{
+   	    chksum += (ULONG)*list;
+   	    DEBUGPUTHEX(("LIST", (ULONG)list));
+   	    DEBUGPUTHEX(("LISTP", (ULONG)*list));
+   	    DEBUGPUTHEX(("CHK", chksum));
+            /* on amiga, if bit 31 is set then this points to another list of
+             * modules rather than pointing to a single module. bit 31 is
+             * inconvenient on architectures where code may be loaded above
+             * 2GB. on these platforms we assume aligned pointers and use bit
+             * 0 instead */
+#ifdef __mc68000__
+	    if(*list & 0x80000000) { list = (IPTR *)(*list & 0x7fffffff); continue; }
+#else
+            if(*list & 0x1) { list = (IPTR *)(*list & ~(IPTR)0x1); continue; }
+#endif
+	    list++;
+   	    isdata = TRUE;
+   	}
+    }
+
+    if (sysbase->KickMemPtr) {
+	struct MemList *ml = (struct MemList*)sysbase->KickMemPtr;
+	while (ml) {
+	    UBYTE i;
+	    ULONG *p = (ULONG*)ml;
+	    for (i = 0; i < sizeof(struct MemList) / sizeof(ULONG); i++)
+	    	chksum += p[i];
+	    DEBUGPUTHEX(("MEM", (ULONG)p));
+	    DEBUGPUTHEX(("CHK", chksum));
+	    ml = (struct MemList*)ml->ml_Node.ln_Succ;
+	    isdata = TRUE;
+	}
+    }
+    if (isdata && !chksum)
+    	chksum--;
+    return chksum;
+}
+#endif
 
 void doColdCapture(void)
 {
@@ -264,6 +318,13 @@ void doColdCapture(void)
 
 void exec_boot(ULONG *membanks, ULONG *cpu)
 {
+#if 0
+	struct ExecBase *oldSysBase = *(APTR *)4;
+	DebugInit();
+	DEBUGPUTHEX(("X SysBase->KickCheckSum", (ULONG)oldSysBase->KickCheckSum));
+	SumKickDataX(oldSysBase);
+#endif
+
 	struct TagItem bootmsg[] = {
 #ifdef AROS_SERIAL_DEBUG
 	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode" },
@@ -516,7 +577,7 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 
 		DEBUGPUTHEX(("RAM Addr: ", addr));
 		DEBUGPUTHEX(("RAM Size: ", size));
-		mh = addmemoryregion(membanks[i], membanks[i + 1]);
+		mh = addmemoryregion(addr, size);
 		Enqueue(&SysBase->MemList, &mh->mh_Node);
 
 		/* Adjust MaxLocMem and MaxExtMem as needed */
@@ -578,10 +639,15 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	 * If we get a single failure, don't run any
 	 * of the KickTags.
 	 */
-	if (SysBase->KickCheckSum == (APTR)SumKickData()) {
-	    if (!InitKickMem(SysBase)) {
-	    	DEBUGPUTS(("[KickMem] KickMem failed an allocation. Ignoring KickTags\n"));
-	    	SysBase->KickTagPtr = NULL;
+	if (SysBase->KickCheckSum) {
+	    if (SysBase->KickCheckSum == (APTR)SumKickData()) {
+		if (!InitKickMem(SysBase)) {
+	    	    DEBUGPUTS(("[KickMem] KickMem failed an allocation. Ignoring KickTags\n"));
+	    	    SysBase->KickTagPtr = NULL;
+	    	}
+	    } else {
+	    	DEBUGPUTS(("[KickMem] Checksum mismatch\n"));
+		SysBase->KickTagPtr = NULL;
 	    }
 	    SysBase->KickMemPtr = NULL;
 	    SysBase->KickCheckSum = (APTR)SumKickData();
