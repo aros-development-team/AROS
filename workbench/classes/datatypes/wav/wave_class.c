@@ -3,6 +3,8 @@
  *	(c) Fredrik Wikstrom
  */
 
+#include <aros/debug.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,60 +36,11 @@
 
 ADD2LIBS("datatypes/sound.datatype", 0, struct Library *, SoundBase);
 
-static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
-	struct VoiceHeader *vhdr);
-
-/*
-static IPTR ClassDispatch (Class *cl, Object *obj, Msg msg) {
-	struct ClassBase * libBase;
-	IPTR retval;
-
-	libBase = (struct ClassBase *)cl->cl_UserData;
-
-	switch(msg->MethodID) {
-
-		case OM_NEW:
-			retval = (IPTR)DoSuperMethodA(cl, obj, msg);
-			if (retval) {
-				LONG error;
-				error = GetWAVE(libBase, (Object *)retval, ((struct opSet *)msg)->ops_AttrList);
-				if (error != OK) {
-					CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
-
-					retval = (ULONG)NULL;
-					SetIoErr(error);
-				}
-			}
-			break;
-
-		case DTM_WRITE:
-			// check if dt's native format should be used
-			if (((struct dtWrite *)msg)->dtw_Mode == DTWM_RAW) {
-				LONG error;
-				error = WriteWAVE(libBase, obj, (struct dtWrite *)msg);
-				if (error == OK) {
-					retval = TRUE;
-				} else {
-					SetIoErr(error);
-					retval = FALSE;
-				}
-				break;
-			}
-			// fall through (let superclass handle it)
-
-		default:
-			retval = (IPTR)DoSuperMethodA(cl, obj, msg);
-			break;
-
-	}
-
-	return(retval);
-}
-*/
-
 IPTR WAVE__DTM_WRITE(Class *cl, Object *obj, struct dtWrite *msg)
 {
     IPTR retval = FALSE;
+
+D(bug("[wave.dt]: %s()\n", __PRETTY_FUNCTION__));
 
     // check if dt's native format should be used
     if (msg->dtw_Mode == DTWM_RAW)
@@ -258,6 +211,8 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
     struct Decoder *	decoder = NULL;
     struct DecoderData	dec_data = {0};
 
+D(bug("[wave.dt]: %s()\n", __PRETTY_FUNCTION__));
+
     DECODERPROTO((*Decode)); // decoder routine
 
     /* Check for RIFF-WAVE header */
@@ -265,20 +220,31 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
 	    ULONG HDR[3]={0};
 	    Status = Read(file, HDR, 12);
 	    if (Status != 12)
-		    Error = ReadError(Status);
-	    else
-		    if (HDR[0] != ID_RIFF || HDR[2] != ID_WAVE)
-			    Error = ERROR_OBJECT_WRONG_TYPE;
+	    {
+		Error = ReadError(Status);
+D(bug("[wave.dt] %s: Failed to read header! (expected 12bytes, read %d, error %d)\n", __PRETTY_FUNCTION__, Status, Error));
+	    }
+	    else if (HDR[0] != ID_RIFF || HDR[2] != ID_WAVE)
+	    {
+		Error = ERROR_OBJECT_WRONG_TYPE;
+D(bug("[wave.dt] %s: File isnt RIFF-WAVE format\n", __PRETTY_FUNCTION__));
+	    }
     }
 
     while (!Done && Error == OK) {
+D(bug("[wave.dt] %s: Reading RIFF Chunk ... ", __PRETTY_FUNCTION__));
+
 	    Status = Read(file, &chunk, sizeof(struct RIFFChunk));
+
+D(bug("done, %d bytes\n", Status));
 
 	    if (Status != sizeof(struct RIFFChunk))
 		    Error = ReadError(Status);
 
 	    chunk.size = read_le32(&chunk.size);
 
+D(bug("[wave.dt] %s: chunk size = %d\n", __PRETTY_FUNCTION__, chunk.size));
+	    
 	    if (Error == OK) {
 		    switch(chunk.type) {
 
@@ -301,12 +267,16 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
 					    break;
 				    }
 
+D(bug("[wave.dt] %s: FMT Chunk Type\n", __PRETTY_FUNCTION__));
+
 				    /* Convert to proper endianness */
 				    fmt->numChannels = read_le16(&fmt->numChannels);
 				    fmt->samplesPerSec = read_le32(&fmt->samplesPerSec);
 				    fmt->blockAlign = read_le16(&fmt->blockAlign);
 				    fmt->bitsPerSample = read_le16(&fmt->bitsPerSample);
 
+D(bug("[wave.dt] %s: %d channels, %d samples/sec\n", __PRETTY_FUNCTION__, fmt->numChannels, fmt->samplesPerSec));
+				    
 				    if (chunk.size == 16) { // unextended
 					    fmt->extraSize = 0;
 				    } else if (chunk.size >= 18) { // extended
@@ -316,16 +286,19 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
 					    break;
 				    }
 
-				    /* check formatTag */
+D(bug("[wave.dt] %s: format %x\n", __PRETTY_FUNCTION__, fmt->formatTag));
 
+				    /* check formatTag */
 				    dec_data.chunk = chunk;
 				    decoder = GetDecoder(fmt->formatTag);
 				    if (decoder) {
+D(bug("[wave.dt] %s: using decoder @ 0x%p\n", __PRETTY_FUNCTION__, decoder));
 					    dec_data.Decode = decoder->Decode;
 					    dec_data.DecodeFrames = decoder->DecodeFrames;
 					    Error = decoder->Setup(&dec_data);
 					    if (Error != OK) break;
 				    } else {
+D(bug("[wave.dt] %s: unknown format!\n", __PRETTY_FUNCTION__));
 					    Error = DTERROR_UNKNOWN_COMPRESSION;
 					    break;
 				    }
@@ -340,6 +313,7 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
 
 			    // Contains numSampleFrames (necessary if not PCM!)
 			    case ID_fact:
+D(bug("[wave.dt] %s: FACT Chunk Type\n", __PRETTY_FUNCTION__));
 				    if (chunk.size != 4) {
 					    Error = NOTOK;
 				    }
@@ -353,6 +327,7 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
 
 			    // Sample data
 			    case ID_data:
+D(bug("[wave.dt] %s: DATA Chunk Type\n", __PRETTY_FUNCTION__));
 				    /* check if fmt chunk was successfully parsed */
 				    if (!fmt) {
 					    Error = NOTOK;
@@ -449,14 +424,18 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
 
 			    // skip unknown chunks!
 			    default:
+D(bug("[wave.dt] %s: Unknown Chunk Type - Skipping\n", __PRETTY_FUNCTION__));
 				    if (Seek(file, (chunk.size+1)&~1, OFFSET_CURRENT) == -1)
 					    Error = IoErr();
 				    break;
 
 		    }
 	    }
+	    D(bug("[wave.dt] %s: Chunk done\n", __PRETTY_FUNCTION__));
     }
 
+D(bug("[wave.dt] %s: Finished\n", __PRETTY_FUNCTION__));
+    
     FreeVec(decodeBuffer);
 
     if (decoder) {
@@ -490,20 +469,26 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
     return(Error);
 }
 
-IPTR WAVE__OM_NEW (Class *cl, Object *obj, Msg msg)
+IPTR WAVE__OM_NEW (Class *cl, Object *self, Msg msg)
 {
-    IPTR retval = (IPTR)DoSuperMethodA(cl, obj, msg);
-    if (retval) 
+D(bug("[wave.dt]: %s()\n", __PRETTY_FUNCTION__));
+
+    self = (IPTR)DoSuperMethodA(cl, self, msg);
+    if (self) 
     {
-	struct VoiceHeader	*vhdr = NULL;
-	char	*FileName;
-	LONG	SourceType = -1;
-	LONG	Error = ERROR_REQUIRED_ARG_MISSING;
-	BPTR	file = (BPTR)NULL;
+	struct VoiceHeader *vhdr = NULL;
+	char	* FileName;
+	IPTR SourceType = -1;
+	IPTR Error = ERROR_REQUIRED_ARG_MISSING;
+	BPTR file = BNULL;
+
+	D(bug("[wave.dt] %s: obj @ 0x%p\n", __PRETTY_FUNCTION__, self));
 
 	FileName = (char *)GetTagData(DTA_Name, (IPTR)"Untitled", ((struct opSet *)msg)->ops_AttrList);
 
-	GetDTAttrs((Object *)retval,
+	D(bug("[wave.dt] %s: filename '%s'\n", __PRETTY_FUNCTION__, FileName));
+
+	GetDTAttrs(self,
 		SDTA_VoiceHeader,	&vhdr,
 		DTA_Handle,		&file,
 		DTA_SourceType,		&SourceType,
@@ -527,7 +512,7 @@ IPTR WAVE__OM_NEW (Class *cl, Object *obj, Msg msg)
 		}
 
 		/* Fill in the remaining information */
-		SetDTAttrs((Object *)retval, NULL, NULL,
+		SetDTAttrs(self, NULL, NULL,
 			DTA_ObjName, FilePart(FileName),
 			SDTA_Sample, Sample,
 			SDTA_LeftSample, Channel[0],
@@ -541,12 +526,12 @@ IPTR WAVE__OM_NEW (Class *cl, Object *obj, Msg msg)
 	} else if (SourceType != DTST_FILE) Error = ERROR_NOT_IMPLEMENTED;
 
 	if (Error != OK) {
-	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
+	    CoerceMethod(cl, (Object *)self, OM_DISPOSE);
 
-	    retval = (IPTR)NULL;
+	    self = (Object *)NULL;
 	    SetIoErr(Error);
 	}
     }
 
-	return retval;
+    return self;
 }
