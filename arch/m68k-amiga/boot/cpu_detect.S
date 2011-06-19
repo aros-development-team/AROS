@@ -32,10 +32,11 @@ cpu_detect_fpu_asm:
 	move.l	%sp,%a1
 	lea		%sp@(-60),%sp
 	move.l	%sp,%a0
-	clr.b	(%a0)
+	clr.w	(%a0)
+	fnop
 	fsave	(%a0)
 	move.w	#0x8000,%d0
-	move.b	(%a0),%d0
+	move.b	1(%a0),%d0
 	move.l	%a1,%sp
 	rts		/* return to cpu_detect */
 
