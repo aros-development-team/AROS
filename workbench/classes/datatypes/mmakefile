@@ -9,9 +9,10 @@
 #MM	    workbench-datatypes-gif \
 #MM	    workbench-datatypes-bmp \
 #MM	    workbench-datatypes-picture \
-#MM         workbench-datatypes-ilbm \
+#MM	    workbench-datatypes-ilbm \
 #MM	    workbench-datatypes-sound \
 #MM	    workbench-datatypes-8svx \
+#MM	    workbench-datatypes-wav \
 #MM	    workbench-datatypes-html \
 #MM	    workbench-datatypes-amigaguide \
 #MM     workbench-datatypes-pnm
