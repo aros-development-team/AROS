@@ -1,6 +1,6 @@
 # DataType Description for WAVE
 Name=WAVE
-Version=$VER: WAVE 1.1 (24.01.2011)
+Version=$VER: WAVE 1.1 (19.06.2011)
 BaseName=wave
 Pattern=#?
 Mask=0x52 0x49 0x46 0x46
