@@ -232,6 +232,8 @@ pid_t __vfork(jmp_buf env)
     D(bug("__vfork: Setting jmp_buf at %p in %p\n", __aros_startup, &__aros_startup_jmp_buf));
     if(setjmp(__aros_startup_jmp_buf))
     {
+        struct Task* child_id;
+
 	D(bug("__vfork: child exited\n or executed\n"));
 
         /* Reinitialize variables as they may have been overwritten during setjmp */
@@ -270,12 +272,15 @@ pid_t __vfork(jmp_buf env)
 
         parent_leavepretendchild(udata);
 
+        /* save child id before freeing udata */
+        child_id = udata->child_id;
+
         D(bug("__vfork: freeing udata\n"));
         FreeMem(udata, sizeof(struct vfork_data));
 
-        D(bug("__vfork: Child(%d) jumping to jmp_buf %p\n", udata->child_id, &env));
+        D(bug("__vfork: Child(%d) jumping to jmp_buf %p\n", child_id, &env));
         D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[_JMPLEN - 1]));
-        vfork_longjmp(env, udata->child_id);
+        vfork_longjmp(env, child_id);
 	assert(0); /* not reached */
         return (pid_t) 1;
     }
