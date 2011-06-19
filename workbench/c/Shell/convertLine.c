@@ -150,7 +150,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
 	bufferReset(&a);
 	bufferCopy(&b, &a, i);
 
-	if ( (in->buf[in->cur] != '\0') && (in->buf[1 + in->cur] != '\0') )
+	if (NULL == strchr(buf, ' '))
 	    /*
 	     * We need a separator here, between the command
 	     * and its first argument
