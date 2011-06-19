@@ -273,6 +273,7 @@ static AROS_UFH4(LONG, aosSeek,
 static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
 {
     struct MemList *ml;
+    UBYTE *mem;
 
     /* Clear bits 15-0, we're setting memory class explicitly */
     flags &= ~0x7fff;
@@ -283,13 +284,14 @@ static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
     	flags |= MEMF_CHIP;
     }
 
-    size += sizeof(struct MemList);
-    ml = AllocMem(size, flags);
-    if (ml == NULL) {
+    size += sizeof(struct MemChunk) + sizeof(struct MemList);
+    mem = AllocMem(size, flags);
+    if (mem == NULL) {
     	WriteF("AOS: Failed to allocate %N bytes of type %X4\n", size, flags);
     } else {
+    	ml = (struct MemList*)(mem + sizeof(struct MemChunk));
 	ml->ml_NumEntries = 1;
-	ml->ml_ME[0].me_Addr = (APTR)ml;
+	ml->ml_ME[0].me_Addr = (APTR)mem;
 	ml->ml_ME[0].me_Length = size;
     	AddTail(&mlist, (struct Node*)ml);
     }
@@ -315,8 +317,9 @@ static AROS_UFH3(void, aosFree,
     AROS_USERFUNC_INIT
     
     addr -= sizeof(struct MemList);
-    size += sizeof(struct MemList);
     Remove((struct Node*)addr);
+    addr -= sizeof(struct MemChunk);
+    size += sizeof(struct MemChunk) + sizeof(struct MemList);
     FreeMem(addr, size);
 
     AROS_USERFUNC_EXIT
@@ -381,11 +384,12 @@ static AROS_UFH3(APTR, elfAlloc,
     } else {
     	flags |= MEMF_CHIP;
     }
-
+    size += sizeof(struct MemChunk);
     ret = AllocMem(size, flags);
     if (ret == NULL)
     	WriteF("ELF: Failed to allocate %N bytes of type %X4\n", size, flags);
-
+    else
+	ret += sizeof(struct MemChunk);
     return ret;
 
     AROS_USERFUNC_EXIT
@@ -397,7 +401,7 @@ static AROS_UFH3(void, elfFree,
 {
     AROS_USERFUNC_INIT
 
-    FreeMem(addr, size);
+    FreeMem(addr - sizeof(struct MemChunk), size + sizeof(struct MemChunk));
 
     AROS_USERFUNC_EXIT
 }
@@ -447,6 +451,8 @@ static struct Resident *LoadFindResident(BPTR seglist)
     	    	/* Set RTF_COLDSTART if no initialization flags set */
     	    	if (!(r->rt_Flags & (RTF_COLDSTART | RTF_SINGLETASK | RTF_AFTERDOS)))
     	    	    r->rt_Flags |= RTF_COLDSTART;
+    	    	if (r->rt_Pri < 10)
+    	    	    r->rt_Pri = 10;
     	    	return r;
     	    }
     	    res++;
@@ -537,12 +543,16 @@ static UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
 static ULONG mySumKickData(struct ExecBase *sysbase)
 {
     ULONG chksum = 0;
+    BOOL isdata = FALSE;
 
     if (sysbase->KickTagPtr) {
     	IPTR *list = sysbase->KickTagPtr;
  	while(*list)
 	{
    	    chksum += (ULONG)*list;
+#if 0
+   	    WriteF("%X8 %X8 %8X\n", list, *list, chksum);
+#endif
             /* on amiga, if bit 31 is set then this points to another list of
              * modules rather than pointing to a single module. bit 31 is
              * inconvenient on architectures where code may be loaded above
@@ -554,20 +564,29 @@ static ULONG mySumKickData(struct ExecBase *sysbase)
             if(*list & 0x1) { list = (IPTR *)(*list & ~(IPTR)0x1); continue; }
 #endif
 	    list++;
+	    isdata = TRUE;
    	}
     }
 
     if (sysbase->KickMemPtr) {
 	struct MemList *ml = (struct MemList*)sysbase->KickMemPtr;
-	while (ml->ml_Node.ln_Succ) {
+	while (ml) {
 	    UBYTE i;
 	    ULONG *p = (ULONG*)ml;
 	    for (i = 0; i < sizeof(struct MemList) / sizeof(ULONG); i++)
 	    	chksum += p[i];
+#if 0
+   	    WriteF("ML %X8\n", ml);
+   	    WriteF("ADDR %X8\n", ml->ml_ME[0].me_Un.meu_Addr);
+   	    WriteF("LEN %X8\n", ml->ml_ME[0].me_Length);
+   	    WriteF("CHK %X8\n", chksum);
+#endif
 	    ml = (struct MemList*)ml->ml_Node.ln_Succ;
+	    isdata = TRUE;
 	}
     }
-
+    if (isdata && !chksum)
+    	chksum--;
     return chksum;
 }
 
@@ -658,8 +677,10 @@ void coldcapturecode(void)
 static void rebootcode(void)
 {
     asm volatile (
-	"nop\n"
-	"move.l #2,%a0\n"
+	"lea 0x01000000,%a0\n"
+	"sub.l %a0@(-0x14),%a0\n"
+	"move.l %a0@(4),%a0\n"
+	"subq.l #2,%a0\n"
 	"reset\n"
 	"jmp (%a0)\n"
     );
@@ -734,12 +755,28 @@ void BootROM(BPTR romlist, struct Resident **reslist)
 
     if ((GfxBase = OpenLibrary("graphics.library", 0))) {
     	LoadView(NULL);
-    	LoadView(NULL);
+    	WaitTOF();
+    	WaitTOF();
     	CloseLibrary(GfxBase);
     }
 
     entry = BADDR(romlist)+sizeof(ULONG);
     kicktags = reslist;
+
+#if 0 
+     /* Debug testing code */
+    if (mlist.lh_Head->ln_Succ) {
+    	SysBase->KickMemPtr = (APTR)mlist.lh_Head;
+    	mlist.lh_TailPred->ln_Succ = NULL;
+    }
+    if (kicktags) {
+    	SysBase->KickTagPtr = kicktags;
+    }
+    SysBase->KickCheckSum = (APTR)mySumKickData(SysBase);
+    SysBase->KickTagPtr = 0;
+    SysBase->KickMemPtr = 0;
+    Delay(200);
+#endif
 
     /* We're off in the weeds now. */
     Disable();
