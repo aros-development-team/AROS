@@ -141,6 +141,7 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, const char
 
     if (header->mwh_fault)
     {
+	mwdata.freeFunc = function;
     	/* Throw an alert with context */
     	Exec_ExtAlert(AN_MemoryInsane, caller, stack, AT_MUNGWALL, &mwdata, SysBase);
 
