@@ -9,8 +9,47 @@
 
 extern void sp060_init(void);
 
+static AROS_UFH2(struct Library*, OpenLib,
+    AROS_UFHA(ULONG, version, D0),
+    AROS_UFHA(struct Library*, base, A6))
+{ 
+    AROS_USERFUNC_INIT
+    
+    base->lib_OpenCnt++;
+    return base;
+
+    AROS_USERFUNC_EXIT
+}
+    
+static AROS_UFH1(void, CloseLib,
+    AROS_UFHA(struct Library*, base, A6))
+{ 
+    AROS_USERFUNC_INIT
+    
+    base->lib_OpenCnt--;
+
+    AROS_USERFUNC_EXIT
+}
+
+static AROS_UFH1(ULONG, DummyLib,
+    AROS_UFHA(struct Library*, base, A6))
+{ 
+    AROS_USERFUNC_INIT
+    
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+static const APTR funcLib[] = { OpenLib, CloseLib, DummyLib, DummyLib, (void*)-1 };
+
+static const UBYTE lib68040[] = "68040.library";
+static const UBYTE lib68060[] = "68060.library";
+
 static int M680x0Init(struct M680x0Base *M680x0Base)
 {
+    struct Library *lib;
+
     if (!(SysBase->AttnFlags & (AFF_68040 | AFF_68060)))
     	return FALSE; /* 68040/060 only need emulation */
     if (SysBase->AttnFlags & AFF_68882)
@@ -21,7 +60,34 @@ static int M680x0Init(struct M680x0Base *M680x0Base)
     /* initialize emulation here */
     sp060_init();
 
-    /* emulation installed, full 68881/68882 now supported  */
+    /* Create fake 68040/060.library, stops C:SetPatch from attempting to load
+     * incompatible 68040/060 libraries.
+     *
+     * We also create both 68040 and 68060.library if 68060 is detected, it prevents
+     * old SetPatch versions (that do not know about 68060) from loading 68040.library.
+     *
+     * (Maybe this is getting too far..)
+     */
+    if (SysBase->AttnFlags & AFF_68060) {
+	lib = MakeLibrary(funcLib, NULL, NULL, sizeof(struct Library), BNULL);
+ 	if (lib) {
+	    lib->lib_Node.ln_Name = (UBYTE*)lib68060;
+	    lib->lib_IdString = lib->lib_Node.ln_Name;
+	    lib->lib_Version = 43;
+	    lib->lib_OpenCnt = 1;
+	    AddLibrary(lib);
+	}
+    }
+    lib = MakeLibrary(funcLib, NULL, NULL, sizeof(struct Library), BNULL);
+    if (lib) {
+	lib->lib_Node.ln_Name = (UBYTE*)lib68040;
+	lib->lib_IdString = lib->lib_Node.ln_Name;
+	lib->lib_Version = 43;
+	lib->lib_OpenCnt = 1;
+	AddLibrary(lib);
+    }
+
+    /* emulation installed, full 68881/68882 instruction set now supported  */
     SysBase->AttnFlags |= AFF_68881 | AFF_68882;
     return TRUE;
 }
