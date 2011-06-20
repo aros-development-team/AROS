@@ -10,9 +10,9 @@
 
 #include "dosboot_intern.h"
 
-struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
-{   
-    UWORD height, depth;
+static struct Screen *OpenBootScreenType(struct DOSBootBase *DOSBootBase, BYTE MinDepth, BYTE SquarePixels)
+{
+    UWORD height;
     ULONG mode;
 
     GfxBase = (void *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
@@ -24,30 +24,31 @@ struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
 
     height = 480;
     mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, height,
-			    BIDTAG_Depth, 8, TAG_DONE);
-    if (mode != INVALID_ID) {
-	/* if we got depth=8 mode, we must have fast enough hardware for 4 planes too,
-	 * either it is non-Amiga(tm) hardware or AGA chipset */
-	depth = 4;
-    } else {
-	/* we probably have OCS or ECS chipset, select 2 planes because 4 planes OCS/ECS hires is very slow */
-	depth = 2;
+	BIDTAG_Depth, MinDepth, TAG_DONE);
+    if (mode == INVALID_ID)
+	Alert(AN_SysScrnType);
+
+    /* Set PAL or NTSC default height if we are running on Amiga(tm) hardware.
+     * We also need to check if this is really PAL or NTSC mode because we have to
+     * use PC 640x480 mode if user has Amiga hardware + RTG board.
+     * Check DisplayFlags first because non-Amiga modeIDs use different format.
+     */
+    if (GfxBase->DisplayFlags & (NTSC | PAL)) {
+    	if ((mode & MONITOR_ID_MASK) == NTSC_MONITOR_ID)
+	    height = SquarePixels ? 400 : 200;
+	else if ((mode & MONITOR_ID_MASK) == PAL_MONITOR_ID)
+	    height = SquarePixels ? 512 : 256;
     }
-    /* set PAL or NTSC default height if we are running on Amiga(tm) hardware
-     * we are using interlaced screen height because boot screen assumes 1:1 pixels */
-    if (GfxBase->DisplayFlags & NTSC)
-        height = 200 * 2;
-    else if (GfxBase->DisplayFlags & PAL)
-        height = 256 * 2;
 
     /* We want the screen to occupy the whole display, so we find best maching
        mode ID and then open a screen with that mode */
     mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, height,
-			    BIDTAG_Depth, depth, TAG_DONE);
+	BIDTAG_Depth, MinDepth, TAG_DONE);
+
     if (mode != INVALID_ID)
     {
 	struct Screen *scr = OpenScreenTags(NULL, SA_DisplayID, mode, SA_Draggable, FALSE, 
-					    SA_Quiet, TRUE, SA_Depth, depth, TAG_DONE);
+					    SA_Quiet, TRUE, SA_Depth, MinDepth, TAG_DONE);
 
 	if (scr)
 	    return scr;
@@ -57,11 +58,16 @@ struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
     return NULL;
 }
 
-
+struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
+{   
+    /* Boot menu requires basic 4+ color screen */
+    return OpenBootScreenType(DOSBootBase, 2, FALSE);
+}
 
 struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
 {
-    struct Screen *scr = OpenBootScreen(DOSBootBase);
+    /* Boot anim requires 16+ color screen and 1:1 pixels */
+    struct Screen *scr = OpenBootScreenType(DOSBootBase, 4, TRUE);
 
     if (!anim_Init(scr, DOSBootBase))
     {
