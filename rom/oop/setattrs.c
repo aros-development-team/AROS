@@ -63,14 +63,14 @@
     
     EnterFunc(bug("OOP_SetAttrs())\n"));
     ASSERT_VALID_PTR(object);
-    ASSERT_VALID_PTR(attrList);
+    ASSERT_VALID_PTR_OR_NULL(attrList);
     
     if (!static_mid) static_mid = OOP_GetMethodID(IID_Root, moRoot_Set);
 
     p.mID	= static_mid;
     p.attrList	= attrList;
 
-    /* Call the Get() method on the object */ 
+    /* Call the Set() method on the object */ 
     ReturnPtr ("OOP_SetAttrs", IPTR, OOP_DoMethod(object, (OOP_Msg)&p));
     
     AROS_LIBFUNC_EXIT
