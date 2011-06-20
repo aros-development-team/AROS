@@ -75,6 +75,7 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->height = height;
     data->bytesperpixel = multi;
     data->VideoData = Allocate(csd->vmem, data->bytesperline * data->height);
+    SetMemoryMode(csd, data->rgbformat);
  
     DB2(bug("%dx%dx%d RGBF=%08x P=%08x\n", width, height, multi, data->rgbformat, data->VideoData));
 
@@ -147,6 +148,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 	     	    OOP_Object *gfxhidd, *sync, *pf;
     		    IPTR modeid = vHidd_ModeID_Invalid;
     		    IPTR dwidth, dheight, depth, width, height;
+    		    struct ModeInfo *modeinfo;
 
 		    OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
 		    OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
@@ -157,8 +159,8 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
 		    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 		    data->rgbformat = getrtgformat(csd, pf);
-		    getrtgmodeinfo(csd, sync, pf, &data->modeinfo);
-		    csd->modeinfo = &data->modeinfo;
+		    modeinfo = getrtgmodeinfo(csd, sync, pf, &data->modeinfo);
+		    csd->modeinfo = modeinfo;
 		    csd->rgbformat = data->rgbformat;
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, width);
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
@@ -174,11 +176,12 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    	for (i = csd->spritecolors + 1; i < csd->spritecolors + 4; i++)
 		            SetSpriteColor(csd, i - (csd->spritecolors + 1),  clut[i * 3 + 0],  clut[i * 3 + 1],  clut[i * 3 + 2]);
 		    }
- 
-		    SetDAC(csd);
-		    SetGC(csd, &data->modeinfo, 0);
-		    SetPanning(csd, data->VideoData, dwidth, 0, 0);
     		    SetColorArray(csd, 0, 256);
+		    SetDisplay(csd, FALSE);
+		    SetGC(csd, modeinfo, 0);
+ 		    SetClock(csd);
+		    SetDAC(csd);
+		    SetPanning(csd, data->VideoData, dwidth, 0, 0);
 		    SetDisplay(csd, TRUE);
 		    SetSwitch(csd, TRUE);
 	            data->disp = TRUE;
