@@ -172,11 +172,14 @@
             {
 	        D(bug("[OpenWorkbench] Minimum size: %dx%d\n", dim.MinRasterWidth, dim.MinRasterHeight));
 		D(bug("[OpenWorkbench] Maximum size: %dx%d\n", dim.MaxRasterWidth, dim.MaxRasterHeight));
+		D(bug("[OpenWorkbench] Maximum depth: %d\n", dim.MaxDepth));
 	        width  = BOUND(dim.MinRasterWidth,  width,  dim.MaxRasterWidth);
 		height = BOUND(dim.MinRasterHeight, height, dim.MaxRasterHeight);
-		D(bug("[OpenWorkbench] Corrected size: %dx%d\n", width, height));
+		depth = BOUND(0, depth, dim.MaxDepth);
+		D(bug("[OpenWorkbench] Corrected size: %dx%d %dbpp\n", width, height, depth));
 		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width = width;
 		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height = height;
+		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth = depth;
             }
 	    
 	    /* Remember this ModeID because OpenScreen() with SA_LikeWorkbench set to TRUE
@@ -185,6 +188,7 @@
 
 	    screenTags[0].ti_Data = width;
             screenTags[1].ti_Data = height;
+            screenTags[2].ti_Data = depth;
 	    screenTags[3].ti_Data = modeid;
 
 	    DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
