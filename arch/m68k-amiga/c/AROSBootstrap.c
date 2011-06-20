@@ -288,13 +288,15 @@ static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
     mem = AllocMem(size, flags);
     if (mem == NULL) {
     	WriteF("AOS: Failed to allocate %N bytes of type %X4\n", size, flags);
-    } else {
-    	ml = (struct MemList*)(mem + sizeof(struct MemChunk));
-	ml->ml_NumEntries = 1;
-	ml->ml_ME[0].me_Addr = (APTR)mem;
-	ml->ml_ME[0].me_Length = size;
-    	AddTail(&mlist, (struct Node*)ml);
+    	return NULL;
     }
+
+    ml = (struct MemList*)(mem + sizeof(struct MemChunk));
+    ml->ml_NumEntries = 1;
+    ml->ml_ME[0].me_Addr = (APTR)mem;
+    ml->ml_ME[0].me_Length = size;
+    AddTail(&mlist, (struct Node*)ml);
+
     return &ml[1];
 }
 
