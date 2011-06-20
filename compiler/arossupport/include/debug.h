@@ -163,21 +163,21 @@
 #define ASSERT(x) do {						\
 	(x) ? 0 :						\
 	( DBPRINTF("\x07%s:%ld: assertion failed: %s\n",	\
-	THIS_FILE, __LINE__, #x) );				\
+	THIS_FILE, __LINE__, #x)); Alert(AG_BadParm);				\
 } while(0)
 
 #define ASSERT_VALID_PTR(x) do {				\
 	(((IPTR)(x) > 1024) &&					\
 	TypeOfMem((APTR)(x))) ? 0 :				\
 	( DBPRINTF("\x07%s, %ld: bad pointer: %s = $%p\n",	\
-	THIS_FILE, __LINE__, #x, (APTR)(x)) );			\
+	THIS_FILE, __LINE__, #x, (APTR)(x))); Alert(AG_BadParm);			\
 } while(0)
 
 #define ASSERT_VALID_PTR_OR_NULL(x) do {			\
 	((((APTR)(x)) == NULL) ||				\
 	(((IPTR)(x) > 1024) &&	TypeOfMem((APTR)(x)))) ? 0 :	\
 	( DBPRINTF("\x07%s:%ld: bad pointer: %s = $%p\n",	\
-	THIS_FILE, __LINE__, #x, (APTR)(x)) );			\
+	THIS_FILE, __LINE__, #x, (APTR)(x))); Alert(AG_BadParm);			\
 } while(0)
 
 #define ASSERT_VALID_TASK(t) do {				\
@@ -194,7 +194,7 @@
 #define KASSERT(x) do {						\
 	(x) ? 0 :						\
 	( DBPRINTF("\x07%s:%ld: assertion failed: %s\n",	\
-	THIS_FILE, __LINE__, #x), Alert(AG_BadParm) );		\
+	THIS_FILE, __LINE__, #x)); Alert(AG_BadParm);		\
 } while(0)
 
 #else /* !ADEBUG */
