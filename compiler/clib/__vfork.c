@@ -232,7 +232,7 @@ pid_t __vfork(jmp_buf env)
     D(bug("__vfork: Setting jmp_buf at %p in %p\n", __aros_startup, &__aros_startup_jmp_buf));
     if(setjmp(__aros_startup_jmp_buf))
     {
-        struct Task* child_id;
+        ULONG child_id;
 
 	D(bug("__vfork: child exited\n or executed\n"));
 
