@@ -14,7 +14,46 @@
 
 static APTR gptr(struct uaegfx_staticdata *csd, WORD offset)
 {
-    return (APTR)((ULONG*)(((UBYTE*)(csd->boardinfo)) + offset))[0];
+    APTR code = (APTR)((ULONG*)(((UBYTE*)(csd->boardinfo)) + offset))[0];
+#if 0
+    D(bug("->RTG off=%d code=%p\n", (offset - (PSSO_BoardInfo_AllocCardMem)) / 4, code));
+    UBYTE *board = gl(csd->boardinfo + PSSO_BoardInfo_MemoryBase);
+    bug("%08x: %08x %08x %08x %08x\n",
+    	board,
+    	gl(board + 0),
+    	gl(board + 4),
+    	gl(board + 8),
+    	gl(board + 12));
+#endif
+    pw (csd->boardinfo + PSSO_BoardInfo_AROSFlag, 1);
+    return code;
+}
+
+static AROS_UFH1(void, RTGCall_Default,
+    AROS_UFHA(APTR, boardinfo, A0))
+{ 
+    AROS_USERFUNC_INIT
+
+    pw (boardinfo + PSSO_BoardInfo_AROSFlag, 0);
+
+    AROS_USERFUNC_EXIT
+}
+
+/* Set fallback functions */
+void InitRTG(APTR boardinfo)
+{
+    ULONG func = (ULONG)RTGCall_Default;
+    pl (boardinfo + PSSO_BoardInfo_ScrollPlanar, func);
+    pl (boardinfo + PSSO_BoardInfo_UpdatePlanarDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitPlanar2ChunkyDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_FillRectDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_InvertRectDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitRectDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitTemplateDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitPatternDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_DrawLineDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitRectNoMaskCompleteDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitPlanar2DirectDefault, func);
 }
 
 BOOL FindCard(struct uaegfx_staticdata *csd)
@@ -38,6 +77,50 @@ BOOL InitCard(struct uaegfx_staticdata *csd)
 	return P96_LC2(BOOL, csd->uaeromvector, 29,
 	    AROS_LCA(APTR, csd->boardinfo, A0),       // For current WinUAEs
 	    AROS_LCA(APTR, csd->boardinfo, A2));      // For older E-UAEs
+}
+
+ULONG GetPixelClock(struct uaegfx_staticdata *csd, struct ModeInfo *mi, ULONG index, ULONG rgbformat)
+{
+    if (csd->CardBase)
+    	return AROS_CALL4(ULONG, gptr(csd, PSSO_BoardInfo_GetPixelClock),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, mi, A1),
+    	    AROS_LCA(ULONG, index, D0),
+    	    AROS_LCA(ULONG, rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    else
+    	return -2;
+}
+
+void SetMemoryMode(struct uaegfx_staticdata *csd, ULONG rgbformat)
+{
+    if (csd->CardBase)
+	AROS_CALL2(ULONG, gptr(csd, PSSO_BoardInfo_SetMemoryMode),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(ULONG, rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+}
+
+ULONG ResolvePixelClock(struct uaegfx_staticdata *csd, struct ModeInfo *mi, ULONG pixelclock, ULONG rgbformat)
+{
+    if (csd->CardBase)
+    	return AROS_CALL4(ULONG, gptr(csd, PSSO_BoardInfo_ResolvePixelClock),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, mi, A1),
+    	    AROS_LCA(ULONG, pixelclock, D0),
+    	    AROS_LCA(ULONG, rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    else
+    	return -2;
+}
+ULONG SetClock(struct uaegfx_staticdata *csd)
+{
+    if (csd->CardBase)
+    	return AROS_CALL1(ULONG, gptr(csd, PSSO_BoardInfo_SetClock),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    struct Library*, csd->CardBase);
+    else
+    	return -2;
 }
 BOOL SetDisplay(struct uaegfx_staticdata *csd, BOOL state)
 {
@@ -125,8 +208,8 @@ void SetPanning(struct uaegfx_staticdata *csd, UBYTE *video, UWORD width, WORD x
 }
 BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask, ULONG rgbformat)
 {
-    if (csd->CardBase)
-    	return AROS_CALL9(BOOL, gptr(csd, PSSO_BoardInfo_FillRect),
+    if (csd->CardBase) {
+    	AROS_CALL9(BOOL, gptr(csd, PSSO_BoardInfo_FillRect),
     	    AROS_LCA(APTR, csd->boardinfo, A0),
     	    AROS_LCA(APTR, ri, A1),
     	    AROS_LCA(WORD, x, D0),
@@ -137,7 +220,8 @@ BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD
     	    AROS_LCA(UBYTE, mask, D5),
     	    AROS_LCA(ULONG, rgbformat, D7),
     	    struct Library*, csd->CardBase);
-    else
+    	return gw (csd->boardinfo + PSSO_BoardInfo_AROSFlag);
+    } else
 	return P96_LC9(BOOL, csd->uaeromvector, 17,
     	    AROS_LCA(APTR, csd->boardinfo, A0),
     	    AROS_LCA(APTR, ri, A1),
@@ -151,8 +235,8 @@ BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD
 }
 BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
 {
-    if (csd->CardBase)
-    	return AROS_CALL8(BOOL, gptr(csd, PSSO_BoardInfo_InvertRect),
+    if (csd->CardBase) {
+    	AROS_CALL8(BOOL, gptr(csd, PSSO_BoardInfo_InvertRect),
     	    AROS_LCA(APTR, csd->boardinfo, A0),
     	    AROS_LCA(APTR, ri, A1),
     	    AROS_LCA(WORD, x, D0),
@@ -162,7 +246,8 @@ BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WO
      	    AROS_LCA(UBYTE, mask, D4),
     	    AROS_LCA(ULONG, rgbformat, D7),
     	    struct Library*, csd->CardBase);
-    else
+    	return gw (csd->boardinfo + PSSO_BoardInfo_AROSFlag);
+    } else
 	return P96_LC8(BOOL, csd->uaeromvector, 31,
     	    AROS_LCA(APTR, csd->boardinfo, A0),
     	    AROS_LCA(APTR, ri, A1),
@@ -176,8 +261,8 @@ BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WO
 BOOL BlitRectNoMaskComplete(struct uaegfx_staticdata *csd, struct RenderInfo *risrc, struct RenderInfo *ridst,
     WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE opcode, ULONG rgbformat)
 {
-    if (csd->CardBase)
-    	return AROS_CALL11(BOOL, gptr(csd, PSSO_BoardInfo_BlitRectNoMaskComplete),
+    if (csd->CardBase) {
+    	AROS_CALL11(BOOL, gptr(csd, PSSO_BoardInfo_BlitRectNoMaskComplete),
     	    AROS_LCA(APTR, csd->boardinfo, A0),
     	    AROS_LCA(APTR, risrc, A1),
     	    AROS_LCA(APTR, ridst, A2),
@@ -190,7 +275,8 @@ BOOL BlitRectNoMaskComplete(struct uaegfx_staticdata *csd, struct RenderInfo *ri
      	    AROS_LCA(UBYTE, opcode, D6),
     	    AROS_LCA(ULONG, rgbformat, D7),
     	    struct Library*, csd->CardBase);
-    else
+    	return gw (csd->boardinfo + PSSO_BoardInfo_AROSFlag);
+    } else
 	return P96_LC11(BOOL, csd->uaeromvector, 28,
     	    AROS_LCA(APTR, csd->boardinfo, A0),
     	    AROS_LCA(APTR, risrc, A1),
@@ -207,8 +293,8 @@ BOOL BlitRectNoMaskComplete(struct uaegfx_staticdata *csd, struct RenderInfo *ri
 BOOL BlitTemplate(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct Template *tmpl,
     WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
 {
-    if (csd->CardBase)
-    	return AROS_CALL9(BOOL, gptr(csd, PSSO_BoardInfo_BlitTemplate),
+    if (csd->CardBase) {
+    	AROS_CALL9(BOOL, gptr(csd, PSSO_BoardInfo_BlitTemplate),
     	    AROS_LCA(APTR, csd->boardinfo, A0),
     	    AROS_LCA(APTR, ri, A1),
     	    AROS_LCA(APTR, tmpl, A2),
@@ -219,7 +305,8 @@ BOOL BlitTemplate(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct T
      	    AROS_LCA(UBYTE, mask, D4),
     	    AROS_LCA(ULONG, rgbformat, D7),
     	    struct Library*, csd->CardBase);
-    else
+    	return gw (csd->boardinfo + PSSO_BoardInfo_AROSFlag);
+    } else
 	return P96_LC9(BOOL, csd->uaeromvector, 27,
     	    AROS_LCA(APTR, csd->boardinfo, A0),
     	    AROS_LCA(APTR, ri, A1),
@@ -356,18 +443,32 @@ void makerenderinfo(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct
     ri->RGBFormat = bm->rgbformat;
 }
 
-void getrtgmodeinfo(struct uaegfx_staticdata *csd, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo)
+struct ModeInfo *getrtgmodeinfo(struct uaegfx_staticdata *csd, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo)
 {
+    struct LibResolution *node;
     IPTR width, height, depth;
 
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
     OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
 
+    D(bug("getrtgmodeinfo %dx%dx%d\n", width, height, depth));
+    // UAE RTG driver does not need anything else
+    // but real RTG does
+    ForeachNode((csd->boardinfo + PSSO_BoardInfo_ResolutionsList), node) {
+    	if (node->Width == width && node->Height == height) {
+    	    UBYTE index = (depth + 7) / 8;
+    	    if (node->Modes[index]) {
+		D(bug("RTG ModeInfo found %p\n", node->Modes[index]));
+		return node->Modes[index];
+    	    }
+    	}
+    }
+    D(bug("using fake modeinfo\n"));
     modeinfo->Width = width;
     modeinfo->Height = height;
     modeinfo->Depth = depth;
-    // UAE RTG driver does not need anything else
+    return modeinfo;    
 }
 
 const UBYTE modetable[16] =

@@ -98,7 +98,7 @@ struct LibResolution {
     UWORD Width;
     UWORD Height;
     UWORD Flags;
-    APTR Modes[MAXMODES];
+    struct ModeInfo *Modes[MAXMODES];
     APTR BoardInfo;
 };
 
@@ -160,6 +160,22 @@ struct ModeInfo {
 	};
 	ULONG			PixelClock;
 };
+
+
+#define GMB_DOUBLECLOCK		0
+#define GMB_INTERLACE		1
+#define GMB_DOUBLESCAN		2
+#define GMB_HPOLARITY		3
+#define GMB_VPOLARITY		4
+#define GMB_COMPATVIDEO		5
+#define GMB_DOUBLEVERTICAL	6
+#define GMF_DOUBLECLOCK		(1L<<GMB_DOUBLECLOCK)
+#define GMF_INTERLACE		(1L<<GMB_INTERLACE)
+#define GMF_DOUBLESCAN		(1L<<GMB_DOUBLESCAN)
+#define GMF_HPOLARITY		(1L<<GMB_HPOLARITY)
+#define GMF_VPOLARITY		(1L<<GMB_VPOLARITY)
+#define GMF_COMPATVIDEO		(1L<<GMB_COMPATVIDEO)
+#define GMF_DOUBLEVERTICAL	(1L<<GMB_DOUBLEVERTICAL)
 
 #define PSSO_BitMapExtra_BoardNode        0
 #define PSSO_BitMapExtra_HashChain        8 /* BoardNode is 8-bytes */
@@ -331,12 +347,13 @@ struct ModeInfo {
 #define PSSO_BoardInfo_SyncPeriod		    PSSO_BoardInfo_SyncTime + 4
 #define PSSO_BoardInfo_SoftVBlankPort		    PSSO_BoardInfo_SyncPeriod + 8
 #define PSSO_BoardInfo_WaitQ		    PSSO_BoardInfo_SyncPeriod + 34
-#define PSSO_BoardInfo_SizeOf			    PSSO_BoardInfo_WaitQ + 12
+#define PSSO_BoardInfo_AROSFlag			PSSO_BoardInfo_WaitQ + 12
+#define PSSO_BoardInfo_SizeOf			    PSSO_BoardInfo_AROSFlag + 4
 
 WORD getrtgdepth (ULONG rgbformat);
 ULONG getrtgformat(struct uaegfx_staticdata *csd, OOP_Object *);
 void makerenderinfo(struct uaegfx_staticdata *csd, struct RenderInfo*, struct bm_data*);
-void getrtgmodeinfo(struct uaegfx_staticdata *csd, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo);
+struct ModeInfo *getrtgmodeinfo(struct uaegfx_staticdata *csd, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo);
 
 APTR  gp(UBYTE *p);
 ULONG gl(UBYTE *p);
@@ -368,5 +385,12 @@ BOOL SetSprite(struct uaegfx_staticdata *sd, BOOL activate);
 BOOL SetSpritePosition(struct uaegfx_staticdata *sd);
 BOOL SetSpriteImage(struct uaegfx_staticdata *sd);
 BOOL SetSpriteColor(struct uaegfx_staticdata *sd, UBYTE idx, UBYTE r, UBYTE g, UBYTE b);
+
+/* real RTG only functions */
+ULONG GetPixelClock(struct uaegfx_staticdata *csd, struct ModeInfo *mi, ULONG index, ULONG rgbformat);
+ULONG ResolvePixelClock(struct uaegfx_staticdata *csd, struct ModeInfo *mi, ULONG pixelclock, ULONG rgbformat);
+ULONG SetClock(struct uaegfx_staticdata *csd);
+void SetMemoryMode(struct uaegfx_staticdata *csd, ULONG rgbformat);
+void InitRTG(APTR boardinfo);
 
 #endif

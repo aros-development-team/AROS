@@ -34,6 +34,7 @@
 
 #define SDEBUG 0
 #define DEBUG 0
+#define DRTG(x) x;
 #include <aros/debug.h>
 
 #define SIZE_RESLIST 4
@@ -217,7 +218,6 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 {
     struct uaegfx_staticdata *csd = CSD(cl);
     struct LibResolution *r;
-    struct Node *node;
     WORD rescnt, i, j, k, l, depth;
     struct TagItem *reslist, *restags, *pflist, *modetags;
     struct pRoot_New mymsg;
@@ -229,12 +229,9 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
     NEWLIST(&csd->rtglist);
     supportedformats = gw(csd->boardinfo + PSSO_BoardInfo_RGBFormats);
-    node = (struct Node*)(((ULONG*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList))[0]);
-    r = (struct LibResolution*)node->ln_Succ;
     rescnt = 0;
-    while (r->node.ln_Succ) {
+    ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
         rescnt++;
-    	r = (struct LibResolution*)r->node.ln_Succ;
     }
     D(bug("UAEGFX: resolutions: %d, supportmask: %x\n", rescnt, supportedformats));
 
@@ -243,8 +240,8 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     pflist = AllocVec(RGBFB_MaxFormats * SIZE_PFLIST * sizeof(struct TagItem), MEMF_PUBLIC | MEMF_CLEAR);
     modetags = AllocVec(SIZE_MODELIST * sizeof(struct TagItem), MEMF_PUBLIC | MEMF_CLEAR);
     
-    r = (struct LibResolution*)node->ln_Succ;
-    for (j = 0, i = 0; i < rescnt; i++, j++) {
+    i = 0;
+    ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
     	reslist[i * SIZE_RESLIST + 0].ti_Tag = aHidd_Sync_HDisp;
     	reslist[i * SIZE_RESLIST + 0].ti_Data = r->Width;
     	reslist[i * SIZE_RESLIST + 1].ti_Tag = aHidd_Sync_VDisp;
@@ -254,12 +251,12 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     	reslist[i * SIZE_RESLIST + 3].ti_Tag = TAG_DONE;
     	reslist[i * SIZE_RESLIST + 3].ti_Data = 0;
     	D(bug("%08x %d*%d\n", r, r->Width, r->Height));
-    	restags[j].ti_Tag = aHidd_Gfx_SyncTags;
-    	restags[j].ti_Data = (IPTR)&reslist[i * SIZE_RESLIST];
-    	r = (struct LibResolution*)r->node.ln_Succ;
+    	restags[i].ti_Tag = aHidd_Gfx_SyncTags;
+    	restags[i].ti_Data = (IPTR)&reslist[i * SIZE_RESLIST];
+    	i++;
     }
-    restags[j].ti_Tag = TAG_DONE;
-    restags[j].ti_Data = 0;
+    restags[i].ti_Tag = TAG_DONE;
+    restags[i].ti_Data = 0;
     
     k = 0;
     for (i = 0, j = 0; i < RGBFB_MaxFormats; i++) {
@@ -397,13 +394,11 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    DB2(bug("w=%d h=%d mode=%08x sync=%x pf=%x\n", dwidth, dheight, mid, sync, pf));
 
 	    modeid = vHidd_ModeID_Invalid;
-	    r = (struct LibResolution*)node->ln_Succ;
-	    while (r->node.ln_Succ) {
+   	    ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
 	    	if (r->Width == dwidth && r->Height == dheight) {
 	    	    modeid = r->DisplayID;
 	    	    break;
 	    	}
-	    	r = (struct LibResolution*)r->node.ln_Succ;
 	    }
 	    if (modeid == vHidd_ModeID_Invalid) {
 	    	D(bug("w=%d h=%d not found!\n", dwidth, dheight));
@@ -430,7 +425,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    node1->modeid = rtgmodeid;
 	    AddTail(&csd->rtglist, &node1->node);
 
-	    DB2(bug("%dx%d %08x %d\n", node1->width, node1->height, node1->modeid, p96mode));
+	    DB2(bug("Added %dx%d %08x %d\n", node1->width, node1->height, node1->modeid, p96mode));
 	}
 	HIDD_Gfx_ReleaseModeIDs(o, midp);
 	csd->superforward = FALSE;
@@ -774,12 +769,93 @@ AROS_UFH4(APTR, rtg_vblank,
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    	AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT
 
-	return 0;	
+    return 0;	
 
-	AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 
+}
+
+struct P96RTGmode
+{
+    UWORD w, h, id;
+    ULONG clock;
+    UWORD htotal, vtotal;
+    UWORD hborder, vborder;
+    UWORD hpos, vpos;
+    UWORD hsync, vsync;
+    UBYTE flags;
+};
+
+static const struct P96RTGmode rtgmodes[] =
+{
+	{ 320, 240, 1, 16000000,  416, 260, 0, 0, 40, 5,  16, 1, GMF_HPOLARITY | GMF_VPOLARITY | GMF_DOUBLESCAN },
+	{ 640, 480, 3, 31000000,  832, 520, 0, 0, 48, 9,  80, 3, GMF_HPOLARITY | GMF_VPOLARITY },
+	{ 800, 600, 4, 40100000, 1056, 620, 0, 0, 56, 1, 112, 2, 0 },
+	{ 0 }
+};
+/* real RTG only */
+static void PopulateModeInfo(struct uaegfx_staticdata *csd, struct LibResolution *res, const struct P96RTGmode *mode)
+{
+    UWORD rgbformat;
+
+    for (rgbformat = 0; rgbformat < RGBFB_MaxFormats; rgbformat++) {
+    	ULONG clockindex;
+    	UBYTE depth, index;
+    	struct ModeInfo *mi;
+
+    	if (!((1 << rgbformat) & RGBFB_SUPPORTMASK))
+    	    continue;
+    	if (!((1 << rgbformat) & gw(csd->boardinfo + PSSO_BoardInfo_RGBFormats)))
+    	    continue;
+    	depth = getrtgdepth(1 << rgbformat);
+    	index = (depth + 7) / 8;
+    	if (res->Modes[index])
+    	    continue;
+    	mi = AllocMem(sizeof(struct ModeInfo), MEMF_CLEAR | MEMF_PUBLIC);
+    	if (!mi)
+    	    continue;
+	mi->OpenCount = 1;
+	mi->Active = TRUE;
+	mi->Width = mode->w;
+	mi->Height = mode->h;
+	mi->Depth = depth;
+	mi->HorTotal = mode->htotal;
+	mi->VerTotal = mode->vtotal;
+	mi->HorBlankSize = mode->hborder;
+	mi->VerBlankSize = mode->vborder;
+	mi->HorSyncStart = mode->hpos;
+	mi->VerSyncStart = mode->vpos;
+	mi->HorSyncSize = mode->hsync;
+	mi->VerSyncSize = mode->vsync;
+	mi->Flags = mode->flags;
+        clockindex = ResolvePixelClock(csd, mi, mode->clock, rgbformat);
+        mi->PixelClock = GetPixelClock(csd, mi, clockindex, rgbformat);
+        DRTG(bug("%d,%p: %dx%dx%d ci=%d clk=%d (%d/%d)\n",
+            index, mi, mi->Width, mi->Height, mi->Depth,
+            clockindex, mi->PixelClock, mi->Numerator, mi->Denominator));
+        res->Modes[index] = mi;
+    }
+}
+static void PopulateResolutionList(struct uaegfx_staticdata *csd)
+{
+    struct LibResolution *node;
+    UWORD cnt;
+    
+    NEWLIST((csd->boardinfo + PSSO_BoardInfo_ResolutionsList));
+    for (cnt = 0; rtgmodes[cnt].clock; cnt++) {
+    	const struct P96RTGmode *mode = &rtgmodes[cnt];
+        node = AllocMem(sizeof(struct LibResolution), MEMF_CLEAR | MEMF_PUBLIC);
+        if (!node)
+            break;
+        node->Width = mode->w;
+        node->Height = mode->h;
+        node->DisplayID = 0x50001000 | (mode->id << 16);
+        node->BoardInfo = csd->boardinfo;
+        PopulateModeInfo(csd, node, mode);
+        AddTail((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList), (struct Node*)node);
+    }   
 }
 
 static int openall(struct uaegfx_staticdata *csd)
@@ -788,11 +864,59 @@ static int openall(struct uaegfx_staticdata *csd)
     	if ((csd->cs_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
     	    return TRUE;
     	}
-    	CloseLibrary(csd->cs_UtilityBase);
     }
     return FALSE;
 }
+static void freeall(struct uaegfx_staticdata *csd)
+{
+    CloseLibrary(csd->cs_IntuitionBase);
+    CloseLibrary(csd->cs_UtilityBase);
+    FreeMem(csd->vmem, sizeof(struct MemHeader));
+    csd->vmem = NULL;
+    FreeVec(csd->boardinfo);
+    csd->boardinfo = NULL;
+}
 
+static void P96DebugInfo(struct uaegfx_staticdata *csd)
+{
+    UBYTE i;
+    DRTG(bug("Reg:%08x IO:%08x Name:'%s' Type:%d BPC=%d Flags=%08x\n",
+	gl(csd->boardinfo + PSSO_BoardInfo_RegisterBase),
+	gl(csd->boardinfo + PSSO_BoardInfo_MemoryIOBase),
+	gl(csd->boardinfo + PSSO_BoardInfo_BoardName),
+	gl(csd->boardinfo + PSSO_BoardInfo_BoardType),
+	gw(csd->boardinfo + PSSO_BoardInfo_BitsPerCannon),
+	gl(csd->boardinfo + PSSO_BoardInfo_Flags)));
+    for (i = 0; i < MAXMODES; i++) {
+    	DRTG(bug("%d: HV:%4d VV: %4d HR:%4d VR:%4d C:%d\n", i,
+    	    gw(csd->boardinfo + PSSO_BoardInfo_MaxHorValue + i * 2),
+    	    gw(csd->boardinfo + PSSO_BoardInfo_MaxVerValue + i * 2),
+    	    gw(csd->boardinfo + PSSO_BoardInfo_MaxHorResolution + i * 2),
+    	    gw(csd->boardinfo + PSSO_BoardInfo_MaxVerResolution + i * 2),
+    	    gl(csd->boardinfo + PSSO_BoardInfo_PixelClockCount + i * 4)));
+    }
+}
+
+static BOOL P96Init(struct uaegfx_staticdata *csd, struct Library *lib)
+{
+    DRTG(bug("P96GFX: attempting to init '%s'\n", lib->lib_Node.ln_Name));
+    pl(csd->boardinfo + PSSO_BoardInfo_CardBase, (ULONG)lib);
+    csd->CardBase = lib;
+    if (FindCard(csd)) {
+	DRTG(bug("P96GFX: FindCard succeeded\n"));
+	if (InitCard(csd)) {
+	    DRTG(bug("P96GFX: InitCard succeeded\n"));
+	    /* Without this card may not be in linear memory map mode. */
+	    SetMemoryMode(csd, RGBFB_CLUT);
+	    InitRTG(csd->boardinfo);
+	    P96DebugInfo(csd);
+	    return TRUE;
+	}
+    }
+    pl(csd->boardinfo + PSSO_BoardInfo_CardBase, 0);
+    csd->CardBase = NULL;
+    return FALSE;
+}
 
 BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 {
@@ -802,29 +926,27 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     struct Interrupt *intr;
     struct Node *node;
 
-    if (!(SysBase->AttnFlags & AFF_68020) || !(SysBase->AttnFlags & AFF_ADDR32))
+    if (!(SysBase->AttnFlags & AFF_68020))
     	return FALSE;
 
-    csd->uaeromvector = (APTR)(0xf00000 + 0xff60);
-    if ((gl(csd->uaeromvector) & 0xff00ffff) != 0xa0004e75) {
-    	D(bug("UAE boot ROM entry point not found. UAEGFX not enabled.\n"));
+    D(bug("Init_UAEGFXClass\n"));
+    if (!openall(csd)) {
+    	freeall(csd);
     	return FALSE;
     }
 
-    D(bug("Init_UAEGFXClass\n"));
-    if (!openall(csd))
-    	return FALSE;
-
     csd->boardinfo = AllocVec(PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last, MEMF_CLEAR | MEMF_PUBLIC);
-    if (!csd->boardinfo)
+    if (!csd->boardinfo) {
+    	freeall(csd);
     	return FALSE;
+    }
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList));
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_BitMapList));
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_MemList));
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_WaitQ));
     csd->bitmapextra = csd->boardinfo + PSSO_BoardInfo_SizeOf;
     pl(csd->boardinfo + PSSO_BoardInfo_BitMapExtra, (ULONG)csd->bitmapextra);
-    pl(csd->boardinfo + PSSO_BoardInfo_UtilBase, (ULONG)TaggedOpenLibrary(TAGGEDOPEN_UTILITY));
+    pl(csd->boardinfo + PSSO_BoardInfo_UtilBase, (ULONG)csd->cs_UtilityBase);
     InitSemaphore((struct SignalSemaphore*)(csd->boardinfo + PSSO_BoardInfo_BoardLock));
     intr = (struct Interrupt*)(csd->boardinfo + PSSO_BoardInfo_HardInterrupt);
     intr->is_Code = (APTR)rtg_vblank;
@@ -840,58 +962,51 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     intr->is_Node.ln_Type = NT_INTERRUPT;
 
     Forbid();
-    node = SysBase->LibList.lh_Head;
-    while (node->ln_Succ) {
-    	struct Library *lib = (struct Library*)node;
-    	struct Node *next = node->ln_Succ;
+    ForeachNode(&SysBase->LibList.lh_Head, node) {
+   	struct Library *lib = (struct Library*)node;
     	char *name = node->ln_Name;
     	int len = strlen(name);
-    	if (len > 5 && !strcmp(name + len - 5, ".card")) {
-    	    D(bug("P96GFX: attempting to init '%s'\n", name));
-    	    pl(csd->boardinfo + PSSO_BoardInfo_CardBase, (ULONG)lib);
-    	    csd->CardBase = lib;
-    	    if (FindCard(csd)) {
-    	    	D(bug("P96GFX: FindCard succeeded\n"));
-    	    	if (InitCard(csd)) {
-		    D(bug("P96GFX: InitCard succeeded\n"));
-		    break;
-		}
-	    }
-    	    pl(csd->boardinfo + PSSO_BoardInfo_CardBase, 0);
-    	    csd->CardBase = NULL;
-	    D(bug("P96GFX: init failed\n"));   
+    	if (len > 5 && !stricmp(name + len - 5, ".card")) {
+    	    if (P96Init(csd, lib))
+    	    	break;
+	    DRTG(bug("P96GFX: init failed\n"));   
 	}
-	node = next;
     }	
     Permit();
 
     if (!csd->CardBase) {
-	if (!FindCard(csd)) {
-    	    D(bug("FindCard() returned false\n"));
-    	    FreeVec(csd->boardinfo);
-    	    csd->boardinfo = NULL;
+    	csd->uaeromvector = (APTR)(0xf00000 + 0xff60);
+    	if ((gl(csd->uaeromvector) & 0xff00ffff) != 0xa0004e75) {
+	    D(bug("UAE boot ROM entry point not found. UAEGFX not enabled.\n"));
+	    freeall(csd);
+	    return FALSE;
+    	}
+    	if (!FindCard(csd)) {
+    	    D(bug("UAEGFX: FindCard() returned false\n"));
+    	    freeall(csd);
     	    return FALSE;
         }
-        D(bug("FindCard done\n"));
+        D(bug("UAEGFX: FindCard done\n"));
         InitCard(csd);
+    } else {
+	PopulateResolutionList(csd);
     }
 
     if (IsListEmpty((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList))) {
      	D(bug("Resolutionlist is empty, init failed.\n"));
-    	FreeVec(csd->boardinfo);
-    	csd->boardinfo = NULL;
+     	freeall(csd);
     	return FALSE;
     }
     D(bug("InitCard done\n"));
 
     csd->hardwaresprite = SetSprite(csd, FALSE) && (gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE));
-    D(bug("hardware sprite: %d\n", csd->hardwaresprite));
+    DRTG(bug("hardware sprite: %d\n", csd->hardwaresprite));
 
     csd->vram_start = (UBYTE*)gl(csd->boardinfo + PSSO_BoardInfo_MemoryBase);
     csd->vram_size = gl(csd->boardinfo + PSSO_BoardInfo_MemorySize);
-    D(bug("P96RTG found at %08x size %08x\n", csd->vram_start, csd->vram_size));
 
     size = (csd->vram_size - 1) & 0xffff0000;
+    DRTG(bug("P96RTG VRAM found at %08x size %08x (%08x).\n", csd->vram_start, csd->vram_size, size));
     mc = (struct MemChunk*)csd->vram_start;
     csd->vmem = AllocVec(sizeof(struct MemHeader), MEMF_CLEAR | MEMF_PUBLIC);
     csd->vmem->mh_Node.ln_Type = NT_MEMORY;
@@ -900,7 +1015,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     csd->vmem->mh_Upper = (APTR)((ULONG)mc + size);
     csd->vmem->mh_Free = size;
     mc->mc_Next = NULL;
-    mc->mc_Bytes = size;
+    mc->mc_Bytes = csd->vmem->mh_Free;
 
     __IHidd_BitMap  	= OOP_ObtainAttrBase(IID_Hidd_BitMap);
     __IHidd_UAEGFXBitmap= OOP_ObtainAttrBase(IID_Hidd_UAEGFXBitMap);
@@ -919,6 +1034,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     {
     	D(bug("Init_UAEGFXClass fail\n"));
     	freeattrbases(LIBBASE, csd);
+    	freeall(csd);
     	return FALSE;
     }
 
@@ -929,11 +1045,8 @@ static int Expunge_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 {
     struct uaegfx_staticdata *csd = &LIBBASE->csd;
     D(bug("Expunge_UAEGFXClass\n"));
-    if (csd->boardinfo != NULL)
-    	FreeVec(csd->boardinfo);
     freeattrbases(LIBBASE, csd);
-    CloseLibrary(LIBBASE->csd.cs_IntuitionBase);
-    CloseLibrary(LIBBASE->csd.cs_UtilityBase);
+    freeall(csd);
     return TRUE;
 }
 
