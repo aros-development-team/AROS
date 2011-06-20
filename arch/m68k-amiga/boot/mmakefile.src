@@ -37,7 +37,8 @@ include $(TOP)/config/make.cfg
 #MM     kernel-amiga-m68k-audio-kobj \
 #MM     kernel-ata-kobj \
 #MM     kernel-shell-kobj \
-#MM     kernel-filesystem-kobj
+#MM     kernel-filesystem-kobj \
+#MM     kernel-m680x0-kobj
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
@@ -103,7 +104,7 @@ KLIBS   :=  keymap graphics layers intuition gadtools icon workbench
 KDEVS   := 
 KHNDLRS := 
 KHIDDS  :=
-KRSRCS  := shellcommands workbook wbtag
+KRSRCS  := shellcommands workbook wbtag m680x0
 KHOOKS  := alert
 
 ROMLOC_ext := 0xe00000
