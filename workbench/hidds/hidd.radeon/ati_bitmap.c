@@ -792,7 +792,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPixel)
     void *ptr = bm->addresses[msg->y];
 	OOP_Object *gc = msg->gc;
 
-    HIDDT_Pixel     	    	    src, dest, val;
+    HIDDT_Pixel     	    	    src, dest = 0, val;
     HIDDT_DrawMode  	    	    mode;
     HIDDT_Pixel     	    	    writeMask;
 
@@ -886,7 +886,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawEllipse)
 	void _drawpixel(int x, int y)
 	{
 		void *ptr = bm->addresses[y];
-		HIDDT_Pixel val, dest;
+		HIDDT_Pixel val, dest = 0;
 
 		if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0)
 		{
@@ -1572,7 +1572,7 @@ D(bug("ATI: PutAlphaImage(%d, %d, %d:%d)\n", msg->x, msg->y, msg->width, msg->he
 
 					for (x=0; x < bw; x++)
 					{
-						UWORD       destpix;
+						UWORD       destpix = 0;
 						ULONG       srcpix;
 						LONG        src_red, src_green, src_blue, src_alpha;
 						LONG        dst_red, dst_green, dst_blue;
