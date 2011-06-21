@@ -272,6 +272,9 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
 	if (echo)
 	    cliEcho(ss, out->buf, DOSBase);
 
+	/* Add terminating linefeed */
+	bufferAppend("\n", 1, out);
+
 	/* OK, we've got a command. Let's execute it! */
 	result = executeLine(ss, out->buf, DOSBase);
 
