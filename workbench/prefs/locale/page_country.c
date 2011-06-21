@@ -130,7 +130,7 @@ static IPTR Country__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     struct Country_DATA *data = INST_DATA(cl, obj);
     struct CountryEntry    *entry;
     IPTR rc;
-    ULONG nr;
+    IPTR nr = 0;
     ULONG i;
 
 
