@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
     struct RDArgs           *rda;
     char                    outpstring[sizeof(unsigned int)*6];
-    IPTR                    offset,start_address,dump_size;
+    IPTR                    offset,start_address,dump_size = 0;
     BOOL                    line_end;
     int                     PROGRAM_ERROR = RETURN_OK;
     char                    *ERROR_TEXT,*HELPTXT;
