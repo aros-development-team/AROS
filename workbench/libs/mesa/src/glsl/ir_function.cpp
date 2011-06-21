@@ -111,7 +111,7 @@ parameter_lists_match(const exec_list *list_a, const exec_list *list_b)
        * but the actual parameter can be coerced to the type of the declared
        * parameter, the match score is one.
        */
-      int score;
+      int score = -1;
       switch ((enum ir_variable_mode)(param->mode)) {
       case ir_var_auto:
       case ir_var_uniform:
