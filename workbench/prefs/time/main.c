@@ -671,11 +671,12 @@ static void HandleAll(void)
 	case RETURNID_SAVE:
     	case RETURNID_USE:
 	    {
-	    	struct ClockData cal_date, clock_time, *dateptr;
+	    	struct ClockData cal_date = {}, clock_time, *dateptr = NULL;
 		IPTR frozen = 0;
 		
 	    	get(calobj, MUIA_Calendar_Date, &dateptr);
-		cal_date = *dateptr;
+	    	if (dateptr)
+			cal_date = *dateptr;
 		
 		get(clockobj, MUIA_Clock_Frozen, &frozen);
 		if (frozen)
