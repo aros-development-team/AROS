@@ -1017,7 +1017,7 @@ void NVCalcStateExt (
     int		   flags 
 )
 {
-    ULONG pixelDepth, VClk;
+    ULONG pixelDepth, VClk = 0;
     /*
      * Save mode parameters.
      */
