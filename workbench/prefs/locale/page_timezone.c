@@ -312,11 +312,11 @@ static void SetEarthmapSelection(UBYTE timezonespen)
 
 static void UpdateZoneName(Object *zone_name, char *newname)
 {
-    char *old;
+    char *old = NULL;
 
     GET(zone_name, MUIA_Text_Contents, &old);
 
-    if(strcmp(old, newname))
+    if(old && strcmp(old, newname))
     {
         SET(zone_name, MUIA_Text_Contents, newname);
     }
