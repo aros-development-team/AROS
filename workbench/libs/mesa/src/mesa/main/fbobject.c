@@ -1649,7 +1649,7 @@ framebuffer_texture(struct gl_context *ctx, const char *caller, GLenum target,
 {
    struct gl_renderbuffer_attachment *att;
    struct gl_texture_object *texObj = NULL;
-   struct gl_framebuffer *fb;
+   struct gl_framebuffer *fb = NULL;
    GLboolean error = GL_FALSE;
 
    ASSERT_OUTSIDE_BEGIN_END(ctx);

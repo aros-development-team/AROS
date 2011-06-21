@@ -1466,7 +1466,7 @@ bld_tex(struct bld_context *bld, struct nv_value *dst0[4],
 {
    struct nv_value *t[4], *s[3];
    uint opcode = translate_opcode(insn->Instruction.Opcode);
-   int arg, dim, c;
+   int arg = 0, dim = 0, c;
    const int tic = insn->Src[1].Register.Index;
    const int tsc = 0;
    const int cube = (insn->Texture.Texture  == TGSI_TEXTURE_CUBE) ? 1 : 0;
