@@ -109,7 +109,7 @@ static VOID PrintProcessorInformation()
     ULONG i, j;
     CONST_STRPTR modelstring;
     ULONG architecture, endianness;
-    STRPTR architecturestring, endiannessstring;
+    CONST_STRPTR architecturestring = "", endiannessstring = "";
     UQUAD cpuspeed;
     
     for (i = 0; i < count; i++)
