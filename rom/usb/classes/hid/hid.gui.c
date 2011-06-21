@@ -2829,7 +2829,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
 
         case MUIM_Action_SetTracking:
         {
-            ULONG state;
+            ULONG state = 0;
             get(nch->nch_TrackKeyEventsObj, MUIA_Selected, &state);
             nch->nch_TrackKeyEvents = state;
             get(nch->nch_TrackEventsObj, MUIA_Selected, &state);
@@ -2956,6 +2956,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
             struct NepHidAction *nha;
             if((nha = nch->nch_GUICurrentAction))
             {
+                tmpval = 0;
                 get(nch->nch_ActionSelectorObj, MUIA_Cycle_Active, &tmpval);
                 if(tmpval != (nha->nha_Type & HUA_ATYPEMASK))
                 {
@@ -3088,58 +3089,74 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
         case MUIM_Action_UpdateAOptions:
         {
             struct NepHidAction *nha;
-            tmpval = 0;
 
             if((nha = nch->nch_GUICurrentAction))
             {
                 nha->nha_IsDefault = FALSE;
+                tmpval = 0;
                 get(nch->nch_ActionAbsToRelObj, MUIA_Selected, &tmpval);
                 nha->nha_AbsToRel = tmpval;
 
+                tmpval = 0;
                 get(nch->nch_ActionClipEnableObj, MUIA_Selected, &tmpval);
                 nha->nha_ClipEnable = tmpval;
                 if(tmpval)
                 {
+                    tmpval = 0;
                     get(nch->nch_A_ClipMinObj, MUIA_Numeric_Value, &tmpval);
                     nha->nha_ClipMin = tmpval;
+                    tmpval = 0;
                     get(nch->nch_A_ClipMaxObj, MUIA_Numeric_Value, &tmpval);
                     nha->nha_ClipMax = tmpval;
+                    tmpval = 0;
                     get(nch->nch_A_ClipStretchObj, MUIA_Selected, &tmpval);
                     nha->nha_ClipStretch = tmpval;
                 }
 
+                tmpval = 0;
                 get(nch->nch_ActionScaleEnableObj, MUIA_Selected, &tmpval);
                 nha->nha_ScaleEnable = tmpval;
                 if(tmpval)
                 {
+                    tmpval = 0;
                     get(nch->nch_A_ScaleMinObj, MUIA_String_Integer, &tmpval);
                     nha->nha_ScaleMin = tmpval;
+                    tmpval = 0;
                     get(nch->nch_A_ScaleMaxObj, MUIA_String_Integer, &tmpval);
                     nha->nha_ScaleMax = tmpval;
                 }
 
+                tmpval = 0;
                 get(nch->nch_ActionCCEnableObj, MUIA_Selected, &tmpval);
                 nha->nha_CCEnable = tmpval;
                 if(tmpval)
                 {
+                    tmpval = 0;
                     get(nch->nch_A_CCVar1Obj, MUIA_Cycle_Active, &tmpval);
                     nha->nha_CCVar1 = A_CCVariableVals[tmpval];
+                    tmpval = 0;
                     get(nch->nch_A_CCCondObj, MUIA_Cycle_Active, &tmpval);
                     nha->nha_CCCond = A_CCCondVals[tmpval];
+                    tmpval = 0;
                     get(nch->nch_A_CCVar2Obj, MUIA_Cycle_Active, &tmpval);
                     nha->nha_CCVar2 = A_CCVariableVals[tmpval];
+                    tmpval = 0;
                     get(nch->nch_A_CCConst1Obj, MUIA_String_Integer, &tmpval);
                     nha->nha_CCConst1 = tmpval;
+                    tmpval = 0;
                     get(nch->nch_A_CCConst2Obj, MUIA_String_Integer, &tmpval);
                     nha->nha_CCConst2 = tmpval;
                 }
 
+                tmpval = 0;
                 get(nch->nch_ActionValEnableObj, MUIA_Selected, &tmpval);
                 nha->nha_ValEnable = tmpval;
                 if(tmpval)
                 {
+                    tmpval = 0;
                     get(nch->nch_A_ValVarObj, MUIA_Cycle_Active, &tmpval);
                     nha->nha_ValVar = A_CCVariableVals[tmpval];
+                    tmpval = 0;
                     get(nch->nch_A_ValConstObj, MUIA_String_Integer, &tmpval);
                     nha->nha_ValConst = tmpval;
                 }
@@ -3151,29 +3168,34 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
         {
             struct NepHidAction *nha;
             struct NepHidGItem *nhgi;
-            tmpval = 0;
 
             if((nha = nch->nch_GUICurrentAction))
             {
                 nha->nha_IsDefault = FALSE;
+                tmpval = 0;
                 get(nch->nch_ActionTriggerObj, MUIA_Cycle_Active, &tmpval);
                 nha->nha_Type = (nha->nha_Type & HUA_ATYPEMASK) | ActionTriggerVals[tmpval];
                 switch(nha->nha_Type & HUA_ATYPEMASK)
                 {
                     case HUA_QUALIFIER:
+                        tmpval = 0;
                         get(nch->nch_A_KeyQualOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_QualMode = A_QualOpVals[tmpval];
+                        tmpval = 0;
                         get(nch->nch_A_KeyQualObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_Qualifier = tmpval;
                         break;
 
                     case HUA_RAWKEY:
+                        tmpval = 0;
                         get(nch->nch_A_RawKeyUpObj, MUIA_Selected, &tmpval);
                         if(tmpval)
                         {
+                            tmpval = 0;
                             get(nch->nch_A_RawKeyObj, MUIA_List_Active, &tmpval);
                             nha->nha_RawKey = tmpval|IECODE_UP_PREFIX;
                         } else {
+                            tmpval = 0;
                             get(nch->nch_A_RawKeyObj, MUIA_List_Active, &tmpval);
                             nha->nha_RawKey = tmpval;
                         }
@@ -3192,41 +3214,52 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         break;
 
                     case HUA_MOUSEPOS:
+                        tmpval = 0;
                         get(nch->nch_A_MousePosOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_MouseAxis = A_MousePosOpVals[tmpval];
                         break;
 
                     case HUA_BUTTONS:
+                        tmpval = 0;
                         get(nch->nch_A_MouseButOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_ButtonMode = A_MouseButOpVals[tmpval];
+                        tmpval = 0;
                         get(nch->nch_A_MouseButObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_ButtonNo = tmpval+1;
                         break;
 
                     case HUA_TABLET:
+                        tmpval = 0;
                         get(nch->nch_A_TabletAxisObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_TabletAxis = A_TabletAxisVals[tmpval];
                         break;
 
                     case HUA_WHEEL:
+                        tmpval = 0;
                         get(nch->nch_A_WheelOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_WheelMode = A_WheelOpVals[tmpval];
+                        tmpval = 0;
                         get(nch->nch_A_WheelDistObj, MUIA_Numeric_Value, &tmpval);
                         nha->nha_WheelDist = tmpval;
                         break;
 
                     case HUA_DIGJOY:
+                        tmpval = 0;
                         get(nch->nch_A_JoypadOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_JoypadOp = A_JoypadOpVals[tmpval];
+                        tmpval = 0;
                         get(nch->nch_A_JoypadFeatObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_JoypadFeat = A_JoypadFeatVals[tmpval];
+                        tmpval = 0;
                         get(nch->nch_A_JoypadPortObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_JoypadPort = tmpval;
                         break;
 
                     case HUA_ANALOGJOY:
+                        tmpval = 0;
                         get(nch->nch_A_APadFeatObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_APadFeat = A_APadFeatVals[tmpval];
+                        tmpval = 0;
                         get(nch->nch_A_APadPortObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_JoypadPort = tmpval;
                         break;
@@ -3235,6 +3268,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         tmpstr = "";
                         get(nch->nch_A_SoundFileObj, MUIA_String_Contents, &tmpstr);
                         strncpy(nha->nha_SoundFile, tmpstr, 255);
+                        tmpval = 0;
                         get(nch->nch_A_SoundVolObj, MUIA_Numeric_Value, &tmpval);
                         nha->nha_SoundVolume = tmpval;
                         break;
@@ -3243,12 +3277,14 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         tmpstr = "";
                         get(nch->nch_A_ShellComObj, MUIA_String_Contents, &tmpstr);
                         strncpy(nha->nha_ExeString, tmpstr, 79);
+                        tmpval = 0;
                         get(nch->nch_A_ShellAsyncObj, MUIA_Selected, &tmpval);
                         nha->nha_ShellAsync = tmpval;
                         break;
 
                     case HUA_OUTPUT:
                         DoMethod(nch->nch_A_OutItemLVObj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &nhgi);
+                        tmpval = 0;
                         get(nch->nch_A_OutOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_OutOp = A_OutOpVals[tmpval];
                         tmpstr = "";
@@ -3272,6 +3308,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
 
                     case HUA_FEATURE:
                         DoMethod(nch->nch_A_FeatItemLVObj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &nhgi);
+                        tmpval = 0;
                         get(nch->nch_A_FeatOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_FeatOp = A_OutOpVals[tmpval];
                         tmpstr = "";
@@ -3286,24 +3323,30 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         break;
 
                     case HUA_MISC:
+                        tmpval = 0;
                         get(nch->nch_A_MiscOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_MiscMode = A_MiscOpVals[tmpval];
                         break;
 
                     case HUA_VARIABLES:
+                        tmpval = 0;
                         get(nch->nch_A_TarVarObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_TarVar = A_TarVariableVals[tmpval];
+                        tmpval = 0;
                         get(nch->nch_A_TarVarOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_TarVarOp = A_TarVarOpVals[tmpval];
                         break;
 
                    case HUA_EXTRAWKEY:
+                        tmpval = 0;
                         get(nch->nch_A_ExtRawKeyUpObj, MUIA_Selected, &tmpval);
                         if(tmpval)
                         {
+                            tmpval = 0;
                             get(nch->nch_A_ExtRawKeyObj, MUIA_List_Active, &tmpval);
                             nha->nha_RawKey = tmpval|IECODE_UP_PREFIX;
                         } else {
+                            tmpval = 0;
                             get(nch->nch_A_ExtRawKeyObj, MUIA_List_Active, &tmpval);
                             nha->nha_RawKey = tmpval;
                         }
@@ -3328,6 +3371,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
             DoMethod(nch->nch_USBKeymapLVObj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &hum);
             if(hum)
             {
+                tmpval = 0;
                 get(nch->nch_RawKeymapLVObj, MUIA_List_Active, &tmpval);
                 nch->nch_KeymapCfg.kmc_Keymap[hum->hum_ID] = tmpval;
             }
