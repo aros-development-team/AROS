@@ -363,7 +363,7 @@ char *getargtype(const struct functionarg *funcarg)
     {
 	brackets++;
 	end--;
-	while (isspace(*(end-1))) end--;
+	while (isspace(*(end-1)) || isdigit(*(end-1))) end--;
 	if (*(end-1)!='[')
 	{
 	    free(s);
