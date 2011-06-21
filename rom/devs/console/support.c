@@ -550,7 +550,7 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
     ** even if we found a command ID.
     */
 
-    struct cmd_params params;
+    struct cmd_params params = {};
 
     BYTE cmd = -1;
     BYTE cmd_next_idx = 0; /* Index to byte after the command */
