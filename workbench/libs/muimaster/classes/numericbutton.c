@@ -306,7 +306,7 @@ static BOOL MakePopupWin(Object *obj, struct Numericbutton_DATA *data)
     struct RastPort 	    	*rp, *saverp;
     LONG    	    	    	 winx, winy, winw, winh;
     LONG    	    	    	 framew, frameh;
-    LONG    	    	    	 min, max;
+    LONG    	    	    	 min = 0, max = 0;
     
     zframe = zune_zframe_get_with_state(obj, &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Slider],
     	    	    	    	    	muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Slider].state);

@@ -62,6 +62,7 @@ static void UpdatePenspec(Object *obj, struct Penadjust_DATA *data)
 {
     IPTR    	    	      val;
 
+    val = 0;
     get(obj, MUIA_Group_ActivePage, &val);
 
     switch(val)
@@ -69,6 +70,7 @@ static void UpdatePenspec(Object *obj, struct Penadjust_DATA *data)
     	case 0:
 	    data->intpenspec.p_type = PST_MUI;
 
+	    val = 0;
 	    get(data->listobj, MUIA_List_Active, &val);
 	    data->intpenspec.p_mui = (LONG)val;
 	    break;
@@ -76,6 +78,7 @@ static void UpdatePenspec(Object *obj, struct Penadjust_DATA *data)
 	case 1:
 	    data->intpenspec.p_type = PST_CMAP;
 
+	    val = 0;
 	    get(data->sliderobj, MUIA_Numeric_Value, &val);
 	    data->intpenspec.p_cmap = (LONG)val;
 	    break;
@@ -83,10 +86,13 @@ static void UpdatePenspec(Object *obj, struct Penadjust_DATA *data)
 	case 2:
 	    data->intpenspec.p_type = PST_RGB;
 	    
+	    val = 0;
 	    get(data->coloradjobj, MUIA_Coloradjust_Red, &val);
 	    data->intpenspec.p_rgb.red = (ULONG)val;
+	    val = 0;
 	    get(data->coloradjobj, MUIA_Coloradjust_Green, &val);
 	    data->intpenspec.p_rgb.green = (ULONG)val;
+	    val = 0;
 	    get(data->coloradjobj, MUIA_Coloradjust_Blue, &val);
 	    data->intpenspec.p_rgb.blue = (ULONG)val;
     }
