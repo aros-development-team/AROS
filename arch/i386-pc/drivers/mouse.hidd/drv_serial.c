@@ -520,7 +520,7 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
     char buf[256];
     int len;
     pnpid_t pnpid;
-    symtab_t *t;
+    symtab_t *t = NULL;
 
     len = mouse_pnpgets(data, unit, buf);
 
@@ -553,7 +553,7 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
     else if(len < 1)
         return -1;
 
-    D(bug("Mouse: protocol: %d\n", t->val));
+    D(bug("Mouse: protocol: %d\n", t ? t->val : -1));
 
     return (t->val);
 }
