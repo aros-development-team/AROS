@@ -142,7 +142,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
     UWORD inspect;
     BOOL shortpkt;
     ULONG ctrlstatus;
-    ULONG nextctrlstatus;
+    ULONG nextctrlstatus = 0;
     ULONG token = 0;
     ULONG actual;
     BOOL updatetree = FALSE;
