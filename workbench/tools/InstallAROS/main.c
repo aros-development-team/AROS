@@ -835,8 +835,8 @@ IPTR Install__MUIM_IC_NextStep
         get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
         if ((int)option == 0 || (int)option == 1)
         {
-            LONG syssize = 0, worksize = 0;
-            IPTR systype, worktype;
+            LONG syssize, worksize;
+            IPTR systype = 0, worktype = 0;
 
             /* Let user try again if either partition size is too big.
                Note that C:Partition will ensure that automatically sized
@@ -1222,7 +1222,7 @@ IPTR Install__MUIM_DispatchInstallProcedure
 static LONG GetPartitionSize(BOOL get_work)
 {
     LONG size = -1;
-    IPTR tmp;
+    IPTR tmp = 0;
 
     if (!get_work)
     {
