@@ -93,10 +93,10 @@ void pFreeForm(struct PsdBase *ps, struct PsdIFFContext *pic);
 ULONG * pInternalWriteForm(struct PsdIFFContext *pic, ULONG *buf);
 struct PsdIFFContext * pAddCfgChunk(struct PsdBase *ps, struct PsdIFFContext *pic, APTR chunk);
 STRPTR pGetStringChunk(struct PsdBase *ps, struct PsdIFFContext *pic, ULONG chunkid);
-BOOL pMatchStringChunk(struct PsdBase *ps, struct PsdIFFContext *pic, ULONG chunkid, STRPTR str);
+BOOL pMatchStringChunk(struct PsdBase *ps, struct PsdIFFContext *pic, ULONG chunkid, CONST_STRPTR str);
 
 BOOL pRemCfgChunk(struct PsdBase *ps, struct PsdIFFContext *pic, ULONG chnkid);
-BOOL pAddStringChunk(struct PsdBase *ps, struct PsdIFFContext *pic, ULONG chunkid, STRPTR str);
+BOOL pAddStringChunk(struct PsdBase *ps, struct PsdIFFContext *pic, ULONG chunkid, CONST_STRPTR str);
 void pUpdateGlobalCfg(struct PsdBase *ps, struct PsdIFFContext *pic);
 APTR pFindCfgChunk(struct PsdBase *ps, struct PsdIFFContext *pic, ULONG chnkid);
 
