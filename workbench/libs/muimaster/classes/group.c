@@ -2828,9 +2828,12 @@ static IPTR Group__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Expor
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     get(data->family, MUIA_Family_List, &(ChildList));
+    if (!ChildList)
+    	return 0;
+
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -2849,9 +2852,12 @@ static IPTR Group__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Impor
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     get(data->family, MUIA_Family_List, &(ChildList));
+    if (!ChildList)
+    	return 0;
+
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -2924,10 +2930,13 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
     get(data->family, MUIA_Family_List, &(ChildList));
+    if (!ChildList)
+    	return TRUE;
+
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {

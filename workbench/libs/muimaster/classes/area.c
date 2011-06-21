@@ -1268,7 +1268,7 @@ MUIM_DrawParentBackground
 static IPTR Area__MUIM_DrawParentBackground(struct IClass *cl, Object *obj, struct MUIP_DrawParentBackground *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-    Object *parent;
+    Object *parent = NULL;
 
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
     return FALSE;
@@ -1319,9 +1319,6 @@ static IPTR Area__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUI
 
     if (!bg)
     {
-    Object *parent;
-    get(obj, MUIA_Parent, &parent);
-
     D(bug("Area_DrawBackground(%p) : MUIM_DrawParentBackground\n",
         obj));
 
@@ -1512,9 +1509,9 @@ static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
     if (data->mad_Frame)
     {
     /* no frame allowed for root object (see Area.doc) */
-    IPTR rootobj;
+    Object *rootobj = NULL;
     get(_win(obj), MUIA_Window_RootObject, &rootobj);
-    if ((Object*)rootobj == obj)
+    if (rootobj == obj)
     {
         data->mad_Frame = MUIV_Frame_None;
         data->mad_FrameTitle = NULL;
@@ -1854,7 +1851,7 @@ static IPTR event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
             Object *menuobj = (Object*)DoMethod(obj, MUIM_ContextMenuBuild, imsg->MouseX, imsg->MouseY);
             if (menuobj)
             {
-            struct NewMenu *newmenu;
+            struct NewMenu *newmenu = NULL;
             
             /* stegerg: HACKME, CHECKME! The menu/menu item objs should automatically
                         be connected (parentobject setup) without need for

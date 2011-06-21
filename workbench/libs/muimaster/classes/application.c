@@ -678,7 +678,7 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->app_WindowFamily)
     {
-        struct MinList *children;
+        struct MinList *children = NULL;
         Object *cstate;
         Object *child;
 
@@ -688,6 +688,9 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
         while (1)
         {
             get(data->app_WindowFamily, MUIA_Family_List, &children);
+            if (children == NULL)
+            	break;
+
             cstate = (Object *)children->mlh_Head;
             if ((child = NextObject(&cstate)))
             {
@@ -872,7 +875,7 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
                        an attribute belonging to an interface which MUIC_Application,
                        together with MUIC_Area and a few others implement. It makes
                        sense now, yes?  */
-                    struct List *wlist;
+                    struct List *wlist = NULL;
                     APTR         wstate;
                     Object      *curwin;
 
@@ -891,7 +894,7 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
 
             case    MUIA_Application_Sleep:
                 {
-                    struct List *wlist;
+                    struct List *wlist = NULL;
                     APTR         wstate;
                     Object      *curwin;
 
@@ -1552,18 +1555,20 @@ static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
                                        struct MUIP_Application_SetConfigdata *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
-    struct MinList *children;
+    struct MinList *children = NULL;
     Object *cstate;
     Object *child;
 
     get(data->app_WindowFamily, MUIA_Family_List, &children);
-    cstate = (Object *)children->mlh_Head;
-    if ((child = NextObject(&cstate)))
-    {
-        D(bug("closing window %p\n", child));
+    if (children) {
+	cstate = (Object *)children->mlh_Head;
+	if ((child = NextObject(&cstate)))
+	{
+	    D(bug("closing window %p\n", child));
 
-        set(child, MUIA_Window_Open, FALSE);
+	    set(child, MUIA_Window_Open, FALSE);
 
+	}
     }
     if (data->app_GlobalInfo.mgi_Configdata)
         MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
@@ -1583,11 +1588,14 @@ static IPTR Application__MUIM_OpenWindows(struct IClass *cl, Object *obj,
                                        struct MUIP_Application_OpenWindows *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
-    struct MinList *children;
+    struct MinList *children = NULL;
     Object *cstate;
     Object *child;
 
     get(data->app_WindowFamily, MUIA_Family_List, &children);
+    if (!children)
+        return 0;
+
     cstate = (Object *)children->mlh_Head;
     if ((child = NextObject(&cstate)))
     {
@@ -1652,7 +1660,7 @@ static IPTR Application__MUIM_Execute(Class *CLASS, Object *self, Msg message)
 
 static IPTR Application__MUIM_UpdateMenus(struct IClass *cl, Object *obj, Msg message)
 {
-    struct List *wlist;
+    struct List *wlist = NULL;
     APTR         wstate;
     Object      *curwin;
 

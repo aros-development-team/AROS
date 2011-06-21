@@ -1901,7 +1901,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     ULONG                        res;
     LONG                         muikey = MUIKEY_NONE;
     Object                      *active_object = NULL;
-    IPTR                         disabled;
+    IPTR                         disabled = 0;
     ULONG                        key;
     ULONG                        deadkey;
 
@@ -2178,7 +2178,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 
             if (ehn->ehn_Events == key)
             {
-                IPTR disabled;
+                IPTR disabled = 0;
                 LONG muikey2 = ehn->ehn_Flags;
 
                 get(ehn->ehn_Object, MUIA_Disabled, &disabled);
@@ -2252,7 +2252,7 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 
         if (ehn->ehn_Events & mask)
         {
-            IPTR disabled;
+            IPTR disabled = 0;
 
             get(ehn->ehn_Object, MUIA_Disabled, &disabled);
             if (disabled)
