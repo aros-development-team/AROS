@@ -65,7 +65,6 @@ AROS_LD1(WORD, SetICR,
 #define RESIDENT_NAME     "cia.resource"
 #define RESIDENT_VERSION  0
 #define RESIDENT_REVISION 1
-#define RESIDENT_DATE     "6.11.2010"
 
 static const char resident_name[] = RESIDENT_NAME;
 static const char resident_id[]   = "\0$VER:" RESIDENT_NAME " " STR(RESIDENT_VERSION) "." STR(RESIDENT_REVISION) " (" ADATE ")";
