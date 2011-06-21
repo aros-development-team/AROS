@@ -250,7 +250,7 @@ static int ftmanager_gui(void)
 
 	if (app)
 	{
-		ULONG t;
+		IPTR t;
 
 		ret = RETURN_OK;
 
@@ -275,6 +275,7 @@ static int ftmanager_gui(void)
                 DoMethod(fontlist, MUIM_FontList_AddDir, XGET(src, MUIA_String_Contents));
 
 		set(win, MUIA_Window_Open, TRUE);
+		t = 0;
 		get(win, MUIA_Window_Open, &t);
 		if (t)
 		{
@@ -294,10 +295,13 @@ static int ftmanager_gui(void)
 
 					case ID_SetDestDir:
 						{
-							STRPTR name;
+							CONST_STRPTR name = NULL;
 							BPTR newdir;
 
 							get(dest, MUIA_String_Contents, &name);
+							if (!name)
+							    break;
+
 							newdir = Lock(name, ACCESS_READ);
 							if (newdir)
 							{
@@ -339,7 +343,7 @@ static int ftmanager_gui(void)
 
 					case ID_SetCodePage:
 						{
-							IPTR entry;
+							IPTR entry = 0;
 							get(codepagecycle, MUIA_Cycle_Active, &entry);
 							LoadCodePage(entry, NULL);
 						}
