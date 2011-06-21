@@ -21,7 +21,7 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
     IPTR        _APICBase;
     UBYTE       _APICID;
     int i;
-    struct PDE2M *pdes[] = { &PDE[0], &PDE[1], &PDE[2], &PDE[3] };
+    struct PDE2M *pdes[] = { &PDE[0][0], &PDE[1][0], &PDE[2][0], &PDE[3][0] };
 
     _APICBase = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getbase();
     _APICID   = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
