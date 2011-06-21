@@ -1009,7 +1009,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
 
 /* /// "psdCopyStr()" */
 AROS_LH1(STRPTR, psdCopyStr,
-         AROS_LHA(STRPTR, name, A0),
+         AROS_LHA(CONST_STRPTR, name, A0),
          LIBBASETYPEPTR, ps, 10, psd)
 {
     AROS_LIBFUNC_INIT
@@ -1028,7 +1028,7 @@ AROS_LH1(STRPTR, psdCopyStr,
 AROS_LH4(void, psdSafeRawDoFmtA,
          AROS_LHA(STRPTR, buf, A0),
          AROS_LHA(ULONG, len, D0),
-         AROS_LHA(STRPTR, fmtstr, A1),
+         AROS_LHA(CONST_STRPTR, fmtstr, A1),
          AROS_LHA(IPTR *, fmtdata, A2),
          LIBBASETYPEPTR, ps, 42, psd)
 {
@@ -1063,7 +1063,7 @@ AROS_UFH2(void, pPutChar,
 
 /* /// "psdCopyStrFmtA()" */
 AROS_LH2(STRPTR, psdCopyStrFmtA,
-         AROS_LHA(STRPTR, fmtstr, A0),
+         AROS_LHA(CONST_STRPTR, fmtstr, A0),
          AROS_LHA(IPTR *, fmtdata, A1),
          LIBBASETYPEPTR, ps, 68, psd)
 {
@@ -7470,7 +7470,7 @@ AROS_LH2(STRPTR, psdGetForcedBinding,
 AROS_LH3(BOOL, psdAddStringChunk,
          AROS_LHA(struct PsdIFFContext *, pic, A0),
          AROS_LHA(ULONG, chunkid, D0),
-         AROS_LHA(STRPTR, str, A1),
+         AROS_LHA(CONST_STRPTR, str, A1),
          LIBBASETYPEPTR, ps, 87, psd)
 {
     AROS_LIBFUNC_INIT
@@ -7488,7 +7488,7 @@ AROS_LH3(BOOL, psdAddStringChunk,
 AROS_LH3(BOOL, psdMatchStringChunk,
          AROS_LHA(struct PsdIFFContext *, pic, A0),
          AROS_LHA(ULONG, chunkid, D0),
-         AROS_LHA(STRPTR, str, A1),
+         AROS_LHA(CONST_STRPTR, str, A1),
          LIBBASETYPEPTR, ps, 88, psd)
 {
     AROS_LIBFUNC_INIT
@@ -7806,7 +7806,7 @@ BOOL pCheckCfgChanged(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "pAddStringChunk()" */
-BOOL pAddStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunkid, STRPTR str)
+BOOL pAddStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunkid, CONST_STRPTR str)
 {
     BOOL res = FALSE;
     ULONG len = strlen(str);
@@ -7827,7 +7827,7 @@ BOOL pAddStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunkid
 /* \\\ */
 
 /* /// "pMatchStringChunk()" */
-BOOL pMatchStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunkid, STRPTR str)
+BOOL pMatchStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunkid, CONST_STRPTR str)
 {
     ULONG *chunk;
     ULONG len;
