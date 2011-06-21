@@ -4540,6 +4540,7 @@ AROS_UFH0(void, nGUITask)
 
                     get(nch->nch_EnableMTPObj, MUIA_Selected, &nch->nch_CDC->cdc_EnableMTP);
                     get(nch->nch_NoPartObjObj, MUIA_Selected, &nch->nch_CDC->cdc_NoPartObj);
+                    tmpstr = "";
                     get(nch->nch_DOSNameObj, MUIA_String_Contents, &tmpstr);
                     strncpy(nch->nch_CDC->cdc_DOSName, tmpstr, 31);
 
