@@ -8,14 +8,13 @@
 #include <aros/libcall.h>
 #include <stdarg.h>
 
+#include <proto/kernel.h>
+
 #ifdef bug
 #undef bug
 #endif
 
-AROS_LD2(int, KrnBug,
-         AROS_LDA(const char *, format, A0),
-         AROS_LDA(va_list, args, A1),
-         struct KernelBase *, KernelBase, 12, Kernel);
+int __KrnBugBoot(format, args);
 
 static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
 {
@@ -23,13 +22,11 @@ static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
 
     va_start(args, format);
 
-    /* We call the function directly. Not using vector table,
-       because KernelBase can be NULL here (during very early
-       startup). */
-    AROS_CALL2(int, AROS_SLIB_ENTRY(KrnBug, Kernel),
-	      AROS_LCA(const char *, format, A0),
-	      AROS_LCA(va_list, args, A1),
-	      struct KernelBase *, KernelBase);
+    /* KernelBase can be NULL, use __KrnBugBoot if it is */
+    if (KernelBase != NULL)
+        KrnBug(format, args);
+    else
+        __KrnBugBoot(format, args);
 
     va_end(args);
 }
