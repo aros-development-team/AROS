@@ -24,9 +24,12 @@
 
 #include <proto/alib.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include LC_LIBDEFS_FILE
+#include "etask.h"
 #include "memory.h"
+#include "exec_util.h"
 #include "exec_debug.h"
 #include "exec_intern.h"
 
@@ -137,6 +140,9 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     char *args;
     APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
     APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
+    struct Task *t, tmptask;
+    struct MemList *ml;
+    IPTR tmpstack[4];
 
     /*
      * Copy reset proof pointers if old SysBase is valid.
@@ -162,6 +168,13 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     /* Allocate memory for library base */
     totalsize = negsize + sizeof(struct IntExecBase);
     SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, MEMF_CLEAR, NULL) + negsize);
+
+    /* Initialize temperaroy task and stack.
+       End of stack may be used during function calling
+    */
+    SysBase->ThisTask = &tmptask;
+    tmptask.tc_SPLower = tmpstack;
+    tmptask.tc_SPUpper = tmpstack + sizeof(tmpstack);
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data */
@@ -293,6 +306,36 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);
 
     SetSysBaseChkSum();
+
+    /* Create boot task */
+    ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
+    t  = (struct Task *)   AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
+    if( !ml || !t )
+    {
+	DINIT("ERROR: Cannot create Boot Task!");
+	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+    }
+
+    D(bug("[exec] Boot task: MemList 0x%p, task 0x%p\n", ml, t));
+
+    ml->ml_NumEntries = 1;
+    ml->ml_ME[0].me_Addr = t;
+    ml->ml_ME[0].me_Length = sizeof(struct Task);
+
+    NEWLIST(&t->tc_MemEntry);
+
+    AddHead(&t->tc_MemEntry,&ml->ml_Node);
+
+    t->tc_Node.ln_Name = "Boot Task";
+    t->tc_Node.ln_Type = NT_TASK;
+    t->tc_Node.ln_Pri = 0;
+    t->tc_State = TS_RUN;
+    t->tc_SigAlloc = 0xFFFF;
+    t->tc_SPLower = AllocMem(AROS_STACKSIZE, MEMF_ANY);
+    t->tc_SPUpper = t->tc_SPLower + AROS_STACKSIZE;
+
+    SysBase->ThisTask = t;
+    SysBase->Elapsed = SysBase->Quantum;
 
     return SysBase;
 }

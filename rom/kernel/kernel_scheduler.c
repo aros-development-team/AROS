@@ -103,8 +103,12 @@ struct Task *core_Dispatch(void)
     /* Original m68k programs can change stack manually without updating SPLower or SPUpper.
      * For example WB3.1 C:SetPatch adds exec/OpenDevice() patch that swaps stacks manually.
      * Result is that _all_ programs that call OpenDevice() crash if stack is checked. */
-#ifndef __mc68000
+#if 0
     /* Check the stack of the task we are about to launch */
+    /* FIXME: On hosted platforms the Boot Task runs with a stack pointer
+       outside indicated range to make end stack storage possible.
+       Check is disabled.
+    */
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
     {
 	bug("[KRN] Task %s went out of stack limits\n", task->tc_Node.ln_Name);

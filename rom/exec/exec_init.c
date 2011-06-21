@@ -161,8 +161,7 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 {
     AROS_USERFUNC_INIT
 
-    struct Task    *t;
-    struct MemList *ml;
+    struct Task *t;
     int i, j;
     UWORD sum;
     UWORD *ptr;
@@ -177,33 +176,8 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 
     DINIT("exec.library init");
 
-    /* Create boot task */
-    ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-    t  = (struct Task *)   AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-    if( !ml || !t )
-    {
-	DINIT("ERROR: Cannot create Boot Task!");
-	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
-    }
-
-    D(bug("[exec] Boot task: MemList 0x%p, task 0x%p\n", ml, t));
-
-    ml->ml_NumEntries = 1;
-    ml->ml_ME[0].me_Addr = t;
-    ml->ml_ME[0].me_Length = sizeof(struct Task);
-
-    NEWLIST(&t->tc_MemEntry);
-
-    AddHead(&t->tc_MemEntry,&ml->ml_Node);
-
-    t->tc_Node.ln_Name = "Boot Task";
-    t->tc_Node.ln_Type = NT_TASK;
-    t->tc_Node.ln_Pri = 0;
-    t->tc_State = TS_RUN;
-    t->tc_SigAlloc = 0xFFFF;
-    t->tc_SPLower = 0;		/* This is the system's boot stack. Not to be confused with supervisor stack! */
-    t->tc_SPUpper = (APTR)~0UL;
-    t->tc_Flags |= TF_ETASK;
+    /* Initialise the ETask data. */
+    t = SysBase->ThisTask;
 
     t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_ANY|MEMF_CLEAR);
     if (!t->tc_UnionETask.tc_ETask)
@@ -211,11 +185,13 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	DINIT("Not enough memory for first task");
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
+    t->tc_Flags |= TF_ETASK;
 
     D(bug("[exec] ETask 0x%p\n", t->tc_UnionETask.tc_ETask));
 
-    /* Initialise the ETask data. */
     InitETask(t, t->tc_UnionETask.tc_ETask);
+    /* Boot Task does not have a parent */
+    t->tc_UnionETask.tc_ETask->et_Parent = NULL;
 
     GetIntETask(t)->iet_Context = KrnCreateContext();
     if (!GetIntETask(t)->iet_Context)
@@ -225,9 +201,6 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     }
 
     D(bug("[exec] CPU context 0x%p\n", GetIntETask(t)->iet_Context));
-
-    SysBase->ThisTask = t;
-    SysBase->Elapsed = SysBase->Quantum;
 
     /* Install the interrupt servers */
     for(i=0; i < 16; i++)
