@@ -327,8 +327,8 @@ AROS_UFH0(void, GM_UNIQUENAME(nHIDCtrlGUITask))
              nch->nch_HCApp, 2, MUIM_Application_OpenConfigWindow, 0);
 
     {
-        ULONG isopen;
-        ULONG iconify;
+        IPTR  isopen = 0;
+        IPTR  iconify = 0;
         ULONG sigs;
         ULONG sigmask;
         LONG retid;

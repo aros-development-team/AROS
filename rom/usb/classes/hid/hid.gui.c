@@ -1584,8 +1584,8 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
     }
 
     {
-        ULONG isopen;
-        ULONG iconify;
+        IPTR  isopen = 0;
+        IPTR  iconify = 0;
         ULONG sigs;
         ULONG sigmask;
         LONG retid;
