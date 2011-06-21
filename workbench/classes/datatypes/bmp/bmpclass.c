@@ -200,7 +200,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     ULONG                   biClrUsed, biClrImportant;
     UWORD                   biPlanes, biBitCount;
     ULONG                   alignwidth, alignbytes, pixelfmt;
-    long                    x, y;
+    long                    x = 0, y;
     int                     cont, byte;
     struct BitMapHeader     *bmhd;
     struct ColorRegister    *colormap;
