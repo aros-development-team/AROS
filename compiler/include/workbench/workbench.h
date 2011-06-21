@@ -186,6 +186,38 @@ struct IconSelectMsg
 #define ISMACTION_Ignore   (2)
 #define ISMACTION_Stop     (3)
 
+/****************************************************************************/
+
+struct CopyBeginMsg
+{
+    ULONG cbm_Length;
+    LONG  cbm_Action;
+    BPTR  cbm_SourceDrawer;
+    BPTR  cbm_DestinationDrawer;
+};
+
+struct CopyDataMsg
+{
+    ULONG  cdm_Length;
+    LONG   cdm_Action;
+    BPTR   cdm_SourceLock;
+    STRPTR cdm_SourceName;
+    BPTR   cdm_DestinationLock;
+    STRPTR cdm_DestinationName;
+    LONG   cdm_DestinationX;
+    LONG   cdm_DestinationY;
+};
+
+struct CopyEndMsg
+{
+    ULONG cem_Length;
+    LONG  cem_Action;
+};
+
+#define CPACTION_Begin (0)
+#define CPACTION_Copy  (1)
+#define CPACTION_End   (2)
+
 /*** Private structures *****************************************************/
 struct AppWindow;
 struct AppWindowDropZone;
