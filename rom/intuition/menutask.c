@@ -705,7 +705,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
 
 static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
-    struct Menu *menu;
+    struct Menu *menu = NULL;
     WORD mouse_x, mouse_y, i;
 
     if(mhd->menubarwin)
