@@ -32,7 +32,7 @@ static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, str
  */
 static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct DosLibrary *DOSBase)
 {
-    int err;
+    int err = 0;
     ULONG tmp;
 
     /* For AOS compatibility, we can't use DOS/Seek() here,
