@@ -6627,8 +6627,8 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
 
     set(ncm->ncm_LunLVObj, MUIA_List_Active, MUIV_List_Active_Top);
     {
-        ULONG isopen;
-        ULONG iconify;
+        IPTR  isopen = 0;
+        IPTR  iconify = 0;
         ULONG sigs;
         ULONG sigmask;
         LONG retid;

@@ -1249,7 +1249,7 @@ BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG pktlen)
 /**************************************************************************/
 
 /* /// "nGetMACAddress()" */
-void nGetMACAddress(UBYTE *macaddr, STRPTR tmpstr)
+void nGetMACAddress(UBYTE *macaddr, CONST_STRPTR tmpstr)
 {
     ULONG macbyte = 0;
     UBYTE ch;
@@ -1450,8 +1450,8 @@ AROS_UFH0(void, nGUITask)
     DoMethod(ncp->ncp_MUIPrefsMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
              ncp->ncp_App, 2, MUIM_Application_OpenConfigWindow, 0);
     {
-        ULONG isopen;
-        ULONG iconify;
+        IPTR  isopen = 0;
+        IPTR  iconify = 0;
         ULONG sigs;
         ULONG sigmask;
         LONG retid;
@@ -1474,7 +1474,7 @@ AROS_UFH0(void, nGUITask)
                 case ID_STORE_CONFIG:
                 case MUIV_Application_ReturnID_Quit:
                 {
-                    STRPTR tmpstr;
+                    CONST_STRPTR tmpstr = "";
                     get(ncp->ncp_UnitObj, MUIA_String_Integer, &ncp->ncp_CDC->cdc_DefaultUnit);
                     get(ncp->ncp_MACAddressObj, MUIA_String_Contents, &tmpstr);
 

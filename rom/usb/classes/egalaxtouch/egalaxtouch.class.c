@@ -1171,8 +1171,8 @@ AROS_UFH0(void, nGUITask)
     DoMethod(nch->nch_MUIPrefsMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
              nch->nch_App, 2, MUIM_Application_OpenConfigWindow, 0);
     {
-        ULONG isopen;
-        ULONG iconify;
+        IPTR  isopen = 0;
+        IPTR  iconify = 0;
         ULONG sigs;
         ULONG sigmask;
         LONG retid;
