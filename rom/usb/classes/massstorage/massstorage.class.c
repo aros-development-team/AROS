@@ -6686,24 +6686,33 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
 
                     get(ncm->ncm_MaxTransferObj, MUIA_Cycle_Active, &ncm->ncm_CDC->cdc_MaxTransfer);
 
+                    tmpstr = "";
                     get(ncm->ncm_FatFSObj, MUIA_String_Contents, &tmpstr);
                     strncpy(ncm->ncm_CDC->cdc_FATFSName, tmpstr, 63);
+                    tmpstr = "";
                     get(ncm->ncm_FatControlObj, MUIA_String_Contents, &tmpstr);
                     strncpy(ncm->ncm_CDC->cdc_FATControl, tmpstr, 63);
+                    tmpstr = "";
                     get(ncm->ncm_FatDosTypeObj, MUIA_String_Contents, &tmpstr);
                     ncm->ncm_CDC->cdc_FATDosType = nGetDosType(tmpstr);
 
+                    tmpstr = "";
                     get(ncm->ncm_NTFSObj, MUIA_String_Contents, &tmpstr);
                     strncpy(ncm->ncm_CDC->cdc_NTFSName, tmpstr, 63);
+                    tmpstr = "";
                     get(ncm->ncm_NTFSControlObj, MUIA_String_Contents, &tmpstr);
                     strncpy(ncm->ncm_CDC->cdc_NTFSControl, tmpstr, 63);
+                    tmpstr = "";
                     get(ncm->ncm_NTFSDosTypeObj, MUIA_String_Contents, &tmpstr);
                     ncm->ncm_CDC->cdc_NTFSDosType = nGetDosType(tmpstr);
 
+                    tmpstr = "";
                     get(ncm->ncm_CDFSObj, MUIA_String_Contents, &tmpstr);
                     strncpy(ncm->ncm_CDC->cdc_CDFSName, tmpstr, 63);
+                    tmpstr = "";
                     get(ncm->ncm_CDControlObj, MUIA_String_Contents, &tmpstr);
                     strncpy(ncm->ncm_CDC->cdc_CDControl, tmpstr, 63);
+                    tmpstr = "";
                     get(ncm->ncm_CDDosTypeObj, MUIA_String_Contents, &tmpstr);
                     ncm->ncm_CDC->cdc_CDDosType = nGetDosType(tmpstr);
 
@@ -6726,6 +6735,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                         get(ncm->ncm_AutoMountFATObj, MUIA_Selected, &curncm->ncm_CUC->cuc_AutoMountFAT);
                         get(ncm->ncm_MountAllFATObj, MUIA_Selected, &curncm->ncm_CUC->cuc_MountAllFAT);
                         get(ncm->ncm_AutoMountCDObj, MUIA_Selected, &curncm->ncm_CUC->cuc_AutoMountCD);
+                        tmpstr = "";
                         get(ncm->ncm_FatDOSNameObj, MUIA_String_Contents, &tmpstr);
                         strncpy(curncm->ncm_CUC->cuc_FATDOSName, tmpstr, 31);
                         get(ncm->ncm_FatBuffersObj, MUIA_String_Integer, &curncm->ncm_CUC->cuc_FATBuffers);
@@ -6772,6 +6782,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                             get(ncm->ncm_AutoMountFATObj, MUIA_Selected, &curncm->ncm_CUC->cuc_AutoMountFAT);
                             get(ncm->ncm_MountAllFATObj, MUIA_Selected, &curncm->ncm_CUC->cuc_MountAllFAT);
                             get(ncm->ncm_AutoMountCDObj, MUIA_Selected, &curncm->ncm_CUC->cuc_AutoMountCD);
+                            tmpstr = "";
                             get(ncm->ncm_FatDOSNameObj, MUIA_String_Contents, &tmpstr);
                             strncpy(curncm->ncm_CUC->cuc_FATDOSName, tmpstr, 31);
                             get(ncm->ncm_FatBuffersObj, MUIA_String_Integer, &curncm->ncm_CUC->cuc_FATBuffers);

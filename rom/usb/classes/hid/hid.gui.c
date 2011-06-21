@@ -2472,7 +2472,8 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
 
         case MUIM_Action_UpdateDevPrefs:
         {
-            STRPTR tmpstr;
+            CONST_STRPTR tmpstr;
+            tmpstr = "";
             get(nch->nch_ConWindowObj, MUIA_String_Contents, &tmpstr);
             strncpy(nch->nch_CDC->cdc_ShellCon, tmpstr, 127);
 
@@ -2483,8 +2484,10 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
             get(nch->nch_TurboMouseObj, MUIA_Cycle_Active, &nch->nch_CDC->cdc_TurboMouse);
 
             get(nch->nch_HIDCtrlAutoObj, MUIA_Selected, &nch->nch_CDC->cdc_HIDCtrlOpen);
+            tmpstr = "";
             get(nch->nch_HIDCtrlRexxObj, MUIA_String_Contents, &tmpstr);
             strncpy(nch->nch_CDC->cdc_HIDCtrlRexx, tmpstr, 31);
+            tmpstr = "";
             get(nch->nch_HIDCtrlTitleObj, MUIA_String_Contents, &tmpstr);
             strncpy(nch->nch_CDC->cdc_HIDCtrlTitle, tmpstr, 31);
 
@@ -3177,11 +3180,13 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         break;
 
                     case HUA_VANILLA:
+                        tmpstr = "";
                         get(nch->nch_A_VanillaStrObj, MUIA_String_Contents, &tmpstr);
                         strncpy(nha->nha_VanillaString, tmpstr, 79);
                         break;
 
                     case HUA_KEYSTRING:
+                        tmpstr = "";
                         get(nch->nch_A_KeyStringObj, MUIA_String_Contents, &tmpstr);
                         strncpy(nha->nha_KeyString, tmpstr, 79);
                         break;
@@ -3227,6 +3232,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         break;
 
                     case HUA_SOUND:
+                        tmpstr = "";
                         get(nch->nch_A_SoundFileObj, MUIA_String_Contents, &tmpstr);
                         strncpy(nha->nha_SoundFile, tmpstr, 255);
                         get(nch->nch_A_SoundVolObj, MUIA_Numeric_Value, &tmpval);
@@ -3234,6 +3240,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         break;
 
                     case HUA_SHELL:
+                        tmpstr = "";
                         get(nch->nch_A_ShellComObj, MUIA_String_Contents, &tmpstr);
                         strncpy(nha->nha_ExeString, tmpstr, 79);
                         get(nch->nch_A_ShellAsyncObj, MUIA_Selected, &tmpval);
@@ -3244,6 +3251,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         DoMethod(nch->nch_A_OutItemLVObj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &nhgi);
                         get(nch->nch_A_OutOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_OutOp = A_OutOpVals[tmpval];
+                        tmpstr = "";
                         get(nch->nch_A_OutArrayObj, MUIA_String_Contents, &tmpstr);
                         strncpy(nha->nha_OutArray, tmpstr, 255);
                         if(nhgi)
@@ -3266,6 +3274,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         DoMethod(nch->nch_A_FeatItemLVObj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &nhgi);
                         get(nch->nch_A_FeatOpObj, MUIA_Cycle_Active, &tmpval);
                         nha->nha_FeatOp = A_OutOpVals[tmpval];
+                        tmpstr = "";
                         get(nch->nch_A_FeatArrayObj, MUIA_String_Contents, &tmpstr);
                         strncpy(nha->nha_OutArray, tmpstr, 255);
                         if(nhgi)
