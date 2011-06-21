@@ -18,6 +18,20 @@
 #include <exec/resident.h>
 #include <aros/asmcall.h>
 
+static void Enable68060SuperScalar(void)
+{
+    asm volatile (
+	".text\n"
+	"moveq	#1,%d0\n"
+	/* enable supercalar */
+	"dc.l	0x4e7b0808\n"	// movec %d0,%pcr
+	/* enable code&data caches, store buffer and branch cache */
+	"move.l	#0xa0808000,%d0\n"
+	"dc.l	0x4e7b0002\n"	// movec %d0,%cacr
+	"rte\n"
+    );
+}
+
 // ROMTAG INIT time
 static void romtaginit(struct ExpansionBase *ExpansionBase)
 {
@@ -120,10 +134,13 @@ AROS_LH1(void, ConfigChain,
 		// called by strap
 		romtaginit(ExpansionBase);
 
-		// enable 68040+ data caches, not the right place but
-		// we can't enable them until all boot roms have been
-		// initialized and memory detections done
-		if (SysBase->AttnFlags & (AFF_68040 | AFF_68060))
+		// enable 68040+ data caches and 68060 superscalar mode
+		// this is not the right place but we can't enable them
+		// any earlier (memory detection, boot roms that breaks if
+		// full 68060 caching enabled)
+		if (SysBase->AttnFlags & AFF_68060)
+			Supervisor((ULONG_FUNC)Enable68060SuperScalar);
+		else if (SysBase->AttnFlags & AFF_68040)
 			CacheControl(CACRF_EnableD, CACRF_EnableD);
 		return;
 	}

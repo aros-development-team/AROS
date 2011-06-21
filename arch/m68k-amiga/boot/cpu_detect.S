@@ -94,12 +94,9 @@ cpu_detect_asm:
 	movec	%pcr,%d0
 	/* 68060 */
 	move.l	%d0,%a2@(4) // save PCR
-	move.w	#0x0001,%d0
- 	/* enable supercalar, enable FPU */
+	moveq	#0,%d0
+ 	/* enable FPU */
  	movec	%d0,%pcr
-	/* enable code cache, store buffer and branch cache */
-	move.l	#0x0080a000,%d0
-	movec	%d0,%cacr
 	move.w	#0x008f,%d0
 cpu_detect_trap_illg:
 	move.l %a1,%sp	/* remove exception stack frame */
