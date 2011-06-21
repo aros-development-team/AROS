@@ -668,7 +668,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
     	    	    	     struct IconEntry *entry, struct Rectangle *rect,
 			     LONG index, BOOL firstvis, BOOL lastvis)
 {
-    STRPTR text, renderflag = "<UHOH>";
+    STRPTR text = NULL, renderflag = "<UHOH>";
     struct TextExtent te;
     ULONG fit;
 
