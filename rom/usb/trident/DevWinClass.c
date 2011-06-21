@@ -826,7 +826,7 @@ AROS_UFH3(IPTR, DevWinDispatcher,
             APTR pic;
             STRPTR devidstr = NULL;
             STRPTR oldname = NULL;
-            STRPTR newname;
+            CONST_STRPTR newname = "";
             STRPTR newnewname;
             psdGetAttrs(PGA_DEVICE, data->pd,
                         DA_IDString, &devidstr,
@@ -841,7 +841,7 @@ AROS_UFH3(IPTR, DevWinDispatcher,
             {
                 newname = "Empty";
             }
-            if(!strcmp(newname, oldname))
+            if(oldname && !strcmp(newname, oldname))
             {
                 return(FALSE);
             }
@@ -862,7 +862,8 @@ AROS_UFH3(IPTR, DevWinDispatcher,
                         psdSetAttrs(PGA_DEVICE, data->pd,
                             DA_ProductName, newnewname,
                             TAG_END);
-                        psdFreeVec(oldname);
+                        if (oldname)
+                            psdFreeVec(oldname);
                     }
                 }
             }
@@ -918,9 +919,9 @@ AROS_UFH3(IPTR, DevWinDispatcher,
         case MUIM_DevWin_NoClassBindChg:
         case MUIM_DevWin_PowerInfoChg:
         {
-            IPTR dontpopup;
-            IPTR noclassbind;
-            IPTR overridepower;
+            IPTR dontpopup = 0;
+            IPTR noclassbind = 0;
+            IPTR overridepower = 0;
             get(data->dontpopupobj, MUIA_Selected, &dontpopup);
             get(data->noclassbindobj, MUIA_Selected, &noclassbind);
             get(data->overridepowerobj, MUIA_Cycle_Active, &overridepower);
