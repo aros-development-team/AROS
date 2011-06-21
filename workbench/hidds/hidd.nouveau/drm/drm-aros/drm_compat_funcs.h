@@ -55,7 +55,7 @@
 #define mdelay(x)                       udelay(1000 * x)
 #define msleep(x)                       udelay(1000 * x)
 #define KHZ2PICOS(x)                    (1000000000UL/(x))
-#define uninitialized_var(x)            x
+#define uninitialized_var(x)            x = 0
 #define get_user(x, p)                  ({u32 ret = 0; x = *(p); ret;})
 #define put_user(x, p)                  ({u32 ret = 0; *(p) = x; ret;})
 #define rounddown(x, y)                 (((x)/(y))*(y))
@@ -120,6 +120,7 @@ static inline IPTR IS_ERR(APTR ptr)
 #define KERN_ERR
 #define KERN_DEBUG
 #define KERN_WARNING
+#define KERN_NOTICE
 #define KERN_INFO
 #define printk(fmt, ...)                bug(fmt, ##__VA_ARGS__)
 #define IMPLEMENT(fmt, ...)             bug("------IMPLEMENT(%s): " fmt, __func__ , ##__VA_ARGS__)
