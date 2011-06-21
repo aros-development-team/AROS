@@ -1141,7 +1141,7 @@ freeset(struct parse *p, cset *cs)
 static wint_t
 singleton(cset *cs)
 {
-	wint_t i, s, n;
+	wint_t i, s = 0, n;
 
 	for (i = n = 0; i < NC; i++)
 		if (CHIN(cs, i)) {
@@ -1382,8 +1382,8 @@ static void
 findmust(struct parse *p, struct re_guts *g)
 {
 	sop *scan;
-	sop *start;
-	sop *newstart;
+	sop *start = NULL;
+	sop *newstart = NULL;
 	sopno newlen;
 	sop s;
 	char *cp;
