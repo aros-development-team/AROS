@@ -1135,7 +1135,7 @@ D(bug("[%s]: sis900_init_tx_ring()\n", unit->sis900u_name));
 	unit->dirty_tx = unit->cur_tx = 0;
 
 	for (i = 0; i < NUM_TX_DESC; i++) {
-		APTR framebuffer;
+		APTR framebuffer = NULL;
 
 		if ((allocate) && ((framebuffer = AllocMem(TX_BUF_SIZE, MEMF_PUBLIC | MEMF_CLEAR)) == NULL)) {
 			/* not enough memory for framebuffer this makes a "hole"
@@ -1181,7 +1181,7 @@ D(bug("[%s]: sis900_init_rx_ring()\n", unit->sis900u_name));
 
 	/*  init RX descriptor and allocate buffers */
 	for (i = 0; i < NUM_RX_DESC; i++) {
-		APTR framebuffer;
+		APTR framebuffer = NULL;
 
 		if ((allocate) && ((framebuffer = AllocMem(RX_BUF_SIZE, MEMF_PUBLIC | MEMF_CLEAR)) == NULL)) {
 			/* not enough memory for framebuffer this makes a "hole"
