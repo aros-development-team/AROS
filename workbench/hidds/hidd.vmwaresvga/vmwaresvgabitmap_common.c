@@ -145,7 +145,7 @@ VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPix
 /*********  BitMap::GetPixel()  *********************************/
 HIDDT_Pixel MNAME_BM(GetPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
-    HIDDT_Pixel pixel;
+    HIDDT_Pixel pixel = 0;
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     ULONG offset;
 
