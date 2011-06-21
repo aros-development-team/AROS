@@ -70,7 +70,7 @@ static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.
 void setup_mmu(void *kick_base)
 {
     int i;
-    struct PDE2M *pdes[] = { &PDE[0], &PDE[1], &PDE[2], &PDE[3] };
+    struct PDE2M *pdes[] = { &PDE[0][0], &PDE[1][0], &PDE[2][0], &PDE[3][0] };
 
     D(kprintf("[BOOT] Setting up MMU, kickstart base 0x%p\n", kick_base));
     D(kprintf("[BOOT] cr0: 0x%p cr3: 0x%p cr4: 0x%p\n", rdcr(cr0), rdcr(cr3), rdcr(cr4)));
