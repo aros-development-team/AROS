@@ -239,7 +239,7 @@ IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
     ULONG 			numtabs;
     ULONG 			i;
 
-    ULONG 			nomwidth, nomheight;
+    ULONG 			nomwidth = 0, nomheight = 0;
 
     D(bug("AsciiDataType_AsyncLayout\n"));
     
