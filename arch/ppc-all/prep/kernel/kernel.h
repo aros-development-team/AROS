@@ -15,7 +15,7 @@ struct KernelBase {
 #ifdef SysBase
 #undef SysBase
 #endif
-#define SysBase KenrelBase->sysBase
+#define SysBase KernelBase->sysBase
 
 #define _IO_BASE    0x80000000
 #define _BUS_BASE   0xc0000000
