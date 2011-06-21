@@ -599,7 +599,7 @@ get_hmac_key(int step, int block)
 static unsigned
 own_random(dst_work *work)
 {
-	int dir = 0, b;
+	int dir = 0, b = 0;
 	int bytes, n, cmd = 0, dig = 0;
 	int start =0;
 /* 
