@@ -375,7 +375,7 @@ nv20_graph_create_context(struct nouveau_channel *chan)
 	struct drm_device *dev = chan->dev;
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_pgraph_engine *pgraph = &dev_priv->engine.graph;
-	void (*ctx_init)(struct drm_device *, struct nouveau_gpuobj *);
+	void (*ctx_init)(struct drm_device *, struct nouveau_gpuobj *) = nv25_graph_context_init;
 	unsigned int idoffs = 0x28;
 	int ret;
 
