@@ -8,13 +8,16 @@
 #include <aros/libcall.h>
 #include <stdarg.h>
 
-#include <proto/kernel.h>
-
 #ifdef bug
 #undef bug
 #endif
 
-int __KrnBugBoot(format, args);
+int __KrnBugBoot(const char *format, va_list args);
+
+AROS_LD2(int, KrnBug,
+	AROS_LDA(const char *, format, A0),
+	AROS_LDA(va_list, args, A1),
+	struct KernelBase *, KernelBase, 12, Kernel);
 
 static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
 {
@@ -23,9 +26,15 @@ static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
     va_start(args, format);
 
     /* KernelBase can be NULL, use __KrnBugBoot if it is */
-    if (KernelBase != NULL)
-        KrnBug(format, args);
-    else
+    if (KernelBase != NULL) {
+    	/* We use AROS_CALL2 here, since there are files that
+    	 * include this that cannot tolerate <proto/kernel.h>
+    	 */
+    	AROS_CALL2(int, AROS_SLIB_ENTRY(KrnBug, Kernel),
+    		AROS_LCA(const char *, format, A0),
+    		AROS_LCA(va_list, args, A1),
+    		struct KernelBase *, KernelBase);
+    } else
         __KrnBugBoot(format, args);
 
     va_end(args);
