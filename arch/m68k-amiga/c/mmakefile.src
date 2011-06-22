@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 
-USER_CFLAGS := -I$(SRCDIR)
+USER_CFLAGS := -I$(SRCDIR) -DADATE="\"$(shell date "+%d.%m.%Y")\""
 USER_AFLAGS := -I$(GENINCDIR) -Os
 
 #MM- workbench-c : workbench-c-$(AROS_TARGET_CPU)
