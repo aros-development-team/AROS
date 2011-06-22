@@ -30,7 +30,7 @@
 /*  FUNCTION
 	Adds a given library to the system's library list after checksumming
 	the library vectors. This function is not for general use but
-	(of course) for building shared librarys that don't use exec's
+	(of course) for building shared libraries that don't use exec's
 	MakeLibrary() mechanism.
 
     INPUTS

@@ -19,10 +19,10 @@
 #include "support.h"
 
 /*
- * This two pointers are used by the ELF loader to claim for memory ranges for both
+ * These two pointers are used by the ELF loader to claim memory ranges for both
  * the RW sections (.data, .bss and such) and RO sections (.text, .rodata....) of executable.
  * Keeping both areas of memory separate reduces the memory waste when more modules are
- * loaded. Moreover, the whole RO range may be marked for MMU as read-only at once. 
+ * loaded. Moreover, the whole RO range may be marked for MMU as read-only at once.
  */
 void *ptr_ro = (void *)KERNEL_TARGET_ADDRESS;
 void *ptr_rw = (void *)KERNEL_TARGET_ADDRESS;
