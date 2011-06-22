@@ -558,7 +558,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #else
     pciStrcat(prodname, " Host Controller");
 #endif
-    KPRINTF(10, ("Unit allocated!\n", hd));
+    KPRINTF(10, ("Unit allocated!\n"));
 
     return TRUE;
 }
