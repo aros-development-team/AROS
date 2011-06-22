@@ -43,17 +43,44 @@ int DebugMayGetChar(void)
 
 #ifdef AROS_SERIAL_DEBUG
 
-void DebugPuts(register const char *buff)
+void DebugPutStr(register const char *buff)
 {
 	for (; *buff != 0; buff++)
 		DebugPutChar(*buff);
 }
 
+void DebugPutDec(const char *what, ULONG val)
+{
+	int i, num;
+	DebugPutStr(what);
+	DebugPutStr(": ");
+	if (val == 0) {
+	    DebugPutChar('0');
+	    DebugPutChar('\n');
+	    return;
+	}
+
+	for (i = 1000000000; i > 0; i /= 10) {
+	    if (val == 0) {
+	    	DebugPutChar('0');
+	    	continue;
+	    }
+
+	    num = val / i;
+	    if (num == 0)
+	    	continue;
+
+	    DebugPutChar("0123456789"[num]);
+	    val -= num * i;
+	}
+	DebugPutChar('\n');
+}
+
 void DebugPutHex(const char *what, ULONG val)
 {
 	int i;
-	DebugPuts(what);
-	DebugPuts(": ");
+	DebugPutStr(what);
+	DebugPutStr(": ");
 	for (i = 0; i < 8; i ++) {
 		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
 	}
