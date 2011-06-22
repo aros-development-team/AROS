@@ -22,7 +22,12 @@ software_reset:
     .word Revision
     .word 0xffff
     .word 0xffff
-    .asciz "AROS ROM"
+    .asciz "AROS ROM Operating System and Libraries"
+    .asciz "Copyright \251 2011 "
+    .asciz "The AROS Development Team, "
+    .asciz "All Rights Reserved."
+    .asciz ADATE
+
 
     .align 4
     .org   0xd0
