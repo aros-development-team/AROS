@@ -41,10 +41,10 @@ const struct UsbSSHubDesc  RHSSHubDesc = { 12,                                  
                                            0,                                            // 2 Number of downstream facing ports that this hub supports. The maximum number of ports of ports a hub can support is 15
                                            WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), // 3 wHubCharacteristics
                                            0,                                            // 5 bPwrOn2PwrGood
-                                           1,                                            // 6 bHubContrCurrent
+                                           10,                                           // 6 bHubContrCurrent
                                            0,                                            // 7 bHubHdrDecLat
                                            0,                                            // 8 wHubDelay
-                                           1                                             // 10 DeviceRemovable
+                                           0                                             // 10 DeviceRemovable
                                          };
 #endif
 
@@ -997,6 +997,21 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             }
                             break;
                         }
+
+                        #if defined(USB3)
+                        /* (URTF_CLASS|URTF_OTHER) USR_SET_FEATURE */
+                        case HCITYPE_XHCI:
+                        {
+                            cmdgood = TRUE;
+                            if(cmdgood)
+                            {
+                                KPRINTF(1000, ("XHCI (URTF_CLASS|URTF_OTHER) USR_SET_FEATURE\n"));
+                                return(0);
+                            }
+                            break;
+                        }
+                        #endif
+
                     }
                     break;
 
@@ -1219,6 +1234,21 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             }
                             break;
                         }
+
+                        #if defined(USB3)
+                        /* (URTF_CLASS|URTF_OTHER) USR_CLEAR_FEATURE */
+                        case HCITYPE_XHCI:
+                        {
+                            cmdgood = TRUE;
+                            if(cmdgood)
+                            {
+                                KPRINTF(1000, ("XHCI (URTF_CLASS|URTF_OTHER) USR_CLEAR_FEATURE\n"));
+                                return(0);
+                            }
+                            break;
+                        }
+                        #endif
+
                     }
                     break;
             }
@@ -1370,6 +1400,16 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             KPRINTF(5, ("EHCI Port %ld Change %08lx\n", idx, *mptr));
                             return(0);
                         }
+
+                        #if defined(USB3)
+                        /* (URTF_IN|URTF_CLASS|URTF_OTHER) USR_GET_STATUS */
+                        case HCITYPE_XHCI:
+                        {
+                            KPRINTF(1000, ("XHCI (URTF_IN|URTF_CLASS|URTF_OTHER) USR_GET_STATUS\n"));
+                            return(0);
+                        }
+                        #endif
+
                     }
                     return(0);
                 }
@@ -1406,7 +1446,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             struct UsbSSHubDesc *uhd = (struct UsbSSHubDesc *) ioreq->iouh_Data;
                             KPRINTF(1, ("RH: Get(SS)HubDescriptor (%ld)\n", len));
 
-                            ioreq->iouh_Actual = hubdesclen;
+                            ioreq->iouh_Actual = (len > hubdesclen) ? hubdesclen : len;
                             CopyMem((APTR) &RHSSHubDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
                             if(ioreq->iouh_Length)
@@ -1423,18 +1463,23 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         {
                             ULONG hubdesclen = 9;
                             ULONG powergood = 1;
+
                             struct UsbHubDesc *uhd = (struct UsbHubDesc *) ioreq->iouh_Data;
                             KPRINTF(1, ("RH: GetHubDescriptor (%ld)\n", len));
+
                             if(unit->hu_RootHubPorts > 7) // needs two bytes for port masks
                             {
                                 hubdesclen += 2;
                             }
+
                             ioreq->iouh_Actual = (len > hubdesclen) ? hubdesclen : len;
                             CopyMem((APTR) &RHHubDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
                             if(ioreq->iouh_Length)
                             {
                                 uhd->bLength = hubdesclen;
                             }
+
                             if(ioreq->iouh_Length >= 6)
                             {
                                 hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
@@ -1830,6 +1875,11 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
                     cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
                 }
                 break;
+            #if defined(USB3)
+            case HCITYPE_XHCI:
+                KPRINTF(1000, ("XHCI cmdFlush\n"));
+                break;
+            #endif
         }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
@@ -2070,6 +2120,13 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                         cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
                     }
                     break;
+
+                #if defined(USB3)
+                case HCITYPE_XHCI:
+                    KPRINTF(1000, ("XHCI cmdAbortIO\n"));
+                    break;
+                #endif
+
             }
         }
         if(foundit)
@@ -2341,6 +2398,13 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                 }
                 break;
             }
+            #if defined(USB3)
+            case HCITYPE_XHCI:
+            {
+                KPRINTF(1000, ("XHCI uhwNakTimeoutInt\n"));
+                break;
+            }
+            #endif
         }
         if(causeint)
         {
