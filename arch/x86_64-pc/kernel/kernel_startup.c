@@ -404,8 +404,8 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 	    "mov %[user_ds],%%es\n\t"
 	    "mov %%rsp,%%r12\n\t"
 	    "pushq %[ds]\n\t"      	// SS
-	    "pushq %%r12\n\t"           // rSP        
-	    "pushq $0x3002\n\t"         // rFLANGS
+	    "pushq %%r12\n\t"           // rSP
+	    "pushq $0x3002\n\t"         // rFLAGS
 	    "pushq %[cs]\n\t"		// CS
 	    "pushq $1f\n\t"
 	    "iretq\n 1:"

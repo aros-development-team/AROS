@@ -1157,7 +1157,7 @@ static IPTR Application__MUIM_AddInputHandler(struct IClass *cl, Object *obj,
         struct timerequest_ext *time_ext = (struct timerequest_ext *)AllocVec(sizeof(struct timerequest_ext),MEMF_PUBLIC);
         if (time_ext)
         {
-           /* Store the request inside the input handler, so the we can remove
+           /* Store the request inside the input handler, so that we can remove
            ** the inputhandler without problems */
            msg->ihnode->ihn_Node.mln_Pred = (struct MinNode*)time_ext;
 

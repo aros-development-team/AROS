@@ -48,8 +48,6 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, cons
 
 	/* Initialize pre-wall */
 	BUILD_WALL(res, 0xDB, MUNGWALL_SIZE);
-
-	/* move over the block between the walls */
 	res += MUNGWALL_SIZE;
 
 	/* Fill the block with weird stuff to exploit bugs in applications */

@@ -990,15 +990,13 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 	aHIDD_BitMap_ClassID must be provided to the base class for a displayable bitmap!
 
     INPUTS
-	gfxHidd - A graphics driver object with which the GC will perform
-	          the rendering operations.
+	gfxHidd - The graphics driver object that will provide the bitmap.
 
 	tagList - A list of bitmap attributes. See hidd.graphics.bitmap class
-	          documentation for their description.
+	          documentation for their descriptions.
 
     RESULT
-	gc - pointer to the newly created GC, ready for use for rendering
-             operations.
+	bm - pointer to the newly created bitmap.
     
     NOTES
 
@@ -2496,7 +2494,7 @@ ULONG GFX__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 	which utilize host's support for mouse pointer.
 
 	The default implementation in the base class just does nothing. A software mouse
-	pointer is implemented in a special layer calles fakegfx.hidd inside
+	pointer is implemented in a special layer called fakegfx.hidd inside
 	graphics.library. If a software pointer emulation is used, this method will
 	never be called.
 
@@ -2549,7 +2547,8 @@ BOOL GFX__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
 	emulation is used, this method will never be called.
 
     INPUTS
-	gfxHidd - a display driver object, on whose display you wish to turn pointer or on off
+	gfxHidd - a display driver object, on whose display you wish to turn
+	    pointer on or off
 	visible - TRUE to enable pointer display, FALSE to disable it
 
     RESULT
@@ -3239,10 +3238,10 @@ OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 	gfxHidd  - a pointer to a display driver object whose display mode you want to query
 	modeID   - a mode ID to query
 	props    - a pointer to a storage area where HIDD_ModeProperties structure will be put
-	propsLen - A length of the supplied buffer in bytes.
+	propsLen - length of the supplied buffer in bytes.
 
     RESULT
-	An actual length of obtained structure
+	Actual length of obtained structure
 
     NOTES
 	Returned data must reflect only real hardware capabilities. For example, do not
