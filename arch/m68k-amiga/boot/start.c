@@ -316,6 +316,35 @@ void doColdCapture(void)
     	  "a0", "a1", "a2", "a3", "a4", "a5", "a6");
 }
 
+static void RomInfo(IPTR rom)
+{
+    APTR ptr = (APTR)rom;
+    CONST_STRPTR str;
+
+    if ((*(UWORD *)(ptr + 8) == 0x0000) &&
+        (*(UWORD *)(ptr + 10) == 0xffff) &&
+        (*(UWORD *)(ptr + 12) == *(UWORD *)(ptr + 16)) &&
+        (*(UWORD *)(ptr + 14) == *(UWORD *)(ptr + 18)) &&
+        (*(UWORD *)(ptr + 20) == 0xffff) &&
+        (*(UWORD *)(ptr + 22) == 0xffff)) {
+    	DEBUGPUTHEX(("ROM Location", rom));
+    	DEBUGPUTD(("  Verision", *(UWORD *)(ptr + 12)));
+    	DEBUGPUTD(("  Revision", *(UWORD *)(ptr + 14)));
+    	str = (ptr + 24);
+    	DEBUGPUTS(("  ROM Type: ")); DEBUGPUTS((str)); DEBUGPUTS(("\n"));
+    	str += strlen(str) + 1;
+    	DEBUGPUTS((" Copyright: ")); DEBUGPUTS((str));
+    	str += strlen(str) + 1;
+    	DEBUGPUTS((str));
+    	str += strlen(str) + 1;
+    	DEBUGPUTS((str));
+    	DEBUGPUTS(("\n"));
+    	str += strlen(str) + 1;
+    	DEBUGPUTS((" ROM Model: ")); DEBUGPUTS((str));
+    	DEBUGPUTS(("\n"));
+    }
+}
+
 void exec_boot(ULONG *membanks, ULONG *cpu)
 {
 #if 0
@@ -369,6 +398,9 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	 */
 	DebugInit();
 	DEBUGPUTS(("[reset]\n"));
+	RomInfo(0xf80000);
+	RomInfo(0xe00000);
+	RomInfo(0xf00000);
 
 	/* Zap out old SysBase if invalid */
 	wasvalid = IsSysBaseValid(oldSysBase);
