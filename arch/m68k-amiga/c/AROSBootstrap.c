@@ -843,6 +843,8 @@ __startup static AROS_ENTRY(int, startup,
     	BSTR format = BNULL;
     	ULONG *args = NULL;
 
+    	WriteF("AROSBootstrap " ADATE "\n");
+
     	if ((name = AllocBSTR("aros.elf.gz")) &&
     	    (format = AllocBSTR(",,,,,,,,,")) && /* this can't be the best way.. */
     	    (args = AllocMem(sizeof(ULONG) * 100, MEMF_ANY))) {
