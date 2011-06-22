@@ -31,7 +31,7 @@
 #endif
 
 /*** Workbench library name *************************************************/
-#define WORKBENCHNAME           "workbench.library"
+#define WORKBENCH_NAME           "workbench.library"
 
 /*** Structures and associated definitions **********************************/
 struct DrawerData
@@ -218,6 +218,60 @@ struct CopyEndMsg
 #define CPACTION_Copy  (1)
 #define CPACTION_End   (2)
 
+/****************************************************************************/
+
+struct DeleteBeginMsg
+{
+    ULONG       dbm_Length;
+    LONG        dbm_Action;
+};
+
+struct DeleteDataMsg
+{
+    ULONG       ddm_Length;
+    LONG        ddm_Action;
+    BPTR        ddm_Lock;
+    STRPTR      ddm_Name;
+};
+
+struct DeleteEndMsg
+{
+    ULONG       dem_Length;
+    LONG        dem_Action;
+};
+
+#define DLACTION_BeginDiscard           (0)
+#define DLACTION_BeginEmptyTrash        (1)
+#define DLACTION_DeleteContents         (3)
+#define DLACTION_DeleteObject           (4)
+#define DLACTION_End                    (5)
+
+/****************************************************************************/
+
+struct SetupCleanupHookMsg
+{
+    ULONG       schm_Length;
+    LONG        schm_State;
+};
+
+#define SCHMSTATE_TryCleanup    (0)
+#define SCHMSTATE_Cleanup       (1)
+#define SCHMSTATE_Setup         (2)
+
+/****************************************************************************/
+
+struct TextInputMsg
+{
+    ULONG       tim_Length;
+    LONG        tim_Action;
+    STRPTR      tim_Prompt;
+};
+
+#define TIACTION_Rename         (0)
+#define TIACTION_RelabelVolume  (1)
+#define TIACTION_NewDrawer      (2)
+#define TIACTION_Execute        (3)
+
 /*** Private structures *****************************************************/
 struct AppWindow;
 struct AppWindowDropZone;
@@ -251,8 +305,10 @@ struct AppMenuItem;
 #define WBAPPICONA_NotifySelectState        (WBA_BASE+14)
 
 /*** Tags for use with AddAppMenuItemA() ************************************/
-/* Command key string for this AppMenu (STRPTR) */
 #define WBAPPMENUA_CommandKeyString         (WBA_BASE+15)
+#define	WBAPPMENUA_GetKey                   (WBA_BASE+65)
+#define	WBAPPMENUA_UseKey                   (WBA_BASE+66)
+#define	WBAPPMENUA_GetTitleKey              (WBA_BASE+77)
 
 /*** Tags for use with OpenWorkbenchObjectA() *******************************/
 #define WBOPENA_ArgLock                     (WBA_BASE+16)

@@ -6,4 +6,4 @@
 #include <workbench/workbench.h>
 #include <aros/symbolsets.h>
 
-ADD2LIBS(WORKBENCHNAME, 39, struct Library *, WorkbenchBase);
+ADD2LIBS(WORKBENCH_NAME, 39, struct Library *, WorkbenchBase);
