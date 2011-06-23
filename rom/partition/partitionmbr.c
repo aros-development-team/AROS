@@ -462,7 +462,7 @@ static LONG PartitionMBRSetPartitionAttrs(struct Library *PartitionBase, struct 
         switch (tag->ti_Tag)
         {
         case PT_DOSENVEC:
-            CopyMemQuick((struct DosEnvec *)tag->ti_Data, &ph->de, sizeof(struct DosEnvec));
+            CopyMem((struct DosEnvec *)tag->ti_Data, &ph->de, sizeof(struct DosEnvec));
             PartitionMBRSetDosEnvec(ph->root, data->entry, (struct DosEnvec *)tag->ti_Data);
             break;
 
