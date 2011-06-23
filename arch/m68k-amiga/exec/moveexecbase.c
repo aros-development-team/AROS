@@ -74,7 +74,7 @@ struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
 	 * superset.
 	 */
 	newsb = (struct ExecBase *)((UBYTE *)AllocMem(totalsize, MEMF_KICK) + oldsb->LibNode.lib_NegSize);
-	CopyMemQuick((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, (UBYTE*)newsb - oldsb->LibNode.lib_NegSize, totalsize);
+	CopyMem((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, (UBYTE*)newsb - oldsb->LibNode.lib_NegSize, totalsize);
 
 	reloclist(&newsb->LibList);
 	AddTail(&newsb->LibList, (struct Node*)newsb);
