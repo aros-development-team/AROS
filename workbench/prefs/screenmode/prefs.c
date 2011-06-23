@@ -91,7 +91,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                 }
                 else
                 {
-		    CopyMemQuick(loadprefs.smp_Reserved, screenmodeprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
+		    CopyMem(loadprefs.smp_Reserved, screenmodeprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
 		    screenmodeprefs.smp_DisplayID = GET_LONG(loadprefs.smp_DisplayID);
 		    screenmodeprefs.smp_Width     = GET_WORD(loadprefs.smp_Width);
 		    screenmodeprefs.smp_Height    = GET_WORD(loadprefs.smp_Height);
@@ -133,7 +133,7 @@ BOOL Prefs_ExportFH(BPTR fh)
     BOOL                    success = TRUE;
     LONG                    error   = 0;
 
-    CopyMemQuick(screenmodeprefs.smp_Reserved, saveprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
+    CopyMem(screenmodeprefs.smp_Reserved, saveprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
     saveprefs.smp_DisplayID = GET_LONG(screenmodeprefs.smp_DisplayID);
     saveprefs.smp_Width     = GET_WORD(screenmodeprefs.smp_Width);
     saveprefs.smp_Height    = GET_WORD(screenmodeprefs.smp_Height);

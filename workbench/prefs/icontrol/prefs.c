@@ -99,7 +99,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                         {
                             D(bug("LoadPrefs: Reading chunk successful.\n"));
 
-                            CopyMemQuick(loadprefs.ic_Reserved, icontrolprefs.ic_Reserved, sizeof(icontrolprefs.ic_Reserved));
+                            CopyMem(loadprefs.ic_Reserved, icontrolprefs.ic_Reserved, sizeof(icontrolprefs.ic_Reserved));
 
                             icontrolprefs.ic_TimeOut        = AROS_BE2WORD(loadprefs.ic_TimeOut);
                             icontrolprefs.ic_MetaDrag       = AROS_BE2WORD(loadprefs.ic_MetaDrag);
@@ -135,7 +135,7 @@ BOOL Prefs_ExportFH(BPTR fh)
     BOOL                    retval = FALSE;
     BOOL                    delete_if_error = FALSE;
 
-    CopyMemQuick(icontrolprefs.ic_Reserved, saveprefs.ic_Reserved, sizeof(icontrolprefs.ic_Reserved));
+    CopyMem(icontrolprefs.ic_Reserved, saveprefs.ic_Reserved, sizeof(icontrolprefs.ic_Reserved));
 
     saveprefs.ic_TimeOut        = AROS_WORD2BE(icontrolprefs.ic_TimeOut);
     saveprefs.ic_MetaDrag       = AROS_WORD2BE(icontrolprefs.ic_MetaDrag);
