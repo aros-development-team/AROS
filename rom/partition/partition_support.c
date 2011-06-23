@@ -172,7 +172,7 @@ void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *p
     ph->bd   = root->bd;
 
     /* initialize DosEnvec */
-    CopyMemQuick(&root->de, &ph->de, sizeof(struct DosEnvec));
+    CopyMem(&root->de, &ph->de, sizeof(struct DosEnvec));
 
     /* Check if partition starts and ends on a cylinder boundary */
     if ((first_sector % cylsecs != 0) || (count_sector % cylsecs != 0))
