@@ -15,8 +15,8 @@
 static APTR gptr(struct uaegfx_staticdata *csd, WORD offset)
 {
     APTR code = (APTR)((ULONG*)(((UBYTE*)(csd->boardinfo)) + offset))[0];
-#if 0
     D(bug("->RTG off=%d code=%p\n", (offset - (PSSO_BoardInfo_AllocCardMem)) / 4, code));
+#if 0
     UBYTE *board = gl(csd->boardinfo + PSSO_BoardInfo_MemoryBase);
     bug("%08x: %08x %08x %08x %08x\n",
     	board,
@@ -44,16 +44,31 @@ void InitRTG(APTR boardinfo)
 {
     ULONG func = (ULONG)RTGCall_Default;
     pl (boardinfo + PSSO_BoardInfo_ScrollPlanar, func);
+    pl (boardinfo + PSSO_BoardInfo_ScrollPlanarDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_UpdatePlanar, func);
     pl (boardinfo + PSSO_BoardInfo_UpdatePlanarDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitPlanar2Chunky, func);
     pl (boardinfo + PSSO_BoardInfo_BlitPlanar2ChunkyDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_FillRect, func);
     pl (boardinfo + PSSO_BoardInfo_FillRectDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_InvertRect, func);
     pl (boardinfo + PSSO_BoardInfo_InvertRectDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitRect, func);
     pl (boardinfo + PSSO_BoardInfo_BlitRectDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitTemplate, func);
     pl (boardinfo + PSSO_BoardInfo_BlitTemplateDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitPattern, func);
     pl (boardinfo + PSSO_BoardInfo_BlitPatternDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_DrawLine, func);
     pl (boardinfo + PSSO_BoardInfo_DrawLineDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitRectNoMaskComplete, func);
     pl (boardinfo + PSSO_BoardInfo_BlitRectNoMaskCompleteDefault, func);
+    pl (boardinfo + PSSO_BoardInfo_BlitPlanar2Direct, func);
     pl (boardinfo + PSSO_BoardInfo_BlitPlanar2DirectDefault, func);
+    
+    pl (boardinfo + PSSO_BoardInfo_SetInterrupt, func);
+    pl (boardinfo + PSSO_BoardInfo_WaitVerticalSync, func);
+    pl (boardinfo + PSSO_BoardInfo_WaitBlitter, func);
 }
 
 BOOL FindCard(struct uaegfx_staticdata *csd)
@@ -77,6 +92,15 @@ BOOL InitCard(struct uaegfx_staticdata *csd)
 	return P96_LC2(BOOL, csd->uaeromvector, 29,
 	    AROS_LCA(APTR, csd->boardinfo, A0),       // For current WinUAEs
 	    AROS_LCA(APTR, csd->boardinfo, A2));      // For older E-UAEs
+}
+
+void SetInterrupt(struct uaegfx_staticdata *csd, ULONG state)
+{
+    if (csd->CardBase)
+	AROS_CALL2(ULONG, gptr(csd, PSSO_BoardInfo_SetInterrupt),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(ULONG, state, D0),
+    	    struct Library*, csd->CardBase);
 }
 
 ULONG GetPixelClock(struct uaegfx_staticdata *csd, struct ModeInfo *mi, ULONG index, ULONG rgbformat)

@@ -218,7 +218,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 {
     struct uaegfx_staticdata *csd = CSD(cl);
     struct LibResolution *r;
-    WORD rescnt, i, j, k, l, depth;
+    WORD rescnt, i, j, k, l;
     struct TagItem *reslist, *restags, *pflist, *modetags;
     struct pRoot_New mymsg;
     struct TagItem mytags[2];
@@ -247,7 +247,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     	reslist[i * SIZE_RESLIST + 1].ti_Tag = aHidd_Sync_VDisp;
     	reslist[i * SIZE_RESLIST + 1].ti_Data = r->Height;
     	reslist[i * SIZE_RESLIST + 2].ti_Tag = aHidd_Sync_Description;
-    	reslist[i * SIZE_RESLIST + 2].ti_Data = (IPTR)"UAEGFX:%hx%v";
+    	reslist[i * SIZE_RESLIST + 2].ti_Data = (IPTR)(csd->CardBase ? "RTGFX:%hx%v" : "UAEGFX:%hx%v");
     	reslist[i * SIZE_RESLIST + 3].ti_Tag = TAG_DONE;
     	reslist[i * SIZE_RESLIST + 3].ti_Data = 0;
     	D(bug("%08x %d*%d\n", r, r->Width, r->Height));
@@ -260,7 +260,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     
     k = 0;
     for (i = 0, j = 0; i < RGBFB_MaxFormats; i++) {
-   	depth = getrtgdepth(1 << i);
+   	WORD depth = getrtgdepth(1 << i);
     	if (!((1 << i) & RGBFB_SUPPORTMASK) || depth == 0 || !((1 << i) & supportedformats)) {
       	    pflist[j].ti_Tag = TAG_DONE;
      	    pflist[j].ti_Data = 0;
@@ -790,20 +790,22 @@ struct P96RTGmode
 
 static const struct P96RTGmode rtgmodes[] =
 {
-	{ 320, 240, 1, 16000000,  416, 260, 0, 0, 40, 5,  16, 1, GMF_HPOLARITY | GMF_VPOLARITY | GMF_DOUBLESCAN },
-	{ 640, 480, 3, 31000000,  832, 520, 0, 0, 48, 9,  80, 3, GMF_HPOLARITY | GMF_VPOLARITY },
-	{ 800, 600, 4, 40100000, 1056, 620, 0, 0, 56, 1, 112, 2, 0 },
+	{  320, 240, 1, 16000000,  416, 260, 0, 0, 40,  5,  16, 1, GMF_HPOLARITY | GMF_VPOLARITY | GMF_DOUBLESCAN },
+	{  640, 480, 3, 31000000,  832, 520, 0, 0, 48,  9,  80, 3, GMF_HPOLARITY | GMF_VPOLARITY },
+	{  800, 600, 4, 40100000, 1056, 620, 0, 0, 56,  1, 112, 2, 0 },
 	{ 0 }
 };
 /* real RTG only */
-static void PopulateModeInfo(struct uaegfx_staticdata *csd, struct LibResolution *res, const struct P96RTGmode *mode)
+static BOOL PopulateModeInfo(struct uaegfx_staticdata *csd, struct LibResolution *res, const struct P96RTGmode *mode)
 {
     UWORD rgbformat;
+    BOOL ok = FALSE;
 
     for (rgbformat = 0; rgbformat < RGBFB_MaxFormats; rgbformat++) {
     	ULONG clockindex;
     	UBYTE depth, index;
     	struct ModeInfo *mi;
+    	UWORD maxhval, maxvval, maxhres, maxvres;
 
     	if (!((1 << rgbformat) & RGBFB_SUPPORTMASK))
     	    continue;
@@ -813,6 +815,16 @@ static void PopulateModeInfo(struct uaegfx_staticdata *csd, struct LibResolution
     	index = (depth + 7) / 8;
     	if (res->Modes[index])
     	    continue;
+
+     	maxhval = gw(csd->boardinfo + PSSO_BoardInfo_MaxHorValue + index * 2);
+     	maxvval = gw(csd->boardinfo + PSSO_BoardInfo_MaxVerValue + index * 2);
+     	maxhres = gw(csd->boardinfo + PSSO_BoardInfo_MaxHorResolution + index * 2);
+     	maxvres = gw(csd->boardinfo + PSSO_BoardInfo_MaxVerResolution + index * 2);
+
+    	if (mode->htotal > maxhval || mode->vtotal > maxvval ||
+    	    mode->w > maxhres || mode->h > maxvres)
+    	    continue;
+
     	mi = AllocMem(sizeof(struct ModeInfo), MEMF_CLEAR | MEMF_PUBLIC);
     	if (!mi)
     	    continue;
@@ -836,7 +848,9 @@ static void PopulateModeInfo(struct uaegfx_staticdata *csd, struct LibResolution
             index, mi, mi->Width, mi->Height, mi->Depth,
             clockindex, mi->PixelClock, mi->Numerator, mi->Denominator));
         res->Modes[index] = mi;
+        ok = TRUE;
     }
+    return ok;
 }
 static void PopulateResolutionList(struct uaegfx_staticdata *csd)
 {
@@ -853,8 +867,10 @@ static void PopulateResolutionList(struct uaegfx_staticdata *csd)
         node->Height = mode->h;
         node->DisplayID = 0x50001000 | (mode->id << 16);
         node->BoardInfo = csd->boardinfo;
-        PopulateModeInfo(csd, node, mode);
-        AddTail((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList), (struct Node*)node);
+        if (PopulateModeInfo(csd, node, mode))
+	    AddTail((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList), (struct Node*)node);
+	else
+	    FreeMem(node, sizeof(struct LibResolution));
     }   
 }
 
@@ -902,13 +918,14 @@ static BOOL P96Init(struct uaegfx_staticdata *csd, struct Library *lib)
     DRTG(bug("P96GFX: attempting to init '%s'\n", lib->lib_Node.ln_Name));
     pl(csd->boardinfo + PSSO_BoardInfo_CardBase, (ULONG)lib);
     csd->CardBase = lib;
+    InitRTG(csd->boardinfo);
     if (FindCard(csd)) {
 	DRTG(bug("P96GFX: FindCard succeeded\n"));
 	if (InitCard(csd)) {
 	    DRTG(bug("P96GFX: InitCard succeeded\n"));
+	    SetInterrupt(csd, FALSE);
 	    /* Without this card may not be in linear memory map mode. */
 	    SetMemoryMode(csd, RGBFB_CLUT);
-	    InitRTG(csd->boardinfo);
 	    P96DebugInfo(csd);
 	    return TRUE;
 	}
@@ -946,6 +963,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_WaitQ));
     csd->bitmapextra = csd->boardinfo + PSSO_BoardInfo_SizeOf;
     pl(csd->boardinfo + PSSO_BoardInfo_BitMapExtra, (ULONG)csd->bitmapextra);
+    pl(csd->boardinfo + PSSO_BoardInfo_ExecBase, (ULONG)SysBase);
     pl(csd->boardinfo + PSSO_BoardInfo_UtilBase, (ULONG)csd->cs_UtilityBase);
     InitSemaphore((struct SignalSemaphore*)(csd->boardinfo + PSSO_BoardInfo_BoardLock));
     intr = (struct Interrupt*)(csd->boardinfo + PSSO_BoardInfo_HardInterrupt);
@@ -999,7 +1017,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     }
     D(bug("InitCard done\n"));
 
-    csd->hardwaresprite = SetSprite(csd, FALSE) && (gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE));
+    csd->hardwaresprite = (gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE)) && SetSprite(csd, FALSE);
     DRTG(bug("hardware sprite: %d\n", csd->hardwaresprite));
 
     csd->vram_start = (UBYTE*)gl(csd->boardinfo + PSSO_BoardInfo_MemoryBase);

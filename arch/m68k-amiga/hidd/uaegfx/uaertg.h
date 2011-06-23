@@ -391,6 +391,7 @@ ULONG GetPixelClock(struct uaegfx_staticdata *csd, struct ModeInfo *mi, ULONG in
 ULONG ResolvePixelClock(struct uaegfx_staticdata *csd, struct ModeInfo *mi, ULONG pixelclock, ULONG rgbformat);
 ULONG SetClock(struct uaegfx_staticdata *csd);
 void SetMemoryMode(struct uaegfx_staticdata *csd, ULONG rgbformat);
+void SetInterrupt(struct uaegfx_staticdata *csd, ULONG state);
 void InitRTG(APTR boardinfo);
 
 #endif

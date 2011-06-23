@@ -74,6 +74,7 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->bytesperline = width;
     data->height = height;
     data->bytesperpixel = multi;
+    SetMemoryMode(csd, RGBFB_CLUT);
     data->VideoData = Allocate(csd->vmem, data->bytesperline * data->height);
     SetMemoryMode(csd, data->rgbformat);
  
@@ -118,7 +119,9 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     	DB2(bug("removing displayed bitmap?!\n"));
     
     FreeVec(data->palette);
+    SetMemoryMode(csd, RGBFB_CLUT);
     Deallocate(csd->vmem, data->VideoData, data->bytesperline * data->height);
+    SetMemoryMode(csd, data->rgbformat);
     
     OOP_DoSuperMethod(cl, o, msg);
     
@@ -176,6 +179,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    	for (i = csd->spritecolors + 1; i < csd->spritecolors + 4; i++)
 		            SetSpriteColor(csd, i - (csd->spritecolors + 1),  clut[i * 3 + 0],  clut[i * 3 + 1],  clut[i * 3 + 2]);
 		    }
+	    	    SetInterrupt(csd, FALSE);
     		    SetColorArray(csd, 0, 256);
 		    SetDisplay(csd, FALSE);
 		    SetGC(csd, modeinfo, 0);
@@ -184,9 +188,11 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    SetPanning(csd, data->VideoData, dwidth, 0, 0);
 		    SetDisplay(csd, TRUE);
 		    SetSwitch(csd, TRUE);
+	    	    SetInterrupt(csd, TRUE);
 	            data->disp = TRUE;
 	            csd->disp = data;
 		} else {
+	    	    SetInterrupt(csd, FALSE);
 		    SetDisplay(csd, FALSE);
 		    SetSwitch(csd, FALSE);
 		    csd->dmodeid = 0;
