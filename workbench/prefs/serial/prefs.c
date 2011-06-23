@@ -119,7 +119,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                         {
                             D(bug("LoadPrefs: Reading chunk successful.\n"));
 
-			    CopyMemQuick(loadprefs.sp_Reserved, serialprefs.sp_Reserved, sizeof(serialprefs.sp_Reserved));
+			    CopyMem(loadprefs.sp_Reserved, serialprefs.sp_Reserved, sizeof(serialprefs.sp_Reserved));
 			    serialprefs.sp_Unit0Map        = GET_LONG(loadprefs.sp_Unit0Map);
 			    serialprefs.sp_BaudRate        = GET_LONG(loadprefs.sp_BaudRate);	
 			    serialprefs.sp_InputBuffer     = GET_LONG(loadprefs.sp_InputBuffer);
@@ -153,7 +153,7 @@ BOOL Prefs_ExportFH(BPTR fh)
     BOOL                retval = FALSE;
     BOOL                delete_if_error = FALSE;
 
-    CopyMemQuick(serialprefs.sp_Reserved, saveprefs.sp_Reserved, sizeof(serialprefs.sp_Reserved));
+    CopyMem(serialprefs.sp_Reserved, saveprefs.sp_Reserved, sizeof(serialprefs.sp_Reserved));
     saveprefs.sp_Unit0Map	 = GET_LONG(serialprefs.sp_Unit0Map);
     saveprefs.sp_BaudRate        = GET_LONG(serialprefs.sp_BaudRate);
     saveprefs.sp_InputBuffer     = GET_LONG(serialprefs.sp_InputBuffer);

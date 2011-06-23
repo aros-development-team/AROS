@@ -118,7 +118,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                         {
                             D(bug("Prefs_ImportFH: Reading chunk successful.\n"));
 
-                            CopyMemQuick(loadprefs.pap_Reserved, paletteprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
+                            CopyMem(loadprefs.pap_Reserved, paletteprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
                             for (i = 0; i < 32; i++)
                             {
                                 paletteprefs.pap_4ColorPens[i] = AROS_BE2WORD(loadprefs.pap_4ColorPens[i]);
@@ -154,7 +154,7 @@ BOOL Prefs_ExportFH(BPTR fh)
     BOOL                delete_if_error = FALSE;
     LONG                i;
 
-    CopyMemQuick(paletteprefs.pap_Reserved, saveprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
+    CopyMem(paletteprefs.pap_Reserved, saveprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
     for (i = 0; i < 32; i++)
     {
         saveprefs.pap_4ColorPens[i] = AROS_WORD2BE(paletteprefs.pap_4ColorPens[i]);
