@@ -19,6 +19,7 @@ FUNCS := \
 	iscybermodeid		\
 	lockbitmaptaglist	\
 	movepixelarray		\
+	processpixelarray	\
 	readpixelarray		\
 	readrgbpixel		\
 	scalepixelarray		\
