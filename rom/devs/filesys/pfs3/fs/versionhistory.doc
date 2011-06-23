@@ -1,0 +1,847 @@
+/* $Revision Header built automatically *************** (do not edit) ************
+**
+** © Copyright by Michiel Pelt
+**
+** File             : ProfFileSystem
+** Created on       : Wednesday, 01-May-93 23:53:02
+** Created by       : Michiel Pelt
+** Current revision : V18.4
+**
+**
+** Purpose
+** -------
+**     A filesystem for the C= Amiga.
+**
+** Revision V18.4 bugfix
+** --------------
+** created on Saturday, 11.09.99 18:02:53  by  Michiel Pelt.   LogMessage :
+**   - fixed deldir bugs 152, 153 and 154
+**     (deldir datestamps and block locking)
+**
+** Revision V18.3 release
+** --------------
+** created on Sunday, 13.06.99 17:48:37  by  Michiel Pelt.   LogMessage :
+**   - Fixed bug related to rblkcluster sanity check
+**
+** Revision V18.2 beta
+** --------------
+** created on Wednesday, 19.05.99 12:49:03  by  Michiel Pelt.   LogMessage :
+**   - Fixed bugs found during test procedure
+**
+** Revision V18.1 beta
+** --------------
+** created on Thursday, 13.05.99 17:12:06  by  Michiel Pelt.   LogMessage :
+**   - Support for long filenames
+**
+** Revision V17.14 beta
+** --------------
+** created on Monday, 26.04.99 17:19:25  by  Michiel Pelt.   LogMessage :
+**   - beta warning 1 bug (142) fixed 
+**   - device name in error messages
+**   - 30 buffers reset to 150
+**   - grotere reserved area schijven
+**
+** Revision V17.13 beta
+** --------------
+** created on Monday, 29.03.99 10:11:37  by  Michiel Pelt.   LogMessage :
+**   - Autoupgrade bug fixed
+**
+** Revision V17.12 beta
+** --------------
+** created on Thursday, 11.03.99 12:25:03  by  Michiel Pelt.   LogMessage :
+**   - fixed superdeldir bugs and enhanced setdeldir
+**   - releasenumbers with mu and ds indication in format requester
+**
+** Revision V17.11 beta
+** --------------
+** created on Tuesday, 09.03.99 11:46:01  by  Michiel Pelt.   LogMessage :
+**   - fixed bug 00137
+**   - releasenumbers in versionhistory.doc
+**
+** Revision V17.10 beta
+** --------------
+** created on Saturday, 06.03.99 21:45:40  by  Michiel Pelt.   LogMessage :
+**   - Fixed bug 00136: KB blocks didn't work
+**   - MODE_EXTROVING: bitrovingpointer voor reserved area (00114)
+**
+** Revision V17.9 beta
+** --------------
+** created on Tuesday, 23.02.99 07:44:39  by  Michiel Pelt.   LogMessage :
+**   - Larger delete directory: zie source/doc/deldir2.doc
+**   - Bugfix 00132, 00134, 00135
+**
+** Revision V17.8
+** --------------
+** created on Saturday, 27.09.98 12:25:13  by  Michiel Pelt.   LogMessage :
+**   - Writeprotection softprotect can be disabled by c:Lock
+**   - Copyprotection fail results in readonly disk
+**	 - ErrorMsg from macro to function -> save > 1K
+**
+** Revision V17.7 not released
+** --------------
+** created on Friday, 25.09.98 23:17:48  by  Michiel Pelt.   LogMessage :
+**   - Release version 4.4
+**
+** Revision V17.6 beta
+** --------------
+** created on Sunday, 20.09.98 18:17:39  by  Michiel Pelt.   LogMessage :
+**   - Fixed superindex mode problems
+**
+** Revision V17.5 beta
+** --------------
+** created on Monday, 14.09.98 20:12:55  by  Michiel Pelt.   LogMessage :
+**   - Test version for Phase 5 bug
+**
+** Revision V17.4 beta
+** --------------
+** created on Tuesday, 01.09.98 07:13:41  by  Michiel Pelt.   LogMessage :
+**   - Support for TD64
+**   - New blocktype: anode superindex, plus more bitmapindexblocks
+**	 - Error if disk > 4G en geen DS of TD64
+**   - Fixed issues 118, 121, 123
+**
+** Revision V17.3 release 4.1
+** --------------
+** created on Tuesday, 16.06.98 12:40:38  by  Michiel Pelt.   LogMessage :
+**   - Fixed issues 116, 117: problems with formatting 4G disks.
+**
+** Revision V17.2
+** --------------
+** created on Thursday, 30.05.98 17:26:23  by  Michiel Pelt.   LogMessage :
+**   - fixed bugs 106-109 plus part of 105
+**   - max buffers to 600
+**	 - added ACTION_IS_PFS2
+**
+** Revision V17.1 beta
+** --------------
+** created on Wednesday, 27.05.98 22:02:27  by Mark Harden.   LogMessage :
+**   - Added second DMAMask failover to include MEMF_LOCAL
+**
+** Revision V17.0 beta
+** --------------
+** created on Friday, 22.05.98 23:09:01  by  Michiel Pelt.   LogMessage :
+**   - Added datestamps, OPTION_DATESTAMP (Issue 00103)
+**   - Updated custom packets for PFS2
+**   - Compiled with SAS/C 6.58
+**   - Built version for 060 (040 is the same as 020)
+**
+** Revision V16.23 release
+** --------------
+** created on Wednesday, 22.04.98 20:37:38  by  Michiel Pelt.   LogMessage :
+**   - Copyright transferred from FLD to GREED
+**   - Changed name from AFS to PFS-II
+**   - fixed filecorruption bug in Allocation.c
+**
+** Revision V16.22 beta
+** --------------
+** created on Sunday, 19.04.98 02:33:20  by  Michiel Pelt.   LogMessage :
+**   - fixed munglist problem reported by ATL
+**
+** Revision V16.21 release
+** --------------
+** created on Wednesday, 19.02.97 21:50:39  by  Michiel Pelt.   LogMessage :
+**   - Update procedure is aborted when error occurs (saver)
+**   - Less requesters
+**
+** Revision V16.20
+** --------------
+** created on Sunday, 18.08.96 11:36:22  by  Michiel Pelt.   LogMessage :
+**   - Empty directoryblocks written by AllocLRU() now detectable
+**     by ignoring dirtystate in update:RemoveEmptyDBlocks()
+**   - Global dirty flag set on each write (better for idle signal)
+**
+** Revision V16.19
+** --------------
+** created on Monday, 29.07.96 21:17:38  by  Michiel Pelt.   LogMessage :
+**   - ACTION_ADD_IDLE_SIGNAL added
+**   - Maskfail -> MEMF_24BITDMA
+**
+** Revision V16.18
+** --------------
+** created on Sunday, 23.06.96 17:05:10  by  Michiel Pelt.   LogMessage :
+**   - BUGFIX: When entering sleepmode flushed references were 
+**     ignored, causing enforcer hits and crashes when awaking
+**
+** Revision V16.17
+** --------------
+** created on Saturday, 08.06.96 16:15:36  by  Michiel Pelt.   LogMessage :
+**   - Overwriting a file caused hardlinks to that file to become
+**     corrupt (caused by NewFile())
+**   - SetDate op deldirfile gaf 'Please Insert Volume' requester
+**
+** Revision V16.16
+** --------------
+** created on Monday, 01.04.96 11:03:24  by  Michiel Pelt.   LogMessage :
+**   - ACTION_DIE problems fixed (see dd_Quit)
+**
+** Revision V16.15
+** --------------
+** created on Thursday, 14.03.96 23:20:46  by  Michiel Pelt.   LogMessage :
+**   - bugfix: SetFileSize didn't work if #blocks remained constant
+**   - big directory performance improvement
+**   - fixed bug in diskchange code (FreeVec(rootblock) instead of FreeBufmem())
+**
+** Revision V16.14
+** --------------
+** created on Thursday, 07.03.96 10:15:11  by  Michiel Pelt.   LogMessage :
+**	 - FreeBlocksAC: updatedisk, but no tobefreed_index update
+**   > Fixes from 17 (Working) tree
+**   - enforcer hit in checkupdate fixed
+**   - format fixed
+**   - rename muAF access fixed
+**   - realloc anodebitmap bug fixed
+**	 - number of reserved blocks calculation
+**
+** Revision V16.13
+** --------------
+** created on Monday, 19.02.96 10:12:07  by  Michiel Pelt.   LogMessage :
+**   - Fixed DICE MakeIndex bug: CD file, Lock file/"". Fix in dd_Lock
+**     routine (bug in this fix fixed in 16.14)
+**
+** Revision V16.12	-- working tree overlap --
+** --------------
+** created on Monday, 29.01.96 23:21:31  by  Michiel Pelt.   LogMessage :
+**   - Anodebitmap implemented
+**     |-> less cache need and much faster file-create on large disks
+**
+** Revision V16.11	-- working tree overlap --
+** --------------
+** created on Wednesday, 24.01.96 13:47:59  by  Michiel Pelt.   LogMessage :
+**   - Notification problems fixed
+**     Softlink problem fixed
+**     Rootblock not updated after reinsertion of known disk
+**
+** Revision V16.10
+** --------------
+** created on Friday, 29.12.95 12:05:49  by  Michiel Pelt.   LogMessage :
+**   - ACTION_SET_ROLLOVER added
+**   - overwriting rollover files doesn't cause them to become 
+**     ordinary files
+**
+** Revision V16.9
+** --------------
+** created on Thursday, 21.12.95 13:06:33  by  Michiel Pelt.   LogMessage :
+**   - Several significant bugfixes
+**
+** Revision V16.8
+** --------------
+** created on Monday, 11.12.95 18:35:14  by  Michiel Pelt.   LogMessage :
+**   - Direct SCSI support
+**
+** Revision V16.7
+** --------------
+** created on Saturday, 09.12.95 17:15:44  by  Michiel Pelt.   LogMessage :
+**   - bugfix: virtualsize of rollover files was limited to 64K
+**   - bugfix: enforcer hit when reading from .deldir
+**
+** Revision V16.6
+** --------------
+** created on Monday, 04.12.95 13:24:34  by  Michiel Pelt.   LogMessage :
+**   - Rollover files implemented
+**   - Reserved area roving pointer stored in rootblockextension
+**   - bugfix: format deldir creation
+**   - bugfix: makedirentry error handling
+**   - bugfix: crossvolume hardlinks
+**   - various other bugfixes
+**
+** Revision V16.5
+** --------------
+** created on Wednesday, 22.11.95 16:38:12  by  Michiel Pelt.   LogMessage :
+**   - bugfix: Sleepmode was unintentionally disabled
+**   - bugfix: ACTION_UPDATE_ANODE sent wrong result on error
+**   - bugfix: Reserved block allocation sometimes compromised atomic commit
+**   - afsversion field in rootblock extension used now
+**   - bugfix: rootblock wasn't reloaded after SLEEP_MODE was left
+**
+** Revision V16.4
+** --------------
+** created on Wednesday, 15.11.95 17:02:01  by  Michiel Pelt.   LogMessage :
+**   - Rootblock extension implemented
+**   - Postponed operations implemented
+**   - bugfix: IsTail() could cause crash after diskchange (or uninhibit)
+**   - bugfix: 16.3 had a bug in ChangeFileSize online dir. update
+**
+** Revision V16.3
+** --------------
+** created on Tuesday, 07.11.95 14:52:17  by  Michiel Pelt.   LogMessage :
+**   - True Atomic Update
+**     -> only 'postponed' delete is still missing
+**   - No volume datestamp update (ever)
+**
+** Revision V16.2
+** --------------
+** created on Thursday, 12.10.95 00:23:44  by  Michiel Pelt.   LogMessage :
+**   - new data caching algortihm, improving random write access
+**
+** Revision V16.1
+** --------------
+** created on Wednesday, 04.10.95 15:02:01  by  Michiel Pelt.   LogMessage :
+**   - preallocation for extended files implemented
+**   - Checking allocated buffer memory against memorymask
+**   - 2.0 now profits from memorypools too
+**
+** Revision V16.0
+** --------------
+** created on Tuesday, 03.10.95 15:07:59  by  Michiel Pelt.   LogMessage :
+**   - Merged develop tree: anodecache included
+**
+** Revision V15.11
+** --------------
+** created on Thursday, 28.09.95 13:15:21  by  Michiel Pelt.   LogMessage :
+**   - DeleteDir didn't free oldblocknr of dirty dirblocks.
+**
+** Revision V15.10
+** --------------
+** created on Sunday, 17.09.95 17:28:46  by  Michiel Pelt.   LogMessage :
+**   - deldir creation bug fixed
+**   - CreateLink and CreateSoftLink didn't check namelength
+**
+** Revision V15.9
+** --------------
+** created on Wednesday, 30.08.95 16:38:21  by  Michiel Pelt.   LogMessage :
+**   - dd_Open now opens file dp_Arg2 argument if filename empty
+**     (GuruBook:599)
+**   - dd_Open returned ERROR_OBJECT_WRONG_TYPE instead of ERROR_SOFT_LINK
+**     when opening soft linked object
+**   - Error requester changed: only one button ('OK')
+**   - Retry possible when Read/Write error occurs, including check if
+**     the same disk is still present (by CheckCurrentVolumeBack())
+**
+** Revision V15.8
+** --------------
+** created on Friday, 25.08.95 09:38:00  by  Michiel Pelt.   LogMessage :
+**   - bugfix: rename .deldir
+**   - diskchange check in RawRead & RawWrite
+**   - rootblock not touched by Touch(), but by UpdateDisk(). Needed
+**     because otherwise the disk won't be recognized after removal and
+**     reinsertion.
+**
+** Revision V15.7
+** --------------
+** created on Sunday, 13.08.95 11:12:07  by  Michiel Pelt.   LogMessage :
+**	 - fixed deldir related bug in delete
+**   - fixed bug in hardlink remapping
+**   - Improved dostohandlerinterface (performance increase)
+**
+** Revision V15.6
+** --------------
+** created on Saturday, 05.08.95 16:00:21  by  Michiel Pelt.   LogMessage :
+**   - writetofile did not free blocks when memory alloc fails
+**   - bugfix in new startup code
+**   - deldir automatically created if it isn't there
+**
+** Revision V15.5
+** --------------
+** created on Friday, 04.08.95 16:48:03  by  Michiel Pelt.   LogMessage :
+**   - Better memory check
+**   - bugfix: rename should fail on volumes
+**	 - bugfix: now limiting filenamesize in rename too
+**	 - ACTION_KILL_EMPTY: delete directory with empty name if found
+**
+** Revision V15.4
+** --------------
+** created on Thursday, 03.08.95 13:34:21  by  Michiel Pelt.   LogMessage :
+**	 - CUTDOWN: limit reserved area size
+**   - Multiuser deldir
+**   - SetOwner and SetProtection (limited) possible on deldir
+**     (not on deldirentries)
+**
+** Revision V15.3
+** --------------
+** created on Friday, 28.07.95 13:00:49  by  Michiel Pelt.   LogMessage :
+**	 - Empty dir and filenames (namelenght 0) not accepted anymore
+**   - Implemented deldirentry validity check
+**   - Fixed deldir related UpdateLE problem
+**   - Filenamesize truncate in SearchInDir and SearchInDeldir
+**	 - Disksize check (rootblock->disksize field etc.)
+**
+** Revision V15.2
+** --------------
+** created on Thursday, 27.07.95 10:19:20  by  Michiel Pelt.   LogMessage :
+**   - Updated ACTION_DIE. Works now; except for the WB problem (not
+**     solvable)
+**
+** Revision V15.1
+** --------------
+** created on Monday, 24.07.95 09:19:36  by  Michiel Pelt.   LogMessage :
+**   - Limited filename size to 31 characters 
+**   - 'CD file' problem solved by clearing dp_Res2 field
+**
+** Revision V15.0
+** --------------
+** created on Wednesday, 19.07.95 17:17:47  by  Michiel Pelt.   LogMessage :
+**   - Deldir finished, but not entirely complete
+**		(validity-check and diskspace freeing not yet implemented)
+**	 - bugfix: Newdir checks for disk writeprotection
+**   - bugfix: Root-dir datestamp was not updated
+**	 - DiskInfo of an AFS disk now shows ID_INTER_FFS_DISK (was ID_DOS_DISK) 
+**   - bugfix: double recording of size in AllocBufmemR
+**	 - bugfix: crashed if MaxTransfer wasn't a multiple of the BLOCKSIZE
+**	 - bugfix: freeing exactly one anode worth of blocks from a file could
+**		cause an anode problem (FreeBlocks())
+**
+** Revision V14.3
+** --------------
+** created on Tuesday, 13.07.95 22:32:49  by  Michiel Pelt.   LogMessage :
+**   - Made localisable (at linktime) by using different message files
+**   - No directorycheck in multiuser (for muFS compat.)
+**   - ReadWrite lock now is shared
+**   - Changed Lite (User) version
+**
+** Revision V14.2
+** --------------
+** created on Friday, 07.07.95 12:14:15  by  Michiel Pelt.   LogMessage :
+**   - Fixed syquest diskchange problem (CheckVolume & dd_Close)
+**	 - Made a V36 stackswap..
+**
+** Revision V14.1
+** --------------
+** created on Thursday, 06.07.95 16:54:56  by  Michiel Pelt.   LogMessage :
+**   - muFS protection problem fixed: Lock now accepts 'Property access'
+**
+** Revision V14.0
+** --------------
+** created on Friday, 23.06.95 22:21:25  by  Michiel Pelt.   LogMessage :
+**   - Multiuser support
+**
+** Revision V13.14
+** --------------
+** created on Friday, 23.06.95 19:30:43  by  Michiel Pelt.   LogMessage :
+**   - Added minimum (50) and maximum (300) to number of buffers
+**	 - Protection extrafields only when needed
+**
+** Revision V13.13
+** --------------
+** created on Wednesday, 21.06.95 13:14:40  by  Michiel Pelt.   LogMessage :
+**   - fixed bug in checkvolume: should be called before UpdateLE
+**   - dd_SetProperty
+**
+** Revision V13.12
+** --------------
+** created on Tuesday, 20.06.95 19:29:55  by  Michiel Pelt.   LogMessage :
+**   - Info() and Examine() now show read only if softprotected
+**   - FreeAnodeBlocks bug fixed
+**   - DoNotify called before fail check (dd_CreateDir) fixed
+**
+** Revision V13.11
+** --------------
+** created on Friday, 16.06.95 16:13:03  by  Michiel Pelt.   LogMessage :
+**   - softprotect disk after error occurs
+**     (implemented by changing ErrorMsg macro and RawWrite)
+**
+** Revision V13.10
+** --------------
+** created on Friday, 16.06.95 15:28:41  by  Michiel Pelt.   LogMessage :
+**   - fixed an UpdateLE bug in Rename
+**
+** Revision V13.9
+** --------------
+** created on Friday, 16.06.95 11:52:15  by  Michiel Pelt.   LogMessage :
+**   - added bufferPool for WriteToDisk
+**   - removed Touch() from WriteToDisk
+**
+** Revision V13.8
+** --------------
+** created on Thursday, 15.06.95 22:37:43  by  Michiel Pelt.   LogMessage :
+**   - Uses exec memory pools now
+**
+** Revision V13.7
+** --------------
+** created on Thursday, 08.06.95 19:13:42  by  Michiel Pelt.   LogMessage :
+**   - check-if-parent-is-dir bug fix (GetFullPath)
+**
+** Revision V13.6
+** --------------
+** created on Thursday, 04.06.95 07:43:54  by  Michiel Pelt.   LogMessage :
+**   - Implemented longword protection
+**
+** Revision V13.5
+** --------------
+** created on Thursday, 04.05.95 00:12:04  by  Michiel Pelt.   LogMessage :
+**   - Link bug fixed: forgot UpdateLE
+**
+** Revision V13.4
+** --------------
+** created on Friday, 14.04.95 13:54:47  by  Michiel Pelt.   LogMessage :
+**   - Cache inconsistency bug solved
+**
+** Revision V13.3
+** --------------
+** created on Wednesday, 29.03.95 23:45:56  by  Michiel Pelt.   LogMessage :
+**   - ACTION_MORE_CACHE implemented
+**   - Notification support implemented
+**
+** Revision V13.2
+** --------------
+** created on Friday, 24.03.95 21:39:52  by  Michiel Pelt.   LogMessage :
+**   - Softlinks implemented
+**   - Bugs in hardlinks handling fixed
+**   - Bug in diskchange interrupt fixed
+**
+** Revision V13.1
+** --------------
+** created on Tuesday, 28.02.95 23:38:15  by  Michiel Pelt.   LogMessage :
+**   - '12.6' bugfix (12.5.1): Solves out of buffers problem
+**   - Links & handling implemented
+**
+** Revision V13.0
+** --------------
+** created on Thursday, 23.02.95 11:59:31  by  Michiel Pelt.   LogMessage :
+**   - Directory extension
+**   - SetOwner implemented
+**
+** Revision V12.6
+** --------------
+** created on Saturday, 18.02.95 11:30:37  by  Michiel Pelt.   LogMessage :
+**   - Added g->blocks_dirty field + usage
+**     Updated AllocReservedBlockSave + call it
+**     AllocReservedBlock(Save) can fail!
+**
+** Revision V12.5
+** --------------
+** created on Tuesday, 14.02.95 18:16:52  by  Michiel Pelt.   LogMessage :
+**   - Changed anodeblocks: 16 byte header, 84 anodes
+**
+** Revision V12.4
+** --------------
+** created on Monday, 13.02.95 10:26:10  by  Michiel Pelt.   LogMessage :
+**   - bugfix: Disksize as shown by dd_info was 1 too big
+**
+** Revision V12.3
+** --------------
+** created on Monday, 13.02.95 09:57:15  by  Michiel Pelt.   LogMessage :
+**   - ULONG anode fields in directory block & entry
+**
+** Revision V12.2
+** --------------
+** created on Thursday, 09.02.95 09:59:44  by  Michiel Pelt.   LogMessage :
+**   - MakeBlockDirty LOCKed blocks. PFS could run out of buffers.
+**
+** Revision V12.1
+** --------------
+** created on Tuesday, 07.02.95 23:36:18  by  Michiel Pelt.   LogMessage :
+**   - Enforcer hit fixed
+**   - OpenFromLock access right bug fixed (ObjectArchive works now)
+**
+** Revision V12.0
+** --------------
+** created on Sunday, 29.01.95 11:18:51  by  Michiel Pelt.   LogMessage :
+**   - Rewritten most disk.c routines for better performance
+**   - Full de_Mask and de_BufMemType support
+**   - Implemented hash table for cache
+**   - Some bugs fixed
+**   - LOCKing changed; no longer in read routines
+**	 - Reserved blocks are now RawRead/RawWrite
+**
+** Revision V11.0
+** --------------
+** created on Wednesday, 18.01.95  by  Michiel Pelt.   LogMessage :
+**   - Completely new block allocation algorithm and routines
+**   - New freeblock management (use bitmap now)
+**   - New blocktypes: Bitmap, BitmapIndex, Index
+**   - 1024 byte reserved blocks
+**   - 1024 byte block support
+**   - New Update algorithm
+**   - Integrated Format
+**   - PFS 9.5 compatibility dropped
+**
+** ---------------
+**
+** V10.6 (05.10.94): Bugs fixed: FlushBlock didn't Remove blockchain (did only
+**					 lruchain), GetAnode now MakeLRUs indexblock.
+** V10.5 (01.10.94): UpdateLE, UpdateLE_exa, LOCK, UNLOCKALL,
+**                   ISLOCKED, DirectUpdate(). PLUS usage.
+** V10.4 (23.09.94): ChangeDirEntry check on ETF_VOLUME removed
+**					 Extended listentry_t and moved from struct * to *_t
+**					 Added LRU:FlushBlock, killed LRU:BlockUsed (nu macro)
+** V10.3 (21.09.94): Removed all references to block->usecount (11 places)
+**
+** Revision V10.1
+** --------------
+** created on Monday, 12.09.94 21:22:41  by  Michiel Pelt.   LogMessage :
+**   LRU Cache:
+**   - MakeVolumeData: allocate blockpool (using de_NumBuffers & 
+**     de_BufMemType) --> CAN FAIL NOW (return 0)
+**   - CountUseCount --> BlockInUse
+**
+** Revision V10.0ß
+** --------------
+** created on Monday, 12.09.94 19:22:26  by  Michiel Pelt.   LogMessage :
+**   - Added indexblocks with acc. functions
+**   - Longword anodes with MODE_SMALL, MODE_BIG
+**   - Modules new_anodes.c new_format.c tobedef.h
+**
+** Revision V9.5.3: taken over from V9.5 parallel version
+** ---------------
+**   - RawRead and RawWrite now use CMD_ commands i.p.v. ETD_ comm.
+**   - A nasty bug created in 9.5.1 fixed: the trackbuffer was flushed
+**     by UpdateDisk->RequestCurrVolBack. Moved RCVB from TD to DiskRemove
+**     Sequence and made it local to Volume.c
+**
+** Revision V9.5.2: last common version
+** --------------
+** created on Wednesday, 24.08.94 21:40:54  by  Michiel Pelt.   LogMessage :
+**  -*-  changed on Tuesday, 06.09.94 19:01:49  by  Michiel Pelt.   LogMessage :
+**   - Upgraded to 9.5.3 from floppy version
+**  -*-  created on Wednesday, 24.08.94 21:40:54  by  Michiel Pelt.   LogMessage :
+**   - SetFileSize() now returns new length instead of BOOL (ADOS manual bug)
+**   - Added Touch() to SetFileSize()
+**
+** Revision V9.5.1
+** ---------------
+** created on Thursday, 18.08.94 10:22:54  by  Michiel Pelt.   LogMessage :
+**   - I now do a CMD_CLEAR in GetCurrentRoot. If this is not present
+**     diskspare gets in trouble after interleaving with FFS
+**   - Added a diskcache invalidate to NewVolume()
+**   - Restricted TD_FORMAT to inhibited mode. Removed NewVolume() from
+**     Format() (not allowed during inhibit)
+**
+** Revision V9.5
+** -------------
+** created on Sunday, 15.08.94 by Michiel Pelt
+**   - All 'name relative to path' packets now ignore name upto
+**     first colon (CreateDir, DeleteObject, Rename, Protect, SetComment,
+**     SetFileDate). Cut out assign/colon related parts in Directory.c and
+**     Volume.c: GetFullPath (edited), GetVolume (killed), GetVolumeN with
+**     locals ScanAssignlist etc (killed).
+**     -> All assign related problems (multiassign, PROGDIR:..) solved
+**   - Serialize disk now also updates DosList.
+**     -> SD problem fixed. Diskcopy should work
+**   - VolumeRequest now uses ErrorReport
+**	 - VolumeRequest, PleaseInsertVolume killed
+**   - Serialize disk still didn't work: called within tick after diskcopy
+**     and is called from Inhibited state.
+**
+** Revision V9.4
+** --------------
+** created on Thursday, 02.06.94 15:45:39  by  Michiel Pelt.   LogMessage :
+**  -*- 9.4.4: Friday, 05.08.94 17:44:26
+**   - The trackdisk buffer is now cleared after diskremove and 
+**     uninhibit
+**  -*- 9.4.3: Tuesday, 02.08.94 16:01:55
+**   - PFS respects MaxTransfer now
+**  -*- 9.4.2: Monday, 01.08.94 09:11:06  
+**   - bugfix DiskRead: UpdateCache if last block tbr in cache
+**     DiskSpare compatibility fix: CMD_UPDATE after FlushCache.
+**  -*- 9.4.1: Wednesday, 20.07.94 09:12:24
+**   - Accept diskspare as a trackdisk device
+**   - DiskInfo NumBlocks now does not include the reserved blocks
+**  -*- 9.4:  Friday, 10.06.94 17:14:05
+**   - Added TD_Format and TD_WriteToCache to improve floppy write 
+**     performace. Can now copy c: (782K) to PFS: in 44 seconds.
+**   - rewritten WriteToFile, ReadFromFile, DiskRead and DiskWrite 
+**     to solve SAS C write/seek bug
+**   - Diskspare.device supported by changing ETD_MOTOR to TD_MOTOR
+**   - Check DOSFALSE i.p.v. DOSTRUE with INHIBIT (Holger Kruse)
+**
+** Revision V9.3
+** --------------
+** created on Monday, 30.05.94 21:32:50  by  Michiel Pelt.   LogMessage :
+**   - Now creates inputevents on diskchange
+**   - PFS now adds FS to FileSysResource list (Nicola3005)
+**   - Added disktypes for ACTION_DISK_INFO: NDOS, BUSY (Nicola3005)
+**   - trackdisk.device flag added (H Kruse) i.v.m. TD_GETGEOMETRY
+**
+** Revision V9.2
+** --------------
+** created on Saturday, 28.05.94 10:52:14  by  Michiel Pelt.   LogMessage :
+**   - international mode casecompare implemented. BOOTABLE NOW (Holger Kruse)
+**   - bugfix: empty files  (was caused by 8.1->8.3 conv) (Rougier)
+**
+** Revision V9.1
+** --------------
+** created on Friday, 20.05.94 13:11:02  by  Michiel Pelt.   LogMessage :
+**  -*-  changed on Wednesday, 25.05.94
+**   - bugfix: Rename 'yourself' (e.g 'hello' to 'Hello')
+**   - Exec lijsten (dubbel gelinkt) voor alles
+**
+** Revision V9.0
+** --------------
+** created on Thursday, 12.05.94 22:59:52  by  Michiel Pelt.   LogMessage :
+**   - RDB installable version (using HDToolBox!), added StackSwap()
+**     in Boot.c (Rougier: StackSwap)
+**
+** Revision V8.4
+** --------------
+** created on Monday, 09.05.94 22:00:35  by  Michiel Pelt.   LogMessage :
+**  -*-  changed on Thursday, 12.05.94
+**   - Removable if <=2 heads and LowCyl == 0: for diskspare.device
+**   - bugfix: NewFile didn't check disk condition (like write-prot)
+**   - Bugfix: parameter-inversion of ctrl->matchfunc
+**   - Format dynamicly chooses reserved area-size now
+**
+** Revision V8.3
+** -------------
+** created on Friday, 06.05.94 13:33:10 by Michiel Pelt.   LogMessage :
+**   - Optimized DiskRead & DiskWrite (added cache); added RawRead, RawWrite,
+**     ReadFromCache, FillCache, FlushCache, WriteToCache
+**   · structures.h: struct diskcache en g->diskcache added
+**   · UpdateDisk: cache FlushCache()ed and RawWrite() used
+**   · Format: FlushCache()
+**   · Initialize: g->diskcache allocated
+**
+** Revision V8.2
+** -------------
+** created on Wednesday, 04.05.94 12:22:47  by  Michiel Pelt.   LogMessage :
+**   - Optimized ReadFromFile en WriteToFile (minimized diskaccesses)
+**
+** Revision V8.1
+** --------------
+** created on Friday, 29.04.94 15:14:37  by  Michiel Pelt.   LogMessage :
+**   - Slightly optimized WriteToFile (extended flag)
+**
+** Revision V8.0
+** --------------
+** created on Friday, 29.04.94 10:23:35  by  Michiel Pelt.   LogMessage :
+**   - First version that accepts harddisks (upto 32MB)
+**     -> volume numblocks,numblocksused,numblocksfree nu LONG ipv WORD
+**		  + usage (in MakeVolumeData)
+**     -> TestRemovability: default removable
+**
+** Revision V7.5 (release 3)
+** --------------
+** created on Wednesday, 20.04.94 14:15:55  by  Michiel Pelt.   LogMessage :
+**   - Nasty usecount bug 'fixed' (replaced by usecountcounter)
+**     zie blz 103 schrift
+**   - RemEmptyDBlk, -ABlk & DeleteDir: FreeVec added
+**
+** Revision V7.4
+** --------------
+** created on Monday, 18.04.94 23:53:02  by  Michiel Pelt.   LogMessage :
+**   - ACTION_SERIALIZE_DISK implemented
+**   - ACTION_CURRENT_VOLUME fixed (zie DevKit3.1 tutorials)
+**   - ACTION_WRITEPROTECT implemented
+**
+** Revision V7.3
+** --------------
+** created on Monday, 18.04.94 22:09:18  by  Michiel Pelt.   LogMessage :
+**   - A few CMD_UPDATES added:
+**     'DiskRelabel' en 'Timer-end unchanged'
+**   - Examineall type-check added (BrowserII works now)
+**
+** Revision V7.2
+** --------------
+** created on Monday, 18.04.94 11:50:30  by  Michiel Pelt.   LogMessage :
+**   - Writeprotection & volumecheck bugfixes:
+**     ChangeFileSize, dd_Rename, SetDate, ProtectFile, AddComment
+**   - Diskchangeinterrupt-name now is mountname-specific (pfs_interrupt)
+**
+** Revision V7.1 (not released)
+** --------------
+** created on Wednesday, 13.04.94 12:44:50  by  Michiel Pelt.   LogMessage :
+**   - SetDate bug fixed: the arguments as specified in DOS manual
+**     were incorrect (bug reported by Pierre Carrette)
+**
+** Revision V7.0 (not released)
+** --------------
+** created on Wednesday, 13.04.94 12:24:17  by  Michiel Pelt.   LogMessage :
+**   - Reentrant version:
+**     all functions use a globaldata parameter g
+**     timeout variable (DosToHandlerInterface) moved to globaldata
+**     ! library-handling not yet fixed
+**
+** Revision V6.14 (not released)
+** --------------
+** created on Wednesday, 13.04.94 12:23:27  by  Michiel Pelt.   LogMessage :
+**   - added Removable flag to globaldata
+**   - added Firstblock & lastblock entry to globaldata
+**   - added TD_CHANGESTATE failure check to GetCurrentRoot
+**   - now writes the two bootblocks in one access (format)
+**   - constructed GetDriveGeometry() functie. Now gets geometry and 
+**     adapts (to) DosEnvec table (FillDosEnvec function killed)
+**
+** Revision V6.13 (not released)
+** --------------
+** created on Sunday, 10.04.94 15:42:29  by  Michiel Pelt.   LogMessage :
+**   - More specific DiskWrite() and DiskRead() error-messages
+**   - Replaced LDF_WRITE with LDF_READ to prevent DeadLock
+**     --> multiple treaded filesystem would be better (DOS is!)
+**
+** Revision V6.12 (release 2)
+** --------------
+** created on Saturday, 26.03.94 08:28:14  by  Michiel Pelt.   LogMessage :
+**   - 6.12: Devicenames of length 4 allowed now (init bug)
+**   - 6.11: 'Ask for volume' 2.0 adaption; errormsgs revised (release 1)
+**   - 6.10: reordered source; SetFileSize implemented
+**   - 6.9: Blocksorted update; Disksize dependent reservedarea
+**   - 6.8: time in ½ sec slices; FreeUnusedResources
+**   - 6.7: Variable timeout, bugfixes
+**   - 6.6: Beta release version
+**   - 6.5: MotorOff() only after timeout; Added read-timeouts
+**	 - 6.4: ACTION_SAME_LOCK added
+**   - 6.3: ExNext changed; dirlockentry added
+**   - 6.2: Save saves, ook voor dir & anode blokken
+**   - 6.1: Debuground (tstprg) of 6.0
+**   - 6.0: Allocationroutines fully rewritten
+**
+** Revision V5 - Timer and diskchangehandler
+** --------------
+** created on Wednesday, 06.10.93 23:26:15  by  Michiel Pelt.   LogMessage :
+**   - 5.1: Added DiskChangeHandler
+**   - 5.0: Added timer & ACTION_DIE
+**
+** Revision V4 - All basic actions implemented
+** --------------
+** created on Sunday, 03.10.93 20:27:16  by  Michiel Pelt.   LogMessage :
+**	 - 4.7: IsChildOf(), upgraded easyrequest, listentry_ptr gone
+**   - 4.6: Direntry-references restored after dirblockchange
+**   - 4.5: Format, ACTION_INHIBIT, relabel
+**   - 4.4: Full diskstate-handling (disktype en diskstate added)
+**   - 4.3: Assigns supported; Uses GetDriveGeometry; ACTION_FLUSH implemented
+**   - 4.2: Newvolume en diskchange aangepakt 
+**   - 4.1: New GetFullPath en FindObject
+**   - 4.0: This will be the first version that actually does something.
+**
+** Revision V3 - Compilefailurefree
+** --------------
+** created on Tuesday, 31.08.93 19:00:08  by  Michiel Pelt.   LogMessage :
+**   - 3.1: Compiled & completed volumechecks and requests
+**   - 3.0: New debugging step; diskchange; becoming real FileSystem
+**
+** Revision V2
+** --------------
+** changed on Thursday, 02.06.93 12:19:47  by  Michiel Pelt.   LogMessage :
+**     2.4: Merged all levels in one file for easy debugging. Moved all
+**     		sources to main filesystem directory. V2.05: NextBlock ()++
+**     2.3:	New function: GetFullPath. Changed prototype for FindObject
+**     		and a few others.
+**	   2.2: Take account of rootblock case
+**	   2.1: Some errors removed
+**     2.0: Compilation ready. All functions implemented. Go for test
+**     		program which uses functions defined here.
+**
+** Revision V1
+** --------------
+**     1.3: Second compilation phase: use the generated protos. Only a
+**     		few NYI functions left. .o size stackcheck:11940; opti 5:9672
+**     1.2: First compilation phase: Prototype generation
+**     1.1: First walkthrough. Still a few functions to be implemented
+**	   1.0: Initial release
+**
+*********************************************************************************/
+#define REVISION "18.4"
+#define REVDATE  "11.09.99"
+#define REVTIME  "18:02:53"
+#define AUTHOR   "Michiel Pelt"
+#define VERNUM   18
+#define REVNUM   4
+
+#define RELNUM  "5.0"
+
+#if MULTIUSER
+#define E1 "mu"
+#else
+#define E1 ""
+#endif
+#if SCSIDIRECT
+#define E2 "ds"
+#else
+#define E2 ""
+#endif
+#ifdef BETAVERSION
+#define E3 " BETA"
+#else
+#define E3 ""
+#endif
+#define RELEASE RELNUM E1 E2 E3
+
