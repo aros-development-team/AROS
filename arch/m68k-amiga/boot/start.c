@@ -328,7 +328,7 @@ static void RomInfo(IPTR rom)
         (*(UWORD *)(ptr + 20) == 0xffff) &&
         (*(UWORD *)(ptr + 22) == 0xffff)) {
     	DEBUGPUTHEX(("ROM Location", rom));
-    	DEBUGPUTD(("  Verision", *(UWORD *)(ptr + 12)));
+    	DEBUGPUTD(("   Version", *(UWORD *)(ptr + 12)));
     	DEBUGPUTD(("  Revision", *(UWORD *)(ptr + 14)));
     	str = (ptr + 24);
     	DEBUGPUTS(("  ROM Type: ")); DEBUGPUTS((str)); DEBUGPUTS(("\n"));
