@@ -233,7 +233,7 @@ static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_all
 		D(bug("[META] Copying from superclass methods for if %s, local ID 0x%08X, basmetaroot %p, superif %p\n",
 			ifb->GlobalInterfaceID, ifb->InterfaceID, OOPBase->ob_BaseMetaObject.inst.rootif, superif));
 	
-		CopyMemQuick(superif, ifb->MethodTable, sizeof(struct IFMethod) * num_methods);
+		CopyMem(superif, ifb->MethodTable, sizeof(struct IFMethod) * num_methods);
 		InsertBucket(inst->data.iftable, (struct Bucket *)ifb, OOPBase);
 		    
 	    } /* for (;;) */
@@ -728,7 +728,7 @@ static BOOL expandbucket(struct IFBucket *b, ULONG num_methods)
     if (!ifm)
     	return FALSE;
 
-    CopyMemQuick(b->MethodTable, ifm, sizeof(struct IFMethod) * b->NumMethods);
+    CopyMem(b->MethodTable, ifm, sizeof(struct IFMethod) * b->NumMethods);
     FreeVec(b->MethodTable);
     b->MethodTable = ifm;
 
