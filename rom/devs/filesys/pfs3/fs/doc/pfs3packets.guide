@@ -1,0 +1,294 @@
+@database "Professional File System 3 documentation"
+@author "Michiel Pelt"
+@(c) "Copyright 1999 by Great Effects Development"
+@$VER: pfs3packets.guide 1.2 (8/6/1999)
+@master pfs3packets.guide
+
+@node "Main" "PFS3 Custom Packets"
+
+@{jcenter}@{b}Professional File System 3
+Custom Packet Documentation@{ub}
+Copyright (c) 1998 by Great Effects Development
+
+for PFS3 Version 5.1
+
+This document provides information for developers. PFS3 defines some
+custom packets to make sleepmode and rollover files possible. All these
+packets have as first argument ID_PFS2_DISK which is 0x50465302L as
+defined in @{"pfs3.h" link pfs3.h/main}.
+
+These packets are:
+
+@{"ACTION_IS_PFS2" link "ACTION_IS_PFS2"}
+@{"ACTION_SLEEP" link "ACTION_SLEEP"}
+@{"ACTION_UPDATE_ANODE" link "ACTION_UPDATE_ANODE"}
+@{"ACTION_CREATE_ROLLOVER" link "ACTION_CREATE_ROLLOVER"}
+@{"ACTION_SET_ROLLOVER" link "ACTION_SET_ROLLOVER"}
+@{"ACTION_ADD_IDLE_SIGNAL" link "ACTION_ADD_IDLE_SIGNAL"}
+@{"ACTION_REMOVE_DIRENTRY" link "ACTION_REMOVE_DIRENTRY"}
+@{"ACTION_SET_DELDIR" link "ACTION_SET_DELDIR"}
+@{"ACTION_SET_FNSIZE" link "ACTION_SET_FNSIZE"}
+
+How to use sleepmode is explained in @{"sleepmode" link sleepmode}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ACTION_IS_PFS2" "ACTION_IS_PFS2"
+@{jcenter}@{b}ACTION_IS_PFS2@{ub}
+@{jleft}
+
+ARG1 = ID_PFS2_DISK (= 'PFS\\02')
+RES1 = DOSTRUE if PFS2 or PFS3 volume
+RES2 = Version (upper word) and revision (lower word)
+
+Check if partition is a PFS2 or PFS3 partition. If it is, it returns DOSTRUE
+in dp_Res1. The version and revision of PFS is returned in dp_Res2.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ACTION_SLEEP" "ACTION_SLEEP"
+@{jcenter}@{b}ACTION_SLEEP@{ub}
+@{jleft}
+
+ARG1 = ID_PFS2_DISK (= 'PFS\\02')
+ARG2 = on/off (DOSTRUE for on, DOSFALSE for off)    
+ARG3 = ULONG signalnr                               
+ARG4 = struct Task *task                            
+RES1 = struct MsgPort *sleepport or NULL for failure
+RES2 = failurecode if RES1==NULL
+
+Enter or leave sleep mode. See @{"sleepmode" link sleepmode} for details.
+If sleep mode is entered (dp_Arg2 == DOSTRUE), dp_Arg3 and dp_Arg4 specify
+where PFS3 will sent the wakeup signal to if PFS3 needs to regain control of
+the disk. If sleep mode is successfully entered, the sleepport will be
+returned in dp_Res1.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ACTION_UPDATE_ANODE" "ACTION_UPDATE_ANODE"
+@{jcenter}@{b}ACTION_UPDATE_ANODE@{ub}
+@{jleft}
+
+ARG1 = ID_PFS2_DISK (= 'PFS\\02')
+ARG2 = old anodenr
+ARG3 = new anodenr (0 = invalidate references)
+RES1 = updatecount or -1 for failure
+RES2 = failurecode if Res1 = -1
+
+This packet is only valid during sleepmode. The optimiser has to sent this
+packet to the sleepport for each anode it reassigns to another anodenumber.
+This packet is necessary because PFS3 identifies objects by anode number.
+Only anode numbers are cached during sleepmode, not the anodes themselves.
+These cached anode numbers are updated by this function. If dp_Arg3 is 0 all
+references to the anode in question are invalidated. This means locks on the
+object become invalid. This packet does not access the disk in any way. It
+doesn't matter when or in which order the packets are sent, as long as all
+changes are passed before the filesystem leaves sleepmode.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ACTION_CREATE_ROLLOVER" "ACTION_CREATE_ROLLOVER"
+@{jcenter}@{b}ACTION_CREATE ROLLOVER@{ub}
+@{jleft}
+
+ARG1 = ID_PFS2_DISK (= 'PFS\\02')
+ARG2 = BPTR LOCK on directory ARG3 is relative to
+ARG3 = APTR name of rollover file 
+ARG4 = WORD desired rollover size in blocks
+RES1 = success
+RES2 = failure code
+
+Creates a rollover file with the specified size. This packet cannot convert
+a normal file to a rollover file. If a file by the specified name already
+exists, an ERROR_OBJECT_EXISTS will be returned.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ACTION_SET_ROLLOVER" "ACTION_SET_ROLLOVER"
+@{jcenter}@{b}ACTION_SET_ROLLOVER@{ub}
+@{jleft}
+
+ARG1 = ID_PFS2_DISK (= 'PFS\\02')
+ARG2 = APTR fileentry (filled in by Open())
+ARG3 = APTR struct rolloverinfo
+RES1 = success
+RES2 = failure code
+
+Changes the attributes of a rolloverfile. In dp_Arg2 an APTR to the
+rolloverfile is expected. This is can be obtained by converting the BPTR
+returned by Open() to an APTR using the macro BADDR(). The rolloverinfo
+structure passed in dp_arg3 looks like this:
+
+struct rolloverinfo
+{
+    BOOL set;                   /* 0 -> read; 1 -> write */
+    ULONG realsize;             /* Space rolloverfile takes on disk */
+    ULONG virtualsize;          /* How much is stored in file */ 
+    ULONG rollpointer;          /* Start of file offset */
+};
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ACTION_ADD_IDLE_SIGNAL" "ACTION_ADD_IDLE_SIGNAL"
+@{jcenter}@{b}ACTION_IDLE_SIGNAL@{ub}
+@{jleft}
+
+ARG1 = ID_PFS2_DISK
+ARG2 = add/remove (DOSTRUE = add; DOSFALSE = remove)
+ARG3 = ULONG signal number (UPPER = read, LOWER = write)
+       remove: handle to remove
+ARG4 = struct Task *task
+RES1 = Idlehandle or DOSFALSE for failure
+RES2 = errorcode
+
+Add or remove a task from the idle signal chain. All tasks in the idle
+signal chain are notified when PFS3 is idle. To add a task, set dp_Arg2 to
+DOSTRUE and a pointer to the task in dp_Arg4. Argument dp_Arg3 specifies
+which signals PFS3 will set when it becomes idle. If it has written to the
+disk it will send the signal specified in the lower word, if it has only
+read from the disk it will send the signal specified by the upper word. Your
+'idlehandle' is returned in dp_Res1.
+
+To remove a task from the idle signal chain set dp_Arg2 to DOSFALSE and pass
+your idlehandle in dp_Arg3.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ACTION_REMOVE_DIRENTRY" "ACTION_REMOVE_DIRENTRY"
+@{jcenter}@{b}ACTION_REMOVE_DIRENTRY@{ub}
+@{jleft}
+
+ARG1 = ID_PFS2_DISK
+ARG2 = Lock to which ARG2 is relative (BPTR)
+ARG3 = STRPTR Name of object to be deleted
+RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
+RES2 = failurecode (if res1 = DOSFALSE)
+
+Removes a directory entry (file, directory, link) without taking any action
+regarding the object in question. Storage taken by the object is not freed.
+This packet is a patch that makes it possible to circumvent an illegal
+object.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ACTION_SET_DELDIR" "ACTION_SET_DELDIR"
+@{jcenter}@{b}ACTION_SET_DELDIR@{ub}
+@{jleft}
+
+ARG1 = MODE_PFS2_DISK
+ARG2 = number of deldirblocks wanted (0 = disable, -1 = check)
+RES1 = success
+RES2 = failure code
+
+Sets the number of deldir blocks. To disable the deldir, set Arg2 to 0.
+To get the current number of deldirblocks set Arg2 to -1 and it will
+be returned in Res2.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ACTION_SET_FNSIZE" "ACTION_SET_FNSIZE"
+@{jcenter}@{b}ACTION_SET_FNSIZE@{ub}
+@{jleft}
+
+ARG1 = MODE_PFS2_DISK
+ARG2 = New maximum filename size (0 = read)
+RES1 = success
+RES2 = failure code / current or new fnsize
+
+Set the maximum filename size. If the new size is illegal, an error will
+be returned. If operation is successful or Arg2 is NULL, the new filename
+size will be returned in Res2.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Sleepmode" "Sleep Mode"
+@{jcenter}@{b}Sleep Mode@{ub}
+@{jleft}
+
+This document assumes some knowledge of the structure of a PFS volume. See
+the supplied include file for details.
+
+Even AFS volumes can get fragmented and therefore can benefit from
+occasional optimization by a disk optimiser. It would be ideal if this
+reorganisation process could be performed transparently, without the disk
+becoming inaccessible while the optimiser is busy. For this purpose AFS has
+a special mode of operation, the sleep mode.
+
+In sleep mode the filesystem has no blocks of the volume cached and doesn't
+access the volume, like during inhibit mode. The difference with inhibit is
+that the filesystem does accept all packets when in sleep mode. If the
+filesystem needs access to the disk to perform a packet it will start the
+wakeup protocol. After completion of the wakeup protocol the filesystem is
+back in normal operating mode and can perform the packet.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "SM_Protocol" "Sleep Mode Protocol"
+@{jcenter}@{b}Sleep Mode Protocol Overview@{ub}
+@{jleft}
+
+Suppose an optimiser process is started. It has to initiate the sleep
+protocol to get access to the disk. It does this by requesting the
+filesystem to enter sleep mode. If the request is granted it can then access
+the disk. The optimiser also gets access to a special messageport, the
+@{i}sleepport@{ui}, for communication with the filesystem during sleep mode.
+When the optimiser is finished with the disk it has to exit sleep mode by
+sending a release message to this messageport.
+
+Sleep mode is not limited to optimisers. Many other applications are
+conceivable, like a diskrepair tool or analyser. In the rest of this chapter
+the application will be called the @{i}client@{ui}.
+
+During sleep mode the client is allowed to change filesystem structures on
+the disk. The filesystem therefore flushes all caches before it grants a
+sleep mode request. The filesystem does keep all locks on the volume, since
+the volume has to remain accessible by the user. Each file locked is
+identified by an anodenumber, which refers to the anodes on disk. If the
+client moves anodes around it has to notify the filesystem about this in
+order to keep the locks valid.
+
+If the filesystem gets a user request for which it needs access to the disk
+it will request the client to finish disk access and release sleep mode.
+During this wakeup protocol the client has to clean up the disk during which
+it can send messages to the sleepport (like anode update messages). The
+client completes the wakeup protocol by sending a release message to the
+sleep port. The filesystem is then back in the normal mode of operation and
+can perform the user's request.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "SM_Enter" "Entering Sleep Mode"
+@{jcenter}@{b}Entering Sleep Mode@{ub}
+@{jleft}
+
+Sleepmode is requested by sending an ACTION_SLEEP packet with dp_Arg2 ==
+DOSTRUE. If the request is granted, the client can begin its work. For every
+anodenumber it changes it has to send an ACTION_UPDATE_ANODE to the
+sleepport. Changes to anodes themselves, without changing their number,
+don't have to be reported.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "SM_Wakeup" "The wakeup protocol"
+@{jcenter}@{b}The wakeup protocol@{ub}
+@{jleft}
+
+Sleep mode is left by using the wakeup protocol. The wakeup protocol can be
+initiated by either the client or the filesystem. If the client is finished
+with whatever it was doing with the disk it will take the initiative. It
+will flush all blocks it has cached and send all outstanding
+ACTION_UPDATE_ANODE packets. After that it sends the ACTION_SLEEP message
+causing the filesystem to exit sleep mode.
+
+The filesystem will initiate the wakeup protocol if it needs access to the
+disk during sleep mode. It will sent a signal to the optimiser, using the
+signal number and messageport specified in the original ACTION_SLEEP packet.
+The client should respond by finishing disk activity and sending all
+outstanding ACTION_UPDATE_ANODE packets to the sleepport. The filesystem
+will leave sleep mode and continue normal operation as soon as it receives
+the MODE_SLEEP message with dp_Arg2 == DOSFALSE.
+
+@endnode
+
+
