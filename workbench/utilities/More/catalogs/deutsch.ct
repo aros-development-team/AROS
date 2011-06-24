@@ -1,4 +1,4 @@
-## version $VER: more.catalog 1.0 (13.09.2000)
+## version $VER: more.catalog 1.4 (24.06.2011)
 ## codeset 0
 ## language deutsch
 ;
@@ -28,6 +28,12 @@ Kann Menus nicht erzeugen!
 ;
 MSG_CANT_CREATE_WIN
 Kann Fenster nicht erzeugen!
+;
+MSG_CANT_CREATE_MSGPORT
+Kann Messageport nicht erzeugen!
+;
+MSG_CANT_ADD_APPWINDOW
+Kann das Fenster nicht in ein AppWindow wandeln!
 ;
 MSG_MEN_PROJECT
 Projekt
@@ -109,4 +115,7 @@ N
 ;
 MSG_SHORTCUT_PREV
 P
+;
+MSG_SHORTCUT_EDITOR
+E
 ;
