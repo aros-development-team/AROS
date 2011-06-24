@@ -2518,9 +2518,13 @@ GNU_REPOSITORY := gnu://
 %fetch_and_build_gnu mmake=development-%(package) package=%(package) subpackage="%(subpackage)" \
    version=%(version) suffixes="%(suffixes)" srcdir="%(srcdir)"  \
    package_repo="%(package_repo)" patch="%(patch)" patch_repo="%(patch_repo)" prefix=%(prefix) \
-   aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall)" \
+   aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="postinstall-%(package)-delete-la-files %(postinstall)" \
    extraoptions="%(extraoptions)" extracflags="%(extracflags)"
-    
+
+#MM
+postinstall-%(package)-delete-la-files:
+	$(RM) $(AROS_DEVELOPMENT)/lib/*.la
+
 %end
 #------------------------------------------------------------------------------
 
