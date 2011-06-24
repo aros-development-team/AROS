@@ -765,7 +765,7 @@ static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct uaegfx_staticdata *csd)
 
 AROS_UFH4(APTR, rtg_vblank,
     AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct uaegfx_staticdata *, csd, A1),
+    AROS_UFHA(APTR, boardinfo, A1),
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
@@ -968,13 +968,13 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     InitSemaphore((struct SignalSemaphore*)(csd->boardinfo + PSSO_BoardInfo_BoardLock));
     intr = (struct Interrupt*)(csd->boardinfo + PSSO_BoardInfo_HardInterrupt);
     intr->is_Code = (APTR)rtg_vblank;
-    intr->is_Data         = csd;
+    intr->is_Data         = csd->boardinfo;
     intr->is_Node.ln_Name = "RTG VBlank";
     intr->is_Node.ln_Pri  = 0;
     intr->is_Node.ln_Type = NT_INTERRUPT;
     intr = (struct Interrupt*)(csd->boardinfo + PSSO_BoardInfo_SoftInterrupt);
     intr->is_Code = (APTR)rtg_vblank;
-    intr->is_Data         = csd;
+    intr->is_Data         = csd->boardinfo;
     intr->is_Node.ln_Name = "RTG VBlank";
     intr->is_Node.ln_Pri  = 0;
     intr->is_Node.ln_Type = NT_INTERRUPT;
