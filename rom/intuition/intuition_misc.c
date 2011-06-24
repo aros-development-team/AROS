@@ -1075,17 +1075,44 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
     struct IntScreenNotify *sn;
     struct Node *node;
 
+    BOOL ignorescreen = FALSE;
+
     if (!IsListEmpty(&GetPrivIBase(IntuitionBase)->ScreenNotificationList))
     {
         node = GetPrivIBase(IntuitionBase)->ScreenNotificationList.lh_Head;
 	for (; node->ln_Succ; node = node->ln_Succ)
         {
             sn = (struct IntScreenNotify *) node;
-            BOOL leavescreen = FALSE;
-            if (flag & (SNOTIFY_AFTER_OPENSCREEN | SNOTIFY_BEFORE_OPENSCREEN | SNOTIFY_AFTER_CLOSESCREEN | SNOTIFY_BEFORE_CLOSESCREEN | SNOTIFY_LOCKPUBSCREEN | SNOTIFY_UNLOCKPUBSCREEN))
+            if (flag & (  SNOTIFY_AFTER_OPENSCREEN  | SNOTIFY_BEFORE_OPENSCREEN
+                        | SNOTIFY_AFTER_CLOSESCREEN | SNOTIFY_BEFORE_CLOSESCREEN
+                        | SNOTIFY_LOCKPUBSCREEN     | SNOTIFY_UNLOCKPUBSCREEN
+                        | SNOTIFY_SCREENDEPTH       | SNOTIFY_PUBSCREENSTATE    ))
             {
+                /* 
+                 * If sn->pubname is supplied, only notify for it
+                 * (data must be a screen, and it must be public)
+                 */
+                if (sn->pubname)
+                {
+                    D(bug("[intuition] FSNMC() sn->pubname is non-NULL... '%s'\n", sn->pubname));
+                    LockPubScreenList();
+                    if (!(   (ResourceExisting((struct Screen*)data, RESOURCE_SCREEN, IntuitionBase))
+                          && (NULL != GetPrivScreen(data)->pubScrNode)
+                          && (NULL != GetPrivScreen(data)->pubScrNode->psn_Node.ln_Name)
+                          && (0 == strcmp(sn->pubname, (const char *)GetPrivScreen(data)->pubScrNode->psn_Node.ln_Name)) ))
+                    {
+                        ignorescreen = TRUE;
+                    }
+                    else
+                    {
+                        D(bug("[intuition] FSNMC() IntScreen->pubScrNode->psn_Node.ln_Name is non-NULL... '%s'\n", GetPrivScreen(data)->pubScrNode->psn_Node.ln_Name));
+                    }
+                    UnlockPubScreenList();
+                }
+                D(bug("[intuition] FSNMC() ignorescreen = %s\n", ignorescreen ? "TRUE" : "FALSE"));
             }
-            if ((sn->flags & flag) && !leavescreen) 
+
+            if ((sn->flags & flag) && !ignorescreen)
             {
                 if (sn->port)
                 {
