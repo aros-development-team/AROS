@@ -112,7 +112,6 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     
     data->objWidth   = objWidth;
     data->objHeight  = objHeight;
-    /* FIXME: depth can be larger than max depth. */
     data->depth      = depth;
     data->def_width  = def_width;
     data->def_height = def_height;
@@ -276,6 +275,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     }
 
                     data->VariableDepth = TRUE;
+                    GetAttr(MUIA_Numeric_Value, data->depth, &val);
                     /* Original AmigaOS screenmode prefs do not allow to change depth for CyberGFX
                      * screnmodes if it is high or true color screenmode. */
                     if (dim.MaxDepth > 8)
@@ -283,7 +283,11 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                         data->VariableDepth = FALSE;
                         depth_tags[3].ti_Tag = MUIA_Numeric_Value;
                         depth_tags[4].ti_Data = TRUE;
-                    }
+                    } else if (val > dim.MaxDepth) {
+                    	/* Make sure depth is always <= dim.MaxDepth */
+                        depth_tags[3].ti_Tag = MUIA_Numeric_Value;
+                        depth_tags[3].ti_Data = dim.MaxDepth;
+                    }	
                 }
                
                 /* Enable autoscroll if one of the maximum sizes is bigger than 
