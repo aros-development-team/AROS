@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     }
 
     ldargs = xmalloc(sizeof(char *) * (argc + EXTRA_ARG_CNT
-        + ((incremental == 1) ? 0 : 2)) + 1);
+        + ((incremental == 1) ? 0 : 2) + 1));
 
     ldargs[0] = ld_name;
     ldargs[1] = OBJECT_FORMAT;
