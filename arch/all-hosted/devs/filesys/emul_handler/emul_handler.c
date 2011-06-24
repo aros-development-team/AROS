@@ -512,7 +512,7 @@ static LONG read_softlink(struct emulbase *emulbase,
                 else
                 {
                     /* copy buffer to create resolved link path in it */
-                    char* target = AllocVecPooled(emulbase->mempool, targetlen);
+                    char* target = AllocVecPooled(emulbase->mempool, targetlen+1);
                     if (target)
                     {
                         strcpy(target, buffer);
