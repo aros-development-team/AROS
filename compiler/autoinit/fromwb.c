@@ -8,6 +8,8 @@
 #include <dos/dosextens.h>
 #include <aros/startup.h>
 #include <aros/symbolsets.h>
+#include <proto/dos.h>
+#include <workbench/startup.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -19,6 +21,7 @@ int __nowbsupport __attribute__((weak)) = 0;
 static void __startup_fromwb(void)
 {
     struct Process *myproc;
+    BPTR curdir = BNULL;
 
     D(bug("Entering __startup_fromwb()\n"));
 
@@ -34,6 +37,10 @@ static void __startup_fromwb(void)
 	__argv = (char **) WBenchMsg;
         __argc = 0;
 
+        /* WB started processes' pr_CurrentDir = BNULL */
+        curdir = DupLock(WBenchMsg->sm_ArgList->wa_Lock);
+        CurrentDir(curdir);
+
 	D(bug("[startup] Started from Workbench\n"));
     }
 
@@ -42,6 +49,10 @@ static void __startup_fromwb(void)
     /* Reply startup message to Workbench */
     if (WBenchMsg)
     {
+        /* Close original lock */
+        CurrentDir(BNULL);
+        UnLock(curdir);
+
         Forbid(); /* make sure we're not UnLoadseg()ed before we're really done */
         ReplyMsg((struct Message *) WBenchMsg);
     }
