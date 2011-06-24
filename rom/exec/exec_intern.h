@@ -46,6 +46,7 @@ struct IntExecBase
     struct Library *DebugBase;			/* debug.library base					*/
     ULONG  PageSize;				/* Memory page size	     				*/
     ULONG  IntFlags;				/* Internal flags, see below 				*/
+    struct MsgPort *RemTaskPort;                /* port used for RemTask() memory cleanup               */
     struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   				*/
     char   AlertBuffer[ALERT_BUFFER_SIZE];	/* Buffer for alert text     				*/
 };
