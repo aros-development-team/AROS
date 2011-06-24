@@ -13,10 +13,18 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#include <aros/symbolsets.h>
+
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "exec_debug.h"
+
+/* Internal message structure */
+struct RemTaskMsg {
+    struct Message msg;
+    struct Task *task;
+};
 
 /*****************************************************************************
 
@@ -58,8 +66,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct MemList *mb, *mbnext;
     struct ETask *et;
+    struct RemTaskMsg *msg;
 
     /* A value of NULL means current task */
     if (task==NULL)
@@ -70,11 +78,7 @@
     if (task == SysBase->ThisTask)
     	DREMTASK("Removing itself");
 
-    /*
-        Since it's possible that the following will free a task
-        structure that is used for some time afterwards it's
-        necessary to protect the free memory list so that nobody
-        can allocate that memory.
+    /* Don't let any other task interfere with us at the moment
     */
     Forbid();
 
@@ -101,27 +105,23 @@
 	CleanupETask(task, et);
     }
 
-    /*
-     * Free all memory in the tc_MemEntry list.
-     * TODO: it's a common practice to put struct Task and stack into this list.
-     * For example this is done by libamiga's CreateTask() and even by dos.library.
-     * We need some smarter way to deallocate these. Current way relies on the fact
-     * that the memory still can be physically accessed after being freed. This
-     * is not going to be true after deploying memory protection.
-     */
-    ForeachNodeSafe(&task->tc_MemEntry, mb, mbnext)
+    /* Send task to task cleaner to clean up memory.
+       This avoids ripping memory from underneath a running Task.
+    */
+    msg = AllocMem(sizeof(struct RemTaskMsg), MEMF_PUBLIC|MEMF_CLEAR);
+    if (msg)
     {
-        DREMTASK("RemTask freeing MemList 0x%p", mb);
-        /* Free one MemList node */
-        FreeEntry(mb);
+        msg->task = task;
+        PutMsg(((struct IntExecBase *)SysBase)->RemTaskPort, (struct Message *)msg);
     }
-
-    /* Changing the task lists always needs a Disable(). */
-    Disable();
+    else
+        Alert( AG_NoMemory | AN_ExecLib );
 
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
     {
+        /* Changing the task lists always needs a Disable(). */
+        Disable();
 
         /*
             Since I don't know how many levels of Forbid()
@@ -130,17 +130,14 @@
         SysBase->TDNestCnt = -1;
 
         /* And force a task switch. Note: Dispatch, not Switch,
-           because the state of thistask must not be saved ->
-           after all the mem for the task + intetask + context
-           could already have been freed by the FreeEntry() call
-           above!!! */
-           
+           because the state of thistask must not be saved
+        */
+
         KrnDispatch();
         /* Does not return. */
     }
 
     /* All done. */
-    Enable();
     Permit();
 
     DREMTASK("Success");
@@ -148,4 +145,54 @@
     AROS_LIBFUNC_EXIT
 }
 
+static void remtaskcleaner(void)
+{
+    struct RemTaskMsg *msg;
+    struct MemList *mb, *mbnext;
+    struct IntExecBase *IntSysBase = (struct IntExecBase *)SysBase;
 
+    DREMTASK("entering remtaskcleaner");
+
+    IntSysBase->RemTaskPort = CreatePort(NULL, 0);
+    if (!IntSysBase->RemTaskPort)
+    {
+        DREMTASK("remtaskcleaner port creation failed !");
+        Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+    }
+    DREMTASK("remtaskcleaner RemTaskPort created");
+
+    do { /* forever */
+        WaitPort(IntSysBase->RemTaskPort);
+        msg = (struct RemTaskMsg *)GetMsg(IntSysBase->RemTaskPort);
+
+        DREMTASK("remtaskcleaner for task %p", msg->task);
+
+        ForeachNodeSafe(&msg->task->tc_MemEntry, mb, mbnext)
+        {
+            DREMTASK("remtaskcleaner freeing MemList 0x%p", mb);
+            /* Free one MemList node */
+            FreeEntry(mb);
+        }
+        FreeMem(msg, sizeof(struct RemTaskMsg));
+    } while(1);
+}
+
+int __RemTask_Setup(struct IntExecBase *IntSysBase)
+{
+    struct Task *cleaner;
+
+    /* taskpri is 127, we assume this task will be run before another task
+       calls RemTask()
+    */
+    cleaner = CreateTask("__RemTask_Cleaner__", 127, remtaskcleaner, AROS_STACKSIZE);
+    if (!cleaner)
+    {
+        DREMTASK("__RemTask_Setup task creation failed !");
+        return 0;
+    }
+    DREMTASK("__RemTask_Setup cleaner task created");
+
+    return 1;
+}
+
+ADD2INITLIB(__RemTask_Setup, 0);
