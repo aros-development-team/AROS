@@ -66,9 +66,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         goto error;
     }
 
-    privdata->acpd_exec_args = AllocPooled(privdata->acpd_exec_pool, argssize);
-    privdata->acpd_exec_args[0] = '\0';
-
     /* Search path if asked and no directory separator is present in the file */
     if (searchpath && index(filename, '/') == NULL && index(filename, ':') == NULL)
     {
@@ -408,7 +405,7 @@ void __exec_do(APTR id)
     struct Task *self = FindTask(NULL);
     LONG returncode;
 
-    D(bug("Entering __exec_prepare(%x)\n", id));
+    D(bug("[__exec_do] Entering, id(%x)\n", id));
 
     if (__get_arosc_privdata()->acpd_flags & PRETEND_CHILD)
     {
@@ -449,7 +446,7 @@ void __exec_do(APTR id)
 
     __exec_cleanup(privdata);
     
-    D(bug("exiting from non-forked execve()\n"));
+    D(bug("[__exec_do] exiting from non-forked\n"));
     _exit(returncode);
 }
 
