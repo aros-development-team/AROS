@@ -133,16 +133,17 @@
         if (fdesc->fcb->flags & O_WRITE)
         {
             /* Write '0' to fill up to requested size
-	     * compatible fseeko does not write but allows write */
-            int i = 0;
+             * compatible fseeko does not write but allows write */
             int bytestowrite = finalseekposition - eofposition;
             int chunkcount = (bytestowrite)/128;
+            int remainder = bytestowrite - (chunkcount * 128);
             char zeroarray[128] = {0};
 
             Seek (fh, 0, OFFSET_END);
-            for (i = 0; i < chunkcount; i++)
-                FWrite(fh, (STRPTR)zeroarray, 128, 1);
-            FWrite(fh, (STRPTR)zeroarray, bytestowrite - (chunkcount * 128), 1);
+            if (chunkcount > 0)
+                FWrite (fh, zeroarray, 128, chunkcount);
+            if (remainder > 0)
+                FWrite (fh, zeroarray, remainder, 1);
             Flush (fh);
         }
     }
