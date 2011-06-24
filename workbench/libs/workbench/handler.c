@@ -320,6 +320,7 @@ static VOID __HandleLaunch_WB
         {NP_Priority,   priority                        },
         {NP_Input,      (IPTR)BNULL                     },
         {NP_Output,     (IPTR)BNULL                     },
+        {NP_CurrentDir, (IPTR)BNULL                     },
         {TAG_DONE,      0                               }
     };
 
