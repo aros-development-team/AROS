@@ -112,6 +112,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     
     data->objWidth   = objWidth;
     data->objHeight  = objHeight;
+    /* FIXME: depth can be larger than max depth. */
     data->depth      = depth;
     data->def_width  = def_width;
     data->def_height = def_height;
@@ -230,8 +231,6 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 };
                 
                 struct DimensionInfo dim;
-                struct DisplayInfo dinf;
-                
                 BOOL autoscroll;
 
                 D(bug("[smproperties] Set DisplayID = 0x%08lx\n", tag->ti_Data));
@@ -240,7 +239,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 {
                     IPTR isdefault, val;
 
-                    depth_tags[1].ti_Data  = 1;
+                    depth_tags[1].ti_Data  = dim.MaxDepth > 8 ? dim.MaxDepth : 1;
                     depth_tags[2].ti_Data  = dim.MaxDepth;
                     depth_tags[3].ti_Data  = dim.MaxDepth;
 
@@ -255,7 +254,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 
                     D(bug("[smproperties] Obtained DimensionsInfo:\n"));
                     D(bug("[smproperties] Minimum raster: %lux%lux1\n", dim.MinRasterWidth, dim.MinRasterHeight));
-                    D(bug("[smproperties] Maximum raster: %lux%lux%lu\n", dim.MaxRasterWidth, dim.MaxRasterHeight, dim. MaxDepth));
+                    D(bug("[smproperties] Maximum raster: %lux%lux%lu\n", dim.MaxRasterWidth, dim.MaxRasterHeight, dim.MaxDepth));
                     D(bug("[smproperties] Display size: %lux%lu\n", data->DefWidth, data->DefHeight));
  
                     GetAttr(MUIA_Selected, data->def_width, &isdefault);
@@ -275,22 +274,18 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                         GetAttr(MUIA_String_Integer, data->objHeight, &val);
                         height = AdjustHeight((LONG)val, data);
                     }
-                }
 
-                data->VariableDepth = TRUE;
-                if (GetDisplayInfoData(NULL, (UBYTE *)&dinf, sizeof(dinf), DTAG_DISP, tag->ti_Data))
-                {
-                    /* Check me: original AmigaOS screenmode prefs do not allow to change depth for CyberGFX
-                       screenmodes. Here i attempt to do it too, however i don't know how it's detected.
-                       Here i rely on DIPF_IS_FOREIGN flag - sonic */
-                    if (dinf.PropertyFlags & DIPF_IS_FOREIGN)
+                    data->VariableDepth = TRUE;
+                    /* Original AmigaOS screenmode prefs do not allow to change depth for CyberGFX
+                     * screnmodes if it is high or true color screenmode. */
+                    if (dim.MaxDepth > 8)
                     {
                         data->VariableDepth = FALSE;
                         depth_tags[3].ti_Tag = MUIA_Numeric_Value;
                         depth_tags[4].ti_Data = TRUE;
                     }
                 }
-                
+               
                 /* Enable autoscroll if one of the maximum sizes is bigger than 
                    the resolution.  */
                    
