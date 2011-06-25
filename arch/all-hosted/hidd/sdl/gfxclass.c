@@ -49,7 +49,7 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 #endif
     Uint32 surftype;
     const SDL_Rect **modes;
-    struct TagItem *pftags;
+    struct TagItem *pftags = NULL;
     int nmodes, i;
     APTR tagpool;
     struct TagItem **synctags, *modetags, *msgtags;
