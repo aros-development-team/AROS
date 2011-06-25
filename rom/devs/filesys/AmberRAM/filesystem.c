@@ -1086,10 +1086,10 @@ BOOL ExamineObject(struct Handler *handler, struct Object *object,
       info->fib_DirEntryType = entry_type;
       info->fib_EntryType = entry_type;
       s = ((struct Node *)object)->ln_Name;
-      CopyMem(MkBStr(handler, s), &info->fib_FileName, StrSize(s));
+      CopyMem(BADDR(MkBStr(handler, s)), &info->fib_FileName, StrSize(s));
       s = object->comment;
       if(s != NULL && ((struct Node *)object)->ln_Pri != ST_SOFTLINK)
-         CopyMem(MkBStr(handler, s), &info->fib_Comment, StrSize(s));
+         CopyMem(BADDR(MkBStr(handler, s)), &info->fib_Comment, StrSize(s));
       else
          info->fib_Comment[0] = '\0';
       info->fib_NumBlocks = object->block_count;
