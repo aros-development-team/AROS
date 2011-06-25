@@ -33,8 +33,8 @@ __stackalign void Host_Shutdown(unsigned char warm)
 	return;
 
     D(printf("[Shutdown] Cold reboot, dir: %s, name: %s\n", bootstrapdir, Kernel_ArgV[0]));
-    chdir(bootstrapdir);
-    execvp(Kernel_ArgV[0], Kernel_ArgV);
+    if (chdir(bootstrapdir)==0)
+    	execvp(Kernel_ArgV[0], Kernel_ArgV);
 
     D(printf("[Shutdown] Unable to re-run AROS\n"));
 }
