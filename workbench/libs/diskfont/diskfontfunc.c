@@ -1171,7 +1171,9 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase *Dis
 	    
 	    olddir = CurrentDir(rementry->DirEntry->DirLock);
 	    fdh = ReadFontDescr(rementry->FileName, DiskfontBase);
-	    if (rementry->ContentsID == OFCH_ID
+	    if (fdh == NULL)
+		RememberAttr = NULL; 
+	    else if (rementry->ContentsID == OFCH_ID
 		&& df_data->u.FontsData.RememberIndex == rementry->Numentries - 1)
 	    {
 		/* It is the TAttr generated for best matching */
