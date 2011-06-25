@@ -29,12 +29,13 @@ static APTR gptr(struct uaegfx_staticdata *csd, WORD offset)
     return code;
 }
 
-static AROS_UFH1(void, RTGCall_Default,
+static AROS_UFH1(ULONG, RTGCall_Default,
     AROS_UFHA(APTR, boardinfo, A0))
 { 
     AROS_USERFUNC_INIT
 
     pw (boardinfo + PSSO_BoardInfo_AROSFlag, 0);
+    return 0;
 
     AROS_USERFUNC_EXIT
 }
@@ -42,33 +43,10 @@ static AROS_UFH1(void, RTGCall_Default,
 /* Set fallback functions */
 void InitRTG(APTR boardinfo)
 {
-    ULONG func = (ULONG)RTGCall_Default;
-    pl (boardinfo + PSSO_BoardInfo_ScrollPlanar, func);
-    pl (boardinfo + PSSO_BoardInfo_ScrollPlanarDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_UpdatePlanar, func);
-    pl (boardinfo + PSSO_BoardInfo_UpdatePlanarDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitPlanar2Chunky, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitPlanar2ChunkyDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_FillRect, func);
-    pl (boardinfo + PSSO_BoardInfo_FillRectDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_InvertRect, func);
-    pl (boardinfo + PSSO_BoardInfo_InvertRectDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitRect, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitRectDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitTemplate, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitTemplateDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitPattern, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitPatternDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_DrawLine, func);
-    pl (boardinfo + PSSO_BoardInfo_DrawLineDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitRectNoMaskComplete, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitRectNoMaskCompleteDefault, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitPlanar2Direct, func);
-    pl (boardinfo + PSSO_BoardInfo_BlitPlanar2DirectDefault, func);
-    
-    pl (boardinfo + PSSO_BoardInfo_SetInterrupt, func);
-    pl (boardinfo + PSSO_BoardInfo_WaitVerticalSync, func);
-    pl (boardinfo + PSSO_BoardInfo_WaitBlitter, func);
+    UWORD i;
+
+    for (i = PSSO_BoardInfo_AllocCardMem; i <= PSSO_BoardInfo_DeleteFeature; i += 4)
+	pl(boardinfo + i, (ULONG)RTGCall_Default);
 }
 
 BOOL FindCard(struct uaegfx_staticdata *csd)
@@ -361,7 +339,11 @@ WORD CalculateBytesPerRow(struct uaegfx_staticdata *csd, WORD width, ULONG rgbfo
 BOOL SetSprite(struct uaegfx_staticdata *csd, BOOL activate)
 {
     if (csd->CardBase)
-    	return FALSE;
+    	return AROS_CALL3(BOOL, gptr(csd, PSSO_BoardInfo_SetSprite),
+	    AROS_LCA(APTR, csd->boardinfo, A0),
+	    AROS_LCA(BOOL, activate, D0),
+	    AROS_LCA(ULONG, csd->rgbformat, D7),
+    	    struct Library*, csd->CardBase);
     return P96_LC3(BOOL, csd->uaeromvector, 36,
     	AROS_LCA(APTR, csd->boardinfo, A0),
     	AROS_LCA(BOOL, activate, D0),
@@ -371,7 +353,10 @@ BOOL SetSprite(struct uaegfx_staticdata *csd, BOOL activate)
 BOOL SetSpritePosition(struct uaegfx_staticdata *csd)
 {
     if (csd->CardBase)
-    	return FALSE;
+    	return AROS_CALL2(BOOL, gptr(csd, PSSO_BoardInfo_SetSpritePosition),
+	    AROS_LCA(APTR, csd->boardinfo, A0),
+	    AROS_LCA(ULONG, csd->rgbformat, D7),
+    	    struct Library*, csd->CardBase);
     return P96_LC2(BOOL, csd->uaeromvector, 37,
     	AROS_LCA(APTR, csd->boardinfo, A0),
      	AROS_LCA(ULONG, csd->rgbformat, D7));
@@ -380,7 +365,10 @@ BOOL SetSpritePosition(struct uaegfx_staticdata *csd)
 BOOL SetSpriteImage(struct uaegfx_staticdata *csd)
 {
     if (csd->CardBase)
-    	return FALSE;
+    	return AROS_CALL2(BOOL, gptr(csd, PSSO_BoardInfo_SetSpriteImage),
+	    AROS_LCA(APTR, csd->boardinfo, A0),
+	    AROS_LCA(ULONG, csd->rgbformat, D7),
+    	    struct Library*, csd->CardBase);
     return P96_LC2(BOOL, csd->uaeromvector, 38,
     	AROS_LCA(APTR, csd->boardinfo, A0),
      	AROS_LCA(ULONG, csd->rgbformat, D7));
@@ -389,7 +377,14 @@ BOOL SetSpriteImage(struct uaegfx_staticdata *csd)
 BOOL SetSpriteColor(struct uaegfx_staticdata *csd, UBYTE idx, UBYTE r, UBYTE g, UBYTE b)
 {
     if (csd->CardBase)
-    	return FALSE;
+    	return AROS_CALL6(BOOL, gptr(csd, PSSO_BoardInfo_SetSpriteColor),
+	    AROS_LCA(APTR, csd->boardinfo, A0),
+	    AROS_LCA(UBYTE, idx, D0),
+	    AROS_LCA(UBYTE, r, D1),
+	    AROS_LCA(UBYTE, g, D2),
+	    AROS_LCA(UBYTE, b, D3),
+	    AROS_LCA(ULONG, csd->rgbformat, D7),
+    	    struct Library*, csd->CardBase);
     return P96_LC6(BOOL, csd->uaeromvector, 39,
     	AROS_LCA(APTR, csd->boardinfo, A0),
     	AROS_LCA(UBYTE, idx, D0),
