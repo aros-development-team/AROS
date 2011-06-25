@@ -278,7 +278,7 @@ ULONG examineNext
 	fib->fib_DirEntryType = 
 		OS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(ah->volume)]);
 	string = (char *)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4);
-#ifdef AROS_DOS_PACKETS
+#ifndef AROS_FAST_BSTR
 	CopyMem(string, fib->fib_FileName, string[0]+1);
 #else
 	CopyMem(string+1, fib->fib_FileName, string[0]);
@@ -300,7 +300,7 @@ ULONG examineNext
 	if (fib->fib_DirEntryType != ST_ROOT)
 	{
 		string = (char *)entryblock->buffer+(BLK_COMMENT_START(ah->volume)*4);
-#ifdef AROS_DOS_PACKETS
+#ifndef AROS_FAST_BSTR
 		CopyMem(string, fib->fib_Comment, string[0] + 1);
 #else
 		CopyMem(string+1, fib->fib_Comment, string[0]);
