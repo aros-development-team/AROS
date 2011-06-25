@@ -45,8 +45,8 @@ extern struct ExecBase *AbsExecBase;
 static struct DosPacket *GetPacket(struct MsgPort *port);
 static VOID ReplyPacket(struct MsgPort *proc_port, struct DosPacket *packet,
    PINT result1, PINT result2);
-static TEXT *BStr(struct Handler *h, BSTR b_str);
-static TEXT *BStr2(struct Handler *h, BSTR b_str);
+static TEXT *BStr(struct Handler *h, UBYTE *b_str);
+static TEXT *BStr2(struct Handler *h, UBYTE *b_str);
 
 LONG AmberMain(void)
 {
@@ -82,7 +82,7 @@ LONG AmberMain(void)
    WaitPort(proc_port);
    packet = GetPacket(proc_port);
 
-   exit = CmdStartup(handler, BStr(handler, (BSTR)(packet->dp_Arg1)),
+   exit = CmdStartup(handler, BStr(handler, BADDR(packet->dp_Arg1)),
       BADDR(packet->dp_Arg3), proc_port);
 
    ReplyPacket(proc_port, packet, DOSBOOL(!exit), IoErr());
@@ -131,7 +131,7 @@ LONG AmberMain(void)
          case ACTION_FINDOUTPUT:
 
             if(!CmdFind(handler, BADDR(packet->dp_Arg1),
-               BADDR(packet->dp_Arg2), BStr(handler, (BSTR)(packet->dp_Arg3)),
+               BADDR(packet->dp_Arg2), BStr(handler, BADDR(packet->dp_Arg3)),
                MODE_NEWFILE))
                result = DOSFALSE;
             break;
@@ -139,7 +139,7 @@ LONG AmberMain(void)
          case ACTION_FINDUPDATE:
 
             if(!CmdFind(handler, BADDR(packet->dp_Arg1),
-               BADDR(packet->dp_Arg2), BStr(handler, (BSTR)(packet->dp_Arg3)),
+               BADDR(packet->dp_Arg2), BStr(handler, BADDR(packet->dp_Arg3)),
                MODE_READWRITE))
                result = DOSFALSE;
             break;
@@ -147,7 +147,7 @@ LONG AmberMain(void)
          case ACTION_FINDINPUT:
 
             if(!CmdFind(handler, BADDR(packet->dp_Arg1),
-               BADDR(packet->dp_Arg2), BStr(handler, (BSTR)(packet->dp_Arg3)),
+               BADDR(packet->dp_Arg2), BStr(handler, BADDR(packet->dp_Arg3)),
                MODE_OLDFILE))
                result = DOSFALSE;
             break;
@@ -190,7 +190,7 @@ LONG AmberMain(void)
          case ACTION_LOCATE_OBJECT:
 
             result = (PINT)MKBADDR(CmdLocateObject(handler,
-               BADDR(packet->dp_Arg1), BStr(handler, (BSTR)(packet->dp_Arg2)),
+               BADDR(packet->dp_Arg1), BStr(handler, BADDR(packet->dp_Arg2)),
                packet->dp_Arg3));
             break;
 
@@ -229,7 +229,7 @@ LONG AmberMain(void)
          case ACTION_CREATE_DIR:
 
             result = (PINT)MKBADDR(CmdCreateDir(handler, BADDR(packet->dp_Arg1),
-               BStr(handler, (BSTR)(packet->dp_Arg2))));
+               BStr(handler, BADDR(packet->dp_Arg2))));
             break;
 
          case ACTION_EXAMINE_OBJECT:
@@ -282,43 +282,43 @@ LONG AmberMain(void)
          case ACTION_SET_PROTECT:
 
             if(!CmdSetProtect(handler, BADDR(packet->dp_Arg2),
-               BStr(handler, (BSTR)(packet->dp_Arg3)), packet->dp_Arg4))
+               BStr(handler, BADDR(packet->dp_Arg3)), packet->dp_Arg4))
                result = DOSFALSE;
             break;
 
          case ACTION_SET_COMMENT:
 
             if(!CmdSetComment(handler, BADDR(packet->dp_Arg2),
-               BStr(handler, (BSTR)(packet->dp_Arg3)),
-               BStr2(handler, (BSTR)(packet->dp_Arg4))))
+               BStr(handler, BADDR(packet->dp_Arg3)),
+               BStr2(handler, BADDR(packet->dp_Arg4))))
                result = DOSFALSE;
             break;
 
          case ACTION_RENAME_OBJECT:
 
             if(!CmdRenameObject(handler, BADDR(packet->dp_Arg1),
-               BStr(handler, (BSTR)(packet->dp_Arg2)), BADDR(packet->dp_Arg3),
-               BStr2(handler, (BSTR)(packet->dp_Arg4))))
+               BStr(handler, BADDR(packet->dp_Arg2)), BADDR(packet->dp_Arg3),
+               BStr2(handler, BADDR(packet->dp_Arg4))))
                result = DOSFALSE;
             break;
 
          case ACTION_RENAME_DISK:
 
-            if(!CmdRenameDisk(handler, BStr(handler, (BSTR)(packet->dp_Arg1))))
+            if(!CmdRenameDisk(handler, BStr(handler, BADDR(packet->dp_Arg1))))
                result = DOSFALSE;
             break;
 
          case ACTION_SET_DATE:
 
             if(!CmdSetDate(handler, BADDR(packet->dp_Arg2),
-               BStr(handler, (BSTR)(packet->dp_Arg3)), (APTR)packet->dp_Arg4))
+               BStr(handler, BADDR(packet->dp_Arg3)), (APTR)packet->dp_Arg4))
                result = DOSFALSE;
             break;
 
          case ACTION_DELETE_OBJECT:
 
             if(!CmdDeleteObject(handler, BADDR(packet->dp_Arg1),
-               BStr(handler, (BSTR)(packet->dp_Arg2))))
+               BStr(handler, BADDR(packet->dp_Arg2))))
                result = DOSFALSE;
             break;
 
@@ -340,7 +340,7 @@ LONG AmberMain(void)
             if(link_type == LINK_HARD)
                link_target = BADDR(link_target);
             if(!CmdMakeLink(handler, BADDR(packet->dp_Arg1),
-               BStr(handler, (BSTR)(packet->dp_Arg2)), link_target, link_type))
+               BStr(handler, BADDR(packet->dp_Arg2)), link_target, link_type))
                result = DOSFALSE;
             break;
 
@@ -427,25 +427,37 @@ static VOID ReplyPacket(struct MsgPort *proc_port, struct DosPacket *packet,
    return;
 }
 
-static TEXT *BStr(struct Handler *h, BSTR b_str)
+static TEXT *BStr(struct Handler *h, UBYTE *b_str)
 {
    UBYTE length;
 
-   length = AROS_BSTR_strlen(b_str);
+#ifdef AROS_FAST_BSTR
+   length = StrSize(b_str);
+   CopyMem(b_str, h->b_buffer2, length);
+#else
+   length = *b_str;
    if(length != 0)
-      CopyMem(AROS_BSTR_ADDR(b_str), h->b_buffer, length);
+      CopyMem(b_str + 1, h->b_buffer, length);
+#endif
    *(h->b_buffer + length) = '\0';
 
    return h->b_buffer;
 }
 
-static TEXT *BStr2(struct Handler *h, BSTR b_str)
+
+
+static TEXT *BStr2(struct Handler *h, UBYTE *b_str)
 {
    UBYTE length;
 
-   length = AROS_BSTR_strlen(b_str);
+#ifdef AROS_FAST_BSTR
+   length = StrSize(b_str);
+   CopyMem(b_str, h->b_buffer2, length);
+#else
+   length = *b_str;
    if(length != 0)
-      CopyMem(AROS_BSTR_ADDR(b_str), h->b_buffer2, length);
+      CopyMem(b_str + 1, h->b_buffer2, length);
+#endif
    *(h->b_buffer2 + length) = '\0';
 
    return h->b_buffer2;
@@ -453,17 +465,20 @@ static TEXT *BStr2(struct Handler *h, BSTR b_str)
 
 
 
-BSTR MkBStr(struct Handler *h, TEXT *str)
+UBYTE *MkBStr(struct Handler *h, TEXT *str)
 {
    UBYTE length;
-   BSTR b_str = MKBADDR(h->b_buffer);
 
    length = StrLen(str);
+#ifdef AROS_FAST_BSTR
+   CopyMem(str, h->b_buffer, length + 1);
+#else
    if(length != 0)
-      CopyMem(str, AROS_BSTR_ADDR(b_str), length);
-   AROS_BSTR_setstrlen(b_str, length);
+      CopyMem(str, h->b_buffer + 1, length);
+   *h->b_buffer = length;
+#endif
 
-   return b_str;
+   return h->b_buffer;
 }
 
 
