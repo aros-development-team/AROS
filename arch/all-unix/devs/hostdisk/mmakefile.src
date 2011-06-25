@@ -6,6 +6,11 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" 
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)		\
 	       -I$(SRCDIR)/arch/all-hosted/devs/hostdisk -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
+## The '-Wno-attributes' is here due to a gcc 4.5.x bug
+## where its strcmp() builtin generates a number of spurious
+## complaints with -O1 or higher optimizations enabled.
+USER_CFLAGS += -Wno-attributes
+
 %build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
     arch=unix files="hostdisk_host geometry"
 
