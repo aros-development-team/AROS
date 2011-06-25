@@ -40,7 +40,7 @@ static struct OOP_ABDescr attrbases[] =
 
 static ULONG xbutton2hidd(XButtonEvent *xb)
 {
-    ULONG button;
+    ULONG button = vHidd_Mouse_NoButton;
     
     switch (xb->button)
     {

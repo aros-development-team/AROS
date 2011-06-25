@@ -393,7 +393,7 @@ static inline UBYTE pix_to_lut(HIDDT_Pixel pixel, HIDDT_PixelLUT *plut,
     	    	    	       HIDDT_PixelFormat *pf)
 {
     HIDDT_ColComp   red, green, blue;
-    ULONG   	    i, best_match;
+    ULONG   	    i, best_match = 0;
     ULONG   	    diff, lowest_diff = 0xFFFFFFFF;
     
     red   = RED_COMP(pixel, pf);

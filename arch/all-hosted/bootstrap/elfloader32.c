@@ -50,8 +50,14 @@ struct ExecBase *SysBase;
  */
 static int read_block(void *file, long offset, void *dest, long length)
 {
-    fseek(file, offset, SEEK_SET);
-    fread(dest,(size_t)length, 1, file);
+    int err;
+
+    err = fseek(file, offset, SEEK_SET);
+    if (err) return 0;
+
+    err = fread(dest,(size_t)length, 1, file);
+    if (err == 0) return 0;
+
 
     return 1;
 }

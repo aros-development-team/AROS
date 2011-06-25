@@ -26,7 +26,7 @@ int SetRootDirectory(void)
     /* If AROSBootstrap.exe is found in the current directory, this means the bootstrap
      was started in its own dir. Go one level up in order to reach the root */
     if (!stat(APPNAME, &st))
-	chdir("..");
+	return chdir("..");
 
     return 0;
 }
