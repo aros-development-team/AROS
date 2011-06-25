@@ -140,7 +140,7 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     RawDoFmt("%d", &dim.MaxRasterHeight, RAWFMTFUNC_STRING, buffer);
                     set(data->objMaximumH, MUIA_Text_Contents, buffer);
 
-                    val = 1 << dim.MaxDepth;
+                    val = 1 << (dim.MaxDepth > 24 ? 24 : dim.MaxDepth);
                     RawDoFmt("%ld", &val, RAWFMTFUNC_STRING, buffer);
                     set(data->objMaximumColors, MUIA_Text_Contents, buffer);
                 }
