@@ -14,12 +14,14 @@
 
 struct bm_data
 {
-    struct MinNode node;
+    struct Node node;
     OOP_Object	    	*pixfmtobj;	/* Cached pixelformat object */
     OOP_Object	    	*gfxhidd;	/* Cached driver object */
     ULONG rgbformat;
     struct ModeInfo modeinfo;
     UBYTE *VideoData;
+    ULONG memsize;
+    BOOL invram;
     WORD width, height;
     WORD disp_width, disp_height;
     WORD bytesperpixel;

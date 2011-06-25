@@ -28,6 +28,7 @@
 #define DEBUG 0
 #define DB2(x) ;
 #define DEBUG_TEXT(x)
+#define DVRAM(x) ;
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -35,6 +36,126 @@
 #include "uaegfx.h"
 #include "uaegfxbitmap.h"
 #include "uaertg.h"
+
+static APTR allocrtgvrambitmap(struct uaegfx_staticdata *csd, struct bm_data *bm)
+{
+    APTR vmem;
+    SetMemoryMode(csd, RGBFB_CLUT);
+    vmem = Allocate(csd->vmem, bm->memsize);
+    SetMemoryMode(csd, bm->rgbformat);
+    DVRAM(bug("BM %p: %p,%d VRAM allocated.\n", bm, vmem, bm->memsize));
+    return vmem;
+}
+
+static void freertgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm)
+{
+    DVRAM(bug("BM %p: freeing %p:%d from %s\n", bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM"));
+    if (bm->invram) {
+	SetMemoryMode(csd, RGBFB_CLUT);
+	Deallocate(csd->vmem, bm->VideoData, bm->memsize);
+	SetMemoryMode(csd, bm->rgbformat);
+	csd->vram_used -= bm->memsize;
+    } else {
+    	FreeMem(bm->VideoData, bm->memsize);
+    	csd->fram_used -= bm->memsize;
+    }
+    bm->VideoData = NULL;
+    bm->invram = FALSE;
+}	
+
+static BOOL movebitmaptofram(struct uaegfx_staticdata *csd, struct bm_data *bm)
+{
+    BOOL ok = FALSE;
+    APTR vmem;
+
+    vmem = AllocMem(bm->memsize, MEMF_ANY);
+    if (vmem) {
+	SetMemoryMode(csd, bm->rgbformat);
+	CopyMemQuick(bm->VideoData, vmem, bm->memsize);
+	freertgbitmap(csd, bm);
+	bm->VideoData = vmem;
+	csd->fram_used += bm->memsize;
+	ok = TRUE;
+   }
+   DVRAM(bug("BM %p: moved to RAM %p:%d. VRAM=%d\n", bm, bm->VideoData, bm->memsize, csd->vram_used));
+   return ok;
+}
+
+static BOOL allocrtgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm, BOOL usevram)
+{
+    bm->memsize = (bm->bytesperline * bm->height + 7) & ~7;
+    if (!(bm->VideoData = allocrtgvrambitmap(csd, bm))) {
+    	if (usevram && bm->memsize < csd->vram_size) {
+    	     struct bm_data *bmnode;
+	     ForeachNode(&csd->bitmaplist, bmnode) {
+		if (bmnode != bm && bmnode->invram && !bmnode->locked) {
+		    if (movebitmaptofram(csd, bmnode)) {
+			if ((bm->VideoData = allocrtgvrambitmap(csd, bm))) {
+			    csd->vram_used += bm->memsize;
+			    bm->invram = TRUE;
+			    break;
+			}
+		    }
+    		}
+    	     }
+	}
+	if (!bm->VideoData) {
+	    bm->VideoData = AllocMem(bm->memsize, MEMF_ANY);
+	    if (bm->VideoData)
+		csd->fram_used += bm->memsize;
+	}
+    } else {
+	csd->vram_used += bm->memsize;
+	bm->invram = TRUE;
+    }
+    DVRAM(bug("BM %p: %p,%d bytes allocated from %s. VRAM=%d\n", bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM", csd->vram_used));
+    return bm->VideoData != NULL;
+}
+
+static BOOL movethisbitmaptovram(struct uaegfx_staticdata *csd, struct bm_data *bm)
+{
+    APTR vmem = allocrtgvrambitmap(csd, bm);
+    if (vmem) {
+	SetMemoryMode(csd, bm->rgbformat);
+	CopyMemQuick(bm->VideoData, vmem, bm->memsize);
+	freertgbitmap(csd, bm);
+	bm->VideoData = vmem;
+	bm->invram = TRUE;
+	csd->vram_used += bm->memsize;
+	DVRAM(bug("BM %p: %p:%d moved back to VRAM\n", bm, bm->VideoData, bm->memsize));
+	return TRUE;
+    }
+    return FALSE;
+}
+
+static BOOL movebitmaptovram(struct uaegfx_staticdata *csd, struct bm_data *bm)
+{
+     struct bm_data *bmnode;
+ 
+     if (bm->invram)
+	return TRUE;
+     DVRAM(bug("BM %p: %p,%d needs to be in VRAM...\n", bm, bm->VideoData, bm->memsize));
+     ForeachNode(&csd->bitmaplist, bmnode) {
+	if (bmnode != bm && bmnode->invram && !bmnode->locked) {
+	    if (movebitmaptofram(csd, bmnode)) {
+	    	if (movethisbitmaptovram(csd, bm)) {
+		    return TRUE;
+		}
+	    }
+	}
+     }
+     DVRAM(bug("-> not enough memory, VRAM=%d\n", csd->vram_used));
+     return FALSE;
+}
+
+static BOOL maybeputinvram(struct uaegfx_staticdata *csd, struct bm_data *bm)
+{
+    if (bm->invram)
+	return TRUE;
+    if (bm->memsize >= csd->vram_size - csd->vram_used)
+	return FALSE;
+    return movethisbitmaptovram(csd, bm);
+}
 
 /****************************************************************************************/
 
@@ -74,9 +195,8 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->bytesperline = width;
     data->height = height;
     data->bytesperpixel = multi;
-    SetMemoryMode(csd, RGBFB_CLUT);
-    data->VideoData = Allocate(csd->vmem, data->bytesperline * data->height);
-    SetMemoryMode(csd, data->rgbformat);
+    allocrtgbitmap(csd, data, TRUE);
+    AddTail(&csd->bitmaplist, &data->node);
  
     DB2(bug("%dx%dx%d RGBF=%08x P=%08x\n", width, height, multi, data->rgbformat, data->VideoData));
 
@@ -117,15 +237,12 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     DB2(bug("UAEGFXBitmap__Root__Dispose %x bm=%x\n", o, data));
     if (data->disp)
     	DB2(bug("removing displayed bitmap?!\n"));
-    
+
     FreeVec(data->palette);
-    SetMemoryMode(csd, RGBFB_CLUT);
-    Deallocate(csd->vmem, data->VideoData, data->bytesperline * data->height);
-    SetMemoryMode(csd, data->rgbformat);
+    freertgbitmap(csd, data);
+    Remove(&data->node);
     
     OOP_DoSuperMethod(cl, o, msg);
-    
-    return;
 }
 
 VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
@@ -169,6 +286,9 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
 		    D(bug("%dx%dx%d (%dx%d) BF=%08x\n", dwidth, dheight, depth, width, height, data->rgbformat));
 
+		    if (!data->invram)
+		    	movebitmaptovram(csd, data);
+
 		    csd->dwidth = dwidth;
 		    csd->dheight = dheight;
 		    csd->dmodeid = modeid;
@@ -191,11 +311,14 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 	    	    SetInterrupt(csd, TRUE);
 	            data->disp = TRUE;
 	            csd->disp = data;
+	            csd->disp->locked++;
 		} else {
 	    	    SetInterrupt(csd, FALSE);
 		    SetDisplay(csd, FALSE);
 		    SetSwitch(csd, FALSE);
 		    csd->dmodeid = 0;
+		    if (csd->disp)
+			csd->disp->locked--;
 		    data->disp = FALSE;
 		    csd->disp = NULL;
 		}
@@ -276,7 +399,13 @@ ADD2EXPUNGELIB(UAEGFXBitmap_Expunge, 0);
 
 BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
+    struct uaegfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
+
+    if (!data->invram) {
+	if (!movebitmaptovram(csd, data))
+	    return FALSE;
+    }
 
     *msg->addressReturn = data->VideoData;
     *msg->widthReturn = data->width;
@@ -745,14 +874,17 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     struct RenderInfo ri;
     BOOL v = FALSE;
 
-    makerenderinfo(csd, &ri, data);
-    if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set) {
-    	ULONG pen = mode == vHidd_GC_DrawMode_Clear ? 0x00000000 : 0xffffffff;
-    	v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, 0xff, data->rgbformat);
-    } else if (mode == vHidd_GC_DrawMode_Copy) {
-        v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, 0xff, data->rgbformat);
-    } else if (mode == vHidd_GC_DrawMode_Invert) {
-       v = InvertRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff, data->rgbformat);
+    maybeputinvram(csd, data);
+    if (data->invram) {
+	makerenderinfo(csd, &ri, data);
+	if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set) {
+    	    ULONG pen = mode == vHidd_GC_DrawMode_Clear ? 0x00000000 : 0xffffffff;
+	    v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, 0xff, data->rgbformat);
+	} else if (mode == vHidd_GC_DrawMode_Copy) {
+	    v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, 0xff, data->rgbformat);
+	} else if (mode == vHidd_GC_DrawMode_Invert) {
+	    v = InvertRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff, data->rgbformat);
+	}
     }
     if (!v)
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -769,25 +901,30 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     struct Template tmpl;
     struct RenderInfo ri;
     UBYTE drawmode;
+    BOOL v = FALSE;
     
-    makerenderinfo(csd, &ri, data);
-    if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
-    	drawmode = JAM1;
-    else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
-     	drawmode = COMPLEMENT;
-    else
-     	drawmode = JAM2;
-    if (msg->inverttemplate)
-    	drawmode |= INVERSVID;
+    maybeputinvram(csd, data);
+    if (data->invram) {
+	makerenderinfo(csd, &ri, data);
+	if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
+	     drawmode = JAM1;
+	else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
+	     drawmode = COMPLEMENT;
+	else
+	    drawmode = JAM2;
+	if (msg->inverttemplate)
+	     drawmode |= INVERSVID;
 
-    tmpl.Memory = msg->Template;
-    tmpl.BytesPerRow = msg->modulo;
-    tmpl.XOffset = msg->srcx;
-    tmpl.DrawMode = drawmode;
-    tmpl.FgPen = fg;
-    tmpl.BgPen = bg;
-    
-    if (!BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat))
+	tmpl.Memory = msg->Template;
+	tmpl.BytesPerRow = msg->modulo;
+	tmpl.XOffset = msg->srcx;
+	tmpl.DrawMode = drawmode;
+	tmpl.FgPen = fg;
+	tmpl.BgPen = bg;
+
+	v = BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
+    }
+    if (!v)
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 

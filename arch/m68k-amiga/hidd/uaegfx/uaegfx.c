@@ -228,6 +228,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	return NULL;
 
     NEWLIST(&csd->rtglist);
+    NEWLIST(&csd->bitmaplist);
     supportedformats = gw(csd->boardinfo + PSSO_BoardInfo_RGBFormats);
     rescnt = 0;
     ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
@@ -645,7 +646,7 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     struct bm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
     struct RenderInfo risrc, ridst;
 
-    if (sdata->rgbformat != ddata->rgbformat) {
+    if (sdata->rgbformat != ddata->rgbformat || !sdata->invram || !ddata->invram) {
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     	return;
     }
@@ -745,9 +746,14 @@ BOOL UAEGFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 {
     struct uaegfx_staticdata *csd = CSD(cl);
     IPTR width, height, bpp;
+    
     OOP_GetAttr(msg->sync, aHidd_Sync_HDisp, &width);
     OOP_GetAttr(msg->sync, aHidd_Sync_VDisp, &height);
     OOP_GetAttr(msg->pixFmt, aHidd_PixFmt_BytesPerPixel, &bpp);
+    if (width > csd->maxwidth[bpp])
+	return FALSE;
+    if (height > csd->maxheight[bpp])
+	return FALSE;
     return width * height * bpp < csd->vram_size;
 }
 
@@ -896,11 +902,15 @@ static void freeall(struct uaegfx_staticdata *csd)
 static void P96DebugInfo(struct uaegfx_staticdata *csd)
 {
     UBYTE i;
-    DRTG(bug("Reg:%08x IO:%08x Name:'%s' Type:%d BPC=%d Flags=%08x\n",
+    DRTG(bug("Name:'%s'\n",
+	gl(csd->boardinfo + PSSO_BoardInfo_BoardName)));
+    DRTG(bug("Reg:%08x IO:%08x\n",
 	gl(csd->boardinfo + PSSO_BoardInfo_RegisterBase),
-	gl(csd->boardinfo + PSSO_BoardInfo_MemoryIOBase),
-	gl(csd->boardinfo + PSSO_BoardInfo_BoardName),
+	gl(csd->boardinfo + PSSO_BoardInfo_MemoryIOBase)));
+    DRTG(bug("BoardType:%d GCType:%d PCType:%d BPC:%d Flags:%08x\n",
 	gl(csd->boardinfo + PSSO_BoardInfo_BoardType),
+	gl(csd->boardinfo + PSSO_BoardInfo_GraphicsControllerType),
+	gl(csd->boardinfo + PSSO_BoardInfo_PaletteChipType),
 	gw(csd->boardinfo + PSSO_BoardInfo_BitsPerCannon),
 	gl(csd->boardinfo + PSSO_BoardInfo_Flags)));
     for (i = 0; i < MAXMODES; i++) {
@@ -926,7 +936,7 @@ static BOOL P96Init(struct uaegfx_staticdata *csd, struct Library *lib)
 	    SetInterrupt(csd, FALSE);
 	    /* Without this card may not be in linear memory map mode. */
 	    SetMemoryMode(csd, RGBFB_CLUT);
-	    P96DebugInfo(csd);
+ 	    P96DebugInfo(csd);
 	    return TRUE;
 	}
     }
@@ -935,11 +945,12 @@ static BOOL P96Init(struct uaegfx_staticdata *csd, struct Library *lib)
     return FALSE;
 }
 
+
 BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 {
     struct uaegfx_staticdata *csd = &LIBBASE->csd;
     struct MemChunk *mc;
-    ULONG size;
+    UBYTE i;
     struct Interrupt *intr;
     struct Node *node;
 
@@ -985,7 +996,11 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     	char *name = node->ln_Name;
     	int len = strlen(name);
     	if (len > 5 && !stricmp(name + len - 5, ".card")) {
-    	    if (P96Init(csd, lib))
+	    BOOL ret;
+	    Permit();
+	    ret = P96Init(csd, lib);
+	    Forbid();
+	    if (ret)
     	    	break;
 	    DRTG(bug("P96GFX: init failed\n"));   
 	}
@@ -1006,8 +1021,10 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
         }
         D(bug("UAEGFX: FindCard done\n"));
         InitCard(csd);
+	csd->hardwaresprite = (gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE)) && SetSprite(csd, FALSE);
     } else {
 	PopulateResolutionList(csd);
+	csd->hardwaresprite = gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE);
     }
 
     if (IsListEmpty((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList))) {
@@ -1015,23 +1032,26 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
      	freeall(csd);
     	return FALSE;
     }
+    for (i = 0; i < MAXMODES; i++) {
+    	csd->maxwidth[i] = gw(csd->boardinfo + PSSO_BoardInfo_MaxHorResolution + i * 2);
+    	csd->maxheight[i] = gw(csd->boardinfo + PSSO_BoardInfo_MaxVerResolution + i * 2);
+    }
+
     D(bug("InitCard done\n"));
 
-    csd->hardwaresprite = (gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE)) && SetSprite(csd, FALSE);
     DRTG(bug("hardware sprite: %d\n", csd->hardwaresprite));
 
     csd->vram_start = (UBYTE*)gl(csd->boardinfo + PSSO_BoardInfo_MemoryBase);
     csd->vram_size = gl(csd->boardinfo + PSSO_BoardInfo_MemorySize);
 
-    size = (csd->vram_size - 1) & 0xffff0000;
-    DRTG(bug("P96RTG VRAM found at %08x size %08x (%08x).\n", csd->vram_start, csd->vram_size, size));
+    DRTG(bug("P96RTG VRAM found at %08x size %08x\n", csd->vram_start, csd->vram_size));
     mc = (struct MemChunk*)csd->vram_start;
     csd->vmem = AllocVec(sizeof(struct MemHeader), MEMF_CLEAR | MEMF_PUBLIC);
     csd->vmem->mh_Node.ln_Type = NT_MEMORY;
     csd->vmem->mh_First = mc;
     csd->vmem->mh_Lower = (APTR)mc;
-    csd->vmem->mh_Upper = (APTR)((ULONG)mc + size);
-    csd->vmem->mh_Free = size;
+    csd->vmem->mh_Upper = (APTR)((ULONG)mc + csd->vram_size);
+    csd->vmem->mh_Free = csd->vram_size;
     mc->mc_Next = NULL;
     mc->mc_Bytes = csd->vmem->mh_Free;
 

@@ -52,6 +52,7 @@ struct uaegfx_staticdata
 	OOP_MethodID hiddGfxBase;
 	
 	struct List rtglist;
+	struct List bitmaplist;
 	struct Library *CardBase;
 	struct Library *cs_IntuitionBase;
 	struct Library *cs_UtilityBase;
@@ -63,6 +64,7 @@ struct uaegfx_staticdata
 	UBYTE *bitmapextra;
 	UBYTE *vram_start;
 	ULONG vram_size;
+	ULONG vram_used, fram_used;
 	struct MemHeader *vmem;
 	
 	WORD sprite_width, sprite_height;
@@ -74,6 +76,9 @@ struct uaegfx_staticdata
 	
 	UWORD dwidth, dheight;
 	ULONG dmodeid;
+
+	UWORD maxwidth[5];
+	UWORD maxheight[5];
 
 	struct ViewPort *viewport;
     void (*acb)(void *data, void *bm);
