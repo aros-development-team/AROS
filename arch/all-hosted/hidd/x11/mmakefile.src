@@ -10,7 +10,11 @@ DISK_EXEDIR := $(AROS_DEVS)/Monitors
     progname=X11 targetdir=$(DISK_EXEDIR) \
     files=$(DISK_FILES) uselibs="oop"
 
-USER_CFLAGS := -DHOST_OS_$(ARCH) -isystem $(GENINCDIR) $(HOST_X11_CFLAGS) $(KERNEL_INCLUDES)
+USER_CFLAGS = -DHOST_OS_$(ARCH) -isystem $(GENINCDIR) $(HOST_X11_CFLAGS) $(KERNEL_INCLUDES)
+## The '-Wno-attributes' is here due to a gcc 4.5.x bug
+## where its strcmp() builtin generates a number of spurious
+## complaints with -O1 or higher optimizations enabled.
+USER_CFLAGS += -Wno-attributes
 
 # TODO: What if the system is pure Darwin running a regular PC?
 ifeq ($(ARCH),darwin)

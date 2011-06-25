@@ -5,6 +5,11 @@ EXEDIR := $(BINDIR)/boot
 
 FILES         := main bootstrap elfloader32 filesystem hostinterface memory support shutdown ui
 PROG	      := AROSBootstrap
+
+## The '-Wno-attributes' is here due to a gcc 4.5.x bug
+## where its strcmp() builtin generates a number of spurious
+## complaints with -O1 or higher optimizations enabled.
+USER_CFLAGS += -Wno-attributes
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR)
 
 ifeq ($(ARCH),mingw32)

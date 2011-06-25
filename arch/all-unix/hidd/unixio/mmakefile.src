@@ -7,6 +7,11 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
+## The '-Wno-attributes' is here due to a gcc 4.5.x bug
+## where its strcmp() builtin generates a number of spurious
+## complaints with -O1 or higher optimizations enabled.
+USER_CFLAGS += -Wno-attributes
+
 %build_module mmake=kernel-unixio \
     modname=unixio modtype=hidd \
     files=unixio_class uselibs="oop rom"
