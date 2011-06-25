@@ -125,7 +125,7 @@ struct Notification *FindNotification(struct Handler *handler,
    struct NotifyRequest *request);
 VOID Notify(struct Handler *handler, struct Notification *notification);
 
-BSTR MkBStr(struct Handler *h, STRPTR str);
+UBYTE *MkBStr(struct Handler *h, STRPTR str);
 
 PINT SetString(struct Handler *handler, TEXT **field, const TEXT *new_str);
 PINT SwapStrings(TEXT **field1, TEXT **field2);
