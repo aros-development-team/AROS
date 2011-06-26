@@ -7,7 +7,7 @@ EXEDIR := $(BINDIR)/boot
 MINGW32_HANDLERS := emul
 MINGW32_HIDD	 := wingdi
 MINGW32_LIBS	 := expansion exec
-MINGW32_RES	 := kernel hostlib battclock processor
+MINGW32_RES	 := kernel hostlib battclock processor emul
 
 KOBJ_HANDLERS := $(addprefix $(KOBJSDIR)/, $(addsuffix _handler.o, $(MINGW32_HANDLERS)))
 KOBJ_HIDD     := $(addprefix $(KOBJSDIR)/, $(addsuffix _hidd.o, $(MINGW32_HIDD)))
@@ -28,6 +28,7 @@ KOBJS_MINGW32 := $(KOBJ_RES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_HIDD)
 #MM			  kernel-processor-kobj		\
 #MM			  kernel-expansion-kobj		\
 #MM			  kernel-exec-kobj		\
+#MM			  kernel-emul-kobj		\
 #MM			  kernel-fs-emul-kobj		\
 #MM			  kernel-hidd-wingdi-kobj	\
 #MM			  linklibs			\

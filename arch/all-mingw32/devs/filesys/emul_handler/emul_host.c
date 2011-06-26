@@ -319,9 +319,8 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 
 /*********************************************************************************************/
 
-LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
+size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, BOOL *async, SIPTR *err)
 {
-    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
     ULONG res;
     ULONG werr;
 
@@ -334,10 +333,10 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 	 */
         struct AsyncReaderControl *reader = emulbase->pdata.ConsoleReader;
 
-	DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", iofs->io_Union.io_READ.io_Length));
+	DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", len));
 	reader->fh = fh->fd;
-	reader->addr = iofs->io_Union.io_READ.io_Buffer;
-	reader->len = iofs->io_Union.io_READ.io_Length;
+	reader->addr = buff;
+	reader->len = len;
 	reader->sig = SIGF_DOS;
 	reader->task = FindTask(NULL);
 	reader->cmd = ASYNC_CMD_READ;
@@ -353,7 +352,7 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 	    Wait(reader->sig);
 
 	    DASYNC(bug("[emul] Read %ld bytes, error %lu\n", reader->.actual, reader->error));
-	    iofs->io_Union.io_READ.io_Length = reader->actual;
+	    len = reader->actual;
 	    werr = reader->error;
 
 	    if (werr)
@@ -362,12 +361,12 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 	    {
 	        char *c, *d;
 
-	        c = iofs->io_Union.io_READ.io_Buffer;
+	        c = buff;
 	        d = c;
 	        while (*c) {
 	            if ((c[0] == '\r') && (c[1] == '\n')) {
 	                c++;
-	                iofs->io_Union.io_READ.io_Length--;
+	                len--;
 	            }
 	            *d++ = *c++;
 	        }
@@ -377,27 +376,27 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
     else
     {
 	Forbid();
-	res = emulbase->pdata.KernelIFace->ReadFile(fh->fd, iofs->io_Union.io_READ.io_Buffer,
-						      iofs->io_Union.io_READ.io_Length, &iofs->io_Union.io_READ.io_Length, NULL);
+	res = emulbase->pdata.KernelIFace->ReadFile(fh->fd, buff, len, &len, NULL);
 	werr = emulbase->pdata.KernelIFace->GetLastError();
 	Permit();
     }
 
-    return res ? 0 : Errno_w2a(werr, FMF_MODE_OLDFILE);
+    *err = Errno_w2a(werr, FMF_MODE_OLDFILE);
+
+    return len;
 }
 
-LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
+size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, size_t len, BOOL *async, SIPTR *err)
 {
-    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
     ULONG error, werr;
 
     Forbid();
-    error = emulbase->pdata.KernelIFace->WriteFile(fh->fd, iofs->io_Union.io_WRITE.io_Buffer,
-						   iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL);
+    error = emulbase->pdata.KernelIFace->WriteFile(fh->fd, buff, len, &len, NULL);
     werr = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
-    return error ? 0 : Errno_w2a(werr, FMF_WRITE);
+    *err = Errno_w2a(werr, FMF_WRITE);
+    return len;
 }
 
 static LONG seek_file(struct emulbase *emulbase, void *fh, UQUAD *Offset, ULONG mode, UQUAD *newpos)
@@ -452,9 +451,11 @@ static LONG seek_file(struct emulbase *emulbase, void *fh, UQUAD *Offset, ULONG 
 }
 
 
-LONG DoSeek(struct emulbase *emulbase, void *fh, UQUAD *Offset, ULONG mode)
+off_t DoSeek(struct emulbase *emulbase, void *file, off_t offset, ULONG mode, SIPTR *err)
 {
-    return seek_file(emulbase, fh, Offset, mode, NULL);
+    UQUAD Offset = offset;
+    *err = seek_file(emulbase, fh, &Offset, mode, NULL);
+    return Offset;
 }
 
 /*********************************************************************************************/
@@ -811,14 +812,14 @@ static ULONG ReadDir(struct emulbase *emulbase, struct filehandle *fh, LPWIN32_F
 
 /*********************************************************************************************/
 
-static ULONG examine_entry_sub(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName, WIN32_FILE_ATTRIBUTE_DATA *FIB)
+static ULONG DoExamineEntry_sub(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName, WIN32_FILE_ATTRIBUTE_DATA *FIB)
 {
     STRPTR filename, name;
     ULONG plen, flen;
     ULONG error = 0;
     ULONG werr;
 
-    DEXAM(bug("[emul] examine_entry_sub(): filehandle's path: %s\n", fh->hostname));
+    DEXAM(bug("[emul] DoExamineEntry_sub(): filehandle's path: %s\n", fh->hostname));
     if (FoundName)
     {
 	DEXAM(bug("[emul] ...containing object: %s\n", FoundName));
@@ -853,7 +854,7 @@ static ULONG examine_entry_sub(struct emulbase *emulbase, struct filehandle *fh,
 
 /*********************************************************************************************/
 
-LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *FoundName,
+LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *FoundName,
 		    struct ExAllData *ead, ULONG size, ULONG type)
 {
     STRPTR next, last, end, name;
@@ -866,11 +867,11 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Found
   
     if(next > end)
     {
-        DEXAM(bug("[emul] examine_entry(): end of buffer\n"));
+        DEXAM(bug("[emul] DoExamineEntry(): end of buffer\n"));
         return ERROR_BUFFER_OVERFLOW;
     }
 
-    error = examine_entry_sub(emulbase, fh, FoundName, &FIB);
+    error = DoExamineEntry_sub(emulbase, fh, FoundName, &FIB);
     if (error)
 	return error;
 
@@ -927,7 +928,7 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Found
 
 /*********************************************************************************************/
 
-LONG examine_next(struct emulbase *emulbase,  struct filehandle *fh, struct FileInfoBlock *FIB)
+LONG DoExamineNext(struct emulbase *emulbase,  struct filehandle *fh, struct FileInfoBlock *FIB)
 {
     char *src, *dest;
     ULONG res;
@@ -940,7 +941,7 @@ LONG examine_next(struct emulbase *emulbase,  struct filehandle *fh, struct File
 
     res = ReadDir(emulbase, fh, &FindData, &FIB->fib_DiskKey);
     if (!res)
-	res = examine_entry_sub(emulbase, fh, FindData.cFileName, &AttrData);
+	res = DoExamineEntry_sub(emulbase, fh, FindData.cFileName, &AttrData);
     if (res)
     {
 	DoRewindDir(emulbase, fh);
@@ -971,7 +972,7 @@ LONG examine_next(struct emulbase *emulbase,  struct filehandle *fh, struct File
 
 /*********************************************************************************************/
 
-LONG examine_all(struct emulbase *emulbase, struct filehandle *fh, struct ExAllData *ead,
+LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAllData *ead,
 		 struct ExAllControl *eac, ULONG size, ULONG type)
 {
     struct ExAllData *last = NULL;
@@ -979,7 +980,7 @@ LONG examine_all(struct emulbase *emulbase, struct filehandle *fh, struct ExAllD
     LONG error;
     WIN32_FIND_DATA FindData;
 
-    DEXAM(bug("[emul] examine_all(%s)\n", fh->hostname));
+    DEXAM(bug("[emul] DoExamineAll(%s)\n", fh->hostname));
 
     eac->eac_Entries = 0;
     error = examine_start(emulbase, fh);
@@ -1000,7 +1001,7 @@ LONG examine_all(struct emulbase *emulbase, struct filehandle *fh, struct ExAllD
 	    continue;
 
 	DEXAM(bug("[emul] Examining object\n"));
-        error = examine_entry(emulbase, fh, FindData.cFileName, ead, end-(STRPTR)ead, type);
+        error = DoExamineEntry(emulbase, fh, FindData.cFileName, ead, end-(STRPTR)ead, type);
         if(error)
 	    break;
 	/* Do some more matching... */
@@ -1123,16 +1124,16 @@ LONG DoSetDate(struct emulbase *emulbase, char *fullname, struct DateStamp *date
     return ret ? 0 : Errno_w2a(werr, FMF_WRITE);
 }
 
-LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK *io_SEEK)
+SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
     LONG error;
     ULONG werr;
     UQUAD newpos;
 
-    DFSIZE(bug("[emul] DoSetSize(): mode %ld, offset %llu\n", io_SEEK->io_SeekMode, io_SEEK->io_Offset));
+    DFSIZE(bug("[emul] DoSetSize(): mode %ld, offset %llu\n", mode, offset));
 
     /* First seek to the requested position. io_Offset will contain OLD position after that. NEW position will be in newpos */
-    error = seek_file(emulbase, fh, &io_SEEK->io_Offset, io_SEEK->io_SeekMode, &newpos);
+    error = seek_file(emulbase, fh, &offset, mode, &newpos);
     if (!error)
     {
         /* Set EOF to NEW position */
@@ -1147,19 +1148,20 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
 	 * If our OLD position was less than new file size, we seek back to it. io_Offset will again contain
          * position before this seek - i. e. our NEW file size.
 	 */
-        if (io_SEEK->io_Offset < newpos)
+        if (offset < newpos)
 	{
 	    LONG error2;
 
-            error2 = seek_file(emulbase, fh, &io_SEEK->io_Offset, OFFSET_BEGINNING, NULL);
+            error2 = seek_file(emulbase, fh, &offset, OFFSET_BEGINNING, NULL);
             if (!error)
         	error = error2;
         } else
-            io_SEEK->io_Offset = newpos;
+            offset = newpos;
     }
 
     DFSIZE(bug("[emul] FSA_SET_FILE_SIZE returning %lu\n", error));
-    return error;
+    *err = error;
+    return offset;
 }
 
 BOOL DoGetType(struct emulbase *emulbase, void *fd)

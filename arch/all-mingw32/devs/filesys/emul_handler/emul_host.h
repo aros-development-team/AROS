@@ -1,5 +1,5 @@
-#ifndef __EMUL_HOST_H
-#define __EMUL_HOST_H
+#ifndef RESOURCES_EMUL_HOST_H
+#define RESOURCES_EMUL_HOST_H
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
@@ -28,7 +28,7 @@ struct AsyncReaderControl
 
 #ifdef __AROS__
 
-#include "winapi.h"
+#include <resources/emul_winapi.h>
 
 struct EmulInterface
 {

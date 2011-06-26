@@ -5,12 +5,20 @@ ifneq ($(FAMILY),)
     FAMILY_INCLUDES := -I$(SRCDIR)/arch/all-$(FAMILY)/devs/filesys/emul_handler
 endif
 
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/devs/filesys/emul_handler $(FAMILY_INCLUDES) -I$(SRCDIR)/$(CURDIR)
 
-FILES := emul_handler filenames emul_host
+%build_module mmake=kernel-emul \
+    modname=emul modtype=resource \
+    objdir=$(OBJDIR)/resource \
+    files=emul_init uselibs="rom"
 
-%build_module mmake=kernel-fs-emul \
-  modname=emul modtype=device modsuffix=handler \
-  files="$(FILES)" uselibs=rom
+FILES := resident emul_handler filenames emul_host
+
+%build_module_simple mmake=kernel-fs-emul \
+    modname=emul modtype=handler \
+    files="$(FILES)" uselibs="rom"
+
+%copy_includes includes="emul.h" path=resources
 
 %common

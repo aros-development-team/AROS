@@ -19,17 +19,11 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 
+#include <resources/emul.h>
+
 #include "dosboot_intern.h"
 
 #undef GfxBase
-
-struct emulbase
-{
-    struct Device eb_device;
-    APTR eb_stdin;
-    APTR eb_stdout;
-    APTR eb_stderr;
-};
 
 void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
@@ -73,9 +67,7 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 	This is quite naughty, but I know what I'm doing here, since
 	emul.handler ALWAYS exists under Unix, and it won't go away.
     */
-    Forbid();
-    emulbase = (struct emulbase *)FindName(&SysBase->DeviceList, "emul.handler");
-    Permit();
+    emulbase = (struct emulbase *)OpenResource("emul.resource");
     D(bug("[DOSBoot.hosted] __dosboot_Boot: emulbase = 0x%08lX\n", emulbase));
 
     if( emulbase == NULL )
@@ -93,9 +85,9 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     	Alert(AT_DeadEnd | AN_BootStrap | AG_NoMemory);
     }
 
-    fh_stdin->fh_Device  = &emulbase->eb_device;
+    fh_stdin->fh_Device  = &emulbase->pdata;
     fh_stdin->fh_Unit    = emulbase->eb_stdin;
-    fh_stdout->fh_Device = &emulbase->eb_device;
+    fh_stdout->fh_Device = &emulbase->pdata;
     fh_stdout->fh_Unit   = emulbase->eb_stdout;
 
     SetVBuf(MKBADDR(fh_stdin) , NULL, BUF_LINE, -1);

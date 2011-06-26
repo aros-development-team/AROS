@@ -6,9 +6,13 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-hosted/devs/filesys/emul_handler
 
+FILES := emul_host filenames
+
 %build_archspecific mainmmake=kernel-fs-emul \
   maindir=arch/all-hosted/devs/filesys/emul_handler \
-  arch=mingw32 files="emul_host filenames"
+  arch=mingw32 files=$(FILES)
+
+%copy_includes mmake=includes-copy-mingw32-$(CPU) includes="emul_host.h emul_winapi.h" path=resources
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
