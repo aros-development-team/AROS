@@ -161,19 +161,19 @@ static int load_hunk(void *file, struct sheader *sh)
 	/* Allocate a chunk with write access */
 	if (sh->flags & SHF_WRITE)
 	{
-		ptr_rw = (char *)(((unsigned long)ptr_rw
+		ptr_rw = (uintptr_t)(((unsigned long)ptr_rw
 				+ (unsigned long)sh->addralign - 1)
 				& ~((unsigned long)sh->addralign - 1));
-		ptr = ptr_rw;
+		ptr = (void *)ptr_rw;
 		ptr_rw = ptr_rw + sh->size;
 	}
 	else
 	{
 		/* Read-Only mode? Get the memory from the kernel space, align it accorting to the demand */
-		ptr_ro = (char *)(((unsigned long)ptr_ro
+		ptr_ro = (uintptr_t)(((unsigned long)ptr_ro
 				+ (unsigned long)sh->addralign - 1)
 				& ~((unsigned long)sh->addralign - 1));
-		ptr = ptr_ro;
+		ptr = (void *)ptr_ro;
 		ptr_ro = ptr_ro + sh->size;
 	}
 
@@ -292,8 +292,6 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 int loadElf(void *elf_file)
 {
 	struct elfheader *eh = (struct elfheader *)elf_file;
-	uint32_t s_ro = 0;
-	uint32_t s_rw = 0;
 
 	kprintf("[BOOT] loadElf(%p)\n", eh);
 
@@ -307,7 +305,7 @@ int loadElf(void *elf_file)
 			/* Load the symbol and string tables */
 			if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB)
 			{
-				sh[i].addr = (unsigned long)elf_file + sh[i].offset;
+				sh[i].addr = (void *)((intptr_t)elf_file + sh[i].offset);
 			}
 			/* Does the section require memoy allcation? */
 			else if (sh[i].flags & SHF_ALLOC)
@@ -335,7 +333,7 @@ int loadElf(void *elf_file)
 		{
 			if (sh[i].type == SHT_REL && sh[sh[i].info].addr)
 			{
-				sh[i].addr = (uint32_t) elf_file + sh[i].offset;
+				sh[i].addr = (void *)((intptr_t)elf_file + sh[i].offset);
 				if (!sh[i].addr	|| !relocate(eh, sh, i, virtoffset))
 				{
 					return 0;
@@ -343,4 +341,6 @@ int loadElf(void *elf_file)
 			}
 		}
 	}
+
+	return 1;
 }
