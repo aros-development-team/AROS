@@ -100,11 +100,11 @@ $(DISTDIR)/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
 FILES   := 
 AFILES  := ext_entry
 
-KLIBS   :=  keymap graphics layers intuition gadtools icon workbench
+KLIBS   :=  keymap graphics layers intuition gadtools icon workbench 680x0
 KDEVS   := 
 KHNDLRS := 
 KHIDDS  :=
-KRSRCS  := shellcommands workbook wbtag m680x0
+KRSRCS  := shellcommands workbook wbtag
 KHOOKS  := alert
 
 ROMLOC_ext := 0xe00000
