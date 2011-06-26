@@ -123,6 +123,9 @@ static BOOL VolumeIsOffline(struct DosList *dl)
 {
 #ifndef AROS_DOS_PACKETS
     /* packet.handler units do not go away */
+    if (dl->dol_Ext.dol_AROS.dol_Device == NULL)
+    	return FALSE;
+
     if (strcmp(dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, "packet.handler"))
         return dl->dol_Ext.dol_AROS.dol_Unit == NULL;
     else
