@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 
 TESTSDIR := $(AROS_TESTS)/cdrom
 
-MODULE_FILES := arosdevice arosmain
+MODULE_FILES := arosdevice
 HANDLER_FILES := device cdrom devsupp generic \
 	hfs iso9660 intui path rock volumes \
 	joliet prefs charset

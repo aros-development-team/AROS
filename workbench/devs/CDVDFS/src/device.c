@@ -198,10 +198,6 @@ void btos(BSTR, char *);
 ULONG __abox__ = 1;
 #endif
 
-#ifdef AROS_KERNEL
-extern struct Globals *global;
-
-#else
 struct Globals glob;
 struct Globals *global=&glob;
 
@@ -222,7 +218,6 @@ LONG SAVEDS Main(void)
 {
     return handler(*(struct ExecBase **)4L);
 }
-#endif
 #endif
 
 LONG handler(struct ExecBase *SysBase)
@@ -419,9 +414,6 @@ char    buf[256];
 register WORD   error;
 UBYTE   notdone = 1;
  
-#ifdef AROS_KERNEL
-	global = global->acdrbase->GetData(global->acdrbase);
-#endif
 	if (signals & global->g_timer_sigbit)
 	{
 		GetMsg (global->g_timer_mp);
@@ -1332,23 +1324,13 @@ void Create_Volume_Node (LONG p_disk_type, ULONG p_volume_date) {
 		BUG(dbprintf("[Reusing old volume node]");)
 		Forbid ();
 		global->DevList = dl;
-#ifdef AROS_KERNEL
-		dl->dl_Ext.dl_AROS.dl_Device = &global->acdrbase->device;
-		dl->dl_Ext.dl_AROS.dl_Unit = (struct Unit *)&global->device->rootfh;
-#else
 		dl->dl_Task = &global->DosProc->pr_MsgPort;
-#endif
 		Permit ();
 	}
 	else
 	{
 		global->DevList = dl = (struct DeviceList *)MakeDosEntry(global->g_vol_name+1, DLT_VOLUME);
-#ifdef AROS_KERNEL
-		dl->dl_Ext.dl_AROS.dl_Device = &global->acdrbase->device;
-		dl->dl_Ext.dl_AROS.dl_Unit = (struct Unit *)&global->device->rootfh;
-#else
 		dl->dl_Task = &global->DosProc->pr_MsgPort;
-#endif
 		dl->dl_DiskType = p_disk_type;
 		dl->dl_VolumeDate.ds_Days = p_volume_date / (24 * 60 * 60);
 		dl->dl_VolumeDate.ds_Minute = (p_volume_date % (24 * 60 * 60)) / 60;
@@ -1465,11 +1447,7 @@ void Unmount (void)
       		   global->g_volume->locks);)
       BUG(dbprintf("[there are still %d file handles on this volume]",
       		   global->g_volume->file_handles);)
-#ifdef AROS_KERNEL
-      global->DevList->dl_Ext.dl_AROS.dl_Unit = NULL;
-#else
       global->DevList->dl_Task = NULL;
-#endif
     }
 
     global->DevList = NULL;
