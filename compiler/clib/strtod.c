@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function strtod().
@@ -61,6 +61,10 @@
     int     exp = 0;
     char    c = 0, c2 = 0;
     int     digits = 0;      
+
+    /* assign initial value in case nothing will be found */
+    if (endptr)
+        *endptr = (char *)str;
 
     /* skip all leading spaces */
     while (isspace (*str))
@@ -135,7 +139,8 @@
         }
     }
 
-    if (endptr)
+    /* something was found, assign the pointer value */
+    if (endptr && digits > 0)
         *endptr = (char *)str;
 
     return val;
