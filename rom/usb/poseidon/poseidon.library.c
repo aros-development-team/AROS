@@ -2964,7 +2964,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     {
                         pd->pd_Flags |= PDFF_HIGHSPEED;
                     }
-                    #if defined(USB3)
+                    #if defined(AROS_USB30_CODE)
                     if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x300))
                     {
                         pd->pd_Flags |= PDFF_SUPERSPEED;
@@ -5327,7 +5327,7 @@ AROS_LH4(struct PsdErrorMsg *, psdAddErrorMsgA,
             if((pem->pem_Msg = psdCopyStrFmtA(fmtstr, fmtdata)))
             {
 		if (ps->ps_Flags & PSF_KLOG)
-		    KPrintF("[%s] %s\n", origin, pem->pem_Msg);
+		    //KPrintF("[%s] %s\n", origin, pem->pem_Msg);
 
                 if(pOpenDOS(ps))
                 {
@@ -9221,7 +9221,7 @@ static const ULONG PsdDevicePT[] =
     PACK_WORDBIT(DA_Dummy, DA_HasAppBinding, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_APPBINDING),
     PACK_WORDBIT(DA_Dummy, DA_NeedsSplitTrans, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_NEEDSSPLIT),
     PACK_WORDBIT(DA_Dummy, DA_LowPower, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_LOWPOWER),
-#if defined (USB3)
+#if defined (AROS_USB30_CODE)
     PACK_WORDBIT(DA_Dummy, DA_IsSuperspeed, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_SUPERSPEED),
 #endif
     PACK_ENDTABLE

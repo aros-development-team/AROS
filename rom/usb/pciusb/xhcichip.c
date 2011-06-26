@@ -11,9 +11,9 @@
 
 #include "uhwcmd.h"
 
-#if defined(USB3)
+#if defined(AROS_USB30_CODE)
 
-void *AllocVecAlignedOnPage(ULONG bytesize, ULONG flags, ULONG alignment);
+//void *AllocVecAlignedOnPage(ULONG bytesize, ULONG flags, ULONG alignment);
 
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
@@ -378,7 +378,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 */
 
                 /* Allocate 256 entries of 64bit pointer array aligned on 64 byte cache line not crossing 4K page border */
-                hc->xhc_dcbaa = AllocVecAlignedOnPage( (256*8), MEMF_CLEAR, 64);
+                //hc->xhc_dcbaa = AllocVecAlignedOnPage( (256*8), MEMF_CLEAR, 64);
 
                 /*
                     If the Max Scratchpad Buffers field of the HCSPARAMS2 register is > ‘0’, then the first entry (entry_0) in
