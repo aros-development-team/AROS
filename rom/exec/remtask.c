@@ -84,10 +84,10 @@ struct RemTaskMsg {
 
     /* Remove() here, before freeing the MemEntry list. Because
        the MemEntry list might contain the task struct itself! */
-                    
+
     if(task != SysBase->ThisTask)
     {
-        Remove(&task->tc_Node);         
+        Remove(&task->tc_Node);
     }
 
     /*
@@ -102,7 +102,7 @@ struct RemTaskMsg {
     if(et != NULL)
     {
         KrnDeleteContext(((struct IntETask *)et)->iet_Context);
-	CleanupETask(task, et);
+        CleanupETask(task, et);
     }
 
     /* Send task to task cleaner to clean up memory.
@@ -130,7 +130,7 @@ struct RemTaskMsg {
         SysBase->TDNestCnt = -1;
 
         /* And force a task switch. Note: Dispatch, not Switch,
-           because the state of thistask must not be saved
+           because the state of ThisTask must not be saved
         */
 
         KrnDispatch();
@@ -162,12 +162,28 @@ static void remtaskcleaner(void)
     DREMTASK("remtaskcleaner RemTaskPort created");
 
     do { /* forever */
+        struct List list;
         WaitPort(IntSysBase->RemTaskPort);
         msg = (struct RemTaskMsg *)GetMsg(IntSysBase->RemTaskPort);
 
         DREMTASK("remtaskcleaner for task %p", msg->task);
 
+        /* Note tc_MemEntry list is part of the task structure which
+           usually is also placed in tc_MemEntry. MungWall_Check()
+           will fill freed memory and destroy our list while we are
+           iterating or the freed memory including our list could be
+           reused by some other task. We take special care of this by
+           copying the list nodes to a local list before freeing.
+           Alternatively, we could check all MemEntries for the task
+           and free it after iterating.
+         */
+        NEWLIST(&list);
         ForeachNodeSafe(&msg->task->tc_MemEntry, mb, mbnext)
+        {
+            Remove(&mb->ml_Node);
+            AddTail(&list, &mb->ml_Node);
+        }
+        ForeachNodeSafe(&list, mb, mbnext)
         {
             DREMTASK("remtaskcleaner freeing MemList 0x%p", mb);
             /* Free one MemList node */
