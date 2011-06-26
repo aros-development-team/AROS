@@ -77,6 +77,65 @@ const int ptroffset [] =
     6
 };
 
+const char * newlinetest_rn = "\t-2.700264 -1.792122 -2.037897\r\n\t-0.084267 0.081827 0.584534\r\n";
+const char * newlinetest_n = "\t-2.700264 -1.792122 -2.037897\n\t-0.084267 0.081827 0.584534\n";
+
+const double newlinetestresults [] =
+{
+    -2.700264,
+    -1.792122,
+    -2.037897,
+    -0.084267,
+    0.081827,
+    0.584534,
+    0.000000
+};
+
+const int newlinetestptroffset_rn [] =
+{
+    10,
+    10,
+    10,
+    12,
+    9,
+    9,
+    0,
+    -1,
+    -1
+};
+
+const int newlinetestptroffset_n [] =
+{
+    10,
+    10,
+    10,
+    11,
+    9,
+    9,
+    0,
+    -1,
+    -1
+};
+
+#define TESTLINELINE_I  6
+
+void testnewline(const char * buffer, const int * ptroffset)
+{
+    int i = 0; char * src = NULL; char *next;
+    for(src = (char *)buffer; i < (TESTLINELINE_I + 2); i++, src = next)
+    {
+        double f = strtod(src, &next);
+        if ((float)newlinetestresults[i] != (float)f)
+            printf("RESULT FAILURE @ %s, should be %f was %f\n", src, newlinetestresults[i], f);
+        if (ptroffset[i] != (next - src))
+            printf("OFFSET FAILURE @ %s, should be %d was %d\n", src, ptroffset[i], (next - src));
+        if(next <= src) break;
+    }
+    
+    if (TESTLINELINE_I != i)
+        printf("ITER FAILURE @ %s, should be %d was %d\n", buffer, TESTLINELINE_I, i);
+}
+
 int main()
 {
     char * float_end = NULL;
@@ -90,9 +149,11 @@ int main()
         if (f != results[i])
             printf("RESULT FAILURE @ %s, should be %f was %f\n", str, results[i], f);
         if ((float_end - str) != ptroffset[i])
-            printf("OFFSET FAILURE @ %s, should be %d was %d\n", str, ptroffset[i], (int)(float_end - str));
+            printf("OFFSET FAILURE @ %s, should be %d was %d\n", str, ptroffset[i], (float_end - str));
         i++;
     }
-
-    return 0;
+    
+    /* Check bahavior with new-lined strings */
+    testnewline(newlinetest_rn, newlinetestptroffset_rn);
+    testnewline(newlinetest_n, newlinetestptroffset_n);
 }
