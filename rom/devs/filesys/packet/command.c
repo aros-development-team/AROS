@@ -125,6 +125,9 @@
 #endif
 
 static BSTR mkbstr(APTR pool, CONST_STRPTR str) {
+#ifdef AROS_FAST_BSTR
+    return MKBADDR(str);
+#else
     UBYTE *buf;
     UBYTE len;
 
@@ -135,9 +138,13 @@ static BSTR mkbstr(APTR pool, CONST_STRPTR str) {
     buf[0] = len;
 
     return (BSTR) MKBADDR(buf);
+#endif
 }
 
 static STRPTR mkcstr(APTR pool, BSTR bstr) {
+#ifdef AROS_FAST_BSTR
+    return BADDR(bstr);
+#else
     UBYTE *str = BADDR(bstr);
     UBYTE *buf;
     UBYTE len = str[0];
@@ -147,6 +154,7 @@ static STRPTR mkcstr(APTR pool, BSTR bstr) {
     buf[len] = 0;
 
     return buf;
+#endif
 }
 
 static struct ph_packet *packet_alloc(void) {
@@ -964,8 +972,8 @@ static BOOL packet_doreply(struct ph_mount *mount)
 
             /* make sure we have enough room for everything that came back */
             if (size < sizeof(struct ExAllData) +
-                       (mode >= ED_COMMENT ? (comment_len = fib->fib_Comment[0]) : 0) +
-                       (mode >= ED_NAME    ? (filename_len = fib->fib_FileName[0]) : 0)) {
+                       (mode >= ED_COMMENT ? (comment_len = AROS_BSTR_strlen(fib->fib_Comment)) : 0) +
+                       (mode >= ED_NAME    ? (filename_len = AROS_BSTR_strlen(fib->fib_FileName)) : 0)) {
                 iofs->io_DosError = ERROR_BUFFER_OVERFLOW;
                 FreeMem(fib, sizeof(struct FileInfoBlock));
                 break;
