@@ -9,23 +9,24 @@
 /*********************************************************************************************/
 
 #define DEBUG 0
-#define DCHDIR(x)
-#define DCMD(x)
-#define DERROR(x)
-#define DEXAM(x)
-#define DFNAME(x)
-#define DFSIZE(x)
-#define DLINK(x)
-#define DLOCK(x)
-#define DMOUNT(x)
-#define DOPEN(x)
-#define DSEEK(x)
+#define DCHDIR(x) D(x)
+#define DCMD(x) D(x)
+#define DERROR(x) D(x)
+#define DEXAM(x) D(x)
+#define DFNAME(x) D(x)
+#define DFSIZE(x) D(x)
+#define DLINK(x) D(x)
+#define DLOCK(x) D(x)
+#define DMOUNT(x) D(x)
+#define DOPEN(x) D(x)
+#define DSEEK(x) D(x)
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <exec/memory.h>
 #include <devices/input.h>
 #include <devices/inputevent.h>
+#include <libraries/expansion.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/exall.h>
@@ -34,13 +35,13 @@
 #include <proto/dos.h>
 #include <proto/expansion.h>
 
-#include <limits.h>
-#include <string.h>
-#include <stddef.h>
+#include <resources/emul.h>
 
 #include "emul_intern.h"
 
-#include LC_LIBDEFS_FILE
+#include <limits.h>
+#include <string.h>
+#include <stddef.h>
 
 #ifdef AROS_FAST_BSTR
 
@@ -65,26 +66,26 @@ static void SendEvent(struct emulbase *emulbase, LONG event)
 
     D(bug("[emul] SendEvent\n"));
     if ((InputPort = (struct MsgPort*)CreateMsgPort())) {
-	
-	if ((InputRequest = (struct IOStdReq*)CreateIORequest(InputPort, sizeof(struct IOStdReq)))) {
-	  
-	  if (!OpenDevice("input.device", 0, (struct IORequest*)InputRequest, 0)) {
-		
-		if ((ie = AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC|MEMF_CLEAR))) {
-		  ie->ie_Class = event;
-		  InputRequest->io_Command = IND_WRITEEVENT;
-		  InputRequest->io_Data = ie;
-		  InputRequest->io_Length = sizeof(struct InputEvent);
-		  
-		  DoIO((struct IORequest*)InputRequest);
-		  
-		  FreeVec(ie);
-		}
-		CloseDevice((struct IORequest*)InputRequest);
-	  }
-	  DeleteIORequest ((APTR)InputRequest);
-	}
-	DeleteMsgPort (InputPort);
+        
+        if ((InputRequest = (struct IOStdReq*)CreateIORequest(InputPort, sizeof(struct IOStdReq)))) {
+          
+          if (!OpenDevice("input.device", 0, (struct IORequest*)InputRequest, 0)) {
+        	
+        	if ((ie = AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC|MEMF_CLEAR))) {
+        	  ie->ie_Class = event;
+        	  InputRequest->io_Command = IND_WRITEEVENT;
+        	  InputRequest->io_Data = ie;
+        	  InputRequest->io_Length = sizeof(struct InputEvent);
+        	  
+        	  DoIO((struct IORequest*)InputRequest);
+        	  
+        	  FreeVec(ie);
+        	}
+        	CloseDevice((struct IORequest*)InputRequest);
+          }
+          DeleteIORequest ((APTR)InputRequest);
+        }
+        DeleteMsgPort (InputPort);
     }
 }
 
@@ -110,28 +111,28 @@ static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, st
     *dest = AllocVecPooled(emulbase->mempool, len);
     if ((*dest))
     {
-	CopyMem(fh->hostname, *dest, dirlen);
-	c = *dest + dirlen;
-	if (flen)
-	    c = append(c, filename);
-	*c = 0;
+        CopyMem(fh->hostname, *dest, dirlen);
+        c = *dest + dirlen;
+        if (flen)
+            c = append(c, filename);
+        *c = 0;
 
-	c = *dest + (fh->name - fh->hostname);
-	DFNAME(bug("[emul] Shrinking filename: \"%s\"\n", c));
-	if (!shrink(c))
-	{
-	    FreeVecPooled(emulbase->mempool, *dest);
-	    *dest = NULL;
-	    ret = ERROR_OBJECT_NOT_FOUND;
-	} else {
-	    DFNAME(bug("[emul] resulting host filename: \"%s\"\n", *dest));
-	    if (part) {
-	        *part = c;
-	        DFNAME(bug("[emul] resulting AROS filename: \"%s\"\n", c));
-	    }
-	}
+        c = *dest + (fh->name - fh->hostname);
+        DFNAME(bug("[emul] Shrinking filename: \"%s\"\n", c));
+        if (!shrink(c))
+        {
+            FreeVecPooled(emulbase->mempool, *dest);
+            *dest = NULL;
+            ret = ERROR_OBJECT_NOT_FOUND;
+        } else {
+            DFNAME(bug("[emul] resulting host filename: \"%s\"\n", *dest));
+            if (part) {
+                *part = c;
+                DFNAME(bug("[emul] resulting AROS filename: \"%s\"\n", c));
+            }
+        }
     } else
-	ret = ERROR_NO_FREE_STORE;
+        ret = ERROR_NO_FREE_STORE;
     return ret;
 }
 
@@ -154,7 +155,7 @@ static void free_lock(struct emulbase *emulbase, struct filehandle *current)
 
 /*********************************************************************************************/
 
-static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const char *name, LONG mode, LONG protect, BOOL AllowDir)
+static LONG open_(struct emulbase *emulbase, struct filehandle *fhv, struct filehandle **handle, const char *name, LONG mode, LONG protect, BOOL AllowDir)
 {
     LONG ret = 0;
     struct filehandle *fh;
@@ -164,42 +165,53 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
     fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
     if (fh)
     {
-	fh->dl = (*handle)->dl;
+        fh->dl = (*handle)->dl;
+        fh->fh.fh_Type = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fh->fh.fh_Arg1 = (SIPTR)fh;
 
-	/* If no filename is given and the file-descriptor is one of the
-	 standard filehandles (stdin, stdout, stderr) ... */
-	if((!name[0]) && ((*handle)->type & FHD_STDIO))
-	{
-	    /* ... then just reopen that standard filehandle. */
-	    fh->type       = FHD_FILE|FHD_STDIO;
-	    fh->fd         = (*handle)->fd;
-	    fh->name       = NULL;
-	    fh->hostname   = NULL;
-	    fh->volumename = NULL;
-	    *handle = fh;
+        /* If no filename is given and the file-descriptor is one of the
+         standard filehandles (stdin, stdout, stderr) ... */
+        if((!name[0]) && ((*handle)->type & FHD_STDIO))
+        {
+            /* ... then just reopen that standard filehandle. */
+            fh->type       = FHD_FILE|FHD_STDIO;
+            fh->fd         = (*handle)->fd;
+            fh->name       = NULL;
+            fh->hostname   = NULL;
+            fh->volumename = NULL;
+            *handle = fh;
 
-	    return 0;
-	}
+            return 0;
+        }
 
-	fh->volumename=(*handle)->volumename;
+        fh->volumename=(*handle)->volumename;
 
-	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, name);
-	if (!ret)
-	{
-	    ret = DoOpen(emulbase, fh, mode, protect, AllowDir);
-	    if (!ret)
-	    {
-	    	*handle = fh;
-	    	return 0;
-	    }
+        ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, name);
+        if (!ret)
+        {
+            /* If the name is empty, this is an alias of the root
+             * volume's handle.
+             */
+            if (fh->name[0] == 0) {
+                FreeMem(fh, sizeof(*fh));
+                *handle = fhv;
+                return 0;
+            }
 
-	    DOPEN(bug("[emul] Freeing pathname\n"));
-	    FreeVecPooled(emulbase->mempool, fh->hostname);
-	}
-	DOPEN(bug("[emul] Freeing filehandle\n"));
-	FreeMem(fh, sizeof(struct filehandle));
+            ret = DoOpen(emulbase, fh, mode, protect, AllowDir);
+            if (!ret)
+            {
+            	*handle = fh;
+            	return 0;
+            }
+
+            DOPEN(bug("[emul] Freeing pathname\n"));
+            FreeVecPooled(emulbase->mempool, fh->hostname);
+        }
+        DOPEN(bug("[emul] Freeing filehandle\n"));
+        FreeMem(fh, sizeof(struct filehandle));
     } else
-	ret = ERROR_NO_FREE_STORE;
+        ret = ERROR_NO_FREE_STORE;
     DOPEN(bug("[emul] open_() returns %lu\n", ret));
     return ret;
 }
@@ -208,7 +220,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
 /*********************************************************************************************/
 
 static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
-		       const char *filename, ULONG protect)
+        	       const char *filename, ULONG protect)
 {
   LONG ret = 0;
   struct filehandle *fh;
@@ -216,22 +228,22 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
   fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
   if (fh)
   {
-	fh->volumename = (*handle)->volumename;
-	fh->dl	       = (*handle)->dl;
-	
-	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, filename);
-	if (!ret)
-	{
-	    ret = DoMkDir(emulbase, fh, protect);
-	    if (!ret)
-	    {
-	        *handle = fh;
-	        return 0;
-	    }
-	}
-	free_lock(emulbase, fh);
+        fh->volumename = (*handle)->volumename;
+        fh->dl	       = (*handle)->dl;
+        
+        ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, filename);
+        if (!ret)
+        {
+            ret = DoMkDir(emulbase, fh, protect);
+            if (!ret)
+            {
+                *handle = fh;
+                return 0;
+            }
+        }
+        free_lock(emulbase, fh);
   } else
-	ret = ERROR_NO_FREE_STORE;
+        ret = ERROR_NO_FREE_STORE;
   
   return ret;
 }
@@ -246,8 +258,8 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh, cons
     ret = makefilename(emulbase, &filename, NULL, fh, file);
     if (!ret)
     {
-	ret = DoDelete(emulbase, filename);
-	FreeVecPooled(emulbase->mempool, filename);
+        ret = DoDelete(emulbase, filename);
+        FreeVecPooled(emulbase->mempool, filename);
     }
 
     return ret;
@@ -256,81 +268,19 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh, cons
 /*********************************************************************************************/
 
 static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
-			const char *file, ULONG aprot)
+        		const char *file, ULONG aprot)
 {
     LONG ret = 0;
     char *filename = NULL;
 
     if ((ret = makefilename(emulbase, &filename, NULL, fh, file)))
-	return ret;
+        return ret;
 
     ret = DoChMod(emulbase, filename, aprot);
 
     FreeVecPooled(emulbase->mempool, filename);
     return ret;
 }
-
-/*********************************************************************************************/
-
-#define DEVNAME	    "EMU"
-#define VOLNAME	    "System"
-
-#define VOLNAME_LEN  6
-
-static LONG startup(struct emulbase *emulbase)
-{
-    struct Library *ExpansionBase;
-    struct DeviceNode *dlv = NULL;
-    BSTR devname;
-
-    D(kprintf("[Emulhandler] startup\n"));
-
-    emulbase->mempool = CreatePool(MEMF_ANY|MEMF_SEM_PROTECTED, 4096, 2000);
-    if (!emulbase->mempool)
-	return FALSE;
-
-    ExpansionBase = OpenLibrary("expansion.library",0);
-    if (!ExpansionBase)
-	return FALSE;
-
-    D(kprintf("[Emulhandler] startup: got ExpansionBase\n"));	  
-
-    devname = CreateBSTR(DEVNAME);
-    if (devname)
-    {
-    	dlv = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR|MEMF_PUBLIC);
-    	if (dlv)
-    	{
-	    D(kprintf("[Emulhandler] startup allocated dlv\n"));
-
-	    dlv->dn_Name    = devname;
-    	    dlv->dn_Type    = DLT_DEVICE;
-    	    dlv->dn_Handler = CreateBSTR(MOD_NAME_STRING);
-
-	    dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(devname);
-
-	    AddBootNode(5, 0, dlv, NULL);
-	}
-    }
-
-    CloseLibrary(ExpansionBase);
-
-    return dlv ? TRUE : FALSE;
-}
-
-ADD2INITLIB(startup, 10)
-
-/*********************************************************************************************/
-
-static LONG cleanup(struct emulbase *emulbase)
-{
-    if (emulbase->mempool)
-    	DeletePool(emulbase->mempool);
-
-    return TRUE;
-}
-
-ADD2EXPUNGELIB(cleanup, 10);
 
 /*********************************************************************************************/
 
@@ -345,20 +295,44 @@ const ULONG sizes[] = {
     sizeof(struct ExAllData)
 };
 
-static LONG examine(struct emulbase *emulbase, struct filehandle *fh,
-             struct ExAllData *ead, ULONG size, ULONG type)
+static SIPTR examine(struct emulbase *emulbase, struct filehandle *fh,
+             struct FileInfoBlock *fib)
 {
-    LONG err;
+    UBYTE buff[sizeof(struct ExAllData) +
+               sizeof(fib->fib_FileName) + 1 +
+               sizeof(fib->fib_Comment) + 1];
+    struct ExAllData *ead = (APTR)&buff[0];
+    SIPTR err;
 
-    if (fh->type == FHD_DIRECTORY)
-    {
-	DEXAM(bug("[emul] examine(): Resetting search handle\n"));
-	err = DoRewindDir(emulbase, fh);
-	if (err)
-	    return err;
+    err = DoExamineEntry(emulbase, fh, NULL, ead, sizeof(buff), ED_OWNER);
+    if (err)
+        return err;
+
+    memset(fib, 0, sizeof(*fib));
+
+    if (ead->ed_Name) {
+        strncpy(fib->fib_FileName, ead->ed_Name, sizeof(fib->fib_FileName));
+        fib->fib_FileName[sizeof(fib->fib_FileName)-1] = 0;
     }
 
-    return examine_entry(emulbase, fh, NULL, ead, size, type);
+    if (ead->ed_Comment) {
+        strncpy(fib->fib_Comment, ead->ed_Comment, sizeof(fib->fib_Comment));
+        fib->fib_Comment[sizeof(fib->fib_Comment)-1] = 0;
+    }
+
+    fib->fib_DiskKey = 0;
+    fib->fib_DirEntryType = ead->ed_Type;
+    fib->fib_Protection = ead->ed_Prot;
+    fib->fib_EntryType = ead->ed_Type;
+    fib->fib_Size = ead->ed_Size;
+    fib->fib_NumBlocks = (ead->ed_Size + 512 - 1) / 512;
+    fib->fib_Date.ds_Days = ead->ed_Days;
+    fib->fib_Date.ds_Minute = ead->ed_Mins;
+    fib->fib_Date.ds_Tick = ead->ed_Ticks;
+    fib->fib_OwnerUID = ead->ed_OwnerUID;
+    fib->fib_OwnerGID = ead->ed_OwnerGID;
+    
+    return 0; 
 }
 
 /*********************************************************************************************/
@@ -379,8 +353,8 @@ char *pathname_from_name (struct emulbase *emulbase, char *name)
     	if (!result)
       	    return NULL;
 
-	copyname(result, name, i);
-	result[i]=0x0;
+        copyname(result, name, i);
+        result[i]=0x0;
     }
     return result;
 }
@@ -396,9 +370,9 @@ static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle
     error = makefilename(emulbase, &fn, NULL, handle, name);
     if (!error)
     {
-	DLINK(bug("[emul] Host name of the link: %s\n", fn));
+        DLINK(bug("[emul] Host name of the link: %s\n", fn));
         error = DoHardLink(emulbase, fn, oldfile->hostname);
-	FreeVecPooled(emulbase->mempool, fn);
+        FreeVecPooled(emulbase->mempool, fn);
     }
 
     return error;
@@ -418,19 +392,19 @@ static LONG create_softlink(struct emulbase * emulbase,
     if (!error)
     {
         char *src = AllocVecPooled(emulbase->mempool, strlen(ref)+1);
-	if (src)
-	{
-	    strcpy(src, ref);
-	    DLINK(bug("[emul] Link host name: %s\n", dest));
-	    error = DoSymLink(emulbase, src, dest);
-	    DLINK(bug("[emul] Error: %d\n", error));
+        if (src)
+        {
+            strcpy(src, ref);
+            DLINK(bug("[emul] Link host name: %s\n", dest));
+            error = DoSymLink(emulbase, src, dest);
+            DLINK(bug("[emul] Error: %d\n", error));
 
-	    FreeVecPooled(emulbase->mempool, src);
-	}
-	else
-	    error = ERROR_NO_FREE_STORE;
+            FreeVecPooled(emulbase->mempool, src);
+        }
+        else
+            error = ERROR_NO_FREE_STORE;
 
-	FreeVecPooled(emulbase->mempool, dest);
+        FreeVecPooled(emulbase->mempool, dest);
     }
 
     return error;
@@ -439,22 +413,23 @@ static LONG create_softlink(struct emulbase * emulbase,
 /*********************************************************************************************/
 
 static LONG rename_object(struct emulbase * emulbase, struct filehandle *fh,
-			  const char *file, const char *newname)
+        		  const char *file, struct filehandle *fh2, const char *newname)
 {
   LONG ret = 0L;
   
   char *filename = NULL , *newfilename = NULL;
-  
+ 
+  /* FIXME: fh2 is unused! */
   ret = makefilename(emulbase, &filename, NULL, fh, file);
   if (!ret)
   {
-	ret = makefilename(emulbase, &newfilename, NULL, fh, newname);
-	if (!ret)
-	{
-	    ret = DoRename(emulbase, filename, newfilename);
-	    FreeVecPooled(emulbase->mempool, newfilename);
-	}
-	FreeVecPooled(emulbase->mempool, filename);
+        ret = makefilename(emulbase, &newfilename, NULL, fh, newname);
+        if (!ret)
+        {
+            ret = DoRename(emulbase, filename, newfilename);
+            FreeVecPooled(emulbase->mempool, newfilename);
+        }
+        FreeVecPooled(emulbase->mempool, filename);
   }
   
   return ret;
@@ -466,7 +441,7 @@ static LONG read_softlink(struct emulbase *emulbase,
                           struct filehandle *fh,
                           CONST_STRPTR link,
                           STRPTR buffer,
-                          ULONG *size)
+                          SIPTR *size)
 {
     char *ln;
     LONG ret = 0;
@@ -544,29 +519,23 @@ static LONG read_softlink(struct emulbase *emulbase,
 
 /*********************************************************************************************/
 
-static ULONG parent_dir(struct emulbase *emulbase,
-				 struct filehandle *fh,
-				 char ** DirectoryName)
+static SIPTR parent_dir(struct emulbase *emulbase, 
+                                struct filehandle *fhv,
+                                struct filehandle **fhp)
 {
-    *DirectoryName = pathname_from_name(emulbase, fh->name);
-    DCHDIR(bug("[emul] Parent directory: \"%s\"\n", *DirectoryName));
+    SIPTR err;
 
-    return (*DirectoryName) ? 0 : ERROR_NO_FREE_STORE;
-}
+    DCHDIR(bug("[emul] Original directory: \"%s\"\n", (*fhp)->name));
+    err = open_(emulbase, fhv, fhp, "/", MODE_OLDFILE, 0, TRUE);
+    DCHDIR(bug("[emul] Parent directory: \"%s\"\n", err ? NULL : (*fhp)->name));
 
-/*********************************************************************************************/
-
-static void parent_dir_post(struct emulbase *emulbase, char ** DirectoryName)
-{
-    /* free the previously allocated memory */
-    FreeVecPooled(emulbase->mempool, *DirectoryName);
-    **DirectoryName = 0;
+    return err;
 }
 
 /*********************************************************************************************/
 
 static LONG set_date(struct emulbase *emulbase, struct filehandle *fh,
-		     const char *FileName, struct DateStamp *date)
+        	     const char *FileName, struct DateStamp *date)
 {
     char *fullname;
     LONG ret;
@@ -576,425 +545,657 @@ static LONG set_date(struct emulbase *emulbase, struct filehandle *fh,
     {
     	ret = DoSetDate(emulbase, fullname, date);
 
-	FreeVecPooled(emulbase->mempool, fullname);
+        FreeVecPooled(emulbase->mempool, fullname);
     }
     return ret;
 }
 
 /*********************************************************************************************/
 
-static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
+static struct filehandle *new_volume(struct emulbase *emulbase, const char *vol, const char *path)
 {
     struct filehandle *fhv;
     struct DosList *doslist;
     char *unixpath;
     int vol_len = 0;
     char *sp;
-    char *vol;
 
-    unixpath = (char *)iofs->io_Union.io_OpenDevice.io_DeviceName;
-    if (unixpath)
+    vol_len = strlen(vol) + 1;
+
+    if (path)
     {
-	DMOUNT(bug("[emul] Mounting volume %s\n", unixpath));
+        DMOUNT(bug("[emul] Mounting volume %s:%s\n", vol, path));
 
-	/* Volume name and Unix path are encoded into DEVICE entry of
-	   MountList like this: <volumename>:<unixpath> */
-	vol = unixpath;
-	do {
-	    if (*unixpath == 0)
-		return FALSE;
-
-	    vol_len++;
-	} while (*unixpath++ != ':');
-	DMOUNT(bug("[emul] Host path: %s, volume name length %u\n", unixpath, vol_len));
-
-	sp = strchr(unixpath, '~');
-	if (sp)
-	{
+        sp = strchr(path, '~');
+        if (sp)
+        {
             unixpath = GetHomeDir(emulbase, sp + 1);
-	    if (!unixpath)
-		return FALSE;
-	}
+            if (!unixpath)
+                return NULL;
+        } else {
+            unixpath = AllocVecPooled(emulbase->mempool, strlen(path)+1);
+            if (!unixpath)
+                return NULL;
+
+            CopyMem(path, unixpath, strlen(path)+1);
+        }
     }
     else
     {
         ULONG res;
 
-	DMOUNT(bug("[emul] Mounting root volume\n"));
+        DMOUNT(bug("[emul] Mounting root volume\n"));
 
-        unixpath = AllocVec(PATH_MAX, MEMF_PUBLIC);
-	if (!unixpath)
-	    return FALSE;
+        unixpath = AllocVecPooled(emulbase->mempool, PATH_MAX);
+        if (!unixpath)
+            return NULL;
 
-	res = GetCurrentDir(emulbase, unixpath, PATH_MAX);
-	DMOUNT(bug("[emul] GetCurrentDir() returned %d\n", res));
-	if(!res)
-	{
-	    FreeVec(unixpath);
+        res = GetCurrentDir(emulbase, unixpath, PATH_MAX);
+        DMOUNT(bug("[emul] GetCurrentDir() returned %d\n", res));
+        if(!res)
+        {
+            FreeVec(unixpath);
 
-	    return FALSE;
-	}
-	D(bug("[emul] startup directory %s\n", unixpath));
+            return NULL;
+        }
+        D(bug("[emul] startup directory %s\n", unixpath));
 
-	vol = VOLNAME;
-	vol_len = VOLNAME_LEN + 1;
     }
 
     if (CheckDir(emulbase, unixpath))
     {
-	FreeVec(unixpath);
-	return FALSE;
+        FreeVecPooled(emulbase->mempool, unixpath);
+        return NULL;
     }
 
     fhv = AllocMem(sizeof(struct filehandle) + vol_len, MEMF_PUBLIC|MEMF_CLEAR);
     DMOUNT(bug("[emul] Volume file handle: 0x%p\n", fhv));
     if (fhv)
     {
-	char *volname = (char *)fhv + sizeof(struct filehandle);
+        char *volname = (char *)fhv + sizeof(struct filehandle);
 
-	CopyMem(vol, volname, vol_len - 1);
-	volname[vol_len - 1] = 0;
+        CopyMem(vol, volname, vol_len - 1);
+        volname[vol_len - 1] = 0;
 
-	fhv->hostname   = unixpath;
-	fhv->name       = unixpath + strlen(unixpath);
-	fhv->type       = FHD_DIRECTORY;
-	fhv->volumename = volname;
-	AllocMem(12, MEMF_PUBLIC);
-	DMOUNT(bug("[emul] Making volume node %s\n", volname));
+        fhv->hostname   = unixpath;
+        fhv->name       = unixpath + strlen(unixpath);
+        fhv->type       = FHD_DIRECTORY;
+        fhv->volumename = volname;
+        if (!DoOpen(emulbase, fhv, MODE_OLDFILE, 0, TRUE)) {
+            DMOUNT(bug("[emul] Making volume node %s\n", volname));
 
-	doslist = MakeDosEntry(volname, DLT_VOLUME);
-	DMOUNT(bug("[emul] Volume node 0x%p\n", doslist));
-	if (doslist)
-	{
-	    fhv->dl = doslist;
-	    doslist->dol_Ext.dol_AROS.dol_Unit=(struct Unit *)fhv;
-	    doslist->dol_Ext.dol_AROS.dol_Device=&emulbase->device;
-	    AddDosEntry(doslist);
+            doslist = MakeDosEntry(volname, DLT_VOLUME);
+            DMOUNT(bug("[emul] Volume node 0x%p\n", doslist));
+            if (doslist)
+            {
+                fhv->dl = doslist;
+                doslist->dol_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+                AddDosEntry(doslist);
 
-	    iofs->IOFS.io_Unit   = (struct Unit *)fhv;
-	    iofs->IOFS.io_Device = &emulbase->device;
+                SendEvent(emulbase, IECLASS_DISKINSERTED);
 
-	    SendEvent(emulbase, IECLASS_DISKINSERTED);
+                DMOUNT(bug("[emul] Mounting done\n"));
+                return fhv;
+            }
+            DMOUNT(bug("[emul] DOS Volume add failed, freeing volume node\n"));
+        }
 
-	    DMOUNT(bug("[emul] Mounting done\n"));
-	    return TRUE;		
-	}
-
-	DMOUNT(bug("[emul] Failed, freeing volume node\n"));
+        DMOUNT(bug("[emul] Failed, freeing volume node\n"));
+        FreeVecPooled(emulbase->mempool, unixpath);
         FreeMem(fhv, sizeof(struct filehandle) + vol_len);
     }
 
     DMOUNT(bug("[emul] Mounting failed\n"));
-    return FALSE;
+    return NULL;
 }
 
-/*********************************************************************************************/
+#define FH_FROM(x)	\
+    	({ IPTR _fh = (IPTR)x; \
+    	   if (!_fh) _fh = (IPTR)fhv; \
+    	   (struct filehandle *)_fh;\
+    	 })
+#define FH_FROM_LOCK(x)	\
+    	({ BPTR _x = (BPTR)x; \
+    	   APTR _fh; \
+    	   if (_x == BNULL) { \
+    	     _fh = fhv; \
+    	   } else { \
+    	     _fh = (APTR)(((struct FileLock *)BADDR(_x))->fl_Key); \
+    	   } \
+    	   (struct filehandle *)_fh;\
+    	 })
 
-static int GM_UNIQUENAME(Open)
-(
- LIBBASETYPEPTR emulbase,
- struct IOFileSys *iofs,
- ULONG unitnum,
- ULONG flags
-)
+void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosPacket *dp)
 {
-  /* Keep compiler happy */
-  unitnum=0;
-  flags=0;
-  
-  if (DOSBase == NULL)
-	DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 41);
-  
-  if (DOSBase == NULL || !new_volume(iofs, emulbase))
-  {
-	iofs->IOFS.io_Error = -1;
-	return FALSE;
-  }
-  
-  /* Set returncode */
-  iofs->IOFS.io_Error=0;
-  return TRUE;
-}
-
-ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
-
-/*********************************************************************************************/
-
-AROS_LH1(void, beginio,
-		 AROS_LHA(struct IOFileSys *, iofs, A1),
-		 struct emulbase *, emulbase, 5, emul_handler)
-{
-    AROS_LIBFUNC_INIT
-  
-    LONG error = 0;
+    SIPTR Res1 = DOSFALSE;
+    SIPTR Res2 = ERROR_UNKNOWN;
     struct filehandle *fh, *fh2;
+    struct FileHandle *f;
+    struct FileLock *fl, *fl2;
     struct InfoData *id;
   
-    /* WaitIO will look into this */
-    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
-  
-    /*
-     Do everything quick no matter what. This is possible
-     because I never need to Wait().
-     */
-    DB2(bug("[emul] Got command %u\n", iofs->IOFS.io_Command));
+    DB2(bug("[emul] Got command %u\n", dp->dp_Type));
 
-    switch(iofs->IOFS.io_Command)
+    switch(dp->dp_Type)
     {
-    case FSA_OPEN:
-        DCMD(bug("[emul] FSA_OPEN(\"%s\")\n", iofs->io_Union.io_OPEN.io_Filename));
-	error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
-		      iofs->io_Union.io_OPEN.io_Filename, iofs->io_Union.io_OPEN.io_FileMode, 0, TRUE);
-	break;
+    case ACTION_FINDINPUT:
+    case ACTION_FINDOUTPUT:
+    case ACTION_FINDUPDATE:
+    	f = (struct FileHandle *)(dp->dp_Arg1);
+    	fh2 = FH_FROM_LOCK(dp->dp_Arg2);
+        D(bug("[emul] %p ACTION_FIND%s: %p, %p, %b\n", fhv, (dp->dp_Type == ACTION_FINDINPUT) ? "INPUT" : ((dp->dp_Type == ACTION_FINDOUTPUT) ? "OUTPUT" : "UPDATE"), fh, fh2, dp->dp_Arg3));
+        Res2 = open_(emulbase, fhv, &fh2, AROS_BSTR_ADDR(dp->dp_Arg3), dp->dp_Type, 0, TRUE);
+        if (Res2 == 0) {
+            memset(f, 0, sizeof(*f));
+            f->fh_Type = fh2->fh.fh_Type;
+            f->fh_Arg1 = fh2->fh.fh_Arg1;
+            if (fh2 != fhv)
+                fh2->locks++;
+            Res1 = DOSTRUE;
+        } else {
+            Res1 = DOSFALSE;
+        }
+        break;
 
-    case FSA_CLOSE:
-	DCMD(bug("[emul] FSA_CLOSE\n"));
-	free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
-	break;
+    case ACTION_END:
+        fh = FH_FROM(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_END\n", fhv, fh));
+        if (fh != fhv) {
+            fh->locks--;
+            if (!fh->locks)
+                free_lock(emulbase, fh);
+        }
+        Res2 = 0;
+        Res1 = DOSTRUE;
+        break;
 
-    case FSA_READ:
-	fh = (struct filehandle *)iofs->IOFS.io_Unit;  
+    case ACTION_READ:
+        fh = FH_FROM(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_READ\n", fhv, fh));
 
-	if (fh->type & FHD_FILE)
-	{
-	    BOOL async = FALSE;
+        if (fh->type & FHD_FILE)
+        {
+            BOOL async = FALSE;
 
-	    error = DoRead(emulbase, iofs, &async);
-	    if (async)
-	    {
-	    	/* Asynchronous request sent, reset QUICK flag and return */
-		iofs->IOFS.io_Flags &= ~IOF_QUICK;
-		return;
-	    }
-	}
-	else
-	    error = ERROR_OBJECT_WRONG_TYPE;
-	break;
+            Res1 = DoRead(emulbase, fh, (APTR)dp->dp_Arg2, dp->dp_Arg3, &async, &Res2);
+        }
+        else {
+            Res1 = -1;
+            Res2 = ERROR_OBJECT_WRONG_TYPE;
+        }
+        break;
 
-    case FSA_WRITE:
-	fh = (struct filehandle *)iofs->IOFS.io_Unit;
+    case ACTION_WRITE:
+        fh = FH_FROM(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_WRITE\n", fhv, fh));
 
-	if (fh->type & FHD_FILE)
-	{
-	    BOOL async = FALSE;
+        if (fh->type & FHD_FILE)
+        {
+            BOOL async = FALSE;
 
-	    error = DoWrite(emulbase, iofs, &async);
-	    if (async)
-	    {
-	    	/* Asynchronous request sent, reset QUICK flag and return */
-		iofs->IOFS.io_Flags &= ~IOF_QUICK;
-		return;
-	    }
-	}
-	else
-	    error = ERROR_OBJECT_WRONG_TYPE;
-	break;
+            Res1 = DoWrite(emulbase, fh, (APTR)dp->dp_Arg2, dp->dp_Arg3, &async, &Res2);
+        } else {
+            Res1 = -1;
+            Res2 = ERROR_OBJECT_WRONG_TYPE;
+        }
+        break;
 
-    case FSA_SEEK:
-	fh = (struct filehandle *)iofs->IOFS.io_Unit;
+    case ACTION_SEEK:
+        fh = FH_FROM(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_SEEK %p, mode %ld, offset %llu\n", fhv, fh, dp->dp_Arg3, dp->dp_Arg2));
 
-    	DCMD(bug("[emul] FSA_SEEK, mode %ld, offset %llu\n", iofs->io_Union.io_SEEK.io_SeekMode, iofs->io_Union.io_SEEK.io_Offset));
+        if (fh->type == FHD_FILE)
+            Res1 = DoSeek(emulbase, fh->fd, dp->dp_Arg2, dp->dp_Arg3, &Res2);
+        else {
+            Res1 = DOSFALSE;
+            Res2 = ERROR_OBJECT_WRONG_TYPE;
+        }
 
-	if (fh->type == FHD_FILE)
-	    error = DoSeek(emulbase, fh->fd, &iofs->io_Union.io_SEEK.io_Offset, iofs->io_Union.io_SEEK.io_SeekMode);
-	else
-	    error = ERROR_OBJECT_WRONG_TYPE;
+        break;
 
-	DSEEK(bug("[emul] FSA_SEEK returning %lu\n", error));
-	break;
+    case ACTION_SET_FILE_SIZE:
+        fh = FH_FROM(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_SET_FILE_SIZE: %p, mode %ld, offset %llu\n", fhv, fh, dp->dp_Arg2, dp->dp_Arg3));
+     
+        Res1 = DoSetSize(emulbase, fh, dp->dp_Arg2, dp->dp_Arg3, &Res2);
+        break;
 
-    case FSA_SET_FILE_SIZE:
-        fh = (struct filehandle *)iofs->IOFS.io_Unit;
+    case ACTION_SAME_LOCK:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        fh2 = FH_FROM_LOCK(dp->dp_Arg2);
+        DCMD(bug("[emul] %p ACTION_SAME_LOCK: %p, %p\n", fhv, fh, fh2));
+
+        /* Sanity checks */
+        if (fh->fh.fh_Type != fhv->fh.fh_Type) {
+            bug("[emul] ACTION_SAME_LOCK: Arg1 is not one of our locks!\n");
+            Res2 = ERROR_UNKNOWN;
+            Res1 = LOCK_DIFFERENT;
+            break;
+        }
+         /* Sanity checks */
+        if (fh2->fh.fh_Type != fhv->fh.fh_Type) {
+            bug("[emul] ACTION_SAME_LOCK: Arg2 is not one of our locks!\n");
+            Res2 = ERROR_UNKNOWN;
+            Res1 = LOCK_DIFFERENT;
+            break;
+        }
         
-        DCMD(bug("[emul] FSA_SET_FILE_SIZE, mode %ld, offset %llu\n", iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode, iofs->io_Union.io_SET_FILE_SIZE.io_Offset));
- 
- 	error = DoSetSize(emulbase, fh, &iofs->io_Union.io_SEEK);
-	DFSIZE(bug("[emul] FSA_SET_FILE_SIZE returning %lu\n", error));
-	break;
+        if (strcmp(fh->hostname, fh2->hostname)) {
+            Res2 = ERROR_UNKNOWN;
+            Res1 = LOCK_DIFFERENT;
+        } else {
+            Res2 = 0;
+            Res1 = LOCK_SAME;
+        }
+        break;
 
-    case FSA_IS_INTERACTIVE:
-	fh = (struct filehandle *)iofs->IOFS.io_Unit;
-	  
-	if (fh->type & FHD_FILE)
-	    iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = DoGetType(emulbase, fh->fd);
-	else
-	     iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = FALSE;
-	break;
+    case ACTION_EXAMINE_FH:
+        fh = FH_FROM(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_EXAMINE_FH: %p, fib %p\n", fhv, fh, BADDR(dp->dp_Arg2)));
+        Res2 = examine(emulbase, fh, (struct FileInfoBlock *)BADDR(dp->dp_Arg2));
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
 
-    case FSA_SAME_LOCK:
-	fh = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
-	fh2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
-	  
-	if (strcmp(fh->hostname, fh2->hostname))
-	    iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
-	else
-	    iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_SAME;
-	  
-	break;
+    case ACTION_EXAMINE_OBJECT:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_EXAMINE_OBJECT: %p, fib %p\n", fhv, fh, BADDR(dp->dp_Arg2)));
+        Res2 = examine(emulbase, fh, (struct FileInfoBlock *)BADDR(dp->dp_Arg2));
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
 
-    case FSA_EXAMINE:
-	DCMD(bug("[emul] FSA_EXAMINE\n"));
-	error = examine(emulbase, (struct filehandle *)iofs->IOFS.io_Unit,
-			iofs->io_Union.io_EXAMINE.io_ead,
-			iofs->io_Union.io_EXAMINE.io_Size,
-			iofs->io_Union.io_EXAMINE.io_Mode);
-	iofs->io_DirPos = 0; /* Directory search position has been reset */
-	break;
+    case ACTION_EXAMINE_NEXT:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_EXAMINE_NEXT: %p, fib %p (key %d)\n", fhv, fh, BADDR(dp->dp_Arg2), ((struct FileInfoBlock *)BADDR(dp->dp_Arg2))->fib_DiskKey));
+        Res2 = DoExamineNext(emulbase, (struct filehandle *)fh, (struct FileInfoBlock *)BADDR(dp->dp_Arg2));
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
 
-    case FSA_EXAMINE_NEXT:
-	DCMD(bug("[emul] FSA_EXAMINE_NEXT\n"));
-	error = examine_next(emulbase, (struct filehandle *)iofs->IOFS.io_Unit,
-			     iofs->io_Union.io_EXAMINE_NEXT.io_fib);
-	break;
-
-    case FSA_EXAMINE_ALL:
-	DCMD(bug("[emul] FSA_EXAMINE_ALL\n"));
-	error = examine_all(emulbase,
-						  (struct filehandle *)iofs->IOFS.io_Unit,
-						  iofs->io_Union.io_EXAMINE_ALL.io_ead,
-						  iofs->io_Union.io_EXAMINE_ALL.io_eac,
-						  iofs->io_Union.io_EXAMINE_ALL.io_Size,
-						  iofs->io_Union.io_EXAMINE_ALL.io_Mode);
-	break;
-	  
-    case FSA_EXAMINE_ALL_END:
+    case ACTION_EXAMINE_ALL:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_EXAMINE_ALL: %p\n", fhv, fh));
+        Res2 = DoExamineAll(emulbase, fh, (APTR)dp->dp_Arg2,
+                                                BADDR(dp->dp_Arg5),
+                                                dp->dp_Arg3,
+                                                dp->dp_Arg4);
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
+          
+    case ACTION_EXAMINE_ALL_END:
         /* Just rewind */
-	error = DoRewindDir(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
-	break;
-	  
-    case FSA_OPEN_FILE:
-	DCMD(bug("[emul] FSA_OPEN_FILE: name \"%s\", mode 0x%08lX)\n", iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode));
-	error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
-			iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode,
-			iofs->io_Union.io_OPEN_FILE.io_Protection, FALSE);
-	break;
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_EXAMINE_ALL_END: %p\n", fhv, fh));
+        Res2 = DoRewindDir(emulbase, (struct filehandle *)fh);
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
+          
+    case ACTION_CREATE_DIR:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_CREATE_DIR: %p, %b\n", fhv, fh, dp->dp_Arg2));
 
-    case FSA_CREATE_DIR:
-	error = create_dir(emulbase,
-						 (struct filehandle **)&iofs->IOFS.io_Unit,
-						 iofs->io_Union.io_CREATE_DIR.io_Filename,
-						 iofs->io_Union.io_CREATE_DIR.io_Protection);
-	break;
-	  
-    case FSA_CREATE_HARDLINK:
-	DCMD(bug("[emul] FSA_CREATE_HARDLINK: link name \"%s\"\n", iofs->io_Union.io_CREATE_HARDLINK.io_Filename));
-	error = create_hardlink(emulbase,
-							  (struct filehandle *)iofs->IOFS.io_Unit,
-							  iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
-							  (struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
-	DLINK(bug("[emul] FSA_CREATE_HARDLINK returning %lu\n", error));
-	break;
-	  
-    case FSA_CREATE_SOFTLINK:
-	error = create_softlink(emulbase,
-							  (struct filehandle *)iofs->IOFS.io_Unit,
-							  iofs->io_Union.io_CREATE_SOFTLINK.io_Filename,
-							  iofs->io_Union.io_CREATE_SOFTLINK.io_Reference);
-	break;
-	  
-    case FSA_RENAME:
-	error = rename_object(emulbase,
-							(struct filehandle *)iofs->IOFS.io_Unit,
-							iofs->io_Union.io_RENAME.io_Filename,
-							iofs->io_Union.io_RENAME.io_NewName);
-	break;
-	  
-    case FSA_READ_SOFTLINK:
-	error = read_softlink(emulbase, (struct filehandle *)iofs->IOFS.io_Unit,
-			      iofs->io_Union.io_READ_SOFTLINK.io_Filename,
-			      iofs->io_Union.io_READ_SOFTLINK.io_Buffer,
-			      &iofs->io_Union.io_READ_SOFTLINK.io_Size);
-	break;
-	  
-    case FSA_DELETE_OBJECT:
-	error = delete_object(emulbase,
-							(struct filehandle *)iofs->IOFS.io_Unit,
-							iofs->io_Union.io_DELETE_OBJECT.io_Filename);
-	break;
-	  
-    case FSA_SET_PROTECT:
-	error = set_protect(emulbase,
-						  (struct filehandle *)iofs->IOFS.io_Unit,
-						  iofs->io_Union.io_SET_PROTECT.io_Filename,
-						  iofs->io_Union.io_SET_PROTECT.io_Protection);
-	break;
-	  
-    case FSA_PARENT_DIR:
-	error = parent_dir(emulbase,
-						 (struct filehandle *)iofs->IOFS.io_Unit,
-						 &(iofs->io_Union.io_PARENT_DIR.io_DirName));
-	break;
-	  
-    case FSA_PARENT_DIR_POST:
-	/* error will always be 0 */
-	error = 0;
-	parent_dir_post(emulbase, &(iofs->io_Union.io_PARENT_DIR.io_DirName));
-	break;    
-	  
-    case FSA_IS_FILESYSTEM:
-	iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
-	error = 0;
-	break;
+        fl = AllocMem(sizeof(*fl), MEMF_ANY | MEMF_CLEAR);
+        if (!fl) {
+            Res2 = ERROR_NO_FREE_STORE;
+            Res1 = DOSFALSE;
+            break;
+        }
+
+        Res2 = create_dir(emulbase, &fh, AROS_BSTR_ADDR(dp->dp_Arg2), 0755);
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        if (Res1 != DOSTRUE) {
+            FreeMem(fl, sizeof(*fl));
+            break;
+        }
+
+        /* Make a lock */
+        fl->fl_Link = BNULL;
+        fl->fl_Key = (IPTR)fh;
+        fl->fl_Access = ACCESS_READ;
+        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Volume = MKBADDR(fh->dl);
+        if (fh != fhv)
+            fh->locks++;
+        Res2 = 0;
+        Res1 = (SIPTR)fl;
+        break;
+    case ACTION_LOCATE_OBJECT:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_LOCATE_OBJECT: %p, %b\n", fhv, fh, dp->dp_Arg2));
+
+        fl = AllocMem(sizeof(*fl), MEMF_ANY | MEMF_CLEAR);
+        if (!fl) {
+            Res2 = ERROR_NO_FREE_STORE;
+            Res1 = DOSFALSE;
+            break;
+        }
+
+        Res2 = open_(emulbase, fhv, &fh, AROS_BSTR_ADDR(dp->dp_Arg2), (dp->dp_Arg3 == ACCESS_READ) ? MODE_OLDFILE : MODE_NEWFILE, 0755, TRUE);
+        if (Res2) {
+            Res1 = DOSFALSE;
+            FreeMem(fl, sizeof(*fl));
+            break;
+        }
+
+        /* Make a lock */
+        fl->fl_Link = BNULL;
+        fl->fl_Key = (IPTR)fh;
+        fl->fl_Access = dp->dp_Arg3;
+        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Volume = MKBADDR(fh->dl);
+        if (fh != fhv)
+            fh->locks++;
+        Res2 = 0;
+        Res1 = (SIPTR)fl;
+        break;
+
+    case ACTION_FH_FROM_LOCK:
+        fh = FH_FROM(dp->dp_Arg1);
+        fh2 = FH_FROM_LOCK(dp->dp_Arg2);
+        fl = BADDR(dp->dp_Arg2);
+        DCMD(bug("[emul] %p ACTION_FH_FROM_LOCK: %p, lock %p\n", fhv, fh, fh2));
+
+        CopyMem(&fh2->fh, &fh->fh, sizeof(fh->fh));
+        if (fl)
+            FreeMem(fl, sizeof(*fl));
+
+        Res2 = 0;
+        Res1 = DOSTRUE;
+        break;
+
+    case ACTION_COPY_DIR: /* DupLock */
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        fl = BADDR(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_COPY_DIR: %p\n", fhv, fh));
+
+        fl2 = AllocMem(sizeof(*fl2), MEMF_ANY | MEMF_CLEAR);
+        if (!fl2) {
+            Res2 = ERROR_NO_FREE_STORE;
+            Res1 = DOSFALSE;
+            break;
+        }
+
+        CopyMem(fl, fl2, sizeof(*fl2));
+        if (fh != fhv)
+            fh->locks++;
+
+        Res2 = 0;
+        Res1 = (SIPTR)MKBADDR(fl2);
+        break;
+
+    case ACTION_COPY_DIR_FH: /* Dup */
+        fh = FH_FROM(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_COPY_DIR_FH: %p\n", fhv, fh));
+
+        fl = AllocMem(sizeof(*fl), MEMF_ANY | MEMF_CLEAR);
+        if (!fl) {
+            Res2 = ERROR_NO_FREE_STORE;
+            Res1 = DOSFALSE;
+            break;
+        }
+
+        /* Make a lock */
+        fl->fl_Link = BNULL;
+        fl->fl_Key = (IPTR)fh;
+        fl->fl_Access = ACCESS_READ;
+        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Volume = MKBADDR(fh->dl);
+        if (fh != fhv)
+            fh->locks++;
+
+        Res2 = 0;
+        Res1 = (SIPTR)MKBADDR(fl);
+        break;
+
+    case ACTION_FREE_LOCK:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        fl = BADDR(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_FREE_LOCK: %p\n", fhv, fh));
+
+        /* Don't free the volume's filehandle */
+        if (fh == fhv) {
+            Res2 = 0;
+            Res1 = DOSTRUE;
+            break;
+        }
+
+        FreeMem(fl, sizeof(*fl));
+        if (fh != fhv) {
+            fh->locks--;
+            if (!fh->locks)
+                free_lock(emulbase, fh);
+        }
+
+        Res2 = 0;
+        Res1 = DOSTRUE;
+        break;
+
+    case ACTION_MAKE_LINK:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+
+        Res2 = ERROR_UNKNOWN;
+        if (dp->dp_Arg4 == LINK_SOFT) {
+                DCMD(bug("[emul] %p ACTION_MAKE_LINK: %p, dest \"%b\", src \"%b\"\n", fhv, fh, dp->dp_Arg2, dp->dp_Arg3));
+                Res2 = create_softlink(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2), AROS_BSTR_ADDR(dp->dp_Arg3));
+        } else if (dp->dp_Arg4 == LINK_HARD) {
+                fh2 = FH_FROM_LOCK(dp->dp_Arg3);
+                DCMD(bug("[emul] %p ACTION_MAKE_LINK: %p, dest \"%b\", src %p\n", fhv, fh, dp->dp_Arg2, fh2));
+                Res2 = create_hardlink(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2), fh2);
+        }
+
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
+          
+    case ACTION_RENAME_OBJECT:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        fh2 = FH_FROM_LOCK(dp->dp_Arg3);
+        DCMD(bug("[emul] %p ACTION_RENAME_OBJECT: %p, \"%b\" => %p, \"%b\"\n", fhv, fh, dp->dp_Arg2, fh2, dp->dp_Arg4));
+        Res2 = rename_object(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2), fh2, AROS_BSTR_ADDR(dp->dp_Arg4));
+
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
+          
+    case ACTION_READ_LINK:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_READ_LINK: %p\n", fhv, fh));
+        Res1 = dp->dp_Arg4;
+        Res2 = read_softlink(emulbase, fh, (APTR)dp->dp_Arg2, (APTR)dp->dp_Arg3, &Res1);
+        break;
+          
+    case ACTION_DELETE_OBJECT:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_DELETE_OBJECT: %p\n", fhv, fh));
+        Res2 = delete_object(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg2));
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
+          
+    case ACTION_SET_PROTECT:
+        /* dp_Arg1 is unused */
+        fh = FH_FROM_LOCK(dp->dp_Arg2);
+        DCMD(bug("[emul] %p ACTION_SET_PROTECT: %p\n", fhv, fh));
+        Res2 = set_protect(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg3), dp->dp_Arg4);
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
+          
+    case ACTION_PARENT:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_PARENT: %p\n", fhv, fh));
+
+        if (fh == fhv) {
+            Res1 = 0;
+            Res2 = 0;
+            break;
+        }
+
+        fl = AllocMem(sizeof(*fl), MEMF_ANY | MEMF_CLEAR);
+        if (!fl) {
+            Res2 = ERROR_NO_FREE_STORE;
+            Res1 = DOSFALSE;
+            break;
+        }
+
+        Res2 = parent_dir(emulbase, fhv, &fh);
+        if (Res2) {
+            FreeMem(fl, sizeof(*fl));
+            Res1 = DOSFALSE;
+            break;
+        }
+
+       /* Make a lock */
+        fl->fl_Link = BNULL;
+        fl->fl_Key = (IPTR)fh;
+        fl->fl_Access = ACCESS_READ;
+        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Volume = MKBADDR(fh->dl);
+        if (fh != fhv)
+            fh->locks++;
+
+        Res1 = (SIPTR)MKBADDR(fl);
+        Res2 = 0;
+        break;
+          
+    case ACTION_PARENT_FH:
+        fh = FH_FROM(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_PARENT_FH: %p\n", fhv, fh));
+
+        if (fh == fhv) {
+            Res1 = 0;
+            Res2 = 0;
+            break;
+        }
+
+        fl = AllocMem(sizeof(*fl), MEMF_ANY | MEMF_CLEAR);
+        if (!fl) {
+            Res2 = ERROR_NO_FREE_STORE;
+            Res1 = DOSFALSE;
+            break;
+        }
+
+        Res2 = parent_dir(emulbase, fhv, &fh);
+        if (Res2) {
+            FreeMem(fl, sizeof(*fl));
+            Res1 = DOSFALSE;
+            break;
+        }
+
+        /* Make a lock */
+        fl->fl_Link = BNULL;
+        fl->fl_Key = (IPTR)fh;
+        fl->fl_Access = ACCESS_READ;
+        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Volume = MKBADDR(fh->dl);
+        if (fh != fhv)
+            fh->locks++;
+
+        Res1 = (SIPTR)MKBADDR(fl);
+        Res2 = 0;
+        break;
+     case ACTION_IS_FILESYSTEM:
+        DCMD(bug("[emul] %p ACTION_IS_FILESYSTEM:\n", fhv));
+        Res2 = 0;
+        Res1 = DOSTRUE;
+        break;
   
-    case FSA_DISK_INFO:
-	fh = (struct filehandle *)iofs->IOFS.io_Unit;
-	id = iofs->io_Union.io_INFO.io_Info;
+    case ACTION_DISK_INFO:
+        id = (struct InfoData *)BADDR(dp->dp_Arg1);
+        DCMD(bug("[emul] %p ACTION_DISK_INFO:\n", fhv));
 
-	error = DoStatFS(emulbase, fh->hostname, id);
-	if (!error)
-	{
-	    /* Fill in host-independent part */
-	    id->id_UnitNumber = 0;
+        Res2 = DoStatFS(emulbase, ".", id);
+        if (!Res2)
+        {
+            /* Fill in host-independent part */
+            id->id_UnitNumber = 0;
     	    id->id_DiskType   = ID_DOS_DISK; /* Well, not really true... */
-	    id->id_VolumeNode = MKBADDR(fh->dl);
+            id->id_VolumeNode = MKBADDR(fh->dl);
     	    id->id_InUse      = TRUE; /* Perhaps we should count locks? */
-	}
+        }
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
 
-	break;
+    case ACTION_SET_DATE:
+        /* dp_Arg1 is unused */
+        fh = FH_FROM_LOCK(dp->dp_Arg2);
+        DCMD(bug("[emul] %p ACTION_SET_DATE: %p\n", fhv, fh));
+        Res2 = set_date(emulbase, fh, AROS_BSTR_ADDR(dp->dp_Arg3), (struct DateStamp *)dp->dp_Arg4);
+        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        break;
 
-    case FSA_SET_DATE:
-	error = set_date(emulbase, (struct filehandle *)iofs->IOFS.io_Unit
-			 , iofs->io_Union.io_SET_DATE.io_Filename, &iofs->io_Union.io_SET_DATE.io_Date);
-	break;
-
-    case FSA_SET_OWNER:
+    case ACTION_SET_OWNER:
         /* pretend to have changed owner, avoids tons of error messages from e.g. tar */
-        error = 0;
+        Res1 = DOSTRUE;
         break;
 
 /* FIXME: not supported yet
-    case FSA_SET_COMMENT:
-    case FSA_MORE_CACHE:
-    case FSA_MOUNT_MODE:
-    case FSA_WAIT_CHAR:
-    case FSA_FILE_MODE:*/
+    case ACTION_SET_COMMENT:
+    case ACTION_MORE_CACHE:
+    case ACTION_WAIT_CHAR:
+  */
     default:
-        DCMD(bug("[emul] Unknown action %lu\n", iofs->IOFS.io_Command));
-	error = ERROR_ACTION_NOT_KNOWN;
-	break;
+        DCMD(bug("[emul] Unknown action %lu\n", dp->dp_Type));
+        Res2 = ERROR_ACTION_NOT_KNOWN;
+        Res1 = DOSFALSE;
+        break;
     }
 
     /* Set error code */
-    iofs->io_DosError = error;
-    DB2(bug("[emul] Replying with error %u\n", error));
+    DB2(bug("[emul] Replying with %llu, %llu\n",
+                (unsigned long long)Res1,
+                (unsigned long long)Res2));
 
-    /* If the quick bit is not set send the message to the port */
-    if(!(iofs->IOFS.io_Flags & IOF_QUICK))
-	ReplyMsg(&iofs->IOFS.io_Message);
-
-    AROS_LIBFUNC_EXIT
+    ReplyPkt(dp, Res1, Res2);
 }
 
-/*********************************************************************************************/
-
-AROS_LH1(LONG, abortio,
-		 AROS_LHA(struct IOFileSys *, iofs, A1),
-		 struct emulbase *, emulbase, 6, emul_handler)
+void EmulHandler_work(void)
 {
-  AROS_LIBFUNC_INIT
-  
-  /* Everything already done. */
-  return 0;
-  
-  AROS_LIBFUNC_EXIT
+    struct DosPacket *dp;
+    struct DeviceNode *dn;
+    struct MsgPort *mp;
+    struct filehandle *fhv;
+    struct emulbase *emulbase;
+
+    mp = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+
+    /* Wait for startup message. */
+    D(bug("EMUL: Waiting for startup...\n"));
+    WaitPort(mp);
+    dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
+
+    D(bug("EMUL: Open emul.resource\n"));
+    emulbase = (APTR)OpenResource("emul.resource");
+    if (!emulbase) {
+        D(bug("EMUL: FATAL - can't find myself\n"));
+        ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
+        return;
+    }
+
+    if (!DOSBase)
+        DOSBase = (APTR)OpenLibrary("dos.library", 0);
+
+    if (!DOSBase) {
+        ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
+        return;
+    }
+
+    dn = (struct DeviceNode *)BADDR(dp->dp_Arg3);
+
+    fhv = new_volume(emulbase, AROS_BSTR_ADDR(dn->dn_Name), NULL);
+    if (!fhv) {
+        CloseLibrary((APTR)emulbase);
+        ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
+        return;
+    }
+
+    dn->dn_Task = mp;
+    ReplyPkt(dp, DOSTRUE, 0);
+
+    fhv->locks = 1;
+    while (fhv->locks) {
+        dp = WaitPkt();
+
+        handlePacket(emulbase, fhv, dp);
+    }
+
+    D(bug("EMUL: Closing volume %s\n", fhv->volumename));
+    RemDosEntry(fhv->dl);
+    free_lock(emulbase, fhv);
+    CloseLibrary((APTR)DOSBase);
 }
+

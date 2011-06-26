@@ -42,13 +42,14 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 #pragma pack()
 
 /* This prevents redefinition of struct timeval */
 #define _AROS_TYPES_TIMEVAL_S_H_
 
-#define DEBUG 0
+#define DEBUG 1
 #define DASYNC(x)
 #define DEXAM(x)
 #define DMOUNT(x)
@@ -70,25 +71,14 @@
 
 #define NO_CASE_SENSITIVITY
 
-#ifdef DEBUG_INTERFACE
-#define DUMP_INTERFACE					\
-{							\
-    int i;						\
-    APTR *iface = (APTR *)emulbase->pdata.SysIFace;	\
-							\
-    for (i = 0; libcSymbols[i]; i++)			\
-	bug("%s\t\t0x%p\n", libcSymbols[i], iface[i]);	\
-}
-#else
-#define DUMP_INTERFACE
-#endif
+struct dirent *ReadDir(struct emulbase *emulbase, struct filehandle *fh, IPTR *dirpos);
 
 /*********************************************************************************************/
 
-static int TryRead(struct LibCInterface *iface, int fd, void *buf, size_t len)
+static int TryRead(struct LibCInterface *iface, int fd, void *buf, SIPTR len)
 {
     fd_set rfds;
-    struct timeval tv = {0, 0};
+    struct timeval tv = {1, 0};
     int res;
 
     FD_ZERO (&rfds);
@@ -112,174 +102,6 @@ static int TryRead(struct LibCInterface *iface, int fd, void *buf, size_t len)
     return res;
 }
 
-static void SigIOHandler(struct emulbase *emulbase, void *unused)
-{
-    struct IOFileSys *req, *req2;
-
-    ForeachNodeSafe(&emulbase->pdata.readList, req, req2)
-    {
-	int len;
-	struct filehandle *fh = (struct filehandle *)req->IOFS.io_Unit;
-
-	/* Try to process the request */
-        len = TryRead(emulbase->pdata.SysIFace, (IPTR)fh->fd, req->io_Union.io_READ.io_Buffer, req->io_Union.io_READ.io_Length);
-	if (len != -2)
-	{
-	    /* Reply the requst if it is done */
-	    Remove((struct Node *)req);	
-	    if (len == -1)
-		req->io_DosError = *emulbase->pdata.errnoPtr;
-	    else {
-		req->io_Union.io_READ.io_Length = len;
-		req->io_DosError = 0;
-	    }
-	    DASYNC(bug("[emul] Replying request 0x%p, result %d, error %d\n", req, len, req->io_DosError));
-	    ReplyMsg(&req->IOFS.io_Message);
-	}
-	DASYNC(bug("-"));
-    };
-}
-
-/*********************************************************************************************/
-
-static inline struct filehandle *CreateStdHandle(int fd)
-{
-    struct filehandle *fh;
-
-    fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
-    if (fh)
-    {
-	fh->type = FHD_FILE|FHD_STDIO;
-	fh->fd   = (void *)(IPTR)fd;
-    }
-
-    return fh;
-}
-
-static const char *libcSymbols[] = {
-    "open",
-    "close",
-    "closedir",
-    "opendir",
-    "readdir" INODE64_SUFFIX,
-    "rewinddir",
-    "read",
-    "write",
-    "lseek",
-    "ftruncate",
-    "mkdir",
-    "rmdir",
-    "unlink",
-    "link",
-    "symlink",
-    "readlink",
-    "rename",
-    "chmod",
-    "isatty",
-    "statfs",
-    "utime",
-    "localtime",
-    "mktime",
-    "getcwd",
-    "getenv",
-    "fcntl",
-    "select",
-    "kill",
-    "getpid",
-#ifndef HOST_OS_android
-    "seekdir",
-    "telldir",
-    "getpwent",
-    "endpwent",
-#endif
-#ifdef HOST_OS_linux
-    "__errno_location",
-    "__xstat",
-    "__lxstat",
-#else
-#ifdef HOST_OS_android
-    "__errno",
-#else
-    "__error",
-#endif
-    "stat" INODE64_SUFFIX,
-    "lstat" INODE64_SUFFIX,
-#endif
-    NULL
-};
-
-static int host_startup(struct emulbase *emulbase)
-{
-    ULONG r = 0;
-
-    HostLibBase = OpenResource("hostlib.resource");
-
-    D(bug("[EmulHandler] got hostlib.resource %p\n", HostLibBase));
-    if (!HostLibBase)
-	return FALSE;
-
-    KernelBase = OpenResource("kernel.resource");
-    if (!KernelBase)
-	return FALSE;
-
-    emulbase->pdata.libcHandle = HostLib_Open(LIBC_NAME, NULL);
-    if (!emulbase->pdata.libcHandle)
-    	return FALSE;
-
-    emulbase->pdata.SysIFace = (struct LibCInterface *)HostLib_GetInterface(emulbase->pdata.libcHandle, libcSymbols, &r);
-    if (!emulbase->pdata.SysIFace)
-    {
-        D(bug("[EmulHandler] Unable go get host-side library interface!\n"));
-    	return FALSE;
-    }
-
-    D(bug("[EmulHandler] %lu unresolved symbols!\n", r));
-    DUMP_INTERFACE
-    if (r)
-    	return FALSE;
-
-    emulbase->ReadIRQ = KrnAddIRQHandler(SIGIO, SigIOHandler, emulbase, NULL);
-    if (!emulbase->ReadIRQ)
-	return FALSE;
-
-    emulbase->eb_stdin  = CreateStdHandle(STDIN_FILENO);
-    emulbase->eb_stdout = CreateStdHandle(STDOUT_FILENO);
-    emulbase->eb_stderr = CreateStdHandle(STDERR_FILENO);
-
-    NEWLIST(&emulbase->pdata.readList);
-    emulbase->pdata.my_pid   = emulbase->pdata.SysIFace->getpid();
-    AROS_HOST_BARRIER
-    emulbase->pdata.errnoPtr = emulbase->pdata.SysIFace->__error();
-    AROS_HOST_BARRIER
-
-    return TRUE;
-}
-
-ADD2INITLIB(host_startup, 0);
-
-static int host_cleanup(struct emulbase *emulbase)
-{
-    D(bug("[EmulHandler] Expunge\n"));
-
-    if (!HostLibBase)
-    	return TRUE;
-
-    if (emulbase->pdata.SysIFace)
-    	HostLib_DropInterface((APTR *)emulbase->pdata.SysIFace);
-
-    if (emulbase->pdata.libcHandle)
-    	HostLib_Close(emulbase->pdata.libcHandle, NULL);
-
-    if (!KernelBase)
-	return TRUE;
-
-    KrnRemIRQHandler(emulbase->ReadIRQ);
-
-    return TRUE;
-}
-
-ADD2EXPUNGELIB(host_cleanup, 0);
- 
 /*********************************************************************************************/
 
 /* Make an AROS error-code (<dos/dos.h>) out of a unix error-code. */
@@ -400,12 +222,20 @@ static int mode2flags(LONG mode)
 {
     int flags;
 
-    flags=(mode&FMF_CREATE?O_CREAT:0)|
-          (mode&FMF_CLEAR?O_TRUNC:0);
-    if(mode&FMF_WRITE)
-        flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
-    else
-        flags|=O_RDONLY;
+    switch (mode) {
+    case MODE_NEWFILE:
+    	flags = O_CREAT | O_TRUNC | O_RDWR;
+    	break;
+    case MODE_OLDFILE:
+    	flags = O_RDONLY;
+    	break;
+    case MODE_READWRITE:
+    	flags = O_RDWR | O_CREAT;
+    	break;
+    default:
+    	flags = O_RDONLY;
+    	break;
+    }
     
     return flags;
 }
@@ -442,8 +272,9 @@ static void timestamp2datestamp(struct emulbase *emulbase, time_t *timestamp, st
 
 /*********************************************************************************************/
 
-static time_t datestamp2timestamp(struct LibCInterface *iface, struct DateStamp *datestamp)
+static time_t datestamp2timestamp(struct emulbase *emulbase, struct DateStamp *datestamp)
 {
+    struct LibCInterface *iface = emulbase->pdata.SysIFace;
     ULONG secs = datestamp->ds_Days * (60 * 60 * 24) + 
                  datestamp->ds_Minute * 60 +
                  datestamp->ds_Tick / TICKS_PER_SECOND;
@@ -659,7 +490,7 @@ static inline int nocase_chmod(struct LibCInterface *iface, char *path, mode_t m
 
 /*-------------------------------------------------------------------------------------------*/
 
-static inline int nocase_readlink(struct LibCInterface *iface, char *path, char *buffer, size_t size)
+static inline int nocase_readlink(struct LibCInterface *iface, char *path, char *buffer, SIPTR size)
 {
     int ret;
 
@@ -774,87 +605,52 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
     HostLib_Unlock();
 }
 
-LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
+size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, BOOL *async, SIPTR *err)
 {
-    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-    int len;
-    LONG error = 0;
+    SIPTR error = 0;
 
     DREAD(bug("[emul] Reading %u bytes from fd %d\n", iofs->io_Union.io_READ.io_Length, (int)fh->fd));
 
     HostLib_Lock();
 
-    len = TryRead(emulbase->pdata.SysIFace, (IPTR)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
-    DREAD(bug("[emul] Result: %d\n", len));
-    if (len == -1)
-	error = err_u2a(emulbase);
+    do {
+        len = TryRead(emulbase->pdata.SysIFace, (IPTR)fh->fd, buff, len);
+        DREAD(bug("[emul] Result: %d\n", len));
+        if (len == -1)
+            error = err_u2a(emulbase);
+    } while (len == -2);
 
     HostLib_Unlock();
 
-    if (len == -2)
-    {
-	/* There was no data available, perform an asynchronous read */
-	DREAD(bug("[emul] Putting request 0x%p to asynchronous queue\n", iofs));
-
-	Disable();
-	AddTail((struct List *)&emulbase->pdata.readList, (struct Node *)iofs);
-	Enable();
-
-	HostLib_Lock();
-
-	/* Own the filedescriptor and enable SIGIO on it */
-	emulbase->pdata.SysIFace->fcntl((IPTR)fh->fd, F_SETOWN, emulbase->pdata.my_pid);
-	AROS_HOST_BARRIER
-	len = emulbase->pdata.SysIFace->fcntl((IPTR)fh->fd, F_GETFL);
-	AROS_HOST_BARRIER
-	len |= O_ASYNC;
-	emulbase->pdata.SysIFace->fcntl((IPTR)fh->fd, F_SETFL, len);
-	AROS_HOST_BARRIER
-
-	/* Kick processing loop once because SIGIO could arrive after read attempt
-	   but before we added the request to the queue. */
-	emulbase->pdata.SysIFace->kill(emulbase->pdata.my_pid, SIGIO);
-	AROS_HOST_BARRIER
-
-	HostLib_Unlock();
-	*async = TRUE;
-	return 0;
-    }
-	
-    if (!error)
-	iofs->io_Union.io_READ.io_Length = len;
-    return error;
+    *err = error;
+    return len;
 }
 
-LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
+size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, size_t len, BOOL *async, SIPTR *err)
 {
-    /* Our write routine is always synchronous */
-    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-    int len;
-    LONG error = 0;
+    SIPTR error = 0;
     
     HostLib_Lock();
 
-    len = emulbase->pdata.SysIFace->write((IPTR)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
+    len = emulbase->pdata.SysIFace->write((IPTR)fh->fd, buff, len);
     AROS_HOST_BARRIER
     if (len == -1)
 	error = err_u2a(emulbase);
 
     HostLib_Unlock();
- 
-    if (!error)
-    	iofs->io_Union.io_READ.io_Length = len;
-    return error;
+
+    *err = error;
+    return len;
 }
 
-LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
+off_t DoSeek(struct emulbase *emulbase, void *file, off_t offset, ULONG mode, SIPTR *err)
 {
-    off_t res;
+    SIPTR res;
     off_t oldpos = 0;
-    LONG error = 0;
+    SIPTR error = 0;
 
     /* kprintf() does not understand UQUAD values */
-    DSEEK(bug("[emul] DoSeek(%d, 0x%08X%08X, %d)\n", (int)file, (ULONG)(*Offset >> 32), (ULONG)*Offset, mode));
+    DSEEK(bug("[emul] DoSeek(%d, 0x%llx, %d)\n", (int)file, (unsigned long long)offset, (int)mode));
 
     switch (mode) {
     case OFFSET_BEGINNING:
@@ -874,16 +670,14 @@ LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
     res = LSeek((IPTR)file, 0, SEEK_CUR);
     AROS_HOST_BARRIER
 
-    DSEEK(bug("[emul] Original position: 0x%08X%08X\n", (ULONG)(res >> 32), (ULONG)res));
+    DSEEK(bug("[emul] Original position: 0x%llx\n", (unsigned long long)res));
     if (res != -1)
     {
-        UQUAD offs = *Offset;
-
         oldpos = res;
-        res = LSeek((IPTR)file, offs, mode);
+        res = LSeek((IPTR)file, offset, mode);
         AROS_HOST_BARRIER
 
-	DSEEK(bug("[emul] New position: 0x%08X%08X\n", (ULONG)(res >> 32), (ULONG)res));
+	DSEEK(bug("[emul] New position: 0x%llx\n", (unsigned long long)res));
     }
 
     if (res == -1)
@@ -891,9 +685,8 @@ LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
 
     HostLib_Unlock();
 
-    if (!error)
-	*Offset = oldpos;
-    return error;
+    *err = error;
+    return oldpos;
 }
 
 LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
@@ -1036,7 +829,7 @@ LONG DoSetDate(struct emulbase *emulbase, char *name, struct DateStamp *date)
 
     HostLib_Lock();
 
-    times.actime = datestamp2timestamp(emulbase->pdata.SysIFace, date);
+    times.actime = datestamp2timestamp(emulbase, date);
     times.modtime = times.actime;
 
     res = nocase_utime(emulbase->pdata.SysIFace, name, &times);
@@ -1048,16 +841,16 @@ LONG DoSetDate(struct emulbase *emulbase, char *name, struct DateStamp *date)
     return res;
 }
 
-LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK *io_SEEK)
+SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
-    off_t absolute = 0;
-    LONG err = 0;
+    SIPTR absolute = 0;
+    SIPTR error = 0;
 
     HostLib_Lock();
 
-    switch (io_SEEK->io_SeekMode) {
+    switch (mode) {
     case OFFSET_BEGINNING:
-        absolute = io_SEEK->io_Offset;
+        absolute = offset;
         break;
 
     case OFFSET_CURRENT:
@@ -1065,9 +858,9 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
        	AROS_HOST_BARRIER
 
         if (absolute == -1)
-            err = err_u2a(emulbase);
+            error = err_u2a(emulbase);
 	else
-            absolute += io_SEEK->io_Offset;
+            absolute += offset;
         break;
 
     case OFFSET_END:
@@ -1075,28 +868,27 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
         AROS_HOST_BARRIER
 
         if (absolute == -1)
-            err = err_u2a(emulbase);
+            error = err_u2a(emulbase);
 	else
-            absolute -= io_SEEK->io_Offset;
+            absolute -= offset;
         break;
 
     default:
-    	err = ERROR_UNKNOWN;
+    	error = ERROR_UNKNOWN;
     }
 
-    if (!err)
+    if (!error)
     {
-	err = FTruncate((IPTR)fh->fd, absolute);
+	error = FTruncate((IPTR)fh->fd, absolute);
 	AROS_HOST_BARRIER
-	if (err)
-	    err = err_u2a(emulbase);
+	if (error)
+	    error = err_u2a(emulbase);
     }
        
     HostLib_Unlock();
 
-    if (!err)
-        io_SEEK->io_Offset = absolute;
-    return err;
+    *err = error;
+    return absolute;
 }
 
 BOOL DoGetType(struct emulbase *emulbase, void *fd)
@@ -1197,14 +989,14 @@ static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR 
     return err;
 }	
 
-LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *EntryName,
+LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *EntryName,
 		   struct ExAllData *ead, ULONG size, ULONG type)
 {
     STRPTR next, end, last, name;
     struct stat st;
     LONG err;
 
-    DEXAM(bug("[emul] examine_entry(0x%p, %s, 0x%p, %u, %u)\n", fh, EntryName, ead, size, type));
+    DEXAM(bug("[emul] DoExamineEntry(0x%p, %s, 0x%p, %u, %u)\n", fh, EntryName, ead, size, type));
 
     /* Return an error, if supplied type is not supported. */
     if(type>ED_OWNER)
@@ -1287,7 +1079,7 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Entry
 
 /*********************************************************************************************/
 
-LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
+LONG DoExamineNext(struct emulbase *emulbase, struct filehandle *fh,
                   struct FileInfoBlock *FIB)
 {
     int	i;
@@ -1369,7 +1161,7 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
 
 /*********************************************************************************************/
 
-LONG examine_all(struct emulbase *emulbase,
+LONG DoExamineAll(struct emulbase *emulbase,
 			struct filehandle *fh,
                         struct ExAllData *ead,
                         struct ExAllControl *eac,
@@ -1381,7 +1173,7 @@ LONG examine_all(struct emulbase *emulbase,
     struct dirent *dir;
     LONG error;
 #ifndef HOST_OS_android
-    off_t oldpos;
+    SIPTR oldpos;
 #endif
 
     eac->eac_Entries = 0;
@@ -1417,7 +1209,7 @@ LONG examine_all(struct emulbase *emulbase,
 	    continue;
 	}
 
-	error = examine_entry(emulbase, fh, dir->d_name, ead, end-(STRPTR)ead, type);
+	error = DoExamineEntry(emulbase, fh, dir->d_name, ead, end-(STRPTR)ead, type);
 	if(error)
 	    break;
 
@@ -1508,7 +1300,7 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
 	int hlen = strlen(home);
 	int splen = strlen(sp_end);
 
-	newunixpath = AllocVec(hlen + splen + 1, MEMF_PUBLIC);
+	newunixpath = AllocVecPooled(emulbase->mempool, hlen + splen + 1);
 	if (newunixpath)
 	{
 	    char *s = newunixpath;
@@ -1551,7 +1343,7 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
     return res ? TRUE : FALSE;
 }
 
-int CheckDir(struct emulbase *emulbase, char *path)
+BOOL CheckDir(struct emulbase *emulbase, char *path)
 {
     int res;
     struct stat st;
@@ -1567,7 +1359,7 @@ int CheckDir(struct emulbase *emulbase, char *path)
 
     DMOUNT(bug("[emul] Result: %d, mode: %o\n", res, st.st_mode));
     if ((!res) && S_ISDIR(st.st_mode))
-	return 0;
+	return FALSE;
 
-    return -1;
+    return TRUE;
 }

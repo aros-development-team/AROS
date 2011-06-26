@@ -6,7 +6,7 @@
 #include <dos/dosasl.h>
 #include <dos/filesystem.h>
 
-#include "emul_handler_intern.h"
+#include <resources/emul.h>
 
 LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir)
 {

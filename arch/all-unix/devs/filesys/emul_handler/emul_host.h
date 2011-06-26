@@ -1,3 +1,6 @@
+#ifndef RESOURCES_EMUL_HOST_H
+#define RESOURCES_EMUL_HOST_H
+
 /* avoid conflicts between our __unused define and the ones that might come in
    via sys/stat.h */
 #undef __unused
@@ -115,9 +118,10 @@ struct Emul_PlatformData
     int			   *errnoPtr;	/* Pointer to host's errno		 */
     int			    my_pid;	/* AROS process ID			 */
     struct MinList	    readList;	/* Asynchronous read queue		 */
+    APTR em_UtilityBase;
 };
 
-struct emulbase;
-struct filehandle;
+/* Remove this hack later in the ABIv1 development cycle */
+#define UtilityBase (emulbase->pdata.em_UtilityBase)
 
-struct dirent *ReadDir(struct emulbase *emulbase, struct filehandle *fh, IPTR *dirpos);
+#endif /* RESOURCES_EMUL_HOST_H */
