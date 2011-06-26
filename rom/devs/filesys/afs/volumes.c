@@ -147,7 +147,12 @@ struct Volume *initVolume
 		LONG *error
 	)
 {
-struct Volume *volume;
+	struct Volume *volume;
+
+	if (blockdevice == NULL) {
+	    *error = ERROR_NO_DISK;
+	    return NULL;
+	}
 
 	volume = AllocMem(sizeof(struct Volume) + strlen(blockdevice) + 1,MEMF_PUBLIC | MEMF_CLEAR);
 	if (volume != NULL)
