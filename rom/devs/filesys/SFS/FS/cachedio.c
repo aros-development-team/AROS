@@ -137,7 +137,7 @@ void invalidateiocache(struct IOCache *ioc) {
 
 
 
-void free(struct MinList *lruhead) {
+void freeIOCache(struct MinList *lruhead) {
 
   /* Frees all IOCache buffers attached to the passed in list and the
      listheader itself.  If lruhead is zero then this function does
@@ -191,7 +191,7 @@ struct MinList *allocate(ULONG size, LONG n) {
       return(lruhead);
     }
 
-    free(lruhead);
+    freeIOCache(lruhead);
   }
 
   return(0);
@@ -275,7 +275,7 @@ LONG setiocache(ULONG lines, ULONG readahead, BYTE copyback) {
       globals->iocache_mask=sizeinblocks-1;
       globals->iocache_shift=shift;
 
-      free(globals->iocache_lruhead);
+      freeIOCache(globals->iocache_lruhead);
       globals->iocache_lruhead=lruhead;
 
       if(globals->iocache_readonwrite==FALSE && globals->iocache_copyback!=FALSE) {
@@ -288,7 +288,7 @@ LONG setiocache(ULONG lines, ULONG readahead, BYTE copyback) {
       }
     }
     else {
-      free(lruhead);
+      freeIOCache(lruhead);
     }
 
     return(errorcode);
@@ -325,7 +325,7 @@ void cleanupcachedio(void) {
   /* Only call this if initcachedio() was succesful. */
 
   flushiocache();    /*** returns an errorcode... */
-  free(globals->iocache_lruhead);
+  freeIOCache(globals->iocache_lruhead);
   globals->iocache_lruhead=0;
 
   globals->iocache_lines=0;
