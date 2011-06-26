@@ -9,7 +9,7 @@ USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -mc68020
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-all/m680x0
 
 %build_module mmake=kernel-m680x0 \
-   modname=m680x0 modtype=resource \
+   modname=680x0 modtype=library \
    files="$(FILES)"
 
 %build_archspecific \
