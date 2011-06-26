@@ -74,6 +74,7 @@ struct Node {};
 #define ERROR_DISK_FULL           221
 #define ERROR_DELETE_PROTECTED    222
 #define ERROR_NOT_A_DOS_DISK      225
+#define ERROR_NO_DISK             226
 #define ERROR_NO_MORE_ENTRIES     232
 #define LOCK_DIFFERENT           -1
 #define LOCK_SAME                 0
