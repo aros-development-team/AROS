@@ -774,8 +774,8 @@ static void MakeWin(void)
     if (!(win = OpenWindowTags(NULL, WA_PubScreen	, (IPTR)scr	        , 
 				  WA_Left		, 0			, 
 				  WA_Top		, scr->BarHeight + 1	, 
-				  WA_Width		, 600			, 
-				  WA_Height		, 300			, 
+				  WA_Width		, 640			, 
+				  WA_Height		, 480			, 
 				  WA_AutoAdjust		, TRUE			,
 			          USE_SIMPLEREFRESH ? 
                                   WA_SimpleRefresh  :
@@ -1394,13 +1394,13 @@ static BOOL HandleWin(void)
 		{
 		    quitme = TRUE;
 		}
+		else if (key == 8 || (key == ' ' && (0 != (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))))
+		{
+		    ScrollTo(GAD_VERTSCROLL, viewstarty - (visibley - 1), TRUE);
+		}
 		else if (key == ' ')
 		{
 		    ScrollTo(GAD_VERTSCROLL, viewstarty + visibley - 1, TRUE);
-		}
-		else if (key == 8)
-		{
-		    ScrollTo(GAD_VERTSCROLL, viewstarty - (visibley - 1), TRUE);
 		}
 		else if (key == 13)
 		{
