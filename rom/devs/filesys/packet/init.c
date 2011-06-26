@@ -112,12 +112,14 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
 
     /* find this mount */
     mount = NULL;
-    ForeachNode(&(pb->mounts), scan) {
-        /* XXX what happens if the mount point matches but the handler doesn't? */
-        if (strcmp(scan->handler_name, AROS_BSTR_ADDR(dn->dn_Handler)) == 0 &&
-            strcmp(scan->mount_point, iofs->io_Union.io_OpenDevice.io_DosName) == 0) {
-            mount = scan;
-            break;
+    if (dn->dn_Handler != BNULL) {
+        ForeachNode(&(pb->mounts), scan) {
+            /* XXX what happens if the mount point matches but the handler doesn't? */
+            if (strcmp(scan->handler_name, AROS_BSTR_ADDR(dn->dn_Handler)) == 0 &&
+                strcmp(scan->mount_point, iofs->io_Union.io_OpenDevice.io_DosName) == 0) {
+                mount = scan;
+                break;
+            }
         }
     }
 
@@ -153,7 +155,10 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
 		return FALSE;
 	}
 
-        strncpy(mount->handler_name, AROS_BSTR_ADDR(dn->dn_Handler), MAXFILENAMELENGTH);
+	if (dn->dn_Handler == BNULL)
+	    mount->handler_name[0] = 0;
+	else
+            strncpy(mount->handler_name, AROS_BSTR_ADDR(dn->dn_Handler), MAXFILENAMELENGTH);
         strncpy(mount->mount_point, iofs->io_Union.io_OpenDevice.io_DosName, MAXFILENAMELENGTH);
 
         mount->seglist = seglist;
