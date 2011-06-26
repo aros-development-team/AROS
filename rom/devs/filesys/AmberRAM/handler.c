@@ -433,7 +433,7 @@ static TEXT *BStr(struct Handler *h, UBYTE *b_str)
 
 #ifdef AROS_FAST_BSTR
    length = StrSize(b_str);
-   CopyMem(b_str, h->b_buffer2, length);
+   CopyMem(b_str, h->b_buffer, length);
 #else
    length = *b_str;
    if(length != 0)
