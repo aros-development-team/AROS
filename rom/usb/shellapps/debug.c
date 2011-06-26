@@ -1,7 +1,7 @@
 #include "debug.h"
 
 #ifdef DEBUG
-void dumpmem(void *mem, unsigned long int len)
+void dumpmem_shellapps(void *mem, unsigned long int len)
 {
   unsigned char *p;
 

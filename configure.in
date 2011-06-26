@@ -1915,6 +1915,13 @@ if test "$palm_debug_hack" = "yes" ; then
 fi
 AC_MSG_RESULT($palm_debug_hack)
 
+dnl See if the user wants the usb3.0 code
+AC_MSG_CHECKING([if usb3.0 code is enabled])
+AC_ARG_ENABLE(usb30_code,AC_HELP_STRING([--enable-usb30-code],[Enable usb3.0 code (default=no)]),usb30_code="yes",usb30_code="no")
+if test "$usb30_code" = "yes" ; then
+    aros_usb30_code="1"
+fi
+AC_MSG_RESULT($usb30_code)
 
 dnl See if the user wants nesting supervisor activated for unix flavour
 AC_MSG_CHECKING([if nesting supervisor support is enabled])
@@ -2257,6 +2264,9 @@ AC_SUBST(aros_serial_debug)
 
 # Palm native version related
 AC_SUBST(aros_palm_debug_hack)
+
+# USB3.0 code
+AC_SUBST(aros_usb30_code)
 
 # Unix/Hosted version related
 AC_SUBST(aros_nesting_supervisor)

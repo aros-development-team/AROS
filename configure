@@ -611,6 +611,7 @@ aros_ios_version
 aros_ios_platform
 aros_enable_mmu
 aros_nesting_supervisor
+aros_usb30_code
 aros_palm_debug_hack
 aros_serial_debug
 aros_host_sdl_libs
@@ -850,6 +851,7 @@ enable_includes
 with_resolution
 with_serial_debug
 enable_palm_debug_hack
+enable_usb30_code
 enable_nesting_supervisor
 enable_mmu
 enable_x11_hidd
@@ -1512,6 +1514,7 @@ Optional Features:
   --enable-palm-debug-hack
                           Enable palm debug output hack in palm native
                           (default=no)
+  --enable-usb30-code     Enable usb3.0 code (default=no)
   --enable-nesting-supervisor
                           Enable nesting supervisor support in unix
                           (default=no)
@@ -10162,6 +10165,20 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $palm_debug_hack" >&5
 $as_echo "$palm_debug_hack" >&6; }
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if usb3.0 code is enabled" >&5
+$as_echo_n "checking if usb3.0 code is enabled... " >&6; }
+# Check whether --enable-usb30_code was given.
+if test "${enable_usb30_code+set}" = set; then :
+  enableval=$enable_usb30_code; usb30_code="yes"
+else
+  usb30_code="no"
+fi
+
+if test "$usb30_code" = "yes" ; then
+    aros_usb30_code="1"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $usb30_code" >&5
+$as_echo "$usb30_code" >&6; }
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if nesting supervisor support is enabled" >&5
 $as_echo_n "checking if nesting supervisor support is enabled... " >&6; }
@@ -11094,6 +11111,9 @@ $as_echo "$dbus" >&6; }
 
 
 # Palm native version related
+
+
+# USB3.0 code
 
 
 # Unix/Hosted version related
