@@ -64,7 +64,10 @@ void Putc(char chr)
     }
     else if (!dead)
     {
-#warning "TODO: Enable screen debug to serial at config time, and note that it doesnt work properly on real hardware since it doesnt initialise the serial port to a given baud_rate"
+/* TODO: Enable screen debug to serial at config time, and note
+ * that it doesnt work properly on real hardware since it doesnt
+ * initialise the serial port to a given baud_rate
+ */
 #if defined(SCREEN_SERIAL_DEBUG)
 #if AROS_SERIAL_DEBUG == 1
         asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x3F8));
