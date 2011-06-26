@@ -73,7 +73,8 @@ static int M680x0Init(struct M680x0Base *M680x0Base)
  	if (lib) {
 	    lib->lib_Node.ln_Name = (UBYTE*)lib68060;
 	    lib->lib_IdString = lib->lib_Node.ln_Name;
-	    lib->lib_Version = 43;
+	    lib->lib_Version = M680x0Base->pb_LibNode.lib_Version;
+	    lib->lib_Revision = M680x0Base->pb_LibNode.lib_Revision;
 	    lib->lib_OpenCnt = 1;
 	    AddLibrary(lib);
 	}
@@ -82,11 +83,13 @@ static int M680x0Init(struct M680x0Base *M680x0Base)
     if (lib) {
 	lib->lib_Node.ln_Name = (UBYTE*)lib68040;
 	lib->lib_IdString = lib->lib_Node.ln_Name;
-	lib->lib_Version = 43;
+	lib->lib_Version = M680x0Base->pb_LibNode.lib_Version;
+	lib->lib_Revision = M680x0Base->pb_LibNode.lib_Revision;
 	lib->lib_OpenCnt = 1;
 	AddLibrary(lib);
     }
 
+    M680x0Base->pb_LibNode.lib_OpenCnt++;
     /* emulation installed, full 68881/68882 instruction set now supported  */
     SysBase->AttnFlags |= AFF_68881 | AFF_68882;
     return TRUE;
