@@ -391,7 +391,7 @@ size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff
     ULONG error, werr;
 
     Forbid();
-    error = emulbase->pdata.KernelIFace->WriteFile(fh->fd, buff, len, &len, NULL);
+    error = emulbase->pdata.KernelIFace->WriteFile(fh->fd, (void *)buff, len, &len, NULL);
     werr = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
@@ -399,15 +399,16 @@ size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff
     return len;
 }
 
-static LONG seek_file(struct emulbase *emulbase, void *fh, UQUAD *Offset, ULONG mode, UQUAD *newpos)
+static LONG seek_file(struct emulbase *emulbase, struct filehandle *fh, off_t *Offset, ULONG mode, UQUAD *newpos)
 {
     ULONG error, werror;
     ULONG pos_high = 0;
     UQUAD oldpos;
+    UQUAD offset = *Offset;
 
     DB2(bug("[emul] LSeek() - getting current position\n"));
     Forbid();
-    oldpos = emulbase->pdata.KernelIFace->SetFilePointer(fh, 0, &pos_high, FILE_CURRENT);
+    oldpos = emulbase->pdata.KernelIFace->SetFilePointer(fh->fd, 0, &pos_high, FILE_CURRENT);
     Permit();
     oldpos |= (UQUAD)pos_high << 32;
     DSEEK(bug("[emul] Original position: %llu\n", oldpos));
@@ -426,10 +427,10 @@ static LONG seek_file(struct emulbase *emulbase, void *fh, UQUAD *Offset, ULONG 
 	mode = FILE_END;
     }
 
-    pos_high = *Offset >> 32;
+    pos_high = offset >> 32;
     DB2(bug("[emul] LSeek() - setting new position\n"));
     Forbid();
-    error = emulbase->pdata.KernelIFace->SetFilePointer(fh, *Offset, &pos_high, mode);
+    error = emulbase->pdata.KernelIFace->SetFilePointer(fh->fd, offset, &pos_high, mode);
     werror = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
@@ -444,18 +445,19 @@ static LONG seek_file(struct emulbase *emulbase, void *fh, UQUAD *Offset, ULONG 
 	}
 	error = 0;
 	
-	*Offset = oldpos;
+	offset = oldpos;
     }
+
+    *Offset = offset;
 
     return error;
 }
 
 
-off_t DoSeek(struct emulbase *emulbase, void *file, off_t offset, ULONG mode, SIPTR *err)
+off_t DoSeek(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULONG mode, SIPTR *err)
 {
-    UQUAD Offset = offset;
-    *err = seek_file(emulbase, fh, &Offset, mode, NULL);
-    return Offset;
+    *err = seek_file(emulbase, fh->fd, &offset, mode, NULL);
+    return offset;
 }
 
 /*********************************************************************************************/
@@ -526,167 +528,6 @@ LONG DoChMod(struct emulbase *emulbase, char *filename, ULONG aprot)
 
     return ret ? 0 : Errno_w2a(err, FMF_WRITE);
 }
-
-/*********************************************************************************************/
-
-static void EmulIntHandler(struct AsyncReaderControl *msg, void *d)
-{
-    DASYNC(bug("[emul] Interrupt on request 0x%p, task 0x%p, signal 0x%08lX\n", msg, msg->task, msg->sig));
-    Signal(msg->task, msg->sig);
-}
-
-/*********************************************************************************************/
-
-static struct filehandle *CreateStdHandle(struct emulbase *emulbase, ULONG id)
-{
-    struct filehandle *fh;
-    APTR handle;
-
-    Forbid();
-    handle = emulbase->pdata.KernelIFace->GetStdHandle(id);
-    Permit();
-
-    if (!handle)
-	return NULL;
-
-    fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
-    if (fh) {
-	fh->type = FHD_FILE|FHD_STDIO;
-	fh->fd   = handle;
-    }
-
-    return fh;
-}
-
-/*********************************************************************************************/
-
-const char *EmulSymbols[] = {
-    "Emul_Init_Native",
-    "EmulGetHome",
-    NULL
-};
-    
-const char *KernelSymbols[] = {
-    "CreateFileA",
-    "CloseHandle",
-    "ReadFile",
-    "WriteFile",
-    "SetFilePointer",
-    "SetEndOfFile",
-    "GetFileType",
-    "GetStdHandle",
-    "MoveFileA",
-    "GetCurrentDirectoryA",
-    "FindFirstFileA",
-    "FindNextFileA",
-    "FindClose",
-    "CreateDirectoryA",
-    "SetFileAttributesA",
-    "GetLastError",
-    "CreateHardLinkA",
-    "CreateSymbolicLinkA",
-    "SetEvent",
-    "SetFileTime",
-    "GetFileAttributesA",
-    "GetFileAttributesExA",
-    "DeleteFileA",
-    "RemoveDirectoryA",
-    "GetDiskFreeSpaceA",
-    NULL
-};
-
-static LONG host_startup(struct emulbase *emulbase)
-{
-    ULONG r;
-
-    HostLibBase = OpenResource("hostlib.resource");
-    D(bug("[EmulHandler] got hostlib.resource %p\n", HostLibBase));
-    if (!HostLibBase)
-	return FALSE;
-
-    KernelBase = OpenResource("kernel.resource");
-    if (!KernelBase)
-	return FALSE;
-
-    emulbase->pdata.EmulHandle = HostLib_Open("Libs\\Host\\emul_handler.dll", NULL);
-    if (!emulbase->pdata.EmulHandle) {
-	D(bug("[EmulHandler] Unable to open emul.handler host-side library!\n"));
-	return FALSE;
-    }
-
-    emulbase->pdata.EmulIFace = (struct EmulInterface *)HostLib_GetInterface(emulbase->pdata.EmulHandle, EmulSymbols, &r);
-    D(bug("[EmulHandler] Native library interface: 0x%08lX\n", emulbase->pdata.EmulIFace));
-    if ((!emulbase->pdata.EmulIFace) || r)
-	return FALSE;
-
-    emulbase->pdata.KernelHandle = HostLib_Open("kernel32.dll", NULL);
-    if (!emulbase->pdata.KernelHandle)
-	return FALSE;
-
-    emulbase->pdata.KernelIFace = (struct KernelInterface *)HostLib_GetInterface(emulbase->pdata.KernelHandle, KernelSymbols, &r);
-    if (!emulbase->pdata.KernelIFace)
-	return FALSE;
-
-    D(bug("[EmulHandler] %lu unresolved symbols in kernel32.dll\n", r));
-    D(bug("[EmulHandler] CreateHardLink()     : 0x%08lX\n", emulbase->pdata.KernelIFace->CreateHardLink));
-    D(bug("[EmulHandler] CreateSymbolicLink() : 0x%08lX\n", emulbase->pdata.KernelIFace->CreateSymbolicLink));
-    if (r > 2)
-	return FALSE;
-
-    D(bug("[Emulhandler] Creating console reader\n"));
-    Forbid();
-    emulbase->pdata.ConsoleReader = emulbase->pdata.EmulIFace->EmulInitNative();
-    Permit();
-
-    D(bug("[Emulhandler] Console reader at %p\n", emulbase->pdata.ConsoleReader));
-    if (!emulbase->pdata.ConsoleReader)
-	return FALSE;
-	
-    D(bug("[Emulhandler] Console reader IRQ %u\n", emulbase->pdata.ConsoleReader->IrqNum));
-    emulbase->ReadIRQ = KrnAddIRQHandler(emulbase->pdata.ConsoleReader->IrqNum, EmulIntHandler, emulbase->pdata.ConsoleReader, NULL);
-    D(bug("[Emulhandler] Added console interrupt %p\n", emulbase->ReadIRQ));
-    if (!emulbase->ReadIRQ)
-	return FALSE;
-
-    emulbase->eb_stdin  = CreateStdHandle(emulbase, STD_INPUT_HANDLE);
-    emulbase->eb_stdout = CreateStdHandle(emulbase, STD_OUTPUT_HANDLE);
-    emulbase->eb_stderr = CreateStdHandle(emulbase, STD_ERROR_HANDLE);
-
-    return TRUE;
-}
-
-ADD2INITLIB(host_startup, 0);
-
-static int host_cleanup(struct emulbase *emulbase)
-{
-    D(bug("[EmulHandler] Expunge\n"));
-    
-    if (KernelBase)
-    {
-	/* TODO: shut down console reader */
-	if (emulbase->ReadIRQ)
-	    KrnRemIRQHandler(emulbase->ReadIRQ);
-    }
-
-    if (!HostLibBase)
-    	return TRUE;
-
-    if (emulbase->pdata.KernelIFace)
-    	HostLib_DropInterface((APTR *)emulbase->pdata.KernelIFace);
-
-    if (emulbase->pdata.EmulIFace)
-    	HostLib_DropInterface((APTR *)emulbase->pdata.EmulIFace);
-
-    if (emulbase->pdata.EmulHandle)
-    	HostLib_Close(emulbase->pdata.EmulHandle, NULL);
-
-    if (emulbase->pdata.KernelHandle)
-    	HostLib_Close(emulbase->pdata.KernelHandle, NULL);
-
-    return TRUE;
-}
-
-ADD2EXPUNGELIB(host_cleanup, 0);
 
 /*********************************************************************************************/
 
@@ -1124,16 +965,16 @@ LONG DoSetDate(struct emulbase *emulbase, char *fullname, struct DateStamp *date
     return ret ? 0 : Errno_w2a(werr, FMF_WRITE);
 }
 
-SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
+off_t DoSetSize(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULONG mode, SIPTR *err)
 {
     LONG error;
     ULONG werr;
     UQUAD newpos;
 
-    DFSIZE(bug("[emul] DoSetSize(): mode %ld, offset %llu\n", mode, offset));
+    DFSIZE(bug("[emul] DoSetSize(): mode %ld, offset %llu\n", mode, (unsigned long long)offset));
 
     /* First seek to the requested position. io_Offset will contain OLD position after that. NEW position will be in newpos */
-    error = seek_file(emulbase, fh, &offset, mode, &newpos);
+    error = seek_file(emulbase, fh->fd, &offset, mode, &newpos);
     if (!error)
     {
         /* Set EOF to NEW position */
@@ -1152,7 +993,7 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
 	{
 	    LONG error2;
 
-            error2 = seek_file(emulbase, fh, &offset, OFFSET_BEGINNING, NULL);
+            error2 = seek_file(emulbase, fh->fd, &offset, OFFSET_BEGINNING, NULL);
             if (!error)
         	error = error2;
         } else
@@ -1162,19 +1003,6 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
     DFSIZE(bug("[emul] FSA_SET_FILE_SIZE returning %lu\n", error));
     *err = error;
     return offset;
-}
-
-BOOL DoGetType(struct emulbase *emulbase, void *fd)
-{
-    ULONG type;
-
-    DB2(bug("[emul] GetFileType()\n"));
-
-    Forbid();
-    type = emulbase->pdata.KernelIFace->GetFileType(fd);
-    Permit();
-
-    return type == FILE_TYPE_CHAR ? TRUE : FALSE;
 }
 
 LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
@@ -1290,7 +1118,7 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
     return (res < len) ? TRUE : FALSE;
 }
 
-int CheckDir(struct emulbase *emulbase, char *path)
+BOOL CheckDir(struct emulbase *emulbase, char *path)
 {
     ULONG attrs;
 
@@ -1299,7 +1127,7 @@ int CheckDir(struct emulbase *emulbase, char *path)
     Permit();
 
     if (attrs == INVALID_FILE_ATTRIBUTES)
-	return -1;
+	return TRUE;
 
-    return (attrs & FILE_ATTRIBUTE_DIRECTORY) ? 0 : -1;
+    return (attrs & FILE_ATTRIBUTE_DIRECTORY) ? FALSE : TRUE;
 }

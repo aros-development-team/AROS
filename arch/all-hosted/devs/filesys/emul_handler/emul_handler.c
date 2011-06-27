@@ -745,7 +745,7 @@ void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosP
         DCMD(bug("[emul] %p ACTION_SEEK %p, mode %ld, offset %llu\n", fhv, fh, dp->dp_Arg3, dp->dp_Arg2));
 
         if (fh->type == FHD_FILE)
-            Res1 = DoSeek(emulbase, fh->fd, dp->dp_Arg2, dp->dp_Arg3, &Res2);
+            Res1 = DoSeek(emulbase, fh, dp->dp_Arg2, dp->dp_Arg3, &Res2);
         else {
             Res1 = DOSFALSE;
             Res2 = ERROR_OBJECT_WRONG_TYPE;
@@ -1187,6 +1187,7 @@ void EmulHandler_work(void)
     ReplyPkt(dp, DOSTRUE, 0);
 
     fhv->locks = 1;
+    fhv->fh.fh_Type = mp;
     while (fhv->locks) {
         dp = WaitPkt();
 

@@ -31,7 +31,7 @@ LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
     return ERROR_NOT_IMPLEMENTED;
 }
 
-LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG Mode)
+LONG DoSeek(struct emulbase *emulbase, struct filehandle *, UQUAD *Offset, ULONG Mode)
 {
     /* Adjust file position */
     return ERROR_NOT_IMPLEMENTED;
@@ -98,19 +98,13 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
     return ERROR_NOT_IMPLEMENTED;
 }
 
-BOOL DoGetType(struct emulbase *emulbase, void *fd)
-{
-    /* Check if the file is a character device */
-    return FALSE;
-}
-
 LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
 {
     /* Get disk information */
     return ERROR_NOT_IMPLEMENTED;
 }
 
-LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *name,
+LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *name,
 		   struct ExAllData *ead, ULONG size, ULONG type)
 {
     /* Examine named object */

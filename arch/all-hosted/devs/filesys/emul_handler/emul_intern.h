@@ -40,7 +40,7 @@ void DoClose(struct emulbase *emulbase, struct filehandle *fh);
 LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh);
 size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, BOOL *async, SIPTR *err);
 size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, size_t len, BOOL *async, SIPTR *err);
-off_t DoSeek(struct emulbase *emulbase, void *file, off_t Offset, ULONG Mode, SIPTR *err);
+off_t DoSeek(struct emulbase *emulbase, struct filehandle *fh, off_t Offset, ULONG Mode, SIPTR *err);
 LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect);
 LONG DoDelete(struct emulbase *emulbase, char *name);
 LONG DoChMod(struct emulbase *emulbase, char *filename, ULONG prot);
@@ -49,8 +49,7 @@ LONG DoSymLink(struct emulbase *emulbase, char *dest, char *src);
 LONG DoRename(struct emulbase *emulbase, char *filename, char *newfilename);
 int DoReadLink(struct emulbase *emulbase, char *filename, char *buffer, ULONG size, LONG *err);
 LONG DoSetDate(struct emulbase *emulbase, char *fullname, struct DateStamp *date);
-SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULONG mode, SIPTR *err);
-BOOL DoGetType(struct emulbase *emulbase, void *fd);
+off_t DoSetSize(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULONG mode, SIPTR *err);
 LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id);
 
 LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *EntryName,
