@@ -10132,7 +10132,7 @@ fi
 if test "$aros_serial_debug" = 0 ; then
     serial_debug_forced=""
     if test "$serial_debug" = "yes" ; then
-        serial_debug="2"
+        serial_debug="1"
     fi
     if test "$serial_debug" = "no" ; then
         serial_debug="none"
