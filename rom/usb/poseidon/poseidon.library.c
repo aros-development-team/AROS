@@ -5326,8 +5326,9 @@ AROS_LH4(struct PsdErrorMsg *, psdAddErrorMsgA,
         {
             if((pem->pem_Msg = psdCopyStrFmtA(fmtstr, fmtdata)))
             {
-		if (ps->ps_Flags & PSF_KLOG)
+		if (ps->ps_Flags & PSF_KLOG) {
 		    //KPrintF("[%s] %s\n", origin, pem->pem_Msg);
+		}
 
                 if(pOpenDOS(ps))
                 {
