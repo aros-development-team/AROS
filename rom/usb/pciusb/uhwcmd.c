@@ -1441,7 +1441,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         case UDT_SSHUB:
                         {
                             ULONG hubdesclen = 12;
-                            ULONG powergood = 1;
 
                             struct UsbSSHubDesc *uhd = (struct UsbSSHubDesc *) ioreq->iouh_Data;
                             KPRINTF(1, ("RH: Get(SS)HubDescriptor (%ld)\n", len));
