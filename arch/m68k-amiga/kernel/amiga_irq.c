@@ -176,7 +176,10 @@ static inline BOOL Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase
 
 #define PAULA_IRQ_CHECK(valid_mask) \
     const UWORD irq_mask = valid_mask; \
-    UWORD mask = custom_r(INTENAR) & custom_r(INTREQR) & (irq_mask); \
+    UWORD intenar = custom_r(INTENAR); \
+    if (!(intenar & INTF_INTEN)) \
+    	return TRUE; \
+    UWORD mask = intenar & custom_r(INTREQR) & (irq_mask); \
     do {
 
 #define PAULA_IRQ_ACK(clear_mask) \
