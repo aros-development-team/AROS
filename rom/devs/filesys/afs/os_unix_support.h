@@ -30,6 +30,7 @@ typedef char*          STRPTR;
 typedef const char*    CONST_STRPTR;
 typedef unsigned char  TEXT;
 typedef unsigned long  IPTR;
+typedef signed long    SIPTR;
 typedef unsigned long  BPTR;
 typedef int16_t          BOOL;
 #define VOID  void
