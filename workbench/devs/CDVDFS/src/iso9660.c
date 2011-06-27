@@ -78,24 +78,13 @@ t_bool Iso_Is_Top_Level_Object (CDROM_OBJ *);
 #define VOL(vol,tag) (((t_iso_vol_info *)(vol->vol_info))->tag)
 #define OBJ(obj,tag) (((t_iso_obj_info *)(obj->obj_info))->tag)
 
-extern struct Globals *global;
-
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-#ifdef UtilityBase
-#	undef UtilityBase
-#endif
-#define UtilityBase global->UtilityBase
-
 int Get_Volume_Name(VOLUME *p_volume, char *buf, int buflen)
 {
     char *iso_name = VOL(p_volume,pvd).volume_id;
 
     D(bug("[CDVDFS]\tGet_Volume_Name()\n"));
     if (p_volume->protocol == PRO_JOLIET)
-	return Get_Joliet_Name(iso_name, buf, 32);
+	return Get_Joliet_Name(p_volume->global, iso_name, buf, 32);
     else {
 	CopyMem(iso_name, buf, 32);
 	return 32;
@@ -111,7 +100,7 @@ int Get_File_Name(VOLUME *volume, directory_record *dir, char *buf, int buflen)
     switch (volume->protocol) 
     {
 	case PRO_JOLIET:
-	    len = Get_Joliet_Name(dir->file_id, buf, dir->file_id_length);
+	    len = Get_Joliet_Name(volume->global, dir->file_id, buf, dir->file_id_length);
 	    break;
 
 	case PRO_ROCK:
@@ -223,10 +212,11 @@ t_bool Uses_High_Sierra_Protocol(CDROM *p_cdrom)
     return StrNCmp((char *) p_cdrom->buffer + 9, "CDROM", 5) == 0;
 }
 
+static t_handler const g_iso_handler;
 t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong p_svd_offset) 
 {
+    struct CDVDBase *global = p_volume->global;
     long loc = p_svd_offset + p_offset;
-    extern t_handler g_iso_handler;
     
     D(bug("[CDVDFS]\tIso_Init_Vol_Info()\n"));
 
@@ -312,7 +302,7 @@ void Iso_Close_Vol_Info(VOLUME *p_volume)
     FreeMem (p_volume->vol_info, sizeof (t_iso_vol_info));
 }
 
-CDROM_OBJ *Iso_Alloc_Obj(int p_length_of_dir_record) 
+CDROM_OBJ *Iso_Alloc_Obj(struct CDVDBase *global, int p_length_of_dir_record) 
 {
     CDROM_OBJ *obj;
     
@@ -325,6 +315,7 @@ CDROM_OBJ *Iso_Alloc_Obj(int p_length_of_dir_record)
 	return NULL;
     }
 
+    obj->global = global;
     obj->obj_info = AllocMem (sizeof (t_iso_obj_info), MEMF_PUBLIC);
     if (!obj->obj_info)
     {
@@ -355,7 +346,7 @@ CDROM_OBJ *Iso_Open_Top_Level_Directory(VOLUME *p_volume)
     
     D(bug("[CDVDFS]\tIso_Open_Top_Level_Directory()\n"));
 
-    obj = Iso_Alloc_Obj(VOL(p_volume,pvd).root.length);
+    obj = Iso_Alloc_Obj(p_volume->global, VOL(p_volume,pvd).root.length);
     if (!obj)
 	return NULL;
 
@@ -380,6 +371,7 @@ CDROM_OBJ *Iso_Open_Top_Level_Directory(VOLUME *p_volume)
 
 int Names_Equal(VOLUME *volume, directory_record *dir, char *p_name)
 {
+    struct CDVDBase *global = volume->global;
     int pos, len;
     char buf[256];
 
@@ -387,7 +379,7 @@ int Names_Equal(VOLUME *volume, directory_record *dir, char *p_name)
 
     D(bug("[CDVDFS]\tComparing names '%s' <=> '%s'\n", p_name, buf));
 
-    if (Strncasecmp(buf, p_name, len) == 0 && p_name[len] == 0)
+    if (Strnicmp(buf, p_name, len) == 0 && p_name[len] == 0)
     {
 	D(bug("[CDVDFS]\t-> Equal\n"));
 	return TRUE;
@@ -409,7 +401,7 @@ int Names_Equal(VOLUME *volume, directory_record *dir, char *p_name)
     if (pos>=0)
     {
 	D(bug("[CDVDFS]\t-> checking some more\n"));
-	return (Strncasecmp(buf, p_name, pos) == 0 && p_name[pos] == 0);
+	return (Strnicmp(buf, p_name, pos) == 0 && p_name[pos] == 0);
     }
     else
     {
@@ -424,6 +416,7 @@ int Names_Equal(VOLUME *volume, directory_record *dir, char *p_name)
 directory_record *Get_Directory_Record
 	(VOLUME *p_volume, uint32_t p_location, uint32_t p_offset)
 {
+    struct CDVDBase *global = p_volume->global;
     int len;
     int loc;
 
@@ -466,6 +459,7 @@ directory_record *Get_Directory_Record
 
 CDROM_OBJ *Iso_Create_Directory_Obj(VOLUME *p_volume, uint32_t p_location)
 {
+    struct CDVDBase *global = p_volume->global;
     directory_record *dir;
     uint32_t loc;
     int offset = 0;
@@ -520,7 +514,7 @@ CDROM_OBJ *Iso_Create_Directory_Obj(VOLUME *p_volume, uint32_t p_location)
 	offset += dir->length;
     }
 
-    obj = Iso_Alloc_Obj(dir->length);
+    obj = Iso_Alloc_Obj(global, dir->length);
     if (!obj)
     {
 	D(bug("[CDVDFS]\tFailed to allocate object\n"));
@@ -543,6 +537,7 @@ CDROM_OBJ *Iso_Create_Directory_Obj(VOLUME *p_volume, uint32_t p_location)
 
 CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
 {
+    struct CDVDBase *global = p_dir->global;
     uint32_t loc = OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length;
     uint32_t len = OBJ(p_dir,dir)->data_length;
     directory_record *dir;
@@ -607,7 +602,7 @@ CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
 	return Iso_Create_Directory_Obj(p_dir->volume, cl);
     }
 
-    obj = Iso_Alloc_Obj(dir->length);
+    obj = Iso_Alloc_Obj(global, dir->length);
     if (!obj)
     {
 	D(bug("[CDVDFS]\tFailed to create object\n"));
@@ -649,6 +644,7 @@ void Iso_Close_Obj(CDROM_OBJ *p_object)
 
 int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length) 
 {
+    struct CDVDBase *global = p_file->global;
     uint32_t loc;
     int remain_block, remain_file, remain;
     int len;
@@ -752,7 +748,7 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     return buf_pos;
 }
 
-t_ulong Extract_Date(directory_record *p_dir_record) 
+t_ulong Extract_Date(struct CDVDBase *global, directory_record *p_dir_record) 
 {
     struct ClockData ClockData;
 
@@ -798,7 +794,7 @@ int Iso_CDROM_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info)
 	p_info->directory_f = p_obj->directory_f;
 	p_info->symlink_f = p_obj->symlink_f;
 	p_info->file_length = OBJ(p_obj,dir)->data_length;
-	p_info->date = Extract_Date(OBJ(p_obj,dir));
+	p_info->date = Extract_Date(p_obj->global, OBJ(p_obj,dir));
 	p_info->protection = p_obj->protection;
 
 	if (p_obj->volume->protocol == PRO_ROCK &&
@@ -817,6 +813,7 @@ int Iso_CDROM_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info)
 int Iso_Examine_Next
 	(CDROM_OBJ *p_dir, CDROM_INFO *p_info, uint32_t *p_offset)
 {
+    struct CDVDBase *global = p_dir->global;
     uint32_t offset;
     directory_record *rec;
     int len;
@@ -904,7 +901,7 @@ int Iso_Examine_Next
     }
 
     p_info->file_length = rec->data_length;
-    p_info->date = Extract_Date(rec);
+    p_info->date = Extract_Date(global, rec);
 
     if (p_dir->volume->protocol == PRO_ROCK &&
 	    (len = Get_RR_File_Comment(p_dir->volume, rec, &p_info->protection, p_info->comment, sizeof(p_info->name))) > 0)
@@ -1020,6 +1017,7 @@ int Digs_To_Int (char *p_digits, int p_num)
 
 t_ulong Iso_Creation_Date(VOLUME *p_volume) 
 {
+    struct CDVDBase *global = p_volume->global;
     struct ClockData ClockData;
     char *dt = VOL(p_volume,pvd).vol_creation;
     
@@ -1079,7 +1077,7 @@ t_ulong Iso_File_Length (CDROM_OBJ *p_obj)
     return OBJ(p_obj,dir)->data_length;
 }
 
-t_handler g_iso_handler = 
+static t_handler const g_iso_handler = 
 {
     Iso_Close_Vol_Info,
     Iso_Open_Top_Level_Directory,

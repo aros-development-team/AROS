@@ -24,17 +24,18 @@ typedef struct vol_reg_node {
   struct vol_reg_node *next;
 } t_vol_reg_node;
 
+struct CDVDBase;
 
 void Register_Lock (LOCK *p_lock);
 void Unregister_Lock (LOCK *p_lock);
-int Reinstall_Locks (void);
+int Reinstall_Locks (struct CDVDBase *global);
 void Register_File_Handle(CDROM_OBJ *p_obj);
 void Unregister_File_Handle(CDROM_OBJ *p_obj);
 struct DeviceList *Find_Dev_List (CDROM_OBJ *p_obj);
-int Reinstall_File_Handles (void);
-void Register_Volume_Node(struct DeviceList *p_volume, char *Name);
-void Unregister_Volume_Node(struct DeviceList *p_volume);
-struct DeviceList *Find_Volume_Node(char *p_name);
+int Reinstall_File_Handles (struct CDVDBase *global);
+void Register_Volume_Node(struct CDVDBase *global, struct DeviceList *p_volume, char *Name);
+void Unregister_Volume_Node(struct CDVDBase *global, struct DeviceList *p_volume);
+struct DeviceList *Find_Volume_Node(struct CDVDBase *global, char *p_name);
 
 #endif /* VOLUMES_H */
 

@@ -48,18 +48,7 @@
 
 #define TIME_DIFF ((74UL * 365 + 19) * 24 * 60 * 60)
 
-extern struct Globals *global;
-
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-#ifdef UtilityBase
-#	undef UtilityBase
-#endif
-#define UtilityBase global->UtilityBase
-
-static char g_conv_table[128] = {
+static char const g_conv_table[128] = {
   'Ä', 'Å', 'Ç', 'É', 'Ñ', 'Ö', 'Ü',
   'á', 'à', 'â', 'ä', 'ã', 'å', 'ç',
   'é', 'è', 'ê', 'ë', 'í', 'ì', 'î',
@@ -319,6 +308,7 @@ int pos;
 t_bool HFS_Find_Leaf_Record
 	(VOLUME *p_volume, t_leaf_record_pos *p_leaf, t_ulong p_parent_id)
 {
+struct CDVDBase *global = p_volume->global;
 t_node_descr *node;
 short *sp;
 int i;
@@ -410,9 +400,11 @@ t_ulong next_node;
 	return TRUE;
 }
 
+static t_handler const g_hfs_handler;
+
 t_bool HFS_Init_Vol_Info
 	(VOLUME *p_volume, int p_start_block) {
-extern t_handler g_hfs_handler;
+struct CDVDBase *global = p_volume->global;
 t_uchar *block;
 t_hdr_node hdr;
 
@@ -473,7 +465,7 @@ void HFS_Close_Vol_Info(VOLUME *p_volume)
 	FreeMem (p_volume->vol_info, sizeof (t_hfs_vol_info));
 }
 
-CDROM_OBJ *HFS_Alloc_Obj(void) {
+CDROM_OBJ *HFS_Alloc_Obj(struct CDVDBase *global) {
 CDROM_OBJ *obj = AllocMem (sizeof (CDROM_OBJ), MEMF_PUBLIC | MEMF_CLEAR);
   
 	if (!obj)
@@ -482,6 +474,7 @@ CDROM_OBJ *obj = AllocMem (sizeof (CDROM_OBJ), MEMF_PUBLIC | MEMF_CLEAR);
 		return NULL;
 	}
 
+	obj->global = global;
 	obj->obj_info = AllocMem (sizeof (t_hfs_obj_info), MEMF_PUBLIC | MEMF_CLEAR);
 	if (!obj->obj_info)
 	{
@@ -489,11 +482,14 @@ CDROM_OBJ *obj = AllocMem (sizeof (CDROM_OBJ), MEMF_PUBLIC | MEMF_CLEAR);
 		return NULL;
 	}
 
+	obj->global = global;
+
 	return obj;
 }
 
 CDROM_OBJ *HFS_Open_Top_Level_Directory(VOLUME *p_volume) {
-CDROM_OBJ *obj = HFS_Alloc_Obj();
+struct CDVDBase *global = p_volume->global;
+CDROM_OBJ *obj = HFS_Alloc_Obj(global);
 
   if (!obj)
     return NULL;
@@ -510,6 +506,7 @@ CDROM_OBJ *obj = HFS_Alloc_Obj();
 
 CDROM_OBJ *HFS_Open_Object(VOLUME *p_volume, char *p_name, t_ulong p_parent) {
 t_leaf_record_pos leaf;
+struct CDVDBase *global = p_volume->global;
 CDROM_OBJ *obj;
 char name[50];
 char type;
@@ -563,7 +560,7 @@ t_bool data_fork = FALSE;
 			return NULL;
 	}
 
-	obj = HFS_Alloc_Obj();
+	obj = HFS_Alloc_Obj(global);
 	obj->directory_f = (type == 1);
 	obj->volume = p_volume;
 
@@ -584,6 +581,7 @@ CDROM_OBJ *HFS_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name) {
 }
 
 CDROM_OBJ *HFS_Find_Parent(CDROM_OBJ *p_obj) {
+struct CDVDBase *global = p_obj->global;
 t_leaf_record_pos leaf;
 
 	if (OBJ(p_obj,parent_id) == 2)
@@ -623,6 +621,7 @@ void HFS_Close_Obj(CDROM_OBJ *p_obj)
 
 int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length) 
 {
+    struct CDVDBase *global = p_file->global;
     uint32_t block;
     int remain_block, remain_file, remain;
     int len;
@@ -763,6 +762,7 @@ t_bool HFS_Cdrom_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info) {
 t_bool HFS_Examine_Next
 	(CDROM_OBJ *p_obj, CDROM_INFO *p_info, uint32_t *p_offset)
 {
+struct CDVDBase *global = p_obj->global;
 t_leaf_record_pos leaf;
 short fork = 3;
 
@@ -902,6 +902,7 @@ t_ulong HFS_Block_Size (VOLUME *p_volume)
 }
 
 void HFS_Volume_Id(VOLUME *p_volume, char *p_buf, int p_buf_length) {
+struct CDVDBase *global = p_volume->global;
 int len = p_buf_length - 1;
 
 	if (len > VOL(p_volume,mdb).VolNameLen)
@@ -933,7 +934,7 @@ t_ulong HFS_File_Length (CDROM_OBJ *p_obj)
 	  OBJ(p_obj,cat_rec).f.RLgLen);
 }
 
-t_handler g_hfs_handler = {
+static t_handler const g_hfs_handler = {
   HFS_Close_Vol_Info,
   HFS_Open_Top_Level_Directory,
   HFS_Open_Obj_In_Directory,

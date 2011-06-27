@@ -43,7 +43,7 @@ enum partype {
 void Cleanup (void)
 {
   if (UtilityBase)
-    CloseLibrary (UtilityBase);
+    CloseLibrary ((APTR)UtilityBase);
 }
 
 void Send_Packet (int p_cmd, void *p_1, void *p_2)
@@ -178,7 +178,7 @@ int main (int argc, char *argv[])
   if (argc != 4)
     Usage ();
 
-  if (!(UtilityBase = OpenLibrary ((UBYTE *) "utility.library", 37))) {
+  if (!(UtilityBase = (APTR)OpenLibrary ("utility.library", 37))) {
     fprintf (stderr, "cannot open utility.library\n");
     exit (1);
   }  

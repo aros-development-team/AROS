@@ -21,29 +21,30 @@
 
 #include LC_LIBDEFS_FILE
 
-LONG handler(struct ExecBase *SysBase);
+LONG CDVD_handler(struct ExecBase *SysBase);
 
-void CDVDFS_work()
+void CDVD_work()
 {
-    handler(SysBase);
+    CDVD_handler(SysBase);
 }
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR cdrombase)
 {
     APTR DOSBase;
     int ret;
+    BPTR seg;
 
     DOSBase = OpenLibrary("dos.library", 0);
     if (!DOSBase)
     	return FALSE;
 
-    cdrombase->ab_SegList = CreateSegList(CDVDFS_work);
-    if (cdrombase->ab_SegList == BNULL) {
+    seg = CreateSegList(CDVD_work);
+    if (seg == BNULL) {
     	CloseLibrary(DOSBase);
 	return FALSE;
     }
 
-    ret = AddSegment("cdrom.handler", cdrombase->ab_SegList, CMD_SYSTEM);
+    ret = AddSegment("cdrom.handler", seg, CMD_SYSTEM);
 
     CloseLibrary(DOSBase);
 

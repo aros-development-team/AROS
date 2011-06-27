@@ -58,18 +58,16 @@ void dbprintf (char *p_dummy, ...)
 }
 #endif
 
-struct Globals glob;
-struct Globals *global = &glob;
-
-struct UtilityBase *UtilityBase;
+struct CDVDBase glob;
+struct CDVDBase *global = &glob;
 
 void Cleanup (void)
 {
   if (global->g_cd)
     Cleanup_CDROM (global->g_cd);
 
-  if (global->CodesetsBase)
-    CloseLibrary(global->CodesetsBase);
+  if (CodesetsBase)
+    CloseLibrary(CodesetsBase);
   if (UtilityBase)
     CloseLibrary ((struct Library*) UtilityBase);
 }
@@ -966,18 +964,15 @@ int main (int argc, char *argv[])
 {
   global->g_cd = NULL;
   global->g_memory_type = MEMF_CHIP;
-  global->SysBase = SysBase;
   atexit (Cleanup);
 
   if (argc < 2)
     Usage ();
 
-  if (!(UtilityBase = (struct UtilityBase *)
-	 OpenLibrary ((UBYTE *) "utility.library", 37))) {
+  if (!(UtilityBase = (APTR)OpenLibrary("utility.library", 37))) {
     fprintf (stderr, "cannot open utility.library\n");
     exit (1);
   }
-  global->UtilityBase = UtilityBase;
 
   if (!Get_Device_And_Unit ()) {
     fprintf (stderr,
@@ -997,10 +992,10 @@ int main (int argc, char *argv[])
     exit (1);
   }
 
-  global->CodesetsBase = NULL;
-  InitCharset();
+  CodesetsBase = NULL;
+  InitCharset(global);
 
-  global->g_cd = Open_CDROM (global->g_device, global->g_unit, global->g_memory_type,
+  global->g_cd = Open_CDROM (global, global->g_device, global->g_unit, global->g_memory_type,
   		   STD_BUFFERS, 0);
   if (!global->g_cd) {
     fprintf (stderr, "cannot open CDROM, error code = %d\n", global->g_cdrom_errno);

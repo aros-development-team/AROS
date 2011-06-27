@@ -2,19 +2,17 @@
 #define INTUI_H
 /* intui.h: */
 
-void Init_Intui(void);
-void Close_Intui(void);
-void Display_Error_Tags(char *, APTR);
+#include "globals.h"
+
+void Init_Intui(struct CDVDBase *global);
+void Close_Intui(struct CDVDBase *global);
+void Display_Error_Tags(struct CDVDBase *global, char *, APTR);
 #define Display_Error(_p_msg, ...)	\
 ({					\
     IPTR _tags[] = { __VA_ARGS__ };	\
-    Display_Error_Tags(_p_msg, (CONST APTR )_tags); \
+    Display_Error_Tags(global, _p_msg, (CONST APTR )_tags); \
 })
-void Show_CDDA_Icon(void);
-void Hide_CDDA_Icon(void);
-
-extern struct MsgPort *g_app_port;
-extern ULONG g_app_sigbit;
-extern int g_retry_show_cdda_icon;
+void Show_CDDA_Icon(struct CDVDBase *global);
+void Hide_CDDA_Icon(struct CDVDBase *global);
 
 #endif

@@ -9,10 +9,12 @@ include $(TOP)/config/make.cfg
 
 TESTSDIR := $(AROS_TESTS)/cdrom
 
-MODULE_FILES := arosdevice
-HANDLER_FILES := device cdrom devsupp generic \
-	hfs iso9660 intui path rock volumes \
-	joliet prefs charset
+CORE_FILES := volumes path hfs generic iso9660 cdrom \
+		 devsupp rock joliet prefs charset intui device
+
+MODULE_FILES := resource $(CORE_FILES)
+HANDLER_FILES := handler $(CORE_FILES)
+
 CDCONTROL_FILES := cdcontrol
 CDROM_FILES := main cdrom iso9660 rock joliet \
 	hfs generic path charset
@@ -27,23 +29,24 @@ USER_CFLAGS := -DNDEBUG -DDEBUG=0
 
 %build_prog mmake=workbench-devs-cdvdfs-packet \
     progname=cdrom.handler targetdir=$(AROS_DEVS) \
-    objdir=$(GENDIR)/$(CURDIR)-packet files="$(HANDLER_FILES)" usestartup=no uselibs="arossupport rom"
+    objdir=$(GENDIR)/$(CURDIR)-packet files="$(HANDLER_FILES)" \
+    usestartup=no uselibs="arossupport rom"
 
 %build_prog mmake=workbench-devs-cdvdfs-cdcontrol \
     progname=cdcontrol targetdir=$(AROS_C) \
-    files=$(CDCONTROL_FILES) uselibs="amiga arosc"
+    files="$(CDCONTROL_FILES)" uselibs="amiga arosc"
 
 %build_prog mmake=workbench-devs-cdvdfs-cdrom \
     progname=cdrom targetdir=$(TESTSDIR) \
-    files=$(CDROM_FILES) uselibs="amiga arosc"
+    files="$(CDROM_FILES)" uselibs="amiga arosc"
 
 %build_prog mmake=workbench-devs-cdvdfs-checkcd \
     progname=checkcd targetdir=$(AROS_C) \
-    files=$(CHECKCD_FILES) uselibs="amiga arosc"
+    files="$(CHECKCD_FILES)" uselibs="amiga arosc"
 
 USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
 
 %build_module mmake=workbench-devs-cdvdfs \
     modname=cdrom modtype=resource modsuffix=handler \
-    files="$(MODULE_FILES) $(HANDLER_FILES)" \
+    files="$(MODULE_FILES)" \
     uselibs="arossupport rom"

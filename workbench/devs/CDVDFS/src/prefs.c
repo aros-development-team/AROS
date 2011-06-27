@@ -10,17 +10,20 @@
 #include "prefs.h"
 #include "aros_stuff.h"
 
-extern struct Globals *global;
-
-#define SysBase global->SysBase
-#define DOSBase global->DOSBase
-
 void SAVEDS Prefs_Process (void)
 {
     ULONG Sigset;
+    struct CDVDBase *global;
+    struct MsgPort *mp;
+    struct Message *msg;
 
-    BUG(dbprintf("Prefs handler process started\n");)
-    PutMsg(global->Dback, &global->DummyMsg);
+    mp = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+    WaitPort(mp);
+    msg =  GetMsg(mp);
+    global = (APTR)msg->mn_Node.ln_Name;
+
+    BUG(dbprintf(global, "Prefs handler process started for CDVDBase %p\n", global);)
+    ReplyMsg(msg);
 
     do
     {
@@ -29,7 +32,7 @@ void SAVEDS Prefs_Process (void)
 	 * because this can trigger loading some files from disk,
 	 * which in turn can trigger new requests to our handler.
 	 */
-	InitCharset();
+	InitCharset(global);
 
 	/*
 	 * TODO:
@@ -46,26 +49,32 @@ void SAVEDS Prefs_Process (void)
     PutMsg(global->Dback,&global->DummyMsg);	      /*  Kill handshake  */
 }
 
-struct TagItem PrefsProcTags[] = {
+static struct TagItem const PrefsProcTags[] = {
 	{NP_Entry, (IPTR)Prefs_Process},
 	{NP_Name, (IPTR)"CDVDFS prefs monitor"},
+#ifdef __mc68000
 	{NP_StackSize, 4096},
+#endif
 #ifdef __MORPHOS__
 	{NP_CodeType, CODETYPE_PPC},
 #endif
 	{ TAG_DONE }
 };
 
-void Prefs_Init (void)
+void Prefs_Init (struct CDVDBase *global)
 {
+
     global->PrefsProc = (struct Task *)CreateNewProc(PrefsProcTags);
     if (global->PrefsProc) {
+      global->DummyMsg.mn_ReplyPort = global->Dback;
+      global->DummyMsg.mn_Node.ln_Name = (APTR)global;
+      PutMsg(&((struct Process *)global->PrefsProc)->pr_MsgPort, &global->DummyMsg);
       WaitPort(global->Dback);				    /* handshake startup    */
       GetMsg(global->Dback);				    /* remove dummy msg     */
     };
 }
 
-void Prefs_Uninit (void)
+void Prefs_Uninit (struct CDVDBase *global)
 {
     if (global->PrefsProc)
     {
