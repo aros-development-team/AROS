@@ -198,23 +198,27 @@ static inline BOOL Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase
     	core_ExitInterrupt(regs); \
     return TRUE;
 
+/* AOS interrupt handlers will clear INTREQ before executing interrupt code,
+ * servers will clear INTREQ after whole server chain has been executed.
+ */
+
 static BOOL Amiga_Level_1(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* Paula IRQs 0 - Serial port TX done
      *            1 - Disk DMA finished
      *            2 - SoftInt
      */
-    PAULA_IRQ_CHECK(INTF_SOFTINT | INTF_DSKBLK | INTF_TBE);
 
-    PAULA_IRQ_HANDLE(INTB_TBE);
-    PAULA_IRQ_HANDLE(INTB_DSKBLK);
-    PAULA_IRQ_HANDLE(INTB_SOFTINT);
+    PAULA_IRQ_CHECK(INTF_SOFTINT | INTF_DSKBLK | INTF_TBE);
 
     /* SOFTINT is cleared by SOFTINT handler, we can't clear it
      * here anymore because SOFTINT handler may call Cause() internally
      */
-
     PAULA_IRQ_ACK(INTF_DSKBLK | INTF_TBE);
+
+    PAULA_IRQ_HANDLE(INTB_TBE);
+    PAULA_IRQ_HANDLE(INTB_DSKBLK);
+    PAULA_IRQ_HANDLE(INTB_SOFTINT);
 
     PAULA_IRQ_EXIT();
 }
@@ -258,13 +262,13 @@ static BOOL Amiga_Level_4(regs_t *regs, int id, struct ExecBase *SysBase)
      */
     PAULA_IRQ_CHECK(INTF_AUD0 | INTF_AUD1 | INTF_AUD2 | INTF_AUD3);
 
+    PAULA_IRQ_ACK(INTF_AUD0 | INTF_AUD1 | INTF_AUD2 | INTF_AUD3);
+
     PAULA_IRQ_HANDLE(INTB_AUD0);
     PAULA_IRQ_HANDLE(INTB_AUD1);
     PAULA_IRQ_HANDLE(INTB_AUD2);
     PAULA_IRQ_HANDLE(INTB_AUD3);
     
-    PAULA_IRQ_ACK(INTF_AUD0 | INTF_AUD1 | INTF_AUD2 | INTF_AUD3);
-
     PAULA_IRQ_EXIT();
 }
 
@@ -275,10 +279,10 @@ static BOOL Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
      */
     PAULA_IRQ_CHECK(INTF_RBF | INTF_DSKSYNC);
 
+    PAULA_IRQ_ACK(INTF_RBF | INTF_DSKSYNC);
+
     PAULA_IRQ_HANDLE(INTB_RBF);
     PAULA_IRQ_HANDLE(INTB_DSKSYNC);
-
-    PAULA_IRQ_ACK(INTF_RBF | INTF_DSKSYNC);
 
     PAULA_IRQ_EXIT();
 }
