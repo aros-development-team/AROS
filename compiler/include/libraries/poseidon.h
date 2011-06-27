@@ -149,7 +149,7 @@
 #define DA_IsNewToMe         (DA_Dummy + 0x41)
 #define DA_InhibitClassBind  (DA_Dummy + 0x42)
 #define DA_OverridePowerInfo (DA_Dummy + 0x43)
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
 #define DA_IsSuperspeed      (DA_Dummy + 0x44)
 #endif
 

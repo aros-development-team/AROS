@@ -75,7 +75,7 @@ AROS_UFH3(void, pciEnumerator,
     	case HCITYPE_UHCI:
 #endif
 #endif
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
     	case HCITYPE_XHCI:
 #endif
 	    KPRINTF(10, ("Setting up device...\n"));
@@ -308,7 +308,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     BOOL allocgood = TRUE;
     ULONG usb11ports;
     ULONG usb20ports;
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
     ULONG usb30ports;
 #endif
     ULONG cnt;
@@ -316,7 +316,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     ULONG ohcicnt = 0;
     ULONG uhcicnt = 0;
     ULONG ehcicnt = 0;
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
     ULONG xhcicnt = 0;
 #endif
     STRPTR prodname;
@@ -365,7 +365,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     allocgood = ehciInit(hc,hu);
                     break;
                 }
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
                 case HCITYPE_XHCI:
                 {
                     allocgood = xhciInit(hc,hu);
@@ -400,14 +400,14 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     // find all belonging host controllers
     usb11ports = 0;
     usb20ports = 0;
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
     usb30ports = 0;
 #endif
 
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
         if(hc->hc_HCIType == HCITYPE_XHCI)
         {
             xhcicnt++;
@@ -482,7 +482,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
     hu->hu_RootHub11Ports = usb11ports;
     hu->hu_RootHub20Ports = usb20ports;
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
 // FIXME: This is probably wrong as well... 
     hu->hu_RootHub30Ports = usb30ports;
     hu->hu_RootHubPorts = (usb11ports > usb20ports) ? ((usb11ports > usb30ports) ? usb11ports : usb30ports) : ((usb30ports > usb20ports) ? usb30ports : usb20ports);
@@ -494,7 +494,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         hu->hu_EhciOwned[cnt] = hu->hu_PortMap20[cnt] ? TRUE : FALSE;
     }
 
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
     KPRINTF(1000, ("Unit %ld: USB Board %08lx has %ld USB1.1, %ld USB2.0 and %ld USB3.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports, hu->hu_RootHub30Ports));
 #else
     KPRINTF(10, ("Unit %ld: USB Board %08lx has %ld USB1.1 and %ld USB2.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports));
@@ -535,7 +535,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     {
         pciStrcat(prodname, " EHCI USB 2.0");
     }
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
     if(xhcicnt)
     {
         if(xhcicnt >1)
@@ -588,7 +588,7 @@ void pciFreeUnit(struct PCIUnit *hu)
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
     xhciFree(hc, hu);
 #endif
     // doing this in three steps to avoid these damn host errors
