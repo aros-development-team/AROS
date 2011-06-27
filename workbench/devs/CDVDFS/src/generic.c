@@ -44,33 +44,6 @@
 #define HAN(vol,func) (*(vol)->handler->func)
 #define HANX(vol,func) ((vol)->handler->func)
 
-extern struct Globals *global;
-
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-#ifdef UtilityBase
-#	undef UtilityBase
-#endif
-#define UtilityBase global->UtilityBase
-
-/* Strncasecmp works like 'strncmp' but ignores case differences.
- */
-
-int Strncasecmp(char *p_str1,char *p_str2,int p_length) {
-int i;
-int len = 0;
-  
-	while (len < p_length && *p_str1 && *p_str2)
-	{
-		if ((i = ToLower (*p_str1++) - ToLower (*p_str2++)))
-			return i;
-		len++;
-	}
-	return (len == p_length) ? 0 : ToLower (*p_str1) - ToLower (*p_str2);
-}
-
 /* WhichProtocol - examines which protocol is used.
  *
  * Input Variables:
@@ -89,6 +62,8 @@ t_protocol Which_Protocol
 	(CDROM *p_cdrom,t_bool p_use_rock_ridge, t_bool p_use_joliet, int *p_skip,
 	 t_ulong *p_offset, t_ulong *p_svd_offset)
 {
+	struct CDVDBase *global = p_cdrom->global;
+
 	if (global->g_hfs_first && Uses_HFS_Protocol(p_cdrom, p_skip))
 		return PRO_HFS;
 
@@ -123,6 +98,7 @@ t_protocol Which_Protocol
 }
 
 VOLUME *Open_Volume(CDROM *p_cdrom, t_bool p_use_rock_ridge, t_bool p_use_joliet) {
+struct CDVDBase *global = p_cdrom->global;
 VOLUME *res;
 int skip;
 t_ulong offset, svdoffset;
@@ -134,6 +110,7 @@ t_ulong offset, svdoffset;
 		return NULL;
 	}
 
+	res->global = global;
 	res->cd = p_cdrom;
   
 	res->locks = 0;        /* may be modified by application program */
@@ -188,6 +165,7 @@ CDROM_OBJ * result = HAN
 }
 
 CDROM_OBJ *Open_Object(CDROM_OBJ *p_current_dir, char *p_path_name) {
+struct CDVDBase *global = p_current_dir->global;
 char *cp = p_path_name;
 CDROM_OBJ *obj, *new;
 VOLUME *vol = p_current_dir->volume;
@@ -359,6 +337,7 @@ t_ulong Location (CDROM_OBJ *p_object)
 
 int Seek_Position (CDROM_OBJ *p_object, long p_offset, int p_mode)
 {
+  struct CDVDBase *global = p_object->global;
   t_ulong new_pos;
   t_ulong max_len = HAN(p_object->volume, file_length)(p_object);
 

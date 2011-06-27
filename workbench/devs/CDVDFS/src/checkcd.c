@@ -44,19 +44,11 @@ extern struct Library *SysBase, *DOSBase;
 #define STD_BUFFERS 20
 #define FILE_BUFFERS 2
 
+static struct CDVDBase *global;
 t_ulong g_check_sector;
 char *g_check_name;
 prim_vol_desc g_pvd;
 int g_path_table_records = 0;
-
-struct Globals glob;
-struct Globals *global = &glob;
-
-#ifdef __MORPHOS__
-struct Library *UtilityBase;
-#else
-struct UtilityBase *UtilityBase;
-#endif
 
 #define TU(x,o)  (t_ulong)(((unsigned char *)(x))[o])
 #if AROS_BIG_ENDIAN
@@ -414,10 +406,10 @@ void Cleanup (void)
   if (global->g_cd)
     Cleanup_CDROM (global->g_cd);
 
-  if (global->CodesetsBase)
-    CloseLibrary(global->CodesetsBase);
+  if (CodesetsBase)
+    CloseLibrary(CodesetsBase);
   if (UtilityBase)
-    CloseLibrary ((struct Library *)UtilityBase);
+    CloseLibrary ((APTR)UtilityBase);
 }
 
 int Get_Device_And_Unit (void)
@@ -457,17 +449,20 @@ int Get_Device_And_Unit (void)
 
 int main (int argc, char *argv[])
 {
+  struct CDVDBase *global;
+
+  global = AllocMem(sizeof(*global), MEMF_CLEAR | MEMF_PUBLIC);
+  if (global)
+      return ERROR_NO_FREE_STORE;
+
   global->g_cd = NULL;
   global->g_memory_type = MEMF_CHIP;
-  global->SysBase = SysBase;
   atexit (Cleanup);
 
-  if (!(UtilityBase = (struct UtilityBase *)
-	 OpenLibrary ("utility.library", 37))) {
+  if (!(UtilityBase = (APTR)OpenLibrary ("utility.library", 37))) {
     fprintf (stderr, "cannot open utility.library\n");
     exit (1);
   }
-  global->UtilityBase = (struct UtilityBase *)UtilityBase;
 
   if (!Get_Device_And_Unit ()) {
     fprintf (stderr,
@@ -487,10 +482,10 @@ int main (int argc, char *argv[])
     exit (1);
   }
 
-  global->CodesetsBase = NULL;
-  InitCharset();
+  CodesetsBase = NULL;
+  InitCharset(global);
 
-  global->g_cd = Open_CDROM (global->g_device, global->g_unit, global->g_memory_type,
+  global->g_cd = Open_CDROM (global, global->g_device, global->g_unit, global->g_memory_type,
   		   STD_BUFFERS, FILE_BUFFERS);
   if (!global->g_cd) {
     fprintf (stderr, "cannot open CDROM, error code = %d\n", global->g_cdrom_errno);

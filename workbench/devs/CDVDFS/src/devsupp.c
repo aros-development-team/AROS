@@ -70,22 +70,11 @@
 #include "globals.h"
 #include "debug.h"
 
-extern struct Globals *global;
-extern const struct Resident ACDR_resident;
-
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-#ifdef DOSBase
-#	undef DOSBase
-#endif
-#define DOSBase global->DOSBase
-
-int OpenCDRom() {
+int OpenCDRom(struct CDVDBase *global) {
 
 	global->g_cd = Open_CDROM
 		(
+			global,
 			global->g_device,
 			global->g_unit,
 			global->g_memory_type,
@@ -141,7 +130,7 @@ int OpenCDRom() {
 	return FALSE;
 }
 
-int Get_Startup(struct FileSysStartupMsg *fssm) {
+int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
 	enum {
 	  ARG_RETRY,
 	  ARG_LOWERCASE,
@@ -164,7 +153,7 @@ int Get_Startup(struct FileSysStartupMsg *fssm) {
 
 	STRPTR Args[ARGCOUNT] = {0};
 	STRPTR Index;
-	static UBYTE LocalBuffer[250];
+	UBYTE LocalBuffer[250];
 	struct RDArgs *ArgsPtr;
 	int result = FALSE,len,i;
 	struct DosEnvec *de;
@@ -334,19 +323,19 @@ int Get_Startup(struct FileSysStartupMsg *fssm) {
 			    Display_Error ("Out of memory");
 			} else
 			  result = TRUE;
-			BUG(dbprintf("Use RockRidge: %ld\n", global->g_use_rock_ridge);)
-			BUG(dbprintf("Use joliet: %ld\n", global->g_use_joliet);)
-			BUG(dbprintf("Force lowercase: %ld\n", global->g_map_to_lowercase);)
-			BUG(dbprintf("Allow lowercase: %ld\n", global->g_maybe_map_to_lowercase);)
+			BUG(dbprintf(global, "Use RockRidge: %ld\n", global->g_use_rock_ridge);)
+			BUG(dbprintf(global, "Use joliet: %ld\n", global->g_use_joliet);)
+			BUG(dbprintf(global, "Force lowercase: %ld\n", global->g_map_to_lowercase);)
+			BUG(dbprintf(global, "Allow lowercase: %ld\n", global->g_maybe_map_to_lowercase);)
 		}
 	}
 	if (result)
-		return OpenCDRom();
+		return OpenCDRom(global);
 	else
 		return FALSE;
 }
 
-int Handle_Control_Packet (ULONG p_type, IPTR p_par1, IPTR p_par2)
+int Handle_Control_Packet (struct CDVDBase *global, ULONG p_type, IPTR p_par1, IPTR p_par2)
 {
   switch (p_type) {
   case CDCMD_LOWERCASE:
@@ -481,7 +470,7 @@ void SAVEDS debugmain (void)
     PutMsg(global->Dback,&global->DummyMsg);	      /*  Kill handshake  */
 }
 
-void dbinit (void)
+void dbinit (struct CDVDBase *global)
 {
     TASK *task = FindTask(NULL);
 
@@ -526,7 +515,7 @@ void dbuninit (void)
     }
 }
 
-void dbprintf (char *format, ...)
+void dbprintf (struct CDVDBase *global, char *format, ...)
 {
     va_list arg;
     char buf[256];

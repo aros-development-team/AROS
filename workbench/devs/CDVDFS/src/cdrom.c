@@ -81,13 +81,6 @@
 #include "clib_stuff.h"
 #include <exec/interrupts.h>
 
-extern struct Globals *global;
-
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-
 /*
  * i decided to change few things to make this code less insane.
  * biggest change is - i don't care any more if anyone reads one sector at a time
@@ -100,6 +93,7 @@ extern struct Globals *global;
 
 CDROM *Open_CDROM
 	(
+	        struct CDVDBase *global,
 		char *p_device,
 		int p_scsi_id,
 		uint32_t p_memory_type,
@@ -122,6 +116,7 @@ CDROM *Open_CDROM
 	if (NULL == cd)
 	    break;
 
+	cd->global = global;
 	cd->buffers_cnt  = p_std_buffers;
 
 	/*
@@ -272,6 +267,7 @@ int Read_From_Drive
  */
 int Read_Chunk(CDROM *p_cd, long p_sector)
 {
+    struct CDVDBase *global = p_cd->global;
     int status;
     int i;
     int loc;
@@ -380,10 +376,14 @@ int Mode_Select
 		int p_block_length
 	)
 {
-    static unsigned char cmd[6] = { 0x15, 0x10, 0, 0, 12, 0 };
-    static unsigned char mode[12] =
-    { 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0 };
+    uint8_t cmd[6] = { };
+    unsigned char mode[12] = { };
 
+    cmd[0] = 0x15;
+    cmd[1] = 0x10;
+    cmd[4] = 0x0a;
+
+    mode[3] = 8;
     mode[4] = p_mode;
     mode[9] = p_block_length >> 16;
     mode[10] = (p_block_length >> 8) & 0xff;
@@ -395,7 +395,9 @@ int Mode_Select
 
 int Inquire (CDROM *p_cd, t_inquiry_data *p_data)
 {
-    static unsigned char cmd[6] = { 0x12, 0, 0, 0, 96, 0 };
+    uint8_t cmd[6] = { };
+    cmd[0] = 0x12;
+    cmd[4] = 96;
 
     if (!Do_SCSI_Command(p_cd,p_cd->buffer_io,96,cmd,6,SCSIF_READ))
 	return FALSE;
@@ -411,13 +413,14 @@ t_toc_data *Read_TOC
 		t_toc_header *p_toc_header
 	)
 {
-    static uint8_t cmd[10] = { 0x43, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    uint8_t cmd[10] = { };
     uint32_t toc_len = 0;
     uint8_t *buf = p_cd->buffer_io;
 
     /*
      * check toc len
      */
+    cmd[0] = 0x43;
     cmd[7] = 0;
     cmd[8] = 4;
     if (0 == Do_SCSI_Command(p_cd, buf, 4, cmd, 10, SCSIF_READ))
@@ -553,11 +556,13 @@ inline void block2msf (uint32_t blk, unsigned char *msf)
 
 int Start_Play_Audio(CDROM *p_cd) 
 {
-    static unsigned char cmd[10] = { 0x47, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    uint8_t cmd[10] = { };
     uint32_t start = 0xffffffff,end;
     t_toc_header hdr;
     t_toc_data *toc;
     int i, len;
+
+    cmd[0] = 0x47;
 
     /*
      * read TOC
@@ -612,7 +617,8 @@ int Start_Play_Audio(CDROM *p_cd)
 
 int Stop_Play_Audio(CDROM *p_cd) 
 {
-    static unsigned char cmd[6] = { 0x1B, 0, 0, 0, 0, 0 };
+    uint8_t cmd[6] = { };
+    cmd[0] = 0x1b;
     return Do_SCSI_Command(p_cd, 0, 0, cmd, 6, SCSIF_READ);
 }
 
@@ -654,8 +660,11 @@ void Clear_Sector_Buffers (CDROM *p_cd)
 
 int Find_Last_Session(CDROM *p_cd, uint32_t *p_result)
 {
-    static uint8_t cmd[] = {0x43, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    uint8_t cmd[10] = { };
     uint8_t *data = p_cd->buffer_io;
+
+    cmd[0] = 0x43;
+    cmd[2] = 0x01;
 
     /*
      * first: READTOC IS MANDATORY

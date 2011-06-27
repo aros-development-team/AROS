@@ -26,13 +26,6 @@
 
 #include "clib_stuff.h"
 
-extern struct Globals *global;
-
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-
 /* Append p_name to path list: */
 
 t_path_list Append_Path_List(t_path_list p_list, char *p_name) {

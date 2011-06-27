@@ -37,13 +37,6 @@
 #define VOL(vol,tag) (((t_iso_vol_info *)(vol->vol_info))->tag)
 #define OBJ(obj,tag) (((t_iso_obj_info *)(obj->obj_info))->tag)
 
-extern struct Globals *global;
-
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-
 /* Check whether the given volume uses the Rock Ridge Interchange Protocol.
  * The protocol is identified by the sequence
  *            'S' 'P' 7 1 0xbe 0xef

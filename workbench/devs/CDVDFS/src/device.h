@@ -14,17 +14,7 @@
 #include <devices/inputevent.h>
 #include <utility/date.h>
 
-#include "filehandles.h"
 #include "generic.h"
-
-#ifdef AROS_KERNEL
-struct ACDRDeviceInfo {
-	struct MsgPort *taskmp;
-	struct FileSysStartupMsg fssm;
-	struct Globals *global;
-	struct ACDRHandle rootfh;
-};
-#endif
 
 typedef struct Interrupt	INTERRUPT;
 typedef struct Task		TASK;
@@ -44,8 +34,6 @@ typedef struct InfoData 	INFODATA;
 
 #define FILE_DIR    1
 #define FILE_FILE   -1
-
-extern t_bool g_disk_inserted;
 
 #endif /* ACDR_DEVICE_H */
 

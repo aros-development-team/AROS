@@ -22,9 +22,10 @@ typedef enum protocol {
 } t_protocol;
 
 typedef struct VOLUME {
+  struct CDVDBase *global;
   CDROM		 *cd;			/* Pointer to CDROM structure	*/
   t_protocol	 protocol;		/* Protocol used		*/
-  struct handler *handler;		/* Pointer to handler struct	*/
+  const struct handler *handler;		/* Pointer to handler struct	*/
   void		 *vol_info;		/* Depends on protocol		*/
   size_t	 vol_info_size;		/* Size of vol_info structure	*/
   t_bool	 mixed_char_filenames;	/* Filenames may contain upper
@@ -41,6 +42,7 @@ typedef struct VOLUME {
 } VOLUME;
 
 typedef struct CDROM_OBJ {
+  struct CDVDBase *global;
   t_bool		directory_f;	/* TRUE iff object is a directory     */
   t_bool		symlink_f;	/* TRUE iff object is a symbolic link */
   uint32_t		protection;	/* Amiga protection bits              */

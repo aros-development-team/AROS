@@ -12,27 +12,22 @@
 #include "charset.h"
 #include "aros_stuff.h"
 
-extern struct Globals *global;
-
-#define SysBase      global->SysBase
-#define CodesetsBase global->CodesetsBase
-
-void InitCharset(void)
+void InitCharset(struct CDVDBase *global)
 {
     if (!CodesetsBase)
     {
 	CodesetsBase = OpenLibrary("codesets.library", 0);
-	BUG(dbprintf("[CDVDFS] CodesetsBase 0x%p\n", CodesetsBase));
+	BUG(dbprintf(global, "[CDVDFS] CodesetsBase 0x%p\n", CodesetsBase));
 
 	if (CodesetsBase)
 	{
 	    global->uniCodeset = CodesetsFindA("UTF-16", NULL);
-	    BUG(dbprintf("[CDVDFS] Unicode codeset: 0x%p\n", global->uniCodeset));
+	    BUG(dbprintf(global, "[CDVDFS] Unicode codeset: 0x%p\n", global->uniCodeset));
 	}
     }
 }
 
-int UTF16ToSystem(char *from, char *to, unsigned char len)
+int UTF16ToSystem(struct CDVDBase *global, char *from, char *to, unsigned char len)
 {
     ULONG l = -1;
 

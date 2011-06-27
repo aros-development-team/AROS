@@ -36,41 +36,32 @@
 #include "aros_stuff.h"
 #include "clib_stuff.h"
 
-extern struct Globals *global;
-
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-#ifdef UtilityBase
-#	undef UtilityBase
-#endif
-#define UtilityBase global->UtilityBase
-
 /*  Associate p_lock with the pathname of the locked object on the current
  *  volume.
  */
 
 void Register_Lock (LOCK *p_lock)
 {
+  CDROM_OBJ *obj_p = (CDROM_OBJ *)p_lock->fl_Link;
+  struct CDVDBase *global = obj_p->global;
   t_lock_node *new;
   BUG(char pathname[300];)
 
   BUG
   (
-    if (!Full_Path_Name ((CDROM_OBJ*) p_lock->fl_Link, pathname, sizeof (pathname))) {
-      dbprintf ("[Cannot install lock / cannot determine pathname]");
+    if (!Full_Path_Name (obj_p, pathname, sizeof (pathname))) {
+      dbprintf (global, "[Cannot install lock / cannot determine pathname]");
       return;
     }
   );
 
   new = (t_lock_node*) AllocMem (sizeof (t_lock_node), MEMF_PUBLIC);
   if (!new) {
-    BUG(dbprintf ("[Cannot install lock on '%s']", pathname);)
+    BUG(dbprintf (global, "[Cannot install lock on '%s']", pathname);)
     return;
   }
 
-  new->pathlist = Copy_Path_List (((CDROM_OBJ*) p_lock->fl_Link)->pathlist, FALSE);
+  new->pathlist = Copy_Path_List (obj_p->pathlist, FALSE);
 
   new->vol_name = (char*) AllocMem (strlen (global->g_vol_name+1) + 1,
   				    MEMF_PUBLIC);
@@ -93,6 +84,8 @@ void Register_Lock (LOCK *p_lock)
 
 void Unregister_Lock (LOCK *p_lock)
 {
+  CDROM_OBJ *obj_p = (CDROM_OBJ *)p_lock->fl_Link;
+  struct CDVDBase *global = obj_p->global;
   t_lock_node *ptr, *old;
   BUG(char pathname[300];)
 
@@ -102,10 +95,10 @@ void Unregister_Lock (LOCK *p_lock)
       (
         if (!Path_Name_From_Path_List (ptr->pathlist, pathname,
                                        sizeof (pathname))) {
-          dbprintf ("[cannot determine pathname]");
+          dbprintf (global, "[cannot determine pathname]");
           return;
         }
-        dbprintf ("[Removing lock from '%s']", pathname);
+        dbprintf (global, "[Removing lock from '%s']", pathname);
       );
       if (old)
         old->next = ptr->next;
@@ -116,7 +109,7 @@ void Unregister_Lock (LOCK *p_lock)
       FreeMem (ptr, sizeof (t_lock_node));
       return;
     }
-  BUG(dbprintf ("[Lock cannot be removed %08lx]", (uint32_t) p_lock);)
+  BUG(dbprintf (global, "[Lock cannot be removed %08lx]", (uint32_t) p_lock);)
 }
 
 /*  Update the fl_Link values for all locks that have been
@@ -127,7 +120,7 @@ void Unregister_Lock (LOCK *p_lock)
  *  Returns the number of locks on the volume.
  */
 
-int Reinstall_Locks (void)
+int Reinstall_Locks (struct CDVDBase *global)
 {
   t_lock_node *ptr;
   CDROM_OBJ* obj;
@@ -138,15 +131,15 @@ int Reinstall_Locks (void)
     if (strcmp (global->g_vol_name+1, ptr->vol_name) == 0) {
       result++;
       if (!Path_Name_From_Path_List (ptr->pathlist, pathname, sizeof (pathname))) {
-        BUG(dbprintf ("[cannot determine pathname]");)
+        BUG(dbprintf (global, "[cannot determine pathname]");)
         break;
       }
-      BUG(dbprintf ("[Reinstalling lock on '%s'", pathname);)
+      BUG(dbprintf (global, "[Reinstalling lock on '%s'", pathname);)
       obj = Open_Object (global->g_top_level_obj, pathname);
       if (obj) {
-        BUG(dbprintf ("]\n");)
+        BUG(dbprintf (global, "]\n");)
       } else {
-        BUG(dbprintf ("(FAILED) ]\n");)
+        BUG(dbprintf (global, "(FAILED) ]\n");)
 	continue;
       }
       ptr->lock->fl_Link = (BPTR)obj;
@@ -161,6 +154,7 @@ int Reinstall_Locks (void)
 
 void Register_File_Handle(CDROM_OBJ *p_obj)
 {
+struct CDVDBase *global = p_obj->global;
 t_fh_node *new;
 
 	new = (t_fh_node*) AllocMem (sizeof (t_fh_node), MEMF_PUBLIC);
@@ -189,6 +183,7 @@ t_fh_node *new;
 
 void Unregister_File_Handle(CDROM_OBJ *p_obj) {
 t_fh_node *ptr, *old;
+struct CDVDBase *global = p_obj->global;
   
 	for (ptr=global->g_fh_list, old = NULL; ptr; old = ptr, ptr = ptr->next)
 		if (ptr->obj == p_obj && StrCmp (global->g_vol_name+1, ptr->vol_name) == 0)
@@ -209,7 +204,7 @@ t_fh_node *ptr, *old;
  *  Returns the number of file handles on the volume.
  */
 
-int Reinstall_File_Handles (void)
+int Reinstall_File_Handles (struct CDVDBase *global)
 {
   t_fh_node *ptr;
   int result = 0;
@@ -224,6 +219,7 @@ int Reinstall_File_Handles (void)
 }
 
 struct DeviceList *Find_Dev_List (CDROM_OBJ *p_obj) {
+struct CDVDBase *global = p_obj->global;
 t_fh_node *ptr;
 
 	for (ptr=global->g_fh_list; ptr; ptr = ptr->next)
@@ -239,7 +235,7 @@ t_fh_node *ptr;
 /*  Register a volume node as owned by this handler.
  */
 
-void Register_Volume_Node(struct DeviceList *p_volume, char *Name) {
+void Register_Volume_Node(struct CDVDBase *global, struct DeviceList *p_volume, char *Name) {
 t_vol_reg_node *new;
 int len;
   
@@ -263,7 +259,7 @@ int len;
 /*  Remove the registration for the volume node.
  */
 
-void Unregister_Volume_Node(struct DeviceList *p_volume) {
+void Unregister_Volume_Node(struct CDVDBase *global, struct DeviceList *p_volume) {
 t_vol_reg_node *ptr, *old;
 
 	for (ptr=global->g_volume_list, old=NULL; ptr; old=ptr, ptr=ptr->next)
@@ -284,7 +280,7 @@ t_vol_reg_node *ptr, *old;
 /*  Find a volume node with a matching name.
  */
 
-struct DeviceList *Find_Volume_Node(char *p_name) {
+struct DeviceList *Find_Volume_Node(struct CDVDBase *global, char *p_name) {
 t_vol_reg_node *ptr;
 
 	for (ptr=global->g_volume_list; ptr; ptr=ptr->next)

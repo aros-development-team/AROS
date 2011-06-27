@@ -21,6 +21,7 @@
 #define SCSI_BUFSIZE 2048
 
 typedef struct CDROM {
+  struct CDVDBase *global;
   unsigned char 	*buffer;
   unsigned char		**buffers;
   unsigned char 	*buffer_data;
@@ -68,6 +69,7 @@ typedef struct toc_data {
 
 CDROM *Open_CDROM
 	(
+		struct CDVDBase *global,
 		char *p_device,
 		int p_scsi_id,
 		uint32_t p_memory_type,
@@ -92,9 +94,6 @@ int Start_Play_Audio(CDROM *p_cd);
 int Stop_Play_Audio(CDROM *p_cd);
 void Clear_Sector_Buffers (CDROM *p_cd);
 int Find_Last_Session(CDROM *p_cd, uint32_t *p_result);
-
-extern int g_cdrom_errno;
-extern int g_ignore_blocklength;
 
 enum {
   CDROMERR_OK = 0,	/* no error			*/

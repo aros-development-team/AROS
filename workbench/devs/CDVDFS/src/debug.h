@@ -9,9 +9,9 @@
 #endif
 #	if DEBUG>0
 #		define BUG(x) x
-#               define dbinit() kprintf("Debugger running:" HANDLER_VERSION "GNU C" __VERSION__ "," __TIME__ "\n")
-#               define dbuninit()
-#		define dbprintf kprintf
+#               define dbinit(global) kprintf("Debugger running:" HANDLER_VERSION "GNU C" __VERSION__ "," __TIME__ "\n")
+#               define dbuninit(global)
+#		define dbprintf(global,fmt,args...) kprintf(fmt ,##args )
 #	else
 #		define BUG(x)
 #	endif
@@ -33,7 +33,7 @@
 #define D BUG
 #endif
 #ifndef bug
-#define bug dbprintf
+#define bug(fmt,args...) dbprintf(global, fmt ,##args )
 #endif
 
 #endif /* ACDR_DEBUG_H */

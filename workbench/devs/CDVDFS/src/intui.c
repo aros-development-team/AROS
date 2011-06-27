@@ -42,9 +42,7 @@
 #include "intui.h"
 #include "globals.h"
 
-extern struct Globals *global;
-
-UWORD g_image_data[] = {
+static UWORD const g_image_data[] = {
 	/* Plane 0 */
 		0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0001,0x1D5F,0x5000,
 		0x0002,0x8000,0x0000,0x0002,0x8000,0x0000,0x001E,0xB9F1,0xF000,
@@ -86,33 +84,16 @@ UWORD g_image_data[] = {
 		0xFFF8,0xFFFC,0x3FFE,0xFFFF,0x0001,0xFFFE,0xFFFF,0xFFFF,0xFFFE
 };
 
-char *g_iconname = "CD-DA";
-
-#ifdef SysBase
-#	undef SysBase
-#endif
-#define SysBase global->SysBase
-
-void Init_Intui() {
-#ifndef AROS_KERNEL
-struct IconBase *IconBase=NULL;
-#endif
-
-	global->IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
-#ifndef AROS_KERNEL
-	IconBase = (struct IconBase *)OpenLibrary("icon.library", 37);
-	if (!IconBase)
-	      Display_Error ("cannot open icon.library");
-	global->IconBase = IconBase;
-	global->WorkbenchBase = (struct WorkbenchBase *)OpenLibrary("workbench.library", 37);
-	if (!global->WorkbenchBase)
+void Init_Intui(struct CDVDBase *global) {
+	IntuitionBase = (APTR)OpenLibrary("intuition.library", 37);
+	WorkbenchBase = (APTR)OpenLibrary("workbench.library", 37);
+	if (!WorkbenchBase)
 	      Display_Error("cannot open workbench.library");
-	global->g_user_disk_object = GetDiskObject ("env:cdda");
+	IconBase = (APTR)OpenLibrary("icon.library", 37);
+	if (IconBase)
+		global->g_user_disk_object = GetDiskObject ("env:cdda");
 	if ((!IconBase) || (!global->g_user_disk_object))
 	{
-#else
-        global->WorkbenchBase=NULL;
-#endif
 		global->g_xpos = NO_ICON_POSITION;
 		global->g_ypos = NO_ICON_POSITION;
 		global->g_disk_object_image.LeftEdge = 0;
@@ -120,7 +101,7 @@ struct IconBase *IconBase=NULL;
 		global->g_disk_object_image.Width = 47;
 		global->g_disk_object_image.Height = 36;
 		global->g_disk_object_image.Depth = 3;
-		global->g_disk_object_image.ImageData = g_image_data;
+		global->g_disk_object_image.ImageData = (APTR)g_image_data;
 		global->g_disk_object_image.PlanePick = 0xff;
 		global->g_disk_object_image.PlaneOnOff = 0x00;
 		global->g_disk_object_image.NextImage = NULL;
@@ -151,47 +132,32 @@ struct IconBase *IconBase=NULL;
 		global->g_disk_object.do_ToolWindow = NULL;
 		global->g_disk_object.do_StackSize = 0;
 		global->g_user_disk_object = &global->g_disk_object;
-#ifndef AROS_KERNEL
 	}
 	else
 	{
 	char *name;
 		name = FindToolType (global->g_user_disk_object->do_ToolTypes, "ICONNAME");
 		if (name)
-			g_iconname = name;
+			global->g_iconname = name;
 	}
-#endif
 
 	global->g_app_port = NULL;
 	global->g_app_sigbit = 0;
 	global->g_app_icon = NULL;
 }
 
-void Close_Intui() {
-	if (global->WorkbenchBase)
-		CloseLibrary ((struct Library *)global->WorkbenchBase);
-	if (global->IconBase)
-		CloseLibrary ((struct Library *)global->IconBase);
-	if (global->IntuitionBase)
-		CloseLibrary ((struct Library *)global->IntuitionBase);
+void Close_Intui(struct CDVDBase *global) {
+	if (WorkbenchBase)
+		CloseLibrary ((struct Library *)WorkbenchBase);
+	if (IconBase)
+		CloseLibrary ((struct Library *)IconBase);
+	if (IntuitionBase)
+		CloseLibrary ((struct Library *)IntuitionBase);
 }
 
-#ifdef IntuitionBase
-#	undef IntutitionBase
-#endif
-#define IntuitionBase global->IntuitionBase
-#ifdef IconBase
-#	undef IconBase
-#endif
-#define IconBase global->IconBase
-#ifdef WorkbenchBase
-#	undef WorkbenchBase
-#endif
-#define WorkbenchBase global->WorkbenchBase
-
-void Display_Error_Tags (char *p_message, APTR arg)
+void Display_Error_Tags (struct CDVDBase *global, char *p_message, APTR arg)
 {
-    static struct EasyStruct req =
+    struct EasyStruct req =
     {
 	sizeof (struct EasyStruct),
 	0,
@@ -202,16 +168,33 @@ void Display_Error_Tags (char *p_message, APTR arg)
 
     if (IntuitionBase)
     {
-#ifdef AROS_KERNEL
 	if (!IntuitionBase->FirstScreen)
 	    return;
-#endif
         req.es_TextFormat = (UBYTE *) p_message;
         EasyRequestArgs (NULL, &req, NULL, arg);
     }
 }
 
-void Show_CDDA_Icon (void) {
+/* Evil workaround for a gcc 4.5.2 register spill bug on m68k
+ */
+#ifndef __mc68000
+static inline
+#endif
+void Add_CDDA_Icon(struct CDVDBase *global)
+{
+	global->g_app_icon = AddAppIconA
+		(
+			0,
+			0,
+			(UBYTE *) global->g_iconname,
+			global->g_app_port,
+			BNULL,
+			global->g_user_disk_object,
+			NULL
+		);
+}
+
+void Show_CDDA_Icon (struct CDVDBase *global) {
 
 	if (!IconBase || !WorkbenchBase)
 		return;
@@ -229,16 +212,7 @@ void Show_CDDA_Icon (void) {
 
 	global->g_app_sigbit = 1<<global->g_app_port->mp_SigBit;
 
-	global->g_app_icon = AddAppIconA
-		(
-			0,
-			0,
-			(UBYTE *) g_iconname,
-			global->g_app_port,
-			NULL,
-			global->g_user_disk_object,
-			NULL
-		);
+	Add_CDDA_Icon(global);
 
 	/*
 		AddAppIconA may fail if the Workbench has not yet been loaded.
@@ -253,7 +227,7 @@ void Show_CDDA_Icon (void) {
 	global->g_retry_show_cdda_icon = FALSE;
 }
 
-void Hide_CDDA_Icon(void) {
+void Hide_CDDA_Icon(struct CDVDBase *global) {
 struct Message *msg;
 
 	global->g_retry_show_cdda_icon = FALSE;

@@ -5,23 +5,24 @@
 #include <libraries/codesets.h>
 #include <workbench/workbench.h>
 
-#include "acdrbase.h"
 #include "cdrom.h"
 #include "debug.h"
 #include "device.h"
 #include "generic.h"
 #include "volumes.h"
 
-struct Globals
+/* Per-CD base */
+struct CDVDBase
 {
+    struct MinNode MinNode;
+
     /* Library bases */
-    struct ExecBase *SysBase;
-    struct DosLibrary *DOSBase;
-    struct UtilityBase *UtilityBase;/* Utility library for miscellaneous tasks */
-    struct IntuitionBase *IntuitionBase;
-    struct IconBase *IconBase;
-    struct WorkbenchBase *WorkbenchBase;
-    struct Library *CodesetsBase;
+    struct DosLibrary *g_DOSBase;
+    struct UtilityBase *g_UtilityBase;/* Utility library for miscellaneous tasks */
+    struct IntuitionBase *g_IntuitionBase;
+    struct IconBase *g_IconBase;
+    struct WorkbenchBase *g_WorkbenchBase;
+    struct Library *g_CodesetsBase;
 
     /* these two ones are needed to create new volume nodes */
     struct ACDRBase *acdrbase;      /* Base of the AROS handler */
@@ -31,6 +32,7 @@ struct Globals
     CDROM_OBJ	*g_top_level_obj;
 
     char	*g_vol_name;
+    char	*g_iconname;
     PROC	*DosProc;        /* Our Process */
     DEVNODE         *DosNode;        /* Our DOS node.. created by DOS for us */
     ULONG	g_dos_sigbit;
@@ -104,11 +106,12 @@ struct Globals
 
 };
 
-#define GET_SYSBASE struct ExecBase *SysBase = global->SysBase;
-#define GET_DOSBASE struct DOSBase *DOSBase = global->DOSBase;
-#define GET_UTILITYBASE struct UtilityBase *UtilityBase = global->UtilityBase;
-#define GET_INTUITIONBASE struct IntuitionBase *IntuitionBase = global->IntutiionBase;
-#define GET_ICONBASE struct IconBase *IconBase = global->IconBase;
+#define DOSBase       (global->g_DOSBase)
+#define UtilityBase   (global->g_UtilityBase)
+#define IntuitionBase (global->g_IntuitionBase)
+#define IconBase      (global->g_IconBase)
+#define WorkbenchBase (global->g_WorkbenchBase)
+#define CodesetsBase  (global->g_CodesetsBase)
 
 #endif /* GLOBALS_H */
 

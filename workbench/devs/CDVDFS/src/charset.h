@@ -1,4 +1,6 @@
-void InitCharset(void);
-int UTF16ToSystem(char *from, char *to, unsigned char len);
+struct CDVDBase;
+
+void InitCharset(struct CDVDBase *global);
+int UTF16ToSystem(struct CDVDBase *global, char *from, char *to, unsigned char len);
 
 
