@@ -10176,6 +10176,8 @@ fi
 
 if test "$usb30_code" = "yes" ; then
     aros_usb30_code="1"
+else
+    aros_usb30_code="0"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $usb30_code" >&5
 $as_echo "$usb30_code" >&6; }

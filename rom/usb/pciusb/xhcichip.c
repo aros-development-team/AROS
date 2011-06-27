@@ -11,7 +11,7 @@
 
 #include "uhwcmd.h"
 
-#if defined(AROS_USB30_CODE)
+#if (AROS_USB30_CODE)
 
 //void *AllocVecAlignedOnPage(ULONG bytesize, ULONG flags, ULONG alignment);
 
