@@ -85,4 +85,15 @@ typedef AROS_BSTR_TYPE BSTR;
 #define AROS_BSTR_getchar(s,l)   (AROS_BSTR_ADDR(s)[l])
 #define AROS_BSTR_putchar(s,l,c) (AROS_BSTR_ADDR(s)[l] = c)
 
+/* Convenience macro for declaring const BSTRs
+ */
+#ifdef AROS_FAST_BSTR
+#define AROS_CONST_BSTR(string) ((BSTR)MKBADDR(string))
+#else
+#define AROS_CONST_BSTR(string) ({ \
+    struct { UBYTE len; UBYTE str[sizeof(string)]; } \
+    	const __tmp_bstr = { .len = sizeof(string)-1, .str = string }; \
+    (BSTR)MKBADDR(&__tmp_bstr);})
+#endif
+
 #endif /* DOS_BPTR_H */
