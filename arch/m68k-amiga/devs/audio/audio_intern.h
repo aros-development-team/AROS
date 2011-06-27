@@ -9,10 +9,17 @@
 #define NR_CH 4
 #define CH_MASK ((1 << NR_CH) - 1)
 
+struct AudioInterrupt
+{
+	struct Interrupt audint;
+	UWORD ch;
+	struct AudioBase *ab;
+};
+
 struct AudioBase
 {
     struct Device td_device;
-    struct Interrupt audint[NR_CH];
+    struct AudioInterrupt audint[NR_CH];
     UWORD *zerosample;
     WORD key[NR_CH];
     BYTE  pri[NR_CH];

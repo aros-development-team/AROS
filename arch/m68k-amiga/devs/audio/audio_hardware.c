@@ -139,18 +139,8 @@ AROS_UFH4(ULONG, audio_int,
 { 
     AROS_USERFUNC_INIT
 
-    volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct AudioBase *ab = data;
-    UWORD irqmask = custom->intreqr;
-
-    if (irqmask & INTF_AUD0)
-    	audioirq(ab, 0);
-    if (irqmask & INTF_AUD1)
-    	audioirq(ab, 1);
-    if (irqmask & INTF_AUD2)
-    	audioirq(ab, 2);
-    if (irqmask & INTF_AUD3)
-    	audioirq(ab, 3);
+    struct AudioInterrupt *ai = data;
+    audioirq(ai->ab, ai->ch);
 
     return 0;
 
@@ -160,7 +150,7 @@ AROS_UFH4(ULONG, audio_int,
 void audiohw_reset(struct AudioBase *ab, UWORD mask)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct Interrupt *inter;
+    struct AudioInterrupt *inter;
     UBYTE ch;
 
     Disable();
@@ -170,11 +160,13 @@ void audiohw_reset(struct AudioBase *ab, UWORD mask)
     	if (!(mask & (1 << ch)))
     	    continue;
 	inter = &ab->audint[ch];
-	inter->is_Code = (APTR)audio_int;
-	inter->is_Data = ab;
-	inter->is_Node.ln_Name = "audio";
-	inter->is_Node.ln_Type = NT_INTERRUPT;
-	SetIntVector(INTB_AUD0 + ch, inter);
+	inter->audint.is_Code = (APTR)audio_int;
+	inter->audint.is_Data = inter;
+	inter->audint.is_Node.ln_Name = "audio";
+	inter->audint.is_Node.ln_Type = NT_INTERRUPT;
+	inter->ch = ch;
+	inter->ab = ab;
+	SetIntVector(INTB_AUD0 + ch, &inter->audint);
 	custom->aud[ch].ac_vol = 0;
 	custom->aud[ch].ac_per = 100;
     }
