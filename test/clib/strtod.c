@@ -128,7 +128,7 @@ void testnewline(const char * buffer, const int * ptroffset)
         if ((float)newlinetestresults[i] != (float)f)
             printf("RESULT FAILURE @ %s, should be %f was %f\n", src, newlinetestresults[i], f);
         if (ptroffset[i] != (next - src))
-            printf("OFFSET FAILURE @ %s, should be %d was %d\n", src, ptroffset[i], (next - src));
+            printf("OFFSET FAILURE @ %s, should be %d was %d\n", src, ptroffset[i], (int)(next - src));
         if(next <= src) break;
     }
     
@@ -149,11 +149,13 @@ int main()
         if (f != results[i])
             printf("RESULT FAILURE @ %s, should be %f was %f\n", str, results[i], f);
         if ((float_end - str) != ptroffset[i])
-            printf("OFFSET FAILURE @ %s, should be %d was %d\n", str, ptroffset[i], (float_end - str));
+            printf("OFFSET FAILURE @ %s, should be %d was %d\n", str, ptroffset[i], (int)(float_end - str));
         i++;
     }
     
     /* Check bahavior with new-lined strings */
     testnewline(newlinetest_rn, newlinetestptroffset_rn);
     testnewline(newlinetest_n, newlinetestptroffset_n);
+
+    return 0;
 }
