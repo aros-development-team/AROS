@@ -75,7 +75,7 @@ struct dirent *ReadDir(struct emulbase *emulbase, struct filehandle *fh, IPTR *d
 
 /*********************************************************************************************/
 
-static int TryRead(struct LibCInterface *iface, int fd, void *buf, SIPTR len)
+static int TryRead(struct emulbase *emulbase, int fd, void *buf, SIPTR len)
 {
     fd_set rfds;
     struct timeval tv = {1, 0};
@@ -84,7 +84,7 @@ static int TryRead(struct LibCInterface *iface, int fd, void *buf, SIPTR len)
     FD_ZERO (&rfds);
     FD_SET(fd, &rfds);
 
-    res = iface->select(fd+1, &rfds, NULL, NULL, &tv);
+    res = emulbase->pdata.SysIFace->select(fd+1, &rfds, NULL, NULL, &tv);
     AROS_HOST_BARRIER
 
     if (res == -1)
@@ -96,7 +96,7 @@ static int TryRead(struct LibCInterface *iface, int fd, void *buf, SIPTR len)
     if (res == 0)
 	return -2;
     
-    res = iface->read(fd, buf, len);
+    res = emulbase->pdata.SysIFace->read(fd, buf, len);
     AROS_HOST_BARRIER
     
     return res;
@@ -274,7 +274,6 @@ static void timestamp2datestamp(struct emulbase *emulbase, time_t *timestamp, st
 
 static time_t datestamp2timestamp(struct emulbase *emulbase, struct DateStamp *datestamp)
 {
-    struct LibCInterface *iface = emulbase->pdata.SysIFace;
     ULONG secs = datestamp->ds_Days * (60 * 60 * 24) + 
                  datestamp->ds_Minute * 60 +
                  datestamp->ds_Tick / TICKS_PER_SECOND;
@@ -292,7 +291,7 @@ static time_t datestamp2timestamp(struct emulbase *emulbase, struct DateStamp *d
     tm.tm_min = date.min;
     tm.tm_sec = date.sec;
     
-    ret = iface->mktime(&tm);
+    ret = emulbase->pdata.SysIFace->mktime(&tm);
     AROS_HOST_BARRIER
 
     return ret;
@@ -302,8 +301,9 @@ static time_t datestamp2timestamp(struct emulbase *emulbase, struct DateStamp *d
 
 #ifdef NO_CASE_SENSITIVITY
 
-static void fixcase(struct LibCInterface *iface, char *pathname)
+static void fixcase(struct emulbase *emulbase, char *pathname)
 {
+    struct LibCInterface *iface = emulbase->pdata.SysIFace;
     struct dirent 	*de;
     struct stat	st;
     DIR			*dir;
@@ -313,7 +313,7 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
 
     pathstart = pathname;
 
-    res = iface->lstat((const char *)pathname, &st);
+    res = emulbase->pdata.SysIFace->lstat((const char *)pathname, &st);
     AROS_HOST_BARRIER
 
     if (res == 0)
@@ -329,14 +329,14 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
 
 	dirfound = TRUE;
 	    
-	res = iface->lstat(pathname, &st);
+	res = emulbase->pdata.SysIFace->lstat(pathname, &st);
 	AROS_HOST_BARRIER
 	if (res != 0)
 	{
 	    dirfound = FALSE;
 
             pathstart[-1] = '\0';
-	    dir = iface->opendir(pathname);
+	    dir = emulbase->pdata.SysIFace->opendir(pathname);
 	    AROS_HOST_BARRIER
 	    pathstart[-1] = '/';
 
@@ -344,12 +344,12 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
 	    {
 		while(1)
 		{
-		    de = iface->readdir(dir);
+		    de = emulbase->pdata.SysIFace->readdir(dir);
 		    AROS_HOST_BARRIER
 		    if (!de)
 		    	break;
 		    
-        	    if (strcasecmp(de->d_name, pathstart) == 0)
+        	    if (Stricmp(de->d_name, pathstart) == 0)
 		    {
 			dirfound = TRUE;
 			strcpy(pathstart, de->d_name);
@@ -371,18 +371,18 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
 
 #else
 
-#define fixcase(iface, pathname)
+#define fixcase(emulbase, pathname)
 
 #endif
 
 /*-------------------------------------------------------------------------------------------*/
 
-static int inline nocase_lstat(struct LibCInterface *iface, char *file_name, struct stat *st)
+static int inline nocase_lstat(struct emulbase *emulbase, char *file_name, struct stat *st)
 {
     int ret;
 
-    fixcase(iface, file_name);
-    ret = iface->lstat(file_name, st);
+    fixcase(emulbase, file_name);
+    ret = emulbase->pdata.SysIFace->lstat(file_name, st);
     AROS_HOST_BARRIER
 
     return ret;
@@ -390,38 +390,12 @@ static int inline nocase_lstat(struct LibCInterface *iface, char *file_name, str
 
 /*-------------------------------------------------------------------------------------------*/
 
-static inline int nocase_unlink(struct LibCInterface *iface, char *pathname)
+static inline int nocase_unlink(struct emulbase *emulbase, char *pathname)
 {
     int ret;
 
-    fixcase(iface, pathname);
-    ret = iface->unlink((const char *)pathname);
-    AROS_HOST_BARRIER
-    
-    return ret;
-}
-
-/*-------------------------------------------------------------------------------------------*/
-
-static inline int nocase_mkdir(struct LibCInterface *iface, char *pathname, mode_t mode)
-{
-    int ret;
-
-    fixcase(iface, pathname);
-    ret = iface->mkdir(pathname, mode);
-    AROS_HOST_BARRIER
-
-    return ret;
-}
-
-/*-------------------------------------------------------------------------------------------*/
-
-static inline int nocase_rmdir(struct LibCInterface *iface, char *pathname)
-{
-    int ret;
-
-    fixcase(iface, pathname);
-    ret = iface->rmdir(pathname);
+    fixcase(emulbase, pathname);
+    ret = emulbase->pdata.SysIFace->unlink((const char *)pathname);
     AROS_HOST_BARRIER
     
     return ret;
@@ -429,14 +403,12 @@ static inline int nocase_rmdir(struct LibCInterface *iface, char *pathname)
 
 /*-------------------------------------------------------------------------------------------*/
 
-static inline int nocase_link(struct LibCInterface *iface, char *oldpath, char *newpath)
+static inline int nocase_mkdir(struct emulbase *emulbase, char *pathname, mode_t mode)
 {
     int ret;
 
-    fixcase(iface, oldpath);
-    fixcase(iface, newpath);
-
-    ret = iface->link(oldpath, newpath);
+    fixcase(emulbase, pathname);
+    ret = emulbase->pdata.SysIFace->mkdir(pathname, mode);
     AROS_HOST_BARRIER
 
     return ret;
@@ -444,31 +416,59 @@ static inline int nocase_link(struct LibCInterface *iface, char *oldpath, char *
 
 /*-------------------------------------------------------------------------------------------*/
 
-static inline int nocase_symlink(struct LibCInterface *iface, char *oldpath, char *newpath)
+static inline int nocase_rmdir(struct emulbase *emulbase, char *pathname)
+{
+    int ret;
+
+    fixcase(emulbase, pathname);
+    ret = emulbase->pdata.SysIFace->rmdir(pathname);
+    AROS_HOST_BARRIER
+    
+    return ret;
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static inline int nocase_link(struct emulbase *emulbase, char *oldpath, char *newpath)
+{
+    int ret;
+
+    fixcase(emulbase, oldpath);
+    fixcase(emulbase, newpath);
+
+    ret = emulbase->pdata.SysIFace->link(oldpath, newpath);
+    AROS_HOST_BARRIER
+
+    return ret;
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static inline int nocase_symlink(struct emulbase *emulbase, char *oldpath, char *newpath)
 { 
-    fixcase(iface, oldpath);
-    fixcase(iface, newpath);
+    fixcase(emulbase, oldpath);
+    fixcase(emulbase, newpath);
 
-    return iface->symlink(oldpath, newpath);
+    return emulbase->pdata.SysIFace->symlink(oldpath, newpath);
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
-static inline int nocase_rename(struct LibCInterface *iface, char *oldpath, char *newpath)
+static inline int nocase_rename(struct emulbase *emulbase, char *oldpath, char *newpath)
 {
     struct stat st;
     int ret;
     
-    fixcase(iface, oldpath);
-    fixcase(iface, newpath);
+    fixcase(emulbase, oldpath);
+    fixcase(emulbase, newpath);
 
     /* AmigaDOS Rename does not allow overwriting */
-    ret = iface->lstat(newpath, &st);
+    ret = emulbase->pdata.SysIFace->lstat(newpath, &st);
     AROS_HOST_BARRIER
     if (ret == 0)
     	return ERROR_OBJECT_EXISTS;
 
-    ret = iface->rename(oldpath, newpath);
+    ret = emulbase->pdata.SysIFace->rename(oldpath, newpath);
     AROS_HOST_BARRIER
 
     return ret;
@@ -476,13 +476,13 @@ static inline int nocase_rename(struct LibCInterface *iface, char *oldpath, char
 
 /*-------------------------------------------------------------------------------------------*/
 
-static inline int nocase_chmod(struct LibCInterface *iface, char *path, mode_t mode)
+static inline int nocase_chmod(struct emulbase *emulbase, char *path, mode_t mode)
 {
     int ret;
 
-    fixcase(iface, path);
+    fixcase(emulbase, path);
 
-    ret = iface->chmod(path, mode);
+    ret = emulbase->pdata.SysIFace->chmod(path, mode);
     AROS_HOST_BARRIER
     
     return ret;
@@ -490,24 +490,24 @@ static inline int nocase_chmod(struct LibCInterface *iface, char *path, mode_t m
 
 /*-------------------------------------------------------------------------------------------*/
 
-static inline int nocase_readlink(struct LibCInterface *iface, char *path, char *buffer, SIPTR size)
+static inline int nocase_readlink(struct emulbase *emulbase, char *path, char *buffer, SIPTR size)
 {
     int ret;
 
-    fixcase(iface, path);
+    fixcase(emulbase, path);
 
-    ret = iface->readlink(path, buffer, size);
+    ret = emulbase->pdata.SysIFace->readlink(path, buffer, size);
     AROS_HOST_BARRIER
     
     return ret;
 }
 
-static inline int nocase_utime(struct LibCInterface *iface, char *path, const struct utimbuf *times)
+static inline int nocase_utime(struct emulbase *emulbase, char *path, const struct utimbuf *times)
 {
     int ret;
 
-    fixcase(iface, path);
-    ret = iface->utime(path, times);
+    fixcase(emulbase, path);
+    ret = emulbase->pdata.SysIFace->utime(path, times);
     AROS_HOST_BARRIER
     
     return ret;
@@ -526,7 +526,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 
     HostLib_Lock();
 
-    r = nocase_lstat(emulbase->pdata.SysIFace, fh->hostname, &st);
+    r = nocase_lstat(emulbase, fh->hostname, &st);
     /* File name case is already adjusted here, so after this we can call UNIX functions directly */
 
     if (r == -1)
@@ -614,7 +614,7 @@ size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_
     HostLib_Lock();
 
     do {
-        len = TryRead(emulbase->pdata.SysIFace, (IPTR)fh->fd, buff, len);
+        len = TryRead(emulbase, (IPTR)fh->fd, buff, len);
         DREAD(bug("[emul] Result: %d\n", len));
         if (len == -1)
             error = err_u2a(emulbase);
@@ -643,14 +643,14 @@ size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff
     return len;
 }
 
-off_t DoSeek(struct emulbase *emulbase, void *file, off_t offset, ULONG mode, SIPTR *err)
+off_t DoSeek(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULONG mode, SIPTR *err)
 {
     SIPTR res;
     off_t oldpos = 0;
     SIPTR error = 0;
 
     /* kprintf() does not understand UQUAD values */
-    DSEEK(bug("[emul] DoSeek(%d, 0x%llx, %d)\n", (int)file, (unsigned long long)offset, (int)mode));
+    DSEEK(bug("[emul] DoSeek(%d, 0x%llx, %d)\n", (int)fh->fd, (unsigned long long)offset, (int)mode));
 
     switch (mode) {
     case OFFSET_BEGINNING:
@@ -667,14 +667,14 @@ off_t DoSeek(struct emulbase *emulbase, void *file, off_t offset, ULONG mode, SI
 
     HostLib_Lock();
 
-    res = LSeek((IPTR)file, 0, SEEK_CUR);
+    res = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
     AROS_HOST_BARRIER
 
     DSEEK(bug("[emul] Original position: 0x%llx\n", (unsigned long long)res));
     if (res != -1)
     {
         oldpos = res;
-        res = LSeek((IPTR)file, offset, mode);
+        res = LSeek((IPTR)fh->fd, offset, mode);
         AROS_HOST_BARRIER
 
 	DSEEK(bug("[emul] New position: 0x%llx\n", (unsigned long long)res));
@@ -697,7 +697,7 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
 
     HostLib_Lock();
 
-    ret = nocase_mkdir(emulbase->pdata.SysIFace, fh->hostname, protect);
+    ret = nocase_mkdir(emulbase, fh->hostname, protect);
     if (!ret)
     {
 	fh->type = FHD_DIRECTORY;
@@ -720,7 +720,7 @@ LONG DoDelete(struct emulbase *emulbase, char *name)
 
     HostLib_Lock();
 
-    ret = nocase_lstat(emulbase->pdata.SysIFace, name, &st);
+    ret = nocase_lstat(emulbase, name, &st);
 
     if (!ret)
     {
@@ -750,7 +750,7 @@ LONG DoChMod(struct emulbase *emulbase, char *filename, ULONG prot)
     
     HostLib_Lock();
 
-    ret = nocase_chmod(emulbase->pdata.SysIFace, filename, prot_a2u(prot));
+    ret = nocase_chmod(emulbase, filename, prot_a2u(prot));
     if (ret)
         ret = err_u2a(emulbase);
 
@@ -765,7 +765,7 @@ LONG DoHardLink(struct emulbase *emulbase, char *fn, char *oldfile)
 
     HostLib_Lock();
 
-    error = nocase_link(emulbase->pdata.SysIFace, oldfile, fn);
+    error = nocase_link(emulbase, oldfile, fn);
     if (error)
         error = err_u2a(emulbase);
 
@@ -780,7 +780,7 @@ LONG DoSymLink(struct emulbase *emulbase, char *dest, char *src)
 
     HostLib_Lock();
 
-    error = nocase_symlink(emulbase->pdata.SysIFace, dest, src);
+    error = nocase_symlink(emulbase, dest, src);
     if (error)
         error = err_u2a(emulbase);
 
@@ -795,7 +795,7 @@ int DoReadLink(struct emulbase *emulbase, char *filename, char *buffer, ULONG si
 
     HostLib_Lock();
 
-    res = nocase_readlink(emulbase->pdata.SysIFace, filename, buffer, size);
+    res = nocase_readlink(emulbase, filename, buffer, size);
     if (res == -1)
         *err = err_u2a(emulbase);
     else if (res == size)
@@ -813,7 +813,7 @@ LONG DoRename(struct emulbase *emulbase, char *filename, char *newfilename)
 
     HostLib_Lock();
 
-    error = nocase_rename(emulbase->pdata.SysIFace, filename, newfilename);
+    error = nocase_rename(emulbase, filename, newfilename);
     if (error)
 	error = err_u2a(emulbase);
 
@@ -832,7 +832,7 @@ LONG DoSetDate(struct emulbase *emulbase, char *name, struct DateStamp *date)
     times.actime = datestamp2timestamp(emulbase, date);
     times.modtime = times.actime;
 
-    res = nocase_utime(emulbase->pdata.SysIFace, name, &times);
+    res = nocase_utime(emulbase, name, &times);
     if (res < 0)
         res = err_u2a(emulbase);
 
@@ -889,20 +889,6 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
 
     *err = error;
     return absolute;
-}
-
-BOOL DoGetType(struct emulbase *emulbase, void *fd)
-{
-    int ret;
-
-    HostLib_Lock();
-    
-    ret = emulbase->pdata.SysIFace->isatty((IPTR)fd);
-    AROS_HOST_BARRIER
-
-    HostLib_Unlock();
-
-    return ret;
 }
 
 LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)

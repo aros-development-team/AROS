@@ -6,6 +6,12 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-hosted/devs/filesys/emul_handler
 
+FILES := emul_host_mingw32
+
+%build_archspecific mainmmake=kernel-emul \
+  maindir=arch/all-hosted/devs/filesys/emul_handler/resource \
+  arch=mingw32 files=$(FILES)
+
 FILES := emul_host filenames
 
 %build_archspecific mainmmake=kernel-fs-emul \
