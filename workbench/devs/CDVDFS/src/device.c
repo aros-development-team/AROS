@@ -273,9 +273,7 @@ ULONG signals;
      *  Set dn_Task field which tells DOS not to startup a new
      *  process on every reference.
      */
-#ifndef AROS_KERNEL
     global->DosNode->dn_Task = &global->DosProc->pr_MsgPort;
-#endif
 
     Init_Intui ();
 

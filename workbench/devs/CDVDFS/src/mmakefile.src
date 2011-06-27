@@ -44,6 +44,6 @@ USER_CFLAGS := -DNDEBUG -DDEBUG=0
 USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
 
 %build_module mmake=workbench-devs-cdvdfs \
-    modname=cdrom modtype=device modsuffix=handler \
+    modname=cdrom modtype=resource modsuffix=handler \
     files="$(MODULE_FILES) $(HANDLER_FILES)" \
     uselibs="arossupport rom"
