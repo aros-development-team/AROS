@@ -108,7 +108,8 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
             iofs->io_Union.io_OpenDevice.io_DeviceName,
             iofs->io_Union.io_OpenDevice.io_Unit,
             iofs->io_Union.io_OpenDevice.io_DosName,
-            AROS_BSTR_ADDR(dn->dn_Handler)));
+            AROS_BSTR_ADDR(dn->dn_Handler),
+            dn->dn_SegList, dn->dn_Startup));
 
     /* find this mount */
     mount = NULL;
@@ -125,6 +126,27 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
 
     /* if we didn't find it then we have to set it up */
     if (mount == NULL) {
+#if 0
+	/* No way to find the handler? Then use the default.
+	 */
+	if (dn->dn_SegList == BNULL && dn->dn_Handler == BNULL)
+		dn->dn_SegList = DOSBase->dl_Root->rn_FileHandlerSegment;
+#endif
+
+	/* First, look in the DOS public segment list */
+	if (dn->dn_SegList == BNULL && dn->dn_Handler != BNULL) {
+	    struct Segment *seg = NULL;
+	    CONST_STRPTR cp = AROS_BSTR_ADDR(dn->dn_Handler);
+
+	    /* Try to find in the Resident Segment list */
+	    Forbid();
+	    seg = FindSegment(cp, NULL, TRUE);
+	    Permit();
+	    if (seg != NULL) {
+	    	    D(bug("[packet] handler '%s' found in DOS Segment List\n", cp));
+	    	    dn->dn_SegList = seg ? seg->seg_Seg : BNULL;
+	    }
+	}
 
         /* try to load the named handler from each dir in the search path if
          * not already loaded */
