@@ -36,11 +36,11 @@ struct DosListAROSExt
 #define dn_Device dol_Device
 #define dn_Unit dol_Unit
 
-#define AROS_DOSDEVNAME(dn) (((struct DosList*)dn)->dol_Ext.dol_AROS.dol_DevName)
+#define AROS_DOSDEVNAME(dn) (((struct DosList*)(dn))->dol_Ext.dol_AROS.dol_DevName)
 
 #else
 
-#define AROS_DOSDEVNAME(dn) ((char*)BADDR(((struct DosList*)dn)->dol_Name) + 1)
+#define AROS_DOSDEVNAME(dn) AROS_BSTR_ADDR(((struct DosList*)(dn))->dol_Name)
 
 #endif
 
