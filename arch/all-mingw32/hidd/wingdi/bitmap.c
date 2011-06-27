@@ -287,9 +287,9 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
         ULONG drmd = GC_DRMD(msg->gc);
 
         OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-        src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, src_stdpf);
+        src_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, src_stdpf);
         /* DIB pixels are expected to be 0x00RRGGBB */
-        dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_0RGB32_Native);
+        dst_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_0RGB32_Native);
         src = msg->pixels;
         dst = buf;
         HIDD_BM_ConvertPixels(o, &src, src_pixfmt, msg->modulo, &dst, dst_pixfmt, bufmod,
@@ -383,8 +383,8 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	Permit();
         OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 	/* DIB pixels will be 0x00RRGGBB) */
-        src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_0RGB32_Native);
-        dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, dst_stdpf);
+        src_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_0RGB32_Native);
+        dst_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, dst_stdpf);
         dst = msg->pixels;
         src = buf;
         HIDD_BM_ConvertPixels(o, &src, src_pixfmt, bufmod, &dst, dst_pixfmt, msg->modulo,
