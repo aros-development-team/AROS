@@ -18,3 +18,9 @@ AROS_LH2(int, KrnBug,
 
     AROS_LIBFUNC_EXIT
 }
+
+/* internal function for kernel when KernelBase is NULL */
+int __KrnBugBoot(const char *format, va_list args)
+{
+    return myvkprintf(format, args);
+}
