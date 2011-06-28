@@ -46,6 +46,9 @@ static const struct MemRegion PC_Memory[] =
 struct KernBootPrivate *__KernBootPrivate = NULL;
 struct ExecBase * __attribute__((section(".rodata"))) SysBase = NULL;
 
+static void doInitCode(IPTR imh2, IPTR  khi, IPTR addr, IPTR arg4,
+	               IPTR arg5, IPTR arg6, IPTR arg7, IPTR arg8);
+
 /*
  * Small asm stub in the beginning.
  * We do it in asm because we need to clear BSS section
@@ -379,42 +382,35 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 	__KernBootPrivate->kbp_LowMem = mh;
 	TLS_SET(SysBase, SysBase);
 
-	/* 
-	 * Make kickstart code area read-only.
-	 * We do it only after ExecBase creation because SysBase is put
-	 * into .rodata. This way we prevent it from ocassional modification by buggy software.
+	/* Attempt to allocate a real stack, and switch to it.
+	 * We need to do this, since our current stack is in
+	 * the area that's about to be hit with some memory
+	 * protection goodness.
 	 */
-        core_ProtKernelArea(addr, khi - addr, 1, 0, 1);
+	do {
+	    struct StackSwapStruct sss;
+	    struct StackSwapArgs ssa = {
+	    	.Args = { 
+	    	    (IPTR)mh2,
+	    	    (IPTR)addr,
+	    	    (IPTR)khi,
+		} };
+	    const ULONG size = AROS_STACKSIZE;
+	    APTR sp;
+	
+	    sp = AllocMem(size, MEMF_PUBLIC);
+	    if (sp == NULL) {
+		D(bug("Can't allocate a new stack for Exec... Strange.\n"));
+		break;
+	    }
 
-	/* Transfer the rest of memory list into SysBase */
-	D(bug("[Kernel] Transferring memory list into SysBase...\n"));
-	while (mh2->mh_Node.ln_Succ)
-	{
-	    mh = (struct MemHeader *)mh2->mh_Node.ln_Succ;
+	    sss.stk_Lower = sp;
+	    sss.stk_Upper = sp + size;
+	    sss.stk_Pointer = sss.stk_Upper;
 
-	    D(bug("[Kernel] * 0x%p - 0x%p (%s)\n", mh2->mh_Lower, mh2->mh_Upper, mh2->mh_Node.ln_Name));
-	    Enqueue(&SysBase->MemList, &mh2->mh_Node);
-
-	    mh2 = mh;
-	}
-
-	D(bug("[Kernel] Leaving supervisor mode\n"));
-	asm volatile (
-	    "mov %[user_ds],%%ds\n\t"   // Load DS and ES
-	    "mov %[user_ds],%%es\n\t"
-	    "mov %%rsp,%%r12\n\t"
-	    "pushq %[ds]\n\t"      	// SS
-	    "pushq %%r12\n\t"           // rSP
-	    "pushq $0x3002\n\t"         // rFLAGS
-	    "pushq %[cs]\n\t"		// CS
-	    "pushq $1f\n\t"
-	    "iretq\n 1:"
-	    ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
-
-	D(bug("[Kernel] Done?! Still here?\n"));
-
-	InitCode(RTF_SINGLETASK, 0);
-	InitCode(RTF_COLDSTART, 0);
+	    NewStackSwap(&sss, (LONG_FUNC)doInitCode, &ssa);
+	    /* We should never return */
+	} while (0);
 
 	bug("[Kernel] ERROR: System Boot Failed!\n");
 	panic();
@@ -432,6 +428,49 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
     }
 
     while (1) asm volatile("hlt");
+}
+
+static void doInitCode(IPTR imh2, IPTR  khi, IPTR addr, IPTR __a4,
+	               IPTR __a5, IPTR __a6, IPTR __a7, IPTR __a8)
+{
+    struct MemHeader *mh, *mh2 = (APTR)imh2;
+
+    /* 
+     * Make kickstart code area read-only.
+     * We do it only after ExecBase creation because SysBase is put
+     * into .rodata. This way we prevent it from ocassional modification by buggy software.
+     */
+        core_ProtKernelArea(addr, khi - addr, 1, 0, 1);
+
+    /* Transfer the rest of memory list into SysBase */
+    D(bug("[Kernel] Transferring memory list into SysBase...\n"));
+    while (mh2->mh_Node.ln_Succ)
+    {
+        mh = (struct MemHeader *)mh2->mh_Node.ln_Succ;
+
+        D(bug("[Kernel] * 0x%p - 0x%p (%s)\n", mh2->mh_Lower, mh2->mh_Upper, mh2->mh_Node.ln_Name));
+        Enqueue(&SysBase->MemList, &mh2->mh_Node);
+
+        mh2 = mh;
+    }
+
+    D(bug("[Kernel] Leaving supervisor mode\n"));
+    asm volatile (
+        "mov %[user_ds],%%ds\n\t"   // Load DS and ES
+        "mov %[user_ds],%%es\n\t"
+        "mov %%rsp,%%r12\n\t"
+        "pushq %[ds]\n\t"      	// SS
+        "pushq %%r12\n\t"           // rSP
+        "pushq $0x3002\n\t"         // rFLAGS
+        "pushq %[cs]\n\t"		// CS
+        "pushq $1f\n\t"
+        "iretq\n 1:"
+        ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
+
+    D(bug("[Kernel] Done?! Still here?\n"));
+
+    InitCode(RTF_SINGLETASK, 0);
+    InitCode(RTF_COLDSTART, 0);
 }
 
 /*
