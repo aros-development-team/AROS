@@ -10,13 +10,12 @@ include $(TOP)/config/make.cfg
 #MM kernel-package-strap-native:	\
 #MM	kernel-bootloader-pkg		\
 #MM	kernel-dosboot-pkg		\
-#MM	kernel-filesystem-pkg		\
 #MM	kernel-fs-afs-pkg		\
 #MM	workbench-devs-cdvdfs-pkg	\
 #MM	kernel-fs-sfs-pkg		\
 #MM	kernel-partition-pkg
 
-PKG_RSRC     := bootloader dosboot filesystem
+PKG_RSRC     := bootloader dosboot
 PKG_LIBS     := partition
 PKG_HANDLERS := afs cdrom sfs
 
