@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -56,7 +56,7 @@
 	case DOS_FILEHANDLE:
 	{
 	    struct FileHandle *fh=(struct FileHandle *)ptr;
-	    if(fh->fh_Flags&FHF_BUF)
+	    if (fh->fh_Flags & FHF_OWNBUF)
 		FreeMem(BADDR(fh->fh_Buf),fh->fh_Size);
 	    FreeMem(fh,sizeof(struct FileHandle));
 	    break;
