@@ -965,7 +965,7 @@ LONG DoSetDate(struct emulbase *emulbase, char *fullname, struct DateStamp *date
     return ret ? 0 : Errno_w2a(werr, FMF_WRITE);
 }
 
-off_t DoSetSize(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULONG mode, SIPTR *err)
+SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
     LONG error;
     ULONG werr;

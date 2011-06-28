@@ -49,7 +49,7 @@ LONG DoSymLink(struct emulbase *emulbase, char *dest, char *src);
 LONG DoRename(struct emulbase *emulbase, char *filename, char *newfilename);
 int DoReadLink(struct emulbase *emulbase, char *filename, char *buffer, ULONG size, LONG *err);
 LONG DoSetDate(struct emulbase *emulbase, char *fullname, struct DateStamp *date);
-off_t DoSetSize(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULONG mode, SIPTR *err);
+SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err);
 LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id);
 
 LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *EntryName,
