@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function realloc().
@@ -27,7 +27,7 @@
 	the new contents will be undefined.
 
     INPUTS
-	oldmen - What you got from malloc() or calloc().
+	oldmem - What you got from malloc() or calloc().
 	size - The new size.
 
     RESULT
@@ -81,6 +81,8 @@ copy:
 
 	if (newmem)
 	{
+	    if (size > oldsize)
+		size = oldsize;
 	    CopyMem (oldmem, newmem, size);
 	    free (oldmem);
 	}
