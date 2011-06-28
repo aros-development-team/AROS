@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a DOS device to the system.
@@ -139,7 +139,22 @@
 	}
 
 	CloseLibrary((struct Library *)DOSBase);
-    } else {
+    }
+    else
+    {
+    	/*
+    	 * CHECKME: Is this correct? V36 autodocs say this
+    	 * (http://cataclysm.cx/random/amiga/reference/Includes_and_Autodocs_2._guide/node03B0.html):
+    	 *
+    	 * Before V36 Kickstart, no function existed to add BOOTNODES.
+	 * If an older expansion.library is in use, driver code will need
+         * to manually construct a BootNode and Enqueue() it to eb_Mountlist.
+         * If you have a V36 or better expansion.library, your code should
+	 * use AddBootNode().
+	 *
+	 * Perhaps we should just fail here, and the driver has already constructed a BootNode
+	 * before calling AddDosEntry() ?
+	 */
     	return AddBootNode(bootPri, flags, deviceNode, NULL);
     }
     return ok;
