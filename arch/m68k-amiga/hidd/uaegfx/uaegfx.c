@@ -799,6 +799,7 @@ static const struct P96RTGmode rtgmodes[] =
 	{  320, 240, 1, 16000000,  416, 260, 0, 0, 40,  5,  16, 1, GMF_HPOLARITY | GMF_VPOLARITY | GMF_DOUBLESCAN },
 	{  640, 480, 3, 31000000,  832, 520, 0, 0, 48,  9,  80, 3, GMF_HPOLARITY | GMF_VPOLARITY },
 	{  800, 600, 4, 40100000, 1056, 620, 0, 0, 56,  1, 112, 2, 0 },
+	{ 1024, 768, 5, 65000000, 1344, 806, 0, 0, 88,  3,  88, 6, GMF_HPOLARITY | GMF_VPOLARITY },
 	{ 0 }
 };
 /* real RTG only */
@@ -963,7 +964,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     	return FALSE;
     }
 
-    csd->boardinfo = AllocVec(PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last, MEMF_CLEAR | MEMF_PUBLIC);
+    csd->boardinfo = AllocVec(PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last + sizeof(struct ModeInfo), MEMF_CLEAR | MEMF_PUBLIC);
     if (!csd->boardinfo) {
     	freeall(csd);
     	return FALSE;
@@ -973,6 +974,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_MemList));
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_WaitQ));
     csd->bitmapextra = csd->boardinfo + PSSO_BoardInfo_SizeOf;
+    csd->fakemodeinfo = (struct ModeInfo*)(csd->boardinfo + PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last);
     pl(csd->boardinfo + PSSO_BoardInfo_BitMapExtra, (ULONG)csd->bitmapextra);
     pl(csd->boardinfo + PSSO_BoardInfo_ExecBase, (ULONG)SysBase);
     pl(csd->boardinfo + PSSO_BoardInfo_UtilBase, (ULONG)csd->cs_UtilityBase);
