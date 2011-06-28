@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function setvbuf().
@@ -44,6 +44,13 @@
     fdesc *desc;
 
     if (!stream)
+    {
+	errno = EFAULT;
+	return EOF;
+    }
+
+    /* Fail if provided buffer is smaller than minimum required by DOS */
+    if (buf && size < 208)
     {
 	errno = EFAULT;
 	return EOF;
