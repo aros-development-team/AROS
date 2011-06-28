@@ -58,17 +58,17 @@
 
 #ifndef UTF32_TYPEDEF
 #define UTF32_TYPEDEF
-typedef unsigned long  UTF32;   /* at least 32 bits */
+typedef ULONG UTF32;   /* at least 32 bits */
 #endif
 
 #ifndef UTF16_TYPEDEF
 #define UTF16_TYPEDEF
-typedef unsigned short UTF16;   /* at least 16 bits */
+typedef UWORD UTF16;   /* at least 16 bits */
 #endif
 
 #ifndef UTF8_TYPEDEF
 #define UTF8_TYPEDEF
-typedef unsigned char  UTF8;    /* typically 8 bits */
+typedef UBYTE UTF8;    /* typically 8 bits */
 #endif
 
 /***********************************************************************/
