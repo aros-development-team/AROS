@@ -20,7 +20,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct DosPacket *, dp, D1),
-	AROS_LHA(LONG              , res1, D2),
+	AROS_LHA(SIPTR             , res1, D2),
 	AROS_LHA(LONG              , res2, D3),
 
 /*  LOCATION */
@@ -53,7 +53,7 @@
     AROS_LIBFUNC_EXIT
 } /* ReplyPkt */
 
-void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, LONG res1, LONG res2)
+void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, SIPTR res1, LONG res2)
 {
     struct MsgPort *mp;
     struct Message *mn;
