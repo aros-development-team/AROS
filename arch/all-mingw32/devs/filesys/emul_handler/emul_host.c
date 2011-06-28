@@ -319,27 +319,23 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 
 /*********************************************************************************************/
 
-size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, BOOL *async, SIPTR *err)
+size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, SIPTR *err)
 {
     ULONG res;
     ULONG werr;
 
     if (fh->type & FHD_STDIO)
     {
-        /*
-	 * FIXME:
-	 * 1. This is not thread-safe.
-	 * 2. We should return in non-quick mode after queuing the request, and reply it inside the interrupt.
-	 */
+        /* FIXME: This is not thread-safe. */
         struct AsyncReaderControl *reader = emulbase->pdata.ConsoleReader;
 
 	DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", len));
-	reader->fh = fh->fd;
+	reader->fh   = fh->fd;
 	reader->addr = buff;
-	reader->len = len;
-	reader->sig = SIGF_DOS;
+	reader->len  = len;
+	reader->sig  = SIGF_DOS;
 	reader->task = FindTask(NULL);
-	reader->cmd = ASYNC_CMD_READ;
+	reader->cmd  = ASYNC_CMD_READ;
 	SetSignal(0, reader->sig);
 
 	Forbid();

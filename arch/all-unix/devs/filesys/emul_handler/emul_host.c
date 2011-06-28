@@ -605,7 +605,7 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
     HostLib_Unlock();
 }
 
-size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, BOOL *async, SIPTR *err)
+size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, SIPTR *err)
 {
     SIPTR error = 0;
 
@@ -613,11 +613,13 @@ size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_
 
     HostLib_Lock();
 
-    do {
+    do
+    {
         len = TryRead(emulbase, (IPTR)fh->fd, buff, len);
         DREAD(bug("[emul] Result: %d\n", len));
         if (len == -1)
             error = err_u2a(emulbase);
+        /* FIXME: Fix this busylooping, wait for SIGIO interrupt here */
     } while (len == -2);
 
     HostLib_Unlock();
@@ -626,7 +628,7 @@ size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_
     return len;
 }
 
-size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, size_t len, BOOL *async, SIPTR *err)
+size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, size_t len, SIPTR *err)
 {
     SIPTR error = 0;
     

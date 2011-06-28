@@ -19,6 +19,7 @@
 #define DLOCK(x) D(x)
 #define DMOUNT(x) D(x)
 #define DOPEN(x) D(x)
+#define DSAME(x)
 #define DSEEK(x) D(x)
 
 #include <aros/debug.h>
@@ -715,9 +716,7 @@ void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosP
 
         if (fh->type & FHD_FILE)
         {
-            BOOL async = FALSE;
-
-            Res1 = DoRead(emulbase, fh, (APTR)dp->dp_Arg2, dp->dp_Arg3, &async, &Res2);
+            Res1 = DoRead(emulbase, fh, (APTR)dp->dp_Arg2, dp->dp_Arg3, &Res2);
         }
         else {
             Res1 = -1;
@@ -731,9 +730,7 @@ void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosP
 
         if (fh->type & FHD_FILE)
         {
-            BOOL async = FALSE;
-
-            Res1 = DoWrite(emulbase, fh, (APTR)dp->dp_Arg2, dp->dp_Arg3, &async, &Res2);
+            Res1 = DoWrite(emulbase, fh, (APTR)dp->dp_Arg2, dp->dp_Arg3, &Res2);
         } else {
             Res1 = -1;
             Res2 = ERROR_OBJECT_WRONG_TYPE;
@@ -764,29 +761,34 @@ void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosP
         fh = FH_FROM_LOCK(dp->dp_Arg1);
         fh2 = FH_FROM_LOCK(dp->dp_Arg2);
         DCMD(bug("[emul] %p ACTION_SAME_LOCK: %p, %p\n", fhv, fh, fh2));
+        DSAME(bug("[emul] %p ACTION_SAME_LOCK: %p, %p\n", fhv, fh, fh2));
 
-        /* Sanity checks */
+        /*
+         * Sanity checks.
+         * These are triggered sometimes because of IOFS flaw: fh_Device is the same even for actually
+         * different volumes (see SameDevice() ). This will be fixed when we get rid of IOFS, so there's
+         * no additional job required.
+         */
         if (fh->fh.fh_Type != fhv->fh.fh_Type) {
-            bug("[emul] ACTION_SAME_LOCK: Arg1 is not one of our locks!\n");
+            D(bug("[emul] ACTION_SAME_LOCK: Arg1 is not one of our locks!\n"));
             Res2 = ERROR_UNKNOWN;
-            Res1 = LOCK_DIFFERENT;
+            Res1 = DOSFALSE;
             break;
         }
          /* Sanity checks */
         if (fh2->fh.fh_Type != fhv->fh.fh_Type) {
-            bug("[emul] ACTION_SAME_LOCK: Arg2 is not one of our locks!\n");
+            D(bug("[emul] ACTION_SAME_LOCK: Arg2 is not one of our locks!\n"));
             Res2 = ERROR_UNKNOWN;
-            Res1 = LOCK_DIFFERENT;
+            Res1 = DOSFALSE;
             break;
         }
-        
-        if (strcmp(fh->hostname, fh2->hostname)) {
-            Res2 = ERROR_UNKNOWN;
-            Res1 = LOCK_DIFFERENT;
-        } else {
-            Res2 = 0;
-            Res1 = LOCK_SAME;
-        }
+
+	DSAME(bug("[emul] Paths: %s, %s\n", fh->hostname, fh2->hostname));
+	Res2 = 0;
+	/* DOSTRUE means 'Same', DOSFALSE means 'Different' */
+	Res1 = strcmp(fh->hostname, fh2->hostname) ? DOSFALSE : DOSTRUE;
+
+        DSAME(bug("[emul] Replying with 0x%p, %ld\n", Res1, Res2));
         break;
 
     case ACTION_EXAMINE_FH:

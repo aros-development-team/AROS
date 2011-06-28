@@ -49,8 +49,6 @@
 /* This prevents redefinition of struct timeval */
 #define _AROS_TYPES_TIMEVAL_S_H_
 
-#define DEBUG 1
-
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <dos/dosasl.h>
