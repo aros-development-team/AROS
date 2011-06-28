@@ -60,6 +60,7 @@ struct uaegfx_staticdata
 	APTR uaeromvector;
 	ULONG rgbformat;
 	struct ModeInfo *modeinfo;
+	struct ModeInfo *fakemodeinfo;
 	UBYTE *boardinfo;
 	UBYTE *bitmapextra;
 	UBYTE *vram_start;

@@ -157,6 +157,19 @@ static BOOL maybeputinvram(struct uaegfx_staticdata *csd, struct bm_data *bm)
     return movethisbitmaptovram(csd, bm);
 }
 
+static void hidescreen(struct uaegfx_staticdata *csd, struct bm_data *bm)
+{
+    D(bug("Hide %p: (%p:%d)\n",
+	bm, bm->VideoData, bm->memsize));
+    SetInterrupt(csd, FALSE);
+    SetDisplay(csd, FALSE);
+    SetSwitch(csd, FALSE);
+    csd->dmodeid = 0;
+    bm->locked--;
+    bm->disp = FALSE;
+    csd->disp = NULL;
+}
+
 /****************************************************************************************/
 
 #define AO(x) 	    	  (aoHidd_BitMap_ ## x)
@@ -196,7 +209,7 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->height = height;
     data->bytesperpixel = multi;
     allocrtgbitmap(csd, data, TRUE);
-    AddTail(&csd->bitmaplist, &data->node);
+    AddTail(&csd->bitmaplist, (struct Node*)&data->node);
  
     DB2(bug("%dx%dx%d RGBF=%08x P=%08x\n", width, height, multi, data->rgbformat, data->VideoData));
 
@@ -222,7 +235,7 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	o = NULL;
     }
     
-    DB2(bug("ret=%x bm=%x\n", o, data));
+    DB2(bug("ret=%x bm=%p (%p:%d)\n", o, data, data->VideoData, data->memsize));
   	
     return o;
 }
@@ -234,13 +247,13 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     data = OOP_INST_DATA(cl, o);
     
-    DB2(bug("UAEGFXBitmap__Root__Dispose %x bm=%x\n", o, data));
+    DB2(bug("UAEGFXBitmap__Root__Dispose %x bm=%x (%p,%d)\n", o, data, data->VideoData, data->memsize));
     if (data->disp)
-    	DB2(bug("removing displayed bitmap?!\n"));
+    	hidescreen(csd, data);
 
     FreeVec(data->palette);
     freertgbitmap(csd, data);
-    Remove(&data->node);
+    Remove((struct Node*)&data->node);
     
     OOP_DoSuperMethod(cl, o, msg);
 }
@@ -253,7 +266,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     ULONG   	    idx;
     BOOL moved = FALSE;
 
-    DB2(bug("UAEGFXBitmap__Root__Set\n"));
+    DB2(bug("UAEGFXBitmap__Root__Set %p (%p:%d)\n", data, data->VideoData, data->memsize));
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
@@ -279,12 +292,14 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
 		    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 		    data->rgbformat = getrtgformat(csd, pf);
-		    modeinfo = getrtgmodeinfo(csd, sync, pf, &data->modeinfo);
+		    modeinfo = getrtgmodeinfo(csd, sync, pf, csd->fakemodeinfo);
 		    csd->modeinfo = modeinfo;
 		    csd->rgbformat = data->rgbformat;
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, width);
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
-		    D(bug("%dx%dx%d (%dx%d) BF=%08x\n", dwidth, dheight, depth, width, height, data->rgbformat));
+		    D(bug("Show %p: (%p:%d) %dx%dx%d (%dx%d) BF=%08x\n",
+			data, data->VideoData, data->memsize,
+			dwidth, dheight, depth, width, height, data->rgbformat));
 
 		    if (!data->invram)
 		    	movebitmaptovram(csd, data);
@@ -313,14 +328,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 	            csd->disp = data;
 	            csd->disp->locked++;
 		} else {
-	    	    SetInterrupt(csd, FALSE);
-		    SetDisplay(csd, FALSE);
-		    SetSwitch(csd, FALSE);
-		    csd->dmodeid = 0;
-		    if (csd->disp)
-			csd->disp->locked--;
-		    data->disp = FALSE;
-		    csd->disp = NULL;
+		    hidescreen(csd, data);
 		}
 		break;
 		case aoHidd_BitMap_LeftEdge:
@@ -350,9 +358,9 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
     struct bm_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    DB2(bug("UAEGFXBitmap__Root__Get\n"));
+    //DB2(bug("UAEGFXBitmap__Root__Get\n"));
     if (IS_BITMAP_ATTR(msg->attrID, idx)) {
- 	DB2(bug("=%d\n", idx));
+ 	//DB2(bug("=%d\n", idx));
 	switch (idx) {
 	case aoHidd_BitMap_LeftEdge:
 	    *msg->storage = 0;//data->leftedge;
@@ -371,7 +379,7 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 	    return;
 	}
     }
-    DB2(bug("UAEGFXBitmap__Root__Get Exit\n"));
+    //DB2(bug("UAEGFXBitmap__Root__Get Exit\n"));
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
