@@ -31,7 +31,6 @@ $(BINDIR)/boot:
 #MM	kernel-battclock-kobj			\
 #MM	kernel-processor-kobj			\
 #MM	kernel-expansion-kobj			\
-#MM	kernel-filesystem-kobj			\
 #MM	kernel-exec-kobj			\
 #MM     $(X11_HIDD_TARGET)		        \
 #MM     kernel-emul-kobj                        \
@@ -43,7 +42,7 @@ $(BINDIR)/boot:
 KLIBS   := exec expansion
 KHNDLRS := emul
 KHIDDS  := 
-KRSRCS  := battclock hostlib processor FileSystem emul
+KRSRCS  := battclock hostlib processor emul
 # Disabled until ported - sonic
 # ifeq ("$(AROS_HOST_ARCH)","linux")
 # KHIDDS  += linux
