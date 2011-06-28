@@ -1,0 +1,11 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-s-amiga-m68k:
+
+workbench-s-amiga-m68k: $(AROS_S)/Startup-Sequence
+
+$(AROS_S)/Startup-Sequence: Startup-Sequence
+	@$(CP) $^ $@
+
+%common
