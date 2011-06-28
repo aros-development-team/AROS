@@ -50,6 +50,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    ASSERT_VALID_PTR_OR_NULL(poolHeader);
+
     D(bug("[exec] DeletePool(0x%p)\n", poolHeader));
 
     /* It is legal to DeletePool(NULL) */
