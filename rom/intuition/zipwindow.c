@@ -132,4 +132,8 @@ static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
     }
 
     DoMoveSizeWindow(window, NewLeftEdge, NewTopEdge, NewWidth, NewHeight, TRUE, IntuitionBase);
+    if (window->Flags & WFLG_ZOOMED)
+        window->Flags &= ~WFLG_ZOOMED;
+    else
+        window->Flags |= WFLG_ZOOMED; 
 }
