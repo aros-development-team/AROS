@@ -13,7 +13,7 @@
 
 #if (AROS_USB30_CODE)
 
-//void *AllocVecAlignedOnPage(ULONG bytesize, ULONG flags, ULONG alignment);
+APTR AllocVecAlignedOn4KPage(APTR *original, ULONG bytesize, ULONG alignment);
 
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
@@ -231,19 +231,6 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 //    KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   capreg_readl(XHCI_HCCPARAMS)));
 
     /*
-        Chapter 4.20
-        System software shall allocate the Scratchpad Buffer(s) before placing the xHC in Run mode (Run/Stop(R/S) = ‘1’).
-
-        The following operations take place to allocate Scratchpad Buffers to the xHC:
-        1) Software examines the Max Scratchpad Buffers field in the HCSPARAMS2 register.
-        2) Software allocates a Scratchpad Buffer Array with Max Scratchpad Buffers entries.
-        3) Software writes the base address of the Scratchpad Buffer Array to the DCBAA (Slot 0) entry.
-        4) For each entry in the Scratchpad Buffer Array:
-            a. Software allocates a PAGESIZE Scratchpad Buffer.
-            b. Software writes the base address of the allocated Scratchpad Buffer to associated entry in the Scratchpad Buffer Array.
-    */
-
-    /*
         This field defines the page size supported by the xHC implementation.
         This xHC supports a page size of 2^(n+12) if bit n is Set. For example,
         if bit 0 is Set, the xHC supports 4k byte page sizes.
@@ -255,7 +242,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         cnt++;
     }
     hc->xhc_pagesize = 1<<(cnt);
-    KPRINTF(1000, ("Pagesize 2^(n+12) = %lx\n", hc->xhc_pagesize));
+    KPRINTF(1000, ("Pagesize 2^(n+12) = 0x%lx\n", hc->xhc_pagesize));
 
     hc->xhc_scratchbufs = XHCV_SPB_Max(capreg_readl(XHCI_HCSPARAMS2));
     KPRINTF(1000, ("Max Scratchpad Buffers %lx\n",hc->xhc_scratchbufs));
@@ -267,6 +254,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         Number of Device Slots (MaxSlots). This field specifies the maximum number of Device
         Context Structures and Doorbell Array entries this host controller can support. Valid values are
         in the range of 1 to 255. The value of ‘0’ is reserved.
+        FIXME: Fail gracefully on error (0)
     */
     hc->xhc_maxslots = XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1));
     KPRINTF(1000, ("MaxSlots %lx\n",hc->xhc_maxslots));
@@ -375,19 +363,35 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                     - Software shall set Device Context Base Address Array entries for unallocated Device Slots to ‘0’.
                     - Software shall set Device Context Base Address Array entries for allocated Device Slots to point to the
                       Device Context data structure associated with the device.
+                    FIXME: Fail gracefully on error (NULL memptr)
                 */
-
-                /* Allocate 256 entries of 64bit pointer array aligned on 64 byte cache line not crossing 4K page border */
-                //hc->xhc_dcbaa = AllocVecAlignedOnPage( (256*8), MEMF_CLEAR, 64);
+                hc->xhc_dcbaa = AllocVecAlignedOn4KPage(&hc->xhc_dcbaa_original, (hc->xhc_maxslots + 1)*8, 64);
+                KPRINTF(1000, ("XHCI: Allocated DCBAA\n"));
 
                 /*
                     If the Max Scratchpad Buffers field of the HCSPARAMS2 register is > ‘0’, then the first entry (entry_0) in
                     the DCBAA shall contain a pointer to the Scratchpad Buffer Array. If the Max Scratchpad Buffers field of
                     the HCSPARAMS2 register is = ‘0’, then the first entry (entry_0) in the DCBAA is reserved and shall be
                     cleared to ‘0’ by software.
+
+                        Chapter 4.20
+                            System software shall allocate the Scratchpad Buffer(s) before placing the xHC in Run mode (Run/Stop(R/S) = ‘1’).
+
+                            The following operations take place to allocate Scratchpad Buffers to the xHC:
+                            1) Software examines the Max Scratchpad Buffers field in the HCSPARAMS2 register.
+                            2) Software allocates a Scratchpad Buffer Array with Max Scratchpad Buffers entries.
+                            3) Software writes the base address of the Scratchpad Buffer Array to the DCBAA (Slot 0) entry.
+                            4) For each entry in the Scratchpad Buffer Array:
+                                a. Software allocates a PAGESIZE Scratchpad Buffer.
+                                b. Software writes the base address of the allocated Scratchpad Buffer to associated entry in the Scratchpad Buffer Array.
+
+                    FIXME: Allocate Scratchpad Buffers and Scratchpad Buffer Array and fill it. Program DCBAA array entry_0 or clear it (MEMF_CLEAR takes care of that)
                 */
                 if(!hc->xhc_scratchbufs) {
+                    ;
                 }
+
+                /* FIXME: Allocate device context data structures and fill rest of the DCBAA array*/
 
                 /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
 
@@ -428,52 +432,37 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
 
 
 /*
-    Allocate aligned memory that does not cross 4K page boundaries
+    Allocate aligned memory on 4K page boundaries
+    -Could of cource use hc->xhc_pagesize...
+    -Free with FreeVec on original ptr
+    -Does not check if bytesize exceeds pagesize
 */
-void *AllocVecAlignedOnPage(ULONG bytesize, ULONG flags, ULONG alignment) {
+APTR AllocVecAlignedOn4KPage(APTR *original, ULONG bytesize, ULONG alignment) {
 
 #define PAGE_SHIFT          12
 #define PAGE_SIZE           (1 << PAGE_SHIFT)
 #define PAGE_MASK           (~(PAGE_SIZE-1))
-
 #define ALIGN_MASK          (~(alignment-1))
-
 #define PAGE_ALIGN(addr)    (((addr)+PAGE_SIZE-1)&PAGE_MASK)
 
-    APTR res = NULL;
-    IPTR pageaddr;
-    ULONG requirements = flags & MEMF_PHYSICAL_MASK;
+    APTR aligned = NULL;
+    IPTR tmp;
 
-    struct MemHeader *mh;
+    if (original) {
+        *original = AllocVec(PAGE_SIZE + bytesize + alignment, (MEMF_PUBLIC | MEMF_CLEAR));
+        KPRINTF(1000, ("4KAlloc: Original %lx\n", original));
 
-    /* can not fulfill requirement for not crossing page boundaries */
-    if(!(bytesize>PAGE_SIZE)) {
-
-        Forbid();
-
-        ForeachNode(&SysBase->MemList, mh) {
-
-            /* type matches and enough free space */
-            if ((requirements & ~mh->mh_Attributes) || mh->mh_Free < bytesize) {
-
-                pageaddr = (IPTR) mh->mh_Lower;
-                /**/
-                do {
-                    pageaddr += (PAGE_SIZE)-1;
-                    if( ((IPTR)mh->mh_Lower <= ((pageaddr&PAGE_MASK) - AROS_ALIGN(sizeof(ULONG)))) ){
-                        if(((IPTR)mh->mh_Upper >= (pageaddr&PAGE_MASK) + bytesize)){
-                            /* there is memory for us in this memheader, now go and claim it... */
-                            /* implement private nommu_AllocAbs in here */
-                            Permit();
-                            return res;
-                        }
-                    }
-                }while(1);
-            }
+        if (original) {
+            tmp = (IPTR) original;
+            tmp = (tmp + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+            KPRINTF(1000, ("4KAlloc: Page alignment %lx\n", tmp));
+            tmp = (tmp + alignment - 1) & ~(alignment - 1);
+            KPRINTF(1000, ("4KAlloc: Final alignment %lx\n", tmp));
+            aligned = (APTR) tmp;
         }
-        Permit();
     }
-    return res;
+
+    return aligned;
 }
 
 #endif
