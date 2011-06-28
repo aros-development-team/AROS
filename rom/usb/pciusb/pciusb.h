@@ -86,6 +86,7 @@ struct PCIUnit
     struct PCIController *hu_PortMap11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 controller */
     struct PCIController *hu_PortMap20[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 2.0 controller */
 #if (AROS_USB30_CODE)
+/* FIXME: XHCI runs in parallel with its EHCI controller, check port assignment from EXT_CAP_SUPPORTED_PROTOCOL */
     struct PCIController *hu_PortMap30[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 3.0 controller */
 #endif
     UBYTE                 hu_PortNum11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 companion controller port */
@@ -111,8 +112,8 @@ struct PCIUnit
 struct PCIController
 {
     struct Node           hc_Node;
-    struct PCIDevice     *hc_Device;         /* Uplink */
-    struct PCIUnit       *hc_Unit;           /* Uplink */
+    struct PCIDevice     *hc_Device;        /* Uplink */
+    struct PCIUnit       *hc_Unit;          /* Uplink */
 
     OOP_Object           *hc_PCIDeviceObject;
     OOP_Object           *hc_PCIDriverObject;
@@ -120,7 +121,7 @@ struct PCIController
     UWORD                 hc_FunctionNum;
     UWORD                 hc_HCIType;
     UWORD                 hc_NumPorts;
-    UWORD		  hc_Flags;		/* See below */
+    UWORD                 hc_Flags;         /* See below */
 
     volatile APTR         hc_RegBase;
 
@@ -131,6 +132,7 @@ struct PCIController
     ULONG                 xhc_scratchbufs;
     ULONG                 xhc_maxslots;
     APTR                  xhc_dcbaa;
+    APTR                  xhc_dcbaa_original;
     BOOL                  xhc_contextsize64; 
     #endif
 
@@ -179,7 +181,7 @@ struct PCIController
 
     ULONG                 hc_FrameCounter;
     struct List           hc_TDQueue;
-    struct List		  hc_AbortQueue;
+    struct List           hc_AbortQueue;
     struct List           hc_PeriodicTDQueue;
     struct List           hc_CtrlXFerQueue;
     struct List           hc_IntXFerQueue;
@@ -189,7 +191,7 @@ struct PCIController
     struct Interrupt      hc_CompleteInt;
     struct Interrupt      hc_ResetInt;
 
-    UBYTE                 hc_PortNum20[MAX_ROOT_PORTS]; /* Global Port number the local controller port corresponds with */
+    UBYTE                 hc_PortNum20[MAX_ROOT_PORTS];     /* Global Port number the local controller port corresponds with */
 
     UWORD                 hc_PortChangeMap[MAX_ROOT_PORTS]; /* Port Change Map */
 

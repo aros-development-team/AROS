@@ -268,4 +268,6 @@
 #define	XHCF_PS_DR      (1UL<<XHCB_PS_DR)
 #define	XHCF_PS_WPR     (1UL<<XHCB_PS_WPR)
 
+#define XHCV_PS_SPEED(p)    (((p)&XHCM_PS_SPEED)>>XHCB_PS_SPEED)
+
 #endif /* XHCICHIP_H */
