@@ -9,6 +9,9 @@
 char const CDVD_version[] = "\0$VER: CDVDFS 1.4 (16-Jun-2008)";
 
 #ifdef __AROS__
+#ifndef SAVEDS
+#define SAVEDS
+#endif
 #define AbsExecBase SysBase
 #else
 #ifndef __startup
@@ -21,7 +24,8 @@ extern void CDVD_handler(struct ExecBase *sysbase);
 
 __startup LONG SAVEDS Main(void)
 {
-    return CDVD_handler(AbsExecBase);
+    CDVD_handler(AbsExecBase);
+    return 0;
 }
 
 
