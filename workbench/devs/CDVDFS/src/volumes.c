@@ -109,7 +109,7 @@ void Unregister_Lock (LOCK *p_lock)
       FreeMem (ptr, sizeof (t_lock_node));
       return;
     }
-  BUG(dbprintf (global, "[Lock cannot be removed %08lx]", (uint32_t) p_lock);)
+  BUG(dbprintf (global, "[Lock cannot be removed %08llx]", (unsigned long long) p_lock);)
 }
 
 /*  Update the fl_Link values for all locks that have been
