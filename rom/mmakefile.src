@@ -57,6 +57,7 @@ BASE_DEVICES  := console input gameport keyboard
 BASE_HANDLERS := amberram con nil packet
 BASE_HIDD     := hiddclass graphics keyboard mouse
 BASE_LIBS     := aros boot debug dos graphics intuition keymap layers oop utility
+BASE_RSRCS    := FileSystem
 
 # *** ELF kickstart package ***
 
@@ -68,8 +69,8 @@ BASE_LIBS     := aros boot debug dos graphics intuition keymap layers oop utilit
 #MM     kernel-boot-kobj \
 #MM	kernel-debug-kobj \
 #MM     kernel-dosboot-kobj \
+#MM	kernel-filesystem-kobj \
 #MM	kernel-fs-amberram-kobj \
-#MM     kernel-fs-packet-kobj \
 #MM     kernel-graphics-kobj \
 #MM     kernel-hidd-graphics-kobj \
 #MM     kernel-hidd-kbd-kobj \
@@ -93,7 +94,7 @@ BASE_LIBS     := aros boot debug dos graphics intuition keymap layers oop utilit
 #MM kernel-link-base: kernel-kernel-includes kernel-objs
 
 %link_kickstart mmake=kernel-link-base file=$(BINDIR)/boot/aros-base \
-	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) \
+	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) res=$(BASE_RSRCS) \
 	uselibs="autoinit libinit amiga arossupport rom arosm hiddstubs" \
 	map=$(GENDIR)/boot/kernel-base.map
 
@@ -104,6 +105,7 @@ BASE_LIBS     := aros boot debug dos graphics intuition keymap layers oop utilit
 #MM     kernel-dos-pkg \
 #MM     kernel-boot-pkg \
 #MM	kernel-debug-pkg \
+#MM	kernel-filesystem-pkg \
 #MM	kernel-fs-amberram-pkg \
 #MM	kernel-fs-con-pkg \
 #MM	kernel-fs-nil-pkg \
@@ -124,6 +126,6 @@ BASE_LIBS     := aros boot debug dos graphics intuition keymap layers oop utilit
 #MM     kernel-layers-pkg
 
 %make_package mmake=kernel-package-base file=$(BINDIR)/boot/aros-base.pkg \
-	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS)
+	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) res=$(BASE_RSRCS)
 
 %common
