@@ -18,6 +18,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-misc-kobj \
 #MM     workbench-fs-pipefs-kobj \
 #MM     workbench-fs-xpipe-kobj \
+#MM     workbench-fs-cdrom-kobj \
 #MM     workbench-libs-workbench-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-c-shellcommands-kobj \
@@ -102,7 +103,7 @@ AFILES  := ext_entry
 
 KLIBS   :=  keymap graphics layers intuition gadtools icon workbench 680x0
 KDEVS   := 
-KHNDLRS := 
+KHNDLRS := cdrom
 KHIDDS  :=
 KRSRCS  := shellcommands workbook wbtag
 KHOOKS  := alert
