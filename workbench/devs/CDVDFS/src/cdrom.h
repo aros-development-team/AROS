@@ -20,6 +20,12 @@
 
 #define SCSI_BUFSIZE 2048
 
+#ifdef __GNUC__
+#define __packed    __attribute__((packed))
+#else
+#define __packed
+#endif
+
 typedef struct CDROM {
   struct CDVDBase *global;
   unsigned char 	*buffer;
@@ -51,13 +57,13 @@ typedef struct inquiry_data {
   char		vendor[8];
   char		product[16];
   char		revision[4];
-} t_inquiry_data;
+} __packed t_inquiry_data;
 
 typedef struct toc_header {
   unsigned short length;
   unsigned char  first_track;
   unsigned char  last_track;
-} t_toc_header;
+} __packed t_toc_header;
 
 typedef struct toc_data {
   char		reserved1;
@@ -65,7 +71,7 @@ typedef struct toc_data {
   unsigned char	track_number;
   char		reserved2;
   uint32_t address;
-} t_toc_data;
+} __packed t_toc_data;
 
 CDROM *Open_CDROM
 	(
