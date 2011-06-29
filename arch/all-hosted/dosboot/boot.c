@@ -42,9 +42,8 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     */
 
     struct GfxBase *GfxBase;
-    struct emulbase *emulbase;
+    struct EmulHandler *emulbase;
     struct TagItem fhtags[]= { { TAG_END, 0 } };
-    struct FileHandle *fh_stdin, *fh_stdout;
     struct TagItem tags[] =
     {
         { SYS_Asynch,      TRUE       }, /* 0 */
@@ -58,54 +57,65 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     BPTR cis  = BNULL;
     BPTR sseq = BNULL;
     LONG rc = RETURN_FAIL;
-    BOOL hidds_ok = FALSE;
-    struct Process *me;
+    ULONG displayid = INVALID_ID;
+    struct Process *me = (struct Process *)FindTask(NULL);
 
     D(bug("[DOSBoot.hosted] __dosboot_Boot()\n")); 
 
     /*
-	This is quite naughty, but I know what I'm doing here, since
-	emul.handler ALWAYS exists under Unix, and it won't go away.
-    */
-    emulbase = (struct emulbase *)OpenResource("emul.resource");
+     * Locate emul.handler and obtain emergency I/O from it.
+     * emul.handler resource holds internal abstract handles for stdin, stdout and stderr.
+     * We can use any emul.handler instance to talk to them, we use EMU: process.
+     */
+    emulbase = OpenResource("emul.handler");
     D(bug("[DOSBoot.hosted] __dosboot_Boot: emulbase = 0x%08lX\n", emulbase));
 
-    if( emulbase == NULL )
+    if (emulbase)
     {
-	/* BootStrap couldn't open unknown */
-	Alert(AT_DeadEnd | AN_BootStrap | AG_OpenDev | AO_Unknown );
+    	struct MsgPort *emulport = DeviceProc("EMU");
+
+    	if (emulport)
+    	{
+    	    struct FileHandle *fh_stdin, *fh_stdout;
+
+	    fh_stdin = AllocDosObject(DOS_FILEHANDLE, fhtags);
+	    fh_stdout = AllocDosObject(DOS_FILEHANDLE, fhtags);
+
+    	    if (fh_stdin == NULL || fh_stdout == NULL)
+    	    {
+    	    	/* We have got some problems here. */
+    	    	Alert(AT_DeadEnd | AN_BootStrap | AG_NoMemory);
+    	    }
+
+	    /*
+	     * FIXME: This currently won't work. Non-m68k AROS is still IOFS
+	     * and it wants to see fh_Device and fh_Unit filled in.
+	     * The problem will automatically go away when we switch to DOS packets.
+	     * We could artificially perform some wrapping with packet.handler, just
+	     * i don't want to do throwaway work - sonic
+	     */
+    	    fh_stdin->fh_Type  = emulport;
+    	    fh_stdin->fh_Arg1  = (SIPTR)emulbase->eb_stdin;
+    	    fh_stdout->fh_Type = emulport;
+    	    fh_stdout->fh_Arg1 = (SIPTR)emulbase->eb_stdout;
+
+    	    SetVBuf(MKBADDR(fh_stdin) , NULL, BUF_LINE, -1);
+    	    SetVBuf(MKBADDR(fh_stdout), NULL, BUF_LINE, -1);
+
+    	    if (Input())
+    	    	Close(Input());
+	    if (Output())
+    	    	Close(Output());
+
+	    D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting input and output for DOS\n"));
+	    SelectInput(MKBADDR(fh_stdin));
+	    SelectOutput(MKBADDR(fh_stdout));
+	    me->pr_CES = MKBADDR(fh_stdout);
+
+	    D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting output for AROSSupport\n"));
+	    ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = fh_stdout;
+	}
     }
-
-    fh_stdin = AllocDosObject(DOS_FILEHANDLE, fhtags);
-    fh_stdout = AllocDosObject(DOS_FILEHANDLE, fhtags);
-
-    if(fh_stdin == NULL || fh_stdout == NULL)
-    {
-    	/* We have got some problems here. */
-    	Alert(AT_DeadEnd | AN_BootStrap | AG_NoMemory);
-    }
-
-    fh_stdin->fh_Device  = &emulbase->pdata;
-    fh_stdin->fh_Unit    = emulbase->eb_stdin;
-    fh_stdout->fh_Device = &emulbase->pdata;
-    fh_stdout->fh_Unit   = emulbase->eb_stdout;
-
-    SetVBuf(MKBADDR(fh_stdin) , NULL, BUF_LINE, -1);
-    SetVBuf(MKBADDR(fh_stdout), NULL, BUF_LINE, -1);
-
-    if (Input())
-    	Close(Input());
-    if (Output())
-    	Close(Output());
-
-    D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting input and output for DOS\n"));
-    SelectInput(MKBADDR(fh_stdin));
-    SelectOutput(MKBADDR(fh_stdout));
-    me = (struct Process *)FindTask(NULL);
-    me->pr_CES = MKBADDR(fh_stdout);
-
-    D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting output for AROSSupport\n"));
-    ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = fh_stdout;
 
     /*
      * This actually checks if we have at least one display mode in the database.
@@ -115,17 +125,17 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 36);
     if (GfxBase)
     {
-        if (NextDisplayInfo(INVALID_ID) != INVALID_ID)
-	    hidds_ok = TRUE;
+        displayid = NextDisplayInfo(INVALID_ID);
 	CloseLibrary(&GfxBase->LibNode);
     }
 
-    if (hidds_ok)
+    if (displayid != INVALID_ID)
     {
         D(bug("[DOSBoot.hosted] __dosboot_Boot: Opening boot shell\n"));
         cis  = Open("CON:20/20///Boot Shell/AUTO", MODE_OLDFILE);
     } else
         PutStr("Failed to load system HIDDs\n");
+
     if (cis)
     {
         D(bug("[DOSBoot.hosted] __dosboot_Boot: Flags = 0x%08lX\n", Flags));
@@ -136,20 +146,25 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
             tags[2].ti_Data = (IPTR)sseq;
         }
         tags[3].ti_Data = (IPTR)cis;
-    } else {
+    }
+    else
+    {
         tags[3].ti_Tag = TAG_DONE;
         PutStr("Entering emergency shell\n");
     }
+
     rc = SystemTagList("", tags);
     if (rc != -1)
     {
         cis  = BNULL;
         sseq = BNULL;
     }
-    else {
+    else
+    {
         PutStr("Cannot open boot console\n");
         rc = RETURN_FAIL;
     }
+
     if (sseq)
         Close(sseq);
     if (cis)
