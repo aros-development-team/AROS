@@ -115,15 +115,6 @@ static LONG host_startup(struct emulbase *emulbase)
 {
     ULONG r;
 
-    HostLibBase = OpenResource("hostlib.resource");
-    D(bug("[EmulHandler] got hostlib.resource %p\n", HostLibBase));
-    if (!HostLibBase)
-	return FALSE;
-
-    KernelBase = OpenResource("kernel.resource");
-    if (!KernelBase)
-	return FALSE;
-
     emulbase->pdata.EmulHandle = HostLib_Open("Libs\\Host\\emul_handler.dll", NULL);
     if (!emulbase->pdata.EmulHandle) {
 	D(bug("[EmulHandler] Unable to open emul.handler host-side library!\n"));

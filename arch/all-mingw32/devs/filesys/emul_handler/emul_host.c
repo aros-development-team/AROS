@@ -810,7 +810,7 @@ LONG DoExamineNext(struct emulbase *emulbase,  struct filehandle *fh, struct Fil
 /*********************************************************************************************/
 
 LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAllData *ead,
-		 struct ExAllControl *eac, ULONG size, ULONG type)
+                  struct ExAllControl *eac, ULONG size, ULONG type, struct DosLibrary *DOSBase)
 {
     struct ExAllData *last = NULL;
     STRPTR end = (STRPTR)ead + size;

@@ -17,7 +17,7 @@
 #define DFSIZE(x) D(x)
 #define DLINK(x) D(x)
 #define DLOCK(x) D(x)
-#define DMOUNT(x) D(x)
+#define DMOUNT(x)
 #define DOPEN(x) D(x)
 #define DSAME(x)
 #define DSEEK(x) D(x)
@@ -438,11 +438,8 @@ static LONG rename_object(struct emulbase * emulbase, struct filehandle *fh,
 
 /*********************************************************************************************/
 
-static LONG read_softlink(struct emulbase *emulbase,
-                          struct filehandle *fh,
-                          CONST_STRPTR link,
-                          STRPTR buffer,
-                          SIPTR *size)
+static LONG read_softlink(struct emulbase *emulbase, struct filehandle *fh, CONST_STRPTR link,
+                          STRPTR buffer, SIPTR *size, struct DosLibrary *DOSBase)
 {
     char *ln;
     LONG ret = 0;
@@ -553,19 +550,39 @@ static LONG set_date(struct emulbase *emulbase, struct filehandle *fh,
 
 /*********************************************************************************************/
 
-static struct filehandle *new_volume(struct emulbase *emulbase, const char *vol, const char *path)
+#define VOLNAME	    "System"
+#define VOLNAME_LEN  6
+
+static struct filehandle *new_volume(struct emulbase *emulbase, const char *path, struct MsgPort *mp, struct DosLibrary *DOSBase)
 {
     struct filehandle *fhv;
     struct DosList *doslist;
     char *unixpath;
+    const char *vol;
     int vol_len = 0;
     char *sp;
 
-    vol_len = strlen(vol) + 1;
-
-    if (path)
+    /*
+     * MakeDosNode() creates zero-length fssm_Device instead of BNULL pointer when ParamPkt[1] is zero.
+     * CHECKME: is this correct, or MakeDosNode() needs to be fixed?
+     */
+    if (path && path[0])
     {
-        DMOUNT(bug("[emul] Mounting volume %s:%s\n", vol, path));
+        DMOUNT(bug("[emul] Mounting volume %s\n", path));
+
+	/*
+	 * Volume name and Unix path are encoded into DEVICE entry of
+	 * MountList like this: <volumename>:<unixpath>
+	 */
+	vol = path;
+	do
+	{
+	    if (*path == 0)
+		return NULL;
+
+	    vol_len++;
+	} while (*path++ != ':');
+	DMOUNT(bug("[emul] Host path: %s, volume name length %u\n", unixpath, vol_len));
 
         sp = strchr(path, '~');
         if (sp)
@@ -601,6 +618,8 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *vol,
         }
         D(bug("[emul] startup directory %s\n", unixpath));
 
+	vol = VOLNAME;
+	vol_len = VOLNAME_LEN + 1;
     }
 
     if (CheckDir(emulbase, unixpath))
@@ -630,7 +649,7 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *vol,
             if (doslist)
             {
                 fhv->dl = doslist;
-                doslist->dol_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+                doslist->dol_Task = mp;
                 AddDosEntry(doslist);
 
                 SendEvent(emulbase, IECLASS_DISKINSERTED);
@@ -666,7 +685,7 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *vol,
     	   (struct filehandle *)_fh;\
     	 })
 
-void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosPacket *dp)
+static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosPacket *dp, struct DosLibrary *DOSBase)
 {
     SIPTR Res1 = DOSFALSE;
     SIPTR Res2 = ERROR_UNKNOWN;
@@ -815,10 +834,8 @@ void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosP
     case ACTION_EXAMINE_ALL:
         fh = FH_FROM_LOCK(dp->dp_Arg1);
         DCMD(bug("[emul] %p ACTION_EXAMINE_ALL: %p\n", fhv, fh));
-        Res2 = DoExamineAll(emulbase, fh, (APTR)dp->dp_Arg2,
-                                                BADDR(dp->dp_Arg5),
-                                                dp->dp_Arg3,
-                                                dp->dp_Arg4);
+        Res2 = DoExamineAll(emulbase, fh, (APTR)dp->dp_Arg2, BADDR(dp->dp_Arg5),
+                            dp->dp_Arg3, dp->dp_Arg4, DOSBase);
         Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
         break;
           
@@ -999,7 +1016,7 @@ void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosP
         fh = FH_FROM_LOCK(dp->dp_Arg1);
         DCMD(bug("[emul] %p ACTION_READ_LINK: %p\n", fhv, fh));
         Res1 = dp->dp_Arg4;
-        Res2 = read_softlink(emulbase, fh, (APTR)dp->dp_Arg2, (APTR)dp->dp_Arg3, &Res1);
+        Res2 = read_softlink(emulbase, fh, (APTR)dp->dp_Arg2, (APTR)dp->dp_Arg3, &Res1, DOSBase);
         break;
           
     case ACTION_DELETE_OBJECT:
@@ -1147,8 +1164,11 @@ void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosP
 
 void EmulHandler_work(void)
 {
+    struct DosLibrary *DOSBase;
     struct DosPacket *dp;
     struct DeviceNode *dn;
+    struct FileSysStartupMsg *fssm;
+    STRPTR devpath = NULL;
     struct MsgPort *mp;
     struct filehandle *fhv;
     struct emulbase *emulbase;
@@ -1161,31 +1181,33 @@ void EmulHandler_work(void)
     dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
 
     D(bug("EMUL: Open emul.resource\n"));
-    emulbase = (APTR)OpenResource("emul.resource");
+    emulbase = OpenResource("emul.handler");
     if (!emulbase) {
         D(bug("EMUL: FATAL - can't find myself\n"));
         ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
         return;
     }
 
-    if (!DOSBase)
-        DOSBase = (APTR)OpenLibrary("dos.library", 0);
-
+    DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (!DOSBase) {
         ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
         return;
     }
 
-    dn = (struct DeviceNode *)BADDR(dp->dp_Arg3);
+    dn = BADDR(dp->dp_Arg3);
+    dn->dn_Task = mp;
 
-    fhv = new_volume(emulbase, AROS_BSTR_ADDR(dn->dn_Name), NULL);
-    if (!fhv) {
-        CloseLibrary((APTR)emulbase);
-        ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
+    fssm = BADDR(dp->dp_Arg2);
+    if (fssm)
+    	devpath = AROS_BSTR_ADDR(fssm->fssm_Device);
+
+    fhv = new_volume(emulbase, devpath, mp, DOSBase);
+    if (!fhv)
+    {
+        ReplyPkt(dp, DOSFALSE, ERROR_NO_FREE_STORE);
         return;
     }
 
-    dn->dn_Task = mp;
     ReplyPkt(dp, DOSTRUE, 0);
 
     fhv->locks = 1;
@@ -1193,7 +1215,7 @@ void EmulHandler_work(void)
     while (fhv->locks) {
         dp = WaitPkt();
 
-        handlePacket(emulbase, fhv, dp);
+        handlePacket(emulbase, fhv, dp, DOSBase);
     }
 
     D(bug("EMUL: Closing volume %s\n", fhv->volumename));

@@ -117,8 +117,7 @@ struct Emul_PlatformData
     struct LibCInterface   *SysIFace;
     int			   *errnoPtr;	/* Pointer to host's errno		 */
     int			    my_pid;	/* AROS process ID			 */
-    struct MinList	    readList;	/* Asynchronous read queue		 */
-    APTR em_UtilityBase;
+    APTR		    em_UtilityBase;
 };
 
 /* Remove this hack later in the ABIv1 development cycle */

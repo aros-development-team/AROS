@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define __DOS_NOLIBBASE__
+
 #ifdef HOST_OS_ios
 
 #ifdef __arm__
@@ -1149,12 +1151,8 @@ LONG DoExamineNext(struct emulbase *emulbase, struct filehandle *fh,
 
 /*********************************************************************************************/
 
-LONG DoExamineAll(struct emulbase *emulbase,
-			struct filehandle *fh,
-                        struct ExAllData *ead,
-                        struct ExAllControl *eac,
-                        ULONG  size,
-                        ULONG  type)
+LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAllData *ead,
+                  struct ExAllControl *eac, ULONG size, ULONG type, struct DosLibrary *DOSBase)
 {
     struct ExAllData *last=NULL;
     STRPTR end=(STRPTR)ead+size;

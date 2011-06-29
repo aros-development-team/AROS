@@ -6,7 +6,7 @@
 #include <dos/dosasl.h>
 #include <dos/filesystem.h>
 
-#include <resources/emul.h>
+#include "emul_intern.h"
 
 LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir)
 {
@@ -19,22 +19,25 @@ void DoClose(struct emulbase *emulbase, struct filehandle *fh)
     /* Close handle */
 }
 
-LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
+size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, SIPTR *err)
 {
     /* Read from a file */
-    return ERROR_NOT_IMPLEMENTED;
+    *err = ERROR_NOT_IMPLEMENTED;
+    return -1;
 }
 
-LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
+size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, size_t len, SIPTR *err)
 {
     /* Write to a file */
-    return ERROR_NOT_IMPLEMENTED;
+    *err = ERROR_NOT_IMPLEMENTED;
+    return -1;
 }
 
-LONG DoSeek(struct emulbase *emulbase, struct filehandle *, UQUAD *Offset, ULONG Mode)
+off_t DoSeek(struct emulbase *emulbase, struct filehandle *fh, off_t Offset, ULONG Mode, SIPTR *err)
 {
     /* Adjust file position */
-    return ERROR_NOT_IMPLEMENTED;
+    *err = ERROR_NOT_IMPLEMENTED;
+    return -1;
 }
 
 LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh)
@@ -92,10 +95,11 @@ LONG DoSetDate(struct emulbase *emulbase, char *fullname, struct DateStamp *date
     return ERROR_NOT_IMPLEMENTED;
 }
 
-LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK *io_SEEK)
+SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
     /* Set file size */
-    return ERROR_NOT_IMPLEMENTED;
+    *err = ERROR_NOT_IMPLEMENTED;
+    return -1;
 }
 
 LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
@@ -142,8 +146,8 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
     return 0;
 }
 
-int CheckDir(struct emulbase *emulbase, char *path)
+BOOL CheckDir(struct emulbase *emulbase, char *name)
 {
     /* Check if the directory is accessible */
-    return -1;
+    return FALSE;
 }
