@@ -7,16 +7,7 @@ EXEDIR := $(BINDIR)/boot
 MINGW32_HANDLERS := emul
 MINGW32_HIDD	 := wingdi
 MINGW32_LIBS	 := expansion exec
-MINGW32_RES	 := kernel hostlib battclock processor
-
-KOBJ_HANDLERS := $(addprefix $(KOBJSDIR)/, $(addsuffix _handler.o, $(MINGW32_HANDLERS)))
-KOBJ_HIDD     := $(addprefix $(KOBJSDIR)/, $(addsuffix _hidd.o, $(MINGW32_HIDD)))
-KOBJ_LIBS     := $(addprefix $(KOBJSDIR)/, $(addsuffix _library.o, $(MINGW32_LIBS)))
-KOBJ_RES      := $(addprefix $(KOBJSDIR)/, $(addsuffix _resource.o, $(MINGW32_RES)))
-
-# Module containing startup code (kernel_resource.o) must appear first
-# in the final list.
-KOBJS_MINGW32 := $(KOBJ_RES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_HIDD)
+MINGW32_RES	 := hostlib battclock processor
 
 #MM- AROS-mingw32-$(CPU): kernel-bootstrap-hosted kernel-boot-mingw32 \
 #MM			  kernel-link-mingw32 kernel-link-base kernel-link-hosted \
@@ -34,15 +25,11 @@ KOBJS_MINGW32 := $(KOBJ_RES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_HIDD)
 #MM			  linklibs			\
 #MM			  kernel-link-mingw32-quick
 
-#MM
-kernel-link-mingw32-quick: $(BINDIR)/boot/aros-bsp-mingw32
-
-$(EXEDIR)/aros-bsp-mingw32: $(KOBJS_MINGW32)
-	@$(ECHO) Linking $@...
-	@$(MKDIR) $(GENDIR)/boot
-	@$(TARGET_CC) $(GENMAP) $(GENDIR)/boot/kernel-mingw32.map \
-	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
-	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
+%link_kickstart mmake=kernel-link-mingw32 file=$(EXEDIR)/aros-bsp-mingw32 \
+	handlers=$(MINGW32_HANDLERS) hidds=$(MINGW32_HIDD) libs=$(MINGW32_LIBS) res=$(MINGW32_RES) \
+	startup=$(KOBJSDIR)/kernel_resource.o \
+	uselibs="arossupport hiddstubs amiga autoinit libinit rom m" \
+	map=$(GENDIR)/boot/kernel-mingw32.map
 
 #MM
 kernel-boot-mingw32: $(EXEDIR)/AROSBootstrap.conf
