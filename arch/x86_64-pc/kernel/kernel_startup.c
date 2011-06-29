@@ -382,10 +382,16 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 	__KernBootPrivate->kbp_LowMem = mh;
 	TLS_SET(SysBase, SysBase);
 
-	/* Attempt to allocate a real stack, and switch to it.
+	/* 
+	 * Attempt to allocate a real stack, and switch to it.
 	 * We need to do this, since our current stack is in
 	 * the area that's about to be hit with some memory
 	 * protection goodness.
+	 * FIXME: This should not be needed. Only .code and .rodata are made read-only, they are
+	 * placed by the bootstrap starting from KRN_KernelBase and up to KRN_Highest. Our stack is
+	 * in .bss.
+	 * Using boot stack won't cause mis-assertions, because our memory list lists all physical
+	 * regions, including kickstart's own area.
 	 */
 	do {
 	    struct StackSwapStruct sss;
