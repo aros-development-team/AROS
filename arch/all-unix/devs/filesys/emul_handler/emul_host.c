@@ -3,38 +3,7 @@
     $Id$
 */
 
-#define __DOS_NOLIBBASE__
-
-#ifdef HOST_OS_ios
-
-#ifdef __arm__
-/*
- * Under ARM iOS quadwords are long-aligned, however in AROS (according to AAPCS)
- * they are quad-aligned. This macro turns on some tricks which bypass this problem
- */
-#define HOST_LONG_ALIGNED
-#endif
-#ifdef __i386__
-/*
- * Under i386 we pick up MacOS' libSystem.dylib instead of Simulator's libSystem.dylib,
- * so we have to use special versions of certain functions. We can't simply #define _DARWIN_NO_64_BIT_INODE
- * because iOS SDK forbids this (in iOS inode_t is always 64-bit wide)
- */
-#define INODE64_SUFFIX "$INODE64"
-#endif
-
-#else
-
-/* 
- * Use 32-bit inode_t on Darwin. Otherwise we are expected to use "stat$INODE64"
- * instead of "stat" function which is available only on MacOS 10.6.
- */
-#define _DARWIN_NO_64_BIT_INODE
-#endif
-
-#ifndef INODE64_SUFFIX
-#define INODE64_SUFFIX
-#endif
+#include "unix_hints.h"
 
 #ifdef HOST_LONG_ALIGNED
 #pragma pack(4)
@@ -51,7 +20,7 @@
 /* This prevents redefinition of struct timeval */
 #define _AROS_TYPES_TIMEVAL_S_H_
 
-#define DEBUG 1
+#define DEBUG 0
 #define DASYNC(x)
 #define DEXAM(x)
 #define DMOUNT(x)
@@ -607,7 +576,7 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
     HostLib_Unlock();
 }
 
-size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, SIPTR *err)
+LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG len, SIPTR *err)
 {
     SIPTR error = 0;
 
@@ -630,7 +599,7 @@ size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_
     return len;
 }
 
-size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, size_t len, SIPTR *err)
+LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, ULONG len, SIPTR *err)
 {
     SIPTR error = 0;
     
@@ -647,14 +616,13 @@ size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff
     return len;
 }
 
-off_t DoSeek(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULONG mode, SIPTR *err)
+LONG DoSeek(struct emulbase *emulbase, struct filehandle *fh, LONG offset, ULONG mode, SIPTR *err)
 {
-    SIPTR res;
-    off_t oldpos = 0;
+    off_t res;
+    LONG oldpos = 0;
     SIPTR error = 0;
 
-    /* kprintf() does not understand UQUAD values */
-    DSEEK(bug("[emul] DoSeek(%d, 0x%llx, %d)\n", (int)fh->fd, (unsigned long long)offset, (int)mode));
+    DSEEK(bug("[emul] DoSeek(%d, %d, %d)\n", (int)fh->fd, offset, mode));
 
     switch (mode) {
     case OFFSET_BEGINNING:
@@ -674,14 +642,14 @@ off_t DoSeek(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULO
     res = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
     AROS_HOST_BARRIER
 
-    DSEEK(bug("[emul] Original position: 0x%llx\n", (unsigned long long)res));
+    DSEEK(bug("[emul] Original position: %llu\n", (unsigned long long)res));
     if (res != -1)
     {
         oldpos = res;
         res = LSeek((IPTR)fh->fd, offset, mode);
         AROS_HOST_BARRIER
 
-	DSEEK(bug("[emul] New position: 0x%llx\n", (unsigned long long)res));
+	DSEEK(bug("[emul] New position: %llu\n", (unsigned long long)res));
     }
 
     if (res == -1)
