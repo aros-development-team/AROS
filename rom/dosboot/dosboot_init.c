@@ -81,22 +81,21 @@ static void load_system_configuration(struct DosLibrary *DOSBase)
 /* Check if the given DeviceNode is already in DOS list */
 static BOOL IsMounted(struct DeviceNode *node, struct DosLibrary *DOSBase)
 {
-    struct DosList *dl, *e;
+    struct DosList *dl;
     BOOL res = FALSE;
 
     dl = LockDosList(LDF_DEVICES|LDF_READ);
 
-    while ((e = NextDosEntry(dl, LDF_DEVICES)))
+    while ((dl = NextDosEntry(dl, LDF_DEVICES)))
     {
-    	if (e == (struct DosList *)node)
+    	if (dl == (struct DosList *)node)
     	{
     	    res = TRUE;
     	    break;
     	}
     }
-    
-    UnLockDosList(LDF_DEVICES|LDF_READ);
 
+    UnLockDosList(LDF_DEVICES|LDF_READ);
     return res;
 }
 
