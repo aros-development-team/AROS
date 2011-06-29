@@ -760,7 +760,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
 
     case ACTION_SEEK:
         fh = FH_FROM(dp->dp_Arg1);
-        DCMD(bug("[emul] %p ACTION_SEEK %p, mode %ld, offset %llu\n", fhv, fh, dp->dp_Arg3, dp->dp_Arg2));
+        DCMD(bug("[emul] %p ACTION_SEEK %p, mode %ld, offset %lu\n", fhv, fh, dp->dp_Arg3, dp->dp_Arg2));
 
         if (fh->type == FHD_FILE)
             Res1 = DoSeek(emulbase, fh, dp->dp_Arg2, dp->dp_Arg3, &Res2);

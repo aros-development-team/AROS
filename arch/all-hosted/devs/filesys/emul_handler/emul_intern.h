@@ -63,13 +63,19 @@ char *nextpart(char *sp);
 
 extern const ULONG sizes[];
 
-/* Host OS file manipulation functions */
+/*
+ * Host OS file manipulation functions.
+ * Please do not use size_t, off_t, etc, here. They can be different between AROS
+ * and host OS, which will cause weird problems, which are hard to detect if you
+ * don't know about them. A nice example is Darwin, where off_t is 64-bit wide even
+ * on 32-bit machines. On AROS size off_t is 32-bit wide.
+ */
 LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir);
 void DoClose(struct emulbase *emulbase, struct filehandle *fh);
 LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh);
-size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, SIPTR *err);
-size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, size_t len, SIPTR *err);
-off_t DoSeek(struct emulbase *emulbase, struct filehandle *fh, off_t Offset, ULONG Mode, SIPTR *err);
+LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG len, SIPTR *err);
+LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, ULONG len, SIPTR *err);
+LONG DoSeek(struct emulbase *emulbase, struct filehandle *fh, LONG Offset, ULONG Mode, SIPTR *err);
 LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect);
 LONG DoDelete(struct emulbase *emulbase, char *name);
 LONG DoChMod(struct emulbase *emulbase, char *filename, ULONG prot);

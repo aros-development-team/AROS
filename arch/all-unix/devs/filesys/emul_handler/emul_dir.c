@@ -1,10 +1,4 @@
-#ifndef HOST_OS_ios
-/* 
- * Use 32-bit inode_t on Darwin. Otherwise we are expected to use "stat$INODE64"
- * instead of "stat" function which is available only on MacOS 10.6.
- */
-#define _DARWIN_NO_64_BIT_INODE
-#endif
+#include "unix_hints.h"
 
 #include <sys/time.h>
 #include <sys/types.h>

@@ -319,7 +319,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 
 /*********************************************************************************************/
 
-size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_t len, SIPTR *err)
+LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG len, SIPTR *err)
 {
     ULONG res;
     ULONG werr;
@@ -382,7 +382,7 @@ size_t DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, size_
     return len;
 }
 
-size_t DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, size_t len, BOOL *async, SIPTR *err)
+LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, ULONG len, SIPTR *err)
 {
     ULONG error, werr;
 
@@ -450,7 +450,7 @@ static LONG seek_file(struct emulbase *emulbase, struct filehandle *fh, off_t *O
 }
 
 
-off_t DoSeek(struct emulbase *emulbase, struct filehandle *fh, off_t offset, ULONG mode, SIPTR *err)
+LONG DoSeek(struct emulbase *emulbase, struct filehandle *fh, LONG offset, ULONG mode, SIPTR *err)
 {
     *err = seek_file(emulbase, fh->fd, &offset, mode, NULL);
     return offset;
