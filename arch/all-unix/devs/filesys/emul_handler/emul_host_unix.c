@@ -144,21 +144,9 @@ static inline struct filehandle *CreateStdHandle(int fd)
     return fh;
 }
 
-
 static int host_startup(struct emulbase *emulbase)
 {
     ULONG r = 0;
-
-    HostLibBase = OpenResource("hostlib.resource");
-
-    D(bug("[EmulHandler] got hostlib.resource %p\n", HostLibBase));
-    if (!HostLibBase)
-	return FALSE;
-
-    KernelBase = OpenResource("kernel.resource");
-    D(bug("[EmulHandler] KernelBase = %p\n", KernelBase));
-    if (!KernelBase)
-	return FALSE;
 
     UtilityBase = OpenLibrary("utility.library", 0);
     D(bug("[EmulHandler] UtilityBase = %p\n", UtilityBase));
@@ -187,11 +175,10 @@ static int host_startup(struct emulbase *emulbase)
     	return FALSE;
     }
 
-    emulbase->eb_stdin  = CreateStdHandle(STDIN_FILENO);
-    emulbase->eb_stdout = CreateStdHandle(STDOUT_FILENO);
-    emulbase->eb_stderr = CreateStdHandle(STDERR_FILENO);
+    emulbase->pub.eb_stdin  = CreateStdHandle(STDIN_FILENO);
+    emulbase->pub.eb_stdout = CreateStdHandle(STDOUT_FILENO);
+    emulbase->pub.eb_stderr = CreateStdHandle(STDERR_FILENO);
 
-    NEWLIST(&emulbase->pdata.readList);
     emulbase->pdata.my_pid   = emulbase->pdata.SysIFace->getpid();
     AROS_HOST_BARRIER
     emulbase->pdata.errnoPtr = emulbase->pdata.SysIFace->__error();

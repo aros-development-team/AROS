@@ -14,15 +14,44 @@
 #include <dos/filesystem.h>
 
 #include <resources/emul.h>
-#include <resources/emul_host.h>
+
+#include <emul_host.h>
 
 #include <sys/types.h>
 
-/* FIXME: Remove these #define xxxBase hacks
-   Do not use this in new code !
-*/
+/* Internal form of our handle */
+struct filehandle
+{
+    struct FileHandle fh;
+    char * hostname;		/* full host pathname (includes volume root prefix) */
+    char * name;		/* full AROS name including pathname		    */
+    int    type;		/* type flags, see below		       	    */
+    char * volumename;		/* volume name					    */
+    void * fd;			/* Object itself				    */
+    struct DosList *dl;		/* Volume node					    */
+    unsigned int locks;         /* Number of open locks				    */
+    struct PlatformHandle ph;	/* Platform-specific data			    */
+};
+
+/* type flags */
+#define FHD_FILE      0x01
+#define FHD_DIRECTORY 0x02
+#define FHD_STDIO     0x80
+
+struct emulbase
+{
+    struct EmulHandler	      pub;
+    APTR		      mempool;
+    APTR		      ReadIRQ;
+    APTR		      HostLibBase;
+    APTR		      KernelBase;
+    struct Emul_PlatformData  pdata;	/* Platform-specific portion */
+};
+
 #define HostLibBase emulbase->HostLibBase
 #define KernelBase  emulbase->KernelBase
+
+void EmulHandler_work(void);
 
 /* File name manipulation functions (filenames.c) */
 BOOL shrink(char *filename);
@@ -56,7 +85,7 @@ LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *Entr
 		   struct ExAllData *ead, ULONG size, ULONG type);
 LONG DoExamineNext(struct emulbase *emulbase,  struct filehandle *fh, struct FileInfoBlock *FIB);
 LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAllData *ead,
-                  struct ExAllControl *eac, ULONG size, ULONG  type);
+                  struct ExAllControl *eac, ULONG size, ULONG type, struct DosLibrary *DOSBase);
 
 char *GetHomeDir(struct emulbase *emulbase, char *user);
 ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len);

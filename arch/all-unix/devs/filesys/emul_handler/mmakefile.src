@@ -10,22 +10,10 @@ ifeq ($(ARCH),darwin)
 USER_CFLAGS += -D_FORTIFY_SOURCE=0
 endif
 
-FILES := emul_host_unix
-
-%build_archspecific mainmmake=kernel-emul \
-  maindir=arch/all-hosted/devs/filesys/emul_handler/resource \
-  arch=unix files=$(FILES)
-
-FILES := emul_host emul_dir
+FILES := emul_host_unix emul_host emul_dir
 
 %build_archspecific mainmmake=kernel-fs-emul \
   maindir=arch/all-hosted/devs/filesys/emul_handler \
-  arch=unix files=$(FILES)
-
-#MM- includes-copy-linux-$(CPU): includes-copy-unix
-#MM- includes-copy-android-$(CPU): includes-copy-unix
-#MM- includes-copy-darwin-$(CPU): includes-copy-unix
-
-%copy_includes mmake=includes-copy-unix includes="emul_host.h" path=resources
+  arch=unix files="$(FILES)"
 
 %common
