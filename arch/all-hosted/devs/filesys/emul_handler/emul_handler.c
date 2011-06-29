@@ -9,18 +9,18 @@
 /*********************************************************************************************/
 
 #define DEBUG 0
-#define DCHDIR(x) D(x)
-#define DCMD(x) D(x)
-#define DERROR(x) D(x)
-#define DEXAM(x) D(x)
-#define DFNAME(x) D(x)
-#define DFSIZE(x) D(x)
-#define DLINK(x) D(x)
-#define DLOCK(x) D(x)
+#define DCHDIR(x)
+#define DCMD(x)
+#define DERROR(x)
+#define DEXAM(x)
+#define DFNAME(x)
+#define DFSIZE(x)
+#define DLINK(x)
+#define DLOCK(x)
 #define DMOUNT(x)
-#define DOPEN(x) D(x)
+#define DOPEN(x)
 #define DSAME(x)
-#define DSEEK(x) D(x)
+#define DSEEK(x)
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -582,7 +582,7 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *path
 
 	    vol_len++;
 	} while (*path++ != ':');
-	DMOUNT(bug("[emul] Host path: %s, volume name length %u\n", unixpath, vol_len));
+	DMOUNT(bug("[emul] Host path: %s, volume name length %u\n", path, vol_len));
 
         sp = strchr(path, '~');
         if (sp)
@@ -621,6 +621,8 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *path
 	vol = VOLNAME;
 	vol_len = VOLNAME_LEN + 1;
     }
+
+    DMOUNT(bug("[emul] Resolved host path: %s\n", unixpath));
 
     if (CheckDir(emulbase, unixpath))
     {
@@ -703,7 +705,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
     case ACTION_FINDUPDATE:
     	f = (struct FileHandle *)(dp->dp_Arg1);
     	fh2 = FH_FROM_LOCK(dp->dp_Arg2);
-        D(bug("[emul] %p ACTION_FIND%s: %p, %p, %b\n", fhv, (dp->dp_Type == ACTION_FINDINPUT) ? "INPUT" : ((dp->dp_Type == ACTION_FINDOUTPUT) ? "OUTPUT" : "UPDATE"), fh, fh2, dp->dp_Arg3));
+        DCMD(bug("[emul] %p ACTION_FIND%s: %p, %p, %b\n", fhv, (dp->dp_Type == ACTION_FINDINPUT) ? "INPUT" : ((dp->dp_Type == ACTION_FINDOUTPUT) ? "OUTPUT" : "UPDATE"), fh, fh2, dp->dp_Arg3));
         Res2 = open_(emulbase, fhv, &fh2, AROS_BSTR_ADDR(dp->dp_Arg3), dp->dp_Type, 0, TRUE);
         if (Res2 == 0) {
             memset(f, 0, sizeof(*f));
@@ -1117,16 +1119,20 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         id = (struct InfoData *)BADDR(dp->dp_Arg1);
         DCMD(bug("[emul] %p ACTION_DISK_INFO:\n", fhv));
 
-        Res2 = DoStatFS(emulbase, ".", id);
+        Res2 = DoStatFS(emulbase, fhv->hostname, id);
         if (!Res2)
         {
             /* Fill in host-independent part */
             id->id_UnitNumber = 0;
     	    id->id_DiskType   = ID_DOS_DISK; /* Well, not really true... */
-            id->id_VolumeNode = MKBADDR(fh->dl);
+            id->id_VolumeNode = MKBADDR(fhv->dl);
     	    id->id_InUse      = TRUE; /* Perhaps we should count locks? */
+    	    
+    	    Res1 = DOSTRUE;
         }
-        Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
+        else
+            Res1 = DOSFALSE;
+
         break;
 
     case ACTION_SET_DATE:
@@ -1155,9 +1161,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
     }
 
     /* Set error code */
-    DB2(bug("[emul] Replying with %llu, %llu\n",
-                (unsigned long long)Res1,
-                (unsigned long long)Res2));
+    DCMD(bug("[emul] Replying with 0x%p, %ld\n", Res1, Res2));
 
     ReplyPkt(dp, Res1, Res2);
 }
@@ -1180,9 +1184,10 @@ void EmulHandler_work(void)
     WaitPort(mp);
     dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
 
-    D(bug("EMUL: Open emul.resource\n"));
+    D(bug("EMUL: Open resource\n"));
     emulbase = OpenResource("emul.handler");
-    if (!emulbase) {
+    if (!emulbase)
+    {
         D(bug("EMUL: FATAL - can't find myself\n"));
         ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
         return;
