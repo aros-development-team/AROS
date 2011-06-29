@@ -12,17 +12,15 @@
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
-#include <exec/memory.h>
 #include <libraries/expansion.h>
-#include <proto/exec.h>
-#include <utility/tagitem.h>
-#include <dos/exall.h>
-#include <dos/dosasl.h>
+#include <resources/filesysres.h>
 #include <proto/arossupport.h>
 #include <proto/dos.h>
+#include <proto/exec.h>
 #include <proto/expansion.h>
 
 #include "emul_intern.h"
+#include LC_LIBDEFS_FILE
 
 #include <limits.h>
 #include <string.h>
@@ -53,12 +51,46 @@ ADD2INITLIB(startup, -10)
 
 /*
  * This is executed after all platform-specific initialization is done.
- * It will add "EMU: device to boot up from.
+ * It will register the handler in FileSystem.resource and add "EMU: device to boot up from
  */
+#define ID_EMUL_DISK AROS_MAKE_ID('E','M','U',0);
+
+extern const char GM_UNIQUENAME(LibName)[];
+
 static LONG automount(struct emulbase *emulbase)
 {
+    struct FileSysResource *fsr;
     struct Library *ExpansionBase;
     struct DeviceNode *dlv = NULL;
+    BPTR seglist = CreateSegList(EmulHandler_work);
+
+    if (!seglist)
+    	return FALSE;
+
+    /* Register ourselves in FileSystem.resource if available */
+    fsr = OpenResource("FileSystem.resource");
+    if (fsr)
+    {
+	struct FileSysEntry *fse = AllocMem(sizeof(struct FileSysEntry), MEMF_CLEAR);
+
+	if (fse)
+	{
+	    fse->fse_Handler = CreateBSTR(GM_UNIQUENAME(LibName));
+	    if (fse->fse_Handler)
+	    {
+	    	fse->fse_DosType      = ID_EMUL_DISK;
+	    	fse->fse_Version      = (VERSION_NUMBER << 16) | REVISION_NUMBER;
+	    	fse->fse_PatchFlags   = FSEF_HANDLER|FSEF_STACKSIZE|FSEF_SEGLIST;
+	    	fse->fse_StackSize    = 16384;
+	    	fse->fse_SegList      = seglist;
+	    	fse->fse_Node.ln_Name = AROS_BSTR_ADDR(fse->fse_Handler);
+
+	    	Enqueue(&fsr->fsr_FileSysEntries, &fse->fse_Node);
+	    }
+	    else
+	    	FreeMem(fse, sizeof(struct FileSysEntry));
+	}
+   }
 
     ExpansionBase = OpenLibrary("expansion.library",0);
     if (ExpansionBase)
@@ -76,13 +108,13 @@ static LONG automount(struct emulbase *emulbase)
         pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
         pp[DE_MASK       + 4] = 0x7FFFFFFE;
         pp[DE_BOOTPRI    + 4] = 0;
-        pp[DE_DOSTYPE    + 4] = AROS_MAKE_ID('E','M','U','L');
+        pp[DE_DOSTYPE    + 4] = ID_EMUL_DISK;
 
         dlv = MakeDosNode(pp);
 
         if (dlv)
         {
-            dlv->dn_SegList = CreateSegList(EmulHandler_work);
+            dlv->dn_SegList = seglist;
             D(bug("[Emulhandler] startup allocated dlv %p, handler %p\n", dlv, dlv->dn_SegList));
             AddBootNode(dlv->dn_Priority, 0, dlv, NULL);
         }
