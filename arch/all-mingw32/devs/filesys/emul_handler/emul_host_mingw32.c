@@ -155,9 +155,9 @@ static LONG host_startup(struct emulbase *emulbase)
     if (!emulbase->ReadIRQ)
 	return FALSE;
 
-    emulbase->eb_stdin  = CreateStdHandle(emulbase, STD_INPUT_HANDLE);
-    emulbase->eb_stdout = CreateStdHandle(emulbase, STD_OUTPUT_HANDLE);
-    emulbase->eb_stderr = CreateStdHandle(emulbase, STD_ERROR_HANDLE);
+    emulbase->pub.eb_stdin  = CreateStdHandle(emulbase, STD_INPUT_HANDLE);
+    emulbase->pub.eb_stdout = CreateStdHandle(emulbase, STD_OUTPUT_HANDLE);
+    emulbase->pub.eb_stderr = CreateStdHandle(emulbase, STD_ERROR_HANDLE);
 
     return TRUE;
 }
