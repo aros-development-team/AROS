@@ -98,7 +98,7 @@ struct GlobalLock;
 struct ExtFileLock {
     /* struct FileLock */
     BPTR                fl_Link;
-    LONG                fl_Key;
+    IPTR                fl_Key;
     LONG                fl_Access;
     struct MsgPort *    fl_Task;
     BPTR                fl_Volume;
