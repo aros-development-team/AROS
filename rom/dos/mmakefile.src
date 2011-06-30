@@ -17,7 +17,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     cliinitrun close comparedates createdir createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
 	     deletevar deviceproc displayerror dopkt dosgetstring dosgetlocalizedstring \
-	     duplock duplockfromfh endnotify error errorreport \
+	     duplock duplockfromfh endnotify errorreport \
 	     exall exallend examine examinefh execute exit exnext \
 	     fault fgetc fgets filepart findarg findcliproc finddosentry findsegment \
 	     findvar flush format fputc fputs fread freeargs freedeviceproc \
@@ -29,9 +29,9 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     makedosentry makelink matchend matchfirst matchnext matchpattern \
 	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry \
 	     open openfromlock output parentdir parentoffh parsepattern \
-	     parsepatternnocase pathpart pipe printfault putstr read readargs \
+	     parsepatternnocase pathpart printfault putstr read readargs \
 	     readitem relabel readlink remassignlist remdosentry remsegment rename \
-	     replypkt runcommand samedevice samelock scanvars seek selecterror \
+	     replypkt runcommand samedevice samelock scanvars seek \
 	     selectinput selectoutput sendpkt setargstr setcomment setconsoletask \
 	     setcurrentdirname setfiledate setfilesize setfilesystask \
 	     setioerr setmode setowner setprogramdir setprogramname \

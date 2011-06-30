@@ -6,12 +6,7 @@
     Lang: English
 */
 
-#ifdef DEBUG
-#undef DEBUG
-#endif
-# define  DEBUG 0
-# include <aros/debug.h>
-
+#include <aros/debug.h>
 #include <utility/tagitem.h>
 #include <dos/dostags.h>
 #include <proto/utility.h>
@@ -103,7 +98,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    BPTR   cis = Input(), cos = Output(), ces = Error(), script = BNULL;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    BPTR   cis = Input(), cos = Output(), ces = me->pr_CES, script = BNULL;
     BPTR   shellseg = BNULL;
     STRPTR cShell      = "C:Shell";
     STRPTR shellName   = "Boot Shell";
@@ -278,7 +274,6 @@
     if (newtags)
     {
 	struct CliStartupMessage csm;
-	struct Process *me       = (struct Process *)FindTask(NULL);
 	struct Process *cliproc;
 
 	struct TagItem proctags[] =
@@ -300,11 +295,11 @@
 	    { NP_Error      , (IPTR)ces                     },
 	    { NP_CloseError , (isAsynch || ces_opened) &&
             /* 
-                Since old AmigaOS programs don't know anything about Error()
+                Since old AmigaOS programs don't know anything about pr_CES
                 being handled by this function, don't close the Error stream
                 if it's the same as the caller's one.
             */
-			      ces != Error()                }, /* 14 */
+			      ces != me->pr_CES             }, /* 14 */
 	    { NP_ConsoleTask, (IPTR)ct                      }, /* 15 */
 	    { TAG_END       , 0                             }  /* 16 */
 	};
