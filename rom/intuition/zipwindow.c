@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -132,8 +132,9 @@ static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
     }
 
     DoMoveSizeWindow(window, NewLeftEdge, NewTopEdge, NewWidth, NewHeight, TRUE, IntuitionBase);
+
     if (window->Flags & WFLG_ZOOMED)
-        window->Flags &= ~WFLG_ZOOMED;
+        AROS_ATOMIC_AND(window->Flags, ~WFLG_ZOOMED);
     else
-        window->Flags |= WFLG_ZOOMED; 
+        AROS_ATOMIC_OR(window->Flags, WFLG_ZOOMED);
 }
