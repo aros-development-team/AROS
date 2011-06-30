@@ -161,38 +161,34 @@ static int DosInit(struct DosLibrary *LIBBASE)
      * at this point in time.
      *
      * I can't allocate a timerequest/MsgPort pair here anyway,
-     * because I need a separate one for each caller to Delay()
+     * because I need a separate one for each caller to Delay().
+     * However, CreateIORequest() will fail if MsgPort == NULL, so we
+     * supply some dummy value.
      */
-    LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Succ = NULL;
-    LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Pred = NULL;
-    LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Pri  = 0;
-    LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Name = NULL;
-    LIBBASE->dl_TimerIO.tr_node.io_Message.mn_ReplyPort    = NULL;
-    LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Length       = sizeof(struct timerequest);
-
-    if (OpenDevice("timer.device", UNIT_VBLANK, &LIBBASE->dl_TimerIO.tr_node, 0) == 0)
+    LIBBASE->dl_TimeReq = CreateIORequest((APTR)0xC0DEBAD0, sizeof(struct timerequest));
+    if (LIBBASE->dl_TimeReq)
     {
-	LIBBASE->dl_TimeReq = &LIBBASE->dl_TimerIO;
+    	if (OpenDevice("timer.device", UNIT_VBLANK, &LIBBASE->dl_TimeReq->tr_node, 0) == 0)
+    	{
+	    LIBBASE->dl_lib.lib_Node.ln_Name = "dos.library";
+	    LIBBASE->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
+	    LIBBASE->dl_lib.lib_Version = VERSION_NUMBER;
 
-	LIBBASE->dl_lib.lib_Node.ln_Name = "dos.library";
-	LIBBASE->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
-	LIBBASE->dl_lib.lib_Version = VERSION_NUMBER;
+	    AddLibrary((struct Library *)LIBBASE);
 
-	AddLibrary((struct Library *)LIBBASE);
+	    /* debug.library is optional, so don't check result */
+	    DebugBase = OpenLibrary("debug.library", 0);
 
-	/* debug.library is optional, so don't check result */
-	DebugBase = OpenLibrary("debug.library", 0);
+	    /* This is where we start the RTF_AFTERDOS residents */
+	    D(bug("[DOS] DosInit: InitCode(RTF_AFTERDOS)\n"));
+	    InitCode(RTF_AFTERDOS, 0);
 
-	/* This is where we start the RTF_AFTERDOS residents */
-	D(bug("[DOS] DosInit: InitCode(RTF_AFTERDOS)\n"));
-	InitCode(RTF_AFTERDOS, 0);
-
-	/*
-	 * We now restart the multitasking - this is done
-	 * automatically by RemTask() when it switches.
-	 */
-	RemTask(NULL);
+	   /*
+	    * We now restart the multitasking - this is done
+	    * automatically by RemTask() when it switches.
+	    */
+	   RemTask(NULL);
+	}
     }
 
     Alert(AT_DeadEnd | AG_OpenDev | AN_DOSLib | AO_TimerDev);

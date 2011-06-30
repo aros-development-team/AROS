@@ -152,7 +152,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 
     	handle->fh_Type = BNULL;
     	/* NIL: is considered interactive */
-    	handle->fh_Port = (struct MsgPort*)DOSTRUE;
+    	handle->fh_Port = DOSTRUE;
         return DOSTRUE;
     }
     else

@@ -112,7 +112,7 @@
         }
 
         /* Fill the buffer. */
-        size = Read(file, BADDR(fh->fh_Buf), fh->fh_Size);
+        size = Read(file, BADDR(fh->fh_Buf), fh->fh_BufSize);
 
         /* Prepare filehandle for data. */
         if(size <= 0)
