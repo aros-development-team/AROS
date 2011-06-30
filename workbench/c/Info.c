@@ -378,11 +378,9 @@ BOOL ScanDosList(STRPTR *filter)
 	UBYTE  type = ndl->dol_Type;
 	UBYTE  name[108];
 
-#ifdef AROS_DOS_PACKETS
  	/* do not start non-started handlers or open CON: or RAW: windows.. */
 	if(type == DLT_DEVICE && !ndl->dol_Task)
 	    continue;
-#endif
 
 	__sprintf(name, "%s:", AROS_DOSDEVNAME(ndl));
 
@@ -410,9 +408,7 @@ BOOL ScanDosList(STRPTR *filter)
 	    break;
 	}
 	
-#ifdef AROS_DOS_PACKETS
 	idn->Task     = ndl->dol_Task;
-#endif
 	idn->IsVolume = type == DLT_VOLUME;
 	
 	while((idn->Name[len] = name[len])) 
@@ -718,13 +714,11 @@ void doInfo()
 			    UnLock(lock);
 
 			} else if (IoErr() == ERROR_NO_DISK && idn->Task) {
-#ifdef AROS_DOS_PACKETS
 			    name = NULL;
 			    D(bug("Calling ACTION_DISK_INFO\n"));
-			    if (DoPkt(idn->Task, ACTION_DISK_INFO, MKBADDR(id), BNULL, BNULL, BNULL, BNULL)) {
+			    if (DoPkt(idn->Task, ACTION_DISK_INFO, (SIPTR)MKBADDR(id), (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL)) {
 			    	gotinfo = TRUE;
 			    }
-#endif
 			}
 				
 			if (gotinfo) {	

@@ -552,11 +552,7 @@ static void __fill_statbuffer(
 	fib->fib_DirEntryType = ST_PIPEFILE;
     }
 
-#ifdef AROS_DOS_PACKETS
-    sb->st_dev     = ((struct FileLock *)BADDR(lock))->fl_Volume;
-#else
-    sb->st_dev     = (dev_t)((struct FileHandle *)lock)->fh_Device;
-#endif
+    sb->st_dev     = (dev_t)((struct FileLock *)BADDR(lock))->fl_Volume;
     sb->st_ino     = hash;    /* hash value will be truncated if st_ino size is
                                  smaller than uint64_t, but it's ok */
     sb->st_size    = (off_t)fib->fib_Size;

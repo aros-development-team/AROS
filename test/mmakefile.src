@@ -79,7 +79,6 @@ COMMONTESTFILES := \
     rwverify \
     setfilesize \
     timeport \
-    getdeviceproc \
     minicat \
     time \
     waitforchar \

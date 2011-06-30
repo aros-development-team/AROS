@@ -95,11 +95,6 @@ Object *DiskInfo__OM_NEW
     STRPTR			handlertype = "";
     STRPTR			deviceinfo = "";
 
-#ifndef AROS_DOS_PACKETS
-    STRPTR			fstype = NULL;
-    STRPTR			fshandler = NULL;
-    struct DosList	        *dl, *dn;
-#endif
     BOOL                        disktypefound = FALSE;
 
     static struct InfoData id;
@@ -168,75 +163,6 @@ Object *DiskInfo__OM_NEW
 
     /* find the volumes doslist information .. */
     filesystem = _(MSG_UNKNOWN);
-#ifndef AROS_DOS_PACKETS
-    IPTR volunit = 0;
-    dl = LockDosList(LDF_VOLUMES|LDF_READ);
-    if (dl) {
-	dn = FindDosEntry(dl, volname, LDF_VOLUMES);
-	if (dn) {
-	    ULONG i;
-
-	    volunit = (IPTR)dn->dol_Ext.dol_AROS.dol_Unit;
-
-	    D(bug("[DiskInfo] %s: Volume's unit @ %p\n", __PRETTY_FUNCTION__, volunit));
-
-	    if (dn->dol_Task != NULL)
-	    {
-		handlertype = _(MSG_PACKETDEVICE);
-	    }
-	    else if (dn->dol_Ext.dol_AROS.dol_Device != NULL)
-	    {
-		handlertype = _(MSG_IOFSDEVICE);
-	    }
-
-	    disktype = dn->dol_misc.dol_volume.dol_DiskType;
-	    for (i = 0; i < sizeof(dt) / sizeof(LONG); ++i)
-	    {
-		if (disktype == dt[i])
-		{
-		    fstype = disktypelist[i];
-		    fshandler = dn->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name;
-		    disktypefound = TRUE;
-		    break;
-		}
-	    }
-            D(bug("[DiskInfo] %s: Disk Type: %s\n", __PRETTY_FUNCTION__, filesystem));
-	}
-	UnLockDosList(LDF_VOLUMES|LDF_READ);
-    }
-    /* If we know the volumes unit - find its device information .. */
-    if (volunit != 0)
-    {
-	dl = LockDosList(LDF_DEVICES|LDF_READ);
-	if (dl) {
-	    while ((dl = NextDosEntry(dl, LDF_DEVICES)))
-	    {
-		if ((IPTR)dl->dol_Ext.dol_AROS.dol_Unit == volunit)
-		{
-		    struct FileSysStartupMsg *fsstartup = (struct FileSysStartupMsg *)BADDR(dl->dol_misc.dol_handler.dol_Startup);
-		    dosdevname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
-		    fshandler = (UBYTE*)AROS_BSTR_ADDR(dl->dol_misc.dol_handler.dol_Handler);
-
-		    D(bug("[DiskInfo] %s: Found Volumes device @ %p, '%s'\n", __PRETTY_FUNCTION__, dl, dosdevname));
-		    if (fsstartup != NULL)
-		    {
-			deviceinfo = AllocVec(strlen((UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device)) + (fsstartup->fssm_Unit/10 + 1) + 7, MEMF_CLEAR);
-			sprintf(deviceinfo,"%s %s %d", (UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device), _(MSG_UNIT), (int)fsstartup->fssm_Unit);
-		    }
-		    D(bug("[DiskInfo] %s: Handler '%s'\n", __PRETTY_FUNCTION__, fshandler));
-		    break;
-		}
-	    }
-	    UnLockDosList(LDF_VOLUMES|LDF_READ);
-	}
-    }
-
-    if (fstype && fshandler)
-    {
-	filesystem = AllocVec(strlen(fstype) + strlen(fshandler) + 4, MEMF_CLEAR);
-	sprintf(filesystem, "%s (%s)", fstype, fshandler);
-    }
-#endif
 
     volname[strlen(volname)] = ':';
 

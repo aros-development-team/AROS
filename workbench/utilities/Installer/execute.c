@@ -1863,25 +1863,14 @@ void *params;
 			switch (lockBits)
 			{
 			    case LDF_VOLUMES:
-#ifdef AROS_DOS_PACKETS
 DMSG("VOLUME(%b:)\n",tdl->dol_Name);
 				ret = AllocVec(AROS_BSTR_strlen(tdl->dol_Name)+2, MEMF_ANY);
 				outofmem(ret);
 				sprintf(ret,"%s:",AROS_BSTR_ADDR(tdl->dol_Name));
-#else
-DMSG("VOLUME(%s:)\n",(char *)tdl->dol_Ext.dol_AROS.dol_DevName);
-				ret = AllocVec(strlen((char *)tdl->dol_Ext.dol_AROS.dol_DevName) + 2, MEMF_ANY);
-				outofmem(ret);
-				sprintf(ret,"%s:",(char *)tdl->dol_Ext.dol_AROS.dol_DevName);
-#endif
 				break;
 
 			    case LDF_ASSIGNS:
-#ifdef AROS_DOS_PACKETS
 DMSG("ASSIGN(%b:):\n",tdl->dol_Name);
-#else
-DMSG("ASSIGN(%s:):\n",(char *)tdl->dol_Ext.dol_AROS.dol_DevName);
-#endif
 				switch (tdl->dol_Type)
 				{
 				    case DLT_LATE:
@@ -1931,17 +1920,10 @@ DMSG("  +%s\n", dirName);
 				    BPTR lockdev;
 				    char *lname;
 
-#ifdef AROS_DOS_PACKETS
 DMSG("DEV(%b:):\n",(char *)tdl->dol_Name);
 				    lname = AllocVec(AROS_BSTR_strlen(tdl->dol_Name) + 2, MEMF_ANY);
 				    outofmem(lname);
 				    sprintf(lname,"%s:",AROS_BSTR_ADDR(tdl->dol_Name));
-#else
-DMSG("DEV(%s:):\n",(char *)tdl->dol_Ext.dol_AROS.dol_DevName);
-				    lname = AllocVec(strlen(tdl->dol_Ext.dol_AROS.dol_DevName) + 2, MEMF_ANY);
-				    outofmem(lname);
-				    sprintf(lname,"%s:",tdl->dol_Ext.dol_AROS.dol_DevName);
-#endif
 				    lockdev = Lock(lname, SHARED_LOCK);
 				    if (lockdev)
 				    {

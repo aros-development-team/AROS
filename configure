@@ -7660,7 +7660,7 @@ case "$target_os" in
 		aros_object_format="m68kelf"
 		aros_flavour="standcompat"
 		gcc_target_cpu="m68000"
-		aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin -Wno-volatile-register-var -DAROS_DOS_PACKETS -Os"
+		aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin -Wno-volatile-register-var -Os"
 		aros_config_aflags="$aros_config_aflags -${gcc_target_cpu}"
 		target_tool_prefix="m68k-elf-"
 		# Needed to get the correct multilib
