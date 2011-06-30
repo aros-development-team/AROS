@@ -249,7 +249,7 @@ UWORD i;
  Output: DOSTRUE for success; DOSFALSE otherwise
 ********************************************/
 LONG relabel(struct AFSBase *afsbase, struct Volume *volume,
-	CONST_STRPTR name, LONG *error) {
+	CONST_STRPTR name, SIPTR *error) {
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
 

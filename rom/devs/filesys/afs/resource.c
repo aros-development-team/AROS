@@ -19,19 +19,15 @@
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
 
-#include "os.h"
-#include "afshandler.h"
-#include "volumes.h"
-
 #include LC_LIBDEFS_FILE
 
 extern void AFS_work();
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
 {
-    BOOL ok;
     struct FileSysResource *fsr;
     const ULONG dos = 0x444f5300;
+    BPTR seg;
     int cnt;
 
     /* Create device node and add it to the system.
@@ -39,45 +35,36 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
      */
     fsr = (struct FileSysResource *)OpenResource("FileSystem.resource");
     if (fsr == NULL)
-    	return FALSE;
+        return FALSE;
 
-    afsbase->ab_SegList = CreateSegList(AFS_work);
-    if (afsbase->ab_SegList == BNULL)
-	return FALSE;
+    seg = CreateSegList(AFS_work);
+    if (seg == BNULL)
+        return FALSE;
 
-    for (cnt = 1; cnt <= 7; cnt++) {
+    for (cnt = 0; cnt <= 7; cnt++) {
 	struct FileSysEntry *fse = AllocMem(sizeof(*fse), MEMF_CLEAR);
 	if (fse) {
+	    fse->fse_Node.ln_Name = "AFS/OFS";
+	    fse->fse_Node.ln_Pri = 120 + cnt; /* Automount priority */
 	    fse->fse_DosType = dos + cnt;
-	    fse->fse_Version = (afsbase->ab_Lib.lib_Version << 16) | afsbase->ab_Lib.lib_Revision;
-	    fse->fse_PatchFlags = FSEF_SEGLIST;
-	    fse->fse_SegList = afsbase->ab_SegList;
-	    AddTail(&fsr->fsr_FileSysEntries, (struct Node *)fse);
+	    fse->fse_Version = (afsbase->lib_Version << 16) | afsbase->lib_Revision;
+	    fse->fse_PatchFlags = FSEF_HANDLER | FSEF_SEGLIST | FSEF_GLOBALVEC;
+	    fse->fse_Handler = AROS_CONST_BSTR("afs.handler");
+	    fse->fse_SegList = seg;
+	    fse->fse_GlobalVec = (BPTR)(SIPTR)-1;
+
+	    /* Add to the list. I know forbid and permit are
+	     * a little unnecessary for the pre-multitasking state
+	     * we should be in at this point, but you never know
+	     * who's going to blindly copy this code as an example.
+	     */
+    	    Forbid();
+	    Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);
+	    Permit();
 	}
     }
 
-    return ok;
+    return TRUE;
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init),0)
-
-/* NOTE: This is only here because architectures cannot
- *       override a libraries's *.conf file
- */
-AROS_LH1(void, beginio,
- AROS_LHA(struct IOFileSys *, iofs, A1),
-           struct AFSBase *, afsbase, 5, Afs)
-{
-    AROS_LIBFUNC_INIT
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH1(LONG, abortio,
- AROS_LHA(struct IOFileSys *, iofs, A1),
-           struct AFSBase *, afsbase, 6, Afs)
-{
-	AROS_LIBFUNC_INIT
-	return 0;
-	AROS_LIBFUNC_EXIT
-}

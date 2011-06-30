@@ -25,13 +25,6 @@ endif
 USER_CFLAGS := -DDEBUG=0 \
 	       -D__INTUITION_NOLIBBASE__
 
-ifeq ($(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU),amiga-m68k)
-CONFFILE := afs_amiga-m68k.conf
-else
-CONFFILE := afs.conf
-endif
-
 %build_module mmake=kernel-fs-afs \
-    modname=afs modtype=device modsuffix=handler \
-    files="arosdevice $(FILES)" uselibs="rom" \
-    conffile="$(CONFFILE)"
+    modname=afs modtype=resource modsuffix=handler \
+    files="resource $(FILES)" uselibs="rom"
