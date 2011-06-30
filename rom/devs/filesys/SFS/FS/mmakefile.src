@@ -17,7 +17,7 @@ FILES := adminspaces \
 	 cachedio \
 	 filesystemmain
 
-MODULE_FILES := arosdevice arosmain
+MODULE_FILES := resource
 
 USER_CFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
@@ -29,6 +29,6 @@ USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS) \
                -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module mmake=kernel-fs-sfs \
-	modname=sfs modtype=device modsuffix=handler \
+	modname=sfs modtype=resource modsuffix=handler \
 	files="$(MODULE_FILES) $(FILES)" \
 	uselibs="arossupport rom m"
