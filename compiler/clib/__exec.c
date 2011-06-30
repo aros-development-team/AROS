@@ -6,7 +6,6 @@
 */
 #include <exec/types.h>
 #include <dos/dos.h>
-#include <proto/alib.h>
 #include <proto/dos.h>
 
 #include <aros/libcall.h>
@@ -45,6 +44,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     struct arosc_privdata *privdata = __get_arosc_privdata();
     char *filename2 = NULL;
     int argssize = 512;
+    struct Process *me;
 
     D(bug("Entering __exec_prepare(\"%s\", %d, %x, %x)\n",
           filename, searchpath, argv, envp
@@ -307,11 +307,12 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         goto error;
     }
 
+    me = (struct Process *)FindTask(NULL);
+
     if (envp && envp != environ)
     {
         struct MinList tempenv;
         struct LocalVar *lv, *lv2;
-        struct Process *me = (struct Process *)FindTask(NULL);
         char *const *envit;
         int env_ok = 1;
         
@@ -369,8 +370,11 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         privdata->acpd_exec_oldin = SelectInput(in->fcb->fh);
     if(out) 
         privdata->acpd_exec_oldout = SelectOutput(out->fcb->fh);
-    if(err)
-        privdata->acpd_exec_olderr = SelectErrorOutput(err->fcb->fh);
+    if (err)
+    {
+        privdata->acpd_exec_olderr = me->pr_CES;
+        me->pr_CES = err->fcb->fh;
+    }
 
     /* Generate new privdata for the exec */
     assert(!(privdata->acpd_flags & KEEP_OLD_ACPD));
@@ -630,8 +634,10 @@ static void __exec_cleanup(struct arosc_privdata *privdata)
     }
     if(privdata->acpd_exec_olderr)
     {
-        SelectErrorOutput(privdata->acpd_exec_olderr);
-        privdata->acpd_exec_olderr = (BPTR)NULL;
+    	struct Process *me = (struct Process *)FindTask(NULL);
+    	
+    	me->pr_CES = privdata->acpd_exec_olderr;
+        privdata->acpd_exec_olderr = BNULL;
     }
 
     if (privdata->acpd_exec_pool)

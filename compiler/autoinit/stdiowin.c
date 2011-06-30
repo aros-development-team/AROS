@@ -1,13 +1,13 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: autoinit library - open IO window when started from WB
 */
 #include <dos/dos.h>
-#include <proto/dos.h>
 #include <aros/startup.h>
 #include <dos/stdio.h>
+#include <proto/dos.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -38,6 +38,8 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
 
 static void __startup_stdiowin(void)
 {
+    struct Process *me;
+
     D(bug("[__startup_stdiowin] Entering\n"));
 
     if (!WBenchMsg)
@@ -76,7 +78,9 @@ static void __startup_stdiowin(void)
 
     __old_in = SelectInput(__iowinr);
     __old_out = SelectOutput(__iowinw);
-    __old_err = SelectError(__iowine);
+    me = (struct Process *)FindTask(NULL);
+    __old_err = me->pr_CES;
+    me->pr_CES = __iowine;
 
     D(bug("[__startup_stdiowin] old in %p out %p err %p\n", __old_in, __old_out, __old_err));
 
@@ -86,7 +90,7 @@ static void __startup_stdiowin(void)
 
     SelectInput(__old_in);
     SelectOutput(__old_out);
-    SelectError(__old_err);
+    me->pr_CES = __old_err;
 
     Close(__iowinr);
     Close(__iowine);

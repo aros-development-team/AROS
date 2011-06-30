@@ -62,6 +62,7 @@ UBYTE * ACrypt(UBYTE * buffer, const UBYTE * password, const UBYTE * user);
 
 /* Dos support */
 BPTR ErrorOutput(void);
+BPTR SelectErrorOutput(BPTR fh);
 
 /* Exec support */
 VOID BeginIO (struct IORequest *ioReq);
