@@ -22,7 +22,6 @@
 /* Internal form of our handle */
 struct filehandle
 {
-    struct FileHandle fh;
     char * hostname;		/* full host pathname (includes volume root prefix) */
     char * name;		/* full AROS name including pathname		    */
     int    type;		/* type flags, see below		       	    */
