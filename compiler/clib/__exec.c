@@ -6,6 +6,7 @@
 */
 #include <exec/types.h>
 #include <dos/dos.h>
+#include <proto/alib.h>
 #include <proto/dos.h>
 
 #include <aros/libcall.h>
@@ -369,7 +370,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     if(out) 
         privdata->acpd_exec_oldout = SelectOutput(out->fcb->fh);
     if(err)
-        privdata->acpd_exec_olderr = SelectError(err->fcb->fh);
+        privdata->acpd_exec_olderr = SelectErrorOutput(err->fcb->fh);
 
     /* Generate new privdata for the exec */
     assert(!(privdata->acpd_flags & KEEP_OLD_ACPD));
@@ -629,7 +630,7 @@ static void __exec_cleanup(struct arosc_privdata *privdata)
     }
     if(privdata->acpd_exec_olderr)
     {
-        SelectError(privdata->acpd_exec_olderr);
+        SelectErrorOutput(privdata->acpd_exec_olderr);
         privdata->acpd_exec_olderr = (BPTR)NULL;
     }
 
