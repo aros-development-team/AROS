@@ -29,6 +29,7 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-bootloader-pc-i386-kobj \
 #MM	kernel-isapnp-kobj \
 #MM     kernel-partition-kobj \
+#MM     kernel-filesystem-kobj \
 #MM     kernel-fs-afs-kobj \
 #MM	kernel-fs-sfs-kobj \
 #MM     workbench-devs-cdvdfs-kobj \
@@ -45,7 +46,7 @@ USELIBS	:= hiddstubs amiga arossupport rom arosm autoinit libinit
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-KRSRCS  := battclock bootloader dosboot processor
+KRSRCS  := battclock bootloader dosboot processor FileSystem
 KLIBS   := boot aros debug dos graphics utility intuition keymap \
       	   expansion oop layers partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
