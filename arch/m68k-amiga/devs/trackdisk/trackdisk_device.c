@@ -20,8 +20,13 @@
 #include <clib/alib_protos.h>
 #include <aros/symbolsets.h>
 
+#include <dos/filehandler.h>
+#include <libraries/expansion.h>
+#include <libraries/expansionbase.h>
+
 #include <proto/exec.h>
 #include <proto/disk.h>
+#include <proto/expansion.h>
 
 #include <hardware/custom.h>
 #include <hardware/cia.h>
@@ -501,11 +506,53 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     return unit;
 }
 
+/*
+ * Create BootNodes for all 4 possible devices
+ */
+static void TD_BootNode(
+        struct ExpansionBase *ExpansionBase,
+        ULONG unit, ULONG id)
+{
+    /* Until we see a boot block, assume all floppies are OFS */
+    const ULONG dostype = AROS_MAKE_ID('D','O','S','\000');
+
+    TEXT dosdevname[4] = "DF0";
+    IPTR pp[4 + DE_BOOTBLOCKS + 1] = {};
+    struct DeviceNode *devnode;
+    BOOL hddisk = ishd(id);
+
+    dosdevname[2] += unit;
+    D(bug("trackdisk.device: Adding bootnode %s: DDHD=%d\n", dosdevname, hddisk ? 1 : 0));
+
+    pp[0] = (IPTR)dosdevname;
+    pp[1] = (IPTR)"trackdisk.device";
+    pp[2] = unit;
+    pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
+    pp[DE_SIZEBLOCK + 4] = 128;
+    pp[DE_NUMHEADS + 4] = 2;
+    pp[DE_SECSPERBLOCK + 4] = 1;
+    pp[DE_BLKSPERTRACK + 4] = hddisk ? 22 : 11;
+    pp[DE_RESERVEDBLKS + 4] = 2;
+    pp[DE_LOWCYL + 4] = 0;
+    pp[DE_HIGHCYL + 4] = 79;
+    pp[DE_NUMBUFFERS + 4] = 10;
+    pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
+    pp[DE_MAXTRANSFER + 4] = 0x00200000;
+    pp[DE_MASK + 4] = 0x7FFFFFFE;
+    pp[DE_BOOTPRI + 4] = 5 - (unit * 10);
+    pp[DE_DOSTYPE + 4] = dostype;
+    pp[DE_BOOTBLOCKS + 4] = 2;
+    devnode = MakeDosNode(pp);
+
+    if (devnode)
+   	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
+}
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 {
     ULONG i;
     UBYTE drives;
     struct DiskBase *DiskBase;
+    struct ExpansionBase *ExpansionBase;
  
     D(bug("TD: Init\n"));
     
@@ -513,6 +560,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
     DiskBase = OpenResource("disk.resource");
     if (!DiskBase)
   	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_OpenRes);
+
     TDBase->td_DiskBase = DiskBase;
     TDBase->ciaa = (struct CIA*)0xbfe001;
     TDBase->ciab = (struct CIA*)0xbfd000;
@@ -531,6 +579,10 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
     	return FALSE;
     }
 
+    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
+    if (!ExpansionBase)
+  	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_OpenLib);
+
     /* Alloc memory for track buffering, DD buffer only, reallocated
      * later if HD disk detected to save RAM on unexpanded machines */
     TDBase->td_DMABuffer = AllocMem(DISK_BUFFERSIZE, MEMF_CHIP);
@@ -540,14 +592,18 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 
     for (i = 0; i < TD_NUMUNITS; i++) {
 	TDBase->td_Units[i] = NULL;
-  	ULONG id = GetUnitID(i);
-  	if (id != DRT_EMPTY)
-  	    TD_InitUnit(i, TDBase);
+	ULONG id = GetUnitID(i);
+	if (id != DRT_EMPTY) {
+	    TD_BootNode(ExpansionBase, i, id);
+	    TD_InitUnit(i, TDBase);
+	}
 	D(bug("TD%d id=%08x status=%d\n", i, id, TDBase->td_Units[i] ? 1 : 0));
     }
 
     /* Create the message processor task */
     TD_InitTask(TDBase);
+
+    CloseLibrary((struct Library *)ExpansionBase);
 
     D(bug("TD: done %d\n", drives));
 
