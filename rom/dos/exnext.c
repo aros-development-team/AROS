@@ -5,6 +5,9 @@
     Desc:
     Lang: English
 */
+
+#define DEBUG 0
+#include <aros/debug.h>
 #include <proto/exec.h>
 
 #include "dos_intern.h"
@@ -35,11 +38,9 @@
 
     RESULT
 
-    != 0    if operation was successful
-    == 0    if operation was not successful
-
-            A failure occurs also if there is no "next" entry in
-            the directory. Then IoErr() equals ERROR_NO_MORE_ENTRIES.
+    success  --  a boolean telling whether the operation was successful
+                 or not. A failure occurs also if there is no "next" entry in
+		 the directory. Then IoErr() equals ERROR_NO_MORE_ENTRIES.
 
     NOTES
 
@@ -54,8 +55,8 @@
         AllocDosObject()) to Examine().
     2.  Pass the same parameters to ExNext().
     3.  Do something with the FileInfoBlock returned.
-    4.  Call ExNext() repeatedly until it returns 0 and use the
-        information you are provided. When ExNext returns 0, check IoErr()
+    4.  Call ExNext() repeatedly until it returns FALSE and use the
+        information you are provided. When ExNext returns FALSE, check IoErr()
 	to make sure that there was no real failure (ERROR_NO_MORE_ENTRIES).
 
     BUGS
@@ -71,29 +72,21 @@
     AROS_LIBFUNC_INIT
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
+    struct FileLock *fl = BADDR(lock);
+    LONG ret;
 
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    ASSERT_VALID_PTR_OR_NULL(BADDR(lock));
+    ASSERT_VALID_FILELOCK(lock);
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_EXAMINE_NEXT, DOSBase);
-
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit   = fh->fh_Unit;
-
-    iofs.io_Union.io_EXAMINE_NEXT.io_fib = fileInfoBlock;
-
-    /* Send the request. */
-    DosDoIO(&iofs.IOFS);
-
-    /* Set error code and return */
-    SetIoErr(iofs.io_DosError);
-
-    if(iofs.io_DosError != 0)
-        return DOSFALSE;
-    else
-        return DOSTRUE;
+    D(bug("[ExNext] lock=%x fib=%x\n", fl, fileInfoBlock));
+    ret = dopacket2(DOSBase, NULL,  fl->fl_Task, ACTION_EXAMINE_NEXT, lock, MKBADDR(fileInfoBlock));
+    if (ret) {
+    	fixfib(fileInfoBlock);
+    	D(bug("[ExNext] '%s'\n", fileInfoBlock->fib_FileName));
+    } else {
+    	D(bug("[ExNext] ret=%d err=%d\n", ret, IoErr()));
+    }
+    return ret;
 
     AROS_LIBFUNC_EXIT
 } /* ExNext */

@@ -19,9 +19,8 @@ LONG InternalSeek
     struct DosLibrary *DOSBase 
 )
 {
-    
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    LONG  status;
+    SIPTR doserror = 0;
 
     /* Make sure the input parameters are sane. */
     ASSERT_VALID_PTR( fh );
@@ -31,23 +30,11 @@ LONG InternalSeek
 	|| mode == OFFSET_END 
 	|| mode == OFFSET_CURRENT 
     );
-        
-    /* Prepare I/O request. */
-    InitIOFS( &iofs, FSA_SEEK, DOSBase );
-
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit   = fh->fh_Unit;
-
-    iofs.io_Union.io_SEEK.io_Offset   = (QUAD)position;
-    iofs.io_Union.io_SEEK.io_SeekMode = mode;
-
-    /* send the request, with error reporting */
+    D(bug("[seek] %x:%d:%d\n", fh, position, mode));
     do {
-        DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0
-        && !ErrorReport(iofs.io_DosError, REPORT_STREAM, (IPTR)fh, NULL));
+        status = dopacket3(DOSBase, &doserror, fh->fh_Type, ACTION_SEEK, fh->fh_Arg1, position, mode);
+        D(bug("=%d %d\n", status, doserror));
+    } while (status == -1 && !ErrorReport(doserror, REPORT_STREAM, (IPTR)fh, NULL));
 
-    SetIoErr(iofs.io_DosError);
-
-    return iofs.io_DosError == 0 ? (LONG) iofs.io_Union.io_SEEK.io_Offset : -1;
+    return status;
 }

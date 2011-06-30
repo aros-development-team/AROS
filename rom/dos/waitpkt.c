@@ -95,19 +95,6 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort)
 	}
     }
 
-#ifndef AROS_DOS_PACKETS
-    if (!msg->mn_Node.ln_Name)
-    {
-	/*
-	 * If ln_Name is not filled in, we are talking to an IOFS handler via emulation layer.
-	 * Call emulator to translate results back to packet form.
-	 */
-	D(bug("[DOS] WaitPkt(): got IOFS IORequest 0x%p\n", msg));
-	
-	return IOFS_GetPkt((struct IOFileSys *)msg);
-    }
-#endif
-
     D(bug("[DOS] WaitPkt(): got DOS packet 0x%p in message 0x%p\n", msg->mn_Node.ln_Name, msg));
     return (struct DosPacket *)msg->mn_Node.ln_Name;
 }

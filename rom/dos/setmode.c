@@ -51,21 +51,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IOFileSys     iofs;
-    struct FileHandle   *fha = (struct FileHandle *)BADDR(fh);
-
-    InitIOFS(&iofs, FSA_CONSOLE_MODE, DOSBase);
-
-    iofs.IOFS.io_Device = fha->fh_Device;
-    iofs.IOFS.io_Unit   = fha->fh_Unit;
-
-    iofs.io_Union.io_CONSOLE_MODE.io_ConsoleMode = mode;
-
-    DosDoIO(&iofs.IOFS);
-
-    SetIoErr(iofs.io_DosError);
-
-    return iofs.io_DosError == 0 ? DOSTRUE : DOSFALSE;
+    struct FileHandle *afh = BADDR(fh);
+    LONG status;
+    
+    status = dopacket1(DOSBase, NULL, afh->fh_Type, ACTION_SCREEN_MODE, mode);
+    
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* SetMode */

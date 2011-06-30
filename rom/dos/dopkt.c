@@ -71,14 +71,12 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
     struct DosPacket *dp;
     struct MsgPort   *replyPort;
 
-#ifdef AROS_DOS_PACKETS
     if (port == NULL)
     {
     	/* NIL: */
     	D(bug("null port\n"));
     	return TRUE;
     }
-#endif
 
     /* First I create a regular dos packet */
     dp = allocdospacket();

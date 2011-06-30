@@ -5,6 +5,8 @@
     Desc: Set a filecomment.
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
@@ -36,8 +38,8 @@
 	comment - new comment for the file.
 
     RESULT
-	!= 0 if all went well, 0 else. IoErr() gives additional
-	information in that case.
+	Boolean success indicator. IoErr() gives additional information upon
+	failure.
 
     NOTES
 
@@ -53,15 +55,23 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    struct PacketHelperStruct phs;
+    LONG status = DOSFALSE;
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_SET_COMMENT, DOSBase);
+    D(bug("[SetComment] '%s' '%s'\n", name, comment));
 
-    iofs.io_Union.io_SET_COMMENT.io_Comment = comment;
+    if (getpacketinfo(DOSBase, name, &phs)) {
+    	BSTR com = C2BSTR(comment);
+    	if (com) {
+    	    status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_COMMENT, (SIPTR)NULL, phs.lock, phs.name, com);
+    	    FREEC2BSTR(com);
+    	} else {
+    	    SetIoErr(ERROR_NO_FREE_STORE);
+    	}
+    	freepacketinfo(DOSBase, &phs);
+    }
 
-    return DoIOFS(&iofs, NULL, name, DOSBase) == 0 ? DOSTRUE : DOSFALSE;
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* SetComment */

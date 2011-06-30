@@ -5,16 +5,8 @@
     Desc: Creates a pair of filehandles connected to each other
     Lang: english
 */
-#include <exec/memory.h>
-#include <exec/lists.h>
-#include <proto/exec.h>
-#include <utility/tagitem.h>
-#include <dos/dosextens.h>
-#include <dos/filesystem.h>
-#include <dos/stdio.h>
+#include <aros/debug.h>
 #include <proto/dos.h>
-#include <proto/utility.h>
-#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -57,42 +49,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct FileHandle *rfh, *wfh;
-    struct IOFileSys iofs;
-    LONG err;
+    bug("[Pipe] not implemented\n");
 
-    if ((rfh = (struct FileHandle *) AllocDosObject(DOS_FILEHANDLE, NULL)) == NULL) {
-        return DOSFALSE;
-    }
-    if ((wfh = (struct FileHandle *) AllocDosObject(DOS_FILEHANDLE, NULL)) == NULL) {
-        return DOSFALSE;
-    }
-
-    InitIOFS(&iofs, FSA_PIPE, DOSBase);
-    err = DoIOFS(&iofs, NULL, name, DOSBase);
-
-    if (err != 0) {
-        FreeDosObject(DOS_FILEHANDLE, rfh);
-        FreeDosObject(DOS_FILEHANDLE, wfh);
-        return DOSFALSE;
-    }
-
-    rfh->fh_Device = iofs.IOFS.io_Device;
-    rfh->fh_Unit   = iofs.IOFS.io_Unit;
-
-    wfh->fh_Device = iofs.IOFS.io_Device;
-    wfh->fh_Unit   = iofs.io_Union.io_PIPE.io_Writer;
-
-    if (IsInteractive(MKBADDR(rfh)))
-        SetVBuf(MKBADDR(rfh), NULL, BUF_LINE, -1);
-
-    if (IsInteractive(MKBADDR(wfh)))
-        SetVBuf(MKBADDR(wfh), NULL, BUF_LINE, -1);
-
-    *reader = MKBADDR(rfh);
-    *writer = MKBADDR(wfh);
-
-    return DOSTRUE;
+    return DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* Pipe */

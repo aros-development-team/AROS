@@ -54,14 +54,7 @@
     AROS_LIBFUNC_INIT
     
     struct DevProc *dvp;
-    LONG err;
-
-    /* Use stackspace for IO request. */
-    struct IOFileSys iofs;
-    
-    /* setup */
-    InitIOFS(&iofs, FSA_MORE_CACHE, DOSBase);
-    iofs.io_Union.io_MORE_CACHE.io_NumBuffers = numbuffers;
+    LONG ret;
 
     /* get the device */
     if ((dvp = GetDeviceProc(devicename, NULL)) == NULL)
@@ -74,16 +67,11 @@
         return DOSFALSE;
     }
 
-    err = DoIOFS(&iofs, dvp, NULL, DOSBase);
+    ret = dopacket1(DOSBase, NULL, dvp->dvp_Port, ACTION_MORE_CACHE, numbuffers);
 
     FreeDeviceProc(dvp);
 
-    if (err != 0)
-        return DOSFALSE;
-
-    /* caller expects the new number of buffers in IoErr() */
-    SetIoErr(iofs.io_Union.io_MORE_CACHE.io_NumBuffers);
-    return DOSTRUE;
+    return ret;
 
     AROS_LIBFUNC_EXIT
 } /* AddBuffers */

@@ -5,6 +5,8 @@
     Desc: Lock the directory a file is located in
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "dos_intern.h"
 #include <dos/dosasl.h>
 #include <proto/exec.h>
@@ -48,58 +50,9 @@
 {  
     AROS_LIBFUNC_INIT
 
-    BPTR    lock = MKBADDR(NULL); 
-    LONG    success = DOSFALSE;
-    char *  Buffer = NULL;
-    LONG    Buffersize = 256;
-    LONG    Attempts = 1;
-
-    #define DEF_BUFSIZESTEP 128
-
-    if (fh != NULL)
-    {
-	/* Attempt to get the string of the file fh */
-	while ((DOSFALSE == success) && (Attempts <= 5))
-	{
-	    Buffer = (char *) AllocMem(Buffersize, MEMF_CLEAR);
-
-	    if (NULL ==  Buffer)
-              	return NULL;
-
-	    success = NameFromFH(fh, Buffer, Buffersize);
-
-	    /* did it fail with a buffer overflow?? */
-	    if (DOSFALSE == success)
-	    {
-        	if (ERROR_BUFFER_OVERFLOW == IoErr())
-        	{
-        	    Attempts++;
-        	    FreeMem(Buffer, Buffersize);
-        	    Buffersize += DEF_BUFSIZESTEP;
-        	}
-        	else /* another error occured -> exit */
-        	{
-        	    FreeMem(Buffer, Buffersize);
-        	    return NULL;
-        	}
-	    }
-	  
-	} /* while ((DOSFALSE == success) && (Attempts <= 5)) */
-	
-	if (DOSTRUE == success)
-	{
-	    char * PP = PathPart(Buffer); /* get the path part of the file */
-
-	    *PP = '\0';
-	    
-	    lock = Lock (Buffer, SHARED_LOCK);
-	}
-	
-	FreeMem(Buffer, Buffersize);
-
-    } /* if (fh != NULL) */
-
-    return lock;
+    struct FileHandle *handle = BADDR(fh);
+    D(bug("[ParentOfFH] fh=%x\n", handle));
+    return (BPTR)dopacket1(DOSBase, NULL, handle->fh_Type, ACTION_PARENT_FH, handle->fh_Arg1);
 
     AROS_LIBFUNC_EXIT
   

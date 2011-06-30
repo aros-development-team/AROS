@@ -83,9 +83,6 @@
 	if (s2 != NULL)
 	{
 	    strcpy(s2, name);
-#ifndef AROS_DOS_PACKETS
-	    dl->dol_Ext.dol_AROS.dol_DevName = s2;
-#endif
 	    dl->dol_Type = type;
 	    return dl;
 	}

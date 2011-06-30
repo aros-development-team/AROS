@@ -2,11 +2,13 @@
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Write data to a file.
-    Lang: English
+    Desc: Write a couple of bytes from a file.
+    Lang: english
 */
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/exec.h>
+#include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include "dos_intern.h"
 
@@ -18,29 +20,30 @@
 	AROS_LH3(LONG, Write,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,       file,   D1),
-	AROS_LHA(CONST_APTR, buffer, D2),
-	AROS_LHA(LONG,       length, D3),
+	AROS_LHA(BPTR, file,   D1),
+	AROS_LHA(APTR, buffer, D2),
+	AROS_LHA(LONG, length, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 8, Dos)
+	struct DosLibrary *, DOSBase, 7, Dos)
 
 /*  FUNCTION
-	Write some data to a given file. The request is directly
+	Write some data from a given file. The request is directly
 	given to the filesystem - no buffering is involved. For
 	small amounts of data it's probably better to use the
 	buffered I/O routines.
 
     INPUTS
 	file   - filehandle
-	buffer - pointer to data buffer
+	buffer - pointer to buffer for the data
 	length - number of bytes to write. The filesystem is
 		 advised to try to fulfill the request as good
 		 as possible.
 
     RESULT
-	The number of bytes actually written, -1 if an error happened.
-	IoErr() will give additional information in that case.
+	The number of bytes actually written, 0 if the end of the
+	file was reached, -1 if an error happened. IoErr() will
+	give additional information in that case.
 
     NOTES
 
@@ -56,42 +59,21 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Get pointer to filehandle. */
-    struct FileHandle *fh = (struct FileHandle *)BADDR(file);
+    /* Get pointer to filehandle */
+    struct FileHandle *fh = BADDR(file);
+    LONG ret;
 
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    ASSERT_VALID_PTR(fh);
+    ASSERT_VALID_PTR(buffer);
 
-    /* Make sure the input parameters are sane. */
-    ASSERT_VALID_PTR( fh );
-    ASSERT_VALID_PTR( fh->fh_Device );
-    ASSERT_VALID_PTR( fh->fh_Unit );
-    ASSERT_VALID_PTR( buffer );
+    D(bug("[Write] %x %x %d\n", fh, buffer, length));
+    if (fh->fh_Type == BNULL) /* NIL: */
+    	ret = length;
+    else
+    	ret = dopacket3(DOSBase, NULL, fh->fh_Type, ACTION_WRITE, fh->fh_Arg1, (SIPTR)buffer, length);
+    D(bug("[Write]=%d\n", ret));
 
-    /* Handle append mode. */
-    if( fh->fh_Flags & FHF_APPEND )
-    {
-	InternalSeek( fh, 0, OFFSET_END, DOSBase );
-    }
-
-    /* Prepare I/O request */
-    InitIOFS( &iofs, FSA_WRITE, DOSBase );
-
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit   = fh->fh_Unit;
-
-    iofs.io_Union.io_WRITE.io_Buffer = (APTR)buffer;
-    iofs.io_Union.io_WRITE.io_Length = length;
-
-    /* send the request, with error reporting */
-    do {
-        DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0
-        && !ErrorReport(iofs.io_DosError, REPORT_STREAM, (IPTR)fh, NULL));
-
-    SetIoErr(iofs.io_DosError);
-
-    return iofs.io_DosError == 0 ? iofs.io_Union.io_WRITE.io_Length : -1;
+    return ret;
 
     AROS_LIBFUNC_EXIT
-} /* Write */
+} /* Read */

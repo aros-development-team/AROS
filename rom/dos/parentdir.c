@@ -5,6 +5,9 @@
     Desc:
     Lang: english
 */
+
+#define DEBUG 0
+#include <aros/debug.h>
 #include "dos_intern.h"
 #include <dos/dos.h>
 
@@ -39,8 +42,6 @@
     EXAMPLE
 
     BUGS
-	Locks get via ParentDir() are currently never unlocked! Use this 
-	function with care.
 
     SEE ALSO
 
@@ -50,11 +51,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    BPTR oldlock = CurrentDir(lock), newlock;
-
-    newlock = Lock("/", ACCESS_READ);
-    CurrentDir(oldlock);
-
-    return newlock;
+    struct FileLock *fl = BADDR(lock);
+    D(bug("[ParentDir] lock=%x\n", lock));
+    return (BPTR)dopacket1(DOSBase, NULL, fl->fl_Task, ACTION_PARENT, lock);
+ 
     AROS_LIBFUNC_EXIT
 } /* ParentDir */

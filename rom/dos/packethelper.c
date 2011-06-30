@@ -74,5 +74,5 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct *phs)
 {
     if (phs->dp)
     	FreeDeviceProc(phs->dp);
-    FreeVec(BADDR(phs->name));
+    FREEC2BSTR(phs->name);
 }

@@ -5,12 +5,12 @@
     Desc: dos.library function DupLockFromFH()
     Lang: english
 */
-
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include "dos_intern.h"
 
-/*****i***********************************************************************
+/*****************************************************************************
 
     NAME */
 #include <proto/dos.h>
@@ -48,7 +48,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    return DupLock(handle);
+    struct FileHandle *fh = BADDR(handle);
+    BPTR ret;
+
+    ret = (BPTR)dopacket1(DOSBase, NULL, fh->fh_Type, ACTION_COPY_DIR_FH, fh->fh_Arg1);
+    D(bug("[DupLockFromFH] %x -> %x\n", fh, BADDR(ret)));
+    return ret;
 
     AROS_LIBFUNC_EXIT
 } /* DupLockFromFH */

@@ -46,44 +46,28 @@
 {
     AROS_LIBFUNC_INIT
     
-    struct IOFileSys iofs;
-    struct FileHandle *fh1;
-    struct FileHandle *fh2;
+    struct FileLock *fl1;
+    struct FileLock *fl2;
+    LONG status;
+    SIPTR res;
 
     if(!SameDevice(lock1, lock2))
     	return LOCK_DIFFERENT;
 	
-    fh1 = (struct FileHandle *)BADDR(lock1);
-    fh2 = (struct FileHandle *)BADDR(lock2);
-	
-    /* Check if it is the same lock */
+    fl1 = (struct FileLock *)BADDR(lock1);
+    fl2 = (struct FileLock *)BADDR(lock2);
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_SAME_LOCK, DOSBase);
-
-    iofs.IOFS.io_Device = fh1->fh_Device;
-    iofs.IOFS.io_Unit   = fh1->fh_Unit;
-    iofs.io_Union.io_SAME_LOCK.io_Lock[0] = fh1->fh_Unit;
-    iofs.io_Union.io_SAME_LOCK.io_Lock[1] = fh2->fh_Unit;
-    iofs.io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
-
-    /* Send the request. */
-    DosDoIO(&iofs.IOFS);
-
-    /* Set error code and return */
-    SetIoErr(iofs.io_DosError);
-
-    if(iofs.io_DosError != 0)
-	return LOCK_DIFFERENT;
-    else
-    {
-	if(iofs.io_Union.io_SAME_LOCK.io_Same == LOCK_SAME)
-	    return LOCK_SAME;
-	else
-	    return LOCK_SAME_VOLUME;
+    status = dopacket2(DOSBase, &res, fl1->fl_Task, ACTION_SAME_LOCK, lock1, lock2);
+    if (status)
+    	return LOCK_SAME;
+    if (res == ERROR_NOT_IMPLEMENTED) {
+    	SetIoErr(0);
+    	if (fl1->fl_Volume == fl2->fl_Volume && fl1->fl_Key == fl2->fl_Key)
+    	    return LOCK_SAME;
+    	if (fl1->fl_Volume == fl2->fl_Volume)
+    	    return LOCK_SAME_VOLUME;
     }
-    
-    return 0;
+    return LOCK_DIFFERENT;
 
     AROS_LIBFUNC_EXIT
 } /* SameLock */

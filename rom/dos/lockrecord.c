@@ -63,7 +63,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IOFileSys iofs;
+    LONG status;
     struct FileHandle *fileH = BADDR(fh);
 
     if (fh == BNULL)
@@ -71,26 +71,9 @@
 	return DOSFALSE;
     }
 
-    InitIOFS(&iofs, FSA_LOCK_RECORD, DOSBase);
+    status = dopacket5(DOSBase, NULL, fileH->fh_Type, ACTION_LOCK_RECORD, fileH->fh_Arg1, offset, length, mode, timeout);
 
-    iofs.IOFS.io_Device = fileH->fh_Device;
-    iofs.IOFS.io_Unit = fileH->fh_Unit;
-
-    iofs.io_Union.io_RECORD.io_Offset = offset;
-    iofs.io_Union.io_RECORD.io_Size = length;
-    iofs.io_Union.io_RECORD.io_RecordMode = mode;
-    iofs.io_Union.io_RECORD.io_Timeout = timeout;
-
-    DosDoIO(&iofs.IOFS);
-    
-    SetIoErr(iofs.io_DosError);
-    
-    if (iofs.io_DosError != 0)
-    {
-	return DOSFALSE;
-    }
-
-    return DOSTRUE;
-
+    return status;
+ 
     AROS_LIBFUNC_EXIT
 } /* LockRecord */

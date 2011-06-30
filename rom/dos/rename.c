@@ -52,15 +52,15 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
     struct DevProc *olddvp, *newdvp;
-    struct IOFileSys iofs;
-    LONG err;
+    SIPTR err;
+    LONG status;
     struct Process *me = (struct Process *)FindTask(NULL);
     char buf1[256], vol[32];
     char buf2[256];
     int len;
-
-    InitIOFS(&iofs, FSA_RENAME, DOSBase);
+    BSTR bstrNewName, bstrOldName;
 
     len = SplitName(oldName, ':', vol, 0, sizeof(vol) - 1);
 
@@ -166,13 +166,16 @@
         return DOSFALSE;
     }
 
-    iofs.io_Union.io_RENAME.io_NewName = StripVolume(newName);
-    err = DoIOFS(&iofs, olddvp, oldName, DOSBase);
+    bstrNewName = C2BSTR(newName);
+    bstrOldName = C2BSTR(oldName);
+    status = dopacket4(DOSBase, &err, olddvp->dvp_Port, ACTION_RENAME_OBJECT, olddvp->dvp_Lock, bstrOldName, newdvp->dvp_Lock, bstrNewName);
+    FREEC2BSTR(bstrOldName);
+    FREEC2BSTR(bstrNewName);
 
     FreeDeviceProc(olddvp);
     FreeDeviceProc(newdvp);
 
-    return err == 0 ? DOSTRUE : DOSFALSE;
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* Rename */

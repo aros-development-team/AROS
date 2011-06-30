@@ -18,8 +18,9 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     STRPTR  	    	 s1, s2, name, origbuffer;
     BPTR parentlock, origlock;
     struct FileInfoBlock *fib;
-    LONG    	    	 error, code;
-    BOOL first = TRUE;
+    LONG  error;
+    SIPTR code = DOSFALSE;
+    BOOL  first = TRUE;
 
     origbuffer = buffer;
     D(bug("NameFromX(%x,%x,%d,%d)\n", BADDR(lock), buffer, length, filehandle));
@@ -31,7 +32,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     }
     
     if (filehandle) {
-    	lock = dopacket1(DOSBase, NULL, ((struct FileHandle*)BADDR(lock))->fh_Type, ACTION_COPY_DIR_FH,
+    	lock = (BPTR)dopacket1(DOSBase, NULL, ((struct FileHandle*)BADDR(lock))->fh_Type, ACTION_COPY_DIR_FH,
     		((struct FileHandle*)BADDR(lock))->fh_Arg1);
     	if (!lock)
     	    return DOSFALSE;
@@ -62,7 +63,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
 	error = dopacket2(DOSBase, NULL, ((struct FileLock*)BADDR(lock))->fl_Task, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib)) == 0;
 	//bug("name='%s'\n", fib->fib_FileName);
 	if (!error) {
-	    parentlock = dopacket1(DOSBase, &code, ((struct FileLock*)BADDR(lock))->fl_Task, ACTION_PARENT, lock);
+	    parentlock = (BPTR)dopacket1(DOSBase, &code, ((struct FileLock*)BADDR(lock))->fl_Task, ACTION_PARENT, lock);
 	    if (!parentlock && !first)
 	    	error = code;
 	    //bug("parentlock=%x\n", parentlock);

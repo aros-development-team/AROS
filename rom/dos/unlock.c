@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#define DEBUG 0
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
@@ -13,7 +14,7 @@
 #include "dos_intern.h"
 #include <aros/debug.h>
 
-/*****i***********************************************************************
+/*****************************************************************************
 
     NAME */
 #include <proto/dos.h>
@@ -49,7 +50,19 @@
 {
     AROS_LIBFUNC_INIT
 
-    return Close(lock);
+    /* Get pointer to filehandle */
+    struct FileLock *fl = BADDR(lock);
+
+    ASSERT_VALID_PTR_OR_NULL(fl);
+    ASSERT_VALID_FILELOCK(lock);
+
+    D(bug("UnLock(%x)\n", fl));
+
+    /* 0 handles are OK */
+    if(lock == BNULL)
+	return 0;
+
+    return dopacket1(DOSBase, NULL, fl->fl_Task, ACTION_FREE_LOCK, lock) != 0;
 
     AROS_LIBFUNC_EXIT
 } /* UnLock */

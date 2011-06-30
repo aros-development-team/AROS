@@ -53,33 +53,17 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct DevProc *dvp;
-    LONG err;
+    struct PacketHelperStruct phs;
+    LONG status = DOSFALSE;
 
-    /* Get space for I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    if (!getdevpacketinfo(DOSBase, devicename, volumename, &phs))
+    	return DOSFALSE;
+ 
+    status = dopacket2(DOSBase, NULL, phs.port, ACTION_FORMAT, phs.name, (IPTR)dostype);
+
+    freepacketinfo(DOSBase, &phs);
     
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_FORMAT, DOSBase);
-    iofs.io_Union.io_FORMAT.io_VolumeName = volumename;
-    iofs.io_Union.io_FORMAT.io_DosType = dostype;
-    
-    /* get the device */
-    if ((dvp = GetDeviceProc(devicename, NULL)) == NULL)
-        return DOSFALSE;
-
-    /* we're only interested in real devices */
-    if (dvp->dvp_DevNode->dol_Type != DLT_DEVICE) {
-        FreeDeviceProc(dvp);
-        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-        return DOSFALSE;
-    }
-
-    err = DoIOFS(&iofs, dvp, NULL, DOSBase);
-
-    FreeDeviceProc(dvp);
-    
-    return err == 0 ? TRUE : FALSE;
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* Format */

@@ -77,8 +77,6 @@
     STRPTR              volname = NULL;
     STRPTR              devname = NULL;
     struct DeviceList   *dl = NULL;
-    struct Device       *handler = NULL;
-    struct Unit         *unit = NULL;
     char                buf[128];
     struct DevProc      *dvp;
     struct DosList      *dol;
@@ -86,12 +84,16 @@
     ULONG               idcmp = 0;
     LONG                err;
     LONG                res;
+    struct MsgPort      *msgport;
+    struct PacketHelperStruct phs;
+    
 
     /* do nothing if errors are disabled */
     if (me->pr_WindowPtr == (APTR) -1) {
         SetIoErr(code);
         return DOSTRUE;
     }
+    buf[0] = 0;
 
     /* first setup the error format and work out which args we need */
     switch (code) {
@@ -169,9 +171,10 @@
         case REPORT_STREAM:
             if (arg1 == (IPTR)NULL)
                 return DOSTRUE;
-
-            handler = ((struct FileHandle *) BADDR(arg1))->fh_Device;
-            unit = ((struct FileHandle *) BADDR(arg1))->fh_Unit;
+            msgport = ((struct FileHandle *) BADDR(arg1))->fh_Type;
+            dl = (struct DeviceList*)BADDR(dopacket1(DOSBase, NULL, msgport, ACTION_CURRENT_VOLUME, ((struct FileHandle *) BADDR(arg1))->fh_Arg1));
+            if (dl)
+            	volname = (char*)BADDR(dl->dl_Name) + 1;
             break;
             
         case REPORT_TASK:
@@ -180,35 +183,27 @@
 
         /* a lock */
         case REPORT_LOCK:
+        {
+            struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, 0);
+            if (!fib)
+            	return DOSTRUE;
             /* if they provided a lock, just use it */
             if (arg1 != (IPTR)NULL) {
-                handler = ((struct FileHandle *) BADDR(arg1))->fh_Device;
-                unit = ((struct FileHandle *) BADDR(arg1))->fh_Unit;
+            	msgport = ((struct FileLock *) BADDR(arg1))->fl_Task;
+            } else {
+            	msgport = device;
             }
-
-            /* otherwise we use the secondary device, and we look through the
-             * doslist to determine the unit */
-            else {
-                handler = (struct Device *) device;
-
-                /* find the doslist entry */
-                dol = LockDosList(LDF_READ | LDF_ALL);
-                while (dol != NULL && (dol->dol_Type != DLT_VOLUME ||
-                                       dol->dol_Ext.dol_AROS.dol_Device != handler))
-                    dol = BADDR(dol->dol_Next);
-
-                /* found it, steal its unit */
-                if (dol != NULL)
-                    unit = dol->dol_Ext.dol_AROS.dol_Unit;
-                
-                UnLockDosList(LDF_READ | LDF_ALL);
-
-                /* if we didn't find it, there's not much more we can do */
-                if (dol == NULL)
-                    return DOSTRUE;
+            if (dopacket2(DOSBase, NULL, msgport, ACTION_EXAMINE_OBJECT, arg1, (SIPTR)MKBADDR(fib))) {
+            	fixfib(fib);
+            	strncpy(buf, fib->fib_FileName, sizeof (buf) - 1);
+            	buf[sizeof(buf) - 1] = 0;
             }
-
-            break;
+            FreeDosObject(DOS_FIB, fib);
+            if (buf[0] == 0)
+            	return DOSTRUE;
+            volname = buf;
+        }
+        break;
 
         /* a volume, ie a DeviceList */
         case REPORT_VOLUME:
@@ -216,75 +211,27 @@
                 return DOSTRUE;
 
             dl = (struct DeviceList *) arg1;
+            volname = (char*)BADDR(dl->dl_Name) + 1;
+            msgport = dl->dl_Task;
             break;
             
         /* raw volume name */
         case REPORT_INSERT:
             if (arg1 == (IPTR)NULL)
                 return DOSTRUE;
-
+            if (!getpacketinfo(DOSBase, (STRPTR)arg1, &phs))
+            	return DOSTRUE;
+            msgport = phs.port;
             volname = (STRPTR) arg1;
             /* rip off any trailing stuff, if its there */
             if (SplitName(volname, ':', buf, 0, sizeof(buf)-1) == -1)
                 volname = buf;
+            freepacketinfo(DOSBase, &phs);
             break;
 
         /* do nothing with other types */
         default:
             return DOSTRUE;
-    }
-
-    /* get the name if we don't already have it */
-    if (volname == NULL) {
-
-        /* just use the volume pointer if we already have it */
-        if (dl != NULL)
-            volname = dl->dl_Ext.dl_AROS.dol_DevName;
-
-        /* otherwise we have to get it from the handler */
-        else {
-            /* XXX for packets we'd just call ACTION_CURRENT_DEVICE */
-
-            struct FileHandle *fh;
-            char *p;
-
-            /* remember the current error just in case this fails. I don't know if
-             * this is actually necessary but I'm trying to keep side-effects to a
-             * minimum */
-            err = IoErr();
-
-            /* make a fake lock (filehandle) */
-            if ((fh = AllocDosObject(DOS_FILEHANDLE, 0)) == NULL) {
-                SetIoErr(err);
-                return DOSTRUE;
-            }
-
-            fh->fh_Device = handler;
-            fh->fh_Unit = unit;
-
-            /* get the handler to give us the name */
-            if (!NameFromLock(MKBADDR(fh), buf, 127)) {
-                FreeDosObject(DOS_FILEHANDLE, fh);
-                SetIoErr(err);
-                return DOSTRUE;
-            }
-
-            /* cleanup */
-            FreeDosObject(DOS_FILEHANDLE, fh);
-            SetIoErr(err);
-
-            /* find the volume seperator */
-            for (p = buf; *p != ':' && *p != '\0'; p++);
-        
-            /* not there. can this happen? */
-            if (*p == '\0')
-                return DOSTRUE;
-
-            /* overwrite it, and we have a volume name */
-            *p = '\0';
-
-            volname = buf;
-        }
     }
 
     /* for the device name we need the doslist entry */
@@ -301,17 +248,14 @@
             return DOSTRUE;
         }
 
-        /* search the list for a device node with the same handler/port as the
-         * volume */
+        /* search the list for a device node with the same port as the volume */
         dol = LockDosList(LDF_READ | LDF_ALL);
-        while (dol != NULL && (dol->dol_Type != DLT_DEVICE ||
-                               dol->dol_Ext.dol_AROS.dol_Device != (struct Device *) dvp->dvp_Port ||
-                               dol->dol_Ext.dol_AROS.dol_Unit != dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit))
+        while (dol != NULL && (dol->dol_Type != DLT_DEVICE || dol->dol_Task != msgport))
             dol = BADDR(dol->dol_Next);
 
         /* found it */
         if (dol != NULL)
-            devname = dol->dol_Ext.dol_AROS.dol_DevName;
+            devname = (char*)dol->dol_Name + 1;
 
         /* XXX can this happen? */
         else

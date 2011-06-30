@@ -5,14 +5,15 @@
     Desc: Retrieve the full pathname from a filehandle.
     Lang: english
 */
-
 #include <proto/exec.h>
 #include <dos/filesystem.h>
 #include "dos_intern.h"
 
 #include <aros/debug.h>
 
-/*****i***********************************************************************
+BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length, BOOL filehandle);
+
+/*****************************************************************************
 
     NAME */
 #include <proto/dos.h>
@@ -20,7 +21,7 @@
 	AROS_LH3(BOOL, NameFromFH,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,   handle, D1),
+	AROS_LHA(BPTR,   lock,   D1),
 	AROS_LHA(STRPTR, buffer, D2),
 	AROS_LHA(LONG,   length, D3),
 
@@ -43,10 +44,11 @@
 	give additional information in that case.
 
 *****************************************************************************/
+/*AROS alias NameFromFH NameFromLock */
 {
     AROS_LIBFUNC_INIT
 
-    return NameFromLock(handle, buffer, length);
+    return namefrom_internal(DOSBase, lock, buffer, length, TRUE);
     
     AROS_LIBFUNC_EXIT
 }

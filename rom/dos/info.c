@@ -37,10 +37,7 @@
 
     RESULT
 
-    != 0    if operation was successful
-    == 0    if operation was not successful
-
-    Boolean indicating success or failure. If success (!= 0) the
+    Boolean indicating success or failure. If TRUE (success) the
     'parameterBlock' is filled with information on the volume.
 
     NOTES
@@ -59,27 +56,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IOFileSys iofs;
-    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
+    struct FileLock *fl = (struct FileLock *)BADDR(lock);
+    LONG status;
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_DISK_INFO, DOSBase);
-
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit   = fh->fh_Unit;
-
-    iofs.io_Union.io_INFO.io_Info = parameterBlock;
-
-    DosDoIO(&iofs.IOFS);
-
-    SetIoErr(iofs.io_DosError);
-
-    if (iofs.io_DosError != 0)
-    {
-        return DOSFALSE;
-    }
-
-    return DOSTRUE;
+    status = dopacket2(DOSBase, NULL, fl->fl_Task, ACTION_INFO, lock, MKBADDR(parameterBlock));
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* Info */

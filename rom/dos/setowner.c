@@ -5,6 +5,7 @@
     Desc: Set the owner of a file.
     Lang: English
 */
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
@@ -49,16 +50,17 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    struct PacketHelperStruct phs;
+    LONG status = DOSFALSE;
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_SET_OWNER, DOSBase);
+    D(bug("[SetOwner] '%s' %x\n", name, owner_info));
 
-    iofs.io_Union.io_SET_OWNER.io_UID = owner_info >> 16;
-    iofs.io_Union.io_SET_OWNER.io_GID = owner_info & 0xffff;
+    if (getpacketinfo(DOSBase, name, &phs)) {
+    	status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_OWNER, (IPTR)NULL, phs.lock, phs.name, (IPTR)owner_info);
+    	freepacketinfo(DOSBase, &phs);
+    }
 
-    return DoIOFS(&iofs, NULL, name, DOSBase) == 0;
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* SetOwner */

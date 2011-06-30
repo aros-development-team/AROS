@@ -5,9 +5,10 @@ USER_INCLUDES := -I$(SRCDIR)/rom/devs
 USER_CFLAGS := -D__DOS_NOLIBBASE__
 
 IMAGE_TYPES := aos elf
-FILES	  := bcpl_support errorlist lddemon runprocess iofs_support \
+FILES	  := bcpl_support errorlist lddemon runprocess \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
+	     packethelper namefrom \
 	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
 FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
