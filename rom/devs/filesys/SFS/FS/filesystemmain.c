@@ -289,9 +289,7 @@ LONG mainprogram(struct ExecBase *SysBase)
 
   D(bug("[SFS] Filesystem main\n"));
 
-#ifndef AROS_KERNEL
   globals = AllocMem(sizeof(struct Globals), MEMF_PUBLIC | MEMF_CLEAR);
-#endif
   globals->sysBase = SysBase;
   initGlobals();
 
@@ -3431,11 +3429,7 @@ struct DeviceList *usevolumenode(UBYTE *name, ULONG creationdate) {
         }
 
         while(nr!=0) {
-#ifdef AROS_KERNEL
-          nr->nr_Handler=(APTR)globals->asfsbase;
-#else
           nr->nr_Handler=&globals->mytask->pr_MsgPort;
-#endif
           nr = (struct NotifyRequest *)nr->nr_Next;
         }
 
@@ -3690,10 +3684,6 @@ LONG initdisk() {
         _DEBUG(("initdisk: Using new or old volumenode.\n"));
 
         if(errorcode==0) {    /* Reusing the found VolumeNode or using the new VolumeNode */
-#ifdef AROS_KERNEL
-          vn->dl_Ext.dl_AROS.dl_Device = &globals->asfsbase->device;
-          vn->dl_Ext.dl_AROS.dl_Unit = (struct Unit *)&globals->device->rootfh;
-#endif
           vn->dl_Task=globals->devnode->dn_Task;
           vn->dl_DiskType=globals->dosenvec->de_DosType;
           globals->volumenode=vn;
@@ -3789,9 +3779,6 @@ static void deinitdisk() {
 
       Forbid();
 
-#ifdef AROS_KERNEL
-      globals->volumenode->dl_Ext.dl_AROS.dl_Unit = NULL;
-#endif
       globals->volumenode->dl_Task=0;
       globals->volumenode->dl_LockList=MKBADDR(globals->locklist);
       globals->volumenode->dl_unused=MKBADDR(globals->notifyrequests);
