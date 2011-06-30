@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Pattern matching and parsing functionality
@@ -580,12 +580,7 @@ LONG patternParse(CONST_STRPTR Source, STRPTR Dest, LONG DestLength,
 	    break;
 
 	case '*':
-	    /*
-	     * Check dl_Flags too for backwards compatibility with older AROS software.
-	     * TODO: remove in ABI v1.
-	     */
-	    if ((DOSBase->dl_Flags & RNF_WILDSTAR) ||
-	        (DOSBase->dl_Root->rn_Flags & RNF_WILDSTAR))
+	    if (DOSBase->dl_Root->rn_Flags & RNF_WILDSTAR)
 	    {
 		iswild = 1;
 		PUT(P_ANY);
