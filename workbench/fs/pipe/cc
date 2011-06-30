@@ -1,0 +1,29 @@
+.KEY xxx_file,opt1,opt2,opt3
+;           Compile a C program                       Version 4.00
+;           Works with Lattice version 3.03 and above
+
+IF NOT EXISTS <xxx_file>.c
+    ECHO "File <xxx_file>.c does not exist."
+    SKIP END
+ENDIF
+
+ECHO "-- compiling...<xxx_file>.c"
+
+IF NOT EXISTS "Ram:cctempdir"
+    MAKEDIR Ram:cctempdir
+ENDIF
+
+:c/LC1 <opt1> <opt2> <opt3> -oRam:cctempdir/cctemp.q -i:include/ -i:include/lattice/ <xxx_file>
+
+IF NOT EXISTS "Ram:cctempdir/cctemp.q"
+    ECHO "Compile failed."
+    QUIT 20
+ENDIF
+
+:c/LC2 -v -o<xxx_file>.o Ram:cctempdir/cctemp
+
+DELETE Ram:cctempdir all
+
+ECHO "-- done compiling '<xxx_file>'. --"
+
+LAB END

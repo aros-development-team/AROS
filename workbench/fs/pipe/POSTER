@@ -1,0 +1,53 @@
+From noao!hao!ames!ptsfa!ihnp4!ihlpa!qix Sun Jun 28 09:30:34 1987
+Return-Path: <noao!hao!ames!ptsfa!ihnp4!ihlpa!qix>
+Received: by noname.uucp (3.2/SMI-3.2)
+	id AA23391; Sun, 28 Jun 87 09:30:19 MST
+Received: by noao.arpa (5.51/SAG.7)
+	id AA24086; Sun, 28 Jun 87 05:23:29 MST
+Received: by hao.ucar.edu.UCAR.EDU (5.31/1.00.UUCP-MOD.8-11-85)
+	id AA06315; Sun, 28 Jun 87 04:28:57 PDT
+Received: Sat, 27 Jun 87 09:21:58 PDT by ames.arpa (5.57/1.2)
+Message-Id: <8706271621.AA20315@ames.arpa>
+From: noao!ames!ihnp4!ihlpa!qix
+Received: by ihnp4.ATT.COM id AA19449; 27 Jun 87 09:11:00 CDT (Sat)
+Message-Version: 2
+>To: /addr=ihlpa!ihnp4!ptsfa!ames!hao!noao!mcdsun!fnf
+Date: Sat 27 Jun 1987 09:09 CDT
+Message-Service: Mail
+Message-Protocol: EMail
+End-Of-Header: 
+Email-Version: 2
+X-Postmark: ihlpa!qix
+To: ihlpa!ihnp4!ptsfa!ames!hao!noao!mcdsun!fnf
+Subject: P: pipe handler bug fix
+Ua-Message-Id: <post.qix.Sat 27 Jun 1987 09:08 CDT>
+End-Of-Protocol: 
+Status: R
+
+There was a bug in P: version 1.2 as posted.
+Included is the new "ph.uue" (version 1.2.1) along with "phl.uue",
+"README" and "tap_demo".
+
+Change the sources as follows:
+File "pipecreate.c", line 102:
+
+	PIPEKEY 	*pipekey;
+
+Change to:
+
+	PIPEKEY 	*pipekey = NULL;
+
+Thanks to Mitsu (mitsuharu hadeishi) for reporting the bug:
+
+> Minor problem, however; I accidentally typed p: at the command line
+> and the system crashed.  What should happen is "Unable to load p::
+> Error code 212".  Otherwise, a great thing!
+>
+>			  -Mitsu
+
+
+This reminds me of a novel use for pipes, reminiscent of "Mission Impossible".
+Copy an executable file to a pipe.  Now, you can execute it ONCE.
+
+			-Ed Puckett.
+
