@@ -16,6 +16,8 @@
 #include <exec/resident.h>
 #include <exec/types.h>
 
+#include <resources/filesysres.h>
+
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
 
@@ -28,27 +30,47 @@ void CDVD_work()
     CDVD_handler(SysBase);
 }
 
-static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR cdrombase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR base)
 {
-    APTR DOSBase;
-    int ret;
+    struct FileSysResource *fsr;
+    struct FileSysEntry *fse;
+    const ULONG dostype = AROS_MAKE_ID('C','D','V','D');
     BPTR seg;
 
-    DOSBase = OpenLibrary("dos.library", 0);
-    if (!DOSBase)
-    	return FALSE;
+    /* Create device node and add it to the system.
+     * The handler will then be started when it is first accessed
+     */
+    fsr = (struct FileSysResource *)OpenResource("FileSystem.resource");
+    if (fsr == NULL)
+        return FALSE;
 
     seg = CreateSegList(CDVD_work);
-    if (seg == BNULL) {
-    	CloseLibrary(DOSBase);
-	return FALSE;
+    if (seg == BNULL)
+        return FALSE;
+
+    fse = AllocMem(sizeof(*fse), MEMF_CLEAR);
+    if (fse) {
+        fse->fse_Node.ln_Name = "ISO9660/HFS";
+        fse->fse_Node.ln_Pri = 0;
+        fse->fse_DosType = dostype;
+        fse->fse_Version = (base->lib_Version << 16) | base->lib_Revision;
+        fse->fse_PatchFlags = FSEF_HANDLER | FSEF_SEGLIST | FSEF_GLOBALVEC;
+        fse->fse_Handler = AROS_CONST_BSTR("cdrom.handler");
+        fse->fse_SegList = seg;
+        fse->fse_GlobalVec = (BPTR)(SIPTR)-1;
+
+        /* Add to the list. I know forbid and permit are
+         * a little unnecessary for the pre-multitasking state
+         * we should be in at this point, but you never know
+         * who's going to blindly copy this code as an example.
+         */
+        Forbid();
+        Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);
+        Permit();
     }
 
-    ret = AddSegment("cdrom.handler", seg, CMD_SYSTEM);
-
-    CloseLibrary(DOSBase);
-
-    return ret;
+    return TRUE;
 }
+
 
 ADD2INITLIB(GM_UNIQUENAME(Init),0)
