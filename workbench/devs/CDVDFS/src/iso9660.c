@@ -106,7 +106,7 @@ int Get_File_Name(VOLUME *volume, directory_record *dir, char *buf, int buflen)
 	case PRO_ROCK:
 	    len = Get_RR_File_Name(volume, dir, buf, buflen);
 	    if (len > 0)
-		return len;
+		break;
 
 	    /* Fall through... */
 
