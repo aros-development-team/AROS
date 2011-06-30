@@ -161,7 +161,7 @@ enomem:
 /* Internal routines for packet allocation. Does not require DOSBase. */
 struct DosPacket *allocdospacket(void)
 {
-    struct StandardPacket *sp = AllocVec(sizeof(struct StandardPacket), MEMF_CLEAR);
+    struct StandardPacket *sp = AllocMem(sizeof(struct StandardPacket), MEMF_CLEAR);
 
     if (sp == NULL)
 	return NULL;

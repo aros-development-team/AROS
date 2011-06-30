@@ -111,7 +111,12 @@
     AROS_LIBFUNC_EXIT
 } /* FreeDosObject */
 
+#define offsetof(TYPE, MEMBER) ((IPTR) &((TYPE *)0)->MEMBER)
+#define container_of(ptr, type, member) ({          \
+    const typeof(((type *)0)->member) *__mptr = (ptr);    \
+             (type *)((char *)__mptr - offsetof(type, member)); })
+
 void freedospacket(struct DosPacket *dp)
 {
-    FreeVec((APTR)(((APTR)dp)-(APTR)(&((struct StandardPacket *)0)->sp_Pkt))); 
+    FreeMem(container_of(dp, struct StandardPacket, sp_Pkt), sizeof(struct StandardPacket));
 }
