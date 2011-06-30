@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: File Identifier/starter
@@ -52,6 +52,7 @@
 
 ******************************************************************************/
 
+#include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/datatypes.h>
 #include <datatypes/datatypes.h>
@@ -139,7 +140,7 @@ int identify(CONST_STRPTR filename, BOOL verbose)
         }
         else
         {
-            FPrintf(Error(), ERROR_HEADER": Could not obtain datatype for file.\n");
+            FPrintf(ErrorOutput(), ERROR_HEADER": Could not obtain datatype for file.\n");
             rc = RETURN_FAIL;
         }
 
