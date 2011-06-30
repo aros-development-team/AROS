@@ -12,15 +12,11 @@
 #include <dos/filesystem.h>
 
 #include <string.h>
-#include <stdio.h>
 
-AROS_LH2(struct MsgPort *, RunHandler,
-	 AROS_LHA(struct DeviceNode *, deviceNode, A0),
-	 AROS_LHA(const char *, path, A1),
-	 struct DosLibrary *, DOSBase, 27, Dos)
+#include "dos_intern.h"
+
+struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, struct DosLibrary *DOSBase)
 {
-	AROS_LIBFUNC_INIT
-
 	struct FileSysStartupMsg *fssm;
 	struct DosPacket *dp;
 	struct MsgPort *reply_port;
@@ -151,6 +147,4 @@ AROS_LH2(struct MsgPort *, RunHandler,
         FreeDosObject(DOS_STDPKT, dp);
 
 	return process ? &process->pr_MsgPort : NULL;
-
-	AROS_LIBFUNC_EXIT
 }
