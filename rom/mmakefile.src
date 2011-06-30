@@ -8,8 +8,6 @@ include $(TOP)/config/make.cfg
 #MM     kernel-boot \
 #MM	kernel-debug \
 #MM	kernel-fs-con \
-#MM	kernel-fs-nil \
-#MM     kernel-fs-packet \
 #MM     kernel-graphics \
 #MM     kernel-hidd-graphics \
 #MM     kernel-hidd-kbd \
@@ -54,7 +52,7 @@ include $(TOP)/config/make.cfg
 # These modules are architecture-independent and can work on both hosted and native systems.
 
 BASE_DEVICES  := console input gameport keyboard
-BASE_HANDLERS := amberram con nil packet
+BASE_HANDLERS := amberram con
 BASE_HIDD     := hiddclass graphics keyboard mouse
 BASE_LIBS     := aros boot debug dos graphics intuition keymap layers oop utility
 BASE_RSRCS    := FileSystem

@@ -1,9 +1,0 @@
-include $(TOP)/config/make.cfg
-
-FILES := init command
-
-#MM- kernel-fs-packet : includes linklibs kernel-fs-packet-linklib
-
-%build_module mmake=kernel-fs-packet \
-    modname=packet modtype=device modsuffix=handler \
-    files="$(FILES)" uselibs="amiga rom"

@@ -1,9 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-#MM- kernel-fs-nil : includes linklibs
-
-%build_module mmake=kernel-fs-nil \
-    modname=nil modtype=device modsuffix=handler \
-    files=nil_handler uselibs="amiga rom"
-
