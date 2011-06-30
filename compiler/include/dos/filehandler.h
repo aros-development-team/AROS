@@ -112,17 +112,17 @@ struct DeviceNode
       /* PRIVATE pointer to next entry */
     BPTR  dn_Next;
       /* Type of this node. Has to be DLT_DEVICE. */
-    ULONG dn_Type;
+    SIPTR dn_Type;
 
     struct MsgPort * dn_Task;   /* dol_Task field */
     BPTR             dn_Lock;	/* dol_Lock field */
 
     BSTR  dn_Handler;    /* Null-terminated device name for handler. */
-    ULONG dn_StackSize;  /* Initial stacksize for packet-handler task */
-    LONG  dn_Priority;   /* Initial priority for packet-handler task */
+    SIPTR dn_StackSize;  /* Initial stacksize for packet-handler task */
+    SIPTR dn_Priority;   /* Initial priority for packet-handler task */
     BPTR  dn_Startup;    /* (struct FileSysStartupMsg *) see above */
-    BPTR  dn_SegList;    /* SegList (for packet handlers) */
-    BPTR  dn_GlobalVec;  /* Ignored, historic */
+    BPTR  dn_SegList;    /* SegList for the handler */
+    BPTR  dn_GlobalVec;  /* Global Vector, should be (BPTR)-1 */
 
     BSTR   dn_Name;
 };
