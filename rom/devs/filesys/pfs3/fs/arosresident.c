@@ -64,8 +64,10 @@ static AROS_UFH3 (APTR, Init,
 	if (fse) {
 	    fse->fse_DosType = cnt == 0 ? pfs3 : pfs3ds;
 	    fse->fse_Version = (VERNUM << 16) | REVNUM;
-	    fse->fse_PatchFlags = FSEF_SEGLIST;
+	    fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_HANDLER | FSEF_GLOBALVEC;
 	    fse->fse_SegList = seglist;
+	    fse->fse_Handler = AROS_CONST_BSTR("pfs3.handler");
+	    fse->fse_GlobalVec = (BPTR)(SIPTR)-1;
 	    AddTail(&fsr->fsr_FileSysEntries, (struct Node *)fse);
 	}
     }
