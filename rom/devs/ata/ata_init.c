@@ -75,6 +75,8 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
     TEXT dosdevname[4] = "HD0";
+    const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
+    const ULONG IdCDVD = AROS_MAKE_ID('C','D','V','D');
 
     ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
                                                         40L);
@@ -115,25 +117,19 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
         pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC | MEMF_31BIT;
         pp[DE_MAXTRANSFER  + 4] = 0x00200000;
         pp[DE_MASK         + 4] = 0x7FFFFFFE;
-        pp[DE_BOOTPRI      + 4] = ((!unit->au_DevType) ? 0 : 10);
-        pp[DE_DOSTYPE      + 4] = 0x444F5301;
+        pp[DE_BOOTPRI      + 4] = ((unit->au_DevType == DG_DIRECT_ACCESS) ? 0 : 10);
+        pp[DE_DOSTYPE      + 4] = ((unit->au_DevType == DG_DIRECT_ACCESS) ? IdDOS : IdCDVD);
         pp[DE_BOOTBLOCKS   + 4] = 2;
     
         devnode = MakeDosNode(pp);
 
         if (devnode)
         {
-            if(unit->au_DevType == DG_DIRECT_ACCESS)
-                devnode->dn_Handler = AROS_CONST_BSTR("afs.handler");
-            else
-                devnode->dn_Handler = AROS_CONST_BSTR("cdrom.handler");
+            D(bug("[ATA>>]:-ata_RegisterVolume: '%s', type=0x%08x with StartCyl=%d, EndCyl=%d .. ",
+                  AROS_DOSDEVNAME(devnode),
+                  pp[DE_DOSTYPE      + 4], StartCyl, EndCyl));
 
-            D(bug("[ATA>>]:-ata_RegisterVolume: '%s' with StartCyl=%d, EndCyl=%d .. ",
-                  AROS_DOSDEVNAME(devnode), StartCyl, EndCyl));
-            D(bug("[ATA>>]:-ata_RegisterVolume: Increasing stack size from %d to %d\n", devnode->dn_StackSize, devnode->dn_StackSize*2));
-            devnode->dn_StackSize *= 2;
-
-            AddBootNode(devnode->dn_Priority, 0, devnode, 0);
+            AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, NULL);
             D(bug("done\n"));
             
             return TRUE;
