@@ -112,24 +112,11 @@ struct DOSVolumeNode
     STRPTR			dvn_VolName;
     STRPTR			dvn_DevName;
     ULONG			dvn_Flags;
-#ifndef AROS_DOS_PACKETS
-    struct Device		*dvn_Device;
-    struct Unit			*dvn_Unit;
-#endif
     struct MsgPort		*dvn_Port;
 };
 
 static BOOL VolumeIsOffline(struct DosList *dl)
 {
-#ifndef AROS_DOS_PACKETS
-    /* packet.handler units do not go away */
-    if (dl->dol_Ext.dol_AROS.dol_Device == NULL)
-    	return FALSE;
-
-    if (strcmp(dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, "packet.handler"))
-        return dl->dol_Ext.dol_AROS.dol_Unit == NULL;
-    else
-#endif
         return dl->dol_Task == NULL;
 }
 
@@ -174,14 +161,6 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 			D(bug("[IconVolumeList] Registering Volume '%s' @ %p, Type %d, Port 0x%p\n", newdvn->dvn_VolName, dl, dl->dol_Type, dl->dol_Task));
 
 			newdvn->dvn_Port = dl->dol_Task;
-#if !defined(AROS_DOS_PACKETS)
-                        newdvn->dvn_Device = dl->dol_Ext.dol_AROS.dol_Device;
-                        newdvn->dvn_Unit   = dl->dol_Ext.dol_AROS.dol_Unit;
-
-                        D(bug("[IconVolumeList] Device '%s' @ 0x%p, Unit @ 0x%p\n",
-                              newdvn->dvn_Device ? newdvn->dvn_Device->dd_Library.lib_Node.ln_Name : NULL,
-                              newdvn->dvn_Device, newdvn->dvn_Unit));
-#endif
 
                         if (VolumeIsOffline(dl))
                         {
@@ -199,10 +178,6 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 
 			if (dl->dol_Task != NULL)
                             bug("[IconVolumeList] %s: Packet Style device\n", __PRETTY_FUNCTION__);
-#ifndef AROS_DOS_PACKETS
-			else if (dl->dol_Ext.dol_AROS.dol_Device != NULL)
-                            bug("[IconVolumeList] %s: IOFS Style device\n", __PRETTY_FUNCTION__);
-#endif
 			else
                             bug("[IconVolumeList] %s: Unknown device type\n", __PRETTY_FUNCTION__);
 #endif
@@ -224,16 +199,8 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		LONG   				len = AROS_BSTR_strlen(dl->dol_Name);
 
                 D(bug("[IconVolumeList] %s: Checking Device '%s' @ %p (Device ", __PRETTY_FUNCTION__, dosname, dl));
-#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
-                D(if (dl->dol_Ext.dol_AROS.dol_Device) bug("'%s' ", dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name));
-                D(bug("@ 0x%p, Unit @ 0x%p) Type: %d\n", dl->dol_Ext.dol_AROS.dol_Device, dl->dol_Ext.dol_AROS.dol_Unit, dl->dol_Type));
-#endif
 
-#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
-		if (dl->dol_Ext.dol_AROS.dol_Device == NULL)
-#else
 		if (dl->dol_Task == NULL)
-#endif
 		{
                     D(bug("[IconVolumeList] %s: '%s' : handler inactive!\n", __PRETTY_FUNCTION__, dosname));
                     continue;
@@ -253,51 +220,12 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 
                     if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
                     {
-#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
-                        struct IOFileSys *_iofs = NULL;
-                        if ((_iofs = AllocMem(sizeof(struct IOFileSys), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
-                        {
-                            struct Process *me = (struct Process *)FindTask(NULL);
-
-                            D(bug("[IconVolumeList] %s: Getting Info for '%s'\n", __PRETTY_FUNCTION__, nd_nambuf));
-
-                            _iofs->IOFS.io_Message.mn_Node.ln_Type  = 0;
-                            _iofs->IOFS.io_Message.mn_ReplyPort     = &me->pr_MsgPort;
-                            _iofs->IOFS.io_Message.mn_Length        = sizeof(struct IOFileSys);
-                            _iofs->IOFS.io_Command                  = FSA_DISK_INFO;
-
-                            _iofs->IOFS.io_Flags                    = IOF_QUICK;
-
-                            _iofs->IOFS.io_Device                   = dl->dol_Ext.dol_AROS.dol_Device;
-                            _iofs->IOFS.io_Unit                     = dl->dol_Ext.dol_AROS.dol_Unit;
-
-                            _iofs->io_Union.io_INFO.io_Info         = nd_paramblock;
-
-                            DoIO(&_iofs->IOFS);
-
-                            if (_iofs->io_DosError != 0)
-                            {
-                                D(bug("[IconVolumeList] %s: FSA_DISK_INFO returns error %08x\n", __PRETTY_FUNCTION__, _iofs->io_DosError));
-                                FreeMem(nd_paramblock, sizeof(struct InfoData));
-                                nd_paramblock = NULL;
-                            }
-                            FreeMem(_iofs, sizeof(struct IOFileSys));
-                        }
-                        else
-                        {
-                            D(bug("[IconVolumeList] %s: Failed to allocate IOFileSys storage\n", __PRETTY_FUNCTION__));
-
-                            FreeMem(nd_paramblock, sizeof(struct InfoData));
-                            nd_paramblock = NULL;
-                        }
-#else
 			{
-			    if (!DoPkt(dl->dol_Task, ACTION_DISK_INFO, MKBADDR(nd_paramblock), BNULL, BNULL, BNULL, BNULL)) {
+			    if (!DoPkt(dl->dol_Task, ACTION_DISK_INFO, (SIPTR)MKBADDR(nd_paramblock), (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL)) {
                                 FreeMem(nd_paramblock, sizeof(struct InfoData));
                                 nd_paramblock = NULL;
                             }	
 			}
-#endif
                     }
                     else
                     {
@@ -312,18 +240,8 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		    {
 		    	BOOL volfound;
 
-#ifndef AROS_DOS_PACKETS
-			/*
-			 * For pure IOFS handlers we don't have dol_Task in DeviceNode.
-			 * In this case we need to compare device and unit.
-			 */
-			if (!dl->dol_Task)
-			    volfound = (dvn->dvn_Device == dl->dol_Ext.dol_AROS.dol_Device) &&
-			    	       (dvn->dvn_Unit == dl->dol_Ext.dol_AROS.dol_Unit);
-			else
-#endif
-			    /* For packet handlers it's enough to compare MsgPort */
-			    volfound = dvn->dvn_Port == dl->dol_Task;
+			/* For packet handlers it's enough to compare MsgPort */
+			volfound = dvn->dvn_Port == dl->dol_Task;
 
 			if (volfound)
 			{
@@ -391,11 +309,6 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                             {
                                 STRPTR nd_namext;
                                 int nd_namext_len = 0;
-
-#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
-                                newdvn->dvn_Unit        = dl->dol_Ext.dol_AROS.dol_Unit;
-                                newdvn->dvn_Device      = dl->dol_Ext.dol_AROS.dol_Device;
-#endif
 
                                 switch (nd_paramblock->id_DiskType)
                                 {

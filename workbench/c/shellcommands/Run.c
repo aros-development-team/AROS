@@ -227,16 +227,9 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 static BPTR duphandle(struct DosLibrary * DOSBase, BPTR toclone, LONG mode)
 {
     BPTR newhandle;
-#ifdef AROS_DOS_PACKETS
     struct MsgPort *old;
     old = SetConsoleTask(((struct FileHandle*)BADDR(toclone))->fh_Type);
     newhandle = Open("*", mode);
     SetConsoleTask(old);
-#else
-    BPTR old;
-    old = CurrentDir(toclone);
-    newhandle = Open("", mode);
-    CurrentDir(old);
-#endif
     return newhandle;
 }

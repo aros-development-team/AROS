@@ -23,7 +23,6 @@ int __nostdiowin __attribute__((weak)) = 0;
 static BPTR __iowinr = BNULL, __iowinw = BNULL, __iowine = BNULL;
 static BPTR __old_in, __old_out, __old_err;
 
-#ifdef AROS_DOS_PACKETS
 static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
 {
     BPTR nfh;
@@ -36,7 +35,6 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
     SetConsoleTask(old);
     return nfh;
 }
-#endif
 
 static void __startup_stdiowin(void)
 {
@@ -51,7 +49,6 @@ static void __startup_stdiowin(void)
     D(bug("[__startup_stdiowin] Opening console window: %s\n", __stdiowin));
 
     __iowinw = Open(__stdiowin, MODE_OLDFILE);
-#ifdef AROS_DOS_PACKETS
     __iowinr = DupFH(__iowinw, MODE_OLDFILE, DOSBase);
     if (__iowinr) {
     	/* this is so ugly but ReadArgs() needs EOF or
@@ -64,16 +61,11 @@ static void __startup_stdiowin(void)
     	fh->fh_Pos = fh->fh_End + 1;
     }
     __iowine = DupFH(__iowinw, MODE_OLDFILE, DOSBase);
-#else
-    __iowinr = __iowine = __iowinw;
-#endif
 
     if (!__iowinr || !__iowinw || !__iowine)
     {
-#ifdef AROS_DOS_PACKETS
     	Close(__iowinr);
     	Close(__iowine);
-#endif
     	Close(__iowinw);
         D(bug("[__startup_stdiowin] Failed!\n"));
         return;
@@ -96,10 +88,8 @@ static void __startup_stdiowin(void)
     SelectOutput(__old_out);
     SelectError(__old_err);
 
-#ifdef AROS_DOS_PACKETS
     Close(__iowinr);
     Close(__iowine);
-#endif
     Close(__iowinw);
 
     D(bug("[__startup_stdiowin] Done!\n"));

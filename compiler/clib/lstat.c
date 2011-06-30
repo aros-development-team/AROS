@@ -102,94 +102,9 @@ static BPTR __lock(
     return res;
 }
 
-#ifdef AROS_DOS_PACKETS
 static BPTR __lock(
     const char* name,
     LONG        accessMode)
 {
     return Lock(name, accessMode);
 }
-#else
-static BPTR __lock(
-    const char* name,
-    LONG        accessMode)
-{
-    struct DevProc *dvp;
-    LONG error;
-
-    if (name == NULL)
-        return BNULL;
-
-    if (*name == '\0')
-        return Lock(name, accessMode);
-
-    /* Get pointer to process structure */
-    struct Process *me = (struct Process *)FindTask(NULL);
-
-    /* Create filehandle */
-    struct FileHandle *
-    ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
-
-    if (ret != NULL)
-    {
-        /* Get pointer to I/O request. Use stackspace for now. */
-        struct IOFileSys iofs;
-
-    	/* Prepare I/O request. */
-    	InitIOFS(&iofs, FSA_OPEN, DOSBase);
-
-    	switch (accessMode)
-     	{
-        	case EXCLUSIVE_LOCK:
-        	    iofs.io_Union.io_OPEN.io_FileMode = FMF_LOCK | FMF_READ;
-        	    break;
-
-        	case SHARED_LOCK:
-        	    iofs.io_Union.io_OPEN.io_FileMode = FMF_READ;
-        	    break;
-
-        	default:
-		    D(bug("[Lock] incompatible mode %d\n", accessMode));
-	            FreeDosObject(DOS_FILEHANDLE, ret);
-		    SetIoErr(ERROR_ACTION_NOT_KNOWN);
-		    return BNULL;
-     	}
- 
-        iofs.io_Union.io_OPEN.io_Filename = StripVolume(name);
-
-        dvp = NULL;
-    
-        do {
-            if ((dvp = GetDeviceProc(name, dvp)) == NULL) {
-                error = IoErr();
-                break;
-            }
-
-            error = DoIOFS(&iofs, dvp, NULL, DOSBase);
-        } while (error == ERROR_OBJECT_NOT_FOUND);
-
-        if (error == ERROR_NO_MORE_ENTRIES)
-            error = me->pr_Result2 = ERROR_OBJECT_NOT_FOUND;
-
-        FreeDeviceProc(dvp);
-    
-    	if (!error)
-    	{
-    	    ret->fh_Device = iofs.IOFS.io_Device;
-    	    ret->fh_Unit   = iofs.IOFS.io_Unit;
-    
-    	    return MKBADDR(ret);
-    	}
-        else
-        {
-            FreeDosObject(DOS_FILEHANDLE, ret);
-        }
-    }
-    else
-    {
-        SetIoErr(ERROR_NO_FREE_STORE);
-    }
-
-    return BNULL;
-}
-#endif /* AROS_DOS_PACKETS */

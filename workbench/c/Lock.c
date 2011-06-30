@@ -82,45 +82,42 @@ static const char exthelp[] =
     "\tOFF/S     Turn write protect off\n"
     "\tPASSKEY   The password string for the lock (optional)\n";
 
-int lockDevice(struct IOFileSys *iofs, STRPTR key)
+BOOL lockDevice(struct DevProc *dvp, ULONG key)
 {
-    if( iofs->io_Union.io_MOUNT_MODE.io_MountMode & MMF_LOCKED )
-    {
-	/* We are already locked? What do we do? */
-	return ERROR_DISK_WRITE_PROTECTED;
-    }
-    iofs->io_Union.io_MOUNT_MODE.io_MountMode = MMF_LOCKED;
-    iofs->io_Union.io_MOUNT_MODE.io_Mask = MMF_LOCKED;
-    iofs->io_Union.io_MOUNT_MODE.io_Password = key;
-
-    DoIO((struct IORequest *)iofs);
-    return iofs->io_DosError;
+    return DoPkt(dvp->dvp_Port, ACTION_WRITE_PROTECT, DOSTRUE, key, 0, 0, 0);
 }
 
-int unlockDevice(struct IOFileSys *iofs, STRPTR key)
+BOOL unlockDevice(struct DevProc *dvp, ULONG key)
 {
-    if(!(iofs->io_Union.io_MOUNT_MODE.io_MountMode & MMF_LOCKED))
-    {
-	/* We are not locked, so lets return success. */
-	return 0;
-    }
-    /* We are locked, lets try and unlock it */
-    iofs->io_Union.io_MOUNT_MODE.io_MountMode = 0;
-    iofs->io_Union.io_MOUNT_MODE.io_Mask = MMF_LOCKED;
-    iofs->io_Union.io_MOUNT_MODE.io_Password = key;
+    return DoPkt(dvp->dvp_Port, ACTION_WRITE_PROTECT, DOSFALSE, key, 0, 0, 0);
+}
 
-    DoIO((struct IORequest *)iofs);
-    return iofs->io_DosError;
+/* Perl's hash() algorithm
+ */
+#define HASH_MULTIPLIER 33
+
+ULONG Hash(CONST_STRPTR key)
+{
+    ULONG hash;
+
+    if (key == 0 || key[0] == 0)
+       return 0;
+
+    for (hash = 0; *key; key++)
+        hash = HASH_MULTIPLIER * hash + *key;
+
+    /* Improve distribution of low-order bits */
+    hash += (hash >> 5);
+
+    return hash;
 }
 
 int __nocommandline;
 
 int main(void)
 {
-    struct Process *pr = (struct Process *)FindTask(NULL);
     struct RDArgs *rd, *rda = NULL;
     IPTR args[TOTAL_ARGS] = { NULL, FALSE, FALSE, NULL };
-    struct IOFileSys *iofs;
     struct DevProc *dp;
     int error = 0;
 
@@ -144,39 +141,20 @@ int main(void)
 	    }
 	    else
 	    {
-		/*
-		    It is a real volume, not an assign...
-		    We send the device a I/O request.
-		*/
-		iofs = (struct IOFileSys *)CreateIORequest(
-		    	    &pr->pr_MsgPort, sizeof(struct IOFileSys)
-			);
-		if( iofs != NULL )
-		{
-		    /* First of find out current state. */
-		    iofs->io_Union.io_MOUNT_MODE.io_Mask = 0;
-		    iofs->IOFS.io_Device = (struct Device *)dp->dvp_Port;
-		    iofs->IOFS.io_Command = FSA_MOUNT_MODE;
-
-		    DoIO((struct IORequest *)iofs);
-		    if (args[ARG_ON] && args[ARG_OFF])
-		    {
-			/* Both are set? */
-			error = ERROR_TOO_MANY_ARGS;
-		    }
-		    else if (args[ARG_OFF])
-		    {
-			error = unlockDevice(iofs, (STRPTR)args[ARG_PASSKEY]);
-		    }
-		    else
-		    {
-			error = lockDevice(iofs, (STRPTR)args[ARG_PASSKEY]);
-		    }
-		    DeleteIORequest((struct IORequest *)iofs);
-
-		} /* iofs != NULL */
-		else
-		    error = ERROR_NO_FREE_STORE;
+	        /* First of find out current state. */
+	        if (args[ARG_ON] && args[ARG_OFF])
+	        {
+	        	/* Both are set? */
+	        	error = ERROR_TOO_MANY_ARGS;
+	        }
+	        else if (args[ARG_OFF])
+	        {
+	        	error = unlockDevice(dp, Hash((CONST_STRPTR)args[ARG_PASSKEY]));
+	        }
+	        else
+	        {
+	        	error = lockDevice(dp, Hash((CONST_STRPTR)args[ARG_PASSKEY]));
+	        }
 	    }
 
 	    if( dp )

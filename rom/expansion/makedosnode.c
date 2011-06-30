@@ -209,9 +209,6 @@
     dn->dn_Name = bs1;
     dn->dn_Priority = 10;
     dn->dn_StackSize = 4000;
-#ifndef AROS_DOS_PACKETS
-    dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(bs1);
-#endif
 
     return dn;
 

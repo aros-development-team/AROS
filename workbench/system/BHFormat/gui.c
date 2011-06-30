@@ -272,12 +272,7 @@ void VolumesToList(Object* listObject)
     	    do
     	    {
 		if ((volume = NextDosEntry(volume, LDF_VOLUMES)) == 0) break;
-#ifdef AROS_DOS_PACKETS
 	    } while (strcmp(AROS_BSTR_ADDR(volume->dol_Name), AROS_BSTR_ADDR(device->dol_Name)) != 0);
-#else
-    	    } while((volume->dol_Ext.dol_AROS.dol_Device != device->dol_Ext.dol_AROS.dol_Device) ||
-		(volume->dol_Ext.dol_AROS.dol_Unit != device->dol_Ext.dol_AROS.dol_Unit));
-#endif
 	
 	    if (volume) strcpy(entry.volumeName, AROS_BSTR_ADDR(volume->dol_Name));
 	    else strcpy(entry.volumeName, "");
@@ -478,11 +473,7 @@ int rcGuiMain(void)
     char szVolumeName[108];
     struct DosList *pdlDevice = NULL;
     szVolumeInfo[0] = '\0';
-#ifdef AROS_FAKE_LOCK
-    char volName[108];
-#else
     struct FileLock * pflVolume = 0;
-#endif
     static struct InfoData dinf __attribute__((aligned (4)));
     LONG rc = RETURN_FAIL;
 
@@ -518,36 +509,6 @@ int rcGuiMain(void)
 		ReportErrSz( ertFailure, 0, 0 );
 		goto cleanup;
 	    }
-#ifdef AROS_FAKE_LOCK
-	    if (NameFromLock(_WBenchMsg->sm_ArgList[1].wa_Lock, volName, sizeof(volName))) 
-	    {
-		D(Printf("Volume name: %s\n", volName));
-		volName[strlen(volName)-1] = '\0';
-		pdlList = LockDosList( LDF_DEVICES | LDF_VOLUMES | LDF_READ );
-		pdlVolume = FindDosEntry(pdlList, volName, LDF_VOLUMES);
-		if (pdlVolume) 
-		{
-		    D(Printf("Looking for device = 0x%08lX Unit = 0x%08lX\n",
-			     pdlVolume->dol_Ext.dol_AROS.dol_Device,
-			     pdlVolume->dol_Ext.dol_AROS.dol_Unit));
-		    pdlDevice = pdlList;            
-		    do
-		    {
-			if ((pdlDevice = NextDosEntry(pdlDevice, LDF_DEVICES)) == 0)
-			    break;
-			D(Printf("Checking device %s:\n", pdlDevice->dol_Ext.dol_AROS.dol_DevName);)
-			D(Printf("Device = 0x%08lX Unit = 0x%08lX\n", pdlDevice->dol_Ext.dol_AROS.dol_Device,
-				 pdlDevice->dol_Ext.dol_AROS.dol_Unit);)
-		    }
-#ifdef AROS_DOS_PACKETS
-		    while (strcmp(AROS_BSTR_ADDR(pdlDevice->dol_Name), AROS_BSTR_ADDR(pdlVolume->dol_Name)) != 0);
-#else
-		    while((pdlDevice->dol_Ext.dol_AROS.dol_Device != pdlVolume->dol_Ext.dol_AROS.dol_Device) ||
-			  (pdlDevice->dol_Ext.dol_AROS.dol_Unit != pdlVolume->dol_Ext.dol_AROS.dol_Unit));
-#endif
-		}
-	    }
-#else	    
 	    pflVolume =
 		(struct FileLock *)BADDR(_WBenchMsg->sm_ArgList[1].wa_Lock);
 	    pdlVolume = (struct DosList *)BADDR(pflVolume->fl_Volume);
@@ -559,7 +520,6 @@ int rcGuiMain(void)
 		    break;
 	    }
 	    while( pdlDevice->dol_Task != pflVolume->fl_Task );
-#endif
 	    if (!pdlDevice)
 	    {
 		ReportErrSz( ertFailure, ERROR_DEVICE_NOT_MOUNTED, 0 );
@@ -600,11 +560,7 @@ int rcGuiMain(void)
         }
     }
     
-#ifdef AROS_FAKE_LOCK
-    if (!bGetDosDevice(pdlDevice, LDF_DEVICES|LDF_VOLUMES|LDF_READ))
-#else
     if (!bGetDosDevice(pdlDevice, LDF_DEVICES|LDF_READ))
-#endif
 	goto cleanup;
 	    
     RawDoFmtSz( szTitle, _(MSG_WINDOW_TITLE), szDosDevice );

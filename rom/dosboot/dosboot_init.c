@@ -102,11 +102,7 @@ static BOOL IsMounted(struct DeviceNode *node, struct DosLibrary *DOSBase)
 /* Run a handler for the given DeviceNode */
 static APTR __dosboot_RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
 {
-#ifdef AROS_DOS_PACKETS
     if (!deviceNode->dn_Task)
-#else
-    if (!deviceNode->dn_Ext.dn_AROS.dn_Device)
-#endif
     {
     	CONST_STRPTR deviceName = AROS_BSTR_ADDR(deviceNode->dn_Name);
     	ULONG nameLen = AROS_BSTR_strlen(deviceNode->dn_Name);
@@ -123,11 +119,7 @@ static APTR __dosboot_RunHandler(struct DeviceNode *deviceNode, struct DosLibrar
 	FreeMem(buf, nameLen);
     }
 
-#ifdef AROS_DOS_PACKETS
     return deviceNode->dn_Task;
-#else
-    return deviceNode->dn_Ext.dn_AROS.dn_Device;
-#endif
 }
 
 static void __dosboot_Mount(struct BootNode *bootNode, struct DosLibrary * DOSBase)
