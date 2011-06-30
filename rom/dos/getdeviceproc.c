@@ -318,7 +318,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 
 	    D(bug("Accessing device '%b', path='%s'\n", dl->dol_Name, origname));
 
-	    newhandler = RunHandler((struct DeviceNode *)dl, origname);
+	    newhandler = RunHandler((struct DeviceNode *)dl, origname, DOSBase);
 	    res = newhandler ? TRUE : FALSE;
 
 	    LockDosList(LDF_ALL | LDF_READ);
