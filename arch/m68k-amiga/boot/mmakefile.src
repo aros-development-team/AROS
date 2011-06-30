@@ -16,9 +16,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-disk-kobj \
 #MM     kernel-potgo-kobj \
 #MM     kernel-misc-kobj \
-#MM     workbench-fs-pipefs-kobj \
-#MM     workbench-fs-xpipe-kobj \
-#MM     workbench-fs-cdrom-kobj \
+#MM     workbench-devs-cdvdfs-kobj \
 #MM     workbench-libs-workbench-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-c-shellcommands-kobj \
@@ -80,7 +78,7 @@ ROMLOC_rom := 0x0f80000
 
 KLIBS   := exec aros dos utility oop expansion boot mathffp partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
-KHNDLRS := con afs amberram # pipefs xpipe
+KHNDLRS := con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock kernel processor dosboot cia potgo disk FileSystem misc shell
 KHOOKS  :=
