@@ -1,0 +1,196 @@
+README file for pipe-handler (version 1.2 13-Jun-87)
+====================================================
+
+This program and source are freely distributable, provided the file headers
+remain intact (i.e., my name is on them!!!).
+
+Ed Puckett accepts no responsibility for others' use of this program.
+
+...but you shouldn't have any problems!
+
+
+WHAT IS THIS?
+-------------
+Pipe-handler is an AmigaDOS device.  It supports OPEN, CLOSE, READ and
+WRITE (of course), and also LOCK, EXAMINE, EXNEXT.  Therefore, you can
+CD to the handler, use Dir and List on it, and ASSIGN to it as well as
+to individual pipes in it.  Here is a complete list of the packet
+types it supports:
+
+	MODE_READWRITE
+	ACTION_FINDINPUT  (syn: MODE_READONLY, MODE_OLDFILE)
+	ACTION_FINDOUTPUT (syn: MODE_NEWFILE)
+	ACTION_END
+	ACTION_READ
+	ACTION_WRITE
+	ACTION_LOCATE_OBJECT
+	ACTION_COPY_DIR
+	ACTION_FREE_LOCK
+	ACTION_EXAMINE_OBJECT
+	ACTION_EXAMINE_NEXT
+	ACTION_PARENT
+
+You cannot Seek() pipes nor can you create pipe subdirectories.
+
+
+INSTALLATION
+------------
+1. Perform the following:
+	<uudecode phl.uue to produce pipe-handler-l>
+	<uudecode ph.uue  to produce pipe-handler>
+	Copy pipe-handler-l L:pipe-handler-loader
+	Copy pipe-handler   L:pipe-handler
+
+2. Add to S:Startup-Sequence (do not include !'s - they denote start of line):
+	!Mount P:
+	!Dir >NIL: P:
+
+3. Add to DEVS:Mountlist (do not include !'s - they denote start of line):
+	!P:	 Handler = L:pipe-handler-loader
+	!	 Stacksize = 3000
+	!	 Priority = 5
+	!#
+
+4. Reboot
+
+
+NOTES ON INSTALLATION
+---------------------
+* The handler, once installed, requires approximately 18k of memory.  This
+  memory cannot be reclaimed (unless you reboot and do not load the handler).
+  Each pipe requires additional memory while it exists (its buffer size +
+  about 100 bytes or so).
+
+* You can skip the reboot, and just perform the "Mount" and "Dir" from the
+  startup-sequence manually.
+
+* After the "Dir", the pipe-handler is loaded into the system, and the files
+  "L:pipe-handler-loader" and "L:pipe-handler" will not be accessed until the
+  next reboot.	This means you may remove them from L: if you want (until
+  next	reboot).  I do this because I copy L: into Ram:.
+
+* TO CHANGE THE HANDLER NAME: change "P:" to whatever you want (e.g., "PIPE:")
+  in the following 2 files:
+	DEVS:Mountlist		(1 occurrence)
+	S:Startup-Sequence	(2 occurrences)
+
+* Feel free to shorten or otherwise change the names "pipe-handler-loader"
+  and "pipe-handler".  Just be sure to reflect those changes in
+  "S:Startup-Sequence" and "DEVS:Mountlist".
+
+
+TAPS
+----
+The handler also supports "taps".  These are essentially tees off of the
+pipe, and can specify any destination to which a copy of the pipe's stream
+is to be sent.	One interesting application of this is tapping to a
+CON: window; you can then see what is going through the pipe, and you
+can also stop pipe throughput by typing a character into this window.
+Taps can also be other pipes.
+
+For an interesting demo of taps, EXECUTE the file "tap_demo".
+
+All pipe I/O is asynchronous, so you will not be able to lock up the
+handler by stopping one of its pipes.  A single reader / single writer
+discipline in enforced.
+
+Pipe buffers are dynamically allocated.  A pipe is removed from memory
+when all openers have closed it and it is empty.  The size of a pipe buffer
+may be specified as part of its name.  Otherwise, pipe buffers have a default
+size of 4096 bytes.
+
+Pipes behave in most respects like ordinary files.  Some differences follow:
+Pipes block for writing (i.e., the write request is suspended) when the
+pipe's buffer is full, and block for reading when the pipe's buffer is
+empty.	Thus, pipes are sort of like bounded ram: files.  EOF is returned
+for reading when the pipe's buffer is empty and no process has the pipe
+open for writing.
+
+
+NAME SYNTAX
+-----------
+In addition to the pipe's identifier, its name can specify its size
+and a tap.  The syntax is
+
+	name[/size][/[tapname]]
+
+where the parts enclosed in "[]" are optional.  The size must begin with
+a digit in the range 0-9.  If first digit is not "0", the size is
+interpreted as decimal.  If the size begins with "0x", it is interpreted
+as hexadecimal.  Otherwise, if the size begins with "0" but not "0x", it
+is interpreted as octal.
+
+If an empty tapname is specified, the default tap CON:10/15/300/70/name
+is used (where "name" is the pipe's name given).
+
+
+EXAMPLES OF PIPE NAMES
+----------------------
+
+The following assume that the pipe-handler is mounted as device P:
+
+P:x				Opens a pipe named "x" with buffer size 4096
+
+P:x/100 			Opens a pipe named "x" with buffer size 100
+
+P:hold/ 			Opens a pipe named "hold" with buffer size
+				4096, and also opens a window which displays
+				the data which passes through the pipe.
+
+P:xyzzy/plugh			Opens a pipe named "xyzzy" with buffer size
+				4096, and also directs the data passing
+				through into the file "plugh".  (Note that
+				taps may be specified without specifying
+				a size.)
+
+P:thru/0x40/ram:thru-log	Opens a pipe named "thru" with buffer size
+				64 (decimal), and also directs the data
+				passing through the pipe into the file
+				"ram:thru-log".
+
+
+WHAT IS THIS SILLY "LOADER" FILE?
+---------------------------------
+According to _The_AmigaDOS_Manual_ (Bantam Books, Feb 1986), page 291:
+
+	If you write your device handler in C, you cannot use the automatic
+	load and process creation provided by the kernel.  In this case you
+	must load the code yourself . . . .
+
+Well, I know others have gotten around this, and I did, too.  The "prelude"
+version of the handler (see the Makefile) does it all with one file.
+However, I noticed that doing it this way, the handler would take about
+3 seconds to "Mount" (after first access to it).  This made me very nervous -
+visions of wild linking through memory, etc.  The loader version mounts
+almost immediately.
+
+Anyway, due to my (possibly unfounded) paranoia, I instead use the BCPL-like
+assembly module "pipe-handler-loader" which LoadSeg()'s pipe-handler.  There
+are undoubtedly better ways of handling this, but this works and, for me,
+it is not too annoying to put up with the extra file.
+
+
+COMPILATION
+-----------
+The supplied C source files were compiled with Lattice v3.03.
+The assembly programs were assembled using the Commodore Assembler.
+
+See the Makefile for information on creating a debugging version
+(this puts up a window and tells you what packets are received by
+the handler - fun!).  Basically, you just compile with a -DDEBUG
+option and link in the debugging modules.
+
+The Makefile will make either a "prelude" version (no "loader file)
+or a "loader" version (the default).
+
+I use an EXECUTE file "cc" to driver the compiler.  It is supplied.
+
+
+INQUIRIES / COMMENTS / SUGGESTIONS
+----------------------------------
+Ed Puckett
+
+US Mail:  MIT Branch PO - PO Box 61
+	  Cambridge, MA  02139
+
+E Mail:  ...!ihnp4!mit-eddie!mit-oz!qix
