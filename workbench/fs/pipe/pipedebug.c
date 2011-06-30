@@ -8,10 +8,16 @@
 **
 **  History:    05-Jan-87       Original Version (1.0)
 */
+#include   <string.h>	// For strlen
+#include   <stdio.h>	// For snprintf
 
 #include   <libraries/dos.h>
 #include   <libraries/dosextens.h>
 #include   <exec/exec.h>
+
+#include   <proto/exec.h>
+#include   <proto/dos.h>
+#include   <proto/alib.h>
 
 #include   "pipedebug.h"
 
@@ -44,11 +50,13 @@
 **	void  DebugIO (Handler, Type, Arg1, Arg2, Arg3)
 */
 
-
-
+#ifdef BADDR
+#define   BPTRtoCptr(Bp)   BADDR(Bp)
+#define   CptrtoBPTR(Cp)   MKBADDR(Cp)
+#else
 #define   BPTRtoCptr(Bp)   ((char *) ((ULONG) (Bp) << 2))
 #define   CptrtoBPTR(Cp)   ((BPTR)   ((ULONG) (Cp) >> 2))
-
+#endif
 
 
 #define   MEMFLAGS   (MEMF_PUBLIC | MEMF_CLEAR)
@@ -59,6 +67,8 @@ static struct MsgPort    *DebugDOSPort  =  NULL;
 static struct Message    *DebugMsg      =  NULL;
 static struct DosPacket  *DebugPkt      =  NULL;
 BPTR                      DebugFH       =  0;
+
+static void DebugIO(struct MsgPort *Handler, SIPTR Type, SIPTR Arg1, SIPTR Arg2,SIPTR Arg3);
 
 
 
@@ -78,10 +88,7 @@ int  InitDebugIO (NodePri)
 
 BYTE  NodePri;
 
-{ struct MsgPort  *CreatePort();
-  BYTE            *AllocMem();
-
-
+{
   DebugDOSPort=  NULL;
   DebugMsg=      NULL;
   DebugPkt=      NULL;
@@ -106,8 +113,7 @@ BYTE  NodePri;
 
 void  CleanupDebugIO ()
 
-{ void  FreeMem();
-
+{
 
   if (DebugFH != 0)
     DebugClose (DebugFH);
@@ -137,41 +143,40 @@ BPTR  DebugOpen (name, mode)
 char  *name;
 int   mode;
 
-{ char               Bnamebuf[DEBUGOPEN_MAXNAMELEN + 3 + 2], *Bname;
-  UBYTE              namelen;
-  struct MsgPort     *HandlerPID, *DeviceProc();
-  int                IoErr();
+{
+  BSTR               Bname;
+  struct MsgPort     *HandlerPID;
   struct FileLock    *Lock;
   struct FileHandle  *handle;
-  BYTE               *AllocMem();
-  void               DebugIO(), FreeMem();
 
+  Bname = MKBADDR(AllocVec(strlen(name) + 1, MEMF_ANY));
+  if (!Bname)
+    return 0;
 
-  Bname= (char *) (((ULONG) Bnamebuf + 3) & (~0 << 2));     /* longword align */
-
-  for (namelen= 0; (Bname[namelen + 1]= name[namelen]); ++namelen)
-    if (namelen > DEBUGOPEN_MAXNAMELEN)
-      return 0;
-
-  Bname[0]= (char) namelen;     /* make a BSTR */
-
+  CopyMem(name, AROS_BSTR_ADDR(Bname), strlen(name));
+  AROS_BSTR_setstrlen(Bname, strlen(name));
 
   HandlerPID= DeviceProc (name);
-  if (HandlerPID == NULL)
+  if (HandlerPID == NULL) {
+    FreeVec(BADDR(Bname));
     return 0;
+  }
 
   Lock= (struct FileLock *) IoErr ();
 
 
-  if ((handle= (struct FileHandle *) AllocMem (sizeof (struct FileHandle), MEMFLAGS)) == NULL)
+  if ((handle= (struct FileHandle *) AllocMem (sizeof (struct FileHandle), MEMFLAGS)) == NULL) {
+    FreeVec(BADDR(Bname));
     return 0;
+  }
 
   handle->fh_Pos= -1;
   handle->fh_End= -1;
   handle->fh_Type= HandlerPID;
 
 
-  DebugIO (HandlerPID, mode, CptrtoBPTR (handle), CptrtoBPTR (Lock), CptrtoBPTR (Bname));
+  DebugIO (HandlerPID, mode, (SIPTR)CptrtoBPTR (handle), (SIPTR)CptrtoBPTR (Lock), (SIPTR)Bname);
+  FreeVec(BADDR(Bname));
 
   if (DebugPkt->dp_Res1 == 0)
     { FreeMem (handle, sizeof (struct FileHandle));
@@ -194,7 +199,6 @@ void  DebugClose (fh)
 BPTR  fh;
 
 { struct FileHandle  *handle;
-  void               DebugIO(), FreeMem();
 
   handle= (struct FileHandle *) BPTRtoCptr (fh);
   DebugIO (handle->fh_Type, 1007, handle->fh_Arg1, 0, 0);
@@ -216,10 +220,9 @@ BYTE   *buf;
 ULONG  len;
 
 { struct FileHandle  *handle;
-  void               DebugIO();
 
   handle= (struct FileHandle *) BPTRtoCptr (fh);
-  DebugIO (handle->fh_Type, ACTION_WRITE, handle->fh_Arg1, buf, len);
+  DebugIO (handle->fh_Type, ACTION_WRITE, handle->fh_Arg1, (SIPTR)buf, len);
   return DebugPkt->dp_Res1;
 }
 
@@ -233,15 +236,12 @@ ULONG  len;
 static void  DebugIO (Handler, Type, Arg1, Arg2, Arg3)
 
 struct MsgPort  *Handler;
-LONG            Type;
-LONG            Arg1;
-LONG            Arg2;
-LONG            Arg3;
+SIPTR           Type;
+SIPTR           Arg1;
+SIPTR           Arg2;
+SIPTR           Arg3;
 
-{ void            PutMsg();
-  struct MsgPort  *WaitPort(), *Getmsg();
-
-
+{
   DebugMsg->mn_ReplyPort=    DebugDOSPort;
   DebugMsg->mn_Node.ln_Type= NT_MESSAGE;
   DebugMsg->mn_Node.ln_Name= (char *) DebugPkt;
@@ -269,15 +269,14 @@ void  OutStr (str, fh)
 char  *str;
 BPTR  fh;
 
-{ int  strlen();
-
+{
   DebugWrite (fh, str, strlen (str));
 }
 
 
 
 /*---------------------------------------------------------------------------
-** OutLONG() outputs the decimal representaion on "n" to the filehandle "fh".
+** OutLONG() outputs the hex representaion of "n" to the filehandle "fh".
 ** The conversion function stcu_d() is used -- this may not be available
 ** on all systems.  In that case, such a function will need to be written.
 */
@@ -287,9 +286,15 @@ void  OutLONG (n, fh)
 ULONG  n;
 BPTR   fh;
 
-{ char  buf[80];
-  int   stcu_d();     /* Lattice C Library conversion function */
+{
+   char buff[16];
+   int i = sizeof(buff)-1;
 
-  (void) stcu_d (buf, n, 80);
-  OutStr (buf, fh);
+   buff[i--] = 0;
+   for (buff[i] = '0'; n > 0; i--) {
+      buff[i] = "0123456789abcdef"[n & 0xf];
+      n >>= 4;
+   }
+   
+   FPuts(fh, &buff[i]);
 }

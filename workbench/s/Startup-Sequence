@@ -35,8 +35,7 @@ EndIf
 
 Mount >NIL: DEVS:DOSDrivers/~(#?.info)
 
-Touch >NIL: PIPEFS:systempipe
-Assign >NIL: PIPE:    PIPEFS:systempipe
+Dir >NIL: PIPE:
 
 Path C: SYS:System S: SYS:Prefs SYS:Tools SYS:Utilities QUIET
 

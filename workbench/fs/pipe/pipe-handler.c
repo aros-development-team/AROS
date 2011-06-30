@@ -29,6 +29,10 @@
 #include   <libraries/filehandler.h>
 #include   <exec/exec.h>
 
+#include   <proto/exec.h>
+#include   <proto/dos.h>
+#include   <proto/alib.h>
+
 #include   "pipelists.h"
 #include   "pipename.h"
 #include   "pipebuf.h"
@@ -38,11 +42,11 @@
 
 #if PIPEDIR
 # include   "pipedir.h"
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
 #ifdef DEBUG
 # include   "pipedebug.h"
-#endif DEBUG
+#endif /* DEBUG */
 
 
 
@@ -90,11 +94,11 @@
 ** --------------------------
 **	BPTRtoCptr (Bp)
 **	CptrtoBPTR (Cp)
-**	ReplyPkt   (pkt)
+**	QuickReplyPkt   (pkt)
 **
 ** Local Functions
 ** ---------------
-**	struct DosPacket  *GetPkt (port)
+**	struct DosPacket  *QuickGetPkt (port)
 */
 
 
@@ -139,13 +143,16 @@ PIPELISTHEADER     pipelist;
 PIPELISTHEADER     tapwaitlist;
 struct MsgPort     *TapReplyPort  =  NULL;
 
+#ifndef __AROS__
 struct Library     *SysBase  =  NULL;
-struct Library     *DOSBase  =  NULL;
+#endif
+struct DosLibrary  *DOSBase  =  NULL;
 
 #if PIPEDIR
   struct DateStamp   PipeDate;
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
+static struct DosPacket *QuickGetPkt (register struct MsgPort  *port);
 
 
 /*---------------------------------------------------------------------------
@@ -165,12 +172,13 @@ struct DosPacket  *StartPkt;
 { char              *cp;
   struct Task       *Task;
   ULONG             PipeMask, TapReplyMask, WakeupMask, SigMask;
-  struct DosPacket  *pkt, *GetPkt();
-  void              OpenPipe(), ClosePipe();
+  struct DosPacket  *pkt;
 
-
+#ifndef __AROS__
   SysBase= AbsExecBase;
-  if ((DOSBase= OpenLibrary (DOSNAME, 0)) == NULL)
+#endif
+
+  if ((DOSBase= (APTR)OpenLibrary (DOSNAME, 0)) == NULL)
     goto QUIT;
 
   BSTRtoCstr (BPTRtoCptr (StartPkt->dp_Arg1), HandlerName, sizeof (HandlerName));
@@ -180,8 +188,8 @@ struct DosPacket  *StartPkt;
         break;
       }
 
-  Task= FindTask (0);
-  PipePort= (struct MsgPort *) ((ULONG) Task + sizeof (struct Task));
+  Task= FindTask (NULL);
+  PipePort= &((struct Process *)Task)->pr_MsgPort;
   ((struct Process *) Task)->pr_CurrentDir= 0;     /* initial file system root */
 
   if ((TapReplyPort= CreatePort (NULL, PipePort->mp_Node.ln_Pri)) == NULL)
@@ -190,7 +198,7 @@ struct DosPacket  *StartPkt;
 #ifdef DEBUG
   if (! InitDebugIO (PipePort->mp_Node.ln_Pri))
     goto QUIT;
-#endif DEBUG
+#endif /* DEBUG */
 
 
   PipeMask=     (1L << PipePort->mp_SigBit);
@@ -205,60 +213,60 @@ struct DosPacket  *StartPkt;
 
 #if PIPEDIR
   (void) DateStamp (&PipeDate);
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
-  ReplyPkt (StartPkt);
+  QuickReplyPkt (StartPkt);
 
 
 LOOP:
   SigMask= Wait (WakeupMask);
 
   if (SigMask & TapReplyMask)
-    while ((pkt= GetPkt (TapReplyPort)) != NULL)
+    while ((pkt= QuickGetPkt (TapReplyPort)) != NULL)
       HandleTapReply (pkt);
 
   if (SigMask & PipeMask)
-    while ((pkt= GetPkt (PipePort)) != NULL)
+    while ((pkt= QuickGetPkt (PipePort)) != NULL)
       switch (pkt->dp_Type)
         { case MODE_READWRITE:
 #ifdef DEBUG
   OS ("Open READWRITE packet received\n");
-#endif DEBUG
+#endif /* DEBUG */
             OpenPipe (pkt, 0);
             break;
 
           case MODE_READONLY:     /* syn: MODE_OLDFILE, ACTION_FINDINPUT */
 #ifdef DEBUG
   OS ("Open READONLY packet received\n");
-#endif DEBUG
+#endif /* DEBUG */
             OpenPipe (pkt, 0);
             break;
 
           case MODE_NEWFILE:     /* syn: ACTION_FINDOUTPUT */
 #ifdef DEBUG
   OS ("Open NEWFILE packet received\n");
-#endif DEBUG
+#endif /* DEBUG */
             OpenPipe (pkt, 0);
             break;
 
           case ACTION_END:
 #ifdef DEBUG
   OS ("Close packet received\n");
-#endif DEBUG
+#endif /* DEBUG */
             ClosePipe (pkt);
             break;
 
           case ACTION_READ:
 #ifdef DEBUG
   OS ("<<< Read packet received\n");
-#endif DEBUG
+#endif /* DEBUG */
             StartPipeIO (pkt, PIPEREAD);
             break;
 
           case ACTION_WRITE:
 #ifdef DEBUG
   OS (">>> Write packet received\n");
-#endif DEBUG
+#endif /* DEBUG */
             StartPipeIO (pkt, PIPEWRITE);
             break;
 
@@ -266,53 +274,53 @@ LOOP:
           case ACTION_LOCATE_OBJECT:
 #  ifdef DEBUG
      OS (  "Lock packet received\n");
-#  endif DEBUG
+#  endif /* DEBUG */
             PipeLock (pkt);
             break;
 
           case ACTION_COPY_DIR:
 #  ifdef DEBUG
      OS (  "DupLock packet received\n");
-#  endif DEBUG
+#  endif /* DEBUG */
             PipeDupLock (pkt);
             break;
 
           case ACTION_FREE_LOCK:
 #  ifdef DEBUG
      OS (  "UnLock packet received\n");
-#  endif DEBUG
+#  endif /* DEBUG */
             PipeUnLock (pkt);
             break;
 
           case ACTION_EXAMINE_OBJECT:
 #  ifdef DEBUG
      OS (  "Examine packet received\n");
-#  endif DEBUG
+#  endif /* DEBUG */
             PipeExamine (pkt);
             break;
 
           case ACTION_EXAMINE_NEXT:
 #  ifdef DEBUG
      OS (  "ExNext packet received\n");
-#  endif DEBUG
+#  endif /* DEBUG */
             PipeExNext (pkt);
             break;
 
           case ACTION_PARENT:
 #  ifdef DEBUG
      OS (  "ParentDir packet received\n");
-#  endif DEBUG
+#  endif /* DEBUG */
             PipeParentDir (pkt);
             break;
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
           default:
 #ifdef DEBUG
   OS ("BAD packet received, type = "); OL (pkt->dp_Type); NL;
-#endif DEBUG
+#endif /* DEBUG */
             pkt->dp_Res1= 0;
             pkt->dp_Res2= ERROR_ACTION_NOT_KNOWN;
-            ReplyPkt (pkt);
+            QuickReplyPkt (pkt);
         }
 
   goto LOOP;
@@ -326,10 +334,10 @@ QUIT:
 
 #ifdef DEBUG
   CleanupDebugIO ();
-#endif DEBUG
+#endif /* DEBUG */
 
   if (DOSBase != NULL)
-    CloseLibrary (DOSBase);
+    CloseLibrary ((APTR)DOSBase);
 }
 
 
@@ -337,10 +345,9 @@ QUIT:
 /*---------------------------------------------------------------------------
 ** Returns the DosPacket associated with the next message on "port", or NULL
 ** if the port is empty.  The message is removed from the port.
-** A related macro, ReplyPkt() is provided in pipe-handler.h.
+** A related macro, QuickReplyPkt() is provided in pipe-handler.h.
 */
-
-static struct DosPacket  *GetPkt (port)
+static struct DosPacket  *QuickGetPkt (port)
 
 register struct MsgPort  *port;
 
@@ -363,13 +370,13 @@ PIPEDATA  *FindPipe (name)
 char  *name;
 
 { PIPEDATA  *p;
-  char      *cp, *strdiff();
+  char      *cp;
 
 
   for (p= (PIPEDATA *) FirstItem (&pipelist); p != NULL; p= (PIPEDATA *) NextItem (p))
     { cp= strdiff (name, p->name);
 
-      if ((*cp == '\0') && (p->name[(LONG) cp - (LONG) name] == '\0'))
+      if ((*cp == '\0') && (p->name[(const UBYTE *)cp - (const UBYTE *)name] == '\0'))
         return p;     /* same name */
     }
 

@@ -83,7 +83,7 @@ typedef struct pipedata
     ULONG             lockct;                /* number of extant locks */
     struct FileLock   *lock;                 /* this pipe's lock - see note above */
     struct DateStamp  accessdate;            /* date last accessed */
-#endif PIPEDIR
+#endif /* PIPEDIR */
   }
 PIPEDATA;
 
@@ -120,13 +120,17 @@ extern struct MsgPort     *TapReplyPort;
 
 #if PIPEDIR
   extern struct DateStamp  PipeDate;
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
+#ifdef __AROS__
+#define   BPTRtoCptr(Bp)      BADDR(Bp)
+#define   CptrtoBPTR(Cp)      MKBADDR(Cp)
+#else
 #define   BPTRtoCptr(Bp)      ((char *) ((ULONG) (Bp) << 2))
 #define   CptrtoBPTR(Cp)      ((BPTR)   ((ULONG) (Cp) >> 2))
+#endif
 
-#define   ReplyPkt(pkt)       PutMsg ((pkt)->dp_Port, (pkt)->dp_Link)
-
+#define   QuickReplyPkt(pkt)       PutMsg ((pkt)->dp_Port, (pkt)->dp_Link)
 
 extern void      handler   ( /* StartPkt */ );
 extern PIPEDATA  *FindPipe ( /* name */ );
@@ -137,6 +141,10 @@ extern PIPEDATA  *FindPipe ( /* name */ );
 ** references to system
 */
 
+#ifdef __AROS__
+#include <proto/exec.h>
+#include <proto/dos.h>
+#else
 extern struct Library     *OpenLibrary ();
 extern void               CloseLibrary ();
 extern struct Task        *FindTask ();
@@ -153,11 +161,9 @@ extern int                IoErr ();
 
 #if PIPEDIR
   extern struct DateStamp   *DateStamp ();
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
 extern struct Library     *AbsExecBase;
-
-
 
 /*---------------------------------
 ** these are new to the 1.2 release
@@ -165,12 +171,16 @@ extern struct Library     *AbsExecBase;
 
 #ifndef MODE_READWRITE
 # define   MODE_READWRITE   1004
-#endif  MODE_READWRITE
-
-#ifndef MODE_READONLY
-# define   MODE_READONLY    MODE_OLDFILE
-#endif  MODE_READONLY
+#endif /*  MODE_READWRITE */
 
 #ifndef ACTION_END
 # define   ACTION_END       1007     /* not really new, just missing */
-#endif  ACTION_END
+#endif /*  ACTION_END */
+
+#endif /* !__AROS__ */
+
+#ifndef MODE_READONLY
+# define   MODE_READONLY    MODE_OLDFILE
+#endif /*  MODE_READONLY */
+
+

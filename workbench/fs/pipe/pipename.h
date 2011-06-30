@@ -39,7 +39,7 @@
 
 #if AUTONAME
 # define   AUTONAME_INIT            "$00000000"
-#endif AUTONAME
+#endif /* AUTONAME */
 
 
 
@@ -58,4 +58,4 @@ extern char  *strdiff      ( /* str1, str2 */ );
 
 #if AUTONAME
   extern char  *get_autoname ( /* newflag */ );
-#endif AUTONAME
+#endif /* AUTONAME */

@@ -30,11 +30,11 @@
 
 #if PIPEDIR
 # include   "pipedir.h"
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
 #ifdef DEBUG
 # include   "pipedebug.h"
-#endif DEBUG
+#endif /* DEBUG */
 
 
 
@@ -88,20 +88,23 @@
 ** parsed without reference to the lock.
 */
 
+static int TapFormsLoop(BPTR tapfh, PIPEDATA *pipe);
+static void CloseTap(BPTR tapfh);
+static void OpenTap(struct DosPacket *pkt,const char *tapname);
+
 void  OpenPipe (pkt, tapfh)
 
 struct DosPacket  *pkt;
 BPTR              tapfh;
 
-{ void               OpenTap(), CloseTap();
+{
   LONG               openmode;
   struct FileHandle  *handle;
   struct FileLock    *lock;
   char               *pipename = NULL, *tapname = NULL;
   ULONG              pipesize;
   PIPEKEY            *pipekey = NULL;
-  PIPEDATA           *pipe;
-  int                TapFormsLoop();
+  PIPEDATA           *pipe = NULL;
 
 
   pkt->dp_Res1= 0;     /* error, for now */
@@ -124,11 +127,11 @@ BPTR              tapfh;
     { if (pipename[0] == '\0')
 #if AUTONAME
         pipename= get_autoname ((openmode == MODE_NEWFILE) || (openmode == MODE_READWRITE));
-#else !AUTONAME
+#else /* !AUTONAME */
         { pkt->dp_Res2= ERROR_INVALID_COMPONENT_NAME;
           goto OPENREPLY;
         }
-#endif AUTONAME
+#endif /* AUTONAME */
 
       pipe= FindPipe (pipename);
     }
@@ -198,14 +201,14 @@ OPENMEMERR1:
 #if PIPEDIR
       pipe->lockct= 0;
       InitLock (pipe->lock, pipe);
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
       InsertTail (&pipelist, pipe);     /* at tail for directory's sake */
 
 #ifdef DEBUG
        OS ("*** created pipe '"); OS (pipe->name);
        OS ("'   [buflen "); OL (pipe->buf->len); OS ("]\n");
-#endif DEBUG
+#endif /* DEBUG */
     }
   else     /* PIPE WAS FOUND */
     { if (TapFormsLoop (tapfh, pipe))
@@ -249,7 +252,7 @@ OPENMEMERR1:
     }
 
 
-  handle->fh_Arg1= (LONG) pipekey;     /* for identification on Read, Write, Close */
+  handle->fh_Arg1= (IPTR) pipekey;     /* for identification on Read, Write, Close */
   pkt->dp_Res1= 1;
   pkt->dp_Res2= 0;     /* for successful open */
 
@@ -265,9 +268,9 @@ OPENREPLY:
 #if PIPEDIR
    else
      SetPipeDate (pipe);
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
-  ReplyPkt (pkt);
+  QuickReplyPkt(pkt);
 }
 
 
@@ -344,7 +347,7 @@ struct DosPacket  *pkt;
   pkt->dp_Res1= 1;
   pkt->dp_Res2= 0;
 
-  ReplyPkt (pkt);
+  QuickReplyPkt (pkt);
 }
 
 
@@ -361,7 +364,7 @@ PIPEDATA  *pipe;
 {
 #ifdef DEBUG
   OS ("*** discarding pipe '"); OS (pipe->name); OS ("'\n");
-#endif DEBUG
+#endif /* DEBUG */
 
   Delete (&pipelist, pipe);
 
@@ -385,7 +388,7 @@ PIPEDATA  *pipe;
 static void  OpenTap (pkt, tapname)
 
 struct DosPacket  *pkt;
-char              *tapname;
+const char        *tapname;
 
 { char               *Bname;
   struct FileHandle  *handle;
@@ -420,7 +423,7 @@ OPENTAPERR1:
 OPENTAPERR:
       pkt->dp_Res1= 0;
       pkt->dp_Res2= ERROR_INVALID_COMPONENT_NAME;
-      ReplyPkt (pkt);
+      QuickReplyPkt (pkt);
       return;
     }
 
@@ -435,7 +438,7 @@ OPENTAPERR:
   wd->pktinfo.tapwait.clientpkt= pkt;
   wd->pktinfo.tapwait.handle= handle;     /* for HandleTapReply() */
 
-  StartTapIO ( tappkt, MODE_NEWFILE,
+  StartTapIO ( tappkt, ACTION_FINDOUTPUT,
                CptrtoBPTR (handle), CptrtoBPTR (Lock), CptrtoBPTR (Bname),
                Handler );
 
@@ -470,7 +473,7 @@ CLOSETAPERR:
       FreeMem (taphandle, sizeof (struct FileHandle));
 #ifdef DEBUG
       OS ("!!! ERROR - CloseTap() failed\n");
-#endif DEBUG
+#endif /* DEBUG */
       return;
     }
 

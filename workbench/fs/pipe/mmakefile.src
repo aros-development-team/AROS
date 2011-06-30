@@ -1,0 +1,15 @@
+include $(TOP)/config/make.cfg
+
+#MM- workbench-fs : workbench-fs-pipe
+
+FILES=pipebuf pipedebug pipecreate pipedir \
+      pipe-handler pipelists pipename pipesched \
+      main
+
+%build_prog mmake=workbench-fs-pipe \
+	progname=pipe.handler targetdir=$(AROS_DEVS) \
+	files="$(FILES)" \
+	usestartup=no \
+	uselibs="arossupport rom"
+
+%common

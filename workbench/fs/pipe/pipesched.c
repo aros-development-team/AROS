@@ -24,11 +24,11 @@
 
 #if PIPEDIR
 # include   "pipedir.h"
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
 #ifdef DEBUG
 # include   "pipedebug.h"
-#endif DEBUG
+#endif /* DEBUG */
 
 
 
@@ -54,6 +54,8 @@
 ** ---------------
 **	void  EndPipeIO (pipe, wd)
 */
+
+static void EndPipeIO (PIPEDATA *pipe, WAITINGDATA *wd);
 
 
 
@@ -81,7 +83,7 @@ IOTYPE            iotype;     /* assumed only PIPEREAD or PIPEWRITE */
     { pkt->dp_Res2= ERROR_ACTION_NOT_KNOWN;
 SPIOEXIT:
       pkt->dp_Res1= -1;
-      ReplyPkt (pkt);
+      QuickReplyPkt (pkt);
       return;
     }
 
@@ -148,7 +150,7 @@ PIPEDATA  *pipe;
 
 #if PIPEDIR
   SetPipeDate (pipe);
-#endif PIPEDIR
+#endif /* PIPEDIR */
 
   for (change= TRUE; change; )
     { change= FALSE;
@@ -193,7 +195,7 @@ PIPEDATA  *pipe;
       if (! (pipe->flags & OPEN_FOR_READ))     /* readerlist is now empty */
 #if PIPEDIR
         if (pipe->lockct == 0)
-#endif PIPEDIR
+#endif /* PIPEDIR */
           DiscardPipe (pipe);
     }
 }
@@ -225,7 +227,7 @@ WAITINGDATA  *wd;
   if (wd->pktinfo.pipewait.reqtype == PIPEREAD)
     { Delete (&pipe->readerlist, wd);
 
-      ReplyPkt (pkt);
+      QuickReplyPkt (pkt);
       FreeMem (wd, sizeof (WAITINGDATA));
     }
   else     /* must be PIPEWRITE -- reqtype is new PIPERW */
@@ -233,11 +235,11 @@ WAITINGDATA  *wd;
 
       if (pipe->tapfh != 0)     /* then write to the pipe tap */
         { if ((tappkt= AllocPacket (TapReplyPort)) == NULL)
-            { ReplyPkt (pkt);
+            { QuickReplyPkt (pkt);
               FreeMem (wd, sizeof (WAITINGDATA));
 #ifdef DEBUG
               OS ("!!! ERROR - Could not allocate packet for tap write\n");
-#endif DEBUG
+#endif /* DEBUG */
             }
           else
             { wd->pkt= tappkt;     /* reuse wd for tap write request */
@@ -254,7 +256,7 @@ WAITINGDATA  *wd;
             }
         }
       else     /* otherwise, return finished packet */
-        { ReplyPkt (pkt);
+        { QuickReplyPkt (pkt);
           FreeMem (wd, sizeof (WAITINGDATA));
         }
     }
@@ -359,7 +361,7 @@ struct DosPacket  *pkt;
     {
 #ifdef DEBUG
       OS ("!!! ERROR - WAITINGDATA not found in HandleTapReply()\n");
-#endif DEBUG
+#endif /* DEBUG */
       FreePacket (pkt);
       return;     /* not found - this should never happen */
     }
@@ -374,7 +376,7 @@ struct DosPacket  *pkt;
                { FreeMem (wd->pktinfo.tapwait.handle, sizeof (struct FileHandle));
                  pkt->dp_Res1= 0;
                  pkt->dp_Res2= ERROR_INVALID_COMPONENT_NAME;
-                 ReplyPkt (wd->pktinfo.tapwait.clientpkt);
+                 QuickReplyPkt (wd->pktinfo.tapwait.clientpkt);
                }
 
              FreeMem (BPTRtoCptr (pkt->dp_Arg3), OPENTAP_STRSIZE);
@@ -385,13 +387,13 @@ struct DosPacket  *pkt;
              break;
 
       case ACTION_WRITE:     /* for a tap write request */
-             ReplyPkt (wd->pktinfo.tapwait.clientpkt);     /* return to client */
+             QuickReplyPkt (wd->pktinfo.tapwait.clientpkt);     /* return to client */
              break;
 
 #ifdef DEBUG
       default:     /* should never happen */
              OS ("!!! ERROR - bad packet type in HandleTapReply(), type ="); OL (pkt->dp_Type); NL;
-#endif DEBUG
+#endif /* DEBUG */
     }
 
   FreePacket (pkt);
