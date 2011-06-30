@@ -49,9 +49,24 @@
 {
     AROS_LIBFUNC_INIT
 
-    bug("[Pipe] not implemented\n");
+    BPTR fhin, fhout;
 
-    return DOSFALSE;
+    /* Create file for writing */
+    fhout = Open(name, MODE_NEWFILE);
+    if (fhout == BNULL)
+    	    return DOSFALSE;
+
+    fhin = Open(name, MODE_OLDFILE);
+    if (fhin == BNULL) {
+    	    DeleteFile(name);
+    	    Close(fhout);
+    	    return DOSFALSE;
+    }
+
+    *reader = fhin;
+    *writer = fhout;
+
+    return DOSTRUE;
 
     AROS_LIBFUNC_EXIT
 } /* Pipe */
