@@ -88,7 +88,7 @@
 	}
     }
 
-    if (writer)
+    if (!writer)
     {
         errno = IoErr2errno(IoErr());
         __free_fdesc(rdesc);
