@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -67,6 +67,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
     struct CommandLineInterface *cli = Cli();
     STRPTR arguments = SHArg(ARGUMENTS), s;
     BPTR from;
+    struct Process *me = (struct Process *)FindTask(NULL);
 
     if (!cli)
         return RETURN_ERROR;
@@ -76,7 +77,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
     if (!from)
     {
 	IPTR data[] = { (IPTR)SHArg(NAME) };
-	VFPrintf(Error(), "EXECUTE: can't open %s\n", data);
+	VFPrintf(me->pr_CES, "EXECUTE: can't open %s\n", data);
 	PrintFault(IoErr(), NULL);
 	return RETURN_FAIL;
     }
@@ -130,7 +131,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 
 	    if (c)
 	    {
-		FPuts(Error(),
+		FPuts(me->pr_CES,
 		      "EXECUTE: error while creating temporary file\n");
 		PrintFault(c, NULL);
 		Close(tmpfile);
@@ -150,7 +151,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 
 	    if (c)
 	    {
-		FPuts(Error(), "EXECUTE: error while creating temporary file\n");
+		FPuts(me->pr_CES, "EXECUTE: error while creating temporary file\n");
 		PrintFault(c, NULL);
 		Close(tmpfile);
 		DeleteFile(tmpname);
@@ -178,7 +179,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	      is not handled correctly yet, we just give up
 	    */
 	    LONG c = IoErr();
-	    FPuts(Error(), "EXECUTE: error while creating temporary file\n");
+	    FPuts(me->pr_CES, "EXECUTE: error while creating temporary file\n");
 	    PrintFault(c, NULL);
 	    Close(from);
 
