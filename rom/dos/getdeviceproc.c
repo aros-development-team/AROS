@@ -311,10 +311,18 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 	res = TRUE;
 	if (dl->dol_Type == DLT_DEVICE)
 	{
+	    /* Unlock before starting handler, handler may internally
+	     * require dos list locks, for example to add volume node.
+	     */
+	    UnLockDosList(LDF_ALL | LDF_READ);
+
 	    D(bug("Accessing device '%b', path='%s'\n", dl->dol_Name, origname));
 
 	    newhandler = RunHandler((struct DeviceNode *)dl, origname);
 	    res = newhandler ? TRUE : FALSE;
+
+	    LockDosList(LDF_ALL | LDF_READ);
+
 	} else {
 	    while (res && !dl->dol_Task) {
 	    	D(bug("Accessing offline volume '%b'\n", dl->dol_Name));
