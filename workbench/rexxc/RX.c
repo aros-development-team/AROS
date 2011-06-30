@@ -1,5 +1,5 @@
 /*
-    Copyright © 2007, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Run rexx scripts
@@ -29,7 +29,7 @@ static BPTR olddir = (BPTR)-1;
 static BOOL init(void)
 {
 #ifdef __AROS__
-    out = Error();
+    out = ErrorOutput();
 #else 
     out = Output();
 #endif
