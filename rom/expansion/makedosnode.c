@@ -210,6 +210,19 @@
     dn->dn_Priority = 10;
     dn->dn_StackSize = 4000;
 
+#if __WORDSIZE > 32
+    /*
+     * EXPERIMENTAL: Fix up BufMemType on 64 bits.
+     * Many software set Mask to 0x7FFFFFFF, assuming 31-bit memory, with BufMemType = PUBLIC.
+     * This is perfectly true on 32-bit architectures, where addresses from 0x80000000 and up
+     * belong to MMIO, however on 64 bits we might have memory beyond this address.
+     * And AllocMem(MEMF_PUBLIC) would prefer to return that memory. This might screw up
+     * filesystems expecting AllocMem() to return memory fully corresponding to the mask.
+     */
+    if ((newde->de_TableSize >= DE_MASK) && (!(newde->de_Mask & 0x7FFFFFFF)))
+	newde->de_BufMemType |= MEMF_31BIT;
+#endif
+
     return dn;
 
     AROS_LIBFUNC_EXIT
