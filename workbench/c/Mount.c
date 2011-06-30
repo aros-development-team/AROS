@@ -1578,6 +1578,19 @@ struct DeviceNode *MyMakeDosNode(char *DosName, IPTR *ParameterPkt, char *Startu
 
 	    CopyMem(&ParameterPkt[ENVIROMENT_INDEX], MyDosEnvec, MyEnvSize);
 
+#if __WORDSIZE > 32
+	    /*
+	     * EXPERIMENTAL: Fix up BufMemType on 64 bits.
+	     * Many software (and users) set Mask to 0x7FFFFFFF, assuming 31-bit memory, with BufMemType = PUBLIC.
+	     * This is perfectly true on 32-bit architectures, where addresses from 0x80000000 and up
+	     * belong to MMIO, however on 64 bits we might have memory beyond this address.
+	     * And AllocMem(MEMF_PUBLIC) would prefer to return that memory. This might screw up
+	     * filesystems expecting AllocMem() to return memory fully corresponding to the mask.
+	     */
+	    if ((MyDosEnvec->de_TableSize >= DE_MASK) && (!(MyDosEnvec->de_Mask & 0x7FFFFFFF)))
+		MyDosEnvec->de_BufMemType |= MEMF_31BIT;
+#endif
+
             Status=TRUE;
             DEBUG_MAKEDOSNODE(Printf("MakeDosNode: done\n"));
           }
