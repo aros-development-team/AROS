@@ -135,11 +135,6 @@ static void __dosboot_Mount(struct BootNode *bootNode, struct DosLibrary * DOSBa
         Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
     }
 
-    /*
-     * RunHandler() is a private dos.library function
-     * TODO: Replace it with our own function which appends ':' to device name
-     * and calls DeviceProc(). We actually don't need RunHandler() any more.
-     */
     __dosboot_RunHandler(dn, DOSBase);
 }
 
