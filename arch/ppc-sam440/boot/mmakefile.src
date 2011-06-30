@@ -38,6 +38,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-fs-afs \
 #MM     kernel-bootloader-sam440-ppc \
 #MM     kernel-dos \
+#MM	kernel-lddemon \
 #MM     kernel-boot \
 #MM     kernel-dosboot \
 #MM     kernel-ata \
@@ -60,7 +61,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-processor
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
-PKG_RSRC     := misc bootloader battclock dosboot usbromstartup processor
+PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
 PKG_HANDLERS := con nil amberram packet cdrom sfs afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass pci pci-amcc440 i2c i2c-amcc440 radeon irq usb ohci

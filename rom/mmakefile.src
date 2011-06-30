@@ -55,7 +55,7 @@ BASE_DEVICES  := console input gameport keyboard
 BASE_HANDLERS := amberram con
 BASE_HIDD     := hiddclass graphics keyboard mouse
 BASE_LIBS     := aros boot debug dos graphics intuition keymap layers oop utility
-BASE_RSRCS    := FileSystem
+BASE_RSRCS    := FileSystem lddemon
 
 # *** ELF kickstart package ***
 
@@ -76,6 +76,7 @@ BASE_RSRCS    := FileSystem
 #MM     kernel-utility-kobj \
 #MM     kernel-intuition-kobj \
 #MM     kernel-keymap-kobj \
+#MM	kernel-lddemon-kobj \
 #MM     kernel-devs \
 #MM     kernel-expansion-kobj \
 #MM     kernel-hidd-kobj \
@@ -115,6 +116,7 @@ BASE_RSRCS    := FileSystem
 #MM     kernel-utility-pkg \
 #MM     kernel-intuition-pkg \
 #MM     kernel-keymap-pkg \
+#MM	kernel-lddemon-pkg \
 #MM     kernel-console-pkg \
 #MM	kernel-gameport-pkg \
 #MM	kernel-input-pkg \
