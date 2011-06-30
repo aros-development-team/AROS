@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -85,6 +85,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 
     if (cli)
     {
+    	struct Process *me = (struct Process *)FindTask(NULL);
 	BPTR toclone;
 
 	if (IsInteractive(Input()))
@@ -102,11 +103,11 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 	cos = duphandle(DOSBase, toclone, FMF_WRITE);
 
 	/* This is sort of a hack, needed because the original AmigaOS shell didn't allow
-	   Error() redirection, so all the scripts written so far assume that only Input() and
+	   pr_CES redirection, so all the scripts written so far assume that only Input() and
 	   Output() require to be redirected in order to not block the parent console */
-        if (Error() != cli->cli_StandardError && IsInteractive(Error()))
+        if (me->pr_CES != cli->cli_StandardError && IsInteractive(me->pr_CES))
 	{
-	    toclone = Error();
+	    toclone = me->pr_CES;
 
 	    ces = duphandle(DOSBase, toclone, FMF_WRITE);
 	}
