@@ -26,29 +26,52 @@ AROS_LH2(struct MsgPort *, RunHandler,
 	struct MsgPort *reply_port;
 	struct Process *process = NULL;
 	BSTR bpath;
+	CONST_STRPTR handler;
 
 	/* First check if already started */
 	if (deviceNode->dn_Task)
 	    return deviceNode->dn_Task;
 
+	handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
+
+	/* No possible way to continue? */
+	if (deviceNode->dn_SegList == BNULL && handler == NULL)
+	    return NULL;
+
 	if (deviceNode->dn_SegList == BNULL) {
 	    struct Segment *seg = NULL;
-	    CONST_STRPTR cp;
 
-	    if (deviceNode->dn_Handler != BNULL) {
-	    	cp = AROS_BSTR_ADDR(deviceNode->dn_Handler);
+	    /* Try to find in the Resident Segment list */
+	    Forbid();
+	    D(bug("[RunHandler] handler '%s' in resident list\n", handler));
+	    seg = FindSegment(handler, NULL, TRUE);
+	    Permit();
 
-	    	/* Try to find in the Resident Segment list */
-	    	Forbid();
-	    	seg = FindSegment(cp, NULL, TRUE);
-	    	Permit();
-	    	if (seg == NULL) {
-		    D(bug("[RunHandler] handler '%s' not found\n", cp));
-		    return NULL;
-		}
-	    }
-	    deviceNode->dn_SegList = seg ? seg->seg_Seg : DOSBase->dl_Root->rn_FileHandlerSegment;
+	    deviceNode->dn_SegList = seg ? seg->seg_Seg : BNULL;
 	}
+
+	if (deviceNode->dn_SegList == BNULL) {
+	    D(bug("[RunHandler] LoadSeg(\"%s\")\n", handler));
+
+	    deviceNode->dn_SegList = LoadSeg(handler);
+        }
+
+	if (deviceNode->dn_SegList == BNULL) {
+	    CONST_STRPTR cp = FilePart(handler);
+
+	    if (cp != NULL) {
+	    	BPTR dir;
+	    	dir = Lock("DEVS:", SHARED_LOCK);
+	    	if (dir != BNULL) {
+	    	    BPTR olddir;
+	    	    olddir = CurrentDir(dir);
+	    	    D(bug("[RunHandler] LoadSeg(\"DEVS:%s\")\n", cp));
+	    	    deviceNode->dn_SegList = LoadSeg(cp);
+	    	    CurrentDir(olddir);
+	    	}
+	    }
+	}
+
 	if (deviceNode->dn_SegList == BNULL) {
 		D(bug("[RunHandler] name '%b' seglist=NULL?\n", deviceNode->dn_Name));
 		return NULL;
@@ -74,8 +97,8 @@ AROS_LH2(struct MsgPort *, RunHandler,
    	D(bug("[RunHandler] devicenode=%08lx path='%b' devicename '%b' unit %d dosname '%b' handler=%x seg=%08lx startup=%08lx\n",
             deviceNode,
             bpath,
-            fssm->fssm_Device,
-            fssm->fssm_Unit,
+            fssm ? fssm->fssm_Device : BNULL,
+            fssm ? fssm->fssm_Unit : 0,
             deviceNode->dn_Name,
             deviceNode->dn_Handler,
             deviceNode->dn_SegList,
