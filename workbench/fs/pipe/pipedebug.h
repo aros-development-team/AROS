@@ -9,8 +9,6 @@
 **  History:    05-Jan-87       Original Version (1.0)
 */
 
-
-
 #define   DEBUGOPEN_MAXNAMELEN   108
 
 #define   DEBUG_CON_NAME         "CON:10/30/300/100/pipe-handler DEBUG"

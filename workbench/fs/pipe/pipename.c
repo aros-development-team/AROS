@@ -9,6 +9,7 @@
 **  History:    05-Jan-87       Original Version (1.0)
 **		07-Feb-87	Added conditional compilation for autoname.
 */
+#include   <string.h>	/* For strcpy */
 
 #include   <libraries/dos.h>
 #include   <libraries/dosextens.h>
@@ -49,6 +50,8 @@
 ** ---------------
 **	int  ParseNum (str, nump)
 */
+
+static int ParseNum ( char   *str, ULONG  *nump);
 
 
 
@@ -127,7 +130,7 @@ char   **tapnmp;     /* reference to tap name pointer, returns NULL if none */
         { if ( *(strdiff ("CON:", *tapnmp)) )     /* true if not '\0' */
             return FALSE;     /* only CON: . . . allowed */
         }
-#endif CON_TAP_ONLY
+#endif /* CON_TAP_ONLY */
     }
 
   return TRUE;
@@ -174,9 +177,13 @@ register char  *str;
 BYTE           *BSTRp;
 unsigned       maxsize;
 
-{ register char  *bp;
+{
+#ifdef AROS_FAST_BSTR
+  strncpy(BSTRp, str, maxsize);
+  BSTRp[maxsize-1] = 0;
+#else
+  register char  *bp;
   register int   i, limit;
-
 
   bp= BSTRp + 1;
 
@@ -187,6 +194,7 @@ unsigned       maxsize;
       break;
 
   BSTRp[0]= i;
+#endif
 }
 
 
@@ -247,9 +255,13 @@ register char  *to;
 register char  *from;
 
 {
+#ifdef __AROS__
+  strcpy(to, from);
+#else
 STRCPYLOOP:
   if (*(to++)= *(from++))
     goto STRCPYLOOP;
+#endif
 }
 
 
@@ -321,7 +333,7 @@ BYTE  newflag;
   return  autoname;
 }
 
-#endif AUTONAME
+#endif /* AUTONAME */
 
 
 
@@ -355,7 +367,7 @@ ULONG  *nump;
     }
 
   for (*nump= 0; TRUE; ++str)
-    { value= (LONG) findchar (digits, uppercase (*str)) - (LONG) digits;
+    { value= findchar (digits, uppercase (*str)) - digits;
 
       if (! inrange (value, 0, (radix - 1)))
         break;

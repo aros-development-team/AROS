@@ -22,6 +22,9 @@
 #include   <libraries/filehandler.h>
 #include   <exec/exec.h>
 
+#include   <proto/exec.h>
+#include   <proto/dos.h>
+
 #include   "pipelists.h"
 #include   "pipename.h"
 #include   "pipebuf.h"
@@ -59,6 +62,18 @@
 **	void  FillFIB (fib, DiskKey, FileName, Protection, Type, Size, NumBlocks, Datep)
 */
 
+static void InitPipedirLock (void);
+static void FillFIB (
+		struct FileInfoBlock  *fib,
+		SIPTR                 DiskKey,
+		char                  *FileName,     /* null-terminated */
+		LONG                  Protection,
+		LONG                  Type,
+		LONG                  Size,
+		LONG                  NumBlocks,
+		struct DateStamp      *Datep);
+
+
 
 
 /*---------------------------------------------------------------------------
@@ -70,7 +85,6 @@
 
 static BYTE             LockBytes[sizeof (struct FileLock) + 3];
 static struct FileLock  *PipedirLock  =  NULL;
-
 
 
 /*---------------------------------------------------------------------------
@@ -87,7 +101,7 @@ PIPEDATA  *pipe;
 
 #if UPDATE_PIPEDATE
   (void) DateStamp (&PipeDate);
-#endif UPDATE_PIPEDATE
+#endif /* UPDATE_PIPEDATE */
 }
 
 
@@ -131,14 +145,14 @@ struct DosPacket  *pkt;
 
   if ( (lock == NULL) || ((pipe= (PIPEDATA *) lock->fl_Key) == NULL) )
     { if (name[0] == '\0')
-        pkt->dp_Res1= CptrtoBPTR (PipedirLock);
+        pkt->dp_Res1= (SIPTR)CptrtoBPTR (PipedirLock);
       else
         { if ((pipe= FindPipe (name)) == NULL)
             { pkt->dp_Res2= ERROR_OBJECT_NOT_FOUND;
               goto PLOCKEXIT;
             }
 
-          pkt->dp_Res1= CptrtoBPTR (pipe->lock);
+          pkt->dp_Res1= (SIPTR)CptrtoBPTR (pipe->lock);
           ++pipe->lockct;
         }
     }
@@ -148,12 +162,12 @@ struct DosPacket  *pkt;
           goto PLOCKEXIT;
         }
 
-      pkt->dp_Res1= CptrtoBPTR (pipe->lock);
+      pkt->dp_Res1= (SIPTR)CptrtoBPTR (pipe->lock);
       ++pipe->lockct;
     }
 
 PLOCKEXIT:
-  ReplyPkt (pkt);
+  QuickReplyPkt (pkt);
 }
 
 
@@ -183,7 +197,7 @@ struct DosPacket  *pkt;
         ++pipe->lockct;     /* lock is on an individual pipe */
     }
 
-  ReplyPkt (pkt);
+  QuickReplyPkt (pkt);
 }
 
 
@@ -214,7 +228,7 @@ struct DosPacket  *pkt;
       pkt->dp_Res2= 0;
     }
 
-  ReplyPkt (pkt);
+  QuickReplyPkt (pkt);
 }
 
 
@@ -232,7 +246,6 @@ struct DosPacket  *pkt;
 { struct FileInfoBlock  *fib;
   struct FileLock       *lock;
   PIPEDATA              *pipe;
-  void                  FillFIB();
 
 
   pkt->dp_Res1= 1;     /* no error, for now */
@@ -246,7 +259,7 @@ struct DosPacket  *pkt;
     }
   else
     { if ((pipe= (PIPEDATA *) lock->fl_Key) == NULL)     /* then this is a lock on the handler */
-        { FillFIB ( fib, FirstItem (&pipelist), HandlerName,
+        { FillFIB ( fib, (SIPTR)FirstItem (&pipelist), HandlerName,
                     (FIBF_EXECUTE | FIBF_DELETE), 1,
                     0, 0, &PipeDate );
         }
@@ -257,7 +270,7 @@ struct DosPacket  *pkt;
         }
     }
 
-  ReplyPkt (pkt);
+  QuickReplyPkt (pkt);
 }
 
 
@@ -284,7 +297,6 @@ struct DosPacket  *pkt;
 { struct FileLock       *lock;
   struct FileInfoBlock  *fib;
   PIPEDATA              *listitem, *pipe;
-  void                  FillFIB();
 
 
   pkt->dp_Res1= 0;     /* error, for now */
@@ -312,7 +324,7 @@ struct DosPacket  *pkt;
       break;
 
   if (listitem == pipe)     /* then found next entry */
-    { FillFIB ( fib, NextItem (listitem), listitem->name,
+    { FillFIB ( fib, (SIPTR)NextItem (listitem), listitem->name,
                 (FIBF_EXECUTE | FIBF_DELETE), -1,
                 listitem->buf->len, 1, &listitem->accessdate );
 
@@ -321,7 +333,7 @@ struct DosPacket  *pkt;
     }
 
 EXNEXTREPLY:
-  ReplyPkt (pkt);
+  QuickReplyPkt (pkt);
 }
 
 
@@ -350,10 +362,10 @@ struct DosPacket  *pkt;
     { if (lock->fl_Key == NULL)     /* then lock is on handler */
         pkt->dp_Res1= 0;     /* root of current filing system */
       else
-        pkt->dp_Res1= CptrtoBPTR (PipedirLock);
+        pkt->dp_Res1= (SIPTR)CptrtoBPTR (PipedirLock);
     }
 
-  ReplyPkt (pkt);
+  QuickReplyPkt (pkt);
 }
 
 
@@ -364,7 +376,7 @@ struct DosPacket  *pkt;
 static void  InitPipedirLock ()
 
 { if (PipedirLock == NULL)
-    { PipedirLock= (struct FileLock *) (((ULONG) LockBytes + 3) & ((~0)<<2));
+    { PipedirLock= (struct FileLock *) (((SIPTR) LockBytes + 3) & ((~0)<<2));
       InitLock (PipedirLock, NULL);
     }
 }
@@ -399,7 +411,7 @@ LONG             key;
 static void  FillFIB (fib, DiskKey, FileName, Protection, Type, Size, NumBlocks, Datep)
 
 struct FileInfoBlock  *fib;
-LONG                  DiskKey;
+SIPTR                 DiskKey;
 char                  *FileName;     /* null-terminated */
 LONG                  Protection;
 LONG                  Type;
