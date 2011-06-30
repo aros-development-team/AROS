@@ -386,7 +386,7 @@ LONG CONMain(void)
 				case ACTION_FINDOUTPUT:
 				case ACTION_FINDUPDATE:
 					dosfh = BADDR(dp->dp_Arg1);
-					dosfh->fh_Port = (struct MsgPort*)DOSTRUE;
+					dosfh->fh_Interactive = DOSTRUE;
 					dosfh->fh_Arg1 = (IPTR)fh;
 					fh->usecount++;
 				 	fh->breaktask = dp->dp_Port->mp_SigTask;

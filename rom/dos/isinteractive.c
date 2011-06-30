@@ -49,11 +49,7 @@
     /* Get pointer to filehandle */
     struct FileHandle *fh=(struct FileHandle *)BADDR(file);
 
-#ifdef __mc68000
-    return (LONG)fh->fh_Port; /* 100% identical to official ROM behavior */
-#else
-    return (fh->fh_Port != NULL);
-#endif
+    return (LONG)fh->fh_Interactive; /* 100% identical to official ROM behavior */
 
     AROS_LIBFUNC_EXIT
 } /* IsInteractive */

@@ -90,7 +90,7 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR lock, LONG mode, CON
     	SetIoErr(0);
     	handle->fh_Type = BNULL;
     	/* NIL: is considered interactive */
-    	handle->fh_Port = DOSTRUE;
+    	handle->fh_Interactive = DOSTRUE;
     	return 0;
     }
 
