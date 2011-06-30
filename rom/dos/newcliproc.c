@@ -56,7 +56,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 	cli->cli_StandardInput  = Input();
         cli->cli_StandardOutput =
     	cli->cli_CurrentOutput  = Output();
-	cli->cli_StandardError  = Error();
+	cli->cli_StandardError  = me->pr_CES;
     	cli->cli_CurrentInput   = CurrentInput;
     	cli->cli_Interactive    = cli->cli_CurrentInput == cli->cli_StandardInput ? DOSTRUE : DOSFALSE;
     	cli->cli_Background     = Background;

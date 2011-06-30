@@ -44,8 +44,10 @@
 	!=0 returned by hook function if scan process was aborted, 0 otherwise.
 
     NOTES
-    ScanVarsMsg structure content is valid only during hook call.
-    See <dos/var.h> for description of ScanVarsMsg structure.
+    	ScanVarsMsg structure content is valid only during hook call.
+    	See <dos/var.h> for description of ScanVarsMsg structure.
+
+	This function is compatible with AmigaOS v4.
 
     EXAMPLE
 
