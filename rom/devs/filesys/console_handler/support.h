@@ -77,20 +77,26 @@
 #define	INP_STRING		100
 #define INP_ECHO_STRING	    	101
 
-struct Task *createConTask(APTR taskparams, struct conbase *conbase);
-BOOL parse_filename(struct conbase *conbase, struct filehandle *fh,
-    struct IOFileSys *iofs, struct NewWindow *nw);
+BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw);
 
-void do_write(struct conbase *conbase, struct filehandle *fh, APTR data, ULONG length);
-void do_movecursor(struct conbase *conbase, struct filehandle *fh, UBYTE direction, UBYTE howmuch);
-void do_cursorvisible(struct conbase *conbase, struct filehandle *fh, BOOL on);
-void do_deletechar(struct conbase *conbase, struct filehandle *fh);
-void do_eraseinline(struct conbase *conbase, struct filehandle *fh);
-void do_eraseindisplay(struct conbase *conbase, struct filehandle *fh);
+void do_write(struct filehandle *fh, APTR data, ULONG length);
+void do_movecursor(struct filehandle *fh, UBYTE direction, UBYTE howmuch);
+void do_cursorvisible(struct filehandle *fh, BOOL on);
+void do_deletechar(struct filehandle *fh);
+void do_eraseinline(struct filehandle *fh);
+void do_eraseindisplay(struct filehandle *fh);
 
-WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *);
+WORD scan_input(struct filehandle *fh, UBYTE *);
 
-void answer_read_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs);
-LONG answer_write_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs);
-void add_to_history(struct conbase *conbase, struct filehandle *fh);
-void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp);
+void con_read(struct filehandle *fh, struct DosPacket *dp);
+void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3);
+BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp);
+void HandlePendingReads(struct filehandle *fh);
+
+void add_to_history(struct filehandle *fh);
+void history_walk(struct filehandle *fh, WORD inp);
+
+void process_input(struct filehandle *fh);
+
+void replypkt(struct DosPacket *dp, SIPTR res1);
+void replypkt2(struct DosPacket *dp, SIPTR res1, SIPTR res2);

@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := con_task support completion
+FILES := support completion resident
 
 #MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
 

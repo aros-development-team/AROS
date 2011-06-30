@@ -7,4 +7,4 @@
 */
 
 
-void Completion(struct conbase *conbase, struct filehandle *fh);
+void Completion(struct filehandle *fh);

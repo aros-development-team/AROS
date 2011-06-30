@@ -15,7 +15,6 @@
 #include <intuition/intuition.h>
 #include <hidd/hidd.h>
 #include <aros/asmcall.h>
-#include <libraries/gadtools.h>
 
 /*
 ** stegerg:
@@ -46,14 +45,7 @@ struct conTaskParams
 {
     struct conbase *conbase;
     struct Task	*parentTask;
-    struct IOFileSys *iofs;
     ULONG initSignal;
-};
-
-struct conbase
-{
-    struct Device	device;
-    struct Device     * inputbase;
 };
 
 struct filehandle
@@ -63,17 +55,15 @@ struct filehandle
     struct MsgPort	*conreadmp;
     struct MsgPort	*conwritemp;
     struct Window	*window;
-    struct Menu         *menu;
-    void                *vi; /* visual-info required by GadTools */
     struct Task 	*contask;
     struct Task		*breaktask;
     struct Task		*lastwritetask;
-    struct MsgPort      *contaskmp;
     struct MinList	pendingReads;
-    struct MinList	pendingWrites;
     struct NewWindow	nw;
+    struct MsgPort *timermp;
+    struct timerequest *timerreq;
     UBYTE		*wintitle;
-    UBYTE               *screenname;
+    UBYTE		*screenname;
 #if BETTER_WRITE_HANDLING
     LONG		partlywrite_actual;
     LONG		partlywrite_size;
@@ -98,6 +88,11 @@ struct filehandle
     WORD                pastebufferpos;
     WORD                pastebuffersize;
     STRPTR              pastebuffer;
+    struct Device *inputbase;
+    struct IntuitionBase *intuibase;
+    struct DosLibrary *dosbase;
+    struct Library *gtbase;
+    struct Library *utilbase;
 };
 
 /* filehandle flags */
@@ -114,20 +109,19 @@ struct filehandle
 #define FHFLG_NOECHO            512  /* input echoing is disabled */
 #define FHFLG_NOWRITE           1024 /* disable do_write() completely, no output */
 
-typedef struct IntuitionBase IntuiBase;
+#undef InputBase
+#undef IntuitionBase
+#undef DOSBase
+#undef GadToolsBase
+#undef UtilityBase
 
 /* FIXME: Remove these #define xxxBase hacks
    Do not use this in new code !
 */
-#ifdef InputBase
-#   undef InputBase
-#endif
-#define InputBase conbase->inputbase
-
-AROS_UFP3(VOID, conTaskEntry,
-    AROS_UFPA(STRPTR, argstr, A0),
-    AROS_UFPA(ULONG, arglen, D0),
-    AROS_UFPA(struct ExecBase *, sysbase, A6)
-);
+#define InputBase fh->inputbase
+#define IntuitionBase fh->intuibase
+#define DOSBase fh->dosbase
+#define GadToolsBase fh->gtbase
+#define UtilityBase fh->utilbase
 
 #endif /* __CON_HANDLER_INTERN_H */
