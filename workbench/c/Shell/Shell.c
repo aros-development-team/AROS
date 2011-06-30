@@ -296,7 +296,9 @@ exit:
 
     if (cli->cli_Interactive)
     {
-	Flush(Error());
+    	struct Process *me = (struct Process *)FindTask(NULL);
+
+	Flush(me->pr_CES);
 	Flush(Output());
     }
 
