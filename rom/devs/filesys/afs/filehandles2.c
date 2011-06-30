@@ -78,7 +78,7 @@ ULONG setDate
 {
 ULONG block;
 struct BlockCache *blockbuffer;
-LONG error;
+SIPTR error;
 
 	D(bug("[afs] setData()\n"));
 	if (0 == checkValid(afsbase, ah->volume))
@@ -108,7 +108,7 @@ ULONG setProtect
 {
 ULONG block;
 struct BlockCache *blockbuffer;
-LONG error;
+SIPTR error;
 
 	D(bug("[afs] setProtect(ah,%s,%ld)\n", name, mask));
 	if (0 == checkValid(afsbase, ah->volume))
@@ -134,7 +134,7 @@ ULONG setComment
 {
 ULONG block;
 struct BlockCache *blockbuffer;
-LONG error;
+SIPTR error;
 
 	D(bug("[afs] setComment(ah,%s,%s)\n", name, comment));
 	if (0 == checkValid(afsbase, ah->volume))
@@ -205,7 +205,7 @@ ULONG deleteObject(struct AFSBase *afsbase, struct AfsHandle *ah,
 {
 ULONG lastblock,key;
 struct BlockCache *blockbuffer, *priorbuffer;
-LONG error;
+SIPTR error;
 
 	D(bug("[afs] delete(ah,%s)\n", name));
 	/*
@@ -443,7 +443,7 @@ struct BlockCache *getDirBlockBuffer
 		struct AfsHandle *ah,
 		CONST_STRPTR name,
 		STRPTR entryname,
-		LONG *error
+		SIPTR *error
 	)
 {
 ULONG block,len;
@@ -480,7 +480,7 @@ ULONG renameObject
 struct BlockCache *lastlink,*oldfile,*existingfile,*dirblock;
 ULONG block,dirblocknum,lastblock;
 UBYTE newentryname[34];
-LONG error;
+SIPTR error;
 
 	D(bug("[afs] rename(%ld,%s,%s)\n", dirah->header_block, oname, newname));
 	if (0 == checkValid(afsbase, dirah->volume))
@@ -641,7 +641,7 @@ struct BlockCache *createNewEntry
 		CONST_STRPTR entryname,
 		struct BlockCache *dirblock,
 		ULONG protection,
-		LONG *error
+		SIPTR *error
 	)
 {
 struct BlockCache *newblock;
@@ -737,7 +737,7 @@ struct AfsHandle *createDir
 		struct AfsHandle *dirah,
 		CONST_STRPTR filename,
 		ULONG protection,
-		LONG *error
+		SIPTR *error
 	)
 {
 struct AfsHandle *ah = NULL;

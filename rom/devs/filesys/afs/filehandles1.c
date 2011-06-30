@@ -35,7 +35,7 @@ struct BlockCache *getHeaderBlock
 		CONST_STRPTR name,
 		struct BlockCache *blockbuffer,
 		ULONG *block,
-		LONG *error
+		SIPTR *error
 	)
 {
 ULONG key;
@@ -152,7 +152,7 @@ struct BlockCache *findBlock
 		struct AfsHandle *dirah,
 		CONST_STRPTR name,
 		ULONG *block,
-		LONG *error
+		SIPTR *error
 	)
 {
 STRPTR pos;
@@ -348,7 +348,7 @@ struct AfsHandle *allocHandle
 		struct BlockCache *fileblock,
 		ULONG mode,
 		ULONG *hashtable,
-		LONG *error
+		SIPTR *error
 	)
 {
 struct AfsHandle *ah;
@@ -390,7 +390,7 @@ struct AfsHandle *getHandle
 		struct Volume *volume,
 		struct BlockCache *fileblock,
 		ULONG mode,
-		LONG *error
+		SIPTR *error
 	)
 {
 struct AfsHandle *ah;
@@ -444,7 +444,7 @@ struct AfsHandle *openf
 		struct AfsHandle *dirah,
 		CONST_STRPTR filename,
 		ULONG mode,
-		LONG *error
+		SIPTR *error
 	)
 {
 struct AfsHandle *ah = NULL;
@@ -475,7 +475,7 @@ struct AfsHandle *openfile
 		CONST_STRPTR name,
 		ULONG mode,
 		ULONG protection,
-		LONG *error
+		SIPTR *error
 	)
 {
 struct AfsHandle *ah = NULL;
@@ -612,7 +612,7 @@ LONG readData
 		struct AfsHandle *ah,
 		void *buffer,
 		ULONG length,
-		LONG *error
+		SIPTR *error
 	)
 {
 struct BlockCache *extensionbuffer;
@@ -719,7 +719,7 @@ D(
 }
 
 LONG readf
-	(struct AFSBase *afsbase, struct AfsHandle *ah, void *buffer, ULONG length, LONG *error)
+	(struct AFSBase *afsbase, struct AfsHandle *ah, void *buffer, ULONG length, SIPTR *error)
 {
 LONG readbytes;
 
@@ -771,7 +771,7 @@ LONG writeData
 		struct AfsHandle *ah,
 		void *buffer,
 		ULONG length,
-		LONG *error
+		SIPTR *error
 	)
 {
 ULONG block = 0;
@@ -1006,7 +1006,7 @@ BOOL extensionModified = FALSE;
 }
 
 LONG writef
-	(struct AFSBase *afsbase, struct AfsHandle *ah, void *buffer, ULONG length, LONG *error)
+	(struct AFSBase *afsbase, struct AfsHandle *ah, void *buffer, ULONG length, SIPTR *error)
 {
 struct BlockCache *headerblock;
 LONG writtenbytes;
@@ -1044,7 +1044,7 @@ struct DateStamp ds;
 }
 
 LONG seek
-	(struct AFSBase* afsbase, struct AfsHandle *ah, LONG offset, LONG mode, LONG *error)
+	(struct AFSBase* afsbase, struct AfsHandle *ah, LONG offset, LONG mode, SIPTR *error)
 {
 LONG old = -1;
 UWORD filekey, byte;
@@ -1127,7 +1127,7 @@ struct BlockCache *blockbuffer;
 }
 
 LONG setFileSize
-	(struct AFSBase* afsbase, struct AfsHandle *ah, LONG size, LONG mode, LONG *error)
+	(struct AFSBase* afsbase, struct AfsHandle *ah, LONG size, LONG mode, SIPTR *error)
 {
 LONG pos = -1, extra, savederror, newsize;
 struct BlockCache *headerblock;
