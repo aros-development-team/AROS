@@ -24,6 +24,8 @@
 
 #include <aros/asmcall.h>
 #include <dos/stdio.h>
+
+#include <proto/alib.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -299,7 +301,7 @@ int main(int argc, char **argv)
    if (DOSBase != NULL) {
        struct Library *sbl = (APTR)SysBase;
        if (sbl->lib_Version > 40) {
-       	   FPrintf(Error(), "SetPatchAROS: Unsupported exec.library %ld.%ld\n",
+       	   FPrintf(ErrorOutput(), "SetPatchAROS: Unsupported exec.library %ld.%ld\n",
        	   	   sbl->lib_Version, sbl->lib_Revision);
        	   CloseLibrary((APTR)DOSBase);
        	   return RETURN_ERROR;
