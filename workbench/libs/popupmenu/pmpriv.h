@@ -44,7 +44,7 @@
 
 #include <cybergraphx/cybergraphics.h>  /* v41 uses cybergraphx/ dir */
 
-#include "popupmenu.h"
+#include <libraries/pm.h>
 
 #include "pmtypes.h"
 #include "pmmem.h"
