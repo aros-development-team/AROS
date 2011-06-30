@@ -80,7 +80,7 @@ KLIBS   := exec aros dos utility oop expansion boot mathffp partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
-KRSRCS  := battclock kernel processor dosboot cia potgo disk FileSystem misc shell
+KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell
 KHOOKS  :=
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS))) \

@@ -46,7 +46,7 @@ USELIBS	:= hiddstubs amiga arossupport rom arosm autoinit libinit
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-KRSRCS  := battclock bootloader dosboot processor FileSystem
+KRSRCS  := battclock bootloader dosboot processor lddemon FileSystem
 KLIBS   := boot aros debug dos graphics utility intuition keymap \
       	   expansion oop layers partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
