@@ -1171,7 +1171,7 @@ char			name[256+1];
   if ((error==RETURN_OK) ||
       (error==ERROR_OBJECT_NOT_FOUND))
   {
-    DEBUG_MOUNT(Printf("ReadMountFile: look for icon\n"));
+    DEBUG_MOUNT(Printf("ReadMountFile: look for icon '%s'\n", filename));
 
     if ((IconBase =  OpenLibrary("icon.library", 37)))
     {
@@ -1892,10 +1892,7 @@ LONG mount(IPTR	*params, STRPTR	name)
 	DEBUG_MOUNT(Printf("MountDev: SegList   0x%lx\n",dn->dn_SegList));
         DEBUG_MOUNT(Printf("MountDev: StackSize %ld\n",dn->dn_StackSize));
 	DEBUG_MOUNT(Printf("MountDev: Priority  %ld\n",dn->dn_Priority));
-	if (!IsEHandler && StartupString)
-	DEBUG_MOUNT(Printf("MountDev: Startup   <%b>\n", dn->dn_Startup));
-	else
-	DEBUG_MOUNT(Printf("MountDev: Startup   0x%lx\n",dn->dn_Startup));
+	DEBUG_MOUNT(Printf(!IsEHandler && StartupString ? "MountDev: Startup   <%b>\n" : "MountDev: Startup   0x%lx\n", dn->dn_Startup));
         DEBUG_MOUNT(Printf("MountDev: GlobalVec %ld\n",dn->dn_GlobalVec));
 
         if (dn->dn_SegList || dn->dn_Handler)
