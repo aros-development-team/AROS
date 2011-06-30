@@ -113,7 +113,7 @@ FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOS
         fh->fh_Flags |= FHF_WRITE;
 
         fh->fh_Pos = 0;
-        fh->fh_End = fh->fh_Size;
+        fh->fh_End = fh->fh_BufSize;
     }
 
         LONG

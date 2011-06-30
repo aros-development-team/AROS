@@ -88,7 +88,7 @@
      *
      * (AOS compatability issue)
      */
-    fh->fh_Buf2 = fh->fh_Buf;
+    fh->fh_OrigBuf = fh->fh_Buf;
 
     return 0;
     
@@ -103,11 +103,11 @@ vbuf_free(FileHandlePtr fh)
     {
 	/* free buffer allocated by system */
     	if (fh->fh_Flags & FHF_OWNBUF)
-	    FreeMem(BADDR(fh->fh_Buf), fh->fh_Size);
+	    FreeMem(BADDR(fh->fh_Buf), fh->fh_BufSize);
 
         fh->fh_Buf = BNULL;
         fh->fh_Pos = fh->fh_End = 0;
-        fh->fh_Size = 0;
+        fh->fh_BufSize = 0;
     }
 
     fh->fh_Flags &= ~(FHF_BUF | FHF_OWNBUF);
@@ -128,14 +128,14 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
 
     if (NULL != buf)
     {
-        fh->fh_Size = size;
+        fh->fh_BufSize = size;
         fh->fh_Flags |= flags;
 
         if(fh->fh_Flags & FHF_WRITE)
         {
             fh->fh_Buf = MKBADDR(buf);
             fh->fh_Pos = 0;
-            fh->fh_End = fh->fh_Size;
+            fh->fh_End = fh->fh_BufSize;
         }
         else
         {

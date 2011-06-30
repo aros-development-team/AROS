@@ -9,9 +9,6 @@
     Lang: English
 */
 
-#ifndef AROS_CONFIG_H
-#   include <aros/config.h>
-#endif
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
@@ -53,13 +50,11 @@ struct DosLibrary
 
     struct RootNode * dl_Root;
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     /* private BCPL fields. Do not use. */
     APTR    dl_GV;
-    LONG    dl_A2;
-    LONG    dl_A5;
-    LONG    dl_A6;
-#endif
+    SIPTR   dl_A2;
+    SIPTR   dl_A5;
+    SIPTR   dl_A6;
 
     /* The following fields are PRIVATE! */
     struct ErrorString	 * dl_Errors;
@@ -67,31 +62,8 @@ struct DosLibrary
     struct Library	 * dl_UtilityBase;
     struct Library	 * dl_IntuitionBase;
 
-    /*
-     * These were AROS-specific private fields. At the moment they are mostly not used
-     * and are present only for binary compatibility with programs that used dl_Flags
-     * (Directory Opus for example). Do not try to use them in any way!
-     */
-    struct Device	 * dl_TimerBase;
-    struct timerequest	   dl_TimerIO;
-    struct DosList	 * dl_DevInfo;
-    struct ExecBase	 * dl_SysBase;
-    BPTR		   dl_SegList;
-    struct Device	 * dl_NulHandler;
-    struct Unit 	 * dl_NulLock;
-
-    /* LDDemon (library loader) private data */
-    struct SignalSemaphore dl_LDObjectsListSigSem;
-    struct List            dl_LDObjectsList;
-    struct Interrupt	   dl_LDHandler;
-    struct MsgPort	 * dl_LDDemonPort;
-    struct Process	 * dl_LDDemonTask;
-    ULONG		   dl_LDReturn;
-
     /* AROS-specific and private. Can go away in future. */
     BPTR    	    	   dl_SYSLock;
-    /* The flags are ORed with RootNode->rn_Flags. See below for definitions. */
-    ULONG		   dl_Flags;
 };
 
 /* dl_Flags/rn_Flags */
@@ -324,34 +296,28 @@ struct FileHandle
 {
     /* The next three are used with packet-based filesystems */
     ULONG  fh_Flags;
-    struct MsgPort * fh_Port;   /* packet reply port */
+    LONG   fh_Interactive;	/* interactive handle flag */
     struct MsgPort * fh_Type;   /* port to send packets to */
 
     BPTR    fh_Buf;
     LONG    fh_Pos;
     LONG    fh_End;
 
-    LONG  fh_Funcs;
-    LONG  fh_Func2;
-    APTR  fh_Func3;
+    SIPTR fh_Funcs;
+    SIPTR fh_Func2;
+    SIPTR fh_Func3;
     SIPTR fh_Args;
-    APTR  fh_Arg2;
+    SIPTR fh_Arg2;
 
     /* v39+ */
-    ULONG fh_Size;	/* Size of buffered io buffer */
-    BPTR  fh_Buf2;	/* Always the same as fh_Buf */
+    ULONG fh_BufSize;	/* Size of buffered io buffer */
+    BPTR  fh_OrigBuf;	/* Always the same as fh_Buf */
 };
 
 /* Original AmigaOS aliases */
+#define fh_Port fh_Interactive
 #define fh_Func1 fh_Funcs
 #define fh_Arg1 fh_Args
-
-/* AmigaOS4 alias for fh_Port */
-#define fh_Interactive fh_Port
-
-/* AROS-specific. Do not use, will change! */
-#define fh_Device fh_Func3
-#define fh_Unit	  fh_Arg2
 
 /* Structure of a lock. This is provided as it may be required internally by
  * packet-based filesystems, but it is not used by dos.library and the rest of

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -64,7 +64,7 @@
 	return ret;
 
     /* Func3 == -1: file was already closed. */
-    if (fh->fh_Func3 == (APTR)-1)
+    if (fh->fh_Func3 == -1)
     	Alert(AN_FileReclosed);
 
     /* If the filehandle has a pending write on it Flush() the buffer. */
@@ -75,7 +75,7 @@
 
     /* Free the filehandle which was allocated in Open(), CreateDir()
        and such. */
-    fh->fh_Func3 = (APTR)-1;
+    fh->fh_Func3 = -1;
     FreeDosObject(DOS_FILEHANDLE, fh);
 
     return ret;
