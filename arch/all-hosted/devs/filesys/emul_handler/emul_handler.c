@@ -8,7 +8,7 @@
 
 /*********************************************************************************************/
 
-#define DEBUG 1
+#define DEBUG 0
 #define DCHDIR(x)
 #define DCMD(x)
 #define DDEL(x)
@@ -176,8 +176,6 @@ static LONG open_(struct emulbase *emulbase, struct filehandle *fhv, struct file
     if (fh)
     {
         fh->dl = (*handle)->dl;
-        fh->fh.fh_Type = &((struct Process *)FindTask(NULL))->pr_MsgPort;
-        fh->fh.fh_Arg1 = (SIPTR)fh;
 
         /* If no filename is given and the file-descriptor is one of the
          standard filehandles (stdin, stdout, stderr) ... */
@@ -682,11 +680,7 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *path
     return NULL;
 }
 
-#define FH_FROM(x)	\
-    	({ IPTR _fh = (IPTR)x; \
-    	   if (!_fh) _fh = (IPTR)fhv; \
-    	   (struct filehandle *)_fh;\
-    	 })
+#define FH_FROM(x) ((struct filehandle *)(x))
 #define FH_FROM_LOCK(x)	\
     	({ BPTR _x = (BPTR)x; \
     	   APTR _fh; \
@@ -698,7 +692,7 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *path
     	   (struct filehandle *)_fh;\
     	 })
 
-static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct DosPacket *dp, struct DosLibrary *DOSBase)
+static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct MsgPort *mp, struct DosPacket *dp, struct DosLibrary *DOSBase)
 {
     SIPTR Res1 = DOSFALSE;
     SIPTR Res2 = ERROR_UNKNOWN;
@@ -714,20 +708,24 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
     case ACTION_FINDINPUT:
     case ACTION_FINDOUTPUT:
     case ACTION_FINDUPDATE:
-    	f = (struct FileHandle *)(dp->dp_Arg1);
+    	f = BADDR(dp->dp_Arg1);
     	fh2 = FH_FROM_LOCK(dp->dp_Arg2);
+
         DCMD(bug("[emul] %p ACTION_FIND%s: %p, %p, %b\n", fhv, (dp->dp_Type == ACTION_FINDINPUT) ? "INPUT" : ((dp->dp_Type == ACTION_FINDOUTPUT) ? "OUTPUT" : "UPDATE"), fh, fh2, dp->dp_Arg3));
         Res2 = open_(emulbase, fhv, &fh2, AROS_BSTR_ADDR(dp->dp_Arg3), dp->dp_Type, 0, TRUE);
-        if (Res2 == 0) {
+
+        if (Res2 == 0)
+        {
             memset(f, 0, sizeof(*f));
-            f->fh_Type = fh2->fh.fh_Type;
-            f->fh_Arg1 = fh2->fh.fh_Arg1;
+            f->fh_Type = mp;
+            f->fh_Arg1 = (SIPTR)fh2;
             if (fh2 != fhv)
                 fh2->locks++;
             Res1 = DOSTRUE;
-        } else {
-            Res1 = DOSFALSE;
         }
+        else
+            Res1 = DOSFALSE;
+
         break;
 
     case ACTION_END:
@@ -792,30 +790,10 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
     case ACTION_SAME_LOCK:
         fh = FH_FROM_LOCK(dp->dp_Arg1);
         fh2 = FH_FROM_LOCK(dp->dp_Arg2);
+
         DCMD(bug("[emul] %p ACTION_SAME_LOCK: %p, %p\n", fhv, fh, fh2));
-        DSAME(bug("[emul] %p ACTION_SAME_LOCK: %p, %p\n", fhv, fh, fh2));
-
-        /*
-         * Sanity checks.
-         * These are triggered sometimes because of IOFS flaw: fh_Device is the same even for actually
-         * different volumes (see SameDevice() ). This will be fixed when we get rid of IOFS, so there's
-         * no additional job required.
-         */
-        if (fh->fh.fh_Type != fhv->fh.fh_Type) {
-            D(bug("[emul] ACTION_SAME_LOCK: Arg1 is not one of our locks!\n"));
-            Res2 = ERROR_UNKNOWN;
-            Res1 = DOSFALSE;
-            break;
-        }
-         /* Sanity checks */
-        if (fh2->fh.fh_Type != fhv->fh.fh_Type) {
-            D(bug("[emul] ACTION_SAME_LOCK: Arg2 is not one of our locks!\n"));
-            Res2 = ERROR_UNKNOWN;
-            Res1 = DOSFALSE;
-            break;
-        }
-
 	DSAME(bug("[emul] Paths: %s, %s\n", fh->hostname, fh2->hostname));
+
 	Res2 = 0;
 	/* DOSTRUE means 'Same', DOSFALSE means 'Different' */
 	Res1 = strcmp(fh->hostname, fh2->hostname) ? DOSFALSE : DOSTRUE;
@@ -879,10 +857,10 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         }
 
         /* Make a lock */
-        fl->fl_Link = BNULL;
-        fl->fl_Key = (IPTR)fh;
+        fl->fl_Link   = BNULL;
+        fl->fl_Key    = (IPTR)fh;
         fl->fl_Access = ACCESS_READ;
-        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Task   = mp;
         fl->fl_Volume = MKBADDR(fh->dl);
         if (fh != fhv)
             fh->locks++;
@@ -908,10 +886,10 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         }
 
         /* Make a lock */
-        fl->fl_Link = BNULL;
-        fl->fl_Key = (IPTR)fh;
+        fl->fl_Link   = BNULL;
+        fl->fl_Key    = (IPTR)fh;
         fl->fl_Access = dp->dp_Arg3;
-        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Task   = mp;
         fl->fl_Volume = MKBADDR(fh->dl);
         if (fh != fhv)
             fh->locks++;
@@ -920,12 +898,14 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         break;
 
     case ACTION_FH_FROM_LOCK:
-        fh = FH_FROM(dp->dp_Arg1);
+        f = BADDR(dp->dp_Arg1);
         fh2 = FH_FROM_LOCK(dp->dp_Arg2);
         fl = BADDR(dp->dp_Arg2);
         DCMD(bug("[emul] %p ACTION_FH_FROM_LOCK: %p, lock %p\n", fhv, fh, fh2));
 
-        CopyMem(&fh2->fh, &fh->fh, sizeof(fh->fh));
+	f->fh_Type = mp;
+	f->fh_Arg1 = (SIPTR)fh2;
+
         if (fl)
             FreeMem(fl, sizeof(*fl));
 
@@ -965,10 +945,10 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         }
 
         /* Make a lock */
-        fl->fl_Link = BNULL;
-        fl->fl_Key = (IPTR)fh;
+        fl->fl_Link   = BNULL;
+        fl->fl_Key    = (IPTR)fh;
         fl->fl_Access = ACCESS_READ;
-        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Task   = mp;
         fl->fl_Volume = MKBADDR(fh->dl);
         if (fh != fhv)
             fh->locks++;
@@ -1072,10 +1052,10 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         }
 
        /* Make a lock */
-        fl->fl_Link = BNULL;
-        fl->fl_Key = (IPTR)fh;
+        fl->fl_Link   = BNULL;
+        fl->fl_Key    = (IPTR)fh;
         fl->fl_Access = ACCESS_READ;
-        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Task   = mp;
         fl->fl_Volume = MKBADDR(fh->dl);
         if (fh != fhv)
             fh->locks++;
@@ -1109,10 +1089,10 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         }
 
         /* Make a lock */
-        fl->fl_Link = BNULL;
-        fl->fl_Key = (IPTR)fh;
+        fl->fl_Link   = BNULL;
+        fl->fl_Key    = (IPTR)fh;
         fl->fl_Access = ACCESS_READ;
-        fl->fl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        fl->fl_Task   = mp;
         fl->fl_Volume = MKBADDR(fh->dl);
         if (fh != fhv)
             fh->locks++;
@@ -1225,11 +1205,10 @@ void EmulHandler_work(void)
     ReplyPkt(dp, DOSTRUE, 0);
 
     fhv->locks = 1;
-    fhv->fh.fh_Type = mp;
-    while (fhv->locks) {
+    while (fhv->locks)
+    {
         dp = WaitPkt();
-
-        handlePacket(emulbase, fhv, dp, DOSBase);
+        handlePacket(emulbase, fhv, mp, dp, DOSBase);
     }
 
     D(bug("EMUL: Closing volume %s\n", fhv->volumename));
