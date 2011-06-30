@@ -1,15 +1,9 @@
-
-#define  DEBUG 0
 #include <aros/debug.h>
-
-#include <proto/exec.h>
-#include <proto/dos.h>
-
-#include <exec/types.h>
 #include <exec/memory.h>
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
-#include <dos/filesystem.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 
 #include <string.h>
 
@@ -23,10 +17,6 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 	struct Process *process = NULL;
 	BSTR bpath;
 	CONST_STRPTR handler;
-
-	/* First check if already started */
-	if (deviceNode->dn_Task)
-	    return deviceNode->dn_Task;
 
 	handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
 
@@ -137,12 +127,12 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 
         DeleteMsgPort(reply_port);
 
-        if (dp->dp_Res1 == DOSFALSE) {
+        if (dp->dp_Res1 == DOSFALSE)
+        {
             D(bug("[RunHandler] handler failed startup [%d]\n", dp->dp_Res2));
             process = NULL;
-        } else {
-            D(bug("[RunHandler] '%b' now online\n", deviceNode->dn_Name));
         }
+            D(else bug("[RunHandler] '%b' now online, dn_Task 0x%p, pr_MsgPort 0x%p\n", deviceNode->dn_Name, deviceNode->dn_Task, &process->pr_MsgPort);)
 
         FreeDosObject(DOS_STDPKT, dp);
 

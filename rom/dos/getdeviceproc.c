@@ -66,9 +66,16 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 
     struct DevProc *dp2;
     
-    D(bug("[GetDeviceProc] '%s':%x\n", name, dp));
+    D(bug("[GetDeviceProc] '%s':0x%p\n", name, dp));
     dp2 = deviceproc_internal(DOSBase, name, dp);
-    D(bug("[GetDeviceProc] = %x, port=%x lock=%x dv=%x\n", dp2, dp2->dvp_Port, dp2->dvp_Lock, dp2->dvp_DevNode));
+
+#if DEBUG
+    bug("[GetDeviceProc] = 0x%p", dp2);
+    if (dp2)
+        bug(", port=0x%p lock=0x%p dv=0x%p\n", dp2->dvp_Port, dp2->dvp_Lock, dp2->dvp_DevNode);
+    RawPutChar('\n');
+#endif
+
     return dp2;
 
     AROS_LIBFUNC_EXIT
@@ -311,31 +318,45 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 	res = TRUE;
 	if (dl->dol_Type == DLT_DEVICE)
 	{
-	    /* Unlock before starting handler, handler may internally
-	     * require dos list locks, for example to add volume node.
-	     */
-	    UnLockDosList(LDF_ALL | LDF_READ);
+	    /* Check if the handler is not started */
+	    newhandler = dl->dol_Task;
+	    if (!newhandler)
+	    {
+	    	D(bug("[GetDeviceProc] Accessing device '%b', path='%s'\n", dl->dol_Name, origname));
 
-	    D(bug("Accessing device '%b', path='%s'\n", dl->dol_Name, origname));
+	    	/*
+	    	 * Unlock before starting handler, handler may internally
+	    	 * require dos list locks, for example to add volume node.
+	     	 */
+	    	UnLockDosList(LDF_ALL | LDF_READ);
 
-	    newhandler = RunHandler((struct DeviceNode *)dl, origname, DOSBase);
-	    res = newhandler ? TRUE : FALSE;
+	    	newhandler = RunHandler((struct DeviceNode *)dl, origname, DOSBase);
+	    	if (!newhandler)
+	    	     res = FALSE;
 
-	    LockDosList(LDF_ALL | LDF_READ);
-
-	} else {
+	    	LockDosList(LDF_ALL | LDF_READ);
+	    }
+	}
+	else
+	{
 	    while (res && !dl->dol_Task) {
-	    	D(bug("Accessing offline volume '%b'\n", dl->dol_Name));
+	    	D(bug("[GetDeviceProc] Accessing offline volume '%b'\n", dl->dol_Name));
 		res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (IPTR)dl, NULL);
 	    }
 	}
-	if (!res || (dl->dol_Type == DLT_DEVICE && !dl->dol_Task && !newhandler)) {
+	if (!res)
+	{
             UnLockDosList(LDF_ALL | LDF_READ);
             FreeMem(dp, sizeof(struct DevProc));
             SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
             return NULL;
 	}
-        dp->dvp_Port = newhandler ? newhandler : dl->dol_Task;
+
+	/*
+	 * A handler theoretically may choose to use custom MsgPort for communications.
+	 * Pick up its preference if specified.
+	 */
+        dp->dvp_Port = dl->dol_Task ? dl->dol_Task : newhandler;
         dp->dvp_Lock = BNULL;
         dp->dvp_Flags = 0;
         dp->dvp_DevNode = dl;
@@ -349,7 +370,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     if (dl->dol_Type != DLT_DIRECTORY) {
         UnLockDosList(LDF_ALL | LDF_READ);
         FreeMem(dp, sizeof(struct DevProc));
-        kprintf("%s:%d: DosList entry 0x%08x has unknown type %d. Probably a bug, report it!\n"
+        kprintf("%s:%d: DosList entry 0x%p has unknown type %d. Probably a bug, report it!\n"
                 "    GetDeviceProc() called for '%s'\n",
                 __FILE__, __LINE__, dl, dl->dol_Type, name);
         SetIoErr(ERROR_BAD_NUMBER);

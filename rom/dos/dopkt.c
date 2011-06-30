@@ -100,7 +100,7 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
 	}
     }
     
-    D(bug("dp=%x act=%d port=%x reply=%x proc=%d %x %x %x %x %x '%s'\n",
+    D(bug("dp=0x%p act=%d port=0x%p reply=0x%p proc=%d 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx '%s'\n",
     	  dp, action, port, replyPort, __is_process(me), arg1, arg2, arg3, arg4, arg5, me->pr_Task.tc_Node.ln_Name));
     dp->dp_Type = action;
     dp->dp_Arg1 = arg1;
