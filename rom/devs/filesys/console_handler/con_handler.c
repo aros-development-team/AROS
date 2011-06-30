@@ -1,15 +1,3 @@
-/*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
-
-    Desc: Filesystem that uses console device for input/output.
-    Lang: english
-*/
-
-/****************************************************************************************/
-
-/* AROS includes */
-
 
 #include <proto/exec.h>
 #include <exec/libraries.h>
@@ -26,10 +14,12 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <devices/conunit.h>
-#include <aros/symbolsets.h>
 
 #include <stddef.h>
 #include <string.h>
+
+#include "con_handler_intern.h"
+#include "support.h"
 
 #undef SDEBUG
 #undef DEBUG
@@ -37,372 +27,497 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include "con_handler_intern.h"
-#include "support.h"
-
-#include LC_LIBDEFS_FILE
-
-/****************************************************************************************/
+static char *BSTR2C(BSTR srcs)
+{
+	UBYTE *src = BADDR(srcs);
+	char *dst;
+	
+	dst = AllocVec(src[0] + 1, MEMF_ANY);
+	if (!dst)
+		return NULL;
+	memcpy (dst, src + 1, src[0]);
+	dst[src[0]] = 0;
+	return dst;
+}
+static WORD isdosdevicec(CONST_STRPTR s)
+{
+	UBYTE b = 0;
+	while (s[b]) {
+		if (s[b] == ':')
+			return b;
+		b++;
+	}
+	return -1;
+}
 
 #define ioReq(x) ((struct IORequest *)x)
 
-/****************************************************************************************/
-
-static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
+static const struct NewWindow default_nw =
 {
-    static const char *devnames[2] = { "CON", "RAW" };
-    struct DeviceNode *dn;
-    int     	      i;
+    0,				/* LeftEdge */
+    0,				/* TopEdge */
+    -1,				/* Width */
+    -1,				/* Height */
+    1,				/* DetailPen */
+    0,				/* BlockPen */
+    0,		    	    	/* IDCMP */
+    WFLG_DEPTHGADGET   |
+    WFLG_SIZEGADGET    |
+    WFLG_DRAGBAR       |
+    WFLG_SIZEBRIGHT    |
+    WFLG_SMART_REFRESH |
+    WFLG_ACTIVATE,
+    0,				/* FirstGadget */
+    0,				/* CheckMark */
+    "CON:",			/* Title */
+    0,				/* Screen */
+    0,				/* Bitmap */
+    100,			/* MinWidth */
+    100,			/* MinHeight */
+    32767,			/* MaxWidth */
+    32767,			/* MaxHeight */
+    WBENCHSCREEN		/* type */
+};
 
 
-    /* Really bad hack, but con_handler is in ROM, intuition.library is
-       open, if intuition.library is open, then Input.Device must be
-       open, too, ... and I don't like to OpenDevice just for Peek-
-       Qualifier */
+static LONG MakeConWindow(struct filehandle *fh)
+{
+    LONG err = 0;
 
-/* InputDevice open hack. Hope this is not a problem since it is only used for PeekQualifier */
-    Forbid();
-    conbase->inputbase = (struct Device *)FindName(&SysBase->DeviceList, "input.device");
-    Permit();
-
-    /* Install CON: and RAW: handlers into device list
-     *
-     * KLUDGE: con-handler should create only one device node, depending on
-     * the startup packet it gets. The mountlists for CON:/RAW: should be into dos.library bootstrap
-     * routines.
-     */
-    for(i = 0; i < 2; i++)
+    struct TagItem win_tags [] =
     {
-	if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(3),
-                          MEMF_CLEAR|MEMF_PUBLIC)))
+	{WA_PubScreen	,0	    },
+	{WA_AutoAdjust	,TRUE       },
+	{WA_PubScreenName, 0        },
+	{WA_PubScreenFallBack, TRUE },
+	{TAG_DONE                   }
+    };
+
+    win_tags[2].ti_Data = (IPTR)fh->screenname;
+    D(bug("[contask] Opening window on screen %s, IntuitionBase = 0x%p\n", fh->screenname, IntuitionBase));
+    fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
+
+    if (fh->window)
+    {
+    	D(bug("contask: window opened\n"));
+	fh->conreadio->io_Data   = (APTR)fh->window;
+	fh->conreadio->io_Length = sizeof (struct Window);
+
+	if (0 == OpenDevice("console.device", CONU_SNIPMAP, ioReq(fh->conreadio), 0))
 	{
-	    BSTR s = (BSTR)MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
-	    WORD   a;
-	    
-	    for(a = 0; a < 3; a++)
-	    {
-		AROS_BSTR_putchar(s, a, devnames[i][a]);
-	    }
-	    AROS_BSTR_setstrlen(s, 3);
+	    const UBYTE lf_on[] = {0x9B, 0x32, 0x30, 0x68 }; /* Set linefeed mode    */
 
-	    dn->dn_Type		= DLT_DEVICE;
+	    D(bug("contask: device opened\n"));
 
-	    /* 
-	       i equals 1 when dn_DevName is "RAW", and 0 otherwise. This
-	       tells con_task that it has to start in RAW mode
-	     */   
-	    dn->dn_Ext.dn_AROS.dn_Unit		= (struct Unit *)(IPTR)i;
+    	    fh->flags |= FHFLG_CONSOLEDEVICEOPEN;
 
-	    dn->dn_Ext.dn_AROS.dn_Device	= &conbase->device;
-	    dn->dn_Handler	= NULL;
-	    dn->dn_Startup	= NULL;
-	    dn->dn_Name		= s;
-	    dn->dn_Ext.dn_AROS.dn_DevName	= AROS_BSTR_ADDR(dn->dn_Name);
+	    fh->conwriteio = *fh->conreadio;
+	    fh->conwriteio.io_Message.mn_ReplyPort = fh->conwritemp;
 
-	    if (AddDosEntry((struct DosList *)dn))
-	    {
-		if (i == 0)
-		    continue;
+	    /* Turn the console into LF+CR mode so that both
+	       linefeed and carriage return is done on
+	    */
+	    fh->conwriteio.io_Command	= CMD_WRITE;
+	    fh->conwriteio.io_Data	= (APTR)lf_on;
+	    fh->conwriteio.io_Length	= 4;
 
-		return TRUE;
-	    }
+	    DoIO(ioReq(&fh->conwriteio));
 
-	    FreeMem(dn, sizeof (struct DeviceNode));
-	}
-    }
-
-    return FALSE;
-}
-
-/****************************************************************************************/
-
-static int GM_UNIQUENAME(Open)
-(
-    LIBBASETYPEPTR conbase,
-    struct IOFileSys *iofs,
-    ULONG unitnum,
-    ULONG flags
-)
-{
-    /*
-       Check whether the user mounted us as "RAW", in which case abuse of the
-       io_Unit field in the iofs structure to tell the con task that it has
-       to start in RAW mode
-    */
-    if (strncasecmp("RAW", iofs->io_Union.io_OpenDevice.io_DosName, 4))
-        iofs->IOFS.io_Unit = (struct Unit *)1;
-
-    /* Set returncode */
-    iofs->IOFS.io_Error=0;
-
-    /* Mark Message as recently used. */
-    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    
-    return TRUE;
-}
-
-/****************************************************************************************/
-
-ADD2INITLIB(GM_UNIQUENAME(Init),0)
-ADD2OPENDEV(GM_UNIQUENAME(Open),0)
-
-/****************************************************************************************/
-
-static LONG open_con(struct conbase *conbase, struct IOFileSys *iofs)
-{
-    struct filehandle 	    *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-    CONST_STRPTR	    filename = iofs->io_Union.io_OPEN.io_Filename;
-#if DEBUG
-    ULONG   	    	    mode = iofs->io_Union.io_OPEN.io_FileMode;
-#endif
-    struct conTaskParams    params;
-    struct Task     	    *contask;
-    LONG    	    	    err = 0;
-
-    EnterFunc(bug("open_conh(filename=%s, mode=%d)\n",
-    	filename, mode));
-
-    /* we're a console, we don't have a parent */
-    if (filename[0] == '/' && filename[1] == '\0')
-        err = iofs->io_DosError = ERROR_OBJECT_NOT_FOUND;
-
-    else if (fh != NULL && fh != (struct filehandle *)1)
-    {
-        /* DupLock */
-	fh->usecount++;
-    }
-    
-    else
-    {
-    	UBYTE sig = AllocSignal(-1);
-	
-	if (sig == (UBYTE)-1)
-	{
-	    iofs->io_DosError = ERROR_NO_FREE_STORE; /* Any other error code better suited here? */
-	}
+	} /* if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conreadio), 0)) */
 	else
 	{
-	    params.conbase = conbase;
-	    params.iofs = iofs;
-	    params.parentTask = FindTask(NULL);
-	    params.initSignal = 1L << sig;
-
-	    contask = createConTask(&params, conbase);
-	    if (contask)
-	    {
-		Wait(params.initSignal);
-		if (iofs->io_DosError)
-		{
-	    	    RemTask(contask);
-		}
-	    }
-	    
-	    FreeSignal(sig);
-	}	
-	err = iofs->io_DosError;
-    }
-
-    ReturnInt("open_conh", LONG, err);
-}
-
-/****************************************************************************************/
-
-AROS_LH1(void, beginio,
-    AROS_LHA(struct IOFileSys *, iofs, A1),
-    struct conbase *, conbase, 5, Con)
-{
-    AROS_LIBFUNC_INIT
-
-    LONG error = 0;
-    BOOL request_queued = FALSE;
-
-    EnterFunc(bug("conhandler_BeginIO(iofs=%p)\n", iofs));
-
-    /* WaitIO will look into this */
-    iofs->IOFS.io_Message.mn_Node.ln_Type = NT_MESSAGE;
-
-    /*
-	Do everything quick no matter what. This is possible
-	because I never need to Wait().
-    */
-    
-    D(bug("Doing command %d\n", iofs->IOFS.io_Command));
-    
-    switch(iofs->IOFS.io_Command)
-    {
-	case FSA_OPEN_FILE:
-	case FSA_OPEN:
-	    error = open_con(conbase, iofs);
-	    break;
-
-	case FSA_CLOSE:
-        case FSA_READ:
-	case FSA_WRITE:
-	case FSA_CONSOLE_MODE:
-	case FSA_CHANGE_SIGNAL:
-	case FSA_WAIT_CHAR:
-	    iofs->IOFS.io_Flags	&= ~IOF_QUICK;
-	    request_queued = TRUE;
-
-	    PutMsg(((struct filehandle *)iofs->IOFS.io_Unit)->contaskmp,
-	           (struct Message *)iofs);
-	    break;
-
-	case FSA_IS_INTERACTIVE:
-	    iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = TRUE;
-	    error = 0;
-	    break;
-
-	case FSA_SEEK:
-	case FSA_SET_FILE_SIZE:
-	    error = ERROR_NOT_IMPLEMENTED;
-	    break;
-
-	case FSA_FILE_MODE:
-/* FIXME: not supported yet */
-	    error=ERROR_ACTION_NOT_KNOWN;
-	    break;
-
-	case FSA_DISK_INFO:
-	{
-	    /* In AmigaOS this functionality is provided by ACTION_DISK_INFO */
-	    struct InfoData *inf = iofs->io_Union.io_INFO.io_Info;
-	    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-
-	    inf->id_NumSoftErrors = 0;
-	    inf->id_UnitNumber    = CONU_SNIPMAP;
-	    inf->id_DiskState     = ID_VALIDATED;
-	    inf->id_NumBlocks     = 0;
-	    inf->id_NumBlocksUsed = 0;
-	    inf->id_BytesPerBlock = 1;
-	    inf->id_DiskType      = ID_NO_DISK_PRESENT;
-	    inf->id_VolumeNode    = fh->window;
-	    inf->id_InUse         = (IPTR)&fh->conwriteio;
+	    err = ERROR_INVALID_RESIDENT_LIBRARY;
 	}
-	break;
+	if (err) CloseWindow(fh->window);
 
-	case FSA_EXAMINE:
-        {
-            struct ExAllData  *ead        = iofs->io_Union.io_EXAMINE.io_ead;
-            const ULONG        type       = iofs->io_Union.io_EXAMINE.io_Mode;
-            const ULONG        size       = iofs->io_Union.io_EXAMINE.io_Size;
-            STRPTR             next, end;
-
-            static const ULONG sizes[]=
-            {
-                0,
-                offsetof(struct ExAllData,ed_Type),
-                offsetof(struct ExAllData,ed_Size),
-                offsetof(struct ExAllData,ed_Prot),
-                offsetof(struct ExAllData,ed_Days),
-                offsetof(struct ExAllData,ed_Comment),
-                offsetof(struct ExAllData,ed_OwnerUID),
-                sizeof(struct ExAllData)
-             };
-
-	     next = (STRPTR)ead + sizes[type];
-             end  = (STRPTR)ead + size;
-
-             if (type > ED_OWNER)
-             {
-                 error = ERROR_BAD_NUMBER;
-                 break;
-             }
-
-             switch(type)
-             {
-                 case ED_OWNER:
-                     ead->ed_OwnerUID = 0;
-                     ead->ed_OwnerGID = 0;
-
-                 /* Fall through */
-                 case ED_COMMENT:
-                     ead->ed_Comment = NULL;
-
-                 /* Fall through */
-                 case ED_DATE:
-                     ead->ed_Days  = 0;
-                     ead->ed_Mins  = 0;
-                     ead->ed_Ticks = 0;
-
-		 /* Fall through */
-                 case ED_PROTECTION:
-                     ead->ed_Prot = 0;
-
-                 /* Fall through */
-                 case ED_SIZE:
-                     ead->ed_Size = 0;
-
-                 /* Fall through */
-                 case ED_TYPE:
-                     ead->ed_Type = ST_PIPEFILE;
-
-		 /* Fall through */
-                 case ED_NAME:
-                     if (next >= end)
-		     {
-		         error = ERROR_BUFFER_OVERFLOW;
-                         break;
-		     }
-
-                     ead->ed_Name = next;
-		     *next = '\0';
-	    }
-        }
-	break;
-
-
-        case FSA_SAME_LOCK:
-	case FSA_EXAMINE_NEXT:
-	case FSA_EXAMINE_ALL:
-	case FSA_EXAMINE_ALL_END:
-	case FSA_CREATE_DIR:
-	case FSA_CREATE_HARDLINK:
-	case FSA_CREATE_SOFTLINK:
-	case FSA_RENAME:
-        case FSA_READ_SOFTLINK:
-	case FSA_DELETE_OBJECT:
-	case FSA_PARENT_DIR:
-        case FSA_PARENT_DIR_POST:
-	case FSA_SET_COMMENT:
-	case FSA_SET_PROTECT:
-	case FSA_SET_OWNER:
-	case FSA_SET_DATE:
-	case FSA_IS_FILESYSTEM:
-	case FSA_MORE_CACHE:
-	case FSA_FORMAT:
-	case FSA_MOUNT_MODE:
-	    error = ERROR_ACTION_NOT_KNOWN;
-
-	default:
-	    error=ERROR_ACTION_NOT_KNOWN;
-	    break;
+    } /* if (fh->window) */
+    else
+    {
+        D(bug("[contask] Failed to open a window\n"));
+	err = ERROR_NO_FREE_STORE;
     }
-
-    /* Set error code */
-    iofs->io_DosError=error;
-
-    /* If the quick bit is not set send the message to the port */
-    if(!(iofs->IOFS.io_Flags&IOF_QUICK) && !request_queued)
-	ReplyMsg(&iofs->IOFS.io_Message);
-
-    ReturnVoid("conhandler_beginio");
-
-    AROS_LIBFUNC_EXIT
+    
+    return err;
 }
 
-/****************************************************************************************/
-
-AROS_LH1(LONG, abortio,
-    AROS_LHA(struct IOFileSys *, iofs, A1),
-    struct conbase *, conbase, 6, Con)
+static BOOL MakeSureWinIsOpen(struct filehandle *fh)
 {
-    AROS_LIBFUNC_INIT
-    
-    /* Everything already done. */
-    return 0;
-    
-    AROS_LIBFUNC_EXIT
+    if (fh->window)
+    	return TRUE;
+    return MakeConWindow(fh) == 0;
 }
 
-/****************************************************************************************/
+static void close_con(struct filehandle *fh)
+{
+	/* Clean up */
+
+	if (fh->timerreq) {
+		CloseDevice((struct IORequest *)fh->timerreq);
+		DeleteIORequest((struct IORequest *)fh->timerreq);
+	}
+	DeleteMsgPort(fh->timermp);
+
+	if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
+    		CloseDevice((struct IORequest *)fh->conreadio);
+
+	if (fh->window)
+    		CloseWindow(fh->window);
+	
+	DeleteIORequest(ioReq(fh->conreadio));
+	FreeVec(fh->conreadmp);
+
+	if (fh->screenname)
+    		FreeVec(fh->screenname);
+	if (fh->wintitle)
+    		FreeVec(fh->wintitle);
+	if (fh->pastebuffer)
+    		FreeMem(fh->pastebuffer,PASTEBUFSIZE);
+
+	CloseLibrary((struct Library*)fh->intuibase);
+ 	CloseLibrary((struct Library*)fh->dosbase);
+   	FreeVec(fh);
+}
+
+static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
+{
+	char *filename, *fn;
+	struct filehandle *fh;
+	struct DeviceNode *dn;
+	LONG err, ok;
+	LONG i;
+	
+	dn = BADDR(dp->dp_Arg3);
+	*perr = ERROR_NO_FREE_STORE;
+	fh = AllocVec(sizeof(struct filehandle), MEMF_PUBLIC | MEMF_CLEAR);
+    	if (!fh)
+    		return NULL;
+
+    	fh->timermp = CreateMsgPort();
+    	fh->timerreq = (struct timerequest*)CreateIORequest(fh->timermp, sizeof(struct timerequest));
+   	OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)fh->timerreq, 0);
+
+	fh->intuibase = (APTR)OpenLibrary("intuition.library", 0);
+	fh->dosbase = (APTR)OpenLibrary("dos.library", 0);
+	fh->utilbase = (APTR)OpenLibrary("utility.library", 0);
+	Forbid();
+    	fh->inputbase = (struct Device *)FindName(&SysBase->DeviceList, "input.device");
+    	Permit();
+
+	err = 0;
+	filename = BSTR2C((BSTR)dp->dp_Arg1);
+	fn = filename;
+	i = isdosdevicec(fn);
+	if (i >= 0)
+		fn += i + 1;
+
+ 	fh->contask = FindTask(0);
+
+	NEWLIST(&fh->pendingReads);
+
+    	/* Create msgport for console.device communication */
+	fh->conreadmp = AllocVec(sizeof (struct MsgPort) * 2, MEMF_PUBLIC|MEMF_CLEAR);
+	if (fh->conreadmp)
+	{
+
+	    fh->conreadmp->mp_Node.ln_Type = NT_MSGPORT;
+	    fh->conreadmp->mp_Flags = PA_SIGNAL;
+	    fh->conreadmp->mp_SigBit = AllocSignal(-1);
+	    fh->conreadmp->mp_SigTask = fh->contask;
+	    NEWLIST(&fh->conreadmp->mp_MsgList);
+
+	    fh->conwritemp = fh->conreadmp + 1;
+
+	    fh->conwritemp->mp_Node.ln_Type = NT_MSGPORT;
+	    fh->conwritemp->mp_Flags = PA_SIGNAL;
+	    fh->conwritemp->mp_SigBit = AllocSignal(-1);
+	    fh->conwritemp->mp_SigTask = fh->contask;
+	    NEWLIST(&fh->conwritemp->mp_MsgList);
+
+
+	    fh->conreadio = (struct IOStdReq *)CreateIORequest(fh->conreadmp, sizeof (struct IOStdReq));
+	    if (fh->conreadio)
+	    {
+    	    	D(bug("contask: conreadio created\n"));
+
+		fh->nw = default_nw;
+
+		if (parse_filename(fh, fn, &fh->nw))
+		{
+                    if (!(fh->flags & FHFLG_AUTO))
+                    {
+                        err = MakeConWindow(fh);
+                        if (!err)
+                            ok = TRUE;
+                    }
+                    else
+                    {
+                        ok = TRUE;
+                    }
+                }
+		else
+		    err = ERROR_BAD_STREAM_NAME;
+
+		if (!ok)
+		{
+		    DeleteIORequest(ioReq(fh->conreadio));
+		}
+
+	    } /* if (fh->conreadio) */
+	    else
+	    {
+	    	err = ERROR_NO_FREE_STORE;
+	    }
+
+	} /* if (fh->conreadmp) */
+	else
+	{
+	    err = ERROR_NO_FREE_STORE;
+	}
+
+	if (dn->dn_Startup)
+		fh->flags |= FHFLG_RAW;
+
+	if (!ok)
+		close_con(fh);
+
+ 	*perr = err;
+ 	FreeVec(filename);
+    	return fh;
+}
+
+static void startread(struct filehandle *fh)
+{
+	if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
+		return;
+	fh->conreadio->io_Command = CMD_READ;
+	fh->conreadio->io_Data    = fh->consolebuffer;
+	fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
+	SendIO((struct IORequest*)fh->conreadio);
+	fh->flags |= FHFLG_ASYNCCONSOLEREAD;
+}
+
+LONG CONMain(void)
+{
+	struct MsgPort *mp;
+	struct DosPacket *dp;
+	struct Message *mn;
+	struct FileHandle *dosfh;
+	LONG error;
+    	struct filehandle *fh;
+   	struct DosPacket *waitingdp = NULL;
+	
+	D(bug("[CON] started\n"));
+	mp = &((struct Process*)FindTask(NULL))->pr_MsgPort;
+	WaitPort(mp);
+	dp = (struct DosPacket*)GetMsg(mp)->mn_Node.ln_Name;	
+	D(bug("[CON] startup message received. port=%x path='%b'\n", mp, dp->dp_Arg1));
+
+	fh = open_con(dp, &error);
+	if (!fh) {
+		D(bug("[CON] init failed\n"));
+		goto end;
+	}
+	D(bug("[CON] %x open\n", fh));
+	replypkt(dp, DOSTRUE);
+
+    	for(;;)
+    	{
+        	ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
+		ULONG timermask   = 1L << fh->timermp->mp_SigBit;
+		ULONG packetmask = 1L << mp->mp_SigBit;
+		ULONG sigs;
+
+		sigs = Wait(packetmask | conreadmask | timermask);
+
+		if (sigs & timermask) {
+			if (waitingdp) {
+				replypkt(waitingdp, DOSFALSE);
+				waitingdp = NULL;
+			}
+		}
+
+		if (sigs & conreadmask) {
+			GetMsg(fh->conreadmp);
+			fh->flags &= ~FHFLG_ASYNCCONSOLEREAD;
+			if (waitingdp) {
+				replypkt(waitingdp, DOSTRUE);
+				AbortIO((struct IORequest *)fh->timerreq);
+				WaitIO((struct IORequest *)fh->timerreq);
+				waitingdp = NULL;
+			}
+			D(bug("IO_READ %d\n", fh->conreadio->io_Actual));
+	    		fh->conbuffersize = fh->conreadio->io_Actual;
+	    		fh->conbufferpos = 0;
+	    		/* terminate with 0 char */
+	    		fh->consolebuffer[fh->conbuffersize] = '\0';
+			if (fh->flags & FHFLG_RAW)
+			{
+				LONG inp;
+				/* raw mode */
+				for(inp = 0; (inp < fh->conbuffersize) && (fh->inputpos <  INPUTBUFFER_SIZE); )
+				{
+				    fh->inputbuffer[fh->inputpos++] = fh->consolebuffer[inp++];
+				}
+				fh->inputsize = fh->inputstart = fh->inputpos;
+				HandlePendingReads(fh);
+			} /* if (fh->flags & FHFLG_RAW) */
+			else
+			{
+			    	/* Cooked mode */
+				/* disable output if we're not suppoed to be echoing */
+				if (fh->flags & FHFLG_NOECHO)
+					fh->flags |= FHFLG_NOWRITE;
+				process_input(fh);
+				/* re-enable output */
+				fh->flags &= ~FHFLG_NOWRITE;
+			} /* if (fh->flags & FHFLG_RAW) else ... */
+			startread(fh);
+		}
+
+		while ((mn = GetMsg(mp))) {
+			dp = (struct DosPacket*)mn->mn_Node.ln_Name;	
+			dp->dp_Res2 = 0;
+			D(bug("[CON %x] packet %x:%d %x,%x,%x\n",
+				fh, dp, dp->dp_Type, dp->dp_Arg1, dp->dp_Arg2, dp->dp_Arg3));
+			error = 0;
+			switch (dp->dp_Type)
+			{
+				case ACTION_FINDINPUT:
+				case ACTION_FINDOUTPUT:
+				case ACTION_FINDUPDATE:
+					dosfh = BADDR(dp->dp_Arg1);
+					dosfh->fh_Port = (struct MsgPort*)DOSTRUE;
+					dosfh->fh_Arg1 = (IPTR)fh;
+					fh->usecount++;
+				 	fh->breaktask = dp->dp_Port->mp_SigTask;
+				 	D(bug("[CON] Find fh=%x. Usecount=%d\n", dosfh, fh->usecount));
+					replypkt(dp, DOSTRUE);
+				break;
+				case ACTION_END:
+					fh->usecount--;
+					D(bug("[CON] usecount=%d\n", fh->usecount));
+					if (fh->usecount <= 0)
+						goto end;
+					replypkt(dp, DOSTRUE);
+				break;
+				case ACTION_READ:
+					if (!MakeSureWinIsOpen(fh))
+						goto end;
+				 	fh->breaktask = dp->dp_Port->mp_SigTask;
+					startread(fh);
+					con_read(fh, dp);
+				break;
+				case ACTION_WRITE:
+					if (!MakeSureWinIsOpen(fh))
+						goto end;
+				 	fh->breaktask = dp->dp_Port->mp_SigTask;
+					startread(fh);
+					answer_write_request(fh, dp);
+				break;
+				case ACTION_SCREEN_MODE:
+				{
+	                            LONG wantmode = dp->dp_Arg1 ? FCM_RAW : 0;
+				    D(bug("ACTION_SCREEN_MODE %s\n", wantmode ? "RAW" : "CON"));
+	                            if ((wantmode & FCM_RAW) && !(fh->flags & FHFLG_RAW))
+	                            {
+					/* Switching from CON: mode to RAW: mode */
+					fh->flags |= FHFLG_RAW;
+					fh->inputstart = fh->inputsize;
+					fh->inputpos   = fh->inputsize;
+					HandlePendingReads(fh);
+	                            }
+	                            else
+	                            {
+	                                /* otherwise just copy the flags */
+	                                fh->flags &= ~(FHFLG_RAW | FHFLG_NOECHO);
+	                                if (wantmode & FCM_RAW)
+	                                    fh->flags |= FHFLG_RAW;
+	                                if (wantmode & FCM_NOECHO)
+	                                    fh->flags |= FHFLG_NOECHO;
+	                            }
+				    replypkt(dp, DOSTRUE);
+				}
+				break;
+				case ACTION_CHANGE_SIGNAL:
+				{
+					struct Task *old = fh->breaktask;
+					if (dp->dp_Arg2)
+		    				fh->breaktask = (struct Task*)dp->dp_Arg2;
+ 					replypkt2(dp, DOSTRUE, (SIPTR)old);
+ 				}
+				break;
+				case ACTION_WAIT_CHAR:
+				{
+				    if (!MakeSureWinIsOpen(fh))
+					goto end;
+				    if (fh->inputsize > 0)
+				    {
+				    	replypkt(dp, DOSTRUE);
+				    }
+				    else
+				    {
+					LONG timeout = dp->dp_Arg1;
+					LONG sec = timeout / 1000000;
+					LONG usec = timeout % 1000000;
+	
+					fh->timerreq->tr_node.io_Command = TR_ADDREQUEST;
+					fh->timerreq->tr_time.tv_secs = sec;
+					fh->timerreq->tr_time.tv_micro = usec;
+					SendIO((struct IORequest *)fh->timerreq);
+					waitingdp = dp;
+				    }
+ 				    startread(fh);
+				}
+				break;
+				case ACTION_IS_FILESYSTEM:
+					replypkt(dp, DOSFALSE);
+				break;
+				case ACTION_DISK_INFO:
+				{
+				    /* strange console handler features */
+				    struct InfoData *id = BADDR(dp->dp_Arg1);
+				    memset(id, 0, sizeof(struct InfoData));
+				    id->id_DiskType = (fh->flags & FHFLG_RAW) ?
+				        AROS_MAKE_ID('R','A','W', 0) : AROS_MAKE_ID('C','O','N', 0);
+				    id->id_VolumeNode = (BPTR)fh->window;
+				    id->id_InUse = (IPTR)fh->conreadio;
+				    replypkt(dp, DOSTRUE);
+				}	
+				break;
+				case ACTION_SEEK:
+					/* Yes, DOSTRUE. Check Guru Book for details. */
+					replypkt2(dp, DOSTRUE, ERROR_ACTION_NOT_KNOWN);
+				break;
+				default:
+					bug("[CON] unknown action %d\n", dp->dp_Type);
+					replypkt2(dp, DOSFALSE, ERROR_ACTION_NOT_KNOWN);
+				break;
+			}
+		}
+	}
+end:
+	D(bug("[CON] %x closing\n", fh));
+	if (fh) {
+    		struct Message *msg, *next_msg;
+		if (waitingdp) {
+			AbortIO((struct IORequest *)fh->timerreq);
+			WaitIO((struct IORequest *)fh->timerreq);
+			replypkt(waitingdp, DOSFALSE);
+		}
+		ForeachNodeSafe(&fh->pendingReads, msg, next_msg)
+		{
+    			struct DosPacket *dpr;
+            		Remove((struct Node *)msg);
+            		dpr = (struct DosPacket*)msg->mn_Node.ln_Name;
+            		replypkt(dpr, DOSFALSE);
+            	}
+		if (fh->flags & FHFLG_ASYNCCONSOLEREAD) {
+    			AbortIO(ioReq(fh->conreadio));
+			WaitIO(ioReq(fh->conreadio));
+		}
+		close_con(fh);
+	}
+	replypkt(dp, DOSFALSE);
+	D(bug("[CON] %x closed\n", fh));
+	return 0;
+}

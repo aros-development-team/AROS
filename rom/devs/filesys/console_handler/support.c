@@ -25,6 +25,7 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <intuition/intuition.h>
+#include <intuition/sghooks.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/input.h>
@@ -40,6 +41,28 @@
 
 #include "con_handler_intern.h"
 #include "support.h"
+#include "completion.h"
+
+#define ioReq(x) ((struct IORequest *)x)
+
+void replypkt(struct DosPacket *dp, SIPTR res1)
+{
+	struct MsgPort *mp;
+	struct Message *mn;
+	
+	mp = dp->dp_Port;
+	mn = dp->dp_Link;
+	mn->mn_Node.ln_Name = (char*)dp;
+	dp->dp_Port = &((struct Process*)FindTask(NULL))->pr_MsgPort;
+	dp->dp_Res1 = res1;
+	PutMsg(mp, mn);
+}
+void replypkt2(struct DosPacket *dp, SIPTR res1, SIPTR res2)
+{
+	dp->dp_Res2 = res2;
+	replypkt(dp, res1);
+}
+
 
 /******************************************************************************************/
 
@@ -155,46 +178,18 @@ csimatchtable[] =
 
 /******************************************************************************************/
 
-struct Task *createConTask(APTR taskparams, struct conbase *conbase)
+BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
 {
-    struct TagItem tags[] =
-    {
-    	{NP_Name    	, (IPTR)"CON: Window"	},
-	{NP_Entry   	, (IPTR)conTaskEntry	},
-	{NP_Priority   	, CONTASK_PRIORITY  	},
-	{NP_StackSize	, CONTASK_STACKSIZE 	},
-	{NP_Input   	, 0 	    	    	},
-	{NP_Output  	, 0 	    	    	},
-	{NP_Error   	, 0 	    	    	},
-	{NP_WindowPtr	, (IPTR)-1  	    	},
-	{NP_CopyVars	, FALSE     	    	},
-	{NP_UserData	, (IPTR)taskparams  	},
-	{TAG_DONE   	    	    	    	}	
-    };
-    
-    return (struct Task *)CreateNewProc(tags);
-
-}
-
-
-/******************************************************************************************/
-
-BOOL parse_filename(struct conbase *conbase, struct filehandle *fh,
-		    struct IOFileSys *iofs, struct NewWindow *nw)
-{
-    CONST UBYTE   *filename;
-    CONST UBYTE   *param;
+    char   *param;
     UBYTE   c;
     WORD    paramid = 1;
     LONG    paramval = 0;
     BOOL    ok = TRUE, done = FALSE, paramok = FALSE;
 
-    ASSERT_VALID_PTR(conbase);
     ASSERT_VALID_PTR(fh);
-    ASSERT_VALID_PTR(iofs);
     ASSERT_VALID_PTR(nw);
 
-    param = filename = iofs->io_Union.io_OPEN.io_Filename;
+    param = filename;
     ASSERT_VALID_PTR(param);
 
     while (!done)
@@ -352,7 +347,7 @@ BOOL parse_filename(struct conbase *conbase, struct filehandle *fh,
 /******************************************************************************************/
 
 
-void do_write(struct conbase *conbase, struct filehandle *fh, APTR data, ULONG length)
+void do_write(struct filehandle *fh, APTR data, ULONG length)
 {
     /* write stuff out, but only if write is enabled */
     if (! (fh->flags & FHFLG_NOWRITE)) {
@@ -366,7 +361,7 @@ void do_write(struct conbase *conbase, struct filehandle *fh, APTR data, ULONG l
 
 /******************************************************************************************/
 
-void do_movecursor(struct conbase *conbase, struct filehandle *fh, UBYTE direction, UBYTE howmuch)
+void do_movecursor(struct filehandle *fh, UBYTE direction, UBYTE howmuch)
 {
     UBYTE seq[6]; /* 9B <N> <N> <N> <dir> <0> */
     ULONG size;
@@ -384,13 +379,13 @@ void do_movecursor(struct conbase *conbase, struct filehandle *fh, UBYTE directi
 	    size = strlen(seq);
 	}
     	
-	do_write(conbase, fh, seq, size);
+	do_write(fh, seq, size);
     }
 }
 
 /******************************************************************************************/
 
-void do_cursorvisible(struct conbase *conbase, struct filehandle *fh, BOOL on)
+void do_cursorvisible(struct filehandle *fh, BOOL on)
 {
     UBYTE seq[4];
     ULONG size = 0;
@@ -400,34 +395,34 @@ void do_cursorvisible(struct conbase *conbase, struct filehandle *fh, BOOL on)
     seq[size++] = ' ';
     seq[size++] = 'p';
     
-    do_write(conbase, fh, seq, size);
+    do_write(fh, seq, size);
 }
 
 /******************************************************************************************/
 
-void do_deletechar(struct conbase *conbase, struct filehandle *fh)
+void do_deletechar(struct filehandle *fh)
 {
     UBYTE seq[] = {0x9B, 'P'};
     
-    do_write(conbase, fh, seq, 2);
+    do_write(fh, seq, 2);
 }
 
 /******************************************************************************************/
 
-void do_eraseinline(struct conbase *conbase, struct filehandle *fh)
+void do_eraseinline(struct filehandle *fh)
 {
     UBYTE seq[] = {0x9B, 'K'};
     
-    do_write(conbase, fh, seq, 2);
+    do_write(fh, seq, 2);
 }
 
 /******************************************************************************************/
 
-void do_eraseindisplay(struct conbase *conbase, struct filehandle *fh)
+void do_eraseindisplay(struct filehandle *fh)
 {
     UBYTE seq[] = {0x9B, 'J'};
     
-    do_write(conbase, fh, seq, 2);
+    do_write(fh, seq, 2);
 }
 /******************************************************************************************/
 static void copy_from_pastebuf(struct filehandle * fh)
@@ -455,7 +450,7 @@ static void copy_from_pastebuf(struct filehandle * fh)
     }
 }
 
-WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
+WORD scan_input(struct filehandle *fh, UBYTE *buffer)
 {
   CONST struct csimatch *match;
   UBYTE c;
@@ -553,128 +548,7 @@ WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
 
 /******************************************************************************************/
 
-void answer_read_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs)
-{
-    ULONG readlen;
-
-    readlen = (fh->inputsize < iofs->io_Union.io_READ.io_Length) ? fh->inputsize :
-								   iofs->io_Union.io_READ.io_Length;
-
-    iofs->io_Union.io_READ.io_Length = readlen;
-    iofs->IOFS.io_Error = 0;
-    iofs->io_DosError = 0;
-
-    CopyMem(fh->inputbuffer, iofs->io_Union.io_READ.io_Buffer, readlen);
-    CopyMem(fh->inputbuffer + readlen, fh->inputbuffer, fh->inputsize - readlen);
-
-#if DEBUG
-{
-    UBYTE *buffer = (UBYTE *)iofs->io_Union.io_READ.io_Buffer;
-    WORD i;
-    
-    kprintf("answer_read_request (readlen = %d inputsize = %d inputpos = %d inputstart = %d)\n--",
-    		readlen,
-		fh->inputsize,
-		fh->inputpos,
-		fh->inputstart);
-		
-    for(i = 0;i < readlen; i++)
-    {
-    	printf("%c", buffer[i]);
-    }
-    kprintf(" ------------\n\n");
-}
-#endif
-
-    fh->inputsize  -= readlen;
-    fh->inputpos   -= readlen;
-    fh->inputstart -= readlen;
-
-    ReplyMsg(&iofs->IOFS.io_Message);
-}
-
-
-/******************************************************************************************/
-
-LONG answer_write_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs)
-{
-    UBYTE 		*buffer = iofs->io_Union.io_WRITE.io_Buffer;
-    LONG 		*length_ptr = &(iofs->io_Union.io_WRITE.io_Length);
-#if BETTER_WRITE_HANDLING
-    LONG 		writesize = 0;
-#endif
-
-#if RMB_FREEZES_OUTPUT
-    struct Window 	*conwindow;
-    
-    conwindow = ((struct ConUnit *)fh->conwriteio.io_Unit)->cu_Window;
-    
-    while((PeekQualifier() & IEQUALIFIER_RBUTTON) &&
-    	  conwindow &&
-	  (conwindow == IntuitionBase->ActiveWindow))
-    {
-        Delay(2);
-    }
-#endif
-
-#if BETTER_WRITE_HANDLING
-   
-    for(;;)
-    {
-        if (writesize == (*length_ptr) - fh->partlywrite_size) break;
-	if (writesize == 256) break;
-	if (buffer[writesize++ +fh->partlywrite_size] == '\n') break;
-    }
-        
-    D(bug("answer_write_request: writing %d bytes (total size = %d)\n", writesize, *length_ptr));
-
-    do_write(conbase, fh, &buffer[fh->partlywrite_size], writesize);
-    fh->partlywrite_size += writesize;
-    fh->partlywrite_actual += fh->conwriteio.io_Actual;
-    
-    if (fh->partlywrite_size == *length_ptr)
-    {
-        iofs->IOFS.io_Error = 0;
-	iofs->io_DosError = fh->conwriteio.io_Error;
-	*length_ptr = fh->partlywrite_actual;
-	
-	fh->partlywrite_actual = 0;
-	fh->partlywrite_size = 0;
-	
-	/* Must remove first from pendingWrites List */
-	
-	Remove((struct Node *)iofs);
-	ReplyMsg(&iofs->IOFS.io_Message);
-
-        D(bug("answer_write_request: returning 0\n"));
- 	
-	return 0;
-    }
-
-    D(bug("answer_write_request: returning %d\n",  *length_ptr - fh->partlywrite_size));
-  
-    return *length_ptr - fh->partlywrite_size;
-    
-#else
-    do_write(conbase, fh, buffer, *length_ptr);
-
-    iofs->IOFS.io_Error = 0;
-    iofs->io_DosError = fh->conwriteio.io_Error;    
-    *length_ptr = fh->conwriteio.io_Actual;
-
-    /* No need to remove from pendingWrites List as it already is removed
-       or was never in */
-    
-    ReplyMsg(&iofs->IOFS.io_Message);
-    
-    return 0;
-#endif
-}
-
-
-/******************************************************************************************/
-
-void add_to_history(struct conbase *conbase, struct filehandle *fh)
+void add_to_history(struct filehandle *fh)
 {
     BOOL add_to_history = FALSE;
     
@@ -717,7 +591,7 @@ void add_to_history(struct conbase *conbase, struct filehandle *fh)
 
 /******************************************************************************************/
 
-void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp)
+void history_walk(struct filehandle *fh, WORD inp)
 {
     if (fh->historysize)
     {
@@ -776,10 +650,10 @@ void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp)
 
 	if (fh->inputpos > fh->inputstart)
 	{
-	    do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+	    do_movecursor(fh, CUR_LEFT, fh->inputpos - fh->inputstart);
 	}
 
-	do_eraseinline(conbase, fh);
+	do_eraseinline(fh);
 
 	fh->inputsize = fh->inputstart;
 	fh->inputpos = fh->inputstart;
@@ -803,7 +677,7 @@ void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp)
 		fh->inputsize += len;
 		fh->inputpos  += len;
 
-		do_write(conbase, fh, &fh->inputbuffer[fh->inputstart], len);
+		do_write(fh, &fh->inputbuffer[fh->inputstart], len);
 	    }
 
     #if !CYCLIC_HISTORY_WALK
@@ -814,3 +688,522 @@ void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp)
 }
 
 /******************************************************************************************/
+
+LONG MakeConWindow(struct filehandle *fh)
+{
+    LONG err = 0;
+
+    struct TagItem win_tags [] =
+    {
+	{WA_PubScreen	,0	    },
+	{WA_AutoAdjust	,TRUE       },
+	{WA_PubScreenName, 0        },
+	{WA_PubScreenFallBack, TRUE },
+	{TAG_DONE                   }
+    };
+
+    win_tags[2].ti_Data = (IPTR)fh->screenname;
+    D(bug("[contask] Opening window on screen %s, IntuitionBase = 0x%p\n", fh->screenname, IntuitionBase));
+    fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
+
+    if (fh->window)
+    {
+    	D(bug("contask: window opened\n"));
+	fh->conreadio->io_Data   = (APTR)fh->window;
+	fh->conreadio->io_Length = sizeof (struct Window);
+
+	if (0 == OpenDevice("console.device", CONU_SNIPMAP, ioReq(fh->conreadio), 0))
+	{
+	    const UBYTE lf_on[] = {0x9B, 0x32, 0x30, 0x68 }; /* Set linefeed mode    */
+
+	    D(bug("contask: device opened\n"));
+
+    	    fh->flags |= FHFLG_CONSOLEDEVICEOPEN;
+
+	    fh->conwriteio = *fh->conreadio;
+	    fh->conwriteio.io_Message.mn_ReplyPort = fh->conwritemp;
+
+	    /* Turn the console into LF+CR mode so that both
+	       linefeed and carriage return is done on
+	    */
+	    fh->conwriteio.io_Command	= CMD_WRITE;
+	    fh->conwriteio.io_Data	= (APTR)lf_on;
+	    fh->conwriteio.io_Length	= 4;
+
+	    DoIO(ioReq(&fh->conwriteio));
+
+	} /* if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conreadio), 0)) */
+	else
+	{
+	    err = ERROR_INVALID_RESIDENT_LIBRARY;
+	}
+	if (err) CloseWindow(fh->window);
+
+    } /* if (fh->window) */
+    else
+    {
+        D(bug("[contask] Failed to open a window\n"));
+	err = ERROR_NO_FREE_STORE;
+    }
+    
+    return err;
+}
+
+/****************************************************************************************/
+
+BOOL MakeSureWinIsOpen(struct filehandle *fh)
+{
+    D(bug("[contask] Console window handle: 0x%p\n", fh->window));
+    if (fh->window)
+    	return TRUE;
+    return MakeConWindow(fh) ? TRUE : FALSE;
+}
+
+/****************************************************************************************/
+
+static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
+
+struct MyEditHookMsg
+{
+    struct Message 	msg;
+    struct SGWork	*sgw;
+    WORD 		code;
+};
+
+static void do_paste(struct filehandle * fh)
+{
+  struct MsgPort replyport, *port;
+  struct SGWork sgw;
+  struct MyEditHookMsg msg;
+  struct StringInfo sinfo;
+
+  if (!(port = FindPort(CONCLIP_PORTNAME))) {
+    D(bug("ConClip not running, but we got a ConClip paste request"));
+    return;
+  }
+
+  D(bug("PASTE REQUEST!\n"));
+
+  replyport.mp_Node.ln_Type	= NT_MSGPORT;
+  replyport.mp_Node.ln_Name 	= NULL;
+  replyport.mp_Node.ln_Pri 	= 0;
+  replyport.mp_Flags 		= PA_SIGNAL;
+  replyport.mp_SigBit 	= SIGB_SINGLE;
+  replyport.mp_SigTask 	= FindTask(NULL);
+  NEWLIST(&replyport.mp_MsgList);
+			    
+  msg.msg.mn_Node.ln_Type 	= NT_MESSAGE;
+  msg.msg.mn_ReplyPort 	= &replyport;
+  msg.msg.mn_Length 		= sizeof(msg);
+  
+  msg.code = 'V';
+  msg.sgw  = &sgw;
+
+  /* FIXME: Ensure no fields are left uninitialized */
+
+  sgw.Gadget = 0;
+  sgw.WorkBuffer = AllocMem(PASTEBUFSIZE,MEMF_CLEAR | MEMF_ANY);
+  sgw.PrevBuffer = 0;
+  sgw.IEvent = 0;
+  sgw.Code = 'V';
+  sgw.Actions = 0;
+  sgw.LongInt = 0;
+  sgw.GadgetInfo = 0;
+  sgw.EditOp = EO_BIGCHANGE;
+  sgw.BufferPos = 0;
+  sgw.NumChars = 0;
+
+  /* ConClip only ever looks at MaxChars in StringInfo */
+  sinfo.MaxChars = PASTEBUFSIZE;
+  sgw.StringInfo = &sinfo;
+  
+  SetSignal(0, SIGF_SINGLE);
+  PutMsg(port, &msg.msg);
+  WaitPort(&replyport);
+
+  D(bug("Pasting %d bytes\n",sgw.BufferPos));
+
+  if (fh->pastebuffer) FreeMem(fh->pastebuffer,PASTEBUFSIZE);
+  fh->pastebuffer = sgw.WorkBuffer;
+  fh->pastebuffersize = sgw.BufferPos;
+  fh->pastebufferpos = 0;
+}
+
+
+/****************************************************************************************/
+
+void process_input(struct filehandle *fh)
+{
+  UBYTE c;
+  WORD inp;
+  while((inp = scan_input(fh, &c)) != INP_DONE)
+    {
+      D(bug("Input Code: %d\n",inp));
+      
+      switch(inp)
+	{
+	case INP_CURSORLEFT:
+	  if (fh->inputpos > fh->inputstart)
+	    {
+	      fh->inputpos--;
+	      do_movecursor(fh, CUR_LEFT, 1);
+	    }
+	  break;
+	  
+	case INP_SHIFT_CURSORLEFT: /* move to beginning of line */
+	case INP_HOME:
+	  if (fh->inputpos > fh->inputstart)
+	    {
+	      do_movecursor(fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+	      fh->inputpos = fh->inputstart;
+	    }
+	  break;
+	  
+	case INP_CURSORRIGHT:
+	  if (fh->inputpos < fh->inputsize)
+	    {
+	      fh->inputpos++;
+	      do_movecursor(fh, CUR_RIGHT, 1);
+	    }
+	  break;
+	  
+	case INP_SHIFT_CURSORRIGHT: /* move to end of line */
+	case INP_END:
+	  if (fh->inputpos != fh->inputsize)
+	    {
+	      do_movecursor(fh, CUR_RIGHT, fh->inputsize - fh->inputpos);
+	      fh->inputpos = fh->inputsize;
+	    }
+	  break;
+	  
+	case INP_CURSORUP: /* walk through cmd history */
+	case INP_CURSORDOWN:
+	case INP_SHIFT_CURSORUP:
+	case INP_SHIFT_CURSORDOWN:
+	  /* no history if we're hidden */
+	  if (! (fh->flags & FHFLG_NOECHO))
+	    history_walk(fh, inp);
+	  break;
+	  
+	case INP_BACKSPACE:
+	  if (fh->inputpos > fh->inputstart)
+	    {
+	      do_movecursor(fh, CUR_LEFT, 1);
+	      
+	      if (fh->inputpos == fh->inputsize)
+		{
+		  do_deletechar(fh);
+		  
+		  fh->inputsize--;
+		  fh->inputpos--;
+		} else {
+		WORD chars_right = fh->inputsize - fh->inputpos;
+		
+		fh->inputsize--;
+		fh->inputpos--;
+		
+		do_cursorvisible(fh, FALSE);
+		do_write(fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
+		do_deletechar(fh);
+		do_movecursor(fh, CUR_LEFT, chars_right);
+		do_cursorvisible(fh, TRUE);
+		
+		memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
+		
+	      }
+	    }
+	  break;
+	  
+	case INP_SHIFT_BACKSPACE:
+	  if (fh->inputpos > fh->inputstart)
+	    {
+	      do_movecursor(fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+	      if (fh->inputpos == fh->inputsize)
+		{
+		  do_eraseinline(fh);
+		  
+		  fh->inputpos = fh->inputsize = fh->inputstart;
+		} else {
+		WORD chars_right = fh->inputsize - fh->inputpos;
+		
+		do_cursorvisible(fh, FALSE);
+		do_write(fh, &fh->inputbuffer[fh->inputpos], chars_right);
+		do_eraseinline(fh);
+		do_movecursor(fh, CUR_LEFT, chars_right);
+		do_cursorvisible(fh, TRUE);
+		
+		memmove(&fh->inputbuffer[fh->inputstart], &fh->inputbuffer[fh->inputpos], chars_right);
+		
+		fh->inputsize -= (fh->inputpos - fh->inputstart);
+		fh->inputpos = fh->inputstart;
+	      }
+	    }
+	  break;
+	  
+	case INP_DELETE:
+	  if (fh->inputpos < fh->inputsize)
+	    {
+	      fh->inputsize--;
+	      
+	      if (fh->inputpos == fh->inputsize)
+		{
+		  do_deletechar(fh);
+		} else {
+		WORD chars_right = fh->inputsize - fh->inputpos;
+		
+		do_cursorvisible(fh, FALSE);
+		do_write(fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
+		do_deletechar(fh);
+		do_movecursor(fh, CUR_LEFT, chars_right);
+		do_cursorvisible(fh, TRUE);
+		
+		memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
+	      }
+	    }
+	  break;
+	  
+	case INP_SHIFT_DELETE:
+	  if (fh->inputpos < fh->inputsize)
+	    {
+	      fh->inputsize = fh->inputpos;
+	      do_eraseinline(fh);
+	    }
+	  break;
+	  
+	case INP_CONTROL_X:
+	  if ((fh->inputsize - fh->inputstart) > 0)
+	    {
+	      if (fh->inputpos > fh->inputstart)
+		{
+		  do_movecursor(fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+		}
+	      do_eraseinline(fh);
+	      
+	      fh->inputpos = fh->inputsize = fh->inputstart;
+	    }
+	  break;
+	  
+	case INP_ECHO_STRING:
+	  do_write(fh, &c, 1);
+	  break;
+	  
+	case INP_STRING:
+	  if (fh->inputsize < INPUTBUFFER_SIZE)
+	    {
+	      do_write(fh, &c, 1);
+	      
+	      if (fh->inputpos == fh->inputsize)
+		{
+		  fh->inputbuffer[fh->inputpos++] = c;
+		  fh->inputsize++;
+		} else {
+		WORD chars_right = fh->inputsize - fh->inputpos;
+		
+		do_cursorvisible(fh, FALSE);
+		do_write(fh, &fh->inputbuffer[fh->inputpos], chars_right);
+		do_movecursor(fh, CUR_LEFT, chars_right);
+		do_cursorvisible(fh, TRUE);
+		
+		memmove(&fh->inputbuffer[fh->inputpos + 1], &fh->inputbuffer[fh->inputpos], chars_right);
+		fh->inputbuffer[fh->inputpos++] = c;
+		fh->inputsize++;
+	      }
+	    }
+	  break;
+	  
+	case INP_EOF:
+	  fh->flags |= FHFLG_EOF;
+	  if (fh->flags & FHFLG_AUTO && fh->window)
+	    {
+	      CloseWindow(fh->window);
+	      fh->window = NULL;
+	    }
+	  
+	  /* fall through */
+	  
+	case INP_RETURN:
+	  if (fh->inputsize < INPUTBUFFER_SIZE)
+	    {
+	      if (inp != INP_EOF)
+		{
+		  c = '\n';
+		  do_write(fh, &c, 1);
+		  
+		  /* don't put hidden things in the history */
+		  if (! (fh->flags & FHFLG_NOECHO))
+		    add_to_history(fh);
+		  
+		  fh->inputbuffer[fh->inputsize++] = '\n';
+		}
+	      
+	      fh->inputstart = fh->inputsize;
+	      fh->inputpos = fh->inputstart;
+	      
+	      if (fh->inputsize)
+	      	HandlePendingReads(fh);
+	      
+	      if ((fh->flags & FHFLG_EOF) && (fh->flags & FHFLG_READPENDING))
+		{
+		  struct Message *msg = (struct Message*)RemHead((struct List *)&fh->pendingReads);
+		  struct DosPacket *dp = (struct DosPacket*)msg->mn_Node.ln_Name;
+		  
+		  if (dp)
+		  {
+		  	replypkt2(dp, 0, 0);
+		        fh->flags &= ~FHFLG_EOF;
+		  }
+		  
+		  if (IsListEmpty(&fh->pendingReads))
+		      fh->flags &= ~FHFLG_READPENDING;
+		}
+	      
+	    } /* if (fh->inputsize < INPUTBUFFER_SIZE) */
+	  break;
+	  
+	case INP_LINEFEED:
+	  if (fh->inputsize < INPUTBUFFER_SIZE)
+	    {
+	      c = '\n';
+	      do_write(fh, &c, 1);
+	      
+	      /* don't put hidden things in the history */
+	      if (! (fh->flags & FHFLG_NOECHO))
+		add_to_history(fh);
+	      
+	      fh->inputbuffer[fh->inputsize++] = c;
+	      fh->inputstart = fh->inputsize;
+	      fh->inputpos = fh->inputsize;
+	    }
+	  break;
+	  
+	case INP_CTRL_C:
+	case INP_CTRL_D:
+	case INP_CTRL_E:
+	case INP_CTRL_F:
+	  if (fh->breaktask)
+	    {
+	      Signal(fh->breaktask, 1L << (12 + inp - INP_CTRL_C));
+	    }
+	  break;
+	  
+	case INP_TAB:
+	  /* don't complete hidden things */
+	  if (! (fh->flags & FHFLG_NOECHO))
+	    Completion(fh);
+	  break;
+	  
+	case INP_PASTE:
+	  do_paste(fh);
+	  break;
+	  
+	} /* switch(inp) */
+      
+    } /* while((inp = scan_input(fh, &c)) != INP_DONE) */
+}
+
+
+BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
+{
+    UBYTE *buffer = (UBYTE*)dp->dp_Arg2;
+    LONG length = dp->dp_Arg3;
+
+#if RMB_FREEZES_OUTPUT
+    struct Window 	*conwindow;
+    
+    conwindow = ((struct ConUnit *)fh->conwriteio.io_Unit)->cu_Window;
+    
+    while((PeekQualifier() & IEQUALIFIER_RBUTTON) &&
+    	  conwindow && (conwindow == IntuitionBase->ActiveWindow))
+    {
+        Delay(2);
+    }
+#endif
+
+    if ((dp->dp_Port->mp_Flags & PF_ACTION) == PA_SIGNAL &&
+        dp->dp_Port->mp_SigTask)
+    {
+    	fh->lastwritetask = dp->dp_Port->mp_SigTask;
+    }
+
+
+    do_write(fh, buffer, length);
+    replypkt2(dp, length, 0);
+    
+    return TRUE;
+}
+
+void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3)
+{
+    ULONG readlen;
+
+    readlen = (fh->inputsize < dp_Arg3) ? fh->inputsize : dp_Arg3;
+
+    CopyMem(fh->inputbuffer, (UBYTE*)dp->dp_Arg2, readlen);
+    CopyMem(fh->inputbuffer + readlen, fh->inputbuffer, fh->inputsize - readlen);
+
+    fh->inputsize  -= readlen;
+    fh->inputpos   -= readlen;
+    fh->inputstart -= readlen;
+    
+    replypkt2(dp, readlen, 0);
+}
+
+void HandlePendingReads(struct filehandle *fh)
+{
+    if (fh->flags & FHFLG_READPENDING)
+    {			    
+    	struct DosPacket *dp;
+    	struct Message *msg, *next_msg;
+
+	ForeachNodeSafe(&fh->pendingReads, msg, next_msg)
+	{
+            Remove((struct Node *)msg);
+            dp = (struct DosPacket*)msg->mn_Node.ln_Name;
+	    answer_read_request(fh, dp, dp->dp_Arg3);
+
+	    if (fh->inputsize == 0)
+	    	break;
+
+	}
+	if (IsListEmpty(&fh->pendingReads))
+		fh->flags &= ~FHFLG_READPENDING;
+    }
+
+    if (fh->inputsize)
+    {
+	fh->flags |= FHFLG_CANREAD;
+	fh->canreadsize = fh->inputsize;
+    }
+}
+
+void con_read(struct filehandle *fh, struct DosPacket *dp)
+{
+    if (fh->flags & FHFLG_CANREAD)
+    {
+        ULONG readlen = (fh->canreadsize < dp->dp_Arg3) ? fh->canreadsize : dp->dp_Arg3;
+
+	answer_read_request(fh, dp, readlen);
+
+	fh->canreadsize -= readlen;
+	if (fh->canreadsize == 0)
+		fh->flags &= ~FHFLG_CANREAD;
+	
+    }
+    else
+    {    
+    	if (fh->flags & FHFLG_EOF)
+	{
+	    replypkt2(dp, 0, 0);
+	    fh->flags &= ~FHFLG_EOF;
+	}
+    	else if (fh->flags & FHFLG_RAW)
+    	{
+    	    replypkt2(dp, 0, 0);
+    	}
+	else
+	{
+	    AddTail((struct List *)&fh->pendingReads, (struct Node *)dp->dp_Link);
+	    fh->flags |= FHFLG_READPENDING;
+	}
+    }
+}

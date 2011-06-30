@@ -21,7 +21,6 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
-#define __GADTOOLS_NOLIBBASE__
 #include <proto/gadtools.h>
 #include <proto/asl.h>
 #include "con_handler_intern.h"
@@ -46,7 +45,6 @@ struct matchnode
 
 struct completioninfo
 {
-    struct conbase     *conbase;
     struct filehandle  *fh;
     struct List     	matchlist;
     APTR    	    	pool;
@@ -63,15 +61,13 @@ struct completioninfo
 
 /* Delay opening of the gadtools.library to the first time InitCompletion is called */
 
-static struct Library *GadToolsBase = NULL;
-
-static struct completioninfo *InitCompletion(struct conbase *conbase, struct filehandle *fh)
+static struct completioninfo *InitCompletion(struct filehandle *fh)
 {
     struct completioninfo *ci = NULL;
     APTR    	    	   pool;
 
-    if (GadToolsBase == NULL)
-	GadToolsBase = OpenLibrary("gadtools.library", 39);
+    if (fh->gtbase == NULL)
+	fh->gtbase = OpenLibrary("gadtools.library", 39);
     
     if (fh->lastwritetask && GadToolsBase)
     if (fh->lastwritetask->tc_Node.ln_Type == NT_PROCESS)
@@ -83,7 +79,6 @@ static struct completioninfo *InitCompletion(struct conbase *conbase, struct fil
     	    if ((ci = (struct completioninfo *)AllocPooled(pool, sizeof(*ci))))
 	    {
 		ci->pool = pool;
-		ci->conbase = conbase;
 		ci->fh = fh;
 		NewList(&ci->matchlist);
 		
@@ -103,14 +98,14 @@ static struct completioninfo *InitCompletion(struct conbase *conbase, struct fil
 
 /****************************************************************************************/
 
-static void CleanupCompletion(struct conbase *conbase, struct completioninfo *ci)
+static void CleanupCompletion(struct completioninfo *ci)
 {
     DeletePool(ci->pool);
 }
 
 /****************************************************************************************/
 
-static void PrepareCompletion(struct conbase *conbase, struct completioninfo *ci)
+static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
 {
     WORD i;
     BOOL in_quotes = FALSE;
@@ -175,7 +170,7 @@ static void AddQuotes(struct completioninfo *ci, STRPTR s, LONG s_size)
 
 /****************************************************************************************/
 
-static void InsertIntoConBuffer(struct conbase *conbase, struct completioninfo *ci, STRPTR s)
+static void InsertIntoConBuffer(struct completioninfo *ci, STRPTR s)
 {
     WORD i = ci->fh->conbufferpos;
     
@@ -193,7 +188,7 @@ static void InsertIntoConBuffer(struct conbase *conbase, struct completioninfo *
 
 /****************************************************************************************/
 
-static void DoFileReq(struct conbase *conbase, struct completioninfo *ci)
+static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
 {
     struct Library *AslBase;
     BPTR    	    lock, olddir;
@@ -230,7 +225,7 @@ static void DoFileReq(struct conbase *conbase, struct completioninfo *ci)
 		    	    strncat(ci->match, " ", sizeof(ci->match));
 			}
 
-	    		InsertIntoConBuffer(conbase, ci, ci->match);
+	    		InsertIntoConBuffer(ci, ci->match);
 		    }
 		    
 		}
@@ -248,7 +243,7 @@ static void DoFileReq(struct conbase *conbase, struct completioninfo *ci)
 
 /****************************************************************************************/
 
-static BOOL PreparePattern(struct conbase *conbase, struct completioninfo *ci)
+static BOOL PreparePattern(struct filehandle *fh, struct completioninfo *ci)
 {
     WORD parsecode;
     
@@ -268,7 +263,7 @@ static BOOL PreparePattern(struct conbase *conbase, struct completioninfo *ci)
 
 /****************************************************************************************/
 
-static void AddMatchNode(struct conbase *conbase, struct completioninfo *ci,
+static void AddMatchNode(struct filehandle *fh, struct completioninfo *ci,
     	    	    	 STRPTR name, WORD type)
 {
     struct matchnode 	*mn;
@@ -318,7 +313,7 @@ static void AddMatchNode(struct conbase *conbase, struct completioninfo *ci,
 
 /****************************************************************************************/
 
-static void ScanDir(struct conbase *conbase, struct completioninfo *ci)
+static void ScanDir(struct filehandle *fh, struct completioninfo *ci)
 {
     struct FileInfoBlock *fib;
     BPTR    	    	  lock;
@@ -335,7 +330,7 @@ static void ScanDir(struct conbase *conbase, struct completioninfo *ci)
 		    {
 		    	BOOL isdir = (fib->fib_DirEntryType > 0);
 
-    	    	    	AddMatchNode(conbase, ci, fib->fib_FileName, (isdir ? 1 : 0));
+    	    	    	AddMatchNode(fh, ci, fib->fib_FileName, (isdir ? 1 : 0));
 		    }
 		}
 	    }
@@ -350,7 +345,7 @@ static void ScanDir(struct conbase *conbase, struct completioninfo *ci)
 /****************************************************************************************/
 
 
-static void ScanVol(struct conbase *conbase, struct completioninfo *ci)
+static void ScanVol(struct filehandle *fh, struct completioninfo *ci)
 {
     struct DosList *dlist;
 
@@ -358,16 +353,16 @@ static void ScanVol(struct conbase *conbase, struct completioninfo *ci)
     
     while ((dlist = NextDosEntry(dlist, LDF_VOLUMES | LDF_ASSIGNS | LDF_DEVICES)) != NULL)
     {
-	if (MatchPatternNoCase(ci->pattern, dlist->dol_Ext.dol_AROS.dol_DevName))
+	if (MatchPatternNoCase(ci->pattern, AROS_DOSDEVNAME(dlist)))
 	{
-    	    AddMatchNode(conbase, ci, dlist->dol_Ext.dol_AROS.dol_DevName, 2);
+    	    AddMatchNode(fh, ci, AROS_DOSDEVNAME(dlist), 2);
 
 	}
     }
     UnLockDosList(LDF_READ | LDF_VOLUMES | LDF_DEVICES | LDF_ASSIGNS);
 }
 
-static void DoScan(struct conbase *conbase, struct completioninfo *ci)
+static void DoScan(struct filehandle *fh, struct completioninfo *ci)
 {
     BPTR    	    lock, olddir;
     
@@ -375,8 +370,8 @@ static void DoScan(struct conbase *conbase, struct completioninfo *ci)
     {
     	olddir = CurrentDir(lock);
 	
-	if (ci->dirpart[0] == 0) ScanVol(conbase, ci);
-	ScanDir(conbase, ci);
+	if (ci->dirpart[0] == 0) ScanVol(fh, ci);
+	ScanDir(fh, ci);
 		
 	CurrentDir(olddir);
 	UnLock(lock);
@@ -399,7 +394,7 @@ static void DoScan(struct conbase *conbase, struct completioninfo *ci)
 
 /****************************************************************************************/
 
-static BOOL DoChooseReq(struct conbase *conbase, struct completioninfo *ci)
+static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
 {
     static const char oktext[] = "Ok";
     static const char canceltext[] = "Cancel";
@@ -722,25 +717,25 @@ static BOOL DoChooseReq(struct conbase *conbase, struct completioninfo *ci)
 
 /****************************************************************************************/
 
-void Completion(struct conbase *conbase, struct filehandle *fh)
+void Completion(struct filehandle *fh)
 {
     struct completioninfo *ci;
 
-    if ((ci = InitCompletion(conbase, fh)))
+    if ((ci = InitCompletion(fh)))
     {
-    	PrepareCompletion(conbase, ci);
+    	PrepareCompletion(fh, ci);
     	
 	if (!ci->dirpart[0] && !ci->filepart[0])
 	{
-	    DoFileReq(conbase, ci);
+	    DoFileReq(fh, ci);
 	}
 	else
 	{
-	    if (PreparePattern(conbase, ci))
+	    if (PreparePattern(fh, ci))
 	    {
 	    	BOOL doprint = FALSE;
 		
-	    	DoScan(conbase, ci);
+	    	DoScan(fh, ci);
 		
 		strncpy(ci->match, ci->dirpart, sizeof(ci->match));
 		
@@ -754,7 +749,7 @@ void Completion(struct conbase *conbase, struct filehandle *fh)
 		}
 		else if (ci->nummatchnodes > 1)
 		{
-		    doprint = DoChooseReq(conbase, ci);
+		    doprint = DoChooseReq(fh, ci);
 		}
 		
 		if (doprint)
@@ -779,15 +774,15 @@ void Completion(struct conbase *conbase, struct filehandle *fh)
 		    	strncat(ci->match, " ", sizeof(ci->match));
 		    }
 		    
-		    InsertIntoConBuffer(conbase, ci, ci->match);
+		    InsertIntoConBuffer(ci, ci->match);
 
 		}
 	    }
 	}
 	
-    	CleanupCompletion(conbase, ci);
+    	CleanupCompletion(ci);
 	
-    } /* if ((ci = InitCompletion(conbase))) */
+    } /* if ((ci = InitCompletion())) */
     
 }
 
