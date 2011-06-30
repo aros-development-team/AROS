@@ -1,0 +1,8 @@
+# $Id: mmakefile.src 39345 2011-06-17 05:55:29Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+%build_module mmake=kernel-lddemon \
+  modname=lddemon modtype=resource \
+  files="lddemon" uselibs="rom"
+
+%common
