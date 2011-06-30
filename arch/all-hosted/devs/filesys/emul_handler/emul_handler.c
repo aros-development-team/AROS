@@ -8,9 +8,10 @@
 
 /*********************************************************************************************/
 
-#define DEBUG 0
+#define DEBUG 1
 #define DCHDIR(x)
 #define DCMD(x)
+#define DDEL(x)
 #define DERROR(x)
 #define DEXAM(x)
 #define DFNAME(x)
@@ -100,6 +101,14 @@ static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, st
     char *c;
 
     DFNAME(bug("[emul] makefilename(): directory \"%s\", file \"%s\")\n", fh->hostname, filename));
+
+    /*
+     * dos.library will give us whatever the user typed. It won't strip away device prefix.
+     * Here we have to do it ourselves.
+     */
+    c = strrchr(filename, ':');
+    if (c)
+    	filename = c + 1;
 
     ret = validate(filename);
     if (ret)
@@ -255,6 +264,8 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh, cons
 {
     LONG ret = 0;
     char *filename = NULL;
+
+    DDEL(bug("[emul] Deleting object %s in handle 0x%p (%s)\n", file, fh, fh->hostname));
 
     ret = makefilename(emulbase, &filename, NULL, fh, file);
     if (!ret)
