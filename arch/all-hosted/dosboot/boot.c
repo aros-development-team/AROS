@@ -76,6 +76,7 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 
     	if (emulport)
     	{
+    	    /* A little bit of magic */
     	    struct FileHandle *fh_stdin, *fh_stdout;
 
 	    fh_stdin = AllocDosObject(DOS_FILEHANDLE, fhtags);
@@ -87,17 +88,12 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     	    	Alert(AT_DeadEnd | AN_BootStrap | AG_NoMemory);
     	    }
 
-	    /*
-	     * FIXME: This currently won't work. Non-m68k AROS is still IOFS
-	     * and it wants to see fh_Device and fh_Unit filled in.
-	     * The problem will automatically go away when we switch to DOS packets.
-	     * We could artificially perform some wrapping with packet.handler, just
-	     * i don't want to do throwaway work - sonic
-	     */
-    	    fh_stdin->fh_Type  = emulport;
-    	    fh_stdin->fh_Arg1  = (SIPTR)emulbase->eb_stdin;
-    	    fh_stdout->fh_Type = emulport;
-    	    fh_stdout->fh_Arg1 = (SIPTR)emulbase->eb_stdout;
+	    fh_stdin->fh_Interactive  = DOSTRUE;
+    	    fh_stdin->fh_Type	      = emulport;
+    	    fh_stdin->fh_Arg1	      = (SIPTR)emulbase->eb_stdin;
+    	    fh_stdout->fh_Interactive = DOSTRUE;
+    	    fh_stdout->fh_Type	      = emulport;
+    	    fh_stdout->fh_Arg1	      = (SIPTR)emulbase->eb_stdout;
 
     	    SetVBuf(MKBADDR(fh_stdin) , NULL, BUF_LINE, -1);
     	    SetVBuf(MKBADDR(fh_stdout), NULL, BUF_LINE, -1);
