@@ -1177,6 +1177,10 @@ void EmulHandler_work(void)
     struct filehandle *fhv;
     struct emulbase *emulbase;
 
+    DOSBase = (APTR)OpenLibrary("dos.library", 0);
+    if (!DOSBase)
+        return;
+
     mp = &((struct Process *)FindTask(NULL))->pr_MsgPort;
 
     /* Wait for startup message. */
@@ -1189,12 +1193,6 @@ void EmulHandler_work(void)
     if (!emulbase)
     {
         D(bug("EMUL: FATAL - can't find myself\n"));
-        ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
-        return;
-    }
-
-    DOSBase = (APTR)OpenLibrary("dos.library", 0);
-    if (!DOSBase) {
         ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
         return;
     }
