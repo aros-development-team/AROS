@@ -96,6 +96,7 @@ FILES	:= \
     refreshdtobjects \
     releaseinfo \
     removeamigaguidehost \
+    selecterroroutput \
     sendamigaguidecmd \
     sendamigaguidecontext \
     setamigaguideattrs \
