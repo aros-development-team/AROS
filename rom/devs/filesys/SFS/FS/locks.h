@@ -5,9 +5,10 @@
 #include <exec/types.h>
 #include "nodes.h"
 
-struct ExtFileLock {
+struct ExtFileLock
+{
   BPTR  link;
-  NODE  objectnode;
+  IPTR  objectnode;
   LONG  access;
   struct MsgPort *task;
   BPTR  volume;
