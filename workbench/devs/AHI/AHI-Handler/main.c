@@ -289,7 +289,7 @@ int main(void)
 
 
         fh->fh_Arg1 = (ULONG) data;
-        fh->fh_Port = (struct MsgPort *) DOS_TRUE;
+        fh->fh_Port = DOS_TRUE;
         break;
       }
 
