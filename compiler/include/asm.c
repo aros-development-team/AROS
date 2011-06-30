@@ -73,7 +73,6 @@ int main(void) {
     DEFINE(pr_CES        , offsetof (struct Process, pr_CES));
 
     asm volatile("\n/* struct DosBase */" ::);
-    DEFINE(dl_SysBase    , offsetof (struct DosLibrary, dl_SysBase));
     DEFINE(dl_Root       , offsetof (struct DosLibrary, dl_Root));
 
     asm volatile("\n/* struct MsgPort */" ::);
