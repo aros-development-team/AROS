@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 workbench-s-amiga-m68k: $(AROS_S)/Startup-Sequence
 
 $(AROS_S)/Startup-Sequence: Startup-Sequence
+	@$(MKDIR) $(AROS_S)
 	@$(CP) $^ $@
 
 %common
