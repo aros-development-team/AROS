@@ -2,152 +2,107 @@
     Copyright © 2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Low-level filesystem access functions, IOFS version
+    Desc: Low-level filesystem access functions, packet version
     Lang: English
 */
 
 #include <aros/debug.h>
 #include <dos/dos.h>
 #include <dos/filesystem.h>
-#include <exec/execbase.h>
-#include <exec/io.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 
 #include "dos_intern.h"
 #include "fs_driver.h"
 
-BYTE DosDoIO(struct IORequest *iORequest)
-{
-    return DoIO(iORequest);
-} /* DosDoIO */
-
 LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, CONST_STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
 {
-    struct FileHandle *fh = BADDR(parent);
-    struct IOFileSys iofs;
+    struct FileLock *fl = BADDR(parent);
+    struct MsgPort *port;
+    SIPTR error = 0;
+    BSTR bstrname = C2BSTR(name);
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_OPEN, DOSBase);    
+    if (!bstrname)
+    	return ERROR_NO_FREE_STORE;
 
-    switch (accessMode)
-    {
-    	case EXCLUSIVE_LOCK:
-    	    iofs.io_Union.io_OPEN.io_FileMode = FMF_LOCK | FMF_READ;
-    	    break;
-    
-    	case SHARED_LOCK:
-    	    iofs.io_Union.io_OPEN.io_FileMode = FMF_READ;
-    	    break;
-    
-    	default:
-	    D(bug("[LocateObject] incompatible mode %d\n", accessMode));
-	    return ERROR_ACTION_NOT_KNOWN;
-    }
-
-    iofs.io_Union.io_OPEN.io_Filename = name;
-
-    if (fh)
-    {
-    	iofs.IOFS.io_Device = fh->fh_Device;
-    	iofs.IOFS.io_Unit   = fh->fh_Unit;
-    }
+    if (fl)
+    	port = fl->fl_Task;
     else
     {
-	iofs.IOFS.io_Device = (struct Device *)dvp->dvp_Port;
-
-	if (dvp->dvp_Lock != BNULL)
-	    iofs.IOFS.io_Unit = ((struct FileHandle *)BADDR(dvp->dvp_Lock))->fh_Unit;
-	else
-            iofs.IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;
+    	port   = dvp->dvp_Port;
+    	parent = dvp->dvp_Lock;
     }
 
-    DosDoIO(&iofs.IOFS);
-    
-    if (!iofs.io_DosError)
-    {
-        /* Create filehandle */
-	struct FileHandle *handle = AllocDosObject(DOS_FILEHANDLE, NULL);
+    *ret = (BPTR)dopacket3(DOSBase, &error, port, ACTION_LOCATE_OBJECT, parent, bstrname, accessMode);
+    FREEC2BSTR(bstrname);
 
-	handle->fh_Device = iofs.IOFS.io_Device;
-	handle->fh_Unit   = iofs.IOFS.io_Unit;
-	
-	*ret = MKBADDR(handle);
-    }
-
-    return iofs.io_DosError;
+    return error;
 }
 
-LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR ref, LONG accessMode, CONST_STRPTR name, struct DosLibrary *DOSBase)
+LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR lock, LONG mode, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
-    struct IOFileSys iofs;
-    LONG doappend = 0;
+    ULONG action;
+    BSTR bstrname;
+    struct MsgPort *port = NULL;
+    struct Process *me;
+    SIPTR error = 0;
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_OPEN_FILE, DOSBase);
-
-    switch (accessMode)
-    {
-    case MODE_OLDFILE:
-	iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_MODE_OLDFILE;
-	break;
-
-    case MODE_NEWFILE:
-	iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_MODE_NEWFILE;
-	break;
-
-    case MODE_READWRITE:
-	iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_MODE_READWRITE;
-	break;
-
-    default:
-	/* See if the user requested append mode */
-	doappend = accessMode & FMF_APPEND;
-	/* The append mode is all taken care by dos.library */
-	iofs.io_Union.io_OPEN_FILE.io_FileMode = accessMode & ~FMF_APPEND;
-	break;
-    }
-
-    if (refType == REF_DEVICE)
-    {
-        struct DevProc *dvp = BADDR(ref);
-
-	iofs.IOFS.io_Device = (struct Device *)dvp->dvp_Port;
-	if (dvp->dvp_Lock != BNULL)
-	    iofs.IOFS.io_Unit = ((struct FileHandle *)BADDR(dvp->dvp_Lock))->fh_Unit;
-	else
-            iofs.IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;
-    }
+    if (mode == MODE_READWRITE)
+	action = ACTION_FINDUPDATE;
+    else if (mode == MODE_NEWFILE)
+	action = ACTION_FINDOUTPUT;
+    else if (mode == MODE_OLDFILE)
+	action = ACTION_FINDINPUT;
+    else if (mode & FMF_CREATE)
+	action = ACTION_FINDOUTPUT;
+    else if (mode & FMF_CLEAR)
+	action = ACTION_FINDOUTPUT;
+    else if (mode & (FMF_READ | FMF_WRITE))
+	action = ACTION_FINDINPUT;
     else
     {
-    	/* In IOFS consoles and regular locks are the same */
-    	struct FileHandle *fh = BADDR(ref);
-
-    	iofs.IOFS.io_Device = fh->fh_Device;
-	iofs.IOFS.io_Unit   = fh->fh_Unit;
+	bug("unknown access mode %x\n", mode);
+	return ERROR_ACTION_NOT_KNOWN;
     }
 
-    iofs.io_Union.io_OPEN_FILE.io_Filename = (refType == REF_CONSOLE) ? (STRPTR)"" : name;
-
-    DosDoIO(&iofs.IOFS);
-
-    if (!iofs.io_DosError)
+    switch (refType)
     {
-        handle->fh_Device = iofs.IOFS.io_Device;
-        handle->fh_Unit   = iofs.IOFS.io_Unit;
+    case REF_LOCK:
+	/* 'lock' parameter is actually a parent's BPTR lock */
+    	port = ((struct FileLock *)BADDR(lock))->fl_Task;
+    	break;
 
-        if (doappend)
-        {
-            /* See if the handler supports FSA_SEEK */
-            if (Seek(MKBADDR(handle), 0, OFFSET_END) != -1)
-            {
-        	/* if so then set the proper flag in the FileHandle struct */
-        	handle->fh_Flags |= FHF_APPEND;
-            }
-        }
+    case REF_DEVICE:
+    	port = ((struct DevProc *)BADDR(lock))->dvp_Port;
+    	lock = ((struct DevProc *)BADDR(lock))->dvp_Lock;
+    	break;
+
+    case REF_CONSOLE:
+    	me = (struct Process *)FindTask(NULL);
+    	port = me->pr_ConsoleTask;
+    	/* console handler ACTION_FIND* ignores lock */
+        break;
     }
 
-    return iofs.io_DosError;
+    if (!port)
+    {
+    	/* handler pointer not set, return NIL: handle */
+    	SetIoErr(0);
+    	handle->fh_Type = BNULL;
+    	/* NIL: is considered interactive */
+    	handle->fh_Port = (struct MsgPort*)DOSTRUE;
+    	return 0;
+    }
+
+    bstrname = C2BSTR(name);
+    if (!bstrname)
+    	return ERROR_NO_FREE_STORE;
+
+    dopacket3(DOSBase, &error, port, action, MKBADDR(handle), lock, bstrname);
+    FREEC2BSTR(bstrname);
+
+    handle->fh_Type = port;
+    return error;
 }
 
 LONG fs_ReadLink(BPTR parent, struct DevProc *dvp, CONST_STRPTR path, STRPTR buffer, ULONG size, struct DosLibrary *DOSBase)
@@ -156,13 +111,13 @@ LONG fs_ReadLink(BPTR parent, struct DevProc *dvp, CONST_STRPTR path, STRPTR buf
 
     if (parent)
     {
-        struct FileHandle *fh = BADDR(parent);
+	struct FileLock *fl = BADDR(parent);
 
-    	port = (struct MsgPort *)fh->fh_Device;
+    	port = fl->fl_Task;
     }
     else
     {
-        port   = dvp->dvp_Port;
+    	port   = dvp->dvp_Port;
     	parent = dvp->dvp_Lock;
     }
 
@@ -171,52 +126,33 @@ LONG fs_ReadLink(BPTR parent, struct DevProc *dvp, CONST_STRPTR path, STRPTR buf
 
 LONG fs_ChangeSignal(BPTR handle, struct Process *task, struct DosLibrary *DOSBase)
 {
-    struct IOFileSys iofs;
+    SIPTR error = 0;
     struct FileHandle *fh = BADDR(handle);
 
-    InitIOFS(&iofs, FSA_CHANGE_SIGNAL, DOSBase);
+    dopacket3(DOSBase, &error, fh->fh_Type, ACTION_CHANGE_SIGNAL, fh->fh_Arg1, (IPTR)task, (SIPTR)NULL);
 
-    iofs.io_Union.io_CHANGE_SIGNAL.io_Task = (struct Task *)task;
-
-    iofs.IOFS.io_Device  = fh->fh_Device;
-    iofs.IOFS.io_Unit    = fh->fh_Unit;
-
-    DosDoIO(&iofs.IOFS);
-    
-    return iofs.io_DosError;
+    return error;
 }
 
 LONG fs_AddNotify(struct NotifyRequest *notify, struct DevProc *dvp, BPTR lock, struct DosLibrary *DOSBase)
 {
-    struct IOFileSys iofs;
+    SIPTR err = 0;
+    LONG status = dopacket1(DOSBase, &err, notify->nr_Handler, ACTION_ADD_NOTIFY, (SIPTR)notify);
 
-    /* If this is an assign, we use its lock */
-    if (dvp->dvp_Lock)
-    	lock = dvp->dvp_Lock;
-
-    /* prepare the notify request */
-    InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
-
-    iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
-    iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
-    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(lock))->fh_Unit;
-
-    DosDoIO(&iofs.IOFS);
-
-    return iofs.io_DosError;
+    return status ? 0 : err;
 }
 
 BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary *DOSBase)
 {
-    BPTR ret = BNULL;
+    BPTR nfh;
+    struct MsgPort *old;
+    struct FileHandle *h;
 
-    if (fh)
-    {
-        BPTR olddir = CurrentDir(fh);
-        ret    = Open("", mode);
-
-        CurrentDir(olddir);
-    }
-
-    return ret;
+    h = BADDR(fh);
+    if (!h->fh_Type)
+    	return Open("NIL:", mode);
+    old = SetConsoleTask(h->fh_Type);
+    nfh = Open("*", mode);
+    SetConsoleTask(old);
+    return nfh;
 }

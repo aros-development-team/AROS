@@ -5,6 +5,8 @@
     Desc: Change the date of a file.
     Lang: English
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include <string.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
@@ -52,15 +54,17 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    struct PacketHelperStruct phs;
+    LONG status = DOSFALSE;
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_SET_DATE, DOSBase);
+    D(bug("[SetFileDate] '%s' %x\n", name, date));
 
-    CopyMem(date, &iofs.io_Union.io_SET_DATE.io_Date, sizeof(struct DateStamp));
+    if (getpacketinfo(DOSBase, name, &phs)) {
+    	status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_DATE, (IPTR)NULL, phs.lock, phs.name, (IPTR)date);
+    	freepacketinfo(DOSBase, &phs);
+    }
 
-    return DoIOFS(&iofs, NULL, name, DOSBase) == 0;
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* SetFileDate */

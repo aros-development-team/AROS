@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
-
 #include <proto/exec.h>
 
 #include "dos_intern.h"
@@ -52,29 +51,17 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IOFileSys iofs;
-    struct DevProc *dvp;
-    LONG err;
+    struct PacketHelperStruct phs;
+    LONG status = DOSFALSE;
 
-    InitIOFS(&iofs, FSA_INHIBIT, DOSBase);
-    iofs.io_Union.io_INHIBIT.io_Inhibit = onoff ? TRUE : FALSE;
+    if (!getdevpacketinfo(DOSBase, name, NULL, &phs))
+    	return DOSFALSE;
+ 
+    status = dopacket1(DOSBase, NULL, phs.port, ACTION_INHIBIT, onoff);
 
-    /* get the device */
-    if ((dvp = GetDeviceProc(name, NULL)) == NULL)
-        return DOSFALSE;
-
-    /* we're only interested in real devices */
-    if (dvp->dvp_DevNode->dol_Type != DLT_DEVICE) {
-        FreeDeviceProc(dvp);
-        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-        return DOSFALSE;
-    }
-
-    err = DoIOFS(&iofs, dvp, NULL, DOSBase);
-
-    FreeDeviceProc(dvp);
+    freepacketinfo(DOSBase, &phs);
     
-    return err == 0 ? DOSTRUE : DOSFALSE;
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* Inhibit */

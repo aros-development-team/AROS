@@ -117,39 +117,26 @@
     AROS_LIBFUNC_INIT
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
-
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    struct FileLock *fl = BADDR(lock);
+    LONG status = 0;
+    SIPTR err = 0;
 
     /* If fib != NULL it means we've already been called and found out that
        we needed to emulate ExAll, thus don't waste time sending messages to the
        handler.  */
     if (((struct InternalExAllControl *)control)->fib != NULL)
     {
-    	iofs.io_DosError = ERROR_ACTION_NOT_KNOWN;
+    	err = ERROR_ACTION_NOT_KNOWN;
     }
     else
     {
-	/* Prepare I/O request. */
-	InitIOFS(&iofs, FSA_EXAMINE_ALL, DOSBase);
-
-	iofs.IOFS.io_Device = fh->fh_Device;
-	iofs.IOFS.io_Unit   = fh->fh_Unit;
-
-	iofs.io_Union.io_EXAMINE_ALL.io_ead  = buffer;
-	iofs.io_Union.io_EXAMINE_ALL.io_eac  = control;
-	iofs.io_Union.io_EXAMINE_ALL.io_Size = size;
-	iofs.io_Union.io_EXAMINE_ALL.io_Mode = data;
-
-	/* Send the request. */
-	DosDoIO(&iofs.IOFS);
+    	status = dopacket5(DOSBase, &err, fl->fl_Task, ACTION_EXAMINE_ALL, (SIPTR)lock, (IPTR)buffer, (IPTR)size, (IPTR)data, (IPTR)control);
     }
     
     if
     (
-        iofs.io_DosError == ERROR_NOT_IMPLEMENTED ||
-	iofs.io_DosError == ERROR_ACTION_NOT_KNOWN
+        err == ERROR_NOT_IMPLEMENTED ||
+	err == ERROR_ACTION_NOT_KNOWN
     )
     {
 	/* Try to emulate it */
@@ -172,9 +159,6 @@
     	    sizeof(struct ExAllData)
 	};
 	
-	/* No errors for now.  */
-        iofs.io_DosError = 0;
-	
 	/* Allocate the FIB structure, if not allocated yet. It will be deallocated
 	   by DeleteDosObject().  */
 	if (!icontrol->fib)
@@ -182,7 +166,7 @@
 	    icontrol->fib = AllocDosObject(DOS_FIB, NULL);
 	    if (!icontrol->fib)
 	    {
-	        iofs.io_DosError = IoErr();
+	        err = IoErr();
 	        goto end;
 	    }
 	}
@@ -198,12 +182,12 @@
 	{    
 	    if (!Examine(lock, icontrol->fib))
 	    {
-	        iofs.io_DosError = IoErr();
+	        err = IoErr();
 		goto end;
 	    }
 	    if (icontrol->fib->fib_DirEntryType <= 0)
 	    {
-       	        iofs.io_DosError = ERROR_OBJECT_WRONG_TYPE;
+       	        err = ERROR_OBJECT_WRONG_TYPE;
 		goto end;
 	    }
 	}
@@ -215,7 +199,7 @@
 	#define ReturnOverflow()                               \
 	do {                                                   \
 	    if (last == curr)                                  \
-		iofs.io_DosError = ERROR_BUFFER_OVERFLOW;      \
+		err = ERROR_BUFFER_OVERFLOW;                   \
    	                                                       \
 	    icontrol->fib->fib_DiskKey = control->eac_LastKey; \
 	    goto end;                                          \
@@ -240,7 +224,7 @@
 	    
 	if (data > ED_OWNER)
 	    /* We don't have that many fields to fill in... */
-	    iofs.io_DosError = ERROR_BAD_NUMBER;
+	    err = ERROR_BAD_NUMBER;
 	else
 	{
 	    for
@@ -312,7 +296,7 @@
 		curr = curr->ed_Next;
 	 	control->eac_Entries++;
 	    }
-	    iofs.io_DosError = IoErr();
+	    err = IoErr();
 	}
 end:
         /* This is the last one, after it there's nothing.  */
@@ -320,8 +304,8 @@ end:
     }
 
     /* Set error code and return */
-    SetIoErr(iofs.io_DosError);
-    return (iofs.io_DosError == 0) ? DOSTRUE : DOSFALSE;
+    SetIoErr(err);
+    return (err == 0) ? DOSTRUE : DOSFALSE;
   
     AROS_LIBFUNC_EXIT
 } /* ExAll */

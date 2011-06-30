@@ -5,6 +5,7 @@
     Desc: Change the mode of a filehandle or lock.
     Lang: English
 */
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
@@ -54,32 +55,17 @@
     AROS_LIBFUNC_INIT
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh = (struct FileHandle *)BADDR(object);
-
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
-
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_FILE_MODE, DOSBase);
-
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit   = fh->fh_Unit;
-
-    iofs.io_Union.io_FILE_MODE.io_FileMode =
-        (newmode == EXCLUSIVE_LOCK) ? FMF_LOCK : 0;
-    iofs.io_Union.io_FILE_MODE.io_Mask = FMF_LOCK;
-
-    /* Send the request. */
-    DosDoIO(&iofs.IOFS);
-
-    /* Set error code and return */
-    if (iofs.io_DosError != 0)
-    {
-        SetIoErr(iofs.io_DosError);
-	return DOSFALSE;
-    }
+    struct FileHandle *fh = (struct FileHandle*)BADDR(object);
+    struct FileLock *fl = (struct FileLock*)BADDR(object);
+    LONG ret;
     
-    return DOSTRUE;
+    if (type != CHANGE_LOCK && type != CHANGE_FH) {
+    	SetIoErr(ERROR_BAD_NUMBER);
+    	return FALSE;
+    }
+    D(bug("[ChangeMode] %d %x %d\n", type, fh, newmode));
+    ret = dopacket3(DOSBase, NULL, type == CHANGE_LOCK ? fl->fl_Task : fh->fh_Type, ACTION_CHANGE_MODE, type, object, newmode);
+    return ret;
 
     AROS_LIBFUNC_EXIT
 } /* ChangeMode */

@@ -5,6 +5,7 @@
     Desc: Set the protection bits of a file.
     Lang: English
 */
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
@@ -48,16 +49,19 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    
+    LONG status = 0;
+    SIPTR error = 0;
+    struct PacketHelperStruct phs;
 
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    D(bug("[SetProtection] '%s':%x\n", name, protect));
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_SET_PROTECT, DOSBase);
-
-    iofs.io_Union.io_SET_PROTECT.io_Protection = protect;
-
-    return DoIOFS(&iofs, NULL, name, DOSBase) == 0 ? DOSTRUE : DOSFALSE;
+    if (getpacketinfo(DOSBase, name, &phs)) {
+    	status = dopacket4(DOSBase, &error, phs.port, ACTION_SET_PROTECT, BNULL, phs.lock, phs.name, protect);
+    	freepacketinfo(DOSBase, &phs);
+    }
+ 
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* SetProtection */

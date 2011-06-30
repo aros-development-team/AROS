@@ -144,8 +144,8 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     	error = fs_Open(handle, REF_CONSOLE, con, accessMode, name, DOSBase);
     else if (!Stricmp(name, "*"))
     	error = fs_Open(handle, REF_CONSOLE, ast, accessMode, name, DOSBase);
-#ifdef AROS_DOS_PACKETS
-    /* Special case for NIL:, unsupported by IOFS */
+
+    /* Special case for NIL: */
     else if (!Stricmp(name, "NIL:"))
     {
     	SetIoErr(0);
@@ -155,7 +155,6 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     	handle->fh_Port = (struct MsgPort*)DOSTRUE;
         return DOSTRUE;
     }
-#endif
     else
     {
         BPTR cur = BNULL;

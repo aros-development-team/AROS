@@ -119,9 +119,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     ULONG arg, numargs, nextarg;
     LONG it, item, chars;
     struct CSource lcs, *cs;
-//#ifdef AROS_DOS_PACKETS
     TEXT argbuff[256];	/* Maximum BCPL string length + ASCIIZ */
-//#endif
 
     ASSERT_VALID_PTR(template);
     ASSERT_VALID_PTR(array);

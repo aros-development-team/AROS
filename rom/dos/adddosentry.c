@@ -9,7 +9,6 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
-#include "../devs/filesys/packet/packet.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -84,70 +83,6 @@
         FindTask(NULL)->tc_Node.ln_Name));
 
     dl = LockDosList(LDF_ALL | LDF_READ);
-
-#ifndef AROS_DOS_PACKETS
-    /* If the passed entry has dol_Task defined, then it's a packet-based
-     * handler, and probably doesn't have valid dol_DevName, dol_Device and
-     * dol_Unit fields, which will be needed. So we search through the DOS
-     * list looking for the packet.handler entry for the same process, and
-     * fill in the values from there.
-     *
-     * This all falls down if the handler does somehow know these fields and
-     * adds different values. We can't just test for NULL, as the handler may
-     * not have cleared it. I can't think of a single good reason why a
-     * handler would do this, so I'm not worrying about it for now.
-     *
-     * It will also break if the handler has set dol_Task to something other
-     * than its original packet.handler task. In that case we won't be able to
-     * match it correctly in the DOS list, and so the three fields will remain
-     * bogus, probably causing crashes shortly after. Again, I'll worry about
-     * it if and when it happens.
-     */
-    if (dlist->dol_Task != NULL)
-    {
-    	struct DosList *scan;
-
-        for (scan = dl; scan != NULL; scan = BADDR(scan->dol_Next))
-            if (scan->dol_Task == dlist->dol_Task && scan->dol_Type == DLT_DEVICE) {
-                /* Do patching only if found DeviceNode belongs to packet.handler. Otherwise do not touch anything.
-                   This lets filesystems with own IOFS wrappers to set up dol_Task field on their own. This can be
-                   used for example to enable utilities to pass packets directly to the filesystem without the need
-                   to interact with wrapper. This will be used by SFS - Pavel Fedin <sonic.amiga@gmail.com> */
-                if (!strcmp(scan->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, "packet.handler")) {
-                    struct ph_handle *vol_handle;
-
-                    dlist->dol_Ext.dol_AROS.dol_DevName = AROS_BSTR_ADDR(dlist->dol_Name);
-                    dlist->dol_Ext.dol_AROS.dol_Device = scan->dol_Ext.dol_AROS.dol_Device;
-
-                    /* A separate handle needs to be allocated for each volume,
-                     * because it may need to stay around after its original
-                     * DOS device has been destroyed */
-                    vol_handle = AllocMem(sizeof(struct ph_handle),
-                        MEMF_PUBLIC);
-                    if (vol_handle != NULL)
-                    {
-                        CopyMem(scan->dol_Ext.dol_AROS.dol_Unit, vol_handle,
-                            sizeof(struct ph_handle));
-                        vol_handle->msgport = dlist->dol_Task;
-                        vol_handle->volume = dlist;
-                        dlist->dol_Ext.dol_AROS.dol_Unit =
-                            (struct Unit *)vol_handle;
-                    }
-                    else
-                        success = 0;
-                }
-                break;
-            }
-    }
-    /* Software ported from AmigaOS may be unaware of dol_DevName existance.
-     * In this case dol_DevName will be NULL (this assumes that it allocates
-     * the DosNode in a system-friendly manner using AllocDosObject().
-     */
-    if (!dlist->dol_Ext.dol_AROS.dol_DevName) {
-	dlist->dol_Ext.dol_AROS.dol_DevName = AROS_BSTR_ADDR(dlist->dol_Name);
-	D(bug("[AddDosEntry] Filling in dol_DevName: %s\n", dlist->dol_Ext.dol_AROS.dol_DevName));
-    }
-#endif
 
     LockDosList(LDF_ENTRY|LDF_WRITE);
     if(dlist->dol_Type != DLT_VOLUME)

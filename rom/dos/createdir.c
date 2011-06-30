@@ -5,7 +5,8 @@
     Desc: Create a new directory.
     Lang: English
 */
-
+#define DEBUG 0
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
@@ -53,24 +54,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct FileHandle *fh;
-    struct IOFileSys iofs;
+    BPTR lock = BNULL;
+    struct PacketHelperStruct phs;
+    SIPTR error;
 
-    if ((fh = (struct FileHandle *) AllocDosObject(DOS_FILEHANDLE, NULL)) == NULL)
-        return NULL;
+    D(bug("[CreateDir] '%s'\n", name));
 
-    InitIOFS(&iofs, FSA_CREATE_DIR, DOSBase);
-    iofs.io_Union.io_CREATE_DIR.io_Protection = 0;
-
-    if (DoIOFS(&iofs, NULL, name, DOSBase) != 0) {
-        FreeDosObject(DOS_FILEHANDLE, fh);
-        return NULL;
+    if (getpacketinfo(DOSBase, name, &phs)) {
+    	lock = (BPTR)dopacket2(DOSBase, &error, phs.port, ACTION_CREATE_DIR, phs.lock, phs.name);
+    	freepacketinfo(DOSBase, &phs);
     }
 
-    fh->fh_Device = iofs.IOFS.io_Device;
-    fh->fh_Unit   = iofs.IOFS.io_Unit;
-
-    return MKBADDR(fh);
+    return lock;
 
     AROS_LIBFUNC_EXIT
 } /* CreateDir */

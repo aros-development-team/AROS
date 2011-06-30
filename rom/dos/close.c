@@ -5,6 +5,7 @@
     Desc:
     Lang: English
 */
+#define DEBUG 0
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
@@ -37,7 +38,6 @@
 	0 if there was an error. != 0 on success.
 
     NOTES
-	This function is identical to UnLock().
 
     EXAMPLE
 
@@ -48,74 +48,34 @@
     INTERNALS
 
 *****************************************************************************/
-
-/*****************************************************************************
-
-    NAME
-#include <clib/dos_protos.h>
-
-	AROS_LH1(BOOL, UnLock,
-
-    SYNOPSIS
-	AROS_LHA(BPTR, lock, D1),
-
-    LOCATION
-	struct DosLibrary *, DOSBase, 15, Dos)
-
-    FUNCTION
-	Free a lock created with Lock().
-
-    INPUTS
-	lock -- The lock to free
-
-    RESULT
-
-    NOTES
-	This function is identical to Close() - see there.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************/
-/*AROS alias UnLock Close */
 {
     AROS_LIBFUNC_INIT
 
     /* Get pointer to filehandle */
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
-
-    /* Get space for I/O request. Use stack for now. */
-    struct IOFileSys iofs;
-
     /* The returncode defaults to OK. */
     BOOL ret = 1;
 
+    D(bug("Close(%x)\n", fh));
     ASSERT_VALID_PTR_OR_NULL(fh);
 
     /* 0 handles are OK */
     if(file == BNULL)
 	return ret;
 
+    /* Func3 == -1: file was already closed. */
+    if (fh->fh_Func3 == (APTR)-1)
+    	Alert(AN_FileReclosed);
+
     /* If the filehandle has a pending write on it Flush() the buffer. */
     if(fh->fh_Flags & FHF_WRITE)
 	ret = Flush(file);
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_CLOSE, DOSBase);
-
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit	= fh->fh_Unit;
-
-    /* Send the request. No errors possible. */
-    DosDoIO(&iofs.IOFS);
+    ret = dopacket1(DOSBase, NULL, fh->fh_Type, ACTION_END, fh->fh_Arg1);
 
     /* Free the filehandle which was allocated in Open(), CreateDir()
        and such. */
+    fh->fh_Func3 = (APTR)-1;
     FreeDosObject(DOS_FILEHANDLE, fh);
 
     return ret;

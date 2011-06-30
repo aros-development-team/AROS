@@ -12,7 +12,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static BOOL VolumeIsOffline(struct DosList *dl);
+extern struct Process *r(struct DeviceNode *dn, struct DosLibrary *DOSBase);
+static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STRPTR name, struct DevProc *dp);
 
 /*****************************************************************************
 
@@ -63,15 +64,28 @@ static BOOL VolumeIsOffline(struct DosList *dl);
 {
     AROS_LIBFUNC_INIT
 
+    struct DevProc *dp2;
+    
+    D(bug("[GetDeviceProc] '%s':%x\n", name, dp));
+    dp2 = deviceproc_internal(DOSBase, name, dp);
+    D(bug("[GetDeviceProc] = %x, port=%x lock=%x dv=%x\n", dp2, dp2->dvp_Port, dp2->dvp_Lock, dp2->dvp_DevNode));
+    return dp2;
+
+    AROS_LIBFUNC_EXIT
+
+} /* GetDeviceProc */
+
+static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STRPTR name, struct DevProc *dp)
+{
     struct Process *pr = (struct Process *)FindTask(NULL);
     struct DosList *dl = NULL;
-    CONST_STRPTR origname = name;
     char vol[32];
     LONG len;
-    char buf[256];
     BPTR cur = BNULL, lock = BNULL;
     BOOL stdio = FALSE;
     BOOL res;
+    CONST_STRPTR origname = name;
+    struct FileLock *fl;
 
     /* if they passed us the result of a previous call, then they're wanted to
      * loop over the targets of a multidirectory assign */
@@ -117,16 +131,17 @@ static BOOL VolumeIsOffline(struct DosList *dl);
             stdio = TRUE;
         }
 
+         /* allocate structure for return */
+        if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return NULL;
+        }
+
         if (stdio) {
             /* handle doesn't exist */
             if (cur == (BPTR) -1) {
                 SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-                return NULL;
-            }
-
-            /* got it, make a fake devproc */
-            if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
-                SetIoErr(ERROR_NO_FREE_STORE);
+                FreeMem(dp, sizeof(struct DevProc));
                 return NULL;
             }
 
@@ -137,7 +152,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
             }
 
             /* build the devproc for return */
-            dp->dvp_Port = (struct MsgPort *) ((struct FileHandle *) BADDR(lock))->fh_Device;
+            dp->dvp_Port = ((struct FileHandle *) BADDR(lock))->fh_Type;
             dp->dvp_Lock = lock;
             dp->dvp_Flags = DVPF_UNLOCK; /* remember to unlock in FreeDeviceNode() */
 
@@ -149,11 +164,8 @@ static BOOL VolumeIsOffline(struct DosList *dl);
              * implement names. bring on packets I say */
 
             dl = LockDosList(LDF_ALL | LDF_READ);
-            while (dl != NULL
-                && ((struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device
-                != dp->dvp_Port))
+            while (dl != NULL && dl->dol_Task != dp->dvp_Port)
                 dl = BADDR(dl->dol_Next);
-
             UnLockDosList(LDF_READ | LDF_ALL);
 
             /* not found */
@@ -171,63 +183,38 @@ static BOOL VolumeIsOffline(struct DosList *dl);
 
         /* something real, work out what it's relative to */
     	if (Strnicmp(name, "PROGDIR:", 8) == 0) {
-    	    cur = pr->pr_HomeDir;
-
-            /* move past the "volume" name, so that we end up in the "no
-             * volume name" case below */;
-            name = &name[8];
-        }
-
-        else
-            cur = pr->pr_CurrentDir;
-
-        /* if we got NULL, then it's relative to the system root lock */
-        if (cur == BNULL)
-            cur = DOSBase->dl_SYSLock;
+    	    lock = pr->pr_HomeDir;
+    	    /* I am not sure if these are correct but AOS does return
+    	     * non-NULL PROGDIR: handle even if pr_HomeDir is cleared */
+    	    if (!lock)
+    	    	lock = pr->pr_CurrentDir;
+    	    if (!lock)
+    	    	lock = DOSBase->dl_SYSLock;
+    	    fl = BADDR(lock);
+            dp->dvp_Port = fl->fl_Task;
+            dp->dvp_Lock = lock;
+            dp->dvp_Flags = 0;
+            dp->dvp_DevNode = BADDR(fl->fl_Volume);
+            return dp;
+    	}
 
         /* extract the volume name */
-        len = SplitName(name, ':', vol, 0, sizeof(vol)-1);
+        len = SplitName(name, ':', vol, 0, sizeof(vol) - 1);
 
-        /* move the name past it, it's now relative to the volume */
-        name += len;
-
-        /* if there wasn't one (or we found a lone ':'), then we need to
-         * extract it from the name of the current dir */
-
-        /* XXX this block sucks. NameFromLock () calls DupLock(), which calls
-         * Lock(), which would end up back here if it wasn't for the
-         * special-case in Lock(). once we have real FileLock locks, then this
-         * code will go and we can just look at cur->fl_Volume to get the
-         * doslist entry. see the morphos version for details */
+        /* if there wasn't one (or we found a lone ':') -> current dir */
         if (len <= 1) {
-
-            /* if we didn't find a ':' at all, then we'll need to return the
-             * lock that it's relative to, so make a note */
-            if (len == -1)
-                lock = cur;
-
-            if (NameFromLock(cur, buf, 255) != DOSTRUE)
-                return NULL;
-
-            len = SplitName(buf, ':', vol, 0, sizeof(vol)-1);
-
-            /* if there isn't one, something is horribly wrong */
-            if (len <= 1) {
-                kprintf("%s:%d: NameFromLock() returned a path without a volume. Probably a bug, report it!\n"
-                        "    GetDeviceProc() called for '%s'\n"
-                        "    NameFromLock() called on 0x%08x, returned '%s'\n",
-                        __FILE__, __LINE__, name, cur, buf);
-                SetIoErr(ERROR_INVALID_COMPONENT_NAME);
-                return NULL;
-            }
+            lock = pr->pr_CurrentDir;
+            /* if we got NULL, then it's relative to the system root lock */
+            if (lock == BNULL || name[0] == ':')
+                lock = DOSBase->dl_SYSLock;
+     	    fl = BADDR(lock);
+            dp->dvp_Port = fl->fl_Task;
+            dp->dvp_Lock = lock;
+            dp->dvp_Flags = 0;
+            dp->dvp_DevNode = BADDR(fl->fl_Volume);
+            return dp;
         }
-
-        /* allocate structure for return */
-        if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
-            SetIoErr(ERROR_NO_FREE_STORE);
-            return NULL;
-        }
-
+ 
         do {
             /* now find the doslist entry for the named volume */
             dl = LockDosList(LDF_ALL | LDF_READ);
@@ -243,18 +230,6 @@ static BOOL VolumeIsOffline(struct DosList *dl);
                 }
             }
         } while(dl == NULL);
-
-        /* relative to the current dir, then we have enough to get out of here */
-        if (lock != BNULL) {
-            dp->dvp_Port = (struct MsgPort *) ((struct FileHandle *) BADDR(cur))->fh_Device;
-            dp->dvp_Lock = lock;
-            dp->dvp_Flags = 0;
-            dp->dvp_DevNode = dl;
-
-            UnLockDosList(LDF_ALL | LDF_READ);
-
-            return dp;
-        }
     }
 
     /* at this point, we have an allocated devproc in dp, the doslist is
@@ -303,7 +278,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
 
         /* the added entry will be a DLT_DIRECTORY, so we can just copy the
          * details in and get out of here */
-        dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
+        dp->dvp_Port = dl->dol_Task;
         dp->dvp_Lock = dl->dol_Lock;
         dp->dvp_Flags = 0;
         dp->dvp_DevNode = dl;
@@ -318,7 +293,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
         lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 
         /* just fill out the dp and return */
-        dp->dvp_Port = (struct MsgPort *) ((struct FileHandle *) BADDR(lock))->fh_Device;
+        dp->dvp_Port = ((struct FileLock *) BADDR(lock))->fl_Task;
         dp->dvp_Lock = lock;
         dp->dvp_Flags = DVPF_UNLOCK;   /* remember to unlock in FreeDeviceNode() */
         dp->dvp_DevNode = dl;
@@ -329,25 +304,30 @@ static BOOL VolumeIsOffline(struct DosList *dl);
     }
 
     /* devices and volumes are easy */
-    if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME) {
+    if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME)
+    {
+    	struct MsgPort *newhandler = NULL;
+
 	res = TRUE;
 	if (dl->dol_Type == DLT_DEVICE)
 	{
-	    D(bug("Accessing device %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
-	    res = RunHandler((struct DeviceNode *)dl, origname) ? TRUE : FALSE;
+	    D(bug("Accessing device '%b', path='%s'\n", dl->dol_Name, origname));
+
+	    newhandler = RunHandler((struct DeviceNode *)dl, origname);
+	    res = newhandler ? TRUE : FALSE;
 	} else {
-	    while (res && VolumeIsOffline(dl)) {
-	    	D(bug("Accessing offline volume %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
+	    while (res && !dl->dol_Task) {
+	    	D(bug("Accessing offline volume '%b'\n", dl->dol_Name));
 		res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (IPTR)dl, NULL);
 	    }
 	}
-	if (!res) {
+	if (!res || (dl->dol_Type == DLT_DEVICE && !dl->dol_Task && !newhandler)) {
             UnLockDosList(LDF_ALL | LDF_READ);
             FreeMem(dp, sizeof(struct DevProc));
             SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
             return NULL;
 	}
-        dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
+        dp->dvp_Port = newhandler ? newhandler : dl->dol_Task;
         dp->dvp_Lock = BNULL;
         dp->dvp_Flags = 0;
         dp->dvp_DevNode = dl;
@@ -371,7 +351,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
     /* real assigns. first, see if it's just pointing to a single dir */
     if (dp->dvp_Flags != DVPF_ASSIGN) {
         /* just a plain assign, easy */
-        dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
+        dp->dvp_Port = dl->dol_Task;
         dp->dvp_Lock = dl->dol_Lock;
         dp->dvp_DevNode = dl;
         
@@ -379,7 +359,6 @@ static BOOL VolumeIsOffline(struct DosList *dl);
         dp->dvp_Flags = dl->dol_misc.dol_assign.dol_List != NULL ? DVPF_ASSIGN : 0;
 
         UnLockDosList(LDF_ALL | LDF_READ);
-
         return dp;
     }
 
@@ -412,24 +391,12 @@ static BOOL VolumeIsOffline(struct DosList *dl);
     }
 
     /* final pieces */
-    dp->dvp_Port = (struct MsgPort *) ((struct FileHandle *) BADDR(dp->dvp_Lock))->fh_Device;
+    dp->dvp_Port = ((struct FileLock *) BADDR(dp->dvp_Lock))->fl_Task;
     dp->dvp_Flags = DVPF_ASSIGN;
     dp->dvp_DevNode = dl;
 
     UnLockDosList(LDF_READ|LDF_ALL);
-
     /* phew */
     SetIoErr(0);
     return dp;
-
-    AROS_LIBFUNC_EXIT
-} /* GetDeviceProc */
-
-static BOOL VolumeIsOffline(struct DosList *dl)
-{
-    if (dl->dol_Ext.dol_AROS.dol_Device && strcmp(dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name,
-	"packet.handler"))
-	return !dl->dol_Ext.dol_AROS.dol_Unit;
-    else
-	return !dl->dol_Task;
 }

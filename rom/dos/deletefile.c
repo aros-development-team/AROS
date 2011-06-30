@@ -5,6 +5,7 @@
     Desc: Delete a file or directory.
     Lang: English
 */
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
@@ -52,16 +53,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    LONG status = 0;
+    SIPTR error;
+    struct PacketHelperStruct phs;
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_DELETE_OBJECT, DOSBase);
+    D(bug("[DeleteFile] '%s'\n", name));
 
-    if (DoIOFS(&iofs, NULL, name, DOSBase) == 0)
-        return DOSTRUE;
-    else
-        return DOSFALSE;
+    if (getpacketinfo(DOSBase, name, &phs)) {
+    	status = dopacket2(DOSBase, &error, phs.port, ACTION_DELETE_OBJECT, phs.lock, phs.name);
+    	freepacketinfo(DOSBase, &phs);
+    }
+    
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* DeleteFile */

@@ -57,23 +57,26 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IOFileSys iofs;
-    LONG err;
+    LONG err = ERROR_OBJECT_NOT_FOUND;
+    LONG code = DOSFALSE;
+    struct DevProc *dvp = NULL;
 
     /* console is never a filesystem */
-    if (Stricmp(devicename, "CONSOLE:") == 0 || Stricmp(devicename, "*") == 0)
-        return FALSE;
+    if (Stricmp(devicename, "CONSOLE:") == 0 || Stricmp(devicename, "*") == 0 ||
+    	Stricmp(devicename, "CON:") == 0 || Stricmp(devicename, "RAW:") == 0) {
+    	SetIoErr(err);
+        return code;
+    }
 
-    InitIOFS(&iofs, FSA_IS_FILESYSTEM, DOSBase);
-    err = DoIOFS(&iofs, NULL, devicename, DOSBase);
-
-    /* XXX if err is ERROR_ACTION_NOT_KNOWN, we should try to lock the
-     * root. if we can get a lock, then it's a filesystem */
-
-    if (err != 0)
-        return FALSE;
-
-    return iofs.io_Union.io_IS_FILESYSTEM.io_IsFilesystem;
+    if ((dvp = GetDeviceProc(devicename, dvp))) {
+    	if (dvp->dvp_Port != NULL) // NIL: isn't a filesystem
+    	    code = dopacket0(DOSBase, NULL, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
+    	FreeDeviceProc(dvp);
+    } else {
+    	SetIoErr(err);
+    }
+   
+    return code;
     
     AROS_LIBFUNC_EXIT
 } /* IsFilesystem */

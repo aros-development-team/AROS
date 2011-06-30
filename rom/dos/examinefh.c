@@ -5,7 +5,7 @@
     Desc: dos.library function ExamineFH().
     Lang: English
 */
-
+#define DEBUG 0
 #include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -21,8 +21,8 @@
 	AROS_LH2(BOOL, ExamineFH,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,                   handle, D1),
-	AROS_LHA(struct FileInfoBlock *, fib,    D2),
+	AROS_LHA(BPTR,                   lock, D1),
+	AROS_LHA(struct FileInfoBlock *, fib,  D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 65, Dos)
@@ -46,7 +46,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    return Examine(handle, fib);
+    /* Get pointer to filehandle */
+    struct FileHandle *fh = BADDR(lock);
+    D(bug("[ExamineFH] fh=%x fib=%x\n", fh, fib));
+    return dopacket2(DOSBase, NULL, fh->fh_Type, ACTION_EXAMINE_FH, fh->fh_Arg1, MKBADDR(fib));
 
     AROS_LIBFUNC_EXIT
 } /* ExamineFH */

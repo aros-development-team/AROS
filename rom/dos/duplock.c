@@ -5,6 +5,8 @@
     Desc: dos.library function DupLock()
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include "dos_intern.h"
 
@@ -33,7 +35,6 @@
 	information in that case.
 
     NOTES
-	This function is identical to DupLockFromFH().
 
     EXAMPLE
 
@@ -44,52 +45,17 @@
     INTERNALS
 
 *****************************************************************************/
-
-/*****************************************************************************
-
-    NAME
-#include <clib/dos_protos.h>
-
-	AROS_LH1(BPTR, DupLockFromFH,
-
-    SYNOPSIS
-	AROS_LHA(BPTR, fh, D1),
-
-    LOCATION
-	struct DosLibrary *, DOSBase, 62, Dos)
-
-    FUNCTION
-	Try to get a lock on the object selected by the filehandle.
-
-    INPUTS
-	fh - filehandle.
-
-    RESULT
-	The new lock or 0 in case of an error. IoErr() will give additional
-	information in that case.
-
-    NOTES
-	This function is identical to DupLock().
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************/
-/*AROS alias DupLockFromFH DupLock */
 {
     AROS_LIBFUNC_INIT
 
-    BPTR old, new;
+    struct FileLock *fl = (struct FileLock *)BADDR(lock);
+    BPTR ret;
 
-    /* Use Lock() to clone the handle. cd to it first. */
-    old = CurrentDir(lock);
-    new=Lock("",SHARED_LOCK);
-    CurrentDir(old);
-    return new;
+    if (lock == BNULL)
+    	return BNULL;
+    ret = (BPTR)dopacket1(DOSBase, NULL, fl->fl_Task, ACTION_COPY_DIR, lock);
+    D(bug("[DupLock] %x -> %x\n", fl, BADDR(ret)));
+    return ret;
+
     AROS_LIBFUNC_EXIT
 } /* DupLock */

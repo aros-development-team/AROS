@@ -102,10 +102,6 @@ struct vfp
 STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase);
 LONG RootDir(struct DevProc *dvp, struct DosLibrary *DOSBase);
 
-/* Packet emulator for IOFS */
-void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport);
-struct DosPacket *IOFS_GetPkt(struct IOFileSys *msg);
-
 /* Packet I/O */
 struct DosPacket *allocdospacket(void);
 void freedospacket(struct DosPacket *dp);
@@ -114,11 +110,11 @@ void internal_SendPkt(struct DosPacket *dp, struct MsgPort *port, struct MsgPort
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort);
 void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, SIPTR res1, LONG res2);
 
-#define dopacket5(base, res2, port, action, arg1, arg2, arg3, arg4, arg5) dopacket(res2, port, action, arg1, arg2, arg3, arg4, arg5)
-#define dopacket4(base, res2, port, action, arg1, arg2, arg3, arg4)       dopacket(res2, port, action, arg1, arg2, arg3, arg4, 0)
-#define dopacket3(base, res2, port, action, arg1, arg2, arg3)		  dopacket(res2, port, action, arg1, arg2, arg3, 0, 0)
-#define dopacket2(base, res2, port, action, arg1, arg2)			  dopacket(res2, port, action, arg1, arg2, 0, 0, 0)
-#define dopacket1(base, res2, port, action, arg1)			  dopacket(res2, port, action, arg1, 0, 0, 0, 0)
+#define dopacket5(base, res2, port, action, arg1, arg2, arg3, arg4, arg5) dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), (SIPTR)(arg5))
+#define dopacket4(base, res2, port, action, arg1, arg2, arg3, arg4)       dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), 0)
+#define dopacket3(base, res2, port, action, arg1, arg2, arg3)		  dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), 0, 0)
+#define dopacket2(base, res2, port, action, arg1, arg2)			  dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), 0, 0, 0)
+#define dopacket1(base, res2, port, action, arg1)			  dopacket(res2, port, action, (SIPTR)(arg1), 0, 0, 0, 0)
 #define dopacket0(base, res2, port, action)				  dopacket(res2, port, action, 0, 0, 0, 0, 0)
 
 extern APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase);
@@ -309,12 +305,19 @@ char *BSTR2C(BSTR);
 
 #endif
 
-#ifdef AROS_DOS_PACKETS
-
+#ifdef AROS_FAST_BSTR
+#define C2BSTR(x)	((char *)(x))
+#define FREEC2BSTR(x)	do { } while (0)
+#define CMPCBSTR(a,b)	strcmp(a,b)
+#define CMPICBSTR(a,b)	strcasecmp(a,b)
+#define fixfib(f)	do { } while (0)
+#else
 BSTR C2BSTR(CONST_STRPTR);
+#define FREEC2BSTR(bstr) FreeVec(BADDR(bstr))
 BOOL CMPCBSTR(CONST_STRPTR, BSTR);
 BOOL CMPICBSTR(CONST_STRPTR, BSTR);
 void fixfib(struct FileInfoBlock*);
+#endif
 
 struct PacketHelperStruct
 {
@@ -335,10 +338,4 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
     	} \
     } while (0);
 
-#else
-
-#define ASSERT_VALID_FILELOCK(lock)
-
-#endif
-    
 #endif /* DOS_INTERN_H */

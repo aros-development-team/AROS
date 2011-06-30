@@ -67,39 +67,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IOFileSys iofs;
-    struct DevProc *dvp;
-    struct FileHandle *fh;
-    LONG err;
+    struct PacketHelperStruct phs;
+    LONG status;
 
-    /* soft link is easy */
-    if (soft) {
-        InitIOFS(&iofs, FSA_CREATE_SOFTLINK, DOSBase);
-        iofs.io_Union.io_CREATE_SOFTLINK.io_Reference = (STRPTR) dest;
-        return DoIOFS(&iofs, NULL, name, DOSBase) == 0 ? DOSTRUE : DOSFALSE;
+    status = DOSFALSE;
+    if (getpacketinfo(DOSBase, name, &phs)) {
+        status = dopacket4(DOSBase, NULL, phs.port, ACTION_MAKE_LINK, phs.lock, phs.name, (SIPTR)name, (IPTR)soft);
+    	freepacketinfo(DOSBase, &phs);
     }
-
-    /* hard link. find the handler */
-    if ((dvp = GetDeviceProc(name, NULL)) == NULL)
-        return DOSFALSE;
-
-    fh = (struct FileHandle *) BADDR(dest);
-
-    /* source and target must be on the same device
-     * XXX this is insufficient, see comments in samedevice.c */
-    if (dvp->dvp_Port != (struct MsgPort *)fh->fh_Device) {
-        FreeDeviceProc(dvp);
-        SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
-        return DOSFALSE;
-    }
-
-    InitIOFS(&iofs, FSA_CREATE_HARDLINK, DOSBase);
-    iofs.io_Union.io_CREATE_HARDLINK.io_OldFile = fh->fh_Unit;
-    err = DoIOFS(&iofs, dvp, name, DOSBase);
-
-    FreeDeviceProc(dvp);
-
-    return err == 0 ? DOSTRUE : DOSFALSE;
+    
+    return status;
 
     AROS_LIBFUNC_EXIT
 } /* MakeLink */

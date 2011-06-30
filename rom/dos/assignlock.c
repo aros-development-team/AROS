@@ -64,17 +64,10 @@
 	    return DOSFALSE;
 	else
 	{
-#ifdef AROS_DOS_PACKETS
 	    struct FileLock *fl = BADDR(lock);
 
 	    newdl->dol_Task = fl->fl_Task;
-#else
-	    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
-
-	    newdl->dol_Ext.dol_AROS.dol_Unit   = fh->fh_Unit;
-	    newdl->dol_Ext.dol_AROS.dol_Device = fh->fh_Device;
-#endif
-	    newdl->dol_Lock                    = lock;
+	    newdl->dol_Lock = lock;
 	}
     }
 

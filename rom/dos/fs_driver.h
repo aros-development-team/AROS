@@ -1,6 +1,8 @@
 #ifndef DOS_FS_DRIVER_H
 #define DOS_FS_DRIVER_H
 
+#include <dos/notify.h>
+
 /* Reference object types for fs_Open() */
 #define REF_LOCK    0
 #define REF_DEVICE  1

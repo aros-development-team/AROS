@@ -5,6 +5,7 @@
     Desc: Read a couple of bytes from a file.
     Lang: english
 */
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
@@ -59,34 +60,20 @@
     AROS_LIBFUNC_INIT
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh = (struct FileHandle *)BADDR(file);
-
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    struct FileHandle *fh = BADDR(file);
+    LONG ret;
 
     ASSERT_VALID_PTR(fh);
-    ASSERT_VALID_PTR(fh->fh_Device);
-    ASSERT_VALID_PTR(fh->fh_Unit);
     ASSERT_VALID_PTR(buffer);
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_READ, DOSBase);
+    D(bug("[Read] %x %x %d\n", fh, buffer, length));
+    if (fh->fh_Type == BNULL)
+    	ret = 0;
+    else
+    	ret = dopacket3(DOSBase, NULL, fh->fh_Type, ACTION_READ, fh->fh_Arg1, (SIPTR)buffer, length);
+    D(bug("[Read]=%d\n", ret));
 
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit   = fh->fh_Unit;
-
-    iofs.io_Union.io_READ.io_Buffer = buffer;
-    iofs.io_Union.io_READ.io_Length = length;
-
-    /* send the request, with error reporting */
-    do {
-        DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0
-        && !ErrorReport(iofs.io_DosError, REPORT_STREAM, (IPTR)fh, NULL));
-
-    SetIoErr(iofs.io_DosError);
-
-    return iofs.io_DosError == 0 ? iofs.io_Union.io_READ.io_Length : -1;
+    return ret;
 
     AROS_LIBFUNC_EXIT
 } /* Read */
