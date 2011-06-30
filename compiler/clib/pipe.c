@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -71,7 +71,25 @@
 	return -1;
     }
 
-    if (Pipe("XPIPE:", &reader, &writer) != DOSTRUE) {
+    /*
+     * FIXME: this is untested, and looks very badly. At least, not thread-safe.
+     * Do we really need XPIPE: ? netlib provides an implementation of popen()
+     * which perfectly works on standard AmigaOS PIPE:
+     */
+    writer = Open("XPIPE:", MODE_NEWFILE);
+    if (writer)
+    {
+    	reader = Open("XPIPE:", MODE_OLDFILE);
+	if (!reader)
+	{
+    	    DeleteFile("XPIPE:");
+    	    Close(writer);
+    	    writer = BNULL;
+	}
+    }
+
+    if (writer)
+    {
         errno = IoErr2errno(IoErr());
         __free_fdesc(rdesc);
         __free_fdesc(wdesc);
