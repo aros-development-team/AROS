@@ -1,30 +1,59 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef DEBUG
 #define DEBUG 0
-#endif
 
 #include <proto/exec.h>
-
 #include <exec/errors.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <exec/types.h>
 #include <resources/filesysres.h>
-
-#include <aros/libcall.h>
-#include <aros/symbolsets.h>
+#include <aros/asmcall.h>
 #include <aros/debug.h>
 
-#include LC_LIBDEFS_FILE
+#define HANDLER_NAME "afs.handler"
+#define VERSION      41
+#define REVISION     3
+
+#define _STR(A) #A
+#define STR(A) _STR(A)
+
+extern const char afs_End;
+static const TEXT version_string[];
+
+static AROS_UFP3 (APTR, afs_Init,
+		  AROS_UFPA(APTR, unused, D0),
+		  AROS_UFPA(BPTR, segList, A0),
+		  AROS_UFPA(struct ExecBase *, sysBase, A6));
+
+const struct Resident afs_romtag =
+{
+   RTC_MATCHWORD,
+   (struct Resident *)&afs_romtag,
+   (APTR)&afs_End + 1,
+   RTF_COLDSTART,
+   VERSION,
+   NT_PROCESS,
+   -1,
+   HANDLER_NAME,
+   (STRPTR)version_string,
+   afs_Init
+};
+
+static const TEXT version_string[] = HANDLER_NAME " " STR(VERSION) "." STR(REVISION) " (" ADATE ")\n";
 
 extern void AFS_work();
 
-static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
+static AROS_UFH3 (APTR, afs_Init,
+		  AROS_UFHA(APTR, unused, D0),
+		  AROS_UFHA(BPTR, segList, A0),
+		  AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+   AROS_USERFUNC_INIT
+
     struct FileSysResource *fsr;
     const ULONG dos = 0x444f5300;
     BPTR seg;
@@ -35,11 +64,11 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
      */
     fsr = (struct FileSysResource *)OpenResource("FileSystem.resource");
     if (fsr == NULL)
-        return FALSE;
+        return NULL;
 
     seg = CreateSegList(AFS_work);
     if (seg == BNULL)
-        return FALSE;
+        return NULL;
 
     for (cnt = 0; cnt <= 7; cnt++) {
 	struct FileSysEntry *fse = AllocMem(sizeof(*fse), MEMF_CLEAR);
@@ -47,7 +76,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
 	    fse->fse_Node.ln_Name = "AFS/OFS";
 	    fse->fse_Node.ln_Pri = 120 + cnt; /* Automount priority */
 	    fse->fse_DosType = dos + cnt;
-	    fse->fse_Version = (afsbase->lib_Version << 16) | afsbase->lib_Revision;
+	    fse->fse_Version = (VERSION << 16) | REVISION;
 	    fse->fse_PatchFlags = FSEF_HANDLER | FSEF_SEGLIST | FSEF_GLOBALVEC;
 	    fse->fse_Handler = AROS_CONST_BSTR("afs.handler");
 	    fse->fse_SegList = seg;
@@ -64,7 +93,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
 	}
     }
 
-    return TRUE;
-}
+    return NULL;
 
-ADD2INITLIB(GM_UNIQUENAME(Init),0)
+    AROS_USERFUNC_EXIT
+}
