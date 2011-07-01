@@ -1041,6 +1041,8 @@ GLOB_MKDIRS += $(BD_TARGETDIR) $(BD_OBJDIR)
 #MM %(mmake) : core-linklibs includes-generate-deps
 #MM %(mmake)-kobj : core-linklibs includes-generate-deps
 #MM %(mmake)-pkg  : core-linklibs includes-generate-deps
+#MM %(mmake)-kobj-quick
+#MM %(mmake)-pkg-quick
 #MM %(mmake)-quick
 #MM %(mmake)-clean
 
@@ -1116,6 +1118,8 @@ BD_PKGMOD := $(PKGDIR)/%(modname).%(modtype)
 BD_KOBJ   := $(KOBJSDIR)/%(modname)_%(modtype).o
 
 %(mmake)-quick : %(mmake)
+%(mmake)-pkg-quick  : $(BD_PKGMOD)
+%(mmake)-kobj-quick : $(BD_KOBJ)
 %(mmake)       : $(BD_MODULE)
 %(mmake)-pkg   : $(BD_PKGMOD)
 %(mmake)-kobj  : $(BD_KOBJ)
