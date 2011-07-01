@@ -175,6 +175,13 @@ static void close_con(struct filehandle *fh)
 
 	CloseLibrary((struct Library*)fh->intuibase);
  	CloseLibrary((struct Library*)fh->dosbase);
+ 
+ 	/* These libraries are opened only if completion was used */
+ 	if (fh->gfxbase)
+ 	    CloseLibrary((struct Library*)fh->gfxbase);
+ 	if (fh->gtbase)
+ 	    CloseLibrary(fh->gtbase);
+ 
    	FreeVec(fh);
 }
 
