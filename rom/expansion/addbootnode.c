@@ -6,14 +6,17 @@
     Lang: english
 */
 
-#include "expansion_intern.h"
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <dos/filehandler.h>
-#include <proto/exec.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+
+#include "expansion_intern.h"
 
 /*****************************************************************************
 
@@ -114,50 +117,80 @@
     AROS_LIBFUNC_INIT
 
     struct BootNode *bn;
+    APTR DOSBase;
+    BOOL ok = FALSE;
 
-    /* This basically uses AddDosNode() to do all its work, however we
-       ourselves have to add the bootnode. Unfortunately
-    */
     D(bug("[AddBootNode] Adding %b from Task %s\n", deviceNode->dn_Name, FindTask(NULL)->tc_Node.ln_Name));
 
-    /* Is this enough of a test? */
-    if(!(ExpansionBase->Flags & EBF_BOOTFINISHED))
+    /* Don't add the same node twice */
+    ForeachNode(&ExpansionBase->MountList, bn)
     {
-	/* Don't add the same node twice */
-	ForeachNode(&ExpansionBase->MountList, bn)
-	{
-	    if(stricmp(AROS_BSTR_ADDR(((struct DeviceNode *) bn->bn_DeviceNode)->dn_Name), AROS_BSTR_ADDR(deviceNode->dn_Name)) == 0)
-	    {
-		// so there was already an entry with that DOS name.
-                D(bug("[AddBootNode] Rejecting attempt to add duplicate device\n"));
-		return FALSE;
-	    }
-	}
-	if((bn = AllocMem(sizeof(struct BootNode), MEMF_CLEAR|MEMF_PUBLIC)))
-	{
-	    APTR DOSBase;
-
-	    bn->bn_Node.ln_Name = (STRPTR)configDev;
-	    bn->bn_Node.ln_Type = NT_BOOTNODE;
-	    bn->bn_Node.ln_Pri = bootPri;
-	    bn->bn_Flags = flags;
-	    bn->bn_DeviceNode = deviceNode;
-	    Forbid();
-	    Enqueue( &ExpansionBase->MountList, (struct Node *)bn );
-	    Permit();
-
-	    /* Don't call AddDosNode() if dos is not yet available, it would recurse and fail with duplicate device */
-	    DOSBase = OpenLibrary("dos.library", 0);
-	    if (!DOSBase)
-		return TRUE;
-	    CloseLibrary(DOSBase);
-	}
-	else
-	    return FALSE;
+        if(stricmp(AROS_BSTR_ADDR(((struct DeviceNode *) bn->bn_DeviceNode)->dn_Name), AROS_BSTR_ADDR(deviceNode->dn_Name)) == 0)
+        {
+            // so there was already an entry with that DOS name.
+            D(bug("[AddBootNode] Rejecting attempt to add duplicate device\n"));
+            return FALSE;
+        }
     }
 
-    /* We now let AddDosNode() do all the hard work */
-    return AddDosNode(bootPri, flags, deviceNode);
+    if((bn = AllocMem(sizeof(struct BootNode), MEMF_CLEAR|MEMF_PUBLIC)))
+    {
+        bn->bn_Node.ln_Name = (STRPTR)configDev;
+        bn->bn_Node.ln_Type = NT_BOOTNODE;
+        bn->bn_Node.ln_Pri = bootPri;
+        bn->bn_Flags = flags;
+        bn->bn_DeviceNode = deviceNode;
+        D(bug("[AddBootNode] Add BootNode %p to the MountList\n", bn));
+        Forbid();
+        Enqueue( &ExpansionBase->MountList, (struct Node *)bn );
+        Permit();
+    } else {
+        return FALSE;
+    }
+
+    /* See if DOS is up and running... */
+    DOSBase = OpenLibrary("dos.library", 0);
+    if (DOSBase == NULL) {
+        /* If DOS isn't up yet, that's fine. 
+         */
+        ok = TRUE;
+    } else {
+        /* We should add the filesystem to the DOS device list. It will
+         * be usable from this point onwards.
+         *
+         * The DeviceNode structure that was passed to us can be added
+         * to the DOS list as it is, and we will let DOS start the
+         * filesystem task if it is necessary to do so.
+         */
+        if (AddDosEntry((struct DosList *)deviceNode)) {
+            if (!(flags & ADNF_STARTPROC)) {
+                ok = TRUE;
+            } else {
+                STRPTR dosname;
+                BYTE len = AROS_BSTR_strlen(deviceNode->dn_Name);
+
+                /* append a colon to the name, DeviceProc() needs a full path */
+                dosname = AllocVec(len + 1 + 1, MEMF_ANY);
+                if (dosname) {
+                    CopyMem(AROS_BSTR_ADDR(deviceNode->dn_Name), dosname, len);
+                    dosname[len++] = ':';
+                    dosname[len++] = 0;
+
+                    /* DeviceProc() will see that dn_Device for this node is NULL
+                     * and start up the handler.
+                     */
+                    D(bug("[AddBootNode] Starting up \"%s\"\n", dosname));
+                    DeviceProc(dosname);
+                    FreeVec(dosname);
+                    ok = TRUE;
+                }
+            }
+        }
+
+        CloseLibrary((struct Library *)DOSBase);
+    }
+
+    return ok;
 
     AROS_LIBFUNC_EXIT
 } /* AddBootNode */
