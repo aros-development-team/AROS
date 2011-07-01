@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdio.h> /* For snprintf */
 
 #include "__errno.h"
 #include "__fdesc.h"
@@ -44,6 +45,9 @@
     BPTR reader, writer;
     fcb *rfcb = NULL, *wfcb = NULL;
     fdesc *rdesc = NULL, *wdesc = NULL;
+    /* PIPE:cpipe-%08x-%d, where %x is the getpid(), %d is the nth pipe */
+    char pipe_name[5 + 6 + 8 + 1 + 16 + 1];
+    static int pipeno = 0;
 
     if (!pipedes)
     {
@@ -71,18 +75,22 @@
 	return -1;
     }
 
-    /*
-     * FIXME: this is untested, and looks very badly. At least, not thread-safe.
-     * Do we really need XPIPE: ? netlib provides an implementation of popen()
-     * which perfectly works on standard AmigaOS PIPE:
-     */
-    writer = Open("XPIPE:", MODE_NEWFILE);
+    /* Get the next pipe number */
+    Forbid();
+    pipeno++;
+    Permit();
+
+    snprintf(pipe_name, sizeof(pipe_name), "PIPE:cpipe-%08x-%d",
+               (unsigned long)getpid(), pipeno);
+    pipe_name[sizeof(pipe_name)-1] = 0;
+
+    writer = Open(pipe_name, MODE_NEWFILE);
     if (writer)
     {
-    	reader = Open("XPIPE:", MODE_OLDFILE);
+    	reader = Open(pipe_name, MODE_OLDFILE);
 	if (!reader)
 	{
-    	    DeleteFile("XPIPE:");
+    	    DeleteFile(pipe_name);
     	    Close(writer);
     	    writer = BNULL;
 	}
