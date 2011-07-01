@@ -47,6 +47,9 @@ struct RexxMsg
 #define ARG2(msg) ((UBYTE *)msg->rm_Args[2])
 #define RXARG(msg,n) ((UBYTE *)msg->rm_Args[n])
 
+/* Maximum arguments */
+#define MAXRMARG  15
+
 /* The command for in rm_Action */
 #define RXCOMM   0x01000000
 #define RXFUNC   0x02000000
