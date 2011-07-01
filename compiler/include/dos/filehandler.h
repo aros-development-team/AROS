@@ -2,7 +2,7 @@
 #define DOS_FILEHANDLER_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Constants for filehandlers.
@@ -112,14 +112,14 @@ struct DeviceNode
       /* PRIVATE pointer to next entry */
     BPTR  dn_Next;
       /* Type of this node. Has to be DLT_DEVICE. */
-    SIPTR dn_Type;
+    ULONG dn_Type;
 
     struct MsgPort * dn_Task;   /* dol_Task field */
     BPTR             dn_Lock;	/* dol_Lock field */
 
     BSTR  dn_Handler;    /* Null-terminated device name for handler. */
-    SIPTR dn_StackSize;  /* Initial stacksize for packet-handler task */
-    SIPTR dn_Priority;   /* Initial priority for packet-handler task */
+    LONG  dn_StackSize;  /* Initial stacksize for packet-handler task */
+    LONG  dn_Priority;   /* Initial priority for packet-handler task */
     BPTR  dn_Startup;    /* (struct FileSysStartupMsg *) see above */
     BPTR  dn_SegList;    /* SegList for the handler */
     BPTR  dn_GlobalVec;  /* Global Vector, should be (BPTR)-1 */
