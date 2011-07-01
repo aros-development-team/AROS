@@ -602,8 +602,9 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     for (m = mod; module_count > 0; module_count--, m++)
     {
         kprintf("[BOOT] Loading %s... ", m->name);
-        load_elf_file(m->name, m->address, 0);
-        kprintf("\n");
+
+        if (!load_elf_file(m->name, m->address, 0))
+            panic("Failed to load the kickstart");
     }
 
     /* Prepare the rest of boot taglist */

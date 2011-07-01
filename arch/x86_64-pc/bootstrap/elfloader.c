@@ -57,7 +57,7 @@ void set_base_address(void *ptr, void *tracker)
  */
 static int read_block(void *file, long offset, void *dest, long length)
 {
-    __bs_memcpy(dest, (void *)((long)file + offset), length);
+    __bs_memcpy(dest, file + offset, length);
     return 1;
 }
 
@@ -66,7 +66,7 @@ static int read_block(void *file, long offset, void *dest, long length)
  */
 static void *load_block(void *file, long offset, long length)
 {
-    return (void*)((long)file + offset);
+    return file + offset;
 }
 
 /*
@@ -99,12 +99,12 @@ static int check_header(struct elfheader *eh)
  */
 static int load_hunk(void *file, struct sheader *sh)
 {
-    void *ptr=(void*)0;
+    void *ptr;
 
     /* empty chunk? Who cares :) */
     if (!sh->size)
     	return 1;
-    
+
     /* Allocate a chunk with write access - take aligned memory beneath the RO kernel */
     if (sh->flags & SHF_WRITE)
     {
@@ -121,7 +121,7 @@ static int load_hunk(void *file, struct sheader *sh)
         ptr_ro = ptr_ro + sh->size;
     }
     D(kprintf("%p\n", (unsigned int)ptr));
-    
+
     sh->addr = (long)ptr;
     
     /* copy block of memory from ELF file if it exists */
@@ -147,41 +147,58 @@ static void *copy_data(const void *src, void *addr, unsigned long len)
 }
 
 /* Perform relocations of given section */
-static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, unsigned long long virt)
+static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, struct sheader *symtab_shndx, unsigned long long virt)
 {
-    struct sheader *shrel    = &sh[shrel_idx];
-    struct sheader *shsymtab = &sh[shrel->link];
-    struct sheader *toreloc  = &sh[shrel->info];
-
-    struct symbol *symtab   = (struct symbol *)((unsigned long)shsymtab->addr);
-    struct relo   *rel      = (struct relo *)((unsigned long)shrel->addr);
-    char          *section  = (char *)((unsigned long)toreloc->addr);
-
-    unsigned int numrel = (unsigned long)shrel->size / (unsigned long)shrel->entsize;
-    unsigned int i;
-
+    struct sheader *shsymtab;
+    struct symbol *symtab;
+    struct relo *rel;
+    unsigned int numrel, i;
+    struct sheader *shrel   = &sh[shrel_idx];
+    struct sheader *toreloc = &sh[SHINDEX(shrel->info)];
     struct symbol *SysBase_sym = NULL;
 
-    D(kprintf("[ELF Loader] performing %d relocations, target address %p%p\n", 
-              numrel, (unsigned long)(virt >> 32), (unsigned long)virt));
+    /*
+     * Ignore relocs if the target section has no allocation. that can happen
+     * eg. with a .debug PROGBITS and a .rel.debug section
+     */
+    if (!(toreloc->flags & SHF_ALLOC))
+    	return 1;
+
+    shsymtab = &sh[SHINDEX(shrel->link)];
+    symtab   = (struct symbol *)((unsigned long)shsymtab->addr);
+    rel      = (struct relo *)((unsigned long)shrel->addr);
+    numrel   = (unsigned long)shrel->size / (unsigned long)shrel->entsize;
+
+    D(kprintf("[ELF Loader] performing %d relocations, target address 0x%016llX%08X\n", numrel, virt));
 
     for (i=0; i<numrel; i++, rel++)
     {
         struct symbol *sym = &symtab[ELF_R_SYM(rel->info)];
+        unsigned int shindex = sym->shindex;
         char *name = (char *)(unsigned long)sh[shsymtab->link].addr + sym->name;
-        unsigned long *p = (unsigned long *)&section[rel->offset];
+        void *p = (void *)(unsigned long)toreloc->addr + rel->offset;
         unsigned long long s;
+
+        if (shindex == SHN_XINDEX)
+        {
+            if (symtab_shndx == NULL)
+            {
+                kprintf("[ELF Loader] got symbol with shndx 0xfff, but there's no symtab shndx table\n");
+                return 0;
+            }
+            shindex = ((unsigned int *)(unsigned long)symtab_shndx->addr)[ELF_R_SYM(rel->info)];
+        }
 
         switch (sym->shindex)
         {
             case SHN_UNDEF:
-                D(kprintf("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
-			  name, (unsigned long)sh[eh->shstrndx].addr + toreloc->name));
+                kprintf("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
+			name, (unsigned long)sh[eh->shstrndx].addr + toreloc->name);
                 return 0;
 
             case SHN_COMMON:
-                D(kprintf("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
-                      	  name, (unsigned long)sh[eh->shstrndx].addr + toreloc->name));
+                kprintf("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
+                      	name, (unsigned long)sh[eh->shstrndx].addr + toreloc->name);
 
                 return 0;
 
@@ -234,7 +251,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
                 break;
 
             case R_X86_64_PC32: /* PC relative 32 bit signed */
-                *p = s + rel->addend - ((unsigned long)p + virt);
+                *(unsigned long *)p = s + rel->addend - ((unsigned long)p + virt);
                 break;
 
             case R_X86_64_32:
@@ -256,7 +273,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
     return 1;
 }
 
-void load_elf_file(const char *Name, void *file, unsigned long long virt)
+int load_elf_file(const char *Name, void *file, unsigned long long virt)
 {
     struct elfheader eh;
     struct sheader *sh;
@@ -275,7 +292,7 @@ void load_elf_file(const char *Name, void *file, unsigned long long virt)
     )
     {
         kprintf("[ELF Loader] Wrong module header, aborting.\n");
-        return;
+        return 0;
     }
     
     /* Iterate over the section header in order to prepare memory and eventually load some hunks */
@@ -292,11 +309,11 @@ void load_elf_file(const char *Name, void *file, unsigned long long virt)
 #ifndef DEBUG
             else if (!addr_displayed)
             {
-                kprintf("0x%016X", sh[i].addr);
+                kprintf("0x%016llX\n", sh[i].addr);
                 addr_displayed = 1;
             }
 #endif
-        }	
+        }
     }
 
     /* For every loaded section perform the relocations */
@@ -305,9 +322,12 @@ void load_elf_file(const char *Name, void *file, unsigned long long virt)
         if (sh[i].type == AROS_ELF_REL && sh[sh[i].info].addr)
         {
             sh[i].addr = (unsigned long)load_block(file, sh[i].offset, sh[i].size);
-            if (!sh[i].addr || !relocate(&eh, sh, i, virt))
+            
+            /* FIXME: Implement full support for SHN_XINDEX (locate the appropriate section) */
+            if (!sh[i].addr || !relocate(&eh, sh, i, NULL, virt))
             {
                 kprintf("[ELF Loader] Relocation error!\n");
+                return 0;
             }
             /*
              * Flush relocs after they are processed, in order not to pass
@@ -341,4 +361,6 @@ void load_elf_file(const char *Name, void *file, unsigned long long virt)
     /* Link the module descriptor with previous one */
     prev_mod->Next = (unsigned long)mod;
     prev_mod = mod;
+
+    return 1;
 }
