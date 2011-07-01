@@ -3923,6 +3923,12 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                 pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_1;
             }
         }
+        #if (AROS_USB30_CODE)
+        if(pd->pd_Flags & PDFF_SUPERSPEED)
+        {
+            pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
+        }
+        #endif
         if(pd->pd_Flags & PDFF_NEEDSSPLIT)
         {
             /* USB1.1 device connected to a USB2.0 hub */

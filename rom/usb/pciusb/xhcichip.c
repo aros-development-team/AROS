@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved
     $Id$
 */
 
@@ -12,8 +12,6 @@
 #include "uhwcmd.h"
 
 #if (AROS_USB30_CODE)
-
-APTR AllocVecAlignedOn4KPage(APTR *original, ULONG bytesize, ULONG alignment);
 
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
@@ -32,7 +30,7 @@ AROS_UFH3(void, xhciResetHandler,
 	/* Halt controller */
     #ifdef DEBUG
     if(!xhciHaltHC(hc))
-        KPRINTF(1000, ("XHCI Halting HC failed, reset may result in undefined behavior!\n"));
+        KPRINTF(1000, ("Halting HC failed, reset may result in undefined behavior!\n"));
     #else
     xhciHaltHC(hc);
     #endif
@@ -94,7 +92,7 @@ void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     }
 }
 
-IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
+IPTR xhciSearchExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
 
     IPTR extcapoff = (IPTR) 0;
     ULONG cnt = XHCI_EXT_CAPS_MAX;
@@ -198,7 +196,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     ULONG cnt, timeout, temp;
     IPTR extcap;
-    APTR memptr;
+    APTR memptr = NULL;
     volatile APTR pciregbase;
 
     struct TagItem pciActivateMemAndBusmaster[] =
@@ -253,10 +251,13 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     /*
         Number of Device Slots (MaxSlots). This field specifies the maximum number of Device
         Context Structures and Doorbell Array entries this host controller can support. Valid values are
-        in the range of 1 to 255. The value of ‘0’ is reserved.
-        FIXME: Fail gracefully on error (0)
+        in the range of 1 to 255. The value of ‘0’ is reserved. Fail gracefully on error (0)
     */
     hc->xhc_maxslots = XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1));
+    if(hc->xhc_maxslots == 0){
+        KPRINTF(1000, ("MaxSlots count is 0, failing!\n"));
+        return FALSE;
+    }
     KPRINTF(1000, ("MaxSlots %lx\n",hc->xhc_maxslots));
 
     KPRINTF(1000, ("MaxIntrs %lx\n",XHCV_MaxIntrs(capreg_readl(XHCI_HCSPARAMS1))));
@@ -267,7 +268,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     }
 
     /* xHCI Extended Capabilities, search for USB Legacy Support */
-    extcap = xhciExtCap(hc, XHCI_EXT_CAPS_LEGACY, 0);
+    extcap = xhciSearchExtCap(hc, XHCI_EXT_CAPS_LEGACY, 0);
     if(extcap) {
 
         temp = READMEM32_LE(extcap);
@@ -294,21 +295,30 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         }
     }
 
-    /* xHCI Extended Capabilities, search for Supported Protocol */
-    extcap = 0;
-    do {
-        extcap = xhciExtCap(hc, XHCI_EXT_CAPS_PROTOCOL, extcap);
-        if(extcap) {
-            ;
-        }
-    } while (extcap);
+    /* XHCI spec says that there is at least one "Supported Protocol" capability, fail if none is found as this is used for port logic */
+    extcap = xhciSearchExtCap(hc, XHCI_EXT_CAPS_PROTOCOL, 0);
+    if(extcap) {
+        KPRINTF(1000, ("Supported Protocol found!\n"));
+        xhciParseSupProtocol(hc, extcap);
+
+        /* Parse rest, if any...*/
+        do {
+            extcap = xhciSearchExtCap(hc, XHCI_EXT_CAPS_PROTOCOL, extcap);
+            if(extcap) {
+                KPRINTF(1000, ("More Supported Protocols found!\n"));
+                xhciParseSupProtocol(hc, extcap);
+            }
+        }while(extcap);
+    }else{
+        return FALSE;
+    }
 
     if(xhciHaltHC(hc)) {
         if(xhciResetHC(hc)) {
 
             for(cnt = 1; cnt <=hc->hc_NumPorts; cnt++) {
                 temp = opreg_readl(XHCI_PORTSC(cnt));
-                KPRINTF(1000, ("Port #%d speed is %d\n",cnt, (temp&XHCM_PS_SPEED)>>XHCB_PS_SPEED ));
+                KPRINTF(1000, ("Attached device's speed on port #%d is %d (PORTSC %lx)\n",cnt, XHCV_PS_SPEED(temp), temp ));
             }
 
             hc->hc_PCIMemSize = 1024;   //Arbitrary number
@@ -366,7 +376,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                     FIXME: Fail gracefully on error (NULL memptr)
                 */
                 hc->xhc_dcbaa = AllocVecAlignedOn4KPage(&hc->xhc_dcbaa_original, (hc->xhc_maxslots + 1)*8, 64);
-                KPRINTF(1000, ("XHCI: Allocated DCBAA\n"));
+                KPRINTF(1000, ("Allocated DCBAA\n"));
 
                 /*
                     If the Max Scratchpad Buffers field of the HCSPARAMS2 register is > ‘0’, then the first entry (entry_0) in
@@ -450,19 +460,61 @@ APTR AllocVecAlignedOn4KPage(APTR *original, ULONG bytesize, ULONG alignment) {
 
     if (original) {
         *original = AllocVec(PAGE_SIZE + bytesize + alignment, (MEMF_PUBLIC | MEMF_CLEAR));
-        KPRINTF(1000, ("4KAlloc: Original %lx\n", original));
+        KPRINTF(1000, ("Original %lx\n", original));
 
         if (original) {
             tmp = (IPTR) original;
             tmp = (tmp + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-            KPRINTF(1000, ("4KAlloc: Page alignment %lx\n", tmp));
+            KPRINTF(1000, ("Page alignment %lx\n", tmp));
+            /*
+                FIXME: Check if any final alignment is needed, eg. alignment is <= PAGE_SIZE.
+                Memory usage can then be reduced if bytesize is also <= PAGE_SIZE
+                Now we allocate always (PAGE_SIZE + alignment) extra bytes of memory
+            */
             tmp = (tmp + alignment - 1) & ~(alignment - 1);
-            KPRINTF(1000, ("4KAlloc: Final alignment %lx\n", tmp));
+            KPRINTF(1000, ("Final alignment %lx\n", tmp));
             aligned = (APTR) tmp;
         }
     }
 
     return aligned;
 }
+
+BOOL xhciParseSupProtocol(struct PCIController *hc, IPTR extcap) {
+
+    ULONG temp;
+
+    temp = READMEM32_LE(extcap);
+    KPRINTF(1000, ("Version %l.%l\n", XHCV_SPFD_RMAJOR(temp), XHCV_SPFD_RMINOR(temp) ));
+
+    temp = READMEM32_LE(extcap + XHCI_SPNAMESTRING);
+    KPRINTF(1000, ("0x%lx\n", temp ));
+
+    temp = READMEM32_LE(extcap + XHCI_SPPORT);
+    KPRINTF(1000, ("CPO %ld\n", XHCV_SPPORT_CPO(temp) ));
+    KPRINTF(1000, ("CPCNT %ld\n", XHCV_SPPORT_CPCNT(temp) ));
+    KPRINTF(1000, ("PD %ld\n", XHCV_SPPORT_PD(temp) ));
+    KPRINTF(1000, ("PSIC %ld\n", XHCV_SPPORT_PSIC(temp) ));
+
+    return TRUE;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #endif
