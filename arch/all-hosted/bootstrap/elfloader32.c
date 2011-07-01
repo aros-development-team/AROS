@@ -139,9 +139,9 @@ static void *copy_data(void *src, void *addr, unsigned long len)
 static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
 {
   struct sheader *shrel    = &sh[shrel_idx];
-  struct sheader *shsymtab = &sh[shrel->link];
-  struct sheader *toreloc  = &sh[shrel->info];
-  
+  struct sheader *shsymtab = &sh[SHINDEX(shrel->link)];
+  struct sheader *toreloc  = &sh[SHINDEX(shrel->info)];
+
   struct symbol *symtab   = (struct symbol *)shsymtab->addr;
   struct relo   *rel      = (struct relo *)shrel->addr;
   char          *section  = (char *)toreloc->addr;
@@ -150,7 +150,14 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
   unsigned int i;
   
   struct symbol *SysBase_sym = NULL;
-  
+
+    /*
+     * Ignore relocs if the target section has no allocation. that can happen
+     * eg. with a .debug PROGBITS and a .rel.debug section
+     */
+  if (!(toreloc->flags & SHF_ALLOC))
+	return 1;
+
   DREL(fprintf(stderr, "[ELF Loader] performing %d relocations\n", numrel));
   
   for (i=0; i<numrel; i++, rel++)
