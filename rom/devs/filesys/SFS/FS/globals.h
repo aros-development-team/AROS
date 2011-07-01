@@ -7,13 +7,9 @@
 #include "transactions.h"
 #include "nodes.h"
 #include "fs.h"
-#include "asfsbase.h"
-#include "aros_stuff.h"
 
 struct Globals
 {
-    struct ASFSBase *asfsbase;
-    struct ASFSDeviceInfo *device;
     struct ExecBase *sysBase;
     struct DosLibrary *dosBase;
     struct IntuitionBase *intuitionBase;

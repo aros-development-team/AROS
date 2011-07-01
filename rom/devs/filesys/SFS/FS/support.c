@@ -15,7 +15,6 @@
 
 #include "globals.h"
 #include "debug.h"
-#include "aros_stuff.h"
 
 void ClearMemQuick(void *mem, LONG bytes) {
   ULONG *m=mem;
