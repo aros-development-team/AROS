@@ -69,7 +69,7 @@ static void load_system_configuration(struct DosLibrary *DOSBase)
 
 #else
 
-#define load_system_configuration(DOSBase)
+#define load_system_configuration(DOSBase) do { } while (0)
 
 #endif
 
@@ -510,7 +510,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
                 RemDosEntry(bootNode->bn_DeviceNode);
             }
         }
-        ExpansionBase->Flags |= EBF_BOOTFINISHED;
 
         /* We don't need expansion.library any more */
 	D(bug("[DOSBoot] Closing expansion.library\n"));

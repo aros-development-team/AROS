@@ -74,90 +74,19 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct DosLibrary *DOSBase;
-    BOOL ok = FALSE;
-    struct BootNode *bn;
-
-    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-
-    /* Aha, DOS is up and running... */
-    if (DOSBase != NULL)
-    {
-	/* Due to race conditions while booting (dos becomes available), 
-	   we will check the mount list if the entry is already there.
-	   As long as we are in the boot process, leave the mounting to 
-	   that process. Otherwise, mount it immediately. */
-	ForeachNode(&ExpansionBase->MountList, bn)
-	{
-	    if(stricmp(AROS_BSTR_ADDR(((struct DeviceNode *) bn->bn_DeviceNode)->dn_Name), AROS_BSTR_ADDR(deviceNode->dn_Name)) == 0)
-	    {
-		// so there was already an entry with that DOS name.
-		if(ExpansionBase->Flags & EBF_BOOTFINISHED)
-		{
-		    // well, just add it to the DOS List, the mount list won't be touched anymore anyway.
-		    // we won't remove the duplicate entry though.
-		} else {
-		    // if that node is already the mount list, don't bother
-		    CloseLibrary((struct Library *)DOSBase);
-		    return FALSE;
-		}
-		break;
-	    }
-	}
-
-	if(deviceNode->dn_SegList == BNULL && deviceNode->dn_Handler == BNULL && deviceNode->dn_Task == NULL)
-	    deviceNode->dn_SegList = DOSBase->dl_Root->rn_FileHandlerSegment;
-
-	/* We should add the filesystem to the DOS device list. It will
-	   be usable from this point onwards.
-
-	   The DeviceNode structure that was passed to us can be added
-	   to the DOS list as it is, and we will let DOS start the
-	   filesystem task if it is necessary to do so.
-	*/
-
-	ok = AddDosEntry((struct DosList *)deviceNode);
-	/* Have we been asked to start a filesystem, and there is none already */
-	if (flags & ADNF_STARTPROC)
-	{
-		STRPTR dosname = AROS_BSTR_ADDR(deviceNode->dn_Name);
-		char namebuffer[32];
-		char *tarptr = namebuffer;
-		ULONG len = 30;
-
-    	/* append a colon to the name, DeviceProc() needs a full path */
-    	while((*tarptr++ = *dosname++) && (--len));
-    	if(tarptr[-1] == 0) --tarptr;
-    	*tarptr++ = ':';
-    	*tarptr = 0;
-
-	    /* Yes, better do so.
-
-	       DeviceProc() will see that dn_Device for this node is NULL
-	       and start up the handler. */
-	    DeviceProc(namebuffer);
-	}
-
-	CloseLibrary((struct Library *)DOSBase);
-    }
-    else
-    {
-    	/*
-    	 * CHECKME: Is this correct? V36 autodocs say this
-    	 * (http://cataclysm.cx/random/amiga/reference/Includes_and_Autodocs_2._guide/node03B0.html):
-    	 *
-    	 * Before V36 Kickstart, no function existed to add BOOTNODES.
-	 * If an older expansion.library is in use, driver code will need
-         * to manually construct a BootNode and Enqueue() it to eb_Mountlist.
-         * If you have a V36 or better expansion.library, your code should
-	 * use AddBootNode().
-	 *
-	 * Perhaps we should just fail here, and the driver has already constructed a BootNode
-	 * before calling AddDosEntry() ?
-	 */
-    	return AddBootNode(bootPri, flags, deviceNode, NULL);
-    }
-    return ok;
+    /*
+     * Before V36 Kickstart, no public function existed to add BOOTNODES.
+     * If an older expansion.library is in use, driver code would needed 
+     * to manually construct a BootNode and Enqueue() it to eb_Mountlist.
+     *
+     * This maps to the pre v36 hidden function, that was identical
+     * to AddBootNode(bootPri, flags, deviceNode, NULL);
+     *
+     * The reason for the difference is that the old function was
+     * ROM internal, and it had no provision for specifying which
+     * ConfigDev the DeviceNode was attached to.
+     */
+    return AddBootNode(bootPri, flags, deviceNode, NULL);
 
     AROS_LIBFUNC_EXIT
 } /* AddDosNode */
