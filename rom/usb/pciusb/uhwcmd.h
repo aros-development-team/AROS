@@ -108,11 +108,13 @@ static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
 /* xhcichip.c, in order of appearance */
 void xhciCompleteInt(struct PCIController *hc);
 void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
-IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap);
+IPTR xhciSearchExtCap(struct PCIController *hc, ULONG id, IPTR extcap);
 BOOL xhciHaltHC(struct PCIController *hc);
 BOOL xhciResetHC(struct PCIController *hc);
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
+APTR AllocVecAlignedOn4KPage(APTR *original, ULONG bytesize, ULONG alignment);
+BOOL xhciParseSupProtocol(struct PCIController *hc, IPTR extcap);
 #endif
 
 UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset);

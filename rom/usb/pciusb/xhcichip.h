@@ -156,6 +156,38 @@
 #define XHCF_SMI_BAR            (1UL<<XHCB_SMI_BAR)
 
 
+/* These are for XHCI_EXT_CAPS_PROTOCOL */
+/* xHCI Supported Protocol Capability Field Definitions */
+#define XHCI_SPFD               0x00
+#define XHCB_SPFD_RMINOR        16
+#define XHCB_SPFD_RMAJOR        24
+
+#define	XHCM_SPFD_RMINOR        (((1UL<<8)-1)<<XHCB_SPFD_RMINOR)
+#define	XHCM_SPFD_RMAJOR        (((1UL<<8)-1)<<XHCB_SPFD_RMAJOR)
+
+#define XHCV_SPFD_RMINOR(p)    (((p)&XHCM_SPFD_RMINOR)>>XHCB_SPFD_RMINOR)
+#define XHCV_SPFD_RMAJOR(p)    (((p)&XHCM_SPFD_RMAJOR)>>XHCB_SPFD_RMAJOR)
+
+#define XHCI_SPNAMESTRING       0x04
+
+#define XHCI_SPPORT             0x08
+#define XHCB_SPPORT_CPO         0       /* Compatible Port Offset */
+#define XHCB_SPPORT_CPCNT       8       /* Compatible Port Count */
+#define XHCB_SPPORT_PD          16      /* Protocol Defined */
+#define XHCB_SPPORT_PSIC        28      /* Protocol Speed ID Count */
+
+#define XHCM_SPPORT_CPO         (((1UL<<8)-1)<<XHCB_SPPORT_CPO)
+#define XHCM_SPPORT_CPCNT       (((1UL<<8)-1)<<XHCB_SPPORT_CPCNT)
+#define XHCM_SPPORT_PD          (((1UL<<12)-1)<<XHCB_SPPORT_PD)
+#define XHCM_SPPORT_PSIC        (((1UL<<4)-1)<<XHCB_SPPORT_PSIC)
+
+#define XHCV_SPPORT_CPO(p)      (((p)&XHCM_SPPORT_CPO)>>XHCB_SPPORT_CPO)
+#define XHCV_SPPORT_CPCNT(p)    (((p)&XHCM_SPPORT_CPCNT)>>XHCB_SPPORT_CPCNT)
+#define XHCV_SPPORT_PD(p)       (((p)&XHCM_SPPORT_PD)>>XHCB_SPPORT_PD)
+#define XHCV_SPPORT_PSIC(p)     (((p)&XHCM_SPPORT_PSIC)>>XHCB_SPPORT_PSIC)
+
+#define XHCI_SPPSI(psic) ((psic *4) + 0x10 )
+
 /* XHCI operational register defines */
 /* USB Command Register (USBCMD) */
 #define	XHCI_USBCMD     0x00
