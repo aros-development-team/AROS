@@ -1,7 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-ifneq ($(FLAVOUR),palmnative)
 FILES := main \
 	bitmap \
 	cache \
@@ -15,16 +14,14 @@ FILES := main \
 	misc \
 	os_aros_support \
 	volumes \
-   validator
-else
-FILES :=
-endif
+   	validator
 
 #MM- kernel-fs-afs : includes linklibs
 
-USER_CFLAGS := -DDEBUG=0 \
-	       -D__INTUITION_NOLIBBASE__
+USER_CFLAGS := -D__INTUITION_NOLIBBASE__ -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-%build_module mmake=kernel-fs-afs \
-    modname=afs modtype=resource modsuffix=handler \
-    files="resource $(FILES)" uselibs="rom"
+%build_module_simple mmake=kernel-fs-afs \
+    modname=afs modtype=handler \
+    files="resource $(FILES) resident_end" uselibs="rom"
+
+%common
