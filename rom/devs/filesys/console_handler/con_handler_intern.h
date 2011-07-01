@@ -90,6 +90,7 @@ struct filehandle
     STRPTR              pastebuffer;
     struct Device *inputbase;
     struct IntuitionBase *intuibase;
+    struct GfxBase *gfxbase;
     struct DosLibrary *dosbase;
     struct Library *gtbase;
     struct Library *utilbase;
@@ -122,6 +123,7 @@ struct filehandle
 #define IntuitionBase fh->intuibase
 #define DOSBase fh->dosbase
 #define GadToolsBase fh->gtbase
+#define GfxBase	fh->gfxbase
 #define UtilityBase fh->utilbase
 
 #endif /* __CON_HANDLER_INTERN_H */

@@ -68,6 +68,9 @@ static struct completioninfo *InitCompletion(struct filehandle *fh)
 
     if (fh->gtbase == NULL)
 	fh->gtbase = OpenLibrary("gadtools.library", 39);
+
+    if (fh->gfxbase == NULL)
+	fh->gfxbase = (APTR)OpenLibrary("graphics.library", 39);
     
     if (fh->lastwritetask && GadToolsBase)
     if (fh->lastwritetask->tc_Node.ln_Type == NT_PROCESS)
