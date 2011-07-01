@@ -346,11 +346,6 @@ struct FileLock
  ****************************** DosLists ******************************
  **********************************************************************/
 
-/* In this section, we need to have each entry in the list have
- * the same size. The valid types you can use are:
- *  BPTR, BSTR, IPTR, SIPTR, or C pointers (ie 'UBYTE *' or 'struct MsgPort *')
- */
-
 /* This structure is returned by LockDosList() and similar calls. This
  * structure is identical the AmigaOS one, but this structure is PRIVATE
  * anyway. Use system-calls for dos list-handling.
@@ -360,7 +355,7 @@ struct DosList
       /* PRIVATE pointer to next entry. */
     BPTR dol_Next;
       /* Type of the current node (see below). */
-    SIPTR            dol_Type;
+    LONG             dol_Type;
       /* Filesystem task handling this entry (for old-style filesystems) */
     struct MsgPort * dol_Task;
       /* The lock passed to AssignLock(). Only set if the type is
@@ -372,8 +367,8 @@ struct DosList
           /* See struct DevInfo below. */
         struct {
             BSTR    dol_Handler;
-            SIPTR   dol_StackSize;
-            SIPTR   dol_Priority;
+            LONG    dol_StackSize;
+            LONG    dol_Priority;
             BPTR    dol_Startup;
             BPTR    dol_SegList;
             BPTR    dol_GlobVec;
@@ -382,7 +377,7 @@ struct DosList
         struct {
             struct DateStamp dol_VolumeDate;
             BPTR             dol_LockList;
-            SIPTR            dol_DiskType;
+            LONG             dol_DiskType;
             BPTR             dol_unused;
         } dol_volume;
           /* Structure used for assigns. */
@@ -409,24 +404,24 @@ struct DosList
 /* The following structures are essentially the same as DosList above. The
    difference is that they support just one type of entry. You can use them
    instead of DosList if you have a list containing just one type of
-   entry. For more information see above. */
+   entry. For more information see above.
+   Note that these two entries have the same size, and dl_Name has the same offset.
+   Also they have to correspond the union above.
+ */
 
 struct DeviceList
 {
     BPTR             dl_Next;
-    SIPTR            dl_Type; /* see above, always = DLT_VOLUME */
-
+    LONG             dl_Type;		/* see above, always = DLT_VOLUME		       */
     struct MsgPort * dl_Task;
     BPTR             dl_Lock;
 
-    /* Embedded DateStamp structured as defined in <dos/dos.h>. At this
-       date the volume was created. */
-    struct DateStamp dl_VolumeDate;
-    /* (void *) List of all locks on the volume. */
-    BPTR             dl_LockList;
-    /* Type of the disk. (see <dos/dos.h> for definitions) */
-    SIPTR            dl_DiskType;
-    BPTR             dl_unused; /* PRIVATE */
+    struct DateStamp dl_VolumeDate;	/* At this date the volume was created.		       */
+					/* ULONG padding is inserted here on 64 bits	       */
+    BPTR             dl_LockList;	/* (void *) List of all locks on the volume.	       */
+    LONG             dl_DiskType;	/* Type of the disk. (see <dos/dos.h> for definitions) */
+					/* ULONG padding is inserted here on 64 bits	       */
+    BPTR             dl_unused;		/* PRIVATE					       */
 
     BSTR dl_Name;
 };
@@ -437,17 +432,15 @@ struct DeviceList
 struct DevInfo
 {
     BPTR             dvi_Next;
-    SIPTR            dvi_Type;       /* see above, always = DLT_DEVICE */
-
+    LONG             dvi_Type;       /* see above, always = DLT_DEVICE */
     struct MsgPort * dvi_Task;
     BPTR             dvi_Lock;
 
-    BSTR             dvi_Handler;    /* Device name for handler. */
-    SIPTR            dvi_StackSize;  /* Packet-handler initial stack size */
-    SIPTR            dvi_Priority;   /* Packet-handler initial priority */
-    BPTR             dvi_Startup;    /* (struct FileSysStartupMsg * - defined in
-                                        <dos/filehandler.h>) */
-    BPTR             dvi_SegList;    /* SegList for the handler */
+    BSTR             dvi_Handler;    /* Device name for handler.	  */
+    LONG             dvi_StackSize;  /* Packet-handler initial stack size */
+    LONG             dvi_Priority;   /* Packet-handler initial priority	  */
+    BPTR             dvi_Startup;    /* (struct FileSysStartupMsg *)	  */
+    BPTR             dvi_SegList;    /* SegList for the handler		  */
     BPTR             dvi_GlobalVec;  /* Global Vector, should be (BPTR)-1 */
 
     BSTR             dvi_Name;
@@ -500,7 +493,7 @@ struct DosPacket
    struct Message * dp_Link; /* Pointer to a standard exec message. */
    struct MsgPort * dp_Port; /* Reply-Port of that packet. */
 
-   SIPTR dp_Type; /* see below */
+   LONG  dp_Type; /* see below */
    SIPTR dp_Res1; /* Normal return value. */
    SIPTR dp_Res2; /* Secondary return value (as returned by IoErr()). See
                     <dos/dos.h> for possible values. */
@@ -617,7 +610,7 @@ struct StandardPacket
 struct Segment
 {
     BPTR  seg_Next;    /* Pointer to next segment. */
-    SIPTR seg_UC;      /* Usage count/type */
+    LONG  seg_UC;      /* Usage count/type */
     BPTR  seg_Seg;     /* Actual Segment */
     UBYTE seg_Name[4]; /* The first characters of the name (BSTR). */
 };
