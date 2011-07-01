@@ -6,7 +6,7 @@
     Lang: English
 */
 
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_MEM
 //#define DEBUG_MEM_TYPE MMAP_TYPE_RAM
 //#define DEBUG_TAGLIST
@@ -319,16 +319,18 @@ static void setupFB(struct multiboot *mb)
     if (mb->flags & MB_FLAGS_GFX)
     {
     	kprintf("[BOOT] Got VESA display mode 0x%x from the bootstrap\n", mb->vbe_mode);
+    	D(kprintf("[BOOT] Mode info 0x%p, controller into 0x%p\n", mb->vbe_mode_info, mb->vbe_control_info));
+
     	/*
 	 * We are already running in VESA mode set by the bootloader.
 	 * Pass on the mode information to AROS.
 	 */
 	tag->ti_Tag = KRN_VBEModeInfo;
-        tag->ti_Data = KERNEL_OFFSET | mb->vbe_mode_info;
+        tag->ti_Data = mb->vbe_mode_info;
         tag++;
 
         tag->ti_Tag = KRN_VBEControllerInfo;
-        tag->ti_Data = KERNEL_OFFSET | mb->vbe_control_info;
+        tag->ti_Data = mb->vbe_control_info;
         tag++;
 
         tag->ti_Tag = KRN_VBEMode;
@@ -505,8 +507,10 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     	mmap = (struct mb_mmap *)mb->mmap_addr;
     	len  = mb->mmap_length;
 
+	D(kprintf("[BOOT] Memory map at 0x%p, length %u\n", mmap, len));
+
 #ifdef DEBUG_MEM
-	kprintf("[BOOT] Memory map at 0x%p:\n", mmap);
+	kprintf("[BOOT] Memory map contents:\n", mmap);
         while (len >= sizeof(struct mb_mmap))
         {
 #ifdef DEBUG_MEM_TYPE
