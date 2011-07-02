@@ -229,6 +229,10 @@ const char ver_version[]="\0$VER: " PROGRAMNAMEVER " 1.84 (" ADATE ")\r\n";
 static const char ver_version[]={"\0$VER: " PROGRAMNAMEVER " 1.84 " __AMIGADATE__ "\r\n"};
 #endif
 
+#ifdef __AROS__
+/* AROS builds in a 'struct Resident' automatically
+ */
+#else
 /* ROMTag is useful for C:Version. */
 #define res_Init NULL
 
@@ -245,6 +249,7 @@ const struct Resident resident =
     &ver_version[7],
     res_Init
 };
+#endif
 
 /* Main */
 
