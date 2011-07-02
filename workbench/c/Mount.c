@@ -289,7 +289,7 @@ int main(void)
             {
               while (*MyDevPtr)
               {
-                DEBUG_MOUNT(Printf("Mount: Current DevName <%s>\n",
+                DEBUG_MOUNT(kprintf("Mount: Current DevName <%s>\n",
                                    (IPTR)*MyDevPtr));
 
 		if ((params = AllocVec(PARAMSLENGTH, MEMF_PUBLIC | MEMF_CLEAR)))
@@ -305,7 +305,7 @@ int main(void)
                   if ((*MyDevPtr)[len-1] == ':')
                   {
                     /* search for a devicename */
-                    DEBUG_MOUNT(Printf("Mount: search for devname <%s>\n",
+                    DEBUG_MOUNT(kprintf("Mount: search for devname <%s>\n",
                                        (IPTR)*MyDevPtr));
 
 		    strcpy(dirname, *MyDevPtr);
@@ -313,21 +313,21 @@ int main(void)
 
                     if ((error=CheckDevice(dirname))!=RETURN_OK)
                     {
-                      DEBUG_MOUNT(Printf("Mount: is already mounted..stop\n"));
+                      DEBUG_MOUNT(kprintf("Mount: is already mounted..stop\n"));
                     }
                     else
                     {
                       if (args[1])
                       {
 			error=readmountlist(params, dirname, (STRPTR)(args[1]));
-			DEBUG_MOUNT(Printf("Mount: readmountlist(%s) returned %ld\n", args[1], error));
+			DEBUG_MOUNT(kprintf("Mount: readmountlist(%s) returned %ld\n", args[1], error));
                       }
                       else
                       {
                         char	**SearchPtr;
                         ULONG	slen;
 
-                        DEBUG_MOUNT(Printf("Mount: search device definition <%s>\n",
+                        DEBUG_MOUNT(kprintf("Mount: search device definition <%s>\n",
                                            (IPTR)*MyDevPtr));
                         for (SearchPtr=(char**) SearchTable;
                              *SearchPtr;
@@ -345,21 +345,21 @@ int main(void)
 			  dirname[slen]	= '\0';
                           strcat(dirname, *MyDevPtr);
 			  dirname[slen+len-1] =	'\0';
-			  DEBUG_MOUNT(Printf("Mount: try File <%s>\n", (IPTR)dirname));
+			  DEBUG_MOUNT(kprintf("Mount: try File <%s>\n", (IPTR)dirname));
 
 			  error=readmountfile(params, dirname);
-			  DEBUG_MOUNT(Printf("Mount: readmountfile returned %ld\n", error));
+			  DEBUG_MOUNT(kprintf("Mount: readmountfile returned %ld\n", error));
 			  if (error != ERROR_OBJECT_NOT_FOUND)
 			    break;
                         }
 			if (error == ERROR_OBJECT_NOT_FOUND)
                         {
-                          DEBUG_MOUNT(Printf("Mount: try from mountlist\n"));
+                          DEBUG_MOUNT(kprintf("Mount: try from mountlist\n"));
 			  dirname[0] = '\0';
                           strcat(dirname, *MyDevPtr);
 			  dirname[len-1] = '\0';
 			  error=readmountlist(params, dirname, MOUNTLIST);
-			  DEBUG_MOUNT(Printf("Mount: readmountlist(default) returned %ld\n", error));
+			  DEBUG_MOUNT(kprintf("Mount: readmountlist(default) returned %ld\n", error));
                         }
                       }
                     }
@@ -373,7 +373,7 @@ int main(void)
                     UBYTE stack_ap[sizeof(struct AnchorPath) + 3];
                     struct AnchorPath	*MyAp = (struct AnchorPath *) (((IPTR) stack_ap + 3) & ~3);
 
-                    DEBUG_MOUNT(Printf("Mount: search for mountfile <%s>\n",
+                    DEBUG_MOUNT(kprintf("Mount: search for mountfile <%s>\n",
                                        (IPTR)*MyDevPtr));
 
                     memset(MyAp,0,sizeof(struct AnchorPath));
@@ -385,7 +385,7 @@ int main(void)
                     {
                       if (MyAp->ap_Flags & APF_DirChanged)
                       {
-                        DEBUG_MOUNT(Printf("Mount: Changed directories...\n"));
+                        DEBUG_MOUNT(kprintf("Mount: Changed directories...\n"));
                       }
 
                       if (NameFromLock(MyAp->ap_Current->an_Lock,
@@ -406,12 +406,12 @@ int main(void)
                       {
                         if (MyAp->ap_Flags & APF_DIDDIR)
                         {
-                          DEBUG_MOUNT(Printf("Mount: Ascending from directory %s\n",
+                          DEBUG_MOUNT(kprintf("Mount: Ascending from directory %s\n",
                                         (IPTR)dirname));
                         }
                         else
                         {
-                          DEBUG_MOUNT(Printf("Mount: The next dir is  ... %s\n", (IPTR)dirname));
+                          DEBUG_MOUNT(kprintf("Mount: The next dir is  ... %s\n", (IPTR)dirname));
                         }
                         /* clear the completed directory flag */
                         MyAp->ap_Flags     &=      ~APF_DIDDIR;
@@ -421,14 +421,14 @@ int main(void)
                       {
                         /* Here is code for handling each particular file */
 
-                        DEBUG_MOUNT(Printf("Mount: try File <%s>\n",
+                        DEBUG_MOUNT(kprintf("Mount: try File <%s>\n",
                                            (IPTR)dirname));
 
                         memset(&flagargs, 0, sizeof(flagargs));
 			IsEHandler = TRUE;
 			IsFilesystem = TRUE;
 			error=readmountfile(params, dirname);
-			DEBUG_MOUNT(Printf("Mount: readmount file returned %ld\n", error));
+			DEBUG_MOUNT(kprintf("Mount: readmount file returned %ld\n", error));
                       }
                     }
                     /* This absolutely, positively must be called, all of the time. */
@@ -703,14 +703,14 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	int i;
 	char *s = NULL;
 
-	DEBUG_MOUNT(Printf("ReadMountArgs:\n%s\n\n", (IPTR)&rda->RDA_Source.CS_Buffer[rda->RDA_Source.CS_CurChr]));
+	DEBUG_MOUNT(kprintf("ReadMountArgs:\n%s\n\n", (IPTR)&rda->RDA_Source.CS_Buffer[rda->RDA_Source.CS_CurChr]));
 
 	memset(&args, 0, sizeof(args));
 
 	if (!(MyRDA = ReadArgs((STRPTR)options, &args[0], rda)))
 	{
-		DEBUG_MOUNT(Printf("ReadMountArgs: ReadArgs failed\n"));
-		DEBUG_MOUNT(PrintFault(IoErr(),"ReadMountArgs"));
+		DEBUG_MOUNT(kprintf("ReadMountArgs: ReadArgs failed\n"));
+		DEBUG_MOUNT(kprintfault(IoErr(),"ReadMountArgs"));
 		//return (ULONG) IoErr();
 		return  ERR_INVALIDKEYWORD;
 	}
@@ -745,7 +745,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	if (s)
 	{
 		int len;
-		DEBUG_MOUNT(Printf("ReadMountArgs: Handler <%s>\n",s));
+		DEBUG_MOUNT(kprintf("ReadMountArgs: Handler <%s>\n",s));
 		len = strlen(s);
 		if (HandlerString)
 		{
@@ -785,7 +785,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	{
 		int len;
 
-		DEBUG_MOUNT(Printf("ReadMountArgs: Device <%s>\n",(STRPTR)args[ARG_DEVICE]));
+		DEBUG_MOUNT(kprintf("ReadMountArgs: Device <%s>\n",(STRPTR)args[ARG_DEVICE]));
 
 		len = strlen((STRPTR)args[ARG_DEVICE]);
 
@@ -815,13 +815,13 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 			len = strlen((STRPTR)args[ARG_UNIT]);
 
-			DEBUG_MOUNT(Printf("ReadMountArgs: len %ld\n",len));
+			DEBUG_MOUNT(kprintf("ReadMountArgs: len %ld\n",len));
 
 			if ((UnitString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
 				strcpy(UnitString, (STRPTR)args[ARG_UNIT]);
 				params[2] = (IPTR)UnitString;
-				DEBUG_MOUNT(Printf("ReadMountArgs: Unit String <%s>\n", (STRPTR)params[2]));
+				DEBUG_MOUNT(kprintf("ReadMountArgs: Unit String <%s>\n", (STRPTR)params[2]));
 			}
 			else
 			{
@@ -830,13 +830,13 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 			}
 		}
         	else
-			DEBUG_MOUNT(Printf("ReadMountArgs: Unit Value %ld\n",params[2]));
+			DEBUG_MOUNT(kprintf("ReadMountArgs: Unit Value %ld\n",params[2]));
 	}
 	if (args[ARG_FLAGS] != 0)
 	{
 //			char *String;
 
-		DEBUG_MOUNT(Printf("ReadMountArgs: Flags <%s>\n",(STRPTR)args[ARG_FLAGS]));
+		DEBUG_MOUNT(kprintf("ReadMountArgs: Flags <%s>\n",(STRPTR)args[ARG_FLAGS]));
 		if (FlagsString)
 		{
 			FreeVec(FlagsString);
@@ -848,7 +848,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		if ((*String >= 0x30) && (*String <= 0x39))
 		{
 			params[3] = GetValue(String);
-			DEBUG_MOUNT(Printf("ReadMountArgs: Flag Value %ld\n",params[3]));
+			DEBUG_MOUNT(kprintf("ReadMountArgs: Flag Value %ld\n",params[3]));
 		}
 		else
 */
@@ -859,13 +859,13 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 			len = strlen((STRPTR)args[ARG_FLAGS]);
 
-			DEBUG_MOUNT(Printf("ReadMountArgs: len %ld\n",len));
+			DEBUG_MOUNT(kprintf("ReadMountArgs: len %ld\n",len));
 
 			if ((FlagsString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
 				strcpy(FlagsString, (STRPTR)args[ARG_FLAGS]);
 				params[3] = (IPTR) FlagsString;
-				DEBUG_MOUNT(Printf("ReadMountArgs: Flags String <%s>\n",(STRPTR)params[3]));
+				DEBUG_MOUNT(kprintf("ReadMountArgs: Flags String <%s>\n",(STRPTR)params[3]));
 			}
 			else
 			{
@@ -874,7 +874,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 			}
 		}
         	else
-			DEBUG_MOUNT(Printf("ReadMountArgs: Flag Value %ld\n",params[3]));
+			DEBUG_MOUNT(kprintf("ReadMountArgs: Flag Value %ld\n",params[3]));
 	}
 
         vec = (struct DosEnvec *)&params[4];
@@ -948,7 +948,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	if (args[ARG_CONTROL] != 0)
 	{
 		int len;
-		DEBUG_MOUNT(Printf("ReadMountArgs: Control <%s>\n",args[ARG_CONTROL]));
+		DEBUG_MOUNT(kprintf("ReadMountArgs: Control <%s>\n",args[ARG_CONTROL]));
 		if (ControlString)
 		{
 			FreeVec(ControlString);
@@ -982,7 +982,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	{
 //		      char *String;
 
-		DEBUG_MOUNT(Printf("ReadMountArgs: Startup <%s>\n",args[ARG_STARTUP]));
+		DEBUG_MOUNT(kprintf("ReadMountArgs: Startup <%s>\n",args[ARG_STARTUP]));
 		if (StartupString)
 		{
 			FreeVec(StartupString);
@@ -1003,7 +1003,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 			len = strlen((STRPTR)args[ARG_STARTUP]);
 
-			DEBUG_MOUNT(Printf("ReadMountArgs: len %ld\n",len));
+			DEBUG_MOUNT(kprintf("ReadMountArgs: len %ld\n",len));
 
 			if ((StartupString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
@@ -1034,7 +1034,7 @@ STRPTR	MountListBuf;
 LONG	MountListBufSize;
 ULONG	error;
 
-  DEBUG_MOUNT(Printf("ReadMountList: find <%s> in mountlist <%s>\n",
+  DEBUG_MOUNT(kprintf("ReadMountList: find <%s> in mountlist <%s>\n",
                      name,
                      mountlist));
 
@@ -1056,7 +1056,7 @@ ULONG	error;
     {
       if ((error = mount(params,name))!=RETURN_OK)
       {
-        DEBUG_MOUNT(Printf("ReadMountList: mount failed error %ld\n",
+        DEBUG_MOUNT(kprintf("ReadMountList: mount failed error %ld\n",
                            error));
       }
     }
@@ -1094,7 +1094,7 @@ int			toollen;
 BOOL			mountinfo=FALSE;
 char			name[256+1];
 
-  DEBUG_MOUNT(Printf("ReadMountFile: <%s>\n", (IPTR)filename));
+  DEBUG_MOUNT(kprintf("ReadMountFile: <%s>\n", (IPTR)filename));
 
   {
     struct Process *me = (APTR) FindTask(NULL);
@@ -1130,7 +1130,7 @@ char			name[256+1];
     }
   }
 
-  DEBUG_MOUNT(Printf("ReadMountFile: mount <%s>\n", (IPTR)name));
+  DEBUG_MOUNT(kprintf("ReadMountFile: mount <%s>\n", (IPTR)name));
 
   if ((error=CheckDevice(name))!=RETURN_OK)
   {
@@ -1139,21 +1139,21 @@ char			name[256+1];
 
   InitParams(params);
 
-  DEBUG_MOUNT(Printf("ReadMountFile: readfile\n"));
+  DEBUG_MOUNT(kprintf("ReadMountFile: readfile\n"));
 
   error = readfile(filename,
                    &MountListBuf,
                    &MountListBufSize);
   if (error==RETURN_OK)
   {
-    DEBUG_MOUNT(Printf("ReadMountFile: preparsefile\n"));
+    DEBUG_MOUNT(kprintf("ReadMountFile: preparsefile\n"));
     preparefile(MountListBuf, MountListBufSize);
 
 
-    DEBUG_MOUNT(Printf("ReadMountFile: parsemountfile\n"));
+    DEBUG_MOUNT(kprintf("ReadMountFile: parsemountfile\n"));
     if ((error = parsemountfile(params, MountListBuf, MountListBufSize))!=RETURN_OK)
     {
-      DEBUG_MOUNT(Printf("ReadMountFile: parsemountfile error %ld\n", error));
+      DEBUG_MOUNT(kprintf("ReadMountFile: parsemountfile error %ld\n", error));
       ShowFault(IoErr(), "Mountfile '%s' is invalid", filename);
     }
     else
@@ -1164,14 +1164,14 @@ char			name[256+1];
   }
   else
   {
-    DEBUG_MOUNT(Printf("ReadMountFile: mountfile not found..search for <%s.info>\n",
+    DEBUG_MOUNT(kprintf("ReadMountFile: mountfile not found..search for <%s.info>\n",
                        filename));
   }
 
   if ((error==RETURN_OK) ||
       (error==ERROR_OBJECT_NOT_FOUND))
   {
-    DEBUG_MOUNT(Printf("ReadMountFile: look for icon '%s'\n", filename));
+    DEBUG_MOUNT(kprintf("ReadMountFile: look for icon '%s'\n", filename));
 
     if ((IconBase =  OpenLibrary("icon.library", 37)))
     {
@@ -1184,7 +1184,7 @@ char			name[256+1];
           {
             char	*ToolPtr;
             ToolPtr	=	*myargv;
-            DEBUG_MOUNT(Printf("ReadMountFile: ToolType <%s>\n",
+            DEBUG_MOUNT(kprintf("ReadMountFile: ToolType <%s>\n",
                                ToolPtr));
             if ((ToolPtr[0] != '(') && (ToolPtr[0] != '*') &&
                 !((ToolPtr[0] == 'I') && (ToolPtr[1] == 'M') && (ToolPtr[3] == '=')))
@@ -1207,7 +1207,7 @@ char			name[256+1];
                 }
                 else
                 {
-                  DEBUG_MOUNT(Printf("ReadMountFile: ReadArgs failed error %ld\n",
+                  DEBUG_MOUNT(kprintf("ReadMountFile: ReadArgs failed error %ld\n",
                                      error));
                 }
                 FreeVec(ToolString);
@@ -1220,7 +1220,7 @@ char			name[256+1];
             }
             else
             {
-              DEBUG_MOUNT(Printf("ReadMountFile: skipped\n"));
+              DEBUG_MOUNT(kprintf("ReadMountFile: skipped\n"));
             }
             myargv++;
           }
@@ -1236,11 +1236,11 @@ char			name[256+1];
 
   if (mountinfo)
   {
-    DEBUG_MOUNT(Printf("ReadMountFile: mount information exists\n"));
+    DEBUG_MOUNT(kprintf("ReadMountFile: mount information exists\n"));
 
     if ((error = mount(params,name)) != RETURN_OK)
     {
-      DEBUG_MOUNT(Printf("ReadMountFile: mount failed error %ld\n",
+      DEBUG_MOUNT(kprintf("ReadMountFile: mount failed error %ld\n",
                          error));
     }
   }
@@ -1267,7 +1267,7 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
     ml = Open(name, MODE_OLDFILE);
     me->pr_WindowPtr = oldwinptr;
 
-    DEBUG_MOUNT(Printf("ReadFile: <%s>\n", (IPTR) name));
+    DEBUG_MOUNT(kprintf("ReadFile: <%s>\n", (IPTR) name));
 
     if (ml)
     {
@@ -1319,7 +1319,7 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 	Close(ml);
     }
 
-    DEBUG_MOUNT(Printf("ReadFile: error %ld\n", IoErr()));
+    DEBUG_MOUNT(kprintf("ReadFile: error %ld\n", IoErr()));
     return IoErr();
 }
 
@@ -1637,7 +1637,7 @@ STRPTR args[NUM_ARGS];
 LONG   error;
 struct RDArgs rda;
 
-    DEBUG_MOUNT(Printf("ParseMountFile:\n"));
+    DEBUG_MOUNT(kprintf("ParseMountFile:\n"));
 
     memset(&args, 0, sizeof(args));
     memset(&rda,0,sizeof(struct RDArgs));
@@ -1647,12 +1647,12 @@ struct RDArgs rda;
     rda.RDA_Source.CS_CurChr = 0;
     rda.RDA_Flags = RDAF_NOPROMPT;
 
-    DEBUG_MOUNT(Printf("ReadArgs..\n%s\n\n", (IPTR)rda.RDA_Source.CS_Buffer));
+    DEBUG_MOUNT(kprintf("ReadArgs..\n%s\n\n", (IPTR)rda.RDA_Source.CS_Buffer));
 
     if ((error=ReadMountArgs(params,
                             &rda))!=RETURN_OK)
     {
-	DEBUG_MOUNT(Printf("Parse: ReadArgs failed\n"));
+	DEBUG_MOUNT(kprintf("Parse: ReadArgs failed\n"));
     }
     return error;
 }
@@ -1674,7 +1674,7 @@ STRPTR s2;
 char *ptr;
 struct RDArgs rda;
 
-    DEBUG_MOUNT(Printf("ParseMountList: <%s>\n", (IPTR)name));
+    DEBUG_MOUNT(kprintf("ParseMountList: <%s>\n", (IPTR)name));
 
     memset(&args,0,sizeof(args));
     memset(&rda,0,sizeof(struct RDArgs));
@@ -1688,8 +1688,8 @@ struct RDArgs rda;
     {
 	res = ReadItem(buffer, sizeof(buffer), &rda.RDA_Source);
 
-	DEBUG_MOUNT(Printf("ParseMountList: buffer <%s>\n", (IPTR)buffer));
-	DEBUG_MOUNT(Printf("ParseMountList: ReadItem res %ld\n",res));
+	DEBUG_MOUNT(kprintf("ParseMountList: buffer <%s>\n", (IPTR)buffer));
+	DEBUG_MOUNT(kprintf("ParseMountList: ReadItem res %ld\n",res));
 
 	if (res == ITEM_ERROR)
 	{
@@ -1716,7 +1716,7 @@ struct RDArgs rda;
 
 	if (s2 == buffer || s2[-1] != ':')
 	{
-	    DEBUG_MOUNT(Printf("ParseMountList: failure\n"));
+	    DEBUG_MOUNT(kprintf("ParseMountList: failure\n"));
 	    return ERR_DEVICENOTFOUND;
 	}
 
@@ -1725,7 +1725,7 @@ struct RDArgs rda;
 	if (!Strnicmp(name, buffer, s2 - buffer) &&
 	   (!name[s2 - buffer] || (name[s2 - buffer] == ':' || !name[s2 - buffer + 1])))
 	{
-	    DEBUG_MOUNT(Printf("ParseMountList: found\n"));
+	    DEBUG_MOUNT(kprintf("ParseMountList: found\n"));
 
 	    /* Copy the string so we get proper case - Piru */
 	    memcpy(name, buffer, s2 - buffer);
@@ -1741,12 +1741,12 @@ struct RDArgs rda;
 		}
 	    }
 
-	    DEBUG_MOUNT(Printf("ReadArgs..\n%s\n\n", (IPTR)&rda.RDA_Source.CS_Buffer[rda.RDA_Source.CS_CurChr]));
+	    DEBUG_MOUNT(kprintf("ReadArgs..\n%s\n\n", (IPTR)&rda.RDA_Source.CS_Buffer[rda.RDA_Source.CS_CurChr]));
 
 	    if ((error=ReadMountArgs(params,
                                      &rda))!=RETURN_OK)
 	    {
-		DEBUG_MOUNT(Printf("ParseMountList: ReadArgs failed\n"));
+		DEBUG_MOUNT(kprintf("ParseMountList: ReadArgs failed\n"));
 		//return IoErr();
 	    }
 
@@ -1757,13 +1757,13 @@ struct RDArgs rda;
 	{
 	    if (rda.RDA_Source.CS_Buffer[rda.RDA_Source.CS_CurChr++] == '\n')
 	    {
-		DEBUG_MOUNT(Printf("ParseMountList: reach the end of the block\n"));
+		DEBUG_MOUNT(kprintf("ParseMountList: reach the end of the block\n"));
 		break;
 	    }
 	}
     }
 
-    DEBUG_MOUNT(Printf("ParseMountList: mount found nothing\n"));
+    DEBUG_MOUNT(kprintf("ParseMountList: mount found nothing\n"));
     return ERR_DEVICENOTFOUND;
 }
 
@@ -1824,50 +1824,50 @@ LONG mount(IPTR	*params, STRPTR	name)
     struct DeviceNode *dn;
 
     strupr(name);
-    DEBUG_MOUNT(Printf("MountDev: <%s>\n", (IPTR)name));
+    DEBUG_MOUNT(kprintf("MountDev: <%s>\n", (IPTR)name));
 
     if ((error=checkmount(params))!=RETURN_OK)
     {
-	DEBUG_MOUNT(Printf("MountDev: checkmount failed\n"));
+	DEBUG_MOUNT(kprintf("MountDev: checkmount failed\n"));
 	return error;
     }
 
     vec = (struct DosEnvec *)&params[4];
 
-    DEBUG_MOUNT(Printf("MountDev: DosName         <%s>\n", (IPTR)name));
-    DEBUG_MOUNT(Printf("MountDev: Filesystem      <%s>\n", (IPTR)HandlerString + BSTR_OFFSET));
-    DEBUG_MOUNT(Printf("MountDev: Device          <%s>\n", (IPTR)DeviceString));
-    DEBUG_MOUNT(Printf("MountDev: TableSize       %ld\n",vec->de_TableSize));
-    DEBUG_MOUNT(Printf("MountDev: SizeBlock       %ld\n",vec->de_SizeBlock));
-    DEBUG_MOUNT(Printf("MountDev: SecOrg          %ld\n",vec->de_SecOrg));
-    DEBUG_MOUNT(Printf("MountDev: Surfaces        %ld\n",vec->de_Surfaces));
-    DEBUG_MOUNT(Printf("MountDev: SectorsPerBlock %ld\n",vec->de_SectorPerBlock));
-    DEBUG_MOUNT(Printf("MountDev: BlocksPerTrack  %ld\n",vec->de_BlocksPerTrack));
-    DEBUG_MOUNT(Printf("MountDev: Reserved        %ld\n",vec->de_Reserved));
-    DEBUG_MOUNT(Printf("MountDev: PreAlloc        %ld\n",vec->de_PreAlloc));
-    DEBUG_MOUNT(Printf("MountDev: Interleave      %ld\n",vec->de_Interleave));
-    DEBUG_MOUNT(Printf("MountDev: LowCyl          %ld\n",vec->de_LowCyl));
-    DEBUG_MOUNT(Printf("MountDev: UpperCyl        %ld\n",vec->de_HighCyl));
-    DEBUG_MOUNT(Printf("MountDev: NumBuffers      %ld\n",vec->de_NumBuffers));
+    DEBUG_MOUNT(kprintf("MountDev: DosName         <%s>\n", (IPTR)name));
+    DEBUG_MOUNT(kprintf("MountDev: Filesystem      <%s>\n", (IPTR)HandlerString + BSTR_OFFSET));
+    DEBUG_MOUNT(kprintf("MountDev: Device          <%s>\n", (IPTR)DeviceString));
+    DEBUG_MOUNT(kprintf("MountDev: TableSize       %ld\n",vec->de_TableSize));
+    DEBUG_MOUNT(kprintf("MountDev: SizeBlock       %ld\n",vec->de_SizeBlock));
+    DEBUG_MOUNT(kprintf("MountDev: SecOrg          %ld\n",vec->de_SecOrg));
+    DEBUG_MOUNT(kprintf("MountDev: Surfaces        %ld\n",vec->de_Surfaces));
+    DEBUG_MOUNT(kprintf("MountDev: SectorsPerBlock %ld\n",vec->de_SectorPerBlock));
+    DEBUG_MOUNT(kprintf("MountDev: BlocksPerTrack  %ld\n",vec->de_BlocksPerTrack));
+    DEBUG_MOUNT(kprintf("MountDev: Reserved        %ld\n",vec->de_Reserved));
+    DEBUG_MOUNT(kprintf("MountDev: PreAlloc        %ld\n",vec->de_PreAlloc));
+    DEBUG_MOUNT(kprintf("MountDev: Interleave      %ld\n",vec->de_Interleave));
+    DEBUG_MOUNT(kprintf("MountDev: LowCyl          %ld\n",vec->de_LowCyl));
+    DEBUG_MOUNT(kprintf("MountDev: UpperCyl        %ld\n",vec->de_HighCyl));
+    DEBUG_MOUNT(kprintf("MountDev: NumBuffers      %ld\n",vec->de_NumBuffers));
     DEBUG_MOUNT(if (vec->de_TableSize >= DE_BUFMEMTYPE))
-    DEBUG_MOUNT(Printf("MountDev: BufMemType      0x%lx\n",vec->de_BufMemType));
-    DEBUG_MOUNT(Printf("MountDev: MaxTransfer     0x%lx\n",vec->de_MaxTransfer));
+    DEBUG_MOUNT(kprintf("MountDev: BufMemType      0x%lx\n",vec->de_BufMemType));
+    DEBUG_MOUNT(kprintf("MountDev: MaxTransfer     0x%lx\n",vec->de_MaxTransfer));
     DEBUG_MOUNT(if (vec->de_TableSize >= DE_MASK))
-    DEBUG_MOUNT(Printf("MountDev: Mask            0x%lx\n",vec->de_Mask));
+    DEBUG_MOUNT(kprintf("MountDev: Mask            0x%lx\n",vec->de_Mask));
     DEBUG_MOUNT(if (vec->de_TableSize >= DE_BOOTPRI))
-    DEBUG_MOUNT(Printf("MountDev: BootPri         %ld\n",vec->de_BootPri));
+    DEBUG_MOUNT(kprintf("MountDev: BootPri         %ld\n",vec->de_BootPri));
     DEBUG_MOUNT(if (vec->de_TableSize >= DE_DOSTYPE))
-    DEBUG_MOUNT(Printf("MountDev: DosType         0x%lx\n",vec->de_DosType));
+    DEBUG_MOUNT(kprintf("MountDev: DosType         0x%lx\n",vec->de_DosType));
     DEBUG_MOUNT(if (vec->de_TableSize >= DE_BAUD))
-    DEBUG_MOUNT(Printf("MountDev: Baud            %ld\n",vec->de_Baud));
+    DEBUG_MOUNT(kprintf("MountDev: Baud            %ld\n",vec->de_Baud));
     DEBUG_MOUNT(if (vec->de_TableSize >= DE_CONTROL))
-    DEBUG_MOUNT(Printf("MountDev: Control         0x%lx\n",vec->de_Control));
+    DEBUG_MOUNT(kprintf("MountDev: Control         0x%lx\n",vec->de_Control));
     DEBUG_MOUNT(if (vec->de_TableSize >= DE_BOOTBLOCKS))
-    DEBUG_MOUNT(Printf("MountDev: BootBlocks      %ld\n",vec->de_BootBlocks));
+    DEBUG_MOUNT(kprintf("MountDev: BootBlocks      %ld\n",vec->de_BootBlocks));
 
     if ((dn=MyMakeDosNode(name, IsEHandler ? params : NULL, StartupString)))
     {
-        DEBUG_MOUNT(Printf("MountDev: DeviceNode 0x%lx\n", (IPTR)dn));
+        DEBUG_MOUNT(kprintf("MountDev: DeviceNode 0x%lx\n", (IPTR)dn));
 
 	dn->dn_StackSize = StackSize;
 	dn->dn_Priority	 = Priority;
@@ -1880,13 +1880,13 @@ LONG mount(IPTR	*params, STRPTR	name)
 
 	if (IsFilesystem && ((ForceLoad==0) || (HandlerString==NULL)))
         {
-	    DEBUG_MOUNT(Printf("MountDev: patchdosnode\n"));
+	    DEBUG_MOUNT(kprintf("MountDev: patchdosnode\n"));
 	    PatchDosNode(dn,vec->de_DosType);
         }
 
         if (ForceLoad || dn->dn_SegList==BNULL)
         {
-	    DEBUG_MOUNT(Printf("MountDev: Load Handler\n"));
+	    DEBUG_MOUNT(kprintf("MountDev: Load Handler\n"));
 	    dn->dn_Handler = MKBADDR(HandlerString);
         }
         else
@@ -1900,19 +1900,19 @@ LONG mount(IPTR	*params, STRPTR	name)
 		HandlerString =	NULL;
 	    }
         }
-	DEBUG_MOUNT(Printf("MountDev: Name      %b\n",dn->dn_Name));
-	DEBUG_MOUNT(Printf("MountDev: Handler   0x%lx <%b>\n",dn->dn_Handler,dn->dn_Handler));
-	DEBUG_MOUNT(Printf("MountDev: SegList   0x%lx\n",dn->dn_SegList));
-        DEBUG_MOUNT(Printf("MountDev: StackSize %ld\n",dn->dn_StackSize));
-	DEBUG_MOUNT(Printf("MountDev: Priority  %ld\n",dn->dn_Priority));
-	DEBUG_MOUNT(Printf(!IsEHandler && StartupString ? "MountDev: Startup   <%b>\n" : "MountDev: Startup   0x%lx\n", dn->dn_Startup));
-        DEBUG_MOUNT(Printf("MountDev: GlobalVec %ld\n",dn->dn_GlobalVec));
+	DEBUG_MOUNT(kprintf("MountDev: Name      %b\n",dn->dn_Name));
+	DEBUG_MOUNT(kprintf("MountDev: Handler   0x%lx <%b>\n",dn->dn_Handler,dn->dn_Handler));
+	DEBUG_MOUNT(kprintf("MountDev: SegList   0x%lx\n",dn->dn_SegList));
+        DEBUG_MOUNT(kprintf("MountDev: StackSize %ld\n",dn->dn_StackSize));
+	DEBUG_MOUNT(kprintf("MountDev: Priority  %ld\n",dn->dn_Priority));
+	DEBUG_MOUNT(kprintf(!IsEHandler && StartupString ? "MountDev: Startup   <%b>\n" : "MountDev: Startup   0x%lx\n", dn->dn_Startup));
+        DEBUG_MOUNT(kprintf("MountDev: GlobalVec %ld\n",dn->dn_GlobalVec));
 
         if (dn->dn_SegList || dn->dn_Handler)
         {
 	    if (AddDosEntry((struct DosList *)dn))
 	    {
-		    DEBUG_MOUNT(Printf("MountDev: AddDosEntry worked\n"));
+		    DEBUG_MOUNT(kprintf("MountDev: AddDosEntry worked\n"));
 		    /*
 		     * Don't free these anymore as they belong to the dosnode
 		     */
@@ -1926,14 +1926,14 @@ LONG mount(IPTR	*params, STRPTR	name)
 		    if (Activate)
 		    {
 			strcat(name, ":");
-			DEBUG_MOUNT(Printf("Activating \"%s\"\n", (IPTR)name));
+			DEBUG_MOUNT(kprintf("Activating \"%s\"\n", (IPTR)name));
 			DeviceProc(name);
 		    }
 		    error = 0;
 	    }
 	    else
 	    {
-		    DEBUG_MOUNT(Printf("MountDev: AddDosEntry failed\n"));
+		    DEBUG_MOUNT(kprintf("MountDev: AddDosEntry failed\n"));
 		    error = ERROR_INVALID_RESIDENT_LIBRARY;
 		    if (HandlerString)
 		    {
@@ -1943,7 +1943,7 @@ LONG mount(IPTR	*params, STRPTR	name)
         }
         else
         {
-	        DEBUG_MOUNT(Printf("MountDev: no loadseg and no handler specified\n"));
+	        DEBUG_MOUNT(kprintf("MountDev: no loadseg and no handler specified\n"));
 	        error = ERROR_OBJECT_NOT_FOUND;
         }
     }
