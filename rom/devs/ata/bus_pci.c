@@ -352,6 +352,13 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
      */
     if (SubClass == PCI_SUBCLASS_SATA)
     {
+    /*
+        WARNING: This will most probably result in failed boot on number of PC's.
+        It is not enough to just clear GHC_AE, see chapter 10.2 Hardware Prerequisites to Enable/Disable GHC.AE on ahci 1.3 specification
+        I can confirm this happening on my P45D motherboard with mixed IDE/SATA drives
+    */
+//      return;
+
     	APTR hba_phys = NULL;
     	IPTR hba_size = 0;
 	OOP_Object *Driver = NULL;
