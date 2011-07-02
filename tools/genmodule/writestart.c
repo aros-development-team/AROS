@@ -662,7 +662,7 @@ static void writehandler(FILE *out, struct config *cfg)
                "        return;\n"
                "    \n"
                "    for (i = 0; i < sizeof(handler)/sizeof(handler[0]); i++) {\n"
-               "        struct FileSysEntry *fse;\n"
+               "        struct FileSysEntry *fse = NULL;\n"
                "        int j;\n"
                "    \n"
                "        /* Check to see if we can allocate the memory for the fse */\n"
