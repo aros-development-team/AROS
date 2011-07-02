@@ -27,7 +27,7 @@ USER_CFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
 # same module for both putting on disk and including into kickstart.
 # Resident startup code is very small, so we don't bother about binary size.
 
-%build_module_simple mmake=kernel-fs-sfs \
+%build_module mmake=kernel-fs-sfs \
     modname=sfs modtype=handler \
     files="$(FILES)" uselibs="arossupport rom"
 
