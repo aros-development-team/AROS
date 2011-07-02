@@ -9,11 +9,8 @@ include $(TOP)/config/make.cfg
 
 TESTSDIR := $(AROS_TESTS)/cdrom
 
-CORE_FILES := volumes path hfs generic iso9660 cdrom \
+HANDLER_FILES := handler volumes path hfs generic iso9660 cdrom \
 		 devsupp rock joliet prefs charset intui device
-
-MODULE_FILES := resource $(CORE_FILES)
-HANDLER_FILES := handler $(CORE_FILES)
 
 CDCONTROL_FILES := cdcontrol
 CDROM_FILES := main cdrom iso9660 rock joliet \
@@ -26,11 +23,6 @@ CHECKCD_FILES := checkcd cdrom iso9660 rock joliet \
 
 #And these ones are for normal operation
 USER_CFLAGS := -DNDEBUG -DDEBUG=0
-
-%build_prog mmake=workbench-devs-cdvdfs-packet \
-    progname=cdrom.handler targetdir=$(AROS_DEVS) \
-    objdir=$(GENDIR)/$(CURDIR)-packet files="$(HANDLER_FILES)" \
-    usestartup=no uselibs="arossupport rom"
 
 %build_prog mmake=workbench-devs-cdvdfs-cdcontrol \
     progname=cdcontrol targetdir=$(AROS_C) \
@@ -47,6 +39,6 @@ USER_CFLAGS := -DNDEBUG -DDEBUG=0
 USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
 
 %build_module mmake=workbench-devs-cdvdfs \
-    modname=cdrom modtype=resource modsuffix=handler \
-    files="$(MODULE_FILES)" \
+    modname=cdrom modtype=handler \
+    files="$(HANDLER_FILES)" \
     uselibs="arossupport rom"
