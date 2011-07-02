@@ -20,7 +20,7 @@ FILES := \
 	boot \
 	assroutines
 
- USER_CFLAGS := \
+PFS3_CFLAGS := \
 	-DEXTRAPACKETS=1 \
 	-DSIZEFIELD \
 	-DDELDIR=1 \
@@ -33,12 +33,33 @@ FILES := \
 	-DTD64=1 \
 	-DSCSIDIRECT=0
 
+PFS3DS_CFLAGS := \
+	-DEXTRAPACKETS=1 \
+	-DSIZEFIELD \
+	-DDELDIR=1 \
+	-DMAX_BUFFERS=600 \
+	-DMIN_BUFFERS=70 \
+	-DMULTIUSER=0 \
+	-DPROTECTION=0 \
+	-DVERSION23=1 \
+	-DROLLOVER=1 \
+	-DTD64=1 \
+	-DSCSIDIRECT=1
+
 USER_CFLAGS := \
-    -DAROS_KERNEL $(USER_CFLAGS) \
+    -DAROS_KERNEL $(PFS3_CFLAGS) \
 	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
 
 %build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \
+    files="$(FILES)" uselibs="rom"
+
+USER_CFLAGS := \
+    -DAROS_KERNEL $(PFS3DS_CFLAGS) \
+	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+
+%build_module mmake=kernel-fs-pfs3ds \
+    modname=pfs3ds modtype=handler \
     files="$(FILES)" uselibs="rom"
 
 %common
