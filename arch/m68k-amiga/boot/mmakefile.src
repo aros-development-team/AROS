@@ -3,6 +3,8 @@ include $(TOP)/config/make.cfg
 # Rules to create AROS Kernel for amiga-m68k
 #
 
+Q ?= @
+
 #MM- kernel-link-amiga-m68k : general-setup-amiga-m68k
 
 #MM- kernel-link-amiga-m68k : \
@@ -156,6 +158,7 @@ $(DISTDIR)/aros-amiga-m68k.elf: $(DISTDIR)/aros-amiga-m68k-reloc.elf
 	    --section-start .ss=$(ROMLOC_ss) \
 	    --section-start .bss=$(ROMLOC_bss) \
 	    $<
+	$(Q)$(TARGET_OBJDUMP) -h $@ | grep '[rea][oxm][mte]   '
 
 $(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/tools/romcheck
 	$(Q)$(TARGET_OBJCOPY) \
@@ -163,6 +166,7 @@ $(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/
 		--only-section=.$* \
 		--gap-fill 0xff \
 		$(DISTDIR)/aros-amiga-m68k.elf $@
+	$(Q)echo -n "$*: "
 	$(Q)$(HOSTGENDIR)/tools/romcheck $@
 
 #MM
