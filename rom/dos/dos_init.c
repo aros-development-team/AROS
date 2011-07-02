@@ -6,7 +6,6 @@
     Lang: english
 */
 
-
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -143,6 +142,20 @@ static int DosInit(struct DosLibrary *LIBBASE)
     	}
 
     	LIBBASE->dl_Root->rn_FileHandlerSegment = defseg;
+
+    	/* Add all that have both Handler and SegList defined
+    	 * to the Resident list
+    	 */
+    	ForeachNode(&fsr->fsr_FileSysEntries, fse) {
+    	    if ((fse->fse_PatchFlags & FSEF_HANDLER) &&
+    	        (fse->fse_PatchFlags & FSEF_SEGLIST) &&
+    	        (fse->fse_Handler != BNULL) &&
+    	        (fse->fse_SegList != BNULL)) {
+    	        D(bug("[DOS] Adding \"%b\" (%p) at %p to the resident list\n",
+    	                    fse->fse_Handler, BADDR(fse->fse_Handler), BADDR(fse->fse_SegList)));
+    	        AddSegment(AROS_BSTR_ADDR(fse->fse_Handler), fse->fse_SegList, CMD_SYSTEM);
+            }
+        }
     }
 
     /* Initialize for the fools that illegally used this field */
