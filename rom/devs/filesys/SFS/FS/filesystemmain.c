@@ -220,11 +220,6 @@ void mainloop(void);
 
 /* ASM prototypes */
 
-static AROS_UFP3 (APTR, res_Init,
-		  AROS_UFPA(APTR, unused, D0),
-		  AROS_UFPA(BPTR, segList, A0),
-		  AROS_UFPA(struct ExecBase *, sysBase, A6));
-
 #define MAJOR_VERSION (1)
 #define MINOR_VERSION (84)
 
@@ -234,10 +229,8 @@ const char ver_version[]="\0$VER: " PROGRAMNAMEVER " 1.84 (" ADATE ")\r\n";
 static const char ver_version[]={"\0$VER: " PROGRAMNAMEVER " 1.84 " __AMIGADATE__ "\r\n"};
 #endif
 
-#ifndef __AROS__
-/* On non-AROS we don't need init routine. However ROMTag is useful for C:Version. */
+/* ROMTag is useful for C:Version. */
 #define res_Init NULL
-#endif
 
 const struct Resident resident =
 {
@@ -267,63 +260,11 @@ LONG mainprogram(struct ExecBase *);
 #undef SysBase
 
 #ifdef __AROS__
-AROS_ENTRY(__startup static ULONG, Start,
-	   AROS_UFHA(char *, argstr, A0),
-	   AROS_UFHA(ULONG, argsize, D0),
-	   struct ExecBase *, sBase)
+void SFS_handler(void)
 {
-    AROS_USERFUNC_INIT
-
-    return mainprogram(sBase);
-
-    AROS_USERFUNC_EXIT
+    bug("[SFS] Starting up\n");
+    mainprogram(SysBase);
 }
-
-static AROS_UFH3 (APTR, res_Init,
-		  AROS_UFHA(APTR, unused, D0),
-		  AROS_UFHA(BPTR, segList, A0),
-		  AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-
-    struct FileSysResource *fsr;
-    struct FileSysEntry *fse;
-    BPTR SegList;
-
-    D(bug("[SFS] Resident init\n"));
-
-    /* Create device node and add it to the system.
-     * The handler will then be started when it is first accessed
-     */
-    fsr = (struct FileSysResource *)OpenResource("FileSystem.resource");
-    if (fsr == NULL)
-    	return NULL;
-
-    SegList = CreateSegList(Start);
-    if (SegList == BNULL)
-	return NULL;
-
-    fse = AllocMem(sizeof(*fse), MEMF_CLEAR);
-    if (fse)
-    {
-	fse->fse_DosType = DOSTYPE_ID;
-	fse->fse_Version = (MAJOR_VERSION << 16) | MINOR_VERSION;
-	fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_HANDLER | FSEF_GLOBALVEC;
-	fse->fse_SegList = SegList;
-	fse->fse_Handler = AROS_CONST_BSTR("sfs.handler");
-	fse->fse_GlobalVec = (BPTR)(SIPTR)-1;
-	Forbid();
-	Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);
-	Permit();
-
-	D(bug("[SFS] Registered in FileSysRes\n"));
-    }
-
-    return NULL;
-
-    AROS_USERFUNC_EXIT
-}
-
 #else
 LONG __saveds trampoline(void)
 {
