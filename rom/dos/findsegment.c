@@ -73,7 +73,7 @@
 	if
 	(
 	    (system || (system == FALSE && (seg->seg_UC >=0)))  &&
-	    (strcasecmp( name, AROS_BSTR_ADDR(MKBADDR(&seg->seg_Name[0]))) == 0)
+	    (Stricmp( name, AROS_BSTR_ADDR(MKBADDR(&seg->seg_Name[0]))) == 0)
 	)
 	{
 		/* We have a matching segment */

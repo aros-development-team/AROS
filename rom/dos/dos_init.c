@@ -112,6 +112,12 @@ static int DosInit(struct DosLibrary *LIBBASE)
     InitSemaphore(&dosinfo->di_EntryLock);
     InitSemaphore(&dosinfo->di_DeleteLock);
 
+    /* Initialize for Stricmp */
+    LIBBASE->dl_UtilityBase   = OpenLibrary("utility.library", 0);
+
+    /* Initialize for the fools that illegally used this field */
+    LIBBASE->dl_IntuitionBase = NULL;
+
     /*
      * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
      * if it's been loaded. Otherwise, use the first handler
@@ -157,10 +163,6 @@ static int DosInit(struct DosLibrary *LIBBASE)
             }
         }
     }
-
-    /* Initialize for the fools that illegally used this field */
-    LIBBASE->dl_UtilityBase   = OpenLibrary("utility.library", 0);
-    LIBBASE->dl_IntuitionBase = NULL;
 
     PatchDOS(LIBBASE);
 
