@@ -306,10 +306,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     struct PCIController *hc;
 
     BOOL allocgood = TRUE;
-    ULONG usb11ports;
-    ULONG usb20ports;
+    ULONG usb11ports = 0;
+    ULONG usb20ports = 0;
 #if (AROS_USB30_CODE)
-    ULONG usb30ports;
+    ULONG usb30ports = 0;
 #endif
     ULONG cnt;
 
@@ -319,6 +319,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #if (AROS_USB30_CODE)
     ULONG xhcicnt = 0;
 #endif
+
     STRPTR prodname;
 
     KPRINTF(10, ("*** pciAllocUnit(%p) ***\n", hu));
@@ -339,10 +340,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
-#endif
 
     if(allocgood)
     {
+#endif
         // allocate necessary memory
         hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
         while(hc->hc_Node.ln_Succ)
@@ -352,35 +353,61 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 case HCITYPE_UHCI:
                 {
                     allocgood = uhciInit(hc,hu);
+                    if(allocgood) {
+                        uhcicnt++;
+                    }
                     break;
                 }
 
                 case HCITYPE_OHCI:
                 {
                     allocgood = ohciInit(hc,hu);
+                    if(allocgood) {
+                        ohcicnt++;
+                    }
                     break;
                 }
 
                 case HCITYPE_EHCI:
                 {
                     allocgood = ehciInit(hc,hu);
+                    if(allocgood) {
+                        ehcicnt++;
+                        if(usb20ports) {
+                            KPRINTF(200, ("WARNING: More than one EHCI controller per board?!?\n"));
+                        }
+                        usb20ports = hc->hc_NumPorts;
+
+                        for(cnt = 0; cnt < usb20ports; cnt++) {
+                            hu->hu_PortMap20[cnt] = hc;
+                            hc->hc_PortNum20[cnt] = cnt;
+                        }
+                    }
                     break;
                 }
 #if (AROS_USB30_CODE)
                 case HCITYPE_XHCI:
                 {
                     allocgood = xhciInit(hc,hu);
+                    if(allocgood) {
+                        xhcicnt++;
+                        if(usb30ports) {
+                            KPRINTF(200, ("WARNING: More than one XHCI controller per board?!?\n"));
+                        }
+                        usb20ports = hc->xhc_NumPorts20;
+                        usb30ports = hc->xhc_NumPorts30;
+                    }
                     break;
                 }
 #endif
             }
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
         }
+#if 0 // FIXME this needs to be replaced by something AROS supports
     }
 
     if(!allocgood)
     {
-#if 0
         // free previously allocated boards
         hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
         while(hc->hc_Node.ln_Succ)
@@ -395,55 +422,11 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
         }
+#else
+    if(!allocgood)
+    {
 #endif
         return FALSE;
-    }
-
-    // find all belonging host controllers
-    usb11ports = 0;
-    usb20ports = 0;
-#if (AROS_USB30_CODE)
-    usb30ports = 0;
-#endif
-
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
-    {
-#if (AROS_USB30_CODE)
-        if(hc->hc_HCIType == HCITYPE_XHCI)
-        {
-            xhcicnt++;
-            if(usb30ports)
-            {
-                KPRINTF(200, ("WARNING: Two XHCI controllers per Board?!?\n"));
-            }
-            usb30ports = hc->hc_NumPorts;
-        }
-        else
-#endif
-        if(hc->hc_HCIType == HCITYPE_EHCI)
-        {
-            ehcicnt++;
-            if(usb20ports)
-            {
-                KPRINTF(200, ("WARNING: Two EHCI controllers per Board?!?\n"));
-            }
-            usb20ports = hc->hc_NumPorts;
-            for(cnt = 0; cnt < usb20ports; cnt++)
-            {
-                hu->hu_PortMap20[cnt] = hc;
-                hc->hc_PortNum20[cnt] = cnt;
-            }
-        }
-        else if(hc->hc_HCIType == HCITYPE_UHCI)
-        {
-            uhcicnt++;
-        }
-        else if(hc->hc_HCIType == HCITYPE_OHCI)
-        {
-            ohcicnt++;
-        }
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
