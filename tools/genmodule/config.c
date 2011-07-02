@@ -12,6 +12,7 @@
 #define __USE_XOPEN
 #include <time.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "functionhead.h"
 #include "config.h"
@@ -47,6 +48,7 @@ const static char usage[] =
 
 static void readconfig(struct config *);
 static struct classinfo *newclass(struct config *);
+static struct handlerinfo *newhandler(struct config *);
 
 /* the method prefices for the supported classes */
 static const char *muimprefix[] =
@@ -217,6 +219,11 @@ struct config *initconfig(int argc, char **argv)
 	cfg->modtype = HIDD;
 	cfg->moddir = "Devs/Drivers";
     }
+    else if (strcmp(argv[optind+2], "handler")==0)
+    {
+	cfg->modtype = HANDLER;
+	cfg->moddir = "Devs";
+    }
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" specified for second argument\n", argv[2]);
@@ -294,6 +301,7 @@ static void readsectionstartup(struct config *);
 static void readsectionfunctionlist(struct config *);
 static void readsectionmethodlist(struct classinfo *);
 static void readsectionclass(struct config *);
+static void readsectionhandler(struct config *);
 
 static void readconfig(struct config *cfg)
 {
@@ -306,6 +314,7 @@ static void readconfig(struct config *cfg)
     case DEVICE:
     case RESOURCE:
     case USBCLASS:
+    case HANDLER:
 	break;
 	
     case MCC:
@@ -338,6 +347,7 @@ static void readconfig(struct config *cfg)
         cfg->firstlvo = 6;
 	mainclass->boopsimprefix = muimprefix;
 	break;
+    case HANDLER:
     case RESOURCE:
 	cfg->firstlvo = 1;
 	break;
@@ -392,7 +402,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 	{
 	    static char *parts[] =
 	    {
-		"config", "cdefprivate", "cdef", "startup", "functionlist", "methodlist", "class"
+		"config", "cdefprivate", "cdef", "startup", "functionlist", "methodlist", "class", "handler",
 	    };
 	    const unsigned int nums = sizeof(parts)/sizeof(char *);
 	    unsigned int partnum;
@@ -466,6 +476,9 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 		    exitfileerror(20, "class section may not be nested\n");
 		readsectionclass(cfg);
 		break;
+            case 8: /* handler */
+		readsectionhandler(cfg);
+		break;
 	    }
 	}
 	else if (strlen(line)!=0)
@@ -487,6 +500,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             case LIBRARY:
             case RESOURCE:
             case USBCLASS:
+            case HANDLER:
                 cfg->options |= OPTION_INCLUDES;
                 break;
                 
@@ -546,6 +560,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             case MUI:
             case MCP:
             case HIDD:
+            case HANDLER:
                 cfg->options |= OPTION_NOAUTOINIT;
                 break;
 	
@@ -1051,6 +1066,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    case DEVICE:
 		cfg->libbasetypeptrextern = "struct Device *";
 		break;
+	    case HANDLER:
 	    case RESOURCE:
 		cfg->libbasetypeptrextern = "APTR ";
 		break;
@@ -1869,3 +1885,208 @@ static struct classinfo *newclass(struct config *cfg)
     
     return cl;
 }
+
+static struct handlerinfo *newhandler(struct config *cfg)
+{
+    struct handlerinfo *hl;
+
+    hl = calloc(1,sizeof(*hl));
+    hl->next = cfg->handlerlist;
+    cfg->handlerlist = hl;
+    return hl;
+}
+
+static int getdirective(char *s, const char *directive, int range_min, int range_max, int *val)
+{
+    char *tmp;
+    int newval;
+
+    if (strncmp(s, directive, strlen(directive)) != 0)
+        return 0;
+
+    s += strlen(directive);
+    if (*s && !isspace(*s))
+        exitfileerror(20, "Unrecognized directive \".%s\"\n", directive);
+
+    while (isspace(*s)) s++;
+    if (!*s)
+        exitfileerror(20, "No .%s value specified\n", directive);
+
+    newval = strtol(s, &tmp, 0);
+    if (s == tmp || !(newval >= range_min && newval <= range_max)) {
+        tmp = s;
+        while (*tmp && !isspace(*tmp)) tmp++;
+        exitfileerror(20, "Invalid .%s value of %.*s\n", directive, tmp - s, s);
+    }
+
+    *val = newval;
+    return 1;
+}
+
+static void
+readsectionhandler(struct config *cfg)
+{
+    char *line = NULL, *s;
+    struct handlerinfo *hl;
+    unsigned char autolevel = 0;
+    unsigned int stacksize;
+    char priority;
+    
+    for (;;)
+    {
+        char *function;
+        int function_len;
+        char *tmp;
+
+        /* Defaults */
+        stacksize = 0;
+        priority = 10;
+
+        s = line = readline();
+
+        if (s==NULL)
+            exitfileerror(20, "unexpected end of file in section hanlder\n");
+
+        if (strncmp(s, "##", 2)==0)
+            break;
+
+        /* Ignore comments */
+        if (strncmp(s, "#", 1)==0)
+            continue;
+
+        /* Skip ahead to function name */
+        while (*s && isspace(*s)) s++;
+
+        /* Permit blank lines */
+        if (!*s)
+            continue;
+
+        if (*s == '.') {
+            int val;
+            s++;
+
+            if (getdirective(s, "autodetect", 0, 127, &val)) {
+                autolevel = val;
+            } else if (getdirective(s, "stacksize", 0, INT_MAX, &val)) {
+                stacksize = val;
+            } else if (getdirective(s, "priority", -128, 127, &val)) {
+                priority = val;
+            } else {
+                exitfileerror(20, "Unrecognized directive \"%s\"\n", line);
+            }
+            continue;
+        }
+
+        function = s;
+        while (*s && !isspace(*s)) s++;
+        function_len = s - function;
+
+        if (!*s)
+            exitfileerror(20, "No identifier specified for the handler");
+
+        function[function_len] = 0;
+        s++;
+
+        do {
+            unsigned int id = 0;
+
+            if (strncasecmp(s,"resident=",9)==0) {
+                char *res;
+
+                s = strchr(s, '=') + 1;
+                res = s;
+                while (*s && !isspace(*s)) s++;
+                if (res == s)
+                    exitfileerror(20, "Empty resident= is not permitted\n");
+
+                if (*s)
+                    *(s++) = 0;
+
+                hl = newhandler(cfg);
+                hl->type = HANDLER_RESIDENT;
+                hl->id = 0;
+                hl->name = strdup(res);
+                hl->autodetect = autolevel--;
+                hl->stacksize = stacksize;
+                hl->priority = priority;
+                hl->handler = strdup(function);
+            } else if (strncasecmp(s,"dosdevice=",10)==0) {
+                char *dev;
+
+                s = strchr(s, '=') + 1;
+                dev = s;
+                while (*s && !isspace(*s)) s++;
+                if (dev == s)
+                    exitfileerror(20, "Empty dosdevice= is not permitted\n");
+
+                if (*s)
+                    *(s++) = 0;
+
+                hl = newhandler(cfg);
+                hl->type = HANDLER_DOSDEVICE;
+                hl->id = 0;
+                hl->name = strdup(dev);
+                hl->autodetect = autolevel ? autolevel-- : 0;
+                hl->handler = strdup(function);
+                hl->stacksize = stacksize;
+                hl->priority = priority;
+            } else if (strncasecmp(s,"dostype=",8) == 0) {
+                s = strchr(s, '=') + 1;
+
+                id = (unsigned int)strtoul(s, &tmp, 0);
+                
+                if (s == tmp) {
+                    while (*tmp && !isspace(*tmp))
+                        tmp++;
+                    exitfileerror(20, "\"%.*s\" is not a numerical DOS ID\n", (tmp -s), s);
+                }
+                s = tmp;
+
+                if (id == 0 || id == ~0) {
+                    exitfileerror(20, "DOS ID 0x%08x is not permitted\n", id);
+                }
+
+                hl = newhandler(cfg);
+                hl->type = HANDLER_DOSTYPE;
+                hl->id = id;
+                hl->name = NULL;
+                hl->autodetect = autolevel ? autolevel-- : 0;
+                hl->handler = strdup(function);
+                hl->stacksize = stacksize;
+                hl->priority = priority;
+            } else {
+                for (tmp = s; !isspace(*tmp); tmp++);
+                exitfileerror(20, "Unknown option \"%.*s\"\n", tmp - s, s);
+            }
+
+            /* Advance to next ID */
+            while (*s && isspace(*s)) s++;
+
+        } while (*s);
+    }
+
+    if (s == NULL)
+	exitfileerror(20, "Unexpected end of file\n");
+
+    if (strncmp(s, "##", 2) != 0)
+	exitfileerror(20, "'##end handler' expected\n");
+    s += 2;
+
+    while (isspace(*s)) s++;
+    
+    if (strncmp(s, "end", 3) != 0)
+	exitfileerror(20, "'##end handler' expected\n");
+    s += 3;
+
+    while (isspace(*s)) s++;
+    
+    if (strncmp(s, "handler", 7) != 0)
+	exitfileerror(20, "'##end handler' expected\n");
+    s += 7;
+    
+    while (isspace(*s)) s++;
+    if (*s != '\0')
+	exitfileerror(20, "'##end handler' expected\n");
+}
+
+

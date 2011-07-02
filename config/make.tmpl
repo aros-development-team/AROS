@@ -1368,7 +1368,9 @@ endif
 
 BD_OBJS       := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
 	     	 $(addsuffix .o, $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES))))
+ifneq (%(modtype),handler)
 BD_STARTOBJS  := $(addsuffix .o,$(addprefix $(GENDIR)/,$(RESIDENT_BEGIN)))
+endif
 BD_ENDOBJS    := $(addsuffix .o,$(BD_ENDFILES))
 BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))) $(BD_LINKLIBFILES)) \
                  %(linklibobjs)
