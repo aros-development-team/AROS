@@ -15,7 +15,7 @@
 
 enum command { CMD_UNSPECIFIED, FILES, LIBDEFS, INCLUDES, MAKEFILE, WRITEFUNCLIST, WRITEFD, WRITESKEL };
 enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, IMAGE, GADGET,
-	       DATATYPE, CLASS, HIDD, USBCLASS
+	       DATATYPE, CLASS, HIDD, USBCLASS, HANDLER
 };
 
 enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT,
@@ -76,6 +76,25 @@ struct classinfo
 
     /* Interfaces used in this class (only for HIDD classes) */
     struct stringlist *interfaces;
+};
+
+/* DOS handlers */
+struct handlerinfo {
+    struct handlerinfo *next;
+
+    enum {
+        HANDLER_DOSTYPE,        /* FileSysResource registered */
+        HANDLER_DOSDEVICE,      /* AddBootNode() registered */
+        HANDLER_RESIDENT,       /* AddSegment() registered */
+    } type;
+    unsigned int id;
+    char *name;
+    int   autodetect;           /* Autodetect priority (0 for not autodetectable) */
+    /* DeviceNode overrides */
+    int priority;               /* Task priority */
+    int stacksize;              /* Stacksize information */
+
+    char *handler;              /* Name of the handler */
 };
 
 struct config
@@ -139,6 +158,9 @@ struct config
     
     /* The classes defined in this module */
     struct classinfo *classlist;
+
+    /* The DOS IDs and handlers for this module */
+    struct handlerinfo *handlerlist;
 };
 
 /* Function prototypes */

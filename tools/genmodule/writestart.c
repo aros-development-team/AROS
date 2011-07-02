@@ -15,6 +15,7 @@ static void writedecl(FILE *, struct config *);
 static void writedeclsets(FILE *, struct config *);
 static void writeresident(FILE *, struct config *);
 static void writeinitlib(FILE *, struct config *);
+static void writehandler(FILE *, struct config *);
 static void writeopenlib(FILE *, struct config *);
 static void writecloselib(FILE *, struct config *);
 static void writeexpungelib(FILE *, struct config *);
@@ -47,7 +48,7 @@ void writestart(struct config *cfg)
 	writeresident(out, cfg);
 	writedeclsets(out, cfg);
 	writeinitlib(out, cfg);
-	if (cfg->modtype != RESOURCE)
+	if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
 	{
 	    writeopenlib(out, cfg);
 	    writecloselib(out, cfg);
@@ -140,7 +141,7 @@ static void writedecl(FILE *out, struct config *cfg)
     }
 
     /* Is there a variable for storing the segList ? */
-    if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
+    if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
     {
 	fprintf(out,
 		"#ifndef GM_SEGLIST_FIELD\n"
@@ -490,7 +491,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "    AROS_UFPA(struct ExecBase *, sysBase, A6)\n"
 	    ");\n"
     );
-    if (cfg->modtype != RESOURCE)
+    if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
     {
 	fprintf(out,
 		"AROS_LP1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
@@ -527,6 +528,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	fprintf(out, "    NT_DEVICE,\n");
 	break;
     case RESOURCE:
+    case HANDLER:
 	fprintf(out, "    NT_RESOURCE,\n");
 	break;
     default:
@@ -573,8 +575,184 @@ static void writeresident(FILE *out, struct config *cfg)
     );
 }
 
+static void writehandler(FILE *out, struct config *cfg)
+{
+    int i;
+    struct handlerinfo *hl, *best;
+
+    if (cfg->handlerlist == NULL)
+        return;
+
+    fprintf(out,
+               "\n"
+               "#include <resources/filesysres.h>\n"
+               "#include <aros/system.h>\n"
+               "#include <proto/arossupport.h>\n"
+               "#include <proto/dos.h>\n"
+               "#include <proto/expansion.h>\n"
+               "\n"
+               );
+
+    for (hl = cfg->handlerlist; hl != NULL; hl = hl->next) {
+        fprintf(out,
+               "extern void %s(void);\n",
+               hl->handler);
+    }
+
+    best = cfg->handlerlist;
+    for (hl = cfg->handlerlist->next; hl; hl = hl->next) {
+        if (hl->autodetect > best->autodetect)
+            best = hl;
+    }
+
+    fprintf(out,
+            "\n"
+            "/* This is run when linked as a program, so that\n"
+            " * C:Mount can start it.\n"
+            " */\n"
+            "__startup void GM_UNIQUENAME(MountMain)(void)\n"
+            "{\n"
+            "    %s();\n"
+            "}\n",
+            best->handler);
+
+    fprintf(out,
+               "\n"
+               "void GM_UNIQUENAME(InitHandler)(LIBBASETYPEPTR lh)\n"
+               "{\n"
+               "    struct FileSysResource *fsr;\n"
+               "    int i;\n"
+               "    struct {\n"
+               "        ULONG id;\n"
+               "        const char *name; /* if ID is 0 (resident) or ~0 (dos node) */\n"
+               "        BYTE autodetect;\n"
+               "        BYTE priority;\n"
+               "        ULONG stacksize;\n"
+               "        void (*handler)(void);\n"
+               "    } const handler[] = { \n");
+    for (hl = cfg->handlerlist; hl != NULL; hl = hl->next) {
+        switch (hl->type) {
+        case HANDLER_RESIDENT:
+            fprintf(out,
+               "        { .id = 0, .name = \"%s\", .handler = %s }, \n",
+               hl->name, hl->handler);
+            break;
+        case HANDLER_DOSDEVICE:
+            fprintf(out,
+               "        { .id = ~0, .name = \"%s\", .handler = %s, .priority = %d, .stacksize = %d }, \n",
+               hl->name, hl->handler, hl->priority, hl->stacksize);
+            break;
+        case HANDLER_DOSTYPE:
+            fprintf(out,
+               "        { .id = 0x%08x, .handler = %s, .autodetect = %d, .priority = %d, .stacksize = %d*sizeof(IPTR) }, \n",
+               hl->id, hl->handler, hl->autodetect, hl->priority, hl->stacksize);
+            break;
+        }
+    }
+    fprintf(out,
+               "    };\n"
+               "    BPTR seg[sizeof(handler)/sizeof(handler[0])] = { };\n"
+               "    APTR DOSBase; /* Used for resident handlers */\n"
+               "    APTR ExpansionBase; /* Used for dos device handlers */\n"
+               "\n"
+               "    fsr = (struct FileSysResource *)OpenResource(\"FileSystem.resource\");\n"
+               "    DOSBase = OpenLibrary(\"dos.library\",0);\n"
+               "    ExpansionBase = OpenLibrary(\"expansion.library\",0);\n"
+               "    if (fsr == NULL && DOSBase == NULL && ExpansionBase == NULL)\n"
+               "        return;\n"
+               "    \n"
+               "    for (i = 0; i < sizeof(handler)/sizeof(handler[0]); i++) {\n"
+               "        struct FileSysEntry *fse;\n"
+               "        int j;\n"
+               "    \n"
+               "        /* Check to see if we can allocate the memory for the fse */\n"
+               "        if (handler[i].id != 0 && handler[i].id != ~0) {\n"
+               "            if (!fsr)\n"
+               "                continue;\n"
+               "            fse = AllocMem(sizeof(*fse), MEMF_CLEAR);\n"
+               "            if (!fse)\n"
+               "                continue;\n"
+               "        }\n"
+               "    \n"
+               "        /* Did we already make a segment for this handler? */\n"
+               "        for (j = 0; j < i; j++)\n"
+               "            if (handler[i].handler == handler[j].handler)\n"
+               "                break;\n"
+               "        if (seg[j] == (BPTR)0)\n"
+               "            seg[j] = CreateSegList(handler[j].handler);\n"
+               "        if (seg[j] == BNULL) {\n"
+               "            FreeMem(fse, sizeof(*fse));\n"
+               "            continue;\n"
+               "        }\n"
+               "\n"
+               "        /* Named handlers */\n"
+               "        if (handler[i].id == 0) {\n"
+               "\n"
+               "            if (!DOSBase)\n"
+               "                continue;\n"
+               "\n"
+               "            AddSegment(handler[i].name, seg[j], CMD_SYSTEM);\n"
+               "            continue;\n"
+               "        }\n"
+               "\n"
+               "        /* DOS DeviceNode handlers */\n"
+               "        if (handler[i].id == ~0) {\n"
+               "            struct DeviceNode *dn;\n"
+               "            IPTR pp[5];\n"
+               "\n"
+               "            if (!ExpansionBase)\n"
+               "                continue;\n"
+               "\n"
+               "            pp[0] = (IPTR)handler[i].name;\n"
+               "            pp[1] = (IPTR)NULL;\n"
+               "            pp[2] = 0;\n"
+               "            pp[3] = 0;\n"
+               "            pp[4] = 0;\n"
+               "            dn = MakeDosNode(pp);\n"
+               "            if (dn) {\n"
+               "                dn->dn_SegList = seg[j];\n"
+               "                dn->dn_Priority = handler[i].priority;\n"
+               "                if (handler[i].stacksize)\n"
+               "                    dn->dn_StackSize = handler[i].stacksize;\n"
+               "                dn->dn_GlobalVec = (BPTR)(SIPTR)-1;\n"
+               "                AddBootNode(-5, 0, dn, NULL);\n"
+               "            }\n"
+               "            continue;\n"
+               "        }\n"
+               "        \n"
+               "        /* DOS ID based handlers */\n"
+               "        fse->fse_Node.ln_Name = VERSION_STRING;\n"
+               "        fse->fse_Node.ln_Pri  = handler[i].autodetect;\n"
+               "        fse->fse_DosType = handler[i].id;\n"
+               "        fse->fse_Version = (MAJOR_VERSION << 16) | MINOR_VERSION;\n"
+               "        fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_GLOBALVEC;\n"
+               "        if (handler[i].stacksize) {\n"
+               "            fse->fse_PatchFlags |= FSEF_STACKSIZE;\n"
+               "            fse->fse_StackSize = handler[i].stacksize;\n"
+               "        }\n"
+               "        fse->fse_Priority = handler[i].priority;\n"
+               "        fse->fse_SegList = seg[j];\n"
+               "        fse->fse_GlobalVec = (BPTR)(SIPTR)-1;\n"
+               "    \n"
+               "        /* Add to the list. I know forbid and permit are\n"
+               "         * a little unnecessary for the pre-multitasking state\n"
+               "         * we should be in at this point, but you never know\n"
+               "         * who's going to blindly copy this code as an example.\n"
+               "         */\n"
+               "        Forbid();\n"
+               "        Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);\n"
+               "        Permit();\n"
+               "    }\n"
+               "    CloseLibrary(ExpansionBase);\n"
+               "    CloseLibrary(DOSBase);\n"
+               "}\n");
+}
+
 static void writeinitlib(FILE *out, struct config *cfg)
 {
+    if (cfg->modtype == HANDLER)
+        writehandler(out, cfg);
+
     fprintf(out,
 	    "AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
 	    "    AROS_UFHA(LIBBASETYPEPTR, lh, D0),\n"
@@ -635,7 +813,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	);
     }
 
-    if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
+    if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
 	fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
     if (cfg->options & OPTION_DUPBASE)
 	fprintf(out, "    GM_ROOTBASE_FIELD(lh) = (LIBBASETYPEPTR)lh;\n");
@@ -684,8 +862,12 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "    else\n"
 	    "    {\n"
     );
-    
-    if (!(cfg->options & OPTION_RESAUTOINIT) && !(cfg->options & OPTION_SELFINIT))
+   
+    if (cfg->modtype == HANDLER && cfg->handlerlist)
+    {
+        fprintf(out,
+                   "        GM_UNIQUENAME(InitHandler)(lh);\n");
+    } else if (!(cfg->options & OPTION_RESAUTOINIT) && !(cfg->options & OPTION_SELFINIT))
     {
     	fprintf(out,
 	    	    "        AddResource(lh);\n"
@@ -702,13 +884,15 @@ static void writeinitlib(FILE *out, struct config *cfg)
     );
 }
 
-
 static void writeopenlib(FILE *out, struct config *cfg)
 {
     switch (cfg->modtype)
     {
     case RESOURCE:
 	fprintf(stderr, "Internal error: writeopenlib called for a resource\n");
+	break;
+    case HANDLER:
+	fprintf(stderr, "Internal error: writeopenlib called for a handler\n");
 	break;
     case DEVICE:
 	if (cfg->options & OPTION_NOOPENCLOSE)
@@ -1117,7 +1301,7 @@ writefunctable(FILE *out,
 		"const APTR GM_UNIQUENAME(FuncTable)[]=\n"
 		"{\n"
 	);
-	if (cfg->modtype != RESOURCE)
+	if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
 	{
 	    fprintf(out,
 		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(OpenLib),%s),\n"
@@ -1147,7 +1331,7 @@ writefunctable(FILE *out,
     }
     else /* NORESIDENT */
     {
-	if (cfg->modtype != RESOURCE)
+	if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
 	{
 	    int neednull = 0;
 	    struct functionhead *funclistit2;
