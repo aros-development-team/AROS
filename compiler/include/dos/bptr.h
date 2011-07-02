@@ -91,8 +91,8 @@ typedef AROS_BSTR_TYPE BSTR;
 #define AROS_CONST_BSTR(string) ((BSTR)MKBADDR(string))
 #else
 #define AROS_CONST_BSTR(string) ({ \
-    struct { UBYTE len; UBYTE str[sizeof(string)]; } \
-    	const __tmp_bstr = { .len = sizeof(string)-1, .str = string }; \
+    static const struct { UBYTE len; UBYTE str[sizeof(string)]; } \
+    	const __tmp_bstr __attribute__((__aligned__(4)))= { .len = sizeof(string)-1, .str = string }; \
     (BSTR)MKBADDR(&__tmp_bstr);})
 #endif
 
