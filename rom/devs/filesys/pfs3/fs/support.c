@@ -162,6 +162,10 @@ BOOL ddstricmp (DSTR dstr1, DSTR dstr2)
 // BCPLtoCString converts BCPL string to a CString. 
 UBYTE *BCPLtoCString(STRPTR dest, DSTR src)
 {
+#ifdef AROS_FAST_BSTR
+  strcpy(dest, (CONST_STRPTR)src);
+  return dest;
+#else
   UBYTE len, *to;
 
 	len  = *(src++);
@@ -173,4 +177,5 @@ UBYTE *BCPLtoCString(STRPTR dest, DSTR src)
 	*dest = 0x0;
 
 	return to;
+#endif
 }
