@@ -5,10 +5,12 @@ Revision= 10
 	.text
 
 	.globl software_reset
+	.globl _start
 	.align 4 
 
 rom_start:
 	.word	0x1111
+_start:
 software_reset:
 	jmp rom_init
 
