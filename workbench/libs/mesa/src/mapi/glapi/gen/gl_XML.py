@@ -629,8 +629,9 @@ class gl_function( gl_item ):
 		name = element.nsProp( "name", None )
 		alias = element.nsProp( "alias", None )
 
-		if is_attr_true(element, "static_dispatch"):
-			self.static_entry_points.append(name)
+		# if is_attr_true(element, "static_dispatch"):
+		# AROS version requires all entry points to be available in library base
+		self.static_entry_points.append( name )
 
 		self.entry_points.append( name )
 		if alias:
