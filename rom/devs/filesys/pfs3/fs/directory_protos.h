@@ -17,56 +17,56 @@ BOOL dstricmp(DSTR , STRPTR );
 BOOL ddstricmp(DSTR , DSTR );
 UBYTE * BCPLtoCString(STRPTR , DSTR );
 
-UBYTE * GetFullPath(union objectinfo * , STRPTR , union objectinfo * , ULONG * , globaldata * );
+UBYTE * GetFullPath(union objectinfo * , STRPTR , union objectinfo * , SIPTR * , globaldata * );
 
 BOOL GetRoot(union objectinfo * , globaldata * );
 
-BOOL FindObject(union objectinfo * , STRPTR , union objectinfo * , ULONG * , globaldata * );
+BOOL FindObject(union objectinfo * , STRPTR , union objectinfo * , SIPTR * , globaldata * );
 
-BOOL GetParent(union objectinfo * , union objectinfo * , ULONG * , globaldata * );
+BOOL GetParent(union objectinfo * , union objectinfo * , SIPTR * , globaldata * );
 
 BOOL FetchObject(ULONG diranodenr, ULONG target, union objectinfo *result, globaldata *g);
 
-BOOL ExamineFile(listentry_t * , struct FileInfoBlock * , ULONG * , globaldata * );
+BOOL ExamineFile(listentry_t * , struct FileInfoBlock * , SIPTR * , globaldata * );
 
-BOOL ExamineNextFile(lockentry_t * , struct FileInfoBlock * , ULONG * , globaldata * );
+BOOL ExamineNextFile(lockentry_t * , struct FileInfoBlock * , SIPTR * , globaldata * );
 
 void GetNextEntry(lockentry_t * , globaldata * );
 
-BOOL ExamineAll(lockentry_t * , UBYTE * , ULONG , LONG , struct ExAllControl * , ULONG * , globaldata * );
+BOOL ExamineAll(lockentry_t * , UBYTE * , ULONG , LONG , struct ExAllControl * , SIPTR * , globaldata * );
 
 ULONG NewFile(BOOL, union objectinfo * , STRPTR , union objectinfo * , globaldata * );
 
-lockentry_t * NewDir(union objectinfo * , STRPTR , ULONG * , globaldata * );
+lockentry_t * NewDir(union objectinfo * , STRPTR , SIPTR * , globaldata * );
 
 struct cdirblock * MakeDirBlock(ULONG , ULONG , ULONG , ULONG , globaldata * );
 
-BOOL DeleteObject(union objectinfo * , ULONG * , globaldata * );
+BOOL DeleteObject(union objectinfo * , SIPTR * , globaldata * );
 BOOL KillEmpty (union objectinfo *parent, globaldata *g);
-LONG forced_RemoveDirEntry (union objectinfo *info, ULONG *error, globaldata *g);
+LONG forced_RemoveDirEntry (union objectinfo *info, SIPTR *error, globaldata *g);
 
-BOOL RenameAndMove(union objectinfo *, union objectinfo *, union objectinfo *, STRPTR , ULONG * , globaldata * );
+BOOL RenameAndMove(union objectinfo *, union objectinfo *, union objectinfo *, STRPTR , SIPTR * , globaldata * );
 
-BOOL AddComment(union objectinfo * , STRPTR , ULONG * , globaldata * );
+BOOL AddComment(union objectinfo * , STRPTR , SIPTR * , globaldata * );
 
-BOOL ProtectFile(struct fileinfo * , ULONG , ULONG * , globaldata * );
+BOOL ProtectFile(struct fileinfo * , ULONG , SIPTR * , globaldata * );
 
-BOOL SetOwnerID(struct fileinfo *file, ULONG owner, ULONG *error, globaldata *g);
+BOOL SetOwnerID(struct fileinfo *file, ULONG owner, SIPTR *error, globaldata *g);
 
-LONG ReadSoftLink(union objectinfo *linkfi, char *buffer, ULONG size, ULONG *error, globaldata *g);
+LONG ReadSoftLink(union objectinfo *linkfi, char *buffer, ULONG size, SIPTR *error, globaldata *g);
 
 BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
-	union objectinfo *newlink, ULONG *error, globaldata *g);
+	union objectinfo *newlink, SIPTR *error, globaldata *g);
 
 BOOL CreateLink(union objectinfo *directory, STRPTR linkname, union objectinfo *object,
-	union objectinfo *newlink, ULONG *error, globaldata *g);
+	union objectinfo *newlink, SIPTR *error, globaldata *g);
 
-BOOL SetDate(union objectinfo * , struct DateStamp * , ULONG * , globaldata * );
+BOOL SetDate(union objectinfo * , struct DateStamp * , SIPTR * , globaldata * );
 
 void Touch(struct fileinfo * , globaldata * );
 
 BOOL CreateRollover(union objectinfo *dir, STRPTR rollname, ULONG size,
-	union objectinfo *result, ULONG *error, globaldata *g);
+	union objectinfo *result, SIPTR *error, globaldata *g);
 ULONG SetRollover(fileentry_t *rooi, struct rolloverinfo *roinfo, globaldata *g);
 
 void ChangeDirEntry(struct fileinfo from, struct direntry *to, union objectinfo *destdir, struct fileinfo *result, globaldata *g);

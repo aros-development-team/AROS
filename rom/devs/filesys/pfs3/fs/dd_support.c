@@ -232,7 +232,7 @@ void PFSDoNotify (struct fileinfo *object, BOOL checkparent, globaldata *g)
 	struct notifyobject *no = NULL;
 
 #if DELDIR
-	if ((ULONG)object->direntry <= SPECIAL_DELFILE)
+	if ((IPTR)object->direntry <= SPECIAL_DELFILE)
 		return;
 #endif
 
@@ -346,7 +346,7 @@ static void Sleep (globaldata *g)
 		 */
 		for (le=HeadOf (&volume->fileentries); le->next; le=le->next)
 		{
-			le->dirblocknr = NULL;
+			le->dirblocknr = 0;
 
 			/* terminate examine chains */
 			if (le->type.flags.dir && !IsDelDir(le->info))
@@ -383,7 +383,7 @@ static void Awake (globaldata *g)
   listentry_t *le;
   struct volumedata *volume = g->currentvolume;
   struct rootblock *rootblock;
-  ULONG error;
+  SIPTR error;
 
 	if (volume)
 	{

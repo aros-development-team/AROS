@@ -2,14 +2,14 @@
 disk.c
  */
 
-//ULONG ReadFromFile(fileentry_t * , UBYTE * , ULONG , ULONG * , globaldata * );
-//ULONG WriteToFile(fileentry_t * , UBYTE * , ULONG , ULONG * , globaldata * );
-LONG ChangeFileSize(fileentry_t * , LONG , LONG , ULONG * , globaldata * );
-ULONG ReadFromObject(fileentry_t * , UBYTE * , ULONG , ULONG * , globaldata * );
-ULONG WriteToObject(fileentry_t * , UBYTE * , ULONG , ULONG * , globaldata * );
-LONG SeekInObject(fileentry_t * , LONG , LONG , ULONG * , globaldata * );
-LONG ChangeObjectSize(fileentry_t * , LONG , LONG , ULONG * , globaldata * );
-LONG SeekInFile(fileentry_t *file, LONG offset, LONG mode, ULONG *error, globaldata *g);
+//ULONG ReadFromFile(fileentry_t * , UBYTE * , ULONG , SIPTR * , globaldata * );
+//ULONG WriteToFile(fileentry_t * , UBYTE * , ULONG , SIPTR * , globaldata * );
+LONG ChangeFileSize(fileentry_t * , LONG , LONG , SIPTR * , globaldata * );
+ULONG ReadFromObject(fileentry_t * , UBYTE * , ULONG , SIPTR * , globaldata * );
+ULONG WriteToObject(fileentry_t * , UBYTE * , ULONG , SIPTR * , globaldata * );
+LONG SeekInObject(fileentry_t * , LONG , LONG , SIPTR * , globaldata * );
+LONG ChangeObjectSize(fileentry_t * , LONG , LONG , SIPTR * , globaldata * );
+LONG SeekInFile(fileentry_t *file, LONG offset, LONG mode, SIPTR *error, globaldata *g);
 
 ULONG DiskRead(UBYTE * , ULONG , ULONG , globaldata * );
 

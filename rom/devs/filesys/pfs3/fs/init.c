@@ -172,7 +172,7 @@ BOOL Initialize(DSTR mountname, struct FileSysStartupMsg *fssm,
 
 	for (i=1; i<*mountname+1 && mountname[i]!=':'; i++);
 	/* now mountname[i]==':' || i==*mountname+1 ==> i=sizeof(mnname) */
-	g->mountname    = AllocMemR (i, NULL, g);
+	g->mountname    = AllocMemR (i, 0, g);
 	g->mountname[0] = i-1; 
 	CopyMem(mountname+1, g->mountname+1, i-1);
 
@@ -271,7 +271,7 @@ Removed because of problems with Phase 5 boards
 		return FALSE;
 
 	/* check memory against mask */
-	if (((ULONG)g->dc.data) & ~g->dosenvec->de_Mask)
+	if (((IPTR)g->dc.data) & ~g->dosenvec->de_Mask)
 		ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
 
 	if (!InitLRU(g))
@@ -453,7 +453,7 @@ static BOOL AddToFSResource(ULONG dostype, BPTR seglist, globaldata *g)
 			fse->fse_Version = ((LONG)VERNUM) << 16 | REVNUM;
 			fse->fse_PatchFlags = 0x180;
 			fse->fse_SegList = seglist;
-			fse->fse_GlobalVec = -1;
+			fse->fse_GlobalVec = (BPTR)(SIPTR)-1;
 
 			AddHead(&FileSysResBase->fsr_FileSysEntries,&fse->fse_Node);
 		}
@@ -475,7 +475,7 @@ void InitModules (struct volumedata *volume, BOOL formatting, globaldata *g)
   rootblock_t *rootblock = volume->rootblk;
 
 	g->rootblock = rootblock;
-	g->uip = NULL;
+	g->uip = 0;
 	g->harddiskmode = rootblock->options & MODE_HARDDISK;
 	g->anodesplitmode = rootblock->options & MODE_SPLITTED_ANODES;
 	g->dirextension = rootblock->options & MODE_DIR_EXTENSION;
@@ -533,10 +533,10 @@ static void DoPostponed (struct volumedata *volume, globaldata *g)
 				break;
 		}
 
-		postponed->operation_id = NULL;
-		postponed->argument1 = NULL;
-		postponed->argument2 = NULL;
-		postponed->argument3 = NULL;
+		postponed->operation_id = 0;
+		postponed->argument1 = 0;
+		postponed->argument2 = 0;
+		postponed->argument3 = 0;
 	}
 }
 #endif

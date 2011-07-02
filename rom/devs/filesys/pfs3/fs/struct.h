@@ -731,17 +731,17 @@ struct idlehandle
 /* other macro definitions                                                   */
 /*****************************************************************************/
 
-#define IsSoftLink(oi) ((ULONG)(oi).file.direntry>2 && ((oi).file.direntry->type==ST_SOFTLINK))
-#define IsRealDir(oi) ((ULONG)(oi).file.direntry>2 && ((oi).file.direntry->type==ST_USERDIR))
-#define IsDir(oi) ((ULONG)(oi).file.direntry>2 && ((oi).file.direntry->type)>0)
-#define IsFile(oi) ((ULONG)(oi).file.direntry>2 && ((oi).file.direntry->type)<=0)
+#define IsSoftLink(oi) ((IPTR)(oi).file.direntry>2 && ((oi).file.direntry->type==ST_SOFTLINK))
+#define IsRealDir(oi) ((IPTR)(oi).file.direntry>2 && ((oi).file.direntry->type==ST_USERDIR))
+#define IsDir(oi) ((IPTR)(oi).file.direntry>2 && ((oi).file.direntry->type)>0)
+#define IsFile(oi) ((IPTR)(oi).file.direntry>2 && ((oi).file.direntry->type)<=0)
 #define IsVolume(oi) ((oi).volume.root==0)
 #if DELDIR
 #define IsDelDir(oi) ((oi).deldir.special==SPECIAL_DELDIR)
 #define IsDelFile(oi) ((oi).deldir.special==SPECIAL_DELFILE)
 #endif /* DELDIR */
 #if ROLLOVER
-#define IsRollover(oi) ((ULONG)(oi).file.direntry>2 && ((oi).file.direntry->type==ST_ROLLOVERFILE))
+#define IsRollover(oi) ((IPTR)(oi).file.direntry>2 && ((oi).file.direntry->type==ST_ROLLOVERFILE))
 #endif /* ROLLOVER */
 #define ISCURRENTVOLUME(v) (g->currentvolume && \
 	dstricmp(g->currentvolume->rootblk->diskname, v) == 0)
@@ -752,8 +752,8 @@ struct idlehandle
 // IsRoot(fi) checked of *oi bij de rootdir hoort
 // IsRootA(fi) checked of oi bij de rootdir hoort
 #define N(x) ((x)?(&(x)):NULL)
-#define IsRoot(oi) (((oi)==NULL) || ((oi)->volume.root == NULL))
-#define IsRootA(oi) ((oi).volume.root == NULL)
+#define IsRoot(oi) (((oi)==NULL) || ((oi)->volume.root == 0))
+#define IsRootA(oi) ((oi).volume.root == 0)
 
 // voor VolumeRequest:
 #define VR_URGENT   0

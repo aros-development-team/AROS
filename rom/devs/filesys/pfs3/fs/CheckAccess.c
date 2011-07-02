@@ -17,7 +17,7 @@
 
 /* fileaccess that changes a file but doesn't write to it
  */
-BOOL CheckChangeAccess(fileentry_t *file, ULONG *error, globaldata *g)
+BOOL CheckChangeAccess(fileentry_t *file, SIPTR *error, globaldata *g)
 {
 #if DELDIR
 	/* delfiles cannot be altered */
@@ -52,7 +52,7 @@ BOOL CheckChangeAccess(fileentry_t *file, ULONG *error, globaldata *g)
 
 /* fileaccess that writes to a file
  */
-BOOL CheckWriteAccess(fileentry_t *file, ULONG *error, globaldata *g)
+BOOL CheckWriteAccess(fileentry_t *file, SIPTR *error, globaldata *g)
 {
 
 	if (!CheckChangeAccess(file, error, g))
@@ -70,7 +70,7 @@ BOOL CheckWriteAccess(fileentry_t *file, ULONG *error, globaldata *g)
 
 /* fileaccess that reads from a file
  */
-BOOL CheckReadAccess(fileentry_t *file, ULONG *error, globaldata *g)
+BOOL CheckReadAccess(fileentry_t *file, SIPTR *error, globaldata *g)
 {
 	*error = 0;
 
@@ -102,9 +102,9 @@ BOOL CheckReadAccess(fileentry_t *file, ULONG *error, globaldata *g)
 
 /* check on operate access (like Seek)
  */
-BOOL CheckOperateFile(fileentry_t *file, ULONG *error, globaldata *g)
+BOOL CheckOperateFile(fileentry_t *file, SIPTR *error, globaldata *g)
 {
-	*error = NULL;
+	*error = 0;
 
 	/* test on type */
 #if DELDIR

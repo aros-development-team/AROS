@@ -283,9 +283,9 @@ static UBYTE debugbuf[120];
 /*
  * Contents
  */
-static BOOL GetParentOf(union objectinfo *path, ULONG *error, globaldata *);
-static BOOL GetDir(STRPTR dirname, union objectinfo *path, ULONG *error, globaldata *);
-static BOOL GetObject(STRPTR objectname, union objectinfo *path, ULONG *error, globaldata *);
+static BOOL GetParentOf(union objectinfo *path, SIPTR *error, globaldata *);
+static BOOL GetDir(STRPTR dirname, union objectinfo *path, SIPTR *error, globaldata *);
+static BOOL GetObject(STRPTR objectname, union objectinfo *path, SIPTR *error, globaldata *);
 static BOOL SearchInDir(ULONG dirnodenr, STRPTR objectname, union objectinfo *info, globaldata * g);
 static void FillFib(struct direntry *direntry, struct FileInfoBlock *fib, globaldata * g);
 #if DELDIR
@@ -293,7 +293,7 @@ static struct deldirentry *SearchInDeldir(STRPTR delname, union objectinfo *resu
 static BOOL IsDelfileValid(struct deldirentry *dde, struct cdeldirblock *ddblk, globaldata *g);
 static BOOL BlockTaken(struct canode *anode, globaldata *g);
 static void FillDelfileFib(struct deldirentry *dde, ULONG slotnr, struct FileInfoBlock *fib, globaldata *g);
-static struct deldirentry *GetDeldirEntry(ULONG *nr, globaldata *g);
+static struct deldirentry *GetDeldirEntry(IPTR *nr, globaldata *g);
 static ULONG FillInDDEData(struct ExAllData *buffer, LONG type, struct deldirentry *dde, ULONG ddenr, ULONG spaceleft, globaldata *g);
 static struct cdeldirblock *GetDeldirBlock(UWORD seqnr, globaldata *g);
 #endif
@@ -301,11 +301,11 @@ static void GetFirstEntry(lockentry_t *, globaldata *);
 static ULONG GetFirstNonEmptyDE(ULONG anodenr, struct fileinfo *, globaldata *);
 static void RemakeNextEntry(lockentry_t *, struct FileInfoBlock *, globaldata *);
 static ULONG FillInData(struct ExAllData *, LONG, struct direntry *, ULONG);
-static BOOL DeleteDir(union objectinfo *, ULONG *, globaldata *);
+static BOOL DeleteDir(union objectinfo *, SIPTR *, globaldata *);
 static BOOL DirIsEmpty(ULONG, globaldata *);
 static BOOL MakeDirEntry(BYTE type, UBYTE *name, UBYTE *entrybuffer, globaldata * g);
 static BOOL IsChildOf(union objectinfo child, union objectinfo parent, globaldata * g);
-static BOOL DeleteLink(struct fileinfo *link, ULONG *, globaldata * g);
+static BOOL DeleteLink(struct fileinfo *link, SIPTR *, globaldata * g);
 static BOOL RemapLinks(struct fileinfo *object, globaldata * g);
 static void UpdateLinkDir(struct direntry *object, ULONG newdiran, globaldata * g);
 static void MoveLink(struct direntry *object, ULONG newdiran, globaldata *g);
@@ -351,7 +351,7 @@ static BOOL FreeAnodeBlocks(ULONG anodenr, enum freeblocktype freenodes, globald
  * will be stored in g->unparsed.
  */
 UBYTE *GetFullPath(union objectinfo *basispath, STRPTR filename,
-				   union objectinfo *fullpath, ULONG *error, globaldata * g)
+				   union objectinfo *fullpath, SIPTR *error, globaldata * g)
 {
 	UBYTE *pathpart, parttype;
 	COUNT index;
@@ -435,7 +435,7 @@ UBYTE *GetFullPath(union objectinfo *basispath, STRPTR filename,
 BOOL GetRoot(union objectinfo * path, globaldata * g)
 {
 	UpdateCurrentDisk(g);
-	path->volume.root = NULL;
+	path->volume.root = 0;
 	path->volume.volume = g->currentvolume;
 	return DOSTRUE;
 }
@@ -443,7 +443,7 @@ BOOL GetRoot(union objectinfo * path, globaldata * g)
 /* pre: - path <> 0 and volume or directory
  * result back in path
  */
-static BOOL GetParentOf(union objectinfo *path, ULONG *error, globaldata * g)
+static BOOL GetParentOf(union objectinfo *path, SIPTR *error, globaldata * g)
 {
 	BOOL ok;
 	union objectinfo info;
@@ -457,7 +457,7 @@ static BOOL GetParentOf(union objectinfo *path, ULONG *error, globaldata * g)
  *      - dirname without path; strlen(dirname) > 0
  * result back in path
  */
-static BOOL GetDir(STRPTR dirname, union objectinfo *path, ULONG *error, globaldata * g)
+static BOOL GetDir(STRPTR dirname, union objectinfo *path, SIPTR *error, globaldata * g)
 {
 	BOOL found;
 
@@ -505,7 +505,7 @@ static BOOL GetDir(STRPTR dirname, union objectinfo *path, ULONG *error, globald
  *      - objectname without path; strlen(objectname) > 0
  * result back in path
  */
-static BOOL GetObject(STRPTR objectname, union objectinfo *path, ULONG *error, globaldata *g)
+static BOOL GetObject(STRPTR objectname, union objectinfo *path, SIPTR *error, globaldata *g)
 {
 	ULONG anodenr;
 	BOOL found;
@@ -531,7 +531,7 @@ static BOOL GetObject(STRPTR objectname, union objectinfo *path, ULONG *error, g
 #if DELDIR
 		if (g->deldirenabled && IsVolume(*path))
 		{
-			if (stricmp(deldirname+1, objectname) == NULL)
+			if (stricmp(deldirname+1, objectname) == 0)
 			{
 				path->deldir.special = SPECIAL_DELDIR;
 				path->deldir.volume = g->currentvolume;
@@ -567,7 +567,7 @@ static BOOL GetObject(STRPTR objectname, union objectinfo *path, ULONG *error, g
  * will be stored in g->unparsed.
  */
 BOOL FindObject(union objectinfo *directory, STRPTR objectname,
-				union objectinfo *object, ULONG *error, globaldata *g)
+				union objectinfo *object, SIPTR *error, globaldata *g)
 {
 	UBYTE *filename;
 	BOOL ok;
@@ -601,7 +601,7 @@ BOOL FindObject(union objectinfo *directory, STRPTR objectname,
  * childfi == parentfi can be dangerous
  * in:childfi; out:parentfi, error
  */
-BOOL GetParent(union objectinfo *childfi, union objectinfo *parentfi, ULONG *error, globaldata *g)
+BOOL GetParent(union objectinfo *childfi, union objectinfo *parentfi, SIPTR *error, globaldata *g)
 {
 	struct canode anode;
 	struct cdirblock *dirblock;
@@ -638,7 +638,7 @@ BOOL GetParent(union objectinfo *childfi, union objectinfo *parentfi, ULONG *err
 	// -II- check if in root
 	if (parentanodenr == 0)     /* child is in rootdir */
 	{
-		parentfi->volume.root = NULL;
+		parentfi->volume.root = 0;
 		parentfi->volume.volume = childfi->file.dirblock->volume;
 		return TRUE;
 	}
@@ -820,7 +820,7 @@ BOOL FetchObject(ULONG diranodenr, ULONG target, union objectinfo * result, glob
  *
  * - fib_DirEntryType must be equal to fib_EntryType
  */
-BOOL ExamineFile(listentry_t *file, struct FileInfoBlock * fib, ULONG *error, globaldata * g)
+BOOL ExamineFile(listentry_t *file, struct FileInfoBlock * fib, SIPTR *error, globaldata * g)
 {
 	struct volumedata *volume;
 #if DELDIR
@@ -835,7 +835,7 @@ BOOL ExamineFile(listentry_t *file, struct FileInfoBlock * fib, ULONG *error, gl
 		volume = file->volume;
 
 	/* fill in fib */
-	fib->fib_DiskKey = (LONG)file;  // I use it as dir-block-number for ExNext
+	fib->fib_DiskKey = (IPTR)file;  // I use it as dir-block-number for ExNext
 	if (!file || IsVolumeEntry(file))
 	{
 		fib->fib_DirEntryType = \
@@ -933,7 +933,7 @@ BOOL ExamineFile(listentry_t *file, struct FileInfoBlock * fib, ULONG *error, gl
  *
  */
 BOOL ExamineNextFile(lockentry_t *file, struct FileInfoBlock * fib,
-					 ULONG *error, globaldata * g)
+					 SIPTR *error, globaldata * g)
 
 {
 	struct direntry *direntry;
@@ -952,7 +952,7 @@ BOOL ExamineNextFile(lockentry_t *file, struct FileInfoBlock * fib,
 	{
 		struct deldirentry *dde;
 
-		dde = GetDeldirEntry((ULONG *)&fib->fib_DiskKey, g);
+		dde = GetDeldirEntry(&fib->fib_DiskKey, g);
 		if (dde)
 		{
 			FillDelfileFib(dde, fib->fib_DiskKey, fib, g);
@@ -968,7 +968,7 @@ BOOL ExamineNextFile(lockentry_t *file, struct FileInfoBlock * fib,
 #endif
 
 	/* check if same lock used */
-	if ((LONG)file != (LONG)fib->fib_DiskKey)
+	if ((IPTR)file != (IPTR)fib->fib_DiskKey)
 	{
 		DB(Trace(1, "ExamineNextFile", "Other lock!!\n"));
 		RemakeNextEntry(file, fib, g);
@@ -985,7 +985,7 @@ BOOL ExamineNextFile(lockentry_t *file, struct FileInfoBlock * fib,
 	direntry = file->nextentry.direntry;
 	if (direntry->next)
 	{
-		fib->fib_DiskKey = (LONG)file;  // I use it as dir-block-number
+		fib->fib_DiskKey = (IPTR)file;  // I use it as dir-block-number
 		FillFib(direntry, fib, g);
 	}
 	else
@@ -1247,7 +1247,7 @@ static ULONG FillInData(struct ExAllData *buffer, LONG type,
 }
 
 BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
-		  LONG type, struct ExAllControl * ctrl, ULONG *error, globaldata * g)
+		  LONG type, struct ExAllControl * ctrl, SIPTR *error, globaldata * g)
 {
 	struct direntry *direntry;
 	struct ExAllData *lasteaentry = NULL;
@@ -1333,7 +1333,7 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 	/* check if it's the first call and if same lock is used */
 	if (ctrl->eac_LastKey == 0)
 		GetFirstEntry(object, g);
-	else if ((LONG)object != (LONG)ctrl->eac_LastKey)
+	else if ((IPTR)object != (IPTR)ctrl->eac_LastKey)
 	{
 		*error = ERROR_NO_MORE_ENTRIES;
 		return DOSFALSE;
@@ -1385,7 +1385,7 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 	}
 
 	/* Finish up */
-	ctrl->eac_LastKey = (LONG)object;
+	ctrl->eac_LastKey = (IPTR)object;
 	ctrl->eac_Entries = j;
 
 	if (eod)
@@ -1424,7 +1424,7 @@ ULONG NewFile (BOOL found, union objectinfo *directory, STRPTR filename, union o
 {
 	union objectinfo info;
 	ULONG anodenr;
-	ULONG error;
+	SIPTR error;
 	UBYTE entrybuffer[MAX_ENTRYSIZE];
 	struct extrafields extrafields;
 	struct direntry *destentry;
@@ -1534,9 +1534,9 @@ ULONG NewFile (BOOL found, union objectinfo *directory, STRPTR filename, union o
 
 			/* Delete old file (update possible) */
 			if (g->deldirenabled && info.file.direntry->type == ST_FILE)
-				FreeBlocksAC(achain, ULONG_MAX, keepanodes, g);
+				FreeBlocksAC(achain, UINT_MAX, keepanodes, g);
 			else
-				FreeBlocksAC(achain, ULONG_MAX, freeanodes, g);
+				FreeBlocksAC(achain, UINT_MAX, freeanodes, g);
 			DetachAnodeChain(achain, g);
 		}
 
@@ -1581,7 +1581,7 @@ ULONG NewFile (BOOL found, union objectinfo *directory, STRPTR filename, union o
  *
  * maxneeds: 2 nd, 3 na = 2 nablk : 4 res
  */
-lockentry_t *NewDir(union objectinfo *parent, STRPTR dirname, ULONG *error, globaldata * g)
+lockentry_t *NewDir(union objectinfo *parent, STRPTR dirname, SIPTR *error, globaldata * g)
 {
 	union objectinfo info;
 	listentry_t *fileentry;
@@ -1722,7 +1722,7 @@ struct cdirblock *MakeDirBlock(ULONG blocknr, ULONG anodenr, ULONG rootanodenr,
  * Don't check dirtycount!
  * info becomes INVALID!
  */
-BOOL DeleteObject(union objectinfo * info, ULONG *error, globaldata * g)
+BOOL DeleteObject(union objectinfo * info, SIPTR *error, globaldata * g)
 {
 	ULONG anodenr;
 
@@ -1785,10 +1785,10 @@ BOOL DeleteObject(union objectinfo * info, ULONG *error, globaldata * g)
 
 			ChangeDirEntry(info->file, NULL, NULL, NULL, g);    /* remove direntry */
 			if (do_deldir)
-				FreeBlocksAC(achain, ULONG_MAX, keepanodes, g);
+				FreeBlocksAC(achain, UINT_MAX, keepanodes, g);
 			else
 			{
-				FreeBlocksAC(achain, ULONG_MAX, freeanodes, g);
+				FreeBlocksAC(achain, UINT_MAX, freeanodes, g);
 				FreeAnode(achain->head.an.nr, g);
 			}
 			DetachAnodeChain(achain, g);
@@ -1801,7 +1801,7 @@ BOOL DeleteObject(union objectinfo * info, ULONG *error, globaldata * g)
 /* 
  * Delete directory
  */
-static BOOL DeleteDir(union objectinfo *info, ULONG *error, globaldata * g)
+static BOOL DeleteDir(union objectinfo *info, SIPTR *error, globaldata * g)
 {
 	struct canode anode, chnode;
 	struct volumedata *volume = g->currentvolume;
@@ -1857,7 +1857,8 @@ static BOOL DeleteDir(union objectinfo *info, ULONG *error, globaldata * g)
  */
 BOOL KillEmpty(union objectinfo * parent, globaldata * g)
 {
-	ULONG dirnodenr, error;
+	ULONG dirnodenr;
+	SIPTR error;
 	union objectinfo filefi;
 
 	if (IsVolume(*parent))
@@ -1875,7 +1876,7 @@ BOOL KillEmpty(union objectinfo * parent, globaldata * g)
  * Remove a directory entry without freeing anything and without
  * checking validity
  */
-LONG forced_RemoveDirEntry(union objectinfo *info, ULONG *error, globaldata * g)
+LONG forced_RemoveDirEntry(union objectinfo *info, SIPTR *error, globaldata * g)
 {
 	if (!info || IsVolume(*info))
 	{
@@ -1929,8 +1930,8 @@ void FreeAnodesInChain(ULONG anodenr, globaldata * g)
 			{
 				rext->blk.tobedone.operation_id = PP_FREEANODECHAIN;
 				rext->blk.tobedone.argument1 = anode.nr;
-				rext->blk.tobedone.argument2 = NULL;
-				rext->blk.tobedone.argument3 = NULL;
+				rext->blk.tobedone.argument2 = 0;
+				rext->blk.tobedone.argument3 = 0;
 			}
 
 			UpdateDisk(g);
@@ -1942,10 +1943,10 @@ void FreeAnodesInChain(ULONG anodenr, globaldata * g)
 
 	if (rext)
 	{
-		rext->blk.tobedone.operation_id = NULL;
-		rext->blk.tobedone.argument1 = NULL;
-		rext->blk.tobedone.argument2 = NULL;
-		rext->blk.tobedone.argument3 = NULL;
+		rext->blk.tobedone.operation_id = 0;
+		rext->blk.tobedone.argument1 = 0;
+		rext->blk.tobedone.argument2 = 0;
+		rext->blk.tobedone.argument3 = 0;
 	}
 }
 
@@ -1983,7 +1984,7 @@ void FreeAnodesInChain(ULONG anodenr, globaldata * g)
  * src- destanodenr = anodenr of source- destination directory
  */
 BOOL RenameAndMove (union objectinfo *sourcedi, union objectinfo *srcinfo,
-					union objectinfo *destdir, STRPTR destpath, ULONG *error,
+					union objectinfo *destdir, STRPTR destpath, SIPTR *error,
 					globaldata * g)
 {
 	struct direntry *srcdirentry, *destentry;
@@ -2140,7 +2141,7 @@ BOOL RenameAndMove (union objectinfo *sourcedi, union objectinfo *srcinfo,
  *
  * maxdirty: 1d, 1a = 2 res
  */
-BOOL AddComment(union objectinfo * info, STRPTR comment, ULONG *error, globaldata * g)
+BOOL AddComment(union objectinfo * info, STRPTR comment, SIPTR *error, globaldata * g)
 {
 	struct direntry *sourceentry, *destentry;
 	union objectinfo directory;
@@ -2212,7 +2213,7 @@ BOOL AddComment(union objectinfo * info, STRPTR comment, ULONG *error, globaldat
  *
  * maxneeds: changes 1 block. NEVER allocates new block
  */
-BOOL ProtectFile(struct fileinfo * file, ULONG protection, ULONG *error, globaldata * g)
+BOOL ProtectFile(struct fileinfo * file, ULONG protection, SIPTR *error, globaldata * g)
 {
 	ENTER("ProtectFile");
 
@@ -2282,7 +2283,7 @@ BOOL ProtectFile(struct fileinfo * file, ULONG protection, ULONG *error, globald
 	return DOSTRUE;
 }
 
-BOOL SetOwnerID(struct fileinfo * file, ULONG owner, ULONG *error, globaldata * g)
+BOOL SetOwnerID(struct fileinfo * file, ULONG owner, SIPTR *error, globaldata * g)
 {
 	struct extrafields extrafields;
 	union objectinfo directory;
@@ -2344,7 +2345,7 @@ BOOL SetOwnerID(struct fileinfo * file, ULONG owner, ULONG *error, globaldata * 
 	return DOSTRUE;
 }
 
-LONG ReadSoftLink(union objectinfo *linkfi, char *buffer, ULONG size, ULONG *error, globaldata * g)
+LONG ReadSoftLink(union objectinfo *linkfi, char *buffer, ULONG size, SIPTR *error, globaldata * g)
 {
 	struct canode anode;
 	UBYTE softblock[1024];
@@ -2370,7 +2371,7 @@ LONG ReadSoftLink(union objectinfo *linkfi, char *buffer, ULONG size, ULONG *err
 }
 
 BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
-					union objectinfo *newlink, ULONG *error, globaldata * g)
+					union objectinfo *newlink, SIPTR *error, globaldata * g)
 {
 	ULONG anodenr;
 	UBYTE entrybuffer[MAX_ENTRYSIZE];
@@ -2464,7 +2465,7 @@ BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
  * newlink: result (out)
  */
 BOOL CreateLink(union objectinfo * linkdir, STRPTR linkname, union objectinfo * object,
-				union objectinfo * newlink, ULONG *error, globaldata * g)
+				union objectinfo * newlink, SIPTR *error, globaldata * g)
 {
 	union objectinfo info, odi;
 	ULONG anodenr, linklist;
@@ -2603,7 +2604,7 @@ BOOL CreateLink(union objectinfo * linkdir, STRPTR linkname, union objectinfo * 
 	return DOSTRUE;
 }
 
-BOOL SetDate(union objectinfo *file, struct DateStamp *date, ULONG *error, globaldata *g)
+BOOL SetDate(union objectinfo *file, struct DateStamp *date, SIPTR *error, globaldata *g)
 {
 	ENTER("SetDate");
 
@@ -2662,7 +2663,7 @@ void Touch(struct fileinfo *info, globaldata * g)   // ook archiveflag..
  * result: created rolloverfile (out)
  */
 BOOL CreateRollover(union objectinfo *dir, STRPTR rollname, ULONG size,
-					union objectinfo *result, ULONG *error, globaldata * g)
+					union objectinfo *result, SIPTR *error, globaldata * g)
 {
 	ULONG anodenr;
 	struct direntry *de;
@@ -2781,7 +2782,8 @@ ULONG SetRollover(fileentry_t *rollfile, struct rolloverinfo *roinfo, globaldata
 	struct extrafields extrafields;
 	struct direntry *sourcede, *destde;
 	UBYTE entrybuffer[MAX_ENTRYSIZE];
-	ULONG error, realsize;
+	SIPTR error;
+	ULONG realsize;
 
 	/* check if file is rollover file */
 	if (!IsRollover(rollfile->le.info))
@@ -3060,7 +3062,8 @@ static BOOL MoveToPrevious(struct fileinfo de, struct direntry *to, struct filei
 static void RenameInPlace(struct fileinfo from, struct direntry *to, struct fileinfo *result, globaldata * g)
 {
 	UBYTE *dest, *start, *end;
-	ULONG error, movelen;
+	SIPTR error;
+	ULONG movelen;
 	int diff;
 	union objectinfo parent;
 
@@ -3100,7 +3103,7 @@ static void RemoveDirEntry(struct fileinfo info, globaldata * g)
 {
 	UBYTE *endofblok, *startofblok, *destofblok, *startofclear;
 	UWORD clearlen;
-	ULONG error;
+	SIPTR error;
 	union objectinfo parent;
 
 	LOCK(info.dirblock);
@@ -3406,7 +3409,7 @@ struct cdirblock *LoadDirBlock(ULONG blocknr, globaldata * g)
 
 static BOOL IsChildOf(union objectinfo child, union objectinfo parent, globaldata * g)
 {
-	ULONG error;
+	SIPTR error;
 	union objectinfo up;
 	BOOL goon = TRUE;
 
@@ -3433,7 +3436,7 @@ void GetExtraFields(struct direntry *direntry, struct extrafields *extrafields)
 
 	flags = *(--fields);
 	for (i = 0; i < sizeof(struct extrafields) / 2; i++, flags >>= 1)
-		*(extra++) = (flags & 1) ? *(--fields) : NULL;
+		*(extra++) = (flags & 1) ? *(--fields) : 0;
 
 	/* patch protection lower 8 bits */
 	extrafields->prot |= direntry->protection;
@@ -3536,7 +3539,7 @@ void UpdateLinks(struct direntry *object, globaldata * g)
 /*
  * Removes link from linklist and kills direntry
  */
-static BOOL DeleteLink(struct fileinfo *link, ULONG *error, globaldata * g)
+static BOOL DeleteLink(struct fileinfo *link, SIPTR *error, globaldata * g)
 {
 	struct canode linknode, linklist;
 	struct extrafields extrafields;
@@ -3596,7 +3599,7 @@ static BOOL RemapLinks(struct fileinfo *object, globaldata * g)
 	union objectinfo link, directory;
 	struct direntry *destentry;
 	UBYTE entrybuffer[MAX_ENTRYSIZE];
-	ULONG error;
+	SIPTR error;
 
 	ENTER("RemapLinks");
 	/* get head of linklist */
@@ -3885,7 +3888,7 @@ static void FillDelfileFib(struct deldirentry *dde, ULONG slotnr, struct FileInf
  * Get a >valid< deldirentry starting from deldirentrynr ddnr
  * deldir is assumed present and enabled
  */
-static struct deldirentry *GetDeldirEntry(ULONG *ddnr, globaldata * g)
+static struct deldirentry *GetDeldirEntry(IPTR *ddnr, globaldata * g)
 {
 	struct crootblockextension *rext = g->currentvolume->rblkextension;
 	struct cdeldirblock *ddblk;

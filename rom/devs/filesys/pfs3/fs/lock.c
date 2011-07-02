@@ -109,7 +109,7 @@ static UBYTE debugbuf[120];
 **
 ** result: the fileentry, or NULL if failure
 */
-struct listentry *MakeListEntry (union objectinfo *info, listtype type, ULONG *error, globaldata *g)
+struct listentry *MakeListEntry (union objectinfo *info, listtype type, SIPTR *error, globaldata *g)
 {
   listentry_t *listentry;
   union objectinfo newinfo;
@@ -376,7 +376,7 @@ void FreeListEntry(listentry_t *entry, globaldata *g)
 /*                               CHANGE                               */
 /**********************************************************************/
 
-BOOL _ChangeAccessMode(listentry_t *file, LONG mode, ULONG *error, globaldata *g)
+BOOL _ChangeAccessMode(listentry_t *file, LONG mode, SIPTR *error, globaldata *g)
 {
   UWORD oldmode, newmode;
 

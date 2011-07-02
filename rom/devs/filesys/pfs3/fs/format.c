@@ -155,7 +155,7 @@ static crootblockextension_t *MakeFormatRBlkExtension (struct rootblock *rbl, gl
 /*                               FORMAT                               */
 /**********************************************************************/
 
-BOOL FDSFormat (DSTR diskname, LONG disktype, ULONG *error, globaldata *g)
+BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, globaldata *g)
 {
   struct rootblock *rootblock;
   struct volumedata *volume;
@@ -183,7 +183,7 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, ULONG *error, globaldata *g)
 	if (g->geom->dg_TotalSectors > MAXDISKSIZE)
 		return DOSFALSE;
 
-	if (MakeBootBlock (g) != NULL)
+	if (MakeBootBlock (g) != 0)
 		return DOSFALSE;
 
 	if (!(rootblock = MakeRootBlock (diskname, g)))
@@ -411,7 +411,7 @@ static void MakeRootDir (globaldata *g)
 
 	blocknr = AllocReservedBlock (g);
 	anodenr = AllocAnode (0, g);
-	blk = MakeDirBlock (blocknr, anodenr, anodenr, NULL, g);
+	blk = MakeDirBlock (blocknr, anodenr, anodenr, 0, g);
 }
 
 static const ULONG schijf[][2] =
@@ -469,7 +469,7 @@ static void MakeReservedBitmap (struct rootblock **rbl, ULONG numreserved, globa
 
 	/* init bitmapblock header */
 	bmb->id = BMBLKID;
-	bmb->seqnr = NULL;
+	bmb->seqnr = 0;
 
 	/* fill bitmap */
 	bitmap = bmb->bitmap;
