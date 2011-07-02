@@ -135,7 +135,7 @@ const char *const Dos_SubstDateTable[]=
 
 	for (t=0; t<3; t++)
 	{
-	    if (!strncasecmp (Dos_SubstDateTable[t], ptr, strlen (Dos_SubstDateTable[t])))
+	    if (!Strnicmp (Dos_SubstDateTable[t], ptr, strlen (Dos_SubstDateTable[t])))
 		break;
 	}
 
@@ -145,7 +145,7 @@ const char *const Dos_SubstDateTable[]=
 	{
 	    for (t=0; t<7; t++)
 	    {
-		if (!strncasecmp (Dos_WeekTable[t], ptr, strlen (Dos_WeekTable[t])))
+		if (!Strnicmp (Dos_WeekTable[t], ptr, strlen (Dos_WeekTable[t])))
 		    break;
 	    }
 
@@ -244,7 +244,7 @@ const char *const Dos_SubstDateTable[]=
 		    case 'm':
 			for (t=0; t<12; t++)
 			{
-			    if (!strncasecmp (Dos_MonthTable[t], ptr,
+			    if (!Strnicmp (Dos_MonthTable[t], ptr,
 				    strlen (Dos_MonthTable[t])))
 				break;
 			}

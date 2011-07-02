@@ -298,7 +298,7 @@ char *BSTR2C(BSTR);
 #define C2BSTR(x)	((char *)(x))
 #define FREEC2BSTR(x)	do { } while (0)
 #define CMPCBSTR(a,b)	strcmp(a,b)
-#define CMPICBSTR(a,b)	strcasecmp(a,b)
+#define CMPICBSTR(a,b)	Stricmp(a,b)
 #define fixfib(f)	do { } while (0)
 #else
 BSTR C2BSTR(CONST_STRPTR);
