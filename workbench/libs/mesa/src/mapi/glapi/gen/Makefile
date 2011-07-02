@@ -5,7 +5,9 @@
 
 
 TOP = ../../../..
-include $(TOP)/configs/current
+#include $(TOP)/configs/current
+PYTHON2 = python
+PYTHON_FLAGS = -t -O -O
 
 MESA_DIR = $(TOP)/src/mesa
 MESA_GLAPI_DIR = $(TOP)/src/mapi/glapi
@@ -27,11 +29,12 @@ MESA_OUTPUTS = \
 	$(MESA_DIR)/main/enums.c \
 	$(MESA_DIR)/main/glapidispatch.h \
 	$(MESA_DIR)/main/remap_helper.h \
-	$(MESA_GLX_DIR)/indirect.c \
-	$(MESA_GLX_DIR)/indirect.h \
-	$(MESA_GLX_DIR)/indirect_init.c \
-	$(MESA_GLX_DIR)/indirect_size.h \
-	$(MESA_GLX_DIR)/indirect_size.c
+
+#	$(MESA_GLX_DIR)/indirect.c \
+#	$(MESA_GLX_DIR)/indirect.h \
+#	$(MESA_GLX_DIR)/indirect_init.c \
+#	$(MESA_GLX_DIR)/indirect_size.h \
+#	$(MESA_GLX_DIR)/indirect_size.c
 
 ######################################################################
 
