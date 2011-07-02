@@ -12309,7 +12309,7 @@
     <function name="TextureRangeAPPLE" offset="assign" static_dispatch="false">
         <param name="target" type="GLenum"/>
         <param name="length" type="GLsizei"/>
-        <param name="pointer" type="GLvoid *"/>
+        <param name="pointer" type="const GLvoid *"/>
     </function>
     <function name="GetTexParameterPointervAPPLE" offset="assign" static_dispatch="false">
         <param name="target" type="GLenum"/>
