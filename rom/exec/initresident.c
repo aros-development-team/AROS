@@ -163,11 +163,13 @@
         DINITRESIDENT("Initresident !RTF_AUTOINIT");
 
 	/* ...or let the library do it. */
-        library = AROS_UFC3(struct Library *, resident->rt_Init,
-            AROS_UFCA(struct Library *,  0L, D0),
-            AROS_UFCA(BPTR,              segList, A0),
-            AROS_UFCA(struct ExecBase *, SysBase, A6)
-        );
+	if (resident->rt_Init) {
+            library = AROS_UFC3(struct Library *, resident->rt_Init,
+                AROS_UFCA(struct Library *,  0L, D0),
+                AROS_UFCA(BPTR,              segList, A0),
+                AROS_UFCA(struct ExecBase *, SysBase, A6)
+            );
+        }
     }
 
     DINITRESIDENT("InitResident end 0x%p (\"%s\")", resident, resident->rt_Name);
