@@ -1296,106 +1296,10 @@ static const char gl_string_table[] =
 
 
 #ifdef USE_MGL_NAMESPACE
-#define gl_dispatch_stub_343 mgl_dispatch_stub_343
-#define gl_dispatch_stub_344 mgl_dispatch_stub_344
-#define gl_dispatch_stub_345 mgl_dispatch_stub_345
-#define gl_dispatch_stub_356 mgl_dispatch_stub_356
-#define gl_dispatch_stub_357 mgl_dispatch_stub_357
-#define gl_dispatch_stub_358 mgl_dispatch_stub_358
-#define gl_dispatch_stub_359 mgl_dispatch_stub_359
-#define gl_dispatch_stub_361 mgl_dispatch_stub_361
-#define gl_dispatch_stub_362 mgl_dispatch_stub_362
-#define gl_dispatch_stub_363 mgl_dispatch_stub_363
-#define gl_dispatch_stub_364 mgl_dispatch_stub_364
-#define gl_dispatch_stub_365 mgl_dispatch_stub_365
-#define gl_dispatch_stub_366 mgl_dispatch_stub_366
-#define gl_dispatch_stub_601 mgl_dispatch_stub_601
-#define gl_dispatch_stub_602 mgl_dispatch_stub_602
-#define gl_dispatch_stub_603 mgl_dispatch_stub_603
-#define gl_dispatch_stub_604 mgl_dispatch_stub_604
-#define gl_dispatch_stub_605 mgl_dispatch_stub_605
-#define gl_dispatch_stub_606 mgl_dispatch_stub_606
-#define gl_dispatch_stub_607 mgl_dispatch_stub_607
-#define gl_dispatch_stub_608 mgl_dispatch_stub_608
-#define gl_dispatch_stub_643 mgl_dispatch_stub_643
-#define gl_dispatch_stub_685 mgl_dispatch_stub_685
-#define gl_dispatch_stub_686 mgl_dispatch_stub_686
-#define gl_dispatch_stub_687 mgl_dispatch_stub_687
-#define gl_dispatch_stub_688 mgl_dispatch_stub_688
-#define gl_dispatch_stub_689 mgl_dispatch_stub_689
-#define gl_dispatch_stub_690 mgl_dispatch_stub_690
-#define gl_dispatch_stub_691 mgl_dispatch_stub_691
-#define gl_dispatch_stub_692 mgl_dispatch_stub_692
-#define gl_dispatch_stub_693 mgl_dispatch_stub_693
-#define gl_dispatch_stub_774 mgl_dispatch_stub_774
-#define gl_dispatch_stub_775 mgl_dispatch_stub_775
-#define gl_dispatch_stub_776 mgl_dispatch_stub_776
-#define gl_dispatch_stub_777 mgl_dispatch_stub_777
-#define gl_dispatch_stub_778 mgl_dispatch_stub_778
-#define gl_dispatch_stub_787 mgl_dispatch_stub_787
-#define gl_dispatch_stub_788 mgl_dispatch_stub_788
-#define gl_dispatch_stub_806 mgl_dispatch_stub_806
-#define gl_dispatch_stub_807 mgl_dispatch_stub_807
-#define gl_dispatch_stub_808 mgl_dispatch_stub_808
-#define gl_dispatch_stub_866 mgl_dispatch_stub_866
-#define gl_dispatch_stub_867 mgl_dispatch_stub_867
-#define gl_dispatch_stub_874 mgl_dispatch_stub_874
-#define gl_dispatch_stub_875 mgl_dispatch_stub_875
-#define gl_dispatch_stub_876 mgl_dispatch_stub_876
-#define gl_dispatch_stub_877 mgl_dispatch_stub_877
-#define gl_dispatch_stub_878 mgl_dispatch_stub_878
 #endif /* USE_MGL_NAMESPACE */
 
 
 #if defined(NEED_FUNCTION_POINTER) || defined(GLX_INDIRECT_RENDERING)
-void GLAPIENTRY gl_dispatch_stub_343(GLenum target, GLenum format, GLenum type, GLvoid * table);
-void GLAPIENTRY gl_dispatch_stub_344(GLenum target, GLenum pname, GLfloat * params);
-void GLAPIENTRY gl_dispatch_stub_345(GLenum target, GLenum pname, GLint * params);
-void GLAPIENTRY gl_dispatch_stub_356(GLenum target, GLenum format, GLenum type, GLvoid * image);
-void GLAPIENTRY gl_dispatch_stub_357(GLenum target, GLenum pname, GLfloat * params);
-void GLAPIENTRY gl_dispatch_stub_358(GLenum target, GLenum pname, GLint * params);
-void GLAPIENTRY gl_dispatch_stub_359(GLenum target, GLenum format, GLenum type, GLvoid * row, GLvoid * column, GLvoid * span);
-void GLAPIENTRY gl_dispatch_stub_361(GLenum target, GLboolean reset, GLenum format, GLenum type, GLvoid * values);
-void GLAPIENTRY gl_dispatch_stub_362(GLenum target, GLenum pname, GLfloat * params);
-void GLAPIENTRY gl_dispatch_stub_363(GLenum target, GLenum pname, GLint * params);
-void GLAPIENTRY gl_dispatch_stub_364(GLenum target, GLboolean reset, GLenum format, GLenum type, GLvoid * values);
-void GLAPIENTRY gl_dispatch_stub_365(GLenum target, GLenum pname, GLfloat * params);
-void GLAPIENTRY gl_dispatch_stub_366(GLenum target, GLenum pname, GLint * params);
-void GLAPIENTRY gl_dispatch_stub_601(GLenum pname, GLfloat * params);
-void GLAPIENTRY gl_dispatch_stub_602(GLenum pname, GLint * params);
-void GLAPIENTRY gl_dispatch_stub_603(GLenum pname, GLfloat param);
-void GLAPIENTRY gl_dispatch_stub_604(GLenum pname, const GLfloat * params);
-void GLAPIENTRY gl_dispatch_stub_605(GLenum pname, GLint param);
-void GLAPIENTRY gl_dispatch_stub_606(GLenum pname, const GLint * params);
-void GLAPIENTRY gl_dispatch_stub_607(GLclampf value, GLboolean invert);
-void GLAPIENTRY gl_dispatch_stub_608(GLenum pattern);
-void GLAPIENTRY gl_dispatch_stub_643(GLenum mode);
-void GLAPIENTRY gl_dispatch_stub_685(const GLenum * mode, const GLint * first, const GLsizei * count, GLsizei primcount, GLint modestride);
-void GLAPIENTRY gl_dispatch_stub_686(const GLenum * mode, const GLsizei * count, GLenum type, const GLvoid * const * indices, GLsizei primcount, GLint modestride);
-void GLAPIENTRY gl_dispatch_stub_687(GLsizei n, const GLuint * fences);
-void GLAPIENTRY gl_dispatch_stub_688(GLuint fence);
-void GLAPIENTRY gl_dispatch_stub_689(GLsizei n, GLuint * fences);
-void GLAPIENTRY gl_dispatch_stub_690(GLuint fence, GLenum pname, GLint * params);
-GLboolean GLAPIENTRY gl_dispatch_stub_691(GLuint fence);
-void GLAPIENTRY gl_dispatch_stub_692(GLuint fence, GLenum condition);
-GLboolean GLAPIENTRY gl_dispatch_stub_693(GLuint fence);
-void GLAPIENTRY gl_dispatch_stub_774(GLenum face);
-void GLAPIENTRY gl_dispatch_stub_775(GLuint array);
-void GLAPIENTRY gl_dispatch_stub_776(GLsizei n, const GLuint * arrays);
-void GLAPIENTRY gl_dispatch_stub_777(GLsizei n, GLuint * arrays);
-GLboolean GLAPIENTRY gl_dispatch_stub_778(GLuint array);
-void GLAPIENTRY gl_dispatch_stub_787(GLclampd zmin, GLclampd zmax);
-void GLAPIENTRY gl_dispatch_stub_788(GLenum modeRGB, GLenum modeA);
-void GLAPIENTRY gl_dispatch_stub_806(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
-void GLAPIENTRY gl_dispatch_stub_807(GLenum target, GLenum pname, GLint param);
-void GLAPIENTRY gl_dispatch_stub_808(GLenum target, GLintptr offset, GLsizeiptr size);
-void GLAPIENTRY gl_dispatch_stub_866(GLenum target, GLenum pname, GLvoid ** params);
-void GLAPIENTRY gl_dispatch_stub_867(GLenum target, GLsizei length, GLvoid * pointer);
-void GLAPIENTRY gl_dispatch_stub_874(GLenum frontfunc, GLenum backfunc, GLint ref, GLuint mask);
-void GLAPIENTRY gl_dispatch_stub_875(GLenum target, GLuint index, GLsizei count, const GLfloat * params);
-void GLAPIENTRY gl_dispatch_stub_876(GLenum target, GLuint index, GLsizei count, const GLfloat * params);
-void GLAPIENTRY gl_dispatch_stub_877(GLuint id, GLenum pname, GLint64EXT * params);
-void GLAPIENTRY gl_dispatch_stub_878(GLuint id, GLenum pname, GLuint64EXT * params);
 #endif /* defined(NEED_FUNCTION_POINTER) || defined(GLX_INDIRECT_RENDERING) */
 
 static const glprocs_table_t static_functions[] = {
@@ -2000,14 +1904,14 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET( 9694, glPauseTransformFeedback, glPauseTransformFeedback, NULL, 598),
     NAME_FUNC_OFFSET( 9719, glResumeTransformFeedback, glResumeTransformFeedback, NULL, 599),
     NAME_FUNC_OFFSET( 9745, glPolygonOffsetEXT, glPolygonOffsetEXT, NULL, 600),
-    NAME_FUNC_OFFSET( 9764, gl_dispatch_stub_601, gl_dispatch_stub_601, NULL, 601),
-    NAME_FUNC_OFFSET( 9796, gl_dispatch_stub_602, gl_dispatch_stub_602, NULL, 602),
-    NAME_FUNC_OFFSET( 9828, gl_dispatch_stub_603, gl_dispatch_stub_603, NULL, 603),
-    NAME_FUNC_OFFSET( 9856, gl_dispatch_stub_604, gl_dispatch_stub_604, NULL, 604),
-    NAME_FUNC_OFFSET( 9885, gl_dispatch_stub_605, gl_dispatch_stub_605, NULL, 605),
-    NAME_FUNC_OFFSET( 9913, gl_dispatch_stub_606, gl_dispatch_stub_606, NULL, 606),
-    NAME_FUNC_OFFSET( 9942, gl_dispatch_stub_607, gl_dispatch_stub_607, NULL, 607),
-    NAME_FUNC_OFFSET( 9959, gl_dispatch_stub_608, gl_dispatch_stub_608, NULL, 608),
+    NAME_FUNC_OFFSET( 9764, glGetPixelTexGenParameterfvSGIS, glGetPixelTexGenParameterfvSGIS, NULL, 601),
+    NAME_FUNC_OFFSET( 9796, glGetPixelTexGenParameterivSGIS, glGetPixelTexGenParameterivSGIS, NULL, 602),
+    NAME_FUNC_OFFSET( 9828, glPixelTexGenParameterfSGIS, glPixelTexGenParameterfSGIS, NULL, 603),
+    NAME_FUNC_OFFSET( 9856, glPixelTexGenParameterfvSGIS, glPixelTexGenParameterfvSGIS, NULL, 604),
+    NAME_FUNC_OFFSET( 9885, glPixelTexGenParameteriSGIS, glPixelTexGenParameteriSGIS, NULL, 605),
+    NAME_FUNC_OFFSET( 9913, glPixelTexGenParameterivSGIS, glPixelTexGenParameterivSGIS, NULL, 606),
+    NAME_FUNC_OFFSET( 9942, glSampleMaskSGIS, glSampleMaskSGIS, NULL, 607),
+    NAME_FUNC_OFFSET( 9959, glSamplePatternSGIS, glSamplePatternSGIS, NULL, 608),
     NAME_FUNC_OFFSET( 9979, glColorPointerEXT, glColorPointerEXT, NULL, 609),
     NAME_FUNC_OFFSET( 9997, glEdgeFlagPointerEXT, glEdgeFlagPointerEXT, NULL, 610),
     NAME_FUNC_OFFSET(10018, glIndexPointerEXT, glIndexPointerEXT, NULL, 611),
@@ -2042,7 +1946,7 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(10645, glFogCoorddvEXT, glFogCoorddvEXT, NULL, 640),
     NAME_FUNC_OFFSET(10661, glFogCoordfEXT, glFogCoordfEXT, NULL, 641),
     NAME_FUNC_OFFSET(10676, glFogCoordfvEXT, glFogCoordfvEXT, NULL, 642),
-    NAME_FUNC_OFFSET(10692, gl_dispatch_stub_643, gl_dispatch_stub_643, NULL, 643),
+    NAME_FUNC_OFFSET(10692, glPixelTexGenSGIX, glPixelTexGenSGIX, NULL, 643),
     NAME_FUNC_OFFSET(10710, glBlendFuncSeparateEXT, glBlendFuncSeparateEXT, NULL, 644),
     NAME_FUNC_OFFSET(10733, glFlushVertexArrayRangeNV, glFlushVertexArrayRangeNV, NULL, 645),
     NAME_FUNC_OFFSET(10759, glVertexArrayRangeNV, glVertexArrayRangeNV, NULL, 646),
@@ -2084,15 +1988,15 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(11546, glWindowPos4ivMESA, glWindowPos4ivMESA, NULL, 682),
     NAME_FUNC_OFFSET(11565, glWindowPos4sMESA, glWindowPos4sMESA, NULL, 683),
     NAME_FUNC_OFFSET(11583, glWindowPos4svMESA, glWindowPos4svMESA, NULL, 684),
-    NAME_FUNC_OFFSET(11602, gl_dispatch_stub_685, gl_dispatch_stub_685, NULL, 685),
-    NAME_FUNC_OFFSET(11627, gl_dispatch_stub_686, gl_dispatch_stub_686, NULL, 686),
-    NAME_FUNC_OFFSET(11654, gl_dispatch_stub_687, gl_dispatch_stub_687, NULL, 687),
-    NAME_FUNC_OFFSET(11671, gl_dispatch_stub_688, gl_dispatch_stub_688, NULL, 688),
-    NAME_FUNC_OFFSET(11687, gl_dispatch_stub_689, gl_dispatch_stub_689, NULL, 689),
-    NAME_FUNC_OFFSET(11701, gl_dispatch_stub_690, gl_dispatch_stub_690, NULL, 690),
-    NAME_FUNC_OFFSET(11716, gl_dispatch_stub_691, gl_dispatch_stub_691, NULL, 691),
-    NAME_FUNC_OFFSET(11728, gl_dispatch_stub_692, gl_dispatch_stub_692, NULL, 692),
-    NAME_FUNC_OFFSET(11741, gl_dispatch_stub_693, gl_dispatch_stub_693, NULL, 693),
+    NAME_FUNC_OFFSET(11602, glMultiModeDrawArraysIBM, glMultiModeDrawArraysIBM, NULL, 685),
+    NAME_FUNC_OFFSET(11627, glMultiModeDrawElementsIBM, glMultiModeDrawElementsIBM, NULL, 686),
+    NAME_FUNC_OFFSET(11654, glDeleteFencesNV, glDeleteFencesNV, NULL, 687),
+    NAME_FUNC_OFFSET(11671, glFinishFenceNV, glFinishFenceNV, NULL, 688),
+    NAME_FUNC_OFFSET(11687, glGenFencesNV, glGenFencesNV, NULL, 689),
+    NAME_FUNC_OFFSET(11701, glGetFenceivNV, glGetFenceivNV, NULL, 690),
+    NAME_FUNC_OFFSET(11716, glIsFenceNV, glIsFenceNV, NULL, 691),
+    NAME_FUNC_OFFSET(11728, glSetFenceNV, glSetFenceNV, NULL, 692),
+    NAME_FUNC_OFFSET(11741, glTestFenceNV, glTestFenceNV, NULL, 693),
     NAME_FUNC_OFFSET(11755, glAreProgramsResidentNV, glAreProgramsResidentNV, NULL, 694),
     NAME_FUNC_OFFSET(11779, glBindProgramNV, glBindProgramNV, NULL, 695),
     NAME_FUNC_OFFSET(11795, glDeleteProgramsNV, glDeleteProgramsNV, NULL, 696),
@@ -2173,11 +2077,11 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(13374, glSetFragmentShaderConstantATI, glSetFragmentShaderConstantATI, NULL, 771),
     NAME_FUNC_OFFSET(13405, glPointParameteriNV, glPointParameteriNV, NULL, 772),
     NAME_FUNC_OFFSET(13425, glPointParameterivNV, glPointParameterivNV, NULL, 773),
-    NAME_FUNC_OFFSET(13446, gl_dispatch_stub_774, gl_dispatch_stub_774, NULL, 774),
-    NAME_FUNC_OFFSET(13469, gl_dispatch_stub_775, gl_dispatch_stub_775, NULL, 775),
-    NAME_FUNC_OFFSET(13492, gl_dispatch_stub_776, gl_dispatch_stub_776, NULL, 776),
-    NAME_FUNC_OFFSET(13518, gl_dispatch_stub_777, gl_dispatch_stub_777, NULL, 777),
-    NAME_FUNC_OFFSET(13541, gl_dispatch_stub_778, gl_dispatch_stub_778, NULL, 778),
+    NAME_FUNC_OFFSET(13446, glActiveStencilFaceEXT, glActiveStencilFaceEXT, NULL, 774),
+    NAME_FUNC_OFFSET(13469, glBindVertexArrayAPPLE, glBindVertexArrayAPPLE, NULL, 775),
+    NAME_FUNC_OFFSET(13492, glDeleteVertexArraysAPPLE, glDeleteVertexArraysAPPLE, NULL, 776),
+    NAME_FUNC_OFFSET(13518, glGenVertexArraysAPPLE, glGenVertexArraysAPPLE, NULL, 777),
+    NAME_FUNC_OFFSET(13541, glIsVertexArrayAPPLE, glIsVertexArrayAPPLE, NULL, 778),
     NAME_FUNC_OFFSET(13562, glGetProgramNamedParameterdvNV, glGetProgramNamedParameterdvNV, NULL, 779),
     NAME_FUNC_OFFSET(13593, glGetProgramNamedParameterfvNV, glGetProgramNamedParameterfvNV, NULL, 780),
     NAME_FUNC_OFFSET(13624, glProgramNamedParameter4dNV, glProgramNamedParameter4dNV, NULL, 781),
@@ -2186,8 +2090,8 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(13709, glProgramNamedParameter4fvNV, glProgramNamedParameter4fvNV, NULL, 784),
     NAME_FUNC_OFFSET(13738, glPrimitiveRestartIndexNV, glPrimitiveRestartIndexNV, NULL, 785),
     NAME_FUNC_OFFSET(13764, glPrimitiveRestartNV, glPrimitiveRestartNV, NULL, 786),
-    NAME_FUNC_OFFSET(13785, gl_dispatch_stub_787, gl_dispatch_stub_787, NULL, 787),
-    NAME_FUNC_OFFSET(13802, gl_dispatch_stub_788, gl_dispatch_stub_788, NULL, 788),
+    NAME_FUNC_OFFSET(13785, glDepthBoundsEXT, glDepthBoundsEXT, NULL, 787),
+    NAME_FUNC_OFFSET(13802, glBlendEquationSeparateEXT, glBlendEquationSeparateEXT, NULL, 788),
     NAME_FUNC_OFFSET(13829, glBindFramebufferEXT, glBindFramebufferEXT, NULL, 789),
     NAME_FUNC_OFFSET(13850, glBindRenderbufferEXT, glBindRenderbufferEXT, NULL, 790),
     NAME_FUNC_OFFSET(13872, glCheckFramebufferStatusEXT, glCheckFramebufferStatusEXT, NULL, 791),
@@ -2205,9 +2109,9 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(14192, glIsFramebufferEXT, glIsFramebufferEXT, NULL, 803),
     NAME_FUNC_OFFSET(14211, glIsRenderbufferEXT, glIsRenderbufferEXT, NULL, 804),
     NAME_FUNC_OFFSET(14231, glRenderbufferStorageEXT, glRenderbufferStorageEXT, NULL, 805),
-    NAME_FUNC_OFFSET(14256, gl_dispatch_stub_806, gl_dispatch_stub_806, NULL, 806),
-    NAME_FUNC_OFFSET(14277, gl_dispatch_stub_807, gl_dispatch_stub_807, NULL, 807),
-    NAME_FUNC_OFFSET(14301, gl_dispatch_stub_808, gl_dispatch_stub_808, NULL, 808),
+    NAME_FUNC_OFFSET(14256, glBlitFramebufferEXT, glBlitFramebufferEXT, NULL, 806),
+    NAME_FUNC_OFFSET(14277, glBufferParameteriAPPLE, glBufferParameteriAPPLE, NULL, 807),
+    NAME_FUNC_OFFSET(14301, glFlushMappedBufferRangeAPPLE, glFlushMappedBufferRangeAPPLE, NULL, 808),
     NAME_FUNC_OFFSET(14331, glBindFragDataLocationEXT, glBindFragDataLocationEXT, NULL, 809),
     NAME_FUNC_OFFSET(14357, glGetFragDataLocationEXT, glGetFragDataLocationEXT, NULL, 810),
     NAME_FUNC_OFFSET(14382, glGetUniformuivEXT, glGetUniformuivEXT, NULL, 811),
@@ -2265,19 +2169,19 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(15508, glGetTransformFeedbackVaryingEXT, glGetTransformFeedbackVaryingEXT, NULL, 863),
     NAME_FUNC_OFFSET(15541, glTransformFeedbackVaryingsEXT, glTransformFeedbackVaryingsEXT, NULL, 864),
     NAME_FUNC_OFFSET(15572, glProvokingVertexEXT, glProvokingVertexEXT, NULL, 865),
-    NAME_FUNC_OFFSET(15593, gl_dispatch_stub_866, gl_dispatch_stub_866, NULL, 866),
-    NAME_FUNC_OFFSET(15624, gl_dispatch_stub_867, gl_dispatch_stub_867, NULL, 867),
+    NAME_FUNC_OFFSET(15593, glGetTexParameterPointervAPPLE, glGetTexParameterPointervAPPLE, NULL, 866),
+    NAME_FUNC_OFFSET(15624, glTextureRangeAPPLE, glTextureRangeAPPLE, NULL, 867),
     NAME_FUNC_OFFSET(15644, glGetObjectParameterivAPPLE, glGetObjectParameterivAPPLE, NULL, 868),
     NAME_FUNC_OFFSET(15672, glObjectPurgeableAPPLE, glObjectPurgeableAPPLE, NULL, 869),
     NAME_FUNC_OFFSET(15695, glObjectUnpurgeableAPPLE, glObjectUnpurgeableAPPLE, NULL, 870),
     NAME_FUNC_OFFSET(15720, glActiveProgramEXT, glActiveProgramEXT, NULL, 871),
     NAME_FUNC_OFFSET(15739, glCreateShaderProgramEXT, glCreateShaderProgramEXT, NULL, 872),
     NAME_FUNC_OFFSET(15764, glUseShaderProgramEXT, glUseShaderProgramEXT, NULL, 873),
-    NAME_FUNC_OFFSET(15786, gl_dispatch_stub_874, gl_dispatch_stub_874, NULL, 874),
-    NAME_FUNC_OFFSET(15811, gl_dispatch_stub_875, gl_dispatch_stub_875, NULL, 875),
-    NAME_FUNC_OFFSET(15840, gl_dispatch_stub_876, gl_dispatch_stub_876, NULL, 876),
-    NAME_FUNC_OFFSET(15871, gl_dispatch_stub_877, gl_dispatch_stub_877, NULL, 877),
-    NAME_FUNC_OFFSET(15895, gl_dispatch_stub_878, gl_dispatch_stub_878, NULL, 878),
+    NAME_FUNC_OFFSET(15786, glStencilFuncSeparateATI, glStencilFuncSeparateATI, NULL, 874),
+    NAME_FUNC_OFFSET(15811, glProgramEnvParameters4fvEXT, glProgramEnvParameters4fvEXT, NULL, 875),
+    NAME_FUNC_OFFSET(15840, glProgramLocalParameters4fvEXT, glProgramLocalParameters4fvEXT, NULL, 876),
+    NAME_FUNC_OFFSET(15871, glGetQueryObjecti64vEXT, glGetQueryObjecti64vEXT, NULL, 877),
+    NAME_FUNC_OFFSET(15895, glGetQueryObjectui64vEXT, glGetQueryObjectui64vEXT, NULL, 878),
     NAME_FUNC_OFFSET(15920, glEGLImageTargetRenderbufferStorageOES, glEGLImageTargetRenderbufferStorageOES, NULL, 879),
     NAME_FUNC_OFFSET(15959, glEGLImageTargetTexture2DOES, glEGLImageTargetTexture2DOES, NULL, 880),
     NAME_FUNC_OFFSET(15988, glArrayElement, glArrayElement, NULL, 306),
@@ -2303,12 +2207,12 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(16371, glColorTableParameterfv, glColorTableParameterfv, NULL, 340),
     NAME_FUNC_OFFSET(16398, glColorTableParameteriv, glColorTableParameteriv, NULL, 341),
     NAME_FUNC_OFFSET(16425, glCopyColorTable, glCopyColorTable, NULL, 342),
-    NAME_FUNC_OFFSET(16445, glGetColorTable, glGetColorTableEXT, glGetColorTableEXT, 343),
-    NAME_FUNC_OFFSET(16464, glGetColorTable, glGetColorTableEXT, glGetColorTableEXT, 343),
-    NAME_FUNC_OFFSET(16483, glGetColorTableParameterfv, glGetColorTableParameterfvEXT, glGetColorTableParameterfvEXT, 344),
-    NAME_FUNC_OFFSET(16513, glGetColorTableParameterfv, glGetColorTableParameterfvEXT, glGetColorTableParameterfvEXT, 344),
-    NAME_FUNC_OFFSET(16543, glGetColorTableParameteriv, glGetColorTableParameterivEXT, glGetColorTableParameterivEXT, 345),
-    NAME_FUNC_OFFSET(16573, glGetColorTableParameteriv, glGetColorTableParameterivEXT, glGetColorTableParameterivEXT, 345),
+    NAME_FUNC_OFFSET(16445, glGetColorTable, glGetColorTableSGI, glGetColorTableSGI, 343),
+    NAME_FUNC_OFFSET(16464, glGetColorTable, glGetColorTableSGI, glGetColorTableSGI, 343),
+    NAME_FUNC_OFFSET(16483, glGetColorTableParameterfv, glGetColorTableParameterfvSGI, glGetColorTableParameterfvSGI, 344),
+    NAME_FUNC_OFFSET(16513, glGetColorTableParameterfv, glGetColorTableParameterfvSGI, glGetColorTableParameterfvSGI, 344),
+    NAME_FUNC_OFFSET(16543, glGetColorTableParameteriv, glGetColorTableParameterivSGI, glGetColorTableParameterivSGI, 345),
+    NAME_FUNC_OFFSET(16573, glGetColorTableParameteriv, glGetColorTableParameterivSGI, glGetColorTableParameterivSGI, 345),
     NAME_FUNC_OFFSET(16603, glColorSubTable, glColorSubTable, NULL, 346),
     NAME_FUNC_OFFSET(16622, glCopyColorSubTable, glCopyColorSubTable, NULL, 347),
     NAME_FUNC_OFFSET(16645, glConvolutionFilter1D, glConvolutionFilter1D, NULL, 348),
@@ -2319,17 +2223,17 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(16777, glConvolutionParameteriv, glConvolutionParameteriv, NULL, 353),
     NAME_FUNC_OFFSET(16805, glCopyConvolutionFilter1D, glCopyConvolutionFilter1D, NULL, 354),
     NAME_FUNC_OFFSET(16834, glCopyConvolutionFilter2D, glCopyConvolutionFilter2D, NULL, 355),
-    NAME_FUNC_OFFSET(16863, glGetConvolutionFilter, gl_dispatch_stub_356, gl_dispatch_stub_356, 356),
-    NAME_FUNC_OFFSET(16889, glGetConvolutionParameterfv, gl_dispatch_stub_357, gl_dispatch_stub_357, 357),
-    NAME_FUNC_OFFSET(16920, glGetConvolutionParameteriv, gl_dispatch_stub_358, gl_dispatch_stub_358, 358),
-    NAME_FUNC_OFFSET(16951, glGetSeparableFilter, gl_dispatch_stub_359, gl_dispatch_stub_359, 359),
+    NAME_FUNC_OFFSET(16863, glGetConvolutionFilter, glGetConvolutionFilterEXT, glGetConvolutionFilterEXT, 356),
+    NAME_FUNC_OFFSET(16889, glGetConvolutionParameterfv, glGetConvolutionParameterfvEXT, glGetConvolutionParameterfvEXT, 357),
+    NAME_FUNC_OFFSET(16920, glGetConvolutionParameteriv, glGetConvolutionParameterivEXT, glGetConvolutionParameterivEXT, 358),
+    NAME_FUNC_OFFSET(16951, glGetSeparableFilter, glGetSeparableFilterEXT, glGetSeparableFilterEXT, 359),
     NAME_FUNC_OFFSET(16975, glSeparableFilter2D, glSeparableFilter2D, NULL, 360),
-    NAME_FUNC_OFFSET(16998, glGetHistogram, gl_dispatch_stub_361, gl_dispatch_stub_361, 361),
-    NAME_FUNC_OFFSET(17016, glGetHistogramParameterfv, gl_dispatch_stub_362, gl_dispatch_stub_362, 362),
-    NAME_FUNC_OFFSET(17045, glGetHistogramParameteriv, gl_dispatch_stub_363, gl_dispatch_stub_363, 363),
-    NAME_FUNC_OFFSET(17074, glGetMinmax, gl_dispatch_stub_364, gl_dispatch_stub_364, 364),
-    NAME_FUNC_OFFSET(17089, glGetMinmaxParameterfv, gl_dispatch_stub_365, gl_dispatch_stub_365, 365),
-    NAME_FUNC_OFFSET(17115, glGetMinmaxParameteriv, gl_dispatch_stub_366, gl_dispatch_stub_366, 366),
+    NAME_FUNC_OFFSET(16998, glGetHistogram, glGetHistogramEXT, glGetHistogramEXT, 361),
+    NAME_FUNC_OFFSET(17016, glGetHistogramParameterfv, glGetHistogramParameterfvEXT, glGetHistogramParameterfvEXT, 362),
+    NAME_FUNC_OFFSET(17045, glGetHistogramParameteriv, glGetHistogramParameterivEXT, glGetHistogramParameterivEXT, 363),
+    NAME_FUNC_OFFSET(17074, glGetMinmax, glGetMinmaxEXT, glGetMinmaxEXT, 364),
+    NAME_FUNC_OFFSET(17089, glGetMinmaxParameterfv, glGetMinmaxParameterfvEXT, glGetMinmaxParameterfvEXT, 365),
+    NAME_FUNC_OFFSET(17115, glGetMinmaxParameteriv, glGetMinmaxParameterivEXT, glGetMinmaxParameterivEXT, 366),
     NAME_FUNC_OFFSET(17141, glHistogram, glHistogram, NULL, 367),
     NAME_FUNC_OFFSET(17156, glMinmax, glMinmax, NULL, 368),
     NAME_FUNC_OFFSET(17168, glResetHistogram, glResetHistogram, NULL, 369),
@@ -2488,8 +2392,8 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(19917, glDrawElementsInstancedARB, glDrawElementsInstancedARB, NULL, 573),
     NAME_FUNC_OFFSET(19944, glDrawElementsInstancedARB, glDrawElementsInstancedARB, NULL, 573),
     NAME_FUNC_OFFSET(19968, glRenderbufferStorageMultisample, glRenderbufferStorageMultisample, NULL, 574),
-    NAME_FUNC_OFFSET(20004, gl_dispatch_stub_607, gl_dispatch_stub_607, NULL, 607),
-    NAME_FUNC_OFFSET(20020, gl_dispatch_stub_608, gl_dispatch_stub_608, NULL, 608),
+    NAME_FUNC_OFFSET(20004, glSampleMaskSGIS, glSampleMaskSGIS, NULL, 607),
+    NAME_FUNC_OFFSET(20020, glSamplePatternSGIS, glSamplePatternSGIS, NULL, 608),
     NAME_FUNC_OFFSET(20039, glPointParameterfEXT, glPointParameterfEXT, NULL, 615),
     NAME_FUNC_OFFSET(20057, glPointParameterfEXT, glPointParameterfEXT, NULL, 615),
     NAME_FUNC_OFFSET(20078, glPointParameterfEXT, glPointParameterfEXT, NULL, 615),
@@ -2562,11 +2466,11 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(21277, glIsProgramNV, glIsProgramNV, NULL, 708),
     NAME_FUNC_OFFSET(21292, glPointParameteriNV, glPointParameteriNV, NULL, 772),
     NAME_FUNC_OFFSET(21310, glPointParameterivNV, glPointParameterivNV, NULL, 773),
-    NAME_FUNC_OFFSET(21329, gl_dispatch_stub_776, gl_dispatch_stub_776, NULL, 776),
-    NAME_FUNC_OFFSET(21350, gl_dispatch_stub_778, gl_dispatch_stub_778, NULL, 778),
+    NAME_FUNC_OFFSET(21329, glDeleteVertexArraysAPPLE, glDeleteVertexArraysAPPLE, NULL, 776),
+    NAME_FUNC_OFFSET(21350, glIsVertexArrayAPPLE, glIsVertexArrayAPPLE, NULL, 778),
     NAME_FUNC_OFFSET(21366, glPrimitiveRestartIndexNV, glPrimitiveRestartIndexNV, NULL, 785),
-    NAME_FUNC_OFFSET(21390, gl_dispatch_stub_788, gl_dispatch_stub_788, NULL, 788),
-    NAME_FUNC_OFFSET(21414, gl_dispatch_stub_788, gl_dispatch_stub_788, NULL, 788),
+    NAME_FUNC_OFFSET(21390, glBlendEquationSeparateEXT, glBlendEquationSeparateEXT, NULL, 788),
+    NAME_FUNC_OFFSET(21414, glBlendEquationSeparateEXT, glBlendEquationSeparateEXT, NULL, 788),
     NAME_FUNC_OFFSET(21441, glBindFramebufferEXT, glBindFramebufferEXT, NULL, 789),
     NAME_FUNC_OFFSET(21459, glBindRenderbufferEXT, glBindRenderbufferEXT, NULL, 790),
     NAME_FUNC_OFFSET(21478, glCheckFramebufferStatusEXT, glCheckFramebufferStatusEXT, NULL, 791),
@@ -2584,7 +2488,7 @@ static const glprocs_table_t static_functions[] = {
     NAME_FUNC_OFFSET(21762, glIsFramebufferEXT, glIsFramebufferEXT, NULL, 803),
     NAME_FUNC_OFFSET(21778, glIsRenderbufferEXT, glIsRenderbufferEXT, NULL, 804),
     NAME_FUNC_OFFSET(21795, glRenderbufferStorageEXT, glRenderbufferStorageEXT, NULL, 805),
-    NAME_FUNC_OFFSET(21817, gl_dispatch_stub_806, gl_dispatch_stub_806, NULL, 806),
+    NAME_FUNC_OFFSET(21817, glBlitFramebufferEXT, glBlitFramebufferEXT, NULL, 806),
     NAME_FUNC_OFFSET(21835, glBindFragDataLocationEXT, glBindFragDataLocationEXT, NULL, 809),
     NAME_FUNC_OFFSET(21858, glGetFragDataLocationEXT, glGetFragDataLocationEXT, NULL, 810),
     NAME_FUNC_OFFSET(21880, glGetUniformuivEXT, glGetUniformuivEXT, NULL, 811),
