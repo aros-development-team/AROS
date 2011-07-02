@@ -67,35 +67,39 @@
     struct DosInfo *dinf;
     int namelen = strlen(name) + 1;
 
+    Forbid();
+
+    if (FindSegment(name, NULL, type)) {
+        Permit();
+        return FALSE;
+    }
+
     sptr = AllocVec(sizeof(struct Segment) + namelen - 4 + 1,
 		    MEMF_CLEAR | MEMF_PUBLIC);
 
-    if( sptr != NULL )
-    {
-        dinf = BADDR(DOSBase->dl_Root->rn_Info);
-
-	sptr->seg_UC = type;
-	sptr->seg_Seg = seg;
-
-#ifdef AROS_FAST_BPTR
-	CopyMem(name, sptr->seg_Name, namelen);
-#else
-	CopyMem(name, &sptr->seg_Name[1], namelen);
-	sptr->seg_Name[0] = namelen - 1;
-#endif
-
-	/* Sigh, we just add the segment to the start of the list */
-	Forbid();
-
-	sptr->seg_Next = dinf->di_ResList;
-	dinf->di_ResList = MKBADDR(sptr);
-
-	Permit();
-
-	return TRUE;
+    if( sptr == NULL ) {
+        Permit();
+        return FALSE;
     }
 
-    return FALSE;
+    dinf = BADDR(DOSBase->dl_Root->rn_Info);
+
+    sptr->seg_UC = type;
+    sptr->seg_Seg = seg;
+
+#ifdef AROS_FAST_BPTR
+    CopyMem(name, sptr->seg_Name, namelen);
+#else
+    CopyMem(name, &sptr->seg_Name[1], namelen);
+    sptr->seg_Name[0] = namelen - 1;
+#endif
+
+    /* Sigh, we just add the segment to the start of the list */
+    sptr->seg_Next = dinf->di_ResList;
+    dinf->di_ResList = MKBADDR(sptr);
+
+    Permit();
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* AddSegment */
