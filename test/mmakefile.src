@@ -94,7 +94,8 @@ COMMONTESTFILES := \
     printf_f \
     pubscreen \
 	versionlib \
-	runtests
+	runtests \
+	fsresource
 
 HOSTEDTESTFILES :=  \
     hostlib
