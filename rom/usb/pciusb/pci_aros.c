@@ -322,10 +322,11 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     STRPTR prodname;
 
     KPRINTF(10, ("*** pciAllocUnit(%p) ***\n", hu));
+
+#if 0 // FIXME this needs to be replaced by something AROS supports
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
-#if 0 // FIXME this needs to be replaced by something AROS supports
         PCIXObtainBoard(hc->hc_BoardObject);
         if (PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, (ULONG) hd->hd_Library.lib_Node.ln_Name))
             hc->hc_Flags |= HCF_BOARD_ALLOCATED;
@@ -335,10 +336,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             allocgood = FALSE;
         }
         PCIXReleaseBoard(hc->hc_BoardObject);
-#endif
 
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
+#endif
 
     if(allocgood)
     {
@@ -379,11 +380,11 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
     if(!allocgood)
     {
+#if 0
         // free previously allocated boards
         hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
         while(hc->hc_Node.ln_Succ)
         {
-#if 0
             PCIXObtainBoard(hc->hc_BoardObject);
             if (hc->hc_Flags & HCF_ALLOCATED)
             {
@@ -391,9 +392,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, 0);
             }
             PCIXReleaseBoard(hc->hc_BoardObject);
-#endif
+
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
         }
+#endif
         return FALSE;
     }
 
