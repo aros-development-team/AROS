@@ -226,10 +226,13 @@ void __saveds EntryPoint (void)
 	struct Message *msg;
 	UBYTE *mountname;
 	ULONG signal, dossig, timesig, notifysig, sleepsig, waitmask;
+
+#ifndef __AROS__
 #undef SysBase
 	struct ExecBase *SysBase;
 
 	SysBase =  *((struct ExecBase **)4);
+#endif
 
 	/* init globaldata */
 	g = AllocVec (sizeof(struct globaldata), MEMF_CLEAR);
@@ -238,7 +241,9 @@ void __saveds EntryPoint (void)
 		Alert (AG_NoMemory);
 		Wait (0);
 	}
+#ifndef __AROS__
 	g->g_SysBase = SysBase;
+#endif
 
 	/* open libs */
 	IntuitionBase = (APTR)OpenLibrary ("intuition.library", 36L);
@@ -280,10 +285,11 @@ void __saveds EntryPoint (void)
 		NormalErrorMsg (AFS_ERROR_INIT_FAILED, NULL, 1);
 		if (g->mountname) FreeVec (g->mountname);
 		if (g->geom) FreeMemP (g->geom, g);
-		RES1(pkt) = DOSTRUE;
+		RES2(pkt) = ERROR_NOT_A_DOS_DISK;
+		RES1(pkt) = DOSFALSE;
 		ReturnPacket (pkt, msgport, g);
 		FreeVec (g);
-		Wait (0); // wait forever
+		return;
 	}
 
 	g->DoCommand = NormalCommands;  //%4.5
@@ -310,7 +316,9 @@ void __saveds EntryPoint (void)
 	g->muFS_ready = FALSE;
 #endif
 
+#ifndef __AROS__
 #define SysBase g->g_SysBase
+#endif
 
 	while (1)
 	{
