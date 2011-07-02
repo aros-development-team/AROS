@@ -63,7 +63,7 @@ struct DiskObject
     UWORD              do_Magic;
     UWORD              do_Version;
     struct Gadget      do_Gadget;
-    UBYTE              do_Type;        /* see below */
+    UWORD              do_Type;        /* see below */
     STRPTR             do_DefaultTool;
     STRPTR            *do_ToolTypes;
     LONG               do_CurrentX;
