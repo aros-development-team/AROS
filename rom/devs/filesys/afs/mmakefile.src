@@ -20,8 +20,8 @@ FILES := main \
 
 USER_CFLAGS := -D__INTUITION_NOLIBBASE__ -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-%build_module_simple mmake=kernel-fs-afs \
+%build_module mmake=kernel-fs-afs \
     modname=afs modtype=handler \
-    files="resource $(FILES) resident_end" uselibs="rom"
+    files="$(FILES)" uselibs="rom"
 
 %common
