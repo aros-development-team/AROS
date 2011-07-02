@@ -29,7 +29,7 @@
 	the first one that the SameLock() function called on the 'lock'
 	parameter returns that they belong to the same object.
 
-	The entry for this lock will be remove from the lock, and the
+	The entry for this lock will be removed from the lock, and the
 	lock for the entry in the list will be unlocked.
 
     INPUTS
@@ -46,7 +46,7 @@
 
     BUGS
 	If this is the first lock in a list, this will not set
-	dol_Device/dol_Unit correctly. This will be fixed shortly.
+	dol_Device/dol_Unit correctly.
 
     SEE ALSO
 
