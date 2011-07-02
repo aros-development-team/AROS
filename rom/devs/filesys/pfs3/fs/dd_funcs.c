@@ -198,7 +198,7 @@ static SIPTR dd_Lock(struct DosPacket *pkt, globaldata * g)
 	GetFileInfoFromLock(pkt->dp_Arg1, 0, parentfe, parentfi);
 	BCPLtoCString(pathname, (DSTR)BARG2(pkt));
 	DB(Trace(1, "Lock", "locking : %s parent: %lx \n", pathname, pkt->dp_Arg1));
-	DB(if (parentfi) Trace(1, "Lock", "anodenr = %lx and %lx \n", parentfe->anodenr,
+	DB(if (parentfi) Trace(1, "Lock", "anodenr = %lx and %lx \n", parentfe->nextanode,
 		(parentfi->file.direntry ? parentfi->file.direntry->anode : ANODE_ROOTDIR)));
 	SkipColon(fullname, pathname);
 

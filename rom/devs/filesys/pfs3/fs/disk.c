@@ -1575,7 +1575,7 @@ retry_read:
 		}
 
 		PROFILE_OFF();
-		if (DoIO((struct IORequest*)request) != NULL)
+		if (DoIO((struct IORequest*)request) != 0)
 		{
 			ULONG args[2];
 			PROFILE_ON();
@@ -1608,7 +1608,7 @@ retry_read:
 		}
 	}
 
-	return NULL;
+	return 0;
 }
 
 
@@ -1713,7 +1713,7 @@ retry_write:
 		}
 
 		PROFILE_OFF();
-		if (DoIO((struct IORequest*)request) != NULL)
+		if (DoIO((struct IORequest*)request) != 0)
 		{
 			ULONG args[2];
 			PROFILE_ON();
@@ -1746,7 +1746,7 @@ retry_write:
 		}
 	}
 
-	return NULL;
+	return 0;
 }
 
 #endif /* SCSIDIRECT */

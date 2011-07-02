@@ -1046,7 +1046,7 @@ nrd_error:
 */
 void GetDriveGeometry(globaldata *g)
 {
-  ULONG *env = (ULONG *)g->dosenvec;
+  IPTR *env = (IPTR *)g->dosenvec;
   struct DriveGeometry *geom = g->geom;
   UBYTE error = 1;
 
