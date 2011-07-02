@@ -171,7 +171,7 @@ static AROS_UFH2(BPTR, myLoadSeg,
            struct StackSwapStruct sss;
            struct StackSwapArgs ssa;
            
-           sss.stk_Lower = AllocMem(8192, MEMF_ANY);
+           sss.stk_Lower = AllocMem(MINSTACK, MEMF_ANY);
            if (sss.stk_Lower == NULL) {
                Close(file);
                return BNULL;
@@ -189,7 +189,7 @@ static AROS_UFH2(BPTR, myLoadSeg,
            	   	AROS_UFHA(LONG_FUNC, InternalLoadSeg_ELF, A1),
            	   	AROS_UFHA(struct StackSwapArgs *, &ssa, A2),
            	   	AROS_UFHA(struct ExecBase *, SysBase, A6));
-           FreeMem(sss.stk_Lower, 8192);
+           FreeMem(sss.stk_Lower, MINSTACK);
 
            if (segs) {
                if ((LONG)segs > 0) {
@@ -301,7 +301,7 @@ int main(int argc, char **argv)
    if (DOSBase != NULL) {
        struct Library *sbl = (APTR)SysBase;
        if (sbl->lib_Version > 40) {
-       	   FPrintf(ErrorOutput(), "SetPatchAROS: Unsupported exec.library %ld.%ld\n",
+       	   FPrintf(Output(), "SetPatchAROS: Unsupported exec.library %ld.%ld\n",
        	   	   sbl->lib_Version, sbl->lib_Revision);
        	   CloseLibrary((APTR)DOSBase);
        	   return RETURN_ERROR;
