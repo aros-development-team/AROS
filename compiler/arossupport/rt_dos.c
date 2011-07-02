@@ -130,7 +130,7 @@ static IPTR RT_Close (RTData * rtd, FileResource * rt)
     return TRUE;
 } /* RT_Close */
 
-static const STRPTR GetFileMode (LONG mode)
+static CONST_STRPTR GetFileMode (LONG mode)
 {
     static char buffer[64];
 
