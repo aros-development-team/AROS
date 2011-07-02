@@ -907,7 +907,7 @@ struct _glapi_table
    void (GLAPIENTRYP TransformFeedbackVaryingsEXT)(GLuint program, GLsizei count, const char ** varyings, GLenum bufferMode); /* 864 */
    void (GLAPIENTRYP ProvokingVertexEXT)(GLenum mode); /* 865 */
    void (GLAPIENTRYP GetTexParameterPointervAPPLE)(GLenum target, GLenum pname, GLvoid ** params); /* 866 */
-   void (GLAPIENTRYP TextureRangeAPPLE)(GLenum target, GLsizei length, GLvoid * pointer); /* 867 */
+   void (GLAPIENTRYP TextureRangeAPPLE)(GLenum target, GLsizei length, const GLvoid * pointer); /* 867 */
    void (GLAPIENTRYP GetObjectParameterivAPPLE)(GLenum objectType, GLuint name, GLenum pname, GLint * value); /* 868 */
    GLenum (GLAPIENTRYP ObjectPurgeableAPPLE)(GLenum objectType, GLuint name, GLenum option); /* 869 */
    GLenum (GLAPIENTRYP ObjectUnpurgeableAPPLE)(GLenum objectType, GLuint name, GLenum option); /* 870 */

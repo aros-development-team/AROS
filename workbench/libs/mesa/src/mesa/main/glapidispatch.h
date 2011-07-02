@@ -4502,7 +4502,7 @@ extern int driDispatchRemapTable[ driDispatchRemapTable_size ];
 #define CALL_GetTexParameterPointervAPPLE(disp, parameters) CALL_by_offset(disp, (void (GLAPIENTRYP)(GLenum, GLenum, GLvoid **)), _gloffset_GetTexParameterPointervAPPLE, parameters)
 #define GET_GetTexParameterPointervAPPLE(disp) GET_by_offset(disp, _gloffset_GetTexParameterPointervAPPLE)
 #define SET_GetTexParameterPointervAPPLE(disp, fn) SET_by_offset(disp, _gloffset_GetTexParameterPointervAPPLE, fn)
-#define CALL_TextureRangeAPPLE(disp, parameters) CALL_by_offset(disp, (void (GLAPIENTRYP)(GLenum, GLsizei, GLvoid *)), _gloffset_TextureRangeAPPLE, parameters)
+#define CALL_TextureRangeAPPLE(disp, parameters) CALL_by_offset(disp, (void (GLAPIENTRYP)(GLenum, GLsizei, const GLvoid *)), _gloffset_TextureRangeAPPLE, parameters)
 #define GET_TextureRangeAPPLE(disp) GET_by_offset(disp, _gloffset_TextureRangeAPPLE)
 #define SET_TextureRangeAPPLE(disp, fn) SET_by_offset(disp, _gloffset_TextureRangeAPPLE, fn)
 #define CALL_GetObjectParameterivAPPLE(disp, parameters) CALL_by_offset(disp, (void (GLAPIENTRYP)(GLenum, GLuint, GLenum, GLint *)), _gloffset_GetObjectParameterivAPPLE, parameters)
