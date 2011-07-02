@@ -470,7 +470,9 @@ struct globaldata
 	struct Process *myproc;             /* our process (needed for diskchange interrupt) */
 	struct Interrupt *diskinterrupt;    /* diskint & signal also used by interrupt. Don't change! */
 	ULONG diskchangesignal;
+#ifndef __AROS__
 	struct ExecBase *g_SysBase;
+#endif
 	struct IntuitionBase *g_IntuitionBase;
 	struct Library *g_UtilityBase;
 	struct DosLibrary *g_DOSBase;
@@ -585,7 +587,9 @@ typedef struct globaldata globaldata;
 /*****************************************************************************/
 /* Library base macros                                                       */
 /*****************************************************************************/
+#ifndef __AROS__
 #define SysBase       g->g_SysBase
+#endif
 #define IntuitionBase g->g_IntuitionBase
 #define UtilityBase   g->g_UtilityBase
 #define DOSBase       g->g_DOSBase
