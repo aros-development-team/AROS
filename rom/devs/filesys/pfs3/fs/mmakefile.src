@@ -18,8 +18,7 @@ FILES := \
 	CheckAccess \
 	messages \
 	boot \
-	assroutines \
-	arosresident
+	assroutines
 
  USER_CFLAGS := \
 	-DEXTRAPACKETS=1 \
@@ -38,7 +37,7 @@ USER_CFLAGS := \
     -DAROS_KERNEL $(USER_CFLAGS) \
 	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
 
-%build_module_simple mmake=kernel-fs-pfs3-packet \
+%build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \
     files="$(FILES)" uselibs="rom"
 
