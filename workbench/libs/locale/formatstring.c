@@ -389,8 +389,13 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
               {
                 BSTR s = (BSTR)*(UBYTE **)indices[arg_pos-1];
 
-                buffer = AROS_BSTR_ADDR(s);
-                buflen = AROS_BSTR_strlen(s);
+                if (s != (BSTR)BNULL) {
+                    buffer = AROS_BSTR_ADDR(s);
+                    buflen = AROS_BSTR_strlen(s);
+                } else {
+                    buffer = "(bnull)";
+                    buflen = strlen(buffer);
+                }
 
 #if !USE_GLOBALLIMIT
                 if (buflen > limit)
