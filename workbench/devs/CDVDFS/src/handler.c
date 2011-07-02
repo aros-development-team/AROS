@@ -14,15 +14,12 @@ char const CDVD_version[] = "\0$VER: CDVDFS 1.4 (16-Jun-2008)";
 #endif
 #define AbsExecBase SysBase
 #else
-#ifndef __startup
-#define __startup
-#endif
 struct Library const *AbsExecBase = (void *)4;
 #endif
 
 extern void CDVD_handler(struct ExecBase *sysbase);
 
-__startup LONG SAVEDS Main(void)
+LONG SAVEDS CDVD_Main(void)
 {
     CDVD_handler(AbsExecBase);
     return 0;
