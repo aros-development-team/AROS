@@ -577,7 +577,7 @@ BOOL FindObject(union objectinfo *directory, STRPTR objectname,
 
 	if (!filename)
 	{
-		DB(Trace(2, "FindObject !filename %s\n", objectname));
+		DB(Trace(2, "FindObject", "!filename %s\n", objectname));
 		return DOSFALSE;
 	}
 

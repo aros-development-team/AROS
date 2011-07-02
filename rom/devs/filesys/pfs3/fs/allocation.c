@@ -718,7 +718,7 @@ ULONG AllocReservedBlock (globaldata *g)
 			g->dirty = TRUE;
 			(*free)--;
 			alloc_data.res_roving = 32*i + (31 - j);
-			DB(Trace(10,"AllocReservedBlock","allocated %ld\n", seqnr));
+			DB(Trace(10,"AllocReservedBlock","allocated %ld\n", blocknr));
 			return blocknr;
 		  }
 		}
