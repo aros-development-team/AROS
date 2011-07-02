@@ -290,7 +290,7 @@ int main(void)
               while (*MyDevPtr)
               {
                 DEBUG_MOUNT(Printf("Mount: Current DevName <%s>\n",
-                                   (ULONG)*MyDevPtr));
+                                   (IPTR)*MyDevPtr));
 
 		if ((params = AllocVec(PARAMSLENGTH, MEMF_PUBLIC | MEMF_CLEAR)))
                 {
@@ -306,7 +306,7 @@ int main(void)
                   {
                     /* search for a devicename */
                     DEBUG_MOUNT(Printf("Mount: search for devname <%s>\n",
-                                       (ULONG)*MyDevPtr));
+                                       (IPTR)*MyDevPtr));
 
 		    strcpy(dirname, *MyDevPtr);
 		    dirname[len-1] = '\0';
@@ -328,7 +328,7 @@ int main(void)
                         ULONG	slen;
 
                         DEBUG_MOUNT(Printf("Mount: search device definition <%s>\n",
-                                           (ULONG)*MyDevPtr));
+                                           (IPTR)*MyDevPtr));
                         for (SearchPtr=(char**) SearchTable;
                              *SearchPtr;
                              SearchPtr++)
@@ -345,7 +345,7 @@ int main(void)
 			  dirname[slen]	= '\0';
                           strcat(dirname, *MyDevPtr);
 			  dirname[slen+len-1] =	'\0';
-			  DEBUG_MOUNT(Printf("Mount: try File <%s>\n", (ULONG)dirname));
+			  DEBUG_MOUNT(Printf("Mount: try File <%s>\n", (IPTR)dirname));
 
 			  error=readmountfile(params, dirname);
 			  DEBUG_MOUNT(Printf("Mount: readmountfile returned %ld\n", error));
@@ -374,7 +374,7 @@ int main(void)
                     struct AnchorPath	*MyAp = (struct AnchorPath *) (((IPTR) stack_ap + 3) & ~3);
 
                     DEBUG_MOUNT(Printf("Mount: search for mountfile <%s>\n",
-                                       (ULONG)*MyDevPtr));
+                                       (IPTR)*MyDevPtr));
 
                     memset(MyAp,0,sizeof(struct AnchorPath));
 
@@ -407,11 +407,11 @@ int main(void)
                         if (MyAp->ap_Flags & APF_DIDDIR)
                         {
                           DEBUG_MOUNT(Printf("Mount: Ascending from directory %s\n",
-                                        (ULONG)dirname));
+                                        (IPTR)dirname));
                         }
                         else
                         {
-                          DEBUG_MOUNT(Printf("Mount: The next dir is  ... %s\n", (ULONG)dirname));
+                          DEBUG_MOUNT(Printf("Mount: The next dir is  ... %s\n", (IPTR)dirname));
                         }
                         /* clear the completed directory flag */
                         MyAp->ap_Flags     &=      ~APF_DIDDIR;
@@ -422,7 +422,7 @@ int main(void)
                         /* Here is code for handling each particular file */
 
                         DEBUG_MOUNT(Printf("Mount: try File <%s>\n",
-                                           (ULONG)dirname));
+                                           (IPTR)dirname));
 
                         memset(&flagargs, 0, sizeof(flagargs));
 			IsEHandler = TRUE;
@@ -488,7 +488,7 @@ int main(void)
                 BPTR olddir;
 
                 DEBUG_MOUNT(kprintf("Mount: try File <%s>\n",
-				   (ULONG) _WBenchMsg->sm_ArgList[i].wa_Name));
+				   (IPTR) _WBenchMsg->sm_ArgList[i].wa_Name));
 
 		olddir = CurrentDir(_WBenchMsg->sm_ArgList[i].wa_Lock);
 
@@ -703,7 +703,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	int i;
 	char *s = NULL;
 
-	DEBUG_MOUNT(Printf("ReadMountArgs:\n%s\n\n",(ULONG)&rda->RDA_Source.CS_Buffer[rda->RDA_Source.CS_CurChr]));
+	DEBUG_MOUNT(Printf("ReadMountArgs:\n%s\n\n", (IPTR)&rda->RDA_Source.CS_Buffer[rda->RDA_Source.CS_CurChr]));
 
 	memset(&args, 0, sizeof(args));
 
@@ -1094,7 +1094,7 @@ int			toollen;
 BOOL			mountinfo=FALSE;
 char			name[256+1];
 
-  DEBUG_MOUNT(Printf("ReadMountFile: <%s>\n", (ULONG)filename));
+  DEBUG_MOUNT(Printf("ReadMountFile: <%s>\n", (IPTR)filename));
 
   {
     struct Process *me = (APTR) FindTask(NULL);
@@ -1130,7 +1130,7 @@ char			name[256+1];
     }
   }
 
-  DEBUG_MOUNT(Printf("ReadMountFile: mount <%s>\n", (ULONG)name));
+  DEBUG_MOUNT(Printf("ReadMountFile: mount <%s>\n", (IPTR)name));
 
   if ((error=CheckDevice(name))!=RETURN_OK)
   {
@@ -1267,7 +1267,7 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
     ml = Open(name, MODE_OLDFILE);
     me->pr_WindowPtr = oldwinptr;
 
-    DEBUG_MOUNT(Printf("ReadFile: <%s>\n", (LONG) name));
+    DEBUG_MOUNT(Printf("ReadFile: <%s>\n", (IPTR) name));
 
     if (ml)
     {
@@ -1530,7 +1530,7 @@ struct DeviceNode *MyMakeDosNode(char *DosName, IPTR *ParameterPkt, char *Startu
 
   if ((MyDeviceNode = AllocVec(sizeof(struct DeviceNode), MEMF_PUBLIC | MEMF_CLEAR)))
   {
-    DEBUG_MAKEDOSNODE(Printf("MakeDosNode: MyDeviceNode 0x%lx\n", (ULONG)MyDeviceNode));
+    DEBUG_MAKEDOSNODE(Printf("MakeDosNode: MyDeviceNode 0x%lx\n", (IPTR)MyDeviceNode));
 
     MyDeviceNode->dn_StackSize = 600;
     MyDeviceNode->dn_Priority  = 10;
@@ -1647,7 +1647,7 @@ struct RDArgs rda;
     rda.RDA_Source.CS_CurChr = 0;
     rda.RDA_Flags = RDAF_NOPROMPT;
 
-    DEBUG_MOUNT(Printf("ReadArgs..\n%s\n\n",(ULONG)rda.RDA_Source.CS_Buffer));
+    DEBUG_MOUNT(Printf("ReadArgs..\n%s\n\n", (IPTR)rda.RDA_Source.CS_Buffer));
 
     if ((error=ReadMountArgs(params,
                             &rda))!=RETURN_OK)
@@ -1674,7 +1674,7 @@ STRPTR s2;
 char *ptr;
 struct RDArgs rda;
 
-    DEBUG_MOUNT(Printf("ParseMountList: <%s>\n",(ULONG)name));
+    DEBUG_MOUNT(Printf("ParseMountList: <%s>\n", (IPTR)name));
 
     memset(&args,0,sizeof(args));
     memset(&rda,0,sizeof(struct RDArgs));
@@ -1688,7 +1688,7 @@ struct RDArgs rda;
     {
 	res = ReadItem(buffer, sizeof(buffer), &rda.RDA_Source);
 
-	DEBUG_MOUNT(Printf("ParseMountList: buffer <%s>\n",(ULONG)buffer));
+	DEBUG_MOUNT(Printf("ParseMountList: buffer <%s>\n", (IPTR)buffer));
 	DEBUG_MOUNT(Printf("ParseMountList: ReadItem res %ld\n",res));
 
 	if (res == ITEM_ERROR)
@@ -1741,7 +1741,7 @@ struct RDArgs rda;
 		}
 	    }
 
-	    DEBUG_MOUNT(Printf("ReadArgs..\n%s\n\n",(ULONG)&rda.RDA_Source.CS_Buffer[rda.RDA_Source.CS_CurChr]));
+	    DEBUG_MOUNT(Printf("ReadArgs..\n%s\n\n", (IPTR)&rda.RDA_Source.CS_Buffer[rda.RDA_Source.CS_CurChr]));
 
 	    if ((error=ReadMountArgs(params,
                                      &rda))!=RETURN_OK)
@@ -1824,7 +1824,7 @@ LONG mount(IPTR	*params, STRPTR	name)
     struct DeviceNode *dn;
 
     strupr(name);
-    DEBUG_MOUNT(Printf("MountDev: <%s>\n",(ULONG)name));
+    DEBUG_MOUNT(Printf("MountDev: <%s>\n", (IPTR)name));
 
     if ((error=checkmount(params))!=RETURN_OK)
     {
@@ -1834,9 +1834,9 @@ LONG mount(IPTR	*params, STRPTR	name)
 
     vec = (struct DosEnvec *)&params[4];
 
-    DEBUG_MOUNT(Printf("MountDev: DosName         <%s>\n",(ULONG)name));
-    DEBUG_MOUNT(Printf("MountDev: Filesystem      <%s>\n",(ULONG)HandlerString + BSTR_OFFSET));
-    DEBUG_MOUNT(Printf("MountDev: Device          <%s>\n",(ULONG)DeviceString));
+    DEBUG_MOUNT(Printf("MountDev: DosName         <%s>\n", (IPTR)name));
+    DEBUG_MOUNT(Printf("MountDev: Filesystem      <%s>\n", (IPTR)HandlerString + BSTR_OFFSET));
+    DEBUG_MOUNT(Printf("MountDev: Device          <%s>\n", (IPTR)DeviceString));
     DEBUG_MOUNT(Printf("MountDev: TableSize       %ld\n",vec->de_TableSize));
     DEBUG_MOUNT(Printf("MountDev: SizeBlock       %ld\n",vec->de_SizeBlock));
     DEBUG_MOUNT(Printf("MountDev: SecOrg          %ld\n",vec->de_SecOrg));
@@ -1867,7 +1867,7 @@ LONG mount(IPTR	*params, STRPTR	name)
 
     if ((dn=MyMakeDosNode(name, IsEHandler ? params : NULL, StartupString)))
     {
-        DEBUG_MOUNT(Printf("MountDev: DeviceNode 0x%lx\n",(ULONG)dn));
+        DEBUG_MOUNT(Printf("MountDev: DeviceNode 0x%lx\n", (IPTR)dn));
 
 	dn->dn_StackSize = StackSize;
 	dn->dn_Priority	 = Priority;
@@ -1925,8 +1925,8 @@ LONG mount(IPTR	*params, STRPTR	name)
 		    }
 		    if (Activate)
 		    {
-			DEBUG_MOUNT(Printf("Activating\n"));
 			strcat(name, ":");
+			DEBUG_MOUNT(Printf("Activating \"%s\"\n", (IPTR)name));
 			DeviceProc(name);
 		    }
 		    error = 0;
