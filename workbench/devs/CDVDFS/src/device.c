@@ -525,6 +525,7 @@ UBYTE   notdone = 1;
 			case ACTION_IS_FILESYSTEM:
 			case ACTION_INHIBIT:
 			case ACTION_MORE_CACHE:
+			case ACTION_DISK_INFO:
 			case ACTION_FLUSH:
 			case ACTION_FREE_LOCK:
 				break;
@@ -734,7 +735,6 @@ openbreak:
 			/* fall through */
 		case ACTION_DISK_INFO: /* InfoData          Bool:TRUE */
 		{
-			if (Mount_Check (global))
 			{
 				register INFODATA *id;
 
@@ -742,20 +742,16 @@ openbreak:
 				error = 0;
 				memset (id, 0, sizeof(*id));
 				id->id_UnitNumber = global->g_unit;
-				id->id_VolumeNode = MKBADDR(global->DevList);
-				id->id_InUse = 0;
-				id->id_DiskState = ID_WRITE_PROTECTED;
-				if (global->g_inhibited)
-				{
+				if (global->g_inhibited) {
 					id->id_DiskType = 0x42555359 /* "BUSY" */;
-					id->id_NumBlocks	 = 0;
-					id->id_BytesPerBlock = 0;
-				}
-				else
-				{
+				} else if (Mount_Check (global)) {
 					id->id_DiskType = ID_DOS_DISK;
 					id->id_NumBlocks= Volume_Size (global->g_volume);
 					id->id_BytesPerBlock = Block_Size (global->g_volume);
+					id->id_VolumeNode = MKBADDR(global->DevList);
+					id->id_DiskState = ID_WRITE_PROTECTED;
+				} else {
+					id->id_DiskType = ID_NO_DISK_PRESENT;
 				}
 				id->id_NumBlocksUsed = id->id_NumBlocks;
 			}
