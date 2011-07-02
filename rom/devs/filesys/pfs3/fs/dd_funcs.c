@@ -62,59 +62,59 @@
  * function prototypes
  */
 
-static LONG NotKnown(struct DosPacket *pkt, globaldata * g);
-static LONG NotYetImplemented(struct DosPacket *pkt, globaldata * g);
-static LONG dd_IsFileSystem(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Quit(struct DosPacket *pkt, globaldata * g);
-static LONG dd_CurrentVolume(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Lock(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Unlock(struct DosPacket *pkt, globaldata * g);
-static LONG dd_DupLock(struct DosPacket *pkt, globaldata * g);
-static LONG dd_CreateDir(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Parent(struct DosPacket *pkt, globaldata * g);
-static LONG dd_SameLock(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Open(struct DosPacket *pkt, globaldata * g);
-static LONG dd_OpenFromLock(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Close(struct DosPacket *pkt, globaldata * g);
-static LONG dd_ChangeMode(struct DosPacket *pkt, globaldata * g);
-static LONG dd_SeekRead(struct DosPacket *pkt, globaldata * g);
-static LONG dd_WriteSFS(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Relabel(struct DosPacket *pkt, globaldata * g);
-static LONG dd_AddBuffers(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Info(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Flush(struct DosPacket *pkt, globaldata * g);
-static LONG dd_WriteProtect(struct DosPacket *pkt, globaldata * g);
-static LONG dd_SerializeDisk(struct DosPacket *pkt, globaldata * g);
-static LONG dd_DeleteObject(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Rename(struct DosPacket *pkt, globaldata * g);
-static LONG dd_SetProperty(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Examine(struct DosPacket *pkt, globaldata * g);
-static LONG dd_ExamineAll(struct DosPacket *pkt, globaldata * g);
-static LONG dd_MakeLink(struct DosPacket *pkt, globaldata * g);
-static LONG dd_ReadLink(struct DosPacket *pkt, globaldata * g);
-static LONG dd_InhibitOn(struct DosPacket *pkt, globaldata * g);
-static LONG dd_InhibitOff(struct DosPacket *pkt, globaldata * g);
-static LONG dd_Format(struct DosPacket *pkt, globaldata * g);
-static LONG dd_AddNotify(struct DosPacket *pkt, globaldata * g);
-static LONG dd_RemoveNotify(struct DosPacket *pkt, globaldata * g);
-static LONG dd_SignalIdle(struct DosPacket *pkt, globaldata * g);
+static SIPTR NotKnown(struct DosPacket *pkt, globaldata * g);
+static SIPTR NotYetImplemented(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_IsFileSystem(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Quit(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_CurrentVolume(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Lock(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Unlock(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_DupLock(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_CreateDir(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Parent(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_SameLock(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Open(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_OpenFromLock(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Close(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_ChangeMode(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_SeekRead(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_WriteSFS(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_AddBuffers(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Info(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Flush(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_WriteProtect(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_SerializeDisk(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_DeleteObject(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Rename(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_SetProperty(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Examine(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_ExamineAll(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_MakeLink(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_ReadLink(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_InhibitOn(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_InhibitOff(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_AddNotify(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_RemoveNotify(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_SignalIdle(struct DosPacket *pkt, globaldata * g);
 
 /* internal packets; PFS2 extensions */
 static int dd_CheckCustomPacket(LONG id);
-static LONG dd_IsPFS2 (struct DosPacket *pkt, globaldata *g);
-static LONG dd_KillEmpty(struct DosPacket *pkt, globaldata * g);
-static LONG dd_RemoveDirEntry(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_IsPFS2 (struct DosPacket *pkt, globaldata *g);
+static SIPTR dd_KillEmpty(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_RemoveDirEntry(struct DosPacket *pkt, globaldata * g);
 
 #if EXTRAPACKETS
-static LONG dd_Sleep(struct DosPacket *pkt, globaldata * g);
-static LONG dd_UpdateAnode(struct DosPacket *pkt, globaldata * g);
-static LONG dd_SetFileSize(struct DosPacket *pkt, globaldata *g);
+static SIPTR dd_Sleep(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_UpdateAnode(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_SetFileSize(struct DosPacket *pkt, globaldata *g);
 #if ROLLOVER
-static LONG dd_MakeRollover(struct DosPacket *pkt, globaldata * g);
-static LONG dd_SetRollover(struct DosPacket *pkt, globaldata *g);
+static SIPTR dd_MakeRollover(struct DosPacket *pkt, globaldata * g);
+static SIPTR dd_SetRollover(struct DosPacket *pkt, globaldata *g);
 #endif /* ROLLOVER */
 #if DELDIR
-static LONG dd_SetDeldir(struct DosPacket *pkt, globaldata *g);
+static SIPTR dd_SetDeldir(struct DosPacket *pkt, globaldata *g);
 #endif
 #endif /* ExtraPackets */
 
@@ -123,19 +123,19 @@ static LONG dd_SetDeldir(struct DosPacket *pkt, globaldata *g);
  * table functions 
  */
 
-static LONG NotKnown(struct DosPacket *pkt, globaldata * g)
+static SIPTR NotKnown(struct DosPacket *pkt, globaldata * g)
 {
 	pkt->dp_Res2 = ERROR_ACTION_NOT_KNOWN;
 	return DOSFALSE;
 }
 
-static LONG NotYetImplemented(struct DosPacket *pkt, globaldata * g)
+static SIPTR NotYetImplemented(struct DosPacket *pkt, globaldata * g)
 {
 	pkt->dp_Res2 = ERROR_NOT_IMPLEMENTED;
 	return DOSFALSE;
 }
 
-static LONG dd_IsFileSystem(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_IsFileSystem(struct DosPacket *pkt, globaldata * g)
 {
 	return DOSTRUE;
 }
@@ -143,13 +143,13 @@ static LONG dd_IsFileSystem(struct DosPacket *pkt, globaldata * g)
 /* causes PFS2 to quit. The dieing-flag will cause main to call 
  * Quit() after returning the packet
  */
-static LONG dd_Quit(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Quit(struct DosPacket *pkt, globaldata * g)
 {
 	g->dieing = TRUE;
 	return DOSTRUE;
 }
 
-static LONG dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
 {
 	/* arguments fixed 18-04-94 */
 	// ARG1 = APTR fileentry. (filled in by Open()) of NULL
@@ -161,12 +161,12 @@ static LONG dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
 	if (!pkt->dp_Arg1)
 	{
 		if (g->currentvolume)
-			return MKBADDR(g->currentvolume->devlist);
+			return (SIPTR)MKBADDR(g->currentvolume->devlist);
 		else
-			return NULL;
+			return (SIPTR)BNULL;
 	}
 	else
-		return MKBADDR(((fileentry_t *) pkt->dp_Arg1)->le.volume->devlist);
+		return (SIPTR)MKBADDR(((fileentry_t *) pkt->dp_Arg1)->le.volume->devlist);
 }
 
 
@@ -174,7 +174,7 @@ static LONG dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
  * Lock functions
  */
 
-static LONG dd_Lock(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Lock(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = Lock on directory ARG2 is relative to (BPTR)
 	// ARG2 = BSTR Name of object
@@ -187,7 +187,7 @@ static LONG dd_Lock(struct DosPacket *pkt, globaldata * g)
 	union objectinfo filefi, *parentfi;
 	UBYTE pathname[PATHSIZE], *fullname;
 	listtype type;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 #if MULTIUSER
 	struct extrafields extrafields;
 	ULONG flags;
@@ -251,11 +251,11 @@ static LONG dd_Lock(struct DosPacket *pkt, globaldata * g)
 	}
 
 	DB(Trace(1, "Lock", "adres: %lx\n", filefe));
-	pkt->dp_Res2 = NULL;
-	return MKBADDR(&filefe->lock);
+	pkt->dp_Res2 = 0;
+	return (SIPTR)MKBADDR(&filefe->lock);
 }
 
-static LONG dd_Unlock(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Unlock(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = LOCK to free
 	// RES1 = BOOL TRUE
@@ -272,7 +272,7 @@ static LONG dd_Unlock(struct DosPacket *pkt, globaldata * g)
 	return DOSTRUE;
 }
 
-static LONG dd_DupLock(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_DupLock(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BPTR lock to duplicate / filehandle->fh_Arg1 to dup
 	// RES1 = Duplicated lock
@@ -294,10 +294,10 @@ static LONG dd_DupLock(struct DosPacket *pkt, globaldata * g)
 		}
 
 		/* return lock to root (GURU 605) */
-		filefi.volume.root = NULL;
+		filefi.volume.root = 0;
 		filefi.volume.volume = g->currentvolume;
 		type.value = ET_VOLUME + ET_SHAREDREAD;
-		if (!(dstfe = (lockentry_t *)MakeListEntry(&filefi, type, (ULONG *)&pkt->dp_Res2, g)))
+		if (!(dstfe = (lockentry_t *)MakeListEntry(&filefi, type, &pkt->dp_Res2, g)))
 			return 0;
 
 		goto dl_add;
@@ -309,7 +309,7 @@ static LONG dd_DupLock(struct DosPacket *pkt, globaldata * g)
 	else
 		srcfe = (lockentry_t *)pkt->dp_Arg1;
 
-	if (!CheckVolume(srcfe->le.volume, 0, (ULONG *)&pkt->dp_Res2, g))
+	if (!CheckVolume(srcfe->le.volume, 0, &pkt->dp_Res2, g))
 		return DOSFALSE;
 	UpdateLE((listentry_t *)srcfe, g);
 
@@ -345,10 +345,10 @@ static LONG dd_DupLock(struct DosPacket *pkt, globaldata * g)
 	}
 
 	DB(Trace(1, "DupLock", "of %lx adres: %lx\n", srcfe, dstfe));
-	return MKBADDR(&dstfe->le.lock);
+	return (SIPTR)MKBADDR(&dstfe->le.lock);
 }
 
-static LONG dd_CreateDir(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_CreateDir(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = Lock on directory ARG2 is relative to (BPTR)
 	// ARG2 = BSTR Name of new directory
@@ -359,7 +359,7 @@ static LONG dd_CreateDir(struct DosPacket *pkt, globaldata * g)
 	union objectinfo path, *parentfi;
 	UBYTE *dirname, pathname[PATHSIZE];
 	UBYTE *zonderpad;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 #if MULTIUSER
 #if MU_CHECKDIR
 	struct extrafields extrafields;
@@ -395,13 +395,13 @@ static LONG dd_CreateDir(struct DosPacket *pkt, globaldata * g)
 	if (newdirle)
 	{
 		PFSDoNotify(&newdirle->le.info.file, TRUE, g);
-		return MKBADDR(&newdirle->le.lock);
+		return (SIPTR)MKBADDR(&newdirle->le.lock);
 	}
 	else
 		return DOSFALSE;
 }
 
-static LONG dd_Parent(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Parent(struct DosPacket *pkt, globaldata * g)
 {
 	// ACTION_PARENT en ACTION_PARENT_FH
 	// ARG1 = BPTR Lock on object to get the parent of
@@ -413,7 +413,7 @@ static LONG dd_Parent(struct DosPacket *pkt, globaldata * g)
 	listentry_t *parentfe;
 	listtype type;
 	union objectinfo *childfi, parentfi;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 
 	// get fe & fi of child
 	if (pkt->dp_Type == ACTION_PARENT)
@@ -440,7 +440,7 @@ static LONG dd_Parent(struct DosPacket *pkt, globaldata * g)
 	}
 
 	// get fi of parent
-	if (!GetParent(childfi, &parentfi, (ULONG *)&pkt->dp_Res2, g))
+	if (!GetParent(childfi, &parentfi, &pkt->dp_Res2, g))
 		return 0;
 
 	// make and enter a fileentry
@@ -448,7 +448,7 @@ static LONG dd_Parent(struct DosPacket *pkt, globaldata * g)
 	type.flags.type = IsVolume(parentfi) ? (ETF_VOLUME) : (ETF_LOCK);
 	type.flags.access = ET_SHAREDREAD;
 
-	if (!(parentfe = MakeListEntry(&parentfi, type, (ULONG *)&pkt->dp_Res2, g)))
+	if (!(parentfe = MakeListEntry(&parentfi, type, &pkt->dp_Res2, g)))
 		return 0;
 
 	if (!AddListEntry(parentfe))
@@ -459,7 +459,7 @@ static LONG dd_Parent(struct DosPacket *pkt, globaldata * g)
 		return (0);
 	}
 
-	return MKBADDR(&parentfe->lock);
+	return (SIPTR)MKBADDR(&parentfe->lock);
 }
 
 
@@ -467,7 +467,7 @@ static LONG dd_Parent(struct DosPacket *pkt, globaldata * g)
 #define H_LOCK_SAME 1
 #define H_LOCK_SAME_VOLUME 0
 
-static LONG dd_SameLock(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_SameLock(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BPTR Lock 1 to compare
 	// ARG2 = BPTR Lock 2 to compare
@@ -502,7 +502,7 @@ static LONG dd_SameLock(struct DosPacket *pkt, globaldata * g)
  * Filehandle functions
  */
 
-static LONG dd_Open(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Open(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BPTR Filehandle to fill in
 	// ARG2 = BPTR LOCK on directory ARG3 is relative to
@@ -523,7 +523,7 @@ static LONG dd_Open(struct DosPacket *pkt, globaldata * g)
 	lockentry_t *parentfe;
 	union objectinfo pathfi, filefi, *parentfi;
 	listtype type;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 	UBYTE pathname[PATHSIZE], *fullname, *filename;
 	BOOL found;
 	ULONG oldsize;
@@ -713,12 +713,12 @@ static LONG dd_Open(struct DosPacket *pkt, globaldata * g)
 
 	/* if the file was created, the user has to be notified */
 	((fileentry_t *) filefe)->checknotify = !found;
-	filehandle->fh_Arg1 = (LONG)filefe;     // We get this with Read(), Write() etc
+	filehandle->fh_Arg1 = (SIPTR)filefe;     // We get this with Read(), Write() etc
 
 	return DOSTRUE;
 }
 
-static LONG dd_OpenFromLock(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_OpenFromLock(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BPTR to filehandle
 	// ARG2 = BPTR lock on file to open
@@ -731,7 +731,7 @@ static LONG dd_OpenFromLock(struct DosPacket *pkt, globaldata * g)
 
 	filehandle = (struct FileHandle *)BADDR(pkt->dp_Arg1);
 	if (!(lockentry = ListEntryFromLock(pkt->dp_Arg2)) ||
-		!CheckVolume(lockentry->volume, 0, (ULONG *)&pkt->dp_Res2, g))
+		!CheckVolume(lockentry->volume, 0, &pkt->dp_Res2, g))
 		return DOSFALSE;
 
 	UpdateLE(lockentry, g);
@@ -743,7 +743,7 @@ static LONG dd_OpenFromLock(struct DosPacket *pkt, globaldata * g)
 
 	type.value = (lockentry->lock.fl_Access == EXCLUSIVE_LOCK) ? \
 		(ET_FILEENTRY | ET_EXCLWRITE) : (ET_FILEENTRY | ET_SHAREDREAD);
-	if (!(fileentry = MakeListEntry(&lockentry->info, type, (ULONG *)&pkt->dp_Res2, g)))
+	if (!(fileentry = MakeListEntry(&lockentry->info, type, &pkt->dp_Res2, g)))
 		return DOSFALSE;
 
 	/* oude lock verwijderen; nieuwe fileentry toevoegen
@@ -757,13 +757,13 @@ static LONG dd_OpenFromLock(struct DosPacket *pkt, globaldata * g)
 		return DOSFALSE;
 	}
 
-	filehandle->fh_Arg1 = (LONG)fileentry;
+	filehandle->fh_Arg1 = (SIPTR)fileentry;
 	return DOSTRUE;
 }
 
-static LONG dd_Close(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Close(struct DosPacket *pkt, globaldata * g)
 {
-	ULONG error;
+	SIPTR error;
 	fileentry_t *fe = (fileentry_t *)pkt->dp_Arg1;
 
 	if (!fe)
@@ -786,7 +786,7 @@ static LONG dd_Close(struct DosPacket *pkt, globaldata * g)
 	return DOSTRUE;
 }
 
-static LONG dd_ChangeMode(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_ChangeMode(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = LONG type of object to change - either CHANGE_FH or CHANGE_LOCK
 	// ARG2 = BPTR object to be changed
@@ -804,7 +804,7 @@ static LONG dd_ChangeMode(struct DosPacket *pkt, globaldata * g)
 
 	if (listentry)
 	{
-		if (!CheckVolume(listentry->volume, 0, (ULONG *)&pkt->dp_Res2, g))
+		if (!CheckVolume(listentry->volume, 0, &pkt->dp_Res2, g))
 			return DOSFALSE;
 
 		UpdateLE(listentry, g);
@@ -812,11 +812,11 @@ static LONG dd_ChangeMode(struct DosPacket *pkt, globaldata * g)
 	else
 		return DOSFALSE;
 
-	return ChangeAccessMode(listentry, pkt->dp_Arg3, (ULONG *)&pkt->dp_Res2);
+	return ChangeAccessMode(listentry, pkt->dp_Arg3, &pkt->dp_Res2);
 }
 
 /* reading and seeking in an open file */
-static LONG dd_SeekRead(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_SeekRead(struct DosPacket *pkt, globaldata * g)
 {
 	// ACTION_READ
 	// ARG1 = APTR fileentry. (filled in by Open())
@@ -835,7 +835,7 @@ static LONG dd_SeekRead(struct DosPacket *pkt, globaldata * g)
 	listentry_t *listentry;
 
 	listentry = (listentry_t *) pkt->dp_Arg1;
-	if (!CheckVolume(listentry->volume, 0, (ULONG *)&pkt->dp_Res2, g))
+	if (!CheckVolume(listentry->volume, 0, &pkt->dp_Res2, g))
 		return -1;
 
 	UpdateLE(listentry, g);
@@ -844,18 +844,18 @@ static LONG dd_SeekRead(struct DosPacket *pkt, globaldata * g)
 	{
 		return (LONG)ReadFromObject((fileentry_t *) listentry,
 									(UBYTE *)pkt->dp_Arg2, (ULONG)pkt->dp_Arg3,
-									(ULONG *)&pkt->dp_Res2, g);
+									&pkt->dp_Res2, g);
 	}
 	else
 	{
 		return SeekInObject((fileentry_t *) listentry,
 							(LONG)pkt->dp_Arg2, (LONG)pkt->dp_Arg3,
-							(ULONG *)&pkt->dp_Res2, g);
+							&pkt->dp_Res2, g);
 	}
 }
 
 /* Write to an open file, or change its size (SFS = SetFileSize) */
-static LONG dd_WriteSFS(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_WriteSFS(struct DosPacket *pkt, globaldata * g)
 {
 	// ACTION_WRITE
 	// ARG1 = APTR fileentry. (filled in by Open())
@@ -874,7 +874,7 @@ static LONG dd_WriteSFS(struct DosPacket *pkt, globaldata * g)
 	listentry_t *listentry;
 
 	listentry = (listentry_t *)pkt->dp_Arg1;
-	if (!CheckVolume(listentry->volume, 1, (ULONG *)&pkt->dp_Res2, g))
+	if (!CheckVolume(listentry->volume, 1, &pkt->dp_Res2, g))
 		return -1;
 	UpdateLE(listentry, g);
 
@@ -882,12 +882,12 @@ static LONG dd_WriteSFS(struct DosPacket *pkt, globaldata * g)
 	{
 		return (LONG)WriteToObject((fileentry_t *)listentry,
 								   (UBYTE *)pkt->dp_Arg2, (ULONG)pkt->dp_Arg3,
-								   (ULONG *)&pkt->dp_Res2, g);
+								   &pkt->dp_Res2, g);
 	}
 	else                        /* SetFileSize */
 	{
 		return ChangeObjectSize((fileentry_t *)listentry,
-					   pkt->dp_Arg2, pkt->dp_Arg3, (ULONG *)&pkt->dp_Res2, g);
+					   pkt->dp_Arg2, pkt->dp_Arg3, &pkt->dp_Res2, g);
 	}
 }
 
@@ -897,7 +897,7 @@ static LONG dd_WriteSFS(struct DosPacket *pkt, globaldata * g)
  */
 
 /* change the name of a volume */
-static LONG dd_Relabel(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BSTR new disk name
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
@@ -919,7 +919,7 @@ static LONG dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	BCPLtoCString(newlabel, (DSTR)BARG1(pkt));
 	volume = g->currentvolume;
 
-	if (!CheckVolume(volume, 1, (ULONG *)&pkt->dp_Res2, g))
+	if (!CheckVolume(volume, 1, &pkt->dp_Res2, g))
 		return DOSFALSE;
 
 	/* make new doslist entry COPY VAN DISKINSERTSEQUENCE */
@@ -970,7 +970,7 @@ static LONG dd_Relabel(struct DosPacket *pkt, globaldata * g)
 }
 
 /* change the size of the cache */
-static LONG dd_AddBuffers(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_AddBuffers(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = LONG (number of buffers)
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
@@ -1003,7 +1003,7 @@ static LONG dd_AddBuffers(struct DosPacket *pkt, globaldata * g)
 }
 
 /* disk info */
-static LONG dd_Info(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Info(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = diskinfo: BPTR to InfoData to fill in
 	//        info: BPTR lock on volume
@@ -1065,7 +1065,7 @@ static LONG dd_Info(struct DosPacket *pkt, globaldata * g)
 }
 
 /* flush cache (BTW: doesn't actually flush the cache right now) */
-static LONG dd_Flush(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Flush(struct DosPacket *pkt, globaldata * g)
 {
 	UpdateDisk(g);
 	FreeUnusedResources(g->currentvolume, g);
@@ -1074,7 +1074,7 @@ static LONG dd_Flush(struct DosPacket *pkt, globaldata * g)
 }
 
 /* soft-writeprotect disk */
-static LONG dd_WriteProtect(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_WriteProtect(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BOOL DOSTRUE = write protect; DOSFALSE = un-writeprotect
 	// ARG2 = LONG 32 bit pass key
@@ -1104,7 +1104,7 @@ static LONG dd_WriteProtect(struct DosPacket *pkt, globaldata * g)
 			 g->protectkey == ~0)
 		{
 			g->softprotect = 0;
-			g->protectkey = NULL;
+			g->protectkey = 0;
 			return DOSTRUE;
 		}
 		return DOSFALSE;
@@ -1112,7 +1112,7 @@ static LONG dd_WriteProtect(struct DosPacket *pkt, globaldata * g)
 }
 
 /* make disk unique by timestamping it */
-static LONG dd_SerializeDisk(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_SerializeDisk(struct DosPacket *pkt, globaldata * g)
 {
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 	// RES2 = failurecode (if res1 = DOSFALSE)
@@ -1154,7 +1154,7 @@ static LONG dd_SerializeDisk(struct DosPacket *pkt, globaldata * g)
 /**********************
  * Object functions
  */
-static LONG dd_DeleteObject(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_DeleteObject(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = Lock to which ARG2 is relative (BPTR)
 	// ARG2 = BSTR Name of object to be deleted
@@ -1164,7 +1164,7 @@ static LONG dd_DeleteObject(struct DosPacket *pkt, globaldata * g)
 	lockentry_t *parentfe;
 	union objectinfo *parentfi, filefi;
 	UBYTE *filename, pathname[PATHSIZE];
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 #if MULTIUSER
 	struct extrafields extrafields;
 	ULONG flags;
@@ -1187,10 +1187,10 @@ static LONG dd_DeleteObject(struct DosPacket *pkt, globaldata * g)
 #endif /* MULTIUSER */
 
 	PFSDoNotify(&filefi.file, TRUE, g);
-	return DeleteObject(&filefi, (ULONG *)&pkt->dp_Res2, g);
+	return DeleteObject(&filefi, &pkt->dp_Res2, g);
 }
 
-static LONG dd_Rename(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Rename(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BPTR Lock to which ARG2 is relative
 	// ARG2 = BSTR Name of object to rename
@@ -1203,7 +1203,7 @@ static LONG dd_Rename(struct DosPacket *pkt, globaldata * g)
 	union objectinfo *srcdirfi, *dstdirfi;
 	UBYTE *srcname, srcpathname[PATHSIZE], *dstname, dstpathname[PATHSIZE];
 	struct volumedata *srcvol, *dstvol;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 	union objectinfo pathoi, sourceoi;
 	UBYTE *objectname;
 	BOOL result;
@@ -1252,7 +1252,7 @@ static LONG dd_Rename(struct DosPacket *pkt, globaldata * g)
 }
 
 /* change a object property: filenote, protection, owner, date */
-static LONG dd_SetProperty(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_SetProperty(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = Unused
 	// ARG2 = BPTR Lock to which arg3 is relative
@@ -1263,7 +1263,7 @@ static LONG dd_SetProperty(struct DosPacket *pkt, globaldata * g)
 
 	lockentry_t *parentfe;
 	union objectinfo *parentfi, objectfi;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 	UBYTE *filename, pathname[PATHSIZE], comment[PATHSIZE];
 #if MULTIUSER
 	struct extrafields extrafields;
@@ -1299,7 +1299,7 @@ static LONG dd_SetProperty(struct DosPacket *pkt, globaldata * g)
 /*
  * Examine directory contents
  */
-static LONG dd_Examine(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Examine(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = LOCK or filehandle of object to examine
 	// ARG2 = BPTR FileInfoBlock to fill in
@@ -1315,7 +1315,7 @@ static LONG dd_Examine(struct DosPacket *pkt, globaldata * g)
 
 	if (listentry)
 	{
-		if (!CheckVolume(listentry->volume, 0, (ULONG *)&pkt->dp_Res2, g))
+		if (!CheckVolume(listentry->volume, 0, &pkt->dp_Res2, g))
 			return DOSFALSE;
 
 		UpdateLE(listentry, g);
@@ -1330,14 +1330,14 @@ static LONG dd_Examine(struct DosPacket *pkt, globaldata * g)
 	if (pkt->dp_Type == ACTION_EXAMINE_NEXT)
 		return ExamineNextFile((lockentry_t *) listentry,
 							   (struct FileInfoBlock *)BARG2(pkt),
-							   (ULONG *)&pkt->dp_Res2, g);
+							   &pkt->dp_Res2, g);
 	else
 		return ExamineFile(listentry,
 						   (struct FileInfoBlock *)BARG2(pkt),
-						   (ULONG *)&pkt->dp_Res2, g);
+						   &pkt->dp_Res2, g);
 }
 
-static LONG dd_ExamineAll(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_ExamineAll(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BPTR Lock on directory to examine
 	// ARG2 = APTR Buffer to store resultsobject to be changed
@@ -1354,7 +1354,7 @@ static LONG dd_ExamineAll(struct DosPacket *pkt, globaldata * g)
 	listentry = ListEntryFromLock(pkt->dp_Arg1);
 	if (listentry)
 	{
-		if (!CheckVolume(listentry->volume, 0, (ULONG *)&pkt->dp_Res2, g))
+		if (!CheckVolume(listentry->volume, 0, &pkt->dp_Res2, g))
 			return DOSFALSE;
 
 		UpdateLE(listentry, g);
@@ -1369,11 +1369,11 @@ static LONG dd_ExamineAll(struct DosPacket *pkt, globaldata * g)
 	return ExamineAll((lockentry_t *)listentry,
 					  (UBYTE *)pkt->dp_Arg2, (ULONG)pkt->dp_Arg3, pkt->dp_Arg4,
 					  (struct ExAllControl *)(pkt->dp_Arg5),
-					  (ULONG *)&pkt->dp_Res2, g);
+					  &pkt->dp_Res2, g);
 }
 
 /* make a hard or softlink */
-static LONG dd_MakeLink(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_MakeLink(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BPTR LOCK on directory ARG2 is relative to
 	// ARG2 = BSTR Name of link
@@ -1394,13 +1394,13 @@ static LONG dd_MakeLink(struct DosPacket *pkt, globaldata * g)
 	ULONG flags;
 #endif
 #endif
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 
 	GetFileInfoFromLock(pkt->dp_Arg1, 1, parentle, parentfi);
 	BCPLtoCString(linkname, (DSTR)BARG2(pkt));
 	SkipColon(fullname, linkname);
 
-	if (!(zonderpad = GetFullPath(parentfi, fullname, &path, (ULONG *)&pkt->dp_Res2, g)))
+	if (!(zonderpad = GetFullPath(parentfi, fullname, &path, &pkt->dp_Res2, g)))
 		return DOSFALSE;
 
 #if MULTIUSER
@@ -1427,7 +1427,7 @@ static LONG dd_MakeLink(struct DosPacket *pkt, globaldata * g)
 	if (pkt->dp_Arg4 != LINK_HARD)
 	{
 		result = CreateSoftLink(&path, zonderpad, (STRPTR) pkt->dp_Arg3, &linkinfo,
-								(ULONG *)&pkt->dp_Res2, g);
+								&pkt->dp_Res2, g);
 		if (result)
 			PFSDoNotify(&linkinfo.file, TRUE, g);
 
@@ -1445,7 +1445,7 @@ static LONG dd_MakeLink(struct DosPacket *pkt, globaldata * g)
 	/* don't do this until you know the lock is ours */
 	UpdateLE((listentry_t *)targetle, g);
 
-	result = CreateLink(&path, zonderpad, &targetle->le.info, &linkinfo, (ULONG *)&pkt->dp_Res2, g);
+	result = CreateLink(&path, zonderpad, &targetle->le.info, &linkinfo, &pkt->dp_Res2, g);
 	if (result)
 	{
 		PFSUpdateNotify(linkinfo.file.dirblock->blk.anodenr, zonderpad,
@@ -1457,7 +1457,7 @@ static LONG dd_MakeLink(struct DosPacket *pkt, globaldata * g)
 }
 
 /* read a softlink: finding out which file (ascii) it is referring to */
-static LONG dd_ReadLink(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_ReadLink(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BPTR LOCK on directory ARG2 is relative to
 	// ARG2 = BSTR Name of link
@@ -1469,7 +1469,7 @@ static LONG dd_ReadLink(struct DosPacket *pkt, globaldata * g)
 	lockentry_t *parentle;
 	union objectinfo linkfi, *parentfi;
 	char *fullname;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 
 	GetFileInfoFromLock(pkt->dp_Arg1, 0, parentle, parentfi);
 
@@ -1477,13 +1477,13 @@ static LONG dd_ReadLink(struct DosPacket *pkt, globaldata * g)
 	SkipColon(fullname, (char *)pkt->dp_Arg2);
 
 	if (!(FindObject(parentfi, fullname, &linkfi,
-					 (ULONG *)&pkt->dp_Res2, g)))
+					 &pkt->dp_Res2, g)))
 	{
 		if (pkt->dp_Res2 != ERROR_IS_SOFT_LINK)
 			return DOSFALSE;
 	}
 
-	return ReadSoftLink(&linkfi, (char *)pkt->dp_Arg3, pkt->dp_Arg4, (ULONG *)&pkt->dp_Res2, g);
+	return ReadSoftLink(&linkfi, (char *)pkt->dp_Arg3, pkt->dp_Arg4, &pkt->dp_Res2, g);
 }
 
 
@@ -1492,7 +1492,7 @@ static LONG dd_ReadLink(struct DosPacket *pkt, globaldata * g)
  */
 
 /* inhibit called from uninhibited state */
-static LONG dd_InhibitOn(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_InhibitOn(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BOOL DOSTRUE = inhibit; DOSFALSE = uninhibit
 	// RES1 = Success/failure (DOSTRUE/DOSFALSE)
@@ -1513,7 +1513,7 @@ static LONG dd_InhibitOn(struct DosPacket *pkt, globaldata * g)
 }
 
 /* Inhibit called from inhibited state */
-static LONG dd_InhibitOff(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_InhibitOff(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = BOOL DOSTRUE = inhibit; DOSFALSE = uninhibit
 	// RES1 = Success/failure (DOSTRUE/DOSFALSE)
@@ -1543,7 +1543,7 @@ static LONG dd_InhibitOff(struct DosPacket *pkt, globaldata * g)
 }
 
 
-static LONG dd_Format(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 {
 	/* argumenten stemmen NIET met de dosmanual overeen */
 	// ARG1 = BSTR Name of device (with trailing ':')
@@ -1570,14 +1570,14 @@ static LONG dd_Format(struct DosPacket *pkt, globaldata * g)
 	}
 
 	/* format disk */
-	return FDSFormat((DSTR)BADDR(pkt->dp_Arg1), pkt->dp_Arg2, (ULONG *)&pkt->dp_Res2, g);
+	return FDSFormat((DSTR)BADDR(pkt->dp_Arg1), pkt->dp_Arg2, &pkt->dp_Res2, g);
 }
 
 
 /**********************
 * Notify stuff
 */
-static LONG dd_AddNotify (struct DosPacket *pkt, globaldata *g)
+static SIPTR dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 {
 	// ARG1 = APTR struct NotifyRequest *
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
@@ -1610,7 +1610,7 @@ static LONG dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 	ctodstr (temp, no->objectname);
 	intltoupper (no->objectname);
 
-	if (!(GetFullPath(NULL, name, &oi, (ULONG *)&pkt->dp_Res2, g)))
+	if (!(GetFullPath(NULL, name, &oi, &pkt->dp_Res2, g)))
 	{
 		if (g->unparsed)
 		{
@@ -1629,7 +1629,7 @@ static LONG dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 	else
 	{
 		/* try to locate object */
-		found = FindObject (&oi, no->objectname+1, &filefi, (ULONG *)&pkt->dp_Res2, g);
+		found = FindObject (&oi, no->objectname+1, &filefi, &pkt->dp_Res2, g);
 		if (found)
 		{
 			no->anodenr = IsVolume(filefi) ? ANODE_ROOTDIR : filefi.file.direntry->anode;
@@ -1668,7 +1668,7 @@ static LONG dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 	return DOSFALSE;
 }
 
-static LONG dd_RemoveNotify (struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_RemoveNotify (struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = APTR struct NotifyRequest *
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
@@ -1717,7 +1717,7 @@ static int dd_CheckCustomPacket(LONG id)
 /*
  * Check if filesystem is PFS2
  */
-static LONG dd_IsPFS2 (struct DosPacket *pkt, globaldata *g)
+static SIPTR dd_IsPFS2 (struct DosPacket *pkt, globaldata *g)
 {
 	// ARG1 = ID_PFS2_DISK
 	// RES1 = DOSTRUE (is PFS2), otherwise it isn't
@@ -1737,14 +1737,14 @@ static LONG dd_IsPFS2 (struct DosPacket *pkt, globaldata *g)
 /*
  * Remove empty file
  */
-static LONG dd_KillEmpty(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_KillEmpty(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = lock to parent directory
 	// ARG2 = ID_PFS2_DISK or ID
 
 	lockentry_t *parentfe;
 	union objectinfo *parentfi;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 
 	if (!dd_CheckCustomPacket(pkt->dp_Arg2))
 		return DOSFALSE;
@@ -1758,7 +1758,7 @@ static LONG dd_KillEmpty(struct DosPacket *pkt, globaldata * g)
  * remove direntry, without freeing diskspace or checking
  * validity. Useful for corrupt files & entries.
  */
-static LONG dd_RemoveDirEntry(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_RemoveDirEntry(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = ID_PFS2_DISK
 	// ARG2 = Lock to which ARG2 is relative (BPTR)
@@ -1769,7 +1769,7 @@ static LONG dd_RemoveDirEntry(struct DosPacket *pkt, globaldata * g)
 	lockentry_t *parentfe;
 	union objectinfo *parentfi, filefi;
 	UBYTE *filename, *pathname;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 
 	if (!dd_CheckCustomPacket(pkt->dp_Arg1))
 		return DOSFALSE;
@@ -1779,7 +1779,7 @@ static LONG dd_RemoveDirEntry(struct DosPacket *pkt, globaldata * g)
 	SkipColon(filename, pathname);
 	LocateFile(parentfi, filename, filefi, error);
 
-	return forced_RemoveDirEntry(&filefi, (ULONG *)&pkt->dp_Res2, g);
+	return forced_RemoveDirEntry(&filefi, &pkt->dp_Res2, g);
 }
 
 #if EXTRAPACKETS
@@ -1787,7 +1787,7 @@ static LONG dd_RemoveDirEntry(struct DosPacket *pkt, globaldata * g)
 /*
  * exit or leave SLEEP_MODE
  */
-static LONG dd_Sleep(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_Sleep(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = MODE_PFS2_DISK
 	// ARG2 = on/off (DOSTRUE = on; DOSFALSE = off)
@@ -1805,7 +1805,7 @@ static LONG dd_Sleep(struct DosPacket *pkt, globaldata * g)
 		{
 			Awake(g);
 			g->sleeptask = NULL;
-			g->alarmsignal = NULL;
+			g->alarmsignal = 0;
 			return DOSTRUE;
 		}
 		else
@@ -1823,7 +1823,7 @@ static LONG dd_Sleep(struct DosPacket *pkt, globaldata * g)
 			g->sleeptask = (struct Task *)pkt->dp_Arg4;
 			g->alarmsignal = (ULONG)pkt->dp_Arg3;
 			Sleep(g);
-			return (LONG)g->sleepport;
+			return (SIPTR)g->sleepport;
 		}
 	}
 }
@@ -1839,7 +1839,7 @@ static LONG dd_Sleep(struct DosPacket *pkt, globaldata * g)
  * RES1 = Idlehandle or DOSFALSE for failure
  * RES2 = errorcode
  */
-static LONG dd_SignalIdle(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_SignalIdle(struct DosPacket *pkt, globaldata * g)
 {
 	struct idlehandle *handle;
 
@@ -1856,7 +1856,7 @@ static LONG dd_SignalIdle(struct DosPacket *pkt, globaldata * g)
 		handle->cleansignal = pkt->dp_Arg3 >> 16;
 		handle->dirtysignal = pkt->dp_Arg3 & 0xffff;
 		MinAddHead (&g->idlelist, handle);
-		return (LONG)handle;
+		return (SIPTR)handle;
 	}
 	else
 	{
@@ -1867,7 +1867,7 @@ static LONG dd_SignalIdle(struct DosPacket *pkt, globaldata * g)
 }
 
 
-static LONG dd_UpdateAnode(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_UpdateAnode(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = MODE_PFS2_DISK
 	// ARG2 = old anodenr
@@ -1883,7 +1883,7 @@ static LONG dd_UpdateAnode(struct DosPacket *pkt, globaldata * g)
 #endif
 
 #if ROLLOVER
-static LONG dd_MakeRollover(struct DosPacket *pkt, globaldata * g)
+static SIPTR dd_MakeRollover(struct DosPacket *pkt, globaldata * g)
 {
 	// ARG1 = MODE_PFS2_DISK
 	// ARG2 = BPTR LOCK on directory ARG3 is relative to
@@ -1896,7 +1896,7 @@ static LONG dd_MakeRollover(struct DosPacket *pkt, globaldata * g)
 	union objectinfo path, rolloverinfo, *parentfi;
 	UBYTE *rollovername;
 	UBYTE *zonderpad, *fullname;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 	BOOL result;
 
 	if (!dd_CheckCustomPacket(pkt->dp_Arg1))
@@ -1921,7 +1921,7 @@ static LONG dd_MakeRollover(struct DosPacket *pkt, globaldata * g)
 
 /* Read and set rollover info
  */
-static LONG dd_SetRollover(struct DosPacket *pkt, globaldata *g)
+static SIPTR dd_SetRollover(struct DosPacket *pkt, globaldata *g)
 {
 	// ARG1 = MODE_PFS2_DISK
 	// ARG2 = APTR fileentry (filled in by Open())
@@ -1930,7 +1930,7 @@ static LONG dd_SetRollover(struct DosPacket *pkt, globaldata *g)
 	// RES2 = failure code
 
 	listentry_t *rlfile;
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 
 	if (!dd_CheckCustomPacket(pkt->dp_Arg1))
 		return DOSFALSE;
@@ -1944,14 +1944,14 @@ static LONG dd_SetRollover(struct DosPacket *pkt, globaldata *g)
 #endif
 
 #if DELDIR
-static LONG dd_SetDeldir(struct DosPacket *pkt, globaldata *g)
+static SIPTR dd_SetDeldir(struct DosPacket *pkt, globaldata *g)
 {
 	// ARG1 = MODE_PFS2_DISK
 	// ARG2 = number of deldirblocks wanted (0 = disable, -1 = check)
 	// RES1 = success
 	// RES2 = failure code
 
-	ULONG *error = &pkt->dp_Res2;
+	SIPTR *error = &pkt->dp_Res2;
 
 	if (!dd_CheckCustomPacket(pkt->dp_Arg1))
 		return DOSFALSE;
@@ -1986,7 +1986,7 @@ static LONG dd_SetDeldir(struct DosPacket *pkt, globaldata *g)
 /* set filename size. failure codes:
  * ACTION_BAD_NUMBER = grootte illegaal of kleiner dan huidig
  */
-static LONG dd_SetFileSize(struct DosPacket *pkt, globaldata *g)
+static SIPTR dd_SetFileSize(struct DosPacket *pkt, globaldata *g)
 {
 	// ACTION_SET_FNSIZE 2222
 	// ARG1 = MODE_PFS2_DISK

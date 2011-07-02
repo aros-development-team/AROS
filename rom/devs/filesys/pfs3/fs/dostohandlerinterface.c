@@ -110,7 +110,7 @@ void SleepCommands (struct DosPacket *action, globaldata *g);
 
 struct functable
 {
-	LONG (*function)(struct DosPacket *, globaldata *);
+	SIPTR (*function)(struct DosPacket *, globaldata *);
 	ULONG timeout;
 };
 
@@ -334,7 +334,7 @@ void InhibitedCommands(struct DosPacket *action, globaldata *g)
 			break;
 
 		case ACTION_CURRENT_VOLUME: // <sendpkt only>
-			action->dp_Res1 = NULL;
+			action->dp_Res1 = 0;
 			break;
 
 		case ACTION_DISK_INFO:      // Info(..)

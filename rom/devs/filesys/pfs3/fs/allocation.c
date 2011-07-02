@@ -536,7 +536,7 @@ l1:     /* get blocks to free */
 			 */
 			freeing = size;
 			chnode->an.clustersize -= size;
-			chnode->an.next = NULL;
+			chnode->an.next = 0;
 			if (freetype == freeanodes)
 				SaveAnode (&chnode->an, chnode->an.nr, g);
 		}
@@ -592,10 +592,10 @@ l1:     /* get blocks to free */
 	/* cancel posponed operation */
 	if (rext)
 	{
-		rext->blk.tobedone.operation_id = NULL;
-		rext->blk.tobedone.argument1 = NULL;
-		rext->blk.tobedone.argument2 = NULL;
-		rext->blk.tobedone.argument3 = NULL;
+		rext->blk.tobedone.operation_id = 0;
+		rext->blk.tobedone.argument1 = 0;
+		rext->blk.tobedone.argument2 = 0;
+		rext->blk.tobedone.argument3 = 0;
 		MakeBlockDirty ((struct cachedblock *)rext, g);
 	}
 
@@ -620,7 +620,7 @@ static void RestoreAnodeChain (struct anodechain *achain, BOOL empty,
 		achain->head.next = NULL;
 		achain->head.an.clustersize = 0;
 		achain->head.an.blocknr = ~0L;
-		achain->head.an.next = NULL;
+		achain->head.an.next = 0;
 		SaveAnode (&achain->head.an, achain->head.an.nr, g);
 	}
 	else
@@ -630,7 +630,7 @@ static void RestoreAnodeChain (struct anodechain *achain, BOOL empty,
 			chnode = chnode->next;
 
 		chnode->next = NULL;
-		chnode->an.next = NULL;
+		chnode->an.next = 0;
 		SaveAnode (&chnode->an, chnode->an.nr, g);
 	}
 }
@@ -698,7 +698,7 @@ ULONG AllocReservedBlock (globaldata *g)
    * (really necessary?)
    */
   if (*free == 0)
-	return NULL;
+	return 0;
 
   j = 31 - alloc_data.res_roving % 32;
   for (i = alloc_data.res_roving / 32; i <= (alloc_data.numreserved/32); i++, j=31)
@@ -734,7 +734,7 @@ ULONG AllocReservedBlock (globaldata *g)
 	return AllocReservedBlock (g);
   }
   else
-	return NULL;
+	return 0;
 
   EXIT("AllocReservedBlock");
 }

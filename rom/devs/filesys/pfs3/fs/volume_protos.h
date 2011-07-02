@@ -18,7 +18,7 @@ BOOL UpdateChangeCount(globaldata * );
 
 void UpdateCurrentDisk(globaldata * );
 
-BOOL CheckVolume(struct volumedata * , BOOL , ULONG * , globaldata * );
+BOOL CheckVolume(struct volumedata * , BOOL , SIPTR * , globaldata * );
 
 LONG ErrorMsg(CONST_STRPTR, APTR, globaldata *);
 LONG _NormalErrorMsg(CONST_STRPTR, APTR, ULONG, globaldata * );

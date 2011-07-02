@@ -311,7 +311,7 @@ void GetAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 	else
 	{
 		anode->clustersize = anode->next = 0;
-		anode->blocknr     = ~0UL;
+		anode->blocknr     = ~0;
 		// ErrorMsg (AFS_ERROR_DNV_ALLOC_INFO, NULL);
 	}
 }
@@ -437,7 +437,7 @@ ULONG AllocAnode (ULONG connect, globaldata *g)
 		else
 		{
 			if (!(ablock = big_NewAnodeBlock (seqnr, g)))
-				return NULL;
+				return 0;
 			anodes = ablock->blk.nodes;
 			k = 0;
 		}
@@ -874,7 +874,7 @@ void InitAnodes (struct volumedata *volume, BOOL formatting, globaldata *g)
 		g->getanodeblock = big_GetAnodeBlock;
 
 		andata.curranseqnr = volume->rblkextension ?
-							 volume->rblkextension->blk.curranseqnr : NULL;
+							 volume->rblkextension->blk.curranseqnr : 0;
 		andata.anodesperblock = (SIZEOF_RESBLOCK - sizeof(anodeblock_t)) /
 								sizeof(anode_t);
 		andata.indexperblock = (SIZEOF_RESBLOCK - sizeof(indexblock_t)) /

@@ -122,7 +122,7 @@ BOOL InitLRU (globaldata *g)
 		return FALSE;
 
 	/* check memory against mask */
-	if (((ULONG)g->glob_lrudata.LRUarray) & ~g->dosenvec->de_Mask)
+	if (((SIPTR)g->glob_lrudata.LRUarray) & ~g->dosenvec->de_Mask)
 		ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
 
 	array = (UBYTE *)g->glob_lrudata.LRUarray;
@@ -295,7 +295,7 @@ void UpdateReference (ULONG blocknr, struct cdirblock *blk, globaldata *g)
 			le->le.info.file.dirblock = blk;
 			le->le.info.file.direntry = (struct direntry *)((UBYTE *)blk + le->le.dirblockoffset);
 			le->le.dirblocknr =
-			le->le.dirblockoffset = NULL;
+			le->le.dirblockoffset = 0;
 		}
 
 		/* exnext references */
@@ -304,7 +304,7 @@ void UpdateReference (ULONG blocknr, struct cdirblock *blk, globaldata *g)
 			le->nextentry.dirblock = blk;
 			le->nextentry.direntry = (struct direntry *)((UBYTE *)blk + le->nextdirblockoffset);
 			le->nextdirblocknr =
-			le->nextdirblockoffset = NULL;
+			le->nextdirblockoffset = 0;
 		}
 	}
 }

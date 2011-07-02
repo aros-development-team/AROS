@@ -384,7 +384,7 @@ static void RemoveEmptyABlocks(struct volumedata *volume, globaldata *g)
 
 				/* and remove the reference (this one should already be in the cache) */
 				index = GetIndexBlock(indexblknr, g);
-				index->blk.index[indexoffset] = NULL;
+				index->blk.index[indexoffset] = 0;
 				index->changeflag = TRUE;
 			}
 		}

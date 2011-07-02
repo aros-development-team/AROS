@@ -264,7 +264,7 @@ void NewVolume (BOOL FORCE, globaldata *g)
 
 	/* undo error enforced softprotect */
 	if ((g->softprotect == 1) && g->protectkey == ~0)
-		g->softprotect = g->protectkey = NULL;
+		g->softprotect = g->protectkey = 0;
 
 	if (oldstate && !newstate)
 		DiskRemoveSequence (g);
@@ -365,7 +365,7 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
   struct DeviceList *devlist;
   BOOL found = FALSE, added = FALSE;
   UBYTE diskname[DNSIZE];       // or should it be a DSTR??
-  ULONG locklist;
+  SIPTR locklist;
 
 	ENTER("DiskInsertSequence");
 
@@ -401,7 +401,7 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 		DB(Trace(1, "DiskInsertSequence", "found\n"));
 
 		devlist = (struct DeviceList *)doslist;
-		locklist = (ULONG)BADDR(devlist->dl_LockList);
+		locklist = (SIPTR)BADDR(devlist->dl_LockList);
 
 		/* take over volume
 		** use LOCKTOFILEENTRY(lock)->volume to get volumepointer
@@ -515,7 +515,7 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 		/* create new deldir */
 		SetDeldir(1, g);
 		ResToBeFreed(rootblock->deldir, g);
-		rootblock->deldir = NULL;
+		rootblock->deldir = 0;
 		rootblock->options |= MODE_SUPERDELDIR;
 	}
 #endif
@@ -750,7 +750,7 @@ BOOL UpdateChangeCount(globaldata *g)
 	{
 		ENTER("UpdateChangeCount");
 		request->iotd_Req.io_Command = TD_CHANGENUM;
-		if(DoIO((struct IORequest *)request) == NULL)
+		if(DoIO((struct IORequest *)request) == 0)
 			changecount = request->iotd_Req.io_Actual;  
 		else
 			changecount = ~0;
@@ -777,7 +777,7 @@ void UpdateCurrentDisk(globaldata *g)
 ** If volume==NULL (no disk present) then FALSE is returned (@XLII).
 ** result: requested volume present/not present TRUE/FALSE
 */
-BOOL CheckVolume(struct volumedata *volume, BOOL write, ULONG *error, globaldata *g)
+BOOL CheckVolume(struct volumedata *volume, BOOL write, SIPTR *error, globaldata *g)
 {
 	if(!volume || !g->currentvolume)
 	{
@@ -962,7 +962,7 @@ BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 	
 	/* Get diskprotection @XLI */
 	request->iotd_Req.io_Command = TD_PROTSTATUS;
-	if (DoIO((struct IORequest *)request) == NULL)
+	if (DoIO((struct IORequest *)request) == 0)
 	{
 		if (request->iotd_Req.io_Actual)
 			g->diskstate = ID_WRITE_PROTECTED;
@@ -1074,7 +1074,7 @@ void GetDriveGeometry(globaldata *g)
 		geom->dg_TrackSectors   = env[DE_BLKSPERTRACK];
 		geom->dg_BufMemType     = env[DE_MEMBUFTYPE];
 		geom->dg_DeviceType     = DG_UNKNOWN;
-		geom->dg_Flags          = NULL;
+		geom->dg_Flags          = 0;
 	}
 
 	g->firstblock = g->dosenvec->de_LowCyl * geom->dg_CylSectors;
@@ -1140,7 +1140,7 @@ void RequestCurrentVolumeBack(globaldata *g)
 	{
 		ready = GetCurrentRoot(&rootblock, g) && SameDisk(volume->rootblk, rootblock);
 		if(!ready)
-			ErrorReport(ABORT_BUSY, REPORT_VOLUME, (ULONG)MKBADDR(volume->devlist), NULL);
+			ErrorReport(ABORT_BUSY, REPORT_VOLUME, (IPTR)MKBADDR(volume->devlist), NULL);
 	}
 
 	if (rootblock)
