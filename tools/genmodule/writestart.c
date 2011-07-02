@@ -622,9 +622,9 @@ static void writehandler(FILE *out, struct config *cfg)
                "{\n"
                "    struct FileSysResource *fsr;\n"
                "    int i;\n"
-               "    struct {\n"
+               "    const struct {\n"
                "        ULONG id;\n"
-               "        const char *name; /* if ID is 0 (resident) or ~0 (dos node) */\n"
+               "        BSTR name;\n"
                "        BYTE autodetect;\n"
                "        BYTE priority;\n"
                "        ULONG stacksize;\n"
@@ -634,17 +634,17 @@ static void writehandler(FILE *out, struct config *cfg)
         switch (hl->type) {
         case HANDLER_RESIDENT:
             fprintf(out,
-               "        { .id = 0, .name = \"%s\", .handler = %s }, \n",
+               "        { .id = 0, .name = AROS_CONST_BSTR(\"%s\"), .handler = %s }, \n",
                hl->name, hl->handler);
             break;
         case HANDLER_DOSDEVICE:
             fprintf(out,
-               "        { .id = ~0, .name = \"%s\", .handler = %s, .priority = %d, .stacksize = %d }, \n",
+               "        { .id = ~0, .name = AROS_CONST_BSTR(\"%s\"), .handler = %s, .priority = %d, .stacksize = %d }, \n",
                hl->name, hl->handler, hl->priority, hl->stacksize);
             break;
         case HANDLER_DOSTYPE:
             fprintf(out,
-               "        { .id = 0x%08x, .handler = %s, .autodetect = %d, .priority = %d, .stacksize = %d*sizeof(IPTR) }, \n",
+               "        { .id = 0x%08x, .name = AROS_CONST_BSTR(MOD_NAME_STRING), .handler = %s, .autodetect = %d, .priority = %d, .stacksize = %d*sizeof(IPTR) }, \n",
                hl->id, hl->handler, hl->autodetect, hl->priority, hl->stacksize);
             break;
         }
@@ -691,7 +691,7 @@ static void writehandler(FILE *out, struct config *cfg)
                "            if (!DOSBase)\n"
                "                continue;\n"
                "\n"
-               "            AddSegment(handler[i].name, seg[j], CMD_SYSTEM);\n"
+               "            AddSegment(AROS_BSTR_ADDR(handler[i].name), seg[j], CMD_SYSTEM);\n"
                "            continue;\n"
                "        }\n"
                "\n"
@@ -703,7 +703,7 @@ static void writehandler(FILE *out, struct config *cfg)
                "            if (!ExpansionBase)\n"
                "                continue;\n"
                "\n"
-               "            pp[0] = (IPTR)handler[i].name;\n"
+               "            pp[0] = (IPTR)AROS_BSTR_ADDR(handler[i].name);\n"
                "            pp[1] = (IPTR)NULL;\n"
                "            pp[2] = 0;\n"
                "            pp[3] = 0;\n"
@@ -725,11 +725,12 @@ static void writehandler(FILE *out, struct config *cfg)
                "        fse->fse_Node.ln_Pri  = handler[i].autodetect;\n"
                "        fse->fse_DosType = handler[i].id;\n"
                "        fse->fse_Version = (MAJOR_VERSION << 16) | MINOR_VERSION;\n"
-               "        fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_GLOBALVEC;\n"
+               "        fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_GLOBALVEC | FSEF_HANDLER | FSEF_PRIORITY;\n"
                "        if (handler[i].stacksize) {\n"
                "            fse->fse_PatchFlags |= FSEF_STACKSIZE;\n"
                "            fse->fse_StackSize = handler[i].stacksize;\n"
                "        }\n"
+               "        fse->fse_Handler = handler[i].name;\n"
                "        fse->fse_Priority = handler[i].priority;\n"
                "        fse->fse_SegList = seg[j];\n"
                "        fse->fse_GlobalVec = (BPTR)(SIPTR)-1;\n"
