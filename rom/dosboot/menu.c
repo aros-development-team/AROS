@@ -22,6 +22,7 @@
 #include <libraries/expansionbase.h>
 #include <libraries/configvars.h>
 #include <dos/filehandler.h>
+#include <devices/trackdisk.h>
 #include <exec/rawfmt.h>
 #include <aros/bootloader.h>
 #include <aros/symbolsets.h>
@@ -279,7 +280,7 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
     struct ExpansionBase *ExpansionBase;
     struct BootNode *bn;
     WORD y = 50;
-    char text[100];
+    char text[100], *textp;
 
     ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
     if (!ExpansionBase)
@@ -290,9 +291,12 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 	struct DeviceNode *dn = bn->bn_DeviceNode;
 	struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
 	struct DosEnvec *de;
+	struct IOStdReq *io;
+	struct MsgPort *port;
 	char dostype[5];
 	UBYTE i;
 	ULONG size;
+	BOOL devopen, ismedia;
 
 	if (y >= DOSBootBase->bottomY - 20)
 	    break;
@@ -312,7 +316,25 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 	Move(win->RPort, 20, y);
 	Text(win->RPort, text, strlen(text));
 
-	if (de) {
+	textp = NULL;
+	devopen = ismedia = FALSE;
+	if ((port = (struct MsgPort*)CreateMsgPort())) {
+	    if ((io = (struct IOStdReq*)CreateIORequest(port, sizeof(struct IOStdReq)))) {
+		if (!OpenDevice(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit, (struct IORequest*)io, fssm->fssm_Flags)) {
+		    devopen = TRUE;
+		    io->io_Command = TD_CHANGESTATE;
+		    io->io_Actual = 1;
+		    DoIO((struct IORequest*)io);
+		    if (!io->io_Error && io->io_Actual == 0)
+			ismedia = TRUE;
+		    CloseDevice((struct IORequest*)io);
+		}
+		DeleteIORequest((struct IORequest*)io);
+	    }
+	    DeleteMsgPort(port);
+	}
+
+	if (de && ismedia) {
 	    for (i = 0; i < 4; i++) {
 		dostype[i] = (de->de_DosType >> ((3 - i) * 8)) & 0xff;
 	        if (dostype[i] < 9)
@@ -332,8 +354,15 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 	    NewRawDoFmt("%s [%08lx] %ldk", RAWFMTFUNC_STRING, text,
 		dostype, de->de_DosType,
 		size);
+	    textp = text;
+	} else if (!devopen) {
+	    textp = "[device open error]";
+	} else if (!ismedia) {
+	    textp = "[no media]";
+	}
+	if (textp) {
 	    Move(win->RPort, 400, y);
-	    Text(win->RPort, text, strlen(text));
+	    Text(win->RPort, textp, strlen(textp));
 	}
 
 	y += 16;
