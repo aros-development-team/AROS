@@ -33,16 +33,28 @@ static void Exec_CrashHandler(void)
  * In our current implementation we use two pointers on stack. The idea is taken
  * from AmigaOS v4.
  *
- * On m68k, the exeception handling routines check to see whether
- * task->tc_TrapCode == Exec_TrapHandler, and, if so, call this
- * routine.
- *
- * If not, they call the routine via the AOS 1.x-3.x method described above.
+ * For m68k, we need a thunk, since we will call this routine via
+ * the AOS 1.x-3.x method described above.
  *
  * See arch/m68k-all/kernel/m68k_exception.c for implementation details.
  */
-
+#ifdef __mc68000
+asm (
+        "       .text\n"
+        "       .balign 2\n"
+        "       .global Exec_TrapHandler\n"
+        "Exec_TrapHandler:\n"
+        "       move.l  %sp@+,%d0\n"    /* Pop off trap number */
+        "       move.l  %sp,%sp@-\n"    /* Push on pointer to exception ctx */
+        "       move.l  %d0,%sp@-\n"    /* Push on trap number */
+        "       jsr Exec__TrapHandler\n" /* Call C routine */
+        "       addq.l  #8,%sp\n"       /* Pop off trap number and ctx ptr */
+        "       rte\n"                  /* Return from trap */
+        );
+void Exec__TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
+#else
 void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
+#endif
 {
     struct Task *task = SysBase->ThisTask;
 

@@ -269,7 +269,6 @@ void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     ULONG alert;
     VOID (*trapHandler)(ULONG, void *);
-    extern VOID Exec_TrapHandler(ULONG trapNum, void *);
 
     /* Conveniently, the ACPU_* traps are identical to
      * id | AT_DeadEnd!
@@ -297,17 +296,13 @@ void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
     }
 
     trapHandler = FindTask(NULL)->tc_TrapCode;
-    if (trapHandler == Exec_TrapHandler)
-    	trapHandler(alert, regs);
-    else {
-    	/* Call an AmigaOS trap handler, in supervisor
-    	 * mode, that *may* alter almost any of our
-    	 * registers, by abusing the stack frame
-    	 * via 'regs_t'. Whee!
-    	 */
-    	regs->trapcode = (IPTR)trapHandler;
-    	regs->traparg  = (ULONG)id;
-    }
+    /* Call an AmigaOS trap handler, in supervisor
+     * mode, that *may* alter almost any of our
+     * registers, by abusing the stack frame
+     * via 'regs_t'. Whee!
+     */
+    regs->trapcode = (IPTR)trapHandler;
+    regs->traparg  = (ULONG)id;
 }
 
 void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
