@@ -357,6 +357,8 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	struct TagItem bootmsg[] = {
 #ifdef AROS_SERIAL_DEBUG
 	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode" },
+#else
+	    { TAG_END },
 #endif
 	    { TAG_END },
 	};
@@ -410,12 +412,21 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	    wasvalid = IsSysBaseValidNoVersion(oldSysBase);
 	    if (wasvalid) {
 	    	DEBUGPUTHEX(("[SysBase] fakebase at", (ULONG)oldSysBase));
+	    	if (oldSysBase->DebugData) {
+	    	    bootmsg[0].ti_Tag = KRN_CmdLine;
+	    	    bootmsg[0].ti_Data = (IPTR)oldSysBase->DebugData;
+	    	}
 	    	wasvalid = TRUE;
 	    } else {
 	    	DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)oldSysBase));
 	    	wasvalid = FALSE;
 	    }
 	}
+    	if (bootmsg[0].ti_Tag == KRN_CmdLine) {
+	    DEBUGPUTS(("[SysBase] kernel commandline '"));
+    	    DEBUGPUTS((bootmsg[0].ti_Data));
+    	    DEBUGPUTS(("'\n"));
+    	}
 
 	if (wasvalid) {
 	    /* Save reset proof vectors */
