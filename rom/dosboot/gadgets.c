@@ -82,7 +82,8 @@ struct ButtonGadget *createButton
 void freeButtonGadget(struct ButtonGadget *button, struct DOSBootBase *DOSBootBase) 
 {
         D(bug("[BootMenu] freeButtonGadget()\n"));
-
+	if (button == NULL)
+		return;
 	DisposeObject(button->gadget);
 	FreeMem(button, sizeof(struct ButtonGadget));
 }
