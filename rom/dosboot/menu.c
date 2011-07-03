@@ -290,7 +290,7 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
     ForeachNode(&ExpansionBase->MountList, bn) {
 	struct DeviceNode *dn = bn->bn_DeviceNode;
 	struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
-	struct DosEnvec *de;
+	struct DosEnvec *de = NULL;
 	struct IOStdReq *io;
 	struct MsgPort *port;
 	char dostype[5];
@@ -302,7 +302,7 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 	    break;
 	if (!fssm || !fssm->fssm_Device)
 	    continue;
-	if (fssm->fssm_Environ > 0x64) {
+	if (fssm->fssm_Environ > (BPTR)0x64) {
 	    de = BADDR(fssm->fssm_Environ);
 	    if (de->de_TableSize < 15)
 		de = NULL;
@@ -459,7 +459,7 @@ static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
     DOSBootBase->bm_Screen = OpenBootScreen(DOSBootBase);
     if (DOSBootBase->bm_Screen) {
 	DOSBootBase->bottomY = DOSBootBase->bm_Screen->Height - (DOSBootBase->bm_Screen->Height > 256 ? 32 : 16);
-	D(bug("[BootMenu] initScreen: Screen opened @ %p\n", bm_Screen));
+	D(bug("[BootMenu] initScreen: Screen opened @ %p\n",  DOSBootBase->bm_Screen));
 	page = PAGE_MAIN;
 	do {
 	    page = initWindow(DOSBootBase, bcfg, page);
