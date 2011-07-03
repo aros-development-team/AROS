@@ -92,7 +92,6 @@ VOID DeleteHandler(struct Handler *handler)
       DeletePool(handler->clear_pool);
 
       DeleteMsgPort(handler->notify_port);
-      FreeMem(handler, sizeof(struct Handler));
 
       /* Close libraries */
 
@@ -106,6 +105,8 @@ VOID DeleteHandler(struct Handler *handler)
       base = UtilityBase;
       if(base != NULL)
          CloseLibrary(base);
+
+      FreeMem(handler, sizeof(struct Handler));
    }
 
    return;
