@@ -33,6 +33,7 @@ struct DOSBootBase
 
     struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
     struct IntuitionBase *bm_IntuitionBase;
+    struct Screen        *bm_Screen;		/* Screen					  */
     struct Window        *bm_Window;		/* Window and gadgets		  */
     struct MainGadgets    bm_MainGadgets;
 
@@ -41,6 +42,7 @@ struct DOSBootBase
     
     APTR		  animData;		/* Animation stuff		  */
     ULONG		  delayTicks;		/* Delay period. Can be adjusted by animation code */
+    WORD		  bottomY;
 };
 
 /* Boot flags */
