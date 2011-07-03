@@ -424,7 +424,7 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	}
     	if (bootmsg[0].ti_Tag == KRN_CmdLine) {
 	    DEBUGPUTS(("[SysBase] kernel commandline '"));
-    	    DEBUGPUTS((bootmsg[0].ti_Data));
+    	    DEBUGPUTS(((CONST_STRPTR)bootmsg[0].ti_Data));
     	    DEBUGPUTS(("'\n"));
     	}
 
