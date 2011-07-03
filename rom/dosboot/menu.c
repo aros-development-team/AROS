@@ -261,8 +261,10 @@ static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
     	    cd->cd_Rom.er_Manufacturer, cd->cd_Rom.er_Product, cd->cd_Rom.er_SerialNumber);
 	if ((cd->cd_Rom.er_Type & ERT_TYPEMASK) == ERT_ZORROIII)
 	    strcat(text, " Z3");
-	else
+	else if ((cd->cd_Rom.er_Type & ERT_TYPEMASK) == ERT_ZORROII)
 	    strcat(text, " Z2");
+        else
+            strcat(text, "   ");
 	if (cd->cd_Rom.er_Type & ERTF_DIAGVALID)
 	    strcat(text, " ROM");
 	if (cd->cd_Rom.er_Type & ERTF_MEMLIST)
