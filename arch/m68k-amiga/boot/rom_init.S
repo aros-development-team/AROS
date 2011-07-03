@@ -2,9 +2,7 @@
 	.chip 68000
 	.align 4 
 
-	reset
 	.globl rom_init
-	nop
 rom_init:
 	/* In ROM, so disable the overlay */
 	moveq	#0x3, %d0

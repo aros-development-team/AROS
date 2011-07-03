@@ -30,6 +30,11 @@ software_reset:
     .asciz "All Rights Reserved."
     .asciz ADATE
 
-
+    /* Magic reset vector, used by some expansion ROMs and
+     * softkick programs */
     .align 4
     .org   0xd0
+    .global rom_magic_reset
+rom_magic_reset:
+    reset
+    nop
