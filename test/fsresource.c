@@ -38,27 +38,27 @@ int main(int argc, char **argv)
 		    dostype[i] = '.';
 	    }
 	    dostype[4] = 0;
-    	    printf("DOSType: %08lx (%s)\n", fse->fse_DosType, dostype);
-    	    printf("Version: %08lx (%d.%d)\n", fse->fse_Version, fse->fse_Version >> 16, fse->fse_Version & 0xffff);
-    	    printf("PatchFlags: %08lx\n", fse->fse_PatchFlags);
+    	    printf("DOSType: %08lx (%s)\n", (unsigned long)fse->fse_DosType, dostype);
+    	    printf("Version: %08lx (%d.%d)\n", (unsigned long)fse->fse_Version, fse->fse_Version >> 16, fse->fse_Version & 0xffff);
+    	    printf("PatchFlags: %08lx\n", (unsigned long)fse->fse_PatchFlags);
     	    checkpatch(fse, FSEB_TYPE);
-   	    printf("Type: %08lx\n", fse->fse_Type);
+   	    printf("Type: %08lx\n", (unsigned long)fse->fse_Type);
     	    checkpatch(fse, FSEB_TASK);
-   	    printf("Task: %08lx\n", fse->fse_Task);
+   	    printf("Task: %08lx\n", (unsigned long)fse->fse_Task);
     	    checkpatch(fse, FSEB_LOCK);
-   	    printf("Lock: %08lx\n", fse->fse_Lock);
+   	    printf("Lock: %08lx\n", (unsigned long)fse->fse_Lock);
     	    checkpatch(fse, FSEB_HANDLER);
-   	    printf("Handler: %08lx\n", fse->fse_Handler);
+   	    printf("Handler: %08lx\n", (unsigned long)fse->fse_Handler);
     	    checkpatch(fse, FSEB_STACKSIZE);
-   	    printf("StackSize: %08lx\n", fse->fse_StackSize);
+   	    printf("StackSize: %08lx\n", (unsigned long)fse->fse_StackSize);
     	    checkpatch(fse, FSEB_PRIORITY);
-   	    printf("Priority: %08lx\n", fse->fse_Priority);
+   	    printf("Priority: %08lx\n", (unsigned long)fse->fse_Priority);
     	    checkpatch(fse, FSEB_STARTUP);
-   	    printf("Startup: %08lx\n", fse->fse_Startup);
+   	    printf("Startup: %08lx\n", (unsigned long)fse->fse_Startup);
     	    checkpatch(fse, FSEB_SEGLIST);
-   	    printf("SegList: %08lx\n", fse->fse_SegList);
+   	    printf("SegList: %08lx\n", (unsigned long)fse->fse_SegList);
     	    checkpatch(fse, FSEB_GLOBALVEC);
-   	    printf("GlobalVec: %08lx\n", fse->fse_GlobalVec);
+   	    printf("GlobalVec: %08lx\n", (unsigned long)fse->fse_GlobalVec);
 	    printf("\n");
    	}
     } else {
