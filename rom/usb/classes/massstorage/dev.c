@@ -22,6 +22,16 @@ AROS_UFH3(DEVBASETYPEPTR, GM_UNIQUENAME(devInit),
     base->np_Library.lib_Revision     = REVISION_NUMBER;
     base->np_Library.lib_IdString     = VERSION_STRING;
 
+    /* Create config device so we can boot from these */
+    if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
+        if ((base->np_ConfigDev = AllocConfigDev())) {
+            base->np_ConfigDev->cd_Node.ln_Name = DEVNAME;
+            base->np_ConfigDev->cd_Driver = base;
+            AddConfigDev(base->np_ConfigDev);
+        }
+        CloseLibrary(ExpansionBase);
+    }
+
     /* Store segment */
     base->np_SegList = seglist;
 
@@ -148,7 +158,7 @@ AROS_LH1(BPTR, devExpunge,
          DEVBASETYPEPTR, base, 3,usbscsidev)
 {
     AROS_LIBFUNC_INIT
-    
+
     BPTR ret;
 
     KPRINTF(10, ("devExpunge base: 0x%08lx\n", base));
@@ -160,6 +170,16 @@ AROS_LH1(BPTR, devExpunge,
         KPRINTF(5, ("devExpunge: Unloading...\n"));
 
         CloseLibrary(base->np_UtilityBase);
+
+        /* Create config device so we can boot from these */
+        if (base->np_ConfigDev) {
+            APTR ExpansionBase;
+            if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
+                RemConfigDev(base->np_ConfigDev);
+                FreeConfigDev(base->np_ConfigDev);
+                CloseLibrary(ExpansionBase);
+            }
+        }
 
         ret = base->np_SegList;
 
