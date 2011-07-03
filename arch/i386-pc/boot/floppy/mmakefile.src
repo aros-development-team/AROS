@@ -91,7 +91,7 @@ BOOT_TAR_ICONS := \
 
 BOOT_TAR_MISC := \
     Devs/DataTypes/ELF Devs/DataTypes/ELF_EXE Devs/DataTypes/ILBM \
-    Devs/DataTypes/FTXT Devs/DOSDrivers/PIPEFS \
+    Devs/DataTypes/FTXT Devs/DOSDrivers/PIPE \
     Devs/Keymaps Devs/Mountlist \
     Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 \
     Locale/Countries Locale/Help \
