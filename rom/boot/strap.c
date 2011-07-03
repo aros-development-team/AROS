@@ -297,8 +297,12 @@ static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
     VOID_FUNC init = NULL;
     UBYTE *buffer;
 
+    /* BootNodes that don't have a ConfigDev are not bootable */
+    if (bn->bn_Node.ln_Name == NULL)
+        return;
+
     if (!GetBootNodeDeviceUnit(bn, &device, &unit))
-       return;
+        return;
 
     /* memf_chip not required but more compatible with old bootblocks */
     buffer = AllocMem(BOOTBLOCK_SIZE, MEMF_CHIP);
