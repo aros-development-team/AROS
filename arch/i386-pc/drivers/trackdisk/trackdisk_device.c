@@ -142,7 +142,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
                         CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler),
                             len);
                         AROS_BSTR_setstrlen(devnode->dn_Handler, len);
-			AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
+			AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, tdb->td_ConfigDev);
 		    }
 		}
 	    }
@@ -161,6 +161,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
     struct BootLoaderBase *BootLoaderBase;
     ULONG i;
     UBYTE drives;
+    APTR ExpansionBase;
 
     D(bug("TD: Init\n"));
     
@@ -261,6 +262,18 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 	    kprintf("[Floppy] Unit %d is a 1.44Mb drive\n",i);
 	    TD_InitUnit(i,TDBase);
 	}
+    }
+
+    /* We need to synthesize a ConfigDev, so that the AddBootNode()
+     * call will generate bootable devices
+     */
+    if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
+        if ((TDBase->td_ConfigDev = AllocConfigDev())) {
+            TDBase->td_ConfigDev->cd_Node.ln_Name = "trackdisk.device";
+            TDBase->td_ConfigDev->cd_Driver = TDBase;
+            AddConfigDev(TDBase->td_ConfigDev);
+        }
+        CloseLibrary(ExpansionBase);
     }
 
     /* Create the message processor task */

@@ -59,6 +59,7 @@ struct TrackDiskBase
 {
     struct Device           	td_device;
     struct TaskData		*td_TaskData;
+    struct ConfigDev		*td_ConfigDev;
     struct TDU			*td_Units[TD_NUMUNITS];
     struct timerequest  	*td_TimerIO;
     struct MsgPort      	*td_TimerMP;
