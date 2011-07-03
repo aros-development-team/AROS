@@ -47,6 +47,7 @@
 #define RC_DONTREPLY  -1
 
 #define MAX_ROOT_PORTS   16
+#define MAX_USB3_PORTS   255
 
 #define PCI_CLASS_SERIAL_USB 0x0c03
 
@@ -86,15 +87,10 @@ struct PCIUnit
     struct PCIController *hu_PortMap11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 controller */
     struct PCIController *hu_PortMap20[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 2.0 controller */
 #if (AROS_USB30_CODE)
-/* FIXME: XHCI runs in parallel with its EHCI controller, check port assignment from EXT_CAP_SUPPORTED_PROTOCOL */
-    struct PCIController *hu_PortMap30[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 3.0 controller */
+    struct PCIController *hu_PortMap30[MAX_USB3_PORTS]; /* Maps from Global Port to USB 3.0 controller */
 #endif
     UBYTE                 hu_PortNum11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 companion controller port */
     UBYTE                 hu_EhciOwned[MAX_ROOT_PORTS]; /* TRUE, if currently owned by EHCI */
-#if (AROS_USB30_CODE)
-    UBYTE                 hu_PortNum20[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 2.0 companion controller port */
-    UBYTE                 hu_XhciOwned[MAX_ROOT_PORTS]; /* TRUE, if currently owned by XHCI */
-#endif
     UBYTE                 hu_ProductName[80]; /* for Query device */
     struct PCIController *hu_DevControllers[128]; /* maps from Device address to controller */
     struct IOUsbHWReq    *hu_DevBusyReq[128*16*2]; /* pointer to io assigned to the Endpoint */
@@ -134,6 +130,10 @@ struct PCIController
     APTR                  xhc_dcbaa;
     APTR                  xhc_dcbaa_original;
     BOOL                  xhc_contextsize64; 
+
+    UWORD                 xhc_NumPorts;
+    UWORD                 xhc_NumPorts20;
+    UWORD                 xhc_NumPorts30;
     #endif
 
     APTR                  hc_PCIMem;

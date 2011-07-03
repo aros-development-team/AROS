@@ -77,7 +77,7 @@ void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                         Port Link State Change (PLC)
                         Port Config Error Change (CEC)
                 */
-                for (portn = 1; portn <= hc->hc_NumPorts; portn++) {
+                for (portn = 1; portn <= hc->xhc_NumPorts; portn++) {
                     if (opreg_readl(XHCI_PORTSC(portn)) & (XHCF_PS_CSC|XHCF_PS_PEC|XHCF_PS_OCC|XHCF_PS_WRC|XHCF_PS_PRC|XHCF_PS_PLC|XHCF_PS_CEC)) {
                             KPRINTF(1000,("port %d changed\n", portn));
                     }
@@ -165,13 +165,13 @@ BOOL xhciResetHC(struct PCIController *hc) {
     opreg_writel(XHCI_USBCMD, (temp | XHCF_CMD_HCRST));
 
     /*
-        Controller clears HCRST bit when reset is done, wait for it and for CNR-bit to be cleared
+        Controller clears HCRST bit when reset is done, wait for it and the CNR-bit to be cleared
     */
     timeout = 250;  //FIXME: arbitrary value of 2500ms
     do {
         temp = opreg_readl(XHCI_USBCMD);
         if( !(temp & XHCF_CMD_HCRST) ) {
-            /* Wait for CNR-bit to be 0 */
+            /* Wait for CNR-bit to clear */
             timeout = 250;  //FIXME: arbitrary value of 2500ms
             do {
                 temp = opreg_readl(XHCI_USBSTS);
@@ -231,7 +231,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     /*
         This field defines the page size supported by the xHC implementation.
         This xHC supports a page size of 2^(n+12) if bit n is Set. For example,
-        if bit 0 is Set, the xHC supports 4k byte page sizes.
+        if bit 0 is set, the xHC supports 4k byte page sizes.
     */
     cnt = 12;
     temp = opreg_readl(XHCI_PAGESIZE)&0xffff;
@@ -245,13 +245,19 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     hc->xhc_scratchbufs = XHCV_SPB_Max(capreg_readl(XHCI_HCSPARAMS2));
     KPRINTF(1000, ("Max Scratchpad Buffers %lx\n",hc->xhc_scratchbufs));
 
-    hc->hc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
-    KPRINTF(1000, ("MaxPorts %lx\n",hc->hc_NumPorts));
+    hc->xhc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
+    KPRINTF(1000, ("MaxPorts %lx\n",hc->xhc_NumPorts));
+
+    /*
+        We don't yeat know how many we have each of them, xhciParseSupProtocol takes care of that
+    */
+    hc->xhc_NumPorts20 = 0;
+    hc->xhc_NumPorts30 = 0;
 
     /*
         Number of Device Slots (MaxSlots). This field specifies the maximum number of Device
         Context Structures and Doorbell Array entries this host controller can support. Valid values are
-        in the range of 1 to 255. The value of ‘0’ is reserved. Fail gracefully on error (0)
+        in the range of 1 to 255. The value of ‘0’ is reserved, fail gracefully on it
     */
     hc->xhc_maxslots = XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1));
     if(hc->xhc_maxslots == 0){
@@ -313,10 +319,21 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         return FALSE;
     }
 
+    if( (hc->xhc_NumPorts < (hc->xhc_NumPorts20 + hc->xhc_NumPorts30)) ) {
+        KPRINTF(1000, ("Too many ports in Supported Protocol!\n"));
+        return FALSE;
+    }else if ( (hc->xhc_NumPorts > (hc->xhc_NumPorts20 + hc->xhc_NumPorts30)) ) {
+        hc->xhc_NumPorts20 = (hc->xhc_NumPorts30 - hc->xhc_NumPorts30)
+        return TRUE;
+    }
+
+    KPRINTF(1000, ("Number of USB2.0 ports %ld\n", hc->xhc_NumPorts20 ));
+    KPRINTF(1000, ("Number of USB3.0 ports %ld\n", hc->xhc_NumPorts30 ));
+
     if(xhciHaltHC(hc)) {
         if(xhciResetHC(hc)) {
 
-            for(cnt = 1; cnt <=hc->hc_NumPorts; cnt++) {
+            for(cnt = 1; cnt <=hc->xhc_NumPorts; cnt++) {
                 temp = opreg_readl(XHCI_PORTSC(cnt));
                 KPRINTF(1000, ("Attached device's speed on port #%d is %d (PORTSC %lx)\n",cnt, XHCV_PS_SPEED(temp), temp ));
             }
@@ -460,19 +477,19 @@ APTR AllocVecAlignedOn4KPage(APTR *original, ULONG bytesize, ULONG alignment) {
 
     if (original) {
         *original = AllocVec(PAGE_SIZE + bytesize + alignment, (MEMF_PUBLIC | MEMF_CLEAR));
-        KPRINTF(1000, ("Original %lx\n", original));
+        KPRINTF(100, ("Original %lx\n", original));
 
         if (original) {
             tmp = (IPTR) original;
             tmp = (tmp + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-            KPRINTF(1000, ("Page alignment %lx\n", tmp));
+            KPRINTF(100, ("Page alignment %lx\n", tmp));
             /*
                 FIXME: Check if any final alignment is needed, eg. alignment is <= PAGE_SIZE.
-                Memory usage can then be reduced if bytesize is also <= PAGE_SIZE
+                Memory usage can then be reduced if bytesize is also <= PAGE_SIZE-alignment
                 Now we allocate always (PAGE_SIZE + alignment) extra bytes of memory
             */
             tmp = (tmp + alignment - 1) & ~(alignment - 1);
-            KPRINTF(1000, ("Final alignment %lx\n", tmp));
+            KPRINTF(100, ("Final alignment %lx\n", tmp));
             aligned = (APTR) tmp;
         }
     }
@@ -480,38 +497,34 @@ APTR AllocVecAlignedOn4KPage(APTR *original, ULONG bytesize, ULONG alignment) {
     return aligned;
 }
 
-BOOL xhciParseSupProtocol(struct PCIController *hc, IPTR extcap) {
+void xhciParseSupProtocol(struct PCIController *hc, IPTR extcap) {
 
-    ULONG temp;
+    ULONG temp1, temp2;
 
-    temp = READMEM32_LE(extcap);
-    KPRINTF(1000, ("Version %l.%l\n", XHCV_SPFD_RMAJOR(temp), XHCV_SPFD_RMINOR(temp) ));
+    temp1 = READMEM32_LE(extcap);
+    KPRINTF(1000, ("Version %l.%l\n", XHCV_SPFD_RMAJOR(temp1), XHCV_SPFD_RMINOR(temp1) ));
 
-    temp = READMEM32_LE(extcap + XHCI_SPNAMESTRING);
-    KPRINTF(1000, ("0x%lx\n", temp ));
+    temp2 = READMEM32_LE(extcap + XHCI_SPPORT);
+    KPRINTF(1000, ("CPO %ld\n", XHCV_SPPORT_CPO(temp2) ));
+    KPRINTF(1000, ("CPCNT %ld\n", XHCV_SPPORT_CPCNT(temp2) ));
+    KPRINTF(1000, ("PD %ld\n", XHCV_SPPORT_PD(temp2) ));
+    KPRINTF(1000, ("PSIC %ld\n", XHCV_SPPORT_PSIC(temp2) ));
 
-    temp = READMEM32_LE(extcap + XHCI_SPPORT);
-    KPRINTF(1000, ("CPO %ld\n", XHCV_SPPORT_CPO(temp) ));
-    KPRINTF(1000, ("CPCNT %ld\n", XHCV_SPPORT_CPCNT(temp) ));
-    KPRINTF(1000, ("PD %ld\n", XHCV_SPPORT_PD(temp) ));
-    KPRINTF(1000, ("PSIC %ld\n", XHCV_SPPORT_PSIC(temp) ));
+    /*
+        FIXME:
+            -We might not get at all "USB2 Supported Protocol", in that case make a wild assumption on # USB2.0 ports
+            -Check if the name string is "USB " (=0x20425355)
+            -Map USB specifications to their respective ports (USB2.0/USB3.0) 
+    */
 
-    return TRUE;
+    if(XHCV_SPFD_RMAJOR(temp1) == 2) {
+        hc->xhc_NumPorts20 = ((XHCV_SPPORT_CPCNT(temp2) - XHCV_SPPORT_CPO(temp2) + 1));
+    }
+
+    if(XHCV_SPFD_RMAJOR(temp1) == 3) {
+        hc->xhc_NumPorts30 = ((XHCV_SPPORT_CPCNT(temp2) - XHCV_SPPORT_CPO(temp2) + 1));
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
