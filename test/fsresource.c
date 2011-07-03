@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	    }
 	    dostype[4] = 0;
     	    printf("DOSType: %08lx (%s)\n", (unsigned long)fse->fse_DosType, dostype);
-    	    printf("Version: %08lx (%d.%d)\n", (unsigned long)fse->fse_Version, fse->fse_Version >> 16, fse->fse_Version & 0xffff);
+    	    printf("Version: %08lx (%d.%d)\n", (unsigned long)fse->fse_Version, (int)(fse->fse_Version >> 16), (int)(fse->fse_Version & 0xffff));
     	    printf("PatchFlags: %08lx\n", (unsigned long)fse->fse_PatchFlags);
     	    checkpatch(fse, FSEB_TYPE);
    	    printf("Type: %08lx\n", (unsigned long)fse->fse_Type);
