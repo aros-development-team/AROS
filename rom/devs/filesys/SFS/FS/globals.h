@@ -8,9 +8,11 @@
 #include "nodes.h"
 #include "fs.h"
 
-struct Globals
+struct SFSBase
 {
+#ifndef __AROS__
     struct ExecBase *sysBase;
+#endif
     struct DosLibrary *dosBase;
     struct IntuitionBase *intuitionBase;
     struct UtilityBase *utilityBase;
@@ -198,11 +200,18 @@ struct Globals
     LONG debugreqs;
 };
 
+#ifdef __AROS__
+#define globals (*(struct SFSBase **)&((struct Process *)FindTask(NULL))->pr_GlobVec)
+#else
 extern struct Globals *globals;
+#endif
+
 void initGlobals();
 
+#ifndef __AROS__
 #ifdef SysBase
 #undef SysBase
+#endif
 #endif
 
 #ifdef DOSBase
@@ -224,7 +233,9 @@ void initGlobals();
 /* FIXME: Remove these #define xxxBase hacks
    Do not use this in new code !
 */
+#ifndef __AROS__
 #define SysBase (globals->sysBase)
+#endif
 #define DOSBase (globals->dosBase)
 #define IntuitionBase (globals->intuitionBase)
 #define UtilityBase (globals->utilityBase)
