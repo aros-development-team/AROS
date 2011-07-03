@@ -728,6 +728,7 @@ static void doreboot(void)
 }
 
 APTR entry, kicktags;
+UBYTE *kernelcmd;
 
 static void supercode(void)
 {
@@ -751,6 +752,15 @@ static void supercode(void)
     sysbase = (struct ExecBase*)fakesys; 
 
     memset(sysbase, 0, FAKEBASESIZE);
+    /* Misuse DebugData as a command line pointer,
+     * Stuff the string to &IntVects[0]..
+     * kernelcmd is a BCPL string!
+     */
+    if (kernelcmd) {
+    	APTR cmdptr = &sysbase->IntVects[0];
+    	sysbase->DebugData = cmdptr;
+	memcpy(cmdptr, kernelcmd + 1, kernelcmd[0]);
+    }
 
     /* Detached node */
     sysbase->LibNode.lib_Node.ln_Pred = &sysbase->LibNode.lib_Node;
@@ -788,12 +798,13 @@ static void supercode(void)
     doreboot();
 }
 
-void BootROM(BPTR romlist, struct Resident **reslist)
+void BootROM(BPTR romlist, struct Resident **reslist, UBYTE *cmdline)
 {
     APTR GfxBase;
 
     entry = BADDR(romlist)+sizeof(ULONG);
     kicktags = reslist;
+    kernelcmd = cmdline;
 
 #if 0
      /* Debug testing code */
@@ -846,31 +857,31 @@ __startup static AROS_ENTRY(int, startup,
     	WriteF("AROSBootstrap " ADATE "\n");
 
     	if ((name = AllocBSTR("aros.elf.gz")) &&
-    	    (format = AllocBSTR(",,,,,,,,,")) && /* this can't be the best way.. */
+    	    (format = AllocBSTR("CMD/K,,,,,,,,,")) && /* this can't be the best way.. */
     	    (args = AllocMem(sizeof(ULONG) * 100, MEMF_ANY))) {
-	    args[0] = name;
+	    args[1] = name;
 
 	    RdArgs(format, MKBADDR(args), 50);
 	    if (!IoErr()) {
 	    	/* Load ROM image */
-	    	if (args[0] == BNULL)
-	    	    args[0] = name;
+	    	if (args[1] == BNULL)
+	    	    args[1] = name;
 
-		ROMSegList = ROMLoad(args[0]);
+		ROMSegList = ROMLoad(args[1]);
 		if (ROMSegList != BNULL) {
 		    struct Resident **ResidentList;
 		    WriteF("Successfully loaded ROM\n");
 
-		    ResidentList = LoadResidents(&args[1]);
+		    ResidentList = LoadResidents(&args[2]);
 
 		    WriteF("Booting...\n");
 		    Delay(50);
 
-		    BootROM(ROMSegList, ResidentList);
+		    BootROM(ROMSegList, ResidentList, BADDR(args[0]));
 
 		    UnLoadSeg(ROMSegList);
 		} else {
-		    WriteF("Can't load ROM ELF file %S\n", args[0]);
+		    WriteF("Can't load ROM ELF file %S\n", args[1]);
 		}
 	    } else {
 		WriteF("Can't parse arguments\n");
