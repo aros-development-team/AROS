@@ -103,7 +103,9 @@ struct DefragmentStep {
 
 #include "globals.h"
 
-struct Globals *globals=NULL;
+#ifndef __AROS__
+struct SFSBase *globals=NULL;
+#endif
 
 void initGlobals()
 {
@@ -262,7 +264,9 @@ extern const NEWDATAL;
 
 LONG mainprogram(struct ExecBase *);
 
+#ifndef __AROS__
 #undef SysBase
+#endif
 
 #ifdef __AROS__
 void SFS_handler(void)
@@ -303,14 +307,16 @@ LONG mainprogram(struct ExecBase *SysBase)
 
   D(bug("[SFS] Filesystem main\n"));
 
-  globals = AllocMem(sizeof(struct Globals), MEMF_PUBLIC | MEMF_CLEAR);
+  globals = AllocMem(sizeof(struct SFSBase), MEMF_PUBLIC | MEMF_CLEAR);
+#ifndef __AROS__
   globals->sysBase = SysBase;
+#endif
   initGlobals();
 
+#ifndef __AROS__
 #undef SysBase
 #define SysBase (globals->sysBase)
 
-#ifndef __AROS__
   old_a4=(APTR)getreg(REG_A4);
   reslen=((ULONG)&RESLEN-(ULONG)old_a4)+64;
 
@@ -521,6 +527,7 @@ LONG mainprogram(struct ExecBase *SysBase)
     CloseLibrary((struct Library *)DOSBase);
   }
 
+  FreeMem(globals, sizeof(struct SFSBase));
   _DEBUG(("Exiting filesystem\n"));
 
   return(ERROR_NO_FREE_STORE);
@@ -6770,12 +6777,18 @@ LONG step(void) {
    wait for the reply and then free the message yourself.
 */
 
+#ifdef __AROS__
+#undef globals
+#else
 #undef SysBase
+#endif
 #undef DOSBase
 
 static void sdlhtask(void)
 {
+#ifndef __AROS__
   struct ExecBase *SysBase=globals->sysBase;
+#endif
   struct DosLibrary *DOSBase;
 
   if((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",37))!=0) {
