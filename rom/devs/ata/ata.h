@@ -95,6 +95,8 @@ struct ataBase
     */
    struct Device           ata_Device;
 
+   struct ConfigDev       *ata_ConfigDev;
+
    /*
     * master task pointer
     */
