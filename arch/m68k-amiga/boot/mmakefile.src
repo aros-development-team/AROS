@@ -85,13 +85,13 @@ KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaeg
 KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell
 KHOOKS  :=
 
-KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS))) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS))) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS))) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS))) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) )) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.o    ,$(KHOOKS) ))
+KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.ko  ,$(KDEVS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.ko ,$(KHNDLRS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.ko    ,$(KHIDDS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.ko,$(KRSRCS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.ko  ,$(KDRVRS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.ko    ,$(KHOOKS) ))
 
 OBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
@@ -110,13 +110,13 @@ KHOOKS  := alert
 
 ROMLOC_ext := 0xe00000
 KOBJS_ext := \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) )) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.o    ,$(KHOOKS) ))
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS)  )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.ko  ,$(KDEVS)  )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.ko ,$(KHNDLRS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.ko    ,$(KHIDDS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.ko,$(KRSRCS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.ko  ,$(KDRVRS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.ko    ,$(KHOOKS) ))
 OBJS_ext := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
 $(DISTDIR)/aros-amiga-m68k-ext.elf: $(KOBJS_ext) $(OBJS_ext)
@@ -181,6 +181,23 @@ $(KOBJSDIR)/%.o : %.S
 
 $(KOBJSDIR)/%.d : %.c
 	%mkdepend_q
+
+# Localize symbols, so that we don't get name clashes when linking
+#
+# .. except for exec.library. Our boot code needs symbols from it
+#    (PrepareMoveExecBase, InitKickTags, etc)
+%/exec_library.ko: %/exec_library.o
+	$(Q)$(CP) $< $@
+
+# .. except for kernel.resource. Our boot code needs symbols from it
+#    (krnPrepareExecBase and krnCreateMemHeader)
+%/kernel_resource.ko: %/kernel_resource.o
+	$(Q)$(CP) $< $@
+
+# Localize symbols for everybody else though!
+%.ko: %.o
+	$(Q)$(NM_PLAIN) --defined-only $< | cut -d' ' -f3 >$@.sym
+	$(Q)$(OBJCOPY) --localize-symbols $@.sym $< $@
 
 DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 -include $(DEPS)
