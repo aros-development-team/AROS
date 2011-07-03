@@ -50,6 +50,7 @@ struct TDU
 struct TrackDiskBase
 {
     struct Device           td_device;
+    struct ConfigDev			*td_ConfigDev;
     struct TaskData			*td_TaskData;
     struct TDU				*td_Units[TD_NUMUNITS];
     struct timerequest  	*td_TimerIO;
