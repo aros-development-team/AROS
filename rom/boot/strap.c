@@ -386,7 +386,8 @@ static ULONG GetOffset(struct Library *PartitionBase, struct PartitionHandle *ph
     return offset;
 }
 
-static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Library *PartitionBase,
+static VOID AddPartitionVolume(struct ConfigDev *cfgdev,
+			       struct ExpansionBase *ExpansionBase, struct Library *PartitionBase,
 			       struct FileSysStartupMsg *fssm, struct PartitionHandle *table,
 			       struct PartitionHandle *pn, struct ExecBase *SysBase)
 {
@@ -547,13 +548,14 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
 
     devnode = MakeDosNode(pp);
     if (devnode != NULL) {
-        AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, 0, devnode, NULL);
+        AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, 0, devnode, cfgdev);
         D(bug("[Boot] AddBootNode(%b, 0, 0x%p, NULL)\n",  devnode->dn_Name, pp[4 + DE_DOSTYPE]));
         return;
     }
 }
 
-static BOOL CheckTables(struct ExpansionBase *ExpansionBase, struct Library *PartitionBase,
+static BOOL CheckTables(struct ConfigDev *cfgdev,
+			struct ExpansionBase *ExpansionBase, struct Library *PartitionBase,
 			struct FileSysStartupMsg *fssm,	struct PartitionHandle *table,
 			struct ExecBase *SysBase)
 {
@@ -568,8 +570,8 @@ static BOOL CheckTables(struct ExpansionBase *ExpansionBase, struct Library *Par
         while (ph->ln.ln_Succ)
         {
             /* Attempt to add partition to system if it isn't a subtable */
-            if (!CheckTables(ExpansionBase, PartitionBase, fssm, ph, SysBase))
-                AddPartitionVolume(ExpansionBase, PartitionBase, fssm, table,
+            if (!CheckTables(cfgdev, ExpansionBase, PartitionBase, fssm, ph, SysBase))
+                AddPartitionVolume(cfgdev, ExpansionBase, PartitionBase, fssm, table,
                     ph, SysBase);
             ph = (struct PartitionHandle *)ph->ln.ln_Succ;
         }
@@ -615,6 +617,7 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
 {
     struct DeviceNode *dn = bn->bn_DeviceNode;
     BOOL res = FALSE;
+    struct ConfigDev *cfgdev = (struct ConfigDev *)bn->bn_Node.ln_Name;
 
     D(bug("CheckPartition('%b') handler = %x\n", dn->dn_Name, dn->dn_SegList));
     
@@ -631,7 +634,7 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
             {
             	/* don't check removable devices for partition tables */
             	if (!IsRemovable(SysBase, pt->bd->ioreq))
-                    res = CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
+                    res = CheckTables(cfgdev, ExpansionBase, PartitionBase, fssm, pt, SysBase);
 
            	CloseRootPartition(pt);
            }
