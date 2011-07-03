@@ -2010,20 +2010,20 @@ readsectionhandler(struct config *cfg)
                 hl->stacksize = stacksize;
                 hl->priority = priority;
                 hl->handler = strdup(function);
-            } else if (strncasecmp(s,"dosdevice=",10)==0) {
+            } else if (strncasecmp(s,"dosnode=",8)==0) {
                 char *dev;
 
                 s = strchr(s, '=') + 1;
                 dev = s;
                 while (*s && !isspace(*s)) s++;
                 if (dev == s)
-                    exitfileerror(20, "Empty dosdevice= is not permitted\n");
+                    exitfileerror(20, "Empty dosnode= is not permitted\n");
 
                 if (*s)
                     *(s++) = 0;
 
                 hl = newhandler(cfg);
-                hl->type = HANDLER_DOSDEVICE;
+                hl->type = HANDLER_DOSNODE;
                 hl->id = 0;
                 hl->name = strdup(dev);
                 hl->autodetect = autolevel ? autolevel-- : 0;

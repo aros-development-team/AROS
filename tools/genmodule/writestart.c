@@ -637,7 +637,7 @@ static void writehandler(FILE *out, struct config *cfg)
                "        { .id = 0, .name = AROS_CONST_BSTR(\"%s\"), .handler = %s }, \n",
                hl->name, hl->handler);
             break;
-        case HANDLER_DOSDEVICE:
+        case HANDLER_DOSNODE:
             fprintf(out,
                "        { .id = ~0, .name = AROS_CONST_BSTR(\"%s\"), .handler = %s, .priority = %d, .stacksize = %d }, \n",
                hl->name, hl->handler, hl->priority, hl->stacksize);
@@ -703,7 +703,7 @@ static void writehandler(FILE *out, struct config *cfg)
                "                if (handler[i].stacksize)\n"
                "                    dn->dn_StackSize = handler[i].stacksize;\n"
                "                dn->dn_GlobalVec = (BPTR)(SIPTR)-1;\n"
-               "                AddBootNode(-5, 0, dn, NULL);\n"
+               "                AddDosNode(-5, 0, dn);\n"
                "            }\n"
                "            continue;\n"
                "        }\n"
