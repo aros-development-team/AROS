@@ -300,6 +300,10 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 	ULONG size;
 	BOOL devopen, ismedia;
 
+	/* Only devices with bn_ConfigDev are bootable */
+	if ((struct ConfigDev *)bn->bn_Node.ln_Name == NULL)
+	    continue;
+
 	if (y >= DOSBootBase->bottomY - 20)
 	    break;
 	if (!fssm || !fssm->fssm_Device)

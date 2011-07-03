@@ -336,6 +336,12 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	    struct DeviceNode *dn = bootNode->bn_DeviceNode;
 	    STRPTR deviceName = AROS_BSTR_ADDR(dn->dn_Name);
 
+	    /* We only boot from nodes that were registered
+	     * with a ConfigDev
+	     */
+	    if (bootNode->bn_Node.ln_Name == NULL)
+	        continue;
+
             DB2(bug("[DOSBoot] Trying to boot from '%s' (priority %d)...\n", deviceName, bootNode->bn_Node.ln_Pri));
 
 	    if (LIBBASE->db_BootDevice)
