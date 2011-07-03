@@ -1188,9 +1188,6 @@ void EmulHandler_work(void)
         return;
     }
 
-    dn = BADDR(dp->dp_Arg3);
-    dn->dn_Task = mp;
-
     fssm = BADDR(dp->dp_Arg2);
     if (fssm)
     	devpath = AROS_BSTR_ADDR(fssm->fssm_Device);
@@ -1198,9 +1195,17 @@ void EmulHandler_work(void)
     fhv = new_volume(emulbase, devpath, mp, DOSBase);
     if (!fhv)
     {
+        D(bug("EMUL: FATAL - can't create the inital volume \"%s\"\n", devpath));
         ReplyPkt(dp, DOSFALSE, ERROR_NO_FREE_STORE);
         return;
     }
+
+    /* Now, once we know all is well with the world,
+     * we tell DOS that we're the handler for this
+     * DeviceNode
+     */
+    dn = BADDR(dp->dp_Arg3);
+    dn->dn_Task = mp;
 
     ReplyPkt(dp, DOSTRUE, 0);
 
