@@ -11,7 +11,7 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/devs/filesys/emul_handler $(FAMILY
 FILES := emul_init emul_handler filenames emul_host
 
 %build_module mmake=kernel-fs-emul \
-    modname=emul modtype=handler \
+    modname=emul modtype=resource modsuffix=handler \
     files="$(FILES)" uselibs="rom"
 
 %copy_includes includes="emul.h" path=resources
