@@ -47,32 +47,43 @@ static LONG startup(struct emulbase *emulbase)
         return FALSE;
 
     /* Create a ConfigDev and BootNode so we can boot from this device */
-    if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
+    if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION)))
+    {
         struct DeviceNode *dn;
-        IPTR pp[5] = {
-            (IPTR)"EMU",
-            (IPTR)NULL,         /* System volume */
-            (IPTR)0,
-            (IPTR)0,
-            (IPTR)0
-        };
+        IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
 
-        if ((emulbase->eb_ConfigDev = AllocConfigDev())) {
+        pp[0] 		      = (IPTR)"EMU";
+        pp[1]		      = 0;
+        pp[2]		      = 0;
+        pp[DE_TABLESIZE  + 4] = DE_DOSTYPE;
+        /* .... */
+        pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
+        pp[DE_MASK       + 4] = -1;
+        pp[DE_BOOTPRI    + 4] = 0;
+        pp[DE_DOSTYPE    + 4] = AROS_MAKE_ID('E', 'M', 'U', 0);
+
+        if ((emulbase->eb_ConfigDev = AllocConfigDev()))
+        {
             emulbase->eb_ConfigDev->cd_Node.ln_Name = "emul.handler";
             emulbase->eb_ConfigDev->cd_Driver = NULL;
             AddConfigDev(emulbase->eb_ConfigDev);
         }
 
         dn = MakeDosNode(pp);
-        /* The handler will already be in the DOS Resident list
-         * by the time we need it (thanks to genmodule's auto
-         * generated *.handler init code), so no need to specify
-         * the dn_SegList here.
-         */
-        dn->dn_Handler = AROS_CONST_BSTR("emul.handler");
-        dn->dn_StackSize = 16384*sizeof(IPTR);
         if (dn)
+        {
+            /*
+             * The handler will already be in the FileSystem.resource list
+             * by the time we need it (thanks to genmodule's auto
+             * generated *.handler init code), so no need to specify
+             * the dn_SegList here.
+             */
+            dn->dn_Handler = AROS_CONST_BSTR("emul.handler");
+            dn->dn_StackSize = 16384;
+	    dn->dn_GlobalVec = (BPTR)-1;
+
             AddBootNode(0, 0, dn, emulbase->eb_ConfigDev);
+        }
 
         CloseLibrary(ExpansionBase);
     }
