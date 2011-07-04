@@ -307,7 +307,8 @@ static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
 
     /* BootNodes that don't have a ConfigDev are not bootable */
     if (bn->bn_Node.ln_Type != NT_BOOTNODE ||
-        (struct ConfigDev *)bn->bn_Node.ln_Name == NULL)
+        (!(bn->bn_Flags & ADNF_NOCONFIGDEV) &&
+        (struct ConfigDev *)bn->bn_Node.ln_Name == NULL))
         return;
 
     if (!GetBootNodeDeviceUnit(bn, &device, &unit, &bootblock_size))
@@ -561,7 +562,7 @@ static VOID AddPartitionVolume(struct ConfigDev *cfgdev,
 
     devnode = MakeDosNode(pp);
     if (devnode != NULL) {
-        AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, 0, devnode, cfgdev);
+        AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, ADNF_STARTPROC | ((bootable && (cfgdev == NULL)) ? ADNF_NOCONFIGDEV : 0), devnode, cfgdev);
         D(bug("[Boot] AddBootNode(%b, 0, 0x%p, NULL)\n",  devnode->dn_Name, pp[4 + DE_DOSTYPE]));
         return;
     }
