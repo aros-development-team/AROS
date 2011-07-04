@@ -67,15 +67,13 @@ static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.
  * - Bits 20–0  byte offset into the physical page.
  * Let's remember that our topmost address is  0xFFFFF000, as specified by GDT.
 */
-void setup_mmu(void *kick_base)
+void setup_mmu(void)
 {
     int i;
     struct PDE2M *pdes[] = { &PDE[0][0], &PDE[1][0], &PDE[2][0], &PDE[3][0] };
 
     D(kprintf("[BOOT] Setting up MMU, kickstart base 0x%p\n", kick_base));
     D(kprintf("[BOOT] cr0: 0x%p cr3: 0x%p cr4: 0x%p\n", rdcr(cr0), rdcr(cr3), rdcr(cr4)));
-
-    KernelTarget.off = kick_base;
 
     D(kprintf("[BOOT] Setting up descriptor tables.\n"));
 
@@ -188,7 +186,7 @@ void setup_mmu(void *kick_base)
  * 
  * After that it is perfectly safe to jump into the pure 64-bit kernel.
  */
-void kick(struct TagItem64 *km)
+void kick(void *kick_base, struct TagItem64 *km)
 {
     unsigned int v1 = 0, v2 = 0, v3 = 0, v4 = 0;
 
@@ -199,6 +197,8 @@ void kick(struct TagItem64 *km)
         if (v4 & (1 << 29))
         {
             D(kprintf("[BOOT] x86-64 CPU ok\n"));
+
+	    KernelTarget.off = kick_base;
 
 	    asm volatile ("lgdt %0"::"m"(GDT_sel));
 	    D(kprintf("[BOOT] GDTR loaded\n"));

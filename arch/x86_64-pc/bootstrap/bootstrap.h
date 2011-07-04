@@ -34,7 +34,8 @@ struct KernelMessage {
 struct module
 {
     const char *name;
-    void *address;
+    struct elfheader *eh;	/* Effectively start address of the module */
+    struct sheader *sh;
 };
 
 /*
@@ -77,8 +78,8 @@ extern struct TagItem64 *tag;
 extern void *_binary_vesa_start;
 extern unsigned long _binary_vesa_size;
 
-void setup_mmu(void *kick_base);
-void kick(struct TagItem64 *km);
+void setup_mmu(void);
+void kick(void *kick_base, struct TagItem64 *km);
 
 #if defined(__i386__) || defined(__x86_64__)
     #define LONG2BE(v)  ({ unsigned int __v32; asm volatile("bswap %0":"=a"(__v32):"0"((v))); __v32; })

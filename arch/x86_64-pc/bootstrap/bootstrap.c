@@ -143,8 +143,9 @@ static struct module *module_prepare(const char *s, const struct module *m, int 
 /*
  * Search for modules
  */
-static int find_modules(struct multiboot *mb, const struct module *m)
+static int find_modules(struct multiboot *mb, const struct module *m, unsigned long *endPtr)
 {
+    unsigned long end = 0;
     int count = 0;
 
     /* Are there any modules at all? */
@@ -158,19 +159,23 @@ static int find_modules(struct multiboot *mb, const struct module *m)
         for (i=0; i < mb->mods_count; i++, mod++)
         {
             char *p = (char *)mod->mod_start;
-            const char *name = __bs_remove_path((char *)mod->cmdline);
 
             if (p[0] == 0x7f && p[1] == 'E' && p[2] == 'L' && p[3] == 'F')
             {
                 /* 
                  * The loaded file is an ELF object. It may be put directly into our list of modules
                  */
+                const char *name = __bs_remove_path((char *)mod->cmdline);
                 struct module *mo = module_prepare(name, m, &count);
 
-                mo->name = name;
-                mo->address = (void*)mod->mod_start;
+		/* GRUB doesn't give us names of loaded modules */
+                mo->name = "Kickstart ELF";
+                mo->eh = (void*)mod->mod_start;
 
-                D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->name, mo->address));
+                D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->name, mo->eh));
+
+		if (mod->mod_end > end)
+		    end = mod->mod_end;
             }
             else if (p[0] == 'P' && p[1] == 'K' && p[2] == 'G' && p[3] == 0x01)
             {
@@ -180,7 +185,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                  */
                 void *file = p + 8;
 
-                D(kprintf("[BOOT] * package %s @ %p:\n", name, mod->mod_start));
+                D(kprintf("[BOOT] * package @ %p:\n", mod->mod_start));
 
                 while (file < (void*)mod->mod_end)
                 {
@@ -192,18 +197,22 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                     len = LONG2BE(*(int *)file);
                     file += 4;
 
-                    mo->name    = s;
-                    mo->address = file;
-                    D(kprintf("[BOOT]   * PKG module %s @ %p\n", mo->name, mo->address));
+                    mo->name = s;
+                    mo->eh = file;
+                    D(kprintf("[BOOT]   * PKG module %s @ %p\n", mo->name, mo->eh));
                     
                     file += len;
                 }
+
+		if (mod->mod_end > end)
+		    end = mod->mod_end;
             }
             else
-            	kprintf("[BOOT] Unknown module 0x%p (%s)\n", p, (char *)mod->cmdline);
+            	kprintf("[BOOT] Unknown module 0x%p\n", p);
         }
     }
 
+    *endPtr = end;
     /* Return the real amount of modules to load */
     return count;
 }
@@ -388,13 +397,13 @@ static void setupFB(struct multiboot *mb)
     }
 }
 
-static void prepare_message(void *kick_base)
+static void prepare_message(unsigned long kick_base)
 {
     D(kprintf("[BOOT] Kickstart 0x%p - 0x%p (entry 0x%p), protection 0x%p - 0x%p\n", kernel_lowest(), kernel_highest(), kick_base,
     	      &_prot_lo, &_prot_hi));
 
     tag->ti_Tag  = KRN_KernelBase;
-    tag->ti_Data = KERNEL_OFFSET | (unsigned long)kick_base;
+    tag->ti_Data = KERNEL_OFFSET | kick_base;
     tag++;
 
     tag->ti_Tag  = KRN_KernelLowest;
@@ -448,12 +457,17 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
 {
     struct module *mod;
     char *vesa = NULL;
+    int i;
     int module_count = 0;
-    void *kick_base = (void *)KERNEL_TARGET_ADDRESS;
-    struct module *m;
     const char *cmdline = NULL;
     struct mb_mmap *mmap = NULL;
     unsigned long len = 0;
+    unsigned long ro_size = 0;
+    unsigned long rw_size = 0;
+    unsigned long ksize;
+    unsigned long mod_end = 0;
+    unsigned long kbase = 0;
+    unsigned long kstart = 0;
 
     /*
      * This will set fb_Mirror address to start of our working memory.
@@ -480,21 +494,6 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
 
     if (cmdline)
     {
-        char *kern = strstr(cmdline, "base_address=");
-        
-        if (kern)
-        {
-            unsigned long p = strtoul(&kern[13], NULL, 0);
-
-            if (p >= 0x00200000)
-            {
-            	kick_base = (void *)p;
-            	kprintf("[BOOT] Kernel base address changed to %p\n", kick_base);
-            }
-            else
-	        kprintf("[BOOT] Kernel base address too low (%p). Keeping default.\n", p);
-	}
-
     	vesa = strstr(cmdline, "vesa=");
 
 	tag->ti_Tag = KRN_CmdLine;
@@ -508,24 +507,6 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     	len  = mb->mmap_length;
 
 	D(kprintf("[BOOT] Memory map at 0x%p, length %u\n", mmap, len));
-
-#ifdef DEBUG_MEM
-	kprintf("[BOOT] Memory map contents:\n", mmap);
-        while (len >= sizeof(struct mb_mmap))
-        {
-#ifdef DEBUG_MEM_TYPE
-            if (mmap->type == DEBUG_MEM_TYPE)
-#endif
-		kprintf("[BOOT] Type %d addr %llp len %llp\n", mmap->type, mmap->addr, mmap->len);
-
-            len -= mmap->size+4;
-            mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
-        }
-
-    	mmap = (struct mb_mmap *)mb->mmap_addr;
-    	len = mb->mmap_length;
-#endif
-
     }
 
     if (mb->flags & MB_FLAGS_MEM)
@@ -585,10 +566,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     	setupFB(mb);
 
     /* Setup stage - prepare the environment */
-    setup_mmu(kick_base);
-
-    kprintf("[BOOT] Loading kickstart...\n");
-    set_base_address(kick_base, __bss_track);
+    setup_mmu();
 
     /*
      * This will place list of modules in the end of our working memory.
@@ -597,22 +575,97 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     mod = __bs_malloc(0);
 
     /* Search for external modules loaded by GRUB */
-    module_count = find_modules(mb, mod);
+    module_count = find_modules(mb, mod, &mod_end);
 
     if (module_count == 0)
     	panic("No kickstart modules found, nothing to run");
 
-    /* If any external modules are found, load them now */
-    for (m = mod; module_count > 0; module_count--, m++)
+    /* Count kickstart size */
+    kprintf("[BOOT] Calculating kickstart size...\n");
+    for (i = 0; i < module_count; i++)
     {
-        kprintf("[BOOT] Loading %s... ", m->name);
+    	if (!count_elf_size(&mod[i], &ro_size, &rw_size))
+    	    panic("Failed to determine kickstart size");
+    }
 
-        if (!load_elf_file(m->name, m->address, 0))
+    D(kprintf("[BOOT] Code %u, data %u\n", ro_size, rw_size));
+
+    /* Total kickstart size + alignment window */
+    ksize = ro_size + rw_size + 4095;
+
+    /* Now locate the highest appropriate region */
+#ifdef DEBUG_MEM
+    kprintf("[BOOT] Memory map contents:\n", mmap);
+#endif
+    while (len >= sizeof(struct mb_mmap))
+    {
+#ifdef DEBUG_MEM
+#ifdef DEBUG_MEM_TYPE
+        if (mmap->type == DEBUG_MEM_TYPE)
+#endif
+	    kprintf("[BOOT] Type %d addr %llp len %llp\n", mmap->type, mmap->addr, mmap->len);
+#endif
+
+        if (mmap->type == MMAP_TYPE_RAM)
+        {
+            unsigned long long start = mmap->addr;
+            unsigned long long end = mmap->addr + mmap->len;
+
+	    /*
+	     * The region must be located in 32-bit memory and must not overlap
+	     * our modules.
+	     * Here we assume the following:
+	     * 1. Multiboot data from GRUB is placed in low memory.
+	     * 2. At least one module is placed in upper memory, above ourselves.
+	     * 3. There's no usable space below our modules.
+	     */
+	    if ((start <= 0x100000000 - ksize) && (end >= mod_end + ksize))
+	    {
+		unsigned long size;
+
+	    	if (start < mod_end)
+	    	    start = mod_end;
+
+	    	if (end > 0x100000000)
+	    	    end = 0x100000000;
+
+		/* Remember the region if it fits in */
+		size = end - start;
+		if (size >= ksize)
+		{
+		    /*
+		     * We place .data section at the start of the region, followed by .code section
+		     * at page-aligned 'kbase' address.
+		     * There must be a space beyond kickstart's read-only section, because the kickstart
+		     * will extend it in order to store boot-time configuration and own private data.
+		     */
+		    kstart = start;
+		    kbase = start + rw_size;
+		    kbase = (kbase + 4095) & (~4095);
+	    	}
+	    }
+	}
+
+        len -= mmap->size+4;
+        mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
+    }
+
+    if (!kbase)
+    	panic("Failed to determine kickstart address");
+
+    kprintf("[BOOT] Loading kickstart, data 0x%p, code 0x%p...\n", kstart, kbase);
+    set_base_address((void *)kbase, __bss_track);
+
+    for (i = 0; i < module_count; i++)
+    {
+        kprintf("[BOOT] Loading %s... ", mod[i].name);
+
+        if (!load_elf_file(&mod[i], 0))
             panic("Failed to load the kickstart");
     }
 
     /* Prepare the rest of boot taglist */
-    prepare_message(kick_base);
+    prepare_message(kbase);
 
 #ifdef DEBUG_TAGLIST
     kprintf("[BOOT] Boot taglist:\n");
@@ -621,7 +674,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
 #endif
 
     /* Jump to the kickstart */
-    kick(km);
+    kick((void *)kbase, km);
 
     panic("Failed to run the kickstart");
 }
