@@ -18,7 +18,8 @@ int main(int argc, char **argv)
     struct FileSysResource *fsr;
     
     fsr = OpenResource(FSRNAME);
-    if (fsr) {
+    if (fsr)
+    {
     	struct FileSysEntry *fse;
     	WORD cnt;
 
@@ -26,11 +27,14 @@ int main(int argc, char **argv)
     	printf("Creator: '%s'\n", fsr->fsr_Creator);
     	printf("\n");
     	cnt = 0;
-    	ForeachNode(&fsr->fsr_FileSysEntries, fse) {
+    	ForeachNode(&fsr->fsr_FileSysEntries, fse)
+    	{
     	    char dostype[5];
     	    WORD i;
+
     	    printf("FileSysEntry %d at %p\n", cnt++, fse);
-	    for (i = 0; i < 4; i++) {
+	    for (i = 0; i < 4; i++)
+	    {
 	    	dostype[i] = (fse->fse_DosType >> ((3 - i) * 8)) & 0xff;
 		if (dostype[i] < 9)
 		    dostype[i] += '0';
@@ -44,21 +48,21 @@ int main(int argc, char **argv)
     	    checkpatch(fse, FSEB_TYPE);
    	    printf("Type: %08lx\n", (unsigned long)fse->fse_Type);
     	    checkpatch(fse, FSEB_TASK);
-   	    printf("Task: %08lx\n", (unsigned long)fse->fse_Task);
+   	    printf("Task: %p\n", (void *)fse->fse_Task);
     	    checkpatch(fse, FSEB_LOCK);
-   	    printf("Lock: %08lx\n", (unsigned long)fse->fse_Lock);
+   	    printf("Lock: %p\n", fse->fse_Lock);
     	    checkpatch(fse, FSEB_HANDLER);
-   	    printf("Handler: %08lx\n", (unsigned long)fse->fse_Handler);
+   	    printf("Handler: %p (%b)\n", fse->fse_Handler, fse->fse_Handler);
     	    checkpatch(fse, FSEB_STACKSIZE);
-   	    printf("StackSize: %08lx\n", (unsigned long)fse->fse_StackSize);
+   	    printf("StackSize: %u\n", fse->fse_StackSize);
     	    checkpatch(fse, FSEB_PRIORITY);
-   	    printf("Priority: %08lx\n", (unsigned long)fse->fse_Priority);
+   	    printf("Priority: %d\n", fse->fse_Priority);
     	    checkpatch(fse, FSEB_STARTUP);
-   	    printf("Startup: %08lx\n", (unsigned long)fse->fse_Startup);
+   	    printf("Startup: %p\n", fse->fse_Startup);
     	    checkpatch(fse, FSEB_SEGLIST);
-   	    printf("SegList: %08lx\n", (unsigned long)fse->fse_SegList);
+   	    printf("SegList: %p\n", fse->fse_SegList);
     	    checkpatch(fse, FSEB_GLOBALVEC);
-   	    printf("GlobalVec: %08lx\n", (unsigned long)fse->fse_GlobalVec);
+   	    printf("GlobalVec: %ld\n", (long)fse->fse_GlobalVec);
 	    printf("\n");
    	}
     } else {
