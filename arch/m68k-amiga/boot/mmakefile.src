@@ -52,6 +52,11 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 FILES=start early debug
 AFILES=rom_entry rom_init cpu_detect superstack_swap
 
+# Force rebuilding, so that we always get new date strings
+rom_entry.o: FORCE
+
+ext_entry.o: FORCE
+
 # USe -m68000 when compiling .S files, as we will need the
 # expanded instruction set to detect alterate CPUs
 USER_AFLAGS := -m68060 -DADATE="\"$(shell date "+%d.%m.%Y")\""
