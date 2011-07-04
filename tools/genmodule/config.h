@@ -84,7 +84,7 @@ struct handlerinfo {
 
     enum {
         HANDLER_DOSTYPE,        /* FileSysResource registered */
-        HANDLER_DOSNODE,        /* AddDosNode() registered */
+        HANDLER_DOSNODE,        /* Non-bootable DOS device */
         HANDLER_RESIDENT,       /* AddSegment() registered */
     } type;
     unsigned int id;
