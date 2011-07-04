@@ -298,11 +298,11 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 	char dostype[5];
 	UBYTE i;
 	ULONG size;
-	BOOL devopen, ismedia;
+	BOOL devopen, ismedia, bootable;
 
 	/* Only devices with bn_ConfigDev are bootable */
-	if ((struct ConfigDev *)bn->bn_Node.ln_Name == NULL)
-	    continue;
+	bootable = (bn->bn_Node.ln_Type == NT_BOOTNODE) &&
+	           ((struct ConfigDev *)bn->bn_Node.ln_Name != NULL);
 
 	if (y >= DOSBootBase->bottomY - 20)
 	    break;
@@ -314,7 +314,8 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 		de = NULL;
 	}
 
-	NewRawDoFmt("%10s: %4d %s-%ld", RAWFMTFUNC_STRING, text,
+	NewRawDoFmt("%c%10s: %4d %s-%ld", RAWFMTFUNC_STRING, text,
+	    bootable ? '*' : ' ',
 	    AROS_BSTR_ADDR(dn->dn_Name),
 	    bn->bn_Node.ln_Pri,
 	    AROS_BSTR_ADDR(fssm->fssm_Device),

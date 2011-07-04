@@ -339,8 +339,11 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	    /* We only boot from nodes that were registered
 	     * with a ConfigDev
 	     */
-	    if (bootNode->bn_Node.ln_Name == NULL)
+	    if (bootNode->bn_Node.ln_Type == NT_BOOTNODE &&
+	        (struct ConfigDev *)bootNode->bn_Node.ln_Name == NULL) {
+	        DB2(bug("[DOSBoot] '%s' is not marked as bootable\n", deviceName));
 	        continue;
+            }
 
             DB2(bug("[DOSBoot] Trying to boot from '%s' (priority %d)...\n", deviceName, bootNode->bn_Node.ln_Pri));
 
