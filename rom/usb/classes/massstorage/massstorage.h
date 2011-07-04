@@ -295,7 +295,6 @@ struct NepMSDevBase
 
     BPTR                np_SegList;       /* device seglist */
     struct NepMSBase   *np_ClsBase;       /* pointer to class base */
-    struct ConfigDev   *np_ConfigDev;     /* Config Device */
     struct Library     *np_UtilityBase;   /* cached utilitybase */
 };
 
