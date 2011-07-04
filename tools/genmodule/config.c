@@ -500,10 +500,13 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             case LIBRARY:
             case RESOURCE:
             case USBCLASS:
-            case HANDLER:
                 cfg->options |= OPTION_INCLUDES;
                 break;
-                
+
+            case HANDLER:
+            	cfg->options |= OPTION_NOINCLUDES;
+                break;
+
             case DEVICE:
                 cfg->options |= (
                     (cfg->funclist != NULL)
@@ -571,12 +574,11 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             }
         }
 	
-	if (cfg->modtype == RESOURCE)
-	    /* Enforce noopenclose for resources */
+	if ((cfg->modtype == RESOURCE) || (cfg->modtype == HANDLER))
+	    /* Enforce noopenclose for resources and handlers */
 	    cfg->options |= OPTION_NOOPENCLOSE;
-	else
+	else if (!(cfg->options & OPTION_SELFINIT))
 	    /* Enforce using RTF_AUTOINIT for everything except resources */
-	    if (!(cfg->options & OPTION_SELFINIT))
 	    cfg->options |= OPTION_RESAUTOINIT;
     }
 
