@@ -61,7 +61,9 @@ void writestart(struct config *cfg)
 	}
 	writesets(out, cfg);
     }
-    writefunctable(out, cfg);
+    
+    if (cfg->modtype != HANDLER)
+	writefunctable(out, cfg);
 
     for (cl = cfg->classlist; cl != NULL; cl = cl->next)
     {
@@ -580,9 +582,6 @@ static void writehandler(FILE *out, struct config *cfg)
     int i;
     struct handlerinfo *hl, *best;
 
-    if (cfg->handlerlist == NULL)
-        return;
-
     fprintf(out,
                "\n"
                "#include <resources/filesysres.h>\n"
@@ -618,7 +617,7 @@ static void writehandler(FILE *out, struct config *cfg)
 
     fprintf(out,
                "\n"
-               "void GM_UNIQUENAME(InitHandler)(LIBBASETYPEPTR lh)\n"
+               "void GM_UNIQUENAME(InitHandler)(void)\n"
                "{\n"
                "    struct FileSysResource *fsr;\n"
                "    int i;\n"
@@ -742,7 +741,7 @@ static void writehandler(FILE *out, struct config *cfg)
 
 static void writeinitlib(FILE *out, struct config *cfg)
 {
-    if (cfg->modtype == HANDLER)
+    if (cfg->handlerlist)
         writehandler(out, cfg);
 
     fprintf(out,
@@ -768,10 +767,12 @@ static void writeinitlib(FILE *out, struct config *cfg)
                 "#endif\n"
         );
     }
-    
-    if (!(cfg->options & OPTION_RESAUTOINIT))
+
+    if (cfg->modtype != HANDLER)
     {
-	fprintf(out,
+    	if (!(cfg->options & OPTION_RESAUTOINIT))
+    	{
+	    fprintf(out,
 		"    int vecsize;\n"
 		"    struct Node *n;\n"
 		"    char *mem;\n"
@@ -788,21 +789,22 @@ static void writeinitlib(FILE *out, struct config *cfg)
 		"    n->ln_Pri = RESIDENTPRI;\n"
 		"    n->ln_Name = (char *)GM_UNIQUENAME(LibName);\n"
 		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n"
-	);
-	if (cfg->options & OPTION_SELFINIT)
-	{
+	    );
+	    if ((cfg->modtype != RESOURCE) && (cfg->options & OPTION_SELFINIT))
+	    {
 		fprintf(out,
 			"    ((struct Library*)lh)->lib_NegSize = vecsize;\n"
 			"    ((struct Library*)lh)->lib_PosSize = sizeof(LIBBASETYPE);\n"
 		);
 		
+	    }
 	}
-    }
-    else
-    {
-	fprintf(out,
+    	else
+    	{
+	    fprintf(out,
 		"    ((struct Library *)lh)->lib_Revision = REVISION_NUMBER;\n"
-	);
+	    );
+    	}
     }
 
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
@@ -819,14 +821,28 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "    {\n"
 	    "        set_call_funcs(SETNAME(CTORS), -1, 0);\n"
 	    "\n"
-	    "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, lh);\n"
+    );
+    
+    if (cfg->modtype == HANDLER)
+    	fprintf(out,
+    	    "        ok = 1;\n");
+    else
+    	fprintf(out,
+	    "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, lh);\n");
+    fprintf(out,
 	    "    }\n"
 	    "    else\n"
 	    "        ok = 0;\n"
 	    "\n"
 	    "    if (!ok)\n"
 	    "    {\n"
-	    "        set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, lh);\n"
+    );
+    
+    if (cfg->modtype != HANDLER)
+    	fprintf(out,
+	    "        set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, lh);\n");
+
+    fprintf(out,
 	    "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 	    "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
     );
@@ -834,19 +850,23 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "        set_close_libraries();\n");
-    if (cfg->options & OPTION_RESAUTOINIT)
+
+    if (cfg->modtype != HANDLER)
     {
-	fprintf(out,
+    	if (cfg->options & OPTION_RESAUTOINIT)
+    	{
+	    fprintf(out,
 		"\n"
 		"        __freebase(lh);\n"
-	);
-    }
-    else
-    {
-	fprintf(out,
+	    );
+    	}
+    	else
+    	{
+	    fprintf(out,
 		"\n"
 		"        FreeMem(mem, vecsize+LIBBASESIZE);\n"
-	);
+	    );
+    	}
     }
     fprintf(out,
 	    "        return NULL;\n"
@@ -854,18 +874,32 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "    else\n"
 	    "    {\n"
     );
-   
-    if (cfg->modtype == HANDLER && cfg->handlerlist)
+
+    if (!(cfg->options & OPTION_RESAUTOINIT) && !(cfg->options & OPTION_SELFINIT))
     {
-        fprintf(out,
-                   "        GM_UNIQUENAME(InitHandler)(lh);\n");
-    } else if (!(cfg->options & OPTION_RESAUTOINIT) && !(cfg->options & OPTION_SELFINIT))
-    {
-    	fprintf(out,
-	    	    "        AddResource(lh);\n"
-	);
+    	switch (cfg->modtype)
+    	{
+    	case RESOURCE:
+    	    fprintf(out, "        AddResource(lh);\n");
+    	    break;
+
+    	case DEVICE:
+    	    fprintf(out, "        AddDevice(lh);\n");
+
+    	case HANDLER:
+    	    /* Bare handlers don't require adding at all */
+    	    break;
+
+    	default:
+    	    /* Everything else is library */
+	    fprintf(out, "        AddLibrary(lh);\n");
+	    break;
+    	}
     }
-    
+
+    if (cfg->handlerlist)
+        fprintf(out, "        GM_UNIQUENAME(InitHandler)();\n");
+
     fprintf(out,
 	    "        return  lh;\n"
 	    "    }\n"
