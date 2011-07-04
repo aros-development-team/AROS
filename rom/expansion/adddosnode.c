@@ -86,7 +86,7 @@
      * ROM internal, and it had no provision for specifying which
      * ConfigDev the DeviceNode was attached to.
      */
-    return AddBootNode(bootPri, flags, deviceNode, NULL);
+    return AddBootNode(bootPri, flags | ADNF_NOCONFIGDEV, deviceNode, NULL);
 
     AROS_LIBFUNC_EXIT
 } /* AddDosNode */
