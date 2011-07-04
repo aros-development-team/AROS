@@ -129,7 +129,7 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                   AROS_DOSDEVNAME(devnode),
                   pp[DE_DOSTYPE      + 4], StartCyl, EndCyl));
 
-            AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, unit->au_Bus->ab_Base->ata_ConfigDev);
+            AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, unit->au_Bus->ab_ConfigDev);
             D(bug("done\n"));
             
             return TRUE;
@@ -163,6 +163,7 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, BOOL h
      * ata bus - this is going to be created and linked to the master list here
      */
     struct ata_Bus *ab;
+    APTR ExpansionBase;
 
     UWORD i;
 
@@ -172,6 +173,22 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, BOOL h
     ab = (struct ata_Bus*) AllocVecPooled(ATABase->ata_MemPool, sizeof(struct ata_Bus));
     if (ab == NULL)
         return;
+
+    /* Create a ConfigDev so we can boot from this device */
+    if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
+        struct ConfigDev *cd;
+        if ((cd = AllocConfigDev())) {
+            cd->cd_Node.ln_Name = "ata.device";
+            cd->cd_Driver = ATABase;
+            cd->cd_BoardAddr = (APTR)IOBase;
+            cd->cd_BoardSize = 16;
+            cd->cd_SlotAddr = ATABase->ata__buscount;
+            ab->ab_ConfigDev = cd;
+            AddConfigDev(ab->ab_ConfigDev);
+        }
+        CloseLibrary(ExpansionBase);
+    }
+
 
     ab->ab_Base         = ATABase;
     ab->ab_Port         = IOBase;
@@ -299,7 +316,6 @@ static int ata_Scan(struct ataBase *base)
 static int ata_init(LIBBASETYPEPTR LIBBASE)
 {
     struct BootLoaderBase	*BootLoaderBase;
-    APTR ExpansionBase;
 
     D(bug("[ATA--] ata_init: ata.device Initialization\n"));
 
@@ -367,16 +383,6 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
                 }
             }
         }
-    }
-
-    /* Create a ConfigDev so we can boot from this device */
-    if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
-        if ((LIBBASE->ata_ConfigDev = AllocConfigDev())) {
-            LIBBASE->ata_ConfigDev->cd_Node.ln_Name = "ata.device";
-            LIBBASE->ata_ConfigDev->cd_Driver = LIBBASE;
-            AddConfigDev(LIBBASE->ata_ConfigDev);
-        }
-        CloseLibrary(ExpansionBase);
     }
 
     /* Initialize BUS list */

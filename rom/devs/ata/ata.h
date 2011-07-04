@@ -95,8 +95,6 @@ struct ataBase
     */
    struct Device           ata_Device;
 
-   struct ConfigDev       *ata_ConfigDev;
-
    /*
     * master task pointer
     */
@@ -130,6 +128,7 @@ struct ata_Bus
 {
    struct MinNode          ab_Node;    /* exec node */
    struct ataBase          *ab_Base;   /* device self */
+   struct ConfigDev        *ab_ConfigDev;
    ULONG                   ab_Port;    /* IO port used */
    ULONG                   ab_Alt;     /* alternate io port */
    UBYTE                   ab_IRQ;     /* IRQ number used */
