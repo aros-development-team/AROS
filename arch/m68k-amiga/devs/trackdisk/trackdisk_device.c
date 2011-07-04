@@ -511,7 +511,6 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
  */
 static void TD_BootNode(
         struct ExpansionBase *ExpansionBase,
-        struct ConfigDev *cfgdev,
         ULONG unit, ULONG id)
 {
     /* Until we see a boot block, assume all floppies are OFS */
@@ -546,7 +545,7 @@ static void TD_BootNode(
     devnode = MakeDosNode(pp);
 
     if (devnode)
-   	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, cfgdev);
+   	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC | ADNF_NOCONFIGDEV, devnode, NULL);
 }
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 {
@@ -584,15 +583,6 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
     if (!ExpansionBase)
   	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_OpenLib);
 
-    /* We need to synthesize a ConfigDev, so that the AddBootNode()
-     * call will generate bootable devices
-     */
-    if ((TDBase->td_ConfigDev = AllocConfigDev())) {
-        TDBase->td_ConfigDev->cd_Node.ln_Name = "trackdisk.device";
-        TDBase->td_ConfigDev->cd_Driver = TDBase;
-        AddConfigDev(TDBase->td_ConfigDev);
-    }
-
     /* Alloc memory for track buffering, DD buffer only, reallocated
      * later if HD disk detected to save RAM on unexpanded machines */
     TDBase->td_DMABuffer = AllocMem(DISK_BUFFERSIZE, MEMF_CHIP);
@@ -604,7 +594,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 	TDBase->td_Units[i] = NULL;
 	ULONG id = GetUnitID(i);
 	if (id != DRT_EMPTY) {
-	    TD_BootNode(ExpansionBase, TDBase->td_ConfigDev, i, id);
+	    TD_BootNode(ExpansionBase, i, id);
 	    TD_InitUnit(i, TDBase);
 	}
 	D(bug("TD%d id=%08x status=%d\n", i, id, TDBase->td_Units[i] ? 1 : 0));
