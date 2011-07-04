@@ -19,6 +19,6 @@
 
 /* This is supposed to tell the boot code that we boot without a ConfigDev */
 #define ADNB_NOCONFIGDEV    8
-#define ADNF_NOCONFIGDEV    (1L<< ADNF_NOCONFIGDEV)
+#define ADNF_NOCONFIGDEV    (1L<< ADNB_NOCONFIGDEV)
 
 #endif /* LIBRARIES_EXPANSION_H */
