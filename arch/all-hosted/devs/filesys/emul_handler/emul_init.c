@@ -46,7 +46,7 @@ static LONG startup(struct emulbase *emulbase)
     if (!emulbase->mempool)
         return FALSE;
 
-    /* Create a ConfigDev and BootNode so we can boot from this device */
+    /* Create a BootNode so we can boot from this device */
     if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION)))
     {
         struct DeviceNode *dn;
@@ -62,13 +62,6 @@ static LONG startup(struct emulbase *emulbase)
         pp[DE_BOOTPRI    + 4] = 0;
         pp[DE_DOSTYPE    + 4] = AROS_MAKE_ID('E', 'M', 'U', 0);
 
-        if ((emulbase->eb_ConfigDev = AllocConfigDev()))
-        {
-            emulbase->eb_ConfigDev->cd_Node.ln_Name = "emul.handler";
-            emulbase->eb_ConfigDev->cd_Driver = NULL;
-            AddConfigDev(emulbase->eb_ConfigDev);
-        }
-
         dn = MakeDosNode(pp);
         if (dn)
         {
@@ -82,7 +75,7 @@ static LONG startup(struct emulbase *emulbase)
             dn->dn_StackSize = 16384;
 	    dn->dn_GlobalVec = (BPTR)-1;
 
-            AddBootNode(0, 0, dn, emulbase->eb_ConfigDev);
+            AddBootNode(0, ADNF_STARTPROC | ADNF_NOCONFIGDEV, dn, NULL);
         }
 
         CloseLibrary(ExpansionBase);
@@ -97,15 +90,6 @@ ADD2INITLIB(startup, -10)
 
 static LONG cleanup(struct emulbase *emulbase)
 {
-    if (emulbase->eb_ConfigDev) {
-        APTR ExpansionBase;
-        if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
-            RemConfigDev(emulbase->eb_ConfigDev);
-            FreeConfigDev(emulbase->eb_ConfigDev);
-            CloseLibrary(ExpansionBase);
-        }
-    }
-
     if (emulbase->mempool)
     	DeletePool(emulbase->mempool);
 
