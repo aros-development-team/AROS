@@ -327,7 +327,7 @@ static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
                    io->io_Data = buffer;
                    io->io_Offset = 0;
                    io->io_Command = CMD_READ;
-                   D(bug("[Strap] %b.%d bootblock read (%d bytes)\n", device, unit, BOOTBLOCK_SIZE));
+                   D(bug("[Strap] %b.%d bootblock read (%d bytes)\n", device, unit, bootblock_size));
                    DoIO((struct IORequest*)io);
                    if (io->io_Error == 0) {
                        D(bug("[Strap] %b.%d bootblock read to %p ok\n", device, unit, buffer));
@@ -349,6 +349,9 @@ static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
                    } else {
                        D(bug("[Strap] io_Error %d\n", io->io_Error));
                    }
+                   io->io_Command = TD_MOTOR;
+                   io->io_Length = 0;
+                   DoIO((struct IORequest*)io);
                    CloseDevice((struct IORequest *)io);
                }
                DeleteIORequest((struct IORequest*)io);
