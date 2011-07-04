@@ -202,10 +202,11 @@ static void PatchBootNode(struct FileSysResource *fsr, struct BootNode *bn, ULON
     }
 }
 
-static BOOL GetBootNodeDeviceUnit(struct BootNode *bn, BPTR *device, ULONG *unit)
+static BOOL GetBootNodeDeviceUnit(struct BootNode *bn, BPTR *device, ULONG *unit, ULONG *bootblocks)
 {
     struct DeviceNode *dn;
     struct FileSysStartupMsg *fssm;
+    struct DosEnvec *de;
 
     if (bn == NULL)
         return FALSE;
@@ -221,14 +222,21 @@ static BOOL GetBootNodeDeviceUnit(struct BootNode *bn, BPTR *device, ULONG *unit
     *unit = fssm->fssm_Unit;
     *device = fssm->fssm_Device;
 
+    de = BADDR(fssm->fssm_Environ);
+    /* Following check from Guru Book */
+    if (de == NULL || (de->de_TableSize & 0xffffff00) != 0 || de->de_TableSize < DE_BOOTBLOCKS)
+    	return FALSE;
+    *bootblocks = de->de_BootBlocks * de->de_SizeBlock * sizeof(ULONG);
+    if (*bootblocks == 0)
+    	return FALSE;
     return TRUE;
 }
  
-static BOOL BootBlockChecksum(UBYTE *bootblock)
+static BOOL BootBlockChecksum(UBYTE *bootblock, ULONG bootblock_size)
 {
        ULONG crc = 0, crc2 = 0;
        UWORD i;
-       for (i = 0; i < 1024; i += 4) {
+       for (i = 0; i < bootblock_size; i += 4) {
            ULONG v = (bootblock[i] << 24) | (bootblock[i + 1] << 16) |
 (bootblock[i + 2] << 8) | bootblock[i + 3];
            if (i == 4) {
@@ -288,7 +296,7 @@ static LONG CallBootBlockCode(APTR bootcode, struct IOStdReq *io, VOID_FUNC *ini
 
 static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
 {
-    const ULONG BOOTBLOCK_SIZE = 1024;
+    ULONG bootblock_size;
     struct MsgPort *msgport;
     struct IOStdReq *io;
     BPTR device;
@@ -302,11 +310,11 @@ static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
         (struct ConfigDev *)bn->bn_Node.ln_Name == NULL)
         return;
 
-    if (!GetBootNodeDeviceUnit(bn, &device, &unit))
+    if (!GetBootNodeDeviceUnit(bn, &device, &unit, &bootblock_size))
         return;
 
     /* memf_chip not required but more compatible with old bootblocks */
-    buffer = AllocMem(BOOTBLOCK_SIZE, MEMF_CHIP);
+    buffer = AllocMem(bootblock_size, MEMF_CHIP);
     if (buffer != NULL) {
        D(bug("[Strap] bootblock address %p\n", buffer));
        if ((msgport = CreateMsgPort())) {
@@ -314,7 +322,7 @@ static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
                if (!OpenDevice(AROS_BSTR_ADDR(device), unit, (struct IORequest*)io, 0)) {
                    /* Read the device's boot block
                     */
-                   io->io_Length = BOOTBLOCK_SIZE;
+                   io->io_Length = bootblock_size;
                    io->io_Data = buffer;
                    io->io_Offset = 0;
                    io->io_Command = CMD_READ;
@@ -322,7 +330,7 @@ static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
                    DoIO((struct IORequest*)io);
                    if (io->io_Error == 0) {
                        D(bug("[Strap] %b.%d bootblock read to %p ok\n", device, unit, buffer));
-                       if (BootBlockChecksum(buffer)) {
+                       if (BootBlockChecksum(buffer, bootblock_size)) {
                            APTR bootcode = buffer + 12;
 
                            /* Force the handler for this device */
@@ -346,7 +354,7 @@ static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
            }
            DeleteMsgPort(msgport);
        }
-       FreeMem(buffer, BOOTBLOCK_SIZE);
+       FreeMem(buffer, bootblock_size);
    }
 
    if (init != NULL) {
