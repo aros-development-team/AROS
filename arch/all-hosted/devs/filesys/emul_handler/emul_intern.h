@@ -44,7 +44,6 @@ struct emulbase
     APTR		      ReadIRQ;
     APTR		      HostLibBase;
     APTR		      KernelBase;
-    struct ConfigDev         *eb_ConfigDev;
     struct Emul_PlatformData  pdata;	/* Platform-specific portion */
 };
 
