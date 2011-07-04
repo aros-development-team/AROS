@@ -298,7 +298,8 @@ static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
     UBYTE *buffer;
 
     /* BootNodes that don't have a ConfigDev are not bootable */
-    if (bn->bn_Node.ln_Name == NULL)
+    if (bn->bn_Node.ln_Type != NT_BOOTNODE ||
+        (struct ConfigDev *)bn->bn_Node.ln_Name == NULL)
         return;
 
     if (!GetBootNodeDeviceUnit(bn, &device, &unit))
