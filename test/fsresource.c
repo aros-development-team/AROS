@@ -42,27 +42,27 @@ int main(int argc, char **argv)
 		    dostype[i] = '.';
 	    }
 	    dostype[4] = 0;
-    	    printf("DOSType: %08lx (%s)\n", (unsigned long)fse->fse_DosType, dostype);
-    	    printf("Version: %08lx (%d.%d)\n", (unsigned long)fse->fse_Version, (int)(fse->fse_Version >> 16), (int)(fse->fse_Version & 0xffff));
-    	    printf("PatchFlags: %08lx\n", (unsigned long)fse->fse_PatchFlags);
+    	    printf("DOSType     : %08lx (%s)\n", (unsigned long)fse->fse_DosType, dostype);
+    	    printf("Version     : %08lx (%d.%d)\n", (unsigned long)fse->fse_Version, (int)(fse->fse_Version >> 16), (int)(fse->fse_Version & 0xffff));
+    	    printf("PatchFlags  : %08lx\n", (unsigned long)fse->fse_PatchFlags);
     	    checkpatch(fse, FSEB_TYPE);
-   	    printf("Type: %08lx\n", (unsigned long)fse->fse_Type);
+   	    printf("Type      : %08lx\n", (unsigned long)fse->fse_Type);
     	    checkpatch(fse, FSEB_TASK);
-   	    printf("Task: %p\n", (void *)fse->fse_Task);
+   	    printf("Task      : %p\n", (void *)fse->fse_Task);
     	    checkpatch(fse, FSEB_LOCK);
-   	    printf("Lock: %p\n", fse->fse_Lock);
+   	    printf("Lock      : %p\n", fse->fse_Lock);
     	    checkpatch(fse, FSEB_HANDLER);
-   	    printf("Handler: %p (%b)\n", fse->fse_Handler, fse->fse_Handler);
+   	    printf("Handler   : %p (%b)\n", fse->fse_Handler, fse->fse_Handler);
     	    checkpatch(fse, FSEB_STACKSIZE);
-   	    printf("StackSize: %u\n", fse->fse_StackSize);
+   	    printf("StackSize : %u\n", fse->fse_StackSize);
     	    checkpatch(fse, FSEB_PRIORITY);
-   	    printf("Priority: %d\n", fse->fse_Priority);
+   	    printf("Priority  : %d\n", fse->fse_Priority);
     	    checkpatch(fse, FSEB_STARTUP);
-   	    printf("Startup: %p\n", fse->fse_Startup);
+   	    printf("Startup   : %p\n", fse->fse_Startup);
     	    checkpatch(fse, FSEB_SEGLIST);
-   	    printf("SegList: %p\n", fse->fse_SegList);
+   	    printf("SegList   : %p\n", fse->fse_SegList);
     	    checkpatch(fse, FSEB_GLOBALVEC);
-   	    printf("GlobalVec: %ld\n", (long)fse->fse_GlobalVec);
+   	    printf("GlobalVec : %ld\n", (long)fse->fse_GlobalVec);
 	    printf("\n");
    	}
     } else {
