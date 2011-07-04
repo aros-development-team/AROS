@@ -103,7 +103,9 @@ IPTR kickbase(void);
     All queries understood by this call will have appropriate values
     assigned to the location a tag's ti_Data pointed to.
 
-    This function will (for now) always return 0.
+    This function will return 0 on success, or the index of the
+    first tag that could not be processed. (Ie 1 for Tag[0], 2 for
+    Tag[1], etc)
 
     NOTES
 
@@ -120,9 +122,14 @@ IPTR kickbase(void);
 {
     AROS_LIBFUNC_INIT
 
+    APTR UtilityBase;
     struct TagItem *tag;
     ULONG ret = 0;
+    int i = 0;
     IPTR data = 0;
+
+    if (!(UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY)))
+        return 1;
 
 #   define SetData(tag,type,value)  \
     D(bug("   Data was: %d\n", *((type *)(tag->ti_Data)))); \
@@ -133,7 +140,8 @@ IPTR kickbase(void);
 
     while( (tag = NextTagItem((const struct TagItem**)&taglist)))
     {
-        D(bug("  tag = 0x%lx  data = 0x%lx\n", tag->ti_Tag, tag->ti_Data));
+        D(bug("  tag[%d] = 0x%lx  data = 0x%lx\n", i, tag->ti_Tag, tag->ti_Data));
+        i++;
 
         switch(tag->ti_Tag)
         {
@@ -217,10 +225,14 @@ IPTR kickbase(void);
         
         default:
             SetData (tag, IPTR, 0);
+            if (ret == 0)
+                ret = i;
             break;
         
         }
     }
+
+    CloseLibrary(UtilityBase);
 
     return ret;
     AROS_LIBFUNC_EXIT
