@@ -14,8 +14,8 @@
 
 #include <string.h>
 
-#include "elfloader.h"
 #include "bootstrap.h"
+#include "elfloader.h"
 #include "support.h"
 
 /*
@@ -62,36 +62,18 @@ static int read_block(void *file, long offset, void *dest, long length)
 }
 
 /*
- * load_block returns a pointer to the memory location within ELF file.
- */
-static void *load_block(void *file, long offset, long length)
-{
-    return file + offset;
-}
-
-/*
  * Test for correct ELF header here
  */
-static int check_header(struct elfheader *eh)
+static const char *check_header(struct elfheader *eh)
 {
-    if
-    (
-        eh->ident[0] != 0x7f ||
-        eh->ident[1] != 'E'  ||
-        eh->ident[2] != 'L'  ||
-        eh->ident[3] != 'F'
-    )
-    {
-        kprintf("[ELF Loader] Not an ELF object\n");
-        return 0;
-    }
+    if (eh->ident[0] != 0x7f || eh->ident[1] != 'E' ||
+        eh->ident[2] != 'L'  || eh->ident[3] != 'F')
+        return "Not an ELF object";
 
     if (eh->type != ET_REL || eh->machine != AROS_ELF_MACHINE)
-    {
-        kprintf("[ELF Loader] Wrong object type or wrong architecture\n");
-        return 0;
-    }
-    return 1;
+        return "Wrong object type or wrong architecture";
+
+    return NULL;
 }
 
 /*
@@ -273,36 +255,87 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, st
     return 1;
 }
 
-int load_elf_file(const char *Name, void *file, unsigned long long virt)
+int count_elf_size(struct module *n, unsigned long *ro_size, unsigned long *rw_size)
 {
-    struct elfheader eh;
-    struct sheader *sh;
+    unsigned long ksize = 0;
+    unsigned long rwsize = 0;
+    unsigned short i;
+    const char *err;
+
+    D(kprintf("[ELF Loader] Checking module %s...\n", n->name));
+
+    /* Check the header of ELF file */
+    err = check_header(n->eh);
+    if (err)
+    {
+    	kprintf("[ELF Loader] %s: %s\n", n->name, err);
+    	return 0;
+    }
+
+    /* Locate section headers */
+    n->sh = (void *)n->eh + n->eh->shoff;
+
+    /*
+     * Debug data for the module includes:
+     * - Module descriptor (struct ELF_ModuleInfo)
+     * - ELF file header
+     * - ELF section header
+     * - File name
+     * - One empty pointer for alignment
+     */
+    ksize += (sizeof(struct ELF_ModuleInfo64) + sizeof(struct elfheader) + n->eh->shnum * n->eh->shentsize
+    	     + strlen(n->name) + sizeof(unsigned long long));
+
+    /* Go through all sections and calculate kernel size */
+    for (i = 0; i < n->eh->shnum; i++)
+    {
+	/* Ignore sections with zero lengths */
+	if (!n->sh[i].size)
+	    continue;
+	
+	/*
+	 * We will load:
+	 * - Actual code and data (allocated sections)
+	 * - String tables (for debug data)
+	 * - Symbol tables (for debug data)
+	 */
+	if ((n->sh[i].flags & SHF_ALLOC) || (n->sh[i].type == SHT_STRTAB) || (n->sh[i].type == SHT_SYMTAB))
+	{
+	    /* Add maximum space for alignment */
+	    unsigned long s = n->sh[i].size + n->sh[i].addralign - 1;
+
+	    if (n->sh[i].flags & SHF_WRITE)
+		rwsize += s;
+	    else
+		ksize += s;
+	}
+    }
+
+    /* We sum up lengths */
+    *ro_size += ksize;
+    *rw_size += rwsize;
+
+    return 1;
+}
+
+int load_elf_file(struct module *n, unsigned long long virt)
+{
+    struct elfheader *eh = n->eh;
+    struct sheader *sh = n->sh;
     long i;
     int addr_displayed = 0;
     struct ELF_ModuleInfo64 *mod;
 
     D(kprintf("[ELF Loader] Loading ELF module from address %p\n", file));
-    
-    /* Check the header of ELF file */
-    if
-    (
-        !read_block(file, 0, &eh, sizeof(eh)) ||
-        !check_header(&eh) ||
-        !(sh = load_block(file, eh.shoff, eh.shnum * eh.shentsize))
-    )
-    {
-        kprintf("[ELF Loader] Wrong module header, aborting.\n");
-        return 0;
-    }
-    
+
     /* Iterate over the section header in order to prepare memory and eventually load some hunks */
-    for (i=0; i < eh.shnum; i++)
+    for (i=0; i < eh->shnum; i++)
     {
         /* Load allocated sections, symbol and string tables */
         if ((sh[i].flags & SHF_ALLOC)  || (sh[i].type == SHT_STRTAB) || (sh[i].type == SHT_SYMTAB))
         {
             /* Yup, it does. Load the hunk */
-            if (!load_hunk(file, &sh[i]))
+            if (!load_hunk(n->eh, &sh[i]))
             {
                 kprintf("[ELF Loader] Error at loading of the hunk!\n");
             }
@@ -317,14 +350,14 @@ int load_elf_file(const char *Name, void *file, unsigned long long virt)
     }
 
     /* For every loaded section perform the relocations */
-    for (i=0; i < eh.shnum; i++)
+    for (i=0; i < eh->shnum; i++)
     {
         if (sh[i].type == AROS_ELF_REL && sh[sh[i].info].addr)
         {
-            sh[i].addr = (unsigned long)load_block(file, sh[i].offset, sh[i].size);
-            
+            sh[i].addr = (unsigned long)eh + sh[i].offset;
+
             /* FIXME: Implement full support for SHN_XINDEX (locate the appropriate section) */
-            if (!sh[i].addr || !relocate(&eh, sh, i, NULL, virt))
+            if (!sh[i].addr || !relocate(eh, sh, i, NULL, virt))
             {
                 kprintf("[ELF Loader] Relocation error!\n");
                 return 0;
@@ -352,11 +385,11 @@ int load_elf_file(const char *Name, void *file, unsigned long long virt)
 
     /* Copy section header */
     mod->sh = (unsigned long)ptr_ro;
-    ptr_ro = copy_data(sh, ptr_ro, eh.shnum * eh.shentsize);
+    ptr_ro = copy_data(sh, ptr_ro, eh->shnum * eh->shentsize);
 
     /* Copy module name */
     mod->Name = (unsigned long)ptr_ro;
-    ptr_ro = copy_data(Name, ptr_ro, strlen(Name) + 1);
+    ptr_ro = copy_data(n->name, ptr_ro, strlen(n->name) + 1);
 
     /* Link the module descriptor with previous one */
     prev_mod->Next = (unsigned long)mod;
