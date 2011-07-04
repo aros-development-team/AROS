@@ -52,7 +52,7 @@ int main(int argc, char **argv)
     	    checkpatch(fse, FSEB_LOCK);
    	    printf("Lock      : %p\n", fse->fse_Lock);
     	    checkpatch(fse, FSEB_HANDLER);
-   	    printf("Handler   : %p (%b)\n", fse->fse_Handler, fse->fse_Handler);
+   	    printf("Handler   : %p (%s)\n", fse->fse_Handler, AROS_BSTR_ADDR(fse->fse_Handler));
     	    checkpatch(fse, FSEB_STACKSIZE);
    	    printf("StackSize : %u\n", fse->fse_StackSize);
     	    checkpatch(fse, FSEB_PRIORITY);
