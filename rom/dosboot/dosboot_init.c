@@ -100,10 +100,18 @@ static BOOL IsMounted(struct DeviceNode *node, struct DosLibrary *DOSBase)
 }
 
 /* Run a handler for the given DeviceNode */
-static APTR __dosboot_RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
+static APTR __dosboot_RunHandler(struct BootNode *bootNode, struct DosLibrary *DOSBase)
 {
-    if (!deviceNode->dn_Task)
-    {
+    struct DeviceNode *deviceNode = bootNode->bn_DeviceNode;
+
+    /* Already running? Nothing to do, then. */
+    if (deviceNode->dn_Task)
+        return deviceNode->dn_Task;
+
+    /* If the node don't want to be automatically started,
+     * then don't start it.
+     */
+    if (bootNode->bn_Flags & ADNF_STARTPROC) {
     	CONST_STRPTR deviceName = AROS_BSTR_ADDR(deviceNode->dn_Name);
     	ULONG nameLen = AROS_BSTR_strlen(deviceNode->dn_Name);
     	STRPTR buf = AllocMem(nameLen + 2, MEMF_ANY);
@@ -135,7 +143,7 @@ static void __dosboot_Mount(struct BootNode *bootNode, struct DosLibrary * DOSBa
         Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
     }
 
-    __dosboot_RunHandler(dn, DOSBase);
+    __dosboot_RunHandler(bootNode, DOSBase);
 }
 
 static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
@@ -339,8 +347,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	    /* We only boot from nodes that were registered
 	     * with a ConfigDev
 	     */
-	    if (bootNode->bn_Node.ln_Type == NT_BOOTNODE &&
-	        (struct ConfigDev *)bootNode->bn_Node.ln_Name == NULL) {
+	    if (!IsBootableNode(bootNode)) {
 	        DB2(bug("[DOSBoot] '%s' is not marked as bootable\n", deviceName));
 	        continue;
             }
@@ -511,7 +518,8 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	D(bug("[DOSBoot] Assigns done, retrying mounting handlers\n"));
         ForeachNodeSafe(&ExpansionBase->MountList, bootNode, tmpNode)
         {
-            if (!__dosboot_RunHandler(bootNode->bn_DeviceNode, DOSBase))
+            if ((bootNode->bn_Flags & ADNF_STARTPROC) &&
+                !__dosboot_RunHandler(bootNode, DOSBase))
             {
                 Forbid();
                 REMOVE( bootNode );
