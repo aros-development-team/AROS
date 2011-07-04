@@ -589,6 +589,7 @@ static void writehandler(FILE *out, struct config *cfg)
                "#include <proto/arossupport.h>\n"
                "#include <proto/dos.h>\n"
                "#include <proto/expansion.h>\n"
+               "#include <libraries/expansion.h>\n"
                "\n"
                );
 
@@ -702,7 +703,7 @@ static void writehandler(FILE *out, struct config *cfg)
                "                if (handler[i].stacksize)\n"
                "                    dn->dn_StackSize = handler[i].stacksize;\n"
                "                dn->dn_GlobalVec = (BPTR)(SIPTR)-1;\n"
-               "                AddDosNode(-5, 0, dn);\n"
+               "                AddBootNode(-5, 0, dn, NULL);\n"
                "            }\n"
                "            continue;\n"
                "        }\n"
