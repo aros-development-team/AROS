@@ -557,6 +557,22 @@ static LONG set_date(struct emulbase *emulbase, struct filehandle *fh,
     return ret;
 }
 
+static LONG disk_info(struct emulbase *emulbase, struct filehandle *fh, struct InfoData *id)
+{
+    LONG Res2 = DoStatFS(emulbase, fh->hostname, id);
+
+    if (!Res2)
+    {
+        /* Fill in host-independent part */
+        id->id_UnitNumber = 0;
+        id->id_DiskType   = ID_DOS_DISK; /* Well, not really true... */
+        id->id_VolumeNode = MKBADDR(fh->dl);
+    	id->id_InUse      = TRUE; /* Perhaps we should count locks? */
+    }
+
+    return Res2;
+}
+
 /*********************************************************************************************/
 
 #define VOLNAME	    "System"
@@ -1100,30 +1116,27 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         Res1 = (SIPTR)MKBADDR(fl);
         Res2 = 0;
         break;
-     case ACTION_IS_FILESYSTEM:
+    case ACTION_IS_FILESYSTEM:
         DCMD(bug("[emul] %p ACTION_IS_FILESYSTEM:\n", fhv));
         Res2 = 0;
         Res1 = DOSTRUE;
+        break;
+  
+    case ACTION_INFO:
+        fh = FH_FROM_LOCK(dp->dp_Arg1);
+    	id = BADDR(dp->dp_Arg2);
+    	DCMD(bug("[emul] %p ACTION_INFO:\n", fhv));
+  
+        Res2 = disk_info(emulbase, fh, id);
+        Res1 = Res2 ? DOSFALSE : DOSTRUE;
         break;
   
     case ACTION_DISK_INFO:
         id = (struct InfoData *)BADDR(dp->dp_Arg1);
         DCMD(bug("[emul] %p ACTION_DISK_INFO:\n", fhv));
 
-        Res2 = DoStatFS(emulbase, fhv->hostname, id);
-        if (!Res2)
-        {
-            /* Fill in host-independent part */
-            id->id_UnitNumber = 0;
-    	    id->id_DiskType   = ID_DOS_DISK; /* Well, not really true... */
-            id->id_VolumeNode = MKBADDR(fhv->dl);
-    	    id->id_InUse      = TRUE; /* Perhaps we should count locks? */
-    	    
-    	    Res1 = DOSTRUE;
-        }
-        else
-            Res1 = DOSFALSE;
-
+        Res2 = disk_info(emulbase, fhv, id);
+        Res1 = Res2 ? DOSFALSE : DOSTRUE;
         break;
 
     case ACTION_SET_DATE:
