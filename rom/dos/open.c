@@ -128,16 +128,9 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 	case MODE_OLDFILE:
 	    ast = con = me->pr_CIS;
 	    break;
-
 	default:
-	    if (accessMode & (FMF_CREATE|FMF_CLEAR))
-	    {
-	    	con = me->pr_COS;
-	    	ast = me->pr_CES ? me->pr_CES : me->pr_COS;
-	    }
-	    else
-	    	ast = con = me->pr_CIS;
-	    break;
+	    SetIoErr(ERROR_NOT_IMPLEMENTED);
+	    return DOSFALSE;
     }
 
     if (!Stricmp(name, "CONSOLE:"))
