@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -30,12 +30,13 @@ static void __fill_statbuffer(
     int                  fallback_to_defaults,
     BPTR                 lock);
 
-int __stat(BPTR lock, struct stat *sb)
+int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
 {
     struct FileInfoBlock *fib;
     UBYTE *buffer;
     int buffersize = 256;
     int fallback_to_defaults = 0;
+    BOOL Examined;
 
     fib = AllocDosObject(DOS_FIB, NULL);
 
@@ -46,7 +47,10 @@ int __stat(BPTR lock, struct stat *sb)
         return -1;
     }
 
-    if (!Examine(lock, fib))
+    Examined = filehandle
+             ? ExamineFH(lock, fib)
+             : Examine(lock, fib);
+    if (!Examined)
     {
 	if(IoErr() == ERROR_NOT_IMPLEMENTED)
 	{
@@ -64,6 +68,8 @@ int __stat(BPTR lock, struct stat *sb)
        compute hash value */
     do
     {
+        BOOL GotName;
+
         if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
         {
             errno = ENOMEM;
@@ -71,7 +77,10 @@ int __stat(BPTR lock, struct stat *sb)
             return -1;
         }
 
-        if(NameFromLock(lock, buffer, buffersize))
+        GotName = filehandle
+                ? NameFromFH(lock, buffer, buffersize)
+                : NameFromLock(lock, buffer, buffersize);
+        if(GotName)
             break;
         else if(   IoErr() == ERROR_OBJECT_IN_USE
                 || IoErr() == ERROR_NOT_IMPLEMENTED

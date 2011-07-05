@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,7 +16,7 @@
 #include "__stat.h"
 #include "__upath.h"
 
-/* like Dos.Lock but no automatick soft link resolution */
+/* like Dos_Lock() but no automatic soft link resolution */
 static BPTR __lock(
     const char* name,
     LONG        accessMode);
@@ -95,7 +95,7 @@ static BPTR __lock(
         return -1;
     }
     else
-        res = __stat(lock, sb);
+        res = __stat(lock, sb, FALSE);
 
     UnLock(lock);
 
