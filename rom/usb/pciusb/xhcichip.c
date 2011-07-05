@@ -323,7 +323,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         KPRINTF(1000, ("Too many ports in Supported Protocol!\n"));
         return FALSE;
     }else if ( (hc->xhc_NumPorts > (hc->xhc_NumPorts20 + hc->xhc_NumPorts30)) ) {
-        hc->xhc_NumPorts20 = (hc->xhc_NumPorts30 - hc->xhc_NumPorts30)
+        hc->xhc_NumPorts20 = (hc->xhc_NumPorts30 - hc->xhc_NumPorts30);
         return TRUE;
     }
 

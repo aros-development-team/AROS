@@ -44,14 +44,16 @@ AROS_UFH3(void, pciEnumerator,
     struct PCIDevice *hd = (struct PCIDevice *) hook->h_Data;
     struct PCIController *hc;
     IPTR hcitype;
-    IPTR dev;
     IPTR bus;
+    IPTR dev;
+    IPTR sub;
     IPTR intline;
     ULONG devid;
 
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Interface, &hcitype);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Bus, &bus);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev, &dev);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev, &sub);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
 
     devid = (bus<<16)|dev;
@@ -85,6 +87,7 @@ AROS_UFH3(void, pciEnumerator,
             {
             	hc->hc_Device = hd;
             	hc->hc_DevID = devid;
+            	hc->hc_FunctionNum = sub;
             	hc->hc_HCIType = hcitype;
             	hc->hc_PCIDeviceObject = pciDevice;
             	hc->hc_PCIIntLine = intline;
@@ -118,8 +121,6 @@ BOOL pciInit(struct PCIDevice *hd)
     struct PCIController *nexthc;
     struct PCIUnit *hu;
     ULONG unitno = 0;
-    UWORD ohcicnt;
-    UWORD uhcicnt;
 
     KPRINTF(10, ("*** pciInit(%p) ***\n", hd));
 /*  if(sizeof(IPTR) > 4)
@@ -169,6 +170,7 @@ BOOL pciInit(struct PCIDevice *hd)
         return FALSE;
     }
 
+    // Create units with a list of host controllers having the same bus and device number.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ)
     {
         hu = AllocPooled(hd->hd_MemPool, sizeof(struct PCIUnit));
@@ -183,9 +185,7 @@ BOOL pciInit(struct PCIDevice *hd)
 
         NewList(&hu->hu_Controllers);
         NewList(&hu->hu_RHIOQueue);
-        ohcicnt = 0;
-        uhcicnt = 0;
-        // find all belonging host controllers
+
         hc = (struct PCIController *) hd->hd_TempHCIList.lh_Head;
         while((nexthc = (struct PCIController *) hc->hc_Node.ln_Succ))
         {
@@ -193,16 +193,6 @@ BOOL pciInit(struct PCIDevice *hd)
             {
                 Remove(&hc->hc_Node);
                 hc->hc_Unit = hu;
-                if(hc->hc_HCIType == HCITYPE_UHCI)
-                {
-                    hc->hc_FunctionNum = uhcicnt++;
-                }
-                else if(hc->hc_HCIType == HCITYPE_OHCI)
-                {
-                    hc->hc_FunctionNum = ohcicnt++;
-                } else {
-                    hc->hc_FunctionNum = 0;
-                }
                 AddTail(&hu->hu_Controllers, &hc->hc_Node);
             }
             hc = nexthc;
