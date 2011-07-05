@@ -1485,9 +1485,12 @@ static void writesets(FILE *out, struct config *cfg)
 	    "DEFINESET(EXIT)\n"
 	    "DEFINESET(CTORS)\n"
 	    "DEFINESET(DTORS)\n"
+    );
+    if (cfg->modtype != HANDLER)
+	fprintf(out,
 	    "DEFINESET(INITLIB)\n"
 	    "DEFINESET(EXPUNGELIB)\n"
-    );
+    	);
     if (!(cfg->options & OPTION_NOOPENCLOSE))
         fprintf(out,
 	    "DEFINESET(OPENLIB)\n"
