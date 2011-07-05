@@ -271,7 +271,7 @@ LONG mainprogram(struct ExecBase *);
 #ifdef __AROS__
 void SFS_handler(void)
 {
-    bug("[SFS] Starting up\n");
+    D(bug("[SFS] Starting up\n"));
     mainprogram(SysBase);
 }
 #else
