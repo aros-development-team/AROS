@@ -344,14 +344,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	    struct DeviceNode *dn = bootNode->bn_DeviceNode;
 	    STRPTR deviceName = AROS_BSTR_ADDR(dn->dn_Name);
 
-	    /* We only boot from nodes that were registered
-	     * with a ConfigDev
-	     */
-	    if (!IsBootableNode(bootNode)) {
-	        DB2(bug("[DOSBoot] '%s' is not marked as bootable\n", deviceName));
-	        continue;
-            }
-
             DB2(bug("[DOSBoot] Trying to boot from '%s' (priority %d)...\n", deviceName, bootNode->bn_Node.ln_Pri));
 
 	    if (LIBBASE->db_BootDevice)
@@ -365,6 +357,28 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	    }
 	    else
 	    {
+	    	/*
+	    	 * We only boot from nodes that were registered with a ConfigDev.
+	    	 * CHECKME: Is it correct? Amiga 1200 and 4000 have an onboard IDE controller
+	    	 * server by main kickstart ROM, which has no associated expansion peripherials.
+	    	 * From the documentation we can understand, that "Autobooting" generally means
+	    	 * running associated board's DiagArea->da_BootPoint as a bootblock (this is
+	    	 * assumed to be done in Boot Strap). Looks like A1200/4000 ROM is able to
+	    	 * "self-boot" (i. e. run dos.library if there's no floppy with a bootblock
+	    	 * is found, but there are some hard drives present).
+	    	 * This likely means that these ROMs simply run dos.library manually if there are
+	    	 * some 'non-bootable' DOS nodes present and there are no 'autoboot' nodes around.
+	    	 * P. S. This actually means that our bootup sequence is wrong. If we wait until
+	    	 * 'No boot media' screen comes up, and then insert a floppy with a bootblock, it
+	    	 * won't be run, unlike on original Amiga(tm). Looks like most of this code needs to
+	    	 * be moved to Boot Strap.
+	     	 */
+	    	if (!IsBootableNode(bootNode))
+	    	{
+	            DB2(bug("[DOSBoot] '%s' is not marked as bootable\n", deviceName));
+	            continue;
+            	}
+
 		/* Devices marked as not bootable will have priority == -128 */
 		if (bootNode->bn_Node.ln_Pri == -128)
 		    continue;
