@@ -55,13 +55,13 @@ struct stat st;
 	stat(srcpath, &st);
 	filename = filepart(srcpath);
 	printf("Copying %s to %s ...", filename, dstpath);
-	ah = openf(NULL, &volume->ah, dstpath, FMF_READ, &error);
+	ah = openf(NULL, &volume->ah, dstpath, MODE_OLDFILE, &error);
 	if (ah != NULL)
 	{
 		fd = open(srcpath, O_RDONLY);
 		if (fd != -1)
 		{
-			fah = openfile(NULL, ah, filename, FMF_READ | FMF_WRITE | FMF_CREATE | FMF_LOCK | FMF_CLEAR, 0, &error);
+			fah = openfile(NULL, ah, filename, MODE_NEWFILE, 0, &error);
 			if (fah != NULL)
 			{
 				written=0;
@@ -109,7 +109,7 @@ struct AfsHandle *ah;
 struct AfsHandle *dah;
 
 	printf("Creating directory %s ...", dirname);
-	ah = openf(NULL, &volume->ah, "", FMF_READ, &error);
+	ah = openf(NULL, &volume->ah, "", MODE_OLDFILE, &error);
 	if (ah != NULL)
 	{
 		dah = createDir(NULL, ah, dirname, 0, &error);
