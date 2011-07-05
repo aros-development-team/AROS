@@ -81,7 +81,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     struct MemList  	    	*memlist = NULL;
     struct CommandLineInterface *cli = NULL;
     struct Process  	    	*me = (struct Process *)FindTask(NULL);
-    STRPTR          	    	 s;
     ULONG                        old_sig = 0;
 
     /* TODO: NP_CommandName, NP_NotifyOnDeath */
@@ -206,23 +205,14 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     stack = AllocMem(process->pr_StackSize, MEMF_PUBLIC);
     ENOMEM_IF(stack == NULL);
 
-    s = (STRPTR)defaults[10].ti_Data;
-
-    while (*s++);
-
-    namesize = s - (STRPTR)defaults[10].ti_Data;
-
+    namesize = strlen((STRPTR)defaults[10].ti_Data) + 1;
     name = AllocMem(namesize, MEMF_PUBLIC);
     ENOMEM_IF(name == NULL);
 
     /* NP_Arguments */
-    s = (STRPTR)defaults[12].ti_Data;
-
-    if (s != NULL)
+    if (defaults[12].ti_Data)
     {
-	while(*s++);
-
-	argsize = s - (STRPTR)defaults[12].ti_Data;
+    	argsize = strlen((STRPTR)defaults[12].ti_Data) + 1;
 	argptr  = (STRPTR)AllocVec(argsize, MEMF_PUBLIC);
 	ENOMEM_IF(argptr == NULL);
     }
@@ -375,7 +365,8 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     }
 
     CopyMem((APTR)defaults[10].ti_Data, name, namesize);
-    CopyMem((APTR)defaults[12].ti_Data, argptr, argsize);
+    if (argptr)
+	CopyMem((APTR)defaults[12].ti_Data, argptr, argsize);
 
     process->pr_Task.tc_Node.ln_Type = NT_PROCESS;
     process->pr_Task.tc_Node.ln_Name = name;
