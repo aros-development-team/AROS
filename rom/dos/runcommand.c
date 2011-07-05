@@ -17,15 +17,17 @@
 #include <dos/stdio.h>
 #include "dos_intern.h"
 
-LONG AROS_SLIB_ENTRY(RunProcess,Dos)
-(
-	struct Process	       * proc,
-	struct StackSwapStruct * sss,
-	CONST_STRPTR		 argptr,
-	ULONG			 argsize,
-	LONG_FUNC		 entry,
-	struct DosLibrary      * DOSBase
-);
+#ifdef __mc68000
+
+ULONG BCPL_CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me);
+
+#else
+
+/* On non-m68k systems we don't implement BCPL ABI, and use the same entry code */
+
+#define BCPL_CallEntry CallEntry
+
+#endif
 
 /*****************************************************************************
 
@@ -84,6 +86,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     STRPTR oldargs;
     LONG oldresult;
     struct aros_startup * oldstartup;
+    volatile APTR oldReturnAddr;
 
     /* Get pointer to process structure */
     struct Process *me=(struct Process *)FindTask(NULL);
@@ -91,6 +94,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     UBYTE *stack;
     LONG ret;
     struct StackSwapStruct sss;
+    struct StackSwapArgs args;
     BPTR oldinput = BNULL;
 
     if(stacksize < AROS_STACKSIZE)
@@ -126,10 +130,18 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     D(bug("RunCommand: segList @%p I=0x%p O=%p Args='%s' Argsize=%u\n", BADDR(segList), oldinput, Output(), argptr, argsize));
     vbuf_inject(oldinput, argptr, argsize, DOSBase);
 
-    ret=AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
-		(LONG_FUNC)((BPTR *)BADDR(segList)+1),DOSBase);
+    /* pr_ReturnAddr is set by CallEntry routine */
+    oldReturnAddr = me->pr_ReturnAddr;
 
-    me->pr_Arguments=oldargs;
+    args.Args[0] = (IPTR)argptr;
+    args.Args[1] = argsize;
+    args.Args[2] = (IPTR)BADDR(segList) + sizeof(BPTR);
+    args.Args[3] = (IPTR)me;
+
+    ret = NewStackSwap(&sss, BCPL_CallEntry, &args);
+
+    me->pr_ReturnAddr = oldReturnAddr;
+    me->pr_Arguments  = oldargs;
 
     oldresult=me->pr_Result2;
     /* restore saved iet_startup */
