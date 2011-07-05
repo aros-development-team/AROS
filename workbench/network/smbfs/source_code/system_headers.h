@@ -66,7 +66,9 @@
 
 #include <libraries/locale.h>
 
-/*#include <bsdsocket/socketbasetags.h>*/
+#if defined(__AROS__)
+#include <bsdsocket/socketbasetags.h>
+#endif
 
 #include <utility/date.h>
 #include <utility/tagitem.h>
@@ -101,6 +103,9 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#if defined(__AROS__)
+#define	EPROCLIM	67		/* Too many processes */
+#endif
 /*#include <sys/param.h>*/
 /*#include <sys/ioctl.h>*/
 #include <sys/stat.h>

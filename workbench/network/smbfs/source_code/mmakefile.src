@@ -1,0 +1,21 @@
+# $Id$
+#
+# Makefile for smbfs
+
+include $(TOP)/config/make.cfg
+
+SMBFSFILES = main \
+    proc \
+    smb_abstraction \
+    sock \
+    crypt
+
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -I$(AROS_DEVELOPMENT)/netinclude -I$(SRCDIR)/$(CURDIR)/include
+
+#MM workbench-network-smbfs-client : aros-tcpip workbench-network-smbfs-setup includes linklibs
+
+%build_prog mmake=workbench-network-smbfs-client \
+    progname=SMBFS targetdir=$(AROS_C) \
+    files="$(SMBFSFILES)"  uselibs="rom"
+
+%common

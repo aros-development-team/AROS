@@ -142,7 +142,9 @@ VOID ASM AsmFreePooled(REG(a0,APTR poolHeader),REG(a1,APTR memory),REG(d0,ULONG 
 /****************************************************************************/
 
 /* Forward declarations for local routines. */
+#if !defined(__AROS__)
 LONG _start(VOID);
+#endif
 LONG VARARGS68K LocalPrintf(STRPTR format, ...);
 STRPTR amitcp_strerror(int error);
 STRPTR host_strerror(int error);
@@ -216,7 +218,9 @@ STATIC VOID HandleFileSystem(STRPTR device_name, STRPTR volume_name, STRPTR serv
 
 /****************************************************************************/
 
+#if !defined(__AROS__)
 struct Library *			SysBase;
+#endif
 struct Library *			DOSBase;
 struct Library *			UtilityBase;
 struct Library *			IntuitionBase;
@@ -299,8 +303,11 @@ STATIC UBYTE				M2A[256];
 
 /****************************************************************************/
 
-LONG
-_start(VOID)
+#if !defined(__AROS__)
+LONG _start(VOID)
+#else
+int main(void)
+#endif
 {
 	struct
 	{
@@ -352,6 +359,7 @@ _start(VOID)
 	char env_user_name[64];
 	char env_password[64];
 
+#if !defined(__AROS__)
 	SysBase = (struct Library *)AbsExecBase;
 
 	#if defined(__amigaos4__)
@@ -359,7 +367,7 @@ _start(VOID)
 		IExec = (struct ExecIFace *)((struct ExecBase *)SysBase)->MainInterface;
 	}
 	#endif /* __amigaos4__ */
-
+#endif
 	/* Pick up the Workbench startup message, if
 	 * there is one.
 	 */
@@ -686,7 +694,7 @@ _start(VOID)
 
 		GetProgramName(program_name,sizeof(program_name));
 
-		Parameters = ReadArgs(cmd_template,(LONG *)&args,NULL);
+		Parameters = ReadArgs(cmd_template,(IPTR *)&args,NULL);
 		if(Parameters == NULL)
 		{
 			PrintFault(IoErr(),FilePart(program_name));
@@ -1257,8 +1265,12 @@ struct FormatContext
 
 /****************************************************************************/
 
+#if !defined(__AROS__)
 STATIC VOID ASM
 CountChar(REG(a3,struct FormatContext * fc))
+#else
+STATIC VOID CountChar(struct FormatContext * fc)
+#endif
 {
 	fc->fc_Size++;
 }
@@ -1278,8 +1290,12 @@ CVSPrintf(STRPTR format_string,APTR args)
 
 /****************************************************************************/
 
+#if !defined(__AROS__)
 STATIC VOID ASM
 StuffChar(REG(d0,UBYTE c),REG(a3,struct FormatContext * fc))
+#else
+STATIC VOID StuffChar(UBYTE c, struct FormatContext * fc)
+#endif
 {
 	(*fc->fc_Buffer++) = c;
 }
@@ -1880,8 +1896,12 @@ TranslateBName(UBYTE * name,UBYTE * map)
 		LONG len;
 		UBYTE c;
 
+#if !defined(__AROS__)
 		len = (*name++);
-
+#else
+		len = AROS_BSTR_strlen(name);
+		name = AROS_BSTR_ADDR(name);
+#endif
 		while(len-- > 0)
 		{
 			c = (*name);
@@ -2513,7 +2533,9 @@ Setup(
 
 /****************************************************************************/
 
+
 /* Convert a BCPL string into a standard NUL terminated 'C' string. */
+#if !defined(__AROS__)
 INLINE STATIC VOID
 ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 {
@@ -2528,10 +2550,27 @@ ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 
 	cstring[len] = '\0';
 }
+#else
+INLINE STATIC VOID
+ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
+{
+        UWORD _i = 0;
+	UWORD _len = AROS_BSTR_strlen(bstring);
+
+        while((_i < _len) && (_i < max_len))
+        {
+            cstring[_i] = AROS_BSTR_getchar(bstring, _i);
+            _i++;
+        }
+
+	cstring[_i] = '\0';
+}
+#endif
 
 /* Convert a NUL terminated 'C' string into a BCPL string. */
+#if !defined(__AROS__)
 INLINE STATIC VOID
-ConvertCString(LONG max_len,APTR bstring,STRPTR cstring)
+ConvertCString(LONG max_len, APTR bstring, STRPTR cstring)
 {
 	LONG len = strlen(cstring);
 	STRPTR to = bstring;
@@ -2542,6 +2581,19 @@ ConvertCString(LONG max_len,APTR bstring,STRPTR cstring)
 	(*to++) = len;
 	memcpy(to,cstring,len);
 }
+#else
+INLINE STATIC VOID
+ConvertCString(LONG max_len, APTR bstring, STRPTR cstring)
+{
+        UWORD _i = 0;
+        while((cstring[_i] != '\0') && (_i < max_len))
+        {
+            AROS_BSTR_putchar(bstring, _i, cstring[_i]);
+            _i++;
+        }
+        AROS_BSTR_setstrlen(bstring, _i);
+}
+#endif
 
 /****************************************************************************/
 
@@ -3801,13 +3853,19 @@ Action_ExamineObject(
 
 	if(lock == NULL)
 	{
+#if !defined(__AROS__)
 		STRPTR volume_name = BADDR(VolumeNode->dol_Name);
 		LONG len = volume_name[0];
-
-		SHOWMSG("ZERO root lock");
-
-		memcpy(fib->fib_FileName+1,volume_name+1,len);
+	    
+		memcpy(fib->fib_FileName+1, volume_name + 1, len);
 		fib->fib_FileName[0] = len;
+#else
+		STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
+		LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
+
+		memcpy(fib->fib_FileName, volume_name, len);
+#endif
+		SHOWMSG("ZERO root lock");
 
 		fib->fib_DirEntryType	= ST_ROOT;
 		fib->fib_EntryType		= ST_ROOT;
@@ -3844,13 +3902,19 @@ Action_ExamineObject(
 
 		if(strcmp(ln->ln_FullName,SMB_ROOT_DIR_NAME) == SAME)
 		{
+#if !defined(__AROS__)
 			STRPTR volume_name = BADDR(VolumeNode->dol_Name);
 			LONG len = volume_name[0];
 
-			SHOWMSG("root lock");
-
-			memcpy(fib->fib_FileName+1,volume_name+1,len);
+			memcpy(fib->fib_FileName+1, volume_name + 1, len);
 			fib->fib_FileName[0] = len;
+#else
+			STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
+			LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
+
+			memcpy(fib->fib_FileName, volume_name, len);
+#endif
+			SHOWMSG("root lock");
 
 			fib->fib_DirEntryType	= ST_ROOT;
 			fib->fib_EntryType		= ST_ROOT;
