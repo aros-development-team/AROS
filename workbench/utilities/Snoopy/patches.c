@@ -489,14 +489,6 @@ AROS_LH2(BPTR, New_Open,
 	if      (accessMode == MODE_OLDFILE)   opt = MSG(MSG_READ);
 	else if (accessMode == MODE_NEWFILE)   opt = MSG(MSG_WRITE);
 	else if (accessMode == MODE_READWRITE) opt = MSG(MSG_MODIFY);
-	else if (accessMode & (FMF_READ|FMF_WRITE|FMF_APPEND|FMF_CREATE))
-	{
-	    sprintf(optstr, "FMF %c%c%c%c",
-		(accessMode & FMF_READ) ? 'R' : '_',
-		(accessMode & FMF_WRITE) ? 'W' : '_',
-		(accessMode & FMF_APPEND) ? 'A' : '_',
-		(accessMode & FMF_CREATE) ? 'C' : '_');
-	}
 	else
             opt = MSG(MSG_UNKNOWN);
 
