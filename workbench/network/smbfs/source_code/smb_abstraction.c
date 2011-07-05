@@ -20,6 +20,8 @@
 #include <smb/smb.h>
 #include <smb/smbno.h>
 
+#define MAXHOSTNAMELEN 256
+
 /*****************************************************************************/
 
 #define ATTR_CACHE_TIME     5   /* cache attributes for this time */

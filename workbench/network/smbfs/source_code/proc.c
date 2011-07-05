@@ -14,7 +14,9 @@
  */
 
 #include "smbfs.h"
+#if !defined(__AROS__)
 #include "quad_math.h"
+#endif
 
 /*****************************************************************************/
 
@@ -1276,6 +1278,7 @@ smb_proc_readdir_short (struct smb_server *server, char *path, int fpos, int cac
 
 /*****************************************************************************/
 
+#if !defined(__AROS__)
 /* Interpret an 8 byte "filetime" structure to a 'time_t'.
  * It's originally in "100ns units since jan 1st 1601".
  *
@@ -1317,6 +1320,19 @@ interpret_long_date(char * p)
 
   return(result);
 }
+#else
+static time_t
+interpret_long_date(char * p)
+{
+    QUAD long_date;
+    long_date  = (DVAL(p,0) << 32) | DVAL(p,4);
+
+    long_date -= 116444736000000000;
+    long_date /= 10000000;
+    
+    return((time_t)long_date & 0xFFFFFFFF);
+}
+#endif
 
 /*****************************************************************************/
 
@@ -2315,7 +2331,11 @@ smb_proc_reconnect (struct smb_server *server)
     LOG (("smb_proc_connect: workgroup = %s\n", server->mount_data.workgroup_name));
     if (server->protocol >= PROTOCOL_NT1)
     {
+#if !defined(__AROS__)
       char *OS_id = "AmigaOS";
+#else
+      char *OS_id = "AROS";
+#endif
       char *client_id = "smbfs";
 
       SHOWMSG("server->protocol >= PROTOCOL_NT1");

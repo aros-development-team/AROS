@@ -39,9 +39,11 @@
 
 #include <string.h>
 
+#if !defined(__AROS__)
 extern struct Library * AbsExecBase;
 
 #define SysBase AbsExecBase
+#endif
 
 extern void kprintf(const char *,...);
 extern void __stdargs kputc(char c);
