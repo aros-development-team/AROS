@@ -7,7 +7,7 @@ FILES=pipebuf pipedebug pipecreate pipedir \
       main
 
 %build_prog mmake=workbench-fs-pipe \
-	progname=pipe.handler targetdir=$(AROS_DEVS) \
+	progname=pipe.handler targetdir=$(AROS_FS) \
 	files="$(FILES)" \
 	usestartup=no \
 	uselibs="arossupport rom"
