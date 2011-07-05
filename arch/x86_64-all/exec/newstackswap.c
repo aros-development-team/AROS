@@ -1,77 +1,93 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: NewStackSwap() - Call a function with swapped stack.
+    Desc: NewStackSwap() - Call a function with swapped stack, x86-64 version
     Lang: english
 */
 
-/*****************************************************************************
-
-    NAME */
+#include <aros/config.h>
 #include <aros/debug.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
-	AROS_LH3(IPTR, NewStackSwap,
+#define _PUSH(sp, val) *--sp = (IPTR)val
 
-/*  SYNOPSIS */
+AROS_LH3(IPTR, NewStackSwap,
 	AROS_LHA(struct StackSwapStruct *,  sss, A0),
 	AROS_LHA(LONG_FUNC, entry, A1),
 	AROS_LHA(struct StackSwapArgs *, args, A2),
-
-/*  LOCATION */
 	struct ExecBase *, SysBase, 122, Exec)
-
-/*  FUNCTION
-	Calls a function with a new stack.
-
-    INPUTS
-	sss     -   A structure containing the values for the upper, lower
-		    and current bounds of the stack you wish to use.
-	entry	-   Address of the function to call.
-	args	-   A structure (actually an array) containing up to 8
-		    function arguments.  The function is called using C calling
-		    convention (no AROS_UHFx macro needed).
-
-    RESULT
-	A value actually returned by your function. The function will be
-	running on a new stack.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-        Do not attempt to pass in a prebuilt stack - it will be erased.
-
-    SEE ALSO
-	StackSwap()
-
-    INTERNALS
-	This function MUST be replaced in $(KERNEL) or $(ARCH).
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    IPTR  *	retptr;
-    IPTR 	ret;
+    volatile struct Task *t = FindTask(NULL);
+    volatile IPTR *sp = sss->stk_Pointer;
+    volatile APTR splower = t->tc_SPLower;
+    volatile APTR spupper = t->tc_SPUpper;
+    IPTR ret;
 
-    retptr = &ret;
+    /* Only last two arguments are put to stack in x86-64 */
+    _PUSH(sp, args->Args[7]);
+    _PUSH(sp, args->Args[6]);
 
-    sss->stk_Pointer = sss->stk_Upper;
+    if (t->tc_Flags & TF_STACKCHK)
+    {
+    	UBYTE* startfill = sss->stk_Lower;
 
-    D(bug("In NewStackSwap() entry=%lx, *entry=%lx\n", (IPTR)entry, (IPTR)*entry));
-    StackSwap(sss);
+    	while (startfill < (UBYTE *)sp)
+	    *startfill++ = 0xE1;
+    }
 
-    /* Call the function with the new stack */
-    *retptr = entry(args->Args[0], args->Args[1], args->Args[2], args->Args[3],
-		    args->Args[4], args->Args[5], args->Args[6], args->Args[7]);
+    /*
+     * We need to Disable() before changing limits and SP, otherwise
+     * stack check will fail if we get interrupted in the middle of this
+     */
+    D(bug("[NewStackSwap] SP 0x%p, entry point 0x%p\n", sp, entry));
+    Disable();
 
-    StackSwap(sss);
+    /* Change limits. The rest is done in asm below */
+    t->tc_SPLower = sss->stk_Lower;
+    t->tc_SPUpper = sss->stk_Upper;
 
+    asm volatile(
+    /* Save original RSP */
+    "push %%rbp\n\t"
+    "movq %%rsp, %%rbp\n\t"
+    /* Actually change the stack */
+    "movq %2, %%rsp\n\t"
+
+    /* Enable(). It preserves all registers by convention. */
+    "call *-168(%%rdi)\n\t"
+
+    /* Call our function with its arguments */
+    "movq 0(%3), %%rdi\n\t"
+    "movq 8(%3), %%rsi\n\t"
+    "movq 16(%3), %%rdx\n\t"
+    "movq 24(%3), %%rcx\n\t"
+    "movq 32(%3), %%r8\n\t"
+    "movq 40(%3), %%r9\n\t"
+    "call *%1\n\t"
+
+    /* Disable(). Also preserves registers. */
+    "movabsq $SysBase, %%rdi\n\t"
+    "movq (%%rdi), %%rdi\n\t"
+    "call *-160(%%rdi)\n\t"
+
+    /* Restore original RSP. Function's return value is in RAX. */
+    "movq %%rbp, %%rsp\n\t"
+    "popq %%rbp\n"
+    : "=a"(ret)
+    : "r"(entry), "r"(sp), "r"(args), "D"(SysBase)
+    : "rsi", "rdx", "rcx", "r8", "r9", "cc");
+
+    /* Change limits back and return */
+    t->tc_SPLower = splower;
+    t->tc_SPUpper = spupper;
+    Enable();
+
+    D(bug("[NewStackSwap] Returning 0x%p\n", ret));
     return ret;
-    
+
     AROS_LIBFUNC_EXIT
 } /* NewStackSwap() */
