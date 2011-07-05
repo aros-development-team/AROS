@@ -1,0 +1,662 @@
+smbfs 1.19 (27.11.2000)
+
+- Fixed ACTION_FINDOUTPUT implementation; the memory to hold the
+  name of the file to be created was released before the file
+  was created. This could cause garbage to be written to the
+  output file.
+
+- Fixed ACTION_COPY_DIR implementation; the name of the lock to
+  be duplicated did not get duplicated.
+
+- Fixed ACTION_EXAMINE_OBJECT and ACTION_EXAMINE_NEXT
+  implementations; protection bits are now reported 'properly'
+  with respect to read/write access.
+
+
+smbfs 1.20 (27.11.2000)
+
+- ACTION_EXAMINE_NEXT now filters out SMB names that include
+  '/' or ':' characters.
+
+
+smbfs 1.21 (28.11.2000)
+
+- Modified ACTION_RENAME_DISK to remove the volume node before
+  changing it. It also sends the appropriate diskremove/diskinserted
+  input events now.
+
+- Reorganized and rewrote the code to reduce dependencies on
+  the compiler runtime library.
+
+- Unified error reporting code.
+
+- SMBFS can now be launched from Workbench using the same parameters
+  you would use when starting it from Shell. Error reporting
+  has been adapted to show an error requester and to pool error
+  messages rather than printing them to the console.
+
+
+smbfs 1.22 (30.11.2000)
+
+- Fixed the test that looks for file/lock access mode collisions.
+
+- No longer changes the case of the password; there is now an
+  option to make the change.
+
+- Fixed ACTION_SAME_LOCK which was comparing the same lock with
+  itself.
+
+- Added support for ACTION_EXAMINE_ALL, ACTION_EXAMINE_ALL_END
+  and ACTION_WRITE_PROTECT packet types.
+
+- No longer allows for files and locks to refer to "." and "..".
+  The use of the backslash character '\' is also disallowed in
+  Amiga file/directory names.
+
+
+smbfs 1.23 (30.11.2000)
+
+- In the ExNext()/ExAll() handling functions local error variables
+  were shadowing each other. Fixed.
+
+- The error reporting requester now also lists the name of the
+  service to connect to. This should help in telling different
+  invocations of the program apart.
+
+- The size of the directory cache is now a configurable option.
+
+- Added a new option which forces all name comparisons to be
+  done in a case-sensitive fashion.
+
+- Reading/writing data to/from a file in chunks larger than
+  65535 bytes could fail and cause the file system to hang.
+
+
+smbfs 1.24 (1.12.2000)
+
+- Added an option to allow hidden files to be omitted from
+  directory listings.
+
+- Improved upon the error reporting in the code that directly
+  calls the TCP/IP API functions.
+
+- Reorganized the AmigaDOS packet handling switch..case
+  list.
+
+- Added support for ACTION_MORE_CACHE packet type. The
+  cache in this context refers to the directory scanning
+  cache.
+
+- Improved upon the host lookup error reporting code.
+
+- Added support for file name translation such as via the
+  CrossDOS translation table files.
+
+
+smbfs 1.25 (2.12.2000)
+
+- SMBFS now displays some configuration information as soon as
+  it has successfully connected to the file server and is ready
+  for action. This output can be suppressed with the new
+  "QUIET" command line parameter.
+
+- When removing a directory, the error code returned is examined
+  more closely to see whether the directory was not yet empty.
+
+- When setting the protection bits of a file or directory, the
+  file system now treats either 'protected from deletion' and
+  'protected from writing' as indications to mark a file as
+  write protected. Previously, a file had to be both protected
+  from deletion and from writing to be treated as write protected.
+
+- Cleaned up the program's data structures and eliminated all
+  static data that would hold state information. The entire
+  client side is now completely reentrant.
+
+
+smbfs 1.26 (3.12.2000)
+
+- File and directory names are no longer duplicated in the
+  SMB abstraction layer. The strings supplied by the Amiga
+  file system layer are referenced instead.
+
+- Changed the way the ACTION_MORE_CACHE implementation returns
+  its result code to be compatible with current practices.
+
+
+smbfs 1.27 (4.12.2000)
+
+- The changes I made to the file read command in order to allow it
+  to read more than 65535 bytes at a time did not allow read
+  attempts at the end of the file to come out properly. Fixed.
+
+- Integrated password encryption code lifted from Samba. Hope
+  it works as it should, because if it doesn't, I wouldn't know
+  how to fix it...
+
+
+smbfs 1.28 (4.12.2000)
+
+- Oh dear, more fixes to the password encryption code and the
+  connection setup to follow it. This time I managed to test the
+  code briefly with Samba and password encryption enabled.
+  Amazingly, it seems to work this time!
+
+
+smbfs 1.29 (6.12.2000)
+
+- Writes larger than 65535 bytes could stall and slow down the
+  file system. Fixed. [Thore Böckelmann]
+
+- The ACTION_MORE_CACHE implementation never returned the total
+  number of cache entries allocated. Fixed. [Thore Böckelmann]
+
+- Plain text passwords didn't seem to work any more after I made
+  the changes to allow for encrypted passwords to be used. Fixed.
+
+
+smbfs 1.30 (6.12.2000)
+
+- Changed the structure of the share names by which the file system
+  refers to the data on the server; they all start with a backslash
+  now. This seems to help NT and doesn't break the rest.
+
+- For file shares exported using 'share level security', no passwords
+  will be transmitted.
+
+
+smbfs 1.31 (7.12.2000)
+
+- The ACTION_EXAMINE and ACTION_EXAMINE_FH implementations now verify
+  that the name to return will fit into the FileInfoBlock's limited
+  buffer space.
+
+- Deleting files and directories from a directory currently being
+  scanned via ACTION_EXAMINE_NEXT or ACTION_EXAMINE_ALL will now cause
+  the directory scanner to restart. This is ugly, I know, but at least
+  it won't cause the scanning process to hickup or lose entries
+  directory entries during its course of duty. The flip side is that
+  the scanner will probably return some entries twice. There must
+  be a better way to implement this, but for now, this is it.
+
+- Tried to make device and volume node removal safer.
+
+- SMBFS now always adds a device node to go along with the volume node.
+  It's safer that way because for every file system you either have a
+  single device node in the system (and no volume node) or a volume
+  node *and* a device node. If the device node is missing, there's
+  typically something wrong and some application software cannot handle
+  this case properly. SMBFS will attempt to add a new, unique device
+  node every time it is launched.
+
+- When specifying the name of the file system device to add, SMBFS
+  now complains if that name already exists.
+
+
+smbfs 1.32 (8.12.2000)
+
+- File and directory modification dates were always off by six hours and
+  one second. I don't know how that happens, it doesn't seem to be a bug
+  in the date conversion routines. I worked around the problem by adding
+  and subtracting an adjustment value.
+
+
+smbfs 1.33 (10.12.2000)
+
+- The ACTION_PARENT_DIR implementation did not return a ZERO lock for
+  the root directory. Fixed. [Rudolph Riedel]
+
+- Replaced the doubly-linked Exec lists with skip lists which
+  are better suited for the repeated lookup operations that
+  are so common in the file system. This time the list code
+  seems to work properly.
+
+- Added -- largely untested -- time and date decoding routines for
+  directory entries returned by NT.
+
+
+smbfs 1.34 (10.12.2000)
+
+- Had to take out the skip list code again since it did not seem to
+  work reliably.
+
+- Further tweaking to the NT date and time decoding code.
+
+
+smbfs 1.35 (10.12.2000)
+
+- Small modification to the ACTION_EXAMINE_NEXT/ACTION_EXAMINE_ALL code
+  which tries to work around a strange effect caused by Amiga Samba
+  returning the contents of an empty drawer.
+
+
+smbfs 1.36 (11.12.2000)
+
+- More fixes to the NT date and time conversion code and the
+  strange six hour fixup that seems to be necessary for the
+  'regular' time conversion to work.
+
+
+smbfs 1.37 (11.12.2000)
+
+- Replaced the entire 'regular' date and time conversion code. The
+  strange six hour fixup is no longer necessary.
+
+
+smbfs 1.38 (11.12.2000)
+
+- Ditched the packet size kludges in "sock.c" and "proc.c" I had put
+  in there. It seems that only the 'smba_write()'/'smba_read()' code
+  could trigger it, and that code was fixed quite a while ago.
+
+- Migrated some code changes from the Samba source over to the
+  directory scanner.
+
+- Maximum transmission size per packet is now the same as the
+  number the server allowed us to use rather than a fixed number
+  imposed by VM page sizes.
+
+- Tried to clean up more of the code.
+
+- Discovered that the 'smb_valid_packet()' routine never could have
+  worked and fixed it so that it now finally does what it should do.
+
+- Better error propagation for some routines in "proc.c".
+
+- More streamlined error testing code.
+
+
+smbfs 1.39 (11.12.2000)
+
+- Almost fixed several bugs in 'smb_proc_readdir_long()'.
+
+- 'smb_proc_readdir_long()' does not work correctly. It only seems to
+  work, but will fail if the scanner is to restart before the entire
+  directory is read. Restored the old behaviour :(
+
+
+smbfs 1.40 (13.12.2000)
+
+- Took out some more unused and unnecessary code.
+
+- Rewrote the time and date conversion routines.
+
+- Modified the directory reading code so that it no longer relies
+  upon the last directory entry index which doesn't seem to be
+  correct most of the time.
+
+- Directory scanning errors are now flagged as such.
+
+
+smbfs 1.41 (16.12.2000)
+
+- In the SMB abstraction layer, the directory cache is now invalidated
+  only if the respective action that could have invalidated it succeeds.
+
+- Now clears the directory cache only if the respective action would
+  have affected the directory being cached.
+
+- In debug mode [Ctrl]+F will display a list of open files and allocated
+  locks.
+
+- Added very silly support for ACTION_SET_COMMENT packet.
+
+- Found an interesting bug fix for 'smb_proc_readdir_long()' in the
+  Linux 2.4.0 kernel which seemed worth integrating into the file system.
+
+
+smbfs 1.42 (19.12.2000)
+
+- Integrated Chris Hertel's broadcast name query code. This means that
+  the name of the host whose file shares you want to access need no
+  longer be in the hosts database. However, you still cannot refer to
+  a host solely by its IP address.
+
+
+smbfs 1.43 (21.12.2000)
+
+- The integrated broadcase name query code would conflict with the
+  DNS lookup. Fixed. [Thore Böckelmann]
+
+- The NetBIOS name query code now retries four times to get a response
+  out of the network.
+
+- Put the mysterious 6 hour time offset fix back in.
+
+
+smbfs 1.44 (29.12.2000)
+
+- Rewrote the host lookup error reporting code to use the appropriate
+  API function.
+
+- Discovered that all the functionality required by SMBFS was supported
+  by the original free AmiTCP 3.0 release. Changed the "bsdsocket.library"
+  open parameters.
+
+- The ACTION_EXAMINE_OBJECT implementation consistently got the name of
+  the root directory wrong. Fixed.
+
+
+smbfs 1.45 (7.1.2001)
+
+- Discovered why file and directory creation dates were wrong by about
+  six hours. Fixed.
+
+- The order of the parameters passed to the 'ExAll()' filter hook was
+  wrong. Fixed [Thorsteinn Sveinsson and Matt Sealey].
+
+
+smbfs 1.46 (1.2.2001)
+
+- Removed the workarounds for the mysterious 'off by six hours' bug.
+  The time delta value added was consistently wrong.
+
+
+smbfs 1.47 (18.2.2001)
+
+- The name of the domain/workgroup, the name of the user and the
+  password to be used can now be preset using environment variables.
+
+- Changed the command line argument template to work better with the
+  newly introduced environment variable settings.
+
+
+smbfs 1.48 (3.3.2001)
+
+- Modified the command template so that the final parameter can no
+  longer cause all other parameters to be swallowed. Also updated
+  the documentation.
+
+
+smbfs 1.49 (3.3.2001)
+
+- Handling of ACTION_FINDUPDATE needed improving. It should have
+  created a file that didn't already exist. It now does [David Gerber].
+
+
+smbfs 1.50 (4.3.2001)
+
+- ACTION_FINDUPDATE is now associated with a shared lock. It used
+  to be an exclusive lock [David Gerber].
+
+- The test to follow ACTION_FINDUPDATE that determines whether the
+  file to open already exists now also tries to 'stat()' the file
+  in question to find out whether it exists.
+
+
+smbfs 1.51 (13.3.2001)
+
+- Whoops. The new code to pull data from environment variables didn't
+  actually check whether the work group name could be set up properly
+  and thus didn't complain about it either. It now notifies you if
+  no work group name was provided and none could be found.
+
+
+smbfs 1.52 (22.6.2001)
+
+- Added another option which allows you to preset the time zone offset
+  to use when translating between the local time and the SMB server
+  time. Using the default locale doesn't work for that purpose all the
+  time since there are so many misconfigured servers out there.
+
+- The ACTION_DIE packet didn't have the desired effect if the file
+  system didn't have a reason to wait for any resources to be
+  released again. It just wouldn't quit. Now it does.
+
+- Before it exits, the file system no longer posts a disk change
+  event if it was launched from Workbench. I found that the steps
+  taken so far could end up deadlocking Workbench.
+
+
+smbfs 1.53 (26.6.2001)
+
+- Changed the file name parser; it should now be possible to tie assigns
+  to files and directories on an smb volume. Since the updated file name
+  translation code also is a bit smarter about when to use which
+  file name separator character, accesses to the media should be a
+  bit faster, too.
+
+- When translating path names, trailing '/' characters are now properly
+  parsed, i.e. Lock("/",...) should always bring up the parent directory
+  [Matt Sealey].
+
+- Duplicating a ZERO lock now works as expected.
+
+
+smbfs 1.54 (27.6.2001)
+
+- Directory and file creation didn't work that properly after applying
+  the changes I made to the parser. Fixed [Matt Sealey].
+
+
+smbfs 1.55 (3.3.2002)
+ 
+- At least samba 2.2.2-12 on linux can send total_data of 0 bytes. This
+  caused sock.c/smb_receive_trans2() malloc() (==AllocVecPooled) to fail
+  on smba_readdir(). Fixed [Harry Sintonen].
+
+- Added quickfix against crash if smb_abstraction.c/smb_smba_readdir()
+  fails. This is by no means a real fix, but at least it doesn't crash
+  [Harry Sintonen].
+
+- There is definitely something fishy in the smbfs restart/retry scheme,
+  it just doesn't work properly (all state data has to be, and is,
+  reset when restarts occur, but still it tries to use the old data as if
+  nothing happened). Someone should really take a closer look at this
+  [Harry Sintonen].
+
+
+smbfs 1.56 (3.9.2002)
+
+- Rewrote the Setup() code which allocates and initializes the device and
+  volume nodes. Lost all Forbid()..Permit() pairs on the way, making the
+  code more robust and less weird.
+
+- In proc.c/smb_proc_readdir_long() now specifically watches for the
+  smb_trans2_request() function return empty data and parameter values.
+  This is now treated as an attempt to read from an empty directory.
+  Previously, there was a slight change that the information was
+  taken seriously even if NULL was returned.
+
+
+smbfs 1.57 (3.9.2002)
+
+- Ran the code through GCC and rewrote the code to get rid of the compiler
+  warnings that appeared to have something more serious about them. This
+  includes, for example, comparisons between signed and unsigned values.
+
+
+smbfs 1.58 (5.9.2002)
+
+- Rebuilt using my own TCP/IP stack SDK. Rebuilding the code with the
+  Miami SDK should still be possible, though.
+
+- Changed the way smb_proc_readdir_long() aborts the job if no valid
+  data is read.
+
+
+smbfs 1.59 (10.9.2003)  [Harry Sintonen <sintonen -at- iki -dot- fi>]
+
+- Fixed ACTION_DELETE_OBJECT to restart directory scanning, it
+  searched for wrong object. Fixes the problem where every other
+  file was skipped when deleting directory.
+
+
+smbfs 1.60 (11.2.2004) [Peter Riede <Noster-Riede -at- T-Online -dot- de>]
+
+- Fixed ACTION_SEEK, it doesn't works if followed by ACTION_WRITE.
+  Fixes the problem by using the SMBlseek packet instead of just
+  remembering the position in the local FileNode structure
+
+- Fixed ACTION_SETFILESIZE, has returned an errorcode of 37 instead
+  of 0L on success.
+
+- Added support for the ACTION_LOCK_RECORD and ACTION_UNLOCK_RECORD
+  packets.
+
+
+smbfs 1.61 (27.4.2004)
+
+- Reworked the ACTION_SEEK implementation. Turns out that the SMB
+  lseek packet only seems to work for the Samba server but produces
+  unpredictable results with Microsoft flavoured servers. The new
+  code, which helps to avoid trouble with overlapping write access
+  and seeks, now performs much like the old one except that it
+  "notifies" the SMB server of the new file position to be used.
+  Tested both with Samba and Windows XP: works as it should.
+
+
+smbfs 1.62 (8.5.2004)
+
+- Added sanity checks to the record locking code. For example,
+  locking a record of length 0 must be considered illegal. Also,
+  since the protocol deals with 32 bit signed integers for
+  file position and record length, parameters that are "too large"
+  and come out as negative values are now rejected.
+
+
+smbfs 1.63 (9.5.2004)
+
+- Added more sanity checks to the record locking code, this time
+  to avoid integer overflows.
+
+- Added support for the SMB 'archive' and 'system' file attributes,
+  which are mapped to the Amiga 'archived' and 'pure' protection
+  bits.
+
+- Cleaned up the header files.
+
+
+smbfs 1.64 (13.5.2004)
+
+- ExamineFH() did not fill in the file protection bits. Fixed.
+
+- Ported to AmigaOS4.
+
+
+smbfs 1.65 (16.5.2004)
+
+- The port numbers of the NetBIOS session and name services are no
+  longer hard-coded. They are now looked up (netbios-ns/udp and
+  netbios-ssn/tcp), and if that fails, the hard-coded default port
+  numbers are used instead.
+
+- Tried to reduce the risk of triggering buffer overflows by replacing
+  calls to strcpy/strcat. This revealed weaknesses in a number of
+  places, including the code that fills in the names of the directory
+  entries.
+
+- Instead of calling memcpy(), the code now invokes exec.library/CopyMem(),
+  which should be a wee bit faster than what the 'C' runtime library can do.
+
+- Merged with Peter Riede's changes: for small packets to be sent,
+  SMBwrite is used instead of SMBwritebraw (which greatly enhances
+  performance), the server max_xmit field is initialized differently
+  if the session was opened with a SMBtconx packet and ACTION_SEEK
+  no longer sets the error code to an undefined value in case of
+  success.
+
+
+smbfs 1.66 (10.6.2004)
+
+- Added a paranoia check to the ExAll() implementation which should
+  avoid trouble with extremely short data buffers.
+
+
+smbfs 1.67 (27.5.2005)
+
+- Replaced the long NT date conversion code with something hopefully
+  much more robust. The results so far are both encouraging and
+  irritating. Dates that previously came out as "unknown" are now
+  processed, but there are differences between the dates shown in the
+  directory listing and by listing the files by name. Go figure...
+
+- Transplanted some more code from Samba to handle directory entry
+  data conversion.
+
+
+smbfs 1.68 (3.6.2005)
+
+- It appears that Windows XP can produce directory listings with
+  file/directory modification times set to 0, indicating that no
+  such information is available, while the associated last file
+  write access data is present. Previously, smbfs only reported
+  the modification. If this data is unavailable and the date of
+  the last write access is, the last write access will be
+  reported instead.
+
+
+smbfs 1.69 (13.6.2005)
+
+- The time stamps used in "proc.c", as returned and submitted to
+  the SMB file system on the other end of the wire are apparently
+  all in Universally Coordinated Time already (or at least, this
+  seems to be the case with Samba and Windows XP). Hence no conversion
+  between local time and UTC is necessary, which would otherwise
+  distort all date stamps converted. I modified the file system to
+  leave all time stamps essentially unadjusted for local time in
+  "proc.c". The local time zone adjustments are now performed only
+  where the time in question is known to be Amiga-specific, such as
+  the current system time or the date stamp to set for a file.
+
+  The time conversion appears to be working correctly now, but it
+  does ignore the effects of daylight savings time, which you might
+  want to adjust for manually through the TIMEZONEOFFSET option
+  (careful though: this overrides your current locale-defined time
+  zone settings as far as smbfs is concerned).
+
+  Unsolved problem: at least Windows XP seems to return different
+  time stamps for directory listings and for indidivual files. As
+  far as I can tell, the sets of time stamps returned for either
+  doesn't match anywhere.
+
+
+smbfs 1.70 (13.6.2005)
+
+- Introduced a new option to account for daylight savings time
+  when appropriate.
+
+- Looks like some of the time stamps used in "proc.c" are
+  transmitted in local time after all; brought back the
+  conversion functions.
+
+
+smbfs 1.71 (13.6.2005)
+
+- The extended directory scanning entry conversion code now swaps
+  the last modification and last write access date stamps. This
+  matches the time of the last modification, as returned by the
+  regular ACTION_EXAMINE_FH/ACTION_EXAMINE packets. Note that the
+  time resolution is a little bit coarser because the modification
+  time as expressed by the SMB getattr function cannot represent
+  60 distinct seconds per minute but only 30. The net effect is
+  that the resulting time stamps in a directory listing and by
+  examining a file can differ by one second.
+
+- The DST option's time offset was added to rather than subtracted
+  from the local time. Fixed.
+
+
+smbfs 1.72 (14.4.2009)
+
+- In proc.c, smb_setup_header() initialized the SMB header length
+  field with a number which was too large by four bytes. Consequently,
+  what was later committed to the wire would have four trailing data
+  bytes which could contain random values. This often didn't do much
+  harm, but it seems that Samba 3.2.4 and Windows Vista don't like the
+  looks of the trailing junk bytes.
+
+
+smbfs 1.73 (17.4.2009)
+
+- Modified smb_valid_packet() in proc.c to check whether the packet
+  received is smaller than expected, not whether the length matches
+  exactly. This seems to fix the protocol negotiation with Samba 3.2.5
+  for now. Haven't checked Vista yet, though...
+
+
+smbfs 1.74 (31.8.2009)
+
+- Integrated Harry Sintonen's fix for the problem caused by large
+  writes to files. The respective packet size was off by one byte.
+  Thank you very much!

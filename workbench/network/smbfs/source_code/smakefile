@@ -1,0 +1,135 @@
+#
+# $Id: smakefile,v 1.4 2009/04/14 11:32:51 obarthel Exp $
+#
+# :ts=8
+#
+# SMB file system wrapper for AmigaOS, using the AmiTCP V3 API
+#
+# Copyright (C) 2000-2009 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+# NOTE: In order to build smbfs you will need to obtain the AmiTCP
+#       SDK, or the equivalent for Miami/Miami Deluxe or Roadshow.
+#       From that SDK, copy the "netinclude" directory to the same
+#       directory you find this "smakefile" in. Next, modify this
+#       "smakefile", removing the "@ctags >tagfiles/$* $<" and
+#       "@type tagfiles/\#? >t:tags", "@copy t:tags """ and
+#       "@delete >nil: t:tags" lines if you don't have the "ctags"
+#       command installed.
+#
+
+.c.o:
+	sc $(CFLAGS) $<
+	@ctags >tagfiles/$* $<
+
+.asm.o:
+	asm $(ASMFLAGS) $<
+
+###############################################################################
+
+PROJECT = smbfs
+
+###############################################################################
+
+#############################################################################
+#
+# Program version
+#
+#############################################################################
+
+VERSION = 1
+
+###############################################################################
+
+ OPTIMIZE =	optimize opttime optinline optinlocal optschedule
+ CPU =		any
+#CPU =		060
+ DEBUG =	line
+#DEBUG =	symbolflush noopt define=DEBUG
+
+###############################################################################
+
+CFLAGS =	idlen=64 comnest streq strmerge nostkchk \
+		$(OPTIMIZE) cpu=$(CPU) debug=$(DEBUG) data=faronly \
+		params=register idir=netinclude idir=include \
+		ignore=306 gst=system_headers.gst
+
+LFLAGS =	smallcode smalldata noicons batch
+
+###############################################################################
+
+OBJS = main.o proc.o smb_abstraction.o sock.o crypt.o quad_math.o
+
+###############################################################################
+
+LIBS = lib:scnb.lib lib:amiga.lib lib:debug.lib
+
+###############################################################################
+
+all: tagfiles system_headers.gst $(PROJECT)
+
+tagfiles:
+	makedir $@
+
+$(PROJECT): $(OBJS) system_headers.gst Assert.o
+	slink $(OBJS) to $@.debug lib $(LIBS) Assert.o $(LFLAGS) \
+		map $(PROJECT).map,fhx fwidth 32 pwidth 32 swidth 32
+	slink $@.debug to $@ noicons nodebug
+	@type tagfiles/\#? >t:tags
+	@copy t:tags ""
+	@delete >nil: t:tags
+
+system_headers.gst: system_headers.h system_headers.c
+	gst unload $@
+	sc $(CFLAGS) nodebug noobjname nogst makegst=$@ system_headers.c
+
+###############################################################################
+
+assert.o : assert.c
+crypt.o : crypt.c system_headers.h assert.h smbfs.h
+main.o : main.c system_headers.h assert.h smbfs.h smb_abstraction.h smbfs_rev.h
+proc.o : proc.c system_headers.h assert.h smbfs.h quad_math.h
+quad_math.o : quad_math.c quad_math.h
+smb_abstraction.o : smb_abstraction.c system_headers.h assert.h smbfs.h smb_abstraction.h
+sock.o : sock.c system_headers.h assert.h smbfs.h smb_abstraction.h
+
+###############################################################################
+
+clean:
+	-delete \#?.o $(PROJECT)(%|.debug)
+
+realclean: clean
+	-delete system_headers.gst tags tagfiles \#?.map all
+
+###############################################################################
+
+mkid:
+	mkid -v \#?.(c|h|a|asm|i) include/smb/\#?.h
+
+update:
+	mkid -v -u
+
+version:
+	bumprev $(VERSION) $(PROJECT)
+
+###############################################################################
+
+cvs-tag:
+	cvs -q tag V$(VERSION)_`type $(PROJECT)_rev.rev`
+
+cvs-update:
+	cvs update
