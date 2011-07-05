@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prints a hexdump of a memory region
@@ -65,7 +65,7 @@
     for (t=0; t<end; t++)
     {
 	if ((t&15) == 0)
-	    kprintf ("%08lx:", offset+t);
+	    kprintf ("%p:", offset+t);
 
 	if ((t&3) == 0)
 	    kprintf (" ");
@@ -81,8 +81,14 @@
 
 	    for (i=15; i>=0; i--)
 	    {
-		if (isprint (((UBYTE *)data)[t-i]))
-		    kprintf ("%c", ((UBYTE *)data)[t-i]);
+	    	UBYTE c = ((UBYTE *)data)[t-i];
+
+		/*
+		 * isprint() introduces depencency on arosc.library, which prevents
+		 * using this function from within KS code.
+		 */
+	    	if ((c > 0x1F) && (c < 0x7E))
+		    kprintf ("%c", c);
 		else
 		    kprintf (".");
 	    }
