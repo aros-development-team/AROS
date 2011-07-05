@@ -11,14 +11,10 @@
 
 #define EXPANSIONNAME   "expansion.library"
 
-/* Flags for the AddDosNode() call */
+/* Flag for the AddDosNode()/AddBootNode() calls */
 
 /* Start FileSystem process. */
 #define ADNB_STARTPROC      0
 #define ADNF_STARTPROC      (1L<< ADNB_STARTPROC)
-
-/* This is supposed to tell the boot code that we boot without a ConfigDev */
-#define ADNB_NOCONFIGDEV    8
-#define ADNF_NOCONFIGDEV    (1L<< ADNB_NOCONFIGDEV)
 
 #endif /* LIBRARIES_EXPANSION_H */

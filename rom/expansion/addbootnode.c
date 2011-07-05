@@ -91,7 +91,7 @@
 
 	configDev   -   A valid expansion board ConfigDev structure, this
 			is required for an autoboot before DOS is running.
-			If left NULL, this will make the node non-bootable.
+			If left NULL, the node cannot be BootPoint booted.
 
     RESULT
 	TRUE if everything was ok,

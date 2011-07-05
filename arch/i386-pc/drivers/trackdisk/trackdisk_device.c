@@ -143,7 +143,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
                         CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler),
                             len);
                         AROS_BSTR_setstrlen(devnode->dn_Handler, len);
-			AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC | ADNF_NOCONFIGDEV, devnode, NULL);
+			AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
 		    }
 		}
 	    }
