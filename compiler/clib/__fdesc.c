@@ -92,7 +92,7 @@ int __getfdslot(int wanted_fd)
 
 LONG __oflags2amode(int flags)
 {
-    LONG openmode = 0;
+    LONG openmode = -1;
 
     /* filter out invalid modes */
     switch (flags & (O_CREAT|O_TRUNC|O_EXCL))
@@ -102,12 +102,17 @@ LONG __oflags2amode(int flags)
             return -1;
     }
 
-    if (flags & O_WRITE)    openmode |= FMF_WRITE;
-    if (flags & O_READ)     openmode |= FMF_READ;
-    if (flags & O_EXEC)     openmode |= FMF_EXECUTE;
-    if (flags & O_CREAT)    openmode |= FMF_CREATE;
-    if (flags & O_NONBLOCK) openmode |= FMF_NONBLOCK;
-    if (flags & O_APPEND)   openmode |= FMF_APPEND;
+    /* Sorted in 'trumping' order. Ie if 
+     * O_WRITE is on, that overrides O_READ.
+     * Similarly, O_CREAT overrides O_WRITE.
+     */
+    if (flags & O_READ)     openmode = MODE_OLDFILE;
+    if (flags & O_WRITE)    openmode = MODE_READWRITE;
+    if (flags & O_CREAT)    openmode = MODE_NEWFILE;
+    if (flags & O_APPEND)   /* Handled later */;
+    if (flags & O_TRUNC)    /* Handled later */;
+    if (flags & O_EXEC)     /* Ignored */;
+    if (flags & O_NONBLOCK) /* Ignored */;
 
     return openmode;
 }
@@ -207,7 +212,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
         if (fib->fib_DirEntryType > 0)
         {
             /* A directory cannot be opened for writing */
-            if (openmode & FMF_WRITE)
+            if (openmode != MODE_OLDFILE)
             {
                 errno = EISDIR;
                 goto err;
@@ -231,9 +236,6 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	lock = BNULL;
     }
 
-    if (openmode & (FMF_APPEND | FMF_WRITE))
-	openmode |= FMF_READ; /* force filesystem ACTION_FINDUPDATE */
-
     if (!(fh = Open ((char *)pathname, openmode)) )
     {
 	ULONG ioerr = IoErr();
@@ -241,12 +243,13 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	errno = IoErr2errno(ioerr);
         goto err;
     }
-    
+   
+    /* Handle O_TRUNC */
     if((flags & O_TRUNC) && (flags & (O_RDWR | O_WRONLY)))
     {
 	if(SetFileSize(fh, 0, OFFSET_BEGINNING) != 0)
 	{
-	    /* Ignore error if FSA_SET_FILE_SIZE is not implemented */
+	    /* Ignore error if ACTION_SET_FILE_SIZE is not implemented */
 	    if(IoErr() != ERROR_NOT_IMPLEMENTED)
 	    {
 	        errno = IoErr2errno(IoErr());
@@ -254,6 +257,16 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	    }
 	}
     }
+
+    /* Handle O_APPEND */
+    if((flags & O_APPEND) && (flags & (O_RDWR | O_WRONLY)))
+    {
+        if(Seek(fh, 0, OFFSET_END) != 0) {
+            errno = IoErr2errno(IoErr());
+            goto err;
+        }
+    }
+
 
 success:
     currdesc->fcb->fh        = fh;
