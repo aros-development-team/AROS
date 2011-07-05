@@ -757,7 +757,7 @@ char dirname[34];
 		dirblock = createNewEntry
 			(afsbase, dirah->volume, ST_USERDIR, dirname, dirblock, protection, error);
 		if (dirblock != NULL)
-			ah = getHandle(afsbase, dirah->volume, dirblock, FMF_READ, error);
+			ah = getHandle(afsbase, dirah->volume, dirblock, MODE_OLDFILE, error);
 	}
 	return ah;
 }
