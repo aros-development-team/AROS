@@ -19,14 +19,21 @@ int main(void)
 
     if (rda)
     {
-	BPTR fh = Open((STRPTR)args[0], FMF_CREATE);
-        if (fh)
-	{
-	    Close(fh);
-	    return RETURN_OK;
-	}
+        struct DateStamp ds;
 
-	PrintFault(IoErr(), NULL);
+        /* Attempt to update the file's date stamp */
+        if (SetFileDate((CONST_STRPTR)args[0], DateStamp(&ds))) {
+            return RETURN_OK;
+        } else {
+            /* Attempt to create the file, if needed */
+            BPTR fh = Open((STRPTR)args[0], MODE_NEWFILE);
+            if (fh) {
+                Close(fh);
+                return RETURN_OK;
+            }
+        }
+
+        PrintFault(IoErr(), NULL);
    }
    return RETURN_FAIL;
 }
