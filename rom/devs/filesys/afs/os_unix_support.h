@@ -192,12 +192,10 @@ struct DosEnvec {
 	IPTR de_BootBlocks;
 };
 
-/* dos/filesystem.h */
-#define FMF_LOCK   (1L<<0)
-#define FMF_WRITE  (1L<<2)
-#define FMF_READ   (1L<<3)
-#define FMF_CREATE (1L<<4)
-#define FMF_CLEAR  (1L<<5)
+/* dos/dos.h */
+#define MODE_READWRITE 1004
+#define MODE_OLDFILE   1005
+#define MODE_NEWFILE   1006
 
 /* aros/debug.h */
 #if DEBUG

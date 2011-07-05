@@ -356,12 +356,10 @@ void AFS_work(void)
 		    else
 		    	dh = (APTR)(dl->fl_Key);
 
-		    if (dp->dp_Type == ACTION_FINDINPUT)
-			mode = FMF_MODE_OLDFILE;
-		    if (dp->dp_Type == ACTION_FINDOUTPUT)
-			mode = FMF_MODE_NEWFILE;
-		    if (dp->dp_Type == ACTION_FINDUPDATE)
-			mode = FMF_MODE_READWRITE;
+		    /* MODE_* directly matches its 
+		     * corresponding ACTION_* counterpart.
+		     */
+		    mode = dp->dp_Type;
 
 		    fn = skipdevname(fn);
 
@@ -404,9 +402,9 @@ void AFS_work(void)
 		    	dh = (APTR)(dl->fl_Key);
 
 		    if (dp->dp_Arg3 == ACCESS_READ)
-		    	mode |= FMF_MODE_OLDFILE;
+		    	mode = MODE_OLDFILE;
 		    else if (dp->dp_Arg3 == ACCESS_WRITE)
-		    	mode |= FMF_MODE_NEWFILE;
+		    	mode = MODE_NEWFILE;
 
 		    fn = skipdevname(fn);
 
@@ -448,7 +446,7 @@ void AFS_work(void)
 		    	oh = (APTR)dp->dp_Arg1;
 		    }
 
-		    ah = openf(handler, oh, "", FMF_MODE_OLDFILE, &res2);
+		    ah = openf(handler, oh, "", MODE_OLDFILE, &res2);
 		    if (ah == NULL) {
 		    	ok = DOSFALSE;
 		    	break;
@@ -616,7 +614,7 @@ void AFS_work(void)
 		    	oh = (APTR)opl->fl_Key;
 		    else
 		    	oh = (APTR)dp->dp_Arg1;
-		    ah = openf(handler, oh, "/", FMF_MODE_OLDFILE, &res2);
+		    ah = openf(handler, oh, "/", MODE_OLDFILE, &res2);
 		    if (ah == NULL) {
 		    	ok = DOSFALSE;
 		    	if (res2 == ERROR_OBJECT_NOT_FOUND && gethandletype(handler, oh) == ST_ROOT)

@@ -406,7 +406,8 @@ struct AfsHandle *ah;
 	ah = findHandle(volume, fileblock->blocknum);
 	if (ah != NULL)
 	{
-		if (ah->mode & FMF_LOCK)
+		if (ah->mode == MODE_READWRITE ||
+		    ah->mode == MODE_NEWFILE)
 		{
 			*error = ERROR_OBJECT_IN_USE;
 			ah = NULL;
@@ -464,7 +465,7 @@ ULONG block;
  Input : dirah      - a handle filename is
                       relative to
          name   - filename to lock
-         mode       - FMF_...
+         mode       - MODE_...
          protection - bits for new files
  Output: AfsHandle for success; NULL otherwise
 ******************************************/
@@ -494,7 +495,7 @@ ULONG fileblocknum = -1;
 	/*
 	 * if user wants to delete or create a new file - make sure we can do that.
 	 */
-	if (((mode & FMF_CLEAR) || (mode & FMF_CREATE)) && (0 == checkValid(afsbase, dirah->volume)))
+	if ((mode != MODE_OLDFILE) && (0 == checkValid(afsbase, dirah->volume)))
 		*error = ERROR_DISK_WRITE_PROTECTED;
 
 	/* 
@@ -539,7 +540,7 @@ ULONG fileblocknum = -1;
 				/*
 				 * remove existing file if we are asked to clear its contents
 				 */
-				if (mode & FMF_CLEAR)
+				if (mode == MODE_NEWFILE)
 					*error = deleteObject(afsbase, dirah, name);
 
 				/*
@@ -551,7 +552,7 @@ ULONG fileblocknum = -1;
 					 * in case we could not find existing file, or if we deleted this file previously, 
 					 * create a new one.
 					 */
-					if ((mode & FMF_CREATE) && ((fileblock == NULL) || (mode & FMF_CLEAR)))
+					if (mode == MODE_NEWFILE)
 					{
 						/*
 						 * please note that dirblock may become invalid here
