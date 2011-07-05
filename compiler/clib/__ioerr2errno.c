@@ -28,12 +28,6 @@ int IoErr2errno (int ioerr)
 	case ERROR_OBJECT_NOT_FOUND:
 	    return ENOENT;
 
-        case ERROR_WOULD_BLOCK:
-	    return EAGAIN;
-
-        case ERROR_BROKEN_PIPE:
-	    return EPIPE;
-
 	case ERROR_OBJECT_EXISTS:
 	    return EEXIST;
 
