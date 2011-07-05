@@ -768,13 +768,6 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
 	CloseLibrary(PartitionBase);
     }
 
-    /* Try to get a boot-block from any device in
-     * the boot list.
-     */
-    ForeachNode(&ExpansionBase->MountList, bootNode) {
-        BootBlock(ExpansionBase, bootNode);
-    }
-
     /* Ok, we've collected all the Boot nodes. Now,
      * go through the list and patch them (if needed)
      * from the FileSysResource patches
@@ -784,6 +777,16 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
         ForeachNode(&ExpansionBase->MountList, bootNode) {
             PatchBootNode(fsr, bootNode, 0);
         }
+    }
+
+    /*
+     * Try to get a boot-block from any device in
+     * the boot list.
+     * Do this after PatchBootNode(), otherwise if dos.library is
+     * run by Workbench floppy, we end up with unassigned filesystems.
+     */
+    ForeachNode(&ExpansionBase->MountList, bootNode) {
+        BootBlock(ExpansionBase, bootNode);
     }
 
     CloseLibrary(&ExpansionBase->LibNode);
