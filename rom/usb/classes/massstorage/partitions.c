@@ -270,7 +270,7 @@ static VOID AddPartitionVolume(struct NepClassMS *ncm,
                         i++;
                     }
                     AROS_BSTR_setstrlen(devnode->dn_Handler, i);
-                    AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, ADNF_STARTPROC | ADNF_NOCONFIGDEV, devnode, NULL);
+                    AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, ADNF_STARTPROC, devnode, NULL);
                     D(bug("[Boot] AddBootNode(%s,0x%lx,'%s')\n",
                         devnode->dn_Ext.dn_AROS.dn_DevName,
                         pp[4 + DE_DOSTYPE], handler));

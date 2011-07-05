@@ -129,7 +129,7 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                   AROS_DOSDEVNAME(devnode),
                   pp[DE_DOSTYPE      + 4], StartCyl, EndCyl));
 
-            AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC | ADNF_NOCONFIGDEV, devnode, NULL);
+            AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
             D(bug("done\n"));
             
             return TRUE;

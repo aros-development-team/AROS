@@ -72,16 +72,8 @@ void anim_Animate(struct Screen *scr, struct DOSBootBase *DOSBootBase);
 
 static inline BOOL IsBootableNode(struct BootNode *bootNode)
 {
-    if (bootNode->bn_Node.ln_Type != NT_BOOTNODE)
-        return FALSE;
-
-    if (bootNode->bn_Flags & ADNF_NOCONFIGDEV)
-        return TRUE;
-
-    if ((struct ConfigDev *)bootNode->bn_Node.ln_Name == NULL)
-        return FALSE;
-
-    return TRUE;
+    return ((bootNode->bn_Node.ln_Type == NT_BOOTNODE) &&
+            (bootNode->bn_Node.ln_Pri > -128)) ? TRUE : FALSE;
 }
 
 

@@ -75,7 +75,7 @@ static LONG startup(struct emulbase *emulbase)
             dn->dn_StackSize = 16384;
 	    dn->dn_GlobalVec = (BPTR)-1;
 
-            AddBootNode(0, ADNF_STARTPROC | ADNF_NOCONFIGDEV, dn, NULL);
+            AddBootNode(0, ADNF_STARTPROC, dn, NULL);
         }
 
         CloseLibrary(ExpansionBase);

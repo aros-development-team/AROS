@@ -5659,7 +5659,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
                     GM_UNIQUENAME(nStoreConfig)(ncm);
                 }
 
-                if(AddBootNode(nh->nh_RDsk.rdsk_PART.pb_Environment[DE_BOOTPRI], ADNF_STARTPROC | ADNF_NOCONFIGDEV, node, NULL))
+                if(AddBootNode(nh->nh_RDsk.rdsk_PART.pb_Environment[DE_BOOTPRI], ADNF_STARTPROC, node, NULL))
                 {
                     KPRINTF(10, ("AddBootNode() succeeded\n"));
                     psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),

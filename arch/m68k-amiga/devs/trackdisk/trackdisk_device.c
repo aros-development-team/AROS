@@ -545,7 +545,7 @@ static void TD_BootNode(
     devnode = MakeDosNode(pp);
 
     if (devnode)
-   	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC | ADNF_NOCONFIGDEV, devnode, NULL);
+   	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
 }
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 {
