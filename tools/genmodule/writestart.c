@@ -703,7 +703,7 @@ static void writehandler(FILE *out, struct config *cfg)
                "                if (__handler[i].stacksize)\n"
                "                    dn->dn_StackSize = __handler[i].stacksize;\n"
                "                dn->dn_GlobalVec = (BPTR)(SIPTR)-1;\n"
-               "                AddBootNode(-5, 0, dn, NULL);\n"
+               "                AddBootNode(-128, 0, dn, NULL);\n"
                "            }\n"
                "            continue;\n"
                "        }\n"
