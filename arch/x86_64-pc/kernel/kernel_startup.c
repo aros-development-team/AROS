@@ -46,8 +46,7 @@ static const struct MemRegion PC_Memory[] =
 struct KernBootPrivate *__KernBootPrivate = NULL;
 struct ExecBase * __attribute__((section(".rodata"))) SysBase = NULL;
 
-static void doInitCode(IPTR imh2, IPTR  khi, IPTR addr, IPTR arg4,
-	               IPTR arg5, IPTR arg6, IPTR arg7, IPTR arg8);
+static void doInitCode(struct MemHeader *mh2, IPTR  khi, IPTR addr);
 
 /*
  * Small asm stub in the beginning.
@@ -387,23 +386,30 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 	 * We need to do this, since our current stack is in
 	 * the area that's about to be hit with some memory
 	 * protection goodness.
+	 *
 	 * FIXME: This should not be needed. Only .code and .rodata are made read-only, they are
 	 * placed by the bootstrap starting from KRN_KernelBase and up to KRN_Highest. Our stack is
 	 * in .bss.
 	 * Using boot stack won't cause mis-assertions, because our memory list lists all physical
 	 * regions, including kickstart's own area.
-	 */
+	 *
+	 * CHECKME: Disabled, because there should really be no problems. There was one significant
+	 * problem with fixed kickstart address of 0x1000000 (16MB). Modules were loaded bu GRUB
+	 * somewhere near this address also, causing overlaying when decoding ELFs. One can say it
+	 * worked only because of pure luck. At the moment the bootstrap is rewritten and this
+	 * problem is not present any more.
+	 *
 	do {
 	    struct StackSwapStruct sss;
 	    struct StackSwapArgs ssa = {
 	    	.Args = { 
 	    	    (IPTR)mh2,
-	    	    (IPTR)addr,
 	    	    (IPTR)khi,
+	    	    (IPTR)addr,
 		} };
 	    const ULONG size = AROS_STACKSIZE;
 	    APTR sp;
-	
+
 	    sp = AllocMem(size, MEMF_PUBLIC);
 	    if (sp == NULL) {
 		D(bug("Can't allocate a new stack for Exec... Strange.\n"));
@@ -415,8 +421,9 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 	    sss.stk_Pointer = sss.stk_Upper;
 
 	    NewStackSwap(&sss, (LONG_FUNC)doInitCode, &ssa);
-	    /* We should never return */
-	} while (0);
+	    // We should never return
+	} while (0); */
+	doInitCode(mh2, khi, addr);
 
 	bug("[Kernel] ERROR: System Boot Failed!\n");
 	panic();
@@ -436,17 +443,16 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
     while (1) asm volatile("hlt");
 }
 
-static void doInitCode(IPTR imh2, IPTR  khi, IPTR addr, IPTR __a4,
-	               IPTR __a5, IPTR __a6, IPTR __a7, IPTR __a8)
+static void doInitCode(struct MemHeader *mh2, IPTR  khi, IPTR addr)
 {
-    struct MemHeader *mh, *mh2 = (APTR)imh2;
+    struct MemHeader *mh;
 
     /* 
      * Make kickstart code area read-only.
      * We do it only after ExecBase creation because SysBase is put
      * into .rodata. This way we prevent it from ocassional modification by buggy software.
      */
-        core_ProtKernelArea(addr, khi - addr, 1, 0, 1);
+    core_ProtKernelArea(addr, khi - addr, 1, 0, 1);
 
     /* Transfer the rest of memory list into SysBase */
     D(bug("[Kernel] Transferring memory list into SysBase...\n"));
