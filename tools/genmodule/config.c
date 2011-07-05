@@ -222,7 +222,7 @@ struct config *initconfig(int argc, char **argv)
     else if (strcmp(argv[optind+2], "handler")==0)
     {
 	cfg->modtype = HANDLER;
-	cfg->moddir = "Devs";
+	cfg->moddir = "$(AROS_DIR_FS)";
     }
     else
     {
