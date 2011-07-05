@@ -93,14 +93,14 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 	else
 	    toclone = cli->cli_StandardInput;
 
-	cis = duphandle(DOSBase, toclone, FMF_READ);
+	cis = duphandle(DOSBase, toclone, MODE_OLDFILE);
 
 	if (IsInteractive(Output()))
 	    toclone = Output();
 	else
 	    toclone = cli->cli_StandardOutput;
 
-	cos = duphandle(DOSBase, toclone, FMF_WRITE);
+	cos = duphandle(DOSBase, toclone, MODE_NEWFILE);
 
 	/* This is sort of a hack, needed because the original AmigaOS shell didn't allow
 	   pr_CES redirection, so all the scripts written so far assume that only Input() and
@@ -109,7 +109,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 	{
 	    toclone = me->pr_CES;
 
-	    ces = duphandle(DOSBase, toclone, FMF_WRITE);
+	    ces = duphandle(DOSBase, toclone, MODE_NEWFILE);
 	}
     }
 

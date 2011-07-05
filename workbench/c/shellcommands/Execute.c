@@ -72,7 +72,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
     if (!cli)
         return RETURN_ERROR;
 
-    from = Open(SHArg(NAME), FMF_READ);
+    from = Open(SHArg(NAME), MODE_OLDFILE);
 
     if (!from)
     {
