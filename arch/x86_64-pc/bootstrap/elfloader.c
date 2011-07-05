@@ -381,7 +381,7 @@ int load_elf_file(struct module *n, unsigned long long virt)
 
     /* Copy ELF header */
     mod->eh  = (unsigned long)ptr_ro;
-    ptr_ro = copy_data(&eh, ptr_ro, sizeof(struct elfheader));
+    ptr_ro = copy_data(eh, ptr_ro, sizeof(struct elfheader));
 
     /* Copy section header */
     mod->sh = (unsigned long)ptr_ro;
