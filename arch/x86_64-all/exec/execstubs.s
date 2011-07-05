@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Stubs to call C functions while preserving all registers
+    Desc: Stubs to call C functions while preserving all registers, x86-64 version
     Lang: english
 */
 	#include "aros/x86_64/asm.h"
@@ -20,26 +20,53 @@
 		    which gets two arguments
 */
 
+#define PUSH			      \
+	pushq %rax		    ; \
+	pushq %rcx		    ; \
+	pushq %rdx		    ; \
+	pushq %rsi		    ; \
+	pushq %rdi		    ; \
+	pushq %r8		    ; \
+	pushq %r9		    ; \
+	pushq %r10		    ; \
+	pushq %r11
 
-#define STUB_ARG0(name)               \
+#define POP			      \
+	popq %r11		    ; \
+	popq %r10		    ; \
+	popq %r9		    ; \
+	popq %r8		    ; \
+	popq %rdi		    ; \
+	popq %rsi		    ; \
+	popq  %rdx		    ; \
+	popq  %rcx		    ; \
+	popq  %rax
+
+#define STUB_ARG0(name)              \
 	push %rbp                  ; \
 	mov  %rsp,%rbp             ; \
-	call  name		    ; \
-	leave
+	PUSH			   ; \
+	call  name		   ; \
+	POP			   ; \
+	leave			   ; \
 	ret
 
-#define STUB_ARG1(name)               \
+#define STUB_ARG1(name)              \
 	push %rbp                  ; \
 	mov  %rsp,%rbp             ; \
-	call  name		    ; \
-	leave			    ; \
+	PUSH			   ; \
+	call  name		   ; \
+	POP			   ; \
+	leave			   ; \
 	ret
 
-#define STUB_ARG2(name)               \
+#define STUB_ARG2(name)              \
 	push %rbp                  ; \
 	mov  %rsp,%rbp             ; \
-	call  name		    ; \
-	leave			    ; \
+	PUSH			   ; \
+	call  name		   ; \
+	POP			   ; \
+	leave			   ; \
 	ret
 
 /* To save typing work */
