@@ -47,23 +47,22 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR lock, LONG mode, CON
     struct Process *me;
     SIPTR error = 0;
 
-    if (mode == MODE_READWRITE)
-	action = ACTION_FINDUPDATE;
-    else if (mode == MODE_NEWFILE)
-	action = ACTION_FINDOUTPUT;
-    else if (mode == MODE_OLDFILE)
-	action = ACTION_FINDINPUT;
-    else if (mode & FMF_CREATE)
-	action = ACTION_FINDOUTPUT;
-    else if (mode & FMF_CLEAR)
-	action = ACTION_FINDOUTPUT;
-    else if (mode & (FMF_READ | FMF_WRITE))
-	action = ACTION_FINDINPUT;
+    /* The MODE_* flags exactly match their corresponding ACTION_*
+     * flags:
+     *
+     * MODE_READWRITE = ACTION_FINDUPDATE = 1004
+     * MODE_OLDFILE   = ACTION_FINDINPUT  = 1005
+     * MODE_NEWFILE   = ACTION_FINDOUTPUT = 1006
+     *
+     * Even so, we don't want bad data propogaing
+     * down, so check that the mode is valid.
+     */
+    if ((mode == MODE_READWRITE) ||
+        (mode == MODE_OLDFILE) ||
+        (mode == MODE_NEWFILE))
+        action = mode;
     else
-    {
-	bug("unknown access mode %x\n", mode);
-	return ERROR_ACTION_NOT_KNOWN;
-    }
+        return ERROR_NOT_IMPLEMENTED;
 
     switch (refType)
     {
