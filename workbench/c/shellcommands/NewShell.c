@@ -103,8 +103,8 @@ AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"))
 {
     AROS_SHCOMMAND_INIT
 
-    BPTR from = Open(SHArg(FROM),   FMF_READ);
-    BPTR win  = Open(SHArg(WINDOW), FMF_READ);
+    BPTR from = Open(SHArg(FROM),   MODE_OLDFILE);
+    BPTR win  = Open(SHArg(WINDOW), MODE_OLDFILE);
 
     LONG rc = RETURN_FAIL;
 
