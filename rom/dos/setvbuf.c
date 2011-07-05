@@ -129,19 +129,10 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
     if (NULL != buf)
     {
         fh->fh_BufSize = size;
-        fh->fh_Flags |= flags;
-
-        if(fh->fh_Flags & FHF_WRITE)
-        {
-            fh->fh_Buf = MKBADDR(buf);
-            fh->fh_Pos = 0;
-            fh->fh_End = fh->fh_BufSize;
-        }
-        else
-        {
-            fh->fh_Buf = MKBADDR(buf);
-            fh->fh_Pos = fh->fh_End = 0;
-        }
+        fh->fh_Flags  |= flags;
+        fh->fh_Buf     = MKBADDR(buf);
+        fh->fh_Pos     = 0;
+	fh->fh_End     = (fh->fh_Flags & FHF_WRITE) ? fh->fh_BufSize : 0;
     }
 
     return buf;
@@ -150,6 +141,7 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
 void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DOSBase)
 {
     FileHandlePtr fhinput;
+    STRPTR buf;
 
     if (!fh)
     	return;
@@ -159,23 +151,25 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     vbuf_free(fhinput);
 
     /* Must be always buffered or EndCLI won't work */
-    if (vbuf_alloc(fhinput, NULL, size + 1) && IsInteractive(fh))
+    buf = vbuf_alloc(fhinput, NULL, size + 1);
+    if (buf && IsInteractive(fh))
     {
-    	D(bug("[vbuf_inject] Handle 0x%p, injecting string: %s, size: %u\n", fh, argptr, size));
+    	D(bug("[vbuf_inject] Handle 0x%p, buffer 0x%p, injecting string: %s, size: %u\n", fh, buf, argptr, size));
 
 	/* ugly hack */
-
 	fhinput->fh_Pos = 0;
     	if (size > 0)
     	{
-	    CopyMem(argptr, BADDR(fhinput->fh_Buf), size);
+	    CopyMem(argptr, buf, size);
 
 	    /*
 	     * Append EOL if there's no one.
 	     * Without it ReadArgs() blocks in FGets() reading arguments.
 	     */
-	    if (((UBYTE *)BADDR(fhinput->fh_Buf))[size - 1] != '\n')
-	    	((UBYTE *)BADDR(fhinput->fh_Buf))[size++] = '\n';
+	    if (buf[size - 1] != '\n')
+	    	buf[size++] = '\n';
+	    	
+	    DB2(bug("[vbuf_inject] Buffer contents:\n"); hexdump(buf, (IPTR)buf, size));
 	}
 	fhinput->fh_End = size;
     }
