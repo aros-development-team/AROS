@@ -151,10 +151,10 @@ static ULONG Errno_w2a(ULONG e, LONG mode)
        on the context */
     if (e == ERROR_ACCESS_DENIED)
     {
-	if (mode == FMF_MODE_OLDFILE)
+	if (mode == MODE_OLDFILE)
 	    return ERROR_READ_PROTECTED;
 	
-	if (mode & FMF_WRITE)
+	if (mode == MODE_READWRITE || mode == MODE_NEWFILE)
 	    return ERROR_WRITE_PROTECTED;
 
 	if (mode == 0)
@@ -248,21 +248,21 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 
 	DOPEN2(bug("[emul] Open file \"%s\", mode 0x%08lX\n", fh->hostname, mode));
 
-	if (mode & FMF_WRITE)
+	if (mode == MODE_NEWFILE || mode == MODE_READWRITE)
 	    flags = GENERIC_WRITE;
-	if (mode & FMF_READ)
+	if (mode == MODE_OLDFILE || mode == MODE_READWRITE)
 	    flags |= GENERIC_READ;
 
 	/*
 	 * FILE_SHARE_WRITE looks strange here, however without it i can't reopen file which
-         * is already open with MODE_OLDFILE, even just for reading with FMF_READ
+         * is already open with MODE_OLDFILE, even just for reading with _READ
 	 */
-	lock = (mode & FMF_LOCK) ? 0 : FILE_SHARE_READ|FILE_SHARE_WRITE;
+	lock = (mode == MODE_NEWFILE || mode == MODE_READWRITE) ? 0 : FILE_SHARE_READ|FILE_SHARE_WRITE;
 
-	if (mode & FMF_CREATE)
-	    create = (mode & FMF_CLEAR) ? CREATE_ALWAYS : OPEN_ALWAYS;
+	if (mode == MODE_NEWFILE)
+	    create = CREATE_ALWAYS;
 	else
-	    create = (mode & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
+	    create = OPEN_EXISTING;
 
 	/*
 	 * On post-XP systems files with 'system' attribute may be opened for writing
@@ -275,34 +275,6 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 	Forbid();
 	fh->fd = emulbase->pdata.KernelIFace->CreateFile(fh->hostname, flags, lock, NULL, create, protect, NULL);
 
-	if ((mode == FMF_MODE_OLDFILE) && (fh->fd == INVALID_HANDLE_VALUE))
-	{
-            /*
-	     * Hack against two problems: 
-	     *
-	     * Problem 1: dll's in LIBS:Host and AROSBootstrap.exe are locked against writing by
-             * Windows while AROS is running. However we may still read them. MODE_OLDFILE
-	     * also requests write access with shared lock, this is why it fails on these files.
-	     *
-	     * Problem 2: FMF_MODE_OLDFILE requests write access, which fails on files with
-	     * read-only attribute.
-	     *
-             * Here we try to work around these problems by attempting to open the file in read-only mode
-             * (FMF_READ) when we discover one of them.
-	     *
-             * I hope this will not affect files really open in AROS because exclusive lock
-             * disallows read access also.
-	     */
-	    err = emulbase->pdata.KernelIFace->GetLastError();
-
-	    DOPEN2(bug("[emul] Windows error: %u\n", err));
-	    switch (err)
-	    {
-	    case ERROR_SHARING_VIOLATION:
-	    case ERROR_ACCESS_DENIED:
-		fh->fd = emulbase->pdata.KernelIFace->CreateFile(fh->hostname, GENERIC_READ, lock, NULL, OPEN_EXISTING, protect, NULL);
-	    }
-        }
         err = emulbase->pdata.KernelIFace->GetLastError();
         Permit();
 
@@ -377,7 +349,7 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
 	Permit();
     }
 
-    *err = Errno_w2a(werr, FMF_MODE_OLDFILE);
+    *err = Errno_w2a(werr, MODE_OLDFILE);
 
     return len;
 }
@@ -391,7 +363,7 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
     werr = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
-    *err = Errno_w2a(werr, FMF_WRITE);
+    *err = Errno_w2a(werr, MODE_NEWFILE);
     return len;
 }
 
@@ -431,7 +403,7 @@ static LONG seek_file(struct emulbase *emulbase, struct filehandle *fh, off_t *O
     Permit();
 
     if (error == (ULONG)-1)
-	error = Errno_w2a(werror, FMF_MODE_OLDFILE);
+	error = Errno_w2a(werror, MODE_OLDFILE);
     else
     {
 	if (newpos)
@@ -479,7 +451,7 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
 
 	return 0;
     }
-    return Errno_w2a(werror, FMF_WRITE);
+    return Errno_w2a(werror, MODE_NEWFILE);
 }
 
 /*********************************************************************************************/
@@ -522,7 +494,7 @@ LONG DoChMod(struct emulbase *emulbase, char *filename, ULONG aprot)
     err = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
-    return ret ? 0 : Errno_w2a(err, FMF_WRITE);
+    return ret ? 0 : Errno_w2a(err, MODE_READWRITE);
 }
 
 /*********************************************************************************************/
@@ -566,7 +538,7 @@ LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh)
         Permit();
 
         if (!r)
-            return Errno_w2a(err, FMF_MODE_OLDFILE);
+            return Errno_w2a(err, MODE_OLDFILE);
 
 	fh->fd = INVALID_HANDLE_VALUE;
     }
@@ -631,7 +603,7 @@ static ULONG ReadDir(struct emulbase *emulbase, struct filehandle *fh, LPWIN32_F
 		Permit();
             }
             if (!res)
-		return Errno_w2a(err, FMF_MODE_OLDFILE);
+		return Errno_w2a(err, MODE_OLDFILE);
 
 		fh->ph.dirpos++;
 	    DEXAM(bug("[emul] Found %s, position %lu\n", FindData->cFileName, fh->ph.dirpos));
@@ -686,7 +658,7 @@ static ULONG DoExamineEntry_sub(struct emulbase *emulbase, struct filehandle *fh
 	FreeVecPooled(emulbase->mempool, name);
     }
 
-    return error ? 0 : Errno_w2a(werr, FMF_MODE_OLDFILE);
+    return error ? 0 : Errno_w2a(werr, MODE_OLDFILE);
 }	
 
 /*********************************************************************************************/
@@ -880,7 +852,7 @@ LONG DoHardLink(struct emulbase *emulbase, char *name, char *oldfile)
     werr = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
-    return error ? 0 : Errno_w2a(werr, FMF_WRITE);
+    return error ? 0 : Errno_w2a(werr, MODE_NEWFILE);
 }
 
 /*********************************************************************************************/
@@ -905,7 +877,7 @@ LONG DoSymLink(struct emulbase *emulbase, char *dest, char *src)
 
     DLINK(bug("[emul] Result: %d, Windows error: %u\n", error, werr));
 
-    return error ? 0 : Errno_w2a(werr, FMF_WRITE);
+    return error ? 0 : Errno_w2a(werr, MODE_NEWFILE);
 }
 
 /*********************************************************************************************/
@@ -919,7 +891,7 @@ LONG DoRename(struct emulbase *emulbase, char *filename, char *newname)
     werr = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
-    return ret ? 0 : Errno_w2a(werr, FMF_WRITE);
+    return ret ? 0 : Errno_w2a(werr, MODE_NEWFILE);
 }
 
 /*********************************************************************************************/
@@ -958,7 +930,7 @@ LONG DoSetDate(struct emulbase *emulbase, char *fullname, struct DateStamp *date
 
     Permit();
 
-    return ret ? 0 : Errno_w2a(werr, FMF_WRITE);
+    return ret ? 0 : Errno_w2a(werr, MODE_READWRITE);
 }
 
 SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
@@ -979,7 +951,7 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
 	werr = emulbase->pdata.KernelIFace->GetLastError();
         Permit();
 
-	error = error ? 0 : Errno_w2a(werr, FMF_WRITE);
+	error = error ? 0 : Errno_w2a(werr, MODE_READWRITE);
 
 	/*
 	 * If our OLD position was less than new file size, we seek back to it. io_Offset will again contain
@@ -1056,7 +1028,7 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
 	return 0;
     }
 
-    return Errno_w2a(err, FMF_MODE_OLDFILE);
+    return Errno_w2a(err, MODE_OLDFILE);
 }
 
 char *GetHomeDir(struct emulbase *emulbase, char *sp)
