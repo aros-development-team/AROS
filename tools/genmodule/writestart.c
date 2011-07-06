@@ -630,7 +630,6 @@ static void writehandler(FILE *out, struct config *cfg)
     fprintf(out,
                "    };\n"
                "    BPTR seg[sizeof(__handler)/sizeof(__handler[0])] = { };\n"
-               "    APTR ExpansionBase; /* Used for dos device handlers */\n"
                "\n"
                "    fsr = (struct FileSysResource *)OpenResource(\"FileSystem.resource\");\n"
                "    if (fsr == NULL)\n"
