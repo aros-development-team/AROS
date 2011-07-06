@@ -1,18 +1,21 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English
 */
 
-#include "dos_intern.h"
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <intuition/intuition.h>
 #include <exec/ports.h>
-
 #include <aros/debug.h>
+
+#define CATCOMP_NUMBERS
+
+#include "dos_intern.h"
+#include "strings.h"
 
 /*****************************************************************************
 
@@ -53,10 +56,6 @@
 	       pr_WindowPtr is -1 or if an attempt to open the requester fails.
 
     NOTES
-
-    Locks and filehandles are the same in AROS so there is redundancy in
-    the parameters. Furthermore, the 'device' argument is not cared about
-    as AROS doesn't build filesystems with handlers.
 
     EXAMPLE
 
@@ -99,28 +98,28 @@
     switch (code) {
         /* Volume FOO: is not validated */
         case ERROR_DISK_NOT_VALIDATED:
-            format = DosGetString(STRING_DISK_NOT_VALIDATED);
+            format = DosGetString(MSG_STRING_DISK_NOT_VALIDATED);
             want_volume = TRUE;
             break;
 
         /* Volume FOO: is write protected */
         case ERROR_DISK_WRITE_PROTECTED:
-            format = DosGetString(STRING_DISK_WRITE_PROTECTED);
+            format = DosGetString(MSG_STRING_DISK_WRITE_PROTECTED);
             want_volume = TRUE;
             break;
 
         /* Please (insert|replace) volume FOO: in ... */
         case ERROR_DEVICE_NOT_MOUNTED:
             if (type == REPORT_INSERT) {
-                format = DosGetString(STRING_DEVICE_NOT_MOUNTED_INSERT);
+                format = DosGetString(MSG_STRING_DEVICE_NOT_MOUNTED_INSERT);
                 want_volume = TRUE;
             }
             else if (type == REPORT_STREAM) {
-                format = DosGetString(STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET);
+                format = DosGetString(MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET);
                 want_volume = want_device = TRUE;
             }
             else {
-                format = DosGetString(STRING_DEVICE_NOT_MOUNTED_REPLACE);
+                format = DosGetString(MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE);
                 want_volume = TRUE;
             }
             idcmp = IDCMP_DISKINSERTED;
@@ -128,32 +127,32 @@
 
         /* Volume FOO: is full */
         case ERROR_DISK_FULL:
-            format = DosGetString(STRING_DISK_FULL);
+            format = DosGetString(MSG_STRING_DISK_FULL);
             want_volume = TRUE;
             break;
 
         /* Not a DOS disk in ...*/
         case ERROR_NOT_A_DOS_DISK:
-            format = DosGetString(STRING_NOT_A_DOS_DISK);
+            format = DosGetString(MSG_STRING_NOT_A_DOS_DISK);
             want_device = TRUE;
             break;
 
         /* No disk present in ...*/
         case ERROR_NO_DISK:
-            format = DosGetString(STRING_NO_DISK);
+            format = DosGetString(MSG_STRING_NO_DISK);
             want_device = TRUE;
             break;
 
         /* You MUST replace volume FOO: in ... */
         case ABORT_BUSY:
-            format = DosGetString(STRING_ABORT_BUSY);
+            format = DosGetString(MSG_STRING_ABORT_BUSY);
             want_volume = want_device = TRUE;
             idcmp = IDCMP_DISKINSERTED;
             break;
 
         /* Volume FOO: has a read/write error */
         case ABORT_DISK_ERROR:
-            format = DosGetString(STRING_ABORT_DISK_ERROR);
+            format = DosGetString(MSG_STRING_ABORT_DISK_ERROR);
             want_volume = TRUE;
             break;
 

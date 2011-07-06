@@ -1,14 +1,20 @@
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English
 */
+
 #include <proto/intuition.h>
-#include "dos_intern.h"
 #include <aros/debug.h>
+
 #include <string.h>
+
+#define CATCOMP_NUMBERS
+
+#include "dos_intern.h"
+#include "strings.h"
 
 /*****i***********************************************************************
 
@@ -64,7 +70,7 @@
     {
 	sizeof(struct EasyStruct),
 	0,			    	    /* flags */
-	DosGetString(STRING_REQUESTTITLE),  /* "System Requester" */
+	DosGetString(MSG_STRING_REQUESTTITLE),  /* "System Requester" */
 	(STRPTR)formatStr,
 	gadTexts			    /* "Retry|Cancel" */
     };
@@ -92,9 +98,9 @@
     }
 
     /* Create localised gadget texts */
-    strcpy(gtPtr, DosGetString(STRING_RETRY));
+    strcpy(gtPtr, DosGetString(MSG_STRING_RETRY));
     strcat(gtPtr, "|");
-    strcat(gtPtr, DosGetString(STRING_CANCEL));
+    strcat(gtPtr, DosGetString(MSG_STRING_CANCEL));
 
     res = EasyRequestArgs(window, &es, &idcmp, args);
 

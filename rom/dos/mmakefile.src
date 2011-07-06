@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(SRCDIR)/rom/devs
+USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
 USER_CFLAGS := -D__DOS_NOLIBBASE__
 
 IMAGE_TYPES := aos elf
@@ -16,7 +16,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     attemptlockdoslist changemode checksignal cli cliinitnewcli \
 	     cliinitrun close comparedates createdir createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
-	     deletevar deviceproc displayerror dopkt dosgetstring dosgetlocalizedstring \
+	     deletevar deviceproc displayerror dopkt dosgetstring \
 	     duplock duplockfromfh endnotify errorreport \
 	     exall exallend examine examinefh execute exit exnext \
 	     fault fgetc fgets filepart findarg findcliproc finddosentry findsegment \
@@ -40,9 +40,10 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
 	     vprintf waitforchar waitpkt write writechars runhandler
 
-#MM kernel-dos-linklib : linklibs-clib kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
-#MM kernel-dos-kobj : linklibs-clib kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
-#MM kernel-dos : linklibs-clib kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
+#MM kernel-dos-linklib : workbench-libs-dos-catalogs
+#MM kernel-dos-kobj : workbench-libs-dos-catalogs
+#MM kernel-dos-pkg : workbench-libs-dos-catalogs
+#MM kernel-dos : workbench-libs-dos-catalogs
 
 #MM kernel-dos-includes : \
 #MM     kernel-utility-includes \
@@ -54,5 +55,11 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
   modname=dos modtype=library \
   files="dos_init $(FUNCTIONS) $(FILES)" \
   uselibs="rom"
+
+$(GENDIR)/$(CURDIR)/errorlist.o : $(GENDIR)/$(CURDIR)/errorlist.h
+
+$(GENDIR)/$(CURDIR)/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCDIR)/$(CURDIR)/genstrings.py
+	@$(ECHO) Generating $@...
+	@$(SRCDIR)/$(CURDIR)/genstrings.py $< > $@
 
 %common
