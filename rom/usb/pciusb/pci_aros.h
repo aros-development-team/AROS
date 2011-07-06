@@ -33,6 +33,7 @@
 
 #define READREG16_LE(rb, offset) AROS_WORD2LE(*((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 #define READREG32_LE(rb, offset) AROS_LONG2LE(*((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
+#define READREG64_LE(rb, offset) AROS_QUAD2LE(*((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 
 #define READIO16_LE(rb, offset) AROS_WORD2LE(WORDIN((((UBYTE *) (rb)) + ((ULONG) (offset)))))
 #define WRITEIO16_LE(rb, offset, value) WORDOUT((((UBYTE *) (rb)) + ((ULONG) (offset))), AROS_WORD2LE(value))

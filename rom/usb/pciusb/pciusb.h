@@ -196,7 +196,7 @@ struct PCIController
     UWORD                 hc_PortChangeMap[MAX_ROOT_PORTS]; /* Port Change Map */
 
     BOOL                  hc_complexrouting;
-    ULONG                 hc_portroute;
+    UQUAD                 hc_portroute;
 
 };
 
