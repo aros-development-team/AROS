@@ -111,25 +111,23 @@ struct PartitionAttribute
 #define PLAM_READ  (1<<0)
 #define PLAM_WRITE (1<<1)
 
-/* partition table attributes */
-#define PTTA_DONE             0 /* no more attributes */
-#define PTTA_TYPE           100 /* partition table type */
-#define PTTA_MAXLEADIN        1
-#define PTTA_RESERVED       101 /* reserved blocks */
-#define PTTA_MAX_PARTITIONS 102 /* max numbers of partitions in table */
+/* Obsolete definitions. Don't use them in new code. */
+#define PTTA_DONE           TAG_DONE
+#define PTTA_TYPE           PTT_TYPE
+#define PTTA_MAXLEADIN      PTT_MAXLEADIN
+#define PTTA_RESERVED       PTT_RESERVED
+#define PTTA_MAX_PARTITIONS PTT_MAX_PARTITIONS
 
-/* partition attributes */
-#define PTA_DONE      PTTA_DONE /* no more attributes */
-#define PTA_GEOMETRY          1 /* geometry of partition (virtual HD) */
-#define PTA_DOSENVEC          2 /* whole struct DosEnvec support */
-#define PTA_DOSENVEC_GEOMETRY 3 /* only low/high cyl, sizeblock support in struct DosEnvec */
-#define PTA_LEADIN            4
-#define PTA_TYPE            100 /* type of partition */
-#define PTA_POSITION        101 /* position of table within partition table */
-#define PTA_ACTIVE          102 /* make partition active (whatever that means ;) */
-#define PTA_NAME            103 /* device name support */
-#define PTA_BOOTABLE        104 /* bootable flag support */
-#define PTA_AUTOMOUNT 105
+#define PTA_DONE              TAG_DONE
+#define PTA_GEOMETRY          PT_GEOMETRY
+#define PTA_DOSENVEC          PT_DOSENVEC
+#define PTA_LEADIN            PT_LEADIN
+#define PTA_TYPE              PT_TYPE
+#define PTA_POSITION          PT_POSITION
+#define PTA_ACTIVE            PT_ACTIVE
+#define PTA_NAME              PT_NAME
+#define PTA_BOOTABLE          PT_BOOTABLE
+#define PTA_AUTOMOUNT 	      PT_AUTOMOUNT
 
 struct PartitionBase
 {

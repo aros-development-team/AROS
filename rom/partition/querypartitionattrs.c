@@ -7,15 +7,15 @@
 #include "partition_support.h"
 #include "platform.h"
 
-/* This what we can always do */
+/* This is what we can always do */
 static const struct PartitionAttribute defaultPartitionAttrs[] =
 {
-    {PTA_GEOMETRY,  PLAM_READ},
-    {PTA_DOSENVEC,  PLAM_READ},
-    {PTA_POSITION,  PLAM_READ},
+    {PT_GEOMETRY  , PLAM_READ},
+    {PT_DOSENVEC  , PLAM_READ},
+    {PT_POSITION  , PLAM_READ},
     {PT_STARTBLOCK, PLAM_READ},
-    {PT_ENDBLOCK,   PLAM_READ},
-    {PTA_DONE, 0}
+    {PT_ENDBLOCK  , PLAM_READ},
+    {TAG_DONE, 0}
 };
 
 /*****************************************************************************

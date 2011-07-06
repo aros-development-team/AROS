@@ -7,6 +7,12 @@
 #include "partition_support.h"
 #include "platform.h"
 
+/* By default we have nothing here */
+static const struct PartitionAttribute defaultPartitionTableAttrs[] =
+{
+    {TAG_DONE, 0}
+};
+
 /*****************************************************************************
 
     NAME */
@@ -53,7 +59,7 @@
         return handler->partitionTableAttrs;
     }
 
-    return NULL;
+    return defaultPartitionTableAttrs;
 
     AROS_LIBFUNC_EXIT
 }
