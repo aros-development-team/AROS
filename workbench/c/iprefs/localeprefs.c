@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,7 +18,6 @@
 void LocalePrefs_Handler(STRPTR filename)
 {
     struct Locale  *newloc, *oldloc;
-    struct Catalog *newcat, *oldcat;
     struct TagItem  tags[] =
     {
     	{OC_BuiltInLanguage, (IPTR)"english"},
@@ -38,14 +37,6 @@ void LocalePrefs_Handler(STRPTR filename)
 	
 	/* if (oldloc) CloseLocale(oldloc); */
     }
-    
-    oldcat = (struct Catalog *)DOSBase->dl_Errors;
-    newcat = OpenCatalogA(NULL, "System/Libs/dos.catalog", tags);
-    DOSBase->dl_Errors = (struct ErrorString *)newcat;
-    
-    /* Never close old dos.catalog */
-    
-    /* if (oldcat) CloseCatalog(oldcat) */
     
     D(bug("In IPrefs:LocalePrefs_Handler. Done.\n", filename));
 }
