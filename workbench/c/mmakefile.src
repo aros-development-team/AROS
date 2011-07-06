@@ -76,7 +76,7 @@ USER_CFLAGS     := -I$(SRCDIR)/rom/dos -DADATE="\"$(shell date "+%d.%m.%Y")\""
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
-#MM workbench-c : includes linklibs workbench-c-pure workbench-c-requeststring workbench-devs-cdvdfs-checkcd workbench-libs-uuid
+#MM workbench-c : includes linklibs workbench-c-pure workbench-c-requeststring workbench-libs-uuid
 #MM workbench-c-quick : workbench-c-pure-quick workbench-c-requeststring-quick
 
 %build_progs mmake=workbench-c \

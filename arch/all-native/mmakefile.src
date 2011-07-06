@@ -11,7 +11,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-bootloader-pkg		\
 #MM	kernel-dosboot-pkg		\
 #MM	kernel-fs-afs-pkg		\
-#MM	workbench-devs-cdvdfs-pkg	\
+#MM	kernel-fs-cdvdfs-pkg		\
 #MM	kernel-fs-sfs-pkg		\
 #MM	kernel-partition-pkg
 

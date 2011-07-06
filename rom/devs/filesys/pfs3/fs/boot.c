@@ -215,7 +215,7 @@ static UBYTE debugbuf[120];
 /*                                MAIN                                */
 /**********************************************************************/
 
-void __saveds EntryPoint (void)
+void __saveds __startup EntryPoint (void)
 {
 	/* globals */
 	struct globaldata *g;

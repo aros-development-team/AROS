@@ -580,7 +580,7 @@ static void writeresident(FILE *out, struct config *cfg)
 static void writehandler(FILE *out, struct config *cfg)
 {
     int i;
-    struct handlerinfo *hl, *best;
+    struct handlerinfo *hl;
 
     fprintf(out,
                "\n"
@@ -588,8 +588,6 @@ static void writehandler(FILE *out, struct config *cfg)
                "#include <aros/system.h>\n"
                "#include <proto/arossupport.h>\n"
                "#include <proto/dos.h>\n"
-               "#include <proto/expansion.h>\n"
-               "#include <libraries/expansion.h>\n"
                "\n"
                );
 
@@ -598,23 +596,6 @@ static void writehandler(FILE *out, struct config *cfg)
                "extern void %s(void);\n",
                hl->handler);
     }
-
-    best = cfg->handlerlist;
-    for (hl = cfg->handlerlist->next; hl; hl = hl->next) {
-        if (hl->autodetect > best->autodetect)
-            best = hl;
-    }
-
-    fprintf(out,
-            "\n"
-            "/* This is run when linked as a program, so that\n"
-            " * C:Mount can start it.\n"
-            " */\n"
-            "__startup void GM_UNIQUENAME(MountMain)(void)\n"
-            "{\n"
-            "    %s();\n"
-            "}\n",
-            best->handler);
 
     fprintf(out,
                "\n"
@@ -630,17 +611,14 @@ static void writehandler(FILE *out, struct config *cfg)
                "        ULONG stacksize;\n"
                "        void (*handler)(void);\n"
                "    } const __handler[] = { \n");
-    for (hl = cfg->handlerlist; hl != NULL; hl = hl->next) {
-        switch (hl->type) {
+    for (hl = cfg->handlerlist; hl != NULL; hl = hl->next)
+    {
+        switch (hl->type)
+        {
         case HANDLER_RESIDENT:
             fprintf(out,
                "        { .id = 0, .name = AROS_CONST_BSTR(\"%s\"), .handler = %s }, \n",
                hl->name, hl->handler);
-            break;
-        case HANDLER_DOSNODE:
-            fprintf(out,
-               "        { .id = ~0, .name = AROS_CONST_BSTR(\"%s\"), .handler = %s, .priority = %d, .stacksize = %d }, \n",
-               hl->name, hl->handler, hl->priority, hl->stacksize);
             break;
         case HANDLER_DOSTYPE:
             fprintf(out,
@@ -655,23 +633,18 @@ static void writehandler(FILE *out, struct config *cfg)
                "    APTR ExpansionBase; /* Used for dos device handlers */\n"
                "\n"
                "    fsr = (struct FileSysResource *)OpenResource(\"FileSystem.resource\");\n"
-               "    ExpansionBase = OpenLibrary(\"expansion.library\",0);\n"
-               "    if (fsr == NULL && ExpansionBase == NULL)\n"
+               "    if (fsr == NULL)\n"
                "        return;\n"
-               "    \n"
+               "\n"
                "    for (i = 0; i < sizeof(__handler)/sizeof(__handler[0]); i++) {\n"
-               "        struct FileSysEntry *fse = NULL;\n"
+               "        struct FileSysEntry *fse;\n"
                "        int j;\n"
-               "    \n"
+               "\n"
                "        /* Check to see if we can allocate the memory for the fse */\n"
-               "        if (__handler[i].id != ~0) {\n"
-               "            if (!fsr)\n"
-               "                continue;\n"
-               "            fse = AllocMem(sizeof(*fse), MEMF_CLEAR);\n"
-               "            if (!fse)\n"
-               "                continue;\n"
-               "        }\n"
-               "    \n"
+               "        fse = AllocMem(sizeof(*fse), MEMF_CLEAR);\n"
+               "        if (!fse)\n"
+               "            return;\n"
+               "\n"
                "        /* Did we already make a segment for this handler? */\n"
                "        for (j = 0; j < i; j++)\n"
                "            if (__handler[i].handler == __handler[j].handler)\n"
@@ -680,34 +653,9 @@ static void writehandler(FILE *out, struct config *cfg)
                "            seg[j] = CreateSegList(__handler[j].handler);\n"
                "        if (seg[j] == BNULL) {\n"
                "            FreeMem(fse, sizeof(*fse));\n"
-               "            continue;\n"
+               "            return;\n"
                "        }\n"
-               "\n"
-               "        /* DOS DeviceNode handlers */\n"
-               "        if (__handler[i].id == ~0) {\n"
-               "            struct DeviceNode *dn;\n"
-               "            IPTR pp[5];\n"
-               "\n"
-               "            if (!ExpansionBase)\n"
-               "                continue;\n"
-               "\n"
-               "            pp[0] = (IPTR)AROS_BSTR_ADDR(__handler[i].name);\n"
-               "            pp[1] = (IPTR)NULL;\n"
-               "            pp[2] = 0;\n"
-               "            pp[3] = 0;\n"
-               "            pp[4] = 0;\n"
-               "            dn = MakeDosNode(pp);\n"
-               "            if (dn) {\n"
-               "                dn->dn_SegList = seg[j];\n"
-               "                dn->dn_Priority = __handler[i].priority;\n"
-               "                if (__handler[i].stacksize)\n"
-               "                    dn->dn_StackSize = __handler[i].stacksize;\n"
-               "                dn->dn_GlobalVec = (BPTR)(SIPTR)-1;\n"
-               "                AddBootNode(-128, 0, dn, NULL);\n"
-               "            }\n"
-               "            continue;\n"
-               "        }\n"
-               "        \n"
+               " \n"
                "        /* DOS ID based handlers\n"
                "         * NOTE: fse_DosType == 0 is a special flag use in\n"
                "         * dos.library's init to add the handler to the\n"
@@ -736,7 +684,6 @@ static void writehandler(FILE *out, struct config *cfg)
                "        Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);\n"
                "        Permit();\n"
                "    }\n"
-               "    CloseLibrary(ExpansionBase);\n"
                "}\n");
 }
 
