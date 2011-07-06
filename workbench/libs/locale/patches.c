@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,19 +23,6 @@
 #define LIB_LOCALE  4
 
 /*********************************************************************************************/
-
-#ifdef __MORPHOS__
-
-extern void LIB_LocRawDoFmt(void);
-extern void LIB_LocStrnicmp(void);
-extern void LIB_LocStricmp(void);
-extern void LIB_LocToLower(void);
-extern void LIB_LocToUpper(void);
-extern void LIB_LocDateToStr(void);
-extern void LIB_LocStrToDate(void);
-extern void LIB_LocDosGetLocalizedString(void);
-
-#else
 
 AROS_LD4(APTR, LocRawDoFmt,
 	 AROS_LDA(CONST_STRPTR, FormatString, A0),
@@ -74,8 +61,6 @@ AROS_LD1(CONST_STRPTR, LocDosGetLocalizedString,
 	 AROS_LDA(LONG, stringNum, D1),
 	 struct DosLibrary *, DOSBase, 38, Locale);
 
-#endif
-
 /*********************************************************************************************/
 
 static struct patchinfo
@@ -85,16 +70,6 @@ static struct patchinfo
     APTR    whichpatchfunc;
 } pi [] = {
 
-#ifdef __MORPHOS__
-    {LIB_EXEC   , 87 , LIB_LocRawDoFmt},
-    {LIB_UTILITY, 28 , LIB_LocStrnicmp},
-    {LIB_UTILITY, 27 , LIB_LocStricmp},
-    {LIB_UTILITY, 30 , LIB_LocToLower},
-    {LIB_UTILITY, 29 , LIB_LocToUpper},
-    {LIB_DOS    , 124, LIB_LocDateToStr},
-    {LIB_DOS    , 125, LIB_LocStrToDate},
-    {LIB_DOS    , 163, LIB_LocDosGetLocalizedString},
-#else
     {LIB_EXEC   , 87 , AROS_SLIB_ENTRY(LocRawDoFmt		, Locale)},
     {LIB_EXEC   , 137, AROS_SLIB_ENTRY(LocVNewRawDoFmt		, Locale)},
     {LIB_UTILITY, 28 , AROS_SLIB_ENTRY(LocStrnicmp		, Locale)},
@@ -103,8 +78,7 @@ static struct patchinfo
     {LIB_UTILITY, 29 , AROS_SLIB_ENTRY(LocToUpper		, Locale)},
     {LIB_DOS    , 124, AROS_SLIB_ENTRY(LocDateToStr		, Locale)},
     {LIB_DOS    , 125, AROS_SLIB_ENTRY(LocStrToDate		, Locale)},
-    {LIB_DOS    , 154, AROS_SLIB_ENTRY(LocDosGetLocalizedString	, Locale)},
- #endif
+    {LIB_DOS    , 163, AROS_SLIB_ENTRY(LocDosGetLocalizedString	, Locale)},
     {0}
 };
 
