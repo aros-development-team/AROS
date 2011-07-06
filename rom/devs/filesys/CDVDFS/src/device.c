@@ -190,8 +190,10 @@ ULONG __abox__ = 1;
 #endif
 
 #ifdef __AROS__
-AROS_UFH1(__startup LONG, Main,
-	  AROS_UFHA(struct ExecBase *, sBase, A6))
+AROS_ENTRY(__startup LONG, Main,
+	   AROS_UFHA(char *, argstr, A0),
+	   AROS_UFHA(ULONG, argsize, D0),
+	   struct ExecBase *, sBase)
 {
     AROS_USERFUNC_INIT
 
@@ -200,6 +202,9 @@ AROS_UFH1(__startup LONG, Main,
     AROS_USERFUNC_EXIT
 }
 #else
+
+char __version__[] = "\0$VER: CDVDFS 1.4 (16-Jun-2008)";
+
 LONG SAVEDS Main(void)
 {
     return handler(*(struct ExecBase **)4L);
