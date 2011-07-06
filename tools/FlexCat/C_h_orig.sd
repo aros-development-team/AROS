@@ -34,7 +34,7 @@
 
 #ifdef CATCOMP_NUMBERS
 
-#define %i %e
+#define %i %d
 
 #endif /* CATCOMP_NUMBERS */
 
