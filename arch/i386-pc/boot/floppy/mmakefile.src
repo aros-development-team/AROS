@@ -49,7 +49,7 @@ BOOT_TAR_EXECUTABLES := \
     Classes/Zune/PrefsEditor.mcc Classes/Zune/SystemPrefsWindow.mcc \
     Devs/clipboard.device \
     Devs/serial.device \
-    Devs/pipe.handler \
+    L/pipe.handler \
     Libs/arosc.library Libs/asl.library Libs/commodities.library \
     Libs/cybergraphics.library \
     Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
