@@ -154,15 +154,7 @@
 #define ID_CDFS_DISK 0x43444653
 #endif
 
-/*
- *  Since this code might be called several times in a row without being
- *  unloaded, you CANNOT ASSUME GLOBALS HAVE BEEN ZERO'D!!  This also goes
- *  for any global/static assignments that might be changed by running the
- *  code.
- */
-
-LONG CDVD_handler(struct ExecBase *);
-
+LONG handler(struct ExecBase *);
 static LOCK *cdlock(CDROM_OBJ *, int);
 static void cdunlock (LOCK *);
 static CDROM_OBJ *getlockfile(struct CDVDBase *global, IPTR);
@@ -197,6 +189,23 @@ static void btos(BSTR, char *);
 ULONG __abox__ = 1;
 #endif
 
+#ifdef __AROS__
+AROS_UFH1(__startup LONG, Main,
+	  AROS_UFHA(struct ExecBase *, sBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    return handler(sBase);
+
+    AROS_USERFUNC_EXIT
+}
+#else
+LONG SAVEDS Main(void)
+{
+    return handler(*(struct ExecBase **)4L);
+}
+#endif
+
 static struct CDVDBase *AllocCDVDBase(struct ExecBase *SysBase)
 {
     struct CDVDBase *cdvd = NULL;
@@ -215,7 +224,7 @@ static void FreeCDVDBase(struct CDVDBase *cdvd)
     FreeMem(cdvd, sizeof(*cdvd));
 }
 
-LONG CDVD_handler(struct ExecBase *SysBase)
+LONG handler(struct ExecBase *SysBase)
 {
 register PACKET *packet;
 MSG     *msg;

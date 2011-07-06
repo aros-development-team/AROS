@@ -208,7 +208,7 @@ static CONST_STRPTR skipdevname(CONST_STRPTR fn)
  Input : proc - our process structure
  Output: -
 ********************************************/
-void AFS_work(void)
+void __startup AFS_work(void)
 {
     struct MsgPort *mp;
     struct DosPacket *dp;

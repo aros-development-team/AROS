@@ -1,11 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-devs-cdvdfs: includes linklibs
-#MM- workbench-devs-cdvdfs-checkcd: includes linklibs
-#MM- workbench-devs-cdvdfs-cdrom: includes linklibs
-#MM- workbench-devs-cdvdfs-cdcontrol: includes linklibs
-#MM- workbench-devs-cdvdfs-packet: includes linklibs
+#MM- workbench-c: kernel-fs-cdvdfs-cdcontrol kernel-fs-cdvdfs-checkcd
+#MM- test: kernel-fs-cdvdfs-cdrom
 
 TESTSDIR := $(AROS_TESTS)/cdrom
 
@@ -24,21 +21,23 @@ CHECKCD_FILES := checkcd cdrom iso9660 rock joliet \
 #And these ones are for normal operation
 USER_CFLAGS := -DNDEBUG -DDEBUG=0
 
-%build_prog mmake=workbench-devs-cdvdfs-cdcontrol \
+%build_prog mmake=kernel-fs-cdvdfs-cdcontrol \
     progname=cdcontrol targetdir=$(AROS_C) \
     files="$(CDCONTROL_FILES)" uselibs="amiga arosc"
 
-%build_prog mmake=workbench-devs-cdvdfs-cdrom \
+%build_prog mmake=kernel-fs-cdvdfs-cdrom \
     progname=cdrom targetdir=$(TESTSDIR) \
     files="$(CDROM_FILES)" uselibs="amiga arosc"
 
-%build_prog mmake=workbench-devs-cdvdfs-checkcd \
+%build_prog mmake=kernel-fs-cdvdfs-checkcd \
     progname=checkcd targetdir=$(AROS_C) \
     files="$(CHECKCD_FILES)" uselibs="amiga arosc"
 
 USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
 
-%build_module mmake=workbench-devs-cdvdfs \
+%build_module mmake=kernel-fs-cdvdfs \
     modname=cdrom modtype=handler \
     files="$(HANDLER_FILES)" \
     uselibs="arossupport rom"
+
+%common

@@ -18,7 +18,7 @@ Q ?= @
 #MM     kernel-disk-kobj \
 #MM     kernel-potgo-kobj \
 #MM     kernel-misc-kobj \
-#MM     workbench-devs-cdvdfs-kobj \
+#MM     kernel-fs-cdvdfs-kobj \
 #MM     workbench-libs-workbench-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-c-shellcommands-kobj \

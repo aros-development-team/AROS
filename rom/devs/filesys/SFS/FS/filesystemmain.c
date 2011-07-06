@@ -269,10 +269,16 @@ LONG mainprogram(struct ExecBase *);
 #endif
 
 #ifdef __AROS__
-void SFS_handler(void)
+AROS_ENTRY(__startup ULONG, Start,
+	   AROS_UFHA(char *, argstr, A0),
+	   AROS_UFHA(ULONG, argsize, D0),
+	   struct ExecBase *, sBase)
 {
-    D(bug("[SFS] Starting up\n"));
-    mainprogram(SysBase);
+    AROS_USERFUNC_INIT
+
+    return mainprogram(sBase);
+
+    AROS_USERFUNC_EXIT
 }
 #else
 LONG __saveds trampoline(void)

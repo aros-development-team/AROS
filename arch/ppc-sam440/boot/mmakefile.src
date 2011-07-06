@@ -50,7 +50,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-partition \
 #MM     workbench-libs-workbench \
 #MM     kernel-sam440-ppc-irq \
-#MM     workbench-devs-cdvdfs \
+#MM     kernel-fs-cdvdfs \
 #MM     kernel-fs-sfs \
 #MM     kernel-fs-amberram \
 #MM     kernel-hidd-graphics \

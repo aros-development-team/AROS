@@ -4,9 +4,10 @@ include $(TOP)/config/make.cfg
 # to provide a way to mount disk images or real hard drives using fdsk.device
 # or hostdisk.device
 
-#MM- workbench-hosted:  $(SDL_HIDD_TARGET)		\
-#MM			workbench-devs-cdvdfs-packet	\
-#MM			kernel-fs-sfs			\
+#MM- workbench-hosted:  $(SDL_HIDD_TARGET)	\
+#MM			kernel-fs-afs		\
+#MM			kernel-fs-cdvdfs	\
+#MM			kernel-fs-sfs		\
 #MM			kernel-partition
 
 #MM kernel-link-hosted: kernel-bootloader-kobj kernel-dosboot-kobj
