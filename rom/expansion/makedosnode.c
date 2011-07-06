@@ -106,7 +106,7 @@
     struct DeviceNode *dn;
     struct FileSysStartupMsg *fssm;
     struct DosEnvec *de;
-    struct DosEnvec *newde;
+    const struct DosEnvec *de_pp;
     ULONG  desize;
     STRPTR s1, s2 = 0;
     BSTR   bs1, bs2;
@@ -119,38 +119,10 @@
     }
 
     /* This is the environment structure */
-    de = (struct DosEnvec *)((IPTR *)parmPacket + 4);
-    desize = sizeof(IPTR) * (de->de_TableSize + 1);
-    newde = AllocMem(desize, MEMF_CLEAR | MEMF_PUBLIC);
-    if(de == NULL)
-    {
-        return NULL;
-    }
-    CopyMem(de, newde, desize);
-        
-    dn = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR | MEMF_PUBLIC);
-    
-    if (dn == NULL)
-    {
-	FreeMem(newde, desize);
-	return NULL;
-    }
-    
-    fssm = AllocMem(sizeof(struct FileSysStartupMsg),
-		    MEMF_CLEAR | MEMF_PUBLIC);
-    
-    if (fssm == NULL)
-    {
-	FreeMem(newde, desize);
-	FreeMem(dn, sizeof(struct DeviceNode));
-	
-	return NULL;
-    }
-    
-    /* To help prevent fragmentation I will allocate both strings in the
-       same block of memory.
-    */
+    de_pp = (struct DosEnvec *)((IPTR *)parmPacket + 4);
+    desize = sizeof(IPTR) * (de_pp->de_TableSize + 1);
 
+    /* Get the length of the strings we'll be packing */
     strLen1 = strlen((STRPTR)((IPTR *)parmPacket)[0]);
     /* Round size to alloc to nearest mutiple of 4 */
     sz1 = (AROS_BSTR_MEMSIZE4LEN(strLen1) + 3) & ~3;
@@ -166,20 +138,25 @@
     }
     sz2 = AROS_BSTR_MEMSIZE4LEN(strLen2 + 1);
 
-    s1 = AllocVec(sz1 + sz2, MEMF_CLEAR | MEMF_PUBLIC);
-    
-    if (s1 == NULL)
+    /* Allocate it all as one big chunk. Helps with disposal later. */
+    dn = AllocVec(sizeof(*dn)+sizeof(*fssm)+desize+sz1+sz2, MEMF_CLEAR | MEMF_PUBLIC);
+    if (dn == NULL)
     {
-	FreeMem(newde, desize);
-	FreeMem(dn, sizeof(struct DeviceNode));
-	FreeMem(fssm, sizeof(struct FileSysStartupMsg));
-	
-	return NULL;
+        return NULL;
     }
-    
-    /* We have no more allocations */
+
+    /* fssm is the (IPTR aligned) memory after the DeviceNode */
+    fssm = (struct FileSysStartupMsg *)(&dn[1]);
+    /* de is the (IPTR aligned) memory after the fssm */
+    de = (struct DosEnvec *)(&fssm[1]);
+    /* s1 is the memory after the de */
+    s1 = ((APTR)de) + desize;
+    /* And s2 is then memory after that */
     s2 = s1 + sz1;
 
+    /* Now that we have the pointers, fill it all */
+    CopyMem(de_pp, de, desize);
+        
     bs1 = MKBADDR(s1);
     bs2 = MKBADDR(s2);
     
@@ -200,7 +177,7 @@
     /* Strings are done, now the FileSysStartupMsg */
     fssm->fssm_Unit = ((IPTR *)parmPacket)[2];
     fssm->fssm_Device = bs2;
-    fssm->fssm_Environ = MKBADDR(newde);
+    fssm->fssm_Environ = MKBADDR(de);
     fssm->fssm_Flags = ((IPTR *)parmPacket)[3];
     
     /* FSSM is done, now the DeviceNode */
@@ -219,8 +196,8 @@
      * And AllocMem(MEMF_PUBLIC) would prefer to return that memory. This might screw up
      * filesystems expecting AllocMem() to return memory fully corresponding to the mask.
      */
-    if ((newde->de_TableSize >= DE_MASK) && (!(newde->de_Mask & 0x7FFFFFFF)))
-	newde->de_BufMemType |= MEMF_31BIT;
+    if ((de->de_TableSize >= DE_MASK) && (!(de->de_Mask & 0x7FFFFFFF)))
+	de->de_BufMemType |= MEMF_31BIT;
 #endif
 
     return dn;
