@@ -4,7 +4,6 @@
  */
 
 #include <dos/dosasl.h>
-#include <dos/filesystem.h>
 
 #include "emul_intern.h"
 

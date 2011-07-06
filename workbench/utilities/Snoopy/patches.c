@@ -12,8 +12,6 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 
-#include <dos/filesystem.h>
-
 #include "main.h"
 #include "patches.h"
 #include "setup.h"

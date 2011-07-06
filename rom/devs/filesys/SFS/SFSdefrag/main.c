@@ -25,8 +25,6 @@
 #include "../FS/packets.h"
 #include "../FS/query.h"
 
-#include <dos/filesystem.h>
-
 #define _DEBUG_H
 #include "../FS/asmsupport.c"
 

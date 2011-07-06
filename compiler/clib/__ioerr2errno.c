@@ -8,7 +8,6 @@
 
 #include <dos/dos.h>
 #include <dos/dosasl.h>
-#include <dos/filesystem.h>
 #include "__errno.h"
 
 int IoErr2errno (int ioerr)

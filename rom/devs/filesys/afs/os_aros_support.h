@@ -12,7 +12,6 @@
 #include <dos/dosextens.h>
 #include <dos/exall.h>
 #include <dos/filehandler.h>
-#include <dos/filesystem.h>
 #include <dos/stdio.h>
 #include <exec/interrupts.h>
 #include <exec/types.h>

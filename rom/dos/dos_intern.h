@@ -11,9 +11,10 @@
 #include <aros/system.h>
 #include <exec/io.h>
 #include <dos/dos.h>
+#include <dos/exall.h>
 #include <dos/dosextens.h>
-#include <dos/filesystem.h>
 #include <dos/dosasl.h>
+#include <dos/filehandler.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/utility.h>

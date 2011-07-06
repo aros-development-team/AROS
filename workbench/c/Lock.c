@@ -61,7 +61,6 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <dos/dosextens.h>
-#include <dos/filesystem.h>
 #include <dos/rdargs.h>
 #include <proto/exec.h>
 #include <proto/dos.h>

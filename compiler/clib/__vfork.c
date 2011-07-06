@@ -8,7 +8,6 @@
 #include <exec/exec.h>
 #include <exec/tasks.h>
 #include <dos/dos.h>
-#include <dos/filesystem.h>
 #include <aros/cpu.h>
 
 #include <sys/types.h>

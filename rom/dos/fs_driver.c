@@ -8,7 +8,6 @@
 
 #include <aros/debug.h>
 #include <dos/dos.h>
-#include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 

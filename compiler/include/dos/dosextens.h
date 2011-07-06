@@ -320,8 +320,8 @@ struct FileHandle
 #define fh_Arg1 fh_Args
 
 /* Structure of a lock. This is provided as it may be required internally by
- * packet-based filesystems, but it is not used by dos.library and the rest of
- * AROS. Lock() returns a struct FileHandle! */
+ * packet-based filesystems.
+ */
 struct FileLock
 {
     BPTR             fl_Link;   /* (struct FileLock *) Pointer to next lock. */
@@ -481,12 +481,6 @@ struct AssignList
  ********************** Low Level File Handling ***********************
  **********************************************************************/
 
-/* This section is OBSOLETE and is not implemented in AROS! AROS uses a
-   different concept for filesystem-handling. See <dos/filesystem.h> for
-   more information. Use the structures and defines in this section only, if
-   you are programming just for AmigaOS. */
-
-
 /* Allocate this structure with AllocDosObject(). */
 struct DosPacket
 {
@@ -513,9 +507,9 @@ struct DosPacket
 #define dp_BufAddr  dp_Arg1
 
 
-/* These are defined for packet emulation purposes only! AROS doesn't use
-   packets at all, but emulates (some of) them via DoPkt(), SendPkt() and
-   others to function like they did in AmigaOS */
+/* These are defined for DOS Packet filesystems, and are
+ * passed by DoPkt(), SendPkt(), and others
+ */
 
 /* dp_Type */
 #define ACTION_NIL             0

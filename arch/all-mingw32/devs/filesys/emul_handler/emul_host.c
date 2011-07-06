@@ -29,7 +29,6 @@
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
-#include <dos/filesystem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <dos/bptr.h>

@@ -473,12 +473,6 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 
 	if (dismount)
 	{
-#ifdef __AROS__
-/* TODO: AROS currently doesn't support packet handlers directly
-      	 and we currently don't support shutting down IOFS handlers */
-		success = DOSFALSE;
-		ioerr = ERROR_ACTION_NOT_KNOWN;
-#else
         	struct MsgPort *dp;
         	struct Process *tp;
 
@@ -492,7 +486,6 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 			ioerr = IoErr();
                 	DEBUG_ASSIGN(Printf("doassign: ACTION_DIE returned %ld\n",success));
 		}
-#endif
 	}
 
 	colon = strchr(name, ':');

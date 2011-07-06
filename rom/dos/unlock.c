@@ -9,7 +9,6 @@
 #define DEBUG 0
 #include <proto/exec.h>
 #include <dos/dosextens.h>
-#include <dos/filesystem.h>
 #include <proto/dos.h>
 #include "dos_intern.h"
 #include <aros/debug.h>

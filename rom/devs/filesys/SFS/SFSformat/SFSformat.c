@@ -4,10 +4,6 @@
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 
-#ifdef __AROS__
-#include <dos/filesystem.h>
-#endif
-
 #include "../FS/packets.h"
 
 const char version[]="\0$VER: SFSformat 1.1 (" ADATE ")\r\n";

@@ -84,10 +84,8 @@ struct DosEnvec
 
 
 /* This is the message that is passed to a file handler during startup
-   in the DeviceNode->dn_Startup field. It is not used in AROS DOS handlers
-   as they are now Device based, and the information is passed in during
-   OpenDevice(), however this needs to be stored for late opening
-   handlers. */
+   in the DeviceNode->dn_Startup field.
+ */
 struct FileSysStartupMsg
 {
     IPTR  fssm_Unit;    /* Unit number of device used. Can also be an STRPTR */
@@ -102,11 +100,7 @@ struct FileSysStartupMsg
     <dos/dosextens.h>. This is the version for a DOS "device" DLT_DEVICE.
     It is essentially the same structure as DevInfo, defined in
     <dos/dosextens.h>.
-
-    For AROS this is notably different, as filehandlers are no longer
-    DOS tasks (ie Processes), some of the fields here have no purpose
-    and are ignored. The only fields retained are the dn_Next, dn_Type,
-    dn_Startup and dn_Handler fields. */
+  */
 struct DeviceNode
 {
       /* PRIVATE pointer to next entry */

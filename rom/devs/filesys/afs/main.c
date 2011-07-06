@@ -10,8 +10,6 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
-#include <dos/filesystem.h>
-
 #include <aros/macros.h>
 #include <aros/debug.h>
 

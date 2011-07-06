@@ -7,7 +7,6 @@
 */
 
 #include <exec/devices.h>
-#include <dos/filesystem.h>
 #include <devices/timer.h>
 
 struct AFSBase

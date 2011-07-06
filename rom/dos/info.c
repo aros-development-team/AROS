@@ -14,7 +14,6 @@
     NAME */
 
 #include <proto/dos.h>
-#include <dos/filesystem.h>
 
 	AROS_LH2(LONG, Info,
 
