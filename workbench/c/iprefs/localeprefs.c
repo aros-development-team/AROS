@@ -18,12 +18,6 @@
 void LocalePrefs_Handler(STRPTR filename)
 {
     struct Locale  *newloc, *oldloc;
-    struct TagItem  tags[] =
-    {
-    	{OC_BuiltInLanguage, (IPTR)"english"},
-	{OC_Version 	   , 0	    	    },
-	{TAG_DONE   	    	    	    }
-    };
     
     D(bug("In IPrefs:LocalePrefs_Handler\n"));
     

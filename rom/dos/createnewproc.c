@@ -10,7 +10,6 @@
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
-#include <dos/filesystem.h>
 #include <dos/dostags.h>
 #include <dos/stdio.h>
 #include <proto/dos.h>

@@ -20,7 +20,6 @@
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <dos/dos.h>
-#include <dos/filesystem.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
 #include "__errno.h"

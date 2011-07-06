@@ -7,7 +7,6 @@
 */
 
 #include <aros/debug.h>
-#include <dos/filesystem.h>
 #include <dos/notify.h>
 #include <proto/exec.h>
 

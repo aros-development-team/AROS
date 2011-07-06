@@ -7,7 +7,6 @@
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
-#include <dos/filesystem.h>
 #include <dos/dosextens.h>
 #include <dos/exall.h>
 #include "dos_intern.h"

@@ -8,7 +8,6 @@
 
 #include <dos/dos.h>
 #include <proto/dos.h>
-#include <dos/filesystem.h>
 
 int __nocommandline;
 

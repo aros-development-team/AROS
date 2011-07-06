@@ -6,7 +6,6 @@
     Lang: English
 */
 #include "dos_intern.h"
-#include <dos/filesystem.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
 

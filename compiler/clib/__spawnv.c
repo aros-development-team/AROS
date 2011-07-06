@@ -11,7 +11,6 @@
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
-#include <dos/filesystem.h>
 #include <aros/debug.h>
 
 #include <unistd.h>

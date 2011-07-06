@@ -8,7 +8,6 @@
 #include "__arosc_privdata.h"
 
 #include <dos/dos.h>
-//#include <dos/filesystem.h>
 #include <proto/dos.h>
 //#include <utility/tagitem.h>
 #include <unistd.h>

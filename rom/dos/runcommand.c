@@ -12,7 +12,6 @@
 #include "../exec/etask.h"
 #include <proto/exec.h>
 #include <utility/tagitem.h>
-#include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <dos/stdio.h>
 #include "dos_intern.h"

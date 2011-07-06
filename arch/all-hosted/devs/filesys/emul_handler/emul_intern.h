@@ -11,7 +11,6 @@
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <dos/dosextens.h>
-#include <dos/filesystem.h>
 
 #include <resources/emul.h>
 

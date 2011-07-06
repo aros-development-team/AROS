@@ -1,7 +1,6 @@
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <dos/filesystem.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>

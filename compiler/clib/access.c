@@ -8,7 +8,6 @@
 #include <aros/debug.h>
 #include <errno.h>
 #include <proto/dos.h>
-#include <dos/filesystem.h>
 #include <string.h>
 
 #include <aros/debug.h>

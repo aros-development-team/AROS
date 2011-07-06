@@ -7,7 +7,6 @@
 */
 #include "expansion_intern.h"
 #include <exec/io.h>
-#include <dos/filesystem.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 

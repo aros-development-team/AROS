@@ -29,7 +29,6 @@ $Id$
 #include <dos/dos.h>
 #include <dos/datetime.h>
 #include <dos/filehandler.h>
-#include <dos/filesystem.h>
 
 #include <exec/memory.h>
 #include <graphics/gfx.h>

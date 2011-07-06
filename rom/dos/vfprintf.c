@@ -7,7 +7,6 @@
 */
 #include <proto/exec.h>
 #include <dos/dosextens.h>
-#include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
 #include "dos_intern.h"

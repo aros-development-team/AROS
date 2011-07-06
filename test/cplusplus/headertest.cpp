@@ -237,7 +237,6 @@
 #include <dos/elf.h>
 #include <dos/exall.h>
 #include <dos/filehandler.h>
-#include <dos/filesystem.h>
 #include <dos/notify.h>
 #include <dos/rdargs.h>
 #include <dos/record.h>

@@ -56,7 +56,6 @@
 
 #include <exec/memory.h>
 #include <proto/exec.h>
-#include <dos/filesystem.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <proto/dos.h>

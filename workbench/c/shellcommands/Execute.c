@@ -45,7 +45,6 @@
 ******************************************************************************/
 
 #include <proto/exec.h>
-#include <dos/filesystem.h>
 #include <dos/dos.h>
 #include <dos/bptr.h>
 #include <proto/dos.h>

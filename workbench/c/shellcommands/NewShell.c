@@ -91,7 +91,6 @@
 #include <proto/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
-#include <dos/filesystem.h>
 #include <aros/asmcall.h>
 #include <string.h>
 
