@@ -511,21 +511,21 @@ posbreak:
 
 static const struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
 {
-    {PTTA_TYPE,           PLAM_READ},
-    {PTTA_RESERVED,       PLAM_READ},
-    {PTTA_MAX_PARTITIONS, PLAM_READ},
-    {PTTA_DONE,           0}
+    {PTT_TYPE,           PLAM_READ},
+    {PTT_RESERVED,       PLAM_READ},
+    {PTT_MAX_PARTITIONS, PLAM_READ},
+    {TAG_DONE,           0}
 };
 
 static const struct PartitionAttribute PartitionMBRPartitionAttrs[]=
 {
-    {PTA_GEOMETRY,  PLAM_READ},
-    {PTA_TYPE,      PLAM_READ | PLAM_WRITE},
-    {PTA_POSITION,  PLAM_READ | PLAM_WRITE},
-    {PTA_ACTIVE,    PLAM_READ | PLAM_WRITE},
+    {PT_GEOMETRY,  PLAM_READ},
+    {PT_TYPE,      PLAM_READ | PLAM_WRITE},
+    {PT_POSITION,  PLAM_READ | PLAM_WRITE},
+    {PT_ACTIVE,    PLAM_READ | PLAM_WRITE},
     {PT_STARTBLOCK, PLAM_READ},
     {PT_ENDBLOCK,   PLAM_READ},
-    {PTA_DONE, 0}
+    {TAG_DONE, 0}
 };
 
 static ULONG PartitionMBRDestroyPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)

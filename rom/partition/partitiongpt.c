@@ -651,21 +651,21 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
 
 static const struct PartitionAttribute PartitionGPTPartitionTableAttrs[]=
 {
-    {PTTA_TYPE,           PLAM_READ},
-    {PTTA_DONE,           0}
+    {PTT_TYPE,           PLAM_READ},
+    {TAG_DONE,           0}
 };
 
 static const struct PartitionAttribute PartitionGPTPartitionAttrs[]=
 {
-    {PTA_GEOMETRY,  PLAM_READ},
-    {PTA_TYPE,      PLAM_READ|PLAM_WRITE},
-    {PTA_POSITION,  PLAM_READ},
-    {PTA_NAME,      PLAM_READ|PLAM_WRITE},
-    {PTA_BOOTABLE,  PLAM_READ|PLAM_WRITE},
-    {PTA_AUTOMOUNT, PLAM_READ|PLAM_WRITE},
+    {PT_GEOMETRY,  PLAM_READ},
+    {PT_TYPE,      PLAM_READ|PLAM_WRITE},
+    {PT_POSITION,  PLAM_READ},
+    {PT_NAME,      PLAM_READ|PLAM_WRITE},
+    {PT_BOOTABLE,  PLAM_READ|PLAM_WRITE},
+    {PT_AUTOMOUNT, PLAM_READ|PLAM_WRITE},
     {PT_STARTBLOCK, PLAM_READ},
     {PT_ENDBLOCK,   PLAM_READ},
-    {PTA_DONE, 0}
+    {TAG_DONE, 0}
 };
 
 const struct PTFunctionTable PartitionGPT =

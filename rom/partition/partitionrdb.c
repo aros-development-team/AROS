@@ -977,21 +977,21 @@ void PartitionRDBDeletePartition
 
 const struct PartitionAttribute PartitionRDBPartitionTableAttrs[]=
 {
-    {PTTA_TYPE,     PLAM_READ},
-    {PTTA_RESERVED, PLAM_READ},
-    {PTTA_DONE,     0}
+    {PTT_TYPE,     PLAM_READ},
+    {PTT_RESERVED, PLAM_READ},
+    {TAG_DONE,     0}
 };
 
 const struct PartitionAttribute PartitionRDBPartitionAttrs[]=
 {
     /* TODO: implement write */
-    {PTA_GEOMETRY,  PLAM_READ},
-    {PTA_DOSENVEC,  PLAM_READ | PLAM_WRITE},
-    {PTA_TYPE,      PLAM_READ | PLAM_WRITE},
-    {PTA_NAME,      PLAM_READ | PLAM_WRITE},
-    {PTA_BOOTABLE,  PLAM_READ | PLAM_WRITE},
-    {PTA_AUTOMOUNT, PLAM_READ | PLAM_WRITE},
-    {PTA_DONE,      0}
+    {PT_GEOMETRY,  PLAM_READ},
+    {PT_DOSENVEC,  PLAM_READ | PLAM_WRITE},
+    {PT_TYPE,      PLAM_READ | PLAM_WRITE},
+    {PT_NAME,      PLAM_READ | PLAM_WRITE},
+    {PT_BOOTABLE,  PLAM_READ | PLAM_WRITE},
+    {PT_AUTOMOUNT, PLAM_READ | PLAM_WRITE},
+    {TAG_DONE,      0}
 };
 
 ULONG PartitionRDBDestroyPartitionTable

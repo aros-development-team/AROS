@@ -417,22 +417,22 @@ static LONG PartitionEBRSetPartitionAttrs(struct Library *PartitionBase, struct 
 
 static const struct PartitionAttribute PartitionEBRPartitionTableAttrs[]=
 {
-    {PTTA_TYPE,           PLAM_READ},
-    {PTTA_RESERVED,       PLAM_READ},
-    {PTTA_MAXLEADIN,      PLAM_READ},
-    {PTTA_DONE,           0}
+    {PTT_TYPE,           PLAM_READ},
+    {PTT_RESERVED,       PLAM_READ},
+    {PTT_MAXLEADIN,      PLAM_READ},
+    {TAG_DONE,           0}
 };
 
 static const struct PartitionAttribute PartitionEBRPartitionAttrs[]=
 {
-    {PTA_GEOMETRY,  PLAM_READ},
-    {PTA_TYPE,      PLAM_READ | PLAM_WRITE},
-    {PTA_DOSENVEC,  PLAM_READ | PLAM_WRITE},
-    {PTA_POSITION,  PLAM_READ},
-    {PTA_LEADIN,    PLAM_READ},
+    {PT_GEOMETRY,  PLAM_READ},
+    {PT_TYPE,      PLAM_READ | PLAM_WRITE},
+    {PT_DOSENVEC,  PLAM_READ | PLAM_WRITE},
+    {PT_POSITION,  PLAM_READ},
+    {PT_LEADIN,    PLAM_READ},
     {PT_STARTBLOCK, PLAM_READ},
     {PT_ENDBLOCK,   PLAM_READ},
-    {PTA_DONE, 0}
+    {TAG_DONE, 0}
 };
 
 static ULONG PartitionEBRDestroyPartitionTable
