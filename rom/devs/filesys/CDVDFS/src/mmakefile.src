@@ -6,8 +6,8 @@ include $(TOP)/config/make.cfg
 
 TESTSDIR := $(AROS_TESTS)/cdrom
 
-HANDLER_FILES := handler volumes path hfs generic iso9660 cdrom \
-		 devsupp rock joliet prefs charset intui device
+HANDLER_FILES := device volumes path hfs generic iso9660 cdrom \
+		 devsupp rock joliet prefs charset intui
 
 CDCONTROL_FILES := cdcontrol
 CDROM_FILES := main cdrom iso9660 rock joliet \
