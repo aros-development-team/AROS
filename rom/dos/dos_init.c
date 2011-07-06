@@ -87,6 +87,9 @@ static void PatchDOS(struct DosLibrary *dosbase)
 
 #endif
 
+extern const ULONG err_Numbers[];
+extern const char err_Strings[];
+
 static int DosInit(struct DosLibrary *LIBBASE)
 {
     D(bug("DosInit\n"));
@@ -95,8 +98,16 @@ static int DosInit(struct DosLibrary *LIBBASE)
     struct DosInfo *dosinfo;
     struct FileSysResource *fsr;
 
-    LIBBASE->dl_Root = (struct RootNode *)AllocMem(sizeof(struct RootNode),
-                                                   MEMF_PUBLIC|MEMF_CLEAR);
+    /*
+     * These two are allocated together with DOSBase, for reduced fragmentation.
+     * Structure pointed to by dl_Errors is intentionally read-write - who knows...
+     */
+    LIBBASE->dl_Root   = &((struct IntDosBase *)DOSBase)->rootNode;
+    LIBBASE->dl_Errors = &((struct IntDosBase *)DOSBase)->errors;
+
+    LIBBASE->dl_Errors->estr_Nums    = (LONG *)err_Numbers;
+    LIBBASE->dl_Errors->estr_Strings = (STRPTR)err_Strings;
+
     dosinfo = AllocMem(sizeof(struct DosInfo), MEMF_PUBLIC|MEMF_CLEAR);
 
     /* Init the RootNode structure */

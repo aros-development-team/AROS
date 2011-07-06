@@ -39,6 +39,8 @@ struct IntDosBase
 {
     struct DosLibrary pub;
     struct Library *debugBase;
+    struct RootNode rootNode;
+    struct ErrorString errors;
 };
 
 #define DebugBase ((struct IntDosBase *)DOSBase)->debugBase
@@ -50,14 +52,6 @@ struct DAList
     STRPTR *MultVec;
     BOOL    FreeRDA;
 };
-
-struct EString
-{
-    LONG Number;
-    STRPTR String;
-};
-
-extern CONST struct EString EString[];
 
 #ifndef EOF
 #define EOF -1
@@ -215,30 +209,7 @@ struct markerarray
 
 #define MATCHFUNCS_NO_DUPLOCK 	0
 
-/* DosGetString additional codes (printf style parametrized) */
-
-#define  STRING_DISK_NOT_VALIDATED                  -4000
-#define  STRING_DISK_WRITE_PROTECTED                -4001
-#define  STRING_DEVICE_NOT_MOUNTED_INSERT           -4002
-#define  STRING_DEVICE_NOT_MOUNTED_REPLACE          -4003
-#define  STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET   -4004
-#define  STRING_DISK_FULL                           -4005
-#define  STRING_NOT_A_DOS_DISK                      -4006
-#define  STRING_NO_DISK                             -4007
-#define  STRING_ABORT_BUSY                          -4008
-#define  STRING_ABORT_DISK_ERROR                    -4009
-
-#define  STRING_RETRY           -5000
-#define  STRING_CANCEL          -5001
-#define  STRING_REQUESTTITLE    -5002
-
 #include "dos_commanderrors.h"
-
-/* Force attempts to use DosLibrary->dl_Errors to fail. This is used by
-   locale.library's replacement function for DosGetString() to peek
-   the pointer of the catalog to use */
-   
-#define dl_Errors   	    	do_not_use_is_reserved_for_locale_dosgetstring_replacement
 
 #define  __is_task(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_TASK)
 #define  __is_process(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DosGetString() - Support for localized strings.
@@ -35,14 +35,16 @@
     NOTES
 	Error strings will ALWAYS be less than 80 characters, and should
 	ideally be less than 60 characters.
-	
+
+	This is a private function, whose the only purpose is to be patched
+	by locale.library.
+
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-    	DosGetLocalizedString()
-	
+
     INTERNALS
 	This is dosPrivate5()
 
@@ -50,28 +52,29 @@
 {
     AROS_LIBFUNC_INIT
 
-    STRPTR retval;
+    LONG *p = DOSBase->dl_Errors->estr_Nums;
+    UBYTE *q = DOSBase->dl_Errors->estr_Strings;
 
-    retval = DosGetLocalizedString(stringNum);
-
-    if (!retval)
+    do
     {
-    	const struct EString *es = EString;
-	
-	while(es->Number)
+	LONG n = p[0];
+	LONG m = p[1];
+
+	while (n <= m)
 	{
-	    if(es->Number == stringNum)
-	    {
-		retval = es->String;
-		break;
-	    }
-	    es++;
+	    if (n == stringNum)
+	    	return q + 1;
+
+	    q += q[0] + 1;
+	    ++n;
 	}
+
+	p += 2;
     }
-    
-    return retval;
-    
+    while (p[0] != 0);
+
+    return "undefined error";
+
     AROS_LIBFUNC_EXIT
     
 } /* DosGetString */
-
