@@ -107,8 +107,6 @@ struct filehandle
 #define FHFLG_AUTO  	    	64  /* filename contained AUTO */
 #define FHFLG_CONSOLEDEVICEOPEN 128
 #define FHFLG_EOF   	    	256
-#define FHFLG_NOECHO            512  /* input echoing is disabled */
-#define FHFLG_NOWRITE           1024 /* disable do_write() completely, no output */
 
 #undef InputBase
 #undef IntuitionBase

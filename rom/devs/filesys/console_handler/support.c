@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for console handler. 
@@ -21,7 +21,6 @@
 #include <exec/errors.h>
 #include <exec/alerts.h>
 #include <utility/tagitem.h>
-#include <dos/filesystem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <intuition/intuition.h>
@@ -349,14 +348,11 @@ BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
 
 void do_write(struct filehandle *fh, APTR data, ULONG length)
 {
-    /* write stuff out, but only if write is enabled */
-    if (! (fh->flags & FHFLG_NOWRITE)) {
-        fh->conwriteio.io_Command	= CMD_WRITE;
-        fh->conwriteio.io_Data	        = data;
-        fh->conwriteio.io_Length	= length;
+    fh->conwriteio.io_Command = CMD_WRITE;
+    fh->conwriteio.io_Data    = data;
+    fh->conwriteio.io_Length  = length;
 
-        DoIO((struct IORequest *)&fh->conwriteio);
-    }
+    DoIO((struct IORequest *)&fh->conwriteio);
 }
 
 /******************************************************************************************/
@@ -880,9 +876,7 @@ void process_input(struct filehandle *fh)
 	case INP_CURSORDOWN:
 	case INP_SHIFT_CURSORUP:
 	case INP_SHIFT_CURSORDOWN:
-	  /* no history if we're hidden */
-	  if (! (fh->flags & FHFLG_NOECHO))
-	    history_walk(fh, inp);
+	  history_walk(fh, inp);
 	  break;
 	  
 	case INP_BACKSPACE:
@@ -1028,10 +1022,7 @@ void process_input(struct filehandle *fh)
 		{
 		  c = '\n';
 		  do_write(fh, &c, 1);
-		  
-		  /* don't put hidden things in the history */
-		  if (! (fh->flags & FHFLG_NOECHO))
-		    add_to_history(fh);
+		  add_to_history(fh);
 		  
 		  fh->inputbuffer[fh->inputsize++] = '\n';
 		}
@@ -1065,10 +1056,7 @@ void process_input(struct filehandle *fh)
 	    {
 	      c = '\n';
 	      do_write(fh, &c, 1);
-	      
-	      /* don't put hidden things in the history */
-	      if (! (fh->flags & FHFLG_NOECHO))
-		add_to_history(fh);
+	      add_to_history(fh);
 	      
 	      fh->inputbuffer[fh->inputsize++] = c;
 	      fh->inputstart = fh->inputsize;
@@ -1087,11 +1075,9 @@ void process_input(struct filehandle *fh)
 	  break;
 	  
 	case INP_TAB:
-	  /* don't complete hidden things */
-	  if (! (fh->flags & FHFLG_NOECHO))
-	    Completion(fh);
+	  Completion(fh);
 	  break;
-	  
+
 	case INP_PASTE:
 	  do_paste(fh);
 	  break;

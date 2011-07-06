@@ -7,7 +7,6 @@
 #include <exec/errors.h>
 #include <exec/alerts.h>
 #include <utility/tagitem.h>
-#include <dos/filesystem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <intuition/intuition.h>
@@ -371,12 +370,7 @@ LONG CONMain(void)
 			else
 			{
 			    	/* Cooked mode */
-				/* disable output if we're not suppoed to be echoing */
-				if (fh->flags & FHFLG_NOECHO)
-					fh->flags |= FHFLG_NOWRITE;
 				process_input(fh);
-				/* re-enable output */
-				fh->flags &= ~FHFLG_NOWRITE;
 			} /* if (fh->flags & FHFLG_RAW) else ... */
 			startread(fh);
 		}
@@ -423,9 +417,8 @@ LONG CONMain(void)
 				break;
 				case ACTION_SCREEN_MODE:
 				{
-	                            LONG wantmode = dp->dp_Arg1 ? FCM_RAW : 0;
-				    D(bug("ACTION_SCREEN_MODE %s\n", wantmode ? "RAW" : "CON"));
-	                            if ((wantmode & FCM_RAW) && !(fh->flags & FHFLG_RAW))
+				    D(bug("ACTION_SCREEN_MODE %s\n", dp->dp_Arg1 ? "RAW" : "CON"));
+	                            if (dp->dp_Arg1 && !(fh->flags & FHFLG_RAW))
 	                            {
 					/* Switching from CON: mode to RAW: mode */
 					fh->flags |= FHFLG_RAW;
@@ -436,11 +429,10 @@ LONG CONMain(void)
 	                            else
 	                            {
 	                                /* otherwise just copy the flags */
-	                                fh->flags &= ~(FHFLG_RAW | FHFLG_NOECHO);
-	                                if (wantmode & FCM_RAW)
+	                                if (dp->dp_Arg1)
 	                                    fh->flags |= FHFLG_RAW;
-	                                if (wantmode & FCM_NOECHO)
-	                                    fh->flags |= FHFLG_NOECHO;
+	                                else
+					    fh->flags &= ~FHFLG_RAW;
 	                            }
 				    replypkt(dp, DOSTRUE);
 				}
