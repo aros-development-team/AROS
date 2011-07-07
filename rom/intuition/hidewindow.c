@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -9,8 +9,6 @@
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 
-#ifdef CGXSHOWHIDESUPPORT
-#undef ChangeLayerVisibility
 struct HideWindowActionMsg
 {
     struct IntuiActionMsg  msg;
@@ -19,25 +17,13 @@ struct HideWindowActionMsg
 
 static VOID int_hidewindow(struct HideWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase);
-#endif
-
-#ifdef ChangeLayerVisibility
-struct HideWindowActionMsg
-{
-    struct IntuiActionMsg   msg;
-    struct Window   	  *window;
-};
-
-static VOID int_hidewindow(struct HideWindowActionMsg *msg,
-                           struct IntuitionBase *IntuitionBase);
-#endif
 
 /*****************************************************************************
  
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(VOID, HideWindow,
+    AROS_LH1(BOOL, HideWindow,
 
 /*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
@@ -52,10 +38,10 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
 	window - The window to affect.
  
     RESULT
-	None.
+	Success indicator. On AROS this is always TRUE.
  
     NOTES
-	This function is compatible with AmigaOS v4.
+	This function is source-compatible with AmigaOS v4.
  
     EXAMPLE
  
@@ -72,36 +58,29 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
 {
     AROS_LIBFUNC_INIT
 
-#ifdef CGXSHOWHIDESUPPORT
     struct HideWindowActionMsg msg;
 
     DEBUG_HIDEWINDOW(dprintf("HideWindow: Window 0x%lx\n", (ULONG) window));
-
     SANITY_CHECK(window)
+
+#ifdef CGXSHOWHIDESUPPORT
     if (window->Flags & WFLG_BACKDROP) return;
+#endif
 
     msg.window = window;
     DoASyncAction((APTR)int_hidewindow, &msg.msg, sizeof(msg), IntuitionBase);
-#endif
 
-#ifdef ChangeLayerVisibility
-    struct HideWindowActionMsg msg;
-
-    DEBUG_HIDEWINDOW(dprintf("HideWindow: Window 0x%lx\n", window));
-
-    msg.window = window;
-    DoASyncAction((APTR)int_hidewindow, &msg.msg, sizeof(msg), IntuitionBase);
-#endif
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* HideWindow */
 
 
-#ifdef CGXSHOWHIDESUPPORT
 static VOID int_hidewindow(struct HideWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase)
 {
     struct Window  *window = msg->window;
+#ifdef CGXSHOWHIDESUPPORT
     struct Library *CGXSystemBase;
 
     if (!window) return;
@@ -118,14 +97,7 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
         ((struct IntWindow *)(window))->specialflags |= SPFLAG_ICONIFIED;
         CloseLibrary(CGXSystemBase);
     }
-};
-#endif
-
-#ifdef ChangeLayerVisibility
-static VOID int_hidewindow(struct HideWindowActionMsg *msg,
-                           struct IntuitionBase *IntuitionBase)
-{
-    struct Window *window = msg->window;
+#else
     struct Screen *screen;
 
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
@@ -153,5 +125,5 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
 
         CheckLayers(screen, IntuitionBase);
     }
-}
 #endif
+};

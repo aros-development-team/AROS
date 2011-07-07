@@ -127,8 +127,8 @@ cliprects */
 #define LA_ChildOf	WA_Parent
 #define LA_InFrontOf	WA_InFrontOf
 #define LA_Behind	WA_Behind
-#define LA_Visible	WA_Visible
-#define LA_Shape	WA_Shape
+#define LA_Visible	WA_Hidden
+#define LA_Shape	WA_ShapeRegion
 #define LA_ShapeHook	WA_ShapeHook
 
 

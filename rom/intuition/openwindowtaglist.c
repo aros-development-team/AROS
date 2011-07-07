@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -214,7 +214,7 @@
 	    Make window visible.
 	    Default: TRUE
 
-	WA_Shape (struct Region *)
+	WA_ShapeRegion (struct Region *)
 
 	WA_ShapeHook (struct Hook *)
 

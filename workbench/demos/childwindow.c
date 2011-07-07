@@ -108,7 +108,7 @@ static struct Window * makeparentwin(ULONG visible)
 	{ WA_DragBar 	, TRUE	    	    	    	    },
 	{ WA_IDCMP   	, IDCMP_CLOSEWINDOW 	    	    },
 	{ WA_Activate	, TRUE	    	    	    	    },
-	{ WA_Visible    , (IPTR)visible                     },
+	{ WA_Hidden     , !visible                          },
 	{ WA_SizeGadget , TRUE                              },
 	{ TAG_DONE                                          }
     };
@@ -129,7 +129,7 @@ static void makewin(struct Window * parent)
 	{ WA_DepthGadget, TRUE	    	    	    	    },
 	{ WA_DragBar 	, TRUE	    	    	    	    },
 	{ WA_Activate	, TRUE	    	    	    	    },
-	{ WA_Shape   	, (IPTR)shape	    	    	    },
+	{ WA_ShapeRegion, (IPTR)shape	    	    	    },
 	{ WA_Parent     , (IPTR)parent			    },
 	{ TAG_DONE   	    	    	    	    	    }
     };

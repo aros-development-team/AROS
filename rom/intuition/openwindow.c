@@ -527,8 +527,8 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 break;
     	#endif
 
-    	#ifndef __MORPHOS__
-            case WA_Shape:
+#ifndef __MORPHOS__
+            case WA_ShapeRegion:
 	    	shapeti = tag;
                 shape = (struct Region *)tag->ti_Data;
                 break;
@@ -544,10 +544,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 parentl   = parentwin->WLayer;
                 break;
 
-            case WA_Visible:
-                windowvisible = (ULONG)tag->ti_Data;
+            case WA_Hidden:
+                windowvisible = !tag->ti_Data;
                 break;
-    	#endif
+#endif
 
             case WA_Pointer:
             case WA_BusyPointer:

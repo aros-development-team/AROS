@@ -124,7 +124,7 @@ static void makewin(void)
 	{ WA_DragBar 	, TRUE	    	    	    	    	},
 	{ WA_IDCMP   	, IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY  },
 	{ WA_Activate	, TRUE	    	    	    	    	},
-	{ WA_Shape   	, (IPTR)shape	    	    	    	},
+	{ WA_ShapeRegion   	, (IPTR)shape	    	    	    	},
 	{ TAG_DONE   	    	    	    	    	    	}
     };
 
