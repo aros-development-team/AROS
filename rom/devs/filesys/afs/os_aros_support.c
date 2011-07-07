@@ -389,14 +389,12 @@ struct IOHandle *ioh;
 			D(bug("[afs 0x%08lX] Media change signalled\n", volume));
 			if (diskPresent(afsbase, ioh))
 			{
-			    if (!(ioh->ioflags & IOHF_DISK_IN))
+			    if (!volume->inhibitcounter)
 			    {
-			        if (!volume->inhibitcounter) {
-				    D(bug("[afs 0x%08lX] Media inserted\n", volume));
-				    newMedium(afsbase, volume);
-				}
-				ioh->ioflags |= IOHF_DISK_IN;
+				D(bug("[afs 0x%08lX] Media inserted\n", volume));
+				newMedium(afsbase, volume);
 			    }
+			    ioh->ioflags |= IOHF_DISK_IN;
 			}
 			else
 			{
