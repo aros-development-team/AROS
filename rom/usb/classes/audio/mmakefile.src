@@ -5,7 +5,7 @@ USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 
 FILES :=    usbaudio.class numtostr debug
 
-#MM- kernel-usb-classes-usbaudio : kernel-usb-usbclass kernel-usb-poseidon \
+#MM- kernel-usb-classes-usbaudio : kernel-usb-usbclass kernel-usb-poseidon-includes \
 #MM  workbench-devs-AHI
 
 %build_module mmake=kernel-usb-classes-usbaudio \

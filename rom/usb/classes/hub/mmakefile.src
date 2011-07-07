@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES :=    hub.class debug
 
-#MM- kernel-usb-classes-hub : kernel-usb-usbclass kernel-usb-poseidon
+#MM- kernel-usb-classes-hub : kernel-usb-usbclass kernel-usb-poseidon-includes
 
 %build_module mmake=kernel-usb-classes-hub \
     modname=hub modtype=usbclass modsuffix="class" \
