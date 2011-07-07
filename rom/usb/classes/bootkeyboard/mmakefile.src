@@ -5,7 +5,7 @@ USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 
 FILES :=    bootkeyboard.class debug
 
-#MM- kernel-usb-classes-bootkeyboard : kernel-usb-usbclass kernel-usb-poseidon
+#MM- kernel-usb-classes-bootkeyboard : kernel-usb-usbclass kernel-usb-poseidon-includes
 
 %build_module mmake=kernel-usb-classes-bootkeyboard \
     modname=bootkeyboard modtype=usbclass modsuffix="class" \

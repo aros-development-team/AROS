@@ -12,7 +12,7 @@
 #define DB_LEVEL 1000
 #endif
 
-#include <aros/debug.h>
+#include <proto/debug.h>
 
 // DEBUG 0 should equal undefined DEBUG
 #ifdef DEBUG
@@ -23,7 +23,7 @@
 
 #ifdef DEBUG
 #define KPRINTF(l, x) do { if ((l) >= DB_LEVEL) \
-     { bug("%s:%s/%lu: ", __FILE__, __FUNCTION__, __LINE__); bug x;} } while (0)
+     { KPrintF("%s:%s/%lu: ", __FILE__, __FUNCTION__, __LINE__); KPrintF x;} } while (0)
 #define DB(x) x
    void dumpmem_trident(void *mem, unsigned long int len);
 #else /* !DEBUG */

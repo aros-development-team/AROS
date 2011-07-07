@@ -9,7 +9,7 @@ void dumpmem_pciusb(void *mem, unsigned long int len)
 
   p = (unsigned char *) mem;
 
-  bug("\n");
+  RawPutChar('\n');
 
   do
   {
@@ -20,7 +20,7 @@ void dumpmem_pciusb(void *mem, unsigned long int len)
       c = *p++;
       str[b] = ((c >= ' ') && (c <= 'z')) ? c : '.';
       str[b + 1] = 0;
-      bug("%02lx ", c);
+      KPrintF("%02lx ", c);
       if (--len == 0) break;
     }
 
@@ -29,10 +29,10 @@ void dumpmem_pciusb(void *mem, unsigned long int len)
       bug("   ");
     }
 
-    bug("  %s\n", str);
+    KPrintF("  %s\n", str);
   } while (len);
 
-  bug("\n\n");
+  KPrintF("\n\n");
 }
 
 #endif /* DEBUG */

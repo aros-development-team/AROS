@@ -5,7 +5,7 @@ USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 
 FILES :=    rndis.class dev debug if_urndis
 
-#MM- kernel-usb-classes-rndis : kernel-usb-usbclass kernel-usb-poseidon
+#MM- kernel-usb-classes-rndis : kernel-usb-usbclass kernel-usb-poseidon-includes
 
 %build_module mmake=kernel-usb-classes-rndis \
     modname=rndis modtype=usbclass modsuffix="class" \

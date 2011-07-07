@@ -17,7 +17,7 @@ USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 #MM     includes-copy
 #MM- kernel-usb-poseidon : linklibs
 
-#MM- kernel-usb-shelltools : kernel-usb-poseidon
+#MM- kernel-usb-shelltools : kernel-usb-poseidon-includes
 
 #MM- kernel-usb-usbromstartup : kernel-usb-poseidon
 

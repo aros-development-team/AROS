@@ -47,7 +47,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-usb-classes-massstorage-pkg
 
 #MM kernel-usb-classes-kobj : \
-#MM     kernel-usb-usbclass kernel-usb-poseidon \
+#MM     kernel-usb-usbclass \
 #MM     kernel-usb-classes-bootkeyboard-kobj \
 #MM     kernel-usb-classes-bootmouse-kobj \
 #MM     kernel-usb-classes-hid-kobj \
