@@ -56,7 +56,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
   files="dos_init $(FUNCTIONS) $(FILES)" \
   uselibs="rom"
 
-$(GENDIR)/$(CURDIR)/errorlist.o : $(GENDIR)/$(CURDIR)/errorlist.h
+$(GENDIR)/$(CURDIR)/errorlist.d : $(GENDIR)/$(CURDIR)/errorlist.h
 
 $(GENDIR)/$(CURDIR)/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCDIR)/$(CURDIR)/genstrings.py
 	@$(ECHO) Generating $@...
