@@ -16,6 +16,8 @@
 #include "memory.h"
 #include "mungwall.h"
 
+#define DSCAN(x) x
+
 /*
  * Build a wall around the allocated chunk.
  * Returns updated pointer to the beginning of the chunk (actually a pointer to a usable area)
@@ -139,8 +141,9 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, const char
 
     if (header->mwh_fault)
     {
-	mwdata.freeFunc = function;
     	/* Throw an alert with context */
+    	mwdata.hdr      = header;
+	mwdata.freeFunc = function;
     	Exec_ExtAlert(AN_MemoryInsane, caller, stack, AT_MUNGWALL, &mwdata, SysBase);
 
     	/*
@@ -226,12 +229,14 @@ void MungWall_Scan(APTR pool, const char *function, APTR caller, APTR stack, str
 	struct MungwallHeader 	*allocnode;
 	struct MungwallHeader	*tmp;
 
-	D(bug("[Mungwall] Scan(), caller %s\n", function));
+	DSCAN(bug("[Mungwall] Scan(), caller %s, SysBase 0x%p\n", function, SysBase));
 
 	Forbid();
 
 	ForeachNodeSafe(&PrivExecBase(SysBase)->AllocMemList, allocnode, tmp)
 	{
+	    DSCAN(bug("[Mungwall] allocnode 0x%p, next 0x%p\n", allocnode, tmp));
+
 	    if (pool && (allocnode->mwh_pool == pool))
 	    {
 		/*
