@@ -15,7 +15,7 @@ USER_CFLAGS := -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
   modname=dosboot modtype=resource \
   files="$(FILES)" uselibs="rom oop hiddstubs"
 
-$(GENDIR)/$(CURDIR)/bootanim.o : $(GENDIR)/$(CURDIR)/nomedia_image.h
+$(GENDIR)/$(CURDIR)/bootanim.d : $(GENDIR)/$(CURDIR)/nomedia_image.h
 
 $(GENDIR)/$(CURDIR)/nomedia_image.h : $(NOMEDIA_IMAGE).ilbm
 	@$(ECHO) Creating $@...
