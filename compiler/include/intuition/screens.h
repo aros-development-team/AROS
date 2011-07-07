@@ -2,7 +2,7 @@
 #define INTUITION_SCREENS_H
 
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Screen handling structures
@@ -187,7 +187,6 @@ struct ExtNewScreen
 #define SA_BackChild       (SA_Dummy + 38)
 #define SA_LikeWorkbench   (SA_Dummy + 39)
 #define SA_MinimizeISG     (SA_Dummy + 41)
-#define SA_ID              (SA_Dummy + 42)
 
 /* SA_Overscan */
 #define OSCAN_TEXT     1

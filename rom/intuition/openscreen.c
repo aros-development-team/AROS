@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -270,11 +270,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             case SA_Title:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Title <%s>\n",tag->ti_Data));
                 ns.DefaultTitle = (UBYTE *)tag->ti_Data;
-                break;
-
-            case SA_ID:
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_ID <%s>\n",tag->ti_Data));
-                screen->ID = StrDup((STRPTR)tag->ti_Data);
                 break;
 
             case SA_Font:
@@ -1092,8 +1087,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         screen->Screen.Title = ns.DefaultTitle;
 
-        if (screen->ID == NULL) if (screen->Screen.Title) screen->ID = StrDup(screen->Screen.Title);
-
         DEBUG_OPENSCREEN(dprintf("OpenScreen: init layers\n"));
         InitLayers(&screen->Screen.LayerInfo);
         li_inited = TRUE;
@@ -1403,34 +1396,36 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
     if (ok)
     {
-        IPTR    userbuffersize;
-
+        IPTR userbuffersize;
         struct NewDecorator *nd;
 
         nd = ((struct IntIntuitionBase *)(IntuitionBase))->Decorator;
 
         ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
 
-        struct DosLibrary    *DOSBase;
+	/* Open dos.library only once, when first needed */
+	if (!DOSBase)
+            DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
 
-        DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 40);
         if (DOSBase)
         {
             struct Node *node;
+
             if (!IsListEmpty(&GetPrivIBase(IntuitionBase)->Decorations))
             {
                 node = GetPrivIBase(IntuitionBase)->Decorations.lh_Head;
                 for (; node->ln_Succ; node = node->ln_Succ)
                 {
                     struct NewDecorator *d = (struct NewDecorator *) node;
-                    if ((d->nd_IntPattern != NULL) && (screen->ID != NULL)) if (MatchPattern(d->nd_IntPattern, screen->ID)) nd = d;
+
+                    if ((d->nd_IntPattern != NULL) && (screen->Screen.Title != NULL))
+                    {	
+                    	if (MatchPattern(d->nd_IntPattern, screen->Screen.Title))
+                    	    nd = d;
+                    }
                 }
             }
-
-            CloseLibrary((struct Library *) DOSBase);
         }
-
-  //      if (MatchPattern(tl->parsename, task->tc_Node.ln_Name)) b = tl;
 
         if (nd != NULL)
         {
@@ -1809,8 +1804,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         }
 
         if (screen->Decorator) screen->Decorator->nd_cnt--;
-
-        if (screen->ID) FreeVec(screen->ID);
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Free Screen\n"));
         FreeMem (screen, sizeof (struct IntScreen));
