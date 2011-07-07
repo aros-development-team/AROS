@@ -32,6 +32,10 @@
 #define TDU_READONLY	0x01
 #define TDU_WRITABLE	0x00
 
+#define DT_UNDETECTED 0
+#define DT_ADOS 1
+#define DT_PCDOS 2
+
 struct TDU
 {
     struct	TDU_PublicUnit pub;
@@ -45,6 +49,7 @@ struct TDU
     BOOL    tdu_broken;			/* recalibrate didn't find TRACK0, drive ignored */
     UBYTE	tdu_sectors;		/* number of sectors per track */
     BOOL    tdu_selected;
+    UBYTE   tdu_disktype;
 };
 
 struct TrackDiskBase
@@ -74,6 +79,7 @@ struct TrackDiskBase
     BYTE					td_buffer_unit;		/* buffer contains this unit's track */
     UBYTE					td_lastdir;		/* last step direction */
     BOOL					td_dirty;
+    UWORD					*crc_table16;		/* PCDOS checksum table */
 };
 
 #endif /* TRACKDISK_DEVICE_H */
