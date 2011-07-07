@@ -27,7 +27,8 @@ MA 02111-1307, USA.
 #include <exec/alerts.h>
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
-
+#include <libraries/iffparse.h>
+#include <resources/filesysres.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -36,7 +37,7 @@ MA 02111-1307, USA.
 #define _STR(A) #A
 #define STR(A) _STR(A)
 
-#define HANDLER_NAME "amberram.handler"
+#define HANDLER_NAME "amber-ram-handler"
 #define VERSION 1
 #define REVISION 9
 
@@ -85,6 +86,7 @@ static AROS_UFH3 (APTR, Init,
    struct DosLibrary *DOSBase;
    struct DeviceNode *dev_node;
    BPTR seg;
+   struct FileSysResource *fsr;
 
     AROS_USERFUNC_INIT
 
@@ -107,6 +109,32 @@ static AROS_UFH3 (APTR, Init,
    dev_node->dn_GlobalVec = (BPTR)(SIPTR)-1;
    if(!AddDosEntry((APTR)dev_node))
       Alert(AT_DeadEnd);
+
+   /*
+    * The code written manually because i still don't like overgrown
+    * genmodule's implementation. I'll rewrite it one day.
+    *					- sonic
+    */
+   fsr = OpenResource("FileSystem.resource");
+   if (fsr)
+   {
+      struct FileSysEntry *fse = AllocMem(sizeof(struct FileSysEntry), MEMF_ANY);
+      
+      if (fse)
+      {
+      	  fse->fse_Node.ln_Name = HANDLER_NAME;
+      	  fse->fse_Node.ln_Pri  = 0;
+          fse->fse_DosType      = MAKE_ID('A', 'R', 'A', 'M');
+          fse->fse_Version      = (VERSION << 16) | REVISION;
+          fse->fse_PatchFlags   = FSEF_HANDLER | FSEF_STACKSIZE | FSEF_PRIORITY | FSEF_SEGLIST;
+          fse->fse_Handler      = AROS_CONST_BSTR(HANDLER_NAME);
+          fse->fse_StackSize    = 16384;
+          fse->fse_Priority     = -5;
+          fse->fse_SegList      = seg;
+
+	  Enqueue(&fsr->fsr_FileSysEntries, &fse->fse_Node);
+       }
+   }
 
    AROS_USERFUNC_EXIT
 
