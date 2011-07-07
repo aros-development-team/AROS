@@ -43,6 +43,14 @@ static BOOL ishd(ULONG id)
     return id == DRT_150RPM;
 }
 
+static UBYTE getsectors(struct TDU *tdu)
+{
+    BYTE hdmult = tdu->tdu_hddisk ? 2 : 1;
+    if (tdu->tdu_disktype == DT_UNDETECTED)
+    	return 11 * hdmult;
+    return tdu->tdu_sectors;
+}
+
 static void getunit(struct TrackDiskBase *tdb)
 {
     struct DiskBase *DiskBase = tdb->td_DiskBase;
@@ -87,7 +95,7 @@ static void TestInsert(struct TrackDiskBase *tdb, struct TDU *tdu, BOOL dostep)
         D(bug("[Floppy] Insertion detected\n"));
         td_recalibrate(tdu, tdb);
         tdu->tdu_hddisk = ishd(ReadUnitID(tdu->tdu_UnitNum));
-        tdu->tdu_sectors = tdu->tdu_hddisk ? 22 : 11;
+        td_detectformat(tdu, tdb);
         tdu->tdu_DiskIn = TDU_DISK;
         tdu->pub.tdu_Counter++;
         tdu->tdu_ProtStatus = td_getprotstatus(tdu,tdb);
@@ -215,14 +223,15 @@ static BOOL TD_PerformIO(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    break;
 	case TD_GETGEOMETRY:
 	    {
-		int hdmult = tdu->tdu_hddisk ? 2 : 1;
+		BYTE sectors = getsectors(tdu);
 		geo = (struct DriveGeometry *)iotd->iotd_Req.io_Data;
 		geo->dg_SectorSize = 512;
-		geo->dg_TotalSectors = 11 * hdmult;
 		geo->dg_Cylinders = 80;
-		geo->dg_CylSectors = 11 * hdmult * 2;
+		geo->dg_CylSectors = sectors * 2;
 		geo->dg_Heads = 2;
-		geo->dg_TrackSectors = 11 * hdmult;
+		geo->dg_TrackSectors = sectors;
+		geo->dg_CylSectors = geo->dg_TrackSectors * geo->dg_Heads;
+		geo->dg_TotalSectors = geo->dg_CylSectors * geo->dg_Cylinders;
 		geo->dg_BufMemType = MEMF_PUBLIC;
 		geo->dg_DeviceType = DG_DIRECT_ACCESS;
 		geo->dg_Flags = DGF_REMOVABLE;
@@ -231,11 +240,11 @@ static BOOL TD_PerformIO(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    break;
 	case TD_GETDRIVETYPE:
 	    iotd->iotd_Req.io_Actual = tdu->tdu_hddisk ? DRIVE3_5_150RPM : DRIVE3_5;
-            iotd->iotd_Req.io_Error=0;
+            iotd->iotd_Req.io_Error = 0;
 	    break;
 	case TD_GETNUMTRACKS:
 	    iotd->iotd_Req.io_Actual = 80 * 2;
-            iotd->iotd_Req.io_Error=0;
+            iotd->iotd_Req.io_Error = 0;
 	    break;
 	case ETD_SEEK:
 	    if (iotd->iotd_Count > tdu->pub.tdu_Counter) {
@@ -243,9 +252,12 @@ static BOOL TD_PerformIO(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 		break;
 	    }
 	case TD_SEEK:
-    	    td_select(tdu, tdb);
-	    temp = (iotd->iotd_Req.io_Offset >> 10) / (tdu->tdu_hddisk ? 22 : 11);
-	    iotd->iotd_Req.io_Error = td_seek(tdu, temp >> 1, temp & 1, tdb);
+	    {
+		BYTE sectors = getsectors(tdu);
+    	        td_select(tdu, tdb);
+	        temp = (iotd->iotd_Req.io_Offset >> 10) / sectors;
+	        iotd->iotd_Req.io_Error = td_seek(tdu, temp >> 1, temp & 1, tdb);
+	    }
 	    break;
 	default:
 	    /* Not supported */
@@ -368,6 +380,7 @@ static void TD_DevTask(struct Task *parent, struct TrackDiskBase *tdb)
 	    tdu->tdu_ProtStatus = td_getprotstatus(tdu,tdb);
 	    tdu->tdu_hddisk = ishd(GetUnitID(i));
 	    tdu->tdu_sectors = tdu->tdu_hddisk ? 22 : 11;
+	    tdu->tdu_disktype = DT_UNDETECTED;
 	    td_deselect(tdu, tdb);
 	    giveunit(tdb);
 	}
@@ -424,6 +437,7 @@ static void TD_DevTask(struct Task *parent, struct TrackDiskBase *tdb)
 			    tdu->tdu_DiskIn = TDU_NODISK;
 			    tdu->tdu_sectors = 11;
 			    tdu->tdu_hddisk = 0;
+			    tdu->tdu_disktype = DT_UNDETECTED;
 			    tdu->pub.tdu_Counter++;
 			    if (tdu->tdu_UnitNum == tdb->td_buffer_unit)
 			    	td_clear(tdb);

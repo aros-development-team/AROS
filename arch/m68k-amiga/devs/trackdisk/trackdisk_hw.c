@@ -215,7 +215,7 @@ UBYTE td_getDiskChange(struct TDU *tdu, struct TrackDiskBase *tdb)
     return v;
 }
 
-static int checkbuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
+static BOOL checkbuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
     // allocate HD sized buffer if HD disk inserted
     if ((tdu->tdu_hddisk && !tdb->td_supportHD) || !tdb->td_DMABuffer) {
@@ -275,12 +275,159 @@ static UBYTE td_readwritetrack(UBYTE track, UBYTE write, struct TDU *tdu, struct
     return err;
 }
 
+static void make_crc_table16(struct TrackDiskBase *tdb)
+{
+	unsigned short w;
+	int n, k;
+	
+	tdb->crc_table16 = AllocMem(256 * sizeof(UWORD), MEMF_ANY);
+	if (!tdb->crc_table16)
+		return;
+	for (n = 0; n < 256; n++) {
+		w = n << 8;
+		for (k = 0; k < 8; k++) {
+			w = (w << 1) ^ ((w & 0x8000) ? 0x1021 : 0);
+		}
+		tdb->crc_table16[n] = w;
+	}
+}
+
+static UWORD get_crc16_next(struct TrackDiskBase *tdb, void *vbuf, UWORD len, UWORD crc)
+{
+	UBYTE *buf = (UBYTE*)vbuf;
+	while (len-- > 0)
+		crc = (crc << 8) ^ tdb->crc_table16[((crc >> 8) ^ (*buf++)) & 0xff];
+	return crc;
+}
+static UWORD get_crc16(struct TrackDiskBase *tdb, void *vbuf, UWORD len)
+{
+	if (!tdb->crc_table16) {
+		make_crc_table16(tdb);
+		if (!tdb->crc_table16)
+			return 0;
+	}
+	return get_crc16_next(tdb, vbuf, len, 0xffff);
+}
+
+/* Following really needs optimization... */
+static UBYTE mfmdecode (UWORD **mfmp)
+{
+	UWORD mfm;
+	UBYTE out;
+	UBYTE i;
+
+	mfm = **mfmp;
+	out = 0;
+	(*mfmp)++;
+	for (i = 0; i < 8; i++) {
+		out >>= 1;
+		if (mfm & 1)
+			out |= 0x80;
+		mfm >>= 2;
+	}
+	return out;
+}
+
+/* PC floppy format decoding is very expensive compared to ADOS... */
+static UBYTE td_decodebuffer_pcdos(struct TDU *tdu, struct TrackDiskBase *tdb)
+{
+        UWORD *raw, *rawend;
+        UWORD i;
+        UBYTE lasterr;
+        UBYTE *data = tdb->td_DataBuffer;
+        BYTE sector;
+	UBYTE tmp[8];
+	UWORD datacrc;
+	UBYTE current_head, current_cyl;
+
+	tmp[0] = tmp[1] = tmp[2] = 0xa1;
+	tmp[3] = 0xfb;
+	datacrc = get_crc16(tdb, tmp, 4);
+	current_head = tdb->td_buffer_track & 1;
+	current_cyl = tdb->td_buffer_track / 2;
+	
+	lasterr = 0;
+	raw = tdb->td_DMABuffer;
+	rawend = tdb->td_DMABuffer + DISK_BUFFERSIZE * (tdu->tdu_hddisk ? 2 : 1);
+	sector = -1;
+	while (tdb->td_sectorbits != (1 << tdu->tdu_sectors) - 1) {
+		UBYTE *secdata;
+		UWORD crc;
+		UBYTE mark;
+
+		if (raw != tdb->td_DMABuffer) {
+			while (*raw != 0x4489) {
+				if (raw >= rawend) {
+					if (lasterr == 0)
+						lasterr = TDERR_TooFewSecs;
+					goto end;
+				}
+				raw++;
+			}
+		}
+		while (*raw == 0x4489 && raw < rawend)
+			raw++;
+		if (raw >= rawend - 8) {
+			if (lasterr == 0)
+				lasterr = TDERR_TooFewSecs;
+			goto end;
+		}
+		mark = mfmdecode(&raw);
+		if (mark == 0xfe) {
+			UBYTE cyl, head, size;
+
+			cyl = mfmdecode (&raw);
+			head = mfmdecode (&raw);
+			sector = mfmdecode (&raw);
+			size = mfmdecode (&raw);
+			crc = (mfmdecode (&raw) << 8) | mfmdecode (&raw);
+
+			tmp[0] = 0xa1; tmp[1] = 0xa1; tmp[2] = 0xa1; tmp[3] = mark;
+			tmp[4] = cyl; tmp[5] = head; tmp[6] = sector; tmp[7] = size;
+			if (get_crc16(tdb, tmp, 8) != crc || cyl != current_cyl || head != current_head || size != 2 || sector < 1 || sector > tdu->tdu_sectors) {
+				D(bug("PCDOS: corrupted sector header. cyl=%d head=%d sector=%d size=%d crc=%04x\n",
+					cyl, head, sector, size, crc));
+				sector = -1;
+				continue;
+			}
+			sector--;
+			continue;
+		}
+		if (mark != 0xfb) {
+			D(bug("PCDOS: unknown address mark %02X\n", mark));
+			continue;
+		}
+		if (sector < 0)
+			continue;
+		if (raw >= rawend - 512) {
+			if (lasterr == 0)
+				lasterr = TDERR_TooFewSecs;
+			goto end;
+		}
+		secdata = data + sector * 512;
+		for (i = 0; i < 512; i++)
+			secdata[i] = mfmdecode (&raw);
+		crc = (mfmdecode (&raw) << 8) | mfmdecode (&raw);
+		if (get_crc16_next(tdb, secdata, 512, datacrc) != crc) {
+			D(bug("PCDOS: sector %d data checksum error\n", sector + 1));
+			continue;
+		}
+		D(bug("PCDOS: read sector %d\n", sector));
+		tdb->td_sectorbits |= 1 << sector;
+		sector = -1;
+	}
+end:
+	D(bug("PCDOS: err=%d secmask=%08x\n", lasterr, tdb->td_sectorbits));
+	return lasterr;
+}
+
+
 static ULONG getmfmlong (UWORD *mfmbuf)
 {
     return ((mfmbuf[0] << 16) | mfmbuf[1]) & 0x55555555;
 }
 
-static UBYTE td_decodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
+static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
         UWORD *raw, *rawend;
         UBYTE i;
@@ -302,7 +449,7 @@ static UBYTE td_decodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
                     	if (lasterr == 0)
                             lasterr = TDERR_TooFewSecs;
                         goto end;
-                   }
+                    }
                     raw++;
                 }
             }
@@ -378,13 +525,22 @@ static UBYTE td_decodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
             if (chksum) {
                 lasterr = TDERR_BadSecSum;
            	D(bug("td_decodebuffer sector %d data checksum error\n", trackoffs));
-                 continue; // data checksum error
+                continue; // data checksum error
             }
             tdb->td_sectorbits |= 1 << trackoffs;
 	}
 end:
 	D(bug("td_decodebuffer err=%d secmask=%08x\n", lasterr, tdb->td_sectorbits));
 	return lasterr;
+}
+
+static UBYTE td_decodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
+{
+	if (tdu->tdu_disktype == DT_ADOS)
+		return td_decodebuffer_ados(tdu, tdb);
+	else if (tdu->tdu_disktype == DT_PCDOS)
+		return td_decodebuffer_pcdos(tdu, tdb);
+	return TDERR_TooFewSecs;
 }
 
 static void mfmcode (UWORD *mfm, UWORD words)
@@ -400,7 +556,7 @@ static void mfmcode (UWORD *mfm, UWORD words)
 	}
 }
 
-static void td_encodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
+static void td_encodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
 	UWORD i;
 	UBYTE sec;
@@ -479,6 +635,12 @@ static void td_encodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
 	*mfmbuf = 0xaaaa;
 }
 
+static void td_encodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
+{
+	if (tdu->tdu_disktype == DT_ADOS)
+		td_encodebuffer_ados(tdu, tdb);
+}	
+
 static UBYTE td_readbuffer(UBYTE track, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
 	UBYTE ret;
@@ -498,6 +660,12 @@ static UBYTE td_readbuffer(UBYTE track, struct TDU *tdu, struct TrackDiskBase *t
 	ret = td_decodebuffer(tdu, tdb);
 	D(bug("td_readbuffer td_decodebuffer ERR=%d MASK=%08x\n", ret, tdb->td_sectorbits));
 	return ret;
+}
+
+static void maybe_detect(struct TDU *tdu, struct TrackDiskBase *tdb)
+{
+	if (tdu->tdu_disktype == DT_UNDETECTED)
+		td_detectformat(tdu, tdb);
 }
 
 static UBYTE maybe_flush(struct TDU *tdu, struct TrackDiskBase *tdb, int track)
@@ -523,6 +691,7 @@ UBYTE td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 		return TDERR_DiskChanged;
 	if (checkbuffer(tdu, tdb))
 		return TDERR_NoMem;
+	maybe_detect(tdu, tdb);
 
 	iotd->iotd_Req.io_Actual = 0;
 	offset = iotd->iotd_Req.io_Offset;
@@ -664,6 +833,8 @@ UBYTE td_write(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
     UBYTE err;
     if (tdu->tdu_DiskIn == TDU_NODISK)
         return TDERR_DiskChanged;
+    if (tdu->tdu_disktype != DT_ADOS)
+    	return TDERR_WriteProt;
     if (!td_getprotstatus(tdu, tdb)) {
         err = td_write2(iotd, tdu, tdb);
     } else {
@@ -733,6 +904,8 @@ static UBYTE td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskB
 
     if (checkbuffer(tdu, tdb))
         return TDERR_NoMem;
+    if (tdu->tdu_disktype != DT_ADOS)
+    	return TDERR_WriteProt;
     iotd->iotd_Req.io_Actual = 0;
     offset = iotd->iotd_Req.io_Offset;
     len = iotd->iotd_Req.io_Length;
@@ -774,3 +947,56 @@ UBYTE td_format(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb
     }
     return err;
 }
+
+static UBYTE countbits(ULONG mask)
+{
+    UBYTE cnt = 0;
+    while (mask) {
+    	cnt++;
+    	mask >>= 1;
+    }
+    return cnt;
+}
+
+void td_detectformat(struct TDU *tdu, struct TrackDiskBase *tdb)
+{
+    UBYTE err;
+    UBYTE track = 0;
+    UBYTE cnt;
+
+    D(bug("detectformat HD=%d\n", tdu->tdu_hddisk ? 1 : 0)); 
+    if (checkbuffer(tdu, tdb)) {
+	tdu->tdu_disktype = DT_ADOS;
+	tdu->tdu_sectors = tdu->tdu_hddisk ? 22 : 11;
+	return;
+    }
+    tdu->tdu_disktype = DT_UNDETECTED;
+    tdb->td_sectorbits = 0;
+    tdb->td_buffer_unit = tdu->tdu_UnitNum;
+    tdb->td_buffer_track = track;
+    td_select(tdu, tdb);
+    td_seek(tdu, track >> 1, track & 1, tdb);
+    tdu->tdu_sectors = tdu->tdu_hddisk ? 22 : 11;
+    err = td_readwritetrack(track, 0, tdu, tdb);
+    if (!err) {
+	err = td_decodebuffer_ados(tdu, tdb);
+	/* Did all sectors fail to decode? It could be non-ADOS disk */
+	if (err && tdb->td_sectorbits == 0) {
+	    tdu->tdu_sectors = tdu->tdu_hddisk ? 18 : 9;
+	    err = td_decodebuffer_pcdos(tdu, tdb);
+	    cnt = countbits(tdb->td_sectorbits);
+	    if (cnt > tdu->tdu_sectors / 2 + 1) {
+	    	/* enough sectors decoded fine, assume PCDOS */
+	    	tdu->tdu_disktype = DT_PCDOS;
+	    }
+	} else {
+	    tdu->tdu_disktype = DT_ADOS;
+	}   
+    }
+    if (tdu->tdu_disktype == DT_UNDETECTED) {
+	tdu->tdu_disktype = DT_ADOS;
+	tdu->tdu_sectors = tdu->tdu_hddisk ? 22 : 11;
+	tdb->td_sectorbits = 0;
+    }
+    D(bug("detectformat=%d sectors=%d sectormask=%08x\n", tdu->tdu_disktype, tdu->tdu_sectors, tdb->td_sectorbits));
+ }

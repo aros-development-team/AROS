@@ -28,6 +28,7 @@ void td_select(struct TDU *tdu, struct TrackDiskBase *tdb);
 void td_deselect(struct TDU *tdu, struct TrackDiskBase *tdb);
 UBYTE td_flush(struct TDU *tdu, struct TrackDiskBase *tdb);
 void td_clear(struct TrackDiskBase *tdb);
+void td_detectformat(struct TDU*, struct TrackDiskBase *);
 
 #endif /* TRACKDISK_HW_H */
 
