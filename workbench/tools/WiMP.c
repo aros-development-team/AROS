@@ -500,7 +500,7 @@ AROS_UFH3(void, show_func,
     struct Window *win;
     if (get_selected(&scr, &win) == Window_type)
     {
-	ShowWindow ( win );
+	ShowWindow ( win, NULL );
     }
 
     Delay(5);
@@ -557,7 +557,7 @@ AROS_UFH3(void, showall_func,
 	    /* Show Window if hidden */
 	    if ( IsWindowVisible ( win ) != TRUE )
 	    {
-		ShowWindow ( win );
+		ShowWindow ( win, NULL );
 	    }
 	    win = win->NextWindow;
 	}

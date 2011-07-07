@@ -27,7 +27,7 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 
 /*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(struct Window *, other, A0),
+         AROS_LHA(struct Window *, other, A1),
 
 /*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 140, Intuition)
