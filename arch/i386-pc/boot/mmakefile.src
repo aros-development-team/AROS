@@ -79,6 +79,9 @@ kernel-link-pc-i386-quick : $(BINDIR)/boot/aros-kernel-pc-i386.gz $(BINDIR)/boot
 #MM kernel-package-pc-i386 : kernel-link-pc-i386
 kernel-package-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz $(BINDIR)/boot/aros-usb-pc-i386.gz
 
+#MM
+kernel-link-usb-pc-i386 : $(BINDIR)/boot/aros-usb-pc-i386.gz
+
 $(BINDIR)/boot/aros-kernel-pc-i386 : $(KOBJS) $(DEPLIBS)
 	@$(TARGET_CC) $(CFLAGS) -Wl,-N \
 	    $(GENMAP) $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $@ $(KOBJS) \
