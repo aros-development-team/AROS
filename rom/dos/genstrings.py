@@ -54,7 +54,7 @@ while (n < len(numbers) - 1):
     if (int(numbers[n]) == prev + 1):
     	last = ids[n]
     else:
-    	print "    {0}, {1},".format(first, last)
+    	print "    %s, %s," % (first, last)
     	first = ids[n]
     	last = ids[n]
 print "    0, 0"
@@ -68,8 +68,8 @@ print " */"
 print "const char err_Strings[] ="
 print "{"
 for str_line in strings:
-    print "    {0},".format(len(str_line) + 1),
+    print "    %d," % (len(str_line) + 1)
     for c in str_line:
-        print "'{0}',".format(c),
+        print "'%s'," % c,
     print "0,"
 print "};"
