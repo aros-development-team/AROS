@@ -1,4 +1,4 @@
-FileSystem     = devs:fat.handler
+FileSystem     = devs:fat-handler
 Device         = trackdisk.device
 Unit           = 0          /* change drive number here */
 Flags          = 0

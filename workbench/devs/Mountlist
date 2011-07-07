@@ -127,7 +127,7 @@ USR:
 /* Entry for FAT12/16/32 image (ie MSDOS/Win95/98 filesystem) */
 
 FAT:
-        FileSystem     = fat.handler
+        FileSystem     = fat-handler
         Device         = fdsk.device
         Unit           = 0
 	LowCyl	       = 0
