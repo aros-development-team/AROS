@@ -16,7 +16,7 @@
 #include "memory.h"
 #include "mungwall.h"
 
-#define DSCAN(x) x
+#define DSCAN(x)
 
 /*
  * Build a wall around the allocated chunk.
