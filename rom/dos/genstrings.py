@@ -26,8 +26,8 @@ while True:
     tmp = id_line.split()
     ids.append(tmp[0])
 
-    tmp = tmp[1].partition('(')
-    tmp = tmp[2].partition('/')
+    tmp = tmp[1].split('(')
+    tmp = tmp[1].split('/')
     numbers.append(tmp[0])
 
     strings.append(str_line)
