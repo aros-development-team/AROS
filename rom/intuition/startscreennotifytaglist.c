@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -18,7 +18,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
-    AROS_LH1(IPTR, StartScreenNotifyTagList,
+    AROS_LH1(APTR, StartScreenNotifyTagList,
 
 /*  SYNOPSIS */
          AROS_LHA(struct TagItem *, tags, A0),
@@ -102,7 +102,7 @@
         }
     }
 
-    ReturnPtr ("StartScreenNotifyTagList", IPTR, (IPTR)notify);
+    ReturnPtr ("StartScreenNotifyTagList", APTR, notify);
 
     AROS_LIBFUNC_EXIT
 } /* StartScreenNotifyTagList */

@@ -685,17 +685,16 @@ struct ExtNewWindow
 #define WA_TabletMessages    (WA_Dummy + 55)
 #define WA_HelpGroup	     (WA_Dummy + 56)
 #define WA_HelpGroupWindow   (WA_Dummy + 57)
-#define WA_ToolBox           (WA_Dummy + 58)
-
-/* AROS specific tags */
-
+/* AmigaOS4 -compatible tags follow */
+#define WA_Hidden            (WA_Dummy + 60)
+#define WA_ToolBox           (WA_Dummy + 61)
+#define WA_ShapeRegion 	     (WA_Dummy + 65)
+#define WA_ShapeHook	     (WA_Dummy + 66)
+#define WA_InFrontOf	     (WA_Dummy + 67)
+/* AROS specific tags follow */
 #define WA_Priority 	     (WA_Dummy + 100)
 #define WA_Parent   	     (WA_Dummy + 101)
-#define WA_InFrontOf	     (WA_Dummy + 102)
 #define WA_Behind   	     (WA_Dummy + 103)
-#define WA_Visible  	     (WA_Dummy + 104)
-#define WA_Shape    	     (WA_Dummy + 105)
-#define WA_ShapeHook	     (WA_Dummy + 106)
 
 /* Flags */
 #define WFLG_SIZEGADGET     (1L<<0)
@@ -740,6 +739,10 @@ struct ExtNewWindow
 #define DEFAULTMOUSEQUEUE 5
 
 #define HC_GADGETHELP 1
+
+/* Magic values for ShowWindow() and WA_InFrontOf */
+#define WINDOW_BACKMOST  (NULL)
+#define WINDOW_FRONTMOST ((struct Window *)1)
 
 			   /***** Images *****/
 

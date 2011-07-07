@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -9,8 +9,6 @@
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 
-#ifdef CGXSHOWHIDESUPPORT
-#undef ChangeLayerVisibility
 struct ShowWindowActionMsg
 {
     struct IntuiActionMsg    msg;
@@ -19,28 +17,17 @@ struct ShowWindowActionMsg
 
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase);
-#endif
-
-#ifdef ChangeLayerVisibility
-struct ShowWindowActionMsg
-{
-    struct IntuiActionMsg    msg;
-    struct Window   	    *window;
-};
-
-static VOID int_showwindow(struct ShowWindowActionMsg *msg,
-                           struct IntuitionBase *IntuitionBase);
-#endif
 
 /*****************************************************************************
  
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(VOID, ShowWindow,
+    AROS_LH2(BOOL, ShowWindow,
 
 /*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
+         AROS_LHA(struct Window *, other, A0),
 
 /*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 140, Intuition)
@@ -54,10 +41,10 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 	window - The window to affect.
  
     RESULT
-	None.
+	Success indicator. On AROS it's always TRUE.
  
     NOTES
-	This function is compatible with AmigaOS v4.
+	This function is soure-compatible with AmigaOS v4.
  
     EXAMPLE
  
@@ -74,34 +61,29 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 {
     AROS_LIBFUNC_INIT
 
-#ifdef CGXSHOWHIDESUPPORT
     struct ShowWindowActionMsg msg;
 
-    DEBUG_SHOWWINDOW(dprintf("ShowWindow: Window 0x%lx\n", window));
+    DEBUG_SHOWWINDOW(dprintf("ShowWindow: Window 0x%p\n", window));
+    SANITY_CHECKR(window, FALSE)
 
-    SANITY_CHECK(window)
+    /*
+     * TODO: in AmigaOS v4 we have additional 'other' parameter,
+     * and the window is moved in front of that window. Implement this.
+     */
 
     msg.window = window;
     DoASyncAction((APTR)int_showwindow, &msg.msg, sizeof(msg), IntuitionBase);
-#endif
 
-#ifdef ChangeLayerVisibility
-    struct ShowWindowActionMsg msg;
-
-    DEBUG_SHOWWINDOW(dprintf("ShowWindow: Window 0x%lx\n", window));
-
-    msg.window = window;
-    DoASyncAction((APTR)int_showwindow, &msg.msg, sizeof(msg), IntuitionBase);
-#endif
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* ShowWindow */
 
-#ifdef CGXSHOWHIDESUPPORT
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase)
 {
     struct Window  *window = msg->window;
+#ifdef CGXSHOWHIDESUPPORT
     struct Library *CGXSystemBase;
     
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
@@ -114,14 +96,7 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
         CloseLibrary(CGXSystemBase);
         ActivateWindow(window);
     }
-};
-#endif
-
-#ifdef ChangeLayerVisibility
-static VOID int_showwindow(struct ShowWindowActionMsg *msg,
-                           struct IntuitionBase *IntuitionBase)
-{
-    struct Window *window = msg->window;
+#else
     struct Screen *screen;
     
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
@@ -148,5 +123,8 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 
         UNLOCK_REFRESH(screen);
     }
-}
+
+
 #endif
+
+};

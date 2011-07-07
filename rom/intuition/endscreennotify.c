@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -21,7 +21,7 @@
     AROS_LH1(BOOL, EndScreenNotify,
 
 /*  SYNOPSIS */
-         AROS_LHA(IPTR, notify, A0),
+         AROS_LHA(APTR, notify, A0),
 
 /*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 162, Intuition)
