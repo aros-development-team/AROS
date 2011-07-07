@@ -33,10 +33,16 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, cons
 
 	D(bug("[MungWall] Allocated %u bytes at 0x%p\n", origSize, res + MUNGWALL_BLOCK_SHIFT));
 
-        /* Save orig byteSize before wall (there is one room of MUNGWALLHEADER_SIZE
-	   bytes before wall for such stuff (see above).
-	*/
+	/*
+	 * Build pre-wall starting from header, and up to MUNGWALL_BLOCK_SHIFT.
+	 * This will fill also header padding. Will help in detecting issues.
+	 */
+        memset(res, 0xDB, MUNGWALL_BLOCK_SHIFT);
 
+        /*
+         * Now save allocation info in the header (there is one room of MUNGWALLHEADER_SIZE
+	 * bytes before wall for such stuff (see above).
+	 */
 	header->mwh_magicid   = MUNGWALL_HEADER_ID;
 	header->mwh_fault     = FALSE;
 	header->mwh_allocsize = origSize;
@@ -45,19 +51,27 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, cons
 	header->mwh_Owner     = FindTask(NULL);
 	header->mwh_Caller    = caller;
 
-	/* Skip to the start of the pre-wall */
-        res += MUNGWALLHEADER_SIZE;
-
-	/* Initialize pre-wall */
-	BUILD_WALL(res, 0xDB, MUNGWALL_SIZE);
-	res += MUNGWALL_SIZE;
+	/* Skip to the start of data space */
+        res += MUNGWALL_BLOCK_SHIFT;
 
 	/* Fill the block with weird stuff to exploit bugs in applications */
 	if (!(requirements & MEMF_CLEAR))
 	    MUNGE_BLOCK(res, MEMFILL_ALLOC, origSize);
 
-	/* Initialize post-wall */
-	BUILD_WALL(res + origSize, 0xDB, MUNGWALL_SIZE + AROS_ROUNDUP2(origSize, MEMCHUNK_TOTAL) - origSize);
+	/*
+	 * Initialize post-wall.
+	 * Fill only MUNGWALL_SIZE bytes, this is what we are guaranteed to have in the end.
+	 * We can't assume anything about padding. AllocMem() does guarantee that the actual
+	 * allocation start and size is a multiple of MEMCHUNK_TOTAL, but for example
+	 * AllocPooled() doesn't. Pooled allocations are only IPTR-aligned (see InternalFreePooled(),
+	 * in AROS pooled allocations are vectored, pool pointer is stored in an IPTR preceding the
+	 * actual block in AllocVec()-alike manner).
+	 * IPTR alignment is 100% correct since original AmigaOS(tm) autodocs say that even AllocMem()
+	 * result is longword-aligned. AROS introduces additional assumption that AllocMem() result
+	 * is aligned at least up to AROS_WORSTALIGN (CPU-specific value, see exec/memory.h), however
+	 * this is still not true for other allocation functions (AllocVec() etc).
+	 */
+	memset(res + origSize, 0xDB, MUNGWALL_SIZE);
 
 	Forbid();
     	AddHead((struct List *)&PrivExecBase(SysBase)->AllocMemList, (struct Node *)&header->mwh_node);
@@ -133,9 +147,7 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, const char
     if (mwdata.pre_start)
     	header->mwh_fault = TRUE;
 
-    mwdata.post_start = CheckWall((UBYTE *)header + MUNGWALL_BLOCK_SHIFT + header->mwh_allocsize, 0xDB,
-	    	      		 MUNGWALL_SIZE + AROS_ROUNDUP2(header->mwh_allocsize, MEMCHUNK_TOTAL) - header->mwh_allocsize,
-	    	      		 &mwdata.post_end);
+    mwdata.post_start = CheckWall((UBYTE *)header + MUNGWALL_BLOCK_SHIFT + header->mwh_allocsize, 0xDB, MUNGWALL_SIZE, &mwdata.post_end);
     if (mwdata.post_start)
     	header->mwh_fault = TRUE;
 
@@ -235,7 +247,7 @@ void MungWall_Scan(APTR pool, const char *function, APTR caller, APTR stack, str
 
 	ForeachNodeSafe(&PrivExecBase(SysBase)->AllocMemList, allocnode, tmp)
 	{
-	    DSCAN(bug("[Mungwall] allocnode 0x%p, next 0x%p\n", allocnode, tmp));
+	    DSCAN(bug("[Mungwall] allocnode 0x%p, next 0x%p, %s(%lu)\n", allocnode, tmp, allocnode->mwh_AllocFunc, allocnode->mwh_allocsize));
 
 	    if (pool && (allocnode->mwh_pool == pool))
 	    {
