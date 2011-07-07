@@ -442,6 +442,7 @@ struct IntIntuitionBase
     struct Library          	*MUIMasterBase;
 #endif
     
+    struct DosLibrary		*DOSBase;
     struct LayersBase       	*LayersBase;
     struct Library          	*UtilityBase;
     struct GfxBase          	*GfxBase;
@@ -683,8 +684,6 @@ struct IntScreen
     struct NewDecorator     *Decorator;
 
     struct BitMap           *AllocatedBitmap;
-
-    STRPTR                   ID;
 #ifdef SKINS
     WORD                     LastClockPos;
     WORD                     LastClockWidth;
@@ -760,49 +759,15 @@ struct IntIntuiMessage
 */
 #include <proto/utility.h>
 
-#ifdef UtilityBase
-#undef UtilityBase
-#endif
+#define DOSBase			(GetPrivIBase(IntuitionBase)->DOSBase)
 #define UtilityBase   	    	(GetPrivIBase(IntuitionBase)->UtilityBase)
-
-#ifdef LayersBase
-#undef LayersBase
-#endif
 #define LayersBase   	    	(GetPrivIBase(IntuitionBase)->LayersBase)
-
-#ifdef OOPBase
-#undef OOPBase
-#endif
 #define OOPBase   	    	(GetPrivIBase(IntuitionBase)->OOPBase)
-
-#ifdef GfxBase
-#undef GfxBase
-#endif
 #define GfxBase   	    	(GetPrivIBase(IntuitionBase)->GfxBase)
-
-#ifdef KeymapBase
-#undef KeymapBase
-#endif
 #define KeymapBase   	    	(GetPrivIBase(IntuitionBase)->KeymapBase)
-
-#ifdef InputBase
-#undef InputBase
-#endif
 #define InputBase   	    	(GetPrivIBase(IntuitionBase)->InputBase)
-
-#ifdef TimerBase
-#undef TimerBase
-#endif
 #define TimerBase   	    	(GetPrivIBase(IntuitionBase)->TimerBase)
-
-#ifdef TimerMP
-#undef TimerMP
-#endif
 #define TimerMP     	    	(GetPrivIBase(IntuitionBase)->TimerMP)
-
-#ifdef TimerIO
-#undef TimerIO
-#endif
 #define TimerIO     	    	(GetPrivIBase(IntuitionBase)->TimerIO)
 
 #define PublicClassList     	((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))

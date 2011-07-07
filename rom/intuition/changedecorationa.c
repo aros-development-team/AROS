@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -92,17 +92,20 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBa
             if (nd->nd_Pattern != NULL)
             {
                 nd->nd_IntPattern = AllocVec(strlen(nd->nd_Pattern) * 2 + 1, MEMF_CLEAR);
-                if (nd->nd_IntPattern) {
-                    struct DosLibrary    *DOSBase;
-                    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 40);
+                if (nd->nd_IntPattern)
+                {
+		    if (!DOSBase)
+                    	DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+
                     if (DOSBase)
                     {
-                        if (ParsePattern(nd->nd_Pattern, nd->nd_IntPattern, strlen(nd->nd_Pattern) * 2 + 1) == -1) {
+                        if (ParsePattern(nd->nd_Pattern, nd->nd_IntPattern, strlen(nd->nd_Pattern) * 2 + 1) == -1)
+                        {
                             FreeVec(nd->nd_IntPattern);
                             nd->nd_IntPattern = NULL;
                         }
-                        else global = FALSE;
-                        CloseLibrary((struct Library *) DOSBase);
+                        else
+                            global = FALSE;
                     }
                 }
             }
