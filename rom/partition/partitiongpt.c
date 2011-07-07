@@ -29,8 +29,6 @@
 #include <proto/partition.h>
 #include <proto/utility.h>
 
-#include <zlib.h>
-
 #include "partition_support.h"
 #include "partition_types.h"
 #include "partitiongpt.h"
@@ -229,10 +227,10 @@ static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle
     	     * CHECKME: is it correct on bigendian machines? It should, however who knows...
     	     */
     	    ULONG orig_crc = AROS_LE2LONG(hdr->HeaderCRC32);
-    	    ULONG crc = crc32(0L, Z_NULL, 0);
+    	    ULONG crc;
 
 	    hdr->HeaderCRC32 = 0;
-    	    crc = crc32(crc, (const Bytef *)hdr, hdrSize);
+    	    crc = Crc32_ComputeBuf(0, hdr, hdrSize);
 
 	    D(bug("[GPT] Header CRC: calculated 0x%08X, expected 0x%08X\n", crc, orig_crc));
 
@@ -318,9 +316,8 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
 	if (!res)
 	{
 	    ULONG orig_crc = AROS_LE2LONG(hdr->PartCRC32);
-    	    ULONG crc = crc32(0L, Z_NULL, 0);
+    	    ULONG crc = Crc32_ComputeBuf(0, table, entrysize * cnt);
 
-    	    crc = crc32(crc, (const Bytef *)table, entrysize * cnt);
 	    D(bug("[GPT] Data CRC: calculated 0x%08X, expected 0x%08X\n", crc, orig_crc));
 
 	    if (crc == orig_crc)
@@ -444,7 +441,7 @@ static LONG GPTWriteTable(struct Library *PartitionBase, struct PartitionHandle 
 			   UQUAD headerblk, UQUAD backupblk, UQUAD startblk, ULONG tablesize)
 {
     LONG res;
-    ULONG crc = crc32(0L, Z_NULL, 0);
+    ULONG crc;
 
     hdr->CurrentBlock = AROS_QUAD2LE(headerblk);
     hdr->BackupBlock  = AROS_QUAD2LE(backupblk);
@@ -452,7 +449,7 @@ static LONG GPTWriteTable(struct Library *PartitionBase, struct PartitionHandle 
     hdr->HeaderCRC32  = 0;
 
     /* We modify the header, so we have to recalculate its CRC */
-    crc = crc32(crc, (const Bytef *)hdr, AROS_LE2LONG(hdr->HeaderSize));
+    crc = Crc32_ComputeBuf(0, hdr, AROS_LE2LONG(hdr->HeaderSize));
     hdr->HeaderCRC32 = AROS_LONG2LE(crc);
     DWRITE(bug("[GPT] New header CRC 0x%08X\n", crc));
 
@@ -495,7 +492,7 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
     table = AllocMem(tablesize, MEMF_CLEAR);
     if (table)
     {
-	ULONG crc = crc32(0L, Z_NULL, 0);
+	ULONG crc;
 	struct GPTPartition *p = table;
 	struct GPTPartitionHandle *gph;
 	UQUAD backup;
@@ -527,7 +524,7 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
     	    p = (APTR)p + entrysize;
     	}
 
-	crc = crc32(crc, (const Bytef *)table, entrysize * cnt);
+	crc = Crc32_ComputeBuf(0, table, entrysize * cnt);
 	hdr->PartCRC32 = AROS_LONG2LE(crc);
 	DWRITE(bug("[GPT] New data CRC 0x%08X\n", crc));
 

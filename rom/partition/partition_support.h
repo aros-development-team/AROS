@@ -77,6 +77,8 @@ LONG deviceError(LONG err);
 void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *ph, ULONG first_sector, ULONG count_sector);
 void setDosType(struct DosEnvec *de, ULONG type);
 
+unsigned int Crc32_ComputeBuf(unsigned int inCrc32, const void *buf, unsigned int bufLen);
+
 #define getGeometry PartitionGetGeometry
 #define writeBlock  PartitionWriteBlock
 
