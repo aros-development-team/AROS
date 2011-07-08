@@ -77,23 +77,23 @@ static void getvisual(void)
 
 /***********************************************************************************/
 
-static struct Region *shapefunc(struct Hook *hook, struct Layer *lay, struct ShapeHookMsg *msg)
+static BOOL shapefunc(struct Hook *hook, struct Layer *lay, struct ShapeHookMsg *msg)
 {
-    struct Region *newshape, *retregion = msg->ActualShape;
+    struct Region *newshape;
     WORD x2, y2;
-  
+    BOOL success = TRUE;    
+
     switch(msg->Action)
     {
     	case SHAPEHOOKACTION_CREATELAYER:
 	case SHAPEHOOKACTION_SIZELAYER:
 	case SHAPEHOOKACTION_MOVESIZELAYER:
-	    x2 = msg->NewBounds.MaxX - msg->NewBounds.MinX;
-	    y2 = msg->NewBounds.MaxY - msg->NewBounds.MinY;
+	    x2 = msg->NewBounds->MaxX - msg->NewBounds->MinX;
+	    y2 = msg->NewBounds->MaxY - msg->NewBounds->MinY;
 	    
 	    if ((newshape = NewRegion()))
 	    {
 	    	struct Rectangle rect;
-		BOOL success = TRUE;
 		
 		rect.MinX = 9;
 		rect.MinY = 0;
@@ -139,8 +139,8 @@ static struct Region *shapefunc(struct Hook *hook, struct Layer *lay, struct Sha
 		
 		if (success)
 		{
-	    	    if (msg->ActualShape) DisposeRegion(msg->ActualShape);
-	    	    retregion = shape = newshape;
+	    	    if (msg->OldShape) DisposeRegion(msg->OldShape);
+	    	    msg->NewShape = shape = newshape;
 		}
 		else
 		{
@@ -151,7 +151,7 @@ static struct Region *shapefunc(struct Hook *hook, struct Layer *lay, struct Sha
 	    
     } /* switch(msg->Action) */
     
-    return retregion;
+    return success;
 }
 
 /***********************************************************************************/
