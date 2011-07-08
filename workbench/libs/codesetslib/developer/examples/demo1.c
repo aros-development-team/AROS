@@ -180,7 +180,7 @@ MakeStaticHook(popupWindowHook, popupWindowFun);
 
 HOOKPROTONH(popupOpenFun, ULONG, Object *list, Object *str)
 {
-    STRPTR s, x;
+    STRPTR s = NULL, x;
     int i;
 
     get(str, MUIA_Text_Contents, (IPTR *)&s);
@@ -420,7 +420,7 @@ meditorLoad(struct IClass *cl,Object *obj,struct MUIP_Editor_Load *msg)
                                 {
                                     struct codeset *codeset;
                                     STRPTR         str;
-                                    STRPTR                  cname;
+                                    STRPTR                  cname = NULL;
 
                                     /* Get used codeset */
                                     get(data->codesetsObj, MUIA_Text_Contents, (IPTR *)&cname);
@@ -476,7 +476,7 @@ meditorSave(struct IClass *cl, Object *obj, UNUSED Msg msg)
     {
         struct codeset *codeset;
         UTF8           *utf8;
-        STRPTR                  cname;
+        STRPTR                  cname = NULL;
         ULONG                   dlen;
 
         /* Get current user codeset */
