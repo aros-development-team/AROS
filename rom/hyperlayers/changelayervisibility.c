@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -41,6 +41,8 @@
        FALSE - layer could not be changed to new state
   
     NOTES
+    	This is an AROS private function, providing support
+    	for showing/hiding windows in intuition.
 
     EXAMPLE
 

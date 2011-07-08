@@ -6,92 +6,27 @@
 #include <aros/libcall.h>
 #include <graphics/clip.h>
 #include <graphics/layers.h>
+#include <intuition/extensions.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
-#include "basicfuncs.h"
-
-/*****************************************************************************
-
-    NAME */
 #include <proto/layers.h>
-	AROS_LH8(struct Layer *, CreateLayerTagList,
 
-/*  SYNOPSIS */
-	AROS_LHA(struct Layer_Info *, li, A0),
-	AROS_LHA(struct BitMap     *, bm, A1),
-        AROS_LHA(LONG               , x0, D0),
-        AROS_LHA(LONG               , y0, D1),
-        AROS_LHA(LONG               , x1, D2),
-        AROS_LHA(LONG               , y1, D3),
-	AROS_LHA(LONG               , flags, D4),
-	AROS_LHA(struct TagItem    *, tagList, A2),
+#include "basicfuncs.h"
+#include "layers_intern.h"
 
-/*  LOCATION */
-	struct LayersBase *, LayersBase, 37, Layers)
-
-/*  FUNCTION
-        Create a new layer according to the tags given.
-
-    INPUTS
-        li    - pointer to LayerInfo structure
-        bm    - pointer to common bitmap
-	x0,y0 - upper left corner of the layer (in parent layer coords)
-	x1,y1 - lower right corner of the layer (in parent layer coords)
-        flags - choose the type of layer by setting some flags
-                If it is to be a super bitmap layer then the tag
-                LA_SUPERBITMAP must be provided along with a 
-                pointer to a valid super bitmap.
-        tagList - a list of tags that specify the properties of the
-                  layer. The following tags are currently supported:
-                  LA_PRIORITY : priority class of the layer. The
-                                higher the number the further the
-                                layer will be in front of everything
-                                else.
-                                Default value is UPFRONTPRIORITY.
-                  LA_HOOK     : Backfill hook
-                  LA_SUPERBITMAP : pointer to a superbitmap. The flags
-                                  must also represent that this
-                                  layer is supposed to be a superbitmap
-                                  layer.
-                  LA_CHILDOF  : pointer to parent layer. If NULL then
-                                this layer will be created as a old-style
-                                layer.
-                  LA_INFRONTOF : pointer to a layer in front of which
-                                 this layer is to be created.
-                  LA_BEHIND : pointer to a layer behind which this layer
-                             is to be created. Must not give both LA_INFRONTOF
-                             and LA_BEHIND.
-                  LA_VISIBLE : FALSE if this layer is to be invisible.
-                               Default value is TRUE
-                  LA_SHAPE : The region of the layer that comprises its shape.
-                             This value is optional. The region must be relative to the layer.
-                  
-        
-    RESULT
-        Pointer to the newly created layer. NULL if layer could not be 
-        created (Probably out of memory).
-        If the layer is created successfully you must not free its shape.
-        The shape is automatically freed when the layer is deleted.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************/
+/*
+ * LA_InFrontOf and LA_Behind are intentionally left
+ * because they allow to implement AmigaOS4-compatible functionality.
+ */
+struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG x0, LONG y0, 
+				 LONG x1, LONG y1, LONG flags, int priority, struct TagItem *tagList,
+				 struct LayersBase *LayersBase)
 {
-  AROS_LIBFUNC_INIT
-
   struct BitMap * superbitmap = NULL;
   struct Hook * hook = NULL, *shapehook = NULL;
-  int priority = UPFRONTPRIORITY;
+  APTR win = 0;
   int visible = TRUE;
   struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL; 
   struct Layer * l;
@@ -103,47 +38,43 @@
   while((tag = NextTagItem(&tstate)))
   {
     switch (tag->ti_Tag)
-    {
-      case LA_Priority:
-        priority = tag->ti_Data;
-      break;
-      
-      case LA_Hook:
+    { 
+    case LA_BackfillHook:
         hook = (struct Hook *)tag->ti_Data;
-      break;
-      
-      case LA_SuperBitMap:
+        break;
+
+    case LA_SuperBitMap:
         superbitmap = (struct BitMap *)tag->ti_Data;
-      break;
-      
-      case LA_ChildOf:
+        break;
+
+    case LA_ChildOf:
         parent = (struct Layer *)tag->ti_Data;
-      break;
-      
-      case LA_InFrontOf:
-        if (infrontof)
-          return NULL;
+        break;
+
+    case LA_InFrontOf:
         infrontof = (struct Layer *)tag->ti_Data;
-      break;
-      
-      case LA_Behind:
-        if (behind)
-          return NULL;
+        break;
+
+    case LA_Behind:
         behind = (struct Layer *)tag->ti_Data;
-      break;
-      
-      case LA_Visible:
-        visible = tag->ti_Data;
-      break;
-      
-      case LA_Shape:
+        break;
+
+    case LA_Hidden:
+        visible = !tag->ti_Data;
+        break;
+
+    case LA_ShapeRegion:
         layershape = (struct Region *)tag->ti_Data;
-      break;
-      
-      case LA_ShapeHook:
-      	shapehook = (struct Hook *)tag->ti_Data;
-      break;
-   
+        break;
+
+    case LA_ShapeHook:
+	shapehook = (struct Hook *)tag->ti_Data;
+	break;
+
+    case LA_WindowPtr:
+      	win = (APTR)tag->ti_Data;
+      	break;
+
     }
 
   } /* while((tag = NextTagItem(&tstate))) */
@@ -158,23 +89,24 @@
     {
       /* Root layer not yet installed */
       
-      if (!(flags & LAYER_ROOT_LAYER)) /* avoid endless recursion */
+      if (priority != ROOTPRIORITY) /* avoid endless recursion */
       {
         struct TagItem tags[] =
 	{
-	    {LA_Visible , FALSE     	},
-	    {LA_Priority, ROOTPRIORITY	},
+	    {LA_Hidden, TRUE     	},
 	    {TAG_DONE	    	    	}
 	};
-	
+
         if (!(CreateLayerTagList(li,
 	    	    	    	 bm,
 				 0,
 				 0,
 				 GetBitMapAttr(bm, BMA_WIDTH) - 1,
 				 GetBitMapAttr(bm, BMA_HEIGHT) - 1,
-				 LAYER_ROOT_LAYER,
-				 tags)))
+				 0,
+				 ROOTPRIORITY,
+				 tags,
+				 LayersBase)))
 	{
 	  li->check_lp = NULL;
 	  return NULL;
@@ -200,30 +132,34 @@
     return NULL;
   
   /* First create the shape region relative to nothing, that is 0,0 origin */
-  
+
   shape = NewRectRegion(0, 0, x1 - x0, y1 - y0);
   if (!shape)
     return NULL;
-    
+
   if (shapehook)
   {
-    struct ShapeHookMsg msg;
-    
-    msg.Action = SHAPEHOOKACTION_CREATELAYER;
-    msg.Layer  = 0;
-    msg.ActualShape = layershape;
-    msg.NewBounds.MinX = x0;
-    msg.NewBounds.MinY = y0;
-    msg.NewBounds.MaxX = x1;
-    msg.NewBounds.MaxY = y1;
-    msg.OldBounds.MinX = 0;
-    msg.OldBounds.MinY = 0;
-    msg.OldBounds.MaxX = 0;
-    msg.OldBounds.MaxY = 0;
-    
-    layershape = (struct Region *)CallHookPkt(shapehook, NULL, &msg);
+    	struct ShapeHookMsg msg;
+    	struct Rectangle NewBounds, OldBounds;
+
+	msg.NewShape  = layershape;
+	msg.OldShape  = layershape;
+    	msg.NewBounds = &NewBounds;
+    	msg.OldBounds = &OldBounds;
+
+    	NewBounds.MinX = x0;
+    	NewBounds.MinY = y0;
+    	NewBounds.MaxX = x1;
+    	NewBounds.MaxY = y1;
+    	OldBounds.MinX = 0;
+    	OldBounds.MinY = 0;
+    	OldBounds.MaxX = 0;
+    	OldBounds.MaxY = 0;
+
+        if (CallHookPkt(shapehook, NULL, &msg))
+            layershape = msg.NewShape;
   }
-  
+
   if (layershape) if (!AndRegionRegion(layershape, shape))
   {
     DisposeRegion(shape);
@@ -249,29 +185,31 @@
 
   if (l && rp)
   {
-    l->shape = shape;
     IL(l)->shapehook = shapehook;
+    l->Window = win;
     l->shaperegion = layershape;
     l->rp = rp;
-    
+
     rp->Layer = l;
     rp->BitMap = bm;
-
-    l->bounds.MinX = x0;
-    l->bounds.MaxX = x1;
-    l->bounds.MinY = y0;
-    l->bounds.MaxY = y1;
     
     l->Flags = (WORD) flags;
     l->LayerInfo = li;
-    l->Width  = x1 - x0 + 1;
-    l->Height = y1 - y0 + 1;
     
     l->SuperBitMap = superbitmap;
     l->BackFill = hook;
     l->priority = priority;
     
     InitSemaphore(&l->Lock);
+
+    l->shape = shape;
+    l->bounds.MinX = x0;
+    l->bounds.MaxX = x1;
+    l->bounds.MinY = y0;
+    l->bounds.MaxY = y1;
+    l->Width  = x1 - x0 + 1;
+    l->Height = y1 - y0 + 1;
+
     LockLayer(0, l);
     
     if (NULL == (l->DamageList = NewRegion()))
@@ -460,6 +398,4 @@ failexit:
     FreeRastPort(rp);
 
   return NULL;
-
-  AROS_LIBFUNC_EXIT
 } /* CreateBehindHookLayer */

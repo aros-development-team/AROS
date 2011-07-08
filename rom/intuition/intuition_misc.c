@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -1178,7 +1178,7 @@ void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *Intuit
 
 /**********************************************************************************/
 
-AROS_UFH3(struct Region *, DefaultWindowShapeFunc,
+AROS_UFH3(BOOL, DefaultWindowShapeFunc,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct Layer *, lay, A2),
     AROS_UFHA(struct ShapeHookMsg *, msg, A1))
@@ -1192,8 +1192,8 @@ AROS_UFH3(struct Region *, DefaultWindowShapeFunc,
     
     shapemsg.MethodID	    = WDM_WINDOWSHAPE;
     shapemsg.wdp_TrueColor  = (GetPrivScreen(win->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
-    shapemsg.wdp_Width 	    = msg->NewBounds.MaxX - msg->NewBounds.MinX + 1;
-    shapemsg.wdp_Height     = msg->NewBounds.MaxY - msg->NewBounds.MinY + 1;
+    shapemsg.wdp_Width 	    = msg->NewBounds->MaxX - msg->NewBounds->MinX + 1;
+    shapemsg.wdp_Height     = msg->NewBounds->MaxY - msg->NewBounds->MinY + 1;
     shapemsg.wdp_Window = win;
     shapemsg.wdp_UserBuffer = IW(win)->DecorUserBuffer;
     
@@ -1203,8 +1203,9 @@ AROS_UFH3(struct Region *, DefaultWindowShapeFunc,
     IW(win)->OutlineShape = shape;
     IW(win)->CustomShape = FALSE;
     
-    return shape;   
-    
+    msg->NewShape = shape;
+    return TRUE;
+
     AROS_USERFUNC_EXIT 
 }
 

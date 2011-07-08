@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	  := basicfuncs movelayerz
+FILES	  := basicfuncs createlayertaglist movelayerz
 FUNCS := \
 	beginupdate \
 	behindlayer \
@@ -10,9 +10,10 @@ FUNCS := \
 	collectpixelslayer \
 	createbehindhooklayer \
 	createbehindlayer \
+	createbehindlayertaglist \
 	createupfronthooklayer \
 	createupfrontlayer \
-	createlayertaglist \
+	createupfrontlayertaglist \
 	deletelayer \
 	disposelayerinfo \
 	dohookcliprects \
@@ -23,7 +24,6 @@ FUNCS := \
 	installclipregion \
 	installlayerhook \
 	installlayerinfohook \
-	isfrontmostlayer \
 	islayerhiddenbysibling \
 	islayervisible \
 	locklayer \

@@ -2,7 +2,7 @@
 #define GRAPHICS_CLIP_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Clip descriptions.
@@ -121,17 +121,6 @@ cliprects */
 #define ALIGN_OFFSET(x) ((x) & 0x0F)
 
 
-#define LA_Priority	WA_Priority
-#define LA_Hook		WA_BackFill
-#define LA_SuperBitMap	WA_SuperBitMap
-#define LA_ChildOf	WA_Parent
-#define LA_InFrontOf	WA_InFrontOf
-#define LA_Behind	WA_Behind
-#define LA_Visible	WA_Hidden
-#define LA_Shape	WA_ShapeRegion
-#define LA_ShapeHook	WA_ShapeHook
-
-
 /*
  * Tags for scale layer
  */
@@ -143,11 +132,6 @@ cliprects */
 #define LA_SRCHEIGHT  0x4005
 #define LA_DESTWIDTH  0x4006
 #define LA_DESTHEIGHT 0x4007
-
-
-#define ROOTPRIORITY		0
-#define BACKDROPPRIORITY	10
-#define UPFRONTPRIORITY		20
 
 #define IS_VISIBLE(l) (TRUE == l->visible)
 
@@ -171,7 +155,10 @@ struct CollectPixelsLayerMsg
   ULONG  minterm;
 };
 
-/* Msg sent through LA_ShapeHook. Hook function must look like this:
+/*
+   AmigaOS4-style shape hook.
+
+   Msg sent through LA_ShapeHook. Hook function must look like this:
 
     AROS_UFH3(struct Region *, MyShapeFunc,
     	AROS_UFHA(struct Hook *, hook, A0),
@@ -181,18 +168,17 @@ struct CollectPixelsLayerMsg
 */
 
 #define SHAPEHOOKACTION_CREATELAYER     0
-#define SHAPEHOOKACTION_MOVELAYER	    1
-#define SHAPEHOOKACTION_SIZELAYER	    2
+#define SHAPEHOOKACTION_MOVELAYER	1
+#define SHAPEHOOKACTION_SIZELAYER	2
 #define SHAPEHOOKACTION_MOVESIZELAYER   3
 
 struct ShapeHookMsg
 {
     LONG    	     Action;
-    struct Layer    *Layer;
-    struct Region   *ActualShape;
-    struct Rectangle NewBounds;
-    struct Rectangle OldBounds;
+    struct Region    *NewShape;
+    struct Region    *OldShape;
+    struct Rectangle *NewBounds;
+    struct Rectangle *OldBounds;
 };
 
 #endif /* GRAPHICS_CLIP_H */
-

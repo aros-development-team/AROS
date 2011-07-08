@@ -58,7 +58,12 @@ void _CallLayerHook(struct Hook * h,
 
 void SetLayerPriorities(struct Layer_Info * li);
 struct Layer * internal_WhichLayer(struct Layer * l, WORD x, WORD y);
+struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG x0, LONG y0, 
+				 LONG x1, LONG y1, LONG flags, int priority, struct TagItem *tagList,
+				 struct LayersBase *LayersBase);
 void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase);
+struct Layer *GetFirstFamilyMember(struct Layer *l);
+
 
 /***************************************************************************/
 /*                               LAYERINFO                                 */
@@ -135,6 +140,15 @@ int _CopyClipRectsToClipRects(struct Layer * l,
 			      struct LayersBase *LayersBase);
 void UninstallClipRegionClipRects(struct Layer_Info * LI);
 void InstallClipRegionClipRects(struct Layer_Info * LI);
+
+/***************************************************************************/
+/*                            TRANSPARENCY HOOK                            */
+/***************************************************************************/
+
+struct Region *doCreateLayer(struct Hook *shapeHook, struct Region *layershape,
+			     LONG x0, LONG y0, LONG x1, LONG y1,
+			     APTR data, struct LayersBase *LayersBase);
+void doChangeLayer(struct Layer *l, struct LayersBase *LayersBase);
 
 /*-----------------------------------END-----------------------------------*/
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -86,26 +86,12 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  struct TagItem tagList[5] = {{LA_Priority    , 0},
-                               {LA_Hook        , NULL},
-                               {LA_SuperBitMap , NULL},
-                               {TAG_DONE       , 0UL}};
+    return CreateUpfrontLayerTags(li, bm, x0, y0, x1, y1, flags,
+  				  LA_BackfillHook, hook,
+  				  LA_SuperBitMap, bm2,
+  				  TAG_DONE);
 
-  tagList[0].ti_Data = (LAYERBACKDROP == (flags & LAYERBACKDROP)) ?
-                       BACKDROPPRIORITY:
-                       UPFRONTPRIORITY;
-  tagList[1].ti_Data = (IPTR)hook;
-  tagList[2].ti_Data = (IPTR)bm2; 
-
-  return CreateLayerTagList(li,
-                            bm,
-			    x0, y0, x1, y1,
-                            flags,
-                            &tagList[0]);
-
-
-  AROS_LIBFUNC_EXIT
-  
+    AROS_LIBFUNC_EXIT
 } /* CreateUpfrontHookLayer */

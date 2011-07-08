@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -11,6 +11,8 @@
 #include <proto/graphics.h>
 #include <graphics/clip.h>
 #include <graphics/layers.h>
+
+#include "basicfuncs.h"
 #include "layers_intern.h"
 
 /*****************************************************************************

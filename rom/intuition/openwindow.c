@@ -45,7 +45,7 @@ struct OpenWindowActionMsg
     struct Region   	    *shape;
     struct Hook     	    *shapehook;
     struct Layer    	    *parentlayer;
-    BOOL    	    	     visible;
+    BOOL    	    	     invisible;
     BOOL    	    	     success;
 };
 
@@ -122,7 +122,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     ULONG           	    	 helpgroup = 0;
     ULONG           	    	 extrabuttons = 0, extrabuttonsid = ETI_Dummy;
   //ULONG     	    	    	 lock;
-    ULONG                   	 windowvisible = TRUE;
+    ULONG                   	 windowinvisible = FALSE;
     BOOL            	    	 driver_init_done = FALSE, have_helpgroup = FALSE;
     BOOL                    	 do_setwindowpointer = FALSE;
 
@@ -155,7 +155,7 @@ WFLG_WINDOWACTIVE )
     if (newWindow->Flags & WFLG_NW_EXTENDED)
     {
         tagList = ((struct ExtNewWindow *)newWindow)->Extension;
-    #if 0
+#ifdef __mc68000
         /* Sanitycheck the taglist pointer. Some Am*gaOS 1.3/2.x era
          * apps have WFLG_NW_EXTENDED set with bogus Extension taglist
          * pointer... (older CygnusED for example) - Piru
@@ -169,7 +169,7 @@ WFLG_WINDOWACTIVE )
         {
             tagList = NULL;
         }
-    #endif
+#endif
     }
     else
     {
@@ -545,7 +545,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 break;
 
             case WA_Hidden:
-                windowvisible = !tag->ti_Data;
+                windowinvisible = tag->ti_Data;
                 break;
 #endif
 
@@ -1072,7 +1072,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     msg.shape = shape;
     msg.shapehook = shapehook;
     msg.parentlayer = parentl;
-    msg.visible = windowvisible;
+    msg.invisible = windowinvisible;
 
     DoSyncAction((APTR)int_openwindow, &msg.msg, IntuitionBase);
 
@@ -1246,12 +1246,10 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     struct Window * w = msg->window;
     struct BitMap * SuperBitMap = msg->bitmap;
     struct Hook   * backfillhook = msg->backfillhook;
-#ifdef CreateLayerTagList
     struct Region * shape = msg->shape;
     struct Hook   * shapehook = msg->shapehook;
     struct Layer  * parent = msg->parentlayer;
-    BOOL            visible = msg->visible;
-#endif
+    BOOL            invisible = msg->invisible;
 
 #ifdef SKINS
     BOOL            installtransphook = FALSE;
@@ -1351,19 +1349,22 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
           I just make it that the outer window has the size of what is requested
         */
 
-    #ifdef __MORPHOS__
-
         struct TagItem layertags[] =
         {
             {LA_BackfillHook, (IPTR)LAYERS_NOBACKFILL},
             {SuperBitMap ? LA_SuperBitMap : TAG_IGNORE, (IPTR)SuperBitMap},
+#ifdef SKINS
             {installtransphook ? LA_TransHook : TAG_IGNORE, notransphook ? (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->notransphook : (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->transphook},
             {installtransphook ? LA_TransRegion : TAG_IGNORE, (IPTR)IW(w)->transpregion},
-            {LA_WindowPtr, (IPTR)w},
+#else
+	    {TAG_IGNORE  , 0           },
+	    {TAG_IGNORE  , 0           },
+#endif
+            {LA_WindowPtr, (IPTR)w     },
+            {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
+            {LA_Hidden   , invisible   },
             {TAG_DONE}
         };
-
-
 
         /* First create outer window */
         struct Layer * L = CreateUpfrontLayerTagList(
@@ -1376,29 +1377,6 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                                    , LAYERSIMPLE | (layerflags & LAYERBACKDROP)
                                    , (struct TagItem *)&layertags);
 
-    #else
-        /* First create outer window */
-
-        struct TagItem lay_tags[] =
-        {
-            {LA_Hook        , (IPTR)LAYERS_NOBACKFILL    	    	    	    	    	},
-            {LA_Priority    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
-            {LA_SuperBitMap , (IPTR)NULL                          	    	    	    	},
-            {LA_ChildOf     , (IPTR)parent                              	    	    	},
-            {LA_Visible     , (ULONG)visible                                                    },
-            {TAG_DONE                                           	    	    	    	}
-        };
-
-        struct Layer * L = CreateLayerTagList(&w->WScreen->LayerInfo,
-                        		       w->WScreen->RastPort.BitMap,
-                        		       w->RelLeftEdge,
-                        		       w->RelTopEdge,
-                        		       w->RelLeftEdge + w->Width - 1,
-                        		       w->RelTopEdge + w->Height - 1,
-                        		       LAYERSIMPLE | (layerflags & LAYERBACKDROP),
-                        		       lay_tags);
-
-    #endif
         /* Could the layer be created. Nothing bad happened so far, so simply leave */
         if (NULL == L)
         {
@@ -1413,14 +1391,19 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
         w->BorderRPort = L->rp;
         BLAYER(w) = L;
 
-        /* This layer belongs to a window */
-    #ifndef __MORPHOS__
-        L->Window = (APTR)w;
-    #endif
-
-    #ifdef __MORPHOS__
         /* Now comes the inner window */
         layertags[0].ti_Data = (IPTR)backfillhook;
+	if (shapehook)
+	{
+	    layertags[2].ti_Tag  = LA_ShapeHook;
+	    layertags[2].ti_Data = (IPTR)shapehook;
+	}
+	if (shape)
+	{
+	    layertags[3].ti_Tag  = LA_ShapeRegion;
+	    layertags[3].ti_Data = (IPTR)shape;
+	}
+
         w->WLayer = CreateUpfrontLayerTagList(
                 &w->WScreen->LayerInfo
                 , w->WScreen->RastPort.BitMap
@@ -1430,35 +1413,6 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                 , w->TopEdge  + w->BorderTop + w->GZZHeight - 1
                 , layerflags
                 , (struct TagItem *)&layertags);
-
-    #else
-        /* Now comes the inner window */
-
-    	{
-            struct TagItem lay_tags[] =
-            {
-                {LA_Hook     	, (IPTR)backfillhook	    	    	    	    	    	    },
-                {LA_Priority    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
-                {LA_Shape       , (IPTR)shape                               	    	    	    },
-		{LA_ShapeHook	, (IPTR)shapehook   	    	    	    	    	    	    },
-                {LA_SuperBitMap , (IPTR)SuperBitMap                           	    	    	    },
-                {LA_ChildOf     , (IPTR)parent                              	    	    	    },
-                {LA_Visible     , (ULONG)visible                                                    },
-                {TAG_DONE                                           	    	    	    	    }
-            };
-
-            w->WLayer = CreateLayerTagList(&w->WScreen->LayerInfo,
-                        		    w->WScreen->RastPort.BitMap,
-                        		    w->RelLeftEdge + w->BorderLeft,
-                        		    w->RelTopEdge + w->BorderTop,
-                        		    w->RelLeftEdge + w->BorderLeft + w->GZZWidth - 1,
-                        		    w->RelTopEdge + w->BorderTop + w->GZZHeight - 1,
-                        		    layerflags,
-                        		    lay_tags);
-					    
-	}
-
-    #endif
 
         /* could this layer be created? If not then delete the outer window and exit */
         if (NULL == w->WLayer)
@@ -1473,17 +1427,33 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     }
     else
     {
-    #ifdef __MORPHOS__
-
         struct TagItem layertags[] =
         {
             {LA_BackfillHook, (IPTR)backfillhook},
             {SuperBitMap ? LA_SuperBitMap : TAG_IGNORE, (IPTR)SuperBitMap},
+#ifdef SKINS
             {installtransphook ? LA_TransHook : TAG_IGNORE, notransphook ? (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->notransphook : (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->transphook},
             {installtransphook ? LA_TransRegion : TAG_IGNORE, (IPTR)IW(w)->transpregion},
-            {LA_WindowPtr, (IPTR)w},
+#else
+	    {TAG_IGNORE  , 0           },
+	    {TAG_IGNORE  , 0           },
+#endif
+            {LA_WindowPtr, (IPTR)w     },
+            {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
+            {LA_Hidden, invisible   },
             {TAG_DONE}
         };
+
+	if (shapehook)
+	{
+	    layertags[2].ti_Tag  = LA_ShapeHook;
+	    layertags[2].ti_Data = (IPTR)shapehook;
+	}
+	if (shape)
+	{
+	    layertags[3].ti_Tag  = LA_ShapeRegion;
+	    layertags[3].ti_Data = (IPTR)shape;
+	}
 
         D(dprintf("CreateUpfontLayerTagList(taglist 0x%lx)\n",&layertags));
 
@@ -1495,30 +1465,6 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                                 w->TopEdge  + w->Height - 1,
                                 layerflags,
                                 (struct TagItem *)&layertags);
-    #else
-
-        struct TagItem lay_tags[] =
-        {
-            {LA_Hook        , (IPTR)backfillhook	    	    	    	    	    	},
-            {LA_Priority    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
-            {LA_Shape       , (IPTR)shape                               	    	    	},
-	    {LA_ShapeHook   , (IPTR)shapehook   	    	    	    	    	    	},
-            {LA_SuperBitMap , (IPTR)SuperBitMap                           	    	    	},
-            {LA_ChildOf     , (IPTR)parent                              	    	    	},
-            {LA_Visible     , (ULONG)visible                                                    },
-            {TAG_DONE                                           	    	    	    	}
-        };
-
-        w->WLayer = CreateLayerTagList(&w->WScreen->LayerInfo,
-                        	       w->WScreen->RastPort.BitMap,
-                        	       w->RelLeftEdge,
-                        	       w->RelTopEdge,
-                        	       w->RelLeftEdge + w->Width - 1,
-                        	       w->RelTopEdge + w->Height - 1,
-                        	       layerflags,
-                        	       lay_tags);
-
-    #endif
 
         /* Install the BorderRPort here! see GZZ window above  */
         if (NULL != w->WLayer)
