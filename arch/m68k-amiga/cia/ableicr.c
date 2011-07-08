@@ -17,7 +17,7 @@
 
 AROS_LH1(WORD, AbleICR,
 	 AROS_LHA(WORD, mask, D0),
-	 struct Library *, resource, 8, Cia)
+	 struct Library *, resource, 3, Cia)
 {
     AROS_LIBFUNC_INIT
 
