@@ -101,7 +101,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 	  AROS_LHA(struct AVLNode *, node, A1),
 	  AROS_LHA(AVLNODECOMP, func, A2),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 142, Exec)
+	  struct ExecBase *, SysBase, 139, Exec)
 /*  FUNCTION
 	Add a new node to an AVL tree.
 
@@ -368,7 +368,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 	  AROS_LHA(struct AVLNode **, Root, A0),
 	  AROS_LHA(struct AVLNode *, Node, A1),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 143, Exec)
+	  struct ExecBase *, SysBase, 140, Exec)
 /*  FUNCTION
 	Remove a given node from the tree.
 
@@ -654,7 +654,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 	  AROS_LHA(struct AVLNode **, root, A0),
 	  AROS_LHA(AVLKey, key, A1), AROS_LHA(AVLKEYCOMP, func, A2),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 144, Exec)
+	  struct ExecBase *, SysBase, 141, Exec)
 /*  FUNCTION
 	Looks up a node in the tree by key, and removes it if it
 	is found.
@@ -709,7 +709,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 	  AROS_LHA(const struct AVLNode *, Root, A0),
 	  AROS_LHA(AVLKey, key, A1), AROS_LHA(AVLKEYCOMP, func, A2),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 145, Exec)
+	  struct ExecBase *, SysBase, 142, Exec)
 /*  FUNCTION
 	Find an entry in the AVL tree by key.
 
@@ -767,7 +767,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Node, A0),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 146, Exec)
+	  struct ExecBase *, SysBase, 143, Exec)
 /*  FUNCTION
 	Perform an inverse-order traversal to the previous node in the tree.
 
@@ -854,7 +854,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 	  AROS_LHA(const struct AVLNode *, root, A0),
 	  AROS_LHA(AVLKey, key, A1), AROS_LHA(AVLKEYCOMP, func, A2),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 147, Exec)
+	  struct ExecBase *, SysBase, 144, Exec)
 /*  FUNCTION
 	Find the node matching the key, or if such a node does not exist,
 	then the node with the next-lowest value.
@@ -914,7 +914,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Node, A0),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 148, Exec)
+	  struct ExecBase *, SysBase, 145, Exec)
 /*  FUNCTION
 	Perform an in-order traversal to the next node in the tree.
 
@@ -1001,7 +1001,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 	  AROS_LHA(const struct AVLNode *, Root, A0),
 	  AROS_LHA(AVLKey, key, A1), AROS_LHA(AVLKEYCOMP, func, A2),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 149, Exec)
+	  struct ExecBase *, SysBase, 146, Exec)
 /*  FUNCTION
 	Find the node matching the key, or if such a node does not exist,
 	then the node with the next-highest value.
@@ -1061,7 +1061,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Root, A0),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 150, Exec)
+	  struct ExecBase *, SysBase, 147, Exec)
 /*  FUNCTION
 	Find the smallest node in an AVL tree.
 
@@ -1111,7 +1111,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Root, A0),
 /*  LOCATION */
-	  struct ExecBase *, SysBase, 151, Exec)
+	  struct ExecBase *, SysBase, 148, Exec)
 /*  FUNCTION
 	Find the largest node in an AVL tree.
 

@@ -20,7 +20,7 @@
 	AROS_LHA(struct StackSwapArgs *, args, A2),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 122, Exec)
+	struct ExecBase *, SysBase, 134, Exec)
 
 /*  FUNCTION
 	Calls a function with a new stack. 
