@@ -14,6 +14,6 @@ EXEDIR  := $(AROS_UTILITIES)
 
 %build_prog mmake=workbench-utilities-snoopy \
     progname=Snoopy targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga"
+    files=$(FILES) uselibs="rom mui arossupport amiga"
 
 %common
