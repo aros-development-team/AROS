@@ -239,7 +239,7 @@ AROS_LH1(void, devBeginIO,
  */
 AROS_LH1(LONG, devAbortIO,
          AROS_LHA(struct IOUsbHWReq *, ioreq, A1),
-	     LIBBASETYPEPTR, base, 5, pciusb)
+	     LIBBASETYPEPTR, base, 6, pciusb)
 {
     AROS_LIBFUNC_INIT
 
