@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     WiMP -- Window manipulation program.
@@ -500,7 +500,7 @@ AROS_UFH3(void, show_func,
     struct Window *win;
     if (get_selected(&scr, &win) == Window_type)
     {
-	ShowWindow ( win, NULL );
+	ShowWindow (win, WINDOW_FRONTMOST);
     }
 
     Delay(5);
@@ -557,7 +557,7 @@ AROS_UFH3(void, showall_func,
 	    /* Show Window if hidden */
 	    if ( IsWindowVisible ( win ) != TRUE )
 	    {
-		ShowWindow ( win, NULL );
+		ShowWindow (win, WINDOW_FRONTMOST);
 	    }
 	    win = win->NextWindow;
 	}
