@@ -1450,6 +1450,13 @@ static void readsectionfunctionlist(struct config *cfg)
 		
 		(*funclistptr)->novararg = 1;
 	    }
+	    else if (strncmp(s, "version", 7) == 0)
+	    {
+	        /* TODO: Mark version number for the following
+	         *       functions, so that the automatic OpenLibrary()
+	         *       will know what version to use.
+	         */
+	    }
 	    else
 		exitfileerror(20, "Syntax error");
 	}
