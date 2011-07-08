@@ -30,7 +30,7 @@
         AROS_LHA(char *,              text,         A1),
 
 /*  LOCATION */
-        struct WorkbenchBase *, WorkbenchBase, 10, Workbench)
+        struct WorkbenchBase *, WorkbenchBase, 27, Workbench)
 
 /*  FUNCTION
 
