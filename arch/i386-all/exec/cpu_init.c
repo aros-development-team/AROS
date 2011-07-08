@@ -4,7 +4,7 @@
 
 #include "etask.h"
 
-extern void Exec_CopyMem_SSE();
+extern void AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104)();
 
 static int cpu_Init(struct ExecBase *SysBase)
 {
