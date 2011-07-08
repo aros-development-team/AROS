@@ -35,7 +35,7 @@ AROS_LD4(APTR, LocVNewRawDoFmt,
 	 AROS_LDA(VOID_FUNC   , PutChProc, A2),
 	 AROS_LDA(APTR        , PutChData, A3),
 	 AROS_LDA(va_list     , DataStream, A1),
-	 struct ExecBase *, SysBase, 137, Locale);
+	 struct ExecBase *, SysBase, 39, Locale);
 AROS_LD3(LONG, LocStrnicmp,
 	 AROS_LDA(CONST_STRPTR, string1, A0),
 	 AROS_LDA(CONST_STRPTR, string2, A1),
