@@ -92,7 +92,7 @@ static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh)
         ourvec = SetFunction(nh->nh_LowLevelBase, -5 * LIB_VECTSIZE, nh->nh_LLOldReadJoyPort);
         if(ourvec != AROS_SLIB_ENTRY(nReadJoyPort, hid))
         {
-            SetFunction(nh->nh_LowLevelBase, -5 / 6 * LIB_VECTSIZE, ourvec);
+            SetFunction(nh->nh_LowLevelBase, -5 * LIB_VECTSIZE, ourvec);
             Enable();
             return(FALSE); /* we couldn't remove the patch! */
         }
