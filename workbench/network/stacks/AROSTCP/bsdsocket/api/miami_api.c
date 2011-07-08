@@ -63,7 +63,7 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: __MiamiLIB_Cleanup()\n"));
 
 AROS_LH1 (struct Library *, Open,
 	AROS_LHA(ULONG, version, D0),
-        struct Library *, MasterBase, 0, Miami)
+        struct Library *, MasterBase, 1, Miami)
 {
 	AROS_LIBFUNC_INIT
 
@@ -117,7 +117,7 @@ D(bug("[AROSTCP](miami_api.c) MiamiLIB_Open: Created MIAMI user library base: 0x
 	AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(ULONG *, Close, struct MiamiBase *, MiamiBase, 1, Miami)
+AROS_LH0(ULONG *, Close, struct MiamiBase *, MiamiBase, 2, Miami)
 {
 	AROS_LIBFUNC_INIT
 

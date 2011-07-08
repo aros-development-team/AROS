@@ -89,7 +89,7 @@ AROS_LH4(LONG, send,
    AROS_LHA(caddr_t, buf, A0),
    AROS_LHA(LONG, len, D1),
    AROS_LHA(LONG, flags, D2),
-   struct SocketBase *, libPtr, 12, UL)
+   struct SocketBase *, libPtr, 11, UL)
 {
   AROS_LIBFUNC_INIT
   DSYSCALLS(log(LOG_DEBUG,"send(%ld, buf, %ld, 0x%08lx) called", s, len, flags);)
@@ -143,7 +143,7 @@ AROS_LH6(LONG, sendto,
    AROS_LHA(LONG, flags, D2),
    AROS_LHA(caddr_t, to, A1),
    AROS_LHA(LONG, tolen, D3),
-   struct SocketBase *, libPtr, 13, UL)
+   struct SocketBase *, libPtr, 10, UL)
 {
   AROS_LIBFUNC_INIT
   DSYSCALLS(log(LOG_DEBUG,"sendto(%ld, buf, %ld, 0x%08lx, sockaddr_in, %ld", s, len, flags, tolen);)
@@ -161,7 +161,7 @@ AROS_LH3(LONG, sendmsg,
    AROS_LHA(LONG, s, D0),
    AROS_LHA(struct msghdr *, msg_p, A0),
    AROS_LHA(LONG, flags, D1),
-   struct SocketBase *, libPtr, 14, UL)
+   struct SocketBase *, libPtr, 45, UL)
 {
   AROS_LIBFUNC_INIT
   LONG error, retval;
@@ -269,7 +269,7 @@ AROS_LH4(LONG, recv,
    AROS_LHA(caddr_t, buf, A0),
    AROS_LHA(LONG, len, D1),
    AROS_LHA(LONG, flags, D2),
-   struct SocketBase *, libPtr, 15, UL)
+   struct SocketBase *, libPtr, 13, UL)
 {
   AROS_LIBFUNC_INIT
   DSYSCALLS(log(LOG_DEBUG,"recv(%ld, buf, %ld, 0x%08lx) called", s, len, flags);)
@@ -292,7 +292,7 @@ AROS_LH6(LONG, recvfrom,
    AROS_LHA(LONG, flags, D2),
    AROS_LHA(caddr_t, from, A1),
    AROS_LHA(LONG *, fromlenaddr, A2),
-   struct SocketBase *, libPtr, 16, UL)
+   struct SocketBase *, libPtr, 12, UL)
 {
   AROS_LIBFUNC_INIT
   struct msghdr	msg;
@@ -330,7 +330,7 @@ AROS_LH3(LONG, recvmsg,
    AROS_LHA(LONG, s, D0),
    AROS_LHA(struct msghdr *, msg_p, A0),
    AROS_LHA(LONG, flags, D1),
-   struct SocketBase *, libPtr, 17, UL)
+   struct SocketBase *, libPtr, 46, UL)
 {
   AROS_LIBFUNC_INIT
   LONG error, retval;

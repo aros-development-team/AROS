@@ -105,7 +105,7 @@ char * __Inet_NtoA(ULONG s_addr, struct SocketBase *libPtr)
 }
 AROS_LH1(char *, Inet_NtoA,
    AROS_LHA(ULONG, s_addr, D0),
-   struct SocketBase *, libPtr, 30, UL)
+   struct SocketBase *, libPtr, 29, UL)
 {
   AROS_LIBFUNC_INIT
   D(__log(LOG_DEBUG,"Inet_NtoA(0x%08lx) called",s_addr);)
@@ -229,7 +229,7 @@ AROS_LH2(LONG, inet_aton,
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH1(ULONG, inet_addr,
    AROS_LHA(const char *, cp, A0),
-   struct SocketBase *, libPtr, 31, UL)
+   struct SocketBase *, libPtr, 30, UL)
 {
         AROS_LIBFUNC_INIT
 	struct in_addr val;
@@ -251,7 +251,7 @@ AROS_LH1(ULONG, inet_addr,
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH1(ULONG, Inet_LnaOf,
    AROS_LHA(ULONG, s_addr, D0),
-   struct SocketBase *, libPtr, 32, UL)
+   struct SocketBase *, libPtr, 31, UL)
 {
         AROS_LIBFUNC_INIT
 	NTOHL(s_addr);
@@ -275,7 +275,7 @@ AROS_LH1(ULONG, Inet_LnaOf,
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH1(ULONG, Inet_NetOf,
    AROS_LHA(ULONG, s_addr, D0),
-   struct SocketBase *, libPtr, 33, UL)
+   struct SocketBase *, libPtr, 32, UL)
 {
         AROS_LIBFUNC_INIT
 	NTOHL(s_addr);
@@ -301,7 +301,7 @@ AROS_LH1(ULONG, Inet_NetOf,
 AROS_LH2(ULONG, Inet_MakeAddr,
    AROS_LHA(ULONG, net, D0),
    AROS_LHA(ULONG, host, D1),
-   struct SocketBase *, libPtr, 34, UL)
+   struct SocketBase *, libPtr, 33, UL)
 {
 	AROS_LIBFUNC_INIT
 	u_long addr;
@@ -330,7 +330,7 @@ AROS_LH2(ULONG, Inet_MakeAddr,
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH1(ULONG, inet_network,
    AROS_LHA(const char *, cp, A0),
-   struct SocketBase *, libPtr, 35, UL)
+   struct SocketBase *, libPtr, 34, UL)
 {
 	AROS_LIBFUNC_INIT
 	register u_long val, base, n;

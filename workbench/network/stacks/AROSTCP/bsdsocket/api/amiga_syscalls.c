@@ -104,7 +104,7 @@ AROS_LH3(LONG, socket,
    AROS_LHA(LONG, domain, D0),
    AROS_LHA(LONG, type, D1),
    AROS_LHA(LONG, protocol, D2),
-   struct SocketBase *, libPtr, 2, UL)
+   struct SocketBase *, libPtr, 5, UL)
 {
   AROS_LIBFUNC_INIT
   
@@ -127,7 +127,7 @@ AROS_LH3(LONG, bind,
    AROS_LHA(LONG, s, D0),
    AROS_LHA(caddr_t, name, A0),
    AROS_LHA(LONG, namelen, D1),
-   struct SocketBase *, libPtr, 3, UL)
+   struct SocketBase *, libPtr, 6, UL)
 {
   AROS_LIBFUNC_INIT
   struct socket *so;
@@ -163,7 +163,7 @@ D(bug("[AROSTCP](amiga_syscalls.c) UL_bind(%ld, sockaddr_in, %ld)\n", s, namelen
 AROS_LH2(LONG, listen,
    AROS_LHA(LONG, s, D0),
    AROS_LHA(LONG, backlog, D1),
-   struct SocketBase *, libPtr, 4, UL)
+   struct SocketBase *, libPtr, 7, UL)
 {
   AROS_LIBFUNC_INIT
   struct socket *so;
@@ -196,7 +196,7 @@ AROS_LH3(LONG, accept,
    AROS_LHA(LONG, s, D0),
    AROS_LHA(caddr_t, name, A0),
    AROS_LHA(socklen_t *, anamelen, A1),
-   struct SocketBase *, libPtr, 5, UL)
+   struct SocketBase *, libPtr, 8, UL)
 {
   AROS_LIBFUNC_INIT
   struct socket *so;
@@ -339,7 +339,7 @@ AROS_LH3(LONG, connect,
    AROS_LHA(LONG, s, D0),
    AROS_LHA(caddr_t, name, A0),
    AROS_LHA(LONG, namelen, D1),
-   struct SocketBase *, libPtr, 6, UL)
+   struct SocketBase *, libPtr, 9, UL)
 {
   AROS_LIBFUNC_INIT
   
@@ -360,7 +360,7 @@ D(bug("[AROSTCP](amiga_syscalls.c) UL_connect(%ld, sockaddr_in, %ld)\n", s, name
 AROS_LH2(LONG, shutdown,
    AROS_LHA(LONG, s, D0),
    AROS_LHA(LONG, how, D1),
-   struct SocketBase *, libPtr, 7, UL)
+   struct SocketBase *, libPtr, 14, UL)
 {
   AROS_LIBFUNC_INIT
   struct socket *so;
@@ -398,7 +398,7 @@ AROS_LH5(LONG, setsockopt,
    AROS_LHA(LONG, name, D2),
    AROS_LHA(caddr_t, val, A0),
    AROS_LHA(ULONG, valsize, D3),
-   struct SocketBase *, libPtr, 8, UL)
+   struct SocketBase *, libPtr, 15, UL)
 {
   AROS_LIBFUNC_INIT
   struct socket *so;
@@ -451,7 +451,7 @@ AROS_LH5(LONG, getsockopt,
    AROS_LHA(LONG, name, D2),
    AROS_LHA(caddr_t, val, A0),
    AROS_LHA(ULONG *, avalsize, A1),
-   struct SocketBase *, libPtr, 9, UL)
+   struct SocketBase *, libPtr, 16, UL)
 {
   AROS_LIBFUNC_INIT
   struct socket *so;
@@ -500,7 +500,7 @@ AROS_LH3(LONG, getsockname,
    AROS_LHA(LONG, fdes, D0),
    AROS_LHA(caddr_t, asa, A0),
    AROS_LHA(ULONG *, alen, A1),
-   struct SocketBase *, libPtr, 10, UL)
+   struct SocketBase *, libPtr, 17, UL)
 {
   AROS_LIBFUNC_INIT
   /*register*/
@@ -548,7 +548,7 @@ AROS_LH3(LONG, getpeername,
    AROS_LHA(LONG, fdes, D0),
    AROS_LHA(caddr_t, asa, A0),
    AROS_LHA(ULONG *, alen, A1),
-   struct SocketBase *, libPtr, 11, UL)
+   struct SocketBase *, libPtr, 18, UL)
 {
   AROS_LIBFUNC_INIT
   struct socket *so;
