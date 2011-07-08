@@ -24,9 +24,9 @@
 
     .text
     .balign 4
-    .globl  AROS_SLIB_ENTRY(SMult32_020,Utility)
-    .type   AROS_SLIB_ENTRY(SMult32_020,Utility),@function
-AROS_SLIB_ENTRY(SMult32_020,Utility):
+    .globl  AROS_SLIB_ENTRY(SMult32_020,Utility,23)
+    .type   AROS_SLIB_ENTRY(SMult32_020,Utility,23),@function
+AROS_SLIB_ENTRY(SMult32_020,Utility,23):
     muls.l  %d1,%d0
     rts
 

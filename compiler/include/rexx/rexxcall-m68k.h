@@ -28,8 +28,8 @@
 	     AROS_UFPA(STRPTR *, _retargstringptr, A1), \
 	     AROS_UFHA(lt, l, A6)); \
   asm ( ".text\n" \
-  	".global " #p "_" #f "\n" \
-  	#p "_" #f ":\n" \
+  	".global " #p "_" #o "_" #f "\n" \
+  	#p "_" #o "_" #f ":\n" \
   	"jsr " #p "_" #f "_wrapper \n" \
   	"move.l %d0,%a0 \n" \
   	"rts\n" ); \

@@ -35,12 +35,12 @@ void flash(UWORD);
 /*
     Architecture dependent function variations:
 */
-extern void AROS_SLIB_ENTRY(GetCC_10,Exec)();
-extern void AROS_SLIB_ENTRY(CacheClearU_20,Exec)();
-extern void AROS_SLIB_ENTRY(CacheClearU_40,Exec)();
-extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec)();
-extern void AROS_SLIB_ENTRY(CachePostDMA_30,Exec)();
-extern void AROS_SLIB_ENTRY(CachePostDMA_40,Exec)();
+extern void AROS_SLIB_ENTRY(GetCC_10,Exec,88)();
+extern void AROS_SLIB_ENTRY(CacheClearU_20,Exec,106)();
+extern void AROS_SLIB_ENTRY(CacheClearU_40,Exec,106)();
+extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127)();
+extern void AROS_SLIB_ENTRY(CachePostDMA_30,Exec,128)();
+extern void AROS_SLIB_ENTRY(CachePostDMA_40,Exec,128)();
 
 /*
     TODO:
@@ -123,7 +123,7 @@ UBYTE dearray[] =
 #define SetFunc(offset,name) \
 { \
     if(dearray[offset]) \
-	SetFunction((struct Library *)SysBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Exec)); \
+	SetFunction((struct Library *)SysBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Exec,offset)); \
 }
 
 int start(void)

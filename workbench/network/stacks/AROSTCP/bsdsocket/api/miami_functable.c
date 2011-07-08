@@ -29,30 +29,30 @@ typedef VOID (* f_void)();
 /*
  * Null used in both function tables
  */
-extern VOID AROS_SLIB_ENTRY(Null, LIB)(VOID);
+extern VOID AROS_SLIB_ENTRY(Null, LIB, 0)(VOID);
 
 /*
  * "declarations" for ExecLibraryList_funcTable functions.
  */ 
 
-extern VOID AROS_SLIB_ENTRY(Open, Miami)();
-extern VOID AROS_SLIB_ENTRY(Close, Miami)();
+extern VOID AROS_SLIB_ENTRY(Open, Miami, 1)();
+extern VOID AROS_SLIB_ENTRY(Close, Miami, 2)();
 
-extern VOID AROS_SLIB_ENTRY(Expunge, ELL)();
+extern VOID AROS_SLIB_ENTRY(Expunge, ELL, 3)();
 
 f_void Miami_InitFuncTable[]=
 {
 #ifdef __MORPHOS__
 	FUNCARRAY_32BIT_NATIVE,
 #endif
-	AROS_SLIB_ENTRY(Open, Miami),
-    AROS_SLIB_ENTRY(Close, Miami),
-	AROS_SLIB_ENTRY(Expunge, ELL),
+	AROS_SLIB_ENTRY(Open, Miami, 1),
+    AROS_SLIB_ENTRY(Close, Miami, 2),
+	AROS_SLIB_ENTRY(Expunge, ELL, 3),
 /* TODO: NicJA - LIB_Null?? */
 #if defined(__AROS__)
    NULL,
 #else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Reserved() is never called */
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Reserved() is never called */
 #endif
   (f_void)-1
 };
@@ -60,54 +60,51 @@ f_void Miami_InitFuncTable[]=
 /*
  * "declarations" for userLibrary_funcTable functions.
  */ 
-
-extern VOID AROS_SLIB_ENTRY(MiamiSysCtl, Miami)();
-//extern VOID AROS_SLIB_ENTRY(MiamiSetSysLogPort, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiDisallowDNS, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiGetPid, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiPFAddHook, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiPFRemoveHook, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiGetHardwareLen, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiOpenSSL, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiCloseSSL, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiSetSocksConn, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiIsOnline, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiOnOffline, Miami)();
-extern VOID AROS_SLIB_ENTRY(inet_ntop, Miami)();
-extern VOID AROS_SLIB_ENTRY(Miami_inet_aton, Miami)();
-extern VOID AROS_SLIB_ENTRY(inet_pton, Miami)();
-extern VOID AROS_SLIB_ENTRY(gethostbyname2, Miami)();
-extern VOID AROS_SLIB_ENTRY(gai_strerror, Miami)();
-extern VOID AROS_SLIB_ENTRY(freeaddrinfo, Miami)();
-extern VOID AROS_SLIB_ENTRY(getaddrinfo, Miami)();
-extern VOID AROS_SLIB_ENTRY(getnameinfo, Miami)();
-extern VOID AROS_SLIB_ENTRY(if_nametoindex, Miami)();
-extern VOID AROS_SLIB_ENTRY(if_indextoname, Miami)();
-extern VOID AROS_SLIB_ENTRY(if_nameindex, Miami)();
-extern VOID AROS_SLIB_ENTRY(if_freenameindex, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiSupportsIPV6, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiGetResOptions, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiSetResOptions, Miami)();
-extern VOID AROS_SLIB_ENTRY(sockatmark, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiSupportedCPUs, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiGetFdCallback, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiSetFdCallback, Miami)();
-extern VOID AROS_SLIB_ENTRY(MiamiGetCredentials, Miami)();
-extern VOID AROS_SLIB_ENTRY(SetSysLogPort, Miami)();
-extern VOID AROS_SLIB_ENTRY(Miami_gethostent, Miami)();
-extern VOID AROS_SLIB_ENTRY(Miami_endhostent, Miami)();
-extern VOID AROS_SLIB_ENTRY(Miami_getprotoent, Miami)();
-extern VOID AROS_SLIB_ENTRY(Miami_endprotoent, Miami)();
-extern VOID AROS_SLIB_ENTRY(ClearDynNameServ, Miami)();
-extern VOID AROS_SLIB_ENTRY(ClearDynDomain, Miami)();
-extern VOID AROS_SLIB_ENTRY(AddDynNameServ, Miami)();
-extern VOID AROS_SLIB_ENTRY(AddDynDomain, Miami)();
-extern VOID AROS_SLIB_ENTRY(EndDynNameServ, Miami)();
-extern VOID AROS_SLIB_ENTRY(EndDynDomain, Miami)();
-extern VOID AROS_SLIB_ENTRY(Miami_sethostname, Miami)();
-extern VOID AROS_SLIB_ENTRY(Miami_QueryInterfaceTagList, Miami)();
-
-extern VOID AROS_SLIB_ENTRY(FindKernelVar, Miami)();
+void AROS_SLIB_ENTRY(MiamiSysCtl, Miami, 5)(void);
+void AROS_SLIB_ENTRY(SetSysLogPort, Miami, 6)(void);
+void AROS_SLIB_ENTRY(Miami_QueryInterfaceTagList, Miami, 7)(void);
+void AROS_SLIB_ENTRY(ClearDynNameServ, Miami, 9)(void);
+void AROS_SLIB_ENTRY(Miami_gethostent, Miami, 10)(void);
+void AROS_SLIB_ENTRY(MiamiDisallowDNS, Miami, 11)(void);
+void AROS_SLIB_ENTRY(Miami_endhostent, Miami, 12)(void);
+void AROS_SLIB_ENTRY(MiamiGetPid, Miami, 13)(void);
+void AROS_SLIB_ENTRY(Miami_getprotoent, Miami, 14)(void);
+void AROS_SLIB_ENTRY(Miami_endprotoent, Miami, 15)(void);
+void AROS_SLIB_ENTRY(MiamiPFAddHook, Miami, 16)(void);
+void AROS_SLIB_ENTRY(MiamiPFRemoveHook, Miami, 17)(void);
+void AROS_SLIB_ENTRY(MiamiGetHardwareLen, Miami, 18)(void);
+void AROS_SLIB_ENTRY(EndDynDomain, Miami, 19)(void);
+void AROS_SLIB_ENTRY(EndDynNameServ, Miami, 20)(void);
+void AROS_SLIB_ENTRY(AddDynNameServ, Miami, 21)(void);
+void AROS_SLIB_ENTRY(AddDynDomain, Miami, 22)(void);
+void AROS_SLIB_ENTRY(Miami_sethostname, Miami, 23)(void);
+void AROS_SLIB_ENTRY(ClearDynDomain, Miami, 24)(void);
+void AROS_SLIB_ENTRY(MiamiOpenSSL, Miami, 25)(void);
+void AROS_SLIB_ENTRY(MiamiCloseSSL, Miami, 26)(void);
+void AROS_SLIB_ENTRY(MiamiSetSocksConn, Miami, 33)(void);
+void AROS_SLIB_ENTRY(MiamiIsOnline, Miami, 35)(void);
+void AROS_SLIB_ENTRY(MiamiOnOffline, Miami, 36)(void);
+void AROS_SLIB_ENTRY(inet_ntop, Miami, 38)(void);
+void AROS_SLIB_ENTRY(Miami_inet_aton, Miami, 39)(void);
+void AROS_SLIB_ENTRY(inet_pton, Miami, 40)(void);
+void AROS_SLIB_ENTRY(gethostbyname2, Miami, 41)(void);
+void AROS_SLIB_ENTRY(gai_strerror, Miami, 42)(void);
+void AROS_SLIB_ENTRY(freeaddrinfo, Miami, 43)(void);
+void AROS_SLIB_ENTRY(getaddrinfo, Miami, 44)(void);
+void AROS_SLIB_ENTRY(getnameinfo, Miami, 45)(void);
+void AROS_SLIB_ENTRY(if_nametoindex, Miami, 46)(void);
+void AROS_SLIB_ENTRY(if_indextoname, Miami, 47)(void);
+void AROS_SLIB_ENTRY(if_nameindex, Miami, 48)(void);
+void AROS_SLIB_ENTRY(if_freenameindex, Miami, 49)(void);
+void AROS_SLIB_ENTRY(MiamiSupportsIPV6, Miami, 50)(void);
+void AROS_SLIB_ENTRY(MiamiGetResOptions, Miami, 51)(void);
+void AROS_SLIB_ENTRY(MiamiSetResOptions, Miami, 52)(void);
+void AROS_SLIB_ENTRY(sockatmark, Miami, 53)(void);
+void AROS_SLIB_ENTRY(MiamiSupportedCPUs, Miami, 54)(void);
+void AROS_SLIB_ENTRY(MiamiGetFdCallback, Miami, 55)(void);
+void AROS_SLIB_ENTRY(MiamiSetFdCallback, Miami, 56)(void);
+void AROS_SLIB_ENTRY(MiamiGetCredentials, Miami, 58)(void);
+void AROS_SLIB_ENTRY(FindKernelVar, Miami, 59)(void);
 
 f_void	Miami_UserFuncTable[] =
 {
@@ -115,134 +112,68 @@ f_void	Miami_UserFuncTable[] =
 	FUNCARRAY_BEGIN,
 	FUNCARRAY_32BIT_NATIVE,
 #endif
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Open() is never called */
-#endif
-	AROS_SLIB_ENTRY(Close, Miami),
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Expunge() is never called */
-#endif
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Reserved() is never called */
-#endif
-	AROS_SLIB_ENTRY(MiamiSysCtl, Miami),
-	AROS_SLIB_ENTRY(SetSysLogPort, Miami),
-	AROS_SLIB_ENTRY(Miami_QueryInterfaceTagList, Miami),
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Reserved2() is never called */
-#endif
-	AROS_SLIB_ENTRY(ClearDynNameServ, Miami),
-	AROS_SLIB_ENTRY(Miami_gethostent, Miami),
-	AROS_SLIB_ENTRY(MiamiDisallowDNS, Miami),
-	AROS_SLIB_ENTRY(Miami_endhostent, Miami),
-	AROS_SLIB_ENTRY(MiamiGetPid, Miami),
-	AROS_SLIB_ENTRY(Miami_getprotoent, Miami),
-	AROS_SLIB_ENTRY(Miami_endprotoent, Miami),
-	AROS_SLIB_ENTRY(MiamiPFAddHook, Miami),
-	AROS_SLIB_ENTRY(MiamiPFRemoveHook, Miami),
-	AROS_SLIB_ENTRY(MiamiGetHardwareLen, Miami),
-	AROS_SLIB_ENTRY(EndDynDomain, Miami),
-	AROS_SLIB_ENTRY(EndDynNameServ, Miami),
-	AROS_SLIB_ENTRY(AddDynNameServ, Miami),
-	AROS_SLIB_ENTRY(AddDynDomain, Miami),
-	AROS_SLIB_ENTRY(Miami_sethostname, Miami),
-	AROS_SLIB_ENTRY(ClearDynDomain, Miami),
-	AROS_SLIB_ENTRY(MiamiOpenSSL, Miami),
-	AROS_SLIB_ENTRY(MiamiCloseSSL, Miami),
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
-#endif
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
-#endif
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
-#endif
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
-#endif
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
-#endif
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
-#endif
-	AROS_SLIB_ENTRY(MiamiSetSocksConn, Miami),
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
-#endif
-	AROS_SLIB_ENTRY(MiamiIsOnline, Miami),
-	AROS_SLIB_ENTRY(MiamiOnOffline, Miami),
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
-#endif
-	AROS_SLIB_ENTRY(inet_ntop, Miami),
-	AROS_SLIB_ENTRY(Miami_inet_aton, Miami),
-	AROS_SLIB_ENTRY(inet_pton, Miami),
-	AROS_SLIB_ENTRY(gethostbyname2, Miami),
-	AROS_SLIB_ENTRY(gai_strerror, Miami),
-	AROS_SLIB_ENTRY(freeaddrinfo, Miami),
-	AROS_SLIB_ENTRY(getaddrinfo, Miami),
-	AROS_SLIB_ENTRY(getnameinfo, Miami),
-	AROS_SLIB_ENTRY(if_nametoindex, Miami),
-	AROS_SLIB_ENTRY(if_indextoname, Miami),
-	AROS_SLIB_ENTRY(if_nameindex, Miami),
-	AROS_SLIB_ENTRY(if_freenameindex, Miami),
-	AROS_SLIB_ENTRY(MiamiSupportsIPV6, Miami),
-	AROS_SLIB_ENTRY(MiamiGetResOptions, Miami),
-	AROS_SLIB_ENTRY(MiamiSetResOptions, Miami),
-	AROS_SLIB_ENTRY(sockatmark, Miami),
-	AROS_SLIB_ENTRY(MiamiSupportedCPUs, Miami),
-	AROS_SLIB_ENTRY(MiamiGetFdCallback, Miami),
-	AROS_SLIB_ENTRY(MiamiSetFdCallback, Miami),
-/* TODO: NicJA - LIB_Null?? */
-#if defined(__AROS__)
-   NULL,
-#else
-  AROS_SLIB_ENTRY(Null, LIB),	     /* ELL_Close() is never called */
-#endif
-	AROS_SLIB_ENTRY(MiamiGetCredentials, Miami),
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Open() is never called */
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Expunge() is never called */
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Reserved() is never called */
+	AROS_SLIB_ENTRY(MiamiSysCtl, Miami, 5),
+	AROS_SLIB_ENTRY(SetSysLogPort, Miami, 6),
+	AROS_SLIB_ENTRY(Miami_QueryInterfaceTagList, Miami, 7),
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Reserved2() is never called */
+	AROS_SLIB_ENTRY(ClearDynNameServ, Miami, 9),
+	AROS_SLIB_ENTRY(Miami_gethostent, Miami, 10),
+	AROS_SLIB_ENTRY(MiamiDisallowDNS, Miami, 11),
+	AROS_SLIB_ENTRY(Miami_endhostent, Miami, 12),
+	AROS_SLIB_ENTRY(MiamiGetPid, Miami, 13),
+	AROS_SLIB_ENTRY(Miami_getprotoent, Miami, 14),
+	AROS_SLIB_ENTRY(Miami_endprotoent, Miami, 15),
+	AROS_SLIB_ENTRY(MiamiPFAddHook, Miami, 16),
+	AROS_SLIB_ENTRY(MiamiPFRemoveHook, Miami, 17),
+	AROS_SLIB_ENTRY(MiamiGetHardwareLen, Miami, 18),
+	AROS_SLIB_ENTRY(EndDynDomain, Miami, 19),
+	AROS_SLIB_ENTRY(EndDynNameServ, Miami, 20),
+	AROS_SLIB_ENTRY(AddDynNameServ, Miami, 21),
+	AROS_SLIB_ENTRY(AddDynDomain, Miami, 22),
+	AROS_SLIB_ENTRY(Miami_sethostname, Miami, 23),
+	AROS_SLIB_ENTRY(ClearDynDomain, Miami, 24),
+	AROS_SLIB_ENTRY(MiamiOpenSSL, Miami, 25),
+	AROS_SLIB_ENTRY(MiamiCloseSSL, Miami, 26),
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Close() is never called */
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Close() is never called */
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Close() is never called */
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Close() is never called */
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Close() is never called */
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Close() is never called */
+	AROS_SLIB_ENTRY(MiamiSetSocksConn, Miami, 33),
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Close() is never called */
+	AROS_SLIB_ENTRY(MiamiIsOnline, Miami, 35),
+	AROS_SLIB_ENTRY(MiamiOnOffline, Miami, 36),
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Close() is never called */
+	AROS_SLIB_ENTRY(inet_ntop, Miami, 38),
+	AROS_SLIB_ENTRY(Miami_inet_aton, Miami, 39),
+	AROS_SLIB_ENTRY(inet_pton, Miami, 40),
+	AROS_SLIB_ENTRY(gethostbyname2, Miami, 41),
+	AROS_SLIB_ENTRY(gai_strerror, Miami, 42),
+	AROS_SLIB_ENTRY(freeaddrinfo, Miami, 43),
+	AROS_SLIB_ENTRY(getaddrinfo, Miami, 44),
+	AROS_SLIB_ENTRY(getnameinfo, Miami, 45),
+	AROS_SLIB_ENTRY(if_nametoindex, Miami, 46),
+	AROS_SLIB_ENTRY(if_indextoname, Miami, 47),
+	AROS_SLIB_ENTRY(if_nameindex, Miami, 48),
+	AROS_SLIB_ENTRY(if_freenameindex, Miami, 49),
+	AROS_SLIB_ENTRY(MiamiSupportsIPV6, Miami, 50),
+	AROS_SLIB_ENTRY(MiamiGetResOptions, Miami, 51),
+	AROS_SLIB_ENTRY(MiamiSetResOptions, Miami, 52),
+	AROS_SLIB_ENTRY(sockatmark, Miami, 53),
+	AROS_SLIB_ENTRY(MiamiSupportedCPUs, Miami, 54),
+	AROS_SLIB_ENTRY(MiamiGetFdCallback, Miami, 55),
+	AROS_SLIB_ENTRY(MiamiSetFdCallback, Miami, 56),
+	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Close() is never called */
+	AROS_SLIB_ENTRY(MiamiGetCredentials, Miami, 58),
 #ifdef __MORPHOS__
 	-1,
 	FUNCARRAY_32BIT_SYSTEMV,
 #endif
-	AROS_SLIB_ENTRY(FindKernelVar, Miami),
+	AROS_SLIB_ENTRY(FindKernelVar, Miami, 59),
 #ifdef __MORPHOS__
 	(f_void)-1,
 	FUNCARRAY_END

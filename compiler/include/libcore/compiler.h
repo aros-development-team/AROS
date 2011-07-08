@@ -235,7 +235,7 @@ Therefore ASM must be used. */
 #   define AROS_UFP2	AROS_UFH2
 #   define AROS_UFP3	AROS_UFH3
 
-#   define AROS_SLIB_ENTRY(n,s)     n
+#   define AROS_SLIB_ENTRY(n,s,o)     n
 
 #endif
 

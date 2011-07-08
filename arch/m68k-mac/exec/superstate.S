@@ -48,9 +48,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(SuperState,Exec)
+	.globl	AROS_SLIB_ENTRY(SuperState,Exec,25)
 
-AROS_SLIB_ENTRY(SuperState,Exec):
+AROS_SLIB_ENTRY(SuperState,Exec,25):
 #if DoRegisterCalls
 	move.l	$4,%a6         // Get SysBase
 #endif

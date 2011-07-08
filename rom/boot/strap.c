@@ -44,7 +44,7 @@ int __startup boot_entry()
 }
 
 static const UBYTE boot_end;
-int AROS_SLIB_ENTRY(init,boot)();
+static int boot_init();
 
 const struct Resident boot_resident =
 {
@@ -658,7 +658,7 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
         Enqueue(&ExpansionBase->MountList, &bn->bn_Node);
 }
 
-AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
+static AROS_UFH3(int, boot_init,
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(ULONG, seglist, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6)

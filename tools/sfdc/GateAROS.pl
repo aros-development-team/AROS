@@ -33,7 +33,8 @@ BEGIN {
 	if ($prototype->{type} eq 'cfunction') {
 	    print "#define $gateprefix$prototype->{funcname} " .
 		"AROS_SLIB_ENTRY(" .
-		"$gateprefix$prototype->{funcname},$sfd->{Basename})\n\n";
+		"$gateprefix$prototype->{funcname},$sfd->{Basename},".
+		($prototype->{bias}/6).")\n\n";
 	}
 
 	$self->SUPER::function (@_);
@@ -120,7 +121,7 @@ BEGIN {
 	    print ";\n";
 	    print "#define $gateprefix$prototype->{funcname} " .
 		"AROS_SLIB_ENTRY(" .
-		"$gateprefix$prototype->{funcname},$sfd->{Basename})\n";
+		"$gateprefix$prototype->{funcname},$sfd->{Basename},".($prototype->{bias}/6).")\n";
 	}
 	else {
 	    print "\n";

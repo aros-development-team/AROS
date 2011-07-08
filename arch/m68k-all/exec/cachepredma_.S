@@ -54,8 +54,8 @@
 ******************************************************************************/
 
 /*
-   XDEF AROS_SLIB_ENTRY(CachePreDMA,Exec)   	; for 68000/10/20/30
-   XDEF AROS_SLIB_ENTRY(CachePreDMA_40,Exec)	; for 68040+
+   XDEF AROS_SLIB_ENTRY(CachePreDMA,Exec,127)   	; for 68000/10/20/30
+   XDEF AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127)	; for 68040+
 */
 
 	#include "aros/m68k/asm.h"
@@ -64,9 +64,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(CachePreDMA_00,Exec)
-	.type	AROS_SLIB_ENTRY(CachePreDMA_00,Exec),@function
-AROS_SLIB_ENTRY(CachePreDMA_00,Exec):
+	.globl	AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127)
+	.type	AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127),@function
+AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127):
 #ifndef DoRegisterCalls
     move.l  %sp(4), %a0
 #endif
@@ -75,9 +75,9 @@ AROS_SLIB_ENTRY(CachePreDMA_00,Exec):
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(CachePreDMA_40,Exec)
-	.type	AROS_SLIB_ENTRY(CachePreDMA_40,Exec),@function
-AROS_SLIB_ENTRY(CachePreDMA_40,Exec):
+	.globl	AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127)
+	.type	AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127),@function
+AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127):
 #ifndef DoRegisterCalls
     move.l  %sp(4), %a0
 #endif

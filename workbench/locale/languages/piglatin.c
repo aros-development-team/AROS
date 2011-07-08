@@ -58,13 +58,13 @@ extern const UBYTE name[];
 extern const UBYTE version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
-extern struct Language *AROS_SLIB_ENTRY(init,language)();
+extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
 AROS_LD1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
     struct Language *, language, 1, language);
 AROS_LD0(BPTR, close, struct Language *, language, 2, language);
 AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
-AROS_LD0I(int, null, struct Language *, language, 4, language);
+AROS_LD0I(int, null, struct Language *, language, 0, language);
 AROS_LD0(ULONG, mask, struct Language *, language, 5, language);
 extern const char end;
 
@@ -97,12 +97,12 @@ const APTR inittabl[4] =
     (APTR)sizeof(struct Language),
     (APTR)functable,
     (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,language)
+    &AROS_SLIB_ENTRY(init,language,0)
 };
 
 struct ExecBase *mySysBase;
 
-AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language),
+AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_UFHA(struct Language *, language, D0),
     AROS_UFHA(BPTR,             segList, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
@@ -130,7 +130,7 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language),
 	Although it is unlikely, you would return NULL if you for some
 	unknown reason couldn't open.
     */
-    bug("GetLangStr: Loaded at address %p\n", &AROS_SLIB_ENTRY(getlangstring,language));
+    bug("GetLangStr: Loaded at address %p\n", &AROS_SLIB_ENTRY(getlangstring,language,9));
     return language;
 
     AROS_USERFUNC_EXIT
@@ -192,7 +192,7 @@ AROS_LH0(BPTR, expunge, struct Language *, language, 3, language)
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(int, null, struct Language *, language, 4, language)
+AROS_LH0I(int, null, struct Language *, language, 0, language)
 {
     AROS_LIBFUNC_INIT
 
@@ -252,19 +252,19 @@ AROS_LH1(STRPTR, getlangstring,
 
 void *const functable[] =
 {
-    &AROS_SLIB_ENTRY(open,language),
-    &AROS_SLIB_ENTRY(close,language),
-    &AROS_SLIB_ENTRY(expunge,language),
-    &AROS_SLIB_ENTRY(null,language),
-    &AROS_SLIB_ENTRY(mask,language),
+    &AROS_SLIB_ENTRY(open,language,1),
+    &AROS_SLIB_ENTRY(close,language,2),
+    &AROS_SLIB_ENTRY(expunge,language,3),
+    &AROS_SLIB_ENTRY(null,language,0),
+    &AROS_SLIB_ENTRY(mask,language,5),
 
     /* Note, shorter function table, as only getlangstring is used */
 
     /* 0 - 3 */
-    &AROS_SLIB_ENTRY(null, language),
-    &AROS_SLIB_ENTRY(null, language),
-    &AROS_SLIB_ENTRY(null, language),    
-    &AROS_SLIB_ENTRY(getlangstring, language),
+    &AROS_SLIB_ENTRY(null, language, 0),
+    &AROS_SLIB_ENTRY(null, language, 0),
+    &AROS_SLIB_ENTRY(null, language, 0),    
+    &AROS_SLIB_ENTRY(getlangstring, language, 9),
     (void *)-1
 };
 

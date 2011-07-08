@@ -126,13 +126,13 @@ extern const UBYTE version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
 extern const ULONG datatable;
-extern struct Language *AROS_SLIB_ENTRY(init,language)();
+extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
 AROS_LD1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
     struct Language *, language, 1, language);
 AROS_LD0(BPTR, close, struct Language *, language, 2, language);
 AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
-AROS_LD0I(int, null, struct Language *, language, 4, language);
+AROS_LD0I(int, null, struct Language *, language, 0, language);
 AROS_LD0(ULONG, mask, struct Language *, language, 5, language);
 extern const char end;
 
@@ -165,10 +165,10 @@ const APTR inittabl[4] =
     (APTR)sizeof(struct Language),
     (APTR)functable,
     (APTR)datatable,
-    &AROS_SLIB_ENTRY(init,language)
+    &AROS_SLIB_ENTRY(init,language,0)
 };
 
-AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language),
+AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_UFHA(struct Language *, language, D0),
     AROS_UFHA(BPTR,             segList, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
@@ -610,11 +610,11 @@ AROS_LH4(LONG, strcompare,
 
 void *const functable[] =
 {
-    &AROS_SLIB_ENTRY(open,language),
-    &AROS_SLIB_ENTRY(close,language),
-    &AROS_SLIB_ENTRY(expunge,language),
-    &AROS_SLIB_ENTRY(null,language),
-    &AROS_SLIB_ENTRY(mask,language),
+    &AROS_SLIB_ENTRY(open,language,1),
+    &AROS_SLIB_ENTRY(close,language,2),
+    &AROS_SLIB_ENTRY(expunge,language,3),
+    &AROS_SLIB_ENTRY(null,language,0),
+    &AROS_SLIB_ENTRY(mask,language,5),
 
     /*
 	CHANGES:
@@ -630,31 +630,31 @@ void *const functable[] =
     */
 
     /* 0 - 3 */
-    &AROS_SLIB_ENTRY(convtolower, language),
-    &AROS_SLIB_ENTRY(convtoupper, language),
-    &AROS_SLIB_ENTRY(null, language),
-    &AROS_SLIB_ENTRY(getlangstring, language),
+    &AROS_SLIB_ENTRY(convtolower, language, 6),
+    &AROS_SLIB_ENTRY(convtoupper, language, 7),
+    &AROS_SLIB_ENTRY(null, language, 0),
+    &AROS_SLIB_ENTRY(getlangstring, language, 9),
 
     /* 4 - 7 */
-    &AROS_SLIB_ENTRY(isalnum, language),
-    &AROS_SLIB_ENTRY(isalpha, language),
-    &AROS_SLIB_ENTRY(iscntrl, language),
-    &AROS_SLIB_ENTRY(isdigit, language),
+    &AROS_SLIB_ENTRY(isalnum, language, 10),
+    &AROS_SLIB_ENTRY(isalpha, language, 11),
+    &AROS_SLIB_ENTRY(iscntrl, language, 12),
+    &AROS_SLIB_ENTRY(isdigit, language, 13),
 
     /* 8 - 11 */
-    &AROS_SLIB_ENTRY(isgraph, language),
-    &AROS_SLIB_ENTRY(islower, language),
-    &AROS_SLIB_ENTRY(isprint, language),
-    &AROS_SLIB_ENTRY(isspace, language),
+    &AROS_SLIB_ENTRY(isgraph, language, 14),
+    &AROS_SLIB_ENTRY(islower, language, 15),
+    &AROS_SLIB_ENTRY(isprint, language, 16),
+    &AROS_SLIB_ENTRY(isspace, language, 17),
 
     /* 12 - 15 */
-    &AROS_SLIB_ENTRY(ispunct, language),
-    &AROS_SLIB_ENTRY(isupper, language),
-    &AROS_SLIB_ENTRY(isxdigit, language),
-    &AROS_SLIB_ENTRY(stringconv, language),
+    &AROS_SLIB_ENTRY(ispunct, language, 18),
+    &AROS_SLIB_ENTRY(isupper, language, 19),
+    &AROS_SLIB_ENTRY(isxdigit, language, 20),
+    &AROS_SLIB_ENTRY(stringconv, language, 21),
 
     /* 16 */
-    &AROS_SLIB_ENTRY(stringcomp, language),
+    &AROS_SLIB_ENTRY(stringcomp, language, 22),
 
     (void *)-1
 };

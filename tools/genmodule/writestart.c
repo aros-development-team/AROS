@@ -1277,29 +1277,29 @@ writefunctable(FILE *out,
 	if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
 	{
 	    fprintf(out,
-		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(OpenLib),%s),\n"
-		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(CloseLib),%s),\n"
-		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(ExpungeLib),%s),\n"
-		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(ExtFuncLib),%s),\n",
+		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(OpenLib),%s,1),\n"
+		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(CloseLib),%s,2),\n"
+		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(ExpungeLib),%s,3),\n"
+		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(ExtFuncLib),%s,4),\n",
 		    cfg->basename, cfg->basename, cfg->basename, cfg->basename
 	    );
 	    lvo += 4;
 	}
         if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
 	{
-	    fprintf(out,
-		    "    &AROS_SLIB_ENTRY(MCC_Query,%s),\n",
-		    cfg->basename
-	    );
 	    lvo++;
+	    fprintf(out,
+		    "    &AROS_SLIB_ENTRY(MCC_Query,%s,%d),\n",
+		    cfg->basename, lvo
+	    );
 	}
         else if (cfg->modtype == DATATYPE)
 	{
-	    fprintf(out,
-		    "    &AROS_SLIB_ENTRY(ObtainEngine,%s),\n",
-		    cfg->basename
-	    );
 	    lvo++;
+	    fprintf(out,
+		    "    &AROS_SLIB_ENTRY(ObtainEngine,%s,%d),\n",
+		   cfg->basename, lvo
+	    );
 	}
     }
     else /* NORESIDENT */
@@ -1355,18 +1355,18 @@ writefunctable(FILE *out,
 		    "\n"
 		    "const APTR GM_UNIQUENAME(FuncTable)[]=\n"
 		    "{\n"
-		    "    &AROS_SLIB_ENTRY(%s,%s),\n"
-		    "    &AROS_SLIB_ENTRY(%s,%s),\n",
-		    funclistit->internalname, cfg->basename,
-		    funclistit2->internalname, cfg->basename
+		    "    &AROS_SLIB_ENTRY(%s,%s,%d),\n"
+		    "    &AROS_SLIB_ENTRY(%s,%s,%d),\n",
+		    funclistit->internalname, cfg->basename, lvo+1,
+		    funclistit2->internalname, cfg->basename, lvo+2
 	    );
 	    lvo += 2;
 	    funclistit = funclistit2->next;
 
 	    if (funclistit->lvo == 3)
 	    {
-		fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n",
-			funclistit->internalname, cfg->basename
+		fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s,%d),\n",
+			funclistit->internalname, cfg->basename, lvo+1
 		);
 		funclistit = funclistit->next;
 	    }
@@ -1376,8 +1376,8 @@ writefunctable(FILE *out,
 	    
 	    if (funclistit->lvo == 4)
 	    {
-		fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n",
-			funclistit->internalname, cfg->basename
+		fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s,%d),\n",
+			funclistit->internalname, cfg->basename, lvo+1
 		);
 		funclistit = funclistit->next;
 	    }
@@ -1408,7 +1408,7 @@ writefunctable(FILE *out,
 	    
 	case REGISTER:
 	case REGISTERMACRO:
-	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->internalname, cfg->basename);
+	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s,%d),\n", funclistit->internalname, cfg->basename, lvo);
 	    break;
 	    
 	default:

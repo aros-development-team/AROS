@@ -78,7 +78,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
                     AROS_UFCA(ULONG, 7, D0),
                     AROS_UFCA(ULONG, SC_ASCII, D1));
     #else
-    void *fn = AROS_SLIB_ENTRY(strcompare, english);
+    void *fn = AROS_SLIB_ENTRY(strcompare, english, 22);
     ret = AROS_CALL4(ULONG, fn,
                      AROS_LCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
                      AROS_LCA(STRPTR, lName, A2),

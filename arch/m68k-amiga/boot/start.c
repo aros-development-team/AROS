@@ -39,7 +39,7 @@ extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 	
 /* Create a sign extending call stub:
  * foo:
- *   jsr AROS_SLIB_ENTRY(funcname, libname)
+ *   jsr AROS_SLIB_ENTRY(funcname, libname, funcid)
  *     0x4eb9 .... ....
  *   ext.w %d0	// EXT_BYTE only
  *     0x4880	
@@ -52,7 +52,7 @@ extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 	do { \
 		void libname##_##funcname##_Wrapper(void) \
 		{ asm volatile ( \
-			"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname)) "\n" \
+			"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
 			"ext.w %d0\n" \
 			"ext.l %d0\n" \
 			"rts\n"); } \
@@ -63,7 +63,7 @@ extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 	do { \
 		void libname##_##funcname##_Wrapper(void) \
 		{ asm volatile ( \
-			"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname)) "\n" \
+			"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
 			"ext.l %d0\n" \
 			"rts\n"); } \
 		/* Insert into the library's jumptable */ \
@@ -74,7 +74,7 @@ extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
  * foo:
  *   movem.l %d0-%d1/%a0-%a1,%sp@-
  *     0x48e7 0xc0c0
- *   jsr AROS_SLIB_ENTRY(funcname, libname)
+ *   jsr AROS_SLIB_ENTRY(funcname, libname, funcid)
  *     0x4eb9 .... ....
  *   movem.l %sp@+,%d0-%d1/%d0-%a1
  *     0x4cdf 0x0303
@@ -86,7 +86,7 @@ extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 		void libname##_##funcname##_Wrapper(void) \
 	        { asm volatile ( \
 	        	"movem.l %d0-%d1/%a0-%a1,%sp@-\n" \
-	        	"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname)) "\n" \
+	        	"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
 	        	"movem.l %sp@+,%d0-%d1/%a0-%a1\n" \
 	        	"rts\n" ); } \
 		/* Insert into the library's jumptable */ \

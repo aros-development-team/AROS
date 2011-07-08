@@ -15,12 +15,12 @@ static const STRPTR GM_UNIQUENAME(libname) = MOD_NAME_STRING;
 static
 const APTR GM_UNIQUENAME(DevFuncTable)[] =
 {
-    &AROS_SLIB_ENTRY(devOpen, usbscsidev),
-    &AROS_SLIB_ENTRY(devClose, usbscsidev),
-    &AROS_SLIB_ENTRY(devExpunge, usbscsidev),
-    &AROS_SLIB_ENTRY(devReserved, usbscsidev),
-    &AROS_SLIB_ENTRY(devBeginIO, usbscsidev),
-    &AROS_SLIB_ENTRY(devAbortIO, usbscsidev),
+    &AROS_SLIB_ENTRY(devOpen, usbscsidev, 1),
+    &AROS_SLIB_ENTRY(devClose, usbscsidev, 2),
+    &AROS_SLIB_ENTRY(devExpunge, usbscsidev, 3),
+    &AROS_SLIB_ENTRY(devReserved, usbscsidev, 4),
+    &AROS_SLIB_ENTRY(devBeginIO, usbscsidev, 5),
+    &AROS_SLIB_ENTRY(devAbortIO, usbscsidev, 6),
     (APTR) -1,
 };
 

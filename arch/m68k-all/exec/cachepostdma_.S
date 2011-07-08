@@ -48,9 +48,9 @@
 ******************************************************************************/
 
 /*
-   XDEF AROS_SLIB_ENTRY(CachePostDMA_00,Exec)  	; for 68000/10/20
-   XDEF AROS_SLIB_ENTRY(CachePostDMA_30,Exec)	; for 68030+
-   XDEF AROS_SLIB_ENTRY(CachePostDMA_40,Exec)	; for 68040/68060
+   XDEF AROS_SLIB_ENTRY(CachePostDMA_00,Exec,128)  	; for 68000/10/20
+   XDEF AROS_SLIB_ENTRY(CachePostDMA_30,Exec,128)	; for 68030+
+   XDEF AROS_SLIB_ENTRY(CachePostDMA_40,Exec,128)	; for 68040/68060
 */
 
 	#include "aros/m68k/asm.h"
@@ -59,16 +59,16 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(CachePostDMA_00,Exec)
-	.type	AROS_SLIB_ENTRY(CachePostDMA_00,Exec),@function
-AROS_SLIB_ENTRY(CachePostDMA_00,Exec):
+	.globl	AROS_SLIB_ENTRY(CachePostDMA_00,Exec,128)
+	.type	AROS_SLIB_ENTRY(CachePostDMA_00,Exec,128),@function
+AROS_SLIB_ENTRY(CachePostDMA_00,Exec,128):
 	rts
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(CachePostDMA_30,Exec)
-	.type	AROS_SLIB_ENTRY(CachePostDMA_30,Exec),@function
-AROS_SLIB_ENTRY(CachePostDMA_30,Exec):
+	.globl	AROS_SLIB_ENTRY(CachePostDMA_30,Exec,128)
+	.type	AROS_SLIB_ENTRY(CachePostDMA_30,Exec,128),@function
+AROS_SLIB_ENTRY(CachePostDMA_30,Exec,128):
 	btst.l	#DMAB_NoModify,%d0	/* Has DMA modified data in mem? */
 	bne.s	cpd_30_end		/* nope, just exit */
 	move.l	%a5,%sp@-			/* save a5 */
@@ -90,9 +90,9 @@ cachepostdmasup_30:
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(CachePostDMA_40,Exec)
-	.type	AROS_SLIB_ENTRY(CachePostDMA_40,Exec),@function
-AROS_SLIB_ENTRY(CachePostDMA_40,Exec):
+	.globl	AROS_SLIB_ENTRY(CachePostDMA_40,Exec,128)
+	.type	AROS_SLIB_ENTRY(CachePostDMA_40,Exec,128),@function
+AROS_SLIB_ENTRY(CachePostDMA_40,Exec,128):
 	btst.l	#DMAB_NoModify,%d0	/* Has DMA modified data in mem? */
 	bne.s	cpd_40_end		/* nope, just exit */
 	move.l	%a5,%sp@-			/* save a5 */

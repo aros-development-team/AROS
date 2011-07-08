@@ -44,9 +44,9 @@
 #include <aros/config.h>
 
 	.text
-	.globl  AROS_SLIB_ENTRY(CopyMem_SSE,Exec)
-	_FUNCTION(AROS_SLIB_ENTRY(CopyMem_SSE,Exec))
-AROS_SLIB_ENTRY(CopyMem_SSE,Exec):
+	.globl  AROS_SLIB_ENTRY(CopyMem_SSE,Exec,104)
+	_FUNCTION(AROS_SLIB_ENTRY(CopyMem_SSE,Exec,104))
+AROS_SLIB_ENTRY(CopyMem_SSE,Exec,104):
 	movl	12(%esp),%eax
 	cmpl	$4096,%eax
 	jl	Exec_CopyMem	/* non-SSE version is faster for small copies */

@@ -10,8 +10,8 @@
 
     .text
     .balign 4
-    .globl  AROS_SLIB_ENTRY(SPCmp,Mathffp)
-AROS_SLIB_ENTRY(SPCmp,Mathffp):
+    .globl  AROS_SLIB_ENTRY(SPCmp,Mathffp,7)
+AROS_SLIB_ENTRY(SPCmp,Mathffp,7):
 
 	movem.l %d2,-(%sp)
 	move.l	%d0,%d2

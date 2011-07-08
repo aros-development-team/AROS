@@ -65,9 +65,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(Enable,Exec)
+	.globl	AROS_SLIB_ENTRY(Enable,Exec,21)
 
-AROS_SLIB_ENTRY(Enable,Exec):
+AROS_SLIB_ENTRY(Enable,Exec,21):
 	/* As we said above: ALL registers must be preserved! */
 	subq.b	#1,%a6@(IDNestCnt)
 	bge.s	0f

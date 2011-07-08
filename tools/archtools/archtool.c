@@ -639,42 +639,42 @@ int i;
   fprintf( out, "#include LC_LIBDEFS_FILE\n" );
   if(lc->option & o_nolibheader)
   {
-    fprintf( out, "extern void AROS_SLIB_ENTRY(open,BASENAME) (void);\n" );
-    fprintf( out, "extern void AROS_SLIB_ENTRY(close,BASENAME) (void);\n" );
-    fprintf( out, "extern void AROS_SLIB_ENTRY(expunge,BASENAME) (void);\n" );
-    fprintf( out, "extern void AROS_SLIB_ENTRY(null,BASENAME) (void);\n" );
+    fprintf( out, "extern void AROS_SLIB_ENTRY(open,BASENAME,1) (void);\n" );
+    fprintf( out, "extern void AROS_SLIB_ENTRY(close,BASENAME,2) (void);\n" );
+    fprintf( out, "extern void AROS_SLIB_ENTRY(expunge,BASENAME,3) (void);\n" );
+    fprintf( out, "extern void AROS_SLIB_ENTRY(null,BASENAME,0) (void);\n" );
   }
   else
   {
-    fprintf( out, "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader) (void);\n" );
-    fprintf( out, "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader) (void);\n" );
-    fprintf( out, "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader) (void);\n" );
-    fprintf( out, "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader) (void);\n" );
+    fprintf( out, "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader,1) (void);\n" );
+    fprintf( out, "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader,2) (void);\n" );
+    fprintf( out, "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader,3) (void);\n" );
+    fprintf( out, "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader,4) (void);\n" );
   }
   for( i = 0 ; i < number-4 ; i++ )
   {
     if(names[i])
-      fprintf( out, "extern void AROS_SLIB_ENTRY(%s,BASENAME) (void);\n", names[i] );
+      fprintf( out, "extern void AROS_SLIB_ENTRY(%s,BASENAME,%d) (void);\n", names[i], i+5 );
   }
   fprintf( out, "\nvoid *const LIBFUNCTABLE[]=\n{\n" );
   if(lc->option & o_nolibheader)
   {
-    fprintf( out, "    AROS_SLIB_ENTRY(open, BASENAME),\n" );
-    fprintf( out, "    AROS_SLIB_ENTRY(close, BASENAME),\n" );
-    fprintf( out, "    AROS_SLIB_ENTRY(expunge, BASENAME),\n" );
-    fprintf( out, "    AROS_SLIB_ENTRY(null, BASENAME),\n" );
+    fprintf( out, "    AROS_SLIB_ENTRY(open, BASENAME, 1),\n" );
+    fprintf( out, "    AROS_SLIB_ENTRY(close, BASENAME, 2),\n" );
+    fprintf( out, "    AROS_SLIB_ENTRY(expunge, BASENAME, 3),\n" );
+    fprintf( out, "    AROS_SLIB_ENTRY(null, BASENAME, 0),\n" );
   }
   else
   {
-    fprintf( out, "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),\n" );
-    fprintf( out, "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),\n" );
-    fprintf( out, "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),\n" );
-    fprintf( out, "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),\n" );
+    fprintf( out, "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader,1),\n" );
+    fprintf( out, "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader,2),\n" );
+    fprintf( out, "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader,3),\n" );
+    fprintf( out, "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader,4),\n" );
   }
   for( i = 0 ; i < number-4 ; i++ )
   {
     if(names[i])
-      fprintf( out, "    AROS_SLIB_ENTRY(%s,BASENAME), /* %d */\n", names[i], i+5 );
+      fprintf( out, "    AROS_SLIB_ENTRY(%s,BASENAME,%d), /* %d */\n", names[i], i+5, i+5 );
     else
       fprintf( out, "    NULL, /* %d */\n", i+5 );
   }

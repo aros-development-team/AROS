@@ -638,7 +638,7 @@ typedef unsigned long (*ULONG_FUNC)();
     t AROS_LHQ_ ## s ## _ ## n ## _ ## o(\
     __AROS_LHAQUAD_GENMOD(a1))
 #define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
-    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
     __AROS_LHAQUAD(a1),\
     __AROS_LHAQUAD(a2),\
     __AROS_LH_BASE(bt,bn))

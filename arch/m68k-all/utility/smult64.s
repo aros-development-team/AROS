@@ -22,17 +22,17 @@
     .text
     .balign 4
 
-    .globl  AROS_SLIB_ENTRY(SMult64,Utility)
-    .globl  AROS_SLIB_ENTRY(SMult64_020,Utility)
+    .globl  AROS_SLIB_ENTRY(SMult64,Utility,33)
+    .globl  AROS_SLIB_ENTRY(SMult64_020,Utility,33)
 
     /* Required by SMult64() */
-    .globl  AROS_SLIB_ENTRY(UMult64,Utility)
+    .globl  AROS_SLIB_ENTRY(UMult64,Utility,34)
 
-    .type   AROS_SLIB_ENTRY(SMult64,Utility),@function
-    .type   AROS_SLIB_ENTRY(SMult64_020,Utility),@function
+    .type   AROS_SLIB_ENTRY(SMult64,Utility,33),@function
+    .type   AROS_SLIB_ENTRY(SMult64_020,Utility,33),@function
 
 
-AROS_SLIB_ENTRY(SMult64_020,Utility):
+AROS_SLIB_ENTRY(SMult64_020,Utility,33):
     muls.l  %d0,%d0:%d1
     rts
 
@@ -47,7 +47,7 @@ AROS_SLIB_ENTRY(SMult64_020,Utility):
 
 /* Have to change the sign... */
     .balign 4
-AROS_SLIB_ENTRY(SMult64,Utility):
+AROS_SLIB_ENTRY(SMult64,Utility,33):
     move.l  %d2,-(%sp)
     moveq   #0,%d2
     tst.l   %d0
@@ -62,7 +62,7 @@ AROS_SLIB_ENTRY(SMult64,Utility):
 
     /* Ok, so if d2 != 0, then the sign was changed */
 .Lispos2:
-    jsr     AROS_SLIB_ENTRY(UMult64,Utility)
+    jsr     AROS_SLIB_ENTRY(UMult64,Utility,34)
     tst.l   %d0
     beq.s   .Lispos
     moveq   #0,%d2

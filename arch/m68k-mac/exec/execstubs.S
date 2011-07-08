@@ -18,8 +18,8 @@
 
 	.text
 	.balign 16
-	.globl	AROS_SLIB_ENTRY(ObtainSemaphore,Exec)
-AROS_SLIB_ENTRY(ObtainSemaphore,Exec):
+	.globl	AROS_SLIB_ENTRY(ObtainSemaphore,Exec,94)
+AROS_SLIB_ENTRY(ObtainSemaphore,Exec,94):
 	movem.l	%d0-%d1/%a0-%a1,-(%sp)
 	move.l	%a6,-(%sp)
 	move.l	%a0,-(%sp)
@@ -32,8 +32,8 @@ AROS_SLIB_ENTRY(ObtainSemaphore,Exec):
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
-	.globl	AROS_SLIB_ENTRY(ReleaseSemaphore,Exec)
-AROS_SLIB_ENTRY(ReleaseSemaphore,Exec):
+	.globl	AROS_SLIB_ENTRY(ReleaseSemaphore,Exec,95)
+AROS_SLIB_ENTRY(ReleaseSemaphore,Exec,95):
 	movem.l	%d0-%d1/%a0-%a1,-(%sp)
 	move.l	%a6,-(%sp)
 	move.l	%a0,-(%sp)
@@ -46,8 +46,8 @@ AROS_SLIB_ENTRY(ReleaseSemaphore,Exec):
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
-	.globl	AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec)
-AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec):
+	.globl	AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec,113)
+AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec,113):
 	movem.l	%d0-%d1/%a0-%a1,-(%sp)
 	move.l	%a6,-(%sp)
 	move.l	%a0,-(%sp)
@@ -60,9 +60,9 @@ AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec):
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
-        .globl	AROS_SLIB_ENTRY(Disable,Exec)
+        .globl	AROS_SLIB_ENTRY(Disable,Exec,20)
      
-AROS_SLIB_ENTRY(Disable,Exec):
+AROS_SLIB_ENTRY(Disable,Exec,20):
 	movem.l	%d0-%d1/%a0-%a1,-(%sp)
 	move.l	%a6,-(%sp)
 #ifdef __PIC__
@@ -74,8 +74,8 @@ AROS_SLIB_ENTRY(Disable,Exec):
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
-	.globl	AROS_SLIB_ENTRY(Enable,Exec)
-AROS_SLIB_ENTRY(Enable,Exec):
+	.globl	AROS_SLIB_ENTRY(Enable,Exec,21)
+AROS_SLIB_ENTRY(Enable,Exec,21):
 	movem.l	%d0-%d1/%a0-%a1,-(%sp)
 	move.l	%a6,-(%sp)
 #ifdef __PIC__
@@ -87,8 +87,8 @@ AROS_SLIB_ENTRY(Enable,Exec):
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
-	.globl	AROS_SLIB_ENTRY(Forbid,Exec)
-AROS_SLIB_ENTRY(Forbid,Exec):
+	.globl	AROS_SLIB_ENTRY(Forbid,Exec,22)
+AROS_SLIB_ENTRY(Forbid,Exec,22):
 	movem.l %d0-%d1/%a0-%a1,-(%sp)
 	move.l	%a6,-(%sp)
 #ifdef __PIC__
@@ -100,8 +100,8 @@ AROS_SLIB_ENTRY(Forbid,Exec):
 	movem.l (%sp)+,%d0-%d1/%a0-%a1
 	rts
 
-	.globl	AROS_SLIB_ENTRY(Permit,Exec)
-AROS_SLIB_ENTRY(Permit,Exec):
+	.globl	AROS_SLIB_ENTRY(Permit,Exec,23)
+AROS_SLIB_ENTRY(Permit,Exec,23):
 	movem.l %d0-%d1/%a0-%a1,-(%sp)
 	move.l	%a6,-(%sp)
 #ifdef __PIC__

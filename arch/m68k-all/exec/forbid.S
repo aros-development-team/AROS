@@ -60,8 +60,8 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(Forbid,Exec)
+	.globl	AROS_SLIB_ENTRY(Forbid,Exec,22)
 
-AROS_SLIB_ENTRY(Forbid,Exec):
+AROS_SLIB_ENTRY(Forbid,Exec,22):
 	addq.b	#1,%a6@(TDNestCnt)
 	rts

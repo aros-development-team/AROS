@@ -46,9 +46,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(Supervisor,Exec)
+	.globl	AROS_SLIB_ENTRY(Supervisor,Exec,5)
 
-AROS_SLIB_ENTRY(Supervisor,Exec):
+AROS_SLIB_ENTRY(Supervisor,Exec,5):
 #ifndef DoRegisterCalls
 	move.l  4(%sp),%a5 // Get the userFunction pointer
 #endif

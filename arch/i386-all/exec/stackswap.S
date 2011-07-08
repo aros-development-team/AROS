@@ -42,9 +42,9 @@
 #include <aros/config.h>
 
 	.text
-	.globl	AROS_SLIB_ENTRY(StackSwap,Exec)
-	_FUNCTION(AROS_SLIB_ENTRY(StackSwap,Exec))
-AROS_SLIB_ENTRY(StackSwap,Exec):
+	.globl	AROS_SLIB_ENTRY(StackSwap,Exec,122)
+	_FUNCTION(AROS_SLIB_ENTRY(StackSwap,Exec,122))
+AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	/* Save %ebx content */
 	pushl	%ebx
 

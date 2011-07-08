@@ -12,24 +12,24 @@
 #include "kernel.h"
 
 #include "libdefs.h"
-extern void AROS_SLIB_ENTRY(BusToPhys,BASENAME) (void);
-extern void AROS_SLIB_ENTRY(PhysToBus,BASENAME) (void);
-extern void AROS_SLIB_ENTRY(OutB,BASENAME) (void);
-extern void AROS_SLIB_ENTRY(OutW,BASENAME) (void);
-extern void AROS_SLIB_ENTRY(OutL,BASENAME) (void);
-extern void AROS_SLIB_ENTRY(InB,BASENAME) (void);
-extern void AROS_SLIB_ENTRY(InW,BASENAME) (void);
-extern void AROS_SLIB_ENTRY(InL,BASENAME) (void);
+extern void AROS_SLIB_ENTRY(BusToPhys,BASENAME,5) (void);
+extern void AROS_SLIB_ENTRY(PhysToBus,BASENAME,6) (void);
+extern void AROS_SLIB_ENTRY(OutB,BASENAME,7) (void);
+extern void AROS_SLIB_ENTRY(OutW,BASENAME,8) (void);
+extern void AROS_SLIB_ENTRY(OutL,BASENAME,9) (void);
+extern void AROS_SLIB_ENTRY(InB,BASENAME,10) (void);
+extern void AROS_SLIB_ENTRY(InW,BASENAME,11) (void);
+extern void AROS_SLIB_ENTRY(InL,BASENAME,12) (void);
 
 void *const LIBFUNCTABLE[VECTOR_COUNT+1]=
 {
-    AROS_SLIB_ENTRY(BusToPhys,BASENAME),
-    AROS_SLIB_ENTRY(PhysToBus,BASENAME),
-    AROS_SLIB_ENTRY(OutB,BASENAME),
-    AROS_SLIB_ENTRY(OutW,BASENAME),
-    AROS_SLIB_ENTRY(OutL,BASENAME),
-    AROS_SLIB_ENTRY(InB,BASENAME),
-    AROS_SLIB_ENTRY(InW,BASENAME),
-    AROS_SLIB_ENTRY(InL,BASENAME),
+    AROS_SLIB_ENTRY(BusToPhys,BASENAME,5),
+    AROS_SLIB_ENTRY(PhysToBus,BASENAME,6),
+    AROS_SLIB_ENTRY(OutB,BASENAME,7),
+    AROS_SLIB_ENTRY(OutW,BASENAME,8),
+    AROS_SLIB_ENTRY(OutL,BASENAME,9),
+    AROS_SLIB_ENTRY(InB,BASENAME,10),
+    AROS_SLIB_ENTRY(InW,BASENAME,11),
+    AROS_SLIB_ENTRY(InL,BASENAME,12),
     (void *)-1L
 };

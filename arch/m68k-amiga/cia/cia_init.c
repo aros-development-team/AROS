@@ -96,10 +96,10 @@ struct Resident const Cia_ROMTag =
 
 static const APTR Cia_FuncTable[]=
 {
-    &AROS_SLIB_ENTRY(AddICRVector,Cia),
-    &AROS_SLIB_ENTRY(RemICRVector,Cia),
-    &AROS_SLIB_ENTRY(AbleICR,Cia),
-    &AROS_SLIB_ENTRY(SetICR,Cia),
+    &AROS_SLIB_ENTRY(AddICRVector,Cia,1),
+    &AROS_SLIB_ENTRY(RemICRVector,Cia,2),
+    &AROS_SLIB_ENTRY(AbleICR,Cia,3),
+    &AROS_SLIB_ENTRY(SetICR,Cia,4),
     (void *)-1
 };
 

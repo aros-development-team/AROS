@@ -38,10 +38,10 @@
 
 
 /*
-   XDEF AROS_SLIB_ENTRY(CacheClearU_00,Exec)   	; for 68000/68010
-   XDEF AROS_SLIB_ENTRY(CacheClearU_20,Exec)	; for 68020/68030
-   XDEF AROS_SLIB_ENTRY(CacheClearU_40,Exec)	; for 68040/68060
-   XDEF AROS_SLIB_ENTRY(CacheClearU_60,Exec)	; for 68060 (clears not only
+   XDEF AROS_SLIB_ENTRY(CacheClearU_00,Exec,106)   	; for 68000/68010
+   XDEF AROS_SLIB_ENTRY(CacheClearU_20,Exec,106)	; for 68020/68030
+   XDEF AROS_SLIB_ENTRY(CacheClearU_40,Exec,106)	; for 68040/68060
+   XDEF AROS_SLIB_ENTRY(CacheClearU_60,Exec,106)	; for 68060 (clears not only
 						; the i and d caches, but also
 						; the branch cache)
 */
@@ -50,17 +50,17 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(CacheClearU_00,Exec)
-	.type	AROS_SLIB_ENTRY(CacheClearU_00,Exec),@function
-AROS_SLIB_ENTRY(CacheClearU_00,Exec):
+	.globl	AROS_SLIB_ENTRY(CacheClearU_00,Exec,106)
+	.type	AROS_SLIB_ENTRY(CacheClearU_00,Exec,106),@function
+AROS_SLIB_ENTRY(CacheClearU_00,Exec,106):
 	/* Simple 68000s have no chaches */
 	rts
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(CacheClearU_20,Exec)
-	.type	AROS_SLIB_ENTRY(CacheClearU_20,Exec),@function
-AROS_SLIB_ENTRY(CacheClearU_20,Exec):
+	.globl	AROS_SLIB_ENTRY(CacheClearU_20,Exec,106)
+	.type	AROS_SLIB_ENTRY(CacheClearU_20,Exec,106),@function
+AROS_SLIB_ENTRY(CacheClearU_20,Exec,106):
 	move.l	%a5,%a1		/* Save a5 */
 	lea.l	cacheclearusup_20,%a5
 	jmp	Supervisor(%a6)	/* No jsr: this saves an rts */
@@ -76,9 +76,9 @@ cacheclearusup_20:
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(CacheClearU_40,Exec)
-	.type	AROS_SLIB_ENTRY(CacheClearU_40,Exec),@function
-AROS_SLIB_ENTRY(CacheClearU_40,Exec):
+	.globl	AROS_SLIB_ENTRY(CacheClearU_40,Exec,106)
+	.type	AROS_SLIB_ENTRY(CacheClearU_40,Exec,106),@function
+AROS_SLIB_ENTRY(CacheClearU_40,Exec,106):
 	move.l	%a5,%a1
 	lea.l	cacheclearusup_40,%a5
 	jmp	Supervisor(%a6)
@@ -92,9 +92,9 @@ cacheclearusup_40:
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(CacheClearU_60,Exec)
-	.type	AROS_SLIB_ENTRY(CacheClearU_60,Exec),@function
-AROS_SLIB_ENTRY(CacheClearU_60,Exec):
+	.globl	AROS_SLIB_ENTRY(CacheClearU_60,Exec,106)
+	.type	AROS_SLIB_ENTRY(CacheClearU_60,Exec,106),@function
+AROS_SLIB_ENTRY(CacheClearU_60,Exec,106):
 	move.l	%a5,%a1
 	lea.l	cacheclearusup_60,%a5
 	jmp	Supervisor(%a6)

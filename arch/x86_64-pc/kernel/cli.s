@@ -2,11 +2,11 @@
 
 	.text
 	.align  16
-	.globl  AROS_SLIB_ENTRY(KrnCli, Kernel)
-	.type   AROS_SLIB_ENTRY(KrnCli, Kernel), @function
+	.globl  AROS_SLIB_ENTRY(KrnCli, Kernel, 9)
+	.type   AROS_SLIB_ENTRY(KrnCli, Kernel, 9), @function
 
-AROS_SLIB_ENTRY(KrnCli, Kernel):
+AROS_SLIB_ENTRY(KrnCli, Kernel, 9):
 	cli
 	ret
 
-	.size  AROS_SLIB_ENTRY(KrnCli, Kernel), .-AROS_SLIB_ENTRY(KrnCli, Kernel)
+	.size  AROS_SLIB_ENTRY(KrnCli, Kernel, 9), .-AROS_SLIB_ENTRY(KrnCli, Kernel, 9)

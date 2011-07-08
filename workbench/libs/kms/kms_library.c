@@ -150,8 +150,8 @@ static ULONG KMS_Init(struct kms_base *KMSBase)
     if (error)
 	return FALSE;
 
-    KMSBase->rom_MapRawKey = SetFunction(KeymapBase, (LONG)(-7 * LIB_VECTSIZE), AROS_SLIB_ENTRY(patch_MapRawKey, Kms));
-    KMSBase->rom_MapANSI   = SetFunction(KeymapBase, (LONG)(-8 * LIB_VECTSIZE), AROS_SLIB_ENTRY(patch_MapANSI, Kms));
+    KMSBase->rom_MapRawKey = SetFunction(KeymapBase, (LONG)(-7 * LIB_VECTSIZE), AROS_SLIB_ENTRY(patch_MapRawKey, Kms, 7));
+    KMSBase->rom_MapANSI   = SetFunction(KeymapBase, (LONG)(-8 * LIB_VECTSIZE), AROS_SLIB_ENTRY(patch_MapANSI, Kms, 8));
 
     KMSBase->pub.kms_SwitchQual = KMS_QUAL_DISABLE;
 

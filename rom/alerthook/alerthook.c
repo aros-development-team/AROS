@@ -29,7 +29,7 @@ struct Errors
 
 static const UBYTE Alerthook_name[];
 static const UBYTE Alerthook_version[];
-AROS_UFP3(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
+static AROS_UFP3(ULONG, Alerthook_init,
     AROS_UFPA(void *,		    dummy1,  D0),
     AROS_UFPA(BPTR,		    dummy2,  A0),
     AROS_UFPA(struct ExecBase *,    SysBase, A6)
@@ -55,7 +55,7 @@ const struct Resident Alerthook_resident __attribute__((section(".text"))) =
     -45,
     (UBYTE *)Alerthook_name,
     (UBYTE *)&Alerthook_version[6],
-    (APTR)&AROS_SLIB_ENTRY(init,Alerthook)
+    (APTR)&Alerthook_init,
 };
 
 static const UBYTE Alerthook_name[] = "alert.hook\r\n";
@@ -99,7 +99,7 @@ mystrcpy(STRPTR dest, STRPTR src, LONG len)
     return dest;
 }
 
-AROS_UFH3(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
+static AROS_UFH3(ULONG, Alerthook_init,
     AROS_UFHA(void *,		    dummy1,  D0),
     AROS_UFHA(BPTR,		    dummy2,  A0),
     AROS_UFHA(struct ExecBase *,    SysBase, A6)

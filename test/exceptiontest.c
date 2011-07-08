@@ -43,7 +43,7 @@ int main(void)
 	{
 	    printf("sig2: %d\n",s2);
 	    oldexc=SysBase->ThisTask->tc_ExceptCode;
-	    SysBase->ThisTask->tc_ExceptCode=&AROS_SLIB_ENTRY(handler,Test);
+	    SysBase->ThisTask->tc_ExceptCode=&AROS_SLIB_ENTRY(handler,Test,0);
 	    SetExcept(1<<s2,1<<s2);
 	    Signal(SysBase->ThisTask,(1<<s2)|(1<<s1));
 	    SetExcept(0,1<<s2);

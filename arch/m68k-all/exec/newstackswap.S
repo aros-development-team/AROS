@@ -54,8 +54,8 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(NewStackSwap,Exec)
-AROS_SLIB_ENTRY(NewStackSwap,Exec):
+	.globl	AROS_SLIB_ENTRY(NewStackSwap,Exec,134)
+AROS_SLIB_ENTRY(NewStackSwap,Exec,134):
     /* Stackswap will clobber %d0, %d1, %a0, and %a1,
      * so we need to save %a0/%a1 in %a3/%a4
      */

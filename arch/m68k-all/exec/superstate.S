@@ -45,9 +45,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(SuperState,Exec)
-	.type	AROS_SLIB_ENTRY(SuperState,Exec),@function
-AROS_SLIB_ENTRY(SuperState,Exec):
+	.globl	AROS_SLIB_ENTRY(SuperState,Exec,25)
+	.type	AROS_SLIB_ENTRY(SuperState,Exec,25),@function
+AROS_SLIB_ENTRY(SuperState,Exec,25):
 	/* Goto supervisor mode. Preserve a5 in d0 (faster than stack space) */
 	move.l	%a5,%d0
 	lea.l	super,%a5

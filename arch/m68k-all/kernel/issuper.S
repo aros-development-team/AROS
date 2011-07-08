@@ -38,9 +38,9 @@ AROS_LH0I(int, KrnIsSuper,
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(KrnIsSuper,Kernel)
+	.globl	AROS_SLIB_ENTRY(KrnIsSuper,Kernel,13)
 
-AROS_SLIB_ENTRY(KrnIsSuper,Kernel):
+AROS_SLIB_ENTRY(KrnIsSuper,Kernel,13):
 	movem.l	%a5-%a6,%sp@-
 	move.l	SysBase,%a6
 	lea	1f,%a5

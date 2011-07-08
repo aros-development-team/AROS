@@ -50,9 +50,9 @@
 
 	.text
 	.balign 2
-	.globl	AROS_SLIB_ENTRY(UnlockLayerRom,Graphics)
+	.globl	AROS_SLIB_ENTRY(UnlockLayerRom,Graphics,73)
 
-AROS_SLIB_ENTRY(UnlockLayerRom,Graphics):
+AROS_SLIB_ENTRY(UnlockLayerRom,Graphics,73):
     move.l  %a6,%sp@-
     move.l  SysBase,%a6
     lea.l   %a5@(ly_Lock),%a0

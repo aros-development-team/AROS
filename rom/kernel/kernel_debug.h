@@ -30,7 +30,7 @@ static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
     	/* We use AROS_CALL2 here, since there are files that
     	 * include this that cannot tolerate <proto/kernel.h>
     	 */
-    	AROS_CALL2(int, AROS_SLIB_ENTRY(KrnBug, Kernel),
+    	AROS_CALL2(int, AROS_SLIB_ENTRY(KrnBug, Kernel, 12),
     		AROS_LCA(const char *, format, A0),
     		AROS_LCA(va_list, args, A1),
     		struct KernelBase *, KernelBase);

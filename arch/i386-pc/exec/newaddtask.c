@@ -23,8 +23,6 @@
 #endif
 #include <aros/debug.h>
 
-void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
-
 /*****************************************************************************
 
     NAME */

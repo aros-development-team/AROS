@@ -110,12 +110,12 @@ AROS_UFP0(void, GM_UNIQUENAME(nDispatcherTask));
 
 AROS_LD1(ULONG, nReadJoyPort,
          AROS_LDA(ULONG, port, D0),
-         struct Library *, LowLevelBase, 0, hid);
+         struct Library *, LowLevelBase, 5, hid);
           
 AROS_LD2(ULONG, nSetJoyPortAttrsA,
          AROS_LDA(ULONG, port, D0),
          AROS_LDA(struct TagItem *, tags, A1),
-         struct Library *, LowLevelBase, 0, hid);
+         struct Library *, LowLevelBase, 22, hid);
 
 AROS_UFP3(LONG, GM_UNIQUENAME(USBKeyListDisplayHook),
           AROS_UFPA(struct Hook *, hook, A0),

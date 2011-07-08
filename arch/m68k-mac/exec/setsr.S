@@ -41,9 +41,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(SetSR,Exec)
+	.globl	AROS_SLIB_ENTRY(SetSR,Exec,24)
 
-AROS_SLIB_ENTRY(SetSR,Exec):
+AROS_SLIB_ENTRY(SetSR,Exec,24):
 
 	/*
 	 * Switch to Supervisor Mode by calling a trap function

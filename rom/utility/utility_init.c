@@ -11,14 +11,14 @@
 #include "intern.h"
 #include LC_LIBDEFS_FILE
 
-extern ULONG AROS_SLIB_ENTRY(SMult32_020,Utility)();
-extern ULONG AROS_SLIB_ENTRY(UMult32_020,Utility)();
-extern ULONG AROS_SLIB_ENTRY(SMult64_020,Utility)();
-extern ULONG AROS_SLIB_ENTRY(UMult64_020,Utility)();
-extern ULONG AROS_SLIB_ENTRY(SDivMod32_020,Utility)();
-extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility)();
+extern ULONG AROS_SLIB_ENTRY(SMult32_020,Utility,23)();
+extern ULONG AROS_SLIB_ENTRY(UMult32_020,Utility,24)();
+extern ULONG AROS_SLIB_ENTRY(SDivMod32_020,Utility,25)();
+extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility,26)();
+extern ULONG AROS_SLIB_ENTRY(SMult64_020,Utility,33)();
+extern ULONG AROS_SLIB_ENTRY(UMult64_020,Utility,34)();
 
-#define SetFunc(a,b) SetFunction((struct Library *)LIBBASE, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility))
+#define SetFunc(a,b) SetFunction((struct Library *)LIBBASE, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility,a))
 
 static int UtilityInit(LIBBASETYPEPTR LIBBASE)
 {

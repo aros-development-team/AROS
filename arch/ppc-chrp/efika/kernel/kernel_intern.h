@@ -159,7 +159,7 @@ static inline void bug(const char *format, ...)
     struct KernelBase *kbase = getKernelBase();
     va_list args;
     va_start(args, format);
-    AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, kbase);
+    AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(format, args, kbase);
     va_end(args);
 }
 

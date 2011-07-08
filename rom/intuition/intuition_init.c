@@ -6,8 +6,6 @@
 
 /****************************************************************************************/
 
-#define INIT AROS_SLIB_ENTRY(init,Intuition)
-
 #include <string.h>
 #include <exec/lists.h>
 #include <exec/resident.h>
@@ -423,7 +421,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 	 a requester with Retry/Cancel options */
 	GetPrivIBase(LIBBASE)->OldDisplayErrorFunc =
 	    SetFunction(DOSBase, -81*LIB_VECTSIZE,
-			AROS_SLIB_ENTRY(DisplayError, Intuition));
+			AROS_SLIB_ENTRY(DisplayError, Intuition, 81));
     }
 #else
 # ifdef SKINS

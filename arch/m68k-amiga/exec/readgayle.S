@@ -38,8 +38,8 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(ReadGayle,Exec)
-AROS_SLIB_ENTRY(ReadGayle,Exec):
+	.globl	AROS_SLIB_ENTRY(ReadGayle,Exec,136)
+AROS_SLIB_ENTRY(ReadGayle,Exec,136):
 
 	/* A3000 Fat Gary/RAMSEY registers are supposed to be supervisor-only
 	 * Common chip revisions don't care but later (rare) revisions might do it */

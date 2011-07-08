@@ -10,10 +10,10 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 
-extern void AROS_SLIB_ENTRY(CacheClearU_00,Exec)(void);
-extern void AROS_SLIB_ENTRY(CacheClearU_20,Exec)(void);
-extern void AROS_SLIB_ENTRY(CacheClearU_40,Exec)(void);
-extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec)(void);
+extern void AROS_SLIB_ENTRY(CacheClearU_00,Exec,106)(void);
+extern void AROS_SLIB_ENTRY(CacheClearU_20,Exec,106)(void);
+extern void AROS_SLIB_ENTRY(CacheClearU_40,Exec,106)(void);
+extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec,106)(void);
 /*****************************************************************************
 
     NAME */
@@ -70,16 +70,16 @@ extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec)(void);
     Disable();
     if (SysBase->AttnFlags & AFF_68060) {
         /* 68060 support */
-        func = AROS_SLIB_ENTRY(CacheClearU_60, Exec);
+        func = AROS_SLIB_ENTRY(CacheClearU_60, Exec, 106);
     } else if (SysBase->AttnFlags & AFF_68040) {
         /* 68040 support */
-        func = AROS_SLIB_ENTRY(CacheClearU_40, Exec);
+        func = AROS_SLIB_ENTRY(CacheClearU_40, Exec, 106);
     } else if (SysBase->AttnFlags & AFF_68020) {
         /* 68020 support */
-        func = AROS_SLIB_ENTRY(CacheClearU_20, Exec);
+        func = AROS_SLIB_ENTRY(CacheClearU_20, Exec, 106);
     } else {
         /* Everybody else (68000, 68010) */
-        func = AROS_SLIB_ENTRY(CacheClearU_00, Exec);
+        func = AROS_SLIB_ENTRY(CacheClearU_00, Exec, 106);
     }
     func();
     SetFunction((struct Library *)SysBase, -LIB_VECTSIZE * 106, func);

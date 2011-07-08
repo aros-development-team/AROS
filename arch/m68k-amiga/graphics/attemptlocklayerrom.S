@@ -51,9 +51,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(AttemptLockLayerRom,Graphics)
+	.globl	AROS_SLIB_ENTRY(AttemptLockLayerRom,Graphics,109)
 
-AROS_SLIB_ENTRY(AttemptLockLayerRom,Graphics):
+AROS_SLIB_ENTRY(AttemptLockLayerRom,Graphics,109):
     movem.l %d1/%a0-%a1/%a6,%sp@-
     move.l  SysBase,%a6
     lea.l   %a5@(ly_Lock),%a0

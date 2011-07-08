@@ -29,7 +29,7 @@ int main(void) {
 
     asm volatile("\n#define AROS_CSYMNAME(n)       n\n" ::);
     asm volatile("\n#define AROS_CDEFNAME(n)       n\n" ::);
-    asm volatile("\n#define AROS_SLIB_ENTRY(n,s)   s ## _ ## n\n" ::);
+    asm volatile("\n#define AROS_SLIB_ENTRY(n,s,o)   s ## _ ## o ## _ ## n\n" ::);
     
     asm volatile("\n#define _FUNCTION(n)           .type   n,@function" ::);
     asm volatile("\n#define _ALIGNMENT             .balign %0" :: "i" (AROS_WORSTALIGN));

@@ -11,13 +11,13 @@
     .text
     .balign 4
 
-    .globl  AROS_SLIB_ENTRY(UDivMod32,Utility)
-    .globl  AROS_SLIB_ENTRY(UDivMod32_020,Utility)
+    .globl  AROS_SLIB_ENTRY(UDivMod32,Utility,26)
+    .globl  AROS_SLIB_ENTRY(UDivMod32_020,Utility,26)
 
-    .type   AROS_SLIB_ENTRY(UDivMod32,Utility),@function
-    .type   AROS_SLIB_ENTRY(UDivMod32_020,Utility),@function
+    .type   AROS_SLIB_ENTRY(UDivMod32,Utility,26),@function
+    .type   AROS_SLIB_ENTRY(UDivMod32_020,Utility,26),@function
 
-AROS_SLIB_ENTRY(UDivMod32_020,Utility):
+AROS_SLIB_ENTRY(UDivMod32_020,Utility,26):
     divul.l %d1,%d1:%d0
     rts
 
@@ -27,7 +27,7 @@ AROS_SLIB_ENTRY(UDivMod32_020,Utility):
 */
 
     .balign 4
-AROS_SLIB_ENTRY(UDivMod32,Utility):
+AROS_SLIB_ENTRY(UDivMod32,Utility,26):
     movem.l %d2-%d3,-(%sp)
     cmp.l   #0xFFFF,%d1
     bhi.s   .Lfull_division
