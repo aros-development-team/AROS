@@ -25,7 +25,7 @@
 	AROS_LHA(ULONG, mode, D0),
 
 /*  LOCATION */
-	struct Library *, MUIScreenBase, 0x2a, MUIScreen)
+	struct Library *, MUIScreenBase, 9, MUIScreen)
 
 /*  FUNCTION
 

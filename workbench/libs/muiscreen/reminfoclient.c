@@ -22,7 +22,7 @@
 	AROS_LHA(struct MUIS_InfoClient *, sic,  A0),
 
 /*  LOCATION */
-	struct Library *, MUIScreenBase_intern, 0x54, MUIScreen)
+	struct Library *, MUIScreenBase_intern, 14, MUIScreen)
 
 /*  FUNCTION
 
