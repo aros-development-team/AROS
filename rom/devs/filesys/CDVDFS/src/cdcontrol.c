@@ -68,8 +68,8 @@ void Send_Packet (int p_cmd, void *p_1, void *p_2)
   packet->sp_Pkt.dp_Port = replyport;
   packet->sp_Pkt.dp_Type = ACTION_USER;
   packet->sp_Pkt.dp_Arg1 = p_cmd;
-  packet->sp_Pkt.dp_Arg2 = (ULONG) p_1;
-  packet->sp_Pkt.dp_Arg3 = (ULONG) p_2;
+  packet->sp_Pkt.dp_Arg2 = (IPTR) p_1;
+  packet->sp_Pkt.dp_Arg3 = (IPTR) p_2;
 
   PutMsg (g_device_proc, (struct Message *) packet);
   WaitPort (replyport);
