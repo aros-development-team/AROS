@@ -49,7 +49,7 @@ AROS_LH3(IPTR, NewStackSwap,
 	 AROS_LHA(struct StackSwapStruct *,  sss, A0),
 	 AROS_LHA(LONG_FUNC, entry, A1),
 	 AROS_LHA(struct StackSwapArgs *, args, A2),
-	 struct ExecBase *, SysBase, 122, Exec)
+	 struct ExecBase *, SysBase, 134, Exec)
 {
     AROS_LIBFUNC_INIT
 
