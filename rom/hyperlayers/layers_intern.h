@@ -42,10 +42,16 @@ struct IntLayer
 {
     struct Layer lay;
     struct Hook  *shapehook;
+    IPTR         window;	/* This is passed to shape hook. Comes from Intuition. */
     ULONG   	 intflags;
 };
 
 #define IL(x) ((struct IntLayer *)(x))
+
+/* Standard layer priorities */
+#define ROOTPRIORITY		0
+#define BACKDROPPRIORITY	10
+#define UPFRONTPRIORITY		20
 
 #define INTFLAG_AVOID_BACKFILL 1
 

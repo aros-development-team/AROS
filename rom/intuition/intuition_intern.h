@@ -1019,7 +1019,7 @@ extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBa
 extern void UpdateMouseCoords(struct Window *win);
 extern WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
 
-AROS_UFP3(struct Region *, DefaultWindowShapeFunc,
+AROS_UFP3(BOOL, DefaultWindowShapeFunc,
     AROS_UFPA(struct Hook *, hook, A0),
     AROS_UFPA(struct Layer *, lay, A2),
     AROS_UFPA(struct ShapeHookMsg *, msg, A1));

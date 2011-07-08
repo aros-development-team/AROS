@@ -36,10 +36,11 @@
        The user can provide a callback hook that will be 
        called when the current layer's information is all backed up
        in ClipRects. The signature of the callback should look as follows:
-           AROS_UFC4(struct Region *, callback,
-               AROS_UFCA(struct Hook   *          , hook       , A0),
-               AROS_UFCA(struct Layer  *          , l          , A2),
-               AROS_UFCA(struct ScaleLayerParam * , arg        , A1));
+
+           AROS_UFC3(BOOL, callback,
+               AROS_UFCA(struct Hook   *       , hook       , A0),
+               AROS_UFCA(struct Layer  *       , l          , A2),
+               AROS_UFCA(struct ShapeHookMsg * , arg        , A1));
 
 
     INPUTS

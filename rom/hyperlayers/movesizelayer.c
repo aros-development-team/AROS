@@ -123,10 +123,12 @@
                            0, 
                            l->bounds.MaxX - l->bounds.MinX + dw, 
                            l->bounds.MaxY - l->bounds.MinY + dh);
+
   if (IL(l)->shapehook)
   {
     struct ShapeHookMsg msg;
-    
+    struct Rectangle NewBounds;
+
     if ((dx || dy) && (dw || dh))
     {
     	msg.Action = SHAPEHOOKACTION_MOVESIZELAYER;
@@ -139,21 +141,21 @@
     {
     	msg.Action = SHAPEHOOKACTION_SIZELAYER;
     }
+
+    msg.NewShape  = l->shaperegion;    
+    msg.OldShape  = l->shaperegion;
+    msg.NewBounds = &NewBounds;
+    msg.OldBounds = &l->bounds;
+
+    NewBounds.MinX = l->bounds.MinX + dx;
+    NewBounds.MinY = l->bounds.MinY + dy;
+    NewBounds.MaxX = l->bounds.MaxX + dx + dw;
+    NewBounds.MaxY = l->bounds.MaxY + dy + dh;
     
-    msg.Layer  = l;
-    msg.ActualShape = l->shaperegion;
-    msg.NewBounds.MinX = l->bounds.MinX + dx;
-    msg.NewBounds.MinY = l->bounds.MinY + dy;
-    msg.NewBounds.MaxX = l->bounds.MaxX + dx + dw;
-    msg.NewBounds.MaxY = l->bounds.MaxY + dy + dh;
-    msg.OldBounds.MinX = l->bounds.MinX;
-    msg.OldBounds.MinY = l->bounds.MinY;
-    msg.OldBounds.MaxX = l->bounds.MaxX;
-    msg.OldBounds.MaxY = l->bounds.MaxY;
-    
-    l->shaperegion = (struct Region *)CallHookPkt(IL(l)->shapehook, l, &msg);
+    if (CallHookPkt(IL(l)->shapehook, l, &msg))
+	l->shaperegion = msg.NewShape;
   }
-  
+
   if (l->shaperegion)
     AndRegionRegion(l->shaperegion, newshape);
   

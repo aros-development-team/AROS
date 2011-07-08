@@ -1091,34 +1091,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         InitLayers(&screen->Screen.LayerInfo);
         li_inited = TRUE;
 
-#if 0
-        /* Root layer now installed automatically by first call
-           to CreateLayerTagList */
-
-#ifdef CreateLayerTagList
-        {
-            struct TagItem tags[4] =
-            {
-                {LA_Visible , FALSE 	    },
-                {LA_Priority, ROOTPRIORITY  },
-                {TAG_DONE   	    	    }
-            };
-
-            screen->rootLayer =
-                CreateLayerTagList(&screen->Screen.LayerInfo,
-                                   screen->Screen.RastPort.BitMap,
-                                   screen->Screen.LeftEdge,
-                                   screen->Screen.TopEdge,
-                                   screen->Screen.LeftEdge + screen->Screen.Width - 1,
-                                   screen->Screen.TopEdge + screen->Screen.Height - 1,
-                                   0,
-                                   tags);
-
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: rootLayer 0x%lx\n",screen->rootLayer));
-        }
-#endif
-#endif
-
         if (NULL != layer_info_hook)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: instal layerinfohook\n"));
