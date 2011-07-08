@@ -17,6 +17,7 @@
 
 #define opreg_readl(opreg) READREG32_LE(hc->xhc_opregbase, opreg)
 #define opreg_writel(opreg, value) WRITEREG32_LE(hc->xhc_opregbase, opreg, value)
+#define opreg_writeq(opreg, value) WRITEREG64_LE(hc->xhc_opregbase, opreg, value)
 
 #define capreg_readl(capreg) READREG32_LE(hc->xhc_capregbase, capreg)
 #define capreg_readw(capreg) READREG16_LE(hc->xhc_capregbase, capreg)
