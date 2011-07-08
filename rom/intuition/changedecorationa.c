@@ -34,7 +34,7 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBa
 	 AROS_LHA(struct NewDecorator *, nd, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 153, Intuition)
+         struct IntuitionBase *, IntuitionBase, 152, Intuition)
 
 /*  FUNCTION
 	Setup a new decorator for intuition windows, screens or menus.

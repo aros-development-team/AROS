@@ -24,7 +24,7 @@
          AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 163, Intuition)
+         struct IntuitionBase *, IntuitionBase, 161, Intuition)
 
 /*  FUNCTION
 	Obtain an array of monitorclass objects installed in the
