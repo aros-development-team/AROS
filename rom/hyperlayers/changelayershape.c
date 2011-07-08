@@ -27,7 +27,7 @@
 	AROS_LHA(struct Region *, newshape   , A1),
 	AROS_LHA(struct Hook   *, callback   , A2),
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 41, Layers)
+	struct LayersBase *, LayersBase, 37, Layers)
 
 /*  FUNCTION
        Changes the shape of the layer on the fly.

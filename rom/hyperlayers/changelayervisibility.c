@@ -25,7 +25,7 @@
 	AROS_LHA(int           , visible, D0),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 39, Layers)
+	struct LayersBase *, LayersBase, 41, Layers)
 
 /*  FUNCTION
        Makes the given layer visible or invisible.
