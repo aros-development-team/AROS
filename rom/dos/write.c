@@ -24,7 +24,7 @@
 	AROS_LHA(LONG, length, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 7, Dos)
+	struct DosLibrary *, DOSBase, 8, Dos)
 
 /*  FUNCTION
 	Write some data from a given file. The request is directly
