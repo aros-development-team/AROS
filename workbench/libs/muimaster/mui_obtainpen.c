@@ -25,7 +25,7 @@
 	AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 22, MUIMaster)
+	struct Library *, MUIMasterBase, 26, MUIMaster)
 
 /*  FUNCTION
 	Turns struct MUI_PenSpec (the result of a Poppen object) into
