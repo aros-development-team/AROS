@@ -44,9 +44,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(UserState,Exec)
+	.globl	AROS_SLIB_ENTRY(UserState,Exec,26)
 
-AROS_SLIB_ENTRY(UserState,Exec):
+AROS_SLIB_ENTRY(UserState,Exec,26):
 #ifndef DoRegisterCalls
 	move.l	0x4.w,%a6      // Get SysBase
 	move.l  4(%ssp),%d0    // get sysStack

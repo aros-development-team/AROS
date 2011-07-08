@@ -3,13 +3,13 @@
 
                 .text
                 .align 4
-                .globl AROS_SLIB_ENTRY(StackSwap, Exec)
-                .type AROS_SLIB_ENTRY(StackSwap, Exec), @function 
+                .globl AROS_SLIB_ENTRY(StackSwap, Exec, 122)
+                .type AROS_SLIB_ENTRY(StackSwap, Exec, 122), @function 
 
 #define SysBase %r30
 #define SSS     %r29
 
-AROS_SLIB_ENTRY(StackSwap, Exec):
+AROS_SLIB_ENTRY(StackSwap, Exec, 122):
                 stwu %r1, -32(%r1)
                 
                 stw %r3,8(%r1)

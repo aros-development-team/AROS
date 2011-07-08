@@ -64,9 +64,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(Disable,Exec)
+	.globl	AROS_SLIB_ENTRY(Disable,Exec,20)
 
-AROS_SLIB_ENTRY(Disable,Exec):
+AROS_SLIB_ENTRY(Disable,Exec,20):
 	/* As we said above: ALL registers must be preserved! */
 	move.w	#0x4000,0xdff09a
 	addq.b	#1,IDNestCnt(%a6)

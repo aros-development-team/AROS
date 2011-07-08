@@ -306,7 +306,7 @@ D(bug("[pcnet32] init.BeginIO\n"));
 
 AROS_LH1(LONG, abortio,
     AROS_LHA(struct IOSana2Req *, req, A1),
-    LIBBASETYPEPTR, LIBBASE, 5, PCNet32)
+    LIBBASETYPEPTR, LIBBASE, 6, PCNet32)
 {
     AROS_LIBFUNC_INIT
     struct PCN32Unit *dev;

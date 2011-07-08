@@ -90,14 +90,14 @@ static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh)
         APTR ourvec;
         Disable();
         ourvec = SetFunction(nh->nh_LowLevelBase, -5 * LIB_VECTSIZE, nh->nh_LLOldReadJoyPort);
-        if(ourvec != AROS_SLIB_ENTRY(nReadJoyPort, hid))
+        if(ourvec != AROS_SLIB_ENTRY(nReadJoyPort, hid, 5))
         {
             SetFunction(nh->nh_LowLevelBase, -5 * LIB_VECTSIZE, ourvec);
             Enable();
             return(FALSE); /* we couldn't remove the patch! */
         }
         ourvec = SetFunction(nh->nh_LowLevelBase, -22 * LIB_VECTSIZE, nh->nh_LLOldSetJoyPortAttrsA);
-        if(ourvec != AROS_SLIB_ENTRY(nSetJoyPortAttrsA, hid))
+        if(ourvec != AROS_SLIB_ENTRY(nSetJoyPortAttrsA, hid, 22))
         {
             SetFunction(nh->nh_LowLevelBase, -22 * LIB_VECTSIZE, ourvec);
             Enable();
@@ -450,8 +450,8 @@ void nInstallLLPatch(struct NepHidBase *nh)
         if((nh->nh_LowLevelBase = OpenLibrary("lowlevel.library", 40)))
         {
             Disable();
-            nh->nh_LLOldReadJoyPort = SetFunction(nh->nh_LowLevelBase, -5 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nReadJoyPort, hid));
-            nh->nh_LLOldSetJoyPortAttrsA = SetFunction(nh->nh_LowLevelBase, -22 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nSetJoyPortAttrsA, hid));
+            nh->nh_LLOldReadJoyPort = SetFunction(nh->nh_LowLevelBase, -5 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nReadJoyPort, hid, 5));
+            nh->nh_LLOldSetJoyPortAttrsA = SetFunction(nh->nh_LowLevelBase, -22 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nSetJoyPortAttrsA, hid, 22));
             Enable();
         }
     }
@@ -6606,7 +6606,7 @@ struct PsdIFFContext * nSaveItem(struct NepClassHid *nch, struct PsdIFFContext *
 /* /// "nReadJoyPort()" */
 AROS_LH1(ULONG, nReadJoyPort,
          AROS_LHA(ULONG, port, D0),
-         struct Library *, LowLevelBase, 0, hid)
+         struct Library *, LowLevelBase, 5, hid)
 {
     AROS_LIBFUNC_INIT
 
@@ -6697,7 +6697,7 @@ AROS_LH1(ULONG, nReadJoyPort,
 AROS_LH2(ULONG, nSetJoyPortAttrsA,
          AROS_LHA(ULONG, port, D0),
          AROS_LHA(struct TagItem *, tags, A1),
-         struct Library *, LowLevelBase, 0, hid)
+         struct Library *, LowLevelBase, 22, hid)
 {
     AROS_LIBFUNC_INIT
 

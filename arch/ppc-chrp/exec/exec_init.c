@@ -39,7 +39,10 @@ intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *
 
 struct ExecBase *priv_SysBase;
 
-int Kernel_KrnBug(const char * format, va_list args, void * KernelBase);
+AROS_LD2(int, KrnBug,
+         AROS_LDA(const char *, format, A0),
+         AROS_LDA(va_list, args, A1),
+         struct KernelBase *, KernelBase, 11, Kernel);
 #undef bug
 
 static inline void bug(const char *format, ...)
@@ -48,7 +51,7 @@ static inline void bug(const char *format, ...)
 
     va_start(args, format);
     /* Our KrnBug() ignores base address */
-    AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, NULL);
+    AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(format, args, NULL);
     va_end(args);
 }
 
@@ -581,7 +584,7 @@ static int __kprintf(const UBYTE *fmt, ...)
     int result = 0;
 
     va_start(ap,fmt);
-    result = AROS_SLIB_ENTRY(KrnBug, Kernel)(fmt, ap, NULL);
+    result = AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(fmt, ap, NULL);
     va_end(ap);
 
     return result;
@@ -589,7 +592,7 @@ static int __kprintf(const UBYTE *fmt, ...)
 
 static int __vkprintf(const UBYTE *fmt, va_list args)
 {
-    return AROS_SLIB_ENTRY(KrnBug, Kernel)(fmt, args, NULL);
+    return AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(fmt, args, NULL);
 }
 
 static int __rkprintf(const STRPTR mainSystem, const STRPTR subSystem, int level, const UBYTE *fmt, ...)
@@ -598,7 +601,7 @@ static int __rkprintf(const STRPTR mainSystem, const STRPTR subSystem, int level
     int result = 0;
 
     va_start(ap,fmt);
-    result = AROS_SLIB_ENTRY(KrnBug, Kernel)(fmt, ap, NULL);
+    result = AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(fmt, ap, NULL);
     va_end(ap);
 
     return result;

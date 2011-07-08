@@ -12,12 +12,12 @@ static const STRPTR libname = MOD_NAME_STRING;
 static
 const APTR DevFuncTable[] =
 {
-    &AROS_SLIB_ENTRY(devOpen, dev),
-    &AROS_SLIB_ENTRY(devClose, dev),
-    &AROS_SLIB_ENTRY(devExpunge, dev),
-    &AROS_SLIB_ENTRY(devReserved, dev),
-    &AROS_SLIB_ENTRY(devBeginIO, dev),
-    &AROS_SLIB_ENTRY(devAbortIO, dev),
+    &AROS_SLIB_ENTRY(devOpen, dev, 1),
+    &AROS_SLIB_ENTRY(devClose, dev, 2),
+    &AROS_SLIB_ENTRY(devExpunge, dev, 3),
+    &AROS_SLIB_ENTRY(devReserved, dev, 4),
+    &AROS_SLIB_ENTRY(devBeginIO, dev, 5),
+    &AROS_SLIB_ENTRY(devAbortIO, dev, 6),
     (APTR) -1,
 };
 

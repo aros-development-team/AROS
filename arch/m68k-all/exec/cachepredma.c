@@ -12,8 +12,8 @@
 #include <exec/types.h>
 #include <aros/libcall.h>
 
-extern void AROS_SLIB_ENTRY(CachePreDMA_00,Exec)(void);
-extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec)(void);
+extern void AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127)(void);
+extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127)(void);
 /*****************************************************************************
 
     NAME */
@@ -76,10 +76,10 @@ extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec)(void);
     Disable();
     if (SysBase->AttnFlags & AFF_68040) {
         /* 68040 support */
-        func = AROS_SLIB_ENTRY(CachePreDMA_40, Exec);
+        func = AROS_SLIB_ENTRY(CachePreDMA_40, Exec, 127);
     } else {
         /* Everybody else (68000, 68010) */
-        func = AROS_SLIB_ENTRY(CachePreDMA_00, Exec);
+        func = AROS_SLIB_ENTRY(CachePreDMA_00, Exec, 127);
     }
 
     SetFunction((struct Library *)SysBase, -LIB_VECTSIZE * 127, func);

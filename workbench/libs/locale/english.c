@@ -68,7 +68,7 @@ extern const ULONG __code_table_to_upper[];
 extern const CONST_STRPTR __language_strings[];
 extern const ULONG  __language_short_order_tab[];
 extern const ULONG  __language_long_order_tab[];
-extern ULONG AROS_SLIB_ENTRY( null, Locale)();
+extern ULONG AROS_SLIB_ENTRY( null, Locale, 0)();
 
 
 /* We use these in the code table ctype array to indicate the types that a
@@ -397,7 +397,7 @@ AROS_LH4(LONG, strcompare,
 #define Xj(a,b) a##b
 #define TRAPIT(n,s)  \
 struct EmulLibEntry Xj(LIB_##n,_Gate) = { TRAP_LIB, 0, (void (*)(void)) LIB_##n }
-#define AROS_SLIB_ENTRY_GATED(n,s) Xj(LIB_##n,_Gate)
+#define AROS_SLIB_ENTRY_GATED(n,s,o) Xj(LIB_##n,_Gate)
 
     /* 0 - 3 */
     TRAPIT(convtolower, english);
@@ -426,38 +426,38 @@ struct EmulLibEntry Xj(LIB_##n,_Gate) = { TRAP_LIB, 0, (void (*)(void)) LIB_##n 
     /* 16 */
     TRAPIT(strcompare, english);
 #else
-#define AROS_SLIB_ENTRY_GATED AROS_SLIB_ENTRY
+#define AROS_SLIB_ENTRY_GATED(name,base,n) AROS_SLIB_ENTRY(name,base,n)
 #endif /*Morphos*/
 
 
 void *const __eng_functable[] =
 {
     /* 0 - 3 */
-    &AROS_SLIB_ENTRY_GATED(convtolower, english),
-    &AROS_SLIB_ENTRY_GATED(convtoupper, english),
+    &AROS_SLIB_ENTRY_GATED(convtolower, english,6),
+    &AROS_SLIB_ENTRY_GATED(convtoupper, english,7),
     NULL,
-    &AROS_SLIB_ENTRY_GATED(getlangstring, english),
+    &AROS_SLIB_ENTRY_GATED(getlangstring, english,9),
 
     /* 4 - 7 */
-    &AROS_SLIB_ENTRY_GATED(isalnum, english),
-    &AROS_SLIB_ENTRY_GATED(isalpha, english),
-    &AROS_SLIB_ENTRY_GATED(iscntrl, english),
-    &AROS_SLIB_ENTRY_GATED(isdigit, english),
+    &AROS_SLIB_ENTRY_GATED(isalnum, english,10),
+    &AROS_SLIB_ENTRY_GATED(isalpha, english,11),
+    &AROS_SLIB_ENTRY_GATED(iscntrl, english,12),
+    &AROS_SLIB_ENTRY_GATED(isdigit, english,13),
 
     /* 8 - 11 */
-    &AROS_SLIB_ENTRY_GATED(isgraph, english),
-    &AROS_SLIB_ENTRY_GATED(islower, english),
-    &AROS_SLIB_ENTRY_GATED(isprint, english),
-    &AROS_SLIB_ENTRY_GATED(ispunct, english),
+    &AROS_SLIB_ENTRY_GATED(isgraph, english,14),
+    &AROS_SLIB_ENTRY_GATED(islower, english,15),
+    &AROS_SLIB_ENTRY_GATED(isprint, english,16),
+    &AROS_SLIB_ENTRY_GATED(ispunct, english,17),
 
     /* 12 - 15 */
-    &AROS_SLIB_ENTRY_GATED(isspace, english),
-    &AROS_SLIB_ENTRY_GATED(isupper, english),
-    &AROS_SLIB_ENTRY_GATED(isxdigit, english),
-    &AROS_SLIB_ENTRY_GATED(strconvert, english),
+    &AROS_SLIB_ENTRY_GATED(isspace, english,18),
+    &AROS_SLIB_ENTRY_GATED(isupper, english,19),
+    &AROS_SLIB_ENTRY_GATED(isxdigit, english,20),
+    &AROS_SLIB_ENTRY_GATED(strconvert, english,21),
 
     /* 16 */
-    &AROS_SLIB_ENTRY_GATED(strcompare, english),
+    &AROS_SLIB_ENTRY_GATED(strcompare, english,22),
 
     (void *)-1
 };

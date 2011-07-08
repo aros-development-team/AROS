@@ -33,8 +33,6 @@
 
 /****************************************************************************************/
 
-extern UWORD AROS_SLIB_ENTRY(PeekQualifier,Input) ();
-
 #if NEWSTYLE_DEVICE
 
 #include <devices/newstyle.h>

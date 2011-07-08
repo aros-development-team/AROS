@@ -80,7 +80,7 @@ const UBYTE Layers_version[]="$VER: layers.strap 41.2 (02.11.1997)";
 #define SetFunc(offset,name) \
 { \
     if(Layers_dearray[offset]) \
-	SetFunction((struct Library *)LayersBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Layers)); \
+	SetFunction((struct Library *)LayersBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Layers,offset)); \
 }
 
 /* use this to disable a setfunc that doesn't work yet */

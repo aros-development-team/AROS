@@ -35,7 +35,7 @@ extern const char version[];
 extern const APTR inittabl[4];
 extern void *const arosc_functable[];
 extern const struct inittable datatable;
-extern struct aroscbase *AROS_SLIB_ENTRY(init,arosc)();
+extern struct aroscbase *arosc_init();
 AROS_LD1(struct aroscbase *, open, AROS_LDA(ULONG, version, D0), struct aroscbase *, aroscbase, 1, arosc);
 AROS_LD0(BPTR, close, struct aroscbase *, aroscbase, 2, arosc);
 AROS_LD0(BPTR, expunge, struct aroscbase *, aroscbase, 3, arosc);
@@ -77,13 +77,13 @@ const APTR inittabl[4]=
     (APTR)sizeof(struct aroscbase),
     (APTR)arosc_functable,
     NULL,
-    &AROS_SLIB_ENTRY(init,arosc)
+    &arosc_init,
 };
 
 DECLARESET(INIT);
 DECLARESET(EXIT);
 
-AROS_UFH3(struct aroscbase *, AROS_SLIB_ENTRY(init,arosc),
+AROS_UFH3(struct aroscbase *, arosc_init,
  AROS_UFHA(struct aroscbase *, __aroscbase, D0),
  AROS_UFHA(BPTR,               segList,   A0),
  AROS_UFHA(struct ExecBase *,  __SysBase,   A6)

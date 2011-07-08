@@ -10,9 +10,9 @@
 
     .text
     .balign 4
-    .globl  AROS_SLIB_ENTRY(SPTst,Mathffp)
-    .globl  AROS_SLIB_ENTRY(SPCmp,Mathffp)
-AROS_SLIB_ENTRY(SPTst,Mathffp):
+    .globl  AROS_SLIB_ENTRY(SPTst,Mathffp,8)
+    .globl  AROS_SLIB_ENTRY(SPCmp,Mathffp,7)
+AROS_SLIB_ENTRY(SPTst,Mathffp,8):
 
 	moveq	#0,%d0
-	bra		AROS_SLIB_ENTRY(SPCmp,Mathffp)
+	bra		AROS_SLIB_ENTRY(SPCmp,Mathffp,7)

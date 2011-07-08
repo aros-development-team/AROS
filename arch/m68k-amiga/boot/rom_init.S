@@ -1,3 +1,6 @@
+
+#include <aros/m68k/asm.h>
+
 	.text
 	.chip 68000
 	.align 4 
@@ -108,7 +111,7 @@ rom_init:
 .skip32bit:
 	/* Do we have a Gayle? */
 	sub.l	%a6,%a6
-	jsr		Exec_ReadGayle
+	jsr	AROS_SLIB_ENTRY(ReadGayle,Exec,136)
 	/* slow ram */
 	move.l	#0x00c00000,%a0
 	move.l	#0x00d80000,%a1

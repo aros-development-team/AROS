@@ -7,9 +7,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(NewStackSwap,Exec)
+	.globl	AROS_SLIB_ENTRY(NewStackSwap,Exec,134)
 
-AROS_SLIB_ENTRY(NewStackSwap,Exec):
+AROS_SLIB_ENTRY(NewStackSwap,Exec,134):
 
 	// r0 contains parameter 'newStack'
         // r1 contains new entry point

@@ -717,16 +717,16 @@ static ULONG LDDemon_Init(struct LDDemonBase *ldBase)
     ObtainSemaphore(&ldBase->dl_LDObjectsListSigSem);
 
 #define SetFunc(offs,ptr) \
-    SetFunction(&SysBase->LibNode, (offs)*(LONG)LIB_VECTSIZE, \
-    			AROS_SLIB_ENTRY(ptr,Dos))
+    SetFunction(&SysBase->LibNode, (-offs)*(LONG)LIB_VECTSIZE, \
+    			AROS_SLIB_ENTRY(ptr,Dos,0))
 
     /* Do not set the vectors until you have initialised everything else. */
-    __OpenLibrary = SetFunc(-92, OpenLibrary);
-    __OpenDevice = SetFunc(-74, OpenDevice);
-    (void)SetFunc(-69, CloseLibrary);
-    (void)SetFunc(-75, CloseDevice);
-    (void)SetFunc(-67, RemLibrary);
-    (void)SetFunc(-73, RemLibrary);
+    __OpenLibrary = SetFunc(92, OpenLibrary);
+    __OpenDevice = SetFunc(74, OpenDevice);
+    (void)SetFunc(69, CloseLibrary);
+    (void)SetFunc(75, CloseDevice);
+    (void)SetFunc(67, RemLibrary);
+    (void)SetFunc(73, RemLibrary);
 
     if( !(ldBase->dl_LDDemonTask = CreateNewProc((struct TagItem *)tags)) )
     {

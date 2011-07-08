@@ -1,5 +1,5 @@
 #define AROS_CDEFNAME(n)       _ ## n
-#define AROS_SLIB_ENTRY(n,s)   s ## _ ## n
+#define AROS_SLIB_ENTRY(n,s,o)   s ## _ ## o ## _ ## n
 
 # Exec functions
 #define Supervisor    -30

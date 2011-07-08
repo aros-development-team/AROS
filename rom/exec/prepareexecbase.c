@@ -183,7 +183,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 #endif
 
     /* Setup function vectors */
-    AROS_CALL3(ULONG, AROS_SLIB_ENTRY(MakeFunctions, Exec),
+    AROS_CALL3(ULONG, AROS_SLIB_ENTRY(MakeFunctions, Exec, 15),
 	      AROS_UFCA(APTR, SysBase, A0),
 	      AROS_UFCA(CONST_APTR, LIBFUNCTABLE, A1),
 	      AROS_UFCA(CONST_APTR, NULL, A2),

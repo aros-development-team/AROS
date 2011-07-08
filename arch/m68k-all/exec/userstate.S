@@ -42,9 +42,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(UserState,Exec)
-	.type	AROS_SLIB_ENTRY(UserState,Exec),@function
-AROS_SLIB_ENTRY(UserState,Exec):
+	.globl	AROS_SLIB_ENTRY(UserState,Exec,26)
+	.type	AROS_SLIB_ENTRY(UserState,Exec,26),@function
+AROS_SLIB_ENTRY(UserState,Exec,26):
 	/* simply return if argument is NULL */
 	tst.l	%d0
 	bne	nonzero

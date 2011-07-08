@@ -307,9 +307,9 @@ STATIC CONST CONST_APTR LibVectors[] =
   #ifdef __MORPHOS__
   (CONST_APTR)FUNCARRAY_32BIT_NATIVE,
   #endif
-  (CONST_APTR)LibOpen,
-  (CONST_APTR)LibClose,
-  (CONST_APTR)LibExpunge,
+  (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Codesets, 1),
+  (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Codesets, 2),
+  (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Codesets, 3),
   (CONST_APTR)LibNull,
   (CONST_APTR)libvector,
   (CONST_APTR)-1

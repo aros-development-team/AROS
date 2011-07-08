@@ -117,7 +117,7 @@ AROS_LD3(void, CacheClearE,
 
        Note that we call this function directly because MakeFunctions() is also
        used for building ExecBase itself. */
-    AROS_UFC4(void, AROS_SLIB_ENTRY(CacheClearE, Exec),
+    AROS_UFC4(void, AROS_SLIB_ENTRY(CacheClearE, Exec, 107),
 	      AROS_UFCA(APTR, lastvec, A0),
 	      AROS_UFCA(ULONG, n, D0),
 	      AROS_UFCA(ULONG, CACRF_ClearI|CACRF_ClearD, D1),

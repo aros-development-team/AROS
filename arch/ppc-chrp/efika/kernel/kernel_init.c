@@ -618,7 +618,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
      */
     if (!realchip)
     {
-    	__AllocMem = SetFunction(SysBase, -33*LIB_VECTSIZE, AROS_SLIB_ENTRY(AllocMem, Kernel));
+    	__AllocMem = SetFunction(SysBase, -33*LIB_VECTSIZE, AROS_SLIB_ENTRY(AllocMem, Kernel, 33));
     }
 
     /*

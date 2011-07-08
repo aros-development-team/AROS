@@ -774,14 +774,14 @@ AROS_LH1(ULONG, dev_GetBlkSize,
 
 static const APTR Storage_dev_FuncTable[]=
 {
-		&AROS_SLIB_ENTRY(dev_OpenLib,Storage),
-		&AROS_SLIB_ENTRY(dev_CloseLib,Storage),
-		&AROS_SLIB_ENTRY(dev_ExpungeLib,Storage),
-		&AROS_SLIB_ENTRY(dev_ExtFuncLib,Storage),
-		&AROS_SLIB_ENTRY(dev_BeginIO,Storage),
-		&AROS_SLIB_ENTRY(dev_AbortIO,Storage),
-		&AROS_SLIB_ENTRY(dev_GetRdskLba,Storage),
-		&AROS_SLIB_ENTRY(dev_GetBlkSize,Storage),
+		&AROS_SLIB_ENTRY(dev_OpenLib,Storage,1),
+		&AROS_SLIB_ENTRY(dev_CloseLib,Storage,2),
+		&AROS_SLIB_ENTRY(dev_ExpungeLib,Storage,3),
+		&AROS_SLIB_ENTRY(dev_ExtFuncLib,Storage,4),
+		&AROS_SLIB_ENTRY(dev_BeginIO,Storage,5),
+		&AROS_SLIB_ENTRY(dev_AbortIO,Storage,6),
+		&AROS_SLIB_ENTRY(dev_GetRdskLba,Storage,7),
+		&AROS_SLIB_ENTRY(dev_GetBlkSize,Storage,8),
 		(void *)-1
 };
 

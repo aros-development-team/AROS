@@ -3,10 +3,10 @@
 
                 .text
                 .align  16
-                .globl  AROS_SLIB_ENTRY(StackSwap, Exec)
-                .type   AROS_SLIB_ENTRY(StackSwap, Exec), @function
+                .globl  AROS_SLIB_ENTRY(StackSwap, Exec, 122)
+                .type   AROS_SLIB_ENTRY(StackSwap, Exec, 122), @function
                 
-AROS_SLIB_ENTRY(StackSwap, Exec):
+AROS_SLIB_ENTRY(StackSwap, Exec, 122):
                 /* struct StackSwap is %rdi */
                 /* SysBase is %rsi */
                 

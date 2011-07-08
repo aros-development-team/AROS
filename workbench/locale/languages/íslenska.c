@@ -25,7 +25,7 @@
 #define LANGREV     0           /* Revision number of language */
 #define LANGTAG     "\0$VER: íslenska.language 41.0 (03.02.2001)"
 
-STRPTR AROS_SLIB_ENTRY(getlangstring,language)();
+STRPTR AROS_SLIB_ENTRY(getlangstring,language,9)();
 
 /* ----------------------------------------------------------------------- */
 
@@ -50,12 +50,12 @@ extern const UBYTE name[];
 extern const UBYTE version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
-extern struct Language *AROS_SLIB_ENTRY(init,language)();
-extern struct Language *AROS_SLIB_ENTRY(open,language)();
-extern BPTR AROS_SLIB_ENTRY(close,language)();
-extern BPTR AROS_SLIB_ENTRY(expunge,language)();
-extern int AROS_SLIB_ENTRY(null,language)();
-extern ULONG AROS_SLIB_ENTRY(mask,language)();
+extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
+extern struct Language *AROS_SLIB_ENTRY(open,language,1)();
+extern BPTR AROS_SLIB_ENTRY(close,language,2)();
+extern BPTR AROS_SLIB_ENTRY(expunge,language,3)();
+extern int AROS_SLIB_ENTRY(null,language,0)();
+extern ULONG AROS_SLIB_ENTRY(mask,language,5)();
 extern const char end;
 
 int entry(void)
@@ -87,12 +87,12 @@ const APTR inittabl[4] =
     (APTR)sizeof(struct Language),
     (APTR)functable,
     (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,language)
+    &AROS_SLIB_ENTRY(init,language,0)
 };
 
 struct ExecBase *mySysBase;
 
-AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language),
+AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_UFHA(struct Language *, language, D0),
     AROS_UFHA(BPTR,             segList, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
@@ -120,7 +120,7 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language),
 	Although it is unlikely, you would return NULL if you for some
 	unknown reason couldn't open.
     */
-    bug("GetLangStr: Loaded at address %p\n", &AROS_SLIB_ENTRY(getlangstring,language));
+    bug("GetLangStr: Loaded at address %p\n", &AROS_SLIB_ENTRY(getlangstring,language,9));
     return language;
 
     AROS_USERFUNC_EXIT
@@ -182,7 +182,7 @@ AROS_LH0(BPTR, expunge, struct Language *, language, 3, language)
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(int, null, struct Language *, language, 4, language)
+AROS_LH0I(int, null, struct Language *, language, 0, language)
 {
     AROS_LIBFUNC_INIT
 
@@ -242,19 +242,19 @@ AROS_LH1(STRPTR, getlangstring,
 
 void *const functable[] =
 {
-    &AROS_SLIB_ENTRY(open,language),
-    &AROS_SLIB_ENTRY(close,language),
-    &AROS_SLIB_ENTRY(expunge,language),
-    &AROS_SLIB_ENTRY(null,language),
-    &AROS_SLIB_ENTRY(mask,language),
+    &AROS_SLIB_ENTRY(open,language,1),
+    &AROS_SLIB_ENTRY(close,language,2),
+    &AROS_SLIB_ENTRY(expunge,language,3),
+    &AROS_SLIB_ENTRY(null,language,0),
+    &AROS_SLIB_ENTRY(mask,language,5),
 
     /* Note, shorter function table, as only getlangstring is used */
 
     /* 0 - 3 */
-    &AROS_SLIB_ENTRY(null, language),
-    &AROS_SLIB_ENTRY(null, language),
-    &AROS_SLIB_ENTRY(null, language),    
-    &AROS_SLIB_ENTRY(getlangstring, language),
+    &AROS_SLIB_ENTRY(null, language, 0),
+    &AROS_SLIB_ENTRY(null, language, 0),
+    &AROS_SLIB_ENTRY(null, language, 0),    
+    &AROS_SLIB_ENTRY(getlangstring, language, 9),
     (void *)-1
 };
 

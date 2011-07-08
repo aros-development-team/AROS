@@ -145,21 +145,21 @@ void PrioInsert(struct StackVars *sv, struct List *list,
 struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 			      STRPTR name);
 
-AROS_UFP4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes), 
+AROS_UFP4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes, 0), 
 	AROS_UFPA(BPTR   , fh        , D1),
 	AROS_UFPA(void * , buf       , D2),
 	AROS_UFPA(LONG   , size      , D3),
 	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
-AROS_UFP4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes), 
+AROS_UFP4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes, 0), 
 	AROS_UFPA(BPTR   , fh        , D1),
 	AROS_UFPA(LONG   , pos       , D2),
 	AROS_UFPA(LONG   , mode      , D3),
 	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
-AROS_UFP3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes), 
+AROS_UFP3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes, 0), 
 	AROS_UFPA(ULONG, size, D0),
 	AROS_UFPA(ULONG, req,  D1),
 	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
-AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDatatypes), 
+AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDatatypes, 0), 
 	AROS_UFPA(APTR , memory, A1),
 	AROS_UFPA(ULONG, size  , D0),
 	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
@@ -202,10 +202,10 @@ const LONG const CollArray[2*NUM_COLL]=
 
 const LONG_FUNC const FunctionArray[]=
 {				/* Note! */
-    (LONG_FUNC)AROS_SLIB_ENTRY(ReadFunc, AddDatatypes),
-    (LONG_FUNC)AROS_SLIB_ENTRY(AllocFunc, AddDatatypes),
-    (LONG_FUNC)AROS_SLIB_ENTRY(FreeFunc, AddDatatypes),
-    (LONG_FUNC)AROS_SLIB_ENTRY(SeekFunc, AddDatatypes), /* For ELF */
+    (LONG_FUNC)AROS_SLIB_ENTRY(ReadFunc, AddDatatypes, 0),
+    (LONG_FUNC)AROS_SLIB_ENTRY(AllocFunc, AddDatatypes, 0),
+    (LONG_FUNC)AROS_SLIB_ENTRY(FreeFunc, AddDatatypes, 0),
+    (LONG_FUNC)AROS_SLIB_ENTRY(SeekFunc, AddDatatypes, 0), /* For ELF */
 };
 
 
@@ -1358,7 +1358,7 @@ struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 *
 */
 
-AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes),
+AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes, 0),
 	AROS_UFHA(BPTR   , fh        , D1),
 	AROS_UFHA(void * , buffer    , D2),
 	AROS_UFHA(LONG   , length    , D3),
@@ -1400,7 +1400,7 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes),
 *
 */
 
-AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes),
+AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes, 0),
 	AROS_UFHA(BPTR   , fh        , D1),
 	AROS_UFHA(LONG   , pos       , D2),
 	AROS_UFHA(LONG   , mode      , D3),
@@ -1449,7 +1449,7 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes),
 *
 */
 
-AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes),
+AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes, 0),
 	AROS_UFHA(ULONG, size, D0),
 	AROS_UFHA(ULONG, flags,D1),
 	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
@@ -1484,7 +1484,7 @@ AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes),
 *
 */
 
-AROS_UFH3(void, AROS_SLIB_ENTRY(FreeFunc, AddDatatypes),
+AROS_UFH3(void, AROS_SLIB_ENTRY(FreeFunc, AddDatatypes, 0),
 	AROS_UFHA(APTR , memory, A1),
 	AROS_UFHA(ULONG, size  , D0),
 	AROS_UFHA(struct DosLibrary *, DOSBase, A6))

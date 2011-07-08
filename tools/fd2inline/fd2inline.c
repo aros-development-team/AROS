@@ -2401,10 +2401,10 @@ fD_write(FILE* outfile, const fdDef* obj)
 
 	 if (target==AROS)
 	 {
-	    fprintf(outfile, "#define %s%s AROS_SLIB_ENTRY(%s%s,%s)\n",
+	    fprintf(outfile, "#define %s%s AROS_SLIB_ENTRY(%s%s,%s,%d)\n",
 		    gateprefix, name,
 		    gateprefix, name,
-		    BaseNamC);
+		    BaseNamC,fD_GetOffset(obj));
 	 }
 
 	 fprintf(outfile,"\n");

@@ -65,8 +65,8 @@
 	.text
 	.balign 4
 	.chip 68020
-	.globl	AROS_SLIB_ENTRY(CacheControl,Exec)
-AROS_SLIB_ENTRY(CacheControl,Exec):
+	.globl	AROS_SLIB_ENTRY(CacheControl,Exec,108)
+AROS_SLIB_ENTRY(CacheControl,Exec,108):
 
     movem.l %d2/%d3/%a5,%sp@-
     move.l %d0,%d2

@@ -25,21 +25,21 @@
     .text
     .balign 4
 
-    .globl  AROS_SLIB_ENTRY(SMult32,Utility)
-    .globl  AROS_SLIB_ENTRY(UMult32,Utility)
-    .globl  AROS_SLIB_ENTRY(UMult32_020,Utility)
+    .globl  AROS_SLIB_ENTRY(SMult32,Utility,23)
+    .globl  AROS_SLIB_ENTRY(UMult32,Utility,24)
+    .globl  AROS_SLIB_ENTRY(UMult32_020,Utility,24)
 
-    .type   AROS_SLIB_ENTRY(SMult32,Utility),@function
-    .type   AROS_SLIB_ENTRY(UMult32,Utility),@function
-    .type   AROS_SLIB_ENTRY(UMult32_020,Utility),@function
+    .type   AROS_SLIB_ENTRY(SMult32,Utility,23),@function
+    .type   AROS_SLIB_ENTRY(UMult32,Utility,24),@function
+    .type   AROS_SLIB_ENTRY(UMult32_020,Utility,24),@function
 
-AROS_SLIB_ENTRY(UMult32_020,Utility):
+AROS_SLIB_ENTRY(UMult32_020,Utility,24):
     mulu.l  %d1,%d0
     rts
 
     .balign 4
-AROS_SLIB_ENTRY(SMult32,Utility):
-AROS_SLIB_ENTRY(UMult32,Utility):
+AROS_SLIB_ENTRY(SMult32,Utility,23):
+AROS_SLIB_ENTRY(UMult32,Utility,24):
 /*
     What do we have to do
     d0 = (a^16 + b), d1 = (c^16 = d)

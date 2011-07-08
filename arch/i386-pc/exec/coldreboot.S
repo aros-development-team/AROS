@@ -44,9 +44,9 @@
 #include "aros/i386/asm.h"
 
 	    .text
-	    .globl	AROS_SLIB_ENTRY(ColdReboot,Exec)
-	    _FUNCTION(AROS_SLIB_ENTRY(ColdReboot,Exec))
-AROS_SLIB_ENTRY(ColdReboot,Exec):
+	    .globl	AROS_SLIB_ENTRY(ColdReboot,Exec,121)
+	    _FUNCTION(AROS_SLIB_ENTRY(ColdReboot,Exec,121))
+AROS_SLIB_ENTRY(ColdReboot,Exec,121):
 
 #ifdef DEBUG
 	    hlt

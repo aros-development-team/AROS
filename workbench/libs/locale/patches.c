@@ -70,15 +70,15 @@ static struct patchinfo
     APTR    whichpatchfunc;
 } pi [] = {
 
-    {LIB_EXEC   , 87 , AROS_SLIB_ENTRY(LocRawDoFmt		, Locale)},
-    {LIB_EXEC   , 137, AROS_SLIB_ENTRY(LocVNewRawDoFmt		, Locale)},
-    {LIB_UTILITY, 28 , AROS_SLIB_ENTRY(LocStrnicmp		, Locale)},
-    {LIB_UTILITY, 27 , AROS_SLIB_ENTRY(LocStricmp		, Locale)},
-    {LIB_UTILITY, 30 , AROS_SLIB_ENTRY(LocToLower		, Locale)},
-    {LIB_UTILITY, 29 , AROS_SLIB_ENTRY(LocToUpper		, Locale)},
-    {LIB_DOS    , 124, AROS_SLIB_ENTRY(LocDateToStr		, Locale)},
-    {LIB_DOS    , 125, AROS_SLIB_ENTRY(LocStrToDate		, Locale)},
-    {LIB_DOS    , 163, AROS_SLIB_ENTRY(LocDosGetLocalizedString	, Locale)},
+    {LIB_EXEC   , 87 , AROS_SLIB_ENTRY(LocRawDoFmt		, Locale, 31)},
+    {LIB_UTILITY, 28 , AROS_SLIB_ENTRY(LocStrnicmp		, Locale, 32)},
+    {LIB_UTILITY, 27 , AROS_SLIB_ENTRY(LocStricmp		, Locale, 33)},
+    {LIB_UTILITY, 30 , AROS_SLIB_ENTRY(LocToLower		, Locale, 34)},
+    {LIB_UTILITY, 29 , AROS_SLIB_ENTRY(LocToUpper		, Locale, 35)},
+    {LIB_DOS    , 124, AROS_SLIB_ENTRY(LocDateToStr		, Locale, 36)},
+    {LIB_DOS    , 125, AROS_SLIB_ENTRY(LocStrToDate		, Locale, 37)},
+    {LIB_DOS    , 163, AROS_SLIB_ENTRY(LocDosGetLocalizedString	, Locale, 38)},
+    {LIB_EXEC   , 137, AROS_SLIB_ENTRY(LocVNewRawDoFmt		, Locale, 39)},
     {0}
 };
 

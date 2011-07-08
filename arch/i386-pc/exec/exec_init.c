@@ -1052,12 +1052,11 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
 	    case 1:
 		rkprintf("SSE\n");
 		/* Patch exec with some SSE-aware functions */
-	        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_SSE, Exec));
-	        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_SSE, Exec));
-	        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_SSE, Exec));
-	        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_SSE, Exec));
-		SetFunction(&ExecBase->LibNode, -104*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMem_SSE, Exec));
-		SetFunction(&ExecBase->LibNode, -105*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMem_SSE, Exec));
+	        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_SSE, Exec, 6));
+	        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_SSE, Exec, 9));
+	        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_SSE, Exec, 10));
+		SetFunction(&ExecBase->LibNode, -104*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104));
+		SetFunction(&ExecBase->LibNode, -105*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 105));
 		/* tell the CPU that we will support SSE */
 		wrcr(cr4, rdcr(cr4) | (3 << 9));
 		/* Clear the EM and MP flags of CR0 */
@@ -1077,9 +1076,9 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     else
     { 
 #if ASSUME_FPU
-        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_FPU, Exec));
-        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_FPU, Exec));
-        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_FPU, Exec));
+        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_FPU, Exec, 6));
+        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_FPU, Exec, 9));
+        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_FPU, Exec, 10));
 
 	rkprintf("FPU enabled.\n");
 #endif
@@ -1131,16 +1130,16 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     if (strstr(arosmb->cmdline, "debug=serial"))
     {
         SetFunction(&ExecBase->LibNode, -84 * LIB_VECTSIZE,
-            AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
+            AROS_SLIB_ENTRY(SerialRawIOInit, Exec, 84));
         SetFunction(&ExecBase->LibNode, -86 * LIB_VECTSIZE,
-            AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
+            AROS_SLIB_ENTRY(SerialRawPutChar, Exec, 86));
     }
     else if (strstr(arosmb->cmdline, "debug=memory"))
     {
         SetFunction(&ExecBase->LibNode, -84 * LIB_VECTSIZE,
-            AROS_SLIB_ENTRY(MemoryRawIOInit, Exec));
+            AROS_SLIB_ENTRY(MemoryRawIOInit, Exec, 84));
         SetFunction(&ExecBase->LibNode, -86 * LIB_VECTSIZE,
-            AROS_SLIB_ENTRY(MemoryRawPutChar, Exec));
+            AROS_SLIB_ENTRY(MemoryRawPutChar, Exec, 86));
     }
     PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL; /* temp fix for debug=memory */
     RawIOInit();

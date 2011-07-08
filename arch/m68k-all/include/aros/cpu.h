@@ -346,10 +346,10 @@ extern void aros_not_implemented ();
 #define AROS_LC4LONG   AROS_LC4
 
 #   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \
-	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
 	__AROS_LDAQUAD(a1), __AROS_LD_BASE(bt,bn))
 #   define AROS_LDQUAD2(t,n,a1,a2,bt,bn,o,s) \
-	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
 	__AROS_LDAQUAD(a1), \
 	__AROS_LDAQUAD(a2),__AROS_LD_BASE(bt,bn))
 

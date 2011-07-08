@@ -43,17 +43,17 @@
 
 #include "arosc_init.h"
 
-extern struct aroscbase *AROS_SLIB_ENTRY(open,arosc)();
-extern BPTR AROS_SLIB_ENTRY(close,arosc)();
-extern BPTR AROS_SLIB_ENTRY(expunge,arosc)();
-extern int AROS_SLIB_ENTRY(null,arosc)();
+extern struct aroscbase *AROS_SLIB_ENTRY(open,arosc,1)();
+extern BPTR AROS_SLIB_ENTRY(close,arosc,2)();
+extern BPTR AROS_SLIB_ENTRY(expunge,arosc,3)();
+extern int AROS_SLIB_ENTRY(null,arosc,4)();
 
 void *const arosc_functable[]=
 {
-    &AROS_SLIB_ENTRY(open,arosc),
-    &AROS_SLIB_ENTRY(close,arosc),
-    &AROS_SLIB_ENTRY(expunge,arosc),
-    &AROS_SLIB_ENTRY(null,arosc),
+    &AROS_SLIB_ENTRY(open,arosc,1),
+    &AROS_SLIB_ENTRY(close,arosc,2),
+    &AROS_SLIB_ENTRY(expunge,arosc,3),
+    &AROS_SLIB_ENTRY(null,arosc,4),
 #define SYSTEM_CALL(name, x...)  &name,
 #include <sys/syscall.def>
 #undef SYSTEM_CALL

@@ -40,8 +40,8 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(ColdReboot,Exec)
-AROS_SLIB_ENTRY(ColdReboot,Exec):
+	.globl	AROS_SLIB_ENTRY(ColdReboot,Exec,121)
+AROS_SLIB_ENTRY(ColdReboot,Exec,121):
 	jsr	Disable(%a6)			/* disable */
 	moveq.l	#0,%d0				/* cache bits */
 	moveq.l	#-1,%d1				/* cache mask */

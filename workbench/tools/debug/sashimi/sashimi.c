@@ -340,15 +340,15 @@ RemovePatches(VOID)
      * this is not bullet proof :(
      */
     res = SetFunction(&SysBase->LibNode,LVORawIOInit,OldRawIOInit);
-    if(res != AROS_SLIB_ENTRY(NewRawIOInit,Exec))
+    if(res != AROS_SLIB_ENTRY(NewRawIOInit,Exec,84))
         SetFunction(&SysBase->LibNode,LVORawIOInit,res);
 
     res = SetFunction(&SysBase->LibNode,LVORawMayGetChar,OldRawMayGetChar);
-    if(res != AROS_SLIB_ENTRY(NewRawMayGetChar,Exec))
+    if(res != AROS_SLIB_ENTRY(NewRawMayGetChar,Exec,85))
         SetFunction(&SysBase->LibNode,LVORawMayGetChar,res);
 
     res = SetFunction(&SysBase->LibNode,LVORawPutChar,OldRawPutChar);
-    if(res != AROS_SLIB_ENTRY(NewRawPutChar,Exec))
+    if(res != AROS_SLIB_ENTRY(NewRawPutChar,Exec,86))
         SetFunction(&SysBase->LibNode,LVORawPutChar,res);
 
     /* make sure IO is re-inited
@@ -366,9 +366,9 @@ InstallPatches(VOID)
      */
     Disable();
 
-    OldRawIOInit        = SetFunction(&SysBase->LibNode,LVORawIOInit,        AROS_SLIB_ENTRY(NewRawIOInit,Exec));
-    OldRawMayGetChar    = SetFunction(&SysBase->LibNode,LVORawMayGetChar,    AROS_SLIB_ENTRY(NewRawMayGetChar,Exec));
-    OldRawPutChar       = SetFunction(&SysBase->LibNode,LVORawPutChar,       AROS_SLIB_ENTRY(NewRawPutChar,Exec));
+    OldRawIOInit        = SetFunction(&SysBase->LibNode,LVORawIOInit,        AROS_SLIB_ENTRY(NewRawIOInit,Exec,84));
+    OldRawMayGetChar    = SetFunction(&SysBase->LibNode,LVORawMayGetChar,    AROS_SLIB_ENTRY(NewRawMayGetChar,Exec,85));
+    OldRawPutChar       = SetFunction(&SysBase->LibNode,LVORawPutChar,       AROS_SLIB_ENTRY(NewRawPutChar,Exec,86));
 
     Enable();
 }

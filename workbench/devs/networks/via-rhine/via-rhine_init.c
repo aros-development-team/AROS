@@ -339,7 +339,7 @@ D(bug("[VIA-RHINE] init.BeginIO\n"));
 
 AROS_LH1(LONG, abortio,
     AROS_LHA(struct IOSana2Req *, req, A1),
-    LIBBASETYPEPTR, LIBBASE, 5, VIARHINEDev)
+    LIBBASETYPEPTR, LIBBASE, 6, VIARHINEDev)
 {
     AROS_LIBFUNC_INIT
     struct VIARHINEUnit *dev;

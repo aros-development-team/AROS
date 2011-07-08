@@ -113,7 +113,7 @@ static struct Library *dummylib;
 
 static void *function_array[] =
 {
-  Dummy_LIB_open,
+  AROS_SLIB_ENTRY(LIB_open, Dummy, 1),
   LIB_close,
   LIB_expunge,
   LIB_reserved,

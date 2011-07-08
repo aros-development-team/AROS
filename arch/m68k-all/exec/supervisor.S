@@ -78,8 +78,9 @@
 
 	.text
 	.balign 4
-	.globl AROS_SLIB_ENTRY(Supervisor,Exec)
-AROS_SLIB_ENTRY(Supervisor,Exec):
+	.globl AROS_SLIB_ENTRY(Supervisor,Exec,5)
+	.type	AROS_SLIB_ENTRY(SuperState,Exec,5),@function
+AROS_SLIB_ENTRY(Supervisor,Exec,5):
 #ifndef DoRegisterCalls
 	move.l	%a5,%sp@-
 	move.l	%sp@(-8),%a5

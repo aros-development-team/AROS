@@ -3,9 +3,9 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(WaitBlit,Graphics)
+	.globl	AROS_SLIB_ENTRY(WaitBlit,Graphics,38)
 
-AROS_SLIB_ENTRY(WaitBlit,Graphics):
+AROS_SLIB_ENTRY(WaitBlit,Graphics,38):
     tst.w 0xdff002 /* original DIP Agnus bug workaround */
 w2: btst #6,0xdff002
     bne.s w1

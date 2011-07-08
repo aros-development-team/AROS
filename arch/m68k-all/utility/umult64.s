@@ -22,14 +22,14 @@
     .text
     .balign 4
 
-    .globl  AROS_SLIB_ENTRY(UMult64,Utility)
-    .globl  AROS_SLIB_ENTRY(UMult64_020,Utility)
+    .globl  AROS_SLIB_ENTRY(UMult64,Utility,34)
+    .globl  AROS_SLIB_ENTRY(UMult64_020,Utility,34)
 
-    .type   AROS_SLIB_ENTRY(UMult64,Utility),@function
-    .type   AROS_SLIB_ENTRY(UMult64_020,Utility),@function
+    .type   AROS_SLIB_ENTRY(UMult64,Utility,34),@function
+    .type   AROS_SLIB_ENTRY(UMult64_020,Utility,34),@function
 
 
-AROS_SLIB_ENTRY(UMult64_020,Utility):
+AROS_SLIB_ENTRY(UMult64_020,Utility,34):
     mulu.l  %d0,%d0:%d1
     rts
 
@@ -43,7 +43,7 @@ AROS_SLIB_ENTRY(UMult64_020,Utility):
 */
 
     .balign 4
-AROS_SLIB_ENTRY(UMult64,Utility):
+AROS_SLIB_ENTRY(UMult64,Utility,34):
     movem.l %d2-%d5,-(%sp)
     /* Set up some registers */
     move.l  %d0,%d2

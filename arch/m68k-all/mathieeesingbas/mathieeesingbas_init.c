@@ -11,16 +11,17 @@
 
 #include "mathieeesingbas_intern.h"
 
-#define SetFunc(a,b) SetFunction(lh, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,MathIeeeSingBas))
+#define SetFunc(a,b) SetFunction(lh, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,MathIeeeSingBas,a))
 
-extern void AROS_SLIB_ENTRY(Mul_6888x,MathIeeeSingBas)(void);
-extern void AROS_SLIB_ENTRY(Div_6888x,MathIeeeSingBas)(void);
-extern void AROS_SLIB_ENTRY(Add_6888x,MathIeeeSingBas)(void);
-extern void AROS_SLIB_ENTRY(Sub_6888x,MathIeeeSingBas)(void);
-extern void AROS_SLIB_ENTRY(Neg_6888x,MathIeeeSingBas)(void);
-extern void AROS_SLIB_ENTRY(Abs_6888x,MathIeeeSingBas)(void);
-extern void AROS_SLIB_ENTRY(Fix_6888x,MathIeeeSingBas)(void);
-extern void AROS_SLIB_ENTRY(Flt_6888x,MathIeeeSingBas)(void);
+extern void AROS_SLIB_ENTRY(Fix_6888x,MathIeeeSingBas,5)(void);
+extern void AROS_SLIB_ENTRY(Flt_6888x,MathIeeeSingBas,6)(void);
+
+extern void AROS_SLIB_ENTRY(Abs_6888x,MathIeeeSingBas,9)(void);
+extern void AROS_SLIB_ENTRY(Neg_6888x,MathIeeeSingBas,10)(void);
+extern void AROS_SLIB_ENTRY(Add_6888x,MathIeeeSingBas,11)(void);
+extern void AROS_SLIB_ENTRY(Sub_6888x,MathIeeeSingBas,12)(void);
+extern void AROS_SLIB_ENTRY(Mul_6888x,MathIeeeSingBas,13)(void);
+extern void AROS_SLIB_ENTRY(Div_6888x,MathIeeeSingBas,14)(void);
 
 static int IEEESP_Init(struct Library *lh)
 {
