@@ -41,7 +41,7 @@ AROS_UFP3(struct Region *, ScaleLayerCallback,
 	AROS_LHA(struct TagItem *, taglist   , A1),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 42, Layers)
+	struct LayersBase *, LayersBase, 38, Layers)
 
 /*  FUNCTION
         Scale the given layer. This function will use the
