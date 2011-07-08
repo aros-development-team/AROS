@@ -24,7 +24,7 @@
 	AROS_LHA(APTR,           userdata, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 167, Dos)
+	struct DosLibrary *, DOSBase, 169, Dos)
 
 /*  FUNCTION
 	Scan local and/or global variables accordingly to specified flags. For
