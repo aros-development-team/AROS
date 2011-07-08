@@ -87,7 +87,7 @@ VAR ULONG                       winmask;
 VAR ULONG                       msgmask;
 /* variables for Intuition's ScreenNotify */
 VAR struct MsgPort             *isnport;
-VAR IPTR                        isnstarted;
+VAR APTR                        isnstarted;
 VAR ULONG                       isnmask;
 /* variable for using separate screen */
 VAR BOOL			separate_screen;
