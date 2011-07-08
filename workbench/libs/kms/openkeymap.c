@@ -17,7 +17,7 @@
 	AROS_LHA(STRPTR, name, A0),
 
 /*  LOCATION */
-	struct KMSLibrary *, KMSBase, 1, Kms)
+	struct KMSLibrary *, KMSBase, 5, Kms)
 
 /*  FUNCTION
 	Open a keymap by name.
