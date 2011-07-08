@@ -61,7 +61,7 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
     struct HideWindowActionMsg msg;
 
     DEBUG_HIDEWINDOW(dprintf("HideWindow: Window 0x%lx\n", (ULONG) window));
-    SANITY_CHECK(window)
+    SANITY_CHECKR(window, FALSE)
 
 #ifdef CGXSHOWHIDESUPPORT
     if (window->Flags & WFLG_BACKDROP) return;

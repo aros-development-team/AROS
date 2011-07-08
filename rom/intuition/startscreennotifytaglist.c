@@ -24,7 +24,7 @@
          AROS_LHA(struct TagItem *, tags, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 161, Intuition)
+         struct IntuitionBase *, IntuitionBase, 154, Intuition)
 
 /*  FUNCTION
 	Add Notifications to Intuition. You will be notified when
