@@ -22,7 +22,7 @@
     AROS_LHA(struct Node *, handle, A1),
 
 /*  LOCATION */
-    struct Library *, PartitionBase, 22, Partition)
+    struct Library *, PartitionBase, 23, Partition)
 
 /*  FUNCTION
     Adds the specified filesystem to the system list of bootable filesystems
