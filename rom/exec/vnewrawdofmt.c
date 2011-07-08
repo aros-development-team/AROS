@@ -29,7 +29,7 @@
 	AROS_LHA(va_list,      DataStream,   A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 87, Exec)
+	struct ExecBase *, SysBase, 137, Exec)
 
 /*  FUNCTION
 	printf-style formatting function with callback hook and C-style
