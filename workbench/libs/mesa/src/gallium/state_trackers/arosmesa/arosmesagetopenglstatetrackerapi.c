@@ -10,7 +10,7 @@
 /*  SYNOPSIS */ 
 
 /*  LOCATION */
-      struct Library *, MesaBase, 0, Mesa)
+      struct Library *, MesaBase, 11, Mesa)
 
 /*  FUNCTION
         This is a PRIVATE function used by egl.library to receive pointer to
