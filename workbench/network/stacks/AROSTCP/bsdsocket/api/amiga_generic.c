@@ -211,7 +211,7 @@ AROS_LH3(LONG, IoctlSocket,
 	AROS_LHA(LONG, fdes, D0),
         AROS_LHA(ULONG, cmd, D1),
         AROS_LHA(caddr_t, data, A0),
-        struct SocketBase *, libPtr, 18, UL)
+        struct SocketBase *, libPtr, 19, UL)
 {
   AROS_LIBFUNC_INIT
   return __IoctlSocket(fdes, cmd, data, libPtr);
@@ -457,7 +457,7 @@ AROS_LH6(LONG, WaitSelect,
    AROS_LHA(fd_set *, exeptfds, A2),
    AROS_LHA(struct timeval *, timeout, A3),
    AROS_LHA(ULONG *, sigmp, D1),
-   struct SocketBase *, libPtr, 19, UL)
+   struct SocketBase *, libPtr, 21, UL)
 {
   AROS_LIBFUNC_INIT
   DSYSCALLS(log(LOG_DEBUG,"WaitSelect(%lu, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx) called", nfds, readfds, writefds, exeptfds, timeout, sigmp);)
@@ -467,7 +467,7 @@ AROS_LH6(LONG, WaitSelect,
 
 AROS_LH1(LONG, GetSocketEvents,
    AROS_LHA(ULONG *,eventsp, A0),
-   struct SocketBase *, libPtr, 46, UL)
+   struct SocketBase *, libPtr, 50, UL)
 {
    AROS_LIBFUNC_INIT
    struct soevent *se;
@@ -829,7 +829,7 @@ static LONG makeId(LONG id)
 AROS_LH2(LONG, ReleaseSocket,
    AROS_LHA(LONG, fd, D0),
    AROS_LHA(LONG, id, D1),
-   struct SocketBase *,libPtr, 21, UL)
+   struct SocketBase *,libPtr, 25, UL)
 {
   AROS_LIBFUNC_INIT
   struct SocketNode *sn;
@@ -884,7 +884,7 @@ AROS_LH2(LONG, ReleaseSocket,
 AROS_LH2(LONG, ReleaseCopyOfSocket,
    AROS_LHA(LONG, fd, D0),
    AROS_LHA(LONG, id, D1),
-   struct SocketBase *, libPtr, 22, UL)
+   struct SocketBase *, libPtr, 26, UL)
 {
   AROS_LIBFUNC_INIT
   struct SocketNode *sn;
@@ -928,7 +928,7 @@ AROS_LH4(LONG, ObtainSocket,
    AROS_LHA(LONG, domain, D1),
    AROS_LHA(LONG, type, D2),
    AROS_LHA(LONG, protocol, D3),
-   struct SocketBase *, libPtr, 23, UL)
+   struct SocketBase *, libPtr, 24, UL)
 {
   AROS_LIBFUNC_INIT
   struct protosw *prp;
@@ -1006,7 +1006,7 @@ AROS_LH4(LONG, ObtainSocket,
 AROS_LH2(LONG, Dup2Socket,
    AROS_LHA(LONG, fd1, D0),
    AROS_LHA(LONG, fd2, D1),
-   struct SocketBase *, libPtr, 23, UL)
+   struct SocketBase *, libPtr, 44, UL)
 {
   AROS_LIBFUNC_INIT
   LONG newfd;

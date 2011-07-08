@@ -492,7 +492,7 @@ D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: finished search\n"));
 
 AROS_LH1(struct hostent *, gethostbyname,
    AROS_LHA(char *, name, A0),
-   struct SocketBase *, libPtr, 30, UL)
+   struct SocketBase *, libPtr, 35, UL)
 {
   AROS_LIBFUNC_INIT
   return __gethostbyname(name, libPtr);
@@ -582,7 +582,7 @@ AROS_LH3(struct hostent *, gethostbyaddr,
    AROS_LHA(UBYTE *, addr, A0),
    AROS_LHA(int, len, D0),
    AROS_LHA(int, type, D1),
-   struct SocketBase *, libPtr, 31, UL)
+   struct SocketBase *, libPtr, 36, UL)
 {
   AROS_LIBFUNC_INIT
 #if defined(__AROS__)
@@ -810,7 +810,7 @@ D(bug("[AROSTCP](gethostnameadr.c) __gethostname: namelen: %d host_namelen: %d\n
 AROS_LH2(LONG, gethostname,
    AROS_LHA(STRPTR, name, A0),
    AROS_LHA(LONG, namelen, D0),
-   struct SocketBase *, libPtr, 32, UL)
+   struct SocketBase *, libPtr, 47, UL)
 {
   AROS_LIBFUNC_INIT
 #if defined(__AROS__)
@@ -867,7 +867,7 @@ D(bug("[AROSTCP](gethostnameadr.c) gethostname()\n"));
 /*ULONG SAVEDS gethostid(
    REG(a6, struct SocketBase * libPtr))*/
 AROS_LH0(ULONG, gethostid,
-   struct SocketBase *, libPtr, 33, UL)
+   struct SocketBase *, libPtr, 48, UL)
 {
   AROS_LIBFUNC_INIT
 

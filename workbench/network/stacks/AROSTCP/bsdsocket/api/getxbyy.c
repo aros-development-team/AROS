@@ -210,7 +210,7 @@ static struct netent * makenetent(struct SocketBase * libPtr,
    REG(a6, struct SocketBase * libPtr))*/
 AROS_LH1(struct netent *, getnetbyname,
    AROS_LHA(const char *, name, A0),
-   struct SocketBase *, libPtr, 34, UL)
+   struct SocketBase *, libPtr, 37, UL)
 {
   AROS_LIBFUNC_INIT
   struct NetentNode * entNode;
@@ -241,7 +241,7 @@ AROS_LH1(struct netent *, getnetbyname,
 AROS_LH2(struct netent *, getnetbyaddr,
    AROS_LHA(long, netw, D0),
    AROS_LHA(long, type, D1),
-   struct SocketBase *, libPtr, 35, UL)
+   struct SocketBase *, libPtr, 38, UL)
 {
   AROS_LIBFUNC_INIT
   struct NetentNode * entNode;
@@ -328,7 +328,7 @@ struct ServentNode * findServentNode(struct NetDataBase * ndb,
 AROS_LH2(struct servent *, getservbyname,
    AROS_LHA(const char *, name, A0),
    AROS_LHA(const char *, proto, A1),
-   struct SocketBase *, libPtr, 36, UL)
+   struct SocketBase *, libPtr, 39, UL)
 {
   AROS_LIBFUNC_INIT
   struct ServentNode * entNode;
@@ -355,7 +355,7 @@ AROS_LH2(struct servent *, getservbyname,
 AROS_LH2(struct servent *, getservbyport,
    AROS_LHA(LONG, port, D0),
    AROS_LHA(const char *, proto, A0),
-   struct SocketBase *, libPtr, 37, UL)
+   struct SocketBase *, libPtr, 40, UL)
 {
   AROS_LIBFUNC_INIT
   struct ServentNode * entNode;
@@ -418,7 +418,7 @@ static struct protoent * makeprotoent(struct SocketBase * libPtr,
    REG(a6, struct SocketBase * libPtr))*/
 AROS_LH1(struct protoent *, getprotobyname,
    AROS_LHA(const char *, name, A0),
-   struct SocketBase *, libPtr, 38, UL)
+   struct SocketBase *, libPtr, 41, UL)
 {
   AROS_LIBFUNC_INIT
   struct ProtoentNode * entNode;
@@ -447,7 +447,7 @@ AROS_LH1(struct protoent *, getprotobyname,
    REG(a6, struct SocketBase * libPtr))*/
 AROS_LH1(struct protoent *, getprotobynumber,
    AROS_LHA(long, protoc, A0),
-   struct SocketBase *, libPtr, 39, UL)
+   struct SocketBase *, libPtr, 42, UL)
 {
   AROS_LIBFUNC_INIT
   struct ProtoentNode * entNode;

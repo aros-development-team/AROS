@@ -88,7 +88,7 @@ extern struct kernel_var kvars[];
 /*LONG Errno(
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH0(LONG, Errno,
-   struct SocketBase *, libPtr, 24, UL)
+   struct SocketBase *, libPtr, 27, UL)
 {
   AROS_LIBFUNC_INIT
   return (LONG)readErrnoValue(libPtr);
@@ -112,7 +112,7 @@ LONG __SetErrnoPtr(VOID *err_p, UBYTE size, struct SocketBase *libPtr)
 AROS_LH2(LONG, SetErrnoPtr,
    AROS_LHA(VOID *, err_p, A0),
    AROS_LHA(UBYTE, size, D0),
-   struct SocketBase *, libPtr, 25, UL)
+   struct SocketBase *, libPtr, 28, UL)
 {
   AROS_LIBFUNC_INIT
   return __SetErrnoPtr(err_p, size, libPtr);
@@ -128,7 +128,7 @@ AROS_LH3(VOID, Syslog,
    AROS_LHA(ULONG, pri, D0),
    AROS_LHA(const char *, fmt, A0),
    AROS_LHA(IPTR *, ap, A1),
-   struct SocketBase *, libPtr, 26, UL)
+   struct SocketBase *, libPtr, 43, UL)
 {
   AROS_LIBFUNC_INIT
   int saved_errno;
@@ -231,7 +231,7 @@ AROS_LH3(VOID, SetSocketSignals,
    AROS_LHA(ULONG, sigintrmask, D0),
    AROS_LHA(ULONG, sigiomask, D1),
    AROS_LHA(ULONG, sigurgmask, D2),
-   struct SocketBase *, libPtr, 27, UL)
+   struct SocketBase *, libPtr, 22, UL)
 {
   AROS_LIBFUNC_INIT
   CHECK_TASK_VOID();
@@ -248,7 +248,7 @@ AROS_LH3(VOID, SetSocketSignals,
 /*LONG getdtablesize(
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH0(LONG, getdtablesize,
-   struct SocketBase *, libPtr, 28, UL)
+   struct SocketBase *, libPtr, 23, UL)
 {
   AROS_LIBFUNC_INIT
   DSYSCALLS(log(LOG_DEBUG,"getdtablesize(): returned %ld", libPtr->dTableSize);)
@@ -642,7 +642,7 @@ setdtablesize(struct SocketBase * libPtr, UWORD size)
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH1(ULONG, SocketBaseTagList,
    AROS_LHA(struct TagItem *, tags, A0),
-   struct SocketBase *, libPtr, 29, UL)
+   struct SocketBase *, libPtr, 49, UL)
 {
   AROS_LIBFUNC_INIT
   ULONG errIndex = 1;

@@ -144,7 +144,7 @@ BOOL SB_Expunged = FALSE; /* boolean value set by ELL_Expunge */
 
 AROS_LH1 (struct Library *, Open,
 	AROS_LHA(ULONG, version, D0),
-        struct Library *, libPtr, 0, ELL)
+        struct Library *, libPtr, 1, ELL)
 {
   AROS_LIBFUNC_INIT
   struct SocketBase * newBase;
@@ -316,7 +316,7 @@ D(bug("[AROSTCP](amiga_api.c) __ELL_Expunge()\n"));
   return NULL;
 }
 
-AROS_LH0(ULONG *, Expunge, struct Library *, libPtr, 2, ELL)
+AROS_LH0(ULONG *, Expunge, struct Library *, libPtr, 3, ELL)
 {
   AROS_LIBFUNC_INIT
 #if defined(__AROS__)
@@ -326,7 +326,7 @@ D(bug("[AROSTCP](amiga_api.c) ELL_Expunge()\n"));
   AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(LONG, Null, struct Library *, libPtr, 3, Null)
+AROS_LH0I(LONG, Null, struct Library *, libPtr, 0, LIB)
 {
   AROS_LIBFUNC_INIT
 #if defined(__AROS__)
@@ -423,7 +423,7 @@ D(bug("[AROSTCP](amiga_api.c) __UL_Close: Closing proc 0x%lx base 0x%lx\n", libP
   return NULL; /* always return null */
 }
 
-AROS_LH0(ULONG *, Close, struct SocketBase *, libPtr, 1, UL)
+AROS_LH0(ULONG *, Close, struct SocketBase *, libPtr, 2, UL)
 {
   AROS_LIBFUNC_INIT
 #if defined(__AROS__)
