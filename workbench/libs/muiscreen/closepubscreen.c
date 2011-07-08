@@ -26,7 +26,7 @@
 	AROS_LHA(char *, name,  A0),
 
 /*  LOCATION */
-	struct MUIScreenBase_intern *, MUIScreenBase, 0x48, MUIScreen)
+	struct MUIScreenBase_intern *, MUIScreenBase, 8, MUIScreen)
 
 /*  FUNCTION
 

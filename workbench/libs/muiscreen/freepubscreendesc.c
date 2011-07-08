@@ -19,7 +19,7 @@
 	AROS_LHA(struct MUI_PubScreenDesc *, psd,  A0),
 
 /*  LOCATION */
-	struct Library *, MUIScreenBase, 0x1e, MUIScreen)
+	struct Library *, MUIScreenBase, 6, MUIScreen)
 
 /*  FUNCTION
 

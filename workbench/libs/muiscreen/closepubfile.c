@@ -20,7 +20,7 @@
 	AROS_LHA(APTR, pf,  A0),
 
 /*  LOCATION */
-	struct Library *, MUIScreenBase, 0x30, MUIScreen)
+	struct Library *, MUIScreenBase, 10, MUIScreen)
 
 /*  FUNCTION
 
