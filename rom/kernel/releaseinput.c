@@ -13,7 +13,7 @@ AROS_LH0I(void, KrnReleaseInput,
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 33, Kernel)
+	struct KernelBase *, KernelBase, 34, Kernel)
 
 /*  FUNCTION
 	Release low-level debug input hardware and hand it back to the operating system
