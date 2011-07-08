@@ -302,7 +302,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
 	AROS_LHA(va_list     , DataStream, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 87, Locale)
+	struct ExecBase *, SysBase, 39, Locale)
 
 /*  FUNCTION
     	See exec.library/VNewRawDoFmt
