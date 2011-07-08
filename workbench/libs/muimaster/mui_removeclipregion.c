@@ -23,7 +23,7 @@
 	AROS_LHA(APTR, handle, A1),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 27, MUIMaster)
+	struct Library *, MUIMasterBase, 31, MUIMaster)
 
 /*  FUNCTION
 

@@ -229,7 +229,7 @@ APTR zune_bubble_create(Object *obj, LONG x, LONG y, char *text, ULONG flags)
 				       WA_Activate, FALSE,
 				       WA_Borderless, TRUE,
 				       WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
-				       WA_Shape, (IPTR)bubble->shape,
+				       WA_ShapeRegion, (IPTR)bubble->shape,
 				       TAG_DONE);
 
     if (!bubble->win)

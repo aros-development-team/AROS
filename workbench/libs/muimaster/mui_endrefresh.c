@@ -21,7 +21,7 @@
 	AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 29, MUIMaster)
+	struct Library *, MUIMasterBase, 33, MUIMaster)
 /*  FUNCTION
 
     INPUTS
