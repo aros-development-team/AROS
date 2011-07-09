@@ -105,7 +105,7 @@ UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
      return sum;
 }
 
-void SetSysBaseChkSum()
+void SetSysBaseChkSum(void)
 {
      SysBase->ChkBase=~(IPTR)SysBase;
      SysBase->ChkSum = 0;

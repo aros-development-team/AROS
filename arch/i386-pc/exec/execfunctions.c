@@ -108,7 +108,7 @@ void AROS_SLIB_ENTRY(ObtainSemaphore,Exec,94)(void);
 void AROS_SLIB_ENTRY(ReleaseSemaphore,Exec,95)(void);
 void AROS_SLIB_ENTRY(AttemptSemaphore,Exec,96)(void);
 void AROS_SLIB_ENTRY(ObtainSemaphoreList,Exec,97)(void);
-void AROS_SLIB_ENTRY(ReleaseSemaphoreList,Exec,99)(void);
+void AROS_SLIB_ENTRY(ReleaseSemaphoreList,Exec,98)(void);
 void AROS_SLIB_ENTRY(FindSemaphore,Exec,99)(void);
 void AROS_SLIB_ENTRY(AddSemaphore,Exec,100)(void);
 void AROS_SLIB_ENTRY(RemSemaphore,Exec,101)(void);
@@ -247,7 +247,7 @@ const void *ExecFunctions[] __attribute__((section(".rodata"))) =
 	&AROS_SLIB_ENTRY(ReleaseSemaphore,Exec,95),
 	&AROS_SLIB_ENTRY(AttemptSemaphore,Exec,96),
 	&AROS_SLIB_ENTRY(ObtainSemaphoreList,Exec,97),
-	&AROS_SLIB_ENTRY(ReleaseSemaphoreList,Exec,99),
+	&AROS_SLIB_ENTRY(ReleaseSemaphoreList,Exec,98),
 	&AROS_SLIB_ENTRY(FindSemaphore,Exec,99),
 /*100 */&AROS_SLIB_ENTRY(AddSemaphore,Exec,100),
 	&AROS_SLIB_ENTRY(RemSemaphore,Exec,101),

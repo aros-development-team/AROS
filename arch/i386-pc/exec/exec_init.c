@@ -179,7 +179,7 @@ extern void AROS_SLIB_ENTRY(PrepareContext_SSE, Exec, 6)();
 extern void AROS_SLIB_ENTRY(Dispatch_SSE, Exec, 10)();
 extern void AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104)();
 
-extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
+extern ULONG Exec_15_MakeFunctions(APTR, APTR, APTR, APTR);
 
 AROS_UFP5S(void, IntServer,
     AROS_UFPA(ULONG, intMask, D0),
@@ -762,7 +762,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
 
     /* Build the jumptable */
     ExecBase->LibNode.lib_NegSize =
-        Exec_MakeFunctions(ExecBase, (APTR)LIBFUNCTABLE, NULL, ExecBase);
+        Exec_15_MakeFunctions(ExecBase, (APTR)LIBFUNCTABLE, NULL, ExecBase);
 
     rkprintf("OK\n");
 
@@ -1183,7 +1183,7 @@ asm("\nexec_DefaultTrap:\n\t"
     "popl   %eax\n\t"
     "pushl  4\n\t"
     "pushl  %eax\n\t"
-    "call    Exec_Alert");
+    "call    Exec_18_Alert");
 
 
 
@@ -1620,6 +1620,14 @@ AROS_LH0(BPTR, close,
 
     /* I have one fewer opener. */
     SysBase->LibNode.lib_OpenCnt--;
+    return 0;
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0I(int, null,
+    struct ExecBase *, SysBase, 3, Exec)
+{
+    AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
 }

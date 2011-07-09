@@ -213,9 +213,9 @@ Exec_Schedule_x:    cli     	    	    	    	    /* stegerg: added -> CHECKME */
 */
 
                     .balign 32,0x90
-                    .globl  Exec_Switch
-                    .type   Exec_Switch,@function
-Exec_Switch:        cli                         /* Disable all interrupts */
+                    .globl  Exec_9_Switch
+                    .type   Exec_9_Switch,@function
+Exec_9_Switch:      cli                         /* Disable all interrupts */
 		    cld
                     SAVE_ALL                    /* Save context */
 
@@ -250,9 +250,9 @@ Exec_Switch_Common: movl    4,%ebp
                     jmp     Exec_Dispatch_x
 
                     .balign 32,0x90
-                    .globl  Exec_Switch_FPU
-                    .type   Exec_Switch_FPU,@function
-Exec_Switch_FPU:    cli
+                    .globl  Exec_9_Switch_FPU
+                    .type   Exec_9_Switch_FPU,@function
+Exec_9_Switch_FPU:  cli
 		    cld
                     SAVE_ALL
                     movl    4,%eax
@@ -272,9 +272,9 @@ Exec_Switch_FPU:    cli
                     jmp     Exec_Switch_Common
 
                     .balign 32,0x90
-                    .globl  Exec_Switch_SSE
-                    .type   Exec_Switch_SSE,@function
-Exec_Switch_SSE:    cli
+                    .globl  Exec_9_Switch_SSE
+                    .type   Exec_9_Switch_SSE,@function
+Exec_9_Switch_SSE:  cli
 		    cld
                     SAVE_ALL
                     movl    4,%eax
@@ -287,34 +287,36 @@ Exec_Switch_SSE:    cli
                     rep
                     movsl
 
-		    addl    $15,%edi
-		    andl    $~15,%edi
+		            addl    $15,%edi
+		            andl    $~15,%edi
                     fxsave  (%edi)
 
                     movl    $Exec_Restore_SSE,%edi
                     jmp     Exec_Switch_Common
 
                     .balign 32,0x90
-                    .globl  Exec_Dispatch_SSE
-                    .type   Exec_Dispatch_SSE,@function
+                    .globl  Exec_10_Dispatch_SSE
+                    .type   Exec_10_Dispatch_SSE,@function
 		    
-Exec_Dispatch_SSE:  SAVE_ALL
+Exec_10_Dispatch_SSE:
+                    SAVE_ALL
     	    	    movl    $Exec_Restore_SSE,%edi
                     jmp     Exec_Dispatch_com
 
                     .balign 32,0x90
-                    .globl  Exec_Dispatch_FPU
-                    .type   Exec_Dispatch_FPU,@function
+                    .globl  Exec_10_Dispatch_FPU
+                    .type   Exec_10_Dispatch_FPU,@function
 		    
-Exec_Dispatch_FPU:  SAVE_ALL
+Exec_10_Dispatch_FPU:
+                    SAVE_ALL
     	    	    movl    $Exec_Restore_FPU,%edi
                     jmp     Exec_Dispatch_com
 		    
                     .balign 32,0x90
-                    .globl  Exec_Dispatch
-                    .type   Exec_Dispatch,@function
+                    .globl  Exec_10_Dispatch
+                    .type   Exec_10_Dispatch,@function
 		    
-Exec_Dispatch:	    SAVE_ALL
+Exec_10_Dispatch:	SAVE_ALL
     	     	    movl    $Exec_Restore_Gene,%edi
 Exec_Dispatch_com:  movl    4,%ebp
                     movb    $-1,IDNestCnt(%ebp)

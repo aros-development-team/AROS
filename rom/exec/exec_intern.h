@@ -72,7 +72,7 @@ BOOL Exec_PreparePlatform(struct Exec_PlatformData *pdata, struct TagItem *tags)
 void InitKickTags(void);
 void InitResidentList(IPTR *list, ULONG startClass, ULONG version);
 UWORD GetSysBaseChkSum(struct ExecBase *sysbase);
-void SetSysBaseChkSum();
+void SetSysBaseChkSum(void);
 BOOL IsSysBaseValid(struct ExecBase *sysbase);
 
 #endif /* __EXEC_INTERN_H__ */
