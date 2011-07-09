@@ -165,19 +165,19 @@ extern const APTR LIBFUNCTABLE[] __text;
 
 extern struct Library * PrepareAROSSupportBase (void);
 extern ULONG SoftIntDispatch();
-extern void Exec_SerialRawIOInit();
-extern void Exec_SerialRawPutChar(UBYTE chr);
-extern void Exec_MemoryRawIOInit();
-extern void Exec_MemoryRawPutChar(UBYTE chr);
+extern void AROS_SLIB_ENTRY(SerialRawIOInit, Exec, 84)();
+extern void AROS_SLIB_ENTRY(SerialRawPutChar, Exec, 86)(UBYTE chr);
+extern void AROS_SLIB_ENTRY(MemoryRawIOInit, Exec, 84)();
+extern void AROS_SLIB_ENTRY(MemoryRawPutChar, Exec, 86)(UBYTE chr);
 
-extern void Exec_Switch_FPU();
-extern void Exec_PrepareContext_FPU();
-extern void Exec_Dispatch_FPU();
+extern void AROS_SLIB_ENTRY(Switch_FPU, Exec, 9)();
+extern void AROS_SLIB_ENTRY(PrepareContext_FPU, Exec, 6)();
+extern void AROS_SLIB_ENTRY(Dispatch_FPU, Exec, 10)();
 
-extern void Exec_Switch_SSE();
-extern void Exec_PrepareContext_SSE();
-extern void Exec_Dispatch_SSE();
-extern void Exec_CopyMem_SSE();
+extern void AROS_SLIB_ENTRY(Switch_SSE, Exec, 9)();
+extern void AROS_SLIB_ENTRY(PrepareContext_SSE, Exec, 6)();
+extern void AROS_SLIB_ENTRY(Dispatch_SSE, Exec, 10)();
+extern void AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104)();
 
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
 

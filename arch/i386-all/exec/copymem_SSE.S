@@ -49,7 +49,7 @@
 AROS_SLIB_ENTRY(CopyMem_SSE,Exec,104):
 	movl	12(%esp),%eax
 	cmpl	$4096,%eax
-	jl	Exec_CopyMem	/* non-SSE version is faster for small copies */
+	jl	AROS_SLIB_ENTRY(CopyMem,Exec,104)	/* non-SSE version is faster for small copies */
 
 	pushl	%edi
 	pushl	%esi
