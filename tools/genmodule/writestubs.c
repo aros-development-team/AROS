@@ -161,7 +161,6 @@ void writestubs(struct config *cfg)
                                     type, name, arglistit->reg
                             );
                         }
-                        arglistit->reg[2] = '/';
                         free(type);
                         free(name);
                     }
