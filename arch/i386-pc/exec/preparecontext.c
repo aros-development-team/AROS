@@ -128,7 +128,7 @@ AROS_LH4(BOOL, PrepareContext,
 
 /* FIXME: This needs to be fixed/updated if the way library params are passed is changed */
 
-BOOL Exec_PrepareContext_FPU(struct Task *task, APTR entryPoint, APTR fallBack, struct TagItem *tagList, struct ExecBase *SysBase)
+BOOL Exec_6_PrepareContext_FPU(struct Task *task, APTR entryPoint, APTR fallBack, struct TagItem *tagList, struct ExecBase *SysBase)
 {
     ULONG *regs;
     BOOL  retval = FALSE;
@@ -152,7 +152,7 @@ BOOL Exec_PrepareContext_FPU(struct Task *task, APTR entryPoint, APTR fallBack, 
 
 }
 
-BOOL Exec_PrepareContext_SSE(struct Task *task, APTR entryPoint, APTR fallBack, struct TagItem *tagList, struct ExecBase *SysBase)
+BOOL Exec_6_PrepareContext_SSE(struct Task *task, APTR entryPoint, APTR fallBack, struct TagItem *tagList, struct ExecBase *SysBase)
 {
     ULONG *regs;
     BOOL  retval = FALSE;
