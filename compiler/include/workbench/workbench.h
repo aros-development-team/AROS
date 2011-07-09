@@ -34,6 +34,15 @@
 #define WORKBENCH_NAME           "workbench.library"
 
 /*** Structures and associated definitions **********************************/
+struct OldDrawerData
+{
+    struct NewWindow    dd_NewWindow;
+    LONG                dd_CurrentX;
+    LONG                dd_CurrentY;
+};
+
+#define OLDDRAWERDATAFILESIZE (sizeof(struct OldDrawerData))
+
 struct DrawerData
 {
     struct NewWindow dd_NewWindow;
