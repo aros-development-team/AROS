@@ -12,14 +12,6 @@
 
 /*#define OUTPUT_DATA*/
 
-struct OldDrawerData
-{
-    struct NewWindow dd_NewWindow;
-    LONG             dd_CurrentX;
-    LONG             dd_CurrentY;
-};
-
-
 STATIC STRPTR StrDupPooled(APTR pool, STRPTR str)
 {
     char *newstr;
