@@ -517,7 +517,12 @@ DEP_LIBS := arosm autoinit arossupport
 #MM- linklibs-core : linklibs-clib
 #MM- linklibs : linklibs-clib
 #MM linklibs-clib : setup-clib includes linklibs-mlib linklibs-autoinit \
-#MM			clib-stubs linklibs-amiga linklibs-arossupport
+#MM			clib-stubs linklibs-amiga linklibs-arossupport \
+#MM			linklibs-aros \
+#MM			linklibs-dos \
+#MM			linklibs-locale \
+#MM			linklibs-dos \
+#MM			linklibs-intuition
 
 #MM linklibs-clib32 : includes
 
@@ -548,7 +553,7 @@ $(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ) $(OBJDIR)/libarosccommon.a
 	    objs="$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(MODULE_OBJ)" \
 	    endtag="$(OBJDIR)/shared/arosc_endtag.o" \
 	    ldflags="$(LDFLAGS) -L$(OBJDIR)" \
-	    libs="$(LIBS) -larosccommon"
+	    libs="$(LIBS) -larosccommon -laros -ldos -llocale -lautoinit -ldos -lintuition"
 
 $(OBJDIR)/static/%.o : %.c
 	%compile_q opt="$(CFLAGS) -DAROSC_STATIC"
