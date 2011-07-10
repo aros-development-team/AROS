@@ -140,7 +140,7 @@ class arg:
 # - templrefs: an array to indicate the templates used in the body of the template.
 #   This is generated with the generate_templrefs function of this class.
 class template:
-    re_arginst = re.compile('%\(([a-zA-Z0-9][a-zA-Z0-9_]*)\)')
+    re_arginst = re.compile('([a-zA-Z0-9-_]*)%\(([a-zA-Z0-9][a-zA-Z0-9_]*)\)([a-zA-Z0-9-_]*)')
     hascommon = 0
 
     # Generate a template
@@ -165,7 +165,7 @@ class template:
 
     # Generate the references for the genmf variable used in this template
     # This function will return an assositive array of tuples with linerefs[lineno]
-    # an array of tuples named argrefs with the tuple of the form (argbody, start, stop)
+    # an array of tuples named argrefs with the tuple of the form (argbody, start, stop, prefix, suffix)
     # with argbody an object of class arg, start and stop the start and end of this variable
     # in the string of this line.
     def generate_linerefs(self):
@@ -174,9 +174,9 @@ class template:
         while lineno < len(self.body):
             argrefs = []
             for m in template.re_arginst.finditer(self.body[lineno]):
-                if self.args.has_key(m.group(1)):
-                    argbody = self.args[m.group(1)]
-                    argrefs.append((argbody, m.start(), m.end()))
+                if self.args.has_key(m.group(2)):
+                    argbody = self.args[m.group(2)]
+                    argrefs.append((argbody, m.start(), m.end(),m.group(1),m.group(3)))
                     argbody.used = 1
     
             if len(argrefs) > 0:
@@ -235,11 +235,19 @@ class template:
             for argref in argrefs:
                 if argref[1] > pos:
                     lineout = lineout + line[pos:argref[1]]
-            
+           
+                linevals=[]
                 if not argref[0].value == None:
-                    lineout = lineout + argref[0].value
+                    for val in argref[0].value.split():
+                        linevals.append(argref[3] + val + argref[4])
                 elif argref[0].default:
-                    lineout = lineout + argref[0].default
+                    for val in argref[0].default.split():
+                        linevals.append(argref[3] + val + argref[4])
+
+                if len(linevals) == 0:
+                    lineout += argref[3] + argref[4]
+                else:
+                    lineout += " ".join(linevals)
     
                 pos = argref[2]
                 
