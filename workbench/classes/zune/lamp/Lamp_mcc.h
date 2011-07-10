@@ -1,5 +1,5 @@
-#ifndef ZUNE_PREFSWINDOW_H
-#define ZUNE_PREFSWINDOW_H
+#ifndef LAMP_MCC_H
+#define LAMP_MCC_H
 
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved.
@@ -52,4 +52,4 @@ struct MUIP_Lamp_SetRGB                 {STACKED ULONG methodid; STACKED ULONG r
 #define MUIV_Lamp_Color_LoadingData     10
 #define MUIV_Lamp_Color_SavingData      11
 
-#endif /* ZUNE_PREFSWINDOW_H */
+#endif /* LAMP_MCC_H */
