@@ -88,6 +88,18 @@
   int             Success;
   BOOL            ReturnValue;
   char            Buffer[BUFFER_SIZE + 1];
+  APTR DOSBase;
+  APTR UtilityBase;
+
+  DOSBase = OpenLibrary("dos.library", 0);
+  if (DOSBase == NULL)
+      return FALSE;
+
+  UtilityBase = OpenLibrary("utility.library", 0);
+  if (UtilityBase == NULL) {
+      CloseLibrary(DOSBase);
+      return FALSE;
+  }
 
   ReturnValue = FALSE;
 
@@ -115,6 +127,8 @@
     }
   }
 
+  CloseLibrary(UtilityBase);
+  CloseLibrary(DOSBase);
   return (ReturnValue);
 
 } /* IsDosEntry */
