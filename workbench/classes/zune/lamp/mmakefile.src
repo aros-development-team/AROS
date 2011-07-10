@@ -16,7 +16,7 @@ INCLUDE_FILES := Lamp_mcc.h
     mmake=workbench-classes-zune-lamp \
     modname=Lamp modtype=mcc \
     conffile=lamp.conf \
-    uselibs="graphics intuition muimaster utility amiga rom"
+    uselibs="amiga rom"
 
 %copy_includes path=mui
 

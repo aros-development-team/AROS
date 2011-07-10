@@ -12,7 +12,7 @@ INCLUDE_FILES := prefswindow.h
     mmake=workbench-classes-zune-prefswindow \
     modname=PrefsWindow modtype=mcc \
     conffile=prefswindow.conf \
-    uselibs="intuition locale muimaster utility amiga rom"
+    uselibs="amiga rom"
     
 %copy_includes path=zune
     

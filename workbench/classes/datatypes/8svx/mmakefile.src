@@ -9,4 +9,4 @@ USER_CFLAGS   := -DMYDEBUG
 
 %build_module mmake=workbench-datatypes-8svx \
     modname=8svx modtype=datatype \
-    files=$(FILES) uselibs="dos datatypes iffparse intuition"
+    files=$(FILES)

@@ -13,6 +13,6 @@ EXEDIR      := $(AROS_TESTS)/benchmarks/graphics
 
 %build_progs mmake=test-benchmarks-graphics \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="amiga arosc graphics cybergraphics intuition diskfont m"
+    uselibs="amiga arosc m"
 
 %common

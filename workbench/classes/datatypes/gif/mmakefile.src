@@ -9,5 +9,5 @@ USER_CFLAGS   := -DMYDEBUG
 
 %build_module mmake=workbench-datatypes-gif \
     modname=gif modtype=datatype \
-    files=$(FILES) uselibs="dos datatypes intuition picture"
+    files=$(FILES)
 

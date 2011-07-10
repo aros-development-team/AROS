@@ -109,7 +109,7 @@ USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 
 %build_progs mmake=test \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
-    uselibs="version coolimagesstatic graphics intuition utility cybergraphics commodities arossupport amiga arosc m hiddstubs oop"
+    uselibs="coolimagesstatic arossupport amiga arosc m hiddstubs oop"
 
 
 %copy_files_q mmake=test-testscript files="testscript" dst=$(EXEDIR)

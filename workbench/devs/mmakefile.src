@@ -33,12 +33,12 @@ include $(TOP)/config/make.cfg
 %build_module mmake=workbench-devs-fdsk \
   modname=fdsk modtype=device \
   files=fdsk_device \
-  uselibs="dos arossupport amiga rom"
+  uselibs="arossupport amiga rom"
 
 %build_module mmake=workbench-devs-ramdrive \
   modname=ramdrive modtype=device \
   files=ramdrive_device \
-  uselibs="dos arossupport amiga rom"
+  uselibs="arossupport amiga rom"
 
 #MM
 workbench-devs-mountlist : $(AROS_DEVS)/Mountlist workbench-devs-dosdrivers

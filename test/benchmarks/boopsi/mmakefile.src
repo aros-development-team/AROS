@@ -13,6 +13,6 @@ EXEDIR := $(AROS_TESTS)/benchmarks/boopsi
 
 %build_progs mmake=test-benchmarks-boopsi \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="intuition muimaster arossupport amiga arosc m"
+    uselibs="arossupport amiga arosc m"
 
 %common

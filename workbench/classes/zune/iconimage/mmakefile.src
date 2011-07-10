@@ -10,7 +10,7 @@ INCLUDE_FILES := iconimage.h
     mmake=workbench-classes-zune-iconimage \
     modname=IconImage modtype=mcc \
     conffile=iconimage.conf \
-    uselibs="icon intuition muimaster utility amiga rom"
+    uselibs="amiga rom"
     
 %copy_includes path=zune
     
