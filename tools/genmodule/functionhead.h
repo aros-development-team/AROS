@@ -34,6 +34,7 @@ struct functionhead {
     unsigned int lvo; /* Only for library functions, not methods */
     struct stringlist *interface; /* Only for HIDD class */
     char *method; /* Only for HIID class */
+    int version;  /* First library version number this appeared in*/
     int novararg : 1; /* Are varargs allowed for this function ? */
     int priv     : 1; /* Is function private */
 };

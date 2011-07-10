@@ -1297,6 +1297,7 @@ static void readsectionfunctionlist(struct config *cfg)
     int atend = 0, i;
     char *line, *s, *s2;
     unsigned int lvo = cfg->firstlvo;
+    int minversion = 0;
     struct functionhead **funclistptr = &cfg->funclist;
     
     if (cfg->basename==NULL)
@@ -1452,10 +1453,28 @@ static void readsectionfunctionlist(struct config *cfg)
 	    }
 	    else if (strncmp(s, "version", 7) == 0)
 	    {
-	        /* TODO: Mark version number for the following
-	         *       functions, so that the automatic OpenLibrary()
-	         *       will know what version to use.
+	        /* Mark version number for the following
+	         * functions, so that the automatic OpenLibrary()
+	         * will know what version to use.
 	         */
+	        char *tmp;
+	        int ver;
+
+	        s += 7;
+
+	        while (isspace(*s)) s++;
+	        ver = (int)strtol(s, &tmp, 0);
+
+	        if (s == tmp)
+	            exitfileerror(20, ".version expects an integer\n");
+
+	        s = tmp;
+	        while (isspace(*s)) s++;
+
+	        if (*s && *s != '#')
+	            exitfileerror(20, ".version has junk after the version number\n");
+
+	        minversion = ver;
 	    }
 	    else
 		exitfileerror(20, "Syntax error");
@@ -1496,6 +1515,7 @@ static void readsectionfunctionlist(struct config *cfg)
 	    *s2 = '\0';
 	    (*funclistptr)->type = strdup(line);
 	    (*funclistptr)->lvo = lvo;
+	    (*funclistptr)->version = minversion;
 	    lvo++;
 
 	    /* Parse function prototype */
