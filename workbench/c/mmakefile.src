@@ -81,7 +81,7 @@ USER_CFLAGS     := -I$(SRCDIR)/rom/dos -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga arosc m debug"
+    uselibs="arossupport debug asl diskfont partition utility iffparse intuition graphics dos icon locale amiga m"
 
 %build_progs mmake=workbench-c-pure \
     files=$(PURE_FILES) targetdir=$(AROS_C) \
@@ -89,7 +89,7 @@ USER_CFLAGS     := -I$(SRCDIR)/rom/dos -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 %build_prog mmake=workbench-c-requeststring progname=RequestString \
     files=RequestString targetdir=$(AROS_C) \
-    uselibs="arossupport amiga rom mui"
+    uselibs="mui intuition dos muimaster arossupport amiga rom"
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...
