@@ -8,7 +8,7 @@ DISK_EXEDIR := $(AROS_DEVS)/Monitors
 
 %build_prog mmake=devs-monitors-x11 \
     progname=X11 targetdir=$(DISK_EXEDIR) \
-    files=$(DISK_FILES) uselibs="oop"
+    files=$(DISK_FILES) uselibs="oop icon"
 
 USER_CFLAGS = -DHOST_OS_$(ARCH) -isystem $(GENINCDIR) $(HOST_X11_CFLAGS) $(KERNEL_INCLUDES)
 ## The '-Wno-attributes' is here due to a gcc 4.5.x bug
