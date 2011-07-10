@@ -1325,7 +1325,7 @@ static time_t
 interpret_long_date(char * p)
 {
     QUAD long_date;
-    long_date  = (DVAL(p,0) << 32) | DVAL(p,4);
+    long_date  = ((QUAD)DVAL(p,0) << 32) | DVAL(p,4);
 
     long_date -= 116444736000000000;
     long_date /= 10000000;

@@ -150,7 +150,9 @@ STRPTR amitcp_strerror(int error);
 STRPTR host_strerror(int error);
 LONG CompareNames(STRPTR a, STRPTR b);
 VOID StringToUpper(STRPTR s);
+#ifndef __AROS__
 VOID VARARGS68K ReportError(STRPTR fmt, ...);
+#endif
 VOID FreeMemory(APTR address);
 APTR AllocateMemory(ULONG size);
 LONG GetTimeZoneDelta(VOID);
@@ -181,39 +183,39 @@ STATIC VOID TranslateBName(UBYTE *name, UBYTE *map);
 STATIC VOID Cleanup(VOID);
 STATIC BOOL Setup(STRPTR program_name, STRPTR service, STRPTR workgroup, STRPTR username, STRPTR opt_password, BOOL opt_changecase, STRPTR opt_clientname, STRPTR opt_servername, int opt_cachesize, LONG *opt_time_zone_offset, LONG *opt_dst_offset, STRPTR device_name, STRPTR volume_name, STRPTR translation_file);
 STATIC VOID ConvertBString(LONG max_len, STRPTR cstring, APTR bstring);
-STATIC BPTR Action_Parent(struct FileLock *parent, LONG *error_ptr);
-STATIC LONG Action_DeleteObject(struct FileLock *parent, APTR bcpl_name, LONG *error_ptr);
-STATIC BPTR Action_CreateDir(struct FileLock *parent, APTR bcpl_name, LONG *error_ptr);
-STATIC BPTR Action_LocateObject(struct FileLock *parent, APTR bcpl_name, LONG mode, LONG *error_ptr);
-STATIC BPTR Action_CopyDir(struct FileLock *lock, LONG *error_ptr);
-STATIC LONG Action_FreeLock(struct FileLock *lock, LONG *error_ptr);
-STATIC LONG Action_SameLock(struct FileLock *lock1, struct FileLock *lock2, LONG *error_ptr);
-STATIC LONG Action_SetProtect(struct FileLock *parent, APTR bcpl_name, LONG mask, LONG *error_ptr);
-STATIC LONG Action_RenameObject(struct FileLock *source_lock, APTR source_bcpl_name, struct FileLock *destination_lock, APTR destination_bcpl_name, LONG *error_ptr);
-STATIC LONG Action_DiskInfo(struct InfoData *id, LONG *error_ptr);
-STATIC LONG Action_Info(struct FileLock *lock, struct InfoData *id, LONG *error_ptr);
-STATIC LONG Action_ExamineObject(struct FileLock *lock, struct FileInfoBlock *fib, LONG *error_ptr);
+STATIC BPTR Action_Parent(struct FileLock *parent, SIPTR *error_ptr);
+STATIC LONG Action_DeleteObject(struct FileLock *parent, APTR bcpl_name, SIPTR *error_ptr);
+STATIC BPTR Action_CreateDir(struct FileLock *parent, APTR bcpl_name, SIPTR *error_ptr);
+STATIC BPTR Action_LocateObject(struct FileLock *parent, APTR bcpl_name, LONG mode, SIPTR *error_ptr);
+STATIC BPTR Action_CopyDir(struct FileLock *lock, SIPTR *error_ptr);
+STATIC LONG Action_FreeLock(struct FileLock *lock, SIPTR *error_ptr);
+STATIC LONG Action_SameLock(struct FileLock *lock1, struct FileLock *lock2, SIPTR *error_ptr);
+STATIC LONG Action_SetProtect(struct FileLock *parent, APTR bcpl_name, LONG mask, SIPTR *error_ptr);
+STATIC LONG Action_RenameObject(struct FileLock *source_lock, APTR source_bcpl_name, struct FileLock *destination_lock, APTR destination_bcpl_name, SIPTR *error_ptr);
+STATIC LONG Action_DiskInfo(struct InfoData *id, SIPTR *error_ptr);
+STATIC LONG Action_Info(struct FileLock *lock, struct InfoData *id, SIPTR *error_ptr);
+STATIC LONG Action_ExamineObject(struct FileLock *lock, struct FileInfoBlock *fib, SIPTR *error_ptr);
 STATIC BOOL NameIsAcceptable(STRPTR name, LONG max_len);
-STATIC LONG Action_ExamineNext(struct FileLock *lock, struct FileInfoBlock *fib, LONG *error_ptr);
-STATIC LONG Action_ExamineAll(struct FileLock *lock, struct ExAllData *ed, ULONG size, ULONG type, struct ExAllControl *eac, LONG *error_ptr);
-STATIC LONG Action_Find(LONG action, struct FileHandle *fh, struct FileLock *parent, APTR bcpl_name, LONG *error_ptr);
-STATIC LONG Action_Read(struct FileNode *fn, APTR mem, LONG length, LONG *error_ptr);
-STATIC LONG Action_Write(struct FileNode *fn, APTR mem, LONG length, LONG *error_ptr);
-STATIC LONG Action_End(struct FileNode *fn, LONG *error_ptr);
-STATIC LONG Action_Seek(struct FileNode *fn, LONG position, LONG mode, LONG *error_ptr);
-STATIC LONG Action_SetFileSize(struct FileNode *fn, LONG position, LONG mode, LONG *error_ptr);
-STATIC LONG Action_SetDate(struct FileLock *parent, APTR bcpl_name, struct DateStamp *ds, LONG *error_ptr);
-STATIC LONG Action_ExamineFH(struct FileNode *fn, struct FileInfoBlock *fib, LONG *error_ptr);
-STATIC BPTR Action_ParentFH(struct FileNode *fn, LONG *error_ptr);
-STATIC BPTR Action_CopyDirFH(struct FileNode *fn, LONG *error_ptr);
-STATIC LONG Action_FHFromLock(struct FileHandle *fh, struct FileLock *fl, LONG *error_ptr);
-STATIC LONG Action_RenameDisk(APTR bcpl_name, LONG *error_ptr);
-STATIC LONG Action_ChangeMode(LONG type, APTR object, LONG new_mode, LONG *error_ptr);
-STATIC LONG Action_WriteProtect(LONG flag, ULONG key, LONG *error_ptr);
-STATIC LONG Action_MoreCache(LONG buffer_delta, LONG *error_ptr);
-STATIC LONG Action_SetComment(struct FileLock *parent, APTR bcpl_name, APTR bcpl_comment, LONG *error_ptr);
-STATIC LONG Action_LockRecord(struct FileNode *fn, LONG offset, LONG length, LONG mode, ULONG timeout, LONG *error_ptr);
-STATIC LONG Action_FreeRecord(struct FileNode *fn, LONG offset, LONG length, LONG *error_ptr);
+STATIC LONG Action_ExamineNext(struct FileLock *lock, struct FileInfoBlock *fib, SIPTR *error_ptr);
+STATIC LONG Action_ExamineAll(struct FileLock *lock, struct ExAllData *ed, ULONG size, ULONG type, struct ExAllControl *eac, SIPTR *error_ptr);
+STATIC LONG Action_Find(LONG action, struct FileHandle *fh, struct FileLock *parent, APTR bcpl_name, SIPTR *error_ptr);
+STATIC LONG Action_Read(struct FileNode *fn, APTR mem, LONG length, SIPTR *error_ptr);
+STATIC LONG Action_Write(struct FileNode *fn, APTR mem, LONG length, SIPTR *error_ptr);
+STATIC LONG Action_End(struct FileNode *fn, SIPTR *error_ptr);
+STATIC LONG Action_Seek(struct FileNode *fn, LONG position, LONG mode, SIPTR *error_ptr);
+STATIC LONG Action_SetFileSize(struct FileNode *fn, LONG position, LONG mode, SIPTR *error_ptr);
+STATIC LONG Action_SetDate(struct FileLock *parent, APTR bcpl_name, struct DateStamp *ds, SIPTR *error_ptr);
+STATIC LONG Action_ExamineFH(struct FileNode *fn, struct FileInfoBlock *fib, SIPTR *error_ptr);
+STATIC BPTR Action_ParentFH(struct FileNode *fn, SIPTR *error_ptr);
+STATIC BPTR Action_CopyDirFH(struct FileNode *fn, SIPTR *error_ptr);
+STATIC LONG Action_FHFromLock(struct FileHandle *fh, struct FileLock *fl, SIPTR *error_ptr);
+STATIC LONG Action_RenameDisk(APTR bcpl_name, SIPTR *error_ptr);
+STATIC LONG Action_ChangeMode(LONG type, APTR object, LONG new_mode, SIPTR *error_ptr);
+STATIC LONG Action_WriteProtect(LONG flag, ULONG key, SIPTR *error_ptr);
+STATIC LONG Action_MoreCache(LONG buffer_delta, SIPTR *error_ptr);
+STATIC LONG Action_SetComment(struct FileLock *parent, APTR bcpl_name, APTR bcpl_comment, SIPTR *error_ptr);
+STATIC LONG Action_LockRecord(struct FileNode *fn, LONG offset, LONG length, LONG mode, ULONG timeout, SIPTR *error_ptr);
+STATIC LONG Action_FreeRecord(struct FileNode *fn, LONG offset, LONG length, SIPTR *error_ptr);
 STATIC VOID HandleFileSystem(STRPTR device_name, STRPTR volume_name, STRPTR service_name);
 
 /****************************************************************************/
@@ -259,7 +261,9 @@ struct Locale *				Locale;
 /****************************************************************************/
 
 int							errno;
+#ifndef h_errno
 int							h_errno;
+#endif
 
 /****************************************************************************/
 
@@ -806,6 +810,9 @@ int main(void)
 
 /****************************************************************************/
 
+#ifdef __AROS__
+#define LocalPrintf(format,args...) Printf(format ,##args )
+#else
 LONG VARARGS68K
 LocalPrintf(STRPTR format, ...)
 {
@@ -828,6 +835,7 @@ LocalPrintf(STRPTR format, ...)
 
 	return(result);
 }
+#endif /* __AROS__ */
 
 /****************************************************************************/
 
@@ -1055,6 +1063,30 @@ AddError(STRPTR fmt,APTR args)
 /* Report an error that has occured; if the program was not launched
  * from Shell, error messages will be accumulated for later display.
  */
+#ifdef __AROS__
+VOID VReportError(STRPTR fmt, IPTR *args)
+{
+	if(NOT Quiet)
+	{
+		if(WBStartup != NULL)
+		{
+			AddError(fmt,args);
+		}
+		else
+		{
+			UBYTE program_name[MAX_FILENAME_LEN];
+
+			GetProgramName(program_name,sizeof(program_name));
+
+			LocalPrintf("%s: ",FilePart(program_name));
+
+			VPrintf(fmt,args);
+
+			LocalPrintf("\n");
+		}
+	}
+}
+#else
 VOID VARARGS68K
 ReportError(STRPTR fmt,...)
 {
@@ -1104,6 +1136,7 @@ ReportError(STRPTR fmt,...)
 		}
 	}
 }
+#endif
 
 /****************************************************************************/
 
@@ -1948,7 +1981,7 @@ ReallyRemoveDosEntry(struct DosList * entry)
 	for(i = 0 ; i < 100 ; i++)
 	{
 		dl = AttemptLockDosList(LDF_WRITE|kind);
-		if(((ULONG)dl) <= 1)
+		if(((IPTR)dl) <= 1)
 			dl = NULL;
 
 		if(dl != NULL)
@@ -2796,7 +2829,7 @@ BuildFullName(
 STATIC BPTR
 Action_Parent(
 	struct FileLock *	parent,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	BPTR result = ZERO;
 	STRPTR full_name = NULL;
@@ -2841,7 +2874,7 @@ Action_Parent(
 
 	memset(ln,0,sizeof(*ln));
 
-	ln->ln_FileLock.fl_Key		= (LONG)ln;
+	ln->ln_FileLock.fl_Key		= (IPTR)ln;
 	ln->ln_FileLock.fl_Access	= SHARED_LOCK;
 	ln->ln_FileLock.fl_Task		= FileSystemPort;
 	ln->ln_FileLock.fl_Volume	= MKBADDR(VolumeNode);
@@ -2912,7 +2945,7 @@ STATIC LONG
 Action_DeleteObject(
 	struct FileLock *	parent,
 	APTR				bcpl_name,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	STRPTR full_name = NULL;
@@ -3083,7 +3116,7 @@ STATIC BPTR
 Action_CreateDir(
 	struct FileLock *	parent,
 	APTR				bcpl_name,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	BPTR result = ZERO;
 	STRPTR full_name = NULL;
@@ -3167,7 +3200,7 @@ Action_CreateDir(
 
 	memset(ln,0,sizeof(*ln));
 
-	ln->ln_FileLock.fl_Key		= (LONG)ln;
+	ln->ln_FileLock.fl_Key		= (IPTR)ln;
 	ln->ln_FileLock.fl_Access	= EXCLUSIVE_LOCK;
 	ln->ln_FileLock.fl_Task		= FileSystemPort;
 	ln->ln_FileLock.fl_Volume	= MKBADDR(VolumeNode);
@@ -3229,7 +3262,7 @@ Action_LocateObject(
 	struct FileLock *	parent,
 	APTR				bcpl_name,
 	LONG				mode,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	BPTR result = ZERO;
 	STRPTR full_name = NULL;
@@ -3282,7 +3315,7 @@ Action_LocateObject(
 
 	memset(ln,0,sizeof(*ln));
 
-	ln->ln_FileLock.fl_Key		= (LONG)ln;
+	ln->ln_FileLock.fl_Key		= (IPTR)ln;
 	ln->ln_FileLock.fl_Access	= (mode != EXCLUSIVE_LOCK) ? SHARED_LOCK : EXCLUSIVE_LOCK;
 	ln->ln_FileLock.fl_Task		= FileSystemPort;
 	ln->ln_FileLock.fl_Volume	= MKBADDR(VolumeNode);
@@ -3324,7 +3357,7 @@ Action_LocateObject(
 STATIC BPTR
 Action_CopyDir(
 	struct FileLock *	lock,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	BPTR result = ZERO;
 	STRPTR full_name = NULL;
@@ -3380,7 +3413,7 @@ Action_CopyDir(
 
 	strcpy(full_name,source_name);
 
-	ln->ln_FileLock.fl_Key		= (LONG)ln;
+	ln->ln_FileLock.fl_Key		= (IPTR)ln;
 	ln->ln_FileLock.fl_Access	= source_mode;
 	ln->ln_FileLock.fl_Task		= FileSystemPort;
 	ln->ln_FileLock.fl_Volume	= MKBADDR(VolumeNode);
@@ -3418,7 +3451,7 @@ Action_CopyDir(
 STATIC LONG
 Action_FreeLock(
 	struct FileLock *	lock,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSTRUE;
 	struct LockNode * ln;
@@ -3452,7 +3485,7 @@ STATIC LONG
 Action_SameLock(
 	struct FileLock *	lock1,
 	struct FileLock *	lock2,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	STRPTR name1;
@@ -3505,7 +3538,7 @@ Action_SetProtect(
 	struct FileLock *	parent,
 	APTR				bcpl_name,
 	LONG				mask,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	STRPTR full_name = NULL;
@@ -3618,7 +3651,7 @@ Action_RenameObject(
 	APTR				source_bcpl_name,
 	struct FileLock *	destination_lock,
 	APTR				destination_bcpl_name,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	struct LockNode * ln;
 	LONG result = DOSFALSE;
@@ -3727,12 +3760,12 @@ Action_RenameObject(
 STATIC LONG
 Action_DiskInfo(
 	struct InfoData *	id,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSTRUE;
-	LONG block_size;
-	LONG num_blocks;
-	LONG num_blocks_free;
+	long block_size;
+	long num_blocks;
+	long num_blocks_free;
 	LONG error;
 
 	ENTER();
@@ -3809,7 +3842,7 @@ STATIC LONG
 Action_Info(
 	struct FileLock *	lock,
 	struct InfoData *	id,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result;
 
@@ -3840,7 +3873,7 @@ STATIC LONG
 Action_ExamineObject(
 	struct FileLock *		lock,
 	struct FileInfoBlock *	fib,
-	LONG *					error_ptr)
+	SIPTR *					error_ptr)
 {
 	LONG result = DOSFALSE;
 	LONG error = OK;
@@ -4093,7 +4126,7 @@ STATIC LONG
 Action_ExamineNext(
 	struct FileLock *		lock,
 	struct FileInfoBlock *	fib,
-	LONG *					error_ptr)
+	SIPTR *					error_ptr)
 {
 	struct LockNode * ln;
 	LONG result = DOSFALSE;
@@ -4250,7 +4283,7 @@ dir_scan_callback_func_exall(
 		ed = ec->ec_Next;
 
 		ed->ed_Next = NULL;
-		ed->ed_Name = (STRPTR)(((ULONG)ed) + ec->ec_MinSize);
+		ed->ed_Name = (STRPTR)(((IPTR)ed) + ec->ec_MinSize);
 		strcpy(ed->ed_Name,name);
 
 		TranslateCName(ed->ed_Name,M2A);
@@ -4338,7 +4371,7 @@ dir_scan_callback_func_exall(
 				ec->ec_Last->ed_Next = ed;
 
 			ec->ec_Last = ed;
-			ec->ec_Next = (struct ExAllData *)(((ULONG)ed) + size);
+			ec->ec_Next = (struct ExAllData *)(((IPTR)ed) + size);
 			ec->ec_BytesLeft -= size;
 			ec->ec_Control->eac_Entries++;
 
@@ -4365,7 +4398,7 @@ Action_ExamineAll(
 	ULONG					size,
 	ULONG					type,
 	struct ExAllControl *	eac,
-	LONG *					error_ptr)
+	SIPTR *					error_ptr)
 {
 	struct ExAllContext ec;
 	struct LockNode * ln;
@@ -4572,7 +4605,7 @@ Action_Find(
 	struct FileHandle *		fh,
 	struct FileLock *		parent,
 	APTR					bcpl_name,
-	LONG *					error_ptr)
+	SIPTR *					error_ptr)
 {
 	LONG result = DOSFALSE;
 	STRPTR parent_path = NULL;
@@ -4780,7 +4813,7 @@ Action_Find(
 		goto out;
 	}
 
-	fh->fh_Arg1 = (LONG)fn;
+	fh->fh_Arg1 = (IPTR)fn;
 
 	AddTail((struct List *)&FileList,(struct Node *)fn);
 	result = DOSTRUE;
@@ -4808,7 +4841,7 @@ Action_Read(
 	struct FileNode *	fn,
 	APTR				mem,
 	LONG				length,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = 0;
 	LONG error = OK;
@@ -4843,7 +4876,7 @@ Action_Write(
 	struct FileNode *	fn,
 	APTR				mem,
 	LONG				length,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	LONG error = OK;
@@ -4882,7 +4915,7 @@ Action_Write(
 STATIC LONG
 Action_End(
 	struct FileNode *	fn,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	Remove((struct Node *)fn);
 
@@ -4901,7 +4934,7 @@ Action_Seek(
 	struct FileNode *	fn,
 	LONG				position,
 	LONG				mode,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG previous_position = fn->fn_Offset;
 	LONG result = -1;
@@ -5066,7 +5099,7 @@ Action_SetFileSize(
 	struct FileNode *	fn,
 	LONG				position,
 	LONG				mode,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	smba_stat_t st;
 	LONG result = -1;
@@ -5151,7 +5184,7 @@ Action_SetDate(
 	struct FileLock *	parent,
 	APTR				bcpl_name,
 	struct DateStamp *	ds,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	STRPTR full_name = NULL;
@@ -5248,7 +5281,7 @@ STATIC LONG
 Action_ExamineFH(
 	struct FileNode *		fn,
 	struct FileInfoBlock *	fib,
-	LONG *					error_ptr)
+	SIPTR *					error_ptr)
 {
 	LONG result = DOSFALSE;
 	smba_stat_t st;
@@ -5332,7 +5365,7 @@ Action_ExamineFH(
 STATIC BPTR
 Action_ParentFH(
 	struct FileNode *	fn,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	BPTR result = ZERO;
 	struct LockNode * ln = NULL;
@@ -5379,7 +5412,7 @@ Action_ParentFH(
 
 	memset(ln,0,sizeof(*ln));
 
-	ln->ln_FileLock.fl_Key		= (LONG)ln;
+	ln->ln_FileLock.fl_Key		= (IPTR)ln;
 	ln->ln_FileLock.fl_Access	= SHARED_LOCK;
 	ln->ln_FileLock.fl_Task		= FileSystemPort;
 	ln->ln_FileLock.fl_Volume	= MKBADDR(VolumeNode);
@@ -5417,7 +5450,7 @@ Action_ParentFH(
 STATIC BPTR
 Action_CopyDirFH(
 	struct FileNode *	fn,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	BPTR result = ZERO;
 	struct LockNode * ln = NULL;
@@ -5455,7 +5488,7 @@ Action_CopyDirFH(
 
 	memset(ln,0,sizeof(*ln));
 
-	ln->ln_FileLock.fl_Key		= (LONG)ln;
+	ln->ln_FileLock.fl_Key		= (IPTR)ln;
 	ln->ln_FileLock.fl_Access	= SHARED_LOCK;
 	ln->ln_FileLock.fl_Task		= FileSystemPort;
 	ln->ln_FileLock.fl_Volume	= MKBADDR(VolumeNode);
@@ -5494,7 +5527,7 @@ STATIC LONG
 Action_FHFromLock(
 	struct FileHandle *	fh,
 	struct FileLock *	fl,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	struct FileNode * fn;
@@ -5524,7 +5557,7 @@ Action_FHFromLock(
 	Remove((struct Node *)ln);
 	FreeMemory(ln);
 
-	fh->fh_Arg1 = (LONG)fn;
+	fh->fh_Arg1 = (IPTR)fn;
 
 	AddTail((struct List *)&FileList,(struct Node *)fn);
 	result = DOSTRUE;
@@ -5542,7 +5575,7 @@ Action_FHFromLock(
 STATIC LONG
 Action_RenameDisk(
 	APTR	bcpl_name,
-	LONG *	error_ptr)
+	SIPTR *	error_ptr)
 {
 	LONG result = DOSFALSE;
 	LONG error = OK;
@@ -5613,7 +5646,7 @@ Action_ChangeMode(
 	LONG				type,
 	APTR				object,
 	LONG				new_mode,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	struct FileLock * fl = NULL;
@@ -5720,7 +5753,7 @@ STATIC LONG
 Action_WriteProtect(
 	LONG	flag,
 	ULONG	key,
-	LONG *	error_ptr)
+	SIPTR *	error_ptr)
 {
 	LONG result = DOSFALSE;
 	LONG error = OK;
@@ -5781,7 +5814,7 @@ Action_WriteProtect(
 STATIC LONG
 Action_MoreCache(
 	LONG	buffer_delta,
-	LONG *	error_ptr)
+	SIPTR *	error_ptr)
 {
 	LONG result;
 	int old_size;
@@ -5809,7 +5842,7 @@ Action_SetComment(
 	struct FileLock *	parent,
 	APTR				bcpl_name,
 	APTR				bcpl_comment,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	STRPTR full_name = NULL;
@@ -5898,7 +5931,7 @@ Action_LockRecord (
 	LONG				length,
 	LONG				mode,
 	ULONG				timeout,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	LONG error;
@@ -5929,7 +5962,7 @@ Action_LockRecord (
 	if (timeout > 0)
 	{
 		if (timeout > 214748364)
-			timeout = ~0UL;	/* wait forever */
+			timeout = ~0;	/* wait forever */
 		else
 			timeout *= 20;	/* milliseconds instead of Ticks */
 	}
@@ -5958,7 +5991,7 @@ Action_FreeRecord (
 	struct FileNode *	fn,
 	LONG				offset,
 	LONG				length,
-	LONG *				error_ptr)
+	SIPTR *				error_ptr)
 {
 	LONG result = DOSFALSE;
 	LONG error;
@@ -6064,7 +6097,7 @@ HandleFileSystem(STRPTR device_name,STRPTR volume_name,STRPTR service_name)
 		{
 			struct DosPacket * dp;
 			struct Message * mn;
-			LONG res1,res2;
+			IPTR res1,res2;
 
 			while((mn = GetMsg(FileSystemPort)) != NULL)
 			{
@@ -6099,13 +6132,13 @@ HandleFileSystem(STRPTR device_name,STRPTR volume_name,STRPTR service_name)
 					case ACTION_CURRENT_VOLUME:
 						/* (Ignore) -> VolumeNode */
 
-						res1 = MKBADDR(VolumeNode);
+						res1 = (IPTR)MKBADDR(VolumeNode);
 						break;
 
 					case ACTION_LOCATE_OBJECT:
 						/* Lock,Name,Mode -> Lock */
 
-						res1 = Action_LocateObject((struct FileLock *)BADDR(dp->dp_Arg1),(APTR)BADDR(dp->dp_Arg2),dp->dp_Arg3,&res2);
+						res1 = (IPTR)Action_LocateObject((struct FileLock *)BADDR(dp->dp_Arg1),(APTR)BADDR(dp->dp_Arg2),dp->dp_Arg3,&res2);
 						break;
 
 					case ACTION_RENAME_DISK:
@@ -6157,7 +6190,7 @@ HandleFileSystem(STRPTR device_name,STRPTR volume_name,STRPTR service_name)
 					case ACTION_COPY_DIR:
 						/* Lock -> Lock */
 
-						res1 = Action_CopyDir((struct FileLock *)BADDR(dp->dp_Arg1),&res2);
+						res1 = (IPTR)Action_CopyDir((struct FileLock *)BADDR(dp->dp_Arg1),&res2);
 						break;
 
 					case ACTION_SET_PROTECT:
@@ -6169,7 +6202,7 @@ HandleFileSystem(STRPTR device_name,STRPTR volume_name,STRPTR service_name)
 					case ACTION_CREATE_DIR:
 						/* Lock,Name -> Lock */
 
-						res1 = Action_CreateDir((struct FileLock *)BADDR(dp->dp_Arg1),(APTR)BADDR(dp->dp_Arg2),&res2);
+						res1 = (IPTR)Action_CreateDir((struct FileLock *)BADDR(dp->dp_Arg1),(APTR)BADDR(dp->dp_Arg2),&res2);
 						break;
 
 					case ACTION_EXAMINE_OBJECT:
@@ -6207,7 +6240,7 @@ HandleFileSystem(STRPTR device_name,STRPTR volume_name,STRPTR service_name)
 					case ACTION_PARENT:
 						/* Lock -> Lock */
 
-						res1 = Action_Parent((struct FileLock *)BADDR(dp->dp_Arg1),&res2);
+						res1 = (IPTR)Action_Parent((struct FileLock *)BADDR(dp->dp_Arg1),&res2);
 						break;
 
 					case ACTION_INHIBIT:
@@ -6293,13 +6326,13 @@ HandleFileSystem(STRPTR device_name,STRPTR volume_name,STRPTR service_name)
 					case ACTION_COPY_DIR_FH:
 						/* FileHandle->fh_Arg1 -> Bool */
 
-						res1 = Action_CopyDirFH((struct FileNode *)dp->dp_Arg1,&res2);
+						res1 = (IPTR)Action_CopyDirFH((struct FileNode *)dp->dp_Arg1,&res2);
 						break;
 
 					case ACTION_PARENT_FH:
 						/* FileHandle->fh_Arg1 -> Bool */
 
-						res1 = Action_ParentFH((struct FileNode *)dp->dp_Arg1,&res2);
+						res1 = (IPTR)Action_ParentFH((struct FileNode *)dp->dp_Arg1,&res2);
 						break;
 
 					case ACTION_EXAMINE_ALL:

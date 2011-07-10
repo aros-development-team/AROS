@@ -115,7 +115,9 @@ extern struct SocketIFace *	ISocket;
 
 /****************************************************************************/
 
+#ifndef h_errno
 extern int h_errno;
+#endif
 
 /****************************************************************************/
 
@@ -127,7 +129,14 @@ extern STRPTR host_strerror(int error);
 extern time_t MakeTime(const struct tm * const tm);
 extern ULONG GetCurrentTime(VOID);
 extern VOID GMTime(time_t seconds,struct tm * tm);
+#ifdef __AROS__
+extern VOID VReportError(STRPTR fmt, IPTR *args);
+#define ReportError(fmt, ...) do { \
+    IPTR args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+    VReportError(fmt, args); } while (0)
+#else
 extern VOID VARARGS68K ReportError(STRPTR fmt,...);
+#endif
 extern VOID StringToUpper(STRPTR s);
 extern VOID VARARGS68K SPrintf(STRPTR buffer, STRPTR formatString,...);
 
