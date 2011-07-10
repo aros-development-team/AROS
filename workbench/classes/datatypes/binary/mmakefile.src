@@ -7,5 +7,5 @@ FILES := binaryclass
 
 %build_module mmake=workbench-datatypes-binary \
     modname=binary modtype=datatype \
-    files=$(FILES)
+    files=$(FILES) uselibs="dos datatypes graphics intuition text"
 
