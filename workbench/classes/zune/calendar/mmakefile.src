@@ -12,7 +12,7 @@ INCLUDE_FILES := calendar.h
     mmake=workbench-classes-zune-calendar \
     modname=Calendar modtype=mcc \
     conffile=calendar.conf \
-    uselibs="amiga rom m"
+    uselibs="graphics intuition locale muimaster utility amiga rom m"
     
 %copy_includes path=zune
     
