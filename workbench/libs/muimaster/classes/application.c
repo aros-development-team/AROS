@@ -338,7 +338,7 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
     data->app_SingleTask = (BOOL)GetTagData(MUIA_Application_SingleTask, FALSE,
                                             msg->ops_AttrList);
     data->app_Base = (STRPTR)GetTagData(MUIA_Application_Base, (IPTR)"UNNAMED", msg->ops_AttrList);
-    if (!data->app_Base || strpbrk(data->app_Base, " :/()#?*.,"))
+    if (!data->app_Base || strpbrk(data->app_Base, " :/()#?*,"))
     {
         data->app_Base = NULL; /* don't remove */
         CoerceMethod(cl, obj, OM_DISPOSE);
