@@ -295,7 +295,7 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
 #define ASSERT_VALID_FILELOCK(lock) do { \
     	struct FileLock *fl = BADDR(lock); \
     	if (fl && fl->fl_Access != SHARED_LOCK && fl->fl_Access != EXCLUSIVE_LOCK) { \
-    	    bug("%s() called with a bogus FileLock! B=%x FL=%x %s/%s/%d\n", __FUNCTION__, lock, fl, __FILE__,__FUNCTION__,__LINE__); \
+    	    bug("%s() called with a bogus FileLock! Lock=%x FL=%x Access %d %s/%s/%d\n", __FUNCTION__, lock, fl, fl->fl_Access, __FILE__,__FUNCTION__,__LINE__); \
     	} \
     } while (0);
 
