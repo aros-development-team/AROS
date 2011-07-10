@@ -937,7 +937,7 @@ BD_LDFLAGS   := %(ldflags)
 #MM
 %(mmake)-quick : %(mmake)
 
-#MM %(mmake) : includes-generate-deps linklibs-core
+#MM %(mmake) : includes-generate-deps linklibs-core linklibs-%(uselibs)
 %(mmake) : $(BD_TARGETDIR)/$(BD_PROGNAME)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
@@ -995,7 +995,7 @@ BD_LDFLAGS   := %(ldflags)
 #MM
 %(mmake)-quick : %(mmake)
 
-#MM %(mmake) : includes-generate-deps
+#MM %(mmake) : includes-generate-deps linklibs-core linklibs-%(uselibs)
 %(mmake) : $(BD_EXES)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
@@ -1185,10 +1185,12 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 
 # Define metamake targets and their dependencies
 #MM- includes-all : %(mmake)-includes
-#MM %(mmake) : %(mmake)-includes core-linklibs
-#MM %(mmake)-kobj : %(mmake)-includes core-linklibs
+#MM- linklibs-%(modname): %(mmake)-linklib
+#MM- includes-%(modname): %(mmake)-includes
+#MM %(mmake) : %(mmake)-includes core-linklibs linklibs-%(uselibs)
+#MM %(mmake)-kobj : %(mmake)-includes core-linklibs linklibs-%(uselibs)
 #MM %(mmake)-kobj-quick : %(mmake)-includes-quick
-#MM %(mmake)-pkg : %(mmake)-includes core-linklibs
+#MM %(mmake)-pkg : %(mmake)-includes core-linklibs linklibs-%(uselibs)
 #MM %(mmake)-pkg-quick : %(mmake)-includes-quick
 #MM %(mmake)-linklib : %(mmake)-includes
 #MM %(mmake)-quick : %(mmake)-includes-quick
