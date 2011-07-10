@@ -162,9 +162,13 @@ dnl Checks for libraries.
 
 AC_SEARCH_LIBS([NewList],      [amiga],, [AC_MSG_WARN(libamiga is missing.)])
 AC_SEARCH_LIBS([floor],        [m],,	 [AC_MSG_ERROR(libm is missing.)])
-AC_SEARCH_LIBS([IntuitionBase],[auto],,  [AC_MSG_WARN(Who cares?)])
+AC_SEARCH_LIBS([CloseWindow],  [auto],,  [LIBS="$LIBS -lintuition"])
+AC_SEARCH_LIBS([GetDiskObject],[auto],,  [LIBS="$LIBS -licon"])
+AC_SEARCH_LIBS([NextTagItem],  [auto],,  [LIBS="$LIBS -lutility"])
+AC_SEARCH_LIBS([OpenIFF],      [auto],,  [LIBS="$LIBS -liffparse"])
+AC_SEARCH_LIBS([MUI_Error],    [auto],,  [LIBS="$LIBS -lmuimaster"])
 AC_SEARCH_LIBS([LayoutBase],   [raauto],,[AC_MSG_WARN(Who cares?)])
-AC_SEARCH_LIBS([MUI_NewObject],[mui],,   [AC_MSG_WARN(Who cares?)])
+AC_SEARCH_LIBS([MUI_NewObject],[mui],,   [AC_MSG_ERROR(MUI is missing)])
 
 case $host in
  i?86be-pc-amithlon)
