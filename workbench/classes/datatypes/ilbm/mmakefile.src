@@ -9,5 +9,5 @@ USER_CFLAGS   := -DMYDEBUG
 
 %build_module mmake=workbench-datatypes-ilbm \
     modname=ilbm modtype=datatype \
-    files=$(FILES) uselibs="dos datatypes graphics iffparse intuition picture"
+    files=$(FILES)
 

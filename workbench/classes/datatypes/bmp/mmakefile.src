@@ -9,4 +9,4 @@ USER_CFLAGS   := -DMYDEBUG
 
 %build_module mmake=workbench-datatypes-bmp \
     modname=bmp modtype=datatype \
-    files=$(FILES) uselibs="dos datatypes graphics intuition picture"
+    files=$(FILES)

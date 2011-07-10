@@ -7,5 +7,5 @@ FILES := asciiclass
 
 %build_module mmake=workbench-datatypes-ascii \
     modname=ascii modtype=datatype \
-    files=$(FILES) uselibs="dos datatypes graphics intuition text"
+    files=$(FILES)
 

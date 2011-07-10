@@ -9,4 +9,4 @@ FILES := init handler ppp serial
 
 %build_module mmake=devs-networks-drivers-ppp \
     modname=ppp modtype=device \
-    moduledir=Devs/Networks uselibs="dos utility arosc"
+    moduledir=Devs/Networks uselibs="arosc"

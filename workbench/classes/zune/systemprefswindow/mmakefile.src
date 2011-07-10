@@ -12,7 +12,7 @@ INCLUDE_FILES := systemprefswindow.h
     mmake=workbench-classes-zune-systemprefswindow \
     modname=SystemPrefsWindow modtype=mcc \
     conffile=systemprefswindow.conf \
-    uselibs="asl dos icon intuition locale muimaster utility amiga rom"
+    uselibs="amiga rom"
     
 %copy_includes path=zune
     
