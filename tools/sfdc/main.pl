@@ -468,87 +468,87 @@ sub parse_sfd ( $ ) {
 	++$line_no;
 	
 	for ($line) {
-	    /==copyright\s/ && do {
+	    /^==copyright\s/ && do {
 		( $$result{'copyright'} = $_ ) =~ s/==copyright\s+(.*)\s*/$1/;
 		last;
 	    };
 
-	    /==id\s+/ && do {
+	    /^==id\s+/ && do {
 		( $$result{'id'} = $_ ) =~ s/==id\s+(.*)\s*/$1/;
 		last;
 	    };
 
-	    /==libname\s+/ && do {
+	    /^==libname\s+/ && do {
 		( $$result{'libname'} = $_ ) =~ s/==libname\s+(.*)\s*/$1/;
 		last;
 	    };
 
-	    /==base\s+/ && do {
+	    /^==base\s+/ && do {
 		( $$result{'base'} = $_ ) =~ s/==base\s+_?(.*)\s*/$1/;
 		last;
 	    };
 
-	    /==basetype\s+/ && do {
+	    /^==basetype\s+/ && do {
 		( $$result{'basetype'} = $_ ) =~ s/==basetype\s+(.*)\s*/$1/;
 		last;
 	    };
 
-	    /==include\s+/ && do {
+	    /^==include\s+/ && do {
 		( my $inc = $_ ) =~ s/==include\s+(.*)\s*/$1/;
 
 		push @{$$result{'includes'}}, $inc;
 		last;
 	    };
 
-	    /==typedef\s+/ && do {
+	    /^==typedef\s+/ && do {
 		( my $td = $_ ) =~ s/==typedef\s+(.*)\s*$/$1/;
 
 		push @{$$result{'typedefs'}}, $td;
 		last;
 	    };
 	    
-	    /==bias\s+/ && do {
+	    /^==bias\s+/ && do {
 		( $bias = $_ ) =~ s/==bias\s+(.*)\s*/$1/;
 		last;
 	    };
 
-	    /==reserve\s+/ && do {
+	    /^==reserve\s+/ && do {
 		( my $reserve = $_ ) =~ s/==reserve\s+(.*)\s*/$1/;
 
 		$bias += 6 * $reserve;
 		last;
 	    };
 
-	    /==alias\s*$/ && do {
+	    /^==alias\s*$/ && do {
 		# Move back again
 		$type = $last_type;
 		$bias -= 6;
 		last;
 	    };
 
-	    /==varargs\s*$/ && do {
+	    /^==varargs\s*$/ && do {
 		$type = 'varargs';
 		# Move back again
 		$bias -= 6;
 		last;
 	    };
 	    
-	    /==private\s*$/ && do {
+	    /^==private\s*$/ && do {
 		$private = 1;
 		last;
 	    };
 
-	    /==public\s*$/ && do {
+	    /^==public\s*$/ && do {
 		$private = 0;
 		last;
 	    };
 
-	    /==version\s+/ && do {
+	    /^==version\s+/ && do {
 		( $version = $_ ) =~ s/==version\s+(.*)\s*/$1/;
 		last;
 	    };
 	    
-	    /==end\s*$/ && do {
+	    /^==end\s*$/ && do {
 		last LINE;
 	    };
 	    
