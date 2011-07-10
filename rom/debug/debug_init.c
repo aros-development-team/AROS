@@ -36,6 +36,10 @@ static int Debug_Init(struct DebugBase *DebugBase)
     if (!KernelBase)
     	return FALSE;
 
+    UtilityBase = OpenLibrary("utility.library", 0);
+    if (!UtilityBase)
+        return FALSE;
+
     NEWLIST(&DebugBase->db_Modules);
     InitSemaphore(&DebugBase->db_ModSem);
 
@@ -50,7 +54,7 @@ static int Debug_Init(struct DebugBase *DebugBase)
      * and it can read debug information only from there
      */
     if (HostIFace && HostIFace->ModListPtr)
-	*HostIFace->ModListPtr = &DebugBase->db_Modules;
+        *HostIFace->ModListPtr = &DebugBase->db_Modules;
 #endif
 
     D(bug("[Debug] Debug_Init() done\n"));
