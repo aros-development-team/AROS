@@ -11,7 +11,7 @@ INCLUDE_FILES := Busy_mcc.h
     mmake=workbench-classes-zune-busy \
     modname=Busy modtype=mcc \
     conffile=busy.conf \
-    uselibs="amiga m rom"
+    uselibs="muimaster graphics utility amiga m rom"
     
 %copy_includes path=mui
     
