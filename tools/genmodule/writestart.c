@@ -1263,6 +1263,7 @@ writefunctable(FILE *out,
     unsigned int lvo;
     int i;
     char *name, *type;
+    int lastversion = 0;
     
     /* lvo contains the number of functions already printed in the functable */
     lvo = 0;
@@ -1408,6 +1409,10 @@ writefunctable(FILE *out,
 	    
 	case REGISTER:
 	case REGISTERMACRO:
+	    if (funclistit->version != lastversion) {
+	        lastversion = funclistit->version;
+	        fprintf(out, "    /* Version %d */\n", lastversion);
+	    }
 	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s,%d),\n", funclistit->internalname, cfg->basename, lvo);
 	    break;
 	    
