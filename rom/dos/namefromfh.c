@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Retrieve the full pathname from a filehandle.
@@ -10,8 +10,6 @@
 
 #include <aros/debug.h>
 
-BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length, BOOL filehandle);
-
 /*****************************************************************************
 
     NAME */
@@ -20,7 +18,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
 	AROS_LH3(BOOL, NameFromFH,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,   lock,   D1),
+	AROS_LHA(BPTR,   fh    , D1),
 	AROS_LHA(STRPTR, buffer, D2),
 	AROS_LHA(LONG,   length, D3),
 
@@ -43,11 +41,19 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
 	give additional information in that case.
 
 *****************************************************************************/
-/*AROS alias NameFromFH NameFromLock */
 {
     AROS_LIBFUNC_INIT
 
-    return namefrom_internal(DOSBase, lock, buffer, length, TRUE);
-    
+    BOOL res;
+    BPTR lock = DupLockFromFH(fh);
+
+    if (!lock)
+    	return DOSFALSE;
+
+    res = namefrom_internal(DOSBase, lock, buffer, length);
+    UnLock(lock);
+	
+    return res;
+
     AROS_LIBFUNC_EXIT
 }
