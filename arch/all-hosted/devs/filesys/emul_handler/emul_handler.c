@@ -728,7 +728,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
     	fh2 = FH_FROM_LOCK(dp->dp_Arg2);
 
         DCMD(bug("[emul] %p ACTION_FIND%s: %p, %p, %b\n", fhv, (dp->dp_Type == ACTION_FINDINPUT) ? "INPUT" : ((dp->dp_Type == ACTION_FINDOUTPUT) ? "OUTPUT" : "UPDATE"), fh, fh2, dp->dp_Arg3));
-        Res2 = open_(emulbase, fhv, &fh2, AROS_BSTR_ADDR(dp->dp_Arg3), dp->dp_Type, 0, TRUE);
+        Res2 = open_(emulbase, fhv, &fh2, AROS_BSTR_ADDR(dp->dp_Arg3), dp->dp_Type, 0, FALSE);
 
         if (Res2 == 0)
         {
