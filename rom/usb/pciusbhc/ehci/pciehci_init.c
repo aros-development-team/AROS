@@ -1,6 +1,6 @@
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved
-    $Id: pciehci_init.c 39842 2011-07-05 19:39:09Z DizzyOfCRN $
+    $Id$
 */
 
 #include LC_LIBDEFS_FILE
