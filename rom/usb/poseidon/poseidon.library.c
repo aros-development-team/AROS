@@ -1492,7 +1492,8 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
     memlist.mrm_ml.ml_ME[2].me_Length = strlen(name) + 1;
 
 #ifdef __AROS__
-    if (!NewAllocEntry(&memlist.mrm_ml, &newmemlist, NULL))
+    newmemlist = NewAllocEntry(&memlist.mrm_ml, NULL);
+    if (!newmemlist)
 #else
     newmemlist = AllocEntry(&memlist.mrm_ml);
     if((IPTR) newmemlist & 0x80000000)

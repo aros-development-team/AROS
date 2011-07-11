@@ -73,7 +73,6 @@ void Exec_FreeTaskMem (struct Task * task, APTR mem, struct ExecBase *SysBase);
 
 void Exec_InitETask(struct Task *task, struct ETask *etask, struct ExecBase *SysBase);
 void Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase);
-struct Task *Exec_FindTaskByID(ULONG id, struct ExecBase *SysBase);
 struct ETask *Exec_FindChild(ULONG id, struct ExecBase *SysBase);
 struct IntETask *FindETask(struct List *, ULONG id, struct ExecBase *SysBase);
 
@@ -118,7 +117,6 @@ static inline void InitMsgPort(struct MsgPort *ret)
  */
 #define AllocTaskMem(t,s,f) Exec_AllocTaskMem(t,s,f,SysBase)
 #define FreeTaskMem(t,m)    Exec_FreeTaskMem(t,m,SysBase)
-#define FindTaskByID(i)	    Exec_FindTaskByID(i,SysBase)
 #define FindChild(i)	    Exec_FindChild(i,SysBase)
 #define FindETask(l,i)	    Exec_FindETask(l,i,SysBase)
 #define InitETask(t,e)	    Exec_InitETask(t,e,SysBase)

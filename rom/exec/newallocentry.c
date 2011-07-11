@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory.
@@ -26,15 +26,14 @@
 
     NAME */
 
-	AROS_LH3(BOOL, NewAllocEntry,
+	AROS_LH2(struct MemList *, NewAllocEntry,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct MemList *, entry, A0),
-	AROS_LHA(struct MemList **, return_entry, A1),
-	AROS_LHA(ULONG *, return_flags, D0),
+	AROS_LHA(ULONG *, return_flags, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 151, Exec)
+	struct ExecBase *, SysBase, 174, Exec)
 
 /*  FUNCTION
 	Allocate a number of memory blocks through a MemList structure.
@@ -48,15 +47,14 @@
 		       NULL here.
 
     RESULT
-    	TRUE if the allocation was successful. In this case *return_entry will
-	be set to the address of the allocated MemList. *return_flags will be set
-	to 0.
-	
-	FALSE if the allocation failed. In this case *return_entry will be set
-	to NULL and *return_flags will be set to contain the type of memory that
-	couldn't be allocated.
-	
+    	Address of the allocated MemList if the allocation was successful. In this
+    	case *return_flags will be set to 0.
+
+	NULL if the allocation failed. In this case *return_flags will contain the
+	type of memory that couldn't be allocated.
+
     NOTES
+    	This function is AROS-specific.
 
     EXAMPLE
 
@@ -93,9 +91,8 @@
     /* The allocation failed? Return "no public memory" */
     if(ret == NULL)
     {
-    	*return_entry = NULL;
 	if (return_flags) *return_flags = MEMF_PUBLIC;
-	return FALSE;
+	return NULL;
     }
     
     /* Init new struct */
@@ -137,9 +134,7 @@
 		FreeMem(ret, mlsize);
 
 		/* All done */
-		*return_entry = NULL;
-		
-		return FALSE;
+		return NULL;
 	    }
 	}
 	else /* if length = 0 */
@@ -156,10 +151,9 @@
     }
     
     /* Everything filled. Return OK. */
-    *return_entry = ret;
     if (return_flags) *return_flags = 0;
     
-    return TRUE;
+    return ret;
     
     AROS_LIBFUNC_EXIT
 } /* AllocEntry */

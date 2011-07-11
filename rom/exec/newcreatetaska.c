@@ -166,7 +166,8 @@ static const struct newMemList MemTemplate =
 
     DADDTASK("NewCreateTaskA: name %s\n", taskname ? taskname : "<NULL>");
 
-    if (NewAllocEntry((struct MemList *)&nml, &ml, NULL))
+    ml = NewAllocEntry((struct MemList *)&nml, NULL);
+    if (ml)
     {
     	struct Task *task2 = NULL;
 	APTR name = ml->ml_ME[2].me_Addr;

@@ -16,7 +16,7 @@ ALL_FUNCTIONS := \
 	closelibrary coldreboot copymem copymemquick createiorequest \
 	createmsgport createpool deallocate debug deleteiorequest \
 	deletemsgport deletepool disable dispatch doio enable enqueue \
-	exception findname findport findresident findsemaphore findtask \
+	exception findname findport findresident findsemaphore findtask findtaskbypid \
 	forbid freeentry freemem freepooled freesignal freetrap freevec getcc \
 	getmsg initcode initresident initsemaphore initstruct insert \
 	makefunctions makelibrary obtainquickvector obtainsemaphore \
@@ -36,14 +36,10 @@ INIT_FILES := exec_init prepareexecbase
 FILES	   := alertextra alert_cpu systemalert initkicktags \
 	      memory memory_nommu mungwall traphandler exec_debug exec_util
 
-# I need the private includes (for struct AROSCPUContext) and they
-# have to be first in the list
-USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/exec \
-               -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
-               -I$(SRCDIR)/arch/all-$(ARCH)/kernel
+# platform.h can be overriden in arch-specific directory
+USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/exec
 ifneq ($(FAMILY),)
-USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/exec \
-	       -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
+USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
 endif
 USER_CFLAGS += -I$(SRCDIR)/$(CURDIR)
 
@@ -51,3 +47,5 @@ USER_CFLAGS += -I$(SRCDIR)/$(CURDIR)
   modname=exec modtype=library \
   files="$(INIT_FILES) $(ALL_FUNCTIONS) $(FILES)" \
   uselibs="arossupport rom"
+
+%common
