@@ -142,11 +142,29 @@ void AROS_SLIB_ENTRY(CachePostDMA,Exec,128)(void);
 void AROS_SLIB_ENTRY(AddMemHandler,Exec,129)(void);
 void AROS_SLIB_ENTRY(RemMemHandler,Exec,130)(void);
 void AROS_SLIB_ENTRY(ObtainQuickVector,Exec,131)(void);
+void AROS_SLIB_ENTRY(NewStackSwap,Exec,134)(void);
 void AROS_SLIB_ENTRY(TaggedOpenLibrary,Exec,135)(void);
-void AROS_SLIB_ENTRY(AllocVecPooled,Exec,149)(void);
-void AROS_SLIB_ENTRY(FreeVecPooled,Exec,150)(void);
-void AROS_SLIB_ENTRY(NewAllocEntry,Exec,151)(void);
-void AROS_SLIB_ENTRY(NewAddTask,Exec,152)(void);
+void AROS_SLIB_ENTRY(ReadGayle,Exec,136)(void);
+void AROS_SLIB_ENTRY(VNewRawDoFmt,Exec,137)(void);
+void AROS_SLIB_ENTRY(AVL_AddNode,Exec,142)(void);
+void AROS_SLIB_ENTRY(AVL_RemNodeByAddress,Exec,143)(void);
+void AROS_SLIB_ENTRY(AVL_RemNodeByKey,Exec,144)(void);
+void AROS_SLIB_ENTRY(AVL_FindNode,Exec,145)(void);
+void AROS_SLIB_ENTRY(AVL_FindPrevNodeByAddress,Exec,146)(void);
+void AROS_SLIB_ENTRY(AVL_FindPrevNodeByKey,Exec,147)(void);
+void AROS_SLIB_ENTRY(AVL_FindNextNodeByAddress,Exec,148)(void);
+void AROS_SLIB_ENTRY(AVL_FindNextNodeByKey,Exec,149)(void);
+void AROS_SLIB_ENTRY(AVL_FindFirstNode,Exec,150)(void);
+void AROS_SLIB_ENTRY(AVL_FindLastNode,Exec,151)(void);
+void AROS_SLIB_ENTRY(NewCreateTaskA,Exec,153)(void);
+void AROS_SLIB_ENTRY(FindTaskByPID,Exec,166)(void);
+void AROS_SLIB_ENTRY(AddResetCallback,Exec,167)(void);
+void AROS_SLIB_ENTRY(RemResetCallback,Exec,168)(void);
+void AROS_SLIB_ENTRY(AllocVecPooled,Exec,169)(void);
+void AROS_SLIB_ENTRY(FreeVecPooled,Exec,170)(void);
+void AROS_SLIB_ENTRY(ShutdownA,Exec,173)(void);
+void AROS_SLIB_ENTRY(NewAllocEntry,Exec,174)(void);
+void AROS_SLIB_ENTRY(NewAddTask,Exec,176)(void);
 
 const void *ExecFunctions[] __attribute__((section(".rodata"))) =
 {
@@ -283,24 +301,51 @@ const void *ExecFunctions[] __attribute__((section(".rodata"))) =
 	&AROS_SLIB_ENTRY(ObtainQuickVector,Exec,131),
 	NULL,
 	NULL,
-	NULL,
+	&AROS_SLIB_ENTRY(NewStackSwap,Exec,134),
 	&AROS_SLIB_ENTRY(TaggedOpenLibrary,Exec,135),
+	&AROS_SLIB_ENTRY(ReadGayle,Exec,136),
+	&AROS_SLIB_ENTRY(VNewRawDoFmt,Exec,137),
+        NULL,
+        NULL,
+/*140 */NULL,
+        NULL,
+        &AROS_SLIB_ENTRY(AVL_AddNode,Exec,142),
+        &AROS_SLIB_ENTRY(AVL_RemNodeByAddress,Exec,143),
+        &AROS_SLIB_ENTRY(AVL_RemNodeByKey,Exec,144),
+        &AROS_SLIB_ENTRY(AVL_FindNode,Exec,145), /* 145 */
+        &AROS_SLIB_ENTRY(AVL_FindPrevNodeByAddress,Exec,146),
+        &AROS_SLIB_ENTRY(AVL_FindPrevNodeByKey,Exec,147),
+        &AROS_SLIB_ENTRY(AVL_FindNextNodeByAddress,Exec,148),
+        &AROS_SLIB_ENTRY(AVL_FindNextNodeByKey,Exec,149),
+/*150 */&AROS_SLIB_ENTRY(AVL_FindFirstNode,Exec,150),
+        &AROS_SLIB_ENTRY(AVL_FindLastNode,Exec,151),
+        NULL,
+	&AROS_SLIB_ENTRY(NewCreateTaskA,Exec,153),
+        NULL,
+        NULL,
+        NULL,
+        NULL,
 	NULL,
-	NULL, /* 137 */
         NULL,
-        NULL,
-        NULL, /* 140 */
-        NULL,
+/*160 */NULL,
         NULL,
         NULL,
         NULL,
-        NULL, /* 145 */
+        NULL,
+        NULL,
+        &AROS_SLIB_ENTRY(FindTaskByPID,Exec,166),
+        &AROS_SLIB_ENTRY(AddResetCallback,Exec,167),
+        &AROS_SLIB_ENTRY(RemResetCallback,Exec,168),
+        &AROS_SLIB_ENTRY(AllocVecPooled,Exec,169),
+/*170 */&AROS_SLIB_ENTRY(FreeVecPooled,Exec,170),
+        NULL,
+        NULL,
+	&AROS_SLIB_ENTRY(ShutdownA,Exec,173),
+        &AROS_SLIB_ENTRY(NewAllocEntry,Exec,174),
+        NULL,
+        &AROS_SLIB_ENTRY(NewAddTask,Exec,176),
         NULL,
         NULL,
         NULL,
-        &AROS_SLIB_ENTRY(AllocVecPooled,Exec,149), /* 149 */
-        &AROS_SLIB_ENTRY(FreeVecPooled,Exec,150),  /* 150 */
-        &AROS_SLIB_ENTRY(NewAllocEntry,Exec,151),  /* 151 */
-        &AROS_SLIB_ENTRY(NewAddTask,Exec,152),     /* 152 */
 	(APTR)-1
 };

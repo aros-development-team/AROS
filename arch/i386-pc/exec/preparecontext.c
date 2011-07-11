@@ -127,9 +127,15 @@ AROS_LH4(BOOL, PrepareContext,
 }
 
 /* FIXME: This needs to be fixed/updated if the way library params are passed is changed */
-
-BOOL Exec_6_PrepareContext_FPU(struct Task *task, APTR entryPoint, APTR fallBack, struct TagItem *tagList, struct ExecBase *SysBase)
+AROS_LH4(BOOL, PrepareContext_FPU,
+    AROS_LHA(struct Task *, task, A0),
+    AROS_LHA(APTR, entryPoint, A1),
+    AROS_LHA(APTR, fallBack, A2),
+    AROS_LHA(struct TagItem *, tagList, A3),
+    struct ExecBase *, SysBase, 6, Exec)
 {
+    AROS_LIBFUNC_INIT
+
     ULONG *regs;
     BOOL  retval = FALSE;
     
@@ -150,10 +156,18 @@ BOOL Exec_6_PrepareContext_FPU(struct Task *task, APTR entryPoint, APTR fallBack
     
     return retval;
 
+    AROS_LIBFUNC_EXIT
 }
 
-BOOL Exec_6_PrepareContext_SSE(struct Task *task, APTR entryPoint, APTR fallBack, struct TagItem *tagList, struct ExecBase *SysBase)
+AROS_LH4(BOOL, PrepareContext_SSE,
+    AROS_LHA(struct Task *, task, A0),
+    AROS_LHA(APTR, entryPoint, A1),
+    AROS_LHA(APTR, fallBack, A2),
+    AROS_LHA(struct TagItem *, tagList, A3),
+    struct ExecBase *, SysBase, 6, Exec)
 {
+    AROS_LIBFUNC_INIT
+
     ULONG *regs;
     BOOL  retval = FALSE;
     
@@ -177,4 +191,5 @@ BOOL Exec_6_PrepareContext_SSE(struct Task *task, APTR entryPoint, APTR fallBack
     
     return retval;
 
+    AROS_LIBFUNC_EXIT
 }
