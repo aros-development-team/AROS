@@ -159,7 +159,9 @@ LONG GetTimeZoneDelta(VOID);
 ULONG GetCurrentTime(VOID);
 VOID GMTime(time_t seconds, struct tm *tm);
 time_t MakeTime(const struct tm *const tm);
+#ifndef __AROS__
 VOID VARARGS68K SPrintf(STRPTR buffer, STRPTR formatString, ...);
+#endif
 int BroadcastNameQuery(char *name, char *scope, UBYTE *address);
 
 /****************************************************************************/
@@ -1345,6 +1347,7 @@ VSPrintf(STRPTR buffer, STRPTR formatString, APTR args)
 
 /****************************************************************************/
 
+#if !defined(__AROS__)
 /* Format a string for output. */
 VOID VARARGS68K
 SPrintf(STRPTR buffer, STRPTR formatString,...)
@@ -1365,6 +1368,7 @@ SPrintf(STRPTR buffer, STRPTR formatString,...)
 	}
 	#endif /* __amigaos4__ */
 }
+#endif
 
 /****************************************************************************/
 
