@@ -71,25 +71,37 @@ static char * langlist[] =
   AROS_LIBFUNC_INIT
 
   int index = 0;
+  APTR LocaleBase;
+
   /*
    * Get the default locale
    */
-  struct Locale * locale = OpenLocale("");
+  struct Locale * locale;
+ 
+  LocaleBase = OpenLibrary("locale.library", 0);
+  if (LocaleBase == NULL)
+      return LANG_UNKNOWN;
+
+  locale = OpenLocale("");
   
-  if (NULL == locale)
+  if (NULL == locale) {
+    CloseLibrary(LocaleBase);
     return LANG_UNKNOWN;
+  }
   
   while (NULL != langlist[index])
   {
     if (0 == strcmp(locale->loc_LanguageName,(char *)langlist[index]))
     {
       CloseLocale(locale);
+      CloseLibrary(LocaleBase);
       return index+1;
     }
     index++;
   }
 
   CloseLocale(locale);
+  CloseLibrary(LocaleBase);
   return LANG_UNKNOWN;
 
   AROS_LIBFUNC_EXIT
