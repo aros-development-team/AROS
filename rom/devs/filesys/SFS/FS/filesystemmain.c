@@ -2110,21 +2110,21 @@ void mainloop(void) {
                     switch(globals->packet->dp_Arg4) {
                     default:
                     case ED_OWNER:
-                      eadsize+=4;
+                      eadsize += 4;			/* ed_OwnedGID, ed_OwnedUID */
                     case ED_COMMENT:
                       stringsize+=strlen(o->name+namelength+1)+1;
-                      eadsize+=4;
+                      eadsize += sizeof(UBYTE *);	/* ed_Comment */
                     case ED_DATE:
-                      eadsize+=12;
+                      eadsize += 12;			/* ed_Ticks, ed_Mins, ed_Days */
                     case ED_PROTECTION:
-                      eadsize+=4;
+                      eadsize += 4;			/* ed_Prot */
                     case ED_SIZE:
-                      eadsize+=4;
+                      eadsize += 4;			/* ed_Size */
                     case ED_TYPE:
-                      eadsize+=4;
+                      eadsize += 4;
                     case ED_NAME:
-                      stringsize+=namelength+1;
-                      eadsize+=8;
+                      stringsize += namelength+1;
+                      eadsize += sizeof(APTR) * 2;	/* ed_Name, ed_Next */
                       break;
                     }
 
@@ -2217,7 +2217,7 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
 
                     if(keepentry!=DOSFALSE && (o->bits & OTYPE_HIDDEN)==0) {
                       ead->ed_Next=0;
-                      eadsize=(eadsize+3) & 0xFFFFFFFC;
+                      eadsize = (eadsize + sizeof(APTR) - 1) & ~(sizeof(APTR) - 1);
                       if(prevead!=0) {
                         prevead->ed_Next=ead;
                       }
