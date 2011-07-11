@@ -315,7 +315,6 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     {
     	struct MsgPort *newhandler = NULL;
 
-	res = TRUE;
 	if (dl->dol_Type == DLT_DEVICE)
 	{
 	    /* Check if the handler is not started */
@@ -332,24 +331,32 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 
 	    	newhandler = RunHandler((struct DeviceNode *)dl, origname, DOSBase);
 	    	if (!newhandler)
-	    	     res = FALSE;
+	    	{
+		    FreeMem(dp, sizeof(struct DevProc));
+	            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+        	    return NULL;
+        	}
 
 	    	LockDosList(LDF_ALL | LDF_READ);
 	    }
 	}
 	else
 	{
-	    while (res && !dl->dol_Task) {
+	    res = TRUE;
+
+	    while (res && !dl->dol_Task)
+	    {
 	    	D(bug("[GetDeviceProc] Accessing offline volume '%b'\n", dl->dol_Name));
 		res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (IPTR)dl, NULL);
 	    }
-	}
-	if (!res)
-	{
-            UnLockDosList(LDF_ALL | LDF_READ);
-            FreeMem(dp, sizeof(struct DevProc));
-            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-            return NULL;
+
+	    if (!res)
+	    {
+	        UnLockDosList(LDF_ALL | LDF_READ);
+            	FreeMem(dp, sizeof(struct DevProc));
+            	SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+            	return NULL;
+            }
 	}
 
 	/*
