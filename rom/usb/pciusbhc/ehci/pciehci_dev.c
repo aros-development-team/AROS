@@ -16,10 +16,11 @@ static int Open(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq,  ULONG unit, U
     } else {
         ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
 
-        struct ehu_unit *ehu;
-        ForeachNode(&ehd->ehd_unitlist, ehu) {
+        struct Unitnode *ehu_unitnode;
+        ForeachNode(&ehd->ehd_unitlist, ehu_unitnode) {
+            struct ehu_unit *ehu = (struct ehu_unit *)ehu_unitnode->ehu_unitptr;
             if(ehu->ehu_unitnumber == unit) {
-                ioreq->iouh_Req.io_Unit = ehu;
+                ioreq->iouh_Req.io_Unit = (struct Unit *)ehu;
                 if(ehu->ehu_unitallocated) {
                     ioreq->iouh_Req.io_Error = IOERR_UNITBUSY;
                     KPRINTF2(DBL_DEVIO, ("Unit %ld already open", unit));
