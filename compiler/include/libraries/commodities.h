@@ -2,7 +2,7 @@
 #define LIBRARIES_COMMODITIES_H
 
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Includes for commodities.library.
@@ -124,7 +124,6 @@ typedef struct InputXpression IX;
 /* Nodes of the list got from CopyBrokerList(). This function is used by
  * Exchange to get the current brokers. This structure is the same as
  * in AmigaOS and MorphOS, but it is undocumented there. */
-#pragma pack(2)
 struct BrokerCopy
 {
     struct Node     bc_Node;
@@ -136,6 +135,5 @@ struct BrokerCopy
     UWORD           bc_Dummy;
     ULONG           bc_Flags;
 };
-#pragma pack()
 
 #endif /* LIBRARIES_COMMODITIES_H */

@@ -160,17 +160,18 @@ struct CollectPixelsLayerMsg
 
    Msg sent through LA_ShapeHook. Hook function must look like this:
 
-    AROS_UFH3(struct Region *, MyShapeFunc,
+    AROS_UFH3(BOOL, MyShapeFunc,
     	AROS_UFHA(struct Hook *, hook, A0),
     	AROS_UFHA(struct Layer *, layer, A2),
     	AROS_UFHA(struct ShapeHookMsg *, msg, A1))
 
 */
 
-#define SHAPEHOOKACTION_CREATELAYER     0
-#define SHAPEHOOKACTION_MOVELAYER	1
-#define SHAPEHOOKACTION_SIZELAYER	2
-#define SHAPEHOOKACTION_MOVESIZELAYER   3
+#define SHAPEHOOKACTION_CREATELAYER      0
+#define SHAPEHOOKACTION_MOVELAYER	 1
+#define SHAPEHOOKACTION_SIZELAYER	 2
+#define SHAPEHOOKACTION_MOVESIZELAYER    3
+#define SHAPEHOOKACTION_CHANGELAYERSHAPE 4
 
 struct ShapeHookMsg
 {
