@@ -131,6 +131,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
         {
             D(bug("[RunHandler] handler failed startup [%d]\n", dp->dp_Res2));
             process = NULL;
+            deviceNode->dn_Task = NULL; /* Some handlers (e.g. SFS) don't clear dn_Task upon failure. */
         }
             D(else bug("[RunHandler] '%b' now online, dn_Task 0x%p, pr_MsgPort 0x%p\n", deviceNode->dn_Name, deviceNode->dn_Task, &process->pr_MsgPort);)
 
