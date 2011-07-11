@@ -20,40 +20,58 @@ AROS_UFH3(void, ehc_enumhook,
     struct ehc_controller *ehc;
     if((ehc = AllocPooled(ehd->ehd_mempool, sizeof(struct ehc_controller)))) {
 
+        NEWLIST(&ehc->ehc_CtrlXFerQueue);
+        NEWLIST(&ehc->ehc_IntXFerQueue);
+        NEWLIST(&ehc->ehc_IsoXFerQueue);
+        NEWLIST(&ehc->ehc_BulkXFerQueue);
+
+        ehc->ehc_devicebase = ehd;
+        ehc->ehc_pcideviceobject = pcidevice;
+
+        OOP_GetAttr(pcidevice, aHidd_PCIDevice_Driver, (IPTR *)&ehc->ehc_pcidriverobject);
+
         OOP_GetAttr(pcidevice, aHidd_PCIDevice_Bus, &ehc->ehc_pcibus);
         OOP_GetAttr(pcidevice, aHidd_PCIDevice_Dev, &ehc->ehc_pcidev);
-        OOP_GetAttr(pcidevice, aHidd_PCIDevice_Dev, &ehc->ehc_pcisub);
+        OOP_GetAttr(pcidevice, aHidd_PCIDevice_Sub, &ehc->ehc_pcisub);
+        OOP_GetAttr(pcidevice, aHidd_PCIDevice_INTLine, &ehc->ehc_intline);
 
-        /* Try to match the controller with previous unit nodes created based on the bus address (if any) */
-        struct ehu_unit *ehu;
-        if (!IsListEmpty(&ehd->ehd_unitlist)) {
-            ForeachNode(&ehd->ehd_unitlist, ehu) {
-                if(((ehu->ehu_pcibus == ehc->ehc_pcibus)&&(ehu->ehu_pcidev == ehc->ehc_pcidev))) {
-                    Found = TRUE;
-                    break;
+        if(!(ehc->ehc_intline == 255)) {
+
+            /* Try to match the controller with previous unit nodes created based on the bus address (if any) */
+            struct ehu_unit *ehu;
+            if (!IsListEmpty(&ehd->ehd_unitlist)) {
+                ForeachNode(&ehd->ehd_unitlist, ehu) {
+                    if(((ehu->ehu_pcibus == ehc->ehc_pcibus)&&(ehu->ehu_pcidev == ehc->ehc_pcidev))) {
+                        Found = TRUE;
+                        break;
+                    }
                 }
             }
-        }
 
-        /* Add the controller to the unit node or create a new one */
-        if(Found) {
-                KPRINTF2(DBL_DEVIO,("EHC Found matching unit #%ld (%04x:%04x)\n", ehu->ehu_unitnumber, ehu->ehu_pcibus, ehu->ehu_pcidev));
-                ADDTAIL((struct List*)&ehu->ehu_cntrlist, (struct Node*)ehc);
-        }else{
-            if((ehu = AllocPooled(ehd->ehd_mempool, sizeof(struct ehu_unit)))) {
-                ehu->ehu_pcibus = ehc->ehc_pcibus;
-                ehu->ehu_pcidev = ehc->ehc_pcidev;
-                if (!IsListEmpty(&ehd->ehd_unitlist)) {
-                    struct ehu_unit *prev_ehu = (struct ehu_unit *)GetPred(ehu);
-                    ehu->ehu_unitnumber = prev_ehu->ehu_unitnumber + 1;
+            /* Add the controller to the unit node or create a new one */
+            if(Found) {
+                    KPRINTF2(DBL_DEVIO,("EHC Found matching unit #%ld (%04x:%04x)\n", ehu->ehu_unitnumber, ehu->ehu_pcibus, ehu->ehu_pcidev));
+                    ADDTAIL((struct List*)&ehu->ehu_cntrlist, (struct Node*)ehc);
+            }else{
+                if((ehu = AllocPooled(ehd->ehd_mempool, sizeof(struct ehu_unit)))) {
+                    ehu->ehu_pcibus = ehc->ehc_pcibus;
+                    ehu->ehu_pcidev = ehc->ehc_pcidev;
+                    if (!IsListEmpty(&ehd->ehd_unitlist)) {
+                        struct ehu_unit *prev_ehu = (struct ehu_unit *)GetPred(ehu);
+                        ehu->ehu_unitnumber = prev_ehu->ehu_unitnumber + 1;
+                    }else{
+                        ehu->ehu_unitnumber = 0;
+                    }
+                    NEWLIST((struct MinList *)&ehu->ehu_cntrlist);
+                    ADDTAIL((struct List*)&ehu->ehu_cntrlist, (struct Node*)ehc);
+                    ADDTAIL((struct List*)&ehd->ehd_unitlist, (struct Node*)ehu);
+                    KPRINTF2(DBL_DEVIO,("EHC Created new unit #%ld (%04x:%04x)\n", ehu->ehu_unitnumber, ehu->ehu_pcibus, ehu->ehu_pcidev));
                 }else{
-                    ehu->ehu_unitnumber = 0;
+                    FreePooled(ehd->ehd_mempool, ehc, sizeof(struct ehc_controller));
                 }
-                NEWLIST((struct MinList *)&ehu->ehu_cntrlist);
-                ADDTAIL((struct List*)&ehu->ehu_cntrlist, (struct Node*)ehc);
-                ADDTAIL((struct List*)&ehd->ehd_unitlist, (struct Node*)ehu);
-                KPRINTF2(DBL_DEVIO,("EHC Created new unit #%ld (%04x:%04x)\n", ehu->ehu_unitnumber, ehu->ehu_pcibus, ehu->ehu_pcidev));
             }
+        }else{
+            FreePooled(ehd->ehd_mempool, ehc, sizeof(struct ehc_controller));
         }
     }
 
@@ -87,8 +105,21 @@ static int Init(LIBBASETYPEPTR LIBBASE) {
 
     if((ehd->ehd_mempool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 16384, 4096))) {
         if((ehd->ehd_pcihidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_PCI, NULL))) {
+
             HIDD_PCI_EnumDevices(ehd->ehd_pcihidd, &pci_enumhooktag, (struct TagItem *) &pci_enumtag);
+
             if (!IsListEmpty(&ehd->ehd_unitlist)) {
+                struct ehu_unit *ehu;
+                ForeachNode(&ehd->ehd_unitlist, ehu) {
+                    if (!IsListEmpty(&ehu->ehu_cntrlist)) {
+                        KPRINTF2(DBL_DEVIO,("EHC Unit #%ld has controller(s) ", ehu->ehu_unitnumber));
+                        struct ehc_controller *ehc;
+                        ForeachNode(&ehu->ehu_cntrlist, ehc) {
+                            KPRINTF2(DBL_DEVIO,("#%ld ", ehc->ehc_pcisub));
+                        }
+                        KPRINTF2(DBL_DEVIO,("\n"));
+                    }
+                }
                 return TRUE;
             }
         }
