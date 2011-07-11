@@ -103,7 +103,9 @@ void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, SIPTR re
 extern APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase);
 extern void BCPL_Cleanup(struct Process *me);
 ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me);
+
 struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, struct DosLibrary *DOSBase);
+BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length);
 
 /* Cli dependent SetProgramName() for use in CreateNewProc() */
 BOOL internal_SetProgramName(struct CommandLineInterface *cli,

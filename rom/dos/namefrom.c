@@ -12,7 +12,7 @@
 #include <proto/dos.h>
 #include <aros/debug.h>
 
-BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length, BOOL filehandle)
+BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length)
 {
     STRPTR  	    	 s1, s2, name, origbuffer;
     BPTR parentlock, origlock;
@@ -28,13 +28,6 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     {
         SetIoErr(ERROR_LINE_TOO_LONG);
         return DOSFALSE;
-    }
-    
-    if (filehandle) {
-    	lock = (BPTR)dopacket1(DOSBase, NULL, ((struct FileHandle*)BADDR(lock))->fh_Type, ACTION_COPY_DIR_FH,
-    		((struct FileHandle*)BADDR(lock))->fh_Arg1);
-    	if (!lock)
-    	    return DOSFALSE;
     }
 
     fib = AllocDosObject(DOS_FIB, 0);
@@ -150,9 +143,6 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     	}
         while (c);
     }
-
-    if (filehandle)
-    	UnLock(origlock);
 
     FreeDosObject(DOS_FIB, fib);
 

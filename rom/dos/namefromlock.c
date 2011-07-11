@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Retrieve the full pathname from a lock.
@@ -9,8 +9,6 @@
 #include "dos_intern.h"
 
 #include <aros/debug.h>
-
-BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length, BOOL filehandle);
 
 /*****************************************************************************
 
@@ -46,7 +44,34 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
 {
     AROS_LIBFUNC_INIT
 
-    return namefrom_internal(DOSBase, lock, buffer, length, FALSE);
+    /*
+     * We could simply call namefrom_internal() with our lock. However this
+     * causes prolems with Mount on SFS. Mount with a pattern (e. g. Mount DEVS:DOSDrivers/#?)
+     * enters endless loop examining the same first file all times.
+     * The problem occurs because Mount calls NameFromLock() on AnchorPath's ap_Current->an_Lock().
+     * This results in calling Examine() on this lock.
+     * SFS, in its turn, uses own extended form of a lock, and stores some information about current
+     * search position in it. Calling Examine() on this lock, even with another FIB, causes search
+     * position to be reset to the beginning of the directory.
+     * This is unlikely a bug in Mount, because this code perfectly works on MorphOS without any
+     * modifications. This is either:
+     * a) A bug in SFS itself (unlikely, should have been noticed and fixed)
+     * b) Wrong implementation of our NameFromLock().
+     *
+     * Duplicating a lock here is a brute-force workaround for this problem. When i have more time, i'll
+     * pick up my old archive with MorphOS dos.library code, and check theirs implementation.
+     *									Sonic
+     */
+    BOOL res;
+    BPTR lock2 = DupLock(lock);
+
+    if (!lock2)
+    	return DOSFALSE;
+
+    res = namefrom_internal(DOSBase, lock2, buffer, length);
+    UnLock(lock2);
+
+    return res;
     
     AROS_LIBFUNC_EXIT
 }
