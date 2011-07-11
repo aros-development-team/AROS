@@ -104,16 +104,21 @@
 
     if (NULL != callback)
     {
-      struct ChangeLayerShapeMsg clsm;
-      clsm.newshape = newshape;
-      clsm.cliprect = l->ClipRect;
-      clsm.shape    = l->shape;
-      /*
-       * call the callback to the user to give me a new shape
-       * The user can manipulate the cliprects of the layer
-       * l and can have a look at the current shape.
-       */
-      l->shaperegion = (struct Region *)CallHookPkt(callback, l, &clsm);
+	struct ShapeHookMsg msg;
+
+	msg.Action    = SHAPEHOOKACTION_CHANGELAYERSHAPE;
+	msg.NewShape  = l->shaperegion;    
+	msg.OldShape  = l->shaperegion;
+	msg.NewBounds = &l->bounds;
+	msg.OldBounds = &l->bounds;    
+    
+	/*
+	 * call the callback to the user to give me a new shape
+	 * The user can manipulate the cliprects of the layer
+	 * l and can have a look at the current shape.
+	 */
+	if (CallHookPkt(callback, l, &msg))
+	    l->shaperegion = msg.NewShape;
     }
     else
     {
