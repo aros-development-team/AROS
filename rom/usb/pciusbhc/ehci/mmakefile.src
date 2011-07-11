@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 36648 2011-01-17 14:31:59Z neil $
+# $Id: pciehci.h 40009 2011-07-11 13:41:11Z DizzyOfCRN $
 include $(TOP)/config/make.cfg
 
 FILES := pciehci_init pciehci_dev
