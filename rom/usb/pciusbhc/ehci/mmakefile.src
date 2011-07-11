@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 36648 2011-01-17 14:31:59Z neil $
+include $(TOP)/config/make.cfg
+
+FILES := pciehci_init pciehci_dev
+
+%build_module mmake=kernel-usb-pciehci  \
+	modname=pciehci modtype=device      \
+	files="$(FILES)"                    \
+	uselibs="oop rom hiddstubs debug"
+
+%common
