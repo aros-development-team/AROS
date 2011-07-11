@@ -51,8 +51,17 @@ struct ehc_controller {                 /* EHCI Controller Struct (ehc_) */
     struct MinNode  ehc_contrnode;
 
     APTR            ehc_unitptr;
+    APTR            ehc_devicebase;
 
-    IPTR            ehc_pcibus, ehc_pcidev, ehc_pcisub;
+    OOP_Object     *ehc_pcideviceobject;
+    OOP_Object     *ehc_pcidriverobject;
+
+    struct List     ehc_CtrlXFerQueue;
+    struct List     ehc_IntXFerQueue;
+    struct List     ehc_IsoXFerQueue;
+    struct List     ehc_BulkXFerQueue;
+
+    IPTR            ehc_pcibus, ehc_pcidev, ehc_pcisub, ehc_intline;
 };
 
 struct ehu_unit {                       /* EHCI Unit Structure (ehu_) */
