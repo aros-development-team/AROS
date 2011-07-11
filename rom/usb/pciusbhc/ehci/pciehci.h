@@ -21,8 +21,8 @@
 
 #define PCI_BASE_CLASS_SERIAL   0x0c
 #define PCI_SUB_CLASS_USB       0x03
-#define PCI_INTERFACE_EHCI      0x20
-//#define PCI_INTERFACE_EHCI      0x00  /* Really UHCI, used to check unit node creation. Remove later */
+//#define PCI_INTERFACE_EHCI      0x20
+#define PCI_INTERFACE_EHCI      0x00  /* Really UHCI, used to check unit node creation. Remove later */
 
 #define RC_OK         0                 /* Reply the iorequest with success */
 #define RC_DONTREPLY  -1                /* Magic cookie, don't set error fields & don't reply the ioreq */
@@ -56,29 +56,36 @@ struct ehc_controller {                 /* EHCI Controller Struct (ehc_) */
     OOP_Object     *ehc_pcideviceobject;
     OOP_Object     *ehc_pcidriverobject;
 
-    struct List     ehc_CtrlXFerQueue;
-    struct List     ehc_IntXFerQueue;
-    struct List     ehc_IsoXFerQueue;
-    struct List     ehc_BulkXFerQueue;
+    struct MinList  ehc_CtrlXFerQueue;
+    struct MinList  ehc_IntXFerQueue;
+    struct MinList  ehc_IsoXFerQueue;
+    struct MinList  ehc_BulkXFerQueue;
 
     IPTR            ehc_pcibus, ehc_pcidev, ehc_pcisub, ehc_intline;
 };
 
+struct Unitnode {
+    struct MinNode  ehu_unitnode;;
+    APTR            ehu_unitptr;
+};
+
 struct ehu_unit {                       /* EHCI Unit Structure (ehu_) */
-    struct MinNode  ehu_unitnode;
+    struct Unit     ehu_devunit;
+
+    struct Unitnode ehu_unitnode;
 
     ULONG           ehu_unitnumber;
     BOOL            ehu_unitallocated;  /* Unit opened */
     IPTR            ehu_pcibus, ehu_pcidev;
 
-    struct List     ehu_cntrlist;
+    struct MinList  ehu_cntrlist;
 };
 
 /* pciehci.device base*/
 struct pciehcibase {                    /* EHCI Device Structure (ehd_) */
     struct Device   ehd_device;
 
-    struct List     ehd_unitlist;       /* Host Controller List */
+    struct MinList  ehd_unitlist;       /* Host Controller List */
 
     APTR            ehd_mempool;
 
