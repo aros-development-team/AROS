@@ -12,6 +12,8 @@
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
 #include <proto/graphics.h>
+#include <proto/reqtools.h>
+
 #include <string.h>
 #include <math.h>
 
@@ -24,8 +26,6 @@ extern struct ReqToolsBase *ReqToolsBase;
 
 #include "misc.h"
 #include "gui.h"
-
-#include <proto/reqtools.h>
 
 
 #ifndef max
