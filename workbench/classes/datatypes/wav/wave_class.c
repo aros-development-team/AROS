@@ -213,8 +213,6 @@ static LONG ConvertWAVE (BPTR file, BYTE **ChannelsPtr,
 
 D(bug("[wave.dt]: %s()\n", __PRETTY_FUNCTION__));
 
-    DECODERPROTO((*Decode)); // decoder routine
-
     /* Check for RIFF-WAVE header */
     {
 	    ULONG HDR[3]={0};
@@ -473,7 +471,7 @@ IPTR WAVE__OM_NEW (Class *cl, Object *self, Msg msg)
 {
 D(bug("[wave.dt]: %s()\n", __PRETTY_FUNCTION__));
 
-    self = (IPTR)DoSuperMethodA(cl, self, msg);
+    self = (Object *)DoSuperMethodA(cl, self, msg);
     if (self) 
     {
 	struct VoiceHeader *vhdr = NULL;
@@ -533,5 +531,5 @@ D(bug("[wave.dt]: %s()\n", __PRETTY_FUNCTION__));
 	}
     }
 
-    return self;
+    return (IPTR)self;
 }
