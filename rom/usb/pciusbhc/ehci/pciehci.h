@@ -1,6 +1,6 @@
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved
-    $Id: pciehci.h 39842 2011-07-05 19:39:09Z DizzyOfCRN $
+    $Id$
 */
 
 #ifndef PCIEHCI_H
