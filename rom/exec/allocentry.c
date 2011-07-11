@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory.
@@ -65,7 +65,8 @@
     struct MemList *ret;
     ULONG   	    ret_flags;
 
-    if (NewAllocEntry(entry, &ret, &ret_flags))
+    ret = NewAllocEntry(entry, &ret_flags);
+    if (ret)
     {
     	/* Check nasty case where the returncode is misleading :-(
 	   Like when memory was allocated at address 0x8???????. And

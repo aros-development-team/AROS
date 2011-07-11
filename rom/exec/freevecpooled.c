@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,7 @@
 AROS_LH2(void, FreeVecPooled,
     AROS_LHA(APTR, pool,   D0),
     AROS_LHA(APTR, memory, D1),
-    struct ExecBase *, SysBase, 150, Exec)
+    struct ExecBase *, SysBase, 170, Exec)
 {
     AROS_LIBFUNC_INIT
     

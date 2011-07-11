@@ -30,7 +30,7 @@
         AROS_LHA(struct TagItem *,  tagList,   A4),
 
 /*  LOCATION */
-        struct ExecBase *, SysBase, 152, Exec)
+        struct ExecBase *, SysBase, 176, Exec)
 
 /*  FUNCTION
         Add a new task to the system. If the new task has the highest
@@ -54,8 +54,8 @@
         happen with TF_ETASK set - currenty not implemented).
 
     NOTES
-    	This is AROS-specific function which is going to be private in ABI v1.
-    	Use MorphOS-compatible NewCreateTaskA() in your applications.
+    	This function is private. Use MorphOS-compatible NewCreateTaskA()
+    	in your applications.
 
     EXAMPLE
 

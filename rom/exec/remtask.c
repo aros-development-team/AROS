@@ -20,12 +20,6 @@
 #include "exec_util.h"
 #include "exec_debug.h"
 
-/* Internal message structure */
-struct RemTaskMsg {
-    struct Message msg;
-    struct Task *task;
-};
-
 /*****************************************************************************
 
     NAME */
@@ -105,17 +99,13 @@ struct RemTaskMsg {
         CleanupETask(task, et);
     }
 
-    /* Send task to task cleaner to clean up memory.
-       This avoids ripping memory from underneath a running Task.
-    */
-    msg = AllocMem(sizeof(struct RemTaskMsg), MEMF_PUBLIC|MEMF_CLEAR);
-    if (msg)
-    {
-        msg->task = task;
-        PutMsg(((struct IntExecBase *)SysBase)->RemTaskPort, (struct Message *)msg);
-    }
-    else
-        Alert( AG_NoMemory | AN_ExecLib );
+    /*
+     * Send task to task cleaner to clean up memory.
+     * This avoids ripping memory from underneath a running Task.
+     * Message is basically a Node, so we use our task's tc_Node as a message.
+     * We use InternalPutMsg() because it won't change ln_Type. Just in case...
+     */
+    InternalPutMsg(((struct IntExecBase *)SysBase)->RemTaskPort, (struct Message *)task, SysBase);
 
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
@@ -151,22 +141,17 @@ static void remtaskcleaner(void)
     struct MemList *mb, *mbnext;
     struct IntExecBase *IntSysBase = (struct IntExecBase *)SysBase;
 
-    DREMTASK("entering remtaskcleaner");
-
-    IntSysBase->RemTaskPort = CreatePort(NULL, 0);
-    if (!IntSysBase->RemTaskPort)
-    {
-        DREMTASK("remtaskcleaner port creation failed !");
-        Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
-    }
     DREMTASK("remtaskcleaner RemTaskPort created");
 
-    do { /* forever */
+    do
+    { /* forever */
         struct List list;
-        WaitPort(IntSysBase->RemTaskPort);
-        msg = (struct RemTaskMsg *)GetMsg(IntSysBase->RemTaskPort);
+        struct Task *task;
 
-        DREMTASK("remtaskcleaner for task %p", msg->task);
+        WaitPort(IntSysBase->RemTaskPort);
+	task = GetMsg(IntSysBase->RemTaskPort);
+
+        DREMTASK("remtaskcleaner for task %p", task);
 
         /* Note tc_MemEntry list is part of the task structure which
            usually is also placed in tc_MemEntry. MungWall_Check()
@@ -178,7 +163,7 @@ static void remtaskcleaner(void)
            and free it after iterating.
          */
         NEWLIST(&list);
-        ForeachNodeSafe(&msg->task->tc_MemEntry, mb, mbnext)
+        ForeachNodeSafe(&task->tc_MemEntry, mb, mbnext)
         {
             Remove(&mb->ml_Node);
             AddTail(&list, &mb->ml_Node);
@@ -189,18 +174,22 @@ static void remtaskcleaner(void)
             /* Free one MemList node */
             FreeEntry(mb);
         }
-        FreeMem(msg, sizeof(struct RemTaskMsg));
     } while(1);
 }
 
-int __RemTask_Setup(struct IntExecBase *IntSysBase)
+int __RemTask_Setup(struct ExecBase *SysBase)
 {
     struct Task *cleaner;
 
     /* taskpri is 127, we assume this task will be run before another task
        calls RemTask()
     */
-    cleaner = CreateTask("__RemTask_Cleaner__", 127, remtaskcleaner, AROS_STACKSIZE);
+    cleaner = NewCreateTask(TASKTAG_NAME       , "__RemTask_Cleaner__",
+    		            TASKTAG_PRI	       , 127,
+    		            TASKTAG_PC	       , remtaskcleaner,
+    		            TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->RemTaskPort,
+    		            TAG_DONE);
+
     if (!cleaner)
     {
         DREMTASK("__RemTask_Setup task creation failed !");
