@@ -7,16 +7,18 @@
 BSTR CreateBSTR(CONST_STRPTR src)
 {
     STRPTR dst;
-    ULONG len = AROS_BSTR_MEMSIZE4LEN(strlen(src));
+    ULONG len = strlen(src);
+    ULONG size = AROS_BSTR_MEMSIZE4LEN(len);
 
-    dst = AllocVec(len, MEMF_ANY);
+    dst = AllocVec(size, MEMF_ANY);
     if (!dst)
 	return BNULL;
 
 #ifdef AROS_FAST_BSTR
-    CopyMem(src, dst, len);
+    CopyMem(src, dst, size);
 #else
-    CopyMem(src, dst + 1, len);
+    /* Our BSTR's are also NUL-terminated: len + 1 */
+    CopyMem(src, dst + 1, len + 1);
     dst[0] = len;
 #endif
 
