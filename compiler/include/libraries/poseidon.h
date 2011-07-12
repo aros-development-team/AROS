@@ -149,9 +149,7 @@
 #define DA_IsNewToMe         (DA_Dummy + 0x41)
 #define DA_InhibitClassBind  (DA_Dummy + 0x42)
 #define DA_OverridePowerInfo (DA_Dummy + 0x43)
-#if (AROS_USB30_CODE)
 #define DA_IsSuperspeed      (DA_Dummy + 0x44)
-#endif
 
 /* Tags for psdGetAttrs(PGA_CONFIG,...) */
 #define CA_Dummy             (TAG_USER + 23)
