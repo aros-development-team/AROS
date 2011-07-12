@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -274,8 +274,8 @@ struct ConsoleBase
     
     struct Interrupt	*inputHandler;
     struct Task		*consoleTask;
-    struct MsgPort	 commandPort;
-    
+    struct MsgPort	*commandPort;
+
     /* Queued read requests */
     struct MinList	readRequests;
     
@@ -302,17 +302,6 @@ struct ConsoleBase
     struct MinList sniphooks;
 
 };
-
-/* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers	and the corresponding
-   structs are equal.
-   This is a hack, of course. */
-typedef struct GfxBase GraphicsBase;
-typedef struct IntuitionBase IntuiBase;
-
-#define expunge() \
-__AROS_LC0(BPTR, expunge, struct ConsoleBase *, ConsoleDevice, 3, Console)
-
 
 #undef CB
 #define CB(x) ((struct ConsoleBase *)x)
