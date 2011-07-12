@@ -61,7 +61,6 @@
 {
     AROS_LIBFUNC_INIT
     struct ETask *et;
-    struct RemTaskMsg *msg;
 
     /* A value of NULL means current task */
     if (task==NULL)
@@ -137,7 +136,6 @@
 
 static void remtaskcleaner(void)
 {
-    struct RemTaskMsg *msg;
     struct MemList *mb, *mbnext;
     struct IntExecBase *IntSysBase = (struct IntExecBase *)SysBase;
 
@@ -149,7 +147,7 @@ static void remtaskcleaner(void)
         struct Task *task;
 
         WaitPort(IntSysBase->RemTaskPort);
-	task = GetMsg(IntSysBase->RemTaskPort);
+	task = (struct Task *)GetMsg(IntSysBase->RemTaskPort);
 
         DREMTASK("remtaskcleaner for task %p", task);
 
