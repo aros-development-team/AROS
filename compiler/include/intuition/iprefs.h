@@ -2,7 +2,7 @@
 #define INTUITION_IPREFS_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PRIVATE/TOP SECRET!!! Communication between IPrefs program and Intuition
@@ -22,11 +22,6 @@
 #   include <intuition/screens.h>
 #endif
 
-/* These values may change in order to provide 
-   binary compatibility with AmigaOS on m68k */
-
-#ifdef __mc68000
-
 #define IPREFS_TYPE_SCREENMODE_V37 1
 #define IPREFS_TYPE_FONT_V37       2
 #define IPREFS_TYPE_OVERSCAN_V37   3
@@ -36,25 +31,7 @@
 #define IPREFS_TYPE_POINTER_V39    7
 #define IPREFS_TYPE_PALETTE_V39    8
 #define IPREFS_TYPE_PENS_V39       9
-
 #define IPREFS_TYPE_POINTER_ALPHA 10
-
-#else
-
-#define IPREFS_TYPE_ICONTROL_V37   0
-#define IPREFS_TYPE_SCREENMODE_V37 1
-#define IPREFS_TYPE_POINTER_V39    2
-#define IPREFS_TYPE_PALETTE_V39    3
-#define IPREFS_TYPE_POINTER_ALPHA  4
-
-/* dummy entries */
-#define IPREFS_TYPE_FONT_V37       10
-#define IPREFS_TYPE_OVERSCAN_V37   11
-#define IPREFS_TYPE_POINTER_V37    12
-#define IPREFS_TYPE_PALETTE_V37    13
-#define IPREFS_TYPE_PENS_V39       14
-
-#endif
 
 /* backwards compatibility */
 #define IPREFS_TYPE_SCREENMODE IPREFS_TYPE_SCREENMODE_V37
