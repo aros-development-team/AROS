@@ -125,12 +125,13 @@ struct AppMessage
 };
 
 /* Definition for am_Version */
-#define AM_VERSION         1
+#define AM_VERSION              1
 
 /* Definitions for am_Type */
-#define AMTYPE_APPWINDOW   7
-#define AMTYPE_APPICON     8
-#define AMTYPE_APPMENUITEM 9
+#define AMTYPE_APPWINDOW        7
+#define AMTYPE_APPICON          8
+#define AMTYPE_APPMENUITEM      9
+#define AMTYPE_APPWINDOWZONE    10
 
 /* Definitions for am_Class */
 #define AMCLASSICON_Open        0
