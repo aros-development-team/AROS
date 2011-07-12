@@ -41,7 +41,7 @@ FILES	:= \
     writestruct \
     writeword
 
-#MM- linklibs-core : linklibs-arossupport
+#MM- core-linklibs : linklibs-arossupport
 #MM- linklibs: linklibs-arossupport
 #MM linklibs-arossupport : includes
 

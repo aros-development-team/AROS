@@ -47,7 +47,7 @@ FUNCS := adddtobject \
 #MM     workbench-libs-icon-includes \
 #MM     includes-copy
 
-#MM- linklibs-core: linklibs-datatypes
+#MM- core-linklibs: linklibs-datatypes
 
 %build_module mmake=workbench-libs-datatypes \
     modname=datatypes modtype=library \

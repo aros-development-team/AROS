@@ -17,7 +17,7 @@ FILES := \
     pm_setitemattrs
 
 #MM- linklibs : linklibs-popupmenu
-#MM- linklibs-core : linklibs-popupmenu
+#MM- core-linklibs : linklibs-popupmenu
 #MM linklibs-popupmenu : includes
 
 %build_linklib mmake=linklibs-popupmenu libname=popupmenu files=$(FILES)

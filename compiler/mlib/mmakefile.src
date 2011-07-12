@@ -184,7 +184,7 @@ includes-copy : $(AROS_INCLUDES)/math.h
 
 %rule_copy from=$(SRCDIR)/$(CURDIR)/%.h to=$(AROS_INCLUDES)/%.h
 
-#MM- linklibs-core : linklibs-mlib
+#MM- core-linklibs : linklibs-mlib
 #MM- linklibs : linklibs-mlib
 #MM- linklibs-mlib : linklibs-arosm-$(CPU) arosm-setup-link
 #MM linklibs-arosm-hasfpu : includes

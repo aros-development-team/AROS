@@ -116,7 +116,7 @@ FILES	:= \
     videocontroltags \
     workbenchcontrol
 
-#MM- linklibs-core : linklibs-amiga
+#MM- core-linklibs : linklibs-amiga
 #MM- linklibs: linklibs-amiga 
 #MM linklibs-amiga : includes includes-copy kernel-aros-includes
 
