@@ -253,8 +253,16 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
                 {
                     BSTR s = fetch_arg(BSTR);
                     
-		    buf = AROS_BSTR_ADDR(s);
-		    width = AROS_BSTR_strlen(s);
+                    if (s)
+                    {
+		    	buf = AROS_BSTR_ADDR(s);
+		    	width = AROS_BSTR_strlen(s);
+		    }
+		    else
+		    {
+		    	buf = "";
+		    	width = 0;
+		    }
 
 		    break;
                 }
