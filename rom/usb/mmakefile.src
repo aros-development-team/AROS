@@ -21,9 +21,6 @@ include $(TOP)/config/make.cfg
 #MM- kernel-usb-kobj-pc-i386 : \
 #MM      kernel-usb-kobj
 
-#MM- kernel-usb-kobj-pc-x86_64 : \
-#MM      kernel-usb-kobj
-
 #MM- kernel-usb-kobj-sam440-ppc : \
 #MM      kernel-usb-kobj
 
@@ -61,7 +58,7 @@ include $(TOP)/config/make.cfg
 #MM- kernel-usb-pkg :			\
 #MM      kernel-usb-poseidon-pkg	\
 #MM      kernel-usb-shelltools		\
-#MM      kernel-usb-classes-common	\
+#MM      kernel-usb-classes		\
 #MM	 kernel-usb-classes-pkg		\
 #MM      kernel-usb-shellapps		\
 #MM      kernel-usb-trident		\
