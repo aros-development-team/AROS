@@ -18,11 +18,12 @@
 #include <proto/exec.h>
 #include <proto/debug.h>
 #include <proto/oop.h>
+#include <proto/utility.h>
 
 #define PCI_BASE_CLASS_SERIAL   0x0c
 #define PCI_SUB_CLASS_USB       0x03
-//#define PCI_INTERFACE_EHCI      0x20
-#define PCI_INTERFACE_EHCI      0x00  /* Really UHCI, used to check unit node creation. Remove later */
+#define PCI_INTERFACE_EHCI      0x20
+//#define PCI_INTERFACE_EHCI      0x00  /* Really UHCI, used to check unit node creation. Remove later */
 
 #define RC_OK         0                 /* Reply the iorequest with success */
 #define RC_DONTREPLY  -1                /* Magic cookie, don't set error fields & don't reply the ioreq */
@@ -33,8 +34,9 @@
 #define HiddAttrBase            (ehd->ehd_hiddattrbase)
 #define HiddPCIDeviceAttrBase   (ehd->ehd_hiddpcideviceab)
 
-#define DBL_DEVIO 10
-#define DEBUG DBL_DEVIO
+#define DBL_DEVIO   5
+#define DBL_UHWIO   10
+#define DEBUG       DBL_DEVIO
 
 #ifdef DEBUG
 #define KPRINTF(l, x) do { if ((l) >= DEBUG) \

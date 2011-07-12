@@ -5,6 +5,8 @@
 
 #include LC_LIBDEFS_FILE
 
+#include "pciehci_uhw.h"
+
 static int Open(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq,  ULONG unit, ULONG flags) {
     LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
@@ -60,7 +62,7 @@ AROS_LH1(void, BeginIO,
 
     struct ehu_unit *ehu = (struct ehu_unit *) ioreq->iouh_Req.io_Unit;
 
-    ULONG ret = RC_OK;
+    UWORD ret = RC_OK;
 
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     ioreq->iouh_Req.io_Error                   = UHIOERR_NO_ERROR;
@@ -79,7 +81,7 @@ AROS_LH1(void, BeginIO,
 
             case UHCMD_QUERYDEVICE:
                 KPRINTF2(DBL_DEVIO,("cmdQueryDevice\n"));
-//              ret = cmdQueryDevice(ioreq, unit, base);
+                ret = cmdQueryDevice(ioreq, ehu, ehd);
                 break;
 
 			case UHCMD_USBRESET:
