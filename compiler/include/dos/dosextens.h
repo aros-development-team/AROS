@@ -205,9 +205,10 @@ struct Process
 #define PRB_CLOSEOUTPUT 4
 #define PRB_FREEARGS	5
 #define PRB_CLOSEERROR	6
-#define PRB_SYNCHRONOUS 7
-#define PRB_WAITINGFORCHILD 8 /* This one is subject to change! */
-#define PRB_NOTIFYONDEATH 9
+/* The following are AROS-specific */
+#define PRB_SYNCHRONOUS     18
+#define PRB_WAITINGFORCHILD 19 /* This one is subject to change! */
+#define PRB_NOTIFYONDEATH   20
 
 #define PRF_FREESEGLIST (1L << PRB_FREESEGLIST)
 #define PRF_FREECURRDIR (1L << PRB_FREECURRDIR)

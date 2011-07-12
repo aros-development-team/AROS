@@ -114,19 +114,26 @@
 #define SYS_UserShell	(SYS_Dummy + 4) /* (BPTR) */
 #define SYS_CustomShell (SYS_Dummy + 5) /* (STRPTR) */
 
-/* Aros specific */
+  /* The following are AmigaOS4-compatible */
+
   /* (BPTR/struct FileHandle *) Output filehandle. This must be a different
      filehandle from than supllied to SYS_Input. Default is Error() of the
      current process. */
-#define SYS_Error	(SYS_Dummy + 10)
+#define SYS_Error	(SYS_Dummy + 6)
+
+ /* The following are AROS-specific */
+
  /* (BPTR/struct FileHandle *) This is the FileHandle from which the shell will try to read
      commands to execute right after having executed the command supplied to SystemTagList()
      If not specified it defaults to NIL: */
 #define SYS_ScriptInput (SYS_Dummy + 11)
+
+
   /* (BOOL) The shell is run as a "background shell", like when the Run command is
      used. If the shell is in background mode, when the EOF is reached on
      SYS_ScriptInput the shell will immediately exit, without trying to read from
      SYS_Input. By default it's set to TRUE. */
+
 #define SYS_Background  (SYS_Dummy + 12)
    /* (LONG *) ti_Data points to a memory location in which SystemTagList will store the
       Cli number of the newly created cli process */
