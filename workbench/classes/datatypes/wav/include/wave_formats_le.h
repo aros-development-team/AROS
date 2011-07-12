@@ -75,7 +75,7 @@
 #define WAVE_FORMAT_MVI_MV12			0x0084 /* MVI MV12 */
 #define WAVE_FORMAT_DF_G726				0x0085 /* DF G.726 */
 #define WAVE_FORMAT_DF_GSM610			0x0086 /* DF GSM610 */
-#define WAVE_FORMAT_ISIAUDIO			0x0088 /* ISIAudio */
+/* #define WAVE_FORMAT_ISIAUDIO			0x0088*/ /* ISIAudio */
 #define WAVE_FORMAT_ONLIVE				0x0089 /* Onlive */
 #define WAVE_FORMAT_SBC24				0x0091 /* SBC24 */
 #define WAVE_FORMAT_DOLBY_AC3_SPDIF		0x0092 /* Dolby AC3 SPDIF */
@@ -105,7 +105,7 @@
 #define WAVE_FORMAT_OLIOPR				0x1004 /* OLIOPR */
 #define WAVE_FORMAT_LH_CODEC			0x1100 /* LH Codec */
 #define WAVE_FORMAT_NORRIS				0x1400 /* Norris */
-#define WAVE_FORMAT_ISIAUDIO			0x1401 /* ISIAudio */
+/* #define WAVE_FORMAT_ISIAUDIO			0x1401*/ /* ISIAudio */
 #define WAVE_FORMAT_SOUNDSPACE_MUSICOMPRESS	0x1500 /* Soundspace Music Compression */
 #define WAVE_FORMAT_DVM					0x2000 /* DVM */
 #define WAVE_FORMAT_AAC					0xA106 /* ISO/MPEG-4 advanced audio Coding */
