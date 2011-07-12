@@ -53,7 +53,7 @@ AROS_UFH3(void, ehc_enumhook,
             /* Add the controller to the unit node or create a new one */
             if(Found) {
                     KPRINTF2(DBL_DEVIO,("EHC Found matching unit #%ld (%04x:%04x)\n", ehu->ehu_unitnumber, ehu->ehu_pcibus, ehu->ehu_pcidev));
-                    ADDTAIL((struct MinList *)&ehu->ehu_cntrlist, (struct MinNode*)ehc);
+                    ADDTAIL((struct MinList *)&ehu->ehu_cntrlist, (struct MinNode *)ehc);
             }else{
                 if((ehu = AllocPooled(ehd->ehd_mempool, sizeof(struct ehu_unit)))) {
                     ehu->ehu_unitnode.ehu_unitptr = ehu;
@@ -62,7 +62,6 @@ AROS_UFH3(void, ehc_enumhook,
                     ehu->ehu_pcidev = ehc->ehc_pcidev;
 
                     if (!IsListEmpty(&ehd->ehd_unitlist)) {
-
                         struct Unitnode *prev_ehu_unitnode = (struct Unitnode *)GetTail(&ehd->ehd_unitlist);
                         struct ehu_unit *prev_ehu = (struct ehu_unit *)prev_ehu_unitnode->ehu_unitptr;
 
@@ -72,8 +71,8 @@ AROS_UFH3(void, ehc_enumhook,
                     }
 
                     NEWLIST((struct MinList *)&ehu->ehu_cntrlist);
-                    ADDTAIL((struct MinList *)&ehu->ehu_cntrlist, (struct MinNode*) ehc);
-                    ADDTAIL((struct MinList *)&ehd->ehd_unitlist, (struct MinNode*) &ehu->ehu_unitnode);
+                    ADDTAIL((struct MinList *)&ehu->ehu_cntrlist, (struct MinNode *) ehc);
+                    ADDTAIL((struct MinList *)&ehd->ehd_unitlist, (struct MinNode *) &ehu->ehu_unitnode);
                     KPRINTF2(DBL_DEVIO,("EHC Created new unit #%ld (%04x:%04x)\n", ehu->ehu_unitnumber, ehu->ehu_pcibus, ehu->ehu_pcidev));
                 }else{
                     FreePooled(ehd->ehd_mempool, ehc, sizeof(struct ehc_controller));

@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := pciehci_init pciehci_dev
+FILES := pciehci_init pciehci_dev pciehci_uhw pciehci_hci
 
 %build_module mmake=kernel-usb-pciehci  \
 	modname=pciehci modtype=device      \
