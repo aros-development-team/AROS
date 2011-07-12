@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Input device
@@ -20,9 +20,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#if defined(__GNUC__) || defined(__INTEL_COMPILER)
-#    include "input_intern.h"
-#endif
+#include "input_intern.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -68,61 +66,25 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR InputDevice)
     InputDevice->KeyRepeatInterval.tv_micro
 	= (DEFAULT_KEY_REPEAT_INTERVAL % 50) * 1000000 / 50;
 
+    D(bug("[InputDev] Starting up task, inputbase 0x%P\n", InputDevice));
+
+    InputDevice->InputTask = NewCreateTask(TASKTAG_NAME	      , "input.device",
+    					   TASKTAG_PRI	      , IDTASK_PRIORITY,
+    					   TASKTAG_STACKSIZE  , IDTASK_STACKSIZE,
+    					   TASKTAG_TASKMSGPORT, &InputDevice->CommandPort,
+    					   TASKTAG_PC	      , ProcessEvents,
+    					   TASKTAG_ARG1	      , InputDevice,
+    					   TAG_DONE);
+
     /* Initialise the input.device task. */
     InputDevice->InputTask = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
+
     if(InputDevice->InputTask)
     {
-	struct Task *task = InputDevice->InputTask;
-	APTR stack;
-
-	NEWLIST(&task->tc_MemEntry);
-	task->tc_Node.ln_Type = NT_TASK;
-	task->tc_Node.ln_Name = "input.device";
-	task->tc_Node.ln_Pri = IDTASK_PRIORITY;
-
-	/* Initialise CommandPort now we have the task */
-	InputDevice->CommandPort.mp_SigTask = task;
-	InputDevice->CommandPort.mp_Flags = PA_SIGNAL;
-	NEWLIST(&InputDevice->CommandPort.mp_MsgList);
-	
-	/*
-	 *  This is always safe, nobody else knows about our task yet.
-	 *  Both the AROS and AmigaOS AddTask() initialise zeroed fields,
-	 *  otherwise we have to do it ourselves.
-	 */
-	InputDevice->CommandPort.mp_SigBit = 16;
-	task->tc_SigAlloc = 1L<<16 | SysBase->TaskSigAlloc;
-
-	stack = AllocMem(IDTASK_STACKSIZE, MEMF_CLEAR|MEMF_PUBLIC);
-	if(stack != NULL)
-	{
-    	    struct TagItem tags[] =
-	    {
-	    	{TASKTAG_ARG1, (IPTR)InputDevice},
-		{TAG_DONE   	    	    	}
-	    };
-	    
-	    task->tc_SPLower = stack;
-	    task->tc_SPUpper = (UBYTE *)stack + IDTASK_STACKSIZE;
-
-    	#if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET;
-    	#else
-	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET;
-    	#endif
-
-	    D(bug("[InputDev] Starting up task, inputbase 0x%P\n", InputDevice));
-
-	    if(NewAddTask(task, ProcessEvents, NULL, tags) != NULL)
-	    {
-	    	D(bug("[InputDev] Done\n"));
-		return TRUE;
-	    }
-	}
+	D(bug("[InputDev] Done\n"));
+	return TRUE;
     }
 
-    Alert(AT_DeadEnd | AG_NoMemory | AO_Unknown | AN_Unknown);
-    
     return FALSE;
 }
 
@@ -212,7 +174,7 @@ AROS_LH1(void, beginio,
         /* Mark IO request to be done non-quick */
     	ioreq->io_Flags &= ~IOF_QUICK;
     	/* Send to input device task */
-    	PutMsg(&InputDevice->CommandPort, (struct Message *)ioreq);
+    	PutMsg(InputDevice->CommandPort, &ioreq->io_Message);
     }
     else
     {

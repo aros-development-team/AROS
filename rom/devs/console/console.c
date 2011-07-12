@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Console.device
@@ -7,7 +7,6 @@
 */
 
 /****************************************************************************************/
-
 
 #include <string.h>
 
@@ -27,13 +26,9 @@
 #include <graphics/rastport.h>
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
-
 #include <graphics/rastport.h>
 
-#if defined(__GNUC__) || defined(__INTEL_COMPILER)
-#    include "console_gcc.h"
-#endif
-
+#include "console_gcc.h"
 #include "consoleif.h"
 
 #include LC_LIBDEFS_FILE
@@ -86,78 +81,15 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ConsoleDevice)
 	Alert(AT_DeadEnd | AN_ConsoleDev | AG_NoMemory);
 
     /* Create the console.device task. */
-    ConsoleDevice->consoleTask = AllocMem(sizeof(struct Task), MEMF_CLEAR|MEMF_PUBLIC);
-    if(ConsoleDevice->consoleTask)
-    {
-	struct Task * const task = ConsoleDevice->consoleTask;
-	APTR stack;
+    ConsoleDevice->consoleTask = NewCreateTask(TASKTAG_NAME	  , "console.device",
+					       TASKTAG_PRI 	  , COTASK_PRIORITY,
+					       TASKTAG_STACKSIZE  , COTASK_STACKSIZE,
+					       TASKTAG_TASKMSGPORT, &ConsoleDevice->commandPort,
+					       TASKTAG_PC	  , consoleTaskEntry,
+					       TASKTAG_ARG1	  , ConsoleDevice,
+					       TAG_DONE);
 
-	/* Initialise the task */
-	NEWLIST(&task->tc_MemEntry);
-	task->tc_Node.ln_Type = NT_TASK;
-	task->tc_Node.ln_Name = "console.device";
-	task->tc_Node.ln_Pri = COTASK_PRIORITY;
-
-	/* Initialise Command Port now we have the task */
-	ConsoleDevice->commandPort.mp_Node.ln_Type = NT_MSGPORT;
-	ConsoleDevice->commandPort.mp_SigTask = task;
-	ConsoleDevice->commandPort.mp_Flags = PA_SIGNAL;
-	ConsoleDevice->commandPort.mp_SigBit = 16;
-	NEWLIST(&ConsoleDevice->commandPort.mp_MsgList);
-
-	task->tc_SigAlloc = 1L<<16 | SysBase->TaskSigAlloc;
-
-	stack = AllocMem(COTASK_STACKSIZE, MEMF_PUBLIC);
-	if(stack != NULL)
-	{
-#if 1
-    	    struct TagItem tags[] =
-	    {
-	    	{TASKTAG_ARG1, (IPTR)ConsoleDevice  },
-		{TAG_DONE   	    	    	    }
-	    };
-	    
-	    task->tc_SPLower = stack;
-	    task->tc_SPUpper = (UBYTE *)stack + COTASK_STACKSIZE;
-    	#if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET;
-    	#else
-	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET;
-    	#endif
-
-	    if(NewAddTask(task, consoleTaskEntry, NULL, tags) != NULL)
-	    {
-		return TRUE;
-		/* ALL OK */
-	    }
-	    
-#else
-	    task->tc_SPLower = stack;
-	    task->tc_SPUpper = (UBYTE *)stack + COTASK_STACKSIZE;
-
-    	#if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET - sizeof(APTR);
-	    ((APTR *)task->tc_SPUpper)[-1] = ConsoleDevice;
-    	#else
-	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET + sizeof(APTR);
-	    ((APTR *)(task->tc_SPLower + SP_OFFSET))[0] = ConsoleDevice;
-    	#endif
-
-	    if(AddTask(task, consoleTaskEntry, NULL) != NULL)
-	    {
-		return TRUE;
-		/* ALL OK */
-	    }
-
-#endif
-
-	    FreeMem(stack, COTASK_STACKSIZE);
-	}
-	FreeMem(task, sizeof(struct Task));
-    }
-
-    Alert(AT_DeadEnd | AN_ConsoleDev | AG_NoMemory);
-    return FALSE;
+    return ConsoleDevice->consoleTask ? TRUE : FALSE;
 }
 
 /****************************************************************************************/
@@ -408,7 +340,7 @@ AROS_LH1(void, beginio,
         /* Mark IO request to be done non-quick */
     	ioreq->io_Flags &= ~IOF_QUICK;
     	/* Send to input device task */
-    	PutMsg(&ConsoleDevice->commandPort, (struct Message *)ioreq);
+    	PutMsg(ConsoleDevice->commandPort, &ioreq->io_Message);
     }
     else
     {

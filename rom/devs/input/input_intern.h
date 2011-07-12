@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for the input.device
@@ -51,7 +51,7 @@ struct inputbase
     ** input device is never removed, once it's initialized.
     */
     struct Task 	*InputTask;
-    struct MsgPort 	CommandPort;
+    struct MsgPort 	*CommandPort;
     struct MinList 	HandlerList;
     struct InputEvent 	*EventQueueHead;
     struct InputEvent 	*EventQueueTail;

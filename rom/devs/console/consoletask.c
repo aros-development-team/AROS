@@ -1,23 +1,18 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code executed by the console.device task.
     Lang: english
 */
 
-
-
 #include <exec/lists.h>
-
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/console.h>
 #include <exec/io.h>
 #include <exec/alerts.h>
 #include <dos/dos.h>
-
-
 #include <devices/input.h>
 #include <devices/rawkeycodes.h>
 
@@ -139,7 +134,7 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
     inputport = ((struct cdihData *)ConsoleDevice->inputHandler->is_Data)->inputPort;
     
     inputsig	= 1 << inputport->mp_SigBit;
-    commandsig	= 1 << ConsoleDevice->commandPort.mp_SigBit;
+    commandsig	= 1 << ConsoleDevice->commandPort->mp_SigBit;
     
     waitsigs = inputsig|commandsig|SIGBREAKF_CTRL_C;
     
@@ -293,7 +288,7 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 	    struct IOStdReq *req;
 	    
 	    
-	    while ((req = (struct IOStdReq *)GetMsg(&ConsoleDevice->commandPort)))
+	    while ((req = (struct IOStdReq *)GetMsg(ConsoleDevice->commandPort)))
 	    {
 	      pasteData(ICU(req->io_Unit), ConsoleDevice);
 	      

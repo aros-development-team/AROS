@@ -62,7 +62,8 @@ static void ahci_taskcode_hba(struct ahci_hba_chip *hba_chip, struct Task* paren
     }
 }
 
-BOOL ahci_create_hbatask(struct ahci_hba_chip *hba_chip) {
+BOOL ahci_create_hbatask(struct ahci_hba_chip *hba_chip)
+{
     HBAHW_D("Setting up HBA task...\n");
 
     //move to hba_chip struct
@@ -70,54 +71,22 @@ BOOL ahci_create_hbatask(struct ahci_hba_chip *hba_chip) {
     struct MemList  *ml;
     UBYTE *sp = NULL;
 
-    struct TagItem tags[] = {
-        { TASKTAG_ARG1, (IPTR)hba_chip },
-        { TASKTAG_ARG2, (IPTR)FindTask(0) },
-        { TAG_DONE,     0 }
+    t = NewCreateTask(TASKTAG_NAME     , "HBA task",
+    		      TASKTAG_PRI      , HBA_TASK_PRI,
+    		      TASKTAG_STACKSIZE, HBA_TASK_STACKSIZE,
+    		      TASKTAG_PC       , ahci_taskcode_hba,
+    		      TASKTAG_ARG1     , hba_chip,
+        	      TASKTAG_ARG2     , FindTask(NULL),
+        	      TAG_DONE);
     };
 
-    t = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-    if (t) {
-        ml = AllocMem(sizeof(struct MemList) + sizeof(struct MemEntry), MEMF_PUBLIC | MEMF_CLEAR);
-        if(ml) {
-    	    sp = AllocMem(HBA_TASK_STACKSIZE, MEMF_PUBLIC | MEMF_CLEAR);
-    	    if(sp) {
-                t->tc_SPLower = sp;
-                t->tc_SPUpper = sp + HBA_TASK_STACKSIZE;
-            #if AROS_STACK_GROWS_DOWNWARDS
-		        t->tc_SPReg = (UBYTE *)t->tc_SPUpper-SP_OFFSET;
-            #else
-		        t->tc_SPReg = (UBYTE *)t->tc_SPLower-SP_OFFSET;
-            #endif
+    if (!t)
+    	return FALSE;
 
-                ml->ml_NumEntries = 2;
+    Wait(SIGBREAKF_CTRL_C);
+    HBAHW_D("Signal from HBA task received\n");
 
-                ml->ml_ME[0].me_Addr = t;
-                ml->ml_ME[0].me_Length = sizeof(struct Task);
-
-                ml->ml_ME[1].me_Addr = sp;
-                ml->ml_ME[1].me_Length = HBA_TASK_STACKSIZE;
-        
-                NEWLIST(&t->tc_MemEntry);
-                AddHead(&t->tc_MemEntry, &ml->ml_Node);
-
-                t->tc_Node.ln_Name = "HBA task";
-                t->tc_Node.ln_Type = NT_TASK;
-                t->tc_Node.ln_Pri  = HBA_TASK_PRI;
-
-                NewAddTask(t, ahci_taskcode_hba, NULL, tags);
-
-                Wait(SIGBREAKF_CTRL_C);
-                HBAHW_D("Signal from HBA task received\n");
-
-                return TRUE;
-            }
-            FreeMem(ml,sizeof(struct MemList) + sizeof(struct MemEntry));
-        }
-        FreeMem(t,sizeof(struct Task));
-    }
-
-    return FALSE;
+    return TRUE;
 }
 
 BOOL ahci_setup_hba(struct ahci_hba_chip *hba_chip) {

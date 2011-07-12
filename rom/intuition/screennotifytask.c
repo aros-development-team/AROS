@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,63 +20,6 @@
 #undef DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
-
-void DefaultScreennotifyHandler(struct ScreennotifyTaskParams *taskparams);
-
-/**************************************************************************************************/
-/******************************
-**  CreateScreennotifyHandlerTask()  **
-******************************/
-struct Task *CreateScreennotifyHandlerTask(APTR taskparams, struct IntuitionBase *IntuitionBase)
-{
-    struct Task *task;
-    APTR    stack;
-
-    task = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-    if (task)
-    {
-        NEWLIST(&task->tc_MemEntry);
-        task->tc_Node.ln_Type = NT_TASK;
-        task->tc_Node.ln_Name = SCREENNOTIFYTASK_NAME;
-        task->tc_Node.ln_Pri = SCREENNOTIFYTASK_PRIORITY;
-
-        stack = AllocMem(SCREENNOTIFYTASK_STACKSIZE, MEMF_PUBLIC);
-        if(stack != NULL)
-        {
-            task->tc_SPLower=stack;
-            task->tc_SPUpper=(UBYTE *)stack + SCREENNOTIFYTASK_STACKSIZE;
-
-    	    {
-	    	struct TagItem tags[] =
-		{
-		    {TASKTAG_ARG1, (IPTR)taskparams },
-		    {TAG_DONE	    	    	    }
-		};
-		
-    	    #if AROS_STACK_GROWS_DOWNWARDS
-    		task->tc_SPReg = (UBYTE *)task->tc_SPUpper-SP_OFFSET;
-    	    #else
-        	task->tc_SPReg=(UBYTE *)task->tc_SPLower+SP_OFFSET;
-    	    #endif
-
-        	if(NewAddTask(task, DefaultScreennotifyHandler, NULL, tags) != NULL)
-        	{
-                    /* Everything went OK */
-                    return (task);
-        	}
-	    
-	    }
-            FreeMem(stack, SCREENNOTIFYTASK_STACKSIZE);
-
-        } /* if(stack != NULL) */
-        FreeMem(task,sizeof(struct Task));
-
-    } /* if (task) */
-    return (NULL);
-
-}
-
-
 
 /**************************************************************************************************/
 
@@ -146,7 +89,14 @@ BOOL InitDefaultScreennotifyHandler(struct IntuitionBase *IntuitionBase)
 
     SetSignal(0, SIGF_INTUITION);
 
-    if ((task = CreateScreennotifyHandlerTask(&params, IntuitionBase)))
+    task = NewCreateTask(TASKTAG_NAME	  , SCREENNOTIFYTASK_NAME,
+    			 TASKTAG_PRI	  , SCREENNOTIFYTASK_PRIORITY,
+    			 TASKTAG_STACKSIZE, SCREENNOTIFYTASK_STACKSIZE,
+    			 TASKTAG_PC	  , DefaultScreennotifyHandler,
+    			 TASKTAG_ARG1	  , &params,
+    			 TAG_DONE);
+
+    if (task)
     {
         Wait(SIGF_INTUITION);
 

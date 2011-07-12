@@ -100,90 +100,6 @@ static WORD CalcMaxCommKeyWidth(struct Window *win, struct MenuHandlerData *mhd,
                                 struct IntuitionBase *IntuitionBase);
 static void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 
-
-/**************************************************************************************************/
-/******************************
-**  CreateMenuHandlerTask()  **
-******************************/
-struct Task *CreateMenuHandlerTask(APTR taskparams, struct IntuitionBase *IntuitionBase)
-{
-    struct Task *task;
-    APTR    stack;
-
-    task = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-    if (task)
-    {
-        NEWLIST(&task->tc_MemEntry);
-        task->tc_Node.ln_Type = NT_TASK;
-        task->tc_Node.ln_Name = MENUTASK_NAME;
-        task->tc_Node.ln_Pri = MENUTASK_PRIORITY;
-
-        stack = AllocMem(MENUTASK_STACKSIZE, MEMF_PUBLIC);
-        if(stack != NULL)
-        {
-            task->tc_SPLower=stack;
-            task->tc_SPUpper=(UBYTE *)stack + MENUTASK_STACKSIZE;
-
-    #ifdef __MORPHOS__
-            task->tc_SPReg = task->tc_SPUpper;
-
-            {
-                struct TaskInitExtension taskext;
-                struct TagItem      	 tags[4];
-
-                taskext.Trap 	  = TRAP_PPCTASK;
-                taskext.Extension = 0;
-                taskext.Tags 	  = tags;
-
-                tags[0].ti_Tag  = TASKTAG_CODETYPE;
-                tags[0].ti_Data = CODETYPE_PPC;
-                tags[1].ti_Tag  = TASKTAG_PC;
-                tags[1].ti_Data = (ULONG)DefaultMenuHandler;
-                tags[2].ti_Tag  = TASKTAG_PPC_ARG1;
-                tags[2].ti_Data = (ULONG)taskparams;
-                tags[3].ti_Tag  = TAG_END;
-
-                if(AddTask(task, (APTR)&taskext, NULL) != NULL)
-                {
-                    /* Everything went OK */
-                    return (task);
-                }
-            }
-    #else
-    	    {
-	    	struct TagItem tags[] =
-		{
-		    {TASKTAG_ARG1, (IPTR)taskparams },
-		    {TAG_DONE	    	    	    }
-		};
-		
-    	    #if AROS_STACK_GROWS_DOWNWARDS
-    		task->tc_SPReg = (UBYTE *)task->tc_SPUpper-SP_OFFSET;
-    	    #else
-        	task->tc_SPReg=(UBYTE *)task->tc_SPLower+SP_OFFSET;
-    	    #endif
-
-        	if(NewAddTask(task, DefaultMenuHandler, NULL, tags) != NULL)
-        	{
-                    /* Everything went OK */
-                    return (task);
-        	}
-	    
-	    }
-    #endif
-            FreeMem(stack, MENUTASK_STACKSIZE);
-
-        } /* if(stack != NULL) */
-        FreeMem(task,sizeof(struct Task));
-
-    } /* if (task) */
-    return (NULL);
-
-}
-
-#undef DefaultMenuHandler
-
-
 /**************************************************************************************************/
 
 /***************************
@@ -314,7 +230,12 @@ BOOL InitDefaultMenuHandler(struct IntuitionBase *IntuitionBase)
 
     SetSignal(0, SIGF_INTUITION);
 
-    if ((task = CreateMenuHandlerTask(&params, IntuitionBase)))
+    task = NewCreateTask(TASKTAG_NAME, "Intuition menu handler",
+    			 TASKTAG_PC  , DefaultMenuHandler,
+    			 TASKTAG_ARG1, &params,
+    			 TAG_DONE);
+
+    if (task)
     {
         Wait(SIGF_INTUITION);
 

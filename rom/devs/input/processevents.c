@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -253,7 +253,7 @@ void ProcessEvents (struct inputbase *InputDevice)
     /* .. and to the timer device */
     SEND_TIMER_REQUEST(timerio);
     
-    commandsig = 1 << InputDevice->CommandPort.mp_SigBit;
+    commandsig = 1 << InputDevice->CommandPort->mp_SigBit;
     
     kbdsig      = 1 << kbdmp->mp_SigBit;
     gpdsig      = 1 << gpdmp->mp_SigBit;
@@ -299,7 +299,7 @@ void ProcessEvents (struct inputbase *InputDevice)
 	    struct IOStdReq *ioreq;
 
 	    /* Get all commands from the port */
-	    while ((ioreq = (struct IOStdReq *)GetMsg(&InputDevice->CommandPort)))
+	    while ((ioreq = (struct IOStdReq *)GetMsg(InputDevice->CommandPort)))
 	    {
 	    	
 		switch (ioreq->io_Command)
