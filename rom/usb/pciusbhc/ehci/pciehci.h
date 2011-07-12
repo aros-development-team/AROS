@@ -6,13 +6,17 @@
 #ifndef PCIEHCI_H
 #define PCIEHCI_H
 
+#include <aros/io.h>
 #include <aros/system.h>
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
 
 #include <exec/exec.h>
+
+#include <devices/timer.h>
 #include <devices/newstyle.h>
 #include <devices/usbhardware.h>
+
 #include <hidd/pci.h>
 
 #include <proto/exec.h>
@@ -58,10 +62,28 @@ struct ehc_controller {                 /* EHCI Controller Struct (ehc_) */
     OOP_Object     *ehc_pcideviceobject;
     OOP_Object     *ehc_pcidriverobject;
 
+    ULONG           ehc_EhciUsbCmd;
+    ULONG          *ehc_EhciFrameList;
+    struct EhciQH  *ehc_EhciQHPool;
+    struct EhciTD  *ehc_EhciTDPool;
+
+    struct EhciQH  *ehc_EhciAsyncQH;
+    struct EhciQH  *ehc_EhciIntQH[11];
+    struct EhciQH  *ehc_EhciTermQH;
+    volatile BOOL   ehc_AsyncAdvanced;
+    struct EhciQH  *ehc_EhciAsyncFreeQH;
+    struct EhciTD  *ehc_ShortPktEndTD;
+
+    ULONG           ehc_FrameCounter;
+    struct List     ehc_TDQueue;
+    struct List     ehc_AbortQueue;
+    struct List     ehc_PeriodicTDQueue;
     struct MinList  ehc_CtrlXFerQueue;
     struct MinList  ehc_IntXFerQueue;
     struct MinList  ehc_IsoXFerQueue;
     struct MinList  ehc_BulkXFerQueue;
+
+    volatile APTR   ehc_opregbase;
 
     IPTR            ehc_pcibus, ehc_pcidev, ehc_pcisub, ehc_intline;
 };
@@ -77,11 +99,19 @@ struct ehu_unit {                       /* EHCI Unit Structure (ehu_) */
     struct Unitnode ehu_unitnode;
 
     ULONG           ehu_unitnumber;
+
+    struct timerequest    hu_NakTimeoutReq;
+    struct MsgPort        hu_NakTimeoutMsgPort;
+    struct Interrupt      hu_NakTimeoutInt;
+
     BOOL            ehu_unitallocated;  /* Unit opened */
     IPTR            ehu_pcibus, ehu_pcidev;
 
     UWORD           ehu_RootHubAddr;    /* Root Hub Address */
     ULONG           ehu_FrameCounter;   /* Common frame counter */
+    struct IOUsbHWReq    *ehu_DevBusyReq[128*16*2]; /* pointer to io assigned to the Endpoint */
+    ULONG           ehu_NakTimeoutFrame[128*16*2]; /* Nak Timeout framenumber */
+    UBYTE           ehu_DevDataToggle[128*16*2]; /* Data toggle bit for endpoints */
 
     struct MinList  ehu_cntrlist;
 };
