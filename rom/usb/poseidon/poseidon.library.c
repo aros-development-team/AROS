@@ -5290,7 +5290,7 @@ AROS_LH1(void, psdRemClass,
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
                            "This should never happen! Class %s still in use (cnt=%ld). Could not get rid of it! Sorry, we're broke.",
                            puc->puc_ClassBase->lib_Node.ln_Name, puc->puc_UseCnt);
-            Wait(0L);
+
             /*psdDelayMS(2000);*/
         }
     }
@@ -6269,6 +6269,8 @@ AROS_LH1(BOOL, psdLoadCfgFromDisk,
     ULONG formhead[3];
     ULONG formlen;
 
+    XPRINTF(10, ("Loading config file: %s\n", filename));
+
     if(!filename)
     {
         loaded = psdLoadCfgFromDisk("ENV:Sys/poseidon.prefs");
@@ -6284,16 +6286,22 @@ AROS_LH1(BOOL, psdLoadCfgFromDisk,
 
     if(!pOpenDOS(ps))
     {
+    	KPRINTF(1, ("dos.library not available yet\n"));
         return(FALSE);
     }
+
     filehandle = Open(filename, MODE_OLDFILE);
+    KPRINTF(1, ("File handle 0x%p\n", filehandle));
     if(filehandle)
     {
         if(Read(filehandle, formhead, 12) == 12)
         {
+            KPRINTF(1, ("Read header\n"));
             if((AROS_LONG2BE(formhead[0]) == ID_FORM) && (AROS_LONG2BE(formhead[2]) == IFFFORM_PSDCFG))
             {
                 formlen = AROS_LONG2BE(formhead[1]);
+                KPRINTF(1, ("Header OK, %lu bytes\n", formlen));
+
                 buf = (ULONG *) psdAllocVec(formlen + 8);
                 if(buf)
                 {
@@ -6302,8 +6310,12 @@ AROS_LH1(BOOL, psdLoadCfgFromDisk,
                     buf[2] = formhead[2];
                     if(Read(filehandle, &buf[3], formlen - 4) == formlen - 4)
                     {
+                    	KPRINTF(1, ("Data read OK\n"));
+
                         psdReadCfg(NULL, buf);
                         psdParseCfg();
+                        
+                        KPRINTF(1, ("All done\n"));
                         loaded = TRUE;
                     }
                     psdFreeVec(buf);
@@ -6419,7 +6431,7 @@ AROS_LH2(struct PsdIFFContext *, psdFindCfgForm,
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *subpic;
 
-    KPRINTF(160, ("psdFindCfgForm(%p, %p)\n", pic, formid));
+    KPRINTF(160, ("psdFindCfgForm(0x%p, 0x%08lx)\n", pic, formid));
     pLockSemShared(ps, &ps->ps_ConfigLock);
     if(!pic)
     {
@@ -6467,6 +6479,8 @@ AROS_LH1(struct PsdIFFContext *, psdNextCfgForm,
         if(pic->pic_FormID == formid)
         {
             pUnlockSem(ps, &ps->ps_ConfigLock);
+
+            KPRINTF(1, ("Found context 0x%p\n", pic));
             return(pic);
         }
         pic = (struct PsdIFFContext *) pic->pic_Node.ln_Succ;
@@ -6612,7 +6626,7 @@ AROS_LH2(APTR, psdGetCfgChunk,
     ULONG *chnk;
     ULONG *res = NULL;
 
-    KPRINTF(10, ("psdGetCfgChunk(%p, %p)\n", pic, chnkid));
+    KPRINTF(10, ("psdGetCfgChunk(%p, 0x%08lx)\n", pic, chnkid));
 
     pLockSemShared(ps, &ps->ps_ConfigLock);
     if(!pic)
@@ -6656,7 +6670,7 @@ AROS_LH0(void, psdParseCfg,
     BOOL nodos = (FindTask(NULL)->tc_Node.ln_Type != NT_PROCESS);
     IPTR restartme;
 
-    KPRINTF(10, ("psdParseCfg()\n"));
+    XPRINTF(10, ("psdParseCfg()\n"));
 
     pLockSemShared(ps, &ps->ps_ConfigLock);
     pCheckCfgChanged(ps);
@@ -6672,6 +6686,7 @@ AROS_LH0(void, psdParseCfg,
     // keyboards to configure the hardware!)
     if(!psdFindCfgForm(pic, IFFFORM_UHWDEVICE))
     {
+    	XPRINTF(10, ("No hardware data present\n"));
         removeall = FALSE;
     }
 
@@ -6689,7 +6704,18 @@ AROS_LH0(void, psdParseCfg,
     puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
     while(puc->puc_Node.ln_Succ)
     {
-        puc->puc_RemoveMe = TRUE;
+	/*
+	 * For kickstart-resident classes we check usage count, and
+	 * remove them only if it's zero.
+	 * These classes can be responsible for devices which we can use
+	 * at boot time. If we happen to remove them, we can end up with
+	 * no input or storage devices at all.
+	 */
+    	if (FindResident(puc->puc_ClassName))
+    	    puc->puc_RemoveMe = (puc->puc_UseCnt == 0);
+    	else
+            puc->puc_RemoveMe = TRUE;
+
         puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
     }
 
@@ -6712,6 +6738,7 @@ AROS_LH0(void, psdParseCfg,
             if(!pFindCfgChunk(ps, subpic, IFFCHNK_OFFLINE))
             {
                 phw = pFindHardware(ps, name, unit);
+                XPRINTF(5, ("Have configuration for device 0x%p (%s unit %u)\n", phw, name, unit));
                 if(phw)
                 {
                     phw->phw_RemoveMe = FALSE;
@@ -6730,6 +6757,7 @@ AROS_LH0(void, psdParseCfg,
         {
             name = (STRPTR) &chnk[2];
             puc = (struct PsdUsbClass *) pFindName(ps, &ps->ps_Classes, name);
+            XPRINTF(5, ("Have configuration for class 0x%p (%s)\n", puc, name));
             if(puc)
             {
                 puc->puc_RemoveMe = FALSE;
@@ -6747,6 +6775,7 @@ AROS_LH0(void, psdParseCfg,
     {
         if(puc->puc_RemoveMe)
         {
+	    XPRINTF(5, ("Removing class %s\n", puc->puc_ClassName));
             psdRemClass(puc);
             puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
         } else {
@@ -6760,6 +6789,7 @@ AROS_LH0(void, psdParseCfg,
     {
         if(phw->phw_RemoveMe)
         {
+	    XPRINTF(5, ("Removing device %s unit %u\n", phw->phw_DevName, phw->phw_Unit));
             psdRemHardware(phw);
             phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
         } else {
