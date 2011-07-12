@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ShutdownA() - Shut down the operating system.
@@ -8,6 +8,8 @@
 
 #include <asm/io.h>
 #include <exec/tasks.h>
+#include <proto/dos.h>
+
 #include "exec_util.h"
 
 /*****************************************************************************
@@ -53,9 +55,29 @@
 
     if (action == SD_ACTION_COLDREBOOT)
     {
-        Exec_DoResetCallbacks((struct IntExecBase *)SysBase);
+    	struct DosLibrary *DOSBase = OpenLibrary("dos.library", 36);
+
+    	/*
+    	 * Don't call reset callbacks because their action is not
+    	 * recoverable.
+    	 * On IntelMac port 0xFE doesn't work, so the function should
+    	 * be able to return cleanly.
+    	 * TODO: Implement alternative reset for Mac (ACPI ?)
+    	 *
+        Exec_DoResetCallbacks((struct IntExecBase *)SysBase); */
         outb(0xFE, 0x64);
-        Wait(0);
+
+	/*
+	 * Keyboard controller can be slow, so we need to wait for some time.
+	 * If we don't do this, we'll can see "Unsupported action" error, immediately
+	 * followed by a restart, which looks strange.
+	 * we use dos.library/Delay() here for simplicity.
+	 */
+	if (DOSBase)
+	{
+	    Delay(50);
+	    CloseLibrary((struct Library *)DOSBase);
+	}
     }
     return 0;
 

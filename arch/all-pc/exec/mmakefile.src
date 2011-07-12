@@ -1,0 +1,12 @@
+# $Id: mmakefile.src 38294 2011-04-20 13:14:38Z sonic $
+include $(TOP)/config/make.cfg
+
+FILES := shutdowna
+
+USER_CFLAGS := -I$(SRCDIR)/rom/exec
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=pc \
+  files=$(FILES) modulename=exec
+
+%common
