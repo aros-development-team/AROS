@@ -35,7 +35,7 @@ FUNCS	:=  createcontext \
 #MM     kernel-layers-includes \
 #MM     includes-copy
 #MM- workbench-libs-gadtools : linklibs
-#MM- linklibs-core : linklibs-gadtools
+#MM- core-linklibs : linklibs-gadtools
 
 USER_CFLAGS := -D__NOLIBBASE__
 

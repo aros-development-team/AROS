@@ -35,9 +35,9 @@ FUNCS := \
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \
 #MM    includes-copy
-#MM kernel-partition : linklibs-core core-linklibs
-#MM kernel-partition-kobj : linklibs-core core-linklibs
-#MM- linklibs-core: linklibs-partition
+#MM kernel-partition : core-linklibs core-linklibs
+#MM kernel-partition-kobj : core-linklibs core-linklibs
+#MM- core-linklibs: linklibs-partition
 
 USER_CFLAGS := -DDEBUG=0 \
 	       -D__UTILITY_NOLIBBASE__

@@ -19,7 +19,7 @@ FUNCTIONS := \
 #MM kernel-utility-includes : \
 #MM     kernel-exec-includes
 
-#MM- linklibs-core : linklibs-utility
+#MM- core-linklibs : linklibs-utility
 
 %build_module mmake=kernel-utility \
   modname=utility modtype=library \

@@ -28,7 +28,7 @@ MISCFILES := \
 
 FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(STARTUPFILES) $(MISCFILES)
 
-#MM- linklibs-core : linklibs-autoinit
+#MM- core-linklibs : linklibs-autoinit
 #MM- linklibs: linklibs-autoinit
 #MM linklibs-autoinit : includes includes-copy kernel-expansion-includes
 

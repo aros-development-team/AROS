@@ -4,7 +4,7 @@
 #
 include $(TOP)/config/make.cfg
 
-#MM- linklibs-core : linklibs-libinit
+#MM- core-linklibs : linklibs-libinit
 #MM- linklibs: linklibs-libinit
 #MM linklibs-libinit : includes
 

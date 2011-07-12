@@ -17,7 +17,7 @@ FUNCS	:=  opendiskfont	\
 #MM     workbench-libs-bullet-includes \
 #MM     includes-copy
 #MM- workbench-libs-diskfont : linklibs
-#MM- linklibs-core: linklibs-diskfont
+#MM- core-linklibs: linklibs-diskfont
 
 %build_module mmake=workbench-libs-diskfont \
     modname=diskfont modtype=library \

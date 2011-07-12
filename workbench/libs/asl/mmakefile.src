@@ -41,7 +41,7 @@ FUNCS := allocfilerequest	\
 #MM     workbench-libs-asl-catalogs \
 #MM     workbench-libs-coolimages
 
-#MM- linklibs-core: linklibs-asl
+#MM- core-linklibs: linklibs-asl
 
 %build_module mmake=workbench-libs-asl \
     modname=asl modtype=library \

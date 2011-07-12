@@ -22,7 +22,7 @@ INCLUDE_FILES	:= jpeglib.h jversion.h jinclude.h jconfig.h jmorecfg.h jerror.h
 
 USER_CFLAGS	:= -DNO_GETENV
 
-#MM- linklibs-core : linklibs-jpeg
+#MM- core-linklibs : linklibs-jpeg
 #MM- linklibs: linklibs-jpeg
 #MM linklibs-jpeg : includes
 #MM includes-copy

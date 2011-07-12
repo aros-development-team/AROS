@@ -945,7 +945,7 @@ BD_LDFLAGS   := %(ldflags)
 #MM
 %(mmake)-quick : %(mmake)
 
-#MM %(mmake) : includes-generate-deps linklibs-core linklibs-%(uselibs)
+#MM %(mmake) : includes-generate-deps core-linklibs linklibs-%(uselibs)
 %(mmake) : $(BD_TARGETDIR)/$(BD_PROGNAME)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
@@ -1003,7 +1003,7 @@ BD_LDFLAGS   := %(ldflags)
 #MM
 %(mmake)-quick : %(mmake)
 
-#MM %(mmake) : includes-generate-deps linklibs-core linklibs-%(uselibs)
+#MM %(mmake) : includes-generate-deps core-linklibs linklibs-%(uselibs)
 %(mmake) : $(BD_EXES)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
@@ -2199,7 +2199,7 @@ endif
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
-#MM- %(mmake) : setup includes linklibs-core %(mmake)-quick
+#MM- %(mmake) : setup includes core-linklibs %(mmake)-quick
 
 # Using -j1 in install_command may result in a warning but finally
 # it does its job. make install for gcc does not work reliably for -jN

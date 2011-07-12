@@ -40,7 +40,7 @@ FUNCS := activatecxobj \
 #MM     kernel-utility-includes \
 #MM     includes-copy
 #MM- workbench-libs-commodities : linklibs
-#MM- linklibs-core: linklibs-commodities
+#MM- core-linklibs: linklibs-commodities
 
 %build_module mmake=workbench-libs-commodities \
     modname=commodities modtype=library \

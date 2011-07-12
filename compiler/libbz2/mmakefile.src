@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := bzlib.h
 
-#MM- linklibs-core : linklibs-bz2
+#MM- core-linklibs : linklibs-bz2
 #MM- linklibs : linklibs-bz2
 #MM- linklibs-bz2 : includes
 #MM includes-copy
