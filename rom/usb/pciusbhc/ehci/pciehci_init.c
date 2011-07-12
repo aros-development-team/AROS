@@ -39,8 +39,8 @@ AROS_UFH3(void, ehc_enumhook,
 
             /* Try to match the controller with previous unit nodes created based on the bus address (if any) */
             struct ehu_unit *ehu;
+            struct Unitnode *ehu_unitnode;
             if (!IsListEmpty(&ehd->ehd_unitlist)) {
-                struct Unitnode *ehu_unitnode;
                 ForeachNode(&ehd->ehd_unitlist, ehu_unitnode) {
                     ehu = (struct ehu_unit *)ehu_unitnode->ehu_unitptr;
                     if(((ehu->ehu_pcibus == ehc->ehc_pcibus)&&(ehu->ehu_pcidev == ehc->ehc_pcidev))) {
@@ -53,10 +53,14 @@ AROS_UFH3(void, ehc_enumhook,
             /* Add the controller to the unit node or create a new one */
             if(Found) {
                     KPRINTF2(DBL_DEVIO,("EHC Found matching unit #%ld (%04x:%04x)\n", ehu->ehu_unitnumber, ehu->ehu_pcibus, ehu->ehu_pcidev));
+
+                    ehc->ehc_unitptr = ehu_unitnode->ehu_unitptr;
                     ADDTAIL((struct MinList *)&ehu->ehu_cntrlist, (struct MinNode *)ehc);
             }else{
                 if((ehu = AllocPooled(ehd->ehd_mempool, sizeof(struct ehu_unit)))) {
                     ehu->ehu_unitnode.ehu_unitptr = ehu;
+
+                    ehc->ehc_unitptr = ehu;
 
                     ehu->ehu_pcibus = ehc->ehc_pcibus;
                     ehu->ehu_pcidev = ehc->ehc_pcidev;
@@ -121,10 +125,10 @@ static int Init(LIBBASETYPEPTR LIBBASE) {
                 ForeachNode(&ehd->ehd_unitlist, ehu_unitnode) {
                     struct ehu_unit *ehu = (struct ehu_unit *)ehu_unitnode->ehu_unitptr;
                     if (!IsListEmpty(&ehu->ehu_cntrlist)) {
-                        KPRINTF2(DBL_DEVIO,("EHC Unit #%ld has controller(s) ", ehu->ehu_unitnumber));
+                        KPRINTF2(DBL_DEVIO,("EHC Unit #%ld(%p) has controller(s)\n", ehu->ehu_unitnumber, ehu->ehu_unitnode.ehu_unitptr));
                         struct ehc_controller *ehc;
                         ForeachNode(&ehu->ehu_cntrlist, ehc) {
-                            KPRINTF2(DBL_DEVIO,("#%ld ", ehc->ehc_pcisub));
+                            KPRINTF2(DBL_DEVIO,("#%ld pointing to unit %p\n", ehc->ehc_pcisub, ehc->ehc_unitptr));
                         }
                         KPRINTF2(DBL_DEVIO,("\n"));
                     }
