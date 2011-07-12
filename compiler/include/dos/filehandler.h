@@ -20,8 +20,6 @@
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
-#include <dos/dosextaros.h>
-
 
 /* Disk environment array. The size of this structure is variable.
    de_TableSize contains the size of the structure. This structure may

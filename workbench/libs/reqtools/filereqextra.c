@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,18 +15,7 @@
 
 #include "filereq.h"
 
-
-#ifdef   __AROS__
-
-    #define  DEBUG  0
-    #include <aros/debug.h>
-
-#else
-
-    #define  D(x)  
-
-#endif
-
+#define  D(x)  
 
 /****************************************************************************************/
 
@@ -691,42 +680,6 @@ BOOL REGARGS FindVolume (GlobData *glob, UBYTE *str, struct ReqEntry *curr)
 static BOOL
 IsDosVolume(struct DosList *dlist)
 {
-#ifdef __AROS__
-    struct InfoData id;
-    BPTR            lock;
-    STRPTR          volName = AllocVec(strlen(AROS_DOSDEVNAME(dlist)) + 2,
-				       MEMF_ANY);
-
-    /* Create a colon ended volume name, lock it and call Info() */
-
-    if (volName == NULL)
-    {
-	return FALSE;
-    }
-
-    strcpy(volName, AROS_DOSDEVNAME(dlist));
-    strcat(volName, ":");
-
-    lock = Lock(volName, SHARED_LOCK);
-
-    if (lock != BNULL)
-    {
-	BOOL result = Info(lock, &id);
-
-	UnLock(lock);
-	FreeVec(volName);
-
-	return result;
-    } 
-    else
-    {
-	FreeVec(volName);
-
-	return FALSE;
-    }
-
-#else
-
     BOOL	isdev = FALSE;
     D_S( struct InfoData,id );
 
@@ -736,8 +689,6 @@ IsDosVolume(struct DosList *dlist)
     }
 
     return (isdev);
-#endif
-
 }
 
 /****************************************************************************************/
@@ -832,22 +783,6 @@ AddDisk(
 	{
 	    size = SIZE_NONE;
 
-#ifdef __AROS__
-	    {
-		BPTR lock = Lock((CONST_STRPTR) &deventry->name, SHARED_LOCK);
-
-		if (lock != BNULL)
-		{
-		    if (Info(lock, infodata))
-		    {
-			size = ( infodata->id_NumBlocksUsed * 100 +
-				 infodata->id_NumBlocks / 2 ) /
-			    infodata->id_NumBlocks;
-		    }
-		    UnLock(lock);
-		}
-	    }
-#else
 	    if( deventry->task &&
 		    DoPkt1( deventry->task, ACTION_DISK_INFO, MKBADDR( infodata ) ) )
 	    {
@@ -855,7 +790,6 @@ AddDisk(
 			 infodata->id_NumBlocks / 2 ) /
 		    infodata->id_NumBlocks;
 	    }
-#endif
 	}
 
 	i = StrWidth_noloc( &glob->itxt, deventry->name ) + StrWidth_noloc( &glob->itxt, "W" );

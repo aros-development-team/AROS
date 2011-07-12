@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 #define DEBUG 0
@@ -438,20 +438,17 @@ BOOL __FindDeviceName_WB
         
         while ((dol = NextDosEntry(dol, LDF_DEVICES | LDF_READ)) != NULL)
         {
-            TEXT device[MAXFILENAMELENGTH];
-            
-            strlcpy(device, AROS_DOSDEVNAME(dol), MAXFILENAMELENGTH);
-            
-            if (strlcat(device, ":", MAXFILENAMELENGTH) < MAXFILENAMELENGTH)
-            {
-                BPTR lock;
+            STRPTR devname = AROS_BSTR_ADDR(dol->dol_Name);
+            ULONG len = AROS_BSTR_strlen(devname);
+            TEXT device[len + 2];
+            BPTR lock;
+
+	    CopyMem(devname, device, len);
+	    device[len    ] = ':';
+	    device[len + 1] = 0;
                 
-                if
-                (       
-                       IsFileSystem(device)
-                    && (lock = Lock(device, ACCESS_READ)) != BNULL
-                )
-                {
+            if (IsFileSystem(device) && (lock = Lock(device, ACCESS_READ)) != BNULL)
+            {
                     if (NameFromLock(lock, buffer, length))
                     {
                         buffer[strlen(buffer) - 1] = '\0'; /* Remove trailing ':' */
@@ -466,8 +463,7 @@ BOOL __FindDeviceName_WB
                         }
                     }
                     
-                    UnLock(lock);
-                }
+                UnLock(lock);
             }
         }
         

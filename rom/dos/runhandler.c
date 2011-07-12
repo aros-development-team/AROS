@@ -2,6 +2,7 @@
 #include <exec/memory.h>
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -16,6 +17,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 	struct MsgPort *reply_port;
 	struct Process *process = NULL;
 	BSTR bpath;
+	ULONG len;
 	CONST_STRPTR handler;
 
 	handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
@@ -63,18 +65,24 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 		return NULL;
 	}
 
-	if (path) {
-		bpath = MKBADDR(AllocVec(strlen(path) + 2, MEMF_PUBLIC));
-		if (bpath == BNULL)
-		    return NULL;
-
-		strcpy(AROS_BSTR_ADDR(bpath), path);
-	} else {
-		bpath = MKBADDR(AllocVec(strlen(AROS_DOSDEVNAME(deviceNode)) + 3, MEMF_PUBLIC));
-		strcpy (AROS_BSTR_ADDR(bpath), AROS_DOSDEVNAME(deviceNode));
-		strcat (AROS_BSTR_ADDR(bpath), ":");
+	if (path)
+	{
+	    bpath = CreateBSTR(path);
+	    if (bpath == BNULL)
+		return NULL;
 	}
-	AROS_BSTR_setstrlen(bpath, strlen(AROS_BSTR_ADDR(bpath)));
+	else
+	{
+	    path  = AROS_BSTR_ADDR(deviceNode->dn_Name);
+	    len   = AROS_BSTR_strlen(path);
+	    bpath = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(len + 1), MEMF_PUBLIC));
+	    if (bpath == BNULL)
+		return NULL;
+
+	    CopyMem(path, AROS_BSTR_ADDR(bpath), len);
+	    AROS_BSTR_ADDR(bpath)[len++] = ':';
+	    AROS_BSTR_setstrlen(bpath, len);
+	}
 
 	D(bug("[RunHandler] in open by Task '%s'\n", FindTask(NULL)->tc_Node.ln_Name));
 
@@ -126,6 +134,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
         GetMsg(reply_port);
 
         DeleteMsgPort(reply_port);
+	FreeVec(BADDR(bpath));
 
         if (dp->dp_Res1 == DOSFALSE)
         {

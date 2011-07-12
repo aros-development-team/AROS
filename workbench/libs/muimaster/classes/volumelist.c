@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -163,15 +163,11 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    entry.used[0] = '\0';
 	    
 	    entry.type = DLT_DEVICE;
-	#ifdef __AROS__
-	    strncpy(entry.name, AROS_DOSDEVNAME(actdl), sizeof(entry.name));
-	#else
-	    #warning "FIXME: AmigaOS: get device name"
-	    strncpy(entry.name, "???", sizeof(entry.name));
-	#endif
+
+	    strncpy(entry.name, AROS_BSTR_ADDR(actdl->dol_Name), sizeof(entry.name));
 	    entry.name[sizeof(entry.name) - 2] = '\0';
 	    strcat(entry.name, ":");
-	    
+
 	    DoMethod(obj, MUIM_List_InsertSingle, (IPTR)&entry, MUIV_List_Insert_Bottom);
 	}
 
@@ -189,12 +185,8 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    entry.used[0] = '\0';
 	    
 	    entry.type = DLT_VOLUME;
-	#ifdef __AROS__
-	    strncpy(entry.name, AROS_DOSDEVNAME(actdl), sizeof(entry.name));
-	#else
-	    #warning "FIXME: AmigaOS: get device name"
-	    strncpy(entry.name, "???", sizeof(entry.name));
-	#endif
+
+	    strncpy(entry.name, AROS_BSTR_ADDR(actdl->dol_Name), sizeof(entry.name));
 	    entry.name[sizeof(entry.name) - 2] = '\0';
 	    strcat(entry.name, ":");
 	    
@@ -232,12 +224,8 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    entry.used[0] = '\0';
 	    
 	    entry.type = DLT_DIRECTORY;
-	#ifdef __AROS__
-	    strncpy(entry.name, AROS_DOSDEVNAME(actdl), sizeof(entry.name));
-	#else
-	    #warning "FIXME: AmigaOS: get assign name"
-	    strncpy(entry.name, "???", sizeof(entry.name));
-	#endif
+
+	    strncpy(entry.name, AROS_BSTR_ADDR(actdl->dol_Name), sizeof(entry.name));
 	    entry.name[sizeof(entry.name) - 2] = '\0';
 	    strcat(entry.name, ":");
 	    
