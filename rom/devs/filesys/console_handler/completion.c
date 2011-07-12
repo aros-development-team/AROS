@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -356,9 +356,11 @@ static void ScanVol(struct filehandle *fh, struct completioninfo *ci)
     
     while ((dlist = NextDosEntry(dlist, LDF_VOLUMES | LDF_ASSIGNS | LDF_DEVICES)) != NULL)
     {
-	if (MatchPatternNoCase(ci->pattern, AROS_DOSDEVNAME(dlist)))
+    	STRPTR devname = AROS_BSTR_ADDR(dlist->dol_Name);
+
+	if (MatchPatternNoCase(ci->pattern, devname))
 	{
-    	    AddMatchNode(fh, ci, AROS_DOSDEVNAME(dlist), 2);
+    	    AddMatchNode(fh, ci, devname, 2);
 
 	}
     }

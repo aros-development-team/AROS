@@ -59,19 +59,7 @@
 
 #define ThisProcess()		( ( struct Process * ) FindTask( NULL ) )
 
-#ifndef __AROS__
-
-#ifdef __SASC
-#pragma libcall DOSBase DoPkt1 f0 32103
-#else
-
-#ifndef __GNUC__
-#warning Fix DoPkt1 macro for your compiler
-#endif
-
-#endif
-
-#endif
+#define DoPkt1(port, action, arg1) DoPkt(port, action, arg1, 0, 0, 0, 0)
 
 #define D_S(type,name)	UBYTE a_##name[ sizeof( type ) + 3 ]; \
 			type *name = ( type * )( ( IPTR ) ( a_##name + 3 ) & ~3 );

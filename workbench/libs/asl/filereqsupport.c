@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -151,10 +151,8 @@ void FRFreeListviewNode(struct ASLLVFileReqNode *node, struct LayoutData *ld, st
 	}
     }
 
-#ifdef __MORPHOS__
     if (node->type == ASLLV_FRNTYPE_VOLUMES)
 	FreePooled(ld->ld_IntReq->ir_MemPool, node->node.ln_Name, strlen(node->node.ln_Name) + 1);
-#endif
 
     FreePooled(ld->ld_IntReq->ir_MemPool, node, sizeof(struct ASLLVFileReqNode));
 } 
@@ -659,20 +657,14 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 	if ((node = AllocPooled(ld->ld_IntReq->ir_MemPool, sizeof(struct ASLLVFileReqNode))))
 	{
-#ifdef __MORPHOS__
-	    char *name = BADDR(dlist->dol_Name);
-	    if (name)
+	    if (dlist->dol_Name)
 	    {
-		node->text[0] = PooledCloneStringLen(&name[1], name[0], ":", sizeof(":"), ld->ld_IntReq->ir_MemPool, AslBase);
-		node->node.ln_Name = PooledCloneStringLen(&name[1], name[0], NULL, 0, ld->ld_IntReq->ir_MemPool, AslBase);
+	    	char *name = AROS_BSTR_ADDR(dlist->dol_Name);
+	    	ULONG len = AROS_BSTR_strlen(name);
+
+		node->text[0] = PooledCloneStringLen(name, len, ":", sizeof(":"), ld->ld_IntReq->ir_MemPool, AslBase);
+		node->node.ln_Name = PooledCloneStringLen(name, len, NULL, 0, ld->ld_IntReq->ir_MemPool, AslBase);
 	    }
-#else
-	    char *name = AROS_DOSDEVNAME(dlist);
-	    if (name)
-	    {
-		node->text[0] = node->node.ln_Name = PooledCloneString(name, ":", ld->ld_IntReq->ir_MemPool, AslBase);
-	    }
-#endif
 	    
 	    switch(dlist->dol_Type)
 	    {
@@ -683,7 +675,6 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		    node->dontfreetext |= (1 << 1);
 		    break;
 
-#ifdef __MORPHOS__
 		case DLT_VOLUME:
 		    {
 			struct DosList *dl = LockDosList(LDF_DEVICES | LDF_READ);
@@ -693,8 +684,8 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 			    /* This works for most filesystems */
 			    if (dl->dol_Task == dlist->dol_Task)
 			    {
-				STRPTR devname = (STRPTR)BADDR(dl->dol_Name);
-				ULONG devlen = *devname++;
+				STRPTR devname = AROS_BSTR_ADDR(dl->dol_Name);
+				ULONG devlen = AROS_BSTR_strlen(devname);
 
 				if (devname[devlen-1] == 0) devlen--;
 
@@ -711,7 +702,6 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 			UnLockDosList(LDF_DEVICES | LDF_READ);
 		    }
 		    break;
-#endif
 	    }
 	    	    
 	    node->userdata = ld;

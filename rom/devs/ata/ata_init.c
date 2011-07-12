@@ -125,9 +125,8 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 
         if (devnode)
         {
-            D(bug("[ATA>>]:-ata_RegisterVolume: '%s', type=0x%08x with StartCyl=%d, EndCyl=%d .. ",
-                  AROS_DOSDEVNAME(devnode),
-                  pp[DE_DOSTYPE      + 4], StartCyl, EndCyl));
+            D(bug("[ATA>>]:-ata_RegisterVolume: '%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
+                  devnode->dn_Name, pp[DE_DOSTYPE + 4], StartCyl, EndCyl));
 
             AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
             D(bug("done\n"));
