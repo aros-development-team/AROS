@@ -4,29 +4,6 @@
 #
 include $(TOP)/config/make.cfg
 
-LIBBASEFILES := \
-	aros \
-	asl \
-	commodities \
-	cybergraphics \
-	datatypes \
-	dos \
-	diskfont \
-	expansion \
-	gadtools \
-	graphics \
-	icon \
-	iffparse \
-	intuition \
-	keymap \
-	layers \
-	locale \
-	partition \
-	realtime \
-	utility \
-	workbench \
-	muimaster
-
 # libraries_nolibs must come BEFORE libraries
 LIBHANDLINGFILES := \
 	functions \

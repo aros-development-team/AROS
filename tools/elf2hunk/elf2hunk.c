@@ -235,7 +235,7 @@ static int errorcode = 0;
 
 static void set_error(int err)
 {
-    fprintf(stderr,"Crap: %s\n", strerror(err));
+    fprintf(stderr,"elf2hunk: %s\n", strerror(err));
     errorcode = err;
 }
 
@@ -505,9 +505,10 @@ static int relocate
         {
 
             case SHN_UNDEF:
-                D(bug("[ELF2HUNK] Undefined symbol '%s'\n", symname));
-                      set_error(EINVAL);
-                return 0;
+                D(bug("[ELF2HUNK] Undefined symbol '%s', using value of 0\n", symname));
+                hunk = ~0;
+                value = 0;
+                break;
 
             case SHN_COMMON:
                 D(bug("[ELF2HUNK] COMMON symbol '%s'\n", symname));

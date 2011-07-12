@@ -39,6 +39,7 @@ void writeincdefines(struct config *cfg)
 	    "\n"
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
+	    "#include <aros/symbolsets.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n"
 	    "__BEGIN_DECLS\n"
@@ -98,12 +99,20 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
     {
 	fprintf(out, ", __arg%d", count);
     }
+    fprintf(out,
+                    ") ({\\\n"
+    );
+    if (cfg->options & OPTION_AUTOINIT) {
+        fprintf(out,
+		    "        AROS_LIBREQUIRE(%s,%d)\\\n",
+		    cfg->libbase, funclistit->version
+        );       
+    }
     if (funclistit->arguments == NULL
 	|| strchr(funclistit->arguments->reg, '/') == NULL
     )
     {
 	    fprintf(out,
-		    ") \\\n"
 		    "        AROS_LC%d%s(%s, %s, \\\n",
 		    funclistit->argcount, (isvoid) ? "NR" : "",
 		    funclistit->type, funclistit->name
@@ -126,7 +135,6 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
     else
     {
 	 fprintf(out,
-		    ") \\\n"
 		    "        AROS_LCQUAD%d%s(%s, %s, \\\n",
 		    funclistit->argcount, (isvoid) ? "NR" : "",
 		    funclistit->type, funclistit->name
@@ -156,7 +164,7 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
 	}
     }
     fprintf(out,
-	    "        %s, (__%s), %u, %s)\n\n",
+	    "        %s, (__%s), %u, %s);\\\n})\n\n",
 	    cfg->libbasetypeptrextern, cfg->libbase,	funclistit->lvo, cfg->basename
     );
 

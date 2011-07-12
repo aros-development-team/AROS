@@ -17,8 +17,14 @@
 struct libraryset
 {
     CONST_STRPTR name;
-    const LONG * const versionptr;
+    const LONG version;
     void  **baseptr;
+};
+
+struct libraryreq
+{
+    CONST_STRPTR name;
+    const LONG version;
 };
 
 #define SETNAME(set) __##set##_LIST__
@@ -95,16 +101,22 @@ btype bname;                                                 \
                                                              \
 AROS_IMPORT_ASM_SYM(int, dummy, __includelibrarieshandling); \
                                                              \
-const LONG bname##_version __attribute__((weak)) = ver;      \
-                                                             \
-const struct libraryset libraryset_##bname =                 \
+static const struct libraryset __aros_libset_##bname =       \
 {                                                            \
-     name, &bname##_version, (void *)&bname                  \
+     name, ver, (void *)&bname                               \
 };                                                           \
-ADD2SET(libraryset_##bname, libs, 0) 
+ADD2SET(__aros_libset_##bname, libs, 0) 
 
-#define ASKFORLIBVERSION(bname, ver) \
-const LONG bname##_version = ver
+#define AROS_LIBREQUEST(name, ver, btype, bname)             \
+const struct libraryreq __aros_libreq_##bname##_##ver __attribute__((weak)) =          \
+{                                                            \
+     name, ver                                               \
+};                                                           \
+ADD2SET(__aros_libreq_##bname##_##ver, libreq, ver) 
+
+#define AROS_LIBREQUIRE(bname, ver) \
+    asm volatile (".global __aros_libreq_" #bname "_" #ver);
+
 
 /* Traverse the set from the first element to the last one, or vice versa,
    depending on the value of 'direction': >=0 means first -> last, <0 means

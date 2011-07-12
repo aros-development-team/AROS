@@ -37,6 +37,7 @@ FUNCS := \
 #MM     includes-copy
 
 #MM workbench-libs-workbench : workbench-libs-icon-linklib
+#MM- linklibs-core: linklibs-workbench
 
 USER_CFLAGS += -D__DOS_NOLIBBASE__ \
 	       -D__UTILITY_NOLIBBASE__ \
