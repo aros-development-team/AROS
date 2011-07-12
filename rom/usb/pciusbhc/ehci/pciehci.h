@@ -80,6 +80,9 @@ struct ehu_unit {                       /* EHCI Unit Structure (ehu_) */
     BOOL            ehu_unitallocated;  /* Unit opened */
     IPTR            ehu_pcibus, ehu_pcidev;
 
+    UWORD           ehu_RootHubAddr;    /* Root Hub Address */
+    ULONG           ehu_FrameCounter;   /* Common frame counter */
+
     struct MinList  ehu_cntrlist;
 };
 

@@ -45,17 +45,15 @@ static int Open(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq,  ULONG unit, U
 }
 
 static int Close(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq) {
-    LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
+//  LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_DEVIO,("EHC Close: \n"));
     return TRUE;
 }
 
-AROS_LH1(void, BeginIO,
-    AROS_LHA(struct IOUsbHWReq *, ioreq, A1),
-    LIBBASETYPEPTR, LIBBASE, 5, pciehci)
-{
+AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, LIBBASE, 5, pciehci) {
 	AROS_LIBFUNC_INIT
+
     LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_DEVIO,("EHC BeginIO: "));
@@ -71,12 +69,12 @@ AROS_LH1(void, BeginIO,
         switch (ioreq->iouh_Req.io_Command) {
 			case CMD_RESET:
                 KPRINTF2(DBL_DEVIO,("cmdReset\n"));
-//              ret = cmdReset(ioreq, unit, base);
+                ret = cmdReset(ioreq, ehu, ehd);
                 break;
 
 			case CMD_FLUSH:
                 KPRINTF2(DBL_DEVIO,("cmdFlush\n"));
-//              ret = cmdFlush(ioreq, unit, base);
+//              ret = cmdFlush(ioreq, ehu, ehd);
                 break;
 
             case UHCMD_QUERYDEVICE:
@@ -86,59 +84,68 @@ AROS_LH1(void, BeginIO,
 
 			case UHCMD_USBRESET:
                 KPRINTF2(DBL_DEVIO,("cmdUsbReset\n"));
-//              ret = cmdUsbReset(ioreq, unit, base);
+                ret = cmdUsbReset(ioreq, ehu, ehd);
                 break;
 
 			case UHCMD_USBRESUME:
                 KPRINTF2(DBL_DEVIO,("cmdUsbResume\n"));
-//              ret = cmdUsbResume(ioreq, unit, base);
+                ret = cmdUsbResume(ioreq, ehu, ehd);
                 break;
 
 			case UHCMD_USBSUSPEND:
                 KPRINTF2(DBL_DEVIO,("cmdUsbSuspend\n"));
-//              ret = cmdUsbSuspend(ioreq, unit, base);
+                ret = cmdUsbSuspend(ioreq, ehu, ehd);
                 break;
 
 			case UHCMD_USBOPER:
                 KPRINTF2(DBL_DEVIO,("cmdUsbOper\n"));
-//              ret = cmdUsbOper(ioreq, unit, base);
+                ret = cmdUsbOper(ioreq, ehu, ehd);
                 break;
 
 			case UHCMD_CONTROLXFER:
                 KPRINTF2(DBL_DEVIO,("cmdControlXFer\n"));
-//              ret = cmdControlXFer(ioreq, unit, base);
+//              ret = cmdControlXFer(ioreq, ehu, ehd);
                 break;
 
 			case UHCMD_BULKXFER:
                 KPRINTF2(DBL_DEVIO,("cmdBulkXFer\n"));
-//              ret = cmdBulkXFer(ioreq, unit, base);
+//              ret = cmdBulkXFer(ioreq, ehu, ehd);
                 break;
 
 			case UHCMD_INTXFER:
                 KPRINTF2(DBL_DEVIO,("cmdIntXFer\n"));
-//              ret = cmdIntXFer(ioreq, unit, base);
+//              ret = cmdIntXFer(ioreq, ehu, ehd);
                 break;
 
 			case UHCMD_ISOXFER:
                 KPRINTF2(DBL_DEVIO,("cmdIsoXFer\n"));
-//              ret = cmdIsoXFer(ioreq, unit, base);
+//              ret = cmdIsoXFer(ioreq, ehu, ehd);
                 break;
 
             default:
                 KPRINTF2(DBL_DEVIO,("IOERR_NOCMD\n"));
-//              ret = IOERR_NOCMD;
+                ret = IOERR_NOCMD;
                 break;
         }
     } else {
         switch(ioreq->iouh_Req.io_Command) {
             case NSCMD_DEVICEQUERY:
                 KPRINTF2(DBL_DEVIO,("cmdNSDeviceQuery\n"));
-//              ret = cmdNSDeviceQuery((struct IOStdReq *) ioreq, unit, base);
+
+                struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)((struct IOStdReq *)(ioreq))->io_Data;
+                nsdq->DevQueryFormat    = 0;
+                nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
+                nsdq->DeviceType        = NSDEVTYPE_USBHARDWARE;
+                nsdq->DeviceSubType     = 0;
+                nsdq->SupportedCommands = (UWORD *)NSDSupported;
+
+                ret = RC_OK;
+
                 break;
 
             default:
                 KPRINTF2(DBL_DEVIO,("IOERR_NOCMD\n"));
-//              ret = IOERR_NOCMD;
+                ret = IOERR_NOCMD;
                 break;
         }
     }
@@ -159,12 +166,10 @@ AROS_LH1(void, BeginIO,
 	AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(LONG, AbortIO,
-	AROS_LHA(struct IOUsbHWReq *, ioreq, A1),
-	LIBBASETYPEPTR, LIBBASE, 6, pciehci)
-{
+AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, LIBBASE, 6, pciehci) {
 	AROS_LIBFUNC_INIT
-    LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
+
+//  LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_DEVIO,("EHC AbortIO: \n"));
 
