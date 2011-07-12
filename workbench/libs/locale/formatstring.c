@@ -393,8 +393,8 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
                     buffer = AROS_BSTR_ADDR(s);
                     buflen = AROS_BSTR_strlen(s);
                 } else {
-                    buffer = "(bnull)";
-                    buflen = strlen(buffer);
+                    buffer = "";
+                    buflen = 0;
                 }
 
 #if !USE_GLOBALLIMIT
@@ -602,13 +602,15 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
               if (!scanning)
               {
                 buffer = *(UBYTE **)indices[arg_pos-1];
+                
+                /*
+                 * RawDoFmt() in original AmigaOS(tm) formats NULL pointers as empty strings,
+                 * and not something like "(null)". Some software may rely on this behavior.
+                 * %b is handled in similar manner.
+                 */
                 if (!buffer)
-                {
-                    buffer = "(null)";
-                    buflen = 7;
-                }
-                else
-                    buflen = strlen(buffer);
+                    buffer = "";
+                buflen = strlen(buffer);
 
 #if !USE_GLOBALLIMIT
                 if (buflen > limit)
