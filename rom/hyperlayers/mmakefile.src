@@ -54,6 +54,8 @@ FUNCS := \
 #MM     kernel-utility-includes \
 #MM     includes-copy
 
+#MM- linklibs-core: linklibs-layers
+
 USER_CFLAGS := -D__UTILITY_NOLIBBASE__ -D__GRAPHICS_NOLIBBASE__
 
 %build_module mmake=kernel-layers \

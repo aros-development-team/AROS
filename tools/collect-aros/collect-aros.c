@@ -28,6 +28,18 @@ static void exitfunc(void)
         remove(tempoutput);
 }
 
+static int requires_symbol_sets_handling(setnode *set)
+{
+    for (; set != NULL; set = set->next) {
+        if (strcmp(set->secname, ".aros.set.libreq") == 0)
+            continue;
+
+        return 1;
+    }
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     int cnt, i;
@@ -138,7 +150,7 @@ int main(int argc, char *argv[])
 
     collect_sets(tempoutput, &setlist);
 
-    if (setlist != NULL)
+    if (requires_symbol_sets_handling(setlist))
         fprintf(ldscriptfile, "EXTERN(__this_program_requires_symbol_sets_handling)\n");
 
     fwrite(LDSCRIPT_PART1, sizeof(LDSCRIPT_PART1) - 1, 1, ldscriptfile);

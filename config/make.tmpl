@@ -685,12 +685,20 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
 )
 
+%(module) : LIB_NAMES := %(uselibs) \
+               muimaster asl keymap commodities codesets \
+               diskfont datatypes iffparse cybergraphics \
+               icon gadtools intuition layers graphics \
+               keymap locale aros \
+               dos utility expansion \
+               autoinit libinit
 %(module) : OBJS := %(objs)
 %(module) : ENDTAG := %(endobj)
 %(module) : ERR := %(err)
 %(module) : OBJDIR := %(objdir)
 %(module) : LDFLAGS := $(TMP_LDFLAGS)
-%(module) : LIBS := $(addprefix -l,%(uselibs)) -lautoinit -llibinit -L/usr/lib $(addprefix -l,%(usehostlibs))
+%(module) : LIBS := $(addprefix -l,$(LIB_NAMES)) \
+                    -L/usr/lib $(addprefix -l,%(usehostlibs))
 %(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(USER_DEPLIBS)
 	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) -noarosc"
 

@@ -6,11 +6,52 @@
 */
 #include "genmodule.h"
 
+void writeautostub(struct config *cfg, int version)
+{
+    FILE *out;
+    char line[256], *banner;
+
+    snprintf(line, 255, "%s/%s_autoinit_%d.c", cfg->gendir, cfg->modulename, version);
+    out = fopen(line, "w");
+
+    if (out==NULL)
+    {
+        perror(line);
+    	exit(20);
+    }
+
+    banner = getBanner(cfg);
+    fprintf(out,
+        "%s"
+	    "\n"
+	    "#include <proto/%s.h>\n"
+	    "#include <aros/symbolsets.h>\n"
+	    "\n"
+	    "AROS_LIBREQUEST(\"%s.%s\", %d, %s, %s)\n",
+	    banner, cfg->modulename,
+	    cfg->modulename, cfg->suffix, version,
+	    cfg->libbasetypeptrextern, cfg->libbase
+    );
+    freeBanner(banner);
+
+    fclose(out);
+}
+
 void writeautoinit(struct config *cfg)
 {
     FILE *out;
     char line[256], *banner;
     struct stringlist *linelistit;
+    int minversion = 0;
+    struct functionhead *funclistit;
+
+    writeautostub(cfg, 0);
+    for (funclistit = cfg->funclist; funclistit; funclistit = funclistit->next) {
+        if (funclistit->version > minversion) {
+            minversion = funclistit->version;
+            writeautostub(cfg, minversion);
+        }
+    }
     
     snprintf(line, 255, "%s/%s_autoinit.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
@@ -34,11 +75,16 @@ void writeautoinit(struct config *cfg)
 	    "#include <proto/%s.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "\n"
-	    "ADD2LIBS((CONST_STRPTR)\"%s.library\",%u, %s, %s);\n",
+ 	    "ADD2LIBS(\"%s.%s\", %d, %s, %s)\n",
 	    banner, cfg->modulename,
-	    cfg->modulename, cfg->majorversion, cfg->libbasetypeptrextern, cfg->libbase
+	    cfg->modulename, cfg->suffix, 0,
+	    cfg->libbasetypeptrextern, cfg->libbase
     );
     freeBanner(banner);
+
+    fprintf(out,
+	    "AROS_IMPORT_ASM_SYM(int, dummy, __includelibrarieshandling);\n"
+    );
 
     if (cfg->forcelist!=NULL)
     {

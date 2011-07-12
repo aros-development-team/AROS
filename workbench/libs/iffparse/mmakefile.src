@@ -52,6 +52,7 @@ FUNCS := \
 #MM     kernel-utility-includes \
 #MM     includes-copy
 #MM- workbench-libs-iffparse : linklibs
+#MM- linklibs-core: linklibs-iffparse
 
 %build_module mmake=workbench-libs-iffparse \
     modname=iffparse modtype=library \

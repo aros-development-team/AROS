@@ -393,6 +393,7 @@ BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
 INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
 
 #MM- includes-generate-deps : includes-libraries-mui
+#MM- linklibs-core : linklibs-muimaster
 
 #MM
 includes-libraries-mui : includes-mui-setup $(INCLUDEFILES)

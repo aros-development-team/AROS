@@ -38,6 +38,7 @@ void writeincinline(struct config *cfg)
 	    "\n"
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
+	    "#include <aros/symbolsets.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n",
 	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
@@ -102,13 +103,21 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
 	    narg++;
 	}
     }
+    fprintf(out,
+            "APTR __%s)\n"
+            "{\n",
+            cfg->libbase
+    );
+    if (cfg->options & OPTION_AUTOINIT) {
+        fprintf(out,
+            "    AROS_LIBREQUIRE(%s, %d)\n",
+            cfg->libbase, funclistit->version
+        );
+    }
     if (nquad==0)
     {
         fprintf(out,
-                "APTR __%s)\n"
-                "{\n"
                 "    %sAROS_LC%d%s(%s, %s,\n",
-                cfg->libbase,
                 (isvoid) ? "" : "return ",
                 funclistit->argcount, (isvoid) ? "NR" : "",
                 funclistit->type, funclistit->name
@@ -132,20 +141,14 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
     {
         if (narg) {
 	    fprintf(out,
-		    "APTR __%s)\n"
-		    "{\n"
 		    "    %sAROS_LC%dQUAD%d%s(%s, %s,\n",
-		    cfg->libbase,
 		    (isvoid) ? "" : "return ", narg,
 		    nquad, (isvoid) ? "NR" : "",
 		    funclistit->type, funclistit->name
 	    );
 	} else {
        	    fprintf(out,
-		    "APTR __%s)\n"
-		    "{\n"
 		    "    %sAROS_LCQUAD%d%s(%s, %s,\n",
-		    cfg->libbase,
 		    (isvoid) ? "" : "return ",
 		    nquad, (isvoid) ? "NR" : "",
 		    funclistit->type, funclistit->name

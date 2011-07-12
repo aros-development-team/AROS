@@ -17,6 +17,7 @@ FUNCS := \
 #MM     workbench-libs-rexxsyslib-includes \
 #MM     includes-copy
 #MM- workbench-libs-locale : linklibs
+#MM- linklibs-core: linklibs-locale
 
 %build_module mmake=workbench-libs-locale \
     modname=locale modtype=library \

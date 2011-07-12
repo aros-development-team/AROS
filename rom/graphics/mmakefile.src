@@ -221,6 +221,8 @@ FUNCTIONS := \
 #MM     workbench-libs-cgfx-includes \
 #MM     includes-copy
 
+#MM- linklibs-core : linklibs-graphics
+
 %build_module mmake=kernel-graphics \
   modname=graphics modtype=library \
   files="graphics_init $(FUNCTIONS) $(FILES)" \
