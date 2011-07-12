@@ -99,14 +99,15 @@ static int GM_UNIQUENAME(Open)
 )
 {
     D(bug("id: open()\n"));
-
+#ifndef __mc68000
+    /* Too many AOS programs do not initialize mn_Length. AOS input.device does not care. */
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
     {
         bug("[InputDev] Open: IORequest structure passed to OpenDevice is too small\n");
         ioreq->io_Error = IOERR_OPENFAIL;
 	return FALSE;
     }
-
+#endif
     return TRUE;
 }
 
