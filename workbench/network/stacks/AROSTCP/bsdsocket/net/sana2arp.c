@@ -245,7 +245,7 @@ arptimer()
 {
   struct sana_softc *ssc;
   register struct arptable *atab;
-  register struct arptab *at, *oldest;
+  register struct arptab *at;
   register int i;
 
   for (ssc = ssq; ssc; ssc = ssc->ss_next) {
@@ -253,7 +253,7 @@ arptimer()
       continue;
     /* Lock the table */
     ARPTAB_LOCK(atab);
-    oldest = NULL;
+
     for (i = 0; i < ARPTAB_HSIZE; i++) {
       for (at = (struct arptab *)atab->atb_entries[i].mlh_Head; 
 	   at->at_succ; 
@@ -345,12 +345,11 @@ arpresolve(register struct sana_softc *ssc,
   register struct arptable *atb;
   struct sockaddr_in sin;
   register struct in_ifaddr *ia;
-  u_long lna;
 
   if (m->m_flags & M_BCAST) {	/* broadcast */
     return 1;
   }
-  lna = in_lnaof(*destip);
+
   /* if for us, use software loopback driver if up */
   for (ia = in_ifaddr; ia; ia = ia->ia_next)
     if ((ia->ia_ifp == &ssc->ss_if) &&
@@ -495,7 +494,10 @@ in_arpinput(register struct sana_softc *ssc,
   register struct s2_arppkt *s2a;
   struct sockaddr_in sin;
   struct in_addr isaddr, itaddr, myaddr;
-  int op, completed = 0;
+  int op;
+#if 0 /* unused */
+  int completed = 0;
+#endif
   caddr_t sha, spa, tha, tpa;
   size_t  len = ssc->ss_if.if_addrlen;
 
@@ -564,8 +566,10 @@ in_arpinput(register struct sana_softc *ssc,
 
     if (at) {
       bcopy(sha, (caddr_t)at->at_hwaddr, len);
+#if o /* unused */
       if ((at->at_flags & ATF_COM) == 0)
 	completed = 1;
+#endif
       at->at_flags |= ATF_COM;
       if (at->at_hold) {
 	sin.sin_family = AF_INET;
@@ -579,7 +583,9 @@ in_arpinput(register struct sana_softc *ssc,
       /* ensure we have a table entry */
       if (at = arptnew(isaddr.s_addr, atb, FALSE)) {
 	bcopy(sha, (caddr_t)at->at_hwaddr, len);
+#if 0 /* unused */
 	completed = 1;
+#endif
 	at->at_flags |= ATF_COM;
       }
     }

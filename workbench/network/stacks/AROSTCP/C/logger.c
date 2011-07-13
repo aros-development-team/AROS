@@ -161,6 +161,9 @@ main(int argc, char *argv[])
 #if !defined(__AROS__)
 	openlog(tag ? tag : getlogin(), logflags, 0);
 #else
+        if (tag) {
+            // ignored
+        }
 	//openlog(tag, logflags, 0);
 #endif
 	(void) fclose(stdout);

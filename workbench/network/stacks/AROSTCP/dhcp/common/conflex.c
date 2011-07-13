@@ -160,12 +160,17 @@ static enum dhcp_token get_token (cfile)
 	int c;
 	enum dhcp_token ttok;
 	static char tb [2];
-	int l, p, u;
+	int l, p;
+#ifdef OLD_LEXER
+	int u;
+#endif
 
 	do {
 		l = cfile -> line;
 		p = cfile -> lpos;
+#ifdef OLD_LEXER
 		u = cfile -> ugflag;
+#endif
 
 		c = get_char (cfile);
 #ifdef OLD_LEXER

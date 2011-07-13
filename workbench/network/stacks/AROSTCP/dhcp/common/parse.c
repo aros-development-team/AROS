@@ -651,7 +651,7 @@ TIME parse_date (cfile)
 {
 	// struct tm tm;
 	int guess;
-	int tzoff, wday, year, mon, mday, hour, min, sec;
+	int tzoff, year, mon, mday, hour, min, sec;
 	const char *val;
 	enum dhcp_token token;
 	static int months [11] = { 31, 59, 90, 120, 151, 181,
@@ -671,7 +671,7 @@ TIME parse_date (cfile)
 			skip_to_semi (cfile);
 		return (TIME)0;
 	}
-	wday = atoi (val);
+	/* We completely ignore wday */
 
 	/* Year... */
 	token = next_token (&val, (unsigned *)0, cfile);

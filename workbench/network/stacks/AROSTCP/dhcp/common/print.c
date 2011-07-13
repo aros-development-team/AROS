@@ -407,10 +407,9 @@ char *print_dotted_quads (len, data)
 {
 	static char dq_buf [DQLEN + 1];
 	int i;
-	char *s, *last;
+	char *s;
 
 	s = &dq_buf [0];
-	last = s;
 	
 	i = 0;
 
