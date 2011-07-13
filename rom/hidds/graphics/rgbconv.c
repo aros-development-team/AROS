@@ -214,7 +214,7 @@ ULONG Convert_ARGB32_To_BGR032(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue, src_alpha;
+    UBYTE src_red, src_green, src_blue;
 
     src_step = srcMod - width * 4;
     dst_step = dstMod - width * 4;
@@ -223,7 +223,7 @@ ULONG Convert_ARGB32_To_BGR032(APTR srcPixels, ULONG srcMod,
     {
         for(x = 0; x < width; x++)
         {
-            src_alpha = *p++;
+            p++; /* alpha */
             src_red   = *p++;
             src_green = *p++;
             src_blue  = *p++;
@@ -247,7 +247,7 @@ ULONG Convert_BGRA32_To_BGR032(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue, src_alpha;
+    UBYTE src_red, src_green, src_blue;
 
     src_step = srcMod - width * 4;
     dst_step = dstMod - width * 4;
@@ -259,7 +259,7 @@ ULONG Convert_BGRA32_To_BGR032(APTR srcPixels, ULONG srcMod,
             src_blue  = *p++;
             src_green = *p++;
             src_red   = *p++;
-            src_alpha = *p++;
+            p++; /* alpha */
 
             *q++ = src_blue;
             *q++ = src_green;
@@ -280,7 +280,7 @@ ULONG Convert_RGBA32_To_BGR032(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue, src_alpha;
+    UBYTE src_red, src_green, src_blue;
 
     src_step = srcMod - width * 4;
     dst_step = dstMod - width * 4;
@@ -292,7 +292,7 @@ ULONG Convert_RGBA32_To_BGR032(APTR srcPixels, ULONG srcMod,
             src_red   = *p++;
             src_green = *p++;
             src_blue  = *p++;
-            src_alpha = *p++;
+            p++; /* alpha */
 
             *q++ = src_blue;
             *q++ = src_green;
@@ -313,7 +313,7 @@ ULONG Convert_ABGR32_To_BGR032(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue, src_alpha;
+    UBYTE src_red, src_green, src_blue;
 
     src_step = srcMod - width * 4;
     dst_step = dstMod - width * 4;
@@ -322,7 +322,7 @@ ULONG Convert_ABGR32_To_BGR032(APTR srcPixels, ULONG srcMod,
     {
         for(x = 0; x < width; x++)
         {
-            src_alpha = *p++;
+            p++; /* alpha */
             src_blue  = *p++;
             src_green = *p++;
             src_red   = *p++;
@@ -346,7 +346,7 @@ ULONG Convert_BGR032_To_ARGB32(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue, src_zero;
+    UBYTE src_red, src_green, src_blue;
 
     src_step = srcMod - width * 4;
     dst_step = dstMod - width * 4;
@@ -358,7 +358,7 @@ ULONG Convert_BGR032_To_ARGB32(APTR srcPixels, ULONG srcMod,
             src_blue  = *p++;
             src_green = *p++;
             src_red   = *p++;
-            src_zero = *p++;
+            p++; /* zero */
 
             *q++ = 0xff;
             *q++ = src_red;
@@ -561,7 +561,7 @@ ULONG Convert_ARGB32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue, src_alpha;
+    UBYTE src_red, src_green, src_blue;
 
     src_step = srcMod - width * 4;
     dst_step = dstMod - width * 2;
@@ -570,7 +570,7 @@ ULONG Convert_ARGB32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     {
         for(x = 0; x < width; x++)
         {
-            src_alpha = *p++;
+            p++; /* alpha */
             src_red   = *p++;
             src_green = *p++;
             src_blue  = *p++;
@@ -592,7 +592,7 @@ ULONG Convert_BGRA32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue, src_alpha;
+    UBYTE src_red, src_green, src_blue;
 
     src_step = srcMod - width * 4;
     dst_step = dstMod - width * 2;
@@ -604,7 +604,7 @@ ULONG Convert_BGRA32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
             src_blue  = *p++;
             src_green = *p++;
             src_red   = *p++;
-            src_alpha = *p++;
+            p++; /* alpha */
 
             *q++ = (src_green << 3) & 0xe0 | src_blue >> 3;
             *q++ = src_red & 0xf8 | src_green >> 5;
@@ -623,7 +623,7 @@ ULONG Convert_RGBA32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue, src_alpha;
+    UBYTE src_red, src_green, src_blue;
 
     src_step = srcMod - width * 4;
     dst_step = dstMod - width * 2;
@@ -635,7 +635,7 @@ ULONG Convert_RGBA32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
             src_red   = *p++;
             src_green = *p++;
             src_blue  = *p++;
-            src_alpha = *p++;
+            p++; /* alpha */
 
             *q++ = (src_green << 3) & 0xe0 | src_blue >> 3;
             *q++ = src_red & 0xf8 | src_green >> 5;
@@ -654,7 +654,7 @@ ULONG Convert_ABGR32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
-    UBYTE src_red, src_green, src_blue, src_alpha;
+    UBYTE src_red, src_green, src_blue;
 
     src_step = srcMod - width * 4;
     dst_step = dstMod - width * 2;
@@ -663,7 +663,7 @@ ULONG Convert_ABGR32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     {
         for(x = 0; x < width; x++)
         {
-            src_alpha = *p++;
+            p++; /* alpha */
             src_blue  = *p++;
             src_green = *p++;
             src_red   = *p++;

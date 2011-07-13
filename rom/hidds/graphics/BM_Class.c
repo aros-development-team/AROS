@@ -2783,11 +2783,8 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
     WORD    	    	    x, y;
     ULONG   	    	    *pixarray = (ULONG *)msg->pixels;
     ULONG    	    	    *buf, *xbuf;
-    struct HIDDBitMapData   *data;
     PIXBUF_DECLARE_VARS
     
-    data = OOP_INST_DATA(cl, o);
-
     EnterFunc(bug("BitMap::PutAlphaImage(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
 
@@ -3010,12 +3007,9 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    *bitarray;
     HIDDT_Pixel	    	    *buf, *xbuf, bitmask;
     OOP_Object	    	    *gc = msg->gc;
-    struct HIDDBitMapData   *data;
     WORD    	    	     type = 0;
     PIXBUF_DECLARE_VARS
     
-    data = OOP_INST_DATA(cl, o);
-
     EnterFunc(bug("BitMap::PutTemplate(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
 
@@ -3259,7 +3253,6 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    *pixarray = msg->alpha;
     ULONG    	    	    *buf, *xbuf;
     OOP_Object	    	    *gc = msg->gc;
-    struct HIDDBitMapData   *data;
     HIDDT_Color     	     color;
     LONG 	    	     a_red, a_green, a_blue;
     LONG	    	     b_red = 0;
@@ -3268,8 +3261,6 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     WORD    	    	     type = 0;
     PIXBUF_DECLARE_VARS
     
-    data = OOP_INST_DATA(cl, o);
-
     EnterFunc(bug("BitMap::PutAlphaTemplate(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
 
@@ -3577,12 +3568,9 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     ULONG		     maskmask = 0;
     ULONG    	    	    *buf, *xbuf, patmask;
     OOP_Object	    	    *gc = msg->gc;
-    struct HIDDBitMapData   *data;
     WORD    	    	     type = 0;
     PIXBUF_DECLARE_VARS
     
-    data = OOP_INST_DATA(cl, o);
-
     EnterFunc(bug("BitMap::PutPattern(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
 
@@ -3946,10 +3934,7 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     HIDDT_PixelLUT  	    *pixlut = msg->pixlut;
     HIDDT_Pixel     	    *lut = pixlut ? pixlut->pixels : NULL;
     HIDDT_Pixel     	    *linebuf;
-    struct HIDDBitMapData   *data;
     OOP_Object      	    *gc = msg->gc;
-
-    data = OOP_INST_DATA(cl, o);
 
     EnterFunc(bug("BitMap::PutImageLUT(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
@@ -4235,9 +4220,6 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     HIDDT_PixelLUT  	    *pixlut = msg->pixlut;
     HIDDT_Pixel     	    *lut = pixlut ? pixlut->pixels : NULL;
     HIDDT_Pixel     	    *linebuf;
-    struct HIDDBitMapData   *data;
-
-    data = OOP_INST_DATA(cl, o);
 
     EnterFunc(bug("BitMap::GetImageLUT(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
@@ -4628,6 +4610,20 @@ OOP_Object *BM__Hidd_BitMap__SetColorMap(OOP_Class *cl, OOP_Object *o,
 
 *****************************************************************************************/
 
+/* We only care about magnitudes here, so we don't
+ * have to perform the square root operation to get
+ * the real distance.
+ */
+static ULONG colorDistance(HIDDT_Color *a, HIDDT_Color *b)
+{
+#define SQR(x) ((x) * (x))
+    return SQR((int)a->red - (int)b->red) +
+           SQR((int)a->blue - (int)b->blue) + 
+           SQR((int)a->green - (int)b->green) +
+           SQR((int)a->alpha - (int)b->alpha);
+#undef SQR
+}
+
 HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
 				      struct pHidd_BitMap_MapColor *msg)
 {
@@ -4662,11 +4658,25 @@ HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
     {
     	struct HIDDBitMapData 	*data = OOP_INST_DATA(cl, o);
 	HIDDT_Color 	    	*ctab;
+	HIDDT_ColorLUT          *cmap;
+	ULONG i;
+	ULONG best_ndx = ~0, best_dist = ~0;
 
-	ctab = ((HIDDT_ColorLUT *)data->colmap)->colors;
+	cmap = (HIDDT_ColorLUT *)data->colmap;
+	ctab = cmap->colors;
 	/* Search for the best match in the color table */
-	/* FIXME: Implement this */
+	for (i = 0; i < cmap->entries; i++) {
+	    ULONG dist;
 
+	    dist = colorDistance(&ctab[i], msg->color);
+	    if (dist < best_dist) {
+	        best_dist = dist;
+	        best_ndx = i;
+            }
+        }
+
+        if (best_dist != ~0)
+            msg->color->pixval = ctab[best_ndx].pixval;
     }
 
     return msg->color->pixval;
