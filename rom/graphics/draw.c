@@ -158,10 +158,6 @@ static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
 			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
 {
     struct draw_render_data *drd;
-    ULONG   	    	     width, height;
-
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
 
     drd = (struct draw_render_data *)draw_rd;
 
