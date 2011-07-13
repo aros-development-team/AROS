@@ -36,7 +36,6 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
 
 OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct sync_data 	*data;
     struct class_static_data *csd = CSD(cl);
     BOOL    	    	ok = TRUE;
 
@@ -60,8 +59,6 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
 	return NULL;
-
-    data = OOP_INST_DATA(cl, o);
 
     ok = parse_sync_tags(cl, o, msg->attrList, TRUE);
     if (!ok) {
