@@ -92,7 +92,7 @@
 	    PALEXTRA_REFCNT(pe, n)--;
 	    if (0 == PALEXTRA_REFCNT(pe, n))
 	    {
-        	BOOL found = FALSE;
+        	D(BOOL found = FALSE);
         	/* 
         	** I can take this out if the list of shared pens
         	** since this was the last application that used
@@ -101,7 +101,7 @@
         	index = pe->pe_FirstShared;
         	if ((PalExtra_AllocList_Type)n == index)
         	{
-        	    found = TRUE;
+        	    D(found = TRUE);
         	    /*
         	    ** it's the very first one.
         	    */
@@ -130,7 +130,7 @@
         	    {
         		if ((PalExtra_AllocList_Type)n == PALEXTRA_ALLOCLIST(pe, index))
         		{
-        		    found = TRUE;
+        		    D(found = TRUE);
 
         		    /*
         		    ** Take it out of the list of shared entries

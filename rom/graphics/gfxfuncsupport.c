@@ -74,15 +74,11 @@ ULONG do_render_func(struct RastPort *rp
     OOP_Object      	*gc;
     struct Rectangle 	 rp_clip_rectangle;
     BOOL    	    	 have_rp_cliprectangle;
-    ULONG   	     	 width, height;
     LONG    	     	 srcx, srcy;    
     LONG    	     	 pixwritten = 0;
     
     gc = GetDriverData(rp)->dd_GC;
 	
-    width  = rr->MaxX - rr->MinX + 1;
-    height = rr->MaxY - rr->MinY + 1;
-    
     if (NULL != src)
     {
         srcx = src->x;

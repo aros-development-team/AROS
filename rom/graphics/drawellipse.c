@@ -71,7 +71,6 @@ static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
 
     struct Rectangle 	rr;
     struct ellipse_render_data erd;
-    OOP_Object      	*gc;
     
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return;
@@ -82,8 +81,7 @@ static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
     FIX_GFXCOORD(b);
     
     /* bug("driver_DrawEllipse(%d %d %d %d)\n", xCenter, yCenter, a, b);	
-    */    gc = GetDriverData(rp)->dd_GC;
-    
+    */
     rr.MinX = xCenter - a;
     rr.MinY = yCenter - b;
     rr.MaxX = xCenter + a;
