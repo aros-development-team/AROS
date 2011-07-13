@@ -215,6 +215,7 @@ struct DosPacket  *StartPkt;
   (void) DateStamp (&PipeDate);
 #endif /* PIPEDIR */
 
+  StartPkt->dp_Res1 = DOSTRUE;
   QuickReplyPkt (StartPkt);
 
 
