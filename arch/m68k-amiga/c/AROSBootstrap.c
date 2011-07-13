@@ -24,6 +24,7 @@
 #include <proto/dos.h>
 #include <exec/resident.h>
 
+#include <string.h> /* memcpy, memset */
 #include <zlib.h>
 
 #define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
@@ -45,7 +46,8 @@ static inline void bug(const char *fmt, ...)
     Write(Output(), buff, strlen(buff));
 }
 #endif
-#include <rom/dos/internalloadseg_elf.c>
+
+#include <loadseg/loadseg.h>
 
 struct DosLibrary *DOSBase;
 
@@ -110,30 +112,6 @@ static ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4, const IPT
     return ret;
 }
 
-static BSTR AllocBSTR(const char *name)
-{
-    UBYTE *bs;
-    int len = strlen(name);
-
-    if (len > 255)
-    	return BNULL;
-
-
-    bs = AllocMem(256+1, MEMF_ANY);
-    if (bs == NULL)
-    	return BNULL;
-
-    bs[0] = len;
-    bs[len+1] = 0;
-    CopyMem(name, &bs[1], len);
-    return MKBADDR(bs);
-}
-
-static void FreeBSTR(BSTR bstr)
-{
-    FreeMem(BADDR(bstr), 256+1);
-}
-
 static UBYTE *ConvertBSTR(BSTR bname)
 {
     UBYTE *name = BADDR(bname);
@@ -149,15 +127,14 @@ static void FreeString(UBYTE *cstr)
     FreeMem(cstr, 256+1);
 }
 
-static void WriteF(const char *fmt, ...)
+static void _WriteF(BPTR bfmt, ...)
 {
-   IPTR *args = (IPTR *)&fmt;
-   BSTR bfmt = AllocBSTR(fmt);
+   IPTR *args = (IPTR *)&bfmt;
 
    doBCPL(BCPL_WriteF, bfmt, args[1], args[2], args[3], &args[4], 26-3);
-
-   FreeBSTR(bfmt);
 }
+
+#define WriteF(fmt, args...) _WriteF(AROS_CONST_BSTR(fmt) ,##args )
 
 /* For KS < 2.0, we need to call the BCPL ReadArgs,
  * since DOS/ReadArgs doesn't exist.
@@ -327,7 +304,7 @@ static AROS_UFH3(void, aosFree,
     AROS_USERFUNC_EXIT
 }
 
-/* Backcalls for InternalLoadSeg_ELF
+/* Backcalls for LoadSegment
  * using the gzip backend.
  */
 static AROS_UFH4(LONG, elfRead,
@@ -413,6 +390,7 @@ static BPTR ROMLoad(BSTR bfilename)
     gzFile gzf;
     UBYTE *filename;
     BPTR rom = BNULL;
+    SIPTR error;
     SIPTR funcarray[] = {
     	(SIPTR)elfRead,
     	(SIPTR)elfAlloc,
@@ -422,13 +400,14 @@ static BPTR ROMLoad(BSTR bfilename)
     filename = ConvertBSTR(bfilename);
     if (!filename)
     	return BNULL;
+
+    WriteF("Loading '%S' into RAM...\n", bfilename);
     if ((gzf = gzopen(filename, "rb"))) {
     	gzbuffer(gzf, 65536);
 
-    	WriteF("Loading '%S' into RAM...\n", bfilename);
-    	rom = InternalLoadSeg_ELF((BPTR)gzf, BNULL, funcarray, NULL, DOSBase);
+    	rom = LoadSegment((BPTR)gzf, BNULL, funcarray, NULL, &error, (struct Library *)DOSBase);
     	if (rom == BNULL) {
-    	    WriteF("'%S': Can't parse\n", bfilename);
+    	    WriteF("'%S': Can't parse, error %N\n", bfilename, error);
     	}
 
     	gzclose_r(gzf);
@@ -516,13 +495,14 @@ static struct Resident **LoadResidents(ULONG *namearray)
 	BPTR seglist = BNULL;
 	BPTR bname;
     	UBYTE *name;
+    	SIPTR error = 0;
     	
     	bname = (BPTR)namearray[i];
     	name = ConvertBSTR(bname);
     	if (name) {
 	    handle = Open(name, MODE_OLDFILE);
 	    if (handle) {
-		seglist = InternalLoadSeg(handle, BNULL, (LONG_FUNC*)funcarray, &stack);
+		seglist = LoadSegment(handle, BNULL, funcarray, &stack, &error, (struct Library *)DOSBase);
 		Close(handle);
 	    }
 	    if (seglist) {
@@ -538,7 +518,7 @@ static struct Resident **LoadResidents(ULONG *namearray)
 		    reslist[rescnt++] = resident;
 		}
 	    } else {
-		WriteF("Failed to load '%S'\n", bname);
+		WriteF("Failed to load '%S', error %N\n", bname, error);
 	    }
 	    FreeString(name);
 	}
@@ -850,47 +830,39 @@ __startup static AROS_ENTRY(int, startup,
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
-    	BSTR name = BNULL;
-    	BSTR format = BNULL;
-    	ULONG *args = NULL;
+    	BSTR name = AROS_CONST_BSTR("aros.elf.gz");
+    	BSTR format = AROS_CONST_BSTR("ROM/A,MODULES/M");
+    	ULONG args[100] __attribute__((aligned(4)));
 
     	WriteF("AROSBootstrap " ADATE "\n");
+        args[0] = name;
 
-    	if ((name = AllocBSTR("aros.elf.gz")) &&
-    	    (format = AllocBSTR("CMD/K,,,,,,,,,")) && /* this can't be the best way.. */
-    	    (args = AllocMem(sizeof(ULONG) * 100, MEMF_ANY))) {
-	    args[1] = name;
+        RdArgs(format, MKBADDR(args), sizeof(args)/sizeof(args[0]));
+        if (!IoErr()) {
+            /* Load ROM image */
+            if (args[0] == BNULL)
+                args[0] = name;
 
-	    RdArgs(format, MKBADDR(args), 50);
-	    if (!IoErr()) {
-	    	/* Load ROM image */
-	    	if (args[1] == BNULL)
-	    	    args[1] = name;
+            ROMSegList = ROMLoad(args[0]);
+            if (ROMSegList != BNULL) {
+                struct Resident **ResidentList;
+                WriteF("Successfully loaded ROM\n");
 
-		ROMSegList = ROMLoad(args[1]);
-		if (ROMSegList != BNULL) {
-		    struct Resident **ResidentList;
-		    WriteF("Successfully loaded ROM\n");
+                ResidentList = LoadResidents((IPTR *)args[1]);
 
-		    ResidentList = LoadResidents(&args[2]);
+                WriteF("Booting...\n");
+                Delay(50);
 
-		    WriteF("Booting...\n");
-		    Delay(50);
+                BootROM(ROMSegList, ResidentList, BADDR(args[0]));
 
-		    BootROM(ROMSegList, ResidentList, BADDR(args[0]));
-
-		    UnLoadSeg(ROMSegList);
-		} else {
-		    WriteF("Can't load ROM ELF file %S\n", args[1]);
-		}
-	    } else {
-		WriteF("Can't parse arguments\n");
-	    }
+                UnLoadSeg(ROMSegList);
+            } else {
+                WriteF("Can't load ROM ELF file %S\n", args[0]);
+            }
+        } else {
+            WriteF("Can't parse arguments, error %N\n", IoErr());
 	}
 
-   	FreeBSTR(name);
-    	FreeBSTR(format);
-    	FreeMem(args, sizeof(ULONG) * 100);
     	CloseLibrary((APTR)DOSBase);
     }
 
