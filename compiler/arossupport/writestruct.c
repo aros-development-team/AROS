@@ -228,14 +228,10 @@ struct WriteLevel
 	    break;
 
 	case SDT_IFILL_BYTE: { /* Fill x bytes */
-	    IPTR  offset;
-	    UBYTE value;
 	    IPTR  count;
 
         struct BEIOM_Write wr = {BEIO_WRITE, 0};
 
-	    offset = IDESC;
-	    value  = IDESC;
 	    count  = IDESC;
 
 	    while (count --)
@@ -247,13 +243,9 @@ struct WriteLevel
 	    break; }
 
 	case SDT_IFILL_LONG: { /* Fill x longs */
-	    IPTR  offset;
-	    UBYTE value;
 	    IPTR  count;
         struct BEIOM_Write wr = {BEIO_WRITE, 0};
 
-	    offset = IDESC;
-	    value  = IDESC;
 	    count  = IDESC;
 
 	    count <<= 2;
