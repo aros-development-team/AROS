@@ -55,15 +55,13 @@
     AROS_LIBFUNC_INIT
 
     struct AChain 	*ac = AP->ap_Current;
-    BPTR 		origdir, old_current_lock;
+    BPTR 		origdir;
     LONG 		error = 0;
     BOOL    	    	dir_changed = FALSE;
     
     origdir = CurrentDir(0);
     CurrentDir(origdir);
 
-    old_current_lock = ac->an_Lock;
-    
     AP->ap_Flags &= ~APF_DIDDIR;
     
     /*

@@ -14,14 +14,15 @@
 
 BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length)
 {
-    STRPTR  	    	 s1, s2, name, origbuffer;
+    STRPTR  	    	 s1, s2, name;
+    D(STRPTR origbuffer;)
     BPTR parentlock, origlock;
     struct FileInfoBlock *fib;
     LONG  error;
     SIPTR code = DOSFALSE;
     BOOL  first = TRUE;
 
-    origbuffer = buffer;
+    D(origbuffer = buffer);
     D(bug("NameFromX(%x,%x,%d,%d)\n", BADDR(lock), buffer, length, filehandle));
 	
     if (length < 1)
@@ -50,8 +51,6 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     /* Loop over path */
     do
     {
-    	STRPTR sep = NULL;
-
 	error = dopacket2(DOSBase, NULL, ((struct FileLock*)BADDR(lock))->fl_Task, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib)) == 0;
 	//bug("name='%s'\n", fib->fib_FileName);
 	if (!error) {
@@ -98,9 +97,6 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
                 }
     	    }
 
-    	    /* Stash away the location of the directory separator */
-    	    sep = name;
-    	    
     	    if (!error)
     	    {
         		s2--;

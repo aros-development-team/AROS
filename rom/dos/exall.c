@@ -130,6 +130,8 @@
     else
     {
     	status = dopacket5(DOSBase, &err, fl->fl_Task, ACTION_EXAMINE_ALL, (SIPTR)lock, (IPTR)buffer, (IPTR)size, (IPTR)data, (IPTR)control);
+    	if (status != DOSFALSE)
+    	    err = RETURN_OK;
     }
     
     if

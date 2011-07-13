@@ -12,7 +12,7 @@
 
 struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, struct DosLibrary *DOSBase)
 {
-	struct FileSysStartupMsg *fssm;
+	D(struct FileSysStartupMsg *fssm;)
 	struct DosPacket *dp;
 	struct MsgPort *reply_port;
 	struct Process *process = NULL;
@@ -86,7 +86,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 
 	D(bug("[RunHandler] in open by Task '%s'\n", FindTask(NULL)->tc_Node.ln_Name));
 
-	fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);
+	D(fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);)
 
    	D(bug("[RunHandler] devicenode=%08lx path='%b' devicename '%b' unit %d dosname '%b' handler=%x seg=%08lx startup=%08lx\n",
             deviceNode,
