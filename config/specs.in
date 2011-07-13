@@ -8,7 +8,7 @@
 -nostdinc %{!nostdinc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include -isystem @aros_target_cc_includes@}
 
 *endfile:
--lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -lautoinit
+-lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -lautoinit
 
 *link:
 -m @aros_object_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
