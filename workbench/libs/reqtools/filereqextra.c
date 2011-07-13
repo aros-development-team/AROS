@@ -683,7 +683,7 @@ IsDosVolume(struct DosList *dlist)
     BOOL	isdev = FALSE;
     D_S( struct InfoData,id );
 
-    if( !dlist->dol_Task || DoPkt1( dlist->dol_Task, ACTION_DISK_INFO, MKBADDR( id ) ) )
+    if( !dlist->dol_Task || DoPkt1( dlist->dol_Task, ACTION_DISK_INFO, (SIPTR)MKBADDR( id ) ) )
     {
 	isdev = TRUE;
     }
@@ -784,7 +784,7 @@ AddDisk(
 	    size = SIZE_NONE;
 
 	    if( deventry->task &&
-		    DoPkt1( deventry->task, ACTION_DISK_INFO, MKBADDR( infodata ) ) )
+		    DoPkt1( deventry->task, ACTION_DISK_INFO, (SIPTR)MKBADDR( infodata ) ) )
 	    {
 		size = ( infodata->id_NumBlocksUsed * 100 +
 			 infodata->id_NumBlocks / 2 ) /
