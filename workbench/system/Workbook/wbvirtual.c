@@ -123,7 +123,6 @@ static BOOL wbMoveTo(Class *cl, Object *obj, WORD left, WORD top)
 
 static IPTR WBVirtualNew(Class *cl, Object *obj, struct opSet *ops)
 {
-    struct wbVirtual *my;
     IPTR rc = 0;
 
     rc = DoSuperMethodA(cl, obj, (Msg)ops);
@@ -131,7 +130,6 @@ static IPTR WBVirtualNew(Class *cl, Object *obj, struct opSet *ops)
     	return rc;
 
     obj = (Object *)rc;
-    my = INST_DATA(cl, obj);
 
     DoMethod(obj, OM_SET, ops->ops_AttrList, ops->ops_GInfo);
 
