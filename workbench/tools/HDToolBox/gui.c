@@ -374,6 +374,10 @@ AROS_UFH3(void, buttons_function,
             get(adddevicegadgets.file, MUIA_String_Contents, &str);
             if (str[0])
                 dn = addDeviceName(str);
+
+            if (!dn) {
+                /* FIXME: Should we fail here? */
+            }
         }
         else if (object == addpartitiongadgets.ok)
         {
@@ -402,9 +406,7 @@ AROS_UFH3(void, buttons_function,
         else if (object == partitiontypegadgets.hexid)
         {
             char *str = NULL;
-            struct HDTBPartition *partition;
 
-            partition = (struct HDTBPartition *)partitiontypegadgets.iln;
             DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, (IPTR)&iln);
             get(object, MUIA_String_Contents, &str);
             partitiontypegadgets.type.id_len=strcpyESC(partitiontypegadgets.type.id, str);
