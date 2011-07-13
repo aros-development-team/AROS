@@ -703,9 +703,11 @@ int main(int argc, char **argv)
     struct AnchorPath *ap = NULL;
     struct DateStamp *ds = NULL;
     struct DateTime dt;
+#if 0 /* unused */
     IPTR dte;
+#endif
     STRPTR name = NULL, file = NULL, type = NULL;
-    BPTR cd, lock, icon_cd;
+    BPTR cd, lock;
     LONG  returnid = 0;
     ULONG protection;
     char stack[16];
@@ -827,7 +829,10 @@ D(bug("[WBInfo] scan file\n"));
         dt.dat_StrDay = dow;
         dt.dat_StrDate = date;
         dt.dat_StrTime = time;
-        dte = DateToStr(&dt);
+#if 0 /* unused */
+        dte =
+#endif
+               DateToStr(&dt);
         sprintf(datetime, "%s %s", time, date);
 
         /* fill size */
@@ -1070,7 +1075,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         End),
     End;
 
-    icon_cd = CurrentDir(cd);
+    CurrentDir(cd);
 
     if (application != NULL)
     {

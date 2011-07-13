@@ -820,7 +820,9 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
 
     ULONG                       objX, objY, objW, objH;
     LONG                        iconX, iconY;
+#if 0 /* unused */
     ULONG                       iconW, iconH;
+#endif
 
     if (data->icld_BufferRastPort == data->icld_DisplayRastPort)
     {
@@ -915,8 +917,10 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
     {
 	/* Get the dimensions and affected area of message->entry */
 	IconList_GetIconImageRectangle(obj, data, message->entry, &iconrect);
+#if 0 /* unused */
 	iconW = iconrect.MaxX - iconrect.MinX + 1;
 	iconH = iconrect.MaxY - iconrect.MinY + 1;
+#endif
 
 	/* Add the relative position offset of the message->entry */
 	offsetx = objX - data->icld_ViewX + message->entry->ie_IconX;
@@ -1274,7 +1278,9 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
 
     ULONG                       objX, objY, objW, objH;
     LONG                        labelX, labelY;
+#if 0 /* unused */
     ULONG                       labelW, labelH;
+#endif
 
     if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
 	return FALSE;
@@ -1310,8 +1316,10 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
 
     /* Get the dimensions and affected area of message->entry's label */
     IconList_GetIconLabelRectangle(obj, data, message->entry, &iconlabelrect);
+#if 0 /* unused */
     labelW = iconlabelrect.MaxX - iconlabelrect.MinX + 1;
     labelH = iconlabelrect.MaxY - iconlabelrect.MinY + 1;
+#endif
 
     /* Add the relative position offset of the message->entry's label */
     offsetx = (objX - data->icld_ViewX) + message->entry->ie_IconX;

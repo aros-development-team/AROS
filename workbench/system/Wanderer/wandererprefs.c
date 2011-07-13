@@ -810,7 +810,7 @@ IPTR WandererPrefs__MUIM_WandererPrefs_Reload
   Class *CLASS, Object *self, Msg message
 )
 {
-  struct ContextNode     *context;
+  D(struct ContextNode     *context);
   struct IFFHandle       *handle;
   BOOL                   success = TRUE;
   LONG                   error;
@@ -838,7 +838,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload()\n"));
       {
         if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
         {
-          context = CurrentChunk(handle);
+          D(context = CurrentChunk(handle));
           iff_parse_mode = IFFPARSE_STEP;
 
 D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload: Context 0x%p\n", context));
@@ -862,7 +862,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload: End of header 
 
                 if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
                 {
-                  context = CurrentChunk(handle);
+                  D(context = CurrentChunk(handle));
 
 D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload: Context 0x%p\n", context));
 
