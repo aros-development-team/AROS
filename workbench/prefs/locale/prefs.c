@@ -315,7 +315,9 @@ BOOL Prefs_ExportFH(BPTR fh)
     struct LocalePrefs  saveprefs;
     struct IFFHandle   *iff;
     BOOL                retval = FALSE;
+#if 0 /* unused */
     BOOL                delete_if_error = FALSE;
+#endif
 
     D(Printf("[locale prefs] SavePrefsFH: fh: %lx\n", fh));
 
@@ -331,7 +333,9 @@ BOOL Prefs_ExportFH(BPTR fh)
         iff->iff_Stream = (IPTR) fh;
         D(Printf("[locale prefs] SavePrefsFH: stream opened.\n"));
 
+#if 0 /* unused */
         delete_if_error = TRUE;
+#endif
 
         InitIFFasDOS(iff);
 
@@ -389,7 +393,7 @@ BOOL Prefs_ExportFH(BPTR fh)
         FreeIFF(iff);
     } /* if ((iff = AllocIFF())) */
 
-#if 0
+#if 0 /* unused */
     if (!retval && delete_if_error)
     {
         DeleteFile(filename);

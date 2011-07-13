@@ -131,7 +131,9 @@ BOOL Prefs_ExportFH(BPTR fh)
     struct ExtPointerPrefs  saveprefs;
     struct IFFHandle       *iff;
     BOOL                    retval = FALSE;
+#if 0 /* unused */
     BOOL                    delete_if_error = FALSE;
+#endif
     LONG                    i;
 
     D(bug("Prefs_ExportFH: fh: %lx\n", fh));
@@ -141,7 +143,9 @@ BOOL Prefs_ExportFH(BPTR fh)
         iff->iff_Stream = (IPTR) fh;
         D(bug("Prefs_ExportFH: stream opened.\n"));
 
+#if 0 /* unused */
         delete_if_error = TRUE;
+#endif
 
         InitIFFasDOS(iff);
 
@@ -212,12 +216,12 @@ BOOL Prefs_ExportFH(BPTR fh)
 
     } /* if ((iff = AllocIFF())) */
 
-    #if 0
+#if 0 /* unused */
     if (!retval && delete_if_error)
     {
         DeleteFile(filename);
     }
-    #endif
+#endif
 
     return retval;
 }

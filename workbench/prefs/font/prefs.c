@@ -169,7 +169,6 @@ BOOL Prefs_Default(struct FontPrefs fp[])
 
 BOOL Prefs_ImportFH(BPTR fh, struct FontPrefs fp[])
 {
-    struct ContextNode  *context;
     struct IFFHandle    *handle;
     BOOL                 success = TRUE;
     LONG                 error;
@@ -195,7 +194,6 @@ BOOL Prefs_ImportFH(BPTR fh, struct FontPrefs fp[])
                 if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
                 {
                     struct FileFontPrefs ffp;
-                    context = CurrentChunk(handle);
 
                     error = ReadChunkBytes
                     (

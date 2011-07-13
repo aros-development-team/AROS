@@ -329,6 +329,10 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 (IPTR)entry,
                 MUIV_List_Insert_Bottom
             );
+
+            if (!root) {
+                /* TODO: Do we want to check for an error? */
+            }
         }
 
         DoMethod

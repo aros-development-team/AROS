@@ -314,14 +314,12 @@ D(bug("[WPEditor] WandererPrefs_Hook_OpenAdvancedOptionsFunc: Found ViewSettings
 				if (XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe) == TRUE)
 				{
 					ULONG current_RenderMode = GetTag32Data(MUIA_IconWindowExt_ImageBackFill_BGRenderMode, IconWindowExt_ImageBackFill_RenderMode_Tiled, _viewSettings_Node->wpedbo_Options);
-					IPTR current_RenderMode_entry = 0;
 					int i;
 
 					for (i = 0; i < data->wped_ViewSettings_Current->wpedbo_BFRenderModeCount; i++)
 					{
 						if ((ULONG)GetEntryElementID(data->wped_ViewSettings_Current->wpedbo_BFRenderModeEntries[i]) == current_RenderMode)
 						{
-							current_RenderMode_entry = data->wped_ViewSettings_Current->wpedbo_BFRenderModeEntries[i];
 							SET
 							(
 								(Object *)data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_RenderModeObj,
@@ -346,7 +344,6 @@ D(bug("[WPEditor] WandererPrefs_Hook_OpenAdvancedOptionsFunc: Found ViewSettings
 						{
 							if ((ULONG)GetEntryElementID(data->wped_ViewSettings_Current->wpedbo_BFTileModeEntries[i]) == current_TileMode)
 							{
-								current_RenderMode_entry = data->wped_ViewSettings_Current->wpedbo_BFRenderModeEntries[i];
 								SET
 								(
 									data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_TileModeObj,
@@ -2146,7 +2143,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
 {
 	//SETUP_WPEDITOR_INST_DATA;//unused
 	
-	struct ContextNode     *context;
+	D(struct ContextNode     *context);
 	struct IFFHandle       *handle;
 	BOOL                   success = TRUE;
 	LONG                   error;
@@ -2171,7 +2168,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Iff current handle 0x%p, 
 		{				
 			if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
 			{
-				context = CurrentChunk(handle);
+				D(context = CurrentChunk(handle));
 				iff_parse_mode = IFFPARSE_STEP;
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context 0x%p\n", context));
@@ -2196,7 +2193,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: End of header chunk ..\n"
 
 							if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
 							{
-								context = CurrentChunk(handle);
+								D(context = CurrentChunk(handle));
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context 0x%p\n", context));
 
