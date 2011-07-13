@@ -359,7 +359,10 @@ bind_attrib_location(struct gl_context *ctx, GLuint program, GLuint index,
 {
    struct gl_shader_program *shProg;
    const GLint size = -1; /* unknown size */
-   GLint i, oldIndex;
+   GLint i;
+#if 0 /* unused */
+   GLint oldIndex;
+#endif
    GLenum datatype = GL_FLOAT_VEC4;
 
    shProg = _mesa_lookup_shader_program_err(ctx, program,
@@ -382,6 +385,7 @@ bind_attrib_location(struct gl_context *ctx, GLuint program, GLuint index,
       return;
    }
 
+#if 0 /* unused */
    if (shProg->LinkStatus) {
       /* get current index/location for the attribute */
       oldIndex = get_attrib_location(ctx, program, name);
@@ -389,6 +393,7 @@ bind_attrib_location(struct gl_context *ctx, GLuint program, GLuint index,
    else {
       oldIndex = -1;
    }
+#endif
 
    /* this will replace the current value if it's already in the list */
    i = _mesa_add_attribute(shProg->Attributes, name, size, datatype, index);
