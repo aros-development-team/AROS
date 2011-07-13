@@ -51,11 +51,10 @@
     ASSERT(blocklen > 0);
     ASSERT(numblocks > 0);
 
-    ULONG   len, written;
+    ULONG   written;
     const UBYTE  *ptr;
 
     ptr = block;
-    len = 0;
 
     SetIoErr(0);
 
