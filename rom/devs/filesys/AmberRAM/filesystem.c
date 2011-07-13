@@ -1087,11 +1087,13 @@ BOOL ExamineObject(struct Handler *handler, struct Object *object,
       info->fib_DirEntryType = entry_type;
       info->fib_EntryType = entry_type;
       s = ((struct Node *)object)->ln_Name;
-      CopyMem(MkBStr(handler, s), &info->fib_FileName, StrSize(s));
+      info->fib_FileName[0] = StrSize(s) - 1;
+      CopyMem(s, &info->fib_FileName[1], info->fib_FileName[0]);
       s = object->comment;
-      if(s != NULL && ((struct Node *)object)->ln_Pri != ST_SOFTLINK)
-         CopyMem(MkBStr(handler, s), &info->fib_Comment, StrSize(s));
-      else
+      if(s != NULL && ((struct Node *)object)->ln_Pri != ST_SOFTLINK) {
+         info->fib_Comment[0] = StrSize(s) - 1;
+         CopyMem(s, &info->fib_Comment[1], info->fib_Comment[0]);
+      } else
          info->fib_Comment[0] = '\0';
       info->fib_NumBlocks = object->block_count;
 

@@ -2944,9 +2944,7 @@ static void fillfib(struct FileInfoBlock *fib,struct fsObject *o)
 {
   UBYTE *src;
   UBYTE *dest;
-#ifndef USE_FAST_BSTR
   UBYTE length;
-#endif
 
   if (o->be_objectnode==L2BE(ROOTNODE)) {
     fib->fib_DirEntryType=ST_ROOT;
@@ -2977,42 +2975,26 @@ static void fillfib(struct FileInfoBlock *fib,struct fsObject *o)
 
   src=o->name;
   dest = fib->fib_FileName;
-#ifndef USE_FAST_BSTR
   dest++;
   length=0;
-#endif
 
   while(*src!=0) {
     *dest++=*src++;
-#ifndef USE_FAST_BSTR
     length++;
-#endif
   }
-#ifdef USE_FAST_BSTR
-  *dest = 0;
-#else
   fib->fib_FileName[0]=length;
-#endif
 
   src++;  /* comment follows name, so just skip the null-byte seperating them */
 
   dest = fib->fib_Comment;
-#ifndef USE_FAST_BSTR
   dest++;
   length=0;
-#endif
 
   while(*src!=0) {
     *dest++=*src++;
-#ifndef USE_FAST_BSTR
     length++;
-#endif
   }
-#ifdef USE_FAST_BSTR
-  *dest = 0;
-#else
   fib->fib_Comment[0]=length;
-#endif
 }
 
 

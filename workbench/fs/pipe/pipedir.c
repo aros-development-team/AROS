@@ -422,7 +422,7 @@ struct DateStamp      *Datep;
 { fib->fib_DiskKey=      DiskKey;
   fib->fib_DirEntryType= Type;
 
-  CstrtoBSTR (FileName, fib->fib_FileName, sizeof (fib->fib_FileName));
+  CstrtoFIB (FileName, fib->fib_FileName, sizeof (fib->fib_FileName));
 
   fib->fib_Protection=   Protection;
   fib->fib_EntryType=    Type;     /* ??? */

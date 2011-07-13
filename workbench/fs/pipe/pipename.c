@@ -35,6 +35,7 @@
 **	int   ParsePipeName (Bname, nmp, sizep, tapnmp)
 **	void  BSTRtoCstr    (BSTRp, str, maxsize)
 **	void  CstrtoBSTR    (str, BSTRp, maxsize)
+**	void  CstrtoFIB     (str, BSTRp, maxsize)
 **	int   inrange       (x, lower, upper)
 **	char  uppercase     (c)
 **	char  *findchar     (str, ch)
@@ -150,7 +151,12 @@ register BYTE  *BSTRp;
 register char  *str;
 unsigned       maxsize;
 
-{ register int   i;
+{
+#ifdef AROS_FAST_BSTR
+  strncpy(str, BSTRp, maxsize);
+  str[maxsize-1] = 0;
+#else
+  register int   i;
   register int   limit;
 
 
@@ -161,6 +167,7 @@ unsigned       maxsize;
     *(str++)= *(BSTRp++);
 
   *str= '\0';
+#endif
 }
 
 
@@ -196,6 +203,34 @@ unsigned       maxsize;
   BSTRp[0]= i;
 #endif
 }
+
+/*---------------------------------------------------------------------------
+** CstrtoFIB() converts the null-terminated string pointed to by "str" to
+** a FIB fib_FileName or fib_Comment located at the byte address "BSTRp". 
+** At most "maxsize" bytes will be stored.
+*/
+
+void  CstrtoFIB (str, BSTRp, maxsize)
+
+register char  *str;
+BYTE           *BSTRp;
+unsigned       maxsize;
+
+{
+  register char  *bp;
+  register int   i, limit;
+
+  bp= BSTRp + 1;
+
+  limit= maxsize - 1;
+
+  for (i= 0; i < limit; ++i)
+    if ( (*(bp++)= *(str++)) == '\0' )
+      break;
+
+  BSTRp[0]= i;
+}
+
 
 
 

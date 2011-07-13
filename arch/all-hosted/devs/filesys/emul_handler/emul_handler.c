@@ -321,13 +321,17 @@ static SIPTR examine(struct emulbase *emulbase, struct filehandle *fh,
     memset(fib, 0, sizeof(*fib));
 
     if (ead->ed_Name) {
-        strncpy(fib->fib_FileName, ead->ed_Name, sizeof(fib->fib_FileName));
-        fib->fib_FileName[sizeof(fib->fib_FileName)-1] = 0;
+        fib->fib_FileName[0] = strlen(ead->ed_Name) + 1;
+        if (fib->fib_FileName[0] > sizeof(fib->fib_FileName)-1)
+            fib->fib_FileName[0] = sizeof(fib->fib_FileName)-1;
+        CopyMem(ead->ed_Name, &fib->fib_FileName[1], fib->fib_FileName[0]);
     }
 
     if (ead->ed_Comment) {
-        strncpy(fib->fib_Comment, ead->ed_Comment, sizeof(fib->fib_Comment));
-        fib->fib_Comment[sizeof(fib->fib_Comment)-1] = 0;
+        fib->fib_Comment[0] = strlen(ead->ed_Comment) + 1;
+        if (fib->fib_Comment[0] > sizeof(fib->fib_Comment)-1)
+            fib->fib_Comment[0] = sizeof(fib->fib_Comment)-1;
+        CopyMem(ead->ed_Comment, &fib->fib_Comment[1], fib->fib_Comment[0]);
     }
 
     fib->fib_DiskKey = 0;

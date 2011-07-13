@@ -69,14 +69,23 @@ struct FileInfoBlock
       /* See <dos/dosextens.h> for definitions. Generally: if this is >= 0
          the file described is a directory, otherwise it is a plain file. */
     LONG	     fib_DirEntryType;
-      /* The filename (null-terminated). */
+      /* The filename.
+       *
+       *       User applications should always treat this as ASCIIZ.
+       *
+       * NOTE: This is created as a BCPL string in the ACTION_EXAMINE_*
+       *       filesystem handler code, but is converted to a C style
+       *       '\0'-terminated string by the Dos/Examine???() functions.
+       *
+       */
     UBYTE	     fib_FileName[MAXFILENAMELENGTH];
     LONG	     fib_Protection;   /* The protection bits (see below). */
     LONG	     fib_EntryType;
     LONG	     fib_Size;         /* The size of the file. */
     LONG	     fib_NumBlocks;    /* Number of blocks used for file. */
     struct DateStamp fib_Date;         /* Date of last change to file. */
-    UBYTE	     fib_Comment[MAXCOMMENTLENGTH];  /* The filecomment (null-terminated). */
+    /* The filecomment. Follows the same BSTR/CSTR rules as fib_FileName */
+    UBYTE	     fib_Comment[MAXCOMMENTLENGTH];
     UWORD	     fib_OwnerUID;     /* UserID of fileowner. */
     UWORD	     fib_OwnerGID;     /* GroupID of fileowner. */
     UBYTE	     fib_Reserved[32]; /* PRIVATE */

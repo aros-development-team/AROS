@@ -50,6 +50,7 @@
 extern int   ParsePipeName ( /* Bname, nmp, sizep, tapnmp */ );
 extern void  BSTRtoCstr    ( /* BSTRp, str, maxsize */ );
 extern void  CstrtoBSTR    ( /* str, BSTRp, maxsize */ );
+extern void  CstrtoFIB     ( /* str, BSTRp, maxsize */ );
 extern int   inrange       ( /* x, lower, upper */ );
 extern char  uppercase     ( /* c */ );
 extern char  *findchar     ( /* str, ch */ );
