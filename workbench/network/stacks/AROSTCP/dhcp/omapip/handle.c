@@ -246,7 +246,6 @@ static isc_result_t omapi_handle_lookup_in (omapi_object_t **o,
 					    omapi_handle_table_t *table)
 
 {
-	omapi_handle_table_t *inner;
 	omapi_handle_t scale, index;
 
 	if (!table || table -> first > h || table -> limit <= h)
@@ -271,7 +270,6 @@ static isc_result_t omapi_handle_lookup_in (omapi_object_t **o,
 	   handle must be the subtable of this table whose index into this
 	   table's array of children is the handle divided by the scale. */
 	index = (h - table -> first) / scale;
-	inner = table -> children [index].table;
 
 	return omapi_handle_lookup_in (o, h, table -> children [index].table);
 }

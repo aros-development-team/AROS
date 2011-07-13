@@ -601,7 +601,6 @@ own_random(dst_work *work)
 {
 	int dir = 0, b = 0;
 	int bytes, n, cmd = 0, dig = 0;
-	int start =0;
 /* 
  * now get the initial seed to put into the quick random function from 
  * the address of the work structure 
@@ -616,7 +615,6 @@ own_random(dst_work *work)
 /* pick a random number in the range of 0..7 based on that random number
  * perform some operations that yield random data
  */
-		start = work->filled;
 		n = (dst_s_quick_random(bytes) >> DST_SHIFT) & 0x07;
 		switch (n) {
 		    case 0:

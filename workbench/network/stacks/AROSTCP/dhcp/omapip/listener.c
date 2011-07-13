@@ -354,7 +354,6 @@ static void trace_listener_accept_input (trace_type_t *ttype,
 	u_int16_t *remote_port;
 	u_int16_t *local_port;
 	omapi_connection_object_t *obj;
-	isc_result_t status;
 	struct sockaddr_in remote_addr;
 
 	addr = (struct in_addr *)buf;
@@ -369,8 +368,7 @@ static void trace_listener_accept_input (trace_type_t *ttype,
 				   omapi_listener_object_t, lp) {
 		if (lp -> address.sin_port == *local_port) {
 			obj = (omapi_connection_object_t *)0;
-			status = omapi_listener_connect (&obj,
-							 lp, 0, &remote_addr);
+			omapi_listener_connect (&obj, lp, 0, &remote_addr);
 			omapi_listener_dereference (&lp, MDL);
 			return;
 		}
