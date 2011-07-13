@@ -1104,7 +1104,7 @@ LONG DoExamineNext(struct emulbase *emulbase, struct filehandle *fh,
 
     /* fast copying of the filename */
     src  = dir->d_name;
-    dest = FIB->fib_FileName;
+    dest = &FIB->fib_FileName[1];
 
     for (i =0; i<MAXFILENAMELENGTH-1;i++)
     {
@@ -1113,6 +1113,7 @@ LONG DoExamineNext(struct emulbase *emulbase, struct filehandle *fh,
 	    break;
 	}
     }
+    FIB->fib_FileName[0] = i;
 
     return 0;
 }

@@ -769,12 +769,13 @@ LONG DoExamineNext(struct emulbase *emulbase,  struct filehandle *fh, struct Fil
 	FIB->fib_DirEntryType = ST_FILE;
 
     src  = FindData.cFileName;
-    dest = FIB->fib_FileName;
+    dest = &FIB->fib_FileName[1];
     for (res = 0; res<MAXFILENAMELENGTH-1; res++)
     {
 	if (!(*dest++=*src++))
 	    break;
     }
+    FIB->fib_FileName[0] = res;
     return 0;
 }
 

@@ -278,12 +278,7 @@ ULONG examineNext
 	fib->fib_DirEntryType = 
 		OS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(ah->volume)]);
 	string = (char *)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4);
-#ifdef AROS_FAST_BSTR
-	CopyMem(string+1, fib->fib_FileName, string[0]);
-	fib->fib_FileName[(ULONG)string[0]] = 0;
-#else
 	CopyMem(string, fib->fib_FileName, string[0]+1);
-#endif
 	fib->fib_Protection = OS_BE2LONG(entryblock->buffer[BLK_PROTECT(ah->volume)]);
 	fib->fib_EntryType = fib->fib_DirEntryType;
 	fib->fib_Size = OS_BE2LONG(entryblock->buffer[BLK_BYTE_SIZE(ah->volume)]);
@@ -300,12 +295,7 @@ ULONG examineNext
 	if (fib->fib_DirEntryType != ST_ROOT)
 	{
 		string = (char *)entryblock->buffer+(BLK_COMMENT_START(ah->volume)*4);
-#ifdef AROS_FAST_BSTR
-		CopyMem(string+1, fib->fib_Comment, string[0]);
-		fib->fib_Comment[(ULONG)string[0]] = 0;
-#else
 		CopyMem(string, fib->fib_Comment, string[0] + 1);
-#endif
 	}
 	owner = OS_BE2LONG(entryblock->buffer[BLK_OWNER(ah->volume)]);
 	fib->fib_OwnerUID = owner>>16;

@@ -1249,9 +1249,7 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
 		p_fib->fib_DirEntryType = ST_ROOT;
 		/* file name == volume name: */
 		len = global->g_vol_name[0];
-#ifndef USE_FAST_BSTR
 		*dest++ = len;
-#endif
 		strncpy(dest, global->g_vol_name+1, len);
 	}
 	else
@@ -1268,9 +1266,7 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
 				}
 			}
 		}
-#ifndef USE_FAST_BSTR
 		*dest++ = len;
-#endif
 		strncpy(dest, src, len);
 
 		if ((global->g_map_to_lowercase && p_volume->protocol == PRO_ISO) ||
@@ -1302,9 +1298,7 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
 	len = p_info->comment_length;
 	if (len > MAX_COMMENT_LEN)
 		len = MAX_COMMENT_LEN;
-#ifndef USE_FAST_BSTR
 	*dest++ = len;
-#endif
 	strncpy(dest, p_info->comment, len);
 	dest[len] = 0;
 }

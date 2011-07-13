@@ -857,8 +857,7 @@ BOOL ExamineFile(listentry_t *file, struct FileInfoBlock * fib, SIPTR *error, gl
 			fib->fib_Date.ds_Tick = (ULONG)volume->rootblk->creationtick;
 		}
 
-		strncpy(fib->fib_FileName, volume->rootblk->diskname,
-				volume->rootblk->diskname[0] + 1);
+                CopyMem(volume->rootblk->diskname, fib->fib_FileName, volume->rootblk->diskname[0] + 1);
 		fib->fib_Comment[0] = 0x0;
 		//fib->fib_Reserved[0]  = 0x0;
 	}

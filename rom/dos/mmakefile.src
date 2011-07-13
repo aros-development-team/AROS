@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
 USER_CFLAGS := -D__DOS_NOLIBBASE__
 
-FILES	  := bcpl_support errorlist \
+FILES	  := bcpl_support bstr_helper errorlist \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
 	     packethelper namefrom loadseg_overlay

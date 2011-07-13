@@ -273,14 +273,14 @@ char *BSTR2C(BSTR);
 #define FREEC2BSTR(x)	do { } while (0)
 #define CMPCBSTR(a,b)	strcmp(a,b)
 #define CMPICBSTR(a,b)	Stricmp(a,b)
-#define fixfib(f)	do { } while (0)
 #else
 BSTR C2BSTR(CONST_STRPTR);
 #define FREEC2BSTR(bstr) FreeVec(BADDR(bstr))
 BOOL CMPCBSTR(CONST_STRPTR, BSTR);
 BOOL CMPICBSTR(CONST_STRPTR, BSTR);
-void fixfib(struct FileInfoBlock*);
 #endif
+
+void fixfib(struct FileInfoBlock*);
 
 struct PacketHelperStruct
 {
