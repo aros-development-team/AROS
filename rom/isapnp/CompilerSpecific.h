@@ -260,9 +260,11 @@
 /* AROS Compatibility: IPTR is a type which can store a pointer
  * as well as a long integer.
  */
-#ifndef IPTR
-#define IPTR LONG
-#endif /* IPTR */
+#ifndef AROS_INTPTR_TYPE
+#define AROS_INTPTR_TYPE long
+typedef unsigned AROS_INTPTR_TYPE IPTR;
+typedef signed   AROS_INTPTR_TYPE SIPTR;
+#endif /* AROS_INTPTR_TYPE */
 
 
 
