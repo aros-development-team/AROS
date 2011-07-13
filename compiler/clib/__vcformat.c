@@ -227,7 +227,9 @@ static size_t format_longlong(char *buffer, char type, unsigned long long v)
       static const char flagc[] = { '#','0','-',' ','+' };
       size_t width=0,preci=ULONG_MAX,flags=0; /* Specifications */
       char type,subtype='i';
+#ifdef AROS_HAVE_LONG_LONG
       char lltype=0;
+#endif
       char buffer1[2];		   /* Signs and that like */
       char buffer[REQUIREDBUFFER]; /* The body */
       char *buffer2=buffer;	   /* So we can set this to any other strings */
@@ -276,7 +278,9 @@ static size_t format_longlong(char *buffer, char type, unsigned long long v)
 
       if (*ptr == 'l' || *ptr == 'q')
       {
+#ifdef AROS_HAVE_LONG_LONG
           lltype = 1;
+#endif
           ptr++;
       }
       
