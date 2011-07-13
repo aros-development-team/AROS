@@ -460,7 +460,10 @@ done:
     for (t = first; t < numhunks && t <= last; t++)
     {
       hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
-      if (hunksize)
+      /* We check for SysBase's lib_Version, since some
+       * users of this library will be running on AOS 1.3 or lower
+       */
+      if (hunksize && SysBase->LibNode.lib_Version >= 36)
       {
         CacheClearE(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
       }

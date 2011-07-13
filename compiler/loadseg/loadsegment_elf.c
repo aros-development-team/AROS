@@ -759,6 +759,10 @@ error:
 end:
     
     /* Clear the caches to let the CPU see the new data and instructions */
+    /* We check for SysBase's lib_Version, since some
+     * users of this library will be running on AOS 1.3 or lower
+     */
+    if (SysBase->LibNode.lib_Version >= 36)
     {
         BPTR curr = hunks;
         while (curr)
