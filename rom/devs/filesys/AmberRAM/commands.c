@@ -2124,7 +2124,6 @@ BOOL CmdChangeMode(struct Handler *handler, ULONG type, APTR thing, ULONG new_mo
 {
    struct Lock *lock;
    struct Opening *opening;
-   ULONG old_mode;
    LONG error = 0;
 
    /* Get the lock */
@@ -2138,8 +2137,6 @@ BOOL CmdChangeMode(struct Handler *handler, ULONG type, APTR thing, ULONG new_mo
       lock = thing;
 
    /* Change mode if possible */
-
-   old_mode = ((struct FileLock *)lock)->fl_Access;
 
    if(new_mode == ACCESS_WRITE && lock->lock_count > 1)
    {
