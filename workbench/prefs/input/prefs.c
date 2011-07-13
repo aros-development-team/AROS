@@ -368,7 +368,9 @@ BOOL Prefs_ExportFH(BPTR fh)
     struct FileKMSPrefs	    savekmsprefs;
     struct IFFHandle       *iff;
     BOOL                    retval = FALSE;
+#if 0 /* unused */
     BOOL                    delete_if_error = FALSE;
+#endif
 
     D(Printf("SavePrefs: SwitchMouseButtons: %ld\n", inputprefs.ip_SwitchMouseButtons));
 
@@ -401,7 +403,9 @@ BOOL Prefs_ExportFH(BPTR fh)
         {
             D(Printf("SavePrefs: stream opened.\n"));
 
+#if 0 /* unused */
             delete_if_error = TRUE;
+#endif
 
             InitIFFasDOS(iff);
 
@@ -479,10 +483,12 @@ BOOL Prefs_ExportFH(BPTR fh)
 
     } /* if ((iff = AllocIFF())) */
 
-//     if (!retval && delete_if_error)
-//     {
-//          DeleteFile(filename);
-//     }
+#if 0 /* unused */
+     if (!retval && delete_if_error)
+     {
+          DeleteFile(filename);
+     }
+#endif
 
     return retval;
 }

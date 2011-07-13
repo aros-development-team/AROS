@@ -59,7 +59,6 @@ static BOOL Prefs_Load(STRPTR from)
 
 BOOL Prefs_ImportFH(BPTR fh)
 {
-    struct ContextNode     *context;
     struct IFFHandle       *handle;
     struct ScreenModePrefs  loadprefs = {{0},0};
     BOOL                    success = TRUE;
@@ -78,8 +77,6 @@ BOOL Prefs_ImportFH(BPTR fh)
         {
             if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
             {
-                context = CurrentChunk(handle);
-
                 error = ReadChunkBytes
                 (
                     handle, &loadprefs, sizeof(struct ScreenModePrefs)
