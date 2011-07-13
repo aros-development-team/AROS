@@ -74,7 +74,7 @@ D(bug("[AROSTCP](res_init.c) res_update_db()\n"));
   }
 #if defined(__AROS__)
 D(bug("[AROSTCP](res_init.c) res_update_db: %d Domains in NetDB\n", n-1));
-  ULONG tmp_n = n;
+  D(ULONG tmp_n = n);
 #endif
 
   ObtainSemaphoreShared(&DynDB.dyn_Lock);
@@ -154,7 +154,7 @@ D(bug("[AROSTCP](res_init.c) res_update_db: Last dnsrch array pointer (%d) marke
 
 #if defined(__AROS__)
 D(bug("[AROSTCP](res_init.c) res_update_db: %d Nameservers in NetDB\n", n-1));
-   tmp_n = n;
+   D(tmp_n = n);
 #endif
 
   for (ns = (struct NameserventNode *)DynDB.dyn_NameServers.mlh_Head;

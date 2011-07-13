@@ -143,7 +143,7 @@ TEXT panel_path[FILENAME_MAX];
 void gui_open()
 {
 	struct ifnet *ifp;
-	long PanelVersion;
+	DGUI(long PanelVersion;)
 	long showflags = 0;
 	char ifname[IFNAMSIZ+2];
 	long ifstate;
@@ -176,7 +176,7 @@ D(bug("[AROSTCP](amiga_gui.c) gui_open: Attempting to use '%s'\n", panel_path));
 	      MiamiPanelBase = OpenLibrary(panel_path, 0);
 	      DGUI(KPrintF("Panel library opened, base = 0x%08lx\n", MiamiPanelBase);)
 	      if (MiamiPanelBase) {
-		PanelVersion = MiamiPanelGetVersion();
+		DGUI(PanelVersion = MiamiPanelGetVersion();)
 		DGUI(KPrintF("Panel API version: %lu\n", PanelVersion);)
 		MiamiPanelInhibitRefresh(TRUE);
 		DGUI(KPrintF("Panel inhibited\n");)
