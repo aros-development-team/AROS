@@ -4,12 +4,10 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
 USER_CFLAGS := -D__DOS_NOLIBBASE__
 
-IMAGE_TYPES := aos elf
 FILES	  := bcpl_support errorlist \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
-	     packethelper namefrom \
-	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
+	     packethelper namefrom loadseg_overlay
 
 FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     allocdosobject assignadd assignlate assignlock assignpath \
@@ -54,7 +52,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \
   files="dos_init $(FUNCTIONS) $(FILES)" \
-  uselibs="rom"
+  uselibs="loadseg rom"
 
 $(GENDIR)/$(CURDIR)/errorlist.d : $(GENDIR)/$(CURDIR)/errorlist.h
 

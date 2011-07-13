@@ -13,8 +13,10 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 #include <aros/debug.h>
+
+#include <loadseg/loadseg.h>
+
 #include "dos_intern.h"
-#include "internalloadseg.h"
 
 /*****************************************************************************
 
@@ -75,73 +77,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    typedef struct _segfunc_t
-    {
-    	ULONG id;
-        BPTR (*func)(BPTR, BPTR, SIPTR *, LONG *, struct DosLibrary *);
-        D(CONST_STRPTR format;)
-    } segfunc_t;
+    BPTR seg;
+    SIPTR error;
 
-    #define SEGFUNC(id, format) {id, InternalLoadSeg_##format D(, (STRPTR)#format)}
-    
-    static const segfunc_t funcs[] = 
-    {
-        SEGFUNC(0x7f454c46, ELF),
-        SEGFUNC(0x000003f3, AOS)
-    };
-  
-    BPTR segs = 0;
+    seg = LoadSegment(fh, table, (SIPTR *)funcarray, stack, &error, (struct Library *)DOSBase);
 
-    if (fh)
-    {
-        UBYTE i;
-	const UBYTE num_funcs = sizeof(funcs) / sizeof(funcs[0]);
-    	ULONG id;
-	LONG len;
-
-	SetIoErr(0);
-    	len = ilsRead(fh, &id, sizeof(id));
-	if (len == sizeof(id)) {
-	    id = AROS_BE2LONG(id);
-	    for (i = 0; i < num_funcs; i++) {
-		if (funcs[i].id == id) {
-		    segs = (*funcs[i].func)(fh, BNULL, (SIPTR *)funcarray,
-			stack, DOSBase);
-		    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
-			segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
-		    return segs;
- 		}
- 	    }
- 	}
-    }
-
-    SetIoErr(ERROR_NOT_EXECUTABLE);
-    return BNULL;
+    SetIoErr(error);
+    return seg;
   
     AROS_LIBFUNC_EXIT
 } /* InternalLoadSeg */
-
-APTR _ilsAllocVec(SIPTR *funcarray, ULONG size, ULONG req)
-{
-    UBYTE *p = ilsAllocMem(size, req);
-    if (!p)
-    	return NULL;
-    D(bug("allocmem %p %d\n", p, size));
-    *((ULONG*)p) = (ULONG)size;
-    return p + sizeof(ULONG);       
-}
-
-void _ilsFreeVec(SIPTR *funcarray, void *buf)
-{
-    UBYTE *p = (UBYTE*)buf;
-    ULONG size;
-    if (!buf)
-    	return;
-    p -= sizeof(ULONG);
-    size = ((ULONG*)p)[0];
-    D(bug("freemem %p %d\n", p, size));
-    if (!size)
-    	return;
-
-    ilsFreeMem(p, size);
-}
