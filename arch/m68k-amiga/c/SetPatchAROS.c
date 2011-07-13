@@ -32,6 +32,8 @@
 
 #include <exec/rawfmt.h>
 
+#include <loadseg/loadseg.h>
+
 /*************  ExecBase Patches ********************/
 
 static APTR oldRawDoFmt;
@@ -84,7 +86,6 @@ static AROS_UFH5(APTR, myRawDoFmt,
 
 #define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
 #define NO_SYSBASE_REMAP
-#include <rom/dos/internalloadseg_elf.c>
 
 static AROS_UFH4(LONG, ReadFunc,
 	AROS_UFHA(BPTR, file,   D1),
@@ -170,6 +171,7 @@ static AROS_UFH2(BPTR, myLoadSeg,
        if (len == sizeof(magic) && magic == 0x7f454c46) { /* ELF magic */
            struct StackSwapStruct sss;
            struct StackSwapArgs ssa;
+           SIPTR error = 0;
            
            sss.stk_Lower = AllocMem(MINSTACK, MEMF_ANY);
            if (sss.stk_Lower == NULL) {
@@ -182,22 +184,23 @@ static AROS_UFH2(BPTR, myLoadSeg,
            ssa.Args[1] = (IPTR)BNULL;
            ssa.Args[2] = (IPTR)FunctionArray;
            ssa.Args[3] = (IPTR)NULL;
-           ssa.Args[4] = (IPTR)DOSBase;
+           ssa.Args[4] = (IPTR)&error;
+           ssa.Args[5] = (IPTR)DOSBase;
 
            segs = (BPTR)AROS_UFC4(IPTR, myNewStackSwap,
            	   	AROS_UFHA(struct StackSwapStruct *, &sss, A0),
-           	   	AROS_UFHA(LONG_FUNC, InternalLoadSeg_ELF, A1),
+           	   	AROS_UFHA(LONG_FUNC, LoadSegment, A1),
            	   	AROS_UFHA(struct StackSwapArgs *, &ssa, A2),
            	   	AROS_UFHA(struct ExecBase *, SysBase, A6));
            FreeMem(sss.stk_Lower, MINSTACK);
 
+           SetIoErr(error);
            if (segs) {
                if ((LONG)segs > 0) {
                    Close(file);
                } else {
                    segs = (BPTR)-((LONG)segs);
                }
-               SetIoErr(0);
                return segs;
            }
 

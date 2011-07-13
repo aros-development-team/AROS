@@ -38,7 +38,7 @@ AFILES := newstackswap
 
 %build_prog mmake=workbench-c-m68k-setpatcharos-elf progname=SetPatchAROS.elf \
     files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
-    uselibs="arossupport amiga rom"
+    uselibs="loadseg arossupport amiga rom"
 
 CFILES := AROSBootstrap
 AFILES :=
