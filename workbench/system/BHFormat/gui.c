@@ -462,6 +462,10 @@ AROS_UFH3S(void, btn_format_function,
 cleanup:
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
+    if (rc != RETURN_OK) {
+        /* Shouldn't we do something if rc != RETURN_OK? */
+    }
+
     AROS_USERFUNC_EXIT
 }
 
