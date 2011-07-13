@@ -62,13 +62,12 @@ AROS_SHA(BOOL,     , NOLINE, /S,   FALSE))
     AROS_SHCOMMAND_INIT
 
     LONG error = 0;
-    STRPTR *a, b;
+    STRPTR *a;
 
     a = SHArg(STRINGS);
 
     if (a) while (*a != NULL)
     {
-        b = *a;
         kprintf("%s", *a);
 	a++;
         if (*a)
