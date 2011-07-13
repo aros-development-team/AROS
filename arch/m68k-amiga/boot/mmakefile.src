@@ -43,7 +43,7 @@ Q ?= @
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
-USELIBS := amiga arossupport rom arosm autoinit libinit \
+USELIBS := loadseg amiga arossupport rom arosm autoinit libinit \
 	   hiddstubs 
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
