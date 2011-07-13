@@ -45,7 +45,7 @@ AFILES :=
 
 %build_prog mmake=workbench-c-m68k-arosbootstrap-elf progname=AROSBootstrap.elf \
     files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
-    usestartup=no uselibs="arossupport amiga z rom"
+    usestartup=no uselibs="loadseg arossupport amiga z rom"
 
 
 #MM workbench-c-m68k-aos: workbench-c-m68k-elf
