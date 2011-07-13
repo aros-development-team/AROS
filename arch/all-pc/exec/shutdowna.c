@@ -55,7 +55,7 @@
 
     if (action == SD_ACTION_COLDREBOOT)
     {
-    	struct DosLibrary *DOSBase = OpenLibrary("dos.library", 36);
+    	struct DosLibrary *DOSBase = (APTR)OpenLibrary("dos.library", 36);
 
     	/*
     	 * Don't call reset callbacks because their action is not
