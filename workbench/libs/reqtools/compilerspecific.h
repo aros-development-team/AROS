@@ -1,6 +1,9 @@
-#ifndef IPTR
-#define IPTR ULONG
-#endif
+#ifndef AROS_INTPTR_TYPE
+#define AROS_INTPTR_TYPE long
+typedef unsigned AROS_INTPTR_TYPE IPTR;
+typedef signed   AROS_INTPTR_TYPE SIPTR;
+#endif /* AROS_INTPTR_TYPE */
+
 
 #undef 	REGARGS
 #undef 	STDARGS
