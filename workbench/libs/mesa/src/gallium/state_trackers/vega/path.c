@@ -1083,10 +1083,15 @@ static INLINE VGubyte normalize_coords(struct path_iter_data *pd,
    }
       break;
    case VG_SCUBIC_TO: {
-      VGfloat x0, y0, x1, y1, x2, y2, x3, y3;
+#if 0 /* unused */
+      VGfloat x0, y0;
+#endif
+      VGfloat x1, y1, x2, y2, x3, y3;
       data_at(&pd->coords, pd->path, 0, 4, data);
+#if 0 /* unused */
       x0 = pd->ox;
       y0 = pd->oy;
+#endif
       x1 = 2*pd->ox-pd->px;
       y1 = 2*pd->oy-pd->py;
       x2 = data[0];
