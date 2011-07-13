@@ -49,7 +49,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 
 	    if (cp != NULL) {
 	    	BPTR dir;
-	    	dir = Lock("DEVS:", SHARED_LOCK);
+	    	dir = Lock("L:", SHARED_LOCK);
 	    	if (dir != BNULL) {
 	    	    BPTR olddir;
 	    	    olddir = CurrentDir(dir);
