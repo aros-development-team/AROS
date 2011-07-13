@@ -392,7 +392,9 @@ make_texture(struct st_context *st,
    gl_format mformat;
    struct pipe_resource *pt;
    enum pipe_format pipeFormat;
+#if 0 /* unused */
    GLuint cpp;
+#endif
    GLenum baseFormat, intFormat;
 
    baseFormat = base_format(format);
@@ -404,7 +406,9 @@ make_texture(struct st_context *st,
 
    pipeFormat = st_mesa_format_to_pipe_format(mformat);
    assert(pipeFormat);
+#if 0 /* unused */
    cpp = util_format_get_blocksize(pipeFormat);
+#endif
 
    pixels = _mesa_map_pbo_source(ctx, unpack, pixels);
    if (!pixels)

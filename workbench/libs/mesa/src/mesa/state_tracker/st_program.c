@@ -291,7 +291,9 @@ st_translate_fragment_program(struct st_context *st,
    GLuint inputMapping[FRAG_ATTRIB_MAX];
    GLuint interpMode[PIPE_MAX_SHADER_INPUTS];  /* XXX size? */
    GLuint attr;
+#if 0 /* unused */
    enum pipe_error error;
+#endif
    const GLbitfield inputsRead = stfp->Base.Base.InputsRead;
    struct ureg_program *ureg;
 
@@ -442,7 +444,9 @@ st_translate_fragment_program(struct st_context *st,
       debug_printf("\n");
    }
 
+#if 0 /* unused */
    error = 
+#endif
       st_translate_mesa_program(st->ctx,
                                 TGSI_PROCESSOR_FRAGMENT,
                                 ureg,
@@ -476,7 +480,9 @@ st_translate_geometry_program(struct st_context *st,
    GLuint inputMapping[GEOM_ATTRIB_MAX];
    GLuint outputMapping[GEOM_RESULT_MAX];
    struct pipe_context *pipe = st->pipe;
+#if 0 /* unused */
    enum pipe_error error;
+#endif
    GLuint attr;
    const GLbitfield inputsRead = stgp->Base.Base.InputsRead;
    GLuint vslot = 0;
@@ -680,7 +686,10 @@ st_translate_geometry_program(struct st_context *st,
    ureg_property_gs_output_prim(ureg, stgp->Base.OutputType);
    ureg_property_gs_max_vertices(ureg, stgp->Base.VerticesOut);
 
-   error  = st_translate_mesa_program(st->ctx,
+#if 0 /* unused */
+   error =
+#endif
+            st_translate_mesa_program(st->ctx,
                                       TGSI_PROCESSOR_GEOMETRY,
                                       ureg,
                                       &stgp->Base.Base,
