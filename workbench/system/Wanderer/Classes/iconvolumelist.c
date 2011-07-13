@@ -382,7 +382,9 @@ OM_NEW
 **************************************************************************/
 IPTR IconVolumeList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 {
+#if 0 /* unused */
   struct IconDrawerList_DATA   *data = NULL;
+#endif
 //    struct TagItem            *tag = NULL,
 //                                *tags = NULL;
 
@@ -394,7 +396,9 @@ D(bug("[IconVolumeList]: %s()\n", __PRETTY_FUNCTION__));
     if (!obj)
 	return FALSE;
 
+#if 0 /* unused */
     data = INST_DATA(CLASS, obj);
+#endif
 
     SET(obj, MUIA_IconList_DisplayFlags, ICONLIST_DISP_VERTICAL);
     SET(obj, MUIA_IconList_SortFlags, MUIV_IconList_Sort_MASK);

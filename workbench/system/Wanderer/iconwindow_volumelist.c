@@ -617,11 +617,15 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
 ///OM_NEW()
 Object *IconWindowVolumeList__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
+#if 0 /* unused */
     IPTR                            _newIconList__FSNotifyPort = 0;
+#endif
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
+#if 0 /* unused */
     _newIconList__FSNotifyPort = GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
+#endif
 
     self = (Object *) DoSuperNewTags
       (

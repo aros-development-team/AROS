@@ -688,7 +688,10 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
     ULONG      Success, Success1, Success2, DosError, len;
     char       *dname, *comment, *dpath;
     BOOL       del, created, unprotect, failure;
-    BOOL       stop, overwrite;
+#if 0 /* unused */
+    BOOL       stop;
+#endif
+    BOOL       overwrite;
     LONG       info, prot;
 
     if (quit) return TRUE;
@@ -719,7 +722,9 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                 Success1=Examine(NewLock,FIB);
                 if (Success1) 
                 {
+#if 0 /* unused */
                     stop = quit;
+#endif
                     do 
                     {
                         Success=ExNext(NewLock,FIB);

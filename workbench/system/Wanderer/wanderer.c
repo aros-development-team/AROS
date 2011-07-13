@@ -432,7 +432,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
         static unsigned char  buf[1024];
-        IPTR                  offset;
+        D(IPTR                  offset);
         struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
 
         DoMethod(msg->iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent);
@@ -442,7 +442,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: NextIcon returned MUIV_IconList_Ne
             return;
         }
 
-        offset = strlen(ent->ile_IconEntry->ie_IconNode.ln_Name) - 5;
+        D(offset = strlen(ent->ile_IconEntry->ie_IconNode.ln_Name) - 5);
 
         if ((msg->isroot) && (ent->type == ST_ROOT))
         {
@@ -637,6 +637,9 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
 				NP_UserData,    (IPTR)dropevent,
 				NP_StackSize,   40000,
 				TAG_DONE);
+	    if (wandererCopyProcess == NULL) {
+	        /* TODO: Handle failure to create the copy process */
+	    }
         }
     }
     else if (msg->type == ICONWINDOW_ACTION_APPWINDOWDROP)
