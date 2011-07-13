@@ -148,7 +148,7 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
 
     /* Initialize our stream */
     fakefile.count      = 0;
-    fakefile.offset     = 4;	/* ??? */
+    fakefile.offset     = 0;
     fakefile.size       = LSEGDATASIZE;
     fakefile.fsn        = node;
 
@@ -197,7 +197,7 @@ static SIPTR AddFS(struct RDBData *data)
     	if (!fsrnode)
     	    break;
     	fakefile.count = 0;
-    	fakefile.offset = 4;
+    	fakefile.offset = 0;
     	fakefile.size = size;
     	fakefile.fsn = node;
 	if (node->filesystem[0].lsb_LoadData[0] == 0x000003f3) {
