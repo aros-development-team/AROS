@@ -252,18 +252,15 @@ ADD2EXPUNGELIB(PCKbd_ExpungeAttrs, 0)
 /****************************************************************************************/
 
 #define WaitForInput        		\
-    ({ int i = 0,dummy,timeout=1000;	\
+    ({ int timeout=1000;	\
        do                   		\
        {                    		\
         info = kbd_read_status();     	\
         if (!--timeout)			\
           break;			\
        } while((info & KBD_STATUS_OBF));\
-       while (i < 1000000)     		\
-       {                \
-         dummy = i*i;   \
-         i++;           \
-       }})
+       inb(0x80);  /* Read from port 0x80, the debug port, to add some delay */ \
+     })
 
 /****************************************************************************************/
 

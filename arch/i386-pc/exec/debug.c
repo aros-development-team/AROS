@@ -373,31 +373,39 @@ int	get_irq_list(char *buf);
 	}
 	else if (strcmp(comm, "BE") == 0)
 	{
-            ULONG i, dummy;
+            ULONG i;
+#define DELAY_1USEC()   inb(0x80)
 
 	    kprintf("Beeping...\n");
 
             SetSpkFreq (400);
             SpkOn();
-            for (i = 0; i < 100000000; dummy = i * i, i++);
+            for (i = 0; i < 2000000; i++)
+                DELAY_1USEC();
             SpkOff();
-            for (i = 0; i< 50000000; dummy = i * i, i++);
+            for (i = 0; i < 1000000; i++)
+                DELAY_1USEC();
 
             SetSpkFreq (500);
             SpkOn();
-            for (i = 0; i < 100000000; dummy = i * i, i++);
+            for (i = 0; i < 2000000; i++)
+                DELAY_1USEC();
             SpkOff();
-            for (i = 0; i < 50000000; dummy = i * i, i++);
+            for (i = 0; i < 1000000; i++)
+                DELAY_1USEC();
 
             SetSpkFreq (592);
             SpkOn();
-            for (i=0; i<100000000; dummy = i * i, i++);
+            for (i = 0; i < 2000000; i++)
+                DELAY_1USEC();
             SpkOff();
-            for (i=0; i< 50000000; dummy = i * i, i++);
+            for (i = 0; i < 1000000; i++)
+                DELAY_1USEC();
 
             SetSpkFreq (788);
             SpkOn();
-            for (i = 0; i < 300000000; dummy = i * i, i++);
+            for (i = 0; i < 2000000; i++)
+                DELAY_1USEC();
             SpkOff();
 
 	}
