@@ -253,7 +253,7 @@ AROS_LH2(IPTR, usbDoMethodA,
 
     struct NepClassHub *nch;
 
-    KPRINTF(10, ("Do Method %ld\n", methodid));
+    KPRINTF(1, ("Do Method %ld\n", methodid));
     switch(methodid)
     {
         case UCM_AttemptDeviceBinding:
@@ -473,6 +473,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
                         }
                         if(nch->nch_PowerCycle & (1<<num))
                         {
+                            KPRINTF(2, ("Powercycle request for port %lu\n", num));
                             nch->nch_PowerCycle &= ~(1L<<num);
 
                             /* Wait for device to settle */
@@ -851,10 +852,12 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                     {
                                         nch->nch_Removable |= ((&uhd->DeviceRemovable)[num])<<(num<<3);
                                     }
-                                    KPRINTF(1, ("Hub with %ld ports\n"
+                                    KPRINTF(2, ("Hub with %ld ports\n"
+                                    	   "  Characteristics 0x%04lx\n"
                                            "  PowerGood after %ld ms\n"
                                            "  Power consumption %ld mA\n",
                                            nch->nch_NumPorts,
+                                           nch->nch_HubAttr,
                                            nch->nch_PwrGoodTime, nch->nch_HubCurrent));
                                     psdFreeVec(uhd);
 
@@ -902,6 +905,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                                 GM_UNIQUENAME(nClearPortStatus)(nch, num);
                                             }
                                             psdDelayMS(20);*/
+                                            KPRINTF(2, ("Powering up ports...\n"));
                                             for(num = 1; num <= nch->nch_NumPorts; num++)
                                             {
                                                 psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
@@ -1111,7 +1115,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
     BOOL washighspeed = FALSE;
     BOOL islowspeed = FALSE;
 
-    KPRINTF(1, ("Configuring port %ld of hub 0x%p\n", port, nch));
+    KPRINTF(2, ("Configuring port %ld of hub 0x%p\n", port, nch));
 
     uhps.wPortStatus = 0xDEAD;
     uhps.wPortChange = 0xDA1A;
@@ -1123,10 +1127,12 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
     uhps.wPortChange = AROS_WORD2LE(uhps.wPortChange);
     if(!ioerr)
     {
-    	KPRINTF(1, ("Status 0x%04x, change 0x%04x\n", uhps.wPortStatus, uhps.wPortChange));
+    	KPRINTF(2, ("Status 0x%04x, change 0x%04x\n", uhps.wPortStatus, uhps.wPortChange));
 
         if(uhps.wPortStatus & UPSF_PORT_ENABLE)
         {
+            KPRINTF(2, ("Disabling port %u\n", port));
+
             psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
                          USR_CLEAR_FEATURE, UFS_PORT_ENABLE, (ULONG) port);
             ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
@@ -1143,7 +1149,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
         }
         if(uhps.wPortStatus & UPSF_PORT_CONNECTION)
         {
-            KPRINTF(1, ("There's something at port %ld!\n", port));
+            KPRINTF(2, ("There's something at port %ld!\n", port));
             Forbid();
             if((pd = psdAllocDevice(nch->nch_Hardware)))
             {
@@ -1158,7 +1164,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                 if(uhps.wPortStatus & UPSF_PORT_LOW_SPEED)
                 {
                     psdSetAttrs(PGA_DEVICE, pd, DA_IsLowspeed, TRUE, TAG_END);
-                    KPRINTF(1, ("    It's a lowspeed device!\n"));
+                    KPRINTF(2, ("    It's a lowspeed device!\n"));
                     islowspeed = TRUE;
                 }
                 ObtainSemaphore(&nch->nch_HubBase->nh_Adr0Sema);
@@ -1196,6 +1202,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                             KPRINTF(1, ("GET_PORT_CONNECTION failed %ld.\n", ioerr));
                             break;
                         }
+                        KPRINTF(2, ("After reset: status 0x%04x, change 0x%04x\n", uhps.wPortStatus, uhps.wPortChange));
                         if(!(uhps.wPortStatus & UPSF_PORT_CONNECTION))
                         {
                             break;
@@ -1208,13 +1215,26 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                             {
                                 psdSetAttrs(PGA_DEVICE, pd, DA_IsHighspeed, TRUE, TAG_END);
                                 washighspeed = TRUE;
-                                KPRINTF(1, ("    It's a highspeed device!\n"));
-                            } else {
+                                KPRINTF(2, ("    It's a highspeed device!\n"));
+                            }
+                            else
+                            {
                                 IPTR needssplit = 0;
+
+				/* Some hubs (Apple Keyboard bultin hub) report speed correctly only after reset */
+                                if (uhps.wPortStatus & UPSF_PORT_LOW_SPEED)
+                                {
+                                    psdSetAttrs(PGA_DEVICE, pd, DA_IsLowspeed, TRUE, TAG_END);
+                    		    KPRINTF(2, ("    It's a lowspeed device!\n"));
+		                    islowspeed = TRUE;
+		                }
+
                                 // inherit needs split from hub
                                 psdGetAttrs(PGA_DEVICE, nch->nch_Device, DA_NeedsSplitTrans, &needssplit, TAG_END);
+                                KPRINTF(2, ("    Needs split transfers: %ld\n", needssplit));
                                 if(nch->nch_IsUSB20) /* this is a low/full speed device connected to a 2.0 hub! */
                                 {
+				    KPRINTF(2, ("    Enforcing split transfers\n"));
                                     needssplit = TRUE;
                                 }
                                 psdSetAttrs(PGA_DEVICE, pd, DA_NeedsSplitTrans, needssplit, TAG_END);
@@ -1225,7 +1245,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                             {
                                 if(psdEnumerateDevice(pp))
                                 {
-                                    KPRINTF(1, ("  Device successfully added!\n"));
+                                    KPRINTF(2, ("  Device successfully added!\n"));
                                     psdFreePipe(pp);
                                     psdUnlockDevice(pd);
                                     psdSendEvent(EHMB_ADDDEVICE, pd, NULL);
@@ -1241,7 +1261,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                                 psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
                                                "Wrong port status %04lx for port %ld!",
                                                uhps.wPortStatus, port);
-                                KPRINTF(1, ("Wrong port status %04lx for port %ld.\n", uhps.wPortStatus, port));
+                                KPRINTF(2, ("Wrong port status %04lx for port %ld.\n", uhps.wPortStatus, port));
                             }
                         }
                         if(delayretries > 20)
