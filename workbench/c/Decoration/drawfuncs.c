@@ -116,7 +116,6 @@ static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _
 
 static void TileImageToImage(struct NewImage *src, struct TileInfo * srcti, struct NewImage *dest)
 {
-    ULONG  *s, *d;
     UWORD   y, h;
 
     if (dest == NULL) return;
@@ -125,9 +124,6 @@ static void TileImageToImage(struct NewImage *src, struct TileInfo * srcti, stru
     y = 0;
 
     h = src->h;
-
-    s = src->data;
-    d = dest->data;
 
     if ((srcti->TileTop + srcti->TileBottom) > dest->h) return;
     if ((srcti->TileLeft + srcti->TileRight) > dest->w) return;
