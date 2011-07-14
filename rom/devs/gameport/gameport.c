@@ -714,6 +714,9 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
 	   (ABS(gpUn->gpu_lastY - y) > gpUn->gpu_trigger.gpt_YDelta) ||
 	   (GPBase->gp_nTicks > gpUn->gpu_trigger.gpt_Timeout) ||
 	   (wheel))
+#else
+        (void)(wheel); /* This is unused */
+        (void)(down);  /* This is unused */
 #endif
 
 	{
