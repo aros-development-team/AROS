@@ -246,9 +246,6 @@ static void rendersingleitem(Class *cl, Object *o, struct GadgetInfo *gi, WORD w
         (data->visiblepixels + data->lineheight - 1 + (data->toppixel % data->lineheight)) / data->lineheight)
     {
 	struct RastPort *rp;
-    	struct Node 	*node;
-
-	node = findnode(cl, o, which);
 
 	if ((rp = ObtainGIRPort(gi)))
 	{		    
