@@ -1358,7 +1358,6 @@ VOID UpdateStrGadget(struct Gadget  *gad,
     UWORD           	 text_top;
     struct RastPort 	*rp;
     STRPTR          	 dispstr;
-    UWORD           	 dispstrlen;
     UWORD           	 pens[NUMPENS];
 
     EnterFunc(bug("UpdateStrGadget(current text=%s)\n", strinfo->Buffer));
@@ -1380,7 +1379,6 @@ VOID UpdateStrGadget(struct Gadget  *gad,
 
 
     dispstr = strinfo->Buffer + strinfo->DispPos;
-    dispstrlen = MIN(strinfo->DispCount, strinfo->NumChars - strinfo->DispPos);
 
     /* Clear the background */
     SetAPen(rp, pens[STRBACKPEN]);

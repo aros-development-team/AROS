@@ -83,7 +83,6 @@ AROS_LH1(void, CloseWindow,
     AROS_LIBFUNC_INIT
 
     struct CloseWindowActionMsg  msg;
-    struct IIHData          	*iihd;
     struct MsgPort          	*userport;
 #if USE_IDCMPUPDATE_MESSAGECACHE
     struct IntuiMessage     	*messagecache;
@@ -102,7 +101,6 @@ AROS_LH1(void, CloseWindow,
 
     FireScreenNotifyMessage((IPTR) window, SNOTIFY_BEFORE_CLOSEWINDOW, IntuitionBase);
 
-    iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
     screen = window->WScreen;
     do_unlockscreen = MUST_UNLOCK_SCREEN(window, screen);
@@ -227,10 +225,8 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     /* Free everything except the applications messageport */
     struct Window   *window, *win2;
     struct Screen   *screen;
-    struct MsgPort  *userport;
     struct IIHData  *iihd;
     ULONG            lock;
-    BOOL             do_unlockscreen;
 
     D(bug("CloseWindow (%p)\n", window));
 
@@ -286,8 +282,6 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
     /* Need this in case of a window created under the input.device task context */
     screen = window->WScreen;
-    userport = window->UserPort;
-    do_unlockscreen = MUST_UNLOCK_SCREEN(window, screen);
 
     /* Check if there are still some requesters */
     //jDc: do NOT use this! if there is a requester without ACTIVE flag set this routine will buysloop!

@@ -82,22 +82,11 @@ static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
     struct Screen   	*screen = window->WScreen;
     struct Requester 	*req;
     struct Layer    	*layer = WLAYER(window);
-    struct Layer    	*lay;
-    BOOL    	    	 movetoback = TRUE;
     
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
     if (!ResourceExisting(behindwindow, RESOURCE_WINDOW, IntuitionBase)) return;
 
     LOCK_REFRESH(screen);
-
-    for(lay = WLAYER(behindwindow); lay; lay = lay->back)
-    {
-        if (lay == layer)
-        {
-            movetoback = FALSE;
-            break;
-        }
-    }
 
     /* FIXXXXXXXXXXXXXXXXXXXXXXXXXXXX FIXME FIXXXXXXXXXXXXXXXXXX */
 

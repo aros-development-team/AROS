@@ -193,9 +193,9 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
 
         } /* switch (currently parsed tag) */
 
-#if 0
         if (notify && (msg->MethodID != OM_NEW))
         {
+#if 0 /* FIXME: Why don't we support notification? */
             struct TagItem notify_tags[] =
             {
         	{ 0UL	    , 0UL   	    	},
@@ -211,8 +211,8 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
 
             DoSuperMethodA(cl, (Object *)g, (Msg)&nmsg);
 	    
-        } /* if (the currently parsed attr supports notification) */
 #endif
+        } /* if (the currently parsed attr supports notification) */
     } /* for (each tag in taglist) */
     
     return (retval);

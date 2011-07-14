@@ -62,7 +62,9 @@
 {
     AROS_LIBFUNC_INIT
 
+#if 0 /* unused */
     ULONG mode = NO_DOUBLEBUFFER;
+#endif
 
 #ifdef BEGINUPDATEGADGETREFRESH
     BOOL gadgetrefresh = FALSE;
@@ -86,11 +88,13 @@
 
     LockLayer(0, WLAYER(window));
 
+#if 0 /* unused */
     /* jDc: in current opaque implementation the damaged regions are added to
     ** window's internal damage list and matched against actual damage here
     */
 
     if (IW(window)->specialflags & SPFLAG_WANTBUFFER) mode = DOUBLEBUFFER;
+#endif
 
     /* I don't think I ever have to update the BorderRPort's layer */
     if (!BeginUpdate(WLAYER(window)))

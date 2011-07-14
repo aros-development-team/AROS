@@ -752,6 +752,13 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
             EndUpdate(scr->BarLayer, TRUE);
         }
 
+#if USE_NEWDISPLAYBEEP
+        if (beeping) {
+            /* FIXME: Shouldn't we 'beep' at this point? */
+            D(bug("[intuition] RenderScreenBar: Beep\n"));
+        }
+#endif
+
         D(bug("[intuition] RenderScreenBar: Unlock Layer ..\n"));
 
         UnlockLayer(scr->BarLayer);

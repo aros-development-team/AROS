@@ -125,7 +125,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     //ULONG                  lock;
     WORD                     numcolors = 0;
     UWORD		     spritebase;
+#ifdef SKINS
     BOOL                     workbench = FALSE;
+#endif
     BOOL		     draggable = TRUE;
     struct TagItem   	     modetags[] =
     {
@@ -330,7 +332,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
                             return NULL;
                         }
+#ifdef SKINS
                         workbench = TRUE;
+#endif
                     }
                     else
                     {

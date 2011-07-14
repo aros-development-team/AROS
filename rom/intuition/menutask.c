@@ -1622,7 +1622,7 @@ static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHand
         struct TextFont *oldfont = rp->Font;
         struct TextFont *newfont = NULL;
 
-        WORD x1, y1, x2, y2;
+        WORD x1, y1;
 
         if (item->Flags & ITEMTEXT)
         {
@@ -1640,8 +1640,6 @@ static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHand
         x1 = item->LeftEdge + offx + item->Width - AMIGAKEY_BORDER_SPACING -
              mhd->amigakey->Width - AMIGAKEY_KEY_SPACING - commkeywidth;
         y1 = item->TopEdge  + offy + (item->Height - mhd->amigakey->Height + 1) / 2;
-        x2 = x1 + mhd->amigakey->Width  - 1;
-        y2 = y1 + mhd->amigakey->Height - 1;
 
         SetDrMd(rp, JAM1);
 
