@@ -597,7 +597,9 @@ AROS_UFH0(void, nEthTask)
     UWORD cnt;
     LONG lastioerr = 0;
     ULONG errcount = 0;
+#if 0
     BOOL clearandretry;
+#endif
 
     struct IOSana2Req *ioreq;
 
@@ -647,7 +649,9 @@ AROS_UFH0(void, nEthTask)
 
         /* Main task */
         sigmask = (1L<<ncp->ncp_Unit.unit_MsgPort.mp_SigBit)|(1L<<ncp->ncp_TaskMsgPort->mp_SigBit)|SIGBREAKF_CTRL_C;
+#if 0
         clearandretry = TRUE;
+#endif
         do
         {
             // start transmitting read request if online...
@@ -713,7 +717,9 @@ AROS_UFH0(void, nEthTask)
                                     ioreq->ios2_WireError    = S2WERR_GENERIC_ERROR;
                                     psdDelayMS(50);
                                 } else {
+#if 0
                                     clearandretry = TRUE;
+#endif
                                 }
                                 ReplyMsg((struct Message *) ioreq);
                                 ncp->ncp_WritePending[cnt] = NULL;
@@ -1443,7 +1449,6 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
 {
     ULONG packettype;
     struct EtherPacketHeader *eph;
-    UBYTE *packetdata;
     UBYTE *copydest;
     UWORD writelen;
     struct BufMan *bufman;
@@ -1454,7 +1459,6 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     // the first two bytes are the length
     eph        = (struct EtherPacketHeader *) &buf[2];
     copydest   = buf + 2;
-    packetdata = copydest + sizeof(struct EtherPacketHeader);
     writelen   = ioreq->ios2_DataLength;
     bufman     = ioreq->ios2_BufferManagement;
 
@@ -1650,7 +1654,6 @@ UWORD nReadIOReq(struct NepClassEth *ncp, struct EtherPacketHeader *eph, UWORD d
 BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG len)
 {
     struct EtherPacketHeader *eph;
-    UBYTE *packetdata;
     struct BufMan *bufman;
     struct IOSana2Req *worknode, *nextnode;
     struct Sana2PacketTypeStats *stats;
@@ -1689,7 +1692,6 @@ BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG len)
     ncp->ncp_DeviceStats.PacketsReceived++;
 
     eph = (struct EtherPacketHeader *) pktptr;
-    packetdata = (UBYTE *) (eph + 1);
     stats = FindPacketTypeStats(ncp, (ULONG) AROS_BE2WORD(eph->eph_Type));
     flags = DROPPED|PACKETFILTER;
 

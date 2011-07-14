@@ -392,6 +392,7 @@ void nParseMidi(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     {
         KPRINTF(1, ("Msg: %02lx %02lx %02lx %02lx\n", buf[0], buf[1], buf[2], buf[3]));
         chan = buf[0] >> 4;
+        (void)chan; /* FIXME: Why is 'chan' ignored? */
         cmd = buf[0] & 0x0f;
         switch(cmd)
         {

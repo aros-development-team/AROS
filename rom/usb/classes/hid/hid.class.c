@@ -5812,7 +5812,7 @@ BOOL nDoAction(struct NepClassHid *nch, struct NepHidAction *nha, struct NepHidI
         case HUA_DIGJOY:
         {
             ULONG mask = 0;
-            ULONG oldval;
+            /* ULONG oldval; */
             ULONG *stateptr = &nch->nch_LLPortState[nha->nha_JoypadPort];
 
             switch(nha->nha_JoypadFeat)
@@ -5867,7 +5867,7 @@ BOOL nDoAction(struct NepClassHid *nch, struct NepHidAction *nha, struct NepHidI
                     break;
 
             }
-            oldval = *stateptr;
+            /* oldval = *stateptr; */
             switch(nha->nha_JoypadOp)
             {
                 case HUAT_SET:

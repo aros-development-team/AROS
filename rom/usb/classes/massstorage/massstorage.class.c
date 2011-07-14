@@ -4112,10 +4112,9 @@ LONG nScsiDirectCBI(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
     UWORD retrycnt = 0;
     UBYTE sensedata[18];
     UBYTE *senseptr;
-    UBYTE asc, ascq;
+    UBYTE asc;
     BOOL datadone;
     BOOL statusdone;
-    BOOL ufisense;
     UBYTE cmdstrbuf[16*3+2];
 
     GM_UNIQUENAME(nHexString)(scsicmd->scsi_Command, (ULONG) (scsicmd->scsi_CmdLength < 16 ? scsicmd->scsi_CmdLength : 16), cmdstrbuf);
@@ -4233,7 +4232,6 @@ LONG nScsiDirectCBI(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                 ioerr = 0;
                 scsicmd->scsi_Actual = 0;
             }
-            ufisense = FALSE;
             if((!ioerr) || (ioerr == UHIOERR_RUNTPACKET))
             {
                 KPRINTF(2, ("command status phase...\n"));
@@ -4264,7 +4262,6 @@ LONG nScsiDirectCBI(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                     if(ncm->ncm_CSType == MS_UFI_SUBCLASS)
                     {
                         asc = umscsw.bType;
-                        ascq = umscsw.bValue;
                         if((scsicmd->scsi_Command[0] == SCSI_REQUEST_SENSE) ||
                            (scsicmd->scsi_Command[0] == SCSI_INQUIRY))
                         {
@@ -5703,7 +5700,7 @@ void CheckPartition(struct NepClassMS *ncm)
     UBYTE dosDevice[32], temp[32];
     ULONG spareNum;
     struct DeviceNode *node;
-    BOOL done = FALSE, doMount = TRUE, success = FALSE;
+    BOOL done = FALSE, doMount = TRUE;
     STRPTR devname = DEVNAME;
     BOOL bump;
     ULONG slen;
@@ -5717,7 +5714,6 @@ void CheckPartition(struct NepClassMS *ncm)
                        "Matching partition for %s unit %ld already found. No remount required.",
                        devname, ncm->ncm_UnitNo);
         doMount = FALSE;
-        success = TRUE;
     } else {
         spareNum = 0;
 
@@ -5788,7 +5784,7 @@ void CheckPartition(struct NepClassMS *ncm)
     {
         KPRINTF(10, ("mounting %s\n", dosDevice));
 
-        success = MountPartition(ncm, dosDevice);
+        MountPartition(ncm, dosDevice);
     }
 }
 /* \\\ */
@@ -5812,7 +5808,6 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
 {
     struct NepMSBase *nh = ncm->ncm_ClsBase;
     struct MasterBootRecord *mbr;
-    struct FATSuperBlock *fsb;
     struct DosEnvec *envec;
     struct IOStdReq *stdIO = &nh->nh_IOReq;
     struct DriveGeometry *tddg = &ncm->ncm_Geometry;
@@ -5824,7 +5819,7 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
     {
         return;
     }
-    fsb = (struct FATSuperBlock *) (((UBYTE *) mbr) + ncm->ncm_BlockSize);
+
     stdIO->io_Command = TD_READ64;
     stdIO->io_Offset = startblock<<ncm->ncm_BlockShift;
     stdIO->io_Actual = startblock>>(32-ncm->ncm_BlockShift);

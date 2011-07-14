@@ -589,7 +589,6 @@ struct PsdPoPoGadgets * pGenerateAddBox(LIBBASETYPEPTR ps, struct PsdDevice *pd,
     BOOL   isdead = FALSE;
     BOOL   updatetime = FALSE;
     STRPTR oldbody = NULL;
-    BOOL   update = FALSE;
     UWORD  cnt;
     ULONG  methods[4] = { MUIM_PoPo_ConfigureBinding, MUIM_PoPo_ConfigureClass, MUIM_PoPo_ShutUp, MUIM_PoPo_RemInfo };
 
@@ -674,7 +673,6 @@ struct PsdPoPoGadgets * pGenerateAddBox(LIBBASETYPEPTR ps, struct PsdDevice *pd,
             pog->pog_Device = pd;
         }
     } else {
-        update = TRUE;
         get(pog->pog_BodyObj, MUIA_Text_Contents, &oldbody);
         if(strcmp(oldbody, wholebodyinfo))
         {
@@ -1341,7 +1339,6 @@ struct PsdPoPoGadgets * pAllocPoPoGadgets(LIBBASETYPEPTR ps, STRPTR body, STRPTR
 {
     struct PsdPoPo *po = &ps->ps_PoPo;
     struct PsdPoPoGadgets *pog;
-    Object *hgrp;
     if((pog = (struct PsdPoPoGadgets *) psdAllocVec(sizeof(struct PsdPoPoGadgets))))
     {
         pog->pog_GroupObj =
@@ -1352,7 +1349,7 @@ struct PsdPoPoGadgets * pAllocPoPoGadgets(LIBBASETYPEPTR ps, STRPTR body, STRPTR
                     MUIA_Text_PreParse, (IPTR)"\33c",
                     MUIA_Text_Contents, (IPTR)body,
                     End),
-                Child, (IPTR)(hgrp = HGroup,
+                Child, (IPTR)(HGroup,
                     MUIA_Group_SameWidth, TRUE,
                     Child, (IPTR)(pog->pog_GadgetObj[0] = TextObject, ButtonFrame,
                         MUIA_Background, MUII_ButtonBack,
@@ -1434,19 +1431,12 @@ AROS_UFH3(IPTR, PoPoDispatcher,
                  AROS_UFHA(Msg, msg, A1))
 {
     AROS_USERFUNC_INIT
-    // There should never be an uninitialized pointer, but just in case, try to get an mungwall hit if so.
-    struct PoPoData *data = (struct PoPoData *) 0xABADCAFE;
     struct PsdPoPoGadgets *pog;
     struct PsdPoPoGadgets *tmppog;
     LIBBASETYPEPTR ps = (LIBBASETYPEPTR) cl->cl_UserData;
     struct PsdPoPo *po = &ps->ps_PoPo;
     ULONG sticky = 0;
 
-    // on OM_NEW the obj pointer will be void, so don't try to get the data base in this case.
-    if(msg->MethodID != OM_NEW)
-    {
-        data = INST_DATA(cl, obj);
-    }
     switch(msg->MethodID)
     {
         case OM_NEW:

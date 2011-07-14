@@ -954,7 +954,6 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
 {
     ULONG packettype;
     struct EtherPacketHeader *eph;
-    UBYTE *packetdata;
     UBYTE *copydest;
     UWORD writelen;
     struct BufMan *bufman;
@@ -965,7 +964,6 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     // the first two bytes are the length
     eph        = (struct EtherPacketHeader *) buf;
     copydest   = buf;
-    packetdata = copydest + sizeof(struct EtherPacketHeader);
     writelen   = ioreq->ios2_DataLength;
     bufman     = ioreq->ios2_BufferManagement;
 
@@ -1141,7 +1139,6 @@ UWORD nReadIOReq(struct NepClassEth *ncp, struct EtherPacketHeader *eph, UWORD d
 BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG pktlen)
 {
     struct EtherPacketHeader *eph;
-    UBYTE *packetdata;
     struct BufMan *bufman;
     struct IOSana2Req *worknode, *nextnode;
     struct Sana2PacketTypeStats *stats;
@@ -1158,7 +1155,6 @@ BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG pktlen)
     ncp->ncp_DeviceStats.PacketsReceived++;
 
     eph = (struct EtherPacketHeader *) pktptr;
-    packetdata = (UBYTE *) (eph + 1);
     stats = FindPacketTypeStats(ncp, (ULONG) AROS_BE2WORD(eph->eph_Type));
     flags = DROPPED|PACKETFILTER;
 

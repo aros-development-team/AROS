@@ -7070,14 +7070,9 @@ AROS_LH4(BOOL, psdSetUsbDevCfg,
     struct PsdIFFContext *pic;
     struct PsdIFFContext *cpic = NULL;
     struct PsdIFFContext *mpic = NULL;
-    ULONG ilen = 0;
     BOOL result = FALSE;
 
     KPRINTF(10, ("psdSetUsbDevCfg(%s, %s, %s, %p)\n", owner, devid, ifid, form));
-    if(ifid)
-    {
-        ilen = strlen(ifid);
-    }
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     /* Find device config form. It contains all device config data */
     pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
@@ -7236,13 +7231,8 @@ AROS_LH3(struct PsdIFFContext *, psdGetUsbDevCfg,
     struct PsdIFFContext *pic;
     struct PsdIFFContext *cpic = NULL;
     struct PsdIFFContext *mpic = NULL;
-    ULONG ilen = 0;
 
     KPRINTF(10, ("psdGetUsbDevCfg(%s, %s, %s)\n", owner, devid, ifid));
-    if(ifid)
-    {
-        ilen = strlen(ifid);
-    }
     pLockSemShared(ps, &ps->ps_ConfigLock);
     /* Find device config form. It contains all device config data */
     pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
@@ -7307,15 +7297,10 @@ AROS_LH3(BOOL, psdSetForcedBinding,
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
-    struct PsdIFFContext *cpic = NULL;
     struct PsdIFFContext *mpic = NULL;
     ULONG olen = 0;
-    ULONG ilen = 0;
     BOOL result = FALSE;
-    if(ifid)
-    {
-        ilen = strlen(ifid);
-    }
+
     if(owner)
     {
         olen = strlen(owner);
@@ -7328,7 +7313,6 @@ AROS_LH3(BOOL, psdSetForcedBinding,
         /* Find DEVID-Chunk. Check if it matches our device id */
         if(pMatchStringChunk(ps, pic, IFFCHNK_DEVID, devid))
         {
-            cpic = NULL;
             /* We found the correct device. Now if we need to store interface data, find the interface first */
             if(ifid)
             {
@@ -7450,13 +7434,8 @@ AROS_LH2(STRPTR, psdGetForcedBinding,
     struct PsdIFFContext *pic;
     struct PsdIFFContext *mpic = NULL;
     ULONG *chunk;
-    ULONG ilen = 0;
     STRPTR owner = NULL;
 
-    if(ifid)
-    {
-        ilen = strlen(ifid);
-    }
     pLockSemShared(ps, &ps->ps_ConfigLock);
     /* Find device config form. It contains all device config data */
     pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
