@@ -772,8 +772,8 @@ AROS_UFH0(void, nSerialTask)
                     if(ioerr && (ioerr != UHIOERR_RUNTPACKET))
                     {
                         psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                                       "Serial state failed: %s (%ld)",
-                                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                                       "Serial state failed: %s (%ld), len = %d",
+                                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr, (int)len);
                         psdDelayMS(100);
                     }
                     psdSendPipe(ncp->ncp_EPIntPipe, &ncp->ncp_SerialStateReq, sizeof(ncp->ncp_SerialStateReq));

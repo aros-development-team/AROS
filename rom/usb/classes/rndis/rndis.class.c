@@ -1029,7 +1029,6 @@ UWORD nReadIOReq(struct NepClassEth *ncp, struct EtherPacketHeader *eph, UWORD d
 BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG pktlen)
 {
     struct EtherPacketHeader *eph;
-    UBYTE *packetdata;
     struct BufMan *bufman;
     struct IOSana2Req *worknode, *nextnode;
     struct Sana2PacketTypeStats *stats;
@@ -1048,7 +1047,6 @@ BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG pktlen)
     ncp->ncp_DeviceStats.PacketsReceived++;
 
     eph = (struct EtherPacketHeader *) pktptr;
-    packetdata = (UBYTE *) (eph + 1);
     stats = FindPacketTypeStats(ncp, (ULONG) AROS_BE2WORD(eph->eph_Type));
     flags = DROPPED|PACKETFILTER;
 
