@@ -474,13 +474,12 @@ BOOL RenderLabel( struct Gadget *gad, struct IBox *gadbox,
 VOID RenderFrame(struct PaletteData *data, struct RastPort *rp, struct IBox *gadbox,
         struct DrawInfo *dri, BOOL recessed, BOOL edgesonly, struct PaletteBase_intern *AROSPaletteBase)
 {
-    WORD left, top, right, bottom;
+    WORD left, top;
 
     EnterFunc(bug("RenderFrame(rp=%p, gadbox=%p, dri=%p)\n",
     		rp, gadbox, dri));
 
     left = gadbox->Left; top = gadbox->Top;
-    right = left + gadbox->Width - 1; bottom = top + gadbox->Height - 1;
 
     if (!data->pd_Frame)
     {
