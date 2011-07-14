@@ -65,12 +65,13 @@
 		
 	    case UBMI_UPDATERECTS:
 	    {
+#if 0
 	    	struct RectList *rl;
 		
 		rl = (struct RectList *)tag->ti_Data;
 		
 		/* TODO: Call HIDD_BM_UpdateRect() for all the regions */
-		
+#endif		
 	    	break;
 	    }
 	
