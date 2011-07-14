@@ -306,12 +306,10 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
       {
         if(((data->visual_y-1)*data->fontheight+(data->realypos - data->ypos) != (LONG)ti_Data) && data->shown == TRUE)
         {
-          LONG     diff, smooth;
+          LONG     smooth;
           LONG     lastpixel = ((data->visual_y-1)*data->fontheight) + (data->realypos - data->ypos);
           struct   Hook  *oldhook;
           void    *cliphandle;
-
-          diff = data->visual_y - ((ti_Data/data->fontheight)+1);
 
           data->visual_y = (ti_Data/data->fontheight)+1;
           smooth = ti_Data - lastpixel;
