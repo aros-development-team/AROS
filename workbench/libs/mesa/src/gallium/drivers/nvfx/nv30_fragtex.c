@@ -22,6 +22,8 @@ nv30_sampler_state_init(struct pipe_context *pipe,
 	}
 
 	limit = CLAMP(cso->lod_bias, -16.0, 15.0 + (255.0 / 256.0));
+	(void)limit; /* FIXME: Why is this calculated, then ignored? */
+
 	ps->filt |= (int)(cso->lod_bias * 256.0) & 0x1fff;
 
 	ps->max_lod = (int)CLAMP(cso->max_lod, 0.0, 15.0);
