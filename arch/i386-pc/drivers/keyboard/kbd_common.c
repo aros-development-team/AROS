@@ -47,9 +47,7 @@ unsigned char handle_kbd_event(void)
 		
     while (status & KBD_STATUS_OBF)
     {
-        unsigned char scancode;
-					
-        scancode = kbd_read_input();
+        kbd_read_input();
 
         status = kbd_read_status();
 	if(!work--)

@@ -149,12 +149,14 @@ OOP_Object *PCParUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
 /******* ParallelUnit::Dispose() ***********************************/
 OOP_Object *PCParUnit__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
 {
+    #if 0
 	struct HIDDParallelUnitData * data;
+    #endif
 	EnterFunc(bug("ParallelUnit::Dispose()\n"));
 
+    #if 0
 	data = OOP_INST_DATA(cl, obj);
 
-    #if 0
 	/* stop all interrupts */
 	serial_outp(data, UART_PCP, 0);
     #endif

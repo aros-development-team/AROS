@@ -208,12 +208,8 @@ VOID PCKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 VOID PCKbd__Hidd_Kbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_HandleEvent *msg)
 {
-    struct kbd_data * data;
-
     EnterFunc(bug("kbd_handleevent()\n"));
 
-    data = OOP_INST_DATA(cl, o);
-    
     ReturnVoid("Kbd::HandleEvent");
 }
 
@@ -285,13 +281,13 @@ ADD2EXPUNGELIB(PCKbd_ExpungeAttrs, 0)
 
 void kbd_updateleds(ULONG kbd_keystate)
 {
-    UBYTE key,info;
+    UBYTE info;
     kbd_write_output_w(KBD_OUTCMD_SET_LEDS);
     WaitForInput;
-    key=kbd_read_input();
+    kbd_read_input();
     kbd_write_output_w(kbd_keystate & 0x07);
     WaitForInput;
-    key=kbd_read_input();
+    kbd_read_input();
 }
 
 /****************************************************************************************/
