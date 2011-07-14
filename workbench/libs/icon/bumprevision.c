@@ -49,10 +49,8 @@
     LONG    copy_number = 0;
     BOOL    founddigit	= FALSE;
     UBYTE   c;
-    UBYTE * tempstrptr;
     UBYTE * oldnameptr;
 
-    tempstrptr = tempstr;
     oldnameptr = oldname;
 
     if (!strncmp (oldname, "copy_", 5))

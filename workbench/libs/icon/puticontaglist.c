@@ -114,7 +114,35 @@
                 
         }
     }
-    
+
+    if (onlyUpdatePosition) {
+        /* TODO: Only update the position */
+    }
+
+    if (notifyWorkbench) {
+        /* TODO: Notify the workbench */
+    }
+
+    if (dropPlanarIconImage) {
+        /* TODO: Drop the planar icon image */
+    }
+
+    if (dropChunkyIconImage) {
+        /* TODO: Drop the chunky icon image */
+    }
+
+    if (dropNewIconToolTypes) {
+        /* TODO: Use the NewIcon style */
+    }
+
+    if (optimizeImageSpace) {
+        /* TODO: Optimize image space */
+    }
+
+    if (preserveOldIconImages) {
+        /* TODO: Preserve the old icon images */
+    }
+
     if (defaultType != -1)
     {
         CONST_STRPTR defaultIconName = GetDefaultIconName(defaultType);

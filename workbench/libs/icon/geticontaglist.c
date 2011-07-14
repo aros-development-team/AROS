@@ -251,6 +251,26 @@
     	icon = DupDiskObjectA(&temp, NULL);
     }
 
+    if (label != NULL) {
+        /* TODO: Add the label specified in 'label' to the icon */
+    }
+
+    if (screen != NULL) {
+        /* TODO: Render the icon for the specified screen */
+    }
+
+    if (generateImageMasks) {
+        /* TODO: Generate the image masks */
+    }
+
+    if (remapIcon) {
+        /* TODO: Remap the icon */
+    }
+
+    if (getPaletteMappedIcon) {
+        /* TODO: Palette map the icon */
+    }
+
     /* Set error code */
     if (errorCode != NULL)
         *errorCode = error;
