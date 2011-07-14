@@ -937,7 +937,6 @@ BYTE atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 {
     APTR buffer = cmd->scsi_Data;
     ULONG length = cmd->scsi_Length;
-    BOOL read = FALSE;
     BYTE err = 0;
     BOOL dma = FALSE;
 
@@ -954,7 +953,6 @@ BYTE atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
         dma = TRUE;
         if ((cmd->scsi_Flags & SCSIF_READ) != 0)
         {
-            read = TRUE;
             if (FALSE == dma_SetupPRDSize(unit, buffer, length, TRUE))
                 dma = FALSE;
         }
@@ -1135,9 +1133,9 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
  */
 static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
 {
-    UBYTE type=0;
-    BOOL dma=FALSE;
+    BOOL dma = FALSE;
 #if 0 // We can't set drive modes unless we also set the controller's timing registers
+    UBYTE type=0;
     ata_CommandBlock acb =
     {
         ATA_SET_FEATURES,
@@ -1194,6 +1192,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
                     unit->au_Write64        = ata_WriteSector64;
                 }
             }
+            dma=FALSE;
         }
         else if ((mode >= AB_XFER_MDMA0) && (mode <= AB_XFER_MDMA2))
         {
@@ -1204,6 +1203,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
                 unit->au_Read64         = ata_ReadDMA64;
                 unit->au_Write64        = ata_WriteDMA64;
             }
+            dma=TRUE;
         }
         else if ((mode >= AB_XFER_UDMA0) && (mode <= AB_XFER_UDMA6))
         {
@@ -1214,6 +1214,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
                 unit->au_Read64         = ata_ReadDMA64;
                 unit->au_Write64        = ata_WriteDMA64;
             }
+            dma=TRUE;
         }
         else
         {
@@ -1224,9 +1225,11 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
                 unit->au_Read64         = ata_ReadSector64;
                 unit->au_Write64        = ata_WriteSector64;
             }
+            dma=FALSE;
         }
     }
 
+#if 0 // We can't set drive modes unless we also set the controller's timing registers
     if ((mode >= AB_XFER_PIO0) && (mode <= AB_XFER_PIO4))
     {
         type = 8 + (mode - AB_XFER_PIO0);
@@ -1234,19 +1237,16 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
     else if ((mode >= AB_XFER_MDMA0) && (mode <= AB_XFER_MDMA2))
     {
         type = 32 + (mode - AB_XFER_MDMA0);
-        dma=TRUE;
     }
     else if ((mode >= AB_XFER_UDMA0) && (mode <= AB_XFER_UDMA6))
     {
         type = 64 + (mode - AB_XFER_UDMA0);
-        dma=TRUE;
     }
     else
     {
         type = 0;
     }
 
-#if 0 // We can't set drive modes unless we also set the controller's timing registers
     acb.sectors = type;
     if (0 != ata_exec_cmd(unit, &acb))
     {
