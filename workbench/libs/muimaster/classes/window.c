@@ -3619,6 +3619,12 @@ IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wind
     WindowSelectDimensions(data);
     resized = WindowResize(data);
 
+    if (!resized) {
+        /* FIXME: Should we short circuit the following
+         *        if the window size didn't change?
+         */
+    }
+
     {
         struct Window *win = data->wd_RenderInfo.mri_Window;
         _left(data->wd_RootObject) = win->BorderLeft;

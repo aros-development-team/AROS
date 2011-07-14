@@ -560,13 +560,11 @@ AROS_UFH3
     struct Prop_DATA *node = h->h_Data;
 
     struct dt_node *data = node->node;
-    ULONG   depth;
 
     if (msg->MethodID == WDM_DRAW_BORDERPROPKNOB)
     {
         struct Window   	 *window = msg->wdp_Window;
         struct NewImage 	 *temp; 
-        struct BitMap        *maptemp;
         struct RastPort      *winrp = msg->wdp_RPort;
         struct RastPort      *maprp;
         struct Gadget   	 *gadget = msg->wdp_Gadget;
@@ -581,11 +579,8 @@ AROS_UFH3
     int i;
 
     temp = node->temp;
-    maptemp = node->maptemp;
     maprp = node->tmprp;
 
-    depth = (ULONG) GetBitMapAttr(winrp->BitMap, BMA_DEPTH);
-   
     if (node->buffer) for (i = 0; i < (node->buffer->w * node->buffer->h); i++) node->temp->data[i] = node->buffer->data[i];
     if (node->mapbuffer) BltBitMap(node->mapbuffer, 0, 0, node->maptemp, 0, 0, node->propwidth, node->propheight, 0xc0, 0xff, NULL);
 

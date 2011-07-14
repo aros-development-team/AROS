@@ -920,19 +920,14 @@ VOID DrawDragNDrop(struct DragNDrop *dnd, LONG x, LONG y)
 {
 	static LONG lastx;
 	static LONG lasty;
-	static LONG first=TRUE;
+//	static LONG first=TRUE;
 
-	struct Screen *scr;
-	struct RastPort *rp;
 	struct BitMapNode *node;
 	BOOL reverse;
 	LONG diffx = x - lastx;
 	LONG diffy = y - lasty;
 
 	if(!dnd || !dnd->dnd_Screen) return;
-
-	scr = dnd->dnd_Screen;
-	rp = &scr->RastPort;
 
 	reverse = FALSE;
 
@@ -998,7 +993,7 @@ VOID DrawDragNDrop(struct DragNDrop *dnd, LONG x, LONG y)
 			node = (struct BitMapNode *)Node_Prev(node);
 		}
 	}
-	first = FALSE;
+//	first = FALSE;
 	lastx = x;
 	lasty = y;
 }
