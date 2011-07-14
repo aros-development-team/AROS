@@ -21,13 +21,10 @@ struct Library *ArosBase;
 
 int main(int argc, char **argv)
 {
-    int rc;
     ULONG relMajor, relMinor, vers;
     ULONG kickbase, kicksize;
     UWORD kickver, kickrev;
     STRPTR variant;
-
-    rc = 0;
 
     if(!(ArosBase = OpenLibrary(AROSLIBNAME, AROSLIBVERSION)))
     {

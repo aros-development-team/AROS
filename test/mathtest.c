@@ -42,13 +42,12 @@ int main(int argc, char ** argv)
     LONG * ptr;
     LONG wanted;
     double double_res, double_res2;
-    double * Darg1, * Darg2;
+    double * Darg1;
     QUAD * double_resptr = (QUAD *)&double_res;
     QUAD * double_resptr2 = (QUAD *)&double_res2;
-    QUAD QArg1, QArg2;
+    QUAD QArg1;
 
     Darg1 = (double *)&QArg1;
-    Darg2 = (double *)&QArg2;
 
     #define DEF_FFPOne		0x80000041UL
     #define DEF_FFPTwo		0x80000042UL
