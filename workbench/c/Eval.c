@@ -45,12 +45,12 @@
                         multiplication        *
                         division              /
                         modulo                mod, M, m, %
-                               bitwise and           &
+                        bitwise and           &
                         bitwise or            |
                         bitwise not           ~
                         left shift            lsh, L, l
                         right shift           rsh, R, r
-                        negation               -
+                        negation              -
                         exclusive or          xor, X, x
                         bitwise equivalence   eqv, E, e
 
@@ -100,7 +100,7 @@
 #include  <proto/exec.h>
 
 
-const TEXT version[] = "$VER: Eval 41.2 (4.5.2011)\n";
+const TEXT version[] = "$VER: Eval 41.2 (14.7.2011)\n";
 
 #define  ARG_TEMPLATE  "VALUE1/A,OP,VALUE2/M,TO/K,LFORMAT/K"
 enum 
@@ -137,6 +137,7 @@ int main(void)
     if (rda == NULL)
     {
         PrintFault(IoErr(), "Eval");
+        retval = RETURN_FAIL;
     }
     else
     {
@@ -219,6 +220,7 @@ extern int g_result;                /* The result variable is global for now */
 void printLformat(STRPTR format, int value)
 {
     ULONG i;                        /* Loop variable */
+    char s[10];
 
     /* If it weren't for *n we could use VfWriteF() */
 
@@ -245,12 +247,16 @@ void printLformat(STRPTR format, int value)
             {
             /* Hexadecimal display */
             case 'x':
-                printf("%0*x", format[++i] - '0', value);
+                sprintf(s, "%X", value);
+                s[format[++i] - '0'] = 0;
+                printf("%s", s);
                 break;
 
             /* Octal display */
             case 'o':
-                printf("%0*o", format[++i] - '0', value);
+                sprintf(s, "%o", value);
+                s[format[++i] - '0'] = 0;
+                printf("%s", s);
                 break;
 
             /* Integer display */
@@ -264,7 +270,7 @@ void printLformat(STRPTR format, int value)
                 break;
 
             case '%':
-                printf("%%");
+                printf("%%");       /* AROS extension */
                 break;
 
                 /* Stupid user writes "...%" */
