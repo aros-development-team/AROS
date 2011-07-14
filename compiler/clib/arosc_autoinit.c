@@ -38,13 +38,10 @@ static struct arosc_startup arosc_startup;
 
 static void __arosc_startup(void)
 {
-    struct Process *myproc;
-
     D(bug("[__arosc_startup] Start\n"));
 
     __arosc_program_startup();
 
-    myproc = (struct Process *)FindTask(NULL);
     GetIntETask(FindTask(NULL))->iet_startup = &arosc_startup;
     arosc_startup.as_startup_error = __startup_error;
 
