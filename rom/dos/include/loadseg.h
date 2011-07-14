@@ -32,6 +32,6 @@ AROS_LD4(BPTR, InternalLoadSeg,
        		   AROS_LDA(BPTR       , table        , A0),		\
        		   AROS_LDA(LONG_FUNC *, funcarray    , A1),		\
        		   AROS_LDA(LONG *     , stack        , A2),		\
-       		   struct DosLibrary *, DOSBase, 126, Dos)
+       		   struct DosLibrary *, DOSBase)
 
 #endif /* LOADSEG_LOADSEG_H */
