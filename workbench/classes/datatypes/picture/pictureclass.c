@@ -1055,14 +1055,12 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 
 STATIC IPTR DT_ProcLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
-    IPTR RetVal;
-
     NotifyAttrChanges((Object *) g, msg->gpl_GInfo, 0,
    				 GA_ID, g->GadgetID,
    				 DTA_Busy, TRUE,
    				 TAG_DONE);
 
-    RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
+    DoSuperMethodA(cl, (Object *) g, (Msg) msg);
 
     return DT_AsyncLayout(cl, g, msg);
 }

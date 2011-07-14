@@ -192,13 +192,12 @@ BOOL ConvertTC2CM( struct Picture_Data *pd )
 
 static void ScaleLineSimple( UBYTE *srcxptr, UBYTE *destxptr, ULONG destwidth, UWORD srcpixelbytes, ULONG xscale )
 {
-    unsigned int srcx, destx, srcxinc;
+    unsigned int destx, srcxinc;
     ULONG srcxpos;
     UBYTE r=0, g=0, b=0, a;
     UBYTE *srcxpixel;
 
     a = 0;
-    srcx = 0;
     srcxinc = 1;
     srcxpos = 0;
     if( srcpixelbytes == 1 )
@@ -211,7 +210,7 @@ static void ScaleLineSimple( UBYTE *srcxptr, UBYTE *destxptr, ULONG destwidth, U
 	    srcxpos += xscale;
 	    srcxinc = srcxpos >> 16;
 	    srcxpos &= 0xffff;
-	    // D(bug("picture.datatxpe/TC2TC Scale: srcx %d destx %d srcxpos %06lx srcxinc %d\n", srcx, destx, srcxpos, srcxinc));
+	    // D(bug("picture.datatxpe/TC2TC Scale: destx %d srcxpos %06lx srcxinc %d\n", destx, srcxpos, srcxinc));
 	    *destxptr++ = a;
 	    if( srcxinc )
 	    {
@@ -236,7 +235,7 @@ static void ScaleLineSimple( UBYTE *srcxptr, UBYTE *destxptr, ULONG destwidth, U
 	    srcxpos += xscale;
 	    srcxinc = srcxpos >> 16;
 	    srcxpos &= 0xffff;
-	    // D(bug("picture.datatxpe/TC2TC Scale: srcx %d destx %d srcxpos %06lx srcxinc %d\n", srcx, destx, srcxpos, srcxinc));
+	    // D(bug("picture.datatxpe/TC2TC Scale: destx %d srcxpos %06lx srcxinc %d\n", destx, srcxpos, srcxinc));
 	    *destxptr++ = a;
 	    *destxptr++ = r;
 	    *destxptr++ = g;
@@ -259,11 +258,10 @@ static BOOL ScaleArraySimple( struct Picture_Data *pd, struct RastPort rp )
     unsigned int srcy, desty, srcyinc;
     ULONG srcypos, pixelformat, success;
     UWORD srcpixelbytes;
-    ULONG destwidth, destwidthbytes;
+    ULONG destwidth;
     UBYTE *srcyptr, *destline;
 
     destwidth = pd->DestWidth;
-    destwidthbytes = MOD16( pd->DestWidth << 2 );
     pixelformat = pd->SrcPixelFormat;
     srcpixelbytes = pd->SrcPixelBytes;
     destline = AllocLineBuffer( destwidth, 1, 4 );

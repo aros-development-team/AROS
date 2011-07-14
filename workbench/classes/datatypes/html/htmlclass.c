@@ -106,11 +106,14 @@ int text_len( layout_struct *ldata, string str, int strlen )
 
 int text_height( layout_struct *ldata )
 {
+#if 0
     struct HtmlData 	*data;
 
     data = ldata->userdata;
-/*	height = data->font->tf_YSize;*/
+    return  data->font->tf_YSize;
+#else
 	return 1;
+#endif
 }
 
 int text_fit( layout_struct *ldata, string str, int strlen, int *strsize, int maxwidth )
@@ -203,11 +206,9 @@ void * linelist_store( layout_struct *ldata, string textseg, u_short textlen,
 
 void * linelist_addlf( layout_struct *ldata, void * myline )
 {
-    struct HtmlData 	*data;
     struct Line 	*line;
 
     line = myline;
-    data = ldata->userdata;
     line->ln_Flags |= LNF_LF;
     D(bug("%08p => num=%2d addlf\n", line, (long)line->ln_Data);)
     return line;

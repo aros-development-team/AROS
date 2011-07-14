@@ -253,14 +253,13 @@ short DecodeEnd(GifHandleType *gifhandle)
 
 static short write_code(GifHandleType *gifhandle, struct codecvars *d, short code)
 {
-    short temp_bits, byte, bytes;
+    short temp_bits, bytes;
     unsigned long temp;
 
     temp_bits = d->old_bits;
     temp =  ( code << temp_bits ) | d->old_temp;
     temp_bits += d->code_size;
     bytes =  0;
-    byte = 0;
     while (temp_bits >= 8)
     {
 	if ( !d->bytes_unread-- )
