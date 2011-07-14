@@ -2652,7 +2652,8 @@ BD_TMPDIR  := $(GENDIR)/$(CURDIR)
 
 %(file) : %(objs) $(BD_OUTDIR)
 	@$(ECHO) Linking $@...
-	@$(KERNEL_LD) -melf_i386 --oformat=binary -e %(start) -Ttext=%(start) -o $(BD_TMPDIR)/%(name) %(objs)
+	@$(CC) -Wl,-Ttext=%(start) -nostartfiles -nostdlib -o $(BD_TMPDIR)/%(name).elf %(objs)
+	@$(OBJCOPY) --target binary $(BD_TMPDIR)/%(name).elf $(BD_TMPDIR)/%(name)
 	@cd $(BD_TMPDIR) && $(KERNEL_LD) -r --format binary %(ldflags) %(name) -o $@
 
 GLOB_MKDIRS += $(BD_OUTDIR)
