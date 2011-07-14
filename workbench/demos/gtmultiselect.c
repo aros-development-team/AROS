@@ -186,6 +186,10 @@ AROS_UFH3(IPTR, MyRenderFunc,
      {
      	retval = LVCB_UNKNOWN;
      }
+
+    if (retval != LVCB_OK) {
+        /* FIXME: Should we alert the user or something? */
+    }
     
     return TRUE;
     

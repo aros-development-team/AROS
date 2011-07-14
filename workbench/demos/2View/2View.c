@@ -403,7 +403,10 @@ void ReadAndDisplay(char *filename,struct IFFHandle *iff)
    UBYTE countDown;
 
       /*Structures required for IFF parsing*/
-   struct StoredProperty *bmhd,*cmap,*camg,*crng,*drng,*sham,*ctbl;
+   struct StoredProperty *bmhd,*cmap,*camg,*crng,*drng,*sham;
+#if 0 /* for MacroPaint */
+   struct StoredProperty *ctbl;
+#endif
    struct ContextNode *bodyContext;
 
       /*IntuiMessage...*/
@@ -450,7 +453,9 @@ void ReadAndDisplay(char *filename,struct IFFHandle *iff)
    crng = FindProp(iff,ID_ILBM,ID_CRNG);  /*Color-cycling ranges*/
    drng = FindProp(iff,ID_ILBM,ID_DRNG);  /*New (DPaint IV) color-cycling*/
    sham = FindProp(iff,ID_ILBM,ID_SHAM);  /*SHAM color tables*/
+#if 0
    ctbl = FindProp(iff,ID_ILBM,ID_CTBL);  /*Macro Paint color table info*/
+#endif
 
       /*Get the descriptor for the BODY chunk*/
    bodyContext=CurrentChunk(iff);
