@@ -163,24 +163,15 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
 
 /* We can't use InternalLoadSeg() because DOS isn't initialized
  * at this point. To allow this to be built as a relocatable
- * library, we provide a dummy weak alias here, which will
- * be overridden when linking the ROM image.
+ * library, we will use the loadseg linklib.
  */
-static BPTR _InternalLoadSeg_AOS(BPTR fh,
-                         BPTR table,
-                         SIPTR * funcarray,
-                         SIPTR * stack,
-                         struct Library * DOSBase)
-{
-	return BNULL;
-}
 
-BPTR InternalLoadSeg_AOS(BPTR fh,
-                         BPTR table,
-                         SIPTR * funcarray,
-                         SIPTR * stack,
-                         struct Library * DOSBase)
-	__attribute__((weak, alias("_InternalLoadSeg_AOS")));
+#include <loadseg.h>
+
+void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase)
+{
+    /* Do-nothing function to make the linker happy */
+}
 
 static void AddFS(struct RDBData *data)
 {
@@ -219,7 +210,8 @@ static void AddFS(struct RDBData *data)
     	fakefile.size = size;
     	fakefile.fsn = node;
 	if (node->filesystem[0].lsb_LoadData[0] == 0x000003f3) {
-	    BPTR seg = InternalLoadSeg_AOS((BPTR)&fakefile, BNULL, (SIPTR*)FunctionArray, NULL, NULL);
+	    APTR DOSBase = NULL;
+	    BPTR seg = LoadSegment((BPTR)&fakefile, BNULL, (SIPTR*)FunctionArray, NULL);
 	    if (seg) {
     	    	D(bug("RDB fs %08x %d.%d '%s' seg=%08x added\n",
     	    	    dostype, version >> 16, version & 0xffff, &node->fhb.fhb_FileSysName, seg));
