@@ -429,7 +429,7 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
     struct CompoundDatatype *cdt_bin = NULL;
     struct CompoundDatatype *cdt_asc = NULL;
 
-    UWORD        type;
+    D(UWORD        type);
 
     ULONG IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
     ULONG IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
@@ -439,7 +439,7 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 	     (IFF_ID==ID_FORM || IFF_ID==ID_CAT || IFF_ID==ID_LIST)) )
     {
         D(bug("[ExamineData] IFF detected\n"));
-	type = DTF_IFF;
+	D(type = DTF_IFF);
 	cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_IFFList, CheckArray, CheckSize, Filename);
     }
     else
@@ -468,7 +468,7 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 	if (ascii > CheckSize*3/4)
 	{
 	    D(bug("[ExamineData] Recognized as ASCII\n"));
-	    type = DTF_ASCII;
+	    D(type = DTF_ASCII);
 	    cdt_asc = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_ASCIIList, CheckArray, CheckSize, Filename);
 	    D(bug("[ExamineData] ASCII datatype: 0x%p\n", cdt_asc));
 	    cdt = cdt_asc;
@@ -488,7 +488,7 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 	else
 	{
 	    D(bug("[ExamineData] Recognized as binary\n"));
-	    type = DTF_BINARY;
+	    D(type = DTF_BINARY);
 	    cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList, CheckArray, CheckSize, Filename);
 	}
     }
