@@ -386,6 +386,10 @@ const struct
         return IDERR_NOLENGTH;
     }
 
+    if (localize) {
+        /* FIXME: How should we handle this? */
+    }
+
     if (deadstr)
     {
         if (id & (1L << 31)) // Bit 31 set? If yes: deadend
