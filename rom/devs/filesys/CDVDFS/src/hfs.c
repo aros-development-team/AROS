@@ -631,7 +631,6 @@ int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     int todo;
     t_bool data_fork = OBJ(p_file,data_fork);
     t_ulong first_block;
-    t_ulong last_block;
     t_ulong data_length = (data_fork ? OBJ(p_file,cat_rec).f.LgLen :
 	    OBJ(p_file,cat_rec).f.RLgLen);
 
@@ -650,7 +649,6 @@ int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 	 OBJ(p_file,cat_rec).f.RExtRec[0].StABN
 	);
     block = first_block + (p_file->pos >> 9);
-    last_block = first_block + ((data_length-1) >> 9);
     todo = p_buffer_length;
 
     while (todo)

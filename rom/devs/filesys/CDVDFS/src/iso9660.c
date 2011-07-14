@@ -652,7 +652,7 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     CDROM *cd = vol->cd;
     int buf_pos = 0;
     int todo;
-    uint32_t last_loc, ext_loc;
+    uint32_t ext_loc;
     short blockshift;
     int offset;
     uint32_t firstblock;
@@ -680,11 +680,9 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     /*
        'ext_loc' is the first logical sector of the file extent.
        'loc' is the first logical sector to be read.
-       'last_loc' is the last logical sector of the file extent.
        */
     ext_loc = firstblock >> blockshift;
     loc = ext_loc + ((p_file->pos + offset) >> 11);
-    last_loc = ext_loc + ((OBJ(p_file,dir)->data_length + offset - 1) >> 11);
     todo = p_buffer_length;
 
     offset += p_file->pos;
