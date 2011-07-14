@@ -125,7 +125,7 @@
    */
   UnlockLayers(l->LayerInfo);
 
-  return TRUE;
+  return ret;
   
   AROS_LIBFUNC_EXIT
 } /* UpfrontLayer */

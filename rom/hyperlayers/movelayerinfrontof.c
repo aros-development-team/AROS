@@ -67,7 +67,7 @@
 {
   AROS_LIBFUNC_INIT
 
-  struct Layer * first, *_l;
+  struct Layer *_l;
   int toback = TRUE;
   LONG ret;
 
@@ -77,8 +77,6 @@
 
   LockLayers(layer_to_move->LayerInfo);
 
-  first = GetFirstFamilyMember(layer_to_move);
-  
   _l = layer_to_move->parent->front;
   while (1)
   {
