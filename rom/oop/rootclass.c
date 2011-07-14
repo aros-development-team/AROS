@@ -111,7 +111,6 @@
 OOP_Object *root_new(OOP_Class *root_cl, OOP_Class *cl, struct pRoot_New *param)
 {
     struct _OOP_Object *o;
-    struct RootData *data;
 
     EnterFunc(bug("Root::New(cl=%s, param = %p)\n",
     	cl->ClassNode.ln_Name, param));
@@ -123,8 +122,6 @@ OOP_Object *root_new(OOP_Class *root_cl, OOP_Class *cl, struct pRoot_New *param)
     {
     	D(bug("Mem allocated: %p\n", o));
     	o->o_Class = (OOP_Class *)cl;
-    	
-    	data = (struct RootData *)OOP_BASEOBJECT(o);
     	
 	/* Class has one more object */
     	MD(cl)->objectcount ++;
