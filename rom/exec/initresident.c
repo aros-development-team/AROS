@@ -172,7 +172,7 @@
         }
     }
 
-    DINITRESIDENT("InitResident end 0x%p (\"%s\")", resident, resident->rt_Name);
+    DINITRESIDENT("InitResident end 0x%p (\"%s\"), result 0x%p", resident, resident->rt_Name, library);
 	
     return library;
 
