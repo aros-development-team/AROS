@@ -471,12 +471,16 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 /* Allocate dma channel */
                 ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, 
                     24 * 1024, &carddata->chan);
+                if (ret < 0) {
                 /* TODO: Check ret, how to handle ? */
+                }
 
                 /* Initialize acceleration objects */
             
                 ret = HIDDNouveauAccelCommonInit(carddata);
+                if (ret < 0) {
                 /* TODO: Check ret, how to handle ? */
+                }
             }
             else
             {

@@ -646,6 +646,8 @@ nouveau_mem_timing_init(struct drm_device *dev)
 			break;
 		}
 
+		(void)tUNK_14; /* not used in the following calculations */
+
 		timing->reg_100220 = (tRC << 24 | tRFC << 16 | tRAS << 8 | tRP);
 
 		/* XXX: I don't trust the -1's and +1's... they must come

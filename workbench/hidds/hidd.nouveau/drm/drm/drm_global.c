@@ -71,7 +71,6 @@ int drm_global_item_ref(struct drm_global_reference *ref)
 {
 	int ret;
 	struct drm_global_item *item = &glob[ref->global_type];
-	void *object;
 
 	mutex_lock(&item->mutex);
 	if (item->refcount == 0) {
@@ -89,7 +88,6 @@ int drm_global_item_ref(struct drm_global_reference *ref)
 	}
 	++item->refcount;
 	ref->object = item->object;
-	object = item->object;
 	mutex_unlock(&item->mutex);
 	return 0;
 out_err:
