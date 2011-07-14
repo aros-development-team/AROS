@@ -81,7 +81,7 @@ USER_CFLAGS     := -I$(SRCDIR)/rom/dos -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga arosc m debug"
+    uselibs="uuid arossupport amiga arosc m debug"
 
 %build_progs mmake=workbench-c-pure \
     files=$(PURE_FILES) targetdir=$(AROS_C) \
