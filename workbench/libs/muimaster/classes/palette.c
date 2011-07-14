@@ -73,7 +73,6 @@ static void NotifyGun(Object *obj, struct MUI_PaletteData *data, LONG gun)
 
 static LONG setcolor_func(struct Hook *hook, APTR *obj, STACKULONG *notify)
 {
-    ULONG   val;
     ULONG mode = *notify++;
     ULONG gun = *notify++;
     struct MUI_PaletteData *data = (struct MUI_PaletteData *) *notify++;
@@ -82,7 +81,6 @@ static LONG setcolor_func(struct Hook *hook, APTR *obj, STACKULONG *notify)
     if ((entrie < 0) || (entrie >= data->numentries)) return 0;
     if (mode == 1) {
         if (data->numentries > 0) {
-            val = XGET(data->list, MUIA_List_Active);
             ULONG r = data->entries[entrie].mpe_Red;
             ULONG g = data->entries[entrie].mpe_Green;
             ULONG b = data->entries[entrie].mpe_Blue;
@@ -249,10 +247,6 @@ IPTR Palette__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
 IPTR Palette__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_PaletteData  *data;
-    
-    data = INST_DATA(cl, obj);
-    
     return DoSuperMethodA(cl, obj, msg);
 }
 

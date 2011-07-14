@@ -1781,14 +1781,14 @@ static void Layout1D_minmax_constraints_and_redistrib (
 	cstate = (Object *)children->mlh_Head;
 	while ((child = NextObject(&cstate)))
 	{
-	    WORD old_size;
+	    /* WORD old_size; */
 
 	    if (IS_HIDDEN(child))
 		continue;
 
 	    if (group_horiz)
 	    {
-		old_size = _width(child);
+		/* old_size = _width(child); */
 
 		Layout1D_minmax_constraint(
 		&_width(child), _minwidth(child), _maxwidth(child),
@@ -1805,7 +1805,7 @@ static void Layout1D_minmax_constraints_and_redistrib (
 	    }
 	    else // ! group_horiz
 	    {
-		old_size = _height(child);
+/*		old_size = _height(child); */
 
 		Layout1D_minmax_constraint(
 		&_height(child), _minheight(child), _maxheight(child),
@@ -1834,14 +1834,14 @@ static void Layout1D_minmax_constraints_and_redistrib (
 	cstate = (Object *)children->mlh_Head;
 	while (((child = NextObject(&cstate)) != NULL) && (remainder != 0))
 	{
-	    WORD old_size;
+/*	    WORD old_size; */
 
 	    if (IS_HIDDEN(child))
 		continue;
 
 	    if (group_horiz)
 	    {
-		old_size = _width(child);
+/*		old_size = _width(child); */
 
 		Layout1D_redistribution(
 		    &_width(child), _minwidth(child), _maxwidth(child),
@@ -1857,7 +1857,7 @@ static void Layout1D_minmax_constraints_and_redistrib (
 	    }
 	    else // ! group_horiz
 	    {
-		old_size = _height(child);
+/*		old_size = _height(child); */
 
 		Layout1D_redistribution(
 		    &_height(child), _minheight(child), _maxheight(child),
@@ -2174,13 +2174,13 @@ static void Layout2D_minmax_constraints_and_redistrib (
 	WORD size_shrinkables = total_size;
 	ULONG weight_growables = 0;
 	ULONG weight_shrinkables = 0;
-	WORD old_size;
+/*	WORD old_size; */
 	int i;
 
 	// minmax constraints
 	for (i = 0; i < nitems; i++)
 	{
-	    old_size = infos[i].dim;
+/*    	    old_size = infos[i].dim; */
 
 /*  	    D(bug("bef loop1 on %d : size=%d, rem=%d, A=%d, " */
 /*  		      "sizegrow=%d, sizeshrink=%d w=%d min=%d max=%d\n", */
@@ -2209,7 +2209,7 @@ static void Layout2D_minmax_constraints_and_redistrib (
 
 	for (i = 0; i < nitems; i++)
 	{
-	    old_size = infos[i].dim;
+/*	    old_size = infos[i].dim; */
 
 /*  	    D(bug("bef loop2 on %d : size=%d, rem=%d, A=%d, " */
 /*  		      "size_grow=%d, size_shrink=%d\n", i, */

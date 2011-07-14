@@ -237,7 +237,6 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
 static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 {
     struct Register_DATA *data = INST_DATA(cl, obj);
-    WORD tabx;
 
 /*
  * Erase / prepare for drawing
@@ -313,7 +312,7 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 	    	     data->top + data->tab_height + data->frameheight - 1,
 		     data->left + data->framewidth - 2,
 		     data->top + data->tab_height + data->frameheight - 1);
-	for(i = 0, tabx = 0; i < data->numitems; i++)
+	for(i = 0; i < data->numitems; i++)
 	{
 	    RenderRegisterTabItem(cl, obj, i); 
 	}

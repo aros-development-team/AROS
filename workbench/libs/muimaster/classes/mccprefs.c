@@ -28,15 +28,12 @@ struct MUI_MccprefsData
 **************************************************************************/
 IPTR Mccprefs__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_MccprefsData   *data;
     struct TagItem  	       *tag, *tags;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (!obj)
 	return FALSE;
-
-    data = INST_DATA(cl, obj);
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )

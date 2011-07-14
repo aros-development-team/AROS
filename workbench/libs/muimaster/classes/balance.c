@@ -122,7 +122,6 @@ IPTR Balance__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 IPTR Balance__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Balance_DATA *data = INST_DATA(cl, obj);
-    struct MUI_RenderInfo *mri;
     LONG col1, col2;
 
     DoSuperMethodA(cl, obj, (Msg)msg);
@@ -132,8 +131,6 @@ IPTR Balance__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     if (_mwidth(obj) < 1 || _mheight(obj) < 1)
 	return TRUE;
-
-    mri = muiRenderInfo(obj);
 
     if (data->state == NOT_CLICKED)
     {

@@ -25,7 +25,6 @@ extern struct Library *MUIMasterBase;
 
 IPTR Settingsgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_Settingsgroup *data;
     const struct TagItem    *tags;
     struct TagItem  	    *tag;
 
@@ -36,8 +35,6 @@ IPTR Settingsgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     );
     if (!obj) return FALSE;
     
-    data = INST_DATA(cl, obj);
-
     /* parse initial taglist */
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )

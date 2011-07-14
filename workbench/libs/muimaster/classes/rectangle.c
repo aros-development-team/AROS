@@ -234,7 +234,6 @@ IPTR Rectangle__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMi
 IPTR Rectangle__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Rectangle_DATA *data = INST_DATA(cl, obj);
-    struct MUI_RenderInfo *mri;
 
     /*
     ** let our superclass draw itself first, area class would
@@ -257,8 +256,6 @@ D(bug("Draw Rectangle(0x%lx) %ldx%ldx%ldx%ld mw=%ld mh=%ld\n",obj,_left(obj),_to
 
     if (_mwidth(obj) < 1 || _mheight(obj) < 1)
 	return TRUE;
-
-    mri = muiRenderInfo(obj);
 
     /*
      * ok, everything ready to render...
