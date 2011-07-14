@@ -37,14 +37,14 @@ FILES := gdbstub gdbstop
 
 CFILES := SetPatchAROS
 AFILES := newstackswap
+USER_INCLUDES := -isystem $(SRCDIR)/rom/dos/include
+USER_LDFLAGS  := -L$(GENDIR)/lib
 
 %build_prog mmake=workbench-c-m68k-setpatcharos-elf progname=SetPatchAROS.elf \
     files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
     uselibs="loadseg arossupport amiga rom"
 
 CFILES	      := AROSBootstrap
-USER_INCLUDES := -isystem $(SRCDIR)/rom/dos/include
-USER_LDFLAGS  := -L$(GENDIR)/lib
 
 %build_prog mmake=workbench-c-m68k-arosbootstrap-elf progname=AROSBootstrap.elf \
     files=$(CFILES) targetdir=$(AROS_BOOT) \

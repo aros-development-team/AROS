@@ -32,7 +32,7 @@
 
 #include <exec/rawfmt.h>
 
-#include <loadseg/loadseg.h>
+#include <loadseg.h>
 
 /*************  ExecBase Patches ********************/
 
@@ -144,6 +144,21 @@ static AROS_UFH3(void, FreeFunc,
 static APTR oldLoadSeg;
 extern void myNewStackSwap(void);
 
+/*
+ * This routine is called from within libloadseg.a's ELF loader.
+ * Here it does nothing.
+ */
+void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase)
+{
+}
+
+/* Since LoadSegment() may be a macro, we need this helper function
+ */
+static ULONG CallLoadSegment(BPTR fh, SIPTR *funcs, struct DosLibrary *DOSBase)
+{
+    return LoadSegment(fh, BNULL, funcs, NULL);
+}
+
 static AROS_UFH2(BPTR, myLoadSeg,
 	AROS_UFHA(CONST_STRPTR, name, D1),
 	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
@@ -181,15 +196,12 @@ static AROS_UFH2(BPTR, myLoadSeg,
            sss.stk_Upper = sss.stk_Lower + 8192;
            sss.stk_Pointer = sss.stk_Upper;
            ssa.Args[0] = (IPTR)file;
-           ssa.Args[1] = (IPTR)BNULL;
-           ssa.Args[2] = (IPTR)FunctionArray;
-           ssa.Args[3] = (IPTR)NULL;
-           ssa.Args[4] = (IPTR)&error;
-           ssa.Args[5] = (IPTR)DOSBase;
+           ssa.Args[1] = (IPTR)FunctionArray;
+           ssa.Args[2] = (IPTR)DOSBase;
 
            segs = (BPTR)AROS_UFC4(IPTR, myNewStackSwap,
            	   	AROS_UFHA(struct StackSwapStruct *, &sss, A0),
-           	   	AROS_UFHA(LONG_FUNC, LoadSegment, A1),
+           	   	AROS_UFHA(LONG_FUNC, CallLoadSegment, A1),
            	   	AROS_UFHA(struct StackSwapArgs *, &ssa, A2),
            	   	AROS_UFHA(struct ExecBase *, SysBase, A6));
            FreeMem(sss.stk_Lower, MINSTACK);
