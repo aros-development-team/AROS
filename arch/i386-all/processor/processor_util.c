@@ -139,10 +139,12 @@ D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
     case(VENDOR_AMD): 
         info->Family = AMDDeriveFamily(basefamily, extendedfamily); 
         info->Model = basemodel | (basefamily < 0x0f ? 0 : (extendedmodel << 4));
+        (void)stepping; /* FIXME: Why is this unused? */
         break;
     case(VENDOR_INTEL): 
         info->Family = IntelDeriveFamily(basefamily, extendedfamily);
         info->Model = basemodel | (extendedmodel << 4);
+        (void)stepping; /* FIXME: Why is this unused? */
         break;
     }
 }
