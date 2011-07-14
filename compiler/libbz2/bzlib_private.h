@@ -90,11 +90,11 @@ extern void bz_internal_error ( int errcode );
    { if (!(cond)) bz_internal_error ( errcode ); }
 #define AssertD(cond,msg)                do { } while (0)
 #define VPrintf0(zf)                     do { } while (0)
-#define VPrintf1(zf,za1)                 do { } while (0)
-#define VPrintf2(zf,za1,za2)             do { } while (0)
-#define VPrintf3(zf,za1,za2,za3)         do { } while (0)
-#define VPrintf4(zf,za1,za2,za3,za4)     do { } while (0)
-#define VPrintf5(zf,za1,za2,za3,za4,za5) do { } while (0)
+#define VPrintf1(zf,za1)                 do { (void)(za1); } while (0)
+#define VPrintf2(zf,za1,za2)             do { (void)(za1); (void)(za2); } while (0)
+#define VPrintf3(zf,za1,za2,za3)         do { (void)(za1); (void)(za2); (void)(za3); } while (0)
+#define VPrintf4(zf,za1,za2,za3,za4)     do { (void)(za1); (void)(za2); (void)(za3); (void)(za4); } while (0)
+#define VPrintf5(zf,za1,za2,za3,za4,za5) do { (void)(za1); (void)(za2); (void)(za3); (void)(za4); (void)(za5); } while (0)
 
 #endif
 
