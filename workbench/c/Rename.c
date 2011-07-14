@@ -148,7 +148,6 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 	UBYTE   *pathName;
 	STRPTR  fileStart;
 	BOOL    destIsDir = FALSE;
-	BOOL    destExists = FALSE;
 	LONG    match;
 	BPTR    tolock = BNULL;
 	ULONG   i;
@@ -188,8 +187,6 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 	{
 		struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 		LONG entrytype;
-
-		destExists = TRUE;
 
 		if (!fib)
 		{

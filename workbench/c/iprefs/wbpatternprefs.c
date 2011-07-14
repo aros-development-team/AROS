@@ -141,13 +141,8 @@ void WBPatternPrefs_Handler(STRPTR filename)
 
 static void mybackfillfunc(struct Hook *hook,struct RastPort *rp, struct LayerHookMsg *msg)
 {
-    struct RastPort myrp;
     struct LayerHookData *data = (struct LayerHookData *)hook->h_Data;
     WORD    	    x1,y1,x2,y2,px,py,pw,ph;
-
-    myrp = *rp;
-
-    myrp.Layer = 0;
 
     x1 = msg->bounds.MinX;
     y1 = msg->bounds.MinY;
