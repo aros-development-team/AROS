@@ -56,7 +56,8 @@ BOOL METHOD(VIAAgp3BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_ScanAndDetectDevices)
     };
 
-    ULONG major, minor = 0;
+    ULONG major;
+    D(ULONG minor);
     OOP_Object * bridgedev = NULL;
     UBYTE bridgeagpcap = 0;
     UWORD aperture_size_value = 0;
@@ -75,7 +76,7 @@ BOOL METHOD(VIAAgp3BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 
     /* Getting version info */ 
     major = (readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) >> 4) & 0xf;
-    minor = readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) & 0xf;
+    D(minor = readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) & 0xf);
     
     D(bug("[AGP] [VIA] Read config: AGP version %d.%d\n", major, minor));
         

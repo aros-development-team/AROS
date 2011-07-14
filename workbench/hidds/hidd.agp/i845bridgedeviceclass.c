@@ -51,7 +51,7 @@ BOOL METHOD(i845BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_ScanAndDetectDevices)
     };
 
-    ULONG major, minor = 0;
+    D(ULONG major, minor;)
     OOP_Object * bridgedev = NULL;
     UBYTE bridgeagpcap = 0;
     UBYTE aperture_size_value = 0;
@@ -72,8 +72,8 @@ BOOL METHOD(i845BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     bridgeagpcap = gbddata->bridge->AgpCapability;
 
     /* Getting version info */ 
-    major = (readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) >> 4) & 0xf;
-    minor = readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) & 0xf;
+    D(major = (readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) >> 4) & 0xf);
+    D(minor = readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) & 0xf);
     
     D(bug("[AGP] [Intel 845] Read config: AGP version %d.%d\n", major, minor));
         
