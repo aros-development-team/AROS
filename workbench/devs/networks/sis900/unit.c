@@ -318,7 +318,6 @@ D(bug("[%s]: SiS900_TX_IntF()\n", unit->sis900u_name));
     if (!netif_queue_stopped(unit))
     {
         UWORD packet_size, data_size;
-        struct SiS900Base *base;
         struct IOSana2Req *request;
         struct Opener *opener;
         UBYTE *buffer;
@@ -328,7 +327,6 @@ D(bug("[%s]: SiS900_TX_IntF()\n", unit->sis900u_name));
         struct TypeStats *tracker;
 
         proceed = TRUE; /* Success by default */
-        base = unit->sis900u_device;
         port = unit->sis900u_request_ports[WRITE_QUEUE];
 
         /* Still no error and there are packets to be sent? */
@@ -465,7 +463,6 @@ static void SiS900_IntHandlerF(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     int boguscnt = 20;
     // int i, link_changed;
 	ULONG status;
-	unsigned int handled = 0;
     // struct Device *TimerBase = unit->sis900u_TimerSlowReq->tr_node.io_Device;
     // struct timeval time;
 
@@ -480,7 +477,6 @@ D(bug("[%s]: SiS900_IntHandlerF()!!!!!!!\n", unit->sis900u_name));
 D(bug("[%s]: SiS900_IntHandlerF: Nothing for us ..\n", unit->sis900u_name));
 			break;
 		}
-		handled = 1;
 
 		/* why dow't we break after Tx/Rx case ?? keyword: full-duplex */
 		if (status & (RxORN | RxERR | RxOK))

@@ -309,8 +309,6 @@ AROS_LH1(LONG, abortio,
     LIBBASETYPEPTR, LIBBASE, 6, PCNet32)
 {
     AROS_LIBFUNC_INIT
-    struct PCN32Unit *dev;
-    dev = (APTR)req->ios2_Req.io_Unit;
 
 D(bug("[pcnet32] init.AbortIO\n"));
 

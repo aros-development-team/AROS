@@ -375,12 +375,11 @@ static void mdio_write(struct net_device *unit, int phy_id, int location, int va
 static void sis900_set_capability(struct net_device *unit, struct mii_phy *phy)
 {
 	UWORD cap;
-	UWORD status;
 
 D(bug("[%s]  sis900_set_capability(phy:%d)\n", unit->sis900u_name, phy->phy_addr));
 
-	status = mdio_read(unit, phy->phy_addr, MII_STATUS);
-	status = mdio_read(unit, phy->phy_addr, MII_STATUS);
+	mdio_read(unit, phy->phy_addr, MII_STATUS);
+	mdio_read(unit, phy->phy_addr, MII_STATUS);
 	
 	cap = MII_NWAY_CSMA_CD |
 		((phy->status & MII_STAT_CAN_TX_FDX)? MII_NWAY_TX_FDX:0) |

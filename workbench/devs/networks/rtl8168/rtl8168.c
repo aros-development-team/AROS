@@ -157,30 +157,23 @@ static inline UBYTE *get_hwbase(struct net_device *unit)
 
 void MMIO_W8(APTR addr, UBYTE val8)
 {
-    UBYTE tmp;
-    
     *((volatile UBYTE *)(addr)) = (val8);
 
-    tmp = RTL_R8(addr);
+    RTL_R8(addr);
 }
 
 void MMIO_W16(APTR addr, UWORD val16)
 {
-    UWORD tmp;
-    
     *((volatile UWORD *)(addr)) = (val16);
 
-    tmp = RTL_R16(addr);
-    
+    RTL_R16(addr);
 }
 
 void MMIO_W32(APTR addr, ULONG val32)
 {
-    ULONG tmp;
-    
     *((volatile ULONG *)(addr)) = (val32);
 
-    tmp = RTL_R32(addr);
+    RTL_R32(addr);
 }
 
 static void mdio_write(struct net_device *unit, int RegAddr, UWORD value)
@@ -2269,7 +2262,6 @@ out_drain:
 static int rtl8168nic_Close(struct net_device *unit)
 {
     struct rtl8168_priv *np = get_pcnpriv(unit);
-    UBYTE *base;
 
     RTLD(bug("[%s] rtl8168nic_Close()\n", unit->rtl8168u_name))
     
@@ -2285,8 +2277,6 @@ static int rtl8168nic_Close(struct net_device *unit)
     ObtainSemaphore(&np->lock);
 
     rtl8168nic_DeInit(unit);
-
-    base = get_hwbase(unit);
 
     ReleaseSemaphore(&np->lock);
 

@@ -536,7 +536,6 @@ RTLD(bug("[%s] RTL8139_IntHandlerF: Packet Transmition Attempt detected!\n", uni
 
 			while (np->tx_current - dirty_tx > 0)
 			{
-				BOOL transmit_error = FALSE;
 				int entry = dirty_tx % NUM_TX_DESC;
 
 					ULONG txstatus = LONGIN(base + RTLr_TxStatus0 + (entry << 2));
@@ -553,7 +552,6 @@ RTLD(bug("[%s] RTL8139_IntHandlerF: Packet %d Transmition Error! Tx status %8.8x
 						{
 							LONGOUT(base + RTLr_TxConfig, TX_DMA_BURST << 8);
 						}
-						transmit_error = TRUE;
 					}
 					else
 					{
@@ -565,7 +563,6 @@ RTLD(bug("[%s] RTL8139_IntHandlerF: Packet %d Transmition Underrun Error! Adjust
 							{
 								np->tx_flag += 0x00020000;
 							}
-							transmit_error = TRUE;
 						}
 					}
 					np->tx_pbuf[entry] = NULL;

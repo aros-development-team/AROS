@@ -513,7 +513,6 @@ static void RTL8168_IntHandlerF(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     struct rtl8168_priv *np = unit->rtl8168u_priv;
     APTR base = unit->rtl8168u_BaseMem;
     int status;
-    int handled = 0;
 
     int boguscnt = unit->rtl8168u_device->rtl8168b_MaxIntWork;
 
@@ -531,8 +530,6 @@ RTLD(bug("[%s] RTL8168_IntHandlerF()!!!!!!!\n", unit->rtl8168u_name))
 	/* hotplug/major error/no more work/shared irq */
 	if ((status == 0xFFFF) || !status)
 		break;
-
-	handled = 1;
 
 //	if (!netif_running(unit)) {
 //		rtl8168_asic_down(unit);

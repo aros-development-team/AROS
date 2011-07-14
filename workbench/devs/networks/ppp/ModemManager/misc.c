@@ -437,7 +437,6 @@ BOOL GetResponse(struct EasySerial *s,UBYTE *Buffer,ULONG maxbuffer,LONG timeout
 	char c[2]={0,0};
 	ULONG len = 0;
 	Buffer[0]=0;
-	ULONG recvd;
 
 	if( ! s ) return FALSE;
 	if( ! s->Ok ) return FALSE;
@@ -459,7 +458,7 @@ BOOL GetResponse(struct EasySerial *s,UBYTE *Buffer,ULONG maxbuffer,LONG timeout
 			sigset = (1L<< s->RxPort->mp_SigBit ) |
 					 (1L<< t->TimeMsg->mp_SigBit );
 
-			recvd = Wait(sigset);
+			Wait(sigset);
 
 			if( GetMsg( s->RxPort ) ){
 
