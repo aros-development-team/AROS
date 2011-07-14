@@ -282,7 +282,6 @@ static LONG PartitionEBRCreatePartitionTable
 static struct PartitionHandle *PartitionEBRAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *taglist)
 {
     struct TagItem *tag;
-    struct EBRData *data;
     ULONG block_no = 0, new_block_no, new_block_count, ebr_track_no, ebr_block_no;
     struct PartitionHandle *ph, *new_ph, *head;
     struct DosEnvec *de;
@@ -320,7 +319,6 @@ static struct PartitionHandle *PartitionEBRAddPartition(struct Library *Partitio
 
         while (ph != head && !found)
         {
-            data = (struct EBRData *)ph->data;
             de = &ph->de;
             block_no = de->de_LowCyl * de->de_Surfaces * de->de_BlocksPerTrack;
             if (block_no < new_block_no)
