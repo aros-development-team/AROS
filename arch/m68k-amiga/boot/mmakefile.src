@@ -39,13 +39,14 @@ Q ?= @
 #MM     kernel-ata-kobj \
 #MM     kernel-shell-kobj \
 #MM     kernel-filesystem-kobj \
-#MM     kernel-m680x0-kobj
+#MM     kernel-m680x0-kobj \
+#MM     linklibs-loadseg
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
-USELIBS := loadseg amiga arossupport rom arosm autoinit libinit \
+USELIBS := amiga arossupport rom arosm autoinit libinit \
 	   hiddstubs 
-LIBS    := $(addprefix -l,$(USELIBS))
+LIBS    := $(addprefix -l,$(USELIBS)) -L$(GENDIR)/lib -lloadseg
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 # Main ROM (0xf80000 - 0xffffff)
