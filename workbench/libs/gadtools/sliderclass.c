@@ -57,7 +57,6 @@ STATIC VOID notifylevel(Class *cl, Object *o, WORD level, struct GadgetInfo *gin
 
 IPTR GTSlider__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
-    IPTR 		retval = 0UL;
     const struct TagItem *tstate;
     struct TagItem 	*tag, *dosuper_tags, tags[] =
     {
@@ -116,8 +115,6 @@ IPTR GTSlider__OM_SET(Class * cl, Object * o, struct opSet * msg)
     	tags[2].ti_Data = (IPTR)msg->ops_AttrList;
    
    	dosuper_tags = tags;
-    	
-    	retval = 1UL;
     }
         
     ReturnInt ("Slider::Set", IPTR, DoSuperMethod(cl, o, OM_SET, (IPTR) dosuper_tags, (IPTR) msg->ops_GInfo));
