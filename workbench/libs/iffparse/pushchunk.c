@@ -92,18 +92,11 @@
     if (iff->iff_Flags & IFFF_WRITE)
     {
       struct ContextNode *pcn;
-      LONG   ptype=0;
-      BOOL   newfile=FALSE;
 
-      if((pcn = (struct ContextNode *)CurrentChunk(iff)) != NULL)
-      {
-        ptype = pcn->cn_Type;
-      }
-      else
+      if((pcn = (struct ContextNode *)CurrentChunk(iff)) == NULL)
       {
         if(iff->iff_Flags & IFFF_NEWFILE)
         {
-          newfile = TRUE;
           iff->iff_Flags &= ~IFFF_NEWFILE;
         }
         else
@@ -122,7 +115,7 @@
         return(IFFERR_SYNTAX);
 
       }
-      else if(newfile == TRUE)
+      else if(pcn == NULL)
       {
         /* check if first chunk is either FORM, LIST or CAT */
 
