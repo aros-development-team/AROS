@@ -237,8 +237,6 @@ STATIC VOID RenderEntries(Class *cl, struct Gadget *g, struct gpRender *msg,
       
     for ( ; node->ln_Succ && numentries; node = node->ln_Succ)
     {
-    	ULONG retval;
-
 	D(bug("RenderEntries: Rendering entry %d: node %s\n", current_entry, node->ln_Name));
 
     	/* update state */
@@ -259,7 +257,7 @@ STATIC VOID RenderEntries(Class *cl, struct Gadget *g, struct gpRender *msg,
     	drawmsg.lvdm_Bounds.MinY = top;
     	drawmsg.lvdm_Bounds.MaxY = top + data->ld_ItemHeight - 1;
     	    
-    	retval = CallHookPkt( data->ld_CallBack, node, &drawmsg);
+    	CallHookPkt( data->ld_CallBack, node, &drawmsg);
     	
     	numentries --;
     	current_entry ++;
@@ -311,7 +309,7 @@ STATIC WORD ShownEntries(struct Gadget *g, struct LVData *data)
 
 STATIC VOID UpdateScroller(struct Gadget *g, struct LVData *data, struct GadgetInfo *gi, struct GadToolsBase_intern *GadToolsBase)
 {
-    ULONG Result;
+    D(ULONG Result;)
     struct TagItem scrtags[] = 
     {
 	{PGA_Top	, 0L	},
@@ -339,12 +337,12 @@ STATIC VOID UpdateScroller(struct Gadget *g, struct LVData *data, struct GadgetI
 	if (gi)
 	{
 	    D(bug("UpdateScroller: SetGadgetAttrs\n"));
-    	    Result = SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, gi->gi_Window, NULL, scrtags);
+    	    D(Result = )SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, gi->gi_Window, NULL, scrtags);
 	}
 	else
 	{
 	    D(bug("UpdateScroller: SetAttrs (no gadgetinfo)\n"));
-    	    Result = SetAttrsA(data->ld_Scroller, scrtags);
+    	    D(Result = )SetAttrsA(data->ld_Scroller, scrtags);
     	}
 	D(bug("UpdateScroller: Result 0x%lx\n",Result));
     }

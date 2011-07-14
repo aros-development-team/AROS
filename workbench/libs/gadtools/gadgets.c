@@ -715,7 +715,6 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     
     UWORD freedom = stags[3].ti_Data; /* default */
     WORD arrowdim = 0 /* -1*/, arrowkind = SCROLLER_KIND;
-    BOOL relverify, immediate;
     ULONG scr_dim_tag;
     
     EnterFunc(bug("makescroller(stdgadtags=%p, vi=%p, taglist = %p)\n",
@@ -737,8 +736,8 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	    	    freedom = stags[3].ti_Data = FREEVERT;
     		break;
     	    case GA_Disabled:	stags[4].ti_Data = tidata; break;
-    	    case GA_RelVerify:	relverify = stags[5].ti_Data = tidata; break;
-    	    case GA_Immediate:	immediate = stags[6].ti_Data = tidata; break;
+    	    case GA_RelVerify:	stags[5].ti_Data = tidata; break;
+    	    case GA_Immediate:	stags[6].ti_Data = tidata; break;
 
     	    case GTSC_Arrows:	arrowdim = (WORD)tidata; break;
 	    case GTA_Scroller_ArrowKind: arrowkind = (WORD)tidata; break;
@@ -834,8 +833,6 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 	atags[12].ti_Data = (IPTR)GetTagData(GA_Previous, 0, stdgadtags);
 
     	/* These must be the same as for scroller */
-/*    	atags[8].ti_Data = (IPTR)relverify;
-    	atags[9].ti_Data = (IPTR)immediate;*/
     	atags[10].ti_Data = (IPTR)GetTagData(GA_ID, 0, stdgadtags); 
     	
     	if (freedom == FREEVERT)
@@ -1130,9 +1127,9 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     struct TagItem *lv_width_tag, *lv_height_tag;
     WORD lv_width, lv_height;
 #if CORRECT_LISTVIEWHEIGHT
-    WORD viewheight;
+    WORD viewheight, totalitemheight = 0;
 #endif
-    WORD ysize, totalitemheight = 0;
+    WORD ysize;
     
     struct TagItem *tag, lvtags[] =
     {
@@ -1258,10 +1255,10 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 
     }
     
+#if CORRECT_LISTVIEWHEIGHT    
 			/* GTLV_ItemHeight + LAYOUTA_Spacing */
     totalitemheight = lvtags[5].ti_Data + lvtags[9].ti_Data;
 
-#if CORRECT_LISTVIEWHEIGHT    
  /* stegerg: I think it looks better without this adjustment. Think of
     GTLV_ShowSelected and aligning with other gadgets */
     

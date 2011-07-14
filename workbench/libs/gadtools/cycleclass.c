@@ -320,11 +320,8 @@ IPTR GTCycle__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest *msg)
 
 IPTR GTCycle__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {	
-    struct CycleData 	*data;    
     struct RastPort 	*rp;
     IPTR    	    	retval;
-    
-    data = INST_DATA(cl, g);
     
     g->Flags |= GFLG_SELECTED;
     

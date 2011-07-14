@@ -184,10 +184,7 @@ IPTR GTCheckBox__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 
 IPTR GTCheckBox__OM_GET(Class *cl, struct Gadget *g, struct opGet *msg)
 {
-    struct CheckBoxData *data;
     IPTR    	    	retval;
-    
-    data = INST_DATA(cl, g);
     
     switch (msg->opg_AttrID)
     {
