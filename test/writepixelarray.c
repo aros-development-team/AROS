@@ -218,7 +218,7 @@ static void action(void)
 		
 		ttr1 = tr1 + (tr2 - tr1) * y / (SCREENHEIGHT - 1);
 		ttg1 = tg1 + (tg2 - tg1) * y / (SCREENHEIGHT - 1);
-		ttb1 = tg1 + (tg2 - tg1) * y / (SCREENHEIGHT - 1);
+		ttb1 = tb1 + (tb2 - tb1) * y / (SCREENHEIGHT - 1);
 		
 		ttr2 = tr3 + (tr4 - tr3) * x / (SCREENWIDTH - 1);
 		ttg2 = tg3 + (tg4 - tg3) * x / (SCREENWIDTH - 1);
