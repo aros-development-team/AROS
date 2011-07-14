@@ -120,5 +120,5 @@ BOOL IsRepeatableKey(UWORD key)
         result = FALSE;
     }
     
-    return TRUE;
+    return result;
 }
