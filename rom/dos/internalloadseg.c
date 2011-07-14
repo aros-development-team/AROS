@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DOS function InternalLoadSeg()
@@ -13,10 +13,8 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 #include <aros/debug.h>
-
-#include <loadseg/loadseg.h>
-
 #include "dos_intern.h"
+#include "internalloadseg.h"
 
 /*****************************************************************************
 
@@ -77,13 +75,99 @@
 {
     AROS_LIBFUNC_INIT
 
-    BPTR seg;
-    SIPTR error;
+    typedef struct _segfunc_t
+    {
+    	ULONG id;
+        BPTR (*func)(BPTR, BPTR, SIPTR *, LONG *, struct DosLibrary *);
+        D(CONST_STRPTR format;)
+    } segfunc_t;
 
-    seg = LoadSegment(fh, table, (SIPTR *)funcarray, stack, &error, (struct Library *)DOSBase);
+    #define SEGFUNC(id, format) {id, InternalLoadSeg_##format D(, (STRPTR)#format)}
+    
+    static const segfunc_t funcs[] = 
+    {
+        SEGFUNC(0x7f454c46, ELF),
+        SEGFUNC(0x000003f3, AOS)
+    };
+  
+    BPTR segs = 0;
 
-    SetIoErr(error);
-    return seg;
+    if (fh)
+    {
+        UBYTE i;
+	const UBYTE num_funcs = sizeof(funcs) / sizeof(funcs[0]);
+    	ULONG id;
+	LONG len;
+
+	SetIoErr(0);
+    	len = ilsRead(fh, &id, sizeof(id));
+	if (len == sizeof(id)) {
+	    id = AROS_BE2LONG(id);
+	    for (i = 0; i < num_funcs; i++) {
+		if (funcs[i].id == id) {
+		    segs = (*funcs[i].func)(fh, BNULL, (SIPTR *)funcarray,
+			stack, DOSBase);
+		    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
+			segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
+		    return segs;
+ 		}
+ 	    }
+ 	}
+    }
+
+    SetIoErr(ERROR_NOT_EXECUTABLE);
+    return BNULL;
   
     AROS_LIBFUNC_EXIT
 } /* InternalLoadSeg */
+
+int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, struct DosLibrary * DOSBase)
+{
+  LONG subsize;
+  UBYTE *buf=(UBYTE *)buffer;
+
+  while(size)
+  {
+    subsize = ilsRead(file, buf, size);
+    if(subsize==0)
+    {
+      if (DOSBase)
+      	((struct Process *)FindTask(NULL))->pr_Result2=ERROR_BAD_HUNK;
+      return 1;
+    }
+
+    if(subsize<0)
+      return 1;
+    buf  +=subsize;
+    size -=subsize;
+  }
+  return 0;
+}
+
+APTR _ilsAllocVec(SIPTR *funcarray, ULONG size, ULONG req)
+{
+    UBYTE *p = ilsAllocMem(size, req);
+
+    D(bug("allocmem %p %d\n", p, size));
+    if (!p)
+    	return NULL;
+    	
+    /* Note that the result is ULONG-aligned even on 64 bits! */
+    *((ULONG*)p) = (ULONG)size;
+    return p + sizeof(ULONG);       
+}
+
+void _ilsFreeVec(SIPTR *funcarray, void *buf)
+{
+    UBYTE *p = (UBYTE*)buf;
+    ULONG size;
+    if (!buf)
+    	return;
+    p -= sizeof(ULONG);
+    size = ((ULONG*)p)[0];
+    D(bug("freemem %p %d\n", p, size));
+    if (!size)
+    	return;
+
+    ilsFreeMem(p, size);
+}

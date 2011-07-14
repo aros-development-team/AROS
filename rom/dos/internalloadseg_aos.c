@@ -12,27 +12,29 @@
 #include <dos/doshunks.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/arossupport.h>
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
 
-#include "loadseg_intern.h"
+#include "dos_intern.h"
+#include "internalloadseg.h"
 
-static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, SIPTR *error, struct Library * lib);
+#include <proto/dos.h>
 
 #define GETHUNKPTR(x) ((UBYTE*)(BADDR(hunktab[x]) + sizeof(BPTR)))
 
 /* Seek forward by count ULONGs.
  * Returns 0 on success, 1 on failure.
  */
-static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, SIPTR *error, struct Library *lib)
+static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct DosLibrary *DOSBase)
 {
     int err = 0;
     ULONG tmp;
 
     /* For AOS compatibility, we can't use DOS/Seek() here,
-     * as AOS callers to LoadSegment will not pass
+     * as AOS callers to InternalLoadSeg will not pass
      * in a Seek element of the funcarray, and the read
      * callback of funcarray may be for reading in-memory
      * instead of pointing to DOS/Read.
@@ -40,20 +42,20 @@ static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, SIPTR *error, st
      * Luckily, reading HUNKs is linear, so we can just
      * read ahead.
      */
-    while (count && !(err = read_block(fd, &tmp, sizeof(tmp), funcarray, error, lib)))
+    while (count && !(err = read_block(fd, &tmp, sizeof(tmp), funcarray, DOSBase)))
     	count--;
 
     return err;
 }
 
-BPTR LoadSegment_AOS(BPTR fh,
-                     BPTR table,
-                     SIPTR * funcarray,
-                     LONG  * stacksize,
-                     SIPTR * error,
-                     struct Library    * lib)
+BPTR InternalLoadSeg_AOS(BPTR fh,
+                         BPTR table,
+                         SIPTR * funcarray,
+                         LONG  * stacksize,
+                         struct DosLibrary * DOSBase)
 {
   #define ERROR(a)    { *error=a; goto end; }
+
 
   BPTR *hunktab = BADDR(table);
   BPTR firsthunk = BNULL, prevhunk = BNULL;
@@ -64,28 +66,32 @@ BPTR LoadSegment_AOS(BPTR fh,
   BPTR last_p = 0;
   UBYTE *overlaytable = NULL;
   ULONG tmp, req;
+  SIPTR dummy;
 #if DEBUG
   static STRPTR segtypes[] = { "CODE", "DATA", "BSS", };
 #endif
 
-  if (lib)
+
+  SIPTR *error = &dummy;
+  
+  if (DOSBase)
     error =&((struct Process *)FindTask(NULL))->pr_Result2;
 
   curhunk = 0; /* keep GCC quiet */
   /* start point is HUNK_HEADER + 4 */
   while (1)
   {
-    if (read_block(fh, &count, sizeof(count), funcarray, error, lib))
+    if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
       goto end;
     if (count == 0L)
       break;
     count = AROS_BE2LONG(count);
     count *= 4;
-    if (read_block(fh, name_buf, count, funcarray, error, lib))
+    if (read_block(fh, name_buf, count, funcarray, DOSBase))
       goto end;
     D(bug("\tlibname: \"%.*s\"\n", count, name_buf));
   }
-  if (read_block(fh, &numhunks, sizeof(numhunks), funcarray, error, lib))
+  if (read_block(fh, &numhunks, sizeof(numhunks), funcarray, DOSBase))
     goto end;
 
   numhunks = AROS_BE2LONG(numhunks);
@@ -98,14 +104,14 @@ BPTR LoadSegment_AOS(BPTR fh,
       ERROR(ERROR_NO_FREE_STORE);
   }
 
-  if (read_block(fh, &first, sizeof(first), funcarray, error, lib))
+  if (read_block(fh, &first, sizeof(first), funcarray, DOSBase))
     goto end;
 
   first = AROS_BE2LONG(first);
 
   D(bug("\tFirst hunk: %ld\n", first));
   curhunk = first;
-  if (read_block(fh, &last, sizeof(last), funcarray, error, lib))
+  if (read_block(fh, &last, sizeof(last), funcarray, DOSBase))
     goto end;
 
   last = AROS_BE2LONG(last);
@@ -121,7 +127,7 @@ BPTR LoadSegment_AOS(BPTR fh,
       continue;
     }
 
-    if (read_block(fh, &count, sizeof(count), funcarray, error, lib))
+    if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
       goto end;
 
     count = AROS_BE2LONG(count);
@@ -145,7 +151,7 @@ BPTR LoadSegment_AOS(BPTR fh,
 
       case HUNKF_ADVISORY:
       D(bug("ADVISORY"));
-      if (read_block(fh, &req, sizeof(req), funcarray, error, lib))
+      if (read_block(fh, &req, sizeof(req), funcarray, DOSBase))
         goto end;
       req = AROS_BE2LONG(req);
       break;
@@ -185,7 +191,7 @@ BPTR LoadSegment_AOS(BPTR fh,
     prevhunk = hunktab[i];
   }
 
-  while(!read_block(fh, &hunktype, sizeof(hunktype), funcarray, error, lib))
+  while(!read_block(fh, &hunktype, sizeof(hunktype), funcarray, DOSBase))
   {
     hunktype = AROS_BE2LONG(hunktype);
     D(bug("Hunk Type: %d\n", hunktype & 0xFFFFFF));
@@ -208,24 +214,24 @@ BPTR LoadSegment_AOS(BPTR fh,
              --------------------   */
 
         D(bug("HUNK_SYMBOL (skipping)\n"));
-          while(!read_block(fh, &count, sizeof(count), funcarray, error, lib) && count)
+          while(!read_block(fh, &count, sizeof(count), funcarray, DOSBase) && count)
           {
             count = AROS_BE2LONG(count) ;
 
-            if (seek_forward(fh, count+1, funcarray, error, lib))
+            if (seek_forward(fh, count+1, funcarray, DOSBase))
               goto end;
           }
       break;
 
       case HUNK_UNIT:
 
-        if (read_block(fh, &count, sizeof(count), funcarray, error, lib))
+        if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
           goto end;
 
         count = AROS_BE2LONG(count) ;
 
         count *= 4;
-        if (read_block(fh, name_buf, count, funcarray, error, lib))
+        if (read_block(fh, name_buf, count, funcarray, DOSBase))
           goto end;
         D(bug("HUNK_UNIT: \"%.*s\"\n", count, name_buf));
         break;
@@ -234,7 +240,7 @@ BPTR LoadSegment_AOS(BPTR fh,
       case HUNK_DATA:
       case HUNK_BSS:
 
-        if (read_block(fh, &count, sizeof(count), funcarray, error, lib))
+        if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
           goto end;
 
           count = AROS_BE2LONG(count);
@@ -256,7 +262,7 @@ BPTR LoadSegment_AOS(BPTR fh,
 
           case HUNKF_ADVISORY:
             D(bug("ADVISORY"));
-            if (read_block(fh, &req, sizeof(req), funcarray, error, lib))
+            if (read_block(fh, &req, sizeof(req), funcarray, DOSBase))
               goto end;
 
             req = AROS_BE2LONG(req);
@@ -272,7 +278,7 @@ BPTR LoadSegment_AOS(BPTR fh,
         D(bug(" memory\n"));
         if ((hunktype & 0xFFFFFF) != HUNK_BSS && count)
 	{
-          if (read_block(fh, GETHUNKPTR(curhunk), count*4, funcarray, error, lib))
+          if (read_block(fh, GETHUNKPTR(curhunk), count*4, funcarray, DOSBase))
             goto end;
 
     	}
@@ -285,7 +291,7 @@ BPTR LoadSegment_AOS(BPTR fh,
           ULONG *addr;
           ULONG offset;
 
-          if (read_block(fh, &count, sizeof(count), funcarray, error, lib))
+          if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
             goto end;
           if (count == 0L)
             break;
@@ -293,7 +299,7 @@ BPTR LoadSegment_AOS(BPTR fh,
           count = AROS_BE2LONG(count);
 
           i = count;
-          if (read_block(fh, &count, sizeof(count), funcarray, error, lib))
+          if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
             goto end;
 
           count = AROS_BE2LONG(count);
@@ -301,7 +307,7 @@ BPTR LoadSegment_AOS(BPTR fh,
           D(bug("\tHunk #%ld:\n", count));
           while (i > 0)
           {
-            if (read_block(fh, &offset, sizeof(offset), funcarray, error, lib))
+            if (read_block(fh, &offset, sizeof(offset), funcarray, DOSBase))
               goto end;
 
             offset = AROS_BE2LONG(offset);
@@ -332,7 +338,7 @@ BPTR LoadSegment_AOS(BPTR fh,
 	    
 	    Wordcount++;
 	    
-            if (read_block(fh, &word, sizeof(word), funcarray, error, lib))
+            if (read_block(fh, &word, sizeof(word), funcarray, DOSBase))
               goto end;
             if (word == 0L)
               break;
@@ -341,7 +347,7 @@ BPTR LoadSegment_AOS(BPTR fh,
 
             i = word;
 	    Wordcount++;
-            if (read_block(fh, &word, sizeof(word), funcarray, error, lib))
+            if (read_block(fh, &word, sizeof(word), funcarray, DOSBase))
               goto end;
 
             word = AROS_BE2WORD(word);
@@ -352,7 +358,7 @@ BPTR LoadSegment_AOS(BPTR fh,
             {
               Wordcount++;
               /* read a 16bit number (2 bytes) */
-              if (read_block(fh, &word, sizeof(word), funcarray, error, lib))
+              if (read_block(fh, &word, sizeof(word), funcarray, DOSBase))
                 goto end;
 
               /* offset now contains the byte offset in it`s 16 highest bits.
@@ -376,7 +382,7 @@ BPTR LoadSegment_AOS(BPTR fh,
            16-bit word   */
           if (0x1 == (Wordcount & 0x1)) {
             UWORD word;
-            read_block(fh, &word, sizeof(word), funcarray, error, lib);
+            read_block(fh, &word, sizeof(word), funcarray, DOSBase);
           }
         }
       break;
@@ -385,11 +391,11 @@ BPTR LoadSegment_AOS(BPTR fh,
       {
         D(bug("HUNK_END\n"));
         ++curhunk;
-        /* lib == NULL: Called from RDB filesystem loader which does not
+        /* DOSBase == NULL: Called from RDB filesystem loader which does not
          * know filesystem's original size. Exit if last HUNK_END. This can't
          * be done normally because it would break overlayed executables.
          */
-        if (!lib && curhunk > last)
+        if (!DOSBase && curhunk > last)
             goto done;
       }
       break;
@@ -411,13 +417,13 @@ BPTR LoadSegment_AOS(BPTR fh,
         ERROR(ERROR_BAD_HUNK);
 
       case HUNK_DEBUG:
-        if (read_block(fh, &count, sizeof(count), funcarray, error, lib))
+        if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
           goto end;
 
         count = AROS_BE2LONG(count);
 
         D(bug("HUNK_DEBUG (%x Bytes)\n",count));
-        if (seek_forward(fh, count, funcarray, error, lib))
+        if (seek_forward(fh, count, funcarray, DOSBase))
           goto end;
         break;
 
@@ -426,7 +432,7 @@ BPTR LoadSegment_AOS(BPTR fh,
         D(bug("HUNK_OVERLAY:\n"));
         if (table) /* overlay inside overlay? */
           ERROR(ERROR_BAD_HUNK);
-        if (read_block(fh, &count, sizeof(count), funcarray, error, lib))
+        if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
           goto end;
         count = AROS_BE2LONG(count);
         D(bug("Overlay table size: %d\n", count));
@@ -436,7 +442,7 @@ BPTR LoadSegment_AOS(BPTR fh,
         overlaytable = ilsAllocVec(count, MEMF_CLEAR | MEMF_31BIT);
         if (overlaytable == NULL)
           ERROR(ERROR_NO_FREE_STORE);
-        if (read_block(fh, overlaytable, count - sizeof(ULONG), funcarray, error, lib))
+        if (read_block(fh, overlaytable, count - sizeof(ULONG), funcarray, DOSBase))
             goto end;
         goto done;
       }
@@ -456,17 +462,16 @@ done:
   if (hunktab)
   {
     ULONG hunksize;
-    /* Clear caches */
-    for (t = first; t < numhunks && t <= last; t++)
+
+    if (SysBase->LibNode.lib_Version >= 36)
     {
-      hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
-      /* We check for SysBase's lib_Version, since some
-       * users of this library will be running on AOS 1.3 or lower
-       */
-      if (hunksize && SysBase->LibNode.lib_Version >= 36)
-      {
-        CacheClearE(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
-      }
+    	/* Clear caches */
+    	for (t = first; t < numhunks && t <= last; t++)
+    	{
+      	    hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
+      	    if (hunksize)
+	        CacheClearE(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
+	}
     }
 
     if (table)
@@ -513,28 +518,73 @@ end:
     ilsFreeVec(hunktab);
   }
   return last_p;
-} /* LoadSegment */
+} /* InternalLoadSeg */
 
-
-static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, SIPTR *error, struct Library * lib)
+#ifdef __mc68000
+static AROS_UFH4(LONG, ReadFunc,
+	AROS_UFHA(BPTR, file,   D1),
+	AROS_UFHA(APTR, buffer, D2),
+	AROS_UFHA(LONG, length, D3),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6)
+)
 {
-  LONG subsize;
-  UBYTE *buf=(UBYTE *)buffer;
+    AROS_USERFUNC_INIT
 
-  while(size)
-  {
-    subsize = ilsRead(file, buf, size);
-    if(subsize==0)
-    {
-      *error = ERROR_BAD_HUNK;
-      return 1;
-    }
+    return FRead(file, buffer, 1, length);
 
-    if(subsize<0)
-      return 1;
-    buf  +=subsize;
-    size -=subsize;
-  }
-  return 0;
+    AROS_USERFUNC_EXIT
 }
 
+static AROS_UFH3(APTR, AllocFunc,
+	AROS_UFHA(ULONG, length, D0),
+	AROS_UFHA(ULONG, flags,  D1),
+        AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    return AllocMem(length, flags);
+
+    AROS_USERFUNC_EXIT
+}
+
+static AROS_UFH3(void, FreeFunc,
+	AROS_UFHA(APTR, buffer, A1),
+	AROS_UFHA(ULONG, length, D0),
+        AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    FreeMem(buffer, length);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH4(BPTR, LoadSeg_Overlay,
+    AROS_UFHA(UBYTE*, name, D1),
+    AROS_UFHA(BPTR, hunktable, D2),
+    AROS_UFHA(BPTR, fh, D3),
+    AROS_UFHA(struct DosLibrary *, DosBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    void (*FunctionArray[3])();
+    ULONG hunktype;
+
+    FunctionArray[0] = (APTR)ReadFunc;
+    FunctionArray[1] = (APTR)AllocFunc;
+    FunctionArray[2] = (APTR)FreeFunc;
+
+    D(bug("LoadSeg_Overlay. table=%x fh=%x\n", hunktable, fh));
+    if (read_block(fh, &hunktype, sizeof(hunktype), (SIPTR*)FunctionArray, DosBase))
+    	return BNULL;
+    hunktype = AROS_BE2LONG(hunktype);
+    if (hunktype != HUNK_HEADER)
+    	return BNULL;
+    return InternalLoadSeg_AOS(fh, hunktable, (SIPTR*)FunctionArray, NULL, DosBase);
+
+    AROS_USERFUNC_EXIT
+}
+
+#endif

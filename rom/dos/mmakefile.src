@@ -4,10 +4,15 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
 USER_CFLAGS := -D__DOS_NOLIBBASE__
 
+IMAGE_TYPES := aos elf
+
 FILES	  := bcpl_support bstr_helper errorlist \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
-	     packethelper namefrom loadseg_overlay
+	     packethelper namefrom internalloadseg_support
+
+LOADSEG_FILES := internalloadseg \
+		 $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
 FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     allocdosobject assignadd assignlate assignlock assignpath \
@@ -22,7 +27,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     freedosentry freedosobject fwrite getargstr getconsoletask \
 	     getcurrentdirname getdeviceproc getfilesystask getprogramdir \
 	     getprogramname getprompt getvar info inhibit input \
-	     internalloadseg internalunloadseg ioerr isfilesystem \
+	     internalunloadseg ioerr isfilesystem \
 	     isinteractive loadseg lock lockdoslist lockrecord lockrecords \
 	     makedosentry makelink matchend matchfirst matchnext matchpattern \
 	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry \
@@ -51,13 +56,15 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \
-  files="dos_init $(FUNCTIONS) $(FILES)" \
-  uselibs="loadseg rom"
+  files="dos_init $(FUNCTIONS) $(FILES) $(LOADSEG_FILES)" \
+  uselibs="rom"
 
 $(GENDIR)/$(CURDIR)/errorlist.d : $(GENDIR)/$(CURDIR)/errorlist.h
 
 $(GENDIR)/$(CURDIR)/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCDIR)/$(CURDIR)/genstrings.py
 	@$(ECHO) Generating $@...
 	@$(SRCDIR)/$(CURDIR)/genstrings.py $< > $@
+
+%build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" libdir=$(GENDIR)/lib
 
 %common

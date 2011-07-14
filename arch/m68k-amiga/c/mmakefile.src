@@ -24,6 +24,8 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 #MM                              workbench-c-m68k-setpatcharos-elf-quick \
 #MM                              workbench-c-m68k-arosbootstrap-elf-quick
 
+#MM workbench-c-m68k-arosbootstrap-elf : linklibs-loadseg
+
 AROS_BOOT := $(BINDIR)/boot
 
 FILES := gdbstub gdbstop
@@ -40,11 +42,12 @@ AFILES := newstackswap
     files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
     uselibs="loadseg arossupport amiga rom"
 
-CFILES := AROSBootstrap
-AFILES :=
+CFILES	      := AROSBootstrap
+USER_INCLUDES := -isystem $(SRCDIR)/rom/dos/include
+USER_LDFLAGS  := -L$(GENDIR)/lib
 
 %build_prog mmake=workbench-c-m68k-arosbootstrap-elf progname=AROSBootstrap.elf \
-    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
+    files=$(CFILES) targetdir=$(AROS_BOOT) \
     usestartup=no uselibs="loadseg arossupport amiga z rom"
 
 
