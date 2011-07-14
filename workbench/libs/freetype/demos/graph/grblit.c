@@ -702,11 +702,13 @@
     int             y;
     unsigned char*  read;
     unsigned char*  write;
+#ifdef GR_CONFIG_GRAY_SKIP_WHITE
     unsigned char   max1;
     unsigned char   max2;
 
     max1  = (unsigned char)(blit->source.grays-1);
     max2  = (unsigned char)(blit->target.grays-1);
+#endif
 
     read  = blit->read  + blit->xread;
     write = blit->write + blit->xwrite;
@@ -759,9 +761,11 @@
     int             y;
     unsigned char*  read;
     unsigned char*  write;
+#ifdef GR_CONFIG_GRAY_SKIP_WHITE
     unsigned char   max;
 
     max   = (unsigned char)(blit->source.grays-1);
+#endif
 
     read  = blit->read  + blit->xread;
     write = blit->write + blit->xwrite;
