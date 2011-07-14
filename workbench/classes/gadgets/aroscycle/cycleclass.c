@@ -241,11 +241,8 @@ VOID AROSCycle__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
 IPTR AROSCycle__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {	
-    struct CycleData 	*data;    
     struct RastPort 	*rport;
     IPTR    	    	retval;
-    
-    data = INST_DATA(cl, o);
     
     EG(o)->Flags |= GFLG_SELECTED;
     
