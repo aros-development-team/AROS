@@ -432,6 +432,7 @@ typedef enum __ns_cert_types {
 	    | ((u_int16_t)t_cp[1]) \
 	    ; \
 	(cp) += NS_INT16SZ; \
+	(void)(s); /* prevents 'set but unused' compiler lint */ \
 } while (0)
 
 #define NS_GET32(l, cp) do { \
@@ -442,6 +443,7 @@ typedef enum __ns_cert_types {
 	    | ((u_int32_t)t_cp[3]) \
 	    ; \
 	(cp) += NS_INT32SZ; \
+	(void)(l); /* prevents 'set but unused' compiler lint */ \
 } while (0)
 
 #define NS_PUT16(s, cp) do { \
