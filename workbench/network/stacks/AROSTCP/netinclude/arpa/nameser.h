@@ -223,6 +223,7 @@ extern	u_long	_getlong();
 #define GETSHORT(s, cp) { \
 	(s) = *(cp)++ << 8; \
 	(s) |= *(cp)++; \
+	(void)(s); /* avoid 'set but unused' warnings */ \
 }
 
 #define GETLONG(l, cp) { \
@@ -230,6 +231,7 @@ extern	u_long	_getlong();
 	(l) |= *(cp)++; (l) <<= 8; \
 	(l) |= *(cp)++; (l) <<= 8; \
 	(l) |= *(cp)++; \
+	(void)(l); /* avoid 'set but unused' warnings */ \
 }
 
 

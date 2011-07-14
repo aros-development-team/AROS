@@ -1548,6 +1548,10 @@ void send_discover (cpp)
 			      inaddr_any, &sockaddr_broadcast,
 			      (struct hardware *)0);
 
+	if (result < 0) {
+	    /* FIXME: Shouldn't we log an error here? */
+	}
+
 	add_timeout (cur_time + client -> interval,
 		     send_discover, client, 0, 0);
 }
@@ -1827,6 +1831,10 @@ void send_request (cpp)
 				      from, &destination,
 				      (struct hardware *)0);
 
+	if (result < 0) {
+	    /* FIXME: Shouldn't an error be logged here? */
+	}
+
 	add_timeout (cur_time + client -> interval,
 		     send_request, client, 0, 0);
 }
@@ -1849,6 +1857,10 @@ void send_decline (cpp)
 			      client -> packet_length,
 			      inaddr_any, &sockaddr_broadcast,
 			      (struct hardware *)0);
+
+	if (result < 0) {
+	    /* FIXME: Shouldn't an error be logged here? */
+	}
 }
 
 void send_release (cpp)
@@ -1900,6 +1912,10 @@ void send_release (cpp)
 				      client -> packet_length,
 				      from, &destination,
 				      (struct hardware *)0);
+
+	if (result < 0) {
+	    /* FIXME: Shouldn't an error be logged here? */
+	}
 }
 
 void make_client_options (client, lease, type, sid, rip, prl, op)

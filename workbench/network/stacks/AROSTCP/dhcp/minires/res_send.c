@@ -407,6 +407,7 @@ res_nsend(res_state statp,
 			iov[1].iov_len = buflen;
 #ifdef __AROS__
 bug("DONT HAVE writev\n");
+(void)iov;
 #else
 			if (writev(statp->_sock, iov, 2) !=
 			    (INT16SZ + buflen)) {
