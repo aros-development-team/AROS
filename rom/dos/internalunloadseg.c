@@ -13,7 +13,7 @@
 #include <proto/exec.h>
 
 #include "dos_intern.h"
-#include <loadseg/loadseg.h>
+#include "internalloadseg.h"
 
 /*****************************************************************************
 
@@ -53,7 +53,37 @@
 {
     AROS_LIBFUNC_INIT
 
-    return UnLoadSegment(seglist, freefunc, DOSBase);
+    BPTR next;
+    SIPTR funcarray[] = { (SIPTR)NULL, (SIPTR)NULL, (SIPTR)freefunc };
+
+    if (seglist)
+    {
+	if (DebugBase)
+	    UnregisterModule(seglist);
+
+#ifdef __mc68000
+	{
+    	    /* free overlay structures */
+    	    ULONG *seg = BADDR(seglist);
+    	    if (seg[2] == 0x0000abcd && seg[6] == (ULONG)DOSBase->dl_GV) {
+    	    	Close((BPTR)seg[3]); /* file handle */
+    	    	ilsFreeVec((void*)seg[4]); /* overlay table, APTR */
+    	    	ilsFreeVec(BADDR(seg[5])); /* hunk table, BPTR */
+    	    }
+    	}
+#endif
+
+	while (seglist)
+	{
+	    next = *(BPTR *)BADDR(seglist);
+	    ilsFreeVec(BADDR(seglist));
+	    seglist = next;
+	}
+
+	return DOSTRUE;
+    }
+    else
+	return DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* InternalUnLoadSeg */

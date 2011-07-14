@@ -1,18 +1,21 @@
 #ifndef INTERNALLOADSEG_H
 #define INTERNALLOADSEG_H
 
-BPTR LoadSegment_AOS(BPTR file, BPTR table,
+BPTR InternalLoadSeg_AOS(BPTR file,
+                         BPTR table,
                          SIPTR * funcarray,
                          LONG  * stacksize,
-                         SIPTR * error,
-                         struct Library *lib);
+                         struct DosLibrary * DOSBase);
 
-BPTR LoadSegment_ELF(BPTR file, BPTR table,
+BPTR InternalLoadSeg_ELF(BPTR file,
+                         BPTR hunk_table,
                          SIPTR * funcarray,
                          LONG  * stacksize,
-                         SIPTR * error,
-                         struct Library *lib);
+                         struct DosLibrary * DOSBase);
 
+int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, struct DosLibrary * DOSBase);
+
+/* AllocVec() simulation using allocation function from the supplied array */
 APTR _ilsAllocVec(SIPTR *funcarray, ULONG size, ULONG flags);
 void _ilsFreeVec(SIPTR *funcarray, void *buf);
 
@@ -26,9 +29,8 @@ void _ilsFreeVec(SIPTR *funcarray, void *buf);
         AROS_UFCA(BPTR,   file, D1), \
         AROS_UFCA(void *, buf,  D2), \
         AROS_UFCA(LONG,   size, D3), \
-        AROS_UFCA(struct Library *, lib, A6) \
+        AROS_UFCA(struct DosLibrary *, DOSBase, A6) \
     )
-
 
 #define ilsAllocMem(size, flags)        \
     AROS_UFC3                        \
@@ -38,7 +40,6 @@ void _ilsFreeVec(SIPTR *funcarray, void *buf);
         AROS_UFCA(ULONG, flags, D1), \
         AROS_UFCA(struct ExecBase *, SysBase, A6) \
     )				    
-
 
 #define ilsFreeMem(addr, size)          \
     AROS_UFC3                        \
@@ -56,7 +57,7 @@ void _ilsFreeVec(SIPTR *funcarray, void *buf);
         AROS_UFCA(BPTR,   file, D1), \
         AROS_UFCA(LONG,    pos, D2), \
         AROS_UFCA(LONG,   mode, D3), \
-        AROS_UFCA(struct Library *, lib, A6) \
+        AROS_UFCA(struct DosLibrary *, DOSBase, A6) \
     )
 
 #endif

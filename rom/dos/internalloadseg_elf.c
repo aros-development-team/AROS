@@ -17,18 +17,17 @@
 #include <dos/elf.h>
 #include <dos/dosasl.h>
 #include <libraries/debug.h>
-#include <proto/arossupport.h>
-#include <proto/exec.h>
-/* For ELF module registration */
-#include <proto/debug.h>
 #include <proto/dos.h>
+#include <proto/arossupport.h>
+#include <proto/debug.h>
+#include <proto/exec.h>
 
 #include <string.h>
 #include <stddef.h>
 
-#include <loadseg/loadseg.h>
-
-#include "loadseg_intern.h"
+#include "internalloadseg.h"
+#include "dos_intern.h"
+#include "include/loadseg.h"
 
 struct hunk
 {
@@ -40,40 +39,20 @@ struct hunk
 #define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
-static int read_block
+static int elf_read_block
 (
     BPTR               file,
     ULONG              offset,
     APTR               buffer,
     ULONG              size,
     SIPTR              *funcarray,
-    SIPTR              *error,
-    struct Library    *lib
+    struct DosLibrary *DOSBase
 )
 {
-    UBYTE *buf = (UBYTE *)buffer;
-    LONG   subsize;
-
     if (ilsSeek(file, offset, OFFSET_BEGINNING) < 0)
-        return 0;
+        return 1;
 
-    while (size)
-    {
-        subsize = ilsRead(file, buf, size);
-
-        if (subsize <= 0)
-        {
-            if (subsize == 0)
-                *error = ERROR_BAD_HUNK;
-
-            return 0;
-        }
-
-        buf  += subsize;
-        size -= subsize;
-    }
-
-    return 1;
+    return read_block(file, buffer, size, funcarray, DOSBase);
 }
 
 static void *load_block
@@ -82,8 +61,7 @@ static void *load_block
     ULONG              offset,
     ULONG              size,
     SIPTR             *funcarray,
-    SIPTR             *error,
-    struct Library    *lib
+    struct DosLibrary *DOSBase
 )
 {
     D(bug("[ELF Loader] Load Block\n"));
@@ -93,18 +71,18 @@ static void *load_block
     void *block = ilsAllocMem(size, MEMF_ANY);
     if (block)
     {
-        if (read_block(file, offset, block, size, funcarray, error, lib))
+        if (!elf_read_block(file, offset, block, size, funcarray, DOSBase))
             return block;
 
         ilsFreeMem(block, size);
     }
     else
-        *error = ERROR_NO_FREE_STORE;
+        SetIoErr(ERROR_NO_FREE_STORE);
 
     return NULL;
 }
 
-static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, SIPTR *error, struct Library *lib)
+static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase)
 {
     ULONG shnum = eh->shnum;
 
@@ -123,11 +101,11 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, SIPTR
         struct sheader sh;
 
         if (eh->shoff == 0) {
-            *error = ERROR_NOT_EXECUTABLE;
+            SetIoErr(ERROR_NOT_EXECUTABLE);
             return 0;
         }
 
-        if (!read_block(file, eh->shoff, &sh, sizeof(sh), funcarray, error, lib))
+        if (elf_read_block(file, eh->shoff, &sh, sizeof(sh), funcarray, DOSBase))
             return 0;
 
         /* wider section header count is in the size field */
@@ -135,58 +113,21 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, SIPTR
 
         /* sanity, if they're still invalid then this isn't elf */
         if (shnum == 0)
-            *error = ERROR_NOT_EXECUTABLE;
+            SetIoErr(ERROR_NOT_EXECUTABLE);
     }
 
     return shnum;
 }
 
-static void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct Library *lib)
+static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase)
 {
-    APTR DOSBase = lib;
-    APTR DebugBase;
-
-    /* If the passed in library is not DOS, then we can't get
-     * the name of ELF file.
-     */
-    if (lib == NULL || strcmp(lib->lib_Node.ln_Name,"dos.library")!=0)
-        return;
-
-    if ((DebugBase = OpenLibrary("debug.library", 0)))
-    {
-        char *buffer = AllocMem(512, MEMF_ANY);
-
-        if (buffer) {
-            if (NameFromFH(file, buffer, 512))
-            {
-                char *nameptr = buffer;
-                struct ELF_DebugInfo dbg = {eh, sh};
-
-    /* gdb support needs full paths */
-#if !AROS_MODULES_DEBUG
-                /* First, go through the name, till end of the string */
-                while(*nameptr++);
-                /* Now, go back until either ":" or "/" is found */
-                while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
-                    nameptr--;
-#endif
-                RegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
-            }
-            FreeMem(buffer, 512);
-        }
-        CloseLibrary(DebugBase);
-    }
-}
-
-static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, SIPTR *error, struct Library *lib) {
-    ilsSeek(file, OFFSET_BEGINNING, 0);
-    if (!read_block(file, 0, eh, sizeof(struct elfheader), funcarray, error, lib))
+    if (elf_read_block(file, 0, eh, sizeof(struct elfheader), funcarray, DOSBase))
         return 0;
 
     if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
         eh->ident[2] != 'L'  || eh->ident[3] != 'F') {
 	D(bug("[ELF Loader] Not an ELF object\n"));
-        *error = ERROR_NOT_EXECUTABLE;
+        SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
     }
     D(bug("[ELF Loader] ELF object\n"));
@@ -205,7 +146,7 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, SIPTR 
         D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA]   , AROS_ELF_DATA  ));
         D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine          , AROS_ELF_MACHINE));
 
-        *error = ERROR_NOT_EXECUTABLE;
+        SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
     }
 
@@ -219,8 +160,7 @@ static int load_hunk
     struct sheader      *sh,
     SIPTR               *funcarray,
     BOOL                 do_align,
-    SIPTR               *error,
-    struct Library      *lib
+    struct DosLibrary   *DOSBase
 )
 {
     struct hunk *hunk;
@@ -277,13 +217,13 @@ static int load_hunk
         *next_hunk_ptr = &hunk->next;
 
         if (sh->type != SHT_NOBITS)
-            return read_block(file, sh->offset, sh->addr, sh->size, funcarray, error, lib);
+            return !elf_read_block(file, sh->offset, sh->addr, sh->size, funcarray, DOSBase);
 
         return 1;
 
     }
 
-    *error = ERROR_NO_FREE_STORE;
+    SetIoErr(ERROR_NO_FREE_STORE);
 
     return 0;
 }
@@ -294,8 +234,7 @@ static int relocate
     struct sheader    *sh,
     ULONG              shrel_idx,
     struct sheader    *symtab_shndx,
-    SIPTR             *error,
-    struct Library    *lib
+    struct DosLibrary *DOSBase
 )
 {
     struct sheader *shrel    = &sh[shrel_idx];
@@ -345,7 +284,7 @@ static int relocate
         else {
             if (symtab_shndx == NULL) {
                 D(bug("[ELF Loader] got symbol with shndx 0xfff, but there's no symtab shndx table\n"));
-                *error = ERROR_BAD_HUNK;
+                SetIoErr(ERROR_BAD_HUNK);
                 return 0;
             }
             shindex = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(rel->info)];
@@ -363,7 +302,7 @@ static int relocate
                 if (strncmp((STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name, "__aros_libreq_", 14) != 0) {
                     D(bug("[ELF Loader] Undefined symbol '%s'\n",
                           (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
-                          *error = ERROR_BAD_HUNK;
+                          SetIoErr(ERROR_BAD_HUNK);
                     return 0;
                 }
                 break;
@@ -371,7 +310,7 @@ static int relocate
             case SHN_COMMON:
                 D(bug("[ELF Loader] COMMON symbol '%s'\n",
 		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
-                      *error = ERROR_BAD_HUNK;
+                      SetIoErr(ERROR_BAD_HUNK);
 		      
                 return 0;
 
@@ -534,7 +473,7 @@ static int relocate
                 	offset <= -0x02000000)
                 {
                 	bug("[ELF Loader] Relocation type %d %d out of range!\n", i, ELF_R_TYPE(rel->info));
-                	*error = ERROR_BAD_HUNK;
+                	SetIoErr(ERROR_BAD_HUNK);
                 	return 0;
                 }
                 offset += s - (ULONG)p;
@@ -570,7 +509,7 @@ static int relocate
                 	offset <= -0x01000000)
                 {
                 	bug("[ELF Loader] Relocation type %d %d out of range!\n", i, ELF_R_TYPE(rel->info));
-                	*error = ERROR_BAD_HUNK;
+                	SetIoErr(ERROR_BAD_HUNK);
                 	return 0;
                 }
     	    	offset += s - (ULONG)p;
@@ -647,7 +586,7 @@ static int relocate
 
             default:
                 D(bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF_R_TYPE(rel->info)));
-                *error = ERROR_BAD_HUNK;
+                SetIoErr(ERROR_BAD_HUNK);
 		return 0;
         }
     }
@@ -655,14 +594,13 @@ static int relocate
     return 1;
 }
 
-BPTR LoadSegment_ELF
+BPTR InternalLoadSeg_ELF
 (
     BPTR               file,
     BPTR               table __unused,
     SIPTR             *funcarray,
     LONG              *stack __unused,
-    SIPTR             *error,
-    struct Library    *lib
+    struct DosLibrary *DOSBase
 )
 {
     struct elfheader  eh;
@@ -675,15 +613,15 @@ BPTR LoadSegment_ELF
     ULONG  int_shnum;
 
     /* load and validate ELF header */
-    if (!load_header(file, &eh, funcarray, error, lib))
+    if (!load_header(file, &eh, funcarray, DOSBase))
         return 0;
     
-    int_shnum = read_shnum(file, &eh, funcarray, error, lib);
+    int_shnum = read_shnum(file, &eh, funcarray, DOSBase);
     if (!int_shnum)
         return 0;
 
     /* load section headers */
-    if (!(sh = load_block(file, eh.shoff, int_shnum * eh.shentsize, funcarray, error, lib)))
+    if (!(sh = load_block(file, eh.shoff, int_shnum * eh.shentsize, funcarray, DOSBase)))
         return 0;
 
     /* Iterate over the section headers in order to do some stuff... */
@@ -698,7 +636,7 @@ BPTR LoadSegment_ELF
         */
         if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB || sh[i].type == SHT_SYMTAB_SHNDX)
         {
-            sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, error, lib);
+            sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr)
                 goto error;
 
@@ -723,7 +661,7 @@ BPTR LoadSegment_ELF
 	        if (sh[i].flags & SHF_EXECINSTR)
 		    exec_hunk_seen = TRUE;
 
-                if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, exec_hunk_seen, error, lib))
+                if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, exec_hunk_seen, DOSBase))
                     goto error;
 	    }
         }
@@ -736,8 +674,8 @@ BPTR LoadSegment_ELF
         /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
         if ((sh[i].type == AROS_ELF_REL) && sh[SHINDEX(sh[i].info)].addr)
         {
-	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, error, lib);
-            if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, error, lib))
+	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
+            if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))
                 goto error;
 
             ilsFreeMem(sh[i].addr, sh[i].size);
@@ -746,25 +684,28 @@ BPTR LoadSegment_ELF
     }
 
     /* Everything is loaded now. Register the module at kernel.resource */
-    register_elf(file, hunks, &eh, sh, lib);
+    register_elf(file, hunks, &eh, sh, DOSBase);
     goto end;
 
 error:
 
     /* There were some errors, deallocate The hunks */
 
-    UnLoadSegment(hunks, (VOID_FUNC)funcarray[2], NULL);
+    InternalUnLoadSeg(hunks, (VOID_FUNC)funcarray[2]);
     hunks = 0;
 
 end:
     
-    /* Clear the caches to let the CPU see the new data and instructions */
-    /* We check for SysBase's lib_Version, since some
-     * users of this library will be running on AOS 1.3 or lower
+    /*
+     * Clear the caches to let the CPU see the new data and instructions.
+     * We check for SysBase's lib_Version, since this code is also built
+     * as linklib for AmigaOS version of AROS bootstrap, and it can be
+     * running on AOS 1.3 or lower.
      */
     if (SysBase->LibNode.lib_Version >= 36)
     {
         BPTR curr = hunks;
+
         while (curr)
         {
              struct hunk *hunk = BPTR2HUNK(BADDR(curr));

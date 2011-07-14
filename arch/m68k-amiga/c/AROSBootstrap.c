@@ -47,7 +47,7 @@ static inline void bug(const char *fmt, ...)
 }
 #endif
 
-#include <loadseg/loadseg.h>
+#include <loadseg.h>
 
 struct DosLibrary *DOSBase;
 
@@ -385,12 +385,21 @@ static AROS_UFH3(void, elfFree,
     AROS_USERFUNC_EXIT
 }
 
+/*
+ * This routine is called from within libloadseg.a's ELF loader.
+ * In dos.library it's responsible for collecting debug information from the loaded file.
+ * Here it does nothing (FIXME ???)
+ */
+void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase)
+{
+
+}
+
 static BPTR ROMLoad(BSTR bfilename)
 {
     gzFile gzf;
     UBYTE *filename;
     BPTR rom = BNULL;
-    SIPTR error;
     SIPTR funcarray[] = {
     	(SIPTR)elfRead,
     	(SIPTR)elfAlloc,
@@ -405,9 +414,9 @@ static BPTR ROMLoad(BSTR bfilename)
     if ((gzf = gzopen(filename, "rb"))) {
     	gzbuffer(gzf, 65536);
 
-    	rom = LoadSegment((BPTR)gzf, BNULL, funcarray, NULL, &error, (struct Library *)DOSBase);
+    	rom = LoadSegment((BPTR)gzf, BNULL, funcarray, NULL);
     	if (rom == BNULL) {
-    	    WriteF("'%S': Can't parse, error %N\n", bfilename, error);
+    	    WriteF("'%S': Can't parse, error %N\n", bfilename, IoErr());
     	}
 
     	gzclose_r(gzf);

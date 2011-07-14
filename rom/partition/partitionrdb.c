@@ -17,8 +17,6 @@
 #include <libraries/partition.h>
 #include <resources/filesysres.h>
 
-#include <loadseg/loadseg.h>
-
 #include "partition_support.h"
 #include "platform.h"
 
@@ -163,13 +161,33 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
 
-static SIPTR AddFS(struct RDBData *data)
+/* We can't use InternalLoadSeg() because DOS isn't initialized
+ * at this point. To allow this to be built as a relocatable
+ * library, we provide a dummy weak alias here, which will
+ * be overridden when linking the ROM image.
+ */
+static BPTR _InternalLoadSeg_AOS(BPTR fh,
+                         BPTR table,
+                         SIPTR * funcarray,
+                         SIPTR * stack,
+                         struct Library * DOSBase)
+{
+	return BNULL;
+}
+
+BPTR InternalLoadSeg_AOS(BPTR fh,
+                         BPTR table,
+                         SIPTR * funcarray,
+                         SIPTR * stack,
+                         struct Library * DOSBase)
+	__attribute__((weak, alias("_InternalLoadSeg_AOS")));
+
+static void AddFS(struct RDBData *data)
 {
     struct FileSysResource *fsr;
     struct FileSysNode *node;
     void (* FunctionArray[4])();
     struct FileSysReader fakefile;
-    SIPTR error = RETURN_OK;
 
     FunctionArray[0] = (void(*))ReadFunc;
     FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
@@ -178,7 +196,7 @@ static SIPTR AddFS(struct RDBData *data)
 
     fsr = OpenResource("FileSystem.resource");
     if (!fsr)
-    	return ERROR_INVALID_RESIDENT_LIBRARY;
+    	return;
 
     ForeachNode(&data->fsheaderlist, node) {
     	struct FileSysEntry *fsrnode;
@@ -201,7 +219,7 @@ static SIPTR AddFS(struct RDBData *data)
     	fakefile.size = size;
     	fakefile.fsn = node;
 	if (node->filesystem[0].lsb_LoadData[0] == 0x000003f3) {
-	    BPTR seg = LoadSegment((BPTR)&fakefile, BNULL, (SIPTR*)FunctionArray, NULL, &error, NULL);
+	    BPTR seg = InternalLoadSeg_AOS((BPTR)&fakefile, BNULL, (SIPTR*)FunctionArray, NULL, NULL);
 	    if (seg) {
     	    	D(bug("RDB fs %08x %d.%d '%s' seg=%08x added\n",
     	    	    dostype, version >> 16, version & 0xffff, &node->fhb.fhb_FileSysName, seg));
@@ -211,8 +229,6 @@ static SIPTR AddFS(struct RDBData *data)
     	    }
     	}
     }
-
-    return error;
 }
 
 #endif
@@ -566,10 +582,9 @@ UBYTE i;
             }
    	    FreeVec(buffer);
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
-   	    return AddFS(data);
-#else
-            return 0;
+   	    AddFS(data);
 #endif
+            return 0;
         }
         FreeMem(data, sizeof(struct RDBData));
     }
