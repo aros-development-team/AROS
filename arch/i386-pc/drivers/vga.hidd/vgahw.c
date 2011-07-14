@@ -202,9 +202,9 @@ void vgaDACLoad(struct vgaHWRec *restore, unsigned char start, int num)
 */
 void vgaRestore(struct vgaHWRec *restore)
 {
-    int i,tmp;
+    int i;
 
-    tmp = inb(vgaIOBase + 0x0A);		/* Reset flip-flop */
+    inb(vgaIOBase + 0x0A);		/* Reset flip-flop */
     outb(0x3C0, 0x00);			/* Enables pallete access */
 
     restore->MiscOutReg |= 0x01;
@@ -221,7 +221,7 @@ void vgaRestore(struct vgaHWRec *restore)
     for (i=0; i<9;  i++) outw(0x3CE, (restore->Graphics[i] << 8) | i);
 
     for (i=0; i<21; i++) {
-	tmp = inb(vgaIOBase + 0x0A);
+	inb(vgaIOBase + 0x0A);
 	outb(0x3C0,i); outb(0x3C0, restore->Attribute[i]);
     }
 
@@ -230,7 +230,7 @@ void vgaRestore(struct vgaHWRec *restore)
     vgaDACLoad(restore, 0, 256);
 
     /* Turn on PAS bit */
-    tmp = inb(vgaIOBase + 0x0A);
+    inb(vgaIOBase + 0x0A);
     outb(0x3C0, 0x20);
 }
 

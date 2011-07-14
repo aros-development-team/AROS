@@ -89,9 +89,7 @@ unsigned char handle_mouse_event(void)
 
     while (status & KBD_STATUS_OBF)
     {
-        unsigned char scancode;
-
-        scancode = mouse_read_input();
+        mouse_read_input();
 
         status = mouse_read_status();
 	if(!work--)
