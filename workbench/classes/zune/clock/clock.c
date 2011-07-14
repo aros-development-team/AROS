@@ -85,12 +85,9 @@ IPTR Clock__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 IPTR Clock__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
-    struct ClockData  	  old_clockdata;
     const struct TagItem *tags  = msg->ops_AttrList;
     struct TagItem   	 *tag;
     BOOL    	      	  redraw = FALSE;
-    
-    old_clockdata = data->clockdata;
     
     while ((tag = NextTagItem(&tags)) != NULL)
     {

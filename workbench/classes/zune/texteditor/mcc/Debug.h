@@ -502,10 +502,10 @@ void _UNMEMTRACK(const char *file, const int line, const char *func, const void 
 #define ENTER()              ((void)0)
 #define LEAVE()              ((void)0)
 #define RETURN(r)            ((void)0)
-#define SHOWVALUE(f, v)      ((void)0)
-#define SHOWPOINTER(f, p)    ((void)0)
-#define SHOWSTRING(f, s)     ((void)0)
-#define SHOWMSG(f, m)        ((void)0)
+#define SHOWVALUE(f, v)      ((void)(v))        /* Ensure side effects occur! */
+#define SHOWPOINTER(f, p)    ((void)(p))        /* Ensure side effects occur! */
+#define SHOWSTRING(f, s)     ((void)(s))        /* Ensure side effects occur! */
+#define SHOWMSG(f, m)        ((void)(m))        /* Ensure side effects occur! */
 #define MEMTRACK(f, p, s)    ((void)0)
 #define UNMEMTRACK(f, p)     ((void)0)
 #define D(f, ...)            ((void)0)
