@@ -83,7 +83,7 @@ typedef struct {
 void calcTimings(int x, int y, int vfreq, sync_t *sync)
 {
     ULONG h_period, h_freq, h_total, h_blank, h_front, h_sync, h_back,
-        v_freq, v_total, v_front, v_sync, v_back, duty_cycle, pixel_freq;
+          v_total, v_front, v_sync, v_back, duty_cycle, pixel_freq;
 
     sync->width = x;
     sync->height = y;
@@ -134,7 +134,6 @@ void calcTimings(int x, int y, int vfreq, sync_t *sync)
     h_freq = 1000000000 / h_period;
     pixel_freq = h_freq * h_total / CLOCK_STEP * CLOCK_STEP;
     h_freq = pixel_freq / h_total;
-    v_freq = 100 * h_freq / v_total;
 
     /* Back porch is half of H-blank */
     h_back = h_blank / 2;
@@ -394,7 +393,7 @@ OOP_Object *METHOD(INTELG45, Root, New)
     D(bug("[GMA] Root New\n"));
 
     struct TagItem *modetags, *tags;
-    struct TagItem *pool, *poolptr;
+    struct TagItem *poolptr;
 
     struct TagItem pftags_24bpp[] = {
         { aHidd_PixFmt_RedShift,    8   }, /* 0 */
@@ -454,7 +453,7 @@ OOP_Object *METHOD(INTELG45, Root, New)
 
     modetags = tags = AllocVecPooled(sd->MemPool,
         sizeof (struct TagItem) * (3 + SYNC_LIST_COUNT + 1));
-    pool = poolptr = AllocVecPooled(sd->MemPool,
+    poolptr = AllocVecPooled(sd->MemPool,
         sizeof(struct TagItem) * SYNC_TAG_COUNT * SYNC_LIST_COUNT);
 
 	struct TagItem i2c_attrs[] = {
