@@ -293,7 +293,6 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
 
 void freesysreq_intern(struct Window *window, struct IntuitionBase *IntuitionBase)
 {
-    struct Screen   	    	*scr;
     struct Gadget   	    	*gadgets;
     STRPTR  	    	     	*gadgetlabels;
     struct IntRequestUserData 	*requserdata;
@@ -302,8 +301,6 @@ void freesysreq_intern(struct Window *window, struct IntuitionBase *IntuitionBas
 
     if ((window == NULL) || (window == (void *)1L))
         return;
-
-    scr = window->WScreen;
 
     requserdata = (struct IntRequestUserData *)window->UserData;
 

@@ -929,7 +929,7 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
         
     if (right - left > 6)
     {
-        ULONG   	    	textlen, titlelen, textpixellen;
+        ULONG   	    	textlen, titlelen;
         struct TextExtent 	te;
 
         SetFont(rp, DRI(msg->wdp_Dri)->dri_Font);
@@ -945,8 +945,6 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
                           , window->BorderTop - 2);
     	if (textlen)
 	{
-	    textpixellen = te.te_Extent.MaxX - te.te_Extent.MinX + 1;
-
 	    left = left + 3;
 	    
             SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
