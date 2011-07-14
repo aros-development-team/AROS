@@ -504,14 +504,13 @@ static struct Resident **LoadResidents(ULONG *namearray)
 	BPTR seglist = BNULL;
 	BPTR bname;
     	UBYTE *name;
-    	SIPTR error = 0;
     	
     	bname = (BPTR)namearray[i];
     	name = ConvertBSTR(bname);
     	if (name) {
 	    handle = Open(name, MODE_OLDFILE);
 	    if (handle) {
-		seglist = LoadSegment(handle, BNULL, funcarray, &stack, &error, (struct Library *)DOSBase);
+		seglist = LoadSegment(handle, BNULL, funcarray, &stack);
 		Close(handle);
 	    }
 	    if (seglist) {
@@ -527,7 +526,7 @@ static struct Resident **LoadResidents(ULONG *namearray)
 		    reslist[rescnt++] = resident;
 		}
 	    } else {
-		WriteF("Failed to load '%S', error %N\n", bname, error);
+		WriteF("Failed to load '%S', error %N\n", bname, IoErr());
 	    }
 	    FreeString(name);
 	}
