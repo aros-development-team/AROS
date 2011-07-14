@@ -211,8 +211,8 @@ static void RADEONInitDispBandwidth(struct ati_staticdata *sd, struct CardState 
     float min_mem_eff = 0.8;
     float sclk_eff, sclk_delay;
     float mc_latency_mclk, mc_latency_sclk, cur_latency_mclk, cur_latency_sclk;
-    float disp_latency, disp_latency_overhead, disp_drain_rate, disp_drain_rate2;
-    float pix_clk, pix_clk2; /* in MHz */
+    float disp_latency, disp_latency_overhead, disp_drain_rate;
+    float pix_clk;           /* in MHz */
     int cur_size = 16;       /* in octawords */
     int critical_point;
     int stop_req, max_stop_req;
@@ -226,7 +226,6 @@ static void RADEONInitDispBandwidth(struct ati_staticdata *sd, struct CardState 
     mem_bw = sd->Card.mclk * (sd->Card.RamWidth / 8) * (sd->Card.IsDDR ? 2 : 1);
 
     pix_clk = mode->pixelc/1000.0;
-    pix_clk2 = 0;
 
     peak_disp_bw = (pix_clk * mode->bpp);
 
@@ -364,7 +363,6 @@ static void RADEONInitDispBandwidth(struct ati_staticdata *sd, struct CardState 
       Find the drain rate of the display buffer.
     */
     disp_drain_rate = pix_clk / (16.0/mode->bpp);
-    disp_drain_rate2 = 0;
 
     /*
       Find the critical point of the display buffer.
@@ -1321,7 +1319,7 @@ RADEONMonitorType RADEONDisplayDDCConnected(struct ati_staticdata *sd, RADEONDDC
 
 static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
 {
-    int i = 0, max_mt;
+    int i = 0;
 
 #if DEBUG
     const char *MonTypeName[7] =
@@ -1395,8 +1393,6 @@ static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
         "Unsupported"
     };
 #endif
-
-    max_mt = 5;
 
 /*
     if(info->IsSecondary) {
