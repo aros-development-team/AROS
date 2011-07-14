@@ -199,7 +199,6 @@ EXPORT_SYMBOL(drm_gem_object_alloc);
 static int
 drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 {
-	struct drm_device *dev;
 	struct drm_gem_object *obj;
 
 	/* This is gross. The idr system doesn't let us try a delete and
@@ -219,7 +218,6 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 		spin_unlock(&filp->table_lock);
 		return -EINVAL;
 	}
-	dev = obj->dev;
 
 	/* Release reference and decrement refcount. */
 	idr_remove(&filp->object_idr, handle);

@@ -95,7 +95,11 @@ static void ttm_tt_free_user_pages(struct ttm_tt *ttm)
 			continue;
 		}
 
-#if !defined(__AROS__)
+#ifdef __AROS__
+                if (write & dirty) {
+                    /* Nothing to do on AROS */
+                }
+#else
 		if (write && dirty && !PageReserved(page))
 			set_page_dirty_lock(page);
 #endif
