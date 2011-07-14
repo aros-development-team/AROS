@@ -1137,7 +1137,6 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 				if ((lock = Lock(checkstring, ACCESS_READ)))
 				{
 				    struct FileInfoBlock 	*fib;
-				    BOOL 			isfile = FALSE;
 
 				    if ((fib = AllocDosObject(DOS_FIB, NULL)))
 				    {
