@@ -272,7 +272,7 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
 
     BOOL                hastitle;
     BOOL                hastitlebar;
-    UWORD               textstart = 0, barh, x;
+    UWORD               barh, x;
     LONG                dy;
 
     struct RastPort    *rp = &window->WScreen->RastPort;
@@ -353,7 +353,6 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
                     break;
             }
             x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinBT_o, dy, data->dc->BarJoinBT_s, barh, x, 0, data->dc->BarJoinBT_s, barh);
-            textstart = x;
             if (textpixellen > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarTitleFill_o, dy, data->dc->BarTitleFill_s, barh, x, 0, textpixellen, barh);
             x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinTB_o, dy, data->dc->BarJoinTB_s, barh, x, 0, data->dc->BarJoinTB_s, barh);
         }
@@ -379,14 +378,10 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     struct RastPort    *rp;
     struct NewImage    *ni = NULL;
 
-    BOOL                hasdepth;
-    BOOL                haszoom;
-    BOOL                hasclose;
-    BOOL                hasdrag;
     BOOL                hastitle;
     BOOL                hastitlebar;
     UWORD               textstart = 0, barh, x;
-    ULONG               bc, color, s_col, e_col, arc;
+    ULONG               color, s_col, e_col, arc;
     LONG                dy;
     LONG                pen = -1;
     ULONG               changetype = CHANGE_NO_CHANGE;
@@ -438,10 +433,6 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
         return;
 
     hastitle = window->Title != NULL ? TRUE : FALSE;
-    hasclose = (window->Flags & WFLG_CLOSEGADGET) ? TRUE : FALSE;
-    hasdepth = (window->Flags & WFLG_DEPTHGADGET) ? TRUE : FALSE;
-    hasdrag = (window->Flags & WFLG_DRAGBAR) ? TRUE : FALSE;
-    haszoom = ((window->Flags & WFLG_HASZOOM) || ((window->Flags & WFLG_SIZEGADGET) && hasdepth)) ? TRUE : FALSE;
     hastitlebar = (window->BorderTop == data->dc->BarHeight) ? TRUE : FALSE;
 
     if (wd->img_border_normal->ok) ni = wd->img_border_normal;
@@ -456,14 +447,12 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
         e_col = data->dc->ActivatedGradientColor_e;
         arc = data->dc->ActivatedGradientColor_a;
         dy = 0;
-        bc = data->dc->BaseColors_a;
         pen = wd->ActivePen;
     } else {
         s_col = data->dc->DeactivatedGradientColor_s;
         e_col = data->dc->DeactivatedGradientColor_e;
         arc = data->dc->DeactivatedGradientColor_a;
         dy = data->dc->BarHeight;
-        bc = data->dc->BaseColors_d;
         if (!data->dc->UseGradients)
         {
             if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
@@ -863,7 +852,6 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     ULONG                   bc, color, s_col, e_col, arc;
     UWORD                   bl, bt, br, bb, ww, wh;
     LONG    pen = -1;
-    int                     dy;
 
     if (wd->img_border_normal->ok) ni = wd->img_border_normal;
 
@@ -890,14 +878,12 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         s_col = data->dc->ActivatedGradientColor_s;
         e_col = data->dc->ActivatedGradientColor_e;
         arc = data->dc->ActivatedGradientColor_a;
-        dy = 0;
         bc = data->dc->BaseColors_a;
     } else {
         pen = wd->DeactivePen;
         s_col = data->dc->DeactivatedGradientColor_s;
         e_col = data->dc->DeactivatedGradientColor_e;
         arc = data->dc->DeactivatedGradientColor_a;
-        dy = data->dc->BarHeight;
         bc = data->dc->BaseColors_d;
         if (!data->dc->UseGradients)
         {
@@ -1006,22 +992,12 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
     BOOL                    hasdepth;
     BOOL                    haszoom;
     BOOL                    hasclose;
-    BOOL                    hasdrag;
-    BOOL                    hastitle;
-    BOOL                    hassize;
-    BOOL                    borderless;
     LONG                    width;
-    LONG                    rightborder = 0;
-    LONG                    bottomborder = 0;
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
-    hastitle = window->Title != NULL ? TRUE : FALSE;
     hasclose = (window->Flags & WFLG_CLOSEGADGET) ? TRUE : FALSE;
-    hassize = (window->Flags & WFLG_SIZEGADGET) ? TRUE : FALSE;
     hasdepth = (window->Flags & WFLG_DEPTHGADGET) ? TRUE : FALSE;
-    hasdrag = (window->Flags & WFLG_DRAGBAR) ? TRUE : FALSE;
-    borderless = (window->Flags & WFLG_BORDERLESS) ? TRUE : FALSE;
     haszoom = ((window->Flags & WFLG_HASZOOM) || ((window->Flags & WFLG_SIZEGADGET) && hasdepth)) ? TRUE : FALSE;
 
 
@@ -1341,11 +1317,6 @@ static IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayo
     
                     break;
     
-                case GTYP_SIZING:
-                    rightborder = data->dc->RightBorderGadgets;
-                    if ((gadget->Flags & WFLG_SIZEBBOTTOM) != 0) bottomborder = data->dc->BottomBorderGadgets;
-                    break;
-    
                 case GTYP_WDRAGGING:
                     break;
     
@@ -1485,7 +1456,7 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     BOOL                    hit = (msg->wdp_Flags & WDF_DBPK_HIT) ? TRUE : FALSE;
     ULONG                   y, x, bx0, bx1, by0, by1;
     LONG                    size;
-    ULONG                   bc, color, s_col, e_col, arc;
+    ULONG                   s_col, e_col, arc;
     LONG                    pen = -1;
     struct BitMap          *cachedgadgetbitmap = NULL;
     ULONG                   changetype = CHANGE_NO_CHANGE;
@@ -1573,8 +1544,6 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     else
         return FALSE;
 
-    color = 0x00cccccc;
-
     if (wd->img_border_normal->ok) ni = wd->img_border_normal;
 
     if (ni == NULL) data->dc->UseGradients = TRUE;
@@ -1584,7 +1553,6 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
         s_col = data->dc->ActivatedGradientColor_s;
         e_col = data->dc->ActivatedGradientColor_e;
         arc = data->dc->ActivatedGradientColor_a;
-        bc = data->dc->BaseColors_a;
         pen = wd->ActivePen;
     }
     else
@@ -1592,7 +1560,6 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
         s_col = data->dc->DeactivatedGradientColor_s;
         e_col = data->dc->DeactivatedGradientColor_e;
         arc = data->dc->DeactivatedGradientColor_a;
-        bc = data->dc->BaseColors_d;
         if (!data->dc->UseGradients)
         {
             if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;

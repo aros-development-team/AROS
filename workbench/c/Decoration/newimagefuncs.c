@@ -105,7 +105,7 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
     Object                     *pic;
     struct pdtBlitPixelArray    pa;
     STRPTR                      buffer;
-    UWORD                       w, h, tc, x, y;
+    UWORD                       w, h, x, y;
     UBYTE                       mask;
     ULONG                      *dst;
     LONG                        len;
@@ -153,7 +153,6 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
                     {
                         rp = CreateRastPort();
                         if (rp) rp->BitMap = map;
-                        tc = bmhd->bmh_Transparent;
                     }
                 }
 
