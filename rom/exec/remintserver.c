@@ -49,12 +49,12 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct List *list;
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
+    struct List *list;
     struct Custom *custom = (struct Custom *)(void **)0xdff000;
-#endif
 
     list = (struct List *)SysBase->IntVects[intNumber].iv_Data;
+#endif
 
     Disable();
 
