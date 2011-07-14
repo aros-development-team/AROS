@@ -307,7 +307,7 @@ static void new_line( layout_struct *ldata, int startx, int starty, int *width, 
 
 static int layout_text( layout_struct *ldata, string str, int len, int startx, int starty, int *width, int *height )
 {
-	int		i, idx, linebreak, xpos, xsize, xmax, ypos;
+	int		i, linebreak, xpos, xsize, xmax, ypos;
 	int		strlen, xstrsize, xskip, fontheight;
 	int		charlen, charskip, nospace;
 
@@ -330,7 +330,6 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 			charskip = len;
 			xskip = xstrsize;
 			linebreak = FALSE;
-			idx = 1;
 		}
 		else
 		{
@@ -350,7 +349,6 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 				charskip = strlen;
 				xskip = xstrsize;
 				linebreak = FALSE;
-				idx = 2;
 			}
 			else	/* len > strlen */
 			{
@@ -368,7 +366,6 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 						xskip = xstrsize;	/* this is bigger than neccessary,
 									   but small enough to fit xsize */
 						nospace = FALSE;
-						idx = 3;
 						break;
 					}
 				}
@@ -381,7 +378,6 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 						charlen = 0;
 						charskip = 0;
 						xskip = 0;
-						idx = 4;
 					}
 					else
 					{
@@ -393,7 +389,6 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 								charlen = i;
 								charskip = i+1;
 								nospace = FALSE;
-								idx = 5;
 								break;
 							}
 						}
@@ -402,7 +397,6 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 							/* no space at end of monster word */
 							charlen = len;
 							charskip = len;
-							idx = 6;
 						}
 						xskip = xstrsize;
 						if( charlen > strlen )
@@ -421,7 +415,7 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 		{
 			linelist_addlf( ldata, ldata->oldline );
 		}
-//		D( printf("(%d %d %d i=%d x=%d y=%d %d %d %s)", len, charlen, charskip, idx, startx+xpos, starty+ypos, xstrsize, xskip, linebreak ? "br":""); )
+//		D( printf("(%d %d %d x=%d y=%d %d %d %s)", len, charlen, charskip, startx+xpos, starty+ypos, xstrsize, xskip, linebreak ? "br":""); )
 		xpos += xskip;
 		if( xpos > xmax )
 			xmax = xpos;

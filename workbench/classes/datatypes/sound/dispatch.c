@@ -1896,7 +1896,6 @@ IPTR __regargs Sound_RENDER( Class *cl, Object *o, struct gpRender *gpr )
 //	if( gpr->gpr_Redraw == GREDRAW_REDRAW )
 	{
 		struct RastPort		*rp = gpr->gpr_RPort;
-		struct ColorMap		*cm = NULL;
 		struct IBox			gbox;
 		LONG				bgpen=id->BackgroundPen, wfpen=id->WaveformPen;
 		UWORD				*pens = gpr->gpr_GInfo->gi_DrInfo->dri_Pens;
@@ -1913,12 +1912,6 @@ IPTR __regargs Sound_RENDER( Class *cl, Object *o, struct gpRender *gpr )
 		
 		if( ( x != SHRT_MAX && y != SHRT_MAX ) && ( w >=16 && h >= 8 ) )
 		{
-			if( gpr->gpr_GInfo->gi_Screen )
-			{
-				cm = gpr->gpr_GInfo->gi_Screen->ViewPort.ColorMap;
-			
-			}
-				
 			SetAPen( rp, ( bgpen == -1 ) ? pens[TEXTPEN] : bgpen );
 			RectFill( rp, x,y, w+x-1, h+y-1 );
 

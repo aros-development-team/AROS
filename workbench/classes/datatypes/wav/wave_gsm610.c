@@ -25,11 +25,9 @@ struct gsmstate {
 
 DEC_SETUPPROTO(SetupGSM610) {
 	//int valP = 1;
-	struct ClassBase * libBase;
 	struct GSM610_Format * fmt;
 	struct gsmstate * state;
 
-	libBase = data->libBase;
 	fmt = (struct GSM610_Format *)data->fmt;
 
 	if (fmt->numChannels != 1)
@@ -63,10 +61,8 @@ DEC_SETUPPROTO(SetupGSM610) {
 }
 
 DEC_CLEANUPPROTO(CleanupGSM610) {
-	struct ClassBase * libBase;
 	struct gsmstate * state;
 
-	libBase = data->libBase;
 	state = (struct gsmstate *)data->state;
 
 	FreeVec(state->samples);

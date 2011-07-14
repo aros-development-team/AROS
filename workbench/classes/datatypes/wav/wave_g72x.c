@@ -27,10 +27,8 @@ struct WAV_G72x_state {
 };
 
 DEC_SETUPPROTO(SetupG72x) {
-	struct ClassBase * libBase;
 	struct G72x_Format * fmt;
 	struct WAV_G72x_state * state;
-	libBase = data->libBase;
 	LONG ch;
 	fmt = (struct G72x_Format *)data->fmt;
 

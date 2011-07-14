@@ -356,7 +356,6 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
     JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
-    int row_stride;		/* physical row width in image buffer */
     my_dest_ptr dest;
 
     D(bug("jpeg.datatype/SaveJPEG()\n"));
@@ -435,7 +434,6 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
     }
     jpeghandle->linebuf = linebuf;
 
-    row_stride = width * 3;	/* JSAMPLEs per row in image_buffer */
     row_pointer[0] = linebuf;
     while (cinfo.next_scanline < cinfo.image_height)
     {
