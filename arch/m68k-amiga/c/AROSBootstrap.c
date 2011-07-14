@@ -840,7 +840,8 @@ __startup static AROS_ENTRY(int, startup,
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
     	BSTR name = AROS_CONST_BSTR("aros.elf.gz");
-    	BSTR format = AROS_CONST_BSTR("ROM/A,MODULES/M");
+    	enum { ARG_CMD = 0, ARG_ROM = 1, ARG_MODULES = 2 };
+    	BSTR format = AROS_CONST_BSTR("CMD/K,ROM,MODULES/M");
     	ULONG args[100] __attribute__((aligned(4)));
 
     	WriteF("AROSBootstrap " ADATE "\n");
@@ -849,24 +850,24 @@ __startup static AROS_ENTRY(int, startup,
         RdArgs(format, MKBADDR(args), sizeof(args)/sizeof(args[0]));
         if (!IoErr()) {
             /* Load ROM image */
-            if (args[0] == BNULL)
-                args[0] = name;
+            if (args[ARG_ROM] == BNULL)
+                args[ARG_ROM] = name;
 
-            ROMSegList = ROMLoad(args[0]);
+            ROMSegList = ROMLoad(args[ARG_ROM]);
             if (ROMSegList != BNULL) {
                 struct Resident **ResidentList;
                 WriteF("Successfully loaded ROM\n");
 
-                ResidentList = LoadResidents((IPTR *)args[1]);
+                ResidentList = LoadResidents((IPTR *)args[ARG_MODULES]);
 
                 WriteF("Booting...\n");
                 Delay(50);
 
-                BootROM(ROMSegList, ResidentList, BADDR(args[0]));
+                BootROM(ROMSegList, ResidentList, BADDR(args[ARG_CMD]));
 
                 UnLoadSeg(ROMSegList);
             } else {
-                WriteF("Can't load ROM ELF file %S\n", args[0]);
+                WriteF("Can't load ROM ELF file %S\n", args[ARG_ROM]);
             }
         } else {
             WriteF("Can't parse arguments, error %N\n", IoErr());
