@@ -43,10 +43,8 @@ LONG main()
             dl=LockDosList(LDF_DEVICES|LDF_READ);
             if((dl=FindDosEntry(dl,arglist.device,LDF_DEVICES))!=0)
             {
-                BPTR input;
                 LONG errorcode=0;
 
-                input=Input();
                 msgport=dl->dol_Task;
                 UnLockDosList(LDF_DEVICES|LDF_READ);
                         

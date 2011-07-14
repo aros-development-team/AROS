@@ -132,7 +132,7 @@ int main() {
 
                     do {
                       struct IntuiMessage *msg;
-                      UWORD class,code,qualifier;
+                      UWORD class;
 
                       if(defragmented==FALSE) {
                         if((errorcode=DoPkt(msgport, ACTION_SFS_DEFRAGMENT_STEP, (SIPTR)steps, 190, 0, 0, 0))!=DOSFALSE) {
@@ -186,8 +186,6 @@ int main() {
                       while((msg=(struct IntuiMessage *)GetMsg(mywindow->UserPort))!=0) {
 
                         class=msg->Class;
-                        code=msg->Code;
-                        qualifier=msg->Qualifier;
 
                         ReplyMsg((struct Message *)msg);
 
