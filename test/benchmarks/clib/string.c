@@ -20,13 +20,13 @@ int main()
     BENCHMARK_BUFFER(memmove,1000, BUFSIZE);
     #undef BENCHMARK
     
-    #define BENCHMARK(z, n, c) int res ## n = memcmp(dst, src, BUFSIZE); res ## n = 0;
+    #define BENCHMARK(z, n, c) do { int res ## n = memcmp(dst, src, BUFSIZE); res ## n = 0; (void)res ## n; } while (0);
     memset(src, 'a', BUFSIZE);
     memset(dst, 'a', BUFSIZE);
     BENCHMARK_BUFFER(memcmp,1000, BUFSIZE);
     #undef BENCHMARK
     
-    #define BENCHMARK(z, n, c) char *res ## n = memchr(dst, 'b', BUFSIZE); res ## n = NULL;
+    #define BENCHMARK(z, n, c) do { char *res ## n = memchr(dst, 'b', BUFSIZE); res ## n = NULL; (void)res ## n; } while (0);
     memset(src, 'a', BUFSIZE);
     BENCHMARK_BUFFER(memchr,1000, BUFSIZE);
     #undef BENCHMARK
@@ -35,7 +35,7 @@ int main()
     BENCHMARK_BUFFER(memset,1000, BUFSIZE);
     #undef BENCHMARK
     
-    #define BENCHMARK(z, n, c) int res ## n = strlen(dst); res ## n = 0;
+    #define BENCHMARK(z, n, c) do { int res ## n = strlen(dst); res ## n = 0; (void)res ## n; } while (0);
     memset(dst, 'a', BUFSIZE);
     dst[BUFSIZE - 1] = '\0';
     BENCHMARK_BUFFER(strlen,1000, BUFSIZE);
@@ -47,13 +47,13 @@ int main()
     BENCHMARK_BUFFER(strncpy,1000, BUFSIZE);
     #undef BENCHMARK
     
-    #define BENCHMARK(z, n, c) int res ## n = strncmp(dst, src, BUFSIZE); res ## n = 0;
+    #define BENCHMARK(z, n, c) do { int res ## n = strncmp(dst, src, BUFSIZE); res ## n = 0; (void)res ## n; } while (0);
     memset(src, 'a', BUFSIZE);
     memset(dst, 'a', BUFSIZE);
     BENCHMARK_BUFFER(strncmp,1000, BUFSIZE);
     #undef BENCHMARK
     
-    #define BENCHMARK(z, n, c) int res ## n = strncasecmp(dst, src, BUFSIZE); res ## n = 0;
+    #define BENCHMARK(z, n, c) do { int res ## n = strncasecmp(dst, src, BUFSIZE); res ## n = 0; (void)res ## n; } while (0);
     memset(src, 'a', BUFSIZE);
     memset(dst, 'A', BUFSIZE);
     BENCHMARK_BUFFER(strncasecmp,1000, BUFSIZE);

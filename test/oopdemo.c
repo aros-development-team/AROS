@@ -558,7 +558,6 @@ struct RootData
 Object Root_New(Class *cl, APTR param)
 {
     struct _Object *o;
-    struct RootData *data;
 
     EnterFunc(bug("Root::New(cl=%s, param = %p)\n",
     	cl->ClassNode.ln_Name, param));
@@ -570,8 +569,6 @@ Object Root_New(Class *cl, APTR param)
     {
     	D(bug("Mem allocated: %p\n", o));
     	o->Class = cl;
-
-    	data = (struct RootData *)BASEOBJECT(o);
 
     	cl->ObjectCount ++;
 

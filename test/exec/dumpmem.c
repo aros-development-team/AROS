@@ -54,7 +54,6 @@ int main(int argc, char **argv)
     struct RDArgs           *rda;
     char                    outpstring[sizeof(unsigned int)*6];
     IPTR                    offset,start_address,dump_size = 0;
-    BOOL                    line_end;
     int                     PROGRAM_ERROR = RETURN_OK;
     char                    *ERROR_TEXT,*HELPTXT;
 
@@ -132,8 +131,6 @@ int main(int argc, char **argv)
 
                         if ( ((offset/sizeof(unsigned int)) % 6) == 5 ) 
                         {
-                            line_end = TRUE;
-                            
                             clean_string( outpstring );
 
                             if (serial_out) kprintf("       '%24.24s'                         \t\n",outpstring);
@@ -141,8 +138,6 @@ int main(int argc, char **argv)
                         }
                         else
                         {   
-                            line_end = FALSE;
-     
                             if (serial_out)  kprintf(" ");
                             else printf(" ");
                         }

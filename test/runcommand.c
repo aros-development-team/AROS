@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 	struct aros_startup * oldstartup;
 	char *fname = "SYS:Utilities/Clock";
 	char *full = "";
-	int lastresult;
+	int lastresult = RETURN_OK;
 	
 	oldstartup = (struct aros_startup *)GetIntETask(FindTask(NULL))->iet_startup;
 	
@@ -34,6 +34,6 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	printf("current iet_startup: %p, old iet_startup: %p\n", (struct aros_startup *)GetIntETask(FindTask(NULL))->iet_startup, oldstartup);
+	printf("current iet_startup: %p, old iet_startup: %p, result: %d\n", (struct aros_startup *)GetIntETask(FindTask(NULL))->iet_startup, oldstartup, lastresult);
 	exit(0);
 }
