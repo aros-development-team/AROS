@@ -511,8 +511,8 @@ ValidationResult collect_file_extensions(DiskStructure* ds, struct BlockCache* b
 ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
 {
 	struct BlockCache *bc;
-	LONG primary_type;
 	LONG entry_type;
+	LONG primary_type;
 	ULONG id;
 
 	D(bug("[afs validate]: analyzing block %lu\n", blk));
@@ -542,6 +542,18 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
 	 */
 	entry_type = OS_BE2LONG(bc->buffer[BLK_SECONDARY_TYPE(ds->vol)]);
 	primary_type = OS_BE2LONG(bc->buffer[BLK_PRIMARY_TYPE]);
+
+	switch (primary_type) {
+	    case T_LIST:
+	    	break;
+	    case T_SHORT:
+	    	break;
+	    case T_DATA:
+	    	break;
+	    default:
+	    	/* TODO: handle unknown primary type */
+	    	break;
+	}
 
 	/*
 	 * for root block: collect all bitmap blocks now

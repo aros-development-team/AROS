@@ -483,7 +483,6 @@ struct AfsHandle *ah = NULL;
 struct BlockCache *fileblock, *dirblock;
 UBYTE filename[34];
 ULONG block;
-ULONG dirblocknum;
 ULONG fileblocknum = -1;
 
 	/*
@@ -515,7 +514,6 @@ ULONG fileblocknum = -1;
 			(OS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]) == ST_ROOT))
 		{
 			D(bug("[afs]    parent of %s is on block %lu\n", name, dirblock->blocknum));
-			dirblocknum = dirblock->blocknum;
 
 			/* 
 			 * get the header block of the file to open 
