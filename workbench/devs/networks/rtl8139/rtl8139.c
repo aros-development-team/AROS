@@ -642,7 +642,6 @@ out_drain:
 static int rtl8139nic_close(struct net_device *unit)
 {
 	struct fe_priv *np = get_pcnpriv(unit);
-	UBYTE *base;
 
 	unit->rtl8139u_flags &= ~IFF_UP;
 
@@ -655,8 +654,6 @@ static int rtl8139nic_close(struct net_device *unit)
 	ObtainSemaphore(&np->lock);
 
 	rtl8139nic_deinitialize(unit);    // Stop the chipset and set it in 16bit-mode
-
-	base = get_hwbase(unit);
 
 	ReleaseSemaphore(&np->lock);
 

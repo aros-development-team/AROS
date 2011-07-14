@@ -324,8 +324,6 @@ AROS_LH1(LONG, abortio,
     LIBBASETYPEPTR, LIBBASE, 6, Nforce)
 {
     AROS_LIBFUNC_INIT
-    struct NFUnit *dev;
-    dev = (APTR)req->ios2_Req.io_Unit;
 
     D(bug("[nforce] AbortIO\n"));
 

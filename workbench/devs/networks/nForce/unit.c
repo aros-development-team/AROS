@@ -452,7 +452,6 @@ AROS_UFH3(void, TX_Int,
     if (!netif_queue_stopped(unit))
     {
         UWORD packet_size, data_size;
-        struct NFBase *base;
         struct IOSana2Req *request;
         struct Opener *opener;
         UBYTE *buffer;
@@ -462,7 +461,6 @@ AROS_UFH3(void, TX_Int,
         struct TypeStats *tracker;
 
         proceed = TRUE; /* Success by default */
-        base = unit->nu_device;
         port = unit->request_ports[WRITE_QUEUE];
 
         /* Still no error and there are packets to be sent? */

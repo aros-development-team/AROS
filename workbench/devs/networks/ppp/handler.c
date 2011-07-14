@@ -272,11 +272,8 @@ VOID CMD_READ_Ready(LIBBASETYPEPTR LIBBASE, struct IOExtSer *ioSer){
 
 VOID Incoming_IP_Packet(LIBBASETYPEPTR LIBBASE, BYTE *data , ULONG length){
 	struct IOSana2Req *ios2;
-	struct PPP_DevUnit *sdu;
 
 // bug("GotPacket %d bytes \n",length);
-
-	sdu =   (struct PPP_DevUnit *)LIBBASE->sd_Unit;
 
 	if(length){ // ignore zero-length packets.
 

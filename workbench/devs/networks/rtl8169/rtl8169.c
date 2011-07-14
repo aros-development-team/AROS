@@ -230,26 +230,20 @@ UBYTE *get_hwbase(struct net_device *unit)
 
 void MMIO_W8(APTR addr, UBYTE val8)
 {
-    UBYTE tmp;
-    
     *((volatile UBYTE *)(addr)) = (val8);
-    tmp = RTL_R8(addr);
+    RTL_R8(addr);
 }
 
 void MMIO_W16(APTR addr, UWORD val16)
 {
-    UWORD tmp;
-    
     *((volatile UWORD *)(addr)) = (val16);
-    tmp = RTL_R16(addr);
+    RTL_R16(addr);
 }
 
 void MMIO_W32(APTR addr, ULONG val32)
 {
-    ULONG tmp;
-    
     *((volatile ULONG *)(addr)) = (val32);
-    tmp = RTL_R32(addr);
+    RTL_R32(addr);
 }
 
 void mdio_write(struct net_device *unit, int RegAddr, UWORD value)

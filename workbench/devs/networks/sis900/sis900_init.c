@@ -356,8 +356,6 @@ AROS_LH1(LONG, abortio,
     LIBBASETYPEPTR, LIBBASE, 6, SiS900Dev)
 {
     AROS_LIBFUNC_INIT
-    struct SiS900Unit *unit;
-    unit = (APTR)req->ios2_Req.io_Unit;
 
 D(bug("[SiS900] AbortIO()\n"));
 

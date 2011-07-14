@@ -454,7 +454,6 @@ out_drain:
 static int pcn32_close(struct net_device *dev)
 {
     struct fe_priv *np = get_pcnpriv(dev);
-    UBYTE *base;
 
     dev->pcnu_flags &= ~IFF_UP;
 
@@ -468,8 +467,6 @@ static int pcn32_close(struct net_device *dev)
     ObtainSemaphore(&np->lock);
     
     pcnet32_deinitialize(dev);    // Stop the chipset and set it in 16bit-mode
-
-    base = get_hwbase(dev);
 
     ReleaseSemaphore(&np->lock);
 

@@ -524,7 +524,7 @@ AROS_LH1(LONG, abortio,
 		}
 	}
 	Enable();
-	return 0;
+	return result;
 	AROS_LIBFUNC_EXIT
 }
 

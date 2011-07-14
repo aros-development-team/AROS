@@ -335,7 +335,7 @@ AROS_UFH3(void, RTL8169_TX_IntF,
 
     struct rtl8169_priv *np = unit->rtl8169u_priv;
 	struct RTL8169Base *RTL8169DeviceBase = unit->rtl8169u_device;
-	int nr, try_count = 1;
+	int nr;
 	BOOL proceed = FALSE; /* Fails by default */
 
 	RTLD(bug("[%s] RTL8169_TX_IntF()\n", unit->rtl8169u_name))
@@ -454,7 +454,6 @@ AROS_UFH3(void, RTL8169_TX_IntF,
 				}
 		
 			}
-			try_count = 0;
 			np->cur_tx++;
 		} // while
 	}

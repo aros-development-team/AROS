@@ -617,7 +617,7 @@ static BOOL CmdConfigInterface(struct IOSana2Req *request,
 {
    struct DevUnit *unit;
    BYTE error = 0;
-   ULONG wire_error;
+   ULONG wire_error = S2WERR_UNIT_OFFLINE;
 
    /* Configure adapter */
 
@@ -643,7 +643,7 @@ static BOOL CmdConfigInterface(struct IOSana2Req *request,
    else
    {
       request->ios2_Req.io_Error = error;
-      request->ios2_WireError = S2WERR_IS_CONFIGURED;
+      request->ios2_WireError = wire_error;
    }
 
    /* Return */

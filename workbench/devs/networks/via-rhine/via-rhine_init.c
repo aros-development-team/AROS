@@ -342,8 +342,6 @@ AROS_LH1(LONG, abortio,
     LIBBASETYPEPTR, LIBBASE, 6, VIARHINEDev)
 {
     AROS_LIBFUNC_INIT
-    struct VIARHINEUnit *dev;
-    dev = (APTR)req->ios2_Req.io_Unit;
 
 D(bug("[VIA-RHINE] init.AbortIO\n"));
 

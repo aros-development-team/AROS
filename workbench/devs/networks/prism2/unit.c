@@ -1490,7 +1490,7 @@ static BOOL AddressFilter(struct DevUnit *unit, UBYTE *address,
 
 static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
-   UWORD i, packet_size, data_size, send_size, packet_type, ieee_length,
+   UWORD i, packet_size, data_size, packet_type, ieee_length,
       frame_id;
    UBYTE *buffer;
    struct DevBase *base;
@@ -1566,8 +1566,6 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
          }
 
          /* Write packet header */
-
-         send_size = (packet_size + 1) & ~0x1;
 
          if((request->ios2_Req.io_Flags & SANA2IOF_RAW) != 0)
          {

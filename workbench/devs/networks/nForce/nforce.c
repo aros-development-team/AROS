@@ -917,8 +917,8 @@ static int nv_open(struct net_device *dev)
      * speed changes cause interrupts and are handled by nv_link_irq().
      */
     {
-        ULONG miistat;
-        miistat = readl(base + NvRegMIIStatus);
+        D(ULONG miistat;)
+        D(miistat =) readl(base + NvRegMIIStatus);
         writel(NVREG_MIISTAT_MASK, base + NvRegMIIStatus);
         D(bug("startup: got 0x%08x.\n", miistat));
     }
