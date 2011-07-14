@@ -99,7 +99,6 @@
     	ULONG id;
 	LONG len;
 
-	SetIoErr(0);
     	len = ilsRead(fh, &id, sizeof(id));
 	if (len == sizeof(id)) {
 	    id = AROS_BE2LONG(id);
@@ -115,7 +114,16 @@
  	}
     }
 
-    SetIoErr(ERROR_NOT_EXECUTABLE);
+    /* This routine can be called from partition.library, when
+     * DOSBase is NULL, from HDToolbox, on m68k, when adding
+     * a new device to HDToolbox.
+     *
+     * Luckily, we're not trying to read ELF, which has a
+     * mess of SetIoErr() calls in it.
+     */
+    if (DOSBase != NULL)
+        SetIoErr(ERROR_NOT_EXECUTABLE);
+
     return BNULL;
   
     AROS_LIBFUNC_EXIT
