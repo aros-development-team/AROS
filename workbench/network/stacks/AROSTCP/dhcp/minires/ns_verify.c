@@ -208,6 +208,9 @@ ns_verify(u_char *msg, unsigned *msglen, void *k,
 	/* Read the original id and error. */
 	BOUNDS_CHECK(cp, 2*INT16SZ);
 	GETSHORT(id, cp);
+	if (id) {
+	    /* FIXME: We should probably do something here */
+	}
 	GETSHORT(error, cp);
 
 	/* Parse the other data. */
