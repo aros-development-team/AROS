@@ -208,7 +208,6 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
     LONG  match = 0;
     int   i;
     char  name[MAX_PATH_LEN];
-    BOOL  isfile = TRUE;
     BOOL  deleteit = FALSE;
     BOOL  deletedfile = FALSE;
     BOOL  firstmatch = TRUE;
@@ -323,7 +322,6 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                     deleteit = FALSE;
                 }
             }
-            isfile = !isDirectory(ap, forcelinks);
             strcpy(name, ap->ap_Buf);
 	}
         MatchEnd(ap);

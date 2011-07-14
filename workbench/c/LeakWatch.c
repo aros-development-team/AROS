@@ -689,11 +689,8 @@ int main(void)
     struct TrackedResources *start_rs = NULL;
     BOOL quitme = FALSE;
     int numlines = 30;
-    struct Task *this;
     ULONG  portsig;
     struct MsgPort *port;
-
-    this = FindTask(NULL);
 
     port = CreateMsgPort();
     if (!port)

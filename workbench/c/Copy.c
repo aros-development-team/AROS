@@ -1352,10 +1352,10 @@ void PatCopy(STRPTR name, struct CopyData *cd)
     
                         if (buffer)
                         {
-                    	    BPTR dirlock, lock;
+                    	    BPTR lock;
                             struct DevProc *dvp = GetDeviceProc("", NULL);
 
-                            dirlock = CurrentDir(APath->ap_Current->an_Lock);
+                            CurrentDir(APath->ap_Current->an_Lock);
                             if (ReadLink(dvp->dvp_Port, APath->ap_Current->an_Lock, APath->ap_Info.fib_FileName, buffer, BUFFERSIZE - 1) > 0)
                             {
                                 BOOL link_ok = FALSE;

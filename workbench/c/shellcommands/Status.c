@@ -87,7 +87,7 @@
 
 #include <aros/shcommands.h>
 
-static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb,
+static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, BOOL all,
 			 struct Process *process);
 
 AROS_SH5(Status,41.1,
@@ -163,7 +163,7 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 
 	if (process != NULL)
 	{
-	    printProcess(DOSBase, full, tcb, process);
+	    printProcess(DOSBase, full, tcb, all, process);
 	}
 	else
 	{
@@ -183,7 +183,7 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 
 	ForeachNode(cliList, ci)
 	{
-	    printProcess(DOSBase, full, tcb, ci->ci_Process);
+	    printProcess(DOSBase, full, tcb, all, ci->ci_Process);
 	}
 
 	ReleaseSemaphore(&root->rn_RootLock);
@@ -196,7 +196,7 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 
 
 /* Print the information for a certain cli process */
-static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb,
+static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, BOOL all,
 			 struct Process *process)
 {
     struct CommandLineInterface *cli = BADDR(process->pr_CLI);
