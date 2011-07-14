@@ -21,7 +21,7 @@ kernel-kernel-pc-i386 :: $(OUTDIR)/smpboot.bin.o
 kernel-kernel-pc-i386-kobj :: $(OUTDIR)/smpboot.bin.o
 
 %rule_compile basename=smpbootstrap targetdir=$(OBJDIR)
-%rule_link_binary file=$(OUTDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o
+%rule_link_binary file=$(OUTDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o ldflags="--oformat=elf32-i386"
 
 -include $(OBJDIR)/smpbootstrap.d
 
