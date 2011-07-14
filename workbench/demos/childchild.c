@@ -79,14 +79,10 @@ static void getvisual(void)
 static void MyBackfillFunc(struct Hook *hook,struct RastPort *rp,
 			   struct LayerHookMsg *msg)
 {
-    struct RastPort myrp;
     struct Layer *lay;
     WORD x1,y1,x2,y2,px,py,pw,ph;
 
-    myrp = *rp;
     lay = msg->lay;
-
-    myrp.Layer = 0;
 
     x1 = msg->bounds.MinX;
     y1 = msg->bounds.MinY;
