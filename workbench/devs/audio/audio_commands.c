@@ -580,8 +580,6 @@ VOID _ADCMD_FREE(struct IOAudio *audioio, ETASK *eta)
 
 VOID _CMD_WRITE(struct IOAudio *audioio, ETASK *eta, EUNIT *unit)
 {
-    struct IOAudio *theone;
-
     D(bug("NEWD: Arrived CMD_WRITE from IOAudio (%x), emaunit (%d), cycles (%d), flags (%d)\n",
         audioio, unit->eu_id, audioio->ioa_Cycles, audioio->ioa_Request.io_Flags));
     D(bug("NEWD: Arrived CMD_WRITE from IOAudio (%x), period (%d), len (%d), pri (%d) key (%d)\n",
@@ -601,7 +599,6 @@ VOID _CMD_WRITE(struct IOAudio *audioio, ETASK *eta, EUNIT *unit)
 
     if (audioio->ioa_AllocKey == unit->eu_allockey)
     {
-        theone = audioio;
         audioio->ioa_Request.io_Flags &= ~IOF_QUICK;
         AddTail(&unit->eu_writewaitlist,
                 &audioio->ioa_Request.io_Message.mn_Node); // Put the new one in the tail of the list.
