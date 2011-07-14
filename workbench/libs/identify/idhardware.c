@@ -269,6 +269,10 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
         }
     }
 
+    if (localize) {
+        /* FIXME: Do something here? */
+    }
+
     ObtainSemaphore(&IdentifyBase->sem);
 
     switch(type)

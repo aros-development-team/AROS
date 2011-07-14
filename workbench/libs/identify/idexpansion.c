@@ -224,6 +224,14 @@
         return IDERR_NOLENGTH;
     }
 
+    if (localize) {
+        /* FIXME: Do we need to do something here? */
+    }
+
+    if (secondary) {
+        /* FIXME: Do we need to do something here? */
+    }
+
     // return something to avoid crashes when function is called
     if (manufstr)
     {
