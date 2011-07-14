@@ -1506,7 +1506,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
         hc->hc_NumPorts = (hubdesca & OHAM_NUMPORTS)>>OHAS_NUMPORTS;
         KPRINTF(20, ("Found OHCI Controller %p FuncNum = %ld, Rev %02lx, with %ld ports\n",
              hc->hc_PCIDeviceObject, hc->hc_FunctionNum,
-             READREG32_LE(hc->hc_RegBase, OHCI_REVISION) & 0xFF,
+             revision & 0xFF,
              hc->hc_NumPorts));
 
         KPRINTF(20, ("Powerswitching: %s %s\n",
