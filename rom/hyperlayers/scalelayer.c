@@ -82,6 +82,9 @@ AROS_UFP3(struct Region *, ScaleLayerCallback,
   /*
    * I must not free oldshape here since it is also the new shape!
    */
+  if (oldshape == NULL) {
+      /* TODO: Can this happen? */
+  }
 
   return FALSE;
   AROS_LIBFUNC_EXIT
