@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,6 +12,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
+#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -83,13 +84,15 @@ ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_Layout
 ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
     struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
-    SIPTR type = (SIPTR)msg[0];
+    /* type is ULONG, because on 64-bit machines it can be padded with garbage */
+    ULONG type = (IPTR)msg[0];
     SIPTR val = (SIPTR)msg[1];
+
+    D(bug("[ListView] List 0x%p, Event %d, value %ld\n", data->list, type, val));
 
     switch (type)
     {
 	case	PROP_VERT_FIRST:
-		get(data->vert,MUIA_Prop_First,&val);
 		nnset(data->list,MUIA_List_VertProp_First,val);
 		break;
 
@@ -109,15 +112,14 @@ ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListviewData   *data;
-    struct TagItem *tag, *tags;
     struct Hook *layout_hook;
     Object *group, *vert;
-    Object *list = (Object*)GetTagData(MUIA_Listview_List, NULL, msg->ops_AttrList);
-    LONG entries = 0,first = 0,visible = 0;
-    if (!list) return NULL;
+    Object *list = (Object*)GetTagData(MUIA_Listview_List, 0, msg->ops_AttrList);
+    IPTR entries = 0,first = 0,visible = 0;
+    if (!list) return 0;
 
     layout_hook = mui_alloc_struct(struct Hook);
-    if (!layout_hook) return NULL;
+    if (!layout_hook) return 0;
 
     layout_hook->h_Entry = HookEntry;
     layout_hook->h_SubEntry = (HOOKFUNC)Listview_Layout_Function;
@@ -138,7 +140,7 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj)
     {
 	mui_free(layout_hook);
-	return NULL;
+	return 0;
     }
 
     data = INST_DATA(cl, obj);
@@ -152,17 +154,11 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->hook.h_SubEntry = (HOOKFUNC)Listview_Function;
     data->hook.h_Data = data;
 
-    /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
-    {
-	switch (tag->ti_Tag)
-	{
-    	}
-    }
-
     get(list,MUIA_List_VertProp_First,&first);
     get(list,MUIA_List_VertProp_Visible,&visible);
     get(list,MUIA_List_VertProp_Entries,&entries);
+
+    D(bug("[ListView 0x%p] List 0x%p, First %ld, Visible %ld, Entries %ld\n", obj, list, first, visible, entries));
 
     SetAttrs(data->vert,
 	MUIA_Prop_First, first,
