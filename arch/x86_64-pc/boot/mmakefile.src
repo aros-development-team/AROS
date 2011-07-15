@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# What out port consists of
+# What our port consists of
 
 #MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-x86_64
 #MM- kernel-link-pc-x86_64 : kernel-package-base kernel-package-usb kernel-package-strap-native kernel-bsp-x86_64-pc
@@ -13,6 +13,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-kernel-kobj		 \
 #MM			   kernel-exec-kobj		 \
 #MM			   kernel-ata-kobj		 \
+#MM			   kernel-battclock-kobj	 \
 #MM			   kernel-timer-kobj		 \
 #MM			   kernel-expansion-kobj	 \
 #MM			   kernel-hidd-irq-kobj		 \
@@ -21,9 +22,11 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-pc-i386-serial-kobj	 \
 #MM			   kernel-pc-i386-parallel-kobj	 \
 #MM			   kernel-pc-i386-vga-kobj	 \
+#MM			   kernel-hidd-irq-kobj		 \
 #MM			   kernel-hidd-vesa-kobj	 \
 #MM			   kernel-pci-kobj		 \
-#MM			   kernel-pci-pcipc-kobj
+#MM			   kernel-pci-pcipc-kobj	 \
+#MM			   kernel-processor-kobj
 
 KRSRCS  := battclock processor
 KLIBS   := exec expansion

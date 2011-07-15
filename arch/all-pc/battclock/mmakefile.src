@@ -1,13 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := -I$(SRCDIR)/rom/battclock
-
-# This code is currently used only by x86-64 port
-# However is placed here because of pending merge
+FILES := battclock_init readbattclock writebattclock
 
 %build_archspecific \
-  mainmmake=kernel-battclock maindir=rom/battclock arch=pc-x86_64 \
-  files=readbattclock modulename=battclock
+  mainmmake=kernel-battclock maindir=rom/battclock arch=pc \
+  files="$(FILES)" modulename=battclock
 
-#MM- kernel-battclock-pc-x86_64 : kernel-battclock-includes
+%common
