@@ -27,8 +27,11 @@ $(BOOTSTRAP_NAME): $(OBJS) $(USER_OBJS) $(BINDIR)/boot $(OSGENDIR)/boot $(LIBDEP
 	@$(KERNEL_LD) $(USER_LDFLAGS) -o $@ $(OBJS) $(USER_OBJS) -L$(LIBDIR) $(LDLIBS)
 	#@strip --strip-unneeded -R .note -R .comment $@
 
+# Switch to the i386 linker mode
+AROS_LD := $(KERNEL_LD) -m elf_i386
+
 %rule_link_binary file=$(OBJDIR)/vesa.bin.o name=vesa objs=$(OBJDIR)/vesa.o \
-	start=0x1000 ldflags="--oformat elf32-i386"
+	start=0x1000 ldflags="-m elf_i386"
 
 %rule_compile basename=% targetdir=$(OBJDIR)
 
