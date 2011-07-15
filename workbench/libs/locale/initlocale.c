@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: InitLocale() load locale preferences from a file.
@@ -68,26 +68,20 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	STRPTR lName = il->il_Locale.loc_PrefLanguages[i];
         ULONG ret;
 
-    if (lName != NULL) {
+    if (lName != NULL)
+    {
 
 	/* Is this english? If not try and load the language */
-    #ifdef __MORPHOS__  /*I had some ugly problems with the macros adding a space before _Gate so I had to do it this way*/
-    ret = AROS_UFC4(ULONG, &LIB_strcompare_Gate,
-                    AROS_UFCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
-                    AROS_UFCA(STRPTR, lName, A2),
-                    AROS_UFCA(ULONG, 7, D0),
-                    AROS_UFCA(ULONG, SC_ASCII, D1));
-    #else
-    void *fn = AROS_SLIB_ENTRY(strcompare, english, 22);
-    ret = AROS_CALL4(ULONG, fn,
+	void *fn = AROS_SLIB_ENTRY(strcompare, english, 22);
+
+	ret = AROS_CALL4(ULONG, fn,
                      AROS_LCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
                      AROS_LCA(STRPTR, lName, A2),
                      AROS_LCA(ULONG, 7, D0),
                      AROS_LCA(ULONG, SC_ASCII, D1),
                      struct LocaleBase *, LocaleBase);
-    #endif
 
-    if (ret != 0)
+	if (ret != 0)
 	{
 	    snprintf(fileBuf, PATH_MAX, "%s.language", lName);
 	    fileBuf[PATH_MAX-1] = 0;
@@ -266,7 +260,7 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
     */
     SetLocaleLanguage(locale, LocaleBase);
 
-    locale->il_Locale.loc_Flags = 0;
+    locale->il_Locale.loc_Flags = lp->lp_Flags;
     locale->il_Locale.loc_CodeSet = 0;
     locale->il_Locale.loc_CountryCode = cp->cp_CountryCode;
     locale->il_Locale.loc_TelephoneCode = cp->cp_TelephoneCode;
@@ -274,6 +268,7 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
     locale->il_Locale.loc_CalendarType = cp->cp_CalendarType;
 
 #if (AROS_BIG_ENDIAN == 0)
+    EC(locale->il_Locale.loc_Flags);
     EC(locale->il_Locale.loc_CountryCode);
     EC(locale->il_Locale.loc_TelephoneCode);
     EC(locale->il_Locale.loc_GMTOffset);

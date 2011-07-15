@@ -84,6 +84,9 @@ struct Locale
     UBYTE  loc_Reserved3;
 };
 
+/* loc_Flags, AROS-specific */
+#define LOCF_GMT_CLOCK (1UL << 16)	/* Hardware clock stores GMT */
+
 /* loc_MeasuringSystem */
 #define MS_ISO      0
 #define MS_AMERICAN 1

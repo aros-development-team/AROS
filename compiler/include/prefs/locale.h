@@ -67,12 +67,9 @@ struct LocalePrefs {
     char  lp_CountryName[32];
     char  lp_PreferredLanguages[10][30];
     LONG  lp_GMTOffset;
-    ULONG lp_Flags;
+    ULONG lp_Flags;			/* The same as loc_Flags in struct Locale */
 
     struct CountryPrefs lp_CountryData;
 };
-
-/* lp_Flags, AROS-specific */
-#define LPF_GMT_CLOCK 0x0001	/* Hardware clock stores GMT */
 
 #endif /* PREFS_LOCALE_H */

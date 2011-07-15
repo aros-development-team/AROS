@@ -6,9 +6,10 @@
 // #define MUIMASTER_YES_INLINE_STDARG
 
 ////#define DEBUG 1
+
+#include <libraries/locale.h>
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
-
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -246,9 +247,9 @@ STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
     
     GET(data->timezone, MUIA_Timezone_GMTClock, &tmp);
     if (tmp)
-    	localeprefs.lp_Flags |= LPF_GMT_CLOCK;
+    	localeprefs.lp_Flags |= LOCF_GMT_CLOCK;
     else
-    	localeprefs.lp_Flags &= ~LPF_GMT_CLOCK;
+    	localeprefs.lp_Flags &= ~LOCF_GMT_CLOCK;
 }
 
 /*
@@ -263,7 +264,7 @@ STATIC VOID LocalePrefs2Gadgets(struct LocaleRegister_DATA *data)
     SET(data->language, MUIA_Language_Characterset, character_set);
 
     SET(data->timezone, MUIA_Timezone_Timeoffset, -localeprefs.lp_GMTOffset);
-    SET(data->timezone, MUIA_Timezone_GMTClock, localeprefs.lp_Flags & LPF_GMT_CLOCK);
+    SET(data->timezone, MUIA_Timezone_GMTClock, localeprefs.lp_Flags & LOCF_GMT_CLOCK);
 }
 
 IPTR LocaleRegister__MUIM_PrefsEditor_ImportFH
