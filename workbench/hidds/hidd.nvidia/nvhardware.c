@@ -197,9 +197,7 @@ static inline UBYTE SEQ_in(struct staticdata *sd, UBYTE index)
 
 static inline void ATTR_out(struct staticdata *sd, UBYTE index, UBYTE val)
 {
-    UBYTE tmp;
-    
-    tmp = VGA_RD08(sd->Card.PCIO, 0x3da);
+    VGA_RD08(sd->Card.PCIO, 0x3da);
     if (sd->Card.paletteEnabled)
 	index &= ~0x20;
     else
@@ -211,9 +209,7 @@ static inline void ATTR_out(struct staticdata *sd, UBYTE index, UBYTE val)
 
 static inline UBYTE ATTR_in(struct staticdata *sd, UBYTE index)
 {
-    UBYTE tmp;
-    
-    tmp = VGA_RD08(sd->Card.PCIO, 0x3da);
+    VGA_RD08(sd->Card.PCIO, 0x3da);
     if (sd->Card.paletteEnabled)
 	index &= ~0x20;
     else
