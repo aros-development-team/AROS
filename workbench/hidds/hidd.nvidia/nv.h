@@ -341,6 +341,7 @@ VOID FreeBitmapArea(struct staticdata *, IPTR, ULONG, ULONG, ULONG);
   volatile UBYTE scratch;            \
   _NV_FENCE()                        \
   scratch = (pNv)->FrameBuffer[0];       \
+  (void)scratch; /* unused */        \
   (pNv)->FIFO[0x0010] = (data) << 2; \
   mem_barrier();                     \
 }
