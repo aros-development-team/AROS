@@ -83,8 +83,8 @@ int vkprintf (const UBYTE * fmt, va_list args)
     static const char uhex[] = "0123456789ABCDEF";
     static const char lhex[] = "0123456789abcdef";
     char       * fill;
-    ULONG	 val;
-    LONG	 lval = 0;
+    unsigned long val;
+    long	 lval = 0;
 
     if (!fmt)
     {
@@ -201,7 +201,6 @@ int vkprintf (const UBYTE * fmt, va_list args)
 	    case 'p': {
 		int t;
 		char puffer[sizeof (void *)*2];
-		IPTR val;
 
 		t = sizeof (void *)*2;
 		val = va_arg (args, IPTR);
@@ -242,13 +241,13 @@ int vkprintf (const UBYTE * fmt, va_list args)
 
 		if (*fmt == 'd')
 		{
-		    lval = va_arg (args, LONG);
+		    lval = va_arg (args, long);
 
 		    val = (lval < 0) ? -lval : lval;
 		}
 		else
 		{
-		    val = va_arg (args, ULONG);
+		    val = va_arg (args, unsigned long);
 		}
 
 print_int:
