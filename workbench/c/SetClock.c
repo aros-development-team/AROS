@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SetClock - set/save the date from/to the BBU clock.
@@ -51,18 +51,21 @@
 
 *************************************************************************/
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <dos/dosextens.h>
 #include <dos/rdargs.h>
 #include <devices/timer.h>
+#include <libraries/locale.h>
 #include <utility/tagitem.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/battclock.h>
+#include <proto/locale.h>
 #include <proto/timer.h>
 
-const char version[] = "$VER: SetClock 41.1 (21.2.1997)";
+const char version[] = "$VER: SetClock 42.0 (" ADATE ")";
 const char exthelp[] =
     "SetClock : Set or save the date from/to the battery backed-up clock\n"
     "\tLOAD     Load the time from the battery-backed-up clock\n"
@@ -105,12 +108,39 @@ int main(int argc, char **av)
 			if(OpenDevice("timer.device", UNIT_VBLANK,
 				(struct IORequest *)tr, 0) == 0)
 			{
+			    struct Locale *l;
+			    struct Process *me = (struct Process *)FindTask(NULL);
+
+			    /* Suppress 'Please insert volume' requesters because we can run without ENV: assign */
+			    me->pr_WindowPtr = (APTR)-1;
+
+			    /*
+			     * Open default preferences manually because we run before IPrefs,
+			     * and default locale isn't set yet.
+			     */
+			    l = OpenLocale("ENV:SYS/locale.prefs");
+			    if (!l)
+			    	l = OpenLocale("SYS:Prefs/Env-Archive/SYS/locale.prefs");
+
+			    D(Printf("Preferences locale: 0x%p\n", l));
+
 			    TimerBase = tr->tr_node.io_Device;
 
 			    if(args[0])
 			    {
 				/* Loading */
 				time = ReadBattClock();
+
+				if (l)
+				{
+				    D(Printf("Locale flags 0x%08lx, offset %ld\n", l->loc_Flags, l->loc_GMTOffset));
+
+				    if (l->loc_Flags & LOCF_GMT_CLOCK)
+				    {
+				    	/* loc_GMTOffset actually expresses difference from local time to GMT */
+				    	time -= l->loc_GMTOffset * 60;
+				    }
+				}
 
 				/* Set timer.device clock */
 				tr->tr_node.io_Command = TR_SETSYSTIME;
@@ -127,6 +157,12 @@ int main(int argc, char **av)
 			    {
 				/* Saving */
 				GetSysTime(&t);
+
+				if (l)
+				{
+				    if (l->loc_Flags & LOCF_GMT_CLOCK)
+				    	t.tv_secs += l->loc_GMTOffset * 60;
+				}
 				WriteBattClock(t.tv_secs);
 			    }
 			    else if(args[2])
@@ -136,6 +172,9 @@ int main(int argc, char **av)
 			    }
 			    else
 				error = ERROR_REQUIRED_ARG_MISSING;
+
+			    if (l)
+			    	CloseLocale(l);
 
 			} /* OpenDevice() */
 			else
