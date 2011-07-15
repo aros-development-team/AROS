@@ -2652,7 +2652,7 @@ BD_TMPDIR  := $(GENDIR)/$(CURDIR)
 
 %(file) : %(objs) $(BD_OUTDIR)
 	@$(ECHO) Linking $(subst $(TARGETDIR)/,,$@)...
-	$(LD) %(ldflags) --entry=0 -oformat=binary -Ttext=%(start) -o $(BD_TMPDIR)/%(name) %(objs)
+	@$(KERNEL_LD) %(ldflags) --entry=%(start) -oformat=binary -Ttext=%(start) -o $(BD_TMPDIR)/%(name) %(objs)
 	cd $(BD_TMPDIR) && $(AROS_LD) -r --format binary %(name) -o $@
 
 GLOB_MKDIRS += $(BD_OUTDIR)
