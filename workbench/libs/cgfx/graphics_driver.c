@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -332,10 +332,10 @@ static ULONG dm_render(APTR dmr_data
     struct IntCGFXBase *CyberGfxBase = dmrd->CyberGfxBase;
     UBYTE *addr;
     struct dm_message *msg;
-    IPTR bytesperpixel;
+    IPTR bytesperpixel, bytesperrow;
     ULONG width, height, fb_width, fb_height;
     ULONG banksize, memsize;
-    
+
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;;
     msg = &dmrd->msg;
@@ -349,21 +349,21 @@ static ULONG dm_render(APTR dmr_data
 #endif
     msg->xsize = width;
     msg->ysize = height;
-    
-    /* Get the baseadress from where to render */
-    if (HIDD_BM_ObtainDirectAccess(dstbm_obj
-    	, &addr
-	, &fb_height, &fb_width
-	, &banksize, &memsize)) {
 
-	OOP_GetAttr(dmrd->pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+    OOP_GetAttr(dmrd->pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+    OOP_GetAttr(dstbm_obj, aHidd_BitMap_BytesPerRow, &bytesperrow);
+
+    D(kprintf("width %d bytesperrow %d bytesperpixel %d\n", width, bytesperrow, bytesperpixel));
+    D(kprintf(" colormodel %d\n", msg->colormodel));
+
+    /* Get the baseadress from where to render */
+    if (HIDD_BM_ObtainDirectAccess(dstbm_obj, &addr, &fb_height, &fb_width, &banksize, &memsize))
+    {
 	msg->bytesperpix = (UWORD)bytesperpixel;
-    
+	msg->bytesperrow = bytesperrow;
 	/* Colormodel allready set */
-    
+
 	/* Compute the adress for the start pixel */
-	/* FIXME: We should maybe use something else than the BytesPerLine method since we may have alignment */
-	msg->bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
 #if 1
 	msg->memptr = addr;
 #else
@@ -382,7 +382,6 @@ static ULONG dm_render(APTR dmr_data
 	    { aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
 	    { TAG_DONE, 0UL }
 	};
-	ULONG bytesperrow;
 	ULONG tocopy_h, max_tocopy_h;
 	ULONG lines_todo;
 	OOP_Object *gfxhidd, *gc;
@@ -392,13 +391,6 @@ static ULONG dm_render(APTR dmr_data
 	/* The HIDD bm does not have a base adress so we have to render into
 	   it using a temporary buffer
 	*/
-   	OOP_GetAttr(dmrd->pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
-	//bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
-	bytesperrow = width * bytesperpixel;
-
-
-	D(kprintf("width %d bytesperrow %d bytesperpixel %d\n", width, bytesperrow, bytesperpixel));
-	D(kprintf(" colormodel %d\n", msg->colormodel));
 
 	if (PIXELBUF_SIZE < bytesperrow) {
 	    D(bug("!!! NOT ENOUGH SPACE IN TEMP BUFFER FOR A SINGLE LINE IN DoCDrawMethodTagList() !!!\n"));

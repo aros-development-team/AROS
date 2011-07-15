@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -89,29 +89,11 @@
 	    case LBMI_BASEADDRESS:
 	    	*((IPTR **)tag->ti_Data) = (IPTR *)baseaddress;
 	    	break;
-		
+
 	    case LBMI_BYTESPERROW:
-#if 1
-    	    /* stegerg: I assume here that width returned by ObtainDirectAccess() is always the aligned
-	                bitmap width, so that bytes per row can simply be calculated by multiplicating
-			it with bytes per pixel. Nvidia and Radeon hidd override HIDD_BM_BytesPerLine
-			for some strange reason and can return wrong result, because their real alignment
-			is done on number of bytes, not number of pixels. If later this alignment calc
-			is done again, but based on number of pixels, it may return different/wrong result. */
-			
-    	    {
-    	    	IPTR bpp;
-		
-	    	OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bpp);
-		*((IPTR *)tag->ti_Data) = bpp * width;
-    	    				
-    	    }
-#else	    
-	    	*((IPTR *)tag->ti_Data) = 
-			(ULONG)HIDD_BM_BytesPerLine(HIDD_BM_OBJ(bm), stdpf, width);
-#endif
-	    	break;
-	    
+		OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, (IPTR *)tag->ti_Data);
+		break;
+
 	    case LBMI_BYTESPERPIX:
 	    	OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, (IPTR *)tag->ti_Data);
 	    	break;
