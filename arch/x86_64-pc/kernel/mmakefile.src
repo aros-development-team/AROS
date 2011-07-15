@@ -34,7 +34,7 @@ kernel-kernel-pc-x86_64-pkg :: $(DESTDIR)/smpboot.bin.o
 USER_CFLAGS := -m32
 
 %rule_compile basename=smpbootstrap targetdir=$(OBJDIR)
-%rule_link_binary file=$(DESTDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o
+%rule_link_binary file=$(DESTDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o ldflags="-m elf_i386"
 
 -include $(OBJDIR)/smpbootstrap.d
 
