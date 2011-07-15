@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -57,13 +57,12 @@
     struct opSet ops;
     ULONG   	 result;
 
-    DEBUG_SETATTRS(dprintf("SetAttrs[%x]: Object 0x%lx Tags 0x%lx\n",
-                           &ops, object, tagList));
+    DEBUG_SETATTRS(dprintf("SetAttrs[0x%p]: Object 0x%p Tags 0x%p\n", &ops, object, tagList));
 
     SANITY_CHECKR(object,FALSE)
     SANITY_CHECKR(tagList,FALSE)
 
-#if 0
+#if DEBUG > 1
     if (tagList)
     {
         struct TagItem *state = tagList;
@@ -71,7 +70,7 @@
 
         while (tag = NextTagItem(&state))
         {
-            dprintf("\t%08lx %08lx\n", tag->ti_Tag, tag->ti_Data);
+            dprintf("\t0x%p 0x%p\n", tag->ti_Tag, tag->ti_Data);
         }
     }
 #endif
@@ -82,7 +81,7 @@
 
     result = DoMethodA (object, (Msg)&ops);
 
-    DEBUG_SETATTRS(dprintf("SetAttrs[%x]: Return 0x%lx\n", &ops, result));
+    DEBUG_SETATTRS(dprintf("SetAttrs[0x%p]: Return 0x%08X\n", &ops, result));
 
     return result;
 
