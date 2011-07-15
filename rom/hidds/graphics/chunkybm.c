@@ -30,60 +30,58 @@
 OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct chunkybm_data    *data;
-    
-    IPTR   	    	    width, height, displayable;
-
-#if 0
-    UBYTE   	    	    alignoffset	= 15;
-    UBYTE   	    	    aligndiv	= 2;
-#endif
-    
-    BOOL    	    	    ok = TRUE;
     OOP_Object      	    *pf;
-    APTR		    p_pf = &pf;
-    IPTR   	    	    bytesperpixel;
-    
+    IPTR   	    	    bytesperrow, bytesperpixel;
+    struct TagItem	    *tag;
+    OOP_MethodID	    dispose_mid;
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
     	return NULL;
-	
+
     /* Initialize the instance data to 0 */
     data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof (*data));
 
-    OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)p_pf);
+    OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
     OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);
-    OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
-    OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     /* Get some dimensions of the bitmap */
+    OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bytesperrow);
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel,	&bytesperpixel);
-    
-    width = (width + 15) & ~15;
-    
-    data->bytesperpixel = bytesperpixel;
-    data->bytesperrow	= data->bytesperpixel * width;
 
-    OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
-    if (!displayable)
+    data->bytesperpixel = bytesperpixel;
+    data->bytesperrow	= bytesperrow;
+
+    tag = FindTagItem(aHidd_ChunkyBM_Buffer, msg->attrList);
+    if (tag)
     {
-        data->own_buffer = TRUE;
-        data->buffer = AllocVec(height * data->bytesperrow,
-            MEMF_ANY | MEMF_CLEAR);
-        if (data->buffer == NULL)
-            ok = FALSE;
+    	/*
+    	 * NULL user-supplied buffer is valid.
+    	 * In this case we create a bitmap with no buffer. We can attach it later.
+    	 */
+    	data->own_buffer = FALSE;
+    	data->buffer     = (APTR)tag->ti_Data;
+
+    	return o;
+    }
+    else
+    {
+    	IPTR height;
+
+    	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+
+    	data->own_buffer = TRUE;
+    	data->buffer = AllocVec(height * bytesperrow, MEMF_ANY | MEMF_CLEAR);
+    	
+    	if (data->buffer)
+    	    return o;
     }
 
     /* free all on error */
+    dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
-    if(!ok)
-    {
-        OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-        if(o) OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
-        o = NULL;
-    }
-   
-    return o;
-    
+    OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+    return NULL;
 }
 
 /****************************************************************************************/
@@ -753,89 +751,6 @@ VOID CBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 
 /****************************************************************************************/
 
-VOID CBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
-{
-    struct chunkybm_data   *data = OOP_INST_DATA(cl, o);
-    HIDDT_Pixel     	    fg, bg, pix;
-    ULONG   	    	    cemd;
-    LONG    	    	    x, y;
-    ULONG   	    	    mod, bpp;
-    UBYTE   	           *mem;
-    BOOL    	    	    opaque;
-    
-    fg = GC_FG(msg->gc);
-    bg = GC_BG(msg->gc);
-    cemd = GC_COLEXP(msg->gc);
-
-    bpp = data->bytesperpixel;
-    
-    mem = data->buffer + msg->destY * data->bytesperrow + msg->destX * bpp;
-    mod = data->bytesperrow - msg->width * bpp;
-    
-    opaque = (cemd & vHidd_GC_ColExp_Opaque) ? TRUE : FALSE;
-    
-    for (y = 0; y < msg->height; y ++)
-    {
-        for (x = 0; x < msg->width; x ++)
-        {
-	    ULONG is_set;
-
-	    is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
-	    if (is_set)
-	    {
-		pix = fg;
-	    }
-	    else if (opaque)
-	    {
-		pix = bg;
-	    }
-	    else
-	    {
-		mem += bpp;
-		continue;
-	    }
-
-    	    switch(bpp)
-	    {
-		case 1:
-   	    	    *mem++ = pix;
-		    break;
-
-		case 2:
-		    *((UWORD *)mem) = pix;
-		    mem += 2;
-    	    	    break;
-
-		case 3:
-		#if AROS_BIG_ENDIAN
-		    mem[0] = pix >> 16;
-		    mem[1] = pix >> 8;
-		    mem[2] = pix;
-		#else
-		    mem[0] = pix;
-		    mem[1] = pix >> 8;
-		    mem[2] = pix >> 16;
-		#endif
-		    mem += 3;
-		    break;
-
-		case 4:
-		    *((ULONG *)mem) = pix;
-		    mem += 4;
-		    break;
-
-	    }
-	    
-	} /* for (each x) */
-
-    	mem += mod;
-
-    } /* for (each y) */
-
-}
-
-/****************************************************************************************/
-
 VOID CBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
@@ -1019,17 +934,17 @@ VOID CBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     EnterFunc(bug("BitMap::Get() attrID: %i  storage: %p\n", msg->attrID, msg->storage));
 
-    if(IS_CHUNKYBM_ATTR(msg->attrID, idx))
+    if (IS_CHUNKYBM_ATTR(msg->attrID, idx))
     {
-        switch(idx)
-        {
-            case aoHidd_ChunkyBM_Buffer:
-                 *msg->storage = (IPTR)data->buffer;
-                 break;
+	switch (idx)
+	{
+    	case aoHidd_ChunkyBM_Buffer:
+            *msg->storage = (IPTR)data->buffer;
+            return;
         }
     }
-    else
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 /****************************************************************************************/
