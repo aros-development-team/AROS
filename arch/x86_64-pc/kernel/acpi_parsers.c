@@ -280,6 +280,9 @@ AROS_UFH1(IPTR, ACPI_hook_Table_NMI_Src_Parse,
     }
 
     nmi_src = (struct acpi_table_nmi_src *) table_hook->header;
+    if (nmi_src != NULL) {
+        /* FIXME: Uh... shouldn't we do something with this? */
+    }
 
     return 1;
     
