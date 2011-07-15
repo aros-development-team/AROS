@@ -104,3 +104,6 @@ Default character set
 MSG_NOT_SPECIFIED (//)
 Not specified
 ;
+MSG_GMT_CLOCK (//)
+Hardware clock stores GMT
+;

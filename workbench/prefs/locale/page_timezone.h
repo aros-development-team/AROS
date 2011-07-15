@@ -14,6 +14,7 @@
 
 /*** Attributes *************************************************************/
 #define MUIA_Timezone_Timeoffset    (MUIB_Timezone | 0)
+#define MUIA_Timezone_GMTClock      (MUIB_Timezone | 1)
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *Timezone_CLASS;

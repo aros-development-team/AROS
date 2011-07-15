@@ -210,13 +210,13 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
  */
 STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
 {
-    char *tmp;
+    IPTR tmp;
     char **preferred = NULL;
     ULONG i;
 
     if(GET(data->country, MUIA_Country_Countryname, &tmp))
     {
-        strncpy(localeprefs.lp_CountryName, tmp, 32);
+        strncpy(localeprefs.lp_CountryName, (char *)tmp, 32);
         Prefs_LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
     }
 
@@ -234,14 +234,21 @@ STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
             }
         }
     }
-    GetAttr(MUIA_Language_Characterset, data->language, (IPTR *)&tmp);
+    GetAttr(MUIA_Language_Characterset, data->language, &tmp);
     if (tmp)
-        strcpy(character_set, tmp);
+        strcpy(character_set, (char *)tmp);
     else
         character_set[0] = 0;
     D(bug("[locale prefs] New character set is %s\n", character_set));
 
-    GET(data->timezone, MUIA_Timezone_Timeoffset, &localeprefs.lp_GMTOffset);
+    GET(data->timezone, MUIA_Timezone_Timeoffset, &tmp);
+    localeprefs.lp_GMTOffset = tmp;
+    
+    GET(data->timezone, MUIA_Timezone_GMTClock, &tmp);
+    if (tmp)
+    	localeprefs.lp_Flags |= LPF_GMT_CLOCK;
+    else
+    	localeprefs.lp_Flags &= ~LPF_GMT_CLOCK;
 }
 
 /*
@@ -256,6 +263,7 @@ STATIC VOID LocalePrefs2Gadgets(struct LocaleRegister_DATA *data)
     SET(data->language, MUIA_Language_Characterset, character_set);
 
     SET(data->timezone, MUIA_Timezone_Timeoffset, -localeprefs.lp_GMTOffset);
+    SET(data->timezone, MUIA_Timezone_GMTClock, localeprefs.lp_Flags & LPF_GMT_CLOCK);
 }
 
 IPTR LocaleRegister__MUIM_PrefsEditor_ImportFH

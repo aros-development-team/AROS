@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
    $Id$
 
 Desc:
@@ -113,6 +113,8 @@ struct Timezone_DATA
     Object          *me;
     Object          *zone_name;
     Object          *city_name;
+    Object	    *gmt_switch;
+    Object	    *gmt_label;
     Object          *prefs;
     struct Hook      h;
     struct Hook      Timezone_list_hook;
@@ -310,7 +312,7 @@ static void SetEarthmapSelection(UBYTE timezonespen)
 
 /*************************************************************************/
 
-static void UpdateZoneName(Object *zone_name, char *newname)
+static void UpdateZoneName(Object *zone_name, char *newname, BOOL noNotify)
 {
     char *old = NULL;
 
@@ -318,13 +320,13 @@ static void UpdateZoneName(Object *zone_name, char *newname)
 
     if(old && strcmp(old, newname))
     {
-        SET(zone_name, MUIA_Text_Contents, newname);
+    	SetAttrs(zone_name, MUIA_Text_Contents, newname, MUIA_NoNotify, noNotify, TAG_DONE);
     }
 }
 
 /*************************************************************************/
 
-static void RepaintEarthmap(Object *obj, struct Timezone_DATA *data)
+static void RepaintEarthmap(Object *obj, struct Timezone_DATA *data, BOOL noNotify)
 {
     char  *fmt;
     WORD   minoffset; /* is only used for text gadget */
@@ -381,7 +383,7 @@ static void RepaintEarthmap(Object *obj, struct Timezone_DATA *data)
 
     sprintf(timezone_text, fmt, minoffset / 60, minoffset % 60);
 
-    UpdateZoneName(data->zone_name, timezone_text);
+    UpdateZoneName(data->zone_name, timezone_text, noNotify);
 }
 
 /*************************************************************************/
@@ -458,7 +460,7 @@ STATIC IPTR Timezone__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw
             _mleft(obj) + _mwidth(obj) - 2,
             _mtop(obj) + EARTHMAP_SMALL_HEIGHT + 2 - 1);
 
-    RepaintEarthmap(obj, data);
+    RepaintEarthmap(obj, data, TRUE);
 
     return TRUE;
 }
@@ -484,17 +486,17 @@ AROS_UFH3(
                 lm->lm_MinMax.MinWidth  = EARTHMAP_SMALL_WIDTH +
                     _minwidth(data->city_name);
                 lm->lm_MinMax.MinHeight = EARTHMAP_SMALL_HEIGHT +
-                    _minheight(data->zone_name) + H;
+                    _minheight(data->zone_name) + _minheight(data->gmt_switch) + H + (H/2);
 
                 lm->lm_MinMax.DefWidth  = EARTHMAP_SMALL_WIDTH +
                     _defwidth(data->city_name);
                 lm->lm_MinMax.DefHeight = EARTHMAP_SMALL_HEIGHT +
-                    _defheight(data->zone_name) + H;
+                    _defheight(data->zone_name) + _defheight(data->gmt_switch) + H + (H/2);
 
                 lm->lm_MinMax.MaxWidth  = EARTHMAP_SMALL_WIDTH +
                     _maxwidth(data->city_name);
                 lm->lm_MinMax.MaxHeight = EARTHMAP_SMALL_HEIGHT +
-                    _maxheight(data->zone_name);
+                    _maxheight(data->zone_name) + _maxheight(data->gmt_switch);
                 return 0;
             }
         case MUILM_LAYOUT:
@@ -516,6 +518,24 @@ AROS_UFH3(
                             /* full width */
                             EARTHMAP_SMALL_WIDTH + _defwidth(data->city_name),
                             _minheight(data->zone_name),0))
+                {
+                    return FALSE;
+                }
+
+                if(!MUI_Layout(data->gmt_switch,
+                            1,  EARTHMAP_SMALL_HEIGHT + H + _minheight(data->zone_name),
+                            /* full width */
+                            _minwidth(data->gmt_switch),
+                            _minheight(data->gmt_switch),0))
+                {
+                    return FALSE;
+                }
+
+                if(!MUI_Layout(data->gmt_label,
+                            1 + _minwidth(data->gmt_switch) + (H/2),  EARTHMAP_SMALL_HEIGHT + H + _minheight(data->zone_name),
+                            /* full width */
+                            _minwidth(data->gmt_label),
+                            _minheight(data->gmt_label),0))
                 {
                     return FALSE;
                 }
@@ -564,7 +584,7 @@ AROS_UFH2(
 
     ClearEarthmapSelection();
     SetEarthmapSelection(timezone_table[tz].pen);
-    RepaintEarthmap(data->me,data);
+    RepaintEarthmap(data->me, data, FALSE);
 
     AROS_USERFUNC_EXIT
 }
@@ -581,6 +601,12 @@ static Object *handle_New_error(Object *obj, struct IClass *cl, char *error)
         return NULL;
 
     data = INST_DATA(cl, obj);
+
+    if (data->gmt_label)
+    	DisposeObject(data->gmt_label);
+
+    if (data->gmt_switch)
+    	DisposeObject(data->gmt_switch);
 
     if(data->zone_name)
     {
@@ -694,9 +720,18 @@ Object *Timezone__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return handle_New_error(obj, cl, "ERROR: unable to create city_name ListviewObject!\n");
     }
 
-    DoMethod(obj, OM_ADDMEMBER, data->zone_name);
+    data->gmt_switch = MUI_MakeObject(MUIO_Checkmark, NULL);
+    if (!data->gmt_switch)
+    	return handle_New_error(obj, cl, "ERROR: unable to create checkmark bject!\n");
 
+    data->gmt_label = Label1(_(MSG_GMT_CLOCK));
+    if (!data->gmt_label)
+    	return handle_New_error(obj, cl, "ERROR: unable to create label object!\n");
+
+    DoMethod(obj, OM_ADDMEMBER, data->zone_name);
     DoMethod(obj, OM_ADDMEMBER, data->city_name);
+    DoMethod(obj, OM_ADDMEMBER, data->gmt_switch);
+    DoMethod(obj, OM_ADDMEMBER, data->gmt_label);
 
     data->Timezone_list_hook.h_Entry = (HOOKFUNC) &Timezone_list_hook_func;
     data->Timezone_list_hook.h_Data  = data ;
@@ -714,8 +749,9 @@ Object *Timezone__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
 
-    /* changed hook */
+    /* changed hooks */
     DoMethod(data->zone_name, MUIM_Notify, MUIA_Text_Contents, MUIV_EveryTime, (IPTR) data->prefs, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+    DoMethod(data->gmt_switch, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) data->prefs, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
 
     return obj;
 }
@@ -800,7 +836,7 @@ static IPTR Timezone__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MU
 
                             ClearEarthmapSelection();
                             SetEarthmapSelection(timezonepen);
-                            RepaintEarthmap(obj, data);
+                            RepaintEarthmap(obj, data, FALSE);
                             NNSET(data->city_name, MUIA_List_Active, MUIV_List_Active_Off);
                         }
                     }
@@ -814,7 +850,7 @@ static IPTR Timezone__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MU
 static IPTR Timezone__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Timezone_DATA *data = INST_DATA(cl, obj);
-    ULONG rc;
+    IPTR rc;
 
     switch (msg->opg_AttrID)
     {
@@ -822,6 +858,11 @@ static IPTR Timezone__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             rc = data->lp_GMTOffset;
             D(bug("[timezone class] Timezone_Get: MA_TimeOffset: %d\n",rc));
             break;
+
+	case MUIA_Timezone_GMTClock:
+	    GetAttr(MUIA_Selected, data->gmt_switch, &rc);
+	    break;
+
         default:
             return DoSuperMethodA(cl, obj, (Msg)msg);
     }
@@ -878,6 +919,10 @@ static IPTR Timezone__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
                 update=TRUE;
                 break;
+        
+            case MUIA_Timezone_GMTClock:
+            	SetAttrs(data->gmt_switch, MUIA_Selected, tag->ti_Data, MUIA_NoNotify, TRUE, TAG_DONE);
+            	break;
 
             default:
                 return DoSuperMethodA(cl, obj, (Msg)msg);

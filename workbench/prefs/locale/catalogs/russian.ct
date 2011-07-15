@@ -107,3 +107,6 @@ MSG_CHARACTER_SET (//)
 MSG_NOT_SPECIFIED (//)
 Не определена
 ;
+MSG_GMT_CLOCK (//)
+Аппаратные часы установлены на GMT
+;
