@@ -42,9 +42,10 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     {
 	OOP_MethodID	     disp_mid;
 	struct BitmapData   *data;
-	IPTR 	    	     width, height, depth, multi;
+	IPTR 	    	     height, bytesperline, multi;
 	IPTR		     displayable;
 	HIDDT_ModeID 	     modeid;
+	HIDDT_ColorModel     cmod;
 
 	data = OOP_INST_DATA(cl, o);
 
@@ -52,34 +53,25 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	memset(data, 0, sizeof(struct BitmapData));
 
 	/* Get attr values */
-	OOP_GetAttr(o, aHidd_BitMap_Width, &width);
 	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+	OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bytesperline);
 	OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);
 	OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&data->pixfmtobj);
 	OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
-	OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_Depth, &depth);
+	OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, (IPTR *)&data->VideoData);
 	OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel, &multi);
-	
+
         data->compositing = (OOP_Object *)
             GetTagData(aHidd_VesaGfxBitMap_CompositingHidd, 0, msg->attrList);
 
-	ASSERT (width != 0 && height != 0 && depth != 0);
-	/* 
-	   We must only create depths that are supported by the friend drawable
-	   Currently we only support the default depth
-	   */
-
-	width=(width+15) & ~15;
-	data->width = width;
-	data->height = height;
-	data->bpp = depth;
-
 	data->bytesperpix = multi;
-	data->bytesperline = width * multi;
-	D(bug("[VesaBitMap] Size %dx%d, %u bytes per pixel, %u bytes per line, displayable: %u\n", width, height, multi, data->bytesperline, displayable));
+	data->bytesperline = bytesperline;
+	D(bug("[VesaBitMap] Height %d, %u bytes per pixel, %u bytes per line, displayable: %u\n", height, multi, bytesperline, displayable));
+	D(bug("[VesaBitMap] Video data at 0x%p (%u bytes)\n", data->VideoData, data->bytesperline * height));
 
 	OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-	if (modeid != vHidd_ModeID_Invalid) {
+	if (modeid != vHidd_ModeID_Invalid)
+	{
 	    OOP_Object *sync, *pf;
 	    IPTR dwidth, dheight;
 
@@ -90,30 +82,17 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	    data->disp_height = dheight;
 	}
 
-    	data->VideoData = AllocVec(data->bytesperline * height, MEMF_PUBLIC | MEMF_CLEAR);
-	D(bug("[VesaBitMap] Video data at 0x%p (%u bytes)\n", data->VideoData, width * height * multi));
+	if (!displayable)
+	    ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
 
-	if (data->VideoData) {
-	    HIDDT_ColorModel cmod;
-	    struct TagItem tags[2];
+	OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_ColorModel, &cmod);
+	if (cmod != vHidd_ColorModel_Palette)
+	    ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
 
-            tags[0].ti_Tag = aHidd_ChunkyBM_Buffer;
-            tags[0].ti_Data = (IPTR)data->VideoData;
-            tags[1].ti_Tag = TAG_END;
-	    OOP_SetAttrs(o, tags);
-
-	    if (!displayable)
-	        ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
-
-	    OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_ColorModel, &cmod);
-	    if (cmod != vHidd_ColorModel_Palette)
-		ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
-
-	    data->DAC = AllocMem(768, MEMF_ANY);
-	    D(bug("[VesaBitMap] Palette data at 0x%p\n", data->DAC));
-	    if (data->DAC)
-		ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
-	}
+	data->DAC = AllocMem(768, MEMF_ANY);
+	D(bug("[VesaBitMap] Palette data at 0x%p\n", data->DAC));
+	if (data->DAC)
+	    ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
 
 	disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
@@ -133,7 +112,6 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     if (data->DAC)
 	FreeMem(data->DAC, 768);
-    FreeVec(data->VideoData);
 
     OOP_DoSuperMethod(cl, o, msg);
 

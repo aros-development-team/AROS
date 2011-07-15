@@ -304,6 +304,7 @@
         Query number of bytes per row in the bitmap storage buffer
 
     NOTES
+    	The returned value includes possible padding needed for alignment.
 
     EXAMPLE
 
@@ -767,9 +768,6 @@
     EXAMPLE
 
     BUGS
-	This attribute does not affect aoHidd_BitMap_BytesPerRow value.
-
-	This attribute is supported only by CLID_Hidd_PlanarBM class at the moment.
 
     SEE ALSO
 
@@ -802,6 +800,8 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
         /* clear all data and set some default values */
         memset(data, 0, sizeof(struct HIDDBitMapData));
+
+	attrs[AO(Align)] = 16;
 
         data->width         = 320;
         data->height        = 200;
@@ -883,26 +883,26 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	    {  /* displayable */
 		if (BM_NONDISP_AF != (BM_NONDISP_AF & ATTRCHECK(bitmap)))
 		{
-		    if (OOP_OCLASS(obj) != CSD(cl)->planarbmclass)
+		    /*
+		     * One of Width, Height and PixFmt is not set.
+		     * This is either a mailformed call, or empty planar BitMap object
+		     * for late initialization.
+		     * In the latter case we'll specify aHidd_PlanarBM_AllocPlanes, FALSE.
+		     */
+		    BOOL planes_alloced = GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
+
+		    if (planes_alloced)
 		    {
-	    		/* HACK. This is an ugly hack to allow the
-		           late initialization of BitMap objects in AROS.
-
-		           The PixelFormat will be set later.
-			*/
-
-    	    	    	/* FIXME: Find a better way to do this. */
-
-	    	    	/* One could maybe fix this by implementing a separate AmigaPitMap class
-	    	    	*/
-
 			D(bug("!!! BitMap:New(): NO PIXFMT FOR NONDISPLAYABLE BITMAP !!!\n"));
 			ok = FALSE;
 		    }
 		}
 		else
+		{
 		    data->prot.pixfmt = (OOP_Object *)attrs[AO(PixFmt)];
+		}
 	    } /* displayable */
+
 	    if (GOT_BM_ATTR(Width))
 	        data->width = attrs[AO(Width)];
 	    if (GOT_BM_ATTR(Height))
@@ -913,6 +913,35 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 	if (ok)
 	{
+    	    /*
+    	     * Calculate suggested bytes per row value based on requested alignment and
+    	     * pixelformat's bytes per pixel value.
+    	     * PixFmt will be NULL in case of late initialization.
+    	     */
+	    if (data->prot.pixfmt)
+	    {
+	    	ULONG align = attrs[AO(Align)] - 1;
+	    	ULONG width = (data->width + align) & ~align;
+	    	IPTR bytesperpixel, stdpf;
+
+		OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+		OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_StdPixFmt, &stdpf);
+
+		if (stdpf == vHidd_StdPixFmt_Plane)
+		{
+    		    /*
+	    	     * Planar format actually have 8 pixels per one byte.
+    		     * However bytesperpixel == 1 for them. Perhaps this should
+	    	     * be changed to 0 ?
+    		     */
+	    	    data->bytesPerRow = width >> 3;
+    		}
+	    	else
+    		{
+		    data->bytesPerRow = width * bytesperpixel;
+		}
+	    }
+
 	    /* initialize the direct method calling */
 
 	    if (GOT_BM_ATTR(ModeID))
@@ -1066,14 +1095,8 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 		break;
 
 	    case aoHidd_BitMap_BytesPerRow:
-	    {
-	    	HIDDT_PixelFormat *pf;
-
-		pf = (HIDDT_PixelFormat *)data->prot.pixfmt;
-
-		*msg->storage = pf->bytes_per_pixel * data->width;
-		break;
-	    }
+	    	*msg->storage = data->bytesPerRow;
+	    	break;
 	    
 	    /* Generic bitmaps don't scroll. This has to be implemented
 	       in the subclass */
@@ -1630,6 +1653,7 @@ VOID BM__Hidd_BitMap__DrawLine
 VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
 			       struct pHidd_BitMap_DrawRect *msg)
 {
+#ifdef __RESERVED__
     OOP_Object *gc = msg->gc;
     WORD    	addX, addY;
 
@@ -1642,6 +1666,7 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
     HIDD_BM_DrawLine(obj, gc, msg->maxX, msg->minY + addY, msg->maxX, msg->maxY);
     HIDD_BM_DrawLine(obj, gc, msg->maxX - addX, msg->maxY, msg->minX, msg->maxY);
     HIDD_BM_DrawLine(obj, gc, msg->minX, msg->maxY - addY, msg->minX, msg->minY + addY);
+#endif
 
     ReturnVoid("BitMap::DrawRect");
 }
@@ -1924,6 +1949,7 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
 VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
 				  struct pHidd_BitMap_DrawEllipse *msg)
 {
+#ifdef __RESERVED__
     OOP_Object *gc = msg->gc;
     WORD    	x = msg->rx, y = 0;     /* ellipse points */
 
@@ -1978,6 +2004,7 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
         }
 
     } while (x >= 0);
+#endif
 
     ReturnVoid("BitMap::FillEllipse");
 }
@@ -2026,6 +2053,7 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
 VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
 				  struct pHidd_BitMap_DrawPolygon *msg)
 {
+#ifdef __RESERVED__
     OOP_Object *gc = msg->gc;
     WORD    	i;
 
@@ -2036,6 +2064,7 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
         HIDD_BM_DrawLine(obj, gc, msg->coords[i - 2], msg->coords[i - 1],
                               msg->coords[i], msg->coords[i + 1]);
     }
+#endif
 
     ReturnVoid("BitMap::DrawPolygon");
 }
@@ -2084,12 +2113,7 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
 
 VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
 {
-
-    EnterFunc(bug("BitMap::FillPolygon()"));
-
     D(bug("Sorry, FillPolygon() not implemented yet in bitmap baseclass\n"));
-
-    ReturnVoid("BitMap::FillPolygon");
 }
 
 /*****************************************************************************************
@@ -2262,12 +2286,7 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
 
 VOID BM__Hidd_BitMap__FillText(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
 {
-
-    EnterFunc(bug("BitMap::FillText()\n"));
-
     D(bug("Sorry, FillText() not implemented yet in bitmap baseclass\n"));
-
-    ReturnVoid("BitMap::DrawFillText");
 }
 
 /*****************************************************************************************
@@ -2305,12 +2324,7 @@ VOID BM__Hidd_BitMap__FillText(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 
 VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
 {
-
-    EnterFunc(bug("BitMap::FillSpan()\n"));
-
-    D(bug("Sorry, not implemented yet\n"));
-
-    ReturnVoid("BitMap::FillSpan");
+    D(bug("Sorry, FillSpan() not implemented yet\n"));
 }
 
 /*****************************************************************************************
@@ -4338,6 +4352,7 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 VOID BM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 					 struct pHidd_BitMap_BlitColorExpansion *msg)
 {
+#ifdef __RESERVED__
     ULONG   cemd;
     ULONG   fg, bg;
     LONG    x, y;
@@ -4392,9 +4407,9 @@ else
     bug("\n");
 */
     } /* for ( each y ) */
+#endif
 
     ReturnVoid("BitMap::BlitColorExpansion");
-
 }
 
 /*****************************************************************************************
@@ -4411,6 +4426,7 @@ else
         hidd.graphics.bitmap
 
     FUNCTION
+    	This method is currently not used and reserved.
 
     INPUTS
         obj    -
@@ -4433,6 +4449,7 @@ else
 
 ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BytesPerLine *msg)
 {
+#ifdef __RESERVED__
      ULONG bpl;
 
      switch (msg->pixFmt)
@@ -4472,6 +4489,9 @@ ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_B
      }
 
      return bpl;
+#else
+    return 0;
+#endif
 
 }
 
@@ -5113,6 +5133,9 @@ BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o,
 
     if (GOT_BM_ATTR(Height))
     	data->height = attrs[AO(Height)];
+
+    if (GOT_BM_ATTR(BytesPerRow))
+    	data->bytesPerRow = attrs[AO(BytesPerRow)];
 
     return TRUE;
 }

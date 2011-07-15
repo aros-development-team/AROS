@@ -32,7 +32,7 @@
 
 OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    IPTR width, height, depth;
+    IPTR height, depth, bytesperrow;
     
     BOOL  ok = TRUE;   
      
@@ -68,8 +68,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	
     data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof  (*data));
-    
-   
+
     /* Get some data about the dimensions of the bitmap */
 
     data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
@@ -81,21 +80,20 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     */
     if (!data->planes_alloced)
 	return o; /* Late initialization */
-	
 
     /* Not late initialization. Get some info on the bitmap */	
-    OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     OOP_GetAttr(o, aHidd_BitMap_Depth,	&depth);
+    OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bytesperrow);
 #if 0
     OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)p_pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, (IPTR *)&depth);
 #endif
 
     /* We cache some info */
-    data->bytesperrow	  = ((width + align) & ~align) / 8;
-    data->rows 		  = height;
-    data->depth		  = depth;
+    data->rows        = height;
+    data->depth	      = depth;
+    data->bytesperrow = bytesperrow;
 
     if (ok)
     {
@@ -718,11 +716,12 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
     };
     struct TagItem  	bmtags[] =
     {
-	{ aHidd_BitMap_Width	    , 0UL },
-	{ aHidd_BitMap_Height	    , 0UL },
-	{ aHidd_BitMap_Depth	    , 0UL },
-    	{ aHidd_BitMap_PixFmtTags   , 0UL },
-	{ TAG_DONE  	    	    , 0UL }
+	{ aHidd_BitMap_Width	    , 0 },
+	{ aHidd_BitMap_Height	    , 0 },
+	{ aHidd_BitMap_Depth	    , 0 },
+	{ aHidd_BitMap_BytesPerRow  , 0 },
+    	{ aHidd_BitMap_PixFmtTags   , 0 },
+	{ TAG_DONE  	    	    , 0 }
     };
 	
     ULONG i;
@@ -774,8 +773,9 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
     bmtags[0].ti_Data = bm->BytesPerRow * 8;
     bmtags[1].ti_Data = bm->Rows;
     bmtags[2].ti_Data = bm->Depth;
-    bmtags[3].ti_Data = (IPTR)pftags;
-    
+    bmtags[3].ti_Data = bm->BytesPerRow;
+    bmtags[4].ti_Data = (IPTR)pftags;
+
     /* Call private bitmap method to update superclass */
     if (!HIDD_BitMap_SetBitMapTags(o, bmtags))
     {

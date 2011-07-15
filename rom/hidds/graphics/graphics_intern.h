@@ -206,12 +206,7 @@ struct HIDDBitMapData
     BOOL  displayable;   /* bitmap displayable?           */
     BOOL  pf_registered;
     ULONG flags;         /* see hidd/graphic.h 'flags for */
-#if 0
-    ULONG format;        /* planar or chunky              */
     ULONG bytesPerRow;   /* bytes per row                 */
-    ULONG bytesPerPixel; /* bytes per pixel               */
-    OOP_Object *bitMap;
-#endif
     /* WARNING: structure could be extented in the future                */
     
     OOP_Object *friend;	/* Friend bitmap */
