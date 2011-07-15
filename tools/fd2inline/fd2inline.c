@@ -2401,7 +2401,7 @@ fD_write(FILE* outfile, const fdDef* obj)
 
 	 if (target==AROS)
 	 {
-	    fprintf(outfile, "#define %s%s AROS_SLIB_ENTRY(%s%s,%s,%d)\n",
+	    fprintf(outfile, "#define %s%s AROS_SLIB_ENTRY(%s%s,%s,%ld)\n",
 		    gateprefix, name,
 		    gateprefix, name,
 		    BaseNamC,fD_GetOffset(obj));
@@ -3190,7 +3190,7 @@ main(int argc, char** argv)
 		  if( buffer[ 0 ] == '#' /* Pre-processor instruction */ ||
 		      strncmp( buffer, "typedef", 7 ) == 0 )
 		  {
-		    fprintf(outfile, buffer );
+		    fputs(buffer, outfile );
 		  }
 		}
 		
