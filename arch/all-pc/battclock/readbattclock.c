@@ -1,88 +1,60 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ReadBattClock() function.
     Lang: english
 */
-#include "battclock_intern.h"
 
-#define	ReadRTC(in,out)				\
-    asm volatile (				\
-    "outb	%%al,$0x70	\n\t"		\
-    "inb	$0x71,%%al	\n\t"		\
-    "movl	%%eax,%%ebx	\n\t"		\
-    "andl	$0x0f,%%eax	\n\t"		\
-    "shrl	$4,%%ebx	\n\t"		\
-    "imul	$10,%%ebx	\n\t"		\
-    "addl	%%ebx,%%eax"			\
-    : "=al"(out)				\
-    : "0"(in)					\
-    : "%ebx","cc");
-
-/*****************************************************************************
-
-    NAME */
-#include <proto/battclock.h>
+#include <proto/exec.h>
 #include <proto/utility.h>
 #include <utility/date.h>
 
-	AROS_LH0(ULONG, ReadBattClock,
+#include "battclock_intern.h"
+#include "cmos.h"
 
-/*  SYNOPSIS */
-	/* void */
+static inline int bcd_to_dec(int x)
+{
+    return ( (x >> 4) * 10 + (x & 0x0f) );
+}
 
-/*  LOCATION */
-	struct BattClockBase *, BattClockBase, 2, Battclock)
-
-/*  FUNCTION
-	Return the value stored in the battery back up clock. This value
-	is the number of seconds that have elapsed since midnight on the
-	1st of January 1978 (00:00:00 1.1.1978).
-
-	If the value of the battery clock is invalid, then the clock will
-	be reset.
-
-    INPUTS
-
-    RESULT
-	The number of seconds since 1.1.1978 00:00:00
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	WriteBattClock, ResetBattClock
-
-    INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    battclock_lib.fd and clib/battclock_protos.h
-
-*****************************************************************************/
+AROS_LH0(ULONG, ReadBattClock,
+	 struct BattClockBase *, BattClockBase, 2, Battclock)
 {
     AROS_LIBFUNC_INIT
 
-    struct ClockData date;        
-// HACK: asm statements do not work with a single variable
-    struct __myyear { UWORD year; } myyear;
-//    UWORD  year;
-    ULONG  secs;
+    struct ClockData date;
+    UWORD century;
+    UWORD status_b;
+    ULONG secs;
 
-//    ReadRTC(50,year);
-    ReadRTC(50,myyear.year);
-    ReadRTC(9,date.year);
-    ReadRTC(8,date.month);
-    ReadRTC(7,date.mday);
-    ReadRTC(4,date.hour);
-    ReadRTC(2,date.min);
-    ReadRTC(0,date.sec);
-//    date.year+=100*year;
-    date.year+=100*myyear.year;
+    ObtainSemaphore(&BattClockBase->sem);
+
+    /* Make sure time isn't currently being updated */
+    while ((ReadCMOSByte(STATUS_A) & 0x80) != 0);
+
+    date.sec   = ReadCMOSByte(SEC);
+    date.min   = ReadCMOSByte(MIN);
+    date.hour  = ReadCMOSByte(HOUR);
+    date.mday  = ReadCMOSByte(MDAY);
+    date.month = ReadCMOSByte(MONTH);
+    date.year  = ReadCMOSByte(YEAR);
+    century    = ReadCMOSByte(CENTURY);
+    status_b   = ReadCMOSByte(STATUS_B);
+
+    ReleaseSemaphore(&BattClockBase->sem);
+
+    if ((status_b & 0x04) == 0) {
+	date.sec   = bcd_to_dec(date.sec);
+	date.min   = bcd_to_dec(date.min);
+	date.hour  = bcd_to_dec(date.hour);
+	date.mday  = bcd_to_dec(date.mday);
+	date.month = bcd_to_dec(date.month);
+	date.year  = bcd_to_dec(date.year);
+	century    = bcd_to_dec(century);
+    }
+
+    date.year = century * 100 + date.year;
 
     secs=Date2Amiga(&date);
 
