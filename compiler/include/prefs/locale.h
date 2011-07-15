@@ -2,7 +2,7 @@
 #define PREFS_LOCALE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Locale prefs definitions
@@ -71,5 +71,8 @@ struct LocalePrefs {
 
     struct CountryPrefs lp_CountryData;
 };
+
+/* lp_Flags, AROS-specific */
+#define LPF_GMT_CLOCK 0x0001	/* Hardware clock stores GMT */
 
 #endif /* PREFS_LOCALE_H */
