@@ -1,6 +1,6 @@
 ## version $VER: localeprefs.catalog 1.1 (24.09.2010)
-## codeset 0
 ## language deutsch
+## codeset 0
 ;
 ;
 MSG_CANT_OPEN_LIB
@@ -142,4 +142,8 @@ Standard Zeichensatz
 MSG_NOT_SPECIFIED
 Nicht spezifiziert
 ; Not specified
+;
+MSG_GMT_CLOCK
+Hardware-Uhr speichert GMT
+; Hardware clock stores GMT
 ;
