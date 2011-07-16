@@ -41,6 +41,10 @@
     RESULT
 
     NOTES
+	Not implemented.
+	This function exists to get Scalos compiled. Because Scalos
+	has its own fallback code for the case that lib_Version < 50
+	it's not so urgent to implement it.
 
     EXAMPLE
 
