@@ -222,6 +222,8 @@ int main(void)
 #if 0
     if (old_displays)
         AddDisplays(args.displays, old_displays);
+#else
+    (void)old_displays; /* unused */
 #endif
 
     if (rdargs)

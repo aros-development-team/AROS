@@ -617,7 +617,7 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 {
     char    buffer[10];
     KeySym  ks;
-    int     count;
+    D(int     count;)
     long    result;
 
     D(bug("xkey2hidd\n"));
@@ -636,7 +636,7 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
     
     LOCK_X11
     xk->state = 0;
-    count = XCALL(XLookupString, xk, buffer, 10, &ks, NULL);
+    D(count =) XCALL(XLookupString, xk, buffer, 10, &ks, NULL);
     UNLOCK_X11
     
     D(bug("xk2h: Code %d (0x%x). Event was decoded into %d chars: %d (0x%x)\n",xk->keycode, xk->keycode, count,ks,ks));

@@ -495,7 +495,6 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
     struct bitmap_data  *data;
     XImage  	    	*image;
     IPTR    	    	 depth;
-    ULONG   	    	 bperline;    
     ULONG   	    	 lines_to_copy;
     LONG    	    	 ysize;
     LONG    	    	 current_y;
@@ -525,8 +524,6 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
     if (!image)
     	ReturnVoid("X11Gfx.BitMap::PutImage(XShmCreateImage failed)");
 
-    bperline = image->bytes_per_line;
-    
     ASSERT(image->bytes_per_line > 0);
     
     /* Calculate how many scanline can be stored in the buffer */
@@ -987,7 +984,6 @@ static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
 
     struct bitmap_data  *data;
     XImage  	    	*image;
-    ULONG   	    	 bperline;
     IPTR    	    	 depth;    
     ULONG   	    	 lines_to_copy;
     LONG    	    	 ysize;
@@ -1015,8 +1011,6 @@ static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     if (!image)
     	ReturnVoid("X11Gfx.BitMap::PutImage(XShmCreateImage failed)");
 	
-    bperline = image->bytes_per_line;
-    
     /* Calculate how many scanline can be stored in the buffer */
     maxlines = XSHM_MEMSIZE / image->bytes_per_line; 
     
