@@ -377,7 +377,7 @@ const static unsigned char undef[3][sizeof(double)]= /* Undefined numeric values
                 }
                 break;
             }
-        #endif
+#endif
             case '%':
                 NEXT(c);
                 if(c!='%')
@@ -426,9 +426,14 @@ const static unsigned char undef[3][sizeof(double)]= /* Undefined numeric values
                         else
                             type='o';
                         PREV(d);
-                    }else
-                        if(VAL(!isdigit(c)&&isxdigit(c)))
-                            type='x'; /* Is a valid x number without '0x' */
+                    }
+                    /*  deadwood: Below code is wrong and left for reference.
+                        Algoritm cannot assume that string starting with A-F is
+                        a hexadecimal integer. There must be '0x' sequence -
+                        validated via test/clib/sscanf.c */
+                    //else
+                    //    if(VAL(!isdigit(c)&&isxdigit(c)))
+                    //        type='x'; /* Is a valid x number without '0x' */
                 }
 
                 while(type=='x'&&VAL(c=='0')) /* sedecimal */
