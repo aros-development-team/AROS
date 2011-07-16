@@ -505,10 +505,9 @@ static int relocate
         {
 
             case SHN_UNDEF:
-                D(bug("[ELF2HUNK] Undefined symbol '%s', using value of 0\n", symname));
-                hunk = ~0;
-                value = 0;
-                break;
+                D(bug("[ELF2HUNK] Undefined symbol '%s'\n", symname));
+                      set_error(EINVAL);
+                return 0;
 
             case SHN_COMMON:
                 D(bug("[ELF2HUNK] COMMON symbol '%s'\n", symname));
