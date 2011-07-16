@@ -250,9 +250,4 @@
     to OpenLibrary(). Some system libraries may not be at this version. */
 #define INCLUDE_VERSION 40
 
-/* Import the C++ definitions, if possible.  */
-#if defined(__cplusplus)
-#    include <c++/exec/types.hpp>
-#endif
-
 #endif /* exec/types.h */
