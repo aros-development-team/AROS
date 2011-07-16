@@ -492,11 +492,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 /********** GfxHidd::Dispose()  ******************************/
 VOID X11Cl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct gfx_data *data;
-    
     EnterFunc(bug("X11Gfx::Dispose(o=%p)\n", o));
     
-    data = OOP_INST_DATA(cl, o);    
     cleanupx11stuff(XSD(cl));
 
     D(bug("X11Gfx::Dispose: calling super\n"));    

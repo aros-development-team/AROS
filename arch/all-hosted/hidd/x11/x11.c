@@ -567,7 +567,6 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 			XMapEvent   	    *me;
 			struct notify_msg   *nmsg, *safe;
 			struct xwinnode     *node;
-			BOOL 	    	     found = FALSE;
 
 			me = (XMapEvent *)&event;
 
@@ -579,7 +578,6 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 				 /*  The window has now been mapped.
 			             Send reply to app */
 
-		 		 found = TRUE;
 				 Remove((struct Node *)nmsg);
 				 ReplyMsg((struct Message *)nmsg);
 			    }
