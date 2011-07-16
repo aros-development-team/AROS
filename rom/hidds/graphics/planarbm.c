@@ -60,7 +60,6 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     OOP_Object      	 *pf;
     APTR		 p_pf = &pf;
 #endif
-    ULONG		 align;
 
     o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
@@ -72,7 +71,6 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     /* Get some data about the dimensions of the bitmap */
 
     data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
-    align = GetTagData(aHidd_BitMap_Align, 16, msg->attrList) - 1;
     
     /* FIXME: Fix this hack */
     /* Because this class is used to emulate Amiga bitmaps, we
