@@ -150,3 +150,11 @@ void parse_format(const char *format)
 	pointer_bytes = 8;
     }
 }
+
+void emit_libs(setnode *liblist, FILE *out)
+{
+    while (liblist) {
+        fprintf(out, "PROVIDE(%s = .); LONG(%ld)\n", liblist->secname, liblist->pri);
+        liblist = liblist->next;
+    }
+}

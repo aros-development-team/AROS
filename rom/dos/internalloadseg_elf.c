@@ -296,16 +296,10 @@ static int relocate
         {
 
             case SHN_UNDEF:
-                /* Ignore the __aros_libreq_ undefines. 
-                 * They are used by the autoinit system only.
-                 */
-                if (strncmp((STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name, "__aros_libreq_", 14) != 0) {
-                    D(bug("[ELF Loader] Undefined symbol '%s'\n",
-                          (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
-                          SetIoErr(ERROR_BAD_HUNK);
-                    return 0;
-                }
-                break;
+                D(bug("[ELF Loader] Undefined symbol '%s'\n",
+		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
+                      SetIoErr(ERROR_BAD_HUNK);
+                return 0;
 
             case SHN_COMMON:
                 D(bug("[ELF Loader] COMMON symbol '%s'\n",

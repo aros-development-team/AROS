@@ -110,7 +110,7 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
     );
     if (cfg->options & OPTION_AUTOINIT) {
         fprintf(out,
-            "    AROS_LIBREQUIRE(%s, %d)\n",
+            "    AROS_LIBREQ(%s, %d)\n",
             cfg->libbase, funclistit->version
         );
     }

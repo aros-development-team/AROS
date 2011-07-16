@@ -28,18 +28,6 @@ static void exitfunc(void)
         remove(tempoutput);
 }
 
-static int requires_symbol_sets_handling(setnode *set)
-{
-    for (; set != NULL; set = set->next) {
-        if (strcmp(set->secname, ".aros.set.libreq") == 0)
-            continue;
-
-        return 1;
-    }
-
-    return 0;
-}
-
 int main(int argc, char *argv[])
 {
     int cnt, i;
@@ -50,7 +38,7 @@ int main(int argc, char *argv[])
     int strip_all   = 0;
     char *do_verbose = NULL;
 
-    setnode *setlist = NULL;
+    setnode *setlist = NULL, *liblist = NULL;
 
     program_name = argv[0];
     ld_name = LD_NAME;
@@ -148,20 +136,25 @@ int main(int argc, char *argv[])
     if (incremental == 1)
         return EXIT_SUCCESS;
 
+    fprintf(stderr, "Collecting libs...\n");
+    collect_libs(tempoutput, &liblist);
+
     collect_sets(tempoutput, &setlist);
 
-    if (requires_symbol_sets_handling(setlist))
+    if (setlist != NULL)
         fprintf(ldscriptfile, "EXTERN(__this_program_requires_symbol_sets_handling)\n");
 
     fwrite(LDSCRIPT_PART1, sizeof(LDSCRIPT_PART1) - 1, 1, ldscriptfile);
     emit_sets(setlist, ldscriptfile);
+    emit_libs(liblist, ldscriptfile);
     fwrite(LDSCRIPT_PART2, sizeof(LDSCRIPT_PART2) - 1, 1, ldscriptfile);
     /* Append .eh_frame terminator only on final stage */
     if (incremental == 0)
     	fputs("LONG(0)\n", ldscriptfile);
     fwrite(LDSCRIPT_PART3, sizeof(LDSCRIPT_PART3) - 1, 1, ldscriptfile);
-    if (incremental == 0)
+    if (incremental == 0) {
         fputs("PROVIDE(SysBase = 0x515BA5E);\n", ldscriptfile);
+    }
     fwrite(LDSCRIPT_PART4, sizeof(LDSCRIPT_PART4) - 1, 1, ldscriptfile);
 
     fclose(ldscriptfile);

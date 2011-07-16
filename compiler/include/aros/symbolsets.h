@@ -17,14 +17,8 @@
 struct libraryset
 {
     CONST_STRPTR name;
-    const LONG version;
+    const LONG *versionptr;
     void  **baseptr;
-};
-
-struct libraryreq
-{
-    CONST_STRPTR name;
-    const LONG version;
 };
 
 #define SETNAME(set) __##set##_LIST__
@@ -96,26 +90,26 @@ const void * const SETNAME(set)[] __attribute__((weak))={0,0};
 
 /* this macro generates the necessary symbols to open and close automatically
    a library. An error message will be shown if the library cannot be opened.  */
-#define ADD2LIBS(name, ver, btype, bname)                    \
+#define AROS_LIBSET(name, btype, bname)                      \
 btype bname;                                                 \
+extern const LONG __aros_libreq_##bname __attribute__((weak));  \
                                                              \
 AROS_IMPORT_ASM_SYM(int, dummy, __includelibrarieshandling); \
                                                              \
 static const struct libraryset __aros_libset_##bname =       \
 {                                                            \
-     name, ver, (void *)&bname                               \
+     name, &__aros_libreq_##bname, (void *)&bname             \
 };                                                           \
 ADD2SET(__aros_libset_##bname, libs, 0) 
 
-#define AROS_LIBREQUEST(name, ver, btype, bname)             \
-const struct libraryreq __aros_libreq_##bname##_##ver __attribute__((weak)) =          \
-{                                                            \
-     name, ver                                               \
-};                                                           \
-ADD2SET(__aros_libreq_##bname##_##ver, libreq, ver) 
+#define ADD2LIBS(name, ver, btype, bname)                   \
+const LONG __aros_libreq_##bname = ver;                     \
+AROS_LIBSET(name, btype, bname)
 
-#define AROS_LIBREQUIRE(bname, ver) \
-    asm volatile (".global __aros_libreq_" #bname "_" #ver);
+#define AROS_LIBREQ(bname, ver) \
+    asm volatile ( \
+                  ".global __aros_libreq_" #bname "." #ver "\n" \
+                  "__aros_libreq_" #bname "." #ver "=" #ver);
 
 
 /* Traverse the set from the first element to the last one, or vice versa,

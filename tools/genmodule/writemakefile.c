@@ -39,18 +39,8 @@ void writemakefile(struct config *cfg)
     fprintf(out, "%s_LINKLIBFILES :=", cfg->modulename);
     if (cfg->options & OPTION_STUBS)
         fprintf(out, " %s_stubs", cfg->modulename);
-    if (cfg->options & OPTION_AUTOINIT) {
-        int minversion = 0;
-        struct functionhead *funclistit;
+    if (cfg->options & OPTION_AUTOINIT)
         fprintf(out, " %s_autoinit", cfg->modulename);
-        fprintf(out, " %s_autoinit_0", cfg->modulename);
-        for (funclistit = cfg->funclist; funclistit; funclistit=funclistit->next) {
-            if (funclistit->version <= minversion)
-                continue;
-            minversion = funclistit->version;
-            fprintf(out, " %s_autoinit_%d", cfg->modulename, minversion);
-        }
-    }
     fprintf(out, "\n");
 
     /* Currently there are no asm files anymore */
