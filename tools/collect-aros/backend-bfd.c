@@ -1,4 +1,7 @@
 #include <bfd.h>
+#include <string.h>
+#include <malloc.h>
+#include <stdlib.h>
 
 #include "misc.h"
 #include "backend.h"
@@ -89,6 +92,80 @@ void collect_sets(const char *file, setnode **setlist_ptr)
 
     parse_format(abfd->xvec->name);
     bfd_map_over_sections(abfd, setfunc, setlist_ptr);
+
+    bfd_close(abfd);
+}
+
+static void collect_lib(asymbol *sym, setnode **liblist_ptr)
+{
+    setnode *node;
+    char *cp, *name;
+    int pri;
+
+    if (strncmp(sym->name, "__aros_libreq_", 14) != 0)
+            return;
+
+    node = xmalloc(sizeof(*node)+strlen(sym->name)+1);
+    name = (char *)(&node[1]);
+    strcpy(name, sym->name);
+
+    cp = strchr(name + 14, '.');
+    if (cp != NULL) {
+        char *tmp;
+        pri = strtoul(cp+1, &tmp, 0);
+
+        if ((cp+1) == tmp) {
+            free(node);
+            return;
+        }
+
+        *(cp++) = 0;
+
+    } else {
+        pri = 0;
+    }
+
+    node->secname = name;
+    node->off_setname = 14;
+    node->pri = pri;
+    node->next = *liblist_ptr;
+    *liblist_ptr = node;
+}
+
+void collect_libs(const char *file, setnode **liblist_ptr)
+{
+    long symtab_size;
+    bfd *abfd;
+
+    /* We assume bfd_init() has already been colled by
+     * collect_sets
+     */
+
+    if
+    (
+        (abfd = bfd_openr(file, "default")) == NULL ||
+        !bfd_check_format(abfd, bfd_object)
+    )
+    {
+        bfd_fatal(file);
+    }
+
+    symtab_size = bfd_get_symtab_upper_bound(abfd);
+    if (symtab_size > 0) {
+        asymbol **symtab;
+        long symbols;
+
+        symtab = (asymbol **)xmalloc(symtab_size);
+        symbols = bfd_canonicalize_symtab(abfd, symtab);
+        if (symbols > 0) {
+            long i;
+
+            for (i = 0; i < symbols; i++)
+                collect_lib(symtab[i], liblist_ptr);
+        }
+
+        free(symtab);
+    }
 
     bfd_close(abfd);
 }
