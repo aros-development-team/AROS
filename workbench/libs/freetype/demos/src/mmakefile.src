@@ -17,6 +17,8 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES		:= -I$(SRCDIR)/$(CURDIR)/../graph -I$(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/../../src/base -I$(SRCDIR)/$(CURDIR)/../../config
 
 USER_CFLAGS += -Wno-switch
+# Unfortunately, this code is not yet gcc 4.6.1 paranoia clean
+USER_CFLAGS += -Wno-error
 
 %build_prog mmake=workbench-libs-freetype-demos-ftstring \
     progname=ftstring targetdir=$(BINDIR)/Demos/FreeType \
