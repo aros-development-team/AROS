@@ -13,7 +13,7 @@
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
 %define compile_q cmd="$(TARGET_CC) $(TARGET_CFLAGS)" opt=$(CFLAGS) from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
-	@$(ECHO) "Compiling $(CURDIR)/$(notdir %(from))"
+	@$(ECHO) "Compiling  $(CURDIR)/$(notdir %(from))"
 	@$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 		$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
@@ -53,7 +53,7 @@
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
 %define link_q cmd=$(AROS_CC) opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP)
-	@$(ECHO) "Linking $(subst $(TARGETDIR)/,,%(to))..."
+	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,%(to))..."
 	@$(IF) %(cmd) %(opt) %(from) -o %(to) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 				$(ECHO) "%(to): %(cmd) %(opt) %(from) -o %(to) %(libs)" >> $(GENDIR)/errors ; \
@@ -76,7 +76,7 @@
 # and $(DEPLIBS) make variables.
 #
 %define link_module_q err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
-	@$(ECHO) "Building $(subst $(TARGETDIR)/,,$@) ..."
+	@$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
 	@if $(AROS_CC) $(NOSTARTUP_LDFLAGS) %(ldflags) \
 	    $(GENMAP) %(objdir)/%(module).map \
 	    %(objs) %(libs) %(endtag) \
@@ -97,7 +97,7 @@
 #------------------------------------------------------------------------------
 # Create the library
 %define mklib_q ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
-	@$(ECHO) "Creating library $(subst $(TARGETDIR)/,,%(to))..."
+	@$(ECHO) "Creating   $(subst $(TARGETDIR)/,,%(to))..."
 	@%(ar) %(to) %(from)
 	@%(ranlib) %(to)
 %end
@@ -732,7 +732,7 @@ $(TMP_TARGET) : OPTS := $(TMP_OPTS)
 $(TMP_TARGET) : MODNAME := %(modname)
 $(TMP_TARGET) : MODTYPE := %(modtype)
 $(TMP_TARGET) : $(TMP_DEPS)
-	@$(ECHO) "Generating $(subst $(TARGETDIR)/,, $@)"
+	@$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
 	@$(GENMODULE) $(OPTS) writelibdefs $(MODNAME) $(MODTYPE)
 %end
 #------------------------------------------------------------------------------
@@ -1158,7 +1158,7 @@ $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
 $(BD_KOBJ) : USER_LDFLAGS := $(USER_LDFLAGS)
 $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
-	@$(ECHO) "Linking $(subst $(TARGETDIR)/,,$@)"
+	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
 	@$(AROS_LD) -Ur -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
 	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*$$/) {print "-L " $$3;}'`
 
@@ -1417,7 +1417,7 @@ $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
 $(BD_KOBJ) : USER_LDFLAGS:=$(USER_LDFLAGS)
 $(BD_KOBJ) : $(BD_OBJS) $(USER_OBJS) $(BD_ENDOBJS)
-	@$(ECHO) "Linking $(subst $(TARGETDIR)/,,$@)"
+	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
 	@$(AROS_LD) -Ur -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
 	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*$$/) {print "-L " $$3;}'`
 
@@ -1709,13 +1709,13 @@ $(BD_OBJS) : | $(BD_DIRS)
 GLOB_MKDIRS += $(BD_DIRS)
 
 %(dir)/%/%(subdir)/%(name).catalog : %(srcdir)/%.ct $(BD_DESC).cd
-	@$(ECHO) "Creating %(name) catalog for language $*."
+	@$(ECHO) "Creating   %(name) catalog for language $*."
 	@$(FLEXCAT) $(BD_DESC).cd $< CATALOG=%(dir)/$*/%(subdir)/%(name).catalog || [ $$? -lt 10 ]
 
 ifneq (%(source),)
 %(source) : TMP_SOURCEDESCRIPTION := $(shell echo %(sourcedescription) | sed 's/^\(.\):\//\/\1\//')
 %(source) : $(BD_DESC).cd | $(dir %(source))
-	@$(ECHO) "Creating %(name) catalog source file %(source)"
+	@$(ECHO) "Creating   %(name) catalog source file %(source)"
 	@$(FLEXCAT) $(BD_DESC).cd %(source)=$(TMP_SOURCEDESCRIPTION).sd
 endif
 
@@ -1747,13 +1747,13 @@ BD_OBJS := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
 ifeq (%(image),)
 
 %(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%.png
-	@$(ECHO) Creating $(subst $(TARGETDIR)/,,$@)...
+	@$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
 	@$(ILBMTOICON) $+ $@
 
 else
 
 %(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%(image)
-	@$(ECHO) Creating $(subst $(TARGETDIR)/,,$@)...
+	@$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
 	@$(ILBMTOICON) $+ $@
 
 endif
@@ -2484,7 +2484,7 @@ endif
 $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
 	@$(IF) test $(%(mmake)-installflag) -nt $@ || ! test -f $@; then \
         $(RM) $@ ; \
-        $(ECHO) "Building \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" ; \
+        $(ECHO) "Building   \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" ; \
         mkdir -p "$(DISTDIR)/Packages" ; \
         mkdir -p "$(%(mmake)-prefix)" ; \
         cd $(%(mmake)-%(subpackage)-package-dir) ; \
@@ -2634,7 +2634,7 @@ endif
 %(file): LDFLAGS := $(TMP_LDFLAGS) $(NOSTARTUP_LDFLAGS)
 %(file): LDLIBS := $(addprefix -l, %(uselibs))
 %(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
-	@$(ECHO) Linking $(subst $(TARGETDIR)/,,$@)...
+	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
 	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
 
 GLOB_MKDIRS += $(TMP_DIRS)
@@ -2651,7 +2651,7 @@ BD_OUTDIR := $(dir %(file))
 BD_TMPDIR  := $(GENDIR)/$(CURDIR)
 
 %(file) : %(objs) $(BD_OUTDIR)
-	@$(ECHO) Linking $(subst $(TARGETDIR)/,,$@)...
+	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
 	@$(KERNEL_LD) %(ldflags) --entry=%(start) -oformat=binary -Ttext=%(start) -o $(BD_TMPDIR)/%(name) %(objs)
 	cd $(BD_TMPDIR) && $(AROS_LD) -r --format binary %(name) -o $@
 
