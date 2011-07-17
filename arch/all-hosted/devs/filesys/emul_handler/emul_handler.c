@@ -202,6 +202,10 @@ static LONG open_(struct emulbase *emulbase, struct filehandle *fhv, struct file
              */
             if (fh->name[0] == 0) {
                 FreeMem(fh, sizeof(*fh));
+                if (!AllowDir) {
+                    *handle = 0;
+                    return ERROR_OBJECT_WRONG_TYPE;
+                }
                 *handle = fhv;
                 return 0;
             }
@@ -869,7 +873,9 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
             break;
         }
 
-        Res2 = create_dir(emulbase, &fh, AROS_BSTR_ADDR(dp->dp_Arg2), 0755);
+        Res2 = create_dir(emulbase, &fh, AROS_BSTR_ADDR(dp->dp_Arg2),
+                  FIBF_GRP_EXECUTE | FIBF_GRP_READ |
+                  FIBF_OTR_EXECUTE | FIBF_OTR_READ);
         Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
         if (Res1 != DOSTRUE) {
             FreeMem(fl, sizeof(*fl));
