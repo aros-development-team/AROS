@@ -56,7 +56,9 @@ SHFILES := \
 
 USER_INCLUDES := -I. -I$(SRCDIR)/$(CURDIR)/../include $(addprefix -I,$(DIRS))
 
-USER_CFLAGS := -DFT2_BUILD_LIBRARY
+USER_CFLAGS += -DFT2_BUILD_LIBRARY
+# Unfortunately, this code is not yet gcc 4.6.1 paranoia clean
+USER_CFLAGS += -Wno-error
 
 #MM- workbench-libs : workbench-libs-freetype-module
 #MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes
