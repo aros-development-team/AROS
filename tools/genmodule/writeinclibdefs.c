@@ -31,7 +31,7 @@ void writeinclibdefs(struct config *cfg)
 	
     if (cfg->residentpri >= 105)
 	strcpy(residentflags, "RTF_SINGLETASK");
-    else if (cfg->residentpri >= -50)
+    else if (cfg->residentpri >= -60)
 	strcpy(residentflags, "RTF_COLDSTART");
     else if (cfg->residentpri < -120)
 	strcpy(residentflags, "RTF_AFTERDOS");
