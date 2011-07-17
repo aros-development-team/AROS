@@ -77,9 +77,9 @@ case $host in
   stripflag=""
  ;;
  i?86-*-aros)
- : ${CPU="i386"}
+ : ${CPU="i486"}
   cflags=""
-  optflags="-mcpu=${CPU} -O2"
+  optflags="-m32 -march=${CPU} -O2"
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
   resident=""                                      dnl *** Not supported (yet?)
@@ -88,7 +88,7 @@ case $host in
  x86_64-*-aros)
  : ${CPU="x86_64"}
   cflags=""
-  optflags="-mcpu=k8 -O2 -fomit-frame-pointer"
+  optflags="-O2 -fomit-frame-pointer"
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1 --defsym x86_64=1"
   resident=""
