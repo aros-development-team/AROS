@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Supervisor() - Execute some code in a priviledged environment.
@@ -11,7 +11,7 @@
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH1(ULONG, Supervisor,
+	AROS_LH1(IPTR, Supervisor,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG_FUNC, userFunction, A5),
@@ -73,7 +73,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    return (*userFunction)();
+    /*
+     * This fallback implementation does nothing.
+     * See architecture-specific code for working implementations.
+     */
 
     AROS_LIBFUNC_EXIT
 } /* Supervisor() */
