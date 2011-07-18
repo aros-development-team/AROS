@@ -326,7 +326,7 @@ int load_elf_file(struct module *n, unsigned long long virt)
     int addr_displayed = 0;
     struct ELF_ModuleInfo64 *mod;
 
-    D(kprintf("[ELF Loader] Loading ELF module from address %p\n", file));
+    D(kprintf("[ELF Loader] Loading ELF module from address %p\n", eh));
 
     /* Iterate over the section header in order to prepare memory and eventually load some hunks */
     for (i=0; i < eh->shnum; i++)
