@@ -8,11 +8,11 @@
 #include "pciehci_uhw.h"
 
 UWORD cmdQueryDevice(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
-WORD cmdReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
-WORD cmdUsbReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
-WORD cmdUsbResume(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
-WORD cmdUsbSuspend(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
-WORD cmdUsbOper(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
+UWORD cmdReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
+UWORD cmdUsbReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
+UWORD cmdUsbResume(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
+UWORD cmdUsbSuspend(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
+UWORD cmdUsbOper(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE);
 
 
 static int Open(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq,  ULONG unit, ULONG flags) {
@@ -27,17 +27,20 @@ static int Open(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq,  ULONG unit, U
         ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
 
         struct Unitnode *ehu_unitnode;
-        ForeachNode(&ehd->ehd_unitlist, ehu_unitnode) {
+        ForeachNode(&ehd->ehd_unitnodelist, ehu_unitnode) {
+
             struct ehu_unit *ehu = (struct ehu_unit *)ehu_unitnode->ehu_unitptr;
             if(ehu->ehu_unitnumber == unit) {
                 ioreq->iouh_Req.io_Unit = (struct Unit *)ehu;
-                if(ehu->ehu_unitallocated) {
+
+                if(ehu->ehu_devunit.unit_OpenCnt) {
                     ioreq->iouh_Req.io_Error = IOERR_UNITBUSY;
                     KPRINTF2(DBL_DEVIO, ("Unit %ld already open", unit));
                     break;
                 }else{
                     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
                     ioreq->iouh_Req.io_Error = 0;
+                    ehu->ehu_devunit.unit_OpenCnt++;
                     KPRINTF2(DBL_DEVIO, ("Unit %ld opened\n", unit));
                     return TRUE;
                 }
@@ -56,6 +59,10 @@ static int Close(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq) {
 //  LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_DEVIO,("EHC Close: \n"));
+
+    struct ehu_unit *ehu = (struct ehu_unit *) ioreq->iouh_Req.io_Unit;
+    ehu->ehu_devunit.unit_OpenCnt--;
+
     return TRUE;
 }
 
@@ -244,7 +251,7 @@ UWORD cmdQueryDevice(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPE
     return RC_OK;
 }
 
-WORD cmdReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
+UWORD cmdReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
     LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_UHWIO, ("EHC CMD_RESET: 0x%p\n", ioreq));
@@ -258,15 +265,15 @@ WORD cmdReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIB
     return UHIOERR_USBOFFLINE;
 }
 
-WORD cmdUsbReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
+UWORD cmdUsbReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
     LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_UHWIO, ("EHC UHCMD_USBRESET: 0x%p\n", ioreq));
 
     uhwGetUsbState(ioreq, ehu, ehd);  /* FIXME */
 
-    ehu->ehu_FrameCounter = 1;
-    ehu->ehu_RootHubAddr = 0;
+//  ehu->ehu_FrameCounter = 1;
+//  ehu->ehu_RootHubAddr = 0;
 
     if(ioreq->iouh_State & UHSF_OPERATIONAL){
         return RC_OK;
@@ -274,7 +281,7 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR 
     return UHIOERR_USBOFFLINE;
 }
 
-WORD cmdUsbResume(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
+UWORD cmdUsbResume(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
     LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_UHWIO, ("EHC UHCMD_USBRESUME: 0x%p\n", ioreq));
@@ -286,7 +293,7 @@ WORD cmdUsbResume(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR
     return UHIOERR_USBOFFLINE;
 }
 
-WORD cmdUsbSuspend(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
+UWORD cmdUsbSuspend(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
     LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_UHWIO, ("EHC UHCMD_USBSUSPEND: 0x%p\n", ioreq));
@@ -298,7 +305,7 @@ WORD cmdUsbSuspend(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPT
     return UHIOERR_USBOFFLINE;
 }
 
-WORD cmdUsbOper(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
+UWORD cmdUsbOper(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
     LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_UHWIO, ("EHC UHCMD_USBOPER: 0x%p\n", ioreq));

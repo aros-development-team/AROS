@@ -10,15 +10,51 @@
 #include "pciehci_hci.h"
 #include "pciehci_uhw.h"
 
-static AROS_UFH3(void, ehc_resethandler,
-    AROS_UFHA(struct ehc_controller *, ehc, A1),
-    AROS_UFHA(APTR, unused, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
+APTR pciGetPhysical(struct ehc_controller *ehc, APTR virtaddr) {
+    //struct PCIDevice *hd = hc->hc_Device;
+    return(HIDD_PCIDriver_CPUtoPCI(ehc->ehc_pcidriverobject, virtaddr));
+}
+
+static inline struct EhciQH * ehciAllocQH(struct ehc_controller *ehc) {
+    struct EhciQH *eqh = ehc->ehc_EhciQHPool;
+
+    if(!eqh) {
+        // out of QHs!
+        KPRINTF(20, ("Out of QHs!\n"));
+        return NULL;
+    }
+
+    ehc->ehc_EhciQHPool = (struct EhciQH *) eqh->eqh_Succ;
+    return(eqh);
+}
+
+static inline void ehciFreeQH(struct ehc_controller *ehc, struct EhciQH *eqh) {
+    eqh->eqh_Succ = ehc->ehc_EhciQHPool;
+    ehc->ehc_EhciQHPool = eqh;
+}
+
+static inline struct EhciTD * ehciAllocTD(struct ehc_controller *ehc) {
+    struct EhciTD *etd = ehc->ehc_EhciTDPool;
+
+    if(!etd) {
+        // out of TDs!
+        KPRINTF(20, ("Out of TDs!\n"));
+        return NULL;
+    }
+
+    ehc->ehc_EhciTDPool = (struct EhciTD *) etd->etd_Succ;
+    return(etd);
+}
+
+static inline void ehciFreeTD(struct ehc_controller *ehc, struct EhciTD *etd) {
+    etd->etd_Succ = ehc->ehc_EhciTDPool;
+    ehc->ehc_EhciTDPool = etd;
+}
+
+static AROS_UFH3(void, ehciResetHandler, AROS_UFHA(struct ehc_controller *, ehc, A1), AROS_UFHA(APTR, unused, A5), AROS_UFHA(struct ExecBase *, SysBase, A6)) {
     AROS_USERFUNC_INIT
 
-    // reset controller
-    CONSTWRITEREG32_LE(ehc->ehc_opregbase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
+    CONSTWRITEREG32_LE(ehc->ehc_opregbase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));     /* Resets the controller */
 
     AROS_USERFUNC_EXIT
 }
@@ -108,5 +144,6 @@ void ehciUpdateIntTree(struct ehc_controller *ehc) {
     }
 }
 
-
+BOOL ehciInit(struct ehc_controller *ehc, struct ehu_unit *ehu) {
+}
 
