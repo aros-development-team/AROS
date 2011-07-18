@@ -7,9 +7,11 @@
 
 ////#define DEBUG 1
 
+#include <devices/timer.h>
 #include <libraries/locale.h>
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
+#include <proto/battclock.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -211,13 +213,17 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
  */
 STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
 {
-    IPTR tmp;
+    char *tmp;
+    IPTR newtz;
+    IPTR gmtclock;
     char **preferred = NULL;
     ULONG i;
+    ULONG newflags;
+    BOOL sync_clock = FALSE;
 
-    if(GET(data->country, MUIA_Country_Countryname, &tmp))
+    if (GetAttr(MUIA_Country_Countryname, data->country, (IPTR *)&tmp))
     {
-        strncpy(localeprefs.lp_CountryName, (char *)tmp, 32);
+        strncpy(localeprefs.lp_CountryName, tmp, 32);
         Prefs_LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
     }
 
@@ -235,21 +241,75 @@ STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
             }
         }
     }
-    GetAttr(MUIA_Language_Characterset, data->language, &tmp);
+    GetAttr(MUIA_Language_Characterset, data->language, (IPTR *)&tmp);
     if (tmp)
-        strcpy(character_set, (char *)tmp);
+        strcpy(character_set, tmp);
     else
         character_set[0] = 0;
     D(bug("[locale prefs] New character set is %s\n", character_set));
 
-    GET(data->timezone, MUIA_Timezone_Timeoffset, &tmp);
-    localeprefs.lp_GMTOffset = tmp;
-    
-    GET(data->timezone, MUIA_Timezone_GMTClock, &tmp);
-    if (tmp)
-    	localeprefs.lp_Flags |= LOCF_GMT_CLOCK;
+    GetAttr(MUIA_Timezone_Timeoffset, data->timezone, &newtz);
+
+    newflags = localeprefs.lp_Flags;
+    GetAttr(MUIA_Timezone_GMTClock, data->timezone, &gmtclock);
+    if (gmtclock)
+    	newflags |= LOCF_GMT_CLOCK;
     else
-    	localeprefs.lp_Flags &= ~LOCF_GMT_CLOCK;
+    	newflags &= ~LOCF_GMT_CLOCK;
+
+    /*
+     * If we change "GMT clock" setting, update system time from hardware clock.
+     * We do it in order to prevent time de-synchronization and clobbering
+     * hardware clock.
+     */
+    if ((newflags ^ localeprefs.lp_Flags) & LOCF_GMT_CLOCK)
+    	sync_clock = TRUE;
+
+    /* Do the same if 'GMT clock' is active and we change the time zone */
+    if (gmtclock && (newtz != localeprefs.lp_GMTOffset))
+    	sync_clock = TRUE;
+
+    if (sync_clock)
+    {
+	struct Library *BattClockBase = OpenResource("battclock.resource");
+
+	if (BattClockBase)
+	{
+	    struct MsgPort *mp = CreateMsgPort();
+	    
+	    if (mp)
+	    {
+	    	struct timerequest *tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
+	    
+	    	if (tr)
+	    	{
+		    if (OpenDevice("timer.device", UNIT_VBLANK, &tr->tr_node, 0) == 0)
+		    {
+			ULONG time = ReadBattClock();
+
+			if (tmp)
+			{
+			    /* loc_GMTOffset actually expresses difference from local time to GMT */
+			    time -= localeprefs.lp_GMTOffset * 60;
+			}
+
+			/* Set timer.device clock */
+			tr->tr_node.io_Command = TR_SETSYSTIME;
+			tr->tr_time.tv_secs    = time;
+			tr->tr_time.tv_micro   = 0;
+			tr->tr_node.io_Flags   = IOF_QUICK;
+			DoIO(&tr->tr_node);
+
+			CloseDevice(&tr->tr_node);
+		    }
+		    DeleteIORequest(&tr->tr_node);
+		}
+		DeleteMsgPort(mp);
+	    }
+	}
+    }
+    localeprefs.lp_GMTOffset = newtz;
+    localeprefs.lp_Flags = newflags;
 }
 
 /*
