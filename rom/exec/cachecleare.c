@@ -20,7 +20,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR, address, A0),
-	AROS_LHA(ULONG, length, D0),
+	AROS_LHA(IPTR, length, D0),
 	AROS_LHA(ULONG, caches, D1),
 
 /*  LOCATION */
