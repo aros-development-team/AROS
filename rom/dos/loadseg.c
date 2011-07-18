@@ -136,6 +136,7 @@ static AROS_ENTRY(LONG, SetPatch_noop,
     AROS_LIBFUNC_INIT
 
     BPTR file, segs=0;
+    SIPTR err;
     LONG_FUNC FunctionArray[] = {
     	(LONG_FUNC)ReadFunc,
     	(LONG_FUNC)AllocFunc,
@@ -162,10 +163,10 @@ static AROS_ENTRY(LONG, SetPatch_noop,
 
 	SetVBuf(file, NULL, BUF_FULL, 4096);
 	segs = InternalLoadSeg(file, BNULL, FunctionArray, NULL);
+	/* We cache the IoErr(), since Close() will alter it */
+	err = IoErr();
 
-	if (segs)
-            SetIoErr(0);
-	D(else
+	D(if (segs == BNULL)
  	    bug("[LoadSeg] Failed to load '%s'\n", name));
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
  	/* overlayed executables return -segs and handle must not be closed */
@@ -176,6 +177,7 @@ static AROS_ENTRY(LONG, SetPatch_noop,
 #else
         Close(file);
 #endif
+        SetIoErr(err);
     }
   D(else
         bug("[LoadSeg] Failed to open '%s'\n", name));
