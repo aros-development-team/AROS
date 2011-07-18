@@ -61,7 +61,7 @@ VOID delay_us(struct g45staticdata *sd, uint32_t usec)
 	sd->tr->tr_time.tv_micro = (usec % 1000000);
 
 	/* Wait */
-	DoIO((struct IORequest *)&sd->tr);
+	DoIO(&sd->tr->tr_node);
 
 	sd->tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = NULL;
 }
