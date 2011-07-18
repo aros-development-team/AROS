@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,6 +12,7 @@ extern UWORD b(void);
 
 #ifdef __GNUC__
 #ifdef __mc68000
+#define HAVE_ASM_CODE
 asm(
 "	.text\n"
 "	.balign 2\n"
@@ -24,8 +25,9 @@ asm(
 "	movew	%sp@,%d0\n"
 "	rte\n"
 );
-#else
+#endif
 #ifdef __i386__
+#define HAVE_ASM_CODE
 __asm__(
 "	.globl	a\n"
 "a:\n"
@@ -37,12 +39,27 @@ __asm__(
 "	movl	%esp,%eax\n"
 "	iret\n"
 );
-#else
+#endif
+#ifdef __x86_64__
+#define HAVE_ASM_CODE
+__asm__(
+"	.globl	a\n"
+"a:\n"
+"	pushf\n"
+"	popq	%rax\n"
+"	ret\n"
+"	.globl	b\n"
+"b:\n"
+"	movq	%rsp, %rax\n"
+"	iret\n"
+);
+#endif
+#endif
+
+#ifndef HAVE_ASM_CODE
 #define a(A) 0
 #undef Supervisor
 #define Supervisor(A) 0
-#endif
-#endif
 #endif
 
 int main(void)
@@ -57,8 +74,8 @@ int main(void)
     UserState(ssp);
     Printf("Supervisor flags: %04x\n", ar);
     Printf("User flags: %04x\n", a());
-    Printf("Supervisor stack pointer: %04lx\n",
-        (IPTR)Supervisor((ULONG_FUNC)&b));
+    Printf("User stack pointer: 0x%p\n", &ssp);
+    Printf("Supervisor stack pointer: 0x%p\n", Supervisor((ULONG_FUNC)b));
 
     return 0;
 }
