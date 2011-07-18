@@ -580,6 +580,8 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     if (module_count == 0)
     	panic("No kickstart modules found, nothing to run");
 
+    D(kprintf("[BOOT] Modules end at 0x%p\n", mod_end));
+
     /* Count kickstart size */
     kprintf("[BOOT] Calculating kickstart size...\n");
     for (i = 0; i < module_count; i++)
