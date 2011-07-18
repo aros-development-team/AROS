@@ -223,51 +223,6 @@
 
 #define EHCI_TD_BULK_LIMIT       (128<<10) // limit for one batch of BULK data TDs
 
-struct EhciTD {
-    struct EhciTD  *etd_Succ;
-    ULONG           etd_Unused0;
-    //struct EhciTD  *etd_Pred;
-    ULONG           etd_Self;       /* LE PHYSICAL pointer to self */
-    ULONG           etd_Length;     /* Number of bytes to transfer within this */
-    ULONG           etd_Unused[4];
-
-    /* aligned to 32 bytes */
-    ULONG           etd_NextTD;     /* LE PHYSICAL pointer to next qTD */
-    ULONG           etd_AltNextTD;  /* LE PHYSICAL alternate pointer to next qTD on short packet */
-    ULONG           etd_CtrlStatus; /* LE Control and Status word */
-    ULONG           etd_BufferPtr[5]; /* LE Buffer Pointers */
-
-    ULONG           etd_ExtBufferPtr[5]; /* LE Buffer Pointers (upper 32 bit) */
-    ULONG           etd_Unused2[3];
-};
-
-struct EhciQH {
-    struct EhciQH  *eqh_Succ;
-    struct EhciQH  *eqh_Pred;
-    ULONG           eqh_Self;       /* LE PHYSICAL pointer to self + UHCI_QHSELECT */
-    struct IOUsbHWReq *eqh_IOReq;   /* IO Request this belongs to */
-
-    struct EhciTD  *eqh_FirstTD;    /* First TD */
-    ULONG           eqh_Actual;     /* Number of bytes for successful completion in this QH */
-    ULONG           eqh_Unused0;
-    ULONG           eqh_Unused1;
-
-    /* aligned to 32 bytes */
-    ULONG           eqh_NextQH;     /* LE PHYSICAL horizontal pointer to next QH */
-    ULONG           eqh_EPCaps;     /* LE Endpoint Capabilities/Characteristics word */
-    ULONG           eqh_SplitCtrl;  /* LE Split and Int control stuff */
-    ULONG           eqh_CurrTD;     /* LE PHYSICAL current TD pointer */
-
-    /* Transaction working space for host controller */
-    ULONG           eqh_NextTD;     /* LE PHYSICAL pointer to next qTD */
-    ULONG           eqh_AltNextTD;  /* LE PHYSICAL alternate pointer to next qTD on short packet */
-    ULONG           eqh_CtrlStatus; /* LE Control and Status word */
-    ULONG           eqh_BufferPtr[5]; /* LE Buffer Pointers */
-
-    ULONG           eqh_ExtBufferPtr[5]; /* LE Buffer Pointers (upper 32 bit) */
-    ULONG           eqh_Unused[7];
-};
-
 /* pointer defines */
 
 #define EHCI_PTRMASK        0xffffffe0 /* frame list pointer mask */
@@ -365,46 +320,5 @@ struct EhciQH {
 #define EQSF_MULTI_1        (1UL<<EQSS_MULTIPLIER)
 #define EQSF_MULTI_2        (2UL<<EQSS_MULTIPLIER)
 #define EQSF_MULTI_3        (3UL<<EQSS_MULTIPLIER)
-
-APTR pciGetPhysical(struct ehc_controller *ehc, APTR virtaddr) {
-    //struct PCIDevice *hd = hc->hc_Device;
-    return(HIDD_PCIDriver_CPUtoPCI(ehc->ehc_pcidriverobject, virtaddr));
-}
-
-static inline struct EhciQH * ehciAllocQH(struct ehc_controller *ehc) {
-    struct EhciQH *eqh = ehc->ehc_EhciQHPool;
-
-    if(!eqh) {
-        // out of QHs!
-        KPRINTF(20, ("Out of QHs!\n"));
-        return NULL;
-    }
-
-    ehc->ehc_EhciQHPool = (struct EhciQH *) eqh->eqh_Succ;
-    return(eqh);
-}
-
-static inline void ehciFreeQH(struct ehc_controller *ehc, struct EhciQH *eqh) {
-    eqh->eqh_Succ = ehc->ehc_EhciQHPool;
-    ehc->ehc_EhciQHPool = eqh;
-}
-
-static inline struct EhciTD * ehciAllocTD(struct ehc_controller *ehc) {
-    struct EhciTD *etd = ehc->ehc_EhciTDPool;
-
-    if(!etd) {
-        // out of TDs!
-        KPRINTF(20, ("Out of TDs!\n"));
-        return NULL;
-    }
-
-    ehc->ehc_EhciTDPool = (struct EhciTD *) etd->etd_Succ;
-    return(etd);
-}
-
-static inline void ehciFreeTD(struct ehc_controller *ehc, struct EhciTD *etd) {
-    etd->etd_Succ = ehc->ehc_EhciTDPool;
-    ehc->ehc_EhciTDPool = etd;
-}
 
 #endif /* PCIEHCI_HC_H */

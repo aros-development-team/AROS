@@ -52,6 +52,51 @@
 #define KPRINTF2(l, x) ((void) 0)
 #endif /* DEBUG */
 
+struct EhciTD {
+    struct EhciTD  *etd_Succ;
+    ULONG           etd_Unused0;
+    //struct EhciTD  *etd_Pred;
+    ULONG           etd_Self;       /* LE PHYSICAL pointer to self */
+    ULONG           etd_Length;     /* Number of bytes to transfer within this */
+    ULONG           etd_Unused[4];
+
+    /* aligned to 32 bytes */
+    ULONG           etd_NextTD;     /* LE PHYSICAL pointer to next qTD */
+    ULONG           etd_AltNextTD;  /* LE PHYSICAL alternate pointer to next qTD on short packet */
+    ULONG           etd_CtrlStatus; /* LE Control and Status word */
+    ULONG           etd_BufferPtr[5]; /* LE Buffer Pointers */
+
+    ULONG           etd_ExtBufferPtr[5]; /* LE Buffer Pointers (upper 32 bit) */
+    ULONG           etd_Unused2[3];
+};
+
+struct EhciQH {
+    struct EhciQH  *eqh_Succ;
+    struct EhciQH  *eqh_Pred;
+    ULONG           eqh_Self;       /* LE PHYSICAL pointer to self + UHCI_QHSELECT */
+    struct IOUsbHWReq *eqh_IOReq;   /* IO Request this belongs to */
+
+    struct EhciTD  *eqh_FirstTD;    /* First TD */
+    ULONG           eqh_Actual;     /* Number of bytes for successful completion in this QH */
+    ULONG           eqh_Unused0;
+    ULONG           eqh_Unused1;
+
+    /* aligned to 32 bytes */
+    ULONG           eqh_NextQH;     /* LE PHYSICAL horizontal pointer to next QH */
+    ULONG           eqh_EPCaps;     /* LE Endpoint Capabilities/Characteristics word */
+    ULONG           eqh_SplitCtrl;  /* LE Split and Int control stuff */
+    ULONG           eqh_CurrTD;     /* LE PHYSICAL current TD pointer */
+
+    /* Transaction working space for host controller */
+    ULONG           eqh_NextTD;     /* LE PHYSICAL pointer to next qTD */
+    ULONG           eqh_AltNextTD;  /* LE PHYSICAL alternate pointer to next qTD on short packet */
+    ULONG           eqh_CtrlStatus; /* LE Control and Status word */
+    ULONG           eqh_BufferPtr[5]; /* LE Buffer Pointers */
+
+    ULONG           eqh_ExtBufferPtr[5]; /* LE Buffer Pointers (upper 32 bit) */
+    ULONG           eqh_Unused[7];
+};
+
 
 struct ehc_controller {                 /* EHCI Controller Struct (ehc_) */
     struct MinNode  ehc_contrnode;
@@ -63,6 +108,7 @@ struct ehc_controller {                 /* EHCI Controller Struct (ehc_) */
     OOP_Object     *ehc_pcidriverobject;
 
     ULONG           ehc_EhciUsbCmd;
+
     ULONG          *ehc_EhciFrameList;
     struct EhciQH  *ehc_EhciQHPool;
     struct EhciTD  *ehc_EhciTDPool;
@@ -95,23 +141,11 @@ struct Unitnode {
 
 struct ehu_unit {                       /* EHCI Unit Structure (ehu_) */
     struct Unit     ehu_devunit;
-
     struct Unitnode ehu_unitnode;
 
     ULONG           ehu_unitnumber;
 
-    struct timerequest    hu_NakTimeoutReq;
-    struct MsgPort        hu_NakTimeoutMsgPort;
-    struct Interrupt      hu_NakTimeoutInt;
-
-    BOOL            ehu_unitallocated;  /* Unit opened */
     IPTR            ehu_pcibus, ehu_pcidev;
-
-    UWORD           ehu_RootHubAddr;    /* Root Hub Address */
-    ULONG           ehu_FrameCounter;   /* Common frame counter */
-    struct IOUsbHWReq    *ehu_DevBusyReq[128*16*2]; /* pointer to io assigned to the Endpoint */
-    ULONG           ehu_NakTimeoutFrame[128*16*2]; /* Nak Timeout framenumber */
-    UBYTE           ehu_DevDataToggle[128*16*2]; /* Data toggle bit for endpoints */
 
     struct MinList  ehu_cntrlist;
 };
@@ -120,7 +154,7 @@ struct ehu_unit {                       /* EHCI Unit Structure (ehu_) */
 struct pciehcibase {                    /* EHCI Device Structure (ehd_) */
     struct Device   ehd_device;
 
-    struct MinList  ehd_unitlist;       /* Host Controller List */
+    struct MinList  ehd_unitnodelist;
 
     APTR            ehd_mempool;
 
