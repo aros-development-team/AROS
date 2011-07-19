@@ -147,3 +147,40 @@ noSegments:
 core_DefaultIRETQ:
 	iretq				// Exit
 	.size core_LeaveInterrupt, .-core_LeaveInterrupt
+
+	.globl core_Supervisor
+	.type core_Supervisor, @function
+
+core_Supervisor:
+	movl	Flags(%rdi), %eax	// The same as above, but chains to the routine pointed to by RDI
+	test	$ECF_SEGMENTS, %eax	// Used for Supervisor() implementation.
+	je	noSegments2		// We could use int 0x81 with the only jmpq *%rdi instruction,
+	movq	reg_ds(%rdi), %rax	// but it's easier to jump to such code ocassionally. I hope
+	mov	%ax, %ds		// it's not a big speed loss
+	movq	reg_es(%rdi), %rax
+	mov	%ax, %es
+	movq	reg_fs(%rdi), %rax
+	mov	%ax, %fs
+	movq	reg_gs(%rdi), %rax
+	mov	%ax, %gs
+noSegments2:
+	movq	%rdi, %rsp
+	popq	%rax
+	popq	%rax
+	popq	%rbx
+	popq	%rcx
+	popq	%rdx
+	popq	%rsi
+	popq	%rdi
+	popq	%r8
+	popq	%r9
+	popq	%r10
+	popq	%r11
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+        addq	$32, %rsp
+        jmpq	*%rdi
+	.size core_Supervisor, .-core_Supervisor

@@ -336,16 +336,24 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     }
     else if (irq_number == 0x80)  /* Syscall? */
     {
-        DSYSCALL(bug("[Kernel] Syscall %lu\n", regs->rax));
+	/* Syscall number is actually ULONG (we use only eax) */
+    	ULONG sc = regs->rax;
+
+        DSYSCALL(bug("[Kernel] Syscall %u\n", sc));
 
 	/* The following syscalls can be run in both supervisor and user mode */
-	switch (regs->rax)
+	switch (sc)
 	{
 	case SC_REBOOT:
 	    /* TODO */
 	    bug("[Kernel] Soft reboot is not implemented yet\n");
 	    while (1) asm volatile ("hlt");
 
+	    break;
+
+	case SC_SUPERVISOR:
+	    /* This doesn't return */
+	    core_Supervisor(regs);
 	    break;
 	}
 
@@ -357,7 +365,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	    /* Disable interrupts for a while */
 	    __asm__ __volatile__("cli; cld;");
 
-            switch (regs->rax)
+            switch (sc)
             {
             case SC_CAUSE:
 	    	core_ExitInterrupt(regs);
