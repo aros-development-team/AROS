@@ -70,5 +70,6 @@ struct ExceptionContext;
 
 /* Interrupt processing */
 void core_LeaveInterrupt(struct ExceptionContext *);
+void core_Supervisor(struct ExceptionContext *);
 
 #endif /*KERNEL_INTERN_H_*/
