@@ -38,9 +38,7 @@ title AROS on Sam440
     module boot/modules/massstorage.class
     module boot/modules/misc.resource
     module boot/modules/mouse.hidd
-    module boot/modules/nil.handler
     module boot/modules/oop.library
-    module boot/modules/packet.handler
     module boot/modules/partition.library
     module boot/modules/pci-amcc440.hidd
     module boot/modules/pci.hidd
@@ -85,10 +83,8 @@ title AROS on Sam440 Test AltUsb
     module boot/modules/layers.library
     module boot/modules/misc.resource
     module boot/modules/mouse.hidd
-    module boot/modules/nil.handler
     module boot/modules/ohci.hidd
     module boot/modules/oop.library
-    module boot/modules/packet.handler
     module boot/modules/partition.library
     module boot/modules/pci-amcc440.hidd
     module boot/modules/pci.hidd

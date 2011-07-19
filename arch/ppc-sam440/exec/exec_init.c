@@ -30,7 +30,7 @@ D(extern void debugmem(void));
 
 void exec_main(struct TagItem *msg, void *entry);
 extern CONST_APTR Exec_FuncTable[];
-extern ULONG Exec_MakeFunctions(APTR, CONST_APTR, CONST_APTR, struct ExecBase *);
+extern ULONG Exec_15_MakeFunctions(APTR, CONST_APTR, CONST_APTR, struct ExecBase *);
 void exec_DefaultTaskExit();
 IPTR **exec_RomTagScanner(struct TagItem *msg);
 extern struct Library * PrepareAROSSupportBase (void);
@@ -233,7 +233,7 @@ void exec_main(struct TagItem *msg, void *entry)
 
     /* Build the jumptable */
     SysBase->LibNode.lib_NegSize =
-        Exec_MakeFunctions(SysBase, Exec_FuncTable, NULL, SysBase);
+        Exec_15_MakeFunctions(SysBase, Exec_FuncTable, NULL, SysBase);
 
     SumLibrary((struct Library *)SysBase);
 
@@ -260,7 +260,7 @@ void exec_main(struct TagItem *msg, void *entry)
     Enqueue(&SysBase->LibList,&SysBase->LibNode.lib_Node);
 
     SysBase->DebugAROSBase = PrepareAROSSupportBase();
-    
+
     /* Scan for valid RomTags */
     SysBase->ResModules = exec_RomTagScanner(msg);
 

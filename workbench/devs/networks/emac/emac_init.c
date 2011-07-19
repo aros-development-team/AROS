@@ -231,7 +231,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
     AROS_LHA(struct IOSana2Req *, req, A1),
-    LIBBASETYPEPTR, LIBBASE, 5, EMAC)
+    LIBBASETYPEPTR, LIBBASE, 6, EMAC)
 {
     AROS_LIBFUNC_INIT
 

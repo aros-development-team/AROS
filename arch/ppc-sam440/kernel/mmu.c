@@ -135,7 +135,7 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
 
 AROS_LH1(void *, KrnVirtualToPhysical,
 		AROS_LHA(void *, virtual, A0),
-		struct KernelBase *, KernelBase, 0, Kernel)
+		struct KernelBase *, KernelBase, 20, Kernel)
 {
 	AROS_LIBFUNC_INIT
 
