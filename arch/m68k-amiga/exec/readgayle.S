@@ -59,7 +59,7 @@ AROS_SLIB_ENTRY(ReadGayle,Exec,136):
 	/* NOTE: We must check for custom chip mirroring.
 	 */
 	/* Can we turn off interrupts? */
-	move.w	0xdff01e,%d0
+	move.w	0xdff01c,%d0                    /* INTENAR */
 	move.l	#(0xde1000 & ~0x3ffff), %a0	/* Chip mirror base */
 	move.w	#0x7fff,%a0@(-(0x40000 - 0x3f09a))
 	tst.w	%a0@(-(0x40000 - 0x3f01c))	/* If non-zero, this is not INTENAR */
@@ -69,9 +69,9 @@ AROS_SLIB_ENTRY(ReadGayle,Exec,136):
 	tst.w	%a0@(-(0x40000 - 0x3f01c))           /* If still zero, not INTENAR */
 	beq.s	0f
 	/* Restore interrupts. */
-	move.w	0x7fff,0xdff09a
-	or.w	0x8000,%d0
-	move.w	%d0,0xdff09a
+	move.w	0x7fff,0xdff09a         /* INTENA */
+	or.w	#0x8000,%d0
+	move.w	%d0,0xdff09a            /* INTENA */
 	/* It was a custom chip mirror. Can't be Gayle*/
 	clr.l	%d0
 	bra.s	1f
