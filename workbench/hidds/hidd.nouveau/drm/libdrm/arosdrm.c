@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -63,6 +63,9 @@ int
 drmOpen(const char *name, const char *busid)
 {
     int i;
+
+    if (!current_drm_driver)
+    	return -EINVAL;
 
     for (i = 0; i < 128; i++)
     {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -330,8 +330,15 @@ OOP_Object * METHOD(Nouveau, Root, New)
     ULONG selectedcrtcid;
 
     nouveau_init();
+    D(bug("[Nouveau] nouveau_init() done\n"));
 
-    nouveau_device_open(&dev, "");
+    if (nouveau_device_open(&dev, ""))
+    {
+    	D(bug("[Nouveau] Failed to open device\n"));
+    	return NULL;
+    }
+
+    D(bug("[Nouveau] Opened device 0x%p\n", dev));
     nvdev = nouveau_device(dev);
 
     /* Select crtc and connector */
@@ -340,7 +347,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
         D(bug("[Nouveau] Not able to select connector and crtc\n"));
         return NULL;
     }
-    
+
+    D(bug("[Nouveau] Selected CRTC 0x%p\n", selectedcrtc));
     selectedcrtcid = selectedcrtc->crtc_id;
     drmModeFreeCrtc(selectedcrtc);
 

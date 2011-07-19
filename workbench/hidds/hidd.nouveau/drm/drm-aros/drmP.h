@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,7 +35,6 @@
 #if !defined(DRMP_H)
 #define DRMP_H
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include "drm.h"
