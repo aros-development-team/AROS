@@ -63,7 +63,7 @@ include $(TOP)/config/make.cfg
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
 PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
-PKG_HANDLERS := con nil amberram packet cdrom sfs afs
+PKG_HANDLERS := con amberram cdrom sfs afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass pci pci-amcc440 i2c i2c-amcc440 radeon irq usb ohci
 PKG_USB      := hid
 PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
@@ -72,7 +72,7 @@ MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
+	$(addprefix $(BINDIR)/L/, $(addsuffix .handler, $(PKG_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD))) \

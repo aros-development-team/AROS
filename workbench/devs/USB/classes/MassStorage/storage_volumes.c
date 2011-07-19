@@ -16,6 +16,7 @@
 #include <exec/resident.h>
 #include <exec/types.h>
 #include <libraries/configvars.h>
+#include <libraries/expansion.h>
 #include <libraries/expansionbase.h>
 #include <libraries/partition.h>
 #include <utility/tagitem.h>
@@ -271,9 +272,8 @@ static VOID AddPartitionVolume
                     }
                     AROS_BSTR_setstrlen(devnode->dn_Handler, i);
                     AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, ADNF_STARTPROC, devnode, NULL);
-                    D(bug("[Boot] AddBootNode(%s,0x%lx,'%s')\n",
-                        devnode->dn_Ext.dn_AROS.dn_DevName,
-                        pp[4 + DE_DOSTYPE], handler));
+                    D(bug("[Boot] AddBootNode(%b,0x%lx,'%s')\n",
+                        devnode->dn_Name, pp[4 + DE_DOSTYPE], handler));
 
                     DeviceProc(name);
 

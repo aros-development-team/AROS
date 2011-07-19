@@ -8,7 +8,7 @@ FILES := kernel_init scheduler intr mmu tags syscall debug uic
 kernel-sam440-ppc: $(BINDIR)/boot/aros-amcc440
 
 $(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds \
+	$(TARGET_CC) -nostartfiles -Wl,-Map -Wl,$(OSGENDIR)/boot/kernel.map -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/ldscript.lds \
         -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o \
         -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit
 
