@@ -9,9 +9,7 @@
 unsigned long long DebugInfo_ptr;
 
 int count_elf_size(struct module *n, unsigned long *ro_size, unsigned long *rw_size);
-int load_elf_file(struct module *n, unsigned long long virt);
-void *kernel_lowest();
+int LoadKernel(unsigned long code_addr, unsigned long data_addr, void *bss_track, unsigned long long virt, struct module *mod, unsigned int module_count);
 void *kernel_highest();
-void set_base_address(void *, void *);
 
 #endif /*ELFLOADER_H_*/

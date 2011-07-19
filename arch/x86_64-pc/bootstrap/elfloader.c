@@ -36,11 +36,6 @@ struct _bss_tracker {
     unsigned long long len;
 } *bss_tracker;
 
-void *kernel_lowest()
-{
-    return ptr_rw;
-}
-
 void *kernel_highest()
 {
     return ptr_ro;
@@ -79,47 +74,36 @@ static const char *check_header(struct elfheader *eh)
 /*
  * Get the memory for chunk and load it
  */
-static int load_hunk(void *file, struct sheader *sh)
+static void *load_hunk(void *file, struct sheader *sh, void *ptr)
 {
-    void *ptr;
+    unsigned long align;
 
     /* empty chunk? Who cares :) */
     if (!sh->size)
-    	return 1;
+    	return ptr;
 
-    /* Allocate a chunk with write access - take aligned memory beneath the RO kernel */
-    if (sh->flags & SHF_WRITE)
-    {
-        D(kprintf("[ELF Loader] RW chunk (%d bytes, align=%d) @ ", (unsigned int)sh->size, (unsigned int)sh->addralign));
-        ptr = (void*)(((unsigned long)ptr_rw - (unsigned long)sh->size - (unsigned long)sh->addralign + 1) & ~((unsigned long)sh->addralign-1));
-        ptr_rw = ptr;
-    }
-    else
-    {
-        /* Read-Only mode? Get the memory from the kernel space, align it accorting to the demand */
-        D(kprintf("[ELF Loader] RO chunk (%d bytes, align=%d) @ ", (unsigned int)sh->size, (unsigned int)sh->addralign));
-        ptr_ro = (char *)(((unsigned long)ptr_ro + (unsigned long)sh->addralign - 1) & ~((unsigned long)sh->addralign-1));
-        ptr = ptr_ro;
-        ptr_ro = ptr_ro + sh->size;
-    }
-    D(kprintf("%p\n", (unsigned int)ptr));
+    align = sh->addralign - 1;
+    ptr = (void*)(((unsigned long)ptr + align) & ~align);
+    sh->addr = (unsigned long)ptr;
 
-    sh->addr = (long)ptr;
-    
     /* copy block of memory from ELF file if it exists */
     if (sh->type != SHT_NOBITS)
-        return read_block(file, sh->offset, (void *)((unsigned long)sh->addr), sh->size);
+    {
+        if (!read_block(file, sh->offset, ptr, sh->size))
+            return NULL;
+    }
     else
     {
         memset(ptr, 0, sh->size);
+
         bss_tracker->addr = KERNEL_OFFSET | (unsigned long)ptr;
-        bss_tracker->len = sh->size;
+        bss_tracker->len  = sh->size;
         bss_tracker++;
         bss_tracker->addr = 0;
-        bss_tracker->len = 0;
+        bss_tracker->len  = 0;
     }
-    
-    return 1;
+
+    return ptr + sh->size;
 }
 
 static void *copy_data(const void *src, void *addr, unsigned long len)
@@ -318,7 +302,7 @@ int count_elf_size(struct module *n, unsigned long *ro_size, unsigned long *rw_s
     return 1;
 }
 
-int load_elf_file(struct module *n, unsigned long long virt)
+static int load_elf_file(struct module *n, unsigned long long virt)
 {
     struct elfheader *eh = n->eh;
     struct sheader *sh = n->sh;
@@ -326,26 +310,42 @@ int load_elf_file(struct module *n, unsigned long long virt)
     int addr_displayed = 0;
     struct ELF_ModuleInfo64 *mod;
 
-    D(kprintf("[ELF Loader] Loading ELF module from address %p\n", eh));
-
     /* Iterate over the section header in order to prepare memory and eventually load some hunks */
     for (i=0; i < eh->shnum; i++)
     {
         /* Load allocated sections, symbol and string tables */
         if ((sh[i].flags & SHF_ALLOC)  || (sh[i].type == SHT_STRTAB) || (sh[i].type == SHT_SYMTAB))
         {
-            /* Yup, it does. Load the hunk */
-            if (!load_hunk(n->eh, &sh[i]))
-            {
-                kprintf("[ELF Loader] Error at loading of the hunk!\n");
+	    if (sh[i].flags & SHF_WRITE)
+	    {
+	        D(kprintf("[ELF Loader] RW chunk (%d bytes, align=%d) ", (unsigned int)sh->size, (unsigned int)sh->addralign));
+
+	    	ptr_rw = load_hunk(n->eh, &sh[i], ptr_rw);
+	    	if (!ptr_rw)
+	    	{
+                    kprintf("[ELF Loader] Error loading hunk %u!\n", i);
+                    return 0;
+                }
             }
+            else
+            {
+	        D(kprintf("[ELF Loader] RO chunk (%d bytes, align=%d) ", (unsigned int)sh->size, (unsigned int)sh->addralign));
+
+	    	ptr_ro = load_hunk(n->eh, &sh[i], ptr_ro);
+	    	if (!ptr_ro)
+	    	{
+                    kprintf("[ELF Loader] Error loading hunk %u!\n");
+                    return 0;
+                }
+            }
+
+            if (!addr_displayed)
+            {
+                kprintf("@ 0x%016llX\n", sh[i].addr);
 #ifndef DEBUG
-            else if (!addr_displayed)
-            {
-                kprintf("0x%016llX\n", sh[i].addr);
                 addr_displayed = 1;
-            }
 #endif
+            }
         }
     }
 
@@ -394,6 +394,26 @@ int load_elf_file(struct module *n, unsigned long long virt)
     /* Link the module descriptor with previous one */
     prev_mod->Next = (unsigned long)mod;
     prev_mod = mod;
+
+    return 1;
+}
+
+int LoadKernel(unsigned long code_addr, unsigned long data_addr, void *bss_track, unsigned long long virt, struct module *mod, unsigned int module_count)
+{
+    unsigned int i;
+
+    ptr_ro      = (void *)code_addr;
+    ptr_rw      = (void *)data_addr;
+    bss_tracker = bss_track;
+
+    for (i = 0; i < module_count; i++)
+    {
+        kprintf("[BOOT] Loading %s... ", mod[i].name);
+        D(kprintf("from address %p\n", mod[i].eh));
+
+        if (!load_elf_file(&mod[i], virt))
+            return 0;
+    }
 
     return 1;
 }

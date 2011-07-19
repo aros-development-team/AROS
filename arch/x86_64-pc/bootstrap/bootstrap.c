@@ -397,9 +397,9 @@ static void setupFB(struct multiboot *mb)
     }
 }
 
-static void prepare_message(unsigned long kick_base)
+static void prepare_message(unsigned long kick_start, unsigned long kick_base)
 {
-    D(kprintf("[BOOT] Kickstart 0x%p - 0x%p (entry 0x%p), protection 0x%p - 0x%p\n", kernel_lowest(), kernel_highest(), kick_base,
+    D(kprintf("[BOOT] Kickstart 0x%p - 0x%p (entry 0x%p), protection 0x%p - 0x%p\n", kick_start, kernel_highest(), kick_base,
     	      &_prot_lo, &_prot_hi));
 
     tag->ti_Tag  = KRN_KernelBase;
@@ -407,7 +407,7 @@ static void prepare_message(unsigned long kick_base)
     tag++;
 
     tag->ti_Tag  = KRN_KernelLowest;
-    tag->ti_Data = KERNEL_OFFSET | (unsigned long)kernel_lowest();
+    tag->ti_Data = KERNEL_OFFSET | kick_start;
     tag++;
 
     tag->ti_Tag  = KRN_KernelHighest;
@@ -656,18 +656,11 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     	panic("Failed to determine kickstart address");
 
     kprintf("[BOOT] Loading kickstart, data 0x%p, code 0x%p...\n", kstart, kbase);
-    set_base_address((void *)kbase, __bss_track);
-
-    for (i = 0; i < module_count; i++)
-    {
-        kprintf("[BOOT] Loading %s... ", mod[i].name);
-
-        if (!load_elf_file(&mod[i], 0))
-            panic("Failed to load the kickstart");
-    }
+    if (!LoadKernel(kbase, kstart, __bss_track, 0, mod, module_count))
+        panic("Failed to load the kickstart");
 
     /* Prepare the rest of boot taglist */
-    prepare_message(kbase);
+    prepare_message(kstart, kbase);
 
 #ifdef DEBUG_TAGLIST
     kprintf("[BOOT] Boot taglist:\n");
