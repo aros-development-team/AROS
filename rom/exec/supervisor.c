@@ -6,6 +6,10 @@
     Lang: english
 */
 
+#include <exec/alerts.h>
+
+#include "exec_util.h"
+
 /*****************************************************************************
 
     NAME */
@@ -74,9 +78,12 @@
     AROS_LIBFUNC_INIT
 
     /*
-     * This fallback implementation does nothing.
+     * This fallback implementation throws a recovertable alert and
+     * returns dummy value. Since we should actually call a real interrupt,
+     * there's no generic way to simulate this.
      * See architecture-specific code for working implementations.
      */
+    Exec_ExtAlert(ACPU_PrivErr & ~AT_DeadEnd, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
     return 0;
 
     AROS_LIBFUNC_EXIT
