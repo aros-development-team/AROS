@@ -3,12 +3,13 @@
     $Id$
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-extern UWORD a(void);
-extern UWORD b(void);
+extern IPTR a(void);
+extern IPTR b(void);
 
 #ifdef __GNUC__
 #ifdef __mc68000
@@ -51,32 +52,37 @@ __asm__(
 "	.globl	b\n"
 "b:\n"
 "	movq	%rsp, %rax\n"
-"	iret\n"
+"	iretq\n"
 );
 #endif
 #endif
 
-#ifndef HAVE_ASM_CODE
-#define a(A) 0
-#undef Supervisor
-#define Supervisor(A) 0
-#endif
+int __nocommandline = 1;
 
 int main(void)
 {
+    struct Task *me = FindTask(NULL);
     APTR ssp;
-    UWORD ar;
+    IPTR ar;
 
-    Printf("GetCC(): %04x\n",GetCC());
-    Printf("SetSR(): %04lx\n",SetSR(0,0));
+    Printf("GetCC()         : %04lx\n",GetCC());
+    Printf("SetSR()         : %08lx\n",SetSR(0,0));
+
+    Printf("Task stack      : 0x%p - 0x%p\n", me->tc_SPLower, me->tc_SPUpper);
+    Printf("System stack    : 0x%p - 0x%p\n", SysBase->SysStkLower, SysBase->SysStkUpper);
+
+#ifdef HAVE_ASM_CODE
     ssp = SuperState();
     ar = a();
     UserState(ssp);
-    Printf("Supervisor flags: %04x\n", ar);
-    Printf("User flags: %04x\n", a());
-    Printf("User stack pointer: 0x%p\n", &ssp);
-    Printf("Supervisor stack pointer: 0x%p\n", Supervisor((ULONG_FUNC)b));
+
+    Printf("Supervisor flags: 0x%p\n", ar);
+    Printf("User flags      : 0x%p\n", a());
+    Printf("Saved stack     : 0x%p\n", ssp);
+    Printf("Supervisor stack: 0x%p\n", Supervisor(b));
+#else
+    Printf("This test is not implemented for this CPU\n");
+#endif
 
     return 0;
 }
-
