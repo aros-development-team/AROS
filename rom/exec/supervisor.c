@@ -18,7 +18,7 @@
 	AROS_LH1(IPTR, Supervisor,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG_FUNC, userFunction, A5),
+	AROS_LHA(void *, userFunction, A5),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 5, Exec)
@@ -33,29 +33,21 @@
 	use any system data structures, and on certain systems you must
 	use special methods to leave the code.
 
-	The code will not be passed any parameters.
+	The code will not be passed any parameters. However it has access to all
+	CPU registers.
 
     INPUTS
-	userFunc    -   The address of the code you want called in supervisor
+	userFunction -  The address of the code you want called in supervisor
 			mode.
 
     RESULT
 	The code will be called.
 
     NOTES
-	This function has completely different effects on different
-	processors and architectures.
+    	On some architectures this function is impossible or infeasible to implement.
+    	In this case it throws a recoverable alert.
 
-	Currently defined effects are:
-
-	Kernel                      Effect
-	-------------------------------------------------------------------
-	i386 (under emulation)      None
-	m68k (native)               Runs the process in supervisor mode.
-				    The process must end with an RTE
-				    instruction. It should save any
-				    registers which is uses.
-	m68k (under emulation)
+	Currently this function works only on x86 and PowerPC native kickstarts.
 
     EXAMPLE
 
