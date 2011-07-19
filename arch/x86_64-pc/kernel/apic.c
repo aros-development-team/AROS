@@ -28,8 +28,6 @@
 #define APICICR_DM_INIT       0x500
 #define APICICR_DM_STARTUP    0x600
 
-extern int kernel_cstart(struct TagItem *msg, void *entry);
-
 #if 1
 /*  FIXME: udelay doesn't work - fix! */
 void udelay(LONG usec)

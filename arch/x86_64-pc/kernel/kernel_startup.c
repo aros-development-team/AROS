@@ -27,8 +27,6 @@
 #include "apic.h"
 #include "tls.h"
 
-extern const unsigned long start64;
-
 /* Common IBM PC memory layout */
 static const struct MemRegion PC_Memory[] =
 {
@@ -46,35 +44,55 @@ static const struct MemRegion PC_Memory[] =
  */
 struct KernBootPrivate *__KernBootPrivate = NULL;
 struct ExecBase * __attribute__((section(".rodata"))) SysBase = NULL;
-
 static void doInitCode(struct MemHeader *mh2, IPTR  khi, IPTR addr);
+static void boot_start(struct TagItem *msg);
+
+static char boot_stack[];
 
 /*
- * Small asm stub in the beginning.
- * We do it in asm because we need to clear BSS section
- * before we set stack pointer, because our stack is located in .bss.
- * When we are done, we actually jump to boot_start() routine below.
+ * This is where our kernel started.
+ * First we clear BSS section, then switch stack pointer to our temporary stack
+ * (which is itself located in BSS). While we are here, the stack is actually
+ * located inside our bootstrap, and it's safe to use it a little bit.
  */
-asm(".section .aros.startup,\"ax\"\n\t"
-    ".globl start64\n\t"
-    ".type start64,@function\n"
-    "start64: movq tmp_stack_end(%rip),%rsp\n\t"
-    "movq %rdi,%rbx\n\t"
-    "call clearBss\n\t"
-    "movq %rbx,%rdi\n\t"
-    "movq stack_end(%rip), %rsp\n\t"
-    "movq target_address(%rip), %rsi\n\t"
-    "jmp *%rsi\n\t"
-    ".string \"Native/CORE v3 (" __DATE__ ")\""
-    "\n\t.text\n\t"
-);
-
-void clearBss(struct TagItem *msg)
+IPTR __startup start64(struct TagItem *msg, ULONG magic)
 {
-    const struct KernelBSS *bss = (const struct KernelBSS *)LibGetTagData(KRN_KernelBss, 0, msg);
+    const struct TagItem *bss;
+
+    /* Anti-command-line-run protector */
+    if (magic != AROS_BOOT_MAGIC)
+    	return -1;
+
+    bss = LibFindTagItem(KRN_KernelBss, msg);
 
     if (bss)
-    	__clear_bss(bss);
+    	__clear_bss((const struct KernelBSS *)bss->ti_Data);
+
+    /* Set a new stack and jump to the continuation routine */
+    asm volatile("movq %1, %%rsp\n\t"
+    		 "jmp *%2\n"::"D"(msg), "r"(boot_stack + STACK_SIZE - 16), "r"(boot_start));
+
+    /* Shut up the compiler, this is unreachable */
+    return -1;
+}
+
+/*
+ * This code is executed only once, after the kickstart is loaded by bootstrap.
+ * Its main job is to initialize boot-time debugging console.
+ */
+static void boot_start(struct TagItem *msg)
+{
+    /*
+     * Initialize console ASAP in order to get debug output correctly.
+     * This will deal with both serial and on-screen console.
+     */
+    fb_Mirror = (void *)0x101000;
+    con_InitTagList(msg);
+
+    bug("AROS64 - The AROS Research OS, 64-bit version. Compiled %s\n", __DATE__);
+    D(bug("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [stub @ %p].\n", boot_start, start64));
+
+    kernel_cstart(msg);
 }
 
 /* Print panic string and halt */
@@ -98,7 +116,7 @@ static void RelocateTagData(struct TagItem *tag, unsigned long size)
 }
 
 /* All CPUs start up from this point */
-void kernel_cstart(const struct TagItem *msg, void *entry)
+void kernel_cstart(const struct TagItem *msg)
 {
     IPTR _APICBase;
     UBYTE _APICID;
@@ -379,48 +397,41 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 	SysBase->SysStkUpper = (APTR)__KernBootPrivate->SystemStack + STACK_SIZE * 3;
 
 	/* 
-	 * Attempt to allocate a real stack, and switch to it.
-	 * We need to do this, since our current stack is in
-	 * the area that's about to be hit with some memory
-	 * protection goodness.
-	 *
-	 * FIXME: This should not be needed. Only .code and .rodata are made read-only, they are
-	 * placed by the bootstrap starting from KRN_KernelBase and up to KRN_Highest. Our stack is
-	 * in .bss.
-	 * Using boot stack won't cause mis-assertions, because our memory list lists all physical
-	 * regions, including kickstart's own area.
-	 *
-	 * CHECKME: Disabled, because there should really be no problems. There was one significant
-	 * problem with fixed kickstart address of 0x1000000 (16MB). Modules were loaded bu GRUB
-	 * somewhere near this address also, causing overlaying when decoding ELFs. One can say it
-	 * worked only because of pure luck. At the moment the bootstrap is rewritten and this
-	 * problem is not present any more.
-	 *
-	do {
-	    struct StackSwapStruct sss;
-	    struct StackSwapArgs ssa = {
-	    	.Args = { 
-	    	    (IPTR)mh2,
-	    	    (IPTR)khi,
-	    	    (IPTR)addr,
-		} };
-	    const ULONG size = AROS_STACKSIZE;
-	    APTR sp;
+	 * Make kickstart code area read-only.
+	 * We do it only after ExecBase creation because SysBase pointer is put
+	 * into .rodata. This way we prevent it from ocassional modification by buggy software.
+	 */
+	core_ProtKernelArea(addr, khi - addr, 1, 0, 1);
 
-	    sp = AllocMem(size, MEMF_PUBLIC);
-	    if (sp == NULL) {
-		D(bug("Can't allocate a new stack for Exec... Strange.\n"));
-		break;
-	    }
+	/* Transfer the rest of memory list into SysBase */
+	D(bug("[Kernel] Transferring memory list into SysBase...\n"));
+	while (mh2->mh_Node.ln_Succ)
+	{
+            mh = (struct MemHeader *)mh2->mh_Node.ln_Succ;
 
-	    sss.stk_Lower = sp;
-	    sss.stk_Upper = sp + size;
-	    sss.stk_Pointer = sss.stk_Upper;
+	    D(bug("[Kernel] * 0x%p - 0x%p (%s)\n", mh2->mh_Lower, mh2->mh_Upper, mh2->mh_Node.ln_Name));
+	    Enqueue(&SysBase->MemList, &mh2->mh_Node);
 
-	    NewStackSwap(&sss, (LONG_FUNC)doInitCode, &ssa);
-	    // We should never return
-	} while (0); */
-	doInitCode(mh2, khi, addr);
+	    mh2 = mh;
+	}
+
+	D(bug("[Kernel] Leaving supervisor mode\n"));
+	asm volatile (
+            "mov %[user_ds],%%ds\n\t"   // Load DS and ES
+            "mov %[user_ds],%%es\n\t"
+            "mov %%rsp,%%r12\n\t"
+            "pushq %[ds]\n\t"      	// SS
+            "pushq %%r12\n\t"           // rSP
+            "pushq $0x3002\n\t"         // rFLAGS
+            "pushq %[cs]\n\t"		// CS
+            "pushq $1f\n\t"
+            "iretq\n 1:"
+            ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
+
+	D(bug("[Kernel] Done?! Still here?\n"));
+
+	InitCode(RTF_SINGLETASK, 0);
+	InitCode(RTF_COLDSTART, 0);
 
 	bug("[Kernel] ERROR: System Boot Failed!\n");
 	panic();
@@ -442,75 +453,14 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 
 static void doInitCode(struct MemHeader *mh2, IPTR  khi, IPTR addr)
 {
-    struct MemHeader *mh;
 
-    /* 
-     * Make kickstart code area read-only.
-     * We do it only after ExecBase creation because SysBase is put
-     * into .rodata. This way we prevent it from ocassional modification by buggy software.
-     */
-    core_ProtKernelArea(addr, khi - addr, 1, 0, 1);
-
-    /* Transfer the rest of memory list into SysBase */
-    D(bug("[Kernel] Transferring memory list into SysBase...\n"));
-    while (mh2->mh_Node.ln_Succ)
-    {
-        mh = (struct MemHeader *)mh2->mh_Node.ln_Succ;
-
-        D(bug("[Kernel] * 0x%p - 0x%p (%s)\n", mh2->mh_Lower, mh2->mh_Upper, mh2->mh_Node.ln_Name));
-        Enqueue(&SysBase->MemList, &mh2->mh_Node);
-
-        mh2 = mh;
-    }
-
-    D(bug("[Kernel] Leaving supervisor mode\n"));
-    asm volatile (
-        "mov %[user_ds],%%ds\n\t"   // Load DS and ES
-        "mov %[user_ds],%%es\n\t"
-        "mov %%rsp,%%r12\n\t"
-        "pushq %[ds]\n\t"      	// SS
-        "pushq %%r12\n\t"           // rSP
-        "pushq $0x3002\n\t"         // rFLAGS
-        "pushq %[cs]\n\t"		// CS
-        "pushq $1f\n\t"
-        "iretq\n 1:"
-        ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
-
-    D(bug("[Kernel] Done?! Still here?\n"));
-
-    InitCode(RTF_SINGLETASK, 0);
-    InitCode(RTF_COLDSTART, 0);
-}
-
-/*
- * This code is executed only once, after the kickstart is loaded by bootstrap.
- * Its main job is to initialize boot-time debugging console.
- */
-static void boot_start(struct TagItem *msg)
-{
-    /*
-     * Initialize console ASAP in order to get debug output correctly.
-     * This will deal with both serial and on-screen console.
-     */
-    fb_Mirror = (void *)0x101000;
-    con_InitTagList(msg);
-
-    bug("AROS64 - The AROS Research OS, 64-bit version. Compiled %s\n", __DATE__);
-    D(bug("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", boot_start, &start64));
-
-    kernel_cstart(msg, NULL);
 }
 
 /* Small delay routine used by exec_cinit initializer */
 asm("\ndelay:\t.short   0x00eb\n\tretq");
 
-static uint64_t __attribute__((used, section(".data"), aligned(16))) tmp_stack[128];
-static const uint64_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_stack[126];
-
-static uint64_t stack[8192] __attribute__((used));
-
-static const uint64_t *stack_end __attribute__((used, section(".text"))) = &stack[8190];
-static const void *target_address __attribute__((section(".text"),used)) = (void*)boot_start;
+/* Our boot-time stack */
+static char boot_stack[STACK_SIZE] __attribute__((used, aligned(16)));
 
 static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256)));
 static struct tss_64bit TSS[16] __attribute__((used,aligned(128)));
