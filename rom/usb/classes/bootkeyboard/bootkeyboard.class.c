@@ -63,9 +63,9 @@ ADD2EXPUNGELIB(libExpunge, 0)
 struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
-    ULONG ifclass;
-    ULONG subclass;
-    ULONG proto;
+    IPTR ifclass;
+    IPTR subclass;
+    IPTR proto;
 
     KPRINTF(1, ("nepHidAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
