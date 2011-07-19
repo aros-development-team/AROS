@@ -9,7 +9,7 @@
 #include <utility/tagitem.h>
 #include <asm/cpu.h>
 
-#define STACK_SIZE      8192
+#define STACK_SIZE      65536
 #define PAGE_SIZE	0x1000
 #define PAGE_MASK	0x0FFF
 
@@ -25,6 +25,7 @@ struct   KernBootPrivate
     int                 kbp_APIC_IRQ_Model;
     unsigned short	debug_y_resolution;
     void	       *debug_framebuffer;
+    IPTR	        SystemStack;
 };
 
 #define KERNBOOTFLAG_SERDEBUGCONFIGURED (1 << 0)

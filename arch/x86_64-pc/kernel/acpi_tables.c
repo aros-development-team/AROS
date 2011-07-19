@@ -14,6 +14,7 @@
 #include <proto/arossupport.h>
 
 #include "kernel_base.h"
+#include "kernel_bootmem.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "acpi.h"
@@ -765,11 +766,9 @@ IPTR core_ACPIProbe(const struct TagItem *msg, struct KernBootPrivate *__KernBoo
 
     D(bug("[Kernel] core_ACPIProbe()\n"));
 
-    _Kern_ACPIData = (struct KernelACPIData *)((__KernBootPrivate->kbp_PrivateNext + 4) & ~0x3);
-    __KernBootPrivate->kbp_PrivateNext += sizeof(struct KernelACPIData);
-
+    _Kern_ACPIData = krnAllocBootMem(sizeof(struct KernelACPIData));
     bug("[Kernel] core_ACPIProbe: ACPI Private Data @ %p\n", _Kern_ACPIData);
-    
+
     _Kern_ACPIData->kb_ACPI_Disabled = TRUE;
 
     tag = LibFindTagItem(KRN_CmdLine, msg);

@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "kernel_base.h"
+#include "kernel_bootmem.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "kernel_memory.h"
@@ -83,9 +84,10 @@ static void panic(void)
     while (1) asm volatile("hlt");
 }
 
-static void *RelocateTagData(unsigned char *dest, struct TagItem *tag, unsigned long size)
+static void RelocateTagData(struct TagItem *tag, unsigned long size)
 {
     char *src = (char *)tag->ti_Data;
+    unsigned char *dest = krnAllocBootMem(size);
     unsigned int i;
 
     tag->ti_Data = (IPTR)dest;
@@ -93,9 +95,6 @@ static void *RelocateTagData(unsigned char *dest, struct TagItem *tag, unsigned 
     /* Do not use memcpy() because it can rely on CopyMem() which is not available yet */
     for (i = 0; i < size; i++)
         *dest++ = *src++;
-
-    /* Align the next address */
-    return (void *)AROS_ROUNDUP2((IPTR)dest, sizeof(APTR));
 }
 
 /* All CPUs start up from this point */
@@ -147,7 +146,8 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
     	    dest++;
     	}
 	dest->ti_Tag = TAG_DONE;
-	ptr = dest + 1;	
+
+	__KernBootPrivate->kbp_PrivateNext = (IPTR)dest + 1;
 
 	/* Now relocate linked data */
 	mlen = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
@@ -164,30 +164,29 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
     	    	for (bss = (struct KernelBSS *)tag->ti_Data; bss->addr; bss++)
     	    	    l += sizeof(struct KernelBSS);
 
-    	    	ptr = RelocateTagData(ptr, tag, l);
+    	    	RelocateTagData(tag, l);
     	    	break;
 
     	    case KRN_MMAPAddress:
-    	    	ptr = RelocateTagData(ptr, tag, mlen);
+    	    	RelocateTagData(tag, mlen);
     	    	break;
 
     	    case KRN_VBEModeInfo:
-    	    	ptr = RelocateTagData(ptr, tag, sizeof(struct vbe_mode));
+    	    	RelocateTagData(tag, sizeof(struct vbe_mode));
     	    	vmode = (struct vbe_mode *)tag->ti_Data;
     	    	break;
 
     	    case KRN_VBEControllerInfo:
-    	    	ptr = RelocateTagData(ptr, tag, sizeof(struct vbe_controller));
+    	    	RelocateTagData(tag, sizeof(struct vbe_controller));
     	    	break;
 
 	    case KRN_CmdLine:
 	    	l = strlen((char *)tag->ti_Data) + 1;
-	    	ptr = RelocateTagData(ptr, tag, l);
+	    	RelocateTagData(tag, l);
 	    	cmdline = (char *)tag->ti_Data;
 	    	break;
 	    }
 	}
-	__KernBootPrivate->kbp_PrivateNext = (IPTR)ptr;
 
 	if (cmdline && vmode && vmode->phys_base && strstr(cmdline, "vesahack"))
 	{
@@ -214,11 +213,8 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 
         core_APICProbe(__KernBootPrivate);
 
-        _APICBase = AROS_UFC0(IPTR,
-                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getbase);
-        _APICID = (UBYTE)AROS_UFC1(IPTR,
-                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
-                        AROS_UFCA(IPTR, _APICBase, A0));
+        _APICBase = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getbase();
+        _APICID   = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
 
         D(bug("[Kernel] kernel_cstart[%d]: launching on BSP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase));
         D(bug("[Kernel] kernel_cstart[%d]: KernelBootPrivate @ %p [%d bytes], Next @ %p\n", _APICID, __KernBootPrivate, sizeof(struct KernBootPrivate), __KernBootPrivate->kbp_PrivateNext));
@@ -232,11 +228,8 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
     }
     else
     {
-        _APICBase = AROS_UFC0(IPTR,
-                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getbase);
-        _APICID = (UBYTE)AROS_UFC1(IPTR,
-                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
-                        AROS_UFCA(IPTR, _APICBase, A0));
+        _APICBase = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getbase();
+        _APICID   = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
 
         bug("[Kernel] kernel_cstart[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase);
         bug("[Kernel] kernel_cstart[%d]: KernelBootPrivate @ %p\n", _APICID, __KernBootPrivate);
@@ -381,6 +374,10 @@ void kernel_cstart(const struct TagItem *msg, void *entry)
 	__KernBootPrivate->kbp_LowMem = mh;
 	TLS_SET(SysBase, SysBase);
 
+	/* Provide information about our supevisor stack. Useful at least for diagnostics. */
+	SysBase->SysStkLower = (APTR)__KernBootPrivate->SystemStack;
+	SysBase->SysStkUpper = (APTR)__KernBootPrivate->SystemStack + STACK_SIZE * 3;
+
 	/* 
 	 * Attempt to allocate a real stack, and switch to it.
 	 * We need to do this, since our current stack is in
@@ -508,14 +505,11 @@ static void boot_start(struct TagItem *msg)
 asm("\ndelay:\t.short   0x00eb\n\tretq");
 
 static uint64_t __attribute__((used, section(".data"), aligned(16))) tmp_stack[128];
-static const uint64_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_stack[120];
+static const uint64_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_stack[126];
 
-static uint64_t stack[STACK_SIZE] __attribute__((used));
-static uint64_t stack_panic[STACK_SIZE] __attribute__((used));
-static uint64_t stack_super[STACK_SIZE] __attribute__((used));
-static uint64_t stack_ring1[STACK_SIZE] __attribute__((used));
+static uint64_t stack[8192] __attribute__((used));
 
-static const uint64_t *stack_end __attribute__((used, section(".text"))) = &stack[STACK_SIZE-16];
+static const uint64_t *stack_end __attribute__((used, section(".text"))) = &stack[8190];
 static const void *target_address __attribute__((section(".text"),used)) = (void*)boot_start;
 
 static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256)));
@@ -634,15 +628,33 @@ void core_SetupGDT(struct KernBootPrivate *__KernBootPrivate)
 
 void core_CPUSetup(IPTR _APICBase)
 {
-    UBYTE _APICID = AROS_UFC1(UBYTE,
-                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
-                        AROS_UFCA(IPTR, _APICBase, A0));
+    UBYTE _APICID = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
 
-    D(bug("[Kernel] core_CPUSetup(%d)\n", _APICID));
-    
-    TSS[_APICID].ist1 = (uint64_t)&stack_panic[STACK_SIZE-2];
-    TSS[_APICID].rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
-    TSS[_APICID].rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
+    D(bug("[Kernel] core_CPUSetup[%d]\n", _APICID));
+
+    if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
+    {
+    	/* 
+    	 * Allocate out supervisor stack from boot-time memory.
+    	 * It will be protected from user's intervention.
+    	 * Allocate actually three stacks: panic, supervisor, ring1.
+     	*/
+    	__KernBootPrivate->SystemStack = (IPTR)krnAllocBootMem(STACK_SIZE * 3);
+    }
+    /*
+     * FIXME: Other CPUs should have own supervisor stacks. They can't allocate them because:
+     * 1. __KernBootPrivate is already sealed up. The memory behind it is given up
+     *    to the OS.
+     * 2. AllocMem() is not SMP-aware.
+     *
+     * For now this is the same as it was - all CPUs reuse the same stacks. Likely
+     * this would cause crash if we attempt to use more than one CPU.
+     * In fact the bootstrap CPU could allocate these stacks before actually running these CPUs.
+     */
+
+    TSS[_APICID].ist1 = __KernBootPrivate->SystemStack + STACK_SIZE     - 16;
+    TSS[_APICID].rsp0 = __KernBootPrivate->SystemStack + STACK_SIZE * 2 - 16;
+    TSS[_APICID].rsp1 = __KernBootPrivate->SystemStack + STACK_SIZE * 3 - 16;
 
     bug("[Kernel] core_CPUSetup[%d]: Reloading the GDT and Task Register\n", _APICID);
     asm volatile ("lgdt %0"::"m"(GDT_sel));
