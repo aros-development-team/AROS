@@ -21,11 +21,10 @@
 	struct DosLibrary *, DOSBase, 29, Dos)
 
 /*  FUNCTION
-	DeviceProc() is an obsolete function that returns the Process
-	responsible for a DOS device. It has been updated to return a
-	new filesystem device.
+	DeviceProc() is an obsolete function that returns the
+	MsgPort responsible for a DOS device.
 
-	DeviceProc() will fail if you ask for the Process of a device
+	DeviceProc() will fail if you ask for the MsgPort of a device
 	created with AssignPath() as there is no process to return.
 	If the device requested is an assign, the IoErr() will contain
 	the Lock to the directory (the function will return the device
@@ -35,11 +34,12 @@
 	name - The name of the DOS device, INCLUDING the ':'.
 
     RESULT
-	Either a pointer to the Device structure, or NULL.
+	Either a pointer to the MsgPort, or NULL.
 
     NOTES
-	You should really use GetDeviceProc() as this function caters
-	for all possible device types.
+	You should really use GetDeviceProc(), as that function
+	returns a more useful structure (DevProc), that will
+	persist until FreeDeviceProc() is called on it.
 
     EXAMPLE
 
