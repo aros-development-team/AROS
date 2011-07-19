@@ -592,8 +592,15 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
 
     D(kprintf("[BOOT] Code %u, data %u\n", ro_size, rw_size));
 
-    /* Total kickstart size + alignment window */
-    ksize = ro_size + rw_size + 4095;
+    /*
+     * Total kickstart size + alignment window + some free space for boot-time memory allocator
+     * TODO: This is a temporary thing. Currently our kernel expects that it can use addresses beyond
+     * KRN_KernelHighest to store boot-time private data, supervisor stack, etc.
+     * The area is joined with read-only section because it's accessed only by supervisor-mode code
+     * and can safely be marked as read-only for users.
+     * Boot-time allocator needs to be smarter.
+     */
+    ksize = ro_size + rw_size + 4095 + 65536 * 4;
 
     /* Now locate the highest appropriate region */
 #ifdef DEBUG_MEM
