@@ -109,5 +109,7 @@ USER_CFLAGS := -std=gnu99
 %build_archspecific mainmmake=hidd-nouveau asmfiles=aros_wbinvd_hack \
     maindir=$(CURDIR) arch=i386 modulename=nouveau
 
-%build_archspecific mainmmake=hidd-nouveau asmfiles=aros_wbinvd_hack \
+%build_archspecific mainmmake=hidd-nouveau asmfiles=aros_wbinvd64_hack \
     maindir=$(CURDIR) arch=x86_64 modulename=nouveau
+
+%common
