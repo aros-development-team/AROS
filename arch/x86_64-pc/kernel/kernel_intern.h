@@ -56,6 +56,9 @@ struct PlatformData
 #define KBL_XTPIC       1
 #define KBL_APIC        2
 
+/* Main boot code */
+void kernel_cstart(const struct TagItem *msg);
+
 /** CPU Functions **/
 IPTR core_APICProbe(struct KernBootPrivate *);
 UBYTE core_APICGetTotal();
