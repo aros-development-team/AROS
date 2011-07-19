@@ -77,6 +77,7 @@
      * This fallback implementation does nothing.
      * See architecture-specific code for working implementations.
      */
+    return 0;
 
     AROS_LIBFUNC_EXIT
 } /* Supervisor() */
