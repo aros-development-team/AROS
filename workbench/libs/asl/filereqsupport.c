@@ -662,7 +662,7 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    	char *name = AROS_BSTR_ADDR(dlist->dol_Name);
 	    	ULONG len = AROS_BSTR_strlen(name);
 
-		node->text[0] = PooledCloneStringLen(name, len, ":", sizeof(":"), ld->ld_IntReq->ir_MemPool, AslBase);
+		node->text[0] = PooledCloneStringLen(name, len, ":", 1, ld->ld_IntReq->ir_MemPool, AslBase);
 		node->node.ln_Name = PooledCloneStringLen(name, len, NULL, 0, ld->ld_IntReq->ir_MemPool, AslBase);
 	    }
 	    
