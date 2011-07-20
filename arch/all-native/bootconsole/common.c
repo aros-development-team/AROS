@@ -14,9 +14,9 @@
 #include "console.h"
 
 /* Screen type */
-unsigned char scr_Type = SCR_UNKNOWN;
+__attribute__((section(".data"))) unsigned char scr_Type = SCR_UNKNOWN;
 
-static unsigned char use_serial = 0;
+__attribute__((section(".data"))) static unsigned char use_serial = 0;
 
 void con_InitVESA(unsigned short version, struct vbe_mode *mode)
 {
