@@ -110,6 +110,9 @@ static uint32_t exec_GetMemory()
     return mem;
 }
 
+THIS_PROGRAM_HANDLES_SYMBOLSETS
+DEFINESET(INITLIB)
+
 void exec_main(struct TagItem *msg, void *entry)
 {
     struct ExecBase *SysBase = NULL;
