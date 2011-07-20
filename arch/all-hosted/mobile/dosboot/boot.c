@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DOS startup-sequence starter, iOS version
@@ -19,10 +19,9 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     BPTR cis = BNULL;
 
     /*
-     * This is just enlightened version of native booter
-     * (without 'enableusb' argument handling). On iOS
-     * we won't run Poseidon and we don't have console so
-     * we don't need emergency shell code
+     * This is just an enlightened version of the native booter.
+     * On iOS we won't run Poseidon and we don't have
+     * a console so we don't need emergency shell code.
      */
 
     D(bug("[DOSBoot] __dosboot_Boot()\n"));
