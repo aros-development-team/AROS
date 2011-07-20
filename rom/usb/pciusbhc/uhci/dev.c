@@ -8,14 +8,11 @@
 
 #include "uhwcmd.h"
 
-#define DEVNAME             "pciusb.device"
-
-#define NewList NEWLIST
+#define DEVNAME         "pciusb.device"
 
 const char devname[]     = MOD_NAME_STRING;
 
-static int devInit(LIBBASETYPEPTR base)
-{
+static int devInit(LIBBASETYPEPTR base) {
     KPRINTF(10, ("devInit base: 0x%p SysBase: 0x%p\n",
                  base, SysBase));
 
@@ -29,7 +26,7 @@ static int devInit(LIBBASETYPEPTR base)
                                      16384, 4096);
         if(base->hd_MemPool)
         {
-            NewList(&base->hd_Units);
+            NEWLIST(&base->hd_Units);
 
             KPRINTF(10, ("devInit: Ok\n"));
         } else {
@@ -55,8 +52,7 @@ static int devInit(LIBBASETYPEPTR base)
  * This is the the DEV_OPEN function.
  *
  */
-static int devOpen(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq, ULONG unit, ULONG flags)
-{
+static int devOpen(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq, ULONG unit, ULONG flags) {
     KPRINTF(10, ("devOpen ioreq: 0x%p unit: %ld flags: 0x%08lx base: 0x%p\n",
                ioreq, unit, flags, base));
 
@@ -97,8 +93,7 @@ static int devOpen(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq, ULONG unit, UL
  *
  */
 
-static int devClose(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq)
-{
+static int devClose(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq) {
     KPRINTF(10, ("devClose ioreq: 0x%p base: 0x%p\n", ioreq, base));
 
     Close_Unit(base, (struct PCIUnit *) ioreq->iouh_Req.io_Unit, ioreq);
@@ -109,8 +104,7 @@ static int devClose(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq)
 }
 
 
-static int devExpunge(LIBBASETYPEPTR base)
-{
+static int devExpunge(LIBBASETYPEPTR base) {
     pciExpunge(base);
 
     DeletePool(base->hd_MemPool);
@@ -148,10 +142,8 @@ AROS_LH1(void, devBeginIO,
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     ioreq->iouh_Req.io_Error                   = UHIOERR_NO_ERROR;
 
-    if (ioreq->iouh_Req.io_Command < NSCMD_DEVICEQUERY)
-    {
-        switch (ioreq->iouh_Req.io_Command)
-        {
+    if (ioreq->iouh_Req.io_Command < NSCMD_DEVICEQUERY) {
+        switch (ioreq->iouh_Req.io_Command) {
 			case CMD_RESET:
                 ret = cmdReset(ioreq, unit, base);
                 break;
@@ -201,10 +193,34 @@ AROS_LH1(void, devBeginIO,
                 break;
         }
     } else {
-        switch(ioreq->iouh_Req.io_Command)
-        {
+        switch(ioreq->iouh_Req.io_Command) {
             case NSCMD_DEVICEQUERY:
-                ret = cmdNSDeviceQuery((struct IOStdReq *) ioreq, unit, base);
+                KPRINTF2(200,("cmdNSDeviceQuery\n"));
+
+                static const UWORD NSDSupported[] = {
+                    CMD_FLUSH, CMD_RESET,
+                    UHCMD_QUERYDEVICE,
+                    UHCMD_USBRESET,
+                    UHCMD_USBRESUME,
+                    UHCMD_USBSUSPEND,
+                    UHCMD_USBOPER,
+                    UHCMD_CONTROLXFER ,
+                    UHCMD_ISOXFER,
+                    UHCMD_INTXFER,
+                    UHCMD_BULKXFER,
+                    NSCMD_DEVICEQUERY,
+                    0
+                };
+
+                struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)((struct IOStdReq *)(ioreq))->io_Data;
+                nsdq->DevQueryFormat    = 0;
+                nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
+                nsdq->DeviceType        = NSDEVTYPE_USBHARDWARE;
+                nsdq->DeviceSubType     = 0;
+                nsdq->SupportedCommands = (UWORD *)NSDSupported;
+
+                ret = RC_OK;
+
                 break;
 
             default:
@@ -213,16 +229,17 @@ AROS_LH1(void, devBeginIO,
         }
     }
 
-    if(ret != RC_DONTREPLY)
-    {
-        KPRINTF(1, ("TermIO\n"));
-        if (ret != RC_OK)
-        {
-            /* Set error codes */
+    if(ret != RC_DONTREPLY) {
+        /* Set error codes */
+        if (ret != RC_OK) {
             ioreq->iouh_Req.io_Error = ret & 0xff;
         }
         /* Terminate the iorequest */
-        TermIO(ioreq, base);
+        ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+        /* If not quick I/O, reply the message */
+        if(!(ioreq->iouh_Req.io_Flags & IOF_QUICK)) {
+            ReplyMsg(&ioreq->iouh_Req.io_Message);
+        }
     }
     
     AROS_LIBFUNC_EXIT
@@ -246,10 +263,8 @@ AROS_LH1(LONG, devAbortIO,
     KPRINTF(50, ("devAbortIO ioreq: 0x%p, command %ld, status %ld\n", ioreq, ioreq->iouh_Req.io_Command, ioreq->iouh_Req.io_Message.mn_Node.ln_Type));
 
     /* Is it pending? */
-    if(ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)
-    {
-        if(cmdAbortIO(ioreq, base))
-        {
+    if(ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE) {
+        if(cmdAbortIO(ioreq, base)) {
             return(0);
         }
     }

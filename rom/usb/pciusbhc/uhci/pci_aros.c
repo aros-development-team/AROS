@@ -19,8 +19,6 @@
 
 #include "uhwcmd.h"
 
-#define NewList NEWLIST
-
 #undef HiddPCIDeviceAttrBase
 //#undef HiddUSBDeviceAttrBase
 //#undef HiddUSBHubAttrBase
@@ -81,14 +79,14 @@ AROS_UFH3(void, pciEnumerator,
 
            	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *) &hc->hc_PCIDriverObject);
 
-           	NewList(&hc->hc_CtrlXFerQueue);
-           	NewList(&hc->hc_IntXFerQueue);
-           	NewList(&hc->hc_IsoXFerQueue);
-           	NewList(&hc->hc_BulkXFerQueue);
+           	NEWLIST(&hc->hc_CtrlXFerQueue);
+           	NEWLIST(&hc->hc_IntXFerQueue);
+           	NEWLIST(&hc->hc_IsoXFerQueue);
+           	NEWLIST(&hc->hc_BulkXFerQueue);
 
-           	NewList(&hc->hc_TDQueue);
-           	NewList(&hc->hc_AbortQueue);
-           	NewList(&hc->hc_PeriodicTDQueue);
+           	NEWLIST(&hc->hc_TDQueue);
+           	NEWLIST(&hc->hc_AbortQueue);
+           	NEWLIST(&hc->hc_PeriodicTDQueue);
 
            	AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
         }
@@ -107,7 +105,7 @@ BOOL pciInit(struct PCIDevice *hd)
 
     KPRINTF(10, ("*** pciInit(%p) ***\n", hd));
 
-    NewList(&hd->hd_TempHCIList);
+    NEWLIST(&hd->hd_TempHCIList);
 
     if(!(hd->hd_IRQHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_IRQ, NULL))) {
         KPRINTF(20, ("Unable to create IRQHidd object!\n"));
@@ -155,8 +153,8 @@ BOOL pciInit(struct PCIDevice *hd)
         hu->hu_UnitNo = unitno;
         hu->hu_DevID = ((struct PCIController *) hd->hd_TempHCIList.lh_Head)->hc_DevID;
 
-        NewList(&hu->hu_Controllers);
-        NewList(&hu->hu_RHIOQueue);
+        NEWLIST(&hu->hu_Controllers);
+        NEWLIST(&hu->hu_RHIOQueue);
 
         hc = (struct PCIController *) hd->hd_TempHCIList.lh_Head;
         while((nexthc = (struct PCIController *) hc->hc_Node.ln_Succ)) {
@@ -249,77 +247,48 @@ void PCIXWriteConfigLong(struct PCIController *hc, ULONG offset, ULONG value)
 }
 /* \\\ */
 
-/* /// "pciStrcat()" */
-void pciStrcat(STRPTR d, STRPTR s)
-{
-    while(*d) d++;
-    while((*d++ = *s++));
-}
-/* \\\ */
-
 /* /// "pciAllocUnit()" */
-BOOL pciAllocUnit(struct PCIUnit *hu)
-{
-#if 0
-    struct PCIDevice *hd = hu->hu_Device;
-#endif
+BOOL pciAllocUnit(struct PCIUnit *hu) {
+
     struct PCIController *hc;
 
     BOOL allocgood = TRUE;
     ULONG usb11ports = 0;
-//    ULONG usb20ports = 0;
 
     ULONG cnt;
 
-    ULONG uhcicnt = 0;
-
-    STRPTR prodname;
-
     KPRINTF(10, ("*** pciAllocUnit(%p) ***\n", hu));
-        // allocate necessary memory
-        hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-        while(hc->hc_Node.ln_Succ) {
-            allocgood = uhciInit(hc,hu);
-            if(allocgood) {
-                uhcicnt++;
-            }
-            hc = (struct PCIController *) hc->hc_Node.ln_Succ;
-        }
 
-    if(!allocgood) {
-        return FALSE;
-    }
-
+    // allocate necessary memory
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ) {
-        for(cnt = usb11ports; cnt < usb11ports + hc->hc_NumPorts; cnt++) {
-            hu->hu_PortMap11[cnt] = hc;
-            hu->hu_PortNum11[cnt] = cnt - usb11ports;
-            hc->hc_PortNumGlobal[cnt - usb11ports] = cnt;
+        allocgood = uhciInit(hc,hu);
+        if(allocgood) {
+            for(cnt = usb11ports; cnt < usb11ports + hc->hc_NumPorts; cnt++) {
+                hu->hu_PortMap11[cnt] = hc;
+                hu->hu_PortNum11[cnt] = cnt - usb11ports;
+                hc->hc_PortNumGlobal[cnt - usb11ports] = cnt;
+                KPRINTF2(200,("Mapping ports\n"));
+                KPRINTF2(200,(" Map11[%ld]= %p\n", cnt, hc));
+                KPRINTF2(200,(" Num11[%ld]= %ld\n", cnt, (cnt-usb11ports)));
+                KPRINTF2(200,(" Glo11[%ld]= %ld\n", (cnt-usb11ports), cnt));
+            }
+            usb11ports += hc->hc_NumPorts;
+        }else{
+            return FALSE;
         }
-        usb11ports += hc->hc_NumPorts;
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
-    hu->hu_RootHub11Ports = usb11ports;
     hu->hu_RootHubPorts = usb11ports;
-
-//    KPRINTF(10, ("Unit %ld: USB Board %08lx has %ld USB1.1 and %ld USB2.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports));
-
     hu->hu_RootHubAddr = 0;
 
     // put em online
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
-    {
+    while(hc->hc_Node.ln_Succ) {
     	hc->hc_Flags |= HCF_ONLINE;
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
-
-    // create product name of device
-    prodname = hu->hu_ProductName;
-    *prodname = 0;
-    pciStrcat(prodname, "PCI UHCI USB 1.1 Host Controller");
 
     KPRINTF(10, ("Unit allocated!\n"));
 
