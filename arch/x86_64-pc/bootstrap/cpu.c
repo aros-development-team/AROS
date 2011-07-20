@@ -221,7 +221,7 @@ void kick(void *kick_base, struct TagItem64 *km)
             wrcr(cr0, _CR0_PG | _CR0_PE);
 
 	    kprintf("[BOOT] Leaving 32-bit environment. LJMP $%x,$%p\n\n", SEG_SUPER_CS, KernelTarget.off);
-	    asm volatile("ljmp *%0"::"m"(KernelTarget),"D"(km));
+	    asm volatile("ljmp *%0"::"m"(KernelTarget),"D"(km),"S"(AROS_BOOT_MAGIC));
         }
     }
 
