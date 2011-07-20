@@ -41,7 +41,11 @@ const struct Resident Kernel_resident =
 
 static const UBYTE version[] = VERSION_STRING AROS_ARCHITECTURE;
 
-/* Some globals we can't live without */
+/*
+ * Some globals we can't live without.
+ * IMPORTANT: BootMsg should survive warm restarts, this is why it's initialized with NULL.
+ * This moves it from .bss to .data.
+ */
 struct TagItem *BootMsg = NULL;
 struct KernelBase *KernelBase;
 
