@@ -69,7 +69,7 @@ AROS_SLIB_ENTRY(ReadGayle,Exec,136):
 	tst.w	%a0@(-(0x40000 - 0x3f01c))           /* If still zero, not INTENAR */
 	beq.s	0f
 	/* Restore interrupts. */
-	move.w	0x7fff,0xdff09a         /* INTENA */
+	move.w	#0x7fff,0xdff09a        /* INTENA */
 	or.w	#0x8000,%d0
 	move.w	%d0,0xdff09a            /* INTENA */
 	/* It was a custom chip mirror. Can't be Gayle*/
