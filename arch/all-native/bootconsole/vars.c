@@ -9,11 +9,16 @@
 
 #include "console.h"
 
-/* Display buffer parameters. Kept accross warm reboots. */
-void         *scr_FrameBuffer  = (void *)0xb8000;	/* VRAM address			*/
-unsigned int  scr_Width	       = 80;			/* Display width in characters	*/
-unsigned int  scr_Height       = 25;			/* Display height in characters	*/
+/*
+ * Variables in this file are interntionally placed into .data section
+ * because they need to survive warm reboots.
+ */
+
+/* Display buffer parameters. */
+__attribute__((section(".data"))) void         *scr_FrameBuffer  = (void *)0xb8000;	/* VRAM address			*/
+__attribute__((section(".data"))) unsigned int  scr_Width	 = 80;			/* Display width in characters	*/
+__attribute__((section(".data"))) unsigned int  scr_Height       = 25;			/* Display height in characters	*/
 
 /* Current output position (in characters) */
-unsigned int scr_XPos = 0;
-unsigned int scr_YPos = 0;
+__attribute__((section(".data"))) unsigned int scr_XPos = 0;
+__attribute__((section(".data"))) unsigned int scr_YPos = 0;

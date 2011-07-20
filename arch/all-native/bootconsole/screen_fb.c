@@ -15,11 +15,12 @@
  * Our mirror is a monochrome text-mode representation of the screen.
  * Unused positions are filled with zero bytes, this helps to determine
  * line lengths for faster scrolling.
+ * These variables need to survive accross warm reboot, so we explicitly place them in .data section.
  */
-char *fb_Mirror = NULL;
+__attribute__((section(".data"))) char *fb_Mirror = NULL;
 
-static unsigned int fb_BytesPerLine = 0; /* Bytes per line  */
-static unsigned int fb_BytesPerPix  = 0; /* Bytes per pixel */
+__attribute__((section(".data"))) static unsigned int fb_BytesPerLine = 0; /* Bytes per line  */
+__attribute__((section(".data"))) static unsigned int fb_BytesPerPix  = 0; /* Bytes per pixel */
 
 /*
  * Calculate length of current line in the fb_Mirror buffer.
