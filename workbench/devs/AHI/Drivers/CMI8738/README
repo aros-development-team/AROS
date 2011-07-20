@@ -1,0 +1,87 @@
+
+CMI8738 AHI driver for OS4 / A1
+-------------------------------------
+
+The interrupt of the card must be set to 'Level' in
+the U-Boot menu. From version 5.7, please check if
+the output in the AHI prefs is set to Front (5.7) or
+"Line Out" (5.8 or higher) if you don't hear sound.
+
+The driver is tested with:
+
+- Sweex 5.1
+- Hercules Muse
+- MicroA1
+- Terratec Aureon 5.1 Fun and 5.1 PCI
+
+It is more than likely that it will work with other CMI8738 based cards.
+
+Don't forget to set up Unit 0 in the AHI prefs (freq=44100 Hz,
+Channels = 10 or more).
+
+Please send bug reports to info@audio-evolution.com.
+
+Davy Wentzler
+
+
+
+History:
+
+5.17 (04 Nov 2006):
+    - Initialization code now locks the device
+
+5.16 (06 Apr 2006):
+    - Muted FM
+
+5.15 (16 Feb 2006):
+    - Works with old and new memory system
+
+5.14 (07 Jan 2006):
+    - Works with new memory system
+
+5.13 (10 Dec 2005):
+    - Handles mono modes correctly now.
+
+5.12 (18 Sep 2005):
+    - Did a 'greater than' instead of 'greater or equal than' test to
+      determine which buffer to choose, which could result in any kind
+      of crackling. Odd that it only occured here at sample rates other
+      than 44100 Hz.
+    - Fixed the date in the version string
+
+5.11 (13 Sep 2005):
+    - Fix involving recovery of lost interrupts. The sound could get
+      distorted after Grim Reapers or when starting the network.
+      Distortion will still take place for a short while, but it
+      will recover from that.
+
+5.10: test version
+
+5.9 (04 Sep 2005):
+    - The mic input now has a default gain of +20dB. You can turn this
+      on and off by using the tool 'cmiboost' in the C directory:
+      'cmiboost 1' turns it on and 'cmiboost 0' turns it off.
+
+5.8 (22 Aug 2005):
+    - CD playback stopped when playing a PCM sound. Fixed.
+    - Changed name of first output to "Line Out" instead of
+      "Front"
+
+5.7 (20 Aug 2005):
+    - Added S/PDIF out support. S/PDIF in doesn't work yet.
+
+5.6 (15 Aug 2005):
+    - Volumes were all set to max, which wasn't the intention.
+      When you want to set volumes of CD etc., please user Mixer 1.12.
+
+5.5 (12 Aug 2005):
+    - Input selection
+    - Output volume control
+    - Aux support
+
+
+5.4 (02 Oct 2004):
+
+    - Code clean-up
+
+5.3: Added reset handler to stop the sound when doing a software reset
