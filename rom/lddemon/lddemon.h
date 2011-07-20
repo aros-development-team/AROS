@@ -9,5 +9,7 @@ struct LDDemonBase
     struct Interrupt	   dl_LDHandler;
     struct MsgPort	 * dl_LDDemonPort;
     struct Process	 * dl_LDDemonTask;
+    struct Library 	 * (*__OpenLibrary)();
+    BYTE		   (*__OpenDevice)();
     ULONG		   dl_LDReturn;
 };
