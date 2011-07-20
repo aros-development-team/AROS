@@ -2,6 +2,7 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/arossupportbase.h>
+#include <aros/symbolsets.h>
 #include <exec/execbase.h>
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -267,9 +268,6 @@ void exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
     InitCode(RTF_SINGLETASK, 0);
 
-    PrivExecBase(SysBase)->KernelBase = OpenResource("kernel.resource");
-    PrivExecBase(SysBase)->PageSize   = MEMCHUNK_TOTAL;
-
     /* Install the interrupt servers */
     for (i=0; i<16; i++)
     {
@@ -412,6 +410,9 @@ void exec_main(struct TagItem *msg, void *entry)
     Enable();
 
     D(debugmem());
+
+    /* Call init set. This is needed at least to bring up RemTask garbage collector. */
+    set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase);
 
     D(bug("[exec] InitCode(RTF_COLDSTART)\n"));
     InitCode(RTF_COLDSTART, 0);
