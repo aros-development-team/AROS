@@ -88,6 +88,16 @@ extern "C" {
 
 #define HALT asm volatile("hlt")
 
+/*
+ * Selector used for lgdt and lidt commands.
+ * Intentionally use unsigned long for base address since this file can be compiled also in 32-bit mode.
+ */
+struct segment_selector
+{
+    unsigned short size;
+    unsigned long base;
+} __attribute__((packed));
+
 struct int_gate_64bit {
     uint16_t    offset_low;
     uint16_t    selector;
