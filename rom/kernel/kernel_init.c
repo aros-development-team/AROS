@@ -43,10 +43,9 @@ static const UBYTE version[] = VERSION_STRING AROS_ARCHITECTURE;
 
 /*
  * Some globals we can't live without.
- * IMPORTANT: BootMsg should survive warm restarts, this is why it's initialized with NULL.
- * This moves it from .bss to .data.
+ * IMPORTANT: BootMsg should survive warm restarts, this is why it's placed in .data.
  */
-struct TagItem *BootMsg = NULL;
+__attribute__((section(".data"))) struct TagItem *BootMsg = NULL;
 struct KernelBase *KernelBase;
 
 void __clear_bss(const struct KernelBSS *bss)
