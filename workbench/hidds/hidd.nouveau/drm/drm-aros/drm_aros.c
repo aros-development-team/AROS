@@ -1,5 +1,5 @@
 /*
-    Copyright 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -43,7 +43,7 @@ AROS_UFH3(void, Enumerator,
     
     /* Check interrupt line. If it is not set, just skip the device */
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &INTLine);
-    if ((INTLine == 0) || (INTLine >= 255))
+    if (INTLine >= 255)
     {
         DRM_DEBUG("INT line is not set. Skipping device.\n");
         return;
