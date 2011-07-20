@@ -52,8 +52,7 @@
 #define PCI_CLASS_SERIAL_USB 0x0c03
 
 /* The unit node - private */
-struct PCIUnit
-{
+struct PCIUnit {
     struct Unit           hu_Unit;
     LONG                  hu_UnitNo;
 
@@ -73,21 +72,16 @@ struct PCIUnit
 
     ULONG                 hu_DevID;          /* Device ID (BusID+DevNo) */
     struct List           hu_Controllers;    /* List of controllers */
-    UWORD                 hu_RootHub11Ports;
-//    UWORD                 hu_RootHub20Ports;
 
     UWORD                 hu_RootHubPorts;
     UWORD                 hu_RootHubAddr;    /* Root Hub Address */
     UWORD                 hu_RootPortChanges; /* Merged root hub changes */
-//    ULONG                 hu_FrameCounter;   /* Common frame counter */
+
     struct List           hu_RHIOQueue;      /* Root Hub Pending IO Requests */
 
     struct PCIController *hu_PortMap11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 controller */
-//    struct PCIController *hu_PortMap20[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 2.0 controller */
-
     UBYTE                 hu_PortNum11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 companion controller port */
-//    UBYTE                 hu_EhciOwned[MAX_ROOT_PORTS]; /* TRUE, if currently owned by EHCI */
-    UBYTE                 hu_ProductName[80]; /* for Query device */
+
     struct PCIController *hu_DevControllers[128]; /* maps from Device address to controller */
     struct IOUsbHWReq    *hu_DevBusyReq[128*16*2]; /* pointer to io assigned to the Endpoint */
     ULONG                 hu_NakTimeoutFrame[128*16*2]; /* Nak Timeout framenumber */
@@ -96,8 +90,7 @@ struct PCIUnit
 
 #define HCITYPE_UHCI     0x00
 
-struct PCIController
-{
+struct PCIController {
     struct Node           hc_Node;
     struct PCIDevice     *hc_Device;        /* Uplink */
     struct PCIUnit       *hc_Unit;          /* Uplink */
@@ -146,9 +139,7 @@ struct PCIController
     struct Interrupt      hc_CompleteInt;
     struct Interrupt      hc_ResetInt;
 
-    UBYTE                 hc_PortNumGlobal[MAX_ROOT_PORTS]; /* Global Port number the local controller port corresponds with */
-                                                            /* Index is the Global port number containing the local port starting from 0?*/
-
+    UBYTE                 hc_PortNumGlobal[MAX_ROOT_PORTS]; /* Contains per unit assigned port number, HC has local ports 0 to 1  */
     UWORD                 hc_PortChangeMap[MAX_ROOT_PORTS]; /* Port Change Map */
 
     BOOL                  hc_complexrouting;
@@ -157,16 +148,15 @@ struct PCIController
 };
 
 /* hc_Flags */
-#define HCF_ALLOCATED	0x0001	/* PCI board allocated		 */
-#define HCF_ONLINE	0x0002	/* Online	    		 */
-#define HCF_STOP_BULK	0x0004	/* Bulk transfers stopped	 */
-#define HCF_STOP_CTRL   0x0008  /* Control transfers stopped	 */
-#define HCF_ABORT	0x0010  /* Aborted requests available	 */
+#define HCF_ALLOCATED   0x0001  /* PCI board allocated */
+#define HCF_ONLINE      0x0002  /* Online */
+#define HCF_STOP_BULK   0x0004  /* Bulk transfers stopped */
+#define HCF_STOP_CTRL   0x0008  /* Control transfers stopped */
+#define HCF_ABORT       0x0010  /* Aborted requests available */
 
 /* The device node - private
 */
-struct PCIDevice
-{
+struct PCIDevice {
     struct Library      hd_Library;       /* standard */
     UWORD               hd_Flags;         /* various flags */
 

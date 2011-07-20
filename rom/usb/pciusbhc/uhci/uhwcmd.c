@@ -10,8 +10,6 @@
 
 #include "uhwcmd.h"
 
-#define NewList NEWLIST
-
 /* we cannot use AROS_WORD2LE in struct initializer */
 #if AROS_BIG_ENDIAN
 #define WORD2LE(w) (UWORD)(((w) >> 8) & 0x00FF) | (((w) << 8) & 0xFF00)
@@ -177,7 +175,7 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
             unit->hu_NakTimeoutMsgPort.mp_Node.ln_Type = NT_MSGPORT;
             unit->hu_NakTimeoutMsgPort.mp_Flags = PA_SOFTINT;
             unit->hu_NakTimeoutMsgPort.mp_SigTask = &unit->hu_NakTimeoutInt;
-            NewList(&unit->hu_NakTimeoutMsgPort.mp_MsgList);
+            NEWLIST(&unit->hu_NakTimeoutMsgPort.mp_MsgList);
             Cause(&unit->hu_NakTimeoutInt);
             return(&unit->hu_Unit);
         } else {
@@ -268,7 +266,6 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq,
     /* FIXME */
     uhwGetUsbState(ioreq, unit, base);
 
-//    unit->hu_FrameCounter = 1;
     unit->hu_RootHubAddr = 0;
 
     if(ioreq->iouh_State & UHSF_OPERATIONAL)
@@ -400,7 +397,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if((tag = FindTagItem(UHA_ProductName, taglist)))
     {
-        *((STRPTR *) tag->ti_Data) = unit->hu_ProductName;
+        *((STRPTR *) tag->ti_Data) = "PCI UHCI USB 1.1 Host Controller";
         count++;
     }
     if((tag = FindTagItem(UHA_Description, taglist)))
@@ -1212,88 +1209,6 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
 }
 /* \\\ */
 
-/* /// "NSD stuff" */
-
-static
-const UWORD NSDSupported[] =
-{
-    CMD_FLUSH, CMD_RESET,
-    UHCMD_QUERYDEVICE, UHCMD_USBRESET,
-    UHCMD_USBRESUME, UHCMD_USBSUSPEND,
-    UHCMD_USBOPER, UHCMD_CONTROLXFER ,
-    UHCMD_ISOXFER, UHCMD_INTXFER,
-    UHCMD_BULKXFER,
-    NSCMD_DEVICEQUERY, 0
-};
-
-WORD cmdNSDeviceQuery(struct IOStdReq *ioreq,
-                       struct PCIUnit *unit,
-                       struct PCIDevice *base)
-{
-    struct my_NSDeviceQueryResult *query;
-
-    query = (struct my_NSDeviceQueryResult *) ioreq->io_Data;
-
-    KPRINTF(10, ("NSCMD_DEVICEQUERY ioreq: 0x%p query: 0x%p\n", ioreq, query));
-
-    /* NULL ptr?
-       Enough data?
-       Valid request?
-    */
-    if((!query) ||
-       (ioreq->io_Length < sizeof(struct my_NSDeviceQueryResult)) ||
-       (query->DevQueryFormat != 0) ||
-       (query->SizeAvailable != 0))
-    {
-        /* Return error. This is special handling, since iorequest is only
-           guaranteed to be sizeof(struct IOStdReq). If we'd let our
-           devBeginIO dispatcher return the error, it would trash some
-           memory past end of the iorequest (ios2_WireError field).
-         */
-         ioreq->io_Error = IOERR_NOCMD;
-         TermIO((struct IOUsbHWReq *) ioreq, base);
-
-         /* Don't reply, we already did.
-         */
-         return RC_DONTREPLY;
-    }
-
-    ioreq->io_Actual         = query->SizeAvailable
-                             = sizeof(struct my_NSDeviceQueryResult);
-    query->DeviceType        = NSDEVTYPE_USBHARDWARE;
-    query->DeviceSubType     = 0;
-    query->SupportedCommands = NSDSupported;
-
-    /* Return success (note that this will NOT poke ios2_WireError).
-    */
-    return RC_OK;
-}
-/* \\\ */
-
-/* /// "TermIO()" */
-/*
- *===========================================================
- * TermIO(ioreq, base)
- *===========================================================
- *
- * Return completed ioreq to sender.
- *
- */
-
-void TermIO(struct IOUsbHWReq *ioreq,
-            struct PCIDevice *base)
-{
-    ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
-
-    /* If not quick I/O, reply the message
-    */
-    if(!(ioreq->iouh_Req.io_Flags & IOF_QUICK))
-    {
-        ReplyMsg(&ioreq->iouh_Req.io_Message);
-    }
-}
-/* \\\ */
-
 /* /// "cmdAbortIO()" */
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
 {
@@ -1397,7 +1312,13 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
 
     if (foundit) {
         ioreq->iouh_Req.io_Error = IOERR_ABORTED;
-        TermIO(ioreq, base);
+
+        ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+
+        /* If not quick I/O, reply the message */
+        if(!(ioreq->iouh_Req.io_Flags & IOF_QUICK)) {
+            ReplyMsg(&ioreq->iouh_Req.io_Message);
+        }
     }else{
         KPRINTF(20, ("WARNING, could not abort unknown IOReq %p\n", ioreq));
     }
