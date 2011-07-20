@@ -1,6 +1,6 @@
 /*
     Copyright © 2010-2011, The AROS Development Team. All rights reserved
-    $Id: uhcichip.c 39444 2011-06-21 04:29:27Z jmcmullan $
+    $Id$
 */
 
 #include <proto/exec.h>
@@ -907,7 +907,7 @@ void uhciUpdateFrameCounter(struct PCIController *hc) {
 
 void uhciCompleteInt(struct PCIController *hc) {
 
-    KPRINTF(200, ("CompleteInt!\n"));
+    KPRINTF(100, ("CompleteInt!\n"));
     uhciUpdateFrameCounter(hc);
 
     /* **************** PROCESS DONE TRANSFERS **************** */
@@ -1116,8 +1116,8 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateIO);
 
         // disable BIOS legacy support
-        KPRINTF(10, ("Turning off BIOS legacy support (old value=%04lx)\n", PCIXReadConfigWord(hc, UHCI_USBLEGSUP)));
-        PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0x8f00);
+        KPRINTF(10, ("Turning off BIOS legacy support (old value=%04lx)\n", HIDD_PCIDevice_ReadConfigWord(hc->hc_PCIDeviceObject, UHCI_USBLEGSUP) ));
+        HIDD_PCIDevice_WriteConfigWord(hc->hc_PCIDeviceObject, UHCI_USBLEGSUP, 0x8f00);
 
         KPRINTF(10, ("Resetting UHCI HC\n"));
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_GLOBALRESET);
@@ -1150,10 +1150,10 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster); // enable busmaster
 
         // Fix for VIA Babble problem
-        cnt = PCIXReadConfigByte(hc, 0x40);
+        cnt = HIDD_PCIDevice_ReadConfigByte(hc->hc_PCIDeviceObject, 0x40);
         if(!(cnt & 0x40)) {
             KPRINTF(20, ("Applying VIA Babble workaround\n"));
-            PCIXWriteConfigByte(hc, 0x40, cnt|0x40);
+            HIDD_PCIDevice_WriteConfigByte(hc->hc_PCIDeviceObject, 0x40, cnt|0x40);
         }
 
         KPRINTF(10, ("Configuring UHCI HC\n"));
@@ -1183,8 +1183,8 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
 
         // enable PIRQ
-        KPRINTF(10, ("Enabling PIRQ (old value=%04lx)\n", PCIXReadConfigWord(hc, UHCI_USBLEGSUP)));
-        PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0x2000);
+        KPRINTF(10, ("Enabling PIRQ (old value=%04lx)\n", HIDD_PCIDevice_ReadConfigWord(hc->hc_PCIDeviceObject, UHCI_USBLEGSUP) ));
+        HIDD_PCIDevice_WriteConfigWord(hc->hc_PCIDeviceObject, UHCI_USBLEGSUP, 0x2000);
 
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE|UHCF_RUNSTOP);
         SYNC;
@@ -1213,7 +1213,7 @@ void uhciFree(struct PCIController *hc, struct PCIUnit *hu) {
         KPRINTF(20, ("Shutting down UHCI %08lx\n", hc));
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
         // disable PIRQ
-        PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0);
+        HIDD_PCIDevice_WriteConfigWord(hc->hc_PCIDeviceObject, UHCI_USBLEGSUP, 0);
         // disable all ports
         WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
         uhwDelayMS(50, hu);
