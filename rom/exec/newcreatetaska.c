@@ -164,7 +164,7 @@ static const struct newMemList MemTemplate =
  	}
     }
 
-    DADDTASK("NewCreateTaskA: name %s\n", taskname ? taskname : "<NULL>");
+    DADDTASK("NewCreateTaskA: name %s", taskname ? taskname : "<NULL>");
 
     ml = NewAllocEntry((struct MemList *)&nml, NULL);
     if (ml)
