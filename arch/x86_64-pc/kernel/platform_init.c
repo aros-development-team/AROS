@@ -88,7 +88,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     	CopyMem(&_binary_smpbootstrap_start, pd->kb_APIC_TrampolineBase, (unsigned long)&_binary_smpbootstrap_size);
 
     	/* HACK! Store the PML4 address in smp trampoline area */
-        *(ULONG *)(pd->kb_APIC_TrampolineBase + 0x0014) = (unsigned long)PML4;
+        *(ULONG *)(pd->kb_APIC_TrampolineBase + 0x0014) = (unsigned long)__KernBootPrivate->PML4;
     }
     D(bug("[Kernel] Kernel_Init: Copied APIC bootstrap code to %p\n", pd->kb_APIC_TrampolineBase));
 #endif

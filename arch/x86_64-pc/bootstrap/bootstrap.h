@@ -66,6 +66,9 @@ extern struct TagItem64 *tag;
 /* The target base address of 64-bit kernel */
 #define KERNEL_TARGET_ADDRESS   0x01000000
 
+/* Our kickstart will operate with page size = 4KB */
+#define PAGE_SIZE 4096
+
 //#define KERNEL_HIGH_OFFSET      0x1ffULL
 //#define KERNEL_HIGH_OFFSET      0x1ffULL
 //#define KERNEL_HIGH_OFFSET      31ULL

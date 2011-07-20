@@ -21,14 +21,10 @@ static struct
 } GDT __attribute__((used,aligned(128),section(".bss.aros.tables")));
 
 /* Data used to load GDTR */
-const struct
-{
-    unsigned short size;
-    unsigned int   base;
-} __attribute__((packed)) GDT_sel =
+const struct segment_selector GDT_sel =
 {
     sizeof(GDT)-1,
-    (unsigned int)&GDT
+    (unsigned long)&GDT
 };
 
 /* Far jump detination specification (address and segment selector */

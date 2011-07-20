@@ -39,14 +39,13 @@ static const struct MemRegion PC_Memory[] =
 
 /*
  * Boot-time global variables.
- * They have initial values, so they go to .data section and survive accross warm reboots.
+ * __KernBootPrivate needs to survive accross warm reboots, so it's put into .data.
  * SysBase is intentionally put into .rodata. This way we prevent it from being modified.
  */
-struct KernBootPrivate *__KernBootPrivate = NULL;
-struct ExecBase * __attribute__((section(".rodata"))) SysBase = NULL;
-static void doInitCode(struct MemHeader *mh2, IPTR  khi, IPTR addr);
-static void boot_start(struct TagItem *msg);
+__attribute__((section(".data"))) struct KernBootPrivate *__KernBootPrivate = NULL;
+__attribute__((section(".rodata"))) struct ExecBase *SysBase = NULL;
 
+static void boot_start(struct TagItem *msg);
 static char boot_stack[];
 
 /*
@@ -57,35 +56,30 @@ static char boot_stack[];
  */
 IPTR __startup start64(struct TagItem *msg, ULONG magic)
 {
-    const struct TagItem *bss;
-
     /* Anti-command-line-run protector */
-    if (magic != AROS_BOOT_MAGIC)
-    	return -1;
+    if (magic == AROS_BOOT_MAGIC)
+    {
+    	/* Run the kickstart from boot_start() routine. */
+    	core_Kick(msg, boot_start);
+    }
 
-    bss = LibFindTagItem(KRN_KernelBss, msg);
-
-    if (bss)
-    	__clear_bss((const struct KernelBSS *)bss->ti_Data);
-
-    /* Set a new stack and jump to the continuation routine */
-    asm volatile("movq %1, %%rsp\n\t"
-    		 "jmp *%2\n"::"D"(msg), "r"(boot_stack + STACK_SIZE - 16), "r"(boot_start));
-
-    /* Shut up the compiler, this is unreachable */
     return -1;
 }
 
 /*
  * This code is executed only once, after the kickstart is loaded by bootstrap.
- * Its main job is to initialize boot-time debugging console.
+ * Its main job is to initialize early debugging console ASAP in order to be able
+ * to see what happens. This will deal with both serial and on-screen console.
+ *
+ * This address is selected for console mirror because:
+ * a) The bootstrap is placed at 0x1000000. It has already done its job and we can reuse its memory.
+ * b) 0x1000 is added in order not to overlap with MemHeader and first MemChunk. We are running on a
+ *    PC, so we know, that a new physical memory region always starts at 0x100000 (1MB). When memory map
+ *    is converted into exec lists by mmap_InitMemory(), a MemHeader and first MemChunk will be placed in
+ *    the start of the region. 4KB is more than enough not to clash with it.
  */
 static void boot_start(struct TagItem *msg)
 {
-    /*
-     * Initialize console ASAP in order to get debug output correctly.
-     * This will deal with both serial and on-screen console.
-     */
     fb_Mirror = (void *)0x101000;
     con_InitTagList(msg);
 
@@ -93,6 +87,25 @@ static void boot_start(struct TagItem *msg)
     D(bug("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [stub @ %p].\n", boot_start, start64));
 
     kernel_cstart(msg);
+}
+
+/*
+ * This routine actually launches the kickstart. It's called either upon first start or upon warm reboot.
+ * The only assumption is that stack is outside .bss . For both cases this is true:
+ * 1. First boot - the stack is located inside the bootstrap.
+ * 2. Warm reboot - the stack is located in supervisor area (__KernBootPrivate->SystemStack).
+ */
+void core_Kick(struct TagItem *msg, void *target)
+{
+    const struct TagItem *bss = LibFindTagItem(KRN_KernelBss, msg);
+
+    /* First clear .bss */
+    if (bss)
+    	__clear_bss((const struct KernelBSS *)bss->ti_Data);
+
+    /* ... then switch to initial stack and jump to target address */
+    asm volatile("movq %1, %%rsp\n\t"
+    		 "jmp *%2\n"::"D"(msg), "r"(boot_stack + STACK_SIZE - 16), "r"(target));
 }
 
 /* Print panic string and halt */
@@ -131,7 +144,7 @@ void kernel_cstart(const struct TagItem *msg)
 	struct TagItem *tag = LibFindTagItem(KRN_KernelHighest, msg);
 	struct TagItem *dest;
 	unsigned long mlen;
-        void *ptr;
+        IPTR ptr;
         struct vbe_mode *vmode = NULL;
         char *cmdline = NULL;
 
@@ -144,17 +157,17 @@ void kernel_cstart(const struct TagItem *msg)
         }
 
         /* Align kickstart top address (we are going to place a structure after it) */
-        ptr = (void *)AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
+        ptr = AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
 
-        __KernBootPrivate = ptr;
-        __KernBootPrivate->kbp_InitFlags = 0;
-        __KernBootPrivate->debug_framebuffer = NULL;
+	memset((void *)ptr, 0, sizeof(struct KernBootPrivate));
+        __KernBootPrivate = (struct KernBootPrivate *)ptr;
 
 	/*
 	 * Our boot taglist is placed by the bootstrap just somewhere in memory.
 	 * The first thing is to move it into some safe place.
 	 */
-        BootMsg = ptr + sizeof(struct KernBootPrivate);
+        ptr = AROS_ROUNDUP2(ptr + sizeof(struct KernBootPrivate), sizeof(APTR));
+        BootMsg = (struct TagItem *)ptr;
 
 	dest = BootMsg;
         while ((tag = LibNextTagItem(&msg)))
@@ -164,8 +177,9 @@ void kernel_cstart(const struct TagItem *msg)
     	    dest++;
     	}
 	dest->ti_Tag = TAG_DONE;
+	dest++;
 
-	__KernBootPrivate->kbp_PrivateNext = (IPTR)dest + 1;
+	__KernBootPrivate->kbp_PrivateNext = (IPTR)dest;
 
 	/* Now relocate linked data */
 	mlen = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
@@ -231,8 +245,8 @@ void kernel_cstart(const struct TagItem *msg)
 
         core_APICProbe(__KernBootPrivate);
 
-        _APICBase = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getbase();
-        _APICID   = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
+        _APICBase = boot_APIC_GetBase(__KernBootPrivate);
+        _APICID   = boot_APIC_GetID(__KernBootPrivate, _APICBase);
 
         D(bug("[Kernel] kernel_cstart[%d]: launching on BSP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase));
         D(bug("[Kernel] kernel_cstart[%d]: KernelBootPrivate @ %p [%d bytes], Next @ %p\n", _APICID, __KernBootPrivate, sizeof(struct KernBootPrivate), __KernBootPrivate->kbp_PrivateNext));
@@ -246,8 +260,8 @@ void kernel_cstart(const struct TagItem *msg)
     }
     else
     {
-        _APICBase = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getbase();
-        _APICID   = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
+        _APICBase = boot_APIC_GetBase(__KernBootPrivate);
+        _APICID   = boot_APIC_GetID(__KernBootPrivate, _APICBase);
 
         bug("[Kernel] kernel_cstart[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase);
         bug("[Kernel] kernel_cstart[%d]: KernelBootPrivate @ %p\n", _APICID, __KernBootPrivate);
@@ -336,7 +350,7 @@ void kernel_cstart(const struct TagItem *msg)
 
         D(bug("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n"));
 
-	/* Explore memory list and create MemHeaders */
+	/* Explore memory map and create MemHeaders */
 	NEWLIST(&memList);
         mmap_InitMemory(mmap, mmap_len, &memList, klo, khi, PC_Memory);
 
@@ -451,20 +465,14 @@ void kernel_cstart(const struct TagItem *msg)
     while (1) asm volatile("hlt");
 }
 
-static void doInitCode(struct MemHeader *mh2, IPTR  khi, IPTR addr)
-{
-
-}
-
 /* Small delay routine used by exec_cinit initializer */
 asm("\ndelay:\t.short   0x00eb\n\tretq");
 
 /* Our boot-time stack */
-static char boot_stack[STACK_SIZE] __attribute__((used, aligned(16)));
+static char boot_stack[STACK_SIZE] __attribute__((aligned(16)));
 
-static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256)));
-static struct tss_64bit TSS[16] __attribute__((used,aligned(128)));
-static struct {
+struct gdt_64bit
+{
     struct segment_desc seg0;      /* seg 0x00 */
     struct segment_desc super_cs;  /* seg 0x08 */
     struct segment_desc super_ds;  /* seg 0x10 */
@@ -473,112 +481,127 @@ static struct {
     struct segment_desc user_cs;   /* seg 0x28 */
     struct segment_desc gs;        /* seg 0x30 */
     struct segment_desc ldt;       /* seg 0x38 */
-    struct {
+    struct
+    {
         struct segment_desc tss_low;   /* seg 0x40... */
         struct segment_ext  tss_high;
-    } tss[16];        
-} GDT __attribute__((used,aligned(128)));
+    } tss[16];
+};
 
-const struct
+struct gdt_selector
 {
-    uint16_t size __attribute__((packed));
-    uint64_t base __attribute__((packed));
-} 
-GDT_sel = {sizeof(GDT)-1, (uint64_t)&GDT};
-
-static tls_t system_tls;
+    uint16_t size;
+    uint64_t base;
+} __attribute__((packed));
 
 void core_SetupGDT(struct KernBootPrivate *__KernBootPrivate)
 {
-    IPTR        _APICBase;
-    UBYTE       _APICID;
+    IPTR  _APICBase;
+    UBYTE _APICID;
     int i;
 
-    _APICBase = AROS_UFC0(IPTR,
-        (*(__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getbase));
-
-    _APICID = (UBYTE)AROS_UFC1(IPTR,
-        (*(__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid),
-                AROS_UFCA(IPTR, _APICBase, A0));
+    _APICBase = boot_APIC_GetBase(__KernBootPrivate);
+    _APICID   = boot_APIC_GetID(__KernBootPrivate, _APICBase);
 
     D(bug("[Kernel] core_SetupGDT(%d)\n", _APICID));
 
     if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
     {
-        /* Supervisor segments */
-        GDT.super_cs.type=0x1a;     /* code segment */
-        GDT.super_cs.dpl=0;         /* supervisor level */
-        GDT.super_cs.p=1;           /* present */
-        GDT.super_cs.l=1;           /* long (64-bit) one */
-        GDT.super_cs.d=0;           /* must be zero */
-        GDT.super_cs.limit_low=0xffff;
-        GDT.super_cs.limit_high=0xf;
-        GDT.super_cs.g=1;
+    	struct gdt_64bit *GDT;
+    	struct tss_64bit *TSS;
+    	intptr_t tls_ptr;
 
-        GDT.super_ds.type=0x12;     /* data segment */
-        GDT.super_ds.dpl=0;         /* supervisor level */
-        GDT.super_ds.p=1;           /* present */
-        GDT.super_ds.limit_low=0xffff;
-        GDT.super_ds.limit_high=0xf;
-        GDT.super_ds.g=1;
-        GDT.super_ds.d=1;
+    	if (!__KernBootPrivate->GDT)
+    	{
+    	    __KernBootPrivate->system_tls = krnAllocBootMem(sizeof(tls_t));
+    	    __KernBootPrivate->GDT        = krnAllocBootMemAligned(sizeof(struct gdt_64bit), 128);
+    	    __KernBootPrivate->TSS        = krnAllocBootMemAligned(sizeof(struct tss_64bit) * 16, 128);
+
+    	    D(bug("[Kernel] Allocated GDT 0x%p, TLS 0x%p\n", __KernBootPrivate->GDT, __KernBootPrivate->system_tls));
+    	}
+
+	GDT = __KernBootPrivate->GDT;
+	TSS = __KernBootPrivate->TSS;
+
+        /* Supervisor segments */
+        GDT->super_cs.type=0x1a;     /* code segment */
+        GDT->super_cs.dpl=0;         /* supervisor level */
+        GDT->super_cs.p=1;           /* present */
+        GDT->super_cs.l=1;           /* long (64-bit) one */
+        GDT->super_cs.d=0;           /* must be zero */
+        GDT->super_cs.limit_low=0xffff;
+        GDT->super_cs.limit_high=0xf;
+        GDT->super_cs.g=1;
+
+        GDT->super_ds.type=0x12;     /* data segment */
+        GDT->super_ds.dpl=0;         /* supervisor level */
+        GDT->super_ds.p=1;           /* present */
+        GDT->super_ds.limit_low=0xffff;
+        GDT->super_ds.limit_high=0xf;
+        GDT->super_ds.g=1;
+        GDT->super_ds.d=1;
 
         /* User mode segments */
-        GDT.user_cs.type=0x1a;      /* code segment */
-        GDT.user_cs.dpl=3;          /* User level */
-        GDT.user_cs.p=1;            /* present */
-        GDT.user_cs.l=1;            /* long mode */
-        GDT.user_cs.d=0;            /* must be zero */
-        GDT.user_cs.limit_low=0xffff;
-        GDT.user_cs.limit_high=0xf;
-        GDT.user_cs.g=1;
+        GDT->user_cs.type=0x1a;      /* code segment */
+        GDT->user_cs.dpl=3;          /* User level */
+        GDT->user_cs.p=1;            /* present */
+        GDT->user_cs.l=1;            /* long mode */
+        GDT->user_cs.d=0;            /* must be zero */
+        GDT->user_cs.limit_low=0xffff;
+        GDT->user_cs.limit_high=0xf;
+        GDT->user_cs.g=1;
 
-        GDT.user_cs32.type=0x1a;    /* code segment for legacy 32-bit code. NOT USED YET! */
-        GDT.user_cs32.dpl=3;        /* user elvel */
-        GDT.user_cs32.p=1;          /* present */
-        GDT.user_cs32.l=0;          /* 32-bit mode */
-        GDT.user_cs32.d=1;          /* 32-bit code */
-        GDT.user_cs32.limit_low=0xffff;
-        GDT.user_cs32.limit_high=0xf;
-        GDT.user_cs32.g=1;
+        GDT->user_cs32.type=0x1a;    /* code segment for legacy 32-bit code. NOT USED YET! */
+        GDT->user_cs32.dpl=3;        /* user level */
+        GDT->user_cs32.p=1;          /* present */
+        GDT->user_cs32.l=0;          /* 32-bit mode */
+        GDT->user_cs32.d=1;          /* 32-bit code */
+        GDT->user_cs32.limit_low=0xffff;
+        GDT->user_cs32.limit_high=0xf;
+        GDT->user_cs32.g=1;
 
-        GDT.user_ds.type=0x12;      /* data segment */
-        GDT.user_ds.dpl=3;    /* user elvel */
-        GDT.user_ds.p=1;            /* present */
-        GDT.user_ds.limit_low=0xffff;
-        GDT.user_ds.limit_high=0xf;
-        GDT.user_ds.g=1;
-        GDT.user_ds.d=1;
+        GDT->user_ds.type=0x12;      /* data segment */
+        GDT->user_ds.dpl=3;    	     /* user level */
+        GDT->user_ds.p=1;            /* present */
+        GDT->user_ds.limit_low=0xffff;
+        GDT->user_ds.limit_high=0xf;
+        GDT->user_ds.g=1;
+        GDT->user_ds.d=1;
 
         for (i=0; i < 16; i++)
         {
-            /* Task State Segment */
-            GDT.tss[i].tss_low.type=0x09;      /* 64-bit TSS */
-            GDT.tss[i].tss_low.limit_low=sizeof(TSS)-1;
-            GDT.tss[i].tss_low.base_low=((unsigned long)&TSS[i]) & 0xffff;
-            GDT.tss[i].tss_low.base_mid=(((unsigned long)&TSS[i]) >> 16) & 0xff;
-            GDT.tss[i].tss_low.dpl=3;          /* User mode task */
-            GDT.tss[i].tss_low.p=1;            /* present */
-            GDT.tss[i].tss_low.limit_high=((sizeof(TSS)-1) >> 16) & 0x0f;
-            GDT.tss[i].tss_low.base_high=(((unsigned long)&TSS[i]) >> 24) & 0xff;
-            GDT.tss[i].tss_high.base_ext = 0;  /* is within 4GB :-D */
-        }
-        intptr_t tls_ptr = (intptr_t)&system_tls;
+            const unsigned long tss_limit = sizeof(struct tss_64bit) * 16 - 1;
 
-        GDT.gs.type=0x12;      /* data segment */
-        GDT.gs.dpl=3;    /* user elvel */
-        GDT.gs.p=1;            /* present */
-        GDT.gs.base_low = tls_ptr & 0xffff;
-        GDT.gs.base_mid = (tls_ptr >> 16) & 0xff;
-        GDT.gs.base_high = (tls_ptr >> 24) & 0xff;   
-        GDT.gs.g=1;
-        GDT.gs.d=1;
+            /* Task State Segment */
+            GDT->tss[i].tss_low.type       = 0x09;				      	/* 64-bit TSS */
+            GDT->tss[i].tss_low.limit_low  = tss_limit;
+            GDT->tss[i].tss_low.base_low   = ((unsigned long)&TSS[i]) & 0xffff;
+            GDT->tss[i].tss_low.base_mid   = (((unsigned long)&TSS[i]) >> 16) & 0xff;
+            GDT->tss[i].tss_low.dpl        = 3;						/* User mode task */
+            GDT->tss[i].tss_low.p          = 1;						/* present */
+            GDT->tss[i].tss_low.limit_high = (tss_limit >> 16) & 0x0f;
+            GDT->tss[i].tss_low.base_high  = (((unsigned long)&TSS[i]) >> 24) & 0xff;
+            GDT->tss[i].tss_high.base_ext  = 0;						/* is within 4GB :-D */
+        }
+
+        tls_ptr = (intptr_t)__KernBootPrivate->system_tls;
+
+        GDT->gs.type=0x12;      /* data segment */
+        GDT->gs.dpl=3;    	/* user level */
+        GDT->gs.p=1;            /* present */
+        GDT->gs.base_low = tls_ptr & 0xffff;
+        GDT->gs.base_mid = (tls_ptr >> 16) & 0xff;
+        GDT->gs.base_high = (tls_ptr >> 24) & 0xff;   
+        GDT->gs.g=1;
+        GDT->gs.d=1;
     }
 }
-
+ 
 void core_CPUSetup(IPTR _APICBase)
 {
-    UBYTE _APICID = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
+    struct segment_selector GDT_sel;
+    struct tss_64bit *TSS = __KernBootPrivate->TSS;
+    UBYTE _APICID = boot_APIC_GetID(__KernBootPrivate, _APICBase);
 
     D(bug("[Kernel] core_CPUSetup[%d]\n", _APICID));
 
@@ -588,8 +611,11 @@ void core_CPUSetup(IPTR _APICBase)
     	 * Allocate out supervisor stack from boot-time memory.
     	 * It will be protected from user's intervention.
     	 * Allocate actually three stacks: panic, supervisor, ring1.
-     	*/
-    	__KernBootPrivate->SystemStack = (IPTR)krnAllocBootMem(STACK_SIZE * 3);
+    	 * Note that we do the actual allocation only once. The region is kept
+    	 * in __KernBootPrivate which survives warm reboots.
+     	 */
+     	if (!__KernBootPrivate->SystemStack)
+    	    __KernBootPrivate->SystemStack = (IPTR)krnAllocBootMem(STACK_SIZE * 3);
     }
     /*
      * FIXME: Other CPUs should have own supervisor stacks. They can't allocate them because:
@@ -607,6 +633,9 @@ void core_CPUSetup(IPTR _APICBase)
     TSS[_APICID].rsp1 = __KernBootPrivate->SystemStack + STACK_SIZE * 3 - 16;
 
     bug("[Kernel] core_CPUSetup[%d]: Reloading the GDT and Task Register\n", _APICID);
+
+    GDT_sel.size = sizeof(struct gdt_64bit) - 1;
+    GDT_sel.base = (uint64_t)__KernBootPrivate->GDT;
     asm volatile ("lgdt %0"::"m"(GDT_sel));
     asm volatile ("ltr %w0"::"r"(TASK_SEG + (_APICID << 4)));
     asm volatile ("mov %0,%%gs"::"a"(USER_GS));

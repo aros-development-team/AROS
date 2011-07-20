@@ -9,6 +9,7 @@
 #include <inttypes.h>
 
 #include "kernel_base.h"
+#include "kernel_bootmem.h"
 #include "kernel_debug.h"
 #include "kernel_interrupts.h"
 #include "kernel_intern.h"
@@ -20,13 +21,13 @@
 
 #define D(x)
 #define DSYSCALL(x)
-#define DTRAP(x)
+#define DTRAP(x) x
 #define DUMP_CONTEXT
 
-/* Simulate SysBase access at address 8.
- * Currently disabled (does not work with large code model
- * Read access to zeropage is enabled.
- * TODO: Move global SysBase away from zeropage.
+/*
+ * Simulate SysBase access at address 8.
+ * Disabled because global SysBase is moved away from zeropage.
+ *
 #define EMULATE_SYSBASE 8 */
 
 #define IRQ(x,y) \
@@ -54,13 +55,6 @@ IRQPROTO_16(0x2);
 IRQPROTO(0x8, 0);
 IRQPROTO(0xf, e);
 extern void core_DefaultIRETQ(void);
-
-static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256)));
-const struct
-{
-    uint16_t size __attribute__((packed));
-    uint64_t base __attribute__((packed));
-} IDT_sel = {sizeof(IGATES)-1, (uint64_t)IGATES};
 
 const void *interrupt[256] =
 {
@@ -107,14 +101,25 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
     UBYTE _APICID;
     int i;
     uintptr_t off;
+    struct segment_selector IDT_sel;
 
-    _APICBase = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getbase();
-    _APICID   = __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(_APICBase);
+    _APICBase = boot_APIC_GetBase(__KernBootPrivate);
+    _APICID   = boot_APIC_GetID(__KernBootPrivate, _APICBase);
 
     if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
     {
+    	struct int_gate_64bit *IGATES;
+
+    	if (!__KernBootPrivate->IDT)
+    	{
+    	    __KernBootPrivate->IDT = krnAllocBootMemAligned(sizeof(struct int_gate_64bit) * 256, 256);
+
+    	    D(bug("[Kernel] Allocated IDT at 0x%p\n", __KernBootPrivate->IDT));
+    	}
+
         bug("[Kernel] core_SetupIDT[%d] Setting all interrupt handlers to default value\n", _APICID);
 
+        IGATES = __KernBootPrivate->IDT;
         for (i=0; i < 256; i++)
         {
             if (interrupt[i])
@@ -136,7 +141,11 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
             IGATES[i].ist = 0;
         }
     }
+
     bug("[Kernel] core_SetupIDT[%d] Registering interrupt handlers ..\n", _APICID);
+
+    IDT_sel.size = sizeof(struct int_gate_64bit) * 256 - 1;
+    IDT_sel.base = (unsigned long)__KernBootPrivate->IDT;    
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
@@ -345,16 +354,19 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	switch (sc)
 	{
 	case SC_REBOOT:
-	    /* TODO */
-	    bug("[Kernel] Soft reboot is not implemented yet\n");
-	    while (1) asm volatile ("hlt");
+	    D(bug("[Kernel] Warm restart...\n"));
 
-	    break;
+	    __asm__ __volatile__("cli; cld;");
+	    /*
+	     * Restart the kernel from kernel_cstart() function reusing already relocated BootMsg.
+	     * Debug output, including split-screen vesahack mode, survives the restart.
+	     * This doesn't return.
+	     */
+	    core_Kick(BootMsg, kernel_cstart);
 
 	case SC_SUPERVISOR:
 	    /* This doesn't return */
 	    core_Supervisor(regs);
-	    break;
 	}
 
 	/* Scheduler can be called only from within user mode */
