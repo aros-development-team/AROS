@@ -16,7 +16,7 @@
  * Unused positions are filled with zero bytes, this helps to determine
  * line lengths for faster scrolling.
  */
-char *fb_Mirror;
+char *fb_Mirror = NULL;
 
 static unsigned int fb_BytesPerLine = 0; /* Bytes per line  */
 static unsigned int fb_BytesPerPix  = 0; /* Bytes per pixel */
