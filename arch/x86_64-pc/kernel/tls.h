@@ -1,8 +1,8 @@
 #ifndef ASM_TLS_H
 #define ASM_TLS_H
 
-typedef struct tls {
-    struct Task         *ThisTask;
+typedef struct tls
+{
     struct ExecBase     *SysBase;
     void *              *KernelBase;    /* Base of kernel.resource */
 } tls_t;

@@ -13,7 +13,11 @@
 #define PAGE_SIZE	0x1000
 #define PAGE_MASK	0x0FFF
 
-struct   KernBootPrivate
+/*
+ * Boot-time private data.
+ * This structure is write-protected in user mode and survives warm restarts.
+ */
+struct KernBootPrivate
 {
     IPTR	        kbp_PrivateNext;
     IPTR                kbp_InitFlags;
@@ -26,6 +30,15 @@ struct   KernBootPrivate
     unsigned short	debug_y_resolution;
     void	       *debug_framebuffer;
     IPTR	        SystemStack;
+    void	       *GDT;
+    void	       *TSS;
+    void	       *system_tls;
+    void	       *IDT;
+    void	       *PML4;
+    void	       *PDP;
+    void	       *PDE;
+    void	       *PTE;
+    int		        used_page;
 };
 
 #define KERNBOOTFLAG_SERDEBUGCONFIGURED (1 << 0)
@@ -33,7 +46,6 @@ struct   KernBootPrivate
 #define KERNBOOTFLAG_BOOTCPUSET         (1 << 2)
 
 extern struct KernBootPrivate *__KernBootPrivate;
-extern struct PML4E PML4[512];
 
 /* Platform-specific part of KernelBase */
 struct PlatformData
@@ -57,6 +69,7 @@ struct PlatformData
 #define KBL_APIC        2
 
 /* Main boot code */
+void core_Kick(struct TagItem *msg, void *target);
 void kernel_cstart(const struct TagItem *msg);
 
 /** CPU Functions **/

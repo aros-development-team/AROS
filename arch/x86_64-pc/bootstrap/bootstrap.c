@@ -593,14 +593,15 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     D(kprintf("[BOOT] Code %u, data %u\n", ro_size, rw_size));
 
     /*
-     * Total kickstart size + alignment window + some free space for boot-time memory allocator
+     * Total kickstart size + alignment window (page size - 1) + some free space (512KB) for
+     * boot-time memory allocator.
      * TODO: This is a temporary thing. Currently our kernel expects that it can use addresses beyond
-     * KRN_KernelHighest to store boot-time private data, supervisor stack, etc.
+     * KRN_KernelHighest to store boot-time private data, supervisor stack, segment descriptors, MMU stuff, etc.
      * The area is joined with read-only section because it's accessed only by supervisor-mode code
      * and can safely be marked as read-only for users.
      * Boot-time allocator needs to be smarter.
      */
-    ksize = ro_size + rw_size + 4095 + 65536 * 4;
+    ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x80000;
 
     /* Now locate the highest appropriate region */
 #ifdef DEBUG_MEM
@@ -650,7 +651,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
 		     */
 		    kstart = start;
 		    kbase = start + rw_size;
-		    kbase = (kbase + 4095) & (~4095);
+		    kbase = (kbase + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 	    	}
 	    }
 	}
@@ -660,7 +661,8 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     }
 
     if (!kbase)
-    	panic("Failed to determine kickstart address");
+    	panic("Failed to find %u bytes for the kickstart.\n"
+    	      "Your system doesn't have enough memory.");
 
     kprintf("[BOOT] Loading kickstart, data 0x%p, code 0x%p...\n", kstart, kbase);
     if (!LoadKernel(kbase, kstart, __bss_track, 0, mod, module_count))
