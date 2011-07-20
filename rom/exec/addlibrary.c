@@ -81,9 +81,12 @@
      */
     if (!strcmp(library->lib_Node.ln_Name, "debug.library"))
     {
-    	DebugBase = OpenLibrary("debug.library", 0);
+    	/* Don't bother searching for just added library, just call open vector */
+    	DebugBase = AROS_LVO_CALL1(struct Library *,
+				   AROS_LCA(ULONG, 0, D0),
+				   struct Library *, library, 1, lib);
 
-    	DINIT("debug.library added, base 0x%p", DebugBase);
+    	DINIT("%s added, base 0x%p", library->lib_Node.ln_Name, DebugBase);
     }
 
     AROS_COMPAT_SETD0(library);
