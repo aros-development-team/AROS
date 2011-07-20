@@ -55,4 +55,14 @@ static inline IPTR core_APIC_Init(struct PlatformData *pd)
     return pd->kb_APIC_Drivers[pd->kb_APIC_DriverID]->init(pd->kb_APIC_BaseMap[0]);
 }
 
+static inline IPTR boot_APIC_GetBase(struct KernBootPrivate *__KernBootPrivate)
+{
+    return __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getbase();
+}
+
+static inline UBYTE boot_APIC_GetID(struct KernBootPrivate *__KernBootPrivate, IPTR base)
+{
+    return __KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID]->getid(base);
+}
+
 #endif /* __AROS_APIC_H__ */

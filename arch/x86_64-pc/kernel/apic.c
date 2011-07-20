@@ -19,7 +19,7 @@
 #include "acpi.h"
 #include "apic.h"
 
-#define D(x) x
+#define D(x)
 
 #define CONFIG_LAPICS
 
