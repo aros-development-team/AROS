@@ -4,7 +4,7 @@ delay 5
 default 0
 
 title AROS on Sam440
-    kernel boot/aros-amcc440 enableusb
+    kernel boot/aros-amcc440
     module boot/modules/afs.handler
     module boot/modules/amberram.handler
     module boot/modules/aros.library
