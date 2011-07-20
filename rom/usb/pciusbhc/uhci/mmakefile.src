@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 40023 2011-07-12 08:44:05Z DizzyOfCRN $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := pci_aros uhcichip dev uhwcmd

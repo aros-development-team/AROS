@@ -20,15 +20,9 @@
 #include "uhwcmd.h"
 
 #undef HiddPCIDeviceAttrBase
-//#undef HiddUSBDeviceAttrBase
-//#undef HiddUSBHubAttrBase
-//#undef HiddUSBDrvAttrBase
 #undef HiddAttrBase
 
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
-//#define HiddUSBDeviceAttrBase (hd->hd_HiddUSBDeviceAB)
-//#define HiddUSBHubAttrBase (hd->hd_HiddUSBHubAB)
-//#define HiddUSBDrvAttrBase (hd->hd_HiddUSBDrvAB)
 #define HiddAttrBase (hd->hd_HiddAB)
 
 #define PCI_BASE_CLASS_SERIAL   0x0c
@@ -95,9 +89,7 @@ AROS_UFH3(void, pciEnumerator,
     AROS_USERFUNC_EXIT
 }
 
-/* /// "pciInit()" */
-BOOL pciInit(struct PCIDevice *hd)
-{
+BOOL pciInit(struct PCIDevice *hd) {
     struct PCIController *hc;
     struct PCIController *nexthc;
     struct PCIUnit *hu;
@@ -170,84 +162,7 @@ BOOL pciInit(struct PCIDevice *hd)
     }
     return TRUE;
 }
-/* \\\ */
 
-/* /// "PCIXReadConfigByte()" */
-UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset)
-{
-    struct pHidd_PCIDevice_ReadConfigByte msg;
-
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
-    msg.reg = offset;
-
-    return OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
-}
-/* \\\ */
-
-/* /// "PCIXReadConfigWord()" */
-UWORD PCIXReadConfigWord(struct PCIController *hc, UBYTE offset)
-{
-    struct pHidd_PCIDevice_ReadConfigWord msg;
-
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
-    msg.reg = offset;
-
-    return OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
-}
-/* \\\ */
-
-/* /// "PCIXReadConfigLong()" */
-ULONG PCIXReadConfigLong(struct PCIController *hc, UBYTE offset)
-{
-    struct pHidd_PCIDevice_ReadConfigLong msg;
-
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong);
-    msg.reg = offset;
-
-    return OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
-}
-/* \\\ */
-
-/* /// "PCIXWriteConfigByte()" */
-void PCIXWriteConfigByte(struct PCIController *hc, ULONG offset, UBYTE value)
-{
-    struct pHidd_PCIDevice_WriteConfigByte msg;
-
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
-    msg.reg = offset;
-    msg.val = value;
-
-    OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
-}
-/* \\\ */
-
-/* /// "PCIXWriteConfigWord()" */
-void PCIXWriteConfigWord(struct PCIController *hc, ULONG offset, UWORD value)
-{
-    struct pHidd_PCIDevice_WriteConfigWord msg;
-
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
-    msg.reg = offset;
-    msg.val = value;
-
-    OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
-}
-/* \\\ */
-
-/* /// "PCIXWriteConfigLong()" */
-void PCIXWriteConfigLong(struct PCIController *hc, ULONG offset, ULONG value)
-{
-    struct pHidd_PCIDevice_WriteConfigLong msg;
-
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigLong);
-    msg.reg = offset;
-    msg.val = value;
-
-    OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
-}
-/* \\\ */
-
-/* /// "pciAllocUnit()" */
 BOOL pciAllocUnit(struct PCIUnit *hu) {
 
     struct PCIController *hc;
@@ -294,11 +209,8 @@ BOOL pciAllocUnit(struct PCIUnit *hu) {
 
     return TRUE;
 }
-/* \\\ */
 
-/* /// "pciFreeUnit()" */
-void pciFreeUnit(struct PCIUnit *hu)
-{
+void pciFreeUnit(struct PCIUnit *hu) {
     struct PCIDevice *hd = hu->hu_Device;
     struct PCIController *hc;
 
@@ -321,7 +233,7 @@ void pciFreeUnit(struct PCIUnit *hu)
 
     uhciFree(hc, hu);
 
-    //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
+    //FIXME: uhciFree routine actually ONLY stops the chip NOT free anything as code below...
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ) {
         if(hc->hc_PCIMem) {
@@ -344,11 +256,8 @@ void pciFreeUnit(struct PCIUnit *hu)
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 }
-/* \\\ */
 
-/* /// "pciExpunge()" */
-void pciExpunge(struct PCIDevice *hd)
-{
+void pciExpunge(struct PCIDevice *hd) {
     struct PCIController *hc;
     struct PCIUnit *hu;
 
@@ -382,23 +291,18 @@ void pciExpunge(struct PCIDevice *hd)
         OOP_DisposeObject(hd->hd_IRQHidd);
     }
 }
-/* \\\ */
 
-/* /// "pciGetPhysical()" */
-APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)
-{
+APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr) {
     //struct PCIDevice *hd = hc->hc_Device;
     return(HIDD_PCIDriver_CPUtoPCI(hc->hc_PCIDriverObject, virtaddr));
 }
-/* \\\ */
 
 /*
  * Process some AROS-specific arguments.
  * 'usbpoweron' helps to bring up USB ports on IntelMac,
  * whose firmware sets them up incorrectly.
  */
-static int getArguments(struct PCIDevice *base)
-{
+static int getArguments(struct PCIDevice *base) {
     APTR BootLoaderBase = OpenResource("bootloader.resource");
 
     if (BootLoaderBase)
