@@ -198,19 +198,16 @@ static struct Library *LDInit(BPTR seglist, struct ExecBase *SysBase)
     return NULL;
 }
 
-struct Library *(*__OpenLibrary)();
-BYTE		(*__OpenDevice)();
-
 #define ExecOpenLibrary(libname, version)                         \
-AROS_CALL2(struct Library *, __OpenLibrary,                       \
+AROS_CALL2(struct Library *, ldBase->__OpenLibrary,               \
     AROS_LCA(STRPTR, libname, A1),                                \
     AROS_LCA(ULONG, version, D0),                                 \
     struct ExecBase *, SysBase)
 
 #define ExecOpenDevice(devname, unitNumber, iORequest, flags)     \
-AROS_CALL4(LONG, __OpenDevice,                                    \
+AROS_CALL4(LONG, ldBase->__OpenDevice,                            \
     AROS_LCA(STRPTR, devname, A0),                                \
-    AROS_LCA(IPTR, unitNumber, D0),                              \
+    AROS_LCA(IPTR, unitNumber, D0),                               \
     AROS_LCA(struct IORequest *, iORequest, A1),                  \
     AROS_LCA(ULONG, flags, D1),                                   \
     struct ExecBase *, SysBase)
@@ -445,6 +442,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 {
     AROS_LIBFUNC_INIT
 
+    struct LDDemonBase *ldBase;
     struct Library *library;
     struct LDObjectNode *object = LDRequestObject(libname, version, "libs", &SysBase->LibList, SysBase);
 
@@ -452,6 +450,7 @@ AROS_LH2(struct Library *, OpenLibrary,
     	return NULL;
 
     /* Call the EXEC's OpenLibrary function */
+    ldBase = SysBase->ex_RamLibPrivate;
     library = ExecOpenLibrary(object->ldon_Node.ln_Name, version);
 
     LDReleaseObject(object, SysBase);
@@ -475,6 +474,8 @@ AROS_LH4(LONG, OpenDevice,
     object = LDRequestObject(devname, 0, "devs", &SysBase->DeviceList, SysBase);
     if (object)
     {
+	struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+
     	/* Call exec.library/OpenDevice(), it will do the job */
     	ExecOpenDevice(object->ldon_Node.ln_Name, unitNumber, iORequest, flags);
     	LDReleaseObject(object, SysBase);
@@ -721,8 +722,8 @@ static ULONG LDDemon_Init(struct LDDemonBase *ldBase)
     			AROS_SLIB_ENTRY(ptr,Dos,0))
 
     /* Do not set the vectors until you have initialised everything else. */
-    __OpenLibrary = SetFunc(92, OpenLibrary);
-    __OpenDevice = SetFunc(74, OpenDevice);
+    ldBase->__OpenLibrary = SetFunc(92, OpenLibrary);
+    ldBase->__OpenDevice  = SetFunc(74, OpenDevice);
     (void)SetFunc(69, CloseLibrary);
     (void)SetFunc(75, CloseDevice);
     (void)SetFunc(67, RemLibrary);
