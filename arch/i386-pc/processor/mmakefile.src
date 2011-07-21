@@ -2,7 +2,7 @@
 #
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := -I$(SRCDIR)/rom/processor -I$(SRCDIR)/arch/i386-all/processor
+USER_CFLAGS := -I$(SRCDIR)/rom/processor -I$(SRCDIR)/arch/x86-all/processor
 
 FILES := \
     processor_frequency
