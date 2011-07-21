@@ -9,12 +9,12 @@ limitations under the License.
 The Original Code is written by Davy Wentzler.
 */
 
-#include <config.h>
+//#include <config.h>
 
 #include <devices/ahi.h>
 #include <libraries/ahi_sub.h>
 
-#include "library_card.h"
+#include "library.h"
 
 /******************************************************************************
 ** AHIsub_SetVol **************************************************************

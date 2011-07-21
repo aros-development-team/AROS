@@ -9,10 +9,12 @@ limitations under the License.
 The Original Code is written by Davy Wentzler.
 */
 
-#include <config.h>
+//#include <config.h>
 
+#if !defined(__AROS__)
 #undef __USE_INLINE__
 #include <proto/expansion.h>
+#endif
 #include <libraries/ahi_sub.h>
 #include <proto/exec.h>
 #include <stddef.h>
@@ -20,6 +22,11 @@ The Original Code is written by Davy Wentzler.
 #include "regs.h"
 #include "interrupt.h"
 #include "misc.h"
+#include "pci_wrapper.h"
+#ifdef __AROS__
+#include <aros/debug.h>
+#define DebugPrintF bug
+#endif
 
 #define min(a,b) ((a)<(b)?(a):(b))
 
@@ -35,7 +42,7 @@ int z = 0;
 
 
 LONG
-CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* card )
+CardInterrupt( struct CMI8738_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
@@ -44,12 +51,12 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
   ULONG intreq;
   LONG  handled = 0;
 
-  while ( (( intreq = ( dev->InLong(card->iobase + CMPCI_REG_INTR_STATUS ) ) ) & CMPCI_REG_ANY_INTR )!= 0 )
+  while ( (( intreq = ( pci_inl(CMPCI_REG_INTR_STATUS, card->iobase) ) ) & CMPCI_REG_ANY_INTR )!= 0 )
   {
-    //IExec->DebugPrintF("INT %lx\n", intreq);
+    //DebugPrintF("INT %lx\n", intreq);
     if( intreq & CMPCI_REG_CH0_INTR && AudioCtrl != NULL )
     {
-      unsigned long diff = dev->InLong(card->iobase + CMPCI_REG_DMA0_BASE) - (unsigned long) card->playback_buffer_phys;
+      unsigned long diff = pci_inl(CMPCI_REG_DMA0_BASE, card->iobase) - (unsigned long) card->playback_buffer_phys;
       
       ClearMask(dev, card, CMPCI_REG_INTR_CTRL, CMPCI_REG_CH0_INTR_ENABLE);
 
@@ -64,13 +71,13 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
           
       /*if ((diff > 50 && diff < card->current_bytesize) ||
           (diff > card->current_bytesize + 50 && diff < 2 * card->current_bytesize))
-         IExec->DebugPrintF("Delayed IRQ %lu %lu\n", diff % card->current_bytesize, card->current_bytesize);*/
+         DebugPrintF("Delayed IRQ %lu %lu\n", diff % card->current_bytesize, card->current_bytesize);*/
         
       
       if (diff >= card->current_bytesize) //card->flip == 0) // just played buf 1
       {
          if (card->flip == 1)
-            IExec->DebugPrintF("A:Missed IRQ! diff = %lu\n", diff);
+            DebugPrintF("A:Missed IRQ! diff = %lu\n", diff);
 
          card->flip = 1;
          card->current_buffer = card->playback_buffer;
@@ -78,7 +85,7 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
       else  // just played buf 2
       {
          if (card->flip == 0)
-            IExec->DebugPrintF("B:Missed IRQ! diff = %lu\n", diff);
+            DebugPrintF("B:Missed IRQ! diff = %lu\n", diff);
          
          card->flip = 0;
          card->current_buffer = (APTR) ((long) card->playback_buffer + card->current_bytesize);
@@ -89,7 +96,7 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
         z = 0;*/
       
       card->playback_interrupt_enabled = FALSE;
-      IExec->Cause( &card->playback_interrupt );
+      Cause( &card->playback_interrupt );
     }
 
     if( intreq & CMPCI_REG_CH1_INTR && AudioCtrl != NULL )
@@ -97,7 +104,7 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
       ClearMask(dev, card, CMPCI_REG_INTR_CTRL, CMPCI_REG_CH1_INTR_ENABLE);
       
       /*if (z == 0)
-        IExec->DebugPrintF("rec\n");*/
+        DebugPrintF("rec\n");*/
       z++;
       /*if (z == 30)
         z = 0;*/
@@ -118,7 +125,7 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
          }
 
          card->record_interrupt_enabled = FALSE;
-         IExec->Cause( &card->record_interrupt );
+         Cause( &card->record_interrupt );
       }
     }
 
@@ -135,7 +142,7 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
 ******************************************************************************/
 
 void
-PlaybackInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* card )
+PlaybackInterrupt( struct CMI8738_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
@@ -151,14 +158,14 @@ PlaybackInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, 
     size_t samples;
     int    i;
     
-  	skip_mix = IUtility->CallHookPkt( AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0 );  
-    IUtility->CallHookPkt( AudioCtrl->ahiac_PlayerFunc, (Object*) AudioCtrl, NULL );
+    skip_mix = CallHookPkt( AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0 );  
+    CallHookPkt( AudioCtrl->ahiac_PlayerFunc, (Object*) AudioCtrl, NULL );
 
-    //IExec->DebugPrintF("skip_mix = %d\n", skip_mix);
+    //DebugPrintF("skip_mix = %d\n", skip_mix);
 
     if( ! skip_mix )
     {
-      IUtility->CallHookPkt( AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, card->mix_buffer );
+      CallHookPkt( AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, card->mix_buffer );
     }
     
     /* Now translate and transfer to the DMA buffer */
@@ -182,9 +189,9 @@ PlaybackInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, 
       --i;
     }
 
-    IExec->CacheClearE( card->current_buffer, (ULONG) dst - (ULONG) card->current_buffer, CACRF_ClearD );
+    CacheClearE( card->current_buffer, (ULONG) dst - (ULONG) card->current_buffer, CACRF_ClearD );
     
-    IUtility->CallHookPkt( AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0 );
+    CallHookPkt( AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0 );
   }
 
   WriteMask(dev, card, CMPCI_REG_INTR_CTRL, CMPCI_REG_CH0_INTR_ENABLE);
@@ -197,7 +204,7 @@ PlaybackInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, 
 ******************************************************************************/
 
 void
-RecordInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* card )
+RecordInterrupt( struct CMI8738_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
@@ -214,7 +221,7 @@ RecordInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, st
   WORD* ptr = (WORD *) card->current_record_buffer;
 
 
-  IExec->CacheClearE( card->current_record_buffer, card->current_record_bytesize, CACRF_ClearD);
+  CacheClearE( card->current_record_buffer, card->current_record_bytesize, CACRF_ClearD);
 
   while( i < shorts )
   {
@@ -224,9 +231,9 @@ RecordInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, st
     ++ptr;
   }
 
-  IUtility->CallHookPkt( AudioCtrl->ahiac_SamplerFunc, (Object*) AudioCtrl, &rm );
+  CallHookPkt( AudioCtrl->ahiac_SamplerFunc, (Object*) AudioCtrl, &rm );
   
-  IExec->CacheClearE( card->current_record_buffer, card->current_record_bytesize, CACRF_ClearD);
+  CacheClearE( card->current_record_buffer, card->current_record_bytesize, CACRF_ClearD);
 
 
   WriteMask(dev, card, CMPCI_REG_INTR_CTRL, CMPCI_REG_CH1_INTR_ENABLE);

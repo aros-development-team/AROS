@@ -1,13 +1,12 @@
 
-CMI8738 AHI driver for OS4 / A1
+CMI8738 AHI driver for AROS
 -------------------------------------
 
-The interrupt of the card must be set to 'Level' in
-the U-Boot menu. From version 5.7, please check if
-the output in the AHI prefs is set to Front (5.7) or
-"Line Out" (5.8 or higher) if you don't hear sound.
+Please check if the output in the AHI prefs is set
+to Front (5.7) or "Line Out" (5.8 or higher) if you
+don't hear sound.
 
-The driver is tested with:
+The OS4 version of the driver has been tested with:
 
 - Sweex 5.1
 - Hercules Muse
@@ -23,10 +22,11 @@ Please send bug reports to info@audio-evolution.com.
 
 Davy Wentzler
 
-
-
 History:
 
+5.18 (20 Jul 2011):
+    - Ported to AROS
+    
 5.17 (04 Nov 2006):
     - Initialization code now locks the device
 

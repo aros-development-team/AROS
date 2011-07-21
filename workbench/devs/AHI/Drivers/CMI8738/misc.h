@@ -12,35 +12,35 @@ The Original Code is written by Davy Wentzler.
 #ifndef AHI_Drivers_misc_h
 #define AHI_Drivers_misc_h
 
-#include <config.h>
+//#include <config.h>
 
 #include <devices/ahi.h>
 #include <DriverData.h>
 #include <stddef.h>
 
-void WritePartialMask(struct PCIDevice *dev, struct CardData* card, unsigned long reg, unsigned long shift, unsigned long mask, unsigned long val);
-void ClearMask(struct PCIDevice *dev, struct CardData* card, unsigned long reg, unsigned long mask);
-void WriteMask(struct PCIDevice *dev, struct CardData* card, unsigned long reg, unsigned long mask);
-void cmimix_wr(struct PCIDevice *dev, struct CardData* card, unsigned char port, unsigned char val);
-unsigned char cmimix_rd(struct PCIDevice *dev, struct CardData* card, unsigned char port);
+void WritePartialMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long shift, unsigned long mask, unsigned long val);
+void ClearMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long mask);
+void WriteMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long mask);
+void cmimix_wr(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned char port, unsigned char val);
+unsigned char cmimix_rd(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned char port);
 
 
-struct CardData*
+struct CMI8738_DATA*
 AllocDriverData( struct PCIDevice*    dev,
 		 struct DriverBase* AHIsubBase );
 
 void
-FreeDriverData( struct CardData* card,
+FreeDriverData( struct CMI8738_DATA* card,
 		struct DriverBase*  AHIsubBase );
 
 void
-SaveMixerState( struct CardData* card );
+SaveMixerState( struct CMI8738_DATA* card );
 
 void
-RestoreMixerState( struct CardData* card );
+RestoreMixerState( struct CMI8738_DATA* card );
 
 void
-UpdateMonitorMixer( struct CardData* card );
+UpdateMonitorMixer( struct CMI8738_DATA* card );
 
 Fixed
 Linear2MixerGain( Fixed  linear,
@@ -53,7 +53,7 @@ Linear2RecordGain( Fixed  linear,
 ULONG
 SamplerateToLinearPitch( ULONG samplingrate );
 
-void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress);
+void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int boundary);
 
 void pci_free_consistent(void* addr);
 
