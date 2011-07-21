@@ -43,7 +43,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 
     /* argv[0] usually contains the name of the program, possibly with the full
        path to it. Here we translate that path, which is an AmigaDOS-style path,
-       into an unix-style one.  */
+       into a unix-style one.  */
     if (argv && argv[0] && !__get_arosc_privdata()->acpd_parent_does_upath)
     {
 	new_argv0 = strdup(__path_a2u(argv[0]));
