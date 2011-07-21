@@ -58,7 +58,7 @@ char bootstrapdir[PATH_MAX];
 char buf[512];
 
 static struct mb_mmap MemoryMap = {
-    sizeof(struct mb_mmap),
+    sizeof(struct mb_mmap) - 4,
     0,
     0,
 #if (__WORDSIZE != 64)
