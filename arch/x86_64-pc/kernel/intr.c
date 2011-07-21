@@ -21,7 +21,7 @@
 
 #define D(x)
 #define DSYSCALL(x)
-#define DTRAP(x) x
+#define DTRAP(x)
 #define DUMP_CONTEXT
 
 /*
