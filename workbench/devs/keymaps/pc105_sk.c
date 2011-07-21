@@ -9,7 +9,7 @@
 
 #include <devices/keymap.h>
 
-STATIC char keymapname[] = "pc105_sl";
+STATIC char keymapname[] = "pc105_sk";
 
 STATIC CONST UBYTE lokeymaptypes[];
 STATIC CONST IPTR  lokeymap[];
@@ -240,7 +240,7 @@ STATIC CONST IPTR lokeymap[] =
     /*---- 2nd QWERTY row - 0x10 to 0x1F */
     BYTES(0x5C,0x5C,'Q' ,'q' ),
     BYTES(0x7C,0x7C,'W' ,'w' ),
-    BYTES(0x80,0x80,'E' ,'e' ),
+    BYTES(0x80,EUR ,'E' ,'e' ),
     BYTES('.' ,'.' ,'R' ,'r' ),
     BYTES('.' ,'.' ,'T' ,'t' ),
     BYTES('.' ,'.' ,'Z' ,'z' ),
