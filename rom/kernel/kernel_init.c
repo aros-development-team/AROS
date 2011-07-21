@@ -42,10 +42,10 @@ const struct Resident Kernel_resident =
 static const UBYTE version[] = VERSION_STRING AROS_ARCHITECTURE;
 
 #ifdef __mc68000
-#define __data __attribute__((section(".data")))
-#else
 /* On m68k .data section doesn't exist */
 #define __data
+#else
+#define __data __attribute__((section(".data")))
 #endif
 
 /*
