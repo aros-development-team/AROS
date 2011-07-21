@@ -13,35 +13,19 @@
 const char devname[]     = MOD_NAME_STRING;
 
 static int devInit(LIBBASETYPEPTR base) {
-    KPRINTF(10, ("devInit base: 0x%p SysBase: 0x%p\n",
-                 base, SysBase));
+    KPRINTF(10, ("devInit base: 0x%p SysBase: 0x%p\n", base, SysBase));
 
-    base->hd_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library", 39);
-
-#define	UtilityBase	base->hd_UtilityBase
-
-    if(UtilityBase)
-    {
-        base->hd_MemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED,
-                                     16384, 4096);
-        if(base->hd_MemPool)
-        {
-            NEWLIST(&base->hd_Units);
-
-            KPRINTF(10, ("devInit: Ok\n"));
-        } else {
-            KPRINTF(10, ("devInit: CreatePool() failed!\n"));
-            CloseLibrary((struct Library *) UtilityBase);
-            base = NULL;
-        }
+    base->hd_MemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 16384, 4096);
+    if(base->hd_MemPool) {
+        NEWLIST(&base->hd_Units);
+        KPRINTF(10, ("devInit: Ok\n"));
     } else {
-        KPRINTF(10, ("devInit: OpenLibrary(\"utility.library\", 39) failed!\n"));
-        base = NULL;
+        KPRINTF(10, ("devInit: CreatePool() failed!\n"));
+        return FALSE;
     }
 
     KPRINTF(10, ("devInit: openCnt = %ld\n", base->hd_Library.lib_OpenCnt));
-
-    return base ? TRUE : FALSE;
+    return TRUE;
 }
 
 /*
@@ -58,8 +42,7 @@ static int devOpen(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq, ULONG unit, UL
 
     KPRINTF(10, ("devOpen: openCnt = %ld\n", base->hd_Library.lib_OpenCnt));
 
-    if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq))
-    {
+    if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
         KPRINTF(20, ("devOpen: invalid MN_LENGTH!\n"));
 
         ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
@@ -109,9 +92,6 @@ static int devExpunge(LIBBASETYPEPTR base) {
 
     DeletePool(base->hd_MemPool);
 
-    KPRINTF(5, ("devExpunge: closelibrary utilitybase 0x%p\n",
-                UtilityBase));
-    CloseLibrary((struct Library *) UtilityBase);
     return TRUE;
 }
 

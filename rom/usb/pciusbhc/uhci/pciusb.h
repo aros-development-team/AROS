@@ -160,8 +160,6 @@ struct PCIDevice {
     struct Library      hd_Library;       /* standard */
     UWORD               hd_Flags;         /* various flags */
 
-    struct UtilityBase *hd_UtilityBase;   /* for tags etc */
-
     struct List         hd_TempHCIList;
     OOP_Object         *hd_PCIHidd;
     OOP_Object         *hd_IRQHidd;
