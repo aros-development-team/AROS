@@ -9,81 +9,85 @@ limitations under the License.
 The Original Code is written by Davy Wentzler.
 */
 
-#include <config.h>
+//#include <config.h>
 
 #include <exec/memory.h>
-#ifdef __amigaos4__
-#undef __USE_INLINE__
-#include <proto/expansion.h>
-#else
-#include <libraries/openpci.h>
-#include <proto/openpci.h>
+
+#ifdef __AROS__
+#include <aros/debug.h>
 #endif
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/fakedma.h>
+
 #include <string.h>
 
-#include "library_card.h"
+#include "library.h"
 #include "regs.h"
 #include "interrupt.h"
 #include "misc.h"
-#include "DriverData.h"
+
+#include "pci_wrapper.h"
 
 #define CACHELINE_SIZE 32
 
+#ifdef __AROS__
+#define DebugPrintF bug
+INTGW(static, void,  playbackinterrupt, PlaybackInterrupt);
+INTGW(static, void,  recordinterrupt,   RecordInterrupt);
+INTGW(static, ULONG, cardinterrupt,  CardInterrupt);
+#endif
+
 /* Global in Card.c */
 extern const UWORD InputBits[];
-extern struct DOSIFace *IDOS;
-extern struct FakeDMAIFace *IFakeDMA;
 
 /* Public functions in main.c */
-int card_init(struct CardData *card);
-void card_cleanup(struct CardData *card);
-void AddResetHandler(struct CardData *card);
+int card_init(struct CMI8738_DATA *card);
+void card_cleanup(struct CMI8738_DATA *card);
+#if !defined(__AROS__)
+void AddResetHandler(struct CMI8738_DATA *card);
+#endif
 
-
-void WritePartialMask(struct PCIDevice *dev, struct CardData* card, unsigned long reg, unsigned long shift, unsigned long mask, unsigned long val)
+void WritePartialMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long shift, unsigned long mask, unsigned long val)
 {
-    ULONG tmp;
+  ULONG tmp;
     
-    tmp = dev->InLong(card->iobase + reg);
-    tmp &= ~(mask << shift);
-    tmp |= val << shift;
-    dev->OutLong(card->iobase + reg, tmp);
+  tmp = pci_inl(reg, card);
+  tmp &= ~(mask << shift);
+  tmp |= val << shift;
+  pci_outl(tmp, reg, card);
 }
 
 
-void ClearMask(struct PCIDevice *dev, struct CardData* card, unsigned long reg, unsigned long mask)
+void ClearMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long mask)
 {
-    ULONG tmp;
+  ULONG tmp;
     
-    tmp = dev->InLong(card->iobase + reg);
-    tmp &= ~mask;
-    dev->OutLong(card->iobase + reg, tmp);
+  tmp = pci_inl(reg, card);
+  tmp &= ~mask;
+  pci_outl(tmp, reg, card);
 }
 
 
-void WriteMask(struct PCIDevice *dev, struct CardData* card, unsigned long reg, unsigned long mask)
+void WriteMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long mask)
 {
-    ULONG tmp;
+  ULONG tmp;
     
-    tmp = dev->InLong(card->iobase + reg);
-    tmp |= mask;
-    dev->OutLong(card->iobase + reg, tmp);
+  tmp = pci_inl(reg, card);
+  tmp |= mask;
+  pci_outl(tmp, reg, card);
 }
 
-void cmimix_wr(struct PCIDevice *dev, struct CardData* card, unsigned char port, unsigned char val)
+void cmimix_wr(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned char port, unsigned char val)
 {
-        dev->OutByte(card->iobase + CMPCI_REG_SBADDR, port);
-        dev->OutByte(card->iobase + CMPCI_REG_SBDATA, val);
+  pci_outb(port, CMPCI_REG_SBADDR, card);
+  pci_outb(val, CMPCI_REG_SBDATA, card);
 }
 
-unsigned char cmimix_rd(struct PCIDevice *dev, struct CardData* card, unsigned char port)
+unsigned char cmimix_rd(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned char port)
 {
-        dev->OutByte(card->iobase + CMPCI_REG_SBADDR, port);
-        return (unsigned char) dev->InByte(card->iobase + CMPCI_REG_SBDATA);
+  pci_outb(port, CMPCI_REG_SBADDR, card);
+  return (unsigned char) pci_inb(CMPCI_REG_SBDATA, card);
 }
 
 
@@ -95,18 +99,18 @@ unsigned char cmimix_rd(struct PCIDevice *dev, struct CardData* card, unsigned c
 // handling CAMD support too, it needs to be done at driver loading
 // time.
 
-struct CardData*
+struct CMI8738_DATA*
 AllocDriverData( struct PCIDevice *dev,
 		 struct DriverBase* AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-  struct CardData* card;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
+  struct CMI8738_DATA* card;
   UWORD command_word;
   int i, v;
   unsigned char byte;
 
   // FIXME: This should be non-cachable, DMA-able memory
-  card = IExec->AllocVec( sizeof( *card ), MEMF_PUBLIC | MEMF_CLEAR );
+  card = AllocVec( sizeof( *card ), MEMF_PUBLIC | MEMF_CLEAR );
 
   if( card == NULL )
   {
@@ -116,60 +120,70 @@ AllocDriverData( struct PCIDevice *dev,
 
   card->ahisubbase = AHIsubBase;
 
-  card->interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
+  card->interrupt.is_Node.ln_Type = IRQTYPE;
   card->interrupt.is_Node.ln_Pri  = 0;
   card->interrupt.is_Node.ln_Name = (STRPTR) LibName;
+#ifdef __AROS__
+  card->interrupt.is_Code         = (void(*)(void)) &cardinterrupt;
+#else
   card->interrupt.is_Code         = (void(*)(void)) CardInterrupt;
+#endif
   card->interrupt.is_Data         = (APTR) card;
 
-  card->playback_interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
+  card->playback_interrupt.is_Node.ln_Type = IRQTYPE;
   card->playback_interrupt.is_Node.ln_Pri  = 0;
   card->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  card->playback_interrupt.is_Code         = PlaybackInterrupt;
+#ifdef __AROS__
+  card->playback_interrupt.is_Code         = &playbackinterrupt;
+#else
+  card->interrupt.is_Code         = PlaybackInterrupt;
+#endif
   card->playback_interrupt.is_Data         = (APTR) card;
 
-  card->record_interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
+  card->record_interrupt.is_Node.ln_Type = IRQTYPE;
   card->record_interrupt.is_Node.ln_Pri  = 0;
   card->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  card->record_interrupt.is_Code         = RecordInterrupt;
+#ifdef __AROS__
+  card->record_interrupt.is_Code         = &recordinterrupt;
+#else
+  card->interrupt.is_Code         = RecordInterrupt;
+#endif
   card->record_interrupt.is_Data         = (APTR) card;
 
   card->pci_dev = dev;
 
-  command_word = dev->ReadConfigWord( PCI_COMMAND );  
+  command_word = inw_config(PCI_COMMAND,  dev);  
   command_word |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER;
-  dev->WriteConfigWord( PCI_COMMAND, command_word );
+  outw_config( PCI_COMMAND, command_word, dev);
 
   card->pci_master_enabled = TRUE;
 
   /*for (i = 0; i < 6; i++)
   {
      if (dev->GetResourceRange(i))
-         IExec->DebugPrintF("BAR[%ld] = %lx\n", i, dev->GetResourceRange(i)->BaseAddress);
+         DebugPrintF("BAR[%ld] = %lx\n", i, dev->GetResourceRange(i)->BaseAddress);
   }*/
 
-  card->iobase  = dev->GetResourceRange(0)->BaseAddress;
-  card->length  = ~( dev->GetResourceRange(0)->Size & PCI_BASE_ADDRESS_IO_MASK );
-  card->irq     = dev->MapInterrupt();
-  card->chiprev = dev->ReadConfigByte( PCI_REVISION_ID);
-  card->model   = dev->ReadConfigWord( PCI_SUBSYSTEM_ID);
+  card->iobase  =  ahi_pci_get_base_address(0, dev);
+  card->length  = ahi_pci_get_base_size(0, dev);
+  card->irq     = ahi_pci_get_irq(dev);
+  card->chiprev = inb_config(PCI_REVISION_ID, dev);
+  card->model   = inw_config(PCI_SUBSYSTEM_ID, dev);
 
-  /*IExec->DebugPrintF("---> chiprev = %u, model = %x, Vendor = %x\n", dev->ReadConfigByte( PCI_REVISION_ID), dev->ReadConfigWord( PCI_SUBSYSTEM_ID),
+  /*DebugPrintF("---> chiprev = %u, model = %x, Vendor = %x\n", dev->ReadConfigByte( PCI_REVISION_ID), dev->ReadConfigWord( PCI_SUBSYSTEM_ID),
                      dev->ReadConfigWord( PCI_SUBSYSTEM_VENDOR_ID));*/
 
 
   /* Initialize chip */
   if( card_init( card ) < 0 )
   {
-    IExec->DebugPrintF("Unable to initialize Card subsystem.");
+    DebugPrintF("Unable to initialize Card subsystem.");
     return NULL;
   }
 
-
-  //IExec->DebugPrintF("INTERRUPT %lu\n", dev->MapInterrupt());
-  IExec->AddIntServer(dev->MapInterrupt(), &card->interrupt );
+  //DebugPrintF("INTERRUPT %lu\n", dev->MapInterrupt());
+  ahi_pci_add_intserver(&card->interrupt, dev);
   card->interrupt_added = TRUE;
-  
 
   card->card_initialized = TRUE;
   card->input          = 0;
@@ -182,35 +196,37 @@ AllocDriverData( struct PCIDevice *dev,
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_RESET, 0);
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_ADCMIX_L, 0); //(CMPCI_SB16_MIXER_LINE_SRC_R << 1) ); // set input to line
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_ADCMIX_R, 0); //CMPCI_SB16_MIXER_LINE_SRC_R);
-  
+
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_OUTMIX, 0); // set output mute off for line and CD
-  
+
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_VOICE_L, 0xFF); // PCM
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_VOICE_R, 0xFF);
-  
+
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_CDDA_L, 0x00);
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_CDDA_R, 0x00);
-  
+
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_LINE_L, 0x00);
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_LINE_R, 0x00);
-  
-  byte = dev->InByte(card->iobase + CMPCI_REG_MIXER25);
-  dev->OutByte(card->iobase + CMPCI_REG_MIXER25, byte & ~0x30); // mute Aux
-  dev->OutByte(card->iobase + CMPCI_REG_MIXER25, byte & ~0x01); // turn on mic 20dB boost
-  dev->OutByte(card->iobase + CMPCI_REG_MIXER_AUX, 0x00);
-  
-  byte = dev->InByte(card->iobase + CMPCI_REG_MIXER24);
-  dev->OutByte(card->iobase + CMPCI_REG_MIXER24, byte | CMPCI_REG_FMMUTE);
-  
+
+  byte = pci_inb(CMPCI_REG_MIXER25, card);
+  pci_outb(byte & ~0x30, CMPCI_REG_MIXER25, card); // mute Aux
+  pci_outb(byte & ~0x01, CMPCI_REG_MIXER25, card); // turn on mic 20dB boost
+  pci_outb(0x00, CMPCI_REG_MIXER_AUX, card);
+
+  byte = pci_inb(CMPCI_REG_MIXER24, card);
+  pci_outb(byte | CMPCI_REG_FMMUTE, CMPCI_REG_MIXER24, card);
+
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_MIC, 0x00);
-  
+
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_MASTER_L, 0xFF);
   cmimix_wr(dev, card, CMPCI_SB16_MIXER_MASTER_R, 0xFF);
-  
+
   card->mixerstate = cmimix_rd(dev, card, CMPCI_SB16_MIXER_OUTMIX);
-  
+
+#if !defined(__AROS__)
   AddResetHandler(card);
-  
+#endif
+
   return card;
 }
 
@@ -222,7 +238,7 @@ AllocDriverData( struct PCIDevice *dev,
 // And this code used to be in _AHIsub_FreeAudio().
 
 void
-FreeDriverData( struct CardData* card,
+FreeDriverData( struct CMI8738_DATA* card,
 		struct DriverBase*  AHIsubBase )
 {
   if( card != NULL )
@@ -238,23 +254,23 @@ FreeDriverData( struct CardData* card,
       {
         UWORD cmd;
 
-        cmd = ((struct PCIDevice * ) card->pci_dev)->ReadConfigWord( PCI_COMMAND );
+        cmd = inw_config(PCI_COMMAND, (struct PCIDevice * ) card->pci_dev);
         cmd &= ~( PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER );
-        ((struct PCIDevice * ) card->pci_dev)->WriteConfigWord( PCI_COMMAND, cmd );
+        outw_config(PCI_COMMAND, cmd, (struct PCIDevice * ) card->pci_dev );
       }
     }
 
     if( card->interrupt_added )
     {
-      IExec->RemIntServer(((struct PCIDevice * ) card->pci_dev)->MapInterrupt(), &card->interrupt );
+      ahi_pci_rem_intserver(&card->interrupt, card->pci_dev);
     }
 
-    IExec->FreeVec( card );
+    FreeVec( card );
   }
 }
 
 
-int card_init(struct CardData *card)
+int card_init(struct CMI8738_DATA *card)
 {
     struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
     unsigned short cod;
@@ -263,12 +279,12 @@ int card_init(struct CardData *card)
     ClearMask(dev, card, CMPCI_REG_MISC, CMPCI_REG_POWER_DOWN); // power up
     
     WriteMask(dev, card, CMPCI_REG_MISC, CMPCI_REG_BUS_AND_DSP_RESET);
-    IDOS->Delay(1);
+//    IDOS->Delay(1);
     ClearMask(dev, card, CMPCI_REG_MISC, CMPCI_REG_BUS_AND_DSP_RESET);
 
     /* reset channels */
     WriteMask(dev, card, CMPCI_REG_FUNC_0, CMPCI_REG_CH0_RESET | CMPCI_REG_CH1_RESET);
-     IDOS->Delay(1);
+//     IDOS->Delay(1);
     ClearMask(dev, card, CMPCI_REG_FUNC_0, CMPCI_REG_CH0_RESET | CMPCI_REG_CH1_RESET);
 
     /* Disable interrupts and channels */
@@ -295,7 +311,7 @@ int card_init(struct CardData *card)
 }
 
 
-void card_cleanup(struct CardData *card)
+void card_cleanup(struct CMI8738_DATA *card)
 {
 }
 
@@ -306,7 +322,7 @@ void card_cleanup(struct CardData *card)
 ******************************************************************************/
 
 void
-SaveMixerState( struct CardData* card )
+SaveMixerState( struct CMI8738_DATA* card )
 {
 #if 0
   card->ac97_mic    = codec_read( card, AC97_MIC_VOL );
@@ -320,7 +336,7 @@ SaveMixerState( struct CardData* card )
 
 
 void
-RestoreMixerState( struct CardData* card )
+RestoreMixerState( struct CMI8738_DATA* card )
 {
 #if 0
   codec_write(card, AC97_MIC_VOL,    card->ac97_mic );
@@ -333,7 +349,7 @@ RestoreMixerState( struct CardData* card )
 }
 
 void
-UpdateMonitorMixer( struct CardData* card )
+UpdateMonitorMixer( struct CMI8738_DATA* card )
 {
 #if 0
   int   i  = InputBits[ card->input ];
@@ -489,75 +505,35 @@ SamplerateToLinearPitch( ULONG samplingrate )
 APTR DMAheader = 0;
 #define GFXMEM_BUFFER (64 * 1024) // 64KB should be enough for everyone...
 
-void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress)
+void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int boundary)
 {
-  void* address;
-  unsigned long a;
+    void* address;
+    unsigned long a;
 
-  if (IFakeDMA)
-  {
-        if (size > GFXMEM_BUFFER)
-        {
-            IExec->DebugPrintF("Error allocating memory! Asking %ld bytes\n", size);
-        }
+    address = (void *) AllocVec(size + boundary, MEMF_PUBLIC | MEMF_CLEAR);
 
-        if (DMAheader == 0)
-        {
-            DMAheader = IFakeDMA->AllocDMABuffer(GFXMEM_BUFFER); // alloc once
-        }
-
-        if (DMAheader)
-        {
-			APTR bufStart = IFakeDMA->GetDMABufferAttr(DMAheader, DMAB_PUDDLE );
-			ULONG bufSize = (ULONG)IFakeDMA->GetDMABufferAttr(DMAheader, DMAB_SIZE );
-
-            address = bufStart;
-            *NonAlignedAddress = address;
-
-            a = (unsigned long) address;
-            a = (a + CACHELINE_SIZE - 1) & ~(CACHELINE_SIZE - 1);
-            address = (void *) a;
-
-            return address;
-        }
-  }
-
-  IExec->DebugPrintF("No gfx mem\n");
-  if (IExec->OpenResource("newmemory.resource"))
-  {
-      address = IExec->AllocVecTags(size, AVT_Type, MEMF_SHARED, AVT_Contiguous, TRUE, AVT_Lock, TRUE,
-                                    AVT_PhysicalAlignment, 32, AVT_Clear, 0, TAG_DONE);
-  }
-  else
-  {
-      address = IExec->AllocVec( size + CACHELINE_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
-    
-      if( address != NULL )
-      {
+    if (address != NULL)
+    {
         a = (unsigned long) address;
-        a = (a + CACHELINE_SIZE - 1) & ~(CACHELINE_SIZE - 1);
+        a = (a + boundary - 1) & ~(boundary - 1);
         address = (void *) a;
-      }
-  }
-  
-  *NonAlignedAddress = address;
-  
-  return address;
+    }
+
+    if (NonAlignedAddress)
+    {
+        *NonAlignedAddress = address;
+    }
+
+    return address;
 }
 
 
 void pci_free_consistent(void* addr)
 {
-  if (IFakeDMA)
-  {
-  }
-  else
-  {
-      IExec->FreeVec( addr );
-  }
+    FreeVec(addr);
 }
 
-static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct CardData *card)
+static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct CMI8738_DATA *card)
 {
     struct PCIDevice *dev = card->pci_dev;
     
@@ -567,17 +543,17 @@ static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBa
     return 0UL;
 }
 
-
-void AddResetHandler(struct CardData *card)
+#if !defined(__AROS__)
+void AddResetHandler(struct CMI8738_DATA *card)
 {
     static struct Interrupt interrupt;
 
     interrupt.is_Code = (void (*)())ResetHandler;
     interrupt.is_Data = (APTR) card;
     interrupt.is_Node.ln_Pri  = 0;
-    interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
+    interrupt.is_Node.ln_Type = IRQTYPE;
     interrupt.is_Node.ln_Name = "reset handler";
 
-    IExec->AddResetCallback( &interrupt );
+    AddResetCallback( &interrupt );
 }
-
+#endif

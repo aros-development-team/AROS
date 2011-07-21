@@ -37,7 +37,8 @@ SUBDIRS		= Device Filesave Void
 
 ifneq ($(strip $(HAVE_ASMIO)),)
 SUBDIRS		+= ac97
-SUBDIRS		+= HDAudio 
+SUBDIRS		+= CMI8738
+SUBDIRS		+= HDAudio
 SUBDIRS		+= EMU10kx
 endif
 

@@ -17,10 +17,19 @@ The Original Code is written by Davy Wentzler.
 #include <devices/ahi.h>
 
 #define DRIVER "cmi8738.audio"
+#define DRIVER_NEEDS_GLOBAL_EXECBASE
+
+#ifdef __AROS__
 #define DRIVER_NEED_GLOBAL_EXECBASE
+#endif
+
+#ifdef __amigaos4__
+#define DRIVER_NEED_GLOBAL_EXECBASE
+#endif
+
 #include "DriverBase.h"
 
-struct CardData;
+struct CMI8738_DATA;
 
 struct tester
 {
@@ -31,7 +40,7 @@ struct tester
     int Missed;
 };
 
-struct CardBase
+struct CMI8738Base
 {
     /** Skeleton's variables *************************************************/
 
@@ -44,19 +53,21 @@ struct CardBase
     /** The number of cards found */
     int                    cards_found;
 
-    /** A CardData structure for each card found */
-    struct CardData**   driverdatas;
+    /** A CMI8738_DATA structure for each card found */
+    struct CMI8738_DATA**   driverdatas;
 };
+
+#define DRIVERBASE_SIZEOF (sizeof (struct CMI8738Base))
 
 #define RECORD_BUFFER_SAMPLES     1024
 
 
-struct CardData
+struct CMI8738_DATA
 {
     /*** PCI/Card initialization progress *********************************/
 
     struct PCIDevice    *pci_dev;
-	unsigned long       iobase;
+    APTR       iobase;
 	unsigned long		length;
 	unsigned short		model;
     unsigned char       chiprev;

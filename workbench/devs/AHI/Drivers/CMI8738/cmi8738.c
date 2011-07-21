@@ -9,11 +9,12 @@ limitations under the License.
 The Original Code is written by Davy Wentzler.
 */
 
-#include <config.h>
+//#include <config.h>
 
+#if !defined(__AROS__)
 #undef __USE_INLINE__
 #include <proto/expansion.h>
-
+#endif
 
 #include <devices/ahi.h>
 #include <exec/memory.h>
@@ -23,18 +24,19 @@ The Original Code is written by Davy Wentzler.
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
-#include <proto/fakedma.h>
+
+#ifdef __AROS__
+#include <aros/debug.h>
+#define DebugPrintF bug
+#endif
 #include <math.h>
 #include <string.h>
 
-#include "library_card.h"
+#include "library.h"
 #include "regs.h"
 #include "misc.h"
-#include "DriverData.h"
+#include "pci_wrapper.h"
 
-extern struct UtilityIFace*        IUtility;
-extern struct AHIsubIFace*         IAHIsub;
-extern struct MMUIFace*            IMMU;
 extern int z;
 
 /******************************************************************************
@@ -117,37 +119,37 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
 		    struct AHIAudioCtrlDrv* AudioCtrl,
 		    struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
 
   int   card_num;
   ULONG ret;
   int   i, freq = 6;
 
-  card_num = ( IUtility->GetTagData( AHIDB_AudioID, 0, taglist) & 0x0000f000 ) >> 12;
+  card_num = ( GetTagData( AHIDB_AudioID, 0, taglist) & 0x0000f000 ) >> 12;
   
-  if( card_num >= CardBase->cards_found ||
-      CardBase->driverdatas[ card_num ] == NULL )
+  if( card_num >= CMI8738Base->cards_found ||
+      CMI8738Base->driverdatas[ card_num ] == NULL )
   {
-    IExec->DebugPrintF("no date for card = %ld\n", card_num);
-    Req( "No CardData for card %ld.", card_num );
+    DebugPrintF("no date for card = %ld\n", card_num);
+    Req( "No CMI8738_DATA for card %ld.", card_num );
     return AHISF_ERROR;
   }
   else
   {
-    struct CardData* card;
+    struct CMI8738_DATA* card;
     BOOL in_use;
     struct PCIDevice *dev;
 
-    card  = CardBase->driverdatas[ card_num ];
+    card  = CMI8738Base->driverdatas[ card_num ];
     AudioCtrl->ahiac_DriverData = card;
 
-    IExec->ObtainSemaphore( &CardBase->semaphore );
+    ObtainSemaphore( &CMI8738Base->semaphore );
     in_use = ( card->audioctrl != NULL );
     if( !in_use )
     {
       card->audioctrl = AudioCtrl;
     }
-    IExec->ReleaseSemaphore( &CardBase->semaphore );
+    ReleaseSemaphore( &CMI8738Base->semaphore );
 
     if( in_use )
     {
@@ -202,18 +204,18 @@ void
 _AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
 		   struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-  struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
+  struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
 
   if( card != NULL )
   {
-    IExec->ObtainSemaphore( &CardBase->semaphore );
+    ObtainSemaphore( &CMI8738Base->semaphore );
     if( card->audioctrl == AudioCtrl )
     {
       // Release it if we own it.
       card->audioctrl = NULL;
     }
-    IExec->ReleaseSemaphore( &CardBase->semaphore );
+    ReleaseSemaphore( &CMI8738Base->semaphore );
 
     AudioCtrl->ahiac_DriverData = NULL;
   }
@@ -228,11 +230,11 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
 
   // V6 drivers do not have to preserve all registers
 
-  IExec->Disable();
+  Disable();
 }
 
 
@@ -244,11 +246,11 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
 
   // V6 drivers do not have to preserve all registers
 
-  IExec->Enable();
+  Enable();
 }
 
 
@@ -261,8 +263,8 @@ _AHIsub_Start( ULONG                   flags,
 	       struct AHIAudioCtrlDrv* AudioCtrl,
 	       struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-  struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
+  struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
   struct PCIDevice *dev = card->pci_dev;
   UWORD PlayCtrlFlags = 0, RecCtrlFlags = 0;
   ULONG dma_buffer_size = 0;
@@ -298,7 +300,7 @@ _AHIsub_Start( ULONG                   flags,
        it might not be filled by the mixer software interrupt because of
        pretimer/posttimer! */
 
-    card->mix_buffer = IExec->AllocVec( AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR );
+    card->mix_buffer = AllocVec( AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR );
 
     if( card->mix_buffer == NULL )
     {
@@ -322,9 +324,9 @@ _AHIsub_Start( ULONG                   flags,
       dma_buffer_size = AudioCtrl->ahiac_MaxBuffSamples * dma_sample_frame_size;
     }
 
-    //IExec->DebugPrintF("dma_buffer_size = %ld, AudioCtrl->ahiac_BuffSize = %ld, AudioCtrl->ahiac_MaxBuffSamples = %ld\nAudioCtrl->ahiac_BuffSamples = %ld", dma_buffer_size, AudioCtrl->ahiac_BuffSize, AudioCtrl->ahiac_MaxBuffSamples, AudioCtrl->ahiac_BuffSamples);
+    //DebugPrintF("dma_buffer_size = %ld, AudioCtrl->ahiac_BuffSize = %ld, AudioCtrl->ahiac_MaxBuffSamples = %ld\nAudioCtrl->ahiac_BuffSamples = %ld", dma_buffer_size, AudioCtrl->ahiac_BuffSize, AudioCtrl->ahiac_MaxBuffSamples, AudioCtrl->ahiac_BuffSamples);
  
-    card->playback_buffer = pci_alloc_consistent(dma_buffer_size * 2, &card->playback_buffer_nonaligned);
+    card->playback_buffer = pci_alloc_consistent(dma_buffer_size * 2, &card->playback_buffer_nonaligned, 128);
 
     if (!card->playback_buffer)
     {
@@ -343,20 +345,22 @@ _AHIsub_Start( ULONG                   flags,
     WritePartialMask(dev, card, CMPCI_REG_FUNC_1, CMPCI_REG_DAC_FS_SHIFT, CMPCI_REG_DAC_FS_MASK, FrequencyBits[freqbit]);
     WritePartialMask(dev, card, CMPCI_REG_CHANNEL_FORMAT, CMPCI_REG_CH0_FORMAT_SHIFT, CMPCI_REG_CH0_FORMAT_MASK, ChannelsFlag);
     WriteMask(dev, card, CMPCI_REG_CHANNEL_FORMAT, (13 << 1));
-    
+
+#if !defined(__AROS__)
     if (IFakeDMA == NULL)
     {
-        stack = IExec->SuperState();
+        stack = SuperState();
         card->playback_buffer_phys = IMMU->GetPhysicalAddress(card->playback_buffer);
-        IExec->UserState(stack);
+        UserState(stack);
     }
     else
+#endif
         card->playback_buffer_phys = card->playback_buffer;
-    //IExec->DebugPrintF("ADDR = %lx\n", card->playback_buffer_phys);
+    //DebugPrintF("ADDR = %lx\n", card->playback_buffer_phys);
     
-    dev->OutLong(card->iobase + CMPCI_REG_DMA0_BASE, card->playback_buffer_phys);
-    dev->OutWord(card->iobase + CMPCI_REG_DMA0_LENGTH, (dma_buffer_size / dma_sample_frame_size) * 2 - 1);
-    dev->OutWord(card->iobase + CMPCI_REG_DMA0_INTLEN, (dma_buffer_size / dma_sample_frame_size) - 1);
+    pci_outl(card->playback_buffer_phys, CMPCI_REG_DMA0_BASE, card );
+    pci_outw((dma_buffer_size / dma_sample_frame_size) * 2 - 1, CMPCI_REG_DMA0_LENGTH, card);
+    pci_outw((dma_buffer_size / dma_sample_frame_size) - 1, CMPCI_REG_DMA0_INTLEN, card);
     
     card->is_playing = TRUE;
   }
@@ -370,11 +374,11 @@ _AHIsub_Start( ULONG                   flags,
     card->current_record_bytesize = RECORD_BUFFER_SAMPLES * 4;
 
     /* Allocate a new recording buffer (page aligned!) */
-    card->record_buffer = pci_alloc_consistent(card->current_record_bytesize * 2, &card->record_buffer_nonaligned);
+    card->record_buffer = pci_alloc_consistent(card->current_record_bytesize * 2, &card->record_buffer_nonaligned, 128);
 
     if( card->record_buffer == NULL )
     {
-      Req( "Unable to allocate %ld bytes for the recording buffer.", card->current_record_bytesize);
+      Req( "Unable to allocate %ld bytes for the recording buffer.", card->current_record_bytesize, 128);
       return AHIE_NOMEM;
     }
 
@@ -398,9 +402,9 @@ _AHIsub_Start( ULONG                   flags,
          break;
          
      case 3: // Aux
-         byte = dev->InByte(card->iobase + CMPCI_REG_MIXER25);
+         byte = pci_inb(CMPCI_REG_MIXER25, card);
          byte |= 0x30;
-         dev->OutByte(card->iobase + CMPCI_REG_MIXER25, byte); // unmute Aux
+         pci_outb(byte, CMPCI_REG_MIXER25, card); // unmute Aux
          break;
      
      default:
@@ -414,21 +418,23 @@ _AHIsub_Start( ULONG                   flags,
     WritePartialMask(dev, card, CMPCI_REG_FUNC_1, CMPCI_REG_ADC_FS_SHIFT, CMPCI_REG_ADC_FS_MASK, FrequencyBits[freqbit]);
     WritePartialMask(dev, card, CMPCI_REG_CHANNEL_FORMAT, CMPCI_REG_CH1_FORMAT_SHIFT, CMPCI_REG_CH1_FORMAT_MASK, CMPCI_REG_FORMAT_16BIT | CMPCI_REG_FORMAT_STEREO);
     
+#if !defined(__AROS__)
     if (IFakeDMA == NULL)
     {
-        stack = IExec->SuperState();
+        stack = SuperState();
         card->record_buffer_phys = IMMU->GetPhysicalAddress(card->record_buffer);
-        IExec->UserState(stack);
+        UserState(stack);
     }
     else
+#endif
         card->record_buffer_phys = card->record_buffer;
 
     
-    dev->OutLong(card->iobase + CMPCI_REG_DMA1_BASE, card->record_buffer_phys);
+    pci_outl(card->record_buffer_phys, CMPCI_REG_DMA1_BASE, card);
     //IDOS->Delay(1);
-    dev->OutWord(card->iobase + CMPCI_REG_DMA1_LENGTH, (card->current_record_bytesize / 4) * 2 - 1);
+    pci_outw((card->current_record_bytesize / 4) * 2 - 1, CMPCI_REG_DMA1_LENGTH, card);
     //IDOS->Delay(1);
-    dev->OutWord(card->iobase + CMPCI_REG_DMA1_INTLEN, (card->current_record_bytesize / 4) - 1);
+    pci_outw((card->current_record_bytesize / 4) - 1, CMPCI_REG_DMA1_INTLEN, card);
     //IDOS->Delay(1);
     card->current_record_buffer = card->record_buffer + card->current_record_bytesize;
     card->is_recording = TRUE;
@@ -460,8 +466,8 @@ _AHIsub_Update( ULONG                   flags,
 		struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-  struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
+  struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
 #if 0
   card->current_frames = AudioCtrl->ahiac_BuffSamples;
 
@@ -486,8 +492,8 @@ _AHIsub_Stop( ULONG                   flags,
 	      struct AHIAudioCtrlDrv* AudioCtrl,
 	      struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-  struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
+  struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
   struct PCIDevice *dev = card->pci_dev;
 
 
@@ -508,11 +514,11 @@ _AHIsub_Stop( ULONG                   flags,
     card->current_buffer   = NULL;
 
     if ( card->mix_buffer)
-       IExec->FreeVec( card->mix_buffer );
+       FreeVec( card->mix_buffer );
     card->mix_buffer = NULL;
     card->playback_interrupt_enabled = FALSE;
     card->current_bytesize = 0;
-    //IExec->DebugPrintF("#IRQ's = %ld\n", z);
+    //DebugPrintF("#IRQ's = %ld\n", z);
   }
 
   if( flags & AHISF_RECORD && card->is_recording)
@@ -538,8 +544,8 @@ _AHIsub_Stop( ULONG                   flags,
          break;
          
      case 3: // Aux
-         byte = dev->InByte(card->iobase + CMPCI_REG_MIXER25);
-         dev->OutByte(card->iobase + CMPCI_REG_MIXER25, byte & ~0x30); // mute Aux
+         byte = pci_inb(CMPCI_REG_MIXER25, card);
+         pci_outb(byte & ~0x30, CMPCI_REG_MIXER25, card); // mute Aux
          break;
      
      default:
@@ -574,7 +580,7 @@ _AHIsub_GetAttr( ULONG                   attribute,
 		 struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
   int i;
 
 
@@ -621,14 +627,14 @@ _AHIsub_GetAttr( ULONG                   attribute,
       return (LONG) "Davy Wentzler";
 
     case AHIDB_Copyright:
-      return (LONG) "(C) Davy Wentzler";
+      return (LONG) "(C) 2011 The AROS Dev Team";
 
     case AHIDB_Version:
       return (LONG) LibIDString;
 
     case AHIDB_Annotation:
       return (LONG)
-   	"OS4 PPC native driver";
+        "AROS CMI8738 Audio driver";
 
     case AHIDB_Record:
       return TRUE;
@@ -696,8 +702,8 @@ _AHIsub_HardwareControl( ULONG                   attribute,
 			 struct AHIAudioCtrlDrv* AudioCtrl,
 			 struct DriverBase*      AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-  struct CardData* card = (struct CardData*) AudioCtrl->ahiac_DriverData;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
+  struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
   struct PCIDevice *dev = card->pci_dev;
   unsigned char byte;
 
@@ -705,7 +711,7 @@ _AHIsub_HardwareControl( ULONG                   attribute,
   {
     case AHIC_MonitorVolume:
       card->monitor_volume = Linear2MixerGain( (Fixed) argument, &card->monitor_volume_bits );
-      //IExec->DebugPrintF("card->monitor_volume = %lu, %lx\n", card->monitor_volume, card->monitor_volume);
+      //DebugPrintF("card->monitor_volume = %lu, %lx\n", card->monitor_volume, card->monitor_volume);
       if( card->is_recording )
       {
          UpdateMonitorMixer( card );
@@ -755,8 +761,8 @@ _AHIsub_HardwareControl( ULONG                   attribute,
             break;
             
         case 3: // Aux
-            byte = dev->InByte(card->iobase + CMPCI_REG_MIXER25);
-            dev->OutByte(card->iobase + CMPCI_REG_MIXER25, byte | 0xC0); // rec source Aux
+            byte = pci_inb(CMPCI_REG_MIXER25, card);
+            pci_outb(byte | 0xC0, CMPCI_REG_MIXER25, card); // rec source Aux
             break;
         
         case 4: // SPDIF

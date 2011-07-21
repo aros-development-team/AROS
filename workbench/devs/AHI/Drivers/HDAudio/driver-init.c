@@ -7,7 +7,6 @@
 #include <clib/alib_protos.h>
 #ifdef __AROS__
 #include <aros/debug.h>
-struct ExecBase*  SysBase = NULL;
 struct DosLibrary* DOSBase;
 #endif
 #include <stdlib.h>

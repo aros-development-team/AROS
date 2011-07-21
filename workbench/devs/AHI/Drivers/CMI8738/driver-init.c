@@ -9,40 +9,48 @@ limitations under the License.
 The Original Code is written by Davy Wentzler.
 */
 
-#include <config.h>
+//#include <config.h>
 
 #include <exec/memory.h>
 
+#if !defined(__AROS__)
 #undef __USE_INLINE__
 #include <proto/expansion.h>
+#endif
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/fakedma.h>
 
-#include "library_card.h"
+#ifdef __AROS__
+#include <aros/debug.h>
+#define DebugPrintF bug
+#endif
+
+#include "library.h"
 #include "version.h"
 #include "misc.h"
 #include "regs.h"
-#include "DriverData.h"
+
+#include "pci_wrapper.h"
 
 struct DriverBase* AHIsubBase;
 
+struct DosLibrary* DOSBase;
 struct Library*             ExpansionBase = NULL;
-struct ExpansionIFace*      IExpansion = NULL;
-//struct DOSIFace*            IDOS    = NULL;
-struct UtilityIFace*        IUtility = NULL;
-struct AHIsubIFace*         IAHIsub = NULL;
-struct PCIIFace*            IPCI = NULL;
-struct MMUIFace*            IMMU          = NULL;
-struct Library *FakeDMABase = NULL;
-struct FakeDMAIFace *IFakeDMA = NULL;
 
+struct VendorDevice
+{
+    UWORD vendor;
+    UWORD device;
+};
 
 #define VENDOR_ID 0x13F6
 #define DEVICE_ID 0x0111
 #define CARD_STRING "CMI8738"
+#define MAX_DEVICE_VENDORS 512
 
+struct VendorDevice *vendor_device_list = NULL;
+static int vendor_device_list_size = 0;
 
 /******************************************************************************
 ** Custom driver init *********************************************************
@@ -51,17 +59,17 @@ struct FakeDMAIFace *IFakeDMA = NULL;
 BOOL
 DriverInit( struct DriverBase* ahisubbase )
 {
-  struct CardBase* CardBase = (struct CardBase*) ahisubbase;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) ahisubbase;
   struct PCIDevice   *dev;
-  int                 card_no;
+  int                 card_no, i;
 
-  //IExec->DebugPrintF("DRIVERINIT\n");
+  //DebugPrintF("DRIVERINIT\n");
 
-  CardBase->driverdatas = 0;
-  CardBase->cards_found = 0;
+  CMI8738Base->driverdatas = 0;
+  CMI8738Base->cards_found = 0;
   AHIsubBase = ahisubbase;
-  
-  DOSBase  = IExec->OpenLibrary( DOSNAME, 37 );
+
+  DOSBase  = OpenLibrary( DOSNAME, 37 );
 
   if( DOSBase == NULL )
   {
@@ -69,126 +77,88 @@ DriverInit( struct DriverBase* ahisubbase )
     return FALSE;
   }
 
-  if ((IDOS = (struct DOSIFace *) IExec->GetInterface((struct Library *) DOSBase, "main", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IDOS interface!\n");
-       return FALSE;
-  }
-
-  ExpansionBase = IExec->OpenLibrary( "expansion.library", 1 );
+  ExpansionBase = OpenLibrary( "expansion.library", 1 );
   if( ExpansionBase == NULL )
   {
     Req( "Unable to open 'expansion.library' version 1.\n" );
     return FALSE;
   }
-  if ((IExpansion = (struct ExpansionIFace *) IExec->GetInterface((struct Library *) ExpansionBase, "main", 1, NULL)) == NULL)
+
+  if (!ahi_pci_init(ahisubbase))
   {
-       Req("Couldn't open IExpansion interface!\n");
-       return FALSE;
+    return FALSE;
   }
 
-  if ((IPCI = (struct PCIIFace *) IExec->GetInterface((struct Library *) ExpansionBase, "pci", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IPCI interface!\n");
-       return FALSE;
-  }
-  
-  if ((IAHIsub = (struct AHIsubIFace *) IExec->GetInterface((struct Library *) AHIsubBase, "main", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IAHIsub interface!\n");
-       return FALSE;
-  }
-  
-  if ((IUtility = (struct UtilityIFace *) IExec->GetInterface((struct Library *) UtilityBase, "main", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IUtility interface!\n");
-       return FALSE;
-  }
-
-  if ((IMMU = (struct MMUIFace *) IExec->GetInterface((struct Library *) SysBase, "mmu", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IMMU interface!\n");
-       return FALSE;
-  }
-
-    if(!( FakeDMABase = (struct Library *)IExec->OpenLibrary( "fakedma.library", 52L )))
-	{
-        IExec->DebugPrintF("No fakemda.library found. Using PIO\n");
-	}
-    else
-    {
-    	if(!( IFakeDMA = (struct FakeDMAIFace *)IExec->GetInterface( FakeDMABase, "main", 1L, NULL )))
-    	{
-    		IExec->CloseLibrary( FakeDMABase );
-    	}
-    }
-
-  IExec->InitSemaphore( &CardBase->semaphore );
-
+  InitSemaphore( &CMI8738Base->semaphore );
 
   /*** Count cards ***********************************************************/
 
-  CardBase->cards_found = 0;
+  vendor_device_list = (struct VendorDevice *) AllocVec(sizeof(struct VendorDevice) * MAX_DEVICE_VENDORS, MEMF_PUBLIC | MEMF_CLEAR);
+
+  vendor_device_list[0].vendor = VENDOR_ID;
+  vendor_device_list[0].device = DEVICE_ID;
+  vendor_device_list_size++;
+
+  bug("vendor_device_list_size = %ld\n", vendor_device_list_size);    
+
+  CMI8738Base->cards_found = 0;
   dev = NULL;
 
-  if ( (dev = IPCI->FindDeviceTags( FDT_VendorID, VENDOR_ID, // while
-				  FDT_DeviceID, DEVICE_ID, //FDT_INDEX, CardBase->cards_found,
-				  TAG_DONE ) ) != NULL )
+  for (i = 0; i < vendor_device_list_size; i++)
   {
-    ++CardBase->cards_found;
-//    IExec->DebugPrintF("%s found! :-)\n", CARD_STRING);
+    dev = ahi_pci_find_device(vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
+        
+    if (dev != NULL)
+    {
+      bug("Found CMI8738 #%d [%4x:%4x]\n", i, vendor_device_list[i].vendor, vendor_device_list[i].device);
+      ++CMI8738Base->cards_found;
+      break; // stop at first found controller
+    }
   }
-  
+
   // Fail if no hardware is present (prevents the audio modes from being added to
   // the database if the driver cannot be used).
 
-  if(CardBase->cards_found == 0 )
+  if(CMI8738Base->cards_found == 0 )
   {
-    IExec->DebugPrintF("No %s found! :-(\n", CARD_STRING);
+    DebugPrintF("No CMI8738 found! :-(\n");
     Req( "No card present.\n" );
     return FALSE;
   }
 
-  if (dev->Lock(EXCLUSIVE_LOCK) == FALSE)
-  {
-     IExec->DebugPrintF("CMI8738: Couldn't lock the device\n");
-     return FALSE;
-  }
-
   /*** CAMD ******************************************************************/
 #if 0
-  IExec->InitSemaphore( &CardBase->camd.Semaphore );
-  CardBase->camd.Semaphore.ss_Link.ln_Pri  = 0;
+  InitSemaphore( &CMI8738Base->camd.Semaphore );
+  CMI8738Base->camd.Semaphore.ss_Link.ln_Pri  = 0;
 
-  CardBase->camd.Semaphore.ss_Link.ln_Name = Card_CAMD_SEMAPHORE;
-  IExec->AddSemaphore( &CardBase->camd.Semaphore );
+  CMI8738Base->camd.Semaphore.ss_Link.ln_Name = Card_CAMD_SEMAPHORE;
+  AddSemaphore( &CMI8738Base->camd.Semaphore );
   
-  CardBase->camd.Cards    = CardBase->cards_found;
-  CardBase->camd.Version  = VERSION;
-  CardBase->camd.Revision = REVISION;
+  CMI8738Base->camd.Cards    = CMI8738Base->cards_found;
+  CMI8738Base->camd.Version  = VERSION;
+  CMI8738Base->camd.Revision = REVISION;
 
 
-  CardBase->camd.OpenPortFunc.h_Entry    = OpenCAMDPort;
-  CardBase->camd.OpenPortFunc.h_SubEntry = NULL;
-  CardBase->camd.OpenPortFunc.h_Data     = NULL;
+  CMI8738Base->camd.OpenPortFunc.h_Entry    = OpenCAMDPort;
+  CMI8738Base->camd.OpenPortFunc.h_SubEntry = NULL;
+  CMI8738Base->camd.OpenPortFunc.h_Data     = NULL;
 
-  CardBase->camd.ClosePortFunc.h_Entry    = (HOOKFUNC) CloseCAMDPort;
-  CardBase->camd.ClosePortFunc.h_SubEntry = NULL;
-  CardBase->camd.ClosePortFunc.h_Data     = NULL;
+  CMI8738Base->camd.ClosePortFunc.h_Entry    = (HOOKFUNC) CloseCAMDPort;
+  CMI8738Base->camd.ClosePortFunc.h_SubEntry = NULL;
+  CMI8738Base->camd.ClosePortFunc.h_Data     = NULL;
 
-  CardBase->camd.ActivateXmitFunc.h_Entry    = (HOOKFUNC) ActivateCAMDXmit;
-  CardBase->camd.ActivateXmitFunc.h_SubEntry = NULL;
-  CardBase->camd.ActivateXmitFunc.h_Data     = NULL;
+  CMI8738Base->camd.ActivateXmitFunc.h_Entry    = (HOOKFUNC) ActivateCAMDXmit;
+  CMI8738Base->camd.ActivateXmitFunc.h_SubEntry = NULL;
+  CMI8738Base->camd.ActivateXmitFunc.h_Data     = NULL;
 #endif
-  
 
   /*** Allocate and init all cards *******************************************/
 
-  CardBase->driverdatas = IExec->AllocVec( sizeof( *CardBase->driverdatas ) *
-				       CardBase->cards_found,
+  CMI8738Base->driverdatas = AllocVec( sizeof( *CMI8738Base->driverdatas ) *
+				       CMI8738Base->cards_found,
 				       MEMF_PUBLIC );
 
-  if( CardBase->driverdatas == NULL )
+  if( CMI8738Base->driverdatas == NULL )
   {
     Req( "Out of memory." );
     return FALSE;
@@ -196,15 +166,17 @@ DriverInit( struct DriverBase* ahisubbase )
 
   card_no = 0;
 
-  if( ( dev = IPCI->FindDeviceTags( FDT_VendorID, VENDOR_ID, // while
-				  FDT_DeviceID, DEVICE_ID, //FDT_INDEX, CardBase->cards_found,
-				  TAG_DONE ) ) != NULL )
+  if(dev)
   {
-    CardBase->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
+    CMI8738Base->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
+    if (CMI8738Base->driverdatas[card_no] == NULL)
+    {
+	return FALSE;
+    }
     ++card_no;
   }
 
-  //IExec->DebugPrintF("exit init\n");
+  //DebugPrintF("exit init\n");
   return TRUE;
 }
 
@@ -216,61 +188,25 @@ DriverInit( struct DriverBase* ahisubbase )
 VOID
 DriverCleanup( struct DriverBase* AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
+  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
   int i;
   
-  
-#if 0
-  if( CardBase->camd.Semaphore.ss_Link.ln_Name != NULL )
+  for( i = 0; i < CMI8738Base->cards_found; ++i )
   {
-    IExec->ObtainSemaphore( &CardBase->camd.Semaphore );
-    IExec->RemSemaphore( &CardBase->camd.Semaphore );
-    IExec->ReleaseSemaphore( &CardBase->camd.Semaphore );
-  }
-#endif
-  for( i = 0; i < CardBase->cards_found; ++i )
-  {
-    if (CardBase->driverdatas)
-    {
-        if (CardBase->driverdatas)
-        {
-            CardBase->driverdatas[i]->pci_dev->Unlock();
-            FreeDriverData( CardBase->driverdatas[ i ], AHIsubBase );
-        }
-    }
+    FreeDriverData( CMI8738Base->driverdatas[ i ], AHIsubBase );
   }
 
-  if (CardBase->driverdatas)
-      IExec->FreeVec( CardBase->driverdatas ); 
-  
-  if (IFakeDMA)
-      IExec->DropInterface( (struct Interface *)IFakeDMA );
+  FreeVec( CMI8738Base->driverdatas ); 
 
-  if (FakeDMABase)
-      IExec->CloseLibrary( FakeDMABase );
-
-  if (IUtility)
-    IExec->DropInterface( (struct Interface *) IUtility);
-
-  if (IExpansion)
-    IExec->DropInterface( (struct Interface *) IExpansion);
-
-  if (IPCI)
-    IExec->DropInterface( (struct Interface *) IPCI);
-
-  if (IAHIsub)
-    IExec->DropInterface( (struct Interface *) IAHIsub);
-
-  if (IDOS)
-    IExec->DropInterface( (struct Interface *) IDOS);
+  ahi_pci_exit();
 
   if (ExpansionBase)
-    IExec->CloseLibrary( (struct Library*) ExpansionBase);
+    CloseLibrary( (struct Library*) ExpansionBase);
 
   if (UtilityBase)
-    IExec->CloseLibrary( (struct Library*) UtilityBase);
+    CloseLibrary( (struct Library*) UtilityBase);
 
   if (DOSBase)
-    IExec->CloseLibrary( (struct Library*) DOSBase);
+    CloseLibrary( (struct Library*) DOSBase);
 }
 

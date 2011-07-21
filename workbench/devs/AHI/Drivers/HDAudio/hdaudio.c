@@ -518,7 +518,7 @@ LONG _AHIsub_GetAttr(ULONG attribute,
           return (LONG) "Davy Wentzler";
 
         case AHIDB_Copyright:
-          return (LONG) "(C) Stephen Jones";
+          return (LONG) "(C) 2011 The AROS Dev Team";
 
         case AHIDB_Version:
           return (LONG) LibIDString;
