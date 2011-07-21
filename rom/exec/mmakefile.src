@@ -33,7 +33,7 @@ ALL_FUNCTIONS := \
 	addresetcallback remresetcallback doresetcallbacks newcreatetaska
 
 INIT_FILES := exec_init prepareexecbase
-FILES	   := alertextra alert_cpu systemalert initkicktags \
+FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
 	      memory memory_nommu mungwall traphandler exec_debug exec_util
 
 # platform.h can be overriden in arch-specific directory

@@ -140,7 +140,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     char *args;
     APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
     APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
-    struct Task *t, tmptask;
+    struct Task *t;
     struct MemList *ml;
     IPTR tmpstack[4];
 
@@ -168,13 +168,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     /* Allocate memory for library base */
     totalsize = negsize + sizeof(struct IntExecBase);
     SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, MEMF_CLEAR, NULL) + negsize);
-
-    /* Initialize temperaroy task and stack.
-       End of stack may be used during function calling
-    */
-    SysBase->ThisTask = &tmptask;
-    tmptask.tc_SPLower = tmpstack;
-    tmptask.tc_SPUpper = tmpstack + sizeof(tmpstack);
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data */
@@ -252,19 +245,16 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     InitSemaphore(&PrivExecBase(SysBase)->LowMemSem);
 
     SysBase->SoftVer        = VERSION_NUMBER;
-
     SysBase->MaxLocMem      = (IPTR)mh->mh_Upper;
-
     SysBase->Quantum        = 4;
-
     SysBase->TaskTrapCode   = Exec_TrapHandler;
     SysBase->TaskExceptCode = NULL;
     SysBase->TaskExitCode   = Exec_TaskFinaliser;
     SysBase->TaskSigAlloc   = 0xFFFF;
     SysBase->TaskTrapAlloc  = 0;
 
-    /* Default frequencies */
-    SysBase->VBlankFrequency = 50;
+    /* Default frequencies. FIXME: PowerSupplyFrequency is still used as a multiplier in i386-pc port. */
+    SysBase->VBlankFrequency      = 50;
     SysBase->PowerSupplyFrequency = 1;
 
     /* Parse some arguments from command line */
@@ -307,33 +297,48 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 
     SetSysBaseChkSum();
 
-    /* Create boot task */
-    ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-    t  = (struct Task *)   AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-    if( !ml || !t )
+    /*
+     * Create boot task skeleton.
+     * This is told to be needed for ABIv1 libc (??? what does libc do at RTF_SINGLETASK level ???).
+     * Let's remember that it's boot-time MemHeader. It can be small and/or slow, so keep amount of
+     * allocations at minimum. We'll complete our task later, in exec.library normal init.
+     * Yes, AllocMem() and not direct stdAlloc(), because boot task will be freed when it's done,
+     * and its allocation needs to be mungwall-aware.
+     *
+     * FIXME: In future when memory protection is implemented, AllocMem() may represent a problem here
+     * because it's going to rely on functional kernel.resource. Is it okay to move boot task allocation
+     * to delayed init code in AddResource() ?  This only may represent a problem with old native i386 and
+     * PPC ports, which use own init code, which can be badly compatible with the base code. Merge is really
+     * needed.
+     */
+    t = AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
+    D(bug("[exec] Boot task 0x%p\n", t));
+    if (!t)
     {
 	DINIT("ERROR: Cannot create Boot Task!");
-	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+	return NULL;
     }
-
-    D(bug("[exec] Boot task: MemList 0x%p, task 0x%p\n", ml, t));
-
-    ml->ml_NumEntries = 1;
-    ml->ml_ME[0].me_Addr = t;
-    ml->ml_ME[0].me_Length = sizeof(struct Task);
 
     NEWLIST(&t->tc_MemEntry);
 
-    AddHead(&t->tc_MemEntry,&ml->ml_Node);
-
     t->tc_Node.ln_Name = "Boot Task";
     t->tc_Node.ln_Type = NT_TASK;
-    t->tc_Node.ln_Pri = 0;
-    t->tc_State = TS_RUN;
-    t->tc_SigAlloc = 0xFFFF;
-    t->tc_SPLower = AllocMem(AROS_STACKSIZE, MEMF_ANY);
-    t->tc_SPUpper = t->tc_SPLower + AROS_STACKSIZE;
+    t->tc_Node.ln_Pri  = 0;
+    t->tc_State	       = TS_RUN;
+    t->tc_SigAlloc     = 0xFFFF;
+    /*
+     * Boot-time stack can be placed anywhere in memory.
+     * In order to avoid complex platform-dependent mechanism for querying its limits
+     * we simply shut up stack checking in kernel.resource by specifying the whole address
+     * space as limits.
+     */
+    t->tc_SPLower      = NULL;
+    t->tc_SPUpper      = (APTR)~0;
 
+    /*
+     * Set the current task and elapsed time for it. However, multitasking is
+     * not started up yet (and can't, because this is just a barebone task.
+     */
     SysBase->ThisTask = t;
     SysBase->Elapsed = SysBase->Quantum;
 
