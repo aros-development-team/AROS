@@ -240,7 +240,7 @@ STATIC CONST IPTR lokeymap[] =
     /*---- 2nd QWERTY row - 0x10 to 0x1F */
     BYTES(0x8C,0x9C,'Q' ,'q' ),
     BYTES(0x84,0x82,'W' ,'w' ),
-    BYTES(0xC9,0x80,'E' ,'e' ),
+    BYTES(0xC9,EUR ,'E' ,'e' ),
     BYTES(0x89,0xAE,'R' ,'r' ),
     BYTES('.' ,0x86,'T' ,'t' ),
     BYTES('.' ,0xA5,'Y' ,'y' ),
