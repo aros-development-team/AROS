@@ -229,7 +229,7 @@ struct PopupMenuBase {
 	struct Library		pmb_Library;
 	BPTR			pmb_SegList;
 	ULONG			pmb_Flags;
-	struct Library		*pmb_ExecBase;		/* Theese library */
+	struct Library		*pmb_ExecBase;		/* These library */
 	struct Library		*pmb_UtilityBase;	/* pointers are   */
 	struct Library		*pmb_IntuitionBase;	/* valid as long  */
 	struct Library		*pmb_GfxBase;		/* as pm lib      */
