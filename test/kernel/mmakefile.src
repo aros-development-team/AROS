@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := allocator kernelattrs stackcheck
+FILES := allocator kernelattrs mmap stackcheck
 
 EXEDIR := $(AROS_TESTS)/kernel
 
