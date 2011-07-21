@@ -15,8 +15,6 @@
 #include <exec/alerts.h>
 #include <exec/tasks.h>
 #include <hardware/intbits.h>
-#include <hardware/custom.h>
-#include <dos/dosextens.h>
 
 #include <aros/symbolsets.h>
 #include <aros/system.h>
@@ -34,17 +32,20 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "etask.h"
+#include "intservers.h"
 #include "memory.h"
 
 #include LC_LIBDEFS_FILE
 
 static const UBYTE name[];
 static const UBYTE version[];
-static const struct TagItem resTags[];
+
+/* This comes from genmodule */
 extern const char LIBEND;
-AROS_UFP3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
-    AROS_UFPA(ULONG, dummy, D0),
-    AROS_UFPA(BPTR, segList, A0),
+
+AROS_UFP3S(struct ExecBase *, GM_UNIQUENAME(init),
+    AROS_UFPA(struct MemHeader *, mh, D0),
+    AROS_UFPA(struct TagItem *, tagList, A0),
     AROS_UFPA(struct ExecBase *, sysBase, A6));
 
 const struct Resident Exec_resident =
@@ -52,158 +53,104 @@ const struct Resident Exec_resident =
     RTC_MATCHWORD,
     (struct Resident *)&Exec_resident,
     (APTR)&LIBEND,
-    RTF_SINGLETASK | RTF_EXTENDED,
+    RTF_SINGLETASK,
     VERSION_NUMBER,
     NT_LIBRARY,
     120,
     (STRPTR)name,
     (STRPTR)&version[6],
     &GM_UNIQUENAME(init),
-    REVISION_NUMBER,
-    (struct TagItem *)&resTags[0],
 };
 
 static const UBYTE name[] = MOD_NAME_STRING;
 static const UBYTE version[] = VERSION_STRING;
-static const struct TagItem resTags[] = {
-    {RTT_STARTUP, (IPTR)PrepareExecBase},
-    {TAG_DONE   , 0              }
-};
 
 extern void debugmem(void);
-
-/* IntServer:
-    This interrupt handler will send an interrupt to a series of queued
-    interrupt servers. Servers should return D0 != 0 (Z clear) if they
-    believe the interrupt was for them, and no further interrupts will
-    be called. This will only check the value in D0 for non-m68k systems,
-    however it SHOULD check the Z-flag on 68k systems.
-
-    Hmm, in that case I would have to separate it from this file in order
-    to replace it...
-*/
-AROS_UFH5S(void, IntServer,
-    AROS_UFHA(ULONG, intMask, D0),
-    AROS_UFHA(struct Custom *, custom, A0),
-    AROS_UFHA(struct List *, intList, A1),
-    AROS_UFHA(APTR, intCode, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-
-    struct Interrupt * irq;
-
-    ForeachNode(intList, irq)
-    {
-	if( AROS_UFC4(int, irq->is_Code,
-		AROS_UFCA(struct Custom *, custom, A0),
-		AROS_UFCA(APTR, irq->is_Data, A1),
-		AROS_UFCA(APTR, irq->is_Code, A5),
-		AROS_UFCA(struct ExecBase *, SysBase, A6)
-	))
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-	    ;
-#else
-	    break;
-#endif
-    }
-
-    AROS_USERFUNC_EXIT
-}
-
-/* VBlankServer. The same as general purpose IntServer but also counts task's quantum */
-AROS_UFH5S(void, VBlankServer,
-    AROS_UFHA(ULONG, intMask, D1),
-    AROS_UFHA(struct Custom *, custom, A0),
-    AROS_UFHA(struct List *, intList, A1),
-    AROS_UFHA(APTR, intCode, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-
-    struct Interrupt *irq;
-
-    /* First decrease Elapsed time for current task */
-    if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
-    {
-        SysBase->SysFlags |= SFF_QuantumOver;
-        SysBase->AttnResched |= ARF_AttnSwitch;
-    }
-
-    ForeachNode(intList, irq)
-    {
-	if( AROS_UFC4(int, irq->is_Code,
-		AROS_UFCA(struct Custom *, custom, A0),
-		AROS_UFCA(APTR, irq->is_Data, A1),
-		AROS_UFCA(APTR, irq->is_Code, A5),
-		AROS_UFCA(struct ExecBase *, SysBase, A6)
-	))
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-	    ;
-#else
-	    break;
-#endif
-    }
-
-    AROS_USERFUNC_EXIT
-}
-
-extern ULONG SoftIntDispatch();
 
 THIS_PROGRAM_HANDLES_SYMBOLSETS
 DEFINESET(INITLIB)
 
-AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
-    AROS_UFHA(ULONG, dummy, D0),
-    AROS_UFHA(BPTR, segList, A0),
+AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
+    AROS_UFHA(struct MemHeader *, mh, D0),
+    AROS_UFHA(struct TagItem *, tagList, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
 
     struct Task *t;
-    int i, j;
-    UWORD sum;
-    UWORD *ptr;
+    struct MemList *ml;
+    struct ExceptionContext *ctx;
+    int i;
 
     /*
-     * Please do not do this here.
-     * Global SysBase is set up earlier, in PrepareExecBase(). This assignment
-     * causes crash on kernels using write-protected zeropage (like x86-64).
-     * Memory protection is set up by kernel.resource before entering this code.
+     * exec.library init routine is a little bit magic. The magic is that it
+     * can be run twice.
+     * First time it's run manually from kernel.resource's ROMTag scanner in order
+     * to create initial ExecBase. This condition is determined by SysBase == NULL
+     * passed to this function. In this case the routine expects two more arguments:
+     * mh      - an initial MemHeader in which ExecBase will be constructed.
+     * tagList - boot information passed from the bootstrap. It is used to parse
+     *           certain command-line arguments.
      *
-    SysBase = sysBase; */
+     * Second time it's run as part of normal modules initialization sequence, at the
+     * end of all RTS_SINGLETASK modules. At this moment we already have a complete
+     * memory list and working kernel.resource. Now the job is to complete the boot task
+     * structure, and start up multitasking.
+     */
+    if (!SysBase)
+    	return PrepareExecBase(mh, tagList);
 
     DINIT("exec.library init");
 
-    /* Initialise the ETask data. */
+    /*
+     * TODO: Amiga(tm) port may call PrepareExecBaseMove() here instead of hardlinking
+     * it from within the boot code.
+     */
+
+    /*
+     * kernel.resource is up and running and memory list is complete.
+     * Complete boot task with ETask and CPU context.
+     */
     t = SysBase->ThisTask;
 
+    ml                        = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
     t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_ANY|MEMF_CLEAR);
-    if (!t->tc_UnionETask.tc_ETask)
+    ctx                       = KrnCreateContext();
+
+    D(bug("[exec] MemList 0x%p, ETask 0x%p, CPU context 0x%p\n", ml, t->tc_UnionETask.tc_ETask, ctx));
+
+    if (!ml || !t->tc_UnionETask.tc_ETask || !ctx)
     {
 	DINIT("Not enough memory for first task");
-	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+	return NULL;
     }
-    t->tc_Flags |= TF_ETASK;
 
-    D(bug("[exec] ETask 0x%p\n", t->tc_UnionETask.tc_ETask));
+    /*
+     * Build a memory list for the task.
+     * It doesn't include stack because it wasn't allocated by us.
+     */
+    ml->ml_NumEntries      = 1;
+    ml->ml_ME[0].me_Addr   = t;
+    ml->ml_ME[0].me_Length = sizeof(struct Task);
+    AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
     InitETask(t, t->tc_UnionETask.tc_ETask);
-    /* Boot Task does not have a parent */
+
+    /*
+     * These adjustments need to be done after InitETask():
+     * 1. Set et_Parent to NULL, InitETask() will set it to FindTask(NULL). At this moment
+     *    we have SysBase->ThisTask already set to incomplete "boot task".
+     * 2. Set TF_ETASK in tc_Flags. If it will be already set, InitETask() will try to add
+     *    a new ETask into children list of parent ETask (i. e. ourselves).
+     */
     t->tc_UnionETask.tc_ETask->et_Parent = NULL;
+    t->tc_Flags = TF_ETASK;
 
-    GetIntETask(t)->iet_Context = KrnCreateContext();
-    if (!GetIntETask(t)->iet_Context)
-    {
-	DINIT("Not enough memory for first task context");
-	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
-    }
+    GetIntETask(t)->iet_Context = ctx;
 
-    D(bug("[exec] CPU context 0x%p\n", GetIntETask(t)->iet_Context));
-
-    /* Install the interrupt servers */
-    for(i=0; i < 16; i++)
+    /* Install the interrupt servers. Again, do it here because allocations are needed. */
+    for (i=0; i < 16; i++)
     {
 	struct Interrupt *is;
 
@@ -252,20 +199,6 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     Permit();
     Enable();
 
-    /* Now it's time to calculate exec checksum. It will be used
-     * in future to distinguish whether we'd had proper execBase
-     * before restart */
-    sum=0;
-    ptr = &SysBase->SoftVer;
-
-    i=((IPTR)&SysBase->IntVects[0] - (IPTR)&SysBase->SoftVer) / 2;
-
-    /* Calculate sum for every static part from SoftVer to ChkSum */
-    for (j = 0; j < i; j++)
-        sum+=*(ptr++);
-
-    SysBase->ChkSum = ~sum;
-
     D(debugmem());
 
     /* Call platform-specific init code (if any) */
@@ -275,7 +208,7 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
      * This code returns, allowing more RTF_SINGLETASK modules to get initialized after us.
      * Kernel.resource's startup code has to InitCode(RTF_COLDSTART) itself.
      */
-    return NULL;
+    return SysBase;
 
     AROS_USERFUNC_EXIT
 }

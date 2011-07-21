@@ -6,6 +6,7 @@
 */
 
 #include <aros/debug.h>
+#include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
@@ -190,53 +191,52 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     return RomTag;
 }
 
-/* This is PrepareExecBase() calling convention */
-typedef struct ExecBase *(INITFUNC)(struct MemHeader *, struct TagItem *);
-
-struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struct TagItem *bootMsg)
+struct Resident *krnFindResident(struct Resident **resList, const char *name)
 {
     ULONG i;
-    struct Resident **resList = krnRomTagScanner(mh, ranges);
 
     for (i = 0; resList[i]; i++)
     {
-    	/* Locate exec.library */
-    	if (!strcmp(resList[i]->rt_Name, "exec.library"))
-	{
-	    struct ExecBase *sysBase = NULL;
+    	if (!strcmp(resList[i]->rt_Name, name))
+    	    return resList[i];
+    }
+    return NULL;
+}
 
-	    /* Obtain early init routine pointer encoded in its extensions taglist */
-	    if (resList[i]->rt_Flags & RTF_EXTENDED)
-	    {
-		INITFUNC *execBoot = (INITFUNC *)LibGetTagData(RTT_STARTUP, 0, resList[i]->rt_Tags);
+struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struct TagItem *bootMsg)
+{
+    struct Resident **resList = krnRomTagScanner(mh, ranges);
+    struct Resident *exec = krnFindResident(resList, "exec.library");
+    struct ExecBase *sysBase;
 
-		if (!execBoot)
-		    return NULL;
+    if (!exec)
+    	return NULL;
 
-		sysBase = execBoot(mh, bootMsg);
-		if (sysBase)
-		{
-		    sysBase->ResModules = resList;
+    /* Magic. Described in rom/exec/exec_init.c. */
+    sysBase = AROS_UFC3(struct ExecBase *, exec->rt_Init,
+                	AROS_UFCA(struct MemHeader *, mh, D0),
+                	AROS_UFCA(struct TagItem *, bootMsg, A0),
+ 	                AROS_UFCA(struct ExecBase *, NULL, A6));
+
+    if (sysBase)
+    {
+	sysBase->ResModules = resList;
 
 #ifndef NO_RUNTIME_DEBUG
-		    /* Print out modules list if requested by the user */
-		    if (SysBase->ex_DebugFlags & EXECDEBUGF_INITCODE)
-		    {
-			bug("Resident modules (addr: pri flags version name):\n");
+	/* Print out modules list if requested by the user */
+	if (SysBase->ex_DebugFlags & EXECDEBUGF_INITCODE)
+	{
+	    ULONG i;
 
-			for (i = 0; resList[i]; i++)
-			{
-			    bug("+ %p: %4d %02x %3d \"%s\"\n", resList[i], resList[i]->rt_Pri,
-				resList[i]->rt_Flags, resList[i]->rt_Version, resList[i]->rt_Name);
-			}
-		    }
-#endif
-		}
+	    bug("Resident modules (addr: pri flags version name):\n");
+
+	    for (i = 0; resList[i]; i++)
+	    {
+		bug("+ %p: %4d %02x %3d \"%s\"\n", resList[i], resList[i]->rt_Pri,
+		    resList[i]->rt_Flags, resList[i]->rt_Version, resList[i]->rt_Name);
 	    }
-
-	    return sysBase;
 	}
+#endif
     }
-
-    return NULL;
+    return sysBase;
 }

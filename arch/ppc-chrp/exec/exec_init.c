@@ -24,6 +24,7 @@
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "intservers.h"
 #include "memory.h"
 
 #undef KernelBase
@@ -56,20 +57,6 @@ static inline void bug(const char *format, ...)
     va_end(args);
 }
 
-AROS_UFP5(void, SoftIntDispatch,
-          AROS_UFPA(ULONG, intReady, D1),
-          AROS_UFPA(struct Custom *, custom, A0),
-          AROS_UFPA(IPTR, intData, A1),
-          AROS_UFPA(IPTR, intCode, A5),
-          AROS_UFPA(struct ExecBase *, SysBase, A6));
-
-AROS_UFP5S(void, IntServer,
-    AROS_UFPA(ULONG, intMask, D0),
-    AROS_UFPA(struct Custom *, custom, A0),
-    AROS_UFPA(struct List *, intList, A1),
-    AROS_UFPA(APTR, intCode, A5),
-    AROS_UFPA(struct ExecBase *, SysBase, A6));
-
 const char exec_name[] = "exec.library";
 const char exec_idstring[] = "$VER: exec 41.11 (16.12.2000)\r\n";
 const char exec_fastname[] = "System Memory";
@@ -90,6 +77,9 @@ const struct __attribute__((section(".text"))) Resident Exec_resident =
         (STRPTR)exec_idstring,  /* Ditto */
         exec_main               /* Library initializer (for exec this value is irrelevant since we've jumped there at the begining to bring the system up */
 };
+
+THIS_PROGRAM_HANDLES_SYMBOLSETS
+DEFINESET(INITLIB)
 
 void exec_main(struct TagItem *msg, void *entry)
 {
@@ -372,9 +362,7 @@ void exec_main(struct TagItem *msg, void *entry)
             /* Initialise the ETask data. */
             InitETask(t, t->tc_UnionETask.tc_ETask);
 
-            GetIntETask(t)->iet_Context = AllocMem(SIZEOF_ALL_REGISTERS
-                , MEMF_PUBLIC|MEMF_CLEAR
-            );
+            GetIntETask(t)->iet_Context = KrnCreateContext();
 
             if (!GetIntETask(t)->iet_Context)
             {
@@ -618,41 +606,6 @@ struct Library * PrepareAROSSupportBase(struct ExecBase *SysBase)
     AROSSupportBase->vkprintf = (void *)__vkprintf;
 
     return (struct Library *)AROSSupportBase;
-}
-
-/* IntServer:
-    This interrupt handler will send an interrupt to a series of queued
-    interrupt servers. Servers should return D0 != 0 (Z clear) if they
-    believe the interrupt was for them, and no further interrupts will
-    be called. This will only check the value in D0 for non-m68k systems,
-    however it SHOULD check the Z-flag on 68k systems.
-
-    Hmm, in that case I would have to separate it from this file in order
-    to replace it...
-*/
-AROS_UFH5S(void, IntServer,
-    AROS_UFHA(ULONG, intMask, D0),
-    AROS_UFHA(struct Custom *, custom, A0),
-    AROS_UFHA(struct List *, intList, A1),
-    AROS_UFHA(APTR, intCode, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-
-    struct Interrupt * irq;
-
-    ForeachNode(intList, irq)
-    {
-        if( AROS_UFC4(int, irq->is_Code,
-                AROS_UFCA(struct Custom *, custom, A0),
-                AROS_UFCA(APTR, irq->is_Data, A1),
-                AROS_UFCA(APTR, irq->is_Code, A5),
-                AROS_UFCA(struct ExecBase *, SysBase, A6)
-        ))
-            break;
-    }
-
-    AROS_USERFUNC_EXIT
 }
 
 void _aros_not_implemented(char *string) {}

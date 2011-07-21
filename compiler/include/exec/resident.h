@@ -49,10 +49,4 @@ struct Resident
 #define RTW_NEVER      (0)
 #define RTW_COLDSTART  (1)
 
-/*
- * Tag specifying pointer to resident's early startup code.
- * AROS-specific, used by exec.library.
- */
-#define RTT_STARTUP	(TAG_USER + 0x04AF1234)
-
 #endif /* EXEC_RESIDENT_H */
