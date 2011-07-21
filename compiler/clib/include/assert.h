@@ -14,7 +14,10 @@
 #undef assert
 
 #ifdef NDEBUG
-#define assert(expr)	do { if (expr); } while (0)
+/* According to POSIX.1-2001, assert() must generate no code
+ * if NDEBUG is defined.
+ */
+#define assert(expr)	((void)0)
 #else
 #define assert(expr)	(((expr)) ? (void)0 : __assert(#expr,__FILE__,__LINE__))
 #endif
