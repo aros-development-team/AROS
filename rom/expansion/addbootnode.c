@@ -127,37 +127,43 @@
 
     /* See if DOS is up and running... */
     DOSBase = OpenLibrary("dos.library", 0);
-    if (DOSBase == NULL) {
-    /* Don't add the same node twice */
-    ForeachNode(&ExpansionBase->MountList, bn)
+    if (DOSBase == NULL)
     {
-        if(stricmp(AROS_BSTR_ADDR(((struct DeviceNode *) bn->bn_DeviceNode)->dn_Name), AROS_BSTR_ADDR(deviceNode->dn_Name)) == 0)
+        /* Don't add the same node twice */
+        ForeachNode(&ExpansionBase->MountList, bn)
         {
-            // so there was already an entry with that DOS name.
-            D(bug("[AddBootNode] Rejecting attempt to add duplicate device\n"));
+            if (stricmp(AROS_BSTR_ADDR(
+                ((struct DeviceNode *) bn->bn_DeviceNode)->dn_Name),
+                AROS_BSTR_ADDR(deviceNode->dn_Name)) == 0)
+            {
+                /* so there was already an entry with that DOS name */
+                D(bug("[AddBootNode] Rejecting attempt to add duplicate device\n"));
+                return FALSE;
+            }
+        }
+
+        if ((bn = AllocMem(sizeof(struct BootNode), MEMF_CLEAR | MEMF_PUBLIC)))
+        {
+            bn->bn_Node.ln_Name = (STRPTR)configDev;
+            bn->bn_Node.ln_Type = NT_BOOTNODE;
+            bn->bn_Node.ln_Pri = bootPri;
+            bn->bn_Flags = flags;
+            bn->bn_DeviceNode = deviceNode;
+            D(bug("[AddBootNode] Add BootNode %p to the MountList\n", bn));
+            Forbid();
+            Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
+            Permit();
+        }
+        else
+        {
             return FALSE;
         }
-    }
 
-    if((bn = AllocMem(sizeof(struct BootNode), MEMF_CLEAR|MEMF_PUBLIC)))
-    {
-        bn->bn_Node.ln_Name = (STRPTR)configDev;
-        bn->bn_Node.ln_Type = NT_BOOTNODE;
-        bn->bn_Node.ln_Pri = bootPri;
-        bn->bn_Flags = flags;
-        bn->bn_DeviceNode = deviceNode;
-        D(bug("[AddBootNode] Add BootNode %p to the MountList\n", bn));
-        Forbid();
-        Enqueue( &ExpansionBase->MountList, (struct Node *)bn );
-        Permit();
-    } else {
-        return FALSE;
-    }
-
-        /* If DOS isn't up yet, that's fine. 
-         */
+        /* If DOS isn't up yet, that's fine */
         ok = TRUE;
-    } else {
+    }
+    else
+    {
         /* We should add the filesystem to the DOS device list. It will
          * be usable from this point onwards.
          *
@@ -165,16 +171,21 @@
          * to the DOS list as it is, and we will let DOS start the
          * filesystem task if it is necessary to do so.
          */
-        if (AddDosEntry((struct DosList *)deviceNode)) {
-            if (!(flags & ADNF_STARTPROC)) {
+        if (AddDosEntry((struct DosList *)deviceNode))
+        {
+            if (!(flags & ADNF_STARTPROC))
+            {
                 ok = TRUE;
-            } else {
+            }
+            else
+            {
                 STRPTR dosname;
                 BYTE len = AROS_BSTR_strlen(deviceNode->dn_Name);
 
                 /* append a colon to the name, DeviceProc() needs a full path */
                 dosname = AllocVec(len + 1 + 1, MEMF_ANY);
-                if (dosname) {
+                if (dosname)
+                {
                     CopyMem(AROS_BSTR_ADDR(deviceNode->dn_Name), dosname, len);
                     dosname[len++] = ':';
                     dosname[len++] = 0;
