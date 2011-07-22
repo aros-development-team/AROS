@@ -156,7 +156,7 @@ static VOID PrintProcessorInformation()
 }
 
 int __nocommandline;
-char __stdiowin[]="CON://700//ShowConfig/AUTO/CLOSE/WAIT";
+char __stdiowin[]="CON://800/400/ShowConfig/AUTO/CLOSE/WAIT";
 
 int main()
 {
