@@ -12,7 +12,6 @@ cpu_SuperState:
 	movq	%rsp, %rax		// return int handler stack
 	movq	24(%rax),%rsp		// use user stack
 	pushq	(%rax)			// push return address
-UserStateExit:
 	ret				// return from SuperState() call
 
 	.size  cpu_SuperState, .-cpu_SuperState
@@ -24,8 +23,16 @@ AROS_SLIB_ENTRY(UserState, Exec, 26):
 	// Supervisor return stack is already in rdi
 	movq	%rsp, 24(%rdi)			// put USP onto exception stack frame
 	movq	%rdi, %rsp			// SSP = SP
-	leaq	UserStateExit(%rip), %rax
+	leaq	cpu_UserState(%rip), %rax
 	movq	%rax, (%rsp)			// return at this address
 	iretq
 
 	.size  AROS_SLIB_ENTRY(UserState, Exec, 26), .-AROS_SLIB_ENTRY(UserState, Exec, 26)
+
+	.type   cpu_UserState, @function
+cpu_UserState:
+	mov	%ss, %ax		// SS now contains user-mode data segment. Copy it to DS.
+	mov	%ax, %ds
+	ret
+
+	.size  cpu_UserState, .-cpu_UserState
