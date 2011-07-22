@@ -152,24 +152,12 @@ core_DefaultIRETQ:
 	.type core_Supervisor, @function
 
 core_Supervisor:
-	movl	Flags(%rdi), %eax	// The same as above, but chains to the routine pointed to by RDI
-	test	$ECF_SEGMENTS, %eax	// Used for Supervisor() implementation.
-	je	noSegments2		// We could use int 0x81 with the only jmpq *%rdi instruction,
-	movq	reg_ds(%rdi), %rax	// but it's easier to jump to such code ocassionally. I hope
-	mov	%ax, %ds		// it's not a big speed loss
-	movq	reg_es(%rdi), %rax
-	mov	%ax, %es
-	movq	reg_fs(%rdi), %rax
-	mov	%ax, %fs
-	movq	reg_gs(%rdi), %rax
-	mov	%ax, %gs
-noSegments2:
-	movq	%rdi, %rsp
-	popq	%rax
-	popq	%rax
-	popq	%rbx
-	popq	%rcx
-	popq	%rdx
+	movq	%rdi, %rsp		// Similar to above, but does not restore segment registers, and
+	popq	%rax			// chains to the routine pointed to by RDI.
+	popq	%rax			// Used for Supervisor() implementation.
+	popq	%rbx			// We could use int 0x81 with the only jmpq *%rdi instruction,
+	popq	%rcx			// but it's easier to jump to such code ocassionally. I hope
+	popq	%rdx			// it's not a big speed loss
 	popq	%rsi
 	popq	%rdi
 	popq	%r8

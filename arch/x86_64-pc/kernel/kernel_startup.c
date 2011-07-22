@@ -27,6 +27,8 @@
 #include "apic.h"
 #include "tls.h"
 
+#define DSTACK(x)
+
 /* Common IBM PC memory layout */
 static const struct MemRegion PC_Memory[] =
 {
@@ -75,16 +77,14 @@ IPTR __startup start64(struct TagItem *msg, ULONG magic)
  * Its main job is to initialize early debugging console ASAP in order to be able
  * to see what happens. This will deal with both serial and on-screen console.
  *
- * This address is selected for console mirror because:
- * a) The bootstrap is placed at 0x1000000. It has already done its job and we can reuse its memory.
- * b) 0x1000 is added in order not to overlap with MemHeader and first MemChunk. We are running on a
- *    PC, so we know, that a new physical memory region always starts at 0x100000 (1MB). When memory map
- *    is converted into exec lists by mmap_InitMemory(), a MemHeader and first MemChunk will be placed in
- *    the start of the region. 4KB is more than enough not to clash with it.
+ * Console mirror is placed at the end of bootstrap's protected area. We must not
+ * overwrite it because it contains boot-time GDT, taglist, and some other structures.
+ *
+ * Default address is bootstrap start + 4KB, just in case.
  */
 static void boot_start(struct TagItem *msg)
 {
-    fb_Mirror = (void *)0x101000;
+    fb_Mirror = (void *)LibGetTagData(KRN_ProtAreaEnd, 0x101000, msg);
     con_InitTagList(msg);
 
     bug("AROS64 - The AROS Research OS, 64-bit version. Compiled %s\n", __DATE__);
@@ -109,13 +109,13 @@ void core_Kick(struct TagItem *msg, void *target)
 
     /*
      * ... then switch to initial stack and jump to target address.
-     * We set rbp to 0 here in order to get correct stack traces
+     * We set rbp to 0 and use call here in order to get correct stack traces
      * if the boot task crashes. Otherwise backtrace goes beyond this location
      * into memory areas with undefined contents.
      */
     asm volatile("movq %1, %%rsp\n\t"
     		 "movq $0, %%rbp\n\t"
-    		 "jmp *%2\n"::"D"(msg), "r"(boot_stack + STACK_SIZE - 16), "r"(target));
+    		 "call *%2\n"::"D"(msg), "r"(boot_stack + STACK_SIZE), "r"(target));
 }
 
 /* Print panic string and halt */
@@ -148,6 +148,7 @@ void kernel_cstart(const struct TagItem *msg)
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
 
     D(bug("[Kernel] Boot data: 0x%p\n", __KernBootPrivate));
+    DSTACK(bug("[Kernel] Boot stack: 0x%p - 0x%p\n", boot_stack, boot_stack + STACK_SIZE));
     if (__KernBootPrivate == NULL)
     {
     	/* This is our first start. */
@@ -499,12 +500,6 @@ struct gdt_64bit
     } tss[16];
 };
 
-struct gdt_selector
-{
-    uint16_t size;
-    uint64_t base;
-} __attribute__((packed));
-
 void core_SetupGDT(struct KernBootPrivate *__KernBootPrivate)
 {
     IPTR  _APICBase;
@@ -627,8 +622,15 @@ void core_CPUSetup(IPTR _APICBase)
      	 */
      	if (!__KernBootPrivate->SystemStack)
     	    __KernBootPrivate->SystemStack = (IPTR)krnAllocBootMem(STACK_SIZE * 3);
+    	
+    	DSTACK(bug("[Kernel] Allocated supervisor stack 0x%p - 0x%p\n",
+    		   __KernBootPrivate->SystemStack, __KernBootPrivate->SystemStack + STACK_SIZE * 3));
     }
     /*
+     * At the moment two of three stacks are reserved. IST is not used (indexes == 0 in interrupt gates)
+     * and ring 1 is not used either. However, the space pointed to by IST is used as a temporary stack
+     * for warm restart routine.
+     *
      * FIXME: Other CPUs should have own supervisor stacks. They can't allocate them because:
      * 1. __KernBootPrivate is already sealed up. The memory behind it is given up
      *    to the OS.
@@ -639,11 +641,11 @@ void core_CPUSetup(IPTR _APICBase)
      * In fact the bootstrap CPU could allocate these stacks before actually running these CPUs.
      */
 
-    TSS[_APICID].ist1 = __KernBootPrivate->SystemStack + STACK_SIZE     - 16;
-    TSS[_APICID].rsp0 = __KernBootPrivate->SystemStack + STACK_SIZE * 2 - 16;
-    TSS[_APICID].rsp1 = __KernBootPrivate->SystemStack + STACK_SIZE * 3 - 16;
+    TSS[_APICID].ist1 = __KernBootPrivate->SystemStack + STACK_SIZE     - 16;	/* Interrupt stack entry 1 (failsafe)	 */
+    TSS[_APICID].rsp0 = __KernBootPrivate->SystemStack + STACK_SIZE * 2 - 16;	/* Ring 0 (Supervisor)		 	*/
+    TSS[_APICID].rsp1 = __KernBootPrivate->SystemStack + STACK_SIZE * 3 - 16;	/* Ring 1 (reserved)		 	*/
 
-    bug("[Kernel] core_CPUSetup[%d]: Reloading the GDT and Task Register\n", _APICID);
+    D(bug("[Kernel] core_CPUSetup[%d]: Reloading the GDT and Task Register\n", _APICID));
 
     GDT_sel.size = sizeof(struct gdt_64bit) - 1;
     GDT_sel.base = (uint64_t)__KernBootPrivate->GDT;

@@ -6,7 +6,7 @@
 #include "kernel_intern.h"
 #include "apic.h"
 
-#define D(x) x
+#define D(x)
 #define DMMU(x)
 
 void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
@@ -24,7 +24,7 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
     	struct PDPE  *PDP;
     	struct PDE2M *PDE;
 
-        bug("[Kernel] core_SetupMMU[%d]: Re-creating the MMU pages for first 4GB area\n", _APICID);
+        D(bug("[Kernel] core_SetupMMU[%d]: Re-creating the MMU pages for first 4GB area\n", _APICID));
 
     	if (!__KernBootPrivate->PML4)
     	{
@@ -107,11 +107,11 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
         __KernBootPrivate->used_page = 0;
     }
 
-    bug("[Kernel] core_SetupMMU[%d]: Registering New PML4\n", _APICID);
+    D(bug("[Kernel] core_SetupMMU[%d]: Registering New PML4\n", _APICID));
 
     wrcr(cr3, __KernBootPrivate->PML4);
 
-    bug("[Kernel] core_SetupMMU[%d]: PML4 @ %p\n", _APICID, __KernBootPrivate->PML4);
+    D(bug("[Kernel] core_SetupMMU[%d]: PML4 @ %p\n", _APICID, __KernBootPrivate->PML4));
 }
 
 void core_ProtPage(intptr_t addr, char p, char rw, char us)
@@ -139,8 +139,8 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
 
         pte = &Pages4K[512 * __KernBootPrivate->used_page++];
 
-        bug("[Kernel] The page for address 0x%p was a big one. Splitting it into 4K pages\n", addr);
-        bug("[Kernel] Base=0x%p, pte=0x%p\n", base, pte);
+        D(bug("[Kernel] The page for address 0x%p was a big one. Splitting it into 4K pages\n", addr));
+        D(bug("[Kernel] Base=0x%p, pte=0x%p\n", base, pte));
 
         for (i = 0; i < 512; i++)
         {
@@ -172,7 +172,7 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
 
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us)
 {
-    bug("[Kernel] Protecting area 0x%p - 0x%p\n", addr, addr + length - 1);
+    D(bug("[Kernel] Protecting area 0x%p - 0x%p\n", addr, addr + length - 1));
 
     while (length > 0)
     {

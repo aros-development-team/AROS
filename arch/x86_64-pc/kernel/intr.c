@@ -149,6 +149,12 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
+static void core_Reboot(void)
+{
+    /* A second part of the double stack swap */
+    core_Kick(BootMsg, kernel_cstart);
+}
+
 /*
  * This table is used to translate x86 trap number
  * to AmigaOS trap number to be passed to exec exception handler.
@@ -354,15 +360,24 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	switch (sc)
 	{
 	case SC_REBOOT:
-	    D(bug("[Kernel] Warm restart...\n"));
+	    D(bug("[Kernel] Warm restart, stack 0x%p\n", AROS_GET_SP));
 
-	    __asm__ __volatile__("cli; cld;");
 	    /*
-	     * Restart the kernel from kernel_cstart() function reusing already relocated BootMsg.
-	     * Debug output, including split-screen vesahack mode, survives the restart.
-	     * This doesn't return.
+	     * Restart the kernel with a double stack swap. This doesn't return.
+	     * Double swap guarantees that core_Kick() is called when SP is set to a
+	     * dynamically allocated emergency stack and not to boot stack.
+	     * Such situation is rare but can occur in the following situation:
+	     * 1. Boot task calls SuperState(). Privilege changed, but stack is manually reset
+	     *    back into our .bss space.
+	     * 2. Boot task crashes. Privilege doesn't change this time, RSP is not changed.
+	     * 3. If we call core_Kick() right now, we are dead (core_Kick() clears .bss).
 	     */
-	    core_Kick(BootMsg, kernel_cstart);
+	    __asm__ __volatile__(
+	    	"cli\n\t"
+	    	"cld\n\t"
+	    	"movq %0, %%rsp\n\t"
+	    	"jmp *%1\n"
+	    	::"r"(__KernBootPrivate->SystemStack + STACK_SIZE), "r"(core_Reboot));
 
 	case SC_SUPERVISOR:
 	    /* This doesn't return */
