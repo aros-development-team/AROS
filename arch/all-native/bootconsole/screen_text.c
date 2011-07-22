@@ -40,29 +40,17 @@ void txt_Putc(char chr)
     struct scr *view = scr_FrameBuffer;
     unsigned int i;
 
-    switch (chr)
-    {
     /* Ignore null bytes, they are output by formatting routines as terminators */
-    case 0:
+    if (chr == 0)
     	return;
 
-    case '\n':
-    	scr_XPos = 0;
-    	scr_YPos++;
-    	break;
-
-    default:
-        i = 80 * scr_YPos + scr_XPos;
-
-        view[i].sign = chr;
-        scr_XPos++;
-
-        if (scr_XPos == scr_Width)
-        {
-            scr_XPos = 0;
-            scr_YPos++;
-	}
+    /* Reached end of line ? New line if so. */
+    if ((chr == '\n') || (scr_XPos >= scr_Width))
+    {
+        scr_XPos = 0;
+        scr_YPos++;
     }
+
     if (scr_YPos >= scr_Height)
     {
         scr_YPos = scr_Height - 1;
@@ -72,4 +60,11 @@ void txt_Putc(char chr)
         for (i = scr_Width * scr_YPos; i < scr_Width * scr_Height; i++)
             view[i].sign = ' ';
     }
+
+    if (chr == '\n')
+    	return;
+
+    i = 80 * scr_YPos + scr_XPos;
+    view[i].sign = chr;
+    scr_XPos++;
 }
