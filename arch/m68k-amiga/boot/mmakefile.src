@@ -50,7 +50,7 @@ LIBS    := $(addprefix -l,$(USELIBS)) -L$(GENDIR)/lib -lloadseg
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 # Main ROM (0xf80000 - 0xffffff)
-FILES=start early debug
+FILES=start early debug mmu
 AFILES=rom_entry rom_init cpu_detect superstack_swap
 
 # Force rebuilding, so that we always get new date strings
