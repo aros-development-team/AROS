@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a bootable device into the system.
@@ -120,8 +120,14 @@
     APTR DOSBase;
     BOOL ok = FALSE;
 
+    if(deviceNode == NULL)
+        return ok;
+
     D(bug("[AddBootNode] Adding %b from Task %s\n", deviceNode->dn_Name, FindTask(NULL)->tc_Node.ln_Name));
 
+    /* See if DOS is up and running... */
+    DOSBase = OpenLibrary("dos.library", 0);
+    if (DOSBase == NULL) {
     /* Don't add the same node twice */
     ForeachNode(&ExpansionBase->MountList, bn)
     {
@@ -148,9 +154,6 @@
         return FALSE;
     }
 
-    /* See if DOS is up and running... */
-    DOSBase = OpenLibrary("dos.library", 0);
-    if (DOSBase == NULL) {
         /* If DOS isn't up yet, that's fine. 
          */
         ok = TRUE;
