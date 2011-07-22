@@ -54,7 +54,7 @@ int main(void)
         if (type > MMAP_TYPE_ACPINVS)
             type = 0;
 
-	printf("Entry type %d <%s> addr 0x%016llx len 0x%016llx\n", mmap->type, types[type], mmap->addr, mmap->len);
+	printf("Entry type %d <%s> addr 0x%016llx len 0x%016llx\n", mmap->type, types[type], (unsigned long long)mmap->addr, (unsigned long long)mmap->len);
 
         len -= mmap->size + 4;
         mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap + 4);
