@@ -70,7 +70,7 @@ kernel-setup-pc-i386 :
 	%mkdirs_q $(BINDIR)/boot
 	%mkdirs_q $(BINDIR)/boot/grub
 
-#MM kernel-link-pc-i386 : kernel-setup-pc-i386
+#MM kernel-link-pc-i386 : kernel-setup-pc-i386 kernel-pc-i386
 kernel-link-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz $(BINDIR)/boot/aros-usb-pc-i386.gz
 
 #MM
