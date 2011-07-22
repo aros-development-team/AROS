@@ -439,7 +439,7 @@ BOOL __FindDeviceName_WB
         while ((dol = NextDosEntry(dol, LDF_DEVICES | LDF_READ)) != NULL)
         {
             STRPTR devname = AROS_BSTR_ADDR(dol->dol_Name);
-            ULONG len = AROS_BSTR_strlen(devname);
+            ULONG len = AROS_BSTR_strlen(dol->dol_Name);
             TEXT device[len + 2];
             BPTR lock;
 
