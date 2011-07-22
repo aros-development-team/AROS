@@ -62,10 +62,10 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
     trapNum |= AT_DeadEnd;
 
     /*
-     * We must have a valid task in order to be able
+     * We must have a valid ETask in order to be able
      * to display a requester in user mode.
      */
-    if (task && (task->tc_State != TS_REMOVED))
+    if (task && (task->tc_Flags & TF_ETASK) && (task->tc_State != TS_REMOVED))
     {
 	/* Get internal task structure */
         struct IntETask *iet = GetIntETask(task);

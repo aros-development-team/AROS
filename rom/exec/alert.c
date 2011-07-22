@@ -83,7 +83,7 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
 
     D(bug("[exec] Alert 0x%08X\n", alertNum));
 
-    if (task && (task->tc_State != TS_REMOVED))
+    if (task && (task->tc_Flags & TF_ETASK) && (task->tc_State != TS_REMOVED))
     {
 	iet = GetIntETask(task);
 
