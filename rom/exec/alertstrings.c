@@ -9,6 +9,7 @@
 #include <exec/tasks.h>
 #include <libraries/debug.h>
 #include <proto/debug.h>
+#include <proto/kernel.h>
 
 #include "etask.h"
 #include "exec_intern.h"
@@ -505,25 +506,48 @@ STRPTR FormatLocation(STRPTR buf, const char *text, APTR location, struct ExecBa
 
     buf = NewRawDoFmt(text, RAWFMTFUNC_STRING, buf, location) - 1;
 
-    if (DebugBase && DecodeLocation(location,
+    if (DebugBase)
+    {
+        if (DecodeLocation(location,
 				    DL_ModuleName , &modname, DL_SegmentNumber, &segnum ,
 				    DL_SegmentName, &segname, DL_SegmentStart , &segaddr,
 				    DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
 				    TAG_DONE))
-   {	    
-	if (!segname)
-	    segname = "- unknown -";
+	{	    
+	    if (!segname)
+	    	segname = "- unknown -";
 
-	buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, buf, modname, segnum, segname, segaddr, location - segaddr) - 1;
+	    buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, buf, modname, segnum, segname, segaddr, location - segaddr) - 1;
 
-	if (symaddr)
-	{
-	    if (!symname)
-		symname = "- unknown -";
+	    if (symaddr)
+	    {
+	    	if (!symname)
+		    symname = "- unknown -";
 
-	    buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, buf, symname, symaddr, location - symaddr) - 1;
+		buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, buf, symname, symaddr, location - symaddr) - 1;
+	    }
+        }
+    }
+    else if (KernelBase)
+    {
+    	/*
+    	 * If there's no debug.library yet, we likely crashed in boot code.
+    	 * In this case kickstart location information can be helpful.
+    	 * TODO: Perhaps we should get debug info and locate a module manually?
+    	 * It can be not that big code duplication, but will help if the crash
+    	 * happens not in the first module.
+    	 */
+    	struct TagItem *tags = KrnGetBootInfo();
+
+    	if (tags)
+    	{   
+    	    IPTR klow  = LibGetTagData(KRN_KernelLowest, 0, tags);
+	    IPTR kbase = LibGetTagData(KRN_KernelBase, 0, tags);
+	    IPTR khi   = LibGetTagData(KRN_KernelBase, 0, tags);
+
+	    buf = NewRawDoFmt("\nKickstart location: Lowest 0x%p, Base 0x%p, Highest 0x%p\n", RAWFMTFUNC_STRING, buf, klow, kbase, khi) - 1;
 	}
     }
-    
+
     return buf;
 }
