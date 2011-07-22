@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that uses console device for input/output.
@@ -96,7 +96,7 @@ void HandlePendingReads(struct filehandle *fh);
 void add_to_history(struct filehandle *fh);
 void history_walk(struct filehandle *fh, WORD inp);
 
-void process_input(struct filehandle *fh);
+BOOL process_input(struct filehandle *fh);
 
 void replypkt(struct DosPacket *dp, SIPTR res1);
 void replypkt2(struct DosPacket *dp, SIPTR res1, SIPTR res2);
