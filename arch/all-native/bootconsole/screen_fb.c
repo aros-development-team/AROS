@@ -125,29 +125,15 @@ void fb_Clear(void)
 
 void fb_Putc(char chr)
 {
-    switch (chr)
-    {
     /* Ignore null bytes, they are output by formatting routines as terminators */
-    case 0:
+    if (chr == 0)
     	return;
-
-    case '\n':
-    	scr_XPos = 0;
-    	scr_YPos++;
-    	break;
-
-    default:
-    	/* Draw the character at current position */
-	RenderChar(chr, scr_XPos, scr_YPos);
-
-	/* Increment current column */
-    	scr_XPos++;
-	/* Reached end of line ? New line if so. */
-    	if (scr_XPos == scr_Width)
-    	{
-            scr_XPos = 0;
-            scr_YPos++;
-    	}
+ 
+    /* Reached end of line ? New line if so. */
+    if ((chr == '\n') || (scr_XPos >= scr_Width))
+    {
+        scr_XPos = 0;
+        scr_YPos++;
     }
 
     if (scr_YPos >= scr_Height)
@@ -192,4 +178,10 @@ void fb_Putc(char chr)
 	for (xc = 0; xc < destLen; xc++)
 	    RenderChar(0, xc, scr_YPos);
     }
+
+    if (chr == '\n')
+    	return;
+
+    /* Draw the character at current position and increment current column */
+    RenderChar(chr, scr_XPos++, scr_YPos);
 }
