@@ -141,8 +141,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
     APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
     struct Task *t;
-    struct MemList *ml;
-    IPTR tmpstack[4];
 
     /*
      * Copy reset proof pointers if old SysBase is valid.
