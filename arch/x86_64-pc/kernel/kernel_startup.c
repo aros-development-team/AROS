@@ -368,8 +368,9 @@ void kernel_cstart(const struct TagItem *msg)
 	/*
 	 * Fill zero page with garbage in order to detect accesses to it in supervisor mode.
 	 * For user mode we will disable all access to it.
-	 */
-	MUNGE_BLOCK(NULL, 0xABADCAFE, PAGE_SIZE);
+	 * EXPERIMENTAL: disabled because this trashes EBDA, which may contain ACPI RSDP pointer.
+	 *
+	MUNGE_BLOCK(NULL, 0xABADCAFE, PAGE_SIZE); */
 
 	/*
 	 * TODO: We may have SysBase validation code instead of this.
