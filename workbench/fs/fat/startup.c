@@ -19,12 +19,16 @@
 ULONG __abox__ = 1;
 #endif
 
+#ifndef __AROS__
 struct ExecBase *SysBase;
+#endif
 
 extern void handler(void);
 
 void startup (void) {
+#ifndef __AROS__
     SysBase = *(struct ExecBase **)4L;
-    D(bug("[FAT] handler started, ExecBase = 0x%08lX\n"));
+#endif
+    D(bug("[FAT] handler started\n"));
     handler();
 }
