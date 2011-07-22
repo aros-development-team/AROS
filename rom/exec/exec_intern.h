@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private data belonging to exec.library
@@ -74,5 +74,7 @@ void InitResidentList(IPTR *list, ULONG startClass, ULONG version);
 UWORD GetSysBaseChkSum(struct ExecBase *sysbase);
 void SetSysBaseChkSum(void);
 BOOL IsSysBaseValid(struct ExecBase *sysbase);
+
+IPTR cpu_SuperState();
 
 #endif /* __EXEC_INTERN_H__ */

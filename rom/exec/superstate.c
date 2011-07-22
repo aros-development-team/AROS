@@ -1,10 +1,15 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SuperState() - Switch the processor into a higher plane.
     Lang: english
 */
+
+#include <aros/debug.h>
+#include <proto/kernel.h>
+
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -48,16 +53,27 @@
 {
     AROS_LIBFUNC_INIT
 
-    /*  Again see a real implementation for more information.
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+    /*
+     * This part works only on native AROS.
+     * Hosted ports are running in a virtual machine with only single privilege
+     * level available, so this function will simply return NULL.
+     * cpu_SuperState() is an architecture-specific helper code written in asm.
+     */
 
-	You will have to change into supervisor mode, and then change the
-	stack to the original user stack before returning.
-    */
+    int super = KrnIsSuper();
+    
+    D(bug("[SuperState] Current supervisor mode: %d\n", super));
 
-    /* We have to return something. NULL is an invalid address for a
-       stack, so it could be used to say that this function does
-       nothing.
-    */
+    if (!super)
+    {
+        APTR ssp = Supervisor(cpu_SuperState);
+        
+        D(bug("[SuperState] Saved SP 0x%p\n", ssp));
+        return ssp;
+    }
+#endif
+
     return NULL;
 
     AROS_LIBFUNC_EXIT
