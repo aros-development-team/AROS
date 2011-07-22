@@ -30,10 +30,14 @@
 /* Common IBM PC memory layout */
 static const struct MemRegion PC_Memory[] =
 {
-    {0x000000000, 0x000100000, "Low memory"    , -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_31BIT|MEMF_CHIP|MEMF_24BITDMA},
-    {0x000100000, 0x001000000, "ISA DMA memory", -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_31BIT|MEMF_CHIP|MEMF_24BITDMA},
-    {0x001000000, 0x080000000, "31-bit memory" ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_31BIT			},
-    {0x080000000, -1         , "Upper memory"  , 10, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK                                   },
+    {0x000000000, 0x000100000, "Low memory"    , -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
+    {0x000100000, 0x001000000, "ISA DMA memory", -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
+    /*
+     * FIXME: These two entries should also be CHIP. trackdisk.device and i386 port
+     * fix is needed (use MEMF_24BITDMA instead of MEMF_CHIP for 24-bit ISA DMA-capable area.
+     */
+    {0x001000000, 0x080000000, "31-bit memory" ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST|MEMF_31BIT		},
+    {0x080000000, -1         , "Upper memory"  , 10, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST                         },
     {0          , 0          , NULL            ,  0, 0                                                                  }
 };
 
