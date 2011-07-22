@@ -103,8 +103,14 @@ void core_Kick(struct TagItem *msg, void *target)
     if (bss)
     	__clear_bss((const struct KernelBSS *)bss->ti_Data);
 
-    /* ... then switch to initial stack and jump to target address */
+    /*
+     * ... then switch to initial stack and jump to target address.
+     * We set rbp to 0 here in order to get correct stack traces
+     * if the boot task crashes. Otherwise backtrace goes beyond this location
+     * into memory areas with undefined contents.
+     */
     asm volatile("movq %1, %%rsp\n\t"
+    		 "movq $0, %%rbp\n\t"
     		 "jmp *%2\n"::"D"(msg), "r"(boot_stack + STACK_SIZE - 16), "r"(target));
 }
 
