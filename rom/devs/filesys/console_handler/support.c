@@ -828,7 +828,7 @@ static void do_paste(struct filehandle * fh)
 
 /****************************************************************************************/
 
-void process_input(struct filehandle *fh)
+BOOL process_input(struct filehandle *fh)
 {
   UBYTE c;
   WORD inp;
@@ -1006,26 +1006,31 @@ void process_input(struct filehandle *fh)
 	  break;
 	  
 	case INP_EOF:
+	  D(bug("[CON] Read EOF (window closing)\n"));
+
+	  if (fh->flags & FHFLG_WAITFORCLOSE)
+	  	return TRUE;
+
 	  fh->flags |= FHFLG_EOF;
 	  if (fh->flags & FHFLG_AUTO && fh->window)
-	    {
+	  {
 	      CloseWindow(fh->window);
 	      fh->window = NULL;
-	    }
+	  }
 	  
 	  /* fall through */
 	  
 	case INP_RETURN:
 	  if (fh->inputsize < INPUTBUFFER_SIZE)
-	    {
+	  {
 	      if (inp != INP_EOF)
-		{
+	      {
 		  c = '\n';
 		  do_write(fh, &c, 1);
 		  add_to_history(fh);
 		  
 		  fh->inputbuffer[fh->inputsize++] = '\n';
-		}
+	      }
 	      
 	      fh->inputstart = fh->inputsize;
 	      fh->inputpos = fh->inputstart;
@@ -1034,7 +1039,7 @@ void process_input(struct filehandle *fh)
 	      	HandlePendingReads(fh);
 	      
 	      if ((fh->flags & FHFLG_EOF) && (fh->flags & FHFLG_READPENDING))
-		{
+	      {
 		  struct Message *msg = (struct Message*)RemHead((struct List *)&fh->pendingReads);
 		  struct DosPacket *dp = (struct DosPacket*)msg->mn_Node.ln_Name;
 		  
@@ -1046,9 +1051,9 @@ void process_input(struct filehandle *fh)
 		  
 		  if (IsListEmpty(&fh->pendingReads))
 		      fh->flags &= ~FHFLG_READPENDING;
-		}
+	      }
 	      
-	    } /* if (fh->inputsize < INPUTBUFFER_SIZE) */
+	  } /* if (fh->inputsize < INPUTBUFFER_SIZE) */
 	  break;
 	  
 	case INP_LINEFEED:
@@ -1085,6 +1090,8 @@ void process_input(struct filehandle *fh)
 	} /* switch(inp) */
       
     } /* while((inp = scan_input(fh, &c)) != INP_DONE) */
+
+    return FALSE;
 }
 
 

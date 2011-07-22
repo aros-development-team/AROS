@@ -150,19 +150,30 @@ static void close_con(struct filehandle *fh)
 {
 	/* Clean up */
 
-	if (fh->timerreq) {
+	D(bug("[CON] Deleting timer request 0x%p\n", fh->timerreq));
+	if (fh->timerreq)
+	{
 		CloseDevice((struct IORequest *)fh->timerreq);
 		DeleteIORequest((struct IORequest *)fh->timerreq);
 	}
+	
+	D(bug("[CON] Deleting timer port 0x%p\n", fh->timermp));
 	DeleteMsgPort(fh->timermp);
 
 	if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
-    		CloseDevice((struct IORequest *)fh->conreadio);
+	{
+	    D(bug("[CON] Closing console.device...\n"));
+    	    CloseDevice((struct IORequest *)fh->conreadio);
+    	}
 
+	D(bug("[CON] Closing window 0x%p\n", fh->window));
 	if (fh->window)
     		CloseWindow(fh->window);
-	
+
+	D(bug("[CON] Delete console.device IORequest 0x%p\n", fh->conreadio));
 	DeleteIORequest(ioReq(fh->conreadio));
+	
+	D(bug("[CON] Delete console.device MsgPort 0x%p\n", fh->conreadmp));
 	FreeVec(fh->conreadmp);
 
 	if (fh->screenname)
@@ -302,6 +313,32 @@ static void startread(struct filehandle *fh)
 	fh->flags |= FHFLG_ASYNCCONSOLEREAD;
 }
 
+static void stopwait(struct filehandle *fh, struct DosPacket *waitingdp, ULONG result)
+{
+    if (waitingdp)
+    {
+	AbortIO((struct IORequest *)fh->timerreq);
+	WaitIO((struct IORequest *)fh->timerreq);
+	replypkt(waitingdp, result);
+    }
+}
+
+static void stopread(struct filehandle *fh, struct DosPacket *waitingdp)
+{
+    struct Message *msg, *next_msg;
+
+    stopwait(fh, waitingdp, DOSFALSE);
+
+    ForeachNodeSafe(&fh->pendingReads, msg, next_msg)
+    {
+    	struct DosPacket *dpr;
+
+        Remove((struct Node *)msg);
+	dpr = (struct DosPacket*)msg->mn_Node.ln_Name;
+	replypkt(dpr, DOSFALSE);
+    }
+}
+
 LONG CONMain(void)
 {
 	struct MsgPort *mp;
@@ -316,14 +353,14 @@ LONG CONMain(void)
 	mp = &((struct Process*)FindTask(NULL))->pr_MsgPort;
 	WaitPort(mp);
 	dp = (struct DosPacket*)GetMsg(mp)->mn_Node.ln_Name;	
-	D(bug("[CON] startup message received. port=%x path='%b'\n", mp, dp->dp_Arg1));
+	D(bug("[CON] startup message received. port=0x%p path='%b'\n", mp, dp->dp_Arg1));
 
 	fh = open_con(dp, &error);
 	if (!fh) {
 		D(bug("[CON] init failed\n"));
 		goto end;
 	}
-	D(bug("[CON] %x open\n", fh));
+	D(bug("[CON] 0x%p open\n", fh));
 	replypkt(dp, DOSTRUE);
 
     	for(;;)
@@ -345,11 +382,10 @@ LONG CONMain(void)
 		if (sigs & conreadmask) {
 			GetMsg(fh->conreadmp);
 			fh->flags &= ~FHFLG_ASYNCCONSOLEREAD;
-			if (waitingdp) {
-				replypkt(waitingdp, DOSTRUE);
-				AbortIO((struct IORequest *)fh->timerreq);
-				WaitIO((struct IORequest *)fh->timerreq);
-				waitingdp = NULL;
+			if (waitingdp)
+			{
+			    stopwait(fh, waitingdp, DOSTRUE);
+			    waitingdp = NULL;
 			}
 			D(bug("IO_READ %d\n", fh->conreadio->io_Actual));
 	    		fh->conbuffersize = fh->conreadio->io_Actual;
@@ -369,8 +405,16 @@ LONG CONMain(void)
 			} /* if (fh->flags & FHFLG_RAW) */
 			else
 			{
-			    	/* Cooked mode */
-				process_input(fh);
+			    /* Cooked mode */
+			    if (process_input(fh))
+			    {
+			    	/*
+			    	 * process_input() returns TRUE when EOF was received after the WAIT console
+			    	 * has been closed by the owner.
+			    	 */
+			    	dp = NULL;
+				goto end;
+			    }
 			} /* if (fh->flags & FHFLG_RAW) else ... */
 			startread(fh);
 		}
@@ -378,7 +422,7 @@ LONG CONMain(void)
 		while ((mn = GetMsg(mp))) {
 			dp = (struct DosPacket*)mn->mn_Node.ln_Name;	
 			dp->dp_Res2 = 0;
-			D(bug("[CON %x] packet %x:%d %x,%x,%x\n",
+			D(bug("[CON 0x%p] packet 0x%p:%d 0x%p,0x%p,0x%p\n",
 				fh, dp, dp->dp_Type, dp->dp_Arg1, dp->dp_Arg2, dp->dp_Arg3));
 			error = 0;
 			switch (dp->dp_Type)
@@ -398,7 +442,23 @@ LONG CONMain(void)
 					fh->usecount--;
 					D(bug("[CON] usecount=%d\n", fh->usecount));
 					if (fh->usecount <= 0)
+					{
+					    if (fh->flags & FHFLG_WAIT)
+					    {
+					    	D(bug("[CON] Delayed close, waiting...\n"));
+
+						/*
+						 * Bounce all pending read and waits (the same as we do when exiting).
+						 * However the process is still around, waiting for EOF input.
+						 * Our user has just closed his struct FileHandle and dropped us.
+						 */
+					        stopread(fh, waitingdp);
+					        waitingdp = NULL;
+					        fh->flags = (fh->flags & ~FHFLG_READPENDING) | FHFLG_WAITFORCLOSE;
+					    }
+					    else
 						goto end;
+					}
 					replypkt(dp, DOSTRUE);
 				break;
 				case ACTION_READ:
@@ -495,28 +555,30 @@ LONG CONMain(void)
 		}
 	}
 end:
-	D(bug("[CON] %x closing\n", fh));
-	if (fh) {
-    		struct Message *msg, *next_msg;
-		if (waitingdp) {
-			AbortIO((struct IORequest *)fh->timerreq);
-			WaitIO((struct IORequest *)fh->timerreq);
-			replypkt(waitingdp, DOSFALSE);
-		}
-		ForeachNodeSafe(&fh->pendingReads, msg, next_msg)
-		{
-    			struct DosPacket *dpr;
-            		Remove((struct Node *)msg);
-            		dpr = (struct DosPacket*)msg->mn_Node.ln_Name;
-            		replypkt(dpr, DOSFALSE);
-            	}
-		if (fh->flags & FHFLG_ASYNCCONSOLEREAD) {
-    			AbortIO(ioReq(fh->conreadio));
-			WaitIO(ioReq(fh->conreadio));
-		}
-		close_con(fh);
+	D(bug("[CON] 0x%p closing\n", fh));
+	if (fh)
+	{
+	    D(bug("[CON] Cancelling read requests...\n"));
+	    stopread(fh, waitingdp);
+
+	    if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
+	    {
+	    	D(bug("[CON] Aborting console ioReq 0x%p\n", fh->conreadio));
+
+    		AbortIO(ioReq(fh->conreadio));
+		WaitIO(ioReq(fh->conreadio));
+	    }
+
+	    D(bug("[CON] Closing handle...\n"));
+	    close_con(fh);
 	}
-	replypkt(dp, DOSFALSE);
-	D(bug("[CON] %x closed\n", fh));
+	
+	if (dp)
+	{
+	    D(bug("[CON] Replying packet 0x%p\n", dp));
+	    replypkt(dp, DOSFALSE);
+	}
+
+	D(bug("[CON] 0x%p closed\n", fh));
 	return 0;
 }

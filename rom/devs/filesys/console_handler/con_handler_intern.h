@@ -107,6 +107,7 @@ struct filehandle
 #define FHFLG_AUTO  	    	64  /* filename contained AUTO */
 #define FHFLG_CONSOLEDEVICEOPEN 128
 #define FHFLG_EOF   	    	256
+#define FHFLG_WAITFORCLOSE	512 /* Console with WAIT is waiting to be closed */
 
 #undef InputBase
 #undef IntuitionBase
