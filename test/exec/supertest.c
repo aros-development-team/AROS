@@ -65,8 +65,6 @@ int main(void)
     APTR KernelBase = OpenResource("kernel.resource");
     struct Task *me = FindTask(NULL);
     APTR ssp;
-    IPTR ar;
-    int issuper = 0;
 
     Printf("GetCC()             : %04lx\n",GetCC());
     Printf("SetSR()             : %08lx\n",SetSR(0,0));
@@ -77,22 +75,36 @@ int main(void)
     Printf("Task stack          : 0x%p - 0x%p\n", me->tc_SPLower, me->tc_SPUpper);
     Printf("Supervisor stack    : 0x%p - 0x%p\n", SysBase->SysStkLower, SysBase->SysStkUpper);
 
-#ifdef HAVE_ASM_CODE
     ssp = SuperState();
+    if (ssp)
+    {
+        bug("Entered SuperState...\n");
 
-    ar = a();
-    if (KernelBase)
-    	issuper = KrnIsSuper();
+        int issuper = 0;
+#ifdef HAVE_ASM_CODE
+        IPTR ar = a();
+#endif
 
-    UserState(ssp);
+        if (KernelBase)
+    	    issuper = KrnIsSuper();
 
-    Printf("Supervisor mode test: %d\n", issuper);
-    Printf("Supervisor flags    : 0x%p\n", ar);
+	bug("Leaving SuperState...\n");
+    	UserState(ssp);
+
+	if (KernelBase)
+	    Printf("Supervisor mode test: %d\n", issuper);
+
+	Printf("Saved stack         : 0x%p\n", ssp);
+#ifdef HAVE_ASM_CODE
+	Printf("Supervisor flags    : 0x%p\n", ar);
+#endif
+    }
+    else
+       	Printf("!!! SuperState() failed to enter supervisor mode (returned NULL) !!!\n");
+
+#ifdef HAVE_ASM_CODE
     Printf("User flags          : 0x%p\n", a());
-    Printf("Saved stack         : 0x%p\n", ssp);
     Printf("Supervisor stack    : 0x%p\n", Supervisor(b));
-#else
-    Printf("This test is not implemented for this CPU\n");
 #endif
 
     return 0;
