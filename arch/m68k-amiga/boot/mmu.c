@@ -8,6 +8,7 @@
 #include <proto/utility.h>
 #include <libraries/configvars.h>
 
+#define ZeroPageInvalid 1
 
 #define _STR(A) #A
 #define STR(A) _STR(A)
@@ -124,8 +125,15 @@ static AROS_UFH3 (APTR, Init,
 	/* Move VBR to Fast RAM (Preparation for SysBase is the only valid address in "zero page") */
 	vbr = AllocMem(256 * sizeof(ULONG), MEMF_PUBLIC);
 	if (vbr) {
-		CopyMem(0, vbr, 256 * sizeof(ULONG));
+		ULONG *zero = (ULONG*)0;
+		CopyMem(zero, vbr, 256 * sizeof(ULONG));
 		swapvbr(vbr);
+		/* Corrupt original zero page vectors, makes bad programs crash faster if we don't
+		 * want MMU special zero page handling */
+		for (i = 0; i < 64; i++) {
+			if (i != 1)
+				zero[i] = 0xdeadf00d;
+		}
 	}
 
 	/* RAM */
@@ -156,11 +164,14 @@ static AROS_UFH3 (APTR, Init,
 			mmuram(KernelBase, addr, size);
 	}
 	FreeVec(memheaders);
-	/* Write protect "Zero page"
-	 * Enforcer-like read-protection would be nice, later..
-	 * (ExecBase special handling is complex)
+	/* Mark "zero page" invalid, MMU support handles ExecBase fetches transparently.
+	 * Special bus error handler checks if access was LONG READ from address 4.
 	 */
-	KrnSetProtection(0, PAGE_SIZE, MAP_Readable | MAP_CacheInhibit);
+	if (ZeroPageInvalid)
+		KrnSetProtection(0, PAGE_SIZE, 0);
+	else
+		KrnSetProtection(0, PAGE_SIZE, MAP_Readable | MAP_CacheInhibit);
+	
 
 	/* Expansion IO devices */
 	ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
@@ -186,7 +197,8 @@ static AROS_UFH3 (APTR, Init,
 		addr = 0x00d80000;
 	mmuio(KernelBase, addr, 0x00e00000 - addr);
 	/* CIA */
-	mmuio(KernelBase, 0x00bf0000, 0x00010000);
+	mmuio(KernelBase, 0x00bfd000, 0x00001000);
+	mmuio(KernelBase, 0x00bfe000, 0x00001000);
 
 	debug_mmu(KernelBase);
 	enable_mmu(KernelBase);
