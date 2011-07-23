@@ -26,6 +26,7 @@
 #define INVALID_DESCRIPTOR 0xDEAD0000
 #define ISINVALID(x) ((((ULONG)x) & 3) == 0)
 
+UBYTE *zeropagedescriptor;
 
 /* Allocate MMU descriptor page, it needs to be (1 << bits) * sizeof(ULONG) aligned */
 static ULONG alloc_descriptor(UBYTE mmutype, UBYTE bits)
@@ -84,6 +85,8 @@ static void enable_mmu030(ULONG *levela)
 	"move.l	#0x00a07760,%%d1\n"
 	"move.l	%%d1,%%a7@\n"
 	"pmove	%%a7@,%%tc\n"
+	"movec	%%vbr,%%a5\n"
+	"move.l	#buserror030,%%a5@(8)\n"
 	"move.l	#0x80000002,%%a7@\n"
 	"move.l	%%d0,%%a7@(4)\n"
 	"pmove	%%a7@,%%crp\n"
@@ -118,11 +121,12 @@ static void disable_mmu030(void)
 	"0:\n"
 	: : : "d0", "d1", "a5", "a6");
 }
-static void enable_mmu040(ULONG *levela)
+static void enable_mmu040(ULONG *levela, UBYTE cpu060)
 {
     asm volatile (
     	".chip 68060\n"
 	"move.l	%0,%%d0\n"
+	"move.b	%1,%%d1\n"
 	"move.l 4.w,%%a6\n"
 	"lea	.esuper040(%%pc),%%a5\n"
 	"jsr	-0x1e(%%a6)\n"
@@ -130,6 +134,13 @@ static void enable_mmu040(ULONG *levela)
 	".esuper040:\n"
 	/* Do not interrupt us */
 	"or	#0x0700,%%sr\n"
+	"movec	%%vbr,%%a5\n"
+	"lea	buserror040,%%a6\n"
+	"tst.b	%%d1\n"
+	"beq.s	.cpu040\n"
+	"lea	buserror060,%%a6\n"
+	".cpu040:\n"
+	"move.l	%%a6,%%a5@(8)\n"
 	"moveq	#0,%%d1\n"
 	/* Disable MMU, setup root pointers */
 	"movec	%%d1,%%tc\n"
@@ -149,7 +160,7 @@ static void enable_mmu040(ULONG *levela)
 	"movec	%%d1,%%dtt1\n"
     	"rte\n"
     	"0:\n"
-	: : "m" (levela) : "d0", "d1", "a5", "a6");
+	: : "m" (levela), "m" (cpu060) : "d0", "d1", "a5", "a6");
 }
 
 static void disable_mmu040(void)
@@ -179,7 +190,7 @@ void enable_mmu(struct KernelBase *kb)
 	if (kb->kb_PlatformData->mmu_type == MMU030)
 		enable_mmu030(kb->kb_PlatformData->MMU_Level_A);
 	else
-		enable_mmu040(kb->kb_PlatformData->MMU_Level_A);
+		enable_mmu040(kb->kb_PlatformData->MMU_Level_A, kb->kb_PlatformData->mmu_type == MMU060);
 }
 void disable_mmu(struct KernelBase *kb)
 {
@@ -279,6 +290,18 @@ BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, B
 
 		if (invalid) {
 			pagedescriptor = INVALID_DESCRIPTOR;
+			if (addr == 0 && size == page_size) {
+				/* special case zero page handling */
+				zeropagedescriptor = (UBYTE*)(& LEVELC(descb, addr)) + 3;
+				pagedescriptor = ((ULONG)physaddr) & ~page_mask;
+				if (mmutype == MMU030) {
+					pagedescriptor |= 4;
+					pagedescriptor |= 1 << 6;
+				} else {
+					pagedescriptor |= 4; // write-protected
+					pagedescriptor |= CM_SERIALIZED << 5;
+				}
+			}
 		} else {
 			pagedescriptor = ((ULONG)physaddr) & ~page_mask;
 			if (mmutype == MMU030) {
@@ -295,6 +318,8 @@ BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, B
 				if (supervisor)
 					pagedescriptor |= 1 << 7;
 				pagedescriptor |= cachemode << 5;
+				if (addr != 0 || size != page_size)
+					pagedescriptor |= 1 << 10; // global if not zero page
 			}
 		}
 
