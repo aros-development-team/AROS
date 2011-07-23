@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES=m68k_exception kernel_cpu platform_init setprotection mmu #kernel_gdb
 
-AFILES=issuper fpusavecontext fpurestorecontext
+AFILES=issuper fpusavecontext fpurestorecontext buserror
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
 	       -I$(SRCDIR)/arch/$(CPU)-all/kernel \
