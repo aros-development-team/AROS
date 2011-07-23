@@ -31,7 +31,7 @@
     INPUTS
 
     lock            --  a lock on any file on the volume for which information
-                        should be supplied
+                        should be supplied, or 0
     parameterBlock  --  pointer to an InfoData structure
 
     RESULT
@@ -40,7 +40,10 @@
     'parameterBlock' is filled with information on the volume.
 
     NOTES
-
+    Supplying a lock of 0 will return InfoData from the task
+    that is returned from GetFileSysTask().
+    (Usually the boot volumes' filesystem "SYS:")
+        
     EXAMPLE
 
     BUGS
@@ -58,7 +61,7 @@
     struct FileLock *fl = (struct FileLock *)BADDR(lock);
     LONG status;
 
-    status = dopacket2(DOSBase, NULL, fl->fl_Task, ACTION_INFO, lock, MKBADDR(parameterBlock));
+    status = dopacket2(DOSBase, NULL, fl ? fl->fl_Task : GetFileSysTask(), ACTION_INFO, lock, MKBADDR(parameterBlock));
     return status;
 
     AROS_LIBFUNC_EXIT
