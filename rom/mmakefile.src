@@ -107,8 +107,6 @@ BASE_RSRCS    := FileSystem lddemon
 #MM	kernel-filesystem-pkg \
 #MM	kernel-fs-amberram-pkg \
 #MM	kernel-fs-con-pkg \
-#MM	kernel-fs-nil-pkg \
-#MM     kernel-fs-packet-pkg \
 #MM     kernel-graphics-pkg \
 #MM     kernel-hidd-graphics-pkg \
 #MM     kernel-hidd-kbd-pkg \

@@ -37,7 +37,6 @@ include $(TOP)/config/make.cfg
 #MM     kernel-keyboard \
 #MM     kernel-console \
 #MM     kernel-fs-con \
-#MM     kernel-fs-packet \
 #MM     workbench-libs-workbench \
 #MM     kernel-boot \
 #MM     kernel-dos \
@@ -47,7 +46,6 @@ include $(TOP)/config/make.cfg
 #MM     hidd-i2c \
 #MM     hidd-radeon \
 #MM     hidd-usb \
-#MM     kernel-fs-nil \
 #MM     kernel-partition \
 #MM     kernel-fs-cdvdfs \
 #MM     kernel-fs-sfs \
