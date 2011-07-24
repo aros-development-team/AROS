@@ -28,9 +28,11 @@
 /*  FUNCTION
 	Get the full path name associated with a lock to a file or
 	directory into a user supplied buffer.
+	If the lock is zero the buffer will be filled with the volume name
+	for the assignment "SYS:".
 
     INPUTS
-	lock   - Lock to file or directory.
+	lock   - Lock to file or directory or 0.
 	buffer - Buffer to fill. Contains a NUL terminated string if
 		 all went well.
 	length - Size of the buffer in bytes.
@@ -65,13 +67,10 @@
     BOOL res;
     BPTR lock2 = DupLock(lock);
 
-    if (!lock2)
-    	return DOSFALSE;
-
     res = namefrom_internal(DOSBase, lock2, buffer, length);
     UnLock(lock2);
 
     return res;
-    
+
     AROS_LIBFUNC_EXIT
 }
