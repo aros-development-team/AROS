@@ -147,21 +147,27 @@ static ULONG RdArgs(BSTR format, BPTR args, ULONG max_arg)
 /* Allocate MMU page aligned memory chunks */
 
 #define PAGE_SIZE 4096
+#define ALLOCPADDING (sizeof(struct MemChunk) + 2 * sizeof(BPTR))
 
 static APTR AllocPageAligned(ULONG size, ULONG flags)
 {
     APTR ret;
-    size += sizeof(struct MemChunk);
+    size += ALLOCPADDING;
     ret = AllocMem(size + 2 * PAGE_SIZE, flags);
     if (ret == NULL)
     	return NULL;
     Forbid();
     FreeMem(ret, size + 2 * PAGE_SIZE);
-    ret = AllocAbs((size + PAGE_SIZE - 1) & ~PAGE_SIZE, (APTR)((((ULONG)ret) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)));
+    ret = AllocAbs((size + PAGE_SIZE - 1) & ~PAGE_SIZE, (APTR)(((((ULONG)ret) + ALLOCPADDING + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)) - ALLOCPADDING));
     Permit();
     if (ret == NULL)
     	return NULL;
-    return ret + sizeof(struct MemChunk);
+     return ret;
+}
+static void FreePageAligned(APTR addr, ULONG size)
+{
+    size += ALLOCPADDING;
+    FreeMem(addr, (size + PAGE_SIZE - 1) & ~PAGE_SIZE);
 }
 
 /* Define these here for zlib so that we don't
@@ -396,7 +402,7 @@ static AROS_UFH3(void, elfFree,
 {
     AROS_USERFUNC_INIT
 
-    FreeMem(addr - sizeof(struct MemChunk), size + sizeof(struct MemChunk));
+    FreePageAligned(addr, size);
 
     AROS_USERFUNC_EXIT
 }
