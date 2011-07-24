@@ -144,6 +144,25 @@ static ULONG RdArgs(BSTR format, BPTR args, ULONG max_arg)
     return doBCPL(BCPL_RdArgs, format, args, max_arg, 0, NULL, 0);
 }
 
+/* Allocate MMU page aligned memory chunks */
+
+#define PAGE_SIZE 4096
+
+static APTR AllocPageAligned(ULONG size, ULONG flags)
+{
+    APTR ret;
+    size += sizeof(struct MemChunk);
+    ret = AllocMem(size + 2 * PAGE_SIZE, flags);
+    if (ret == NULL)
+    	return NULL;
+    Forbid();
+    FreeMem(ret, size + 2 * PAGE_SIZE);
+    ret = AllocAbs((size + PAGE_SIZE - 1) & ~PAGE_SIZE, (APTR)((((ULONG)ret) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)));
+    Permit();
+    if (ret == NULL)
+    	return NULL;
+    return ret + sizeof(struct MemChunk);
+}
 
 /* Define these here for zlib so that we don't
  * pull in arosc.library.
@@ -363,12 +382,9 @@ static AROS_UFH3(APTR, elfAlloc,
     } else {
     	flags |= MEMF_CHIP;
     }
-    size += sizeof(struct MemChunk);
-    ret = AllocMem(size, flags);
+    ret = AllocPageAligned(size, flags);
     if (ret == NULL)
     	WriteF("ELF: Failed to allocate %N bytes of type %X4\n", size, flags);
-    else
-	ret += sizeof(struct MemChunk);
     return ret;
 
     AROS_USERFUNC_EXIT
