@@ -6,7 +6,7 @@ Revision= 10
 	.globl ext_entry
 	.align 4 
 
-	nop
+	.word	0x1114
 ext_entry:
 	jmp software_reset
 
