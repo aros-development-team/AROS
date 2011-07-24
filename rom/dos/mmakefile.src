@@ -63,7 +63,7 @@ $(GENDIR)/$(CURDIR)/errorlist.d : $(GENDIR)/$(CURDIR)/errorlist.h
 
 $(GENDIR)/$(CURDIR)/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCDIR)/$(CURDIR)/genstrings.py
 	@$(ECHO) Generating $@...
-	@$(SRCDIR)/$(CURDIR)/genstrings.py $< > $@
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/genstrings.py $< > $@
 
 %build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" libdir=$(GENDIR)/lib
 
