@@ -7,6 +7,7 @@
  */
 
 #include <aros/kernel.h>
+#include <dos/elf.h>
 #include <libraries/debug.h>
 
 #include <inttypes.h>
@@ -21,7 +22,7 @@
 #define DREL(x)
 #define DSYM(x)
 
-static uintptr_t SysBase_ptr = 0;
+static elf_uintptr_t SysBase_ptr = 0;
 
 /*
  * Test for correct ELF header here
@@ -44,20 +45,23 @@ static char *check_header(struct elfheader *eh)
  */
 static void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS **bss_tracker)
 { 
+    unsigned long align;
+
     /* empty chunk? Who cares :) */
     if (!sh->size)
 	return addr;
 
     D(kprintf("[ELF Loader] Chunk (%ld bytes, align=%ld (%p) @ ", sh->size, sh->addralign, (void *)sh->addralign));
-    addr = (char *)(((IPTR)addr + sh->addralign - 1) & ~(sh->addralign-1));
+    align = sh->addralign - 1;
+    addr = (char *)(((unsigned long)addr + align) & ~align);
 
     D(kprintf("%p\n", addr));
-    sh->addr = addr;
+    sh->addr = (elf_ptr_t)(unsigned long)addr;
 
     /* copy block of memory from ELF file if it exists */
     if (sh->type != SHT_NOBITS)
     {
-	if (!read_block(file, sh->offset, sh->addr, sh->size))
+	if (!read_block(file, sh->offset, (void *)(unsigned long)sh->addr, sh->size))
 	    return NULL;
     }
     else
@@ -79,16 +83,15 @@ static void *copy_data(void *src, void *addr, unsigned long len)
 }
 
 /* Perform relocations of given section */
-static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, uintptr_t DefSysBase)
+static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, elf_uintptr_t DefSysBase)
 {
   struct sheader *shrel    = &sh[shrel_idx];
   struct sheader *shsymtab = &sh[SHINDEX(shrel->link)];
   struct sheader *toreloc  = &sh[SHINDEX(shrel->info)];
 
-  struct symbol *symtab   = (struct symbol *)shsymtab->addr;
-  struct relo   *rel      = (struct relo *)shrel->addr;
-  char          *section  = (char *)toreloc->addr;
-  
+  struct symbol *symtab   = (struct symbol *)(unsigned long)shsymtab->addr;
+  struct relo   *rel      = (struct relo *)(unsigned long)shrel->addr;
+
   unsigned int numrel = shrel->size / shrel->entsize;
   unsigned int i;
   
@@ -106,9 +109,9 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, ui
   for (i=0; i<numrel; i++, rel++)
   {
 	struct symbol *sym = &symtab[ELF_R_SYM(rel->info)];
-	unsigned long *p = (unsigned long *)&section[rel->offset];
-	uintptr_t s;
-	const char *name = sh[shsymtab->link].addr + sym->name;
+	unsigned long *p = (void *)(unsigned long)toreloc->addr + rel->offset;
+	const char *name = (const char *)(unsigned long)sh[shsymtab->link].addr + sym->name;
+	elf_uintptr_t s;
 
 #ifdef __arm__
 	/*
@@ -178,22 +181,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, ui
         DREL(kprintf("[ELF Loader] Relocating symbol %s type ", sym->name ? name : "<unknown>"));
 	switch (ELF_R_TYPE(rel->info))
 	{
-#ifdef __i386__
-	case R_386_32: /* 32bit absolute */
-            DREL(kprintf("R_386_32"));
-	    *p += s;
-	    break;
-
-	case R_386_PC32: /* 32bit PC relative */
-            DREL(kprintf("R_386_PC32"));
-	    *p += (s - (uintptr_t)p);
-	    break;
-
-	case R_386_NONE:
-            DREL(kprintf("R_386_NONE"));
-	    break;
-#endif
-#ifdef __x86_64__
+#ifdef ELF_64BIT
         case R_X86_64_64: /* 64bit direct/absolute */
             *(uint64_t *)p = s + rel->addend;
             break;
@@ -212,6 +200,22 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, ui
 
         case R_X86_64_NONE: /* No reloc */
             break;
+#else
+#ifdef __i386__
+	case R_386_32: /* 32bit absolute */
+            DREL(kprintf("R_386_32"));
+	    *p += s;
+	    break;
+
+	case R_386_PC32: /* 32bit PC relative */
+            DREL(kprintf("R_386_PC32"));
+	    *p += (s - (uintptr_t)p);
+	    break;
+
+	case R_386_NONE:
+            DREL(kprintf("R_386_NONE"));
+	    break;
+#endif
 #endif
 #ifdef __mc68000__
         case R_68K_32:
@@ -475,7 +479,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 		/* Remember address of the first code section, this is our entry point */
 		if ((sh[i].flags & SHF_EXECINSTR) && need_entry)
 		{
-		    *kernel_entry = sh[i].addr;
+		    *kernel_entry = (void *)(unsigned long)sh[i].addr;
 		    need_entry = 0;
 		}
 	    }
@@ -492,7 +496,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 
 	    if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
 	    {
-		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
+		sh[i].addr = (elf_ptr_t)(unsigned long)load_block(file, sh[i].offset, sh[i].size);
 
 		if (!sh[i].addr || !relocate(n->eh, sh, i, (uintptr_t)DefSysBase))
 		{
@@ -500,8 +504,8 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 		    return 0;
 		}
 
-		free_block(sh[i].addr);
-		sh[i].addr = NULL;
+		free_block((void *)(unsigned long)sh[i].addr);
+		sh[i].addr = (elf_ptr_t)0;
 	    }
 	}
 
