@@ -42,14 +42,15 @@ static ULONG alloc_descriptor(UBYTE mmutype, UBYTE bits)
 	FreeMem(desc, 3 * size);
 	desc = AllocAbs(size, (APTR)((((ULONG)desc) + size - 1) & ~(size - 1)));
 	Permit();
+	if (!desc)
+		return 0;
 	for (i = 0; i < (1 << bits); i++)
 		desc[i] = INVALID_DESCRIPTOR;
 	dout = (ULONG)desc;
-	/* Descriptor pointer is resident */
 	if (mmutype == MMU030)
-		dout |= 2;
+		dout |= 2; /* Valid 4 byte descriptor */
 	else
-		dout |= 3;
+		dout |= 3; /* Resident descriptor */
 	return dout;
 }	
 
@@ -79,20 +80,27 @@ static void enable_mmu030(ULONG *levela)
 	".esuper030:\n"
 	/* Do not interrupt us */
 	"or	#0x0700,%%sr\n"
+	"subq.l	#8,%%a7\n"
 	/* Disable MMU, setup root pointers,
 	 * uses 68040 MMU descriptor levels (7/7/6, 4K page size) */
-	"subq.l	#8,%%a7\n"
-	"move.l	#0x00a07760,%%d1\n"
+	"move.l	#0x00c07760,%%d1\n"
 	"move.l	%%d1,%%a7@\n"
 	"pmove	%%a7@,%%tc\n"
+	/* Set bus error exception vector */
 	"movec	%%vbr,%%a5\n"
 	"move.l	#buserror030,%%a5@(8)\n"
+	/* Configure CRP. Valid 4 byte descriptor, other features disabled. */
 	"move.l	#0x80000002,%%a7@\n"
+	/* First level descriptor pointer */
 	"move.l	%%d0,%%a7@(4)\n"
+	/* Set CRP */
 	"pmove	%%a7@,%%crp\n"
+	/* Set MMU enabled bit */
 	"bset	#31,%%d1\n"
 	"move.l	%%d1,%%a7@\n"
+	/* MMU on! */
 	"pmove	%%a7@,%%tc\n"
+	/* Clear transparent translation */
 	"clr.l	%%a7@\n"
 	"pmove	%%a7@,%%tt0\n"
 	"pmove	%%a7@,%%tt1\n"
@@ -146,12 +154,12 @@ static void enable_mmu040(ULONG *levela, UBYTE cpu060)
 	"movec	%%d1,%%tc\n"
 	"movec	%%d0,%%urp\n"
 	"movec	%%d0,%%srp\n"
-	/* flush data caches and ATC */
+	/* Flush data caches and ATC */
 	"cpusha	%%dc\n"
 	"cinva	%%dc\n"
 	"pflusha\n"
-	/* Enable MMU */
-	"move.w	#0x8000,%%d0\n"
+	/* Enable MMU, 4K page size */
+	"move.l	#0x00008000,%%d0\n"
 	"movec	%%d0,%%tc\n"
 	/* Disable transparent translation */
 	"movec	%%d1,%%itt0\n"
@@ -305,7 +313,7 @@ BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, B
 		} else {
 			pagedescriptor = ((ULONG)physaddr) & ~page_mask;
 			if (mmutype == MMU030) {
-				pagedescriptor |= 1; // resident page
+				pagedescriptor |= 1; // page descriptor
 				if (writeprotect)
 					pagedescriptor |= 4; // write-protected
 				/* 68030 can only enable or disable caching */
