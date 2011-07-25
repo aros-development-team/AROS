@@ -444,6 +444,9 @@ dissect(struct match *m,
 			if (slow(m, sp, rest, ssub, esub) != NULL) {
 				dp = dissect(m, sp, rest, ssub, esub);
 				assert(dp == rest);
+#ifdef NDEBUG
+				(void)(dp); /* Silence gcc 4.6.1 lint */
+#endif
 			} else		/* no */
 				assert(sp == rest);
 			sp = rest;
