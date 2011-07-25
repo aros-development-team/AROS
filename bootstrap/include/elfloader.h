@@ -6,6 +6,8 @@
 #ifndef BOOTSTRAP_ELFLOADER_H_
 #define BOOTSTRAP_ELFLOADER_H_
 
+#include <inttypes.h>
+
 /* The loader operates with a single-linked list of these structures */
 struct ELFNode
 {
