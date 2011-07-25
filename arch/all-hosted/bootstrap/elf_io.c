@@ -6,6 +6,8 @@
 #include "elf_io.h"
 #include "support.h"
 
+#include <aros/config.h>
+
 struct ELFNode *FirstELF = NULL;
 static struct ELFNode *LastELF = (struct ELFNode *)&FirstELF;
 
