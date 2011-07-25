@@ -67,7 +67,7 @@
 
     if (!super)
     {
-        APTR ssp = Supervisor(cpu_SuperState);
+        APTR ssp = (APTR)Supervisor(cpu_SuperState);
         
         D(bug("[SuperState] Saved SP 0x%p\n", ssp));
         return ssp;
