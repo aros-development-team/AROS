@@ -1,1 +1,0 @@
-void DisplayError(char *fmt, ...);

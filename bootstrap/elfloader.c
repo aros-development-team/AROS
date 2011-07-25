@@ -6,24 +6,16 @@
  Lang: English
  */
 
+#include <aros/kernel.h>
+#include <libraries/debug.h>
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
-#undef __pure
-#undef __const
-#undef __pure2
-#undef __deprecated
-
-#include <aros/kernel.h>
-#include <libraries/debug.h>
-
-#include "elfloader32.h"
-#include "elf_io.h"
-#include "support.h"
-#include "ui.h"
+#include <elfloader.h>
+#include <runtime.h>
 
 #define D(x)
 #define DREL(x)

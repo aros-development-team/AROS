@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "elfloader32.h"
+#include <elfloader.h>
+
 #include "elf_io.h"
 #include "support.h"
 

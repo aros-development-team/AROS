@@ -3,19 +3,21 @@ include $(TOP)/config/make.cfg
 
 EXEDIR := $(BINDIR)/boot
 
-FILES         := main bootstrap elfloader32 elf_io filesystem hostinterface memory support shutdown ui
-PROG	      := AROSBootstrap
+FILES := main bootstrap elf_io filesystem hostinterface memory support shutdown runtime ui
+PROG  := AROSBootstrap
 
 ## The '-Wno-attributes' is here due to a gcc 4.5.x bug
 ## where its strcmp() builtin generates a number of spurious
 ## complaints with -O1 or higher optimizations enabled.
-USER_CFLAGS += -Wno-attributes
-USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR)
+USER_CFLAGS   := -Wno-attributes
+USER_LDFLAGS  := -L$(GENDIR)/lib
+USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR) -isystem $(SRCDIR)/bootstrap/include
+LIBS	      := bootstrap
 
 ifeq ($(ARCH),mingw32)
     EXE_SUFFIX := .exe
 else
-    LIBS := gcc dl
+    LIBS += gcc dl
 endif
 
 ifeq ($(AROS_TARGET_VARIANT),ios)
@@ -28,6 +30,8 @@ ifeq ($(AROS_TARGET_VARIANT),android)
     PROG := lib$(PROG)
     EXE_SUFFIX := .so
 endif
+
+#MM kernel-bootstrap-hosted: linklibs-bootstrap
 
 %build_prog mmake=kernel-bootstrap-hosted \
     progname=$(PROG)$(EXE_SUFFIX) targetdir=$(EXEDIR) \
