@@ -35,6 +35,8 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM     kernel-fs-cdvdfs-kobj \
 #MM	kernel-pc-i386-drivers \
 #MM     kernel-workbench-devs-pc-i386 \
+#MM	kernel-dos-kobj \
+#MM	kernel-dosboot-kobj \
 #MM     kernel-usb-pc-i386 \
 #MM     kernel-processor-kobj
 
