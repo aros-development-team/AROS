@@ -12,8 +12,7 @@ struct ELFNode
     struct ELFNode   *Next;
     struct sheader   *sh;
     struct elfheader *eh;
-    char	     *NamePtr;
-    char	      Name[1];
+    char	     *Name;
 };
 
 struct TagItem;
