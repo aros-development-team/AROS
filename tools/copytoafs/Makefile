@@ -10,7 +10,7 @@ ifeq ($(AROS_HOST_ARCH),mingw32)
 LIBS := -lws2_32
 endif
 
-AFSSRCDIR := $(SRCDIR)/rom/devs/filesys/afs
+AFSSRCDIR := $(SRCDIR)/rom/filesys/afs
 ifneq ($(HOSTGENDIR),)
 OBJDIR := $(HOSTGENDIR)/tools/host_copytoafs
 else
