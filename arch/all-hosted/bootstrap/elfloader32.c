@@ -17,7 +17,6 @@
 #undef __pure2
 #undef __deprecated
 
-#include <aros/config.h>
 #include <aros/kernel.h>
 #include <exec/execbase.h>
 #include <libraries/debug.h>
