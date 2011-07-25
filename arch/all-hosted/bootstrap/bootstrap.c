@@ -27,14 +27,15 @@
 #include <exec/execbase.h>
 #include <utility/tagitem.h>
 
+#include <elfloader.h>
+#include <runtime.h>
+
 #include "bootstrap.h"
-#include "elfloader32.h"
 #include "elf_io.h"
 #include "filesystem.h"
 #include "memory.h"
 #include "support.h"
 #include "shutdown.h"
-#include "ui.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX _MAX_PATH

@@ -1,0 +1,17 @@
+#   $Id: mmakefile.src 37337 2011-03-04 11:40:10Z sonic $
+#
+include $(TOP)/config/make.cfg
+
+FILES := elfloader
+
+USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include -isystem $(GENINCDIR)
+
+%build_linklib mmake=linklibs-bootstrap libname=bootstrap files="$(FILES)" \
+	       compiler=kernel libdir=$(GENDIR)/lib
+
+USER_CFLAGS := -m32
+
+%build_linklib mmake=linklibs-bootstrap32 libname=bootstrap files="$(FILES)" \
+	       compiler=kernel objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
+
+%common
