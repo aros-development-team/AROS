@@ -382,10 +382,21 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	case SC_SUPERVISOR:
 	    /* This doesn't return */
 	    core_Supervisor(regs);
+
+	case SC_RDMSR:
+	    regs->rax = rdmsrq(regs->rcx);
+	    break;
 	}
 
-	/* Scheduler can be called only from within user mode */
-        if (regs->ds != KERNEL_DS)
+	/*
+	 * Scheduler can be called only from within user mode.
+	 * Every task has ss register initialized to a valid segment descriptor.\
+	 * The descriptor itself isn't used by x86-64, however when a privilege
+	 * level switch occurs upon an interrupt, ss is reset to zero. Old ss value
+	 * is always pushed to stack as part of interrupt context.
+	 * We rely on this in order to determine which CPL we are returning to.
+	 */
+        if (regs->ss != 0)
         {
             DSYSCALL(bug("[Kernel] User-mode syscall\n"));
 
@@ -448,7 +459,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	}
 
 	/* Upon exit from the lowest-level hardware IRQ we run the task scheduler */
-	if (SysBase && (regs->ds != KERNEL_DS))
+	if (SysBase && (regs->ss != 0))
 	{
 	    /* Disable interrupts for a while */
 	    __asm__ __volatile__("cli; cld;");

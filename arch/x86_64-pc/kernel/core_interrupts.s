@@ -100,9 +100,10 @@ core_EnterInterrupt:			// At this point two UQUADs for segment registers are
 	movq	%rax, reg_fs(%rdi)
 	mov	%gs, %ax
 	movq	%rax, reg_gs(%rdi)
-	mov	$KERNEL_DS, %ax		// We are supervisor now
-	mov     %ax, %ds
-	mov     %ax, %es
+					// In x86-64 only CS is used to determine current CPL.
+					// Also SS is used as an indicator into which mode iretq returns
+					// (set to zero when interrupt raises privilege level).
+					// So we do not have to manipulate segment registers here (unlike on i386).
 	jmp	core_IRQHandle		// Proceed to C handler
 	.size core_EnterInterrupt, .-core_EnterInterrupt
 

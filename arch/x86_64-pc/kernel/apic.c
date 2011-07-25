@@ -16,6 +16,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_syscall.h"
 #include "acpi.h"
 #include "apic.h"
 
@@ -300,16 +301,17 @@ static IPTR _APIC_IA32_GetMSRAPICBase(void)
 
     if (!(IN_USER_MODE))
     {
-        _apic_base = rdmsrq(27) & ~0x900;
+        _apic_base = rdmsrq(27);
     }
     else
     {
         D(bug("[Kernel] _APIC_IA32_GetMSRAPICBase: Called in UserMode\n"));
-        _apic_base = 0xfee00000;
+
+	__asm__ __volatile__ ("int $0x80":"=a"(_apic_base):"a"(SC_RDMSR),"c"(27));
     }
+    _apic_base &= ~0x900;
 
     D(bug("[Kernel] _APIC_IA32_GetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base));
-
     return _apic_base;
 }
 
