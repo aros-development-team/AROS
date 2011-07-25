@@ -479,6 +479,7 @@ aros_shared_aflags=""
 aros_shared_ldflags="-Wl,-rpath,./lib -shared"
 aros_kernel_ldflags="-Wl,-rpath,./lib"
 
+aros_kernel_ar_flags="cr"
 aros_target_ar_flags="cr"
 aros_target_nm_flags="-C -ul"
 aros_target_strip_flags="--strip-unneeded -R.comment"
@@ -966,6 +967,7 @@ case "$target_os" in
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
 		aros_object_format="elf_i386"
+		aros_kernel_ar_flags="-cr"
 		aros_target_strip_flags="-x"
 		target_tool_prefix="i686-apple-darwin10-"
 		target_tool_flags="-m32"
@@ -980,7 +982,10 @@ case "$target_os" in
                 aros_kernel_ldflags="-m64"
                 aros_target_cflags="-mcmodel=large"
 		aros_default_wbdepth=8
+		aros_kernel_ar="ar"
+		aros_kernel_ar_flags="-cr"
 		aros_kernel_ld="ld"
+		aros_kernel_ranlib="ranlib"
 		target_tool_prefix="i686-apple-darwin10-"
 		;;
 	    *ppc*)
@@ -991,7 +996,10 @@ case "$target_os" in
                 aros_macosx_version="10.0"
 		aros_default_wbdepth=8
 		gcc_target_cpu="ppc"
+		aros_kernel_ar="ar"
+		aros_kernel_ar_flags="-cr"
 		aros_kernel_ld="ld -arch ppc"
+		aros_kernel_ranlib="ranlib -arch ppc"
 		target_tool_prefix="powerpc-apple-darwin10-"
 		;;
 	    *arm*)
@@ -1004,7 +1012,10 @@ case "$target_os" in
 		aros_arch_libs="-laeabi"
 		aros_default_wbdepth=8
 		gcc_target_cpu="arm"
+		aros_kernel_ar="ar"
+		aros_kernel_ar_flags="-cr"
 		aros_kernel_ld="ld -arch arm"
+		aros_kernel_ranlib="ranlib -arch arm"
 		target_tool_prefix="arm-apple-darwin10-" 
                 export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
 		;;
@@ -1535,6 +1546,10 @@ fi
 if test "$crosstools" != "yes"; then
     AROS_TOOL_TARGET(aros_kernel_ld,ld,$aros_kernel_ld)
     AROS_REQUIRED(ld,$aros_kernel_ld)
+    AROS_TOOL_TARGET(aros_kernel_ar,ar,$aros_kernel_ar)
+    AROS_REQUIRED(ld,$aros_kernel_ar)
+    AROS_TOOL_TARGET(aros_kernel_ranlib,ranlib,$aros_kernel_ranlib)
+    AROS_REQUIRED(ld,$aros_kernel_ranlib)
 
     dnl For non-ELF hosts we additionally have to look up ELF toolchain for AROS binaries
     dnl It can be either AROS toolchain selected earlier or generic ELF toolchain we select here.
@@ -1576,10 +1591,15 @@ else
     aros_target_ranlib_ln=$AROS_CROSSTOOLSDIR/$aros_target_ranlib
     aros_target_strip_ln=$AROS_CROSSTOOLSDIR/$aros_target_strip
 
+    dnl FIXME: This works only for native ports. Hosted ports can't be compiled this way.
+    aros_kernel_ar=$AROS_CROSSTOOLSDIR/$aros_target_ar
     aros_kernel_ld=$AROS_CROSSTOOLSDIR/$aros_target_ld
+    aros_kernel_ranlib=$AROS_CROSSTOOLSDIR/$aros_target_ranlib
 
     crosstools_target=tools-crosstools
 fi
+
+aros_kernel_ar="$aros_kernel_ar $aros_kernel_ar_flags"
 
 orig_target_cc=$aros_kernel_cc
 orig_target_ld=$aros_kernel_ld
@@ -1658,9 +1678,9 @@ aros_target_objcopy=${prefix}-objcopy
 aros_target_objdump=${prefix}-objdump
 aros_target_ranlib="${prefix}-ranlib $aros_target_ranlib_flags"
 aros_target_nm="${prefix}-nm $aros_target_nm_flags"
-aros_kernel_nm="${prefix}-nm"
 aros_target_strip=${prefix}-strip
-aros_kernel_ar="${prefix}-ar"
+aros_plain_nm="${prefix}-nm"
+aros_plain_ar="${prefix}-ar"
 
 # Find the system include path. We can suggest that an alternative is
 # used if we don't get it correct. The default is to use /usr/include.
@@ -2200,8 +2220,10 @@ AC_SUBST(aros_target_suffix)
 AC_SUBST(aros_target_incl)
 AC_SUBST(aros_target_ar)
 AC_SUBST(aros_target_ranlib)
-AC_SUBST(aros_kernel_nm)
+AC_SUBST(aros_plain_nm)
+AC_SUBST(aros_plain_ar)
 AC_SUBST(aros_kernel_ar)
+AC_SUBST(aros_kernel_ranlib)
 AC_SUBST(orig_target_cc)
 AC_SUBST(aros_target_cc)
 AC_SUBST(aros_target_cxx)

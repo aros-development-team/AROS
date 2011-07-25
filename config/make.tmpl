@@ -642,10 +642,23 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLI
 
 #------------------------------------------------------------------------------
 # Link the %(objs) to the library %(libdir)/lib%(libname).a
-%define rule_link_linklib libname=/A objs=/A libdir=$(LIBDIR)
+%define rule_link_linklib libname=/A objs=/A libdir=$(LIBDIR) linker=target
+
+ifeq (%(linker),target)
+%(libdir)/lib%(libname).a : TMP_AR:=$(AR)
+%(libdir)/lib%(libname).a : TMP_RANLIB:=$(RANLIB)
+endif
+ifeq (%(linker),host)
+%(libdir)/lib%(libname).a : TMP_AR:=$(HOST_AR)
+%(libdir)/lib%(libname).a : TMP_RANLIB:=$(HOST_RANLIB)
+endif
+ifeq (%(linker),kernel)
+%(libdir)/lib%(libname).a : TMP_AR:=$(KERNEL_AR)
+%(libdir)/lib%(libname).a : TMP_RANLIB:=$(KERNEL_RANLIB)
+endif
 
 %(libdir)/lib%(libname).a : %(objs)
-	%mklib_q from=$^
+	%mklib_q from=$^ ar=$(TMP_AR) ranlib=$(TMP_RANLIB)
 %end
 #------------------------------------------------------------------------------
 
@@ -1610,7 +1623,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - objdir is where the .o are generated
 # - libdir is the directory where the linklib will be placed (default $(LIBDIR))
 %define build_linklib mmake=/A libname=/A \
-  files="$(basename $(call WILDCARD, *.c))" asmfiles=  objs= \
+  files="$(basename $(call WILDCARD, *.c))" asmfiles=  objs= compiler=target \
   cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(LIBDIR)
 
 # assign and generate the local variables used in this macro
@@ -1653,12 +1666,12 @@ TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
 vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir $(BD_FILES)))
 endif
 
-%rule_compile basename=% targetdir=%(objdir) \
+%rule_compile basename=% targetdir=%(objdir) compiler=%(compiler) \
 	      cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
 %rule_assemble basename=% targetdir=%(objdir) \
 	      aflags=$(BD_AFLAGS)
 
-%rule_link_linklib libname=%(libname) objs=$(BD_OBJS) libdir=%(libdir)
+%rule_link_linklib libname=%(libname) objs=$(BD_OBJS) libdir=%(libdir) linker=%(compiler)
 endif
 
 %include_deps depstargets=%(mmake) deps=$(BD_DEPS)
