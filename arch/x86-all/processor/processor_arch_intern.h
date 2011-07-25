@@ -50,6 +50,15 @@ struct SystemProcessors
 #define cpuid(num) \
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
 
+static inline void __attribute__((always_inline)) rdmsr(LONG msr_no, LONG *ret_lo, LONG *ret_hi)
+{
+    LONG ret1,ret2;
+    asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
+    *ret_lo=ret1;
+    *ret_hi=ret2;
+}
+
+
 VOID ReadProcessorInformation(struct X86ProcessorInformation * info);
 VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info);
 UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info);
