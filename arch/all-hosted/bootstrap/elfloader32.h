@@ -7,14 +7,23 @@
 #ifndef ELFLOADER_H_
 #define ELFLOADER_H_
 
-typedef int (*kernel_entry_fun_t)(struct TagItem *, ULONG);
+struct ELFNode
+{
+    struct ELFNode   *Next;
+    struct sheader   *sh;
+    struct elfheader *eh;
+    char	     *NamePtr;
+    char	      Name[1];
+};
 
+struct TagItem;
 struct KernelBSS;
 struct ELF_ModuleInfo;
 
-int AddKernelFile(char *name);
-void FreeKernelList(void);
-int GetKernelSize(size_t *ro_size, size_t *rw_size);
-int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug);
+typedef int (*kernel_entry_fun_t)(struct TagItem *, unsigned int);
+
+int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size);
+int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker,
+	       kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug);
 
 #endif /*ELFLOADER_H_*/
