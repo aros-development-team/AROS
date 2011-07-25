@@ -18,7 +18,6 @@
 #undef __deprecated
 
 #include <aros/kernel.h>
-#include <exec/execbase.h>
 #include <libraries/debug.h>
 
 #include "elfloader32.h"
@@ -30,8 +29,7 @@
 #define DREL(x)
 #define DSYM(x)
 
-/* ***** This is the global SysBase ***** */
-struct ExecBase *SysBase;
+static uintptr_t SysBase_ptr = 0;
 
 /*
  * Test for correct ELF header here
@@ -52,7 +50,7 @@ static char *check_header(struct elfheader *eh)
 /*
  * Get the memory for chunk and load it
  */
-void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS **bss_tracker)
+static void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS **bss_tracker)
 { 
     /* empty chunk? Who cares :) */
     if (!sh->size)
@@ -89,7 +87,7 @@ static void *copy_data(void *src, void *addr, unsigned long len)
 }
 
 /* Perform relocations of given section */
-static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
+static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, uintptr_t DefSysBase)
 {
   struct sheader *shrel    = &sh[shrel_idx];
   struct sheader *shsymtab = &sh[SHINDEX(shrel->link)];
@@ -138,7 +136,6 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
 
 	case SHN_COMMON:
 	    DREL(kprintf("[ELF Loader] COMMON symbol '%s'\n", name));
-
 	    return 0;
 
 	case SHN_ABS:
@@ -148,23 +145,42 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
 	        {
 		    DREL(kprintf("[ELF Loader] got SysBase\n"));
 		    SysBase_sym = sym;
-		    goto SysBase_yes;
 		}
-		else
-		    goto SysBase_no;
 	    }
-	    else if (SysBase_sym == sym)
+
+	    if (SysBase_sym == sym)
 	    {
-SysBase_yes:    s = (uintptr_t)&SysBase;
+		if (!SysBase_ptr)
+		{
+		    SysBase_ptr = DefSysBase;
+		    D(kprintf("[ELF Loader] SysBase pointer set to default %p\n", (void *)SysBase_ptr));
+		}
+
+	    	s = SysBase_ptr;
 	    }
-	    else
-	    {
-SysBase_no:     s = sym->value;
-	    }
+            else
+		s = sym->value;
 	    break;
 		
 	default:
 	    s = (uintptr_t)sh[sym->shindex].addr + sym->value;
+
+	    if (!SysBase_ptr)
+	    {
+		/*
+		 * The first global data symbol named SysBase becomes global SysBase.
+		 * The idea behind: the first module (kernel.resource) contains global
+		 * SysBase variable and all other modules are linked to it.
+		 */
+                if (sym->info == ELF_S_INFO(STB_GLOBAL, STT_OBJECT))
+                {
+                    if (strcmp(name, "SysBase") == 0)
+                    {
+                        SysBase_ptr = s;
+                    	D(kprintf("[ELF Loader] SysBase pointer set to %p\n", (void *)SysBase_ptr));
+                    }
+                }
+            }
 	}
 
         DREL(kprintf("[ELF Loader] Relocating symbol %s type ", sym->name ? name : "<unknown>"));
@@ -409,7 +425,7 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
     return 1;
 }
 
-int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker,
+int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, uintptr_t DefSysBase,
 	       kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug)
 {
     struct ELFNode *n;
@@ -486,7 +502,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 	    {
 		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
 
-		if (!sh[i].addr || !relocate(n->eh, sh, i))
+		if (!sh[i].addr || !relocate(n->eh, sh, i, (uintptr_t)DefSysBase))
 		{
 		    DisplayError("%s: Relocation error in hunk %u!\n", n->Name, i);
 		    return 0;
