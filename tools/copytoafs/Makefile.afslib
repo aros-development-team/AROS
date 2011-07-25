@@ -22,7 +22,7 @@ ifeq ($(AROS_HOST_ARCH),aros)
 FILES := error $(subst os_unix_support,os_aros_support,$(FILES))
 endif
 
-AFSSRCDIR := $(SRCDIR)/rom/devs/filesys/afs
+AFSSRCDIR := $(SRCDIR)/rom/filesys/afs
 ifneq ($(HOSTGENDIR),)
 OBJDIR := $(HOSTGENDIR)/tools/host_afs
 else
