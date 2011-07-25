@@ -329,7 +329,7 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
     size_t rwsize = 0;
     unsigned short i;
 
-    D(kprintf("[ELF Loader] Calculating kernel size...\n"));
+    kprintf("[ELF Loader] Calculating kickstart size...\n");
 
     for (n = FirstELF; n; n = n->Next)
     {
@@ -404,6 +404,8 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
     *ro_size = ksize;
     *rw_size = rwsize;
 
+    kprintf("[ELF Loader] Code %lu, data %lu\n", ksize, rwsize);
+
     return 1;
 }
 
@@ -418,11 +420,11 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
     /* Address of the first module descriptor will automatically go where we need it */
     struct ELF_ModuleInfo *prev_mod = (struct ELF_ModuleInfo *)kernel_debug;
 
-    D(kprintf("[ELF Loader] Loading kernel...\n"));
+    kprintf("[ELF Loader] Loading kickstart...\n");
 
     for (n = FirstELF; n; n = n->Next)
     {
-	D(kprintf("[ELF Loader] Loading file %s\n", n->Name));
+	kprintf("[ELF Loader] Code %p, Data %p, Module %s...\n", ptr_ro, ptr_rw, n->Name);
 
 	file = open_file(n);
 	if (!file)
@@ -470,6 +472,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 		}
 	    }
 		D(else kprintf("Ignored\n");)
+
 	    D(kprintf("[ELF Loader] Section address: %p, size: %lu\n", sh[i].addr, sh[i].size));
 	}
 
