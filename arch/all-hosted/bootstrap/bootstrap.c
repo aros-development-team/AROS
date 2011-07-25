@@ -24,6 +24,7 @@
 
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
+#include <exec/execbase.h>
 #include <utility/tagitem.h>
 
 #include "bootstrap.h"
@@ -75,7 +76,8 @@ static struct KernelBSS __bss_track[256];
 static struct ELF_ModuleInfo *Debug_KickList = NULL;
 
 /* Kernel message */
-static struct TagItem km[] = {
+static struct TagItem km[] =
+{
     {KRN_KernelLowest , 0                },
     {KRN_KernelHighest, 0                },
     {KRN_KernelBss    , 0		 },
@@ -87,6 +89,9 @@ static struct TagItem km[] = {
     {KRN_MMAPLength   , sizeof(MemoryMap)},
     {TAG_DONE         , 0                }
 };
+
+/* Global SysBase */
+struct ExecBase *SysBase;
 
 static char *GetConfigArg(char *str, char *option)
 {
@@ -295,8 +300,9 @@ int bootstrap(int argc, char ** argv)
 	return -1;
     }
 
-    if (!LoadKernel(FirstELF, ro_addr, rw_addr, __bss_track, &kernel_entry, &Debug_KickList))
+    if (!LoadKernel(FirstELF, ro_addr, rw_addr, __bss_track, (uintptr_t)&SysBase, &kernel_entry, &Debug_KickList))
 	return -1;
+
     D(fprintf(stderr, "[Bootstrap] Read-only %p - %p, Read-write %p - %p, Entry %p, Debug info %p\n",
 	     ro_addr, ro_addr + ro_size - 1, rw_addr, rw_addr + rw_size - 1, kernel_entry, Debug_KickList));
 
