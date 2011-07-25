@@ -28,6 +28,7 @@
 
 #include "bootstrap.h"
 #include "elfloader32.h"
+#include "elf_io.h"
 #include "filesystem.h"
 #include "memory.h"
 #include "support.h"
@@ -276,7 +277,7 @@ int bootstrap(int argc, char ** argv)
     }
     fclose(file);
 
-    if (!GetKernelSize(&ro_size, &rw_size))
+    if (!GetKernelSize(FirstELF, &ro_size, &rw_size))
 	return -1;
     D(fprintf(stderr, "[Bootstrap] Kernel size %zu\n", ro_size));
 
@@ -294,7 +295,7 @@ int bootstrap(int argc, char ** argv)
 	return -1;
     }
 
-    if (!LoadKernel(ro_addr, rw_addr, __bss_track, &kernel_entry, &Debug_KickList))
+    if (!LoadKernel(FirstELF, ro_addr, rw_addr, __bss_track, &kernel_entry, &Debug_KickList))
 	return -1;
     D(fprintf(stderr, "[Bootstrap] Read-only %p - %p, Read-write %p - %p, Entry %p, Debug info %p\n",
 	     ro_addr, ro_addr + ro_size - 1, rw_addr, rw_addr + rw_size - 1, kernel_entry, Debug_KickList));

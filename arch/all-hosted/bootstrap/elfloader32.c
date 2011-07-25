@@ -23,6 +23,7 @@
 #include <libraries/debug.h>
 
 #include "elfloader32.h"
+#include "elf_io.h"
 #include "support.h"
 #include "ui.h"
 
@@ -30,55 +31,8 @@
 #define DREL(x)
 #define DSYM(x)
 
-struct ELFNode
-{
-    struct ELFNode   *Next;
-    struct sheader   *sh;
-    struct elfheader  eh;
-    char	     *NamePtr;
-    char	      Name[1];
-};
-
-struct ELFNode *FirstELF = NULL;
-struct ELFNode *LastELF = (struct ELFNode *)&FirstELF;
-
 /* ***** This is the global SysBase ***** */
 struct ExecBase *SysBase;
-
-/*
- * read_block interface. we want to read from files here
- */
-static int read_block(void *file, long offset, void *dest, long length)
-{
-    int err;
-
-    err = fseek(file, offset, SEEK_SET);
-    if (err) return 0;
-
-    err = fread(dest,(size_t)length, 1, file);
-    if (err == 0) return 0;
-
-
-    return 1;
-}
-
-/*
- * load_block also allocates the memory
- */
-static void *load_block(void *file, long offset, long length)
-{
-    void *dest = malloc(length);
-    
-    if (dest)
-    {
-	if (!read_block(file, offset, dest, length)) {
-	    free(dest);
-	    return NULL;
-	}
-    }
-
-    return dest;
-}
 
 /*
  * Test for correct ELF header here
@@ -367,40 +321,7 @@ SysBase_no:     s = sym->value;
   return 1;
 }
 
-int AddKernelFile(char *name)
-{
-    struct ELFNode *n;
-
-    n = malloc(sizeof(struct ELFNode) + strlen(name));
-    if (!n)
-        return 0;
-    
-    n->Next  = NULL;
-    strcpy(n->Name, name);
-#if AROS_MODULES_DEBUG
-    n->NamePtr = n->Name;
-#else
-    n->NamePtr = namepart(n->Name);
-#endif
-
-    LastELF->Next = n;
-    LastELF = n;
-
-    return 1;
-}
-
-void FreeKernelList(void)
-{
-    struct ELFNode *n, *n2;
-    
-    for (n = FirstELF; n; n = n2) {
-	n2 = n->Next;
-	free(n);
-    }
-    /* We do not reset list pointers because the list will never be reused */
-}
-
-int GetKernelSize(size_t *ro_size, size_t *rw_size)
+int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
 {
     struct ELFNode *n;
     FILE *file;
@@ -414,24 +335,30 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
     for (n = FirstELF; n; n = n->Next)
     {
 	D(fprintf(stderr, "[ELF Loader] Checking file %s\n", n->Name));
-	file = fopen(n->Name, "rb");
-	if (!file) {
+	
+	file = open_file(n);
+	if (!file)
+	{
 	    DisplayError("Failed to open file %s!\n", n->Name);
 	    return 0;
 	}
 
 	/* Check the header of ELF file */
-	read_block(file, 0, &n->eh, sizeof(struct elfheader));
-	err = check_header(&n->eh);
-	if (err)
-	    n->sh = NULL;
-	else {
-	    n->sh = load_block(file, n->eh.shoff, n->eh.shnum * n->eh.shentsize);
-	    if (!n->sh)
-	        err = "Failed to read file";
+	n->eh = load_block(file, 0, sizeof(struct elfheader));
+	if (n->eh)
+	{
+	    err = check_header(n->eh);
+	    if (!err)
+	    {
+	    	n->sh = load_block(file, n->eh->shoff, n->eh->shnum * n->eh->shentsize);
+	    	if (!n->sh)
+	    	    err = "Failed to read section headers";
+	    }
 	}
+	else
+	    err = "Failed to read file header";
 
-	fclose(file);
+	close_file(file);
 	if (err)
 	{
 	    DisplayError("%s: %s\n", n->Name, err);
@@ -446,11 +373,11 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
 	 * - File name
 	 * - One empty pointer for alignment
 	 */
-	ksize += (sizeof(struct ELF_ModuleInfo) + sizeof(struct elfheader) + n->eh.shnum * n->eh.shentsize  +
+	ksize += (sizeof(struct ELF_ModuleInfo) + sizeof(struct elfheader) + n->eh->shnum * n->eh->shentsize  +
 		  strlen(n->NamePtr) + sizeof(void *));
 
 	/* Go through all sections and calculate kernel size */
-	for(i = 0; i < n->eh.shnum; i++)
+	for(i = 0; i < n->eh->shnum; i++)
 	{
 	    /* Ignore sections with zero lengths */
 	    if (!n->sh[i].size)
@@ -481,10 +408,11 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
     return 1;
 }
 
-int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug)
+int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker,
+	       kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug)
 {
     struct ELFNode *n;
-    FILE *file;
+    void *file;
     unsigned int i;
     unsigned char need_entry = 1;
     struct ELF_ModuleInfo *mod;
@@ -497,7 +425,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
     {
 	D(fprintf(stderr, "[ELF Loader] Loading file %s\n", n->Name));
 
-	file = fopen(n->Name, "rb");
+	file = open_file(n);
 	if (!file)
 	{
 	    DisplayError("Failed to open file %s!\n", n->Name);
@@ -505,7 +433,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 	}
 
 	/* Iterate over the section header in order to load some hunks */
-	for (i=0; i < n->eh.shnum; i++)
+	for (i=0; i < n->eh->shnum; i++)
 	{
 	    struct sheader *sh = n->sh;
 
@@ -548,7 +476,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 
 	/* For every loaded section perform relocations */
 	D(fprintf(stderr, "[ELF Loader] Relocating...\n"));
-	for (i=0; i < n->eh.shnum; i++)
+	for (i=0; i < n->eh->shnum; i++)
 	{
 	    struct sheader *sh = n->sh;
 
@@ -556,16 +484,18 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 	    {
 		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
 
-		if (!sh[i].addr || !relocate(&n->eh, sh, i))
+		if (!sh[i].addr || !relocate(n->eh, sh, i))
 		{
 		    DisplayError("%s: Relocation error in hunk %u!\n", n->Name, i);
 		    return 0;
 		}
 
-		free(sh[i].addr);
+		free_block(sh[i].addr);
 		sh[i].addr = NULL;
 	    }
 	}
+
+	close_file(file);
 
 	D(fprintf(stderr, "[ELF Loader] Adding module debug information...\n"));
 
@@ -584,7 +514,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 
 	/* Copy section header */
 	mod->sh = ptr_ro;
-	ptr_ro = copy_data(n->sh, ptr_ro, n->eh.shnum * n->eh.shentsize);
+	ptr_ro = copy_data(n->sh, ptr_ro, n->eh->shnum * n->eh->shentsize);
 
 	/* Copy module name */
 	mod->Name = ptr_ro;
@@ -594,7 +524,8 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 	prev_mod->Next = mod;
 	prev_mod = mod;
 
-	free(n->sh);
+	free_block(n->sh);
+	free_block(n->eh);
     }
 
     return 1;
