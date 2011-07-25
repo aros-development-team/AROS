@@ -68,7 +68,6 @@ BASE_RSRCS    := FileSystem lddemon
 #MM	kernel-debug-kobj \
 #MM     kernel-dosboot-kobj \
 #MM	kernel-filesystem-kobj \
-#MM	kernel-fs-amberram-kobj \
 #MM     kernel-graphics-kobj \
 #MM     kernel-hidd-graphics-kobj \
 #MM     kernel-hidd-kbd-kobj \
@@ -78,6 +77,7 @@ BASE_RSRCS    := FileSystem lddemon
 #MM     kernel-keymap-kobj \
 #MM	kernel-lddemon-kobj \
 #MM     kernel-devs \
+#MM	kernel-fs-kobj \
 #MM     kernel-expansion-kobj \
 #MM     kernel-hidd-kobj \
 #MM     kernel-timer-kobj \
@@ -105,8 +105,7 @@ BASE_RSRCS    := FileSystem lddemon
 #MM     kernel-boot-pkg \
 #MM	kernel-debug-pkg \
 #MM	kernel-filesystem-pkg \
-#MM	kernel-fs-amberram-pkg \
-#MM	kernel-fs-con-pkg \
+#MM	kernel-fs-pkg \
 #MM     kernel-graphics-pkg \
 #MM     kernel-hidd-graphics-pkg \
 #MM     kernel-hidd-kbd-pkg \
