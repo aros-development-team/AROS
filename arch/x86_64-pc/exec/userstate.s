@@ -12,6 +12,7 @@ cpu_SuperState:
 	movq	%rsp, %rax		// return int handler stack
 	movq	24(%rax),%rsp		// use user stack
 	pushq	(%rax)			// push return address
+cpu_UserState:
 	ret				// return from SuperState() call
 
 	.size  cpu_SuperState, .-cpu_SuperState
@@ -28,11 +29,3 @@ AROS_SLIB_ENTRY(UserState, Exec, 26):
 	iretq
 
 	.size  AROS_SLIB_ENTRY(UserState, Exec, 26), .-AROS_SLIB_ENTRY(UserState, Exec, 26)
-
-	.type   cpu_UserState, @function
-cpu_UserState:
-	mov	%ss, %ax		// SS now contains user-mode data segment. Copy it to DS.
-	mov	%ax, %ds
-	ret
-
-	.size  cpu_UserState, .-cpu_UserState
