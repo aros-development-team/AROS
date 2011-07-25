@@ -7,7 +7,6 @@
 
 #include <aros/config.h>
 #include <aros/debug.h>
-#include <asm/cpu.h>
 #include <proto/exec.h>
 #include <resources/processor.h>
 
