@@ -400,8 +400,8 @@ void kernel_cstart(const struct TagItem *msg)
 
 	D(bug("[Kernel] Created SysBase at 0x%p (pointer at 0x%p), MemHeader 0x%p\n", SysBase, &SysBase, mh));
 
-	/* Block all access to zero page */
-	core_ProtKernelArea(0, PAGE_SIZE, 0, 0, 0);
+	/* Block all user's access to zero page */
+	core_ProtKernelArea(0, PAGE_SIZE, 1, 0, 0);
 
 	/*
 	 * Now we have working exec.library memory allocator.
