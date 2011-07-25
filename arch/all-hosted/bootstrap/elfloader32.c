@@ -373,7 +373,7 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
 	 * - One empty pointer for alignment
 	 */
 	ksize += (sizeof(struct ELF_ModuleInfo) + sizeof(struct elfheader) + n->eh->shnum * n->eh->shentsize  +
-		  strlen(n->NamePtr) + sizeof(void *));
+		  strlen(n->Name) + sizeof(void *));
 
 	/* Go through all sections and calculate kernel size */
 	for(i = 0; i < n->eh->shnum; i++)
@@ -404,7 +404,7 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
     *ro_size = ksize;
     *rw_size = rwsize;
 
-    kprintf("[ELF Loader] Code %lu, data %lu\n", ksize, rwsize);
+    kprintf("[ELF Loader] Code %lu bytes, data %lu bytes\n", ksize, rwsize);
 
     return 1;
 }
@@ -520,7 +520,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 
 	/* Copy module name */
 	mod->Name = ptr_ro;
-	ptr_ro = copy_data(n->NamePtr, ptr_ro, strlen(n->NamePtr) + 1);
+	ptr_ro = copy_data(n->Name, ptr_ro, strlen(n->Name) + 1);
 
 	/* Link the module descriptor with previous one */
 	prev_mod->Next = mod;

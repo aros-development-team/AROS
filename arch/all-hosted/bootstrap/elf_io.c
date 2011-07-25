@@ -8,27 +8,33 @@
 
 #include <aros/config.h>
 
+struct ExtELFNode
+{
+    struct ELFNode node;
+    char FullName[1];		/* We need to store the full pathname */
+};
+
 struct ELFNode *FirstELF = NULL;
 static struct ELFNode *LastELF = (struct ELFNode *)&FirstELF;
 
 int AddKernelFile(char *name)
 {
-    struct ELFNode *n;
+    struct ExtELFNode *n;
 
-    n = malloc(sizeof(struct ELFNode) + strlen(name));
+    n = malloc(sizeof(struct ExtELFNode) + strlen(name) + 1);
     if (!n)
         return 0;
-    
-    n->Next  = NULL;
-    strcpy(n->Name, name);
+
+    n->node.Next = NULL;
+    strcpy(n->FullName, name);
 #if AROS_MODULES_DEBUG
-    n->NamePtr = n->Name;
+    n->node.Name = n->FullName;
 #else
-    n->NamePtr = namepart(n->Name);
+    n->node.Name = namepart(n->FullName);
 #endif
 
-    LastELF->Next = n;
-    LastELF = n;
+    LastELF->Next = &n->node;
+    LastELF = &n->node;
 
     return 1;
 }
@@ -37,7 +43,8 @@ void FreeKernelList(void)
 {
     struct ELFNode *n, *n2;
     
-    for (n = FirstELF; n; n = n2) {
+    for (n = FirstELF; n; n = n2)
+    {
 	n2 = n->Next;
 	free(n);
     }
@@ -46,7 +53,7 @@ void FreeKernelList(void)
 
 void *open_file(struct ELFNode *n)
 {
-    return fopen(n->Name, "rb");
+    return fopen(((struct ExtELFNode *)n)->FullName, "rb");
 }
 
 void close_file(void *file)
@@ -62,9 +69,10 @@ int read_block(void *file, unsigned long offset, void *dest, unsigned long lengt
     int err;
 
     err = fseek(file, offset, SEEK_SET);
-    if (err) return 0;
+    if (err)
+    	return 0;
 
-    err = fread(dest,(size_t)length, 1, file);
+    err = fread(dest, length, 1, file);
     if (err == 0)
     	return 0;
 
