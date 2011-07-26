@@ -1171,7 +1171,7 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         AddResetCallback(&hc->hc_ResetInt);
 
         // add interrupt
-        hc->hc_PCIIntHandler.h_Node.ln_Name = "UHCI PCI (pciusb.device)";
+        hc->hc_PCIIntHandler.h_Node.ln_Name = "UHCI PCI (pciuhci.device)";
         hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
         hc->hc_PCIIntHandler.h_Code = uhciIntCode;
         hc->hc_PCIIntHandler.h_Data = hc;

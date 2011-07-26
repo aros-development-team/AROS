@@ -1,5 +1,4 @@
-/* uhwcmd.c - pciusb.device by Chris Hodges
-*/
+/* uhwcmd.c - pciuhci.device based on work by Chris Hodges */
 
 #include <devices/usb_hub.h>
 #include <proto/utility.h>

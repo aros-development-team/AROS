@@ -5,7 +5,7 @@
 #include "pci_aros.h"
 
 #include "uhcichip.h"
-#include "pciusb.h"
+#include "pciuhci.h"
 
 struct Unit *Open_Unit(struct IOUsbHWReq *ioreq, LONG unitnr, struct PCIDevice *base);
 void Close_Unit(struct PCIDevice *base, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
