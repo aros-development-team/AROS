@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS Generic ACPI Definitions.
@@ -8,18 +8,9 @@
 #ifndef __AROS_ACPI_H__
 #define __AROS_ACPI_H__
 
-#ifndef EXEC_LISTS_H
-#   include <exec/lists.h>
-#endif
-#ifndef EXEC_SEMAPHORES
-#   include <exec/semaphores.h>
-#endif
-#ifndef UTILITY_HOOKS_H
-#   include <utility/hooks.h>
-#endif
-
-#include <hardware/cpu/cpu.h>
-#include <hardware/pic/pic.h>
+#include <exec/lists.h>
+#include <exec/semaphores.h>
+#include <utility/hooks.h>
 
 #define     MAX_ACPI_TABLES                 32
 
@@ -431,8 +422,6 @@ struct ACPI_TABLE_TYPE_ECDT                                                 /* E
 struct ACPIBase
 {
     struct  Node                            ACPIB_Node;
-    struct  ExecBase                        *ACPIB_SysBase;
-    struct  UtilityBase                     *ACPIB_UtilBase;
     struct  CPUBase                         *ACPIB_CPUBase;
     struct  PICBase                         *ACPIB_PICBase;
 

@@ -49,7 +49,7 @@ void con_InitMultiboot2(void *mb)
 
 	switch (fb->framebuffer_type)
 	{
-    	case MB_FRAMEBUFFER_TEXT:
+    	case MB2_FRAMEBUFFER_TEXT:
     	    /* Text framebuffer, size in characters */
 	    scr_Width  = fb->framebuffer_width;
 	    scr_Height = fb->framebuffer_height;
