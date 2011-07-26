@@ -1884,7 +1884,7 @@ else
 $(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
 endif
 ifeq ($(TARGET),%(mainmmake)-%(arch))
-$(BD_OBJDIR$(BDID))/%.o : %.c
+$(BD_OBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
 	%compile_q opt=$(TMP_CFLAGS) cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 endif
 
@@ -1894,7 +1894,8 @@ else
 $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
 endif
 ifeq ($(TARGET),%(mainmmake)-%(arch))
-$(BD_OBJDIR$(BDID))/%.d : %.c
+$(BD_OBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
+	@echo "MAKE DEPEND 3"
 	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
 endif
 
