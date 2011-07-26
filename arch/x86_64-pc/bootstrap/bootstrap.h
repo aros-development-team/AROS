@@ -6,24 +6,7 @@
     $Id$
 */
 
-/*
- 
-struct KernelMessage {
-    struct { void *low,*high; } GRUBData;
-    
-    struct { void *low,*high; } kernelBase;
-    struct { void *low,*high; } kernelLowest;
-    struct { void *low,*high; } kernelHighest;  
-    struct { void *low,*high; } kernelBSS;     
-    struct { void *low,*high; } GDT;
-    struct { void *low,*high; } IDT;
-    struct { void *low,*high; } PL4;  
-    
-    struct { void *low,*high; } vbeModeInfo;
-    struct { void *low,*high; } vbeControllerInfo;
-    
-};
-*/
+#include <aros/multiboot.h>
 
 #ifdef DEBUG
 #define D(x)    x
@@ -43,6 +26,8 @@ struct TagItem64
 
 /* A pointer used for building boot taglist */
 extern struct TagItem64 *tag;
+extern struct vbe_mode VBEModeInfo;
+extern struct vbe_controller VBEControllerInfo;
 
 /* The target base address of 64-bit kernel */
 #define KERNEL_TARGET_ADDRESS   0x01000000
@@ -65,6 +50,15 @@ extern unsigned long _binary_vesa_size;
 void setup_mmu(void);
 void kick(void *kick_base, struct TagItem64 *km);
 
+unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned long end);
+void AllocFB(void);
+void Hello(void);
+int ParseCmdLine(const char *cmdline);
+struct mb_mmap *mmap_make(unsigned long *len, unsigned long mem_lower, unsigned long long mem_upper);
+void panic(const char *str);
+unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsigned long *mmap_len);
+unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mmap_len);
+
 #if defined(__i386__) || defined(__x86_64__)
     #define LONG2BE(v)  ({ unsigned int __v32; asm volatile("bswap %0":"=a"(__v32):"0"((v))); __v32; })
 #else
@@ -72,4 +66,3 @@ void kick(void *kick_base, struct TagItem64 *km);
 #endif
 
 #endif // _BOOTSTRAP_H
-
