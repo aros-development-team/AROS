@@ -23,6 +23,7 @@ extern unsigned char scr_Type;
 
 /* Common initialization */
 void con_InitMultiboot(struct multiboot *mb);
+void con_InitMultiboot2(unsigned long long *mb);
 void con_InitTagList(const struct TagItem *tags);
 void con_InitVESA(unsigned short version, struct vbe_mode *mode);
 void con_InitVGA(void);
