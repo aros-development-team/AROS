@@ -31,13 +31,6 @@ struct KernelMessage {
 #define D(x)    /* eps */
 #endif
 
-struct module
-{
-    const char *name;
-    struct elfheader *eh;	/* Effectively start address of the module */
-    struct sheader *sh;
-};
-
 /*
  * Our kickstart is 64-bit but we are being compiled in 32-bit mode.
  * So we need a correct definition of TagItem
@@ -46,18 +39,6 @@ struct TagItem64
 {
     unsigned long long ti_Tag;
     unsigned long long ti_Data;
-};
-
-/* Kickstart module debug information (pointed to by KRN_DebugInfo ti_Data) */
-struct ELF_ModuleInfo64
-{
-    unsigned long long Next;
-    unsigned long long Name;
-    unsigned short     Type;
-    unsigned short     Pad0;	/* On i386 we have different alignment, so do explicit padding */
-    unsigned int       Pad1;
-    unsigned long long eh;
-    unsigned long long sh;
 };
 
 /* A pointer used for building boot taglist */

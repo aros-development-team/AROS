@@ -7,7 +7,9 @@
 */
 
 #include <bootconsole.h>
+#include <runtime.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "bootstrap.h"
 #include "support.h"
@@ -15,9 +17,9 @@
 /* This comes from librom32 */
 int __vcformat (void *data, int(*outc)(int, void *), const char * format, va_list args);
 
-const char *__bs_remove_path(const char *in)
+char *__bs_remove_path(char *in)
 {
-    const char *p;
+    char *p;
 
     /* Go to the end of string */
     for (p = in; *p; p++);
@@ -28,8 +30,10 @@ const char *__bs_remove_path(const char *in)
 }
 
 /* Own memcpy(), because librom's one can use CopyMem() */
-void *__bs_memcpy(void *dest, const void *src, long len)
+void *memcpy(void *dest, const void *src, size_t len)
 {
+    void *ret = dest;
+
     while (len >= 4)
     {
         *(unsigned long *)dest = *(unsigned long *)src;
@@ -50,8 +54,7 @@ void *__bs_memcpy(void *dest, const void *src, long len)
         dest += 1;
     }
 
-    /* Return next byte in the destination, useful in some cases */
-    return dest;
+    return ret;
 }
 
 /*
@@ -104,6 +107,18 @@ static int kputc(int c, void *data)
 
 /* KNOWN BUG: %llu and %lld will not work here. See notice in compiler/clib/__vcformat.c. */
 void kprintf(const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+
+    __vcformat(0, kputc, format, ap);
+
+    va_end(ap);
+}
+
+/* The same as kprintf(). Needed for ELF loader. */
+void DisplayError(char *format, ...)
 {
     va_list ap;
 

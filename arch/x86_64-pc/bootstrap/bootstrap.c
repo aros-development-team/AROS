@@ -16,6 +16,7 @@
 #include <asm/cpu.h>
 
 #include <bootconsole.h>
+#include <elfloader.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -114,39 +115,40 @@ static unsigned char __stack[65536] __attribute__((used));
  * Find the storage for module with given name. If such module already exists, return a pointer to it,
  * so that it can be overridden by the new one. Otherwise, alloc space for new module.
  */
-static struct module *module_prepare(const char *s, const struct module *m, int *count)
+static struct ELFNode *module_prepare(const char *s, struct ELFNode *m)
 {
-    struct module *mo = (struct module *)m;
-    int c = *count;
-    
+    struct ELFNode *last = NULL;
+    struct ELFNode *mo;
+
     /* Repeat for every module in the list */
-    while (c>0)
+    for (mo = m; mo; mo = mo->Next)
     {
-        /* Module exists? Break here to allow overriding it */
-#if 0
-// FIXME: we do not know the names of ELF modules
-        if (strcmp(s, mo->name) == 0)
-            break;
-#endif
-        
-        /* Iterate... */
-        c--;
-        mo++;
+	if (s)
+	{
+	    /* Module exists? Break here to allow overriding it */
+            if (strcmp(s, mo->Name) == 0)
+            	return mo;
+        }
+
+	last = mo;
     }
-    
-    /* If the module has not been found on the list, increase the counter */
-    if (c==0) *count = *count + 1;
-    
+
+    mo = __bs_malloc(sizeof(struct ELFNode));
+    mo->Next = NULL;
+
+    if (last)
+	last->Next = mo;
+
     return mo;
 }
 
 /*
  * Search for modules
  */
-static int find_modules(struct multiboot *mb, const struct module *m, unsigned long *endPtr)
+static struct ELFNode *find_modules(struct multiboot *mb, unsigned long *endPtr)
 {
+    struct ELFNode *m = NULL;
     unsigned long end = 0;
-    int count = 0;
 
     /* Are there any modules at all? */
     if (mb->flags && MB_FLAGS_MODS)
@@ -163,16 +165,19 @@ static int find_modules(struct multiboot *mb, const struct module *m, unsigned l
             if (p[0] == 0x7f && p[1] == 'E' && p[2] == 'L' && p[3] == 'F')
             {
                 /* 
-                 * The loaded file is an ELF object. It may be put directly into our list of modules
+                 * The loaded file is an ELF object. It may be put directly into our list of modules.
+                 * Unfortunately GRUB doesn't give us names of loaded modules
                  */
-                const char *name = __bs_remove_path((char *)mod->cmdline);
-                struct module *mo = module_prepare(name, m, &count);
+                struct ELFNode *mo = module_prepare(NULL, m);
 
-		/* GRUB doesn't give us names of loaded modules */
-                mo->name = "Kickstart ELF";
+                mo->Name = "Kickstart ELF";
                 mo->eh = (void*)mod->mod_start;
 
-                D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->name, mo->eh));
+                D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->Name, mo->eh));
+
+		/* Remember the first module as start of our list */
+	        if (!m)
+        	    m = mo;
 
 		if (mod->mod_end > end)
 		    end = mod->mod_end;
@@ -190,17 +195,20 @@ static int find_modules(struct multiboot *mb, const struct module *m, unsigned l
                 while (file < (void*)mod->mod_end)
                 {
                     int len = LONG2BE(*(int *)file);
-                    const char *s = __bs_remove_path(file+4);
-                    struct module *mo = module_prepare(s, m, &count);
+                    char *s = __bs_remove_path(file+4);
+                    struct ELFNode *mo = module_prepare(s, m);
 
                     file += 5+len;
                     len = LONG2BE(*(int *)file);
                     file += 4;
 
-                    mo->name = s;
+                    mo->Name = s;
                     mo->eh = file;
-                    D(kprintf("[BOOT]   * PKG module %s @ %p\n", mo->name, mo->eh));
-                    
+                    D(kprintf("[BOOT]   * PKG module %s @ %p\n", mo->Name, mo->eh));
+
+		    if (!m)
+		    	m = mo;
+
                     file += len;
                 }
 
@@ -208,13 +216,14 @@ static int find_modules(struct multiboot *mb, const struct module *m, unsigned l
 		    end = mod->mod_end;
             }
             else
-            	kprintf("[BOOT] Unknown module 0x%p\n", p);
+            	kprintf("[BOOT] Unknown module 0x%p\n", p);            
         }
     }
 
     *endPtr = end;
-    /* Return the real amount of modules to load */
-    return count;
+
+    /* Return start of the modules list */
+    return m;
 }
 
 /* Marks console mirror buffer as allocated */
@@ -264,19 +273,19 @@ static void setupVESA(char *vesa)
      */
 
     D(kprintf("[BOOT] Backing up low memory, buffer at 0x%p\n", tmp));
-    __bs_memcpy(tmp, VESA_START, vesa_size);
+    memcpy(tmp, VESA_START, vesa_size);
 
     D(kprintf("[BOOT] setupVESA: vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size));
-    __bs_memcpy(VESA_START, vesa_start, vesa_size);
+    memcpy(VESA_START, vesa_start, vesa_size);
 
     kprintf("[BOOT] setupVESA: BestModeMatch for %dx%dx%d = ",x,y,d);
     mode = findMode(x,y,d);
 
     /* Get information and copy it from 16-bit memory space to our 32-bit memory */
     getModeInfo(mode);
-    __bs_memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
+    memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
     getControllerInfo();
-    __bs_memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
+    memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
 
     /* Activate linear framebuffer is supported by the mode */
     if (VBEModeInfo.mode_attributes & VM_LINEAR_FB)
@@ -293,7 +302,7 @@ static void setupVESA(char *vesa)
     }
 
     /* Put memory back and reset memory allocator */
-    __bs_memcpy(VESA_START, tmp, vesa_size);
+    memcpy(VESA_START, tmp, vesa_size);
     __bs_free();
 
     if (res == VBE_RC_SUPPORTED)
@@ -397,9 +406,9 @@ static void setupFB(struct multiboot *mb)
     }
 }
 
-static void prepare_message(unsigned long kick_start, unsigned long kick_base)
+static void prepare_message(unsigned long kick_start, unsigned long kick_base, void *kick_end, void *DebugInfo_ptr)
 {
-    D(kprintf("[BOOT] Kickstart 0x%p - 0x%p (entry 0x%p), protection 0x%p - 0x%p\n", kick_start, kernel_highest(), kick_base,
+    D(kprintf("[BOOT] Kickstart 0x%p - 0x%p (base 0x%p), protection 0x%p - 0x%p\n", kick_start, kick_end, kick_base,
     	      &_prot_lo, &_prot_hi));
 
     tag->ti_Tag  = KRN_KernelBase;
@@ -411,7 +420,7 @@ static void prepare_message(unsigned long kick_start, unsigned long kick_base)
     tag++;
 
     tag->ti_Tag  = KRN_KernelHighest;
-    tag->ti_Data = KERNEL_OFFSET | (unsigned long)kernel_highest();
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long)kick_end;
     tag++;
 
     tag->ti_Tag  = KRN_KernelBss;
@@ -419,7 +428,7 @@ static void prepare_message(unsigned long kick_start, unsigned long kick_base)
     tag++;
 
     tag->ti_Tag  = KRN_DebugInfo;
-    tag->ti_Data = KERNEL_OFFSET | DebugInfo_ptr;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long)DebugInfo_ptr;
     tag++;
 
     tag->ti_Tag  = KRN_ProtAreaStart;
@@ -455,10 +464,8 @@ static void panic(const char *str)
 */
 static void __attribute__((used)) __bootstrap(unsigned int magic, struct multiboot *mb)
 {
-    struct module *mod;
+    struct ELFNode *mod;
     char *vesa = NULL;
-    int i;
-    int module_count = 0;
     const char *cmdline = NULL;
     struct mb_mmap *mmap = NULL;
     unsigned long len = 0;
@@ -468,6 +475,9 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     unsigned long mod_end = 0;
     unsigned long kbase = 0;
     unsigned long kstart = 0;
+    void *kend = NULL;
+    kernel_entry_fun_t kentry = NULL;
+    struct ELF_ModuleInfo *kdebug = NULL;
 
     /*
      * This will set fb_Mirror address to start of our working memory.
@@ -568,26 +578,18 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     /* Setup stage - prepare the environment */
     setup_mmu();
 
-    /*
-     * This will place list of modules in the end of our working memory.
-     * It's safe to reserve zero bytes because we won't allocate anything else.
-     */
-    mod = __bs_malloc(0);
-
     /* Search for external modules loaded by GRUB */
-    module_count = find_modules(mb, mod, &mod_end);
+    mod = find_modules(mb, &mod_end);
 
-    if (module_count == 0)
+    if (!mod)
     	panic("No kickstart modules found, nothing to run");
 
     D(kprintf("[BOOT] Modules end at 0x%p\n", mod_end));
 
     /* Count kickstart size */
-    kprintf("[BOOT] Calculating kickstart size...\n");
-    for (i = 0; i < module_count; i++)
+    if (!GetKernelSize(mod, &ro_size, &rw_size, NULL))
     {
-    	if (!count_elf_size(&mod[i], &ro_size, &rw_size))
-    	    panic("Failed to determine kickstart size");
+    	panic("Failed to determine kickstart size");
     }
 
     D(kprintf("[BOOT] Code %u, data %u\n", ro_size, rw_size));
@@ -661,15 +663,20 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     }
 
     if (!kbase)
+    {
     	panic("Failed to find %u bytes for the kickstart.\n"
     	      "Your system doesn't have enough memory.");
+    }
 
     kprintf("[BOOT] Loading kickstart, data 0x%p, code 0x%p...\n", kstart, kbase);
-    if (!LoadKernel(kbase, kstart, __bss_track, 0, mod, module_count))
+
+    if (!LoadKernel(mod, (void *)kbase, (void *)kstart, (struct KernelBSS *)__bss_track, 8, &kend, &kentry, &kdebug))
+    {
         panic("Failed to load the kickstart");
+    }
 
     /* Prepare the rest of boot taglist */
-    prepare_message(kstart, kbase);
+    prepare_message(kstart, kbase, kend, kdebug);
 
 #ifdef DEBUG_TAGLIST
     kprintf("[BOOT] Boot taglist:\n");
@@ -678,7 +685,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
 #endif
 
     /* Jump to the kickstart */
-    kick((void *)kbase, km);
+    kick(kentry, km);
 
     panic("Failed to run the kickstart");
 }

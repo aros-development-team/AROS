@@ -1,17 +1,17 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	     := bootstrap elfloader cpu support
-USER_CFLAGS  := -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DMULTIBOOT_64BIT -DELF_64BIT
+FILES	     := bootstrap cpu memory_io support
+USER_CFLAGS  := -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isystem $(SRCDIR)/bootstrap/include -DMULTIBOOT_64BIT
 USER_LDFLAGS := -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/bootstrap-pc-x86_64.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds
 LIBDIR       := $(GENDIR)/lib32
-LIBS         := bootconsole rom
+LIBS         := bootconsole rom bootstrap
 OBJDIR       := $(GENDIR)/$(CURDIR)
 USER_OBJS    := $(OBJDIR)/vesa.bin.o
 
 BOOTSTRAP_NAME := $(BINDIR)/boot/bootstrap-pc-x86_64
 
-#MM kernel-bootstrap-x86_64: linklibs-clib32 linklibs-bootconsole32
+#MM kernel-bootstrap-x86_64: linklibs-clib32 linklibs-bootconsole32 linklibs-bootstrap32
 kernel-bootstrap-x86_64: $(BOOTSTRAP_NAME)
 
 #MM
