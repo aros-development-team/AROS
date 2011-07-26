@@ -1,9 +1,9 @@
-#ifndef PCIUSB_H
-#define PCIUSB_H
+#ifndef PCIUHCI_H
+#define PCIUHCI_H
 
 /*
  *----------------------------------------------------------------------------
- *                         Includes for pciusb.device
+ *                         Includes for pciuhci.device
  *----------------------------------------------------------------------------
  *                   By Chris Hodges <chrisly@platon42.de>
  */
@@ -47,9 +47,6 @@
 #define RC_DONTREPLY  -1
 
 #define MAX_ROOT_PORTS   16
-#define MAX_USB3_PORTS   255
-
-#define PCI_CLASS_SERIAL_USB 0x0c03
 
 /* The unit node - private */
 struct PCIUnit {
@@ -175,4 +172,4 @@ struct PCIDevice {
 /* hd_Flags */
 #define HDF_FORCEPOWER	0x01
 
-#endif /* PCIUSB_H */
+#endif /* PCIUHCI_H */

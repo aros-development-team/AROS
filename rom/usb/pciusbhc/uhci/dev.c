@@ -1,5 +1,4 @@
-/* dev.c - pciusb.device by Chris Hodges
-*/
+/* dev.c - pciuhci.device based on work by Chris Hodges */
 
 #include "debug.h"
 
@@ -7,10 +6,6 @@
 #include <proto/utility.h>
 
 #include "uhwcmd.h"
-
-#define DEVNAME         "pciusb.device"
-
-const char devname[]     = MOD_NAME_STRING;
 
 static int devInit(LIBBASETYPEPTR base) {
     KPRINTF(10, ("devInit base: 0x%p SysBase: 0x%p\n", base, SysBase));
@@ -110,7 +105,7 @@ ADD2EXPUNGELIB(devExpunge, 0)
  */
 AROS_LH1(void, devBeginIO,
          AROS_LHA(struct IOUsbHWReq *, ioreq, A1),
-	     LIBBASETYPEPTR, base, 5, pciusb)
+	     LIBBASETYPEPTR, base, 5, pciuhci)
 {
     AROS_LIBFUNC_INIT
 
@@ -236,7 +231,7 @@ AROS_LH1(void, devBeginIO,
  */
 AROS_LH1(LONG, devAbortIO,
          AROS_LHA(struct IOUsbHWReq *, ioreq, A1),
-	     LIBBASETYPEPTR, base, 6, pciusb)
+	     LIBBASETYPEPTR, base, 6, pciuhci)
 {
     AROS_LIBFUNC_INIT
 
