@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	     := bootstrap cpu memory_io support
+FILES	     := bootstrap cpu memory_io multiboot1 multiboot2 support
 USER_CFLAGS  := -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isystem $(SRCDIR)/bootstrap/include -DMULTIBOOT_64BIT
 USER_LDFLAGS := -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/bootstrap-pc-x86_64.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds
 LIBDIR       := $(GENDIR)/lib32

@@ -6,13 +6,14 @@
     Lang: English
 */
 
-#define DEBUG
+//#define DEBUG
 //#define DEBUG_MEM
 //#define DEBUG_MEM_TYPE MMAP_TYPE_RAM
 //#define DEBUG_TAGLIST
 
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
+#include <aros/multiboot2.h>
 #include <asm/cpu.h>
 
 #include <bootconsole.h>
@@ -26,14 +27,16 @@
 #include "vesa.h"
 
 /*
-    The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file, 
-    therefore it will be packed into the .aros.startup section. I hope, that turning debug on
-    will not shift it into some distinct location.
-*/
+ * The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file, 
+ * therefore it will be packed into the .aros.startup section. I hope, that turning debug on
+ * will not shift it into some distinct location.
+ * We support both legacy Multiboot v1 specification (for backwards compatibility with GRUB1)
+ * and new Multiboot v2 specification (EFI-compatible).
+ */
 
 #define MB_FLAGS (MB_PAGE_ALIGN|MB_MEMORY_INFO|MB_VIDEO_MODE)
 
-static const struct multiboot_header __header __attribute__((used,section(".aros.startup"))) =
+const struct multiboot_header __header __attribute__((used,section(".aros.startup"))) =
 {
     MB_MAGIC,
     MB_FLAGS,
@@ -46,7 +49,37 @@ static const struct multiboot_header __header __attribute__((used,section(".aros
     1,	/* We prefer text mode, but will accept also framebuffer */
     640,
     200,
-    32,
+    32
+};
+
+struct my_mb2_header
+{
+    struct mb2_header 			header;
+    struct mb2_header_tag_framebuffer	tag_fb;
+    struct mb2_header_tag		tag_end;
+};
+
+const struct my_mb2_header __header_v2 __attribute__((used,section(".aros.startup"),aligned(8))) =
+{
+    {
+    	MB2_MAGIC,
+    	MB2_ARCH_I386,
+    	sizeof(struct my_mb2_header),
+    	-(MB2_MAGIC + MB2_ARCH_I386 + sizeof(struct my_mb2_header))
+    },
+    {
+        MB2_HEADER_TAG_FRAMEBUFFER,
+        MBTF_OPTIONAL,
+        sizeof(struct mb2_header_tag_framebuffer),
+        640,
+        200,
+        32
+    },
+    {
+        MB2_HEADER_TAG_END,
+        0,
+        sizeof(struct mb2_header_tag)
+    }
 };
 
 /*
@@ -82,16 +115,25 @@ asm("	.text\n\t"
 */
 extern char *_prot_lo, *_prot_hi;
 
-/* Structures to be passed to the kickstart */
-static unsigned char __bss_track[32768] __attribute__((section(".bss.aros.tables")));
-struct TagItem64 km[32] __attribute__((section(".bss.aros.tables")));
-static struct mb_mmap MemoryMap[2];
-static struct vbe_mode VBEModeInfo;
-static struct vbe_controller VBEControllerInfo;
+/*
+ * Structures to be passed to the kickstart.
+ * They are placed in protected area in order to guarantee that the kickstart
+ * won't overwrite them while starting up.
+ */
+__attribute__((section(".bss.aros.tables"))) static unsigned char __bss_track[32768];
+__attribute__((section(".bss.aros.tables"))) struct TagItem64 km[32];
+__attribute__((section(".bss.aros.tables"))) struct mb_mmap MemoryMap[2];
+__attribute__((section(".bss.aros.tables"))) struct vbe_mode VBEModeInfo;
+__attribute__((section(".bss.aros.tables"))) struct vbe_controller VBEControllerInfo;
 
 /* A pointer used for building a taglist */
 struct TagItem64 *tag = &km[0];
 
+/* Our modules list */
+static struct ELFNode *firstMod = NULL;
+static struct ELFNode *lastMod = (struct ELFNode *)&firstMod;
+
+/* Our stack */
 static unsigned char __stack[65536] __attribute__((used));
 
 /*
@@ -115,119 +157,88 @@ static unsigned char __stack[65536] __attribute__((used));
  * Find the storage for module with given name. If such module already exists, return a pointer to it,
  * so that it can be overridden by the new one. Otherwise, alloc space for new module.
  */
-static struct ELFNode *module_prepare(const char *s, struct ELFNode *m)
+static struct ELFNode *module_prepare(const char *s)
 {
-    struct ELFNode *last = NULL;
     struct ELFNode *mo;
 
-    /* Repeat for every module in the list */
-    for (mo = m; mo; mo = mo->Next)
+    if (s)
     {
-	if (s)
-	{
+    	/* Repeat for every module in the list */
+    	for (mo = firstMod; mo; mo = mo->Next)
+    	{
 	    /* Module exists? Break here to allow overriding it */
             if (strcmp(s, mo->Name) == 0)
             	return mo;
         }
-
-	last = mo;
     }
 
     mo = __bs_malloc(sizeof(struct ELFNode));
     mo->Next = NULL;
 
-    if (last)
-	last->Next = mo;
+    lastMod->Next = mo;
+    lastMod = mo;
 
     return mo;
 }
 
-/*
- * Search for modules
- */
-static struct ELFNode *find_modules(struct multiboot *mb, unsigned long *endPtr)
+unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned long end)
 {
-    struct ELFNode *m = NULL;
-    unsigned long end = 0;
+    char *p = (char *)mod_start;
 
-    /* Are there any modules at all? */
-    if (mb->flags && MB_FLAGS_MODS)
+    if (p[0] == 0x7f && p[1] == 'E' && p[2] == 'L' && p[3] == 'F')
     {
-        int i;
-        struct mb_module *mod = (struct mb_module *)mb->mods_addr;
-        D(kprintf("[BOOT] GRUB has loaded %d files\n", mb->mods_count));
+        /* 
+         * The loaded file is an ELF object. It may be put directly into our list of modules.
+         * Unfortunately GRUB doesn't give us names of loaded modules
+         */
+        struct ELFNode *mo = module_prepare(NULL);
 
-        /* Go through the list of modules loaded by GRUB */
-        for (i=0; i < mb->mods_count; i++, mod++)
-        {
-            char *p = (char *)mod->mod_start;
+        mo->Name = "Kickstart ELF";
+        mo->eh = (void*)mod_start;
 
-            if (p[0] == 0x7f && p[1] == 'E' && p[2] == 'L' && p[3] == 'F')
-            {
-                /* 
-                 * The loaded file is an ELF object. It may be put directly into our list of modules.
-                 * Unfortunately GRUB doesn't give us names of loaded modules
-                 */
-                struct ELFNode *mo = module_prepare(NULL, m);
+        D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->Name, mo->eh));
 
-                mo->Name = "Kickstart ELF";
-                mo->eh = (void*)mod->mod_start;
-
-                D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->Name, mo->eh));
-
-		/* Remember the first module as start of our list */
-	        if (!m)
-        	    m = mo;
-
-		if (mod->mod_end > end)
-		    end = mod->mod_end;
-            }
-            else if (p[0] == 'P' && p[1] == 'K' && p[2] == 'G' && p[3] == 0x01)
-            {
-                /* 
-                 * The loaded file is an PKG\0 archive. Scan it to find all modules which are 
-                 * stored here.
-                 */
-                void *file = p + 8;
-
-                D(kprintf("[BOOT] * package @ %p:\n", mod->mod_start));
-
-                while (file < (void*)mod->mod_end)
-                {
-                    int len = LONG2BE(*(int *)file);
-                    char *s = __bs_remove_path(file+4);
-                    struct ELFNode *mo = module_prepare(s, m);
-
-                    file += 5+len;
-                    len = LONG2BE(*(int *)file);
-                    file += 4;
-
-                    mo->Name = s;
-                    mo->eh = file;
-                    D(kprintf("[BOOT]   * PKG module %s @ %p\n", mo->Name, mo->eh));
-
-		    if (!m)
-		    	m = mo;
-
-                    file += len;
-                }
-
-		if (mod->mod_end > end)
-		    end = mod->mod_end;
-            }
-            else
-            	kprintf("[BOOT] Unknown module 0x%p\n", p);            
-        }
+	if (mod_end > end)
+	    end = mod_end;
     }
+    else if (p[0] == 'P' && p[1] == 'K' && p[2] == 'G' && p[3] == 0x01)
+    {
+        /* 
+         * The loaded file is an PKG\0 archive. Scan it to find all modules which are 
+         * stored here.
+         */
+        void *file = p + 8;
 
-    *endPtr = end;
+        D(kprintf("[BOOT] * package @ %p:\n", mod_start));
 
-    /* Return start of the modules list */
-    return m;
+        while (file < (void*)mod_end)
+        {
+            int len = LONG2BE(*(int *)file);
+            char *s = __bs_remove_path(file+4);
+            struct ELFNode *mo = module_prepare(s);
+
+            file += 5+len;
+            len = LONG2BE(*(int *)file);
+            file += 4;
+
+            mo->Name = s;
+            mo->eh = file;
+            D(kprintf("[BOOT]   * PKG module %s @ %p\n", mo->Name, mo->eh));
+
+            file += len;
+        }
+
+	if (mod_end > end)
+	    end = mod_end;
+    }
+    else
+       	kprintf("[BOOT] Unknown module 0x%p\n", p);
+
+    return end;
 }
 
 /* Marks console mirror buffer as allocated */
-static void AllocFB(void)
+void AllocFB(void)
 {
     if (scr_Type == SCR_GFX)
     {
@@ -332,78 +343,45 @@ static void setupVESA(char *vesa)
     kprintf("[BOOT] setupVESA: VESA setup complete\n");
 }
 
-static void setupFB(struct multiboot *mb)
+int ParseCmdLine(const char *cmdline)
 {
-    if (mb->flags & MB_FLAGS_GFX)
+    if (cmdline)
     {
-    	kprintf("[BOOT] Got VESA display mode 0x%x from the bootstrap\n", mb->vbe_mode);
-    	D(kprintf("[BOOT] Mode info 0x%p, controller into 0x%p\n", mb->vbe_mode_info, mb->vbe_control_info));
+        /*
+     	 * If vesa= option was given, set up the specified video mode explicitly.
+     	 * Otherwise specify to AROS what has been passed to us by the bootloader.
+     	 */
+    	char *vesa = strstr(cmdline, "vesa=");
 
-    	/*
-	 * We are already running in VESA mode set by the bootloader.
-	 * Pass on the mode information to AROS.
-	 */
-	tag->ti_Tag = KRN_VBEModeInfo;
-        tag->ti_Data = mb->vbe_mode_info;
-        tag++;
+	tag->ti_Tag  = KRN_CmdLine;
+    	tag->ti_Data = KERNEL_OFFSET | (unsigned long)cmdline;
+    	tag++;
 
-        tag->ti_Tag = KRN_VBEControllerInfo;
-        tag->ti_Data = mb->vbe_control_info;
-        tag++;
-
-        tag->ti_Tag = KRN_VBEMode;
-        tag->ti_Data = mb->vbe_mode;
-        tag++;
-
-        return;
+    	if (vesa)
+    	{
+    	    setupVESA(&vesa[5]);
+    	    return 0;
+    	}
     }
+    return 1;
+}
 
-    if (mb->flags & MB_FLAGS_FB)
-    {
-    	kprintf("[BOOT] Got framebuffer display %dx%dx%d from the bootstrap\n",
-    		mb->framebuffer_width, mb->framebuffer_height, mb->framebuffer_bpp);
-	D(kprintf("[BOOT] Address 0x%llp, type %d, %d bytes per line\n", mb->framebuffer_addr, mb->framebuffer_type, mb->framebuffer_pitch));
+struct mb_mmap *mmap_make(unsigned long *len, unsigned long mem_lower, unsigned long long mem_upper)
+{
+    D(kprintf("[BOOT] No memory map supplied by the bootloader, using defaults\n"));
 
-	/*
-	 * AROS VESA driver supports only RGB framebuffer because we are
-	 * unlikely to have VGA palette registers for other cases.
-	 * FIXME: we have some pointer to palette registers. We just need to
-	 * pass it to the bootstrap and handle it there (how? Is it I/O port
-	 * address or memory-mapped I/O address?)
-	 */
-    	if (mb->framebuffer_type != MB_FRAMEBUFFER_RGB)
-    	    return;
+    MemoryMap[0].size = 20;
+    MemoryMap[0].addr = 0;
+    MemoryMap[0].len  = mem_lower;
+    MemoryMap[0].type = MMAP_TYPE_RAM;
 
-	/*
-    	 * We have a framebuffer but no VBE information.
-    	 * Looks like we are running on EFI machine with no VBE support (Mac).
-    	 * Convert framebuffer data to VBEModeInfo and hand it to AROS.
-    	 */
-    	VBEModeInfo.mode_attributes		= VM_SUPPORTED|VM_COLOR|VM_GRAPHICS|VM_NO_VGA_HW|VM_NO_VGA_MEM|VM_LINEAR_FB;
-    	VBEModeInfo.bytes_per_scanline		= mb->framebuffer_pitch;
-    	VBEModeInfo.x_resolution		= mb->framebuffer_width;
-    	VBEModeInfo.y_resolution		= mb->framebuffer_height;
-    	VBEModeInfo.bits_per_pixel		= mb->framebuffer_bpp;
-    	VBEModeInfo.memory_model		= VMEM_RGB;
-    	VBEModeInfo.red_mask_size		= mb->framebuffer_red_mask_size;
-    	VBEModeInfo.red_field_position	        = mb->framebuffer_red_field_position;
-    	VBEModeInfo.green_mask_size		= mb->framebuffer_green_mask_size;
-    	VBEModeInfo.green_field_position	= mb->framebuffer_green_field_position;
-    	VBEModeInfo.blue_mask_size		= mb->framebuffer_blue_mask_size;
-    	VBEModeInfo.blue_field_position		= mb->framebuffer_blue_field_position;
-	VBEModeInfo.phys_base			= mb->framebuffer_addr;
-	VBEModeInfo.linear_bytes_per_scanline   = mb->framebuffer_pitch;
-	VBEModeInfo.linear_red_mask_size	= mb->framebuffer_red_mask_size;
-	VBEModeInfo.linear_red_field_position   = mb->framebuffer_red_field_position;
-	VBEModeInfo.linear_green_mask_size	= mb->framebuffer_green_mask_size;
-	VBEModeInfo.linear_green_field_position = mb->framebuffer_green_field_position;
-	VBEModeInfo.linear_blue_mask_size	= mb->framebuffer_blue_mask_size;
-	VBEModeInfo.linear_blue_field_position  = mb->framebuffer_blue_field_position;
-
-	tag->ti_Tag = KRN_VBEModeInfo;
-        tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
-        tag++;
-    }
+    MemoryMap[1].size = 20;
+    MemoryMap[1].addr = 0x100000;
+    MemoryMap[1].len  = mem_upper;
+    MemoryMap[1].type = MMAP_TYPE_RAM;
+    
+    *len = sizeof(MemoryMap);
+    return MemoryMap;
 }
 
 static void prepare_message(unsigned long kick_start, unsigned long kick_base, void *kick_end, void *DebugInfo_ptr)
@@ -442,7 +420,7 @@ static void prepare_message(unsigned long kick_start, unsigned long kick_base, v
     tag->ti_Tag = TAG_DONE;
 }
 
-static void panic(const char *str)
+void panic(const char *str)
 {
     kprintf("%s\n", str);
     kprintf("*** SYSTEM PANIC!!! ***\n");
@@ -462,11 +440,8 @@ static void panic(const char *str)
  * or as a collection in PKG file. If some file is specified in both PKG file and list of separate modules, the
  * copy in PKG will be skipped.
 */
-static void __attribute__((used)) __bootstrap(unsigned int magic, struct multiboot *mb)
+static void __bootstrap(unsigned int magic, void *mb)
 {
-    struct ELFNode *mod;
-    char *vesa = NULL;
-    const char *cmdline = NULL;
     struct mb_mmap *mmap = NULL;
     unsigned long len = 0;
     unsigned long ro_size = 0;
@@ -484,79 +459,29 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
      * We don't know its size yet, we will allocate it later.
      */
     fb_Mirror = __bs_malloc(0);
-    con_InitMultiboot(mb);
 
-    kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
-    D(kprintf("[BOOT] Stack @ %p, [%d bytes]\n", __stack, sizeof(__stack)));
-    D(kprintf("[BOOT] Multiboot structure @ %p\n", mb));
-
-    /*
-     * Now allocate our mirror buffer.
-     * The buffer is used only by graphical console.
-     */
-    AllocFB();
-
-    if (mb->flags & MB_FLAGS_CMDLINE)
+    switch(magic)
     {
-    	cmdline = (const char *)mb->cmdline;
-    	D(kprintf("[BOOT] Command line @ %p : '%s'\n", mb->cmdline, cmdline));
+    case MB_STARTUP_MAGIC:
+	/* Parse multiboot v1 information */
+	mod_end = mb1_parse(mb, &mmap, &len);
+	break;
+
+    case MB2_STARTUP_MAGIC:
+    	/* Parse multiboot v2 information */
+    	mod_end = mb2_parse(mb, &mmap, &len);
+	break;
+
+    default:
+    	/* What to do here? We have no console... Die silently... */
+    	return;
     }
 
-    if (cmdline)
+    D(kprintf("[BOOT] Modules end at 0x%p\n", mod_end));
+    if (!mod_end)
     {
-    	vesa = strstr(cmdline, "vesa=");
-
-	tag->ti_Tag = KRN_CmdLine;
-    	tag->ti_Data = KERNEL_OFFSET | (unsigned long)cmdline;
-    	tag++;
+    	panic("No kickstart modules found, nothing to run");
     }
-
-    if ((mb->flags & MB_FLAGS_MMAP))
-    {
-    	mmap = (struct mb_mmap *)mb->mmap_addr;
-    	len  = mb->mmap_length;
-
-	D(kprintf("[BOOT] Memory map at 0x%p, length %u\n", mmap, len));
-    }
-
-    if (mb->flags & MB_FLAGS_MEM)
-    {
-        D(kprintf("[BOOT] Low memory %u KB, upper memory %u KB\n", mb->mem_lower, mb->mem_upper));
-
-    	if (!mmap)
-    	{
-    	    /*
-    	     * To simplify things down, memory map is mandatory for our kickstart.
-    	     * So we create an implicit one if the bootloader didn't supply it.
-    	     */
-            D(kprintf("[BOOT] No memory map supplied by the bootloader, using defaults\n"));
-
-	    MemoryMap[0].size = 20;
-            MemoryMap[0].addr = 0;
-            MemoryMap[0].len  = mb->mem_lower << 10;
-            MemoryMap[0].type = MMAP_TYPE_RAM;
-
-            MemoryMap[1].size = 20;
-            MemoryMap[1].addr = 0x100000;
-            MemoryMap[1].len  = mb->mem_upper << 10;
-            MemoryMap[1].type = MMAP_TYPE_RAM;
-
-            mmap = MemoryMap;
-            len = sizeof(MemoryMap);
-        }
-
-	/* Kickstart wants size in bytes */
-    	tag->ti_Tag = KRN_MEMLower;
-    	tag->ti_Data = mb->mem_lower << 10;
-    	tag++;
-
-	tag->ti_Tag = KRN_MEMUpper;
-    	tag->ti_Data = mb->mem_upper << 10;
-    	tag++;
-    }
-
-    if (!mmap)
-    	panic("No memory information provided by the bootloader");
 
     tag->ti_Tag = KRN_MMAPAddress;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long)mmap;
@@ -566,28 +491,11 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     tag->ti_Data = len;
     tag++;
 
-    /*
-     * If vesa= option was given, set up the specified video mode explicitly.
-     * Otherwise specify to AROS what has been passed to us by the bootloader.
-     */
-    if (vesa)
-        setupVESA(&vesa[5]);
-    else
-    	setupFB(mb);
-
     /* Setup stage - prepare the environment */
     setup_mmu();
 
-    /* Search for external modules loaded by GRUB */
-    mod = find_modules(mb, &mod_end);
-
-    if (!mod)
-    	panic("No kickstart modules found, nothing to run");
-
-    D(kprintf("[BOOT] Modules end at 0x%p\n", mod_end));
-
     /* Count kickstart size */
-    if (!GetKernelSize(mod, &ro_size, &rw_size, NULL))
+    if (!GetKernelSize(firstMod, &ro_size, &rw_size, NULL))
     {
     	panic("Failed to determine kickstart size");
     }
@@ -670,7 +578,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
 
     kprintf("[BOOT] Loading kickstart, data 0x%p, code 0x%p...\n", kstart, kbase);
 
-    if (!LoadKernel(mod, (void *)kbase, (void *)kstart, (struct KernelBSS *)__bss_track, 8, &kend, &kentry, &kdebug))
+    if (!LoadKernel(firstMod, (void *)kbase, (void *)kstart, (struct KernelBSS *)__bss_track, 8, &kend, &kentry, &kdebug))
     {
         panic("Failed to load the kickstart");
     }
@@ -688,4 +596,10 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, struct multibo
     kick(kentry, km);
 
     panic("Failed to run the kickstart");
+}
+
+void Hello(void)
+{
+    kprintf  ("[BOOT] Entered AROS Bootstrap @ 0x%p\n", __bootstrap);
+    D(kprintf("[BOOT] Stack @ 0x%p, [%d bytes]\n", __stack, sizeof(__stack)));
 }
