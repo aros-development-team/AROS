@@ -54,6 +54,7 @@ typedef enum
 #define KRN_HostInterface	(KRN_Dummy + 20) /* Pointer to host OS interface structure (hosted)	*/
 #define KRN_DebugInfo		(KRN_Dummy + 21) /* Kicksrart debug information, see debug.library	*/
 #define KRN_BootLoader          (KRN_Dummy + 22) /* Pointer to bootloader name string			*/
+#define KRN_EFISystemTable	(KRN_Dummy + 23) /* Pointer to EFI system table				*/
 
 /* Magic value passed by the bootstrap as second parameter */
 #define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')
