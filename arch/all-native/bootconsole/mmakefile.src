@@ -10,7 +10,8 @@ FONT   := font8x14
 # This can be hardware-specific.
 SERIAL := serial_16450
 
-FILES := common clear init_multiboot init_taglist screen_text screen_fb util_fb vars $(FONT) $(SERIAL)
+FILES := common clear init_multiboot init_multiboot2 init_taglist \
+	 screen_text screen_fb util_fb vars $(FONT) $(SERIAL)
 
 USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 
