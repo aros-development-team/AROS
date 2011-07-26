@@ -81,7 +81,7 @@ static void *load_hunk(void *file, struct sheader *sh, void *addr, struct Kernel
     /* copy block of memory from ELF file if it exists */
     if (sh->type != SHT_NOBITS)
     {
-	if (!read_block(file, sh->offset, (void *)(unsigned long)sh->addr, sh->size))
+	if (read_block(file, sh->offset, (void *)(unsigned long)sh->addr, sh->size))
 	    return NULL;
     }
     else
@@ -352,43 +352,49 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
   return 1;
 }
 
-int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size, size_t *bss_size)
+int GetKernelSize(struct ELFNode *FirstELF, unsigned long *ro_size, unsigned long *rw_size, unsigned long *bss_size)
 {
     struct ELFNode *n;
-    FILE *file;
-    char *err;
-    size_t ksize = 0;
-    size_t rwsize = 0;
-    size_t bsize = sizeof(struct KernelBSS_t);
+    unsigned long ksize = 0;
+    unsigned long rwsize = 0;
+    unsigned long bsize = sizeof(struct KernelBSS_t);
     unsigned short i;
 
     kprintf("[ELF Loader] Calculating kickstart size...\n");
 
     for (n = FirstELF; n; n = n->Next)
     {
+    	void *file;
+    	char *errstr = NULL;
+    	unsigned int err;
+
 	D(kprintf("[ELF Loader] Checking file %s\n", n->Name));
 	
-	file = open_file(n);
-	if (!file)
+	file = open_file(n, &err);
+	if (err)
 	{
 	    DisplayError("Failed to open file %s!\n", n->Name);
 	    return 0;
 	}
 
 	/* Check the header of ELF file */
-	n->eh = load_block(file, 0, sizeof(struct elfheader));
-	if (n->eh)
+	n->eh = load_block(file, 0, sizeof(struct elfheader), &err);
+	if (err)
+	{
+	    errstr = "Failed to read file header";
+	}
+	else
 	{
 	    err = check_header(n->eh);
 	    if (!err)
 	    {
-	    	n->sh = load_block(file, n->eh->shoff, n->eh->shnum * n->eh->shentsize);
-	    	if (!n->sh)
-	    	    err = "Failed to read section headers";
+	    	n->sh = load_block(file, n->eh->shoff, n->eh->shnum * n->eh->shentsize, &err);
+	    	if (err)
+	    	{
+	    	    errstr = "Failed to read section headers";
+	    	}
 	    }
 	}
-	else
-	    err = "Failed to read file header";
 
 	close_file(file);
 	if (err)
@@ -424,7 +430,7 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size, si
 	    if ((n->sh[i].flags & SHF_ALLOC) || (n->sh[i].type == SHT_STRTAB) || (n->sh[i].type == SHT_SYMTAB))
 	    {
 		/* Add maximum space for alignment */
-		size_t s = n->sh[i].size + n->sh[i].addralign - 1;
+		unsigned long s = n->sh[i].size + n->sh[i].addralign - 1;
 
 		if (n->sh[i].flags & SHF_WRITE)
 		    rwsize += s;
@@ -459,7 +465,6 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
 	       void **kick_end, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug)
 {
     struct ELFNode *n;
-    void *file;
     unsigned int i;
     unsigned char need_entry = 1;
     struct ELF_ModuleInfo_t *mod;
@@ -469,10 +474,13 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
 
     for (n = FirstELF; n; n = n->Next)
     {
+        void *file;
+        unsigned int err;
+
 	kprintf("[ELF Loader] Code %p, Data %p, Module %s...\n", ptr_ro, ptr_rw, n->Name);
 
-	file = open_file(n);
-	if (!file)
+	file = open_file(n, &err);
+	if (err)
 	{
 	    DisplayError("Failed to open file %s!\n", n->Name);
 	    return 0;
@@ -529,11 +537,16 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
 
 	    if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
 	    {
-		sh[i].addr = (elf_ptr_t)(unsigned long)load_block(file, sh[i].offset, sh[i].size);
-
-		if (!sh[i].addr || !relocate(n->eh, sh, i, (uintptr_t)DefSysBase))
+		sh[i].addr = (elf_ptr_t)(unsigned long)load_block(file, sh[i].offset, sh[i].size, &err);
+		if (err)
 		{
-		    DisplayError("%s: Relocation error in hunk %u!\n", n->Name, i);
+		    DisplayError("%s: Failed to load relocation section %u\n", n->Name, i);
+		    return 0;
+		}
+
+		if (!relocate(n->eh, sh, i, (uintptr_t)DefSysBase))
+		{
+		    DisplayError("%s: Relocation error in section %u!\n", n->Name, i);
 		    return 0;
 		}
 

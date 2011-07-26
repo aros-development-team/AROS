@@ -1,8 +1,8 @@
+#include <elfloader.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#include <elfloader.h>
 
 #include "elf_io.h"
 #include "support.h"
@@ -52,9 +52,14 @@ void FreeKernelList(void)
     /* We do not reset list pointers because the list will never be reused */
 }
 
-void *open_file(struct ELFNode *n)
+void *open_file(struct ELFNode *n, unsigned int *err)
 {
-    return fopen(((struct ExtELFNode *)n)->FullName, "rb");
+    FILE *f;
+
+    f = fopen(((struct ExtELFNode *)n)->FullName, "rb");
+    *err = f ? 0 : errno;
+    
+    return f;
 }
 
 void close_file(void *file)
@@ -71,30 +76,34 @@ int read_block(void *file, unsigned long offset, void *dest, unsigned long lengt
 
     err = fseek(file, offset, SEEK_SET);
     if (err)
-    	return 0;
+    	return errno;
 
     err = fread(dest, length, 1, file);
     if (err == 0)
-    	return 0;
+    	return errno;
 
-    return 1;
+    return 0;
 }
 
 /*
  * load_block also allocates the memory
  */
-void *load_block(void *file, unsigned long offset, unsigned long length)
+void *load_block(void *file, unsigned long offset, unsigned long length, unsigned int *err)
 {
     void *dest = malloc(length);
     
     if (dest)
     {
-	if (!read_block(file, offset, dest, length))
+	*err = read_block(file, offset, dest, length);
+	if (*err)
 	{
 	    free(dest);
 	    return NULL;
 	}
+	*err = 0;
     }
+    else
+    	*err = errno;
 
     return dest;
 }

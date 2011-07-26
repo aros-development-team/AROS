@@ -26,7 +26,7 @@ struct ELF_ModuleInfo;
 typedef int (*kernel_entry_fun_t)(struct TagItem *, unsigned int);
 
 /* Two main functions you will use */
-int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size, size_t *bss_size);
+int GetKernelSize(struct ELFNode *FirstELF, unsigned long *ro_size, unsigned long *rw_size, unsigned long *bss_size);
 int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *bss_tracker, uintptr_t DefSysBase,
 	       void **kick_end, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug);
 
@@ -34,10 +34,10 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *bss_t
  * These functions are used to access files by the loader.
  * They need to be provided by your bootstrap implementation.
  */
-void *open_file(struct ELFNode *n);
+void *open_file(struct ELFNode *n, unsigned int *errno);
 void close_file(void *file);
 int read_block(void *file, unsigned long offset, void *dest, unsigned long length);
-void *load_block(void *file, unsigned long offset, unsigned long length);
+void *load_block(void *file, unsigned long offset, unsigned long length, unsigned int *errno);
 void free_block(void *addr);
 
 #endif
