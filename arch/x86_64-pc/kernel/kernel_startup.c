@@ -228,6 +228,11 @@ void kernel_cstart(const struct TagItem *msg)
 	    	RelocateTagData(tag, l);
 	    	cmdline = (char *)tag->ti_Data;
 	    	break;
+
+	    case KRN_BootLoader:
+	    	l = strlen((char *)tag->ti_Data) + 1;
+	    	RelocateTagData(tag, l);
+	    	break;
 	    }
 	}
 
