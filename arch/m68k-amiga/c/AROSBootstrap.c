@@ -380,13 +380,15 @@ static AROS_UFH3(APTR, elfAlloc,
     AROS_USERFUNC_INIT
     APTR ret;
 
-    /* Clear bits 15-0, we're setting memory class explicitly */
-    flags &= ~0x7fff;
-
-    if (SysBase->LibNode.lib_Version >= 36) {
-    	flags |= MEMF_LOCAL | MEMF_REVERSE;
-    } else {
-    	flags |= MEMF_CHIP;
+    /* MEMF_PUBLIC = code/data/bss section */
+    if (flags & MEMF_PUBLIC) {
+        /* Clear bits 15-0, we're setting memory class explicitly */
+        flags &= ~0x7fff;
+        if (SysBase->LibNode.lib_Version >= 36) {
+    	    flags |= MEMF_LOCAL | MEMF_REVERSE;
+        } else {
+    	    flags |= MEMF_CHIP;
+        }
     }
     ret = AllocPageAligned(size, flags);
     if (ret == NULL)
