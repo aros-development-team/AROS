@@ -51,6 +51,9 @@ struct multiboot_header
 #define MB_VIDEO_MODE  0x00000004	/* We specify preferred video mode information	*/
 #define MB_AOUT_KLUDGE 0x00010000
 
+/* This is passed in by the bootloader */
+#define MB_STARTUP_MAGIC 0x2BADB002
+
 /* Structure passed from bootloader */
 struct multiboot
 {
