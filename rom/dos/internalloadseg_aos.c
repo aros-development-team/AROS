@@ -135,7 +135,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     tmp = count & 0xFF000000;
     count &= 0xFFFFFF;
     D(bug("\tHunk %d size: 0x%06lx bytes in ", i, count*4));
-    req = MEMF_CLEAR;
+    req = MEMF_CLEAR | MEMF_PUBLIC;
 
     switch(tmp)
     {

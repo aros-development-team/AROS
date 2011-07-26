@@ -182,7 +182,7 @@ static int load_hunk
              hunk_size += sizeof(struct FullJumpVec);
     }
 
-    hunk = ilsAllocMem(hunk_size, MEMF_ANY | (sh->type == SHT_NOBITS) ? MEMF_CLEAR : 0);
+    hunk = ilsAllocMem(hunk_size, MEMF_PUBLIC | (sh->type == SHT_NOBITS ? MEMF_CLEAR : 0));
     if (hunk)
     {
         hunk->next = 0;
