@@ -139,6 +139,11 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
 
 	case MB2_TAG_EFI64:
 	    D(kprintf("[Multiboot2] EFI 64-bit System table 0x%016llX\n", ((struct mb2_tag_efi64 *)mbtag)->pointer));
+
+	    tag->ti_Tag  = KRN_EFISystemTable;
+	    tag->ti_Data = ((struct mb2_tag_efi64 *)mbtag)->pointer;
+	    tag++;
+
 	    break;
 	}
     }
