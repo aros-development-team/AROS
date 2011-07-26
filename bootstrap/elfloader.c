@@ -22,6 +22,27 @@
 #define DREL(x)
 #define DSYM(x)
 
+/* This definition is used when 64-bit structure is being composed by 32-bit code */
+struct ELF_ModuleInfo64
+{
+    elf_ptr_t	   Next;
+    elf_ptr_t	   Name;
+    unsigned short Type;
+    unsigned short Pad0;	/* On i386 we have different alignment, so do explicit padding */
+    unsigned int   Pad1;
+    elf_ptr_t	   eh;
+    elf_ptr_t	   sh;
+};
+
+#ifdef ELF_64BIT
+#ifdef __i386__
+#define ELF_ModuleInfo_t ELF_ModuleInfo64
+#endif
+#endif
+#ifndef ELF_ModuleInfo_t
+#define ELF_ModuleInfo_t ELF_ModuleInfo
+#endif
+
 static elf_uintptr_t SysBase_ptr = 0;
 
 /*
@@ -378,13 +399,13 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
 
 	/*
 	 * Debug data for the module includes:
-	 * - Module descriptor (struct ELF_ModuleInfo)
+	 * - Module descriptor (struct ELF_ModuleInfo_t)
 	 * - ELF file header
 	 * - ELF section header
 	 * - File name
 	 * - One empty pointer for alignment
 	 */
-	ksize += (sizeof(struct ELF_ModuleInfo) + sizeof(struct elfheader) + n->eh->shnum * n->eh->shentsize  +
+	ksize += (sizeof(struct ELF_ModuleInfo_t) + sizeof(struct elfheader) + n->eh->shnum * n->eh->shentsize  +
 		  strlen(n->Name) + sizeof(void *));
 
 	/* Go through all sections and calculate kernel size */
@@ -428,9 +449,8 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
     void *file;
     unsigned int i;
     unsigned char need_entry = 1;
-    struct ELF_ModuleInfo *mod;
-    /* Address of the first module descriptor will automatically go where we need it */
-    struct ELF_ModuleInfo *prev_mod = (struct ELF_ModuleInfo *)kernel_debug;
+    struct ELF_ModuleInfo_t *mod;
+    struct ELF_ModuleInfo_t *prev_mod = NULL;
 
     kprintf("[ELF Loader] Loading kickstart...\n");
 
@@ -518,24 +538,27 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 
 	/* Allocate module descriptor */
 	mod = ptr_ro;
-	ptr_ro += sizeof(struct ELF_ModuleInfo);
-	mod->Next = NULL;
+	ptr_ro += sizeof(struct ELF_ModuleInfo_t);
+	mod->Next = (elf_ptr_t)0;
 	mod->Type = DEBUG_ELF;
 
 	/* Copy ELF header */
-	mod->eh  = ptr_ro;
-	ptr_ro = copy_data(&n->eh, ptr_ro, sizeof(struct elfheader));
+	mod->eh  = (elf_ptr_t)(unsigned long)ptr_ro;
+	ptr_ro = copy_data(n->eh, ptr_ro, sizeof(struct elfheader));
 
 	/* Copy section header */
-	mod->sh = ptr_ro;
+	mod->sh = (elf_ptr_t)(unsigned long)ptr_ro;
 	ptr_ro = copy_data(n->sh, ptr_ro, n->eh->shnum * n->eh->shentsize);
 
 	/* Copy module name */
-	mod->Name = ptr_ro;
+	mod->Name = (elf_ptr_t)(unsigned long)ptr_ro;
 	ptr_ro = copy_data(n->Name, ptr_ro, strlen(n->Name) + 1);
 
 	/* Link the module descriptor with previous one */
-	prev_mod->Next = mod;
+	if (prev_mod)
+	    prev_mod->Next = (elf_ptr_t)(unsigned long)mod;
+	else
+	    *kernel_debug = (struct ELF_ModuleInfo *)mod;
 	prev_mod = mod;
 
 	free_block(n->sh);
