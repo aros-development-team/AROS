@@ -28,7 +28,7 @@ typedef int (*kernel_entry_fun_t)(struct TagItem *, unsigned int);
 /* Two main functions you will use */
 int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size);
 int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, uintptr_t DefSysBase,
-	       kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug);
+	       void **kick_end, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug);
 
 /*
  * These functions are used to access files by the loader.

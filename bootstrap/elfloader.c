@@ -442,8 +442,15 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
     return 1;
 }
 
+/*
+ * This function loads the listed modules.
+ * It expects that ELF and section header pointers in the list are already set up by GetKernelSize().
+ *
+ * (elf_ptr_t)(unsigned long) double-casting is needed because in some cases elf_ptr_t is an UQUAD,
+ * while in most cases it's a pointer (see dos/elf.h).
+ */
 int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, uintptr_t DefSysBase,
-	       kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug)
+	       void **kick_end, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug)
 {
     struct ELFNode *n;
     void *file;
@@ -564,6 +571,9 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 	free_block(n->sh);
 	free_block(n->eh);
     }
+
+    if (kick_end)
+    	*kick_end = ptr_ro;
 
     return 1;
 }

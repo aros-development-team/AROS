@@ -301,7 +301,7 @@ int bootstrap(int argc, char ** argv)
 	return -1;
     }
 
-    if (!LoadKernel(FirstELF, ro_addr, rw_addr, __bss_track, (uintptr_t)&SysBase, &kernel_entry, &Debug_KickList))
+    if (!LoadKernel(FirstELF, ro_addr, rw_addr, __bss_track, (uintptr_t)&SysBase, NULL, &kernel_entry, &Debug_KickList))
 	return -1;
 
     D(fprintf(stderr, "[Bootstrap] Read-only %p - %p, Read-write %p - %p, Entry %p, Debug info %p\n",
