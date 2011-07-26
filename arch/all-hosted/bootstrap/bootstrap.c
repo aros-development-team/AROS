@@ -71,8 +71,6 @@ static struct mb_mmap MemoryMap = {
     MMAP_TYPE_RAM
 };
 
-static struct KernelBSS __bss_track[256];
-
 /* gdb can pick up kickstart segments from here */
 static struct ELF_ModuleInfo *Debug_KickList = NULL;
 
@@ -148,8 +146,8 @@ int bootstrap(int argc, char ** argv)
     char *SystemVersion;
     FILE *file;
     kernel_entry_fun_t kernel_entry;
-    void *ro_addr, *rw_addr;
-    size_t ro_size, rw_size;
+    void *ro_addr, *rw_addr, *__bss_track;
+    size_t ro_size, rw_size, bss_size;
 
     D(fprintf(stderr, "[Bootstrap] Started\n"));
 
@@ -283,22 +281,31 @@ int bootstrap(int argc, char ** argv)
     }
     fclose(file);
 
-    if (!GetKernelSize(FirstELF, &ro_size, &rw_size))
+    if (!GetKernelSize(FirstELF, &ro_size, &rw_size, &bss_size))
 	return -1;
-    D(fprintf(stderr, "[Bootstrap] Kernel size %zu\n", ro_size));
 
     ro_addr = AllocateRO(ro_size);
     D(fprintf(stderr, "[Bootstrap] Kickstart ROM area: %p\n", ro_addr));
-    if (!ro_addr) {
-	DisplayError("Failed to allocate %u bytes for the kernel!", ro_size);
+    if (!ro_addr)
+    {
+	DisplayError("Failed to allocate %u bytes for the kickstart!", ro_size);
 	return -1;
     }
 
     rw_addr = AllocateRW(rw_size);
     D(fprintf(stderr, "[Bootstrap] Kickstart data area: %p\n", rw_addr));
-    if (!rw_addr) {
-	DisplayError("Failed to allocate %u bytes for the kernel!", rw_size);
+    if (!rw_addr)
+    {
+	DisplayError("Failed to allocate %u bytes for the kickstart!", rw_size);
 	return -1;
+    }
+
+    __bss_track = AllocateRO(bss_size);
+    D(fprintf(stderr, "[Bootstrap] Kickstart BSS array: %p\n", __bss_track));
+    if (!__bss_track)
+    {
+    	DisplayError("Failed to allocate %u bytes for the kickstart!", bss_size);
+    	return -1;
     }
 
     if (!LoadKernel(FirstELF, ro_addr, rw_addr, __bss_track, (uintptr_t)&SysBase, NULL, &kernel_entry, &Debug_KickList))

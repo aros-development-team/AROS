@@ -6,7 +6,6 @@
  Lang: English
  */
 
-#include <aros/kernel.h>
 #include <dos/elf.h>
 #include <libraries/debug.h>
 
@@ -22,26 +21,26 @@
 #define DREL(x)
 #define DSYM(x)
 
-/* This definition is used when 64-bit structure is being composed by 32-bit code */
-struct ELF_ModuleInfo64
+/* Use own definitions because we may be compiled as 32-bit code but build structures for 64-bit code */
+struct ELF_ModuleInfo_t
 {
-    elf_ptr_t	   Next;
-    elf_ptr_t	   Name;
+    elf_uintptr_t  Next;
+    elf_uintptr_t  Name;
     unsigned short Type;
     unsigned short Pad0;	/* On i386 we have different alignment, so do explicit padding */
+#ifdef ELF_64BIT
     unsigned int   Pad1;
-    elf_ptr_t	   eh;
-    elf_ptr_t	   sh;
+#endif
+    elf_uintptr_t  eh;
+    elf_uintptr_t  sh;
 };
 
-#ifdef ELF_64BIT
-#ifdef __i386__
-#define ELF_ModuleInfo_t ELF_ModuleInfo64
-#endif
-#endif
-#ifndef ELF_ModuleInfo_t
-#define ELF_ModuleInfo_t ELF_ModuleInfo
-#endif
+/* Our own definition of struct KernelBSS, to avoid excessive castings */
+struct KernelBSS_t
+{
+    elf_uintptr_t addr;
+    elf_uintptr_t len;
+};
 
 static elf_uintptr_t SysBase_ptr = 0;
 
@@ -64,7 +63,7 @@ static char *check_header(struct elfheader *eh)
 /*
  * Get the memory for chunk and load it
  */
-static void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS **bss_tracker)
+static void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS_t **bss_tracker)
 { 
     unsigned long align;
 
@@ -89,7 +88,7 @@ static void *load_hunk(void *file, struct sheader *sh, void *addr, struct Kernel
     {
 	memset(addr, 0, sh->size);
 
-	(*bss_tracker)->addr = addr;
+	(*bss_tracker)->addr = (unsigned long)addr;
 	(*bss_tracker)->len = sh->size;
 	(*bss_tracker)++;
     }
@@ -112,8 +111,8 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
 
   struct symbol *symtab   = (struct symbol *)(unsigned long)shsymtab->addr;
   struct relo   *rel      = (struct relo *)(unsigned long)shrel->addr;
-
-  unsigned int numrel = shrel->size / shrel->entsize;
+  /* Early cast to unsigned long omits __udivdi3 call in x86-64 native bootstrap */
+  unsigned int numrel = (unsigned long)shrel->size / (unsigned long)shrel->entsize;
   unsigned int i;
   
   struct symbol *SysBase_sym = NULL;
@@ -353,13 +352,14 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
   return 1;
 }
 
-int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
+int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size, size_t *bss_size)
 {
     struct ELFNode *n;
     FILE *file;
     char *err;
     size_t ksize = 0;
     size_t rwsize = 0;
+    size_t bsize = sizeof(struct KernelBSS_t);
     unsigned short i;
 
     kprintf("[ELF Loader] Calculating kickstart size...\n");
@@ -430,6 +430,9 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
 		    rwsize += s;
 		else
 		    ksize += s;
+		
+		if (n->sh[i].type == SHT_NOBITS)
+		    bsize += sizeof(struct KernelBSS_t);
 	    }
 	}
     }
@@ -437,7 +440,10 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
     *ro_size = ksize;
     *rw_size = rwsize;
 
-    kprintf("[ELF Loader] Code %lu bytes, data %lu bytes\n", ksize, rwsize);
+    if (bss_size)
+	*bss_size = bsize;
+
+    kprintf("[ELF Loader] Code %lu bytes, data %lu bytes, BSS array %lu bytes\n", ksize, rwsize, bsize);
 
     return 1;
 }
@@ -449,7 +455,7 @@ int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size)
  * (elf_ptr_t)(unsigned long) double-casting is needed because in some cases elf_ptr_t is an UQUAD,
  * while in most cases it's a pointer (see dos/elf.h).
  */
-int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, uintptr_t DefSysBase,
+int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *tracker, uintptr_t DefSysBase,
 	       void **kick_end, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug)
 {
     struct ELFNode *n;
@@ -486,7 +492,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 
 		if (sh[i].flags & SHF_WRITE)
 		{
-		    ptr_rw = load_hunk(file, &sh[i], (void *)ptr_rw, &tracker);
+		    ptr_rw = load_hunk(file, &sh[i], (void *)ptr_rw, (struct KernelBSS_t **)&tracker);
 		    if (!ptr_rw)
 		    {
 			DisplayError("%s: Error loading hunk %u!\n", n->Name, i);
@@ -495,7 +501,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 		}
 		else
 		{
-		    ptr_ro = load_hunk(file, &sh[i], (void *)ptr_ro, &tracker);
+		    ptr_ro = load_hunk(file, &sh[i], (void *)ptr_ro, (struct KernelBSS_t **)&tracker);
 		    if (!ptr_ro)
 		    {
 			DisplayError("%s: Error loading hunk %u!\n", n->Name, i);
@@ -546,24 +552,24 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 	/* Allocate module descriptor */
 	mod = ptr_ro;
 	ptr_ro += sizeof(struct ELF_ModuleInfo_t);
-	mod->Next = (elf_ptr_t)0;
+	mod->Next = 0;
 	mod->Type = DEBUG_ELF;
 
 	/* Copy ELF header */
-	mod->eh  = (elf_ptr_t)(unsigned long)ptr_ro;
+	mod->eh  = (unsigned long)ptr_ro;
 	ptr_ro = copy_data(n->eh, ptr_ro, sizeof(struct elfheader));
 
 	/* Copy section header */
-	mod->sh = (elf_ptr_t)(unsigned long)ptr_ro;
+	mod->sh = (unsigned long)ptr_ro;
 	ptr_ro = copy_data(n->sh, ptr_ro, n->eh->shnum * n->eh->shentsize);
 
 	/* Copy module name */
-	mod->Name = (elf_ptr_t)(unsigned long)ptr_ro;
+	mod->Name = (unsigned long)ptr_ro;
 	ptr_ro = copy_data(n->Name, ptr_ro, strlen(n->Name) + 1);
 
 	/* Link the module descriptor with previous one */
 	if (prev_mod)
-	    prev_mod->Next = (elf_ptr_t)(unsigned long)mod;
+	    prev_mod->Next = (unsigned long)mod;
 	else
 	    *kernel_debug = (struct ELF_ModuleInfo *)mod;
 	prev_mod = mod;
@@ -572,6 +578,11 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct Kern
 	free_block(n->eh);
     }
 
+    /* Terminate the array of BSS sections */
+    ((struct KernelBSS_t *)tracker)->addr = 0;
+    ((struct KernelBSS_t *)tracker)->len  = 0;
+
+    /* Return end of kickstart read-only area if requested */
     if (kick_end)
     	*kick_end = ptr_ro;
 

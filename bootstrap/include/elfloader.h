@@ -26,8 +26,8 @@ struct ELF_ModuleInfo;
 typedef int (*kernel_entry_fun_t)(struct TagItem *, unsigned int);
 
 /* Two main functions you will use */
-int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size);
-int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, uintptr_t DefSysBase,
+int GetKernelSize(struct ELFNode *FirstELF, size_t *ro_size, size_t *rw_size, size_t *bss_size);
+int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *bss_tracker, uintptr_t DefSysBase,
 	       void **kick_end, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug);
 
 /*
