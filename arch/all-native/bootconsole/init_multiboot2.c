@@ -5,6 +5,7 @@
     Desc: Parse multiboot data and init console.
 */
 
+#include <aros/macros.h>
 #include <aros/multiboot2.h>
 #include <exec/types.h>
 
@@ -23,8 +24,9 @@ void con_InitMultiboot2(void *mb)
      * If we have command line supplied, we may also have serial console.
      * The supplied pointer points to an UQUAD value specifying total length of the
      * whole data array. We just skip it.
+     * Size doesn't include padding needed to align the next tag at 8-byte boundary.
      */
-    for (tag = mb + 8; tag->type != MB2_TAG_END; tag = (void *)tag + tag->size)
+    for (tag = mb + 8; tag->type != MB2_TAG_END; tag = (void *)tag + AROS_ROUNDUP2(tag->size, 8))
     {
     	switch (tag->type)
     	{
