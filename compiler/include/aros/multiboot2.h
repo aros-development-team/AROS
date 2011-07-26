@@ -9,7 +9,20 @@
 #ifndef _AROS_MULTIBOOT2_H
 #define _AROS_MULTIBOOT2_H
 
-#include <aros/multiboot.h>
+#include <aros/cpu.h> /* For __WORDSIZE */
+#include <hardware/vbe.h>
+
+#if (__WORDSIZE == 64)
+#ifndef MULTIBOOT_64BIT
+
+/*
+ * Define this in your code if you want to build 32-bit code using full 64-bit pointers.
+ * Useful for building pc-x86_64 bootstrap which runs in 32 bit mode.
+ */
+#define MULTIBOOT_64BIT
+
+#endif
+#endif
 
 struct mb2_header
 {
@@ -165,13 +178,36 @@ struct mb2_tag_bootdev
     unsigned int part;
 };
 
+struct mb2_mmap
+{
+#ifdef MULTIBOOT_64BIT
+    unsigned long long addr;
+    unsigned long long len;
+#else
+    unsigned int addr_low;
+    unsigned int addr_high;
+    unsigned int len_low;
+    unsigned int len_high;
+#define addr addr_low
+#define len  len_low
+#endif
+    unsigned int type;
+    unsigned int pad;
+};
+
+#define MMAP2_TYPE_RAM	     1	/* General purpose RAM  */
+#define MMAP2_TYPE_RESERVED  2	/* System private areas */
+#define MMAP2_TYPE_ACPIDATA  3  /* ACPI data structures */
+#define MMAP2_TYPE_ACPINVS   4
+#define MMAP2_TYPE_BAD	     5	/* Broken RAM		*/
+
 struct mb2_tag_mmap
 {
-    unsigned int   type;
-    unsigned int   size;
-    unsigned int   entry_size;
-    unsigned int   entry_version;
-    struct mb_mmap mmap[0];
+    unsigned int    type;
+    unsigned int    size;
+    unsigned int    entry_size;
+    unsigned int    entry_version;
+    struct mb2_mmap mmap[0];
 };
 
 struct mb2_tag_vbe
@@ -204,9 +240,14 @@ struct mb2_tag_framebuffer_common
     unsigned int   framebuffer_width;
     unsigned int   framebuffer_height;
     unsigned char  framebuffer_bpp;
-    unsigned char  framebuffer_type;		/* FB_TYPE_xxx, aros/multiboot.h		*/
+    unsigned char  framebuffer_type;
     unsigned short reserved;
 };
+
+/* Framebuffer types */
+#define MB2_FRAMEBUFFER_LUT  0
+#define MB2_FRAMEBUFFER_RGB  1
+#define MB2_FRAMEBUFFER_TEXT 2
 
 struct fb_color
 {
