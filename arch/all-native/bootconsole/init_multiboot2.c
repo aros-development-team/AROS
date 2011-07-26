@@ -12,7 +12,7 @@
 
 #include "console.h"
 
-void con_InitMultiboot2(unsigned long long *mb)
+void con_InitMultiboot2(void *mb)
 {
     struct mb2_tag *tag;
     struct mb2_tag_framebuffer_common *fb = NULL;
@@ -21,8 +21,10 @@ void con_InitMultiboot2(unsigned long long *mb)
     /*
      * Iterate all tags and retrieve console information.
      * If we have command line supplied, we may also have serial console.
+     * The supplied pointer points to an UQUAD value specifying total length of the
+     * whole data array. We just skip it.
      */
-    for (tag = (struct mb2_tag *)(mb + 1); tag->type != MB2_TAG_END; tag = (void *)tag + tag->size)
+    for (tag = mb + 8; tag->type != MB2_TAG_END; tag = (void *)tag + tag->size)
     {
     	switch (tag->type)
     	{
