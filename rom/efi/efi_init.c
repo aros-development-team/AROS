@@ -1,6 +1,7 @@
 #include <aros/debug.h>
 #include <hardware/efi/efi.h>
 #include <resources/efi.h>
+#include <proto/arossupport.h>
 #include <proto/kernel.h>
 
 static BOOL CheckTable(struct EFI_TableHeader *t, UQUAD sig)
@@ -21,6 +22,8 @@ static int efi_Init(struct EFIBase *EFIBase)
     APTR KernelBase;
     struct TagItem *tag;
     struct EFI_SystemTable *efi;
+
+    D(bug("[EFI] Entered efi_Init() at 0x%p\n", efi_Init));
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
@@ -47,7 +50,7 @@ static int efi_Init(struct EFIBase *EFIBase)
 
     if (CheckTable(&efi->RuntimeServices->Hdr, EFI_RUNTIME_SERVICES_SIGNATURE))
     {
-    	D(bug("[EFI] Valid runtime services table 0x%p\n", efi->RuntimeServices));
+    	D(bug("[EFI] Valid runtime services table at 0x%p\n", efi->RuntimeServices));
 
     	EFIBase->Runtime = efi->RuntimeServices;
     }
