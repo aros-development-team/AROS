@@ -678,7 +678,7 @@ static AROS_UFH3(int, boot_init,
     D(bug("[Strap] ExpansionBase 0x%p\n", ExpansionBase));
     if( ExpansionBase == NULL )
     {
-        D(bug( "Could not open expansion.library, something's wrong!\n"));
+        D(bug("Could not open expansion.library, something's wrong!\n"));
         Alert(AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib);
     }
 
@@ -772,6 +772,8 @@ static AROS_UFH3(int, boot_init,
         ForeachNode(&ExpansionBase->MountList, bootNode) {
             PatchBootNode(fsr, bootNode, 0);
         }
+    } else {
+        bug("Could not open FileSystem.resource, booting may fail!\n");
     }
 
     /*
