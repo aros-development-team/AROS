@@ -616,7 +616,7 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
     return len;
 }
 
-LONG DoSeek(struct emulbase *emulbase, struct filehandle *fh, LONG offset, ULONG mode, SIPTR *err)
+SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
     off_t res;
     LONG oldpos = 0;
