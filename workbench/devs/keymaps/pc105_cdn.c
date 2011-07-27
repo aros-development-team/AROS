@@ -3,13 +3,13 @@
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: French Canadian PC105 Keymap
+    Desc: French Canadian Dominion PC105 Keymap
     Lang: English
 */
 
 #include <devices/keymap.h>
 
-STATIC char  keymapname[] = "pc105_ca";
+STATIC char  keymapname[] = "pc105_cdn";
 
 STATIC CONST UBYTE lokeymaptypes[];
 STATIC CONST IPTR  lokeymap[];
