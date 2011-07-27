@@ -32,4 +32,7 @@ struct EFI_SystemTable
     struct EFI_Config	   *ConfigTable;
 };
 
+/* Signature of the EFI system table */
+#define EFI_SYSTEM_TABLE_SIGNATURE 0x5453595320494249
+
 #endif
