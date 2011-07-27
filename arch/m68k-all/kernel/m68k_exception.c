@@ -255,7 +255,7 @@ asm (
 	"	addq.l	#4,%sp\n"		//   Pop off A7
 	"	tst	%sp@\n"			// New tasks have a NULL trapcode
 	"	beq.s	1f\n"
-	"       rts\n"
+	"       rts\n"				// Execute tc_TrapCode
 	"1:\n"
 	"	addq.l	#4,%sp\n"
 	"0:\n"
