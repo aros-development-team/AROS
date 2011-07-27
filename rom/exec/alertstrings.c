@@ -543,7 +543,7 @@ STRPTR FormatLocation(STRPTR buf, const char *text, APTR location, struct ExecBa
     	{   
     	    IPTR klow  = LibGetTagData(KRN_KernelLowest, 0, tags);
 	    IPTR kbase = LibGetTagData(KRN_KernelBase, 0, tags);
-	    IPTR khi   = LibGetTagData(KRN_KernelBase, 0, tags);
+	    IPTR khi   = LibGetTagData(KRN_KernelHighest, 0, tags);
 
 	    buf = NewRawDoFmt("\nKickstart location: Lowest 0x%p, Base 0x%p, Highest 0x%p\n", RAWFMTFUNC_STRING, buf, klow, kbase, khi) - 1;
 	}
