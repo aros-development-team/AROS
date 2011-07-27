@@ -74,7 +74,7 @@ void DoClose(struct emulbase *emulbase, struct filehandle *fh);
 LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh);
 LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG len, SIPTR *err);
 LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, ULONG len, SIPTR *err);
-LONG DoSeek(struct emulbase *emulbase, struct filehandle *fh, LONG Offset, ULONG Mode, SIPTR *err);
+SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR Offset, ULONG Mode, SIPTR *err);
 LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect);
 LONG DoDelete(struct emulbase *emulbase, char *name);
 LONG DoChMod(struct emulbase *emulbase, char *filename, ULONG prot);

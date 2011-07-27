@@ -1,5 +1,5 @@
 /*
- Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+ Copyright © 1995-2011, The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: Filesystem that accesses an underlying host OS filesystem.
@@ -366,16 +366,21 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
     return len;
 }
 
-static LONG seek_file(struct emulbase *emulbase, struct filehandle *fh, off_t *Offset, ULONG mode, UQUAD *newpos)
+/*
+ * This routine stores (absolute) original position in pOffset,
+ * and new position in newpos.
+ * Used in DoSeek() and DoSetSize().
+ */
+static LONG seek_file(struct emulbase *emulbase, void *fd, SIPTR *pOffset, ULONG mode, UQUAD *newpos)
 {
     ULONG error, werror;
     ULONG pos_high = 0;
     UQUAD oldpos;
-    UQUAD offset = *Offset;
+    UQUAD offset = *pOffset;
 
     DB2(bug("[emul] LSeek() - getting current position\n"));
     Forbid();
-    oldpos = emulbase->pdata.KernelIFace->SetFilePointer(fh->fd, 0, &pos_high, FILE_CURRENT);
+    oldpos = emulbase->pdata.KernelIFace->SetFilePointer(fd, 0, &pos_high, FILE_CURRENT);
     Permit();
     oldpos |= (UQUAD)pos_high << 32;
     DSEEK(bug("[emul] Original position: %llu\n", oldpos));
@@ -397,7 +402,7 @@ static LONG seek_file(struct emulbase *emulbase, struct filehandle *fh, off_t *O
     pos_high = offset >> 32;
     DB2(bug("[emul] LSeek() - setting new position\n"));
     Forbid();
-    error = emulbase->pdata.KernelIFace->SetFilePointer(fh->fd, offset, &pos_high, mode);
+    error = emulbase->pdata.KernelIFace->SetFilePointer(fd, offset, &pos_high, mode);
     werror = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
@@ -415,14 +420,15 @@ static LONG seek_file(struct emulbase *emulbase, struct filehandle *fh, off_t *O
 	offset = oldpos;
     }
 
-    *Offset = offset;
+    *pOffset = offset;
 
     return error;
 }
 
-
-LONG DoSeek(struct emulbase *emulbase, struct filehandle *fh, LONG offset, ULONG mode, SIPTR *err)
+SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
+    DSEEK(bug("[emul] DoSeek(0x%p, %ld, %d)\n", fh, offset, mode));
+
     *err = seek_file(emulbase, fh->fd, &offset, mode, NULL);
     return offset;
 }
@@ -941,7 +947,7 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
 
     DFSIZE(bug("[emul] DoSetSize(): mode %ld, offset %llu\n", mode, (unsigned long long)offset));
 
-    /* First seek to the requested position. io_Offset will contain OLD position after that. NEW position will be in newpos */
+    /* First seek to the requested position. 'offset' will contain OLD position after that. NEW position will be in newpos */
     error = seek_file(emulbase, fh->fd, &offset, mode, &newpos);
     if (!error)
     {
@@ -954,7 +960,7 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
 	error = error ? 0 : Errno_w2a(werr, MODE_READWRITE);
 
 	/*
-	 * If our OLD position was less than new file size, we seek back to it. io_Offset will again contain
+	 * If our OLD position was less than new file size, we seek back to it. 'offset' will again contain
          * position before this seek - i. e. our NEW file size.
 	 */
         if (offset < newpos)
