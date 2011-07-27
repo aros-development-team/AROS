@@ -19,6 +19,7 @@
 #define DOPEN2(x)
 #define DSEEK(x)
 #define DSTATFS(x)
+#define DWRITE(x)
 #define DASYNC(x)
 
 #include <aros/debug.h>
@@ -242,26 +243,32 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     }
     else
     {
-	ULONG flags = 0;
-	ULONG lock, create, err;
+	ULONG flags = GENERIC_READ | GENERIC_WRITE;
+	/*
+	 * FILE_SHARE_WRITE looks strange here, however without it i can't reopen file which
+         * is already open with MODE_OLDFILE, even just for reading with Read()
+	 */
+	ULONG lock  = FILE_SHARE_READ | FILE_SHARE_WRITE;
+	ULONG create, err;
 
 	DOPEN2(bug("[emul] Open file \"%s\", mode 0x%08lX\n", fh->hostname, mode));
 
-	if (mode == MODE_NEWFILE || mode == MODE_READWRITE)
-	    flags = GENERIC_WRITE;
-	if (mode == MODE_OLDFILE || mode == MODE_READWRITE)
-	    flags |= GENERIC_READ;
-
-	/*
-	 * FILE_SHARE_WRITE looks strange here, however without it i can't reopen file which
-         * is already open with MODE_OLDFILE, even just for reading with _READ
-	 */
-	lock = (mode == MODE_NEWFILE || mode == MODE_READWRITE) ? 0 : FILE_SHARE_READ|FILE_SHARE_WRITE;
-
-	if (mode == MODE_NEWFILE)
+	switch (mode)
+	{
+	case MODE_NEWFILE:
+	    flags  = GENERIC_WRITE;	/* Only for writing		  */
+	    lock   = 0;			/* This will be an exclusive lock */
 	    create = CREATE_ALWAYS;
-	else
+	    break;
+
+	case MODE_READWRITE:
+	    create = OPEN_ALWAYS;
+	    break;
+
+	default: /* MODE_OLDFILE */
 	    create = OPEN_EXISTING;
+	    break;
+	}
 
 	/*
 	 * On post-XP systems files with 'system' attribute may be opened for writing
@@ -273,8 +280,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 	DOPEN2(bug("[emul] CreateFile: flags 0x%08lX, lock 0x%08lX, create %lu\n", flags, lock, create));
 	Forbid();
 	fh->fd = emulbase->pdata.KernelIFace->CreateFile(fh->hostname, flags, lock, NULL, create, protect, NULL);
-
-        err = emulbase->pdata.KernelIFace->GetLastError();
+        err    = emulbase->pdata.KernelIFace->GetLastError();
         Permit();
 
         DOPEN2(bug("[emul] FileHandle = 0x%08lX\n", fh->fd));
@@ -369,6 +375,8 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
     werr    = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
+    DWRITE(bug("[emul] Write handle 0x%p: success %d, error %d\n", fh, success, werr));
+    
     if (success)
     {
 	*err = 0;
@@ -443,10 +451,14 @@ static LONG seek_file(struct emulbase *emulbase, void *fd, SIPTR *pOffset, ULONG
 
 SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
+    LONG error;
+
     DSEEK(bug("[emul] DoSeek(0x%p, %ld, %d)\n", fh, offset, mode));
 
-    *err = seek_file(emulbase, fh->fd, &offset, mode, NULL);
-    return offset;
+    error = seek_file(emulbase, fh->fd, &offset, mode, NULL);
+
+    *err = error;
+    return error ? -1 : offset;
 }
 
 /*********************************************************************************************/

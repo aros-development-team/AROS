@@ -808,7 +808,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         fh = FH_FROM(dp->dp_Arg1);
         DCMD(bug("[emul] %p ACTION_SET_FILE_SIZE: %p, mode %ld, offset %llu\n", fhv, fh, dp->dp_Arg2, dp->dp_Arg3));
      
-        Res1 = DoSetSize(emulbase, fh, dp->dp_Arg2, dp->dp_Arg3, &Res2);
+        DoSetSize(emulbase, fh, dp->dp_Arg2, dp->dp_Arg3, &Res2);
+	Res1 = (Res2 == 0) ? DOSTRUE : DOSFALSE;
         break;
 
     case ACTION_SAME_LOCK:
