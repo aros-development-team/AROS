@@ -279,8 +279,39 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 
 	DOPEN2(bug("[emul] CreateFile: flags 0x%08lX, lock 0x%08lX, create %lu\n", flags, lock, create));
 	Forbid();
+
 	fh->fd = emulbase->pdata.KernelIFace->CreateFile(fh->hostname, flags, lock, NULL, create, protect, NULL);
-        err    = emulbase->pdata.KernelIFace->GetLastError();
+
+	if ((mode == MODE_OLDFILE) && (fh->fd == INVALID_HANDLE_VALUE))
+	{
+            /*
+	     * Hack against two problems: 
+	     *
+	     * Problem 1: dll's in LIBS:Host and AROSBootstrap.exe are locked against writing by
+             * Windows while AROS is running. However we may still read them. MODE_OLDFILE
+	     * also requests write access with shared lock, this is why it fails on these files.
+	     *
+	     * Problem 2: MODE_OLDFILE requests write access, which fails on files with read-only attribute.
+	     *
+             * Here we try to work around these problems by attempting to open the file in read-only mode
+             * when we discover one of them.
+	     *
+             * I hope this will not affect files really open in AROS because exclusive lock
+             * disallows read access too.
+	     */
+	    err = emulbase->pdata.KernelIFace->GetLastError();
+
+	    DOPEN2(bug("[emul] Windows error: %u\n", err));
+	    switch (err)
+	    {
+	    case ERROR_SHARING_VIOLATION:
+	    case ERROR_ACCESS_DENIED:
+		fh->fd = emulbase->pdata.KernelIFace->CreateFile(fh->hostname, GENERIC_READ, lock, NULL, OPEN_EXISTING, protect, NULL);
+	    }
+        }
+
+	err = emulbase->pdata.KernelIFace->GetLastError();
+
         Permit();
 
         DOPEN2(bug("[emul] FileHandle = 0x%08lX\n", fh->fd));
