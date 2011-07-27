@@ -1,3 +1,7 @@
+/* #define DEBUG */
+#define DTAGS(x)
+#define DMMAP(x)
+
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <aros/multiboot2.h>
@@ -8,9 +12,6 @@
 
 #include "bootstrap.h"
 #include "support.h"
-
-#define DTAGS(x)
-#define DMMAP(x)
 
 /*
  * AROS expects memory map in original format.
@@ -136,6 +137,8 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
 	    tag->ti_Tag  = KRN_BootLoader;
 	    tag->ti_Data = (unsigned long)((struct mb2_tag_string *)mbtag)->string;
 	    tag++;
+
+	    break;
 
 	case MB2_TAG_EFI64:
 	    D(kprintf("[Multiboot2] EFI 64-bit System table 0x%016llX\n", ((struct mb2_tag_efi64 *)mbtag)->pointer));
