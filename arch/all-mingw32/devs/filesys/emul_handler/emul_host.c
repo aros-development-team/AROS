@@ -343,27 +343,43 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
     else
     {
 	Forbid();
-	res = emulbase->pdata.KernelIFace->ReadFile(fh->fd, buff, len, &len, NULL);
+	res  = emulbase->pdata.KernelIFace->ReadFile(fh->fd, buff, len, &len, NULL);
 	werr = emulbase->pdata.KernelIFace->GetLastError();
 	Permit();
     }
 
-    *err = Errno_w2a(werr, MODE_OLDFILE);
-
-    return len;
+    if (res)
+    {
+	*err = 0;
+	return len;
+    }
+    else
+    {
+        *err = Errno_w2a(werr, MODE_OLDFILE);
+	return -1;
+    }
 }
 
 LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, ULONG len, SIPTR *err)
 {
-    ULONG error, werr;
+    ULONG success, werr;
 
     Forbid();
-    error = emulbase->pdata.KernelIFace->WriteFile(fh->fd, (void *)buff, len, &len, NULL);
-    werr = emulbase->pdata.KernelIFace->GetLastError();
+    success = emulbase->pdata.KernelIFace->WriteFile(fh->fd, (void *)buff, len, &len, NULL);
+    werr    = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
 
-    *err = Errno_w2a(werr, MODE_NEWFILE);
-    return len;
+    if (success)
+    {
+	*err = 0;
+	return len;
+    }
+    else
+    {
+	*err = Errno_w2a(werr, MODE_NEWFILE);
+
+	return -1;
+    }
 }
 
 /*
