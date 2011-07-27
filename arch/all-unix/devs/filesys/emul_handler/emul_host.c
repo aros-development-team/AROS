@@ -188,35 +188,6 @@ static ULONG prot_u2a(mode_t protect)
 
 /*********************************************************************************************/
 
-/* Converts AROS file access mode to *nix open() flags */
-static int mode2flags(LONG mode)
-{
-    int flags;
-
-    switch (mode)
-    {
-    case MODE_NEWFILE:
-    	flags = O_CREAT | O_TRUNC | O_RDWR;
-    	break;
-
-    case MODE_OLDFILE:
-    	flags = O_RDWR;
-    	break;
-
-    case MODE_READWRITE:
-    	flags = O_RDWR | O_CREAT;
-    	break;
-
-    default:
-    	flags = O_RDONLY;
-    	break;
-    }
-    
-    return flags;
-}
-
-/*********************************************************************************************/
-
 static void timestamp2datestamp(struct emulbase *emulbase, time_t *timestamp, struct DateStamp *datestamp)
 {
     struct ClockData date;
