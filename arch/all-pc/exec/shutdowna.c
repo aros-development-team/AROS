@@ -8,6 +8,7 @@
 
 #include <asm/io.h>
 #include <exec/tasks.h>
+#include <hardware/efi/runtime.h>
 #include <proto/dos.h>
 
 #include "exec_util.h"
@@ -53,30 +54,60 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (action == SD_ACTION_COLDREBOOT)
+    if (PD(SysBase).efiRT)
     {
-    	struct DosLibrary *DOSBase = (APTR)OpenLibrary("dos.library", 36);
-
     	/*
-    	 * Don't call reset callbacks because their action is not
-    	 * recoverable.
-    	 * On IntelMac port 0xFE doesn't work, so the function should
-    	 * be able to return cleanly.
-    	 * TODO: Implement alternative reset for Mac (ACPI ?)
-    	 *
-        Exec_DoResetCallbacks((struct IntExecBase *)SysBase); */
-        outb(0xFE, 0x64);
+    	 * If the system has EFI firmware, use its runtime interface.
+    	 * Port 0xFE may not work on such machines (Mac).
+    	 */
+    	IPTR efiAction;
 
-	/*
-	 * Keyboard controller can be slow, so we need to wait for some time.
-	 * If we don't do this, we'll can see "Unsupported action" error, immediately
-	 * followed by a restart, which looks strange.
-	 * we use dos.library/Delay() here for simplicity.
-	 */
-	if (DOSBase)
-	{
-	    Delay(50);
-	    CloseLibrary((struct Library *)DOSBase);
+    	switch (action)
+    	{
+    	case SD_ACTION_COLDREBOOT:
+    	    efiAction = EFI_Reset_Cold;
+    	    break;
+
+    	case SD_ACTION_POWEROFF:
+    	    efiAction = EFI_Reset_Shutdown;
+    	    break;
+
+    	default:
+    	    /* Unknown action */
+    	    return 0;
+    	}
+
+    	PD(SysBase).efiRT->ResetSystem(efiAction, 0, 0, NULL);
+    }
+    else
+    {
+    	/* No EFI, poor-man fallback */
+    	if (action == SD_ACTION_COLDREBOOT)
+    	{
+    	    struct DosLibrary *DOSBase;
+
+    	    /*
+    	     * Don't call reset callbacks because their action is not
+    	     * recoverable.
+    	     * On IntelMac port 0xFE doesn't work, so the function should
+    	     * be able to return cleanly.
+    	     * TODO: Implement alternative reset for Mac (ACPI ?)
+    	     *
+            Exec_DoResetCallbacks((struct IntExecBase *)SysBase); */
+            outb(0xFE, 0x64);
+
+	    /*
+	     * Keyboard controller can be slow, so we need to wait for some time.
+	     * If we don't do this, we'll can see "Unsupported action" error, immediately
+	     * followed by a restart, which looks strange.
+	     * we use dos.library/Delay() here for simplicity.
+	     */
+	    DOSBase = (APTR)OpenLibrary("dos.library", 36);
+	    if (DOSBase)
+	    {
+	    	Delay(50);
+	    	CloseLibrary((struct Library *)DOSBase);
+	    }
 	}
     }
     return 0;
