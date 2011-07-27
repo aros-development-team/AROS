@@ -193,16 +193,20 @@ static int mode2flags(LONG mode)
 {
     int flags;
 
-    switch (mode) {
+    switch (mode)
+    {
     case MODE_NEWFILE:
     	flags = O_CREAT | O_TRUNC | O_RDWR;
     	break;
+
     case MODE_OLDFILE:
-    	flags = O_RDONLY;
+    	flags = O_RDWR;
     	break;
+
     case MODE_READWRITE:
     	flags = O_RDWR | O_CREAT;
     	break;
+
     default:
     	flags = O_RDONLY;
     	break;
@@ -491,7 +495,6 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     struct stat st;
     LONG ret = ERROR_OBJECT_WRONG_TYPE;
     int r;
-    long flags;
 
     DOPEN(bug("[emul] Opening host name: %s\n", fh->hostname));
 
@@ -501,24 +504,37 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     /* File name case is already adjusted here, so after this we can call UNIX functions directly */
 
     if (r == -1)
+    {
         /* Non-existing objects can be files opened for writing */
     	st.st_mode = S_IFREG;
+    }
+
     DOPEN(bug("[emul] lstat() returned %d, st_mode is 0x%08X\n", r, st.st_mode));
 
     if (S_ISREG(st.st_mode))
     {
 	/* Object is a plain file */
-	flags = mode2flags(mode);
+    	int flags = O_RDWR;
+
+	switch (mode)
+    	{
+    	case MODE_NEWFILE:
+    	    flags |= O_TRUNC;
+    	    /* Fallthrough */
+
+	case MODE_READWRITE:
+    	    flags |= O_CREAT;
+	}
+
 	r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
 	AROS_HOST_BARRIER
+
 	if (r < 0 && err_u2a(emulbase) == ERROR_WRITE_PROTECTED)
 	{
 	    /* Try again with read-only access. This is needed because AROS
 	     * FS handlers should only pay attention to R/W protection flags
 	     * when the corresponding operation is attempted on the file */
-	    flags &= ~O_ACCMODE;
-	    flags |= O_RDONLY;
-	    r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
+	    r = emulbase->pdata.SysIFace->open(fh->hostname, O_RDONLY, 0770);
 	    AROS_HOST_BARRIER
 	}
 	if (r >= 0)
@@ -653,7 +669,10 @@ SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULO
     }
 
     if (res == -1)
-	error = err_u2a(emulbase);
+    {
+    	oldpos = -1;
+	error  = err_u2a(emulbase);
+    }
 
     HostLib_Unlock();
 
