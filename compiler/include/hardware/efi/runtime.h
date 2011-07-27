@@ -10,6 +10,7 @@
 */
 
 #include <hardware/efi/tables.h>
+#include <libraries/uuid.h>
 
 /* Time value */
 struct EFI_Time
@@ -50,7 +51,7 @@ enum
     EFI_Reset_Shutdown
 };
 
-struct EFI_Runtume
+struct EFI_Runtime
 {
     struct EFI_TableHeader Hdr;
 
@@ -66,5 +67,7 @@ struct EFI_Runtume
     SIPTR (*GetNextHighMonotonicCount)(ULONG *HighCount);
     void  (*ResetSystem)(ULONG Type, SIPTR Status, IPTR DataSize, UWORD *Data);
 };
+
+#define EFI_RUNTIME_SERVICES_SIGNATURE 0x56524553544e5552
 
 #endif

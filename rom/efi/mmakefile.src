@@ -1,0 +1,10 @@
+# $Id: mmakefile.src 39345 2011-06-17 05:55:29Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+FILES := efi_init
+
+%build_module mmake=kernel-efi \
+  modname=efi modtype=resource \
+  files="$(FILES)"
+
+%common

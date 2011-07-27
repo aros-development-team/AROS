@@ -20,7 +20,7 @@ INCSUBDIRS :=	aros				\
 		graphics \
 		hardware \
 		hardware/cpu \
-		hardware/acpi \
+		hardware/efi \
 		hardware/pic \
 		hidd \
 		intuition \
