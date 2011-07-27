@@ -8,7 +8,7 @@
 
 #include <devices/keymap.h>
 
-STATIC char  keymapname[] = "pc105_es";
+STATIC char  keymapname[] = "pc105_e";
 
 STATIC CONST UBYTE lokeymaptypes[];
 STATIC CONST IPTR  lokeymap[];
@@ -482,7 +482,7 @@ STATIC CONST UBYTE locapsable[] =
     SETBITS(1, 1, 0, 0, 0, 0, 0, 0),	/* 18 - 1F */
     
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 20 - 27 */
-    SETBITS(1, 1, 0, 0, 0, 0, 0, 0),	/* 28 - 2F */
+    SETBITS(1, 1, 0, 1, 0, 0, 0, 0),	/* 28 - 2F */
     
     SETBITS(0, 1, 1, 1, 1, 1, 1, 1),	/* 30 - 37 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 38 - 3F */
