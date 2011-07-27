@@ -44,11 +44,21 @@ asm (
         "       .balign 2\n"
         "       .global Exec_TrapHandler\n"
         "Exec_TrapHandler:\n"
-        "       move.l  %sp@+,%d0\n"    /* Pop off trap number */
+        "       move.l  #0,%sp@-\n"     /* Push on a NULL trapcode */
+        "       movem.l %d0-%d7/%a0-%a7,%sp@-\n"   /* Save regs */
+        "       move.l  %usp,%a0\n"          /* Get USP */
+        "       move.l  %a0,%sp@(15*4)\n"    /* Fix up A7 to be USP */
+        "       move.l  %sp@(17*4),%d0\n"    /* Get the trap number */
         "       move.l  %sp,%sp@-\n"    /* Push on pointer to exception ctx */
         "       move.l  %d0,%sp@-\n"    /* Push on trap number */
         "       jsr Exec__TrapHandler\n" /* Call C routine */
-        "       addq.l  #8,%sp\n"       /* Pop off trap number and ctx ptr */
+        "       addq.l  #8,%sp\n"       /* Pop off C routine args */
+        "       movem.l %sp@+,%d0-%d7/%a0-%a5\n"  /* Restore registers */
+        "       move.l  %sp@(4), %a6\n"
+        "       move.l  %a6,%usp\n"     /* Restore USP */
+        "       move.l  %sp@+,%a6\n"    /* Restore A6 */
+        "       addq.l  #4,%sp\n"       /* Skip past A7 */
+        "       addq.l  #8,%sp\n"       /* Skip past trapcode and traparg */
         "       rte\n"                  /* Return from trap */
         );
 void Exec__TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
