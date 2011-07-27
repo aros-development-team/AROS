@@ -14,6 +14,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-exec-kobj		 \
 #MM			   kernel-ata-kobj		 \
 #MM			   kernel-battclock-kobj	 \
+#MM			   kernel-efi-kobj		 \
 #MM			   kernel-timer-kobj		 \
 #MM			   kernel-expansion-kobj	 \
 #MM			   kernel-hidd-irq-kobj		 \
@@ -28,7 +29,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-pci-pcipc-kobj	 \
 #MM			   kernel-processor-kobj
 
-KRSRCS  := battclock processor
+KRSRCS  := battclock efi processor
 KLIBS   := exec expansion
 KDEVS   := ata timer
 KHIDDS  := irq parallel pci pcipc serial vesagfx vgah kbd ps2mouse

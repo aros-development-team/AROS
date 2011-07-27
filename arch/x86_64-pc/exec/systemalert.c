@@ -108,8 +108,8 @@ void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APT
        	/* Default alert width (for possible serial output). */
     	scr_Width = 80;
     }
-    	
-    con_Clear();
+
+//  con_Clear();
 
     PrintFrame(0xDF, SysBase);
 
