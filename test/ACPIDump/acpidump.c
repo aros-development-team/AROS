@@ -1,20 +1,19 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS ACPIDump tool.
     Lang: english
 */
 
-#include <stdio.h>
-#include <ctype.h>
+#include <resources/acpi.h>
+#include <proto/exec.h>
 
-#include <exec/types.h>
-#include <hardware/acpi/acpi.h>
+#include <ctype.h>
+#include <stdio.h>
 
 static void dumpData(unsigned char * data, int length)
 {
-      char buffer[256];
       int len;
       int i, left = length;
       while (left > 0) {
@@ -34,31 +33,6 @@ static void dumpData(unsigned char * data, int length)
       }
 }
 
-
-struct ACPI_TABLE_TYPE_RSDP* getACPIBase()
-{
-	unsigned char *j, *k, sum=0;
-	
-    /* Finding RSD PTR */
-    for (j = 0x000E0000; j < 0x000E0000 + 0x00020000; j += 16)
-    {
-        /* The signature and checksum must both be correct */
-        if(j[0] == 'R' && j[1] == 'S' && j[2] == 'D' && j[3] == ' ' && j[4] == 'P' && j[5] == 'T' && j[6] == 'R' && j[7] == ' ')
-        { 
-            
-            /* We have the signature, let's check the checksum*/ 
-        	k = j + (((struct ACPI_TABLE_TYPE_RSDP*)j)->revision < 2)?20:36;		/* revision is stored at index 15 */
-	        for (; j < k; sum += *(j++));
-	        
-    		if(!sum)
-            {
-                return (struct ACPI_TABLE_TYPE_RSDP*)j;
-            }
-        }
-    }
-    return NULL;
-}
-
 void parseFADT(struct ACPI_TABLE_TYPE_FADT *fadt)
 {
     unsigned char sum = 0;
@@ -71,18 +45,18 @@ void parseFADT(struct ACPI_TABLE_TYPE_FADT *fadt)
     {
         if( ((struct ACPI_TABLE_DEF_HEADER*)fadt)->length >= 44 && fadt->dsdt_addr)
         {
-            j = (unsigned char*) fadt->dsdt_addr;
+            j = (unsigned char*)(IPTR)fadt->dsdt_addr;
             k = j + ((struct ACPI_TABLE_DEF_HEADER *)j)->length;
             for (; j < k; sum += *(j++));
             if(!sum)
             {
-                j = (unsigned char*) fadt->dsdt_addr;
+                j = (unsigned char*)(IPTR)fadt->dsdt_addr;
                 printf("ACPI table %c%c%c%c %08X\n", j[0], j[1], j[2], j[3], fadt->dsdt_addr);
                 dumpData(j, ((struct ACPI_TABLE_DEF_HEADER*)j)->length);
             }
             
             /* FACS don't have checksum */
-            j = (unsigned char*) fadt->facs_addr;
+            j = (unsigned char*)(IPTR)fadt->facs_addr;
             printf("ACPI table %c%c%c%c %08X\n", j[0], j[1], j[2], j[3], fadt->facs_addr);
             dumpData(j, ((struct ACPI_TABLE_DEF_HEADER*)j)->length);
         }
@@ -106,12 +80,8 @@ void parseRSDP(struct ACPI_TABLE_TYPE_RSDP *rsdp)
     int num;
     char *offset;
 
-    if(rsdp->revision > 1)
-    {
-        xsdp = (struct ACPI2_TABLE_TYPE_RSDP*)rsdp;
-    }
-    
-    if(xsdp->revision > 1 && xsdp->xsdt_address)
+    xsdp = (struct ACPI2_TABLE_TYPE_RSDP*)rsdp;
+    if (xsdp->revision > 1 && xsdp->xsdt_address)
     {
         UQUAD address;
 
@@ -179,9 +149,9 @@ void parseRSDP(struct ACPI_TABLE_TYPE_RSDP *rsdp)
         /* ACPI is using RSDT table */
         unsigned long address;
         
-        rsdt = rsdp->rsdt_address;
+        rsdt = (void *)(IPTR)rsdp->rsdt_address;
 
-        printf("ACPI table RSDT %08X\n", (unsigned int)rsdt);
+        printf("ACPI table RSDT 0x%p\n", rsdt);
         
         sum = 0;
 
@@ -237,12 +207,16 @@ void parseRSDP(struct ACPI_TABLE_TYPE_RSDP *rsdp)
 
 int main(int argc, char **argv)
 {
-    struct ACPI_TABLE_TYPE_RSDP *rsdp;
+    struct ACPIBase *ACPIBase = OpenResource("acpi.resource");
     
-    if((rsdp = getACPIBase()) != NULL)
+    if (!ACPIBase)
     {
-        printf("RSD PTR : %08X\n", (unsigned int)rsdp);
-        parseRSDP(rsdp);
+        printf("acpi.resource not found, no ACPI!\n");
+        return 0;
     }
+    
+    printf("RSD PTR : 0x%p\n", ACPIBase->ACPIB_RSDP_Addr);
+    parseRSDP(ACPIBase->ACPIB_RSDP_Addr);
+
     return 0;
 } 

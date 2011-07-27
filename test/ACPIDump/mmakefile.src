@@ -1,0 +1,14 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES  := acpidump
+EXEDIR := $(AROS_TESTS)
+
+%build_prog mmake=test-acpidump \
+    progname=ACPIDump targetdir=$(EXEDIR) \
+    files="$(FILES)" \
+    uselibs="arossupport amiga"
+
+%common
