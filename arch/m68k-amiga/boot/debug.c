@@ -5,10 +5,12 @@
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
+#include <hardware/intbits.h>
+
 #include "amiga_hwreg.h"
 #include "debug.h"
 
-void DebugInit()
+void DebugInit(void)
 {
 	/* Set the debug UART to 115200 */
 	reg_w(SERPER, SERPER_BAUD(SERPER_BASE_PAL, 115200));
@@ -19,6 +21,7 @@ int DebugPutChar(register int chr)
 	if (chr == '\n')
 		DebugPutChar('\r');
 	while ((reg_r(SERDATR) & SERDATR_TBE) == 0);
+	reg_w(INTREQ, INTF_TBE);
 
 	/* Output a char to the debug UART */
 	reg_w(SERDAT, SERDAT_STP8 | SERDAT_DB8(chr));
@@ -36,7 +39,7 @@ int DebugMayGetChar(void)
 	c = SERDATR_DB8_of(reg_r(SERDATR));
 
 	/* Clear RBF */
-	reg_w(INTREQ, (1 << 11));
+	reg_w(INTREQ, INTF_RBF);
 
 	return c;
 }
