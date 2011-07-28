@@ -6,13 +6,13 @@
  Lang: English
  */
 
-#include <dos/elf.h>
-#include <libraries/debug.h>
-
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <dos/elf.h>
+#include <libraries/debug.h>
 
 #include <elfloader.h>
 #include <runtime.h>
@@ -385,8 +385,8 @@ int GetKernelSize(struct ELFNode *FirstELF, unsigned long *ro_size, unsigned lon
 	}
 	else
 	{
-	    err = check_header(n->eh);
-	    if (!err)
+	    errstr = check_header(n->eh);
+	    if (!errstr)
 	    {
 	    	n->sh = load_block(file, n->eh->shoff, n->eh->shnum * n->eh->shentsize, &err);
 	    	if (err)
@@ -397,9 +397,9 @@ int GetKernelSize(struct ELFNode *FirstELF, unsigned long *ro_size, unsigned lon
 	}
 
 	close_file(file);
-	if (err)
+	if (errstr)
 	{
-	    DisplayError("%s: %s\n", n->Name, err);
+	    DisplayError("%s: %s\n", n->Name, errstr);
 	    return 0;
 	}
 
