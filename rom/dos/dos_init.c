@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <aros/debug.h>
+
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -21,7 +23,6 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <resources/filesysres.h>
-#include <aros/debug.h>
 #include LC_LIBDEFS_FILE
 #include "dos_intern.h"
 
@@ -90,7 +91,9 @@ static void PatchDOS(struct DosLibrary *dosbase)
 extern const ULONG err_Numbers[];
 extern const char err_Strings[];
 
-static int DosInit(struct DosLibrary *LIBBASE)
+static int DosExpunge(struct DosLibrary *DOSBase);
+
+static int DosInit(struct DosLibrary *DOSBase)
 {
     D(bug("DosInit\n"));
     
@@ -102,32 +105,32 @@ static int DosInit(struct DosLibrary *LIBBASE)
      * These two are allocated together with DOSBase, for reduced fragmentation.
      * Structure pointed to by dl_Errors is intentionally read-write - who knows...
      */
-    LIBBASE->dl_Root   = &((struct IntDosBase *)DOSBase)->rootNode;
-    LIBBASE->dl_Errors = &((struct IntDosBase *)DOSBase)->errors;
+    DOSBase->dl_Root   = &((struct IntDosBase *)DOSBase)->rootNode;
+    DOSBase->dl_Errors = &((struct IntDosBase *)DOSBase)->errors;
 
-    LIBBASE->dl_Errors->estr_Nums    = (LONG *)err_Numbers;
-    LIBBASE->dl_Errors->estr_Strings = (STRPTR)err_Strings;
+    DOSBase->dl_Errors->estr_Nums    = (LONG *)err_Numbers;
+    DOSBase->dl_Errors->estr_Strings = (STRPTR)err_Strings;
 
     dosinfo = AllocMem(sizeof(struct DosInfo), MEMF_PUBLIC|MEMF_CLEAR);
 
     /* Init the RootNode structure */
     taskarray = AllocMem(sizeof(IPTR) + sizeof(APTR) * 20, MEMF_CLEAR);
     taskarray[0] = 20;
-    LIBBASE->dl_Root->rn_TaskArray = MKBADDR(taskarray);
-    LIBBASE->dl_Root->rn_Info      = MKBADDR(dosinfo);
+    DOSBase->dl_Root->rn_TaskArray = MKBADDR(taskarray);
+    DOSBase->dl_Root->rn_Info      = MKBADDR(dosinfo);
 
-    NEWLIST((struct List *)&LIBBASE->dl_Root->rn_CliList);
-    InitSemaphore(&LIBBASE->dl_Root->rn_RootLock);
+    NEWLIST((struct List *)&DOSBase->dl_Root->rn_CliList);
+    InitSemaphore(&DOSBase->dl_Root->rn_RootLock);
 
     InitSemaphore(&dosinfo->di_DevLock);
     InitSemaphore(&dosinfo->di_EntryLock);
     InitSemaphore(&dosinfo->di_DeleteLock);
 
     /* Initialize for Stricmp */
-    LIBBASE->dl_UtilityBase   = OpenLibrary("utility.library", 0);
+    DOSBase->dl_UtilityBase   = OpenLibrary("utility.library", 0);
 
     /* Initialize for the fools that illegally used this field */
-    LIBBASE->dl_IntuitionBase = NULL;
+    DOSBase->dl_IntuitionBase = NULL;
 
     /*
      * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
@@ -158,7 +161,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
     	    }
     	}
 
-    	LIBBASE->dl_Root->rn_FileHandlerSegment = defseg;
+    	DOSBase->dl_Root->rn_FileHandlerSegment = defseg;
 
     	/* Add all that have both Handler and SegList defined
     	 * to the Resident list
@@ -175,7 +178,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
         }
     }
 
-    PatchDOS(LIBBASE);
+    PatchDOS(DOSBase);
 
     /*
      * iaint:
@@ -191,34 +194,94 @@ static int DosInit(struct DosLibrary *LIBBASE)
      * However, CreateIORequest() will fail if MsgPort == NULL, so we
      * supply some dummy value.
      */
-    LIBBASE->dl_TimeReq = CreateIORequest((APTR)0xC0DEBAD0, sizeof(struct timerequest));
-    if (LIBBASE->dl_TimeReq)
+    DOSBase->dl_TimeReq = CreateIORequest((APTR)0xC0DEBAD0, sizeof(struct timerequest));
+    if (DOSBase->dl_TimeReq)
     {
-    	if (OpenDevice("timer.device", UNIT_VBLANK, &LIBBASE->dl_TimeReq->tr_node, 0) == 0)
+    	if (OpenDevice("timer.device", UNIT_VBLANK, &DOSBase->dl_TimeReq->tr_node, 0) == 0)
     	{
-	    LIBBASE->dl_lib.lib_Node.ln_Name = "dos.library";
-	    LIBBASE->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
-	    LIBBASE->dl_lib.lib_Version = VERSION_NUMBER;
+	    DOSBase->dl_lib.lib_Node.ln_Name = "dos.library";
+	    DOSBase->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
+	    DOSBase->dl_lib.lib_Version = VERSION_NUMBER;
 
-	    AddLibrary((struct Library *)LIBBASE);
+	    AddLibrary((struct Library *)DOSBase);
 
 	    /* debug.library is optional, so don't check result */
 	    DebugBase = OpenLibrary("debug.library", 0);
 
-	    /* This is where we start the RTF_AFTERDOS residents */
-	    D(bug("[DOS] DosInit: InitCode(RTF_AFTERDOS)\n"));
-	    InitCode(RTF_AFTERDOS, 0);
+	    /* Try to boot */
+	    if (CliInit(NULL) == RETURN_OK) {
+	        /*
+	         * We now restart the multitasking - this is done
+	         * automatically by RemTask() when it switches.
+	         */
+	        RemTask(NULL);
 
-	   /*
-	    * We now restart the multitasking - this is done
-	    * automatically by RemTask() when it switches.
-	    */
-	   RemTask(NULL);
+	        /* We really really shouldn't ever get to this line. */
+	    }
+
+	    if (!DosExpunge(DOSBase)) {
+	        /* Oh no. Dangly bits left from the CliInit() attempt
+	         * prevented the Expunge from happening.
+	         *
+	         * We have to return TRUE here, so that Exec()
+	         * doesn't try to re-initialize us.
+	         */
+	        return TRUE;
+            }
+	        
+            return FALSE;
 	}
     }
 
-    Alert(AT_DeadEnd | AG_OpenDev | AN_DOSLib | AO_TimerDev);
     return FALSE;
 }
 
+/* This is running under Forbid() from Exec/RemLibrary(),
+ * so we need not worry about semaphores and such.
+ */
+static int DosExpunge(struct DosLibrary *DOSBase)
+{
+    struct Segment *seg, *stmp;
+    struct DosInfo *dinfo;
+
+    dinfo = BADDR(DOSBase->dl_Root->rn_Info);
+
+    /* If we have anything in the Dos List,
+     * we can't die.
+     */
+    if (dinfo->di_DevInfo != BNULL) {
+        struct DosList *dol;
+        D(bug("%s: Entries still in the Dos List, can't expunge.\n", __func__));
+        for (dol = BADDR(dinfo->di_DevInfo); dol != NULL; dol = BADDR(dol->dol_Next)) {
+            D(bug("%s:  %d '%b'\n", __func__, dol->dol_Type, dol->dol_Name));
+        }
+        return FALSE;
+    }
+
+    /* Close some libraries */
+    CloseLibrary((APTR)DOSBase->dl_IntuitionBase);
+    CloseLibrary((APTR)DOSBase->dl_UtilityBase);
+
+    /* Free the timer device */
+    CloseDevice(&DOSBase->dl_TimeReq->tr_node);
+    DeleteIORequest(DOSBase->dl_TimeReq);
+
+    /* Remove all segments */
+    for (seg = BADDR(dinfo->di_ResList); seg != NULL; seg = stmp) {
+        stmp = BADDR(seg->seg_Next);
+        FreeVec(seg);
+    }
+    dinfo->di_ResList = BNULL;
+
+    /* Free memory */
+    FreeMem(BADDR(DOSBase->dl_Root->rn_TaskArray), sizeof(IPTR) + sizeof(APTR) * 20);
+    FreeMem(dinfo, sizeof(*dinfo));
+
+    Remove((struct Node *)DOSBase);
+
+    D(bug("%s: Expunged.\n", __func__));
+    return TRUE;
+}
+
 ADD2INITLIB(DosInit, 0);
+ADD2EXPUNGELIB(DosExpunge, 0);

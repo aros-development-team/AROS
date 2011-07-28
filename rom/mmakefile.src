@@ -5,7 +5,6 @@ include $(TOP)/config/make.cfg
 #MM     kernel-aros \
 #MM	kernel-disk \
 #MM     kernel-dos \
-#MM     kernel-boot \
 #MM	kernel-debug \
 #MM	kernel-fs-con \
 #MM     kernel-graphics \
@@ -30,7 +29,6 @@ include $(TOP)/config/make.cfg
 #MM     kernel-aros-includes \
 #MM     kernel-cia-includes \
 #MM     kernel-dos-includes \
-#MM     kernel-boot-includes \
 #MM     kernel-bootloader-includes \
 #MM	kernel-debug-includes \
 #MM	kernel-efi-includes \
@@ -55,7 +53,7 @@ include $(TOP)/config/make.cfg
 BASE_DEVICES  := console input gameport keyboard
 BASE_HANDLERS := amberram con
 BASE_HIDD     := hiddclass graphics keyboard mouse
-BASE_LIBS     := aros boot debug dos graphics intuition keymap layers oop utility
+BASE_LIBS     := aros debug dos graphics intuition keymap layers oop utility
 BASE_RSRCS    := FileSystem lddemon
 
 # *** ELF kickstart package ***
@@ -65,7 +63,6 @@ BASE_RSRCS    := FileSystem lddemon
 #MM     kernel-aros-kobj \
 #MM     kernel-disk-kobj \
 #MM     kernel-dos-kobj \
-#MM     kernel-boot-kobj \
 #MM	kernel-debug-kobj \
 #MM     kernel-dosboot-kobj \
 #MM	kernel-filesystem-kobj \
@@ -103,7 +100,6 @@ BASE_RSRCS    := FileSystem lddemon
 #MM kernel-package-base : \
 #MM     kernel-aros-pkg \
 #MM     kernel-dos-pkg \
-#MM     kernel-boot-pkg \
 #MM	kernel-debug-pkg \
 #MM	kernel-filesystem-pkg \
 #MM	kernel-fs-pkg \

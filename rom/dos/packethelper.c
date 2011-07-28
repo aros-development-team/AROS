@@ -27,7 +27,7 @@ BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketH
         if (!cur)
             cur = DOSBase->dl_SYSLock;
         fl = BADDR(cur);
-        phs->port = fl->fl_Task;
+        phs->port = fl ? fl->fl_Task : NULL;
         phs->lock = cur;
         phs->dp = NULL;
         phs->name = bstrname;

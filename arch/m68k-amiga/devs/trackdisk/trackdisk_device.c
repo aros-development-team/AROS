@@ -527,9 +527,6 @@ static void TD_BootNode(
         struct ExpansionBase *ExpansionBase,
         ULONG unit, ULONG id)
 {
-    /* Until we see a boot block, assume all floppies are OFS */
-    const ULONG dostype = AROS_MAKE_ID('D','O','S','\000');
-
     TEXT dosdevname[4] = "DF0";
     IPTR pp[4 + DE_BOOTBLOCKS + 1] = {};
     struct DeviceNode *devnode;
@@ -554,12 +551,12 @@ static void TD_BootNode(
     pp[DE_MAXTRANSFER + 4] = 0x00200000;
     pp[DE_MASK + 4] = 0x7FFFFFFE;
     pp[DE_BOOTPRI + 4] = 5 - (unit * 10);
-    pp[DE_DOSTYPE + 4] = dostype;
+    pp[DE_DOSTYPE + 4] = 0;
     pp[DE_BOOTBLOCKS + 4] = 2;
     devnode = MakeDosNode(pp);
 
     if (devnode)
-   	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
+   	AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, NULL);
 }
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 {

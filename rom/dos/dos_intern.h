@@ -107,6 +107,10 @@ ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *m
 struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, struct DosLibrary *DOSBase);
 BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length);
 
+/* Platform-overridable boot sequence */
+void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags);
+BOOL __dos_IsBootable(struct DosLibrary *DOSBase, BPTR Lock);
+
 /* Cli dependent SetProgramName() for use in CreateNewProc() */
 BOOL internal_SetProgramName(struct CommandLineInterface *cli,
     CONST_STRPTR name, struct DosLibrary *DOSBase);

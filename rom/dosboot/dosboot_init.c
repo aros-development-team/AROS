@@ -2,607 +2,181 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Start up the ol' Dos boot process.
+    Desc: Boot AROS
     Lang: english
 */
 
-#ifdef __mc68000
-/*
- * Load DEVS:system-configuration only on m68k.
- * Setup pre-2.0 boot disk colors and mouse cursors (for example)
- */
-#define USE_SYSTEM_CONFIGURATION
-
-#else
-
-/*
- * Don't check for boot signature on m68k.
- * Original boot disks don't have it.
- */
-#define AROS_BOOT_CHECKSIG ":AROS.boot"
-/* Alternate variant: check if Shell is loadable
-#define AROS_BOOT_CHECKEXEC ":C/Shell" */
-
-#endif
-
-#include <aros/debug.h>
-#include <aros/macros.h>
-#include <aros/asmcall.h>
-#include <aros/symbolsets.h>
-#include <exec/lists.h>
-#include <exec/execbase.h>
-#include <exec/alerts.h>
-#include <exec/memory.h>
-#include <dos/dosextens.h>
-#include <dos/dostags.h>
-#include <dos/filehandler.h>
-#include <libraries/expansionbase.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/utility.h>
+#define DEBUG 1
 
 #include <string.h>
+#include <stdlib.h>
 
-#ifdef USE_SYSTEM_CONFIGURATION
+#include <aros/debug.h>
+#include <exec/alerts.h>
+#include <aros/asmcall.h>
+#include <aros/bootloader.h>
+#include <exec/lists.h>
+#include <exec/memory.h>
+#include <exec/resident.h>
+#include <exec/types.h>
+#include <libraries/configvars.h>
+#include <libraries/expansion.h>
+#include <libraries/expansionbase.h>
+#include <libraries/partition.h>
+#include <utility/tagitem.h>
+#include <devices/bootblock.h>
+#include <devices/timer.h>
+#include <dos/dosextens.h>
+#include <resources/filesysres.h>
 
-#include <proto/intuition.h>
-
-static void load_system_configuration(struct DosLibrary *DOSBase)
-{
-    BPTR fh;
-    ULONG len;
-    struct Preferences prefs;
-    struct Library *IntuitionBase;
-    
-    fh = Open("DEVS:system-configuration", MODE_OLDFILE);
-    if (!fh)
-    	return;
-    len = Read(fh, &prefs, sizeof prefs);
-    Close(fh);
-    if (len != sizeof prefs)
-    	return;
-    IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
-    if (IntuitionBase)
-	SetPrefs(&prefs, len, FALSE);
-    CloseLibrary(IntuitionBase);
-}
-
-#else
-
-#define load_system_configuration(DOSBase) do { } while (0)
-
-#endif
+#include <proto/exec.h>
+#include <proto/expansion.h>
+#include <proto/partition.h>
+#include <proto/bootloader.h>
 
 #include LC_LIBDEFS_FILE
 
-#include "menu.h"
 #include "dosboot_intern.h"
+#include "menu.h"
 
-/* Check if the given DeviceNode is already in DOS list */
-static BOOL IsMounted(struct DeviceNode *node, struct DosLibrary *DOSBase)
+/* Delay just like Dos/Delay(), ticks are
+ * in 1/50th of a second.
+ */
+static void bootDelay(ULONG timeout)
 {
-    struct DosList *dl;
-    BOOL res = FALSE;
-
-    dl = LockDosList(LDF_DEVICES|LDF_READ);
-
-    while ((dl = NextDosEntry(dl, LDF_DEVICES)))
-    {
-    	if (dl == (struct DosList *)node)
-    	{
-    	    res = TRUE;
-    	    break;
-    	}
-    }
-
-    UnLockDosList(LDF_DEVICES|LDF_READ);
-    return res;
-}
-
-/* Run a handler for the given DeviceNode */
-static APTR __dosboot_RunHandler(struct BootNode *bootNode, struct DosLibrary *DOSBase)
-{
-    struct DeviceNode *deviceNode = bootNode->bn_DeviceNode;
-
-    /* Already running? Nothing to do, then. */
-    if (deviceNode->dn_Task)
-        return deviceNode->dn_Task;
-
-    /* If the node don't want to be automatically started,
-     * then don't start it.
-     */
-    if (bootNode->bn_Flags & ADNF_STARTPROC) {
-    	CONST_STRPTR deviceName = AROS_BSTR_ADDR(deviceNode->dn_Name);
-    	ULONG nameLen = AROS_BSTR_strlen(deviceNode->dn_Name);
-    	STRPTR buf = AllocMem(nameLen + 2, MEMF_ANY);
-
-    	if (!buf)
-    	    return NULL;
-
-    	CopyMem(deviceName, buf, nameLen);
-    	buf[nameLen++] = ':';
-    	buf[nameLen++] = 0;
-
-        if (!DeviceProc(buf))
-        {
-            char  buffer[80];
-            SIPTR code = IoErr();
-            Fault(code, NULL, buffer, 80);
-            bug("[DOSBoot] __dosboot_RunHandler: for %s failed, IoErr() = %d, %s\n", buf, code, buffer);
-        }
-        FreeMem(buf, nameLen);
-    }
-
-    return deviceNode->dn_Task;
-}
-
-static void __dosboot_Mount(struct BootNode *bootNode, struct DosLibrary * DOSBase)
-{
-    struct DeviceNode *dn = bootNode->bn_DeviceNode;
-
-    D(bug("[DOSBoot] Mounting BootNode: %p, bn_DeviceNode: %p, Name '%b', Priority %4d...\n",
-          bootNode, dn, dn->dn_Name, bootNode->bn_Node.ln_Pri));
-
-    if (!AddDosEntry((struct DosList *) dn))
-    {
-        kprintf("Mounting node 0x%p (%b) failed at AddDosEntry() -- maybe it was already added by someone else!\n", dn, dn->dn_Name);
-        Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
-    }
-
-    D(bug("[DOSBoot] __dosboot_Mount: run handler\n"));
-
-    __dosboot_RunHandler(bootNode, DOSBase);
-}
-
-static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
-{
-    BPTR lock;
-    BOOL result = FALSE;
-    STRPTR buffer;
-    LONG nameLength, bufferLength;
-
-    D(bug("[DOSBoot] __dosboot_IsBootable('%s')\n", deviceName));
+    struct timerequest  timerio;
+    struct MsgPort 	timermp;
     
-    nameLength = strlen(deviceName);
+    memset(&timermp, 0, sizeof(timermp));
+    
+    timermp.mp_Node.ln_Type = NT_MSGPORT;
+    timermp.mp_Flags 	    = PA_SIGNAL;
+    timermp.mp_SigBit	    = SIGB_SINGLE;
+    timermp.mp_SigTask	    = FindTask(NULL);    
+    NEWLIST(&timermp.mp_MsgList);
+  
+    timerio.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+    timerio.tr_node.io_Message.mn_ReplyPort    = &timermp;
+    timerio.tr_node.io_Message.mn_Length       = sizeof(timermp);
 
-#if defined(AROS_BOOT_CHECKSIG)
-
-    bufferLength = nameLength + sizeof(AROS_BOOT_CHECKSIG) + 1;
-
-    if ((buffer = AllocMem(bufferLength, MEMF_ANY)) == NULL)
-    {
-        Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
+    if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)&timerio, 0) != 0) {
+        D(bug("dosboot: Can't open timer.device unit 0\n"));
+        return;
     }
 
-    CopyMem(deviceName, buffer, nameLength);
-    strcpy(&buffer[nameLength], AROS_BOOT_CHECKSIG);
-    D(bug("[DOSBoot] __dosboot_IsBootable: Opening '%s'...\n", buffer));
-
-    lock = Open(buffer, MODE_OLDFILE);
-
-    FreeMem(buffer, bufferLength);
-    buffer = NULL;
-
-    if (lock)
-    {
-        LONG readsize;
-	struct FileInfoBlock *abfile_fib;
-
-	D(bug("[DOSBoot] __dosboot_IsBootable: Opened succesfully\n"));
-
-	abfile_fib = AllocDosObject(DOS_FIB, NULL);
-	if (abfile_fib)
-	{
-    	    if (ExamineFH(lock, abfile_fib))
-    	    {
-            	bufferLength = abfile_fib->fib_Size + 1;
-
-        	buffer = AllocMem(bufferLength, MEMF_ANY);
-                D(bug("[DOSBoot] __dosboot_IsBootable: Allocated %d bytes for Buffer @ %p\n",
-                      bufferLength, buffer));
-
-		if (!buffer)
-        	{
-            	    Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
-        	}
-
-	        if ((readsize = Read(lock, buffer, (bufferLength - 1))) != -1)
-        	{
-            	    char *sigptr = NULL;
-
-            	    if (readsize != 0)
-            	    {
-                	buffer[readsize] = '\0';
-
-            	    	D(bug("[DOSBoot] __dosboot_IsBootable: Buffer contains '%s'\n", buffer));
-            	    	if ((sigptr = strstr(buffer, AROS_CPU)) != 0)
-            	    	{
-                	    D(bug("[DOSBoot] __dosboot_IsBootable: Signature '%s' found\n", AROS_CPU));
-                	    result = TRUE;
-                	}
-                    }
-            	}
-            }
-            FreeDosObject(DOS_FIB, abfile_fib);
-        }
-    	Close(lock);
-    }
-
-#elif defined(AROS_BOOT_CHECKEXEC)
-
-    bufferLength = nameLength + sizeof(AROS_BOOT_CHECKEXEC) + 1;
-
-    if ((buffer = AllocMem(bufferLength, MEMF_PUBLIC)) == NULL)
-    {
-        Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
-    }
-
-    CopyMem(deviceName, buffer, nameLength);
-    strcpy(&buffer[nameLength], AROS_BOOT_CHECKEXEC);
-
-    D(bug("[DOSBoot] __dosboot_IsBootable: Trying to load '%s' as an executable\n", buffer));
-
-    if ((lock = LoadSeg(buffer)))
-    {
-	D(bug("[DOSBoot] Success!\n"));
-
-    	result = TRUE;
-    	UnLoadSeg(lock);
-    }
-
-#else
-
-    /* bootable if we can lock the device */
-    bufferLength = nameLength + 2;
-
-    buffer = AllocMem(bufferLength, MEMF_ANY);
-    if (buffer)
-    {
-    	CopyMem(deviceName, buffer, nameLength);
-    	buffer[nameLength    ] = ':';
-    	buffer[nameLength + 1] = 0;
-    	D(bug("[DOSBoot] __dosboot_IsBootable: Trying to lock '%s'...\n", buffer));
-
-    	if ((lock = Lock(buffer, SHARED_LOCK)))
-    	{
-    	    D(bug("[DOSBoot] Success!\n"));
-
-            result = TRUE;
-            UnLock(lock);
-    	}
-    }
-
-#endif
-
-    if (buffer != NULL) FreeMem(buffer, bufferLength);
-
-    D(bug("[DOSBoot] __dosboot_IsBootable returned %d\n", result));
-
-    return result;
-}
-
-static void AddBootAssign(CONST_STRPTR path, CONST_STRPTR assign)
-{
-    BPTR lock;
-    if (!(lock = Lock(path, SHARED_LOCK)))
-    	lock = Lock("SYS:", SHARED_LOCK);
-    if (lock)
-        AssignLock(assign, lock);
-}
-
-/** Boot Code **/
-
-AROS_UFH3(void, __dosboot_BootProcess,
-    AROS_UFHA(APTR, argString, A0),
-    AROS_UFHA(ULONG, argSize, D0),
-    AROS_UFHA(struct ExecBase *,SysBase, A6)
-)
-{
-    AROS_USERFUNC_INIT
-
-    struct ExpansionBase *ExpansionBase;
-    struct DosLibrary *DOSBase;
-    struct UtilityBase *UtilityBase;
-    LIBBASETYPEPTR LIBBASE = FindTask(NULL)->tc_UserData;
-    struct BootNode *bootNode = NULL;
-    struct Node *tmpNode = NULL;
-    STRPTR BootDevice = NULL;
-    STRPTR bootName;
-    LONG bootNameLength;
-    BPTR lock;
-    struct Screen *bootScreen = NULL;
-
-    D(bug("[DOSBoot] __dosboot_BootProcess()\n"));
-
-    /**** Open all required libraries **********************************************/
-    if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0)) == NULL)
-    {
-        D(bug("[DOSBoot] __dosboot_BootProcess: Failed to open dos.library.\n" ));
-        Alert(AT_DeadEnd| AG_OpenLib | AN_DOSLib | AO_DOSLib);
-    }
-
-    if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) == NULL)
-    {
-        D(bug("[DOSBoot] __dosboot_BootProcess: Failed to open expansion.library.\n"));
-        Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
-    }
-
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 36);
-    if (!UtilityBase)
-    {
-        D(bug("[DOSBoot] __dosboot_BootProcess: Failed to open utility.library.\n"));
-        Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_UtilityLib);
-    }
-
-    /**** Try to mount all filesystems in the MountList ****************************/
-    D(bug("[DOSBoot] Checking expansion.library/MountList for usable nodes...\n"));
-
-    ForeachNode(&ExpansionBase->MountList, bootNode)
-    {
-        /* Try to mount the filesystem. */
-        __dosboot_Mount(bootNode, DOSBase);
-    }
-
-    LIBBASE->delayTicks = 500;
-
-    /**** Try to find a bootable filesystem ****************************************/
-    while (BootDevice == NULL)
-    {	
-        ForeachNode(&ExpansionBase->MountList, bootNode)
-        {
-	    struct DeviceNode *dn = bootNode->bn_DeviceNode;
-	    STRPTR deviceName = AROS_BSTR_ADDR(dn->dn_Name);
-
-            DB2(bug("[DOSBoot] Trying to boot from '%s' (priority %d)...\n", deviceName, bootNode->bn_Node.ln_Pri));
-
-	    if (LIBBASE->db_BootDevice)
-	    {
-		/*
-		 * If we have boot device specified in either command line or boot menu,
-		 * we can boot up only from it regardless of its priority. Ignore everything else.
-		 */
-		if (Stricmp(LIBBASE->db_BootDevice, deviceName))
-		    continue;
-	    }
-	    else
-	    {
-	    	/*
-	    	 * We only boot from nodes that were registered with a ConfigDev.
-	    	 * CHECKME: Is it correct? Amiga 1200 and 4000 have an onboard IDE controller
-	    	 * server by main kickstart ROM, which has no associated expansion peripherials.
-	    	 * From the documentation we can understand, that "Autobooting" generally means
-	    	 * running associated board's DiagArea->da_BootPoint as a bootblock (this is
-	    	 * assumed to be done in Boot Strap). Looks like A1200/4000 ROM is able to
-	    	 * "self-boot" (i. e. run dos.library if there's no floppy with a bootblock
-	    	 * is found, but there are some hard drives present).
-	    	 * This likely means that these ROMs simply run dos.library manually if there are
-	    	 * some 'non-bootable' DOS nodes present and there are no 'autoboot' nodes around.
-	    	 * P. S. This actually means that our bootup sequence is wrong. If we wait until
-	    	 * 'No boot media' screen comes up, and then insert a floppy with a bootblock, it
-	    	 * won't be run, unlike on original Amiga(tm). Looks like most of this code needs to
-	    	 * be moved to Boot Strap.
-	     	 */
-	    	if (!IsBootableNode(bootNode))
-	    	{
-	            DB2(bug("[DOSBoot] '%s' is not marked as bootable\n", deviceName));
-	            continue;
-            	}
-
-		/* Devices marked as not bootable will have priority == -128 */
-		if (bootNode->bn_Node.ln_Pri == -128)
-		    continue;
-	    }
-
-            /*
-             * Check if the mounted filesystem is bootable. If it's not,
-             * it's probably some kind of transient error (ie. no disk
-             * in drive or wrong disk) so we will retry after some time.
-             */
-            if (__dosboot_IsBootable(deviceName, DOSBase))
-            {
-                BootDevice = deviceName;
-                break;
-            }
-        }
-
-        if (!BootDevice)
-        {
-            ULONG t;
-
-	    if (!bootScreen)
-		bootScreen = NoBootMediaScreen(LIBBASE);
-
-            DB2(kprintf("No bootable disk was found.\n"));
-            DB2(kprintf("Please insert a bootable disk in any drive.\n"));
-            DB2(kprintf("Retrying in 3 seconds...\n"));
-
-	    for (t = 0; t < 150; t += LIBBASE->delayTicks)
-	    {
-	        Delay(LIBBASE->delayTicks);
-	        anim_Animate(bootScreen, DOSBootBase);
-	    }
-
-            /*
-             * Mount newly appeared devices (this for example happens when
-             * USB stick is inserted and a new device has been added for it.
-             */
-            ForeachNode(&ExpansionBase->MountList, bootNode)
-            {
-            	if (!IsMounted(bootNode->bn_DeviceNode, DOSBase))	    
-                    __dosboot_Mount(bootNode, DOSBase);
-            }
-        }
-    }
-
-    if (bootScreen)
-    {
-        anim_Stop(DOSBootBase);
-	CloseBootScreen(bootScreen, LIBBASE);
-    }
-
-    if (BootDevice != NULL)
-    {
-	struct Library *psdBase;
-
-        /* Construct the complete device name of the boot device */
-        bootNameLength = strlen(BootDevice) + 2;
-
-        if ((bootName = AllocMem(bootNameLength, MEMF_ANY|MEMF_CLEAR)) == NULL)
-        {
-            Alert(AT_DeadEnd | AG_NoMemory | AO_DOSLib | AN_StartMem);
-        }
-
-        strcpy(bootName, BootDevice);
-        strcat(bootName, ":");
-
-        D(bug("[DOSBoot] __dosboot_BootProcess: Booting from device '%s'\n", bootName));
-
-        /* Lock the boot device and add some default assigns */
-        lock =  Lock(bootName, SHARED_LOCK);
-        if (lock) {
-            DOSBase->dl_SYSLock = DupLock(lock);
-            DOSBase->dl_Root->rn_BootProc = ((struct FileLock*)BADDR(lock))->fl_Task;
-            SetFileSysTask(DOSBase->dl_Root->rn_BootProc);
-        }
-
-        if ((lock != BNULL) && (DOSBase->dl_SYSLock != BNULL))
-        {
-            AssignLock("SYS", lock);
-        }
-        else
-        {
-            Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
-        }
-
-        FreeMem( bootName, bootNameLength );
-
-        if ((lock = Lock("SYS:", SHARED_LOCK)) != BNULL)
-        {
-            CurrentDir(lock);
-        }
-        else
-        {
-            Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
-        }
-
-        /*
-         * If we have poseidon, ensure that ENV: exists to avoid missing volume requester.
-         * We do it before other assigns because as soon as LIBS: is available it will open
-         * muimaster.library and run popup GUI task.
-         */
-	psdBase = OpenLibrary("poseidon.library", 0);
-
-        if (psdBase)
-        {
-            BPTR lock;
-            	
-            CloseLibrary(psdBase);
-
-            lock = CreateDir("RAM:ENV");
-            if (lock)
-            {
-            	/*
-            	 * CreateDir() returns exclusive lock, while AssignLock() will work correctly
-            	 * only with shared one.
-            	 * CHECKME: Is it the same in original AmigaOS(tm), or AssignLock() needs fixing?
-            	 */
-            	if (ChangeMode(CHANGE_LOCK, lock, SHARED_LOCK))
-                    AssignLock("ENV", lock);
-                else
-                    UnLock(lock);
-            }
-        }
-
-        AddBootAssign("SYS:C", "C");
-        AddBootAssign("SYS:S", "S");
-        AddBootAssign("SYS:Libs", "LIBS");
-        AddBootAssign("SYS:Devs", "DEVS");
-        AddBootAssign("SYS:L", "L");
-        AddBootAssign("SYS:Fonts", "FONTS");
-
-#if !(mc68000)
-        if ((lock = Lock("DEVS:Drivers", SHARED_LOCK)) != BNULL)
-        {
-            AssignLock("DRIVERS", lock);
-            AssignAdd("LIBS", lock);        /* Let hidds in DRIVERS: directory be found by OpenLibrary */
-        }
-#endif
-
-        /* Late binding ENVARC: assign, only if used */
-        AssignLate("ENVARC", "SYS:Prefs/env-archive");
-        load_system_configuration(DOSBase);
-
-        /*
-         * Retry to run handlers which were not started yet.
-         * Here we already can load disk-based handlers.
-         * If starting fails again, remove the BootNode and corresponding DeviceNode from lists.
-         * This prevents us from having nonfunctional DeviceNodes with no handler.
-         */
-	D(bug("[DOSBoot] Assigns done, retrying mounting handlers\n"));
-        ForeachNodeSafe(&ExpansionBase->MountList, bootNode, tmpNode)
-        {
-            if ((bootNode->bn_Flags & ADNF_STARTPROC) &&
-                !__dosboot_RunHandler(bootNode, DOSBase))
-            {
-                Forbid();
-                REMOVE( bootNode );
-                Permit();
-                RemDosEntry(bootNode->bn_DeviceNode);
-            }
-        }
-
-        /* We don't need expansion.library any more */
-	D(bug("[DOSBoot] Closing expansion.library\n"));
-        CloseLibrary((struct Library *)ExpansionBase );
-
-#if !(mc68000)
-        /* Initialize HIDDs */
-	if (!(LIBBASE->BootFlags & BF_NO_DISPLAY_DRIVERS))
-	{
-	    D(bug("[DOSBoot] Loading display drivers\n"));
-	    Execute("C:LoadMonDrvs >NIL:", BNULL, BNULL);
-	}
-#endif
-        /* We now call the system dependant boot - should NEVER return! */
-	D(bug("[DOSBoot] Calling bootstrap code\n"));
-        __dosboot_Boot(DOSBase, LIBBASE->BootFlags);
-    }
-
-    CloseLibrary((struct Library *)UtilityBase);
-    CloseLibrary((struct Library *)DOSBase);
-
-    AROS_USERFUNC_EXIT
+    timerio.tr_node.io_Command 		       = TR_ADDREQUEST;
+    timerio.tr_time.tv_secs                    = timeout / TICKS_PER_SECOND;
+    timerio.tr_time.tv_micro  		       = 1000000UL / TICKS_PER_SECOND * (timeout % TICKS_PER_SECOND);
+
+    SetSignal(0, SIGF_SINGLE);
+	
+    DoIO(&timerio.tr_node);
+
+    CloseDevice((struct IORequest *)&timerio);
 }
 
 int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct TagItem bootprocess[] =
+    struct ExpansionBase *ExpansionBase;
+    void *BootLoaderBase;
+    struct Screen *bootScreen = NULL;
+    ULONG t;
+
+    LIBBASE->delayTicks = 50;
+
+    D(bug("dosboot_Init: GO GO GO!\n"));
+
+    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
+
+    D(bug("[Strap] ExpansionBase 0x%p\n", ExpansionBase));
+    if( ExpansionBase == NULL )
     {
-        { NP_Entry,             (IPTR) __dosboot_BootProcess    },
-        { NP_Name,              (IPTR) "Boot Process"           },
-        { NP_UserData,          (IPTR) LIBBASE                  },
-        { NP_Input,             (IPTR) NULL                     },
-        { NP_Output,            (IPTR) NULL                     },
-        { NP_WindowPtr,         -1                              },
-        { NP_CurrentDir,        (IPTR) NULL                     },
-        { NP_Cli,               (IPTR) 0                        },
-        { TAG_END,                                              }
-    };
+        D(bug( "Could not open expansion.library, something's wrong!\n"));
+        Alert(AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib);
+    }
 
-    D(bug("[DOSBoot] dosboot_Init()\n"));
-    D(bug("[DOSBoot] dosboot_Init: Launching Boot Process control task ..\n"));
+    /* Call the expansion initializations */
+    ConfigChain(NULL);
+    ExpansionBase->Flags |= EBF_SILENTSTART;
 
-    LIBBASE->db_BootDevice = NULL;
-    LIBBASE->BootFlags = 0;
+    /*
+     * Search the kernel parameters for the bootdelay=%d string. It determines the
+     * delay in seconds.
+     */
+    if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
+    {
+    	struct List *args = GetBootInfo(BL_Args);
 
+    	if (args)
+    	{
+    	    struct Node *node;
+
+    	    ForeachNode(args, node)
+    	    {
+    		if (strncmp(node->ln_Name, "bootdelay=", 10) == 0)
+    		{
+    		    ULONG delay = atoi(&node->ln_Name[10]);
+
+		    D(bug("[Boot] delay of %d seconds requested.", delay));
+		    if (delay)
+		    {
+    			struct MsgPort *port = CreateMsgPort();
+    			if (port)
+    			{
+    			    struct timerequest *tr = (struct timerequest *)CreateIORequest(port, sizeof(struct timerequest));
+
+    			    if (tr)
+    			    {
+    				if (!OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0))
+    				{
+    				    tr->tr_node.io_Command = TR_ADDREQUEST;
+    				    tr->tr_time.tv_sec = delay;
+    				    tr->tr_time.tv_usec = 0;
+
+    				    DoIO((struct IORequest *)tr);
+
+    				    CloseDevice((struct IORequest *)tr);
+    				}
+    				DeleteIORequest((struct IORequest *)tr);
+    			    }
+    			    DeleteMsgPort(port);
+    			}
+    		    }
+
+    		    break;
+    		}
+    	    }
+    	}
+    }
+    CloseLibrary((APTR)ExpansionBase);
+
+    /* Scan for any additional partition volumes */
+    dosboot_BootScan(LIBBASE);
+
+    /* Show the boot menu if needed */
     bootmenu_Init(LIBBASE);
 
-    if (CreateNewProc(bootprocess) == NULL)
-    {
-        D(bug("[DOSBoot] dosboot_Init: CreateNewProc() failed with %ld\n", ((struct Process *)FindTask(NULL))->pr_Result2));
-        Alert( AT_DeadEnd | AN_DOSLib | AG_ProcCreate );
+    /* Attempt to boot until we succeed */
+    for (;;) {
+        dosboot_BootStrap(LIBBASE);
+
+        if (!bootScreen)
+            bootScreen = NoBootMediaScreen(LIBBASE);
+
+        D(bug("No bootable disk was found.\n"));
+        D(bug("Please insert a bootable disk in any drive.\n"));
+        D(bug("Retrying in 3 seconds...\n"));
+
+        for (t = 0; t < 150; t += LIBBASE->delayTicks)
+        {
+            bootDelay(LIBBASE->delayTicks);
+            if (bootScreen)
+                anim_Animate(bootScreen, LIBBASE);
+        }
     }
-    return TRUE;
+
+    /* We don't get here if everything went well */
+    return FALSE;
 }
 
 ADD2INITLIB(dosboot_Init, 1)

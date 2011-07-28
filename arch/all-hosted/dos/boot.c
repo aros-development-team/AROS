@@ -14,6 +14,7 @@
 #include <graphics/modeid.h>
 #include <utility/tagitem.h>
 #include <aros/debug.h>
+#include <libraries/expansionbase.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -21,11 +22,11 @@
 
 #include <resources/emul.h>
 
-#include "dosboot_intern.h"
+#include "dos_intern.h"
 
 #undef GfxBase
 
-void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
+void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. We do this by calling the submain()
@@ -60,7 +61,7 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     ULONG displayid = INVALID_ID;
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    D(bug("[DOSBoot.hosted] __dosboot_Boot()\n")); 
+    D(bug("[DOSBoot.hosted] __dos_Boot()\n")); 
 
     /*
      * Locate emul.handler and obtain emergency I/O from it.
@@ -68,7 +69,7 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
      * We can use any emul.handler instance to talk to them, we use EMU: process.
      */
     emulbase = OpenResource("emul.handler");
-    D(bug("[DOSBoot.hosted] __dosboot_Boot: emulbase = 0x%08lX\n", emulbase));
+    D(bug("[DOSBoot.hosted] __dos_Boot: emulbase = 0x%08lX\n", emulbase));
 
     if (emulbase)
     {
@@ -103,17 +104,23 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 	    if (Output())
     	    	Close(Output());
 
-	    D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting input and output for DOS\n"));
+	    D(bug("[DOSBoot.hosted] __dos_Boot: Selecting input and output for DOS\n"));
 	    SelectInput(MKBADDR(fh_stdin));
 	    SelectOutput(MKBADDR(fh_stdout));
 	    me->pr_CES = MKBADDR(fh_stdout);
 
-	    D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting output for AROSSupport\n"));
+	    D(bug("[DOSBoot.hosted] __dos_Boot: Selecting output for AROSSupport\n"));
 	    ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = fh_stdout;
 	}
     }
 
-    /*
+    /* If needed, run the display drivers */
+    if (!(Flags & BF_NO_DISPLAY_DRIVERS)) {
+        Execute("C:LoadMonDrvs", cis, BNULL);
+        /* We don't care about its return code */
+    }
+
+     /*
      * This actually checks if we have at least one display mode in the database.
      * This means that we actually can open a display. If not, we enter emergency
      * shell on host's console.
@@ -122,19 +129,19 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     if (GfxBase)
     {
         displayid = NextDisplayInfo(INVALID_ID);
-	CloseLibrary(&GfxBase->LibNode);
+	CloseLibrary((APTR)GfxBase);
     }
 
     if (displayid != INVALID_ID)
     {
-        D(bug("[DOSBoot.hosted] __dosboot_Boot: Opening boot shell\n"));
+        D(bug("[DOSBoot.hosted] __dos_Boot: Opening boot shell\n"));
         cis  = Open("CON:20/20///Boot Shell/AUTO", MODE_OLDFILE);
     } else
         PutStr("Failed to load system HIDDs\n");
 
     if (cis)
     {
-        D(bug("[DOSBoot.hosted] __dosboot_Boot: Flags = 0x%08lX\n", Flags));
+        D(bug("[DOSBoot.hosted] __dos_Boot: Flags = 0x%08lX\n", Flags));
 
         if (!(Flags & BF_NO_STARTUP_SEQUENCE))
         {

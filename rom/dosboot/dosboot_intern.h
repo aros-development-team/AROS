@@ -29,7 +29,10 @@ struct BootConfig
 struct DOSBootBase
 {
     struct Node           db_Node;		/* Node for linking into the list */
+    IPTR 		  db_BootFlags;		/* Bootup flags (identical to ExpansionBase->eb_BootFlags) */
+    
     char                 *db_BootDevice;	/* Device to boot up from	  */
+    struct BootNode      *db_BootNode;		/* Device to boot up from	  */
 
     struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
     struct IntuitionBase *bm_IntuitionBase;
@@ -38,20 +41,14 @@ struct DOSBootBase
     struct MainGadgets    bm_MainGadgets;
 
     struct BootConfig     bm_BootConfig;	/* Current HIDD configuration     */
-    ULONG		  BootFlags;		/* Bootup flags			  */
-    
     APTR		  animData;		/* Animation stuff		  */
     ULONG		  delayTicks;		/* Delay period. Can be adjusted by animation code */
     WORD		  bottomY;
 };
 
-/* Boot flags */
-#define BF_NO_STARTUP_SEQUENCE 0x0001
-#define BF_NO_DISPLAY_DRIVERS  0x0002
-
 void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase);
-BOOL __dosboot_InitHidds(struct DosLibrary *dosBase);
-void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags);
+LONG dosboot_BootStrap(struct DOSBootBase *DOSBootBase);
+LONG dosboot_BootScan(struct DOSBootBase *DOSBootBase);
 
 struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase);
 struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase);

@@ -1,0 +1,16 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+CFILES  := isbootable
+
+#MM kernel-dos-m68k-amiga : kernel-dos-includes includes-asm_h-m68k
+
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
+               -I$(SRCDIR)/rom/dos \
+               -D__DOS_NOLIBBASE__
+
+%build_archspecific \
+  mainmmake=kernel-dos maindir=rom/dos arch=m68k \
+  files="$(CFILES)" modulename=dos
+
+%common

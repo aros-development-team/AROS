@@ -2,15 +2,14 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Boot AROS
+    Desc: Discover all mountable partitions
     Lang: english
 */
-
-#define DEBUG 0
 
 #include <string.h>
 #include <stdlib.h>
 
+#include <aros/debug.h>
 #include <exec/alerts.h>
 #include <aros/asmcall.h>
 #include <aros/bootloader.h>
@@ -33,32 +32,11 @@
 #include <proto/partition.h>
 #include <proto/bootloader.h>
 
-#include <aros/debug.h>
-#include <aros/macros.h>
+#include LC_LIBDEFS_FILE
+
+#include "dosboot_intern.h"
 
 #define uppercase(x) ((x >= 'a' && x <= 'z') ? (x & 0xdf) : x)
-
-int __startup boot_entry()
-{
-	return -1;
-}
-
-static const UBYTE boot_end;
-static int boot_init();
-
-const struct Resident boot_resident =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&boot_resident,
-    (APTR)&boot_end,
-    RTF_COLDSTART,
-    41,
-    NT_TASK,
-    -119,
-    "Boot Strap",
-    "AROS Boot Strap 41.0\r\n",
-    (APTR)&boot_init
-};
 
 /* 
  * TODO: Check if DOSType lookup in partition.library really works
@@ -91,280 +69,6 @@ static const struct _pt {
     { 0xfd, AROS_MAKE_ID('R','A','I','D')  },	/* linux RAID with autodetect */
     { 0, 0 }
 };
-
-/* Find the most recent version of the matching filesystem
- */
-static struct FileSysEntry *MatchFileSystemResourceHandler(struct FileSysResource *fsr, ULONG DosType)
-{
-    struct FileSysEntry *fse, *best_fse = NULL;
-
-    ForeachNode(&fsr->fsr_FileSysEntries, fse) {
-        if (fse->fse_DosType == DosType) {
-            if (fse->fse_PatchFlags & (FSEF_HANDLER | FSEF_SEGLIST | FSEF_TASK)) {
-                if (best_fse == NULL ||
-                    fse->fse_Version > best_fse->fse_Version) {
-                    best_fse = fse;
-                }
-            }
-        }
-    }
-    D(bug("[Strap] Best fse for 0x%8x is: %p\n", DosType, best_fse));
-
-    return best_fse;
-}
-
-
-/* See if the BootNode's DeviceNode needs to be patched by
- * an entry in FileSysResource
- *
- * If dostype != 0, then the node is forced to that ID
- */
-static void PatchBootNode(struct FileSysResource *fsr, struct BootNode *bn, ULONG dostype)
-{
-    struct DeviceNode *dn;
-    struct FileSysStartupMsg *fssm;
-    struct DosEnvec *de;
-    struct FileSysEntry *fse;
-
-    /* If the caller was lazy, open fsr for them */
-    if (!fsr) {
-        fsr = OpenResource("FileSystem.resource");
-        if (!fsr)
-            return;
-    }
-
-    dn = bn->bn_DeviceNode;
-    if (!dn)
-        return;
-
-    /* If we're not overriding, don't clobber
-     * already configured nodes
-     */
-    if (dostype == 0) {
-        /* If we already have a task installed,
-         * then we're done.
-         */
-        if (dn->dn_Task != NULL)
-            return;
-
-        /* If we already have a handler installed,
-         * then we're done.
-         */
-        if (dn->dn_SegList != BNULL)
-            return;
-    }
-
-    fssm = BADDR(dn->dn_Startup);
-    if (fssm == NULL)
-        return;
-
-    de = BADDR(fssm->fssm_Environ);
-    if (de == NULL)
-        return;
-
-    /* Allow overriding the de_DosType */
-    if (dostype == 0) {
-        dostype = de->de_DosType;
-    } else {
-        de->de_DosType = dostype;
-        dn->dn_Handler = BNULL;
-        dn->dn_SegList = BNULL;
-        dn->dn_GlobalVec = 0;
-    }
-
-    if (!dostype)
-        return;
-
-    D(bug("[Boot] Looking for patches for DeviceNode %p\n", dn));
-
-    /*
-     * MatchFileSystemResourceHandler looks up the filesystem
-     */
-    fse = MatchFileSystemResourceHandler(fsr, dostype);
-    if (fse != NULL)
-    {
-        D(bug("[Boot] found 0x%08x in FileSystem.resource\n", dostype));
-        dn->dn_SegList = fse->fse_SegList;
-        /* other fse_PatchFlags bits are quite pointless */
-        if (fse->fse_PatchFlags & FSEF_TASK)
-            dn->dn_Task = (APTR)fse->fse_Task;
-        if (fse->fse_PatchFlags & FSEF_LOCK)
-            dn->dn_Lock = fse->fse_Lock;
-
-        /* Adjust the stack size for 64-bits if needed.
-         */
-        if (fse->fse_PatchFlags & FSEF_STACKSIZE)
-            dn->dn_StackSize = (fse->fse_StackSize/sizeof(ULONG))*sizeof(IPTR);
-        if (fse->fse_PatchFlags & FSEF_PRIORITY)
-            dn->dn_Priority = fse->fse_Priority;
-        if (fse->fse_PatchFlags & FSEF_GLOBALVEC)
-            dn->dn_GlobalVec = fse->fse_GlobalVec;
-    }
-}
-
-static BOOL GetBootNodeDeviceUnit(struct BootNode *bn, BPTR *device, ULONG *unit, ULONG *bootblocks)
-{
-    struct DeviceNode *dn;
-    struct FileSysStartupMsg *fssm;
-    struct DosEnvec *de;
-
-    if (bn == NULL)
-        return FALSE;
-
-    dn = bn->bn_DeviceNode;
-    if (dn == NULL)
-        return FALSE;
-
-    fssm = BADDR(dn->dn_Startup);
-    if (fssm == NULL)
-        return FALSE;
-
-    *unit = fssm->fssm_Unit;
-    *device = fssm->fssm_Device;
-
-    de = BADDR(fssm->fssm_Environ);
-    /* Following check from Guru Book */
-    if (de == NULL || (de->de_TableSize & 0xffffff00) != 0 || de->de_TableSize < DE_BOOTBLOCKS)
-    	return FALSE;
-    *bootblocks = de->de_BootBlocks * de->de_SizeBlock * sizeof(ULONG);
-    if (*bootblocks == 0)
-    	return FALSE;
-    return TRUE;
-}
- 
-static BOOL BootBlockChecksum(UBYTE *bootblock, ULONG bootblock_size)
-{
-       ULONG crc = 0, crc2 = 0;
-       UWORD i;
-       for (i = 0; i < bootblock_size; i += 4) {
-           ULONG v = (bootblock[i] << 24) | (bootblock[i + 1] << 16) |
-(bootblock[i + 2] << 8) | bootblock[i + 3];
-           if (i == 4) {
-               crc2 = v;
-               v = 0;
-           }
-           if (crc + v < crc)
-               crc++;
-           crc += v;
-       }
-       crc ^= 0xffffffff;
-       D(bug("[Strap] bootblock checksum %s (%08x %08x)\n", crc == crc2 ? "ok" : "error", crc, crc2));
-       return crc == crc2;
-}
-
-/* Execute the code in the boot block.
- * This can be custom defined for your architecture.
- *
- * Returns 0 on success, or an error code
- */
-static LONG CallBootBlockCode(APTR bootcode, struct IOStdReq *io, VOID_FUNC *initcode)
-{
-    LONG retval;
-    VOID_FUNC init;
-#ifdef __mc68000
-    /* Lovely. Double return values. What func. */
-    asm volatile (
-                 "move.l %2,%%a1\n"
-                 "move.l %4,%%a0\n"
-                 "move.l %%a6,%%sp@-\n"
-                 "move.l %3,%%a6\n"
-                 "jsr.l (%%a0)\n"
-                 "move.l %%sp@+,%%a6\n"
-                 "move.l %%d0,%0\n"
-                 "move.l %%a0,%1\n"
-                 : "=m" (retval), "=m" (init)
-                 : "m" (io), "r" (SysBase),
-                   "m" (bootcode)
-                 : "%d0", "%d1", "%a0", "%a1");
-    D(bug("bootblock: D0=0x%08x A0=%p\n", retval, init));
-#else
-    /* A more architecture independent way of doing things.
-     */
-    if (0) { /* Disabled for now */
-        retval = AROS_UFC3(ULONG, bootcode,
-                            AROS_UFCA(VOID_FUNC *,    &init, A0),
-                            AROS_UFCA(struct IOStdReq *, io, A1),
-                            AROS_UFCA(struct ExecBase *, SysBase, A6));
-    } else {
-        retval = -1;
-        init = NULL;
-    }
-#endif
-    *initcode = init;
-    return retval;
-}
-
-static void BootBlock(struct ExpansionBase *ExpansionBase, struct BootNode *bn)
-{
-    ULONG bootblock_size;
-    struct MsgPort *msgport;
-    struct IOStdReq *io;
-    BPTR device;
-    ULONG unit;
-    LONG retval;
-    VOID_FUNC init = NULL;
-    UBYTE *buffer;
-
-    /* BootNodes with a priority of > -128 */
-    if (bn->bn_Node.ln_Type != NT_BOOTNODE || bn->bn_Node.ln_Pri == -128)
-        return;
-
-    if (!GetBootNodeDeviceUnit(bn, &device, &unit, &bootblock_size))
-        return;
-
-    /* memf_chip not required but more compatible with old bootblocks */
-    buffer = AllocMem(bootblock_size, MEMF_CHIP);
-    if (buffer != NULL) {
-       D(bug("[Strap] bootblock address %p\n", buffer));
-       if ((msgport = CreateMsgPort())) {
-           if ((io = CreateIORequest(msgport, sizeof(struct IOStdReq)))) {
-               if (!OpenDevice(AROS_BSTR_ADDR(device), unit, (struct IORequest*)io, 0)) {
-                   /* Read the device's boot block
-                    */
-                   io->io_Length = bootblock_size;
-                   io->io_Data = buffer;
-                   io->io_Offset = 0;
-                   io->io_Command = CMD_READ;
-                   D(bug("[Strap] %b.%d bootblock read (%d bytes)\n", device, unit, bootblock_size));
-                   DoIO((struct IORequest*)io);
-                   if (io->io_Error == 0) {
-                       D(bug("[Strap] %b.%d bootblock read to %p ok\n", device, unit, buffer));
-                       if (BootBlockChecksum(buffer, bootblock_size)) {
-                           APTR bootcode = buffer + 12;
-
-                           /* Force the handler for this device */
-                           PatchBootNode(NULL, bn, *(ULONG *)buffer);
-
-                           ExpansionBase->Flags &= ~EBF_SILENTSTART;
-
-                           D(bug("[Strap] Calling bootblock!\n", buffer));
-                           retval = CallBootBlockCode(bootcode, io, &init);
-                           if (retval != 0)
-                               Alert(AN_BootError);
-                       } else {
-                           D(bug("[Strap] Not a valid bootblock\n"));
-                       }
-                   } else {
-                       D(bug("[Strap] io_Error %d\n", io->io_Error));
-                   }
-                   io->io_Command = TD_MOTOR;
-                   io->io_Length = 0;
-                   DoIO((struct IORequest*)io);
-                   CloseDevice((struct IORequest *)io);
-               }
-               DeleteIORequest((struct IORequest*)io);
-           }
-           DeleteMsgPort(msgport);
-       }
-       FreeMem(buffer, bootblock_size);
-   }
-
-   if (init != NULL) {
-       CloseLibrary((APTR)ExpansionBase);
-       D(bug("calling bootblock loaded code at %p\n", init));
-       init();
-   }
-}
 
 static IPTR MatchPartType(UBYTE PartType)
 {
@@ -658,83 +362,17 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
         Enqueue(&ExpansionBase->MountList, &bn->bn_Node);
 }
 
-static AROS_UFH3(int, boot_init,
-    AROS_UFHA(ULONG, dummy, D0),
-    AROS_UFHA(ULONG, seglist, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+/* Scan all partitions manually for additional
+ * volumes that can be mounted.
+ */
+LONG dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_USERFUNC_INIT
-
     struct ExpansionBase *ExpansionBase;
-    struct Resident *DOSResident;
-    void *BootLoaderBase;
-    struct Library *PartitionBase;
-    struct BootNode *bootNode;
-    struct FileSysResource *fsr;
+    APTR PartitionBase;
 
-    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
-
-    D(bug("[Strap] ExpansionBase 0x%p\n", ExpansionBase));
-    if( ExpansionBase == NULL )
-    {
-        D(bug("Could not open expansion.library, something's wrong!\n"));
-        Alert(AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib);
-    }
-
-    /* Call the expansion initializations */
-    ConfigChain(NULL);
-    ExpansionBase->Flags |= EBF_SILENTSTART;
-
-    /*
-     * Search the kernel parameters for the bootdelay=%d string. It determines the
-     * delay in seconds.
-     */
-    if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
-    {
-    	struct List *args = GetBootInfo(BL_Args);
-
-    	if (args)
-    	{
-    	    struct Node *node;
-
-    	    ForeachNode(args, node)
-    	    {
-    		if (strncmp(node->ln_Name, "bootdelay=", 10) == 0)
-    		{
-    		    ULONG delay = atoi(&node->ln_Name[10]);
-
-		    D(bug("[Boot] delay of %d seconds requested.", delay));
-		    if (delay)
-		    {
-    			struct MsgPort *port = CreateMsgPort();
-    			if (port)
-    			{
-    			    struct timerequest *tr = (struct timerequest *)CreateIORequest(port, sizeof(struct timerequest));
-
-    			    if (tr)
-    			    {
-    				if (!OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0))
-    				{
-    				    tr->tr_node.io_Command = TR_ADDREQUEST;
-    				    tr->tr_time.tv_sec = delay;
-    				    tr->tr_time.tv_usec = 0;
-
-    				    DoIO((struct IORequest *)tr);
-
-    				    CloseDevice((struct IORequest *)tr);
-    				}
-    				DeleteIORequest((struct IORequest *)tr);
-    			    }
-    			    DeleteMsgPort(port);
-    			}
-    		    }
-
-    		    break;
-    		}
-    	    }
-    	}
-    }
+    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
+    if (ExpansionBase == NULL)
+        Alert( AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib );
 
     /* If we have partition.library, we can look for partitions */
     PartitionBase = OpenLibrary("partition.library", 2);
@@ -747,7 +385,7 @@ static AROS_UFH3(int, boot_init,
     	 * ln_Succ of the last node in chain points to the lh_Tail of our list
     	 * which always contains NULL.
     	 */
-	bootNode = (struct BootNode *)ExpansionBase->MountList.lh_Head;
+	struct BootNode *bootNode = (struct BootNode *)ExpansionBase->MountList.lh_Head;
 
 	NEWLIST(&ExpansionBase->MountList);
 
@@ -763,49 +401,9 @@ static AROS_UFH3(int, boot_init,
 	CloseLibrary(PartitionBase);
     }
 
-    /* Ok, we've collected all the Boot nodes. Now,
-     * go through the list and patch them (if needed)
-     * from the FileSysResource patches
-     */
-    fsr = OpenResource("FileSystem.resource");
-    if (fsr) {
-        ForeachNode(&ExpansionBase->MountList, bootNode) {
-            PatchBootNode(fsr, bootNode, 0);
-        }
-    } else {
-        bug("Could not open FileSystem.resource, booting may fail!\n");
-    }
+    CloseLibrary((APTR)ExpansionBase);
 
-    /*
-     * Try to get a boot-block from any device in
-     * the boot list.
-     * Do this after PatchBootNode(), otherwise if dos.library is
-     * run by Workbench floppy, we end up with unassigned filesystems.
-     */
-    ForeachNode(&ExpansionBase->MountList, bootNode) {
-        BootBlock(ExpansionBase, bootNode);
-    }
-
-    CloseLibrary(&ExpansionBase->LibNode);
-
-    /*
-     * Initialize dos.library manually.
-     * It is done for binary compatibility with original m68k Amiga
-     * Workbench floppy bootblocks. This is what they do.
-     */
-    DOSResident = FindResident( "dos.library" );
-
-    if( DOSResident == NULL )
-    {
-        Alert( AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_DOSLib );
-    }
-
-    InitResident( DOSResident, BNULL );
-
-    /* We don't get here if everything went well */
-    return 0;
-
-    AROS_USERFUNC_EXIT
+    return RETURN_OK;
 }
 
-static const UBYTE boot_end = 0;
+
