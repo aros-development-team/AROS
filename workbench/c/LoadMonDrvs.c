@@ -19,8 +19,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "dosboot_intern.h"
-
 #define MONITORS_DIR "DEVS:Monitors"
 
 /************************************************************************/
@@ -67,7 +65,7 @@ static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, 
     LONG error;
     struct AnchorPath *ap = AllocPooled(poolmem, sizeof(struct AnchorPath));
 
-    DB2(bug("[DOSBoot] AnchorPath 0x%p\n", ap));
+    DB2(bug("[LoadMonDrvs] AnchorPath 0x%p\n", ap));
     if (ap)
     {
         /* Initialize important fields in AnchorPath, especially
@@ -81,10 +79,10 @@ static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, 
 	{
 	    struct MonitorNode *newnode;
 
-	    DB2(bug("[DOSBoot] Found monitor name %s\n", ap->ap_Info.fib_FileName));
+	    DB2(bug("[LoadMonDrvs] Found monitor name %s\n", ap->ap_Info.fib_FileName));
 
 	    newnode = AllocPooled(poolmem, sizeof(struct MonitorNode) + strlen(ap->ap_Info.fib_FileName));
-	    DB2(bug("[DOSBoot] Monitor node 0x%p\n", newnode));
+	    DB2(bug("[LoadMonDrvs] Monitor node 0x%p\n", newnode));
 	    if (newnode == NULL) {
 		retvalue = FALSE;
 		goto exit;
@@ -116,7 +114,7 @@ static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase)
 {
     struct MonitorNode *node;
 
-    D(bug("[DOSBoot] Loading monitor drivers...\n"));
+    D(bug("[LoadMonDrvs] Loading monitor drivers...\n"));
     D(bug(" Pri Name\n"));
 
     ForeachNode(monitorsList, node)
@@ -128,31 +126,36 @@ static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase)
     D(bug("--------------------------\n"));
 }
 
-BOOL __dosboot_InitHidds(struct DosLibrary *DOSBase)
+__startup BOOL _main(void)
 {
     APTR pool;
     struct Library *IconBase;
+    APTR DOSBase;
     BPTR dir, olddir;
     BOOL res = TRUE;
 
+    DOSBase = OpenLibrary("dos.library", 0);
+    if (DOSBase == NULL)
+        return ERROR_INVALID_RESIDENT_LIBRARY;
+
+
     dir = Lock(MONITORS_DIR, SHARED_LOCK);
-    D(bug("[DOSBoot] Monitors directory 0x%p\n", dir));
+    D(bug("[LoadMonDrvs] Monitors directory 0x%p\n", dir));
     if (dir) {
         olddir = CurrentDir(dir);
 
         pool = CreatePool(MEMF_ANY, sizeof(struct MonitorNode) * 10, sizeof(struct MonitorNode) * 5);
-	DB2(bug("[DOSBoot] Created pool 0x%p\n", pool));
+	DB2(bug("[LoadMonDrvs] Created pool 0x%p\n", pool));
         if (pool) {
 	    struct List MonitorsList;
 
 	    NewList(&MonitorsList);
 	    IconBase = OpenLibrary("icon.library", 0);
-
-            findMonitors(&MonitorsList, DOSBase, IconBase, pool);
-            loadMonitors(&MonitorsList, DOSBase);
-
-	    if (IconBase)
+	    if (IconBase) {
+                findMonitors(&MonitorsList, DOSBase, IconBase, pool);
+                loadMonitors(&MonitorsList, DOSBase);
 		CloseLibrary(IconBase);
+            }
 	    DeletePool(pool);
 	} else
 	    res = FALSE;
@@ -160,5 +163,8 @@ BOOL __dosboot_InitHidds(struct DosLibrary *DOSBase)
 	CurrentDir(olddir);
 	UnLock(dir);
     }
+
+    CloseLibrary(DOSBase);
+
     return res;
 }

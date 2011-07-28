@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 NOMEDIA_IMAGE := nomedia
 
-FILES := dosboot_init inithidds boot menu gadgets bootscreen bootanim bootconfig
+FILES := dosboot_init boot menu gadgets bootscreen bootanim bootconfig
 
 #MM- kernel-dosboot-includes : kernel-bootloader-includes
 #MM- kernel-dosboot : includes linklibs kernel-bootloader-includes
