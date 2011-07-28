@@ -1,4 +1,5 @@
 
+
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -8,7 +9,7 @@
 #include <proto/utility.h>
 #include <libraries/configvars.h>
 
-#define ZeroPageInvalid 1
+#define D(x) x
 
 #define _STR(A) #A
 #define STR(A) _STR(A)
@@ -52,6 +53,8 @@ extern BYTE _rom_start;
 extern BYTE _rom_end;
 extern BYTE _ext_start;
 extern BYTE _ext_end;
+extern BYTE _bss;
+extern BYTE _bss_end;
 
 static void mmuprotect(void *KernelBase, ULONG addr, ULONG size)
 {
@@ -70,7 +73,20 @@ static void mmuio(void *KernelBase, ULONG addr, ULONG size)
 	KrnSetProtection((void*)addr, size, MAP_Readable | MAP_Writable | MAP_CacheInhibit);
 }
 
-static void swapvbr(ULONG *vbr)
+static APTR AllocPagesAligned(ULONG pages)
+{
+    APTR ret;
+    ret = AllocMem((pages + 1) * PAGE_SIZE, MEMF_CLEAR | MEMF_PUBLIC);
+    if (ret == NULL)
+    	return NULL;
+    Forbid();
+    FreeMem(ret, (pages + 1) * PAGE_SIZE);
+    ret = AllocAbs((pages * PAGE_SIZE + PAGE_SIZE - 1) & ~PAGE_MASK, (APTR)((((ULONG)ret) + PAGE_SIZE - 1) & ~PAGE_MASK));
+    Permit();
+    return ret;
+}
+
+static void swapvbr(APTR vbr)
 {
     asm volatile (
     	".chip 68010\n"
@@ -103,37 +119,58 @@ static AROS_UFH3 (APTR, Init,
 	ULONG *memheaders;
 	struct MemHeader *mh;
 	UWORD i, cnt;
-	ULONG *vbr;
 	char *args;
+	BOOL ZeroPageInvalid = FALSE, ZeroPageProtect = FALSE;
+	BOOL mmucommandline = FALSE;
+	UBYTE *pages;
+	ULONG *zero = (ULONG*)0;
+
+	if (!(SysBase->AttnFlags & AFF_68020))
+		return NULL;
 
 	KernelBase = OpenResource("kernel.resource");
 	if (!KernelBase)
 		return NULL;
+
 	/* Parse some arguments from command line */
-#if 1
 	args = (char *)LibGetTagData(KRN_CmdLine, 0, KrnGetBootInfo());
-	if (!args)
-		return NULL;
-	if (!strstr(args, "mmu"))
-		return FALSE;
-#endif
-	if (!init_mmu(KernelBase))
-		return NULL;
-
-	bug("Initializing MMU setup\n");
-
-	/* Move VBR to Fast RAM (Preparation for SysBase is the only valid address in "zero page") */
-	vbr = AllocMem(256 * sizeof(ULONG), MEMF_PUBLIC);
-	if (vbr) {
-		ULONG *zero = (ULONG*)0;
-		CopyMem(zero, vbr, 256 * sizeof(ULONG));
-		swapvbr(vbr);
-		/* Corrupt original zero page vectors, makes bad programs crash faster if we don't
-		 * want MMU special zero page handling */
-		for (i = 0; i < 64; i++) {
-			if (i != 1)
-				zero[i] = 0xdeadf00d;
+	if (args) {
+		if (strstr(args, "nommu")) {
+			return NULL;
+		} else if (strstr(args, "debugmmu")) {
+			mmucommandline = TRUE;
+			ZeroPageInvalid = TRUE;
+		} else if (strstr(args, "pmmu")) {
+			mmucommandline = TRUE;
+			ZeroPageProtect = TRUE;
+		} else if (strstr(args, "mmu")) {
+			mmucommandline = TRUE;
 		}
+	}
+
+	/* 68030/68851: Only enable if mmu commandline detected. */
+	if (!(SysBase->AttnFlags & AFF_68040) && !mmucommandline)
+		return FALSE;
+
+	if (!init_mmu(KernelBase)) {
+		D(bug("MMU initialization failed\n"));
+		return NULL;
+	}
+
+	D(bug("Initializing MMU setup\n"));
+
+	pages = AllocPagesAligned(3);
+	if (!pages)
+		return NULL;
+
+	/* Move VBR to Fast RAM */
+	CopyMem(zero, pages, PAGE_SIZE);
+	swapvbr(pages);
+	/* Corrupt original zero page vectors, makes bad programs crash faster if we don't
+	 * want MMU special zero page handling */
+	for (i = 0; i < 64; i++) {
+		if (i != 1)
+			zero[i] = 0xdeadf00d;
 	}
 
 	/* RAM */
@@ -164,14 +201,23 @@ static AROS_UFH3 (APTR, Init,
 			mmuram(KernelBase, addr, size);
 	}
 	FreeVec(memheaders);
-	/* Mark "zero page" invalid, MMU support handles ExecBase fetches transparently.
-	 * Special bus error handler checks if access was LONG READ from address 4.
-	 */
-	if (ZeroPageInvalid)
+	if (ZeroPageInvalid) {
+		/* Mark "zero page" invalid, MMU support handles ExecBase fetches transparently.
+	 	* Special bus error handler checks if access was LONG READ from address 4.
+	 	*/
 		KrnSetProtection(0, PAGE_SIZE, 0);
-	else
-		KrnSetProtection(0, PAGE_SIZE, MAP_Readable | MAP_CacheInhibit);
-	
+	} else if (ZeroPageProtect) {
+		/* Remap zero page to Fast RAM, faster SysBase access */
+		KrnMapGlobal(0, pages + PAGE_SIZE, PAGE_SIZE, MAP_Readable);
+	} else {
+		/* No special protection, cacheable */
+		KrnSetProtection(0, PAGE_SIZE, MAP_Readable | MAP_Writable);
+	}
+		
+#if 0
+	/* Remap BSS to Fast RAM, faster performance than Chip RAM */
+	KrnMapGlobal((void*)(0 + PAGE_SIZE), pages + 2 * PAGE_SIZE, PAGE_SIZE, MAP_Readable | MAP_Writable);
+#endif
 
 	/* Expansion IO devices */
 	ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
@@ -189,9 +235,9 @@ static AROS_UFH3 (APTR, Init,
 	/* ROM areas */
 	mmuprotect(KernelBase, 0x00e00000, 0x00080000);
 	mmuprotect(KernelBase, 0x00f80000, 0x00080000);
-	mmuprotect(KernelBase, (ULONG)&_rom_start, (((ULONG)(&_rom_end - &_rom_start)) + PAGE_MASK) & ~PAGE_MASK);
-	mmuprotect(KernelBase, (ULONG)&_ext_start, (((ULONG)(&_ext_end - &_ext_start)) + PAGE_MASK) & ~PAGE_MASK);
-	/* Custom chipset & IO */
+	mmuprotect(KernelBase, (ULONG)&_rom_start & ~PAGE_MASK, (((ULONG)(&_rom_end - &_rom_start)) + PAGE_MASK) & ~PAGE_MASK);
+	mmuprotect(KernelBase, (ULONG)&_ext_start & ~PAGE_MASK, (((ULONG)(&_ext_end - &_ext_start)) + PAGE_MASK) & ~PAGE_MASK);
+	/* Custom chipset & Clock & Mainboard IO */
 	addr = (ULONG)SysBase->MaxExtMem;
 	if (addr < 0x00d80000)
 		addr = 0x00d80000;
@@ -200,10 +246,14 @@ static AROS_UFH3 (APTR, Init,
 	mmuio(KernelBase, 0x00bfd000, 0x00001000);
 	mmuio(KernelBase, 0x00bfe000, 0x00001000);
 
-	debug_mmu(KernelBase);
+	//debug_mmu(KernelBase);
+
+	CopyMem(pages, pages + PAGE_SIZE, PAGE_SIZE);
+	CopyMem((APTR)((ULONG)_bss & ~PAGE_MASK), pages + 2 * PAGE_SIZE, PAGE_SIZE);
+
 	enable_mmu(KernelBase);
 	
-	/* We can safely enable data caches now */
+	/* We can safely enable all caches now */
 	CacheControl(CACRF_EnableD | CACRF_EnableI, CACRF_EnableD | CACRF_EnableI);
 
 	AROS_USERFUNC_EXIT
