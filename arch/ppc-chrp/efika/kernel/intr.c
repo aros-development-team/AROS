@@ -50,7 +50,7 @@ AROS_LH0I(void, KrnSti,
 }
 
 AROS_LH0I(void, KrnIsSuper,
-         struct KernelBase *, KernelBase, 12, Kernel)
+         struct KernelBase *, KernelBase, 13, Kernel)
 {
     AROS_LIBFUNC_INIT
 
@@ -69,7 +69,7 @@ AROS_LH4(void *, KrnAddExceptionHandler,
          AROS_LHA(void *, handler, A0),
          AROS_LHA(void *, handlerData, A1),
          AROS_LHA(void *, handlerData2, A2),
-         struct KernelBase *, KernelBase, 7, Kernel)
+         struct KernelBase *, KernelBase, 14, Kernel)
 {
     AROS_LIBFUNC_INIT
 
@@ -108,7 +108,7 @@ AROS_LH4(void *, KrnAddExceptionHandler,
 
 AROS_LH1(void, KrnRemExceptionHandler,
          AROS_LHA(void *, handle, A0),
-         struct KernelBase *, KernelBase, 8, Kernel)
+         struct KernelBase *, KernelBase, 15, Kernel)
 {
     AROS_LIBFUNC_INIT
 

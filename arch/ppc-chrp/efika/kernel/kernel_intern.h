@@ -152,14 +152,14 @@ int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot);
 AROS_LD2(int, KrnBug,
          AROS_LDA(const char *, format, A0),
          AROS_LDA(va_list, args, A1),
-         struct KernelBase *, KernelBase, 11, Kernel);
+         struct KernelBase *, KernelBase, 12, Kernel);
 
 static inline void bug(const char *format, ...)
 {
     struct KernelBase *kbase = getKernelBase();
     va_list args;
     va_start(args, format);
-    AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(format, args, kbase);
+    AROS_SLIB_ENTRY(KrnBug, Kernel, 12)(format, args, kbase);
     va_end(args);
 }
 

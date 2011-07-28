@@ -3,7 +3,6 @@ include $(TOP)/config/make.cfg
 
 #MM AROS-chrp-ppc-efika: \
 #MM     kernel-chrp-ppc-efika \
-#MM     kernel-chrp-ppc-irq \
 #MM     kernel-package-chrp-ppc-efika \
 #MM     workbench-complete
 
@@ -16,6 +15,7 @@ include $(TOP)/config/make.cfg
 #MM     linklibs-clib \
 #MM     kernel-bootloader-chrp-ppc-efika \
 #MM     kernel-bestcomm-chrp-ppc-efika \
+#MM     kernel-chrp-ppc-irq \
 #MM     kernel-expansion \
 #MM     kernel-utility \
 #MM     kernel-openfirmware \

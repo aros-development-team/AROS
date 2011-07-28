@@ -7,11 +7,13 @@ FILES := kernel_init tags debug intr mmu syscall scheduler ictl
 
 kernel-chrp-ppc-efika: $(BINDIR)/boot/aros-efika
 
+#MM
+kernel-chrp-ppc-efika-quick: $(BINDIR)/boot/aros-efika
+
 $(BINDIR)/boot/aros-efika: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/rtas_resource.o
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds \
+	$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel.map -Wl,-T$(SRCDIR)/$(CURDIR)/ldscript.lds \
         -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/rtas_resource.o \
-        -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit
-	$(STRIP) --strip-unneeded $@
+        -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit -nostartfiles
 
 #MM kernel-kernel-chrp-ppc-efika : includes includes-copy-chrp-ppc-efika linklibs 
 #MM kernel-kernel-chrp-ppc-efika-kobj : includes includes-copy-chrp-ppc-efika linklibs 

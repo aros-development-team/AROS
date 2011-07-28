@@ -40,7 +40,7 @@ struct hunk
 #define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
-static int read_block
+static int elf_read_block
 (
     BPTR               file,
     ULONG              offset,
@@ -91,7 +91,7 @@ static void *load_block
     void *block = ilsAllocMem(size, MEMF_ANY);
     if (block)
     {
-        if (read_block(file, offset, block, size, funcarray, DOSBase))
+        if (elf_read_block(file, offset, block, size, funcarray, DOSBase))
             return block;
 
         ilsFreeMem(block, size);
@@ -125,7 +125,7 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struc
             return 0;
         }
 
-        if (!read_block(file, eh->shoff, &sh, sizeof(sh), funcarray, DOSBase))
+        if (!elf_read_block(file, eh->shoff, &sh, sizeof(sh), funcarray, DOSBase))
             return 0;
 
         /* wider section header count is in the size field */
@@ -142,13 +142,15 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struc
 static void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase)
 {
 #ifdef KrnRegisterModule
+    APTR KernelBase = OpenResource("kernel.resource");
+
     if (KernelBase)
     {
 	char buffer[512];
 
 	if (NameFromFH(file, buffer, sizeof(buffer))) {
 	    char *nameptr = buffer;
-	    struct ELF_DebugInfo dbg = {eh, sh};
+//	    struct ELF_DebugInfo dbg = {eh, sh};
 
 /* gdb support needs full paths */
 #if !AROS_MODULES_DEBUG
@@ -167,7 +169,7 @@ static void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct she
 
 static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {
     ilsSeek(file, OFFSET_BEGINNING, 0);
-    if (!read_block(file, 0, eh, sizeof(struct elfheader), funcarray, DOSBase))
+    if (!elf_read_block(file, 0, eh, sizeof(struct elfheader), funcarray, DOSBase))
         return 0;
 
     if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
@@ -263,7 +265,7 @@ static int load_hunk
         *next_hunk_ptr = &hunk->next;
 
         if (sh->type != SHT_NOBITS)
-            return read_block(file, sh->offset, sh->addr, sh->size, funcarray, DOSBase);
+            return elf_read_block(file, sh->offset, sh->addr, sh->size, funcarray, DOSBase);
 
         return 1;
 

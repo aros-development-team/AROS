@@ -54,34 +54,7 @@
 
   if (seglist)
   {
-#if AROS_MODULES_DEBUG
-    extern struct MinList debug_seglist;
-    extern struct MinList free_debug_segnodes;
-    struct debug_segnode *segnode;
-
-    Forbid();
-    ForeachNode(&debug_seglist, segnode)
-    {
-      if (segnode->seglist == seglist)
-      {
-	/* use the same free function as loadseg ! */
-	struct seginfo *si;
-	while ((si = (struct seginfo *)REMHEAD(&segnode->seginfos)))
-	{
-	  AROS_CALL2NR(void, freefunc,
-	    AROS_LCA(APTR ,  (APTR)si, A1),
-	    AROS_LCA(ULONG,  (ULONG)sizeof(struct seginfo), D0),
-	    struct Library *, (struct Library *)SysBase
-          );
-	}
-
-	REMOVE(segnode);
-	ADDHEAD(&free_debug_segnodes, segnode);
-        break;
-      }
-    }
-    Permit();
-#endif
+    APTR KernelBase = OpenResource("kernel.resource");
 
     while (seglist)
     {

@@ -383,7 +383,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
 
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,
-         struct KernelBase *, KernelBase, 10, Kernel)
+         struct KernelBase *, KernelBase, 11, Kernel)
 {
     AROS_LIBFUNC_INIT
 
@@ -393,7 +393,7 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
 }
 
 AROS_LH0(void *, KrnCreateContext,
-         struct KernelBase *, KernelBase, 10, Kernel)
+         struct KernelBase *, KernelBase, 18, Kernel)
 {
     AROS_LIBFUNC_INIT
 
@@ -416,7 +416,7 @@ AROS_LH0(void *, KrnCreateContext,
 
 AROS_LH1(void, KrnDeleteContext,
 		AROS_LHA(void *, context, A0),
-         struct KernelBase *, KernelBase, 10, Kernel)
+         struct KernelBase *, KernelBase, 19, Kernel)
 {
     AROS_LIBFUNC_INIT
 

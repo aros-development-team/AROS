@@ -33,7 +33,7 @@ D(extern void debugmem(void));
 
 void exec_main(struct TagItem *msg, void *entry);
 extern CONST_APTR Exec_FuncTable[];
-extern ULONG Exec_MakeFunctions(APTR, CONST_APTR, CONST_APTR, struct ExecBase *);
+extern ULONG Exec_15_MakeFunctions(APTR, CONST_APTR, CONST_APTR, struct ExecBase *);
 void exec_DefaultTaskExit();
 IPTR **exec_RomTagScanner(struct TagItem *msg, struct ExecBase *);
 extern struct Library * PrepareAROSSupportBase (struct ExecBase *);
@@ -44,7 +44,7 @@ struct ExecBase *priv_SysBase;
 AROS_LD2(int, KrnBug,
          AROS_LDA(const char *, format, A0),
          AROS_LDA(va_list, args, A1),
-         struct KernelBase *, KernelBase, 11, Kernel);
+         struct KernelBase *, KernelBase, 12, Kernel);
 #undef bug
 
 static inline void bug(const char *format, ...)
@@ -53,7 +53,7 @@ static inline void bug(const char *format, ...)
 
     va_start(args, format);
     /* Our KrnBug() ignores base address */
-    AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(format, args, NULL);
+    AROS_SLIB_ENTRY(KrnBug, Kernel, 12)(format, args, NULL);
     va_end(args);
 }
 
@@ -213,7 +213,7 @@ void exec_main(struct TagItem *msg, void *entry)
 
     /* Build the jumptable */
     SysBase->LibNode.lib_NegSize =
-        Exec_MakeFunctions(SysBase, Exec_FuncTable, NULL, SysBase);
+        Exec_15_MakeFunctions(SysBase, Exec_FuncTable, NULL, SysBase);
 
     SumLibrary((struct Library *)SysBase);
 
@@ -573,7 +573,7 @@ static int __kprintf(const UBYTE *fmt, ...)
     int result = 0;
 
     va_start(ap,fmt);
-    result = AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(fmt, ap, NULL);
+    result = AROS_SLIB_ENTRY(KrnBug, Kernel, 12)(fmt, ap, NULL);
     va_end(ap);
 
     return result;
@@ -581,7 +581,7 @@ static int __kprintf(const UBYTE *fmt, ...)
 
 static int __vkprintf(const UBYTE *fmt, va_list args)
 {
-    return AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(fmt, args, NULL);
+    return AROS_SLIB_ENTRY(KrnBug, Kernel, 12)(fmt, args, NULL);
 }
 
 static int __rkprintf(const STRPTR mainSystem, const STRPTR subSystem, int level, const UBYTE *fmt, ...)
@@ -590,7 +590,7 @@ static int __rkprintf(const STRPTR mainSystem, const STRPTR subSystem, int level
     int result = 0;
 
     va_start(ap,fmt);
-    result = AROS_SLIB_ENTRY(KrnBug, Kernel, 11)(fmt, ap, NULL);
+    result = AROS_SLIB_ENTRY(KrnBug, Kernel, 12)(fmt, ap, NULL);
     va_end(ap);
 
     return result;
