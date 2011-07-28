@@ -1,5 +1,4 @@
 #include <aros/debug.h>
-#include <hardware/efi/efi.h>
 #include <resources/efi.h>
 #include <proto/arossupport.h>
 #include <proto/kernel.h>
@@ -21,7 +20,6 @@ static int efi_Init(struct EFIBase *EFIBase)
 {
     APTR KernelBase;
     struct TagItem *tag;
-    struct EFI_SystemTable *efi;
 
     D(bug("[EFI] Entered efi_Init() at 0x%p\n", efi_Init));
 
@@ -39,20 +37,19 @@ static int efi_Init(struct EFIBase *EFIBase)
     	return FALSE;
     }
 
-    efi = (struct EFI_SystemTable *)tag->ti_Data;
-    D(bug("Found EFI system table at 0x%p\n", efi));
+    EFIBase->System = (struct EFI_SystemTable *)tag->ti_Data;
+    D(bug("Found EFI system table at 0x%p\n", EFIBase->System));
 
-    if (!CheckTable(&efi->Hdr, EFI_SYSTEM_TABLE_SIGNATURE))
+    if (!CheckTable(&EFIBase->System->Hdr, EFI_SYSTEM_TABLE_SIGNATURE))
     {
     	D(bug("[EFI] System table broken\n"));
     	return FALSE;
     }
 
-    if (CheckTable(&efi->RuntimeServices->Hdr, EFI_RUNTIME_SERVICES_SIGNATURE))
+    if (CheckTable(&EFIBase->System->RuntimeServices->Hdr, EFI_RUNTIME_SERVICES_SIGNATURE))
     {
-    	D(bug("[EFI] Valid runtime services table at 0x%p\n", efi->RuntimeServices));
-
-    	EFIBase->Runtime = efi->RuntimeServices;
+    	EFIBase->Runtime = EFIBase->System->RuntimeServices;
+    	D(bug("[EFI] Valid runtime services table at 0x%p\n", EFIBase->Runtime));
     }
 
     return TRUE;

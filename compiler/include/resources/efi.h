@@ -10,12 +10,13 @@
 */
 
 #include <exec/lists.h>
-#include <hardware/efi/runtime.h>
+#include <hardware/efi/efi.h>
 
 struct EFIBase
 {
-    struct Node		node;	 /* Resource node	     */
-    struct EFI_Runtime *Runtime; /* Runtime services pointer */
+    struct Node		    node;    /* Resource node		 */
+    struct EFI_SystemTable *System;  /* System table pointer	 */
+    struct EFI_Runtime	   *Runtime; /* Runtime services pointer */
 };
 
 #endif

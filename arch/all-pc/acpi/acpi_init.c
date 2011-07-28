@@ -1,13 +1,11 @@
-#define DEBUG 2
+#define DEBUG 1
 
 #include <aros/debug.h>
-#include <aros/kernel.h>
-#include <aros/multiboot.h>
 #include <aros/symbolsets.h>
 #include <resources/acpi.h>
-#include <proto/arossupport.h>
+#include <resources/efi.h>
+#include <proto/efi.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include <string.h>
 
@@ -27,8 +25,6 @@ static void *core_ACPIRootSystemDescriptionPointerScan(IPTR scan_start, IPTR sca
     unsigned long scan_offset;
     unsigned char *scan_ptr;
 
-    DB2(bug("[ACPI] Trying region at 0x%p, length %lu (0x%p)\n", scan_start, scan_length, scan_length));
-
     /* Scan for the Root System Description Pointer signature
        on 16-byte boundaries of the physical memory region */
     for (scan_offset = 0; scan_offset < scan_length; scan_offset += 16)
@@ -47,18 +43,52 @@ static void *core_ACPIRootSystemDescriptionPointerScan(IPTR scan_start, IPTR sca
 	}
     }
 
-    return 0;
+    return NULL;
 }
+
+static const uuid_t acpi_20_guid = ACPI_20_TABLE_GUID;
+static const uuid_t acpi_10_guid = ACPI_TABLE_GUID;
 
 /* Attempt to locate the ACPI Root System Description Pointer */
 void *core_ACPIRootSystemDescriptionPointerLocate()
 {
+    struct EFIBase *EFIBase;
     APTR ssp;
     APTR RSDP_PhysAddr;
-    APTR KernelBase;
-    struct TagItem *tags;
-    struct mb_mmap *mmap;
-    IPTR len;
+
+    EFIBase = OpenResource("efi.resource");
+    D(bug("[ACPI] efi.resource 0x%p\n", EFIBase));
+    if (EFIBase)
+    {
+    	/* If we have EFI firmware, the best way to obtain RSDP is to ask it. */
+    	RSDP_PhysAddr = EFI_FindConfigTable(&acpi_20_guid);
+    	if (RSDP_PhysAddr)
+    	{
+    	    D(bug("[ACPI] Got RSDP 2.0 from EFI @ 0x%p\n", RSDP_PhysAddr));
+
+    	    if (!acpi_CheckSum(RSDP_PhysAddr, 36))
+	 	return RSDP_PhysAddr;
+	 	
+	    D(bug("[ACPI] Bad checksum\n"));
+    	}
+
+    	RSDP_PhysAddr = EFI_FindConfigTable(&acpi_10_guid);
+    	if (RSDP_PhysAddr)
+    	{
+    	    D(bug("[ACPI] Got RSDP 1.0 from EFI @ 0x%p\n", RSDP_PhysAddr));
+
+    	    if (!acpi_CheckSum(RSDP_PhysAddr, 20))
+	 	return RSDP_PhysAddr;
+
+	    D(bug("[ACPI] Bad checksum\n"));
+    	}
+    	
+    	/*
+    	 * If there's no RSDP in EFI tables, we'll search for it, just in case.
+    	 * However, to tell the truth, we are unlikely to find it. For example
+    	 * on MacMini RSDP is located neither in EBDA nor in ROM space.
+    	 */
+    }
 
     /* 
      * Search the first Kilobyte of the Extended BIOS Data Area.
@@ -81,46 +111,6 @@ void *core_ACPIRootSystemDescriptionPointerLocate()
         D(bug("[ACPI] RSDP found in BIOS ROM space @ %p\n", RSDP_PhysAddr));
         return RSDP_PhysAddr;
     }    
-
-    D(bug("[ACPI] Seaching in memory map...\n"));
-
-    /*
-     * EXPERIMENTAL: Search in memory regions marked as MMAP_TYPE_ACPIDATA in the memory map.
-     * This was figured out by using 'lsacpi' in GRUB 2 on IntelMac. EFI supplies a pointer
-     * to RDSP, however we are using Multiboot protocol, which doesn't pass us any EFI data.
-     */
-    KernelBase = OpenResource("kernel.resource");
-    if (!KernelBase)
-    {
-        D(bug("[ACPI] kernel.resource failed to open?!\n"));
-    	return NULL;
-    }
-
-    tags = KrnGetBootInfo();
-    mmap = (struct mb_mmap *)LibGetTagData(KRN_MMAPAddress, 0, tags);
-    len  = LibGetTagData(KRN_MMAPLength, 0, tags);
-
-    if (!mmap || !len)
-    {
-    	D(bug("[ACPI] No memory map supplied by the bootstrap\n"));
-    	return NULL;
-    }
-
-    while (len >= sizeof(struct mb_mmap))
-    {
-    	if (mmap->type == MMAP_TYPE_ACPIDATA)
-    	{
-    	    RSDP_PhysAddr = core_ACPIRootSystemDescriptionPointerScan(mmap->addr, mmap->len);
-    	    if (RSDP_PhysAddr)
-    	    {
-    	    	D(bug("[ACPI] RSDP found in ACPI DATA area in memory map @ 0x%p\n", RSDP_PhysAddr));
-		return RSDP_PhysAddr;
-	    }
-	}
-
-        len -= mmap->size + 4;
-        mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap + 4);
-    }
 
     return NULL;
 }
