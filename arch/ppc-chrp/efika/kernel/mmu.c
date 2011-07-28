@@ -371,7 +371,7 @@ AROS_LH3(void, KrnSetProtection,
 		 AROS_LHA(void *, address, A0),
 		 AROS_LHA(uint32_t, length, D0),
          AROS_LHA(KRN_MapAttr, flags, D1),
-         struct KernelBase *, KernelBase, 9, Kernel)
+         struct KernelBase *, KernelBase, 21, Kernel)
 {
     AROS_LIBFUNC_INIT
 
@@ -408,7 +408,7 @@ AROS_LH4(int, KrnMapGlobal,
          AROS_LHA(void *, physical, A1),
          AROS_LHA(uint32_t, length, D0),
          AROS_LHA(KRN_MapAttr, flags, D1),
-         struct KernelBase *, KernelBase, 9, Kernel)
+         struct KernelBase *, KernelBase, 16, Kernel)
 {
     AROS_LIBFUNC_INIT
 
@@ -430,7 +430,7 @@ AROS_LH4(int, KrnMapGlobal,
 AROS_LH2(int, KrnUnmapGlobal,
 		AROS_LHA(void *, virtual, A0),
 		AROS_LHA(uint32_t, length, D0),
-		struct KernelBase *, KernelBase, 10, Kernel)
+		struct KernelBase *, KernelBase, 17, Kernel)
 {
 	AROS_LIBFUNC_INIT
 
@@ -471,7 +471,7 @@ uintptr_t virt2phys(uintptr_t virt)
 
 AROS_LH1(void *, KrnVirtualToPhysical,
 		AROS_LHA(void *, virtual, A0),
-		struct KernelBase *, KernelBase, 0, Kernel)
+		struct KernelBase *, KernelBase, 20, Kernel)
 {
 	AROS_LIBFUNC_INIT
 

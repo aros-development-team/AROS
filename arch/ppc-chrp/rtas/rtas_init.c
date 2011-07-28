@@ -68,7 +68,7 @@ AROS_LH5(int32_t, RTASCall,
 		AROS_LHA(uint32_t,		nrets,	D1),
 		AROS_LHA(uint32_t *,	output, A1),
 		AROS_LHA(va_list,		args,	A2),
-		struct RTASBase *, RTASBase, 0, Rtas)
+		struct RTASBase *, RTASBase, 1, Rtas)
 {
 	AROS_LIBFUNC_INIT
 

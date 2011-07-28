@@ -12,11 +12,19 @@
 #include <utility/utility.h>
 #include <proto/exec.h>
 #include <proto/timer.h>
+#include <proto/oop.h>
 #include <proto/openfirmware.h>
 
 #include "ata.h"
 
+extern uint8_t *sram;
+extern bestcomm_t *bestcomm;
+extern uint32_t bestcomm_taskid;
+
+extern void bestcomm_init();
+
 UBYTE *mbar;
+uint32_t bus_frequency;
 
 volatile ata_5k2_t *ata_5k2;
 
