@@ -84,7 +84,7 @@ ROMLOC_bss := 0x0001020
 
 ROMLOC_rom := 0x0f80000
 
-KLIBS   := exec aros dos utility oop expansion boot mathffp partition debug
+KLIBS   := exec aros dos utility oop expansion mathffp partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx

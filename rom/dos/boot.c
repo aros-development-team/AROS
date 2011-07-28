@@ -15,12 +15,52 @@
 #include <aros/asmcall.h>
 #include <dos/dosextens.h>
 #include <utility/tagitem.h>
+#include <libraries/expansionbase.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include "dosboot_intern.h"
+#include "dos_intern.h"
 
-void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
+#ifdef __mc68000
+/*
+ * Load DEVS:system-configuration only on m68k.
+ * Setup pre-2.0 boot disk colors and mouse cursors (for example)
+ */
+#define USE_SYSTEM_CONFIGURATION
+
+#endif
+
+#ifdef USE_SYSTEM_CONFIGURATION
+
+#include <proto/intuition.h>
+
+static void load_system_configuration(struct DosLibrary *DOSBase)
+{
+    BPTR fh;
+    ULONG len;
+    struct Preferences prefs;
+    struct Library *IntuitionBase;
+    
+    fh = Open("DEVS:system-configuration", MODE_OLDFILE);
+    if (!fh)
+    	return;
+    len = Read(fh, &prefs, sizeof prefs);
+    Close(fh);
+    if (len != sizeof prefs)
+    	return;
+    IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
+    if (IntuitionBase)
+	SetPrefs(&prefs, len, FALSE);
+    CloseLibrary(IntuitionBase);
+}
+
+#else
+
+#define load_system_configuration(DOSBase) do { } while (0)
+
+#endif
+
+void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
     LONG rc = RETURN_FAIL;
     BPTR cis = BNULL;
@@ -28,9 +68,13 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. */
 
-    
-    D(bug("[DOSBoot] __dosboot_Boot()\n"));
+    D(bug("[__dos_Boot] generic boot sequence\n"));
 
+    /* m68000 uses this to get the default colors and
+     * cursors for Workbench
+     */
+    load_system_configuration(DOSBase);
+    
     cis = Open("CON:////Boot Shell/AUTO", MODE_OLDFILE);
     if (cis)
     {
@@ -48,6 +92,13 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 
         SetConsoleTask(((struct FileHandle*)BADDR(cis))->fh_Type);
 
+        /* If needed, run the display drivers loader */
+        if (!(Flags & BF_NO_DISPLAY_DRIVERS)) {
+            /* Check that it exists first... */
+            Execute("C:LoadMonDrvs >NIL:", cis, BNULL);
+            /* We don't care about its return code */
+        }
+
         if (!(Flags & BF_NO_STARTUP_SEQUENCE))
             sseq = Open("S:Startup-Sequence", MODE_OLDFILE);
 
@@ -56,7 +107,7 @@ void __dosboot_Boot(struct DosLibrary *DOSBase, ULONG Flags)
             tags[5].ti_Tag  = SYS_ScriptInput;
             tags[5].ti_Data = (IPTR)sseq;
 
-            D(bug("[DOSBoot] __dosboot_Boot: Open Startup Sequence = %d\n", sseq));
+            D(bug("[__dos_Boot] Open Startup Sequence = %d\n", sseq));
         }
 
         rc = SystemTagList("", tags);

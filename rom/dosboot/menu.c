@@ -203,11 +203,11 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
                     switch (g->GadgetID)
                     {
                     case BUTTON_BOOT:
-                            DOSBootBase->BootFlags &= ~BF_NO_STARTUP_SEQUENCE;
+                            DOSBootBase->db_BootFlags &= ~BF_NO_STARTUP_SEQUENCE;
                             exit = EXIT_BOOT;
                             break;
                     case BUTTON_BOOT_WNSS:
-                            DOSBootBase->BootFlags |= BF_NO_STARTUP_SEQUENCE;
+                            DOSBootBase->db_BootFlags |= BF_NO_STARTUP_SEQUENCE;
                             exit = EXIT_BOOT_WNSS;
                             break;
                     case BUTTON_USE:
@@ -276,6 +276,87 @@ static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
     CloseLibrary((struct Library*)ExpansionBase);
 }
 
+static BOOL bstreqcstr(BSTR bstr, CONST_STRPTR cstr)
+{
+    int clen;
+    int blen;
+
+    clen = strlen(cstr);
+    blen = AROS_BSTR_strlen(bstr);
+    if (clen != blen)
+        return FALSE;
+
+    return (memcmp(AROS_BSTR_ADDR(bstr),cstr,clen) == 0);
+}
+
+static void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
+{
+    struct ExpansionBase *ExpansionBase;
+    struct BootNode *bn;
+
+    if (DOSBootBase->db_BootDevice == NULL &&
+        DOSBootBase->db_BootNode != NULL)
+        return;
+
+    ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
+    if (!ExpansionBase)
+	return;
+
+    Forbid(); /* .. access to ExpansionBase->MountList */
+
+    if (DOSBootBase->db_BootNode == NULL && DOSBootBase->db_BootDevice == NULL) {
+        bn = (APTR)GetHead(&ExpansionBase->MountList);
+    } else {
+        ForeachNode(&ExpansionBase->MountList, bn) {
+            struct DeviceNode *dn;
+
+            dn = bn->bn_DeviceNode;
+            if (dn == NULL || dn->dn_Name == BNULL)
+                continue;
+
+            if (bstreqcstr(dn->dn_Name, DOSBootBase->db_BootDevice))
+                break;
+        }
+    }
+
+    Permit();
+
+    DOSBootBase->db_BootNode = bn;
+    DOSBootBase->db_BootDevice = NULL;
+
+    CloseLibrary((APTR)ExpansionBase);
+}
+
+/* This makes the selected boot device the actual
+ * boot device. It also updates the boot flags.
+ */
+static void setBootDevice(LIBBASETYPEPTR DOSBootBase)
+{
+    struct ExpansionBase *ExpansionBase;
+    struct BootNode *bn;
+
+    ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
+    if (!ExpansionBase)
+	return;
+
+    bn = DOSBootBase->db_BootNode;
+
+    if (bn != NULL) {
+        Remove((struct Node *)bn);
+        bn->bn_Node.ln_Type = NT_BOOTNODE;
+        bn->bn_Node.ln_Pri = 127;
+        /* We use AddHead() instead of Enqueue() here
+         * to *insure* that this gets to the front of
+         * the boot list.
+         */
+        AddHead(&ExpansionBase->MountList, (struct Node *)&bn);
+    }
+
+    ExpansionBase->eb_BootFlags = DOSBootBase->db_BootFlags;
+
+    CloseLibrary((APTR)ExpansionBase);
+}
+
 static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 {
     struct Window *win = DOSBootBase->bm_Window;
@@ -311,7 +392,9 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 	}
 
 	NewRawDoFmt("%c%10s: %4d %s-%ld", RAWFMTFUNC_STRING, text,
-	    IsBootableNode(bn) ? '*' : ' ',
+	    IsBootableNode(bn) ? 
+	       ((DOSBootBase->db_BootNode == bn) ? '*' : '+') 
+	       : ' ',
 	    AROS_BSTR_ADDR(dn->dn_Name),
 	    bn->bn_Node.ln_Pri,
 	    AROS_BSTR_ADDR(fssm->fssm_Device),
@@ -557,6 +640,8 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
 #endif
 #endif
 
+    LIBBASE->db_BootFlags = 0;
+
     /* Check for command line argument */
     if (BootLoaderBase)
     {
@@ -574,11 +659,12 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
                 }
 		else if (0 == stricmp(node->ln_Name, "nomonitors"))
 		{
-		    LIBBASE->BootFlags |= BF_NO_DISPLAY_DRIVERS;
+		    LIBBASE->db_BootFlags |= BF_NO_DISPLAY_DRIVERS;
 		}
 		else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
 		{
 		    LIBBASE->db_BootDevice = &node->ln_Name[11];
+		    selectBootDevice(LIBBASE);
 		}
             }
         }
@@ -600,6 +686,9 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
         D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
 	bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
     }
+
+    /* Make the user's select the top boot device */
+    setBootDevice(LIBBASE);
 
     return bmi_RetVal;
 }

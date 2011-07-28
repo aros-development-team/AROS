@@ -7,6 +7,7 @@ USER_CFLAGS := -D__DOS_NOLIBBASE__
 IMAGE_TYPES := aos elf
 
 FILES	  := bcpl_support bstr_helper errorlist \
+             boot isbootable \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
 	     packethelper namefrom internalloadseg_support
@@ -16,8 +17,9 @@ LOADSEG_FILES := internalloadseg \
 
 FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     allocdosobject assignadd assignlate assignlock assignpath \
-	     attemptlockdoslist changemode checksignal cli cliinitnewcli \
-	     cliinitrun close comparedates createdir createnewproc \
+	     attemptlockdoslist changemode checksignal \
+	     cli cliinit cliinitnewcli cliinitrun \
+	     close comparedates createdir createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
 	     deletevar deviceproc displayerror dopkt dosgetstring \
 	     duplock duplockfromfh endnotify errorreport \
@@ -53,6 +55,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 #MM     kernel-exec-includes \
 #MM     kernel-timer-includes \
 #MM     kernel-intuition-includes
+
+USER_CFLAGS := -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \

@@ -127,7 +127,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 		pp[DE_MAXTRANSFER + 4] = 0x00200000;
 		pp[DE_MASK + 4] = 0x7FFFFFFE;
 		pp[DE_BOOTPRI + 4] = 5;
-		pp[DE_DOSTYPE + 4] = 0x444F5300;
+		pp[DE_DOSTYPE + 4] = 0;
 		pp[DE_BOOTBLOCKS + 4] = 2;
 		devnode = MakeDosNode(pp);
 
@@ -143,7 +143,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
                         CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler),
                             len);
                         AROS_BSTR_setstrlen(devnode->dn_Handler, len);
-			AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
+			AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, NULL);
 		    }
 		}
 	    }
