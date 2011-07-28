@@ -23,9 +23,12 @@
 #include <proto/graphics.h>
 #include <proto/dos.h>
 #include <exec/resident.h>
+#include <aros/kernel.h>
 
 #include <string.h> /* memcpy, memset */
 #include <zlib.h>
+
+#define DEFAULT_KERNEL_CMDLINE "sysdebug=InitCode"
 
 #define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
 #define NO_SYSBASE_REMAP
@@ -740,7 +743,7 @@ static void doreboot(void)
 }
 
 APTR entry, kicktags;
-UBYTE *kernelcmd;
+struct TagItem *kerneltags;
 
 static void supercode(void)
 {
@@ -751,6 +754,7 @@ static void supercode(void)
 
     if ((SysBase->AttnFlags & 0xff) != 0)
     	setcpu();
+
     fakesys = (ULONG*)FAKEBASE;
     coldcapture = (ULONG*)COLDCAPTURE;
     coldcapture[-1] = (ULONG)entry;
@@ -764,15 +768,10 @@ static void supercode(void)
     sysbase = (struct ExecBase*)fakesys; 
 
     memset(sysbase, 0, FAKEBASESIZE);
-    /* Misuse DebugData as a command line pointer,
-     * Stuff the string to &IntVects[0]..
-     * kernelcmd is a BCPL string!
+    /* Misuse DebugData as a kernel tag pointer,
      */
-    if (kernelcmd) {
-    	APTR cmdptr = &sysbase->IntVects[0];
-    	sysbase->DebugData = cmdptr;
-	memcpy(cmdptr, kernelcmd + 1, kernelcmd[0]);
-    }
+    if (kerneltags)
+    	sysbase->DebugData = kerneltags;
 
     /* Detached node */
     sysbase->LibNode.lib_Node.ln_Pred = &sysbase->LibNode.lib_Node;
@@ -810,13 +809,13 @@ static void supercode(void)
     doreboot();
 }
 
-void BootROM(BPTR romlist, struct Resident **reslist, UBYTE *cmdline)
+void BootROM(BPTR romlist, struct Resident **reslist, struct TagItem *tags)
 {
     APTR GfxBase;
 
     entry = BADDR(romlist)+sizeof(ULONG);
     kicktags = reslist;
-    kernelcmd = cmdline;
+    kerneltags = tags;
 
 #if 0
      /* Debug testing code */
@@ -844,6 +843,29 @@ void BootROM(BPTR romlist, struct Resident **reslist, UBYTE *cmdline)
     Disable();
 
     Supervisor((ULONG_FUNC)supercode);
+}
+
+#define KERNELTAGS_SIZE 10
+#define CMDLINE_SIZE 512
+
+static struct TagItem *AllocKernelTags(UBYTE *cmdline)
+{
+    struct TagItem *tags;
+    UBYTE *cmd;
+    
+    tags = aosAllocMem(sizeof(struct TagItem) * KERNELTAGS_SIZE + CMDLINE_SIZE, MEMF_CLEAR, SysBase);
+    if (!tags)
+    	return NULL;
+    cmd = (UBYTE*)(tags + KERNELTAGS_SIZE);
+    /* cmdline is a BCPL string! */
+    if (cmdline && cmdline[0])
+        CopyMem(cmdline + 1, cmd, cmdline[0]);
+    else
+    	strcpy(cmd, DEFAULT_KERNEL_CMDLINE);
+    tags[0].ti_Tag = KRN_CmdLine;
+    tags[0].ti_Data = (IPTR)cmd;
+    tags[1].ti_Tag = TAG_DONE;
+    return tags;
 }
 
 __startup static AROS_ENTRY(int, startup,
@@ -879,14 +901,16 @@ __startup static AROS_ENTRY(int, startup,
             ROMSegList = ROMLoad(args[ARG_ROM]);
             if (ROMSegList != BNULL) {
                 struct Resident **ResidentList;
+                struct TagItem *KernelTags;
                 WriteF("Successfully loaded ROM\n");
 
                 ResidentList = LoadResidents((IPTR *)args[ARG_MODULES]);
+                KernelTags = AllocKernelTags(BADDR(args[ARG_CMD]));
 
                 WriteF("Booting...\n");
                 Delay(50);
 
-                BootROM(ROMSegList, ResidentList, BADDR(args[ARG_CMD]));
+                BootROM(ROMSegList, ResidentList, KernelTags);
 
                 UnLoadSeg(ROMSegList);
             } else {

@@ -357,11 +357,10 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	struct TagItem bootmsg[] = {
 #ifdef AROS_SERIAL_DEBUG
 	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode" },
-#else
-	    { TAG_END },
 #endif
 	    { TAG_END },
 	};
+	struct TagItem *bootmsgptr = bootmsg;
 	volatile APTR *trap;
 	int i;
 	BOOL wasvalid;
@@ -412,19 +411,17 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	    wasvalid = IsSysBaseValidNoVersion(oldSysBase);
 	    if (wasvalid) {
 	    	DEBUGPUTHEX(("[SysBase] fakebase at", (ULONG)oldSysBase));
-	    	if (oldSysBase->DebugData) {
-	    	    bootmsg[0].ti_Tag = KRN_CmdLine;
-	    	    bootmsg[0].ti_Data = (IPTR)oldSysBase->DebugData;
-	    	}
+	    	if (oldSysBase->DebugData)
+	    	    bootmsgptr = (struct TagItem*)oldSysBase->DebugData;
 	    	wasvalid = TRUE;
 	    } else {
 	    	DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)oldSysBase));
 	    	wasvalid = FALSE;
 	    }
 	}
-    	if (bootmsg[0].ti_Tag == KRN_CmdLine) {
+    	if (bootmsgptr[0].ti_Tag == KRN_CmdLine) {
 	    DEBUGPUTS(("[SysBase] kernel commandline '"));
-    	    DEBUGPUTS(((CONST_STRPTR)bootmsg[0].ti_Data));
+    	    DEBUGPUTS(((CONST_STRPTR)bootmsgptr[0].ti_Data));
     	    DEBUGPUTS(("'\n"));
     	}
 
@@ -491,6 +488,7 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 
 	/* Clear the BSS. */
 	__clear_bss(&kbss[0]);
+	BootMsg = bootmsgptr;
 
 	/* NOTE: mh *must* have, as its first mc, a chunk
 	 *       big enough for krnRomTagScanner, and at
@@ -507,7 +505,7 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	 * Call the SysBase initialization.
 	 */
 	Early_ScreenCode(CODE_EXEC_CHECK);
-	if (!krnPrepareExecBase(kickrom, mh, bootmsg))
+	if (!krnPrepareExecBase(kickrom, mh, bootmsgptr))
 	    Early_Alert(AT_DeadEnd | AG_MakeLib | AO_ExecLib);
 
 	/* From here on, we can reference SysBase */
