@@ -9,8 +9,6 @@
 #include <proto/utility.h>
 #include <libraries/configvars.h>
 
-#define D(x) x
-
 #define _STR(A) #A
 #define STR(A) _STR(A)
 
