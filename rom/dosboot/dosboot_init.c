@@ -123,8 +123,14 @@ static APTR __dosboot_RunHandler(struct BootNode *bootNode, struct DosLibrary *D
     	buf[nameLen++] = ':';
     	buf[nameLen++] = 0;
 
-	DeviceProc(buf);
-	FreeMem(buf, nameLen);
+        if (!DeviceProc(buf))
+        {
+            char  buffer[80];
+            SIPTR code = IoErr();
+            Fault(code, NULL, buffer, 80);
+            bug("[DOSBoot] __dosboot_RunHandler: for %s failed, IoErr() = %d, %s\n", buf, code, buffer);
+        }
+        FreeMem(buf, nameLen);
     }
 
     return deviceNode->dn_Task;
@@ -142,6 +148,8 @@ static void __dosboot_Mount(struct BootNode *bootNode, struct DosLibrary * DOSBa
         kprintf("Mounting node 0x%p (%b) failed at AddDosEntry() -- maybe it was already added by someone else!\n", dn, dn->dn_Name);
         Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
     }
+
+    D(bug("[DOSBoot] __dosboot_Mount: run handler\n"));
 
     __dosboot_RunHandler(bootNode, DOSBase);
 }
@@ -168,7 +176,7 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
 
     CopyMem(deviceName, buffer, nameLength);
     strcpy(&buffer[nameLength], AROS_BOOT_CHECKSIG);
-    D(bug("[DOSBoot] Opening '%s'...\n", buffer));
+    D(bug("[DOSBoot] __dosboot_IsBootable: Opening '%s'...\n", buffer));
 
     lock = Open(buffer, MODE_OLDFILE);
 
@@ -180,7 +188,7 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
         LONG readsize;
 	struct FileInfoBlock *abfile_fib;
 
-	D(bug("[DOSBoot] Opened succesfully\n"));
+	D(bug("[DOSBoot] __dosboot_IsBootable: Opened succesfully\n"));
 
 	abfile_fib = AllocDosObject(DOS_FIB, NULL);
 	if (abfile_fib)
@@ -190,7 +198,8 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
             	bufferLength = abfile_fib->fib_Size + 1;
 
         	buffer = AllocMem(bufferLength, MEMF_ANY);
-        	D(bug("[DOSBoot] Allocated %d bytes for Buffer @ %p\n", bufferLength, buffer));
+                D(bug("[DOSBoot] __dosboot_IsBootable: Allocated %d bytes for Buffer @ %p\n",
+                      bufferLength, buffer));
 
 		if (!buffer)
         	{
@@ -265,7 +274,7 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
 
 #endif
 
-    if (buffer != NULL ) FreeMem(buffer, bufferLength);
+    if (buffer != NULL) FreeMem(buffer, bufferLength);
 
     D(bug("[DOSBoot] __dosboot_IsBootable returned %d\n", result));
 
