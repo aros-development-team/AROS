@@ -55,17 +55,17 @@ struct EFI_Runtime
 {
     struct EFI_TableHeader Hdr;
 
-    SIPTR (*GetTime)(struct EFI_Time *Time, struct EFI_Time_Cap *Caps);
-    SIPTR (*SetTime)(struct EFI_Time *Time);
-    SIPTR (*GetWakeupTime)(UBYTE *Enabled, UBYTE *Pending, struct EFI_Time *Time);
-    SIPTR (*SetWakeupTime)(UBYTE Enabled, struct EFI_Time *Time);
-    SIPTR (*SetVirtualAddressMap)(IPTR MapSize, IPTR EntrySize, ULONG EntryVersion, struct EFI_MemMap *Map);
-    SIPTR (*ConvertPointer)(IPTR DebugDisposition, void **Addr);
-    SIPTR (*GetVariable)(UWORD *Name, uuid_t *VendorGUID, ULONG *Attrs, IPTR *DataSize, void *Data);
-    SIPTR (*GetNextVariableName)(IPTR *NameSize, UWORD *Name, uuid_t *VendorGUID);
-    SIPTR (*SetVariable)(UWORD *Name, uuid_t *VendorGUID, ULONG Attrs, void *Data);
-    SIPTR (*GetNextHighMonotonicCount)(ULONG *HighCount);
-    void  (*ResetSystem)(ULONG Type, SIPTR Status, IPTR DataSize, UWORD *Data);
+    __eficall SIPTR (*GetTime)(struct EFI_Time *Time, struct EFI_Time_Cap *Caps);
+    __eficall SIPTR (*SetTime)(struct EFI_Time *Time);
+    __eficall SIPTR (*GetWakeupTime)(UBYTE *Enabled, UBYTE *Pending, struct EFI_Time *Time);
+    __eficall SIPTR (*SetWakeupTime)(UBYTE Enabled, struct EFI_Time *Time);
+    __eficall SIPTR (*SetVirtualAddressMap)(IPTR MapSize, IPTR EntrySize, ULONG EntryVersion, struct EFI_MemMap *Map);
+    __eficall SIPTR (*ConvertPointer)(IPTR DebugDisposition, void **Addr);
+    __eficall SIPTR (*GetVariable)(UWORD *Name, uuid_t *VendorGUID, ULONG *Attrs, IPTR *DataSize, void *Data);
+    __eficall SIPTR (*GetNextVariableName)(IPTR *NameSize, UWORD *Name, uuid_t *VendorGUID);
+    __eficall SIPTR (*SetVariable)(UWORD *Name, uuid_t *VendorGUID, ULONG Attrs, void *Data);
+    __eficall SIPTR (*GetNextHighMonotonicCount)(ULONG *HighCount);
+    __eficall void  (*ResetSystem)(ULONG Type, SIPTR Status, IPTR DataSize, UWORD *Data);
 };
 
 #define EFI_RUNTIME_SERVICES_SIGNATURE 0x56524553544e5552
