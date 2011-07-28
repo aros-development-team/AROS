@@ -76,8 +76,6 @@ AROS_LH1(void *, EFI_FindConfigTable,
     	}
     }
 
-    for (;;);
-
     return NULL;
 
     AROS_LIBFUNC_EXIT
