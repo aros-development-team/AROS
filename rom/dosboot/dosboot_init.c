@@ -560,7 +560,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	if (!(LIBBASE->BootFlags & BF_NO_DISPLAY_DRIVERS))
 	{
 	    D(bug("[DOSBoot] Loading display drivers\n"));
-            __dosboot_InitHidds(DOSBase);
+	    Execute("C:LoadMonDrvs >NIL:", BNULL, BNULL);
 	}
 #endif
         /* We now call the system dependant boot - should NEVER return! */
