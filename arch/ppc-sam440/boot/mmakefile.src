@@ -33,6 +33,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-gameport \
 #MM     kernel-keyboard \
 #MM     kernel-console \
+#MM     kernel-filesystem \
 #MM     kernel-fs-con \
 #MM     kernel-fs-afs \
 #MM     kernel-bootloader-sam440-ppc \
@@ -59,7 +60,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-processor
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
-PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor
+PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
 PKG_HANDLERS := con amberram cdrom sfs afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass pci pci-amcc440 i2c i2c-amcc440 radeon irq usb ohci
@@ -113,7 +114,7 @@ $(TARGET_ISO):
 		$(AROSDIR)
 
 #MM setup-sam440-ppc
-setup-sam440-ppc : 
+setup-sam440-ppc : $(SRCDIR)/$(CURDIR)/menu.lst
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
 	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(BINDIR)/boot/
 #	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst.DH0 $(BINDIR)/boot/
