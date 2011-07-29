@@ -140,38 +140,38 @@ APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev)
 
 ULONG pci_inl(ULONG addr, struct CMI8738_DATA *card)
 {
-    ULONG *real_addr = (ULONG *) (card->iobase + addr); // card->iobase should be virtual
+    volatile ULONG *real_addr = (ULONG *) (card->iobase + addr); // card->iobase should be virtual
 
     return *(real_addr);
 }
 
 UWORD pci_inw(ULONG addr, struct CMI8738_DATA *card)
 {
-    UWORD *real_addr = (UWORD *) (card->iobase + addr);
+    volatile UWORD *real_addr = (UWORD *) (card->iobase + addr);
 
     return *(real_addr);
 }
 
 UBYTE pci_inb(ULONG addr, struct CMI8738_DATA *card)
 {
-    UBYTE *real_addr = (UBYTE *) (card->iobase + addr);
+    volatile UBYTE *real_addr = (UBYTE *) (card->iobase + addr);
 
     return *(real_addr);
 }
 
 void pci_outl(ULONG value, ULONG addr, struct CMI8738_DATA *card)
 {
-    *((ULONG *) (card->iobase + addr)) = value;  
+    *((volatile ULONG *) (card->iobase + addr)) = value;  
 }
 
 void pci_outw(UWORD value, ULONG addr, struct CMI8738_DATA *card)
 {
-    *((UWORD *) (card->iobase + addr)) = value;
+    *((volatile UWORD *) (card->iobase + addr)) = value;
 }
 
 void pci_outb(UBYTE value, ULONG addr, struct CMI8738_DATA *card)
 {
-    *((UBYTE *) (card->iobase + addr)) = value;
+    *((volatile UBYTE *) (card->iobase + addr)) = value;
 }
 
 

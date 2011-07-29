@@ -138,7 +138,7 @@ struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
 #ifdef __AROS__
     card->playback_interrupt.is_Code         = &playbackinterrupt;
 #else
-    card->interrupt.is_Code         = PlaybackInterrupt;
+    card->playback_interrupt.is_Code         = PlaybackInterrupt;
 #endif
     card->playback_interrupt.is_Data         = (APTR) card;
 
@@ -148,7 +148,7 @@ struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
 #ifdef __AROS__
     card->record_interrupt.is_Code         = &recordinterrupt;
 #else
-    card->interrupt.is_Code         = RecordInterrupt;
+    card->record_interrupt.is_Code         = RecordInterrupt;
 #endif
     card->record_interrupt.is_Data         = (APTR) card;
 

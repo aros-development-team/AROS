@@ -18,6 +18,9 @@ The Original Code is written by Davy Wentzler.
 #include <DriverData.h>
 #include <stddef.h>
 
+#define udelay micro_delay
+void micro_delay(unsigned int val);
+
 void WritePartialMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long shift, unsigned long mask, unsigned long val);
 void ClearMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long mask);
 void WriteMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long mask);
