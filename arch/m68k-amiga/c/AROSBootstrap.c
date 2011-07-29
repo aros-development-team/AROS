@@ -24,6 +24,7 @@
 #include <proto/dos.h>
 #include <exec/resident.h>
 #include <aros/kernel.h>
+#include <hardware/cpu/memory.h>
 
 #include <string.h> /* memcpy, memset */
 #include <zlib.h>
@@ -149,7 +150,6 @@ static ULONG RdArgs(BSTR format, BPTR args, ULONG max_arg)
 
 /* Allocate MMU page aligned memory chunks */
 
-#define PAGE_SIZE 4096
 #define ALLOCPADDING (sizeof(struct MemChunk) + 2 * sizeof(BPTR))
 
 static APTR AllocPageAligned(ULONG size, ULONG flags)
@@ -161,7 +161,7 @@ static APTR AllocPageAligned(ULONG size, ULONG flags)
     	return NULL;
     Forbid();
     FreeMem(ret, size + 2 * PAGE_SIZE);
-    ret = AllocAbs((size + PAGE_SIZE - 1) & ~PAGE_SIZE, (APTR)(((((ULONG)ret) + ALLOCPADDING + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)) - ALLOCPADDING));
+    ret = AllocAbs((size + PAGE_SIZE - 1) & PAGE_MASK, (APTR)(((((ULONG)ret) + ALLOCPADDING + PAGE_SIZE - 1) & PAGE_MASK) - ALLOCPADDING));
     Permit();
     if (ret == NULL)
     	return NULL;
@@ -170,7 +170,7 @@ static APTR AllocPageAligned(ULONG size, ULONG flags)
 static void FreePageAligned(APTR addr, ULONG size)
 {
     size += ALLOCPADDING;
-    FreeMem(addr, (size + PAGE_SIZE - 1) & ~PAGE_SIZE);
+    FreeMem(addr, (size + PAGE_SIZE - 1) & PAGE_MASK);
 }
 
 /* Define these here for zlib so that we don't
