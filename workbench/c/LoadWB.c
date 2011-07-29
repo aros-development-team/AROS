@@ -19,6 +19,10 @@
 
 /* Very minimal C:LoadWB */
 
+const TEXT version[] = "$VER: LoadWB 42.1 (29.7.2011)";
+
+int __nocommandline = 1;
+
 int main(void)
 {
     struct WorkbenchBase *WorkbenchBase = TaggedOpenLibrary(TAGGEDOPEN_WORKBENCH);
