@@ -386,7 +386,6 @@ static long internalBootCliHandler(void)
 {
     struct ExpansionBase *ExpansionBase;
     struct DosLibrary *DOSBase;
-    struct Library *psdBase;
     struct MsgPort *mp = &((struct Process *)FindTask(NULL))->pr_MsgPort;
     BPTR lock;
     struct DosPacket *dp;
@@ -435,11 +434,19 @@ static long internalBootCliHandler(void)
         Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
     }
 
+    /* The following code is no longer needed, due to the lazy
+     * assignment of ENV: to SYS:Prefs/Env-Archive, and can't
+     * work anyway, since RAM: is currently initialized
+     * in RTF_AFTERDOS. - Jason McMullan, 2011-07-29
+     */
+#if 0
     /*
      * If we have poseidon, ensure that ENV: exists to avoid missing volume requester.
      * We do it before other assigns because as soon as LIBS: is available it will open
      * muimaster.library and run popup GUI task.
      */
+{
+    struct Library *psdBase;
     psdBase = OpenLibrary("poseidon.library", 0);
 
     if (psdBase)
@@ -460,6 +467,8 @@ static long internalBootCliHandler(void)
                 UnLock(lock);
         }
     }
+}
+#endif
 
     AddBootAssign("SYS:C",                "C", DOSBase);
     AddBootAssign("SYS:Libs",             "LIBS", DOSBase);
