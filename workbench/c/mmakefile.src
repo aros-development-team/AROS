@@ -32,6 +32,7 @@ FILES := \
     List \
     Load \
     Lock \
+    LoadWB \
     MakeDir \
     MakeLink \
     Mount \
