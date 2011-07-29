@@ -25,6 +25,7 @@
 #define DD_OK	     0	/* No error */
 #define DD_NO_MEM    1	/* Out of memory */
 #define DD_ID_EXISTS 2	/* Specified MonitorID is already allocated */
+#define DD_IN_USE    3  /* One of boot mode drivers can't be shut down */
 
 /* This structure is subject to change! Private! */
 struct MonitorHandle
