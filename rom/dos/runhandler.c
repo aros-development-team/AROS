@@ -74,7 +74,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 	else
 	{
 	    path  = AROS_BSTR_ADDR(deviceNode->dn_Name);
-	    len   = AROS_BSTR_strlen(path);
+	    len   = AROS_BSTR_strlen(deviceNode->dn_Name);
 	    bpath = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(len + 1), MEMF_PUBLIC));
 	    if (bpath == BNULL)
 		return NULL;
