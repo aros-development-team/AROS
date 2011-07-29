@@ -160,10 +160,8 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
                        D(bug("[Strap] %b.%d bootblock read to %p ok\n", device, unit, buffer));
                        if (BootBlockChecksum(buffer, bootblock_size))
                        {
-                           APTR bootcode = buffer + 12;
-
                            SetBootNodeDosType(bn, AROS_LONG2BE(*(LONG *)buffer));
-                           init = CallBootBlockCode(bootcode, io, ExpansionBase);
+                           init = CallBootBlockCode(buffer + 12, io, ExpansionBase);
                        }
                        else
                        {
@@ -184,7 +182,8 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
        FreeMem(buffer, bootblock_size);
    }
 
-   if (init != NULL) {
+   if (init != NULL)
+   {
        CloseLibrary((APTR)ExpansionBase);
        D(bug("calling bootblock loaded code at %p\n", init));
        init();
