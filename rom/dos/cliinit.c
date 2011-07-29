@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -448,7 +448,7 @@ static long internalBootCliHandler(void)
 #endif
 
     AssignLate("ENV", "SYS:Prefs/Env-Archive");
-    AssignLate("ENVARC", "ENV");
+    AssignLate("ENVARC", "SYS:Prefs/Env-Archive");
 
     /*
      * Retry to run handlers which were not started yet.
