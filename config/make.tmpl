@@ -1904,7 +1904,6 @@ $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
 endif
 ifeq ($(TARGET),%(mainmmake)-%(arch))
 $(BD_OBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
-	@echo "MAKE DEPEND 3"
 	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
 endif
 
