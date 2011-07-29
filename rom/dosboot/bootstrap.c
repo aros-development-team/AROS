@@ -41,7 +41,7 @@
 
 /* These two functions are implemented in arch/m68k/all/dosboot/bootcode.c */
 
-extern VOID_FUNC *CallBootBlockCode(APTR bootcode, struct IOStdReq *io, struct ExpansionBase *ExpansionBase);
+extern VOID_FUNC CallBootBlockCode(APTR bootcode, struct IOStdReq *io, struct ExpansionBase *ExpansionBase);
 extern void dosboot_BootPoint(struct BootNode *bn);
 
 #else
@@ -135,7 +135,7 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
     if (!GetBootNodeDeviceUnit(bn, &device, &unit, &bootblock_size))
         return;
 
-    D(bug("%s: Probing for boot block on %s %p\n", __func__, device, (APTR)unit));
+    D(bug("%s: Probing for boot block on %b.%d\n", __func__, device, unit));
     /* memf_chip not required but more compatible with old bootblocks */
     buffer = AllocMem(bootblock_size, MEMF_CHIP);
     if (buffer != NULL)
