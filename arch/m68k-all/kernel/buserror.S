@@ -111,8 +111,8 @@ buserror060:
 	bne		.doexit
 	/* FSLW */
 	move.l	12+0x0c(%sp),%d0
-	and.l	#0x03e08200,%d0
+	and.l	#0x03e00200,%d0
 	/* LONG DATA READ PAGE FAULT? */
-	cmp.l	#0x01408200,%d0
+	cmp.l	#0x01400200,%d0
 	bne		.doexit
 	bra		.dotrace
