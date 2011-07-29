@@ -16,7 +16,9 @@
 #include <dos/dosextens.h>
 #include <utility/tagitem.h>
 #include <libraries/expansionbase.h>
+#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
 #include <proto/emul.h>
+#endif
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -65,7 +67,9 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
     LONG rc = RETURN_FAIL;
     BPTR cis = BNULL;
+#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
     APTR EmulBase;
+#endif
 
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. */
@@ -90,6 +94,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
         /* We don't care about its return code */
     }
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
     /*
      * On hosted ports this checks if we have display drivers,
      * and opens emergency console if not.
@@ -104,6 +109,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     {
 	EmulBoot();
     }
+#endif
 
     cis = Open("CON:////Boot Shell/AUTO", MODE_OLDFILE);
     if (cis)
