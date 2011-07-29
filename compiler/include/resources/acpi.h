@@ -21,62 +21,18 @@ struct acpi_table_hook
     struct MinNode                          h_MinNode;
     IPTR	                            (*h_Entry)();                   /* Main entry point */
     IPTR	                            (*h_SubEntry)();                /* Secondary entry point */
-    unsigned long                           phys_addr;                      /* points to "tbl_header" for madt entry hooks */
+    unsigned long                           phys_addr;                      /* points to "header" for madt entry hooks */
     unsigned long                           size;
 };
 
 /********** ACPI DEFINITIONS ****************/
 
-/* Table Type Definitions */
-
-enum ACPI_TABLE_IDS {
-    ACPI_ID_UNKNOWN                         = 0,
-    ACPI_ID_APIC,
-    ACPI_ID_BOOT,
-    ACPI_ID_DBGP,
-    ACPI_ID_DSDT,
-    ACPI_ID_ECDT,
-    ACPI_ID_ETDT,
-    ACPI_ID_FADT,
-    ACPI_ID_FACS,
-    ACPI_ID_OEMX,
-    ACPI_ID_PSDT,
-    ACPI_ID_SBST,
-    ACPI_ID_SLIT,
-    ACPI_ID_SPCR,
-    ACPI_ID_SRAT,
-    ACPI_ID_SSDT,
-    ACPI_ID_SPMI,
-    ACPI_ID_HPET,
-    ACPI_ID_COUNT
-};
-
-#ifdef __ACPI_C__
-
-char *ACPI_ID_STRINGS[ACPI_ID_COUNT] = {
-    [ACPI_ID_UNKNOWN]	                    = "????",
-    [ACPI_ID_APIC]		            = "APIC",
-    [ACPI_ID_BOOT]		            = "BOOT",
-    [ACPI_ID_DBGP]		            = "DBGP",
-    [ACPI_ID_DSDT]		            = "DSDT",
-    [ACPI_ID_ECDT]		            = "ECDT",
-    [ACPI_ID_ETDT]		            = "ETDT",
-    [ACPI_ID_FADT]		            = "FACP",
-    [ACPI_ID_FACS]		            = "FACS",
-    [ACPI_ID_OEMX]		            = "OEM",
-    [ACPI_ID_PSDT]		            = "PSDT",
-    [ACPI_ID_SBST]		            = "SBST",
-    [ACPI_ID_SLIT]		            = "SLIT",
-    [ACPI_ID_SPCR]		            = "SPCR",
-    [ACPI_ID_SRAT]		            = "SRAT",
-    [ACPI_ID_SSDT]		            = "SSDT",
-    [ACPI_ID_SPMI]		            = "SPMI",
-    [ACPI_ID_HPET]		            = "HPET",
-};
-
-#else
-    char *ACPI_ID_STRINGS;
-#endif /* __ACPI_C__ */
+/*
+ * Actually a reverse of AROS_MAKE_ID().
+ * Reverse because ACPI signatures appear to be stored in bigendian format.
+ */
+#define ACPI_MAKE_ID(a, b, c, d) (((ULONG) (d)<<24) | ((ULONG) (c)<<16) | \
+                                  ((ULONG) (d)<<8)  | ((ULONG) (a)))
 
 /* ACPI 2.0 Generic Address Structure (GAS) */
 
@@ -89,21 +45,17 @@ struct GENERIC_ACPI_ADDR
     UQUAD                                   address;                        /* 64-bit address of struct or register */
 };
 
-#define ACPI_TABLE_HEADER                                               /* ACPI common table tbl_header */ \
-    char                                    signature [4];                  /* ACPI signature (4 ASCII characters) */\
-    unsigned int                            length;                         /* Length of table, in bytes, including tbl_header */\
-    unsigned char                           revision;                       /* ACPI Specification minor version # */\
-    unsigned char                           checksum;                       /* To make sum of entire table == 0 */\
-    char                                    oem_id [6];                     /* OEM identification */\
-    char                                    oem_table_id [8];               /* OEM table identification */\
-    unsigned int                            oem_revision;                   /* OEM revision number */\
-    char                                    asl_compiler_id [4];            /* ASL compiler vendor ID */\
-    unsigned int                            asl_compiler_revision;          /* ASL compiler revision number */
-
-
-struct ACPI_TABLE_DEF_HEADER                                                /* ACPI common table tbl_header */
+struct ACPI_TABLE_DEF_HEADER                                                /* ACPI common table header */
 {
-    ACPI_TABLE_HEADER
+    unsigned int                            signature;                      /* ACPI signature (4 ASCII characters) */
+    unsigned int                            length;                         /* Length of table, in bytes, including header */
+    unsigned char                           revision;                       /* ACPI Specification minor version # */
+    unsigned char                           checksum;                       /* To make sum of entire table == 0 */
+    char                                    oem_id [6];                     /* OEM identification */
+    char                                    oem_table_id [8];               /* OEM table identification */
+    unsigned int                            oem_revision;                   /* OEM revision number */
+    char                                    asl_compiler_id [4];            /* ASL compiler vendor ID */
+    unsigned int                            asl_compiler_revision;          /* ASL compiler revision number */
 };
 
 /* Table Handlers */
@@ -116,8 +68,7 @@ enum ACPI_IRQ_PICS
     ACPI_IRQ_PIC_COUNT
 };
 
-/* Root System Description Pointer "RSDP" structures */
-
+/* Root System Description Pointer "RSDP" structure */
 struct ACPI_TABLE_TYPE_RSDP 
 {
     char			            signature[8];
@@ -125,26 +76,11 @@ struct ACPI_TABLE_TYPE_RSDP
     char			            oem_id[6];
     unsigned char			    revision;
     unsigned int			    rsdt_address;
-};
-
-struct ACPI2_TABLE_TYPE_RSDP 
-{
-    char			            signature[8];
-    unsigned char			    checksum;
-    char			            oem_id[6];
-    unsigned char			    revision;
-    unsigned int			    rsdt_address;
+    /* The following fields are present only if revision >= 2 */
     unsigned int			    length;
     UQUAD			            xsdt_address;
     unsigned char			    ext_checksum;
     unsigned char			    reserved[3];
-};
-
-struct ACPI_TABLE_TYPE_SDT                                                      /* System Description Table (RSDT/XSDT) */
-{
-    unsigned long		            phys_addr;
-    enum ACPI_TABLE_IDS	                    id;
-    unsigned long		            size;
 };
 
 struct ACPI_TABLE_DEF_ENTRY_HEADER
@@ -153,37 +89,29 @@ struct ACPI_TABLE_DEF_ENTRY_HEADER
     unsigned char			    length;
 };
 
-
-
 struct ACPI_TABLE_TYPE_RSDT                                                 /* Root System Description Table "RSDT" structures */
 {
-    struct ACPI_TABLE_DEF_HEADER            tbl_header;
+    struct ACPI_TABLE_DEF_HEADER            header;
     unsigned int		            entry[8];
 };
 
-
-
 struct ACPI_TABLE_TYPE_XSDT                                                 /* Extended System Description Table "XSDT" structures */
 {
-    struct ACPI_TABLE_DEF_HEADER            tbl_header;
+    struct ACPI_TABLE_DEF_HEADER            header;
     UQUAD			            entry[1];
 };
 
-
-
 struct ACPI_TABLE_TYPE_FADT                                                 /* Fixed ACPI Description Table "FADT" structures  */
 {
-    struct ACPI_TABLE_DEF_HEADER            tbl_header;
+    struct ACPI_TABLE_DEF_HEADER            header;
     unsigned int                            facs_addr;
     unsigned int                            dsdt_addr;
     /* ... */
 };
 
-
-
 struct ACPI_TABLE_TYPE_MADT                                                 /* Multiple APIC Description Table "MADT" structures */
 {
-    struct ACPI_TABLE_DEF_HEADER            tbl_header;
+    struct ACPI_TABLE_DEF_HEADER            header;
     unsigned int			    lapic_address;
     struct
     {
@@ -215,7 +143,7 @@ typedef struct
 
 struct ACPI_TABLE_TYPE_LAPIC 
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER      tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER      header;
     unsigned char			    acpi_id;
     unsigned char			    id;
     struct 
@@ -227,7 +155,7 @@ struct ACPI_TABLE_TYPE_LAPIC
 
 struct ACPI_TABLE_TYPE_IOAPIC 
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER      tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER      header;
     unsigned char			    id;
     unsigned char			    reserved;
     unsigned int			    address;
@@ -236,7 +164,7 @@ struct ACPI_TABLE_TYPE_IOAPIC
 
 struct ACPI_TABLE_TYPE_INT_SRCOVR 
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER      tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER      header;
     unsigned char			    bus;
     unsigned char			    bus_irq;
     unsigned int			    global_irq;
@@ -245,14 +173,14 @@ struct ACPI_TABLE_TYPE_INT_SRCOVR
 
 struct ACPI_TABLE_TYPE_LAPIC_NMI_SRC 
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER      tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER      header;
     ACPI_INT_FLAGS                          flags;
     unsigned int			    global_irq;
 };
 
 struct ACPI_TABLE_TYPE_LAPIC_NMI 
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER      tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER      header;
     unsigned char			    acpi_id;
     ACPI_INT_FLAGS	                    flags;
     unsigned char			    lint;
@@ -260,14 +188,14 @@ struct ACPI_TABLE_TYPE_LAPIC_NMI
 
 struct ACPI_TABLE_TYPE_LAPIC_ADDROVR 
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER      tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER      header;
     unsigned char			    reserved[2];
     UQUAD			            address;
 };
 
 struct ACPI_TABLE_TYPE_IOSAPIC 
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER      tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER      header;
     unsigned char			    id;
     unsigned char			    reserved;
     unsigned int			    global_irq_base;
@@ -276,7 +204,7 @@ struct ACPI_TABLE_TYPE_IOSAPIC
 
 struct ACPI_TABLE_TYPE_LSAPIC
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER	    tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER	    header;
     unsigned char			    acpi_id;
     unsigned char			    id;
     unsigned char			    eid;
@@ -289,7 +217,7 @@ struct ACPI_TABLE_TYPE_LSAPIC
 
 struct ACPI_TABLE_TYPE_PLAT_INTSRC
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER	    tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER	    header;
     ACPI_INT_FLAGS	                    flags;
     unsigned char			    type;	                        /* See acpi_interrupt_type */
     unsigned char			    id;
@@ -321,7 +249,7 @@ struct ACPI_GEN_REGADDR
 
 struct ACPI_TABLE_TYPE_HPET
 {
-    struct ACPI_TABLE_DEF_HEADER            tbl_header;
+    struct ACPI_TABLE_DEF_HEADER            header;
     unsigned int                            id;
     struct ACPI_GEN_REGADDR                 addr;
     unsigned char                           number;
@@ -335,7 +263,7 @@ struct ACPI_TABLE_TYPE_HPET
 
 struct ACPI_TABLE_TYPE_SRAT 
 {
-    struct ACPI_TABLE_DEF_HEADER            tbl_header;
+    struct ACPI_TABLE_DEF_HEADER            header;
     unsigned int			    table_revision;
     UQUAD			            reserved;
 };
@@ -349,7 +277,7 @@ enum ACPI_SRAT_ENTRY_IDS
 
 struct ACPI_TABLE_AFFIN_PROCESSOR
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER	    tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER	    header;
     unsigned char			    proximity_domain;
     unsigned char			    apic_id;
     struct 
@@ -363,7 +291,7 @@ struct ACPI_TABLE_AFFIN_PROCESSOR
 
 struct ACPI_TABLE_AFFIN_MEMORY
 {
-    struct ACPI_TABLE_DEF_ENTRY_HEADER	    tbl_header;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER	    header;
     unsigned char			    proximity_domain;
     unsigned char			    reserved1[5];
     unsigned int			    base_addr_lo;
@@ -395,14 +323,14 @@ enum acpi_address_range_id
 
 struct ACPI_TABLE_TYPE_SLIT 
 {
-    struct ACPI_TABLE_DEF_HEADER            tbl_header;
+    struct ACPI_TABLE_DEF_HEADER            header;
     UQUAD			            localities;
     unsigned char			    entry[1];	                    /* real size = localities^2 */
 };
 
 struct ACPI_TABLE_TYPE_SBST                                                 /* Smart Battery Description Table (SBST) */
 {
-    struct ACPI_TABLE_DEF_HEADER            tbl_header;
+    struct ACPI_TABLE_DEF_HEADER            header;
     unsigned int			    warning;	                    /* Warn user */
     unsigned int			    low;		            /* Critical sleep */
     unsigned int			    critical;	                    /* Critical shutdown */
@@ -410,7 +338,7 @@ struct ACPI_TABLE_TYPE_SBST                                                 /* S
 
 struct ACPI_TABLE_TYPE_ECDT                                                 /* Embedded Controller Boot Resources Table (ECDT) */
 {
-    struct ACPI_TABLE_DEF_HEADER 	    tbl_header;
+    struct ACPI_TABLE_DEF_HEADER 	    header;
     struct GENERIC_ACPI_ADDR	            ec_control;
     struct GENERIC_ACPI_ADDR	            ec_data;
     unsigned int			    uid;
@@ -422,21 +350,16 @@ struct ACPI_TABLE_TYPE_ECDT                                                 /* E
 struct ACPIBase
 {
     struct  Node                            ACPIB_Node;
-    struct  CPUBase                         *ACPIB_CPUBase;
-    struct  PICBase                         *ACPIB_PICBase;
 
-    struct GenericAPIC                      *ACPIB_GenericAPIC;         /* !! DO NOT USE!! THIS WILL BE REMOVED SOON!! */
-
-    APTR                                    ACPIB_RSDP_Addr;
-    APTR                                    ACPIB_SDT_Addr;
-    int                                     ACPIB_SDT_Count;
-    APTR                                    *ACPIB_SDT_Entry[MAX_ACPI_TABLES];
+    struct ACPI_TABLE_TYPE_RSDP            *ACPIB_RSDP_Addr;
+    struct ACPI_TABLE_DEF_HEADER     	   *ACPIB_SDT_Addr;			/* Raw XSDT or RSDT pointer	   	*/
+    int                                     ACPIB_SDT_Count;			/* Number of entries in the array below */
+    struct ACPI_TABLE_DEF_HEADER    	  **ACPIB_SDT_Entry;			/* Array of pointers to SDT tables 	*/
 /*..*/
-    APTR                                    ACPIB_ACPI_Data;                    /* Base address of acpi data block */
+    APTR                                    ACPIB_ACPI_Data;                    /* Base address of acpi data block 	*/
     APTR                                    ACPIB_ACPI_Data_End;
     APTR                                    ACPIB_ACPI_NVM;                     /* Base address of acpi data block */
 
-    int                                     ACPIB_ACPI_Disabled;
     int                                     ACPIB_ACPI_IRQ;
 
     int                                     ACPIB_ACPI_HT;
