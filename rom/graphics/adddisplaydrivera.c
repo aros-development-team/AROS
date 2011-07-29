@@ -23,7 +23,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR, gfxhidd, A0),
-	AROS_LHA(struct TagItem *, tags, A1),
+	AROS_LHA(const struct TagItem *, tags, A1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 181, Graphics)
@@ -119,20 +119,57 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct TagItem *tag;
     struct monitor_driverdata *mdd;
-    ULONG FirstID, NextID;
-    ULONG NumIDs, IDMask;
+    ULONG FirstID = INVALID_ID;
+    ULONG NextID;
+    ULONG NumIDs = 1;
+    ULONG IDMask = AROS_MONITOR_ID_MASK;
+    BOOL keep_boot = FALSE;
+    UWORD flags = 0;
+    ULONG *ResultID = NULL;
     ULONG ret = DD_OK;
 
     EnterFunc(bug("AddDisplayDriverA(0x%p)\n", gfxhidd));
+
+    /* First parse parameters */
+    while ((tag = NextTagItem(&tags)))
+    {
+    	switch (tag->ti_Tag)
+    	{
+    	case DDRV_MonitorID:
+    	    FirstID = tag->ti_Data;
+    	    break;
+
+    	case DDRV_ReserveIDs:
+    	    NumIDs = tag->ti_Data;
+    	    break;
+
+	case DDRV_IDMask:
+	    IDMask = tag->ti_Data;
+	    break;
+	
+	case DDRV_KeepBootMode:
+	    keep_boot = tag->ti_Data;
+	    break;
+
+	case DDRV_BootMode:
+	    flags = tag->ti_Data ? DF_BootMode : 0;
+	    break;
+
+	case DDRV_ResultID:
+	    ResultID = (ULONG *)tag->ti_Data;
+	    break;
+	}
+    }
 
     /* We lock for the entire function because we want to be sure that
        IDs will remain free during driver_Setup() */
     ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
 
-    FirstID = GetTagData(DDRV_MonitorID, CDD(GfxBase)->last_id, tags);
-    NumIDs  = GetTagData(DDRV_ReserveIDs, 1, tags);
-    IDMask  = GetTagData(DDRV_IDMask, AROS_MONITOR_ID_MASK, tags);
+    /* Default value for monitor ID */
+    if (FirstID == INVALID_ID)
+	FirstID = CDD(GfxBase)->last_id;
 
     /*
      * Calculate next free ID.
@@ -144,11 +181,29 @@
     NextID = FirstID + NumIDs * (~(IDMask & AROS_MONITOR_ID_MASK) + 1);
     D(bug("[AddDisplayDriverA] First ID 0x%08X, next ID 0x%08X\n", FirstID, NextID));
 
-    /* First check if requested IDs are already allocated */
-    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
-	if ((mdd->id >= FirstID && mdd->id < NextID)) {
+    /* First check if the operation can actually be performed */
+    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
+    {
+    	/* Check if requested IDs are already allocated */
+	if ((mdd->id >= FirstID && mdd->id < NextID))
+	{
 	    ret = DD_ID_EXISTS;
 	    break;
+	}
+
+	/*
+	 * Now check if boot mode drivers can really be unloaded.
+	 * Some drivers can start playing with their hardware during
+	 * early init, so we need to check it before driver_Setup().
+	 */
+	if (!keep_boot)
+	{
+	    /* The driver can be unloaded if it has nothing on display */
+	    if ((mdd->flags & DF_BootMode) && (mdd->display))
+	    {
+	    	ret = DD_IN_USE;
+	    	break;
+	    }
 	}
     }
 
@@ -161,31 +216,25 @@
 
 	if (mdd)
 	{
-	    BOOL keep_boot;
 	    struct monitor_driverdata *last, *old;
-	    ULONG *ResultID;
 
-	    mdd->id   = FirstID;
-	    mdd->mask = IDMask;
-
-	    if (GetTagData(DDRV_BootMode, FALSE, tags))
-	        mdd->flags |= DF_BootMode;
+	    mdd->id    =  FirstID;
+	    mdd->mask  =  IDMask;
+	    mdd->flags |= flags;
 
 	    if (CDD(GfxBase)->DriverNotify)
 		/* Use mdd->gfxhidd here because it can be substituted by fakegfx object */
 		mdd->userdata = CDD(GfxBase)->DriverNotify(mdd, TRUE, CDD(GfxBase)->notify_data);
 
-	    /* Remove boot mode drivers if needed */
-	    keep_boot = GetTagData(DDRV_KeepBootMode, FALSE, tags);
+	    /* Remove boot mode drivers */
 	    if (!keep_boot)
 	    {
 		D(bug("[AddDisplayDriverA] Shutting down boot mode drivers\n"));
 		for (last = (struct monitor_driverdata *)CDD(GfxBase);; last = last->next)
 		{
 		    D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p\n", last, last->next));
-		    /* Do not shut down the driver if it displays something.
-		       Experimental and will cause problems in certain cases. */
-		    while (last->next && (last->next->flags & DF_BootMode) && (!last->next->display))
+
+		    while (last->next && (last->next->flags & DF_BootMode))
 		    {
 		        old = last->next;
 			D(bug("[AddDisplayDriverA] Shutting down driver 0x%p (ID 0x%08lX, next 0x%p)\n", old, old->id, old->next));
@@ -219,7 +268,6 @@
 		CDD(GfxBase)->last_id = NextID;
 
 	    /* Return the assigned ID if the caller asked to do so */
-    	    ResultID = (ULONG *)GetTagData(DDRV_ResultID, 0, tags);
 	    if (ResultID)
 	    	*ResultID = FirstID;
 
