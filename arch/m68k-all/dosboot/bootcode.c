@@ -3,6 +3,7 @@
 #include <libraries/expansion.h>
 #include <libraries/expansionbase.h>
 #include <utility/tagitem.h>
+#include <dos/filehandler.h>
 
 #include <proto/exec.h>
 
@@ -12,7 +13,7 @@
  *
  * Returns 0 on success, or an error code
  */
-VOID_FUNC *CallBootBlockCode(APTR bootcode, struct IOStdReq *io, struct ExpansionBase *ExpansionBase)
+VOID_FUNC CallBootBlockCode(APTR bootcode, struct IOStdReq *io, struct ExpansionBase *ExpansionBase)
 {
     UBYTE oldflags = ExpansionBase->Flags & EBF_SILENTSTART;
     LONG retval;
