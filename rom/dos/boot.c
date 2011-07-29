@@ -16,6 +16,7 @@
 #include <dos/dosextens.h>
 #include <utility/tagitem.h>
 #include <libraries/expansionbase.h>
+#include <proto/emul.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -64,6 +65,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
     LONG rc = RETURN_FAIL;
     BPTR cis = BNULL;
+    APTR EmulBase;
 
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. */
@@ -75,7 +77,12 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
      */
     load_system_configuration(DOSBase);
 
-    /* If needed, run the display drivers loader */
+    /*
+     * If needed, run the display drivers loader.
+     * In fact the system must have at least one resident driver,
+     * which will be used for bootmenu etc. However, it we somehow happen
+     * not to have it, this will be our last chance.
+     */
     if (!(Flags & BF_NO_DISPLAY_DRIVERS))
     {
         /* Check that it exists first... */
@@ -84,9 +91,19 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     }
 
     /*
-     * TODO: on hosted ports we can check here if we have display drivers,
-     * and open emergency console if not.
+     * On hosted ports this checks if we have display drivers,
+     * and opens emergency console if not.
+     * I hope this is an acceptable way to keep architecture-specific code
+     * out of dos.library.
+     * This can also be done in some alternate way, like attempting to run
+     * a resident with some specific name.
      */
+    EmulBase = OpenResource("emul.handler");
+    D(bug("[__dos_Boot] emulbase = 0x%p\n", EmulBase));
+    if (EmulBase)
+    {
+	EmulBoot();
+    }
 
     cis = Open("CON:////Boot Shell/AUTO", MODE_OLDFILE);
     if (cis)

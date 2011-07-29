@@ -1,0 +1,18 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+ifneq ($(FAMILY),)
+    FAMILY_INCLUDES := -I$(SRCDIR)/arch/all-$(FAMILY)/filesys/emul_handler
+endif
+
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/filesys/emul_handler $(FAMILY_INCLUDES) -I$(SRCDIR)/$(CURDIR)
+
+FILES := emul_init emul_handler filenames emul_host
+FUNCS := boot
+
+%build_module mmake=kernel-fs-emul \
+    modname=emul modtype=resource modsuffix=handler \
+    files="$(FILES) $(FUNCS)" uselibs="rom"
+
+%common

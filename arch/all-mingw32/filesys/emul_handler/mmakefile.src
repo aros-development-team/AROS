@@ -4,12 +4,14 @@ include $(TOP)/config/make.cfg
 #MM- kernel-fs-emul-mingw32: kernel-fs-emul-mingw32-native
 #MM- kernel-fs-emul-mingw32-kobj: kernel-fs-emul-mingw32-native
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-hosted/devs/filesys/emul_handler
+MAINDIR := arch/all-hosted/filesys/emul_handler
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(MAINDIR)
 
 FILES := emul_host_mingw32 emul_host filenames
 
 %build_archspecific mainmmake=kernel-fs-emul \
-  maindir=arch/all-hosted/devs/filesys/emul_handler \
+  maindir=$(MAINDIR) \
   arch=mingw32 files=$(FILES)
 
 %copy_includes mmake=includes-copy-mingw32-$(CPU) includes="emul_host.h emul_winapi.h" path=resources
