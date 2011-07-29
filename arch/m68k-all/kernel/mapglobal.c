@@ -42,9 +42,10 @@ AROS_LH4I(int, KrnMapGlobal,
 
     BOOL invalid = (flags & (MAP_Readable | MAP_Writable | MAP_Executable)) == 0;
     BOOL readonly = (flags & MAP_Writable) == 0;
+    BOOL supervisor = (flags & MAP_Supervisor) != 0;
     UBYTE cm = (flags & MAP_CacheInhibit) ? CM_SERIALIZED : ((flags & MAP_WriteThrough) ? CM_WRITETHROUGH : CM_COPYBACK);
 
-    return map_region(KernelBase, virtual, physical, length, invalid, readonly, FALSE, cm);
+    return map_region(KernelBase, virtual, physical, length, invalid, readonly, supervisor, cm);
 
     AROS_LIBFUNC_EXIT
 }
