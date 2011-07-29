@@ -1204,7 +1204,7 @@ void EmulHandler_work(void)
     dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
 
     D(bug("EMUL: Open resource\n"));
-    emulbase = OpenResource("emul.handler");
+    emulbase = OpenResource("emul-handler");
     if (!emulbase)
     {
         D(bug("EMUL: FATAL - can't find myself\n"));

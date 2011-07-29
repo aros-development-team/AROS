@@ -1372,14 +1372,20 @@ endif
 ## Linking
 ##
 ifeq (%(modsuffix),)
-BD_MODULE    := %(prefix)/%(moduledir)/%(modname).%(modtype)
-BD_PKGMOD    := $(PKGDIR)/%(modname).%(modtype)
-BD_KOBJ      := $(KOBJSDIR)/%(modname)_%(modtype).o
+BD_SUFFIX := %(modtype)
 else
-BD_MODULE    := %(prefix)/%(moduledir)/%(modname).%(modsuffix)
-BD_PKGMOD    := $(PKGDIR)/%(modname).%(modsuffix)
-BD_KOBJ      := $(KOBJSDIR)/%(modname)_%(modsuffix).o
+BD_SUFFIX := %(modsuffix)
 endif
+
+# Handlers use dash instead of dot in their names
+ifeq ($(BD_SUFFIX),handler)
+BD_MODULE    := %(prefix)/%(moduledir)/%(modname)-$(BD_SUFFIX)
+BD_PKGMOD    := $(PKGDIR)/%(modname)-$(BD_SUFFIX)
+else
+BD_MODULE := %(prefix)/%(moduledir)/%(modname).$(BD_SUFFIX)
+BD_PKGMOD := $(PKGDIR)/%(modname).$(BD_SUFFIX)
+endif
+BD_KOBJ   := $(KOBJSDIR)/%(modname)_$(BD_SUFFIX).o
 
 %(mmake)-quick      : %(mmake)
 %(mmake)            : $(BD_MODULE) $(BD_LINKLIB)
@@ -1391,9 +1397,12 @@ endif
 
 BD_OBJS       := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
 	     	 $(addsuffix .o, $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES))))
+
+# Handlers always have entry point
 ifneq (%(modtype),handler)
 BD_STARTOBJS  := $(addsuffix .o,$(addprefix $(GENDIR)/,$(RESIDENT_BEGIN)))
 endif
+
 BD_ENDOBJS    := $(addsuffix .o,$(BD_ENDFILES))
 BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))) $(BD_LINKLIBFILES)) \
                  %(linklibobjs)
@@ -2568,7 +2577,7 @@ postinstall-%(package)-delete-la-files:
 
 PKG_CLASSES   := $(addsuffix .class, %(classes))
 PKG_DEVICES   := $(addsuffix .device, %(devs))
-PKG_HANDLERS  := $(addsuffix .handler, %(handlers))
+PKG_HANDLERS  := $(addsuffix -handler, %(handlers))
 PKG_HIDD      := $(addsuffix .hidd, %(hidds))
 PKG_LIBS      := $(addsuffix .library, %(libs))
 PKG_RESOURCES := $(addsuffix .resource, %(res))

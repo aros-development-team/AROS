@@ -75,14 +75,14 @@ MODULES_GENERIC := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_GEN_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_GEN_DEVS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_GEN_RSRC))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_GEN_HANDLERS))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix -handler, $(PKG_GEN_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_GEN_HIDDS)))
 
 MODULES_EFIKA := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_EFI_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_EFI_DEVS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_EFI_RSRC))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_EFI_HANDLERS))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix -handler, $(PKG_EFI_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_EFI_HIDDS)))
 
 MODULES_USB := \

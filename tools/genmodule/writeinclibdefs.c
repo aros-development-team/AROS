@@ -16,6 +16,7 @@ void writeinclibdefs(struct config *cfg)
     struct classinfo *classlistit;
     unsigned int funccount;
     struct functionhead *funclistit = cfg->funclist;
+    char sep;
 
     if (funclistit == NULL)
 	funccount = cfg->firstlvo-1;
@@ -67,6 +68,8 @@ void writeinclibdefs(struct config *cfg)
         cfg->modulenameupper, cfg->modulenameupper
     );
 
+    sep = strcmp(cfg->suffix, "handler") ? '.' : '-';
+
     fprintf
     (
         out,
@@ -74,7 +77,7 @@ void writeinclibdefs(struct config *cfg)
         "#define LIBBASE          %s\n"
         "#define LIBBASETYPE      %s\n"
         "#define LIBBASETYPEPTR   %s *\n"
-        "#define MOD_NAME_STRING  \"%s.%s\"\n"
+        "#define MOD_NAME_STRING  \"%s%c%s\"\n"
         "#define VERSION_NUMBER   %u\n"
         "#define MAJOR_VERSION    %u\n"
         "#define REVISION_NUMBER  %u\n"
@@ -88,7 +91,7 @@ void writeinclibdefs(struct config *cfg)
         "#define FUNCTIONS_COUNT  %u\n",
         cfg->basename,
         cfg->libbase, _libbasetype, _libbasetype,
-        cfg->modulename, cfg->suffix,
+        cfg->modulename, sep, cfg->suffix,
         cfg->majorversion, cfg->majorversion,
         cfg->minorversion, cfg->minorversion,
         cfg->modulename, cfg->suffix, cfg->majorversion, cfg->minorversion,

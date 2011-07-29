@@ -98,7 +98,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
      * This can also be done in some alternate way, like attempting to run
      * a resident with some specific name.
      */
-    EmulBase = OpenResource("emul.handler");
+    EmulBase = OpenResource("emul-handler");
     D(bug("[__dos_Boot] emulbase = 0x%p\n", EmulBase));
     if (EmulBase)
     {
