@@ -22,6 +22,7 @@ The Original Code is written by Davy Wentzler.
 #include <proto/dos.h>
 
 #ifdef __AROS__
+#define DEBUG 1
 #include <aros/debug.h>
 #define DebugPrintF bug
 #endif
@@ -63,7 +64,7 @@ DriverInit( struct DriverBase* ahisubbase )
   struct PCIDevice   *dev;
   int                 card_no, i;
 
-  //DebugPrintF("DRIVERINIT\n");
+    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
 
   CMI8738Base->driverdatas = 0;
   CMI8738Base->cards_found = 0;
@@ -176,7 +177,7 @@ DriverInit( struct DriverBase* ahisubbase )
     ++card_no;
   }
 
-  //DebugPrintF("exit init\n");
+    bug("[CMI8738] %s: Done.\n", __PRETTY_FUNCTION__);
   return TRUE;
 }
 
@@ -190,7 +191,9 @@ DriverCleanup( struct DriverBase* AHIsubBase )
 {
   struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
   int i;
-  
+
+    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+
   for( i = 0; i < CMI8738Base->cards_found; ++i )
   {
     FreeDriverData( CMI8738Base->driverdatas[ i ], AHIsubBase );

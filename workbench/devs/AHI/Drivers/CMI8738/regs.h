@@ -60,6 +60,7 @@
 #  define CMPCI_REG_CH1_RESET           0x00080000
 
 #define CMPCI_REG_FUNC_1                0x04
+#  define CMPCI_REG_ZV_ENABLE          0x00000001
 #  define CMPCI_REG_JOY_ENABLE          0x00000002
 #  define CMPCI_REG_UART_ENABLE         0x00000004
 #  define CMPCI_REG_LEGACY_ENABLE       0x00000008

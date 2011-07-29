@@ -24,6 +24,7 @@ The Original Code is written by Davy Wentzler.
 #include "misc.h"
 #include "pci_wrapper.h"
 #ifdef __AROS__
+#define DEBUG 1
 #include <aros/debug.h>
 #define DebugPrintF bug
 #endif
@@ -51,12 +52,14 @@ CardInterrupt( struct CMI8738_DATA* card )
   ULONG intreq;
   LONG  handled = 0;
 
-  while ( (( intreq = ( pci_inl(CMPCI_REG_INTR_STATUS, card->iobase) ) ) & CMPCI_REG_ANY_INTR )!= 0 )
+    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+
+  while ( (( intreq = ( pci_inl(CMPCI_REG_INTR_STATUS, card) ) ) & CMPCI_REG_ANY_INTR )!= 0 )
   {
     //DebugPrintF("INT %lx\n", intreq);
     if( intreq & CMPCI_REG_CH0_INTR && AudioCtrl != NULL )
     {
-      unsigned long diff = pci_inl(CMPCI_REG_DMA0_BASE, card->iobase) - (unsigned long) card->playback_buffer_phys;
+      unsigned long diff = pci_inl(CMPCI_REG_DMA0_BASE, card) - (unsigned long) card->playback_buffer_phys;
       
       ClearMask(dev, card, CMPCI_REG_INTR_CTRL, CMPCI_REG_CH0_INTR_ENABLE);
 
@@ -147,7 +150,9 @@ PlaybackInterrupt( struct CMI8738_DATA* card )
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
   struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
-  
+
+    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+
   if( card->mix_buffer != NULL && card->current_buffer != NULL )
   {
     BOOL   skip_mix;
@@ -209,6 +214,8 @@ RecordInterrupt( struct CMI8738_DATA* card )
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
   struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
+
+    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
 
   struct AHIRecordMessage rm =
   {
