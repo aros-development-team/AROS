@@ -41,6 +41,7 @@ AROS_LH3I(void, KrnSetProtection,
 
     BOOL invalid = (flags & (MAP_Readable | MAP_Writable | MAP_Executable)) == 0;
     BOOL readonly = (flags & MAP_Writable) == 0;
+    BOOL supervisor = (flags & MAP_Supervisor) != 0;
     UBYTE cm = (flags & MAP_CacheInhibit) ? CM_SERIALIZED : ((flags & MAP_WriteThrough) ? CM_WRITETHROUGH : CM_COPYBACK);
     
     /* We need MAP_Supervisor and MAP_CacheInhibitSerialized */
@@ -48,7 +49,7 @@ AROS_LH3I(void, KrnSetProtection,
     if ((ULONG)address < 0x00200000 && cm == CM_SERIALIZED)
 	cm = CM_NONCACHEABLE; /* Chip RAM does not need to be non-cacheable + serialized, only noncacheable */
     
-    map_region(KernelBase, address, NULL, length, invalid, readonly, FALSE, cm);
+    map_region(KernelBase, address, NULL, length, invalid, readonly, supervisor, cm);
 
     AROS_LIBFUNC_EXIT
 }
