@@ -7,7 +7,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#define HANDLER_NAME "con.handler"
+#define HANDLER_NAME "con-handler"
 #define VERSION      41
 #define REVISION     5
 
