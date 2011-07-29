@@ -28,6 +28,7 @@ typedef enum
 	MAP_Readable		= 0x0100,
 	MAP_Writable		= 0x0200,
 	MAP_Executable		= 0x0400,
+	MAP_Supervisor		= 0x0800
 } KRN_MapAttr;
 
 /* Tags for kernel boot message */
