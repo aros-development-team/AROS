@@ -37,6 +37,20 @@
 
 #include "dosboot_intern.h"
 
+#ifdef __mc68000
+
+/* These two functions are implemented in arch/m68k/all/dosboot/bootcode.c */
+
+extern VOID_FUNC *CallBootBlockCode(APTR bootcode, struct IOStdReq *io, struct ExpansionBase *ExpansionBase);
+extern void dosboot_BootPoint(struct BootNode *bn);
+
+#else
+
+#define CallBootBlockCode(bootcode, io, ExpansionBase) NULL
+#define dosboot_BootPoint(bn)
+
+#endif
+
 static BOOL GetBootNodeDeviceUnit(struct BootNode *bn, BPTR *device, IPTR *unit, ULONG *bootblocks)
 {
     struct DeviceNode *dn;
@@ -87,49 +101,6 @@ static BOOL BootBlockChecksum(UBYTE *bootblock, ULONG bootblock_size)
        return crc == crc2;
 }
 
-
-/* Execute the code in the boot block.
- * This can be custom defined for your architecture.
- *
- * Returns 0 on success, or an error code
- */
-static LONG CallBootBlockCode(APTR bootcode, struct IOStdReq *io, VOID_FUNC *initcode)
-{
-    LONG retval;
-    VOID_FUNC init;
-#ifdef __mc68000
-    /* Lovely. Double return values. What func. */
-    asm volatile (
-                 "move.l %2,%%a1\n"
-                 "move.l %4,%%a0\n"
-                 "move.l %%a6,%%sp@-\n"
-                 "move.l %3,%%a6\n"
-                 "jsr.l (%%a0)\n"
-                 "move.l %%sp@+,%%a6\n"
-                 "move.l %%d0,%0\n"
-                 "move.l %%a0,%1\n"
-                 : "=m" (retval), "=m" (init)
-                 : "m" (io), "r" (SysBase),
-                   "m" (bootcode)
-                 : "%d0", "%d1", "%a0", "%a1");
-    D(bug("bootblock: D0=0x%08x A0=%p\n", retval, init));
-#else
-    /* A more architecture independent way of doing things.
-     */
-    if (0) { /* Disabled for now */
-        retval = AROS_UFC3(ULONG, bootcode,
-                            AROS_UFCA(VOID_FUNC *,    &init, A0),
-                            AROS_UFCA(struct IOStdReq *, io, A1),
-                            AROS_UFCA(struct ExecBase *, SysBase, A6));
-    } else {
-        retval = ERROR_INVALID_RESIDENT_LIBRARY;
-        init = NULL;
-    }
-#endif
-    *initcode = init;
-    return retval;
-}
-
 static inline void SetBootNodeDosType(struct BootNode *bn, ULONG dostype)
 {
     struct DeviceNode *dn;
@@ -158,7 +129,6 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
     struct IOStdReq *io;
     BPTR device;
     IPTR unit;
-    LONG retval;
     VOID_FUNC init = NULL;
     UBYTE *buffer;
 
@@ -168,38 +138,35 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
     D(bug("%s: Probing for boot block on %s %p\n", __func__, device, (APTR)unit));
     /* memf_chip not required but more compatible with old bootblocks */
     buffer = AllocMem(bootblock_size, MEMF_CHIP);
-    if (buffer != NULL) {
+    if (buffer != NULL)
+    {
        D(bug("[Strap] bootblock address %p\n", buffer));
-       if ((msgport = CreateMsgPort())) {
-           if ((io = CreateIORequest(msgport, sizeof(struct IOStdReq)))) {
-               if (!OpenDevice(AROS_BSTR_ADDR(device), unit, (struct IORequest*)io, 0)) {
-                   /* Read the device's boot block
-                    */
+       if ((msgport = CreateMsgPort()))
+       {
+           if ((io = CreateIORequest(msgport, sizeof(struct IOStdReq))))
+           {
+               if (!OpenDevice(AROS_BSTR_ADDR(device), unit, (struct IORequest*)io, 0))
+               {
+                   /* Read the device's boot block */
                    io->io_Length = bootblock_size;
                    io->io_Data = buffer;
                    io->io_Offset = 0;
                    io->io_Command = CMD_READ;
                    D(bug("[Strap] %b.%d bootblock read (%d bytes)\n", device, unit, bootblock_size));
                    DoIO((struct IORequest*)io);
-                   if (io->io_Error == 0) {
-                       D(bug("[Strap] %b.%d bootblock read to %p ok\n", device, unit, buffer));
-                       if (BootBlockChecksum(buffer, bootblock_size)) {
-                           APTR bootcode = buffer + 12;
-                           UBYTE oldflags = ExpansionBase->Flags & EBF_SILENTSTART;
 
-                           ExpansionBase->Flags &= ~EBF_SILENTSTART;
+                   if (io->io_Error == 0)
+                   {
+                       D(bug("[Strap] %b.%d bootblock read to %p ok\n", device, unit, buffer));
+                       if (BootBlockChecksum(buffer, bootblock_size))
+                       {
+                           APTR bootcode = buffer + 12;
 
                            SetBootNodeDosType(bn, AROS_LONG2BE(*(LONG *)buffer));
-
-                           D(bug("[Strap] Calling bootblock!\n", buffer));
-                           retval = CallBootBlockCode(bootcode, io, &init);
-                           if (retval != 0) {
-                               init = NULL;
-                               ExpansionBase->Flags |= oldflags;
-
-                               D(bug("[Strap] Boot block failed to boot.\n"));
-                           }
-                       } else {
+                           init = CallBootBlockCode(bootcode, io, ExpansionBase);
+                       }
+                       else
+                       {
                            D(bug("[Strap] Not a valid bootblock\n"));
                        }
                    } else {
@@ -222,63 +189,6 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
        D(bug("calling bootblock loaded code at %p\n", init));
        init();
    }
-}
-
-/* BootPoint booting, as describe in the Amiga Devices Manual
- *
- * Only expected to work on m68k.
- */
-static void dosboot_BootPoint(struct BootNode *bn)
-{
-#ifdef __mc68000
-    struct DeviceNode *dn;
-    struct FileSysStartupMsg *fssm;
-    struct DosEnvec *de;
-    IPTR bootblocks;
-
-    dn = bn->bn_DeviceNode;
-    if (dn == NULL || dn->dn_Name == BNULL)
-        return;
-
-    fssm = BADDR(dn->dn_Startup);
-    if (fssm == NULL)
-        return;
-
-    de = BADDR(fssm->fssm_Environ);
-    if (de == NULL)
-        return;
-
-    bootblocks = (de->de_TableSize < DE_BOOTBLOCKS) ? 0 : de->de_BootBlocks;
-
-    /* BootPoint nodes */
-    if (bootblocks == 0 && bn->bn_Node.ln_Name != NULL) {
-        struct ConfigDev *cd = (APTR)bn->bn_Node.ln_Name;
-        if (cd->cd_Rom.er_DiagArea != NULL) {
-            struct DiagArea *da = cd->cd_Rom.er_DiagArea;
-            if (da->da_Config & DAC_CONFIGTIME) {
-                /* Yes, it's actually a BootPoint node */
-                void *func = (APTR)(((IPTR)da) + da->da_BootPoint);
-
-                D(bug("dosboot_BootStrap: Calling %b BootPoint @%p\n", dn->dn_Name, func));
-                /* Yet another crazy Amiga calling sequence.
-                 * The ConfigDev is pushed on the stack, but
-                 * the BootNode is in A2. Joy.
-                 */
-                asm volatile (
-                        "move.l %0,%%a0\n"
-                        "move.l %1,%%a1\n"
-                        "move.l %2,%%a2\n"
-                        "move.l %%a1,%%sp@-\n"
-                        "jsr    %%a0@\n"
-                        "addq.l #4,%%sp\n"
-                        :
-                        : "d" (func), "d" (cd), "d" (bn)
-                        : "d0", "d1", "a0", "a1", "a2"
-                        );
-            }
-        }
-    }
-#endif
 }
 
 /* Attempt to boot via dos.library directly

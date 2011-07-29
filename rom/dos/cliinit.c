@@ -377,7 +377,8 @@ static void AddBootAssign(CONST_STRPTR path, CONST_STRPTR assign, APTR DOSBase)
 }
 
 
-/* This is what actually gets the Lock() for SYS:,
+/* 
+ * This is what actually gets the Lock() for SYS:,
  * sets up the boot assigns, and starts the
  * startup sequence.
  */
@@ -385,6 +386,7 @@ static long internalBootCliHandler(void)
 {
     struct ExpansionBase *ExpansionBase;
     struct DosLibrary *DOSBase;
+    struct Library *psdBase;
     struct MsgPort *mp = &((struct Process *)FindTask(NULL))->pr_MsgPort;
     BPTR lock;
     struct DosPacket *dp;
@@ -427,9 +429,36 @@ static long internalBootCliHandler(void)
 
     AssignLock("SYS", lock);
     lock = Lock("SYS:", SHARED_LOCK);
-    if (lock == BNULL) {
+    if (lock == BNULL)
+    {
         D(bug("DOS/CliInit: Impossible! The SYS: assign failed!\n"));
         Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
+    }
+
+    /*
+     * If we have poseidon, ensure that ENV: exists to avoid missing volume requester.
+     * We do it before other assigns because as soon as LIBS: is available it will open
+     * muimaster.library and run popup GUI task.
+     */
+    psdBase = OpenLibrary("poseidon.library", 0);
+
+    if (psdBase)
+    {
+        CloseLibrary(psdBase);
+
+        lock = CreateDir("RAM:ENV");
+        if (lock)
+        {
+            /*
+             * CreateDir() returns exclusive lock, while AssignLock() will work correctly
+             * only with shared one.
+             * CHECKME: Is it the same in original AmigaOS(tm), or AssignLock() needs fixing?
+             */
+            if (ChangeMode(CHANGE_LOCK, lock, SHARED_LOCK))
+                AssignLock("ENV", lock);
+            else
+                UnLock(lock);
+        }
     }
 
     AddBootAssign("SYS:C",                "C", DOSBase);
