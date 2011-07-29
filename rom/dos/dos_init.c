@@ -7,11 +7,8 @@
 */
 
 #include <aros/debug.h>
-
-#include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
-#include <exec/alerts.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <proto/exec.h>
@@ -23,262 +20,330 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <resources/filesysres.h>
+
 #include LC_LIBDEFS_FILE
+
 #include "dos_intern.h"
 
-#ifdef __mc68000
+static const UBYTE version[];
+extern const char LIBEND;
 
-/* LoadSeg() needs D1-D3 parameters for overlay hunk support */
-AROS_UFP4(BPTR, LoadSeg_Overlay,
-    AROS_UFPA(UBYTE*, name, D1),
-    AROS_UFPA(BPTR, hunktable, D2),
-    AROS_UFPA(BPTR, fh, D3),
-    AROS_UFPA(struct DosLibrary *, DosBase, A6));
+AROS_UFP3S(struct DosLibrary *, DosInit,
+    AROS_UFPA(ULONG, dummy, D0),
+    AROS_UFPA(BPTR, segList, A0),
+    AROS_UFPA(struct ExecBase *, SysBase, A6));
 
-extern void *BCPL_jsr, *BCPL_rts;
-
-static void PatchDOS(struct DosLibrary *dosbase)
+const struct Resident Dos_resident =
 {
-    UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
-    UWORD i;
-    UWORD *asmcall;
-    IPTR func;
+    RTC_MATCHWORD,
+    (struct Resident *)&Dos_resident,
+    (APTR)&LIBEND,
+    0,			/* We don't autoinit */
+    VERSION_NUMBER,
+    NT_LIBRARY,
+    RESIDENTPRI,
+    MOD_NAME_STRING,
+    (STRPTR)&version[6],
+    DosInit
+};
 
-    /* patch all 1.x dos functions to return value in both D1 and D0
-     * For example most overlayed programs require this */
-    asmcall = AllocMem(5 * (highfunc - lowfunc + 1 - skipfuncs) * sizeof(UWORD) + 12 * sizeof(UWORD), MEMF_PUBLIC);
-    for (i = lowfunc; i <= highfunc; i++) {
-    	if (i == 24 || i == 25)
-    	    continue;
-    	func = (IPTR)__AROS_GETJUMPVEC(dosbase, i)->vec;
-    	asmcall[0] = 0x4eb9; // JSR
-	asmcall[1] = (UWORD)(func >> 16);
-	asmcall[2] = (UWORD)(func >>  0);
-	asmcall[3] = 0x2200; // MOVE.L D0,D1
-	asmcall[4] = 0x4e75; // RTS
- 	__AROS_SETVECADDR(dosbase, i, asmcall);
- 	asmcall += 5;
-    }
-
-    /* redirect LoadSeg() to LoadSeg_Overlay() if D1 == NULL */
-    func = (IPTR)__AROS_GETJUMPVEC(dosbase, 25)->vec;
-    asmcall[0] = 0x4a81; // TST.L D1
-    asmcall[1] = 0x660a; // BNE.B 7 (D1 not NULL = normal LoadSeg)
-    asmcall[2] = 0x4eb9; // JSR LoadSeg_Overlay
-    asmcall[3] = (UWORD)((ULONG)LoadSeg_Overlay >> 16);
-    asmcall[4] = (UWORD)((ULONG)LoadSeg_Overlay >>  0);
-    asmcall[5] = 0x2200; // MOVE.L D0,D1
-    asmcall[6] = 0x4e75; // RTS
-    asmcall[7] = 0x4eb9; // JSR LoadSeg_Original
-    asmcall[8] = (UWORD)(func >> 16);
-    asmcall[9] = (UWORD)(func >>  0);
-    asmcall[10] = 0x2200; // MOVE.L D0,D1
-    asmcall[11] = 0x4e75; // RTS
-    __AROS_SETVECADDR(dosbase, 25, asmcall);
-
-    CacheClearU();
-
-    dosbase->dl_A5 = (LONG)&BCPL_jsr;
-    dosbase->dl_A6 = (LONG)&BCPL_rts;
-}
-
-#else
-
-#define PatchDOS(base)
-
-#endif
+static const UBYTE version[] = VERSION_STRING;
 
 extern const ULONG err_Numbers[];
 extern const char err_Strings[];
 
-static int DosExpunge(struct DosLibrary *DOSBase);
+static void DosExpunge(struct DosLibrary *DOSBase);
 
-static int DosInit(struct DosLibrary *DOSBase)
+extern const APTR GM_UNIQUENAME(FuncTable)[];
+
+THIS_PROGRAM_HANDLES_SYMBOLSETS
+DEFINESET(INITLIB)
+
+/*
+ * Init routine is intentionally written by hands in order to be reentrant.
+ * Reentrancy is needed when there are already some devices mounted, but
+ * all of them are not bootable. And now we insert a floppy with OS3.1
+ * bootblock. It reenters this function...
+ */
+
+AROS_UFH3S(struct DosLibrary *, DosInit,
+    AROS_UFHA(ULONG, dummy, D0),
+    AROS_UFHA(BPTR, segList, A0),
+    AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
 {
-    D(bug("DosInit\n"));
-    
-    IPTR * taskarray;
-    struct DosInfo *dosinfo;
-    struct FileSysResource *fsr;
+    AROS_USERFUNC_INIT
 
-    /*
-     * These two are allocated together with DOSBase, for reduced fragmentation.
-     * Structure pointed to by dl_Errors is intentionally read-write - who knows...
-     */
-    DOSBase->dl_Root   = &((struct IntDosBase *)DOSBase)->rootNode;
-    DOSBase->dl_Errors = &((struct IntDosBase *)DOSBase)->errors;
+    struct DosLibrary *DOSBase = (struct DosLibrary *)FindName(&SysBase->LibList, "dos.library");
 
-    DOSBase->dl_Errors->estr_Nums    = (LONG *)err_Numbers;
-    DOSBase->dl_Errors->estr_Strings = (STRPTR)err_Strings;
+    D(bug("[DosInit] DOSBase 0x%p\n", DOSBase));
 
-    dosinfo = AllocMem(sizeof(struct DosInfo), MEMF_PUBLIC|MEMF_CLEAR);
-
-    /* Init the RootNode structure */
-    taskarray = AllocMem(sizeof(IPTR) + sizeof(APTR) * 20, MEMF_CLEAR);
-    taskarray[0] = 20;
-    DOSBase->dl_Root->rn_TaskArray = MKBADDR(taskarray);
-    DOSBase->dl_Root->rn_Info      = MKBADDR(dosinfo);
-
-    NEWLIST((struct List *)&DOSBase->dl_Root->rn_CliList);
-    InitSemaphore(&DOSBase->dl_Root->rn_RootLock);
-
-    InitSemaphore(&dosinfo->di_DevLock);
-    InitSemaphore(&dosinfo->di_EntryLock);
-    InitSemaphore(&dosinfo->di_DeleteLock);
-
-    /* Initialize for Stricmp */
-    DOSBase->dl_UtilityBase   = OpenLibrary("utility.library", 0);
-
-    /* Initialize for the fools that illegally used this field */
-    DOSBase->dl_IntuitionBase = NULL;
-
-    /*
-     * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
-     * if it's been loaded. Otherwise, use the first handler
-     * on the FileSystemResource list that has fse_PatchFlags
-     * set to mark it with a valid SegList
-     */
-    if ((fsr = OpenResource("FileSystem.resource")))
+    if (!DOSBase)
     {
-    	struct FileSysEntry *fse;
-    	BPTR defseg = BNULL;
-    	const ULONG DosMagic = 0x444f5301; /* DOS\001 */
+	IPTR *taskarray;
+	struct DosInfo *dosinfo;
+	struct FileSysResource *fsr;
 
-    	ForeachNode(&fsr->fsr_FileSysEntries, fse) {
-    	    if (fse->fse_DosType == DosMagic &&
-    	    	(fse->fse_PatchFlags & FSEF_SEGLIST)) {
-    	    	defseg = fse->fse_SegList;
-    	    	break;
-    	    }
+	D(bug("[DosInit] Creating dos.library...\n"));
+
+    	DOSBase = (struct DosLibrary *)MakeLibrary(GM_UNIQUENAME(FuncTable), NULL, NULL, sizeof(struct IntDosBase), BNULL);
+    	if (!DOSBase)
+    	    return NULL;
+
+	/* Initialize our header */
+	DOSBase->dl_lib.lib_Node.ln_Name = MOD_NAME_STRING;
+	DOSBase->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
+	DOSBase->dl_lib.lib_Node.ln_Pri  = RESIDENTPRI;
+	DOSBase->dl_lib.lib_Version      = VERSION_NUMBER;
+	DOSBase->dl_lib.lib_Revision     = REVISION_NUMBER;
+	DOSBase->dl_lib.lib_IdString     = (char *)&version[6];
+	DOSBase->dl_lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
+
+	/*
+	 * These two are allocated together with DOSBase, for reduced fragmentation.
+	 * Structure pointed to by dl_Errors is intentionally read-write - who knows...
+	 */
+	DOSBase->dl_Root   = &((struct IntDosBase *)DOSBase)->rootNode;
+	DOSBase->dl_Errors = &((struct IntDosBase *)DOSBase)->errors;
+
+	DOSBase->dl_Errors->estr_Nums    = (LONG *)err_Numbers;
+	DOSBase->dl_Errors->estr_Strings = (STRPTR)err_Strings;
+
+	/* Init the RootNode structure */
+	dosinfo = AllocMem(sizeof(struct DosInfo), MEMF_PUBLIC|MEMF_CLEAR);
+	if (!dosinfo)
+	{
+	    DosExpunge(DOSBase);
+	    return NULL;
+	}
+
+	DOSBase->dl_Root->rn_Info = MKBADDR(dosinfo);
+
+	taskarray = AllocMem(sizeof(IPTR) + sizeof(APTR) * 20, MEMF_CLEAR);
+	if (!taskarray)
+	{
+	    DosExpunge(DOSBase);
+	    return NULL;
+	}
+
+	taskarray[0] = 20;
+	DOSBase->dl_Root->rn_TaskArray = MKBADDR(taskarray);
+
+	NEWLIST((struct List *)&DOSBase->dl_Root->rn_CliList);
+	InitSemaphore(&DOSBase->dl_Root->rn_RootLock);
+
+	InitSemaphore(&dosinfo->di_DevLock);
+	InitSemaphore(&dosinfo->di_EntryLock);
+	InitSemaphore(&dosinfo->di_DeleteLock);
+
+    	/* Initialize for Stricmp */
+    	DOSBase->dl_UtilityBase = OpenLibrary("utility.library", 0);
+    	if (!DOSBase->dl_UtilityBase)
+    	{
+    	    DosExpunge(DOSBase);
+    	    return NULL;
     	}
 
-    	if (defseg == BNULL) {
-    	    ForeachNode(&fsr->fsr_FileSysEntries, fse) {
-    	    	if ((fse->fse_PatchFlags & FSEF_SEGLIST) &&
-    	    	    (fse->fse_SegList != BNULL)) {
-    	    	    defseg = fse->fse_SegList;
+	/* Initialize for the fools that illegally used this field */
+	DOSBase->dl_IntuitionBase = NULL;
+
+    	/*
+     	 * iaint:
+     	 * I know this is bad, but I also know that the timer.device
+     	 * will never go away during the life of dos.library. I also
+     	 * don't intend to make any I/O calls using this.
+     	 *
+     	 * I also know that timer.device does exist in the device list
+     	 * at this point in time.
+     	 *
+     	 * I can't allocate a timerequest/MsgPort pair here anyway,
+     	 * because I need a separate one for each caller to Delay().
+     	 * However, CreateIORequest() will fail if MsgPort == NULL, so we
+     	 * supply some dummy value.
+     	 */
+    	DOSBase->dl_TimeReq = CreateIORequest((APTR)0xC0DEBAD0, sizeof(struct timerequest));
+    	if (!DOSBase->dl_TimeReq)
+    	{
+    	    DosExpunge(DOSBase);
+    	    return NULL;
+    	}
+
+    	if (OpenDevice("timer.device", UNIT_VBLANK, &DOSBase->dl_TimeReq->tr_node, 0))
+    	{
+    	    DeleteIORequest(DOSBase->dl_TimeReq);
+    	    DOSBase->dl_TimeReq = NULL;
+    	    DosExpunge(DOSBase);
+    	    return NULL;
+    	}
+
+    	/*
+     	 * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
+     	 * if it's been loaded. Otherwise, use the first handler
+     	 * on the FileSystemResource list that has fse_PatchFlags
+     	 * set to mark it with a valid SegList
+     	 */
+    	if ((fsr = OpenResource("FileSystem.resource")))
+    	{
+    	    struct FileSysEntry *fse;
+    	    BPTR defseg = BNULL;
+    	    const ULONG DosMagic = 0x444f5301; /* DOS\001 */
+
+    	    ForeachNode(&fsr->fsr_FileSysEntries, fse)
+    	    {
+    	    	if ((fse->fse_PatchFlags & FSEF_SEGLIST) && fse->fse_SegList)
+    	    	{
+		    /* We prefer DOS\001 */
+    	            if (fse->fse_DosType == DosMagic)
+    	            {
+    	            	defseg = fse->fse_SegList;
+    	            	break;
+    	            }
+
+    	            /* This will remember the first defined seglist */
+    	    	    if (!defseg)
+    	    	    	defseg = fse->fse_SegList;
     	    	}
     	    }
-    	}
 
-    	DOSBase->dl_Root->rn_FileHandlerSegment = defseg;
+    	    DOSBase->dl_Root->rn_FileHandlerSegment = defseg;
 
-    	/* Add all that have both Handler and SegList defined
-    	 * to the Resident list
-    	 */
-    	ForeachNode(&fsr->fsr_FileSysEntries, fse) {
-    	    if ((fse->fse_PatchFlags & FSEF_HANDLER) &&
-    	        (fse->fse_PatchFlags & FSEF_SEGLIST) &&
-    	        (fse->fse_Handler != BNULL) &&
-    	        (fse->fse_SegList != BNULL)) {
-    	        D(bug("[DOS] Adding \"%b\" (%p) at %p to the resident list\n",
-    	                    fse->fse_Handler, BADDR(fse->fse_Handler), BADDR(fse->fse_SegList)));
-    	        AddSegment(AROS_BSTR_ADDR(fse->fse_Handler), fse->fse_SegList, CMD_SYSTEM);
+    	    /* Add all that have both Handler and SegList defined to the Resident list */
+	    ForeachNode(&fsr->fsr_FileSysEntries, fse)
+    	    {
+    	    	if ((fse->fse_PatchFlags & FSEF_HANDLER) &&
+    	            (fse->fse_PatchFlags & FSEF_SEGLIST) &&
+    	            (fse->fse_Handler != BNULL) &&
+    	            (fse->fse_SegList != BNULL))
+    	        {
+    	            D(bug("[DosInit] Adding \"%b\" (%p) at %p to the resident list\n",
+    	                  fse->fse_Handler, BADDR(fse->fse_Handler), BADDR(fse->fse_SegList)));
+    	            AddSegment(AROS_BSTR_ADDR(fse->fse_Handler), fse->fse_SegList, CMD_SYSTEM);
+              	}
             }
         }
-    }
 
-    PatchDOS(DOSBase);
-
-    /*
-     * iaint:
-     * I know this is bad, but I also know that the timer.device
-     * will never go away during the life of dos.library. I also
-     * don't intend to make any I/O calls using this.
-     *
-     * I also know that timer.device does exist in the device list
-     * at this point in time.
-     *
-     * I can't allocate a timerequest/MsgPort pair here anyway,
-     * because I need a separate one for each caller to Delay().
-     * However, CreateIORequest() will fail if MsgPort == NULL, so we
-     * supply some dummy value.
-     */
-    DOSBase->dl_TimeReq = CreateIORequest((APTR)0xC0DEBAD0, sizeof(struct timerequest));
-    if (DOSBase->dl_TimeReq)
-    {
-    	if (OpenDevice("timer.device", UNIT_VBLANK, &DOSBase->dl_TimeReq->tr_node, 0) == 0)
+	/* Call platform-specific init code (if any) */
+    	if (!set_call_libfuncs(SETNAME(INITLIB), 1, 1, DOSBase))
     	{
-	    DOSBase->dl_lib.lib_Node.ln_Name = "dos.library";
-	    DOSBase->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
-	    DOSBase->dl_lib.lib_Version = VERSION_NUMBER;
+    	    DosExpunge(DOSBase);
+    	    return NULL;
+    	}
 
-	    /*
-	     * Early AddLibrary(). Autogenerated code would do it only after all init
-	     * functions are called.
-	     * With selfinit option AddLibrary() call is missing in the autogenerated code.
-	     */
-	    AddLibrary((struct Library *)DOSBase);
+	/* debug.library is optional, so don't check result */
+	DebugBase = OpenLibrary("debug.library", 0);
 
-	    /* debug.library is optional, so don't check result */
-	    DebugBase = OpenLibrary("debug.library", 0);
+	/* Initialization finished */
+	AddLibrary(&DOSBase->dl_lib);
+   }
 
-	    /* Try to boot */
-	    if (CliInit(NULL) == RETURN_OK)
-	    {
-	        /*
-	         * We now restart the multitasking - this is done
-	         * automatically by RemTask() when it switches.
-	         */
-	        RemTask(NULL);
+   /* Try to boot */
+   if (CliInit(NULL) == RETURN_OK)
+   {
+	/*
+	 * We now restart the multitasking - this is done
+	 * automatically by RemTask() when it switches.
+	 */
+	RemTask(NULL);
 
-	        /* We really really shouldn't ever get to this line. */
-	    }	        
-	}
+	/* We really really shouldn't ever get to this line. */
     }
 
-    /* DosExpunge() will be called by startup code for us */
-    return FALSE;
+    DosExpunge(DOSBase);
+    return NULL;
+    
+    AROS_USERFUNC_EXIT
 }
 
-/* This is running under Forbid() from Exec/RemLibrary(),
- * so we need not worry about semaphores and such.
- */
-static int DosExpunge(struct DosLibrary *DOSBase)
+static void DosExpunge(struct DosLibrary *DOSBase)
 {
+    struct DosInfo *dinfo = BADDR(DOSBase->dl_Root->rn_Info);
     struct Segment *seg, *stmp;
-    struct DosInfo *dinfo;
 
-    D(bug("[DOS] Expunge...\n"));
-
-    dinfo = BADDR(DOSBase->dl_Root->rn_Info);
+    D(bug("[DosInit] Expunge...\n"));
 
     /* If we have anything in the Dos List,
      * we can't die.
      */
-    if (dinfo->di_DevInfo != BNULL) {
+    if (dinfo->di_DevInfo != BNULL)
+    {
+#ifdef DEBUG
         struct DosList *dol;
-        D(bug("%s: Entries still in the Dos List, can't expunge.\n", __func__));
-        for (dol = BADDR(dinfo->di_DevInfo); dol != NULL; dol = BADDR(dol->dol_Next)) {
-            D(bug("%s:  %d '%b'\n", __func__, dol->dol_Type, dol->dol_Name));
+
+        bug("%s: Entries still in the Dos List, can't expunge.\n", __func__);
+        for (dol = BADDR(dinfo->di_DevInfo); dol != NULL; dol = BADDR(dol->dol_Next))
+        {
+            bug("%s:  %d '%b'\n", __func__, dol->dol_Type, dol->dol_Name);
         }
-        return FALSE;
+#endif
+        return;
     }
 
     /* Close some libraries */
+    CloseLibrary(DebugBase);
     CloseLibrary((APTR)DOSBase->dl_IntuitionBase);
     CloseLibrary((APTR)DOSBase->dl_UtilityBase);
 
     /* Free the timer device */
-    CloseDevice(&DOSBase->dl_TimeReq->tr_node);
-    DeleteIORequest(DOSBase->dl_TimeReq);
-
-    /* Remove all segments */
-    for (seg = BADDR(dinfo->di_ResList); seg != NULL; seg = stmp) {
-        stmp = BADDR(seg->seg_Next);
-        FreeVec(seg);
+    if (DOSBase->dl_TimeReq)
+    {
+    	CloseDevice(&DOSBase->dl_TimeReq->tr_node);
+    	DeleteIORequest(DOSBase->dl_TimeReq);
     }
-    dinfo->di_ResList = BNULL;
+
+    if (dinfo)
+    {
+    	/* Remove all segments */
+    	for (seg = BADDR(dinfo->di_ResList); seg != NULL; seg = stmp)
+    	{
+            stmp = BADDR(seg->seg_Next);
+            FreeVec(seg);
+    	}
+    	FreeMem(dinfo, sizeof(*dinfo));
+    }
 
     /* Free memory */
     FreeMem(BADDR(DOSBase->dl_Root->rn_TaskArray), sizeof(IPTR) + sizeof(APTR) * 20);
-    FreeMem(dinfo, sizeof(*dinfo));
 
-    Remove((struct Node *)DOSBase);
+    if (DOSBase->dl_lib.lib_Node.ln_Succ)
+    {
+    	/*
+    	 * A fresh DOSBase after creation is filled with NULLs.
+    	 * ln_Succ will be set to something only after AddLibrary().
+    	 */
+	Remove(&DOSBase->dl_lib.lib_Node);
+    }
 
+    FreeMem((char *)DOSBase - DOSBase->dl_lib.lib_NegSize, DOSBase->dl_lib.lib_NegSize + DOSBase->dl_lib.lib_PosSize);
     D(bug("%s: Expunged.\n", __func__));
-    return TRUE;
 }
 
-ADD2INITLIB(DosInit, 0);
-ADD2EXPUNGELIB(DosExpunge, 0);
+/*
+ * Simple open and close routines.
+ * We never auto-expunge, because if we ever do this,
+ * we won't be able to come up again. BTW, LDDemon constantly holds us open,
+ * so we always have at least one user.
+ */
+AROS_LH1(struct DosLibrary *, OpenLib,
+         AROS_LHA(ULONG, version, D0),
+         struct DosLibrary *, DOSBase, 1, Dos)
+{
+    AROS_LIBFUNC_INIT
+
+    /* I have one more opener. */
+    DOSBase->dl_lib.lib_OpenCnt++;
+    return DOSBase;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(BPTR, CloseLib,
+         struct DosLibrary *, DOSBase, 2, Dos)
+{
+    AROS_LIBFUNC_INIT
+
+    /* I have one fewer opener. */
+    DOSBase->dl_lib.lib_OpenCnt--;
+    return BNULL;
+
+    AROS_LIBFUNC_EXIT
+}
