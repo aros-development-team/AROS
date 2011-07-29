@@ -1,17 +1,17 @@
 /* Mountlist entry for the unlimited source of NUL bytes (just a handler) */
 ZERO:
-	EHandler	= nil.handler
+	EHandler	= nil-handler
 	Activate	= 1
 #
 
 ROOT:
-	EHandler	= rootfs.handler
+	EHandler	= rootfs-handler
 	Activate	= 1
 #
 
 /* Entry for a file mounted as filesystem AFD0: */
 AFD0:
-	FileSystem	= afs.handler
+	FileSystem	= afs-handler
 	Device		= fdsk.device
 	Unit		= 0
 	BlockSize	= 512
@@ -25,7 +25,7 @@ AFD0:
 
 /* Entry for a file mounted as filesystem AFD1: */
 AFD1:
-	FileSystem	= afs.handler
+	FileSystem	= afs-handler
 	Device		= fdsk.device
 	Unit		= 1
 	BlockSize	= 512
@@ -39,7 +39,7 @@ AFD1:
 
 /* Entry for a file mounted as filesystem AFD2: */
 AFD2:
-	FileSystem	= afs.handler
+	FileSystem	= afs-handler
 	Device		= fdsk.device
 	Unit		= 2
 	BlockSize	= 512
@@ -53,7 +53,7 @@ AFD2:
 
 /* Entry for a file mounted as filesystem AFD3: */
 AFD3:
-	FileSystem	= afs.handler
+	FileSystem	= afs-handler
 	Device		= fdsk.device
 	Unit		= 3
 	BlockSize	= 512
@@ -67,7 +67,7 @@ AFD3:
 
 /* Entry for a ramdrive disk */
 RAD:
-	FileSystem	= afs.handler
+	FileSystem	= afs-handler
 	Device		= ramdrive.device
 	Unit		= 0
 	BlockSize	= 512
@@ -81,7 +81,7 @@ RAD:
 
 /* Entry for a ramdrive disk */
 RAD2:
-	FileSystem	= afs.handler
+	FileSystem	= afs-handler
 	Device		= ramdrive.device
 	Unit		= 1
 	BlockSize	= 512
@@ -97,7 +97,7 @@ RAD2:
 
 HOME:
 
-	FileSystem     = emul.handler
+	FileSystem     = emul-handler
 	Device         = Home:~
 	LowCyl	       = 0
 	HighCyl	       = 0
@@ -110,7 +110,7 @@ HOME:
 /* Entry for host's unix usr directory */
 
 USR:
-	FileSystem     = emul.handler
+	FileSystem     = emul-handler
 	Device         = USR:/usr
 	LowCyl	       = 0
 	HighCyl	       = 0
@@ -121,7 +121,7 @@ USR:
 #
 
 /* Additional unix directories can be mounted the same way, ie. with */
-/* Filesytem set to "emul.handler" and Device encoding volume name   */
+/* Filesytem set to "emul-handler" and Device encoding volume name   */
 /* and unix path like this: <volumename>:<pathname>                  */
 
 /* Entry for FAT12/16/32 image (ie MSDOS/Win95/98 filesystem) */
@@ -141,7 +141,7 @@ FAT:
 /* Entry for SFS image */
 
 SFS:
-        FileSystem     = sfs.handler
+        FileSystem     = sfs-handler
         Device         = fdsk.device
         Unit           = 0
         LowCyl         = 0
@@ -155,7 +155,7 @@ SFS:
 /* Entry for ISO image */
 
 CD0:
-        FileSystem     = cdrom.handler
+        FileSystem     = cdrom-handler
         Device         = fdsk.device
         Unit           = 0
         LowCyl         = 0
