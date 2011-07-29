@@ -90,8 +90,12 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     if (!(Flags & BF_NO_DISPLAY_DRIVERS))
     {
         /* Check that it exists first... */
-        Execute("C:LoadMonDrvs >NIL:", cis, BNULL);
-        /* We don't care about its return code */
+        BPTR seg = LoadSeg("C:LoadMonDrvs");
+        if (seg != BNULL) {
+            RunCommand(seg, AROS_STACKSIZE, "", 0);
+            /* We don't care about the return code */
+            UnLoadSeg(seg);
+        }
     }
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
