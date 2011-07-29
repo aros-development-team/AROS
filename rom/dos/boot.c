@@ -74,7 +74,20 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
      * cursors for Workbench
      */
     load_system_configuration(DOSBase);
-    
+
+    /* If needed, run the display drivers loader */
+    if (!(Flags & BF_NO_DISPLAY_DRIVERS))
+    {
+        /* Check that it exists first... */
+        Execute("C:LoadMonDrvs >NIL:", cis, BNULL);
+        /* We don't care about its return code */
+    }
+
+    /*
+     * TODO: on hosted ports we can check here if we have display drivers,
+     * and open emergency console if not.
+     */
+
     cis = Open("CON:////Boot Shell/AUTO", MODE_OLDFILE);
     if (cis)
     {
@@ -92,15 +105,10 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 
         SetConsoleTask(((struct FileHandle*)BADDR(cis))->fh_Type);
 
-        /* If needed, run the display drivers loader */
-        if (!(Flags & BF_NO_DISPLAY_DRIVERS)) {
-            /* Check that it exists first... */
-            Execute("C:LoadMonDrvs >NIL:", cis, BNULL);
-            /* We don't care about its return code */
-        }
-
         if (!(Flags & BF_NO_STARTUP_SEQUENCE))
+        {
             sseq = Open("S:Startup-Sequence", MODE_OLDFILE);
+        }
 
 	if (sseq)
 	{
