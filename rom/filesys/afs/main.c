@@ -559,8 +559,12 @@ void __startup AFS_work(void)
 		    fib->fib_Date.ds_Days = ead->ed_Days;
 		    fib->fib_Date.ds_Minute = ead->ed_Mins;
 		    fib->fib_Date.ds_Tick = ead->ed_Ticks;
-		    strncpy(&fib->fib_Comment[1], ead->ed_Comment, sizeof(fib->fib_Comment)-1);
-		    fib->fib_Comment[0] = strlen(&fib->fib_Comment[1]);
+		    if (ead->ed_Comment) {
+			strncpy(&fib->fib_Comment[1], ead->ed_Comment, sizeof(fib->fib_Comment)-1);
+			fib->fib_Comment[0] = strlen(&fib->fib_Comment[1]);
+		    } else {
+		    	fib->fib_Comment[0] = 0;
+		    }
 		    fib->fib_OwnerUID = ead->ed_OwnerUID;
 		    fib->fib_OwnerGID = ead->ed_OwnerGID;
 		    ok = DOSTRUE;
