@@ -499,8 +499,16 @@ static long internalBootCliHandler(void)
             internalPatchBootNode(fsr, bn, DOSBase->dl_Root->rn_FileHandlerSegment);
 
             if (AddDosEntry((struct DosList *)dn) != DOSFALSE) {
+                BOOL mountable = (bn->bn_Flags & ADNF_STARTPROC) ? TRUE : FALSE;
                 D(bug("Dos/CliInit: Added %b: to the DOS list\n", dn->dn_Name));
-                if (bn->bn_Flags & ADNF_STARTPROC) {
+#ifdef __mc68000
+                /* On the Amiga, since ADNF_STARTPROC was not present
+                 * in KS 1.3 and earlier, we need to always mount
+                 * the bootable nodes.
+                 */
+                mountable = TRUE;
+#endif
+                if (mountable) {
                     D(bug("Dos/CliInit: Mounting %b: ", dn->dn_Name));
                     RunHandler(dn, NULL, DOSBase);
                     D(bug("dn->dn_Task = %p\n", dn->dn_Task));
