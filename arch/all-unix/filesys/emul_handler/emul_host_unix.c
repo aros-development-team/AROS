@@ -146,9 +146,9 @@ static int host_startup(struct emulbase *emulbase)
     	return FALSE;
     }
 
-    emulbase->pub.eb_stdin  = CreateStdHandle(STDIN_FILENO);
-    emulbase->pub.eb_stdout = CreateStdHandle(STDOUT_FILENO);
-    emulbase->pub.eb_stderr = CreateStdHandle(STDERR_FILENO);
+    emulbase->eb_stdin  = CreateStdHandle(STDIN_FILENO);
+    emulbase->eb_stdout = CreateStdHandle(STDOUT_FILENO);
+    emulbase->eb_stderr = CreateStdHandle(STDERR_FILENO);
 
     emulbase->pdata.my_pid   = emulbase->pdata.SysIFace->getpid();
     AROS_HOST_BARRIER

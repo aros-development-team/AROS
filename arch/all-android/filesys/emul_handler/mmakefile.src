@@ -1,0 +1,14 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+MAINDIR := arch/all-hosted/filesys/emul_handler
+FILES   := emul_dir
+
+USER_INCLUDES := -I$(SRCDIR)/arch/all-unix/filesys/emul_handler \
+	         -I$(SRCDIR)/$(MAINDIR) \
+	         -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+%build_archspecific mainmmake=kernel-fs-emul \
+  maindir=$(MAINDIR) arch=linux-android files=$(FILES)
+
+%common

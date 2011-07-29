@@ -13,8 +13,6 @@
 #include <dos/dosextens.h>
 #include <dos/exall.h>
 
-#include <resources/emul.h>
-
 #include <emul_host.h>
 
 #include <sys/types.h>
@@ -39,7 +37,10 @@ struct filehandle
 
 struct emulbase
 {
-    struct EmulHandler	      pub;
+    struct Node		      eb_Node;
+    APTR		      eb_stdin;
+    APTR		      eb_stdout;
+    APTR		      eb_stderr;
     APTR		      mempool;
     APTR		      ReadIRQ;
     APTR		      HostLibBase;

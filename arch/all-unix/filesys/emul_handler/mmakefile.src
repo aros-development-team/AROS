@@ -1,9 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+MAINDIR := arch/all-hosted/filesys/emul_handler
+
 USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
 	       -I$(SRCDIR)/$(CURDIR) \
-	       -I$(SRCDIR)/arch/all-hosted/devs/filesys/emul_handler \
+	       -I$(SRCDIR)/$(MAINDIR) \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 ifeq ($(ARCH),darwin)
@@ -13,7 +15,6 @@ endif
 FILES := emul_host_unix emul_host emul_dir
 
 %build_archspecific mainmmake=kernel-fs-emul \
-  maindir=arch/all-hosted/devs/filesys/emul_handler \
-  arch=unix files="$(FILES)"
+  maindir=$(MAINDIR) arch=unix files="$(FILES)"
 
 %common
