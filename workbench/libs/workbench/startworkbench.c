@@ -69,6 +69,8 @@
 	    	/* FIXME: check tags */
 		{ NP_Entry, (IPTR)BADDR(wbseg) },
 		{ NP_WindowPtr, -1 },
+		{ NP_ConsoleTask, BNULL },
+		{ NP_CurrentDir, BNULL },
 		{ NP_Name, (IPTR)"Workbench" },
 		{ NP_Cli, TRUE },
 		{ NP_Priority, 1 },
