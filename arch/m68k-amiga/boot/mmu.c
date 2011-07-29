@@ -8,6 +8,7 @@
 #include <proto/expansion.h>
 #include <proto/utility.h>
 #include <libraries/configvars.h>
+#include <hardware/cpu/memory.h>
 
 #define _STR(A) #A
 #define STR(A) _STR(A)
@@ -38,10 +39,6 @@ const struct Resident rom_tag =
    (STRPTR)version_string,
    (APTR)Init
 };
-
-
-#define PAGE_SIZE 4096
-#define PAGE_MASK (PAGE_SIZE - 1)
 
 void enable_mmu(void *kb);
 void debug_mmu(void *kb);
@@ -79,7 +76,7 @@ static APTR AllocPagesAligned(ULONG pages)
     	return NULL;
     Forbid();
     FreeMem(ret, (pages + 1) * PAGE_SIZE);
-    ret = AllocAbs((pages * PAGE_SIZE + PAGE_SIZE - 1) & ~PAGE_MASK, (APTR)((((ULONG)ret) + PAGE_SIZE - 1) & ~PAGE_MASK));
+    ret = AllocAbs((pages * PAGE_SIZE + PAGE_SIZE - 1) & PAGE_MASK, (APTR)((((ULONG)ret) + PAGE_SIZE - 1) & PAGE_MASK));
     Permit();
     return ret;
 }
@@ -188,10 +185,10 @@ static AROS_UFH3 (APTR, Init,
 	for (i = 0; i < cnt; i++) {
 		ULONG tm;
 		addr = memheaders[i * 2 + 0];
-		addr &= ~PAGE_MASK;
+		addr &= PAGE_MASK;
 		size = memheaders[i * 2 + 1] - addr;
-		size += PAGE_MASK;
-		size &= ~PAGE_MASK;
+		size += PAGE_SIZE - 1;
+		size &= PAGE_MASK;
 		tm = TypeOfMem((void*)(addr + 2 * PAGE_SIZE));
 		if (tm & MEMF_CHIP)
 			mmuchipram(KernelBase, addr, size);
@@ -233,8 +230,8 @@ static AROS_UFH3 (APTR, Init,
 	/* ROM areas */
 	mmuprotect(KernelBase, 0x00e00000, 0x00080000);
 	mmuprotect(KernelBase, 0x00f80000, 0x00080000);
-	mmuprotect(KernelBase, (ULONG)&_rom_start & ~PAGE_MASK, (((ULONG)(&_rom_end - &_rom_start)) + PAGE_MASK) & ~PAGE_MASK);
-	mmuprotect(KernelBase, (ULONG)&_ext_start & ~PAGE_MASK, (((ULONG)(&_ext_end - &_ext_start)) + PAGE_MASK) & ~PAGE_MASK);
+	mmuprotect(KernelBase, (ULONG)&_rom_start & PAGE_MASK, (((ULONG)(&_rom_end - &_rom_start)) + PAGE_SIZE - 1) & PAGE_MASK);
+	mmuprotect(KernelBase, (ULONG)&_ext_start & PAGE_MASK, (((ULONG)(&_ext_end - &_ext_start)) + PAGE_SIZE - 1) & PAGE_MASK);
 	/* Custom chipset & Clock & Mainboard IO */
 	addr = (ULONG)SysBase->MaxExtMem;
 	if (addr < 0x00d80000)
@@ -247,7 +244,7 @@ static AROS_UFH3 (APTR, Init,
 	//debug_mmu(KernelBase);
 
 	CopyMem(pages, pages + PAGE_SIZE, PAGE_SIZE);
-	CopyMem((APTR)((ULONG)_bss & ~PAGE_MASK), pages + 2 * PAGE_SIZE, PAGE_SIZE);
+	CopyMem((APTR)((ULONG)_bss & PAGE_MASK), pages + 2 * PAGE_SIZE, PAGE_SIZE);
 
 	enable_mmu(KernelBase);
 	
