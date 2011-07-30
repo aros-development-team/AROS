@@ -12,6 +12,7 @@
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
+#include <hardware/cpu/memory.h>
 
 #include "memory.h"
 
@@ -26,7 +27,7 @@
 #include "early.h"
 #include "debug.h"
 
-#define SS_STACK_SIZE	0x04000
+#define SS_STACK_SIZE	0x02000
 
 extern const struct Resident Exec_resident;
 
@@ -120,6 +121,15 @@ static LONG doInitCode(void)
 	    APTR ss_stack;
 
 	    ss_stack = AllocMem(SS_STACK_SIZE, MEMF_ANY | MEMF_CLEAR | MEMF_REVERSE);
+	    if (ss_stack && ((ULONG)ss_stack & (PAGE_SIZE - 1))) {
+	    	/* Normally ss_stack is page aligned because it is first MEMF_REVERSE
+	    	 * allocation. But we must check it because enabled mungwall or expansion
+	    	 * boot rom code can allocate some memory.
+	    	 */
+	    	FreeMem(ss_stack, SS_STACK_SIZE);
+	        ss_stack = AllocMem(SS_STACK_SIZE + PAGE_SIZE - 1, MEMF_ANY | MEMF_CLEAR | MEMF_REVERSE);
+	        ss_stack = (APTR)(((ULONG)ss_stack + PAGE_SIZE - 1) & PAGE_MASK);
+	    }
 	    DEBUGPUTHEX(("SS  lower", (ULONG)ss_stack));
 	    DEBUGPUTHEX(("SS  upper", (ULONG)ss_stack + SS_STACK_SIZE - 1));
 	    if (ss_stack == NULL) {
