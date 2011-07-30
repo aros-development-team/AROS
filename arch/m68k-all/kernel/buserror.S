@@ -1,4 +1,5 @@
 
+	#include <aros/config.h>
 	#include "aros/m68k/asm.h"
 
 	.text
@@ -9,7 +10,9 @@ buserror030:
 	or.w	#0x0700,%sr
 	subq.l	#4,%sp
 	movem.l	%d0/%a0,-(%sp)
-	cmp.l	#4,12+0x10(%sp)
+	/* fault address */
+	move.l	12+0x10(%sp),%a0
+	cmp.w	#4,%a0
 	bne		.doexit
 	/* SSW */
 	move.w	12+0x0a(%sp),%d0
@@ -27,7 +30,6 @@ buserror030:
 	addq.l	#4,%sp
 	rte
 
-	.text
 	.balign 4
 	.globl	buserror040
 buserror040:
@@ -35,14 +37,15 @@ buserror040:
 	subq.l	#4,%sp
 	movem.l	%d0/%a0,-(%sp)
 	/* fault address */
-	cmp.l	#4,12+0x14(%sp)
-	bne.s	.doexit
+	move.l	12+0x14(%sp),%a0
+	cmp.w	#4,%a0
+	bne		.doexit
 	/* SSW */
 	move.w	12+0x0c(%sp),%d0
 	and.w	#0xffc0,%d0
 	/* LONG DATA READ + ATC fault? */
 	cmp.w	#0x0500,%d0
-	bne.s	.doexit
+	bne		.doexit
 .dotrace:
 	/* It was long read from address 4. Special handling required.
 	 *
@@ -71,19 +74,7 @@ buserror040:
 	/* Re-run the instruction */
 	rte
 
-.doexit:
-	/* jump to original exception vector
-	 * we assume address error uses same address
-	 *
-	 * TODO: Handle 68040 writebacks. Not really important at this
-	 * point because this is meant to be kernel debugger that simply
-	 * crashes the system if access fault happens.
-	 */
-	movec	%vbr,%a0
-	move.l	3*4(%a0),8(%sp)
-	movem.l	(%sp)+,%d0/%a0
-	rts
-
+	.balign 4
 trace040:
 	move.l	%a0,-(%sp)
 	move.l	zeropagedescriptor,%a0
@@ -99,7 +90,6 @@ trace040:
 	move.l	(%sp)+,%a0
 	rte
 
-	.text
 	.balign 4
 	.globl	buserror060
 buserror060:
@@ -107,12 +97,108 @@ buserror060:
 	subq.l	#4,%sp
 	movem.l	%d0/%a0,-(%sp)
 	/* fault address */
-	cmp.l	#4,12+0x08(%sp)
+	move.l	12+0x08(%sp),%a0
+	cmp.w	#4,%a0
 	bne		.doexit
 	/* FSLW */
 	move.l	12+0x0c(%sp),%d0
 	and.l	#0x03e00200,%d0
 	/* LONG DATA READ PAGE FAULT? */
 	cmp.l	#0x01400200,%d0
-	bne		.doexit
-	bra		.dotrace
+	beq		.dotrace
+	
+.doexit:
+	/* jump to original exception vector
+	 * we assume address error uses same address
+	 *
+	 * TODO: Handle 68040 writebacks. Not really important at this
+	 * point because this is meant to be kernel debugger that simply
+	 * crashes the system if access fault happens.
+	 *
+	 * A0 = fault address
+	 * Following code MUST NOT access SysBase! */
+	 */
+#ifdef AROS_SERIAL_DEBUG
+
+	move.l	%a0,-(%sp)
+	pea		.berrstr1(%pc)
+	jsr		DebugPutHex
+	addq.l	#8,%sp
+	
+	move.l	12+2(%sp),-(%sp)
+	pea		.berrstr2(%pc)
+	jsr		DebugPutHex
+	addq.l	#8,%sp
+
+	moveq	#0,%d0
+	move.w	12+0(%sp),%d0
+	move.l	%d0,-(%sp)
+	pea		.berrstr3(%pc)
+	jsr		DebugPutHex
+	addq.l	#8,%sp
+	
+	movec	%usp,%d0
+	move.l	%d0,-(%sp)
+	pea		.berrstr4(%pc)
+	jsr		DebugPutHex
+	addq.l	#8,%sp
+
+	move.l	%a7,%d0
+	add.l	#12,%d0
+	move.l	%d0,-(%sp)
+	pea		.berrstr5(%pc)
+	jsr		DebugPutHex
+	addq.l	#8,%sp
+
+	move.l	%d7,-(%sp)
+	movem.l	%d0-%d7/%a0-%a6,-(%sp)
+	move.l	15*4+4(%sp),(%sp)		// Original D0
+	move.l	15*4+4+4(%sp),8*4(%sp)	// Original A0
+
+	moveq	#0,%d7
+0:	move.l	0(%sp,%d7.w*4),-(%sp)
+	jsr		DebugPutHexVal
+	addq.l	#4,%sp
+	addq.w	#1,%d7
+	cmp.w	#8,%d7
+	bne.s	0b
+
+	pea		.berrlf(%pc)
+	jsr		DebugPutStr
+	addq.l	#4,%sp
+
+1:	move.l	0(%sp,%d7.w*4),-(%sp)
+	jsr		DebugPutHexVal
+	addq.l	#4,%sp
+	addq.w	#1,%d7
+	cmp.w	#15,%d7
+	bne.s	1b
+
+	pea		.berrlf(%pc)
+	jsr		DebugPutStr
+	addq.l	#4,%sp
+	
+	lea		15*4(%sp),%sp
+	move.l	(%sp)+,%d7
+
+#endif
+
+	movec	%vbr,%a0
+	move.l	3*4(%a0),8(%sp)
+	movem.l	(%sp)+,%d0/%a0
+	rts
+
+#ifdef AROS_SERIAL_DEBUG
+.berrstr1:
+	.string	"Bus error!\nFault address"
+.berrstr2:
+	.string "PC"
+.berrstr3:
+	.string "SR"
+.berrstr4:
+	.string "USP"
+.berrstr5:
+	.string "SSP"
+.berrlf:
+	.string "\n"
+#endif
