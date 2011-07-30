@@ -5,17 +5,16 @@ default 0
 
 title AROS on Sam440
     kernel boot/aros-amcc440
-    module boot/modules/afs.handler
-    module boot/modules/amberram.handler
+    module boot/modules/afs-handler
+    module boot/modules/amberram-handler
     module boot/modules/aros.library
     module boot/modules/ata.device
     module boot/modules/battclock.resource
-    module boot/modules/boot.library
     module boot/modules/bootkeyboard.class
     module boot/modules/bootloader.resource
     module boot/modules/bootmouse.class
-    module boot/modules/cdrom.handler
-    module boot/modules/con.handler
+    module boot/modules/cdrom-handler
+    module boot/modules/con-handler
     module boot/modules/console.device
     module boot/modules/dosboot.resource
     module boot/modules/dos.library
@@ -47,23 +46,22 @@ title AROS on Sam440
     module boot/modules/poseidon.library
     module boot/modules/processor.resource
     module boot/modules/radeon.hidd
-    module boot/modules/sfs.handler
+    module boot/modules/sfs-handler
     module boot/modules/timer.device
     module boot/modules/usbromstartup.resource
     module boot/modules/utility.library
     module boot/modules/workbench.library
 
-title AROS on Sam440 Test AltUsb
+title AROS on Sam440 Test Alternative Usb
     kernel boot/aros-amcc440
-    module boot/modules/afs.handler
-    module boot/modules/amberram.handler
+    module boot/modules/afs-handler
+    module boot/modules/amberram-handler
     module boot/modules/aros.library
     module boot/modules/ata.device
     module boot/modules/battclock.resource
-    module boot/modules/boot.library
     module boot/modules/bootloader.resource
-    module boot/modules/cdrom.handler
-    module boot/modules/con.handler
+    module boot/modules/cdrom-handler
+    module boot/modules/con-handler
     module boot/modules/console.device
     module boot/modules/dosboot.resource
     module boot/modules/dos.library
@@ -92,7 +90,7 @@ title AROS on Sam440 Test AltUsb
     module boot/modules/pci.hidd
     module boot/modules/processor.resource
     module boot/modules/radeon.hidd
-    module boot/modules/sfs.handler
+    module boot/modules/sfs-handler
     module boot/modules/timer.device
     module boot/modules/usb.hidd
     module boot/modules/utility.library
