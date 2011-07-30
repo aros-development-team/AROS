@@ -37,8 +37,6 @@
 #include <proto/dos.h>
 #include <proto/expansion.h>
 
-#include <resources/emul.h>
-
 #include "emul_intern.h"
 
 #include <limits.h>
