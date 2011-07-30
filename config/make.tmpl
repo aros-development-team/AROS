@@ -1134,8 +1134,14 @@ BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),%(files))
     cflags="%(cflags)" dflags="%(dflags)" \
     compiler=%(compiler)
 
+# Handlers use dash instead of dot in their names
+ifeq (%(modtype),handler)
+BD_MODULE := $(BD_MODDIR)/%(modname)-%(modtype)
+BD_PKGMOD := $(PKGDIR)/%(modname)-%(modtype)
+else
 BD_MODULE := $(BD_MODDIR)/%(modname).%(modtype)
 BD_PKGMOD := $(PKGDIR)/%(modname).%(modtype)
+endif
 BD_KOBJ   := $(KOBJSDIR)/%(modname)_%(modtype).o
 
 %(mmake)-quick : %(mmake)
@@ -1379,8 +1385,8 @@ endif
 
 # Handlers use dash instead of dot in their names
 ifeq ($(BD_SUFFIX),handler)
-BD_MODULE    := %(prefix)/%(moduledir)/%(modname)-$(BD_SUFFIX)
-BD_PKGMOD    := $(PKGDIR)/%(modname)-$(BD_SUFFIX)
+BD_MODULE := %(prefix)/%(moduledir)/%(modname)-$(BD_SUFFIX)
+BD_PKGMOD := $(PKGDIR)/%(modname)-$(BD_SUFFIX)
 else
 BD_MODULE := %(prefix)/%(moduledir)/%(modname).$(BD_SUFFIX)
 BD_PKGMOD := $(PKGDIR)/%(modname).$(BD_SUFFIX)
