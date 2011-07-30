@@ -16,6 +16,7 @@ int DebugMayGetChar(void);
 void DebugPutStr(register const char *buff);
 void DebugPutHex(const char *what, ULONG val);
 void DebugPutDec(const char *what, ULONG val);
+void DebugPutHexVal(ULONG val);
 
 #define DEBUGPUTS(x) do { DebugPutStr x; } while(0)
 #define DEBUGPUTD(x) do { DebugPutDec x; } while(0)
