@@ -208,7 +208,9 @@ static AROS_UFH3 (APTR, Init,
 		/* No special protection, cacheable */
 		KrnSetProtection(0, PAGE_SIZE, MAP_Readable | MAP_Writable);
 	}
-		
+	/* Protect Supervisor stack if MMU debugging mode */
+	if (ZeroPageInvalid || ZeroPageProtect)
+		KrnSetProtection(SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower, MAP_Readable | MAP_Writable | MAP_Supervisor); 
 #if 0
 	/* Remap BSS to Fast RAM, faster performance than Chip RAM */
 	KrnMapGlobal((void*)(0 + PAGE_SIZE), pages + 2 * PAGE_SIZE, PAGE_SIZE, MAP_Readable | MAP_Writable);
