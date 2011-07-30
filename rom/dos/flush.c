@@ -51,6 +51,9 @@
     /* Get pointer to filehandle. */
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
 
+    if (!fh)
+	return DOSTRUE;
+
     /* The file must be in write mode. */
     if( fh->fh_Flags & FHF_WRITE )
     {
