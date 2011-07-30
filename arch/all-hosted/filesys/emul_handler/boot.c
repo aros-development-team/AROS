@@ -20,8 +20,6 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 
-#include <resources/emul.h>
-
 #include "emul_intern.h"
 
 #undef GfxBase
