@@ -24,6 +24,7 @@
 void Early_ScreenCode(ULONG code);
 void Early_Alert(ULONG alert);
 void __attribute__((interrupt)) Early_TrapHandler(void);
+void __attribute__((interrupt)) Early_Exception(void);
 
 APTR Early_AllocAbs(struct MemHeader *mh, APTR location, IPTR byteSize);
 

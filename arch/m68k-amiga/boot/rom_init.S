@@ -1,5 +1,6 @@
 
 #include <aros/m68k/asm.h>
+#include <aros/config.h>
 
 	.text
 	.chip 68000
@@ -289,3 +290,29 @@ MemoryTest:
 	move.l	%d1,%d0
 	rts
 
+	.globl Early_Exception
+Early_Exception:
+	or.w	#0x0700,%sr
+#ifdef AROS_SERIAL_DEBUG
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+
+	move.l	16+2(%sp),-(%sp)
+	pea		.earlystr1(%pc)
+	jsr		DebugPutHex
+	addq.l	#8,%sp
+	
+	moveq	#0,%d0
+	move.w	16+6(%sp),%d0
+	move.l	%d0,-(%sp)
+	pea		.earlystr2(%pc)
+	jsr		DebugPutHex
+	addq.l	#8,%sp
+
+	movem.l	(%sp)+,%d0-%d1/%a0-%a1
+#endif
+	jmp		Early_TrapHandler
+	
+.earlystr1:
+	.string "PC"
+.earlystr2:
+	.string "Vector"

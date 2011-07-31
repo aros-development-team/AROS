@@ -398,11 +398,11 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 
 	trap = (APTR *)(NULL);
 
-	/* Set all the exceptions to the Early_TrapHandler
+	/* Set all the exceptions to the Early_Exception
 	 */
 	for (i = 2; i < 64; i++) {
 	    if (i != 31)
-	    	trap[i] = Early_TrapHandler;
+	    	trap[i] = Early_Exception;
 	}
 
 	/* Let the world know we exist
