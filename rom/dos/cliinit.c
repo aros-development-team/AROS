@@ -243,9 +243,8 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct BootNode *
     }
 }
 
-static BPTR internalBootLock(struct DosLibrary *DOSBase, struct FileSysResource *fsr)
+static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *ExpansionBase, struct FileSysResource *fsr)
 {
-    struct ExpansionBase *ExpansionBase;
     struct BootNode *bn;
     struct DeviceNode *dn;
     BPTR lock = BNULL;
@@ -261,12 +260,8 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct FileSysResource 
      * then dosboot.resource will handle checking the
      * next device in the list.
      */
-    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
-    if (!ExpansionBase)
-        return BNULL;
 
     bn = (struct BootNode *)GetHead(&ExpansionBase->MountList);
-    CloseLibrary((APTR)ExpansionBase);
 
     if (bn == NULL)
         return BNULL;
@@ -403,11 +398,15 @@ static long internalBootCliHandler(void)
         Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
     }
 
+    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
+    if (!ExpansionBase)
+	return ERROR_INVALID_RESIDENT_LIBRARY;
+
     /* It's perfectly fine if this fails. */
     fsr = OpenResource("FileSystem.resource");
 
     /* Find and Lock the proposed boot device */
-    lock = internalBootLock(DOSBase, fsr);
+    lock = internalBootLock(DOSBase, ExpansionBase, fsr);
     D(bug("Dos/CliInit: Proposed SYS: lock is: %p\n", BADDR(lock)));
 
     /* Ok, at this point we've either succeeded or failed.
@@ -419,7 +418,10 @@ static long internalBootCliHandler(void)
     D(dp = NULL; (void)dp;);
 
     if (lock == BNULL)
+    {
+	CloseLibrary(&ExpansionBase->LibNode);
         return IoErr();
+    }
 
     /* We're now at the point of no return. */
     DOSBase->dl_SYSLock = DupLock(lock);
@@ -433,42 +435,6 @@ static long internalBootCliHandler(void)
         D(bug("DOS/CliInit: Impossible! The SYS: assign failed!\n"));
         Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
     }
-
-    /* The following code is no longer needed, due to the lazy
-     * assignment of ENV: to SYS:Prefs/Env-Archive, and can't
-     * work anyway, since RAM: is currently initialized
-     * in RTF_AFTERDOS. - Jason McMullan, 2011-07-29
-     */
-#if 0
-    /*
-     * If we have poseidon, ensure that ENV: exists to avoid missing volume requester.
-     * We do it before other assigns because as soon as LIBS: is available it will open
-     * muimaster.library and run popup GUI task.
-     */
-{
-    struct Library *psdBase;
-    psdBase = OpenLibrary("poseidon.library", 0);
-
-    if (psdBase)
-    {
-        CloseLibrary(psdBase);
-
-        lock = CreateDir("RAM:ENV");
-        if (lock)
-        {
-            /*
-             * CreateDir() returns exclusive lock, while AssignLock() will work correctly
-             * only with shared one.
-             * CHECKME: Is it the same in original AmigaOS(tm), or AssignLock() needs fixing?
-             */
-            if (ChangeMode(CHANGE_LOCK, lock, SHARED_LOCK))
-                AssignLock("ENV", lock);
-            else
-                UnLock(lock);
-        }
-    }
-}
-#endif
 
     AddBootAssign("SYS:C",                "C", DOSBase);
     AddBootAssign("SYS:Libs",             "LIBS", DOSBase);
@@ -485,6 +451,10 @@ static long internalBootCliHandler(void)
     }
 #endif
 
+    /* 
+     * This early assignment prevents Poseidon from asking for ENV:
+     * when popup GUI process is initialized and opens muimaster.library.
+     */
     AssignLate("ENV", "SYS:Prefs/Env-Archive");
     AssignLate("ENVARC", "SYS:Prefs/Env-Archive");
 
@@ -493,39 +463,36 @@ static long internalBootCliHandler(void)
      * Here we already can load disk-based handlers.
      */
     D(bug("Dos/CliInit: Assigns done, retrying mount handlers\n"));
-    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
-    if (ExpansionBase) {
-        BootFlags = ExpansionBase->eb_BootFlags;
-        D(bug("Dos/CliInit: Using Boot Flags of 0x%x\n", BootFlags));
 
-        ForeachNodeSafe(&ExpansionBase->MountList, bn, tmpbn) {
-            struct DeviceNode *dn = bn->bn_DeviceNode;
+    BootFlags = ExpansionBase->eb_BootFlags;
+    D(bug("Dos/CliInit: Using Boot Flags of 0x%x\n", BootFlags));
 
-            if (dn == NULL || dn->dn_Name == BNULL)
-                continue;
+    ForeachNodeSafe(&ExpansionBase->MountList, bn, tmpbn)
+    {
+        struct DeviceNode *dn = bn->bn_DeviceNode;
 
-            /* Patch it up, if needed */
-            internalPatchBootNode(fsr, bn, DOSBase->dl_Root->rn_FileHandlerSegment);
+        if (dn == NULL || dn->dn_Name == BNULL)
+            continue;
 
-            if (AddDosEntry((struct DosList *)dn) != DOSFALSE) {
-                BOOL mountable = (bn->bn_Flags & ADNF_STARTPROC) ? TRUE : FALSE;
-                D(bug("Dos/CliInit: Added %b: to the DOS list\n", dn->dn_Name));
-#ifdef __mc68000
-                /* On the Amiga, since ADNF_STARTPROC was not present
-                 * in KS 1.3 and earlier, we need to always mount
-                 * the bootable nodes.
-                 */
-                mountable = TRUE;
-#endif
-                if (mountable) {
-                    D(bug("Dos/CliInit: Mounting %b: ", dn->dn_Name));
-                    RunHandler(dn, NULL, DOSBase);
-                    D(bug("dn->dn_Task = %p\n", dn->dn_Task));
-                }
-            }
+        /* Patch it up, if needed */
+        internalPatchBootNode(fsr, bn, DOSBase->dl_Root->rn_FileHandlerSegment);
+
+        if (AddDosEntry((struct DosList *)dn) != DOSFALSE)
+	{
+            /*
+	     * On the Amiga, since ADNF_STARTPROC was not present in KS 1.3 and earlier,
+	     * we need to always mount the bootable nodes.
+	     * In fact if we have something in ExpansionBase, we for sure want it to
+	     * be mounted. So there's no sense to check for it.
+             */
+            D(bug("Dos/CliInit: Mounting %b: ", dn->dn_Name));
+
+            RunHandler(dn, NULL, DOSBase);
+            D(bug("dn->dn_Task = %p\n", dn->dn_Task));
         }
-        CloseLibrary((APTR)ExpansionBase);
     }
+
+    CloseLibrary((APTR)ExpansionBase);
 
     /* Init all the RTF_AFTERDOS code, since we now have
      * SYS:, the dos devices, and all the other assigns.
