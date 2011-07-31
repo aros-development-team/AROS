@@ -494,14 +494,14 @@ static long internalBootCliHandler(void)
 
     CloseLibrary((APTR)ExpansionBase);
 
+    /* We will now officially set the current directory to SYS: */
+    CurrentDir(DOSBase->dl_SYSLock);
+    
     /* Init all the RTF_AFTERDOS code, since we now have
      * SYS:, the dos devices, and all the other assigns.
      */
     D(bug("Dos/CliInit: Calling InitCode(RTF_AFTERDOS, 0)\n"));
     InitCode(RTF_AFTERDOS, 0);
-
-    /* We will now officially set the current directory to SYS: */
-    CurrentDir(DOSBase->dl_SYSLock);
 
     /* Call the platform-overridable portions */
     D(bug("Dos/CliInit: Calling __dos_Boot(%p, 0x%x)\n", DOSBase, BootFlags));

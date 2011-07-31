@@ -16,9 +16,6 @@
 #include <dos/dosextens.h>
 #include <utility/tagitem.h>
 #include <libraries/expansionbase.h>
-#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
-#include <proto/emul.h>
-#endif
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -67,9 +64,6 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
     LONG rc = RETURN_FAIL;
     BPTR cis = BNULL;
-#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
-    APTR EmulBase;
-#endif
 
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. */
@@ -97,23 +91,6 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
             UnLoadSeg(seg);
         }
     }
-
-#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
-    /*
-     * On hosted ports this checks if we have display drivers,
-     * and opens emergency console if not.
-     * I hope this is an acceptable way to keep architecture-specific code
-     * out of dos.library.
-     * This can also be done in some alternate way, like attempting to run
-     * a resident with some specific name.
-     */
-    EmulBase = OpenResource("emul-handler");
-    D(bug("[__dos_Boot] emulbase = 0x%p\n", EmulBase));
-    if (EmulBase)
-    {
-	EmulBoot();
-    }
-#endif
 
     cis = Open("CON:////Boot Shell/AUTO", MODE_OLDFILE);
     if (cis)
