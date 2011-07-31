@@ -83,6 +83,7 @@ rom_init:
 .mbramtest:
 	/* set AttnFlags AFB_ADDR32 */
 	or.w	#0x4000,%a4@(2)
+
 	/* mainboard ram (A3000) */
 	/* end is static 0x08000000, start addr is end - (size of ram) */
 	move.l	%a5,%a6
@@ -98,6 +99,7 @@ rom_init:
 	move.l	%a6,%a5
 	lsr.l	#1,%d0
 	bsr		.L_memtest
+	bmi.s	.a3000noram
 	bne.s	.a3000test
 	move.l	%a6,%a5
 	tst.l	%d7
@@ -153,8 +155,14 @@ looping:
 	.globl MemoryTest
 MemoryTest:
 	movem.l	%d2-%d5/%a2-%a3/%a5,%sp@-
-	lea.l	%sp@(8),%a5
+	move.w	0xdff01c,%sp@-	/* save INTENA */
+	subq.l	#8,%sp
+	move.l	%sp,%a5
 	bsr.s	.L_memtest
+	addq.l	#8,%sp
+	move.w	%sp@+,%d1
+	or.w	#0x8000,%d1
+	move.w	%d1,0xdff09a	/* restore INTENA */
 	movem.l	%sp@+,%d2-%d5/%a2-%a3/%a5
 	rts
 
