@@ -269,13 +269,23 @@ static void DosExpunge(struct DosLibrary *DOSBase)
 #ifdef DEBUG
         struct DosList *dol;
 
-        bug("%s: Entries still in the Dos List, can't expunge.\n", __func__);
+        bug("[DosInit] Entries still in the Dos List, can't expunge.\n");
         for (dol = BADDR(dinfo->di_DevInfo); dol != NULL; dol = BADDR(dol->dol_Next))
         {
-            bug("%s:  %d '%b'\n", __func__, dol->dol_Type, dol->dol_Name);
+            bug("[DosInit] %d '%b'\n", dol->dol_Type, dol->dol_Name);
         }
 #endif
         return;
+    }
+
+    if (DOSBase->dl_lib.lib_OpenCnt)
+    {
+    	/*
+    	 * Someone is holding us... Perhaps some handler started subprocess
+    	 * which didn't quit. Who knows...
+    	 */
+    	D(bug("[DosInit] Open count is %d, can't expunge\n"));
+    	return;
     }
 
     /* Close some libraries */

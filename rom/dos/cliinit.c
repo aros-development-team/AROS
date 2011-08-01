@@ -134,7 +134,7 @@ static long internalBootCliHandler(void);
 
     DeleteMsgPort(reply_mp);
 
-    D(bug("Dos/CliInit: Task returned Res1=%d, Res2=%d\n", (LONG)Res1, (LONG)Res2));
+    D(bug("Dos/CliInit: Task returned Res1=%ld, Res2=%ld\n", Res1, Res2));
 
     /* Did we succeed? */
     if (Res1 == DOSTRUE)
@@ -238,12 +238,12 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct DeviceNode
     }
 }
 
-static BOOL mountBootNode(struct DeviceNode *dn, struct FileSysResource *fsr, struct DosLibrary *DOSBase)
+static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResource *fsr, struct DosLibrary *DOSBase)
 {
     struct DosList *dl;
 
     if ((dn == NULL) || (dn->dn_Name == BNULL))
-    	return FALSE;
+    	return NULL;
 
     D(bug("Dos/CliInit: Mounting 0x%p (%b)...\n", dn, dn->dn_Name));
 
@@ -261,8 +261,7 @@ static BOOL mountBootNode(struct DeviceNode *dn, struct FileSysResource *fsr, st
     /* Found in DOS list? Do nothing. */
     if (dl)
     {
-    	
-    	return TRUE;
+    	return dl->dol_Task;
     }
 
     /* Patch it up, if needed */
@@ -270,8 +269,6 @@ static BOOL mountBootNode(struct DeviceNode *dn, struct FileSysResource *fsr, st
 
     if (AddDosEntry((struct DosList *)dn) != DOSFALSE)
     {
-    	struct MsgPort *res;
-
         /*
          * Do not check for ANDF_STARTPROC because:
          * a) On the Amiga ADNF_STARTPROC was not present in KS 1.3 and earlier, there was no deferred mount.
@@ -279,12 +276,16 @@ static BOOL mountBootNode(struct DeviceNode *dn, struct FileSysResource *fsr, st
          */
         D(bug("Dos/CliInit: Added to DOS list, starting up handler... "));
 
-        res = RunHandler(dn, NULL, DOSBase);
-        D(bug("Result 0x%p, dn->dn_Task = 0x%p\n", res, dn->dn_Task));
+        if (RunHandler(dn, NULL, DOSBase))
+        {
+            D(bug("dn->dn_Task = 0x%p\n", dn->dn_Task));
+            return dn->dn_Task;
+        }
 
-        return res ? TRUE : FALSE;
+        D(bug("Failed\n"));
+        RemDosEntry((struct DosList *)dn);
     }
-    
+
     /*
      * TODO: AddDosEntry() can fail in case of duplicate name. In this case it would be useful
      * to append some suffix. AmigaOS IIRC did the same.
@@ -292,13 +293,14 @@ static BOOL mountBootNode(struct DeviceNode *dn, struct FileSysResource *fsr, st
      * connect a friend's hard drive which also has partitions with these names.
      */
 
-    return FALSE;
+    return NULL;
 }
 
 static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *ExpansionBase, struct FileSysResource *fsr)
 {
     struct BootNode *bn;
     struct DeviceNode *dn;
+    struct MsgPort *mp;
     BPTR lock = BNULL;
     STRPTR name;
     int name_len;
@@ -313,13 +315,14 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
      * next device in the list.
      */
     bn = (struct BootNode *)GetHead(&ExpansionBase->MountList);
+    D(bug("Dos/CliInit: MountList head: 0x%p\n", bn));
 
     if (bn == NULL)
         return BNULL;
 
     dn = bn->bn_DeviceNode;
-    
-    if (!mountBootNode(dn, fsr, DOSBase))
+    mp = mountBootNode(dn, fsr, DOSBase);
+    if (!mp)
         return BNULL;
 
     D(bug("Dos/CliInit: %b (%d) appears usable\n", dn->dn_Name, bn->bn_Node.ln_Pri));
@@ -329,38 +332,51 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
     name = AllocVec(name_len + 2, MEMF_ANY);
     if (name != NULL)
     {
-        BOOL bootable = FALSE;
-
         /* Make the volume name a volume: name */
         CopyMem(AROS_BSTR_ADDR(dn->dn_Name), name, name_len);
         name[name_len+0] = ':';
         name[name_len+1] = 0;
+        D(bug("Dos/CliInit:   Attempt to Lock(\"%s\")... ", name));
 
-        D(bug("Dos/CliInit:   Attempt to Lock(\"%s\")...\n", name, BADDR(lock)));
         lock = Lock(name, SHARED_LOCK);
-        D(bug("Dos/CliInit:   Lock(\"%s\") => %p\n", name, BADDR(lock)));
+        D(bug("=> 0x%p\n", BADDR(lock)));
 
         if (lock != BNULL)
         {
             /* If we have a lock, check the per-platform conditional boot code. */
-            bootable = __dos_IsBootable(DOSBase, lock);
+            if (!__dos_IsBootable(DOSBase, lock))
+	    {
+               	UnLock(lock);
+            	lock = BNULL;
+            }
         }
 
-        if (!bootable)
+        if (!lock)
         {
-            struct MsgPort *mp;
+            /* DoPkt() will clobber IoErr(), save it */
+            SIPTR err = IoErr();
+            SIPTR dead;
 
             /* Darn. Not bootable. Try to unmount it. */
             D(bug("Dos/CliInit:   Does not have a bootable filesystem, unmounting...\n"));
 
-            /* First, get the lock's handler */
-            mp = ((struct FileLock *)BADDR(lock))->fl_Task;
-            /* Unlock the lock. */
-            UnLock(lock);
-            lock = BNULL;
+            /* It's acceptable if this fails */
+            dead = DoPkt(mp, ACTION_DIE, 0, 0, 0, 0, 0);
+            D(bug("Dos/CliInit:  ACTION_DIE returned %d\n", dead));
 
-            /* Then try to ACTION_DIE the handler. It's okay if it didn't quit. */
-            DoPkt(mp, ACTION_DIE, 0, 0, 0, 0, 0);
+	    if (dead)
+	    {
+	    	/*
+	    	 * Handlers usually won't remove their DeviceNoces themselves.
+	    	 * And even if they do (ACTION_DIE is poorly documented), RemDosEntry()
+	    	 * on an already removed entry is safe due to nature of DOS list.
+	    	 * What is really prohibited, it's unloading own seglist. Well, resident
+	    	 * handlers will never do it, they know...
+	    	 */
+	    	RemDosEntry(dn);
+	    	dn->dn_Task = NULL;
+	    }
+            SetIoErr(err);
         }
 
         FreeVec(name);
@@ -416,19 +432,27 @@ static long internalBootCliHandler(void)
     lock = internalBootLock(DOSBase, ExpansionBase, fsr);
     D(bug("Dos/CliInit: Proposed SYS: lock is: %p\n", BADDR(lock)));
 
-    /* Ok, at this point we've either succeeded or failed.
-     *
-     * Inform our parent.
-     */
-    ReplyPkt(dp, (lock == BNULL) ? DOSFALSE : DOSTRUE, IoErr());
-    /* We've replied, don't touch dp anymore! */
-    D(dp = NULL; (void)dp;);
-
     if (lock == BNULL)
     {
+    	/*
+    	 * We've failed. Inform our parent and exit.
+    	 * Immediately after we reply the packet, the parent (Boot Task) can expunge DOSBase.
+    	 * This is why we first cleanup, then use internal_ReplyPkt (DOSBase is considered
+    	 * invalid).
+    	 * Alternatively we could Forbid() before ReplyPkt(), but... Forbid() is so unpolite...
+    	 */
+    	IPTR err = IoErr();
+
 	CloseLibrary(&ExpansionBase->LibNode);
-        return IoErr();
+	CloseLibrary(&DOSBase->dl_lib);
+
+	/* Immediately after ReplyPkt() DOSBase can be freed. So Forbid() until we really quit. */
+	internal_ReplyPkt(dp, mp, DOSFALSE, err);
+        return err;
     }
+
+    /* Ok, at this point we've succeeded. Inform our parent. */
+    ReplyPkt(dp, DOSTRUE, 0);
 
     /* We're now at the point of no return. */
     DOSBase->dl_Root->rn_BootProc = ((struct FileLock*)BADDR(lock))->fl_Task;
