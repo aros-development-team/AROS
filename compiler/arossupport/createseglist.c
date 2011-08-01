@@ -56,6 +56,9 @@
     segtmp->Size = sizeof(*segtmp);
     segtmp->Next = (IPTR)0;
     __AROS_SET_FULLJMP(&segtmp->Code, function);
+#ifdef __AROS_USE_FULLJMP
+    CacheClearE(&segtmp->Code, sizeof(struct FullJumpVec), CACRF_ClearI | CACRF_ClearD);
+#endif
 
     return MKBADDR(&segtmp->Next);
 }
