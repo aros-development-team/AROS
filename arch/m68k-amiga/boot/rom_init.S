@@ -8,23 +8,18 @@
 
 	.globl rom_init
 rom_init:
-	/* In ROM, so disable the overlay */
-	moveq	#0x3, %d0
-	move.b	%d0, 0xbfe201
-	moveq	#0x2, %d0
-	move.b	%d0, 0xbfe001
 
-	/* Wait a bit for reset to finish */
-	move.l	#0x100000,%d0
-0:	subq.l	#1,%d0
-	bge.s	0b
-
-	/* Disable interrupts and DMA */
-	lea.l	0xdff000, %a0
-	move.w	#0x7fff, %d0
-	move.w	%d0,0x9a(%a0)	/* Interrupt disable */
-	move.w	%d0,0x9c(%a0)	/* Clear interrupts */
-	move.w	%d0,0x96(%a0)	/* Stop DMA */
+	/* Wait a bit for reset to finish.
+	 * Simulate ROM checksum check.
+	 */
+	lea		0x00f80000,%a0
+	move.l	#524288/4,%d0
+	moveq	#0,%d1
+0:	add.l	(%a0)+,%d1
+	bcc.s	1f
+	addq.l	#1,%d1
+1:	subq.l	#1,%d0
+	bne.s	0b
 
 	/* Check for cartridge ROM */
 	lea	0xf00000,%a0
@@ -40,6 +35,25 @@ rom_init:
 	lea	0f,%a5
 	jmp	%a0@(2)
 0:
+
+	/* Disable the overlay, power led off. */
+	moveq	#0,%d0
+	move.b	%d0,0xbfe001
+	moveq	#0x3,%d0
+	move.b	%d0,0xbfe201
+
+	/* Initial Custom chipset setup. Does same writes as AOS.
+	 * It is possible some bus snooping hardware assumes this.
+	 */
+	lea.l	0xdff000,%a0
+	move.w	#0x7fff,%d0
+	move.w	%d0,0x9a(%a0)	/* Interrupt disable */
+	move.w	%d0,0x9c(%a0)	/* Clear interrupts */
+	move.w	%d0,0x96(%a0)	/* Stop DMA */
+	move.w	#0x0174,0x032(%a0)	/* SERPER */
+	move.w	#0x0200,0x100(%a0)	/* BPLCON0 */
+	move.w	#0x0000,0x110(%a0)	/* BPL1DAT */
+	move.w	#0x0111,0x180(%a0)	/* COLOR00 */
 
 	/* temp system stack */
 	lea.l	_ss_end,%sp		/* System stack */
@@ -290,29 +304,39 @@ MemoryTest:
 	move.l	%d1,%d0
 	rts
 
+#define STACK_OFFSET (6*4)
 	.globl Early_Exception
 Early_Exception:
 	or.w	#0x0700,%sr
 #ifdef AROS_SERIAL_DEBUG
-	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+	movem.l	%d0-%d2/%a0-%a2,-(%sp)
 
-	move.l	16+2(%sp),-(%sp)
+	lea		DebugPutHex,%a2
+
+	move.l	STACK_OFFSET+2(%sp),-(%sp)
 	pea		.earlystr1(%pc)
-	jsr		DebugPutHex
+	jsr		(%a2)
 	addq.l	#8,%sp
 	
 	moveq	#0,%d0
-	move.w	16+6(%sp),%d0
+	move.w	STACK_OFFSET+6(%sp),%d0
 	move.l	%d0,-(%sp)
 	pea		.earlystr2(%pc)
-	jsr		DebugPutHex
+	jsr		(%a2)
 	addq.l	#8,%sp
 
-	movem.l	(%sp)+,%d0-%d1/%a0-%a1
+	move.l	STACK_OFFSET+8(%sp),-(%sp)
+	pea		.earlystr3(%pc)
+	jsr		(%a2)
+	addq.l	#8,%sp
+
+	movem.l	(%sp)+,%d0-%d2/%a0-%a2
 #endif
 	jmp		Early_TrapHandler
 	
 .earlystr1:
-	.string "PC"
+	.string "Early Exception!\nPC"
 .earlystr2:
 	.string "Vector"
+.earlystr3:
+	.string "Address"
