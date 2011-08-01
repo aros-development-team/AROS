@@ -1,6 +1,6 @@
 // Kbdal_Albanian_pkf.txt
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Albanian PC105 Keymap
@@ -23,15 +23,9 @@ STATIC CONST UBYTE hirepeatable[];
 
 CONST struct KeyMapNode km =
 {
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     {
     	NULL, NULL, 0, 0, keymapname
     },
-#else
-    {
-    	NULL, NULL, keymapname, 0, 0
-    },
-#endif
     {
     	(UBYTE *)lokeymaptypes,
     	(IPTR  *)lokeymap,

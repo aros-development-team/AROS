@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,9 +19,6 @@
 /**************************************
 		Includes
 **************************************/
-#ifndef AROS_CONFIG_H
-#   include <aros/config.h>
-#endif
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
@@ -31,30 +28,14 @@
 	       Structures
 **************************************/
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 struct Node
 {
     struct Node * ln_Succ,
 		* ln_Pred;
     UBYTE	  ln_Type;
     BYTE	  ln_Pri;
-    /* AROS: pointer should be 32bit aligned, but we cannot do this on
-       the native machine because of binary compatibility.
-    */
     char	* ln_Name;
 };
-
-#else
-struct Node
-{
-    struct Node * ln_Succ,
-		* ln_Pred;
-    /* AROS: pointer should be 32bit aligned */
-    char	* ln_Name;
-    UBYTE	  ln_Type;
-    BYTE	  ln_Pri;
-};
-#endif /* AROS_FLAVOUR */
 
 struct MinNode
 {

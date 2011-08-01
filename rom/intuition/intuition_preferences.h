@@ -1,6 +1,5 @@
-#ifndef INTUITION_PREFERENCES_H
-#   include <intuition/preferences.h>
-#endif
+#include <aros/config.h>
+#include <intuition/preferences.h>
 
 /*
 ** The intuition default preferences structure
