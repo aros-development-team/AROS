@@ -149,9 +149,10 @@ static VOID PrintProcessorInformation()
         }       
 
 
-        printf("PROCESSOR %d:\t[%s/%s] %s (%u Mhz)\n", (int)i + 1, 
-            architecturestring, endiannessstring, modelstring,
-            (unsigned int)(cpuspeed / 1000000));
+        printf("PROCESSOR %d:\t[%s/%s] %s", i + 1, architecturestring, endiannessstring, modelstring);
+        if (cpuspeed)
+            printf(" (%llu Mhz)", cpuspeed / 1000000);
+        printf("\n");
     }
 }
 
