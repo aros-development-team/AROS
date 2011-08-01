@@ -323,6 +323,8 @@ struct AppMenuItem;
 /*** Tags for use with OpenWorkbenchObjectA() *******************************/
 #define WBOPENA_ArgLock                     (WBA_BASE+16)
 #define WBOPENA_ArgName                     (WBA_BASE+17)
+#define WBOPENA_Show                        (WBA_BASE+75)
+#define WBOPENA_ViewBy                      (WBA_BASE+76)
 
 /*** Tags for use with WorkbenchControlA() **********************************/
 #define WBCTRLA_IsOpen                      (WBA_BASE+18)
@@ -343,6 +345,14 @@ struct AppMenuItem;
 #define WBCTRLA_RemoveHiddenDeviceName      (WBA_BASE+45)
 #define WBCTRLA_GetTypeRestartTime          (WBA_BASE+47)
 #define WBCTRLA_SetTypeRestartTime          (WBA_BASE+48)
+#define WBCTRLA_GetCopyHook                 (WBA_BASE+69)
+#define WBCTRLA_SetCopyHook                 (WBA_BASE+70)
+#define WBCTRLA_GetDeleteHook               (WBA_BASE+71)
+#define WBCTRLA_SetDeleteHook               (WBA_BASE+72)
+#define WBCTRLA_GetTextInputHook            (WBA_BASE+73)
+#define WBCTRLA_SetTextInputHook            (WBA_BASE+74)
+#define WBCTRLA_AddSetupCleanupHook         (WBA_BASE+78)
+#define WBCTRLA_RemSetupCleanupHook         (WBA_BASE+79)
 
 /*** Tags for use with AddAppWindowDropZoneA() ******************************/
 #define WBDZA_Left                          (WBA_BASE+26)
