@@ -63,6 +63,7 @@ struct JumpVec
 #define __AROS_ASMJMP			0x4EF9
 #define __AROS_SET_VEC(v,a)             ((v)->vec=(a))
 #define __AROS_GET_VEC(v)               ((v)->vec)
+#define __AROS_USE_FULLJMP
 
 struct FullJumpVec
 {
