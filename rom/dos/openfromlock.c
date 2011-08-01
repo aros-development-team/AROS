@@ -53,17 +53,20 @@
 
     struct FileHandle *fh;
     struct FileLock *fl = BADDR(lock);
-    BPTR bp = BNULL;
+    SIPTR err;
 
     fh = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
     if (fh) {
-        bp = (BPTR)dopacket2(DOSBase, NULL, fl->fl_Task, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
-        if (bp == BNULL)
+        err = dopacket2(DOSBase, NULL, fl->fl_Task, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
+        if (err != DOSTRUE) {
             FreeDosObject(DOS_FILEHANDLE, fh);
+            fh = NULL;
+        }
     } else {
     	SetIoErr(ERROR_NO_FREE_STORE);
     }
-    return bp;
+
+    return fh ? BADDR(fh) : BNULL;
 
     AROS_LIBFUNC_EXIT
 } /* OpenFromLock */
