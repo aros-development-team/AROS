@@ -62,11 +62,19 @@ extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec,106)(void);
     AROS_LIBFUNC_INIT
     void (*func)(void);
 
+    if (SysBase->LibNode.lib_OpenCnt == 0)
+    	/* We were called from PrepareExecBase. AttnFlags isn't set yet.
+    	 * Do nothing or we would always install 68000 routine.
+    	 * No harm done, caches are disabled at this point.
+    	 */
+    	 return;
+
     /* When called the first time, this patches up the
      * Exec syscall table to directly point to the right routine.
      * NOTE: We may have been originally called from SetFunction()
      * We must clear caches before calling SetFunction()
      */
+
     Disable();
     if (SysBase->AttnFlags & AFF_68060) {
         /* 68060 support */
