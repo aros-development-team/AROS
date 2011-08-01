@@ -109,8 +109,6 @@ void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APT
     	scr_Width = 80;
     }
 
-//  con_Clear();
-
     PrintFrame(0xDF, SysBase);
 
     /* Print alert title centered */
@@ -147,6 +145,6 @@ void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APT
     	 * Unfortunately we have no input yet, so just stop.
     	 */
     	PrintString("System halted. Reset the machine.", SysBase);
-    	for(;;) HALT;
+    	for(;;);
     }
 }
