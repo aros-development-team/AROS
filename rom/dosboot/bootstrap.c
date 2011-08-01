@@ -192,39 +192,20 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
 
 /* Attempt to boot via dos.library directly
  */
-static void dosboot_BootDos(struct BootNode *bn)
+static void dosboot_BootDos(void)
 {
-    APTR DOSBase;
     struct Resident *DOSResident;
 
-    /* First, see if previous attempt was able to initialize
-     * dos.library, but dos.library failed to find a
-     * bootable paritition.
-     */
-    DOSBase = OpenLibrary("dos.library", 0);
-    if (DOSBase) {
-        /* Since DOSBase is now (mostly) set up,
-         * just call CliInit(), which will try
-         * to boot off of this node.
-         */
-        if (CliInit(NULL) == RETURN_OK)
-            RemTask(NULL);
-    } else {
-        /*
-         * Initialize dos.library manually.
-         */
-        DOSResident = FindResident( "dos.library" );
+    /* Initialize dos.library manually. This is what Workbench floppy bootblock do. */
+    DOSResident = FindResident( "dos.library" );
 
-        if( DOSResident == NULL )
-        {
-            Alert( AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_DOSLib );
-        }
-
-        /* InitResident() of dos.library will not return 
-         * on success.
-         */
-        InitResident( DOSResident, BNULL );
+    if( DOSResident == NULL )
+    {
+        Alert( AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_DOSLib );
     }
+
+    /* InitResident() of dos.library will not return  on success. */
+    InitResident( DOSResident, BNULL );
 }
 
 
@@ -270,7 +251,7 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
         dosboot_BootBlock(bn, ExpansionBase);
 
         /* And finally with DOS */
-        dosboot_BootDos(bn);
+        dosboot_BootDos();
 
         /* Didn't work. Next! */
         D(bug("%s: DeviceNode %b (%d) was not bootable\n", __func__,
