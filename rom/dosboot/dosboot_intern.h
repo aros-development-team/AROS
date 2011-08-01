@@ -36,6 +36,7 @@ struct DOSBootBase
 
     struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
     struct IntuitionBase *bm_IntuitionBase;
+    struct ExpansionBase *bm_ExpansionBase;
     struct Screen        *bm_Screen;		/* Screen					  */
     struct Window        *bm_Window;		/* Window and gadgets		  */
     struct MainGadgets    bm_MainGadgets;
@@ -48,7 +49,7 @@ struct DOSBootBase
 
 void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase);
 LONG dosboot_BootStrap(struct DOSBootBase *DOSBootBase);
-LONG dosboot_BootScan(struct DOSBootBase *DOSBootBase);
+void dosboot_BootScan(struct DOSBootBase *DOSBootBase);
 
 struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase);
 struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase);
@@ -58,10 +59,8 @@ APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase);
 void anim_Stop(struct DOSBootBase *DOSBootBase);
 void anim_Animate(struct Screen *scr, struct DOSBootBase *DOSBootBase);
 
-#undef GfxBase
-#define GfxBase DOSBootBase->bm_GfxBase
-#undef IntuitionBase
 #define IntuitionBase DOSBootBase->bm_IntuitionBase
+#define GfxBase DOSBootBase->bm_GfxBase
 
 /* Check to see if the bootnode is bootable */
 #include <libraries/expansion.h>

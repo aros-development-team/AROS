@@ -63,6 +63,9 @@ static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootB
     ReturnBool ("init_gfxhidd", success);
 }
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+#ifndef mc68000
+
 static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
 {
     struct BootConfig *bootcfg = &DOSBootBase->bm_BootConfig;
@@ -80,6 +83,9 @@ static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
     D(bug("[BootMenu] initHidds: Hidds initialised\n"));
     return TRUE;
 }
+
+#endif
+#endif
 
 static struct Gadget *createGadgetsBoot(LIBBASETYPEPTR DOSBootBase) 
 {
@@ -243,14 +249,11 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
 static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
 {
     struct Window *win = DOSBootBase->bm_Window;
-    struct ExpansionBase *ExpansionBase;
+    struct ExpansionBase *ExpansionBase = DOSBootBase->bm_ExpansionBase;
     struct ConfigDev *cd;
     WORD y = 50, cnt;
     char text[100];
 
-    ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
-    if (!ExpansionBase)
-	return;
     SetAPen(win->RPort, 1);
     cd = NULL;
     cnt = 0;
@@ -273,7 +276,6 @@ static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
 	Text(win->RPort, text, strlen(text));
 	y += 16;
    }
-    CloseLibrary((struct Library*)ExpansionBase);
 }
 
 static BOOL bstreqcstr(BSTR bstr, CONST_STRPTR cstr)
@@ -289,25 +291,24 @@ static BOOL bstreqcstr(BSTR bstr, CONST_STRPTR cstr)
     return (memcmp(AROS_BSTR_ADDR(bstr),cstr,clen) == 0);
 }
 
-static void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
+void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
 {
-    struct ExpansionBase *ExpansionBase;
     struct BootNode *bn;
 
     if (DOSBootBase->db_BootDevice == NULL &&
         DOSBootBase->db_BootNode != NULL)
         return;
 
-    ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
-    if (!ExpansionBase)
-	return;
-
     Forbid(); /* .. access to ExpansionBase->MountList */
 
-    if (DOSBootBase->db_BootNode == NULL && DOSBootBase->db_BootDevice == NULL) {
-        bn = (APTR)GetHead(&ExpansionBase->MountList);
-    } else {
-        ForeachNode(&ExpansionBase->MountList, bn) {
+    if (DOSBootBase->db_BootNode == NULL && DOSBootBase->db_BootDevice == NULL)
+    {
+        bn = (APTR)GetHead(&DOSBootBase->bm_ExpansionBase->MountList);
+    }
+    else
+    {
+        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
+        {
             struct DeviceNode *dn;
 
             dn = bn->bn_DeviceNode;
@@ -323,8 +324,6 @@ static void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
 
     DOSBootBase->db_BootNode = bn;
     DOSBootBase->db_BootDevice = NULL;
-
-    CloseLibrary((APTR)ExpansionBase);
 }
 
 /* This makes the selected boot device the actual
@@ -332,16 +331,12 @@ static void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
  */
 static void setBootDevice(LIBBASETYPEPTR DOSBootBase)
 {
-    struct ExpansionBase *ExpansionBase;
     struct BootNode *bn;
-
-    ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
-    if (!ExpansionBase)
-	return;
 
     bn = DOSBootBase->db_BootNode;
 
-    if (bn != NULL) {
+    if (bn != NULL)
+    {
         Remove((struct Node *)bn);
         bn->bn_Node.ln_Type = NT_BOOTNODE;
         bn->bn_Node.ln_Pri = 127;
@@ -349,28 +344,23 @@ static void setBootDevice(LIBBASETYPEPTR DOSBootBase)
          * to *insure* that this gets to the front of
          * the boot list.
          */
-        AddHead(&ExpansionBase->MountList, (struct Node *)&bn);
+        AddHead(&DOSBootBase->bm_ExpansionBase->MountList, (struct Node *)&bn);
     }
 
-    ExpansionBase->eb_BootFlags = DOSBootBase->db_BootFlags;
-
-    CloseLibrary((APTR)ExpansionBase);
+    DOSBootBase->bm_ExpansionBase->eb_BootFlags = DOSBootBase->db_BootFlags;
 }
 
 static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 {
     struct Window *win = DOSBootBase->bm_Window;
-    struct ExpansionBase *ExpansionBase;
     struct BootNode *bn;
     WORD y = 50;
     char text[100], *textp;
 
-    ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
-    if (!ExpansionBase)
-	return;
-
     SetAPen(win->RPort, 1);
-    ForeachNode(&ExpansionBase->MountList, bn) {
+
+    ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
+    {
 	struct DeviceNode *dn = bn->bn_DeviceNode;
 	struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
 	struct DosEnvec *de = NULL;
@@ -455,7 +445,6 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 	
 	
     }
-    CloseLibrary((struct Library*)ExpansionBase);
 }
 
 static void centertext(LIBBASETYPEPTR DOSBootBase, BYTE pen, WORD y, const char *text)
@@ -543,9 +532,11 @@ static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
 
     page = -1;
     DOSBootBase->bm_Screen = OpenBootScreen(DOSBootBase);
-    if (DOSBootBase->bm_Screen) {
+    if (DOSBootBase->bm_Screen)
+    {
 	DOSBootBase->bottomY = DOSBootBase->bm_Screen->Height - (DOSBootBase->bm_Screen->Height > 256 ? 32 : 16);
 	D(bug("[BootMenu] initScreen: Screen opened @ %p\n",  DOSBootBase->bm_Screen));
+
 	page = PAGE_MAIN;
 	do {
 	    page = initWindow(DOSBootBase, bcfg, page);
@@ -620,11 +611,9 @@ static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
     return success;
 }
 
-int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
+int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu)
 {
-    struct BootLoaderBase *BootLoaderBase = OpenResource("bootloader.resource");
     BOOL bmi_RetVal = FALSE;
-    BOOL WantBootMenu = FALSE;
 
     D(bug("[BootMenu] bootmenu_Init()\n"));
 
@@ -637,42 +626,10 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
     * will not be needed any more.
     */
     InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
-#endif
-#endif
-
-    LIBBASE->db_BootFlags = 0;
-
-    /* Check for command line argument */
-    if (BootLoaderBase)
-    {
-        struct List *list = NULL;
-        struct Node *node = NULL;
-
-        if ((list = (struct List *)GetBootInfo(BL_Args)) != NULL)
-	{
-            ForeachNode(list,node)
-	    {
-                if (0 == stricmp(node->ln_Name, "bootmenu"))
-                {
-                    D(bug("[BootMenu] bootmenu_Init: Forced with bootloader argument\n"));
-                    WantBootMenu = TRUE;
-                }
-		else if (0 == stricmp(node->ln_Name, "nomonitors"))
-		{
-		    LIBBASE->db_BootFlags |= BF_NO_DISPLAY_DRIVERS;
-		}
-		else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
-		{
-		    LIBBASE->db_BootDevice = &node->ln_Name[11];
-		    selectBootDevice(LIBBASE);
-		}
-            }
-        }
-    }
-
-    /* Initialize default HIDDs */
     if (!initHidds(LIBBASE))
 	return FALSE;
+#endif
+#endif
 
     /* check keyboard if needed */
     if (!WantBootMenu)
@@ -681,8 +638,6 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
     /* Bring up early startup menu if requested */
     if (WantBootMenu)
     {
-        bmi_RetVal = FALSE;
-
         D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
 	bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
     }

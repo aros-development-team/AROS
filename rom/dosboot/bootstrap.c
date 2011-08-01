@@ -215,27 +215,24 @@ static void dosboot_BootDos(void)
 LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
 {
     struct BootNode *bn;
-    struct ExpansionBase *ExpansionBase;
     int i, nodes;
-
-    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
-    if (ExpansionBase == NULL)
-        Alert( AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib );
 
     /*
      * Try to boot from any device in the boot list,
      * highest priority first.
      */
-    ListLength(&ExpansionBase->MountList, nodes);
-    for (i = 0; i < nodes; i++) {
-        bn = (struct BootNode *)GetHead(&ExpansionBase->MountList);
+    ListLength(&LIBBASE->bm_ExpansionBase->MountList, nodes);
+    for (i = 0; i < nodes; i++)
+    {
+        bn = (struct BootNode *)GetHead(&LIBBASE->bm_ExpansionBase->MountList);
 
         if (bn->bn_Node.ln_Type != NT_BOOTNODE ||
             bn->bn_Node.ln_Pri <= -128 ||
-            bn->bn_DeviceNode == NULL) {
+            bn->bn_DeviceNode == NULL)
+        {
             D(bug("%s: Ignoring %p, not a bootable node\n", __func__, bn));
             REMOVE(bn);
-            ADDTAIL(&ExpansionBase->MountList, bn);
+            ADDTAIL(&LIBBASE->bm_ExpansionBase->MountList, bn);
             continue;
         }
 
@@ -248,7 +245,7 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
         dosboot_BootPoint(bn);
 
         /* Then as a BootBlock */
-        dosboot_BootBlock(bn, ExpansionBase);
+        dosboot_BootBlock(bn, LIBBASE->bm_ExpansionBase);
 
         /* And finally with DOS */
         dosboot_BootDos();
@@ -259,10 +256,8 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                     bn->bn_Node.ln_Pri));
 
         REMOVE(bn);
-        ADDTAIL(&ExpansionBase->MountList, bn);
+        ADDTAIL(&LIBBASE->bm_ExpansionBase->MountList, bn);
     }
-
-    CloseLibrary((APTR)ExpansionBase);
 
     D(bug("%s: No BootBlock, BootPoint, or BootDos nodes found\n",__func__));
 
@@ -272,5 +267,3 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
 
     return ERROR_NO_DISK;
 }
-
-
