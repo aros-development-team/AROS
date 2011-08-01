@@ -60,7 +60,8 @@
         return DOSFALSE;
 
     /* we're only interested in real devices */
-    if (dvp->dvp_DevNode->dol_Type != DLT_DEVICE) {
+    if (dvp->dvp_DevNode == NULL ||
+        dvp->dvp_DevNode->dol_Type != DLT_DEVICE) {
         FreeDeviceProc(dvp);
         SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
         return DOSFALSE;
