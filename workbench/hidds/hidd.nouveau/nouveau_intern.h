@@ -30,7 +30,7 @@ struct HIDDNouveauData
 };
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
-#define IID_Hidd_Bitmap_Nouveau         "hidd.bitmap.nouveau"
+#define IID_Hidd_BitMap_Nouveau         "hidd.bitmap.nouveau"
 
 #define HiddBitMapNouveauAttrBase __IHidd_BitMap_Nouveau
 
