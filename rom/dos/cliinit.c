@@ -267,6 +267,12 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
     /* Patch it up, if needed */
     internalPatchBootNode(fsr, dn, DOSBase->dl_Root->rn_FileHandlerSegment);
 
+    if (!dn->dn_Handler && !dn->dn_SegList)
+    {
+    	/* Don't know how to mount? Error... */
+    	return NULL;
+    }
+
     if (AddDosEntry((struct DosList *)dn) != DOSFALSE)
     {
         /*
