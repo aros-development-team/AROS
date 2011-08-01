@@ -70,6 +70,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     	scs->scs_Next = 0;	// from killing us after CLI[1] exits
     	scs->scs_Name = sh->sh_Name;
     	__AROS_SET_FULLJMP(&scs->scs_Code, sh->sh_Command);
+#ifdef __AROS_USE_FULLJMP
+	CacheClearE(&scs->scs_Code, sizeof(struct FullJumpVec), CACRF_ClearI | CACRF_ClearD);
+#endif
     	AddSegment(sh->sh_Name, MKBADDR(&scs->scs_Next), CMD_INTERNAL);
 
     	/* Provide alias for NewShell */
