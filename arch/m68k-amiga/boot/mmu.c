@@ -1,5 +1,5 @@
 
-
+#define DEBUG 1
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -161,11 +161,14 @@ static AROS_UFH3 (APTR, Init,
 	/* Move VBR to Fast RAM */
 	CopyMem(zero, pages, PAGE_SIZE);
 	swapvbr(pages);
-	/* Corrupt original zero page vectors, makes bad programs crash faster if we don't
-	 * want MMU special zero page handling */
-	for (i = 0; i < 64; i++) {
-		if (i != 1)
-			zero[i] = 0xdeadf00d;
+	D(bug("VBR %p\n", pages));
+	if (ZeroPageInvalid || ZeroPageProtect) {
+		/* Corrupt original zero page vectors, makes bad programs crash faster if we don't
+	 	* want MMU special zero page handling */
+		for (i = 0; i < 64; i++) {
+			if (i != 1)
+				zero[i] = 0xdeadf00d;
+		}
 	}
 
 	/* RAM */
@@ -247,11 +250,7 @@ static AROS_UFH3 (APTR, Init,
 
 	CopyMem(pages, pages + PAGE_SIZE, PAGE_SIZE);
 	CopyMem((APTR)((ULONG)_bss & PAGE_MASK), pages + 2 * PAGE_SIZE, PAGE_SIZE);
-
 	enable_mmu(KernelBase);
-	
-	/* We can safely enable all caches now */
-	CacheControl(CACRF_EnableD | CACRF_EnableI, CACRF_EnableD | CACRF_EnableI);
 
 	AROS_USERFUNC_EXIT
 

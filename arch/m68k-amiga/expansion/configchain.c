@@ -31,6 +31,21 @@ static void Enable68060SuperScalar(void)
 	"rte\n"
     );
 }
+static ULONG Check68030MMU(void)
+{
+    register UWORD ret asm("%d0");
+    asm volatile (
+    	".chip 68030\n"
+    	"subq.l	#4,%%sp\n"
+    	"pmove	%%tc,(%%sp)\n"
+    	"move.l	(%%sp),%%d0\n"
+    	"addq.l	#4,%%sp\n"
+    	"rte\n"
+    	: "=r" (ret)
+    );
+    return ret;
+};
+	
 
 // ROMTAG INIT time
 static void romtaginit(struct ExpansionBase *ExpansionBase)
@@ -138,10 +153,16 @@ AROS_LH1(void, ConfigChain,
 		// this is not the right place but we can't enable them
 		// any earlier (memory detection, boot roms that breaks if
 		// full 68060 caching enabled)
-		if (SysBase->AttnFlags & AFF_68060)
+		if (SysBase->AttnFlags & AFF_68060) {
 			Supervisor((ULONG_FUNC)Enable68060SuperScalar);
-		else if (SysBase->AttnFlags & AFF_68040)
+		} else if (SysBase->AttnFlags & AFF_68040) {
 			CacheControl(CACRF_EnableD, CACRF_EnableD);
+		} else if (SysBase->AttnFlags & AFF_68030) {
+			ULONG tc = Supervisor((ULONG_FUNC)Check68030MMU);
+			if (tc & (1 << 31)) { /* Only if MMU enabled */
+				CacheControl(CACRF_EnableD, CACRF_EnableD);
+			}
+		}
 		return;
 	}
 	/* Try to guess if we have Z3 based machine.
