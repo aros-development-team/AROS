@@ -28,12 +28,10 @@ LONG fs_LocateObject(BPTR *ret, struct MsgPort *port, BPTR parent, CONST_STRPTR 
     return error;
 }
 
-LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR lock, LONG mode, CONST_STRPTR name, struct DosLibrary *DOSBase)
+LONG fs_Open(struct FileHandle *handle, struct MsgPort *port, BPTR lock, LONG mode, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
     ULONG action;
     BSTR bstrname;
-    struct MsgPort *port = NULL;
-    struct Process *me;
     SIPTR error = 0;
 
     /* The MODE_* flags exactly match their corresponding ACTION_*
@@ -52,25 +50,6 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR lock, LONG mode, CON
         action = mode;
     else
         return ERROR_NOT_IMPLEMENTED;
-
-    switch (refType)
-    {
-    case REF_LOCK:
-	/* 'lock' parameter is actually a parent's BPTR lock */
-    	port = ((struct FileLock *)BADDR(lock))->fl_Task;
-    	break;
-
-    case REF_DEVICE:
-    	port = ((struct DevProc *)BADDR(lock))->dvp_Port;
-    	lock = ((struct DevProc *)BADDR(lock))->dvp_Lock;
-    	break;
-
-    case REF_CONSOLE:
-    	me = (struct Process *)FindTask(NULL);
-    	port = me->pr_ConsoleTask;
-    	/* console handler ACTION_FIND* ignores lock */
-        break;
-    }
 
     if (!port)
     {

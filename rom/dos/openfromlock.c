@@ -66,7 +66,7 @@
     	SetIoErr(ERROR_NO_FREE_STORE);
     }
 
-    return fh ? BADDR(fh) : BNULL;
+    return fh ? MKBADDR(fh) : BNULL;
 
     AROS_LIBFUNC_EXIT
 } /* OpenFromLock */

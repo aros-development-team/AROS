@@ -195,13 +195,17 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     	     * non-NULL PROGDIR: handle even if pr_HomeDir is cleared */
     	    if (!lock)
     	    	lock = pr->pr_CurrentDir;
-    	    if (!lock)
-    	    	lock = DOSBase->dl_SYSLock;
-    	    fl = BADDR(lock);
-            dp->dvp_Port = fl->fl_Task;
-            dp->dvp_Lock = lock;
+    	    if (lock) {
+                fl = BADDR(lock);
+                dp->dvp_Port = fl->fl_Task;
+                dp->dvp_Lock = lock;
+                dp->dvp_DevNode = BADDR(fl->fl_Volume);
+            } else {
+    	        dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
+    	        dp->dvp_Lock = BNULL;
+                dp->dvp_DevNode = NULL;
+            } 
             dp->dvp_Flags = 0;
-            dp->dvp_DevNode = BADDR(fl->fl_Volume);
             return dp;
     	}
 
@@ -212,13 +216,22 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         if (len <= 1) {
             lock = pr->pr_CurrentDir;
             /* if we got NULL, then it's relative to the system root lock */
-            if (lock == BNULL || name[0] == ':')
-                lock = DOSBase->dl_SYSLock;
-     	    fl = BADDR(lock);
-            dp->dvp_Port = fl->fl_Task;
-            dp->dvp_Lock = lock;
+            if (lock != BNULL) {
+                fl = BADDR(lock);
+                dp->dvp_Port = fl->fl_Task;
+                dp->dvp_Lock = lock;
+                dp->dvp_DevNode = BADDR(fl->fl_Volume);
+            } else {
+    	        dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
+    	        dp->dvp_Lock = BNULL;
+                dp->dvp_DevNode = NULL;
+            }
+
+            /* Jump to the root directory if name[0] == ':' */
+            if (name[0] == ':')
+                dp->dvp_Lock = (dp->dvp_DevNode) ? dp->dvp_DevNode->dol_Lock : BNULL;
+
             dp->dvp_Flags = 0;
-            dp->dvp_DevNode = BADDR(fl->fl_Volume);
             return dp;
         }
  

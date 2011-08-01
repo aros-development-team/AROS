@@ -317,10 +317,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
             /* If we have a lock, check the per-platform
              * conditional boot code.
              */
-            /* Temporarily set dl_SYSLock for the following routine */
-            DOSBase->dl_SYSLock = lock;
             bootable = __dos_IsBootable(DOSBase, lock);
-            DOSBase->dl_SYSLock = BNULL;
 
             if (!bootable) {
                 struct MsgPort *mp;
@@ -424,7 +421,6 @@ static long internalBootCliHandler(void)
     }
 
     /* We're now at the point of no return. */
-    DOSBase->dl_SYSLock = DupLock(lock);
     DOSBase->dl_Root->rn_BootProc = ((struct FileLock*)BADDR(lock))->fl_Task;
     SetFileSysTask(DOSBase->dl_Root->rn_BootProc);
 
@@ -494,9 +490,6 @@ static long internalBootCliHandler(void)
 
     CloseLibrary((APTR)ExpansionBase);
 
-    /* We will now officially set the current directory to SYS: */
-    CurrentDir(DOSBase->dl_SYSLock);
-    
     /* Init all the RTF_AFTERDOS code, since we now have
      * SYS:, the dos devices, and all the other assigns.
      */

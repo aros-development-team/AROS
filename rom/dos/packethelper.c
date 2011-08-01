@@ -24,11 +24,14 @@ BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketH
     	BSTR bstrname = C2BSTR(name);
         struct FileLock *fl;
         cur = me->pr_CurrentDir;
-        if (!cur)
-            cur = DOSBase->dl_SYSLock;
-        fl = BADDR(cur);
-        phs->port = fl ? fl->fl_Task : NULL;
-        phs->lock = cur;
+        if (cur && cur != (BPTR)-1) {
+            fl = BADDR(cur);
+            phs->port = fl->fl_Task;
+            phs->lock = cur;
+        } else {
+            phs->port = DOSBase->dl_Root->rn_BootProc;
+            phs->lock = BNULL;
+        }
         phs->dp = NULL;
         phs->name = bstrname;
         return TRUE;
