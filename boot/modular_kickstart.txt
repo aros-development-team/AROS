@@ -1,0 +1,81 @@
+ Modern AROS bootstraps support modular kickstart. This means that the kickstart doesn't have to be
+a monolythic image and can be built on the fly from separate modules.
+ In order to simplify life for both developers and users the distribution kickstart is broken down
+into several packages. A package is a collection of modules, which can come either in ELF or PKG format.
+PKG format is currently not supported by all bootstraps, however it's preferred way because PKG kickstart
+contains correct module names (for crash backtrace), and also helps to prevent 'multiple definition' problems
+which sometimes appear while linking a ELF kickstart.
+
+ Currently the following standard packages are defined:
+
+ 1. BASE.
+
+ Base package contains machine-independent modules. This package is designed to be fully portable and independent of its
+enviromnemt. The same base package can run on both hosted and native AROS. There's no functional difference between ELF and
+PKG forms.
+ Currently base package includes the following modules:
+
+ console.device
+ input.device
+ gameport.device
+ keyboard.device
+ amberram-handler
+ con-handler
+ hiddclass.hidd
+ graphics.hidd
+ keyboard.hidd
+ mouse.hidd
+ aros.library
+ debug.library
+ dos.library
+ graphics.library
+ intuition.library
+ keymap.library
+ layers.library
+ oop.library
+ utility.library
+ bootloader.resource
+ dosboot.resource
+ FileSystem.resource
+ lddemon.resource
+
+ These modules are not allowed to have machine-specific code because it violates portability convention. As of 01.08.2001,
+i386-pc (bootloader.resource) and m68k-amiga (graphics.library) ports do not conform to this rule.
+ Of course "machine-specific code" does not include "cpu-specific code". It's allowed for any module to have relevant
+portions in arch/<cpu>-all.
+
+ This package is described in rom/mmakefile.src.
+
+ 2. FS
+
+ This package contains resident filesystems and partition.library needed to boot up native AROS. These components are
+left out if base for optimization purposes, because hosted AROS boots up from emul-handler. For hosted flavours disk-based
+version of these components are built by default (arch/all-hosted/mmakefile). However this package also doesn't contain any
+machine specific code and can run on all ports. This package can also be used on hosted, for deeper testing and simulation
+purposes.
+ Described in arch/all-native/mmakefile.src.
+
+ 3. Poseidon.
+
+ Contains resident portion of Poseidon USB stack (poseidon.library, pciusb.device and several classes). Needed to boot up
+from USB devices and use USB keyboard and mice at boot time on native AROS. Does not contain any other hardware-specific
+code than PCI device driver.
+ Decribed in rom/usb/mmakefile.src.
+
+ 4. BSP (Board Support Package)
+ 
+ This term originates from eCos embedded operating systems and covers all lowlevel hardware-specific code which actually
+makes the machine to run. For AROS this means kernel and basic hardware drivers. Contents of this package varies from
+port to port, and this is the only package which is not portable.
+ A minimal BSP contains:
+
+ kernel.resource
+ battclock.resource
+ processor.resource
+ exec.library
+ expansion.library
+ timer.device
+ bootable storage device drivers (ata.device, trackdisk.device)
+ basic input device drivers (keyboard, mouse)
+ at least one basic display driver
+ irq.hidd (oldstyle IRQ handling API for native)
