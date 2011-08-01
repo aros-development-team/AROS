@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -216,15 +216,9 @@ const struct TextFont topaz8_tf =
 		{	/* mn_Node */
 			NULL,
 			NULL,
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 			NT_FONT,
 			0,
 			"topaz.font"
-#else
-			"topaz.font",
-			NT_FONT,
-			0
-#endif /* AROS_FLAVOUR */
 		},
 		NULL,
 		0

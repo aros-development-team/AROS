@@ -50,9 +50,6 @@
         CloseMonitor(), graphics/monitor.h
 
     INTERNALS
-        Currently display_id parameter is ignored because all display modes
-	are served by the same driver (which is the defailt one).
-	In future this will change.
 
     HISTORY
 
@@ -65,33 +62,28 @@
 
     D(bug("[GFX] OpenMonitor(%s)\n", monitor_name));
 
-    if (monitor_name) {
-	if (stricmp(monitor_name, DEFAULT_MONITOR_NAME)) {
+    if (monitor_name)
+    {
+	if (stricmp(monitor_name, DEFAULT_MONITOR_NAME))
+	{
 	    ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
 
-	    /* TODO: use FindName() here, however this is possible only after switch to
-	       ABI v1 (because otherwise struct Node and struct ExtendedNode have different layout */
-	    for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
-	    	if (!strcmp(monitor_name, mspc->ms_Node.xln_Name)) {
-	    	    D(bug("[OpenMonitor] Found spec 0x%p\n", mspc));
-	    	    break;
-	    	}
-	    }
+	    mspc = (struct MonitorSpec *)FindName(&GfxBase->MonitorList, monitor_name);
+	    D(bug("[OpenMonitor] Found spec 0x%p\n", mspc));
 
 	    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
-
-	    if (!mspc->ms_Node.xln_Succ) {
-	    	D(bug("[OpenMonitor] Monitor not found\n"));
-	    	return NULL;
-	    }
-	} else
+	}
+	else
 	    mspc = GfxBase->default_monitor;
-    } else if (display_id != INVALID_ID) {
+    }
+    else if (display_id != INVALID_ID)
+    {
         struct MonitorInfo info;
-	
+
 	if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_MNTR, display_id) >= offsetof(struct MonitorInfo, ViewPosition))
 	    mspc = info.Mspc;
-    } else
+    }
+    else
         mspc = GfxBase->default_monitor;
 
     if (mspc)
