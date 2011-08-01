@@ -225,25 +225,7 @@ struct MUI_RenderInfo
  MUI_EventHandlerNode as used by
  MUIM_Window_AddEventHandler/RemoveEventHandler
 **************************************************************************/
-#ifdef __AROS__
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-/* AROS Nodes are not necessarily binary compatible with AOS ones, so
- * the (MUI_EventHandlerNode *) -> (Node *) cast hack doesnt work.
- */
-struct MUI_EventHandlerNode
-{
-    struct Node    ehn_Node;     /* embedded node structure, private! */
-    UWORD          ehn_Flags;    /* some flags, see below */
-    Object        *ehn_Object;   /* object which should receive MUIM_HandleEvent. */
-    struct IClass *ehn_Class;    /* Class for CoerceMethod(). If NULL DoMethod() is used */
-    ULONG          ehn_Events;   /* the IDCMP flags the handler should be invoked. */
-    BYTE           ehn_Priority; /* sorted by priority. */
-};
-#define MUI_EVENTHANDLERNODE_DEFINED
-#endif
-#endif
 
-#ifndef MUI_EVENTHANDLERNODE_DEFINED
 struct MUI_EventHandlerNode
 {
     struct MinNode ehn_Node;     /* embedded node structure, private! */
@@ -254,9 +236,6 @@ struct MUI_EventHandlerNode
     struct IClass *ehn_Class;    /* Class for CoerceMethod(). If NULL DoMethod() is used */
     ULONG          ehn_Events;   /* the IDCMP flags the handler should be invoked. */
 };
-#endif
-
-#undef MUI_EVENTHANDLERNODE_DEFINED
 
 /* here are the flags for ehn_Flags */
 #define MUI_EHF_ALWAYSKEYS  (1<<0)

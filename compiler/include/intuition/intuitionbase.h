@@ -35,13 +35,8 @@ struct IntuitionBase
 
     ULONG Flags;
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     WORD  MouseY;
     WORD  MouseX;
-#else
-    WORD  MouseX;
-    WORD  MouseY;
-#endif
 
     ULONG Seconds;
     ULONG Micros;
