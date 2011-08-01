@@ -653,6 +653,10 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	trap[8] = Exec_Supervisor_Trap;
 
 	oldmem = AvailMem(MEMF_FAST);
+	
+	/* SysBase is complete, now we can enable instruction caches safely. */
+	CacheControl(CACRF_EnableI, CACRF_EnableI);
+	CacheClearU();
 
 	/* Ok, let's start the system. We have to
 	 * do this in Supervisor context, since some

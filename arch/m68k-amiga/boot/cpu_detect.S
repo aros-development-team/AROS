@@ -2,14 +2,7 @@
 	.chip 68060
 	.align 4 
 
-/* detect CPU and FPU type, enable code cache (if supported)
- * does not enable data caches, it is bad idea on real 68030 hardware
- * without correct MMU tables (for example chip ram must be non-cacheable)
- * 68040/060 data caches will be enabled later (transparent translation
- * registers can be used to disable data caching in low ram, even on EC models)
- * ram testing requires disabled data caches.
- *
- */
+/* Detect CPU and FPU type */
 
 	.globl _cpu_detect
 _cpu_detect:
@@ -73,13 +66,15 @@ cpu_detect_asm:
 	move.w	#0x0003,%d0
 	bra cpu_detect_trap_illg
 	/* 68030 */
-1:	move.w	#0x0001,%d0
-	/* disable data cache, bad idea without correct MMU tables */
+1:	moveq	#0,%d0
+	/* disable caches */
 	movec	%d0,%cacr
 	move.w	#0x0007,%d0
 	bra cpu_detect_trap_illg
 	/* 68040 or 68060 */
 0:	moveq	#0,%d0
+	/* disable caches */
+	movec	%d0,%cacr
 	/* set transparent translation registers,
 	 * allow data caching only in 32-bit fast,
 	 * code caching allowed everywhere */
@@ -101,4 +96,3 @@ cpu_detect_asm:
 cpu_detect_trap_illg:
 	move.l %a1,%sp	/* remove exception stack frame */
 	rts				/* return to cpu_detect() */
-
