@@ -371,6 +371,8 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
     name = AllocVec(name_len + 2, MEMF_ANY);
     if (name != NULL)
     {
+	SIPTR err = 0;
+
         /* Make the volume name a volume: name */
         CopyMem(AROS_BSTR_ADDR(dn->dn_Name), name, name_len);
         name[name_len+0] = ':';
@@ -387,21 +389,24 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
 	    {
                	UnLock(lock);
             	lock = BNULL;
+            	err = ERROR_OBJECT_WRONG_TYPE; /* Something to more or less reflect "This disk is not bootable" */
             }
+        }
+        else
+        {
+            err = IoErr();
         }
 
         if (!lock)
         {
-            /* DoPkt() will clobber IoErr(), save it */
-            SIPTR err = IoErr();
-            SIPTR dead;
+	    SIPTR dead;
 
             /* Darn. Not bootable. Try to unmount it. */
             D(bug("Dos/CliInit:   Does not have a bootable filesystem, unmounting...\n"));
 
             /* It's acceptable if this fails */
             dead = DoPkt(mp, ACTION_DIE, 0, 0, 0, 0, 0);
-            D(bug("Dos/CliInit:  ACTION_DIE returned %d\n", dead));
+            D(bug("Dos/CliInit:  ACTION_DIE returned %ld\n", dead));
 
 	    if (dead)
 	    {
@@ -415,6 +420,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
 	    	RemDosEntry((struct DosList *)dn);
 	    	dn->dn_Task = NULL;
 	    }
+            /* DoPkt() clobbered IoErr() */
             SetIoErr(err);
         }
 
