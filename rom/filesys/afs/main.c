@@ -278,7 +278,7 @@ void __startup AFS_work(void)
     	    switch (dp->dp_Type) {
     	    case ACTION_DIE:
     	    	if (!AFS_close_volume(handler, volume, &res2)) {
-    	    	    ok = DOSFALSE;
+    	    	    ok = FALSE;
     	    	    break;
     	    	}
     	    	dead = DOSTRUE;
