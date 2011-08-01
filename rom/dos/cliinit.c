@@ -161,7 +161,7 @@ static struct FileSysEntry *internalMatchFileSystemResourceHandler(struct FileSy
             }
         }
     }
-    D(bug("[Strap] Best fse for 0x%8x is: %p\n", DosType, best_fse));
+    D(bug("Dos/CliInit: Best fse for 0x%8x is: %p\n", DosType, best_fse));
 
     return best_fse;
 }
@@ -173,16 +173,11 @@ static struct FileSysEntry *internalMatchFileSystemResourceHandler(struct FileSy
  * If de->de_DosType == 0, and no dn_SegList nor dn_Handler,
  * then the node uses the 'defseg' handler.
  */
-static void internalPatchBootNode(struct FileSysResource *fsr, struct BootNode *bn, BPTR defseg)
+static void internalPatchBootNode(struct FileSysResource *fsr, struct DeviceNode *dn, BPTR defseg)
 {
-    struct DeviceNode *dn;
     struct FileSysStartupMsg *fssm;
     struct DosEnvec *de;
     struct FileSysEntry *fse;
-
-    dn = bn->bn_DeviceNode;
-    if (!dn)
-        return;
 
     /* If we already have a task installed,
      * then we're done.
@@ -212,11 +207,11 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct BootNode *
 
     /* If no FileSysResource, nothing to do */
     if (fsr == NULL) {
-        D(bug("[CliInit] No FileSystem.resource, not patching DeviceNode %p\n", dn));
+        D(bug("Dos/CliInit: No FileSystem.resource, not patching DeviceNode %p\n", dn));
         return;
     }
 
-    D(bug("[Boot] Looking for patches for DeviceNode %p\n", dn));
+    D(bug("Dos/CliInit: Looking for patches for DeviceNode %p\n", dn));
 
     /*
      * internalMatchFileSystemResourceHandler looks up the filesystem
@@ -224,7 +219,7 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct BootNode *
     fse = internalMatchFileSystemResourceHandler(fsr, de->de_DosType);
     if (fse != NULL)
     {
-        D(bug("[Boot] found 0x%08x in FileSystem.resource\n", de->de_DosType));
+        D(bug("Dos/CliInit: found 0x%08x in FileSystem.resource\n", de->de_DosType));
         dn->dn_SegList = fse->fse_SegList;
         /* other fse_PatchFlags bits are quite pointless */
         if (fse->fse_PatchFlags & FSEF_TASK)
@@ -241,6 +236,63 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct BootNode *
         if (fse->fse_PatchFlags & FSEF_GLOBALVEC)
             dn->dn_GlobalVec = fse->fse_GlobalVec;
     }
+}
+
+static BOOL mountBootNode(struct DeviceNode *dn, struct FileSysResource *fsr, struct DosLibrary *DOSBase)
+{
+    struct DosList *dl;
+
+    if ((dn == NULL) || (dn->dn_Name == BNULL))
+    	return FALSE;
+
+    D(bug("Dos/CliInit: Mounting 0x%p (%b)...\n", dn, dn->dn_Name));
+
+    /* Check if the device is already in DOS list */
+    dl = LockDosList(LDF_DEVICES | LDF_READ);
+    
+    while ((dl = NextDosEntry(dl, LDF_DEVICES)))
+    {
+    	if (dl == (struct DosList *)dn)
+    	    break;
+    }
+
+    UnLockDosList(LDF_ALL | LDF_READ);
+
+    /* Found in DOS list? Do nothing. */
+    if (dl)
+    {
+    	
+    	return TRUE;
+    }
+
+    /* Patch it up, if needed */
+    internalPatchBootNode(fsr, dn, DOSBase->dl_Root->rn_FileHandlerSegment);
+
+    if (AddDosEntry((struct DosList *)dn) != DOSFALSE)
+    {
+    	struct MsgPort *res;
+
+        /*
+         * Do not check for ANDF_STARTPROC because:
+         * a) On the Amiga ADNF_STARTPROC was not present in KS 1.3 and earlier, there was no deferred mount.
+	 * b) In fact if we have something in ExpansionBase, we for sure want it to be mounted.
+         */
+        D(bug("Dos/CliInit: Added to DOS list, starting up handler... "));
+
+        res = RunHandler(dn, NULL, DOSBase);
+        D(bug("Result 0x%p, dn->dn_Task = 0x%p\n", res, dn->dn_Task));
+
+        return res ? TRUE : FALSE;
+    }
+    
+    /*
+     * TODO: AddDosEntry() can fail in case of duplicate name. In this case it would be useful
+     * to append some suffix. AmigaOS IIRC did the same.
+     * This appears to be needed if you have DH0:. DH1:, etc, on your hard drive, and want to
+     * connect a friend's hard drive which also has partitions with these names.
+     */
+
+    return FALSE;
 }
 
 static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *ExpansionBase, struct FileSysResource *fsr)
@@ -260,101 +312,59 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
      * then dosboot.resource will handle checking the
      * next device in the list.
      */
-
     bn = (struct BootNode *)GetHead(&ExpansionBase->MountList);
 
     if (bn == NULL)
         return BNULL;
 
     dn = bn->bn_DeviceNode;
-    if (dn == NULL || dn->dn_Name == BNULL)
+    
+    if (!mountBootNode(dn, fsr, DOSBase))
         return BNULL;
 
-    /* Patch it up, if needed */
-    internalPatchBootNode(fsr, bn, DOSBase->dl_Root->rn_FileHandlerSegment);
-
-     D(bug("Dos/CliInit: %b (%d) appears usable\n", dn->dn_Name, bn->bn_Node.ln_Pri));
+    D(bug("Dos/CliInit: %b (%d) appears usable\n", dn->dn_Name, bn->bn_Node.ln_Pri));
 
     /* Try to find a Lock for 'name:' */
     name_len = AROS_BSTR_strlen(dn->dn_Name);
     name = AllocVec(name_len + 2, MEMF_ANY);
-    if (name != NULL) {
-        struct DosList *dl;
-        LONG ret;
-
-        CopyMem(AROS_BSTR_ADDR(dn->dn_Name),name,name_len);
-        name[name_len+0] = 0;
-
-        /* Check the DOS list for a volume of the same name */
-        dl = LockDosList(LDF_ALL | LDF_READ);
-        dl = FindDosEntry(dl, name, LDF_ALL);
-        UnLockDosList(LDF_ALL | LDF_READ);
-
-        /* Not in the DOS mount list? Add it. */
-        if (dl == NULL) {
-            ret = AddDosEntry((struct DosList *)dn);
-            if (ret == DOSFALSE) {
-                /* Duplicate name? Something's wrong. 
-                 */
-                D(bug("Dos/CliInit: Can't add %s to the DOS device list\n", name));
-                FreeVec(name);
-                return BNULL;
-            }
-        }
+    if (name != NULL)
+    {
+        BOOL bootable = FALSE;
 
         /* Make the volume name a volume: name */
+        CopyMem(AROS_BSTR_ADDR(dn->dn_Name), name, name_len);
         name[name_len+0] = ':';
         name[name_len+1] = 0;
+
         D(bug("Dos/CliInit:   Attempt to Lock(\"%s\")...\n", name, BADDR(lock)));
         lock = Lock(name, SHARED_LOCK);
         D(bug("Dos/CliInit:   Lock(\"%s\") => %p\n", name, BADDR(lock)));
 
-        if (lock == BNULL) {
-            RemDosEntry((struct DosList *)dn);
-        } else {
-            BOOL bootable;
-
-            /* If we have a lock, check the per-platform
-             * conditional boot code.
-             */
+        if (lock != BNULL)
+        {
+            /* If we have a lock, check the per-platform conditional boot code. */
             bootable = __dos_IsBootable(DOSBase, lock);
+        }
 
-            if (!bootable) {
-                struct MsgPort *mp;
-                SIPTR err;
+        if (!bootable)
+        {
+            struct MsgPort *mp;
 
-                /* Darn. Not bootable. Try to unmount it. */
-                D(bug("Dos/CliInit:   Does not have a bootable filesystem\n"));
+            /* Darn. Not bootable. Try to unmount it. */
+            D(bug("Dos/CliInit:   Does not have a bootable filesystem, unmounting...\n"));
 
-                /* First, get the lock's handler */
-                mp = ((struct FileLock *)BADDR(lock))->fl_Task;
-                /* Unlock the lock. */
-                UnLock(lock);
-                lock = BNULL;
+            /* First, get the lock's handler */
+            mp = ((struct FileLock *)BADDR(lock))->fl_Task;
+            /* Unlock the lock. */
+            UnLock(lock);
+            lock = BNULL;
 
-                /* Then try to ACTION_DIE the handler. */
-                err = DoPkt(mp, ACTION_DIE, 0, 0, 0, 0, 0);
-                if (err != DOSTRUE) {
-                    /* Well, we can't unmount it, so let's
-                     * just continue on.
-                     */
-                    D(bug("Dos/CliInit:   Cannot be unmounted!\n"));
-                }
-
-                /* Excellent, it unmounted, we'll try again later.
-                 */
-            }
+            /* Then try to ACTION_DIE the handler. It's okay if it didn't quit. */
+            DoPkt(mp, ACTION_DIE, 0, 0, 0, 0, 0);
         }
 
         FreeVec(name);
     }
-
-    /* If we have a valid lock, the node was usable,
-     * so remove it from the MountList, since it has
-     * already been mounted.
-     */
-    if (lock != BNULL)
-        Remove(&bn->bn_Node);
 
     return lock;
 }
@@ -455,10 +465,13 @@ static long internalBootCliHandler(void)
     AssignLate("ENVARC", "SYS:Prefs/Env-Archive");
 
     /*
-     * Retry to run handlers which were not started yet.
-     * Here we already can load disk-based handlers.
+     * At this point we have only SYS:, nothing more. Mount the rest.
+     * We do it after assigning SYS: because in some cases we can have
+     * BootNodes with handler name but no seglist (Poseidon could add them for example).
+     * This means the handler needs to be loaded from disk (fat-handler for example).
+     * Here we can already do it.
      */
-    D(bug("Dos/CliInit: Assigns done, retrying mount handlers\n"));
+    D(bug("Dos/CliInit: Assigns done, mount remaining handlers...\n"));
 
     BootFlags = ExpansionBase->eb_BootFlags;
     D(bug("Dos/CliInit: Using Boot Flags of 0x%x\n", BootFlags));
@@ -467,25 +480,18 @@ static long internalBootCliHandler(void)
     {
         struct DeviceNode *dn = bn->bn_DeviceNode;
 
-        if (dn == NULL || dn->dn_Name == BNULL)
-            continue;
+        D(bug("Dos/CliInit: Mounting %b: ", dn->dn_Name));
+        /*
+         * Don't check for return code. Failed is failed.
+         * One of failure reasons can be missing handler specification for some DOSType.
+         * In this case the DeviceNode will not be mounted, but it will stay in
+         * ExpansionBase->MountList. It can be picked up by disk-based program which would
+         * read mappings for disk-based handlers from file.
+         * This way we could automount e. g. FAT, NTFS, EXT3/2, whatever else, partitions.
+         */
+	mountBootNode(dn, fsr, DOSBase);
 
-        /* Patch it up, if needed */
-        internalPatchBootNode(fsr, bn, DOSBase->dl_Root->rn_FileHandlerSegment);
-
-        if (AddDosEntry((struct DosList *)dn) != DOSFALSE)
-	{
-            /*
-	     * On the Amiga, since ADNF_STARTPROC was not present in KS 1.3 and earlier,
-	     * we need to always mount the bootable nodes.
-	     * In fact if we have something in ExpansionBase, we for sure want it to
-	     * be mounted. So there's no sense to check for it.
-             */
-            D(bug("Dos/CliInit: Mounting %b: ", dn->dn_Name));
-
-            RunHandler(dn, NULL, DOSBase);
-            D(bug("dn->dn_Task = %p\n", dn->dn_Task));
-        }
+        D(bug("dn->dn_Task = %p\n", dn->dn_Task));
     }
 
     CloseLibrary((APTR)ExpansionBase);
