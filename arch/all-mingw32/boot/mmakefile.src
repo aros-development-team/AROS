@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 EXEDIR := $(BINDIR)/boot
 
 # Board support package (basic drivers set)
+MINGW32_DEVS	 := timer
 MINGW32_HANDLERS := emul
 MINGW32_HIDD	 := wingdi
 MINGW32_LIBS	 := expansion exec
@@ -11,12 +12,13 @@ MINGW32_RES	 := hostlib battclock processor
 
 #MM- AROS-mingw32-$(CPU): kernel-bootstrap-hosted kernel-boot-mingw32 \
 #MM			  kernel-link-mingw32 kernel-link-base kernel-link-hosted \
-#MM			  kernel-timer workbench-hosted
+#MM			  workbench-hosted
 
 #MM- kernel-link-mingw32: kernel-kernel-kobj		\
 #MM			  kernel-hostlib-kobj		\
 #MM			  kernel-battclock-kobj		\
 #MM			  kernel-processor-kobj		\
+#MM			  kernel-timer-kobj		\
 #MM			  kernel-expansion-kobj		\
 #MM			  kernel-exec-kobj		\
 #MM			  kernel-emul-kobj		\
@@ -26,7 +28,7 @@ MINGW32_RES	 := hostlib battclock processor
 #MM			  kernel-link-mingw32-quick
 
 %link_kickstart mmake=kernel-link-mingw32 file=$(EXEDIR)/aros-bsp-mingw32 \
-	handlers=$(MINGW32_HANDLERS) hidds=$(MINGW32_HIDD) libs=$(MINGW32_LIBS) res=$(MINGW32_RES) \
+	devs=$(MINGW32_DEVS) handlers=$(MINGW32_HANDLERS) hidds=$(MINGW32_HIDD) libs=$(MINGW32_LIBS) res=$(MINGW32_RES) \
 	startup=$(KOBJSDIR)/kernel_resource.o \
 	uselibs="arossupport hiddstubs amiga autoinit libinit rom m" \
 	map=$(GENDIR)/boot/kernel-mingw32.map

@@ -1,11 +1,10 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     GetBootInfo() function.
 */
 
-#include <aros/config.h>
 #include <aros/debug.h>
 #include <aros/bootloader.h>
 
@@ -58,18 +57,19 @@
     {
         case BL_LoaderName:
             return BootLoaderBase->LdrName;
+
 	case BL_Args:
 	    if (BootLoaderBase->Flags & BL_FLAGS_CMDLINE)
 	        return &(BootLoaderBase->Args);
 	    break;
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+
 	case BL_Video:
 	    return BootLoaderBase->Vesa;
+
 	case BL_Drives:
 	    if (BootLoaderBase->Flags & BL_FLAGS_DRIVES)
 		return (APTR)&(BootLoaderBase->DriveInfo);
 	    break;
-#endif
     }
 
     D(bug("[BootLdr] GetBootInfo: Unknown info requested\n"));
