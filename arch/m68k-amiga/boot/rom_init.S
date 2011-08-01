@@ -333,7 +333,8 @@ Early_Exception:
 	movem.l	(%sp)+,%d0-%d2/%a0-%a2
 #endif
 	jmp		Early_TrapHandler
-	
+
+        .section .rodata
 .earlystr1:
 	.string "Early Exception!\nPC"
 .earlystr2:
