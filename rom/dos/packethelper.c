@@ -51,7 +51,8 @@ BOOL getdevpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR devname, CONST_ST
     if ((phs->dp = GetDeviceProc(devname, NULL)) == NULL)
         return DOSFALSE;
     /* we're only interested in real devices */
-    if (phs->dp->dvp_DevNode->dol_Type != DLT_DEVICE) {
+    if (phs->dp->dvp_DevNode == NULL ||
+        phs->dp->dvp_DevNode->dol_Type != DLT_DEVICE) {
         FreeDeviceProc(phs->dp);
         SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
         return DOSFALSE;
