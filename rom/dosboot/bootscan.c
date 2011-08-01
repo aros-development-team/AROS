@@ -217,6 +217,19 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
         }
     }
 
+    if ((pp[4 + DE_TABLESIZE] < DE_DOSTYPE) || (pp[4 + DE_DOSTYPE] == 0))
+    {
+    	/*
+    	 * partition.library reports DosType == 0 for unknown filesystems.
+    	 * However dos.library will mount such DeviceNodes using rn_DefaultHandler
+    	 * (FFS). This is done for compatibility with 3rd party expansion ROMs.
+    	 * Here we ignore partitions with DosType == 0 and won't enter them into
+    	 * mountlist.
+    	 */
+    	D(bug("[Boot] Unknown DosType for %s, skipping partition\n"));
+    	return;
+    }
+
     if (pttype != PHPTT_RDB)
     {
         /*
@@ -362,17 +375,10 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
         Enqueue(&ExpansionBase->MountList, &bn->bn_Node);
 }
 
-/* Scan all partitions manually for additional
- * volumes that can be mounted.
- */
-LONG dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
+/* Scan all partitions manually for additional volumes that can be mounted. */
+void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
 {
-    struct ExpansionBase *ExpansionBase;
     APTR PartitionBase;
-
-    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
-    if (ExpansionBase == NULL)
-        Alert( AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib );
 
     /* If we have partition.library, we can look for partitions */
     PartitionBase = OpenLibrary("partition.library", 2);
@@ -385,25 +391,19 @@ LONG dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
     	 * ln_Succ of the last node in chain points to the lh_Tail of our list
     	 * which always contains NULL.
     	 */
-	struct BootNode *bootNode = (struct BootNode *)ExpansionBase->MountList.lh_Head;
+	struct BootNode *bootNode = (struct BootNode *)LIBBASE->bm_ExpansionBase->MountList.lh_Head;
 
-	NEWLIST(&ExpansionBase->MountList);
+	NEWLIST(&LIBBASE->bm_ExpansionBase->MountList);
 
 	while (bootNode->bn_Node.ln_Succ)
 	{
 	    /* Keep ln_Succ because it can be clobbered by reinsertion */
 	    struct BootNode *nextNode = (struct BootNode *)bootNode->bn_Node.ln_Succ;
 
-	    CheckPartitions(ExpansionBase, PartitionBase, SysBase, bootNode);
+	    CheckPartitions(LIBBASE->bm_ExpansionBase, PartitionBase, SysBase, bootNode);
 	    bootNode = nextNode;
 	}
 
 	CloseLibrary(PartitionBase);
     }
-
-    CloseLibrary((APTR)ExpansionBase);
-
-    return RETURN_OK;
 }
-
-
