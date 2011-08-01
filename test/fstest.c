@@ -398,7 +398,7 @@ char path[512];
 			PrintFault(IoErr(), NULL);
 			return 1;
 		}
-		Close(dir);
+		UnLock(dir);
 		if (depth>0)
 			if (checkDirs(path, depth-1, num-1) != 0)
 				return 1;
@@ -427,7 +427,7 @@ char path[512];
 			PrintFault(IoErr(), NULL);
 			return 1;
 		}
-		Close(dir);
+		UnLock(dir);
 		if (depth>0)
 			if (createDirs(path, depth-1, num-1) != 0)
 				return 1;
