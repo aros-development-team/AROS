@@ -39,6 +39,9 @@
 #define EXIT_BOOT 5
 #define EXIT_BOOT_WNSS 6
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+#ifndef mc68000
+
 static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootBase)
 {
     OOP_Object *gfxhidd;
@@ -62,9 +65,6 @@ static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootB
 
     ReturnBool ("init_gfxhidd", success);
 }
-
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
-#ifndef mc68000
 
 static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
 {
