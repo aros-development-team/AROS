@@ -165,9 +165,11 @@ static void setfmode(struct amigavideo_staticdata *data)
     UWORD fmode;
     fmode  =  data->fmode_bpl == 2 ? 3 : data->fmode_bpl;
     fmode |= (data->fmode_spr == 2 ? 3 : data->fmode_spr) << 2;
-    *data->copper2.copper2_fmode = fmode;
-    if (data->interlace)
-    	*data->copper2i.copper2_fmode = fmode;
+    if (data->copper2.copper2_fmode) {
+	*data->copper2.copper2_fmode = fmode;
+	if (data->interlace)
+	    *data->copper2i.copper2_fmode = fmode;
+    }
 }
 
 static void setcoppercolors(struct amigavideo_staticdata *data)
