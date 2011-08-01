@@ -266,7 +266,7 @@ static void DosExpunge(struct DosLibrary *DOSBase)
      */
     if (dinfo->di_DevInfo != BNULL)
     {
-#ifdef DEBUG
+#if DEBUG
         struct DosList *dol;
 
         bug("[DosInit] Entries still in the Dos List, can't expunge.\n");
