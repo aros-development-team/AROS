@@ -30,7 +30,8 @@ FUNCS := \
 	findfilesystema		 \
 	loadfilesystem		 \
 	getfilesystemattrsa	 \
-	addbootfilesystem
+	addbootfilesystem	 \
+	loadbootfilesystems
 
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \

@@ -1,6 +1,6 @@
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id: querypartitionattrs.c 38180 2011-04-12 12:32:14Z sonic $
+    $Id: $
 
 */
 
@@ -54,9 +54,17 @@
 {
     AROS_LIBFUNC_INIT
 
+    ObtainSemaphore(&PBASE(PartitionBase)->bootSem);
+
+    if (!PBASE(PartitionBase)->pb_DOSBase)
+	PBASE(PartitionBase)->pb_DOSBase = OpenLibrary("dos.library", 36);
+
     /* If dos.library is available, load the filesystem immediately */
-    if (((struct PartitionBase_intern *)PartitionBase)->pb_DOSBase)
+    if (PBASE(PartitionBase)->pb_DOSBase)
+    {
+    	ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);
     	return AddFS(PartitionBase, (struct FileSysHandle *)handle);    
+    }
 
     /* Otherwise we need to queue it to the FSLoader hook (if not already done) */
     if (!((struct FileSysHandle *)handle)->boot)
@@ -64,7 +72,10 @@
     	struct BootFileSystem *bfs = AllocMem(sizeof(struct BootFileSystem), MEMF_ANY);
 
     	if (!bfs)
+    	{
+	    ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);
     	    return ERROR_NO_FREE_STORE;
+    	}
 
 	bfs->ln.ln_Name = handle->ln_Name;
 	bfs->ln.ln_Pri  = handle->ln_Pri;
@@ -75,6 +86,8 @@
 
 	Enqueue(&((struct PartitionBase_intern *)PartitionBase)->bootList, &bfs->ln);
     }
+
+    ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);
 
     return 0;
 

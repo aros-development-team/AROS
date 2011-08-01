@@ -22,6 +22,7 @@ static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->partbase.tables =  (struct PartitionTableInfo **)PartitionSupport;
     NewList(&LIBBASE->bootList);
+    InitSemaphore(&LIBBASE->bootSem);
 
     /*
      * This is intentionally allowed to fail.

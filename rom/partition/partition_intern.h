@@ -10,6 +10,7 @@
 */
 
 #include <exec/libraries.h>
+#include <exec/semaphores.h>
 #include <libraries/partition.h>
 
 #include <aros/libcall.h>
@@ -20,11 +21,14 @@ struct PartitionBase_intern
     struct PartitionBase partbase;
     BPTR segList;
     struct List bootList;
+    struct SignalSemaphore bootSem;
     struct Library *pb_DOSBase;
 
     /* REMOVE ONCE ABIv1 HAS STABALIZED */
     struct Library *pb_UtilityBase;
 };
+
+#define PBASE(x) ((struct PartitionBase_intern *)x)
 
 #define PTYPE(x) ((struct PartitionType *)x)
 
