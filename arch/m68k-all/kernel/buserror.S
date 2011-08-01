@@ -2,6 +2,8 @@
 	#include <aros/config.h>
 	#include "aros/m68k/asm.h"
 
+#define STACKOFFSET (4 + 4*4)
+
 	.text
 	.balign 4
 	.globl	buserror030
@@ -9,24 +11,26 @@ buserror030:
 	/* 68030 bus error handling is so simple.. */
 	or.w	#0x0700,%sr
 	subq.l	#4,%sp
-	movem.l	%d0/%a0,-(%sp)
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+	moveq	#0,%d0
+	/* SSW */
+	move.w	STACKOFFSET+0x0a(%sp),%d0
 	/* fault address */
-	move.l	12+0x10(%sp),%a0
+	move.l	STACKOFFSET+0x10(%sp),%a0
 	cmp.w	#4,%a0
 	bne		.doexit
-	/* SSW */
-	move.w	12+0x0a(%sp),%d0
-	and.w	#0x01f0,%d0
+	move.w	%d0,%d1
+	and.w	#0x01f0,%d1
 	/* DATA (DF) + READ + LONG? */
-	cmp.w	#0x0140,%d0
+	cmp.w	#0x0140,%d1
 	bne		.doexit
 	/* clear DF */
-	and.w	#~0x0100,12+0x0a(%sp)
+	and.w	#~0x0100,STACKOFFSET+0x0a(%sp)
 	movec	%vbr,%a0
 	/* Fetch execbase from VBR */
-	move.l	4(%a0),12+0x2c(%sp)
+	move.l	4(%a0),STACKOFFSET+0x2c(%sp)
 	/* 68030 continues the execution using above fetched value */
-	movem.l	(%sp)+,%d0/%a0
+	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	addq.l	#4,%sp
 	rte
 
@@ -35,16 +39,18 @@ buserror030:
 buserror040:
 	or.w	#0x0700,%sr
 	subq.l	#4,%sp
-	movem.l	%d0/%a0,-(%sp)
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+	/* SSW */
+	moveq	#0,%d0
+	move.w	STACKOFFSET+0x0c(%sp),%d0
 	/* fault address */
-	move.l	12+0x14(%sp),%a0
+	move.l	STACKOFFSET+0x14(%sp),%a0
 	cmp.w	#4,%a0
 	bne		.doexit
-	/* SSW */
-	move.w	12+0x0c(%sp),%d0
-	and.w	#0xffc0,%d0
+	move.w	%d0,%d1
+	and.w	#0xffc0,%d1
 	/* LONG DATA READ + ATC fault? */
-	cmp.w	#0x0500,%d0
+	cmp.w	#0x0500,%d1
 	bne		.doexit
 .dotrace:
 	/* It was long read from address 4. Special handling required.
@@ -63,10 +69,10 @@ buserror040:
 	/* Store old trace vector in "safe" place */
 	move.l	9*4(%a0),254*4(%a0)
 	/* Store old SR */
-	move.w	12(%sp),255*4(%a0)
+	move.w	STACKOFFSET(%sp),255*4(%a0)
 	/* Set temporary trace */
 	move.l	#trace040,9*4(%a0)
-	movem.l	(%sp)+,%d0/%a0
+	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	addq.l	#4,%sp
 	/* Modify SR in stack, trace on, interrupts disabled! */
 	and.w	#0x3fff,(%sp)
@@ -95,16 +101,17 @@ trace040:
 buserror060:
 	or.w	#0x0700,%sr
 	subq.l	#4,%sp
-	movem.l	%d0/%a0,-(%sp)
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+	/* FSLW */
+	move.l	STACKOFFSET+0x0c(%sp),%d0
 	/* fault address */
-	move.l	12+0x08(%sp),%a0
+	move.l	STACKOFFSET+0x08(%sp),%a0
 	cmp.w	#4,%a0
 	bne		.doexit
-	/* FSLW */
-	move.l	12+0x0c(%sp),%d0
-	and.l	#0x03e00200,%d0
-	/* LONG DATA READ PAGE FAULT? */
-	cmp.l	#0x01400200,%d0
+	move.l	%d0,%d1
+	and.l	#0x07000200,%d1
+	/* DATA READ PAGE FAULT? */
+	cmp.l	#0x01000200,%d1
 	beq		.dotrace
 	
 .doexit:
@@ -115,38 +122,44 @@ buserror060:
 	 * point because this is meant to be kernel debugger that simply
 	 * crashes the system if access fault happens.
 	 *
-	 * A0 = fault address
+	 * A0 = fault address, D0 = MMU status flags
 	 * Following code MUST NOT access SysBase! */
 	 */
 #ifdef AROS_SERIAL_DEBUG
-
+	
 	move.l	%a0,-(%sp)
+	
+	move.l	%d0,-(%sp)
 	pea		.berrstr1(%pc)
 	jsr		DebugPutHex
 	addq.l	#8,%sp
-	
-	move.l	12+2(%sp),-(%sp)
+
 	pea		.berrstr2(%pc)
+	jsr		DebugPutHex
+	addq.l	#8,%sp
+	
+	move.l	STACKOFFSET+2(%sp),-(%sp)
+	pea		.berrstr3(%pc)
 	jsr		DebugPutHex
 	addq.l	#8,%sp
 
 	moveq	#0,%d0
-	move.w	12+0(%sp),%d0
+	move.w	STACKOFFSET+0(%sp),%d0
 	move.l	%d0,-(%sp)
-	pea		.berrstr3(%pc)
+	pea		.berrstr4(%pc)
 	jsr		DebugPutHex
 	addq.l	#8,%sp
 	
 	movec	%usp,%d0
 	move.l	%d0,-(%sp)
-	pea		.berrstr4(%pc)
+	pea		.berrstr5(%pc)
 	jsr		DebugPutHex
 	addq.l	#8,%sp
 
 	move.l	%a7,%d0
-	add.l	#12,%d0
+	add.l	#STACKOFFSET,%d0
 	move.l	%d0,-(%sp)
-	pea		.berrstr5(%pc)
+	pea		.berrstr6(%pc)
 	jsr		DebugPutHex
 	addq.l	#8,%sp
 
@@ -184,20 +197,22 @@ buserror060:
 #endif
 
 	movec	%vbr,%a0
-	move.l	3*4(%a0),8(%sp)
-	movem.l	(%sp)+,%d0/%a0
+	move.l	3*4(%a0),STACKOFFSET-4(%sp)
+	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
 #ifdef AROS_SERIAL_DEBUG
 .berrstr1:
-	.string	"Bus error!\nFault address"
+	.string	"Bus error!\nStatus"
 .berrstr2:
-	.string "PC"
+	.string "Fault address"
 .berrstr3:
-	.string "SR"
+	.string "PC"
 .berrstr4:
-	.string "USP"
+	.string "SR"
 .berrstr5:
+	.string "USP"
+.berrstr6:
 	.string "SSP"
 .berrlf:
 	.string "\n"
