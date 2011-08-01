@@ -33,7 +33,7 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_Gallium,         &LIBBASE->sd.galliumAttrBase },
     { IID_Hidd_GC,              &LIBBASE->sd.gcAttrBase },
     { IID_Hidd_Compositing,     &LIBBASE->sd.compositingAttrBase },
-    { IID_Hidd_Bitmap_Nouveau,  &LIBBASE->sd.bitMapNouveauAttrBase },
+    { IID_Hidd_BitMap_Nouveau,  &LIBBASE->sd.bitMapNouveauAttrBase },
     { NULL, NULL }
     };
 
