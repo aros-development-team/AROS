@@ -160,11 +160,17 @@ extern BYTE _ss_end;
 
 /* Protect the 'ROM' if it is actually in RAM.
  */
-static APTR protectAlloc(struct MemHeader *mh, APTR start, ULONG length, const UBYTE *name)
+static APTR protectAlloc(struct MemHeader *mh, APTR start, ULONG length, const UBYTE *name, BOOL pagealign)
 {
-    APTR tmp = Early_AllocAbs(mh, start, length);
+    APTR tmp;
+    
+    if (pagealign)
+    	length = (length + PAGE_SIZE - 1) & PAGE_MASK;
+    tmp = Early_AllocAbs(mh, start, length);
     DEBUGPUTS(("* "));
     DEBUGPUTS((name));
+    if (!tmp)
+    	DEBUGPUTS((" !"));
     DEBUGPUTHEX(("\nStart  ", (ULONG)start));
     DEBUGPUTHEX(("End    ", (ULONG)start + length - 1));
     DEBUGPUTHEX(("Size   ", length));
@@ -187,10 +193,10 @@ static void protectROM(struct MemHeader *mh)
     ULONG ext_len = &_ext_end - &_ext_start;
 
     DEBUGPUTHEX(("Protect", (IPTR)mh));
-    tmp = protectAlloc(mh, ss_start, ss_len, "SS");
-    tmp = protectAlloc(mh, bss_start, bss_len, "BSS");
-    tmp = protectAlloc(mh, rom_start, rom_len, "ROM");
-    tmp = protectAlloc(mh, ext_start, ext_len, "EXT");
+    tmp = protectAlloc(mh, ss_start, ss_len, "SS", FALSE);
+    tmp = protectAlloc(mh, bss_start, bss_len, "BSS", FALSE);
+    tmp = protectAlloc(mh, rom_start, rom_len, "ROM", TRUE);
+    tmp = protectAlloc(mh, ext_start, ext_len, "EXT", TRUE);
     DEBUGPUTHEX(("First  ", (IPTR)mh->mh_First));
     DEBUGPUTHEX(("Bytes  ", (IPTR)mh->mh_First->mc_Bytes));
 }
@@ -744,8 +750,9 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	    SysBase->ThisTask->tc_SPUpper = &usp[size];
 	    SysBase->ThisTask->tc_SPLower = usp;
 
-	    /* Leave supervisor mode */
+	    /* Leave supervisor mode, switch power led on */
 	    asm volatile (
+	    	"or.b	#2,0xbfe001\n"
 	    	"move.l %0,%%usp\n"
 	    	"move.w #0,%%sr\n"
 	    	"jmp %1@\n"
