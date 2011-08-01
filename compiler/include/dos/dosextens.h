@@ -60,9 +60,6 @@ struct DosLibrary
     struct timerequest   * dl_TimeReq;
     struct Library	 * dl_UtilityBase;
     struct Library	 * dl_IntuitionBase;
-
-    /* AROS-specific and private. Can go away in future. */
-    BPTR    	    	   dl_SYSLock;
 };
 
 /* dl_Flags/rn_Flags */

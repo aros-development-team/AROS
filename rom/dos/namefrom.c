@@ -18,6 +18,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     D(STRPTR origbuffer;)
     BPTR parentlock, origlock;
     struct FileInfoBlock *fib;
+    struct MsgPort *port;
     LONG  error;
     SIPTR code = DOSFALSE;
     BOOL  first = TRUE;
@@ -38,8 +39,11 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
         return DOSFALSE;
     }
     
-    if (!lock)
-    	lock = DOSBase->dl_SYSLock;
+    if (lock != BNULL) {
+        port = ((struct FileLock*)BADDR(lock))->fl_Task;
+    } else {
+        port = DOSBase->dl_Root->rn_BootProc;
+    }
 
     /* Construct the name from top to bottom */
     name = buffer + length;
@@ -51,10 +55,10 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     /* Loop over path */
     do
     {
-	error = dopacket2(DOSBase, NULL, ((struct FileLock*)BADDR(lock))->fl_Task, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib)) == 0;
+	error = dopacket2(DOSBase, NULL, port, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib)) == 0;
 	//bug("name='%s'\n", fib->fib_FileName);
 	if (!error) {
-	    parentlock = (BPTR)dopacket1(DOSBase, &code, ((struct FileLock*)BADDR(lock))->fl_Task, ACTION_PARENT, lock);
+	    parentlock = (BPTR)dopacket1(DOSBase, &code, port, ACTION_PARENT, lock);
 	    if (!parentlock && !first)
 	    	error = code;
 	    //bug("parentlock=%x\n", parentlock);

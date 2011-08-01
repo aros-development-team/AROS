@@ -133,9 +133,9 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     }
 
     if (!Stricmp(name, "CONSOLE:"))
-    	error = fs_Open(handle, REF_CONSOLE, con, accessMode, name, DOSBase);
+    	error = fs_Open(handle, me->pr_ConsoleTask, con, accessMode, name, DOSBase);
     else if (!Stricmp(name, "*"))
-    	error = fs_Open(handle, REF_CONSOLE, ast, accessMode, name, DOSBase);
+    	error = fs_Open(handle, me->pr_ConsoleTask, ast, accessMode, name, DOSBase);
 
     /* Special case for NIL: */
     else if (!Stricmp(name, "NIL:"))
@@ -155,22 +155,19 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 
 	if (!filename)
 	{
+	    struct MsgPort *port;
+
 	    /* No ':', pathname relative to current dir */
             cur = me->pr_CurrentDir;
 
-            if (!cur)
-            	cur = DOSBase->dl_SYSLock;
+            if (cur && cur != (BPTR)-1) {
+                port = ((struct FileLock *)BADDR(cur))->fl_Task;
+            } else {
+                port = DOSBase->dl_Root->rn_BootProc;
+                cur = BNULL;
+            }
 
-	    if (cur)
-	    	error = fs_Open(handle, REF_LOCK, cur, accessMode, name, DOSBase);
-	    else
-	    	/*
-	    	 * This can be reached if we attempt to load disk-based library or
-	    	 * device before dl_SYSLock is assigned. This can happen, for example,
-	    	 * when attempting to mount a handler at boottime which is missing
-	    	 * from the kickstart.
-	    	 */
-	    	error = ERROR_OBJECT_NOT_FOUND;
+	    error = fs_Open(handle, port, cur, accessMode, name, DOSBase);
 	}
     	else 
     	{
@@ -183,7 +180,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
                     break;
 		}
 
-	    	error = fs_Open(handle, REF_DEVICE, MKBADDR(dvp), accessMode, filename, DOSBase);
+	    	error = fs_Open(handle, dvp->dvp_Port, dvp->dvp_Lock, accessMode, filename, DOSBase);
             } while(error == ERROR_OBJECT_NOT_FOUND && accessMode != MODE_NEWFILE);
 
 	    if (error == ERROR_NO_MORE_ENTRIES)

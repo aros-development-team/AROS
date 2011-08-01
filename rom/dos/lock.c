@@ -106,13 +106,12 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     }
 
     filename = strchr(name, ':');
-    if (!filename || name[0] == ':')
+    if (!filename)
     {
         struct MsgPort *port;
         BPTR lock;
 
-	/* No ':' in the pathname, or no name before ':', so 
-	 * path is relative to current directory */
+	/* No ':' in the pathname, path is relative to current directory */
 	cur = me->pr_CurrentDir;
 	if (cur && cur != (BPTR)-1) {
 	    port = ((struct FileLock *)BADDR(cur))->fl_Task;
@@ -121,9 +120,6 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
             port = DOSBase->dl_Root->rn_BootProc;
             lock = BNULL;
         }
-
-        if (name[0] == ':')
-            lock = BNULL;
 
         error = fs_LocateObject(handle, port, lock, name, accessMode, DOSBase);
         SetIoErr(error);
