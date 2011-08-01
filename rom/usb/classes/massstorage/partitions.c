@@ -39,19 +39,19 @@ static const struct _dt {
     IPTR    mask,type;
     STRPTR  fs;
 } DosTypes[] = {
-    { 0xffffffff, AROS_MAKE_ID('B','E','F','S' ), "befs.handler"  },
-    { 0xffffff00, AROS_MAKE_ID('B','S','D','\0'), "bsd.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('C','P','M','\0'), "cpm.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('D','O','S','\0'), "afs.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('E','X','T','\0'), "ext.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('F','A','T','\0'), "fat.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('L','V','M','\0'), "lvm.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('M','N','X','\0'), "minix.handler" },
-    { 0xffffffff, AROS_MAKE_ID('N','T','F','S' ), "ntfs.handler"  },
-    { 0xffffffff, AROS_MAKE_ID('R','A','I','D' ), "raid.handler"  },
-    { 0xffffff00, AROS_MAKE_ID('S','F','S','\0'), "sfs.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('S','K','Y','\0'), "skyfs.handler" },
-    { 0xffffffff, AROS_MAKE_ID('V','F','A','T' ), "fat.handler"   },
+    { 0xffffffff, AROS_MAKE_ID('B','E','F','S' ), "befs-handler"  },
+    { 0xffffff00, AROS_MAKE_ID('B','S','D','\0'), "bsd-handler"   },
+    { 0xffffff00, AROS_MAKE_ID('C','P','M','\0'), "cpm-handler"   },
+    { 0xffffff00, AROS_MAKE_ID('D','O','S','\0'), "afs-handler"   },
+    { 0xffffff00, AROS_MAKE_ID('E','X','T','\0'), "ext-handler"   },
+    { 0xffffff00, AROS_MAKE_ID('F','A','T','\0'), "fat-handler"   },
+    { 0xffffff00, AROS_MAKE_ID('L','V','M','\0'), "lvm-handler"   },
+    { 0xffffff00, AROS_MAKE_ID('M','N','X','\0'), "minix-handler" },
+    { 0xffffffff, AROS_MAKE_ID('N','T','F','S' ), "ntfs-handler"  },
+    { 0xffffffff, AROS_MAKE_ID('R','A','I','D' ), "raid-handler"  },
+    { 0xffffff00, AROS_MAKE_ID('S','F','S','\0'), "sfs-handler"   },
+    { 0xffffff00, AROS_MAKE_ID('S','K','Y','\0'), "skyfs-handler" },
+    { 0xffffffff, AROS_MAKE_ID('V','F','A','T' ), "fat-handler"   },
     { 0,0,NULL }
 };
 
