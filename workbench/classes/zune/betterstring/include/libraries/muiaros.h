@@ -1,10 +1,10 @@
 /*
-    Copyright  2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef LIBRARIES_MUIAROS_H
-#define LIBRARIES_MUIAROS_H
+#ifndef LIBRARIES_MUI_H
+#define LIBRARIES_MUI_H
 
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
@@ -347,13 +347,13 @@ struct __MUIBuiltinClass {
     !defined(NO_INLINE_STDARG)           && \
     !defined(__SASC)
 
-#define MUIOBJMACRO_START(class) (IPTR) \
+#define MUIOBJMACRO_START(class) (APTR) \
 ({                                      \
      ClassID __class = (ClassID) class; \
      enum { __ismuiobjmacro = 1 };      \
      IPTR __tags[] = {0
 
-#define BOOPSIOBJMACRO_START(class) (IPTR) \
+#define BOOPSIOBJMACRO_START(class) (APTR) \
 ({                                         \
      Class *__class = (Class *) class;     \
      enum { __ismuiobjmacro = 0 };         \
@@ -428,21 +428,21 @@ struct MUI_NotifyData
 #define MUIM_SetUDataOnce        (MUIB_MUI|0x0042ca19) /* MUI: V11 */
 #define MUIM_WriteLong           (MUIB_MUI|0x00428d86) /* MUI: V6  */
 #define MUIM_WriteString         (MUIB_MUI|0x00424bf4) /* MUI: V6  */
-struct MUIP_CallHook             {STACKED ULONG MethodID; STACKED struct Hook *Hook; STACKED ULONG param1; /* more might follow */};
+struct MUIP_CallHook             {STACKED ULONG MethodID; STACKED struct Hook *Hook; STACKED IPTR param1; /* more might follow */};
 struct MUIP_Export               {STACKED ULONG MethodID; STACKED Object *dataspace;};
-struct MUIP_FindUData            {STACKED ULONG MethodID; STACKED ULONG udata;};
-struct MUIP_GetConfigItem        {STACKED ULONG MethodID; STACKED ULONG id; STACKED APTR *storage;};
-struct MUIP_GetUData             {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED APTR *storage;};
+struct MUIP_FindUData            {STACKED ULONG MethodID; STACKED IPTR udata;};
+struct MUIP_GetConfigItem        {STACKED ULONG MethodID; STACKED ULONG id; STACKED IPTR *storage;};
+struct MUIP_GetUData             {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED IPTR *storage;};
 struct MUIP_Import               {STACKED ULONG MethodID; STACKED Object *dataspace;};
 struct MUIP_KillNotify           {STACKED ULONG MethodID; STACKED ULONG TrigAttr;};
 struct MUIP_KillNotifyObj        {STACKED ULONG MethodID; STACKED ULONG TrigAttr; STACKED Object *dest;};
-struct MUIP_MultiSet             {STACKED ULONG MethodID; STACKED ULONG attr; STACKED ULONG val; STACKED APTR obj; /* more might follow */};
-struct MUIP_NoNotifySet          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED ULONG val; /* more might follow */};
-struct MUIP_Notify               {STACKED ULONG MethodID; STACKED ULONG TrigAttr; STACKED ULONG TrigVal; STACKED APTR DestObj; STACKED ULONG FollowParams; /* more might follow */};
-struct MUIP_Set                  {STACKED ULONG MethodID; STACKED ULONG attr; STACKED ULONG val;};
-struct MUIP_SetAsString          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED char *format; STACKED ULONG val; /* more might follow */};
-struct MUIP_SetUData             {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED ULONG val;};
-struct MUIP_SetUDataOnce         {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED ULONG val;};
+struct MUIP_MultiSet             {STACKED ULONG MethodID; STACKED ULONG attr; STACKED IPTR val; STACKED APTR obj; /* more might follow */};
+struct MUIP_NoNotifySet          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED IPTR val; /* more might follow */};
+struct MUIP_Notify               {STACKED ULONG MethodID; STACKED ULONG TrigAttr; STACKED IPTR TrigVal; STACKED APTR DestObj; STACKED ULONG FollowParams; /* more might follow */};
+struct MUIP_Set                  {STACKED ULONG MethodID; STACKED ULONG attr; STACKED IPTR val;};
+struct MUIP_SetAsString          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED char *format; STACKED IPTR val; /* more might follow */};
+struct MUIP_SetUData             {STACKED ULONG MethodID; STACKED IPTR udata; STACKED ULONG attr; STACKED IPTR val;};
+struct MUIP_SetUDataOnce         {STACKED ULONG MethodID; STACKED IPTR udata; STACKED ULONG attr; STACKED IPTR val;};
 struct MUIP_WriteLong            {STACKED ULONG MethodID; STACKED ULONG val; STACKED ULONG *memory;};
 struct MUIP_WriteString          {STACKED ULONG MethodID; STACKED char *str; STACKED char *memory;};
 
@@ -803,19 +803,20 @@ struct MUI_MinMax
 #define MUIPEN_MASK 0x0000ffff
 #define MUIPEN(pen) ((pen) & MUIPEN_MASK)
 
-
-enum {
-    MUIV_Font_Inherit = 0,
-    MUIV_Font_Normal = -1,
-    MUIV_Font_List = -2,
-    MUIV_Font_Tiny = -3,
-    MUIV_Font_Fixed = -4,
-    MUIV_Font_Title = -5,
-    MUIV_Font_Big = -6,
-    MUIV_Font_Button = -7,
-    MUIV_Font_Knob = -8,
-    MUIV_Font_NegCount = -9,
-};
+/* These cannot be enums, since they will
+ * not be passed properly in varadic
+ * functions by some compilers.
+ */
+#define MUIV_Font_Inherit  ((IPTR)0)
+#define MUIV_Font_Normal   ((IPTR)-1)
+#define MUIV_Font_List     ((IPTR)-2)
+#define MUIV_Font_Tiny     ((IPTR)-3)
+#define MUIV_Font_Fixed    ((IPTR)-4)
+#define MUIV_Font_Title    ((IPTR)-5)
+#define MUIV_Font_Big      ((IPTR)-6)
+#define MUIV_Font_Button   ((IPTR)-7)
+#define MUIV_Font_Knob     ((IPTR)-8)
+#define MUIV_Font_NegCount ((IPTR)-9)
 
 /* Possible keyevents (user configurable) */
 enum
@@ -1164,25 +1165,7 @@ struct MUI_RenderInfo
  MUI_EventHandlerNode as used by
  MUIM_Window_AddEventHandler/RemoveEventHandler
 **************************************************************************/
-#ifdef __AROS__
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-/* AROS Nodes are not necessarily binary compatible with AOS ones, so
- * the (MUI_EventHandlerNode *) -> (Node *) cast hack doesnt work.
- */
-struct MUI_EventHandlerNode
-{
-    struct Node    ehn_Node;     /* embedded node structure, private! */
-    UWORD          ehn_Flags;    /* some flags, see below */
-    Object        *ehn_Object;   /* object which should receive MUIM_HandleEvent. */
-    struct IClass *ehn_Class;    /* Class for CoerceMethod(). If NULL DoMethod() is used */
-    ULONG          ehn_Events;   /* the IDCMP flags the handler should be invoked. */
-    BYTE           ehn_Priority; /* sorted by priority. */
-};
-#define MUI_EVENTHANDLERNODE_DEFINED
-#endif
-#endif
 
-#ifndef MUI_EVENTHANDLERNODE_DEFINED
 struct MUI_EventHandlerNode
 {
     struct MinNode ehn_Node;     /* embedded node structure, private! */
@@ -1193,9 +1176,6 @@ struct MUI_EventHandlerNode
     struct IClass *ehn_Class;    /* Class for CoerceMethod(). If NULL DoMethod() is used */
     ULONG          ehn_Events;   /* the IDCMP flags the handler should be invoked. */
 };
-#endif
-
-#undef MUI_EVENTHANDLERNODE_DEFINED
 
 /* here are the flags for ehn_Flags */
 #define MUI_EHF_ALWAYSKEYS  (1<<0)
@@ -1211,8 +1191,8 @@ struct MUI_EventHandlerNode
 
 #ifndef _MUI_CLASSES_AREA_H
 /* 
-    Copyright  1999, David Le Corfec.
-    Copyright  2002, The AROS Development Team.
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002 - 2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -1390,7 +1370,7 @@ struct MUI_AreaData
 // offset 52
     CONST_STRPTR       mad_BackgroundSpec;
 // offset 56
-    LONG               mad_FontPreset;     /* MUIV_Font_xxx */
+    IPTR               mad_FontPreset;     /* MUIV_Font_xxx or pointer to struct TextFont */
 // offset 76
     CONST_STRPTR       mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
 // Inner values at offset 88 in MUI:
@@ -2303,7 +2283,7 @@ enum
 #define _MUI_CLASSES_LIST_H
 
 /*
-    Copyright © 2002-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -2410,12 +2390,12 @@ enum
     MUIV_List_Active_PageDown = -7,
 };
 
-#define MUIV_List_ConstructHook_String -1
-#define MUIV_List_CopyHook_String -1
+#define MUIV_List_ConstructHook_String (IPTR)-1
+#define MUIV_List_CopyHook_String      (IPTR)-1
 #define MUIV_List_CursorType_None 0
-#define MUIV_List_CursorType_Bar 1
+#define MUIV_List_CursorType_Bar  1
 #define MUIV_List_CursorType_Rect 2
-#define MUIV_List_DestructHook_String -1
+#define MUIV_List_DestructHook_String  (IPTR)-1
 
 enum
 {
@@ -2492,21 +2472,6 @@ enum
 
 
 
-/****************************************************************************/
-/*** Name *******************************************************************/
-#define MUIC_Floattext           "Floattext.mui"
-
-/*** Identifier base (for Zune extensions) **********************************/
-#define MUIB_Floattext           (MUIB_ZUNE | 0x00001500)
-
-/*** Attributes *************************************************************/
-#define MUIA_Floattext_Justify   (MUIB_MUI|0x0042dc03) /* MUI: V4  isg BOOL   */
-#define MUIA_Floattext_SkipChars (MUIB_MUI|0x00425c7d) /* MUI: V4  is. STRPTR */
-#define MUIA_Floattext_TabSize   (MUIB_MUI|0x00427d17) /* MUI: V4  is. LONG   */
-#define MUIA_Floattext_Text      (MUIB_MUI|0x0042d16a) /* MUI: V4  isg STRPTR */
-
-
-
 
 /****************************************************************************/
 /*** Name *******************************************************************/
@@ -2520,6 +2485,31 @@ enum
 
 
 #endif /* _MUI_CLASSES_LIST_H */
+#endif
+
+#ifndef _MUI_CLASSES_FLOATTEXT_H
+#ifndef _MUI_CLASSES_FLOATTEXT_H
+#define _MUI_CLASSES_FLOATTEXT_H
+
+/*
+    Copyright © 2002-2010, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*** Name *******************************************************************/
+#define MUIC_Floattext           "Floattext.mui"
+
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Floattext           (MUIB_ZUNE | 0x00001500)
+
+/*** Attributes *************************************************************/
+#define MUIA_Floattext_Justify   (MUIB_MUI|0x0042dc03) /* MUI: V4  isg BOOL   */
+#define MUIA_Floattext_SkipChars (MUIB_MUI|0x00425c7d) /* MUI: V4  is. STRPTR */
+#define MUIA_Floattext_TabSize   (MUIB_MUI|0x00427d17) /* MUI: V4  is. LONG   */
+#define MUIA_Floattext_Text      (MUIB_MUI|0x0042d16a) /* MUI: V4  isg STRPTR */
+
+
+#endif /* _MUI_CLASSES_VOLUMELIST_H */
 #endif
 
 #ifndef _MUI_CLASSES_POPSTRING_H
