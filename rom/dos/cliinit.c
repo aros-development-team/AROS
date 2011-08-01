@@ -14,8 +14,37 @@
 #include <libraries/expansionbase.h>
 #include <resources/filesysres.h>
 
+#include <ctype.h>
+
 #include "dos_intern.h"
-    
+
+#ifdef DEBUG_DOSTYPE
+
+static void PRINT_DOSTYPE(ULONG dt)
+{
+    unsigned int i;
+
+    bug("Dos/CliInit: DosType is ");
+
+    for (i = 0; i < 4; i++)
+    {
+    	unsigned char c = dt >> (24 - i * 8);
+
+	if (isprint(c))
+    	    RawPutChar(c);
+    	else
+    	    bug("\\%02X", c);
+    }
+
+    RawPutChar('\n');
+}
+
+#else
+
+#define PRINT_DOSTYPE(dt)
+
+#endif
+
 static long internalBootCliHandler(void);
 
 /*****************************************************************************
@@ -145,27 +174,27 @@ static long internalBootCliHandler(void);
     AROS_LIBFUNC_EXIT
 } /* CliInit */
 
-/* Find the most recent version of the matching filesystem
- */
+/* Find the most recent version of the matching filesystem */
 static struct FileSysEntry *internalMatchFileSystemResourceHandler(struct FileSysResource *fsr, ULONG DosType)
 {
     struct FileSysEntry *fse, *best_fse = NULL;
 
-    ForeachNode(&fsr->fsr_FileSysEntries, fse) {
-        if (fse->fse_DosType == DosType) {
-            if (fse->fse_PatchFlags & (FSEF_HANDLER | FSEF_SEGLIST | FSEF_TASK)) {
-                if (best_fse == NULL ||
-                    fse->fse_Version > best_fse->fse_Version) {
+    ForeachNode(&fsr->fsr_FileSysEntries, fse)
+    {
+        if (fse->fse_DosType == DosType)
+        {
+            if (fse->fse_PatchFlags & (FSEF_HANDLER | FSEF_SEGLIST | FSEF_TASK))
+            {
+                if (best_fse == NULL || fse->fse_Version > best_fse->fse_Version)
+                {
                     best_fse = fse;
                 }
             }
         }
     }
-    D(bug("Dos/CliInit: Best fse for 0x%8x is: %p\n", DosType, best_fse));
 
     return best_fse;
 }
-
 
 /* See if the BootNode's DeviceNode needs to be patched by
  * an entry in FileSysResource
@@ -200,7 +229,9 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct DeviceNode
         return;
 
     /* If the DosType is 0 and dn_Handler == BNULL, use the default handler */
-    if (de->de_DosType == 0 && dn->dn_Handler == BNULL) {
+    if (de->de_DosType == 0 && dn->dn_Handler == BNULL)
+    {
+    	D(bug("Dos/CliInit: Neither DosType nor Handler specified, using default filesystem\n"));
         dn->dn_SegList = defseg;
         return;
     }
@@ -219,7 +250,9 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct DeviceNode
     fse = internalMatchFileSystemResourceHandler(fsr, de->de_DosType);
     if (fse != NULL)
     {
-        D(bug("Dos/CliInit: found 0x%08x in FileSystem.resource\n", de->de_DosType));
+        D(bug("Dos/CliInit: found 0x%p in FileSystem.resource\n", fse));
+        PRINT_DOSTYPE(fse->fse_DosType);
+
         dn->dn_SegList = fse->fse_SegList;
         /* other fse_PatchFlags bits are quite pointless */
         if (fse->fse_PatchFlags & FSEF_TASK)
@@ -379,7 +412,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
 	    	 * What is really prohibited, it's unloading own seglist. Well, resident
 	    	 * handlers will never do it, they know...
 	    	 */
-	    	RemDosEntry(dn);
+	    	RemDosEntry((struct DosList *)dn);
 	    	dn->dn_Task = NULL;
 	    }
             SetIoErr(err);
@@ -508,9 +541,6 @@ static long internalBootCliHandler(void)
 
     ForeachNodeSafe(&ExpansionBase->MountList, bn, tmpbn)
     {
-        struct DeviceNode *dn = bn->bn_DeviceNode;
-
-        D(bug("Dos/CliInit: Mounting %b: ", dn->dn_Name));
         /*
          * Don't check for return code. Failed is failed.
          * One of failure reasons can be missing handler specification for some DOSType.
@@ -519,16 +549,12 @@ static long internalBootCliHandler(void)
          * read mappings for disk-based handlers from file.
          * This way we could automount e. g. FAT, NTFS, EXT3/2, whatever else, partitions.
          */
-	mountBootNode(dn, fsr, DOSBase);
-
-        D(bug("dn->dn_Task = %p\n", dn->dn_Task));
+	mountBootNode(bn->bn_DeviceNode, fsr, DOSBase);
     }
 
     CloseLibrary((APTR)ExpansionBase);
 
-    /* Init all the RTF_AFTERDOS code, since we now have
-     * SYS:, the dos devices, and all the other assigns.
-     */
+    /* Init all the RTF_AFTERDOS code, since we now have SYS:, the dos devices, and all the other assigns */
     D(bug("Dos/CliInit: Calling InitCode(RTF_AFTERDOS, 0)\n"));
     InitCode(RTF_AFTERDOS, 0);
 
