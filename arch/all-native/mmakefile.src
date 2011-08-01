@@ -1,25 +1,18 @@
 include $(TOP)/config/make.cfg
 
-# Strap package includes all hardware-independent boot code.
+# 'fs' package includes necessary filesystems and partition.library.
 # These include filesystems and dos.library starter
 
-# There's stripped down version of strap for hosted AROS.
-# It includes only bootloader.resource and dosboot.resource, with support for emegrency console.
-# However native strap would work there too.
-
-#MM kernel-package-strap-native:	\
-#MM	kernel-bootloader-pkg		\
-#MM	kernel-dosboot-pkg		\
-#MM	kernel-fs-afs-pkg		\
-#MM	kernel-fs-cdvdfs-pkg		\
-#MM	kernel-fs-sfs-pkg		\
+#MM kernel-package-fs:		\
+#MM	kernel-fs-afs-pkg	\
+#MM	kernel-fs-cdvdfs-pkg	\
+#MM	kernel-fs-sfs-pkg	\
 #MM	kernel-partition-pkg
 
-PKG_RSRC     := bootloader dosboot
 PKG_LIBS     := partition
 PKG_HANDLERS := afs cdrom sfs
 
-%make_package mmake=kernel-package-strap-native file=$(BINDIR)/boot/aros-strap-native.pkg \
-	      handlers=$(PKG_HANDLERS) libs=$(PKG_LIBS) res=$(PKG_RSRC)
+%make_package mmake=kernel-package-fs file=$(BINDIR)/boot/aros-fs.pkg \
+	      handlers=$(PKG_HANDLERS) libs=$(PKG_LIBS)
 
 %common

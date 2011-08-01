@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 # What our port consists of
 
 #MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-x86_64
-#MM- kernel-link-pc-x86_64 : kernel-package-base kernel-package-usb kernel-package-strap-native kernel-bsp-x86_64-pc
+#MM- kernel-link-pc-x86_64 : kernel-package-base kernel-package-usb kernel-package-fs kernel-bsp-x86_64-pc
 #MM- workbench-pc-x86_64   : workbench-drivers kernel-pc-i386-trackdisk
 
 # -------- x86_64-pc board support package --------

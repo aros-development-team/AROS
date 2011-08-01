@@ -7,7 +7,6 @@
 
 #define DEBUG 0
 
-#include <aros/config.h>
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
@@ -95,12 +94,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     const struct TagItem *bootinfo;
     struct TagItem *tag;
     APTR KernelBase;
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     struct vbe_mode *vmi = NULL;
     struct vbe_controller *vci = NULL;
     UWORD vmode = 0x00FF;	/* Dummy mode number by default		  */
     UBYTE palette = 0;		/* By default we don't know palette width */
-#endif
 
     D(bug("[BootLdr] Init\n"));
     NEWLIST(&(BootLoaderBase->Args));
@@ -121,7 +118,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     	    GetCmdLine((char *)tag->ti_Data, BootLoaderBase);
     	    break;
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     	case KRN_VBEModeInfo:
     	    vmi = (struct vbe_mode *)tag->ti_Data;
     	    break;
@@ -137,11 +133,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	case KRN_VBEPaletteWidth:
 	    palette = tag->ti_Data;
 	    break;
-#endif
 	}
     }
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     /* Get VESA mode information */
     D(bug("[BootLdr] VESA mode info 0x%p, controller info 0x%p\n", vmi, vci));
 
@@ -208,7 +202,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	    D(bug("[BootLdr] Init: Vesa mode direct color flags %02X\n", vmi->direct_color_mode_info));
 	}
     }
-#endif
 
     return TRUE;
 }
