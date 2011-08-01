@@ -32,7 +32,7 @@ struct acpi_table_hook
  * Reverse because ACPI signatures appear to be stored in bigendian format.
  */
 #define ACPI_MAKE_ID(a, b, c, d) (((ULONG) (d)<<24) | ((ULONG) (c)<<16) | \
-                                  ((ULONG) (d)<<8)  | ((ULONG) (a)))
+                                  ((ULONG) (b)<<8)  | ((ULONG) (a)))
 
 /* ACPI 2.0 Generic Address Structure (GAS) */
 
