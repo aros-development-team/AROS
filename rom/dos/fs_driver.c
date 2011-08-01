@@ -14,23 +14,13 @@
 #include "dos_intern.h"
 #include "fs_driver.h"
 
-LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, CONST_STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
+LONG fs_LocateObject(BPTR *ret, struct MsgPort *port, BPTR parent, CONST_STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
 {
-    struct FileLock *fl = BADDR(parent);
-    struct MsgPort *port;
     SIPTR error = 0;
     BSTR bstrname = C2BSTR(name);
 
     if (!bstrname)
     	return ERROR_NO_FREE_STORE;
-
-    if (fl)
-    	port = fl->fl_Task;
-    else
-    {
-    	port   = dvp->dvp_Port;
-    	parent = dvp->dvp_Lock;
-    }
 
     *ret = (BPTR)dopacket3(DOSBase, &error, port, ACTION_LOCATE_OBJECT, parent, bstrname, accessMode);
     FREEC2BSTR(bstrname);
