@@ -20,7 +20,7 @@ static VOID Nouveau_HOSTED_BUILD_Init(LIBBASETYPEPTR LIBBASE)
 }
 #endif
 
-static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
+static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct OOP_ABDescr attrbases[] = 
     {
@@ -74,6 +74,6 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
     return TRUE;
 }
 
-ADD2INITLIB(Novueau_Init, 0);
+ADD2INITLIB(Nouveau_Init, 0);
 
 ADD2LIBS((STRPTR)"gallium.hidd", 7, static struct Library *, GalliumHiddBase);
