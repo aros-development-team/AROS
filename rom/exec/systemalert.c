@@ -98,6 +98,7 @@ void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APT
 {
     char *buf;
 
+    RawPutChar('\n');
     PrintFrame(SysBase);
 
     /* Print alert title centered */
