@@ -1,9 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := startup linux_init gfxclass bmclass kbdclass mouseclass inputtask
+FILES := startup linux_init gfxclass bmclass
 
-%build_module mmake=kernel-hidd-linux \
-  modname=linux modtype=hidd \
-  files=$(FILES) cflags="$(KERNEL_CFLAGS) -I$(GENINCDIR) -D__AROS__" \
-  compiler=kernel
+USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+%build_module mmake=kernel-hidd-linuxfb \
+  modname=linuxfb modtype=hidd \
+  files=$(FILES)
+
+%common

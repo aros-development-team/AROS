@@ -1,12 +1,10 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Onscreen bitmap class for linux fb device
     Lang: English.
 */
-
-#define __OOP_NOATTRBASES__
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,14 +23,6 @@
 
 #include LC_LIBDEFS_FILE
 
-static OOP_AttrBase HiddBitMapAttrBase = 0;
-
-static struct OOP_ABDescr attrbases[] =
-{
-    { IID_Hidd_BitMap	, &HiddBitMapAttrBase 	},
-    { NULL  	    	, NULL      	    	}
-};
-
 #define DEBUG 0
 #include <aros/debug.h>
  
@@ -42,9 +32,9 @@ OOP_Object *LinuxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 {
     BOOL ok = TRUE;
     
-// kill(getpid(), 19);
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
-//kprintf("LINUXFB: GOT OBJ %p\n", o);
+    D(kprintf("LINUXFB: Got bitmap %p\n", o));
+
     if (NULL != o)
     {
     	struct BitmapData *data;

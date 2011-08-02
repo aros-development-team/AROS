@@ -1,70 +1,94 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Linux hidd initialization code.
+    Desc: LinuxFB hidd initialization code.
     Lang: English.
 */
 
+#define DEBUG 0
+
 #define __OOP_NOATTRBASES__
 
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <exec/types.h>
-
-#include <proto/exec.h>
-#include <proto/oop.h>
-
+#include <aros/symbolsets.h>
+#include <aros/debug.h>
 #include <utility/utility.h>
 #include <oop/oop.h>
 #include <hidd/graphics.h>
+#include <proto/exec.h>
+#include <proto/hostlib.h>
+#include <proto/oop.h>
 
-#include <aros/symbolsets.h>
+#include LC_LIBDEFS_FILE
 
 #include "linux_intern.h"
 
-#include LC_LIBDEFS_FILE
-#undef  SDEBUG
-#undef  DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
+/* 
+ * Some attrbases needed as global vars.
+ * These are write-once read-many.
+ */
+OOP_AttrBase HiddBitMapAttrBase;  
+OOP_AttrBase HiddSyncAttrBase;
+OOP_AttrBase HiddGfxAttrBase;
+OOP_AttrBase HiddPixFmtAttrBase;
+OOP_AttrBase HiddLinuxFBAttrBase;
 
-static OOP_AttrBase HiddPixFmtAttrBase = 0;
-
-static struct OOP_ABDescr abd[] = {
-	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
-	{ NULL, NULL }
+static const char *libc_symbols[] =
+{
+    "open",
+    "close",
+    "ioctl",
+    "mmap",
+    "munmap",
+    NULL
 };
+
+static const struct OOP_ABDescr abd[] =
+{
+    { IID_Hidd_BitMap	, &HiddBitMapAttrBase	},
+    { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
+    { IID_Hidd_Gfx  	, &HiddGfxAttrBase	},
+    { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase	},
+    { IID_Hidd_LinuxFB  , &HiddLinuxFBAttrBase  },
+    { NULL  	    	, NULL      	    	}
+};
+
+#define HostLibBase LinuxFBBase->lsd.hostlibBase
 
 static int Init_Hidd(LIBBASETYPEPTR LIBBASE)
 {
+    ULONG i;
+
+    HostLibBase = OpenResource("hostlib.resource");
+    if (!HostLibBase)
+    	return FALSE;
+
+    LIBBASE->libcHandle = HostLib_Open("libc.so.6", NULL);
+    if (!LIBBASE->libcHandle)
+    	return FALSE;
+
+    LIBBASE->lsd.SysIFace = (struct LibCInterface *)HostLib_GetInterface(LIBBASE->libcHandle, libc_symbols, &i);
+    if ((!LIBBASE->lsd.SysIFace) || i)
+	return FALSE;
+
     InitSemaphore(&LIBBASE->lsd.sema);
 
-#if BUFFERED_VRAM
-    InitSemaphore(&LIBBASE->lsd.framebufferlock);
-#endif
-	
-    if (!OOP_ObtainAttrBases(abd))
-	return FALSE;
-kprintf("OBTAINED ATTRBASES\n");	    
-
-    LIBBASE->lsd.input_task = init_linuxinput_task(&LIBBASE->lsd);
-    if (NULL == LIBBASE->lsd.input_task)
-	return FALSE;
-kprintf("GOT INPUT TASK\n");
-
-    return TRUE;
+    return OOP_ObtainAttrBases(abd);
 }
 
 static int Expunge_Hidd(LIBBASETYPEPTR LIBBASE)
 {
+    if (!HostLibBase)
+	return TRUE;
+
     OOP_ReleaseAttrBases(abd);
 
-    if (NULL != LIBBASE->lsd.input_task)
-	kill_linuxinput_task(&LIBBASE->lsd);
-    
+    if (LIBBASE->lsd.SysIFace)
+	HostLib_DropInterface ((APTR *)LIBBASE->lsd.SysIFace);
+
+    if (LIBBASE->libcHandle)
+	HostLib_Close(LIBBASE->libcHandle, NULL);
+
     return TRUE;
 }
 
