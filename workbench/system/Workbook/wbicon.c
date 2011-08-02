@@ -160,6 +160,9 @@ static IPTR wbIconGet(Class *cl, Object *obj, struct opGet *opg)
     case WBIA_File:
     	*(opg->opg_Storage) = (IPTR)my->File;
     	break;
+    case WBIA_Label:
+    	*(opg->opg_Storage) = (IPTR)my->Label;
+    	break;
     default:
     	rc = DoSuperMethodA(cl, obj, (Msg)opg);
     	break;
