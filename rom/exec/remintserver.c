@@ -51,7 +51,7 @@
     AROS_LIBFUNC_INIT
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
     struct List *list;
-    struct Custom *custom = (struct Custom *)(void **)0xdff000;
+    volatile struct Custom *custom = (struct Custom *)(void **)0xdff000;
 
     list = (struct List *)SysBase->IntVects[intNumber].iv_Data;
 #endif
@@ -64,7 +64,8 @@
     if(list->lh_TailPred == (struct Node *)list)
     {
 	/* disable interrupts if there are no more nodes on the list */
-	custom->intena = (UWORD)((1<<intNumber));
+	if (intNumber < INTB_INTEN)
+	    custom->intena = (UWORD)((1<<intNumber));
     }
 #endif
 
