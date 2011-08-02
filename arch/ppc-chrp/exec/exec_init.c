@@ -27,8 +27,6 @@
 #include "intservers.h"
 #include "memory.h"
 
-#undef KernelBase
-
 D(extern void debugmem(void));
 
 void exec_main(struct TagItem *msg, void *entry);
@@ -44,7 +42,7 @@ struct ExecBase *priv_SysBase;
 AROS_LD2(int, KrnBug,
          AROS_LDA(const char *, format, A0),
          AROS_LDA(va_list, args, A1),
-         struct KernelBase *, KernelBase, 12, Kernel);
+         APTR, kernelBase, 12, Kernel);
 #undef bug
 
 static inline void bug(const char *format, ...)
