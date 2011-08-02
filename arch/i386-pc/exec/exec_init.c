@@ -73,7 +73,7 @@
 #include <utility/tagitem.h>
 
 #include <hardware/custom.h>
-#include <hardware/acpi/acpi.h>
+#include <resources/acpi.h>
 
 #include <proto/alib.h>
 #include <proto/exec.h>
