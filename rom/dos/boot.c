@@ -34,13 +34,13 @@
 
 #include <proto/intuition.h>
 
-static void load_system_configuration(struct DosLibrary *DOSBase)
+static void load_system_configuration(struct DosLibrary *DOSBase, ULONG *pFlags)
 {
     BPTR fh;
     ULONG len;
     struct Preferences prefs;
     struct Library *IntuitionBase;
-    
+
     fh = Open("DEVS:system-configuration", MODE_OLDFILE);
     if (!fh)
     	return;
@@ -52,11 +52,22 @@ static void load_system_configuration(struct DosLibrary *DOSBase)
     if (IntuitionBase)
 	SetPrefs(&prefs, len, FALSE);
     CloseLibrary(IntuitionBase);
+
+    /* For now, always set BF_NO_DISPLAY_DRIVERS
+     * for the m68000 architecture, since AmigaOS
+     * Monitor drivers are not compatible with the
+     * AROS graphics.library, and there are no
+     * AROS monitor drivers for m68k hardware.
+     *
+     * This may change in the future.
+     */
+    *pFlags |= BF_NO_DISPLAY_DRIVERS;
+   
 }
 
 #else
 
-#define load_system_configuration(DOSBase) do { } while (0)
+#define load_system_configuration(DOSBase,pFlags) do { } while (0)
 
 #endif
 
@@ -73,7 +84,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     /* m68000 uses this to get the default colors and
      * cursors for Workbench
      */
-    load_system_configuration(DOSBase);
+    load_system_configuration(DOSBase, &Flags);
 
     /*
      * If needed, run the display drivers loader.
