@@ -1,4 +1,3 @@
-APTR core_ACPITableHeaderEarly(int id, struct ACPIBase *ACPIBase);
 unsigned char acpi_CheckTable(struct ACPI_TABLE_DEF_HEADER *header, ULONG id);
 int acpi_IsBlacklisted(struct ACPIBase *ACPIBase);
 

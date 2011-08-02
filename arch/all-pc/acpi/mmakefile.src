@@ -2,9 +2,10 @@
 include $(TOP)/config/make.cfg
 
 FILES := acpi_init acpi_tables oemblacklist
+FUNCS := findsdt
 
 %build_module mmake=kernel-pc-acpi \
   modname=acpi modtype=resource \
-  files="$(FILES)" uselibs=rom
+  files="$(FILES) $(FUNCS)" uselibs=rom
 
 %common
