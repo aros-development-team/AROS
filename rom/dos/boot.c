@@ -34,7 +34,7 @@
 
 #include <proto/intuition.h>
 
-static void load_system_configuration(struct DosLibrary *DOSBase, ULONG *pFlags)
+static void load_system_configuration(struct DosLibrary *DOSBase)
 {
     BPTR fh;
     ULONG len;
@@ -52,22 +52,11 @@ static void load_system_configuration(struct DosLibrary *DOSBase, ULONG *pFlags)
     if (IntuitionBase)
 	SetPrefs(&prefs, len, FALSE);
     CloseLibrary(IntuitionBase);
-
-    /* For now, always set BF_NO_DISPLAY_DRIVERS
-     * for the m68000 architecture, since AmigaOS
-     * Monitor drivers are not compatible with the
-     * AROS graphics.library, and there are no
-     * AROS monitor drivers for m68k hardware.
-     *
-     * This may change in the future.
-     */
-    *pFlags |= BF_NO_DISPLAY_DRIVERS;
-   
 }
 
 #else
 
-#define load_system_configuration(DOSBase,pFlags) do { } while (0)
+#define load_system_configuration(DOSBase) do { } while (0)
 
 #endif
 
@@ -95,7 +84,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     if (!(Flags & BF_NO_DISPLAY_DRIVERS))
     {
         /* Check that it exists first... */
-        BPTR seg = LoadSeg("C:LoadMonDrvs");
+        BPTR seg = LoadSeg("C:AROSMonDrvs");
         if (seg != BNULL) {
             RunCommand(seg, AROS_STACKSIZE, "", 0);
             /* We don't care about the return code */

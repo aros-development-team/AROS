@@ -68,7 +68,7 @@ PURE_FILES := \
     Debug \
     Dir \
     GfxControl \
-    LoadMonDrvs \
+    AROSMonDrvs \
     SetKeyboard \
     WaitX
 #   ISApnp
