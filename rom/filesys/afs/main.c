@@ -78,6 +78,10 @@ static struct AFSBase *AFS_alloc(void)
 
 static void AFS_free(struct AFSBase *handler)
 {
+    if (handler->timer_flags & TIMER_ACTIVE) {
+	AbortIO((struct IORequest *)handler->timer_request);
+	WaitIO((struct IORequest *)handler->timer_request);
+    }
     CloseDevice((struct IORequest *)handler->timer_request);
     DeleteIORequest((struct IORequest *)handler->timer_request);
     CloseLibrary((struct Library *)handler->dosbase);
