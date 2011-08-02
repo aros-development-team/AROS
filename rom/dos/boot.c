@@ -73,7 +73,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     /* m68000 uses this to get the default colors and
      * cursors for Workbench
      */
-    load_system_configuration(DOSBase, &Flags);
+    load_system_configuration(DOSBase);
 
     /*
      * If needed, run the display drivers loader.
