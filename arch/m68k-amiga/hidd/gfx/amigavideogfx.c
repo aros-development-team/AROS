@@ -74,6 +74,7 @@ ULONG AmigaVideoCl__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struc
     if (!(modeid & SPECIAL_MODE_MASK))
     	flags |= DIPF_IS_WB;
     msg->props->DisplayInfoFlags = flags;
+    msg->props->CompositionFlags = COMPF_ABOVE | COMPF_BELOW; // | COMPF_LEFT | COMPF_RIGHT;
     DB2(bug("ModeProp %08x = %08x\n", modeid, flags));
     return sizeof(struct HIDD_ModeProperties);
 }

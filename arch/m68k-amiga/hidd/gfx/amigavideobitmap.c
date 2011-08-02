@@ -192,6 +192,10 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		case aoHidd_BitMap_TopEdge:
 		    if (data->topedge != tag->ti_Data) {
 		    	data->topedge = tag->ti_Data;
+		    	if (data->topedge < 0)
+		    	    data->topedge = 0;
+		    	if (data->topedge >= data->height)
+		    	    data->topedge = data->height - 1;
 		    	moved = TRUE;
 		    }
 		    break;
@@ -378,6 +382,25 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
 	CMDDEBUGUNIMP(bug("DrawLine\n"));
     }
 }
+
+/****************************************************************************************/
+
+VOID AmigaVideoBM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
+				 struct pHidd_BitMap_PutPattern *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigabm_data *data = OOP_INST_DATA(cl, o);
+
+    D(bug("PutPattern(%dx%d,%dx%d,mask=%x,mod=%d,masksrcx=%d)\n(%x,%dx%d,h=%d,d=%d,lut=%x,inv=%d)(fg=%d,bg=%d,colexp=%d,drmd=%d)\n",
+	msg->x, msg->y, msg->width, msg->height,
+	msg->mask, msg->maskmodulo, msg->masksrcx,
+	msg->pattern, msg->patternsrcx, msg->patternsrcy, msg->patternheight, msg->patterndepth, msg->patternlut, msg->invertpattern,
+	GC_FG(msg->gc), GC_BG(msg->gc), GC_COLEXP(msg->gc), GC_DRMD(msg->gc)));
+
+    if (!blit_putpattern(csd, data, msg))
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
 
 /****************************************************************************************/
 
