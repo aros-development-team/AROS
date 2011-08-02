@@ -11,10 +11,11 @@ AROS_UFP4(BPTR, LoadSeg_Overlay,
     AROS_UFPA(struct DosLibrary *, DosBase, A6));
 
 extern void *BCPL_jsr, *BCPL_rts;
+    
+const UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
 
 static int PatchDOS(struct DosLibrary *dosbase)
 {
-    UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
     UWORD i;
     UWORD *asmcall;
     IPTR func;
@@ -62,3 +63,15 @@ static int PatchDOS(struct DosLibrary *dosbase)
 }
 
 ADD2INITLIB(PatchDOS, 0)
+
+static int UnPatchDOS(struct DosLibrary *dosbase)
+{
+    APTR asmcall;
+
+    asmcall = __AROS_GETJUMPVEC(dosbase, lowfunc)->vec;
+    FreeMem(asmcall, 5 * (highfunc - lowfunc + 1 - skipfuncs) * sizeof(UWORD) + 12 * sizeof(UWORD));
+
+    return TRUE;
+}
+
+ADD2EXPUNGELIB(UnPatchDOS, 0)
