@@ -184,9 +184,22 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
 
    if (init != NULL)
    {
-       CloseLibrary((APTR)ExpansionBase);
        D(bug("calling bootblock loaded code at %p\n", init));
-       init();
+
+	/*
+	 * This is actually rt_Init calling convention for non-autoinit residents.
+	 * Workbench floppy bootblocks return a pointer to dos.library init routine,
+	 * and it needs SysBase in A6.
+	 * We don't close boot screen and libraries here. We will close them after
+	 * dos.library is succesfully initialized, using a second RTF_AFTERDOS ROMTag.
+	 * This is needed because dos.library contains the second part of "bootable"
+	 * test, trying to mount a filesystem and read the volume.
+	 * We hope it won't do any harm for NDOS game disks.
+	 */
+       AROS_UFC3(void, init,
+       		 AROS_UFCA(APTR, NULL, D0),
+       		 AROS_UFCA(BPTR, BNULL, A0),
+       		 AROS_UFCA(struct ExecBase *, SysBase, A6));
    }
 }
 
