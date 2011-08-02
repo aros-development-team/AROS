@@ -1,5 +1,3 @@
-#define DEBUG 1
-
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <resources/acpi.h>
@@ -130,84 +128,82 @@ static int acpi_ParseSDT(struct ACPIBase *ACPIBase)
 
     D(bug("[ACPI] acpi_ParseSDT: ACPI v2 XSDT @ %p, ACPI v1 RSDT @ %p\n", XSDT, RSDT));
 
-    if (XSDT)
+    if (!acpi_CheckTable(&XSDT->header, ACPI_MAKE_ID('X', 'S', 'D', 'T')))
     {
-    	if (!acpi_CheckTable(&XSDT->header, ACPI_MAKE_ID('X', 'S', 'D', 'T')))
-    	{
-    	    ACPIBase->ACPIB_SDT_Addr = &XSDT->header;
+    	ACPIBase->ACPIB_SDT_Addr = &XSDT->header;
 
-            ACPIBase->ACPIB_SDT_Count = (XSDT->header.length - sizeof(struct ACPI_TABLE_DEF_HEADER)) >> 3;
-            D(bug("[ACPI] acpi_ParseSDT: XSDT size: %u entries\n", ACPIBase->ACPIB_SDT_Count));
+        ACPIBase->ACPIB_SDT_Count = (XSDT->header.length - sizeof(struct ACPI_TABLE_DEF_HEADER)) >> 3;
+        D(bug("[ACPI] acpi_ParseSDT: XSDT size: %u entries\n", ACPIBase->ACPIB_SDT_Count));
 
-	    if (ACPIBase->ACPIB_SDT_Count == 0)
-	    {
-	    	/* ???? */
-	    	return 1;
-	    }
-
-	    ACPIBase->ACPIB_SDT_Entry = AllocMem(ACPIBase->ACPIB_SDT_Count * sizeof(APTR), MEMF_ANY);
-	    if (!ACPIBase->ACPIB_SDT_Entry)
-	    {
-	    	D(bug("[ACPI] Failed to allocate memory for XSDT entries!\n"));
-	    	return 0;
-	    }
-
-	    D(bug("[ACPI] acpi_ParseSDT: Copying Tables Start\n"));
-            for (i = 0; i < ACPIBase->ACPIB_SDT_Count; i++)
-            {
-            	ACPIBase->ACPIB_SDT_Entry[i] = (APTR)(IPTR)XSDT->entry[i];
-	        D(bug("[ACPI] acpi_ParseSDT: Table %u Entry @ %p\n", i, ACPIBase->ACPIB_SDT_Entry[i]));
-	    }
-
-	    D(bug("[ACPI] acpi_ParseSDT: Copying Tables done!\n"));
+	if (ACPIBase->ACPIB_SDT_Count == 0)
+	{
+	    /* ???? */
 	    return 1;
-        }
+	}
 
-        D(bug("[ACPI] Broken XSDT, trying RSDT...\n"));
-    }
+	/* Plus 1 in order to reserve one pointer for DSDT */
+	ACPIBase->ACPIB_SDT_Entry = AllocMem((ACPIBase->ACPIB_SDT_Count + 1) * sizeof(APTR), MEMF_ANY);
+	if (!ACPIBase->ACPIB_SDT_Entry)
+	{
+	    D(bug("[ACPI] Failed to allocate memory for XSDT entries!\n"));
+	    return 0;
+	}
 
-    if (RSDT)
-    {
-        /* If there is no (or damager) XSDT, then check RSDT */
-        if (!acpi_CheckTable(&RSDT->header, ACPI_MAKE_ID('R', 'S', 'D', 'T')))
+	D(bug("[ACPI] acpi_ParseSDT: Copying Tables Start\n"));
+        for (i = 0; i < ACPIBase->ACPIB_SDT_Count; i++)
         {
-	    ACPIBase->ACPIB_SDT_Addr = &RSDT->header;
+            ACPIBase->ACPIB_SDT_Entry[i] = (APTR)(IPTR)XSDT->entry[i];
+	    D(bug("[ACPI] acpi_ParseSDT: Table %u Entry @ %p\n", i, ACPIBase->ACPIB_SDT_Entry[i]));
+	}
 
-            ACPIBase->ACPIB_SDT_Count = (RSDT->header.length - sizeof(struct ACPI_TABLE_DEF_HEADER)) >> 2;
-	    D(bug("[ACPI] acpi_ParseSDT: RSDT size: %u entries\n", ACPIBase->ACPIB_SDT_Count));
+	D(bug("[ACPI] acpi_ParseSDT: Copying Tables done!\n"));
+	return 1;
+    }
 
-	    if (ACPIBase->ACPIB_SDT_Count == 0)
-	    {
-	    	/* ???? */
-	    	return 1;
-	    }
+    D(bug("[ACPI] Broken (or no) XSDT, trying RSDT...\n"));
 
-	    ACPIBase->ACPIB_SDT_Entry = AllocMem(ACPIBase->ACPIB_SDT_Count * sizeof(APTR), MEMF_ANY);
-	    if (!ACPIBase->ACPIB_SDT_Entry)
-	    {
-	    	D(bug("[ACPI] Failed to allocate memory for RSDT entries!\n"));
-	    	return 0;
-	    }
+    /* If there is no (or damager) XSDT, then check RSDT */
+    if (!acpi_CheckTable(&RSDT->header, ACPI_MAKE_ID('R', 'S', 'D', 'T')))
+    {
+	ACPIBase->ACPIB_SDT_Addr = &RSDT->header;
 
-	    D(bug("[ACPI] acpi_ParseSDT: Copying Tables Start\n"));
-	    for (i = 0; i < ACPIBase->ACPIB_SDT_Count; i++)
-            {   
-            	ACPIBase->ACPIB_SDT_Entry[i] = (APTR)(IPTR)RSDT->entry[i];
-            	D(bug("[ACPI] acpi_ParseSDT: Table %u Entry @ %p\n", i, ACPIBase->ACPIB_SDT_Entry[i]));
-            }
+        ACPIBase->ACPIB_SDT_Count = (RSDT->header.length - sizeof(struct ACPI_TABLE_DEF_HEADER)) >> 2;
+	D(bug("[ACPI] acpi_ParseSDT: RSDT size: %u entries\n", ACPIBase->ACPIB_SDT_Count));
 
-            D(bug("[ACPI] acpi_ParseSDT: Copying Tables done!\n"));
-            return 1;
+	if (ACPIBase->ACPIB_SDT_Count == 0)
+	{
+	    /* ???? */
+	    return 1;
+	}
+
+	/* Plus 1 in order to reserve one pointer for DSDT */
+	ACPIBase->ACPIB_SDT_Entry = AllocMem((ACPIBase->ACPIB_SDT_Count + 1) * sizeof(APTR), MEMF_ANY);
+	if (!ACPIBase->ACPIB_SDT_Entry)
+	{
+	    D(bug("[ACPI] Failed to allocate memory for RSDT entries!\n"));
+	    return 0;
+	}
+
+	D(bug("[ACPI] acpi_ParseSDT: Copying Tables Start\n"));
+	for (i = 0; i < ACPIBase->ACPIB_SDT_Count; i++)
+        {   
+            ACPIBase->ACPIB_SDT_Entry[i] = (APTR)(IPTR)RSDT->entry[i];
+            D(bug("[ACPI] acpi_ParseSDT: Table %u Entry @ %p\n", i, ACPIBase->ACPIB_SDT_Entry[i]));
         }
 
-        D(bug("[ACPI] Broken RSDT\n"));
+        D(bug("[ACPI] acpi_ParseSDT: Copying Tables done!\n"));
+        return 1;
     }
+
+    D(bug("[ACPI] Broken (or no) RSDT\n"));
 
     return 0;
 }
 
 static int acpi_CheckSDT(struct ACPIBase *ACPIBase)
 {
+    struct ACPI_TABLE_TYPE_FADT *FADT = NULL;
+    struct ACPI_TABLE_DEF_HEADER *header;
     unsigned int c = 0;
     unsigned int i;
 
@@ -215,7 +211,7 @@ static int acpi_CheckSDT(struct ACPIBase *ACPIBase)
 
     for (i = 0; i < ACPIBase->ACPIB_SDT_Count; i++)
     {
-    	struct ACPI_TABLE_DEF_HEADER *header = ACPIBase->ACPIB_SDT_Entry[i];
+    	header = ACPIBase->ACPIB_SDT_Entry[i];
 
         if (header == NULL)
         {
@@ -228,16 +224,32 @@ static int acpi_CheckSDT(struct ACPIBase *ACPIBase)
         if (acpi_CheckSum(header, header->length))
         {
             D(bug("[ACPI] WARNING - SDT %d Checksum invalid\n", i));
-
 	    /* Throw away broken table */
             continue;
         }
 
 	/* Pack our array, to simplify access to it */
         ACPIBase->ACPIB_SDT_Entry[c++] = header;
+
+        if (header->signature == ACPI_MAKE_ID('F', 'A', 'C', 'P'))
+            FADT = (struct ACPI_TABLE_TYPE_FADT *)header;
     }
 
-    D(bug("[ACPI] Tables Checked, %u of %u good\n", ACPIBase->ACPIB_SDT_Count, c));
+    D(bug("[ACPI] Tables checked, %u of %u good\n", ACPIBase->ACPIB_SDT_Count, c));
+
+    if (FADT)
+    {
+	/* Map the DSDT header via the pointer in the FADT */
+    	header = (APTR)(IPTR)FADT->dsdt_addr;
+    	D(bug("[ACPI] Got DSDT at 0x%p\n", header));
+
+	if (!acpi_CheckTable(header, ACPI_MAKE_ID('D', 'S', 'D', 'T')))
+    	{
+    	    D(bug("[ACPI] DSDT checked, good\n"));
+    	    /* We have reserved this pointer above, when allocated SDT array */
+    	    ACPIBase->ACPIB_SDT_Entry[c++] = header;
+    	}
+    }
 
     /* Fix up tables count */
     ACPIBase->ACPIB_SDT_Count = c;

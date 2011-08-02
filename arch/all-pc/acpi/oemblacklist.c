@@ -1,5 +1,6 @@
 #include <aros/debug.h>
 #include <resources/acpi.h>
+#include <proto/acpi.h>
 
 #include <string.h>
 
@@ -68,7 +69,8 @@ int acpi_IsBlacklisted(struct ACPIBase *ACPIBase)
 
     for (i = 0; _ACPI_OEMBlacklist[i].oem_id[0] != '\0'; i++)
     {
-        table_header = core_ACPITableHeaderEarly(_ACPI_OEMBlacklist[i].acpi_tableid, ACPIBase);
+        table_header = ACPI_FindSDT(_ACPI_OEMBlacklist[i].acpi_tableid);
+
         if (!table_header)
             continue;
 
