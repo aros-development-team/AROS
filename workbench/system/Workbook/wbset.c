@@ -83,7 +83,6 @@ static void rearrange(Class *cl, Object *obj)
 
     	if ((CurrRight + ibox.Width) < my->MaxWidth) {
     	    ibox.Left = CurrRight;
-    	    CurrRight += ibox.Width;
     	} else {
     	    wbGABox(wb, obj, &sbox);
     	    ibox.Left = sbox.Left;
@@ -91,6 +90,7 @@ static void rearrange(Class *cl, Object *obj)
     	    CurrBottom = sbox.Top + sbox.Height;
     	}
     	ibox.Top  = CurrBottom;
+    	CurrRight += ibox.Width;
 
     	D(bug("New icon position: @%d,%d\n", ibox.Left, ibox.Top));
 
