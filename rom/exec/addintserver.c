@@ -52,7 +52,7 @@
 {
     AROS_LIBFUNC_INIT
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
-    struct Custom *custom = (struct Custom *)(void **)0xdff000;
+    volatile struct Custom *custom = (struct Custom *)(void **)0xdff000;
 #endif
 
     Disable();
@@ -63,7 +63,8 @@
     /*
 	Enable the chipset interrupt if run on a native Amiga.
     */
-    custom->intena = (UWORD)(INTF_SETCLR|(1L<<intNumber));
+    if (intNumber < INTB_INTEN)
+	custom->intena = (UWORD)(INTF_SETCLR|(1L<<intNumber));
 #endif
 
     Enable();
