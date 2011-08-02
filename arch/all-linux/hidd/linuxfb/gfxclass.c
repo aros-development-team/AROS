@@ -1,12 +1,13 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux fbdev gfx HIDD for AROS.
     Lang: English.
 */
 
-#define __OOP_NOATTRBASES__
+#define DEBUG 1
+#define DEBUG_PF
 
 #include <stddef.h>
 #include <stdio.h>
@@ -22,53 +23,37 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 
-#include <proto/exec.h>
-#include <proto/oop.h>
-#include <proto/utility.h>
+#include <aros/debug.h>
 #include <oop/oop.h>
-
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
-
-#include <aros/symbolsets.h>
+#include <proto/exec.h>
+#include <proto/hostlib.h>
+#include <proto/oop.h>
+#include <proto/utility.h>
 
 #include "linux_intern.h"
 #include "bitmap.h"
 
 #include LC_LIBDEFS_FILE
 
-#define DEBUG 0
-#include <aros/debug.h>
+static BOOL setup_linuxfb(struct linux_staticdata *fsd, int fbdev,
+			  struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi);
+static VOID cleanup_linuxfb(struct LinuxFB_data *data, struct linux_staticdata *fsd);
+static BOOL get_pixfmt(struct TagItem *pftags, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi);
 
-/* Some attrbases needed as global vars.
-  These are write-once read-many */
-
-static OOP_AttrBase HiddBitMapAttrBase;  
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddPixFmtAttrBase;
-
-static struct OOP_ABDescr attrbases[] =
-{
-    { IID_Hidd_BitMap	, &HiddBitMapAttrBase	},
-    { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
-    { IID_Hidd_Gfx  	, &HiddGfxAttrBase	},
-    { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase	},
-    { NULL  	    	, NULL      	    	}
-};
-
-static BOOL setup_linuxfb(struct linux_staticdata *fsd);
-static VOID cleanup_linuxfb(struct linux_staticdata *fsd);
-static BOOL get_pixfmt(HIDDT_PixelFormat *pf, struct linux_staticdata *fsd);
+#define HostLibBase fsd->hostlibBase
 
 /***************** FBGfx::New() ***********************/
 
-
-
 OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    UBYTE sync_description[32];
-    
+    struct linux_staticdata *fsd = LSD(cl);
+    struct fb_fix_screeninfo fsi;
+    struct fb_var_screeninfo vsi;
+    int fbdev = GetTagData(aHidd_LinuxFB_File, -1, msg->attrList);
+    char *baseaddr = MAP_FAILED;
+
     struct TagItem pftags[] =
     {
     	{ aHidd_PixFmt_RedShift     , 0	}, /* 0 */
@@ -90,7 +75,6 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	{ TAG_DONE  	    	    , 0 }
     };
         
-    
     struct TagItem synctags[] =
     {
 	{ aHidd_Sync_PixelTime	, 0 },	/* 0 */
@@ -118,109 +102,80 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     	{ aHidd_Gfx_ModeTags, (IPTR)modetags },
 	{ TAG_MORE  	    , 0     	     }
     };
-    
+
     struct pRoot_New mymsg;
-    
-    
-    /* Do GfxHidd initalization here */
-    if (setup_linuxfb(LSD(cl)))
+
+    if (fbdev == -1)
     {
-	/* Register gfxmodes */
-	HIDDT_PixelFormat *pf;
-
-	pf = &LSD(cl)->pf;
-
-	/* Set the pixfmt */
-	if  (vHidd_ColorModel_TrueColor == HIDD_PF_COLMODEL(pf))
-	{
-	    
-	    pftags[0].ti_Data = pf->red_shift;
-	    pftags[1].ti_Data = pf->green_shift;
-	    pftags[2].ti_Data = pf->blue_shift;
-	    pftags[3].ti_Data = pf->alpha_shift;
-	    
-	    pftags[4].ti_Data = pf->red_mask;
-	    pftags[5].ti_Data = pf->green_mask;
-	    pftags[6].ti_Data = pf->blue_mask;
-	    pftags[7].ti_Data = pf->alpha_mask;
-		
-	}
-	else
-	{
-    	    #warning "Check this"
-	    /* stegerg: apps when using GetDisplayInfoData(DTA_DISP) even on 8 bit palettized
-	                screens expect DisplayInfo->redbits/greenbits/bluebits to have
-			correct values (they are calculated based on the red/green/blue masks)
-			which reflect the "size" of the palette (16M, 4096, 262144) */
-
-	    pftags[4].ti_Data = pf->red_mask;
-	    pftags[5].ti_Data = pf->green_mask;
-	    pftags[6].ti_Data = pf->blue_mask;
-	    
-	    pftags[13].ti_Data = pf->clut_shift;
-	    pftags[14].ti_Data = pf->clut_mask;
-	}
-	    
-	pftags[8].ti_Data = HIDD_PF_COLMODEL(pf);
-	pftags[9].ti_Data = pf->depth;
-	pftags[10].ti_Data = pf->bytes_per_pixel;
-	pftags[11].ti_Data = pf->size;
-	pftags[12].ti_Data = vHidd_StdPixFmt_Native;
-	pftags[15].ti_Data = (IPTR)HIDD_PF_BITMAPTYPE(pf);
-	    
-	    
-kprintf("FB: Width: %d, height: %d, line length=%d\n"
-    , LSD(cl)->vsi.xres
-    , LSD(cl)->vsi.yres
-    , LSD(cl)->fsi.line_length
-);
-kprintf("FB;  mask: (%p, %p, %p, %p), shift: (%d, %d, %d, %d)\n"
-    , pf->red_mask, pf->green_mask, pf->blue_mask, pf->alpha_mask
-    , pf->red_shift, pf->green_shift, pf->blue_shift, pf->alpha_shift
-    );
-    
-	/* Set the gfxmode info */
-	synctags[0].ti_Data = LSD(cl)->vsi.pixclock;
-	synctags[1].ti_Data = LSD(cl)->vsi.xres;
-	synctags[2].ti_Data = LSD(cl)->vsi.yres;
-	synctags[3].ti_Data = LSD(cl)->vsi.left_margin;
-	synctags[4].ti_Data = LSD(cl)->vsi.right_margin;
-	synctags[5].ti_Data = LSD(cl)->vsi.hsync_len;
-	synctags[6].ti_Data = LSD(cl)->vsi.upper_margin;
-	synctags[7].ti_Data = LSD(cl)->vsi.lower_margin;
-	synctags[8].ti_Data = LSD(cl)->vsi.vsync_len;
-	synctags[9].ti_Data = (IPTR)sync_description;
-	
-	snprintf(sync_description, sizeof(sync_description), "FBDev:%dx%d",
-	    	 LSD(cl)->vsi.xres, LSD(cl)->vsi.yres);
-	
-	mytags[1].ti_Data = (IPTR)msg->attrList;
-	mymsg.mID = msg->mID;
-	mymsg.attrList = mytags;
-
-	o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
-	if (NULL != o)
-	{
-/*    	    OOP_MethodID dispose_mid;
-	    struct gfx_data *data = OOP_INST_DATA(cl, o);
-	
-*/	    return o;
-	
-	}
-	cleanup_linuxfb(LSD(cl));
+	D(bug("[LinuxFB] No file descriptor supplied in New()\n"));
+	return NULL;
     }
+
+    /* Do GfxHidd initalization here */
+    if (setup_linuxfb(LSD(cl), fbdev, &fsi, &vsi))
+    {
+	if (get_pixfmt(pftags, &fsi, &vsi))
+	{
+	    /* Memorymap the framebuffer using mmap() */
+	    HostLib_Lock();
+	    baseaddr = fsd->SysIFace->mmap(NULL, fsi.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbdev, 0);
+	    HostLib_Unlock();
+
+	    D(bug("[LinuxFB] Mapped at 0x%p\n", baseaddr));
+	    if (baseaddr != MAP_FAILED)
+	    {
+	    	/* Register gfxmodes */	    
     
+	    	/* Set the gfxmode info */
+	    	synctags[0].ti_Data = vsi.pixclock;
+	    	synctags[1].ti_Data = vsi.xres;
+	    	synctags[2].ti_Data = vsi.yres;
+	    	synctags[3].ti_Data = vsi.left_margin;
+	    	synctags[4].ti_Data = vsi.right_margin;
+	    	synctags[5].ti_Data = vsi.hsync_len;
+	    	synctags[6].ti_Data = vsi.upper_margin;
+	    	synctags[7].ti_Data = vsi.lower_margin;
+	    	synctags[8].ti_Data = vsi.vsync_len;
+	    	synctags[9].ti_Data = (IPTR)"FBDev:%hx%v";
+	
+	    	mytags[1].ti_Data = (IPTR)msg->attrList;
+	    	mymsg.mID      = msg->mID;
+	    	mymsg.attrList = mytags;
+
+	    	o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
+	    	if (NULL != o)
+	    	{
+		    struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
+
+		    data->fbdev = fbdev;
+		    data->baseaddr = baseaddr;
+		    data->mem_len  = fsi.smem_len;
+#if BUFFERED_VRAM
+		    InitSemaphore(&data->framebufferlock);
+#endif
+		    return o;
+		}
+	    }
+	}
+    }
+
+    HostLib_Lock();
+
+    if (baseaddr != MAP_FAILED)
+	fsd->SysIFace->munmap(baseaddr, fsi.smem_len);
+    fsd->SysIFace->close(fbdev);
+
+    HostLib_Unlock();
+
     return NULL;
 }
 
 /********** FBGfx::Dispose()  ******************************/
 VOID LinuxFB__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    cleanup_linuxfb(LSD(cl));
-    
+    cleanup_linuxfb(OOP_INST_DATA(cl, o), LSD(cl));
+
     OOP_DoSuperMethod(cl, o, msg);
-    
-    return;
 }
 
 /********** FBGfx::NewBitMap()  ****************************/
@@ -286,6 +241,7 @@ VOID LinuxFB__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_C
     }
 
     {
+	struct LinuxFB_data *fbdata = OOP_INST_DATA(cl, o);
     	struct BitmapData *data = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
         struct BitmapData *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
 
@@ -359,9 +315,9 @@ VOID LinuxFB__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_C
     #if BUFFERED_VRAM
 	if (ddata->RealVideoData)
 	{
-    	    LOCK_FRAMEBUFFER(LSD(cl));    
+    	    LOCK_FRAMEBUFFER(fbdata);    
     	    fbRefreshArea(ddata, msg->destX, msg->destY, msg->destX + msg->width - 1, msg->destY + msg->height - 1);
-    	    UNLOCK_FRAMEBUFFER(LSD(cl));
+    	    UNLOCK_FRAMEBUFFER(fbdata);
 	}
     #endif
  	    
@@ -395,104 +351,43 @@ VOID LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     return;
 }
 
-#undef LSD
-#define LSD(cl) fsd
-
-/********************  init_gfxclass()  *********************************/
-
-static int Init_GfxClass(LIBBASETYPEPTR LIBBASE)
+static BOOL setup_linuxfb(struct linux_staticdata *fsd, int fbdev, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi)
 {
-    return OOP_ObtainAttrBases(attrbases);
-}
+    int r1, r2;
 
+    HostLib_Lock();
 
+    r1 = fsd->SysIFace->ioctl(fbdev, FBIOGET_FSCREENINFO, fsi);
+    r2 = fsd->SysIFace->ioctl(fbdev, FBIOGET_VSCREENINFO, vsi);
 
+    HostLib_Unlock();
 
-/*************** free_gfxclass()  **********************************/
-static int Expunge_GfxClass(LIBBASETYPEPTR LIBBASE)
-{
-    OOP_ReleaseAttrBases(attrbases);
+    if (r1 == -1)
+    {
+	D(kprintf("!!! COULD NOT GET FIXED SCREEN INFO !!!\n"));
+	return FALSE;
+    }
+
+    if (r2 == -1)
+    {
+	D(kprintf("!!! COULD NOT GET FIXED SCREEN INFO !!!\n"));
+	return FALSE;
+    }
+
+    D(kprintf("FB: Width: %d, height: %d, line length=%d\n",
+    	      vsi->xres, vsi->yres, fsi->line_length));
+
     return TRUE;
 }
 
-ADD2INITLIB(Init_GfxClass, 0)
-ADD2EXPUNGELIB(Expunge_GfxClass, 0)
-
-
-
-
-#define FBDEVNAME "/dev/fb0"
-
-
-BOOL setup_linuxfb(struct linux_staticdata *fsd)
+static VOID cleanup_linuxfb(struct LinuxFB_data *data, struct linux_staticdata *fsd)
 {
-    BOOL success = FALSE;
-    fsd->fbdev = open(FBDEVNAME, O_RDWR);
-    if (-1 == fsd->fbdev)
-    {
-    	kprintf("!!! COULD NOT OPEN FB DEV: %s !!!\n", strerror(errno));
-    	/* Get info on the framebuffer */
-    }
-    else
-    {
-	if (-1 == ioctl(fsd->fbdev, FBIOGET_FSCREENINFO, &fsd->fsi))
-	{
-	    kprintf("!!! COULD NOT GET FIXED SCREEN INFO: %s !!!\n", strerror(errno));
-	}
-	else
-	{
-	    if (-1 == ioctl(fsd->fbdev, FBIOGET_VSCREENINFO, &fsd->vsi))
-	    {
-		kprintf("!!! COULD NOT GET FIXED SCREEN INFO: %s !!!\n", strerror(errno));
-	    }
-	    else
-	    {
-	    	if (!get_pixfmt(&fsd->pf, fsd))
-		{
-		     kprintf("!!! COULD NOT GET PIXEL FORMAT !!!\n");
-		}
-		else
-		{
-		    /* Memorymap the framebuffer using mmap() */
-		    fsd->baseaddr = mmap(NULL, fsd->fsi.smem_len
-		    	, PROT_READ | PROT_WRITE
-			, MAP_SHARED
-			, fsd->fbdev
-			, 0
-		    );
-		    if (MAP_FAILED == fsd->baseaddr)
-		    {
-		    	kprintf("!!! COULD NOT MAP FRAMEBUFFER MEM: %s !!!\n", strerror(errno));
-		    }
-		    else
-		    {
-			success = TRUE;
-		    }
-		}
-	    }
-	}
-    }
-    
-    if (!success)
-    {
-    	cleanup_linuxfb(fsd);
-    }
-    
-    return success;
-}
+    HostLib_Lock();
 
-VOID cleanup_linuxfb(struct linux_staticdata *fsd)
-{
+    fsd->SysIFace->munmap(data->baseaddr, data->mem_len);
+    fsd->SysIFace->close(data->fbdev);
 
-    if (NULL != fsd->baseaddr)
-    {
-    	munmap(fsd->baseaddr, fsd->fsi.smem_len);
-    }
-
-    if (0 != fsd->fbdev)
-    {
-    	close(fsd->fbdev);	
-    }
+    HostLib_Unlock();
 }
 
 static HIDDT_Pixel bitfield2mask(struct fb_bitfield *bf)
@@ -516,115 +411,115 @@ static ULONG bitfield2shift(struct fb_bitfield *bf)
      return shift;
 }
 
-static void print_bitfield(const char *color, struct fb_bitfield *bf, struct linux_staticdata *fsd)
+#ifdef DEBUG_PF
+
+static void print_bitfield(const char *color, struct fb_bitfield *bf)
 {
     kprintf("FB: Bitfield %s: %d, %d, %d\n"
 	, color, bf->offset, bf->length, bf->msb_right);
 }
-static BOOL get_pixfmt(HIDDT_PixelFormat *pf, struct linux_staticdata *fsd)
-{
-    struct fb_fix_screeninfo *fsi;
-    struct fb_var_screeninfo *vsi;
-    
-    BOOL success = TRUE;
-    
-    fsi = &fsd->fsi;
-    vsi = &fsd->vsi;
-    
-    pf->depth = pf->size = vsi->bits_per_pixel;
-    pf->stdpixfmt = vHidd_StdPixFmt_Native;
-    pf->bytes_per_pixel = ((pf->size - 1) / 8) + 1;
 
-    
-    print_bitfield("red",	&vsi->red,	fsd);
-    print_bitfield("green",	&vsi->green,	fsd);
-    print_bitfield("blue",	&vsi->blue,	fsd);
-    print_bitfield("transp",	&vsi->transp,	fsd);
-    
+#else
+
+#define print_bitfield(color, bf)
+
+#endif
+
+static BOOL get_pixfmt(struct TagItem *pftags, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi)
+{   
+    BOOL success = TRUE;
+
+    pftags[9 ].ti_Data = vsi->bits_per_pixel;			/* Depth		*/
+    pftags[10].ti_Data = ((vsi->bits_per_pixel - 1) / 8) + 1;	/* Bytes per pixel	*/
+    pftags[11].ti_Data = vsi->bits_per_pixel;			/* Size			*/
+
+    print_bitfield("red",    &vsi->red);
+    print_bitfield("green",  &vsi->green);
+    print_bitfield("blue",   &vsi->blue);
+    print_bitfield("transp", &vsi->transp);
+
     switch (fsi->visual)
     {
     	case FB_VISUAL_TRUECOLOR:
     	case FB_VISUAL_DIRECTCOLOR:
-	    pf->red_mask	= bitfield2mask(&vsi->red);
-	    pf->green_mask	= bitfield2mask(&vsi->green);
-	    pf->blue_mask	= bitfield2mask(&vsi->blue);
-	    pf->alpha_mask	= bitfield2mask(&vsi->transp);
-	    
-	    pf->red_shift	= bitfield2shift(&vsi->red);
-	    pf->green_shift	= bitfield2shift(&vsi->green);
-	    pf->blue_shift	= bitfield2shift(&vsi->blue);
-	    pf->alpha_shift	= bitfield2shift(&vsi->transp);
-	    
-	    SET_PF_COLMODEL(pf, vHidd_ColorModel_TrueColor);
+	    pftags[0].ti_Data = bitfield2shift(&vsi->red);	/* Shifts: R, G, B, A */
+	    pftags[1].ti_Data = bitfield2shift(&vsi->green);
+	    pftags[2].ti_Data = bitfield2shift(&vsi->blue);
+	    pftags[3].ti_Data = bitfield2shift(&vsi->transp);
+
+	    pftags[4].ti_Data = bitfield2mask(&vsi->red);	/* Masks: R, G, B, A */
+	    pftags[5].ti_Data = bitfield2mask(&vsi->green);
+	    pftags[6].ti_Data = bitfield2mask(&vsi->blue);
+	    pftags[7].ti_Data = bitfield2mask(&vsi->transp);
+
+	    pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
 	    break;
     
     	case FB_VISUAL_PSEUDOCOLOR:
-	    pf->clut_shift = 0;
-	    pf->clut_mask = 0xFF;
-
 #warning "also pseudocolor pixelformats need red/green/blue masks now. Is the calc. correct here!?"
 	    /* stegerg: apps when using GetDisplayInfoData(DTA_DISP) even on 8 bit palettized
 	                screens expect DisplayInfo->redbits/greenbits/bluebits to have
 			correct values (they are calculated based on the red/green/blue masks)
 			which reflect the "size" of the palette (16M, 4096, 262144) */
 	    
-	    pf->red_mask	= bitfield2mask(&vsi->red);
-	    pf->green_mask	= bitfield2mask(&vsi->green);
-	    pf->blue_mask	= bitfield2mask(&vsi->blue);
+	    pftags[4 ].ti_Data = bitfield2mask(&vsi->red);	/* Masks: R, G, B, A */
+	    pftags[5 ].ti_Data = bitfield2mask(&vsi->green);
+	    pftags[6 ].ti_Data = bitfield2mask(&vsi->blue);
 	    	    
-	    SET_PF_COLMODEL(pf, vHidd_ColorModel_Palette);
+	    pftags[8 ].ti_Data = vHidd_ColorModel_Palette;
+	    pftags[13].ti_Data = 0;				/* LUT shift */
+	    pftags[14].ti_Data = 0xFF;				/* LUT mask  */
 	    break;
     
     	case FB_VISUAL_STATIC_PSEUDOCOLOR:
-	    pf->clut_shift = 0;
-	    pf->clut_mask = 0xFF;
-
 #warning "also pseudocolor pixelformats need red/green/blue masks now. Is the calc. correct here!?"
 	    /* stegerg: apps when using GetDisplayInfoData(DTA_DISP) even on 8 bit palettized
 	                screens expect DisplayInfo->redbits/greenbits/bluebits to have
 			correct values (they are calculated based on the red/green/blue masks)
 			which reflect the "size" of the palette (16M, 4096, 262144) */
 	    
-	    pf->red_mask	= bitfield2mask(&vsi->red);
-	    pf->green_mask	= bitfield2mask(&vsi->green);
-	    pf->blue_mask	= bitfield2mask(&vsi->blue);
-	    	    
-	    SET_PF_COLMODEL(pf, vHidd_ColorModel_StaticPalette);
+	    pftags[4 ].ti_Data = bitfield2mask(&vsi->red);	/* Masks: R, G, B, A */
+	    pftags[5 ].ti_Data = bitfield2mask(&vsi->green);
+	    pftags[6 ].ti_Data = bitfield2mask(&vsi->blue);
+	    pftags[8 ].ti_Data = vHidd_ColorModel_StaticPalette;
+	    pftags[13].ti_Data = 0;				/* LUT shift */
+	    pftags[14].ti_Data = 0xFF;				/* LUT mask  */
 	    break;
     
-    	case FB_VISUAL_MONO01:
-    	case FB_VISUAL_MONO10:
-	    kprintf("!!! FB: UNHANDLED GRAPHTYPE :%d !!!\n", fsi->visual);
-	    success = FALSE;
-	    break;
-	   
+/*    	case FB_VISUAL_MONO01:
+    	case FB_VISUAL_MONO10: */
 	default:
-	    kprintf("!!! FB: UNKNOWN GRAPHTYPE :%d !!!\n", fsi->visual);
-	    success = FALSE;
-	    break;
+	    D(kprintf("!!! FB: UNHANDLED GRAPHTYPE :%d !!!\n", fsi->visual));
+	    return FALSE;
     }
-    
+
+    D(kprintf("FB;  mask: (%p, %p, %p, %p), shift: (%ld, %ld, %ld, %ld)\n",
+	      pftags[4].ti_Data, pftags[5].ti_Data, pftags[6].ti_Data, pftags[7].ti_Data,
+	      pftags[0].ti_Data, pftags[1].ti_Data, pftags[2].ti_Data, pftags[3].ti_Data));
+
     switch (fsi->type)
     {
 	case FB_TYPE_PACKED_PIXELS:
-	    SET_PF_BITMAPTYPE(pf, vHidd_BitMapType_Chunky);
+	    pftags[15].ti_Data = vHidd_BitMapType_Chunky;
 	    break;
+
 	case FB_TYPE_PLANES:
-	    SET_PF_BITMAPTYPE(pf, vHidd_BitMapType_Planar);
+	    pftags[15].ti_Data = vHidd_BitMapType_Planar;
 	    break;
+
 	case FB_TYPE_INTERLEAVED_PLANES:
-	    SET_PF_BITMAPTYPE(pf, vHidd_BitMapType_InterleavedPlanar);
+	    pftags[15].ti_Data = vHidd_BitMapType_InterleavedPlanar;
 	    break;
-	    
+
 	default:
-	    kprintf("!!! UNSUPPORTED FRAMEBUFFER TYPE: %d !!!\n", fsi->type);
+	    D(kprintf("!!! UNSUPPORTED FRAMEBUFFER TYPE: %d !!!\n", fsi->type));
 	    success = FALSE;
 	    break;
     }
-    
-    return success;
-    
+
+    return success;    
 }
+
 #if BUFFERED_VRAM
 void fbRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
 {
