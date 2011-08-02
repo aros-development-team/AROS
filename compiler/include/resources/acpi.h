@@ -99,7 +99,7 @@ struct ACPI_TABLE_TYPE_XSDT                                                 /* E
 {
     struct ACPI_TABLE_DEF_HEADER            header;
     UQUAD			            entry[1];
-};
+} __attribute__ ((packed));
 
 struct ACPI_TABLE_TYPE_FADT                                                 /* Fixed ACPI Description Table "FADT" structures  */
 {
