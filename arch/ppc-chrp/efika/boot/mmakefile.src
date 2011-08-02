@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM AROS-chrp-ppc-efika: \
+#MM- AROS-chrp-ppc-efika: \
 #MM     kernel-chrp-ppc-efika \
 #MM     kernel-package-chrp-ppc-efika \
 #MM     workbench-complete
@@ -59,7 +59,7 @@ include $(TOP)/config/make.cfg
 PKG_GEN_LIBS 	:= aros partition expansion utility oop graphics layers intuition keymap workbench boot dos
 PKG_GEN_RSRC 	:= dosboot bestcomm lddemon
 PKG_GEN_DEVS 	:= input gameport keyboard console
-PKG_GEN_HANDLERS:= con nil amberram cdrom
+PKG_GEN_HANDLERS:= con amberram cdrom
 PKG_GEN_HIDDS	:= graphics keyboard mouse hiddclass i2c pci
 
 PKG_EFI_LIBS 	:= 
@@ -75,14 +75,14 @@ MODULES_GENERIC := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_GEN_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_GEN_DEVS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_GEN_RSRC))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix -handler, $(PKG_GEN_HANDLERS))) \
+	$(addprefix $(BINDIR)/L/,    $(addsuffix -handler, $(PKG_GEN_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_GEN_HIDDS)))
 
 MODULES_EFIKA := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_EFI_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_EFI_DEVS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_EFI_RSRC))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix -handler, $(PKG_EFI_HANDLERS))) \
+	$(addprefix $(BINDIR)/L/,    $(addsuffix -handler, $(PKG_EFI_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_EFI_HIDDS)))
 
 MODULES_USB := \
