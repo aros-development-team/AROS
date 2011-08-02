@@ -795,7 +795,7 @@ void __startup AFS_work(void)
     }
 
     AFS_free(handler);
-    replypkt(dp, DOSFALSE);
+    replypkt(dp, DOSTRUE);
     return;
 }
 
