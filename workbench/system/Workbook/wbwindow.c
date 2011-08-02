@@ -173,6 +173,27 @@ AROS_UFH3(ULONG, wbIgnoreInfo_Hook,
     AROS_USERFUNC_EXIT
 }
 
+static int wbwiIconCmp(Class *cl, Object *obj, Object *a, Object *b)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+
+    CONST_STRPTR al = NULL, bl = NULL;
+
+    GetAttr(WBIA_Label, a, (IPTR *)&al);
+    GetAttr(WBIA_Label, b, (IPTR *)&bl);
+
+    if (al == bl)
+        return 0;
+
+    if (al == NULL)
+        return 1;
+
+    if (bl == NULL)
+        return -1;
+
+    return Stricmp(al, bl);
+}
+
 static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -183,9 +204,17 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
     if (!wbwi) {
 	DisposeObject(iobj);
     } else {
+	struct wbWindow_Icon *tmp, *pred = NULL;
 	wbwi->wbwiObject = iobj;
-	AddTail((struct List *)&my->IconList, (struct Node *)&wbwi->wbwiNode);
-	DoMethod(my->Set, OM_ADDMEMBER, iobj);
+
+	/* Insert in Alpha order */
+	ForeachNode((struct List *)&my->IconList, tmp) {
+	    if (wbwiIconCmp(cl, obj, tmp->wbwiObject, wbwi->wbwiObject) < 0)
+	        break;
+	    pred = tmp;
+	}
+
+	Insert((struct List *)&my->IconList, (struct Node *)wbwi, (struct Node *)pred);
     }
 }
 
@@ -322,6 +351,48 @@ static void wbRedimension(Class *cl, Object *obj)
     	D(bug("%s: VScroll Total=%d Visible=%d\n", __func__, tot, vis));
     }
 }
+
+/* Rescan the Lock for new entries */
+static void wbRescan(Class *cl, Object *obj)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
+    struct wbWindow_Icon *wbwi;
+
+    /* We're going to busy for a while */
+    D(bug("BUSY....\n"));
+    SetWindowPointer(my->Window, WA_BusyPointer, TRUE, TAG_END);
+
+    /* Remove and undisplay any existing icons */
+    while ((wbwi = (struct wbWindow_Icon *)REMHEAD(&my->IconList)) != NULL) {
+        DoMethod(my->Set, OM_REMMEMBER, wbwi->wbwiObject);
+        DisposeObject(wbwi->wbwiObject);
+        FreeMem(wbwi, sizeof(*wbwi));
+    }
+
+    /* Scan for new icons, and add them to the list
+     */
+    if (my->Lock == BNULL) {
+        /* Root window */
+        wbAddVolumeIcons(cl, obj);
+        wbAddAppIcons(cl, obj);
+    } else {
+        /* Directory window */
+        wbAddFiles(cl, obj);
+    }
+
+    /* Display the new icons */
+    ForeachNode((struct List *)&my->IconList, wbwi)
+        DoMethod(my->Set, OM_ADDMEMBER, wbwi->wbwiObject);
+
+    /* Adjust the scrolling regions */
+    wbRedimension(cl, obj);
+
+    /* Return the point back to normal */
+    SetWindowPointer(my->Window, WA_BusyPointer, FALSE, TAG_END);
+    D(bug("Not BUSY....\n"));
+}
+
 
 const struct TagItem scrollv2window[] = {
 	{ PGA_Top, WBVA_VirtTop },
@@ -498,17 +569,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     /* Send first intuitick */
     DoMethod(obj, WBWM_INTUITICK);
 
-    D(bug("BUSY....\n"));
-    SetWindowPointer(my->Window, WA_BusyPointer, TRUE, TAG_END);
-    if (my->Lock == BNULL) {
-    	wbAddVolumeIcons(cl, obj);
-    	wbAddAppIcons(cl, obj);
-    } else
-    	wbAddFiles(cl, obj);
-    SetWindowPointer(my->Window, WA_BusyPointer, FALSE, TAG_END);
-    D(bug("Not BUSY....\n"));
-
-    wbRedimension(cl, obj);
+    wbRescan(cl, obj);
 
     my->Menu = CreateMenusA((struct NewMenu *)WBWindow_menu, NULL);
     if (my->Menu == NULL)
