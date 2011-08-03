@@ -21,8 +21,8 @@
 #include LC_LIBDEFS_FILE
 
 AROS_LH1(void *, OF_OpenKey,
-		 AROS_LHA(char *, Key, A0),
-         struct OpenFirmwareBase *, OpenFirmwareBase, 10, Openfirmware)
+         AROS_LHA(char *, Key, A0),
+         struct OpenFirmwareBase *, OpenFirmwareBase, 1, Openfirmware)
 {
     AROS_LIBFUNC_INIT
 
@@ -72,8 +72,8 @@ AROS_LH1(void *, OF_OpenKey,
 }
 
 AROS_LH1I(void, OF_CloseKey,
-		 AROS_LHA(void *, Key, A0),
-         struct OpenFirmwareBase *, OpenFirmwareBase, 10, Openfirmware)
+         AROS_LHA(void *, Key, A0),
+         struct OpenFirmwareBase *, OpenFirmwareBase, 2, Openfirmware)
 {
     AROS_LIBFUNC_INIT
 
@@ -81,9 +81,9 @@ AROS_LH1I(void, OF_CloseKey,
 }
 
 AROS_LH2I(void *, OF_GetChild,
-		 AROS_LHA(void *, Key, A0),
-		 AROS_LHA(void *, Prev, A1),
-         struct OpenFirmwareBase *, OpenFirmwareBase, 10, Openfirmware)
+         AROS_LHA(void *, Key, A0),
+         AROS_LHA(void *, Prev, A1),
+         struct OpenFirmwareBase *, OpenFirmwareBase, 3, Openfirmware)
 {
     AROS_LIBFUNC_INIT
 
@@ -99,9 +99,9 @@ AROS_LH2I(void *, OF_GetChild,
 }
 
 AROS_LH2I(void *, OF_FindProperty,
-		 AROS_LHA(void *, Key, A0),
-		 AROS_LHA(char *, name, A1),
-         struct OpenFirmwareBase *, OpenFirmwareBase, 10, Openfirmware)
+         AROS_LHA(void *, Key, A0),
+         AROS_LHA(char *, name, A1),
+         struct OpenFirmwareBase *, OpenFirmwareBase, 4, Openfirmware)
 {
     AROS_LIBFUNC_INIT
 
@@ -123,9 +123,9 @@ AROS_LH2I(void *, OF_FindProperty,
 }
 
 AROS_LH2I(void *, OF_GetProperty,
-		 AROS_LHA(void *, Key, A0),
-		 AROS_LHA(void *, Prev, A1),
-         struct OpenFirmwareBase *, OpenFirmwareBase, 10, Openfirmware)
+         AROS_LHA(void *, Key, A0),
+         AROS_LHA(void *, Prev, A1),
+         struct OpenFirmwareBase *, OpenFirmwareBase, 5, Openfirmware)
 {
     AROS_LIBFUNC_INIT
 
@@ -141,8 +141,8 @@ AROS_LH2I(void *, OF_GetProperty,
 }
 
 AROS_LH1I(uint32_t, OF_GetPropLen,
-		 AROS_LHA(void *, Key, A0),
-         struct OpenFirmwareBase *, OpenFirmwareBase, 10, Openfirmware)
+         AROS_LHA(void *, Key, A0),
+         struct OpenFirmwareBase *, OpenFirmwareBase, 6, Openfirmware)
 {
     AROS_LIBFUNC_INIT
 
@@ -157,8 +157,8 @@ AROS_LH1I(uint32_t, OF_GetPropLen,
 }
 
 AROS_LH1I(char *, OF_GetPropName,
-		 AROS_LHA(void *, Key, A0),
-         struct OpenFirmwareBase *, OpenFirmwareBase, 10, Openfirmware)
+         AROS_LHA(void *, Key, A0),
+         struct OpenFirmwareBase *, OpenFirmwareBase, 8, Openfirmware)
 {
     AROS_LIBFUNC_INIT
 
@@ -173,8 +173,8 @@ AROS_LH1I(char *, OF_GetPropName,
 }
 
 AROS_LH1I(void *, OF_GetPropValue,
-		 AROS_LHA(void *, Key, A0),
-         struct OpenFirmwareBase *, OpenFirmwareBase, 10, Openfirmware)
+         AROS_LHA(void *, Key, A0),
+         struct OpenFirmwareBase *, OpenFirmwareBase, 7, Openfirmware)
 {
     AROS_LIBFUNC_INIT
 
