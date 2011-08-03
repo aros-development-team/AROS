@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a task.
     Lang: english
 */
+
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>

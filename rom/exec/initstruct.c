@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <aros/config.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
 

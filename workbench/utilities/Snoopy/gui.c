@@ -1,10 +1,11 @@
 /*
-    Copyright © 2006-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <aros/config.h>
 #include <aros/debug.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>

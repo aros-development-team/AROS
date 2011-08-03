@@ -2,7 +2,7 @@
 
 /* This file contains architecture-dependent defaults */
 
-void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
+void InitBootConfig(struct BootConfig *bootcfg)
 {
     bootcfg->gfxlib  = "radeon.hidd";
     bootcfg->gfxhidd = "RadeonDriver";

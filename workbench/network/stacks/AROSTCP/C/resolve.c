@@ -20,6 +20,8 @@ static const char version[] = "$VER: resolve 4.0 (17.10.2005)\n"
 
 #define USE_INLINE_STDARG
 
+#include <aros/config.h>
+
 #include <proto/socket.h>
 #include <proto/dos.h>
 

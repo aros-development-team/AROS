@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a segment from the system list.
@@ -7,6 +7,7 @@
 */
 
 #include "dos_intern.h"
+#include <aros/config.h>
 #include <proto/exec.h>
 
 /*****************************************************************************

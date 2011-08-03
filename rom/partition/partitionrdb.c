@@ -6,6 +6,7 @@
 
 #define RDB_WRITE 1
 
+#include <aros/config.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/partition.h>
