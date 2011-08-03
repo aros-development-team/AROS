@@ -18,6 +18,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-timer-kobj		 \
 #MM			   kernel-expansion-kobj	 \
 #MM			   kernel-hidd-irq-kobj		 \
+#MM			   kernel-pc-acpi-kobj		 \
 #MM			   kernel-pc-i386-kbd-kobj	 \
 #MM			   kernel-pc-i386-mouse-kobj	 \
 #MM			   kernel-pc-i386-serial-kobj	 \
@@ -29,7 +30,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-pci-pcipc-kobj	 \
 #MM			   kernel-processor-kobj
 
-KRSRCS  := battclock efi processor
+KRSRCS  := acpi battclock efi processor
 KLIBS   := exec expansion
 KDEVS   := ata timer
 KHIDDS  := irq parallel pci pcipc serial vesagfx vgah kbd ps2mouse
