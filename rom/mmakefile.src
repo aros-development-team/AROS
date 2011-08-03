@@ -24,6 +24,10 @@ include $(TOP)/config/make.cfg
 #MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
 #MM	workbench-devs-amberram
 
+# This metatarget represents all includes for SDK.
+# Note that it includes also some machine-specific modules (hostlib.resource,
+# acpi.resource, efi.resource, etc). This is because our SDK is universal.
+
 #MM- includes-generate : \
 #MM     kernel-exec-includes \
 #MM     kernel-aros-includes \
@@ -44,8 +48,12 @@ include $(TOP)/config/make.cfg
 #MM     kernel-oop-includes \
 #MM     kernel-battclock-includes \
 #MM     kernel-misc-includes \
+#MM	kernel-openfirmware-includes \
 #MM     kernel-processor-includes \
-#MM     kernel-usb-includes-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM	kernel-pc-acpi-includes \
+#MM	kernel-bestcomm-chrp-ppc-efika-includes \
+#MM	kernel-rtas-chrp-ppc-includes \
+#MM     kernel-usb-includes
 
 # This is what kickstart base package consists of.
 # These modules are architecture-independent and can work on both hosted and native systems.
