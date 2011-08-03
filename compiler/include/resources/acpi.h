@@ -12,19 +12,6 @@
 #include <exec/semaphores.h>
 #include <utility/hooks.h>
 
-#define     MAX_ACPI_TABLES                 32
-
-/********** ACPI DEFINITIONS ****************/
- 
-struct acpi_table_hook
-{
-    struct MinNode                          h_MinNode;
-    IPTR	                            (*h_Entry)();                   /* Main entry point */
-    IPTR	                            (*h_SubEntry)();                /* Secondary entry point */
-    unsigned long                           phys_addr;                      /* points to "header" for madt entry hooks */
-    unsigned long                           size;
-};
-
 /********** ACPI DEFINITIONS ****************/
 
 /*
