@@ -36,12 +36,14 @@ AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
 
 #define RDAF_ALLOCATED_BY_READARGS (1L << 31)
 
+/* BCPL compatibility: At least LONG alignment required */
+
 struct IntDosBase
 {
     struct DosLibrary pub;
     struct Library *debugBase;
-    struct RootNode rootNode;
-    struct ErrorString errors;
+    struct RootNode rootNode  __attribute__((aligned(4)));
+    struct ErrorString errors  __attribute__((aligned(4)));
 };
 
 #define DebugBase ((struct IntDosBase *)DOSBase)->debugBase
