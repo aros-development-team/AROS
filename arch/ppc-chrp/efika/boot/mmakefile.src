@@ -56,7 +56,7 @@ include $(TOP)/config/make.cfg
 #MM     devs-networks-drivers-fec-powerpc \
 #MM     kernel-processor
 
-PKG_GEN_LIBS 	:= aros partition expansion utility oop graphics layers intuition keymap workbench boot dos
+PKG_GEN_LIBS 	:= aros partition expansion utility oop graphics layers intuition keymap workbench dos
 PKG_GEN_RSRC 	:= dosboot bestcomm lddemon
 PKG_GEN_DEVS 	:= input gameport keyboard console
 PKG_GEN_HANDLERS:= con amberram cdrom
