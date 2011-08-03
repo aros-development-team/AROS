@@ -1,36 +1,20 @@
 #ifndef EXEC_NODES_H
 #define EXEC_NODES_H
-/* Copyright © 1995, The AROS Development Team. All rights reserved. */
+/* Copyright © 1995-2011, The AROS Development Team. All rights reserved. */
 
 #include "aros_types.h"
 
 typedef be_ptr<struct Node> NodePtr;
 typedef be_ptr<struct MinNode> MinNodePtr;
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 struct Node
 {
     NodePtr ln_Succ,
 	    ln_Pred;
     UBYTE   ln_Type;
     BYTE    ln_Pri;
-    /* AROS: pointer should be 32bit aligned, but we can not do this on
-       the native machine because of binary compatibility.
-    */
     STRPTR  ln_Name;
 };
-
-#else
-struct Node
-{
-    NodePtr ln_Succ,
-	    ln_Pred;
-    /* AROS: pointer should be 32bit aligned */
-    STRPTR  ln_Name;
-    UBYTE   ln_Type;
-    BYTE    ln_Pri;
-};
-#endif /* AROS_FLAVOUR */
 
 struct MinNode
 {
