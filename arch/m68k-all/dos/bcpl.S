@@ -1594,22 +1594,3 @@ bstr_debug:
     movem.l	%sp@+,%d1/%a0-%a1
     rts
 #endif
-
-	/* Load DOSBase from SysBase->ThisTask->pr_GlobVec[BCPL_DOSBase] */
-	.balign	4
-	.globl PatchDOSCall
-PatchDOSCall:
-	/* A0 = pointer to dos function */
-	move.l	%a6,%sp@-
-	move.l	4.w,%a1
-	move.l	%a1@(ThisTask),%a1
-	cmp.b	#13,%a1@(8) /* ln_Type == NT_PROCESS? */
-	bne.s	0f
-	move.l	%a1@(136),%d0 /* pr_GlobVec */
-	beq.s	0f
-	move.l	%d0,%a1
-	move.l	%a1@(BCPL_DOSBase),%a6
-0:	jsr		%a0@
-	move.l	%sp@+,%a6
-	move.l	%d0,%d1
-	rts

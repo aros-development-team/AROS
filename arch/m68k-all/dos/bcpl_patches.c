@@ -12,12 +12,12 @@ AROS_UFP4(BPTR, LoadSeg_Overlay,
     AROS_UFPA(BPTR, fh, D3),
     AROS_UFPA(struct DosLibrary *, DosBase, A6));
 
-extern void *BCPL_jsr, *BCPL_rts, *PatchDOSCall;
+extern void *BCPL_jsr, *BCPL_rts;
 extern const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize];
     
 const UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
 
-#define PATCHMEM_SIZE (6 * (highfunc - lowfunc + 1 - skipfuncs) * sizeof(UWORD) + 11 * sizeof(UWORD))
+#define PATCHMEM_SIZE (10 * (highfunc - lowfunc + 1 - skipfuncs) * sizeof(UWORD) + 16 * sizeof(UWORD))
 
 /* This patches two compatibility problems with badly written programs:
  * 1) Return value in both D0 and D1.
@@ -41,17 +41,25 @@ static int PatchDOS(struct DosLibrary *dosbase)
     	    continue;
     	func = (IPTR)__AROS_GETJUMPVEC(dosbase, i)->vec;
  	__AROS_SETVECADDR(dosbase, i, asmcall);
-    	*asmcall++ = 0x41f9; // LEA func,A0
+ 	*asmcall++ = 0x2f0e; // MOVE.L A6,-(SP)
+	*asmcall++ = 0x4df9; // LEA dosbase,A6
+	*asmcall++ = (UWORD)((ULONG)dosbase >> 16);
+	*asmcall++ = (UWORD)((ULONG)dosbase >>  0);
+	*asmcall++ = 0x4eb9; // JSR func
 	*asmcall++ = (UWORD)(func >> 16);
 	*asmcall++ = (UWORD)(func >>  0);
-	*asmcall++ = 0x4ef9; // JMP PatchDOSCall
-	*asmcall++ = (UWORD)((ULONG)&PatchDOSCall >> 16);
-	*asmcall++ = (UWORD)((ULONG)&PatchDOSCall >>  0);
+	*asmcall++ = 0x2C5F; // MOVE.L (SP)+,A6
+	*asmcall++ = 0x2200; // MOVE.L D0,D1
+	*asmcall++ = 0x4e75; // RTS
     }
 
     /* Redirect LoadSeg() to LoadSeg_Overlay() if D1 == NULL */
     func = (IPTR)__AROS_GETJUMPVEC(dosbase, 25)->vec;
     __AROS_SETVECADDR(dosbase, 25, asmcall);
+    *asmcall++ = 0x2f0e; // MOVE.L A6,-(SP)
+    *asmcall++ = 0x4df9; // LEA dosbase,A6
+    *asmcall++ = (UWORD)((ULONG)dosbase >> 16);
+    *asmcall++ = (UWORD)((ULONG)dosbase >>  0);
     *asmcall++ = 0x41f9; // LEA func,A0
     *asmcall++ = (UWORD)(func >> 16);
     *asmcall++ = (UWORD)(func >>  0);
@@ -60,9 +68,10 @@ static int PatchDOS(struct DosLibrary *dosbase)
     *asmcall++ = 0x41f9; // LEA LoadSeg_Overlay,A0
     *asmcall++ = (UWORD)((ULONG)LoadSeg_Overlay >> 16);
     *asmcall++ = (UWORD)((ULONG)LoadSeg_Overlay >>  0);
-    *asmcall++ = 0x4ef9; // JMP PatchDOSCall
-    *asmcall++ = (UWORD)((ULONG)&PatchDOSCall >> 16);
-    *asmcall++ = (UWORD)((ULONG)&PatchDOSCall >>  0);
+    *asmcall++ = 0x4e90; // JSR (A0)
+    *asmcall++ = 0x2C5F; // MOVE.L (SP)+,A6
+    *asmcall++ = 0x2200; // MOVE.L D0,D1
+    *asmcall++ = 0x4e75; // RTS
 
     CacheClearE(asmmem, PATCHMEM_SIZE, CACRF_ClearI|CACRF_ClearD);
 
