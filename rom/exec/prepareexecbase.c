@@ -271,11 +271,11 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 	 * We store mungwall setting in private flags because it must not be
 	 * switched at runtime (or hard crash will happen).
 	 */
-	opts = strstr(args, "mungwall");
+	opts = strcasestr(args, "mungwall");
 	if (opts)
 	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
 
-	opts = strstr(args, "stacksnoop");
+	opts = strcasestr(args, "stacksnoop");
 	if (opts)
 	    PrivExecBase(SysBase)->IntFlags = EXECF_StackSnoop;
 
@@ -286,7 +286,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 	 * However in order to be able to turn them on during early startup,
 	 * we apply them also here.
 	 */
-	opts = strstr(args, "sysdebug=");
+	opts = strcasestr(args, "sysdebug=");
 	if (opts)
 	    SysBase->ex_DebugFlags = ParseFlags(&opts[9], ExecFlagNames);
     }
