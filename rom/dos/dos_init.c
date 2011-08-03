@@ -138,7 +138,7 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
 	InitSemaphore(&dosinfo->di_DeleteLock);
 
     	/* Initialize for Stricmp */
-    	DOSBase->dl_UtilityBase = OpenLibrary("utility.library", 0);
+    	DOSBase->dl_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     	if (!DOSBase->dl_UtilityBase)
     	{
     	    DosExpunge(DOSBase);
@@ -146,7 +146,7 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
     	}
 
 	/* Initialize for the fools that illegally used this field */
-	DOSBase->dl_IntuitionBase = NULL;
+	DOSBase->dl_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
 
     	/*
      	 * iaint:
