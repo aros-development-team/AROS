@@ -334,6 +334,12 @@ struct ACPI_TABLE_TYPE_ECDT                                                 /* E
 };
 
 
+/*
+ * acpi.resource base.
+ * For the user it's actually black box. Use API to access the data.
+ * These pointers are provided for diagnostics purposes only. The actual
+ * data can be protected against even reading in user mode.
+ */
 struct ACPIBase
 {
     struct  Node                            ACPIB_Node;
@@ -350,12 +356,6 @@ struct ACPIBase
     int                                     ACPIB_ACPI_IRQ;
 
     int                                     ACPIB_ACPI_HT;
-
-    BOOL                                    ACPIB_SMP_Enabled;
-    int                                     ACPIB_SMP_Config;
-/** OBSOLETE _ DO NOT USE (only here to fix build probs till acpi,resource is up ;) */
-    int                                     ACPIB_ACPI_LAPIC;
-    int                                     ACPIB_ACPI_IOAPIC;
 };
 
 #endif /* __AROS_ACPI_H__ */
