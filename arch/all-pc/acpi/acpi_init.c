@@ -1,9 +1,12 @@
 #include <aros/debug.h>
+#include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <resources/acpi.h>
 #include <resources/efi.h>
+#include <proto/arossupport.h>
 #include <proto/efi.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <string.h>
 
@@ -42,7 +45,6 @@ static const uuid_t acpi_10_guid = ACPI_TABLE_GUID;
 static void *core_ACPIRootSystemDescriptionPointerLocate()
 {
     struct EFIBase *EFIBase;
-    APTR ssp;
     struct ACPI_TABLE_TYPE_RSDP *RSDP_PhysAddr;
 
     EFIBase = OpenResource("efi.resource");
@@ -84,28 +86,15 @@ static void *core_ACPIRootSystemDescriptionPointerLocate()
     /* 
      * Search the first Kilobyte of the Extended BIOS Data Area.
      * On x86-64 zero page is protected, on i386 it will someday be too.
-     * We need to become a Supervisor to access it.
+     * This code relies on the fact that InitCode(RTF_SINGLETASK) is called with
+     * supervisor privileges. With them you can at least read these locations.
      */
-    ssp = SuperState();
     RSDP_PhysAddr = core_ACPIRootSystemDescriptionPointerScan(0x00000000, 0x00000400);
-    UserState(ssp);
 
     if (RSDP_PhysAddr != NULL)
     {
-    	void *RSDP_Copy;
-
         D(bug("[ACPI] RSDP found in EBDA @ %p\n", RSDP_PhysAddr));
-
-	/* Make a user-readable copy */
-	RSDP_Copy = AllocMem(36, MEMF_ANY);
-	if (RSDP_Copy)
-	{
-	    ssp = SuperState();
-	    CopyMemQuick(RSDP_PhysAddr, RSDP_Copy, (RSDP_PhysAddr->revision < 2) ? 20 : 36);
-	    UserState(ssp);
-
-	    return RSDP_Copy;
-	}
+        return RSDP_PhysAddr;
     }
 
     /* Search in BIOS ROM address space */
@@ -258,6 +247,27 @@ static int acpi_CheckSDT(struct ACPIBase *ACPIBase)
 
 static int acpi_Init(struct ACPIBase *ACPIBase)
 {
+    APTR KernelBase;
+
+    /*
+     * We are part of package. To make user's life simpler, we allow to disable ourselves
+     * without repacking.
+     */
+    KernelBase = OpenResource("kernel.resource");
+    if (KernelBase)
+    {
+    	struct TagItem *cmdline = LibFindTagItem(KRN_CmdLine, KrnGetBootInfo());
+
+    	if (cmdline)
+    	{
+    	    if (strcasestr((char *)cmdline->ti_Data, "noacpi"))
+    	    {
+    	    	D(bug("[ACPI] Disabled from command line\n"));
+    	    	return FALSE;
+    	    }
+    	}
+    }
+
     ACPIBase->ACPIB_RSDP_Addr = core_ACPIRootSystemDescriptionPointerLocate();
     if (!ACPIBase->ACPIB_RSDP_Addr)
     {
