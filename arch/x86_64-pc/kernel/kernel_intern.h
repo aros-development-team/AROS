@@ -21,12 +21,9 @@ struct KernBootPrivate
 {
     IPTR	        kbp_PrivateNext;
     IPTR                kbp_InitFlags;
-    IPTR                kbp_ACPIRSDP;
-    struct MemHeader   *kbp_LowMem;
     const struct GenericAPIC **kbp_APIC_Drivers;
     IPTR                kbp_APIC_DriverID;
     UWORD               kbp_APIC_BSPID;
-    int                 kbp_APIC_IRQ_Model;
     unsigned short	debug_y_resolution;
     void	       *debug_framebuffer;
     IPTR	        SystemStack;
@@ -50,14 +47,14 @@ extern struct KernBootPrivate *__KernBootPrivate;
 /* Platform-specific part of KernelBase */
 struct PlatformData
 {
-    IPTR                kb_ACPIRSDP;
     APTR                kb_APIC_TrampolineBase;
     const struct GenericAPIC **kb_APIC_Drivers;
     IPTR                kb_APIC_DriverID;
     uint16_t            kb_XTPIC_Mask;
-    UBYTE               kb_APIC_Count;
-    UBYTE		kb_APIC_Ready;
-    UWORD               *kb_APIC_IDMap;                         /* ACPI_ID << 8 | LOGICAL_ID */
+    UBYTE               kb_APIC_Count;		/* How many APICs are woken up				   */
+    UBYTE		kb_APIC_Ready;		/* How many APICs are running				   */
+    UBYTE		kb_APIC_MapSize;	/* How many APICs are enumerated. Zero if no ACPI.	   */
+    UWORD               *kb_APIC_IDMap;         /* ACPI_ID << 8 | LOGICAL_ID */
     IPTR                *kb_APIC_BaseMap;
     int                 kb_APIC_IRQ_Model;
     int                 kb_ACPI_IOAPIC;
@@ -79,7 +76,7 @@ UBYTE core_APICGetNumber();
 void core_SetupIDT(struct KernBootPrivate *);
 void core_SetupGDT(struct KernBootPrivate *);
 void core_SetupMMU(struct KernBootPrivate *);
-void core_CPUSetup(IPTR);
+void core_CPUSetup(UBYTE, IPTR);
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
 void core_DefaultIRETQ();
 

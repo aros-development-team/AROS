@@ -21,8 +21,7 @@
 #include "apic.h"
 
 #define D(x)
-
-#define CONFIG_LAPICS
+/* #define DEBUG_PROBE */
 
 #define APICICR_INT_LEVELTRIG 0x8000
 #define APICICR_INT_ASSERT    0x4000
@@ -72,9 +71,6 @@ static const char str_IA32APIC[] = "IA32 default";
 
 static IPTR _APIC_IA32_probe(const struct GenericAPIC *hook, struct KernBootPrivate *__KernBootPrivate)
 {
-    /*  Default to PIC(8259) interrupt routing model.  This gets overriden later if IOAPICs are enumerated */
-    __KernBootPrivate->kbp_APIC_IRQ_Model = ACPI_IRQ_MODEL_PIC;
-
     return 1; /* should be called last. */
 } 
 
@@ -167,23 +163,12 @@ static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, struct Pl
     IPTR ipisend_timeout, status_ipisend = 0, status_ipirecv = 0;
     ULONG apic_ver, maxlvt, start_count, max_starts = 2;
     IPTR __APICBase;
-    APTR _APICStackBase;
-
     UBYTE __thisAPICNo = core_APICGetNumber(pdata);
 
     __APICBase = pdata->kb_APIC_BaseMap[__thisAPICNo];
 
     D(bug("[Kernel] _APIC_IA32_wake[%d](%d @ %p)\n", __thisAPICNo, wake_apicid, wake_apicstartrip));
     D(bug("[Kernel] _APIC_IA32_wake[%d] KernelBase @ %p, APIC No %d Base @ %p\n", __thisAPICNo, KernelBase, __thisAPICNo, __APICBase));
-
-    /* Setup stack for the new APIC */
-    _APICStackBase = AllocMem(STACK_SIZE, MEMF_CLEAR);
-    D(bug("[Kernel] _APIC_IA32_wake[%d]: stack allocated for APIC ID %d @ %p ..\n", __thisAPICNo, wake_apicid, _APICStackBase));
-
-    *(APTR *)(wake_apicstartrip + 0x0018) = _APICStackBase + STACK_SIZE - SP_OFFSET;
-    *(APTR *)(wake_apicstartrip + 0x0020) = kernel_cstart;
-
-    D(bug("[Kernel] _APIC_IA32_wake[%d]:  ... and set\n", __thisAPICNo));
 
     /* Send the IPI by setting APIC_ICR : Set INIT on target APIC
        by writing the apicid to the destfield of APIC_ICR2 */
@@ -351,7 +336,7 @@ static const struct GenericAPIC *probe_APIC[] =
         NULL,
 };
 
-IPTR core_APICProbe(struct KernBootPrivate *__KernBootPrivate)
+IPTR boot_APIC_Probe(struct KernBootPrivate *__KernBootPrivate)
 {
     int driver_count, changed = 0;
 
@@ -368,6 +353,7 @@ IPTR core_APICProbe(struct KernBootPrivate *__KernBootPrivate)
         }
     }
 
+#ifdef DEBUG_PROBE
     if (!changed)
     {
         bug("[Kernel] core_APICProbe: No suitable APIC driver found.\n");
@@ -376,6 +362,7 @@ IPTR core_APICProbe(struct KernBootPrivate *__KernBootPrivate)
     {
         bug("[Kernel] core_APICProbe: Using APIC driver '%s'\n", ((struct GenericAPIC *)probe_APIC[__KernBootPrivate->kbp_APIC_DriverID])->name);
     }
+#endif
 
     return changed;
 }

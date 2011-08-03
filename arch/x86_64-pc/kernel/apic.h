@@ -31,7 +31,7 @@ struct GenericAPIC
 	IPTR                        (*apic_id_registered)();
 };
 
-IPTR core_APICProbe(struct KernBootPrivate *__KernBootPrivate);
+IPTR boot_APIC_Probe(struct KernBootPrivate *__KernBootPrivate);
 UBYTE core_APICGetNumber(struct PlatformData *pdata);
 
 /* Driver call stubs */
@@ -48,6 +48,11 @@ static inline IPTR core_APIC_Wake(APTR start_addr, UBYTE id, struct PlatformData
 static inline IPTR core_APIC_GetBase(struct PlatformData *pd)
 {
     return pd->kb_APIC_Drivers[pd->kb_APIC_DriverID]->getbase();
+}
+
+static inline IPTR core_APIC_GetID(struct PlatformData *pd, IPTR base)
+{
+    return pd->kb_APIC_Drivers[pd->kb_APIC_DriverID]->getid(base);
 }
 
 static inline IPTR core_APIC_Init(struct PlatformData *pd)
