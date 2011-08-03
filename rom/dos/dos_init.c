@@ -58,6 +58,7 @@ extern const APTR GM_UNIQUENAME(FuncTable)[];
 
 THIS_PROGRAM_HANDLES_SYMBOLSETS
 DEFINESET(INITLIB)
+DEFINESET(EXPUNGELIB)
 
 /*
  * Init routine is intentionally written by hands in order to be reentrant.
@@ -285,6 +286,13 @@ static void DosExpunge(struct DosLibrary *DOSBase)
     	 * which didn't quit. Who knows...
     	 */
     	D(bug("[DosInit] Open count is %d, can't expunge\n"));
+    	return;
+    }
+
+    /* Call platform-specific expunge code (if any) */
+    if (!set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 1, DOSBase))
+    {
+    	D(bug("[DosInit] Platform-dependent code failed to expunge\n"));
     	return;
     }
 
