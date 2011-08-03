@@ -39,7 +39,7 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
     ULONG *GlobVec;
     ULONG *segment;
 
-    GlobVec = AllocVec(sizeof(BCPL_GlobVec), MEMF_ANY);
+    GlobVec = AllocVec(sizeof(BCPL_GlobVec), MEMF_ANY | MEMF_CLEAR);
     if (GlobVec == NULL)
     	return NULL;
 
@@ -51,7 +51,7 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
     	fakeseg[2] = 0x4e714ef9; /* NOP (long alignment) + JMP.L */
     	fakeseg[3] = (ULONG)entry;
     	segList = MKBADDR(fakeseg) + 1;
-    	CacheClearU();
+    	CacheClearE(fakeseg, FAKESEG_SIZE, CACRF_ClearI|CACRF_ClearD);
     	D(bug("fakeseglist @%p\n", fakeseg));
     	entry = NULL;
     }
@@ -69,12 +69,10 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
 
     me->pr_SegList = MKBADDR(GlobVec);
 
-    /* this and dl_A2/dl_A5/dl_A6 probably should be initialized somewhere else.. */
-    ((struct DosLibrary*)DOSBase)->dl_GV = (APTR)BCPL_GlobVec;
-
     GlobVec = ((APTR)GlobVec) + BCPL_GlobVec_NegSize;
     GlobVec[0] = BCPL_GlobVec_PosSize >> 2;
     me->pr_GlobVec = GlobVec;
+    GlobVec[BCPL_DOSBase >> 2] = (ULONG)DOSBase;
 
     segment = BADDR(segList);
     if (segment[2] == 0x0000abcd) {
@@ -87,7 +85,7 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
    	 */
    	 segment[6] = (ULONG)BCPL_GlobVec;
     }
-
+    D(bug("BCPL_Setup '%s' @%p\n", me->pr_Task.tc_Node.ln_Name, GlobVec));
     return entry;
 }
 
@@ -138,7 +136,7 @@ BOOL BCPL_InstallSeg(BPTR seg, ULONG *GlobVec)
 
     if (seg == (ULONG)-2) {
     	D(bug("BCPL_InstallSeg: Inserting DOSBase global\n"));
-    	GlobVec[BCPL_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0);
+    	/* GlobVec[BCPL_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0); */
     	return TRUE;
     }
 
