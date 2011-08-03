@@ -77,6 +77,11 @@ BOOL __dos_IsBootable(struct DosLibrary * DOSBase, BPTR lock)
                     D(bug("[__dos_IsBootable] Signature '%s' found\n", AROS_CPU));
                     result = TRUE;
                 }
+                else
+                {
+                    /* Something to more or less reflect "This disk is not bootable" */
+                    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+                }
             }
         }
         FreeDosObject(DOS_FIB, abfile_fib);
