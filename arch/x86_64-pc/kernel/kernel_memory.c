@@ -104,8 +104,8 @@ struct MemChunk *krnAddKickChunk(struct MemHeader **mhPtr, struct MemChunk *prev
  * It is suggested that:
  * 1. Addresses in both memory map and MemRegion structures
  *    are sorted in ascending order.
- * 2. MemRegion structures cover all possible addresses range (i. e. it is guaranteed
- *    that none of memory map entries will happen to be completely outside of all MemRegions).
+ * 2. MemRegion structures must specify continuous addresses range (i. e. it is guaranteed
+ *    that none of memory map entries will happen to be between two MemRegions).
  */
 void mmap_InitMemory(struct mb_mmap *mmap, unsigned long len, struct MinList *memList,
 		     IPTR klo, IPTR khi, const struct MemRegion *reg)
@@ -179,5 +179,9 @@ void mmap_InitMemory(struct mb_mmap *mmap, unsigned long len, struct MinList *me
 	    mh->mh_Upper = (APTR)end;
 	    ADDTAIL(memList, mh);
 	}
+
+	/* If we reached the end of layout table, exit */
+	if (reg->name == NULL)
+	    return;
     }
 }

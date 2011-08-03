@@ -36,11 +36,18 @@ static const struct MemRegion PC_Memory[] =
     {0x000000000, 0x000100000, "Low memory"    , -6, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
     {0x000100000, 0x001000000, "ISA DMA memory", -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
     /*
-     * FIXME: These two entries should also be CHIP. trackdisk.device and i386 port
+     * FIXME: The following two entries should also be CHIP. trackdisk.device and i386 port
      * fix is needed (use MEMF_24BITDMA instead of MEMF_CHIP for 24-bit ISA DMA-capable area.
      */
     {0x001000000, 0x080000000, "31-bit memory" ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST|MEMF_31BIT		},
-    {0x080000000, -1         , "Upper memory"  , 10, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST                         },
+    /*
+     * FIXME: Our MMU mapping supports only 4GB address space.
+     * We can't enable more right now because lots of RAM would be required for MMU tables,
+     * and it will be irrational to reserve so large boot-time region (AROS will fail to boot
+     * up on systems with relatively small amount of RAM).
+     * MMU structures need to be allocated dynamically from a working memory. Waiting for Michal's
+     * page allocator to implement this...
+    {0x080000000, -1         , "Upper memory"  , 10, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST                         }, */
     {0          , 0          , NULL            ,  0, 0                                                                  }
 };
 
