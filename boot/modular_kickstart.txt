@@ -1,5 +1,5 @@
   Modern AROS bootstraps support modular kickstart. This means that the
-ickstart doesn't have to be a monolythic image and can be built on the
+kickstart doesn't have to be a monolythic image and can be built on the
 fly from separate modules.
 
   In order to simplify life for both developers and users, the distribution
