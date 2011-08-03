@@ -64,6 +64,7 @@ struct amigavideo_staticdata
 	struct Interrupt inter;
 	volatile UWORD framecounter;
 	volatile UWORD mode;
+	struct amigabm_data *updatescroll;
 
 	WORD width_alignment;
 	WORD startx, starty;
