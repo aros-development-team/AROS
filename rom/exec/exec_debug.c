@@ -17,6 +17,7 @@
 #include <exec/rawfmt.h>
 #include <proto/exec.h>
 
+#include <ctype.h>
 #include <string.h>
 
 #include "exec_debug.h"
@@ -74,18 +75,9 @@ void ExecLog(struct ExecBase *SysBase, ULONG flags, const char *format, ...)
  * The following stuff is a candidate to become a public API.
  * Currently i have no idea into what component to put it, so for now
  * it's exec.library's private property.
+ * The main problem is that we need it very early, before debug.library
+ * and whatever else wakes up.
  */
-
-/* Only shared version of our libc has isalpha(), so we use own implementation */
-static int IsAlpha(char c)
-{
-    if ((c >= 'A') && (c <= 'Z'))
-    	return 1;
-    if ((c >= 'a') && (c <= 'z'))
-    	return 1;
-
-    return 0;
-}
 
 /*
  * Return a set of flags specified on the command line.
@@ -103,13 +95,13 @@ ULONG ParseFlags(char *opts, const char * const *FlagNames)
     	opts++;
     }
 
-    while (IsAlpha(*opts))
+    while (isalpha(*opts))
     {
     	char *p = opts + 1;
     	unsigned int i;
 
 	/* Find the end of the word */
-    	while (IsAlpha(*p))
+    	while (isalpha(*p))
 	    p++;
 
 	/* "ALL" means all flags */
@@ -134,7 +126,7 @@ ULONG ParseFlags(char *opts, const char * const *FlagNames)
 	if (quoted)
 	{
 	    /* Skip separator characters */
-	    while (!IsAlpha(*p))
+	    while (!isalpha(*p))
 	    {
 	    	/* If we hit closing quotes or end of line, this is the end */
 	    	if (*p == '"')

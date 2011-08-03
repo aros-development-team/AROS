@@ -91,7 +91,7 @@ DEFINESET(PREINITLIB)
 AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     AROS_UFHA(struct MemHeader *, mh, D0),
     AROS_UFHA(struct TagItem *, tagList, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
+    AROS_UFHA(struct ExecBase *, origSysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
@@ -105,7 +105,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
      * exec.library init routine is a little bit magic. The magic is that it
      * can be run twice.
      * First time it's run manually from kernel.resource's ROMTag scanner in order
-     * to create initial ExecBase. This condition is determined by SysBase == NULL
+     * to create initial ExecBase. This condition is determined by origSysBase == NULL
      * passed to this function. In this case the routine expects two more arguments:
      * mh      - an initial MemHeader in which ExecBase will be constructed.
      * tagList - boot information passed from the bootstrap. It is used to parse
@@ -116,7 +116,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
      * memory list and working kernel.resource. Now the job is to complete the boot task
      * structure, and start up multitasking.
      */
-    if (!SysBase)
+    if (!origSysBase)
     	return PrepareExecBase(mh, tagList);
 
     DINIT("exec.library init");
@@ -127,11 +127,16 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
      *
      * TODO: Amiga(tm) port may call PrepareExecBaseMove() here instead of hardlinking
      * it from within the boot code.
+     *
+     * NOTE: All functions will be passed origSysBase value. This is the original
+     * ExecBase pointer in case if it was moved. The new pointer will be in global
+     * SysBase then.
      */
-    set_call_libfuncs(SETNAME(PREINITLIB), 1, 0, SysBase);
+    set_call_libfuncs(SETNAME(PREINITLIB), 1, 0, origSysBase);
 
     /*
      * kernel.resource is up and running and memory list is complete.
+     * Global SysBase is set to its final value.
      * Complete boot task with ETask and CPU context.
      */
     t = SysBase->ThisTask;
