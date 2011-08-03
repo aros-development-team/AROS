@@ -28,4 +28,6 @@
 #define KRN_OpenFirmwareTree	(KRN_Dummy + 19)
 #define KRN_DebugInfo			(KRN_Dummy + 21)
 
+#define AROS_BOOT_MAGIC (('A' << 24)|('R' << 16)|('O' << 8)|'S')
+
 #endif /*AROS_KERNEL_H*/

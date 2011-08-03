@@ -9,9 +9,7 @@
 #define SUPPORT_H_
 
 #include <inttypes.h>
-
-#define NULL ((void*)0)
-
+#include <stddef.h>
 
 typedef struct __node {
 	struct __node 	*n_succ,

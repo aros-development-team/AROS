@@ -57,4 +57,6 @@ int32_t ofw_rtas_token(const char *service);
 
 ofw_node_t *ofw_scan_tree();
 
+char *ofw_GetString(void *handle, const char *prop);
+
 #endif /* OF1275_H_ */
