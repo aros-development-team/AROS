@@ -675,3 +675,15 @@ ofw_node_t *ofw_scan_tree()
 
 	return root;
 }
+
+/* Copy a string property into allocated memory */
+char *ofw_GetString(void *handle, const char *prop)
+{
+    int32_t len = ofw_get_prop_len(handle, prop);
+    char *str = ofw_claim(NULL, len + 1, 4);
+
+    ofw_get_prop(handle, prop, str, 255);
+    str[len] = 0;
+
+    return str;
+}

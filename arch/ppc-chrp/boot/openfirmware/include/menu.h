@@ -27,7 +27,7 @@
 typedef struct menu_entry {
     char *      m_title;
     char *      m_kernel;
-    int         m_cmdline;
+    char *      m_cmdline;
     char *      m_modules[MAX_MODULES];
     int         m_modules_cnt;
 } menu_entry_t;

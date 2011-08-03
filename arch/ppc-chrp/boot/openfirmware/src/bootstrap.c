@@ -4,7 +4,7 @@
  *  Created on: Aug 13, 2008
  *      Author: misc
  */
-#define DEBUG 0
+#define DEBUG 1
 
 #include <debug.h>
 #include <support.h>
@@ -21,7 +21,7 @@ typedef struct {uintptr_t ti_Tag; intptr_t ti_Data; } tagitem_t;
 extern struct bss_tracker tracker[MAX_BSS_SECTIONS];
 list_t *debug_info;
 
-char *bootpath;
+char *bootpath = NULL;
 char *bootargs;
 
 static void flush_cache(char *start, char *end)
@@ -100,11 +100,10 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	int i;
 	ofw_node_t *rootnode;
 	int kernel_loaded = 1;
-
 	tagitem_t *tags;
 	int tagcnt = 0;
 
-	int (*kernel_phys_entry)(ofw_node_t *) = (void (*)())KERNEL_PHYS_BASE;
+	int (*kernel_phys_entry)(tagitem_t *, uint32_t) = (int (*)())KERNEL_PHYS_BASE;
 
 	struct {
 		uint8_t *base;
@@ -204,12 +203,33 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	tagcnt++;
 
 	handle = ofw_find_device("/chosen");
-	bootpath = ofw_claim(NULL, ofw_get_prop_len(handle, "bootpath") + 1, 4);
-	bootargs = ofw_claim(NULL, ofw_get_prop_len(handle, "bootargs") + 1, 4);
-	ofw_get_prop(handle, "bootpath", bootpath, 255);
-	ofw_get_prop(handle, "bootargs", bootargs, 255);
-	bootpath[ofw_get_prop_len(handle, "bootpath")] = 0;
-	bootargs[ofw_get_prop_len(handle, "bootargs")] = 0;
+	bootargs = ofw_GetString(handle, "bootargs");
+
+	D(bug("[BOOT] bootargs='%s'\n", bootargs));
+
+	/*
+ 	 * --root command line option overrides boot path.
+	 * Useful on Pegasos where /chosen/bootpath doesn't include anything
+	 * beyond physical device.
+	 */
+	if (!strncasecmp(bootargs, "--root", 6))
+	{
+	    bootpath = &bootargs[6];
+
+	    /* Skip all spaces */
+	    while (isspace(*bootpath))
+		bootpath++;
+
+	    /* Now skip non-spaces. This will skip the actual specification. */
+	    bootargs = bootpath + 1;
+	    while (!isspace(*bootargs))
+		bootargs++;
+	    /* Separate bootpath from the rest of command line */
+	    *bootargs++ = 0;
+	}
+
+	if (!bootpath)
+	    bootpath = ofw_GetString(handle, "bootpath");
 
 	D(bug("[BOOT] bootpath='%s' bootargs='%s'\n", bootpath, bootargs));
 
@@ -253,7 +273,7 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 				else
 					sprintf(cmdline, "%s", bootargs);
 				tags[tagcnt].ti_Tag = KRN_CmdLine;
-				tags[tagcnt].ti_Data = cmdline;
+				tags[tagcnt].ti_Data = (intptr_t)cmdline;
 				tagcnt++;
 			}
 		}
@@ -298,7 +318,8 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	}
 
 
-	ofw_node_t *tmp = rootnode->on_children.l_head;
+	ofw_node_t *tmp = (ofw_node_t *)rootnode->on_children.l_head;
+
 	while(tmp->on_node.n_succ)
 	{
 		if (!strcasecmp(tmp->on_name, "rtas"))
@@ -308,19 +329,19 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 			prop->op_name = "load_base";
 			prop->op_value = &rtas_base;
 
-			add_tail(&tmp->on_properties, prop);
+			add_tail(&tmp->on_properties, &prop->op_node);
 
 			prop = ofw_claim(NULL, sizeof(ofw_property_t), 4);
 			prop->op_length = 4;
 			prop->op_name = "entry";
 			prop->op_value = &rtas_entry;
 
-			add_tail(&tmp->on_properties, prop);
+			add_tail(&tmp->on_properties, &prop->op_node);
 
 			break;
 		}
 
-		tmp = tmp->on_node.n_succ;
+		tmp = (ofw_node_t *)tmp->on_node.n_succ;
 	}
 
 	tags[tagcnt].ti_Tag = KRN_KernelBss;
@@ -348,7 +369,7 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	/* Jump into the JUNGLE! */
 	tags[tagcnt].ti_Tag = TAG_DONE;
 	tags[tagcnt].ti_Data = 0UL;
-	kernel_phys_entry(tags);
+	kernel_phys_entry(tags, AROS_BOOT_MAGIC);
 
 	free_menu();
 
