@@ -48,12 +48,29 @@ AROS_UFP3S(struct ExecBase *, GM_UNIQUENAME(init),
     AROS_UFPA(struct TagItem *, tagList, A0),
     AROS_UFPA(struct ExecBase *, sysBase, A6));
 
+/*
+ * exec.library ROMTag.
+ *
+ * It has RTF_COLDSTART level specified, however it actually runs at SINGLETASK
+ * (no multitasking, incomplete boot task).
+ * This is supposed to be the first COLDSTART resident to be executed. Its job is
+ * to complete the boot task and enable multitasking (which actually means entering
+ * COLDSTART level).
+ * Such mechanism allows kernel.resource boot code to do some additional setup after
+ * all SINGLETASK residents are run. Usually these are various lowlevel hardware resources
+ * (like acpi.resource, efi.resource, etc) which can be needed for kernel.resource to
+ * complete own setup. This helps to get rid of additional ROMTag hooks.
+ * There's one more magic with this ROMTag: it's called twice. First time it's called manually
+ * from within krnPrepareExecBase(), for initial ExecBase creation. This magic is described below.
+ *
+ * WARNING: the CPU privilege level must be set to user before calling InitCode(RTF_COLDSTART)!
+ */
 const struct Resident Exec_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Exec_resident,
     (APTR)&LIBEND,
-    RTF_SINGLETASK,
+    RTF_COLDSTART,
     VERSION_NUMBER,
     NT_LIBRARY,
     120,
@@ -69,6 +86,7 @@ extern void debugmem(void);
 
 THIS_PROGRAM_HANDLES_SYMBOLSETS
 DEFINESET(INITLIB)
+DEFINESET(PREINITLIB)
 
 AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     AROS_UFHA(struct MemHeader *, mh, D0),
@@ -104,9 +122,13 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     DINIT("exec.library init");
 
     /*
+     * Call platform-specific pre-init code (if any). Return values are not checked.
+     * Note that Boot Task is still incomplete here, and there's no multitasking yet.
+     *
      * TODO: Amiga(tm) port may call PrepareExecBaseMove() here instead of hardlinking
      * it from within the boot code.
      */
+    set_call_libfuncs(SETNAME(PREINITLIB), 1, 0, SysBase);
 
     /*
      * kernel.resource is up and running and memory list is complete.
@@ -204,10 +226,16 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     /* Call platform-specific init code (if any) */
     set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase);
 
-    /*
-     * This code returns, allowing more RTF_SINGLETASK modules to get initialized after us.
-     * Kernel.resource's startup code has to InitCode(RTF_COLDSTART) itself.
-     */
+    /* Multitasking is on. Call CoolCapture. */
+    if (SysBase->CoolCapture)
+    {
+    	DINIT("Calling CoolCapture at 0x%p", SysBase->CoolCapture);
+
+	AROS_UFC1(void, SysBase->CoolCapture,
+            AROS_UFCA(struct Library *, (struct Library *)SysBase, A6));
+    }
+
+    /* Done. Following the convention, we return our base pointer. */
     return SysBase;
 
     AROS_USERFUNC_EXIT

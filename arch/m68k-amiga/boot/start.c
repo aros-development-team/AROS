@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: m68k-amiga bootstrap to exec.
@@ -506,17 +506,6 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	__clear_bss(&kbss[0]);
 	BootMsg = bootmsgptr;
 
-	/* NOTE: mh *must* have, as its first mc, a chunk
-	 *       big enough for krnRomTagScanner, and at
-	 *       least one other chunk big enough for the
-	 *       initial SysBase.
-	 */
-	DEBUGPUTHEX(("[SysBase mh]", (ULONG)mh));
-	if (mh->mh_First->mc_Bytes < 64*1024) {
-	    DEBUGPUTHEX(("FATAL: SysBase mh's first chunk is too small", mh->mh_First->mc_Bytes));
-	    Early_Alert(AT_DeadEnd | AG_NoMemory);
-	}
-
 	/*
 	 * Call the SysBase initialization.
 	 */
@@ -721,11 +710,6 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	    SysBase = PrepareExecBaseMove(SysBase);
 	    DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
 	}
-	
-	/* Now that SysBase is in its final position, we can
-	 * call CoolCapture and the KickTags.
-	 */
-	InitKickTags();
 
 	/* Initialize IRQ subsystem */
 	AmigaIRQInit(SysBase);

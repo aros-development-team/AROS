@@ -12,6 +12,7 @@
 
 #include "exec_debug.h"
 #include "exec_intern.h"
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -49,40 +50,15 @@
 {
     AROS_LIBFUNC_INIT
 
-    IPTR *list;
+    IPTR *ptr;
 
-    DFINDRESIDENT("FindResident(\"%s\")", name);
+    DFINDRESIDENT("FindResident(\"%s\")", name);    
 
-    list = SysBase->ResModules;
-    if (list)
+    ptr = InternalFindResident(name, SysBase->ResModules);
+    if (ptr)
     {
-	while (*list)
-	{
-            /* on amiga, if bit 31 is set then this points to another list of
-             * modules rather than pointing to a single module. bit 31 is
-             * inconvenient on architectures where code may be loaded above
-             * 2GB. on these platforms we assume aligned pointers and use bit
-             * 0 instead */
-#ifdef __mc68000__
-	    if (*list & 0x80000000)
-	    {
-	    	list = (IPTR *)(*list & 0x7fffffff);
-#else
-	    if (*list & 0x1)
-	    {
-	    	list = (IPTR *)(*list & ~(IPTR)0x1);
-#endif
-	    	continue;
-	    }
-
-	    if (!(strcmp( ((struct Resident *)*list)->rt_Name, name)))
-	    {
-	    	DFINDRESIDENT("Found at 0x%p", *list);
-		return (struct Resident *)*list;
-	    }
-
-	    list++;
-	}
+	DFINDRESIDENT("Found at 0x%p", *ptr);
+	return (struct Resident *)*ptr;
     }
 
     DFINDRESIDENT("Not found");
@@ -90,3 +66,31 @@
 
     AROS_LIBFUNC_EXIT
 } /* FindResident */
+
+IPTR *InternalFindResident(const UBYTE *name, IPTR *list)
+{
+    if (list)
+    {
+	while (*list)
+	{
+            /*
+             * On amiga, if bit 31 is set then this points to another list of
+             * modules rather than pointing to a single module. bit 31 is
+             * inconvenient on architectures where code may be loaded above
+             * 2GB. on these platforms we assume aligned pointers and use bit
+             * 0 instead
+             */
+	    if (*list & RESLIST_NEXT)
+	    {
+	    	list = (IPTR *)(*list & ~RESLIST_NEXT);
+	    	continue;
+	    }
+
+	    if (!(strcmp( ((struct Resident *)*list)->rt_Name, name)))
+		return list;
+
+	    list++;
+	}
+    }
+    return NULL;
+}

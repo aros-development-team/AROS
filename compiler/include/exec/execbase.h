@@ -189,6 +189,17 @@ struct ExecBase
 #define EXECDEBUGF_LOG              0x80000000
 
 /*
+ * AROS-specific definition.
+ * This value ORed with a pointer in SysBase->ResList tells
+ * that it's a pointer to another list, not to a resident.
+ */
+#ifdef __mc68000__
+#define RESLIST_NEXT (IPTR)0x80000000
+#else
+#define RESLIST_NEXT (IPTR)0x00000001
+#endif
+
+/*
  * The following definitions are private!
  */
 

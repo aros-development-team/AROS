@@ -69,8 +69,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *tags);
 struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase);
 BOOL Exec_PreparePlatform(struct Exec_PlatformData *pdata, struct TagItem *tags);
 
-void InitKickTags(void);
-void InitResidentList(IPTR *list, ULONG startClass, ULONG version);
+void InitKickTags(struct ExecBase *SysBase);
 UWORD GetSysBaseChkSum(struct ExecBase *sysbase);
 void SetSysBaseChkSum(void);
 BOOL IsSysBaseValid(struct ExecBase *sysbase);

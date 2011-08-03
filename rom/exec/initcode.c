@@ -37,6 +37,8 @@
     RESULT
 
     NOTES
+    	This is actually internal function. There's no sense to call it from
+    	within user software.
 
     EXAMPLE
 
@@ -50,30 +52,39 @@
 {
     AROS_LIBFUNC_INIT
 
-    IPTR *list = SysBase->ResModules;
+    IPTR *list;
 
     DINITCODE("enter InitCode(0x%02lx, %ld)", startClass, version);
 
+    if (startClass == RTF_COLDSTART)
+    {
+    	/*
+    	 * When the system enters RTF_COLDSTART level, it's a nice time to pick up
+    	 * KickTags.
+    	 * We could call this from within exec init code, but InitKickTags() function
+    	 * will replace SysBase->ResModules if it finds some KickTags. In order to
+    	 * simplify things down, we keep it here, before we start using the list.
+    	 */
+	InitKickTags(SysBase);
+    }
+
+    list = SysBase->ResModules;
     if (list)
     {
 	while (*list)
 	{
 	    struct Resident *res;
 
-            /* on amiga, if bit 31 is set then this points to another list of
+            /*
+             * On Amiga(tm), if bit 31 is set then this points to another list of
              * modules rather than pointing to a single module. bit 31 is
              * inconvenient on architectures where code may be loaded above
              * 2GB. on these platforms we assume aligned pointers and use bit
-             * 0 instead */
-#ifdef __mc68000__
-	    if (*list & 0x80000000)
+             * 0 instead
+             */
+	    if (*list & RESLIST_NEXT)
 	    {
-	    	list = (IPTR *)(*list & 0x7fffffff); 
-#else
-            if (*list & 0x1)
-            {
-            	list = (IPTR *)(*list & ~(IPTR)0x1);
-#endif
+	    	list = (IPTR *)(*list & ~RESLIST_NEXT); 
             	continue;
             }
 
