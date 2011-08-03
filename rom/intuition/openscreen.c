@@ -6,6 +6,7 @@
     Open a new screen.
 */
 
+#include <aros/config.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <intuition/screens.h>

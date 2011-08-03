@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DOS function LoadSeg()
@@ -8,6 +8,7 @@
 #define DEBUG 0
 
 #include <aros/asmcall.h>
+#include <aros/config.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/stdio.h>

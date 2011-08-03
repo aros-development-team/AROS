@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,7 @@
  * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
-
+#include <aros/config.h>
 #include <proto/intuition.h>
 #include <aros/debug.h>
 #include <exec/rawfmt.h>

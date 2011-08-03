@@ -47,7 +47,7 @@ struct DOSBootBase
     WORD		  bottomY;
 };
 
-void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase);
+void InitBootConfig(struct BootConfig *bootcfg);
 LONG dosboot_BootStrap(struct DOSBootBase *DOSBootBase);
 void dosboot_BootScan(struct DOSBootBase *DOSBootBase);
 

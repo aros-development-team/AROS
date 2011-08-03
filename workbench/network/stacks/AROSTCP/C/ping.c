@@ -235,6 +235,8 @@
 #define AMIGA
 #endif
 
+#include <aros/config.h>
+
 #include <proto/socket.h>
 
 #define ioctl IoctlSocket

@@ -1,8 +1,9 @@
 /*
-    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#include <aros/config.h>
 #include <aros/debug.h>
 #include <stdio.h>
 #include <stdlib.h>

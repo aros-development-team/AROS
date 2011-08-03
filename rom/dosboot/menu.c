@@ -1,11 +1,12 @@
 /*
-   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Main bootmenu code
    Lang: english
 */
 
+#include <aros/config.h>
 #include <aros/debug.h>
 
 #include <proto/bootloader.h>
@@ -625,7 +626,7 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu)
     * This urgently needs to be fixed. After fixing this kludge
     * will not be needed any more.
     */
-    InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
+    InitBootConfig(&LIBBASE->bm_BootConfig);
     if (!initHidds(LIBBASE))
 	return FALSE;
 #endif
