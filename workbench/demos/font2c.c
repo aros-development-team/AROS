@@ -1,5 +1,5 @@
 /*
-    Copyright © 1997-98, The AROS Development Team. All rights reserved.
+    Copyright © 1997-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Convert Amiga font to C code.
@@ -270,16 +270,9 @@ static VOID font2c(struct TextFont *tf, FILE * fh, STRPTR prestring)
     fprintf(fh, "\t\t\tNULL,\n");	/* ln_Succ */
     fprintf(fh, "\t\t\tNULL,\n");	/* ln_Pred */
 
-/* See <exec/nodes.h> */
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     fprintf(fh, "\t\t\t%d,\n", tf->tf_Message.mn_Node.ln_Type);	/* ln_Type */
     fprintf(fh, "\t\t\t0,\n");	/* ln_Pri */
     fprintf(fh, "\t\t\t\"%s\"\n", tf->tf_Message.mn_Node.ln_Name);
-#else
-    fprintf(fh, "\t\t\t\"%s\",\n", tf->tf_Message.mn_Node.ln_Name);
-    fprintf(fh, "\t\t\t%d,\n", tf->tf_Message.mn_Node.ln_Type);	/* ln_Type */
-    fprintf(fh, "\t\t\t0\n");	/* ln_Pri */
-#endif
     fprintf(fh, "\t\t},\n");
     fprintf(fh, "\t\tNULL,\n");	/* mn_ReplyPort	*/
     fprintf(fh, "\t\t0\n");	/* mn_Length	*/

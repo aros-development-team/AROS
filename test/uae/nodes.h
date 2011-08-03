@@ -1,6 +1,6 @@
 #ifndef EXEC_NODES_H
 #define EXEC_NODES_H
-/* Copyright © 1995, The AROS Development Team. All rights reserved. */
+/* Copyright © 1995-2011, The AROS Development Team. All rights reserved. */
 
 /******************************************************************************
 
@@ -96,7 +96,6 @@ public:
 	       Structures
 **************************************/
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 struct Node
 {
     NodePtr ln_Succ,
@@ -111,21 +110,6 @@ struct Node
 public:
     inline Node () { return; }
 };
-
-#else
-struct Node
-{
-    NodePtr ln_Succ,
-	    ln_Pred;
-    /* AROS: pointer should be 32bit aligned */
-    STRPTR  ln_Name;
-    UBYTE   ln_Type;
-    BYTE    ln_Pri;
-
-public:
-    inline Node () { return; }
-};
-#endif /* AROS_FLAVOUR */
 
 struct MinNode
 {
