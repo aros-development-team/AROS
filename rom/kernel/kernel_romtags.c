@@ -94,6 +94,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
      */
     struct MemChunk *nextChunk = mh->mh_First->mc_Next;
     IPTR chunkSize = mh->mh_First->mc_Bytes;
+    IPTR limit = chunkSize / sizeof(APTR);
     struct Resident **RomTag = (struct Resident **)mh->mh_First;
     ULONG	    num = 0;
 
@@ -132,6 +133,20 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 		{
 		    /* New module */
 		    RomTag[num++] = res;
+		    /*
+		     * 'limit' holds a length of our MemChunk in pointers.
+		     * Actually it's a number or pointers we can safely store in it (including NULL terminator).
+		     * If it's exceeded, return NULL.
+		     * TODO: If ever needed, this routine can be made smarter. There can be
+		     * the following approaches:
+		     * a) Move the data to a next MemChunk which is bigger than the current one
+		     *    and continue.
+		     * b) In the beginning of this routine, find the largest available MemChunk and use it.
+		     * Note that we exit with destroyed MemChunk here. Anyway, failure here means the system
+		     * is completely unable to boot up.
+		     */
+		    if (num == limit)
+		    	return NULL;
 		}
 
 		/* Get address of EndOfResident from RomTag but only when
@@ -205,10 +220,14 @@ struct Resident *krnFindResident(struct Resident **resList, const char *name)
 
 struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struct TagItem *bootMsg)
 {
-    struct Resident **resList = krnRomTagScanner(mh, ranges);
-    struct Resident *exec = krnFindResident(resList, "exec.library");
+    struct Resident *exec; 
     struct ExecBase *sysBase;
+    struct Resident **resList = krnRomTagScanner(mh, ranges);
 
+    if (!resList)
+    	return NULL;
+
+    exec = krnFindResident(resList, "exec.library");
     if (!exec)
     	return NULL;
 
