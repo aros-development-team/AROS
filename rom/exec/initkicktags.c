@@ -12,50 +12,34 @@
 #endif
 
 #include <aros/debug.h>
+#include <exec/rawfmt.h>
 #include <exec/resident.h>
 #include <proto/exec.h>
 
+#include "exec_debug.h"
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 
-#ifdef __mc68000__
-#define NEXTRESIDENT(list) \
-	if(*list & 0x80000000) { list = (IPTR *)(*list & 0x7fffffff); continue; }
-#else
-#define NEXTRESIDENT(list) \
-        if(*list & 0x1) { list = (IPTR *)(*list & ~(IPTR)0x1); continue; }
-#endif
 
 /* I don't think KickTag merge can be implemented without ugly hacks.. */
-
-
-static IPTR *FindOldResident(IPTR *oldlist, struct Resident *RomTag)
-{
-    IPTR *oldlisttmp = oldlist;
-    if (!oldlist)
-    	return NULL;
-    while (*oldlisttmp) {
-	struct Resident *OldRomTag;
-	NEXTRESIDENT(oldlisttmp);
-	OldRomTag = (struct Resident*)*oldlisttmp;
-	if (!strcmp(OldRomTag->rt_Name, RomTag->rt_Name)) {
-	    if ((OldRomTag->rt_Version < RomTag->rt_Version) ||
-		(OldRomTag->rt_Version == RomTag->rt_Version && OldRomTag->rt_Pri <= RomTag->rt_Pri))
-		return oldlisttmp;
-	}
-	oldlisttmp++;
-    }
-    return NULL;
-}
 
 static IPTR *CopyResidents(IPTR *list, IPTR *dst, IPTR *oldlist)
 {
     struct Resident *RomTag;
+
     while(*list)
     {
 	IPTR *oldresident;
-	NEXTRESIDENT(list);
+
+	if (*list & RESLIST_NEXT)
+	{
+	    list = (IPTR *)(*list & ~RESLIST_NEXT);
+	    continue;
+	}
+
 	RomTag = (struct Resident*)*list;
+
 #ifdef PRINT_LIST
 	bug("* %p: %4d %02x %3d \"%s\"\n",
             RomTag,
@@ -64,23 +48,52 @@ static IPTR *CopyResidents(IPTR *list, IPTR *dst, IPTR *oldlist)
             RomTag->rt_Version,
             RomTag->rt_Name);
 #endif
-	oldresident = FindOldResident(oldlist, RomTag);
+
+	/* Try to find a resident with this name in original list */
+	oldresident = InternalFindResident(RomTag->rt_Name, oldlist);
+	if (oldresident)
+	{
+	    /*
+	     * If found, check version.
+	     * The resident is replaced if:
+	     * a) Version of new resident is greater than version of old one.
+	     * b) Versions are equal, but priority of new resident is greater than priority of old one.
+	     */
+	    struct Resident *OldRomTag = (struct Resident *)*oldresident;
+
+	    if ((OldRomTag->rt_Version >= RomTag->rt_Version) ||
+		(OldRomTag->rt_Version == RomTag->rt_Version && OldRomTag->rt_Pri >= RomTag->rt_Pri))
+	    {
+	    	oldresident = NULL;
+	    }
+	}
+	
 	if (oldresident)
 	    *oldresident = *list;
 	else
 	    *dst++ = *list;
+
 	list++;
     }
+    
+    /* Terminate the list */
     *dst = 0;
     return dst;
 }
 
+/* Count a number of residents in the list */
 static int CountResidents(IPTR *list)
 {
     int cnt = 0;
+
     while(*list)
     {
-	NEXTRESIDENT(list);
+	if (*list & RESLIST_NEXT)
+	{
+	    list = (IPTR *)(*list & ~RESLIST_NEXT);
+	    continue;
+	}
+
 	cnt++;
 	list++;
     }
@@ -114,81 +127,91 @@ static void SortResidents(IPTR *list)
     } while (!sorted);
 }
 
+/*
+ * Residents in our list must always be sorted by priority.
+ * In order to maintain this, we can't just append new residents to the end of our list.
+ * We have to build a complete new list.
+ */
 static void AddToResidentList(IPTR *list)
 {
     IPTR *newlist, *tmplist;
     int oldcnt = CountResidents(SysBase->ResModules);
     int addcnt = CountResidents(list);
-#ifdef PRINT_LIST
-    int i;
-#endif
-    
+
+    /* Allocate space for the new list */
     newlist = AllocMem((oldcnt + addcnt + 1) * sizeof(struct Resident*), MEMF_PUBLIC);
     if (!newlist)
     	return;
+
+    /* Merge two lists and sort. */
     tmplist = CopyResidents(SysBase->ResModules, newlist, NULL);
-#ifdef PRINT_LIST
-    bug("KickTag residents:\n");
-#endif
     CopyResidents(list, tmplist, SysBase->ResModules);
     SortResidents(newlist);
-    /* Redirect InitCode() loop to new list */
-    /* We assume we got here between SINGLETASK and COLDSTART */
-    tmplist = SysBase->ResModules;
-    while (*tmplist) {
-	NEXTRESIDENT(tmplist);
-#ifdef __mc68000__
-	*tmplist++ = (IPTR)(0x80000000 | (IPTR)newlist);
-#else
-	*tmplist++ = (IPTR)(0x00000001 | (IPTR)newlist);
-#endif
-    }
+
+    /*
+     * Replace the list.
+     * We just drop the old list without deallocation because noone really knows if it's safe
+     * to deallocate it. With future page-based memory allocator it will certainly be not.
+     */
     SysBase->ResModules = newlist;
-#ifdef PRINT_LIST
-    bug("Resident modules after KickTags merge:\n");
-    for (i = 0; i < addcnt + oldcnt; i++) {
-    	struct Resident *RomTag = (struct Resident*)newlist[i];
-        bug("+ %p: %4d %02x %3d \"%s\"\n",
-            RomTag,
-            RomTag->rt_Pri,
-            RomTag->rt_Flags,
-            RomTag->rt_Version,
-            RomTag->rt_Name);
+
+#ifndef NO_RUNTIME_DEBUG
+    if (SysBase->ex_DebugFlags & EXECDEBUGF_INITCODE)
+    {
+    	int i;
+    
+    	DINITCODE("Resident modules after KickTags merge:");
+
+	for (i = 0; i < addcnt + oldcnt; i++)
+	{
+    	    struct Resident *RomTag = (struct Resident*)newlist[i];
+
+            NewRawDoFmt("+ %p: %4ld %02x %3ld \"%s\"\n", (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL,
+		        RomTag, RomTag->rt_Pri, RomTag->rt_Flags, RomTag->rt_Version, RomTag->rt_Name);
+	}
     }
 #endif
 }
 
-void InitKickTags(void)
+void InitKickTags(struct ExecBase *SysBase)
 {
     ULONG chk = (ULONG)(IPTR)SysBase->KickCheckSum;
     ULONG chkold = SumKickData();
     struct MemList *ml = (struct MemList*)SysBase->KickMemPtr;
 
-    D(bug("coolcapture=%p kickmemptr=%p kicktagptr=%p kickchecksum=%08x\n",
-	SysBase->CoolCapture, SysBase->KickMemPtr, SysBase->KickTagPtr, chk));
+    DINITCODE("kickmemptr=0x%p kicktagptr=0x%p kickchecksum=0x%08lx", SysBase->KickMemPtr, SysBase->KickTagPtr, chk);
 
-    if (SysBase->CoolCapture) {
-	AROS_UFC1(void, SysBase->CoolCapture,
-            AROS_UFCA(struct Library *, (struct Library *)SysBase, A6));
-    }
-	
-    if (chkold != chk) {
-    	D(bug("Kicktag checksum mismatch %08x!=%08x\n", chkold, chk));
+    if (chkold != chk)
+    {
+    	DINITCODE("Kicktag checksum mismatch %08lx!=%08lx", chkold, chk);
+
     	SysBase->KickMemPtr = NULL;
     	SysBase->KickTagPtr = NULL;
     	SysBase->KickCheckSum = 0;
+
     	return;
     }
-    	
-    while (ml) { /* single linked! */
+
+    /*
+     * Before we do anything else, we need to lock down the entries in KickMemPtr
+     * If we get a single failure, don't run any of the KickTags.
+     */
+    while (ml) /* single linked! */
+    {
     	UWORD i;
-    	for (i = 0; i < ml->ml_NumEntries; i++) {
-    	    D(bug("KickMem at %x len %d\n", ml->ml_ME[i].me_Un.meu_Addr, ml->ml_ME[i].me_Length));
-    	    /* Use the non-Munwalling AllocAbs, since the regions
-    	     * may be consecutive.
+
+	DINITCODE("KickMemList 0x%p, NumEntries: %u", ml->ml_NumEntries);
+    	for (i = 0; i < ml->ml_NumEntries; i++)
+    	{
+    	    DINITCODE(" + Addr 0x%p, Len %u", ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length);
+
+    	    /* 
+    	     * Use the non-Munwalling AllocAbs, since regions may be consecutive.
+    	     * Mungwall headers can trash them in this case.
     	     */
-    	    if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase)) {
-		D(bug("KickMem allocation failed\n"));
+    	    if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase))
+    	    {
+		DINITCODE("KickMem allocation failed");
 		/* Should we free already allocated KickMem lists? */
  	    	return;
  	    }
@@ -197,7 +220,7 @@ void InitKickTags(void)
     }
 
     if (SysBase->KickTagPtr)
+    {
     	AddToResidentList(SysBase->KickTagPtr);
-    
+    }
 }
-    

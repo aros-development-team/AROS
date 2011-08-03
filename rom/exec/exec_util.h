@@ -97,6 +97,8 @@ void Exec_DoResetCallbacks(struct IntExecBase *SysBase);
 APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
 		      APTR PutChData, va_list VaListStream);
 
+IPTR *InternalFindResident(const UBYTE *name, IPTR *list);
+
 void FastPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
 void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
 
