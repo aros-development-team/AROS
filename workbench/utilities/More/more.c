@@ -28,6 +28,8 @@
 #include <proto/alib.h>
 #include <proto/utility.h>
 
+#include <setjmp.h>
+
 #include "global.h"
 #include "req.h"
 
@@ -43,6 +45,8 @@ static inline int abs(int x)
         return -x;
     return x;
 }
+
+static jmp_buf exit_buf;
 
 /****************************************************************************************/
 
@@ -231,8 +235,10 @@ VOID Cleanup(CONST_STRPTR msg)
 
     if (MyArgs) FreeArgs(MyArgs);
     CleanupLocale();
-    
-    Exit(rc);
+  
+    /* Abnormal exit? */
+    if (rc != 0)
+        longjmp(exit_buf, rc);
 }
 
 /****************************************************************************************/
@@ -1636,6 +1642,13 @@ static void HandleAll(void)
 
 int main(int argc, char **argv)
 {
+    int rc;
+
+    /* This is for when Cleanup() is called */
+    rc = setjmp(exit_buf);
+    if (rc)
+        return rc;
+
     InitLocale("System/Utilities/More.catalog", 1);
     InitMenus();
     GetArguments(argc, argv);
