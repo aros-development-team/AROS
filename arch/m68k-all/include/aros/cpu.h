@@ -57,7 +57,7 @@ struct JumpVec
 
 
 /* Any jump to an unimplemented vector will cause an access to this address */
-#define _aros_empty_vector		0xc0edbabe
+#define _aros_empty_vector		0xc0ed0000
 
 /* Internal macros */
 #define __AROS_ASMJMP			0x4EF9
@@ -85,7 +85,7 @@ do                                                       \
 #define __AROS_GETVECADDR(lib,n)        ((void *)__AROS_GETJUMPVEC(lib,n))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
 #define __AROS_INITVEC(lib,n)           __AROS_GETJUMPVEC(lib,n)->jmp = __AROS_ASMJMP, \
-					__AROS_SETVECADDR(lib,n,_aros_empty_vector)
+					__AROS_SETVECADDR(lib,n,_aros_empty_vector | (n << 8) | 1)
 
 
 #define SIZEOF_ALL_REGISTERS		(20*4)
