@@ -124,7 +124,7 @@ AROS_SH1(Shell, 41.3,
     ss.cliNumber = me->pr_TaskNum;
     cliVarNum("process", ss.cliNumber, DOSBase);
 
-    isBootShell = (strcmp(me->pr_Task.tc_Node.ln_Name, "Boot Shell") == 0);
+    isBootShell = (strcmp(me->pr_Task.tc_Node.ln_Name, "Boot Shell") == 0) && ss.cliNumber == 1;
     isBannerDone = FALSE;
 
     initDefaultInterpreterState(&ss);
@@ -411,7 +411,7 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
 	(
 	    absolutePath ||                 /* If this was an absolute path, we don't check the paths set by
 					       'path' or the C: multiassign */
-	    IoErr() == ERROR_OBJECT_IN_USE  /* The object might be exclusively locked */
+	    err == ERROR_OBJECT_IN_USE  /* The object might be exclusively locked */
 	)
 	    return BNULL;
 
