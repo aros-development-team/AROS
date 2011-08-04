@@ -14,6 +14,5 @@ struct SMPBootstrap
     APTR  IP;
 };
 
-int smp_Setup(struct ExecBase *SysBase);
-int smp_Wake(UWORD acpi_id, UBYTE apic_id, struct PlatformData *pdata);
-void smp_Wait(void);
+int smp_Setup(IPTR num);
+int smp_Wake(void);

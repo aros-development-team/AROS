@@ -21,6 +21,7 @@
 #include "kernel_romtags.h"
 #include "acpi.h"
 #include "apic.h"
+#include "smp.h"
 #include "tls.h"
 
 #define D(x) x
@@ -445,6 +446,12 @@ void kernel_cstart(const struct TagItem *msg)
      * Interrupts are still disabled and we are still supervisor.
      */
     core_ACPIInitialise();
+
+    /*
+     * The last thing to do is to start up secondary CPU cores.
+     * This function uses the information previously gathered by ACPI routines.
+     */
+    smp_Wake();
 
     /* Drop privileges down to user mode before calling RTF_COLDSTART */
     D(bug("[Kernel] Leaving supervisor mode\n"));
