@@ -116,13 +116,8 @@
 #include <dos/datetime.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
+#include <proto/utility.h>
 #include <utility/tagitem.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <memory.h>
 
 const TEXT version[] = "$VER: List 41.7 (18.08.2010)\n";
 
@@ -247,7 +242,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
     while ( ( substitutePath < 4 ) && ( '\0' != (c = *temp++) ) )
     {
         if ( '%' == c )
-            if ( 'S' == toupper(*temp++) )
+            if ( 'S' == ToUpper(*temp++) )
                 substitutePath++;
     }
     if ( substitutePath == 3 )
@@ -257,7 +252,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
     {
 	if ('%' == c)
 	{
-	    switch (toupper(*format++))
+	    switch (ToUpper(*format++))
 	    {
 		/* File comment */
 	    case 'C':
@@ -567,7 +562,7 @@ int printFileData(struct AnchorPath *ap,
 		    int  fill;
 		    int  i;	/* Loop variable */
 
-		    sprintf(key, "%ld", (long)diskKey);
+		    __sprintf(key, "%ld", (long)diskKey);
 		    fill = 7 - strlen(key) - 2;
 
 		    for (i = 0; i < fill; i++)
@@ -754,9 +749,9 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 		
 		    if (all && (ap->ap_Info.fib_DirEntryType >= 0))
 		    {
-		    	if ((dirnode = malloc(sizeof(struct DirNode))))
+		    	if ((dirnode = AllocMem(sizeof(struct DirNode), MEMF_ANY)))
 			{
-			    if ((dirnode->dirname = strdup(ap->ap_Buf)))
+			    if ((dirnode->dirname = StrDup(ap->ap_Buf)))
 			    {
 			    	Insert(&DirList, (struct Node *)dirnode,
 				       (struct Node *)prev_dirnode);
@@ -765,7 +760,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 			    }
 			    else
 			    {
-			    	free(dirnode);
+			    	FreeMem(dirnode, sizeof(struct DirNode));
 			    }
 			}
 		    }
@@ -826,8 +821,8 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
         
     while ((dirnode = (struct DirNode *)RemHead(&FreeDirNodeList)))
     {
-    	free(dirnode->dirname);
-	free(dirnode);
+    	FreeVec(dirnode->dirname);
+	FreeMem(dirnode, sizeof(struct DirNode));
     }
     
     return error;
