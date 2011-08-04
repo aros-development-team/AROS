@@ -24,7 +24,7 @@
 #include "smp.h"
 #include "tls.h"
 
-#define D(x) x
+#define D(x)
 #define DSTACK(x)
 
 /* Common IBM PC memory layout */
@@ -606,15 +606,6 @@ void core_CPUSetup(UBYTE _APICID, IPTR SystemStack)
      * At the moment two of three stacks are reserved. IST is not used (indexes == 0 in interrupt gates)
      * and ring 1 is not used either. However, the space pointed to by IST is used as a temporary stack
      * for warm restart routine.
-     *
-     * FIXME: Other CPUs should have own supervisor stacks. They can't allocate them because:
-     * 1. __KernBootPrivate is already sealed up. The memory behind it is given up
-     *    to the OS.
-     * 2. AllocMem() is not SMP-aware.
-     *
-     * For now this is the same as it was - all CPUs reuse the same stacks. Likely
-     * this would cause crash if we attempt to use more than one CPU.
-     * In fact the bootstrap CPU could allocate these stacks before actually running these CPUs.
      */
 
     TSS[_APICID].ist1 = SystemStack + STACK_SIZE     - 16;	/* Interrupt stack entry 1 (failsafe)	 */

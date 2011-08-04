@@ -17,7 +17,7 @@
 #include "apic.h"
 #include "smp.h"
 
-#define D(x) x
+#define D(x)
 
 /*
  * The code here is experimental and very incomplete.

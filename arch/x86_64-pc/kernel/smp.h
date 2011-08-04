@@ -4,14 +4,17 @@
  */
 struct SMPBootstrap
 {
-    ULONG Start;
-    ULONG Arg1;
-    ULONG Arg2;
-    ULONG Arg3;
-    ULONG Arg4;
-    ULONG PML4;
-    APTR  SP;
-    APTR  IP;
+    IPTR  Start;	/* Jump code to bypass this struct */
+    IPTR  Arg1;		/* Arguments			   */
+    IPTR  Arg2;
+    IPTR  Arg3;
+    IPTR  Arg4;
+    APTR  GDT;		/* 64-bit mode GDT address	   */
+    APTR  PML4;		/* 64-bit mode PML4 address	   */
+    APTR  SP;		/* Stack pointer for 64 bit mode   */
+    APTR  IP;		/* Address to jump to		   */
+    ULONG reloc1;	/* Two relocation points	   */
+    ULONG reloc2;
 };
 
 int smp_Setup(IPTR num);
