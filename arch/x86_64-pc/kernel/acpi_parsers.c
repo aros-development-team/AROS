@@ -59,7 +59,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_Count,
     D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Count: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags));
 
     if (processor->flags.enabled)
-    	pdata->kb_APIC_MapSize++;
+    	table_hook->h_Data++;
 
     return 1;
 
@@ -68,7 +68,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_Count,
 
 /*
  * Process the 'Local APIC' MADT Table.
- * This function actually boots up secondary CPUs.
+ * This function collects APIC IDs into already allocated IDMap.
  */
 AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_Parse,
 	  AROS_UFHA(struct Hook *, table_hook, A0),
@@ -78,11 +78,12 @@ AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_Parse,
 
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
 
-    D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags));
-
     if (((pdata->kb_APIC_IDMap[0] & 0xFF) != processor->id) && processor->flags.enabled)
     {
-	smp_Wake(processor->acpi_id, processor->id, pdata);
+	UBYTE apic_newno = pdata->kb_APIC_Count++;
+
+	pdata->kb_APIC_IDMap[apic_newno] = (processor->acpi_id << 8) | processor->id;
+	D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registered APIC number %d [ID=0x%04X]\n", apic_newno, pdata->kb_APIC_IDMap[apic_newno]));
     }
 
     return 1;

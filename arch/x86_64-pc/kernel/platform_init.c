@@ -53,7 +53,6 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     pd->kb_XTPIC_Mask = 0xfffb;
     pd->kb_APIC_Count = 1;	/* We already have one running processor */
-    pd->kb_APIC_Ready = 1;
 
     pd->kb_APIC_DriverID = __KernBootPrivate->kbp_APIC_DriverID;
     pd->kb_APIC_Drivers  = __KernBootPrivate->kbp_APIC_Drivers;

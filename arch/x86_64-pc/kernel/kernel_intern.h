@@ -51,10 +51,8 @@ struct PlatformData
     const struct GenericAPIC **kb_APIC_Drivers;
     IPTR                kb_APIC_DriverID;
     uint16_t            kb_XTPIC_Mask;
-    UBYTE               kb_APIC_Count;		/* How many APICs are woken up				   */
-    UBYTE		kb_APIC_Ready;		/* How many APICs are running				   */
-    UBYTE		kb_APIC_MapSize;	/* How many APICs are enumerated. Zero if no ACPI.	   */
-    UWORD               *kb_APIC_IDMap;         /* ACPI_ID << 8 | LOGICAL_ID */
+    UBYTE               kb_APIC_Count;		/* How many APICs (CPU cores) we have */
+    UWORD               *kb_APIC_IDMap;         /* ACPI_ID << 8 | LOGICAL_ID	      */
     IPTR                *kb_APIC_BaseMap;
     int                 kb_APIC_IRQ_Model;
     int                 kb_ACPI_IOAPIC;
