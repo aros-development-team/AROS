@@ -162,7 +162,6 @@ void kernel_cstart(const struct TagItem *msg)
     IPTR khi;
     const struct TagItem *tstate;
     struct TagItem *tag;
-    IPTR _APICBase;
     UBYTE _APICID;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
 
@@ -295,10 +294,10 @@ void kernel_cstart(const struct TagItem *msg)
     		   __KernBootPrivate->SystemStack, __KernBootPrivate->SystemStack + STACK_SIZE * 3));
     }
 
-    boot_APIC_Probe(__KernBootPrivate);
-    _APICBase = boot_APIC_GetBase(__KernBootPrivate);
-    _APICID   = boot_APIC_GetID(__KernBootPrivate, _APICBase);
-    D(bug("[Kernel] kernel_cstart: launching on BSP APIC ID %d, base @ %p\n", _APICID, _APICBase));
+    core_APIC_Probe(__KernBootPrivate);
+    __KernBootPrivate->_APICBase = core_APIC_GetBase();
+    _APICID   = core_APIC_GetID(__KernBootPrivate->_APICBase);
+    D(bug("[Kernel] kernel_cstart: launching on BSP APIC ID %d, base @ %p\n", _APICID, __KernBootPrivate->_APICBase));
 
     /* Set TSS, GDT, LDT and MMU up */
     core_CPUSetup(_APICID, __KernBootPrivate->SystemStack);

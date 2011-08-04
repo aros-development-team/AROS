@@ -28,10 +28,10 @@ static void smp_Entry(IPTR stackBase, UBYTE *apicready)
 
     /* Enable fxsave/fxrstor */ 
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
-     
-    _APICBase = core_APIC_GetBase(KernelBase->kb_PlatformData);
-    _APICID  = core_APIC_GetID(KernelBase->kb_PlatformData, _APICBase);
-    _APICNO  = core_APICGetNumber(KernelBase->kb_PlatformData);
+
+    _APICBase = core_APIC_GetBase();
+    _APICID   = core_APIC_GetID(_APICBase);
+    _APICNO   = core_APIC_GetNumber(KernelBase->kb_PlatformData, _APICBase);
 
     D(bug("[Kernel] smp_Entry[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase));
     D(bug("[Kernel] smp_Entry[%d]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
@@ -166,7 +166,7 @@ int smp_Wake(void)
     	} while (0);
 
 	/* Start IPI sequence */
-	wakeresult = core_APIC_Wake(bs, apic_id, pdata);
+	wakeresult = core_APIC_Wake(bs, apic_id, __KernBootPrivate->_APICBase);
 	D(bug("[SMP] core_APIC_Wake() returns %d\n", wakeresult));
 
 	/* wakeresult != 0 means error */

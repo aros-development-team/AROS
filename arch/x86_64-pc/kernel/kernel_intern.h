@@ -19,15 +19,14 @@
  */
 struct KernBootPrivate
 {
-    IPTR	        kbp_PrivateNext;
-    IPTR                kbp_InitFlags;
-    const struct GenericAPIC **kbp_APIC_Drivers;
-    IPTR                kbp_APIC_DriverID;
-    UWORD               kbp_APIC_BSPID;
-    unsigned short	debug_y_resolution;
+    IPTR	        kbp_PrivateNext;	/* Boot-time memory allocation pointer 			*/
+    const struct GenericAPIC *kbp_APIC_Driver;	/* Probed APIC driver		       			*/
+    IPTR		_APICBase;		/* Bootstrap APIC base address				*/
+    UWORD               kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				*/
+    unsigned short	debug_y_resolution;	/* Parameters of screen's lower half ('vesahack' mode)	*/
     void	       *debug_framebuffer;
-    IPTR	        SystemStack;
-    void	       *GDT;
+    IPTR	        SystemStack;		/* System stack base address	       			*/
+    void	       *GDT;			/* Self-explanatory					*/
     void	       *TSS;
     void	       *system_tls;
     void	       *IDT;
@@ -38,25 +37,18 @@ struct KernBootPrivate
     int		        used_page;
 };
 
-#define KERNBOOTFLAG_SERDEBUGCONFIGURED (1 << 0)
-#define KERNBOOTFLAG_DEBUG              (1 << 1)
-#define KERNBOOTFLAG_BOOTCPUSET         (1 << 2)
-
 extern struct KernBootPrivate *__KernBootPrivate;
 
 /* Platform-specific part of KernelBase */
 struct PlatformData
 {
-    APTR                kb_APIC_TrampolineBase;
-    const struct GenericAPIC **kb_APIC_Drivers;
-    IPTR                kb_APIC_DriverID;
+    APTR                kb_APIC_TrampolineBase;	/* Starting address of secondary core bootstrap code	*/
     uint16_t            kb_XTPIC_Mask;
-    UBYTE               kb_APIC_Count;		/* How many APICs (CPU cores) we have */
-    UWORD               *kb_APIC_IDMap;         /* ACPI_ID << 8 | LOGICAL_ID	      */
+    UBYTE               kb_APIC_Count;		/* How many APICs (CPU cores) we have			*/
+    UWORD               *kb_APIC_IDMap;         /* ACPI_ID << 8 | LOGICAL_ID	      			*/
     IPTR                *kb_APIC_BaseMap;
     int                 kb_APIC_IRQ_Model;
     int                 kb_ACPI_IOAPIC;
-    int                 kb_SMP_Config;
 };
 
 #define KBL_INTERNAL    0
