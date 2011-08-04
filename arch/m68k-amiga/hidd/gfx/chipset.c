@@ -270,13 +270,13 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
 
     data->use_colors = 1 << bm->depth;
     // need to update sprite colors
-    if (data->use_colors < 20)
-    	data->use_colors = 20;
+    if (data->use_colors < 16 + 4)
+    	data->use_colors = 16 + 4;
     if (data->use_colors > 32 && (data->modeid & EXTRAHALFBRITE_KEY))
     	data->use_colors = 32;
     if (data->modeid & HAM_KEY) {
     	if (bm->depth <= 6)
-    	    data->use_colors = 20;
+    	    data->use_colors = 16 + 4;
     	else
     	    data->use_colors = 64;
     }
@@ -310,13 +310,11 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     	*c++ = 0;
     }
 
-    bplcon0 = bplcon0_res;
+    bplcon0 = bplcon0_null;
     if (bm->depth > 7)
 	bplcon0 |= 0x0010;
     else
 	bplcon0 |= bm->depth << 12;
-    if (data->interlace)
-	bplcon0 |= 0x0004;
     if (data->modeid & HAM_KEY)
     	bplcon0 |= 0x0800;
 
