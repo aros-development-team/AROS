@@ -524,13 +524,12 @@ static long internalBootCliHandler(void)
         AssignLock("DRIVERS", lock);
         AssignAdd("LIBS", lock);
     }
-#endif
-
     /* 
      * This early assignment prevents Poseidon from asking for ENV:
      * when popup GUI process is initialized and opens muimaster.library.
      */
     AssignLate("ENV", "SYS:Prefs/Env-Archive");
+#endif
     AssignLate("ENVARC", "SYS:Prefs/Env-Archive");
 
     /*
