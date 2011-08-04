@@ -18,17 +18,13 @@
 #include <proto/graphics.h>
 #include <proto/gadtools.h>
 #include <proto/alib.h>
+#include <proto/utility.h>
 
 #include "global.h"
 #include "req.h"
 
 #define CATCOMP_NUMBERS
 #include "strings.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -221,7 +217,7 @@ BOOL Handle_Goto_Requester(LONG *line)
 		break;
 
 	    case IDCMP_VANILLAKEY:
-		switch(toupper(msg->Code))
+		switch(ToUpper(msg->Code))
 		{
 		    case 27:
 			killreq = TRUE;
@@ -396,7 +392,7 @@ WORD Handle_Find_Requester(char **text)
 		break;
 
 	    case IDCMP_VANILLAKEY:
-		switch(toupper(msg->Code))
+		switch(ToUpper(msg->Code))
 		{
 		    case 27:
 			killreq = TRUE;
