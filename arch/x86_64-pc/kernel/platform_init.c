@@ -52,19 +52,15 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     LIBBASE->kb_PlatformData = pd;
 
     pd->kb_XTPIC_Mask = 0xfffb;
-    pd->kb_APIC_Count = 1;	/* We already have one running processor */
 
-    pd->kb_APIC_DriverID = __KernBootPrivate->kbp_APIC_DriverID;
-    pd->kb_APIC_Drivers  = __KernBootPrivate->kbp_APIC_Drivers;
-
+    pd->kb_APIC_Count   = 1;		/* We already have one running processor */
     pd->kb_APIC_IDMap   = AllocMem(sizeof(UWORD), MEMF_ANY);
     pd->kb_APIC_BaseMap = AllocMem(sizeof(IPTR), MEMF_ANY);
 
     D(bug("[Kernel] Kernel_Init: APIC IDMap @ %p, BaseMap @ %p\n", pd->kb_APIC_IDMap, pd->kb_APIC_BaseMap));
-    D(bug("[Kernel] Kernel_Init: APIC Drivers @ %p, Using No %d\n", pd->kb_APIC_Drivers, pd->kb_APIC_DriverID));
 
     pd->kb_APIC_IDMap[0]   = __KernBootPrivate->kbp_APIC_BSPID;
-    pd->kb_APIC_BaseMap[0] = core_APIC_GetBase(pd);
+    pd->kb_APIC_BaseMap[0] = __KernBootPrivate->_APICBase;
 
     D(bug("[Kernel] Kernel_Init: BSP APIC ID %d, Base @ %p\n", pd->kb_APIC_IDMap[0], pd->kb_APIC_BaseMap[0]));
 

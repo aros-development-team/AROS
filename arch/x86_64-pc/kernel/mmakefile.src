@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES    := kernel_startup platform_init kernel_cpu kernel_debug kernel_memory kernel_bootmem \
 	    intr apic acpi_tables acpi_parsers mmu smp xtpic
+PICS	 := apic_ia32
 ASMFILES := core_interrupts cli sti issuper
 
 USER_AFLAGS   := -I$(GENINCDIR)
@@ -17,7 +18,7 @@ MAINDIR := rom/kernel
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
-  arch=pc-x86_64 files="$(FILES)" asmfiles=$(ASMFILES)
+  arch=pc-x86_64 files="$(FILES) $(PICS)" asmfiles=$(ASMFILES)
 
 # This builds SMP bootstrap code
 

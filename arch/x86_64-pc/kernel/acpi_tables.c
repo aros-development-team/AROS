@@ -162,14 +162,13 @@ ULONG core_ACPIInitialise(void)
     result = core_ACPITableMADTParse(madt, ACPI_MADT_NMI_SRC, &ACPI_TableParse_NMI_Src_hook);
     D(bug("[Kernel] core_ACPIInitialise: core_ACPITableMADTParse(ACPI_MADT_NMI_SRC) returned %p\n", result));
 
+    /* TODO: implement check for clustered apic's..
     if (KernelBase->kb_PlatformData->kb_APIC_Count)
     {
-        KernelBase->kb_PlatformData->kb_SMP_Config = 1;
         D(bug("[Kernel] core_ACPIInitialise: SMP APICs Configured from ACPI\n"));
 
-        /* TODO: implement check for clustered apic's..
-        core_APICClusteredCheck(); */
-    }
+        core_APICClusteredCheck();
+    } */
 
     hpet = ACPI_FindSDT(ACPI_MAKE_ID('H', 'P', 'E', 'T'));
     if (hpet)

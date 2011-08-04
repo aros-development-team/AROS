@@ -97,52 +97,43 @@ static void PrintContext(struct ExceptionContext *regs, unsigned long error_code
 
 void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
 {
-    IPTR _APICBase;
-    UBYTE _APICID;
     int i;
     uintptr_t off;
     struct segment_selector IDT_sel;
+    struct int_gate_64bit *IGATES;
 
-    _APICBase = boot_APIC_GetBase(__KernBootPrivate);
-    _APICID   = boot_APIC_GetID(__KernBootPrivate, _APICBase);
-
-    if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
+    if (!__KernBootPrivate->IDT)
     {
-    	struct int_gate_64bit *IGATES;
+    	__KernBootPrivate->IDT = krnAllocBootMemAligned(sizeof(struct int_gate_64bit) * 256, 256);
 
-    	if (!__KernBootPrivate->IDT)
-    	{
-    	    __KernBootPrivate->IDT = krnAllocBootMemAligned(sizeof(struct int_gate_64bit) * 256, 256);
-
-    	    D(bug("[Kernel] Allocated IDT at 0x%p\n", __KernBootPrivate->IDT));
-    	}
-
-        bug("[Kernel] core_SetupIDT[%d] Setting all interrupt handlers to default value\n", _APICID);
-
-        IGATES = __KernBootPrivate->IDT;
-        for (i=0; i < 256; i++)
-        {
-            if (interrupt[i])
-                off = (uintptr_t)interrupt[i];
-            else if (i == 0x80)
-                off = (uintptr_t)IRQ0x80_intr;
-            else if (i == 0xfe)
-                off = (uintptr_t)IRQ0xfe_intr;
-            else
-                off = (uintptr_t)core_DefaultIRETQ;
-
-            IGATES[i].offset_low = off & 0xffff;
-            IGATES[i].offset_mid = (off >> 16) & 0xffff;
-            IGATES[i].offset_high = (off >> 32) & 0xffffffff;
-            IGATES[i].type = 0x0e;
-            IGATES[i].dpl = 3;
-            IGATES[i].p = 1;
-            IGATES[i].selector = KERNEL_CS;
-            IGATES[i].ist = 0;
-        }
+    	D(bug("[Kernel] Allocated IDT at 0x%p\n", __KernBootPrivate->IDT));
     }
 
-    bug("[Kernel] core_SetupIDT[%d] Registering interrupt handlers ..\n", _APICID);
+    D(bug("[Kernel] core_SetupIDT: Setting all interrupt handlers to default value\n"));
+    IGATES = __KernBootPrivate->IDT;
+
+    for (i=0; i < 256; i++)
+    {
+        if (interrupt[i])
+            off = (uintptr_t)interrupt[i];
+        else if (i == 0x80)
+            off = (uintptr_t)IRQ0x80_intr;
+        else if (i == 0xfe)
+            off = (uintptr_t)IRQ0xfe_intr;
+        else
+            off = (uintptr_t)core_DefaultIRETQ;
+
+        IGATES[i].offset_low = off & 0xffff;
+        IGATES[i].offset_mid = (off >> 16) & 0xffff;
+        IGATES[i].offset_high = (off >> 32) & 0xffffffff;
+        IGATES[i].type = 0x0e;
+        IGATES[i].dpl = 3;
+        IGATES[i].p = 1;
+        IGATES[i].selector = KERNEL_CS;
+        IGATES[i].ist = 0;
+    }
+
+    D(bug("[Kernel] core_SetupIDT: Registering interrupt handlers ..\n"));
 
     IDT_sel.size = sizeof(struct int_gate_64bit) * 256 - 1;
     IDT_sel.base = (unsigned long)__KernBootPrivate->IDT;    
@@ -439,7 +430,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     	    switch (KernelBase->kb_Interrupts[irq_number].lh_Type)
     	    {
     	    case KBL_APIC:
-            	core_APIC_AckIntr(irq_number, KernelBase->kb_PlatformData);
+            	core_APIC_AckIntr(irq_number);
             	krnRunIRQHandlers(irq_number);
             	break;
 

@@ -14,104 +14,93 @@ void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
     IPTR _APICBase;
     UBYTE _APICID;
     unsigned int i;
+    struct PML4E *PML4;
+    struct PDPE  *PDP;
+    struct PDE2M *PDE;
 
-    _APICBase = boot_APIC_GetBase(__KernBootPrivate);
-    _APICID   = boot_APIC_GetID(__KernBootPrivate, _APICBase);
+    D(bug("[Kernel] core_SetupMMU[%d]: Re-creating the MMU pages for first 4GB area\n", _APICID));
 
-    if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
+    if (!__KernBootPrivate->PML4)
     {
-    	struct PML4E *PML4;
-    	struct PDPE  *PDP;
-    	struct PDE2M *PDE;
+	/*
+	 * Allocate MMU pages and directories. Four PDE directories (PDE2M structures)
+	 * are enough to map whole 4GB address space.
+	 */
+    	__KernBootPrivate->PML4 = krnAllocBootMemAligned(sizeof(struct PML4E) * 512, PAGE_SIZE);
+    	__KernBootPrivate->PDP  = krnAllocBootMemAligned(sizeof(struct PDPE)  * 512, PAGE_SIZE);
+    	__KernBootPrivate->PDE  = krnAllocBootMemAligned(sizeof(struct PDE2M) * 512 * 4, PAGE_SIZE);
+    	__KernBootPrivate->PTE  = krnAllocBootMemAligned(sizeof(struct PTE)   * 512 * 32, PAGE_SIZE);
 
-        D(bug("[Kernel] core_SetupMMU[%d]: Re-creating the MMU pages for first 4GB area\n", _APICID));
-
-    	if (!__KernBootPrivate->PML4)
-    	{
-	    /*
-	     * Allocate MMU pages and directories. Four PDE directories (PDE2M structures)
-	     * are enough to map whole 4GB address space.
-	     */
-    	    __KernBootPrivate->PML4 = krnAllocBootMemAligned(sizeof(struct PML4E) * 512, PAGE_SIZE);
-    	    __KernBootPrivate->PDP  = krnAllocBootMemAligned(sizeof(struct PDPE)  * 512, PAGE_SIZE);
-    	    __KernBootPrivate->PDE  = krnAllocBootMemAligned(sizeof(struct PDE2M) * 512 * 4, PAGE_SIZE);
-    	    __KernBootPrivate->PTE  = krnAllocBootMemAligned(sizeof(struct PTE)   * 512 * 32, PAGE_SIZE);
-
-    	    D(bug("[Kernel] Allocated PML4 0x%p, PDP 0x%p, PDE 0x%p PTE 0x%p\n", __KernBootPrivate->PML4, __KernBootPrivate->PDP, __KernBootPrivate->PDE, __KernBootPrivate->PTE));
-	}
-
-	PML4 = __KernBootPrivate->PML4;
-	PDP  = __KernBootPrivate->PDP;
-	PDE  = __KernBootPrivate->PDE;
-
-        /* PML4 Entry - we need only the first out of 16 entries */
-        PML4[0].p  = 1; /* present */
-        PML4[0].rw = 1; /* read/write */
-        PML4[0].us = 1; /* accessible for user */
-        PML4[0].pwt= 0; /* write-through cache */
-        PML4[0].pcd= 0; /* cache enabled */
-        PML4[0].a  = 0; /* not yet accessed */
-        PML4[0].mbz= 0; /* must be zero */
-        PML4[0].base_low = (unsigned long)PDP >> 12;
-        PML4[0].avl= 0;
-        PML4[0].nx = 0;
-        PML4[0].avail = 0;
-        PML4[0].base_high = ((unsigned long)PDP >> 32) & 0x000FFFFF;
-
-        /*
-            PDP Entries. There are four of them used in order to define 2048 pages of 2MB each.
-         */
-        for (i=0; i < 4; i++)
-        {
-            struct PDE2M *pdes = &PDE[512 * i];
-            unsigned int j;
-
-            /* Set the PDP entry up and point to the PDE table */
-            PDP[i].p  = 1;
-            PDP[i].rw = 1;
-            PDP[i].us = 1;
-            PDP[i].pwt= 0;
-            PDP[i].pcd= 0;
-            PDP[i].a  = 0;
-            PDP[i].mbz= 0;
-            PDP[i].base_low = (unsigned long)pdes >> 12;
-
-            PDP[i].nx = 0;
-            PDP[i].avail = 0;
-            PDP[i].base_high = ((unsigned long)pdes >> 32) & 0x000FFFFF;
-
-            for (j=0; j < 512; j++)
-            {
-                /* Set PDE entries - use 2MB memory pages, with full supervisor and user access */
-                
-                unsigned long base = (i << 30) + (j << 21);
-
-                pdes[j].p  = 1;
-                pdes[j].rw = 1;
-                pdes[j].us = 1;
-                pdes[j].pwt= 0;  // 1
-                pdes[j].pcd= 0;  // 1
-                pdes[j].a  = 0;
-                pdes[j].d  = 0;
-                pdes[j].g  = 0;
-                pdes[j].pat= 0;
-                pdes[j].ps = 1;
-                pdes[j].base_low = base >> 13;
-                
-                pdes[j].avail = 0;
-                pdes[j].nx = 0;
-                pdes[j].base_high = (base >> 32) & 0x000FFFFF;
-            }
-        }
-
-        __KernBootPrivate->used_page = 0;
+    	D(bug("[Kernel] Allocated PML4 0x%p, PDP 0x%p, PDE 0x%p PTE 0x%p\n", __KernBootPrivate->PML4, __KernBootPrivate->PDP, __KernBootPrivate->PDE, __KernBootPrivate->PTE));
     }
 
-    D(bug("[Kernel] core_SetupMMU[%d]: Registering New PML4\n", _APICID));
+    PML4 = __KernBootPrivate->PML4;
+    PDP  = __KernBootPrivate->PDP;
+    PDE  = __KernBootPrivate->PDE;
 
+    /* PML4 Entry - we need only the first out of 16 entries */
+    PML4[0].p  = 1; /* present */
+    PML4[0].rw = 1; /* read/write */
+    PML4[0].us = 1; /* accessible for user */
+    PML4[0].pwt= 0; /* write-through cache */
+    PML4[0].pcd= 0; /* cache enabled */
+    PML4[0].a  = 0; /* not yet accessed */
+    PML4[0].mbz= 0; /* must be zero */
+    PML4[0].base_low = (unsigned long)PDP >> 12;
+    PML4[0].avl= 0;
+    PML4[0].nx = 0;
+    PML4[0].avail = 0;
+    PML4[0].base_high = ((unsigned long)PDP >> 32) & 0x000FFFFF;
+
+    /* PDP Entries. There are four of them used in order to define 2048 pages of 2MB each. */
+    for (i = 0; i < 4; i++)
+    {
+        struct PDE2M *pdes = &PDE[512 * i];
+        unsigned int j;
+
+        /* Set the PDP entry up and point to the PDE table */
+        PDP[i].p  = 1;
+        PDP[i].rw = 1;
+        PDP[i].us = 1;
+        PDP[i].pwt= 0;
+        PDP[i].pcd= 0;
+        PDP[i].a  = 0;
+        PDP[i].mbz= 0;
+        PDP[i].base_low = (unsigned long)pdes >> 12;
+
+        PDP[i].nx = 0;
+        PDP[i].avail = 0;
+        PDP[i].base_high = ((unsigned long)pdes >> 32) & 0x000FFFFF;
+
+        for (j=0; j < 512; j++)
+        {
+            /* Set PDE entries - use 2MB memory pages, with full supervisor and user access */        
+            unsigned long base = (i << 30) + (j << 21);
+
+            pdes[j].p  = 1;
+            pdes[j].rw = 1;
+            pdes[j].us = 1;
+            pdes[j].pwt= 0;  // 1
+            pdes[j].pcd= 0;  // 1
+            pdes[j].a  = 0;
+            pdes[j].d  = 0;
+            pdes[j].g  = 0;
+            pdes[j].pat= 0;
+            pdes[j].ps = 1;
+            pdes[j].base_low = base >> 13;
+
+            pdes[j].avail = 0;
+            pdes[j].nx = 0;
+            pdes[j].base_high = (base >> 32) & 0x000FFFFF;
+        }
+    }
+
+    __KernBootPrivate->used_page = 0;
+
+    D(bug("[Kernel] core_SetupMMU: Registering New PML4 @ 0x%p\n", __KernBootPrivate->PML4));
     wrcr(cr3, __KernBootPrivate->PML4);
 
-    D(bug("[Kernel] core_SetupMMU[%d]: PML4 @ %p\n", _APICID, __KernBootPrivate->PML4));
+    D(bug("[Kernel] core_SetupMMU: Done\n"));
 }
 
 void core_ProtPage(intptr_t addr, char p, char rw, char us)
