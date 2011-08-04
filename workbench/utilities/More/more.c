@@ -26,6 +26,7 @@
 #include <proto/graphics.h>
 #include <proto/gadtools.h>
 #include <proto/alib.h>
+#include <proto/utility.h>
 
 #include "global.h"
 #include "req.h"
@@ -33,13 +34,15 @@
 #define CATCOMP_NUMBERS
 #include "strings.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
 #define DEBUG 0
 #include <aros/debug.h>
+
+static inline int abs(int x)
+{
+    if (x < 0)
+        return -x;
+    return x;
+}
 
 /****************************************************************************************/
 
@@ -172,7 +175,7 @@ VOID Cleanup(CONST_STRPTR msg)
 	{
 	    ShowMessage("More", msg, MSG(MSG_OK));
 	} else {
-	    printf("More: %s\n", msg);
+	    Printf("More: %s\n", msg);
 	}
 	rc = RETURN_WARN;
     } else {
@@ -229,7 +232,7 @@ VOID Cleanup(CONST_STRPTR msg)
     if (MyArgs) FreeArgs(MyArgs);
     CleanupLocale();
     
-    exit(rc);
+    Exit(rc);
 }
 
 /****************************************************************************************/
@@ -285,19 +288,19 @@ static void OpenLibs(void)
 {
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39)))
     {
-        sprintf(s, MSG(MSG_CANT_OPEN_LIB), "intuition.library", 39);	
+        __sprintf(s, MSG(MSG_CANT_OPEN_LIB), "intuition.library", 39);	
 	Cleanup(s);
     }
 
     if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39)))
     {
-        sprintf(s, MSG(MSG_CANT_OPEN_LIB), "graphics.library", 39);	
+        __sprintf(s, MSG(MSG_CANT_OPEN_LIB), "graphics.library", 39);	
 	Cleanup(s);
     }	
 
     if (!(GadToolsBase = OpenLibrary("gadtools.library", 39)))
     {
-        sprintf(s, MSG(MSG_CANT_OPEN_LIB), "gadtools.library", 39);	
+        __sprintf(s, MSG(MSG_CANT_OPEN_LIB), "gadtools.library", 39);	
 	Cleanup(s);
     }	
 }
@@ -736,7 +739,7 @@ static void SetWinTitle(void)
 	NameFromLock(lock, s, 255);
 	UnLock(lock);
     }
-    sprintf(wintitle, MSG(MSG_WIN_TITLE), s, num_lines, filelen);
+    __sprintf(wintitle, MSG(MSG_WIN_TITLE), s, num_lines, filelen);
 
     SetWindowTitles(win, wintitle, (UBYTE *)~0L);
 }
@@ -1189,7 +1192,7 @@ static BOOL FindString(struct LineNode *ln, char *search, LONG searchlen)
     {
 	for(i = 0;i < searchlen;i++)
 	{
-	    if (toupper(text[i]) != toupper(search[i])) break;
+	    if (ToUpper(text[i]) != ToUpper(search[i])) break;
 	}
 
 	if (i == searchlen)
@@ -1389,7 +1392,7 @@ static BOOL HandleWin(void)
 	    	break;
 		
 	    case IDCMP_VANILLAKEY:
-	    	key = toupper(msg->Code);
+	    	key = ToUpper(msg->Code);
 		if (key == 27)
 		{
 		    quitme = TRUE;
@@ -1434,7 +1437,7 @@ static BOOL HandleWin(void)
 		{
                     if ( (GetVar("editor", editorvarbuffer, 299, GVF_GLOBAL_ONLY)) != -1L )
                     {
-                        sprintf(s, "Run QUIET \"%s\" \"%s\"", editorvarbuffer, filenamebuffer );
+                        __sprintf(s, "Run QUIET \"%s\" \"%s\"", editorvarbuffer, filenamebuffer );
 		        if (SystemTags(s, TAG_END))
 		            DisplayBeep(NULL);
                     }
@@ -1529,7 +1532,7 @@ static BOOL HandleWin(void)
 				    break;
 
 			    case MSG_MEN_PROJECT_PRINT:
-				sprintf(s, "Run >NIL: Type \"%s\" TO \"%s\"", filenamebuffer, fillename_dest ? fillename_dest : "PRT:");
+				__sprintf(s, "Run >NIL: Type \"%s\" TO \"%s\"", filenamebuffer, fillename_dest ? fillename_dest : "PRT:");
 				if (System(s, TAG_END))
 				    DisplayBeep(NULL);
 			    	fillename_dest = NULL;
