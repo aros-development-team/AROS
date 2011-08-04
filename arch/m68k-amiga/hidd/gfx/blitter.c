@@ -454,6 +454,10 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
     UBYTE fg = GC_FG(pat->gc);
     UBYTE bg = GC_BG(pat->gc);
 
+    /* These are unused for the moment. */
+    (void)fg;
+    (void)bg;
+
     if (USE_BLITTER == 0 || 1)
     	return FALSE;
 
