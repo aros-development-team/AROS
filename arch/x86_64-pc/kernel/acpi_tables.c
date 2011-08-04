@@ -18,7 +18,8 @@
 #include "acpi.h"
 #include "smp.h"
 
-#define D(x) x
+#define D(x)
+/* #define CONFIG_LAPICS */
 
 /************************************************************************************************
                                     ACPI RELATED FUNCTIONS
@@ -133,7 +134,7 @@ ULONG core_ACPIInitialise(void)
 
     if ((IPTR)ACPI_TableParse_LAPIC_count_hook.h_Data > 1)
     { 
-	if (smp_Setup(IPTR)ACPI_TableParse_LAPIC_count_hook.h_Data)
+	if (smp_Setup((IPTR)ACPI_TableParse_LAPIC_count_hook.h_Data))
     	{
     	    D(bug("[Kernel] Succesfully prepared SMP enviromnent\n"));
 

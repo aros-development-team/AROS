@@ -17,7 +17,7 @@
 #include "apic.h"
 #include "apic_ia32.h"
 
-#define D(x)
+#define D(x) x
 #define DEBUG_WAIT
 
 #if 1
@@ -56,6 +56,20 @@ void udelay(LONG usec)
 }
 #endif
 
+static inline ULONG apic_GetMaxLVT(IPTR __APICBase)
+{
+    ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
+     /*
+      * 82489DX doesnt report no. of LVT entries.
+      * CHECKME: Do we need this here? We are on 64-bit system!
+      * From IntelMP specification v1.4 we can learn that 82489DX is a discrete
+      * APIC which was used with old pre-PCI systems.
+      */
+    ULONG maxlvt = (apic_ver & 0xF0) ? (apic_ver & APIC_LVT_MASK) >> APIC_LVT_SHIFT : 2;
+
+    return maxlvt;
+}
+
 static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
 {
     ULONG ipisend_timeout, status_ipisend;
@@ -70,7 +84,7 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
     APIC_REG(__APICBase, APIC_ICRH) = target << 24;
     APIC_REG(__APICBase, APIC_ICRL) = cmd;
 
-    D(bug("[IPI] Waiting for IPI to complete ", __thisAPICNo));
+    D(bug("[IPI] Waiting for IPI to complete "));
 
     for (ipisend_timeout = 1000; ipisend_timeout > 0; ipisend_timeout--)
     {
@@ -100,15 +114,6 @@ static IPTR _APIC_IA32_probe(void)
 {
     return 1; /* should be called last. */
 } 
-
-static inline ULONG apic_GetMaxLVT(IPTR __APICBase)
-{
-    ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
-     /* 82489DXs doesnt report no. of LVT entries. */
-    ULONG maxlvt = (apic_ver & 0xF0) ? (apic_ver & APIC_LVT_MASK) >> APIC_LVT_SHIFT : 2;
-    
-    return maxlvt;
-}
 
 static IPTR _APIC_IA32_init(IPTR __APICBase)
 {
@@ -190,61 +195,6 @@ static IPTR _APIC_IA32_init(IPTR __APICBase)
     return TRUE;
 } 
 
-#define MAX_STARTS 2
-
-static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
-{
-    ULONG status_ipisend, status_ipirecv;
-    ULONG maxlvt, start_count;
-    D(UBYTE __thisAPICNo = core_APIC_GetID(__APICBase));
-
-    D(bug("[Kernel] _APIC_IA32_wake[%d](%d @ %p)\n", __thisAPICNo, wake_apicid, wake_apicstartrip));
-    D(bug("[Kernel] _APIC_IA32_wake[%d] KernelBase @ %p, APIC No %d Base @ %p\n", __thisAPICNo, KernelBase, __thisAPICNo, __APICBase));
-
-    /* First we send the INIT command (reset the core). Vector must be zero for this. */
-    DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_INT_ASSERT | ICR_DM_INIT);
-
-    /* Deassert INIT after a small delay */
-    udelay(10 * 1000);
-    DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_DM_INIT);
-
-    /* memory barrier */
-    do { asm volatile("mfence":::"memory"); }while(0);
-
-    /* check for Pentium erratum 3AP .. */
-    maxlvt = apic_GetMaxLVT(__APICBase);
-
-    /* Perform IPI STARTUP loop */
-    for (start_count = 1; start_count <= MAX_STARTS; start_count++)
-    {
-        D(bug("[Kernel] _APIC_IA32_wake[%d]: Attempting STARTUP .. %d\n", __thisAPICNo, start_count));
-
-	/* Clear any pending error condition */
-        APIC_REG(__APICBase, APIC_ESR) = 0;
-
-        /* Send STARTUP IPI.  */
-        status_ipisend = DoIPI(__APICBase, wake_apicid, ICR_DM_STARTUP | ((IPTR)wake_apicstartrip >> 12));
-
-        /* Allow the target APIC to accept the IPI */
-        udelay(200);
-
-        if (maxlvt > 3)
-            APIC_REG(__APICBase, APIC_ESR) = 0;
-
-        status_ipirecv = APIC_REG(__APICBase, APIC_ESR) & 0xEF;
-        
-        /* Is everything ok? No need to retry then. */
-        if ((!status_ipisend) && (!status_ipirecv))
-            break;
-
-        D(bug("[Kernel] _APIC_IA32_wake[%d]: STARTUP run status 0x%08X, error 0x%08X\n", __thisAPICNo, status_ipisend, status_ipirecv));
-    }
-
-    D(bug("[Kernel] _APIC_IA32_wake[%d]: STARTUP run finished...\n", __thisAPICNo));
-
-    return (status_ipisend | status_ipirecv);
-}
-
 static IPTR _APIC_IA32_GetMSRAPICBase(void)
 {
     IPTR _apic_base = 0;
@@ -282,6 +232,80 @@ static void _APIC_IA32_Ack(UBYTE intnum)
     IPTR apic_base = rdmsrq(MSR_LAPIC_BASE) & APIC_BASE_MASK;
 
     APIC_REG(apic_base, APIC_EOI) = 0;
+}
+
+#define MAX_STARTS 2
+
+static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
+{
+    ULONG status_ipisend, status_ipirecv;
+    ULONG maxlvt, start_count;
+
+    D(bug("[Kernel] _APIC_IA32_wake(%d @ %p)\n", wake_apicid, wake_apicstartrip));
+    D(bug("[Kernel] _APIC_IA32_wake: APIC ID %d Base @ %p\n", _APIC_IA32_GetID(__APICBase), __APICBase));
+
+    /* First we send the INIT command (reset the core). Vector must be zero for this. */
+    DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_INT_ASSERT | ICR_DM_INIT);
+
+    /* Deassert INIT after a small delay */
+    udelay(10 * 1000);
+    DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_DM_INIT);
+
+    /* memory barrier */
+    do { asm volatile("mfence":::"memory"); }while(0);
+
+    /* check for Pentium erratum 3AP .. */
+    maxlvt = apic_GetMaxLVT(__APICBase);
+
+    /*
+     * 32-bit machines with 82489DX discrete APIC would return here.
+     * 82489DX doesn't support STARTUP IPI because old CPUs didn't have
+     * INIT signal.
+     * They jump to BIOS ROM boot code immediately after INIT IPI. In order to
+     * run the bootstrap, a BIOS warm reset magic has to be used there (see smp.c).
+     * Fortunately we are x86-64...
+     */
+
+    /*
+     * Perform IPI STARTUP loop.
+     * According to official Intel specification, this must be done twice.
+     * If the core succesfully accepts the first INIT, it won't respond to the second one.
+     * This topic (http://forum.osdev.org/viewtopic.php?f=1&t=23018&start=0) tells about
+     * some problems with this on x86-64 machines. If they pop up, this should be reworked.
+     */
+    for (start_count = 1; start_count <= MAX_STARTS; start_count++)
+    {
+        D(bug("[Kernel] _APIC_IA32_wake: Attempting STARTUP .. %d\n", start_count));
+
+	/* Clear any pending error condition */
+        APIC_REG(__APICBase, APIC_ESR) = 0;
+
+        /*
+         * Send STARTUP IPI.
+         * The processor starts up at CS = (vector << 16) and IP = 0.
+         */
+        status_ipisend = DoIPI(__APICBase, wake_apicid, ICR_DM_STARTUP | ((IPTR)wake_apicstartrip >> 12));
+
+        /* Allow the target APIC to accept the IPI */
+        udelay(200);
+
+        if (maxlvt > 3)
+            APIC_REG(__APICBase, APIC_ESR) = 0;
+
+        status_ipirecv = APIC_REG(__APICBase, APIC_ESR) & 0xEF;
+        
+        /* Break the loop if an error happened */
+        if (status_ipisend || status_ipirecv)
+        {
+	    D(bug("[Kernel] _APIC_IA32_wake: STARTUP run status 0x%08X, error 0x%08X\n", status_ipisend, status_ipirecv));
+            break;
+        }
+        
+    }
+
+    D(bug("[Kernel] _APIC_IA32_wake: STARTUP run finished...\n"));
+
+    return (status_ipisend | status_ipirecv);
 }
 
 /**********************************************************/
