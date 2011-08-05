@@ -527,6 +527,9 @@ static long internalBootCliHandler(void)
     /* 
      * This early assignment prevents Poseidon from asking for ENV:
      * when popup GUI process is initialized and opens muimaster.library.
+     * On m68k this harms, Workbench 1.x disks fail to boot correctly with
+     * "Can't cancel ENV:" warning.
+     * FIXME: Fix muimaster.library at last, and forget this hack.
      */
     AssignLate("ENV", "SYS:Prefs/Env-Archive");
 #endif
