@@ -11,11 +11,11 @@
 
 #include <inttypes.h>
 
+#include "apic_driver.h"
+#include "apic_ia32.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_syscall.h"
-#include "apic_generic.h"
-#include "apic_ia32.h"
 
 #define D(x)
 /* #define DEBUG_WAIT */

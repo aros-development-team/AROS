@@ -11,9 +11,8 @@
 
 #include <utility/hooks.h>
 
-#include <apic_generic.h>
+#include "apic_driver.h"
 
-IPTR core_APIC_Probe(struct KernBootPrivate *__KernBootPrivate);
 UBYTE core_APIC_GetNumber(struct PlatformData *pdata, IPTR __APICBase);
 
 /* Driver call stubs */
