@@ -60,7 +60,7 @@ void collect_sets(const char *file, setnode **setlist_ptr)
 */
 void collect_libs(const char *file, setnode **liblist_ptr)
 {
-    unsigned long long offset;
+    unsigned long offset;
     char type;
     char secname[201];
     char buff[256];
@@ -74,7 +74,7 @@ void collect_libs(const char *file, setnode **liblist_ptr)
 
         offset = 0;
 
-        if (sscanf(buff, "%llx %c %200s ", &offset, &type, secname) != 3 &&
+        if (sscanf(buff, "%lx %c %200s ", &offset, &type, secname) != 3 &&
             sscanf(buff, " %c %200s", &type, secname) != 2)
             continue;
 
