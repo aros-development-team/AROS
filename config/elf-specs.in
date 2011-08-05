@@ -1,0 +1,38 @@
+*cpp:
+%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__} %(aros_predefines) %(aros_include) -Uunix -U__unix__ -U__unix -U@aros_host_arch@ -U__@aros_host_arch@ -U__@aros_host_arch@__ 
+
+*ssp_default:
+
+
+*aros_include:
+-nostdinc %{!nostdinc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include -isystem @aros_target_cc_includes@}
+
+*endfile:
+
+
+*link:
+-m @aros_object_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
+
+*lib:
+-lamiga %{!noarosc:-larosc} -larossupport -lm
+
+*libgcc:
+@aros_arch_libs@ -lgcc
+
+*startfile:
+@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/elf-startup.o
+
+*aros_predefines:
+-D__ELF__ @gcc_target_cpu@ -A-system -Asystem(posix)
+
+*predefines:
+%(aros_predefines)
+
+*cross_compile:
+1
+
+.cd:
+@AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/gcccatcomp.sh %i @AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools %g.c %{S:-S} %{!S:-c} %{o: %{o*}} %{!o:-o %{S: %b.s} %{!S:%{c: %b%O} %{!c:%w%g%O}}} %{pipe} %(aros_include) 
+
+*linker:
+@AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/@aros_target_cpu@-@aros_target_arch@-elf-ld
