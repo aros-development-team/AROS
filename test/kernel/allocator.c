@@ -24,7 +24,7 @@
 
 /* Include private kernel.resource stuff, for DumpState() */
 struct KernelBase;
-#include "../../rom/kernel/memory_intern.h"
+#include "../../rom/kernel/mm_linear.h"
 
 #define PAGES_NUM 14
 
