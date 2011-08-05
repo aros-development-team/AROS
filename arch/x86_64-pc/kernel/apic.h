@@ -2,7 +2,7 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROS APIC Definitions.
+    Desc: AROS APIC functions.
     Lang: english
 */
 
@@ -11,18 +11,7 @@
 
 #include <utility/hooks.h>
 
-/********** APIC DEFINITIONS ****************/
-
-struct GenericAPIC
-{ 
-	const char *name;
-	IPTR      (*probe)(void);
-        IPTR      (*getbase)(void);
-        IPTR      (*getid)(IPTR base);
-	IPTR      (*wake)(APTR startrip, UBYTE apicid, IPTR base);
-	IPTR      (*init)(IPTR base);
-	void      (*ack)(UBYTE intnum);
-};
+#include <apic_generic.h>
 
 IPTR core_APIC_Probe(struct KernBootPrivate *__KernBootPrivate);
 UBYTE core_APIC_GetNumber(struct PlatformData *pdata, IPTR __APICBase);
