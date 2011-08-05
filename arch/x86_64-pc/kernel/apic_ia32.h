@@ -45,6 +45,11 @@
 #define APIC_LVT_SHIFT	  16
 #define APIC_EAS	  (1 << 31)	/* Whether this APIC has extended address space	     */
 
+/* Macros to help parsing version */
+#define APIC_INTEGRATED(ver) (ver & 0x000000F0)
+#define APIC_LVT(ver)	     ((ver & APIC_LVT_MASK) >> APIC_LVT_SHIFT)
+
+
 /* Error register */
 #define ERR_SAE (1 << 2) /* Sent accept error	     */
 #define ERR_RAE (1 << 3) /* Receive accept error     */
