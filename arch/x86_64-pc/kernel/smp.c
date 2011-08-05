@@ -172,7 +172,7 @@ int smp_Wake(void)
 	    DWAKE(bug("[SMP] Waiting for APIC %u to initialise .. ", i));
 	    while (!apicready);
 
-	    D(bug("[SMP] APIC %u started up\n"));
+	    D(bug("[SMP] APIC %u started up\n", i));
 	}
 	    D(else bug("[SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult));
     }
