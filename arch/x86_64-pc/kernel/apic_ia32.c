@@ -17,8 +17,8 @@
 #include "apic.h"
 #include "apic_ia32.h"
 
-#define D(x) x
-#define DEBUG_WAIT
+#define D(x)
+/* #define DEBUG_WAIT */
 
 /*
  * On i386 platform we need to support various quirks of old APICs.
@@ -313,10 +313,8 @@ static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __AP
 
     /*
      * Perform IPI STARTUP loop.
-     * According to official Intel specification, this must be done twice. It's not explained why. ;-)
-     * If the core succesfully accepts the first INIT, it won't respond to the second one.
-     * This topic (http://forum.osdev.org/viewtopic.php?f=1&t=23018&start=0) tells about
-     * some problems with this on x86-64 machines. If they pop up, this should be reworked.
+     * According to official Intel specification, this must be done twice.
+     * It's not explained why. ;-)
      */
     for (start_count = 1; start_count <= 2; start_count++)
     {
@@ -341,18 +339,38 @@ static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __AP
 #endif
 
         status_ipirecv = APIC_REG(__APICBase, APIC_ESR) & 0xEF;
-        
-        /* Break the loop if an error happened */
-        if (status_ipisend || status_ipirecv)
-        {
-	    D(bug("[APIC] _APIC_IA32_wake: STARTUP run status 0x%08X, error 0x%08X\n", status_ipisend, status_ipirecv));
-            break;
-        }
-        
+
+	/*
+	 * EXPERIMENTAL:
+	 * On my machine (macmini 3,1, as OS X system profiler says), the core starts up from first
+	 * attempt. The second attempt ends up in error (according to the documentation, the STARTUP
+	 * can be accepted only once, while the core in RESET or INIT state, and first STARTUP, if
+	 * succesful, brings the core out of this state).
+	 * Here we try to detect this condition. If the core accepted STARTUP, we suggest that it has
+	 * started up, and break the loop.
+	 * A topic at osdev.org forum (http://forum.osdev.org/viewtopic.php?f=1&t=23018)
+	 * also tells about some problems with double STARTUP. According to it, the second STARTUP can
+	 * manage to re-run the core from the given address, leaving it in 64-bit mode, causing it to crash.
+	 *
+	 * If startup problems pops up (the core doesn't respond and AROS halts at "Launching APIC no X" stage),
+	 * the following two variations of this algorithm can be tried:
+	 * a) Always send STARTUP twice, but signal error condition only if both attempts failed.
+	 * b) Send first STARTUP, abort on error. Allow second attempt to fail and ignore its result.
+	 *
+	 *								Sonic <pavel_fedin@mail.ru>
+	 */
+	if (!status_ipisend && !status_ipirecv)
+	    break;
     }
 
-    D(bug("[APIC] _APIC_IA32_wake: STARTUP run finished...\n"));
+    D(bug("[APIC] _APIC_IA32_wake: STARTUP run status 0x%08X, error 0x%08X\n", status_ipisend, status_ipirecv));
 
+    /*
+     * We return nonzero on error.
+     * Actually least significant byte of this value holds ESR value, and 12th bit
+     * holds delivery status flag from DoIPI() routine. It will be '1' if we got
+     * stuck at sending phase.
+     */
     return (status_ipisend | status_ipirecv);
 }
 
