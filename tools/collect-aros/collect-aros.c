@@ -136,9 +136,7 @@ int main(int argc, char *argv[])
     if (incremental == 1)
         return EXIT_SUCCESS;
 
-    fprintf(stderr, "Collecting libs...\n");
     collect_libs(tempoutput, &liblist);
-
     collect_sets(tempoutput, &setlist);
 
     if (setlist != NULL)
