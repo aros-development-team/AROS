@@ -1358,6 +1358,14 @@ case "$target_os" in
 	;;
 esac
 
+# Some formats need custom ELF specs.
+# For example for x86_64 it is needed in order for -m32 switch to work correctly.
+if test -f $SRCDIR/config/${aros_object_format}-specs.in; then
+    elf_specs_in=config/${aros_object_format}-specs.in
+else
+    elf_specs_in=config/elf-specs.in
+fi
+
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([where to install or search for cross tools binaries])
 AC_ARG_WITH(crosstools,AC_HELP_STRING([--with-crosstools=DIR],[Where to install or search for cross tools binaries]),with_crosstools=$withval,with_crosstools="default")
@@ -2480,7 +2488,7 @@ AC_CONFIG_FILES(
     mmake.config
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_targetcfg_dir}/specs:config/specs.in
-    ${aros_targetcfg_dir}/elf-specs:config/elf-specs.in
+    ${aros_targetcfg_dir}/elf-specs:${elf_specs_in}
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in
