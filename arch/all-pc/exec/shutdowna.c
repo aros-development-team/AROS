@@ -65,6 +65,13 @@
     	switch (action)
     	{
     	case SD_ACTION_COLDREBOOT:
+    	    /*
+    	     * FIXME: Cold restart doesn't work here. ResetSystem() just returns.
+    	     * I don't know why...
+    	     * In GRUB it seems to work. I tried EFI_Reset_Warm, i tried Disable(),
+    	     * Supervisor()... Nothing helped. Some Mac quirk?
+    	     *							Sonic.
+    	     */
     	    efiAction = EFI_Reset_Cold;
     	    break;
 
