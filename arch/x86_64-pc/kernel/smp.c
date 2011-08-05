@@ -26,9 +26,10 @@ static void smp_Entry(IPTR stackBase, UBYTE *apicready)
     UWORD _APICID;
     UBYTE _APICNO;
 
-    /* Enable fxsave/fxrstor */ 
+    /* Enable fxsave/fxrstor */
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
 
+    /* Find out ourselves */
     _APICBase = core_APIC_GetBase();
     _APICID   = core_APIC_GetID(_APICBase);
     _APICNO   = core_APIC_GetNumber(KernelBase->kb_PlatformData, _APICBase);
@@ -102,35 +103,15 @@ int smp_Setup(IPTR num)
 
     D(bug("[SMP] Copied APIC bootstrap code to %p\n", bs));
 
-    /* Store constant arguments in bootstrap's data area */
-    bs->GDT  = (IPTR)__KernBootPrivate->GDT;
+    /*
+     * Store constant arguments in bootstrap's data area
+     * WARNING!!! The bootstrap code assumes PML4 is pointing to a 32-bit memory,
+     * and there seem to be no easy way to fix this.
+     * If AROS kickstart is ever loaded into high memory, we would need to take
+     * a special care about it.
+     */
     bs->PML4 = (IPTR)__KernBootPrivate->PML4;
     bs->IP   = smp_Entry;
-
-    /*
-     * Fix up absolute addresses in ljmp instructions.
-     * Our relocation points are offsets into bootstrap code, where an address needs to be fixed up.
-     * Initially the bootstrap is linked at zero address. This means that all addresses in it are effectively
-     * turned into offsets.
-     * To simplify things down, we just know that reloc1 points to a 16-bit address inside 16-bit ljmp instruction,
-     * and reloc2 points to a 32-bit address inside 32-bit ljmp.
-     * The rest of bootstrap code is position-independent.
-     */
-    D(bug("[SMP] Addresses at relocation points: 0x%04X, 0x%08X\n", *(UWORD *)((APTR)bs + bs->reloc1), *(ULONG *)((APTR)bs + bs->reloc2)));
-    *(UWORD *)((APTR)bs + bs->reloc1) += (IPTR)bs;
-    *(ULONG *)((APTR)bs + bs->reloc2) += (IPTR)bs;
-
-    /*
-     * BIOS warm reset magic, part one.
-     * Write real-mode bootstrap routine address to 40:67 (real-mode address) location.
-     * This is standard feature of IBM PC AT BIOS. If a warm reset condition is detected,
-     * the BIOS jumps to the given address.
-     * Not needed on x86-64.
-     *
-    D(bug("[SMP] Setting vector for trampoline @ %p ..\n", pdata->kb_APIC_TrampolineBase));
-    *((volatile unsigned short *)0x469) = (IPTR)bs >> 4;
-    *((volatile unsigned short *)0x467) = 0;		 // Actually bs & 0xf, bs is page-aligned.
-    */
 
     return 1;
 }
@@ -171,28 +152,6 @@ int smp_Wake(void)
 
 	/* Initialize 'ready' flag to zero before launching the core */
 	apicready = 0;
-
-	/*
-	 * BIOS warm reset magic, part two.
-	 * This writes 0x0A into CMOS RAM, location 0x0F.
-	 * If the BIOS startup code sees this, it jumps to an address,
-	 * stored in doubleword at 40:67 (real mode notation) location.
-	 * We are x86-64, we don't need this. However, if this code ever gets reused on
-	 * i386, we can enable this in order to support old i486 SMP systems :)
-	 *
-	D(bug("[SMP] Setting warm reset code ..\n"));
-	outb(0xf, 0x70);
-	outb(0xa, 0x71); */
-
-	/* Flush TLB (we are supervisor here) */
-	do
-	{
-	    unsigned long scratchreg;
-
-	    asm volatile(
-        	"movq %%cr3, %0\n\t"
-            	"movq %0, %%cr3":"=r"(scratchreg)::"memory");
-    	} while (0);
 
 	/* Start IPI sequence */
 	wakeresult = core_APIC_Wake(bs, apic_id, __KernBootPrivate->_APICBase);

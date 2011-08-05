@@ -20,6 +20,14 @@
 #define D(x) x
 #define DEBUG_WAIT
 
+/*
+ * On i386 platform we need to support various quirks of old APICs.
+ * x86-64 is free of that crap.
+ */
+#ifdef __i386__
+#define CONFIG_LEGACY
+#endif
+
 #if 1
 /*  FIXME: udelay doesn't work - fix! */
 void udelay(LONG usec)
@@ -55,20 +63,6 @@ void udelay(LONG usec)
     }
 }
 #endif
-
-static inline ULONG apic_GetMaxLVT(IPTR __APICBase)
-{
-    ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
-     /*
-      * 82489DX doesnt report no. of LVT entries.
-      * CHECKME: Do we need this here? We are on 64-bit system!
-      * From IntelMP specification v1.4 we can learn that 82489DX is a discrete
-      * APIC which was used with old pre-PCI systems.
-      */
-    ULONG maxlvt = (apic_ver & 0xF0) ? (apic_ver & APIC_LVT_MASK) >> APIC_LVT_SHIFT : 2;
-
-    return maxlvt;
-}
 
 static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
 {
@@ -117,7 +111,13 @@ static IPTR _APIC_IA32_probe(void)
 
 static IPTR _APIC_IA32_init(IPTR __APICBase)
 {
-    ULONG APIC_VAL, maxlvt;
+    ULONG APIC_VAL;
+    ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
+    ULONG maxlvt = APIC_LVT(apic_ver);
+
+    /* 82489DX doesnt report no. of LVT entries. */
+    if (!APIC_INTEGRATED(apic_ver))
+    	maxlvt = 2;
 
     APIC_REG(__APICBase, APIC_DFR) = 0xFFFFFFFF; /* Put the APIC into flat delivery mode */
 
@@ -125,47 +125,48 @@ static IPTR _APIC_IA32_init(IPTR __APICBase)
     APIC_VAL = APIC_REG(__APICBase, APIC_LDR) & ~(0xFF<<24);
     APIC_VAL |= (1 << 24);
     APIC_REG(__APICBase, APIC_LDR) = APIC_VAL;
-    D(bug("[Kernel] _APIC_IA32_init: APIC Logical Destination ID: %lx\n", APIC_VAL));
+    D(bug("[APIC] _APIC_IA32_init: APIC Logical Destination ID: %lx\n", APIC_VAL));
 
     /* Set Task Priority to 'accept all' */
     APIC_VAL = APIC_REG(__APICBase, APIC_TPR) & ~0xFF;
     APIC_REG(__APICBase, APIC_TPR) = APIC_VAL;
 
-    D(bug("[Kernel] _APIC_IA32_init: APIC TPR=%08x\n", APIC_REG(__APICBase, APIC_TPR)));
+    D(bug("[APIC] _APIC_IA32_init: APIC TPR=%08x\n", APIC_REG(__APICBase, APIC_TPR)));
     /* ??? What's 0x314 ??? */
-    D(bug("[Kernel] _APIC_IA32_init: APIC ICR=%08x%08x\n", APIC_REG(__APICBase, 0x314), APIC_REG(__APICBase, APIC_ICRH)));
+    D(bug("[APIC] _APIC_IA32_init: APIC ICR=%08x%08x\n", APIC_REG(__APICBase, 0x314), APIC_REG(__APICBase, APIC_ICRH)));
 
     APIC_VAL = APIC_REG(__APICBase, APIC_SVR) & ~0xFF;
     APIC_VAL |= (1 << 8); /* Enable APIC */
     APIC_VAL |= (1 << 9); /* Disable focus processor (bit==1) */
     APIC_VAL |= 0xFF; /* Set spurious IRQ vector */
     APIC_REG(__APICBase, APIC_SVR) = APIC_VAL;
-    D(bug("[Kernel] _APIC_IA32_init: APIC SVR=%08x\n", APIC_REG(__APICBase, APIC_SVR)));
+    D(bug("[APIC] _APIC_IA32_init: APIC SVR=%08x\n", APIC_REG(__APICBase, APIC_SVR)));
 
-    D(bug("[Kernel] _APIC_IA32_init: APIC Timer divide=%08x\n", APIC_REG(__APICBase, APIC_TIMER_DIV)));
-    D(bug("[Kernel] _APIC_IA32_init: APIC Timer config=%08x\n", APIC_REG(__APICBase, APIC_TIMER_VEC)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Timer divide=%08x\n", APIC_REG(__APICBase, APIC_TIMER_DIV)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Timer config=%08x\n", APIC_REG(__APICBase, APIC_TIMER_VEC)));
 
     APIC_REG(__APICBase, APIC_LINT0_VEC) = 0x700;
     /* only the BSP should see the LINT1 NMI signal.  */
     APIC_REG(__APICBase, APIC_LINT1_VEC) = 0x400;
 
-    D(bug("[Kernel] _APIC_IA32_init: APIC LVT0=%08x\n", APIC_REG(__APICBase, APIC_LINT0_VEC)));
-    D(bug("[Kernel] _APIC_IA32_init: APIC LVT1=%08x\n", APIC_REG(__APICBase, APIC_LINT1_VEC)));
+    D(bug("[APIC] _APIC_IA32_init: APIC LVT0=%08x\n", APIC_REG(__APICBase, APIC_LINT0_VEC)));
+    D(bug("[APIC] _APIC_IA32_init: APIC LVT1=%08x\n", APIC_REG(__APICBase, APIC_LINT1_VEC)));
 
+#ifdef CONFIG_LEGACY
     /* Due to the Pentium erratum 3AP. */
-    maxlvt = apic_GetMaxLVT(__APICBase);
     if (maxlvt > 3)
-       APIC_REG(__APICBase, APIC_ESR) = 0;
+       	 APIC_REG(__APICBase, APIC_ESR) = 0;
+#endif
 
-    D(bug("[Kernel] _APIC_IA32_init: APIC ESR before enabling vector: %08x\n", APIC_REG(__APICBase, APIC_ESR)));
+    D(bug("[APIC] _APIC_IA32_init: APIC ESR before enabling vector: %08x\n", APIC_REG(__APICBase, APIC_ESR)));
  
     APIC_REG(__APICBase, APIC_ERROR_VEC) = 0xfe; /* Enable error sending, interrupt 0xFE */
 
-     /* spec says clear errors after enabling vector. */
+    /* spec says clear errors after enabling vector. */
     if (maxlvt > 3)
-	APIC_REG(__APICBase, APIC_ESR) = 0;
+       	 APIC_REG(__APICBase, APIC_ESR) = 0;
 
-    D(bug("[Kernel] _APIC_IA32_init: APIC ESR after enabling vector: %08x\n", APIC_REG(__APICBase, APIC_ESR)));
+    D(bug("[APIC] _APIC_IA32_init: APIC ESR after enabling vector: %08x\n", APIC_REG(__APICBase, APIC_ESR)));
 
 /*
     ULONG *localAPIC = (ULONG*)__APICBase + 0x320;
@@ -174,21 +175,21 @@ static IPTR _APIC_IA32_init(IPTR __APICBase)
     
     asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"((volatile ULONG *)(__APICBase + 0x320)));
     // *(volatile ULONG *)localAPIC = 0x000000fe;
-    D(bug("[Kernel] _APIC_IA32_init: APIC Timer config=%08x\n", *(volatile ULONG *)(__APICBase + 0x320)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Timer config=%08x\n", *(volatile ULONG *)(__APICBase + 0x320)));
     
-    D(bug("[Kernel] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
-    D(bug("[Kernel] _APIC_IA32_init: APIC Current count=%08x\n", *(volatile ULONG *)(__APICBase + 0x390)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Current count=%08x\n", *(volatile ULONG *)(__APICBase + 0x390)));
     *(volatile ULONG *)(__APICBase + 0x380) = 0x11111111;
     asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"((volatile ULONG *)(__APICBase + 0x320)));
-    D(bug("[Kernel] _APIC_IA32_init: APIC Timer config=%08x\n", *(volatile ULONG *)(__APICBase + 0x320)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Timer config=%08x\n", *(volatile ULONG *)(__APICBase + 0x320)));
     
     for (i=0; i < 0x10000000; i++) asm volatile("nop;");
     
-    D(bug("[Kernel] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
-    D(bug("[Kernel] _APIC_IA32_init: APIC Current count=%08x\n", *(volatile ULONG *)(__APICBase + 0x390)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Current count=%08x\n", *(volatile ULONG *)(__APICBase + 0x390)));
     for (i=0; i < 0x1000000; i++) asm volatile("nop;");
-    D(bug("[Kernel] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
-    D(bug("[Kernel] _APIC_IA32_init: APIC Current count=%08x\n", *(volatile ULONG *)(__APICBase + 0x390)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Current count=%08x\n", *(volatile ULONG *)(__APICBase + 0x390)));
 
     for (i=0; i < 0x1000000; i++) asm volatile("nop;"); */
 
@@ -205,13 +206,13 @@ static IPTR _APIC_IA32_GetMSRAPICBase(void)
     }
     else
     {
-        D(bug("[Kernel] _APIC_IA32_GetMSRAPICBase: Called in UserMode\n"));
+        D(bug("[APIC] _APIC_IA32_GetMSRAPICBase: Called in UserMode\n"));
 
 	__asm__ __volatile__ ("int $0x80":"=a"(_apic_base):"a"(SC_RDMSR),"c"(MSR_LAPIC_BASE));
     }
     _apic_base &= APIC_BASE_MASK;
 
-    D(bug("[Kernel] _APIC_IA32_GetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base));
+    D(bug("[APIC] _APIC_IA32_GetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base));
     return _apic_base;
 }
 
@@ -221,7 +222,7 @@ static IPTR _APIC_IA32_GetID(IPTR _APICBase)
 
     /* The actual ID is in 8 most significant bits */
     _apic_id = APIC_REG(_APICBase, APIC_ID) >> 24;
-    D(bug("[Kernel] _APIC_IA32_GetID: APIC ID %d\n", _apic_id));
+    D(bug("[APIC] _APIC_IA32_GetID: APIC ID %d\n", _apic_id));
 
     return _apic_id;
 }
@@ -234,48 +235,92 @@ static void _APIC_IA32_Ack(UBYTE intnum)
     APIC_REG(apic_base, APIC_EOI) = 0;
 }
 
-#define MAX_STARTS 2
-
 static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
 {
     ULONG status_ipisend, status_ipirecv;
-    ULONG maxlvt, start_count;
+    ULONG start_count;
+#ifdef CONFIG_LEGACY
+    ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
+#endif
 
-    D(bug("[Kernel] _APIC_IA32_wake(%d @ %p)\n", wake_apicid, wake_apicstartrip));
-    D(bug("[Kernel] _APIC_IA32_wake: APIC ID %d Base @ %p\n", _APIC_IA32_GetID(__APICBase), __APICBase));
+    D(bug("[APIC] _APIC_IA32_wake(%d @ %p)\n", wake_apicid, wake_apicstartrip));
+    D(bug("[APIC] _APIC_IA32_wake: APIC ID %d Base @ %p\n", _APIC_IA32_GetID(__APICBase), __APICBase));
+
+#ifdef CONFIG_LEGACY
+    /*
+     * Check if we have old 82489DX discrete APIC (version & 0xF0 == 0).
+     * This APIC needs different startup procedure. It doesn't support STARTUP IPI
+     * because old CPUs didn't have INIT signal. They jump to BIOS ROM boot code
+     * immediately after INIT IPI. In order to run the bootstrap, a BIOS warm reset
+     * magic has to be used there.
+     */
+    if (!APIC_INTEGRATED(apic_ver))
+    {
+    	/*
+    	 * BIOS warm reset magic, part one.
+    	 * Write real-mode bootstrap routine address to 40:67 (real-mode address) location.
+    	 * This is standard feature of IBM PC AT BIOS. If a warm reset condition is detected,
+    	 * the BIOS jumps to the given address.
+     	 */
+	D(bug("[APIC] Setting BIOS vector for trampoline @ %p ..\n", wake_apicstartrip));
+	*((volatile unsigned short *)0x469) = (IPTR)wake_apicstartrip >> 4;
+	*((volatile unsigned short *)0x467) = 0; /* Actually wake_apicstartrip & 0x0F, it's page-aligned. */
+
+	/*
+	 * BIOS warm reset magic, part two.
+	 * This writes 0x0A into CMOS RAM, location 0x0F. This signals a warm reset condition to BIOS,
+	 * making part one work.
+	 */
+	D(bug("[APIC] Setting warm reset code ..\n"));
+	outb(0xf, 0x70);
+	outb(0xa, 0x71);
+    }
+#endif
+
+    /* Flush TLB (we are supervisor here) */
+    wrcr(cr3, rdcr(cr3));
 
     /* First we send the INIT command (reset the core). Vector must be zero for this. */
-    DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_INT_ASSERT | ICR_DM_INIT);
+    status_ipisend = DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_INT_ASSERT | ICR_DM_INIT);    
+    if (status_ipisend)
+    {
+    	D(bug("[APIC] Error asserting INIT\n"));
+    	return status_ipisend;
+    }
 
     /* Deassert INIT after a small delay */
     udelay(10 * 1000);
-    DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_DM_INIT);
+
+    /* Deassert INIT */
+    status_ipisend = DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_DM_INIT);
+    if (status_ipisend)
+    {
+    	D(bug("[APIC] Error deasserting INIT\n"));
+    	return status_ipisend;
+    }
 
     /* memory barrier */
-    do { asm volatile("mfence":::"memory"); }while(0);
+    asm volatile("mfence":::"memory");
 
-    /* check for Pentium erratum 3AP .. */
-    maxlvt = apic_GetMaxLVT(__APICBase);
-
-    /*
-     * 32-bit machines with 82489DX discrete APIC would return here.
-     * 82489DX doesn't support STARTUP IPI because old CPUs didn't have
-     * INIT signal.
-     * They jump to BIOS ROM boot code immediately after INIT IPI. In order to
-     * run the bootstrap, a BIOS warm reset magic has to be used there (see smp.c).
-     * Fortunately we are x86-64...
-     */
+#ifdef CONFIG_LEGACY
+    /* If it's 82489DX, we are done. */
+    if (!APIC_INTEGRATED(apic_ver))
+    {
+	D(bug("[APIC] _APIC_IA32_wake: 82489DX detected, wakeup done\n"));
+    	return 0;
+    }
+#endif
 
     /*
      * Perform IPI STARTUP loop.
-     * According to official Intel specification, this must be done twice.
+     * According to official Intel specification, this must be done twice. It's not explained why. ;-)
      * If the core succesfully accepts the first INIT, it won't respond to the second one.
      * This topic (http://forum.osdev.org/viewtopic.php?f=1&t=23018&start=0) tells about
      * some problems with this on x86-64 machines. If they pop up, this should be reworked.
      */
-    for (start_count = 1; start_count <= MAX_STARTS; start_count++)
+    for (start_count = 1; start_count <= 2; start_count++)
     {
-        D(bug("[Kernel] _APIC_IA32_wake: Attempting STARTUP .. %d\n", start_count));
+        D(bug("[APIC] _APIC_IA32_wake: Attempting STARTUP .. %d\n", start_count));
 
 	/* Clear any pending error condition */
         APIC_REG(__APICBase, APIC_ESR) = 0;
@@ -289,21 +334,24 @@ static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __AP
         /* Allow the target APIC to accept the IPI */
         udelay(200);
 
-        if (maxlvt > 3)
+#ifdef CONFIG_LEGACY
+	/* Pentium erratum 3AP quirk */
+        if (APIC_LVT(apic_ver) > 3)
             APIC_REG(__APICBase, APIC_ESR) = 0;
+#endif
 
         status_ipirecv = APIC_REG(__APICBase, APIC_ESR) & 0xEF;
         
         /* Break the loop if an error happened */
         if (status_ipisend || status_ipirecv)
         {
-	    D(bug("[Kernel] _APIC_IA32_wake: STARTUP run status 0x%08X, error 0x%08X\n", status_ipisend, status_ipirecv));
+	    D(bug("[APIC] _APIC_IA32_wake: STARTUP run status 0x%08X, error 0x%08X\n", status_ipisend, status_ipirecv));
             break;
         }
         
     }
 
-    D(bug("[Kernel] _APIC_IA32_wake: STARTUP run finished...\n"));
+    D(bug("[APIC] _APIC_IA32_wake: STARTUP run finished...\n"));
 
     return (status_ipisend | status_ipirecv);
 }
