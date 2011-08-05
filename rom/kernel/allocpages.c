@@ -1,9 +1,7 @@
 #include <aros/config.h>
-#include <exec/execbase.h>
-#include <proto/exec.h>
 
 #include <kernel_base.h>
-#include "memory_intern.h"
+#include <kernel_mm.h>
 
 /*****************************************************************************
 
@@ -57,8 +55,6 @@ AROS_LH3(void *, KrnAllocPages,
 
     APTR res = NULL;
 #if USE_MMU
-    struct MemHeader *mh;
-    ULONG physFlags;
     KRN_MapAttr protection;
 
     /* We can't work if MMU is not up */
@@ -70,48 +66,7 @@ AROS_LH3(void *, KrnAllocPages,
     if (flags & MEMF_EXECUTABLE)
 	protection |= MAP_Executable;
 
-    /* Leave only flags that describe physical properties of the memory */
-    physFlags = flags & MEMF_PHYSICAL_MASK;
-
-    /*
-     * Loop over MemHeader structures.
-     * We only add MemHeaders and never remove them, so i hope Forbid()/Permit()
-     * is not really necessary here.
-     */
-    ForeachNode(&SysBase->MemList, mh)
-    {
-	/*
-	 * Check for the right requirements and enough free memory.
-	 * The requirements are OK if there's no bit in the
-	 * 'physFlags' that isn't set in the 'mh->mh_Attributes'.
-	 */
-	if ((physFlags & ~mh->mh_Attributes) || mh->mh_Free < length)
-	   continue;
-
-	if (addr)
-	{
-	    /*
-	     * If we have starting address, only one MemHeader can be
-	     * appropriate for us. We look for it and attempt to allocate
-	     * the given region from it.
-	     */
-	    if (addr >= mh->mh_Lower || addr + length <= mh->mh_Upper)
-	    {
-		res = krnAllocAbs(mh, addr, length, KernelBase);
-		break;
-	    }
-	}
-	else
-	{
-	    /*
-	     * Otherwise try to allocate pages from every MemHeader.
-	     * Note that we still may fail if the memory is fragmented too much.
-	     */
-	    res = krnAllocate(mh, length, flags, KernelBase);
-	    if (res)
-		break;
-	}
-    }
+    res = mm_AllocPages(addr, length, flags, KernelBase);
 
     /*
      * The pages we've just allocated have no access rights at all.
