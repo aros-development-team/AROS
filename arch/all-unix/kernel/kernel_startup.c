@@ -17,7 +17,6 @@
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "kernel_romtags.h"
-#include "memory_intern.h"
 
 #define D(x)
 
