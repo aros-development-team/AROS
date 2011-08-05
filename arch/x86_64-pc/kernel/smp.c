@@ -12,11 +12,12 @@
 #include "smp.h"
 
 #define D(x) x
+#define DWAKE(x)
 
 extern const void *_binary_smpbootstrap_start;
 extern const void *_binary_smpbootstrap_size;
 
-static void smp_Entry(IPTR stackBase, UBYTE *apicready)
+static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready)
 {
     /*
      * This is the entry point for secondary cores.
@@ -34,13 +35,14 @@ static void smp_Entry(IPTR stackBase, UBYTE *apicready)
     _APICID   = core_APIC_GetID(_APICBase);
     _APICNO   = core_APIC_GetNumber(KernelBase->kb_PlatformData, _APICBase);
 
-    D(bug("[Kernel] smp_Entry[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase));
-    D(bug("[Kernel] smp_Entry[%d]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
+    D(bug("[SMP] smp_Entry[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase));
+    D(bug("[SMP] smp_Entry[%d]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
+    D(bug("[SMP] smp_Entry[%d]: Stack base 0x%p, ready lock 0x%p\n", _APICID, stackBase, apicready));
 
     /* Set up GDT and LDT for our core */
     core_CPUSetup(_APICID, stackBase);
 
-    bug("[Kernel] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, KernelBase->kb_PlatformData->kb_APIC_Count);
+    bug("[SMP] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, KernelBase->kb_PlatformData->kb_APIC_Count);
 
     /* Signal the bootstrap core that we are running */
     *apicready = 1;
@@ -105,7 +107,7 @@ int smp_Setup(IPTR num)
 
     /*
      * Store constant arguments in bootstrap's data area
-     * WARNING!!! The bootstrap code assumes PML4 is pointing to a 32-bit memory,
+     * WARNING!!! The bootstrap code assumes PML4 is placed in a 32-bit memory,
      * and there seem to be no easy way to fix this.
      * If AROS kickstart is ever loaded into high memory, we would need to take
      * a special care about it.
@@ -127,6 +129,8 @@ int smp_Wake(void)
     IPTR wakeresult;
     UBYTE i;
     volatile UBYTE apicready;
+
+    D(bug("[SMP] Ready spinlock at 0x%p\n", &apicready));
 
     /* Core number 0 is our bootstrap core, so we start from No 1 */
     for (i = 1; i < pdata->kb_APIC_Count; i++)
@@ -155,8 +159,6 @@ int smp_Wake(void)
 
 	/* Start IPI sequence */
 	wakeresult = core_APIC_Wake(bs, apic_id, __KernBootPrivate->_APICBase);
-	D(bug("[SMP] core_APIC_Wake() returns %d\n", wakeresult));
-
 	/* wakeresult != 0 means error */
 	if (!wakeresult)
 	{
@@ -167,9 +169,12 @@ int smp_Wake(void)
 	     * Previously we have set apicready to 0. When the core starts up,
 	     * it writes 1 there.
 	     */
-	    D(bug("[SMP] Waiting for APIC %u to initialise ..\n", i));
+	    DWAKE(bug("[SMP] Waiting for APIC %u to initialise .. ", i));
 	    while (!apicready);
+
+	    D(bug("[SMP] APIC %u started up\n"));
 	}
+	    D(else bug("[SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult));
     }
 
     D(bug("[SMP] Done\n"));

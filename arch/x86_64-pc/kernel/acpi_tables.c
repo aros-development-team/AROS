@@ -19,7 +19,7 @@
 #include "smp.h"
 
 #define D(x)
-/* #define CONFIG_LAPICS */
+#define CONFIG_LAPICS	/* Disabling this disables secondary CPUs startup */
 
 /************************************************************************************************
                                     ACPI RELATED FUNCTIONS
@@ -127,11 +127,6 @@ ULONG core_ACPIInitialise(void)
     D(bug("[Kernel] core_ACPIInitialise: ACPI found %lu enabled APICs\n", ACPI_TableParse_LAPIC_count_hook.h_Data));
 
 #ifdef CONFIG_LAPICS
-    /*
-     * SMP code is experimental and currently nonfunctional.
-     * It is currently disabled by default.
-     */
-
     if ((IPTR)ACPI_TableParse_LAPIC_count_hook.h_Data > 1)
     { 
 	if (smp_Setup((IPTR)ACPI_TableParse_LAPIC_count_hook.h_Data))
