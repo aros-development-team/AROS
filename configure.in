@@ -2434,7 +2434,8 @@ AC_CONFIG_COMMANDS([compiler_executable],
 
 	echo ${prefix}
 	echo ${prefix2}
-	chmod a+x ${prefix2}-gcc ${prefix2}-ld
+	echo ${prefix3}
+	chmod a+x ${prefix2}-gcc ${prefix2}-ld ${prefix3}-gcc
 
 	ln -sf ${prefix2}-gcc          ${prefix}-gcc
 	ln -sf ${prefix2}-ld           ${prefix}-ld
