@@ -7810,6 +7810,14 @@ case "$target_os" in
 	;;
 esac
 
+# Some formats need custom ELF specs.
+# For example for x86_64 it is needed in order for -m32 switch to work correctly.
+if test -f $SRCDIR/config/${aros_object_format}-specs.in; then
+    elf_specs_in=config/${aros_object_format}-specs.in
+else
+    elf_specs_in=config/elf-specs.in
+fi
+
 #-----------------------------------------------------------------------------
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking where to install or search for cross tools binaries" >&5
 $as_echo_n "checking where to install or search for cross tools binaries... " >&6; }
@@ -11597,7 +11605,7 @@ ac_config_commands="$ac_config_commands compiler_executable"
 ac_config_commands="$ac_config_commands genmf_executable"
 
 
-ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_targetcfg_dir}/elf-specs:config/elf-specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/collect-aros/env.h ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in"
+ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_targetcfg_dir}/elf-specs:${elf_specs_in} ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/collect-aros/env.h ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in"
 
 
 cat >confcache <<\_ACEOF
@@ -12320,7 +12328,7 @@ do
     "mmake.config") CONFIG_FILES="$CONFIG_FILES mmake.config" ;;
     "${aros_targetcfg_dir}/make.defaults") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in" ;;
     "${aros_targetcfg_dir}/specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/specs:config/specs.in" ;;
-    "${aros_targetcfg_dir}/elf-specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/elf-specs:config/elf-specs.in" ;;
+    "${aros_targetcfg_dir}/elf-specs") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/elf-specs:${elf_specs_in}" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in" ;;
