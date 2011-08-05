@@ -5,6 +5,7 @@
     Desc: Intel IA-32 APIC driver.
 */
 
+#include <asm/cpu.h>
 #include <asm/io.h>
 #include <exec/types.h>
 
@@ -12,9 +13,8 @@
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
-#include "kernel_intern.h"
 #include "kernel_syscall.h"
-#include "apic.h"
+#include "apic_generic.h"
 #include "apic_ia32.h"
 
 #define D(x)
@@ -200,16 +200,17 @@ static IPTR _APIC_IA32_GetMSRAPICBase(void)
 {
     IPTR _apic_base = 0;
 
-    if (!(IN_USER_MODE))
-    {
-        _apic_base = rdmsrq(MSR_LAPIC_BASE);
-    }
-    else
+    if (IN_USER_MODE)
     {
         D(bug("[APIC] _APIC_IA32_GetMSRAPICBase: Called in UserMode\n"));
 
 	__asm__ __volatile__ ("int $0x80":"=a"(_apic_base):"a"(SC_RDMSR),"c"(MSR_LAPIC_BASE));
     }
+    else
+    {
+        _apic_base = rdmsrq(MSR_LAPIC_BASE);
+    }
+
     _apic_base &= APIC_BASE_MASK;
 
     D(bug("[APIC] _APIC_IA32_GetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base));
