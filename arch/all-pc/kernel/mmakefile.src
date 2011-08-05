@@ -1,7 +1,8 @@
-# $Id: $
+# $Id$
 include $(TOP)/config/make.cfg
 
-FILES := apic_ia32
+FILES := apic_driver
+APICS := apic_ia32
 
 MAINDIR	      := rom/kernel
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/$(CURDIR) \
@@ -9,6 +10,6 @@ USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/$(CURDIR) \
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
-  arch=pc files="$(FILES)"
+  arch=pc files="$(FILES) $(APICS)"
 
 %common

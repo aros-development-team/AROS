@@ -294,9 +294,9 @@ void kernel_cstart(const struct TagItem *msg)
     		   __KernBootPrivate->SystemStack, __KernBootPrivate->SystemStack + STACK_SIZE * 3));
     }
 
-    core_APIC_Probe(__KernBootPrivate);
+    __KernBootPrivate->kbp_APIC_Driver = core_APIC_Probe();
     __KernBootPrivate->_APICBase = core_APIC_GetBase();
-    _APICID   = core_APIC_GetID(__KernBootPrivate->_APICBase);
+    _APICID = core_APIC_GetID(__KernBootPrivate->_APICBase);
     D(bug("[Kernel] kernel_cstart: launching on BSP APIC ID %d, base @ %p\n", _APICID, __KernBootPrivate->_APICBase));
 
     /* Set TSS, GDT, LDT and MMU up */
