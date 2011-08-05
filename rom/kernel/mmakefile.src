@@ -17,15 +17,21 @@ USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
 
-FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
-         dispatch getbootinfo getscheduler issuper mapglobal			     \
-	 remexceptionhandler remirqhandler schedule setprotection setscheduler sti   \
-	 switch unmapglobal virtualtophysical obtaininput releaseinput 		     \
-	 putchar maygetchar allocpages freepages getsystemattr setsystemattr	     \
-	 initmemory statmemory
+FUNCS :=     addexceptionhandler addirqhandler bug cause cli createcontext deletecontext    \
+             dispatch getbootinfo getscheduler issuper mapglobal			    \
+	     remexceptionhandler remirqhandler schedule setprotection setscheduler sti      \
+	     switch unmapglobal virtualtophysical obtaininput releaseinput 		    \
+	     putchar maygetchar allocpages freepages getsystemattr setsystemattr	    \
+	     initmemory statmemory
+FILES     := kernel_init cpu_init kernel_cpu kernel_debug kernel_intr	\
+	     kernel_memory kernel_romtags kernel_scheduler kernel_timer
+MMU_FILES := kernel_mm
+# You can replace this with own algorithm
+ALLOCATOR := mm_linear
 
-FILES := kernel_init cpu_init kernel_cpu kernel_debug kernel_intr kernel_memory_mmu \
-	 kernel_memory kernel_romtags kernel_scheduler kernel_timer
+ifeq ($(USE_MMU),1)
+    FILES += $(MMU_FILES) $(ALLOCATOR)
+endif
 
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource \

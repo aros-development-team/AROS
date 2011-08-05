@@ -58,8 +58,3 @@ struct BlockHeader
     struct SignalSemaphore sem;	/* Access semaphore	   */
     page_t map[1];		/* Allocations map	   */
 };
-
-APTR krnAllocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase *KernelBase);
-APTR krnAllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase *KernelBase);
-void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase);
-void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query);

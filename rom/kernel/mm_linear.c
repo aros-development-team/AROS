@@ -2,11 +2,10 @@
     Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Page-based memory allocator.
+    Desc: Page-based memory allocator, linear algorithm.
     Lang: english
 */
 
-#include <aros/config.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <proto/arossupport.h>
@@ -16,14 +15,24 @@
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
-#include "memory_intern.h"
+#include <kernel_mm.h>
+#include "mm_linear.h"
 
 #define D(x)
 
-/* The whole this code makes sense only with MMU support */
-#if USE_MMU
+/*
+ * 'Linear' memory page allocator implementation.
+ * Goals of this implementation are simplicity and reduced memory overhead.
+ *
+ * It's a modified version of exec.library allocator, which works with variable-length blocks
+ * of pages. Instead of lists, it keeps the information about allocated/free pages in
+ * a linear memory map, which is separated from the data itself. It allows to block all access
+ * to unallocated pages. When allocating blocks at arbitrary addresses, the memory space is
+ * searched for the best matching block. MEMF_REVERSE can be used to specify search direction.
+ */
 
 /*
+ * Utility function.
  * Change state of block of 'pages' pages starting at 'first' to 'state'.
  * Checks blocks to the left and to the right from our block and merges/splits
  * blocks if necessary, and updates counters.
@@ -98,7 +107,7 @@ static void SetBlockState(struct BlockHeader *head, IPTR first, IPTR pages, page
 }
 
 /* Allocate 'size' bytes from MemHeader mh */
-APTR krnAllocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase *KernelBase)
+APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase *KernelBase)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     APTR addr = NULL;
@@ -248,7 +257,7 @@ APTR krnAllocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase
 }
 
 /* Allocate 'size' bytes starting at 'addr' from MemHeader mh */
-APTR krnAllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase *KernelBase)
+APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase *KernelBase)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     IPTR align = KernelBase->kb_PageSize - 1;
@@ -311,7 +320,7 @@ APTR krnAllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase 
 }
 
 /* Free 'size' bytes starting from address 'addr' in the MemHeader mh */
-void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase)
+void mm_Free(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     /* Calculate number of the starting page within the region */
@@ -334,6 +343,62 @@ void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *Kern
     ReleaseSemaphore(&head->sem);
 }
 
+/* Iniialize memory management in a given MemHeader */
+void mm_Init(struct MemHeader *mh, struct KernelBase *KernelBase)
+{
+    struct BlockHeader *head;
+    IPTR align;
+    APTR end;
+    IPTR memsize;
+    IPTR mapsize;
+    IPTR p;
+    UBYTE free;
+    
+    head = (struct BlockHeader *)mh->mh_First;
+    align = KernelBase->kb_PageSize - 1;
+    
+    /* Fill in legacy MemChunk structure */
+    head->mc.mc_Next = NULL;
+    head->mc.mc_Bytes = 0;
+
+    InitSemaphore(&head->sem);
+
+    /*
+     * Page-align boundaries. 
+     * We intentionally make it start pointing to the previous page,
+     * we'll jump to the next page later, in the loop.
+     */
+    head->start = (APTR)((IPTR)head->map & ~align);
+    end = (APTR)(((IPTR)mh->mh_Upper + 1) & ~align);
+
+    do
+    {
+    	/* Skip one page. This reserves some space (one page or less) for allocations map. */
+    	head->start += KernelBase->kb_PageSize;
+    	/* Calculate resulting map size */
+	mapsize = (head->start - (APTR)head->map) / sizeof(ULONG);
+	/* Calculate number of free bytes and pages */
+	memsize = end - head->start;
+    	head->size = memsize / KernelBase->kb_PageSize;
+	/*
+	 * Repeat the operation if there's not enough memory for allocations map.
+	 * This will take one more page from the area and use it for the map.
+	 */
+    } while (mapsize < head->size);
+
+    /* Mark all pages as free */
+    p = head->size;
+    free = 1;
+    do {
+    	head->map[--p] = free;
+	if (free < 127)
+	    free++;
+    } while (p > 0);
+
+    /* Set free space counter */
+    mh->mh_Free = memsize;
+}
+
 #define SET_LARGEST(ptr, val)	\
     if (ptr)			\
     {				\
@@ -354,7 +419,7 @@ void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *Kern
     }
 
 /* Get statistics from the specified MemHeader */
-void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query)
+void mm_StatMemHeader(struct MemHeader *mh, const struct TagItem *query, struct KernelBase *KernelBase)
 {
     struct TagItem *tag;
     IPTR *largest_alloc  = NULL;
@@ -456,5 +521,3 @@ void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query)
 	ReleaseSemaphore(&head->sem);
     }
 }
-
-#endif
