@@ -11,12 +11,16 @@ include $(TOP)/config/make.cfg
 FILES :=        \
 	startup \
 	detach  \
-	nixmain
+	nixmain \
+	elf-startup
 
 OBJS  := $(addprefix $(LIBDIR)/,$(addsuffix .o,$(FILES)))
 DEPS  := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .d,$(FILES)))
 
 linklibs-startup: $(OBJS)
+
+#MM
+linklibs-startup-quick: $(OBJS)
 
 $(LIBDIR)/%.o : $(GENDIR)/$(CURDIR)/%.o
 	@$(CP) $< $@

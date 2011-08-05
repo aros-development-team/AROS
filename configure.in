@@ -1368,10 +1368,13 @@ else
 fi
 AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 
-if test "$crosstools" != "yes" -a "$with_crosstools" != "default"; then
+if test "$crosstools" != "no" -o "$with_crosstools" != "default"; then
+
+    dnl --with-crosstools with no --enable-crosstools implies --with-aros-gcc with no version specified
+    dnl The same is about --enable-crosstools
+
     use_aros_gcc=yes
     PATH=$AROS_CROSSTOOLSDIR:$PATH
-    target_tool_prefix=${target_cpu}-aros-
 fi
 
 AC_MSG_CHECKING([what specific AROS gcc version to use])
@@ -1386,8 +1389,12 @@ no)
 esac
 AC_MSG_RESULT($aros_gcc_version)
 
-if test "$aros_gcc_version" != "none" -o "$crosstools" = "yes"; then
-    if test "$aros_gcc_version" != "default" -a "$aros_gcc_version" != "none"; then
+if test "$aros_gcc_version" != "none"; then
+
+    dnl Here we either build own crosstools, or use preinstalled ones
+    dnl Check for specific version requested, and append suffix if needed
+
+    if test "$aros_gcc_version" != "default"; then
 	aros_target_cc="$aros_target_cpu-aros-gcc-$aros_gcc_version"
 	aros_target_cxx="$aros_target_cpu-aros-g++-$aros_gcc_version"
     else
@@ -1464,7 +1471,8 @@ if test "$aros_host_cpu" == "x86_64" ; then
     fi
 fi
 
-dnl Enforce cross-compile if we are on Darwin, but our target is not Darwin
+dnl Enforce cross-compile if we are on Darwin, but our target is not Darwin.
+dnl CHECKME: Possibly obsolete because non-ELF hosts are handled below
 if test "$aros_host_arch" == "darwin" ; then
     if test "$aros_target_arch" != "darwin" ; then
 	cross_compiling=yes
@@ -1474,11 +1482,42 @@ fi
 # I want to have this information in configure output, although it might be
 # misleading, e.g. for darwin hosted you cannot compile target code without a
 # cross compiler, but here it says no.
+
+# Note: it says 'yes' only if bootstrap ("kernel") is cross-compiled.
+# Target code is a little bit different thing.
+#						 sonic
 echo "checking wether we are (AROS style) cross compiling... $cross_compiling"
 
 # Set prefix for target compiler etc. if we're cross-compiling
 # (should possibly be earlier but needs to be after AC_PROG_CC)
 if test "$cross_compiling" = "yes" ; then
+
+    if test "x-$aros_flavour" = "x-standalone" -o "x-$aros_flavour" = "x-standcompat" ; then
+	if test "$aros_gcc_version" != "none"; then
+
+	    dnl If we are cross-compiling a native port with AROS compiler, we can reuse
+	    dnl AROS compiler for bootstrap ("kernel"). This eliminates a need for one more
+	    dnl ELF compiler.
+
+	    dnl Use target toolchain as bootstrap one.
+	    target_tool_prefix=${target_cpu}-aros-
+	    target_tool_version=$aros_gcc_version
+	    use_kernel_cc_wrapper=yes
+
+	    dnl Cancel explicit AROS tools assignment. This will cause configure
+	    dnl to select the same tools for bootstrap and AROS.
+	    aros_target_cc=
+	    aros_target_ld=
+	    aros_target_as=
+	    aros_target_ar=
+	    aros_target_ranlib=
+	    aros_target_nm=
+	    aros_target_strip=
+	    aros_target_objcopy=
+	    aros_target_objdump=
+	fi
+    fi
+
     CC=${target_tool_prefix}gcc
     dnl CPP is needed for AC_CHECK_HEADER to work correctly
     CPP=${target_tool_prefix}cpp
@@ -1553,7 +1592,7 @@ if test "$crosstools" != "yes"; then
 
     dnl For non-ELF hosts we additionally have to look up ELF toolchain for AROS binaries
     dnl It can be either AROS toolchain selected earlier or generic ELF toolchain we select here.
-    if test "$target_tool_prefix" != "${target_cpu}-elf-" ; then
+    if test "$target_tool_prefix" != "${target_cpu}-elf-" -a "$target_tool_prefix" != "${target_cpu}-aros-" ; then
 	target_tool_prefix=${target_cpu}-elf-
 	if test "$aros_target_cc" == ""; then
 	   aros_target_cc="${target_tool_prefix}gcc"
@@ -2168,6 +2207,9 @@ else
 fi
 AC_MSG_RESULT($dbus)
 
+if test "$use_kernel_cc_wrapper" = "yes" ; then
+    aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc"
+fi
 
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
@@ -2380,6 +2422,7 @@ AC_CONFIG_COMMANDS([compiler_executable],
 	mkdir -p $prefix
 	prefix="${prefix}/${aros_target_cpu}-aros"
         prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
+	prefix3=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf
 
 	echo ${prefix}
 	echo ${prefix2}
@@ -2403,6 +2446,8 @@ AC_CONFIG_COMMANDS([compiler_executable],
         ln -sf $aros_target_objcopy_ln$aros_host_exe_suffix ${prefix2}-objcopy
         ln -sf $aros_target_objdump_ln$aros_host_exe_suffix ${prefix2}-objdump
         ln -sf $aros_target_strip_ln$aros_host_exe_suffix   ${prefix2}-strip
+
+	ln -sf $aros_kernel_ld$aros_host_exe_suffix         ${prefix3}-ld
     ],
     [
         aros_host_exe_suffix=${aros_host_exe_suffix}
@@ -2417,6 +2462,7 @@ AC_CONFIG_COMMANDS([compiler_executable],
 	aros_target_objdump_ln=${aros_target_objdump_ln}
 	aros_target_objcopy_ln=${aros_target_objcopy_ln}
 	aros_target_strip_ln=${aros_target_strip_ln}
+	aros_kernel_ld=${aros_kernel_ld}
     ]
 )
 AC_CONFIG_COMMANDS([genmf_executable],
@@ -2434,7 +2480,9 @@ AC_CONFIG_FILES(
     mmake.config
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_targetcfg_dir}/specs:config/specs.in
+    ${aros_targetcfg_dir}/elf-specs:config/elf-specs.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
+    ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
     tools/collect-aros/env.h
