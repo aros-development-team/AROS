@@ -564,6 +564,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
     UBYTE drives;
     struct DiskBase *DiskBase;
     struct ExpansionBase *ExpansionBase;
+    ULONG ids[TD_NUMUNITS];
  
     D(bug("TD: Init\n"));
     
@@ -579,8 +580,8 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 
     drives = 0;
     for (i = 0; i < TD_NUMUNITS; i++) {
-  	ULONG id = GetUnitID(i);
-  	if (id != DRT_EMPTY)
+  	ids[i] = GetUnitID(i);
+  	if (ids[i] != DRT_EMPTY)
   	    drives++;
     }
   	
@@ -590,7 +591,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
     	return FALSE;
     }
 
-    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
+    ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
     if (!ExpansionBase)
   	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_OpenLib);
 
@@ -603,16 +604,19 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 
     for (i = 0; i < TD_NUMUNITS; i++) {
 	TDBase->td_Units[i] = NULL;
-	ULONG id = GetUnitID(i);
-	if (id != DRT_EMPTY) {
-	    TD_BootNode(ExpansionBase, i, id);
+	if (ids[i] != DRT_EMPTY)
 	    TD_InitUnit(i, TDBase);
-	}
 	D(bug("TD%d id=%08x status=%d\n", i, id, TDBase->td_Units[i] ? 1 : 0));
     }
 
     /* Create the message processor task */
     TD_InitTask(TDBase);
+
+    /* Only add bootnode if recalibration succeeded */
+    for (i = 0; i < TD_NUMUNITS; i++) {
+	if (TDBase->td_Units[i] && !TDBase->td_Units[i]->tdu_broken)
+	    TD_BootNode(ExpansionBase, i, ids[i]);
+    }
 
     CloseLibrary((struct Library *)ExpansionBase);
 
