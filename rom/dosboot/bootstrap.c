@@ -80,25 +80,45 @@ static BOOL GetBootNodeDeviceUnit(struct BootNode *bn, BPTR *device, IPTR *unit,
     	return FALSE;
     return TRUE;
 }
- 
-static BOOL BootBlockChecksum(UBYTE *bootblock, ULONG bootblock_size)
+
+static BOOL BootBlockCheckSum(UBYTE *bootblock, ULONG bootblock_size)
 {
-       ULONG crc = 0, crc2 = 0;
-       UWORD i;
-       for (i = 0; i < bootblock_size; i += 4) {
-           ULONG v = (bootblock[i] << 24) | (bootblock[i + 1] << 16) |
-(bootblock[i + 2] << 8) | bootblock[i + 3];
-           if (i == 4) {
-               crc2 = v;
-               v = 0;
-           }
-           if (crc + v < crc)
-               crc++;
-           crc += v;
-       }
-       crc ^= 0xffffffff;
-       D(bug("[Strap] bootblock checksum %s (%08x %08x)\n", crc == crc2 ? "ok" : "error", crc, crc2));
-       return crc == crc2;
+    ULONG crc = 0, crc2 = 0;
+    UWORD i;
+
+    for (i = 0; i < bootblock_size; i += 4) {
+	ULONG v = AROS_LONG2BE(*(ULONG*)(bootblock + i));
+	if (i == 4) {
+	    crc2 = v;
+	    v = 0;
+	}
+	if (crc + v < crc)
+	    crc++;
+	crc += v;
+    }
+    crc ^= 0xffffffff;
+    D(bug("[Strap] bootblock %08x checksum %s (%08x %08x)\n",
+	AROS_LONG2BE(*(ULONG*)bootblock), crc == crc2 ? "ok" : "error", crc, crc2));
+    return crc == crc2;
+}
+
+static BOOL BootBlockCheck(UBYTE *bootblock, ULONG bootblock_size)
+{
+    struct FileSysResource *fsr;
+    struct FileSysEntry *fse;
+    ULONG dostype;
+
+    if (!BootBlockCheckSum(bootblock, bootblock_size))
+    	return FALSE;
+    if (!(fsr = OpenResource("FileSystem.resource")))
+	return FALSE;
+    dostype = AROS_LONG2BE(*(ULONG*)bootblock);
+    ForeachNode(&fsr->fsr_FileSysEntries, fse) {
+	if (fse->fse_DosType == dostype)
+	    return TRUE;
+    }
+    D(bug("[Strap] unknown bootblock dostype %08x\n", dostype));
+    return FALSE;
 }
 
 static inline void SetBootNodeDosType(struct BootNode *bn, ULONG dostype)
@@ -158,7 +178,7 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
                    if (io->io_Error == 0)
                    {
                        D(bug("[Strap] %b.%d bootblock read to %p ok\n", device, unit, buffer));
-                       if (BootBlockChecksum(buffer, bootblock_size))
+                       if (BootBlockCheck(buffer, bootblock_size))
                        {
                            SetBootNodeDosType(bn, AROS_LONG2BE(*(LONG *)buffer));
                            init = CallBootBlockCode(buffer + 12, io, ExpansionBase);
