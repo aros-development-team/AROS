@@ -366,7 +366,7 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
 	ldd.ldd_BaseDir = dir;
 
     	SetSignal(0, SIGF_SINGLE);
-	D(bug("[LDCaller] Sending request for %s\n", name));
+	D(bug("[LDCaller] Sending request for %s\n", stripped_libname));
 
 	PutMsg(ldBase->dl_LDDemonPort, (struct Message *)&ldd);
 	WaitPort(&ldd.ldd_ReplyPort);
