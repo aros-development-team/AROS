@@ -72,8 +72,7 @@
 #include <proto/utility.h>
 
 #include <string.h>
-#include <stdlib.h>
-
+#include <setjmp.h>
 
 #undef DEBUG
 #define DEBUG 0
@@ -111,6 +110,7 @@ static struct Task	*progtask;
 static ULONG 		clipunit, portmask;
 static BOOL 		off;
 static UBYTE 		s[256];
+static jmp_buf 		exit_buf;
 
 /*****************************************************************************************/
 
@@ -121,7 +121,7 @@ static void cleanup(STRPTR msg)
     if (oldedithook) SetEditHook(oldedithook);
     if (progport) DeletePort(progport);
 
-    exit(0);
+    longjmp(exit_buf, 1);
 }
 
 /*****************************************************************************************/
@@ -426,6 +426,9 @@ static void handleall(void)
 
 int main(void)
 {
+    if (setjmp(exit_buf))
+        return 0;
+
     init();
     getarguments();
     checkport();

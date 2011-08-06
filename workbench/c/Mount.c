@@ -84,8 +84,8 @@ typedef unsigned long IPTR;
 
 #include <resources/filesysres.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define	DEBUG_PATCHDOSNODE(x)
 #define DEBUG_MOUNT(x)
@@ -1818,8 +1818,11 @@ LONG mount(IPTR	*params, STRPTR	name)
     struct DosEnvec *vec;
     LONG error = RETURN_OK;
     struct DeviceNode *dn;
+    STRPTR cp;
 
-    strupr(name);
+    for (cp = name; *cp != 0; cp++)
+        *cp = ToUpper(*cp);
+    
     DEBUG_MOUNT(KPrintF("MountDev: <%s>\n", (IPTR)name));
 
     if ((error=checkmount(params))!=RETURN_OK)

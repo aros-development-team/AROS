@@ -47,7 +47,6 @@
 
 ******************************************************************************/
 
-#include <stdio.h>
 #include <string.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -141,14 +140,14 @@ D(bug("[install-i386] getDiskFSSM('%s')\n", path));
 					return (struct FileSysStartupMsg *)BADDR(dn->dn_Startup);
 				}
 				else
-					printf("device '%s' doesn't contain a file system\n", dname);
+					Printf("device '%s' doesn't contain a file system\n", dname);
 			}
 			else
 				PrintFault(ERROR_OBJECT_NOT_FOUND, dname);
 		}
 	}
 	else
-		printf("'%s' doesn't contain a device name\n",path);
+		Printf("'%s' doesn't contain a device name\n",path);
 	return 0;
 }
 
@@ -182,7 +181,7 @@ D(bug("[install-i386] nsdCheck(%x)\n", volume));
 		volume->iotd->iotd_Req.io_Length=sizeof(struct NSDeviceQueryResult);
 		if (DoIO((struct IORequest *)&volume->iotd->iotd_Req)==IOERR_NOCMD)
 		{
-			printf("Device doesn't understand NSD-Query\n");
+			Printf("Device doesn't understand NSD-Query\n");
 		}
 		else
 		{
@@ -192,12 +191,12 @@ D(bug("[install-i386] nsdCheck(%x)\n", volume));
 					(volume->iotd->iotd_Req.io_Actual!=nsdq.SizeAvailable)
 				)
 			{
-				printf("WARNING wrong io_Actual using NSD\n");
+				Printf("WARNING wrong io_Actual using NSD\n");
 			}
 			else
 			{
 				if (nsdq.DeviceType != NSDEVTYPE_TRACKDISK)
-					printf("WARNING no trackdisk type\n");
+					Printf("WARNING no trackdisk type\n");
 				for (cmdcheck=nsdq.SupportedCommands;*cmdcheck;cmdcheck++)
 				{
 					if (*cmdcheck == NSCMD_TD_READ64)
@@ -209,7 +208,7 @@ D(bug("[install-i386] nsdCheck(%x)\n", volume));
 						(volume->readcmd!=NSCMD_TD_READ64) ||
 						(volume->writecmd!=NSCMD_TD_WRITE64)
 					)
-					printf("WARNING no READ64/WRITE64\n");
+					Printf("WARNING no READ64/WRITE64\n");
 			}
 		}
 	}
@@ -327,7 +326,7 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 
 	if (readwriteBlock(volume, 0, volume->blockbuffer, 512, volume->readcmd))
 	{
-		printf("Read Error\n");
+		Printf("Read Error\n");
 		return FALSE;
 	}
 	if (
@@ -339,7 +338,7 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 		volume->flags &= ~VF_IS_RDB;
 		if (readwriteBlock(volume, 1, volume->blockbuffer, 512, volume->readcmd))
 		{
-			printf("Read Error\n");
+			Printf("Read Error\n");
 			return FALSE;
 		}
 		if (
@@ -457,7 +456,7 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 						retval = TRUE;
 					}
 					else
-						printf("only MBR and RDB partition tables are supported\n");
+						Printf("only MBR and RDB partition tables are supported\n");
 				}
 				ClosePartitionTable(ph);
 			}
@@ -469,11 +468,11 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 			CloseRootPartition(ph);
 		}
 		else
-			printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
+			Printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
 		CloseLibrary((struct Library *)PartitionBase);
 	}
 	else
-		printf("Couldn't open partition.library\n");
+		Printf("Couldn't open partition.library\n");
 	return retval;
 }
 
@@ -497,7 +496,7 @@ D(bug("[install-i386] getGrubStageVolume(): volume=%x\n", volume));
 			return volume;
 		else
 		{
-			printf("stage2 is on an unsupported file system\n");
+			Printf("stage2 is on an unsupported file system\n");
 			PrintFault(ERROR_OBJECT_WRONG_TYPE, NULL);
 		}
 		uninitVolume(volume);
@@ -569,11 +568,11 @@ D(bug("[install-i386] isvalidPartition(%s:%d, part:%d)\n", device, unit, pnum));
 								retval = TRUE;
 							}
 							else
-								printf("partition is not of type AROS (0x30)\n");
+								Printf("partition is not of type AROS (0x30)\n");
 						}
 						else
 						{
-							printf
+							Printf
 							(
 								"partition %ld not found on device %s unit %lu\n",
 								(long)*pnum, device, (long)unit
@@ -581,7 +580,7 @@ D(bug("[install-i386] isvalidPartition(%s:%d, part:%d)\n", device, unit, pnum));
 						}
 					}
 					else
-						printf("you can only install in partitions which are MBR partitioned\n");
+						Printf("you can only install in partitions which are MBR partitioned\n");
 				}
 				else
 				{
@@ -597,7 +596,7 @@ D(bug("[install-i386] isvalidPartition(%s:%d, part:%d)\n", device, unit, pnum));
 						retval = TRUE;
 					}
 					else
-						printf("partition table type must be either MBR or RDB\n");
+						Printf("partition table type must be either MBR or RDB\n");
 				}
 				ClosePartitionTable(ph);
 			}
@@ -610,11 +609,11 @@ D(bug("[install-i386] isvalidPartition(%s:%d, part:%d)\n", device, unit, pnum));
 			CloseRootPartition(ph);		
 		}
 		else
-			printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
+			Printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
 		CloseLibrary((struct Library *)PartitionBase);
 	}
 	else
-		printf("Couldn't open partition.library\n");
+		Printf("Couldn't open partition.library\n");
 	return retval;
 }
 
@@ -635,7 +634,7 @@ D(bug("[install-i386] getBBVolume(%s:%d, %d)\n", device, unit, partnum));
 			return volume;
 	   }
 		else
-			printf("no space for bootblock (RDB is on block 0)\n");
+			Printf("no space for bootblock (RDB is on block 0)\n");
 	}
 	return NULL;
 }
@@ -677,7 +676,7 @@ D(bug("[install-i386] collectBlockList: Cleared sector list (20 entries) [start:
    if (retval)
 	{
 D(bug("[install-i386] collectBlockList: ERROR reading block (error: %ld\n", retval));
-			printf("ReadError %lu\n", (long)retval);
+			Printf("ReadError %lu\n", (long)retval);
 			return 0;
 		}
 
@@ -698,7 +697,7 @@ D(bug("[install-i386] collectBlockList: First block @ %x, i:%d\n", first_block, 
 		if (retval)
 		{
 D(bug("[install-i386] collectBlockList: ERROR reading block (error: %ld)\n", retval));
-			printf("ReadError %lu\n", (long)retval);
+			Printf("ReadError %lu\n", (long)retval);
 			return 0;
 		}
 D(bug("[install-i386] collectBlockList: read block %lx, i = %d\n", block, i));
@@ -725,7 +724,7 @@ D(bug("[install-i386] collectBlockList: store new block (%d)\n", blk_count));
 				if (blocklist[blk_count-1].sector != 0)
 				{
 D(bug("[install-i386] collectBlockList: ERROR: out of block space at sector %d, block %d\n", i, blk_count));
-					printf("There is no more space to save blocklist in stage2\n");
+					Printf("There is no more space to save blocklist in stage2\n");
 					return 0;
 				}
 D(bug("[install-i386] collectBlockList: storing sector pointer for %d in block %d\n", i, blk_count));
@@ -864,16 +863,16 @@ D(bug("[install-i386] writeStage2(%x)\n", volume));
 						retval = TRUE;
 					}
 					else
-						printf("%s: Write Error\n", menuname);
+						Printf("%s: Write Error\n", menuname);
 				}
 				else
-					printf("%s: Seek Error\n", menuname);
+					Printf("%s: Seek Error\n", menuname);
 			}
 			else
-				printf("Read Error\n");
+				Printf("Read Error\n");
 		}
 		else
-			printf("Write Error\n");
+			Printf("Write Error\n");
 	}
 	else
 		PrintFault(IoErr(), NULL);
@@ -917,7 +916,7 @@ D(bug("[install-i386] changeStage2(%x)\n", volume));
 				}
 			}
 			else
-				printf("%s: Read Error\n", stage2path);
+				Printf("%s: Read Error\n", stage2path);
 		}
 		else
 			PrintFault(IoErr(), stage2path);
@@ -1005,15 +1004,15 @@ D(bug("[install-i386] writeStage1: Install to FLOPPY\n"));
 				error = readwriteBlock
 					(volume, 0, volume->blockbuffer, 512, volume->writecmd);
 				if (error)
-					printf("WriteError %lu\n", (long)error);
+					Printf("WriteError %lu\n", (long)error);
 				else
 					retval = TRUE;
 			}
 			else
-				printf("WriteError %lu\n", (long)error);
+				Printf("WriteError %lu\n", (long)error);
 		}
 		else
-			printf("%s: Read Error\n", stage1path);
+			Printf("%s: Read Error\n", stage1path);
 		Close(fh);
 	}
 	else
@@ -1128,7 +1127,7 @@ D(bug("[install-i386] FORCELBA = %d\n",myargs[4]));
 								);
 						}
 						else
-							printf("Read Error: %lu\n", (long)retval);
+							Printf("Read Error: %lu\n", (long)retval);
 						uninitVolume(bbvol);
 					}
 					uninitVolume(grubvol);
@@ -1136,7 +1135,7 @@ D(bug("[install-i386] FORCELBA = %d\n",myargs[4]));
 			}
 			else
 			{
-				printf
+				Printf
 				(
 					"%s is not on device %s unit %lu\n",
 					(STRPTR)myargs[3], (STRPTR)myargs[0], (long)*((ULONG *)myargs[1])
@@ -1145,7 +1144,7 @@ D(bug("[install-i386] FORCELBA = %d\n",myargs[4]));
 		}
 		else
 			if (fssm)
-				printf("kernel path must begin with a device name\n");
+				Printf("kernel path must begin with a device name\n");
 		FreeArgs(rdargs);
 	}
 	else

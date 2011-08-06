@@ -9,14 +9,15 @@
 #include <exec/exec.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
+#include <exec/rawfmt.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/debug.h>
+#include <proto/alib.h>
 
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+#include <setjmp.h>
 
 #define ARG_TEMPLATE "TASK/K,DEBUG/S"
 
@@ -27,6 +28,7 @@
 static struct RDArgs *MyArgs;
 static IPTR Args[NUM_ARGS];
 static char s[256];
+static jmp_buf exit_buf;
 
 static UBYTE outbuffer[20000];
 static LONG outbuffer_size;
@@ -37,15 +39,16 @@ static void Cleanup(char *msg)
     
     if (msg)
     {
-    	printf("stacksnoop: %s\n",msg);
+    	Printf("stacksnoop: %s\n",msg);
 	rc = RETURN_WARN;
     } else {
     	rc = RETURN_OK;
     }
     
     if (MyArgs) FreeArgs(MyArgs);
-        
-    exit(rc);
+       
+    if (rc != RETURN_OK)
+        longjmp(exit_buf, rc);
 }
 
 static void GetArguments(void)
@@ -64,7 +67,8 @@ static int out (const UBYTE * fmt, ...)
 
     va_start (ap, fmt);
 
-    result = vsprintf(&outbuffer[outbuffer_size], fmt, ap);
+    VNewRawDoFmt(fmt, RAWFMTFUNC_STRING, &outbuffer[outbuffer_size], ap);
+    result = strlen(&outbuffer[outbuffer_size]);
 
     if (Args[ARG_DEBUG])
     	KPutStr(&outbuffer[outbuffer_size]);
@@ -138,13 +142,18 @@ static void Action(void)
     
     Enable();
     
-    puts(outbuffer);
+    PutStr(outbuffer);
 }
 
 ULONG __nocommandline = 1;
 
 int main(void)
 {
+    int rc;
+
+    if ((rc = setjmp(exit_buf)) != 0)
+        return rc;
+
     GetArguments();
     Action();
     Cleanup(0);

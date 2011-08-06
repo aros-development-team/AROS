@@ -10,7 +10,6 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <devices/timer.h>
-#include <stdio.h>
 #include <proto/alib.h>
 
 #include <aros/debug.h>
@@ -135,7 +134,7 @@ D(bug("[WaitForPort] Port found ... escaping from wait loop\n"));
    }
    else
    {
-      printf("WaitForPort: Bad Arguments .. Use 'WaitForPort ?' for correct useage\n");
+      Printf("WaitForPort: Bad Arguments .. Use 'WaitForPort ?' for correct useage\n");
    }
 
    if (AROSTCP_Port) return RETURN_OK;
