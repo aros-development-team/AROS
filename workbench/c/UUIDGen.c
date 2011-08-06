@@ -52,7 +52,6 @@
 #include <proto/dos.h>
 #include <proto/uuid.h>
 #include <libraries/uuid.h>
-#include <stdio.h>
 
 #define  ARG_COUNT  2    /* Number of ReadArgs() arguments */
 

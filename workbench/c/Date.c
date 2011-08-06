@@ -51,7 +51,6 @@
 
 ******************************************************************************/
 
-#include <stdio.h>
 #include <proto/exec.h>
 #include <exec/errors.h>
 #include <exec/io.h>
@@ -61,7 +60,6 @@
 #include <devices/timer.h>
 
 #include <string.h>
-#include <stdlib.h>
 
 const TEXT version[] = "$VER: Date 41.4 (5.3.2000)\n";
 

@@ -68,7 +68,6 @@
 #include <dos/dosasl.h>
 #include <exec/memory.h>
 
-#include <stdio.h>
 #include <string.h>
 
 

@@ -88,7 +88,6 @@
 ******************************************************************************/
 
 #define __USE_SYSBASE
-#include <stdio.h>
 #include <string.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
