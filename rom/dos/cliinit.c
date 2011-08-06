@@ -168,6 +168,9 @@ static long internalBootCliHandler(void);
     /* Did we succeed? */
     if (Res1 == DOSTRUE)
         return RETURN_OK;
+    /* Make sure we return non-zero error code, 0 == RETURN_OK */
+    if (Res2 == 0)
+    	Res2 = ERROR_UNKNOWN;
 
     return Res2;
 
