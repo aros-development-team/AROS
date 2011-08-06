@@ -28,10 +28,7 @@
 #include <proto/utility.h>
 
 #include <string.h>
-#include <stdlib.h>
 #include <memory.h>
-
-//#include <stdio.h>
 
 /******************************************************************************
  

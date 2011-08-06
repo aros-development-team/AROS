@@ -63,7 +63,6 @@
 #include <proto/kms.h>
 
 #include <string.h>
-#include <stdlib.h>
 
 const TEXT version[] = "$VER: SetKeyboard 41.3 (03.03.2011)\n";
 

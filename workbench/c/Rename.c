@@ -83,7 +83,6 @@
 #include <exec/memory.h>
 #include <exec/types.h>
 
-#include <stdio.h>
 #include <string.h>
 
 #define ARG_TEMPLATE	"FROM/A/M,TO=AS/A,QUIET/S"

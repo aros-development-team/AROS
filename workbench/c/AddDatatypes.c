@@ -76,7 +76,6 @@
 #include <proto/arossupport.h>
 
 #include <string.h>
-#include <stdio.h>
 
 #include "../libs/datatypes/datatypes_intern.h"
 #undef DOSBase
@@ -752,7 +751,7 @@ LONG MemStreamHook(struct Hook * hook, UBYTE **memptr, Msg msg)
 	    break;
 	    
 	default:
-	    rc = EOF;
+	    rc = -1;
 	    break;
     }
 

@@ -15,7 +15,6 @@
 #include <proto/workbench.h>
 
 #include <strings.h>
-#include <stdio.h>
 
 /* Very minimal C:LoadWB */
 

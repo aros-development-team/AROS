@@ -329,7 +329,6 @@ typedef ULONG IPTR;
 #include <proto/exec.h>
 
 #include <string.h>
-#include <stdio.h>
 
 const TEXT version[] = "\0$VER: Copy 50.16 (7.3.2007)";
 

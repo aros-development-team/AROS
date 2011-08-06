@@ -71,7 +71,6 @@
 #include <exec/memory.h>
 #include <dos/dosextens.h>
 #include <utility/tagitem.h>
-#include <stdio.h>
 
 #define  ARG_COUNT  4    /* Number of ReadArgs() arguments */
 

@@ -12,8 +12,6 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-#include <stdio.h>
-
 const TEXT version[] = "$VER: MakeDir 42.5 (15.12.2007)\n";
 
 /******************************************************************************
