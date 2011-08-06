@@ -1,0 +1,43 @@
+SetClock LOAD
+
+FailAt 21
+
+Makedir RAM:Clipboards
+If NOT EXISTS RAM:T
+    Makedir RAM:T
+EndIf
+If NOT EXISTS RAM:ENV
+    Makedir RAM:ENV
+    Assign ENV: RAM:ENV
+EndIf
+
+Assign T:       RAM:T
+Assign CLIPS:   RAM:Clipboards
+
+Assign KEYMAPS: DEVS:Keymaps
+Assign LOCALE:  SYS:Locale
+Assign LIBS:    SYS:Classes ADD
+Assign FONTS:   SYS:Fonts
+Assign HELP:    LOCALE:Help DEFER
+Assign THEMES:  SYS:System/Themes DEFER
+Assign IMAGES:  SYS:System/Images DEFER
+
+Mount DEVS:DOSDrivers/~(#?.info)
+
+Path C: SYS:System S: SYS:Prefs SYS:Tools SYS:Utilities QUIET
+
+Copy >NIL: ENVARC: ENV: ALL NOPRO NOREQ PAT ~(def_#?.info)
+
+AddDatatypes REFRESH QUIET
+IPrefs
+Run <NIL: >NIL: ConClip
+
+If EXISTS S:User-Startup
+    Execute S:User-Startup
+EndIf
+
+LoadWB
+
+If NOT ERROR
+    EndCLI
+EndIf

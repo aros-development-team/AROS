@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-.PHONY: $(DISTDIR)/system-amiga-m68k.img
+.PHONY: $(DISTDIR)/system-amiga-m68k.adf
 
 #MM bootdisk-amiga-m68k : \
 #MM           kernel-link-amiga-m68k \
@@ -58,12 +58,15 @@ SYSTEM_FILES := \
     AROS.boot \
     C/Alias \
     C/Assign \
+    C/AddDatatypes \
     C/Copy \
+    C/ConClip \
     C/Delete \
     C/Dir \
     C/EndCLI \
     C/IPrefs \
     C/List \
+    C/LoadWB \
     C/MakeDir \
     C/Mount \
     C/NewCLI \
@@ -73,23 +76,66 @@ SYSTEM_FILES := \
     C/Run \
     C/SetClock \
     C/Touch \
+    Classes/Datatypes/ascii.datatype \
+    Classes/Datatypes/ilbm.datatype \
+    Classes/Datatypes/picture.datatype \
+    Classes/Datatypes/png.datatype \
     Devs/DataTypes/FTXT \
     Devs/DataTypes/ILBM \
-    Devs/DOSDrivers/PIPEFS \
+    Devs/DataTypes/PNG \
+    Devs/DOSDrivers/PIPE \
     Devs/Mountlist \
     Libs/iffparse.library \
     Libs/locale.library \
-    Libs/arosc.library \
     Libs/datatypes.library \
+    Libs/cybergraphics.library \
     S/Shell-Startup \
     S/Startup-Sequence \
-    System/FixFonts
+    System/FixFonts \
+    System/FixFonts.info \
+    Utilities/More \
+    Utilities/More.info
 
 
 SYSTEM_SRC_DIR  := $(AROSDIR)
 SYSTEM_DEST_DIR := $(OSGENDIR)/boot/systemdisk
 
 SYSTEM_DEST_FILES := $(foreach f, $(SYSTEM_FILES), $(SYSTEM_DEST_DIR)/$(f))
+
+$(SYSTEM_DEST_DIR)/%.info: $(SYSTEM_SRC_DIR)/%.info
+	@$(CP) $< $@
+
+$(SYSTEM_DEST_DIR)/C/%: $(SYSTEM_SRC_DIR)/C/%
+	@$(ELF2HUNK)  $< $@
+	@$(CHMOD) +x $@
+
+$(SYSTEM_DEST_DIR)/Libs/%: $(SYSTEM_SRC_DIR)/Libs/%
+	@$(ELF2HUNK)  $< $@
+	@$(CHMOD) +x $@
+
+$(SYSTEM_DEST_DIR)/System/%: $(SYSTEM_SRC_DIR)/System/%
+	@$(ELF2HUNK)  $< $@
+	@$(CHMOD) +x $@
+
+$(SYSTEM_DEST_DIR)/Utilities/%: $(SYSTEM_SRC_DIR)/Utilities/%
+	@$(ELF2HUNK)  $< $@
+	@$(CHMOD) +x $@
+
+$(SYSTEM_DEST_DIR)/Classes/%: $(SYSTEM_SRC_DIR)/Classes/%
+	@$(ELF2HUNK)  $< $@
+	@$(CHMOD) +x $@
+
+$(SYSTEM_DEST_DIR)/S/%: $(SYSTEM_SRC_DIR)/S/%
+	@$(CP) $< $@
+	@$(CHMOD) +x $@
+
+$(SYSTEM_DEST_DIR)/%: $(SYSTEM_SRC_DIR)/%
+	@$(CP) $< $@
+
+$(SYSTEM_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.system
+	@$(CP) $(SRCDIR)/$(CURDIR)/Startup-Sequence.system $@
+	@$(CHMOD) +x $@
+
 
 #MM
 systemdisk-setup-amiga-m68k :
@@ -99,6 +145,7 @@ systemdisk-setup-amiga-m68k :
 	echo -n $(ARCH)-$(CPU) >$(SYSTEM_DEST_DIR)/AROS.boot
 	%mkdirs_q $(SYSTEM_DEST_DIR)/C
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Classes
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Classes/Datatypes
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs/DOSDrivers
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs/Keymaps
@@ -106,19 +153,20 @@ systemdisk-setup-amiga-m68k :
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Fonts
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Libs
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Locale
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Prefs/Env-Archive/SYS/
 	%mkdirs_q $(SYSTEM_DEST_DIR)/S
 	%mkdirs_q $(SYSTEM_DEST_DIR)/System
-	%mkdirs_q $(SYSTEM_DEST_DIR)/System/Wanderer
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Tools
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Utilities
 
-systemdisk-amiga-m68k: $(DISTDIR)/systemdisk-amiga-m68k.img
+systemdisk-amiga-m68k: $(DISTDIR)/systemdisk-amiga-m68k.adf
 
 .PHONY: systemdisk-amiga-m68k-quick
 
 #MM
 systemdisk-amiga-m68k-quick : systemdisk-setup-amiga-m68k systemdisk-amiga-m68k
 
-$(DISTDIR)/systemdisk-amiga-m68k.img: $(SYSTEM_DEST_FILES) $(SYSTEM_EXTRA_FILES) \
+$(DISTDIR)/systemdisk-amiga-m68k.adf: $(SYSTEM_DEST_FILES) $(SYSTEM_EXTRA_FILES) \
  $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	@$(MKDIR) -p "$(DISTDIR)"
 	$(RM) $@
@@ -132,9 +180,6 @@ $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURD
 	echo $(GENDIR)/$(CURDIR)
 	@$(MKDIR) -p $(GENDIR)/$(CURDIR)
 	@$(HOST_CC) $(HOST_CFLAGS) $(SRCDIR)/$(CURDIR)/install.c -o $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
-
-$(SYSTEM_DEST_DIR)/% : $(SYSTEM_SRC_DIR)/%
-	@$(CP) $< $@
 
 #MM
 clean ::
