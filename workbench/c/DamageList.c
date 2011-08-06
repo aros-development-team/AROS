@@ -17,10 +17,10 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
+#include <proto/alib.h>
 
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+#include <setjmp.h>
 
 #define ARG_TEMPLATE "FAST=F/S,NUMBERS=N/S,RECTFILL=RF/S"
 
@@ -37,6 +37,7 @@ static struct Layer *lay;
 static struct RDArgs *MyArgs;
 static IPTR Args[NUM_ARGS];
 static char s[256];
+static jmp_buf exit_buf;
 
 static void Cleanup(char *msg)
 {
@@ -44,15 +45,16 @@ static void Cleanup(char *msg)
     
     if (msg)
     {
-    	printf("damagelist: %s\n",msg);
+    	Printf("damagelist: %s\n",msg);
 	rc = RETURN_WARN;
     } else {
     	rc = RETURN_OK;
     }
     
     if (MyArgs) FreeArgs(MyArgs);
-    
-    exit(rc);
+   
+    if (rc != RETURN_OK)
+        longjmp(exit_buf, rc);
 }
 
 static void GetArguments(void)
@@ -71,8 +73,8 @@ static void Action(void)
     struct RegionRectangle *rr;
     WORD x, y, x1, y1, x2, y2, i, count = 0;
     
-    puts("Activate the window whose damagelist you want to see.\n");
-    puts("You have 3 seconds of time!\n\n");
+    PutStr("Activate the window whose damagelist you want to see.\n");
+    PutStr("You have 3 seconds of time!\n\n");
     
     Delay(3*50);
 
@@ -101,7 +103,7 @@ static void Action(void)
 	x2 = lay->bounds.MinX + dr->bounds.MinX + rr->bounds.MaxX;
 	y2 = lay->bounds.MinY + dr->bounds.MinY + rr->bounds.MaxY;
 
-    	printf("#%04d (%4d,%4d) - (%4d, %4d)  Size: %4d x %4d\n",
+    	Printf("#%04d (%4d,%4d) - (%4d, %4d)  Size: %4d x %4d\n",
 		++count,
 		x1,
 		y1,
@@ -130,7 +132,7 @@ static void Action(void)
 	
 	if (Args[ARG_NUMBERS])
 	{
-	    sprintf(s,"%d",count);
+	    __sprintf(s,"%d",count);
 	    i = TextLength(rp,s,strlen(s));
 	    
 	    x = (x1 + x2 - i) / 2;
@@ -170,6 +172,11 @@ static void Action(void)
 
 int main(void)
 {
+    int rc;
+
+    if ((rc = setjmp(exit_buf)) != 0)
+        return rc;
+
     GetArguments();
     Action();
     Cleanup(0);
