@@ -81,9 +81,11 @@ USER_CFLAGS     := -I$(SRCDIR)/rom/dos -DADATE="\"$(shell date "+%d.%m.%Y")\""
 #MM workbench-c : includes linklibs workbench-c-pure workbench-c-requeststring workbench-libs-uuid
 #MM workbench-c-quick : workbench-c-pure-quick workbench-c-requeststring-quick
 
+USER_LDFLAGS := -noarosc
+
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="uuid arossupport amiga arosc m debug"
+    uselibs="uuid arossupport amiga rom m debug"
 
 %build_progs mmake=workbench-c-pure \
     files=$(PURE_FILES) targetdir=$(AROS_C) \

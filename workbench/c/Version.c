@@ -61,10 +61,9 @@
 #define ENABLE_RT 1
 #include <aros/rt.h>
 
-#include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <ctype.h>
+
 #include <proto/exec.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -73,6 +72,7 @@
 #include <exec/resident.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
+#include <proto/alib.h>
 #include <dos/datetime.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -1216,8 +1216,8 @@ int createdefvers(CONST_STRPTR name)
 	    parsedver.pv_vername &&
 	    parsedver.pv_revname)
 	{
-		sprintf(parsedver.pv_vername, "%ld", (long)parsedver.pv_version);
-		sprintf(parsedver.pv_revname, ".%ld", (long)parsedver.pv_revision);
+		__sprintf(parsedver.pv_vername, "%ld", (long)parsedver.pv_version);
+		__sprintf(parsedver.pv_revname, ".%ld", (long)parsedver.pv_revision);
 
 		return RETURN_OK;
 	}
@@ -1591,7 +1591,7 @@ int setvervar(CONST_STRPTR name, LONG ver, LONG rev)
 {
 	UBYTE buf[32];
 
-	sprintf(buf, "%ld.%ld", (long) ver, (long) rev);
+	__sprintf(buf, "%ld.%ld", (long) ver, (long) rev);
 
 	return SetVar((STRPTR) name, buf, -1, GVF_LOCAL_ONLY | LV_VAR) ? RETURN_OK : -1;
 }

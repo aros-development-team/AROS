@@ -53,7 +53,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include <stdio.h>
 #include <string.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -157,7 +156,7 @@ struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
 		    return (struct FileSysStartupMsg *) BADDR(dn->dn_Startup);
 		}
 		else
-		    printf("device '%s' doesn't contain a file system\n",
+		    Printf("device '%s' doesn't contain a file system\n",
 			   dname);
 	    }
 	    else
@@ -165,7 +164,7 @@ struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
 	}
     }
     else
-	printf("'%s' doesn't contain a device name\n", path);
+	Printf("'%s' doesn't contain a device name\n", path);
     return 0;
 }
 
@@ -200,7 +199,7 @@ void nsdCheck(struct Volume *volume)
 	volume->iotd->iotd_Req.io_Length = sizeof(struct NSDeviceQueryResult);
 	if (DoIO((struct IORequest *) &volume->iotd->iotd_Req) == IOERR_NOCMD)
 	{
-	    printf("Device doesn't understand NSD-Query\n");
+	    Printf("Device doesn't understand NSD-Query\n");
 	}
 	else
 	{
@@ -209,12 +208,12 @@ void nsdCheck(struct Volume *volume)
 		|| (volume->iotd->iotd_Req.io_Actual == 0)
 		|| (volume->iotd->iotd_Req.io_Actual != nsdq.SizeAvailable))
 	    {
-		printf("WARNING wrong io_Actual using NSD\n");
+		Printf("WARNING wrong io_Actual using NSD\n");
 	    }
 	    else
 	    {
 		if (nsdq.DeviceType != NSDEVTYPE_TRACKDISK)
-		    printf("WARNING no trackdisk type\n");
+		    Printf("WARNING no trackdisk type\n");
 		for (cmdcheck = nsdq.SupportedCommands; *cmdcheck; cmdcheck++)
 		{
 		    if (*cmdcheck == NSCMD_TD_READ64)
@@ -224,7 +223,7 @@ void nsdCheck(struct Volume *volume)
 		}
 		if ((volume->readcmd != NSCMD_TD_READ64) ||
 		    (volume->writecmd != NSCMD_TD_WRITE64))
-		    printf("WARNING no READ64/WRITE64\n");
+		    Printf("WARNING no READ64/WRITE64\n");
 	    }
 	}
     }
@@ -372,7 +371,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
 
     if (readBlock(volume, 0, volume->blockbuffer, 512))
     {
-	printf("Read Error\n");
+	Printf("Read Error\n");
 	return FALSE;
     }
 
@@ -384,7 +383,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
 	    volume->flags &= ~VF_IS_RDB;
 	    if (readBlock(volume, 1, volume->blockbuffer, 512))
 	    {
-	        printf("Read Error\n");
+	        Printf("Read Error\n");
 	        return FALSE;
 	    }
 
@@ -520,7 +519,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
 			retval = TRUE;
 		    }
 		    else
-			printf
+			Printf
 			    ("only MBR and RDB partition tables are supported\n");
 		}
 		ClosePartitionTable(ph);
@@ -533,11 +532,11 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
 	    CloseRootPartition(ph);
 	}
 	else
-	    printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
+	    Printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
 	CloseLibrary((struct Library *) PartitionBase);
     }
     else
-	printf("Couldn't open partition.library\n");
+	Printf("Couldn't open partition.library\n");
     return retval;
 }
 
@@ -556,7 +555,7 @@ struct Volume *getGrubStageVolume(CONST_STRPTR device, ULONG unit,
 	    return volume;
 	else
 	{
-	    printf("stage2 is on an unsupported file system\n");
+	    Printf("stage2 is on an unsupported file system\n");
 	    PrintFault(ERROR_OBJECT_WRONG_TYPE, NULL);
 	}
 	uninitVolume(volume);
@@ -627,18 +626,18 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
 				retval = TRUE;
 			    }
 			    else
-				printf
+				Printf
 				    ("partition is not of type AROS (0x30)\n");
 			}
 			else
 			{
-			    printf
+			    Printf
 				("partition %ld not found on device %s unit %lu\n",
 				 (long)*pnum, device, (long)unit);
 			}
 		    }
 		    else
-			printf
+			Printf
 			    ("you can only install in partitions which are MBR partitioned\n");
 		}
 		else
@@ -655,7 +654,7 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
 			retval = TRUE;
 		    }
 		    else
-			printf
+			Printf
 			    ("partition table type must be either MBR or RDB\n");
 		}
 		ClosePartitionTable(ph);
@@ -669,11 +668,11 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
 	    CloseRootPartition(ph);
 	}
 	else
-	    printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
+	    Printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
 	CloseLibrary((struct Library *) PartitionBase);
     }
     else
-	printf("Couldn't open partition.library\n");
+	Printf("Couldn't open partition.library\n");
     return retval;
 }
 
@@ -696,7 +695,7 @@ struct Volume *getBBVolume(CONST_STRPTR device, ULONG unit, LONG * partnum)
 	    return volume;
 	}
 	else
-	    printf("no space for bootblock (RDB is on block 0)\n");
+	    Printf("no space for bootblock (RDB is on block 0)\n");
     }
     return NULL;
 }
@@ -790,15 +789,15 @@ BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume 
 		        error = writeBlock(bootimgvol, 0, bootimgvol->blockbuffer, 512);
                 
 		        if (error)
-		            printf("WriteError %lu\n", (long)error);
+		            Printf("WriteError %lu\n", (long)error);
 		        else
 		            retval = TRUE;
 	        }
 	        else
-		        printf("WriteError %lu\n", (long)error);
+		        Printf("WriteError %lu\n", (long)error);
 	    }
 	    else
-	        printf("%s: Read Error\n", bootimgpath);
+	        Printf("%s: Read Error\n", bootimgpath);
 	    Close(fh);
     }
     else
@@ -831,7 +830,7 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block, struct BlockNode *
     if (retval)
     {
         D(bug("[install] collectBlockListFFS: ERROR reading block (error: %ld\n", retval));
-		printf("ReadError %lu\n", (long)retval);
+		Printf("ReadError %lu\n", (long)retval);
 		return 0;
 	}
 
@@ -849,7 +848,7 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block, struct BlockNode *
 		if (retval)
 		{
             D(bug("[install] collectBlockListFFS: ERROR reading block (error: %ld)\n", retval));
-			printf("ReadError %lu\n", (long)retval);
+			Printf("ReadError %lu\n", (long)retval);
 			return 0;
 		}
         
@@ -878,7 +877,7 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block, struct BlockNode *
 				{
                     D(bug("[install] collectBlockListFFS: ERROR: out of block space at sector %d, block %d\n",
                         i, blk_count));
-					printf("There is no more space to save blocklist in core.img\n");
+					Printf("There is no more space to save blocklist in core.img\n");
 					return 0;
 				}
                 D(bug("[install] collectBlockListFFS: storing sector pointer for %d in block %d\n", 
@@ -956,7 +955,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
     if (retval)
     {
         D(bug("[install] collectBlockListSFS: ERROR reading root block (error: %ld)\n", retval));
-		printf("ReadError %lu\n", (long)retval);
+		Printf("ReadError %lu\n", (long)retval);
 		return 0;
 	}
 
@@ -1002,7 +1001,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
     if (block_sfsobjectcontainer == 0)
     {
         D(bug("[install] collectBlockListSFS: SFSObjectContainer not found\n"));
-		printf("SFSObjectContainer not found\n");
+		Printf("SFSObjectContainer not found\n");
 		return 0;
     }
 
@@ -1019,7 +1018,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
         if (retval)
         {
             D(bug("[install] collectBlockListSFS: ERROR reading block (error: %ld)\n", retval));
-		    printf("ReadError %lu\n", (long)retval);
+		    Printf("ReadError %lu\n", (long)retval);
 		    return 0;
 	    }
 
@@ -1064,7 +1063,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
     if (first_block == 0)
     {
         D(bug("[install] collectBlockListSFS: First block not found\n"));
-		printf("First block not found\n");
+		Printf("First block not found\n");
 		return 0;
     }
 
@@ -1113,7 +1112,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
             if (BNodePtr == NULL)
             {
                 D(bug("[install] collectBlockListSFS: Failed to travers extentbnode tree.\n"));
-		        printf("Failed to travers extentbnode tree.\n");
+		        Printf("Failed to travers extentbnode tree.\n");
 		        return 0;
             }
 
@@ -1136,7 +1135,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
 		if ((blk_count-1) <= -BLCKLIST_ELEMENTS)
 		{
             D(bug("[install] collectBlockListSFS: ERROR: out of block space\n"));
-			printf("There is no more space to save blocklist in core.img\n");
+			Printf("There is no more space to save blocklist in core.img\n");
 			return 0;
 		}
 
@@ -1259,20 +1258,20 @@ BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, struct Volume *volume)
 						retval = TRUE;
 					}
 					else
-						printf("Write Error\n");
+						Printf("Write Error\n");
 				}
 				else
-					printf("Seek Error\n");
+					Printf("Seek Error\n");
 			}
 			else
-				printf("Read Error\n");
+				Printf("Read Error\n");
 		}
 		else
-			printf("Write Error\n");
+			Printf("Write Error\n");
 	}
 	else
     {
-        printf("Seek Error\n");
+        Printf("Seek Error\n");
 		PrintFault(IoErr(), NULL);
     }
 	return retval;
@@ -1325,7 +1324,7 @@ ULONG updateCoreIMG(CONST_STRPTR grubpath,     /* path of grub dir */
                 {
                     block = 0;
                     D(bug("[install] core.img on unsupported file system\n"));
-                    printf("Unsupported file system\n");
+                    Printf("Unsupported file system\n");
                 }
 
                 D(bug("[install] core.img first block: %ld\n", block));
@@ -1337,7 +1336,7 @@ ULONG updateCoreIMG(CONST_STRPTR grubpath,     /* path of grub dir */
 				}
 			}
 			else
-				printf("%s: Read Error\n", coreimgpath);
+				Printf("%s: Read Error\n", coreimgpath);
 		}
 		else
 			PrintFault(IoErr(), coreimgpath);
@@ -1400,11 +1399,11 @@ int main(int argc, char **argv)
 
 	    D(bug("[install] FORCELBA = %d\n", myargs[4]));
 	    if (myargs[4])
-	        printf("FORCELBA ignored\n");
+	        Printf("FORCELBA ignored\n");
 
 	    if (partnum)
 	    {
-	        printf("PARTITIONNUMBER not supported yet\n");
+	        Printf("PARTITIONNUMBER not supported yet\n");
 	        FreeArgs(rdargs);
 	        return RETURN_ERROR;
 	    }
@@ -1444,14 +1443,14 @@ int main(int argc, char **argv)
 	        }
 	        else
 	        {
-		        printf("%s is not on device %s unit %ld\n",
+		        Printf("%s is not on device %s unit %ld\n",
 		           grubpath, bootDevice, (long)unit);
 		        ret = RETURN_ERROR;
 	        }
 	    }
 	    else if (fssm)
 	    {
-	        printf("kernel path must begin with a device name\n");
+	        Printf("kernel path must begin with a device name\n");
 	        FreeArgs(rdargs);
 	        ret = RETURN_ERROR;
 	    }

@@ -56,10 +56,10 @@
 ******************************************************************************/
 
 #include <string.h>
-#include <stdio.h>
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/alib.h>
 
 #include <devices/newstyle.h>
 #include <devices/trackdisk.h>
@@ -157,7 +157,7 @@ UWORD i;
 			);
 		if (retval)
 		{
-			printf("ReadError %lu\n", (long)retval);
+			Printf("ReadError %lu\n", (long)retval);
 			return 0;
 		}
 		while ((i>=6) && (volume->blockbuffer[i]))
@@ -179,7 +179,7 @@ UWORD i;
 				blk_count--; /* decrement first */
 				if (blocklist[blk_count-1].sector != 0)
 				{
-					printf("There is no more space to save blocklist in stage2\n");
+					Printf("There is no more space to save blocklist in stage2\n");
 					return 0;
 				}
 				blocklist[blk_count].sector = AROS_BE2LONG(volume->blockbuffer[i]);
@@ -294,10 +294,10 @@ STRPTR errstr=NULL;
 												volume->blockbuffer, 512, volume->writecommand
 											);
 										if (retval)
-											printf("WriteError %lu\n", (long)retval);
+											Printf("WriteError %lu\n", (long)retval);
 									}
 									else
-										printf("WriteErrro %lu\n", (long)retval);
+										Printf("WriteErrro %lu\n", (long)retval);
 								}
 								else
 									error = IoErr();
@@ -354,7 +354,7 @@ UWORD *cmdcheck;
 		volume->iotd->iotd_Req.io_Length=sizeof(struct NSDeviceQueryResult);
 		if (DoIO((struct IORequest *)&volume->iotd->iotd_Req)==IOERR_NOCMD)
 		{
-			printf("Device doesn't understand NSD-Query\n");
+			Printf("Device doesn't understand NSD-Query\n");
 		}
 		else
 		{
@@ -364,12 +364,12 @@ UWORD *cmdcheck;
 					(volume->iotd->iotd_Req.io_Actual!=nsdq.SizeAvailable)
 				)
 			{
-				printf("WARNING wrong io_Actual using NSD\n");
+				Printf("WARNING wrong io_Actual using NSD\n");
 			}
 			else
 			{
 				if (nsdq.DeviceType != NSDEVTYPE_TRACKDISK)
-					printf("WARNING no trackdisk type\n");
+					Printf("WARNING no trackdisk type\n");
 				for (cmdcheck=nsdq.SupportedCommands;*cmdcheck;cmdcheck++)
 				{
 					if (*cmdcheck == NSCMD_TD_READ64)
@@ -381,7 +381,7 @@ UWORD *cmdcheck;
 						(volume->readcommand!=NSCMD_TD_READ64) ||
 						(volume->writecommand!=NSCMD_TD_WRITE64)
 					)
-					printf("WARNING no READ64/WRITE64\n");
+					Printf("WARNING no READ64/WRITE64\n");
 			}
 		}
 	}
@@ -554,7 +554,7 @@ void uninitVolume(struct Volume *volume) {
 }
 
 void checkBootCode(struct Volume *volume) {
-	printf("CHECK not implemented yet\n");
+	Printf("CHECK not implemented yet\n");
 }
 
 void removeBootCode(struct Volume *volume) {
@@ -566,7 +566,7 @@ ULONG retval;
 			volume->blockbuffer, 512, volume->readcommand
 		);
 	if (retval)
-		printf("ReadError %lu\n", (long)retval);
+		Printf("ReadError %lu\n", (long)retval);
 	else
 	{
 		if ((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00)==0x444F5300)
@@ -577,7 +577,7 @@ ULONG retval;
 					volume->blockbuffer, 512, volume->writecommand
 				);
 			if (retval)
-				printf("WriteError %lu\n", (long)retval);
+				Printf("WriteError %lu\n", (long)retval);
 		}
 	}
 }

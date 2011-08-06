@@ -48,8 +48,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <setjmp.h>
 
 /****************************************************************************************/
 
@@ -72,6 +71,7 @@ IPTR	         args[NUM_ARGS];
 UBYTE	         s[256];
 UBYTE	    	 buf[BUFSIZE];
 STRPTR		 devicename = "parallel.device";
+jmp_buf		 exit_buf;
 
 /****************************************************************************************/
 
@@ -79,7 +79,7 @@ static void cleanup(char *msg, ULONG retcode)
 {
     if (msg && !args[ARG_QUIET]) 
     {
-    	fprintf(stderr, "CopyToPAR: %s\n", msg);
+    	Printf("CopyToPAR: %s\n", msg);
     }
     
     if (fh) Close(fh);
@@ -89,7 +89,7 @@ static void cleanup(char *msg, ULONG retcode)
     if (ParIO) DeleteIORequest((struct IORequest *)ParIO);
     if (ParMP) DeleteMsgPort(ParMP);
     
-    exit(retcode);
+    longjmp(exit_buf, retcode | (1 << 31));
 }
 
 /****************************************************************************************/
@@ -177,6 +177,12 @@ static void docopy(void)
 
 int main(void)
 {
+    int rc;
+
+    if ((rc = setjmp(exit_buf)) != 0) {
+        return rc & ~(1 << 31);
+    }
+
     getarguments();
     openpar();
     openfile();

@@ -61,9 +61,8 @@
 #include <proto/intuition.h>
 #include <proto/diskfont.h>
 
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+#include <setjmp.h>
 
 const TEXT version[] = "$VER: SetDefaultFont 41.1 (1.2.2001)\n";
 
@@ -83,12 +82,13 @@ static char 	    	s[256];
 static char 	    	*fontname;
 static LONG 	    	fontsize;
 static BOOL 	    	screenfont;
+static jmp_buf 	    	exit_buf;
 
 static void Cleanup(char *msg, WORD rc)
 {
     if (msg)
     {
-    	printf("SetDefaultFont: %s\n",msg);
+    	Printf("SetDefaultFont: %s\n",msg);
     }
     
     if (myargs)
@@ -96,7 +96,8 @@ static void Cleanup(char *msg, WORD rc)
 	FreeArgs(myargs);
     }
 
-    exit(rc);
+    if (rc != RETURN_OK)
+        longjmp(exit_buf, rc);
 }
 
 int GfxBase_version = 0;
@@ -156,6 +157,11 @@ static void Action(void)
 
 int main(void)
 {
+    int rc;
+
+    if ((rc = setjmp(exit_buf)) != 0)
+        return rc;
+
     GetArguments();    
     Action();
     Cleanup(0, RETURN_OK);

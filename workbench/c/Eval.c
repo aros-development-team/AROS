@@ -98,7 +98,7 @@
 #include  <dos/rdargs.h>
 #include  <proto/dos.h>
 #include  <proto/exec.h>
-
+#include  <proto/alib.h>
 
 const TEXT version[] = "$VER: Eval 41.2 (14.7.2011)\n";
 
@@ -112,7 +112,6 @@ enum
     ARG_LFORMAT,
     NOOFARGS
 };
-
 
 void printLformat(STRPTR format, int value);
 STRPTR fixExpression(STRPTR val1, STRPTR op, STRPTR *vals);
@@ -175,7 +174,7 @@ int main(void)
             
                 if (file == BNULL)
                 {
-                    printf("Cannot open output file %s\n", toFile);
+                    Printf("Cannot open output file %s\n", toFile);
 
                     retval= RETURN_FAIL;
                 }
@@ -192,7 +191,7 @@ int main(void)
                 }
                 else
                 {
-                    printf("%i\n", g_result);
+                    Printf("%i\n", g_result);
                 }
         
                 /* Reinstall output stream if we changed it */
@@ -231,11 +230,11 @@ void printLformat(STRPTR format, int value)
         case '*':
             if (format[i] == 'n')
             {
-                printf("\n");
+                Printf("\n");
             }
             else
             {
-                printf("*");
+                Printf("*");
             }
 
             break;
@@ -247,30 +246,30 @@ void printLformat(STRPTR format, int value)
             {
             /* Hexadecimal display */
             case 'x':
-                sprintf(s, "%X", value);
+                __sprintf(s, "%X", value);
                 s[format[++i] - '0'] = 0;
-                printf("%s", s);
+                Printf("%s", s);
                 break;
 
             /* Octal display */
             case 'o':
-                sprintf(s, "%o", value);
+                __sprintf(s, "%o", value);
                 s[format[++i] - '0'] = 0;
-                printf("%s", s);
+                Printf("%s", s);
                 break;
 
             /* Integer display */
             case 'n':
-                printf("%i", value);
+                Printf("%i", value);
                 break;
 
             /* Character display */
             case 'c':
-                printf("%c", value);
+                Printf("%c", value);
                 break;
 
             case '%':
-                printf("%%");       /* AROS extension */
+                Printf("%%");       /* AROS extension */
                 break;
 
                 /* Stupid user writes "...%" */
@@ -279,7 +278,7 @@ void printLformat(STRPTR format, int value)
                 break;
 
             default:
-                printf("%%%c", format[i]);
+                Printf("%%%c", format[i]);
                 break;
                 
             } /* switch(%-command) */
@@ -287,7 +286,7 @@ void printLformat(STRPTR format, int value)
             break;
 
         default:
-            printf("%c", format[i]);
+            Printf("%c", format[i]);
             break;
         } /* switch format character */
     }
@@ -337,4 +336,22 @@ STRPTR fixExpression(STRPTR val1, STRPTR op, STRPTR *vals)
     }
 
     return arg;
+}
+
+/* For linking with the evalParser.y output
+ */
+void *malloc(size_t size)
+{
+    return AllocVec(size, MEMF_ANY);
+}
+
+void free(void *ptr)
+{
+    FreeVec(ptr);
+}
+
+int puts(const char *s)
+{
+    PutStr(s);
+    return 0;
 }

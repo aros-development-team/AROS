@@ -13,10 +13,10 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
+#include <proto/alib.h>
 
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+#include <setjmp.h>
 
 #define ARG_TEMPLATE "FAST=F/S,NUMBERS=N/S"
 
@@ -30,6 +30,7 @@ static struct Layer *lay;
 static struct RDArgs *MyArgs;
 static IPTR Args[NUM_ARGS];
 static char s[256];
+static jmp_buf exit_buf;
 
 static void Cleanup(char *msg)
 {
@@ -44,7 +45,9 @@ static void Cleanup(char *msg)
     }
 
     if (MyArgs) FreeArgs(MyArgs);
-    exit(rc);
+
+    if (rc != RETURN_OK)
+        longjmp(exit_buf, rc);
 }
 
 static void GetArguments(void)
@@ -63,8 +66,8 @@ static void Action(void)
     struct ClipRect *cr;
     WORD x, y, i, count = 0;
 
-    puts("Activate the window whose cliprects you want to see.\n");
-    puts("You have 3 seconds of time!\n\n");
+    PutStr("Activate the window whose cliprects you want to see.\n");
+    PutStr("You have 3 seconds of time!\n\n");
 
     Delay(3*50);
 
@@ -109,7 +112,7 @@ static void Action(void)
 	
 	if (Args[ARG_NUMBERS])
 	{
-	    sprintf(s,"%d",count);
+	    __sprintf(s,"%d",count);
 	    i = TextLength(rp,s,strlen(s));
 	    
 	    x = (cr->bounds.MinX + cr->bounds.MaxX - i) / 2;
@@ -149,6 +152,11 @@ static void Action(void)
 
 int main(void)
 {
+    int rc;
+
+    if ((rc = setjmp(exit_buf)) != 0)
+        return rc;
+
     GetArguments();
     Action();
     Cleanup(0);
