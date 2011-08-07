@@ -92,17 +92,20 @@ void dosboot_BootPoint(struct BootNode *bn)
                  * Yet another crazy Amiga calling sequence.
                  * The ConfigDev is pushed on the stack, but
                  * the BootNode is in A2. Joy.
+                 *
+                 * Oh, and don't forget SysBase in A6!
                  */
                 asm volatile (
                         "move.l %0,%%a0\n"
                         "move.l %1,%%a1\n"
                         "move.l %2,%%a2\n"
+                        "move.l %3,%%a6\n"
                         "move.l %%a1,%%sp@-\n"
                         "jsr    %%a0@\n"
                         "addq.l #4,%%sp\n"
                         :
-                        : "d" (func), "d" (cd), "d" (bn)
-                        : "d0", "d1", "a0", "a1", "a2"
+                        : "d" (func), "d" (cd), "d" (bn), "d" (SysBase)
+                        : "d0", "d1", "a0", "a1", "a2", "a6"
                         );
             }
         }
