@@ -9,6 +9,7 @@
 #include <aros/debug.h>
 
 #include "emul_intern.h"
+#include "emul_unix.h"
 
 #define is_special_dir(x) (x[0] == '.' && (!x[1] || (x[1] == '.' && !x[2])))
 

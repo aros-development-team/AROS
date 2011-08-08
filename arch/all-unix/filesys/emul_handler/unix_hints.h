@@ -1,4 +1,8 @@
-/* Some really black magic. Adjusts compilation for various UNIX weirdness. */
+/*
+ * Some really black magic. Adjusts compilation for various UNIX weirdness.
+ * This stuff is placed in a separate file because it needs to be included
+ * before any UNIX headers.
+ */
 
 #ifdef HOST_OS_ios
 
