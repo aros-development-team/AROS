@@ -885,7 +885,7 @@ __startup static AROS_ENTRY(int, startup,
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
     	BSTR name = AROS_CONST_BSTR("aros.elf.gz");
-    	enum { ARG_CMD = 16, ARG_ROM = 17, ARG_MODULES = 0 };
+    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_MODULES = 0 };
     	/* It would be nice to use the '/M' switch, but that
     	 * is not supported under the AOS BCPL RdArgs routine.
     	 *
