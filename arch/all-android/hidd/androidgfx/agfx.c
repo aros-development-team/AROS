@@ -116,7 +116,6 @@ OOP_Object *AGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
     HIDDT_ModeID modeid;
     struct pHidd_Gfx_NewBitMap p;
     OOP_Object *newbm;
-    struct gfx_data *data = OOP_INST_DATA(cl, o);;
     struct TagItem tags[] =
     {
 	{TAG_IGNORE, 0			},
@@ -215,14 +214,17 @@ static OOP_AttrBase *AllocAttrBases(const STRPTR *iftable)
     return ret;
 }
 
-static const char *host_vars[] = {
+static const char *host_vars[] =
+{
     "Java_Env",
     "Java_Class",
     "Java_Object",
     NULL
 };
 
-static const STRPTR interfaces[] = {
+static const STRPTR interfaces[] =
+{
+    IID_Hidd_ChunkyBM,
     IID_Hidd_BitMap,
     IID_Hidd_Sync,
     IID_Hidd_PixFmt,
