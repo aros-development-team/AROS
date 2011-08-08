@@ -2,9 +2,16 @@
 
 char *DefaultConfig = "boot/AROSBootstrap.conf";
 
-char *getosversion(void)
-{   
-    return "Unknown operating system";
+char *getosversion(const char *version)
+{
+    char *parts[] =
+    {
+        version,
+        "/",
+        "Unknown operating system"
+    }
+    
+    return join_strings(3, parts);
 }
 
 char *namepart(char *name)

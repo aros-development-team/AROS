@@ -60,7 +60,8 @@ extern void __clear_cache(char *begin, char *end);
 char bootstrapdir[PATH_MAX];
 char buf[512];
 
-static struct mb_mmap MemoryMap = {
+static struct mb_mmap MemoryMap =
+{
     sizeof(struct mb_mmap) - 4,
     0,
     0,
@@ -73,6 +74,8 @@ static struct mb_mmap MemoryMap = {
 
 /* gdb can pick up kickstart segments from here */
 static struct ELF_ModuleInfo *Debug_KickList = NULL;
+
+static const char version[] = "$VER: AROS Hosted bootstrap v1.0 (" ADATE ")";
 
 /* Kernel message */
 static struct TagItem km[] =
@@ -194,7 +197,7 @@ int bootstrap(int argc, char ** argv)
 	D(fprintf(stderr, "[Bootstrap] Kernel arguments: %s\n", KernelArgs));
     }
 
-    SystemVersion = getosversion();
+    SystemVersion = getosversion(&version[6]);
     D(fprintf(stderr, "[Bootstrap] OS version: %s\n", SystemVersion));
 
     if (SetRootDirectory())
