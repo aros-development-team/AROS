@@ -8,8 +8,16 @@ endif
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/filesys/emul_handler $(FAMILY_INCLUDES) -I$(SRCDIR)/$(CURDIR)
 
-FILES := emul_init emul_handler filenames emul_host
-FUNCS := boot
+FILES	      := emul_init emul_handler filenames emul_host
+CONSOLE_FILES := boot
+
+# Emergency console is useless on mobile platforms (currently all targets with variants),
+# because they don't provide somehow usable stdin/stdout.
+ifeq ($(AROS_TARGET_VARIANT),)
+    FILES += $(CONSOLE_FILES)
+else
+    USER_CFLAGS += -DNO_EMERGENCY_CONSOLE
+endif
 
 %build_module mmake=kernel-fs-emul \
     modname=emul modtype=resource modsuffix=handler \
