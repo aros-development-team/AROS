@@ -112,7 +112,7 @@ struct JumpVec
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GETJUMPVEC(lib,n)->vec)
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
-
+#define __AROS_USE_FULLJMP
 
 /* Macros for generating library stub functions and aliases. */
 
