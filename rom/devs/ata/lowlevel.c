@@ -2214,7 +2214,7 @@ ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen)
     return ((sense[2]&0xf)<<16) | (sense[12]<<8) | (sense[13]);
 }
 
-ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
+ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
 {
     ULONG port = bus->ab_Port;
     UBYTE tmp1, tmp2;
@@ -2254,8 +2254,11 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
             if (0 == (ata_ReadStatus(bus) & 0xfe))
                 return DEV_NONE;
             /* ATA_EXECUTE_DIAG is executed by both devices, do it only once */
-            if (bus->ab_Dev[0] == DEV_UNKNOWN || bus->ab_Dev[0] >= DEV_ATAPI)
+            if (!*DiagExecuted)
+            {
                 BUS_OUT(ATA_EXECUTE_DIAG, ata_Command, port);
+                *DiagExecuted = TRUE;
+            }
 
             ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
             while (ata_ReadStatus(bus) & ATAF_BUSY)
@@ -2288,6 +2291,7 @@ void ata_ResetBus(struct ata_Bus *bus)
     ULONG alt = bus->ab_Alt;
     ULONG port = bus->ab_Port;
     ULONG TimeOut;
+    BOOL  DiagExecuted = FALSE;
 
     /* Set and then reset the soft reset bit in the Device Control
      * register.  This causes device 0 be selected */
@@ -2363,9 +2367,9 @@ void ata_ResetBus(struct ata_Bus *bus)
     }
 
     if (DEV_NONE != bus->ab_Dev[0])
-        bus->ab_Dev[0] = ata_ReadSignature(bus, 0);
+        bus->ab_Dev[0] = ata_ReadSignature(bus, 0, &DiagExecuted);
     if (DEV_NONE != bus->ab_Dev[1])
-        bus->ab_Dev[1] = ata_ReadSignature(bus, 1);
+        bus->ab_Dev[1] = ata_ReadSignature(bus, 1, &DiagExecuted);
 }
 
 void ata_InitBus(struct ata_Bus *bus)
