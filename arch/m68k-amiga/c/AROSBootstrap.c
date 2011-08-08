@@ -892,7 +892,8 @@ __startup static AROS_ENTRY(int, startup,
     	 * So only 16 modules are supported
     	 */
     	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K");
-    	ULONG args[16 + 2 + 256] __attribute__((aligned(4))) = { };
+    	/* Make sure the args are in .bss, not stack */
+    	static ULONG args[16 + 2 + 256] __attribute__((aligned(4))) = { };
 
     	WriteF("AROSBootstrap " ADATE "\n");
         args[0] = name;
