@@ -1,0 +1,39 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+.PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k.iso
+
+TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k.iso
+
+#MM bootiso-amiga-m68k :	AROS-complete		\
+#MM			kernel-package-amiga-m68k		\
+#MM			kernel-bootstrap-i386		\
+#MM			AROS-amiga-m68k-drivers	
+
+bootiso-amiga-m68k: $(AROSDIR)/.backdrop $(TARGET_ISO)
+
+$(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
+		@$(CP) $< $@
+
+#MM
+bootiso-amiga-m68k-quick: $(TARGET_ISO)
+
+.PHONY: bootiso-amiga-m68k-quick
+
+$(warning LANG = $(LANG))
+
+$(TARGET_ISO): 
+	%mkdirs_q $(AROSDIR)/S
+	@$(CP) $(SRCDIR)/arch/m68k-amiga/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+	@$(MKDIR) -p "$(DISTDIR)"
+	@mkisofs -f \
+		-o $@ \
+		-allow-leading-dots \
+		-iso-level 4 \
+                -V "AROS Live CD" \
+                -publisher "The AROS Dev Team" \
+		-p "The AROS Dev Team (www.aros.org)" \
+		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -l -J -r \
+		$(AROSDIR)
+
