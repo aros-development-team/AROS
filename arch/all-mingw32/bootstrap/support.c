@@ -6,13 +6,13 @@
 char *DefaultConfig = "boot\\AROSBootstrap.conf";
 OSVERSIONINFO winver;
 
-char *getosversion(void)
+char *getosversion(const char *bsver)
 {
-    static char SystemVersion[256];
+    static char SystemVersion[512];
 
     winver.dwOSVersionInfoSize = sizeof(winver);
     GetVersionEx(&winver);
-    sprintf(SystemVersion, "Windows %lu.%lu build %lu %s", winver.dwMajorVersion, winver.dwMinorVersion, winver.dwBuildNumber, winver.szCSDVersion);
+    sprintf(SystemVersion, "%s / Windows %lu.%lu build %lu %s", bsver, winver.dwMajorVersion, winver.dwMinorVersion, winver.dwBuildNumber, winver.szCSDVersion);
     
     return SystemVersion;
 }
