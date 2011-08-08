@@ -20,7 +20,7 @@ static inline int linelen(const char *str)
 {
     int l;
 
-    for (l = 0; str[l] && str[l] != '\n' & str[l] != 0x0F; l++);
+    for (l = 0; str[l] && str[l] != '\n' && str[l] != 0x0F; l++);
     return l;
 }
 
