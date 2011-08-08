@@ -132,19 +132,20 @@ AROS_UFH3(APTR, EmulBoot,
     me = (struct Process *)FindTask(NULL);
     me->pr_CES = MKBADDR(fh_stdout);
 
-    PutStr("Failed to load system HIDDs. Entering emergency shell.\n"
-           "EndCLI will reboot the system.\n");
+    PutStr("Display driver(s) failed to initialize. Entering emergency shell.\n"
+    	   "EndCLI will quit AROS.\n");
 
-    rc = SystemTags("", SYS_Asynch, TRUE, SYS_Background, FALSE, TAG_DONE);
+    rc = SystemTags("", SYS_Asynch, FALSE, SYS_Background, FALSE, TAG_DONE);
     if (rc == -1)
     {
     	/* Everything is too bad */
         PutStr("Cannot open boot console. System halted.\n");
-        Wait(0);
+        RemTask(NULL);
     }
 
-    ColdReboot();
-    return NULL;
+    ShutdownA(SD_ACTION_POWEROFF);
+
+    return NULL; /* Just shut up the compiler, we'll never get here */
 
     AROS_USERFUNC_EXIT
 }
