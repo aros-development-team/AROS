@@ -14,7 +14,7 @@ ifeq ($(AROS_TARGET_CPU), arm)
   GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
 else
   GCC_VERSION     = 4.2.4
-  GCC_EXTRA_OPTS += --enable-sjlj-exceptions --with-sysroot=$(AROS_DEVELOPMENT)
+  GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
   GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
   GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 endif
