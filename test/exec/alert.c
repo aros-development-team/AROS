@@ -1,18 +1,64 @@
 /* The main purpose is to test alert address detection and stack trace */
 
+#include <aros/asmcall.h>
+#include <aros/debug.h>
 #include <exec/alerts.h>
+#include <exec/interrupts.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
 
 #include <string.h>
 
+/*
+ * SoftInt is the only way to simulate supervisor mode on hosted AROS.
+ * Of course there's no real privilege level difference, however interrupts
+ * in hosted AROS are running on a simulated supervisor level for internal
+ * purposes (in order to avoid nesting interrupts).
+ */
+AROS_UFH3(void, superAlert,
+	  AROS_UFHA(APTR, interruptData, A1),
+	  AROS_UFHA(APTR, interruptCode, A5),
+	  AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    D(bug("Supervisor code called\n"));
+
+    Alert((IPTR)interruptData);
+
+    AROS_USERFUNC_EXIT
+}
+
+struct Interrupt MyInt;
+
 int main(int argc, char **argv)
 {
-    ULONG n = AN_InitAPtr;
+    IPTR n = AN_InitAPtr;
+    BOOL super = FALSE;
+    int i;
 
-    if ((argc > 1) && !stricmp(argv[1], "deadend"))
-	n = AN_BogusExcpt;
+    for (i = 1; i < argc; i++)
+    {
+    	if (!stricmp(argv[i], "deadend"))
+	    n = AN_BogusExcpt;
+	else if (!stricmp(argv[i], "supervisor"))
+	    super = TRUE;
+    }
 
-    Alert(n);
-    
+    if (super)
+    {
+
+	D(bug("Calling supervisor alert...\n"));
+
+	MyInt.is_Data = (APTR)n;
+	MyInt.is_Code = superAlert;
+
+	Cause(&MyInt);
+    }
+    else
+    {
+    	Alert(n);
+    }
+
     return 0;
 }
