@@ -1,9 +1,9 @@
+#include <runtime.h>
 #include <stdio.h>
 #include <unistd.h>
 
 #include "android.h"
 #include "bootstrap.h"
-#include "ui.h"
 
 /* Interface variables */
 JNIEnv *Java_Env;
