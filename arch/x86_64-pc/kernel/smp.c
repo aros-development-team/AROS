@@ -112,7 +112,7 @@ int smp_Setup(IPTR num)
      * If AROS kickstart is ever loaded into high memory, we would need to take
      * a special care about it.
      */
-    bs->PML4 = (IPTR)__KernBootPrivate->PML4;
+    bs->PML4 = __KernBootPrivate->PML4;
     bs->IP   = smp_Entry;
 
     return 1;

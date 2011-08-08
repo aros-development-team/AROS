@@ -11,14 +11,12 @@
 
 void core_SetupMMU(struct KernBootPrivate *__KernBootPrivate)
 {
-    IPTR _APICBase;
-    UBYTE _APICID;
     unsigned int i;
     struct PML4E *PML4;
     struct PDPE  *PDP;
     struct PDE2M *PDE;
 
-    D(bug("[Kernel] core_SetupMMU[%d]: Re-creating the MMU pages for first 4GB area\n", _APICID));
+    D(bug("[Kernel] core_SetupMMU: Re-creating the MMU pages for first 4GB area\n"));
 
     if (!__KernBootPrivate->PML4)
     {

@@ -54,8 +54,6 @@ AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_Count,
 {
     AROS_USERFUNC_INIT
 
-    struct PlatformData *pdata = KernelBase->kb_PlatformData;
-
     D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Count: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags));
 
     if (processor->flags.enabled)
