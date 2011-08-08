@@ -18,11 +18,6 @@
 #include "exec_util.h"
 #include "etask.h"
 
-/* x86/64 kernel.resource doesn't have KrnIsSuper() */
-#ifndef KrnIsSuper
-#define KrnIsSuper() 0
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -81,11 +76,13 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
     struct IntETask *iet = NULL;
     int supervisor = KrnIsSuper();
 
-    D(bug("[exec] Alert 0x%08X\n", alertNum));
+    D(bug("[exec] Alert 0x%08X, supervisor %d\n", alertNum, supervisor));
 
     if (task && (task->tc_Flags & TF_ETASK) && (task->tc_State != TS_REMOVED))
     {
 	iet = GetIntETask(task);
+	
+	D(bug("[Alert] Task 0x%p, ETask 0x%p\n", task, iet));
 
 	/* Do we already have location set? */
 	if (iet->iet_AlertFlags & AF_Location)
@@ -121,6 +118,8 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
 	/* If this is not a nested call, set the supplementary data if specified */
 	if (data && !(iet->iet_AlertFlags & AF_Alert))
 	{
+	    D(bug("[Alert] Setting alert context, type %u, data 0x%p\n", type, data));
+
 	    iet->iet_AlertType = type;
 	    CopyMem(data, &iet->iet_AlertData, contextSizes[type]);
 	}
@@ -129,7 +128,9 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
 	    /* Either no data or already present */
 	    type = iet->iet_AlertType;
 	    data = &iet->iet_AlertData;
-	}	
+	    
+	    D(bug("[Alert] Got stored alert context, type %u, data 0x%p\n", type, data));
+	}
     }
     else
     	/*
