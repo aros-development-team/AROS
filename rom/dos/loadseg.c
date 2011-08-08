@@ -152,6 +152,10 @@ static AROS_ENTRY(LONG, SetPatch_noop,
      */
     if (Stricmp(FilePart(name),"SetPatch") == 0)
     	return CreateSegList(SetPatch_noop);
+    /* Do not allow Picasso96 to load, it is not
+     * compatible with built-in AROS RTG system */
+    if (Stricmp(FilePart(name),"rtg.library") == 0)
+    	return BNULL;
 #endif
 
     /* Open the file */
