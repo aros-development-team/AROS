@@ -26,6 +26,7 @@
 #include <aros/kernel.h>
 #include <hardware/cpu/memory.h>
 
+#include <stddef.h> /* offsetof */
 #include <string.h> /* memcpy, memset */
 #include <zlib.h>
 
@@ -464,14 +465,13 @@ static void RTGPatch(struct Resident *r, BPTR seg)
     	BPTR seglist = seg;
 	while (seglist) {
 	    ULONG *ptr = BADDR(seglist);
-	    LONG len = ptr[-1] * 4;
+	    LONG len = ptr[-1] - sizeof(BPTR);
 	    UBYTE *p = (UBYTE*)(ptr + 1);
     	    while (len > 0) {
     	    	if (len > 16 && !strnicmp(p, "libs:picasso96/", 15)) {
     	    	    memmove(p, p + 15, strlen(p + 15) + 1);
     	    	    patched = TRUE;
-    	    	}
-    	    	else if (len > 10 && !strnicmp(p, "picasso96/", 10)) {
+    	    	} else if (len > 10 && !strnicmp(p, "picasso96/", 10)) {
     	    	    memmove(p, p + 10, strlen(p + 10) + 1);
     	    	    patched = TRUE;
     	    	}
@@ -491,10 +491,10 @@ static struct Resident *LoadFindResident(BPTR seg)
     while (seglist) {
     	ULONG *ptr = BADDR(seglist);
     	UWORD *res;
-    	LONG len = ptr[-1] * 4;
+    	LONG len = ptr[-1] - sizeof(BPTR);
     	
  	res = (UWORD*)(ptr + 1);
-    	while (len >= 26) {
+    	while (len >= offsetof(struct Resident, rt_Init) + sizeof(APTR)) {
     	    if (*res == RTC_MATCHWORD && ((ULONG*)(res + 1))[0] == (ULONG)res) {
     	    	struct Resident *r = (struct Resident*)res;
     	    	/* Set RTF_COLDSTART if no initialization flags set */
@@ -510,7 +510,7 @@ static struct Resident *LoadFindResident(BPTR seg)
     	}
     	seglist = *((BPTR*)BADDR(seglist));
     }
-    return NULL;	    	
+    return NULL;
 }
 
 static struct Resident **LoadResidents(BPTR *namearray)
