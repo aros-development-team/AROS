@@ -39,16 +39,18 @@ struct AGFXBase
 
 #define XSD(cl) (&((struct AGFXBase *)cl->UserData)->xsd)
 
+#undef HiddChunkyBMAttrBase
 #undef HiddBitMapAttrBase
 #undef HiddSyncAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddGfxAttrBase
 #undef HiddAttrBase
-#define HiddBitMapAttrBase XSD(cl)->AttrBases[0]
-#define HiddSyncAttrBase   XSD(cl)->AttrBases[1]
-#define HiddPixFmtAttrBase XSD(cl)->AttrBases[2]
-#define HiddGfxAttrBase	   XSD(cl)->AttrBases[3]
-#define HiddAttrBase	   XSD(cl)->AttrBases[4]
+#define HiddChunkyBMAttrBase XSD(cl)->AttrBases[0]
+#define HiddBitMapAttrBase   XSD(cl)->AttrBases[1]
+#define HiddSyncAttrBase     XSD(cl)->AttrBases[2]
+#define HiddPixFmtAttrBase   XSD(cl)->AttrBases[3]
+#define HiddGfxAttrBase	     XSD(cl)->AttrBases[4]
+#define HiddAttrBase	     XSD(cl)->AttrBases[5]
 
 #define HostLibBase XSD(cl)->HostLibBase
 

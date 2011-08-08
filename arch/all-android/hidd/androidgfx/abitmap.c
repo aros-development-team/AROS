@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Android bitmap class.
@@ -18,96 +18,79 @@
 #include "agfx.h"
 #include "agfx_bitmap.h"
 
-/*
- * TODO: in fact our bitmap is a plain chunky BitMap in memory. Just for displayable
- * bitmaps it's backed up by java.nio.ByteBuffer object. Perhaps we should find a way
- * to reuse existing chunkybm code. This can be done by making this class a subclass
- * of chunky bitmap and caching its buffer address.
- * However this requires working direct access. Currently it's horribly broken and
- * not implemented for generic bitmaps because of this.
- * The breakage is just a wrong treatment of pixelformat. No endianess swap is needed
- * in software. It urgently needs to be fixed!
- */
-
 /****************************************************************************************/
 
 OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    IPTR win_width  = 0;
-    IPTR win_height = 0;
-    jobject buffer = NULL;
-    APTR pixels    = NULL;
-    ULONG width, height;
-    BOOL onscreen;
-    HIDDT_ModeID modeid;
-    ULONG size;
-
     EnterFunc(bug("ABitmap::New()\n"));
-	
-    width    = GetTagData(aHidd_BitMap_Width      , 0                   , msg->attrList);
-    height   = GetTagData(aHidd_BitMap_Height     , 0                   , msg->attrList);
-    onscreen = GetTagData(aHidd_BitMap_Displayable, FALSE               , msg->attrList);
-    modeid   = GetTagData(aHidd_BitMap_ModeID     , vHidd_ModeID_Invalid, msg->attrList);
-
-    D(bug("[ABitmap] Creating Android bitmap: %ldx%ld, displayable: %d, mode ID: 0x%08x\n", width, height, onscreen, modeid));
-
-    /*
-     * This relies on the fact that bitmaps with aHidd_BitMap_Displayable set to TRUE always
-     * also get aHidd_BitMap_ModeID with valid value. Currently this seems to be true and i
-     * beleive it should stay so
-     */
-    if (modeid != vHidd_ModeID_Invalid)
-    {
-	OOP_Object *gfx = (OOP_Object *)GetTagData(aHidd_BitMap_GfxHidd, 0, msg->attrList);
-	OOP_Object *sync, *pixfmt;
-
-	D(bug("[ABitmap] Display driver object: 0x%p\n", gfx));
-
-	HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
-	OOP_GetAttr(sync, aHidd_Sync_HDisp, &win_width);
-	OOP_GetAttr(sync, aHidd_Sync_VDisp, &win_height);
-
-	D(bug("[ABitmap] Display window size: %dx%d\n", win_width, win_height));
-    }
-
-    size = sizeof(ULONG) * width * height;
-
-    pixels = AllocMem(size, MEMF_PUBLIC);
-    D(bug("[ABitmap] Pixel buffer 0x%p\n", pixels));
-    if (!pixels)
-	goto dispose_bitmap;
-
-    if (onscreen)
-    {
-	/* Displayable pixel buffer is Java ByteBuffer object. */
-	HostLib_Lock();
-	buffer = JNI_NewDirectByteBuffer(pixels, size);
-	HostLib_Unlock();
-
-	D(bug("[ABitmap] ByteBuffer 0x%p\n", buffer));
-	if (!buffer)
-	    goto dispose_bitmap;
-    }
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
-    D(bug("[ABitmap] Object created by superclass: 0x%p\n", o));
     if (o)
     {
-        struct bitmap_data *data = OOP_INST_DATA(cl, o);
+	struct bitmap_data *data = OOP_INST_DATA(cl, o);
+    	BOOL onscreen = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+	HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+    	OOP_MethodID disp_mid;
+    	IPTR width  = 0;
+    	IPTR height = 0;
+    	IPTR mod    = 0;
 
-	data->win_width  = win_width;
-	data->win_height = win_height;
-	data->bm_width	 = width;
-	data->bm_height	 = height;
-	data->bm_left	 = 0;
-	data->bm_top	 = 0;
-	data->buffer     = buffer;
-	data->pixels     = pixels;
+	/*
+     	 * We rely on the fact that bitmaps with aHidd_BitMap_Displayable set to TRUE always
+     	 * also get aHidd_BitMap_ModeID with valid value. Currently this seems to be true and
+     	 * i beleive it should stay so.
+     	 */
+    	if (modeid != vHidd_ModeID_Invalid)
+    	{
+	    IPTR win_width  = 0;
+	    IPTR win_height = 0;
+	    OOP_Object *gfx = (OOP_Object *)GetTagData(aHidd_BitMap_GfxHidd, 0, msg->attrList);
+	    OOP_Object *sync, *pixfmt;
 
-    	ReturnPtr("ABitmap::New()", OOP_Object *, o);
-    } /* if (object allocated by superclass) */
+	    D(bug("[ABitmap] Display driver object: 0x%p\n", gfx));
 
-dispose_bitmap:
+	    HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &win_width);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &win_height);
+
+	    D(bug("[ABitmap] Display window size: %dx%d\n", win_width, win_height));
+
+	    data->win_width  = win_width;
+	    data->win_height = win_height;
+    	}
+
+	/* If this is offscreen bitmap, we are done. */
+    	if (!onscreen)
+	    ReturnPtr("ABitmap::New()", OOP_Object *, o);
+
+	OOP_GetAttr(o, aHidd_BitMap_Width , &width);
+	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+	OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &mod);
+	OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, (IPTR *)&data->pixels);
+
+	D(bug("[ABitmap] Displayable Android bitmap %ldx%ld\n", width, height));
+	D(bug("[ABitmap] Buffer at 0x%p, %ld bytes per row\n", data->pixels, mod));
+
+	/* Displayable pixel buffer is Java ByteBuffer object. */
+	HostLib_Lock();
+	data->buffer = JNI_NewDirectByteBuffer(data->pixels, mod * height);
+	HostLib_Unlock();
+
+	D(bug("[ABitmap] ByteBuffer 0x%p\n", data->buffer));
+
+	if (data->buffer)
+	{
+	    data->bm_width  = width;
+	    data->bm_height = height;
+	    data->bm_mod    = mod;
+
+	    ReturnPtr("ABitmap::New()", OOP_Object *, o);
+	}
+
+	disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	OOP_CoerceMethod(cl, o, &disp_mid);
+
+    }
     ReturnPtr("ABitmap::New()", OOP_Object *, NULL);
     
 }
@@ -127,7 +110,6 @@ VOID ABitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	JNI_DeleteLocalRef(data->buffer);
 	HostLib_Unlock();
     }
-    FreeMem(data->pixels, sizeof(ULONG) * data->bm_width * data->bm_height);
 
     OOP_DoSuperMethod(cl, o, msg);
 
@@ -208,18 +190,9 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
 /****************************************************************************************/
 
-VOID ABitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
+VOID ABitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+    D(bug("[ABitmap 0x%p] UpdateRect(%d, %d, %d, %d)\n", o, msg->x, msg->y, msg->width, msg->height));
 
-    data->pixels[msg->y * data->bm_width + msg->x] = msg->pixel;
-}
-
-/****************************************************************************************/
-
-HIDDT_Pixel ABitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
-{
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-
-    return data->pixels[msg->y * data->bm_width + msg->x];
+    /* TODO */
 }

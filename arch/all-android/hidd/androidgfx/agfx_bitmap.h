@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Android bitmap class definitions
@@ -18,6 +18,7 @@ struct bitmap_data
     ULONG    win_height;
     ULONG    bm_width;
     ULONG    bm_height;
+    ULONG    bm_mod;
     jobject  buffer;
     ULONG   *pixels;
 };
