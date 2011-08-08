@@ -39,6 +39,7 @@
 #include <proto/utility.h>
 
 #include "emul_intern.h"
+#include "emul_unix.h"
 
 #define NO_CASE_SENSITIVITY
 
@@ -48,29 +49,30 @@ struct dirent *ReadDir(struct emulbase *emulbase, struct filehandle *fh, IPTR *d
 
 static int TryRead(struct emulbase *emulbase, int fd, void *buf, SIPTR len)
 {
-    fd_set rfds;
-    struct timeval tv = {1, 0};
+    struct pollfd pfd = {fd, POLLIN, 0};
     int res;
 
-    FD_ZERO (&rfds);
-    FD_SET(fd, &rfds);
-
-    res = emulbase->pdata.SysIFace->select(fd+1, &rfds, NULL, NULL, &tv);
+    res = emulbase->pdata.SysIFace->poll(&pfd, 1, 0);
     AROS_HOST_BARRIER
 
-    if (res == -1)
+    if (res > 0)
     {
-	DASYNC(bug("[emul] Select error\n"));
-	return -1;
+	if (pfd.revents & POLLIN)
+	{
+	    res = emulbase->pdata.SysIFace->read(fd, buf, len);
+	    AROS_HOST_BARRIER
+
+	    return res;
+	}
+    }
+    else if (res < 0)
+    {
+	DASYNC(bug("[emul] Poll error\n"));
+    	return -1;
     }
 
-    if (res == 0)
-	return -2;
-    
-    res = emulbase->pdata.SysIFace->read(fd, buf, len);
-    AROS_HOST_BARRIER
-    
-    return res;
+    /* Not ready yet */
+    return -2;
 }
 
 /*********************************************************************************************/
@@ -567,20 +569,21 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
 {
     SIPTR error = 0;
 
-    DREAD(bug("[emul] Reading %u bytes from fd %d\n", iofs->io_Union.io_READ.io_Length, (int)fh->fd));
+    DREAD(bug("[emul] Reading %u bytes from fd %ld\n", len, fh->fd));
 
     HostLib_Lock();
 
     do
     {
         len = TryRead(emulbase, (IPTR)fh->fd, buff, len);
-        DREAD(bug("[emul] Result: %d\n", len));
         if (len == -1)
             error = err_u2a(emulbase);
         /* FIXME: Fix this busylooping, wait for SIGIO interrupt here */
     } while (len == -2);
 
     HostLib_Unlock();
+
+    DREAD(bug("[emul] Result: %d\n", len));
 
     *err = error;
     return len;

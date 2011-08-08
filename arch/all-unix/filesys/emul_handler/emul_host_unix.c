@@ -31,6 +31,7 @@
 #include <proto/utility.h>
 
 #include "emul_intern.h"
+#include "emul_unix.h"
 
 #define NO_CASE_SENSITIVITY
 
@@ -74,7 +75,7 @@ static const char *libcSymbols[] = {
     "getcwd",
     "getenv",
     "fcntl",
-    "select",
+    "poll",
     "kill",
     "getpid",
 #ifndef HOST_OS_android
