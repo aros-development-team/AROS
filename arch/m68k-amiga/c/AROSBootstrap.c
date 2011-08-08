@@ -513,7 +513,7 @@ static struct Resident *LoadFindResident(BPTR seg)
     return NULL;	    	
 }
 
-static struct Resident **LoadResidents(ULONG *namearray)
+static struct Resident **LoadResidents(BPTR *namearray)
 {
     UBYTE rescnt, i;
     struct Resident **reslist = NULL;
@@ -532,7 +532,7 @@ static struct Resident **LoadResidents(ULONG *namearray)
 	BPTR bname;
     	UBYTE *name;
     	
-    	bname = (BPTR)namearray[i];
+    	bname = namearray[i];
     	name = ConvertBSTR(bname);
     	if (name) {
 	    handle = Open(name, MODE_OLDFILE);
@@ -885,14 +885,28 @@ __startup static AROS_ENTRY(int, startup,
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
     	BSTR name = AROS_CONST_BSTR("aros.elf.gz");
-    	enum { ARG_CMD = 0, ARG_ROM = 1, ARG_MODULES = 2 };
-    	BSTR format = AROS_CONST_BSTR("CMD/K,ROM,MODULES/M");
-    	ULONG args[100] __attribute__((aligned(4)));
+    	enum { ARG_CMD = 16, ARG_ROM = 17, ARG_MODULES = 0 };
+    	/* It would be nice to use the '/M' switch, but that
+    	 * is not supported under the AOS BCPL RdArgs routine.
+    	 *
+    	 * So only 16 modules are supported
+    	 */
+    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K");
+    	ULONG args[16 + 2 + 256] __attribute__((aligned(4))) = { };
 
     	WriteF("AROSBootstrap " ADATE "\n");
         args[0] = name;
 
         RdArgs(format, MKBADDR(args), sizeof(args)/sizeof(args[0]));
+#if DEBUG
+        WriteF("ROM: %S\n", args[ARG_ROM]);
+        WriteF("CMD: %S\n", args[ARG_CMD]);
+        WriteF("MOD: %S\n", args[0]);
+        WriteF("   : %S\n", args[1]);
+        WriteF("   : %S\n", args[2]);
+        WriteF("   : %S\n", args[3]);
+#endif
+
         if (!IoErr()) {
             /* Load ROM image */
             if (args[ARG_ROM] == BNULL)
@@ -904,7 +918,7 @@ __startup static AROS_ENTRY(int, startup,
                 struct TagItem *KernelTags;
                 WriteF("Successfully loaded ROM\n");
 
-                ResidentList = LoadResidents((IPTR *)args[ARG_MODULES]);
+                ResidentList = LoadResidents(&args[ARG_MODULES]);
                 KernelTags = AllocKernelTags(BADDR(args[ARG_CMD]));
 
                 WriteF("Booting...\n");
