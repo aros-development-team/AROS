@@ -47,36 +47,6 @@ struct dirent *ReadDir(struct emulbase *emulbase, struct filehandle *fh, IPTR *d
 
 /*********************************************************************************************/
 
-static int TryRead(struct emulbase *emulbase, int fd, void *buf, SIPTR len)
-{
-    struct pollfd pfd = {fd, POLLIN, 0};
-    int res;
-
-    res = emulbase->pdata.SysIFace->poll(&pfd, 1, 0);
-    AROS_HOST_BARRIER
-
-    if (res > 0)
-    {
-	if (pfd.revents & POLLIN)
-	{
-	    res = emulbase->pdata.SysIFace->read(fd, buf, len);
-	    AROS_HOST_BARRIER
-
-	    return res;
-	}
-    }
-    else if (res < 0)
-    {
-	DASYNC(bug("[emul] Poll error\n"));
-    	return -1;
-    }
-
-    /* Not ready yet */
-    return -2;
-}
-
-/*********************************************************************************************/
-
 /* Make an AROS error-code (<dos/dos.h>) out of a unix error-code. */
 static LONG u2a[][2]=
 {
@@ -565,9 +535,21 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
     HostLib_Unlock();
 }
 
+static inline int ReadReady(int fd, struct emulbase *emulbase)
+{
+    int res;
+    struct pollfd pfd = {fd, POLLIN, 0};
+
+    res = emulbase->pdata.SysIFace->poll(&pfd, 1, 0);
+    AROS_HOST_BARRIER
+
+    return res;
+}
+
 LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG len, SIPTR *err)
 {
     SIPTR error = 0;
+    int res;
 
     DREAD(bug("[emul] Reading %u bytes from fd %ld\n", len, fh->fd));
 
@@ -575,18 +557,59 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
 
     do
     {
-        len = TryRead(emulbase, (IPTR)fh->fd, buff, len);
-        if (len == -1)
-            error = err_u2a(emulbase);
-        /* FIXME: Fix this busylooping, wait for SIGIO interrupt here */
-    } while (len == -2);
+    	/* FIXME: Don't busyloop, wait for SIGIO here */
+    	res = ReadReady((long)fh->fd, emulbase);
+    } while (res == 0);
+
+    if (res > 0)
+    {
+	DASYNC(bug("[emul] FD %ld ready for read\n", fh->fd));
+
+	if (fh->type & FHD_STDIO)
+	{
+	    int res2;
+
+	    /*
+	     * When reading from stdin, we have to read character-by-character until
+	     * we read as many characters as we wanted, or there's nothing more to read.
+	     * Without this read() can return an error. For example this happens on Darwin
+	     * when the shell requests a single read of 208 bytes.
+	     */
+	    res = 0;
+	    do
+	    {
+	    	res2 = emulbase->pdata.SysIFace->read((long)fh->fd, buff++, 1);
+	    	AROS_HOST_BARRIER
+
+	    	if (res2 == -1)
+	    	    break;
+
+	    	if (res++ == len)
+	    	    break;
+
+	    	res2 = ReadReady((long)fh->fd, emulbase);
+	    } while (res2 > 0);
+
+	    if (res2 == -1)
+	    	res = -1;
+	}
+	else
+	{
+	    /* It's not stdin. Read as much as we need to. */
+	    res = emulbase->pdata.SysIFace->read((long)fh->fd, buff, len);
+	    AROS_HOST_BARRIER
+	}
+    }
+
+    if (res == -1)
+	error = err_u2a(emulbase);
 
     HostLib_Unlock();
 
-    DREAD(bug("[emul] Result: %d\n", len));
+    DREAD(bug("[emul] Result %d, error %ld\n", len, error));
 
     *err = error;
-    return len;
+    return res;
 }
 
 LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, ULONG len, SIPTR *err)
