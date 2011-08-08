@@ -234,7 +234,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
 {
     UWORD *c;
     UWORD i;
-    UWORD bplcon0, bplcon0_null, bplcon0_res;
+    UWORD bplcon0, bplcon0_res;
     ULONG pptr;
 
     c = c2d->copper2;
@@ -247,7 +247,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     else
     	bplcon0_res = 0;
 
-    bplcon0_null = 0x0201 | (data->interlace ? 4 : 0) | bplcon0_res;
+    data->bplcon0_null = 0x0201 | (data->interlace ? 4 : 0) | bplcon0_res;
 
     *c++ = 0x01fe;
     *c++ = 0xfffe;
@@ -255,7 +255,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     *c++ = 0xfffe;
 
     *c++ = 0x0100;
-    *c++ = bplcon0_null;
+    *c++ = data->bplcon0_null;
 
     c2d->copper2_bpl = c;
     for (i = 0; i < bm->depth; i++) {
@@ -310,7 +310,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     	*c++ = 0;
     }
 
-    bplcon0 = bplcon0_null;
+    bplcon0 = data->bplcon0_null;
     if (bm->depth > 7)
 	bplcon0 |= 0x0010;
     else
@@ -365,7 +365,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     *c++ = 0xfffe;
     
     *c++ = 0x0100;
-    *c++ = bplcon0_null;
+    *c++ = data->bplcon0_null;
 
    if (data->interlace) {
     	ULONG nextptr = (ULONG)(lace ? data->copper2.copper2 : data->copper2i.copper2);
@@ -381,6 +381,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
 
 BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
 {
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
     UWORD ddfstrt, ddfstop;
     UBYTE fetchunit, fetchstart, maxplanes;
     UWORD bplwidth;
@@ -441,6 +442,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     data->updatescroll = bm;
     data->depth = bm->depth;
     setpalntsc(data, data->modeid);
+    custom->bplcon0 = data->bplcon0_null;
 
     data->mode = 1;
     while (data->mode);
@@ -574,7 +576,6 @@ static AROS_UFH4(ULONG, gfx_vblank,
 
     struct amigavideo_staticdata *data = (struct amigavideo_staticdata*)datap;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    BOOL start = FALSE;
 
     data->framecounter++;
     if (data->sprite) {
@@ -583,8 +584,8 @@ static AROS_UFH4(ULONG, gfx_vblank,
     	p[1 << data->fmode_spr] = data->spritectl;
     }
     if (data->mode == 1) {
+	BOOL start = FALSE;
     	if (data->interlace) {
-	    custom->bplcon0 = 0x0204;
 	    if (custom->vposr & 0x8000)
 	    	start = TRUE;
 	} else {
