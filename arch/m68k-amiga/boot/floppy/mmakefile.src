@@ -10,9 +10,38 @@ include $(TOP)/config/make.cfg
 
 
 BOOT_FILES := \
-	boot/AROSBootstrap \
-	boot/aros.elf.gz \
-	S/Startup-Sequence
+    boot/AROSBootstrap \
+    boot/aros.elf.gz \
+    C/Assign \
+    C/Avail \
+    C/Copy \
+    C/Date \
+    C/Delete \
+    C/Dir \
+    C/DiskChange \
+    C/Eval \
+    C/Filenote \
+    C/IconX \
+    C/Install \
+    C/Join \
+    C/List \
+    C/LoadWB \
+    C/MakeDir \
+    C/MakeLink \
+    C/Mount \
+    C/Protect \
+    C/Relabel \
+    C/Rename \
+    C/Shutdown \
+    C/Touch \
+    C/Type \
+    C/Version \
+    C/Wait \
+    C/Which \
+    Devs/DOSDrivers/PIPE \
+    Libs/version.library \
+    S/Shell-Startup \
+    S/Startup-Sequence
 
 BOOT_SRC_DIR  := $(AROSDIR)
 BOOT_DEST_DIR := $(OSGENDIR)/boot/bootdisk
@@ -24,6 +53,10 @@ bootdisk-setup-amiga-m68k :
 	-$(RM) -rf $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/S
+	%mkdirs_q $(BOOT_DEST_DIR)/C
+	%mkdirs_q $(BOOT_DEST_DIR)/Devs/DOSDrivers
+	%mkdirs_q $(BOOT_DEST_DIR)/L
+	%mkdirs_q $(BOOT_DEST_DIR)/Libs
 	%mkdirs_q $(BOOT_DEST_DIR)/boot
 
 #MM
@@ -47,134 +80,16 @@ $(BOOT_DEST_DIR)/S/Startup-Sequence:
 	@$(CP) $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot $@
 	@$(CHMOD) +x $@
 
+$(BOOT_DEST_DIR)/C/% : $(BOOT_SRC_DIR)/C/%
+	@$(ELF2HUNK) $< $@
+	@$(CHMOD) +x $@
+
+$(BOOT_DEST_DIR)/Libs/% : $(BOOT_SRC_DIR)/Libs/%
+	@$(ELF2HUNK) $< $@
+	@$(CHMOD) +x $@
+
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
-
-
-#MM systemdisk-amiga-m68k : AROS		\
-#MM			systemdisk-setup-amiga-m68k
-
-SYSTEM_FILES := \
-    AROS.boot \
-    C/Alias \
-    C/Assign \
-    C/AddDatatypes \
-    C/Copy \
-    C/ConClip \
-    C/Delete \
-    C/Dir \
-    C/EndCLI \
-    C/IPrefs \
-    C/List \
-    C/LoadWB \
-    C/MakeDir \
-    C/Mount \
-    C/NewCLI \
-    C/Path \
-    C/Prompt \
-    C/Protect \
-    C/Run \
-    C/SetClock \
-    C/Touch \
-    Classes/Datatypes/ascii.datatype \
-    Classes/Datatypes/ilbm.datatype \
-    Classes/Datatypes/picture.datatype \
-    Classes/Datatypes/png.datatype \
-    Devs/DataTypes/FTXT \
-    Devs/DataTypes/ILBM \
-    Devs/DataTypes/PNG \
-    Devs/DOSDrivers/PIPE \
-    Devs/Mountlist \
-    Libs/iffparse.library \
-    Libs/locale.library \
-    Libs/datatypes.library \
-    Libs/cybergraphics.library \
-    S/Shell-Startup \
-    S/Startup-Sequence \
-    System/FixFonts \
-    System/FixFonts.info \
-    Utilities/More \
-    Utilities/More.info
-
-
-SYSTEM_SRC_DIR  := $(AROSDIR)
-SYSTEM_DEST_DIR := $(OSGENDIR)/boot/systemdisk
-
-SYSTEM_DEST_FILES := $(foreach f, $(SYSTEM_FILES), $(SYSTEM_DEST_DIR)/$(f))
-
-$(SYSTEM_DEST_DIR)/%.info: $(SYSTEM_SRC_DIR)/%.info
-	@$(CP) $< $@
-
-$(SYSTEM_DEST_DIR)/C/%: $(SYSTEM_SRC_DIR)/C/%
-	@$(ELF2HUNK)  $< $@
-	@$(CHMOD) +x $@
-
-$(SYSTEM_DEST_DIR)/Libs/%: $(SYSTEM_SRC_DIR)/Libs/%
-	@$(ELF2HUNK)  $< $@
-	@$(CHMOD) +x $@
-
-$(SYSTEM_DEST_DIR)/System/%: $(SYSTEM_SRC_DIR)/System/%
-	@$(ELF2HUNK)  $< $@
-	@$(CHMOD) +x $@
-
-$(SYSTEM_DEST_DIR)/Utilities/%: $(SYSTEM_SRC_DIR)/Utilities/%
-	@$(ELF2HUNK)  $< $@
-	@$(CHMOD) +x $@
-
-$(SYSTEM_DEST_DIR)/Classes/%: $(SYSTEM_SRC_DIR)/Classes/%
-	@$(ELF2HUNK)  $< $@
-	@$(CHMOD) +x $@
-
-$(SYSTEM_DEST_DIR)/S/%: $(SYSTEM_SRC_DIR)/S/%
-	@$(CP) $< $@
-	@$(CHMOD) +x $@
-
-$(SYSTEM_DEST_DIR)/%: $(SYSTEM_SRC_DIR)/%
-	@$(CP) $< $@
-
-$(SYSTEM_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.system
-	@$(CP) $(SRCDIR)/$(CURDIR)/Startup-Sequence.system $@
-	@$(CHMOD) +x $@
-
-
-#MM
-systemdisk-setup-amiga-m68k :
-	%mkdirs_q "$(AROSDIR)/Tools/Boot"
-	-$(RM) -rf $(SYSTEM_DEST_DIR)
-	%mkdirs_q $(SYSTEM_DEST_DIR)
-	echo -n $(ARCH)-$(CPU) >$(SYSTEM_DEST_DIR)/AROS.boot
-	%mkdirs_q $(SYSTEM_DEST_DIR)/C
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Classes
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Classes/Datatypes
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs/DOSDrivers
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs/Keymaps
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs/DataTypes
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Fonts
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Libs
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Locale
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Prefs/Env-Archive/SYS/
-	%mkdirs_q $(SYSTEM_DEST_DIR)/S
-	%mkdirs_q $(SYSTEM_DEST_DIR)/System
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Tools
-	%mkdirs_q $(SYSTEM_DEST_DIR)/Utilities
-
-systemdisk-amiga-m68k: $(DISTDIR)/systemdisk-amiga-m68k.adf
-
-.PHONY: systemdisk-amiga-m68k-quick
-
-#MM
-systemdisk-amiga-m68k-quick : systemdisk-setup-amiga-m68k systemdisk-amiga-m68k
-
-$(DISTDIR)/systemdisk-amiga-m68k.adf: $(SYSTEM_DEST_FILES) $(SYSTEM_EXTRA_FILES) \
- $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
-	@$(MKDIR) -p "$(DISTDIR)"
-	$(RM) $@
-	$(COPYTOAFS) $@ --type OFS --name "AROS System Floppy" --size 1760 $(SYSTEM_DEST_DIR)
-	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
-
-#$(SYSTEM_DEST_DIR)/S/Startup-Sequence:
-#	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c
 	echo $(GENDIR)/$(CURDIR)
