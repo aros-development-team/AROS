@@ -1,18 +1,22 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- arch-common-grub2-host : grub2-host-quick
-#MM  grub2-iso-setup        : grub2-host-quick grub2-aros-quick
+#MM- arch-common-grub2-host : grub2-host-quick grub2-efi-host-quick 
+#MM  grub2-iso-setup        : grub2-host-quick grub2-efi-host-quick grub2-aros-quick
 #MM- bootloader-grub2       : arch-common-grub2
 #MM- bootloader-grub2-isosetup : arch-common-grub2 grub2-iso-setup
 
 BOOT_GRUB := $(AROSDIR)/boot/grub
+BOOT_EFI  := $(AROSDIR)/EFI/BOOT
 
 $(BOOT_GRUB):
 	%mkdirs_q $@
 
+$(BOOT_EFI):
+	%mkdirs_q $@
+
 #MM
-bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/_unicode.pf2
+bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/_unicode.pf2 $(BOOT_EFI)/splash.png $(BOOT_EFI)/_unicode.pf2
 
 $(BOOT_GRUB)/splash.png: splash.png $(BOOT_GRUB)
 		$(CP) $< $(BOOT_GRUB)
@@ -20,11 +24,20 @@ $(BOOT_GRUB)/splash.png: splash.png $(BOOT_GRUB)
 $(BOOT_GRUB)/_unicode.pf2: unicode.pf2 $(BOOT_GRUB)
 		$(CP) $< $(BOOT_GRUB)/_unicode.pf2
 
+$(BOOT_EFI)/splash.png: splash.png $(BOOT_EFI)
+		$(CP) $< $(BOOT_EFI)
+
+$(BOOT_EFI)/_unicode.pf2: unicode.pf2 $(BOOT_EFI)
+		$(CP) $< $(BOOT_EFI)/_unicode.pf2
+
 #MM
-bootloader-grub2gfx-common-livecd: $(BOOT_GRUB)/unicode.pf2
+bootloader-grub2gfx-common-livecd: $(BOOT_GRUB)/unicode.pf2 $(BOOT_EFI)/unicode.pf2
 
 $(BOOT_GRUB)/unicode.pf2: unicode.pf2 $(BOOT_GRUB)
 		$(CP) $< $(BOOT_GRUB)
+
+$(BOOT_EFI)/unicode.pf2: unicode.pf2 $(BOOT_EFI)
+		$(CP) $< $(BOOT_EFI)
 
 # avoid the mate.tmpl s_flag in order to disable stripping of binaries
 export DEBUG		:= yes
@@ -33,20 +46,9 @@ export DEBUG		:= yes
 export CFLAGS		:= $(filter-out -s --strip-all,$(HOST_CFLAGS))
 export TARGET_CFLAGS	:= $(CFLAGS)
 
-ifeq ($(AROS_TARGET_VARIANT),efi)
-    GRUB_ARCH := efi
-    GRUB_CPU  := $(AROS_TARGET_CPU)
-    ARCH_MODS :=
-else
-    GRUB_ARCH := pc
-    GRUB_CPU  := i386
-    ARCH_MODS := biosdisk
-endif
-
 DESTDIR     :=	$(HOSTGENDIR)/$(CURDIR)/host_binaries
 CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
                 --host=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)       \
-                --with-platform=$(GRUB_ARCH)		        \
                 --datarootdir=$(DESTDIR)/share                  \
                 --sysconfdir=$(DESTDIR)/etc                     \
                 --disable-grub-mkfont                           \
@@ -55,31 +57,39 @@ CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
 
 %build_with_configure mmake=grub2-host compiler=host nix=yes		\
         prefix="$(DESTDIR)" srcdir=$(SRCDIR)/$(CURDIR)/../grub2-aros	\
-        extraoptions="$(CONFIG_OPTS)"					\
+        package=pc extraoptions="$(CONFIG_OPTS) --with-platform=pc"	\
         install_target=
 
-GRUB2_MODS  :=	$(ARCH_MODS) fshelp part_msdos part_amiga part_gpt affs sfs ext2 hfsplus iso9660 minicmd
+%build_with_configure mmake=grub2-efi-host compiler=host nix=yes	\
+        prefix="$(DESTDIR)" srcdir=$(SRCDIR)/$(CURDIR)/../grub2-aros	\
+        package=efi extraoptions="$(CONFIG_OPTS) --with-platform=efi"	\
+        install_target=
+
+PC_MODS	    := biosdisk
+EFI_MODS    :=
+GRUB2_MODS  :=	fshelp part_msdos part_amiga part_gpt affs sfs ext2 hfsplus iso9660 minicmd
 LST_FILES   :=	command fs moddep
-MKIMG_OPTS  :=	-O $(GRUB_CPU)-$(GRUB_ARCH) -p /boot/grub
+MKIMG_OPTS  :=	-O i386-pc -p /boot/grub
+MKIMG_EFI   :=  -O $(AROS_TARGET_CPU)-efi -p /EFI/BOOT
 
 #MM
-grub2-iso-setup: grub2-$(GRUB_ARCH)-iso-setup
+grub2-iso-setup: grub2-pc-iso-setup grub2-efi-iso-setup
 
 #MM
 grub2-pc-iso-setup: $(BOOT_GRUB)
 	@$(ECHO) Creating $(BOOT_GRUB)...
-	@cd $(HOSTGENDIR)/$(CURDIR)/grub-core                           && \
-	../grub-mkimage $(MKIMG_OPTS) -d . -o core.img $(GRUB2_MODS)    && \
-	$(CP) *.img $(BOOT_GRUB)                                        && \
-	$(CP) *.mod $(BOOT_GRUB)                                        && \
-	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)               && \
+	@cd $(HOSTGENDIR)/$(CURDIR)/pc/grub-core                           	&& \
+	../grub-mkimage $(MKIMG_OPTS) -d . -o core.img $(PC_MODS) $(GRUB2_MODS) && \
+	$(CP) *.img $(BOOT_GRUB)                                        	&& \
+	$(CP) *.mod $(BOOT_GRUB)                                        	&& \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)               	&& \
 	$(CAT) cdboot.img core.img > $(BOOT_GRUB)/grub2_eltorito
 
 #MM
-grub2-efi-iso-setup: $(BOOT_GRUB)
-	@$(ECHO) Creating $(BOOT_GRUB)...
-	@cd $(HOSTGENDIR)/$(CURDIR)/grub-core                           && \
-	../grub-mkimage $(MKIMG_OPTS) -d . -o grub.efi $(GRUB2_MODS)    && \
-	$(CP) *.efi $(BOOT_GRUB)                                        && \
-	$(CP) *.mod $(BOOT_GRUB)                                        && \
-	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)
+grub2-efi-iso-setup: $(BOOT_EFI)
+	@$(ECHO) Creating $(BOOT_EFI)...
+	@cd $(HOSTGENDIR)/$(CURDIR)/efi/grub-core                           	&& \
+	../grub-mkimage $(MKIMG_EFI) -d . -o grub.efi $(EFI_MODS) $(GRUB2_MODS) && \
+	$(CP) grub.efi $(BOOT_EFI)/BOOTX64.EFI                          	&& \
+	$(CP) *.mod $(BOOT_EFI)                                         	&& \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_EFI)
