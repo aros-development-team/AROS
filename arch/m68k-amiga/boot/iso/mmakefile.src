@@ -6,8 +6,8 @@ include $(TOP)/config/make.cfg
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k.iso
 
 #MM bootiso-amiga-m68k :	AROS-complete		\
-#MM			kernel-package-amiga-m68k		\
-#MM			kernel-bootstrap-i386		\
+#MM			kernel-package-amiga-m68k	\
+#MM			kernel-bootstrap-amiga-m68k	\
 #MM			AROS-amiga-m68k-drivers	
 
 bootiso-amiga-m68k: $(AROSDIR)/.backdrop $(TARGET_ISO)
@@ -26,6 +26,9 @@ $(TARGET_ISO):
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(SRCDIR)/arch/m68k-amiga/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(DISTDIR)"
+	@$(MKDIR) -p "$(AROSDIR).HUNK"
+	@$(ECHO) "Converting $(subst $(TARGETDIR)/,,$(AROSDIR)) -> $(subst $(TARGETDIR)/,,$(AROSDIR).HUNK)"
+	@$(ELF2HUNK) "$(AROSDIR)" "$(AROSDIR).HUNK"
 	@mkisofs -f \
 		-o $@ \
 		-allow-leading-dots \
@@ -35,5 +38,5 @@ $(TARGET_ISO):
 		-p "The AROS Dev Team (www.aros.org)" \
 		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
                 -l -J -r \
-		$(AROSDIR)
+		"$(AROSDIR).HUNK"
 
