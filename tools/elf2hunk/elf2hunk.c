@@ -15,8 +15,14 @@
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <dirent.h>
 
+#include <sys/types.h>
 #include <sys/stat.h>
+
+#define F_VERBOSE       (1 << 0)
+#define F_NOCONVERT     (1 << 1)
 
 #if defined(__GNUC__)&&defined(WIN32)
 #include <winsock2.h>
@@ -233,12 +239,9 @@ struct relo
 #   define PARAMS(x) ()
 #endif /* PROTOTYPES */
 
-static int errorcode = 0;
-
 static void set_error(int err)
 {
-    fprintf(stderr,"elf2hunk: %s\n", strerror(err));
-    errorcode = err;
+    errno = err;
 }
 
 #if defined(DEBUG) && DEBUG
@@ -551,15 +554,15 @@ static int relocate
                 break;
 
             case R_68K_PC16:
-                D(bug("[ELF2HUNK] Unsupported relocation type R_68K_PC16\n"));
-                exit(EXIT_FAILURE);
+                bug("[ELF2HUNK] Unsupported relocation type R_68K_PC16\n");
+                set_error(EINVAL);
                 break;
 
             case R_68k_NONE:
                 break;
 
             default:
-                D(bug("[ELF2HUNK] Unrecognized relocation type %d %d\n", (int)i, (int)ELF_R_TYPE(rel->info)));
+                bug("[ELF2HUNK] Unrecognized relocation type %d %d\n", (int)i, (int)ELF_R_TYPE(rel->info));
                 set_error(EINVAL);
 		return 0;
         }
@@ -666,7 +669,7 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     wlong(hunk_fd, 0);
 }
 
-int copy_to(int in, int out)
+static int copy_to(int in, int out)
 {
     static char buff[64*1024];
     int len, err = 0;
@@ -689,7 +692,7 @@ int copy_to(int in, int out)
     return 0;
 }
 
-int elf2hunk(int file, int hunk_fd, const char *libname)
+int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
 {
     struct hunkheader **hh;
     struct elfheader  eh;
@@ -703,7 +706,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname)
 
     /* load and validate ELF header */
     D(bug("Load header\n"));
-    if (!load_header(file, &eh)) {
+    if ((flags & F_NOCONVERT) || !load_header(file, &eh)) {
         /* If it's not an ELF, just copy it.
          *
          * This simplifies a number of mmakefiles
@@ -891,34 +894,116 @@ error:
     return EXIT_FAILURE;
 }
 
-int main(int argc, char **argv)
+static int copy(const char *src, const char *dst, int flags);
+
+static int copy_dir(const char *src, const char *dst, int flags)
 {
-    int elf_fd, hunk_fd;
+    DIR *sdir;
+    struct dirent *de;
+    char spath[PATH_MAX], dpath[PATH_MAX];
+    char *sp, *dp;
+    int sleft, dleft;
+    int err = EXIT_SUCCESS;
+
+    sdir = opendir(src);
+    if (sdir == NULL) {
+        perror(src);
+        return EXIT_FAILURE;
+    }
+
+    snprintf(spath, sizeof(spath), "%s/", src);
+    spath[sizeof(spath)-1] = 0;
+    sp = &spath[strlen(spath)];
+    sleft = &spath[sizeof(spath)-1] - sp;
+
+    snprintf(dpath, sizeof(dpath), "%s/", dst);
+    dpath[sizeof(dpath)-1] = 0;
+    dp = &dpath[strlen(dpath)];
+    dleft = &dpath[sizeof(dpath)-1] - dp;
+
+    while ((de = readdir(sdir)) != NULL) {
+        int eflags = 0;
+
+        if ((strcmp(de->d_name, ".") == 0) ||
+            (strcmp(de->d_name, "..") == 0))
+            continue;
+
+        /* Don't convert anything in a Development directory */
+        if (strcasecmp(de->d_name, "Development") == 0)
+            eflags |= F_NOCONVERT;
+
+        strncpy(sp, de->d_name, sleft);
+        sp[sleft-1] = 0;
+        strncpy(dp, de->d_name, dleft);
+        dp[dleft-1] = 0;
+        err = copy(spath, dpath, flags | eflags);
+        if (err != EXIT_SUCCESS)
+            break;
+    }
+
+    closedir(sdir);
+
+    return err;
+}
+
+static int copy(const char *src, const char *dst, int flags)
+{
+    int src_fd, hunk_fd;
     struct stat st;
-    int mode;
+    int mode, ret;
 
-    if (argc != 3) {
-    	fprintf(stderr, "Usage:\n%s file.elf file.hunk\n", argv[0]);
-    	return EXIT_FAILURE;
-    }
+    if (flags & F_VERBOSE)
+       printf("%s ->\n  %s\n", src, dst);
 
-    elf_fd = open(argv[1], O_RDONLY);
-    if (elf_fd < 0) {
-    	perror(argv[1]);
-    	return EXIT_FAILURE;
-    }
-
-    if (fstat(elf_fd, &st) >= 0) {
+    if (stat(src, &st) >= 0) {
         mode = st.st_mode;
     } else {
         mode = 0755;
     }
+    
+    if (S_ISDIR(mode)) {
+        unlink(dst);
+        mkdir(dst, mode);
+        return copy_dir(src, dst, flags);
+    }
 
-    hunk_fd = open(argv[2], O_RDWR | O_CREAT | O_TRUNC, mode);
-    if (hunk_fd < 0) {
-    	perror(argv[2]);
+    src_fd = open(src, O_RDONLY);
+    if (src_fd < 0) {
+    	perror(src);
     	return EXIT_FAILURE;
     }
 
-    return elf2hunk(elf_fd, hunk_fd, NULL);
+    hunk_fd = open(dst, O_RDWR | O_CREAT | O_TRUNC, mode);
+    if (hunk_fd < 0) {
+    	perror(dst);
+    	return EXIT_FAILURE;
+    }
+
+    ret = elf2hunk(src_fd, hunk_fd, NULL, flags);
+    if (ret != 0)
+        perror(src);
+
+    close(src_fd);
+    close(hunk_fd);
+
+    return ret;
+}
+
+int main(int argc, char **argv)
+{
+    int flags = 0;
+
+    if (argc == 4 && strcmp(argv[1],"-v") == 0) {
+        flags |= F_VERBOSE;
+        argc--;
+        argv++;
+    }
+
+    if (argc != 3) {
+    	fprintf(stderr, "Usage:\n%s file.elf file.hunk\n", argv[0]);
+    	fprintf(stderr, "%s src-dir dest-dir\n", argv[0]);
+    	return EXIT_FAILURE;
+    }
+
+    return copy(argv[1], argv[2], flags);
 }
