@@ -20,6 +20,7 @@
 #include <elfloader.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "bootstrap.h"
 #include "elfloader.h"
@@ -181,6 +182,96 @@ static struct ELFNode *module_prepare(const char *s)
     return mo;
 }
 
+struct ar_header {
+    char name[16];      /* ASCII, 0x20 padded */
+    char timestamp[12]; /* Decimal */
+    char owner[6];      /* Decimal */
+    char group[6];      /* Decimal */
+    char mode[8];       /* Octal */
+    char size[10];      /* Decimal */
+    char magic[2];      /* 0x60 0x0a */
+};
+
+static const void *ar_data(const struct ar_header *header)
+{
+    unsigned int pad = 0;
+
+    if (header->magic[0] != 0x60 || header->magic[1] != 0x0a)
+        return NULL;
+
+    /* BSD extension - name is appended after the header */
+    if (memcmp(header->name, "#1/", 3) == 0) {
+        pad = strtoul(&header->name[3], NULL, 10);
+    }
+
+    return ((const char *)(&header[1])) + pad;
+}
+
+
+static const struct ar_header *ar_next(const struct ar_header *header)
+{
+    unsigned int len;
+    char size[11];
+
+    if (header->magic[0] != 0x60 || header->magic[1] != 0x0a)
+        return NULL;
+
+    /* All 10 characters may be used! */
+    memcpy(size, header->size, 10);
+    size[10] = 0;
+
+    len = strtoul(size, NULL, 10);
+    if (len & 1)
+        len++;
+
+    /* BSD extension - name is appended after the header */
+    if (memcmp(header->name, "#1/", 3) == 0) {
+        int extra = strtoul(&header->name[3], NULL, 10);
+        if (extra & 1)
+            extra++;
+        len += extra;
+    }
+
+    return (((const void *)(&header[1])) + len);
+}
+
+static char *ar_name(const struct ar_header *header, const struct ar_header *longnames)
+{
+    const char *name;
+    char *tmp;
+    int len;
+
+    name = &header->name[0];
+
+    if (name[0] == '/' && isdigit(name[1]) && longnames != NULL) {
+        /* GNU style long names */
+        const char *cp;
+        int offset = strtoul(&name[1], NULL, 10);
+
+        name = ar_data(longnames) + offset;
+        for (len = 0, cp = name; *cp != '\n'; len++, cp++) {
+            if (*cp == '/')
+                break;
+        }
+    } else if (name[0] == '#' && name[1] == '1' && name[2] == '/') {
+        /* BSD style long names */
+        len = strtoul(&name[3], NULL, 0);
+        name = ((char *)(&header[1]));
+    } else {
+        const char *cp;
+
+        for (len = 0, cp = name; *cp != ' '; len++, cp++)
+            if (longnames != NULL && *cp == '/')
+                break;
+    }
+
+    tmp = __bs_malloc(len + 1);
+    memcpy(tmp, name, len);
+    tmp[len] = 0;
+
+    return tmp;
+}
+
 unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned long end)
 {
     char *p = (char *)mod_start;
@@ -230,6 +321,46 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
 
 	if (mod_end > end)
 	    end = mod_end;
+    }
+    else if (memcmp(p,"!<arch>\n",8) == 0) {
+        const struct ar_header *file;
+        char *name;
+        const struct ar_header *longnames = NULL;
+
+        /* ar(1) archive */
+        D(kprintf("[BOOT] * archive @ %p:\n", mod_start));
+
+        /* Look for the GNU extended name section */
+        for (file = (void *)(p + 8); (void *)file < (void*)mod_end; file = ar_next(file))
+        {
+            name = ar_name(file, NULL);
+            if (strcmp(name, "//") == 0)
+            {
+                longnames = file;
+                break;
+            }
+        }
+        D(kprintf("[BOOT] *   longnames @ %p\n", longnames));
+
+        for (file = (void *)(p + 8); (void *)file < (void*)mod_end; file = ar_next(file))
+        {
+            const char *data = ar_data(file);
+            char *s = ar_name(file, longnames);
+
+            if (memcmp(data,"\177ELF",4) == 0) {
+                struct ELFNode *mo = module_prepare(s);
+
+                mo->Name = s;
+                mo->eh = (void *)data;
+                D(kprintf("[BOOT] *   ar module %s @ %p\n", mo->Name, mo->eh));
+            } else {
+                D(kprintf("[BOOT] *   Ignored @ %p (%s)\n", file, s));
+            }
+        }
+
+	if (mod_end > end)
+	    end = mod_end;
+
     }
     else
        	kprintf("[BOOT] Unknown module 0x%p\n", p);
