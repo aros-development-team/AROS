@@ -53,30 +53,6 @@ static const char *PrintCentered(const char *str, struct KernelBase *KernelBase)
     return str;
 }
 
-static const char *PrintLeftJustified(const char *str, struct KernelBase *KernelBase)
-{
-    int len = linelen(str);
-    int i;
-    ULONG s;
-
-    if (len > (scr_Width - 3))
-    	    len = (scr_Width - 3);
-
-    s = scr_Width - 3 - len;
-
-    krnPutC(0xDB, KernelBase);
-    krnPutC(' ', KernelBase);
-
-    for (i = 0; i < len; i++)
-        krnPutC(*str++, KernelBase);
-
-    PrintChars(' ', s, KernelBase);
-    krnPutC(0xDB, KernelBase);
-    krnPutC('\n', KernelBase);
-
-    return str;
-}
-
 static inline void PrintFrame(char c, struct KernelBase *KernelBase)
 {
     krnPutC(0xDB, KernelBase);
@@ -103,7 +79,6 @@ AROS_LH2(void, KrnDisplayAlert,
      * Very useful for early alerts, while the display driver not started yet.
      * In this case the user gets a nice GURU. Not painted in red yet. :)
      */
-
     unsigned int i;
 
     if (scr_Type == SCR_UNKNOWN)
@@ -117,35 +92,14 @@ AROS_LH2(void, KrnDisplayAlert,
 
     PrintFrame(0xDF, KernelBase);
 
-    /* Print first three lines (task and error) centered */
+    /* Print first three lines (title, task and error) centered */
     for (i = 0; i < 3; i++)
     {
     	text = PrintCentered(text, KernelBase);
     	text++;	/* Skip a newline */
     }
 
-    /* Empty line */
-    PrintCentered("", KernelBase);
-
-    /* The rest is left-justified */
-    while (*text)
-    {
-    	if (*text == 0x0F)
-    	{
-    	    /* 0x0F ends the frame */
-	    PrintFrame(0xDC, KernelBase);
-    	    text++;
-    	    break;
-    	}
-	else
-	{
-	    /* Print left-justified line inside frame */
-    	    text = PrintLeftJustified(text, KernelBase);
-
-    	    if (*text == '\n')
-    	    	text++;
-    	 }
-    }
+    PrintFrame(0xDC, KernelBase);
 
     /* Print the rest of alert text */
     PrintString(text, KernelBase);
@@ -162,8 +116,12 @@ AROS_LH2(void, KrnDisplayAlert,
     	for(;;);
     }
 
-    /* Recoverable alerts don't halt the machine. They are just dropped to debug log. */
-    PrintFrame(0xDC, KernelBase);
+    /*
+     * Recoverable alerts don't halt the machine. They are just dropped to debug log.
+     * Draw a line in the bottom.
+     */
+    PrintChars(0xDC, scr_Width, KernelBase);
+    krnPutC('\n', KernelBase);
 
     AROS_LIBFUNC_EXIT
 }
