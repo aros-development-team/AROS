@@ -64,7 +64,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     D(bug("[Kernel] Kernel_Init: BSP APIC ID %d, Base @ %p\n", pd->kb_APIC_IDMap[0], pd->kb_APIC_BaseMap[0]));
 
-    core_APIC_Init((IPTR)pd);
+    core_APIC_Init(__KernBootPrivate->_APICBase);
     D(bug("[Kernel] APIC initialized\n"));
 
     return TRUE;
