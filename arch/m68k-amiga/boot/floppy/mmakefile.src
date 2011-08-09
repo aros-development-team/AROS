@@ -51,13 +51,6 @@ BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 #MM
 bootdisk-setup-amiga-m68k :
 	-$(RM) -rf $(BOOT_DEST_DIR)
-	%mkdirs_q $(BOOT_DEST_DIR)
-	%mkdirs_q $(BOOT_DEST_DIR)/S
-	%mkdirs_q $(BOOT_DEST_DIR)/C
-	%mkdirs_q $(BOOT_DEST_DIR)/Devs/DOSDrivers
-	%mkdirs_q $(BOOT_DEST_DIR)/L
-	%mkdirs_q $(BOOT_DEST_DIR)/Libs
-	%mkdirs_q $(BOOT_DEST_DIR)/boot
 
 #MM
 bootdisk-amiga-m68k: $(DISTDIR)/bootdisk-amiga-m68k.adf
@@ -80,16 +73,9 @@ $(BOOT_DEST_DIR)/S/Startup-Sequence:
 	@$(CP) $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot $@
 	@$(CHMOD) +x $@
 
-$(BOOT_DEST_DIR)/C/% : $(BOOT_SRC_DIR)/C/%
-	@$(ELF2HUNK) $< $@
-	@$(CHMOD) +x $@
-
-$(BOOT_DEST_DIR)/Libs/% : $(BOOT_SRC_DIR)/Libs/%
-	@$(ELF2HUNK) $< $@
-	@$(CHMOD) +x $@
-
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
-	@$(CP) $< $@
+	%mkdirs_q $(dir $@)
+	@$(ELF2HUNK) $< $@
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c
 	echo $(GENDIR)/$(CURDIR)
