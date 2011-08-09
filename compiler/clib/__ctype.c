@@ -394,7 +394,7 @@ const unsigned short int __ctype_b_array[384] =
     0, /* ÿ */
 };
 
-const unsigned char __ctype_toupper_array[384] =
+const int __ctype_toupper_array[384] =
 {
     /* -128 */
     128,129,130,131, 132,133,134,135,
@@ -449,7 +449,7 @@ const unsigned char __ctype_toupper_array[384] =
     248,249,250,251, 252,253,254,255,
 };
 
-const unsigned char __ctype_tolower_array[384] =
+const int __ctype_tolower_array[384] =
 {
     128,129,130,131, 132,133,134,135,
     136,137,138,139, 140,141,142,143,

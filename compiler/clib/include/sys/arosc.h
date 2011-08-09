@@ -16,8 +16,8 @@ struct arosc_userdata
     int acud_errno;
 
     const unsigned short int *acud_ctype_b;
-    const unsigned char      *acud_ctype_toupper;
-    const unsigned char      *acud_ctype_tolower;
+    const int                *acud_ctype_toupper;
+    const int                *acud_ctype_tolower;
 
     /* Used by time.h functions */
     int        acud_daylight;
