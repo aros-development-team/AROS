@@ -19,6 +19,10 @@ int main(void)
     TEST(!isdigit(c));
     TEST(!isalpha(c));
     TEST(!isalnum(c));
+    TEST(toupper('a') == 'A');
+    TEST(toupper('A') == 'A');
+    TEST(tolower('Z') == 'z');
+    TEST(tolower('z') == 'z');
 
     return 0;
 }
