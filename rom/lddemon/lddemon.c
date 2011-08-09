@@ -182,7 +182,6 @@ static struct Library *LDInit(BPTR seglist, struct List *list, struct ExecBase *
 	    if(    res->rt_MatchWord == RTC_MATCHWORD
 		&& res->rt_MatchTag == res )
 	    {
-		struct Library *lib;
 		struct Node *node;
 
 		D(bug("[LDInit] Calling InitResident(%p) on %s\n", res, res->rt_Name));
@@ -195,7 +194,7 @@ static struct Library *LDInit(BPTR seglist, struct List *list, struct ExecBase *
 		 * reliable for some early AOS libraries.
 		 */
 		Forbid();
-		lib = InitResident(res, seglist);
+		InitResident(res, seglist);
 		node = FindName(list, res->rt_Name);
 		Permit();
 		D(bug("[LDInit] Done calling InitResident(%p) on %s, seg %p, node %p\n", res, res->rt_Name, BADDR(seglist), node));
