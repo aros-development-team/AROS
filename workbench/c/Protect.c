@@ -67,7 +67,9 @@
 
 ******************************************************************************/
 
+#define DEBUG 1
 
+#include <aros/debug.h>
 #include <dos/dos.h>
 #include <dos/dosasl.h>
 #include <dos/dosextens.h>
@@ -80,8 +82,7 @@
 #include <proto/arossupport.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
-
-#include <ctype.h>
+#include <proto/utility.h>
 
 #define CTRL_C         (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
 
@@ -119,8 +120,6 @@ enum
 
 const TEXT version[] = "$VER: Protect 41.1 (2.12.2000)\n";
 
-struct UtilityBase *UtilityBase;
-
 int Do_Protect(struct AnchorPath *, STRPTR, STRPTR, BOOL, BOOL, BOOL, BOOL);
 
 int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
@@ -135,8 +134,8 @@ int main(void)
     struct RDArgs     *rda;
     struct AnchorPath *apath;
 
-    IPTR args[NOOFARGS] = { NULL,
-			    NULL,
+    IPTR args[NOOFARGS] = { 0,
+			    0,
 			    (IPTR)FALSE,
 			    (IPTR)FALSE,
 			    (IPTR)FALSE,
@@ -168,6 +167,8 @@ int main(void)
 
 	    if (flags != NULL)
 	    {
+		D(Printf("Flags: %s\n", flags));
+
                 if (*flags == '+')
                 {
                         add = TRUE;
@@ -181,7 +182,10 @@ int main(void)
 
 	        while (*flags != 0 && retval == RETURN_OK)
 		{
-		    switch (toupper(*flags))
+		    char f = ToUpper(*flags);
+
+		    D(Printf("Checking flag: %lc\n", f));
+		    switch (f)
 		    {
  		        /* Active low */
 			case 'R':
