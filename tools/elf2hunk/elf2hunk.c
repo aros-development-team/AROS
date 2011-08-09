@@ -16,6 +16,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <sys/stat.h>
+
 #if defined(__GNUC__)&&defined(WIN32)
 #include <winsock2.h>
 #else
@@ -386,7 +388,6 @@ static int load_header(int file, struct elfheader *eh)
     if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
         eh->ident[2] != 'L'  || eh->ident[3] != 'F') {
 	D(bug("[ELF2HUNK] Not an ELF object\n"));
-        set_error(ENOEXEC);
         return 0;
     }
     D(bug("[ELF2HUNK] ELF object\n"));
@@ -665,6 +666,29 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     wlong(hunk_fd, 0);
 }
 
+int copy_to(int in, int out)
+{
+    static char buff[64*1024];
+    int len, err = 0;
+
+    do {
+        len = read(in, buff, sizeof(buff));
+        if (len < 0) {
+            perror("Can't read from input file\n");
+            err = len;
+        }
+        if (len == 0)
+            break;
+    } while ((err = write(out, buff, len)) == len);
+
+    if (err < 0) {
+            perror("Can't write to output file\n");
+            return -errno;
+    }
+
+    return 0;
+}
+
 int elf2hunk(int file, int hunk_fd, const char *libname)
 {
     struct hunkheader **hh;
@@ -679,8 +703,15 @@ int elf2hunk(int file, int hunk_fd, const char *libname)
 
     /* load and validate ELF header */
     D(bug("Load header\n"));
-    if (!load_header(file, &eh))
-        return EXIT_FAILURE;
+    if (!load_header(file, &eh)) {
+        /* If it's not an ELF, just copy it.
+         *
+         * This simplifies a number of mmakefiles
+         * for the m68k-amiga boot and ISO creation
+         */
+        lseek(file, 0, SEEK_SET);
+        return (copy_to(file, hunk_fd) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
     
     D(bug("Read SHNum\n"));
     int_shnum = read_shnum(file, &eh);
@@ -863,7 +894,8 @@ error:
 int main(int argc, char **argv)
 {
     int elf_fd, hunk_fd;
-    const char *libname;
+    struct stat st;
+    int mode;
 
     if (argc != 3) {
     	fprintf(stderr, "Usage:\n%s file.elf file.hunk\n", argv[0]);
@@ -876,18 +908,17 @@ int main(int argc, char **argv)
     	return EXIT_FAILURE;
     }
 
-    hunk_fd = open(argv[2], O_RDWR | O_CREAT | O_TRUNC, 0755);
+    if (fstat(elf_fd, &st) >= 0) {
+        mode = st.st_mode;
+    } else {
+        mode = 0755;
+    }
+
+    hunk_fd = open(argv[2], O_RDWR | O_CREAT | O_TRUNC, mode);
     if (hunk_fd < 0) {
     	perror(argv[2]);
     	return EXIT_FAILURE;
     }
 
-    libname = strrchr(argv[1], '/');
-    if (libname == NULL)
-    	libname = argv[1];
-    else
-    	libname++;
-
-    libname = NULL;
-    return elf2hunk(elf_fd, hunk_fd, libname);
+    return elf2hunk(elf_fd, hunk_fd, NULL);
 }
