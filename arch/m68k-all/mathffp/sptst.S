@@ -15,4 +15,4 @@
 AROS_SLIB_ENTRY(SPTst,Mathffp,8):
 
 	moveq	#0,%d0
-	bra		AROS_SLIB_ENTRY(SPCmp,Mathffp,7)
+	bra.l		AROS_SLIB_ENTRY(SPCmp,Mathffp,7)
