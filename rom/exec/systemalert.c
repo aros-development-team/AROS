@@ -22,7 +22,6 @@
 void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)
 {
     char *buf;
-    char *extra;
 
     D(bug("[SystemAlert] Code 0x%08X, type %d, data 0x%p\n", alertNum, type, data));
 
@@ -34,13 +33,7 @@ void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APT
 
     /* Get the alert text */
     buf = FormatAlert(buf, alertNum, SysBase->ThisTask, location, type, SysBase);
-    extra = buf;
-
     FormatAlertExtra(buf, stack, type, data, SysBase);
-    /* FormatAlertExtra() output begins with LF, we replace it with FF in order to close the frame before extra */
-    *extra = 0x0F;
-
-    D(bug("[SystemAlert] Got extra:\n%s\n", extra + 1));
 
     /* Display an alert via kernel.resource */
     KrnDisplayAlert(alertNum, PrivExecBase(SysBase)->AlertBuffer);

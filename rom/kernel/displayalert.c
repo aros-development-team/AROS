@@ -51,30 +51,6 @@ static const char *PrintCentered(const char *str, struct KernelBase *KernelBase)
     return str;
 }
 
-static const char *PrintLeftJustified(const char *str, struct KernelBase *KernelBase)
-{
-    int len = linelen(str);
-    int i;
-    ULONG s;
-
-    if (len > (ALERT_WIDTH - 3))
-    	    len = (ALERT_WIDTH - 3);
-
-    s = ALERT_WIDTH - 3 - len;
-
-    krnPutC('#', KernelBase);
-    krnPutC(' ', KernelBase);
-
-    for (i = 0; i < len; i++)
-        krnPutC(*str++, KernelBase);
-
-    PrintChars(' ', s, KernelBase);
-    krnPutC('#', KernelBase);
-    krnPutC('\n', KernelBase);
-
-    return str;
-}
-
 static inline void PrintFrame(struct KernelBase *KernelBase)
 {
     PrintChars('#', ALERT_WIDTH, KernelBase);
@@ -102,10 +78,8 @@ AROS_LH2(void, KrnDisplayAlert,
     	code - Corresponding alert code.
 	text - A NULL-terminated text to print out.
 
-	First three lines are assumed to be a header, they are centered.
-	The rest of text can contain 0x0F control codes. When this code is
-	met, the frame is closed, and the following text is printed underneath
-	without any formatting.
+	First three lines are assumed to be a header. Some implementations
+	may print them centered inside a frame.
 
     RESULT
 	None. This function is not guaranteed to return.
@@ -145,35 +119,14 @@ AROS_LH2(void, KrnDisplayAlert,
 
     PrintFrame(KernelBase);
 
-    /* Print first three lines (task and error) centered */
+    /* Print first three lines (title, task and error) centered */
     for (i = 0; i < 3; i++)
     {
     	text = PrintCentered(text, KernelBase);
     	text++;	/* Skip a newline */
     }
 
-    /* Empty line */
-    PrintCentered("", KernelBase);
-
-    /* The rest is left-justified */
-    while (*text)
-    {
-    	if (*text == 0x0F)
-    	{
-    	    /* 0x0F ends the frame */
-	    PrintFrame(KernelBase);
-    	    text++;
-    	    break;
-    	}
-	else
-	{
-	    /* Print left-justified line inside frame */
-    	    text = PrintLeftJustified(text, KernelBase);
-
-    	    if (*text == '\n')
-    	    	text++;
-    	 }
-    }
+    PrintFrame(KernelBase);
 
     /* Print the rest of alert text */
     while (*text)
