@@ -66,9 +66,10 @@ struct KernelInterface
 
 struct PlatformData
 {
-    sigset_t	  sig_int_mask;	/* Mask of signals that Disable() block */
+    sigset_t	  sig_int_mask;			   /* Mask of signals that Disable() block */
     unsigned int  supervisor;
     int		 *errnoPtr;
+    void	(*DisplayAlert)(const char *text); /* Currently used only on iOS and Android */
 };
 
 struct SignalTranslation
