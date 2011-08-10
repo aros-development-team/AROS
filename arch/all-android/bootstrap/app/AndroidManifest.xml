@@ -4,7 +4,7 @@
       android:versionName="1.0" package="org.aros.bootstrap">
     <application android:icon="@drawable/icon" android:label="AROS" android:debuggable="true">
         <activity android:name=".AROSBootstrap"
-                  android:label="AROS">
+                  android:label="AROS" android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
