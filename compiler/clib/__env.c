@@ -16,6 +16,57 @@
 
 #include "__env.h"
 
+#ifdef __mc68000
+/* On m68000, we want the bootiso to be mostly compatible with
+ * AOS 3.x and higher.
+ *
+ * ScanVars is a Morphos addition in dos.library v50, so we
+ * have this stub here for arosc.library compatability with
+ * dos.library v39
+ */
+static LONG v39_ScanVars(struct Hook *hook, ULONG flags, APTR userdata)
+{
+    /* We scan through the process->pr_LocalVars list */
+    struct Process  *pr;
+    struct LocalVar *var;
+    struct ScanVarsMsg msg;
+    LONG res = 0;
+    APTR UtilityBase;
+    
+    UtilityBase = OpenLibrary("utility.library", 0);
+    if (UtilityBase == NULL)
+        return 0;
+
+    msg.sv_SVMSize = sizeof(struct ScanVarsMsg);
+    msg.sv_Flags = flags;
+    pr  = (struct Process *)FindTask(NULL);
+
+    /* We know that the callers of this routine
+     * will be asking for GVF_LOCAL_ONLY
+     */
+    var = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
+    
+    ForeachNode(&pr->pr_LocalVars, var)
+    {
+        if (var->lv_Node.ln_Type == LV_VAR)
+        {
+            msg.sv_Name = var->lv_Node.ln_Name;
+            msg.sv_Var = var->lv_Value;
+            msg.sv_VarLen = var->lv_Len;
+            msg.sv_GDir = "";
+            res = CallHookPkt(hook, userdata, &msg);
+            if(res != 0) 
+                break;
+        }
+    }
+
+    CloseLibrary(UtilityBase);
+    return res;
+}
+#undef ScanVars
+#define ScanVars(a,b,c) v39_ScanVars(a,b,c)
+#endif
+
 static __env_item *__env_newvar(const char *name, int valuesize)
 {
     __env_item *item;
