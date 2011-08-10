@@ -47,7 +47,7 @@ static LONG startup(struct emulbase *emulbase)
         return FALSE;
 
     /* Create a BootNode so we can boot from this device */
-    if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION)))
+    if ((ExpansionBase = OpenLibrary("expansion.library", 0)))
     {
         struct DeviceNode *dn;
         IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
@@ -75,7 +75,7 @@ static LONG startup(struct emulbase *emulbase)
             dn->dn_StackSize = 16384;
 	    dn->dn_GlobalVec = (BPTR)-1;
 
-            AddBootNode(0, ADNF_STARTPROC, dn, NULL);
+            AddDosNode(0, ADNF_STARTPROC, dn);
         }
 
         CloseLibrary(ExpansionBase);
