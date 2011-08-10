@@ -461,6 +461,7 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
 static const char hdrstring[] =   "Task : 0x%P - %s";
 static const char errstring[] = "\nError: 0x%08lx - ";
 static const char locstring[] = "\nPC   : 0x%P";
+static const char stkstring[] = "\nStack: 0x%P - 0x%P";
 
 STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, APTR location, UBYTE type, struct ExecBase *SysBase)
 {
@@ -478,6 +479,12 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, APTR locatio
 	buf = FormatLocation(buf, locstring, location, SysBase);
 
 	D(bug("[FormatAlert] Location string:\n%s\n", buffer));
+    }
+
+    /* For AN_StackProbe limits information is useful */
+    if ((alertNum & ~AT_DeadEnd) == AN_StackProbe)
+    {
+    	buf = NewRawDoFmt(stkstring, RAWFMTFUNC_STRING, buf, task->tc_SPLower, task->tc_SPUpper) - 1;
     }
 
     return buf;
