@@ -32,3 +32,8 @@ int __declspec(dllexport) core_getc(void)
 
     return input.Event.KeyEvent.uChar.AsciiChar;
 }
+
+void __declspec(dllexport) core_alert(const char *text)
+{
+    MessageBox(NULL, text, "AROS guru meditation", MB_ICONERROR|MB_SETFOREGROUND);
+}

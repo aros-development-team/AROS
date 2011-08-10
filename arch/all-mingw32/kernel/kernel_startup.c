@@ -27,6 +27,7 @@ static const char *kernel_functions[] = {
     "core_protect",
     "core_putc",
     "core_getc",
+    "core_alert",
     "TrapVector",
     "IRQVector",
     "Ints_Enabled",

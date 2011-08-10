@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES := systemalert cachecleare coldreboot platform_init \
+CFILES := cachecleare coldreboot platform_init \
           shutdowna
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/all-mingw32/kernel

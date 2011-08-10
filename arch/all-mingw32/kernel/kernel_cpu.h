@@ -32,17 +32,18 @@
 /* Our virtual CPU interface. It's needed here for krnSysCall() definition */
 struct KernelInterface
 {
-    int (*core_init)(unsigned int TimerPeriod);
-    void (*core_raise)(ULONG num, const IPTR n);
+    int 	 (*core_init)(unsigned int TimerPeriod);
+    void	 (*core_raise)(ULONG num, const IPTR n);
     unsigned int (*core_protect)(void *addr, unsigned int len, unsigned int prot);
-    void (*core_putc)(char c);
-    int (*core_getc)(void);
-    int (**TrapVector)(unsigned int num, IPTR *args, CONTEXT *regs);
-    int (**IRQVector)(unsigned char *irqs, CONTEXT *regs);
-    volatile int *IntState;
-    volatile int *SuperState;
+    void 	 (*core_putc)(char c);
+    int		 (*core_getc)(void);
+    void	 (*core_alert)(const char *text);
+    int		 (**TrapVector)(unsigned int num, IPTR *args, CONTEXT *regs);
+    int		 (**IRQVector)(unsigned char *irqs, CONTEXT *regs);
+    volatile int 	   *IntState;
+    volatile int 	   *SuperState;
     volatile unsigned char *SleepState;
-    volatile ULONG **LastErrorPtr;
+    volatile ULONG	   **LastErrorPtr;
 };
 
 extern struct KernelInterface KernelIFace;
