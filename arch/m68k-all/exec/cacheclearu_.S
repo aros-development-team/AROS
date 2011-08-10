@@ -105,7 +105,7 @@ cacheclearusup_60:
 			   bit of CACR. Force an invalidation with CINV. */
 	or.w	#0x0700,%sr
 	movec	%cacr,%d0
-	bset.l	#20,%d0		/* set CABC Clear All (entries in) Branch Cache bit */
+	bset.l	#22,%d0		/* set CABC Clear All (entries in) Branch Cache bit */
 	movec	%d0,%cacr		/* clear Branch Cache */
 	move.l	%a1,%a5
 	rte
