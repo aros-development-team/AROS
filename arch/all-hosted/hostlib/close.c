@@ -15,12 +15,12 @@ AROS_LH2(int, HostLib_Close,
 
     int ret;
 
-    HostLib_Lock();
+    HOSTLIB_LOCK();
 
     ret = HostLibBase->HostIFace->hostlib_Close(handle, error);
     AROS_HOST_BARRIER
 
-    HostLib_Unlock();
+    HOSTLIB_UNLOCK();
 
     return ret;
 

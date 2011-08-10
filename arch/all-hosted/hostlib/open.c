@@ -15,12 +15,12 @@ AROS_LH2(void *, HostLib_Open,
 
     void *ret;
 
-    HostLib_Lock();
+    HOSTLIB_LOCK();
 
     ret = HostLibBase->HostIFace->hostlib_Open(filename, error);
     AROS_HOST_BARRIER
 
-    HostLib_Unlock();
+    HOSTLIB_UNLOCK();
 
     return ret;
 
