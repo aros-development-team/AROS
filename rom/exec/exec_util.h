@@ -43,8 +43,9 @@
 #endif
 #ifdef __arm__
 #define PC pc
-#define FP lr
-#define CALLER_FRAME NULL
+#define FP r[11]
+/* __builtin_frame_address(1) returns LR value. Perhaps not AAPCS-compatible. */
+#define CALLER_FRAME ({void * _fp; asm volatile("ldr %0, [%%fp, #-4]":"=r"(_fp)); _fp;})
 #endif
 
 #ifndef PC
