@@ -42,7 +42,7 @@ AROS_LH0(void, HostLib_Unlock,
 {
     AROS_LIBFUNC_INIT
 
-    ReleaseSemaphore(&HostLibBase->HostSem);
+    HOSTLIB_UNLOCK();
 
     AROS_LIBFUNC_EXIT
 }

@@ -16,12 +16,12 @@ AROS_LH3(void *, HostLib_GetPointer,
 
     void *ret;
 
-    HostLib_Lock();
+    HOSTLIB_LOCK();
 
     ret = HostLibBase->HostIFace->hostlib_GetPointer(handle, symbol, error);
     AROS_HOST_BARRIER
 
-    HostLib_Unlock();
+    HOSTLIB_UNLOCK();
 
     return ret;
 

@@ -1,5 +1,8 @@
 #include <proto/exec.h>
 
+#include "hostinterface.h"
+#include "hostlib_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -13,7 +16,7 @@ AROS_LH3(APTR *, HostLib_GetInterface,
     	AROS_LHA(ULONG *, unresolved, A2),
 
 /*  LOCATION */
-    	APTR, HostLibBase, 5, HostLib)
+    	struct HostLibBase *, HostLibBase, 5, HostLib)
 
 /*  FUNCTION
 	Resolve array of symbols in the host operating system library.
@@ -71,12 +74,18 @@ AROS_LH3(APTR *, HostLib_GetInterface,
 	    ULONG bad = 0;
 	    ULONG i;
 
+	    HOSTLIB_LOCK();
+	    
 	    for (i = 0; i < cnt; i++)
 	    {
-		iface[i] = HostLib_GetPointer(handle, symtable[i], NULL);
+		iface[i] = HostLibBase->HostIFace->hostlib_GetPointer(handle, symtable[i], NULL);
+		AROS_HOST_BARRIER
+
 		if (!iface[i])
 		    bad++;
 	    }
+
+	    HOSTLIB_UNLOCK();
 
     	    if (unresolved)
     	        *unresolved = bad;

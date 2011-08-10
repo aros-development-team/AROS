@@ -48,7 +48,7 @@ AROS_LH0(void, HostLib_Lock,
 {
     AROS_LIBFUNC_INIT
 
-    ObtainSemaphore(&HostLibBase->HostSem);
+    HOSTLIB_LOCK();
 
     AROS_LIBFUNC_EXIT
 }
