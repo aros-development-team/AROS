@@ -56,6 +56,8 @@ static void core_TrapHandler(int sig, regs_t *regs)
     short amigaTrap;
     struct AROSCPUContext ctx;
 
+    AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
+
     /* Just for completeness */
     krnRunIRQHandlers(sig);
 
@@ -98,6 +100,8 @@ static void core_TrapHandler(int sig, regs_t *regs)
     /* Trap handler(s) have possibly modified the context, so
        we convert it back before returning */
     RESTOREREGS(&ctx, regs);
+
+    AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
 }
 
 /*
