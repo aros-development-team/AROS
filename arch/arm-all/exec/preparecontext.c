@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PrepareContext() - Prepare a task context for dispatch, ARM version.
@@ -10,6 +10,7 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
+#include <proto/arossupport.h>
 #include <proto/kernel.h>
 #include <aros/arm/cpucontext.h>
 
@@ -21,13 +22,14 @@ AROS_LH4(BOOL, PrepareContext,
 	 AROS_LHA(VOLATILE struct Task *, task,       A0),
 	 AROS_LHA(APTR,                   entryPoint, A1),
 	 AROS_LHA(APTR,                   fallBack,   A2),
-	 AROS_LHA(struct TagItem *,       tagList,    A3),
+	 AROS_LHA(const struct TagItem *, tagList,    A3),
 	 struct ExecBase *, SysBase, 6, Exec)
 {
     AROS_LIBFUNC_INIT
 
+    struct TagItem *t;
     struct ExceptionContext *ctx;
-    STACKULONG args[8] = {0};
+    ULONG args[4] = {0};
     int numargs = 0;
     STACKULONG *sp = task->tc_SPReg;
 
@@ -40,68 +42,41 @@ AROS_LH4(BOOL, PrepareContext,
 	return FALSE;
 
     /* Set up function arguments */
-    while(tagList)
+    while((t = LibNextTagItem(&tagList)))
     {
-    	switch(tagList->ti_Tag)
+    	switch(t->ti_Tag)
 	{
-	    case TAG_MORE:
-	    	tagList = (struct TagItem *)tagList->ti_Data;
-		continue;
-		
-	    case TAG_SKIP:
-	    	tagList += tagList->ti_Data;
-		break;
-		
-	    case TAG_DONE:
-	    	tagList = NULL;
-    	    	break;
+#define REGARG(x)			\
+	case TASKTAG_ARG ## x:		\
+	    ctx->r[x - 1] = t->ti_Data;	\
+	    break;
 
-#define HANDLEARG(x)				   \
-	    case TASKTAG_ARG ## x:		   \
-	        args[x-1] = tagList->ti_Data;      \
-		if (numargs < x) numargs = x;	   \
-	        break;
-		
-	    HANDLEARG(1)
-	    HANDLEARG(2)
-	    HANDLEARG(3)
-	    HANDLEARG(4)
-	    HANDLEARG(5)
-	    HANDLEARG(6)
-	    HANDLEARG(7)
-	    HANDLEARG(8)
-	}
-	
-	if (tagList) tagList++;
-    }
+#define STACKARG(x)			\
+	case TASKTAG_ARG ## x:		\
+	    args[x - 5] = t->ti_Data;	\
+	    if (x - 4 > numargs)	\
+		numargs = x - 4;	\
+	    break;
 
-    if (numargs)
-    {
-	switch (numargs)
-	{
-	    case 8:
-		*--sp = args[7];
-	    case 7:
-		*--sp = args[6];
-	    case 6:
-		*--sp = args[5];
-	    case 5:
-		*--sp = args[4];
-	    case 4:
-		ctx->r[3] = args[3];
-	    case 3:
-		ctx->r[2] = args[2];
-	    case 2:
-		ctx->r[1] = args[1];
-	    case 1:
-		ctx->r[0] = args[0];
-		break;
+	REGARG(1)
+	REGARG(2)
+	REGARG(3)
+	REGARG(4)
+	STACKARG(5)
+	STACKARG(6)
+	STACKARG(7)
+	STACKARG(8)
 	}
     }
+
+    /* Last four arguments are put on stack */
+    while (numargs > 0)
+    	*--sp = args[--numargs];
 
     task->tc_SPReg = sp;
 
     /* Now prepare return address */
+    ctx->r[11] = 0;
     ctx->lr = (ULONG)fallBack;
 
     ctx->Flags = 0;

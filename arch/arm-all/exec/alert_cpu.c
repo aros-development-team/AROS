@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ARM CPU context parsing routines.
@@ -32,14 +32,10 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
     return buf - 1;
 }
 
-/*
- * On ARM we don't have frame pointer and can't do a full backtrace.
- * However in case of CPU trap we can trace down one call. This is done
- * by remembering value of lr register in iet_AlertStack. This routine
- * will then unwind this pseudo-frame.
- */
 APTR UnwindFrame(APTR fp, APTR *caller)
 {
-    *caller = fp;
-    return NULL;
+    APTR *frame = fp;
+
+    *caller = frame[0];
+    return frame[-1];
 }
