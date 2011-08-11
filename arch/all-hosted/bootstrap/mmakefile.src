@@ -20,16 +20,8 @@ else
     LIBS += gcc dl
 endif
 
-ifeq ($(AROS_TARGET_VARIANT),ios)
-    KERNEL_LDFLAGS += $(IOS_LDFLAGS) -framework Foundation -framework UIKit
-    EXEDIR := $(TARGETDIR)/Payload/$(PROG).app
-endif
-ifeq ($(AROS_TARGET_VARIANT),android)
-    KERNEL_LDFLAGS += -shared
-    EXEDIR := $(GENDIR)/arch/all-android/bootstrap/app/libs/armeabi
-    PROG := lib$(PROG)
-    EXE_SUFFIX := .so
-endif
+# Allow to add variant-specific options
+-include $(SRCDIR)/arch/all-$(AROS_TARGET_VARIANT)/bootstrap/make.opts
 
 #MM kernel-bootstrap-hosted: linklibs-bootstrap
 

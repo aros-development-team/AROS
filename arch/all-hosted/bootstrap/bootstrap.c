@@ -61,7 +61,7 @@ extern void __clear_cache(char *begin, char *end);
 char bootstrapdir[PATH_MAX];
 char *KernelArgs = NULL;
 char *SystemVersion = NULL;
-char buf[512];
+char buf[BUFFER_SIZE];
 
 static struct mb_mmap MemoryMap =
 {
@@ -151,7 +151,7 @@ int bootstrap(int argc, char ** argv)
     FILE *file;
     kernel_entry_fun_t kernel_entry;
     void *ro_addr, *rw_addr, *__bss_track;
-    size_t ro_size, rw_size, bss_size;
+    unsigned long ro_size, rw_size, bss_size;
 
     D(fprintf(stderr, "[Bootstrap] Started\n"));
 

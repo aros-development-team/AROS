@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 EXEDIR := $(TARGETDIR)/Payload/AROSBootstrap.app
 OBJDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
 
-FILES         := main appdelegate filesystem ui
+FILES         := main appdelegate filesystem kickstart ui
 ICON          := arch/all-hosted/hidd/x11/icon.png
 PACKAGE	      := AROSBootstrap.ipa
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap

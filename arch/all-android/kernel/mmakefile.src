@@ -9,8 +9,8 @@ USER_CFLAGS := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-linux/kernel \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_android
 
-%build_archspecific \
-  mainmmake=kernel-kernel maindir=$(MAINDIR) \
-  arch=linux-android files=$(FILES)
+# %build_archspecific \
+#   mainmmake=kernel-kernel maindir=$(MAINDIR) \
+#   arch=linux-android files=$(FILES)
 
 %common
