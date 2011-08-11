@@ -100,7 +100,7 @@ LONG main(VOID)
 
         /* Close the destination file */
 
-        if (args.to != NULL && output != NULL)
+        if (args.to != NULL && output != BNULL)
             Close(output);
 
         ReleaseSemaphore(&data->lock);
