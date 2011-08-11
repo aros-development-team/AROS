@@ -1041,12 +1041,15 @@ static int UXIO_Cleanup(struct unixio_base *LIBBASE)
 /* The singleton gets really disposed only when we expunge its library */
 static int UXIO_Dispose(struct unixio_base *LIBBASE)
 {
-    ULONG mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+    if (LIBBASE->uio_csd.obj)
+    {
+	OOP_MethodID mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
-    D(bug("[UnixIO] Disposing object\n"));
+	D(bug("[UnixIO] Disposing object\n"));
 
-    OOP_DoSuperMethod(LIBBASE->uio_unixioclass, LIBBASE->uio_csd.obj, (OOP_Msg)&mid);
-    LIBBASE->uio_csd.obj = NULL;
+	OOP_DoSuperMethod(LIBBASE->uio_unixioclass, LIBBASE->uio_csd.obj, &mid);
+    	LIBBASE->uio_csd.obj = NULL;
+    }
 
     return TRUE;
 }
