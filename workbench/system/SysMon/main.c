@@ -133,14 +133,14 @@ static LONG AddTaskInfo(struct Task * task, struct TaskInfo * ti)
     
     if (src)
     {
-        while(*src != NULL)
+        while(*src != 0)
         {
             ti->Name[namesize++] = *src;
             src++;
         }
     }
     
-    *(ti->Name + namesize) = NULL; /* Terminate */
+    *(ti->Name + namesize) = 0; /* Terminate */
 
     /* Calculate next item  */
     ti->Next = (struct TaskInfo *)(((UBYTE *)ti) + sizeof(struct TaskInfo) + namesize);
