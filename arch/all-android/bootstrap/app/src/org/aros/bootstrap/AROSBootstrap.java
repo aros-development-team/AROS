@@ -106,9 +106,12 @@ public class AROSBootstrap extends Activity
 		{
 	        // Get external storage path 
 	        String extdir = Environment.getExternalStorageDirectory().getAbsolutePath();
-	        Log.d("AROS", "Starting AROS, external storage is: " + extdir);
+	        String tmpdir = getCacheDir().getAbsolutePath();
+	        String arosdir = extdir + "/AROS";
 
-	        int rc = Start(extdir + "/AROS");
+	        Log.d("AROS", "Starting AROS. Root: " + arosdir + ", Temp: " + tmpdir);
+
+	        int rc = Start(arosdir, tmpdir);
 
 	        DisplayError("Bootstrap exited with rc" + rc);
 		}
@@ -122,7 +125,7 @@ public class AROSBootstrap extends Activity
 		return rootView;
 	}
 
-    private native int Start(String dir);
+    private native int Start(String dir, String tmpdir);
 
     private CharSequence errStr;
     private DisplayView rootView;
