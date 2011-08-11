@@ -46,7 +46,7 @@
     
     struct FileLock *fl1, *fl2;
     
-    if (lock1 == NULL || lock2 == NULL)
+    if (lock1 == BNULL || lock2 == BNULL)
     	return DOSFALSE;
 	
     fl1 = (struct FileLock *)BADDR(lock1);
