@@ -48,7 +48,7 @@ public class AROSBootstrap extends Activity
 
     	Looper.loop();
     }
-    
+
     public Dialog onCreateDialog(int id)
     {
 		AlertDialog.Builder b = new AlertDialog.Builder(this);
@@ -113,7 +113,11 @@ public class AROSBootstrap extends Activity
 
 	        int rc = Start(arosdir, tmpdir);
 
-	        DisplayError("Bootstrap exited with rc" + rc);
+	        if (rc == 0)
+	        {
+	        	DisplayServer srv = new DisplayServer(AROSBootstrap.this);
+	        	srv.start();
+	        }
 		}
 	}
 
