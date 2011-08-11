@@ -100,7 +100,7 @@ static const char * const copyrights[] =
 	    try to open it again.
 	*/
 	if(!(res = FindResident(libnames[tag-1]))) return NULL;
-	InitResident(res, NULL);
+	InitResident(res, BNULL);
 	if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
     }
 
