@@ -56,7 +56,7 @@
 
     struct DosList    *dl, *newdl = NULL;
 
-    if (lock != NULL)
+    if (lock != BNULL)
     {
 	newdl = MakeDosEntry(name, DLT_DIRECTORY);
 

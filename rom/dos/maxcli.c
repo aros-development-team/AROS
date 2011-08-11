@@ -58,7 +58,7 @@
        pointer to a process and they might be NULL instead. So
        I search that array backwards until I find a valid entry.
     */
-    while (retval && NULL != taskarray[retval])
+    while (retval && (IPTR)NULL != taskarray[retval])
         retval--;
     
     return retval;

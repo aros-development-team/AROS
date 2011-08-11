@@ -58,7 +58,7 @@
     struct DosList     *dl;
     struct AssignList **al, *newal;
 
-    if(lock == NULL)
+    if(lock == BNULL)
 	return DOSFALSE;
 
     dl = LockDosList(LDF_ASSIGNS | LDF_WRITE);

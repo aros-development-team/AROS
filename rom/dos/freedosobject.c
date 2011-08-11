@@ -100,7 +100,7 @@
 	    see that function for more information as to why...
 	*/
 	case DOS_RDARGS:
-	    if(((struct RDArgs *)ptr)->RDA_DAList != NULL)
+	    if(((struct RDArgs *)ptr)->RDA_DAList != 0)
 		FreeArgs(ptr);
 	    else
 		FreeVec(ptr);
@@ -110,6 +110,9 @@
     }
     AROS_LIBFUNC_EXIT
 } /* FreeDosObject */
+
+#undef offsetof
+#undef container_of
 
 #define offsetof(TYPE, MEMBER) ((IPTR) &((TYPE *)0)->MEMBER)
 #define container_of(ptr, type, member) ({          \

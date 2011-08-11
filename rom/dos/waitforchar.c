@@ -57,7 +57,7 @@
     LONG status;
 
     /* NULL-pointers are okay. */
-    if(file == NULL)
+    if(file == BNULL)
         return 0;
 
     status = dopacket1(DOSBase, NULL, fh->fh_Type, ACTION_WAIT_CHAR, timeout);

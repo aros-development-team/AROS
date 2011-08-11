@@ -102,7 +102,7 @@
 	    { NP_Output	        , 0		  },
 	    { NP_CloseInput	, FALSE		  },
 	    { NP_CloseOutput    , FALSE		  },
-	    { TAG_DONE  	, NULL 	      	  }
+	    { TAG_DONE  	, 0    	      	  }
 	};
 	
 	if ((pr = CreateNewProc(procTags)))
