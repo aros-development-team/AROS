@@ -1,0 +1,5 @@
+KERNEL_LDFLAGS += -shared
+LIBS	       += log
+EXEDIR	       := $(GENDIR)/arch/all-android/bootstrap/app/libs/armeabi
+PROG	       := lib$(PROG)
+EXE_SUFFIX     := .so
