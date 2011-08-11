@@ -35,6 +35,7 @@ $(BINDIR)/boot:
 #MM	kernel-exec-kobj			\
 #MM     $(X11_HIDD_TARGET)		        \
 #MM     kernel-fs-emul-kobj                     \
+#MM	kernel-unixio-kobj			\
 #MM	linklibs
 
 # ---- UNIX board support package ----
@@ -42,7 +43,7 @@ $(BINDIR)/boot:
 KDEVS	:= timer
 KLIBS   := exec expansion
 KHNDLRS := emul
-KHIDDS  := 
+KHIDDS  := unixio
 KRSRCS  := battclock hostlib processor
 # Disabled until ported - sonic
 # ifeq ("$(AROS_HOST_ARCH)","linux")
