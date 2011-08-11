@@ -308,10 +308,10 @@ static BYTE DevOpen(REG(a1, struct IOSana2Req *request),
          opener->tx_function = (APTR)GetTagData(tx_tags[i],
             (UPINT)opener->tx_function, tag_list);
 
-      opener->filter_hook = (APTR)GetTagData(S2_PacketFilter, NULL,
+      opener->filter_hook = (APTR)GetTagData(S2_PacketFilter, (IPTR)NULL,
          tag_list);
       opener->dma_tx_function =
-         (APTR)GetTagData(S2_DMACopyFromBuff32, NULL, tag_list);
+         (APTR)GetTagData(S2_DMACopyFromBuff32, (IPTR)NULL, tag_list);
 
       Disable();
       AddTail((APTR)&unit->openers, (APTR)opener);
