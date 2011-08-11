@@ -112,7 +112,7 @@ int main(void)
 		errStream = Output();
 
 		pr = (struct Process *)FindTask(NULL);
-		if( pr->pr_CES != NULL )
+		if( pr->pr_CES != BNULL )
 		    errStream = pr->pr_CES;
 
 		FPuts(errStream, "ChangeTaskPri: Process does not exist.\n");

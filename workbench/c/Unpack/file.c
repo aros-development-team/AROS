@@ -20,7 +20,7 @@ BPTR FILE_Open( CONST_STRPTR path, LONG mode )
     if( mode != MODE_READ && mode != MODE_WRITE );
     
     file = Open( path, mode2dos[mode] );
-    if( file == NULL ) goto error;
+    if( file == BNULL ) goto error;
     
     Seek( file, 0, OFFSET_END );
     file_size = Seek( file, 0, OFFSET_BEGINNING ) + 1;
@@ -28,7 +28,7 @@ BPTR FILE_Open( CONST_STRPTR path, LONG mode )
     return file;
     
 error:
-    return NULL;
+    return BNULL;
 }
 
 LONG FILE_Read( BPTR file, APTR buffer, LONG length )

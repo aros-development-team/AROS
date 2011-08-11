@@ -116,7 +116,7 @@ int main(void)
 {
     struct RDArgs     * rda;
     struct AnchorPath * apath;
-    IPTR                args[TOTAL_ARGS] = { NULL, (IPTR)"", NULL, NULL};
+    IPTR                args[TOTAL_ARGS] = { 0, (IPTR)"", 0, 0};
     int                 Return_Value;
 
     RT_Init();

@@ -153,7 +153,7 @@ __startup static AROS_ENTRY(int, Start,
 	        PutStr("Direct bitmap access already disabled\n");
 	    else {
 		if (CreateNewProcTags(NP_Seglist, cli->cli_Module, NP_Entry, PatchTask, NP_Name, "GfxControl patch", TAG_DONE))
-		    cli->cli_Module = NULL;
+		    cli->cli_Module = BNULL;
 		else {
 		    PrintFault(IoErr(), "GfxControl");
 		    rc = RETURN_FAIL;
