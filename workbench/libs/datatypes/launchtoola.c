@@ -115,12 +115,12 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 	    output = Open("CON:////Output window/AUTO/WAIT/CLOSE/INACTIVE",
 			  MODE_NEWFILE);
 
-	    if (output != NULL)
+	    if (output != BNULL)
 	    {
 		struct TagItem tags[] = { { SYS_Asynch, !isSynchronous },
-					  { SYS_Input , NULL           },
+					  { SYS_Input , (IPTR)NULL      },
 					  { SYS_Output, (IPTR)output   },
-					  { TAG_DONE, NULL             } };
+					  { TAG_DONE,                  } };
 
 
 		ret = SystemTagList(tBuffer, tags);
@@ -150,7 +150,7 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
             {
                 BPTR lock = Lock(project, ACCESS_READ);
                 
-                if (lock != NULL)
+                if (lock != BNULL)
                 {
                     BPTR parent = ParentDir(lock);
                     

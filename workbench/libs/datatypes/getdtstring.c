@@ -40,7 +40,7 @@ struct StringDef __dtStrings[]=
     { GID_PICTURE,                    "Picture" },
     { GID_ANIMATION,                  "Animation" },
     { GID_MOVIE,                      "Movie" },
-    { NULL,                           NULL }
+    { 0,                              NULL }
 };
 
 
