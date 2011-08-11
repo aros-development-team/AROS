@@ -68,7 +68,7 @@
     struct TagItem *tag;
     APTR            lock;
 
-    error = (LONG *)GetTagData(PLAYER_ErrorCode, NULL, tl);
+    error = (LONG *)GetTagData(PLAYER_ErrorCode, (IPTR)NULL, tl);
 
     while ((tag = NextTagItem(&tl)) != NULL)
     {
@@ -113,7 +113,7 @@
 	    break;
 
 	case PLAYER_Conductor:
-	    if (tag->ti_Data == NULL)
+	    if (tag->ti_Data == (IPTR)NULL)
 	    {
 		player->pl_Source = NULL;
 	    }
