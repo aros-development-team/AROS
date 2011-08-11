@@ -27,6 +27,7 @@ static size_t RAM_len  = 0;
  */
 void *AllocateRO(size_t len)
 {
+    /* There's no sense to set MAP_SHARED for ROM */
     void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE|MAP_32BIT, -1, 0);
 
     if (ret == MAP_FAILED)
@@ -64,12 +65,10 @@ void *AllocateRW(size_t len)
  * needs to have full permissions.
  * Yes, iOS will silently mask out PROT_EXEC here. This is bad.
  * Well, iOS will be a little bit special story in InternalLoadSeg()...
- * TODO: Make it shared for passing RAM between AROS instances upon
- * warm reboot.
  */
 void *AllocateRAM(size_t len)
 {
-    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_PRIVATE|MAP_32BIT, -1, 0);
+    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_SHARED|MAP_32BIT, -1, 0);
 
     if (ret == MAP_FAILED)
     	return NULL;
