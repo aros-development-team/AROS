@@ -65,7 +65,7 @@ AROS_LH3(BOOL, SetNVDProtection,
     BOOL result = FALSE;
     BPTR oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
 
-    if((lock = Lock(appName, SHARED_LOCK)) != NULL)
+    if((lock = Lock(appName, SHARED_LOCK)) != BNULL)
     {
 	result = SetProtection(itemName, mask) == DOSTRUE ? TRUE : FALSE;
 

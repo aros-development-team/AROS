@@ -80,7 +80,7 @@ AROS_LH2(APTR, ReadNVDData,
 
 	    lock2 = Lock(itemName, SHARED_LOCK);
 
-	    if(lock2 != NULL)
+	    if(lock2 != BNULL)
 	    {
 		// We have now found the file -- check how big it is
 		Examine(lock2, fib);

@@ -68,11 +68,11 @@ AROS_LH4(LONG, WriteNVDData,
     BPTR lock    = Lock(appName, SHARED_LOCK);
     BPTR file;
 
-    if(lock == NULL)
+    if(lock == BNULL)
     {
 	lock = CreateDir(appName);
 
-	if(lock == NULL)
+	if(lock == BNULL)
 	{
 	    LONG err = IoErr();
 	    if(err == ERROR_WRITE_PROTECTED ||
@@ -89,7 +89,7 @@ AROS_LH4(LONG, WriteNVDData,
 
     file = Open(itemName, MODE_NEWFILE);
 
-    if(file == NULL)
+    if(file == BNULL)
     {
 	UnLock(lock);
 	CurrentDir(oldCDir);
