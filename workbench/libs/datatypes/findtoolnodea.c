@@ -77,7 +77,7 @@
     if(toollist == NULL)
 	return NULL;
 
-    program = (STRPTR)GetTagData(TOOLA_Program, NULL, attrs);
+    program = (STRPTR)GetTagData(TOOLA_Program, (IPTR)NULL, attrs);
     which   =   (WORD)GetTagData(TOOLA_Which, -1, attrs);
     ltype   =   (WORD)GetTagData(TOOLA_LaunchType, -1, attrs);
 
