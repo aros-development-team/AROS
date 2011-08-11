@@ -104,7 +104,7 @@
   ReturnValue = FALSE;
 
   Position = SplitName(Name, ':', &Buffer[0], 0, BUFFER_SIZE + 1);
-  if (Position != -1 && Name[Position] == NULL)
+  if (Position != -1 && Name[Position] == 0)
   {
     DList = AttemptLockDosList(Flags | LDF_READ);
     if (DList != NULL)

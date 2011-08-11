@@ -45,7 +45,7 @@
 
 ******************************************************************************/
 {
-    if (CLASS == NULL || object == NULL) return NULL;
+    if (CLASS == NULL || object == NULL) return 0;
     
     return DoSuperMethod(CLASS, object, OM_NEW, tags, gadgetInfo);
 } /* DoSuperNewTagList() */
@@ -60,7 +60,7 @@ IPTR DoSuperNewTags
 )
 {
     if (CLASS == NULL || object == NULL)
-        return NULL;
+        return 0;
         
     AROS_SLOWSTACKMETHODS_PRE(tag1)
     retval = DoSuperNewTagList(CLASS, object, gadgetInfo, (struct TagItem *) AROS_SLOWSTACKMETHODS_ARG(tag1));
