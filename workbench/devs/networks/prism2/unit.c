@@ -1914,7 +1914,7 @@ static BOOL LoadFirmware(struct DevUnit *unit, struct DevBase *base)
    /* Read firmware file */
 
    file = Open(firmware_file_name, MODE_OLDFILE);
-   if(file == NULL)
+   if(file == BNULL)
       success = FALSE;
 
    if(success)
@@ -2071,7 +2071,7 @@ static BOOL LoadFirmware(struct DevUnit *unit, struct DevBase *base)
    FreeVec(buffer);
    FreeVec(data);
    FreeDosObject(DOS_FIB, info);
-   if(file != NULL)
+   if(file != BNULL)
       Close(file);
 
    return success;
