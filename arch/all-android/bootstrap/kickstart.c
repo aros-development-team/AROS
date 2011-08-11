@@ -1,5 +1,5 @@
 #include <sys/wait.h>
-
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,6 +17,25 @@
 
 #define D(x)
 
+void childHandler(int sig)
+{
+    int i;
+
+    wait(&i);
+
+    if (WIFEXITED(i))
+    {
+    	D(kprintf("[Bootstrap] AROS process exited with code 0x%08X\n", WEXITSTATUS(i)));
+
+	/* TODO: Process return code here */
+    	exit(0);
+    }
+    else
+    {
+    	DisplayError("AROS process terminated, status 0x%08X\n", i);
+    }
+}
+
 /*
  * This is Android-hosted kicker.
  * Android environment is the most alien one to AROS. It's proved to be impossible
@@ -31,8 +50,16 @@
  */
 int kick(int (*addr)(), struct TagItem *msg)
 {
+    struct sigaction sa;
     int i;
     pid_t child;
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags    = SA_RESTART;
+    sa.sa_restorer = NULL;
+    sa.sa_handler  = childHandler;
+
+    sigaction(SIGCHLD, &sa, NULL);
 
     D(kprintf("[Bootstrap] Launching kickstart...\n"));
     child = fork();
