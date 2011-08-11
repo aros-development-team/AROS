@@ -49,9 +49,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* No tags defined fot this function... */
+    /* No tags defined for this function... */
 
-    return NULL;
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* CloseWorkbenchObjectA */

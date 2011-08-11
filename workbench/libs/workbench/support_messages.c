@@ -54,7 +54,7 @@ VOID __DestroyWBS_WB
         
         for (i = 0; i < message->sm_NumArgs; i++)
         {
-            if (args[i].wa_Lock != NULL) UnLock(args[i].wa_Lock);
+            if (args[i].wa_Lock != BNULL) UnLock(args[i].wa_Lock);
             if (args[i].wa_Name != NULL) FreeVec(args[i].wa_Name);
         }
         
