@@ -51,7 +51,7 @@
 
     /* No tags defined for function... */
 
-    return NULL;
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* MakeWorkbenchObjectVisibleA */

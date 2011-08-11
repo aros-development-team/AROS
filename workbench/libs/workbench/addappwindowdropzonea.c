@@ -189,7 +189,7 @@
 	    dropZone->awdz_widthSpecifier = AWDZFlag_fix;
 	    dropZone->awdz_heightSpecifier = AWDZFlag_fix;
 
-	    if (tag->ti_Data != NULL)
+	    if (tag->ti_Data != (IPTR)NULL)
 	    {
 		dropZone->awdz_Box = *(struct IBox *)tag->ti_Data;
 	    }
@@ -197,7 +197,7 @@
 	    break;
 	    
 	case WBDZA_Hook:
-	    if (tag->ti_Data != NULL)
+	    if (tag->ti_Data != (IPTR)NULL)
 	    {
 		dropZone->awdz_Hook = (struct Hook *)tag->ti_Data;
 	    }
