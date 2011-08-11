@@ -116,7 +116,7 @@ int __nocommandline;
 int main(void)
 {
     struct RDArgs *rd, *rda = NULL;
-    IPTR args[TOTAL_ARGS] = { NULL, FALSE, FALSE, NULL };
+    IPTR args[TOTAL_ARGS] = { 0, FALSE, FALSE, 0 };
     struct DevProc *dp;
     int error = 0;
 

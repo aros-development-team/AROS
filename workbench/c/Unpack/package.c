@@ -74,7 +74,7 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
     LONG   pathLength, dataLength, rc, result;
     STRPTR path   = NULL;
     APTR   buffer = NULL;
-    BPTR   output = NULL;
+    BPTR   output = BNULL;
     
     /* Read the path length */
     rc = PKG_Read( pkg, &pathLength, sizeof( pathLength ) );
@@ -104,7 +104,7 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
     buffer = AllocMem( PKG_BUFFER_SIZE, MEMF_ANY );
     if( buffer == NULL ) { Printf("E:mem\n"); result = -1; goto cleanup; }
     output = Open( path, MODE_NEWFILE );
-    if( output == NULL ) { Printf("E:create\n"); result = -1; goto cleanup; }
+    if( output == BNULL ) { Printf("E:create\n"); result = -1; goto cleanup; }
     
     {
         LONG total = 0;
@@ -137,7 +137,7 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
 cleanup:
     if( path != NULL )   FreeMem( path, pathLength + 1 );
     if( buffer != NULL ) FreeMem( buffer, PKG_BUFFER_SIZE );
-    if( output != NULL ) Close( output );
+    if( output != BNULL ) Close( output );
 
     return result;
 }

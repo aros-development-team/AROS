@@ -102,7 +102,7 @@ main(void)
 {
 	struct RDArgs *rd, *rda = NULL;
 
-	IPTR args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+	IPTR args[TOTAL_ARGS] = { };
 
 	int error = 0;
 
@@ -141,12 +141,12 @@ main(void)
 				}
 				else
 				{
-					mask = (args[ARG_C] != NULL ? SIGBREAKF_CTRL_C : 0)
-					       | (args[ARG_D] != NULL ? SIGBREAKF_CTRL_D : 0)
-					       | (args[ARG_E] != NULL ? SIGBREAKF_CTRL_E : 0)
-					       | (args[ARG_F]!= NULL ? SIGBREAKF_CTRL_F : 0);
+					mask = (args[ARG_C] != 0 ? SIGBREAKF_CTRL_C : 0)
+					       | (args[ARG_D] != 0 ? SIGBREAKF_CTRL_D : 0)
+					       | (args[ARG_E] != 0 ? SIGBREAKF_CTRL_E : 0)
+					       | (args[ARG_F]!= 0 ? SIGBREAKF_CTRL_F : 0);
 
-					if (NULL == mask)
+					if (0 == mask)
 					{
 						mask = SIGBREAKF_CTRL_C; /* default */
 					}
@@ -162,7 +162,7 @@ main(void)
 				Permit();
 				pr = (struct Process *) FindTask(NULL);
 
-				BPTR errStream = (pr->pr_CES != NULL)
+				BPTR errStream = (pr->pr_CES != BNULL)
 				                 ? pr->pr_CES
 						 : Output();
 

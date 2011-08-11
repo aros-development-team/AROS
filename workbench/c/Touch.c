@@ -13,7 +13,7 @@ int __nocommandline;
 
 int main(void)
 {
-    IPTR           args[1] = {NULL};
+    IPTR           args[1] = { 0 };
     struct RDArgs *rda     = ReadArgs("NAME/A", args, NULL);
 
     if (rda)

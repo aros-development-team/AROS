@@ -80,8 +80,8 @@ AROS_SH2
 {
     AROS_SHCOMMAND_INIT
     
-    BPTR oldDir           = NULL, 
-         newDir           = NULL;
+    BPTR oldDir           = BNULL, 
+         newDir           = BNULL;
     APTR pkg              = NULL;
     
     if( SHArg(FILE) == NULL ) goto cleanup;
@@ -96,7 +96,7 @@ AROS_SH2
     if( pkg == NULL ) goto cleanup;
     
     newDir = Lock( SHArg(TO), SHARED_LOCK );
-    if( newDir == NULL ) goto cleanup;
+    if( newDir == BNULL ) goto cleanup;
     oldDir = CurrentDir( newDir );
     
     if( !GUI_Open() ) goto cleanup;
@@ -106,8 +106,8 @@ AROS_SH2
 cleanup:
     GUI_Close();
     
-    if( oldDir != NULL ) CurrentDir( oldDir );
-    if( newDir != NULL ) UnLock( newDir );
+    if( oldDir != BNULL ) CurrentDir( oldDir );
+    if( newDir != BNULL ) UnLock( newDir );
     if( pkg != NULL ) PKG_Close( pkg );
     
     if( IntuitionBase != NULL ) CloseLibrary( (struct Library *) IntuitionBase );
