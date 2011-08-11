@@ -36,7 +36,6 @@ struct Exec_PlatformData
 {
     APTR HostLibBase;
     struct LibCInterface *SysIFace;
-    void (*Reboot)(unsigned char warm);
 };
 
 #define HostLibBase PD(SysBase).HostLibBase

@@ -33,6 +33,7 @@
 #include "bootstrap.h"
 #include "elf_io.h"
 #include "filesystem.h"
+#include "kickstart.h"
 #include "memory.h"
 #include "support.h"
 #include "shutdown.h"
@@ -58,6 +59,8 @@ extern void *HostIFace;
 extern void __clear_cache(char *begin, char *end);
 
 char bootstrapdir[PATH_MAX];
+char *KernelArgs = NULL;
+char *SystemVersion = NULL;
 char buf[512];
 
 static struct mb_mmap MemoryMap =
@@ -84,11 +87,11 @@ static struct TagItem km[] =
     {KRN_KernelHighest, 0                },
     {KRN_KernelBss    , 0		 },
     {KRN_BootLoader   , 0                },
-    {KRN_CmdLine      , 0                },
     {KRN_DebugInfo    , 0                },
     {KRN_HostInterface, 0                },
     {KRN_MMAPAddress  , 0		 },
     {KRN_MMAPLength   , sizeof(MemoryMap)},
+    {KRN_CmdLine      , 0                },
     {TAG_DONE         , 0                }
 };
 
@@ -145,8 +148,6 @@ int bootstrap(int argc, char ** argv)
     unsigned int memSize = 64;
     int def_memSize = 1;
     char *config = DefaultConfig;
-    char *KernelArgs = NULL;
-    char *SystemVersion;
     FILE *file;
     kernel_entry_fun_t kernel_entry;
     void *ro_addr, *rw_addr, *__bss_track;
@@ -342,10 +343,14 @@ int bootstrap(int argc, char ** argv)
     km[1].ti_Data = (IPTR)ro_addr + ro_size - 1;
     km[2].ti_Data = (IPTR)__bss_track;
     km[3].ti_Data = (IPTR)SystemVersion;
-    km[4].ti_Data = (IPTR)KernelArgs;
-    km[5].ti_Data = (IPTR)Debug_KickList;
-    km[6].ti_Data = (IPTR)HostIFace;
-    km[7].ti_Data = (IPTR)&MemoryMap;
+    km[4].ti_Data = (IPTR)Debug_KickList;
+    km[5].ti_Data = (IPTR)HostIFace;
+    km[6].ti_Data = (IPTR)&MemoryMap;
+    /* km[7] is statically filled in */
+    if (KernelArgs)
+        km[8].ti_Data = (IPTR)KernelArgs;
+    else
+    	km[8].ti_Tag = TAG_DONE;
 
     /* Flush instruction cache */
     __clear_cache((char *)ro_addr, (char *)ro_addr + ro_size);
@@ -367,9 +372,7 @@ int bootstrap(int argc, char ** argv)
     fprintf(stderr, "\n");
 #endif
 
-    fprintf(stderr, "[Bootstrap] entering kernel@%p...\n", kernel_entry);
-    i = kernel_entry(km, AROS_BOOT_MAGIC);
+    i = kick(kernel_entry, km);
 
-    DisplayError("Kernel exited with code %d", i);
     return i;
 }

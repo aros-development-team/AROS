@@ -1,4 +1,4 @@
-#define HOSTINTERFACE_VERSION 2
+#define HOSTINTERFACE_VERSION 3
 
 struct HostInterface
 {
@@ -8,8 +8,6 @@ struct HostInterface
     void *(*hostlib_Open)(const char *, char **);
     int   (*hostlib_Close)(void *, char **);
     void *(*hostlib_GetPointer)(void *, const char *, char **);
-    int   (*VKPrintF)(const char *, va_list);
-    void  (*Reboot)(unsigned char action);
-    struct MinList **ModListPtr;
     int   (*KPutC)(int chr);
+    struct MinList **ModListPtr;
 };

@@ -51,26 +51,26 @@
 {
     AROS_LIBFUNC_INIT
 
+    int exitcode;
+
     switch(action)
     {
     case SD_ACTION_POWEROFF:
-	PD(SysBase).SysIFace->exit(0);
-	AROS_HOST_BARRIER
+    	exitcode = 0;
 	break;
 
     case SD_ACTION_COLDREBOOT:
-	D(bug("[exec] Machine reboot\n"));
+    	exitcode = 0x81; /* Magic value for our bootstrap */
+    	break;
 
-	/* SIGARLM during execvp() aborts the whole thing.
-           In order to avoid it we Disable() */
-	Disable();
-
-	D(bug("[exec] SysBase 0x%p, reboot function: 0x%p\n", SysBase, PD(SysBase).Reboot));
-	PD(SysBase).Reboot(0);
-	AROS_HOST_BARRIER
-
-	Enable();
+    default:
+    	return 0; /* Unknown action code */
     }
+
+    PD(SysBase).SysIFace->exit(exitcode);
+    AROS_HOST_BARRIER
+
+    /* Just shut up the compiler, we won't return */
     return 0;
 
     AROS_LIBFUNC_EXIT

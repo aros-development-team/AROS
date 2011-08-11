@@ -3,10 +3,11 @@ include $(TOP)/config/make.cfg
 
 EXEDIR  := $(BINDIR)/boot
 
-FILES         := hostinterface hostlib memory shutdown support
+FILES         := hostinterface hostlib kickstart memory shutdown support
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 		 -I$(SRCDIR)/arch/all-unix/kernel   \
 		 -I$(GENINCDIR) \
+		 -isystem $(SRCDIR)/bootstrap/include \
 		 -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 
 %build_archspecific \
