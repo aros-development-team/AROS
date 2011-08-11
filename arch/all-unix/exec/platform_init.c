@@ -2,13 +2,11 @@
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <proto/hostlib.h>
-#include <proto/kernel.h>
-
-#include "../kernel/hostinterface.h"
 
 #include "exec_intern.h"
 
-static const char *libc_symbols[] = {
+static const char *libc_symbols[] =
+{
     "exit",
 #ifdef HAVE_SWAPCONTEXT
     "getcontext",
@@ -20,16 +18,8 @@ static const char *libc_symbols[] = {
 
 static int Platform_Init(struct ExecBase *SysBase)
 {
-    struct TagItem *tag;
     APTR LibCHandle;
     ULONG r;
-
-    /* Fetch restart callback routine from HostInterface */
-    tag = LibFindTagItem(KRN_HostInterface, KrnGetBootInfo());
-    if (!tag)
-    	return FALSE;
-
-    PD(SysBase).Reboot = ((struct HostInterface *)tag->ti_Data)->Reboot;
 
     HostLibBase = OpenResource("hostlib.resource");
     D(bug("[exec] HostLibBase %p\n", HostLibBase));

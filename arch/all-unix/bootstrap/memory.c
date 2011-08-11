@@ -2,9 +2,18 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#include "bootstrap.h"
+
 #ifndef MAP_32BIT
 #define MAP_32BIT 0
 #endif
+
+static void *code = NULL;
+static void *data = NULL;
+static void *RAM  = NULL;
+
+static size_t code_len = 0;
+static size_t RAM_len  = 0;
 
 /*
  * Allocate memory for kickstart's .code and .rodata. We allocate is as writable
@@ -20,7 +29,14 @@ void *AllocateRO(size_t len)
 {
     void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE|MAP_32BIT, -1, 0);
 
-    return (ret == MAP_FAILED) ? NULL : ret;
+    if (ret == MAP_FAILED)
+    	return NULL;
+    else
+    {
+    	code = ret;
+    	code_len = len;
+    	return ret;
+    }
 }
 
 /*
@@ -39,7 +55,8 @@ int SetRO(void *addr, size_t len)
  */
 void *AllocateRW(size_t len)
 {
-    return malloc(len);
+    data = malloc(len);
+    return data;
 }
 
 /*
@@ -54,5 +71,23 @@ void *AllocateRAM(size_t len)
 {
     void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_PRIVATE|MAP_32BIT, -1, 0);
 
-    return (ret == MAP_FAILED) ? NULL : ret;
+    if (ret == MAP_FAILED)
+    	return NULL;
+    else
+    {
+    	RAM = ret;
+    	RAM_len = len;
+    	return ret;
+    }
+}
+
+void Host_FreeMem(void)
+{
+    munmap(code, code_len);
+    free(data);
+    munmap(RAM, RAM_len);
+
+    free(SystemVersion);    
+    if (KernelArgs)
+    	free(KernelArgs);
 }

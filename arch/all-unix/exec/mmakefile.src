@@ -1,7 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := platform_init shutdowna
+FILES := platform_init coldreboot shutdowna
+# swapcontext() and friends are not implemented on ARM Linux
 ifneq ($(AROS_TARGET_CPU), arm)
 USER_CFLAGS := -DHAVE_SWAPCONTEXT
 FILES += newstackswap
