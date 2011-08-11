@@ -264,7 +264,7 @@ struct DosPacket  *pkt;
                     0, 0, &PipeDate );
         }
       else
-        { FillFIB ( fib, NULL, pipe->name,
+        { FillFIB ( fib, (SIPTR)NULL, pipe->name,
                     (FIBF_EXECUTE | FIBF_DELETE), -1,
                     pipe->buf->len, 1, &pipe->accessdate );
         }
@@ -306,7 +306,7 @@ struct DosPacket  *pkt;
       goto EXNEXTREPLY;
     }
 
-  if (lock->fl_Key != NULL)     /* then an individual pipe */
+  if (lock->fl_Key != (IPTR)NULL)     /* then an individual pipe */
     { pkt->dp_Res2= ERROR_OBJECT_WRONG_TYPE;
       goto EXNEXTREPLY;
     }
@@ -359,7 +359,7 @@ struct DosPacket  *pkt;
       pkt->dp_Res2= ERROR_INVALID_LOCK;
     }
   else
-    { if (lock->fl_Key == NULL)     /* then lock is on handler */
+    { if (lock->fl_Key == (IPTR)NULL)     /* then lock is on handler */
         pkt->dp_Res1= 0;     /* root of current filing system */
       else
         pkt->dp_Res1= (SIPTR)CptrtoBPTR (PipedirLock);
