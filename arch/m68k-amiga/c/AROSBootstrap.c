@@ -50,6 +50,9 @@ static inline void bug(const char *fmt, ...)
 
     Write(Output(), buff, strlen(buff));
 }
+#define D(x) x
+#else
+#define D(x) 
 #endif
 
 #include <loadseg.h>
