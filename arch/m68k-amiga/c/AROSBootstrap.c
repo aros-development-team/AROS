@@ -165,7 +165,7 @@ static APTR AllocPageAligned(ULONG size, ULONG flags)
     	return NULL;
     Forbid();
     FreeMem(ret, size + 2 * PAGE_SIZE);
-    ret = AllocAbs((size + PAGE_SIZE - 1) & PAGE_MASK, (APTR)(((((ULONG)ret) + ALLOCPADDING + PAGE_SIZE - 1) & PAGE_MASK) - ALLOCPADDING));
+    ret = AllocAbs((size + PAGE_SIZE - 1) & PAGE_MASK, (APTR)(((((ULONG)ret) + PAGE_SIZE - 1) & PAGE_MASK)));
     Permit();
     if (ret == NULL)
     	return NULL;
@@ -173,7 +173,6 @@ static APTR AllocPageAligned(ULONG size, ULONG flags)
 }
 static void FreePageAligned(APTR addr, ULONG size)
 {
-    size += ALLOCPADDING;
     FreeMem(addr, (size + PAGE_SIZE - 1) & PAGE_MASK);
 }
 
