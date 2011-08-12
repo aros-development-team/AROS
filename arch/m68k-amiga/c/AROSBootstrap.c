@@ -279,6 +279,7 @@ static AROS_UFH4(LONG, aosSeek,
 
     AROS_USERFUNC_EXIT
 }
+
 static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
 {
     struct MemList *ml;
@@ -995,7 +996,7 @@ __startup static AROS_ENTRY(int, startup,
     	CloseLibrary((APTR)DOSBase);
     }
 
-    return RETURN_OK;
+    return IoErr();
 
     AROS_USERFUNC_EXIT
 }
