@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/ports.h>
@@ -49,6 +51,13 @@ static const int ReplyLength[] =
     8,	/* cmd_Query */
 };
 
+static inline void ReplyRequest(struct Request *request)
+{
+    DB2(bug("[AGFX.task] Replying request 0x%p\n", request));
+
+    Signal((struct Task *)request->msg.mn_Node.ln_Name, request->signal);
+}
+
 void agfxTask(int pipe, struct agfx_staticdata *xsd)
 {
     int pipeready = 0;
@@ -91,7 +100,7 @@ void agfxTask(int pipe, struct agfx_staticdata *xsd)
 	while ((request = (struct Request *)GetMsg(xsd->clientPort)))
 	{
 	    ULONG cmd = request->cmd;
-	    int len = RequestLength[cmd & ~CMD_FLAGS_MASK];
+	    int len = RequestLength[cmd];
 
     	    DB2(bug("[AGFX.task] Command 0x%08X to server\n", cmd));
 
@@ -107,7 +116,7 @@ void agfxTask(int pipe, struct agfx_staticdata *xsd)
 		Hidd_UnixIO_RemInterrupt(xsd->unixio, &xsd->clientInt);
 		Hidd_UnixIO_CloseFile(xsd->unixio, pipe, NULL);
 
-		Signal(request->owner, request->signal);
+		ReplyRequest(request);
 		return;
 	    }
 
@@ -121,16 +130,16 @@ void agfxTask(int pipe, struct agfx_staticdata *xsd)
     	        ShutdownA(SD_ACTION_POWEROFF);
     	    }
 
-	    if (cmd & CMDF_Quick)
-	    {
-	    	/* No reply needed from the server. Signal completion. */
-	    	Signal(request->owner, request->signal);
-	    }
-	    else
+	    if (ReplyLength[cmd])
 	    {
 	    	/* This commands expects a reply, add to queue. */
     	    	AddTail((struct List *)&xsd->sentQueue, &request->msg.mn_Node);
     	    }
+    	    else
+    	    {
+	    	/* No reply needed from the server. Signal completion. */
+	    	ReplyRequest(request);
+	    }
     	}
 
 	/*
@@ -160,18 +169,19 @@ void agfxTask(int pipe, struct agfx_staticdata *xsd)
     	if (pipeready & vHidd_UnixIO_Read)
     	{
     	    ULONG cmd;
+    	    int reply_len;
 
 	    ReadPipe(pipe, &cmd, sizeof(cmd), xsd);
     	    DB2(bug("[AGFX.task] Command 0x%08X from server\n", cmd));
 
-	    if (!(cmd & CMDF_Quick))
+	    reply_len  = ReplyLength[cmd];
+	    if (reply_len)
 	    {
 	    	struct Request *request = (struct Request *)RemHead((struct List *)&xsd->sentQueue);
 
     	    	if (request)
     	    	{
-    	    	    int request_len = RequestLength[cmd & ~CMD_FLAGS_MASK];
-    	            int reply_len   = ReplyLength[cmd & ~CMD_FLAGS_MASK];
+    	    	    int request_len = RequestLength[cmd];
 
 #ifdef CHECK_CONSISTENCY
 		    if (cmd != request->cmd)
@@ -181,13 +191,17 @@ void agfxTask(int pipe, struct agfx_staticdata *xsd)
 		    }
 #endif
     	            ReadPipe(pipe, (char *)&request->cmd + request_len, reply_len, xsd);
-
-    	            DB2(bug("[AGFX.task] Request 0x%p replied\n", request));
-    	            Signal(request->owner, request->signal);
+    	            ReplyRequest(request);
     	        }
 #ifdef CHECK_CONSISTENCY
     	        else
+    	        {
+    	            /* Just read and drop the reply */
+    	            char buf[reply_len];
+
     	            bug("[AGFX.task] Bogus response 0x%08X from server, no pending request!\n", cmd));
+    	            ReadPipe(pipe, buf, reply_len, xsd);
+    	    	}
 #endif
     	    }
 
@@ -213,7 +227,7 @@ void DoRequest(struct Request *req, struct agfx_staticdata *xsd)
      * Limitation: one task can have only one request pending. But
      * it's faster than CreateMsgPort() every time.
      */
-    req->owner  = FindTask(NULL);
+    req->msg.mn_Node.ln_Name = (STRPTR)FindTask(NULL);
     req->signal = SIGF_BLIT;
 
     /* Send the request */
