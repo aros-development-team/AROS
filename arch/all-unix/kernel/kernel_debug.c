@@ -14,5 +14,8 @@ extern struct HostInterface *HostIFace;
 
 int krnPutC(int chr, struct KernelBase *KernelBase)
 {
-    return HostIFace->KPutC(chr);
+    int r = HostIFace->KPutC(chr);
+
+    AROS_HOST_BARRIER
+    return r;
 }
