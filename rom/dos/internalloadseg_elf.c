@@ -158,13 +158,15 @@ static int load_hunk
     BPTR                 file,
     BPTR               **next_hunk_ptr,
     struct sheader      *sh,
+    CONST_STRPTR         strtab,
     SIPTR               *funcarray,
     BOOL                 do_align,
     struct DosLibrary   *DOSBase
 )
 {
     struct hunk *hunk;
-    ULONG   hunk_size;
+    ULONG  hunk_size;
+    ULONG  memflags = 0;
 
     if (!sh->size)
         return 1;
@@ -182,7 +184,24 @@ static int load_hunk
              hunk_size += sizeof(struct FullJumpVec);
     }
 
-    hunk = ilsAllocMem(hunk_size, MEMF_PUBLIC | (sh->type == SHT_NOBITS ? MEMF_CLEAR : 0));
+    if (strtab) {
+        CONST_STRPTR nameext;
+
+        nameext = strrchr(strtab + sh->name, '.');
+        if (nameext) {
+            if (strcmp(nameext, ".MEMF_CHIP")==0) {
+                memflags |= MEMF_CHIP;
+            } else if (strcmp(nameext, ".MEMF_LOCAL")==0) {
+                memflags |= MEMF_LOCAL;
+            } else if (strcmp(nameext, ".MEMF_FAST")==0) {
+                memflags |= MEMF_FAST;
+            } else if (strcmp(nameext, ".MEMF_PUBLIC")==0) {
+                memflags |= MEMF_PUBLIC;
+            }
+        }
+    }
+
+    hunk = ilsAllocMem(hunk_size, memflags | MEMF_PUBLIC | (sh->type == SHT_NOBITS ? MEMF_CLEAR : 0));
     if (hunk)
     {
         hunk->next = 0;
@@ -600,6 +619,7 @@ BPTR InternalLoadSeg_ELF
     struct elfheader  eh;
     struct sheader   *sh;
     struct sheader   *symtab_shndx = NULL;
+    struct sheader   *strtab = NULL;
     BPTR   hunks         = 0;
     BPTR  *next_hunk_ptr = &hunks;
     ULONG  i;
@@ -634,6 +654,14 @@ BPTR InternalLoadSeg_ELF
             if (!sh[i].addr)
                 goto error;
 
+            if (sh[i].type == SHT_STRTAB) {
+                if (strtab == NULL) {
+                    strtab = &sh[i];
+                } else {
+                    D(bug("[ELF Loader] file contains multiple strtab tables. only using the first one\n"));
+                }
+            }
+
             if (sh[i].type == SHT_SYMTAB_SHNDX) {
                 if (symtab_shndx == NULL)
                     symtab_shndx = &sh[i];
@@ -641,7 +669,17 @@ BPTR InternalLoadSeg_ELF
                     D(bug("[ELF Loader] file contains multiple symtab shndx tables. only using the first one\n"));
             }
         }
-        else
+   }
+
+    /* Now that we have the string and symbol tables loaded,
+     * load the rest of the hunks.
+     */
+    for (i = 0; i < int_shnum; i++)
+    {
+        /* Skip the already loaded hunks */
+        if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB || sh[i].type == SHT_SYMTAB_SHNDX)
+            continue;
+
         /* Load the section in memory if needed, and make a hunk out of it */
         if (sh[i].flags & SHF_ALLOC)
         {
@@ -655,11 +693,10 @@ BPTR InternalLoadSeg_ELF
 	        if (sh[i].flags & SHF_EXECINSTR)
 		    exec_hunk_seen = TRUE;
 
-                if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, exec_hunk_seen, DOSBase))
+                if (!load_hunk(file, &next_hunk_ptr, &sh[i], strtab ? strtab->addr : NULL, funcarray, exec_hunk_seen, DOSBase))
                     goto error;
 	    }
         }
-
     }
 
     /* Relocate the sections */
