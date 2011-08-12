@@ -15,10 +15,10 @@ public class DisplayServer extends Thread
 	private static final int cmd_Query =  1;
 	private static final int cmd_Nak   = -1;
 
-	public DisplayServer(AROSBootstrap parent)
+	public DisplayServer(AROSBootstrap parent, String pipe)
 	{
 		handler = new Handler();
-		pipeDir = parent.getCacheDir();
+		pipeName = pipe;
 		context = parent;
 	}
 
@@ -28,7 +28,7 @@ public class DisplayServer extends Thread
 
 		try
 		{
-			File pipe = new File(pipeDir, "AROS.display");
+			File pipe = new File(pipeName);
 			DataInputStream in = new DataInputStream(new FileInputStream(pipe));
 			DataOutputStream out = new DataOutputStream(new FileOutputStream(pipe));
 
@@ -43,7 +43,7 @@ public class DisplayServer extends Thread
 				int id = in.readInt();
 				Log.d("AROSDisplay", "cmd_Query( " + id + ")");
 
-				DisplayView d = context.GetDisplay();
+				DisplayView d = context.GetDisplay(id);
 				out.writeInt(cmd);
 				out.writeInt(d.Width);
 				out.writeInt(d.Height);
@@ -60,6 +60,6 @@ public class DisplayServer extends Thread
 	}
 
 	private Handler handler;
-	private File pipeDir;
+	private String pipeName;
 	private AROSBootstrap context;
 }
