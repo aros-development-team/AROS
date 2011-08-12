@@ -9,10 +9,11 @@
  * aros.elf.gz images. The fully linked aros-amiga-m68k.elf
  * image cannot be loaded by this application.
  *
- * As you can probably guess, you will need at least 2MB of
- * MEMF_LOCAL RAM to get this to work. We can't use MEMF_KICK,
- * since some MEMF_KICK ram may not be available until after
- * expansion.library processing.
+ * As you can probably guess, you will need at least 1MB of
+ * MEMF_LOCAL RAM to get this to work. 
+ *
+ * We also use MEMF_KICK, since some MEMF_KICK ram may will
+ * be available after  expansion.library processing.
  *
  * Also - no AROS specific code can go in here! We have to run
  * on AOS 1.3 and up.
@@ -378,31 +379,73 @@ static AROS_UFH4(LONG, elfSeek,
 
     AROS_USERFUNC_EXIT
 }
+
 static AROS_UFH3(APTR, elfAlloc,
 	AROS_UFHA(ULONG, size, D0),
 	AROS_UFHA(ULONG, flags, D1),
 	AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
-    APTR ret;
+    APTR mem;
+    BOOL is_kickmem;
+    struct MemList *ml;
 
-    /* MEMF_PUBLIC = code/data/bss section */
-    if (flags & MEMF_PUBLIC) {
-        /* Clear bits 15-0, we're setting memory class explicitly */
-        flags &= ~0x7fff;
-        if (SysBase->LibNode.lib_Version >= 36) {
-    	    flags |= MEMF_LOCAL | MEMF_REVERSE;
-        } else {
-    	    flags |= MEMF_CHIP;
+    /* If it's MEMF_LOCAL or MEMF_CHIP, our Exec init
+     * will automatically protect it from allocation after reset.
+     *
+     * For non-MEMF_LOCAL memory, we need to add it to the
+     * KickTag memory list, and set MEMF_KICK if we can.
+     */
+    is_kickmem = (flags & MEMF_LOCAL) ? FALSE : TRUE;
+
+    if (is_kickmem) {
+        if (SysBase->LibNode.lib_Version >= 39)
+            flags |= MEMF_KICK;
+        else {
+            /* Ok, can't use MEMF_KICK.
+             * Fall back to MEMF_LOCAL.
+             */
+            flags |= MEMF_LOCAL;
+            is_kickmem = FALSE;
         }
     }
-    ret = AllocPageAligned(size, flags);
-    if (ret == NULL)
-    	WriteF("ELF: Failed to allocate %N bytes of type %X4\n", size, flags);
-    return ret;
+
+    /* Hmm. MEMF_LOCAL is only available on v36 and later.
+     * Use MEMF_CHIP if we have to.
+     */
+    if ((flags & MEMF_LOCAL) & (SysBase->LibNode.lib_Version < 36)) {
+    	flags &= ~MEMF_LOCAL;
+    	flags |= MEMF_CHIP;
+    }
+
+    if (is_kickmem)
+        size += sizeof(struct MemChunk) + sizeof(struct MemList);
+
+    D(WriteF("ELF: Attempt to allocate %N bytes of type %X4\n", size, flags));
+    mem = AllocPageAligned(size, flags);
+    if (mem == NULL) {
+    	D(WriteF("ELF: Failed to allocate %N bytes of type %X4\n", size, flags));
+    	return NULL;
+    }
+
+    D(WriteF("ELF: Got memory at %X8, size %N\n", (IPTR)mem, size));
+    if (!is_kickmem) {
+        D(WriteF("ELF: Got LOCAL memory at %X8, size %N\n", (IPTR)mem, size));
+        return mem;
+    }
+
+    ml = (struct MemList*)(mem + sizeof(struct MemChunk));
+    ml->ml_NumEntries = 1;
+    ml->ml_ME[0].me_Addr = (APTR)mem;
+    ml->ml_ME[0].me_Length = size;
+    AddTail(&mlist, (struct Node*)ml);
+
+    D(WriteF("ELF: Got KICK memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
+    return &ml[1];
 
     AROS_USERFUNC_EXIT
 }
+
 static AROS_UFH3(void, elfFree,
 	AROS_UFHA(APTR, addr, A1),
 	AROS_UFHA(ULONG, size, D0),
@@ -410,6 +453,18 @@ static AROS_UFH3(void, elfFree,
 {
     AROS_USERFUNC_INIT
 
+    /* If not page aligned, and the offset from the page boundary
+     * is the sizeof(MemChunk) + sizeof(MemList) then we can assume
+     * that it was a KickTag protected allocation
+     */
+    D(WriteF("ELF: Free memory at %X8, size %N\n", (IPTR)addr, size));
+    if (((IPTR)addr & (PAGE_SIZE-1)) == (sizeof(struct MemList) + sizeof(struct MemChunk))) {
+        addr -= sizeof(struct MemList);
+        Remove((struct Node*)addr);
+        addr -= sizeof(struct MemChunk);
+        size += sizeof(struct MemChunk) + sizeof(struct MemList);
+    }
+    D(WriteF("ELF: FREE memory at %X8, size %N\n", (IPTR)addr, size));
     FreePageAligned(addr, size);
 
     AROS_USERFUNC_EXIT
