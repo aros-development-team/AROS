@@ -288,7 +288,7 @@ tcp_drop(tp, _errno)
 	} else
 		tcpstat.tcps_conndrops++;
 	if (_errno == ETIMEDOUT && tp->t_softerror)
-		errno = tp->t_softerror;
+		_errno = tp->t_softerror;
 	so->so_error = _errno;
 	return (tcp_close(tp));
 }
