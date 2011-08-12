@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a library.
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/lists.h>
 #include <exec/libraries.h>
@@ -12,14 +14,6 @@
 #include <proto/exec.h>
 
 #include "exec_debug.h"
-#ifndef DEBUG_OpenLibrary
-#   define DEBUG_OpenLibrary 0
-#endif
-#undef DEBUG
-#if DEBUG_OpenLibrary
-#   define DEBUG 1
-#endif
-#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -64,7 +58,7 @@
 
     struct Library * library;
 
-    D(bug("OpenLibrary begin (\"%s\", %d)\n", libName, version));
+    DRAMLIB("OpenLibrary(\"%s\", %ld)", libName, version);
 
     /* Arbitrate for the library list */
     Forbid();
@@ -83,8 +77,12 @@
 		AROS_LCA(ULONG,version,D0),
 		struct Library *,library,1,lib
 	    );
-	}else
-	    library=NULL;
+	}
+	else
+	{
+	    DRAMLIB("Version mismatch (have %ld, wanted %ld)", library->lib_Version, version);
+	    library = NULL;
+	}
     }
 
     /*
@@ -96,8 +94,8 @@
     /* All done. */
     Permit();
 
-    D(bug("OpenLibrary end (\"%s\", %d) = %p\n", libName, version, library));
-
+    DRAMLIB("OpenLibrary(\"%s\", %ld) = %p", libName, version, library);
     return library;
+
     AROS_LIBFUNC_EXIT
 } /* OpenLibrary */
