@@ -959,7 +959,11 @@ static const char *libc_symbols[] = {
 #ifdef HOST_OS_linux
     "__errno_location",
 #else
+#ifdef HOST_OS_android
+    "__errno",
+#else
     "__error",
+#endif
 #endif
     NULL
 };

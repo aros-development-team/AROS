@@ -4,8 +4,9 @@ include $(TOP)/config/make.cfg
 #MM kernel-unixio : kernel-kernel-includes hidd-unixio-stubs
 #MM kernel-unixio-kobj : kernel-kernel-includes hidd-unixio-stubs
 
-USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
-	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
+	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 ## The '-Wno-attributes' is here due to a gcc 4.5.x bug
 ## where its strcmp() builtin generates a number of spurious
