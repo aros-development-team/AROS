@@ -1,24 +1,29 @@
 #define PIPE_NAME "AROS.display"
 
 #define cmd_Query	0x00000001
-#define cmd_Shutdown	0x00D1ED1E
+#define cmd_Shutdown	0x80D1ED1E
 
-#define CMDF_Quick	0x80000000
-#define CMD_FLAGS_MASK	0xF0000000
+/*
+ * Requests are generally linear data blocks.
+ * Data starting from 'cmd' is sent to the server. The reply will be
+ * stored directly after sent portion.
+ * Lengths are determined by command value using hardcoded tables.
+ */
 
 struct Request
 {
     struct Message  msg;
-    struct Task	   *owner;	/* Owning task  */
     ULONG	    signal;	/* Reply signal */
     ULONG	    cmd;	/* Command	*/
 };
 
 struct QueryRequest
 {
+    /* Request (8 bytes, including cmd) */
     struct Request  req;	/* cmd_Query				*/
     ULONG	    id;		/* Display ID, currently reserved	*/
-    ULONG	    width;	/* Result, will be filled in		*/
+    /* Response (8 bytes) */
+    ULONG	    width;
     ULONG	    height;
 };
 
