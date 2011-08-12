@@ -22,6 +22,11 @@
 #include <oop/oop.h>
 #include <proto/exec.h>
 
+/* Android is not a real Linux :-) */
+#ifdef HOST_OS_android
+#undef HOST_OS_linux
+#endif
+
 #ifdef HOST_OS_linux
 #define LIBC_NAME "libc.so.6"
 #endif
