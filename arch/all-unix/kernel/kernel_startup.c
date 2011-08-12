@@ -49,7 +49,6 @@ static const char *kernel_functions[] = {
     "setitimer",
     "mprotect",
     "read",
-    "write",
     "fcntl",
     "mmap",
     "munmap",
