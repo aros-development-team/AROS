@@ -1,8 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
-	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 FILES := startup agfx abitmap displaytask
 
