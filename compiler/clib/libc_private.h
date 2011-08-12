@@ -39,8 +39,6 @@
 
 #define __dead2 __noreturn
 
-#define EFTYPE EINVAL
-
 static inline void *reallocf(void *ptr, size_t size)
 {
     void *ret = realloc(ptr, size);
