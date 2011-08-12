@@ -49,10 +49,6 @@ USELIBS := amiga arossupport rom arosm autoinit libinit \
 LIBS    := $(addprefix -l,$(USELIBS)) -L$(GENDIR)/lib -lloadseg
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-# Main ROM (0xf80000 - 0xffffff)
-FILES=start early debug mmu
-AFILES=rom_entry rom_init cpu_detect superstack_swap
-
 # Force rebuilding, so that we always get new date strings
 rom_entry.o: FORCE
 
@@ -82,7 +78,11 @@ ROMLOC_ss  := 0x0000800
 #       0x1000 +       0x20
 ROMLOC_bss := 0x0001020
 
+# Main ROM (0xf80000 - 0xffffff)
 ROMLOC_rom := 0x0f80000
+
+FILES=start early debug mmu
+AFILES=rom_entry rom_init cpu_detect superstack_swap
 
 KLIBS   := exec aros dos utility oop expansion mathffp partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
@@ -145,7 +145,7 @@ $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 	$(OBJS_rom) $(KOBJS_rom) \
         $(OBJS_ext) $(KOBJS_ext) \
-	$(SRCDIR)/$(CURDIR)/aros.ld \
+	$(SRCDIR)/$(CURDIR)/aros-rom.ld \
 	$(GENDIR)/rom_objs.ld \
 	$(GENDIR)/ext_objs.ld
 	@$(MKDIR) $(DISTDIR)
@@ -154,7 +154,7 @@ $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.
 		-static -nostartfiles -nostdlib \
 		-Wl,--defsym -Wl,SysBase=0x4 \
 		-m68000 \
-		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros.ld \
+		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-rom.ld \
 		-L$(LIBDIR) $(LIBS) -lgcc
 
 $(DISTDIR)/aros-amiga-m68k.elf: $(DISTDIR)/aros-amiga-m68k-reloc.elf
@@ -208,6 +208,8 @@ $(KOBJSDIR)/%.d : %.c
 DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 -include $(DEPS)
 
+###########################################################################
+
 ## Compressed elf for AROSBootstrap
 
 BOOTDIR := $(BINDIR)/boot
@@ -220,7 +222,71 @@ BOOTDIR := $(BINDIR)/boot
 kernel-boot-elf-gz: $(BOOTDIR)/aros.elf.gz
 kernel-boot-elf-gz-quick: $(BOOTDIR)/aros.elf.gz
 
-$(BOOTDIR)/aros.elf.gz: $(DISTDIR)/aros-amiga-m68k-reloc.elf \
+# Main ROM, that must live in MEMF_LOCAL memory
+
+FILES=start early debug mmu
+AFILES=rom_entry rom_init cpu_detect superstack_swap
+
+KLIBS   := exec expansion
+KDEVS   := 
+KHNDLRS := 
+KHIDDS  := 
+KRSRCS  := kernel
+KHOOKS  :=
+
+KOBJS_local := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.ko  ,$(KDEVS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.ko ,$(KHNDLRS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.ko    ,$(KHIDDS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.ko,$(KRSRCS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.ko  ,$(KDRVRS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.ko    ,$(KHOOKS) ))
+
+OBJS_local:= $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
+	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+
+# Everything else. Can live in MEMF_ANY
+FILES   := 
+AFILES  := ext_entry
+
+KLIBS   := aros dos utility oop mathffp partition \
+           keymap graphics layers intuition gadtools icon workbench 680x0
+KDEVS   := timer input keyboard console trackdisk gameport audio ata
+KHNDLRS := cdrom con afs amberram
+KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
+KRSRCS  := battclock processor lddemon dosboot cia potgo disk \
+           FileSystem misc shell shellcommands workbook wbtag
+KHOOKS  := alert
+
+KOBJS_any := \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS)  )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.ko  ,$(KDEVS)  )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.ko ,$(KHNDLRS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.ko    ,$(KHIDDS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.ko,$(KRSRCS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.ko  ,$(KDRVRS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.ko    ,$(KHOOKS) ))
+
+OBJS_any := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
+	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+
+$(DISTDIR)/aros-amiga-m68k-ram.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
+	$(OBJS_local) $(KOBJS_local) \
+        $(OBJS_any) $(KOBJS_any) \
+	$(SRCDIR)/$(CURDIR)/aros-ram.ld \
+	$(GENDIR)/local_objs.ld \
+	$(GENDIR)/any_objs.ld
+	@$(MKDIR) $(DISTDIR)
+	@$(ECHO) Linking $@...
+	$(Q)$(KERNEL_CC) -Wl,-r \
+		-static -nostartfiles -nostdlib \
+		-Wl,--defsym -Wl,SysBase=0x4 \
+		-m68000 \
+		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-ram.ld \
+		-L$(LIBDIR) $(LIBS) -lgcc
+
+
+$(BOOTDIR)/aros.elf.gz: $(DISTDIR)/aros-amiga-m68k-ram.elf \
 	$(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)$(MKDIR) $(GENDIR)/$(CURDIR)
 	$(Q)$(TARGET_OBJCOPY) \
