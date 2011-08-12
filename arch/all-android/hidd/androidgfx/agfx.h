@@ -1,17 +1,16 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common data structures of androidgfx.hidd
     Lang: English.
 */
 
-#include <jni.h>
+#include <exec/tasks.h>
+#include <hidd/unixio.h>
 
 struct agfx_staticdata
 {
-    APTR HostLibBase;
-
     OOP_AttrBase *AttrBases;
 
     OOP_Class  *gfxclass;
@@ -21,20 +20,19 @@ struct agfx_staticdata
 
     OOP_Object *mousehidd;
     OOP_Object *kbdhidd;
-    
-    JNIEnv     *jni;
-    jobject	jobj;
+    OOP_Object *unixio;
 
-    jmethodID	GetDisplay_mID;
-    jfieldID	Width_aID;
-    jfieldID	Height_aID;
+    struct Task		*clientTask;
+    struct MsgPort	*clientPort;
+    struct uioInterrupt  clientInt;
+    ULONG		 clientRead;
+    struct MinList	 sentQueue;
 };
 
 struct AGFXBase
 {
     struct Library library;
     struct agfx_staticdata xsd;
-    APTR HostLibHandle;
 };
 
 #define XSD(cl) (&((struct AGFXBase *)cl->UserData)->xsd)
@@ -45,19 +43,11 @@ struct AGFXBase
 #undef HiddPixFmtAttrBase
 #undef HiddGfxAttrBase
 #undef HiddAttrBase
+#undef HiddUnixIOAttrBase
 #define HiddChunkyBMAttrBase XSD(cl)->AttrBases[0]
 #define HiddBitMapAttrBase   XSD(cl)->AttrBases[1]
 #define HiddSyncAttrBase     XSD(cl)->AttrBases[2]
 #define HiddPixFmtAttrBase   XSD(cl)->AttrBases[3]
 #define HiddGfxAttrBase	     XSD(cl)->AttrBases[4]
 #define HiddAttrBase	     XSD(cl)->AttrBases[5]
-
-#define HostLibBase XSD(cl)->HostLibBase
-
-#define JNI_GetIntField(obj, id)		(*XSD(cl)->jni)->GetIntField(XSD(cl)->jni, obj, id)
-#define JNI_CallObjectMethod(obj, id...)	(*XSD(cl)->jni)->CallObjectMethod(XSD(cl)->jni, obj, id)
-#define JNI_FindClass(name)			(*XSD(cl)->jni)->FindClass(XSD(cl)->jni, name)
-#define JNI_GetMethodID(cl, name, sig)		(*XSD(cl)->jni)->GetMethodID(XSD(cl)->jni, cl, name, sig)
-#define JNI_GetFieldID(cl, name, sig)		(*XSD(cl)->jni)->GetFieldID(XSD(cl)->jni, cl, name, sig)
-#define JNI_NewDirectByteBuffer(addr, size)	(*XSD(cl)->jni)->NewDirectByteBuffer(XSD(cl)->jni, addr, size)
-#define JNI_DeleteLocalRef(obj)			(*XSD(cl)->jni)->DeleteLocalRef(XSD(cl)->jni, obj)
+#define HiddUnixIOAttrBase   XSD(cl)->AttrBases[6]

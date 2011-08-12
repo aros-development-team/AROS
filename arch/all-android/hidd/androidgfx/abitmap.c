@@ -71,14 +71,9 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	D(bug("[ABitmap] Displayable Android bitmap %ldx%ld\n", width, height));
 	D(bug("[ABitmap] Buffer at 0x%p, %ld bytes per row\n", data->pixels, mod));
 
-	/* Displayable pixel buffer is Java ByteBuffer object. */
-	HostLib_Lock();
-	data->buffer = JNI_NewDirectByteBuffer(data->pixels, mod * height);
-	HostLib_Unlock();
+	/* TODO: Register a bitmap in display server */
 
-	D(bug("[ABitmap] ByteBuffer 0x%p\n", data->buffer));
-
-	if (data->buffer)
+	if (1)
 	{
 	    data->bm_width  = width;
 	    data->bm_height = height;
@@ -102,14 +97,6 @@ VOID ABitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
     EnterFunc(bug("ABitmapGfx.BitMap::Dispose()\n"));
-
-    /* Free pixel buffer */
-    if (data->buffer)
-    {
-	HostLib_Lock();
-	JNI_DeleteLocalRef(data->buffer);
-	HostLib_Unlock();
-    }
 
     OOP_DoSuperMethod(cl, o, msg);
 

@@ -19,6 +19,5 @@ struct bitmap_data
     ULONG    bm_width;
     ULONG    bm_height;
     ULONG    bm_mod;
-    jobject  buffer;
     ULONG   *pixels;
 };
