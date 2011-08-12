@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 1982, 1986, 1989 Regents of the University of California.
+ * Copyright (c) 2011 The AROS Development Team.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,11 +37,8 @@
 #ifndef SYS_ERRNO_H
 #define SYS_ERRNO_H
 
-#ifdef __AROS__
-
-#include <errno.h>
-
-#else
+#include <aros/system.h>
+#include <sys/arosc.h>
 
 #define	EPERM		1		/* Operation not permitted */
 #define	ENOENT		2		/* No such file or directory */
@@ -149,7 +147,17 @@
 #define	ENOLCK		77		/* No locks available */
 #define	ENOSYS		78		/* Function not implemented */
 
+#ifndef _POSIX_SOURCE
 #define	EFTYPE		79		/* Inappropriate file type or format */
+#define	EAUTH		80		/* Authentication error */
+#define	ENEEDAUTH	81		/* Need authenticator */
+#define	EIDRM		82		/* Identifier removed */
+#define	ENOMSG		83		/* No message of desired type */
+#define	EOVERFLOW	84		/* Value too large to be stored in data type */
+#define	ECANCELED	85		/* Operation canceled */
+#define	EILSEQ		86		/* Illegal byte sequence */
+#define	ELAST		86		/* Must be equal largest errno */
+#endif /* _POSIX_SOURCE */
 
 #ifdef KERNEL
 /* pseudo-errors returned inside kernel to modify return to process */
@@ -157,6 +165,11 @@
 #define	EJUSTRETURN	-2		/* don't modify regs, just return */
 #endif
 
-#endif
+__pure static __inline__ int *__get_errno_ptr(void);
+__pure static __inline__ int *__get_errno_ptr(void)
+{
+    return &__get_arosc_userdata()->acud_errno;
+}
+#define errno (*__get_errno_ptr())
 
 #endif /* !SYS_ERRNO_H */
