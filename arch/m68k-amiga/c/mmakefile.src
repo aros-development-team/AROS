@@ -13,18 +13,13 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 #MM- workbench-c-m68k : includes \
 #MM                     kernel-kernel-includes \
 #MM                     linklibs \
-#MM                     workbench-c-m68k-aos
-#MM- workbench-c-m68k-quick : workbench-c-m68k-aos-quick
+#MM                     workbench-c-m68k-quick
 
-#MM- workbench-c-m68k-elf: workbench-c-m68k-apps \
-#MM                        workbench-c-m68k-setpatcharos-elf \
-#MM                        workbench-c-m68k-arosbootstrap-elf
+#MM- workbench-c-m68k-quick: workbench-c-m68k-apps-quick \
+#MM                          workbench-c-m68k-setpatcharos-quick \
+#MM                         workbench-c-m68k-arosbootstrap-quick
 
-#MM- workbench-c-m68k-elf-quick: workbench-c-m68k-apps-quick \
-#MM                              workbench-c-m68k-setpatcharos-elf-quick \
-#MM                              workbench-c-m68k-arosbootstrap-elf-quick
-
-#MM workbench-c-m68k-arosbootstrap-elf : linklibs-loadseg
+#MM workbench-c-m68k-arosbootstrap : linklibs-loadseg
 
 AROS_BOOT := $(BINDIR)/boot
 
@@ -40,27 +35,14 @@ AFILES := newstackswap
 USER_INCLUDES := -isystem $(SRCDIR)/rom/dos/include
 USER_LDFLAGS  := -L$(GENDIR)/lib
 
-%build_prog mmake=workbench-c-m68k-setpatcharos-elf progname=SetPatchAROS.elf \
+%build_prog mmake=workbench-c-m68k-setpatcharos progname=SetPatchAROS \
     files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
     uselibs="loadseg arossupport amiga rom"
 
 CFILES	      := AROSBootstrap
 
-%build_prog mmake=workbench-c-m68k-arosbootstrap-elf progname=AROSBootstrap.elf \
+%build_prog mmake=workbench-c-m68k-arosbootstrap progname=AROSBootstrap \
     files=$(CFILES) targetdir=$(AROS_BOOT) \
     usestartup=no uselibs="loadseg arossupport amiga z rom"
 
-
-#MM workbench-c-m68k-aos: workbench-c-m68k-elf
-#MM workbench-c-m68k-aos-quick: workbench-c-m68k-elf-quick
-
-ALL_FILES := $(FILES)
-
-BOOT_FILES := SetPatchAROS AROSBootstrap
-
-workbench-c-m68k-aos: $(FILES:%=$(AROS_C)/%) $(BOOT_FILES:%=$(AROS_BOOT)/%)
-
-workbench-c-m68k-aos-quick: $(FILES:%=$(AROS_C)/%) $(BOOT_FILES:%=$(AROS_BOOT)/%)
-
-%: %.elf
-	$(Q)$(ELF2HUNK) $< $@
+%common
