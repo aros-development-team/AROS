@@ -108,14 +108,15 @@ public class AROSBootstrap extends Activity
 	        String extdir = Environment.getExternalStorageDirectory().getAbsolutePath();
 	        String tmpdir = getCacheDir().getAbsolutePath();
 	        String arosdir = extdir + "/AROS";
+	        String pipe    = tmpdir + "/AROS.display";
 
-	        Log.d("AROS", "Starting AROS. Root: " + arosdir + ", Temp: " + tmpdir);
+	        Log.d("AROS", "Starting AROS. Root: " + arosdir + ", Pipe: " + pipe);
 
-	        int rc = Start(arosdir, tmpdir);
+	        int rc = Start(arosdir, pipe);
 
 	        if (rc == 0)
 	        {
-	        	DisplayServer srv = new DisplayServer(AROSBootstrap.this);
+	        	DisplayServer srv = new DisplayServer(AROSBootstrap.this, pipe);
 	        	srv.start();
 	        }
 		}
@@ -124,7 +125,8 @@ public class AROSBootstrap extends Activity
 	// This is for far future. Android already supports TV out,
 	// just it always displays the same picture as device's screen.
 	// But what if things change one day?
-	public DisplayView GetDisplay()
+	// 'id' parameter is reserved to identify a particular display.
+	public DisplayView GetDisplay(int id)
 	{
 		return rootView;
 	}

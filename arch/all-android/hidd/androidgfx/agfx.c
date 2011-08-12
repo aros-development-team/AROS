@@ -21,6 +21,7 @@
 #include <hidd/unixio_inline.h>
 #include <oop/oop.h>
 #include <proto/exec.h>
+#include <proto/hostlib.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 
@@ -224,7 +225,6 @@ static const STRPTR interfaces[] =
     IID_Hidd_PixFmt,
     IID_Hidd_Gfx,
     IID_Hidd,
-    IID_Hidd_UnixIO,
     NULL
 };
 
@@ -234,19 +234,38 @@ static const STRPTR interfaces[] =
 static int agfx_init(struct AGFXBase *agfxBase)
 {
     int pipe;
+    APTR HostLibBase;
+    APTR HostLibHandle;
+    const char **pipeName;
+
+    HostLibBase = OpenResource("hostlib.resource");
+    if (!HostLibBase)
+	return FALSE;
+
+    HostLibHandle = HostLib_Open("libAROSBootstrap.so", NULL);
+    if (!HostLibHandle)
+	return FALSE;
+
+    pipeName = HostLib_GetPointer(HostLibHandle, "DisplayPipe", NULL);
+    D(bug("[AGFX] DisplayPipe pointer at 0x%p\n", pipeName));
+    if (!pipeName)
+    {
+    	HostLib_Close(HostLibHandle, NULL);
+    	return FALSE;
+    }
 
     agfxBase->xsd.AttrBases = AllocAttrBases(interfaces);
     if (!agfxBase->xsd.AttrBases)
 	return FALSE;
 
-    agfxBase->xsd.unixio = OOP_NewObjectTags(NULL, CLID_Hidd_UnixIO,
-					     aHidd_UnixIO_Opener, MOD_NAME_STRING,
-					     aHidd_UnixIO_Architecture, AROS_ARCHITECTURE,
-					     TAG_DONE);
+    agfxBase->xsd.unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
     if (!agfxBase->xsd.unixio)
     	return FALSE;
 
-    pipe = Hidd_UnixIO_OpenFile(agfxBase->xsd.unixio, PIPE_NAME, O_RDWR, 0500, NULL);
+    D(bug("[AGFX] Opening dislplay pipe %s...\n", *pipeName));
+    pipe = Hidd_UnixIO_OpenFile(agfxBase->xsd.unixio, *pipeName, O_RDWR, 0500, NULL);
+
+    HostLib_Close(HostLibHandle, NULL);
     if (pipe == -1)
     {
     	D(bug("[AGFX] Failed to open display pipe\n"));
