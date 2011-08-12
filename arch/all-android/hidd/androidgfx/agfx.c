@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Android-hosted graphics driver class.
@@ -10,23 +10,27 @@
 
 #define __OOP_NOATTRBASES__
 
+#include <fcntl.h>
+
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <graphics/displayinfo.h>
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
+#include <hidd/unixio.h>
+#include <hidd/unixio_inline.h>
 #include <oop/oop.h>
 #include <proto/exec.h>
-#include <proto/hostlib.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 
-#include "agfx.h"
-#include "agfx_graphics.h"
+#include LC_LIBDEFS_FILE
+
+#include "server.h"
 
 OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    jobject display;
+    struct QueryRequest query;
 
     struct TagItem pftags[] =
     {
@@ -83,17 +87,15 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     EnterFunc(bug("AGFX::New()\n"));
 
-    HostLib_Lock();
-
-    /* Get Java display object */
-    display = JNI_CallObjectMethod(XSD(cl)->jobj, XSD(cl)->GetDisplay_mID);
     /* Get display size */
-    sync_tags[0].ti_Data = JNI_GetIntField(display, XSD(cl)->Width_aID);
-    sync_tags[1].ti_Data = JNI_GetIntField(display, XSD(cl)->Height_aID);
+    query.req.cmd = cmd_Query;
+    query.id      = 0;
+    DoRequest(&query.req, XSD(cl));
 
-    HostLib_Unlock();
+    D(bug("[AGFX] Display size: %ux%u\n", query.width, query.height));
 
-    D(bug("[AGFX] Display size: %ux%u\n", sync_tags[0].ti_Data, sync_tags[1].ti_Data));
+    sync_tags[0].ti_Data = query.width;
+    sync_tags[1].ti_Data = query.height;
 
     /* Register gfxmodes */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
@@ -103,8 +105,8 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
 	D(bug("AGFX::New(): Got object from super\n"));
 
-	data->width  = sync_tags[0].ti_Data;
-	data->height = sync_tags[1].ti_Data;
+	data->width  = query.width;
+	data->height = query.height;
     }
     ReturnPtr("AGFXGfx::New", OOP_Object *, o);
 }
@@ -214,14 +216,6 @@ static OOP_AttrBase *AllocAttrBases(const STRPTR *iftable)
     return ret;
 }
 
-static const char *host_vars[] =
-{
-    "Java_Env",
-    "Java_Class",
-    "Java_Object",
-    NULL
-};
-
 static const STRPTR interfaces[] =
 {
     IID_Hidd_ChunkyBM,
@@ -230,6 +224,7 @@ static const STRPTR interfaces[] =
     IID_Hidd_PixFmt,
     IID_Hidd_Gfx,
     IID_Hidd,
+    IID_Hidd_UnixIO,
     NULL
 };
 
@@ -238,61 +233,48 @@ static const STRPTR interfaces[] =
 
 static int agfx_init(struct AGFXBase *agfxBase)
 {
-    struct HostInterface *tmpif;
-    ULONG r;
-    jclass MainClass = NULL;
-    jclass DisplayClass;
-
-    HostLibBase = OpenResource("hostlib.resource");
-    if (!HostLibBase)
-	return FALSE;
-
-    agfxBase->HostLibHandle = HostLib_Open("libAROSBootstrap.so", NULL);
-    if (!agfxBase->HostLibHandle)
-	return FALSE;
-
-    tmpif = (struct HostInterface *)HostLib_GetInterface(agfxBase->HostLibHandle, host_vars, &r);
-    if (!tmpif)
-	return FALSE;
-
-    /*
-     * Our interface contains pointers to variables, buf we need values.
-     * So we cache them and then just drop the interface.
-     */
-    if (!r)
-    {
-	agfxBase->xsd.jni  = *tmpif->jni;
-	agfxBase->xsd.jobj = *tmpif->obj;
-	MainClass = *tmpif->cl;
-    }
-    HostLib_DropInterface((APTR *)tmpif);
-    if (r)
-	return FALSE;
+    int pipe;
 
     agfxBase->xsd.AttrBases = AllocAttrBases(interfaces);
     if (!agfxBase->xsd.AttrBases)
 	return FALSE;
-	
-    D(bug("[AGFX] Obtaining Java IDs...\n"));
 
-    HostLib_Lock();
+    agfxBase->xsd.unixio = OOP_NewObjectTags(NULL, CLID_Hidd_UnixIO,
+					     aHidd_UnixIO_Opener, MOD_NAME_STRING,
+					     aHidd_UnixIO_Architecture, AROS_ARCHITECTURE,
+					     TAG_DONE);
+    if (!agfxBase->xsd.unixio)
+    	return FALSE;
 
-    /* Find DisplayView class */
-    DisplayClass = JNI_FindClass("org/aros/bootstrap/DisplayView");
-    D(bug("[AGFX] DisplayView class 0x%p\n", DisplayClass));
-    if (!DisplayClass)
-	return FALSE;
+    pipe = Hidd_UnixIO_OpenFile(agfxBase->xsd.unixio, PIPE_NAME, O_RDWR, 0500, NULL);
+    if (pipe == -1)
+    {
+    	D(bug("[AGFX] Failed to open display pipe\n"));
+    	return FALSE;
+    }
 
-    /*
-     * Cache method and property IDs.
-     * We don't check for errors here because these functions throw exceptions
-     * (read: abort) when they fail. Thanks Sun! :(
-     */
-    agfxBase->xsd.GetDisplay_mID = JNI_GetMethodID(MainClass, "GetDisplay", "()Lorg/aros/bootstrap/DisplayView;");
-    agfxBase->xsd.Width_aID      = JNI_GetFieldID(DisplayClass, "Width", "I");
-    agfxBase->xsd.Height_aID     = JNI_GetFieldID(DisplayClass, "Height", "I");
+    SetSignal(0, SIGF_BLIT);
+    agfxBase->xsd.clientTask = NewCreateTask(TASKTAG_PC		, agfxTask,
+    				     	     TASKTAG_NAME	, MOD_NAME_STRING,
+    					     TASKTAG_TASKMSGPORT, &agfxBase->xsd.clientPort,
+    					     TASKTAG_ARG1	, pipe,
+    					     TASKTAG_ARG2	, &agfxBase->xsd,
+    					     TAG_DONE);
 
-    HostLib_Unlock();
+    /* Wait for startup */
+    if (agfxBase->xsd.clientTask)
+    	Wait(SIGF_BLIT);
+
+    /* If the task fails to initialize, it will set clientRead to zero and exit. */
+    if (!agfxBase->xsd.clientRead)
+    {
+    	D(bug("[AGFX] Failed to start client task\n"));
+
+    	Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, pipe, NULL);
+    	agfxBase->xsd.clientTask = NULL;
+
+    	return FALSE;
+    }
 
     D(bug("[AGFX] Init OK\n"));
     return TRUE;
@@ -304,14 +286,18 @@ static int agfx_expunge(struct AGFXBase *agfxBase)
 {
     D(bug("[AGFX] Expunge\n"));
 
-    if (!HostLibBase)
-	return TRUE;
+    if (agfxBase->xsd.clientTask)
+    {
+    	struct Request shutdown;
+    	
+    	shutdown.cmd = cmd_Shutdown;
+    	DoRequest(&shutdown, &agfxBase->xsd);
+    }
+
+    /* We don't need to dispose a unixio v42 object, it's a singletone. */
 
     if (agfxBase->xsd.AttrBases)
 	FreeAttrBases(interfaces, agfxBase->xsd.AttrBases);
-
-    if (agfxBase->HostLibHandle)
-	HostLib_Close(agfxBase->HostLibHandle, NULL);
 
     return TRUE;
 }
@@ -320,3 +306,4 @@ static int agfx_expunge(struct AGFXBase *agfxBase)
 
 ADD2INITLIB(agfx_init, 0);
 ADD2EXPUNGELIB(agfx_expunge, 0);
+ADD2LIBS("unixio.hidd", 42, static struct Library *, unixioBase);

@@ -1,9 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
-FILES := startup agfx abitmap
+FILES := startup agfx abitmap displaytask
 
 %build_module mmake=kernel-hidd-androidgfx \
   modname=androidgfx modtype=hidd \
