@@ -24,6 +24,18 @@
 #include <aros/debug.h>
 #undef kprintf
 
+/* moveb %d0, %a3@+
+ * rts
+ */
+const ULONG m68k_string = 0x16c04e75;
+/* addql #1, %a3@
+ * rts
+ */
+const ULONG m68k_count  = 0x52934e75;
+/* jmp %a6@(-86 * 6)
+ */
+const ULONG m68k_serial = 0x4eeefdfc;
+
 static APTR realRawDoFmt;
 static AROS_UFH5(APTR, myRawDoFmt,
 	AROS_UFHA(CONST_STRPTR, fmt, A0),
@@ -33,18 +45,6 @@ static AROS_UFH5(APTR, myRawDoFmt,
 	AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
-
-    /* moveb %d0, %a3@+
-     * rts
-     */
-    const ULONG m68k_string = 0x16c04e75;
-    /* addql #1, %a3@
-     * rts
-     */
-    const ULONG m68k_count  = 0x52934e75;
-    /* jmp %a6@(-86 * 6)
-     */
-    const ULONG m68k_serial = 0x4eeefdfc;
 
     switch ((IPTR)putch) {
     case (IPTR)RAWFMTFUNC_STRING:
