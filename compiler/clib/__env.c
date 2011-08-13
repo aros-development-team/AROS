@@ -16,15 +16,12 @@
 
 #include "__env.h"
 
-#ifdef __mc68000
-/* On m68000, we want the bootiso to be mostly compatible with
- * AOS 3.x and higher.
- *
- * ScanVars is a Morphos addition in dos.library v50, so we
+#if AROS_AMIGAOS_COMPLIANCE && (AROS_AMIGAOS_COMPLIANCE >= 30)
+/* ScanVars is a Morphos addition in dos.library v50, so we
  * have this stub here for arosc.library compatability with
- * dos.library v39
+ * dos.library v30..v39.
  */
-static LONG v39_ScanVars(struct Hook *hook, ULONG flags, APTR userdata)
+static LONG v30_ScanVars(struct Hook *hook, ULONG flags, APTR userdata)
 {
     /* We scan through the process->pr_LocalVars list */
     struct Process  *pr;
@@ -64,7 +61,7 @@ static LONG v39_ScanVars(struct Hook *hook, ULONG flags, APTR userdata)
     return res;
 }
 #undef ScanVars
-#define ScanVars(a,b,c) v39_ScanVars(a,b,c)
+#define ScanVars(a,b,c) v30_ScanVars(a,b,c)
 #endif
 
 static __env_item *__env_newvar(const char *name, int valuesize)

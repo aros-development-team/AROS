@@ -16,6 +16,8 @@
 /* Always enabled for ABIv1 */
 #define AROS_DOS_PACKETS                1
 
+#define AROS_AMIGAOS_COMPLIANCE		@aros_amigaos_compliance@
+
 #define AROS_FLAVOUR	    	    	@aros_flavour_uc@
 
 #define AROS_DEFAULT_WBWIDTH		@aros_default_wbwidth@

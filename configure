@@ -695,6 +695,7 @@ aros_host_cc
 aros_host_cpu
 aros_host_arch
 aros_cc_pre
+aros_amigaos_compliance
 AROS_PORTSSRCDIR
 AROS_CROSSTOOLSDIR
 SRCDIR
@@ -851,6 +852,7 @@ with_ios_sdk
 with_sdk
 with_ndk
 with_android_version
+enable_amigaos_compliance
 with_crosstools
 with_aros_gcc
 with_portssources
@@ -883,7 +885,6 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP
-CPPFLAGS
 XMKMF'
 
 
@@ -1521,6 +1522,9 @@ Optional Features:
                           (default=no).
   --enable-target-variant=NAME
                           Enable a specific target variant(default=none)
+  --enable-amigaos-compliance
+                          Enforce userspace AmigaOS compliance to a specific
+                          KickStart version (default=none).
   --enable-includes=dir   Alternative system include directory
   --enable-palm-debug-hack
                           Enable palm debug output hack in palm native
@@ -4083,6 +4087,15 @@ aros_host_mkargs="--no-print-directory"
 aros_host_incl="/usr/include"
 aros_host_exe_suffix="$EXEEXT"
 aros_host_lib_suffix=""
+
+# Ignore all compliance, AROS ROMs = 0
+# KickStart v1.0 = 30
+# KickStart v1.3 = 34
+# KickStart v2.0 = 37
+# KickStart v3.0 = 39
+# KickStart v3.1 = 40
+# AmigaOS   v3.5 = 44
+aros_amigaos_compliance=0
 
 for ac_prog in aclocal aclocal19 aclocal-1.9
 do
@@ -7677,6 +7690,11 @@ case "$target_os" in
 
 	case "$target_cpu" in
 	    *m68k*)
+                # Check whether --enable-amigaos_compliance was given.
+if test "${enable_amigaos_compliance+set}" = set; then :
+  enableval=$enable_amigaos_compliance; aros_amigaos_compliance="$enableval"
+fi
+
 		aros_enable_mmu=no
 		aros_target_cpu="m68k"
 		aros_object_format="m68kelf"
@@ -11427,6 +11445,9 @@ fi
 
 
 
+
+
+# Compatability with other Amiga-like operation systems
 
 
 # Host related
