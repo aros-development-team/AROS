@@ -157,19 +157,24 @@ static ULONG RdArgs(BSTR format, BPTR args, ULONG max_arg)
 
 #define ALLOCPADDING (sizeof(struct MemChunk) + 2 * sizeof(BPTR))
 
-static APTR AllocPageAligned(ULONG size, ULONG flags)
+static APTR AllocPageAligned(ULONG *psize, ULONG flags)
 {
     APTR ret;
+    ULONG size;
+
+    size = *psize;
     size += ALLOCPADDING;
     ret = AllocMem(size + 2 * PAGE_SIZE, flags);
     if (ret == NULL)
     	return NULL;
     Forbid();
     FreeMem(ret, size + 2 * PAGE_SIZE);
-    ret = AllocAbs((size + PAGE_SIZE - 1) & PAGE_MASK, (APTR)(((((ULONG)ret) + PAGE_SIZE - 1) & PAGE_MASK)));
+    size = (size + PAGE_SIZE - 1) & PAGE_MASK;
+    ret = AllocAbs(size, (APTR)(((((ULONG)ret) + PAGE_SIZE - 1) & PAGE_MASK)));
     Permit();
     if (ret == NULL)
     	return NULL;
+    *psize = size;
      return ret;
 }
 static void FreePageAligned(APTR addr, ULONG size)
@@ -418,12 +423,15 @@ static AROS_UFH3(APTR, elfAlloc,
     	flags &= ~MEMF_LOCAL;
     	flags |= MEMF_CHIP;
     }
+    /* If ROM allocation, always allocate from top of memory if possible */
+    if ((flags & MEMF_PUBLIC) && SysBase->LibNode.lib_Version >= 36)
+    	flags |= MEMF_REVERSE;
 
     if (is_kickmem)
         size += sizeof(struct MemChunk) + sizeof(struct MemList);
 
     D(WriteF("ELF: Attempt to allocate %N bytes of type %X4\n", size, flags));
-    mem = AllocPageAligned(size, flags);
+    mem = AllocPageAligned(&size, flags);
     if (mem == NULL) {
     	D(WriteF("ELF: Failed to allocate %N bytes of type %X4\n", size, flags));
     	return NULL;
