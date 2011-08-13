@@ -60,6 +60,7 @@ static inline void bug(const char *fmt, ...)
 
 struct DosLibrary *DOSBase;
 
+static BOOL ROM_Loaded = FALSE;
 static struct List mlist;
 
 /* KS 1.3 (and earlier) don't have a dos.library with
@@ -393,18 +394,20 @@ static AROS_UFH3(APTR, elfAlloc,
 {
     AROS_USERFUNC_INIT
     APTR mem;
-    BOOL is_kickmem;
     struct MemList *ml;
+
+    /* Since we don't know if we need to wrap the memory
+     * with the KickMem wrapper until after allocation,
+     * we always adjust the size as if we have to.
+     */
+     size += sizeof(struct MemChunk) + sizeof(struct MemList);
 
     /* If it's MEMF_LOCAL or MEMF_CHIP, our Exec init
      * will automatically protect it from allocation after reset.
      *
-     * For non-MEMF_LOCAL memory, we need to add it to the
-     * KickTag memory list, and set MEMF_KICK if we can.
+     * Otherwise, we'll need to use a MEMF_KICK region.
      */
-    is_kickmem = (flags & MEMF_LOCAL) ? FALSE : TRUE;
-
-    if (is_kickmem) {
+    if (!(flags & MEMF_LOCAL)) {
         if (SysBase->LibNode.lib_Version >= 39)
             flags |= MEMF_KICK;
         else {
@@ -412,7 +415,6 @@ static AROS_UFH3(APTR, elfAlloc,
              * Fall back to MEMF_LOCAL.
              */
             flags |= MEMF_LOCAL;
-            is_kickmem = FALSE;
         }
     }
 
@@ -423,12 +425,10 @@ static AROS_UFH3(APTR, elfAlloc,
     	flags &= ~MEMF_LOCAL;
     	flags |= MEMF_CHIP;
     }
+
     /* If ROM allocation, always allocate from top of memory if possible */
     if ((flags & MEMF_PUBLIC) && SysBase->LibNode.lib_Version >= 36)
     	flags |= MEMF_REVERSE;
-
-    if (is_kickmem)
-        size += sizeof(struct MemChunk) + sizeof(struct MemList);
 
     D(WriteF("ELF: Attempt to allocate %N bytes of type %X4\n", size, flags));
     mem = AllocPageAligned(&size, flags);
@@ -436,20 +436,26 @@ static AROS_UFH3(APTR, elfAlloc,
     	D(WriteF("ELF: Failed to allocate %N bytes of type %X4\n", size, flags));
     	return NULL;
     }
-
     D(WriteF("ELF: Got memory at %X8, size %N\n", (IPTR)mem, size));
-    if (!is_kickmem) {
-        D(WriteF("ELF: Got LOCAL memory at %X8, size %N\n", (IPTR)mem, size));
-        return mem;
-    }
 
     ml = (struct MemList*)(mem + sizeof(struct MemChunk));
     ml->ml_NumEntries = 1;
     ml->ml_ME[0].me_Addr = (APTR)mem;
     ml->ml_ME[0].me_Length = size;
-    AddTail(&mlist, (struct Node*)ml);
 
-    D(WriteF("ELF: Got KICK memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
+    /* If we're loading the ROM, it will automatically protect
+     * memory in the MEMF_CHIP and MEMF_LOCAL regions.
+     */
+    if (ROM_Loaded || ((TypeOfMem(mem) & (MEMF_CHIP | MEMF_LOCAL)) == 0)) {
+        AddTail(&mlist, (struct Node*)ml);
+        D(WriteF("ELF: Got KICK memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
+    } else {
+        /* Dummy node, so that we can unconditionally call Remove() on it */
+        ml->ml_Node.ln_Pred = &ml->ml_Node;
+        ml->ml_Node.ln_Succ = &ml->ml_Node;
+        D(WriteF("ELF: Got LOCAL memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
+    }
+
     return &ml[1];
 
     AROS_USERFUNC_EXIT
@@ -467,12 +473,10 @@ static AROS_UFH3(void, elfFree,
      * that it was a KickTag protected allocation
      */
     D(WriteF("ELF: Free memory at %X8, size %N\n", (IPTR)addr, size));
-    if (((IPTR)addr & (PAGE_SIZE-1)) == (sizeof(struct MemList) + sizeof(struct MemChunk))) {
-        addr -= sizeof(struct MemList);
-        Remove((struct Node*)addr);
-        addr -= sizeof(struct MemChunk);
-        size += sizeof(struct MemChunk) + sizeof(struct MemList);
-    }
+    addr -= sizeof(struct MemList);
+    Remove((struct Node*)addr);
+    addr -= sizeof(struct MemChunk);
+    size += sizeof(struct MemChunk) + sizeof(struct MemList);
     D(WriteF("ELF: FREE memory at %X8, size %N\n", (IPTR)addr, size));
     FreePageAligned(addr, size);
 
@@ -984,6 +988,7 @@ __startup static AROS_ENTRY(int, startup,
                 struct Resident **ResidentList;
                 struct TagItem *KernelTags;
                 WriteF("Successfully loaded ROM\n");
+                ROM_Loaded = TRUE;
 
                 ResidentList = LoadResidents(&args[ARG_MODULES]);
                 KernelTags = AllocKernelTags(BADDR(args[ARG_CMD]));
