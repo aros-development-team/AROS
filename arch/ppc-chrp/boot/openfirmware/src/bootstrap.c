@@ -47,48 +47,52 @@ static void flush_cache(char *start, char *end)
 char *cmdline;
 
 /* Loads either a single ELF file, or the package of elf files */
-void load_elf_or_package(char *name, uint8_t *base)
+static int load_elf_or_package(char *name, uint8_t *base, unsigned long virt)
 {
-	if (base[0] == 0x7f && base[1] == 'E' && base[2] == 'L' && base[3] == 'F')
+    if (base[0] == 0x7f && base[1] == 'E' && base[2] == 'L' && base[3] == 'F')
+    {
+	return load_elf_file(name, base, virt);
+    }
+    else if (base[0] == 'P' && base[1] == 'K' && base[2] == 'G' && base[3] == 0x01)
+    {
+	uint8_t *file = base+4;
+	uint32_t total_length = *(uint32_t*)file; /* Total length of the module */
+	const uint8_t *file_end = base+total_length;
+	uint32_t len;
+
+	file = base + 8;
+
+	while(file < file_end)
 	{
-		load_elf_file(name, base);
+	    const char *filename = remove_path(file+4);
+
+	    printf("\r\n");
+
+	    /* get text length */
+	    len = *(uint32_t*)file;
+	    /* display the file name */
+	    printf("    %s  ", filename);
+
+	    file += len + 5;
+
+	    /* get the ELF size */
+	    len = *(uint32_t*)file;
+	    file += 4;
+
+	    /* load it */
+	    if (!load_elf_file(filename, file, virt))
+		return 0;
+
+	    /* go to the next file */
+	    file += len;
 	}
-	else if (base[0] == 'P' && base[1] == 'K' && base[2] == 'G' && base[3] == 0x01)
-	{
-		uint8_t *file = base+4;
-		uint32_t total_length = *(uint32_t*)file; /* Total length of the module */
-		const uint8_t *file_end = base+total_length;
-		uint32_t len;
-
-		file = base + 8;
-
-		while(file < file_end)
-		{
-			const char *filename = remove_path(file+4);
-			printf("\r\n");
-
-			/* get text length */
-			len = *(uint32_t*)file;
-			/* display the file name */
-			printf("    %s  ", filename);
-
-			file += len + 5;
-
-			/* get the ELF size */
-			len = *(uint32_t*)file;
-			file += 4;
-
-			/* load it */
-			load_elf_file(filename, file);
-
-			/* go to the next file */
-			file += len;
-		}
-	}
-	else
-	{
-		printf("UNSUPPORTED FILE");
-	}
+    }
+    else
+    {
+	printf("UNSUPPORTED FILE");
+	/* Unknown files are just ignored, it's not a critical error */
+	return 1;
+    }
 }
 
 int bootstrap(uint32_t r3, uint32_t r4, void *r5)
@@ -99,16 +103,13 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	void *rtas_entry;
 	int i;
 	ofw_node_t *rootnode;
-	int kernel_loaded = 1;
 	tagitem_t *tags;
 	int tagcnt = 0;
 
 	int (*kernel_phys_entry)(tagitem_t *, uint32_t) = (int (*)())KERNEL_PHYS_BASE;
+	unsigned long virt = KERNEL_VIRT_BASE;
 
-	struct {
-		uint8_t *base;
-		int32_t size;
-	} memory_region;
+	struct of_region memory_region = {NULL, 0};
 
 	ofw_init(r5);
 
@@ -135,12 +136,18 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	handle = ofw_find_device("/memory");
 	if (handle)
 	{
-		if (ofw_get_prop_len(handle, "reg") == 8)
-		{
-			ofw_get_prop(handle, "reg", &memory_region, sizeof(memory_region));
+	    if (ofw_get_prop_len(handle, "reg") == 8)
+	    {
+		ofw_get_prop(handle, "reg", &memory_region, sizeof(memory_region));
 
-			printf("Available memory %dMB\r\n", memory_region.size >> 20);
-		}
+		printf("Available memory %dMB at 0x%p\r\n", memory_region.size >> 20, memory_region.base);
+	    }
+	}
+
+	if (!memory_region.size)
+	{
+	    printf("Failed to obtain memory information\n");
+	    return -1;
 	}
 
 	handle = ofw_find_device("/options");
@@ -207,25 +214,42 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 
 	D(bug("[BOOT] bootargs='%s'\n", bootargs));
 
-	/*
- 	 * --root command line option overrides boot path.
-	 * Useful on Pegasos where /chosen/bootpath doesn't include anything
-	 * beyond physical device.
-	 */
-	if (!strncasecmp(bootargs, "--root", 6))
+	/* Parse owr own command line options */
+	for(;;)
 	{
-	    bootpath = &bootargs[6];
+	    /* Skip leading spaces */
+	    while (isspace(*bootargs))
+	        bootargs++;
 
-	    /* Skip all spaces */
-	    while (isspace(*bootpath))
-		bootpath++;
+	    if (!strncasecmp(bootargs, "--root", 6))
+	    {
+	    	/*
+ 	     	 * --root command line option overrides boot path.
+	     	 * Useful on Pegasos where /chosen/bootpath doesn't include anything
+	     	 * beyond physical device.
+	     	 */
+	    	bootpath = &bootargs[6];
 
-	    /* Now skip non-spaces. This will skip the actual specification. */
-	    bootargs = bootpath + 1;
-	    while (!isspace(*bootargs))
-		bootargs++;
-	    /* Separate bootpath from the rest of command line */
-	    *bootargs++ = 0;
+	    	/* Skip all spaces between keyword and value */
+	    	while (isspace(*bootpath))
+		    bootpath++;
+
+	        bootargs = bootpath + 1;
+	    	/* Now skip non-spaces. This will skip the value. */
+	        while (!isspace(*bootargs))
+		    bootargs++;
+
+	    	/* Separate bootpath from the rest of command line */
+	    	*bootargs++ = 0;
+	    }
+	    else if (!strncasecmp(bootargs, "--no-remap", 10))
+	    {
+		/* --no-remap cancels virtual addressing */
+	    	bootargs = bootargs + 10;
+		virt = (unsigned long)kernel_phys_entry;
+	    }
+	    else
+		break;
 	}
 
 	if (!bootpath)
@@ -235,47 +259,69 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 
 	if (!load_menu(load_base))
 	{
-		parse_menu();
+		int res = 0;
+		menu_entry_t *selection;
 
-		menu_entry_t *selection = execute_menu();
+		parse_menu();
+		selection = execute_menu();
 
 		if (selection)
 		{
-			char buff[1024];
+		    char buff[1024];
 
-			printf("\r\nLoading \"%s\"\r\n", selection->m_title);
+		    printf("\r\nLoading \"%s\"\r\n", selection->m_title);
 
+		    if (selection->m_kernel)
+		    {
+			/* "kernel" line is optional and obsolete */
 			sprintf(buff, "load %s %s", bootpath, selection->m_kernel);
 			printf("  %s  ", selection->m_kernel);
 			ofw_interpret(buff);
-			load_elf_file(remove_path(selection->m_kernel), load_base);
+			res = load_elf_file(remove_path(selection->m_kernel), load_base, virt);
+			printf("\r\n");
+		    }
+
+		    for (i=0; i < selection->m_modules_cnt; i++)
+		    {
+			printf("  %s  ", selection->m_modules[i]);
+			sprintf(buff, "load %s %s", bootpath, selection->m_modules[i]);
+			if (!ofw_interpret(buff))
+			{
+			    res = load_elf_or_package(remove_path(selection->m_modules[i]), load_base, virt);
+			}
+			else
+			{
+			    printf(" !!LOAD ERROR!!");
+			    res = 0;
+			}
 			printf("\r\n");
 
-			for (i=0; i < selection->m_modules_cnt; i++)
-			{
-				printf("  %s  ", selection->m_modules[i]);
-				sprintf(buff, "load %s %s", bootpath, selection->m_modules[i]);
-				if (!ofw_interpret(buff))
-				{
-					load_elf_or_package(remove_path(selection->m_modules[i]), load_base);
-				}
-				else
-				{
-					printf(" !!LOAD ERROR!!");
-				}
-				printf("\r\n");
-			}
+			if (!res)
+			    break;
+		    }
 
-			if (selection->m_cmdline || strlen(bootargs))
-			{
-				if (selection->m_cmdline && strlen(selection->m_cmdline))
-					sprintf(cmdline, "%s %s", selection->m_cmdline, bootargs);
-				else
-					sprintf(cmdline, "%s", bootargs);
-				tags[tagcnt].ti_Tag = KRN_CmdLine;
-				tags[tagcnt].ti_Data = (intptr_t)cmdline;
-				tagcnt++;
-			}
+		    if (!res)
+		    {
+			printf("Failed to load kickstart!\n");
+
+			ofw_release(load_base, LOAD_SIZE);
+			ofw_release(rtas_base, rtas_size);
+			ofw_release((void*)0x07000000, 0x01000000 - rtas_size);
+
+			return -1;
+		    }
+
+		    if (selection->m_cmdline || strlen(bootargs))
+		    {
+			if (selection->m_cmdline && strlen(selection->m_cmdline))
+			    sprintf(cmdline, "%s %s", selection->m_cmdline, bootargs);
+			else
+			    sprintf(cmdline, "%s", bootargs);
+
+			tags[tagcnt].ti_Tag = KRN_CmdLine;
+			tags[tagcnt].ti_Data = (intptr_t)cmdline;
+			tagcnt++;
+		    }
 		}
 	}
 
@@ -364,11 +410,13 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	tags[tagcnt].ti_Data = (intptr_t)debug_info;
 	tagcnt++;
 
+	tags[tagcnt].ti_Tag = TAG_DONE;
+	tags[tagcnt].ti_Data = 0UL;
+
 	flush_cache(get_ptr_rw(), get_ptr_ro());
 
 	/* Jump into the JUNGLE! */
-	tags[tagcnt].ti_Tag = TAG_DONE;
-	tags[tagcnt].ti_Data = 0UL;
+	printf("Entering kickstart at 0x%p...\n", kernel_phys_entry);
 	kernel_phys_entry(tags, AROS_BOOT_MAGIC);
 
 	free_menu();

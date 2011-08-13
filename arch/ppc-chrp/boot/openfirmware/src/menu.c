@@ -229,8 +229,10 @@ void parse_menu()
             if (menu_entries_cnt < MAX_MENU_ENTRIES)
             {
                 int j;
+
                 menu = menu_entries[menu_entries_cnt++] = ofw_claim(NULL, sizeof(menu_entry_t), 4);
                 menu->m_title = next_word(str);
+		menu->m_kernel = NULL;
                 menu->m_modules_cnt = 0;
 
                 j = strlen(menu->m_title);

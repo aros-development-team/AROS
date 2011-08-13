@@ -22,6 +22,12 @@ typedef struct __list {
 			*l_tailpred;
 } list_t;
 
+struct of_region
+{
+    uint8_t *base;
+    int32_t size;
+};
+
 static inline void new_list(list_t *l)
 {
 	l->l_tailpred = (node_t *)l;
