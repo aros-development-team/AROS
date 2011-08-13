@@ -79,7 +79,7 @@ static int check_header(struct elfheader *eh)
 /*
  * Get the memory for chunk and load it
  */
-static int load_hunk(void *file, struct sheader *sh)
+static int load_hunk(void *file, struct sheader *sh, unsigned long virt)
 {
 	void *ptr=(void*)0;
 
@@ -111,7 +111,7 @@ static int load_hunk(void *file, struct sheader *sh)
 	else
 	{
 		bzero(ptr, sh->size);
-		bss_tracker->addr = (void*)((unsigned long)ptr + KERNEL_VIRT_BASE - KERNEL_PHYS_BASE);
+		bss_tracker->addr = (void*)((unsigned long)ptr + virt - KERNEL_PHYS_BASE);
 		bss_tracker->length = sh->size;
 		bss_tracker++;
 		bss_tracker->addr = NULL;
@@ -228,7 +228,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, ui
 	return 1;
 }
 
-int load_elf_file(const char *name, void *file)
+int load_elf_file(const char *name, void *file, unsigned long virt)
 {
 	struct elfheader *eh;
 	struct sheader *sh;
@@ -259,7 +259,7 @@ int load_elf_file(const char *name, void *file)
 		else if (sh[i].flags & SHF_ALLOC)
 		{
 			/* Yup, it does. Load the hunk */
-			if (!load_hunk(file, &sh[i]))
+			if (!load_hunk(file, &sh[i], virt))
 			{
 				return 0;
 			}
@@ -268,9 +268,9 @@ int load_elf_file(const char *name, void *file)
 				if (sh[i].size && !shown)
 				{
 					D(bug("[BOOT] ELF: section loaded at %p (Virtual addr: %p)\r\n", sh[i].addr, sh[i].addr +
-							KERNEL_VIRT_BASE - KERNEL_PHYS_BASE));
+							virt - KERNEL_PHYS_BASE));
 #if !DEBUG
-					bug("@ %p", sh[i].addr + KERNEL_VIRT_BASE - KERNEL_PHYS_BASE);
+					bug("@ %p", sh[i].addr + virt - KERNEL_PHYS_BASE);
 #endif
 					shown = 1;
 				}
@@ -284,7 +284,7 @@ int load_elf_file(const char *name, void *file)
 		if (sh[i].type == SHT_RELA && sh[sh[i].info].addr)
 		{
 			sh[i].addr = (uint32_t)file + sh[i].offset;
-			if (!sh[i].addr || !relocate(eh, sh, i, KERNEL_VIRT_BASE - KERNEL_PHYS_BASE))
+			if (!sh[i].addr || !relocate(eh, sh, i, virt - KERNEL_PHYS_BASE))
 			{
 				return 0;
 			}
@@ -333,7 +333,7 @@ int load_elf_file(const char *name, void *file)
 				{
 					if (sh[i].addr)
 					{
-						intptr_t virt = sh[i].addr + KERNEL_VIRT_BASE - KERNEL_PHYS_BASE;
+						intptr_t virt = sh[i].addr + virt - KERNEL_PHYS_BASE;
 
 						if (virt < mod->m_lowest)
 							mod->m_lowest = virt;
@@ -357,7 +357,7 @@ int load_elf_file(const char *name, void *file)
 						{
 							symbol_t *sym = __claim(sizeof(symbol_t));
 							sym->s_name = &mod->m_str[st[j].name];
-							sym->s_lowest = sh[st[j].shindex].addr + st[j].value + KERNEL_VIRT_BASE - KERNEL_PHYS_BASE;
+							sym->s_lowest = sh[st[j].shindex].addr + st[j].value + virt - KERNEL_PHYS_BASE;
 							sym->s_highest = sym->s_lowest + st[j].size;
 
 							add_head(&mod->m_symbols, sym);

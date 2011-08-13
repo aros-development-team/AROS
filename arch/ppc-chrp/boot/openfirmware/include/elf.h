@@ -27,7 +27,7 @@ struct bss_tracker {
 
 extern struct bss_tracker tracker[];
 
-int load_elf_file(const char *name, void *file);
+int load_elf_file(const char *name, void *file, unsigned long virt);
 char *get_ptr_rw();
 char *get_ptr_ro();
 void ptr_ro_add(int amount);

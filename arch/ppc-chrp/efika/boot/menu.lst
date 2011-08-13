@@ -7,7 +7,5 @@ title AROS for Efika 5200
     kernel boot/aros-efika bootdelay=5
     module boot/modules/aros-ppc-generic.pkg
     module boot/modules/aros-ppc-efika.pkg
+    module boot/aros-fs.pkg
     module boot/modules/aros-usb.pkg
-    module Devs/sfs.handler
-    module Devs/afs.handler
-    module Devs/Networks/fec.device
