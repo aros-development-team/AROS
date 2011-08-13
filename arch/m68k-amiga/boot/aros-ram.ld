@@ -21,7 +21,7 @@ INCLUDE ../../../bin/amiga-m68k/gen/local_objs.ld
    * all expansion ROMs have been run, at which point we'll allocate
    * a faster location for it.
    */
-  .ss                         : {
+  .ss.MEMF_LOCAL              : {
                                   _ss = .;
                                   . = . + 0x800;
                                   _ss_end = .;
@@ -31,7 +31,7 @@ INCLUDE ../../../bin/amiga-m68k/gen/local_objs.ld
    * The '+8' is to make sure not to overlap the
    * inital memchunk with areas must be zeroed.
    */
-  .bss                        : {
+  .bss.MEMF_LOCAL             : {
                                   _bss = .;
                                   . = . + 0x8; /* Reserved for memchunk */
                                   *(.bss)
