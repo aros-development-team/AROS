@@ -103,6 +103,15 @@ aros_host_incl="/usr/include"
 aros_host_exe_suffix="$EXEEXT"
 aros_host_lib_suffix=""
 
+# Ignore all compliance, AROS ROMs = 0
+# KickStart v1.0 = 30
+# KickStart v1.3 = 34
+# KickStart v2.0 = 37
+# KickStart v3.0 = 39
+# KickStart v3.1 = 40
+# AmigaOS   v3.5 = 44
+aros_amigaos_compliance=0
+
 AC_CHECK_PROGS(aros_host_aclocal,[aclocal aclocal19 aclocal-1.9])
 AC_CHECK_PROGS(aros_host_autoconf,[autoconf autoconf259 autoconf253])
 AC_CHECK_PROGS(aros_host_autoheader,[autoheader autoheader259 autoheader253])
@@ -1205,6 +1214,7 @@ case "$target_os" in
 
 	case "$target_cpu" in
 	    *m68k*)
+                AC_ARG_ENABLE(amigaos_compliance,AC_HELP_STRING([--enable-amigaos-compliance=VERSION],[Enforce userspace AmigaOS compliance to a specific KickStart version (default=none).]),aros_amigaos_compliance="$enableval")
 		aros_enable_mmu=no
 		aros_target_cpu="m68k"
 		aros_object_format="m68kelf"
@@ -2233,6 +2243,9 @@ AC_SUBST(AROS_BUILDDIR_UNIX)
 AC_SUBST(SRCDIR)
 AC_SUBST(AROS_CROSSTOOLSDIR)
 AC_SUBST(AROS_PORTSSRCDIR)
+
+# Compatability with other Amiga-like operation systems
+AC_SUBST(aros_amigaos_compliance)
 
 # Host related
 AC_SUBST(aros_cc_pre)
