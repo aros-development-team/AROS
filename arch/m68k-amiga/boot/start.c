@@ -160,43 +160,34 @@ extern BYTE _ss_end;
 
 /* Protect the 'ROM' if it is actually in RAM.
  */
-static APTR protectAlloc(struct MemHeader *mh, APTR start, ULONG length, const UBYTE *name, BOOL pagealign)
+static APTR protectAlloc(struct MemHeader *mh, APTR start, APTR end, const UBYTE *name, BOOL pagealign)
 {
     APTR tmp;
+    ULONG length;
     
-    if (pagealign)
-    	length = (length + PAGE_SIZE - 1) & PAGE_MASK;
+    if (pagealign) {
+    	start = (APTR)((ULONG)start & PAGE_MASK);
+    	length = (end - start + PAGE_SIZE - 1) & PAGE_MASK;
+    } else {
+    	length = end - start;
+    }
     tmp = Early_AllocAbs(mh, start, length);
     DEBUGPUTS(("* "));
     DEBUGPUTS((name));
     if (!tmp)
     	DEBUGPUTS((" !"));
     DEBUGPUTHEX(("\nStart  ", (ULONG)start));
-    DEBUGPUTHEX(("End    ", (ULONG)start + length - 1));
+    DEBUGPUTHEX(("End    ", (ULONG)end - 1));
     DEBUGPUTHEX(("Size   ", length));
     return tmp;
 }
 static void protectROM(struct MemHeader *mh)
 {
-    APTR tmp;
-
-    APTR ss_start = &_ss;
-    ULONG ss_len = &_ss_end - &_ss;
-
-    APTR bss_start = &_bss;
-    ULONG bss_len = &_bss_end - &_bss;
-
-    APTR rom_start = &_rom_start;
-    ULONG rom_len = &_rom_end - &_rom_start;
-
-    APTR ext_start = &_ext_start;
-    ULONG ext_len = &_ext_end - &_ext_start;
-
     DEBUGPUTHEX(("Protect", (IPTR)mh));
-    tmp = protectAlloc(mh, ss_start, ss_len, "SS", FALSE);
-    tmp = protectAlloc(mh, bss_start, bss_len, "BSS", FALSE);
-    tmp = protectAlloc(mh, rom_start, rom_len, "ROM", TRUE);
-    tmp = protectAlloc(mh, ext_start, ext_len, "EXT", TRUE);
+    protectAlloc(mh, &_ss, &_ss_end, "SS", FALSE);
+    protectAlloc(mh, &_bss, &_bss_end, "BSS", FALSE);
+    protectAlloc(mh, &_rom_start, &_rom_end, "ROM", TRUE);
+    protectAlloc(mh, &_ext_start, &_ext_end, "EXT", TRUE);
     DEBUGPUTHEX(("First  ", (IPTR)mh->mh_First));
     DEBUGPUTHEX(("Bytes  ", (IPTR)mh->mh_First->mc_Bytes));
 }
