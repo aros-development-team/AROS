@@ -12,12 +12,19 @@
 
 void DebugInit(void)
 {
+	/* Set DTR, RTS, etc */
+	volatile UBYTE *ciab_pra = (APTR)0xBFD000;
+	volatile UBYTE *ciab_ddra = (APTR)0xBFD200;
+	*ciab_ddra = 0xff;
+	*ciab_pra = 0;
+
 	/* Set the debug UART to 115200 */
 	reg_w(SERPER, SERPER_BAUD(SERPER_BASE_PAL, 115200));
 }
 
 int DebugPutChar(register int chr)
 {
+	DebugInit();
 	if (chr == '\n')
 		DebugPutChar('\r');
 	while ((reg_r(SERDATR) & SERDATR_TBE) == 0);
@@ -33,6 +40,7 @@ int DebugMayGetChar(void)
 {
 	int c;
 
+	DebugInit();
 	if ((reg_r(SERDATR) & SERDATR_RBF) == 0)
 	    return -1;
 
