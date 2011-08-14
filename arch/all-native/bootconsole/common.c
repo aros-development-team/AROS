@@ -72,7 +72,7 @@ void con_InitSerial(char *cmdline)
     {
     	use_serial = 1;
     	
-    	serial_Init(&cmdline[12]);
+    	serial_Init(&opts[12]);
     }
     else
     	use_serial = 0;

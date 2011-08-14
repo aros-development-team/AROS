@@ -11,6 +11,9 @@ extern unsigned int  scr_Height;	/* Display height in characters */
  */
 extern char *fb_Mirror;
 
+extern unsigned short Serial_Base;
+extern void *IO_Base;
+
 /* Current screen type */
 enum scr_type
 {
