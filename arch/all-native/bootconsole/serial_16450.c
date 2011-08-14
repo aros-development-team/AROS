@@ -16,11 +16,19 @@
 #define SER_MAXBAUD 115200
 
 /* These settings can be kept accross warm reboots in kickstart */
-static unsigned short base     = 0x03F8;
-static unsigned int   baudRate = 115200;
+unsigned short Serial_Base = 0x03F8;
+static unsigned int baudRate = 115200;
+
+#ifdef __ppc__
+#define outb_p outb
+#define inb_p inb
+
+void *IO_Base;
+#endif
 
 /* Standard base addresses for four PC AT serial ports */
-static unsigned short standard_ports[] = {
+static unsigned short standard_ports[] =
+{
     0x03F8,
     0x02F8,
     0x03E8,
@@ -29,6 +37,7 @@ static unsigned short standard_ports[] = {
 
 void serial_Init(char *opts)
 {
+    port_t base;
     unsigned short uDivisor;
     unsigned char tmp;
 
@@ -41,9 +50,9 @@ void serial_Init(char *opts)
 
 	    /* N can be either port number (0 - 4) or direct base address specification */
     	    if (port < 4)
-	    	base = standard_ports[port];
+	    	Serial_Base = standard_ports[port];
 	    else
-	    	base = port;
+	    	Serial_Base = port;
 	}
 
 	/* Set baud rate */
@@ -55,6 +64,12 @@ void serial_Init(char *opts)
 	    	baudRate = baud;
 	}
     }
+
+#ifdef __ppc__
+    base = IO_Base + Serial_Base;
+#else
+    base = Serial_Base;
+#endif
 
     uDivisor = SER_MAXBAUD / baudRate;
     tmp = inb_p(base + UART_LCR);
@@ -69,6 +84,14 @@ void serial_Init(char *opts)
 
 static void serial_RawPutc(char data) 
 {
+    port_t base;
+
+#ifdef __ppc__
+    base = IO_Base + Serial_Base;
+#else
+    base = Serial_Base;
+#endif
+
     /* Wait until the transmitter is empty */
     while (!(inb_p(base + UART_LSR) & UART_LSR_TEMT));
 
