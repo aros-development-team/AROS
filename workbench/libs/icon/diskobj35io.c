@@ -5,6 +5,8 @@
 
 /****************************************************************************************/
 
+#include <aros/debug.h>
+
 #include <datatypes/pictureclass.h>
 
 #include <proto/dos.h>
@@ -14,9 +16,6 @@
 #include <aros/asmcall.h>
 
 #include "icon_intern.h"
-
-#   define DEBUG 0
-#   include <aros/debug.h>
 
 /****************************************************************************************/
 
