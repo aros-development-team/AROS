@@ -92,11 +92,14 @@ AROS_SLIB_ENTRY(CacheControl,Exec,108):
     beq.s 5f
     bset #31,%d1
 5:	bclr #8,%d2
-	beq.s 6f
+	beq.s 2f
 	bset #31,%d2
-6:
+2:	
+	move.l	%d1,-(%sp)
+	jsr	-0x27c(%a6) // CacheClearU
+	move.l	(%sp)+,%d1
 
-2:	lea su(%pc),%a5
+	lea su(%pc),%a5
 	jsr Supervisor(%a6)
 
     move.w %a6@(AttnFlags),%d3
@@ -116,11 +119,11 @@ AROS_SLIB_ENTRY(CacheControl,Exec,108):
 	movem.l %sp@+,%d2/%d3/%a5
     rts
 
-su:	dc.l 0x4e7a0002 //movec %cacr,%d0
+su:	movec %cacr,%d0
 	move.l %d0,%d3
 	and.l %d1,%d2
 	not.l %d1
 	and.l %d1,%d3
 	or.l %d2,%d3
-	dc.l 0x4e7b3002 // movec %d3,%cacr
+	movec %d3,%cacr
 	rte
