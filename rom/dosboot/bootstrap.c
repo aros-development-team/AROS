@@ -181,6 +181,7 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
                        if (BootBlockCheck(buffer, bootblock_size))
                        {
                            SetBootNodeDosType(bn, AROS_LONG2BE(*(LONG *)buffer));
+                           CacheClearE(buffer, bootblock_size, CACRF_ClearI|CACRF_ClearD);
                            init = CallBootBlockCode(buffer + 12, io, ExpansionBase);
                        }
                        else
