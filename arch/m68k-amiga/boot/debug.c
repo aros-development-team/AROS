@@ -15,8 +15,8 @@ void DebugInit(void)
 	/* Set DTR, RTS, etc */
 	volatile UBYTE *ciab_pra = (APTR)0xBFD000;
 	volatile UBYTE *ciab_ddra = (APTR)0xBFD200;
-	*ciab_ddra = 0xff;
-	*ciab_pra = 0;
+	*ciab_ddra = 0xc0;  /* Only DTR and RTS are driven as outputs */
+	*ciab_pra = 0;      /* Turn on DTR and RTS */
 
 	/* Set the debug UART to 115200 */
 	reg_w(SERPER, SERPER_BAUD(SERPER_BASE_PAL, 115200));
