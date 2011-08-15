@@ -16,6 +16,7 @@ USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
 
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/kernel/make.opts
 
 FUNCS :=     addexceptionhandler addirqhandler bug cause cli createcontext deletecontext    \
              displayalert dispatch getbootinfo getscheduler issuper mapglobal		    \
