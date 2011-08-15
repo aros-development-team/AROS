@@ -14,6 +14,11 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.io.DataOutputStream;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.String;
 
 public class AROSBootstrap extends Activity
@@ -21,6 +26,11 @@ public class AROSBootstrap extends Activity
 	static final int ID_ERROR_DIALOG = 0;
 	static final int ID_ALERT_DIALOG = 1;
 
+	public AROSBootstrap()
+	{
+		
+	}
+	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -95,32 +105,8 @@ public class AROSBootstrap extends Activity
     static
     {
         System.loadLibrary("AROSBootstrap");
+        Log.d("AROS", "Started");
     }
-
-    // This callback actually launches the bootstrap.
-    // It is implemented as a nested class because it has to implement
-    // Runnable interface.
-	class Booter implements Runnable
-	{
-		public void run()
-		{
-	        // Get external storage path 
-	        String extdir = Environment.getExternalStorageDirectory().getAbsolutePath();
-	        String tmpdir = getCacheDir().getAbsolutePath();
-	        String arosdir = extdir + "/AROS";
-	        String pipe    = tmpdir + "/AROS.display";
-
-	        Log.d("AROS", "Starting AROS. Root: " + arosdir + ", Pipe: " + pipe);
-
-	        int rc = Start(arosdir, pipe);
-
-	        if (rc == 0)
-	        {
-	        	DisplayServer srv = new DisplayServer(AROSBootstrap.this, pipe);
-	        	srv.start();
-	        }
-		}
-	}
 
 	// This is for far future. Android already supports TV out,
 	// just it always displays the same picture as device's screen.
@@ -131,10 +117,91 @@ public class AROSBootstrap extends Activity
 		return rootView;
 	}
 
-    private native int Start(String dir, String tmpdir);
+	private void DoCommand(int cmd, int[] params) throws IOException
+	{
+		switch (cmd)
+		{
+		case DisplayServer.cmd_Query:
+			Log.d("AROS", "cmd_Query( " + params[0] + " )");
 
+			DisplayView d = GetDisplay(params[0]);
+			InputPipe.writeInt(cmd);
+			InputPipe.writeInt(d.Width);
+			InputPipe.writeInt(d.Height);
+			break;
+
+		default:
+			Log.d("AROSDisplay", "Unknown command " + cmd);
+			InputPipe.writeInt(DisplayServer.cmd_Nak);
+			InputPipe.writeInt(cmd);
+			break;
+		}
+	}
+
+	/* *** Callbacks follow *** */
+	
+    // This callback actually launches the bootstrap.
+    // It is implemented as a nested class because it has to implement
+    // Runnable interface.
+	class Booter implements Runnable
+	{
+		public void run()
+		{
+	        // Get external storage path 
+	        String extdir = Environment.getExternalStorageDirectory().getAbsolutePath();
+	        String arosdir = extdir + "/AROS";
+	        FileDescriptor readfd = new FileDescriptor();
+	        FileDescriptor writefd = new FileDescriptor();
+
+	        Log.d("AROS", "Starting AROS, root path: " + arosdir);
+
+	        int rc = Start(arosdir, readfd, writefd);
+
+	        if (rc == 0)
+	        {
+	        	FileInputStream displaypipe = new FileInputStream(readfd);
+	        	FileOutputStream inputpipe = new FileOutputStream(writefd);
+
+	        	AROSBootstrap.this.InputPipe = new DataOutputStream(inputpipe);
+	        	DisplayServer srv = new DisplayServer(AROSBootstrap.this, displaypipe);
+
+	        	srv.start();
+	        }
+		}
+	}
+
+	// Declaration of AROSBootstrap C code entry point
+    private native int Start(String dir, FileDescriptor rfd, FileDescriptor wfd);
+
+    // This orders processing of a command from server
+    class ServerCommand implements Runnable
+    {
+    	private int Command;
+    	private int[] Parameters;
+
+    	public ServerCommand(int cmd, int... params)
+    	{
+    		Command = cmd;
+    		Parameters = params;
+    	}
+  
+    	public void run()
+    	{
+    		try
+    		{
+				AROSBootstrap.this.DoCommand(Command, Parameters);
+			}
+    		catch (IOException e)
+    		{
+				Log.d("AROS", "Failed to write data to pipe");
+				System.exit(0);
+			}
+    	}
+    }
+    
     private CharSequence errStr;
     private DisplayView rootView;
+    private DataOutputStream InputPipe;
 }
 
 // This is our display class

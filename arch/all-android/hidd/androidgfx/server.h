@@ -1,7 +1,8 @@
-#define PIPE_NAME "AROS.display"
+#define cmd_Nak	       -1
+#define cmd_Query	1
 
-#define cmd_Query	0x00000001
-#define cmd_Shutdown	0x80D1ED1E
+#define STATUS_ACK	0
+#define STATUS_NAK	1
 
 /*
  * Requests are generally linear data blocks.
@@ -12,20 +13,24 @@
 
 struct Request
 {
-    struct Message  msg;
-    ULONG	    signal;	/* Reply signal */
-    ULONG	    cmd;	/* Command	*/
+    struct MinNode  node;
+    struct Task    *owner;
+    ULONG	    signal;	/* Reply signal		*/
+    ULONG	    status;	/* Delivery status	*/
+    ULONG	    cmd;	/* Command		*/
+    ULONG	    len;	/* Number of parameters */
+    /* ULONG parameters follow */
 };
 
 struct QueryRequest
 {
     /* Request (8 bytes, including cmd) */
-    struct Request  req;	/* cmd_Query				*/
+    struct Request  req;	/* cmd_Query, 1				*/
     ULONG	    id;		/* Display ID, currently reserved	*/
     /* Response (8 bytes) */
     ULONG	    width;
     ULONG	    height;
 };
 
-void agfxTask(int pipe, struct agfx_staticdata *xsd);
+void agfxInt(int pipe, int mode, void *data);
 void DoRequest(struct Request *req, struct agfx_staticdata *xsd);

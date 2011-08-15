@@ -90,8 +90,15 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     /* Get display size */
     query.req.cmd = cmd_Query;
+    query.req.len = 1;
     query.id      = 0;
     DoRequest(&query.req, XSD(cl));
+
+    if (query.req.status != STATUS_ACK)
+    {
+    	D(bug("[AGFX] Display server communication error\n"));
+    	return NULL;
+    }
 
     D(bug("[AGFX] Display size: %ux%u\n", query.width, query.height));
 
@@ -228,15 +235,27 @@ static const STRPTR interfaces[] =
     NULL
 };
 
+static int GetPipe(const char *name, APTR lib, APTR HostLibBase)
+{
+    int *ptr = HostLib_GetPointer(lib, name, NULL);
+    
+    if (!ptr)
+    {
+    	D(bug("[AGFX] Failed to locate symbol %s\n", name));
+    	return -1;
+    }
+    
+    return *ptr;
+}
+
 #undef XSD
 #define XSD(cl) (&agfxBase->xsd)
 
 static int agfx_init(struct AGFXBase *agfxBase)
 {
-    int pipe;
     APTR HostLibBase;
     APTR HostLibHandle;
-    const char **pipeName;
+    int res;
 
     HostLibBase = OpenResource("hostlib.resource");
     if (!HostLibBase)
@@ -246,13 +265,15 @@ static int agfx_init(struct AGFXBase *agfxBase)
     if (!HostLibHandle)
 	return FALSE;
 
-    pipeName = HostLib_GetPointer(HostLibHandle, "DisplayPipe", NULL);
-    D(bug("[AGFX] DisplayPipe pointer at 0x%p\n", pipeName));
-    if (!pipeName)
-    {
-    	HostLib_Close(HostLibHandle, NULL);
+    agfxBase->xsd.DisplayPipe = GetPipe("DisplayPipe", HostLibHandle, HostLibBase);
+    agfxBase->xsd.InputPipe   = GetPipe("InputPipe", HostLibHandle, HostLibBase);
+
+    D(bug("[AGFX] DisplayPipe %d InputPipe %d\n", agfxBase->xsd.DisplayPipe, agfxBase->xsd.InputPipe));
+
+    HostLib_Close(HostLibHandle, NULL);
+
+    if ((agfxBase->xsd.DisplayPipe == -1) || (agfxBase->xsd.InputPipe == -1))
     	return FALSE;
-    }
 
     agfxBase->xsd.AttrBases = AllocAttrBases(interfaces);
     if (!agfxBase->xsd.AttrBases)
@@ -262,36 +283,21 @@ static int agfx_init(struct AGFXBase *agfxBase)
     if (!agfxBase->xsd.unixio)
     	return FALSE;
 
-    D(bug("[AGFX] Opening dislplay pipe %s...\n", *pipeName));
-    pipe = Hidd_UnixIO_OpenFile(agfxBase->xsd.unixio, *pipeName, O_RDWR, 0500, NULL);
+    NEWLIST(&agfxBase->xsd.waitQueue);
 
-    HostLib_Close(HostLibHandle, NULL);
-    if (pipe == -1)
+    agfxBase->xsd.serverInt.fd          = agfxBase->xsd.InputPipe;
+    agfxBase->xsd.serverInt.mode	= vHidd_UnixIO_Read;
+    agfxBase->xsd.serverInt.handler     = agfxInt;
+    agfxBase->xsd.serverInt.handlerData = &agfxBase->xsd;
+
+    res = Hidd_UnixIO_AddInterrupt(agfxBase->xsd.unixio, &agfxBase->xsd.serverInt);
+    if (res)
     {
-    	D(bug("[AGFX] Failed to open display pipe\n"));
-    	return FALSE;
-    }
+	Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.DisplayPipe, NULL);
+    	Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.InputPipe, NULL);
 
-    SetSignal(0, SIGF_BLIT);
-    agfxBase->xsd.clientTask = NewCreateTask(TASKTAG_PC		, agfxTask,
-    				     	     TASKTAG_NAME	, MOD_NAME_STRING,
-    					     TASKTAG_TASKMSGPORT, &agfxBase->xsd.clientPort,
-    					     TASKTAG_ARG1	, pipe,
-    					     TASKTAG_ARG2	, &agfxBase->xsd,
-    					     TAG_DONE);
-
-    /* Wait for startup */
-    if (agfxBase->xsd.clientTask)
-    	Wait(SIGF_BLIT);
-
-    /* If the task fails to initialize, it will set clientRead to zero and exit. */
-    if (!agfxBase->xsd.clientRead)
-    {
-    	D(bug("[AGFX] Failed to start client task\n"));
-
-    	Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, pipe, NULL);
-    	agfxBase->xsd.clientTask = NULL;
-
+	/* We don't need to dispose a unixio v42 object, it's a singletone. */
+	agfxBase->xsd.unixio = NULL;
     	return FALSE;
     }
 
@@ -305,15 +311,16 @@ static int agfx_expunge(struct AGFXBase *agfxBase)
 {
     D(bug("[AGFX] Expunge\n"));
 
-    if (agfxBase->xsd.clientTask)
+    if (agfxBase->xsd.unixio)
     {
-    	struct Request shutdown;
-    	
-    	shutdown.cmd = cmd_Shutdown;
-    	DoRequest(&shutdown, &agfxBase->xsd);
-    }
+	Hidd_UnixIO_RemInterrupt(agfxBase->xsd.unixio, &agfxBase->xsd.serverInt);
 
-    /* We don't need to dispose a unixio v42 object, it's a singletone. */
+    	if (agfxBase->xsd.DisplayPipe != -1)
+	    Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.DisplayPipe, NULL);
+
+	if (agfxBase->xsd.InputPipe != -1)
+    	    Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.InputPipe, NULL);
+    }
 
     if (agfxBase->xsd.AttrBases)
 	FreeAttrBases(interfaces, agfxBase->xsd.AttrBases);

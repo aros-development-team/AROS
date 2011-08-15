@@ -10,16 +10,16 @@
 #include "bootstrap.h"
 
 /* Interface variables */
-const char *DisplayPipe;
+int DisplayPipe;
+int InputPipe;
 
 JNIEnv *Java_Env;
 jclass  Java_Class;
 jobject Java_Object;
 
-jmethodID DisplayAlert_mid;
 jmethodID DisplayError_mid;
 
-int Java_org_aros_bootstrap_AROSBootstrap_Start(JNIEnv* env, jobject this, jstring basedir, jstring pipe)
+int Java_org_aros_bootstrap_AROSBootstrap_Start(JNIEnv* env, jobject this, jstring basedir, jobject readfd, jobject writefd)
 {
     jboolean is_copy;
     const char *arospath;
@@ -29,21 +29,7 @@ int Java_org_aros_bootstrap_AROSBootstrap_Start(JNIEnv* env, jobject this, jstri
     Java_Object = this;
     Java_Class  = (*env)->GetObjectClass(env, this);
 
-    DisplayAlert_mid = (*env)->GetMethodID(env, Java_Class, "DisplayAlert", "(Ljava/lang/String;)V");
     DisplayError_mid = (*env)->GetMethodID(env, Java_Class, "DisplayError", "(Ljava/lang/String;)V");
-
-    DisplayPipe = (*env)->GetStringUTFChars(env, pipe, &is_copy);
-
-    /* This call may file because the pipe already exists, it's ok */
-    res = mkfifo(DisplayPipe, 0500);
-    if (res && (errno != EEXIST))
-    {
-    	DisplayError("Failed to create display pipe (%s): %s", DisplayPipe, strerror(errno));
-    	(*env)->ReleaseStringUTFChars(env, pipe, DisplayPipe);
-    	return res;
-    }
-
-    /* We don't release DisplayPipe here because we need it */
 
     arospath = (*env)->GetStringUTFChars(env, basedir, &is_copy);
     res = chdir(arospath);
@@ -57,6 +43,22 @@ int Java_org_aros_bootstrap_AROSBootstrap_Start(JNIEnv* env, jobject this, jstri
     {
 	(*env)->ReleaseStringUTFChars(env, basedir, arospath);
 	res = bootstrap(0, NULL); /* We can't pass any arguments (yet) */
+
+	if (res == 0)
+	{
+	    /* Initialize FileHandle objects by poking the "fd" field with the file descriptor */
+	    jclass *class_fdesc = (*env)->GetObjectClass(env, readfd);
+	    jfieldID field_fd = (*env)->GetFieldID(env, class_fdesc, "descriptor", "I");
+	    
+	    if (!field_fd)
+	    {
+	    	DisplayError("Failed to set up pipe descriptor objects");
+	    	return -1;
+	    }
+
+	    (*env)->SetIntField(env, readfd, field_fd, DisplayPipe);
+	    (*env)->SetIntField(env, writefd, field_fd, InputPipe);
+	}
     }
 
     return res;
