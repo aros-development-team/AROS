@@ -3,6 +3,7 @@ package org.aros.bootstrap;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
 import android.os.Handler;
@@ -54,8 +55,11 @@ public class DisplayServer extends Thread
 		}
 
 		ByteBuffer bb = ByteBuffer.wrap(raw);
+		bb.order(ByteOrder.nativeOrder());
 		IntBuffer ib = bb.asIntBuffer();
+		int[] data = new int[len];
 
-		return ib.array();
+		ib.get(data);
+		return data;
 	}
 }
