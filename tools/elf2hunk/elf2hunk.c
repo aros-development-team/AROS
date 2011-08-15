@@ -26,6 +26,7 @@
 
 #if defined(__GNUC__)&&defined(WIN32)
 #include <winsock2.h>
+#define mkdir(path, mode) mkdir(path)
 #else
 #include <arpa/inet.h>
 typedef uint32_t ULONG;
