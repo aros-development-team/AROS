@@ -8,7 +8,7 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 
-struct segment
+struct phony_segment
 {
     ULONG Size;	/* Length of segment in # of bytes */
     IPTR  Next;	/* Next segment (always 0 for this) */
@@ -51,7 +51,7 @@ struct segment
 
 *****************************************************************************/
 {
-    struct segment *segtmp;
+    struct phony_segment *segtmp;
 
     segtmp = AllocMem(sizeof(*segtmp), MEMF_ANY);
     if (!segtmp)
