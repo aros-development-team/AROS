@@ -29,6 +29,10 @@
 #include "nouveau_connector.h"
 #include "nouveau_encoder.h"
 
+#ifndef EREMOTEIO
+#define EREMOTEIO EIO
+#endif
+
 static int
 auxch_rd(struct drm_encoder *encoder, int address, uint8_t *buf, int size)
 {
