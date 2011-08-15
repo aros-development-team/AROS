@@ -9,9 +9,10 @@
 #include <support.h>
 #include <stdarg.h>
 
-const char *remove_path(const char *in)
+char *remove_path(const char *in)
 {
-    const char *p = &in[strlen(in)-1];
+    char *p = &in[strlen(in)-1];
+
     while (p > in && p[-1] != '/' && p[-1] != ':') p--;
     return p;
 }

@@ -91,7 +91,7 @@ int strcasecmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, int max);
 void bzero(void *dest, int length);
 void memcpy(void *dest, const void *src, int length);
-const char *remove_path(const char *in);
+char *remove_path(const char *in);
 
 void printf(char *str, ...);
 void sprintf(char *dest, char *str, ...);
