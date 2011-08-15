@@ -119,7 +119,8 @@ AROS_SLIB_ENTRY(CacheControl,Exec,108):
 	movem.l %sp@+,%d2/%d3/%a5
     rts
 
-su:	movec %cacr,%d0
+su:	or.w #0x0700,%sr
+	movec %cacr,%d0
 	move.l %d0,%d3
 	and.l %d1,%d2
 	not.l %d1
