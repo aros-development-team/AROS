@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
-FILES := startup agfx abitmap displaytask
+FILES := startup agfx abitmap server
 
 %build_module mmake=kernel-hidd-androidgfx \
   modname=androidgfx modtype=hidd \

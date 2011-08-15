@@ -22,11 +22,11 @@ struct agfx_staticdata
     OOP_Object *kbdhidd;
     OOP_Object *unixio;
 
-    struct Task		*clientTask;
-    struct MsgPort	*clientPort;
-    struct uioInterrupt  clientInt;
-    ULONG		 clientRead;
-    struct MinList	 sentQueue;
+    int DisplayPipe;
+    int InputPipe;
+
+    struct uioInterrupt serverInt;
+    struct MinList	waitQueue;
 };
 
 struct AGFXBase

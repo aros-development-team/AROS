@@ -1,4 +1,6 @@
 #include <sys/wait.h>
+
+#include <errno.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,11 +15,12 @@
 #include <aros/kernel.h>
 #include <runtime.h>
 
+#include "android.h"
 #include "kickstart.h"
 
-#define D(x)
+#define D(x) x
 
-void childHandler(int sig)
+static void childHandler(int sig)
 {
     int i;
 
@@ -51,6 +54,8 @@ void childHandler(int sig)
 int kick(int (*addr)(), struct TagItem *msg)
 {
     struct sigaction sa;
+    int displaypipe[2];
+    int inputpipe[2];
     int i;
     pid_t child;
 
@@ -61,20 +66,54 @@ int kick(int (*addr)(), struct TagItem *msg)
 
     sigaction(SIGCHLD, &sa, NULL);
 
+    if (pipe(displaypipe))
+    {
+    	DisplayError("Failed to create display pipe: %s", strerror(errno));
+    	return -1;
+    }
+    
+    if (pipe(inputpipe))
+    {
+    	close(displaypipe[0]);
+    	close(displaypipe[1]);
+
+    	DisplayError("Failed to create input pipe: %s", strerror(errno));
+    	return -1;
+    }
+
     D(kprintf("[Bootstrap] Launching kickstart...\n"));
     child = fork();
 
     switch (child)
     {
     case -1:
+    	close(displaypipe[0]);
+    	close(displaypipe[1]);
+    	close(inputpipe[0]);
+    	close(inputpipe[1]);
+
     	DisplayError("Failed to run kickstart!");
     	return -1;
 
     case 0:
+    	/* Set up client side of pipes */
+	DisplayPipe = displaypipe[1];
+	InputPipe   = inputpipe[0];
+    	close(displaypipe[0]);
+    	close(inputpipe[1]);
+
         D(kprintf("[Bootstrap] entering kernel at 0x%p...\n", addr));
         i = addr(msg, AROS_BOOT_MAGIC);
         exit(i);
     }
+
+    D(kprintf("[Bootstrap] AROS PID is %d\n", child));
+
+    /* Set up server side of pipes */
+    DisplayPipe = displaypipe[0];
+    InputPipe   = inputpipe[1];
+    close(displaypipe[1]);
+    close(inputpipe[0]);
 
     /* Return to JVM with success indication */
     return 0;
