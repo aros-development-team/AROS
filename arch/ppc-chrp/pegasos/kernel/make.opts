@@ -1,0 +1,2 @@
+USER_LDFLAGS := -L$(GENDIR)/lib
+USER_LIBS    := bootconsole

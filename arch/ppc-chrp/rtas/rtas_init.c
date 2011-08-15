@@ -7,7 +7,7 @@
 
 #define DEBUG 1
 
-#include <asm/mpc5200b.h>
+//#include <asm/mpc5200b.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <aros/libcall.h>
