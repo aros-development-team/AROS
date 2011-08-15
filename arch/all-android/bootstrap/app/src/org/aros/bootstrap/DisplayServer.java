@@ -1,8 +1,9 @@
 package org.aros.bootstrap;
 
-import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 import android.os.Handler;
 import android.util.Log;
@@ -14,14 +15,14 @@ public class DisplayServer extends Thread
 	public static final int cmd_Nak   = -1;
 
 	private Handler handler;
-	private DataInputStream DisplayPipe;
+	private FileInputStream DisplayPipe;
 	private AROSBootstrap main;
 	
 	public DisplayServer(AROSBootstrap parent, FileInputStream pipe)
 	{
 		main = parent;
 		handler = new Handler();
-		DisplayPipe = new DataInputStream(pipe);
+		DisplayPipe = pipe;
 	}
 	
 	public void run()
@@ -40,23 +41,21 @@ public class DisplayServer extends Thread
 
 	private int[] ReadData(int len)
 	{
-		int[] data = new int[len];
-
+		byte[]raw = new byte[len * 4];
+		
 		try
 		{
-			int i;
-
-			for (i = 0; i < len; i++)
-			{
-			    data[i] = DisplayPipe.readInt();
-			}
+			DisplayPipe.read(raw);
 		}
 		catch (IOException e)
 		{
-			Log.d("AROS.Server", "Failed to read pipe");
+			Log.v("AROS.Server", "Error reading pipe");
 			System.exit(0);
 		}
 
-		return data;
+		ByteBuffer bb = ByteBuffer.wrap(raw);
+		IntBuffer ib = bb.asIntBuffer();
+
+		return ib.array();
 	}
 }

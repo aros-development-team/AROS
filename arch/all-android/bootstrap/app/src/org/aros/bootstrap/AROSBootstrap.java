@@ -20,6 +20,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.String;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 public class AROSBootstrap extends Activity
 {
@@ -117,6 +119,26 @@ public class AROSBootstrap extends Activity
 		return rootView;
 	}
 
+	private void ReplyCommand(int cmd, int... response)
+	{
+		int len = (response.length + 1) * 4;
+		ByteBuffer bb = ByteBuffer.allocate(len);        
+        IntBuffer ib = bb.asIntBuffer();
+ 
+        ib.put(0, cmd);
+        ib.put(response, 1, response.length);
+ 
+        try
+        {
+			InputPipe.write(bb.array());
+		}
+        catch (IOException e)
+        {
+        	Log.v("AROS", "Error writing input pipe");
+        	System.exit(0);
+		}
+	}
+	
 	private void DoCommand(int cmd, int[] params) throws IOException
 	{
 		switch (cmd)
@@ -125,15 +147,13 @@ public class AROSBootstrap extends Activity
 			Log.d("AROS", "cmd_Query( " + params[0] + " )");
 
 			DisplayView d = GetDisplay(params[0]);
-			InputPipe.writeInt(cmd);
-			InputPipe.writeInt(d.Width);
-			InputPipe.writeInt(d.Height);
+			ReplyCommand(cmd, d.Width, d.Height);
 			break;
 
 		default:
 			Log.d("AROSDisplay", "Unknown command " + cmd);
-			InputPipe.writeInt(DisplayServer.cmd_Nak);
-			InputPipe.writeInt(cmd);
+			
+			ReplyCommand(DisplayServer.cmd_Nak, cmd);
 			break;
 		}
 	}

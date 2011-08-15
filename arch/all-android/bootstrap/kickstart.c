@@ -107,7 +107,7 @@ int kick(int (*addr)(), struct TagItem *msg)
         exit(i);
     }
 
-    D(kprintf("[Bootstrap] AROS PID is %d\n", child));
+    D(kprintf("[Bootstrap] AROS PID %d, bootstrap PID %d\n", child, getpid()));
 
     /* Set up server side of pipes */
     DisplayPipe = displaypipe[0];
