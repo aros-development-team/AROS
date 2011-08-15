@@ -1013,11 +1013,11 @@ VOID GoOffline(struct DevUnit *unit, struct DevBase *base)
          unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_UPSTALL);
          while((unit->LEWordIn(unit->card, EL3REG_STATUS) &
             EL3REG_STATUSF_CMDINPROGRESS) != 0);
-         unit->LELongOut(unit->card, EL3REG_UPLIST, (ULONG)NULL);
+         unit->LELongOut(unit->card, EL3REG_UPLIST, (ULONG)0);
          unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_DOWNSTALL);
          while((unit->LEWordIn(unit->card, EL3REG_STATUS)
             & EL3REG_STATUSF_CMDINPROGRESS) != 0);
-         unit->LELongOut(unit->card, EL3REG_DOWNLIST, (ULONG)NULL);
+         unit->LELongOut(unit->card, EL3REG_DOWNLIST, (ULONG)0);
       }
 
       /* Turn off media functions */
@@ -2098,7 +2098,7 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
 
          Remove((APTR)request);
          unit->tx_requests[slot] = request;
-         dpd[EL3DPD_NEXT] = (ULONG)NULL;
+         dpd[EL3DPD_NEXT] = (ULONG)0;
          dpd[EL3DPD_HEADER] =
             MakeLELong(EL3DPD_HEADERF_DLINT | packet_size);
          fragment = dpd + EL3DPD_FIRSTFRAG;
