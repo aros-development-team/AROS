@@ -9,37 +9,38 @@ Q ?= @
 
 #MM- kernel-link-amiga-m68k : \
 #MM     kernel-objs \
-#MM     kernel-debug-kobj \
+#MM     kernel-alerthook-kobj \
+#MM     kernel-amiga-m68k-amigavideo-kobj \
+#MM     kernel-amiga-m68k-audio-kobj \
 #MM     kernel-amiga-m68k-devs \
 #MM     kernel-amiga-m68k-kbd-kobj \
 #MM     kernel-amiga-m68k-mouse-kobj \
-#MM     kernel-amiga-m68k-amigavideo-kobj \
 #MM     kernel-amiga-m68k-uaegfx-kobj \
-#MM     kernel-disk-kobj \
-#MM     kernel-potgo-kobj \
-#MM     kernel-misc-kobj \
-#MM     kernel-fs-cdvdfs-kobj \
-#MM     workbench-libs-workbench-kobj \
+#MM     kernel-amiga-m68k-wbtag-kobj \
+#MM     kernel-ata-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-c-shellcommands-kobj \
-#MM     workbench-libs-icon-kobj \
-#MM     workbench-libs-gadtools-kobj \
-#MM     kernel-partition-kobj \
-#MM     kernel-workbook-kobj \
-#MM     kernel-amiga-m68k-wbtag-kobj \
-#MM     kernel-workbench-devs-amiga-m68k \
-#MM     kernel-usb-amiga-m68k \
+#MM     kernel-cia-kobj \
+#MM     kernel-debug-kobj \
+#MM     kernel-disk-kobj \
+#MM     kernel-filesystem-kobj \
 #MM     kernel-fs-afs-kobj \
+#MM     kernel-fs-cdvdfs-kobj \
 #MM     kernel-fs-con-kobj \
 #MM     kernel-kernel-kobj \
-#MM     kernel-cia-kobj \
-#MM     kernel-alerthook-kobj \
-#MM     workbench-libs-mathffp-kobj \
-#MM     kernel-amiga-m68k-audio-kobj \
-#MM     kernel-ata-kobj \
-#MM     kernel-shell-kobj \
-#MM     kernel-filesystem-kobj \
 #MM     kernel-m680x0-kobj \
+#MM     kernel-misc-kobj \
+#MM     kernel-partition-kobj \
+#MM     kernel-potgo-kobj \
+#MM     kernel-shell-kobj \
+#MM     kernel-usb-amiga-m68k \
+#MM     kernel-workbench-devs-amiga-m68k \
+#MM     kernel-workbook-kobj \
+#MM     workbench-libs-gadtools-kobj \
+#MM     workbench-libs-icon-kobj \
+#MM     workbench-libs-mathffp-kobj \
+#MM     workbench-libs-mathieeesingbas-kobj \
+#MM     workbench-libs-workbench-kobj \
 #MM     linklibs-loadseg
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
@@ -84,7 +85,7 @@ ROMLOC_rom := 0x0f80000
 FILES=start early debug mmu
 AFILES=rom_entry rom_init cpu_detect superstack_swap
 
-KLIBS   := exec aros dos utility oop expansion mathffp partition debug
+KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
@@ -107,7 +108,8 @@ $(DISTDIR)/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
 FILES   := 
 AFILES  := ext_entry
 
-KLIBS   :=  keymap graphics layers intuition gadtools icon workbench 680x0
+KLIBS   :=  keymap graphics layers intuition gadtools icon workbench 680x0 \
+            mathffp mathieeesingbas
 KDEVS   := 
 KHNDLRS := cdrom
 KHIDDS  :=
@@ -249,7 +251,7 @@ OBJS_local:= $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 FILES   := 
 AFILES  := ext_entry
 
-KLIBS   := aros dos utility oop mathffp partition \
+KLIBS   := aros dos utility oop mathffp mathieeesingbas partition \
            keymap graphics layers intuition gadtools icon workbench 680x0
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := cdrom con afs amberram
