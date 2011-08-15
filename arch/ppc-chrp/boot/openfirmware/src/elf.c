@@ -323,7 +323,7 @@ int load_elf_file(const char *name, void *file, unsigned long virt)
 					if (!mod->m_str)
 					{
 						mod->m_str = __claim(sh[i].size);
-						memcpy(mod->m_str, sh[i].addr, sh[i].size);
+						memcpy(mod->m_str, (void *)sh[i].addr, sh[i].size);
 
 						D(bug("[BOOT] symbol table copied from %p to %p\n", sh[i].addr, mod->m_str));
 					}
@@ -333,12 +333,12 @@ int load_elf_file(const char *name, void *file, unsigned long virt)
 				{
 					if (sh[i].addr)
 					{
-						intptr_t virt = sh[i].addr + virt - KERNEL_PHYS_BASE;
+						intptr_t addr = sh[i].addr + virt - KERNEL_PHYS_BASE;
 
-						if (virt < mod->m_lowest)
-							mod->m_lowest = virt;
-						if (virt + sh[i].size > mod->m_highest)
-							mod->m_highest = virt + sh[i].size;
+						if (addr < mod->m_lowest)
+							mod->m_lowest = addr;
+						if (addr + sh[i].size > mod->m_highest)
+							mod->m_highest = addr + sh[i].size;
 					}
 				}
 			}

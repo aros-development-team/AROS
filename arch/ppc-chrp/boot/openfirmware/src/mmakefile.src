@@ -11,6 +11,9 @@ USER_CFLAGS += -Os -ffreestanding -nostdlib -Wall -I$(SRCDIR)/$(CURDIR)/../inclu
 #MM ub2lb-chrp-ppc-efika: linklibs
 ub2lb-chrp-ppc-efika: $(AROSDIR)/os_image
 
+#MM
+ub2lb-chrp-ppc-efika-quick: $(AROSDIR)/os_image
+
 $(AROSDIR)/os_image: $(OBJS) $(DEPS)
 	$(KERNEL_LD) -N --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(OBJS) -o $@
 

@@ -86,6 +86,7 @@ static int load_elf_or_package(char *name, uint8_t *base, unsigned long virt)
 	    /* go to the next file */
 	    file += len;
 	}
+	return 1;
     }
     else
     {
