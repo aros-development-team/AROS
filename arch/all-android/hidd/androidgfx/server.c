@@ -47,6 +47,14 @@ void agfxInt(int pipe, int mode, void *data)
 {
     DB2(bug("[AGFX.server] Event 0x%08X on pipe %d\n", mode, pipe));
 
+    if (mode & vHidd_UnixIO_Error)
+    {
+    	/* This likely means broken pipe. Our server is dead, we should die too. */
+    	D(bug("[AGFX.server] Error condition on input pipe\n"));
+
+    	ShutdownA(SD_ACTION_POWEROFF);
+    }
+
     if (mode & vHidd_UnixIO_Read)
     {
     	ULONG cmd;
