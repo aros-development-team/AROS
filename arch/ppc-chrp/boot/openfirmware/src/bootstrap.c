@@ -303,7 +303,7 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 
 		    if (!res)
 		    {
-			printf("Failed to load kickstart!\n");
+			printf("Failed to load kickstart!\r\n");
 
 			ofw_release(load_base, LOAD_SIZE);
 			ofw_release(rtas_base, rtas_size);
@@ -354,13 +354,13 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 
 			D(printf("RTAS ihandle = %p\r\n", ihandle));
 
-			printf("RTAS instantiate returns %d\n", ofw_instantiate_rtas(ihandle, rtas_base, &rtas_entry));
+			printf("RTAS instantiate returns %d\r\n", ofw_instantiate_rtas(ihandle, rtas_base, &rtas_entry));
 
 			D(printf("RTAS entry point @ %p\r\n", rtas_entry));
 
 			ofw_close(ihandle);
 
-			D(printf("%d%d%d%d\n", rtas_base[0], rtas_base[1], rtas_base[2], rtas_base[3]));
+			D(printf("%d%d%d%d\r\n", rtas_base[0], rtas_base[1], rtas_base[2], rtas_base[3]));
 		}
 	}
 
@@ -417,7 +417,7 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	flush_cache(get_ptr_rw(), get_ptr_ro());
 
 	/* Jump into the JUNGLE! */
-	printf("Entering kickstart at 0x%p...\n", kernel_phys_entry);
+	printf("Entering kickstart at 0x%p...\r\n", kernel_phys_entry);
 	kernel_phys_entry(tags, AROS_BOOT_MAGIC);
 
 	free_menu();
