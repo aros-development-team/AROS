@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.String;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
 public class AROSBootstrap extends Activity
@@ -122,7 +123,8 @@ public class AROSBootstrap extends Activity
 	private void ReplyCommand(int cmd, int... response)
 	{
 		int len = (response.length + 1) * 4;
-		ByteBuffer bb = ByteBuffer.allocate(len);        
+		ByteBuffer bb = ByteBuffer.allocate(len);   
+		bb.order(ByteOrder.nativeOrder());
         IntBuffer ib = bb.asIntBuffer();
  
         ib.put(0, cmd);
