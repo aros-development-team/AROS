@@ -352,7 +352,7 @@ static void RomInfo(IPTR rom)
     }
 }
 
-void exec_boot(ULONG *membanks, ULONG *cpu)
+void exec_boot(ULONG *membanks, ULONG *cpupcr)
 {
 #if 0
 	struct ExecBase *oldSysBase = *(APTR *)4;
@@ -384,6 +384,7 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	struct MemHeader *mh;
 	LONG oldLastAlert[4];
 	ULONG oldmem;
+	ULONG cpuinfo, pcrinfo;
 	APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
 	APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
 	/* We can't use the global 'SysBase' symbol, since
@@ -409,6 +410,46 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
 	RomInfo(0xf80000);
 	RomInfo(0xe00000);
 	RomInfo(0xf00000);
+
+	cpuinfo = cpupcr[0];
+	pcrinfo = cpupcr[1];
+
+#ifdef AROS_SERIAL_DEBUG
+	DEBUGPUTS(("CPU: "));
+	if (cpuinfo & AFF_68060)
+		DEBUGPUTS(("68060"));
+	else if (cpuinfo & AFF_68040)
+		DEBUGPUTS(("68040"));
+	else if (cpuinfo & AFF_68030)
+		DEBUGPUTS(("68030"));
+	else if (cpuinfo & AFF_68020) {
+		if (cpuinfo & AFF_ADDR32)
+			DEBUGPUTS(("68020"));
+		else
+			DEBUGPUTS(("68EC020"));
+	} else if (cpuinfo & AFF_68010)
+		DEBUGPUTS(("68010"));
+	else
+		DEBUGPUTS(("68000"));
+	DEBUGPUTS((" FPU: "));
+	if (cpuinfo & AFF_FPU40) {
+		if (cpuinfo & AFF_68060)
+			DEBUGPUTS(("68060"));
+		else if (cpuinfo & AFF_68040)
+			DEBUGPUTS(("68040"));
+		else
+			DEBUGPUTS(("-"));
+	} else if (cpuinfo & AFF_68882)
+		DEBUGPUTS(("68882"));
+	else if (cpuinfo & AFF_68881)
+		DEBUGPUTS(("68881"));
+	else
+		DEBUGPUTS(("-"));
+	DEBUGPUTS(("\n"));
+	if (pcrinfo)
+		DEBUGPUTHEX(("PCR", pcrinfo));
+#endif
+
 
 	/* Zap out old SysBase if invalid */
 	wasvalid = IsSysBaseValid(oldSysBase);
@@ -527,55 +568,19 @@ void exec_boot(ULONG *membanks, ULONG *cpu)
             SysBase->LastAlert[i] = oldLastAlert[i];
 
 	/* Convert CPU/FPU flags to AttnFlags */
-	SysBase->AttnFlags = (UWORD)cpu[0];
+	SysBase->AttnFlags = cpuinfo & 0xffff;
 	if (SysBase->AttnFlags & (AFF_68030 | AFF_68040 | AFF_68060))
 		SysBase->AttnFlags |= AFF_ADDR32;
-	if (cpu[0] & 0xffff0000) {
+	if (cpuinfo & 0xffff0000) {
 		SysBase->AttnFlags |= AFF_FPU;
 		if (SysBase->AttnFlags & (AFF_68040 | AFF_68060))
 			SysBase->AttnFlags |= AFF_FPU40;
 			// AFF_68881 | AFF_68882 set only if 040/060 math emulation running
-		else if (((cpu[0] >> 16) & 0xff) <= 0x1f)
+		else if (((cpuinfo >> 16) & 0xff) <= 0x1f)
 			SysBase->AttnFlags |= AFF_68881;
 		else
 			SysBase->AttnFlags |= AFF_68881 | AFF_68882;
 	}
-
-#ifdef AROS_SERIAL_DEBUG
-	DEBUGPUTS(("CPU: "));
-	if (SysBase->AttnFlags & AFF_68060)
-		DEBUGPUTS(("68060"));
-	else if (SysBase->AttnFlags & AFF_68040)
-		DEBUGPUTS(("68040"));
-	else if (SysBase->AttnFlags & AFF_68030)
-		DEBUGPUTS(("68030"));
-	else if (SysBase->AttnFlags & AFF_68020) {
-		if (SysBase->AttnFlags & AFF_ADDR32)
-			DEBUGPUTS(("68020"));
-		else
-			DEBUGPUTS(("68EC020"));
-	} else if (SysBase->AttnFlags & AFF_68010)
-		DEBUGPUTS(("68010"));
-	else
-		DEBUGPUTS(("68000"));
-	DEBUGPUTS((" FPU: "));
-	if (SysBase->AttnFlags & AFF_FPU40) {
-		if (SysBase->AttnFlags & AFF_68060)
-			DEBUGPUTS(("68060"));
-		else if (SysBase->AttnFlags & AFF_68040)
-			DEBUGPUTS(("68040"));
-		else
-			DEBUGPUTS(("-"));
-	} else if (SysBase->AttnFlags & AFF_68882)
-		DEBUGPUTS(("68882"));
-	else if (SysBase->AttnFlags & AFF_68881)
-		DEBUGPUTS(("68881"));
-	else
-		DEBUGPUTS(("-"));
-	DEBUGPUTS(("\n"));
-	if (cpu[1])
-		DEBUGPUTHEX(("PCR", cpu[1]));
-#endif
 
 	/* Inject code for GetCC, depending on CPU model */
 	if (SysBase->AttnFlags & AFF_68010) {
