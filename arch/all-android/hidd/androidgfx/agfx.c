@@ -180,7 +180,29 @@ VOID AGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 OOP_Object *AGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
-    /* TODO */
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+
+    D(bug("[AGFX] Show(0x%p)\n", msg->bitMap));
+
+    if (data->bitmap)
+    	OOP_SetAttrsTags(data->bitmap, aHidd_BitMap_Visible, FALSE, TAG_DONE);
+
+    if (msg->bitMap)
+    	OOP_SetAttrsTags(msg->bitMap, aHidd_BitMap_Visible, TRUE, TAG_DONE);
+    else
+    {
+    	/* addr == NULL will clear the screen */
+	struct ShowRequest show;
+
+	show.req.cmd   = cmd_Show;
+	show.req.len   = 6;
+	show.displayid = 0;
+	show.addr      = 0;
+
+	DoRequest(&show.req, XSD(cl));
+    }
+
+    data->bitmap = msg->bitMap;
     return msg->bitMap;
 }
 

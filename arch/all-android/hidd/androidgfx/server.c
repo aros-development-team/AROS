@@ -30,10 +30,17 @@ static void ReadPipe(int pipe, void *data, int len, struct agfx_staticdata *xsd)
     }
 }
 
+/*
+ * This arrays specifies reply lengths for commands.
+ * First ULONG (command echo) also counts here. Zero value means we don't need any reply at all.
+ */
 static const int ReplyLength[] = 
 {
     0,
-    8,	/* cmd_Query */
+    3,	/* cmd_Query	*/
+    1,	/* cmd_Show	*/
+    0,	/* cmd_Update	*/
+    0	/* cmd_Scroll	*/
 };
 
 static inline void ReplyRequest(struct Request *request)
@@ -59,7 +66,7 @@ void agfxInt(int pipe, int mode, void *data)
     {
     	ULONG cmd;
     	ULONG status = STATUS_ACK;
-    	int reply_len;
+	int reply_len = ReplyLength[cmd];
 
 	ReadPipe(pipe, &cmd, sizeof(cmd), data);
     	DB2(bug("[AGFX.server] Command 0x%08X from server\n", cmd));
@@ -72,9 +79,9 @@ void agfxInt(int pipe, int mode, void *data)
 	    status = STATUS_NAK;
 	}
 
-	reply_len  = ReplyLength[cmd];
 	if (reply_len)
 	{
+	    /* If CMDF_QUICK is not set, the command needs reply */
     	    struct Request *request = (struct Request *)RemHead((struct List *)&XSD(data)->waitQueue);
 
 #ifdef CHECK_CONSISTENCY
@@ -89,12 +96,12 @@ void agfxInt(int pipe, int mode, void *data)
 		Alert(AT_DeadEnd | AN_AsyncPkt);
 	    }
 #endif
-
-	    if (status == STATUS_ACK)
+	    /* One ULONG has already been read */
+	    if (--reply_len && (status == STATUS_ACK))
 	    {
 	    	ULONG *cmd = &request->cmd;
 
-    	        ReadPipe(pipe, &cmd[request->len + 2], reply_len, data);
+    	        ReadPipe(pipe, &cmd[request->len + 2], reply_len * sizeof(ULONG), data);
     	    }
 
     	    request->status = status;
@@ -106,9 +113,9 @@ void agfxInt(int pipe, int mode, void *data)
 void DoRequest(struct Request *req, struct agfx_staticdata *xsd)
 {
     int len, res, err;
-    int need_reply = ReplyLength[req->cmd];
+    ULONG need_reply = ReplyLength[req->cmd];
 
-    /* If ReplyLength array has nonzero value for this command, we need to wait for reply */
+    /* If ReplyLength for this command is not zero, we need to wait for reply */
     if (need_reply)
     {
     	/*

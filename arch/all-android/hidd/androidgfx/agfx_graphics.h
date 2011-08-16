@@ -11,6 +11,7 @@
 /* Private instance data for Gfx hidd class */
 struct gfx_data
 {
-    ULONG width;	/* Display view size */
-    ULONG height;
+    ULONG	width;	/* Display view size		*/
+    ULONG	height;
+    OOP_Object *bitmap;	/* Currently displayed bitmap   */
 };
