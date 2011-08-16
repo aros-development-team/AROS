@@ -129,6 +129,7 @@ public class AROSBootstrap extends Application
 				Bitmap.Height	   = params[4];
 				Bitmap.BytesPerRow = params[5];
 				Bitmap.Pixels      = MapMemory(params[6], params[5] * params[4]);
+//				Bitmap.Pixels	   = MapMemory(0x0A, 16);
 			}
 
 			Server.ReplyCommand(cmd);
@@ -179,5 +180,5 @@ public class AROSBootstrap extends Application
 	
 	// libAROSBootstrap native methods
     private native int Start(String dir, FileDescriptor rfd, FileDescriptor wfd);
-    private native ByteBuffer MapMemory(long addr, long size);
+    private native ByteBuffer MapMemory(int addr, int size);
 }
