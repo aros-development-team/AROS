@@ -565,6 +565,82 @@ void setscroll(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     data->updatescroll = bm;
 }
 
+/* Convert Z flag to normal C-style return variable. Fun. */
+UBYTE bltnode_wrapper(void)
+{
+    UBYTE ret;
+    asm volatile (
+       "    pea 1f\n"
+       "    move.l 4(%%a1),-(%%sp)\n"
+       "    rts\n"
+       "1:  sne %d0\n"
+       "    move.b %%d0,%0\n"
+       : "=g" (ret)
+    );
+    return ret;
+}
+
+static AROS_UFH4(ULONG, gfx_blit,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(void *, datap, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(ULONG, dummy3, A6))
+{ 
+    AROS_USERFUNC_INIT
+
+    struct amigavideo_staticdata *data = (struct amigavideo_staticdata*)datap;
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct GfxBase *GfxBase = data->gfxbase;
+    struct bltnode *bn = GfxBase->blthd;
+    UBYTE v;
+    UWORD dmaconr;
+    
+    if (bn == NULL)
+    	return 0;
+    
+    /* Was last blit in this node? */
+    if ((ULONG)bn->function & 1) {
+	*((ULONG*)&bn->function) &= ~1;
+	if (bn->stat == CLEANUP)
+	    AROS_UFC2(UBYTE, bn->cleanup,
+		AROS_UFCA(struct Custom *, custom, A0),
+		AROS_UFCA(struct bltnode*, bn, A1));
+	/* Next node */
+    	GfxBase->blthd = bn->n;
+    	bn = GfxBase->blthd;
+    }
+    
+    if (!bn) {
+    	/* Last blit finished */
+	custom->intena = INTF_BLIT;
+	GfxBase->blthd = GfxBase->bsblthd = NULL;
+	DisownBlitter();
+       	return 0;
+    }
+ 
+    v = AROS_UFC2(UBYTE, bltnode_wrapper,
+	    AROS_UFCA(struct Custom *, custom, A0),
+	    AROS_UFCA(struct bltnode*, bn, A1));
+
+    dmaconr = custom->dmaconr;
+    dmaconr = custom->dmaconr;
+    if (!(dmaconr & 0x4000)) {
+    	/* Eh? Blitter not active?, better fake the interrupt. */
+    	custom->intreq = INTF_SETCLR | INTF_BLIT;
+    }
+    
+    if (v) {
+	/* Handle same node again next time */
+	return 0;
+    }
+
+    /* Mark as "done". Probably not the best way.. */
+    *((ULONG*)&bn->function) |= 1;
+
+    return 0;
+	
+    AROS_USERFUNC_EXIT
+}
 
 static AROS_UFH4(ULONG, gfx_vblank,
     AROS_UFHA(ULONG, dummy, A0),
@@ -627,6 +703,12 @@ void initcustom(struct amigavideo_staticdata *data)
     data->inter.is_Node.ln_Type = NT_INTERRUPT;
     AddIntServer(INTB_VERTB, &data->inter);
 
+    GfxBase->bltsrv.is_Code         = (APTR)gfx_blit;
+    GfxBase->bltsrv.is_Data         = data;
+    GfxBase->bltsrv.is_Node.ln_Name = "Blitter";
+    GfxBase->bltsrv.is_Node.ln_Type = NT_INTERRUPT;
+    SetIntVector(INTB_BLIT, &GfxBase->bltsrv);
+
     data->startx = 0x80;
     data->starty = 0x28;
 
@@ -662,7 +744,7 @@ void initcustom(struct amigavideo_staticdata *data)
     *c++ = 0xfffe;
     custom->cop1lc = (ULONG)data->copper1;
     custom->cop2lc = (ULONG)data->copper2_backup;
-    custom->dmacon = 0x8000 | 0x0080 | 0x0020;
+    custom->dmacon = 0x8000 | 0x0080 | 0x0040 | 0x0020;
     data->bplcon3 = ((data->res + 1) << 6) | 2; // spriteres + bordersprite
     
     data->gfxbase->copinit = (struct copinit*)data->copper1;
