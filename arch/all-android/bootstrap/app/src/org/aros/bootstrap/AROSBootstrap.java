@@ -105,13 +105,13 @@ public class AROSBootstrap extends Application
 		switch (cmd)
 		{
 		case cmd_Query:
-			Log.d("AROS", "cmd_Query(" + params + ")");
+			Log.d("AROS", "cmd_Query(" + params[0] + ")");
 
 			Server.ReplyCommand(cmd, DisplayWidth, DisplayHeight);
 			break;
 
 		case cmd_Show:
-			Log.d("AROS", "cmd_Show(" + params + ")");
+			Log.d("AROS", "cmd_Show(" + params[0] + ", " + params[6] + ")");
 
 			if (params[6] == 0)
 			{

@@ -74,6 +74,6 @@ jobject Java_org_aros_bootstrap_AROSBootstrap_MapMemory(JNIEnv* env, jobject thi
 {
     void *ptr = (void *)(unsigned long)addr;
 
-    D(kprintf("[Bootstrap] Mapping %lu bytes at 0x%p\n", size, ptr));
+    D(kprintf("[Bootstrap] Mapping %lu bytes at %p\n", size, ptr));
     return (*env)->NewDirectByteBuffer(env, ptr, size);
 }
