@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       android:versionCode="1"
       android:versionName="1.0" package="org.aros.bootstrap">
-    <application android:icon="@drawable/icon" android:label="AROS" android:debuggable="true">
-        <activity android:name=".AROSBootstrap"
+    <application android:icon="@drawable/icon" android:label="AROS" android:debuggable="true" android:name="AROSBootstrap">
+        <activity android:name=".AROSActivity"
                   android:label="AROS" android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

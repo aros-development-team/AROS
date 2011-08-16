@@ -1,6 +1,8 @@
 package org.aros.bootstrap;
 
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -12,20 +14,40 @@ import android.util.Log;
 
 public class DisplayServer extends Thread
 {
-	public static final int cmd_Query =  1;
-	public static final int cmd_Nak   = -1;
-
 	private Handler handler;
 	private FileInputStream DisplayPipe;
+	private FileOutputStream InputPipe;
 	private AROSBootstrap main;
-	
-	public DisplayServer(AROSBootstrap parent, FileInputStream pipe)
+
+	public DisplayServer(AROSBootstrap parent, FileDescriptor displayfd, FileDescriptor inputfd)
 	{
-		main = parent;
-		handler = new Handler();
-		DisplayPipe = pipe;
+		main        = parent;
+		handler     = new Handler();
+		DisplayPipe = new FileInputStream(displayfd);
+		InputPipe   = new FileOutputStream(inputfd); 
 	}
-	
+
+	public void ReplyCommand(int cmd, int... response)
+	{
+		int len = response.length + 1;
+		ByteBuffer bb = ByteBuffer.allocate(len * 4);   
+		bb.order(ByteOrder.nativeOrder());
+        IntBuffer ib = bb.asIntBuffer();
+ 
+        ib.put(cmd);
+        ib.put(response);
+ 
+        try
+        {
+			InputPipe.write(bb.array());
+		}
+        catch (IOException e)
+        {
+        	Log.d("AROS.Server", "Error writing input pipe");
+        	System.exit(0);
+		}
+	}
+
 	public void run()
 	{
 		Log.d("AROS.Server", "Display server started");
