@@ -7,6 +7,7 @@
 */
 
 #include <proto/exec.h>
+#include <hardware/intbits.h>
 #include <hardware/blit.h>
 #include <graphics/gfxbase.h>
 
@@ -63,14 +64,15 @@
   /* this function uses the queue bsblthd (bsblttl) */
   
   /* I am accessing a public structure and there's no semaphore...*/
-  Forbid();
+  Disable();
   
   if (NULL == GfxBase->bsblthd)
   { 
+    OwnBlitter();
     /* it's the first one in the list */
     GfxBase->bsblthd = bn;
     GfxBase->bsblttl = bn;
-      
+
     /* In this case the following also has to happen: 
        It is my understanding that at the end of every blit an interrupt
        occurs that can take care of any blits in this queue or allow
@@ -84,6 +86,14 @@
     /*
       !!! missing code here!! See explanation above!
     */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
+    {
+      /* Trigger blitter interrupt */
+      volatile struct Custom *custom = (struct Custom *)(void **)0xdff000;
+      custom->intreq = INTF_SETCLR | INTF_BLIT;
+      custom->intena = INTF_SETCLR | INTF_BLIT;
+    }
+#endif
   }
   else
   {
@@ -92,7 +102,7 @@
     GfxBase->bsblttl    = bn;
   }
 
-  Permit();
+  Enable();
 
   AROS_LIBFUNC_EXIT
   

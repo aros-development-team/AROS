@@ -61,21 +61,27 @@
 {
   AROS_LIBFUNC_INIT
 
-  /* prevent other tasks from doing what I am doing */
-  struct Task * me;
+  struct BlitWaitQNode node;
+  struct Task *me;
   
-  me  = FindTask(NULL);
+  me = FindTask(NULL);
 
   D(bug("OwnBlitter: Request by Task %p)\n", me));
-  LOCK_BLIT;
-  
-  /* test whether a task is using the blitter. Even if the blitter is
-     used by the queued blits now the BlitOwner entry must not be NULL!
-   */
+
   Disable();
-  GfxBase->BlitOwner = me;
-  Enable();
-  D(bug("OwnBlitter: Now owned by Task %p\n", me));
+  for (;;) {
+    if (GfxBase->BlitOwner == NULL) {
+      GfxBase->BlitOwner = me;
+      Enable();
+      D(bug("OwnBlitter: Now owned by Task %p\n", me));
+      return;
+    }
+    node.task = me;
+    AddTail(&GfxBase->BlitWaitQ, (struct Node*)&node);
+    SetSignal(0, 1 << SIGB_BLIT);
+    Wait(1 << SIGB_BLIT);
+    Remove((struct Node*)&node);
+  }
 
   AROS_LIBFUNC_EXIT
 } /* OwnBlitter */

@@ -448,4 +448,10 @@ void __DisposeRegionRectangleExtChunk
     struct GfxBase *GfxBase
 );
 
+struct BlitWaitQNode
+{
+	struct MinNode node;
+	struct Task *task;
+};
+
 #endif /* GRAPHICS_INTERN_H */
