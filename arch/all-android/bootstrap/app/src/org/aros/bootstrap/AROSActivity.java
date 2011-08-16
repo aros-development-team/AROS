@@ -10,7 +10,8 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.RelativeLayout;
+
 import java.lang.String;
 import java.nio.IntBuffer;
 
@@ -113,7 +114,7 @@ public class AROSActivity extends Activity
 }
 
 // This is our display class
-class DisplayView extends ViewGroup
+class DisplayView extends RelativeLayout
 {
 	private AROSBootstrap main;
 	private BitmapView bitmap;
@@ -123,6 +124,8 @@ class DisplayView extends ViewGroup
 		super(context);
 		main = app;
 
+		// The bitmap view here magically appears to have the same size as DisplayView
+		// and positioned at (0, 0). Thanks to RelativeLayout.
 		bitmap = new BitmapView(context, app);
 		addView(bitmap);
 	}
@@ -133,14 +136,13 @@ class DisplayView extends ViewGroup
 	}
 
 	@Override
-	protected void onLayout(boolean c, int left, int top, int right, int bottom)
+	protected void onSizeChanged(int w, int h, int oldw, int oldh)
 	{
-		if (!c)
-			return;
-
-		main.DisplayWidth = right - left;
-		main.DisplayHeight = bottom - top;
-		Log.d("AROS", "Screen size set: " + main.DisplayWidth + "x" + main.DisplayHeight);
+		super.onSizeChanged(w, h, oldw, oldh);
+	
+		main.DisplayWidth = w;
+		main.DisplayHeight = h;
+		Log.d("AROS", "Screen size set: " + w + "x" + h);		
 
 		main.Boot();
 	}
@@ -161,7 +163,7 @@ class BitmapView extends View
 	protected void onDraw(Canvas c)
 	{
 		BitmapData bm = main.Bitmap;
-
+	
 		if (bm == null)
 		{
 			c.drawColor(0);
@@ -172,7 +174,7 @@ class BitmapView extends View
 			IntBuffer ib = bm.Pixels.asIntBuffer();
 			int[] Data = new int[ib.capacity()];
 			ib.get(Data);
-		
+
 			c.drawBitmap(Data, 0, stride, 0, 0, main.DisplayWidth, main.DisplayHeight, false, null);
 		}
 	}

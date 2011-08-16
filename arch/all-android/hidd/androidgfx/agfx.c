@@ -67,8 +67,6 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct TagItem mode_tags[] =
     {
 	{ aHidd_Gfx_PixFmtTags	, (IPTR)pftags		},
-	{ aHidd_Sync_HMin	, 112			}, /* In fact these can be even smaller, and */
-	{ aHidd_Sync_VMin	, 112			}, /* maximum can be even bigger...	     */
 	{ aHidd_Sync_HMax	, 16384			},
 	{ aHidd_Sync_VMax	, 16384			},
 	{ aHidd_Sync_Description, (IPTR)"Android: %hx%v"},
