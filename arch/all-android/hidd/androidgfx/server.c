@@ -1,4 +1,4 @@
-#define DEBUG 2
+#define DEBUG 1
 #define CHECK_CONSISTENCY
 
 #include <aros/debug.h>
@@ -66,7 +66,7 @@ void agfxInt(int pipe, int mode, void *data)
     {
     	ULONG cmd;
     	ULONG status = STATUS_ACK;
-	int reply_len = ReplyLength[cmd];
+    	int reply_len;
 
 	ReadPipe(pipe, &cmd, sizeof(cmd), data);
     	DB2(bug("[AGFX.server] Command 0x%08X from server\n", cmd));
@@ -79,6 +79,7 @@ void agfxInt(int pipe, int mode, void *data)
 	    status = STATUS_NAK;
 	}
 
+	reply_len = ReplyLength[cmd];
 	if (reply_len)
 	{
 	    /* If CMDF_QUICK is not set, the command needs reply */

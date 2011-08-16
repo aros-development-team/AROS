@@ -64,11 +64,11 @@ struct UpdateRequest
 {
     struct Request req;		/* cmd_Update, 5			*/
     /* Request */
-    ULONG	   displayid;
-    ULONG	   x;
-    ULONG	   y;
-    ULONG	   width;
-    ULONG	   height;
+    ULONG	   id;		/* Bitmap ID, reserved			*/
+    ULONG	   left;	/* Rectangle to update			*/
+    ULONG	   top;
+    ULONG	   right;
+    ULONG	   bottom;
     /* No response needed */
 };
 
@@ -76,7 +76,7 @@ struct ScrollRequest
 {
     struct Request req;		/* cmd_Scroll, 3			*/
     /* Request */
-    ULONG	   id;		/* Reserved				*/
+    ULONG	   id;		/* Bitmap ID, reserved			*/
     ULONG	   left;	/* New offset				*/
     ULONG	   top;
     /* No response needed */

@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import java.lang.String;
+import java.nio.IntBuffer;
 
 public class AROSActivity extends Activity
 {
@@ -28,6 +29,7 @@ public class AROSActivity extends Activity
     	Log.d("AROS.UI", "Activity created");
 
     	AROSBootstrap app = (AROSBootstrap) getApplication();
+
     	rootView = new DisplayView(this, app);
     	super.onCreate(savedInstanceState);
         setContentView(rootView);
@@ -59,6 +61,11 @@ public class AROSActivity extends Activity
     	showDialog(ID_ALERT_DIALOG);
 
     	Looper.loop();
+    }
+
+    public BitmapView GetBitmap(int id)
+    {
+    	return rootView.GetBitmap(id);
     }
 
     public Dialog onCreateDialog(int id)
@@ -103,37 +110,26 @@ public class AROSActivity extends Activity
 
     	return b.create();
     }
-
-	// This is for far future. Android already supports TV out,
-	// just it always displays the same picture as device's screen.
-	// But what if things change one day?
-	// 'id' parameter is reserved to identify a particular display.
-	public DisplayView GetDisplay(int id)
-	{
-		return rootView;
-	}
 }
 
 // This is our display class
 class DisplayView extends ViewGroup
 {
 	private AROSBootstrap main;
+	private BitmapView bitmap;
 
 	public DisplayView(Context context, AROSBootstrap app)
 	{
 		super(context);
-
-		Width  = 0;
-		Height = 0;
 		main = app;
+
+		bitmap = new BitmapView(context, app);
+		addView(bitmap);
 	}
 
-	public BitmapView NewBitMap(int width, int height)
+	public BitmapView GetBitmap(int id)
 	{
-		BitmapView bm = new BitmapView(null, width, height);
-
-		addView(bm);
-		return bm;
+		return bitmap;
 	}
 
 	@Override
@@ -142,36 +138,42 @@ class DisplayView extends ViewGroup
 		if (!c)
 			return;
 
-		Width = right - left;
-		Height = bottom - top;
-		Log.d("AROS", "Screen size set: " + Width + "x" + Height);
+		main.DisplayWidth = right - left;
+		main.DisplayHeight = bottom - top;
+		Log.d("AROS", "Screen size set: " + main.DisplayWidth + "x" + main.DisplayHeight);
 
 		main.Boot();
 	}
-
-	// Display size - for AROS driver
-	public int Width;
-	public int Height;
 }
 
 // This is our bitmap class
 class BitmapView extends View
 {
-	public BitmapView(Context context, int w, int h)
+	private AROSBootstrap main;
+
+	public BitmapView(Context context, AROSBootstrap app)
 	{
 		super(context);
-
-		width  = w;
-		height = h;
-		Data   = new int[w * h];
+		main = app;
 	}
 
 	@Override
 	protected void onDraw(Canvas c)
-	{	
-		c.drawBitmap(Data, 0, width, 0, 0, width, height, false, null);
-	}
+	{
+		BitmapData bm = main.Bitmap;
 
-	public int[] Data;
-	private int width, height;
+		if (bm == null)
+		{
+			c.drawColor(0);
+		}
+		else
+		{
+			int stride = bm.BytesPerRow / 4;
+			IntBuffer ib = bm.Pixels.asIntBuffer();
+			int[] Data = new int[ib.capacity()];
+			ib.get(Data);
+		
+			c.drawBitmap(Data, 0, stride, 0, 0, main.DisplayWidth, main.DisplayHeight, false, null);
+		}
+	}
 }

@@ -9,6 +9,8 @@
 #include "android.h"
 #include "bootstrap.h"
 
+#define D(x) x
+
 /* Interface variables */
 int DisplayPipe;
 int InputPipe;
@@ -62,4 +64,16 @@ int Java_org_aros_bootstrap_AROSBootstrap_Start(JNIEnv* env, jobject this, jstri
     }
 
     return res;
+}
+
+/*
+ * Wrap a given memory region into ByteBuffer object.
+ * Needed for accessing AROS shared RAM.
+ */
+jobject Java_org_aros_bootstrap_AROSBootstrap_MapMemory(JNIEnv* env, jobject this, jlong addr, jlong size)
+{
+    void *ptr = (void *)(unsigned long)addr;
+
+    D(kprintf("[Bootstrap] Mapping %lu bytes at 0x%p\n", size, ptr));
+    return (*env)->NewDirectByteBuffer(env, ptr, size);
 }
