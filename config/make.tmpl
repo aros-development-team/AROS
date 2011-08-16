@@ -1154,12 +1154,20 @@ BD_KOBJ   := $(KOBJSDIR)/%(modname)_%(modtype).o
 # The module is linked from all the compiled .o files
 BD_OBJS       := $(BD_ARCHOBJS) $(addprefix %(objdir)/, $(addsuffix .o,$(notdir $(BD_NARCHFILES))))
 
+# Under Windows con* is a reserved name, it refers to console. Files with such names can't be created.
+# This breaks con-handler build. Here we work around this
+ifeq (%(modname),con)
+    BD_ERR := $(notdir $(BD_MODULE)).err
+else
+    BD_ERR := %(modname).err
+endif
+
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
-		 endobj= err=%(modname).err objdir=%(objdir) \
+		 endobj= err=$(BD_ERR) objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
 %rule_linkmodule module=$(BD_PKGMOD) objs=$(BD_OBJS) \
-		 endobj= err=%(modname).err objdir=%(objdir) \
+		 endobj= err=$(BD_ERR) objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
 # Link kernel object file
@@ -1415,13 +1423,21 @@ BD_ENDOBJS    := $(addsuffix .o,$(BD_ENDFILES))
 BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))) $(BD_LINKLIBFILES)) \
                  %(linklibobjs)
 
+# Under Windows con* is a reserved name, it refers to console. Files with such names can't be created.
+# This breaks con-handler build. Here we work around this
+ifeq (%(modname),con)
+    BD_ERR := $(notdir $(BD_MODULE)).err
+else
+    BD_ERR := %(modname).err
+endif
+
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
-		 endobj=$(BD_ENDOBJS) err=%(modname).err objdir=%(objdir) \
+		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
 %rule_linkmodule module=$(BD_PKGMOD) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
-		 endobj=$(BD_ENDOBJS) err=%(modname).err objdir=%(objdir) \
+		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
 # Link static lib
