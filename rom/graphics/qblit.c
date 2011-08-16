@@ -7,6 +7,7 @@
 */
 
 #include <proto/exec.h>
+#include <hardware/intbits.h>
 #include <hardware/blit.h>
 #include <graphics/gfxbase.h>
 
@@ -63,15 +64,18 @@
 
   /* this function uses the simple FIFO queue blthd (blttl) */
   
-  /* I am accessing a public structure and there's no semaphore...*/
-  Forbid();
+  /* I am accessing a public structure and there's no semaphore...
+   * Interrupts disabled because this is accessed from blitter interrupt.
+   */
+  Disable();
   
   if (NULL == GfxBase->blthd)
   { 
     /* it's the first one in the list */
+    OwnBlitter();
     GfxBase->blthd = bn;
     GfxBase->blttl = bn;
-      
+
     /* In this case the following also has to happen: 
        It is my understanding that at the end of every blit an interrupt
        occurs that can take care of any blits in this queue or allow
@@ -85,6 +89,15 @@
     /*
       !!! missing code here!! See explanation above!
     */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
+    {
+      /* Trigger blitter interrupt */
+      volatile struct Custom *custom = (struct Custom *)(void **)0xdff000;
+      custom->intreq = INTF_SETCLR | INTF_BLIT;
+      custom->intena = INTF_SETCLR | INTF_BLIT;
+    }
+#endif
+
   }
   else
   {
@@ -93,7 +106,7 @@
     GfxBase->blttl    = bn;
   }
 
-  Permit();
+  Enable();
 
   AROS_LIBFUNC_EXIT
 } /* QBlit */

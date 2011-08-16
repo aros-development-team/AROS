@@ -51,31 +51,44 @@
 
 ******************************************************************************/
 {
-  /* if there are no blits in any of the two queues (QBlit() and QBSBlit())
-     then check whether there is a Task in the BlitWaitQ and put it into
-     the TaskReadyList.
-   */
-
   AROS_LIBFUNC_INIT
 
-  if (GfxBase->BlitOwner != FindTask(NULL)) {
-      D(bug("DisownBlitter: Owned by Task %p, but Task %p is releasing it!\n",
-      	      GfxBase->BlitOwner, FindTask(NULL)));
+  /* Debugging disabled, this function must be callable from blitter interrupt.
+   * FIXME: better solution?
+   */
+
+#if 0
+  struct Task *me = FindTask(NULL);
+
+  D(bug("DisownBlitter: Release by Task %p\n", me));
+
+  if (GfxBase->BlitOwner != me) {
+    D(bug("DisownBlitter: Owned by Task %p, but Task %p is releasing it!\n",
+      GfxBase->BlitOwner, me));
   }
 
-  if (NULL != GfxBase->  blthd &&
-      NULL != GfxBase->bsblthd)
+  if (NULL != GfxBase->blthd && NULL != GfxBase->bsblthd)
   {
     D(bug("DisownBlitter: OOPS! Disowning while queued enties are in play!\n"));
   }
+#endif
 
   Disable();
+
   GfxBase->BlitOwner = NULL;
+  /* Do we have any waiting tasks? */
+  if (!IsListEmpty(&GfxBase->BlitWaitQ)) {
+    /* Wake up next OwnBlitter() waiting task */
+    struct BlitWaitQNode *node = (struct BlitWaitQNode*)GfxBase->BlitWaitQ.lh_Head;
+    D(bug("DisownBlitter: Waking task %p\n", node->task));
+    Signal(node->task, 1 << SIGB_BLIT);
+  }
+
   Enable();
 
-  ULOCK_BLIT;
-
-  D(bug("DisownBlitter: Released by Task %p\n", FindTask(NULL)));
+#if 0
+  D(bug("DisownBlitter: Released by Task %p\n", me));
+#endif
 
   AROS_LIBFUNC_EXIT
 } /* DisownBlitter */
