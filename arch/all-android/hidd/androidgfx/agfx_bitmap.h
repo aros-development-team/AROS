@@ -12,12 +12,13 @@
 
 struct bitmap_data
 {
-    LONG     bm_left;
+    LONG     bm_left;		/* Physical coordinates of top-left corner */
     LONG     bm_top;
-    ULONG    win_width;
+    ULONG    win_width;		/* Display window size			   */
     ULONG    win_height;
-    ULONG    bm_width;
+    ULONG    bm_width;		/* Bitmap size				   */
     ULONG    bm_height;
-    ULONG    bm_mod;
-    ULONG   *pixels;
+    ULONG    mod;		/* Bytes per line			   */
+    IPTR     pixels;		/* Address in memory			   */
+    BOOL     visible;
 };

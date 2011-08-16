@@ -17,6 +17,7 @@
 
 #include "agfx.h"
 #include "agfx_bitmap.h"
+#include "server.h"
 
 /****************************************************************************************/
 
@@ -28,12 +29,22 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     if (o)
     {
 	struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    	BOOL onscreen = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
 	HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    	OOP_MethodID disp_mid;
     	IPTR width  = 0;
     	IPTR height = 0;
     	IPTR mod    = 0;
+
+	OOP_GetAttr(o, aHidd_BitMap_Width , &width);
+	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+	OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &mod);
+	OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, &data->pixels);
+
+	data->bm_width  = width;
+	data->bm_height = height;
+	data->mod       = mod;
+
+	D(bug("[ABitmap] Created bitmap %ldx%ld\n", width, height));
+	D(bug("[ABitmap] Buffer at 0x%p, %ld bytes per row\n", data->pixels, mod));
 
 	/*
      	 * We rely on the fact that bitmaps with aHidd_BitMap_Displayable set to TRUE always
@@ -53,63 +64,21 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &win_width);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &win_height);
 
-	    D(bug("[ABitmap] Display window size: %dx%d\n", win_width, win_height));
-
 	    data->win_width  = win_width;
 	    data->win_height = win_height;
+	    D(bug("[ABitmap] Display window size: %dx%d\n", win_width, win_height));
     	}
-
-	/* If this is offscreen bitmap, we are done. */
-    	if (!onscreen)
-	    ReturnPtr("ABitmap::New()", OOP_Object *, o);
-
-	OOP_GetAttr(o, aHidd_BitMap_Width , &width);
-	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
-	OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &mod);
-	OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, (IPTR *)&data->pixels);
-
-	D(bug("[ABitmap] Displayable Android bitmap %ldx%ld\n", width, height));
-	D(bug("[ABitmap] Buffer at 0x%p, %ld bytes per row\n", data->pixels, mod));
-
-	/* TODO: Register a bitmap in display server */
-
-	if (1)
-	{
-	    data->bm_width  = width;
-	    data->bm_height = height;
-	    data->bm_mod    = mod;
-
-	    ReturnPtr("ABitmap::New()", OOP_Object *, o);
-	}
-
-	disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	OOP_CoerceMethod(cl, o, &disp_mid);
-
     }
-    ReturnPtr("ABitmap::New()", OOP_Object *, NULL);
-    
+
+    ReturnPtr("ABitmap::New()", OOP_Object *, o);
 }
-
-/****************************************************************************************/
-
-VOID ABitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-
-    EnterFunc(bug("ABitmapGfx.BitMap::Dispose()\n"));
-
-    OOP_DoSuperMethod(cl, o, msg);
-
-    ReturnVoid("ABitmapGfx.BitMap::Dispose");
-}
-
 
 /****************************************************************************************/
 
 VOID ABitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    ULONG   	    	idx;
+    ULONG idx;
     
     if (IS_BM_ATTR(msg->attrID, idx))
     {
@@ -133,8 +102,9 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
-    BOOL	    change_position = FALSE;
+    ULONG idx;
+    BOOL change_position = FALSE;
+    BOOL show            = FALSE;
 
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
@@ -152,6 +122,11 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 	        data->bm_top = tag->ti_Data;
 		change_position = TRUE;
 		break;
+
+	    case aoHidd_BitMap_Visible:
+	    	data->visible = tag->ti_Data;
+	    	show = tag->ti_Data;
+	    	break;
 	    }
 	}
     }
@@ -170,6 +145,25 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 	    data->bm_top = -data->bm_height;
 
 	/* TODO */
+	data->bm_left = 0;
+	data->bm_top  = 0;
+    }
+
+    if (show)
+    {
+	struct ShowRequest show;
+
+	show.req.cmd   = cmd_Show;
+	show.req.len   = 7;
+	show.displayid = 0;
+	show.left      = data->bm_left;
+	show.top       = data->bm_top;
+	show.width     = data->bm_width;
+	show.height    = data->bm_height;
+	show.mod       = data->mod;
+	show.addr      = data->pixels;
+
+	DoRequest(&show.req, XSD(cl));
     }
 
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
@@ -179,7 +173,22 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
 VOID ABitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
     D(bug("[ABitmap 0x%p] UpdateRect(%d, %d, %d, %d)\n", o, msg->x, msg->y, msg->width, msg->height));
 
-    /* TODO */
+    if (data->visible)
+    {
+    	struct UpdateRequest update;
+
+    	update.req.cmd   = cmd_Update;
+    	update.req.len   = 5;
+    	update.displayid = 0;
+    	update.x	 = msg->x;
+    	update.y	 = msg->y;
+    	update.width	 = msg->width;
+    	update.height	 = msg->height;
+
+    	DoRequest(&update.req, XSD(cl));
+    }
 }
