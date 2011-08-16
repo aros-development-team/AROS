@@ -130,8 +130,6 @@ OOP_Object *AGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 	{TAG_MORE  , (IPTR)msg->attrList}
     };
 
-    EnterFunc(bug("AGFX::NewBitMap()\n"));
-
     /*
      * Having a valid ModeID means that we are asked to create
      * either displayable bitmap or a friend of a displayable bitmap.
@@ -146,9 +144,8 @@ OOP_Object *AGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 
     p.mID = msg->mID;
     p.attrList = tags;
-    newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
-
-    ReturnPtr("AGFX::NewBitMap", OOP_Object *, newbm);
+    
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, &p.mID);
 }
 
 /****************************************************************************************/

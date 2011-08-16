@@ -7,6 +7,8 @@
 */
 
 #define DEBUG 1
+#define DNEW(x)
+#define DUPD(x)
 
 #include <aros/debug.h>
 #include <hidd/graphics.h>
@@ -23,7 +25,7 @@
 
 OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    EnterFunc(bug("ABitmap::New()\n"));
+    DNEW(bug("ABitmap::New()\n"));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
@@ -43,8 +45,8 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	data->bm_height = height;
 	data->mod       = mod;
 
-	D(bug("[ABitmap] Created bitmap %ldx%ld\n", width, height));
-	D(bug("[ABitmap] Buffer at 0x%p, %ld bytes per row\n", data->pixels, mod));
+	DNEW(bug("[ABitmap] Created bitmap %ldx%ld\n", width, height));
+	DNEW(bug("[ABitmap] Buffer at 0x%p, %ld bytes per row\n", data->pixels, mod));
 
 	/*
      	 * We rely on the fact that bitmaps with aHidd_BitMap_Displayable set to TRUE always
@@ -58,7 +60,7 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	    OOP_Object *gfx = (OOP_Object *)GetTagData(aHidd_BitMap_GfxHidd, 0, msg->attrList);
 	    OOP_Object *sync, *pixfmt;
 
-	    D(bug("[ABitmap] Display driver object: 0x%p\n", gfx));
+	    DNEW(bug("[ABitmap] Display driver object: 0x%p\n", gfx));
 
 	    HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &win_width);
@@ -66,11 +68,11 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
 	    data->win_width  = win_width;
 	    data->win_height = win_height;
-	    D(bug("[ABitmap] Display window size: %dx%d\n", win_width, win_height));
+	    DNEW(bug("[ABitmap] Display window size: %dx%d\n", win_width, win_height));
     	}
     }
 
-    ReturnPtr("ABitmap::New()", OOP_Object *, o);
+    return o;
 }
 
 /****************************************************************************************/
@@ -179,7 +181,7 @@ VOID ABitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd
     {
     	struct UpdateRequest update;
 
-	DB2(bug("[ABitmap 0x%p] UpdateRect(%d, %d, %d, %d)\n", o, msg->x, msg->y, msg->width, msg->height));
+	DUPD(bug("[ABitmap 0x%p] UpdateRect(%d, %d, %d, %d)\n", o, msg->x, msg->y, msg->width, msg->height));
 
     	update.req.cmd = cmd_Update;
     	update.req.len = 5;
