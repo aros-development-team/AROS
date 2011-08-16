@@ -246,9 +246,10 @@ static BOOL Amiga_Level_3(regs_t *regs, int id, struct ExecBase *SysBase)
 
     PAULA_IRQ_HANDLE(INTB_COPER);
     PAULA_IRQ_HANDLE(INTB_VERTB);
-    PAULA_IRQ_HANDLE(INTB_BLIT);
-
+    
     PAULA_IRQ_ACK(INTF_COPER | INTF_VERTB | INTF_BLIT);
+
+    PAULA_IRQ_HANDLE(INTB_BLIT);
 
     PAULA_IRQ_EXIT();
 }
