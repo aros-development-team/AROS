@@ -52,6 +52,9 @@ KRSRCS  := battclock hostlib processor
 ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
     KHIDDS += x11gfx
 endif
+ifeq ("$(X11_HIDD_TARGET)", "kernel-hidd-androidgfx-kobj")
+    KHIDDS += androidgfx
+endif
 
 %link_kickstart mmake=kernel-link-unix file=$(BINDIR)/boot/aros-bsp-$(BSP) \
 	devs=$(KDEVS) handlers=$(KHNDLRS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
