@@ -40,13 +40,13 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
          * I. e. color value is placed in the most significant byte of the ULONG
          * before shifting (cc000000, not 000000cc)
 	 */
-    	{ aHidd_PixFmt_RedShift     , 24			   },
-	{ aHidd_PixFmt_GreenShift   , 16			   },
-	{ aHidd_PixFmt_BlueShift    , 8				   },
+    	{ aHidd_PixFmt_RedShift     , 16			   },
+	{ aHidd_PixFmt_GreenShift   , 8				   },
+	{ aHidd_PixFmt_BlueShift    , 0				   },
 	{ aHidd_PixFmt_AlphaShift   , 0				   },
-	{ aHidd_PixFmt_RedMask	    , 0x000000FF		   },
-	{ aHidd_PixFmt_GreenMask    , 0x0000FF00		   },
-	{ aHidd_PixFmt_BlueMask     , 0x00FF0000		   },
+	{ aHidd_PixFmt_RedMask	    , 0x0000FF00		   },
+	{ aHidd_PixFmt_GreenMask    , 0x00FF0000		   },
+	{ aHidd_PixFmt_BlueMask     , 0xFF000000		   },
 	{ aHidd_PixFmt_AlphaMask    , 0x00000000		   },
 	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor   },
 	{ aHidd_PixFmt_Depth	    , 24			   },
