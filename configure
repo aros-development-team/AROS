@@ -885,6 +885,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP
+CPPFLAGS
 XMKMF'
 
 
@@ -1522,7 +1523,7 @@ Optional Features:
                           (default=no).
   --enable-target-variant=NAME
                           Enable a specific target variant(default=none)
-  --enable-amigaos-compliance
+  --enable-amigaos-compliance=VERSION
                           Enforce userspace AmigaOS compliance to a specific
                           KickStart version (default=none).
   --enable-includes=dir   Alternative system include directory
@@ -7367,6 +7368,7 @@ case "$target_os" in
 		    aros_kernel_includes="-isystem $aros_android_ndk/usr/include"
 		fi
 		need_x11=no
+						x11_hidd_target=kernel-hidd-androidgfx-kobj
 		target_tool_prefix="arm-linux-androideabi-"
             ;;
         esac
