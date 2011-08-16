@@ -175,19 +175,19 @@ VOID ABitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[ABitmap 0x%p] UpdateRect(%d, %d, %d, %d)\n", o, msg->x, msg->y, msg->width, msg->height));
-
     if (data->visible)
     {
     	struct UpdateRequest update;
 
-    	update.req.cmd   = cmd_Update;
-    	update.req.len   = 5;
-    	update.displayid = 0;
-    	update.x	 = msg->x;
-    	update.y	 = msg->y;
-    	update.width	 = msg->width;
-    	update.height	 = msg->height;
+	DB2(bug("[ABitmap 0x%p] UpdateRect(%d, %d, %d, %d)\n", o, msg->x, msg->y, msg->width, msg->height));
+
+    	update.req.cmd = cmd_Update;
+    	update.req.len = 5;
+    	update.id      = 0;
+    	update.left    = msg->x;
+    	update.top     = msg->y;
+    	update.right   = msg->x + msg->width - 1;
+    	update.bottom  = msg->y + msg->height - 1;
 
     	DoRequest(&update.req, XSD(cl));
     }
