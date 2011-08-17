@@ -48,6 +48,7 @@ struct UnixIO_Waiter
 /* static data for the unixioclass */
 struct uio_data
 {
+    APTR		    KernelBase;
     APTR		    HostLibBase;
     STRPTR		    SystemArch;
     OOP_AttrBase	    UnixIOAB;
@@ -57,6 +58,7 @@ struct uio_data
     OOP_Object		   *obj;
     struct MinList	    intList;
     struct MsgPort	   *ud_Port;
+    struct SignalSemaphore  lock;
 };
 
 struct LibCInterface
@@ -77,7 +79,6 @@ struct unixio_base
     struct Library	  uio_lib;
     BPTR		  uio_SegList;
     OOP_Class		 *uio_unixioclass;
-    APTR		  KernelBase;
     APTR		  libcHandle;
     APTR		  irqHandle;
     struct uio_data	  uio_csd;
