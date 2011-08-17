@@ -161,7 +161,10 @@ class DisplayView extends RelativeLayout
 	@Override
 	public boolean onTrackballEvent(MotionEvent e)
 	{
-		// Scale value is 
+		// Scale value is figured out experimentally. On NexusOne
+		// every movement gives offset value of 0.16.
+		// It some problems pop up (different device reports different values),
+		// we can try to take into account only a sign of the value (<0, 0, >0).
 		int x = (int)(e.getX() * 10);
 		int y = (int)(e.getY() * 10);
 		int action = e.getAction();
