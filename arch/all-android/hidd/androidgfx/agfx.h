@@ -42,10 +42,14 @@ struct AGFXBase
 #undef HiddSyncAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddGfxAttrBase
+#undef HiddKbdAB
+#undef HiddMouseAB
 #undef HiddAttrBase
 #define HiddChunkyBMAttrBase XSD(cl)->AttrBases[0]
 #define HiddBitMapAttrBase   XSD(cl)->AttrBases[1]
 #define HiddSyncAttrBase     XSD(cl)->AttrBases[2]
 #define HiddPixFmtAttrBase   XSD(cl)->AttrBases[3]
 #define HiddGfxAttrBase	     XSD(cl)->AttrBases[4]
-#define HiddAttrBase	     XSD(cl)->AttrBases[5]
+#define HiddKbdAB	     XSD(cl)->AttrBases[5]
+#define HiddMouseAB	     XSD(cl)->AttrBases[6]
+#define HiddAttrBase	     XSD(cl)->AttrBases[7]
