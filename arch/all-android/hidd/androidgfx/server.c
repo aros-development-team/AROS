@@ -3,12 +3,14 @@
 #include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/ports.h>
+#include <hidd/mouse.h>
 #include <hidd/unixio.h>
 #include <hidd/unixio_inline.h>
 
 #include <proto/exec.h>
 
 #include "agfx.h"
+#include "agfx_mouse.h"
 #include "server.h"
 
 #undef XSD
@@ -31,9 +33,21 @@ static void ReadPipe(int pipe, void *data, int len, struct agfx_staticdata *xsd)
     res = Hidd_UnixIO_ReadFile(xsd->unixio, pipe, data, len, &err);
     if (res != len)
     {
-	D(bug("[AGFX.server] Error reading pipe, result %d, error %d\n", res, err));
+	D(bug("[AGFX.server] Error reading pipe. Wanted %d bytes, got %d, error %d\n", len, res, err));
  	ShutdownA(SD_ACTION_POWEROFF);
     }
+}
+
+static inline void ReportMouse(int pipe, UWORD flags, struct agfx_staticdata *xsd)
+{
+    struct PointerEvent e;
+
+    ReadPipe(pipe, &e, sizeof(e), xsd);
+
+    DB2(bug("[AGFX.server] Mouse event 0x%08X at (%d, %d), flags 0x%04X\n", e.action, e.x, e.y, flags));
+
+    if (xsd->mousehidd)
+	AMouse_ReportEvent(xsd->mousehidd, &e, flags);
 }
 
 void agfxInt(int pipe, int mode, void *data)
@@ -98,6 +112,17 @@ void agfxInt(int pipe, int mode, void *data)
     	    	D(else bug("[AGFX.server] Bogus reply 0x%08X without a request\n", header.cmd);)
     	}
 
+	switch (header.cmd)
+	{
+	case cmd_Mouse:
+	    ReportMouse(pipe, vHidd_Mouse_Relative, data);
+	    return;
+
+	case cmd_Touch:
+	    ReportMouse(pipe, 0, data);
+	    return;
+	}
+
 	/*
 	 * If we are here, we haven't read the data portion.
 	 * This is either unknown command or bogus response.
@@ -117,7 +142,7 @@ void SendRequest(struct Request *req, struct agfx_staticdata *xsd)
     res = Hidd_UnixIO_WriteFile(xsd->unixio, xsd->DisplayPipe, req, len, &err);
     if (res != len)
     {
-        D(bug("[AGFX.server] Error writing pipe, result %d, error %d\n", res, err));
+        D(bug("[AGFX.server] Error writing pipe. Wanted %d bytes, wrote %d, error %d\n", len, res, err));
     	ShutdownA(SD_ACTION_POWEROFF);
     }
 }

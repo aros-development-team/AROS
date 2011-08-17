@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Android keyboard hidd class.
@@ -52,7 +52,7 @@ OOP_Object *AKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 		}
 	    }
 	}
-	XSD(cl)->kbdhidd = o;
+	XSD(cl)->kbdhidd = data;
     }
 
     ReturnPtr("AKbd::New", OOP_Object *, o);

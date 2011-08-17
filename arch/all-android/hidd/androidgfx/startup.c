@@ -10,12 +10,7 @@
  * driver objects as possible. Every object needs to be given
  * to AddDisplayDriverA() in order to become functional.
  *
- * Hosted drivers are also responsible for registering own input
- * drivers if needed.
- *
- * When the transition completes, kludges from bootmenu and
- * dosboot will be removed. Noone will care about library
- * open etc.
+ * We are hosted, so we register also own input drivers.
  */
 
 #include <aros/debug.h>
@@ -38,45 +33,43 @@ static int agfx_Startup(LIBBASETYPEPTR LIBBASE)
     OOP_Object *kbdriver;
     OOP_Object *msdriver = NULL;
 
-    D(bug("[GDI] gdi_Startup()\n"));
+    D(bug("[AGFX.Startup] agfx_Startup()\n"));
 
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
-    D(bug("[gdi_Startup] GfxBase 0x%p\n", GfxBase));
+    D(bug("[AGFX.Startup] GfxBase 0x%p\n", GfxBase));
     if (!GfxBase)
         return FALSE;
 
-#ifdef NOT_YET
     /* Add keyboard and mouse driver to the system */
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
-    if (kbd) {
+    if (kbd)
+    {
         ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
-	if (ms) {
+	if (ms)
+	{
             kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->xsd.kbdclass, NULL);
-	    if (kbdriver) {
+	    if (kbdriver)
+	    {
 		msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, NULL);
 		if (!msdriver)
 		    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
 	    }
 	    OOP_DisposeObject(ms);
-	}    
+	}
 	OOP_DisposeObject(kbd);
     }
 
     /* If we got no input, we can't work, fail */
-    if (!msdriver) {
+    if (!msdriver)
+    {
 	CloseLibrary(&GfxBase->LibNode);
         return FALSE;
     }
-#endif
 
     /* We use ourselves, and noone else */
     LIBBASE->library.lib_OpenCnt = 1;
 
-    /* Now proceed to adding display modes.
-       In future we will be able to call this several times in a loop.
-       This will allow us to create several displays.
-       In fact we already can do it, however our graphics.library can't
-       handle several displays. */
+    /* Now proceed to adding display modes */
     gfxhidd = OOP_NewObject(LIBBASE->xsd.gfxclass, NULL, NULL);
     D(bug("[gdi_Startup] gfxhidd 0x%p\n", gfxhidd));
 
@@ -85,7 +78,8 @@ static int agfx_Startup(LIBBASETYPEPTR LIBBASE)
 	ULONG err = AddDisplayDriverA(gfxhidd, NULL);
 
 	D(bug("[agfx_Startup] AddDisplayDriver() result: %u\n", err));
-	if (err) {
+	if (err)
+	{
 	    OOP_DisposeObject(gfxhidd);
 	    gfxhidd = NULL;
 	}

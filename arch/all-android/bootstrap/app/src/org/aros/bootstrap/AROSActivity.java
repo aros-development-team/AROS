@@ -161,15 +161,15 @@ class DisplayView extends RelativeLayout
 	@Override
 	public boolean onTrackballEvent(MotionEvent e)
 	{
-		// Scale value is figured out experimentally. On NexusOne
-		// every movement gives offset value of 0.16.
-		// It some problems pop up (different device reports different values),
-		// we can try to take into account only a sign of the value (<0, 0, >0).
-		int x = (int)(e.getX() * 10);
-		int y = (int)(e.getY() * 10);
+		// Trackball reports "normalized" offsets. According to a documentation,
+		// 1.0 stands for a single DPAD key press, and "trackball may report more fine-graned values"
+		// Since we don't know what's "more fine-graned", and there seem to be no exact definition
+		// of these units, we just take a sign of offsets.
+		int x = (int)Math.signum(e.getX());
+		int y = (int)Math.signum(e.getY());
 		int action = e.getAction();
 
-		Log.v("AROS.Input", "Trackball action " + action + " at (" + e.getX() + ", " + e.getY() + ")");
+//		Log.v("AROS.Input", "Trackball action " + action + " at (" + e.getX() + ", " + e.getY() + ")");
 
 		main.ReportMouse(x, y, action);
 		return true;
@@ -178,8 +178,8 @@ class DisplayView extends RelativeLayout
 	@Override
 	public boolean onTouchEvent(MotionEvent e)
 	{
-		int x = (int)e.getRawX();
-		int y = (int)e.getRawY();
+		int x = (int)e.getX();
+		int y = (int)e.getY();
 		int action = e.getAction();
 
 		// This filters out small touchscreen jitter. Since we round up coordinates to
@@ -191,6 +191,7 @@ class DisplayView extends RelativeLayout
 			LastPointerY      = y;
 			LastPointerAction = action;
 
+//			Log.v("AROS.Input", "Touch action " + action + " at (" + x + ", " + y + ")");
 			main.ReportTouch(x, y, action);
 		}
 

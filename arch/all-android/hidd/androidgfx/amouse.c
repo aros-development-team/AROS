@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Android mouse input hidd class.
@@ -12,8 +12,11 @@
 #include <oop/oop.h>
 #include <hidd/mouse.h>
 
+#include <android/input.h>
+
 #include "agfx.h"
 #include "agfx_mouse.h"
+#include "server.h"
 
 OOP_Object *AMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -57,8 +60,13 @@ OOP_Object *AMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	    }
 	} /* while (tags to process) */
 	
-	/* Install the mouse hidd */
-	XSD(cl)->mousehidd = o;
+	/*
+	 * Install the mouse hidd.
+	 * Our class is final, it's not meant to be subclassed. Additionally, we
+	 * report mouse events from within an interrupt, and omitting oop.library calls
+	 * speeds things up.
+	 */
+	XSD(cl)->mousehidd = data;
     }
 
     return o;
@@ -106,4 +114,39 @@ VOID AMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
+void AMouse_ReportEvent(struct mouse_data *data, struct PointerEvent *pkt, UWORD flags)
+{
+    struct pHidd_Mouse_ExtEvent e;
+
+    switch (pkt->action)
+    {
+    case AMOTION_EVENT_ACTION_DOWN:
+    	e.button = vHidd_Mouse_Button1;
+    	e.type	 = vHidd_Mouse_Press;
+    	break;
+    	
+    case AMOTION_EVENT_ACTION_UP:
+    	e.button = vHidd_Mouse_Button1;
+    	e.type	 = vHidd_Mouse_Release;
+    	break;
+    	
+    case AMOTION_EVENT_ACTION_MOVE:
+    	e.button = vHidd_Mouse_NoButton;
+    	e.type	 = vHidd_Mouse_Motion;
+    	break;
+
+    default:
+    	/* Ignore something we don't know about */
+    	return;
+    }
+
+    e.x	    = pkt->x;
+    e.y	    = pkt->y;
+    e.flags = flags;
+
+    data->mouse_callback(data->callbackdata, &e);
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common data structures of androidgfx.hidd
@@ -8,6 +8,9 @@
 
 #include <exec/tasks.h>
 #include <hidd/unixio.h>
+
+struct kbd_data;
+struct mouse_data;
 
 struct agfx_staticdata
 {
@@ -18,9 +21,9 @@ struct agfx_staticdata
     OOP_Class  *mouseclass;
     OOP_Class  *kbdclass;
 
-    OOP_Object *mousehidd;
-    OOP_Object *kbdhidd;
-    OOP_Object *unixio;
+    struct mouse_data *mousehidd;
+    struct kbd_data   *kbdhidd;
+    OOP_Object	      *unixio;
 
     int DisplayPipe;
     int InputPipe;
