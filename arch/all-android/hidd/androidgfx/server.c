@@ -52,18 +52,18 @@ static inline void ReportMouse(int pipe, UWORD flags, struct agfx_staticdata *xs
 
 void agfxInt(int pipe, int mode, void *data)
 {
-    DB2(bug("[AGFX.server] Event 0x%08X on pipe %d\n", mode, pipe));
-
-    if (mode & vHidd_UnixIO_Error)
-    {
-    	D(bug("[AGFX.server] Error condition on input pipe\n"));
-    	ShutdownA(SD_ACTION_POWEROFF);
-    }
-
-    if (mode & vHidd_UnixIO_Read)
+    while (mode & (vHidd_UnixIO_Read | vHidd_UnixIO_Error))
     {
     	struct Request header;
     	ULONG status = STATUS_ACK;
+
+	DB2(bug("[AGFX.server] Event 0x%08X on pipe %d\n", mode, pipe));
+
+	if (mode & vHidd_UnixIO_Error)
+    	{
+    	    D(bug("[AGFX.server] Error condition on input pipe\n"));
+    	    ShutdownA(SD_ACTION_POWEROFF);
+    	}
 
 	/* First read packet header */
 	ReadPipe(pipe, &header, sizeof(header), data);
@@ -104,8 +104,8 @@ void agfxInt(int pipe, int mode, void *data)
     	    	    request->status = status;
 		    Signal(request->owner, request->signal);
 
-		    /* We have read the data, exit */
-		    return;
+		    /* We have read the data */
+		    header.len = 0;
     	    	}
     	    	    D(else bug("[AGFX.server] Bogus reply 0x%08X for request 0x%08X\n", header.cmd, request->cmd);)
     	    }
@@ -116,20 +116,30 @@ void agfxInt(int pipe, int mode, void *data)
 	{
 	case cmd_Mouse:
 	    ReportMouse(pipe, vHidd_Mouse_Relative, data);
-	    return;
+	    break;
 
 	case cmd_Touch:
 	    ReportMouse(pipe, 0, data);
-	    return;
+	    break;
+	    
+	default:
+	    /*
+	     * If we are here, we haven't read the data portion.
+	     * This is either unknown command or bogus response.
+	     * We don't know what to do with arguments, so just swallow them.
+	     */
+	    for (status = 0; status < header.len; status++)
+    	    	ReadPipe(pipe, &header.cmd, sizeof(ULONG), data);
+
+    	    break;
 	}
 
 	/*
-	 * If we are here, we haven't read the data portion.
-	 * This is either unknown command or bogus response.
-	 * We don't know what to do with arguments, so just swallow them.
+	 * Poll the pipe and repeat if still ready.
+	 * This has to be done if commands are sent too quickly.
+	 * We won't get a second SIGIO while we are here.
 	 */
-    	for (status = 0; status < header.len; status++)
-    	    ReadPipe(pipe, &header.cmd, sizeof(ULONG), data);
+	mode = Hidd_UnixIO_Poll(XSD(data)->unixio, pipe, vHidd_UnixIO_Read, NULL);
     }
 }
 
