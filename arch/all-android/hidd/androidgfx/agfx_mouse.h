@@ -2,7 +2,7 @@
 
 struct mouse_data
 {
-    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
+    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_ExtEvent *);
     APTR callbackdata;
 };
 
