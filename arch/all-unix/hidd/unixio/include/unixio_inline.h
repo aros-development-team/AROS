@@ -157,6 +157,7 @@ static inline int __inline_Hidd_UnixIO_Poll(OOP_MethodID base, OOP_Object *o, in
     p.um_MethodID = base + moHidd_UnixIO_Poll;
     p.um_FD       = (APTR)fd;
     p.um_Mode     = mode;
+    p.um_ErrNoPtr = errno_ptr;
 
     return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
 }
