@@ -17,6 +17,8 @@
 #include <graphics/displayinfo.h>
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
+#include <hidd/keyboard.h>
+#include <hidd/mouse.h>
 #include <hidd/unixio.h>
 #include <hidd/unixio_inline.h>
 #include <oop/oop.h>
@@ -123,7 +125,6 @@ OOP_Object *AGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 {
     HIDDT_ModeID modeid;
     struct pHidd_Gfx_NewBitMap p;
-    OOP_Object *newbm;
     struct TagItem tags[] =
     {
 	{TAG_IGNORE, 0			},
@@ -248,6 +249,8 @@ static const STRPTR interfaces[] =
     IID_Hidd_Sync,
     IID_Hidd_PixFmt,
     IID_Hidd_Gfx,
+    IID_Hidd_Kbd,
+    IID_Hidd_Mouse,
     IID_Hidd,
     NULL
 };
