@@ -39,10 +39,11 @@ public class AROSBootstrap extends Application
 	static final int cmd_Query  = 0x80000001;
 	static final int cmd_Show   = 0x80000002;
 	static final int cmd_Update = 0x00000003;
-	static final int cmd_Mouse  = 0x00000004;
-	static final int cmd_Touch  = 0x00000005;
-	static final int cmd_Key    = 0x00000006;
-	
+	static final int cmd_Scroll = 0x00000004;
+	static final int cmd_Mouse  = 0x00000005;
+	static final int cmd_Touch  = 0x00000006;
+	static final int cmd_Key    = 0x00000007;
+
 	@Override
 	public void onCreate()
 	{

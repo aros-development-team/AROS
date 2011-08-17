@@ -3,6 +3,8 @@
 #define cmd_Show       0x80000002
 #define cmd_Update     0x00000003
 #define cmd_Scroll     0x00000004
+#define cmd_Mouse      0x00000005
+#define cmd_Touch      0x00000006
 
 #define CMD_NEED_REPLY 0x80000000
 
@@ -98,6 +100,14 @@ struct ScrollRequest
     ULONG	   id;		/* Bitmap ID, reserved			*/
     ULONG	   left;	/* New offset				*/
     ULONG	   top;
+};
+
+/* Mouse/touchscreen event data */
+struct PointerEvent
+{
+    ULONG x;
+    ULONG y;
+    ULONG action;
 };
 
 void agfxInt(int pipe, int mode, void *data);
