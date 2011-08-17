@@ -851,7 +851,8 @@ with_ios_version
 with_ios_sdk
 with_sdk
 with_ndk
-with_android_version
+with_sdk_version
+with_ndk_version
 enable_amigaos_compliance
 with_crosstools
 with_aros_gcc
@@ -1559,8 +1560,10 @@ Optional Packages:
                           (default=$default_android_sdk).
   --with-ndk=PATH         Specify Android NDK path
                           (default=$default_android_ndk).
-  --with-android-version=VERSION
-                          Use Android platform VERSION (default=2.2).
+  --with-sdk-version=LEVEL
+                          Use Android SDK for API LEVEL (default=8).
+  --with-ndk-version=LEVEL
+                          Use Android NDK for API LEVEL (default=9).
   --with-crosstools=DIR   Where to install or search for cross tools binaries
   --with-aros-gcc=VERSION Use aros-gcc-VERSION for building AROS
   --with-portssources=DIR Where to download sourcecode for external ports
@@ -7204,18 +7207,31 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_android_ndk" >&5
 $as_echo "$aros_android_ndk" >&6; }
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking what Android version to use" >&5
-$as_echo_n "checking what Android version to use... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking what Android SDK version to use" >&5
+$as_echo_n "checking what Android SDK version to use... " >&6; }
 
-# Check whether --with-android-version was given.
-if test "${with_android_version+set}" = set; then :
-  withval=$with_android_version; aros_android_version="$withval"
+# Check whether --with-sdk-version was given.
+if test "${with_sdk_version+set}" = set; then :
+  withval=$with_sdk_version; aros_sdk_version="$withval"
 else
-  aros_android_version="2.2"
+  aros_sdk_version="8"
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_android_version" >&5
-$as_echo "$aros_android_version" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_sdk_version" >&5
+$as_echo "$aros_sdk_version" >&6; }
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking what Android NDK version to use" >&5
+$as_echo_n "checking what Android NDK version to use... " >&6; }
+
+# Check whether --with-ndk-version was given.
+if test "${with_ndk_version+set}" = set; then :
+  withval=$with_ndk_version; aros_ndk_version="$withval"
+else
+  aros_ndk_version="9"
+fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_ndk_version" >&5
+$as_echo "$aros_ndk_version" >&6; }
 
     export PATH="$aros_android_sdk/tools:$PATH"
     # Extract the first word of "$android_tool", so it can be a program name with args.
@@ -7344,14 +7360,7 @@ case "$target_os" in
 	esac
 	case "$aros_target_variant" in
             android)
-		case "$aros_android_version" in
-		2.2)
-		    aros_android_level=android-8
-		    ;;
-		*)
-		    aros_android_level=android-9
-		    ;;
-		esac
+            	aros_android_level=android-$aros_sdk_version
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
 				use_aros_gcc="yes"
@@ -7361,7 +7370,7 @@ case "$target_os" in
 		    CFLAGS="-mandroid"
 		else
 		    export PATH="$aros_android_ndk/toolchains/arm-linux-androideabi-$target_tool_version/prebuilt/$android_build_os/bin:$PATH"
-               	    aros_android_ndk="$aros_android_ndk/platforms/$aros_android_level/arch-arm"
+               	    aros_android_ndk="$aros_android_ndk/platforms/android-$aros_ndk_version/arch-arm"
 		    aros_kernel_cflags="--sysroot $aros_android_ndk -mandroid"
 		    aros_kernel_ldflags="--sysroot $aros_android_ndk -mandroid"
 		    CFLAGS="$CFLAGS --sysroot $aros_android_ndk -mandroid"

@@ -771,9 +771,13 @@ ios)
     AC_ARG_WITH(ndk,AC_HELP_STRING([--with-ndk=PATH],[Specify Android NDK path (default=$default_android_ndk).]),aros_android_ndk="$withval",aros_android_ndk="$default_android_ndk")
     AC_MSG_RESULT($aros_android_ndk)
 
-    AC_MSG_CHECKING([what Android version to use])
-    AC_ARG_WITH(android-version,AC_HELP_STRING([--with-android-version=VERSION],[Use Android platform VERSION (default=2.2).]),aros_android_version="$withval",aros_android_version="2.2")
-    AC_MSG_RESULT($aros_android_version)
+    AC_MSG_CHECKING([what Android SDK version to use])
+    AC_ARG_WITH(sdk-version,AC_HELP_STRING([--with-sdk-version=LEVEL],[Use Android SDK for API LEVEL (default=8).]),aros_sdk_version="$withval",aros_sdk_version="8")
+    AC_MSG_RESULT($aros_sdk_version)
+
+    AC_MSG_CHECKING([what Android NDK version to use])
+    AC_ARG_WITH(ndk-version,AC_HELP_STRING([--with-ndk-version=LEVEL],[Use Android NDK for API LEVEL (default=9).]),aros_ndk_version="$withval",aros_ndk_version="9")
+    AC_MSG_RESULT($aros_ndk_version)
 
     export PATH="$aros_android_sdk/tools:$PATH"
     AC_PATH_PROG(android_tool, $android_tool)
@@ -862,14 +866,7 @@ case "$target_os" in
 	esac
 	case "$aros_target_variant" in
             android)
-		case "$aros_android_version" in
-		2.2)
-		    aros_android_level=android-8
-		    ;;
-		*)
-		    aros_android_level=android-9
-		    ;;
-		esac
+            	aros_android_level=android-$aros_sdk_version
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
 		dnl Android gcc and AROS gcc use different enums size, so we use AROS gcc
@@ -880,7 +877,7 @@ case "$target_os" in
 		    CFLAGS="-mandroid"
 		else
 		    export PATH="$aros_android_ndk/toolchains/arm-linux-androideabi-$target_tool_version/prebuilt/$android_build_os/bin:$PATH"
-               	    aros_android_ndk="$aros_android_ndk/platforms/$aros_android_level/arch-arm"
+               	    aros_android_ndk="$aros_android_ndk/platforms/android-$aros_ndk_version/arch-arm"
 		    aros_kernel_cflags="--sysroot $aros_android_ndk -mandroid"
 		    aros_kernel_ldflags="--sysroot $aros_android_ndk -mandroid"
 		    CFLAGS="$CFLAGS --sysroot $aros_android_ndk -mandroid"
