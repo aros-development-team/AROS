@@ -9,6 +9,8 @@ import android.graphics.Canvas;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RelativeLayout;
 
@@ -118,6 +120,12 @@ class DisplayView extends RelativeLayout
 {
 	private AROSBootstrap main;
 	private BitmapView bitmap;
+	int LastPointerX      = -1;
+	int LastPointerY      = -1;
+	int LastPointerAction = -1;
+	int LastKey			  = -1;
+
+	static final int IECODE_UP_PREFIX = 0x80;
 
 	public DisplayView(Context context, AROSBootstrap app)
 	{
@@ -128,6 +136,9 @@ class DisplayView extends RelativeLayout
 		// and positioned at (0, 0). Thanks to RelativeLayout.
 		bitmap = new BitmapView(context, app);
 		addView(bitmap);
+		
+		setFocusable(true);
+		requestFocus();
 	}
 
 	public BitmapView GetBitmap(int id)
@@ -145,6 +156,67 @@ class DisplayView extends RelativeLayout
 		Log.d("AROS", "Screen size set: " + w + "x" + h);		
 
 		main.Boot();
+	}
+
+	@Override
+	public boolean onTrackballEvent(MotionEvent e)
+	{
+		// Scale value is 
+		int x = (int)(e.getX() * 10);
+		int y = (int)(e.getY() * 10);
+		int action = e.getAction();
+
+		Log.v("AROS.Input", "Trackball action " + action + " at (" + e.getX() + ", " + e.getY() + ")");
+
+		main.ReportMouse(x, y, action);
+		return true;
+	}
+
+	@Override
+	public boolean onTouchEvent(MotionEvent e)
+	{
+		int x = (int)e.getRawX();
+		int y = (int)e.getRawY();
+		int action = e.getAction();
+
+		// This filters out small touchscreen jitter. Since we round up coordinates to
+		// integers, we can get repeating actions, since the actual coordinates will differ by
+		// small fraction.
+		if ((x != LastPointerX) || (y != LastPointerY) || (action != LastPointerAction))
+		{
+			LastPointerX      = x;
+			LastPointerY      = y;
+			LastPointerAction = action;
+
+			main.ReportTouch(x, y, action);
+		}
+
+		return true;
+	}
+
+	@Override
+	public boolean onKeyDown(int code, KeyEvent e)
+	{
+		// Android autorepeats keys if held down. Here we suppress this.
+		if (code != LastKey)
+		{	
+			Log.v("AROS.Input", "KeyDown " + code);
+
+			LastKey = code;
+			main.ReportKey(code, 0);
+		}
+		return true;
+	}
+
+	@Override
+	public boolean onKeyUp(int code, KeyEvent e)
+	{
+		Log.v("AROS.Input", "KeyUp " + code);
+		
+		LastKey = -1;
+		main.ReportKey(code, IECODE_UP_PREFIX);
+
+		return true;
 	}
 }
 

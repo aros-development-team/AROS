@@ -29,12 +29,13 @@ public class DisplayServer extends Thread
 
 	public void ReplyCommand(int cmd, int... response)
 	{
-		int len = response.length + 1;
+		int len = response.length + 2;
 		ByteBuffer bb = ByteBuffer.allocate(len * 4);   
 		bb.order(ByteOrder.nativeOrder());
         IntBuffer ib = bb.asIntBuffer();
  
         ib.put(cmd);
+        ib.put(response.length);
         ib.put(response);
  
         try

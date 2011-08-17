@@ -36,10 +36,13 @@ public class AROSBootstrap extends Application
 
 	// Commands sent to us by AROS display driver
 	static final int cmd_Nak    = -1;
-	static final int cmd_Query  = 1;
-	static final int cmd_Show   = 2;
-	static final int cmd_Update = 3;
-
+	static final int cmd_Query  = 0x80000001;
+	static final int cmd_Show   = 0x80000002;
+	static final int cmd_Update = 0x00000003;
+	static final int cmd_Mouse  = 0x00000004;
+	static final int cmd_Touch  = 0x00000005;
+	static final int cmd_Key    = 0x00000006;
+	
 	@Override
 	public void onCreate()
 	{
@@ -56,7 +59,6 @@ public class AROSBootstrap extends Application
 
 	public void Boot()
 	{
-
 		// We get here after the activity is laid out and we know screen size.
 		// However we need to actually run AROS only once, when the application is
 		// first started. The activity may be flushed by Android OS if it's hidden,
@@ -152,7 +154,22 @@ public class AROSBootstrap extends Application
 			break;
 		}
 	}
-	
+
+	public void ReportMouse(int x, int y, int action)
+	{
+		Server.ReplyCommand(cmd_Mouse, x, y, action);
+	}
+
+	public void ReportTouch(int x, int y, int action)
+	{
+		Server.ReplyCommand(cmd_Touch, x, y, action);
+	}
+
+	public void ReportKey(int code, int flags)
+	{
+		Server.ReplyCommand(cmd_Key, code, flags);
+	}
+
     // This orders processing of a command from server
     class ServerCommand implements Runnable
     {
