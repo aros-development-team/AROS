@@ -118,9 +118,11 @@ VOID AMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
-void AMouse_ReportEvent(struct mouse_data *data, struct PointerEvent *pkt, UWORD flags)
+void AMouse_ReportEvent(struct mouse_data *data, struct PointerEvent *pkt)
 {
     struct pHidd_Mouse_ExtEvent e;
+
+    DB2(bug("[AMouse] Mouse event 0x%08X at (%d, %d)\n", e.action, e.x, e.y));
 
     switch (pkt->action)
     {
@@ -146,7 +148,56 @@ void AMouse_ReportEvent(struct mouse_data *data, struct PointerEvent *pkt, UWORD
 
     e.x	    = pkt->x;
     e.y	    = pkt->y;
-    e.flags = flags;
+    e.flags = vHidd_Mouse_Relative;
 
+    data->mouse_callback(data->callbackdata, &e);
+}
+
+/****************************************************************************************/
+
+void AMouse_ReportTouch(struct mouse_data *data, struct PointerEvent *pkt)
+{
+    struct pHidd_Mouse_ExtEvent e;
+
+    DB2(bug("[AMouse] Touch event 0x%08X at (%d, %d)\n", e.action, e.x, e.y));
+
+    /*
+     * Intuition input handler doesn't recognize mouse button events
+     * together with movement. Instead it catches actions but misses
+     * the actual movement.
+     * In order to work around this, we send two actions instead of one.
+     * First we report movement to given coordinates, then action
+     * (if press or release happened).
+     *
+     * TODO: Perhaps we should feed touchscreen events to input.device instead.
+     *       Well, this is very experimental anyway.
+     */
+
+    e.button = vHidd_Mouse_NoButton;
+    e.type   = vHidd_Mouse_Motion;
+    e.x	     = pkt->x;
+    e.y	     = pkt->y;
+    e.flags  = 0;
+
+    data->mouse_callback(data->callbackdata, &e);
+
+    switch (pkt->action)
+    {
+    case AMOTION_EVENT_ACTION_DOWN:
+    	e.button = vHidd_Mouse_Button1;
+    	e.type	 = vHidd_Mouse_Press;
+    	break;
+    	
+    case AMOTION_EVENT_ACTION_UP:
+    	e.button = vHidd_Mouse_Button1;
+    	e.type	 = vHidd_Mouse_Release;
+    	break;
+
+    default:
+    	/* Ignore something we don't know about */
+    	return;
+    }
+
+    /* Report the second action */
     data->mouse_callback(data->callbackdata, &e);
 }

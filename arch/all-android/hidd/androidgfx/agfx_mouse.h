@@ -8,4 +8,5 @@ struct mouse_data
 
 struct PointerEvent;
 
-void AMouse_ReportEvent(struct mouse_data *data, struct PointerEvent *pkt, UWORD flags);
+void AMouse_ReportEvent(struct mouse_data *data, struct PointerEvent *pkt);
+void AMouse_ReportTouch(struct mouse_data *data, struct PointerEvent *pkt);

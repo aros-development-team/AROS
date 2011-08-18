@@ -38,23 +38,12 @@ static void ReadPipe(int pipe, void *data, int len, struct agfx_staticdata *xsd)
     }
 }
 
-static inline void ReportMouse(int pipe, UWORD flags, struct agfx_staticdata *xsd)
-{
-    struct PointerEvent e;
-
-    ReadPipe(pipe, &e, sizeof(e), xsd);
-
-    DB2(bug("[AGFX.server] Mouse event 0x%08X at (%d, %d), flags 0x%04X\n", e.action, e.x, e.y, flags));
-
-    if (xsd->mousehidd)
-	AMouse_ReportEvent(xsd->mousehidd, &e, flags);
-}
-
 void agfxInt(int pipe, int mode, void *data)
 {
     while (mode & (vHidd_UnixIO_Read | vHidd_UnixIO_Error))
     {
     	struct Request header;
+    	struct PointerEvent e;
     	ULONG status = STATUS_ACK;
 
 	DB2(bug("[AGFX.server] Event 0x%08X on pipe %d\n", mode, pipe));
@@ -115,13 +104,21 @@ void agfxInt(int pipe, int mode, void *data)
 	switch (header.cmd)
 	{
 	case cmd_Mouse:
-	    ReportMouse(pipe, vHidd_Mouse_Relative, data);
+	    ReadPipe(pipe, &e, sizeof(e), data);
+
+	    if (XSD(data)->mousehidd)
+		AMouse_ReportEvent(XSD(data)->mousehidd, &e);
+
 	    break;
 
 	case cmd_Touch:
-	    ReportMouse(pipe, 0, data);
+	    ReadPipe(pipe, &e, sizeof(e), data);
+
+	    if (XSD(data)->mousehidd)
+		AMouse_ReportTouch(XSD(data)->mousehidd, &e);
+
 	    break;
-	    
+
 	default:
 	    /*
 	     * If we are here, we haven't read the data portion.
