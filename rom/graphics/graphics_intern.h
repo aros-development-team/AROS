@@ -91,16 +91,6 @@ typedef WORD PalExtra_AllocList_Type;
 #define PALEXTRA_REFCNT(pe,n) 	    (((PalExtra_RefCnt_Type *)(pe)->pe_RefCnt)[(n)])
 #define PALEXTRA_ALLOCLIST(pe,n)    (((PalExtra_AllocList_Type *)(pe)->pe_AllocList)[(n)])
 
-struct class_static_data
-{
-    struct GfxBase  *gfxbase;
-
-    OOP_AttrBase    hiddFakeFBAttrBase;
-
-    OOP_Class 	    *fakegfxclass;
-    OOP_Class 	    *fakefbclass;
-};
-
 /* 
  * Display mode database item. A pointer to this structure is used as a DisplayInfoHandle.
  * In future, if needed, this structure can be extended to hold static bunches of associated
@@ -125,9 +115,9 @@ struct monitor_driverdata
     ULONG		       mask;		/* Mask of mode ID				  */
     OOP_Object      	      *gfxhidd;		/* Graphics driver to use (can be fakegfx object) */
     ObjectCache     	      *gc_cache;	/* GC cache					  */
+    UWORD		       flags;		/* Flags, see below				  */
 
     APTR		       userdata;	/* Associated data from notification callback	  */
-    UWORD		       flags;		/* Flags, see below				  */
     struct HIDD_ViewPortData  *display;		/* What is currently displayed			  */
 
     /* FakeGfx-related */
@@ -157,6 +147,7 @@ struct common_driverdata
     ULONG		       last_id;			/* Last card ID		           */
     OOP_Object		      *memorygfx;		/* Memory graphics driver	   */
     ObjectCache     	      *gc_cache;		/* GC cache			   */
+    UWORD		       flags;			/* Always zero			   */
 
     /* End of driverdata */
     APTR		       notify_data;		      /* User data for notification callback  */
@@ -164,6 +155,10 @@ struct common_driverdata
     struct SignalSemaphore     displaydb_sem;		/* Display mode database semaphore */
 
     ObjectCache     	      *planarbm_cache;		/* Planar bitmaps cache		   */
+
+    /* Fakegfx classes */
+    OOP_Class		      *fakegfxclass;
+    OOP_Class		      *fakefbclass;
 
     /* Attribute bases */
     OOP_AttrBase    	     hiddBitMapAttrBase;
@@ -173,6 +168,7 @@ struct common_driverdata
     OOP_AttrBase    	     hiddPlanarBMAttrBase;
     OOP_AttrBase    	     hiddGfxAttrBase;
     OOP_AttrBase    	     hiddFakeGfxHiddAttrBase;
+    OOP_AttrBase	     hiddFakeFBAttrBase;
 };
 
 #define CDD(base)   	    ((struct common_driverdata *)&PrivGBase(base)->shared_driverdata)
@@ -184,6 +180,7 @@ struct common_driverdata
 #define __IHidd_PlanarBM    CDD(GfxBase)->hiddPlanarBMAttrBase
 #define __IHidd_Gfx         CDD(GfxBase)->hiddGfxAttrBase
 #define __IHidd_FakeGfxHidd CDD(GfxBase)->hiddFakeGfxHiddAttrBase
+#define __IHidd_FakeFB	    CDD(GfxBase)->hiddFakeFBAttrBase
 
 /* Hashtable sizes. Must be powers of two */
 #define GFXASSOCIATE_HASHSIZE   8
@@ -195,7 +192,6 @@ struct GfxBase_intern
 {
     struct GfxBase 	 	gfxbase;
 
-    struct class_static_data    *fakegfx_staticdata; /* FakeGFX HIDD static data				 */
     ULONG			displays;	     /* Number of display drivers installed in the system	 */
     struct common_driverdata	shared_driverdata;   /* Driver data shared between all monitors (allocated once) */
     struct SignalSemaphore	monitors_sema;	     /* Monitor list semaphore					 */

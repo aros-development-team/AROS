@@ -37,11 +37,8 @@
 
 /******************************************************************************/
 
-static OOP_Class *init_fakefbclass(struct class_static_data *csd);
-static VOID free_fakefbclass(OOP_Class *cl, struct class_static_data *csd);
-
-static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd);
-static VOID free_fakegfxhiddclass(OOP_Class *cl, struct class_static_data *csd);
+static OOP_Class *init_fakefbclass(struct GfxBase *GfxBase);
+static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase);
 
 /******************************************************************************/
 
@@ -74,29 +71,14 @@ struct gfx_data
 
 /******************************************************************************/
 
-static void gfx_setFrameBuffer(struct class_static_data *csd, struct gfx_data *data, OOP_Object *fb);
-static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct class_static_data *csd);
-static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd);
-static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct class_static_data *csd);
-
-/******************************************************************************/
-
-#define LFB(data)	ObtainSemaphore(&(data)->fbsema)
-#define UFB(data)	ReleaseSemaphore(&(data)->fbsema)
-#define LFB_QUICK(data) ObtainSemaphore(&(data)->fbsema)
-#define UFB_QUICK(data) ReleaseSemaphore(&(data)->fbsema)
-
-#define CSD(cl)     	((struct class_static_data *)cl->UserData)
-
-#define __IHidd_FakeFB	(CSD(cl)->hiddFakeFBAttrBase)
+static void gfx_setFrameBuffer(struct GfxBase *GfxBase, struct gfx_data *data, OOP_Object *fb);
+static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct GfxBase *GfxBase);
+static BOOL rethink_cursor(struct gfx_data *data, struct GfxBase *GfxBase);
+static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct GfxBase *GfxBase);
 
 /******************************************************************************/
 
 #if SPECIAL_LOCKING
-
-/******************************************************************************/
-
-#undef SysBase
 
 static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urgent,
     	    	    	    	    	struct ExecBase *SysBase)
@@ -278,26 +260,23 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
 
 /******************************************************************************/
 
-#undef LFB
-#undef UFB
-#undef LFB_QUICK
-#undef UFB_QUICK
-
 #define LFB(data)	FakeGfxHidd_ObtainSemaphore(&(data)->fbsema, FALSE, SysBase)
 #define UFB(data)	FakeGfxHidd_ReleaseSemaphore(&(data)->fbsema, SysBase)
-
 #define LFB_QUICK(data)	FakeGfxHidd_ObtainSemaphore(&(data)->fbsema, TRUE, SysBase)
 #define UFB_QUICK(data) FakeGfxHidd_ReleaseSemaphore(&(data)->fbsema, SysBase)
 
+#else	/* !SPECIAL_LOCKING */
 
-/******************************************************************************/
+#define LFB(data)	ObtainSemaphore(&(data)->fbsema)
+#define UFB(data)	ReleaseSemaphore(&(data)->fbsema)
+#define LFB_QUICK(data) ObtainSemaphore(&(data)->fbsema)
+#define UFB_QUICK(data) ReleaseSemaphore(&(data)->fbsema)
 
 #endif /* SPECIAL_LOCKING */
 
 /******************************************************************************/
 
-#undef GfxBase
-#define GfxBase     	(CSD(cl)->gfxbase)
+#define GfxBase ((struct GfxBase *)cl->UserData)
 
 static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -392,11 +371,13 @@ static OOP_Object *gfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     
     realfb = HIDD_Gfx_NewBitMap(data->gfxhidd, msg->attrList);
     
-    if (realfb && create_fb) {
-    	ret = create_fake_fb(realfb, data, CSD(cl));
+    if (realfb && create_fb)
+    {
+    	ret = create_fake_fb(realfb, data, GfxBase);
 	if (!ret)
 	    OOP_DisposeObject(realfb);
-    } else
+    }
+    else
     	ret = realfb;
 
     return ret;
@@ -416,7 +397,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
     if (NULL == shape)
     {
     	/* Erase the old cursor */
-	draw_cursor(data, FALSE, TRUE, CSD(cl));
+	draw_cursor(data, FALSE, TRUE, GfxBase);
 	data->curs_on = FALSE;
 	data->curs_bm = NULL;
 	data->curs_x	 = data->curs_y		= 0;
@@ -454,7 +435,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	LFB(data);
 
 	/* Erase the old cursor */
-	draw_cursor(data, FALSE, TRUE, CSD(cl));
+	draw_cursor(data, FALSE, TRUE, GfxBase);
 	    
 	/* Now that we have disposed the old image using the old
 	   backup bm, we can install the new image and backup bm before
@@ -472,10 +453,10 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	data->curs_maxy	  = data->curs_y + curs_height - 1;
 	data->curs_pixels = new_curs_pixels;
 
-	ok = rethink_cursor(data, CSD(cl));
+	ok = rethink_cursor(data, GfxBase);
 	UFB(data);
 	
-	draw_cursor(data, TRUE, TRUE, CSD(cl));
+	draw_cursor(data, TRUE, TRUE, GfxBase);
     }
     
     return ok;
@@ -500,14 +481,14 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     
     LFB_QUICK(data);
     /* erase the old cursor */
-    draw_cursor(data, FALSE, TRUE, CSD(cl));
+    draw_cursor(data, FALSE, TRUE, GfxBase);
 
     data->curs_x = msg->x - xoffset;
     data->curs_y = msg->y - yoffset;
     data->curs_maxx = data->curs_x + data->curs_width  - 1;
     data->curs_maxy = data->curs_y + data->curs_height - 1;
     
-    draw_cursor(data, TRUE, TRUE, CSD(cl));
+    draw_cursor(data, TRUE, TRUE, GfxBase);
     UFB_QUICK(data);
     return TRUE;
 }
@@ -525,14 +506,14 @@ LFB_QUICK(data);
     	if (!data->curs_on)
 	{
 	    data->curs_on = TRUE;
-	    draw_cursor(data, TRUE, TRUE, CSD(cl));
+	    draw_cursor(data, TRUE, TRUE, GfxBase);
 	}
     }
     else
     {
     	if (data->curs_on)
 	{
-	    draw_cursor(data, FALSE, TRUE, CSD(cl));
+	    draw_cursor(data, FALSE, TRUE, GfxBase);
 	    data->curs_on = FALSE;
 	}
     }
@@ -585,13 +566,13 @@ static void gfx_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 	inside = TRUE;
 
     if (inside)
-    	draw_cursor(data, FALSE, FALSE, CSD(cl));
+    	draw_cursor(data, FALSE, FALSE, GfxBase);
 
     HIDD_Gfx_CopyBox(data->gfxhidd, src, msg->srcX, msg->srcY,
 		     dest, msg->destX, msg->destY, msg->width, msg->height, msg->gc);
 
     if (inside)
-    	draw_cursor(data, TRUE, FALSE, CSD(cl));
+    	draw_cursor(data, TRUE, FALSE, GfxBase);
 
     UFB(data);
 }
@@ -605,21 +586,25 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
     ret = msg->bitMap;
 
     D(bug("[FakeGfx] Show(0x%p)\n", ret));
-    /* If we are attempting to show a fake bitmap, we are working
-       in NoFrameBuffer mode where each displayable bitmap is
-       intercepted by us */
-    if (ret && (OOP_OCLASS(ret) == CSD(cl)->fakefbclass)) {
+
+    /*
+     * If we are attempting to show a fake bitmap, we are working
+     * in NoFrameBuffer mode where each displayable bitmap is
+     * intercepted by us
+     */
+    if (ret && (OOP_OCLASS(ret) == CDD(GfxBase)->fakefbclass))
+    {
         data->fakefb = ret;
         OOP_GetAttr(msg->bitMap, aHidd_FakeFB_RealBitMap, (IPTR *)&ret);
         D(bug("[FakeGfx] Bitmap is a fakefb object, real bitmap is 0x%p\n", ret));
     }
 
     LFB(data);
-    draw_cursor(data, FALSE, FALSE, CSD(cl));
+    draw_cursor(data, FALSE, FALSE, GfxBase);
 
     ret = HIDD_Gfx_Show(data->gfxhidd, ret, msg->flags);
     D(bug("[FakeGfx] Real framebuffer object 0x%p\n", ret));
-    gfx_setFrameBuffer(CSD(cl), data, ret);
+    gfx_setFrameBuffer(GfxBase, data, ret);
     if (NULL != ret)
     	ret = data->fakefb;
     /* FIXME: temporary workaround: at this point Intuition has already destroyed
@@ -628,8 +613,8 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
        drivers about destroyed sprites.
     if (!msg->bitMap)
 	data->curs_bm = NULL;*/
-    rethink_cursor(data, CSD(cl));
-    draw_cursor(data, TRUE, TRUE, CSD(cl));
+    rethink_cursor(data, GfxBase);
+    draw_cursor(data, TRUE, TRUE, GfxBase);
     
     UFB(data);
 
@@ -673,10 +658,10 @@ struct fakefb_data
 
 #define FGH(data) ((struct gfx_data *)data->fakegfxhidd)
 #define REMOVE_CURSOR(data)	\
-	draw_cursor(FGH(data), FALSE, FALSE, CSD(cl))
+	draw_cursor(FGH(data), FALSE, FALSE, GfxBase)
 
 #define RENDER_CURSOR(data)	\
-	draw_cursor(FGH(data), TRUE, FALSE, CSD(cl))
+	draw_cursor(FGH(data), TRUE, FALSE, GfxBase)
 	
 	
 #define BITMAP_METHOD_INIT	\
@@ -1162,226 +1147,9 @@ static IPTR fakefb_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     return OOP_DoMethod(data->framebuffer, msg);
 }
 
+#undef GfxBase
 
-
-#undef CSD
-#define CSD(cl) csd
-
-
-static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
-{
-    OOP_Class *cl = NULL;
-    
-    struct OOP_MethodDescr root_descr[num_Root_Methods + 1] =
-    {
-        {(IPTR (*)())gfx_new	,    	     	moRoot_New	},
-        {(IPTR (*)())gfx_dispose,         	moRoot_Dispose	},
-        {(IPTR (*)())gfx_get	,      		moRoot_Get	},
-        {(IPTR (*)())gfx_fwd	,         	moRoot_Set	},
-	{ NULL	    	    	, 0UL 	    	    	    	}
-    };
-    
-    struct OOP_MethodDescr gfxhidd_descr[num_Hidd_Gfx_Methods + 1] = 
-    {
-        {(IPTR (*)())gfx_fwd	  	   , moHidd_Gfx_NewGC		},
-        {(IPTR (*)())gfx_fwd	  	   , moHidd_Gfx_DisposeGC	},
-        {(IPTR (*)())gfx_newbitmap	   , moHidd_Gfx_NewBitMap	},
-        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeBitMap	},
-        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryModeIDs	},
-        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_ReleaseModeIDs	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CheckMode	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NextModeID	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetMode		},
-	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_GetPixFmt	},
-	{(IPTR (*)())gfx_setcursorshape    , moHidd_Gfx_SetCursorShape	},
-	{(IPTR (*)())gfx_setcursorpos	   , moHidd_Gfx_SetCursorPos	},
-	{(IPTR (*)())gfx_setcursorvisible  , moHidd_Gfx_SetCursorVisible},
-	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_SetMode	    	},
-	{(IPTR (*)())gfx_show	    	   , moHidd_Gfx_Show		},
-	{(IPTR (*)())gfx_copybox    	   , moHidd_Gfx_CopyBox	    	},
-	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_ModeProperties	},
-	{(IPTR (*)())gfx_showviewports	   , moHidd_Gfx_ShowViewPorts	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetSync	    	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetGamma	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_SetGamma	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryHardware3D },
-	{(IPTR (*)())gfx_getmaxspritesize  , moHidd_Gfx_GetMaxSpriteSize},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NewOverlay	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeOverlay	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_MakeViewPort	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CleanViewPort	},
-	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_PrepareViewPorts},
-        {NULL	    	    	    	   , 0UL   	    	    	}
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr 	, IID_Root  	, num_Root_Methods	},
-        {gfxhidd_descr	, IID_Hidd_Gfx	, num_Hidd_Gfx_Methods	},
-        {NULL	    	, NULL	    	, 0 	    	    	}
-    };
-    
-    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-        
-    struct TagItem tags[] =
-    {
-        { aMeta_SuperID     	, (IPTR)CLID_Root   	    	    },
-        { aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
-        { aMeta_InstSize    	, (IPTR)sizeof (struct gfx_data)    },
-        {TAG_DONE   	    	, 0UL	    	    	    	    }
-    };
-    
-    
-    D(bug("INIT FAKEGFXCLASS\n"));
-    if ((__IHidd_FakeFB = OOP_ObtainAttrBase(IID_Hidd_FakeFB)))
-    {
-	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-	if(NULL != cl)
-	{
-    	    D(bug("FAKE GFX CLASS INITED\n"));	    
-	    cl->UserData = csd;
-
-	    return cl;
-	}
-    }
-    
-    if (NULL == cl)
-    	free_fakegfxhiddclass(cl, csd);
-	
-    return cl;
-}
-
-static void free_fakegfxhiddclass(OOP_Class *cl, struct class_static_data *csd)
-{
-    if (NULL != cl)
-    {
-	OOP_RemoveClass(cl);
-	OOP_DisposeObject((OOP_Object *) cl);
-    	OOP_ReleaseAttrBase(IID_Hidd_FakeFB);
-    }
-}
-
-static OOP_Class *init_fakefbclass(struct class_static_data *csd)
-{
-    struct OOP_MethodDescr root_descr[num_Root_Methods + 1] =
-    {
-        {(IPTR (*)())fakefb_new    , moRoot_New     },
-        {(IPTR (*)())fakefb_dispose, moRoot_Dispose },
-        {(IPTR (*)())fakefb_get    , moRoot_Get     },
-        {(IPTR (*)())fakefb_fwd	   , moRoot_Set	    },
-        {NULL	    	    	   , 0UL    	    }
-    };
-
-    struct OOP_MethodDescr bitmap_descr[num_Hidd_BitMap_Methods + 1] =
-    {
-        {(IPTR (*)())fakefb_fwd	  	, moHidd_BitMap_SetColors	    },
-        {(IPTR (*)())fakefb_putpixel		, moHidd_BitMap_PutPixel	    },
-	{(IPTR (*)())fakefb_drawpixel		, moHidd_BitMap_DrawPixel	    },
-	{(IPTR (*)())fakefb_putimage		, moHidd_BitMap_PutImage	    },
-        {(IPTR (*)())fakefb_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
-        {(IPTR (*)())fakefb_puttemplate	, moHidd_BitMap_PutTemplate         },
-        {(IPTR (*)())fakefb_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
-        {(IPTR (*)())fakefb_putpattern	    	, moHidd_BitMap_PutPattern          },
-	{(IPTR (*)())fakefb_getimage		, moHidd_BitMap_GetImage	    },
-        {(IPTR (*)())fakefb_getpixel		, moHidd_BitMap_GetPixel	    },
-        {(IPTR (*)())fakefb_drawline		, moHidd_BitMap_DrawLine	    },
-        {(IPTR (*)())fakefb_drawrect		, moHidd_BitMap_DrawRect	    },
-        {(IPTR (*)())fakefb_fillrect 		, moHidd_BitMap_FillRect	    },
-        {(IPTR (*)())fakefb_drawellipse	, moHidd_BitMap_DrawEllipse	    },
-        {(IPTR (*)())fakefb_fillellipse	, moHidd_BitMap_FillEllipse	    },
-        {(IPTR (*)())fakefb_drawpolygon	, moHidd_BitMap_DrawPolygon	    },
-        {(IPTR (*)())fakefb_fillpolygon	, moHidd_BitMap_FillPolygon	    },
-        {(IPTR (*)())fakefb_drawtext		, moHidd_BitMap_DrawText	    },
-        {(IPTR (*)())fakefb_drawfilltext	, moHidd_BitMap_FillText	    },
-        {(IPTR (*)())fakefb_fillspan		, moHidd_BitMap_FillSpan	    },
-        {(IPTR (*)())fakefb_clear		, moHidd_BitMap_Clear		    },
-        {(IPTR (*)())fakefb_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_MapColor	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_UnmapPixel	    },
-        {(IPTR (*)())fakefb_putimagelut	, moHidd_BitMap_PutImageLUT	    },
-        {(IPTR (*)())fakefb_puttranspimagelut	, moHidd_BitMap_PutTranspImageLUT   },
-        {(IPTR (*)())fakefb_getimagelut	, moHidd_BitMap_GetImageLUT	    },
-        {(IPTR (*)())fakefb_fwd		, moHidd_BitMap_BytesPerLine	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_ConvertPixels	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect8	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect16	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect24	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect32	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_InvertMemRect	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox8	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox16	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox24	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox32	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyLUTMemBox16	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyLUTMemBox24	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyLUTMemBox32	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMem32Image8	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMem32Image16	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMem32Image24	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_GetMem32Image8	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_GetMem32Image16	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_GetMem32Image24	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate8	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate16    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate24    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate32    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern8	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern16	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern24	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern32	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_SetColorMap	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_ObtainDirectAccess  },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_ReleaseDirectAccess },
-	{(IPTR (*)())fakefb_scale		, moHidd_BitMap_BitMapScale	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PrivateSet	    },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_SetRGBConversionFunction },
-	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_UpdateRect          },
-        {NULL					, 0UL				    }
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr 	, IID_Root       , num_Root_Methods	    },
-        {bitmap_descr	, IID_Hidd_BitMap, num_Hidd_BitMap_Methods  },
-        {NULL	    	, NULL	    	 , 0	    	    	    }
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	    },
-        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    },
-        {aMeta_InstSize     	, (IPTR) sizeof(struct fakefb_data) },
-        {TAG_DONE   	    	, 0UL	    	    	    	    }
-    };
-    
-    OOP_Class *cl = NULL;
-    
-    if(MetaAttrBase)  
-    {
-   	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(NULL != cl)
-            cl->UserData     = csd;
-    } /* if(MetaAttrBase) */
-    
-    if (NULL == cl)
-	free_fakefbclass(cl, csd);
-
-    return cl;
-}
-
-static void free_fakefbclass(OOP_Class *cl, struct class_static_data *csd)
-{
-    if (NULL != cl)
-    {
-	OOP_RemoveClass(cl);
-    	OOP_DisposeObject((OOP_Object *) cl);	
-    }
-
-}
-
-static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
+static BOOL rethink_cursor(struct gfx_data *data, struct GfxBase *GfxBase)
 {
     OOP_Object *pf, *cmap;
     IPTR    	fbdepth, curdepth, i;
@@ -1468,7 +1236,7 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
     return TRUE;
 }
 
-static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct class_static_data *csd)
+static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct GfxBase *GfxBase)
 {
     LONG width, height;
     LONG fbwidth, fbheight;
@@ -1592,7 +1360,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     return;
 }
 
-static void gfx_setFrameBuffer(struct class_static_data *csd, struct gfx_data *data, OOP_Object *fb)
+static void gfx_setFrameBuffer(struct GfxBase *GfxBase, struct gfx_data *data, OOP_Object *fb)
 {
     data->framebuffer = fb;
 
@@ -1606,7 +1374,7 @@ static void gfx_setFrameBuffer(struct class_static_data *csd, struct gfx_data *d
     }
 }
 
-static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct class_static_data *csd)
+static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct GfxBase *GfxBase)
 {
     OOP_Object *fakebm;
     struct TagItem fakebmtags[] =
@@ -1618,66 +1386,242 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
 
     /* If we work with framebuffer-based driver, Show() will never be called on
        a fakefb object so we remember it right now */
-    fakebm = OOP_NewObject(csd->fakefbclass, NULL, fakebmtags);
-    if (data->fakefb_attr == aHidd_BitMap_FrameBuffer) {
+    fakebm = OOP_NewObject(CDD(GfxBase)->fakefbclass, NULL, fakebmtags);
+
+    if (data->fakefb_attr == aHidd_BitMap_FrameBuffer)
+    {
 	data->fakefb      = fakebm;
-	gfx_setFrameBuffer(csd, data, framebuffer);
+	gfx_setFrameBuffer(GfxBase, data, framebuffer);
     }
 
     return fakebm;
 }
 
-#undef GfxBase
+static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase)
+{
+    OOP_Class *cl = NULL;
+    
+    struct OOP_MethodDescr root_descr[num_Root_Methods + 1] =
+    {
+        {(IPTR (*)())gfx_new	,    	     	moRoot_New	},
+        {(IPTR (*)())gfx_dispose,         	moRoot_Dispose	},
+        {(IPTR (*)())gfx_get	,      		moRoot_Get	},
+        {(IPTR (*)())gfx_fwd	,         	moRoot_Set	},
+	{ NULL	    	    	, 0UL 	    	    	    	}
+    };
+    
+    struct OOP_MethodDescr gfxhidd_descr[num_Hidd_Gfx_Methods + 1] = 
+    {
+        {(IPTR (*)())gfx_fwd	  	   , moHidd_Gfx_NewGC		},
+        {(IPTR (*)())gfx_fwd	  	   , moHidd_Gfx_DisposeGC	},
+        {(IPTR (*)())gfx_newbitmap	   , moHidd_Gfx_NewBitMap	},
+        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeBitMap	},
+        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryModeIDs	},
+        {(IPTR (*)())gfx_fwd		   , moHidd_Gfx_ReleaseModeIDs	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CheckMode	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NextModeID	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetMode		},
+	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_GetPixFmt	},
+	{(IPTR (*)())gfx_setcursorshape    , moHidd_Gfx_SetCursorShape	},
+	{(IPTR (*)())gfx_setcursorpos	   , moHidd_Gfx_SetCursorPos	},
+	{(IPTR (*)())gfx_setcursorvisible  , moHidd_Gfx_SetCursorVisible},
+	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_SetMode	    	},
+	{(IPTR (*)())gfx_show	    	   , moHidd_Gfx_Show		},
+	{(IPTR (*)())gfx_copybox    	   , moHidd_Gfx_CopyBox	    	},
+	{(IPTR (*)())gfx_fwd	    	   , moHidd_Gfx_ModeProperties	},
+	{(IPTR (*)())gfx_showviewports	   , moHidd_Gfx_ShowViewPorts	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetSync	    	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_GetGamma	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_SetGamma	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_QueryHardware3D },
+	{(IPTR (*)())gfx_getmaxspritesize  , moHidd_Gfx_GetMaxSpriteSize},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_NewOverlay	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_DisposeOverlay	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_MakeViewPort	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CleanViewPort	},
+	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_PrepareViewPorts},
+        {NULL	    	    	    	   , 0UL   	    	    	}
+    };
+    
+    struct OOP_InterfaceDescr ifdescr[] =
+    {
+        {root_descr 	, IID_Root  	, num_Root_Methods	},
+        {gfxhidd_descr	, IID_Hidd_Gfx	, num_Hidd_Gfx_Methods	},
+        {NULL	    	, NULL	    	, 0 	    	    	}
+    };
+    
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
+        
+    struct TagItem tags[] =
+    {
+        { aMeta_SuperID     	, (IPTR)CLID_Root   	    	    },
+        { aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
+        { aMeta_InstSize    	, (IPTR)sizeof (struct gfx_data)    },
+        {TAG_DONE   	    	, 0UL	    	    	    	    }
+    };
+    
+    
+    D(bug("INIT FAKEGFXCLASS\n"));
+
+    if ((__IHidd_FakeFB = OOP_ObtainAttrBase(IID_Hidd_FakeFB)))
+    {
+	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
+	if(NULL != cl)
+	{
+    	    D(bug("FAKE GFX CLASS INITED\n"));	    
+	    cl->UserData = GfxBase;
+
+	    return cl;
+	}
+	
+	OOP_ReleaseAttrBase(IID_Hidd_FakeFB);
+    }
+    
+    return NULL;
+}
+
+static OOP_Class *init_fakefbclass(struct GfxBase *GfxBase)
+{
+    struct OOP_MethodDescr root_descr[num_Root_Methods + 1] =
+    {
+        {(IPTR (*)())fakefb_new    , moRoot_New     },
+        {(IPTR (*)())fakefb_dispose, moRoot_Dispose },
+        {(IPTR (*)())fakefb_get    , moRoot_Get     },
+        {(IPTR (*)())fakefb_fwd	   , moRoot_Set	    },
+        {NULL	    	    	   , 0UL    	    }
+    };
+
+    struct OOP_MethodDescr bitmap_descr[num_Hidd_BitMap_Methods + 1] =
+    {
+        {(IPTR (*)())fakefb_fwd	  	, moHidd_BitMap_SetColors	    },
+        {(IPTR (*)())fakefb_putpixel		, moHidd_BitMap_PutPixel	    },
+	{(IPTR (*)())fakefb_drawpixel		, moHidd_BitMap_DrawPixel	    },
+	{(IPTR (*)())fakefb_putimage		, moHidd_BitMap_PutImage	    },
+        {(IPTR (*)())fakefb_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
+        {(IPTR (*)())fakefb_puttemplate	, moHidd_BitMap_PutTemplate         },
+        {(IPTR (*)())fakefb_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
+        {(IPTR (*)())fakefb_putpattern	    	, moHidd_BitMap_PutPattern          },
+	{(IPTR (*)())fakefb_getimage		, moHidd_BitMap_GetImage	    },
+        {(IPTR (*)())fakefb_getpixel		, moHidd_BitMap_GetPixel	    },
+        {(IPTR (*)())fakefb_drawline		, moHidd_BitMap_DrawLine	    },
+        {(IPTR (*)())fakefb_drawrect		, moHidd_BitMap_DrawRect	    },
+        {(IPTR (*)())fakefb_fillrect 		, moHidd_BitMap_FillRect	    },
+        {(IPTR (*)())fakefb_drawellipse	, moHidd_BitMap_DrawEllipse	    },
+        {(IPTR (*)())fakefb_fillellipse	, moHidd_BitMap_FillEllipse	    },
+        {(IPTR (*)())fakefb_drawpolygon	, moHidd_BitMap_DrawPolygon	    },
+        {(IPTR (*)())fakefb_fillpolygon	, moHidd_BitMap_FillPolygon	    },
+        {(IPTR (*)())fakefb_drawtext		, moHidd_BitMap_DrawText	    },
+        {(IPTR (*)())fakefb_drawfilltext	, moHidd_BitMap_FillText	    },
+        {(IPTR (*)())fakefb_fillspan		, moHidd_BitMap_FillSpan	    },
+        {(IPTR (*)())fakefb_clear		, moHidd_BitMap_Clear		    },
+        {(IPTR (*)())fakefb_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_MapColor	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_UnmapPixel	    },
+        {(IPTR (*)())fakefb_putimagelut	, moHidd_BitMap_PutImageLUT	    },
+        {(IPTR (*)())fakefb_puttranspimagelut	, moHidd_BitMap_PutTranspImageLUT   },
+        {(IPTR (*)())fakefb_getimagelut	, moHidd_BitMap_GetImageLUT	    },
+        {(IPTR (*)())fakefb_fwd		, moHidd_BitMap_BytesPerLine	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_ConvertPixels	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect32	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_InvertMemRect	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox32	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyLUTMemBox16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyLUTMemBox24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyLUTMemBox32	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMem32Image8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMem32Image16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMem32Image24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_GetMem32Image8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_GetMem32Image16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_GetMem32Image24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate16    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate24    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate32    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern32	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_SetColorMap	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_ObtainDirectAccess  },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_ReleaseDirectAccess },
+	{(IPTR (*)())fakefb_scale		, moHidd_BitMap_BitMapScale	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PrivateSet	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_SetRGBConversionFunction },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_UpdateRect          },
+        {NULL					, 0UL				    }
+    };
+    
+    struct OOP_InterfaceDescr ifdescr[] =
+    {
+        {root_descr 	, IID_Root       , num_Root_Methods	    },
+        {bitmap_descr	, IID_Hidd_BitMap, num_Hidd_BitMap_Methods  },
+        {NULL	    	, NULL	    	 , 0	    	    	    }
+    };
+
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
+
+    struct TagItem tags[] =
+    {
+        {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	    },
+        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    },
+        {aMeta_InstSize     	, (IPTR) sizeof(struct fakefb_data) },
+        {TAG_DONE   	    	, 0UL	    	    	    	    }
+    };
+    
+    OOP_Class *cl = NULL;
+    
+    if (MetaAttrBase)
+    {
+   	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
+    	if (NULL != cl)
+            cl->UserData = GfxBase;
+    } /* if(MetaAttrBase) */
+
+    return cl;
+}
 
 OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 {
-    struct class_static_data *csd = PrivGBase(GfxBase)->fakegfx_staticdata;
+    struct common_driverdata *csd = CDD(GfxBase);
 
-    if (!csd) {
-        csd = AllocMem(sizeof(struct class_static_data), MEMF_ANY);
-	if (!csd)
-	    return NULL;
-	PrivGBase(GfxBase)->fakegfx_staticdata = csd;
+    if (!csd->fakegfxclass)
+    {
+    	/* Lazy class initialization */
+        csd->fakegfxclass	= init_fakegfxhiddclass(GfxBase);
+        csd->fakefbclass	= init_fakefbclass(GfxBase);
 
-        csd->gfxbase    	= GfxBase;
-        csd->fakegfxclass	= init_fakegfxhiddclass(csd);
-        csd->fakefbclass	= init_fakefbclass(csd);
-    
-        if (!csd->fakegfxclass || !csd->fakefbclass) {
+        if (!csd->fakegfxclass || !csd->fakefbclass)
+        {
 	    cleanup_fakegfxhidd(GfxBase);
-	    FreeMem(csd, sizeof(struct class_static_data));
 	    return NULL;
 	}
 	
     }
 
-    struct TagItem fgh_tags[] = {
-	{ aHidd_FakeGfxHidd_RealGfxHidd , (IPTR)gfxhidd },
-	{ TAG_DONE	    	    	, 0UL   	 }
-    };
-
-    return OOP_NewObject(csd->fakegfxclass, NULL, fgh_tags);
+    return OOP_NewObjectTags(csd->fakegfxclass, NULL, aHidd_FakeGfxHidd_RealGfxHidd, gfxhidd, TAG_DONE);
 }
 
 VOID cleanup_fakegfxhidd(struct GfxBase *GfxBase)
 {
-    struct class_static_data *csd = PrivGBase(GfxBase)->fakegfx_staticdata;
-
-    if (!csd)
-        return;
+    struct common_driverdata *csd = CDD(GfxBase);
 
     if (NULL != csd->fakefbclass)
     {
-    	free_fakefbclass(csd->fakefbclass, csd);
+    	OOP_DisposeObject((OOP_Object *)csd->fakefbclass);
 	csd->fakefbclass = NULL;
     }
 
     if (NULL != csd->fakegfxclass)
     {
-    	free_fakegfxhiddclass(csd->fakegfxclass, csd);
+    	OOP_DisposeObject((OOP_Object *)csd->fakegfxclass);
+	OOP_ReleaseAttrBase(IID_Hidd_FakeFB);
 	csd->fakegfxclass = NULL;
     }
-    
-    FreeMem(csd, sizeof(struct class_static_data));
-    PrivGBase(GfxBase)->fakegfx_staticdata = NULL;
 }

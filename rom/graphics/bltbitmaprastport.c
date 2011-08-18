@@ -151,7 +151,7 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
     struct bitmap_render_data 	*brd;
     ULONG   	    	    	width, height;
     struct monitor_driverdata *driver;
-    OOP_Object *gfxhidd;
+    OOP_Object *gfxhidd, *dest_gfxhidd;
 
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;
@@ -161,12 +161,23 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 //    D(bug("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
 //	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase));
 
-    /* Obtain driver object from either src or dest bitmap.
-       We avoid using memory driver because it's slow */
-    driver = GET_BM_DRIVERDATA(brd->srcbm);
+    /*
+     * Select the appropriate driver.
+     * Selection rules are described in BltBitMap() code. This is the same, except destination
+     * is represented by object, not by struct BitMap.
+     */
+    driver  = GET_BM_DRIVERDATA(brd->srcbm);
     gfxhidd = driver->gfxhidd;
+    OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&dest_gfxhidd);
+
     if (driver == (struct monitor_driverdata *)CDD(GfxBase))
-        OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+    {
+    	gfxhidd = dest_gfxhidd;
+    }
+    else if (OOP_OCLASS(dest_gfxhidd) == CDD(GfxBase)->fakegfxclass)
+    {
+    	gfxhidd = dest_gfxhidd;
+    }
 
     /* Get some info on the colormaps. We have to make sure
        that we have the appropriate mapping tables set.

@@ -125,7 +125,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	ULONG wSrc, wDest;
 	ULONG x;
 	ULONG depth;
-	struct monitor_driverdata *driver;
+	struct monitor_driverdata *driver, *dst_driver;
 	OOP_Object *tmp_gc;
 
 	EnterFunc(bug("driver_BltBitMap()\n"));
@@ -184,12 +184,39 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	/* If the size is illegal or we need not copy anything, return */
 	if (ySize <= 0 || xSize <= 0 || !mask) return 0;
 
-	/* Attempt to get real driver object if possible in hope that
-	   it will be able to accelerate the operation */
-	driver = GET_BM_DRIVERDATA(srcBitMap);
-	if (driver == (struct monitor_driverdata *)CDD(GfxBase))
-	    driver = GET_BM_DRIVERDATA(destBitMap);
+	/*
+	 * Select a driver to call
+	 * Selection rules:
+	 * 1. If one of drivers is fakegfx.hidd, we must use it in order
+	 *    to de-masquerade fakefb objects.
+	 * 2. If one of drivers is our default software bitmap driver,
+	 *    we use another one, which can be an accelerated video driver.
+	 */
+	driver     = GET_BM_DRIVERDATA(srcBitMap);
+	dst_driver = GET_BM_DRIVERDATA(destBitMap);
 
+	if (driver == (struct monitor_driverdata *)CDD(GfxBase))
+	{
+	    /*
+	     * If source bitmap is generic software one, we select destination bitmap.
+	     * It can be either fakegfx or accelerated hardware driver.
+	     */
+	    driver = dst_driver;
+	}
+	else if (dst_driver->flags & DF_UseFakeGfx)
+	{
+	    /*
+	     * If destination bitmap is fakegfx bitmap, we use its driver.
+	     * Source one might be not fakegfx.
+	     */
+	    driver = dst_driver;
+	}
+	/*
+	 * If both tests failed, we use source driver. We know that source it not a
+	 * generic software driver, and destionation is not fakegfx. So, source
+	 * can be either fakegfx or hardware driver.
+	 */
+	
 	tmp_gc = obtain_cache_object(driver->gc_cache, GfxBase);
 	if (NULL != tmp_gc)
 	{
