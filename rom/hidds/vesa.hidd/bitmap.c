@@ -118,16 +118,6 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     ReturnVoid("VesaGfx.BitMap::Dispose");
 }
 
-/*********  BitMap::PutPixel()  ***************************/
-// FIXME: in theory we shouldn't need this method since the superclass implements it
-
-VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
-{
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-
-    return;
-}
-
 /*** BitMap::Get() *******************************************/
 
 VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)

@@ -2687,12 +2687,12 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     WORD    	    	    	    srcY = msg->srcY, destY = msg->destY;
     WORD    	    	    	    startX, endX, deltaX, startY, endY, deltaY;
     ULONG   	    	    	    memFG;
-    
     HIDDT_PixelFormat 	    	    *srcpf, *dstpf;
     OOP_Object      	    	    *dest, *src;
-    
     OOP_Object      	    	    *gc;
-    
+    APTR			    srcPixels  = NULL;
+    APTR			    destPixels = NULL;
+
     dest = msg->dest;
     src  = msg->src;
 
@@ -2738,34 +2738,106 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 
     dstpf = (HIDDT_PixelFormat *)HBM(dest)->prot.pixfmt;
 
-#ifdef WHAT_IS_THIS
-    /* Compare graphtypes */
-    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf))
+    OOP_GetAttr(msg->src,  aHidd_ChunkyBM_Buffer, (APTR)&srcPixels);
+    OOP_GetAttr(msg->dest, aHidd_ChunkyBM_Buffer, (APTR)&destPixels);
+
+    if (srcPixels && destPixels)
     {
-    	/* It is ok to do a direct copy */
-    }
-    else
-    {
-    	/* Find out the gfx formats */
-	if (  IS_PALETTIZED(srcpf) && IS_TRUECOLOR(dstpf))
+	/*
+    	 * Both bitmaps are chunky ones and they have directly accessible buffer.
+    	 * We can use optimized routines to do the copy.
+    	 */
+	IPTR src_bytesperline, dest_bytesperline;
+
+	OOP_GetAttr(msg->src, aHidd_BitMap_BytesPerRow, &src_bytesperline);
+	OOP_GetAttr(msg->dest, aHidd_BitMap_BytesPerRow, &dest_bytesperline);
+
+    	switch(GC_DRMD(msg->gc))
 	{
-	
-	}
-	else if (IS_TRUECOLOR(srcpf) && IS_PALETTIZED(dstpf))
-	{
-	
-	}
-	else if (IS_PALETTE(srcpf) && IS_STATICPALETTE(dstpf)) 
-	{
-	
-	}
-	else if (IS_STATICPALETTE(srcpf) && IS_PALETTE(dstpf))
-	{
-	
-	}
-    }
-#endif
-    
+	case vHidd_GC_DrawMode_Copy:
+	    /* At the moment we optimize only bulk copy */
+
+    	    if (srcpf == dstpf)
+    	    {
+    	    	/*
+    	    	 * The same pixelformat. Extremely great!
+    	    	 *
+    	    	 * FIXME: Bulk copy to the same pixelformat is also handled in ConvertPixels very well
+    	    	 *	  (optimized to either per-line or bulk memcpy()). But it can't handle
+    	    	 *	  overlapping regions (which seems to be a requirement for CopyBox).
+    	    	 *	  If this is fixed, we can even throw away HIDD_BM_CopyMemBoxXX at all, reducing
+    	    	 *	  kickstart size.
+    	    	 */
+	    	switch(srcpf->bytes_per_pixel)
+		{
+		case 1:
+		    /*
+		     * In fact all these methods are static, they ignore object pointer, and it's
+		     * needed only for OOP_DoMethod() to fetch class information.
+		     * We use destination bitmap pointer, we can also source one.
+		     */
+	    	    HIDD_BM_CopyMemBox8(msg->dest,
+		    	    		srcPixels, msg->srcX, msg->srcY,
+					destPixels, msg->destX, msg->destY,
+					msg->width, msg->height,
+					src_bytesperline, dest_bytesperline);
+		    return;
+
+		case 2:
+	    	    HIDD_BM_CopyMemBox16(msg->dest,
+		    	    		 srcPixels, msg->srcX, msg->srcY,
+					 destPixels, msg->destX, msg->destY,
+					 msg->width, msg->height,
+					 src_bytesperline, dest_bytesperline);
+		    return;
+
+		case 3:
+	    	    HIDD_BM_CopyMemBox24(msg->dest,
+		    	    		 srcPixels, msg->srcX, msg->srcY,
+		    	    		 destPixels, msg->destX, msg->destY,
+					 msg->width, msg->height,
+					 src_bytesperline, dest_bytesperline);
+		    return;
+
+		case 4:
+	    	    HIDD_BM_CopyMemBox32(msg->dest,
+		    	    		 srcPixels, msg->srcX, msg->srcY,
+					 destPixels, msg->destX, msg->destY,
+					 msg->width, msg->height,
+					 src_bytesperline, dest_bytesperline);
+		    return;
+
+	    	} /* switch(srcpf->bytes_per_pixel) */
+	   } /* srcpf == dstpf */
+	   else
+	   {
+	   	/*
+	   	 * Pixelformats are different. This can't be the same bitmap,
+	   	 * and it's safe to use ConvertPixels method (see FIXME above).
+	   	 */
+	   	srcPixels  += (msg->srcY  * src_bytesperline ) + (msg->srcX  * srcpf->bytes_per_pixel);
+	   	destPixels += (msg->destY * dest_bytesperline) + (msg->destX * dstpf->bytes_per_pixel);
+
+		/*
+		 * Supply NULL pixlut. In this case bitmap's own colormap will be used
+		 * for color lookup (if needed).
+		 */
+	   	HIDD_BM_ConvertPixels(msg->dest,
+	   			      &srcPixels, srcpf, src_bytesperline,
+	   			      &destPixels, dstpf, dest_bytesperline,
+	   			      msg->width, msg->height, NULL);
+
+	   	return;
+	   }
+
+    	   break;
+
+	/* TODO: Optimize other DrawModes here */
+
+    	} /* switch(mode) */  
+
+    } /* srcPixels && destPixels */
+
     gc = msg->gc;
 
     memFG = GC_FG(msg->gc);
