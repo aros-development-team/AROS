@@ -2696,20 +2696,6 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     OOP_Object      	    	    *dest, *src;
     
     OOP_Object      	    	    *gc;
-#if USE_FAST_GETPIXEL
-    struct pHidd_BitMap_GetPixel    get_p;
-#endif
-
-#if USE_FAST_DRAWPIXEL
-    struct pHidd_BitMap_DrawPixel   draw_p;
-    
-    draw_p.mID	= CSD(cl)->drawpixel_mid;
-    draw_p.gc	= msg->gc;
-#endif
-
-#if USE_FAST_GETPIXEL
-    get_p.mID	= CSD(cl)->getpixel_mid;
-#endif
     
     dest = msg->dest;
     src  = msg->src;
@@ -2756,7 +2742,8 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 #endif
 
     dstpf = (HIDDT_PixelFormat *)HBM(dest)->prot.pixfmt;
-    
+
+#ifdef WHAT_IS_THIS
     /* Compare graphtypes */
     if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf))
     {
@@ -2782,14 +2769,13 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	
 	}
     }
+#endif
     
     gc = msg->gc;
-    
+
     memFG = GC_FG(msg->gc);
     
     /* All else have failed, copy pixel by pixel */
-
-
     if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf))
     {
     	if (IS_TRUECOLOR(srcpf))
@@ -2798,48 +2784,27 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	    for(y = startY; y != endY; y += deltaY)
 	    {
 		HIDDT_Color col;
-		
+
 		/* if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
 		    bug("[%d,%d] ", memSrcX, memDestX);
 		*/    
 		for(x = startX; x != endX; x += deltaX)
 		{
-		    HIDDT_Pixel pix;
-		    
-    	    	#if USE_FAST_GETPIXEL
-		    get_p.x = srcX + x;
-		    get_p.y = srcY + y;
-		    pix = GETPIXEL(src, &get_p);
-    	    	#else
-		    pix = HIDD_BM_GetPixel(obj, srcX + x, srcY + y);
-    	    	#endif
+		    HIDDT_Pixel pix = GETPIXEL(src, srcX + x, srcY + y);
 
-    	    	#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
+#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
 		    if (srcpf == dstpf)
 		    {
 			GC_FG(gc) = pix;
-		    } 
-		    else 
-		    {
-    	    	#endif
-		    HIDD_BM_UnmapPixel(src, pix, &col);
-		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
-    	    	#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
 		    }
-    	    	#endif
+		    else
+#endif
+		    {
+		    	HIDD_BM_UnmapPixel(src, pix, &col);
+		    	GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
+		    }
 
-    	    // #if 0
-
-    	    	#if USE_FAST_DRAWPIXEL
-		    draw_p.x = destX + x;
-		    draw_p.y = destY + y;
-		    DRAWPIXEL(dest, &draw_p);
-    	    	#else
-		    
-		    HIDD_BM_DrawPixel(msg->dest, gc, destX + x, destY + y);
-    	    	#endif
-
-    	    // #endif
+		    DRAWPIXEL(dest, gc, destX + x, destY + y);
 		}
 		/*if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
 		    bug("[%d,%d] ", srcY, destY);
@@ -3734,53 +3699,76 @@ ULONG GFX__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 /****************************************************************************************/
 
+static ULONG ObtainAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULONG count)
+{
+    ULONG i;
+    ULONG failed = 0;
+    
+    for (i = 0; i < count; i++)
+    {
+    	bases[i] = OOP_ObtainAttrBase(interfaces[i]);
+    	if (!bases[i])
+    	    failed++;
+    }
+    
+    return failed;
+}
+
+static void ReleaseAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULONG count)
+{
+    ULONG i;
+    
+    for (i = 0; i < count; i++)
+    {
+    	if (bases[i])
+    	    OOP_ReleaseAttrBase(interfaces[i]);
+    }
+}
+
+static ULONG GetMethodBases(OOP_MethodID *bases, CONST_STRPTR *interfaces, ULONG count)
+{
+    ULONG i;
+    ULONG failed = 0;
+
+    for (i = 0; i < count; i++)
+    {
+    	bases[i] = OOP_GetMethodID(interfaces[i], 0);
+    	if (bases[i] == -1)
+    	    failed++;
+    }
+
+    return failed;
+}
+
+static CONST_STRPTR interfaces[NUM_ATTRBASES] =
+{
+    IID_Hidd_BitMap,
+    IID_Hidd_Gfx,
+    IID_Hidd_GC,
+    IID_Hidd_ColorMap,
+    IID_Hidd_Overlay,
+    IID_Hidd_Sync,
+    IID_Hidd_PixFmt,
+    IID_Hidd_PlanarBM,
+    IID_Hidd_ChunkyBM,
+};
+
 static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
 {
     struct class_static_data *csd = &LIBBASE->hdg_csd;
-    
-    __IHidd_PixFmt  	= OOP_ObtainAttrBase(IID_Hidd_PixFmt);
-    __IHidd_BitMap  	= OOP_ObtainAttrBase(IID_Hidd_BitMap);
-    __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
-    __IHidd_Sync    	= OOP_ObtainAttrBase(IID_Hidd_Sync);
-    __IHidd_GC      	= OOP_ObtainAttrBase(IID_Hidd_GC);
-    __IHidd_Overlay    	= OOP_ObtainAttrBase(IID_Hidd_Overlay);
-    __IHidd_ColorMap 	= OOP_ObtainAttrBase(IID_Hidd_ColorMap);
-    __IHidd_PlanarBM	= OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
-    __IHidd_ChunkyBM	= OOP_ObtainAttrBase(IID_Hidd_ChunkyBM);
-    
-    if (!__IHidd_PixFmt     ||
-     	!__IHidd_BitMap     ||
-	!__IHidd_Gfx 	    ||
-	!__IHidd_Sync 	    ||
-	!__IHidd_GC 	    ||
-	!__IHidd_ColorMap   ||
-	!__IHidd_PlanarBM   ||
-	!__IHidd_ChunkyBM
-       )
+ 
+    if (ObtainAttrBases(csd->attrBases, interfaces, NUM_ATTRBASES))
     {
-	goto failexit;
+	ReturnInt("init_gfxhiddclass", ULONG, FALSE);
+    }
+
+    if (GetMethodBases(csd->methodBases, interfaces, NUM_METHODBASES))
+    {
+	ReturnInt("init_gfxhiddclass", ULONG, FALSE);
     }
 
     D(bug("Creating std pixelfmts\n"));
-    if (!create_std_pixfmts(csd))
-    	goto failexit;
-    D(bug("Pixfmts created\n"));
-
-    /* Get two methodis required for direct method execution */
-#if USE_FAST_PUTPIXEL
-    csd->putpixel_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutPixel);
-#endif
-#if USE_FAST_GETPIXEL
-    csd->getpixel_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixel);
-#endif
-#if USE_FAST_DRAWPIXEL
-    csd->drawpixel_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawPixel);
-#endif
-
-    ReturnInt("init_gfxhiddclass", ULONG, TRUE);
-    
-failexit:
-    ReturnInt("init_gfxhiddclass", ULONG, FALSE);
+    ReturnInt("init_gfxhiddclass", ULONG, create_std_pixfmts(csd));    
 }
 
 /****************************************************************************************/
@@ -3790,22 +3778,10 @@ static int GFX_ClassFree(LIBBASETYPEPTR LIBBASE)
     struct class_static_data *csd = &LIBBASE->hdg_csd;
     
     EnterFunc(bug("free_gfxhiddclass(csd=%p)\n", csd));
-    
-    if(NULL != csd)
-    {
-	delete_pixfmts(csd);
-        
-    	OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
-    	OOP_ReleaseAttrBase(IID_Hidd_BitMap);
-    	OOP_ReleaseAttrBase(IID_Hidd_Gfx);
-    	OOP_ReleaseAttrBase(IID_Hidd_Sync);
-    	OOP_ReleaseAttrBase(IID_Hidd_GC);
-	OOP_ReleaseAttrBase(IID_Hidd_Overlay);
-    	OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
-    	OOP_ReleaseAttrBase(IID_Hidd_PlanarBM);
-    	OOP_ReleaseAttrBase(IID_Hidd_ChunkyBM);
-    }
-    
+
+    delete_pixfmts(csd);
+    ReleaseAttrBases(csd->attrBases, interfaces, NUM_ATTRBASES);
+
     ReturnInt("free_gfxhiddclass", BOOL, TRUE);
 }
 
