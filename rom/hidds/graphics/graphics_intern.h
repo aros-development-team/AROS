@@ -205,14 +205,16 @@ struct HIDDBitMapData
 
     /* Optimize these two method calls */
 #if USE_FAST_PUTPIXEL    
-    IPTR (*putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg);
+    OOP_MethodFunc putpixel;
+    OOP_Class *putpixel_Class;
 #endif
 #if USE_FAST_GETPIXEL    
-    IPTR (*getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg);
+    OOP_MethodFunc getpixel;
+    OOP_Class *getpixel_Class;
 #endif
-
 #if USE_FAST_DRAWPIXEL    
-    IPTR (*drawpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg);
+    OOP_MethodFunc drawpixel;
+    OOP_Class *drawpixel_Class;
 #endif
 };
 
@@ -223,65 +225,6 @@ enum
     aoHidd_BitMap_Dummy = num_Hidd_BitMap_Attrs,    
     num_Total_BitMap_Attrs
 };
-
-/* The following calls are optimized by calling the method functions directly */
-
-#if USE_FAST_GETPIXEL
-static inline HIDDT_Pixel FastGetPixel_Inline(OOP_MethodID BitMapBase, OOP_Object *o, WORD x, WORD y)
-{
-    struct pHidd_BitMap_GetPixel get_p;
-
-    get_p.mID = BitMapBase + moHidd_BitMap_GetPixel;
-    get_p.x   = x;
-    get_p.y   = y;
-
-    return HBM(o)->getpixel(OOP_OCLASS(o), o, &get_p);
-}
-
-#define GETPIXEL(obj, x, y) ({OOP_Object *__obj = obj;\
-				FastGetPixel_Inline(HiddBitMapBase, __obj, x, y); })
-#else
-#define GETPIXEL(obj, x, y) HIDD_BM_GetPixel(obj, x, y)
-#endif
-
-#if USE_FAST_PUTPIXEL
-static inline void FastPutPixel_Inline(OOP_MethodID BitMapBase, OOP_Object *o, WORD x, WORD y, HIDDT_Pixel val)
-{
-    struct pHidd_BitMap_PutPixel put_p;
-
-    put_p.mID   = BitMapBase + moHidd_BitMap_PutPixel;
-    put_p.x     = x;
-    put_p.y     = y;
-    put_p.pixel = val;
-
-    HBM(o)->putpixel(OOP_OCLASS(o), o, &put_p);
-}
-
-#define PUTPIXEL(obj, x, y, val) ({OOP_Object *__obj = obj;\
-					FastPutPixel_Inline(HiddBitMapBase, __obj, x, y, val); })
-#else
-#define PUTPIXEL(obj, x, y, val) HIDD_BM_PutPixel(obj, x, y, val)
-#endif
-
-#if USE_FAST_DRAWPIXEL
-static inline void FastDrawPixel_Inline(OOP_MethodID BitMapBase, OOP_Object *o, OOP_Object *gc, WORD x, WORD y)
-{
-    struct pHidd_BitMap_DrawPixel draw_p;
-
-    draw_p.mID = BitMapBase + moHidd_BitMap_DrawPixel;
-    draw_p.gc  = gc;
-    draw_p.x   = x;
-    draw_p.y   = y;
-
-    HBM(o)->drawpixel(OOP_OCLASS(o), o, &draw_p);
-}
-
-#define DRAWPIXEL(obj, gc, x, y) ({OOP_Object *__obj = obj;\
-					FastDrawPixel_Inline(HiddBitMapBase, __obj, gc, x, y); })
-#else
-#define DRAWPIXEL(obj, gc, x, y) HIDD_BM_PutPixel(obj, gc, x, y)
-#endif
-
 
 #if 0
 struct HIDDGCData
@@ -397,5 +340,54 @@ static inline ULONG color_distance(UWORD a1, UWORD r1, UWORD g1, UWORD b1, UWORD
 
 #define CSD(x) (&((struct IntHIDDGraphicsBase *)x->UserData)->hdg_csd)
 #define csd CSD(cl)
+
+/* The following calls are optimized by calling the method functions directly */
+
+#if USE_FAST_GETPIXEL
+static inline HIDDT_Pixel GETPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y)
+{
+    struct pHidd_BitMap_GetPixel get_p;
+
+    get_p.mID = HiddBitMapBase + moHidd_BitMap_GetPixel;
+    get_p.x   = x;
+    get_p.y   = y;
+
+    return HBM(o)->getpixel(HBM(o)->getpixel_Class, o, &get_p.mID);
+}
+#else
+#define GETPIXEL(cl, obj, x, y) HIDD_BM_GetPixel(obj, x, y)
+#endif
+
+#if USE_FAST_PUTPIXEL
+static inline void PUTPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y, HIDDT_Pixel val)
+{
+    struct pHidd_BitMap_PutPixel put_p;
+
+    put_p.mID   = HiddBitMapBase + moHidd_BitMap_PutPixel;
+    put_p.x     = x;
+    put_p.y     = y;
+    put_p.pixel = val;
+
+    HBM(o)->putpixel(HBM(o)->putpixel_Class, o, &put_p.mID);
+}
+#else
+#define PUTPIXEL(cl, obj, x, y, val) HIDD_BM_PutPixel(obj, x, y, val)
+#endif
+
+#if USE_FAST_DRAWPIXEL
+static inline void DRAWPIXEL(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, WORD x, WORD y)
+{
+    struct pHidd_BitMap_DrawPixel draw_p;
+
+    draw_p.mID = HiddBitMapBase + moHidd_BitMap_DrawPixel;
+    draw_p.gc  = gc;
+    draw_p.x   = x;
+    draw_p.y   = y;
+
+    HBM(o)->drawpixel(HBM(o)->drawpixel_Class, o, &draw_p.mID);
+}
+#else
+#define DRAWPIXEL(cl, obj, gc, x, y) HIDD_BM_PutPixel(obj, gc, x, y)
+#endif
 
 #endif /* GRAPHICS_HIDD_INTERN_H */

@@ -949,19 +949,19 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	    data->classptr = (OOP_Class *)attrs[AO(ClassPtr)];
 
     	#if USE_FAST_PUTPIXEL
-	    data->putpixel = (IPTR (*)())OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_PutPixel);
+	    data->putpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_PutPixel, &data->putpixel_Class);
 	    if (NULL == data->putpixel)
 		ok = FALSE;
     	#endif
 
     	#if USE_FAST_GETPIXEL
-	    data->getpixel = (IPTR (*)())OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_GetPixel);
+	    data->getpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_GetPixel, &data->getpixel_Class);
 	    if (NULL == data->getpixel)
 		ok = FALSE;
     	#endif
 
     	#if USE_FAST_DRAWPIXEL
-	    data->drawpixel = (IPTR (*)())OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_DrawPixel);
+	    data->drawpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_DrawPixel, &data->drawpixel_Class);
 	    if (NULL == data->drawpixel)
 		ok = FALSE;
     	#endif
@@ -1296,7 +1296,7 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
     else
 #endif
     {
-    	dest      = HIDD_BM_GetPixel(obj, msg->x, msg->y);
+    	dest      = GETPIXEL(cl, obj, msg->x, msg->y);
     	writeMask = ~GC_COLMASK(gc) & dest;
 
     	val = 0;
@@ -1310,7 +1310,7 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
 
     }
 
-    PUTPIXEL(obj, msg->x, msg->y, val);
+    PUTPIXEL(cl, obj, msg->x, msg->y, val);
 
 /*    ReturnInt("BitMap::DrawPixel ", ULONG, 1); */ /* in quickmode return always 1 */
 

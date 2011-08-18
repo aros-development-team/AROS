@@ -8,8 +8,13 @@
 
 /****************************************************************************************/
 
+#define DEBUG 0
+#define SDEBUG 0
+#define DPF(x)
+#define DCOPYBOX(x)
+
 #include <aros/atomic.h>
-#include <aros/config.h>
+#include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <cybergraphx/cgxvideo.h>
 #include <exec/lists.h>
@@ -31,15 +36,6 @@
 #include <utility/tagitem.h>
 
 #include LC_LIBDEFS_FILE
-
-#undef  SDEBUG
-#undef  DEBUG
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
-
-#define DPF(x)
-
 
 #include <hidd/graphics.h>
 
@@ -2722,22 +2718,21 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     
     /* Get the source pixel format */
     srcpf = (HIDDT_PixelFormat *)HBM(src)->prot.pixfmt;
-    
-    /* bug("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OOP_OCLASS: %s\n", srcpf, obj
-	    , cl->ClassNode.ln_Name, OOP_OCLASS(obj)->ClassNode.ln_Name);
-    */
-    
-#if 0
+
+    DCOPYBOX(bug("COPYBOX: obj=0x%p (%s), src=0x%p at (%d, %d), dst=0x%p at (%d, %d), size=%dx%d\n", obj, OOP_OCLASS(obj)->ClassNode.ln_Name,
+		 msg->src, srcX, srcY, msg->dest, destX, destY, msg->width, msg->height));
+    DCOPYBOX(bug("COPYBOX: GC=0x%p, DrawMode %ld, ColMask 0x%08X\n", msg->gc, GC_DRMD(msg->gc), GC_COLMASK(msg->gc)));
+
+#ifdef COPYBOX_DUMP_DIMS
     {
 	IPTR sw, sh, dw, dh;
-	D(bug("COPYBOX: src=%p, dst=%p, width=%d, height=%d\n"
-	    , obj, msg->dest, msg->width, msg->height));
 
 	OOP_GetAttr(obj, aHidd_BitMap_Width, &sw);
 	OOP_GetAttr(obj, aHidd_BitMap_Height, &sh);
 	OOP_GetAttr(msg->dest, aHidd_BitMap_Width, &dw);
 	OOP_GetAttr(msg->dest, aHidd_BitMap_Height, &dh);
-	D(bug("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh));
+
+	bug("src dims: %dx%d  dest dims: %dx%d\n", sw, sh, dw, dh);
     }
 #endif
 
@@ -2780,7 +2775,8 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     {
     	if (IS_TRUECOLOR(srcpf))
 	{
-    	    // bug("COPY FROM TRUECOLOR TO TRUECOLOR\n");
+    	    DCOPYBOX(bug("COPY FROM TRUECOLOR TO TRUECOLOR\n"));
+
 	    for(y = startY; y != endY; y += deltaY)
 	    {
 		HIDDT_Color col;
@@ -2790,7 +2786,7 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 		*/    
 		for(x = startX; x != endX; x += deltaX)
 		{
-		    HIDDT_Pixel pix = GETPIXEL(src, srcX + x, srcY + y);
+		    HIDDT_Pixel pix = GETPIXEL(cl, src, srcX + x, srcY + y);
 
 #if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
 		    if (srcpf == dstpf)
@@ -2804,7 +2800,7 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 		    	GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
 		    }
 
-		    DRAWPIXEL(dest, gc, destX + x, destY + y);
+		    DRAWPIXEL(cl, dest, gc, destX + x, destY + y);
 		}
 		/*if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
 		    bug("[%d,%d] ", srcY, destY);
@@ -2818,7 +2814,7 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	        For this case we do NOT convert through RGB,
 		but copy the pixel indexes directly
 	     */
-    	    // bug("COPY FROM PALETTE TO PALETTE\n");
+    	    DCOPYBOX(bug("COPY FROM PALETTE TO PALETTE\n"));
 
     	    /* FIXME: This might not work very well with two StaticPalette bitmaps */
 
@@ -2842,15 +2838,15 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	if (IS_TRUECOLOR(srcpf))
 	{
     	    /* FIXME: Implement this */
-	     D(bug("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n"));
+	     DCOPYBOX(bug("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n"));
 	}
 	else if (IS_TRUECOLOR(dstpf))
 	{
 	    /* Get the colortab */
 	    HIDDT_Color *ctab = ((HIDDT_ColorLUT *)HBM(src)->colmap)->colors;
 
-    	    // bug("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
-	    
+    	    DCOPYBOX(bug("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab));
+
 	    for(y = startY; y != endY; y += deltaY)
 	    {		
 		for(x = startX; x != endX; x += deltaX)
