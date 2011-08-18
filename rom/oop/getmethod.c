@@ -16,11 +16,12 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH2(VOID *, OOP_GetMethod,
+	AROS_LH3(OOP_MethodFunc, OOP_GetMethod,
 
 /*  SYNOPSIS */
 	AROS_LHA(OOP_Object  *, obj, 	A0),
 	AROS_LHA(OOP_MethodID,  mid,	D0),
+	AROS_LHA(OOP_Class **, classPtr, A1),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 21, OOP)
@@ -31,8 +32,11 @@
 	The pointer should ONLY be used on the object you aquired.
 
     INPUTS
-    	obj	- pointer to object to get method for.
-	mid	- method id for method to get. This may be obtained with GetMethodID()
+    	obj	 - pointer to object to get method for.
+	mid	 - method id for method to get. This may be obtained with GetMethodID()
+	classPtr - A pointer to a location where implementation class pointer will be stored.
+		   The obtained method must be called with this class pointer. This pointer
+		   is mandatory!
 
     RESULT
     	The method asked for, or NULL if the method does not exist in
@@ -46,8 +50,6 @@
     EXAMPLE
 
     BUGS
-	It returns VOID *. I got compiler errors when returning
-	IPTR (*)(Class *, Object *, Msg)
 
     SEE ALSO
     	OOP_GetMethodID()
@@ -70,13 +72,13 @@
     if (NULL == ifm)
 	return NULL;
 
-    /* Paranoia */    
-    if (NULL == ifm->MethodFunc) {
-	D(bug("!!! OOP/GetMethod(): IFMethod instance had no methodfunc. This should NEVER happen !!!\n"));
-	return NULL;
-    }
-    
-    return (VOID *)ifm->MethodFunc;
+    /* Set class pointer */
+    *classPtr = ifm->mClass;
+
+    /* Paranoia */
+    D(if (NULL == ifm->MethodFunc) bug("!!! OOP/GetMethod(): IFMethod instance had no methodfunc. This should NEVER happen !!!\n");)
+
+    return ifm->MethodFunc;
 
     AROS_LIBFUNC_EXIT
 } /* OOP_GetMethod */
