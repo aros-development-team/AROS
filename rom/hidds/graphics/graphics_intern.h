@@ -9,18 +9,10 @@
 /* Include files */
 
 #include <aros/debug.h>
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-#ifndef EXEC_SEMAPHORES_H
-#   include <exec/semaphores.h>
-#endif
-#ifndef OOP_OOP_H
-#   include <oop/oop.h>
-#endif
-#ifndef HIDD_GRAPHICS_H
-#   include <hidd/graphics.h>
-#endif
+#include <exec/libraries.h>
+#include <exec/semaphores.h>
+#include <oop/oop.h>
+#include <hidd/graphics.h>
 #include <dos/dos.h>
 #include <graphics/gfxbase.h>
 #include <graphics/monitor.h>
@@ -34,15 +26,6 @@
 
 #define HBM(x) ((struct HIDDBitMapData *)x)
 
-#define PUTPIXEL(o, msg)	\
-    HBM(o)->putpixel(OOP_OCLASS(o), o, msg)
-
-#define GETPIXEL(o, msg)	\
-    HBM(o)->getpixel(OOP_OCLASS(o), o, msg)
-
-#define DRAWPIXEL(o, msg)	\
-    HBM(o)->drawpixel(OOP_OCLASS(o), o, msg)
-    
 #define GOT_PF_ATTR(code)	GOT_ATTR(code, aoHidd_PixFmt, pixfmt)
 #define FOUND_PF_ATTR(code)	FOUND_ATTR(code, aoHidd_PixFmt, pixfmt);
 
@@ -89,7 +72,8 @@ struct chunkybm_data
     BOOL own_buffer;
 };
 
-struct sync_data {
+struct sync_data
+{
     struct MonitorSpec *mspc;	/* Associated MonitorSpec */
 
     ULONG pixelclock;		/* pixel time in Hz */
@@ -107,8 +91,9 @@ struct sync_data {
     ULONG vmin;
     ULONG vmax;
 
-    OOP_Object *gfxhidd;	/* Graphics driver that owns this sync */
-    ULONG InternalFlags;	/* Internal flags, see below */
+    OOP_Object	 *gfxhidd;	 /* Graphics driver that owns this sync		*/
+    OOP_MethodID  SetMode_mID;	 /* SetMode method ID, for do_monitor()		*/
+    ULONG InternalFlags;	 /* Internal flags, see below			*/
 };
 
 /* Sync internal flags */
@@ -217,7 +202,6 @@ struct HIDDBitMapData
     OOP_Object *colmap;
     
     HIDDT_ModeID modeid;
-    
 
     /* Optimize these two method calls */
 #if USE_FAST_PUTPIXEL    
@@ -230,20 +214,73 @@ struct HIDDBitMapData
 #if USE_FAST_DRAWPIXEL    
     IPTR (*drawpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg);
 #endif
-
-
-
 };
 
 /* Private bitmap attrs */
 
-enum {
-    aoHidd_BitMap_Dummy = num_Hidd_BitMap_Attrs,
-    
+enum
+{
+    aoHidd_BitMap_Dummy = num_Hidd_BitMap_Attrs,    
     num_Total_BitMap_Attrs
-    
 };
 
+/* The following calls are optimized by calling the method functions directly */
+
+#if USE_FAST_GETPIXEL
+static inline HIDDT_Pixel FastGetPixel_Inline(OOP_MethodID BitMapBase, OOP_Object *o, WORD x, WORD y)
+{
+    struct pHidd_BitMap_GetPixel get_p;
+
+    get_p.mID = BitMapBase + moHidd_BitMap_GetPixel;
+    get_p.x   = x;
+    get_p.y   = y;
+
+    return HBM(o)->getpixel(OOP_OCLASS(o), o, &get_p);
+}
+
+#define GETPIXEL(obj, x, y) ({OOP_Object *__obj = obj;\
+				FastGetPixel_Inline(HiddBitMapBase, __obj, x, y); })
+#else
+#define GETPIXEL(obj, x, y) HIDD_BM_GetPixel(obj, x, y)
+#endif
+
+#if USE_FAST_PUTPIXEL
+static inline void FastPutPixel_Inline(OOP_MethodID BitMapBase, OOP_Object *o, WORD x, WORD y, HIDDT_Pixel val)
+{
+    struct pHidd_BitMap_PutPixel put_p;
+
+    put_p.mID   = BitMapBase + moHidd_BitMap_PutPixel;
+    put_p.x     = x;
+    put_p.y     = y;
+    put_p.pixel = val;
+
+    HBM(o)->putpixel(OOP_OCLASS(o), o, &put_p);
+}
+
+#define PUTPIXEL(obj, x, y, val) ({OOP_Object *__obj = obj;\
+					FastPutPixel_Inline(HiddBitMapBase, __obj, x, y, val); })
+#else
+#define PUTPIXEL(obj, x, y, val) HIDD_BM_PutPixel(obj, x, y, val)
+#endif
+
+#if USE_FAST_DRAWPIXEL
+static inline void FastDrawPixel_Inline(OOP_MethodID BitMapBase, OOP_Object *o, OOP_Object *gc, WORD x, WORD y)
+{
+    struct pHidd_BitMap_DrawPixel draw_p;
+
+    draw_p.mID = BitMapBase + moHidd_BitMap_DrawPixel;
+    draw_p.gc  = gc;
+    draw_p.x   = x;
+    draw_p.y   = y;
+
+    HBM(o)->drawpixel(OOP_OCLASS(o), o, &draw_p);
+}
+
+#define DRAWPIXEL(obj, gc, x, y) ({OOP_Object *__obj = obj;\
+					FastDrawPixel_Inline(HiddBitMapBase, __obj, gc, x, y); })
+#else
+#define DRAWPIXEL(obj, gc, x, y) HIDD_BM_PutPixel(obj, gc, x, y)
+#endif
 
 
 #if 0
@@ -267,22 +304,17 @@ struct HIDDGCData
 };
 #endif    
 
+#define NUM_ATTRBASES   9
+#define NUM_METHODBASES 4
 
 struct class_static_data
 {
     struct GfxBase	 *GfxBase;
     struct SignalSemaphore sema;
 
-    OOP_AttrBase    	 hiddPixFmtAttrBase;
-    OOP_AttrBase    	 hiddBitMapAttrBase;
-    OOP_AttrBase    	 hiddGfxAttrBase;
-    OOP_AttrBase    	 hiddSyncAttrBase;
-    OOP_AttrBase    	 hiddGCAttrBase;
-    OOP_AttrBase	 hiddOverlayAttrBase;
-    OOP_AttrBase    	 hiddColorMapAttrBase;
-    OOP_AttrBase    	 hiddPlanarBMAttrBase;
-    OOP_AttrBase    	 hiddChunkyBMAttrBase;
-    
+    OOP_AttrBase	 attrBases[NUM_ATTRBASES];
+    OOP_MethodID	 methodBases[NUM_METHODBASES];
+
     OOP_Class            *gfxhiddclass; /* graphics hidd class    */
     OOP_Class            *bitmapclass;  /* bitmap class           */
     OOP_Class            *gcclass;      /* graphics context class */
@@ -308,29 +340,28 @@ struct class_static_data
     /* Index of standard pixelformats for quick access */
     HIDDT_PixelFormat	 *std_pixfmts[num_Hidd_StdPixFmt];
 
-    /* Thes calls are optimized by calling the method functions directly	*/
-#if USE_FAST_PUTPIXEL
-    OOP_MethodID	 putpixel_mid;
-#endif
-#if USE_FAST_GETPIXEL
-    OOP_MethodID	 getpixel_mid;
-#endif
-#if USE_FAST_DRAWPIXEL
-    OOP_MethodID	 drawpixel_mid;
-#endif
     HIDDT_RGBConversionFunction rgbconvertfuncs[NUM_RGB_STDPIXFMT][NUM_RGB_STDPIXFMT];
     struct SignalSemaphore rgbconvertfuncs_sem;
 };
 
-#define __IHidd_PixFmt      (csd->hiddPixFmtAttrBase)
-#define __IHidd_BitMap	    (csd->hiddBitMapAttrBase)
-#define __IHidd_Gfx 	    (csd->hiddGfxAttrBase)
-#define __IHidd_Sync	    (csd->hiddSyncAttrBase)
-#define __IHidd_GC  	    (csd->hiddGCAttrBase)
-#define __IHidd_Overlay	    (csd->hiddOverlayAttrBase)
-#define __IHidd_ColorMap    (csd->hiddColorMapAttrBase)
-#define __IHidd_PlanarBM    (csd->hiddPlanarBMAttrBase)
-#define __IHidd_ChunkyBM    (csd->hiddChunkyBMAttrBase)
+#define __IHidd_BitMap	    (csd->attrBases[0])
+#define __IHidd_Gfx 	    (csd->attrBases[1])
+#define __IHidd_GC  	    (csd->attrBases[2])
+#define __IHidd_ColorMap    (csd->attrBases[3])
+#define __IHidd_Overlay	    (csd->attrBases[4])
+#define __IHidd_Sync	    (csd->attrBases[5])
+#define __IHidd_PixFmt      (csd->attrBases[6])
+#define __IHidd_PlanarBM    (csd->attrBases[7])
+#define __IHidd_ChunkyBM    (csd->attrBases[8])
+
+#undef HiddGfxBase
+#undef HiddBitMapBase
+#undef HiddColorMapBase
+#undef HiddGCBase
+#define HiddBitMapBase	    (csd->methodBases[0])
+#define HiddGfxBase	    (csd->methodBases[1])
+#define HiddGCBase	    (csd->methodBases[2])
+#define HiddColorMapBase    (csd->methodBases[3])
 
 /* Library base */
 

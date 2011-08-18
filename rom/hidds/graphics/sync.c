@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sync info class
@@ -41,11 +41,15 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     EnterFunc(bug("Sync::New()\n"));
 
-    /* We need graphics.library in order to be able to create MonitorSpec.
-       we do it here because graphics.hidd is initialized before
-       graphics.library */
+    /*
+     * We need graphics.library in order to be able to create MonitorSpec.
+     * we do it here because graphics.hidd is initialized before
+     * graphics.library
+     */
     ObtainSemaphore(&csd->sema);
-    if (!GfxBase) {
+
+    if (!GfxBase)
+    {
         GfxBase = (void *)OpenLibrary("graphics.library", 41);
         if (!GfxBase)
 	    ok = FALSE;
@@ -57,20 +61,27 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     /* Get object from superclass */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (NULL == o)
-	return NULL;
+    if (o)
+    {
+    	struct sync_data *data = OOP_INST_DATA(cl, o);
 
-    ok = parse_sync_tags(cl, o, msg->attrList, TRUE);
-    if (!ok) {
-	OOP_MethodID dispose_mid;
+    	data->SetMode_mID = HiddGfxBase + moHidd_Gfx_SetMode;
 
-	D(bug("!!! ERROR PARSING SYNC ATTRS IN Sync::New() !!!\n"));
-	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
-	o = NULL;
+	ok = parse_sync_tags(cl, o, msg->attrList, TRUE);
+	if (ok)
+	    return o;
+	else
+    	{
+	    OOP_MethodID dispose_mid;
+
+	    D(bug("!!! ERROR PARSING SYNC ATTRS IN Sync::New() !!!\n"));
+
+	    dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	    OOP_CoerceMethod(cl, o, &dispose_mid);
+	}
     }
 
-    return o;
+    return NULL;
 }
 
 /****************************************************************************************/
@@ -271,7 +282,18 @@ static LONG do_monitor(struct MonitorSpec *mspc)
     data->htotal = 100000000 / mspc->total_colorclocks / 28 / data->pixelclock;
 
     if (data->gfxhidd)
-        HIDD_Gfx_SetMode(data->gfxhidd, (OOP_Object *)mspc->ms_Object);
+    {
+    	/*
+    	 * Use explicit method call.
+    	 * We don't have static data pointer here. We cache the method ID instead for simplicity.
+    	 */
+	struct pHidd_Gfx_SetMode p;
+
+	p.mID  = data->SetMode_mID;
+    	p.Sync = (OOP_Object *)mspc->ms_Object;
+
+    	OOP_DoMethod(data->gfxhidd, &p.mID);
+    }
 
     return 0;
 }
@@ -299,7 +321,7 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
     struct sync_data *data = OOP_INST_DATA(cl, o);
     struct class_static_data *csd = CSD(cl);
 
-    if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_Sync_Attrs, &ATTRCHECK(sync), csd->hiddSyncAttrBase))
+    if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_Sync_Attrs, &ATTRCHECK(sync), __IHidd_Sync))
     {
 	D(bug("!!! parse_sync_tags: ERROR PARSING ATTRS !!!\n"));
 	return FALSE;

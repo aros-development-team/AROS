@@ -949,22 +949,19 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	    data->classptr = (OOP_Class *)attrs[AO(ClassPtr)];
 
     	#if USE_FAST_PUTPIXEL
-	    data->putpixel = (IPTR (*)(OOP_Class *, OOP_Object *, struct pHidd_BitMap_PutPixel *))
-			     OOP_GetMethod(obj, CSD(cl)->putpixel_mid);
+	    data->putpixel = (IPTR (*)())OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_PutPixel);
 	    if (NULL == data->putpixel)
 		ok = FALSE;
     	#endif
 
     	#if USE_FAST_GETPIXEL
-	    data->getpixel = (IPTR (*)(OOP_Class *, OOP_Object *, struct pHidd_BitMap_GetPixel *))
-			     OOP_GetMethod(obj, CSD(cl)->getpixel_mid);
+	    data->getpixel = (IPTR (*)())OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_GetPixel);
 	    if (NULL == data->getpixel)
 		ok = FALSE;
     	#endif
 
     	#if USE_FAST_DRAWPIXEL
-	    data->drawpixel = (IPTR (*)(OOP_Class *, OOP_Object *, struct pHidd_BitMap_DrawPixel *))
-			      OOP_GetMethod(obj, CSD(cl)->drawpixel_mid);
+	    data->drawpixel = (IPTR (*)())OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_DrawPixel);
 	    if (NULL == data->drawpixel)
 		ok = FALSE;
     	#endif
@@ -1256,9 +1253,6 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
     HIDDT_DrawMode  	    	    mode;
     HIDDT_Pixel     	    	    writeMask;
     OOP_Object      	    	    *gc;
-#if USE_FAST_PUTPIXEL
-    struct pHidd_BitMap_PutPixel    p;
-#endif
 
 /*    EnterFunc(bug("BitMap::DrawPixel() x: %i, y: %i\n", msg->x, msg->y));
 */
@@ -1300,35 +1294,23 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
 	val = src;
     }
     else
+#endif
     {
-#endif
+    	dest      = HIDD_BM_GetPixel(obj, msg->x, msg->y);
+    	writeMask = ~GC_COLMASK(gc) & dest;
 
-    dest      = HIDD_BM_GetPixel(obj, msg->x, msg->y);
-    writeMask = ~GC_COLMASK(gc) & dest;
+    	val = 0;
 
-    val = 0;
+    	if(mode & 1) val = ( src &  dest);
+    	if(mode & 2) val = ( src & ~dest) | val;
+    	if(mode & 4) val = (~src &  dest) | val;
+    	if(mode & 8) val = (~src & ~dest) | val;
 
-    if(mode & 1) val = ( src &  dest);
-    if(mode & 2) val = ( src & ~dest) | val;
-    if(mode & 4) val = (~src &  dest) | val;
-    if(mode & 8) val = (~src & ~dest) | val;
+    	val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
 
-    val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
+    }
 
-#if OPTIMIZE_DRAWPIXEL_FOR_COPY
-}
-#endif
-
-#if USE_FAST_PUTPIXEL
-    p.mID	= CSD(cl)->putpixel_mid;
-    p.x		= msg->x;
-    p.y		= msg->y;
-    p.pixel	= val;
-    PUTPIXEL(obj, &p);
-#else
-
-    HIDD_BM_PutPixel(obj, msg->x, msg->y, val);
-#endif
+    PUTPIXEL(obj, msg->x, msg->y, val);
 
 /*    ReturnInt("BitMap::DrawPixel ", ULONG, 1); */ /* in quickmode return always 1 */
 
