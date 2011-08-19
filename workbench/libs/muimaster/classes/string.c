@@ -167,7 +167,10 @@ static BOOL Buffer_SetNewContents (struct MUI_StringData *data, CONST_STRPTR str
         }
 
     }
-    data->BufferPos = data->NumChars;
+    
+    // avoid to BufferPos jumps to end of string if characters are inserted in string
+    if (data->BufferPos > data->NumChars)
+	data->BufferPos = data->NumChars;
     data->DispPos = 0;
     return TRUE;
 }
@@ -1378,6 +1381,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object * obj,
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
     ULONG retval = 0;
     int update = 0;
+    BOOL edited = FALSE;
     LONG muikey = msg->muikey;
     BOOL cursor_kills_marking = FALSE;
     
@@ -1823,12 +1827,18 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object * obj,
 		{
 		    update = String_HandleVanillakey(cl, obj, code, msg->imsg->Qualifier);
 		    if (update)
+		    {
 			retval = MUI_EventHandlerRC_Eat;
+			edited = TRUE;
+		    }
 		}
 	    }
 	    break;
 	}
     }
+
+    if (edited)
+	set(obj, MUIA_String_Contents, data->Buffer); // trigger notification
 
     if (update)
     {
