@@ -71,8 +71,11 @@
   
   if (NULL == GfxBase->blthd)
   { 
+    /* OwnBlitter() only if both lists are empty */
+    if (NULL == GfxBase->bsblthd)
+      OwnBlitter();
+
     /* it's the first one in the list */
-    OwnBlitter();
     GfxBase->blthd = bn;
     GfxBase->blttl = bn;
 
@@ -97,7 +100,6 @@
       custom->intena = INTF_SETCLR | INTF_BLIT;
     }
 #endif
-
   }
   else
   {

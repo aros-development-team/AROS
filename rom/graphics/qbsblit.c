@@ -68,7 +68,10 @@
   
   if (NULL == GfxBase->bsblthd)
   { 
-    OwnBlitter();
+    /* OwnBlitter() only if both lists are empty */
+    if (NULL == GfxBase->blthd)
+      OwnBlitter();
+
     /* it's the first one in the list */
     GfxBase->bsblthd = bn;
     GfxBase->bsblttl = bn;
