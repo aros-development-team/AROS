@@ -1,10 +1,12 @@
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/cia.h>
 
 #include <exec/libraries.h>
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
+#include <hardware/cia.h>
 #include <hidd/graphics.h>
 #include <graphics/modeid.h>
 
@@ -580,42 +582,89 @@ UBYTE bltnode_wrapper(void)
     return ret;
 }
 
+#define BEAMSYNC_ALARM 0x0f00
+/* AOS must use some GfxBase flags field for these. Later.. */
+#define bqvar GfxBase->pad3
+#define BQ_NEXT 1
+#define BQ_BEAMSYNC 2
+#define BQ_BEAMSYNCWAITING 4
+#define BQ_MISSED 8
+
 static AROS_UFH4(ULONG, gfx_blit,
     AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, datap, A1),
+    AROS_UFHA(struct amigavideo_staticdata*, data, A1),
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(ULONG, dummy3, A6))
 { 
     AROS_USERFUNC_INIT
 
-    struct amigavideo_staticdata *data = (struct amigavideo_staticdata*)datap;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = data->gfxbase;
-    struct bltnode *bn = GfxBase->blthd;
+    struct bltnode *bn = NULL;
     UBYTE v;
     UWORD dmaconr;
     
-    if (bn == NULL)
+    dmaconr = custom->dmaconr;
+    dmaconr = custom->dmaconr;
+    if (dmaconr & 0x4000) {
+    	/* Blitter still active? Wait for next interrupt. */
     	return 0;
+    }
+    
+    if (GfxBase->blthd == NULL && GfxBase->bsblthd == NULL) {
+    	custom->intena = INTF_BLIT;
+    	return 0;
+    }
     
     /* Was last blit in this node? */
-    if ((ULONG)bn->function & 1) {
-	*((ULONG*)&bn->function) &= ~1;
+    if (bqvar & BQ_NEXT) {
+    	bqvar &= ~(BQ_NEXT | BQ_MISSED);
+    	if (bqvar & BQ_BEAMSYNC)
+    	    bn = GfxBase->bsblthd;
+    	else
+    	    bn = GfxBase->blthd;
 	if (bn->stat == CLEANUP)
 	    AROS_UFC2(UBYTE, bn->cleanup,
 		AROS_UFCA(struct Custom *, custom, A0),
 		AROS_UFCA(struct bltnode*, bn, A1));
 	/* Next node */
-    	GfxBase->blthd = bn->n;
-    	bn = GfxBase->blthd;
+    	bn = bn->n;
+    	if (bqvar & BQ_BEAMSYNC)
+    	    GfxBase->bsblthd = bn;
+    	else
+    	    GfxBase->blthd = bn;
     }
-    
+
+    if (GfxBase->bsblthd) {
+	bn = GfxBase->bsblthd;
+	bqvar |= BQ_BEAMSYNC;
+    } else if (GfxBase->blthd) {
+	bn = GfxBase->blthd;
+	bqvar &= ~BQ_BEAMSYNC;
+    }
+
     if (!bn) {
     	/* Last blit finished */
+    	bqvar = 0;
 	custom->intena = INTF_BLIT;
 	GfxBase->blthd = GfxBase->bsblthd = NULL;
 	DisownBlitter();
        	return 0;
+    }
+
+    if (bqvar & BQ_BEAMSYNC) {
+	UWORD vpos = VBeamPos();
+	bqvar &= ~BQ_BEAMSYNCWAITING;
+	if (!(bqvar & BQ_MISSED) && bn->beamsync > vpos) {
+	    volatile struct CIA *ciab = (struct CIA*)0xbfd000;
+	    UWORD w = BEAMSYNC_ALARM - (bn->beamsync - vpos);
+	    bqvar |= BQ_BEAMSYNCWAITING;
+	    ciab->ciacrb &= ~0x80;
+	    ciab->ciatodhi = 0;
+	    ciab->ciatodmid = w >> 8;
+	    ciab->ciatodlow = w;
+	    return 0;
+	}
     }
  
     v = AROS_UFC2(UBYTE, bltnode_wrapper,
@@ -634,8 +683,28 @@ static AROS_UFH4(ULONG, gfx_blit,
 	return 0;
     }
 
-    /* Mark as "done". Probably not the best way.. */
-    *((ULONG*)&bn->function) |= 1;
+    bqvar |= BQ_NEXT;
+
+    return 0;
+	
+    AROS_USERFUNC_EXIT
+}
+
+static AROS_UFH4(ULONG, gfx_beamsync,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(struct amigavideo_staticdata*, data, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+{ 
+    AROS_USERFUNC_INIT
+
+    struct GfxBase *GfxBase = data->gfxbase;
+
+    if (bqvar & BQ_BEAMSYNCWAITING) {
+	/* We only need to trigger blitter interrupt */
+	volatile struct Custom *custom = (struct Custom*)0xdff000;
+	custom->intreq = INTF_SETCLR | INTF_BLIT;
+    }
 
     return 0;
 	
@@ -644,13 +713,13 @@ static AROS_UFH4(ULONG, gfx_blit,
 
 static AROS_UFH4(ULONG, gfx_vblank,
     AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, datap, A1),
+    AROS_UFHA(struct amigavideo_staticdata*, data, A1),
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, mySysBase, A6))
 { 
     AROS_USERFUNC_INIT
 
-    struct amigavideo_staticdata *data = (struct amigavideo_staticdata*)datap;
+    struct GfxBase *GfxBase = data->gfxbase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
     data->framecounter++;
@@ -679,6 +748,9 @@ static AROS_UFH4(ULONG, gfx_vblank,
 	data->updatescroll = NULL;
     }
 
+    if (bqvar & BQ_BEAMSYNC)
+	bqvar |= BQ_MISSED;
+
     return 0;
 	
     AROS_USERFUNC_EXIT
@@ -690,11 +762,13 @@ void initcustom(struct amigavideo_staticdata *data)
     UWORD *c;
     UWORD vposr, val;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+    volatile struct CIA *ciab = (struct CIA*)0xbfd000;
 
     resetcustom(data);
     resetsprite(data);
 
     data->gfxbase = (struct GfxBase*)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+    data->gfxbase->cia = OpenResource("ciab.resource");
 
     data->inter.is_Code         = (APTR)gfx_vblank;
     data->inter.is_Data         = data;
@@ -708,6 +782,27 @@ void initcustom(struct amigavideo_staticdata *data)
     GfxBase->bltsrv.is_Node.ln_Name = "Blitter";
     GfxBase->bltsrv.is_Node.ln_Type = NT_INTERRUPT;
     SetIntVector(INTB_BLIT, &GfxBase->bltsrv);
+    custom->intena = INTF_BLIT;
+
+    // CIA-B TOD counts scanlines */
+    GfxBase->timsrv.is_Code = (APTR)gfx_beamsync;
+    GfxBase->timsrv.is_Data = data;
+    GfxBase->timsrv.is_Node.ln_Name = "Beamsync";
+    GfxBase->timsrv.is_Node.ln_Type = NT_INTERRUPT;
+    Disable();
+    AddICRVector(data->gfxbase->cia, 2, &GfxBase->timsrv);
+    AbleICR(data->gfxbase->cia, 1 << 2);
+    ciab->ciacrb |= 0x80;
+    ciab->ciatodhi = 0;
+    /* TOD/ALARM CIA bug: http://eab.abime.net/showpost.php?p=277315&postcount=10 */
+    ciab->ciatodmid = BEAMSYNC_ALARM >> 8;
+    ciab->ciatodlow = BEAMSYNC_ALARM & 0xff;
+    ciab->ciacrb &= ~0x80;
+    ciab->ciatodhi = 0;
+    ciab->ciatodmid = 0;
+    ciab->ciatodlow = 0;
+    AbleICR(data->gfxbase->cia, 0x80 | (1 << 2));
+    Enable();
 
     data->startx = 0x80;
     data->starty = 0x28;
@@ -748,7 +843,6 @@ void initcustom(struct amigavideo_staticdata *data)
     data->bplcon3 = ((data->res + 1) << 6) | 2; // spriteres + bordersprite
     
     data->gfxbase->copinit = (struct copinit*)data->copper1;
-    data->gfxbase->cia = OpenResource("ciab.resource");
 
     D(bug("Copperlist0 %p\n", data->copper1));
 
