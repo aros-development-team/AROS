@@ -15,5 +15,5 @@ endif
 
 %build_module mmake=kernel-ata \
   modname=ata modtype=device \
-  files="ata_init lowlevel ata dma_generic timer $(BUS_DRIVERS)" \
+  files="ata_init lowlevel ata dma_generic timer scsiemu $(BUS_DRIVERS)" \
   uselibs="rom oop"

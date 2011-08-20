@@ -513,5 +513,7 @@ struct atapi_StartStop
     UBYTE   pad2[7];
 };
 
+UBYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);
+
 #endif // _ATA_H
 
