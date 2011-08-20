@@ -13,13 +13,17 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 #MM- workbench-c-m68k : includes \
 #MM                     kernel-kernel-includes \
 #MM                     linklibs \
-#MM                     workbench-c-m68k-quick
+#MM                     workbench-c-m68k-apps \
+#MM                     workbench-c-m68k-setpatcharos \
+#MM                     workbench-c-m68k-arosbootstrap
 
 #MM- workbench-c-m68k-quick: workbench-c-m68k-apps-quick \
 #MM                          workbench-c-m68k-setpatcharos-quick \
 #MM                         workbench-c-m68k-arosbootstrap-quick
 
 #MM workbench-c-m68k-arosbootstrap : linklibs-loadseg
+
+#MM workbench-c-m68k-setpatcharos : linklibs-loadseg
 
 AROS_BOOT := $(BINDIR)/boot
 
