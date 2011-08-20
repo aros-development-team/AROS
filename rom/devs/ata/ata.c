@@ -502,6 +502,10 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     {
         io->io_Error = unit->au_DirectSCSI(unit, (struct SCSICmd *)IOStdReq(io)->io_Data);
     }
+    else if (unit->au_DevType == DG_DIRECT_ACCESS && !(unit->au_Flags & AF_Removable))
+    {
+    	io->io_Error = SCSIEmu(unit, (struct SCSICmd *)IOStdReq(io)->io_Data);
+    }
     else io->io_Error = IOERR_BADADDRESS;
 }
 
@@ -707,7 +711,7 @@ AROS_LH1(void, BeginIO,
     }
     else
     {
-    	D(bug("[ATA%02ld] Fast command\n"));
+    	D(bug("[ATA%02ld] Fast command\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum));
     
         /* Immediate command. Mark unit as active and do the command directly */
         unit->au_Unit.unit_flags |= UNITF_ACTIVE;
