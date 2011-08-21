@@ -59,9 +59,7 @@ struct LinuxFB_data
     int fbdev;
     char *baseaddr;
     unsigned long mem_len;
-#if BUFFERED_VRAM
     struct SignalSemaphore framebufferlock;
-#endif    
 };
 
 struct LibCInterface
@@ -95,10 +93,8 @@ struct BitmapData;
 
 VOID fbRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2);
 
-#if BUFFERED_VRAM
 #define LOCK_FRAMEBUFFER(data)	ObtainSemaphore(&data->framebufferlock)
 #define UNLOCK_FRAMEBUFFER(data) ReleaseSemaphore(&data->framebufferlock)
-#endif
 
 #define LSD(cl) (&((struct linux_base *)cl->UserData)->lsd)
 

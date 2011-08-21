@@ -37,11 +37,9 @@ OOP_Object *LinuxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     if (NULL != o)
     {
-    	struct BitmapData *data;
+    	struct BitmapData *data = OOP_INST_DATA(cl, o);
 	BOOL framebuffer;
 	IPTR val;
-	
-	data = OOP_INST_DATA(cl, o);
 
     	OOP_GetAttr(o, aHidd_BitMap_Width,  &val); data->width = val;
     	OOP_GetAttr(o, aHidd_BitMap_Height, &val); data->height = val;

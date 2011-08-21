@@ -1,7 +1,7 @@
 #ifndef ASM_MPC5200B_H
 #define ASM_MPC5200B_H
 
-#include <inttypes.h>
+#include <asm/cpu.h>
 
 #define __BV32(num)	((0x80000000 >> (num)))
 #define __BV16(num)	((0x8000 >> (num)))
@@ -31,14 +31,6 @@ typedef struct context {
 
 #define SIZEOF_ALL_REGISTERS (sizeof(context_t))
 
-static inline uint32_t rdmsr() {
-    uint32_t msr; asm volatile("mfmsr %0":"=r"(msr)); return msr;
-}
-
-static inline void wrmsr(uint32_t msr) {
-    asm volatile("mtmsr %0"::"r"(msr));
-}
-
 /* Machine State Register */
 #define MSR_POW 0x00040000
 #define MSR_TGPR 0x00020000
@@ -56,12 +48,6 @@ static inline void wrmsr(uint32_t msr) {
 #define MSR_DS  0x00000010
 #define MSR_RI	0x00000002
 #define MSR_LE	0x00000001
-
-#define rdspr(reg) \
-    ({ unsigned long val; asm volatile("mfspr %0,%1":"=r"(val):"i"(reg)); val; })
-
-#define wrspr(reg, val) \
-    do { asm volatile("mtspr %0,%1"::"i"(reg),"r"(val)); } while(0)
 
 /* SPR registers */
 #define XER     0x001   /* Integer Exception Register */

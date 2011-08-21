@@ -1,16 +1,16 @@
 # $Id: mmakefile.src 40592 2011-08-08 09:20:52Z sonic $
 include $(TOP)/config/make.cfg
 
-FILES    := kernel_startup kernel_debug
+FILES    := kernel_startup kernel_debug kernel_bootmem
 
 MAINDIR	      := rom/kernel
 USER_AFLAGS   := -I$(GENINCDIR)
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(MAINDIR) -I$(SRCDIR)/rom/exec \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
-#MM kernel-kernel-chrp-ppc-pegasos : linklibs-bootconsole
-#MM kernel-kernel-chrp-ppc-pegasos-pkg : linklibs-bootconsole
-#MM kernel-kernel-chrp-ppc-pegasos-kobj : linklibs-bootconsole
+#MM kernel-kernel-chrp-ppc-pegasos : linklibs-bootconsole kernel-kernel-native-ppc
+#MM kernel-kernel-chrp-ppc-pegasos-pkg : linklibs-bootconsole kernel-kernel-native-ppc
+#MM kernel-kernel-chrp-ppc-pegasos-kobj : linklibs-bootconsole kernel-kernel-native-ppc
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \

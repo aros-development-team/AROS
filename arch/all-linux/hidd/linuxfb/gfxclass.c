@@ -181,39 +181,24 @@ VOID LinuxFB__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /********** FBGfx::NewBitMap()  ****************************/
 OOP_Object *LinuxFB__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-
-    BOOL displayable;
-    BOOL framebuffer;
-    
     struct TagItem tags[2];
     struct pHidd_Gfx_NewBitMap p;
     HIDDT_ModeID modeid;
-    HIDDT_StdPixFmt stdpf;
-    OOP_Object *friend;
-    OOP_Object *gfxhidd = NULL;
     
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-    friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
-    if (friend) OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-      
-    if ((framebuffer || displayable || (modeid != vHidd_ModeID_Invalid)) ||
-    	((stdpf == vHidd_StdPixFmt_Unknown) && friend && (gfxhidd == o)))
+    modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+    if (modeid != vHidd_ModeID_Invalid)
     {
 	tags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
-	tags[0].ti_Data = (IPTR)LSD(cl)->bmclass;
-	
+	tags[0].ti_Data = (IPTR)LSD(cl)->bmclass;	
 	tags[1].ti_Tag	= TAG_MORE;
 	tags[1].ti_Data = (IPTR)msg->attrList;
-	
+
 	p.mID = msg->mID;
 	p.attrList = tags;
-	
+
 	msg = &p;
     }
-    
+
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -334,21 +319,12 @@ VOID LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
     	switch (idx)
 	{
-	    case aoHidd_Gfx_IsWindowed:
-	    	*msg->storage = (IPTR)FALSE;
-		break;
-		
-	    default:
-	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		break;
+	case aoHidd_Gfx_NoFrameBuffer:
+            *msg->storage = TRUE;
+	    return;
 	}
-    } 
-    else
-    {
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
-    
-    return;
+    OOP_DoSuperMethod(cl, o, &msg.mID);
 }
 
 static BOOL setup_linuxfb(struct linux_staticdata *fsd, int fbdev, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi)
