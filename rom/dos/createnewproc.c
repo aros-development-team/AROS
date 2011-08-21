@@ -100,7 +100,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* 9 */    { NP_StackSize	  , AROS_STACKSIZE    	        },
     /*10 */    { NP_Name    	  , (IPTR)"New Process" 	},
     /*11 */    { NP_Priority	  , me->pr_Task.tc_Node.ln_Pri 	},
-    /*12 */    { NP_Arguments	  , (IPTR)NULL  	    	},
+    /*12 */    { NP_Arguments	  , (IPTR)-1    	    	},
     /*13 */    { NP_Cli     	  , 0           	    	},
     /*14 */    { NP_UserData	  , (IPTR)NULL  	    	},
     /*15 */    { NP_ExitCode	  , (IPTR)NULL  	    	},
@@ -209,11 +209,23 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     ENOMEM_IF(name == NULL);
 
     /* NP_Arguments */
-    if (defaults[12].ti_Data)
+    if (defaults[12].ti_Data != (IPTR)-1)
     {
-    	argsize = strlen((STRPTR)defaults[12].ti_Data) + 1;
-	argptr  = (STRPTR)AllocVec(argsize, MEMF_PUBLIC);
-	ENOMEM_IF(argptr == NULL);
+    	CONST_STRPTR args = (CONST_STRPTR)defaults[12].ti_Data;
+
+    	/* If NULL, then it was provided by the user,
+    	 * so use the empty "" arg list
+    	 */
+    	if (args == NULL)
+	{
+    	    argptr = "";
+    	    argsize = 0;
+	} else {
+	    argsize = strlen(args);
+	    argptr  = (STRPTR)AllocVec(argsize+1, MEMF_PUBLIC);
+	    ENOMEM_IF(argptr == NULL);
+	    CopyMem(args, argptr, argsize+1);
+	}
     }
 
     memlist = AllocMem(sizeof(struct MemList) + 2*sizeof(struct MemEntry),
@@ -364,8 +376,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     }
 
     CopyMem((APTR)defaults[10].ti_Data, name, namesize);
-    if (argptr)
-	CopyMem((APTR)defaults[12].ti_Data, argptr, argsize);
 
     process->pr_Task.tc_Node.ln_Type = NT_PROCESS;
     process->pr_Task.tc_Node.ln_Name = name;
@@ -455,18 +465,16 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         old_sig = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE; 
     }
 
-    /* argsize variable includes trailing 0 byte, but is supposed
-       not to. */
-
-    if (argsize) argsize--;
-
-    /*
-     * Inject command arguments to the beginning of input handle. Guru Book mentions this.
-     * This fixes for example AmigaOS' C:Execute.
-     * CHECKME: is this correct? May be this applies only to CLI processes?
-     */
-    D(bug("[createnewproc] argsize: %u argstr: %s\n", argsize, argptr));
-    vbuf_inject(process->pr_CIS, argptr, argsize, DOSBase);
+    if (argptr != NULL) {
+        /*
+         * Inject command arguments to the beginning of input handle. Guru Book mentions this.
+         * This fixes for example AmigaOS' C:Execute.
+         * This applies only to processes that set NP_Arguments,
+         *  (even to NULL!)
+         */
+        D(bug("[createnewproc] argsize: %u argstr: %s\n", argsize, argptr));
+        vbuf_inject(process->pr_CIS, argptr, argsize, DOSBase);
+    }
 
     tasktags[0].ti_Data = (IPTR)argptr;
     tasktags[1].ti_Data = argsize;

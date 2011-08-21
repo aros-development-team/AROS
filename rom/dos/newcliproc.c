@@ -72,7 +72,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
         }
 
         /* If argstr is missing a newline terminator, add it */
-        if (argsize == 0 || argstr[argsize-1] != '\n')
+        if (argstr && (argsize == 0 || argstr[argsize-1] != '\n'))
         {
             alloced_argstr = AllocVec(argsize+2, MEMF_ANY);
             if (alloced_argstr == NULL)
