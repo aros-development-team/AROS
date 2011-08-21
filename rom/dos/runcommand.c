@@ -16,18 +16,6 @@
 #include <dos/stdio.h>
 #include "dos_intern.h"
 
-#ifdef __mc68000
-
-ULONG BCPL_CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me);
-
-#else
-
-/* On non-m68k systems we don't implement BCPL ABI, and use the same entry code */
-
-#define BCPL_CallEntry CallEntry
-
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -137,7 +125,7 @@ ULONG BCPL_CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Proce
     args.Args[2] = (IPTR)BADDR(segList) + sizeof(BPTR);
     args.Args[3] = (IPTR)me;
 
-    ret = NewStackSwap(&sss, BCPL_CallEntry, &args);
+    ret = NewStackSwap(&sss, CallEntry, &args);
 
     me->pr_ReturnAddr = oldReturnAddr;
     me->pr_Arguments  = oldargs;
