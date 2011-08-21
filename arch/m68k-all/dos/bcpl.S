@@ -1308,9 +1308,13 @@ BCPL execLib        /* 160, long , LVOffset, d0, d1, a0, a1, a2 */
     BRTS
 
 BCPL findSegArray   /* 164, Array @,  */
-    move.l	%a2,%d0
-    addi.l	#BCPL_SegArray_0,%d0
-    lsr.l	#2,%d0
+    movem.l	%a0-%a1/%a6,%sp@-
+    sub.l	%a1,%a1
+    move.l	SysBase,%a6
+    jsr		FindTask(%a6)
+    move.l	%d0,%a0
+    move.l	%a0@(pr_SegList),%d0
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPL deleteObject   /* 168, void, @name */
