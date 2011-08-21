@@ -25,7 +25,7 @@
 	it via AddFreeList()).
 
     INPUTS
-	freelist  - pointer to FreeList struct. It is save to use NULL.
+	freelist  - pointer to FreeList struct. It is safe to use NULL.
 
     RESULT
 
@@ -49,19 +49,12 @@
 
     if ( ! freelist) return;
     
-    struct MemList * node,
-		   * nextnode;
-
-    node = (struct MemList*)freelist->fl_MemList.lh_Head;
-
-    while ( (nextnode = (struct MemList*)node->ml_Node.ln_Succ) )
+    while (!IsListEmpty(&freelist->fl_MemList))
     {
+	struct MemList *node = (struct MemList*)freelist->fl_MemList.lh_Head;
+	Remove ((struct Node*)node);
 	FreeEntry (node);
-
-	node = nextnode;
     }
-
-    FreeMem (freelist, sizeof(struct FreeList));
 
     AROS_LIBFUNC_EXIT
 } /* FreeFreeList */
