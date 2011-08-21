@@ -7,6 +7,7 @@
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <hardware/openfirmware.h>
 #include <utility/tagitem.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -30,24 +31,6 @@ struct KernelBase {
     context_t			*kb_FPUOwner;
     struct List			kb_DeadTasks;
     struct Task			*kb_LastDeadTask;
-};
-
-struct OFWNode {
-	struct MinNode	on_node;
-	char 			*on_name;
-	struct MinList	on_children;
-	struct MinList	on_properties;
-
-	uint8_t	on_storage[];
-};
-
-struct OFWProperty {
-	struct MinNode	op_node;
-	char 			*op_name;
-	uint32_t		op_length;
-	void			*op_value;
-
-	uint8_t			op_storage[];
 };
 
 enum intr_types {

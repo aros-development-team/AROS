@@ -1,0 +1,13 @@
+# $Id: mmakefile.src 40749 2011-08-16 14:19:31Z sonic $
+include $(TOP)/config/make.cfg
+
+ASMFILES := cli sti issuper
+
+MAINDIR	      := rom/kernel
+USER_AFLAGS   := -I $(SRCDIR)/$(MAINDIR) -I$(GENINCDIR)
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=$(MAINDIR) \
+  arch=native-ppc asmfiles=$(ASMFILES)
+
+%common

@@ -1,7 +1,7 @@
 #ifndef ASM_AMCC440_H
 #define ASM_AMCC440_H
 
-#include <inttypes.h>
+#include <asm/cpu.h>
 
 #define CLID_I2C_AMCC440	"hidd.i2c.amcc440"
 
@@ -28,14 +28,6 @@ typedef struct context {
 } context_t;
 
 #define SIZEOF_ALL_REGISTERS (sizeof(context_t))
-
-static inline uint32_t rdmsr() {
-    uint32_t msr; asm volatile("mfmsr %0":"=r"(msr)); return msr;
-}
-
-static inline void wrmsr(uint32_t msr) {
-    asm volatile("mtmsr %0"::"r"(msr));
-}
 
 /* Machine State Register */
 #define MSR_POW 0x00040000
@@ -66,12 +58,6 @@ static inline void wrmsr(uint32_t msr) {
 #define TLB_M   0x00000200      /* Memory Coherence Required */
 #define TLB_I   0x00000400      /* Caching Inhibited */
 #define TLB_W   0x00000800      /* Write Through */
-
-#define rdspr(reg) \
-    ({ unsigned long val; asm volatile("mfspr %0,%1":"=r"(val):"i"(reg)); val; })
-
-#define wrspr(reg, val) \
-    do { asm volatile("mtspr %0,%1"::"i"(reg),"r"(val)); } while(0)
 
 /* SPR registers */
 #define XER     0x001   /* Integer Exception Register */
