@@ -161,6 +161,7 @@ void testboot_standalone(menu_t * entry, void *kernel, boot_dev_t * dev)
 
 void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 {
+	const uint32_t magic = ('A' << 24) | ('R' << 16) | ('O' << 8) | 'S';
 	int i;
 	char tmpbuf[100];
 	void *file_buff = malloc(10 * 1024 * 1024);
@@ -192,7 +193,7 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 		video_draw_text(7, 9, 0, menu->modules[i]->name, 66);
 	}
 
-	void (*entry) (void *);
+	void (*entry) (void *, uint32_t);
 	flush_cache(get_ptr_rw(), get_ptr_ro());
 
 	entry = (void *)KERNEL_PHYS_BASE;
@@ -244,7 +245,7 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 	}
 
         printf("[BOOT] Jumping into kernel @ %p\n", entry);
-	entry(&items[0]);
+	entry(&items[0], magic);
 
 	printf("[BOOT] Shouldn't be back...\n");
 

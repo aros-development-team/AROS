@@ -45,6 +45,10 @@ asm(".section .aros.init,\"ax\"\n\t"
     ".type start,@function\n"
     "start:\n\t"
     "mr %r29,%r3\n\t"           /* Don't forget the message */
+    "lis %r5,0x4152\n\t"        /* Load AROS magic value    */
+    "ori %r5,%r5,0x4f53\n\t"
+    "cmpw %r5,%r4\n\t"          /* Check if it was passed as 2nd parameter */
+    "bnelr\n\t"                 /* No, then return to caller */
     "lis %r9,0xff00\n\t"        /* Virtual address 0xff000000 */
     "li %r10,0\n\t"             /* Physical address 0x00000000 */
     "ori %r9,%r9,0x0270\n\t"    /* 16MB page. Valid one */
@@ -54,7 +58,7 @@ asm(".section .aros.init,\"ax\"\n\t"
     "tlbwe %r10,%r0,1\n\t"
     "tlbwe %r11,%r0,2\n\t"
     "isync\n\t"                         /* Invalidate shadow TLB's */
-    "li %r9,0; mtspr 0x114,%r9; mtspr 0x115,%r9; mttbl %r9; mttbu %r9; mttbl %r9\n\t"
+    "li %r9,0; mttbl %r9; mttbu %r9; mttbl %r9\n\t"
     "lis %r9,tmp_stack_end@ha\n\t"      /* Use temporary stack while clearing BSS */
     "lwz %r1,tmp_stack_end@l(%r9)\n\t"
     "bl __clear_bss\n\t"                /* Clear 'em ALL!!! */
