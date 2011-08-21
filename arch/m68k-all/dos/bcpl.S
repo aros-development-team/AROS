@@ -187,7 +187,6 @@ BCPLd QueuePacket    /* -54, void */
     BRTS
 
 BCPL clearmem       /* -50, void, @buff, lw_length */
-    move.l	%d2,%sp@-
     lsl.l	#2,%d1
     bra		.Lclearmem_cond
 
