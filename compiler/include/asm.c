@@ -118,6 +118,7 @@ int main(void) {
     DEFINE(ln_Succ       , offsetof (struct Node, ln_Succ));
     DEFINE(ln_Pred       , offsetof (struct Node, ln_Pred));
     DEFINE(ln_Pri        , offsetof (struct Node, ln_Pri));
+    DEFINE(ln_Name       , offsetof (struct Node, ln_Name));
 
     DEFINE(lh_Head       , offsetof (struct List, lh_Head));
     DEFINE(lh_TailPred   , offsetof (struct List, lh_TailPred));
