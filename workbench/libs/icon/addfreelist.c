@@ -55,35 +55,31 @@
 
     struct MemList  *memlist;
     struct MemEntry *mementry;
-    
     /* We get hold of the last memlist node inside the list */
     memlist = (struct MemList*)freelist->fl_MemList.lh_TailPred;
 
     /* Is this memlist full ? */
-    if (memlist->ml_NumEntries == FREELIST_MEMLISTENTRIES
-	|| freelist->fl_NumFree == 0
-    )
+    if (freelist->fl_NumFree == 0)
     {
 	/* No more room, we must allocate a new entry */
 	if (!(memlist = AllocMem (sizeof(struct IconInternalMemList),
-		    MEMF_ANY)
+		    MEMF_CLEAR)
 	) )
 	    return FALSE;
 
-	memlist->ml_NumEntries = 0;
+	freelist->fl_NumFree = FREELIST_MEMLISTENTRIES;
+	memlist->ml_NumEntries = FREELIST_MEMLISTENTRIES;
 
 	AddTail ((struct List*)&freelist->fl_MemList, (struct Node*)memlist);
     }
 
     /* Insert the the supplied parameters */
-    mementry = &memlist->ml_ME[ memlist->ml_NumEntries ];
+    mementry = &memlist->ml_ME[freelist->fl_NumFree - 1];
 
     mementry->me_Un.meu_Addr = mem;
     mementry->me_Length      = size;
 
-    memlist->ml_NumEntries ++;
-
-    freelist->fl_NumFree ++;
+    freelist->fl_NumFree--;
 
     return TRUE;
     AROS_LIBFUNC_EXIT
