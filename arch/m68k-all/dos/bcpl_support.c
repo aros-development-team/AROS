@@ -159,3 +159,83 @@ ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
     return DOSTRUE;
 
 }
+
+extern void BCPL_jsr(void);
+extern void BCPL_rts(void);
+
+/* Under AOS, BCPL handlers expect the OS to build
+ * their GlobalVector, and to receive a pointer to their
+ * startup packet in D1.
+ *
+ * This wrapper is here to support that.
+ */
+ULONG RunHandlerBCPL(void)
+{
+    struct DosPacket *dp;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct DeviceNode *dn;
+    APTR entry, globvec;
+    ULONG ret;
+    int i;
+    ULONG *seglist = BADDR(me->pr_SegList);
+
+    WaitPort(&me->pr_MsgPort);
+    dp = (struct DosPacket *)(GetMsg(&me->pr_MsgPort)->mn_Node.ln_Name);
+    D(bug("[RunHandlerBCPL] Startup packet = %p\n", dp));
+
+    dn = BADDR(dp->dp_Arg3);
+    entry = BADDR(dn->dn_SegList) + sizeof(IPTR);
+
+    globvec = AllocMem(sizeof(BCPL_GlobVec), MEMF_ANY | MEMF_CLEAR);
+    if (globvec == NULL) {
+        internal_ReplyPkt(dp, &me->pr_MsgPort, DOSFALSE, ERROR_NO_FREE_STORE);
+        return ERROR_NO_FREE_STORE;
+    }
+
+    D(bug("[RunHandlerBCPL] Global Vector = %p\n", globvec));
+
+    globvec += BCPL_GlobVec_NegSize;
+    ((ULONG *)globvec)[0] = BCPL_GlobVec_PosSize >> 2;
+
+    /* Install the segments into the Global Vector */
+    for (i = 0; i < seglist[0]; i++) {
+        BCPL_InstallSeg(seglist[i+1], globvec);
+    }
+
+    me->pr_GlobVec = globvec;
+
+    D(bug("[RunHandlerBCPL] entry = %p\n", entry));
+
+    /* AOS File Handlers are BCPL programs *without*
+     * the standard CLI setup routines, so they have
+     * to be called as if they were BCPL subroutines.
+     *
+     * Instead of clutting up CallEntry() with yet
+     * another special case, just directly jump here.
+     *
+     * We can do this, especially because we know
+     * that they won't call Dos/Exit() on startup.
+     */
+    D(bug("[RunHandlerBCPL] Global Vector = %p\n", globvec));
+    D(bug("[RunHandlerBCPL] Global Vector = %p\n", me->pr_GlobVec));
+    ret = AROS_UFC11(ULONG, BCPL_jsr,
+            AROS_UFCA(ULONG, 16, D0),
+            AROS_UFCA(BPTR, MKBADDR(dp), D1),
+            AROS_UFCA(ULONG, 0, D2),
+            AROS_UFCA(ULONG, 0, D3),
+            AROS_UFCA(ULONG, 0, D4),
+            AROS_UFCA(APTR, NULL, A0),
+            AROS_UFCA(APTR, me->pr_Task.tc_SPLower + 16, A1),
+            AROS_UFCA(APTR, me->pr_GlobVec, A2),
+            AROS_UFCA(APTR, entry + sizeof(ULONG), A4),
+            AROS_UFCA(APTR, BCPL_jsr, A5),
+            AROS_UFCA(APTR, BCPL_rts, A6));
+
+    globvec -= BCPL_GlobVec_NegSize;
+    D(bug("[RunHandlerBCPL] Global Vector = %p\n", me->pr_GlobVec));
+    FreeMem(globvec, sizeof(BCPL_GlobVec));
+    me->pr_GlobVec = NULL;
+
+    return ret;
+}
+
