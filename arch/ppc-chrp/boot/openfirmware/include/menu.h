@@ -24,12 +24,14 @@
 #define MAX_MODULES       100
 #define MAX_MENU_ENTRIES    9
 
-typedef struct menu_entry {
-    char *      m_title;
-    char *      m_kernel;
-    char *      m_cmdline;
-    char *      m_modules[MAX_MODULES];
-    int         m_modules_cnt;
+typedef struct menu_entry
+{
+    char	 *m_title;
+    char	 *m_kernel;
+    char	 *m_cmdline;
+    char	 *m_modules[MAX_MODULES];
+    int           m_modules_cnt;
+    unsigned long m_virtual;
 } menu_entry_t;
 
 #if 0
@@ -40,7 +42,7 @@ extern int menu_entries_cnt;
 #endif
 
 int load_menu(uint8_t *load_base);
-void parse_menu();
+void parse_menu(unsigned long def_virt);
 menu_entry_t *execute_menu();
 void free_menu();
 
