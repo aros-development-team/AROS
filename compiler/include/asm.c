@@ -65,13 +65,15 @@ int main(void) {
     DEFINE(iet_Context   , sizeof (struct ETask) + 4);
 
     asm volatile("\n/* struct Process */" ::);
-    DEFINE(pr_SegList    , offsetof (struct Process, pr_SegList));
+    DEFINE(pr_CES        , offsetof (struct Process, pr_CES));
+    DEFINE(pr_CIS        , offsetof (struct Process, pr_CIS));
+    DEFINE(pr_CLI        , offsetof (struct Process, pr_CLI));
+    DEFINE(pr_COS        , offsetof (struct Process, pr_COS));
+    DEFINE(pr_ConsoleTask, offsetof (struct Process, pr_ConsoleTask));
+    DEFINE(pr_FileSystemTask, offsetof (struct Process, pr_FileSystemTask));
     DEFINE(pr_MsgPort    , offsetof (struct Process, pr_MsgPort));
     DEFINE(pr_ReturnAddr , offsetof (struct Process, pr_ReturnAddr));
-    DEFINE(pr_CLI        , offsetof (struct Process, pr_CLI));
-    DEFINE(pr_CIS        , offsetof (struct Process, pr_CIS));
-    DEFINE(pr_COS        , offsetof (struct Process, pr_COS));
-    DEFINE(pr_CES        , offsetof (struct Process, pr_CES));
+    DEFINE(pr_SegList    , offsetof (struct Process, pr_SegList));
 
     asm volatile("\n/* struct DosBase */" ::);
     DEFINE(dl_Root       , offsetof (struct DosLibrary, dl_Root));
