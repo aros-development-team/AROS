@@ -694,7 +694,12 @@ BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
     move.l	%a1@(3*4),%d0	/* dp_Res */
     BRTS
 
-BCPLd returnPacket   /* c4, void, @DosPacket, res1, res2 */
+BCPL returnPacket   /* c4, void, @DosPacket, res1, res2 */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    lsl.l	#2, %d1
+    jsr		%a6@(43 * -6)	/* DOS/ReplyPkt() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd openWindow     /* c8, void, leftedge, topedge, width, height, @title */
