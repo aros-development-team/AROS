@@ -397,7 +397,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     NEWLIST(&process->pr_MsgPort.mp_MsgList);
 
     process->pr_SegList = (BPTR)defaults[0].ti_Data;
-    process->pr_GlobVec = NULL;	                   /* Unused BCPL crap */
+    process->pr_GlobVec = DOSBase->dl_GV;
     process->pr_StackBase = MKBADDR(process->pr_Task.tc_SPUpper);
     process->pr_Result2 = 0;
     process->pr_CurrentDir = (BPTR)defaults[8].ti_Data;
