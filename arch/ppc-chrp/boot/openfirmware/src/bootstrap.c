@@ -4,7 +4,8 @@
  *  Created on: Aug 13, 2008
  *      Author: misc
  */
-#define DEBUG 1
+
+#define DEBUG 0
 
 #include <debug.h>
 #include <support.h>
@@ -108,7 +109,7 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	int tagcnt = 0;
 
 	int (*kernel_phys_entry)(tagitem_t *, uint32_t) = (int (*)())KERNEL_PHYS_BASE;
-	unsigned long virt = KERNEL_VIRT_BASE;
+	unsigned long virt;
 
 	struct of_region memory_region = {NULL, 0};
 
@@ -243,12 +244,6 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 	    	/* Separate bootpath from the rest of command line */
 	    	*bootargs++ = 0;
 	    }
-	    else if (!strncasecmp(bootargs, "--no-remap", 10))
-	    {
-		/* --no-remap cancels virtual addressing */
-	    	bootargs = bootargs + 10;
-		virt = (unsigned long)kernel_phys_entry;
-	    }
 	    else
 		break;
 	}
@@ -263,7 +258,7 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 		int res = 0;
 		menu_entry_t *selection;
 
-		parse_menu();
+		parse_menu((unsigned long)kernel_phys_entry);
 		selection = execute_menu();
 
 		if (selection)
@@ -271,6 +266,8 @@ int bootstrap(uint32_t r3, uint32_t r4, void *r5)
 		    char buff[1024];
 
 		    printf("\r\nLoading \"%s\"\r\n", selection->m_title);
+
+		    virt = selection->m_virtual;
 
 		    if (selection->m_kernel)
 		    {

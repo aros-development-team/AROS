@@ -4,6 +4,7 @@ timeout 5
 default 0
 
 title AROS for Efika 5200
+    virtual_addr 0xff800000
     kernel boot/aros-efika bootdelay=5
     module boot/modules/aros-ppc-generic.pkg
     module boot/modules/aros-ppc-efika.pkg

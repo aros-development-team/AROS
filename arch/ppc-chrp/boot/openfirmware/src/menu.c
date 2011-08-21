@@ -160,7 +160,7 @@ char *next_word(char *c)
     return c;
 }
 
-void parse_menu()
+void parse_menu(unsigned long def_virt)
 {
     int i;
     menu_lines_cnt = 0;
@@ -194,33 +194,23 @@ void parse_menu()
         D(bug(str));
         D(bug("\r\n"));
 
-        if (*str == '#') {
+        if (*str == '#')
+	{
+	    /* Skip comments */
             continue;
         }
-        else if (!strncasecmp(str, "timeout", 7) && isspace(str[7])) {
+        else if (!strncasecmp(str, "timeout", 7) && isspace(str[7]))
+	{
             str = next_word(str);
-            timeout_option = 0;
-
-            while(*str && isdigit(*str))
-            {
-                timeout_option = timeout_option * 10;
-                timeout_option += *str - '0';
-                str++;
-            }
+            timeout_option = atoi(str);
 
             D(bug("[BOOT] Found new timeout = %d\r\n", timeout_option));
 
         }
-        else if (!strncasecmp(str, "default", 7) && isspace(str[7])) {
+        else if (!strncasecmp(str, "default", 7) && isspace(str[7]))
+	{
             str = next_word(str);
-            default_option = 0;
-
-            while(*str && isdigit(*str))
-            {
-                default_option = default_option * 10;
-                default_option += *str - '0';
-                str++;
-            }
+            default_option = atoi(str);
 
             D(bug("[BOOT] Found new default = %d\r\n", default_option));
         }
@@ -231,9 +221,11 @@ void parse_menu()
                 int j;
 
                 menu = menu_entries[menu_entries_cnt++] = ofw_claim(NULL, sizeof(menu_entry_t), 4);
-                menu->m_title = next_word(str);
-		menu->m_kernel = NULL;
+
+                menu->m_title       = next_word(str);
+		menu->m_kernel      = NULL;
                 menu->m_modules_cnt = 0;
+		menu->m_virtual     = def_virt;
 
                 j = strlen(menu->m_title);
                 while (isspace(menu->m_title[--j]))
@@ -243,10 +235,21 @@ void parse_menu()
             }
             else return;
         }
+	else if (!strncasecmp(str, "virtual_addr", 12) && isspace(str[12]))
+	{
+	    if (menu)
+	    {
+		char *c = next_word(str);
+
+		menu->m_virtual = atoi(c);
+	    }
+	}
         else if (!strncasecmp(str, "kernel", 6) && isspace(str[6]))
         {
             D(bug("[BOOT] Found new kernel\r\n"));
-            if (menu) {
+
+            if (menu)
+	    {
                 char *c = next_word(str);
                 menu->m_kernel = c;
                 menu->m_cmdline = NULL;

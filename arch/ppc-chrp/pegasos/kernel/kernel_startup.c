@@ -64,3 +64,5 @@ static void kernel_start(struct TagItem *bootMsg)
 
 /* Our boot-time stack */
 static char boot_stack[STACK_SIZE] __attribute__((aligned(16)));
+
+struct BootData *__BootData;

@@ -41,6 +41,11 @@ int isdigit(char c)
     return (c >= '0' && c <= '9');
 }
 
+int isxdigit(char c)
+{
+    return isdigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+}
+
 int tolower(char c)
 {
     if (c >= 'A' && c <= 'Z')
@@ -245,4 +250,34 @@ void printf(char *str, ...)
 	}
 
 	va_end(a);
+}
+
+int atoi(const char *str)
+{
+    int val = 0;
+
+    if ((str[0] == '0') && (tolower(str[1]) == 'x'))
+    {
+	str += 2;
+
+	while (*str && isxdigit(*str))
+	{
+	    char c = tolower(*str++);
+
+	    val <<= 4;
+	    if (c > '9')
+		val += c - 'a' + 10;
+	    else
+		val += c - '0';
+	}
+    }    
+
+    while(*str && isdigit(*str))
+    {
+        val *= 10;
+        val += *str - '0';
+        str++;
+    }
+
+    return val;
 }
