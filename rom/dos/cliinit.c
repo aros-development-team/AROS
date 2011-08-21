@@ -236,6 +236,7 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct DeviceNode
     {
     	D(bug("Dos/CliInit: Neither DosType nor Handler specified, using default filesystem\n"));
         dn->dn_SegList = defseg;
+        dn->dn_GlobalVec = (BPTR)-1;
         return;
     }
 
