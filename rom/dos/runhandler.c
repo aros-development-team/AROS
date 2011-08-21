@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Execute a loaded command synchronously
+    Lang: english
+*/
+
 #include <aros/debug.h>
 #include <exec/memory.h>
 #include <dos/dosextens.h>
