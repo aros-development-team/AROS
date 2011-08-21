@@ -1490,9 +1490,15 @@ if test "$aros_host_cpu" == "x86_64" ; then
 fi
 
 dnl Enforce cross-compile if we are on Darwin, but our target is not Darwin.
-dnl CHECKME: Possibly obsolete because non-ELF hosts are handled below
 if test "$aros_host_arch" == "darwin" ; then
     if test "$aros_target_arch" != "darwin" ; then
+	cross_compiling=yes
+    fi
+fi
+
+dnl The same for MinGW
+if test "$aros_host_arch" == "mingw32" ; then
+    if test "$aros_target_arch" != "mingw32" ; then
 	cross_compiling=yes
     fi
 fi
