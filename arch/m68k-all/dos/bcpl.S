@@ -1395,10 +1395,24 @@ BCPLd writeErr		/* 1a0, ??, ?? */
     moveq.l	#-1,%d0
     BRTS
 
-BCPLd findConsoleHandler /* 1a4, MsgPort ^,  */
+BCPLd findConsoleHandler /* 1a4, MsgPort *,  */
+    movem.l     %a0-%a1/%a6,%sp@-
+    move.l      SysBase,%a6
+    sub.l       %a1,%a1
+    jsr         %a6@(FindTask)
+    move.l      %d0,%a0
+    move.l      %a0@(pr_ConsoleTask),%d0
+    movem.l     %sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd findFileHandler    /* 1a8, MsgPort ^,  */
+BCPLd findFileHandler    /* 1a8, MsgPort *,  */
+    movem.l     %a0-%a1/%a6,%sp@-
+    move.l      SysBase,%a6
+    sub.l       %a1,%a1
+    jsr         %a6@(FindTask)
+    move.l      %d0,%a0
+    move.l      %a0@(pr_FileSystemTask),%d0
+    movem.l     %sp@+,%a0-%a1/%a6
     BRTS
 
 BCPL extractDeviceName  /* 1ac, void, @buf, separator, @name , oldpos */
