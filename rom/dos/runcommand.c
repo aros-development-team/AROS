@@ -119,7 +119,7 @@ ULONG BCPL_CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Proce
 
     /* FIXME: should this be (argsize == -1), as documented? Or it's Amiga-compatible quirk? */
     if (argsize < 0)
-    	argsize = strlen(argptr);
+    	argsize = argptr ? strlen(argptr) : 0;
 
     /*
      * Inject command arguments to the beginning of input handle. Guru Book mentions this.

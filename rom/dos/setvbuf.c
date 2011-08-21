@@ -143,7 +143,7 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     FileHandlePtr fhinput;
     STRPTR buf;
 
-    if (!fh)
+    if (!fh || !argptr)
     	return;
     fhinput = BADDR(fh);
 
