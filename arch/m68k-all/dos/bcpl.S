@@ -62,9 +62,9 @@ BCPL_rts:
  */
     .section .rodata
 .LBCPL_format_trace:
-    .string  "BCPL %s, D1=%p D2=%p D3=%p D4=%p, GV %p\n"
+    .string  "%s: BCPL %s, D1=%p D2=%p D3=%p D4=%p, GV %p\n"
 .LBCPL_format_ret:
-    .string  "\tD1=%p\n"
+    .string  "%s: \tD1=%p\n"
 
     /* For dummy functions */
     .macro  BCPLd name
@@ -76,25 +76,33 @@ BCPL_rts:
     .globl  BCPL_\name
 BCPL_\name:
     movem.l %d1/%a0-%a1,%sp@-
+    move.l  SysBase,%a0
+    move.l  %a0@(ThisTask),%a0
+    move.l  %a0@(ln_Name),%a0
     move.l  %a2,%sp@-
     move.l  %d4,%sp@-
     move.l  %d3,%sp@-
     move.l  %d2,%sp@-
     move.l  %d1,%sp@-
     move.l  #.LBCPL_func_\name,%sp@-
+    move.l  %a0,%sp@-
     move.l  #.LBCPL_format_trace,%sp@-
     jsr     kprintf
-    lea.l   %sp@(7*4),%sp
+    lea.l   %sp@(8*4),%sp
     movem.l %sp@+,%d1/%a0-%a1
     clr.l   %d0		/* DOSFALSE */
     .endm
 
     .macro  BRTSd
     movem.l %d0/%a0-%a1,%sp@-
+    move.l  SysBase,%a0
+    move.l  %a0@(ThisTask),%a0
+    move.l  %a0@(ln_Name),%a0
     move.l  %d0,%sp@-
+    move.l  %a0,%sp@-
     move.l  #.LBCPL_format_ret,%sp@-
     jsr     kprintf
-    addq.l  #8,%sp
+    lea.l   %sp@(3*4),%sp
     movem.l %sp@+,%d0/%a0-%a1
     move.l  %d0,%d1
     jmp     (%a6)
