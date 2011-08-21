@@ -22,9 +22,8 @@ struct CliStartupMessage
     LONG           csm_CliNumber;
 };
 
-AROS_UFP3(LONG, NewCliProc,
+AROS_UFP2(LONG, NewCliProc,
 AROS_UFPA(char *,argstr,A0),
-AROS_UFPA(ULONG,argsize,D0),
-AROS_UFPA(struct ExecBase *,SysBase,A6));
+AROS_UFPA(ULONG,argsize,D0));
 
 #endif /* DOS_NEWCLIPROC_H */
