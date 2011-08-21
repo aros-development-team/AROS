@@ -22,11 +22,13 @@ DEFINESET(SHCOMMANDS)
 #include LC_LIBDEFS_FILE
 
 #undef DOSBase
+
+extern void ShellStart(void);
+
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    struct shcommand *sh;
     APTR DOSBase;
-    int pos;
+    BPTR seg;
 
     D(bug("[Shell] Init\n"));
 
@@ -36,12 +38,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     	return FALSE;
     }
 
-    ForeachElementInSet(SETNAME(SHCOMMANDS), 1, pos, sh) {
-    	BPTR seg = CreateSegList((APTR)sh->sh_Command);
-    	if (seg != BNULL)
-    	    AddSegment(sh->sh_Name, seg, CMD_INTERNAL);
-    }
-
+    seg = CreateSegList(ShellStart);
+    if (seg != BNULL)
+	AddSegment("Shell", seg, CMD_INTERNAL);
+ 
     CloseLibrary(DOSBase);
 
     return TRUE;
