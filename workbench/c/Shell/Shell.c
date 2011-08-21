@@ -80,10 +80,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define SH_GLOBAL_SYSBASE 1
-#define SH_GLOBAL_DOSBASE 1
-#include <aros/shcommands.h>
-
 #include "Shell.h"
 
 static void PrintBanner(struct DosLibrary *DOSBase)
@@ -106,19 +102,25 @@ BOOL isInteractive(struct CommandLineInterface *cli)
     return !cli->cli_Background && cli->cli_CurrentInput == cli->cli_StandardInput;
 }
 
-AROS_SH1(Shell, 41.3,
-	 AROS_SHA(STRPTR, , COMMAND, /F, NULL))
+AROS_ENTRY(__startup ULONG, ShellStart,
+	   AROS_UFHA(char *, argstr, A0),
+	   AROS_UFHA(ULONG, argsize, D0),
+	   struct ExecBase *, SysBase)
 {
-    AROS_SHCOMMAND_INIT
+    AROS_USERFUNC_INIT
 
-    struct Process *me = (struct Process *)FindTask(NULL);
-    STRPTR cmdline = SHArg(COMMAND);
+    struct Process *me;
     ShellState ss = {0};
     LONG error;
     BOOL isBootShell;
     BOOL isBannerDone;
+    APTR DOSBase;
 
     D(bug("[Shell] executing\n"));
+    
+    me = (struct Process *)FindTask(NULL);
+    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+    
     setPath(BNULL, DOSBase);
 
     ss.cliNumber = me->pr_TaskNum;
@@ -139,28 +141,15 @@ AROS_SH1(Shell, 41.3,
 	CloseLibrary((struct Library *)ExpansionBase);
     }
 
-    if (cmdline && cmdline[0] != '\0')
-    {
-	Buffer in = { cmdline, cliLen(cmdline), 0, 0 };
-	Buffer out = {0};
-
-	if ((error = Redirection_init(&ss)) == 0)
-	{
-	    D(bug("[Shell] running command: %s\n", cmdline));
-	    error = checkLine(&ss, &in, &out, TRUE, DOSBase);
-	    Redirection_release(&ss, DOSBase);
-
-	    bufferFree(&in);
-	    bufferFree(&out);
-	}
-    }
-    else
-	error = interact(&ss, isBootShell, isBannerDone, DOSBase);
+    error = interact(&ss, isBootShell, isBannerDone, DOSBase);
 
     D(bug("[Shell] exiting, error = %d\n", error));
+    
+    CloseLibrary(DOSBase);
+
     return error ? RETURN_FAIL : RETURN_OK;
 
-    AROS_SHCOMMAND_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /* First we execute the script, then we interact with the user */
