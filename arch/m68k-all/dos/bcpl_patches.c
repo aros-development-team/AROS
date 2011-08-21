@@ -77,7 +77,7 @@ static int PatchDOS(struct DosLibrary *dosbase)
 
     dosbase->dl_A5 = (LONG)&BCPL_jsr;
     dosbase->dl_A6 = (LONG)&BCPL_rts;
-    dosbase->dl_GV = (APTR)BCPL_GlobVec;
+    dosbase->dl_GV = (APTR)BCPL_GlobVec + BCPL_GlobVec_NegSize;
     
     Permit();
 

@@ -7,10 +7,13 @@
 */
 #define DEBUG 0
 #include <aros/debug.h>
+#include <aros/asmcall.h>
 
 #include <dos/dosextens.h>
+#include <dos/filehandler.h>
 #include <proto/exec.h>
 
+#include "dos_intern.h"
 #include "bcpl.h"
 
 /* Externs */
@@ -18,6 +21,8 @@ extern void BCPL_dummy(void);
 #define BCPL(id, name)	extern void BCPL_##name(void);
 #include "bcpl.inc"
 #undef BCPL
+
+#define BCPL_SlotCount  (BCPL_GlobVec_PosSize<<2)
 
 /* Default Global Vector */
 #define BCPL(id, name) \
@@ -31,48 +36,44 @@ const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
 /*
  * Set up the process's initial global vector
  */
- 
- #define FAKESEG_SIZE (4)
- 
+#define SEGLIST_SIZE (6)
+#define FAKESEG_SIZE (4)
+
+/* Set DOSBase to non-NULL for a BCPL setup
+ * with a valid GlobVec, and NULL for a setup
+ * without a GlobVec.
+ */
 APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
 {
-    ULONG *GlobVec;
     ULONG *segment;
 
-    GlobVec = AllocVec(sizeof(BCPL_GlobVec), MEMF_ANY | MEMF_CLEAR);
-    if (GlobVec == NULL)
+    segment = AllocVec(SEGLIST_SIZE * sizeof(ULONG), MEMF_ANY | MEMF_CLEAR);
+    if (segment == NULL)
     	return NULL;
 
-    /* create fake seglist if only entrypoint was given */
+    /* create fake seglist if only entrypoint was given.
+     * This fake SegList will be automatically unloaded
+     * when the progam exits.
+     */
     if (entry && !segList) {
-	ULONG *fakeseg = AllocMem(FAKESEG_SIZE * sizeof(ULONG), MEMF_ANY);
-    	fakeseg[0] = FAKESEG_SIZE * sizeof(ULONG);
-    	fakeseg[1] = 0;
-    	fakeseg[2] = 0x4e714ef9; /* NOP (long alignment) + JMP.L */
-    	fakeseg[3] = (ULONG)entry;
-    	segList = MKBADDR(fakeseg) + 1;
-    	CacheClearE(fakeseg, FAKESEG_SIZE, CACRF_ClearI|CACRF_ClearD);
-    	D(bug("fakeseglist @%p\n", fakeseg));
+    	segList = CreateSegList(entry);
+    	D(bug("fakeseglist @%p\n", BADDR(segList)));
     	entry = NULL;
+
+    	/* Make sure to free the seglist when we're done */
+    	me->pr_Flags |= PRB_FREESEGLIST;
     }
     if (!entry)
     	entry = (APTR)((BPTR*)BADDR(segList) + 1);
 
-    CopyMem(BCPL_GlobVec, GlobVec, sizeof(BCPL_GlobVec));
+    segment[0] = 4;
+    segment[1] = (ULONG)-1;	/* 'system' segment */
+    segment[2] = (ULONG)-2;	/* 'dosbase' segment */
+    segment[3] = segList;
+    segment[4] = 0;
+    segment[5] = segList;
 
-    GlobVec[0] = 4;
-    GlobVec[1] = (ULONG)-1;	/* 'system' segment */
-    GlobVec[2] = (ULONG)-2;	/* 'dosbase' segment */
-    GlobVec[3] = segList;
-    GlobVec[4] = 0;
-    GlobVec[5] = segList;
-
-    me->pr_SegList = MKBADDR(GlobVec);
-
-    GlobVec = ((APTR)GlobVec) + BCPL_GlobVec_NegSize;
-    GlobVec[0] = BCPL_GlobVec_PosSize >> 2;
-    me->pr_GlobVec = GlobVec;
-    GlobVec[BCPL_DOSBase >> 2] = (ULONG)DOSBase;
+    me->pr_SegList = MKBADDR(segment);
 
     segment = BADDR(segList);
     if (segment[2] == 0x0000abcd) {
@@ -83,61 +84,55 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
    	 * 5 = hunk table (BPTR)
    	 * 6 = global vector (APTR)
    	 */
-   	 segment[6] = (ULONG)BCPL_GlobVec;
+   	 segment[6] = (ULONG)me->pr_GlobVec;
     }
-    D(bug("BCPL_Setup '%s' @%p\n", me->pr_Task.tc_Node.ln_Name, GlobVec));
+    D(bug("BCPL_Setup '%s' @%p (%s)\n", me->pr_Task.tc_Node.ln_Name));
     return entry;
 }
 
 void BCPL_Cleanup(struct Process *me)
 {
-    ULONG *GlobVec = me->pr_GlobVec;
-   
-    if (GlobVec == NULL)
-    	return;
-
-    GlobVec = ((APTR)GlobVec) - BCPL_GlobVec_NegSize;
-    FreeVec(GlobVec);
+    FreeVec(BADDR(me->pr_SegList));
     me->pr_SegList = BNULL;
     me->pr_GlobVec = NULL;
 }
 
-BOOL BCPL_InstallSeg(BPTR seg, ULONG *GlobVec)
+ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
 {
     ULONG *segment;
     ULONG *table;
-    ULONG *pr_GlobVec = ((struct Process *)FindTask(NULL))->pr_GlobVec;
 
     if (seg == BNULL) {
     	D(bug("BCPL_InstallSeg: Empty segment\n"));
-    	return TRUE;
+    	return DOSTRUE;
     }
 
     if (seg == (ULONG)-1) {
-    	ULONG slots = GlobVec[0];
+    	ULONG slots = globvec[0];
     	int i;
     	if (slots > (BCPL_GlobVec_PosSize>>2))
     	    slots = (BCPL_GlobVec_PosSize>>2);
     	D(bug("BCPL_InstallSeg: Inserting %d Faux system entries.\n", slots));
 
-	/* Copy over the negative entries from the process's global vector */
-	CopyMem(&pr_GlobVec[-(BCPL_GlobVec_NegSize>>2)], &GlobVec[-(BCPL_GlobVec_NegSize>>2)], BCPL_GlobVec_NegSize);
+	/* Copy over the negative entries from the default global vector */
+	CopyMem(&BCPL_GlobVec[0], &globvec[-(BCPL_GlobVec_NegSize>>2)], BCPL_GlobVec_NegSize);
 
     	for (i = 2; i < slots; i++) {
-    	    ULONG gv = pr_GlobVec[i];
+    	    ULONG gv = BCPL_GlobVec[(BCPL_GlobVec_NegSize>>2) + i];
     	    if (gv == 0)
     	    	continue;
 
-    	    GlobVec[i] = gv;
+    	    globvec[i] = gv;
     	}
 
-    	return TRUE;
+    	D(bug("BCPL_InstallSeg: Inserting DOSBase global\n"));
+    	globvec[BCPL_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0); 
+
+    	return DOSTRUE;
     }
 
     if (seg == (ULONG)-2) {
-    	D(bug("BCPL_InstallSeg: Inserting DOSBase global\n"));
-    	/* GlobVec[BCPL_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0); */
-    	return TRUE;
+    	return DOSTRUE;
     }
 
     while (seg != BNULL) {
@@ -146,7 +141,7 @@ BOOL BCPL_InstallSeg(BPTR seg, ULONG *GlobVec)
 
 	if ((segment[-1] < segment[1])) {
 	    D(bug("BCPL_InstallSeg: segList @%p does not look like BCPL.\n", segment));
-	    return TRUE;
+	    return DOSTRUE;
 	}
 
 	table = &segment[segment[1]];
@@ -154,12 +149,13 @@ BOOL BCPL_InstallSeg(BPTR seg, ULONG *GlobVec)
 	D(bug("\tFill in for %p:\n", segment));
 
 	for (; table[-1] != 0; table = &table[-2]) {
-	    D(bug("\t GlobVec[%d] = %p\n", table[-2], (APTR)&segment[1] + table[-1]));
-	    GlobVec[table[-2]] = (ULONG)((APTR)&segment[1] + table[-1]);
+	    D(bug("\t globvec[%d] = %p\n", table[-2], (APTR)&segment[1] + table[-1]));
+	    globvec[table[-2]] = (ULONG)((APTR)&segment[1] + table[-1]);
 	}
 
 	seg = segment[0];
     }
 
-    return TRUE;
+    return DOSTRUE;
+
 }
