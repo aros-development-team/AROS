@@ -151,7 +151,7 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     vbuf_free(fhinput);
 
     /* Must be always buffered or EndCLI won't work */
-    buf = vbuf_alloc(fhinput, NULL, size + 1);
+    buf = vbuf_alloc(fhinput, NULL, size);
     if (buf && IsInteractive(fh))
     {
     	D(bug("[vbuf_inject] Handle 0x%p, buffer 0x%p, injecting string: %s, size: %u\n", fh, buf, argptr, size));
@@ -161,14 +161,6 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     	if (size > 0)
     	{
 	    CopyMem(argptr, buf, size);
-
-	    /*
-	     * Append EOL if there's no one.
-	     * Without it ReadArgs() blocks in FGets() reading arguments.
-	     */
-	    if (buf[size - 1] != '\n')
-	    	buf[size++] = '\n';
-	    	
 	    DB2(bug("[vbuf_inject] Buffer contents:\n"); hexdump(buf, (IPTR)buf, size));
 	}
 	fhinput->fh_End = size;
