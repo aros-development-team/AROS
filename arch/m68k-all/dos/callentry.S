@@ -118,4 +118,16 @@ cleanup:
 	addq.l	#4,%sp		/* Drop the stacksize off the stack */
 	movem.l	%sp@+,%d2-%d7/%a2-%a6
 	rts
-	
+
+
+        /* Helper function, to preserve %a5 and %a6.
+         * Used by RunHandlerBCPL
+         */
+        .global BCPL_thunk
+BCPL_thunk:
+        movem.l %a5-%a6,%sp@-
+        lea.l   BCPL_jsr,%a5
+        lea.l   BCPL_rts,%a6
+        jsr     %a5@
+        movem.l %sp@+,%a5-%a6
+        rts

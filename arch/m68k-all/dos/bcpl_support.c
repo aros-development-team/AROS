@@ -160,8 +160,7 @@ ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
 
 }
 
-extern void BCPL_jsr(void);
-extern void BCPL_rts(void);
+extern void BCPL_thunk(void);
 
 /* Under AOS, BCPL handlers expect the OS to build
  * their GlobalVector, and to receive a pointer to their
@@ -192,8 +191,6 @@ ULONG RunHandlerBCPL(void)
         return ERROR_NO_FREE_STORE;
     }
 
-    D(bug("[RunHandlerBCPL] Global Vector = %p\n", globvec));
-
     globvec += BCPL_GlobVec_NegSize;
     ((ULONG *)globvec)[0] = BCPL_GlobVec_PosSize >> 2;
 
@@ -204,21 +201,21 @@ ULONG RunHandlerBCPL(void)
 
     me->pr_GlobVec = globvec;
 
-    D(bug("[RunHandlerBCPL] entry = %p\n", entry));
-
     /* AOS File Handlers are BCPL programs *without*
-     * the standard CLI setup routines, so they have
+     * the standard CLI startup routine, so they have
      * to be called as if they were BCPL subroutines.
      *
-     * Instead of clutting up CallEntry() with yet
+     * Instead of cluttering up CallEntry() with yet
      * another special case, just directly jump here.
      *
      * We can do this, especially because we know
      * that they won't call Dos/Exit() on startup.
+     *
+     * On m68k, AROS_UFC doesn't work well when the
+     * frame pointer is an argument, so we're going to call
+     * a thunk for the A5/A6 BCPL jsr/rts
      */
-    D(bug("[RunHandlerBCPL] Global Vector = %p\n", globvec));
-    D(bug("[RunHandlerBCPL] Global Vector = %p\n", me->pr_GlobVec));
-    ret = AROS_UFC11(ULONG, BCPL_jsr,
+    ret = AROS_UFC9(ULONG, BCPL_thunk,
             AROS_UFCA(ULONG, 16, D0),
             AROS_UFCA(BPTR, MKBADDR(dp), D1),
             AROS_UFCA(ULONG, 0, D2),
@@ -227,12 +224,9 @@ ULONG RunHandlerBCPL(void)
             AROS_UFCA(APTR, NULL, A0),
             AROS_UFCA(APTR, me->pr_Task.tc_SPLower + 16, A1),
             AROS_UFCA(APTR, me->pr_GlobVec, A2),
-            AROS_UFCA(APTR, entry + sizeof(ULONG), A4),
-            AROS_UFCA(APTR, BCPL_jsr, A5),
-            AROS_UFCA(APTR, BCPL_rts, A6));
+            AROS_UFCA(APTR, entry + sizeof(ULONG), A4));
 
     globvec -= BCPL_GlobVec_NegSize;
-    D(bug("[RunHandlerBCPL] Global Vector = %p\n", me->pr_GlobVec));
     FreeMem(globvec, sizeof(BCPL_GlobVec));
     me->pr_GlobVec = NULL;
 
