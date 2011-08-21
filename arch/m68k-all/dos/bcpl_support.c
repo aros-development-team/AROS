@@ -37,7 +37,6 @@ const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
  * Set up the process's initial global vector
  */
 #define SEGLIST_SIZE (6)
-#define FAKESEG_SIZE (4)
 
 /* Set DOSBase to non-NULL for a BCPL setup
  * with a valid GlobVec, and NULL for a setup
@@ -75,6 +74,9 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
 
     me->pr_SegList = MKBADDR(segment);
 
+    /* Set default BCPL GlobVec */
+    me->pr_GlobVec = ((struct DosLibrary *)DOSBase)->dl_GV;
+
     segment = BADDR(segList);
     if (segment[2] == 0x0000abcd) {
    	/* overlayed executable, fun..
@@ -87,12 +89,14 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
    	 segment[6] = (ULONG)me->pr_GlobVec;
     }
     D(bug("BCPL_Setup '%s' @%p (%s)\n", me->pr_Task.tc_Node.ln_Name));
+
     return entry;
 }
 
 void BCPL_Cleanup(struct Process *me)
 {
     FreeVec(BADDR(me->pr_SegList));
+
     me->pr_SegList = BNULL;
     me->pr_GlobVec = NULL;
 }
