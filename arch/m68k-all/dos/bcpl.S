@@ -682,24 +682,26 @@ BCPL Delay          /* bc, void, ticks */
      * and set A1(0) (dp_Link) to the Message, and then use
      * BCPL putPkt and BCPL taskwait.
      */
+#define DOSPACKET_LEN   12
+#define MESSAGE_LEN     10
 BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
-    lea.l	%a1@(10*4), %a0
+    lea.l	%a1@(DOSPACKET_LEN*4), %a0
     move.l 	%a0, %a1@(0)	/* Set Message link */
     sub.l	%a0,%a0
     move.l	%a2@(GV_putPkt),%a4
-    move.l	#(3*4 + 10 * 4 + 10 * 4), %d0
+    move.l	#(DOSPACKET_LEN * 4 + MESSAGE_LEN * 4 + 3 * 4), %d0
     move.l	%a1, %d1
     lsr.l	#2, %d1
     jsr		(%a5)
     move.l	%a2@(GV_taskwait),%a4
-    move.l	#(3*4 + 10 * 4 + 10 * 4), %d0
+    move.l	#(DOSPACKET_LEN * 4 + MESSAGE_LEN * 4 + 3 * 4), %d0
     jsr		(%a5)
     move.l	%a1@(4*4),%d1	/* dp_Res2 */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     jsr		%a6@(77 * -6) /* DOS/SetIoErr */
     movem.l	%sp@+,%a0-%a1/%a6
-    move.l	%a1@(3*4),%d0	/* dp_Res */
+    move.l	%a1@(3*4),%d0	/* dp_Res1 */
     BRTS
 
 BCPL returnPacket   /* c4, void, @DosPacket, res1, res2 */
