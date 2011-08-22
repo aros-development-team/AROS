@@ -1,5 +1,5 @@
 KERNEL_LDFLAGS += -shared
-LIBS	       += log
+LIBS	       += log jnigraphics
 EXEDIR	       := $(GENDIR)/arch/all-android/bootstrap/app/libs/armeabi
 PROG	       := lib$(PROG)
 EXE_SUFFIX     := .so

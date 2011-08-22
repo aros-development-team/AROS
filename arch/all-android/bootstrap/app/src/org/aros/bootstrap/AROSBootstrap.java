@@ -5,17 +5,18 @@ import java.nio.ByteBuffer;
 
 import android.app.Application;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Environment;
 import android.util.Log;
 
 final class BitmapData
 {
-	int		   Left;
-	int		   Top;
-	int		   Width;
-	int		   Height;
-	int		   BytesPerRow;
-	ByteBuffer Pixels;
+	int	Left;
+	int	Top;
+	int	Width;
+	int	Height;
+	int BytesPerRow;
+	int Address;
 }
 
 public class AROSBootstrap extends Application
@@ -124,12 +125,12 @@ public class AROSBootstrap extends Application
 				Bitmap.Width	   = params[3];
 				Bitmap.Height	   = params[4];
 				Bitmap.BytesPerRow = params[5];
-				Bitmap.Pixels      = MapMemory(params[6], params[5] * params[4]);
+				Bitmap.Address     = params[6];
 			}
 
 			if (ui != null)
 				ui.Show(params[0], Bitmap);
-			
+
 			Server.ReplyCommand(cmd);
 			break;
 
@@ -138,7 +139,7 @@ public class AROSBootstrap extends Application
 			{
 				BitmapView view = ui.GetBitmap(params[0]);
 
-				view.invalidate(params[1], params[2], params[3], params[4]);
+				view.Update(Bitmap, params[1], params[2], params[3], params[4]);
 			}
 			// This command doesn't need a reply
 			break;
@@ -194,4 +195,5 @@ public class AROSBootstrap extends Application
 	// libAROSBootstrap native methods
     private native int Start(String dir, FileDescriptor rfd, FileDescriptor wfd);
     private native ByteBuffer MapMemory(int addr, int size);
+    public native int GetBitmap(Bitmap obj, int addr, int x, int y, int width, int height, int bytesPerLine);
 }
