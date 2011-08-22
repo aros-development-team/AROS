@@ -2,7 +2,7 @@
 #define DEVICES_RAWKEYCODES_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Standard Amiga (in case of AROS: virtual) rawkey codes
@@ -118,6 +118,26 @@
 #define RAWKEY_KP_DECIMAL   0x3C
 #define RAWKEY_KP_PLUS	    0x5E
 #define RAWKEY_KP_ENTER     0x43
+
+/* Extra PC and multimedia keys (MorphOS-compatible) */
+#define RAWKEY_KP_DIVIDE    0x5C
+#define RAWKEY_KP_MULTIPLY  0x5D
+#define RAWKEY_SCRLOCK      0x6B
+#define RAWKEY_PRTSCREEN    0x6C
+#define RAWKEY_NUMLOCK      0x6D
+
+#define RAWKEY_MEDIA1       0x72
+#define RAWKEY_MEDIA2       0x73
+#define RAWKEY_MEDIA3       0x74
+#define RAWKEY_MEDIA4       0x75
+#define RAWKEY_MEDIA5       0x76
+#define RAWKEY_MEDIA6       0x77
+#define RAWKEY_CDTV_STOP    RAWKEY_MEDIA1
+#define RAWKEY_CDTV_PLAY    RAWKEY_MEDIA2
+#define RAWKEY_CDTV_PREV    RAWKEY_MEDIA3
+#define RAWKEY_CDTV_NEXT    RAWKEY_MEDIA4
+#define RAWKEY_CDTV_REW     RAWKEY_MEDIA5
+#define RAWKEY_CDTV_FF      RAWKEY_MEDIA6
 
 /*
    NewMouse standard:
