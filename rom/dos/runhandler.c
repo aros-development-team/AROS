@@ -18,14 +18,12 @@
 
 #include "dos_intern.h"
 
-#ifdef __mc68000
 /* Under AOS, BCPL handlers expect to receive a pointer to their
  * startup packet in D1.
  *
  * This wrapper is here to support that.
  */
 ULONG RunHandlerBCPL(void);
-#endif
 
 struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, struct DosLibrary *DOSBase)
 {
@@ -116,17 +114,15 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
             deviceNode->dn_SegList,
             deviceNode->dn_Startup));
 
-#ifdef __mc68000
         D(bug("RunHandler: %b has GlobalVec = %d\n", deviceNode->dn_Name, (SIPTR)deviceNode->dn_GlobalVec));
+
+#ifdef __mc68000
         /* BCPL file-handler support */
-        if (deviceNode->dn_GlobalVec == (BPTR)-1 || deviceNode->dn_GlobalVec == (BPTR)-2) {
-            entry = BADDR(deviceNode->dn_SegList)+sizeof(IPTR);
-        } else {
+        if (deviceNode->dn_GlobalVec != (BPTR)-1 && deviceNode->dn_GlobalVec != (BPTR)-2)
             entry = RunHandlerBCPL;
-        }
-#else
-        entry = BADDR(deviceNode->dn_SegList)+sizeof(IPTR);
+        else
 #endif
+            entry = BADDR(deviceNode->dn_SegList)+sizeof(IPTR);
 
         /* start it up */
         process = CreateNewProcTags(
