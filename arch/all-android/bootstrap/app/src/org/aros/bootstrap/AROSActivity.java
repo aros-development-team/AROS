@@ -5,7 +5,9 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
@@ -15,7 +17,6 @@ import android.view.View;
 import android.widget.RelativeLayout;
 
 import java.lang.String;
-import java.nio.IntBuffer;
 
 public class AROSActivity extends Activity
 {
@@ -141,7 +142,7 @@ class DisplayView extends RelativeLayout
 		// and positioned at (0, 0). Thanks to RelativeLayout.
 		bitmap = new BitmapView(context, app);
 		addView(bitmap);
-		
+
 		setFocusable(true);
 		requestFocus();
 	}
@@ -150,7 +151,7 @@ class DisplayView extends RelativeLayout
 	{
 		bitmap.Show(data);
 	}
-	
+
 	public BitmapView GetBitmap(int id)
 	{
 		return bitmap;
@@ -163,7 +164,7 @@ class DisplayView extends RelativeLayout
 	
 		main.DisplayWidth  = w;
 		main.DisplayHeight = h;
-		Log.d("AROS", "Screen size set: " + w + "x" + h);		
+		Log.d("AROS.UI", "Screen size set: " + w + "x" + h);		
 
 		main.Boot();
 	}
@@ -238,11 +239,7 @@ class DisplayView extends RelativeLayout
 class BitmapView extends View
 {
 	private AROSBootstrap main;
-	private int[] pixarray = null;
-	private IntBuffer pixbuf = null;
-	private int Width = 0;
-	private int Height = 0;
-	private int stride = 0;
+	private Bitmap pixbuf = null;
 
 	public BitmapView(Context context, AROSBootstrap app)
 	{
@@ -255,18 +252,25 @@ class BitmapView extends View
 	public void Show(BitmapData bm)
 	{
 		if (bm == null)
-		{
-			pixbuf   = null;
-			pixarray = null;
-		}
+			// Drop our bitmap object
+			pixbuf = null;
 		else
 		{
-			Width  = bm.Width;
-			Height = bm.Height;
-			stride = bm.BytesPerRow / 4;
-			pixbuf = bm.Pixels.asIntBuffer();
-			pixarray = new int[pixbuf.capacity()];
+			pixbuf = Bitmap.createBitmap(bm.Width, bm.Height, Bitmap.Config.ARGB_8888);
 		}
+	}
+
+	public void Update(BitmapData bm, int x, int y, int width, int height)
+	{
+//		Log.d("AROS.UI", "Update (" + x + ", " + y + ", " + width + ", " + height + ")");
+
+		// Copy a portion from AROS memory to our bitmap object
+		// Unfortunately we can't create a direct bitmap placed at
+		// a specified memory location, so we can't get around this copy.
+		// Using int[] is even worse, we also can't create a direct int[].
+		// Additionally, using int[] proved to be very slow
+		main.GetBitmap(pixbuf, bm.Address, x, y, width, height, bm.BytesPerRow);
+		invalidate(x, y, x + width - 1, y + height - 1);
 	}
 
 	@Override
@@ -278,10 +282,7 @@ class BitmapView extends View
 		}
 		else
 		{
-			pixbuf.rewind();
-			pixbuf.get(pixarray);
-
-			c.drawBitmap(pixarray, 0, stride, 0, 0, Width, Height, false, null);
+			c.drawBitmap(pixbuf, 0, 0, null);
 		}
 	}
 }

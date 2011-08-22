@@ -88,8 +88,8 @@ struct UpdateRequest
     ULONG	   id;		/* Bitmap ID, reserved			*/
     ULONG	   left;	/* Rectangle to update			*/
     ULONG	   top;
-    ULONG	   right;
-    ULONG	   bottom;
+    ULONG	   width;
+    ULONG	   height;
 };
 
 /* Scroll a bitmap */

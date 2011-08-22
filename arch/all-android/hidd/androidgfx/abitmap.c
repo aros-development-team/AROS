@@ -188,8 +188,8 @@ VOID ABitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd
     	update.id      = 0;
     	update.left    = msg->x;
     	update.top     = msg->y;
-    	update.right   = msg->x + msg->width - 1;
-    	update.bottom  = msg->y + msg->height - 1;
+    	update.width   = msg->width;
+    	update.height  = msg->height;
 
     	SendRequest(&update.req, XSD(cl));
     }
