@@ -141,7 +141,22 @@ AROS_ENTRY(__startup ULONG, ShellStart,
 	CloseLibrary((struct Library *)ExpansionBase);
     }
 
-    error = interact(&ss, isBootShell, isBannerDone, DOSBase);
+    if (argsize > 0)
+    {
+	Buffer in = { argstr, argsize, 0, 0 };
+	Buffer out = {0};
+
+	if ((error = Redirection_init(&ss)) == 0)
+	{
+	    D(bug("[Shell] running command: %s\n", in->buf));
+	    error = checkLine(&ss, &in, &out, TRUE, DOSBase);
+	    Redirection_release(&ss, DOSBase);
+
+	    bufferFree(&in);
+	    bufferFree(&out);
+	}
+    } else
+	error = interact(&ss, isBootShell, isBannerDone, DOSBase);
 
     D(bug("[Shell] exiting, error = %d\n", error));
     
