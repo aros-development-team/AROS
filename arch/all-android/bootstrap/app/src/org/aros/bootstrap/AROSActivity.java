@@ -216,7 +216,7 @@ class DisplayView extends RelativeLayout
 		// Android autorepeats keys if held down. Here we suppress this.
 		if (code != LastKey)
 		{	
-			Log.v("AROS.Input", "KeyDown " + code);
+//			Log.v("AROS.Input", "KeyDown " + code);
 
 			LastKey = code;
 			main.ReportKey(code, 0);
@@ -227,7 +227,7 @@ class DisplayView extends RelativeLayout
 	@Override
 	public boolean onKeyUp(int code, KeyEvent e)
 	{
-		Log.v("AROS.Input", "KeyUp " + code);
+//		Log.v("AROS.Input", "KeyUp " + code);
 		
 		LastKey = -1;
 		main.ReportKey(code, IECODE_UP_PREFIX);
