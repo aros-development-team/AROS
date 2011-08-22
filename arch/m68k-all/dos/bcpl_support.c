@@ -22,7 +22,7 @@ extern void BCPL_dummy(void);
 #include "bcpl.inc"
 #undef BCPL
 
-#define BCPL_SlotCount  (BCPL_GlobVec_PosSize<<2)
+#define BCPL_SlotCount  (BCPL_GlobVec_PosSize>>2)
 
 /* Default Global Vector */
 #define BCPL(id, name) \
