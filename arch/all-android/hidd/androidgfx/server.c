@@ -139,6 +139,8 @@ void agfxInt(int pipe, int mode, void *data)
 		    AKbd_ReportKey(XSD(data)->kbdhidd, &ke);
 		break;
 	    }
+	    
+	    break;
 
 	/*
 	 * TODO: Process cmd_Flush() here.
