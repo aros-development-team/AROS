@@ -111,7 +111,7 @@
 /* If neither of the following two tags is specified, the boot-shell is used.
    if SYS_UserShell is set to TRUE then the default user-shell will be used,
    while CustomShell expects a string, which names a new shell. */
-#define SYS_UserShell	(SYS_Dummy + 4) /* (BPTR) */
+#define SYS_UserShell	(SYS_Dummy + 4) /* (BOOL) */
 #define SYS_CustomShell (SYS_Dummy + 5) /* (STRPTR) */
 
   /* The following are AmigaOS4-compatible */

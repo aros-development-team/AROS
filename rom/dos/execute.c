@@ -15,7 +15,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(LONG, Execute,
+	AROS_LH3(BOOL, Execute,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, string, D1),
