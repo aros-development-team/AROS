@@ -6,7 +6,7 @@
     Lang: English.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #define DNEW(x)
 #define DUPD(x)
 
@@ -105,7 +105,9 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     struct bitmap_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  *tag, *tstate;
     ULONG idx;
+#ifdef ENABLE_SCROLL
     BOOL change_position = FALSE;
+#endif
     BOOL show            = FALSE;
 
     tstate = msg->attrList;
@@ -115,6 +117,7 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 	{
 	    switch(idx)
 	    {
+#ifdef ENABLE_SCROLL
 	    case aoHidd_BitMap_LeftEdge:
 	        data->bm_left = tag->ti_Data;
 		change_position = TRUE;
@@ -124,6 +127,7 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 	        data->bm_top = tag->ti_Data;
 		change_position = TRUE;
 		break;
+#endif
 
 	    case aoHidd_BitMap_Visible:
 	    	data->visible = tag->ti_Data;
@@ -133,6 +137,7 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 	}
     }
 
+#ifdef ENABLE_SCROLL
     if (change_position)
     {
 	/* Fix up position. We can completely scroll out
@@ -147,9 +152,8 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 	    data->bm_top = -data->bm_height;
 
 	/* TODO */
-	data->bm_left = 0;
-	data->bm_top  = 0;
     }
+#endif
 
     if (show)
     {

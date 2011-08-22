@@ -246,7 +246,15 @@ class BitmapView extends View
 		super(context);
 		main = app;
 
-		Show(main.Bitmap);
+		BitmapData bm = app.Bitmap;
+		Show(bm);
+		if (pixbuf != null)
+		{
+			// The activity has been recreated after the program was running
+			// in the background for a long time.
+			// Make sure we have the recent bitmap data.
+			main.GetBitmap(pixbuf, bm.Address, 0, 0, bm.Width, bm.Height, bm.BytesPerRow);
+		}
 	}
 
 	public void Show(BitmapData bm)

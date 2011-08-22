@@ -6,8 +6,6 @@
     Lang: English.
 */
 
-#define DEBUG 1
-
 #define __OOP_NOATTRBASES__
 
 #include <fcntl.h>
@@ -69,8 +67,10 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct TagItem mode_tags[] =
     {
 	{ aHidd_Gfx_PixFmtTags	, (IPTR)pftags		},
+#ifdef ENABLE_SCROLL
 	{ aHidd_Sync_HMax	, 16384			},
 	{ aHidd_Sync_VMax	, 16384			},
+#endif
 	{ aHidd_Sync_Description, (IPTR)"Android: %hx%v"},
 	{ aHidd_Gfx_SyncTags	, (IPTR)sync_tags	},
 	{ TAG_DONE  	    	, 0UL 	    	    	}
