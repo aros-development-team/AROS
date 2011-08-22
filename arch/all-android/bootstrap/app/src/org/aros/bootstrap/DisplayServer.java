@@ -67,8 +67,15 @@ public class DisplayServer extends Thread
 
 		for(;;)
 		{
-			int[] cmd  = ReadData(2);	
-			int[] args = ReadData(cmd[1]);
+			int[] cmd, args;
+
+			cmd = ReadData(2);
+			if (cmd == null)
+				return;
+
+			args = ReadData(cmd[1]);
+			if (args == null)
+				return;
 
 			AROSBootstrap.ServerCommand cmdObj = main.new ServerCommand(cmd[0], args);
 			handler.post(cmdObj);
@@ -92,7 +99,7 @@ public class DisplayServer extends Thread
 		if (res != rawlen)
 		{
 			Log.v("AROS.Server", "Error reading pipe (wanted " + len + ", got " + res + ")");
-			System.exit(0);
+			return null;
 		}
 
 		int[] data = new int[len];
