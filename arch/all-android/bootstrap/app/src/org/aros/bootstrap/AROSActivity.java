@@ -144,6 +144,7 @@ class DisplayView extends RelativeLayout
 
 		setId(0);
 		setFocusable(true);
+		setFocusableInTouchMode(true);
 		requestFocus();
 	}
 
