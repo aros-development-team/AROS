@@ -50,7 +50,8 @@ public class AROSBootstrap extends Application
 	public void onLowMemory()
 	{
 		Log.d("AROS", "Memory panic");
-		// TODO: Here we may send a command to display driver to flush libraries
+
+		Server.ReplyCommand(cmd_Flush);
 	}
 
 	public void Boot()
@@ -166,11 +167,6 @@ public class AROSBootstrap extends Application
 	public void ReportKey(int code, int flags)
 	{
 		Server.ReplyCommand(cmd_Key, code, flags);
-	}
-
-	public void ReportMemoryPanic()
-	{
-		Server.ReplyCommand(cmd_Flush);
 	}
 
     // This orders processing of a command from server
