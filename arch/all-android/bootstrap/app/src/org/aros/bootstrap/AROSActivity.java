@@ -66,6 +66,11 @@ public class AROSActivity extends Activity
     	Looper.loop();
     }
 
+    public void Show(int id, BitmapData data)
+    {
+    	rootView.Show(data);
+    }
+
     public BitmapView GetBitmap(int id)
     {
     	return rootView.GetBitmap(id);
@@ -141,6 +146,11 @@ class DisplayView extends RelativeLayout
 		requestFocus();
 	}
 
+	public void Show(BitmapData data)
+	{
+		bitmap.Show(data);
+	}
+	
 	public BitmapView GetBitmap(int id)
 	{
 		return bitmap;
@@ -151,7 +161,7 @@ class DisplayView extends RelativeLayout
 	{
 		super.onSizeChanged(w, h, oldw, oldh);
 	
-		main.DisplayWidth = w;
+		main.DisplayWidth  = w;
 		main.DisplayHeight = h;
 		Log.d("AROS", "Screen size set: " + w + "x" + h);		
 
@@ -228,30 +238,50 @@ class DisplayView extends RelativeLayout
 class BitmapView extends View
 {
 	private AROSBootstrap main;
+	private int[] pixarray = null;
+	private IntBuffer pixbuf = null;
+	private int Width = 0;
+	private int Height = 0;
+	private int stride = 0;
 
 	public BitmapView(Context context, AROSBootstrap app)
 	{
 		super(context);
 		main = app;
+
+		Show(main.Bitmap);
+	}
+
+	public void Show(BitmapData bm)
+	{
+		if (bm == null)
+		{
+			pixbuf   = null;
+			pixarray = null;
+		}
+		else
+		{
+			Width  = bm.Width;
+			Height = bm.Height;
+			stride = bm.BytesPerRow / 4;
+			pixbuf = bm.Pixels.asIntBuffer();
+			pixarray = new int[pixbuf.capacity()];
+		}
 	}
 
 	@Override
 	protected void onDraw(Canvas c)
 	{
-		BitmapData bm = main.Bitmap;
-	
-		if (bm == null)
+		if (pixbuf == null)
 		{
 			c.drawColor(0);
 		}
 		else
 		{
-			int stride = bm.BytesPerRow / 4;
-			IntBuffer ib = bm.Pixels.asIntBuffer();
-			int[] Data = new int[ib.capacity()];
-			ib.get(Data);
+			pixbuf.rewind();
+			pixbuf.get(pixarray);
 
-			c.drawBitmap(Data, 0, stride, 0, 0, main.DisplayWidth, main.DisplayHeight, false, null);
+			c.drawBitmap(pixarray, 0, stride, 0, 0, Width, Height, false, null);
 		}
 	}
 }

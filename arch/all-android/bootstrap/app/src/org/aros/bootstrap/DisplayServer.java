@@ -14,33 +14,45 @@ import android.util.Log;
 
 public class DisplayServer extends Thread
 {
+	private static final int BufferSize = 256;
+
 	private Handler handler;
 	private FileInputStream DisplayPipe;
 	private FileOutputStream InputPipe;
 	private AROSBootstrap main;
+	private ByteBuffer rxbuf;
+	private IntBuffer rxdata;
+	private ByteBuffer txbuf;
+	private IntBuffer txdata;
 
 	public DisplayServer(AROSBootstrap parent, FileDescriptor displayfd, FileDescriptor inputfd)
 	{
 		main        = parent;
 		handler     = new Handler();
 		DisplayPipe = new FileInputStream(displayfd);
-		InputPipe   = new FileOutputStream(inputfd); 
+		InputPipe   = new FileOutputStream(inputfd);
+
+		// Allocate buffers only once. This helps to speed up the server.
+		rxbuf = ByteBuffer.allocate(BufferSize);
+		txbuf = ByteBuffer.allocate(BufferSize);
+		rxbuf.order(ByteOrder.nativeOrder());
+		txbuf.order(ByteOrder.nativeOrder());
+		rxdata = rxbuf.asIntBuffer();
+		txdata = txbuf.asIntBuffer();
 	}
 
 	public void ReplyCommand(int cmd, int... response)
 	{
 		int len = response.length + 2;
-		ByteBuffer bb = ByteBuffer.allocate(len * 4);   
-		bb.order(ByteOrder.nativeOrder());
-        IntBuffer ib = bb.asIntBuffer();
  
-        ib.put(cmd);
-        ib.put(response.length);
-        ib.put(response);
+        txdata.rewind();
+        txdata.put(cmd);
+        txdata.put(response.length);
+        txdata.put(response);
  
         try
         {
-			InputPipe.write(bb.array());
+			InputPipe.write(txbuf.array(), 0, len * 4);
 		}
         catch (IOException e)
         {
@@ -64,12 +76,10 @@ public class DisplayServer extends Thread
 	}
 
 	private int[] ReadData(int len)
-	{
-		byte[]raw = new byte[len * 4];
-		
+	{	
 		try
 		{
-			DisplayPipe.read(raw);
+			DisplayPipe.read(rxbuf.array(), 0, len * 4);
 		}
 		catch (IOException e)
 		{
@@ -77,12 +87,10 @@ public class DisplayServer extends Thread
 			System.exit(0);
 		}
 
-		ByteBuffer bb = ByteBuffer.wrap(raw);
-		bb.order(ByteOrder.nativeOrder());
-		IntBuffer ib = bb.asIntBuffer();
 		int[] data = new int[len];
 
-		ib.get(data);
+		rxdata.rewind();
+		rxdata.get(data);
 		return data;
 	}
 }
