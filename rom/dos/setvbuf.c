@@ -152,7 +152,7 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
 
     /* Must be always buffered or EndCLI won't work */
     buf = vbuf_alloc(fhinput, NULL, size);
-    if (buf && IsInteractive(fh))
+    if (buf)
     {
     	D(bug("[vbuf_inject] Handle 0x%p, buffer 0x%p, injecting string: %s, size: %u\n", fh, buf, argptr, size));
 
