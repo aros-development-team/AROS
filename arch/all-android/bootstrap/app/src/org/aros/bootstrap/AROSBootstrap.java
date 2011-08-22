@@ -8,13 +8,6 @@ import android.content.Intent;
 import android.os.Environment;
 import android.util.Log;
 
-final class DisplayData
-{
-	int		   Width;
-	int		   Height;
-	BitmapData Bitmap;
-}
-
 final class BitmapData
 {
 	int		   Left;
@@ -132,9 +125,11 @@ public class AROSBootstrap extends Application
 				Bitmap.Height	   = params[4];
 				Bitmap.BytesPerRow = params[5];
 				Bitmap.Pixels      = MapMemory(params[6], params[5] * params[4]);
-//				Bitmap.Pixels	   = MapMemory(0x0A, 16);
 			}
 
+			if (ui != null)
+				ui.Show(params[0], Bitmap);
+			
 			Server.ReplyCommand(cmd);
 			break;
 
