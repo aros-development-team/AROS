@@ -102,6 +102,7 @@
 	    { NP_Output	        , 0		  },
 	    { NP_CloseInput	, FALSE		  },
 	    { NP_CloseOutput    , FALSE		  },
+	    { NP_Cli            , TRUE            },
 	    { TAG_DONE  	, 0    	      	  }
 	};
 	
