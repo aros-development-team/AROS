@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -421,18 +421,27 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 {
     BOOL die = FALSE;
 
-    switch(ie->ie_Code) {
+    switch(ie->ie_Code)
+    {
     case MENUUP:
-	if (STICKY)
-	    break;
-
     case SELECTDOWN:
-	HandleSelection(mhd, IntuitionBase);
+    	if (!STICKY)
+    	{
+	    HandleSelection(mhd, IntuitionBase);
 
-        if ((ie->ie_Code == MENUUP) || STICKY)
-	    die = TRUE;
+            if (ie->ie_Code == MENUUP)
+	    	die = TRUE;
+	}
 
         break;
+
+    case SELECTUP:
+    	if (STICKY)
+    	{
+    	    HandleSelection(mhd, IntuitionBase);
+    	    die = TRUE;
+    	}
+    	break;
 
     case MENUDOWN:
 	if (STICKY)
