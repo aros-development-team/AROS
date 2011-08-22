@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       android:versionCode="1"
       android:versionName="1.0" package="org.aros.bootstrap">
+    <supports-screens android:largeScreens="true" android:normalScreens="true" android:anyDensity="true" android:resizeable="false" android:smallScreens="true"></supports-screens>
     <application android:icon="@drawable/icon" android:label="AROS" android:debuggable="true" android:name="AROSBootstrap">
         <activity android:name=".AROSActivity"
                   android:label="AROS" android:screenOrientation="portrait">
