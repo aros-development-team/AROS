@@ -142,6 +142,7 @@ class DisplayView extends RelativeLayout
 		bitmap = new BitmapView(context, app);
 		addView(bitmap);
 
+		setId(0);
 		setFocusable(true);
 		requestFocus();
 	}
