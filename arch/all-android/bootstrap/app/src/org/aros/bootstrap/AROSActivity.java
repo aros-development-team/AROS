@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
@@ -270,7 +269,7 @@ class BitmapView extends View
 		// Using int[] is even worse, we also can't create a direct int[].
 		// Additionally, using int[] proved to be very slow
 		main.GetBitmap(pixbuf, bm.Address, x, y, width, height, bm.BytesPerRow);
-		invalidate(x, y, x + width - 1, y + height - 1);
+		invalidate(x, y, x + width, y + height);
 	}
 
 	@Override
