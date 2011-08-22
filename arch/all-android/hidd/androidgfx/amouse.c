@@ -201,3 +201,18 @@ void AMouse_ReportTouch(struct mouse_data *data, struct PointerEvent *pkt)
     /* Report the second action */
     data->mouse_callback(data->callbackdata, &e);
 }
+
+/****************************************************************************************/
+
+void AMouse_ReportButton(struct mouse_data *data, UWORD button, UWORD action)
+{
+    struct pHidd_Mouse_ExtEvent e;
+
+    e.button = button;
+    e.type   = action;
+    e.x      = 0;	/* Relative motion of (0, 0) = no motion */
+    e.y      = 0;
+    e.flags  = vHidd_Mouse_Relative;
+
+    data->mouse_callback(data->callbackdata, &e);
+}

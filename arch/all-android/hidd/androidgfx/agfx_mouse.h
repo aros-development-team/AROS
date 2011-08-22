@@ -10,3 +10,4 @@ struct PointerEvent;
 
 void AMouse_ReportEvent(struct mouse_data *data, struct PointerEvent *pkt);
 void AMouse_ReportTouch(struct mouse_data *data, struct PointerEvent *pkt);
+void AMouse_ReportButton(struct mouse_data *data, UWORD button, UWORD action);

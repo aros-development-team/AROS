@@ -37,6 +37,7 @@ public class AROSBootstrap extends Application
 	static final int cmd_Mouse  = 0x00000005;
 	static final int cmd_Touch  = 0x00000006;
 	static final int cmd_Key    = 0x00000007;
+	static final int cmd_Flush  = 0x00000008;
 
 	@Override
 	public void onCreate()
@@ -165,6 +166,11 @@ public class AROSBootstrap extends Application
 	public void ReportKey(int code, int flags)
 	{
 		Server.ReplyCommand(cmd_Key, code, flags);
+	}
+
+	public void ReportMemoryPanic()
+	{
+		Server.ReplyCommand(cmd_Flush);
 	}
 
     // This orders processing of a command from server

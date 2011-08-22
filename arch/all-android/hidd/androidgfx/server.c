@@ -2,14 +2,17 @@
 
 #include <aros/debug.h>
 #include <exec/alerts.h>
-#include <exec/ports.h>
+#include <devices/inputevent.h>
 #include <hidd/mouse.h>
 #include <hidd/unixio.h>
 #include <hidd/unixio_inline.h>
 
 #include <proto/exec.h>
 
+#include <android/keycodes.h>
+
 #include "agfx.h"
+#include "agfx_keyboard.h"
 #include "agfx_mouse.h"
 #include "server.h"
 
@@ -44,6 +47,7 @@ void agfxInt(int pipe, int mode, void *data)
     {
     	struct Request header;
     	struct PointerEvent e;
+    	struct KeyEvent ke;
     	ULONG status = STATUS_ACK;
 
 	DB2(bug("[AGFX.server] Event 0x%08X on pipe %d\n", mode, pipe));
@@ -118,6 +122,29 @@ void agfxInt(int pipe, int mode, void *data)
 		AMouse_ReportTouch(XSD(data)->mousehidd, &e);
 
 	    break;
+
+	case cmd_Key:
+	    ReadPipe(pipe, &ke, sizeof(ke), data);
+
+	    switch (ke.code)
+	    {
+	    case AKEYCODE_MENU:
+	    	/* MENU key emulates right mouse button */
+	    	if (XSD(data)->mousehidd)
+	    	    AMouse_ReportButton(XSD(data)->mousehidd, vHidd_Mouse_Button2, (ke.flags & IECODE_UP_PREFIX) ? vHidd_Mouse_Release : vHidd_Mouse_Press);
+	    	break;
+
+	    default:
+	    	if (XSD(data)->kbdhidd)
+		    AKbd_ReportKey(XSD(data)->kbdhidd, &ke);
+		break;
+	    }
+
+	/*
+	 * TODO: Process cmd_Flush() here.
+	 *       It's not a good idea to call AllocMem() from within an interrupt,
+	 *	 so we need to delegate this to some task.
+	 */
 
 	default:
 	    /*

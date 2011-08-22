@@ -5,6 +5,8 @@
 #define cmd_Scroll     0x00000004
 #define cmd_Mouse      0x00000005
 #define cmd_Touch      0x00000006
+#define cmd_Key	       0x00000007
+#define cmd_Flush      0x00000008
 
 #define CMD_NEED_REPLY 0x80000000
 
@@ -108,6 +110,12 @@ struct PointerEvent
     ULONG x;
     ULONG y;
     ULONG action;
+};
+
+struct KeyEvent
+{
+    ULONG code;
+    ULONG flags;
 };
 
 void agfxInt(int pipe, int mode, void *data);
