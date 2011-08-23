@@ -45,22 +45,6 @@ struct UnixIO_Waiter
     BYTE	 signal;
 };
 
-/* static data for the unixioclass */
-struct uio_data
-{
-    APTR		    KernelBase;
-    APTR		    HostLibBase;
-    STRPTR		    SystemArch;
-    OOP_AttrBase	    UnixIOAB;
-    struct LibCInterface   *SysIFace;
-    int		   	   *errnoPtr;
-    pid_t		    aros_PID;
-    OOP_Object		   *obj;
-    struct MinList	    intList;
-    struct MsgPort	   *ud_Port;
-    struct SignalSemaphore  lock;
-};
-
 struct LibCInterface
 {
     int	    (*open)(char *path, int oflag, ...);
@@ -74,15 +58,23 @@ struct LibCInterface
     int	   *(*__error)(void);
 };
 
+/* For simplicity, our library base is our static data */
 struct unixio_base
 {
-    struct UnixIOBase	  uio_Public;
-    BPTR		  uio_SegList;
-    OOP_Class		 *uio_unixioclass;
-    APTR		  irqHandle;
-    struct uio_data	  uio_csd;
+    struct UnixIOBase	   uio_Public;		/* Public portion				*/
+    OOP_AttrBase	   UnixIOAB;		/* Our attribute base	    			*/
+    OOP_Class		  *uio_unixioclass;	/* Our class		    			*/
+    OOP_Object		  *obj;			/* Our singletone	    			*/
+    APTR		   irqHandle;		/* SIGIO IRQ handle	    			*/
+    APTR		   KernelBase;		/* Resource bases	    			*/
+    APTR		   HostLibBase;
+    STRPTR		   SystemArch;		/* System architecture string (cached)		*/
+    struct LibCInterface  *SysIFace;		/* Our libc interface				*/
+    pid_t		   aros_PID;		/* PID of AROS process (for F_SETOWN fcntl)	*/
+    struct MinList	   intList;		/* User's interrupts list			*/
+    struct SignalSemaphore lock;		/* Singletone creation lock			*/
 };
 
-#define UD(cl) (&((struct unixio_base *)cl->UserData)->uio_csd)
+#define UD(cl) ((struct unixio_base *)cl->UserData)
 
 #endif /* UXIO */

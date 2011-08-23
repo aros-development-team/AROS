@@ -101,7 +101,7 @@
 
 *****************************************************************************************/
 
-static int poll_fd(int fd, int req_mode, struct uio_data *ud)
+static int poll_fd(int fd, int req_mode, struct unixio_base *ud)
 {
     struct pollfd pfd = {fd, 0, 0};
     int mode = 0;
@@ -130,7 +130,7 @@ static int poll_fd(int fd, int req_mode, struct uio_data *ud)
     return mode;
 }
 
-static void SigIO_IntServer(struct uio_data *ud, void *unused)
+static void SigIO_IntServer(struct unixio_base *ud, void *unused)
 {
     struct uioInterrupt *intnode;
 
@@ -155,7 +155,7 @@ static void WaitIntHandler(int fd, int mode, void *data)
     Signal(w->task, 1 << w->signal);
 }
 
-static BOOL CheckArch(struct uio_data *data, STRPTR Component, STRPTR MyArch)
+static BOOL CheckArch(struct unixio_base *data, STRPTR Component, STRPTR MyArch)
 {
     STRPTR arg[3] = {Component, MyArch, data->SystemArch};
 
@@ -285,7 +285,7 @@ static BOOL CheckArch(struct uio_data *data, STRPTR Component, STRPTR MyArch)
 ********************/
 OOP_Object *UXIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct uio_data *data = UD(cl);
+    struct unixio_base *data = UD(cl);
     STRPTR archName;
 
     EnterFunc(bug("UnixIO::New(cl=%s)\n", cl->ClassNode.ln_Name));
@@ -458,7 +458,7 @@ IPTR UXIO__Hidd_UnixIO__AsyncIO(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 *****************************************************************************************/
 APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpenFile *msg)
 {
-    struct uio_data *data = UD(cl);
+    struct unixio_base *data = UD(cl);
     APTR retval;
 
     D(bug("[UnixIO] OpenFile(%s, 0x%04X, %o)\n", msg->um_FileName, msg->um_Flags, msg->um_Mode));
@@ -469,11 +469,11 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
     AROS_HOST_BARRIER
 
     if (msg->um_ErrNoPtr)
-    	*msg->um_ErrNoPtr = *data->errnoPtr;
+    	*msg->um_ErrNoPtr = *data->uio_Public.uio_ErrnoPtr;
 
     HostLib_Unlock();
 
-    D(bug("[UnixIO] FD is %d, errno is %d\n", retval, *data->errnoPtr));
+    D(bug("[UnixIO] FD is %d, errno is %d\n", retval, *data->uio_Public.uio_ErrnoPtr));
 
     return retval;
 }
@@ -520,7 +520,7 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
 *****************************************************************************************/
 int UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgCloseFile *msg)
 {
-    struct uio_data *data = UD(cl);
+    struct unixio_base *data = UD(cl);
     int ret = 0;
 
     if (msg->um_FD != (APTR)-1)
@@ -531,7 +531,7 @@ int UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgClos
     	AROS_HOST_BARRIER
 
     	if (msg->um_ErrNoPtr)
-    	    *msg->um_ErrNoPtr = *data->errnoPtr;
+    	    *msg->um_ErrNoPtr = *data->uio_Public.uio_ErrnoPtr;
 
     	HostLib_Unlock();
     }
@@ -587,7 +587,7 @@ int UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgClos
 *****************************************************************************************/
 IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgReadFile *msg)
 {
-    struct uio_data *data = UD(cl);
+    struct unixio_base *data = UD(cl);
     int retval = -1;
     volatile int err = EINVAL;
 
@@ -603,7 +603,7 @@ IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgRead
     	    retval = data->SysIFace->read((long)msg->um_FD, (void *)msg->um_Buffer, (size_t)msg->um_Count);
     	    AROS_HOST_BARRIER
 
-    	    err = *data->errnoPtr;
+    	    err = *data->uio_Public.uio_ErrnoPtr;
     	    D(kprintf(" UXIO__Hidd_UnixIO__ReadFile: retval %d errno %d  buff %x  count %d\n", retval, err, msg->um_Buffer, msg->um_Count));
 
     	    if (msg->um_ErrNoPtr)
@@ -671,7 +671,7 @@ IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgRead
 *****************************************************************************************/
 IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWriteFile *msg)
 {
-    struct uio_data *data = UD(cl);
+    struct unixio_base *data = UD(cl);
     int retval = -1;
     volatile int err = EINVAL;
 
@@ -687,7 +687,7 @@ IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWri
     	    retval = data->SysIFace->write((long)msg->um_FD, (const void *)msg->um_Buffer, (size_t)msg->um_Count);
     	    AROS_HOST_BARRIER
 
-	    err = *data->errnoPtr;
+	    err = *data->uio_Public.uio_ErrnoPtr;
     	    D(kprintf(" UXIO__Hidd_UnixIO__WriteFile: retval %d errno %d  buff %x  count %d\n", retval, err, msg->um_Buffer, msg->um_Count));
 
     	    if (msg->um_ErrNoPtr)
@@ -750,7 +750,7 @@ IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWri
 *****************************************************************************************/
 IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMsgIOControlFile *msg)
 {
-    struct uio_data *data = UD(cl);
+    struct unixio_base *data = UD(cl);
     int err = EINVAL;
     int retval = -1;
 
@@ -764,7 +764,7 @@ IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMs
     	retval = data->SysIFace->ioctl((long)msg->um_FD, (int)msg->um_Request, msg->um_Param);
     	AROS_HOST_BARRIER
 
-	err = *data->errnoPtr;
+	err = *data->uio_Public.uio_ErrnoPtr;
 
 	if (user)
 	    HostLib_Unlock();
@@ -829,7 +829,7 @@ IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMs
 *****************************************************************************************/
 int UXIO__Hidd_UnixIO__AddInterrupt(OOP_Class *cl, OOP_Object *o, struct uioMsgAddInterrupt *msg)
 {
-    struct uio_data *data = UD(cl);
+    struct unixio_base *data = UD(cl);
     int res;
     int err;
 
@@ -850,7 +850,7 @@ int UXIO__Hidd_UnixIO__AddInterrupt(OOP_Class *cl, OOP_Object *o, struct uioMsgA
 	res = data->SysIFace->fcntl(msg->um_Int->fd, F_SETFL, res|O_ASYNC);
 	AROS_HOST_BARRIER
     }
-    err = *data->errnoPtr;
+    err = *data->uio_Public.uio_ErrnoPtr;
 
     HostLib_Unlock();
 
@@ -957,7 +957,7 @@ void UXIO__Hidd_UnixIO__RemInterrupt(OOP_Class *cl, OOP_Object *o, struct uioMsg
 *****************************************************************************************/
 ULONG UXIO__Hidd_UnixIO__Poll(OOP_Class *cl, OOP_Object *o, struct uioMsgPoll *msg)
 {
-    struct uio_data *data = UD(cl);
+    struct unixio_base *data = UD(cl);
     int user = !KrnIsSuper();
     int ret;
  
@@ -966,7 +966,7 @@ ULONG UXIO__Hidd_UnixIO__Poll(OOP_Class *cl, OOP_Object *o, struct uioMsgPoll *m
 
     ret = poll_fd((int)(IPTR)msg->um_FD, msg->um_Mode, data);
     if (msg->um_ErrNoPtr)
-	*msg->um_ErrNoPtr = *data->errnoPtr;
+	*msg->um_ErrNoPtr = *data->uio_Public.uio_ErrnoPtr;
 
     if (user)
     	HostLib_Unlock();
@@ -1000,8 +1000,8 @@ static const char *libc_symbols[] =
 
 #undef HostLibBase
 #undef KernelBase
-#define KernelBase  LIBBASE->uio_csd.KernelBase
-#define HostLibBase LIBBASE->uio_csd.HostLibBase
+#define KernelBase  LIBBASE->KernelBase
+#define HostLibBase LIBBASE->HostLibBase
 
 static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
 {
@@ -1017,35 +1017,35 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
     if (!HostLibBase)
     	return FALSE;
 
-    LIBBASE->uio_csd.SystemArch = (STRPTR)KrnGetSystemAttr(KATTR_Architecture);
-    if (!LIBBASE->uio_csd.SystemArch)
+    LIBBASE->SystemArch = (STRPTR)KrnGetSystemAttr(KATTR_Architecture);
+    if (!LIBBASE->SystemArch)
     	return FALSE;
 
-    if (!CheckArch(&LIBBASE->uio_csd, "unixio.hidd", AROS_ARCHITECTURE))
+    if (!CheckArch(LIBBASE, "unixio.hidd", AROS_ARCHITECTURE))
     	return FALSE;
 
-    LIBBASE->uio_csd.UnixIOAB = OOP_ObtainAttrBase(IID_Hidd_UnixIO);
-    if (!LIBBASE->uio_csd.UnixIOAB)
+    LIBBASE->UnixIOAB = OOP_ObtainAttrBase(IID_Hidd_UnixIO);
+    if (!LIBBASE->UnixIOAB)
     	return FALSE;
 
     LIBBASE->uio_Public.uio_LibcHandle = HostLib_Open(LIBC_NAME, NULL);
     if (!LIBBASE->uio_Public.uio_LibcHandle)
     	return FALSE;
 
-    LIBBASE->uio_csd.SysIFace = (struct LibCInterface *)HostLib_GetInterface(LIBBASE->uio_Public.uio_LibcHandle, libc_symbols, &i);
-    if ((!LIBBASE->uio_csd.SysIFace) || i)
+    LIBBASE->SysIFace = (struct LibCInterface *)HostLib_GetInterface(LIBBASE->uio_Public.uio_LibcHandle, libc_symbols, &i);
+    if ((!LIBBASE->SysIFace) || i)
 	return FALSE;
 
-    LIBBASE->irqHandle = KrnAddIRQHandler(SIGIO, SigIO_IntServer, &LIBBASE->uio_csd, NULL);
+    LIBBASE->irqHandle = KrnAddIRQHandler(SIGIO, SigIO_IntServer, LIBBASE, NULL);
     if (!LIBBASE->irqHandle)
     	return FALSE;
 
-    NewList((struct List *)&LIBBASE->uio_csd.intList);
-    InitSemaphore(&LIBBASE->uio_csd.lock);
+    NewList((struct List *)&LIBBASE->intList);
+    InitSemaphore(&LIBBASE->lock);
 
-    LIBBASE->uio_csd.errnoPtr = LIBBASE->uio_csd.SysIFace->__error();
+    LIBBASE->uio_Public.uio_ErrnoPtr = LIBBASE->SysIFace->__error();
     AROS_HOST_BARRIER
-    LIBBASE->uio_csd.aros_PID  = LIBBASE->uio_csd.SysIFace->getpid();
+    LIBBASE->aros_PID  = LIBBASE->SysIFace->getpid();
     AROS_HOST_BARRIER
 
     return TRUE;
@@ -1061,13 +1061,13 @@ static int UXIO_Cleanup(struct unixio_base *LIBBASE)
     if (LIBBASE->irqHandle)
 	KrnRemIRQHandler(LIBBASE->irqHandle);
 
-    if (LIBBASE->uio_csd.SysIFace)
-	HostLib_DropInterface ((APTR *)LIBBASE->uio_csd.SysIFace);
+    if (LIBBASE->SysIFace)
+	HostLib_DropInterface ((APTR *)LIBBASE->SysIFace);
 
     if (LIBBASE->uio_Public.uio_LibcHandle)
     	HostLib_Close(LIBBASE->uio_Public.uio_LibcHandle, NULL);
 
-    if (LIBBASE->uio_csd.UnixIOAB)
+    if (LIBBASE->UnixIOAB)
     	OOP_ReleaseAttrBase(IID_Hidd_UnixIO);
 
     return TRUE;
@@ -1076,14 +1076,14 @@ static int UXIO_Cleanup(struct unixio_base *LIBBASE)
 /* The singleton gets really disposed only when we expunge its library */
 static int UXIO_Dispose(struct unixio_base *LIBBASE)
 {
-    if (LIBBASE->uio_csd.obj)
+    if (LIBBASE->obj)
     {
 	OOP_MethodID mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
 	D(bug("[UnixIO] Disposing object\n"));
 
-	OOP_DoSuperMethod(LIBBASE->uio_unixioclass, LIBBASE->uio_csd.obj, &mid);
-    	LIBBASE->uio_csd.obj = NULL;
+	OOP_DoSuperMethod(LIBBASE->uio_unixioclass, LIBBASE->obj, &mid);
+    	LIBBASE->obj = NULL;
     }
 
     return TRUE;
