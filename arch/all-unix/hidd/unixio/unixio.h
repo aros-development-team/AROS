@@ -17,8 +17,8 @@
 
 #include <exec/tasks.h>
 #include <exec/ports.h>
-#include <exec/libraries.h>
 #include <dos/bptr.h>
+#include <hidd/unixio.h>
 #include <oop/oop.h>
 #include <proto/exec.h>
 
@@ -76,10 +76,9 @@ struct LibCInterface
 
 struct unixio_base
 {
-    struct Library	  uio_lib;
+    struct UnixIOBase	  uio_Public;
     BPTR		  uio_SegList;
     OOP_Class		 *uio_unixioclass;
-    APTR		  libcHandle;
     APTR		  irqHandle;
     struct uio_data	  uio_csd;
 };

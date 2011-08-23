@@ -350,15 +350,13 @@ void UXIO__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         		- vHidd_UnixIO_Write - to request waiting until write is permitted
 
     RESULT
-    	0 in case of success or UNIX errno value in case if exception happens on the
-    	socket (select() call sets corresponding flag in third fd_set).
+    	0 in case of success or UNIX errno value in case if the operation failed.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-    	Callback routine is called only for read events (if they were requested)
 
     SEE ALSO
 
@@ -369,9 +367,15 @@ void UXIO__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 *****************************************************************************************/
 IPTR UXIO__Hidd_UnixIO__Wait(OOP_Class *cl, OOP_Object *o, struct uioMsg *msg)
 {
-    IPTR retval = 0UL;
+    int retval = 0;
+    int mode;
     struct uioInterrupt myInt;
     struct UnixIO_Waiter w;
+
+    /* Check if the fd is already ready. In this case we don't need to wait for anything. */
+    mode = Hidd_UnixIO_Poll(o, msg->um_Filedesc, msg->um_Mode, &retval);
+    if (mode)
+    	return (mode == -1) ? retval : 0;
 
     w.signal = AllocSignal(-1);
     if (w.signal == -1)
@@ -567,6 +571,8 @@ int UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgClos
 	of EINTR or EAGAIN error happens. If you supplied valid own errno_ptr you should be ready
 	to handle these conditions yourself.
 
+	This method can be called from within interrupts.
+
     EXAMPLE
 
     BUGS
@@ -649,6 +655,8 @@ IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgRead
 	of EINTR or EAGAIN error happens. If you supplied valid own errno_ptr you should be ready
 	to handle these conditions yourself.
 
+	This method can be called from within interrupts.
+
     EXAMPLE
 
     BUGS
@@ -727,6 +735,7 @@ IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWri
 	Operation-specific value (actually a return value of ioctl() function called).
 
     NOTES
+    	This method can be called from within interrupts.
 
     EXAMPLE
 
@@ -933,6 +942,7 @@ void UXIO__Hidd_UnixIO__RemInterrupt(OOP_Class *cl, OOP_Object *o, struct uioMsg
 	Current set of filedescriptor modes.
 
     NOTES
+    	This method can be called from within interrupts.
 
     EXAMPLE
 
@@ -966,7 +976,8 @@ ULONG UXIO__Hidd_UnixIO__Poll(OOP_Class *cl, OOP_Object *o, struct uioMsgPoll *m
 
 /* This is the initialisation code for the HIDD class itself. */
 
-static const char *libc_symbols[] = {
+static const char *libc_symbols[] =
+{
     "open",
     "close",
     "ioctl",
@@ -1017,11 +1028,11 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
     if (!LIBBASE->uio_csd.UnixIOAB)
     	return FALSE;
 
-    LIBBASE->libcHandle = HostLib_Open(LIBC_NAME, NULL);
-    if (!LIBBASE->libcHandle)
+    LIBBASE->uio_Public.uio_LibcHandle = HostLib_Open(LIBC_NAME, NULL);
+    if (!LIBBASE->uio_Public.uio_LibcHandle)
     	return FALSE;
 
-    LIBBASE->uio_csd.SysIFace = (struct LibCInterface *)HostLib_GetInterface(LIBBASE->libcHandle, libc_symbols, &i);
+    LIBBASE->uio_csd.SysIFace = (struct LibCInterface *)HostLib_GetInterface(LIBBASE->uio_Public.uio_LibcHandle, libc_symbols, &i);
     if ((!LIBBASE->uio_csd.SysIFace) || i)
 	return FALSE;
 
@@ -1053,8 +1064,8 @@ static int UXIO_Cleanup(struct unixio_base *LIBBASE)
     if (LIBBASE->uio_csd.SysIFace)
 	HostLib_DropInterface ((APTR *)LIBBASE->uio_csd.SysIFace);
 
-    if (LIBBASE->libcHandle)
-    	HostLib_Close(LIBBASE->libcHandle, NULL);
+    if (LIBBASE->uio_Public.uio_LibcHandle)
+    	HostLib_Close(LIBBASE->uio_Public.uio_LibcHandle, NULL);
 
     if (LIBBASE->uio_csd.UnixIOAB)
     	OOP_ReleaseAttrBase(IID_Hidd_UnixIO);

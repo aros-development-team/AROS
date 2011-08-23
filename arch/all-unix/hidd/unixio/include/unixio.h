@@ -2,13 +2,14 @@
 #define HIDD_UNIXIO_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO Include File
     Lang: english
 */
 
+#include <exec/libraries.h>
 #include <exec/ports.h>
 #include <oop/oop.h>
 
@@ -29,6 +30,13 @@ struct uioInterrupt
     int		   mode;
     void	   (*handler)(int, int, void *);
     void	   *handlerData;
+};
+
+/* (Semi)-public part of unixio.hidd library base */
+struct UnixIOBase
+{
+    struct Library uio_Library;		/* Library node				  */
+    APTR	   uio_LibcHandle;	/* hostlib.resource's handle to host libc */
 };
 
 enum {
