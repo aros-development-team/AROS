@@ -63,6 +63,8 @@ static const char *kernel_functions[] = {
 #endif
 #ifdef HOST_OS_android
     "__page_size",
+    "write",
+    "sigwait",
 #else
     "getpagesize",
     "sigemptyset",

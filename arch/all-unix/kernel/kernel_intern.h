@@ -38,6 +38,8 @@ struct KernelInterface
     int    *(*__error)(void);
 #ifdef HOST_OS_android
     unsigned int *__page_size;
+    ssize_t (*write)(int fd, void *buf, size_t count);
+    int     (*sigwait)(const sigset_t *restrict set, int *restrict sig);
 #else
     int     (*getpagesize)(void);
     int     (*SigEmptySet)(sigset_t *set);
@@ -68,7 +70,12 @@ struct PlatformData
     sigset_t	  sig_int_mask;			   /* Mask of signals that Disable() block */
     unsigned int  supervisor;
     int		 *errnoPtr;
-    void	(*DisplayAlert)(const char *text); /* Currently used only on iOS and Android */
+#ifdef HOST_OS_ios
+    void	(*DisplayAlert)(const char *text);
+#endif
+#ifdef HOST_OS_android
+    int		  alertPipe;
+#endif
 };
 
 struct SignalTranslation

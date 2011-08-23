@@ -39,7 +39,13 @@ int InputPipe;
 /* This is where we remember our data */
 static int (*EntryPoint)() = NULL;
 static struct TagItem *BootMsg = NULL;
+static pid_t AROS_pid = -1;
 
+/*
+ * Our SIGCHLD handler.
+ * It will notify Java side when AROS process exits. Additionally it will free allocated memory
+ * before performing a cold reboot.
+ */
 static void childHandler(int sig)
 {
     int i;
@@ -56,7 +62,7 @@ static void childHandler(int sig)
 	 * If the requested action is not a warm reboot, free all the RAM.
 	 * On cold reboot we will reload the kickstart from scratch.
 	 */
-	if (code != STATUS_COLD_REBOOT)
+	if (code != STATUS_WARM_REBOOT)
 	    Host_FreeMem();
 
 	/* Let the Java part to do the work */
@@ -96,7 +102,6 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
     int displaypipe[2];
     int inputpipe[2];
     int i;
-    pid_t child;
     jclass *class_fdesc = (*env)->GetObjectClass(env, readfd);
     /*
      * In Sun JVM this is 'fd' field, in Android it's 'descriptor'.
@@ -134,7 +139,7 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
     }
 
     D(kprintf("[Bootstrap] Launching kickstart...\n"));
-    child = fork();
+    AROS_pid = fork();
 
     switch (child)
     {
@@ -159,7 +164,7 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
         exit(i);
     }
 
-    D(kprintf("[Bootstrap] AROS PID %d, bootstrap PID %d\n", child, getpid()));
+    D(kprintf("[Bootstrap] AROS PID %d, bootstrap PID %d\n", AROS_pid, getpid()));
 
     /* Set up server side of pipes */
     (*env)->SetIntField(env, readfd, field_fd, displaypipe[0]);
@@ -169,4 +174,10 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
 
     /* Return to JVM with success indication */
     return 0;
+}
+
+/* A small method which allows display server to send signals to AROS process */
+int Java_org_aros_bootstrap_AROSBootstrap_Kill(jint signal)
+{
+    return kill(AROS_pid, signal);
 }
