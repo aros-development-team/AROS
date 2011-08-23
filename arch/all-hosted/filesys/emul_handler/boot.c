@@ -132,6 +132,8 @@ AROS_UFH3(APTR, EmulBoot,
     me = (struct Process *)FindTask(NULL);
     me->pr_CES = MKBADDR(fh_stdout);
 
+    SetPrompt("%N> ");
+
     PutStr("Display driver(s) failed to initialize. Entering emergency shell.\n"
     	   "EndCLI will quit AROS.\n");
 
