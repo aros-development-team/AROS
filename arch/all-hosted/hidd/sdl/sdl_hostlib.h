@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
- * Copyright (c) 2007-2009 The AROS Development Team
+ * Copyright (c) 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -17,8 +17,10 @@
 #undef timeval
 
 #include <exec/semaphores.h>
+#include <proto/hostlib.h>
 
-struct sdl_funcs {
+struct sdl_funcs
+{
     char * (*SDL_GetError) (void);
     char * (*SDL_VideoDriverName) (char *namebuf, int maxlen);
     SDL_Surface * (*SDL_GetVideoSurface) (void);
@@ -51,25 +53,25 @@ extern struct sdl_funcs sdl_funcs;
 
 #define S(name, ...) \
     ({ \
-        Forbid(); \
+        HostLib_Lock(); \
         int __sdlret = sdl_funcs.name(__VA_ARGS__); \
-        Permit(); \
+        HostLib_Unlock(); \
         __sdlret; \
     })
 
 #define SP(name, ...) \
     ({ \
-        Forbid(); \
+        HostLib_Lock(); \
         const void *__sdlret = sdl_funcs.name(__VA_ARGS__); \
-        Permit(); \
+        HostLib_Unlock(); \
         (void *)__sdlret; \
     })
 
 #define SV(name, ...) \
     do { \
-        Forbid(); \
+        HostLib_Lock(); \
         sdl_funcs.name(__VA_ARGS__); \
-        Permit(); \
+        HostLib_Unlock(); \
     } while (0)
 
 struct sdlhidd;
