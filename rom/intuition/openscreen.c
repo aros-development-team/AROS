@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
     Open a new screen.
@@ -627,6 +627,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         if (INVALID_ID == modeid)
         {
             DEBUG_OPENSCREEN(dprintf("!!! OpenScreen: Could not find valid modeid !!!\n");)
+
+	    SetError(OSERR_UNKNOWNMODE);
             FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
 
             return NULL;
