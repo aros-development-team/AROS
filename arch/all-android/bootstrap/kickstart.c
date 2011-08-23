@@ -141,7 +141,7 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
     D(kprintf("[Bootstrap] Launching kickstart...\n"));
     AROS_pid = fork();
 
-    switch (child)
+    switch (AROS_pid)
     {
     case -1:
     	close(displaypipe[0]);
