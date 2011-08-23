@@ -11,9 +11,23 @@
 /* This comes from kernel_startup.c */
 extern struct HostInterface *HostIFace;
 
+static int GetPipe(const char *name, APTR lib, APTR HostLibBase)
+{
+    int *ptr = HostLib_GetPointer(lib, name, NULL);
+    
+    if (!ptr)
+    {
+    	D(bug("[AGFX] Failed to locate symbol %s\n", name));
+    	return -1;
+    }
+    
+    return *ptr;
+}
+
 static int Alert_Init(struct KernelBase *KernelBase)
 {
     APTR ExecHandle;
+    int *ptr;
 
     /*
      * We use local variable for the handle because we never expunge,
@@ -24,15 +38,14 @@ static int Alert_Init(struct KernelBase *KernelBase)
     if (!ExecHandle)
 	return FALSE;
 
-    KernelBase->kb_PlatformData->DisplayAlert = HostIFace->hostlib_GetPointer(ExecHandle, "DisplayAlert", NULL);
-    D(bug("[Alert_Init] DisplayAlert function: %p\n", KernelBase->kb_PlatformData->DisplayAlert));
+    ptr = HostIFace->hostlib_GetPointer(ExecHandle, "DisplayPipe", NULL);
+    D(bug("[Alert_Init] DisplayPipe pointer: %p\n", ptr));
 
-    if (KernelBase->kb_PlatformData->DisplayAlert)
-	return TRUE;
+    KernelBase->kb_PlatformData->alertPipe = ptr ? *ptr : -1;
 
     HostIFace->hostlib_Close(ExecHandle, NULL);
 
-    return FALSE;
+    return (KernelBase->kb_PlatformData->alertPipe != -1) ? TRUE : FALSE;
 }
 
 ADD2INITLIB(Alert_Init, 15);

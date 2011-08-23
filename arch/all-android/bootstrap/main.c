@@ -3,6 +3,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <runtime.h>
@@ -57,15 +58,16 @@ int Java_org_aros_bootstrap_AROSBootstrap_Load(JNIEnv* env, jobject this, jstrin
 }
 
 /*
- * Wrap a given memory region into ByteBuffer object. Needed for accessing AROS shared RAM.
- * FIXME: It would be better to pass in longs here, however looks
+ * Wrap a string at a given memory address into ByteBuffer object.
+ * FIXME: It would be better to pass address as long here, however looks
  * like Android gcc has a bug and misaligns arguments in this case. I got
  * wrong values ('size' was actually 'addr' and 'addr' contained some weird garbage.
  * Since Android is a 32-bit system, i hope ints are ok for now.
  */
-jobject Java_org_aros_bootstrap_AROSBootstrap_MapMemory(JNIEnv* env, jobject this, jint addr, jint size)
+
+jobject Java_org_aros_bootstrap_AROSBootstrap_MapString(JNIEnv* env, jobject this, jint addr)
 {
-    D(kprintf("[Bootstrap] Mapping %lu bytes at %p\n", size, addr));
+    jlong size = strlen((void *)addr);
 
     return (*env)->NewDirectByteBuffer(env, (void *)addr, size);
 }

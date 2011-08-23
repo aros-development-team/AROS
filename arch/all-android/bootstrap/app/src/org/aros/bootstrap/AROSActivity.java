@@ -62,10 +62,8 @@ public class AROSActivity extends Activity
     {
     	errStr = text;
     	showDialog(ID_ALERT_DIALOG);
-
-    	Looper.loop();
     }
-   
+  
     public void Show(int id, BitmapData data)
     {
     	rootView.Show(data);
@@ -102,12 +100,13 @@ public class AROSActivity extends Activity
     			@Override
     			public void onClick(DialogInterface dialog, int which)
     			{
-    				// TODO: break run loop and return
-    				System.exit(0);
+    				AROSBootstrap app = (AROSBootstrap) getApplication();
+
+    				app.Resume();
     			}
     		};
     		break;
-    	
+
     	default:
     		return null;
     		

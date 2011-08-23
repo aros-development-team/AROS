@@ -40,7 +40,12 @@ public class AROSBootstrap extends Application
 	static final int cmd_Touch  = 0x00000006;
 	static final int cmd_Key    = 0x00000007;
 	static final int cmd_Flush  = 0x00000008;
+	static final int cmd_Alert  = 0x00001000;
 
+	// Some Linux signals
+	static final int SIGCONT = 18;
+	static final int SIGSTOP = 19;
+	
 	@Override
 	public void onCreate()
 	{
@@ -190,8 +195,18 @@ public class AROSBootstrap extends Application
 			// This command doesn't need a reply
 			break;
 
+		case cmd_Alert:
+			Log.d("AROS", "Alert code " + params[0]);
+			Kill(SIGSTOP);
+
+			ByteBuffer textBuf = MapString(params[1]);
+			String text = new String(textBuf.array());
+			Foreground();
+			ui.DisplayAlert(text);
+			break;
+
 		default:
-			Log.d("AROSDisplay", "Unknown command " + cmd);
+			Log.d("AROS", "Unknown command " + cmd);
 
 			Server.ReplyCommand(cmd_Nak, cmd);
 			break;
@@ -212,7 +227,12 @@ public class AROSBootstrap extends Application
 	{
 		Server.ReplyCommand(cmd_Key, code, flags);
 	}
-	
+
+	public void Resume()
+	{
+		Kill(SIGCONT);
+	}
+
     // This orders processing of a command from server
     class ServerCommand implements Runnable
     {
@@ -255,10 +275,11 @@ public class AROSBootstrap extends Application
     {
         System.loadLibrary("AROSBootstrap");
     }
-	
+
 	// libAROSBootstrap native methods
     private native int Load(String dir);
     private native int Kick(FileDescriptor rfd, FileDescriptor wfd);
-    private native ByteBuffer MapMemory(int addr, int size);
+    private native int Kill(int signal);
+    private native ByteBuffer MapString(int addr);
     public native int GetBitmap(Bitmap obj, int addr, int x, int y, int width, int height, int bytesPerLine);
 }
