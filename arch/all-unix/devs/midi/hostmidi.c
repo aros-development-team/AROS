@@ -40,6 +40,7 @@ debugdriver.o: debugdriver.c makefile
 
 struct ExecBase *SysBase;
 struct Library  *OOPBase;
+struct Library  *UnixIOBase;
 
 OOP_Object *unixio;
 int 	    midi_fd;
@@ -113,9 +114,17 @@ SAVEDS ASM BOOL Init(REG(a6) APTR sysbase)
     OOPBase = OpenLibrary("oop.library", 0);
     if (!OOPBase) return FALSE;
 
+    UnixIOBase = OpenLibrary("unixio.library", 0);
+    if (!UnixIOBase)
+    {
+    	CloseLibrary(OOPBase);
+    	return FALSE;
+    }
+
     unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
     if (!unixio)
     {
+    	CloseLibrary(UnixIOBase);
         CloseLibrary(OOPBase);
         return FALSE;
     }
@@ -128,8 +137,9 @@ SAVEDS ASM BOOL Init(REG(a6) APTR sysbase)
     if (!midi_fd)
     {
     	OOP_DisposeObject(unixio);
+    	CloseLibrary(UnixIOBase);
         CloseLibrary(OOPBase);
-	
+
 	return FALSE;
 	
     }
