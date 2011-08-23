@@ -17,6 +17,7 @@
 
 #include "android.h"
 #include "kickstart.h"
+#include "platform.h"
 
 #define D(x) x
 
@@ -47,10 +48,19 @@ static void childHandler(int sig)
 
     if (WIFEXITED(i))
     {
-    	D(kprintf("[Bootstrap] AROS process exited with code 0x%08X\n", WEXITSTATUS(i)));
+    	int code = WEXITSTATUS(i);
 
-	/* TODO: Process return code here */
-    	exit(0);
+    	D(kprintf("[Bootstrap] AROS process exited with code 0x%08X\n", code));
+
+	/*
+	 * If the requested action is not a warm reboot, free all the RAM.
+	 * On cold reboot we will reload the kickstart from scratch.
+	 */
+	if (code != STATUS_COLD_REBOOT)
+	    Host_FreeMem();
+
+	/* Let the Java part to do the work */
+	(*Java_Env)->CallVoidMethod(Java_Env, Java_Object, HandleExit_mid, WEXITSTATUS(i));
     }
     else
     {
@@ -144,7 +154,7 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
     	close(displaypipe[0]);
     	close(inputpipe[1]);
 
-        D(kprintf("[Bootstrap] entering kernel at 0x%p...\n", EntryPoint));
+        D(kprintf("[Bootstrap] entering kernel at %p...\n", EntryPoint));
         i = EntryPoint(BootMsg, AROS_BOOT_MAGIC);
         exit(i);
     }

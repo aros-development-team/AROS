@@ -65,7 +65,7 @@ public class AROSActivity extends Activity
 
     	Looper.loop();
     }
-
+   
     public void Show(int id, BitmapData data)
     {
     	rootView.Show(data);
@@ -265,8 +265,12 @@ class BitmapView extends View
 	public void Show(BitmapData bm)
 	{
 		if (bm == null)
+		{
 			// Drop our bitmap object
 			pixbuf = null;
+			// Enforce a redraw. AROS will not call Update() here.
+			invalidate();
+		}
 		else
 		{
 			pixbuf = Bitmap.createBitmap(bm.Width, bm.Height, Bitmap.Config.ARGB_8888);

@@ -45,7 +45,9 @@ public class AROSBootstrap extends Application
 	public void onCreate()
 	{
         Log.d("AROS", "Started");
+
         started = false;
+        handler = new Handler();
 	}
 
 	@Override
@@ -107,6 +109,35 @@ public class AROSBootstrap extends Application
     {
     	Foreground();
     	ui.DisplayError(text);
+    }
+
+    public void HandleExit(int code)
+    {
+    	final int Status_WarmReboot = 0x8F;
+    	final int Status_ColdReboot = 0x81;
+
+    	Runnable cb = null;
+ 
+    	Log.d("AROS", "AROS process exited with code " + code);
+
+    	// Who knows in which thread context we are here...
+    	// In order to get rid of problems, we post a restart call on UI thread using a handler.
+    	switch (code)
+    	{
+    	case Status_WarmReboot:
+    		cb = new WarmReboot();
+    		break;
+    	
+    	case Status_ColdReboot:
+    		cb = new ColdReboot();
+    		break;
+
+    	default:
+    		System.exit(code);
+    		break;
+    	}
+
+    	handler.post(cb);
     }
 
 	private void DoCommand(int cmd, int[] params)

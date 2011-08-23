@@ -14,9 +14,9 @@
 
 /* These variables are used by DisplayError() */
 JNIEnv   *Java_Env;
-jclass    Java_Class;
 jobject   Java_Object;
 jmethodID DisplayError_mid;
+jmethodID HandleExit_mid;
 
 /*
  * This is the main bootstrap entry point.
@@ -27,6 +27,7 @@ jmethodID DisplayError_mid;
  */
 int Java_org_aros_bootstrap_AROSBootstrap_Load(JNIEnv* env, jobject this, jstring basedir)
 {
+    jclass Java_Class;
     jboolean is_copy;
     const char *arospath;
     int res;
@@ -36,6 +37,7 @@ int Java_org_aros_bootstrap_AROSBootstrap_Load(JNIEnv* env, jobject this, jstrin
     Java_Class  = (*env)->GetObjectClass(env, this);
 
     DisplayError_mid = (*env)->GetMethodID(env, Java_Class, "DisplayError", "(Ljava/lang/String;)V");
+    HandleExit_mid   = (*env)->GetMethodID(env, Java_Class, "HandleExit", "(I)V");
 
     arospath = (*env)->GetStringUTFChars(env, basedir, &is_copy);
     res = chdir(arospath);
