@@ -12,17 +12,20 @@
 
 #define D(x) x
 
-/* Interface variables */
-int DisplayPipe;
-int InputPipe;
-
-JNIEnv *Java_Env;
-jclass  Java_Class;
-jobject Java_Object;
-
+/* These variables are used by DisplayError() */
+JNIEnv   *Java_Env;
+jclass    Java_Class;
+jobject   Java_Object;
 jmethodID DisplayError_mid;
 
-int Java_org_aros_bootstrap_AROSBootstrap_Start(JNIEnv* env, jobject this, jstring basedir, jobject readfd, jobject writefd)
+/*
+ * This is the main bootstrap entry point.
+ * It parses the configuration file, prepares the environment and loads the kickstart.
+ * In Android it returns after that, allowing Java code to execute Kick() method,
+ * which actually runs the loaded kickstart.
+ * Kick() can be executed multiple times, this is how warm reboot works.
+ */
+int Java_org_aros_bootstrap_AROSBootstrap_Load(JNIEnv* env, jobject this, jstring basedir)
 {
     jboolean is_copy;
     const char *arospath;
@@ -46,30 +49,13 @@ int Java_org_aros_bootstrap_AROSBootstrap_Start(JNIEnv* env, jobject this, jstri
     {
 	(*env)->ReleaseStringUTFChars(env, basedir, arospath);
 	res = bootstrap(0, NULL); /* We can't pass any arguments (yet) */
-
-	if (res == 0)
-	{
-	    /* Initialize FileHandle objects by poking the "fd" field with the file descriptor */
-	    jclass *class_fdesc = (*env)->GetObjectClass(env, readfd);
-	    jfieldID field_fd = (*env)->GetFieldID(env, class_fdesc, "descriptor", "I");
-	    
-	    if (!field_fd)
-	    {
-	    	DisplayError("Failed to set up pipe descriptor objects");
-	    	return -1;
-	    }
-
-	    (*env)->SetIntField(env, readfd, field_fd, DisplayPipe);
-	    (*env)->SetIntField(env, writefd, field_fd, InputPipe);
-	}
     }
 
     return res;
 }
 
 /*
- * Wrap a given memory region into ByteBuffer object.
- * Needed for accessing AROS shared RAM.
+ * Wrap a given memory region into ByteBuffer object. Needed for accessing AROS shared RAM.
  * FIXME: It would be better to pass in longs here, however looks
  * like Android gcc has a bug and misaligns arguments in this case. I got
  * wrong values ('size' was actually 'addr' and 'addr' contained some weird garbage.
@@ -82,6 +68,10 @@ jobject Java_org_aros_bootstrap_AROSBootstrap_MapMemory(JNIEnv* env, jobject thi
     return (*env)->NewDirectByteBuffer(env, (void *)addr, size);
 }
 
+/*
+ * Copy a given region from AROS displayable bitmap to Java bitmap object.
+ * FIXME: See above why srcAddr is jint.
+ */
 jint Java_org_aros_bootstrap_AROSBootstrap_GetBitmap(JNIEnv* env, jobject this, jobject bitmap, jint srcAddr,
 						     jint x, jint y, jint width, jint height, jint bytesPerLine)
 {

@@ -7,6 +7,7 @@ import android.app.Application;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
 
 final class BitmapData
@@ -26,7 +27,8 @@ public class AROSBootstrap extends Application
 	public BitmapData Bitmap;
 	public AROSActivity ui;
 	private DisplayServer Server;
-	private Boolean started;
+	public Boolean started = false;
+	private Handler handler;
 
 	// Commands sent to us by AROS display driver
 	static final int cmd_Nak    = -1;
@@ -54,36 +56,44 @@ public class AROSBootstrap extends Application
 		Server.ReplyCommand(cmd_Flush);
 	}
 
-	public void Boot()
+	public void ColdBoot()
 	{
-		// We get here after the activity is laid out and we know screen size.
-		// However we need to actually run AROS only once, when the application is
-		// first started. The activity may be flushed by Android OS if it's hidden,
-		// in this case it will be recreated from scratch.
-		if (started)
-		{
-			Log.d("AROS", "Already running");
-			return;
-		}
-
 	    // Get external storage path 
-	    String extdir = Environment.getExternalStorageDirectory().getAbsolutePath();
-	    String arosdir = extdir + "/AROS";
-	    FileDescriptor readfd = new FileDescriptor();
-	    FileDescriptor writefd = new FileDescriptor();
+	    String arosdir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/AROS";
 
-	    Log.d("AROS", "Starting AROS, root path: " + arosdir);
+	    Log.d("AROS", "Loading AROS, root path: " + arosdir);
 
-	    int rc = Start(arosdir, readfd, writefd);
+	    int rc = Load(arosdir);
 
 	    if (rc == 0)
-	    {
-	    	started = true;
+	    	WarmBoot();
+	}
 
-	      	// Initialize and run display server thread
+	private void WarmBoot()
+	{
+	    FileDescriptor readfd  = new FileDescriptor();
+	    FileDescriptor writefd = new FileDescriptor();
+	    
+	    Log.d("AROS", "Starting AROS...");
+
+		int rc = Kick(readfd, writefd);
+
+		if (rc == 0)
+		{
+			started = true;
+
+			// Initialize and run display server thread
 	        AROSBootstrap.this.Server = new DisplayServer(AROSBootstrap.this, readfd, writefd);
 	        AROSBootstrap.this.Server.start();
 		}
+	}
+
+	private void Reset()
+	{
+		// Drop the bitmap and signal this to UI
+		Bitmap = null;
+		if (ui != null)
+			ui.Show(0, null);
 	}
 
 	// Make sure the activity is visible
@@ -131,7 +141,10 @@ public class AROSBootstrap extends Application
 			}
 
 			if (ui != null)
+			{
+				// Signal the view to update
 				ui.Show(params[0], Bitmap);
+			}
 
 			Server.ReplyCommand(cmd);
 			break;
@@ -168,7 +181,7 @@ public class AROSBootstrap extends Application
 	{
 		Server.ReplyCommand(cmd_Key, code, flags);
 	}
-
+	
     // This orders processing of a command from server
     class ServerCommand implements Runnable
     {
@@ -189,13 +202,32 @@ public class AROSBootstrap extends Application
     	}
     }
 
+    class WarmReboot implements Runnable
+    {
+    	public void run()
+    	{
+    		AROSBootstrap.this.Reset();
+    		AROSBootstrap.this.WarmBoot();
+    	}
+    }
+
+    class ColdReboot implements Runnable
+    {
+    	public void run()
+    	{
+    		AROSBootstrap.this.Reset();
+    		AROSBootstrap.this.ColdBoot();
+    	}
+    }
+
     static
     {
         System.loadLibrary("AROSBootstrap");
     }
 	
 	// libAROSBootstrap native methods
-    private native int Start(String dir, FileDescriptor rfd, FileDescriptor wfd);
+    private native int Load(String dir);
+    private native int Kick(FileDescriptor rfd, FileDescriptor wfd);
     private native ByteBuffer MapMemory(int addr, int size);
     public native int GetBitmap(Bitmap obj, int addr, int x, int y, int width, int height, int bytesPerLine);
 }

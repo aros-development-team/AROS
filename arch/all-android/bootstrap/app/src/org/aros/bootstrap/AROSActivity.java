@@ -167,7 +167,11 @@ class DisplayView extends RelativeLayout
 		main.DisplayHeight = h;
 		Log.d("AROS.UI", "Screen size set: " + w + "x" + h);		
 
-		main.Boot();
+		// The activity may be flushed by Android OS if it's hidden,
+		// in this case it will be recreated from scratch while the AROS is already running.
+		/// Here we detect this and perform booting only when needed.
+		if (!main.started)
+			main.ColdBoot();
 	}
 
 	@Override
