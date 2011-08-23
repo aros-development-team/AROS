@@ -1,40 +1,63 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
     Lang: English
 */
 
-#include <aros/debug.h>
+
+
+/*********************************************************************************
+  Not a very good example at all. But at least it should prove that
+  AROS is able to use camd-drivers. -Kjetil M.
+  
+  Compiling it up is easy. Its just like any other AROS-program, showed
+  by this makefile:
+  
+"
+debugdriver: debugdriver.o
+    gcc -nostartfiles -nostdlib -Xlinker -i ../../lib/startup.o debugdriver.o -o debugdriver -L../../lib -larossupport -lamiga -larosc -larosm
+
+debugdriver.o: debugdriver.c makefile
+    gcc debugdriver.c -c -I../../Include -Wall
+"
+
+***********************************************************************************/
+
+
 #include <exec/types.h>
 #include <midi/camddevices.h>
+#include <hidd/unixio.h>
+#include <hidd/unixio_inline.h>
 #include <proto/exec.h>
-#include <proto/hostlib.h>
 #include <proto/oop.h>
+#include <libcore/compiler.h>
+
+#define D(x)
 
 #define NUMPORTS 1
 
-struct LibCInterface
-{
-    int	 (*open)(char *path, int oflag, ...);
-    int	 (*close)(int filedes);
-    long (*write)(int fildes, const void *buf, long nbyte);
-};
-
 struct ExecBase *SysBase;
-APTR HostLibBase;
-APTR LibcHandle = NULL;
-struct LibCInterface *LibcIFace = NULL;
-int midi_fd;
+struct Library  *OOPBase;
 
-int __startup Main(void)
+OOP_Object *unixio;
+int 	    midi_fd;
+
+int main(void)
 {
     /* A camd mididriver is not supposed to be run directly, so we return an error. */
+
     return -1;
 }
 
+
+
 /*    Prototypes    */
+
+static const char version[];
+
+extern void kprintf(char *bla,...);
 
 BOOL ASM Init(REG(a6) APTR sysbase);
 void Expunge(void);
@@ -62,7 +85,7 @@ const struct MidiDeviceData mididevicedata =
 {
     MDD_Magic,
     "hostmidi",
-    "HostMidi V41.0 (c) 2001 AROS - The AROS Research OS",
+    (char *)&version[6],
     41,
     0,
     Init,
@@ -73,71 +96,72 @@ const struct MidiDeviceData mididevicedata =
     1
 };
 
-static const char *libc_symbols[] = {
-    "open",
-    "close",
-    "write",
-    NULL
-};
+static const char version[] = "$VER: HostMidi V41.0 (c) 2001 AROS - The AROS Research OS";
+
+/****************************************************************
+   We only store sysbase, thats all we need in this example.
+   Otherwise, you may want to open libraries, set number of
+   ports, obtain interrupts, etc.
+ ***************************************************************/
 
 SAVEDS ASM BOOL Init(REG(a6) APTR sysbase)
 {
-    ULONG r = 0;
-
     SysBase=sysbase;
 
     D(kprintf("hostmidi_init\n"));
 
-    HostLibBase = OpenResource("hostlib.resource");
-    if (!HostLibBase)
-    	return FALSE;
+    OOPBase = OpenLibrary("oop.library", 0);
+    if (!OOPBase) return FALSE;
 
-    LibcHandle = HostLib_Open("libc.so.6", NULL);
-    /* We can also work under BSD, there's no libc.so.6 but just libc.so */
-    if (!LibcHandle)
-    	LibcHandle = HostLib_Open("libc.so", NULL);
-
-    if (!LibcHandle)
-    	return FALSE;
-
-    LibcIFace = (struct LibCInterface *)HostLib_GetInterface(LibcHandle, libc_symbols, &r); 
-    if ((!LibcIFace) || r)
+    unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
+    if (!unixio)
     {
-    	HostLib_Close(LibcHandle, NULL);
-    	return FALSE;
+        CloseLibrary(OOPBase);
+        return FALSE;
     }
 
-    midi_fd = LibcIFace->open("/dev/midi", 02, 0); /* O_RDWR */
+    midi_fd = Hidd_UnixIO_OpenFile(unixio, "/dev/midi",
+    	    	    	    	   02, /* O_RDWR */
+				   0, /* mode */
+				   NULL); 
 
-    if (midi_fd == -1)
+    if (!midi_fd)
     {
-    	HostLib_DropInterface((APTR *)LibcIFace);
-    	HostLib_Close(LibcHandle, NULL);
-
+    	OOP_DisposeObject(unixio);
+        CloseLibrary(OOPBase);
+	
 	return FALSE;
+	
     }
     
     return TRUE;
 }
 
+/****************************************************************
+   Nothing to do here. Normally, you may want to free memory,
+   close some libraries, free some interrupts, etc.
+*****************************************************************/
 void Expunge(void)
 {
-    if (!HostLibBase)
-	return;
+    if (midi_fd) Hidd_UnixIO_CloseFile(unixio, midi_fd, NULL);
+    if (unixio) OOP_DisposeObject(unixio);
 
-    if (LibcIFace)
-    {
-    	if (midi_fd != -1)
-    	    LibcIFace->close(midi_fd);
-    	HostLib_DropInterface((APTR *)LibcIFace);
-    }
-
-    if (LibcHandle)
-    	HostLib_Close(LibcHandle, NULL);
+    CloseLibrary(OOPBase);
 }
+
+
 
 ULONG (ASM *TransmitFunc)(REG(a2) APTR userdata);
 APTR UserData[NUMPORTS];
+
+
+
+/****************************************************************
+   Normally, you may want to start an interrupt, or signal another task,
+   or send a message to a port, that calls the transmit-function.
+   But for this small example, sending the signal directly via
+   kprintf is excactly what we want to do.
+****************************************************************/
 
 SAVEDS ASM void ActivateXmit(REG(a2) APTR userdata,ULONG REG(d0) portnum)
 {
@@ -145,6 +169,7 @@ SAVEDS ASM void ActivateXmit(REG(a2) APTR userdata,ULONG REG(d0) portnum)
   
     for(;;)
     {
+    	int written, errno;
 	char buf[1];
 	
     	data=(TransmitFunc)(userdata);
@@ -152,7 +177,8 @@ SAVEDS ASM void ActivateXmit(REG(a2) APTR userdata,ULONG REG(d0) portnum)
     	if(data==0x100) return;    
 
     	buf[0] = data;
-	LibcIFace->write(midi_fd, buf, 1);
+	
+        written = Hidd_UnixIO_WriteFile(unixio, midi_fd, buf, 1, &errno);
     }
 }
 
