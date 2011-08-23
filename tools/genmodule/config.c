@@ -499,11 +499,14 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             {
             case LIBRARY:
             case RESOURCE:
-            case USBCLASS:
                 cfg->options |= OPTION_INCLUDES;
                 break;
 
             case HANDLER:
+            case MCC:
+            case MUI:
+            case MCP:
+            case USBCLASS:
             	cfg->options |= OPTION_NOINCLUDES;
                 break;
 
@@ -514,12 +517,9 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
                     || strcmp(cfg->libbasetypeptrextern, "struct Device *") != 0
                 ) ? OPTION_INCLUDES : OPTION_NOINCLUDES;
                 break;
-                
+
             case GADGET:
             case DATATYPE:
-            case MCC:
-            case MUI:
-            case MCP:
             case HIDD:
                 cfg->options |= (
                     (cfg->funclist != NULL)
@@ -539,8 +539,30 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
          */
         if(!((cfg->options & OPTION_STUBS) || (cfg->options & OPTION_NOSTUBS)))
         {
-            cfg->options |= (cfg->funclist != NULL) ?
-                OPTION_STUBS : OPTION_NOSTUBS;
+            switch (cfg->modtype)
+            {
+            case LIBRARY:
+	        cfg->options |= (cfg->funclist != NULL) ? OPTION_STUBS : OPTION_NOSTUBS;
+                break;
+
+	    case USBCLASS:
+            case RESOURCE:
+            case GADGET:
+            case DEVICE:
+            case DATATYPE:
+            case MCC:
+            case MUI:
+            case MCP:
+            case HIDD:
+            case HANDLER:
+                cfg->options |= OPTION_NOSTUBS;
+                break;
+	
+            default:
+                fprintf(stderr, "Internal error writemakefile: unhandled modtype for stubs\n");
+                exit(20);
+                break;
+            }
         }
     
         /* If no indication was given for generating autoinit code or not
@@ -551,10 +573,10 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             switch (cfg->modtype)
             {
             case LIBRARY:
-            case USBCLASS:
                 cfg->options |= OPTION_AUTOINIT;
                 break;
-                
+
+	    case USBCLASS:
             case RESOURCE:
             case GADGET:
             case DEVICE:
