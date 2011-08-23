@@ -32,11 +32,17 @@ struct uioInterrupt
     void	   *handlerData;
 };
 
-/* (Semi)-public part of unixio.hidd library base */
+/*
+ * (Semi)-public part of unixio.hidd library base.
+ * Normally you don't need to access it at all. However it can be
+ * useful if you want to use more specific operations on filedescriptors.
+ * For example emul-handler needs this.
+ */
 struct UnixIOBase
 {
     struct Library uio_Library;		/* Library node				  */
     APTR	   uio_LibcHandle;	/* hostlib.resource's handle to host libc */
+    int		  *uio_ErrnoPtr;	/* Pointer to host's errno variable	  */
 };
 
 enum {

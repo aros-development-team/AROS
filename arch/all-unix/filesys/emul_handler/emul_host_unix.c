@@ -76,24 +76,18 @@ static const char *libcSymbols[] =
     "getcwd",
     "getenv",
     "poll",
+#ifdef HOST_OS_linux
+    "__xstat",
+    "__lxstat",
+#else
+    "stat" INODE64_SUFFIX,
+    "lstat" INODE64_SUFFIX,
+#endif
 #ifndef HOST_OS_android
     "seekdir",
     "telldir",
     "getpwent",
     "endpwent",
-#endif
-#ifdef HOST_OS_linux
-    "__errno_location",
-    "__xstat",
-    "__lxstat",
-#else
-#ifdef HOST_OS_android
-    "__errno",
-#else
-    "__error",
-#endif
-    "stat" INODE64_SUFFIX,
-    "lstat" INODE64_SUFFIX,
 #endif
     NULL
 };
@@ -127,7 +121,7 @@ static int host_startup(struct emulbase *emulbase)
     if (!UtilityBase)
 	return FALSE;
 
-    emulbase->pdata.em_UnixIOBase = (struct UnixIOBase *)OpenLibrary("unixio.hidd", 34);
+    emulbase->pdata.em_UnixIOBase = (struct UnixIOBase *)OpenLibrary("unixio.hidd", 43);
     if (!emulbase->pdata.em_UnixIOBase)
     	return FALSE;
 
@@ -145,17 +139,19 @@ static int host_startup(struct emulbase *emulbase)
 
     D(bug("[EmulHandler] %lu unresolved symbols\n", r));
     DUMP_INTERFACE
-    if (r) {
+    if (r)
+    {
     	CloseLibrary(UtilityBase);
     	return FALSE;
     }
 
+    /* Cache errno pointer for faster access */
+    emulbase->pdata.errnoPtr = emulbase->pdata.em_UnixIOBase->uio_ErrnoPtr;
+
+    /* Create handles for emergency console */
     emulbase->eb_stdin  = CreateStdHandle(STDIN_FILENO);
     emulbase->eb_stdout = CreateStdHandle(STDOUT_FILENO);
     emulbase->eb_stderr = CreateStdHandle(STDERR_FILENO);
-
-    emulbase->pdata.errnoPtr = emulbase->pdata.SysIFace->__error();
-    AROS_HOST_BARRIER
 
     return TRUE;
 }

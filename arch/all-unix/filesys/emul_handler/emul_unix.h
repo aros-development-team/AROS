@@ -56,13 +56,6 @@ struct LibCInterface
     char	  *(*getcwd)(char *buf, size_t size);
     char	  *(*getenv)(const char *name);
     int     	   (*poll)(struct pollfd *fds, nfds_t nfds, int timeout);
-#ifndef HOST_OS_android
-    void	   (*seekdir)(DIR *dirp, long loc);
-    long	   (*telldir)(DIR *dirp);
-    struct passwd *(*getpwent)(void);
-    void	   (*endpwent)(void);
-#endif
-    int		  *(*__error)(void);
 #ifdef HOST_OS_linux
     int		   (*__xstat)(int ver, char *path, struct stat *buf);
     int		   (*__lxstat)(int ver, const char *path, struct stat *buf);
@@ -71,6 +64,12 @@ struct LibCInterface
 #else
     int		   (*stat)(char *path, struct stat *buf);
     int		   (*lstat)(const char *path, struct stat *buf);
+#endif
+#ifndef HOST_OS_android
+    void	   (*seekdir)(DIR *dirp, long loc);
+    long	   (*telldir)(DIR *dirp);
+    struct passwd *(*getpwent)(void);
+    void	   (*endpwent)(void);
 #endif
 };
 
