@@ -5,6 +5,10 @@
    via sys/stat.h */
 #undef __unused
 
+#include <exec/libraries.h>
+#include <hidd/unixio.h>
+#include <oop/oop.h>
+
 struct LibCInterface;
 
 struct PlatformHandle
@@ -14,14 +18,16 @@ struct PlatformHandle
 
 struct Emul_PlatformData
 {
-    void		   *libcHandle;
-    struct LibCInterface   *SysIFace;
-    int			   *errnoPtr;	/* Pointer to host's errno		 */
-    int			    my_pid;	/* AROS process ID			 */
-    APTR		    em_UtilityBase;
+    OOP_Object		 *unixio;	  /* UnixIO object	     */
+    struct LibCInterface *SysIFace;	  /* Libc interface	     */
+    int			 *errnoPtr;	  /* Pointer to host's errno */
+    struct Library	 *em_OOPBase;	  /* Library bases	     */
+    struct UnixIOBase	 *em_UnixIOBase;
+    struct Library 	 *em_UtilityBase;
 };
 
-/* Remove this hack later in the ABIv1 development cycle */
+/* Remove this later in the ABIv1 development cycle */
+#define OOPBase     (emulbase->pdata.em_OOPBase)
 #define UtilityBase (emulbase->pdata.em_UtilityBase)
 
 #endif /* RESOURCES_EMUL_HOST_H */
