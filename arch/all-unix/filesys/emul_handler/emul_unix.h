@@ -10,25 +10,15 @@
 #include <time.h>
 #include <utime.h>
 
-/* Android is not a true Linux ;-) */
-#ifdef HOST_OS_android
-#undef HOST_OS_linux
-#include <sys/vfs.h>
-#endif
-
 #ifdef HOST_OS_linux
 #include <sys/vfs.h>
-#define LIBC_NAME "libc.so.6"
 #else
 #include <sys/mount.h>
 #endif
 
-#ifdef HOST_OS_darwin
-#define LIBC_NAME "libSystem.dylib"
-#endif
-
-#ifndef LIBC_NAME
-#define LIBC_NAME "libc.so"
+/* Android is not a true Linux ;-) */
+#ifdef HOST_OS_android
+#undef HOST_OS_linux
 #endif
 
 #pragma pack()
@@ -65,10 +55,7 @@ struct LibCInterface
     time_t	   (*mktime)(struct tm *timeptr);
     char	  *(*getcwd)(char *buf, size_t size);
     char	  *(*getenv)(const char *name);
-    int		   (*fcntl)(int fd, int cmd, ...);
     int     	   (*poll)(struct pollfd *fds, nfds_t nfds, int timeout);
-    int		   (*kill)(pid_t pid, int sig);
-    int		   (*getpid)(void);
 #ifndef HOST_OS_android
     void	   (*seekdir)(DIR *dirp, long loc);
     long	   (*telldir)(DIR *dirp);

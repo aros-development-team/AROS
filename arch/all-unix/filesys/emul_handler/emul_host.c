@@ -26,11 +26,13 @@
 #define DMOUNT(x)
 #define DOPEN(x)
 #define DREAD(x)
+#define DWRITE(x)
 #define DSEEK(x)
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <dos/dosasl.h>
+#include <hidd/unixio_inline.h>
 #include <utility/date.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -69,10 +71,9 @@ static LONG u2a[][2]=
     { 0           , 0            	     }
 };
 
-static LONG err_u2a(struct emulbase *emulbase)
+static LONG errno_u2a(int err)
 {
     ULONG i;
-    int err = *emulbase->pdata.errnoPtr;
 
     for (i = 0; i < sizeof(u2a)/sizeof(u2a[0]); i++)
     {
@@ -85,6 +86,11 @@ static LONG err_u2a(struct emulbase *emulbase)
 #else
     return ERROR_UNKNOWN;
 #endif
+}
+
+static inline LONG err_u2a(struct emulbase *emulbase)
+{
+    return errno_u2a(*emulbase->pdata.errnoPtr);
 }
 
 /*********************************************************************************************/
@@ -535,70 +541,61 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
     HostLib_Unlock();
 }
 
-static inline int ReadReady(int fd, struct emulbase *emulbase)
-{
-    int res;
-    struct pollfd pfd = {fd, POLLIN, 0};
-
-    res = emulbase->pdata.SysIFace->poll(&pfd, 1, 0);
-    AROS_HOST_BARRIER
-
-    return res;
-}
-
 LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG len, SIPTR *err)
 {
-    SIPTR error = 0;
+    SIPTR error;
     int res;
 
     DREAD(bug("[emul] Reading %u bytes from fd %ld\n", len, fh->fd));
 
+    /* Wait until the fd is ready to read. We reuse UnixIO capabilities for this. */
+    error = Hidd_UnixIO_Wait(emulbase->pdata.unixio, (long)fh->fd, vHidd_UnixIO_Read);
+    if (error)
+    {
+    	*err = errno_u2a(error);
+    	return -1;
+    }
+
     HostLib_Lock();
 
-    do
-    {
-    	/* FIXME: Don't busyloop, wait for SIGIO here */
-    	res = ReadReady((long)fh->fd, emulbase);
-    } while (res == 0);
+    DREAD(bug("[emul] FD %ld ready for read\n", fh->fd));
 
-    if (res > 0)
+    if (fh->type & FHD_STDIO)
     {
-	DASYNC(bug("[emul] FD %ld ready for read\n", fh->fd));
+	int res2;
+	struct pollfd pfd = {(long)fh->fd, POLLIN, 0};
 
-	if (fh->type & FHD_STDIO)
+	/*
+	 * When reading from stdin, we have to read character-by-character until
+	 * we read as many characters as we wanted, or there's nothing more to read.
+	 * Without this read() can return an error. For example this happens on Darwin
+	 * when the shell requests a single read of 208 bytes.
+	 */
+	res = 0;
+	do
 	{
-	    int res2;
-
-	    /*
-	     * When reading from stdin, we have to read character-by-character until
-	     * we read as many characters as we wanted, or there's nothing more to read.
-	     * Without this read() can return an error. For example this happens on Darwin
-	     * when the shell requests a single read of 208 bytes.
-	     */
-	    res = 0;
-	    do
-	    {
-	    	res2 = emulbase->pdata.SysIFace->read((long)fh->fd, buff++, 1);
-	    	AROS_HOST_BARRIER
-
-	    	if (res2 == -1)
-	    	    break;
-
-	    	if (res++ == len)
-	    	    break;
-
-	    	res2 = ReadReady((long)fh->fd, emulbase);
-	    } while (res2 > 0);
+	    res2 = emulbase->pdata.SysIFace->read((long)fh->fd, buff++, 1);
+	    AROS_HOST_BARRIER
 
 	    if (res2 == -1)
-	    	res = -1;
-	}
-	else
-	{
-	    /* It's not stdin. Read as much as we need to. */
-	    res = emulbase->pdata.SysIFace->read((long)fh->fd, buff, len);
+	        break;
+
+	    if (res++ == len)
+	        break;
+
+    	    res2 = emulbase->pdata.SysIFace->poll(&pfd, 1, 0);
 	    AROS_HOST_BARRIER
-	}
+
+	} while (res2 > 0);
+
+	if (res2 == -1)
+	    res = -1;
+    }
+    else
+    {
+	/* It's not stdin. Read as much as we need to. */
+	res = emulbase->pdata.SysIFace->read((long)fh->fd, buff, len);
+	AROS_HOST_BARRIER
     }
 
     if (res == -1)
@@ -615,7 +612,9 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
 LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, ULONG len, SIPTR *err)
 {
     SIPTR error = 0;
-    
+
+    DWRITE(bug("[emul] Writing %u bytes to fd %ld\n", len, fh->fd));
+
     HostLib_Lock();
 
     len = emulbase->pdata.SysIFace->write((IPTR)fh->fd, buff, len);

@@ -27,7 +27,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
-#include <proto/kernel.h>
+#include <proto/oop.h>
 #include <proto/utility.h>
 
 #include "emul_intern.h"
@@ -48,7 +48,8 @@
 #define DUMP_INTERFACE
 #endif
 
-static const char *libcSymbols[] = {
+static const char *libcSymbols[] =
+{
     "open",
     "close",
     "closedir",
@@ -74,10 +75,7 @@ static const char *libcSymbols[] = {
     "mktime",
     "getcwd",
     "getenv",
-    "fcntl",
     "poll",
-    "kill",
-    "getpid",
 #ifndef HOST_OS_android
     "seekdir",
     "telldir",
@@ -120,22 +118,27 @@ static int host_startup(struct emulbase *emulbase)
 {
     ULONG r = 0;
 
+    OOPBase = OpenLibrary("oop.library", 0);
+    if (!OOPBase)
+    	return FALSE;
+
     UtilityBase = OpenLibrary("utility.library", 0);
     D(bug("[EmulHandler] UtilityBase = %p\n", UtilityBase));
     if (!UtilityBase)
 	return FALSE;
 
-    emulbase->pdata.libcHandle = HostLib_Open(LIBC_NAME, NULL);
-    D(bug("[EmulHandler] HostLib = %p\n", emulbase->pdata.libcHandle));
-    if (!emulbase->pdata.libcHandle) {
-    	CloseLibrary(UtilityBase);
+    emulbase->pdata.em_UnixIOBase = (struct UnixIOBase *)OpenLibrary("unixio.hidd", 34);
+    if (!emulbase->pdata.em_UnixIOBase)
     	return FALSE;
-    }
 
-    emulbase->pdata.SysIFace = (struct LibCInterface *)HostLib_GetInterface(emulbase->pdata.libcHandle, libcSymbols, &r);
+    emulbase->pdata.unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
+    if (!emulbase->pdata.unixio)
+    	return FALSE;
+
+    emulbase->pdata.SysIFace = (struct LibCInterface *)HostLib_GetInterface(emulbase->pdata.em_UnixIOBase->uio_LibcHandle, libcSymbols, &r);
     if (!emulbase->pdata.SysIFace)
     {
-        D(bug("[EmulHandler] Unable go get host-side library interface!\n"));
+        D(bug("[EmulHandler] Unable to get host-side library interface!\n"));
     	CloseLibrary(UtilityBase);
     	return FALSE;
     }
@@ -151,8 +154,6 @@ static int host_startup(struct emulbase *emulbase)
     emulbase->eb_stdout = CreateStdHandle(STDOUT_FILENO);
     emulbase->eb_stderr = CreateStdHandle(STDERR_FILENO);
 
-    emulbase->pdata.my_pid   = emulbase->pdata.SysIFace->getpid();
-    AROS_HOST_BARRIER
     emulbase->pdata.errnoPtr = emulbase->pdata.SysIFace->__error();
     AROS_HOST_BARRIER
 
@@ -168,9 +169,10 @@ static int host_cleanup(struct emulbase *emulbase)
     if (emulbase->pdata.SysIFace)
     	HostLib_DropInterface((APTR *)emulbase->pdata.SysIFace);
 
-    if (emulbase->pdata.libcHandle)
-    	HostLib_Close(emulbase->pdata.libcHandle, NULL);
+    /* UnixIO v42 object is a singletone, we don't need to dispose it */
 
+    CloseLibrary(OOPBase);
+    CloseLibrary(&emulbase->pdata.em_UnixIOBase->uio_Library);
     CloseLibrary(UtilityBase);
 
     return TRUE;
