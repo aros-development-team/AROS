@@ -20,6 +20,25 @@
 
 #define D(x) x
 
+/*
+ * This is Android-hosted kicker.
+ * Android environment is the most alien one to AROS. It's proved to be impossible
+ * to run AROS inside JNI because AROS task switching is no friend to threads.
+ * However it's possible to run AROS as a separate process. This way it will be
+ * completely detached and live on its own.
+ *
+ * The bootstrap itself still runs in JVM context, this makes it easier to
+ * implement DisplayError().
+ */
+
+/* Interface with the display driver */
+int DisplayPipe;
+int InputPipe;
+
+/* This is where we remember our data */
+static int (*EntryPoint)() = NULL;
+static struct TagItem *BootMsg = NULL;
+
 static void childHandler(int sig)
 {
     int i;
@@ -40,24 +59,47 @@ static void childHandler(int sig)
 }
 
 /*
- * This is Android-hosted kicker.
- * Android environment is the most alien one to AROS. It's proved to be impossible
- * to run AROS inside JNI because AROS task switching is no friend to threads.
- * However it's possible to run AROS as a separate process. This way it will be
- * completely detached and live on its own.
- * AROS display driver needs to communicate to Java user interface via pipes,
- * UNIX sockets, or some other similar mechanism. This is still a TODO.
- *
- * The bootstrap itself still runs in JVM context, this makes it easier to
- * implement DisplayError().
+ * Just remember arguments and return with zero returncode.
+ * This will signal to Java side that preparation (Load() method)
+ * completed succesfully. Next Java side can execute Kick() method
+ * in order to actually run AROS.
+ * This separation helps to implement warm restart. Kick() can be executed
+ * multiple times.
  */
 int kick(int (*addr)(), struct TagItem *msg)
+{
+    EntryPoint = addr;
+    BootMsg    = msg;
+
+    return 0;
+}
+
+/* 
+ * The actual kicker.
+ * Similar to generic UNIX one, but uses SIGCHILD handler instead of waitpid()
+ * in order to detect when AROS exits.
+ * When this method succesfully exits, a display pipe server is run on Java side.
+ */
+int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobject readfd, jobject writefd)
 {
     struct sigaction sa;
     int displaypipe[2];
     int inputpipe[2];
     int i;
     pid_t child;
+    jclass *class_fdesc = (*env)->GetObjectClass(env, readfd);
+    /*
+     * In Sun JVM this is 'fd' field, in Android it's 'descriptor'.
+     * This is the only place which can be considered a hack. I hope Android guys
+     * won't change this.
+     */
+    jfieldID field_fd = (*env)->GetFieldID(env, class_fdesc, "descriptor", "I");
+
+    if (!field_fd)
+    {
+    	DisplayError("Failed to set up pipe descriptor objects");
+    	return -1;
+    }
 
     sigemptyset(&sa.sa_mask);
     sa.sa_flags    = SA_RESTART;
@@ -102,16 +144,16 @@ int kick(int (*addr)(), struct TagItem *msg)
     	close(displaypipe[0]);
     	close(inputpipe[1]);
 
-        D(kprintf("[Bootstrap] entering kernel at 0x%p...\n", addr));
-        i = addr(msg, AROS_BOOT_MAGIC);
+        D(kprintf("[Bootstrap] entering kernel at 0x%p...\n", EntryPoint));
+        i = EntryPoint(BootMsg, AROS_BOOT_MAGIC);
         exit(i);
     }
 
     D(kprintf("[Bootstrap] AROS PID %d, bootstrap PID %d\n", child, getpid()));
 
     /* Set up server side of pipes */
-    DisplayPipe = displaypipe[0];
-    InputPipe   = inputpipe[1];
+    (*env)->SetIntField(env, readfd, field_fd, displaypipe[0]);
+    (*env)->SetIntField(env, writefd, field_fd, inputpipe[1]);
     close(displaypipe[1]);
     close(inputpipe[0]);
 
