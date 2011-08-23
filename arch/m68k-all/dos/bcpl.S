@@ -1048,14 +1048,14 @@ BCPL toupper        /* 12c, void, char */
     bclr	#5,%d0
     BRTS
 
-BCPL charcmp        /* 130, long , char1, char2 */
+BCPL charicmp        /* 130, long , char1, char2 */
     move.l	%d2,%d0
     bclr	#5,%d0
     bclr	#5,%d1
     sub.l	%d1,%d0
     BRTS
 
-BCPL strcmp         /* 134, long , @String1, @String2 */
+BCPL stricmp         /* 134, long , @String1, @String2 */
     movem.l	%d1-%d3/%a0-%a1,%sp@-
 
 #if BCPLSTRINGDEBUG
@@ -1513,7 +1513,13 @@ BCPL strcpy         /* 1cc, void, @src, @dest */
     move.l	%sp@+,%d2
     BRTS
 
-BCPLd runLoadedCode  /* 1e4, void, @codeseg, stackbytes, @cmdline, cmdlinelength */
+BCPL runCommand    /* 1e4, void, @codeseg, stacklongs, @cmdline, cmdlinelength */
+    movem.l     %a0-%a1/%a6,%sp@-
+    lsl.l       #2,%d2
+    lsl.l       #2,%d3
+    move.l      %a2@(BCPL_DOSBase),%a6
+    jsr         %a6@(84 * -6)   /* DOS/RunCommand() */
+    movem.l     %sp@+,%a0-%a1/%a6
     BRTS
 
 BCPL lock_1ec       /* 1ec, FileLock ^, &name */
@@ -1573,7 +1579,47 @@ BCPLd timerIO        /* 1fc, void, command, @IOStdReq, secs, usecs */
 BCPLd settime        /* 200, void, @timeval */
     BRTS
 
-/*      214 - contains CLI command */
+    /*
+     * DosPacket can be NULL
+     * On error, return DOSFALSE, and put 
+     * @DosPacket in IoErr.
+     */
+BCPL cliInit         /* 214, BOOL, @DosPacket */
+    movem.l     %a0-%a1/%a6,%sp@-
+    move.l      %d1,%d2         /* Save D1 in D2 */
+    lsl.l       #2,%d1
+    move.l      %d1,%a0
+    move.l      %a2@(BCPL_DOSBase),%a6
+    jsr         %a6@(155 * -6)  /* DOS/CliInitNewcli() */
+
+    /* Is bit31 set? */
+    tst.l       %d0
+    ble         .cliInit_done
+
+    /* Check IoErr() against our process base */
+    move.l      SysBase,%a6
+    sub.l       %a1,%a1
+    jsr         %a6@(FindTask)
+    move.l      %d0,%d3
+
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(22 * -6)	/* DOS/IoErr() */
+
+    /* Does FindTask(NULL) == IoErr() ? */
+    cmp.l       %d0,%d3
+    bne         .cliInit_ok
+
+    /* Set IoErr to the Dos Packet */
+    move.l      %d2,%d1
+    jsr		%a6@(77 * -6) /* DOS/SetIoErr */
+    moveq.l     #0,%d0
+    bra         .cliInit_done
+
+.cliInit_ok:
+    moveq.l     #-1,%d0
+.cliInit_done:
+    movem.l     %sp@+,%a0-%a1/%a6
+    BRTS
 
 BCPL findCLI        /* 218, CommandLineInterpreter ^,  */
     movem.l	%a0-%a1/%a6,%sp@-
