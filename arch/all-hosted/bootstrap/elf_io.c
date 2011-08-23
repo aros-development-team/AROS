@@ -49,7 +49,9 @@ void FreeKernelList(void)
 	n2 = n->Next;
 	free(n);
     }
-    /* We do not reset list pointers because the list will never be reused */
+
+    /* Reset list pointers. The list can ocassionally be reused (on Android, for example) */
+    LastELF = (struct ELFNode *)&FirstELF;
 }
 
 void *open_file(struct ELFNode *n, unsigned int *err)
