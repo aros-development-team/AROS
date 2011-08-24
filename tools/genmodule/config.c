@@ -523,7 +523,6 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             case HIDD:
                 cfg->options |= (
                     (cfg->funclist != NULL)
-                    || (cfg->cdeflines != NULL)
                 ) ? OPTION_INCLUDES : OPTION_NOINCLUDES;
                 break;
 	

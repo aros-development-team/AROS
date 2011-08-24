@@ -8,7 +8,6 @@
 
 static void writedefineregister(FILE *, struct functionhead *, struct config *);
 static void writedefinevararg(FILE *, struct functionhead *, struct config *);
-static void writedefinestack(FILE *, struct functionhead *, struct config *);
 static void writealiases(FILE *, struct functionhead *, struct config *);
 
 void writeincdefines(struct config *cfg)
