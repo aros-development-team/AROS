@@ -16,7 +16,7 @@ APP_FILES := res src .classpath .project AndroidManifest.xml
 kernel-bootstrap-android-setup:
 	@$(ECHO) Setting up Android project...
 	@cd $(GENDIR)/$(CURDIR); \
-	for f in $(APP_FILES); do ln -sf $(SRCDIR)/$(CURDIR)/app/$$f app/$$f; done; \
+	for f in $(APP_FILES); do ln -nsf $(SRCDIR)/$(CURDIR)/app/$$f app/$$f; done; \
 	$(ANDROID) update project --path app
 
 %common
