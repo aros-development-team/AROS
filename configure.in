@@ -783,8 +783,13 @@ ios)
     AC_PATH_PROG(android_tool, $android_tool)
     AROS_REQUIRED(android,$android_tool)
 
+    AC_PATH_PROG(ant, ant)
+    if test "$ant" = ""; then
+    	AC_MSG_WARN([Apache Ant is missing, Java bootstrap can't be built automatically])
+    fi
+
     dnl MSYS bash can't run .bat files directly, then need to be started via cmd.exe
-    if test $host_os = "mingw32"; then
+    if test "$host_os" = "mingw32"; then
 	android_tool="cmd //c $android_tool"
     fi
 
@@ -2276,6 +2281,7 @@ AC_SUBST(aros_host_aclocal)
 AC_SUBST(aros_host_autoconf)
 AC_SUBST(aros_host_autoheader)
 AC_SUBST(aros_host_automake)
+AC_SUBST(ant)
 
 # Target Related
 AC_SUBST(aros_target_guitheme)
