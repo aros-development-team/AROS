@@ -9,6 +9,7 @@
 
 AROS_SLIB_ENTRY(KrnIsSuper, Kernel, 13):
 	li	%r3, SC_ISSUPERSTATE
+	sc
 	blr
 
 	.size  AROS_SLIB_ENTRY(KrnIsSuper, Kernel, 13), .-AROS_SLIB_ENTRY(KrnIsSuper, Kernel, 13)

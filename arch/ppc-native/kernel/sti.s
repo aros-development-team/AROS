@@ -9,6 +9,7 @@
 
 AROS_SLIB_ENTRY(KrnSti, Kernel, 10):
 	li	%r3, SC_STI
+	sc
 	blr
 
 	.size  AROS_SLIB_ENTRY(KrnSti, Kernel, 10), .-AROS_SLIB_ENTRY(KrnSti, Kernel, 10)
