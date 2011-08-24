@@ -16,6 +16,9 @@ void writefd(struct config *cfg)
     char *variable;
     char *lower;
 
+    if (!cfg->funclist)
+    	return;
+
     snprintf(line, 255, "%s/%s_lib.fd", cfg->gendir, cfg->modulename);
 
     out = fopen(line, "w");
