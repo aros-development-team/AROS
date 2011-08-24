@@ -10,14 +10,22 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-unix/bootstrap \
 	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=linux-android \
 	files=$(FILES) compiler=kernel
 
-APP_FILES := res src .classpath .project AndroidManifest.xml
+APP_DIRS  := res src
+APP_FILES := .classpath .project build.properties AndroidManifest.xml
 
 #MM
 android-bootstrap-setup:
 	@$(ECHO) Setting up Android project...
 	@cd $(GENDIR)/$(CURDIR); \
-	for f in $(APP_FILES); do ln -nsf $(SRCDIR)/$(CURDIR)/app/$$f app/$$f; done; \
+	for f in $(APP_DIRS) $(APP_FILES); do ln -nsf $(SRCDIR)/$(CURDIR)/app/$$f app/$$f; done; \
 	$(ANDROID) update project --path app --name AROSBootstrap
+
+android-bootstrap-ant-build:
+	@$(ECHO) Buiding Android application...
+	@cd $(GENDIR)/$(CURDIR)/app; $(ANT) release
+
+android-bootstrap-no-ant:
+	@$(ECHO) Apache Ant is not installed, Android bootstrap is not built.
 
 ifeq ($(ANT),)
     ANT_TARGET := android-bootstrap-no-ant
@@ -27,12 +35,5 @@ endif
 
 #MM
 android-bootstrap-build : $(ANT_TARGET)
-
-android-bootstrap-ant-build:
-	@$(ECHO) Buiding Android application...
-	@cd $(GENDIR)/$(CURDIR)/app; $(ANT) release
-
-android-bootstrap-no-ant:
-	@$(ECHO) Apache Ant is not installed, Android bootstrap is not built.
 
 %common
