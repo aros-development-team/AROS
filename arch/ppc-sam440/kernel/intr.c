@@ -166,40 +166,6 @@ AROS_LH1(void, KrnRemExceptionHandler,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(void, KrnCli,
-         struct KernelBase *, KernelBase, 9, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    asm volatile("li %%r3,%0; sc"::"i"(SC_CLI):"memory","r3");
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(void, KrnSti,
-         struct KernelBase *, KernelBase, 10, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    asm volatile("li %%r3,%0; sc"::"i"(SC_STI):"memory","r3");
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(void, KrnIsSuper,
-         struct KernelBase *, KernelBase, 13, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    register int retval asm ("r3");
-
-    asm volatile("sc":"=r"(retval):"0"(SC_ISSUPERSTATE):"memory");
-
-    return retval;
-
-    AROS_LIBFUNC_EXIT
-}
-
 void *__EXCEPTION_0_Prolog();
 void *__EXCEPTION_1_Prolog();
 void *__EXCEPTION_2_Prolog();
