@@ -2451,37 +2451,22 @@ AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h:config/host-conf.h.in)
 
 AC_CONFIG_COMMANDS([compiler_executable],
     [
-        prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
-	mkdir -p $prefix
-	prefix="${prefix}/${aros_target_cpu}-aros"
         prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
 	prefix3=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf
 
-	echo ${prefix}
 	echo ${prefix2}
 	echo ${prefix3}
 	chmod a+x ${prefix2}-gcc ${prefix2}-ld ${prefix3}-gcc
 
-	ln -sf ${prefix2}-gcc          ${prefix}-gcc
-	ln -sf ${prefix2}-ld           ${prefix}-ld
+        ln -sf $aros_target_as_ln$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
+        ln -sf $aros_target_nm_ln$aros_host_exe_suffix      ${prefix2}-nm$aros_host_exe_suffix
+        ln -sf $aros_target_ar_ln$aros_host_exe_suffix      ${prefix2}-ar$aros_host_exe_suffix
+        ln -sf $aros_target_ranlib_ln$aros_host_exe_suffix  ${prefix2}-ranlib$aros_host_exe_suffix
+        ln -sf $aros_target_objcopy_ln$aros_host_exe_suffix ${prefix2}-objcopy$aros_host_exe_suffix
+        ln -sf $aros_target_objdump_ln$aros_host_exe_suffix ${prefix2}-objdump$aros_host_exe_suffix
+        ln -sf $aros_target_strip_ln$aros_host_exe_suffix   ${prefix2}-strip$aros_host_exe_suffix
 
-        ln -sf $aros_target_as_ln$aros_host_exe_suffix      ${prefix}-as
-        ln -sf $aros_target_nm_ln$aros_host_exe_suffix      ${prefix}-nm
-        ln -sf $aros_target_ar_ln$aros_host_exe_suffix      ${prefix}-ar
-        ln -sf $aros_target_ranlib_ln$aros_host_exe_suffix  ${prefix}-ranlib
-        ln -sf $aros_target_objcopy_ln$aros_host_exe_suffix ${prefix}-objcopy
-        ln -sf $aros_target_objdump_ln$aros_host_exe_suffix ${prefix}-objdump
-        ln -sf $aros_target_strip_ln$aros_host_exe_suffix   ${prefix}-strip
-
-        ln -sf $aros_target_as_ln$aros_host_exe_suffix      ${prefix2}-as
-        ln -sf $aros_target_nm_ln$aros_host_exe_suffix      ${prefix2}-nm
-        ln -sf $aros_target_ar_ln$aros_host_exe_suffix      ${prefix2}-ar
-        ln -sf $aros_target_ranlib_ln$aros_host_exe_suffix  ${prefix2}-ranlib
-        ln -sf $aros_target_objcopy_ln$aros_host_exe_suffix ${prefix2}-objcopy
-        ln -sf $aros_target_objdump_ln$aros_host_exe_suffix ${prefix2}-objdump
-        ln -sf $aros_target_strip_ln$aros_host_exe_suffix   ${prefix2}-strip
-
-	ln -sf $aros_kernel_ld$aros_host_exe_suffix         ${prefix3}-ld
+	ln -sf $aros_kernel_ld$aros_host_exe_suffix         ${prefix3}-ld$aros_host_exe_suffix
     ],
     [
         aros_host_exe_suffix=${aros_host_exe_suffix}
