@@ -57,10 +57,10 @@ void writeincinline(struct config *cfg)
             }
             else /* libcall == STACK */
             {
-                /* NOP: nothing to be written for stack argument passing.
-                   The stubs in sthe link library will be used */
+            	/* This is very straightforward, reuse code from writeincdefines.c */
+            	writedefinestack(out, funclistit, cfg);
             }
-            
+
             writealiases(out, funclistit, cfg);
         }
     }

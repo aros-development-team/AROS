@@ -4,7 +4,43 @@
     
     Write the functionlist to a FD file for identify.library.
 */
+
 #include "genmodule.h"
+
+static void write_fd_func(FILE *out, struct functionhead *funclistit, unsigned int lvo)
+{
+    struct functionarg *arglistit;
+    char *variable;
+
+    if (funclistit->lvo > lvo + 1)
+    {
+        if (funclistit->lvo == lvo + 2)
+            fprintf(out, "private()()\n");
+        else
+            fprintf(out, "##bias %u\n", (funclistit->lvo - 1) * 6);
+    }
+
+    fprintf(out, "%s(", funclistit->name);
+
+    for (arglistit = funclistit->arguments;
+         arglistit!=NULL;
+         arglistit = arglistit->next)
+    {
+        /* Print a , separator when not the first function argument */
+        if (arglistit != funclistit->arguments)
+            fprintf(out, ",");
+
+        /* Print only variable name */
+        variable = arglistit->arg + strlen(arglistit->arg) - 1;
+        while ((variable >= arglistit->arg) &&
+               (isalnum(*variable) || (*variable == '_')))
+        {
+            variable--;
+        }
+        fprintf(out, "%s", variable + 1);
+    }
+    fprintf(out, ")(");
+}
 
 void writefd(struct config *cfg)
 {
@@ -13,7 +49,6 @@ void writefd(struct config *cfg)
     struct functionhead *funclistit;
     struct functionarg *arglistit;
     unsigned int lvo;
-    char *variable;
     char *lower;
 
     if (!cfg->funclist)
@@ -57,38 +92,11 @@ void writefd(struct config *cfg)
              funclistit = funclistit->next
         )
         {
-            if (funclistit->libcall == REGISTERMACRO)
+            switch (funclistit->libcall)
             {
-                if (funclistit->lvo > lvo + 1)
-                {
-                    if (funclistit->lvo == lvo + 2)
-                        fprintf(out, "private()()\n");
-                    else
-                        fprintf(out, "##bias %u\n", (funclistit->lvo - 1) * 6);
-                }
-            
-                fprintf(out, "%s(", funclistit->name);
-            
-                for (arglistit = funclistit->arguments;
-                     arglistit!=NULL;
-                     arglistit = arglistit->next
-                )
-                {
-                    /* Print a , separator when not the first function argument */
-                    if (arglistit != funclistit->arguments)
-                        fprintf(out, ",");
+            case  REGISTERMACRO:
+            	write_fd_func(out, funclistit, lvo);
 
-                    /* Print only variable name */
-                    variable = arglistit->arg + strlen(arglistit->arg) - 1;
-                    while ((variable >= arglistit->arg) &&
-                          (isalnum(*variable) || (*variable == '_')))
-                    {
-                        variable--;
-                    }
-                    fprintf(out, "%s", variable + 1);
-                }
-                fprintf(out, ")(");
-            
                 for (arglistit = funclistit->arguments;
                      arglistit != NULL;
                      arglistit = arglistit->next
@@ -107,6 +115,14 @@ void writefd(struct config *cfg)
                 fprintf(out, ")\n");
 
                 lvo = funclistit->lvo;
+            	break;
+            
+            case STACK:
+            	write_fd_func(out, funclistit, lvo);
+            	/* TODO: Currently all SYSV ABI vectors are base-less */
+            	fprintf(out, "sysv)\n");
+            	lvo = funclistit->lvo;
+            	break;
             }
         }
 
