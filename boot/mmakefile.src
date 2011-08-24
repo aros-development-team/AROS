@@ -11,7 +11,7 @@ include $(TOP)/config/make.cfg
 #MM- bootiso : boot bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT) bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- bootiso-quick : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)-quick bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
 
-#MM boot : boot-$(ARCH)-$(CPU) boot-$(ARCH) boot-$(FAMILY)
+#MM boot : boot-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) boot-$(ARCH)-$(CPU) boot-$(ARCH) boot-$(FAMILY)
 
 AROSBOOTSIGFILE := AROS.boot
 

@@ -26,3 +26,5 @@ endif
 
 #MM
 android-bootstrap-build : $(ANT_BUILD_TARGET)
+
+#MM- boot-linux-$(CPU)-android: kernel-bootstrap-hosted android-bootstrap-setup android-bootstrap-build
