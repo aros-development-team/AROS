@@ -51,7 +51,8 @@ PPMTOILBM   	:= @PPMTOILBM@
 SED		:= @SED@
 CHMOD		:= @CHMOD@
 
-# Android tool pathname (for Android target)
+# Android-specific
 ANDROID		:= @android_tool@
+ANT		:= @ant@
 
 # --------------------------------------------------------------------------
