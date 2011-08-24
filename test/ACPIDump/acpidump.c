@@ -100,7 +100,12 @@ int main(int argc, char **argv)
     printf("RSD PTR : 0x%p\n", ACPIBase->ACPIB_RSDP_Addr);
     
     if (dump)
-    	dumpData((unsigned char *)ACPIBase->ACPIB_RSDP_Addr, (ACPIBase->ACPIB_RSDP_Addr->revision < 2) ? 20 : 36);
+    {
+    	if (ACPIBase->ACPIB_RSDP_Addr > 0x1000)
+	    dumpData((unsigned char *)ACPIBase->ACPIB_RSDP_Addr, (ACPIBase->ACPIB_RSDP_Addr->revision < 2) ? 20 : 36);
+	else
+	    printf("Protected location, no dump available\n");
+    }
 
     dumpTable(ACPIBase->ACPIB_SDT_Addr, dump);
 
