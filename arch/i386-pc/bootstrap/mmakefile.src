@@ -6,6 +6,8 @@ FILES		:= bootstrap screen elf support
 LINKER1 = $(KERNEL_CC) $(KERNEL_CFLAGS) -nostartfiles -static-libgcc
 LINKER2 = $(CC) $(CFLAGS) -nostartfiles
 
+#MM- boot-pc-i386: kernel-bootstrap-i386
+
 #MM kernel-bootstrap-i386 : linklibs \
 #MM        kernel-kernel-kobj \
 #MM        kernel-exec-kobj \
