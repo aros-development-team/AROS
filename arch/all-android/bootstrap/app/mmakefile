@@ -1,0 +1,28 @@
+include $(TOP)/config/make.cfg
+
+APP_DIRS  := res src
+APP_FILES := .classpath .project build.properties AndroidManifest.xml
+
+#MM
+android-bootstrap-setup:
+	@$(ECHO) Setting up Android project...
+	@cd $(GENDIR)/$(CURDIR); \
+	for f in $(APP_DIRS) $(APP_FILES); do ln -nsf $(SRCDIR)/$(CURDIR)/$$f $$f; done; \
+	$(ANDROID) update project --path . --name AROSBootstrap
+
+android-bootstrap-ant-build:
+	@$(ECHO) Buiding Android application...
+	@cd $(GENDIR)/$(CURDIR); $(ANT) release
+	@$(CP) -f $(GENDIR)/$(CURDIR)/bin/AROSBootstrap-release.apk $(TARGETDIR)/AROSBootstrap.apk
+
+android-bootstrap-no-ant:
+	@$(ECHO) Apache Ant is not installed, Android bootstrap is not built.
+
+ifeq ($(ANT),)
+    ANT_BUILD_TARGET := android-bootstrap-no-ant
+else
+    ANT_BUILD_TARGET := android-bootstrap-ant-build
+endif
+
+#MM
+android-bootstrap-build : $(ANT_BUILD_TARGET)
