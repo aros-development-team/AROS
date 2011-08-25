@@ -16,9 +16,9 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/fcntl.h>
+//#include <sys/fcntl.h>
 
-#include <sys/signal.h>
+//#include <sys/signal.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/ioctl.h>
@@ -324,7 +324,7 @@ VOID LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    return;
 	}
     }
-    OOP_DoSuperMethod(cl, o, &msg.mID);
+    OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 static BOOL setup_linuxfb(struct linux_staticdata *fsd, int fbdev, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi)
