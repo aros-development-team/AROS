@@ -59,6 +59,11 @@
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
     LONG               offset = 0, ret;
 
+    if (fh == NULL) {
+	SetIoErr(ERROR_INVALID_LOCK);
+	return -1;
+    }
+
     /* If the file is in append mode, seeking is not allowed. */
     if( fh->fh_Flags & FHF_APPEND )
     {
