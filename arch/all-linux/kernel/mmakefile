@@ -1,0 +1,12 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- kernel-kernel-linux-i386 : kernel-$(AROS_TARGET_VARIANT)-sigcore kernel-linux-sigcore
+
+#MM
+kernel-linux-sigcore : $(GENINCDIR)/sigcore.h
+
+$(GENINCDIR)/sigcore.h : sigcore.h.$(AROS_TARGET_CPU).src mksigcore.sh
+	@$(ECHO) Generating $@...
+	@$(MKDIR) $(GENINCDIR)
+	@CC="$(KERNEL_CC)" CPU=$(AROS_TARGET_CPU) $(SHELL) $(SRCDIR)/$(CURDIR)/mksigcore.sh $(SRCDIR)/$(CURDIR) $(GENINCDIR)/sigcore.h

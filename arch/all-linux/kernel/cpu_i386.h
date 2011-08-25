@@ -2,10 +2,10 @@
 #define _SIGCORE_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Macros to handle unix signals
+    Desc: Macros to handle i386 Linux signals
     Lang: english
 */
 
@@ -100,7 +100,12 @@ typedef struct sigcontext regs_t;
     to store original signal mask. See x86-64 and PPC implementation
     of these macros for examples.
 */
+#ifdef HOST_OS_android
+/* In Android's Bionic sigset_t is simply unsigned long */
+#define SC_DISABLE(sc)   ((sc)->oldmask = KernelBase->kb_PlatformData->sig_int_mask)
+#else
 #define SC_DISABLE(sc)   ((sc)->oldmask = KernelBase->kb_PlatformData->sig_int_mask.__val[0])
+#endif
 #define SC_ENABLE(sc)    ((sc)->oldmask = 0L)
 
 /*
