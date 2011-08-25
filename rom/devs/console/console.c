@@ -122,13 +122,14 @@ static int GM_UNIQUENAME(Open)
     else
     {
 	Class *classptr = NULL; /* Keep compiler happy */
-	
+#ifndef __mc68000
+	/* AOS programs don't always initialize mn_Length. */
 	if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
 	{
 	    D(bug("console.device/open: IORequest structure passed to OpenDevice is too small!\n"));
 	    goto open_fail;
 	}
-    
+#endif
 	struct TagItem conunit_tags[] =
 	{
 	    {A_Console_Window,	0},
