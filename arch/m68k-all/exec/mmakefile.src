@@ -3,13 +3,13 @@ include $(TOP)/config/make.cfg
 
 FILES=offsets getcc preparecontext \
       cachecleare cacheclearu cachepostdma cachepredma \
-      setfunction alert_cpu
+      cachecontrol setfunction alert_cpu
 
 AFILES=newstackswap stackswap \
        supervisor superstate userstate \
        forbid \
        cacheclearu_ cachepostdma_ cachepredma_ \
-       setsr cachecontrol \
+       setsr cachecontrol_ \
        obtainquickvector
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec
