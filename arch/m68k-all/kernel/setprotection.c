@@ -42,7 +42,11 @@ AROS_LH3I(void, KrnSetProtection,
     BOOL invalid = (flags & (MAP_Readable | MAP_Writable | MAP_Executable)) == 0;
     BOOL readonly = (flags & MAP_Writable) == 0;
     BOOL supervisor = (flags & MAP_Supervisor) != 0;
+/*
+    Disable CopyBack, it causes unstability on real 68060 hardware, reason currently unknown.
     UBYTE cm = (flags & MAP_CacheInhibit) ? CM_SERIALIZED : ((flags & MAP_WriteThrough) ? CM_WRITETHROUGH : CM_COPYBACK);
+*/
+    UBYTE cm = (flags & MAP_CacheInhibit) ? CM_SERIALIZED : CM_WRITETHROUGH;
     
     /* We need MAP_Supervisor and MAP_CacheInhibitSerialized */
     
