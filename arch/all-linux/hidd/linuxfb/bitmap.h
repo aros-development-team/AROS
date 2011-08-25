@@ -3,16 +3,17 @@
 
 struct BitmapData
 {
-    UBYTE *VideoData;
-    UBYTE *RealVideoData;
-    BOOL   Visible;
-    UBYTE  bytesperpix;
-    ULONG  bytesperline;
-    ULONG  realbytesperline;
-    ULONG  width;
-    ULONG  height;
-    ULONG  display_width;
-    ULONG  display_height;
+    UBYTE      *VideoData;
+    UBYTE      *RealVideoData;
+    OOP_Object *pixfmt;
+    BOOL        Visible;
+    UBYTE       bytesperpix;
+    ULONG       bytesperline;
+    ULONG       realbytesperline;
+    ULONG       width;
+    ULONG       height;
+    ULONG       display_width;
+    ULONG       display_height;
 };
 
 #endif
