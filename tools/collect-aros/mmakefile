@@ -25,3 +25,11 @@ tools-crosstools-collect-aros-quick :
 	    && $(CP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-collect-aros \
 	    && $(TOUCH) $(CROSSTOOLSDIR) $(collect-aros-installflag) ; \
 	fi
+
+#MM
+standalone-collect-aros :
+	@$(ECHO) Bulding standalone collect-aros...
+	@$(MKDIR) $(TOOLDIR)/standalone
+	@$(MAKE) HOST_CC="$(HOST_CC)" HOST_CFLAGS="$(HOST_CFLAGS) -D_STANDALONE_" AROS_HOST_ARCH=$(AROS_HOST_ARCH) \
+	COLLECT-AROS=$(TOOLDIR)/standalone/collect-aros
+	@$(HOST_STRIP) $(TOOLDIR)/standalone/collect-aros
