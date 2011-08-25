@@ -11,19 +11,6 @@
 /* This comes from kernel_startup.c */
 extern struct HostInterface *HostIFace;
 
-static int GetPipe(const char *name, APTR lib, APTR HostLibBase)
-{
-    int *ptr = HostLib_GetPointer(lib, name, NULL);
-    
-    if (!ptr)
-    {
-    	D(bug("[AGFX] Failed to locate symbol %s\n", name));
-    	return -1;
-    }
-    
-    return *ptr;
-}
-
 static int Alert_Init(struct KernelBase *KernelBase)
 {
     APTR ExecHandle;

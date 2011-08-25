@@ -13,4 +13,11 @@ USER_CFLAGS := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-linux/kernel \
     mainmmake=kernel-kernel maindir=$(MAINDIR) \
     arch=linux-android files=$(FILES)
 
+#MM
+kernel-android-sigcore : $(GENINCDIR)/sigcore.h
+
+$(GENINCDIR)/sigcore.h : sigcore.i386.h
+	@$(ECHO) Copying $@...
+	@$(CP) -f $< $@
+
 %common
