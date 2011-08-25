@@ -65,7 +65,7 @@ OOP_Object *LinuxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
 	    D(bug("[LinuxBM] Display driver object: 0x%p\n", gfx));
 
-	    HIDD_Gfx_GetMode(gfx, modeid, &sync, &data->pixfmt);
+	    HIDD_Gfx_GetMode(gfx, modeid, &sync, (OOP_Object **)&data->pixfmt);
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
 
