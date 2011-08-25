@@ -9,9 +9,9 @@
 
 #include <hidd/unixio_inline.h>
 
-#include <signal.h>
-
 #include "tap.h"
+
+#include <signal.h>
 
 /* this fires whenever data is waiting to be read on the tap descriptor */
 static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
