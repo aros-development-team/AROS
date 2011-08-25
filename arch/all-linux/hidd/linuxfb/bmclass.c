@@ -28,8 +28,6 @@
 
 OOP_Object *LinuxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    BOOL ok = TRUE;
-
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     D(kprintf("LINUXFB: Got bitmap %p\n", o));
 
@@ -63,11 +61,11 @@ OOP_Object *LinuxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	    IPTR dwidth  = 0;
 	    IPTR dheight = 0;
 	    OOP_Object *gfx = (OOP_Object *)GetTagData(aHidd_BitMap_GfxHidd, 0, msg->attrList);
-	    OOP_Object *sync, *pixfmt;
+	    OOP_Object *sync;
 
 	    D(bug("[LinuxBM] Display driver object: 0x%p\n", gfx));
 
-	    HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
+	    HIDD_Gfx_GetMode(gfx, modeid, &sync, &data->pixfmt);
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
 
@@ -87,9 +85,15 @@ VOID LinuxBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     if (data->Visible)
     {
+        ULONG x = msg->x * data->bytesperpix;
+        APTR src = data->VideoData     + msg->y * data->bytesperline     + x;
+        APTR dst = data->RealVideoData + msg->y * data->realbytesperline + x;
+
 	DB2(bug("[LinuxBM 0x%p] UpdateRect(%d, %d, %d, %d)\n", o, msg->x, msg->y, msg->width, msg->height));
 
-	/* TODO */
+	HIDD_BM_ConvertPixels(o, &src, data->pixfmt, data->bytesperline,
+	   			 &dst, data->pixfmt, data->realbytesperline,
+	   			 msg->width, msg->height, NULL);
     }
 }
 

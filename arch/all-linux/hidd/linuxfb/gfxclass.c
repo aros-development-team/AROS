@@ -184,7 +184,7 @@ OOP_Object *LinuxFB__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pH
     struct TagItem tags[2];
     struct pHidd_Gfx_NewBitMap p;
     HIDDT_ModeID modeid;
-    
+
     modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
     if (modeid != vHidd_ModeID_Invalid)
     {
@@ -200,114 +200,6 @@ OOP_Object *LinuxFB__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pH
     }
 
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-VOID LinuxFB__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
-{
-    BOOL src = FALSE, dest = FALSE;
-    ULONG mode;
-
-    mode = GC_DRMD(msg->gc);
-
-    if (OOP_OCLASS(msg->src) == LSD(cl)->bmclass) src = TRUE;
-    if (OOP_OCLASS(msg->dest) == LSD(cl)->bmclass) dest = TRUE;
-    
-    
-    if (!dest || !src ||
-    	((mode != vHidd_GC_DrawMode_Copy)))
-    {
-	/* The source and/or destination object is no linuxgfx bitmap, onscreen nor offscreen.
-	   Or drawmode is not one of those we accelerate. Let the superclass do the
-	   copying in a more general way
-	*/
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	return;
-	
-    }
-
-    {
-	struct LinuxFB_data *fbdata = OOP_INST_DATA(cl, o);
-    	struct BitmapData *data = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
-        struct BitmapData *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
-
-        switch(mode)
-	{
-	    case vHidd_GC_DrawMode_Copy:
-	    	switch(data->bytesperpix)
-		{
-		    case 1:
-	    		HIDD_BM_CopyMemBox8(msg->dest,
-		    	    		    data->VideoData,
-					    msg->srcX,
-					    msg->srcY,
-					    ddata->VideoData,
-					    msg->destX,
-					    msg->destY,
-					    msg->width,
-					    msg->height,
-					    data->bytesperline,
-					    ddata->bytesperline);
-			break;
-
-		    case 2:
-	    		HIDD_BM_CopyMemBox16(msg->dest,
-		    	    		    data->VideoData,
-					    msg->srcX,
-					    msg->srcY,
-					    ddata->VideoData,
-					    msg->destX,
-					    msg->destY,
-					    msg->width,
-					    msg->height,
-					    data->bytesperline,
-					    ddata->bytesperline);
-			break;
-			
-
-		    case 3:
-	    		HIDD_BM_CopyMemBox24(msg->dest,
-		    	    		    data->VideoData,
-					    msg->srcX,
-					    msg->srcY,
-					    ddata->VideoData,
-					    msg->destX,
-					    msg->destY,
-					    msg->width,
-					    msg->height,
-					    data->bytesperline,
-					    ddata->bytesperline);
-			break;
-
-		    case 4:
-	    		HIDD_BM_CopyMemBox32(msg->dest,
-		    	    		    data->VideoData,
-					    msg->srcX,
-					    msg->srcY,
-					    ddata->VideoData,
-					    msg->destX,
-					    msg->destY,
-					    msg->width,
-					    msg->height,
-					    data->bytesperline,
-					    ddata->bytesperline);
-			break;
-		    	
-	    	} /* switch(data->bytesperpix) */
-    	    	break;
-		
-    	} /* switch(mode) */
-
-    #if BUFFERED_VRAM
-	if (ddata->RealVideoData)
-	{
-    	    LOCK_FRAMEBUFFER(fbdata);    
-    	    fbRefreshArea(ddata, msg->destX, msg->destY, msg->destX + msg->width - 1, msg->destY + msg->height - 1);
-    	    UNLOCK_FRAMEBUFFER(fbdata);
-	}
-    #endif
- 	    
-    } /**/
-
 }
 
 /******* FBGfx::Set()  ********************************************/
@@ -495,39 +387,3 @@ static BOOL get_pixfmt(struct TagItem *pftags, struct fb_fix_screeninfo *fsi, st
 
     return success;    
 }
-
-#if BUFFERED_VRAM
-void fbRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
-{
-    UBYTE *src, *dst;
-    ULONG srcmod, dstmod;
-    LONG x, y, w, h;
-
-    x1 *= data->bytesperpix;
-    x2 *= data->bytesperpix; x2 += data->bytesperpix - 1;
-    
-    x1 &= ~3;
-    x2 = (x2 & ~3) + 3;
-    w = (x2 - x1) + 1;
-    h = (y2 - y1) + 1;
-    
-    srcmod = (data->bytesperline - w);
-    dstmod = (data->realbytesperline - w);
-   
-    src = data->VideoData + y1 * data->bytesperline + x1;
-    dst = data->RealVideoData + y1 * data->realbytesperline + x1;
-    
-    for(y = 0; y < h; y++)
-    {
-    	for(x = 0; x < w / 4; x++)
-	{
-	    *(ULONG *)dst = *(ULONG *)src;
-	    dst += 4; src += 4;
-	}
-	src += srcmod;
-	dst += dstmod;
-    }
-    
-}
-#endif
-
