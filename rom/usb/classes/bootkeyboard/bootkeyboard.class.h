@@ -16,21 +16,21 @@
 
 /* Protos */
 
-struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif);
-struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif);
-void usbReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch);
+struct NepClassHid * bootkbd_AttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif);
+struct NepClassHid * bootkbd_ForceInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif);
+void bootkbd_ReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch);
 
 void nParseKeys(struct NepClassHid *nch, UBYTE *buf);
 
-struct NepClassHid * nAllocHid(void);
-void nFreeHid(struct NepClassHid *nch);
+struct NepClassHid * bootkbd_AllocHid(void);
+void bootkbd_FreeHid(struct NepClassHid *nch);
 
-BOOL nLoadClassConfig(struct NepHidBase *nh);
+BOOL bootkbd_LoadClassConfig(struct NepHidBase *nh);
 LONG nOpenCfgWindow(struct NepHidBase *nh);
 
-void nGUITaskCleanup(struct NepHidBase *nh);
+void bootkbd_GUITaskCleanup(struct NepHidBase *nh);
 
-AROS_UFP0(void, nHidTask);
-AROS_UFP0(void, nGUITask);
+AROS_UFP0(void, bootkbd_HidTask);
+AROS_UFP0(void, bootkbd_GUITask);
 
 #endif /* BOOTKEYBOARD_CLASS_H */
