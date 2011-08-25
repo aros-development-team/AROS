@@ -33,7 +33,7 @@ static int libInit(LIBBASETYPEPTR nh)
 static int libOpen(LIBBASETYPEPTR nh)
 {
     KPRINTF(10, ("libOpen nh: 0x%08lx\n", nh));
-    nLoadClassConfig(nh);
+    bootkbd_LoadClassConfig(nh);
 
     return TRUE;
 }
@@ -59,8 +59,8 @@ ADD2EXPUNGELIB(libExpunge, 0)
  * ***********************************************************************
  */
 
-/* /// "usbAttemptInterfaceBinding()" */
-struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
+/* /// "bootkbd_AttemptInterfaceBinding()" */
+struct NepClassHid * bootkbd_AttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
     IPTR ifclass;
@@ -78,15 +78,15 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
         CloseLibrary(ps);
         if((ifclass == HID_CLASSCODE) && (subclass == HID_BOOT_SUBCLASS) && (proto == HID_PROTO_KEYBOARD))
         {
-            return(usbForceInterfaceBinding(nh, pif));
+            return(bootkbd_ForceInterfaceBinding(nh, pif));
         }
     }
     return(NULL);
 }
 /* \\\ */
 
-/* /// "usbForceInterfaceBinding()" */
-struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
+/* /// "bootkbd_ForceInterfaceBinding()" */
+struct NepClassHid * bootkbd_ForceInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
     struct NepClassHid *nch;
@@ -105,13 +105,13 @@ struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdI
             nch->nch_Device = NULL;
             nch->nch_Interface = pif;
 
-            nLoadClassConfig(nh);
+            bootkbd_LoadClassConfig(nh);
 
             psdSafeRawDoFmt(buf, 64, "bootkeyboard.class<%08lx>", nch);
             nch->nch_ReadySignal = SIGB_SINGLE;
             nch->nch_ReadySigTask = FindTask(NULL);
             SetSignal(0, SIGF_SINGLE);
-            if((tmptask = psdSpawnSubTask(buf, nHidTask, nch)))
+            if((tmptask = psdSpawnSubTask(buf, bootkbd_HidTask, nch)))
             {
                 psdBorrowLocksWait(tmptask, 1UL<<nch->nch_ReadySignal);
                 if(nch->nch_Task)
@@ -139,8 +139,8 @@ struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdI
 }
 /* \\\ */
 
-/* /// "usbReleaseInterfaceBinding()" */
-void usbReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch)
+/* /// "bootkbd_ReleaseInterfaceBinding()" */
+void bootkbd_ReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch)
 {
     struct Library *ps;
     struct PsdConfig *pc;
@@ -180,7 +180,7 @@ AROS_LH3(LONG, usbGetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, usbstruct, A0),
          AROS_LHA(struct TagItem *, tags, A1),
-         LIBBASETYPEPTR, nh, 5, nep)
+         LIBBASETYPEPTR, nh, 5, bootkbd)
 {
     AROS_LIBFUNC_INIT
 
@@ -241,7 +241,7 @@ AROS_LH3(LONG, usbSetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, usbstruct, A0),
          AROS_LHA(struct TagItem *, tags, A1),
-         LIBBASETYPEPTR, nh, 6, nep)
+         LIBBASETYPEPTR, nh, 6, bootkbd)
 {
     AROS_LIBFUNC_INIT
     return(0);
@@ -253,7 +253,7 @@ AROS_LH3(LONG, usbSetAttrsA,
 AROS_LH2(IPTR, usbDoMethodA,
          AROS_LHA(ULONG, methodid, D0),
          AROS_LHA(IPTR *, methoddata, A1),
-         LIBBASETYPEPTR, nh, 7, nep)
+         LIBBASETYPEPTR, nh, 7, bootkbd)
 {
     AROS_LIBFUNC_INIT
 
@@ -261,20 +261,20 @@ AROS_LH2(IPTR, usbDoMethodA,
     switch(methodid)
     {
         case UCM_AttemptInterfaceBinding:
-            return((IPTR) usbAttemptInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
+            return((IPTR) bootkbd_AttemptInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
 
         case UCM_ForceInterfaceBinding:
-            return((IPTR) usbForceInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
+            return((IPTR) bootkbd_ForceInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
 
         case UCM_ReleaseInterfaceBinding:
-            usbReleaseInterfaceBinding(nh, (struct NepClassHid *) methoddata[0]);
+            bootkbd_ReleaseInterfaceBinding(nh, (struct NepClassHid *) methoddata[0]);
             return(TRUE);
 
         case UCM_OpenCfgWindow:
             return(nOpenCfgWindow(nh));
 
         case UCM_ConfigChangedEvent:
-            nLoadClassConfig(nh);
+            bootkbd_LoadClassConfig(nh);
             return(TRUE);
 
         default:
@@ -285,8 +285,8 @@ AROS_LH2(IPTR, usbDoMethodA,
 }
 /* \\\ */
 
-/* /// "nLoadClassConfig()" */
-BOOL nLoadClassConfig(struct NepHidBase *nh)
+/* /// "bootkbd_LoadClassConfig()" */
+BOOL bootkbd_LoadClassConfig(struct NepHidBase *nh)
 {
     struct Library *ps;
     struct ClsGlobalCfg *cgc;
@@ -339,7 +339,7 @@ LONG nOpenCfgWindow(struct NepHidBase *nh)
     Forbid();
     if(!nh->nh_GUITask)
     {
-        if((nh->nh_GUITask = psdSpawnSubTask(MOD_NAME_STRING " GUI", nGUITask, nh)))
+        if((nh->nh_GUITask = psdSpawnSubTask(MOD_NAME_STRING " GUI", bootkbd_GUITask, nh)))
         {
             Permit();
             CloseLibrary(ps);
@@ -431,8 +431,8 @@ static const UBYTE usbisakeymap[] =
 #undef ps
 #define ps nch->nch_Base
 
-/* /// "nHidTask()" */
-AROS_UFH0(void, nHidTask)
+/* /// "bootkbd_HidTask()" */
+AROS_UFH0(void, bootkbd_HidTask)
 {
     AROS_USERFUNC_INIT
 
@@ -443,7 +443,7 @@ AROS_UFH0(void, nHidTask)
     UBYTE *buf;
     LONG ioerr;
 
-    if((nch = nAllocHid()))
+    if((nch = bootkbd_AllocHid()))
     {
         Forbid();
         if(nch->nch_ReadySigTask)
@@ -479,7 +479,7 @@ AROS_UFH0(void, nHidTask)
 
         psdAbortPipe(nch->nch_EP1Pipe);
         psdWaitPipe(nch->nch_EP1Pipe);
-        nFreeHid(nch);
+        bootkbd_FreeHid(nch);
     }
     AROS_USERFUNC_EXIT
 }
@@ -806,8 +806,8 @@ void nParseKeys(struct NepClassHid *nch, UBYTE *buf)
 }
 /* \\\ */
 
-/* /// "nAllocHid()" */
-struct NepClassHid * nAllocHid(void)
+/* /// "bootkbd_AllocHid()" */
+struct NepClassHid * bootkbd_AllocHid(void)
 {
     struct Task *thistask;
     struct NepClassHid *nch;
@@ -903,8 +903,8 @@ struct NepClassHid * nAllocHid(void)
 }
 /* \\\ */
 
-/* /// "nFreeHid()" */
-void nFreeHid(struct NepClassHid *nch)
+/* /// "bootkbd_FreeHid()" */
+void bootkbd_FreeHid(struct NepClassHid *nch)
 {
     psdFreeVec(nch->nch_EP1Buf);
     psdFreePipe(nch->nch_EP1Pipe);
@@ -932,8 +932,8 @@ void nFreeHid(struct NepClassHid *nch)
 #undef MUIMasterBase
 #define MUIMasterBase nh->nh_MUIBase
 
-/* /// "nGUITask()" */
-AROS_UFH0(void, nGUITask)
+/* /// "bootkbd_GUITask()" */
+AROS_UFH0(void, bootkbd_GUITask)
 {
     AROS_USERFUNC_INIT
 
@@ -948,20 +948,20 @@ AROS_UFH0(void, nGUITask)
     if(!(MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
     {
         KPRINTF(10, ("Couldn't open muimaster.library.\n"));
-        nGUITaskCleanup(nh);
+        bootkbd_GUITaskCleanup(nh);
         return;
     }
 
     if(!(IntuitionBase = OpenLibrary("intuition.library", 39)))
     {
         KPRINTF(10, ("Couldn't open intuition.library.\n"));
-        nGUITaskCleanup(nh);
+        bootkbd_GUITaskCleanup(nh);
         return;
     }
     if(!(ps = OpenLibrary("poseidon.library", 4)))
     {
         KPRINTF(10, ("Couldn't open poseidon.library.\n"));
-        nGUITaskCleanup(nh);
+        bootkbd_GUITaskCleanup(nh);
         return;
     }
 
@@ -1086,7 +1086,7 @@ AROS_UFH0(void, nGUITask)
     if(!nh->nh_App)
     {
         KPRINTF(10, ("Couldn't create application\n"));
-        nGUITaskCleanup(nh);
+        bootkbd_GUITaskCleanup(nh);
         return;
     }
     DoMethod(nh->nh_MainWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
@@ -1117,7 +1117,7 @@ AROS_UFH0(void, nGUITask)
         get(nh->nh_MainWindow, MUIA_Window_Open, &isopen);
         if(!(isopen || iconify))
         {
-            nGUITaskCleanup(nh);
+            bootkbd_GUITaskCleanup(nh);
             return;
         }
         sigmask = 0;
@@ -1171,14 +1171,14 @@ AROS_UFH0(void, nGUITask)
         } while(TRUE);
         set(nh->nh_MainWindow, MUIA_Window_Open, FALSE);
     }
-    nGUITaskCleanup(nh);
+    bootkbd_GUITaskCleanup(nh);
 
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
 
-/* /// "nGUITaskCleanup()" */
-void nGUITaskCleanup(struct NepHidBase *nh)
+/* /// "bootkbd_GUITaskCleanup()" */
+void bootkbd_GUITaskCleanup(struct NepHidBase *nh)
 {
     if(nh->nh_App)
     {
