@@ -27,6 +27,7 @@
  * Some attrbases needed as global vars.
  * These are write-once read-many.
  */
+OOP_AttrBase HiddChunkyBMAttrBase;
 OOP_AttrBase HiddBitMapAttrBase;  
 OOP_AttrBase HiddSyncAttrBase;
 OOP_AttrBase HiddGfxAttrBase;
@@ -45,6 +46,7 @@ static const char *libc_symbols[] =
 
 static const struct OOP_ABDescr abd[] =
 {
+    { IID_Hidd_ChunkyBM , &HiddChunkyBMAttrBase },
     { IID_Hidd_BitMap	, &HiddBitMapAttrBase	},
     { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
     { IID_Hidd_Gfx  	, &HiddGfxAttrBase	},
