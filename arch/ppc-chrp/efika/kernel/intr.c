@@ -29,41 +29,6 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
 void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exception, void *self);
 static void flush_cache(char *start, char *end);
 
-AROS_LH0I(void, KrnCli,
-         struct KernelBase *, KernelBase, 9, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    asm volatile("li %%r3,%0; sc"::"i"(SC_CLI):"memory","r3");
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(void, KrnSti,
-         struct KernelBase *, KernelBase, 10, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    asm volatile("li %%r3,%0; sc"::"i"(SC_STI):"memory","r3");
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(void, KrnIsSuper,
-         struct KernelBase *, KernelBase, 13, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    register int retval asm ("r3");
-
-    asm volatile("sc":"=r"(retval):"0"(SC_ISSUPERSTATE):"memory");
-
-    return retval;
-
-    AROS_LIBFUNC_EXIT
-}
-
-
 AROS_LH4(void *, KrnAddExceptionHandler,
          AROS_LHA(uint8_t, irq, D0),
          AROS_LHA(void *, handler, A0),
