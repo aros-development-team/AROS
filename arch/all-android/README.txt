@@ -2,7 +2,7 @@
 
  This is Google Android-hosted port of AROS. Android is a subset of Linux system, so many functionality
 of this port is the same as of a generic Linux-hosted port.
- At the moment only ARM architecture is supported. i386 version can be created with minor adjustments.
+ Both ARM and i386 architectures are supported, however only ARM is tested.
 
  A minimum required Android version is 2.2 (API level 8).
 
