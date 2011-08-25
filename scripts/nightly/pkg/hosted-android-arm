@@ -1,0 +1,39 @@
+#!/bin/zsh
+# Creates generic "hosted" binary packages.
+
+BUILDTARGET=linux-arm
+
+source $SP/setup
+# The log-name MUST match the name of the package script
+setl   hosted-$BUILDTARGET.log
+
+ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
+
+printi "Creating hosted binary packages..."
+
+printi "Creating AROS/"$BUILDTARGET" system package..."
+PACKAGE=$BASENAME-$BUILDTARGET-system
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+delete  $BUILD_BASE/AROS
+copy    $SOURCE_AROS      $BUILD_BASE/AROS
+
+cd      $BUILD_BASE/AROS
+execute ./configure --target=$BUILDTARGET --enable-target-variant=android --with-sdk=/android-sdk-linux_x86 --with-ndk=/android-ndk-r6 --with-gcc-version=4.4.3
+
+make
+
+cd      $BUILD_BASE/AROS/bin/$BUILDTARGET
+move    AROS $PACKAGE
+move    AROSBootstrap.apk $PACKAGE
+
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
+delete	$PACKAGE/Include
+delete	$PACKAGE/lib
+
+archive $ARCHIVE $PACKAGE
+
+cd      $ROOT
+delete  $BUILD_BASE/AROS
+resetl
