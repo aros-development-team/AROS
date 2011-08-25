@@ -60,13 +60,15 @@
 
     /* Get pointer to filehandle */
     struct FileHandle *fh = BADDR(file);
-    LONG ret;
+    LONG ret = -1;
 
     ASSERT_VALID_PTR(fh);
     ASSERT_VALID_PTR(buffer);
 
     D(bug("[Write] %x %x %d\n", fh, buffer, length));
-    if (fh->fh_Type == BNULL) /* NIL: */
+    if (fh == NULL)
+    	SetIoErr(ERROR_INVALID_LOCK);
+    else if (fh->fh_Type == BNULL) /* NIL: */
     	ret = length;
     else
     	ret = dopacket3(DOSBase, NULL, fh->fh_Type, ACTION_WRITE, fh->fh_Arg1, (SIPTR)buffer, length);
