@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <proto/console.h>
 #include <proto/intuition.h>
+#include <proto/keymap.h>
 #include <exec/resident.h>
 #include <exec/errors.h>
 #include <exec/memory.h>
@@ -313,16 +314,21 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case CD_ASKKEYMAP:
-	    D(bug("CD_ASKKEYMAP\n"));
-	    error = IOERR_NOCMD;
+	    /* FIXME: Returns always default keymap */
+	    if (ioreq->io_Length < sizeof(struct KeyMap))
+	    	error = IOERR_BADLENGTH;
+	    else
+	    	CopyMem(AskKeyMapDefault(), ioreq->io_Data, sizeof(struct KeyMap));
 	    break;
 	case CD_SETKEYMAP:
 	    D(bug("CD_SETKEYMAP\n"));
 	    error = IOERR_NOCMD;
 	    break;
 	case CD_ASKDEFAULTKEYMAP:
-	    D(bug("CD_ASKDEFAULTKEYMAP\n"));
-	    error = IOERR_NOCMD;
+	    if (ioreq->io_Length < sizeof(struct KeyMap))
+	    	error = IOERR_BADLENGTH;
+	    else
+	    	CopyMem(AskKeyMapDefault(), ioreq->io_Data, sizeof(struct KeyMap));
 	    break;
 	case CD_SETDEFAULTKEYMAP:
 	    D(bug("CD_SETDEFAULTKEYMAP\n"));
