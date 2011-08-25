@@ -28,8 +28,8 @@ tools-crosstools-collect-aros-quick :
 
 #MM
 standalone-collect-aros :
-	@$(ECHO) Bulding standalone collect-aros...
+	@$(ECHO) Bulding $(TOOLDIR)/standalone/collect-aros$(HOST_EXE_SUFFIX)...
 	@$(MKDIR) $(TOOLDIR)/standalone
 	@$(MAKE) HOST_CC="$(HOST_CC)" HOST_CFLAGS="$(HOST_CFLAGS) -D_STANDALONE_" AROS_HOST_ARCH=$(AROS_HOST_ARCH) \
 	COLLECT-AROS=$(TOOLDIR)/standalone/collect-aros
-	@$(HOST_STRIP) $(TOOLDIR)/standalone/collect-aros
+	@$(HOST_STRIP) $(TOOLDIR)/standalone/collect-aros$(HOST_EXE_SUFFIX)
