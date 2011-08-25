@@ -4331,6 +4331,9 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
     linux*)
 	aros_host_arch="linux"
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+	android_build_os="linux-x86"
+	android_tool="android"
+	default_android_sdk="/opt/android-sdk-linux_x86"
 	case "$host_cpu" in
 	    *i?86*)
 		aros_host_cpu="i386"
