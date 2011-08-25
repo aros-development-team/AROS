@@ -31,7 +31,7 @@ of this port is the same as of a generic Linux-hosted port.
    Note that Android-targetted gcc can't be used for building AROS binaries even with wrapper scripts.
    Android ABI is not 100% compatible to AROS one.
 
- - Android SDK (Java one). The new builds build was succesfully tested with SDK r10 on MacOS X v10.6.8 (x86-64).
+ - Android SDK (Java one). The new build was succesfully tested with SDK r10 on MacOS X v10.6.8 (x86-64).
    During early development stages SDK v1.6r1 was used under Windows. In fact any SDK version should work.
 
  - Android NDK (Native Development Kit). Versions statring from r5 are known to be supported. Earlier versions
