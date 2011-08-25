@@ -12,6 +12,7 @@ ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
 printi "Creating AROS/"$BUILDTARGET" system package..."
 PACKAGE=$BASENAME-$BUILDTARGET-system
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+ISOFILE=aros-$BUILDTARGET.iso
 
 delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
@@ -21,6 +22,7 @@ export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
 execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-optimization="-Os" --with-serial-debug
 make
 make    bootdisk
+make    bootiso
 
 cd      $BUILD_BASE/AROS/bin/amiga-m68k
 move    AROS $PACKAGE
@@ -31,15 +33,30 @@ delete  $BUILD_BASE/AROS/distfiles/aros-amiga-m68k-reloc.elf
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
 copy    $BUILD_BASE/AROS/distfiles/ $PACKAGE
+delete  $PACKAGE/distfiles/$ISOFILE
 
-archive $ARCHIVE $PACKAGE
+#archive $ARCHIVE $PACKAGE
 move    $PACKAGE AROS
+
+printi "Creating AROS/"$BUILDTARGET" bootiso package..."
+PACKAGE=$BASENAME-$BUILDTARGET-bootiso
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
+
+makedir $PACKAGE
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
+move    $BUILD_BASE/AROS/distfiles/$ISOFILE $PACKAGE
+ziparc  $ARCHIVE $PACKAGE
+
+delete  $PACKAGE
 
 printi "Creating AROS/"$BUILDTARGET" boot package..."
 PACKAGE=$BASENAME-$BUILDTARGET-boot
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.lha
 
 move    $BUILD_BASE/AROS/distfiles $PACKAGE
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
 
 lhaarc  $ARCHIVE $PACKAGE
 
