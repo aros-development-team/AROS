@@ -7363,6 +7363,9 @@ case "$target_os" in
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
 		pci_hidd_target="hidd-pci-linux"
+		android_tool_dir_prefix="x86"
+                android_tool_prefix="i686-android-linux"
+                android_ndk_arch="x86"
 		;;
 	    *x86_64*)
 		aros_target_cpu="x86_64"
@@ -7402,6 +7405,9 @@ case "$target_os" in
                 aros_config_cflags="$aros_config_cflags -marm -march=armv6 -mfpu=vfp -mfloat-abi=softfp -mthumb-interwork -fno-asynchronous-unwind-tables -fno-exceptions -fno-strict-aliasing -fno-omit-frame-pointer"
                 aros_config_aflags="$aros_config_aflags -marm -march=armv6 -mfpu=vfp -mfloat-abi=softfp -mthumb-interwork -fno-asynchronous-unwind-tables -fno-exceptions -fno-strict-aliasing"
                 aros_arch_libs="-laeabi"
+                android_tool_dir_prefix="arm-linux-androideabi"
+                android_tool_prefix="arm-linux-androideabi"
+                android_ndk_arch="arm"
 		;;
 	    *)
 		as_fn_error $? "\"Unknown CPU for Linux -- $target_cpu\"" "$LINENO" 5
@@ -7409,6 +7415,11 @@ case "$target_os" in
 	esac
 	case "$aros_target_variant" in
             android)
+
+		            	if test "$android_ndk_arch" = ""; then
+		    as_fn_error $? "\"Unsupported CPU for Android -- $target_cpu\"" "$LINENO" 5
+		fi
+
             	aros_android_level=android-$aros_sdk_version
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
@@ -7418,8 +7429,8 @@ case "$target_os" in
 		    aros_kernel_ldflags="-mandroid"
 		    CFLAGS="-mandroid"
 		else
-		    export PATH="$aros_android_ndk/toolchains/arm-linux-androideabi-$target_tool_version/prebuilt/$android_build_os/bin:$PATH"
-               	    aros_android_ndk="$aros_android_ndk/platforms/android-$aros_ndk_version/arch-arm"
+		    export PATH="$aros_android_ndk/toolchains/$android_tool_dir_prefix-$target_tool_version/prebuilt/$android_build_os/bin:$PATH"
+               	    aros_android_ndk="$aros_android_ndk/platforms/android-$aros_ndk_version/arch-$android_ndk_arch"
 		    aros_kernel_cflags="--sysroot $aros_android_ndk -mandroid"
 		    aros_kernel_ldflags="--sysroot $aros_android_ndk -mandroid"
 		    CFLAGS="$CFLAGS --sysroot $aros_android_ndk -mandroid"
@@ -7427,7 +7438,7 @@ case "$target_os" in
 		fi
 		need_x11=no
 						x11_hidd_target=kernel-hidd-androidgfx-kobj
-		target_tool_prefix="arm-linux-androideabi-"
+		target_tool_prefix="$android_tool_prefix-"
             ;;
         esac
     ;;
