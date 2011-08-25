@@ -225,7 +225,6 @@ case "$host_os" in
 	android_build_os="darwin-x86"
 	android_tool="android"
 	default_android_sdk="/android-sdk-mac_x86"
-	default_android_ndk="/android-ndk-r5b"
 	case "$host_cpu" in
 	    *i?86*)
 		aros_host_cpu="i386"
@@ -768,16 +767,18 @@ ios)
     AC_MSG_RESULT($aros_android_sdk)
 
     AC_MSG_CHECKING([Android NDK path])
-    AC_ARG_WITH(ndk,AC_HELP_STRING([--with-ndk=PATH],[Specify Android NDK path (default=$default_android_ndk).]),aros_android_ndk="$withval",aros_android_ndk="$default_android_ndk")
+    AC_ARG_WITH(ndk,AC_HELP_STRING([--with-ndk=PATH],[Specify Android NDK path (default=none).]),aros_android_ndk="$withval",aros_android_ndk="none")
     AC_MSG_RESULT($aros_android_ndk)
 
     AC_MSG_CHECKING([what Android SDK version to use])
     AC_ARG_WITH(sdk-version,AC_HELP_STRING([--with-sdk-version=LEVEL],[Use Android SDK for API LEVEL (default=8).]),aros_sdk_version="$withval",aros_sdk_version="8")
     AC_MSG_RESULT($aros_sdk_version)
 
-    AC_MSG_CHECKING([what Android NDK version to use])
-    AC_ARG_WITH(ndk-version,AC_HELP_STRING([--with-ndk-version=LEVEL],[Use Android NDK for API LEVEL (default=9).]),aros_ndk_version="$withval",aros_ndk_version="9")
-    AC_MSG_RESULT($aros_ndk_version)
+    if test "$aros_android_ndk" != "none"; then
+	AC_MSG_CHECKING([what Android NDK version to use])
+	AC_ARG_WITH(ndk-version,AC_HELP_STRING([--with-ndk-version=LEVEL],[Use Android NDK for API LEVEL (default=9).]),aros_ndk_version="$withval",aros_ndk_version="9")
+	AC_MSG_RESULT($aros_ndk_version)
+    fi
 
     export PATH="$aros_android_sdk/tools:$PATH"
     AC_PATH_PROG(android_tool, $android_tool)
@@ -876,7 +877,8 @@ case "$target_os" in
                 aros_default_wbheight=480
 		dnl Android gcc and AROS gcc use different enums size, so we use AROS gcc
 		use_aros_gcc="yes"
-		if test "$aros_android_ndk" = ""; then
+		if test "$aros_android_ndk" = "none"; then
+		    dnl Use standalone toolchain, don't adjust paths
 		    aros_kernel_cflags="-mandroid"
 		    aros_kernel_ldflags="-mandroid"
 		    CFLAGS="-mandroid"
