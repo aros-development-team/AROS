@@ -18,33 +18,33 @@ All Rights Reserved.
 #ifndef AHI_Drivers_misc_h
 #define AHI_Drivers_h
 
-#include <config.h>
+//#include <config.h>
 
 #include <devices/ahi.h>
 #include <DriverData.h>
 #include <stddef.h>
 
-void codec_write(struct CardData *card, unsigned short reg, unsigned short val);
-unsigned short codec_read(struct CardData *card, unsigned short reg);
+void codec_write(struct SB128_DATA *card, unsigned short reg, unsigned short val);
+unsigned short codec_read(struct SB128_DATA *card, unsigned short reg);
 
-void ak4531_ac97_write(struct CardData *card, unsigned short reg, unsigned short val);
+void ak4531_ac97_write(struct SB128_DATA *card, unsigned short reg, unsigned short val);
 
-struct CardData*
+struct SB128_DATA*
 AllocDriverData( struct PCIDevice*    dev,
 		 struct DriverBase* AHIsubBase );
 
 void
-FreeDriverData( struct CardData* card,
+FreeDriverData( struct SB128_DATA* card,
 		struct DriverBase*  AHIsubBase );
 
 void
-SaveMixerState( struct CardData* card );
+SaveMixerState( struct SB128_DATA* card );
 
 void
-RestoreMixerState( struct CardData* card );
+RestoreMixerState( struct SB128_DATA* card );
 
 void
-UpdateMonitorMixer( struct CardData* card );
+UpdateMonitorMixer( struct SB128_DATA* card );
 
 Fixed
 Linear2MixerGain( Fixed  linear,
@@ -57,7 +57,7 @@ Linear2RecordGain( Fixed  linear,
 ULONG
 SamplerateToLinearPitch( ULONG samplingrate );
 
-void *pci_alloc_consistent(size_t size, APTR * NonAlignedaddress);
+void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int boundary);
 
 void pci_free_consistent(void* addr);
 

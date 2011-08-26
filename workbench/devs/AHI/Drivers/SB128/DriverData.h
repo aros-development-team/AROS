@@ -15,20 +15,28 @@ All Rights Reserved.
 
 */
 
-#ifndef AHI_Drivers_Card_DriverData_h
-#define AHI_Drivers_Card_DriverData_h
+#ifndef AHI_Drivers_SB128_DriverData_h
+#define AHI_Drivers_SB128_DriverData_h
 
 #include <exec/types.h>
 #include <exec/interrupts.h>
 #include <devices/ahi.h>
 
-#define DRIVER "sb128.audio"
+#define DRIVER_NEEDS_GLOBAL_EXECBASE
+
+#ifdef __AROS__
 #define DRIVER_NEED_GLOBAL_EXECBASE
+#endif
+
+#ifdef __amigaos4__
+#define DRIVER_NEED_GLOBAL_EXECBASE
+#endif
+
 #include "DriverBase.h"
 
-struct CardData;
+struct SB128_DATA;
 
-struct CardBase
+struct SB128Base
 {
     /** Skeleton's variables *************************************************/
 
@@ -41,23 +49,25 @@ struct CardBase
     /** The number of cards found */
     int                    cards_found;
 
-    /** A CardData structure for each card found */
-    struct CardData**   driverdatas;
+    /** A SB128_DATA structure for each card found */
+    struct SB128_DATA**   driverdatas;
 };
+
+#define DRIVERBASE_SIZEOF (sizeof (struct SB128Base))
 
 #define RECORD_BUFFER_SAMPLES     1024
 
 
-struct CardData
+struct SB128_DATA
 {
     /*** PCI/Card initialization progress *********************************/
 
   struct PCIDevice    *pci_dev;
-	unsigned long       iobase;
-	unsigned long		    length;
-	unsigned short		  model;
+  APTR       iobase;
+  unsigned long		    length;
+  unsigned short		  model;
   unsigned char       chiprev;
-	unsigned int        irq;
+  unsigned int        irq;
 
     /** TRUE if bus mastering is activated */
     BOOL                pci_master_enabled;
@@ -221,4 +231,4 @@ struct CardData
     int                 currentRecFreq;
 };
 
-#endif /* AHI_Drivers_Card_DriverData_h */
+#endif /* AHI_Drivers_SB128_DriverData_h */

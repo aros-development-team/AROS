@@ -17,77 +17,88 @@ All Rights Reserved.
 
 #include <exec/memory.h>
 
-#undef __USE_INLINE__
-#include <proto/expansion.h>
+#ifdef __AROS__
+#define DEBUG 1
+#include <aros/debug.h>
+#endif
 
+#include <proto/exec.h>
 #include <proto/dos.h>
 
-#include <devices/timer.h>
-
-#include "library_card.h"
+#include "library.h"
 #include "regs.h"
 #include "interrupt.h"
 #include "misc.h"
-#include "DriverData.h"
+
+#include "pci_wrapper.h"
+
+#ifdef __AROS__
+#define DebugPrintF bug
+INTGW(static, void,  playbackinterrupt, PlaybackInterrupt);
+INTGW(static, void,  recordinterrupt,   RecordInterrupt);
+INTGW(static, ULONG, cardinterrupt,  CardInterrupt);
+#endif
 
 /* Global in Card.c */
 extern const UWORD InputBits[];
-extern struct DOSIFace *IDOS;
-
-//extern struct timerequest *TimerIO;
-extern struct MsgPort* replymp; 
 
 /* Public functions in main.c */
-int card_init(struct CardData *card);
-void card_cleanup(struct CardData *card);
+int card_init(struct SB128_DATA *card);
+void card_cleanup(struct SB128_DATA *card);
 
-void AddResetHandler(struct CardData *card);
+#if !defined(__AROS__)
+void AddResetHandler(struct SB128_DATA *card);
+#endif
 
-void MicroDelay(unsigned int val)
+void micro_delay(unsigned int val)
 {
   struct Device*              TimerBase = NULL;
-  struct TimeRequest*         TimerIO = NULL;
+  struct timerequest*         TimerIO = NULL;
   struct MsgPort *            replymp;
 
-  replymp = (struct MsgPort *) IExec->CreatePort(NULL, 0);
+  replymp = (struct MsgPort *) CreateMsgPort();
   if (!replymp)
   {
-    IExec->DebugPrintF("SB128: Couldn't create reply port\n");
+    DebugPrintF("SB128: Couldn't create reply port\n");
     return;
   }
 
-  TimerIO = (struct TimeRequest *)IExec->CreateIORequest(replymp, sizeof(struct TimeRequest));
+  TimerIO = (struct TimeRequest *)CreateIORequest(replymp, sizeof(struct timerequest));
 
   if (TimerIO == NULL)
   {
-    IExec->DebugPrintF("SB128: Out of memory.\n");
+    DebugPrintF("SB128: Out of memory.\n");
     return;
   }
 
-  if (IExec->OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)TimerIO, 0) != 0)
+  if (OpenDevice((CONST_STRPTR) "timer.device", UNIT_MICROHZ, (struct IORequest *)TimerIO, 0) != 0)
   {
-    IExec->DebugPrintF("SB128: Unable to open 'timer.device'.\n");
+    DebugPrintF("SB128: Unable to open 'timer.device'.\n");
     return;
   }
   else
   {
-    TimerBase = (struct Device *)TimerIO->Request.io_Device;
+    TimerBase = (struct Device *)TimerIO->tr_node.io_Device;
   }
   
   if (TimerIO)
   {
-    TimerIO->Request.io_Command = TR_ADDREQUEST;
-    TimerIO->Time.Seconds = 0;
-    TimerIO->Time.Microseconds = val;
-    IExec->DoIO((struct IORequest *)TimerIO);
-    IExec->DeleteIORequest((struct IORequest *)TimerIO);
+    TimerIO->tr_node.io_Command = TR_ADDREQUEST;
+    TimerIO->tr_time.tv_secs = 0;
+    TimerIO->tr_time.tv_micro = val;
+    DoIO((struct IORequest *)TimerIO);
+    DeleteIORequest((struct IORequest *)TimerIO);
     TimerIO = NULL;
-    IExec->CloseDevice((struct IORequest *)TimerIO);
-    IExec->DeletePort(replymp);
+    CloseDevice((struct IORequest *)TimerIO);
   }
+
+    if (replymp)
+    {
+        DeleteMsgPort(replymp);
+    }
 }
 
-unsigned long src_ready(struct CardData *card)
+unsigned long src_ready(struct SB128_DATA *card)
 {
   struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
   unsigned int i;
@@ -97,33 +108,33 @@ unsigned long src_ready(struct CardData *card)
      of the SRC register. */
   for (i = 0; i < 0x1000; i++) 
   {
-    if (!((r = dev->InLong(card->iobase + SB128_SRC)) & SRC_BUSY))
+    if (!((r = pci_inl(SB128_SRC, card)) & SRC_BUSY))
         return r;
-    //MicroDelay(1);
+    //micro_delay(1);
   }  
 
-  IExec->DebugPrintF("SB128: SRC Ready timeout.\n");
+  DebugPrintF("SB128: SRC Ready timeout.\n");
   return 0;
 }
 
-void src_write(struct CardData *card, unsigned short addr, unsigned short data)
+void src_write(struct SB128_DATA *card, unsigned short addr, unsigned short data)
 {
   struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
   unsigned long r;
 
-//  IExec->ObtainSemaphore(&card->sb128_semaphore);
+//  ObtainSemaphore(&card->sb128_semaphore);
   
   /* Get copy of SRC register when it's not busy, add address and data, write back. */
   r = src_ready(card) & (SRC_DISABLE | SRC_DIS_DAC2 | SRC_DIS_ADC);
   r = r | (addr << SRC_ADDR_SHIFT);
   r = r | data;
-  dev->OutLong(card->iobase + SB128_SRC, r | SRC_WE);
-  //MicroDelay(1);
+  pci_outl(r | SRC_WE, SB128_SRC, card);
+  //micro_delay(1);
 
-//  IExec->ReleaseSemaphore(&card->sb128_semaphore);
+//  ReleaseSemaphore(&card->sb128_semaphore);
 }
 
-unsigned short src_read(struct CardData *card, unsigned short addr)
+unsigned short src_read(struct SB128_DATA *card, unsigned short addr)
 {
   struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
 
@@ -131,24 +142,24 @@ unsigned short src_read(struct CardData *card, unsigned short addr)
   
   unsigned long r;
 
-//  IExec->ObtainSemaphore(&card->sb128_semaphore);
+//  ObtainSemaphore(&card->sb128_semaphore);
   
   /* Get copy of SRC register when it's not busy, add address, write back,
      wait for ready, then read back value. */
   r = src_ready(card) & (SRC_DISABLE | SRC_DIS_DAC2 | SRC_DIS_ADC);
   r = r | (addr << SRC_ADDR_SHIFT);
-  dev->OutLong(card->iobase + SB128_SRC, r);
+  pci_outl(r, SB128_SRC, card);
   
   /* Give the chip a chance to set the busy bit. */
-  //MicroDelay(1);
+  //micro_delay(1);
   
-//  IExec->ReleaseSemaphore(&card->sb128_semaphore);
+//  ReleaseSemaphore(&card->sb128_semaphore);
   
   return (src_ready(card) & 0xFFFF);
 } 
 
 /* Translate AC97 commands to AK4531 commands, and write to the AK4531 codec */
-void ak4531_ac97_write(struct CardData *card, unsigned short reg, unsigned short val)
+void ak4531_ac97_write(struct SB128_DATA *card, unsigned short reg, unsigned short val)
 {
   char ak4531_L1 = 0;
   char ak4531_R1 = 0;
@@ -213,7 +224,7 @@ void ak4531_ac97_write(struct CardData *card, unsigned short reg, unsigned short
 
       default:
         /* Shouldn't happen */
-        IExec->DebugPrintF("SB128: Unsupported Record Input command\n");
+        DebugPrintF("SB128: Unsupported Record Input command\n");
     }
 
     switch (input_right) {
@@ -259,7 +270,7 @@ void ak4531_ac97_write(struct CardData *card, unsigned short reg, unsigned short
 
       default:
         /* Shouldn't happen */
-        IExec->DebugPrintF("SB128: Unsupported Record Input command\n");
+        DebugPrintF("SB128: Unsupported Record Input command\n");
     }
     
     /* Write input values to AK4531 */
@@ -410,7 +421,7 @@ void ak4531_ac97_write(struct CardData *card, unsigned short reg, unsigned short
         break;
 
       default:
-        IExec->DebugPrintF("SB128: Invalid value for Volume Set\n");
+        DebugPrintF("SB128: Invalid value for Volume Set\n");
     }
     
     return;
@@ -419,28 +430,28 @@ void ak4531_ac97_write(struct CardData *card, unsigned short reg, unsigned short
 
 }
 
-void codec_write(struct CardData *card, unsigned short reg, unsigned short val)
+void codec_write(struct SB128_DATA *card, unsigned short reg, unsigned short val)
 {
   struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
   unsigned long i, r;
 
   /* Take hold of the hardware semaphore */
-  //IExec->ObtainSemaphore(&card->sb128_semaphore);
+  //ObtainSemaphore(&card->sb128_semaphore);
 
   if(card->es1370)
   {
     for (i = 0; i < 10; i++)
     {
-      if (!(dev->InLong(card->iobase + SB128_STATUS) & CODEC_CSTAT ))
+      if (!(pci_inl(SB128_STATUS, card) & CODEC_CSTAT ))
         goto es1370_ok1;
-      IDOS->Delay(1);
+      Delay(1);
     }
-    IExec->DebugPrintF("SB128: Couldn't write to ak4531!\n");
+    DebugPrintF("SB128: Couldn't write to ak4531!\n");
     return;
     
     es1370_ok1:
-    dev->OutWord(card->iobase + ES1370_SB128_CODEC, ((unsigned char)reg << ES1370_CODEC_ADD_SHIFT) | (unsigned char)val);
-    MicroDelay(100);
+    pci_outw(((unsigned char)reg << ES1370_CODEC_ADD_SHIFT) | (unsigned char)val, ES1370_SB128_CODEC, card);
+    micro_delay(100);
   }
   else
   {
@@ -448,65 +459,64 @@ void codec_write(struct CardData *card, unsigned short reg, unsigned short val)
     /* Check for WIP. */
     for (i = 0; i < 0x1000; i++) 
     {
-  	  if (!(dev->InLong(card->iobase + SB128_CODEC) & CODEC_WIP ))
+  	  if (!(pci_inl(SB128_CODEC, card) & CODEC_WIP ))
   	    goto ok1;
   	}
-    IExec->DebugPrintF("SB128: Couldn't write to ac97! (1)\n");
-    //IExec->ReleaseSemaphore(&card->sb128_semaphore);
+    DebugPrintF("SB128: Couldn't write to ac97! (1)\n");
+    //ReleaseSemaphore(&card->sb128_semaphore);
     return;
    
     ok1:
     /* Get copy of SRC register when it's not busy. */
     r = src_ready(card);
     /* Enable "SRC State Data", an undocumented feature! */
-    dev->OutLong(card->iobase + SB128_SRC, (r & (SRC_DISABLE | SRC_DIS_DAC2 |
-          SRC_DIS_ADC)) | 0x00010000);
+    pci_outl((r & (SRC_DISABLE | SRC_DIS_DAC2 | SRC_DIS_ADC)) | 0x00010000, SB128_SRC, card);
 
     /* Wait for "state 0", to avoid "transition states". */
     for (i = 0; i < 0x1000; i++)
     {
-      if ((dev->InLong(card->iobase + SB128_SRC) & 0x00870000) == 0x00)
+      if ((pci_inl(SB128_SRC, card) & 0x00870000) == 0x00)
         break;
-      //MicroDelay(1);
+      //micro_delay(1);
     }
  
     /* Now wait for an undocumented bit to be set (and the SRC to be NOT busy) */
     for (i = 0; i < 0x1000; i++)
     {
-      if ((dev->InLong(card->iobase + SB128_SRC) & 0x00870000) == 0x00010000)
+      if ((pci_inl(SB128_SRC, card) & 0x00870000) == 0x00010000)
         break;
-      //MicroDelay(1);
+      //micro_delay(1);
     }
 
     /* Write out the value to the codec now. */
-    dev->OutLong(card->iobase + SB128_CODEC, (((reg << CODEC_ADD_SHIFT) & CODEC_ADD_MASK) | val));
+    pci_outl((((reg << CODEC_ADD_SHIFT) & CODEC_ADD_MASK) | val), SB128_CODEC, card);
 
     /* Delay to make sure the chip had time to set the WIP after
        the codec write. */
-    //MicroDelay(1);
+    //micro_delay(1);
  
     /* Restore SRC register. */
     src_ready(card);
-    dev->OutLong(card->iobase + SB128_SRC, r);
+    pci_outl(r, SB128_SRC, card);
  
     /* Check for WIP before returning. */
     for (i = 0; i < 0x1000; i++) 
     {
-	    if (!(dev->InLong(card->iobase + SB128_CODEC) & CODEC_WIP))
+	    if (!(pci_inl(SB128_CODEC, card) & CODEC_WIP))
       {
-        //IExec->ReleaseSemaphore(&card->sb128_semaphore); 
+        //ReleaseSemaphore(&card->sb128_semaphore); 
         return;
       }
     }
 
-    IExec->DebugPrintF("SB128: Couldn't write to ac97! (2)\n");
+    DebugPrintF("SB128: Couldn't write to ac97! (2)\n");
   }
 
-  //IExec->ReleaseSemaphore(&card->sb128_semaphore);
+  //ReleaseSemaphore(&card->sb128_semaphore);
   return;
 }
 
-unsigned short codec_read(struct CardData *card, unsigned short reg)
+unsigned short codec_read(struct SB128_DATA *card, unsigned short reg)
 {
   struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
   unsigned long i, r;
@@ -515,15 +525,15 @@ unsigned short codec_read(struct CardData *card, unsigned short reg)
   if(card->es1370)
     return 0;
   
-//IExec->ObtainSemaphore(&card->sb128_semaphore);
+//ObtainSemaphore(&card->sb128_semaphore);
   
   /* Check for WIP. */
   for (i = 0; i < 0x1000; i++) {
-	  if (!((dev->InLong(card->iobase + SB128_CODEC)) & CODEC_WIP ))
+	  if (!((pci_inl(SB128_CODEC, card)) & CODEC_WIP ))
 		  goto ok1;
 	}
-  IExec->DebugPrintF("SB128: Couldn't read from ac97! (1)\n");
-//  IExec->ReleaseSemaphore(&card->sb128_semaphore);
+  DebugPrintF("SB128: Couldn't read from ac97! (1)\n");
+//  ReleaseSemaphore(&card->sb128_semaphore);
   return 0;
    
   ok1:
@@ -532,74 +542,73 @@ unsigned short codec_read(struct CardData *card, unsigned short reg)
   r = src_ready(card);
 
   /* Enable "SRC State Data", an undocumented feature! */
-  dev->OutLong(card->iobase + SB128_SRC, (r & (SRC_DISABLE | SRC_DIS_DAC1 | SRC_DIS_DAC2 |
-        SRC_DIS_ADC)) | 0x00010000);
+  pci_outl((r & (SRC_DISABLE | SRC_DIS_DAC1 | SRC_DIS_DAC2 | SRC_DIS_ADC)) | 0x00010000, SB128_SRC, card);
 
   /* Wait for "state 0", to avoid "transition states".
      Seen in open code. */
   for (i = 0; i < 0x1000; i++)
   {
-    if ((dev->InLong(card->iobase + SB128_SRC) & 0x00870000) == 0x00)
+    if ((pci_inl(SB128_SRC, card) & 0x00870000) == 0x00)
       break;
-    //MicroDelay(1);    
+    //micro_delay(1);    
   }
 
  /* Now wait for an undocumented bit to be set (and the SRC to be NOT busy) */
   for (i = 0; i < 0x1000; i++)
   {
-    if ((dev->InLong(card->iobase + SB128_SRC) & 0x00870000) == 0x00010000)
+    if ((pci_inl(SB128_SRC, card) & 0x00870000) == 0x00010000)
       break;
-    //MicroDelay(1);
+    //micro_delay(1);
   }
 
   /* Write the read request to the chip now */
-  dev->OutLong(card->iobase + SB128_CODEC, (((reg << CODEC_ADD_SHIFT) & CODEC_ADD_MASK) | CODEC_READ));
+  pci_outl((((reg << CODEC_ADD_SHIFT) & CODEC_ADD_MASK) | CODEC_READ), SB128_CODEC, card);
   
   /* Give the chip time to respond to our read request. */
-  //MicroDelay(1);
+  //micro_delay(1);
 
   /* Restore SRC register. */
   src_ready(card);
-  dev->OutLong(card->iobase + SB128_SRC, r);
+  pci_outl(r, SB128_SRC, card);
  
   /* Check for WIP. */
   for (i = 0; i < 0x1000; i++) {
-    if (!((dev->InLong(card->iobase + SB128_CODEC)) & CODEC_WIP))
+    if (!((pci_inl(SB128_CODEC, card)) & CODEC_WIP))
       goto ok2;
   }
-  IExec->DebugPrintF("SB128: Couldn't read from ac97 (2)!\n");
-//  IExec->ReleaseSemaphore(&card->sb128_semaphore);
+  DebugPrintF("SB128: Couldn't read from ac97 (2)!\n");
+//  ReleaseSemaphore(&card->sb128_semaphore);
   return 0;
     
   ok2:
     
   /* Wait for RDY. */
-  //MicroDelay(1);
+  //micro_delay(1);
   for (i = 0; i < 0x1000; i++) {
-		if (!((dev->InLong(card->iobase + SB128_CODEC)) & CODEC_RDY))
+		if (!((pci_inl(SB128_CODEC, card)) & CODEC_RDY))
 		  goto ok3;
 	}
-  IExec->DebugPrintF("SB128: Couldn't read from ac97 (3)!\n");
-//  IExec->ReleaseSemaphore(&card->sb128_semaphore);
+  DebugPrintF("SB128: Couldn't read from ac97 (3)!\n");
+//  ReleaseSemaphore(&card->sb128_semaphore);
   return 0;
 
   ok3:
-  //MicroDelay(5); 
-  IDOS->Delay(1); //A delay here is crucial, remove this if you use MicroDelay()
-  val = dev->InLong(card->iobase + SB128_CODEC);
+  //micro_delay(5); 
+  Delay(1); //A delay here is crucial, remove this if you use micro_delay()
+  val = pci_inl(SB128_CODEC, card);
  
-//  IExec->ReleaseSemaphore(&card->sb128_semaphore);
+//  ReleaseSemaphore(&card->sb128_semaphore);
 
   return val;
 }
 
-void rate_set_adc(struct CardData *card, unsigned long rate)
+void rate_set_adc(struct SB128_DATA *card, unsigned long rate)
 {
   struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
   
   unsigned long n, truncm, freq;
 
-  //IExec->ObtainSemaphore(&card->sb128_semaphore);
+  //ObtainSemaphore(&card->sb128_semaphore);
   
   if (rate > 48000)
     rate = 48000;
@@ -608,7 +617,7 @@ void rate_set_adc(struct CardData *card, unsigned long rate)
 
   if (card->es1370)
   {
-    dev->OutLong(card->iobase + SB128_CONTROL, ((dev->InLong(card->iobase + SB128_CONTROL) & ~DAC2_DIV_MASK) | (DAC2_SRTODIV(rate) << DAC2_DIV_SHIFT)));
+    pci_outl(((pci_inl(SB128_CONTROL, card) & ~DAC2_DIV_MASK) | (DAC2_SRTODIV(rate) << DAC2_DIV_SHIFT)), SB128_CONTROL, card);
   }
   else
   {
@@ -640,17 +649,17 @@ void rate_set_adc(struct CardData *card, unsigned long rate)
 
   }
 
-    //IExec->ReleaseSemaphore(&card->sb128_semaphore);
+    //ReleaseSemaphore(&card->sb128_semaphore);
 
 }
 
-void rate_set_dac2(struct CardData *card, unsigned long rate)
+void rate_set_dac2(struct SB128_DATA *card, unsigned long rate)
 {
   struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
 
   unsigned long freq, r;
  
-  //IExec->ObtainSemaphore(&card->sb128_semaphore);
+  //ObtainSemaphore(&card->sb128_semaphore);
  
   if (rate > 48000)
     rate = 48000;
@@ -659,7 +668,7 @@ void rate_set_dac2(struct CardData *card, unsigned long rate)
   
   if(card->es1370)
   {
-    dev->OutLong(card->iobase + SB128_CONTROL, ((dev->InLong(card->iobase + SB128_CONTROL) & ~DAC2_DIV_MASK) | (DAC2_SRTODIV(rate) << DAC2_DIV_SHIFT)));
+    pci_outl(((pci_inl(SB128_CONTROL, card) & ~DAC2_DIV_MASK) | (DAC2_SRTODIV(rate) << DAC2_DIV_SHIFT)), SB128_CONTROL, card);
   }
   else
   {
@@ -668,18 +677,18 @@ void rate_set_dac2(struct CardData *card, unsigned long rate)
 
     /* Get copy of SRC register when it's not busy, clear, preserve the disable bits, write back. */
     r = src_ready(card) & (SRC_DISABLE | SRC_DIS_DAC1 | SRC_DIS_DAC2 | SRC_DIS_ADC);
-    dev->OutLong(card->iobase + SB128_SRC, r);
+    pci_outl(r, SB128_SRC, card);
   
     /* This is completely undocumented */
     src_write(card, SRC_DAC2 + SRC_INT, 
         (src_read(card, SRC_DAC2 + SRC_INT) & 0x00FF) | ((freq >> 5) & 0xFC00));
     src_write(card, SRC_DAC2 + SRC_VF, freq & 0x7FFF);
     r = (src_ready(card) & (SRC_DISABLE | SRC_DIS_DAC1 | SRC_DIS_ADC));
-    dev->OutLong(card->iobase + SB128_SRC, r);
+    pci_outl(r, SB128_SRC, card);
   
   }
 
-  //IExec->ReleaseSemaphore(&card->sb128_semaphore);
+  //ReleaseSemaphore(&card->sb128_semaphore);
 
 }
 
@@ -691,18 +700,19 @@ void rate_set_dac2(struct CardData *card, unsigned long rate)
    handling CAMD support too, it needs to be done at driver loading
    time. */
 
-struct CardData*
+struct SB128_DATA*
 AllocDriverData( struct PCIDevice *    dev,
 		 struct DriverBase* AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-  struct CardData* card;
+  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
+  struct SB128_DATA* card;
   UWORD command_word;
   int i;
-  BOOL res = FALSE;
+
+    bug("[SB128]: %s()\n", __PRETTY_FUNCTION__);
 
   // FIXME: This should be non-cachable, DMA-able memory
-  card = IExec->AllocVec( sizeof( *card ), MEMF_PUBLIC | MEMF_CLEAR );
+  card = AllocVec( sizeof( *card ), MEMF_PUBLIC | MEMF_CLEAR );
 
   if( card == NULL )
   {
@@ -712,55 +722,64 @@ AllocDriverData( struct PCIDevice *    dev,
 
   card->ahisubbase = AHIsubBase;
 
-  card->interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
+  card->interrupt.is_Node.ln_Type = IRQTYPE;
   card->interrupt.is_Node.ln_Pri  = 0;
   card->interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  card->interrupt.is_Code         = (void(*)(void)) CardInterrupt;
+#ifdef __AROS__
+    card->interrupt.is_Code         = (void(*)(void))&cardinterrupt;
+#else
+    card->interrupt.is_Code         = (void(*)(void))CardInterrupt;
+#endif
   card->interrupt.is_Data         = (APTR) card;
 
-  card->playback_interrupt.is_Node.ln_Type = NT_INTERRUPT;
+  card->playback_interrupt.is_Node.ln_Type = IRQTYPE;
   card->playback_interrupt.is_Node.ln_Pri  = 0;
   card->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  card->playback_interrupt.is_Code         = PlaybackInterrupt;
+#ifdef __AROS__
+    card->playback_interrupt.is_Code         = (void(*)(void))&playbackinterrupt;
+#else
+    card->playback_interrupt.is_Code         = (void(*)(void))PlaybackInterrupt;
+#endif
   card->playback_interrupt.is_Data         = (APTR) card;
 
-  card->record_interrupt.is_Node.ln_Type = NT_INTERRUPT;
+  card->record_interrupt.is_Node.ln_Type = IRQTYPE;
   card->record_interrupt.is_Node.ln_Pri  = 0;
   card->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  card->record_interrupt.is_Code         = RecordInterrupt;
+#ifdef __AROS__
+    card->record_interrupt.is_Code         = (void(*)(void))&recordinterrupt;
+#else
+    card->record_interrupt.is_Code         = (void(*)(void))RecordInterrupt;
+#endif
   card->record_interrupt.is_Data         = (APTR) card;
 
   card->pci_dev = dev;
 
-  command_word = dev->ReadConfigWord( PCI_COMMAND );  
+  command_word = inw_config( PCI_COMMAND , dev);  
   command_word |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER;
-  dev->WriteConfigWord( PCI_COMMAND, command_word );
+  outw_config( PCI_COMMAND, command_word , dev);
 
   card->pci_master_enabled = TRUE;
 
-  card->iobase  = dev->GetResourceRange(0)->BaseAddress;
-  card->length  = ~( dev->GetResourceRange(0)->Size & PCI_BASE_ADDRESS_IO_MASK );
-  card->irq     = dev->MapInterrupt();
-  card->chiprev = dev->ReadConfigByte( PCI_REVISION_ID);
-  card->model   = dev->ReadConfigWord( PCI_SUBSYSTEM_ID);
+  card->iobase  = ahi_pci_get_base_address(0, dev);
+  card->length  = ~( ahi_pci_get_base_size(0, dev) & PCI_BASE_ADDRESS_IO_MASK );
+  card->irq     = ahi_pci_get_irq(dev);
+  card->chiprev = inb_config(PCI_REVISION_ID, dev);
+  card->model   = inw_config(PCI_SUBSYSTEM_ID, dev);
 
-  IExec->DebugPrintF("SB128: Device = %x, Vendor = %x, Revision = %x\n", dev->ReadConfigWord(PCI_DEVICE_ID),
-                     dev->ReadConfigWord(PCI_VENDOR_ID), dev->ReadConfigByte(PCI_REVISION_ID));
-
+    bug("[CMI8738]: %s: iobase = 0x%p, len = %d\n", __PRETTY_FUNCTION__, card->iobase, card->length);
 
   /* Initialise hardware access Semaphore */
-  IExec->InitSemaphore(&card->sb128_semaphore);
+  InitSemaphore(&card->sb128_semaphore);
 
   
   /* Initialize chip */
   if( card_init( card ) < 0 )
   {
-    IExec->DebugPrintF("SB128: Unable to initialize Card subsystem.");
+    DebugPrintF("SB128: Unable to initialize Card subsystem.");
     return NULL;
   }
 
-
-  res = IExec->AddIntServer(dev->MapInterrupt(), &card->interrupt );
+    ahi_pci_add_intserver(&card->interrupt, dev);
   card->interrupt_added = TRUE;
   
 
@@ -772,8 +791,10 @@ AllocDriverData( struct PCIDevice *    dev,
   card->output_volume  = Linear2MixerGain( 0x10000, &card->output_volume_bits );
   SaveMixerState(card);
 
+#if !defined(__AROS__)
   AddResetHandler(card);
-  
+#endif
+
   return card;
 }
 
@@ -785,7 +806,7 @@ AllocDriverData( struct PCIDevice *    dev,
 /* And this code used to be in _AHIsub_FreeAudio(). */
 
 void
-FreeDriverData( struct CardData* card,
+FreeDriverData( struct SB128_DATA* card,
 		struct DriverBase*  AHIsubBase )
 {
   if( card != NULL )
@@ -801,30 +822,30 @@ FreeDriverData( struct CardData* card,
       {
         UWORD cmd;
 
-        cmd = ((struct PCIDevice * ) card->pci_dev)->ReadConfigWord( PCI_COMMAND );
+        cmd = inw_config(PCI_COMMAND, (struct PCIDevice * ) card->pci_dev);
         cmd &= ~( PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER );
-        ((struct PCIDevice * ) card->pci_dev)->WriteConfigWord( PCI_COMMAND, cmd );
+        outw_config(PCI_COMMAND, cmd, (struct PCIDevice * ) card->pci_dev );
       }
     }
 
     if( card->interrupt_added )
     {
-      IExec->RemIntServer(((struct PCIDevice * ) card->pci_dev)->MapInterrupt(), &card->interrupt );
+      ahi_pci_rem_intserver(&card->interrupt, card->pci_dev);
     }
 
-    IExec->FreeVec( card );
+    FreeVec( card );
   }
 }
 
 
-int card_init(struct CardData *card)
+int card_init(struct SB128_DATA *card)
 {
     struct PCIDevice *dev = (struct PCIDevice *) card->pci_dev;
     unsigned short cod;
     unsigned int i;
 
     /* Check if the card is an original ES1370 - different code needed */
-    if (dev->ReadConfigWord(2) == 0x5000)
+    if (inw_config(2, dev) == 0x5000)
         card->es1370 = TRUE;
     else
         card->es1370 = FALSE;
@@ -833,9 +854,9 @@ int card_init(struct CardData *card)
     if (card->es1370)
     {
       /* Enable CODEC access, set DAC sample rate to 44100 */
-      dev->OutLong(card->iobase + SB128_CONTROL, CTRL_CDC_EN | (DAC2_SRTODIV(44100) << DAC2_DIV_SHIFT));
-      dev->OutLong(card->iobase + SB128_SCON, 0x00);
-      IExec->DebugPrintF("SB128: Did RATE init\n");
+      pci_outl(CTRL_CDC_EN | (DAC2_SRTODIV(44100) << DAC2_DIV_SHIFT), SB128_CONTROL, card);
+      pci_outl(0x00, SB128_SCON, card);
+      DebugPrintF("SB128: Did RATE init\n");
       
       /* CODEC initialisation */
       codec_write(card, AK4531_RESET,             0x03); /* Enable CODEC */
@@ -877,37 +898,37 @@ int card_init(struct CardData *card)
       codec_write(card, AK4531_INPUT_MUX_L_2,  0x80);
       codec_write(card, AK4531_INPUT_MUX_R_2,  0x80);
 
-      IExec->DebugPrintF("SB128: Did VOLUME init\n");
+      DebugPrintF("SB128: Did VOLUME init\n");
     }   
     else
     {
       /* Basic clear of everything */
-      dev->OutLong(card->iobase + SB128_CONTROL, 0x00);
-      dev->OutLong(card->iobase + SB128_SCON, 0x00);
-      dev->OutLong(card->iobase + SB128_LEGACY, 0x00);
+      pci_outl(0x00, SB128_CONTROL, card);
+      pci_outl(0x00, SB128_SCON, card);
+      pci_outl(0x00, SB128_LEGACY, card);
 
       /* Magical CT5880 AC97 enable bit plus 20ms delay
       (Gotta love the undocumented stuff) */
-      dev->OutLong(card->iobase + SB128_STATUS, 0x20000000);
-      IDOS->Delay(1);
+      pci_outl(0x20000000, SB128_STATUS, card);
+      Delay(1);
 
       /* Assert the AC97 reset, and wait 20ms */
-      dev->OutLong(card->iobase + SB128_CONTROL, CODEC_RESET);
-      IDOS->Delay(1);
+      pci_outl(CODEC_RESET, SB128_CONTROL, card);
+      Delay(1);
       /* De-assert delay, and wait 20ms */
-      dev->OutLong(card->iobase + SB128_CONTROL, 0x00);
-      IDOS->Delay(1);
+      pci_outl(0x00, SB128_CONTROL, card);
+      Delay(1);
 
-      IExec->DebugPrintF("SB128: Did AC97 reset.\n");
+      DebugPrintF("SB128: Did AC97 reset.\n");
 
       /* Disable the Sample Rate Converter (SRC) */
       src_ready(card);
-      dev->OutLong(card->iobase + SB128_SRC, SRC_DISABLE);
+      pci_outl(SRC_DISABLE, SB128_SRC, card);
       /* Clear the SRC RAM */
       for (i = 0; i < 0x80; i++)
         src_write(card, i, 0);
 
-      IExec->DebugPrintF("SB128: Did SRC wipe.\n");
+      DebugPrintF("SB128: Did SRC wipe.\n");
 
       /* Perform basic configuration of the SRC, not well documented! */
       src_write(card, SRC_DAC1 + SRC_TRUNC, 0x100);
@@ -921,19 +942,19 @@ int card_init(struct CardData *card)
       src_write(card, SRC_VOL_DAC2, 0x1000);
       src_write(card, SRC_VOL_DAC2 + 1, 0x1000);
 
-      IExec->DebugPrintF("SB128: Did SRC init.\n");
+      DebugPrintF("SB128: Did SRC init.\n");
 
       rate_set_adc(card, 44100);
       rate_set_dac2(card, 44100);
 
       /* Re-enable the SRC */
       src_ready(card);
-      dev->OutLong(card->iobase + SB128_SRC, 0);
+      pci_outl(0, SB128_SRC, card);
 
       card->currentPlayFreq = 9;
       card->currentRecFreq = 9;
 
-      IExec->DebugPrintF("SB128: Did RATE init.\n");
+      DebugPrintF("SB128: Did RATE init.\n");
 
       /* Initialise registers of AC97 to default */
       codec_write(card, AC97_RESET, 0x00);
@@ -956,23 +977,23 @@ int card_init(struct CardData *card)
       codec_write(card, AC97_AUX_VOL,           0x0808 );
       codec_write(card, AC97_PCMOUT_VOL,        0x0808 );
 
-      IExec->DebugPrintF("SB128: Did VOLUME init.\n");
+      DebugPrintF("SB128: Did VOLUME init.\n");
 
       cod = codec_read(card, AC97_RESET);
-      IExec->DebugPrintF("SB128: AC97 capabilities = %x\n", cod);
+      DebugPrintF("SB128: AC97 capabilities = %x\n", cod);
 
       cod = codec_read(card, AC97_VENDOR_ID0);
-      IExec->DebugPrintF("SB128: AC97_VENDOR_ID0 = %x\n", cod);
+      DebugPrintF("SB128: AC97_VENDOR_ID0 = %x\n", cod);
 
       cod = codec_read(card, AC97_VENDOR_ID1);
-      IExec->DebugPrintF("SB128: AC97_VENDOR_ID1 = %x\n", cod);
+      DebugPrintF("SB128: AC97_VENDOR_ID1 = %x\n", cod);
     }
 
     return 0;
 }
 
 
-void card_cleanup(struct CardData *card)
+void card_cleanup(struct SB128_DATA *card)
 {
 }
 
@@ -983,7 +1004,7 @@ void card_cleanup(struct CardData *card)
 ******************************************************************************/
 
 void
-SaveMixerState( struct CardData* card )
+SaveMixerState( struct SB128_DATA* card )
 {
   card->ac97_mic    = codec_read( card, AC97_MIC_VOL );
   card->ac97_cd     = codec_read( card, AC97_CD_VOL );
@@ -994,7 +1015,7 @@ SaveMixerState( struct CardData* card )
 
 
 void
-RestoreMixerState( struct CardData* card )
+RestoreMixerState( struct SB128_DATA* card )
 {
   if(card->es1370)
   {
@@ -1016,7 +1037,7 @@ RestoreMixerState( struct CardData* card )
 }
 
 void
-UpdateMonitorMixer( struct CardData* card )
+UpdateMonitorMixer( struct SB128_DATA* card )
 {
   int   i  = InputBits[ card->input ];
   UWORD m  = card->monitor_volume_bits & 0x801f;
@@ -1180,62 +1201,59 @@ SamplerateToLinearPitch( ULONG samplingrate )
 }
 
 
-void *pci_alloc_consistent(size_t size, APTR * NonAlignedAddress)
+void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int boundary)
 {
-  void* address;
-  unsigned long a;
+    void* address;
+    unsigned long a;
 
-  if (IExec->OpenResource("newmemory.resource"))
-  {
-    address = IExec->AllocVecTags(size, AVT_Type, MEMF_SHARED, AVT_Contiguous, TRUE, AVT_Lock, TRUE,
-                                  AVT_PhysicalAlignment, CACHELINE_SIZE, AVT_Clear, 0, TAG_DONE);
+    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
 
-    *NonAlignedAddress = address;
-  }
-  else
-  {
-    address = IExec->AllocVec(size + CACHELINE_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
+    address = (void *) AllocVec(size + boundary, MEMF_PUBLIC | MEMF_CLEAR);
 
-    *NonAlignedAddress = address;
-
-    if( address != NULL )
+    if (address != NULL)
     {
-      a = (unsigned long) address;
-      a = (a + CACHELINE_SIZE - 1) & ~(CACHELINE_SIZE - 1);
-      address = (void *) a;
+        a = (unsigned long) address;
+        a = (a + boundary - 1) & ~(boundary - 1);
+        address = (void *) a;
     }
- 
-  }
-  
-  return address;
+
+    if (NonAlignedAddress)
+    {
+        *NonAlignedAddress = address;
+    }
+
+    return address;
 }
 
 
 void pci_free_consistent(void* addr)
 {
-  IExec->FreeVec(addr);
+    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+
+    FreeVec(addr);
 }
 
-static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct CardData *card)
+static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct SB128_DATA *card)
 {
   struct PCIDevice *dev = card->pci_dev;
 
   //Stop SB128 interrupts and playback/recording
   unsigned long ctrl;
 
-  ctrl = dev->InLong(card->iobase + SB128_CONTROL);
+  ctrl = pci_inl(SB128_CONTROL, card);
   ctrl &= ( ~(CTRL_DAC2_EN)  &  ~(CTRL_ADC_EN) );
   
   /* Stop */
-  dev->OutLong(card->iobase + SB128_CONTROL, ctrl);
+  pci_outl(ctrl, SB128_CONTROL, card);
 
   /* Clear and mask interrupts */
-  dev->OutLong(card->iobase + SB128_SCON, (dev->InLong(card->iobase + SB128_SCON)) & SB128_IRQ_MASK);
+  pci_outl((pci_inl(SB128_SCON, card) & SB128_IRQ_MASK), SB128_SCON, card);
 
   return 0UL;
 }
 
-void AddResetHandler(struct CardData *card)
+#if !defined(__AROS__)
+void AddResetHandler(struct SB128_DATA *card)
 {
   static struct Interrupt interrupt;
 
@@ -1245,6 +1263,6 @@ void AddResetHandler(struct CardData *card)
   interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
   interrupt.is_Node.ln_Name = "SB128 Reset Handler";
 
-  IExec->AddResetCallback( &interrupt );
+  AddResetCallback( &interrupt );
 }
-
+#endif

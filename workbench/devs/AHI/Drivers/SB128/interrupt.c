@@ -15,16 +15,24 @@ All Rights Reserved.
 
 */
 
-#include <config.h>
+//#include <config.h>
 
+#if !defined(__AROS__)
 #undef __USE_INLINE__
 #include <proto/expansion.h>
+#endif
 #include <libraries/ahi_sub.h>
 #include <proto/exec.h>
 #include <stddef.h>
 #include "library.h"
 #include "regs.h"
 #include "interrupt.h"
+#include "pci_wrapper.h"
+#ifdef __AROS__
+#define DEBUG 1
+#include <aros/debug.h>
+#define DebugPrintF bug
+#endif
 
 #define min(a,b) ((a)<(b)?(a):(b))
 
@@ -35,7 +43,7 @@ unsigned long z = 0;
 
 
 LONG
-CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* card )
+CardInterrupt( struct SB128_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
@@ -43,13 +51,16 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
 
   ULONG intreq;
   LONG  handled = 0;
-  while (((intreq = (dev->InLong(card->iobase + SB128_STATUS))) & SB128_INT_PENDING) != 0)
+    
+    bug("[CMI8738]: %s(card @ 0x%p)\n", __PRETTY_FUNCTION__, card);
+
+  while (((intreq = (pci_inl(SB128_STATUS, card))) & SB128_INT_PENDING) != 0)
   {
     if( intreq & SB128_INT_DAC2 && AudioCtrl != NULL )
     {
       /* Clear interrupt pending bit(s) and re-enable playback interrupts */
-      dev->OutLong(card->iobase + SB128_SCON, (dev->InLong(card->iobase + SB128_SCON) & ~SB128_DAC2_INTEN));
-      dev->OutLong(card->iobase + SB128_SCON, (dev->InLong(card->iobase + SB128_SCON) | SB128_DAC2_INTEN));
+      pci_outl((pci_inl(SB128_SCON, card) & ~SB128_DAC2_INTEN), SB128_SCON, card);
+      pci_outl((pci_inl(SB128_SCON, card) | SB128_DAC2_INTEN), SB128_SCON, card);
 
       if (card->flip == 0) /* just played buf 1 */
       {
@@ -63,14 +74,14 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
       }
       
       card->playback_interrupt_enabled = FALSE;
-      IExec->Cause( &card->playback_interrupt );
+      Cause( &card->playback_interrupt );
     }
 
     if( intreq & SB128_INT_ADC && AudioCtrl != NULL )
     {
       /* Clear interrupt pending bit(s) and re-enable record interrupts */
-      dev->OutLong(card->iobase + SB128_SCON, (dev->InLong(card->iobase + SB128_SCON) & ~SB128_ADC_INTEN));
-      dev->OutLong(card->iobase + SB128_SCON, (dev->InLong(card->iobase + SB128_SCON) | SB128_ADC_INTEN));
+      pci_outl((pci_inl(SB128_SCON, card) & ~SB128_ADC_INTEN), SB128_SCON, card);
+      pci_outl((pci_inl(SB128_SCON, card) | SB128_ADC_INTEN), SB128_SCON, card);
 
       if( card->record_interrupt_enabled )
       {
@@ -87,7 +98,7 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
             card->current_record_buffer = (APTR) ((unsigned long) card->record_buffer + card->current_record_bytesize);
          }
          card->record_interrupt_enabled = FALSE;
-         IExec->Cause( &card->record_interrupt );
+         Cause( &card->record_interrupt );
       }
     }
     exit:
@@ -104,7 +115,7 @@ CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, stru
 ******************************************************************************/
 
 void
-PlaybackInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* card )
+PlaybackInterrupt( struct SB128_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
@@ -120,12 +131,12 @@ PlaybackInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, 
     size_t samples;
     int    i;
     
-  	skip_mix = IUtility->CallHookPkt( AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0 );  
-    IUtility->CallHookPkt( AudioCtrl->ahiac_PlayerFunc, (Object*) AudioCtrl, NULL );
+  	skip_mix = CallHookPkt( AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0 );  
+    CallHookPkt( AudioCtrl->ahiac_PlayerFunc, (Object*) AudioCtrl, NULL );
 
   if( ! skip_mix )
     {
-      IUtility->CallHookPkt( AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, card->mix_buffer );
+      CallHookPkt( AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, card->mix_buffer );
     }
     
     /* Now translate and transfer to the DMA buffer */
@@ -149,9 +160,9 @@ PlaybackInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, 
     }
     
     //Flush cache so that data is completely written to the DMA buffer - Articia hack
-    IExec->CacheClearE(card->current_buffer, card->current_bytesize, CACRF_ClearD);
+    CacheClearE(card->current_buffer, card->current_bytesize, CACRF_ClearD);
     
-    IUtility->CallHookPkt( AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0 );
+    CallHookPkt( AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0 );
   }
   card->playback_interrupt_enabled = TRUE;
 }
@@ -162,7 +173,7 @@ PlaybackInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, 
 ******************************************************************************/
 
 void
-RecordInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* card )
+RecordInterrupt( struct SB128_DATA* card )
 {
   struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
@@ -179,7 +190,7 @@ RecordInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, st
   WORD* ptr = card->current_record_buffer;
 
   //Invalidate cache so that data read from DMA buffer is correct - Articia hack
-  IExec->CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
+  CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
 
   while( i < shorts )
   {
@@ -189,10 +200,10 @@ RecordInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, st
     ++ptr;
   }
 
-  IUtility->CallHookPkt( AudioCtrl->ahiac_SamplerFunc, (Object*) AudioCtrl, &rm );
+  CallHookPkt( AudioCtrl->ahiac_SamplerFunc, (Object*) AudioCtrl, &rm );
 
   //Invalidate cache so that data read from DMA buffer is correct - Articia hack
-  IExec->CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
+  CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
 
   card->record_interrupt_enabled = TRUE;
 }
