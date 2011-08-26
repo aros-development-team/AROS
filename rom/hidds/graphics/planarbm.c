@@ -159,6 +159,27 @@ VOID PBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
+VOID PBM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
+{
+    struct planarbm_data *data = OOP_INST_DATA(cl, obj);
+    ULONG idx;
+
+    if (IS_BITMAP_ATTR(msg->attrID, idx))
+    {
+        switch(idx)
+        {
+        case aoHidd_BitMap_Depth:
+            /* Planar bitmaps may have a variable depth. */
+	    *msg->storage = data->depth;
+	    return;
+	}
+    }
+
+    OOP_DoSuperMethod(cl, obj, &msg->mID);
+}
+
+/****************************************************************************************/
+
 VOID PBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutPixel *msg)
 {
@@ -539,9 +560,9 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
     	{ aHidd_BitMap_PixFmtTags   , 0 },
 	{ TAG_DONE  	    	    , 0 }
     };
-	
+    struct pHidd_BitMap_SetBitMapTags;
     ULONG i;
-    
+
     data = OOP_INST_DATA(cl, o);
     bm = msg->bitMap;
     
@@ -593,7 +614,7 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
     bmtags[4].ti_Data = (IPTR)pftags;
 
     /* Call private bitmap method to update superclass */
-    if (!HIDD_BitMap_SetBitMapTags(o, bmtags))
+    if (!BM__Hidd_BitMap__SetBitMapTags(CSD(cl)->bitmapclass, o, bmtags))
     {
     	ULONG i;
 	

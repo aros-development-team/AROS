@@ -1647,7 +1647,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 	    {
 		case aoHidd_Gfx_PixFmtTags:
 		    def_pixfmt_tags[num_Hidd_PixFmt_Attrs].ti_Data = tag->ti_Data;
-		    mdb->pixfmts[pfidx] = HIDD_Gfx_RegisterPixFmt(o, def_pixfmt_tags);
+		    mdb->pixfmts[pfidx] = GFX__Hidd_Gfx__RegisterPixFmt(cl, o, def_pixfmt_tags);
 		    
 		    if (NULL == mdb->pixfmts[pfidx])
 		    {
@@ -2982,8 +2982,9 @@ VOID GFX__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
 
 /****************************************************************************************/
 
-OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	    	  struct pHidd_Gfx_RegisterPixFmt *msg)
+/* The following two methods are private and not virtual */
+
+OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o, struct TagItem *pixFmtTags)
 {
     HIDDT_PixelFormat 	    cmp_pf;
     struct class_static_data *data;
@@ -2992,7 +2993,7 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
     memset(&cmp_pf, 0, sizeof(cmp_pf));
 
     data = CSD(cl);
-    if (!parse_pixfmt_tags(msg->pixFmtTags, &cmp_pf, 0, CSD(cl)))
+    if (!parse_pixfmt_tags(pixFmtTags, &cmp_pf, 0, CSD(cl)))
     {
     	D(bug("!!! FAILED PARSING TAGS IN Gfx::RegisterPixFmt() !!!\n"));
 	return FALSE;
@@ -3019,14 +3020,15 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
     if (retpf)
 	/* Increase pf refcount */
 	AROS_ATOMIC_INC(retpf->refcount);
-    else {
+    else
+    {
     	/* Could not find an alike pf, Create a new pfdb node  */	    
 	/* Since we pass NULL as the taglist below, the PixFmt class will just create a dummy pixfmt */
 	retpf = OOP_NewObject(CSD(cl)->pixfmtclass, NULL, NULL);
 	if (retpf) {
 	    /* We have one user */
 	    retpf->refcount = 1;
-		
+
 	    /* Initialize the pixfmt object the "ugly" way */
 	    memcpy(retpf, &cmp_pf, sizeof (HIDDT_PixelFormat));
 		
@@ -3056,11 +3058,12 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	  struct pHidd_Gfx_ReleasePixFmt *msg)
+/* This method doesn't need object pointer, it's static. */
+
+VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf)
 {
     struct class_static_data *data;
-    struct pixfmt_data *pixfmt = (struct pixfmt_data *)msg->pixFmt;
+    struct pixfmt_data *pixfmt = (struct pixfmt_data *)pf;
 
     DPF(bug("release_pixfmt 0x%p\n", pixfmt));
 
@@ -4079,43 +4082,3 @@ static struct pixfmt_data *find_pixfmt(HIDDT_PixelFormat *tofind, struct class_s
     ReleaseSemaphore(&csd->pfsema);
     return retpf;
 }
-
-/****************************************************************************************/
-
-/* Stubs for private methods */
-
-/****************************************************************************************/
-
-OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags)
-{
-   STATIC_MID;  
-   struct pHidd_Gfx_RegisterPixFmt p, *msg = &p;
-   
-   if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_RegisterPixFmt);
-   
-   p.mID = static_mid;
-   
-   p.pixFmtTags = pixFmtTags;
-   
-   return (OOP_Object *)OOP_DoMethod(o, (OOP_Msg)msg);
-   
-}
-
-/****************************************************************************************/
-
-VOID HIDD_Gfx_ReleasePixFmt(OOP_Object *o, OOP_Object *pixFmt)
-{
-   STATIC_MID;  
-   struct pHidd_Gfx_ReleasePixFmt p, *msg = &p;
-   
-   if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ReleasePixFmt);
-   
-   p.mID = static_mid;
-   
-   p.pixFmt = pixFmt;
-   
-   OOP_DoMethod(o, (OOP_Msg)msg);
-   
-}
-
-/****************************************************************************************/
