@@ -86,12 +86,19 @@ cpu_detect_asm:
 	movec	%d0,%itt0
 	move.w	#0x000f,%d0
  	/* PCR is 68060 only */
-	movec	%pcr,%d0
+	movec	%pcr,%d1
 	/* 68060 */
-	move.l	%d0,%a2@(4) // save PCR
 	moveq	#0,%d0
- 	/* enable FPU */
- 	movec	%d0,%pcr
+	cmp.w	#0x0600,%d1
+	bcc.s	2f
+	/* rev5 or older 68060 revision
+	 * enable I14 and I15 errata workaround
+	 */
+	bset	#5,%d0
+2:	/* Also enables FPU */
+	movec	%d0,%pcr
+ 	movec	%pcr,%d0
+ 	move.l	%d0,%a2@(4) // save PCR
 	move.w	#0x008f,%d0
 cpu_detect_trap_illg:
 	move.l %a1,%sp	/* remove exception stack frame */
