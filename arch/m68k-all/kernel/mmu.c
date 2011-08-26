@@ -29,21 +29,33 @@
 UBYTE *zeropagedescriptor;
 
 /* Allocate MMU descriptor page, it needs to be (1 << bits) * sizeof(ULONG) aligned */
-static ULONG alloc_descriptor(UBYTE mmutype, UBYTE bits)
+static ULONG alloc_descriptor(struct KernelBase *kb, UBYTE mmutype, UBYTE bits, UBYTE level)
 {
+	struct PlatformData *pd = kb->kb_PlatformData;
 	ULONG *desc, dout;
 	ULONG size = sizeof(ULONG) * (1 << bits);
+	ULONG ps = 1 << PAGE_SIZE;
 	UWORD i;
 
-	desc = AllocMem(3 * size, MEMF_PUBLIC);
-	if (!desc)
-		return 0;
-	Forbid();
-	FreeMem(desc, 3 * size);
-	desc = AllocAbs(size, (APTR)((((ULONG)desc) + size - 1) & ~(size - 1)));
-	Permit();
-	if (!desc)
-		return 0;
+	while (pd->page_free < size) {
+		/* allocate in aligned blocks of PAGE_SIZE */
+		UBYTE *mem = AllocMem(2 * ps, MEMF_PUBLIC);
+		if (!mem)
+			return 0;
+		Forbid();
+		FreeMem(mem, 2 * ps);
+		mem = AllocAbs(ps, (APTR)((((ULONG)mem) + ps - 1) & ~(ps - 1)));
+		Permit();
+		if (!mem)
+			return 0;
+		pd->page_ptr = mem;
+		pd->page_free = ps;
+		if (mmutype >= MMU040) {
+			/* 68040+ MMU tables should be serialized */
+			map_region(kb, mem, NULL, ps, FALSE, FALSE, FALSE, CM_SERIALIZED);
+		}
+	}
+	desc = (ULONG*)pd->page_ptr;
 	for (i = 0; i < (1 << bits); i++)
 		desc[i] = INVALID_DESCRIPTOR;
 	dout = (ULONG)desc;
@@ -51,6 +63,9 @@ static ULONG alloc_descriptor(UBYTE mmutype, UBYTE bits)
 		dout |= 2; /* Valid 4 byte descriptor */
 	else
 		dout |= 3; /* Resident descriptor */
+	desc += size;
+	pd->page_ptr += size;
+	pd->page_free -= size;
 	return dout;
 }	
 
@@ -60,7 +75,7 @@ BOOL init_mmu(struct KernelBase *kb)
 	
 	if (!mmutype)
 		return FALSE;
-	kb->kb_PlatformData->MMU_Level_A = (ULONG*)(alloc_descriptor(mmutype, LEVELA_SIZE) & ~3);
+	kb->kb_PlatformData->MMU_Level_A = (ULONG*)(alloc_descriptor(kb, mmutype, LEVELA_SIZE, 0) & ~3);
 	if (!kb->kb_PlatformData->MMU_Level_A) {
 		kb->kb_PlatformData->mmu_type = 0;
 		return FALSE;
@@ -263,12 +278,13 @@ void debug_mmu(struct KernelBase *kb)
 
 BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode)
 {
-	ULONG desca, descb, pagedescriptor;
+	struct PlatformData *pd = kb->kb_PlatformData;
+	ULONG desca, descb, descc, pagedescriptor;
 	ULONG page_size = 1 << PAGE_SIZE;
 	ULONG page_mask = page_size - 1;
 	UBYTE mmutype;
 	
-	mmutype = kb->kb_PlatformData->mmu_type;
+	mmutype = pd->mmu_type;
 	if (!mmutype)
 		return FALSE;
 	if (kb->kb_PlatformData->MMU_Level_A == NULL)
@@ -287,14 +303,15 @@ BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, B
 	while (size) {
 		desca = LEVELA(kb->kb_PlatformData->MMU_Level_A, addr);
 		if (ISINVALID(desca))
-			desca = LEVELA(kb->kb_PlatformData->MMU_Level_A, addr) = alloc_descriptor(mmutype, LEVELB_SIZE);
+			desca = LEVELA(kb->kb_PlatformData->MMU_Level_A, addr) = alloc_descriptor(kb, mmutype, LEVELB_SIZE, 1);
 		if (ISINVALID(desca))
 			return FALSE;
 		descb = LEVELB(desca, addr);
 		if (ISINVALID(descb))
-			descb = LEVELB(desca, addr) = alloc_descriptor(mmutype, LEVELC_SIZE);
+			descb = LEVELB(desca, addr) = alloc_descriptor(kb, mmutype, LEVELC_SIZE, 2);
 		if (ISINVALID(descb))
 			return FALSE;
+		descc = LEVELC(descb, addr);
 
 		if (invalid) {
 			pagedescriptor = INVALID_DESCRIPTOR;
@@ -325,7 +342,9 @@ BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, B
 					pagedescriptor |= 4; // write-protected
 				if (supervisor)
 					pagedescriptor |= 1 << 7;
-				pagedescriptor |= cachemode << 5;
+				// do not override non-cached
+				if ((descc & 3) == 0 || cachemode > ((descc >> 5) & 3))
+					pagedescriptor |= cachemode << 5;
 				if (addr != 0 || size != page_size)
 					pagedescriptor |= 1 << 10; // global if not zero page
 			}
