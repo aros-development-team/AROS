@@ -9,7 +9,11 @@ limitations under the License.
 The Original Code is written by Davy Wentzler.
 */
 
-//#include <config.h>
+#ifdef __AROS__
+#define DEBUG 1
+#include <aros/debug.h>
+#define DebugPrintF bug
+#endif
 
 #include <exec/memory.h>
 
@@ -20,12 +24,6 @@ The Original Code is written by Davy Wentzler.
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-
-#ifdef __AROS__
-#define DEBUG 1
-#include <aros/debug.h>
-#define DebugPrintF bug
-#endif
 
 #include "library.h"
 #include "version.h"
@@ -60,125 +58,137 @@ static int vendor_device_list_size = 0;
 BOOL
 DriverInit( struct DriverBase* ahisubbase )
 {
-  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) ahisubbase;
-  struct PCIDevice   *dev;
-  int                 card_no, i;
+    struct CMI8738Base  *CMI8738Base = (struct CMI8738Base*) ahisubbase;
+    struct PCIDevice    *dev;
+    int                 card_no, i;
+    struct List		foundCards;
+    struct Node         *devTmp;
 
     bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
 
-  CMI8738Base->driverdatas = 0;
-  CMI8738Base->cards_found = 0;
-  AHIsubBase = ahisubbase;
+    CMI8738Base->driverdatas = 0;
+    CMI8738Base->cards_found = 0;
+    AHIsubBase = ahisubbase;
 
-  DOSBase  = OpenLibrary( DOSNAME, 37 );
+    NewList(&foundCards);
 
-  if( DOSBase == NULL )
-  {
-    Req( "Unable to open 'dos.library' version 37.\n" );
-    return FALSE;
-  }
+    DOSBase  = OpenLibrary( DOSNAME, 37 );
 
-  ExpansionBase = OpenLibrary( "expansion.library", 1 );
-  if( ExpansionBase == NULL )
-  {
-    Req( "Unable to open 'expansion.library' version 1.\n" );
-    return FALSE;
-  }
-
-  if (!ahi_pci_init(ahisubbase))
-  {
-    return FALSE;
-  }
-
-  InitSemaphore( &CMI8738Base->semaphore );
-
-  /*** Count cards ***********************************************************/
-
-  vendor_device_list = (struct VendorDevice *) AllocVec(sizeof(struct VendorDevice) * MAX_DEVICE_VENDORS, MEMF_PUBLIC | MEMF_CLEAR);
-
-  vendor_device_list[0].vendor = VENDOR_ID;
-  vendor_device_list[0].device = DEVICE_ID;
-  vendor_device_list_size++;
-
-  bug("vendor_device_list_size = %ld\n", vendor_device_list_size);    
-
-  CMI8738Base->cards_found = 0;
-  dev = NULL;
-
-  for (i = 0; i < vendor_device_list_size; i++)
-  {
-    dev = ahi_pci_find_device(vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
-        
-    if (dev != NULL)
+    if( DOSBase == NULL )
     {
-      bug("Found CMI8738 #%d [%4x:%4x]\n", i, vendor_device_list[i].vendor, vendor_device_list[i].device);
-      ++CMI8738Base->cards_found;
-      break; // stop at first found controller
+        Req( "CMI8738: Unable to open 'dos.library' version 37.\n" );
+        return FALSE;
     }
-  }
 
-  // Fail if no hardware is present (prevents the audio modes from being added to
-  // the database if the driver cannot be used).
+    ExpansionBase = OpenLibrary( "expansion.library", 1 );
+    if( ExpansionBase == NULL )
+    {
+        Req( "CMI8738: Unable to open 'expansion.library' version 1.\n" );
+        return FALSE;
+    }
 
-  if(CMI8738Base->cards_found == 0 )
-  {
-    DebugPrintF("No CMI8738 found! :-(\n");
-    Req( "No card present.\n" );
-    return FALSE;
-  }
+    if (!ahi_pci_init(ahisubbase))
+    {
+        return FALSE;
+    }
 
-  /*** CAMD ******************************************************************/
+    InitSemaphore( &CMI8738Base->semaphore );
+
+    /*** Count cards ***********************************************************/
+
+    vendor_device_list = (struct VendorDevice *) AllocVec(sizeof(struct VendorDevice) * MAX_DEVICE_VENDORS, MEMF_PUBLIC | MEMF_CLEAR);
+
+    vendor_device_list[0].vendor = VENDOR_ID;
+    vendor_device_list[0].device = DEVICE_ID;
+    vendor_device_list_size++;
+
+    bug("vendor_device_list_size = %ld\n", vendor_device_list_size);    
+
+    CMI8738Base->cards_found = 0;
+    dev = NULL;
+
+    for (i = 0; i < vendor_device_list_size; i++)
+    {
+        dev = ahi_pci_find_device(vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
+        
+        if (dev != NULL)
+        {
+            bug("[CMI8738] %s: Found CMI8738 #%d [%4x:%4x] pci obj @ 0x%p\n", __PRETTY_FUNCTION__, i, vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
+            ++CMI8738Base->cards_found;
+
+            devTmp = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+            devTmp->ln_Name = dev;
+            AddTail(&foundCards, devTmp);
+        }
+    }
+
+    // Fail if no hardware is present (prevents the audio modes from being added to
+    // the database if the driver cannot be used).
+
+    if(CMI8738Base->cards_found == 0 )
+    {
+        DebugPrintF("No CMI8738 found! :-(\n");
+#if defined(VERBOSE_REQ)
+        Req( "No card present.\n" );
+#endif
+        return FALSE;
+    }
+
+    /*** CAMD ******************************************************************/
 #if 0
-  InitSemaphore( &CMI8738Base->camd.Semaphore );
-  CMI8738Base->camd.Semaphore.ss_Link.ln_Pri  = 0;
+    InitSemaphore( &CMI8738Base->camd.Semaphore );
+    CMI8738Base->camd.Semaphore.ss_Link.ln_Pri  = 0;
 
-  CMI8738Base->camd.Semaphore.ss_Link.ln_Name = Card_CAMD_SEMAPHORE;
-  AddSemaphore( &CMI8738Base->camd.Semaphore );
+    CMI8738Base->camd.Semaphore.ss_Link.ln_Name = Card_CAMD_SEMAPHORE;
+    AddSemaphore( &CMI8738Base->camd.Semaphore );
   
-  CMI8738Base->camd.Cards    = CMI8738Base->cards_found;
-  CMI8738Base->camd.Version  = VERSION;
-  CMI8738Base->camd.Revision = REVISION;
+    CMI8738Base->camd.Cards    = CMI8738Base->cards_found;
+    CMI8738Base->camd.Version  = VERSION;
+    CMI8738Base->camd.Revision = REVISION;
 
+    CMI8738Base->camd.OpenPortFunc.h_Entry    = OpenCAMDPort;
+    CMI8738Base->camd.OpenPortFunc.h_SubEntry = NULL;
+    CMI8738Base->camd.OpenPortFunc.h_Data     = NULL;
 
-  CMI8738Base->camd.OpenPortFunc.h_Entry    = OpenCAMDPort;
-  CMI8738Base->camd.OpenPortFunc.h_SubEntry = NULL;
-  CMI8738Base->camd.OpenPortFunc.h_Data     = NULL;
+    CMI8738Base->camd.ClosePortFunc.h_Entry    = (HOOKFUNC) CloseCAMDPort;
+    CMI8738Base->camd.ClosePortFunc.h_SubEntry = NULL;
+    CMI8738Base->camd.ClosePortFunc.h_Data     = NULL;
 
-  CMI8738Base->camd.ClosePortFunc.h_Entry    = (HOOKFUNC) CloseCAMDPort;
-  CMI8738Base->camd.ClosePortFunc.h_SubEntry = NULL;
-  CMI8738Base->camd.ClosePortFunc.h_Data     = NULL;
-
-  CMI8738Base->camd.ActivateXmitFunc.h_Entry    = (HOOKFUNC) ActivateCAMDXmit;
-  CMI8738Base->camd.ActivateXmitFunc.h_SubEntry = NULL;
-  CMI8738Base->camd.ActivateXmitFunc.h_Data     = NULL;
+    CMI8738Base->camd.ActivateXmitFunc.h_Entry    = (HOOKFUNC) ActivateCAMDXmit;
+    CMI8738Base->camd.ActivateXmitFunc.h_SubEntry = NULL;
+    CMI8738Base->camd.ActivateXmitFunc.h_Data     = NULL;
 #endif
 
-  /*** Allocate and init all cards *******************************************/
+    /*** Allocate and init all cards *******************************************/
 
-  CMI8738Base->driverdatas = AllocVec( sizeof( *CMI8738Base->driverdatas ) *
-				       CMI8738Base->cards_found,
-				       MEMF_PUBLIC );
+    CMI8738Base->driverdatas = AllocVec( sizeof( *CMI8738Base->driverdatas ) *
+                   CMI8738Base->cards_found,
+                   MEMF_PUBLIC | MEMF_CLEAR);
 
-  if( CMI8738Base->driverdatas == NULL )
-  {
-    Req( "Out of memory." );
-    return FALSE;
-  }
-
-  card_no = 0;
-
-  if(dev)
-  {
-    CMI8738Base->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
-    if (CMI8738Base->driverdatas[card_no] == NULL)
+    if( CMI8738Base->driverdatas == NULL )
     {
-	return FALSE;
+        Req( "Out of memory." );
+        return FALSE;
     }
-    ++card_no;
-  }
+
+    card_no = 0;
+
+    struct Node *scratchNode;
+    ForeachNodeSafe(&foundCards, devTmp, scratchNode)
+    {
+        Remove(devTmp);
+
+        dev = devTmp->ln_Name;
+        bug("[CMI8738] %s: Prepairing card #%d pci obj @ 0x%p\n", __PRETTY_FUNCTION__, card_no, dev);
+        CMI8738Base->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
+        
+        FreeVec(devTmp);
+        ++card_no;
+    }
 
     bug("[CMI8738] %s: Done.\n", __PRETTY_FUNCTION__);
-  return TRUE;
+
+    return TRUE;
 }
 
 

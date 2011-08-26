@@ -46,16 +46,16 @@ extern const UWORD InputBits[];
 int card_init(struct CMI8738_DATA *card);
 void card_cleanup(struct CMI8738_DATA *card);
 
-struct Device *TimerBase = NULL;
-struct timerequest *TimerIO = NULL;
-struct MsgPort *replymp = NULL;
-
 #if !defined(__AROS__)
 void AddResetHandler(struct CMI8738_DATA *card);
 #endif
 
 void micro_delay(unsigned int val)
 {
+  struct Device*              TimerBase = NULL;
+  struct timerequest*         TimerIO = NULL;
+  struct MsgPort *            replymp;
+
     replymp = (struct MsgPort *) CreateMsgPort();
     if (!replymp)
     {
@@ -100,44 +100,44 @@ void micro_delay(unsigned int val)
 
 void WritePartialMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long shift, unsigned long mask, unsigned long val)
 {
-  ULONG tmp;
-    
-  tmp = pci_inl(reg, card);
-  tmp &= ~(mask << shift);
-  tmp |= val << shift;
-  pci_outl(tmp, reg, card);
+    ULONG tmp;
+
+    tmp = pci_inl(reg, card);
+    tmp &= ~(mask << shift);
+    tmp |= val << shift;
+    pci_outl(tmp, reg, card);
 }
 
 
 void ClearMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long mask)
 {
-  ULONG tmp;
-    
-  tmp = pci_inl(reg, card);
-  tmp &= ~mask;
-  pci_outl(tmp, reg, card);
+    ULONG tmp;
+
+    tmp = pci_inl(reg, card);
+    tmp &= ~mask;
+    pci_outl(tmp, reg, card);
 }
 
 
 void WriteMask(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned long reg, unsigned long mask)
 {
-  ULONG tmp;
-    
-  tmp = pci_inl(reg, card);
-  tmp |= mask;
-  pci_outl(tmp, reg, card);
+    ULONG tmp;
+
+    tmp = pci_inl(reg, card);
+    tmp |= mask;
+    pci_outl(tmp, reg, card);
 }
 
 void cmimix_wr(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned char port, unsigned char val)
 {
-  pci_outb(port, CMPCI_REG_SBADDR, card);
-  pci_outb(val, CMPCI_REG_SBDATA, card);
+    pci_outb(port, CMPCI_REG_SBADDR, card);
+    pci_outb(val, CMPCI_REG_SBDATA, card);
 }
 
 unsigned char cmimix_rd(struct PCIDevice *dev, struct CMI8738_DATA* card, unsigned char port)
 {
-  pci_outb(port, CMPCI_REG_SBADDR, card);
-  return (unsigned char) pci_inb(CMPCI_REG_SBDATA, card);
+    pci_outb(port, CMPCI_REG_SBADDR, card);
+    return (unsigned char) pci_inb(CMPCI_REG_SBDATA, card);
 }
 
 
@@ -153,137 +153,182 @@ struct CMI8738_DATA*
 AllocDriverData( struct PCIDevice *dev,
 		 struct DriverBase* AHIsubBase )
 {
-  struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
-  struct CMI8738_DATA* card;
-  UWORD command_word;
-  int i, v;
-  unsigned char byte;
+    struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
+    struct CMI8738_DATA* card;
+    UWORD command_word;
+    ULONG  chipvers;
+    int i, v;
+    unsigned char byte;
 
     bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
 
-  // FIXME: This should be non-cachable, DMA-able memory
-  card = AllocVec( sizeof( *card ), MEMF_PUBLIC | MEMF_CLEAR );
+    // FIXME: This should be non-cachable, DMA-able memory
+    card = AllocVec( sizeof( *card ), MEMF_PUBLIC | MEMF_CLEAR );
 
-  if( card == NULL )
-  {
-    Req( "Unable to allocate driver structure." );
-    return NULL;
-  }
+    if( card == NULL )
+    {
+	Req( "Unable to allocate driver structure." );
+	return NULL;
+    }
 
-  card->ahisubbase = AHIsubBase;
+    card->ahisubbase = AHIsubBase;
 
-  card->interrupt.is_Node.ln_Type = IRQTYPE;
-  card->interrupt.is_Node.ln_Pri  = 0;
-  card->interrupt.is_Node.ln_Name = (STRPTR) LibName;
+    card->interrupt.is_Node.ln_Type = IRQTYPE;
+    card->interrupt.is_Node.ln_Pri  = 0;
+    card->interrupt.is_Node.ln_Name = (STRPTR) LibName;
 #ifdef __AROS__
-  card->interrupt.is_Code         = (void(*)(void)) &cardinterrupt;
+    card->interrupt.is_Code         = (void(*)(void))&cardinterrupt;
 #else
-  card->interrupt.is_Code         = (void(*)(void)) CardInterrupt;
+    card->interrupt.is_Code         = (void(*)(void))CardInterrupt;
 #endif
-  card->interrupt.is_Data         = (APTR) card;
+    card->interrupt.is_Data         = (APTR) card;
 
-  card->playback_interrupt.is_Node.ln_Type = IRQTYPE;
-  card->playback_interrupt.is_Node.ln_Pri  = 0;
-  card->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
+    card->playback_interrupt.is_Node.ln_Type = IRQTYPE;
+    card->playback_interrupt.is_Node.ln_Pri  = 0;
+    card->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
 #ifdef __AROS__
-  card->playback_interrupt.is_Code         = &playbackinterrupt;
+    card->playback_interrupt.is_Code         = (void(*)(void))&playbackinterrupt;
 #else
-  card->playback_interrupt.is_Code         = PlaybackInterrupt;
+    card->playback_interrupt.is_Code         = (void(*)(void))PlaybackInterrupt;
 #endif
-  card->playback_interrupt.is_Data         = (APTR) card;
+    card->playback_interrupt.is_Data         = (APTR) card;
 
-  card->record_interrupt.is_Node.ln_Type = IRQTYPE;
-  card->record_interrupt.is_Node.ln_Pri  = 0;
-  card->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
+    card->record_interrupt.is_Node.ln_Type = IRQTYPE;
+    card->record_interrupt.is_Node.ln_Pri  = 0;
+    card->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
 #ifdef __AROS__
-  card->record_interrupt.is_Code         = &recordinterrupt;
+    card->record_interrupt.is_Code         = (void(*)(void))&recordinterrupt;
 #else
-  card->record_interrupt.is_Code         = RecordInterrupt;
+    card->record_interrupt.is_Code         = (void(*)(void))RecordInterrupt;
 #endif
-  card->record_interrupt.is_Data         = (APTR) card;
+    card->record_interrupt.is_Data         = (APTR) card;
 
-  card->pci_dev = dev;
+    card->pci_dev = dev;
 
-  command_word = inw_config(PCI_COMMAND,  dev);  
-  command_word |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER;
-  outw_config( PCI_COMMAND, command_word, dev);
+    command_word = inw_config(PCI_COMMAND,  dev);  
+    command_word |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER;
+    outw_config( PCI_COMMAND, command_word, dev);
 
-  card->pci_master_enabled = TRUE;
+    card->pci_master_enabled = TRUE;
 
-  /*for (i = 0; i < 6; i++)
-  {
-     if (dev->GetResourceRange(i))
-         DebugPrintF("BAR[%ld] = %lx\n", i, dev->GetResourceRange(i)->BaseAddress);
-  }*/
+    /*for (i = 0; i < 6; i++)
+    {
+	if (dev->GetResourceRange(i))
+	    DebugPrintF("BAR[%ld] = %lx\n", i, dev->GetResourceRange(i)->BaseAddress);
+    }*/
 
-  card->iobase  =  ahi_pci_get_base_address(0, dev);
-  card->length  = ahi_pci_get_base_size(0, dev);
-  card->irq     = ahi_pci_get_irq(dev);
-  card->chiprev = inb_config(PCI_REVISION_ID, dev);
-  card->model   = inw_config(PCI_SUBSYSTEM_ID, dev);
+    card->iobase  =  ahi_pci_get_base_address(0, dev);
+    card->length  = ahi_pci_get_base_size(0, dev);
+    card->irq     = ahi_pci_get_irq(dev);
+    card->chiprev = inb_config(PCI_REVISION_ID, dev);
+    card->model   = inw_config(PCI_SUBSYSTEM_ID, dev);
 
+    bug("[CMI8738]: %s: iobase = 0x%p, len = %d\n", __PRETTY_FUNCTION__, card->iobase, card->length);
+
+    chipvers = pci_inl(CMPCI_REG_INTR_CTRL, card) & CMPCI_REG_VERSION_MASK;
+    if (chipvers)
+    {
+	if (chipvers & CMPCI_REG_VERSION_68)
+	{
+	    card->chipvers = 68;
+	    card->channels = 8;
+	}
+	if (chipvers & CMPCI_REG_VERSION_55)
+	{
+	    card->chipvers = 55;
+	    card->channels = 6;
+	}
+	if (chipvers & CMPCI_REG_VERSION_39)
+	{
+	    card->chipvers = 39;
+	    if (chipvers & CMPCI_REG_VERSION_39B)
+	    {
+		card->channels = 6;
+	    }
+	    else
+	    {
+		card->channels = 4;
+	    }
+	}
+    }
+    else
+    {
+	chipvers = pci_inl(CMPCI_REG_CHANNEL_FORMAT, card) & CMPCI_REG_VERSION_37;
+	if (!chipvers)
+	{
+	    card->chipvers = 33;
+	    card->channels = 2;
+	}
+	else
+	{
+	    card->chipvers = 37;
+	    card->channels = 2;
+	}
+    }
   /*DebugPrintF("---> chiprev = %u, model = %x, Vendor = %x\n", dev->ReadConfigByte( PCI_REVISION_ID), dev->ReadConfigWord( PCI_SUBSYSTEM_ID),
                      dev->ReadConfigWord( PCI_SUBSYSTEM_VENDOR_ID));*/
 
-    bug("[CMI8738]: %s: chiprev = %u, model = %x, Vendor = %x\n", __PRETTY_FUNCTION__,
-     card->chiprev,
+    bug("[CMI8738]: %s: chipvers = %u, chiprev = %u, model = %x, Vendor = %x\n", __PRETTY_FUNCTION__,
+     card->chipvers, card->chiprev,
      card->model,
      inw_config( PCI_SUBSYSTEM_VENDOR_ID, dev));
 
-  /* Initialize chip */
-  if( card_init( card ) < 0 )
-  {
-    DebugPrintF("Unable to initialize Card subsystem.");
-    return NULL;
-  }
+    bug("[CMI8738]: %s: max channels = %d\n", __PRETTY_FUNCTION__, card->channels);
+  
+    /* Initialize chip */
+    if( card_init( card ) < 0 )
+    {
+	DebugPrintF("Unable to initialize Card subsystem.");
+	return NULL;
+    }
 
-  //DebugPrintF("INTERRUPT %lu\n", dev->MapInterrupt());
-  ahi_pci_add_intserver(&card->interrupt, dev);
-  card->interrupt_added = TRUE;
+    //DebugPrintF("INTERRUPT %lu\n", dev->MapInterrupt());
+    ahi_pci_add_intserver(&card->interrupt, dev);
+    card->interrupt_added = TRUE;
 
-  card->card_initialized = TRUE;
-  card->input          = 0;
-  card->output         = 0;
-  card->monitor_volume = Linear2MixerGain( 0, &card->monitor_volume_bits );
-  card->input_gain     = Linear2RecordGain( 0x10000, &card->input_gain_bits );
-  card->output_volume  = Linear2MixerGain( 0x10000, &card->output_volume_bits );
-  SaveMixerState(card);
+    card->card_initialized = TRUE;
+    card->input          = 0;
+    card->output         = 0;
+    card->monitor_volume = Linear2MixerGain( 0, &card->monitor_volume_bits );
+    card->input_gain     = Linear2RecordGain( 0x10000, &card->input_gain_bits );
+    card->output_volume  = Linear2MixerGain( 0x10000, &card->output_volume_bits );
+    SaveMixerState(card);
 
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_RESET, 0);
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_ADCMIX_L, 0); //(CMPCI_SB16_MIXER_LINE_SRC_R << 1) ); // set input to line
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_ADCMIX_R, 0); //CMPCI_SB16_MIXER_LINE_SRC_R);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_RESET, 0);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_ADCMIX_L, 0); //(CMPCI_SB16_MIXER_LINE_SRC_R << 1) ); // set input to line
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_ADCMIX_R, 0); //CMPCI_SB16_MIXER_LINE_SRC_R);
 
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_OUTMIX, 0); // set output mute off for line and CD
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_OUTMIX, 0); // set output mute off for line and CD
 
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_VOICE_L, 0xFF); // PCM
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_VOICE_R, 0xFF);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_VOICE_L, 0xFF); // PCM
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_VOICE_R, 0xFF);
 
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_CDDA_L, 0x00);
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_CDDA_R, 0x00);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_CDDA_L, 0x00);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_CDDA_R, 0x00);
 
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_LINE_L, 0x00);
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_LINE_R, 0x00);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_LINE_L, 0x00);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_LINE_R, 0x00);
 
-  byte = pci_inb(CMPCI_REG_MIXER25, card);
-  pci_outb(byte & ~0x30, CMPCI_REG_MIXER25, card); // mute Aux
-  pci_outb(byte & ~0x01, CMPCI_REG_MIXER25, card); // turn on mic 20dB boost
-  pci_outb(0x00, CMPCI_REG_MIXER_AUX, card);
+    byte = pci_inb(CMPCI_REG_MIXER25, card);
+    pci_outb(byte & ~0x30, CMPCI_REG_MIXER25, card); // mute Aux
+    pci_outb(byte & ~0x01, CMPCI_REG_MIXER25, card); // turn on mic 20dB boost
+    pci_outb(0x00, CMPCI_REG_MIXER_AUX, card);
 
-  byte = pci_inb(CMPCI_REG_MIXER24, card);
-  pci_outb(byte | CMPCI_REG_FMMUTE, CMPCI_REG_MIXER24, card);
+    byte = pci_inb(CMPCI_REG_MIXER24, card);
+    pci_outb(byte | CMPCI_REG_FMMUTE, CMPCI_REG_MIXER24, card);
 
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_MIC, 0x00);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_MIC, 0x00);
 
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_MASTER_L, 0xFF);
-  cmimix_wr(dev, card, CMPCI_SB16_MIXER_MASTER_R, 0xFF);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_MASTER_L, 0xFF);
+    cmimix_wr(dev, card, CMPCI_SB16_MIXER_MASTER_R, 0xFF);
 
-  card->mixerstate = cmimix_rd(dev, card, CMPCI_SB16_MIXER_OUTMIX);
+    card->mixerstate = cmimix_rd(dev, card, CMPCI_SB16_MIXER_OUTMIX);
 
 #if !defined(__AROS__)
-  AddResetHandler(card);
+    AddResetHandler(card);
 #endif
 
-  return card;
+    return card;
 }
 
 
@@ -340,12 +385,12 @@ int card_init(struct CMI8738_DATA *card)
     ClearMask(dev, card, CMPCI_REG_MISC, CMPCI_REG_POWER_DOWN); // power up
     
     WriteMask(dev, card, CMPCI_REG_MISC, CMPCI_REG_BUS_AND_DSP_RESET);
-//    IDOS->Delay(1);
+    udelay(1);
     ClearMask(dev, card, CMPCI_REG_MISC, CMPCI_REG_BUS_AND_DSP_RESET);
 
     /* reset channels */
     WriteMask(dev, card, CMPCI_REG_FUNC_0, CMPCI_REG_CH0_RESET | CMPCI_REG_CH1_RESET);
-//     IDOS->Delay(1);
+    udelay(1);
     ClearMask(dev, card, CMPCI_REG_FUNC_0, CMPCI_REG_CH0_RESET | CMPCI_REG_CH1_RESET);
 
     /* Disable interrupts and channels */
@@ -626,8 +671,8 @@ void AddResetHandler(struct CMI8738_DATA *card)
     interrupt.is_Code = (void (*)())ResetHandler;
     interrupt.is_Data = (APTR) card;
     interrupt.is_Node.ln_Pri  = 0;
-    interrupt.is_Node.ln_Type = IRQTYPE;
-    interrupt.is_Node.ln_Name = "reset handler";
+    interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
+    interrupt.is_Node.ln_Name = "CMI8738 Reset Handler";
 
     AddResetCallback( &interrupt );
 }

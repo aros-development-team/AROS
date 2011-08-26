@@ -9,8 +9,8 @@ limitations under the License.
 The Original Code is written by Davy Wentzler.
 */
 
-#ifndef AHI_Drivers_interrupt_h
-#define AHI_Drivers_interrupt_h
+#ifndef AHI_Drivers_CMI8738_interrupt_h
+#define AHI_Drivers_CMI8738_interrupt_h
 
 //#include <config.h>
 
@@ -25,4 +25,4 @@ PlaybackInterrupt( struct CMI8738_DATA* dd );
 void
 RecordInterrupt( struct CMI8738_DATA* dd );
 
-#endif /* AHI_Drivers_interrupt_h */
+#endif /* AHI_Drivers_CMI8738_interrupt_h */

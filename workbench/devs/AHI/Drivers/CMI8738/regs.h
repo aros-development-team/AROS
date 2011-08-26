@@ -85,11 +85,17 @@
 #  define CMPCI_REG_FORMAT_STEREO       0x00000001
 #  define CMPCI_REG_FORMAT_8BIT         0x00000000
 #  define CMPCI_REG_FORMAT_16BIT        0x00000002
+#  define CMPCI_REG_VERSION_37    	0x01000000 // hardware revision 37
 
 #define CMPCI_REG_INTR_CTRL             0x0c
 #  define CMPCI_REG_CH0_INTR_ENABLE     0x00010000
 #  define CMPCI_REG_CH1_INTR_ENABLE     0x00020000
 #  define CMPCI_REG_TDMA_INTR_ENABLE    0x00040000
+#  define CMPCI_REG_VERSION_MASK	0xFF000000 // version number mask (bits 31:24)
+#  define CMPCI_REG_VERSION_39    	0x04000000 // revision 39
+#  define CMPCI_REG_VERSION_39B  	0x01000000 // 6 channel version of revision 39
+#  define CMPCI_REG_VERSION_55    	0x08000000 // revision 55
+#  define CMPCI_REG_VERSION_68    	0x20000000 // revision 68 (8768)
 
 #define CMPCI_REG_INTR_STATUS           0x10
 #  define CMPCI_REG_CH0_INTR            0x00000001

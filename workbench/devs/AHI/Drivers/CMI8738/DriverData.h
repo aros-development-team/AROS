@@ -9,8 +9,8 @@ limitations under the License.
 The Original Code is written by Davy Wentzler.
 */
 
-#ifndef AHI_Drivers_Card_DriverData_h
-#define AHI_Drivers_Card_DriverData_h
+#ifndef AHI_Drivers_CMI8738_DriverData_h
+#define AHI_Drivers_CMI8738_DriverData_h
 
 #include <exec/types.h>
 #include <exec/interrupts.h>
@@ -67,11 +67,13 @@ struct CMI8738_DATA
     /*** PCI/Card initialization progress *********************************/
 
     struct PCIDevice    *pci_dev;
-    APTR       iobase;
-	unsigned long		length;
-	unsigned short		model;
+    APTR		iobase;
+    unsigned long       length;
+    unsigned short      model;
     unsigned char       chiprev;
-	unsigned int        irq;
+    unsigned char       chipvers;
+    unsigned int	channels;
+    unsigned int        irq;
 
     /** TRUE if bus mastering is activated */
     BOOL                pci_master_enabled;
@@ -223,4 +225,4 @@ struct CMI8738_DATA
     UWORD               ac97_phone;
 };
 
-#endif /* AHI_Drivers_Card_DriverData_h */
+#endif /* AHI_Drivers_CMI8738_DriverData_h */
