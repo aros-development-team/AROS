@@ -18,6 +18,7 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "dispinfo.h"
+#include "fakegfxhidd.h"
 
 #define SET_TAG(tags, idx, tag, val)	\
     tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
@@ -83,8 +84,8 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 		Displayable data has more severe alignment restrictions
 		than non-displayable data in some systems.
 		Note that it may be not enough to specify only this flag
-		to make the bitmap really displayable. See BMF_SCREEN
-		description.
+		to make the bitmap really displayable. See "INTERNALS"
+		section below.
 
 	    BMF_INTERLEAVED: tells graphics that you would like your
 		bitmap to be allocated with one large chunk of display
@@ -185,8 +186,6 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 	standard CGX convention. You may use BMF_REQUESTVMEM definition
 	for this.
 
-	BMF_SCREEN implies these flags.
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -264,10 +263,31 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 	SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
 	if (friend_bitmap && IS_HIDD_BM(friend_bitmap))
 	{
-	    D(bug("[AllocBitMap] Setting friend bitmap: 0x%p\n", friend_bitmap));
-	    SET_BM_TAG(bm_tags, 3, Friend, HIDD_BM_OBJ(friend_bitmap));
+	    OOP_Object *friend_obj = HIDD_BM_OBJ(friend_bitmap);
 
-	    /* If we have no ModeID specified, obtain it from friend */
+	    D(bug("[AllocBitMap] Setting friend bitmap 0x%p, object 0x%p\n", friend_bitmap, friend_obj));
+
+	    /*
+	     * Friend bitmap may hold a fakegfx bitmap object.
+	     * fakegfx is our proxy layer on top of graphics drivers, providing
+	     * software mouse pointer implementation. Graphics drivers do (and must)
+	     * not know about fakegfx, so we need to de-masquerade such objects.
+	     */
+	    if (OOP_OCLASS(friend_obj) == CDD(GfxBase)->fakefbclass)
+	    {
+	    	OOP_GetAttr(friend_obj, aHidd_FakeFB_RealBitMap, (IPTR *)&friend_obj);
+	    	D(bug("[AllocBitMap] Fakefb friend de-masqueraded to 0x%p\n", friend_obj));
+	    }
+
+	    SET_BM_TAG(bm_tags, 3, Friend, friend_obj);
+
+	    /*
+	     * If we have no ModeID specified, obtain it from friend.
+	     * This may assist some display drivers (especially hosted ones) in bitmap class selection.
+	     * They may want to use host OS bitmap objects for non-displayable bitmaps which are friends
+	     * of displayable ones. In this case they may simply check against ModeID != vHidd_ModeID_Invalid,
+	     * and don't have to check friend object by themselves.
+	     */
 	    if (hiddmode == vHidd_ModeID_Invalid)
 		hiddmode = HIDD_BM_HIDDMODE(friend_bitmap);
 
@@ -361,35 +381,30 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 
 		if (alloc)
 		{
-    		    OOP_Object      *pf;
-    		    OOP_Object      *colmap = NULL;
-		    IPTR val, bmtype;
-
-    		    /*  It is possible that the HIDD had to allocate
-    		        a larger depth than that supplied, so
-    		        we should get back the correct depth.
-    		        This is because layers.library might
-    		        want to allocate offscreen bitmaps to
-    		        store obscured areas, and then those
-    		        offscreen bitmaps should be of the same depth as
-    		        the onscreen ones. */
-    		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    		    OOP_GetAttr(pf, aHidd_PixFmt_BitMapType, &bmtype);
+    		    OOP_Object *pf;
+    		    OOP_Object *colmap = NULL;
+		    IPTR bmdepth;
 
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_Width, &width);
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
-		    /* aHidd_PixFmt_Depth is max supported depth if planar bitmap */
-		    if (bmtype == vHidd_BitMapType_Planar)
-		    	OOP_GetAttr(bm_obj, aHidd_BitMap_Depth, &val);
-		    else
-		    	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &val);
-		    depth = val;
+		    OOP_GetAttr(bm_obj, aHidd_BitMap_Depth, &bmdepth);
+		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    		    OOP_GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
 
     		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
 
-    		    OOP_GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
+		    D(bug("[AllocBitMap] Resulting HIDD bitmap: %ldx%ldx%ld\n", width, height, bmdepth));
 
-    		    /* Store it in plane array */
+    		    /* 
+    		     * It is possible that the HIDD had to allocate a larger depth than that supplied, so
+    		     * we should get back the correct depth.
+    		     * This is because layers.library might want to allocate offscreen bitmaps to
+    		     * store obscured areas, and those offscreen bitmaps should be of the same depth as
+    		     * onscreen ones.
+    		     */
+		    depth = bmdepth;
+
+    		    /* Store object and supplementary data in plane array */
     		    HIDD_BM_OBJ(nbm)        = bm_obj;
     		    HIDD_BM_COLMOD(nbm)     = colmod;
     		    HIDD_BM_COLMAP(nbm)     = colmap;
@@ -476,7 +491,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 		{
 		    if (clear)
 		    	BltBitMap(nbm, 0, 0, nbm, 0, 0, width, height, 0x00, 0xFF, NULL);
-    		    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
+    		    ReturnPtr("AllocBitMap", struct BitMap *, nbm);
     		}
 
     		HIDD_Gfx_DisposeBitMap(drv->gfxhidd, bm_obj);
