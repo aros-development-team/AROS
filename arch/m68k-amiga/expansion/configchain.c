@@ -22,11 +22,13 @@ static void Enable68060SuperScalar(void)
 {
     asm volatile (
 	".text\n"
-	"moveq	#1,%d0\n"
 	/* enable supercalar */
+	"dc.l	0x4e7a0808\n"	// movec %pcr,%d0
+	"bset	#0,%d0\n"
 	"dc.l	0x4e7b0808\n"	// movec %d0,%pcr
 	/* enable code&data caches, store buffer and branch cache */
-	"move.l	#0xa0808000,%d0\n"
+	"dc.l	0x4e7a0002\n"	// movec %cacr,%d0
+	"or.l	#0xa0808000,%d0\n"
 	"dc.l	0x4e7b0002\n"	// movec %d0,%cacr
 	"rte\n"
     );
