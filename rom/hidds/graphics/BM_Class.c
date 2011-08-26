@@ -479,12 +479,15 @@
         hidd.graphics.bitmap
 
     FUNCTION
-        Returns pixelformat descriptor object associated with the bitmap.
+        Specify or query pixelformat descriptor object associated with the bitmap.
 
 	Every bitmap has some associated pixelformat object. Pixelformat objects are
 	shared data storages, so many bitmaps may refer to the same pixelformat objects.
 
     NOTES
+    	This attribute is internally specified during bitmap creation, but it's illegal
+    	to do this for the user. NewBitMap method of graphics driver performs an explicit
+    	check against this. It's up to graphics base classes to figure out its value.
 
     EXAMPLE
 
@@ -786,19 +789,19 @@
         aoHidd_BitMap_Depth
 
     SYNOPSIS
-        [G..]
+        [G.I]
 
     LOCATION
         hidd.graphics.bitmap
 
     FUNCTION
-        Return the actual bitmap depth.
+        Specify or query the actual bitmap depth.
 
 	This a convenience attribute to simplify handling planar bitmaps, whose actual depth
 	may vary. Default implementation in base class simply returns depth of bitmap's
-	pixelformat. Planar bitmap class returns the actual depth here. If your specific
-	bitmap class also operates on bitmaps with variable depths, you need to implement
-	this attribute in it.
+	pixelformat, and is ignored during initialization. Planar bitmap class returns the
+	actual depth here. If your specific bitmap class also operates on bitmaps with variable
+	depths, you need to implement this attribute in it.
 
     NOTES
 
