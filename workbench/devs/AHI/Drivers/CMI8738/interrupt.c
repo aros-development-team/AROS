@@ -52,12 +52,21 @@ CardInterrupt( struct CMI8738_DATA* card )
   ULONG intreq;
   LONG  handled = 0;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    bug("[CMI8738]: %s(card @ 0x%p)\n", __PRETTY_FUNCTION__, card);
+    bug("[CMI8738] %s: AHIAudioCtrlDrv @ 0x%p\n", __PRETTY_FUNCTION__, AudioCtrl);
 
-  while ( (( intreq = ( pci_inl(CMPCI_REG_INTR_STATUS, card) ) ) & CMPCI_REG_ANY_INTR )!= 0 )
+    for (;;)
+//  while (((intreq = pci_inl(CMPCI_REG_INTR_STATUS, card)) & CMPCI_REG_ANY_INTR) != 0)
   {
+    intreq = pci_inl(CMPCI_REG_INTR_STATUS, card);
+
+    bug("[CMI8738] %s: INTR_STATUS = %08x\n", __PRETTY_FUNCTION__, intreq);
+
+      if (((intreq & CMPCI_REG_ANY_INTR) == 0) || (AudioCtrl == NULL))
+	  break;
+
     //DebugPrintF("INT %lx\n", intreq);
-    if( intreq & CMPCI_REG_CH0_INTR && AudioCtrl != NULL )
+    if( intreq & CMPCI_REG_CH0_INTR)
     {
       unsigned long diff = pci_inl(CMPCI_REG_DMA0_BASE, card) - (unsigned long) card->playback_buffer_phys;
       
@@ -80,7 +89,9 @@ CardInterrupt( struct CMI8738_DATA* card )
       if (diff >= card->current_bytesize) //card->flip == 0) // just played buf 1
       {
          if (card->flip == 1)
+	 {
             DebugPrintF("A:Missed IRQ! diff = %lu\n", diff);
+	 }
 
          card->flip = 1;
          card->current_buffer = card->playback_buffer;
@@ -88,7 +99,9 @@ CardInterrupt( struct CMI8738_DATA* card )
       else  // just played buf 2
       {
          if (card->flip == 0)
+	 {
             DebugPrintF("B:Missed IRQ! diff = %lu\n", diff);
+	 }
          
          card->flip = 0;
          card->current_buffer = (APTR) ((long) card->playback_buffer + card->current_bytesize);
@@ -102,7 +115,7 @@ CardInterrupt( struct CMI8738_DATA* card )
       Cause( &card->playback_interrupt );
     }
 
-    if( intreq & CMPCI_REG_CH1_INTR && AudioCtrl != NULL )
+    if( intreq & CMPCI_REG_CH1_INTR)
     {
       ClearMask(dev, card, CMPCI_REG_INTR_CTRL, CMPCI_REG_CH1_INTR_ENABLE);
       
@@ -184,9 +197,14 @@ PlaybackInterrupt( struct CMI8738_DATA* card )
 
     i = samples;
 
+
     while( i > 0 )
     {
+#ifdef __AMIGAOS4__
       *dst = ( ( *src & 0xff ) << 8 ) | ( ( *src & 0xff00 ) >> 8 );
+#else
+    *dst = *src;
+#endif
 
       src += skip;
       dst += 1;
@@ -195,7 +213,7 @@ PlaybackInterrupt( struct CMI8738_DATA* card )
     }
 
     CacheClearE( card->current_buffer, (ULONG) dst - (ULONG) card->current_buffer, CACRF_ClearD );
-    
+
     CallHookPkt( AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0 );
   }
 
