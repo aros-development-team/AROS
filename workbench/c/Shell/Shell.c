@@ -110,26 +110,33 @@ AROS_ENTRY(__startup ULONG, ShellStart,
     AROS_USERFUNC_INIT
 
     struct Process *me;
-    ShellState ss = {0};
+    ShellState *ss;
     LONG error;
     BOOL isBootShell;
     BOOL isBannerDone;
     APTR DOSBase;
 
     D(bug("[Shell] executing\n"));
-    
+
     me = (struct Process *)FindTask(NULL);
     DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
-    
+
+    ss = AllocMem(sizeof(ShellState), MEMF_CLEAR);
+    if (!ss) {
+    	SetIoErr(ERROR_NO_FREE_STORE);
+    	CloseLibrary(DOSBase);
+    	return RETURN_FAIL;
+    }
+
     setPath(BNULL, DOSBase);
 
-    ss.cliNumber = me->pr_TaskNum;
-    cliVarNum("process", ss.cliNumber, DOSBase);
+    ss->cliNumber = me->pr_TaskNum;
+    cliVarNum("process", ss->cliNumber, DOSBase);
 
-    isBootShell = (strcmp(me->pr_Task.tc_Node.ln_Name, "Boot Shell") == 0) && ss.cliNumber == 1;
+    isBootShell = (strcmp(me->pr_Task.tc_Node.ln_Name, "Boot Shell") == 0) && ss->cliNumber == 1;
     isBannerDone = FALSE;
 
-    initDefaultInterpreterState(&ss);
+    initDefaultInterpreterState(ss);
 
     if (isBootShell) {
     	struct ExpansionBase *ExpansionBase = (struct ExpansionBase*)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
@@ -146,21 +153,23 @@ AROS_ENTRY(__startup ULONG, ShellStart,
 	Buffer in = { argstr, argsize, 0, 0 };
 	Buffer out = {0};
 
-	if ((error = Redirection_init(&ss)) == 0)
+	if ((error = Redirection_init(ss)) == 0)
 	{
 	    D(bug("[Shell] running command: %s\n", in->buf));
-	    error = checkLine(&ss, &in, &out, TRUE, DOSBase);
-	    Redirection_release(&ss, DOSBase);
+	    error = checkLine(ss, &in, &out, TRUE, DOSBase);
+	    Redirection_release(ss, DOSBase);
 
 	    bufferFree(&in);
 	    bufferFree(&out);
 	}
     } else
-	error = interact(&ss, isBootShell, isBannerDone, DOSBase);
+	error = interact(ss, isBootShell, isBannerDone, DOSBase);
 
     D(bug("[Shell] exiting, error = %d\n", error));
     
     CloseLibrary(DOSBase);
+
+    FreeMem(ss, sizeof(ShellState));
 
     return error ? RETURN_FAIL : RETURN_OK;
 
