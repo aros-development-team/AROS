@@ -140,35 +140,32 @@ APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev)
 
 ULONG pci_inl(ULONG addr, struct SB128_DATA *card)
 {
-    return (*((volatile ULONG *)(card->iobase + addr)));
+    return (*((ULONG *)(card->iobase + addr)));
 }
 
 UWORD pci_inw(ULONG addr, struct SB128_DATA *card)
 {
-    return (*((volatile UWORD *)(card->iobase + addr)));
+    return (*((UWORD *)(card->iobase + addr)));
 }
 
 UBYTE pci_inb(ULONG addr, struct SB128_DATA *card)
 {
-    return (*((volatile UBYTE *)(card->iobase + addr)));
+    return (*((UBYTE *)(card->iobase + addr)));
 }
 
 void pci_outl(ULONG value, ULONG addr, struct SB128_DATA *card)
 {
-    *((volatile ULONG *)(card->iobase + addr)) = (value);
-    pci_inl(addr, card);
+    *((ULONG *)(card->iobase + addr)) = (value);
 }
 
 void pci_outw(UWORD value, ULONG addr, struct SB128_DATA *card)
 {
-    *((volatile UWORD *)(card->iobase + addr)) = (value);
-    pci_inw(addr, card);
+    *((UWORD *)(card->iobase + addr)) = (value);
 }
 
 void pci_outb(UBYTE value, ULONG addr, struct SB128_DATA *card)
 {
-    *((volatile UBYTE *)(card->iobase + addr)) = (value);
-    pci_inb(addr, card);
+    *((UBYTE *)(card->iobase + addr)) = (value);
 }
 
 void outb_setbits(UBYTE value, ULONG addr, struct SB128_DATA *card)
