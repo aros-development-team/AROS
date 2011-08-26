@@ -7423,7 +7423,6 @@ case "$target_os" in
             	aros_android_level=android-$aros_sdk_version
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
-				use_aros_gcc="yes"
 		if test "$aros_android_ndk" = "none"; then
 		    		    aros_kernel_cflags="-mandroid"
 		    aros_kernel_ldflags="-mandroid"
