@@ -5934,7 +5934,7 @@ do
     "Drivers/ac97/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/ac97/Makefile" ;;
     "Drivers/HDAudio/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/HDAudio/Makefile" ;;
     "Drivers/CMI8738/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/CMI8738/Makefile" ;;
-    "Drivers/SB128/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/CB128/Makefile" ;;
+    "Drivers/SB128/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/SB128/Makefile" ;;
     "Drivers/AROS/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/AROS/Makefile" ;;
     "Drivers/Common/Makefile.common") CONFIG_FILES="$CONFIG_FILES Drivers/Common/Makefile.common" ;;
     "Drivers/Device/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/Device/Makefile" ;;
