@@ -32,9 +32,9 @@
 
 OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    IPTR height, depth, bytesperrow;
-    
-    BOOL  ok = TRUE;   
+    IPTR height, bytesperrow;
+    UBYTE depth;
+    BOOL ok = FALSE;
      
 #if 0
     	/* Set the bitmaps' pixelformat */
@@ -54,7 +54,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ TAG_DONE  	    	    , 0UL   	    	    	}
     };
 #endif
-    
+
     struct planarbm_data *data;
 #if 0
     OOP_Object      	 *pf;
@@ -66,12 +66,11 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     	return NULL;
 	
     data = OOP_INST_DATA(cl, o);
-    memset(data, 0, sizeof  (*data));
 
     /* Get some data about the dimensions of the bitmap */
 
     data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
-    
+
     /* FIXME: Fix this hack */
     /* Because this class is used to emulate Amiga bitmaps, we
        have to see if it should have late initialisation
@@ -79,9 +78,11 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     if (!data->planes_alloced)
 	return o; /* Late initialization */
 
+    /* By default we create 1-plane bitmap */
+    depth = GetTagData(aHidd_BitMap_Depth, 1, msg->attrList);
+
     /* Not late initialization. Get some info on the bitmap */	
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
-    OOP_GetAttr(o, aHidd_BitMap_Depth,	&depth);
     OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bytesperrow);
 #if 0
     OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)p_pf);
@@ -90,38 +91,37 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     /* We cache some info */
     data->rows        = height;
-    data->depth	      = depth;
     data->bytesperrow = bytesperrow;
+    data->depth       = depth;
 
-    if (ok)
+    /* Allocate memory for plane array */
+    data->planes = AllocVec(sizeof (UBYTE *) * depth, MEMF_ANY|MEMF_CLEAR);
+    if (data->planes)
     {
-	/* Allocate memory for plane array */
-	data->planes = AllocVec(sizeof (UBYTE *) * depth, MEMF_ANY|MEMF_CLEAR);
-	if (NULL == data->planes)
-	    ok = FALSE;
-	else
+	ok = TRUE;
+	UBYTE i;
+
+	data->planebuf_size = depth;
+
+	/* Allocate all the planes */
+	for ( i = 0; i < depth && ok; i ++)
 	{
-	    UBYTE i;
-
-	    data->planebuf_size = depth;
-
-	    /* Allocate all the planes */
-	    for ( i = 0; i < depth && ok; i ++)
+	    data->planes[i] = AllocVec(height * data->bytesperrow, MEMF_ANY|MEMF_CLEAR);
+	    if (NULL == data->planes[i])
 	    {
-	    	data->planes[i] = AllocVec(height * data->bytesperrow, MEMF_ANY|MEMF_CLEAR);
-	    	if (NULL == data->planes[i])
-	    	    ok = FALSE;
+	        ok = FALSE;
+	        break;
 	    }
 	}
     }
-      
+
     if (!ok)
     {
 	OOP_MethodID dispose_mid;
-    
+
 	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
-	
+
 	o = NULL;
     }
     	

@@ -924,6 +924,10 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 #define SET_BM_TAG(tags, idx, tag, val)	\
     SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
 
+#define COPY_BM_TAG(tags, idx, tag, obj)	\
+    tags[idx].ti_Tag = aHidd_BitMap_ ## tag;	\
+    OOP_GetAttr(obj, aHidd_BitMap_ ## tag , &tags[idx].ti_Data)
+
 /*****************************************************************************************
 
     NAME
@@ -1022,233 +1026,249 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     	    	    	    	      struct pHidd_Gfx_NewBitMap *msg)
 {
-    struct TagItem  	    bmtags[8];
-    
-    IPTR    	    	    attrs[num_Total_BitMap_Attrs];
-    STRPTR  	    	    classid = NULL;
-    OOP_Class 	    	    *classptr = NULL;
-    BOOL    	    	    displayable = FALSE; /* Default attr value */
-    BOOL    	    	    framebuffer = FALSE;
-    OOP_Object      	    *pf = NULL, *sync;
-    HIDDT_ModeID    	    modeid = 0;
-    OOP_Object      	    *bm;
-    IPTR    	    	    depth = 0;
-    struct HIDDGraphicsData *data;
-    
-    DECLARE_ATTRCHECK(bitmap);
-    
-    BOOL    	    	    gotclass = FALSE;
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
 
-    data = OOP_INST_DATA(cl, o);
-    
-    if (0 != OOP_ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs,
-    	    	    	    &ATTRCHECK(bitmap), HiddBitMapAttrBase))
+    struct TagItem bmtags[] =
     {
-	D(bug("!!! FAILED TO PARSE ATTRS IN Gfx::NewBitMap !!!\n"));
-	return NULL;
-    }
-    
-    if (GOT_BM_ATTR(PixFmt))
+    	{aHidd_BitMap_GfxHidd, 0},	/* 0 */
+    	{aHidd_BitMap_PixFmt , 0},	/* 1 */
+    	{TAG_IGNORE	     , 0},	/* 2 */
+    	{TAG_IGNORE	     , 0},	/* 3 */
+    	{TAG_IGNORE	     , 0},	/* 4 */
+    	{TAG_IGNORE	     , 0},	/* 5 */
+    	{TAG_MORE	     , 0},	/* 6 */
+    };
+    OOP_Object   *bm;
+
+    const struct TagItem *tstate = msg->attrList;
+    struct TagItem *tag;
+    ULONG idx;
+
+    STRPTR        classid     = NULL;
+    OOP_Class    *classptr    = NULL;
+    BOOL          displayable = FALSE;
+    BOOL          framebuffer = FALSE;
+    HIDDT_StdPixFmt pixfmt    = vHidd_StdPixFmt_Unknown;
+    OOP_Object   *friend_bm   = NULL;
+    OOP_Object   *sync	      = NULL;
+    OOP_Object   *pf	      = NULL;
+
+    BOOL    	  gotclass   = FALSE;
+    BOOL	  got_width  = FALSE;
+    BOOL	  got_height = FALSE;
+    BOOL	  got_depth  = FALSE;
+
+    while ((tag = NextTagItem(&tstate)))
     {
-	D(bug("!!! Gfx::NewBitMap: USER IS NOT ALLOWED TO PASS aHidd_BitMap_PixFmt !!!\n"));
-	return NULL;
-    }
-    
-    /* Get class supplied by superclass */
-    if (GOT_BM_ATTR(ClassPtr))
-    {
-    	classptr	= (OOP_Class *)attrs[BMAO(ClassPtr)];
-	gotclass = TRUE;
-    }
-    else
-    {
-	if (GOT_BM_ATTR(ClassID))
-	{
-    	    classid	= (STRPTR)attrs[BMAO(ClassID)];
-	    gotclass = TRUE;
+    	if (IS_BITMAP_ATTR(tag->ti_Tag, idx))
+    	{
+    	    switch (idx)
+    	    {
+		case aoHidd_BitMap_Displayable:
+		    displayable = tag->ti_Data;
+		    break;
+	
+		case aoHidd_BitMap_FrameBuffer:
+		    framebuffer = tag->ti_Data;
+		    break;
+	
+		case aoHidd_BitMap_Width:
+		    got_width = TRUE;
+		    break;
+	
+		case aoHidd_BitMap_Height:
+		    got_height = TRUE;
+		    break;
+	
+		case aoHidd_BitMap_Depth:
+		    got_depth = TRUE;
+		    break;
+	
+		case aoHidd_BitMap_ModeID:
+		    /* Make sure it is a valid mode, and retrieve sync/pixelformat data */
+		    if (!HIDD_Gfx_GetMode(o, tag->ti_Data, &sync, &pf))
+		    {
+			D(bug("!!! Gfx::NewBitMap: USER PASSED INVALID MODEID !!!\n"));
+			return NULL;
+		    }
+		    break;
+	
+		case aoHidd_BitMap_Friend:
+		    friend_bm = (OOP_Object *)tag->ti_Data;
+		    break;
+		    
+		case aoHidd_BitMap_PixFmt:
+		    D(bug("!!! Gfx::NewBitMap: USER IS NOT ALLOWED TO PASS aHidd_BitMap_PixFmt !!!\n"));
+		    return NULL;
+	
+		case aoHidd_BitMap_StdPixFmt:
+		    pixfmt = tag->ti_Data;
+		    break;
+	
+		case aoHidd_BitMap_ClassPtr:
+		    classptr = (OOP_Class *)tag->ti_Data;
+		    gotclass = TRUE;
+		    break;
+	
+		case aoHidd_BitMap_ClassID:
+		    classid  = (STRPTR)tag->ti_Data;
+		    gotclass = TRUE;
+		    break;
+	    }
 	}
     }
-		
-    if (GOT_BM_ATTR(Displayable))
-	displayable = (BOOL)attrs[BMAO(Displayable)];
 
-    if (GOT_BM_ATTR(FrameBuffer))
+    if (friend_bm)
     {
-    	framebuffer = (BOOL)attrs[BMAO(FrameBuffer)];
-	if (framebuffer) displayable = TRUE;
-    }
+	/* If we have a friend bitmap, we can inherit some attributes from it */
+    	if (!got_width)
+    	{
+    	    COPY_BM_TAG(bmtags, 2, Width, friend_bm);
+    	    got_width = TRUE;
+    	}
+    	
+    	if (!got_height)
+    	{
+    	    COPY_BM_TAG(bmtags, 3, Height, friend_bm);
+    	    got_height = TRUE;
+    	}
 
-    if (GOT_BM_ATTR(ModeID))
-    {
-	modeid = attrs[BMAO(ModeID)];
-	
-	/* Check that it is a valid mode */
-	if (!HIDD_Gfx_GetMode(o, modeid, &sync, &pf))
+    	if (!got_depth)
 	{
-	    D(bug("!!! Gfx::NewBitMap: USER PASSED INVALID MODEID !!!\n"));
+	    COPY_BM_TAG(bmtags, 4, Depth, friend_bm);
 	}
     }
-    if (GOT_BM_ATTR(Depth))
-    	depth = attrs[BMAO(Depth)];
 
-    /* First argument is gfxhidd */    
-    SET_BM_TAG(bmtags, 0, GfxHidd, o);
-    SET_BM_TAG(bmtags, 1, Displayable, displayable);
-    
-	
-    if (displayable || framebuffer)
+    /* FrameBuffer implies Displayable */
+    if (framebuffer)
     {
-	/* The user has to supply a modeid */
-	if (!GOT_BM_ATTR(ModeID))
+	SET_BM_TAG(bmtags, 5, Displayable, TRUE);
+    	displayable = TRUE;
+    }
+
+    if (displayable)
+    {
+	/* Displayable bitmap. Our subclass has to supply a ModeID and class. */
+	if (!sync)
 	{
 	    D(bug("!!! Gfx::NewBitMap: USER HAS NOT PASSED MODEID FOR DISPLAYABLE BITMAP !!!\n"));
 	    return NULL;
 	}
-	
+
 	if (!gotclass)
 	{
 	    D(bug("!!! Gfx::NewBitMap: SUBCLASS DID NOT PASS CLASS FOR DISPLAYABLE BITMAP !!!\n"));
 	    return NULL;
 	}
-	
-	SET_BM_TAG(bmtags, 2, ModeID, modeid);
-	SET_BM_TAG(bmtags, 3, PixFmt, pf);
-	
-	if (framebuffer)
-	{
-	    SET_BM_TAG(bmtags, 4, FrameBuffer, TRUE);
-	}
-	else
-	{
-	    SET_TAG(bmtags, 4, TAG_IGNORE, 0UL);
-	}
-	if (!depth)
-	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-	SET_BM_TAG(bmtags, 5, Depth, depth);
-	SET_TAG(bmtags, 6, TAG_MORE, msg->attrList);
-	
     }
-    else
-    { /* if (displayable) */
-	IPTR width, height;
-    
-	/* To get a pixfmt for an offscreen bitmap we either need 
-	    (ModeID || ( (Width && Height) && StdPixFmt) || ( (Width && Height) && Friend))
-	*/
-	    
-	if (GOT_BM_ATTR(ModeID))
-	{   
-	    /* We have allredy gotten pixelformat and sync for the modeid case */
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+    else /* if (!displayable) */
+    {
+	/*
+	 * This is an offscreen bitmap and we need to guess its pixelformat.
+	 * In order to do this we need one of (in the order of preference):
+	 * - ModeID
+	 * - StdPixFmt
+	 * - Friend
+	 */
+
+	if (sync)
+	{
+	    /*
+	     * We have alredy got sync for the modeid case.
+	     * Obtain missing size information from it.
+	     */
+	    if (!got_width)
+	    {
+	    	bmtags[2].ti_Tag = aHidd_BitMap_Width;
+	    	OOP_GetAttr(sync, aHidd_Sync_HDisp, &bmtags[2].ti_Data);
+	    }
+
+	    if (!got_height)
+	    {
+		bmtags[3].ti_Tag = aHidd_BitMap_Height;
+	    	OOP_GetAttr(sync, aHidd_Sync_VDisp, &bmtags[3].ti_Data);
+	    }
 	}
-	else
+	else if (pixfmt != vHidd_StdPixFmt_Unknown)
 	{
 	    /* Next to look for is StdPixFmt */
-	    
-	    /* Check that we have width && height */
-	    if (BM_DIMS_AF != (BM_DIMS_AF & ATTRCHECK(bitmap)))
+	    pf = HIDD_Gfx_GetPixFmt(o, pixfmt);
+	    if (NULL == pf)
 	    {
-		D(bug("!!! Gfx::NewBitMap() MISSING WIDTH/HEIGHT TAGS !!!\n"));
+		D(bug("!!! Gfx::NewBitMap(): USER PASSED BOGUS StdPixFmt !!!\n"));
 		return NULL;
 	    }
-	    
-	    width  = attrs[BMAO(Width)];
-	    height = attrs[BMAO(Height)];
-	    	    
-	    if (GOT_BM_ATTR(StdPixFmt))
+	}
+	else if (friend_bm)
+	{
+	    /* Last alternative is that the user passed a friend bitmap */
+
+	    OOP_GetAttr(friend_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+
+	    /* Try to grab the class from friend bitmap (if not already specified).
+	       We do it because friend bitmap may be a display HIDD bitmap */
+	    if (!gotclass)
 	    {
-		pf = HIDD_Gfx_GetPixFmt(o, (HIDDT_StdPixFmt)attrs[BMAO(StdPixFmt)]);
-		if (NULL == pf)
-		{
-		    D(bug("!!! Gfx::NewBitMap(): USER PASSED BOGUS StdPixFmt !!!\n"));
-		    return NULL;
-		}
-	    }
-	    else
-	    {
-		/* Last alternative is that the user passed a friend bitmap */
-		if (GOT_BM_ATTR(Friend))
-		{
-		    OOP_Object *friend_bm = (OOP_Object *)attrs[BMAO(Friend)];
-		    OOP_GetAttr(friend_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-		    /* Try to grab the class from friend bitmap (if not already specified).
-		       We do it because friend bitmap may be a display HIDD bitmap */
-		    if (!gotclass) {
-			/* Another weirdness is that we have to use this attribute instead of
-			   simple getting OOP_OCLASS(friend_bm). We can't get class directly
-			   from the object, because the framebuffer bitmap object may be a
-			   fakegfx.hidd object, which is even not a bitmap at all. Attempt
-			   to create a bitmap of this class causes system-wide breakage.
-			   Perhaps fakegfx HIDD should be fixed in order to handle this correctly.
-			*/
-			OOP_GetAttr(friend_bm, aHidd_BitMap_ClassPtr, (IPTR *)&classptr);
-			D(bug("[GFX] Friend bitmap is 0x%p has ClassPtr 0x%p\n", friend_bm, classptr));
-			if (classptr)
-		            gotclass = TRUE;
-		    }
-		}
-		else
-		{
-		    D(bug("!!! Gfx::NewBitMap: UNSIFFICIENT ATTRS TO CREATE OFFSCREEN BITMAP !!!\n"));
-		    return NULL;
-		}
+		/* Another weirdness is that we have to use this attribute instead of
+		   simple getting OOP_OCLASS(friend_bm). We can't get class directly
+		   from the object, because the framebuffer bitmap object may be a
+		   fakegfx.hidd object, which is even not a bitmap at all. Attempt
+		   to create a bitmap of this class causes system-wide breakage.
+		   Perhaps fakegfx HIDD should be fixed in order to handle this correctly.
+		*/
+		OOP_GetAttr(friend_bm, aHidd_BitMap_ClassPtr, (IPTR *)&classptr);
+		D(bug("[GFX] Friend bitmap is 0x%p has ClassPtr 0x%p\n", friend_bm, classptr));
+
+		if (classptr)
+		    gotclass = TRUE;
 	    }
 	}
-	
+	else
+	{
+	    D(bug("!!! Gfx::NewBitMap: UNSIFFICIENT ATTRS TO CREATE OFFSCREEN BITMAP !!!\n"));
+	    return NULL;
+	}
+
 	/* Did the subclass provide an offbitmap class for us ? */
 	if (!gotclass)
 	{
-	    /* Have to find a suitable class ourselves */
+	    /* Have to find a suitable class ourselves from the pixelformat */
 	    HIDDT_BitMapType bmtype;
-		
+
 	    OOP_GetAttr(pf, aHidd_PixFmt_BitMapType, &bmtype);
 	    switch (bmtype)
 	    {
 	        case vHidd_BitMapType_Chunky:
 		    classptr = CSD(cl)->chunkybmclass;
 		    break;
-		    
+
 	        case vHidd_BitMapType_Planar:
 		    classptr = CSD(cl)->planarbmclass;
 		    break;
-		    
+
 	        default:
 	    	    D(bug("!!! Gfx::NewBitMap: UNKNOWN BITMAPTYPE %d !!!\n", bmtype));
 		    return NULL;
-		    
 	    }
 	    D(bug("[GFX] Bitmap type is %u, using class 0x%p\n", bmtype, classptr));
-	    
+
 	} /* if (!gotclass) */
-	
-	if (!depth)
-	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 
-	/* Set the tags we want to pass to the selected bitmap class */
-	SET_BM_TAG(bmtags, 2, Width,  width);
-	SET_BM_TAG(bmtags, 3, Height, height);
-	SET_BM_TAG(bmtags, 4, Depth, depth);
-	SET_BM_TAG(bmtags, 5, PixFmt, pf);
-
-	if (GOT_BM_ATTR(Friend))
-	{
-	    SET_BM_TAG(bmtags, 6, Friend, attrs[BMAO(Friend)]);
-	}
-	else
-	{
-	    SET_TAG(bmtags, 6, TAG_IGNORE, 0UL);
-	}
-	SET_TAG(bmtags, 7, TAG_MORE, msg->attrList);
-	
     } /* if (!displayable) */
-    
+
+    /* Set the tags we want to pass to the selected bitmap class */
+    bmtags[0].ti_Data = (IPTR)o;
+    bmtags[1].ti_Data = (IPTR)pf;
+    bmtags[6].ti_Data = (IPTR)msg->attrList;
 
     bm = OOP_NewObject(classptr, classid, bmtags);
 
     if (framebuffer)
+    {
+    	/* Remember the framebuffer. It can be needed for default Show() implementation. */
     	data->framebuffer = bm;
-	
+    }
+
     return bm;
     
 }
