@@ -890,8 +890,6 @@ case "$target_os" in
             	aros_android_level=android-$aros_sdk_version
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
-		dnl Android gcc and AROS gcc use different enums size, so we use AROS gcc
-		use_aros_gcc="yes"
 		if test "$aros_android_ndk" = "none"; then
 		    dnl Use standalone toolchain, don't adjust paths
 		    aros_kernel_cflags="-mandroid"
@@ -1638,6 +1636,9 @@ if test "$crosstools" != "yes"; then
 
     dnl For non-ELF hosts we additionally have to look up ELF toolchain for AROS binaries
     dnl It can be either AROS toolchain selected earlier or generic ELF toolchain we select here.
+    dnl This catches also Android-hosted case. Android gcc is a ELF compiler, but it can't be used
+    dnl to build AROS binaries, at least on ARM. Android EABI is different from AROS EABI
+    dnl (at least enum size is known to be different).
     if test "$target_tool_prefix" != "${target_cpu}-elf-" -a "$target_tool_prefix" != "${target_cpu}-aros-" ; then
 	target_tool_prefix=${target_cpu}-elf-
 	if test "$aros_target_cc" == ""; then
