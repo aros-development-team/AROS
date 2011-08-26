@@ -15,38 +15,39 @@ All Rights Reserved.
 
 */
 
-#include <config.h>
-
 #include <exec/memory.h>
-
-#undef __USE_INLINE__
-#include <proto/expansion.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 
 #include <devices/timer.h>
 
-#include "library_card.h"
+#define DEBUG 1
+#include <aros/debug.h>
+#define DebugPrintF bug
+
+#include "library.h"
 #include "version.h"
 #include "misc.h"
 #include "regs.h"
-#include "DriverData.h"
 
+#include "pci_wrapper.h"
 
-struct Library*    SysBase;
-struct Library*    DOSBase;
+struct DosLibrary* DOSBase;
 struct DriverBase* AHIsubBase;
-
 struct Library*             ExpansionBase = NULL;
-struct ExpansionIFace*      IExpansion = NULL;
-struct UtilityIFace*        IUtility = NULL;
-struct AHIsubIFace*         IAHIsub = NULL;
-struct MMUIFace*            IMMU = NULL;
-struct PCIIFace*            IPCI = NULL;
+
+struct VendorDevice
+{
+    UWORD vendor;
+    UWORD device;
+};
 
 #define CARD_STRING "SB128"
+#define MAX_DEVICE_VENDORS 512
 
+struct VendorDevice *vendor_device_list = NULL;
+static int vendor_device_list_size = 0;
 
 /******************************************************************************
 ** Custom driver init *********************************************************
@@ -55,24 +56,19 @@ struct PCIIFace*            IPCI = NULL;
 BOOL
 DriverInit( struct DriverBase* ahisubbase )
 {
-  struct CardBase* CardBase = (struct CardBase*) ahisubbase;
+  struct SB128Base* SB128Base = (struct SB128Base*) ahisubbase;
   struct PCIDevice   *dev;
-  int                 card_no;
+    int                 card_no, i;
+    struct List		foundCards;
+    struct Node         *devTmp;
 
-  UWORD cards[] =
-  {
-    0x1274, 0x5000,
-    0x1274, 0x1371,
-    0x1274, 0x5880,
-    0x1102, 0x8938,
-    PCI_ANY_ID, PCI_ANY_ID
-  };
+    bug("[SB128]: %s()\n", __PRETTY_FUNCTION__);
 
-  CardBase->cards_found = 0;
-  CardBase->driverdatas = 0;
+  SB128Base->cards_found = 0;
+  SB128Base->driverdatas = 0;
   AHIsubBase = ahisubbase;
   
-  DOSBase  = IExec->OpenLibrary( DOSNAME, 37 );
+  DOSBase  = OpenLibrary( DOSNAME, 37 );
 
   if( DOSBase == NULL )
   {
@@ -80,131 +76,129 @@ DriverInit( struct DriverBase* ahisubbase )
     return FALSE;
   }
 
-  if ((IDOS = (struct DOSIFace *) IExec->GetInterface((struct Library *) DOSBase, "main", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IDOS interface!\n");
-       return FALSE;
-  }
-
-  ExpansionBase = IExec->OpenLibrary( "expansion.library", 50 );
+  ExpansionBase = OpenLibrary( "expansion.library", 50 );
   if( ExpansionBase == NULL )
   {
     Req( "Unable to open 'expansion.library' version 50.\n" );
     return FALSE;
   }
-  if ((IExpansion = (struct ExpansionIFace *) IExec->GetInterface((struct Library *) ExpansionBase, "main", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IExpansion interface!\n");
-       return FALSE;
-  }
 
-  if ((IPCI = (struct PCIIFace *) IExec->GetInterface((struct Library *) ExpansionBase, "pci", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IPCI interface!\n");
-       return FALSE;
-  }
-  
-  if ((IAHIsub = (struct AHIsubIFace *) IExec->GetInterface((struct Library *) AHIsubBase, "main", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IAHIsub interface!\n");
-       return FALSE;
-  }
-  
-  if ((IUtility = (struct UtilityIFace *) IExec->GetInterface((struct Library *) UtilityBase, "main", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IUtility interface!\n");
-       return FALSE;
-  }
-
-  if ((IMMU = (struct MMUIFace *) IExec->GetInterface((struct Library *) SysBase, "mmu", 1, NULL)) == NULL)
-  {
-       Req("Couldn't open IMMU interface!\n");
-       return FALSE;
-  }
+    if (!ahi_pci_init(ahisubbase))
+    {
+        return FALSE;
+    }
 
   /* Timer Device */
   
-/*  replymp = (struct MsgPort *) IExec->CreatePort(NULL, 0);
+/*  replymp = (struct MsgPort *) CreatePort(NULL, 0);
   if (!replymp)
   {
-    IExec->DebugPrintF("SB128: Couldn't create ReplyPort!\n");
+    DebugPrintF("SB128: Couldn't create ReplyPort!\n");
     return FALSE;
   }*/
 
-  /*TimerIO = (struct timerequest *)IExec->CreateIORequest(replymp, sizeof(struct timerequest));
+  /*TimerIO = (struct timerequest *)CreateIORequest(replymp, sizeof(struct timerequest));
 
   if (TimerIO == NULL)
   {
-    IExec->DebugPrintF("Out of memory.\n");
+    DebugPrintF("Out of memory.\n");
     return FALSE;
   }
   
-  if (IExec->OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)TimerIO, 0) != 0)
+  if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)TimerIO, 0) != 0)
   {
-    IExec->DebugPrintF("Unable to open 'timer.device'.\n");
+    DebugPrintF("Unable to open 'timer.device'.\n");
     return FALSE;
   }
   else
     TimerBase = (struct Device *)TimerIO->tr_node.io_Device;*/
   
-  IExec->InitSemaphore( &CardBase->semaphore );
+  InitSemaphore( &SB128Base->semaphore );
 
+    /*** Count cards ***********************************************************/
 
-  /*** Count cards ***********************************************************/
+    vendor_device_list = (struct VendorDevice *) AllocVec(sizeof(struct VendorDevice) * MAX_DEVICE_VENDORS, MEMF_PUBLIC | MEMF_CLEAR);
 
-  dev = NULL;
+    vendor_device_list[0].vendor = 0x1274;
+    vendor_device_list[0].device = 0x5000;
+    vendor_device_list_size++;
 
-  if ( (dev = IPCI->FindDeviceTags( FDT_CandidateList, cards,
-				  TAG_DONE ) ) != NULL )
-  {
-    ++CardBase->cards_found;
-    IExec->DebugPrintF("%s found! :-)\n", CARD_STRING);
-  }
-  
-  /* Fail if no hardware is present (prevents the audio modes from being added to
-     the database if the driver cannot be used). */
+    vendor_device_list[0].vendor = 0x1274;
+    vendor_device_list[0].device = 0x1371;
+    vendor_device_list_size++;
+    
+    vendor_device_list[0].vendor = 0x1274;
+    vendor_device_list[0].device = 0x5880;
+    vendor_device_list_size++;
+    
+    vendor_device_list[0].vendor = 0x1102;
+    vendor_device_list[0].device = 0x8938;
+    vendor_device_list_size++;
 
-  if( CardBase->cards_found == 0 )
-  {
-    IExec->DebugPrintF("No %s found! :-(\n", CARD_STRING);
-    Req( "No card present.\n" );
-    return FALSE;
-  }
+    bug("vendor_device_list_size = %ld\n", vendor_device_list_size);    
+
+    SB128Base->cards_found = 0;
+    dev = NULL;
+
+    for (i = 0; i < vendor_device_list_size; i++)
+    {
+        dev = ahi_pci_find_device(vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
+        
+        if (dev != NULL)
+        {
+            bug("[SB128] %s: Found SB128 #%d [%4x:%4x] pci obj @ 0x%p\n", __PRETTY_FUNCTION__, i, vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
+            ++SB128Base->cards_found;
+
+            devTmp = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+            devTmp->ln_Name = dev;
+            AddTail(&foundCards, devTmp);
+        }
+    }
+
+    // Fail if no hardware is present (prevents the audio modes from being added to
+    // the database if the driver cannot be used).
+
+    if(SB128Base->cards_found == 0 )
+    {
+        DebugPrintF("No SB128 found! :-(\n");
+        Req( "No card present.\n" );
+        return FALSE;
+    }
 
   /*** CAMD ******************************************************************/
 #if 0
-  IExec->InitSemaphore( &CardBase->camd.Semaphore );
-  CardBase->camd.Semaphore.ss_Link.ln_Pri  = 0;
+  InitSemaphore( &SB128Base->camd.Semaphore );
+  SB128Base->camd.Semaphore.ss_Link.ln_Pri  = 0;
 
-  CardBase->camd.Semaphore.ss_Link.ln_Name = Card_CAMD_SEMAPHORE;
-  IExec->AddSemaphore( &CardBase->camd.Semaphore );
+  SB128Base->camd.Semaphore.ss_Link.ln_Name = Card_CAMD_SEMAPHORE;
+  AddSemaphore( &SB128Base->camd.Semaphore );
   
-  CardBase->camd.Cards    = CardBase->cards_found;
-  CardBase->camd.Version  = VERSION;
-  CardBase->camd.Revision = REVISION;
+  SB128Base->camd.Cards    = SB128Base->cards_found;
+  SB128Base->camd.Version  = VERSION;
+  SB128Base->camd.Revision = REVISION;
 
 
-  CardBase->camd.OpenPortFunc.h_Entry    = OpenCAMDPort;
-  CardBase->camd.OpenPortFunc.h_SubEntry = NULL;
-  CardBase->camd.OpenPortFunc.h_Data     = NULL;
+  SB128Base->camd.OpenPortFunc.h_Entry    = OpenCAMDPort;
+  SB128Base->camd.OpenPortFunc.h_SubEntry = NULL;
+  SB128Base->camd.OpenPortFunc.h_Data     = NULL;
 
-  CardBase->camd.ClosePortFunc.h_Entry    = (HOOKFUNC) CloseCAMDPort;
-  CardBase->camd.ClosePortFunc.h_SubEntry = NULL;
-  CardBase->camd.ClosePortFunc.h_Data     = NULL;
+  SB128Base->camd.ClosePortFunc.h_Entry    = (HOOKFUNC) CloseCAMDPort;
+  SB128Base->camd.ClosePortFunc.h_SubEntry = NULL;
+  SB128Base->camd.ClosePortFunc.h_Data     = NULL;
 
-  CardBase->camd.ActivateXmitFunc.h_Entry    = (HOOKFUNC) ActivateCAMDXmit;
-  CardBase->camd.ActivateXmitFunc.h_SubEntry = NULL;
-  CardBase->camd.ActivateXmitFunc.h_Data     = NULL;
+  SB128Base->camd.ActivateXmitFunc.h_Entry    = (HOOKFUNC) ActivateCAMDXmit;
+  SB128Base->camd.ActivateXmitFunc.h_SubEntry = NULL;
+  SB128Base->camd.ActivateXmitFunc.h_Data     = NULL;
 #endif
   
 
   /*** Allocate and init all cards *******************************************/
 
-  CardBase->driverdatas = IExec->AllocVec( sizeof( *CardBase->driverdatas ) *
-				       CardBase->cards_found,
+  SB128Base->driverdatas = AllocVec( sizeof( *SB128Base->driverdatas ) *
+				       SB128Base->cards_found,
 				       MEMF_PUBLIC );
 
-  if( CardBase->driverdatas == NULL )
+  if( SB128Base->driverdatas == NULL )
   {
     Req( "Out of memory." );
     return FALSE;
@@ -212,12 +206,21 @@ DriverInit( struct DriverBase* ahisubbase )
 
   card_no = 0;
 
-  if( ( dev = IPCI->FindDeviceTags( FDT_CandidateList, cards, 
-				  TAG_DONE ) ) != NULL )
-  {
-    CardBase->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
-    ++card_no;    
-  }
+    struct Node *scratchNode;
+    ForeachNodeSafe(&foundCards, devTmp, scratchNode)
+    {
+        Remove(devTmp);
+
+        dev = devTmp->ln_Name;
+        bug("[SB128] %s: Prepairing card #%d pci obj @ 0x%p\n", __PRETTY_FUNCTION__, card_no, dev);
+        SB128Base->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
+        
+        FreeVec(devTmp);
+        ++card_no;
+    }
+
+    bug("[SB128] %s: Done.\n", __PRETTY_FUNCTION__);
+
 
   return TRUE;
 }
@@ -230,62 +233,46 @@ DriverInit( struct DriverBase* ahisubbase )
 VOID
 DriverCleanup( struct DriverBase* AHIsubBase )
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
+  struct SB128Base* SB128Base = (struct SB128Base*) AHIsubBase;
   int i;
 #if 0
-  if( CardBase->camd.Semaphore.ss_Link.ln_Name != NULL )
+  if( SB128Base->camd.Semaphore.ss_Link.ln_Name != NULL )
   {
-    IExec->ObtainSemaphore( &CardBase->camd.Semaphore );
-    IExec->RemSemaphore( &CardBase->camd.Semaphore );
-    IExec->ReleaseSemaphore( &CardBase->camd.Semaphore );
+    ObtainSemaphore( &SB128Base->camd.Semaphore );
+    RemSemaphore( &SB128Base->camd.Semaphore );
+    ReleaseSemaphore( &SB128Base->camd.Semaphore );
   }
 #endif
   
-  for( i = 0; i < CardBase->cards_found; ++i )
+  for( i = 0; i < SB128Base->cards_found; ++i )
   {
-    if (CardBase->driverdatas)
+    if (SB128Base->driverdatas)
     {
-      CardBase->driverdatas[ i ]->pci_dev->OutLong(CardBase->driverdatas[ i ]->iobase + SB128_SCON, 0); 
-      FreeDriverData( CardBase->driverdatas[ i ], AHIsubBase );
+      pci_outl( 0, SB128_SCON, SB128Base->driverdatas[i] );
+      FreeDriverData( SB128Base->driverdatas[ i ], AHIsubBase );
     }
   }
 
-  if (CardBase->driverdatas)
-    IExec->FreeVec( CardBase->driverdatas );
+  if (SB128Base->driverdatas)
+    FreeVec( SB128Base->driverdatas );
   
   /*if (TimerIO)
   {
-    IExec->CloseDevice((struct IORequest *)TimerIO);
-    IExec->DeleteIORequest((struct IORequest *)TimerIO);
+    CloseDevice((struct IORequest *)TimerIO);
+    DeleteIORequest((struct IORequest *)TimerIO);
   }*/
   
   /*if (replymp)
-    IExec->DeletePort(replymp);*/
- 
-  if (IMMU)
-    IExec->DropInterface( (struct Interface *) IMMU);
-  
-  if (IUtility) 
-    IExec->DropInterface( (struct Interface *) IUtility);
-  
-  if (IExpansion)
-    IExec->DropInterface( (struct Interface *) IExpansion);
+    DeletePort(replymp);*/
 
-  if (IPCI)
-    IExec->DropInterface( (struct Interface *) IPCI);
-
-  if (IAHIsub)
-    IExec->DropInterface( (struct Interface *) IAHIsub);
-
-  if (IDOS)
-    IExec->DropInterface( (struct Interface *) IDOS);
+  ahi_pci_exit();
 
   if (ExpansionBase)
-    IExec->CloseLibrary( (struct Library*) ExpansionBase );
+    CloseLibrary( (struct Library*) ExpansionBase );
   
   if (UtilityBase)
-    IExec->CloseLibrary( (struct Library*) UtilityBase );
+    CloseLibrary( (struct Library*) UtilityBase );
   
   if (DOSBase)
-    IExec->CloseLibrary( (struct Library*) DOSBase );
+    CloseLibrary( (struct Library*) DOSBase );
 }

@@ -15,20 +15,20 @@ All Rights Reserved.
 
 */
 
-#ifndef AHI_Drivers_interrupt_h
-#define AHI_Drivers_interrupt_h
+#ifndef AHI_Drivers_SB128_interrupt_h
+#define AHI_Drivers_SB128_interrupt_h
 
-#include <config.h>
+//#include <config.h>
 
 #include "DriverData.h"
 
 LONG
-CardInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* dd );
+CardInterrupt(  struct SB128_DATA* dd );
 
 void
-PlaybackInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* dd );
+PlaybackInterrupt(  struct SB128_DATA* dd );
 
 void
-RecordInterrupt( struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* dd );
+RecordInterrupt(  struct SB128_DATA* dd );
 
-#endif /* AHI_Drivers_interrupt_h */
+#endif /* AHI_Drivers_SB128_interrupt_h */
