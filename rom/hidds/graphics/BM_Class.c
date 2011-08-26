@@ -311,6 +311,7 @@
     BUGS
 
     SEE ALSO
+	aoHidd_BitMap_Align
 
     INTERNALS
 
@@ -761,7 +762,43 @@
         Specify number of pixels to align bitmap data width to.
 
 	This attribute can be added in CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap implementation
-	in order to enforce alignment needed for example by blitting hardware.
+	in order to enforce alignment needed for example by blitting hardware. It will
+	have an impact on aoHidd_BitMap_BytesPerRow value.
+
+    NOTES
+    	Default value of this attribute is 16. This alignment is required by graphics.library
+    	for AmigaOS(tm) compatibility reasons.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_BitMap_BytesPerRow
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_Depth
+
+    SYNOPSIS
+        [G..]
+
+    LOCATION
+        hidd.graphics.bitmap
+
+    FUNCTION
+        Return the actual bitmap depth.
+
+	This a convenience attribute to simplify handling planar bitmaps, whose actual depth
+	may vary. Default implementation in base class simply returns depth of bitmap's
+	pixelformat. Planar bitmap class returns the actual depth here. If your specific
+	bitmap class also operates on bitmaps with variable depths, you need to implement
+	this attribute in it.
 
     NOTES
 
@@ -805,7 +842,6 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
         data->width         = 320;
         data->height        = 200;
-        data->reqdepth	    = 8;
         data->displayable   = FALSE;
 	data->pf_registered = FALSE;
 	data->modeid 	    = vHidd_ModeID_Invalid;
@@ -907,8 +943,6 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	        data->width = attrs[AO(Width)];
 	    if (GOT_BM_ATTR(Height))
 	        data->height = attrs[AO(Height)];
-	    if (GOT_BM_ATTR(Depth))
-	        data->reqdepth = attrs[AO(Depth)];
 	} /* if (ok) */
 
 	if (ok)
@@ -1020,7 +1054,7 @@ void BM__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
 
     /* Release the previously registered pixel format */
     if (data->pf_registered)
-    	HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->prot.pixfmt);
+    	GFX__Hidd_Gfx__ReleasePixFmt(CSD(cl)->gfxhiddclass, data->prot.pixfmt);
 
     OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
 
@@ -1050,7 +1084,11 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 		break;
 
             case aoHidd_BitMap_Depth:
-	    	*msg->storage = data->reqdepth;
+            	/*
+            	 * Generally our bitmaps have a fixed depth, which depends on pixelformat.
+            	 * If this is not true for your bitmap, overload aoHidd_BitMap_Depth in your class.
+            	 */
+	    	*msg->storage = ((HIDDT_PixelFormat *)data->prot.pixfmt)->depth;
 		break;
 
             case aoHidd_BitMap_Displayable:
@@ -1068,20 +1106,6 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 	    case aoHidd_BitMap_ColorMap:
 	    	*msg->storage = (IPTR)data->colmap;
 		break;
-
-    	#if 0
-            case aoHidd_BitMap_Depth:
-	    	if (NULL != data->prot.pixfmt)
-		{
-	    	    *msg->storage = ((HIDDT_PixelFormat *)data->prot.pixfmt)->depth;
-		}
-		else
-		{
-		    *msg->storage = data->reqdepth;
-		}
-		break;
-
-    	#endif
 
 	    case aoHidd_BitMap_GfxHidd:
 	    	*msg->storage = (IPTR)data->gfxhidd;
@@ -4511,10 +4535,6 @@ VOID BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 		    data->height = tag->ti_Data;
 		    break;
 
-                case aoHidd_BitMap_Depth:
-		    data->reqdepth = tag->ti_Data;
-		    break;
-
     	    #if 0
                 case aoHidd_BitMap_ColorTab:
 		    data->colorTab = (APTR)tag->ti_Data;
@@ -5073,12 +5093,12 @@ VOID BM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 
 /****************************************************************************************/
 
-/* private ! */
+/*
+ * Private methods follow.
+ * They are implemented as non-virtual, for speed up.
+ */
 
-/****************************************************************************************/
-
-BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o,
-				    struct pHidd_BitMap_SetBitMapTags *msg)
+BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags)
 {
     struct HIDDBitMapData   *data;
     OOP_Object      	    *pf;
@@ -5087,7 +5107,7 @@ BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o,
 
     data = OOP_INST_DATA(cl, o);
 
-    if (0 != OOP_ParseAttrs(msg->bitMapTags
+    if (0 != OOP_ParseAttrs(bitMapTags
     		, attrs, num_Hidd_BitMap_Attrs
 		, &ATTRCHECK(bitmap), HiddBitMapAttrBase))
     {
@@ -5099,12 +5119,12 @@ BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o,
     {
     	/* Already a pixfmt registered? */
 
-	pf = HIDD_Gfx_RegisterPixFmt(data->gfxhidd, (struct TagItem *)attrs[AO(PixFmtTags)]);
+	pf = GFX__Hidd_Gfx__RegisterPixFmt(CSD(cl)->gfxhiddclass, data->gfxhidd, (struct TagItem *)attrs[AO(PixFmtTags)]);
 	if (NULL == pf)
 	    return FALSE;
 
     	if (data->pf_registered)
-	     HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->prot.pixfmt);
+	     GFX__Hidd_Gfx__ReleasePixFmt(CSD(cl)->gfxhiddclass, data->prot.pixfmt);
 
 	data->prot.pixfmt = pf;
     }
@@ -5121,21 +5141,3 @@ BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o,
 
     return TRUE;
 }
-
-/****************************************************************************************/
-
-BOOL HIDD_BitMap_SetBitMapTags(OOP_Object *o, struct TagItem *bitMapTags)
-{
-    STATIC_MID;
-    struct pHidd_BitMap_SetBitMapTags 	p, *msg = &p;
-
-    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetBitMapTags);
-
-    p.mID = static_mid;
-
-    p.bitMapTags = bitMapTags;
-
-    return (BOOL)OOP_DoMethod(o, (OOP_Msg)msg);
-}
-
-/****************************************************************************************/

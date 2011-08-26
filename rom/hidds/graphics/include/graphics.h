@@ -708,7 +708,7 @@ enum
     aoHidd_BitMap_TopEdge,       /* 17 [.SG] Top edge position of the bitmap      */
     aoHidd_BitMap_Align,         /* 18 [I..] Number of pixels to align bitmap data width to */
 
-    aoHidd_BitMap_Depth,         /* 19 [I.G] Bitmap depth                         */
+    aoHidd_BitMap_Depth,         /* 19 [..G] Bitmap depth                         */
 
     num_Hidd_BitMap_Attrs
 };    

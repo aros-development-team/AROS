@@ -148,38 +148,11 @@ struct HIDDGraphicsData
 };
 
 /* Private gfxhidd methods */
-enum {
-    moHidd_Gfx_RegisterPixFmt = num_Hidd_Gfx_Methods,
-    moHidd_Gfx_ReleasePixFmt
-};
-
-struct pHidd_Gfx_RegisterPixFmt {
-    OOP_MethodID mID;
-    struct TagItem *pixFmtTags;
-    
-};
-
-struct pHidd_Gfx_ReleasePixFmt {
-    OOP_MethodID mID;
-    OOP_Object *pixFmt;
-};
-
-
-OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags);
-VOID HIDD_Gfx_ReleasePixFmt(OOP_Object *o, OOP_Object *pixFmt);
+OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o, struct TagItem *pixFmtTags);
+VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf);
 
 /* Private bitmap methods */
-enum {
-    moHidd_BitMap_SetBitMapTags = num_Hidd_BitMap_Methods
-};
-
-struct pHidd_BitMap_SetBitMapTags {
-    OOP_MethodID mID;
-    struct TagItem *bitMapTags;
-};
-
-BOOL HIDD_BitMap_SetBitMapTags(OOP_Object *o, struct TagItem *bitMapTags);
-
+BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags);
 
 struct HIDDBitMapData
 {
@@ -187,7 +160,6 @@ struct HIDDBitMapData
     
     ULONG width;         /* width of the bitmap in pixel  */
     ULONG height;        /* height of the bitmap in pixel */
-    ULONG reqdepth;	 /* Depth as requested by user */
     BOOL  displayable;   /* bitmap displayable?           */
     BOOL  pf_registered;
     ULONG flags;         /* see hidd/graphic.h 'flags for */
