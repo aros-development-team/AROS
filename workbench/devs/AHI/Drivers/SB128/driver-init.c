@@ -15,16 +15,14 @@ All Rights Reserved.
 
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+#define DebugPrintF bug
+
 #include <exec/memory.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-
-#include <devices/timer.h>
-
-#define DEBUG 1
-#include <aros/debug.h>
-#define DebugPrintF bug
 
 #include "library.h"
 #include "version.h"
@@ -67,7 +65,9 @@ DriverInit( struct DriverBase* ahisubbase )
   SB128Base->cards_found = 0;
   SB128Base->driverdatas = 0;
   AHIsubBase = ahisubbase;
-  
+
+    NewList(&foundCards);
+
   DOSBase  = OpenLibrary( DOSNAME, 37 );
 
   if( DOSBase == NULL )
@@ -76,10 +76,10 @@ DriverInit( struct DriverBase* ahisubbase )
     return FALSE;
   }
 
-  ExpansionBase = OpenLibrary( "expansion.library", 50 );
+  ExpansionBase = OpenLibrary( "expansion.library", 1 );
   if( ExpansionBase == NULL )
   {
-    Req( "Unable to open 'expansion.library' version 50.\n" );
+    Req( "Unable to open 'expansion.library' version 1.\n" );
     return FALSE;
   }
 
@@ -88,31 +88,6 @@ DriverInit( struct DriverBase* ahisubbase )
         return FALSE;
     }
 
-  /* Timer Device */
-  
-/*  replymp = (struct MsgPort *) CreatePort(NULL, 0);
-  if (!replymp)
-  {
-    DebugPrintF("SB128: Couldn't create ReplyPort!\n");
-    return FALSE;
-  }*/
-
-  /*TimerIO = (struct timerequest *)CreateIORequest(replymp, sizeof(struct timerequest));
-
-  if (TimerIO == NULL)
-  {
-    DebugPrintF("Out of memory.\n");
-    return FALSE;
-  }
-  
-  if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)TimerIO, 0) != 0)
-  {
-    DebugPrintF("Unable to open 'timer.device'.\n");
-    return FALSE;
-  }
-  else
-    TimerBase = (struct Device *)TimerIO->tr_node.io_Device;*/
-  
   InitSemaphore( &SB128Base->semaphore );
 
     /*** Count cards ***********************************************************/
@@ -123,16 +98,16 @@ DriverInit( struct DriverBase* ahisubbase )
     vendor_device_list[0].device = 0x5000;
     vendor_device_list_size++;
 
-    vendor_device_list[0].vendor = 0x1274;
-    vendor_device_list[0].device = 0x1371;
+    vendor_device_list[1].vendor = 0x1274;
+    vendor_device_list[1].device = 0x1371;
     vendor_device_list_size++;
     
-    vendor_device_list[0].vendor = 0x1274;
-    vendor_device_list[0].device = 0x5880;
+    vendor_device_list[2].vendor = 0x1274;
+    vendor_device_list[2].device = 0x5880;
     vendor_device_list_size++;
     
-    vendor_device_list[0].vendor = 0x1102;
-    vendor_device_list[0].device = 0x8938;
+    vendor_device_list[3].vendor = 0x1102;
+    vendor_device_list[3].device = 0x8938;
     vendor_device_list_size++;
 
     bug("vendor_device_list_size = %ld\n", vendor_device_list_size);    
@@ -161,7 +136,9 @@ DriverInit( struct DriverBase* ahisubbase )
     if(SB128Base->cards_found == 0 )
     {
         DebugPrintF("No SB128 found! :-(\n");
+#if defined(VERBOSE_REQ)
         Req( "No card present.\n" );
+#endif
         return FALSE;
     }
 
