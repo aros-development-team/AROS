@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -27,8 +27,7 @@
 #undef kprintf
 #include <proto/arossupport.h>
 
-//#include "timer_intern.h"
-#include LC_LIBDEFS_FILE
+#include "timer_intern.h"
 
 AROS_UFP4(ULONG, VBlankInt,
     AROS_UFPA(ULONG, dummy, A0),
@@ -39,7 +38,7 @@ AROS_UFP4(ULONG, VBlankInt,
 
 /****************************************************************************************/
 
-static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
+static int timer_Init(struct TimerBase *LIBBASE)
 {
     /* Setup the timer.device data */
     LIBBASE->tb_CurrentTime.tv_secs = 0;
@@ -71,7 +70,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 	HIDD that deals with the vblank */
     LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
     LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
+    LIBBASE->tb_VBlankInt.is_Node.ln_Name = LIBBASE->tb_Device.dd_Library.lib_Node.ln_Name;
     LIBBASE->tb_VBlankInt.is_Code = (APTR)&VBlankInt;
     LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
 
@@ -92,9 +91,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
 /****************************************************************************************/
 
-static int GM_UNIQUENAME(Open)
+static int timer_Open
 (
-    LIBBASETYPEPTR LIBBASE,
+    struct TimerBase *LIBBASE,
     struct timerequest *tr,
     ULONG unitNum,
     ULONG flags
@@ -132,7 +131,7 @@ static int GM_UNIQUENAME(Open)
 
 /****************************************************************************************/
 
-static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
+static int timer_Expunge(struct TimerBase *LIBBASE)
 {
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     RemIntServer(INTB_VERTB, &LIBBASE->tb_VBlankInt);
@@ -141,6 +140,6 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 
 /****************************************************************************************/
 
-ADD2INITLIB(GM_UNIQUENAME(Init), 0)
-ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
-ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
+ADD2INITLIB(timer_Init, 0)
+ADD2OPENDEV(timer_Open, 0)
+ADD2EXPUNGELIB(timer_Expunge, 0)
