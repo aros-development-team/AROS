@@ -9,10 +9,22 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-sfs-pkg	\
 #MM	kernel-partition-pkg
 
-PKG_LIBS     := partition
-PKG_HANDLERS := afs cdrom sfs
+# kernel-fs-kobj metatarget is already taken by rom/filesys
+#MM- kernel-fs-objs:		\
+#MM	kernel-fs-afs-kobj	\
+#MM	kernel-fs-cdvdfs-kobj	\
+#MM	kernel-fs-sfs-kobj	\
+#MM	kernel-partition-kobj
+
+FS_LIBS     := partition
+FS_HANDLERS := afs cdrom sfs
 
 %make_package mmake=kernel-package-fs file=$(BINDIR)/boot/aros-fs.pkg \
-	      handlers=$(PKG_HANDLERS) libs=$(PKG_LIBS)
+	      handlers=$(FS_HANDLERS) libs=$(FS_LIBS)
+	      
+%link_kickstart mmake=kernel-link-fs file=$(BINDIR)/boot/aros-fs \
+	handlers=$(FS_HANDLERS) libs=$(FS_LIBS) \
+	uselibs="amiga arossupport rom debug autoinit libinit" \
+	map=$(GENDIR)/boot/kernel-fs.map deps=kernel-fs-objs
 
 %common
