@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "../rom/exec/etask.h"
+#include "../../rom/exec/etask.h"
 
 static LONG get_default_stack_size()
 {
