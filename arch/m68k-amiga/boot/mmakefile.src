@@ -21,6 +21,7 @@ Q ?= @
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-c-shellcommands-kobj \
 #MM     kernel-cia-kobj \
+#MM     kernel-timer-kobj \
 #MM     kernel-debug-kobj \
 #MM     kernel-disk-kobj \
 #MM     kernel-filesystem-kobj \
