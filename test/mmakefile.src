@@ -85,7 +85,6 @@ COMMONTESTFILES := \
     seektest \
     callhooktest \
     scanvarstest \
-    runcommand \
     aroscprivdata \
     convertpixels \
     patchrgbconv \
