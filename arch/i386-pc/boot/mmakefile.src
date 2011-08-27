@@ -25,20 +25,12 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM- kernel-pc-i386 : general-setup-pc-i386
 
 #MM- kernel-pc-i386 : \
-#MM	kernel-kernel-kobj \
 #MM	kernel-bootloader-pc-i386-kobj \
 #MM	kernel-isapnp-kobj \
-#MM     kernel-partition-kobj \
-#MM     kernel-filesystem-kobj \
-#MM     kernel-fs-afs-kobj \
-#MM	kernel-fs-sfs-kobj \
-#MM     kernel-fs-cdvdfs-kobj \
 #MM	kernel-pc-i386-drivers \
 #MM     kernel-workbench-devs-pc-i386 \
-#MM	kernel-dos-kobj \
-#MM	kernel-dosboot-kobj \
-#MM     kernel-usb-pc-i386 \
-#MM     kernel-processor-kobj
+#MM     kernel-objs \
+#MM     kernel-bsp-objs
 
 #MM- kernel-workbench-devs-pc-i386 : workbench-devs-pc-i386
 
@@ -50,11 +42,10 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 KRSRCS  := battclock bootloader dosboot processor lddemon FileSystem
 KLIBS   := aros debug dos graphics utility intuition keymap \
-      	   expansion oop layers partition
+      	   expansion oop layers
 KDEVS   := timer input keyboard console gameport ata trackdisk
-KHNDLRS := con amberram cdrom afs sfs
+KHNDLRS := con amberram
 KHIDDS  := hiddclass serial keyboard mouse graphics kbd ps2mouse vesagfx vgah pci pcipc
-KUSB    := poseidon_library.o hub_class.o hid_class.o massstorage_class.o pciusb_device.o usbromstartup_resource.o
 ##Disabled RSRC cpu isapnp
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
@@ -64,25 +55,21 @@ KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
 
-KOBJS_USB := $(addprefix $(KOBJSDIR)/,$(KUSB) )
-
 #MM
 kernel-setup-pc-i386 :
 	%mkdirs_q $(OSGENDIR)/boot
 	%mkdirs_q $(BINDIR)/boot
 	%mkdirs_q $(BINDIR)/boot/grub
 
-#MM kernel-link-pc-i386 : kernel-setup-pc-i386 kernel-pc-i386
-kernel-link-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz $(BINDIR)/boot/aros-usb-pc-i386.gz
+#MM kernel-link-pc-i386 : kernel-setup-pc-i386 kernel-pc-i386 kernel-link-usb-gz kernel-link-fs-gz
+kernel-link-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz
 
 #MM
-kernel-link-pc-i386-quick : $(BINDIR)/boot/aros-kernel-pc-i386.gz $(BINDIR)/boot/aros-usb-pc-i386.gz
+kernel-link-pc-i386-quick : $(BINDIR)/boot/aros-kernel-pc-i386.gz
 
 #MM kernel-package-pc-i386 : kernel-link-pc-i386
-kernel-package-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz $(BINDIR)/boot/aros-usb-pc-i386.gz
+kernel-package-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz
 
-#MM
-kernel-link-usb-pc-i386 : $(BINDIR)/boot/aros-usb-pc-i386.gz
 
 $(BINDIR)/boot/aros-kernel-pc-i386 : $(KOBJS) $(DEPLIBS)
 	@$(TARGET_CC) $(CFLAGS) -Wl,-N \
@@ -91,17 +78,7 @@ $(BINDIR)/boot/aros-kernel-pc-i386 : $(KOBJS) $(DEPLIBS)
 	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment \
 	    -R .note.gnu.build-id $@
 
-$(BINDIR)/boot/aros-usb-pc-i386 : $(KOBJS_USB) $(DEPLIBS)
-	@$(TARGET_CC) $(CFLAGS) -Wl,-N \
-	    $(GENMAP) $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $@ $(KOBJS_USB) \
-	    -static $(NOSTARTUP_LDFLAGS) -L$(LIBDIR) $(LIBS)
-	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment \
-	    -R .note.gnu.build-id $@
-
 $(BINDIR)/boot/aros-kernel-pc-i386.gz : $(BINDIR)/boot/aros-kernel-pc-i386
-	@gzip -9 -f $^
-
-$(BINDIR)/boot/aros-usb-pc-i386.gz : $(BINDIR)/boot/aros-usb-pc-i386
 	@gzip -9 -f $^
 
 #MM
