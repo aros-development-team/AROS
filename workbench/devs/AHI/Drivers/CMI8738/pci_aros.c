@@ -312,7 +312,7 @@ BOOL ahi_pci_add_intserver(struct Interrupt *i, APTR dev)
     OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_INTLine, &val);
 
     inthandler.h_Node.ln_Pri = 1;
-    inthandler.h_Node.ln_Name = "HD Audio IRQ";
+    inthandler.h_Node.ln_Name = "CMI8738 IRQ";
     inthandler.h_Code = interrupt_code;
     inthandler.h_Data = i;
 
