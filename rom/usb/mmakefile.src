@@ -1,15 +1,9 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- kernel-usb-pc-i386 : \
-#MM         kernel-usb
+# --- Main metatargets ---
 
-#MM- kernel-usb-pc-x86_64 : \
-#MM         kernel-package-usb
-
-#MM- kernel-usb-sam440-ppc : \
-#MM         kernel-usb
-
+# Build a complete disk-based Poseidon
 #MM- kernel-usb : \
 #MM      kernel-usb-poseidon \
 #MM      kernel-usb-shelltools \
@@ -18,18 +12,7 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-trident \
 #MM      kernel-usb-pciusb
 
-#MM- kernel-usb-kobj-pc-i386 : \
-#MM      kernel-usb-kobj
-
-#MM- kernel-usb-kobj-sam440-ppc : \
-#MM      kernel-usb-kobj
-
-#MM- kernel-usb-kobj : \
-#MM      kernel-usb-poseidon-kobj \
-#MM      kernel-usb-classes-kobj \
-#MM      kernel-usb-pciusb-kobj \
-#MM      kernel-usb-usbromstartup-kobj 
-
+# Clean up
 #MM- kernel-usb-clean : \
 #MM      kernel-usb-poseidon-clean \
 #MM      kernel-usb-shelltools-clean \
@@ -40,18 +23,35 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-usbclass-clean \
 #MM      kernel-usb-usbromstartup-clean 
 
-#MM- kernel-usb-includes-pc-i386 : \
-#MM      kernel-usb-includes
+# Build SDK
+#MM- kernel-usb-includes : \
+#MM      kernel-usb-poseidon-includes \
+#MM      kernel-usb-usbclass-includes
 
-#MM- kernel-usb-includes-pc-x86_64 : \
+# Platform bindings follow
+#MM- kernel-usb-pc-i386 : \
+#MM         kernel-link-usb
+
+#MM- kernel-usb-pc-x86_64 : \
+#MM         kernel-package-usb
+
+#MM- kernel-usb-sam440-ppc : \
+#MM         kernel-usb
+
+#MM- kernel-usb-kobj-sam440-ppc : \
+#MM      kernel-usb-kobj
+
+#MM- kernel-usb-includes-pc-$(CPU) : \
 #MM      kernel-usb-includes
 
 #MM- kernel-usb-includes-sam440-ppc : \
 #MM      kernel-usb-includes
 
-#MM- kernel-usb-includes : \
-#MM      kernel-usb-poseidon-includes \
-#MM      kernel-usb-usbclass-includes
+# This is kickstart package contents
+USB_CLASSES := bootkeyboard bootmouse hub hid massstorage
+USB_DEVS    := pciusb
+USB_LIBS    := poseidon
+USB_RES     := usbromstartup
 
 # --- PKG kickstart package ---
 
@@ -67,13 +67,25 @@ include $(TOP)/config/make.cfg
 
 #MM kernel-package-usb : kernel-usb-pkg
 
-USB_CLASSES := bootkeyboard bootmouse hub hid massstorage
-USB_DEVS    := pciusb
-USB_LIBS    := poseidon
-USB_RES     := usbromstartup
-
 %make_package mmake=kernel-package-usb file=$(BINDIR)/boot/poseidon.pkg \
 	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES)
+
+# --- ELF kickstart package ---
+
+#MM- kernel-usb-kobj :			\
+#MM      kernel-usb-poseidon-kobj	\
+#MM      kernel-usb-shelltools		\
+#MM      kernel-usb-classes		\
+#MM	 kernel-usb-classes-kobj	\
+#MM      kernel-usb-shellapps		\
+#MM      kernel-usb-trident		\
+#MM      kernel-usb-pciusb-kobj		\
+#MM	 kernel-usb-usbromstartup-kobj
+
+%link_kickstart mmake=kernel-link-usb file=$(BINDIR)/boot/poseidon \
+	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES) \
+	uselibs="amiga arossupport rom debug hiddstubs autoinit libinit" \
+	map=$(GENDIR)/boot/kernel-usb.map deps=kernel-usb-kobj
 
 # -----------------------------
 
