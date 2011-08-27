@@ -2629,8 +2629,25 @@ PKG_DEPS  := $(addprefix $(PKGDIR)/, $(PKG_FILES))
 GLOB_MKDIRS += $(PKG_DIR)
 
 %end
-#------------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------
+# Compresses %(file) with a gzip.
+# Good in conjunction with for example %build_prog
+
+%define compress_file mmake=/A file=/A
+
+#MM- %(mmake)-gz : %(mmake) %(mmake)-gz-quick
+
+#MM
+%(mmake)-gz-quick : %(file).gz
+
+%(file).gz: %(file)
+	@$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
+	@gzip -9 -f $^
+
+%end
+
+#------------------------------------------------------------------------------
 # Links a kickstart module in ELF format
 # Arguments are similar to make_package
 
@@ -2676,8 +2693,7 @@ ifneq (%(map),)
     TMP_DIRS    += $(dir %(map))
 endif
 
-#MM %(mmake)    : %(deps)
-#MM %(mmake)-gz : %(deps)
+#MM %(mmake) : %(deps)
 
 #MM
 %(mmake) : %(file)
@@ -2693,15 +2709,7 @@ endif
 	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
 	@$(STRIP) $@
 
-#MM
-%(mmake)-gz : %(file).gz
-
-#MM
-%(mmake)-gz-quick : %(file).gz
-
-%(file).gz: %(file)
-	@$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
-	@gzip -9 -f $^
+%compress_file mmake=%(mmake) file=%(file).gz
 
 GLOB_MKDIRS += $(TMP_DIRS)
 
