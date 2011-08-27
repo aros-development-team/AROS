@@ -35,7 +35,8 @@ int main (int argc, char ** argv)
     seglist = LoadSeg((CONST_STRPTR)"peropenertest_child");
     if (seglist != (BPTR)NULL)
     {
-        RunCommand(seglist, 10*1024, "\n", -1);
+        SetProgramName("peropenertest_child");
+        RunCommand(seglist, 10*1024, "\n", 1);
         UnLoadSeg(seglist);
     }
     else
