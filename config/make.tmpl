@@ -2629,7 +2629,7 @@ GLOB_MKDIRS += $(PKG_DIR)
 # Arguments are similar to make_package
 
 %define link_kickstart mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
-    startup= uselibs= ldflags=$(LDFLAGS) map=
+    startup= uselibs= ldflags=$(LDFLAGS) map= deps=
 
 KOBJ_CLASSES  := $(addprefix $(KOBJSDIR)/, $(addsuffix _class.o, %(classes)))
 KOBJ_DEVICES  := $(addprefix $(KOBJSDIR)/, $(addsuffix _device.o, %(devs)))
@@ -2670,6 +2670,9 @@ ifneq (%(map),)
     TMP_DIRS    += $(dir %(map))
 endif
 
+#MM %(mmake)    : %(deps)
+#MM %(mmake)-gz : %(deps)
+
 #MM
 %(mmake) : %(file)
 
@@ -2682,6 +2685,17 @@ endif
 %(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
 	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
 	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
+	@$(STRIP) $@
+
+#MM
+%(mmake)-gz : %(file).gz
+
+#MM
+%(mmake)-gz-quick : %(file).gz
+
+%(file).gz: %(file)
+	@$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
+	@gzip -9 -f $^
 
 GLOB_MKDIRS += $(TMP_DIRS)
 
