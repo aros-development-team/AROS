@@ -157,10 +157,10 @@ define modlist
         set $i = 0
         while ($i < $shnum)
             if ($sh->addr != 0) && ($sh->size != 0)
-		printf "%p %12s %2u %32s\n", $sh->addr, $i, $kicknode->Name
+		printf "%p              %2u %32s\n", $sh->addr, $i, $kicknode->Name
 	    end
-	    $sh++
-	    $i++
+	    set $sh = $sh + 1
+	    set $i = $i + 1
 	end
         set $kicknode = $kicknode->Next
     end
