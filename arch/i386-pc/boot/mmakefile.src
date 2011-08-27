@@ -29,8 +29,8 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-isapnp-kobj \
 #MM	kernel-pc-i386-drivers \
 #MM     kernel-workbench-devs-pc-i386 \
-#MM     kernel-objs \
-#MM     kernel-bsp-objs
+#MM     kernel-bsp-objs \
+#MM     kernel-objs
 
 #MM- kernel-workbench-devs-pc-i386 : workbench-devs-pc-i386
 
