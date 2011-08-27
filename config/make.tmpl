@@ -932,13 +932,19 @@ BDID := $(BDTARGETID)
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
-    compiler=target srcdir=
+    compiler=target linker= srcdir=
 
 .PHONY : %(mmake)
 
 BD_PROGNAME  := %(progname)
 BD_OBJDIR    := %(objdir)
 BD_TARGETDIR := %(targetdir)
+BD_LINKER    := %(linker)
+
+# If not supplied, linker is equal to compiler
+ifeq ($(BD_LINKER),)
+    BD_LINKER := %(compiler)
+endif
 
 BD_FILES     := %(files)
 BD_ASMFILES  := %(asmfiles)
@@ -971,7 +977,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
     objs="$(BD_OBJS) $(BD_ARCHOBJS) $(USER_OBJS)" ldflags=$(BD_LDFLAGS) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
-    linker=%(compiler)
+    linker=$(BD_LINKER)
 
 endif
 
