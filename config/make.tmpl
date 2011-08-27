@@ -2709,7 +2709,7 @@ endif
 	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
 	@$(STRIP) $@
 
-%compress_file mmake=%(mmake) file=%(file).gz
+%compress_file mmake=%(mmake) file=%(file)
 
 GLOB_MKDIRS += $(TMP_DIRS)
 
