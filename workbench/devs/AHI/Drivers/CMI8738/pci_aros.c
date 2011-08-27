@@ -1,10 +1,10 @@
 #define __OOP_NOATTRBASES__
 
-//#include <config.h>
 
 #include <utility/hooks.h>
 #include <exec/interrupts.h>
-#include <asm/io.h>
+#include <aros/macros.h>
+#include <aros/io.h>
 #include <oop/oop.h>
 #include <hidd/pci.h>
 #include <hidd/irq.h>
@@ -19,7 +19,6 @@
 #define KPrintF kprintf
 
 struct Library *OOPBase;
-
 
 static OOP_AttrBase __IHidd_PCIDev;
 static OOP_Object *pciobj, *irqobj;
@@ -140,32 +139,32 @@ APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev)
 
 ULONG pci_inl(ULONG addr, struct CMI8738_DATA *card)
 {
-    return (*((ULONG *)(card->iobase + addr)));
+    return LONGIN(card->iobase + addr);
 }
 
 UWORD pci_inw(ULONG addr, struct CMI8738_DATA *card)
 {
-    return (*((UWORD *)(card->iobase + addr)));
+    return WORDIN(card->iobase + addr);
 }
 
 UBYTE pci_inb(ULONG addr, struct CMI8738_DATA *card)
 {
-    return (*((UBYTE *)(card->iobase + addr)));
+    return BYTEIN(card->iobase + addr);
 }
 
 void pci_outl(ULONG value, ULONG addr, struct CMI8738_DATA *card)
 {
-    *((ULONG *)(card->iobase + addr)) = (value);
+    LONGOUT(card->iobase + addr, value);
 }
 
 void pci_outw(UWORD value, ULONG addr, struct CMI8738_DATA *card)
 {
-    *((UWORD *)(card->iobase + addr)) = (value);
+    WORDOUT(card->iobase + addr, value);
 }
 
 void pci_outb(UBYTE value, ULONG addr, struct CMI8738_DATA *card)
 {
-    *((UBYTE *)(card->iobase + addr)) = (value);
+    BYTEOUT(card->iobase + addr, value);
 }
 
 void outb_setbits(UBYTE value, ULONG addr, struct CMI8738_DATA *card)
