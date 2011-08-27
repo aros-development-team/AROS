@@ -55,6 +55,16 @@ include $(TOP)/config/make.cfg
 #MM	kernel-rtas-chrp-ppc-includes \
 #MM     kernel-usb-includes
 
+# A shortcut for minimal set of BSP modules.
+# All these components are machine-specific.
+#MM- kernel-bsp-objs:			\
+#MM	kernel-kernel-kobj		\
+#MM	kernel-battclock-kobj		\
+#MM	kernel-processor-kobj		\
+#MM	kernel-timer-kobj		\
+#MM	kernel-expansion-kobj		\
+#MM	kernel-exec-kobj
+
 # This is what kickstart base package consists of.
 # These modules are architecture-independent and can work on both hosted and native systems.
 
@@ -67,9 +77,7 @@ BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 # *** ELF kickstart package ***
 
 #MM- kernel-objs : \
-#MM     kernel-exec-kobj \
 #MM     kernel-aros-kobj \
-#MM     kernel-disk-kobj \
 #MM     kernel-dos-kobj \
 #MM	kernel-debug-kobj \
 #MM     kernel-dosboot-kobj \
@@ -84,14 +92,10 @@ BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 #MM	kernel-lddemon-kobj \
 #MM     kernel-devs \
 #MM	kernel-fs-kobj \
-#MM     kernel-expansion-kobj \
 #MM     kernel-hidd-kobj \
-#MM     kernel-timer-kobj \
-#MM     kernel-battclock-kobj \
 #MM     kernel-oop-kobj \
 #MM     kernel-layers-kobj \
-#MM     kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
-#MM     kernel-processor-kobj
+#MM     kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 # This is here because poor-man i386-pc port still uses own bootloader.resource implementation.
 # So we don't link generic one in kernel-objs target
