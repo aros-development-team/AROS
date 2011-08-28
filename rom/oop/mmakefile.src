@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+#MM- core-linklibs : linklibs-oop
+
 FILES	  :=	hash hiddmetaclass metaclass basemetaclass  \
 		privatestubs rootclass support 
 	
