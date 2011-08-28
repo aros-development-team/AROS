@@ -516,13 +516,12 @@ ROM_OBJ32   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR32)/rom/$(f).o) \
 LIBS := $(ARCH_LIBS) -L$(AROS_LIB) -larosm -lautoinit -larossupport
 DEP_LIBS := arosm autoinit arossupport
 
-#MM- core-linklibs : linklibs-clib
-#MM- linklibs : linklibs-clib
-#MM linklibs-clib : setup-clib includes linklibs-mlib linklibs-autoinit \
-#MM			clib-stubs linklibs-amiga linklibs-arossupport \
-#MM			linklibs-dos \
-#MM			linklibs-locale \
-#MM			linklibs-aros
+#MM- core-linklibs : linklibs-arosc
+#MM- linklibs-arosc : linklibs-clib-linklib
+#MM- linklibs : linklibs-arosc
+#MM linklibs-clib : core-linklibs setup-clib includes clib-stubs
+#MM linklibs-clib-linklib : clib-stubs
+#MM- clib-stubs : setup-clib
 
 #MM linklibs-clib32 : includes
 
@@ -532,7 +531,9 @@ linklibs-clib-quick : linklibs-clib
 #MM
 linklibs-clib32-quick : linklibs-clib32
 
-linklibs-clib : setup-clib $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
+linklibs-clib : $(AROS_LIBS)/$(MODULE)
+
+linklibs-clib-linklib : $(SHARED_LIB) $(ROM_LIB)
 
 linklibs-clib32 : setup-clib32 $(ROM_LIB32)
 
