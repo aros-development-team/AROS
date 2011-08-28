@@ -19,16 +19,6 @@ machine :
 #MM- demos : includes linklibs
 #MM- contrib : includes linklibs
 
-#MM- core-linklibs: \
-#MM      kernel-expansion-linklib \
-#MM      kernel-utility-linklib \
-#MM      kernel-oop-linklib \
-#MM      kernel-graphics-linklib \
-#MM      kernel-layers-linklib \
-#MM      kernel-intuition-linklib \
-#MM      kernel-dos-linklib \
-#MM      kernel-keymap-linklib
-
 #MM- core-includes: \
 #MM      kernel-expansion-includes \
 #MM      kernel-utility-includes \
