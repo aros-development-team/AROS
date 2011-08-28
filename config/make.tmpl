@@ -698,13 +698,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
 )
 
-%(module) : LIB_NAMES := %(uselibs) \
-               muimaster asl keymap commodities codesets \
-               diskfont datatypes iffparse cybergraphics \
-               icon gadtools intuition layers graphics \
-               keymap locale aros \
-               dos utility expansion \
-               autoinit libinit
+%(module) : LIB_NAMES := %(uselibs)
 %(module) : OBJS := %(objs)
 %(module) : ENDTAG := %(endobj)
 %(module) : ERR := %(err)
