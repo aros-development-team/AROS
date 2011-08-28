@@ -4,6 +4,7 @@
 #
 include $(TOP)/config/make.cfg
 
+
 #MM- kernel-aros : linklibs kernel-aros-create-abi-file
 #MM- kernel-aros-kobj : linklibs kernel-aros-create-abi-file
 
@@ -11,7 +12,7 @@ include $(TOP)/config/make.cfg
 #MM-     kernel-exec-includes \
 #MM-     kernel-utility-includes \
 #MM-     includes-copy
-#MM- linklibs-core: linklibs-aros
+#MM- core-linklibs: linklibs-aros
 
 USER_CFLAGS := -DVARIANT="\"$(AROS_TARGET_VARIANT)\"" -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\""
 
