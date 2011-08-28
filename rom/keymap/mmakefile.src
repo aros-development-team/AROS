@@ -4,6 +4,8 @@
 #
 include $(TOP)/config/make.cfg
 
+#MM- core-linklibs : linklibs-keymap
+
 FILES := defaultkeymap support
 FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
 
