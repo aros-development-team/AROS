@@ -2380,13 +2380,15 @@ endif
 #
 #     - mmake       = mmaketarget
 #     - archive     = archive base name
+#     - srcdir      = directory the package is unpacked to, useful if archive unpacks to
+#                     a directory other than its name suggests.
 #     - suffixes    = a list of suffixes to append to the the package name plus the
 #                     version. Each one of them is tried until a matching archive is
 #                     found.
 #     - destination = the directory to unpack the archive to.
 #     - excludes    = diff patterns to exclude files or directories from the patch
 
-%define create_patch mmake=/A archive=/A suffixes="tar.bz2 tar.gz" destination=/A excludes=
+%define create_patch mmake=/A archive=/A srcdir= suffixes="tar.bz2 tar.gz" destination=/A excludes=
 
 .PHONY: %(mmake)
 
@@ -2394,19 +2396,25 @@ ifneq (%(excludes),)
     %(mmake)-exclude := -X ./exclude.patterns
 endif
 
+ifneq (%srcdir),)
+    %(mmake)-srcdir := %(srcdir)
+else
+    %(mmake)-srcdir := %(archive)
+endif
+
 #MM
 %(mmake):
 	@$(FETCH) -a %(archive) -s "%(suffixes)" -l $(PORTSSOURCEDIR) -d %(destination)/tmp ; \
-	$(MV) %(destination)/%(archive) %(destination)/tmp/%(archive).aros ; \
+	$(MV) %(destination)/$(%(mmake)-srcdir) %(destination)/tmp/$(%(mmake)-srcdir).aros ; \
 	cd %(destination)/tmp ; \
 	$(FOR) f in %(excludes) ; do \
 	    $(ECHO) $$f >> ./exclude.patterns ; \
 	done ; \
 	diff -ruN $(%(mmake)-exclude) \
-	    %(archive) \
-	    %(archive).aros \
+	    $(%(mmake)-srcdir) \
+	    $(%(mmake)-srcdir).aros \
 	    >$(SRCDIR)/$(CURDIR)/%(archive)-aros-new.diff ; \
-	$(MV) %(destination)/tmp/%(archive).aros %(destination)/%(archive) ; \
+	$(MV) %(destination)/tmp/$(%(mmake)-srcdir).aros %(destination)/$(%(mmake)-srcdir) ; \
 	$(RM) %(destination)/tmp
 %end
 #------------------------------------------------------------------------------
@@ -2492,7 +2500,7 @@ else
 endif
 
 ifeq (%(patch),yes)
-    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:$(%(mmake)-%(subpackage)-srcdir):-p1    
+    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:$(%(mmake)-%(subpackage)-srcdir):-p1
 else
     %(mmake)-%(subpackage)-patches_specs := ::
 endif
@@ -2503,7 +2511,10 @@ endif
     patches_specs="$(%(mmake)-%(subpackage)-patches_specs)" patches_origins="$(SRCDIR)/$(CURDIR) %(patch_repo)"
 
 %create_patch mmake=%(mmake)-%(subpackage)-create-patch \
-    archive=$(%(mmake)-%(subpackage)-archbase) suffixes="%(suffixes)" destination=$(%(mmake)-portdir)
+    archive=$(%(mmake)-%(subpackage)-archbase) \
+    srcdir=$(%(mmake)-%(subpackage)-srcdir) \
+    suffixes="%(suffixes)" \
+    destination=$(%(mmake)-portdir)
 
 #MM- %(mmake) : %(mmake)-%(subpackage)
 
