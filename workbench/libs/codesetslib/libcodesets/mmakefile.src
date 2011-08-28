@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-#MM- linklibs : linklibs-codesets
+#MM- core-linklibs : linklibs-codesets
 
 CODESETS_LIB := $(AROS_LIB)/libcodesets.a
 

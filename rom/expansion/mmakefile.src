@@ -4,6 +4,8 @@
 #
 include $(TOP)/config/make.cfg
 
+#MM- core-linklibs : linklibs-expansion
+
 FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 	    allocconfigdev allocexpansionmem configboard configchain \
 	    findconfigdev freeboardmem freeconfigdev freeexpansionmem \

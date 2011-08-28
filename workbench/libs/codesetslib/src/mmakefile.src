@@ -18,7 +18,7 @@ FILES := \
 # *don't* pick up the project's local MUI headers.
 USER_CFLAGS = -I. -idirafter $(SRCDIR)/$(CURDIR)/../include
 
-#MM workbench-libs-codesets : workbench-libs-codesets-includes linklibs
+#MM workbench-libs-codesets : workbench-libs-codesets-includes
 
 %build_module_simple mmake=workbench-libs-codesets \
     modname=codesets modtype=library \
