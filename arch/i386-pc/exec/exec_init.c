@@ -88,28 +88,14 @@
 
 #include "etask.h"
 #include "exec_intern.h"
+#include "exec_debug.h"
 #include "exec_util.h"
+#include "intservers.h"
 #include "memory.h"
 #include "traps.h"
 #include "vesa.h"
 
 #define SMP_SUPPORT 0
-
-/*
- * Here the history starts. We are already in flat, 32bit mode. All protections
- * are off, CPU is working in Supervisor level (CPL0). This state can be emu-
- * lated by ColdReboot() routine as it may freely use Supervisor()
- *
- * kernel_startup can be executed only from CPL0 without vmm. Interrupts should
- * be disabled.
- *
- * Note that kernel_startup is declared as entry symbol for output ELF file.
- */
-
-asm(                ".section .aros.init,\"ax\"\n\t.globl kernel_startup  \n\t"
-                    ".type  kernel_startup,@function\n"
-"kernel_startup:    jmp exec_init\n\t.text");
-
 
 #if SMP_SUPPORT
     extern void prepare_primary_cpu(struct ExecBase *SysBase);      /* FUNCTION FROM "cpu.resource"!!!!!!! */
@@ -144,11 +130,9 @@ asm(                ".section .aros.init,\"ax\"\n\t.globl kernel_startup  \n\t"
  * Some declarations
  */
 void    get_ACPI_RSDPTR(struct arosmb *mb);
-void    exec_init() __no_ret;       /* init NEVER returns */
 void    exec_cinit() __no_ret;      /* c-style init NEVER returns */
 int     exec_check_base();
 void    exec_DefaultTrap();
-void    exec_DefaultTaskExit();
 //void    exec_CheckCPU();
 int 	exec_RamCheck_fast();
 int 	exec_RamCheck_dma();
@@ -163,8 +147,7 @@ extern const UBYTE LIBEND __text;             /* Somewhere in library */
 extern ULONG _edata,_end;                       /* They are standard for ELF */
 extern const APTR LIBFUNCTABLE[] __text;
 
-extern struct Library * PrepareAROSSupportBase (void);
-extern ULONG SoftIntDispatch();
+extern struct Library * pc_PrepareAROSSupportBase (void);
 extern void AROS_SLIB_ENTRY(SerialRawIOInit, Exec, 84)();
 extern void AROS_SLIB_ENTRY(SerialRawPutChar, Exec, 86)(UBYTE chr);
 extern void AROS_SLIB_ENTRY(MemoryRawIOInit, Exec, 84)();
@@ -179,14 +162,6 @@ extern void AROS_SLIB_ENTRY(PrepareContext_SSE, Exec, 6)();
 extern void AROS_SLIB_ENTRY(Dispatch_SSE, Exec, 10)();
 extern void AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104)();
 
-extern ULONG Exec_15_MakeFunctions(APTR, APTR, APTR, APTR);
-
-AROS_UFP5S(void, IntServer,
-    AROS_UFPA(ULONG, intMask, D0),
-    AROS_UFPA(struct Custom *, custom, A0),
-    AROS_UFPA(struct List *, intList, A1),
-    AROS_UFPA(APTR, intCode, A5),
-    AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 #undef memcpy
 #define memcpy(_d, _s, _len)                     \
@@ -264,59 +239,10 @@ const struct Resident Exec_resident __text=
     126,                    /* Very high startup priority. */
     (char *)exec_name,      /* Pointer to name string */
     (char *)exec_idstring,  /* Ditto */
-    exec_init               /* Library initializer (for exec this value is irrelevant since we've jumped there at the begining to bring the system up */
+    NULL               /* Library initializer (for exec this value is irrelevant since we've jumped there at the begining to bring the system up */
 };
 
 struct view { unsigned char sign; unsigned char attr; };
-
-/*
- * Init the exec.library and as well whole system. This routine has to prepare
- * all needed structures, GDT and IDT tables, TSS structure and many other.
- *
- * We have to use asm creature because there is no stack at the moment
- */
-asm("\nexec_init:                \n\t"
-	        "movl    $0x93000,%esp\n\t"     /* Start with setting up a temporary stack */
-			"pushl   %edx		 \n\t"		/* TagList from bootstrap */
-	        "pushl   %ebx        \n\t"      /* Then store the MultiBoot info pointer   */
-	        "pushl   %eax        \n\t"      /* Store multiboot magic cookie            */
-	        "pushl   $0x0        \n\t"      /* And fake a C code call                  */
-
-            "cld                 \n\t"      /* At the startup it's very important   */
-            "cli                 \n\t"      /* to lock all interrupts. Both on the  */
-            "movb    $-1,%al     \n\t"      /* CPU side and hardware side. We don't  */
-            "outb    %al,$0x21   \n\t"      /* have proper structures in RAM yet.   */
-            "outb    %al,$0xa1 \n\n\t"
-
-            "jmp     exec_cinit");          /* Jump to C function :))) */
-
-/*
- * This routine is used by kernel to change all colors on the screen according
- * to R,G,B values passed here
- */
-void exec_SetColors(char r, char g, char b)
-{
-    int	    i;
-    short   reg = 0x3c8;        /* IO reg to control PEL */
-
-    asm("movb   $0,%%al\n\t"    /* Start with color 0 */
-        "outb   %%al,%w0\n\t"
-        : /* no output */
-        : "Nd"(reg));
-
-    reg++;                      /* Here we have to put R, G, B */
-
-    for (i=0; i<256; i++)       /* Set whole palette */
-    {
-        asm("outb   %b0,%w1"::"a"(r),"Nd"(reg));
-        asm("outb   %b0,%w1"::"a"(g),"Nd"(reg));
-        asm("outb   %b0,%w1"::"a"(b),"Nd"(reg));
-        asm("nop    \n\t"
-            "nop    \n\t"
-            "nop    \n\t"
-            "nop");
-    }
-}
 
 /*
  * Mixed stuff used to control TSS/GDT/IDT stuff. This is strictly machine
@@ -416,36 +342,25 @@ const char exec_fastname[] __text = "Fast Memory";
 struct arosmb *arosmb;
 
 /*
- * C/ASM mixed initialization routine. Here the real game begins...
+ * Here the real game begins...
+ * Init the exec.library and as well whole system. This routine has to prepare
+ * all needed structures, GDT and IDT tables, TSS structure and many other.
  */
-void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
+void exec_cinit(struct TagItem *tags, struct multiboot *mbinfo)
 {
     struct ExecBase *ExecBase;
-    struct multiboot *mbinfo;
-
+    char *opts;
     ULONG locmem, extmem;
-
-    APTR KickMemPtr,
-         KickTagPtr,
-         KickCheckSum;
+    ULONG   negsize = 0;             	/* size of vector table */
+    void **fp = (void **)LIBFUNCTABLE;  /* pointer to a function in the table */
+    APTR KickMemPtr = NULL;
+    APTR KickTagPtr = NULL;
+    APTR KickCheckSum = NULL;
 
     struct _tss *tss = (struct _tss *)0x40; /* Dummy pointer making life easier */
     long long *idt = (long long *)0x100;    /* Ditto */
 
     int i;                                  /* Whatever? Counter? Erm... */
-
-//    exec_SetColors(0x10,0x10,0x10);         /* Set screen to almost black */
-
-    /* Check whether we have .bss block */
-    if ((int)&_end - (int)&_edata)
-    {
-        /*
-         * Damn! We have to GET RID OF THIS!!! But now the only thing I can do
-         * is clearing it. GRUB have done it already but we have to repeat that
-         * (it may NEED that as it might be ColdReboot())
-         */
-	bzero(&_edata,(int)&_end-(int)&_edata);
-    }
 
     clr();
     rkprintf("AROS - The AROS Research OS\nCompiled %s\n\n",__DATE__);
@@ -459,9 +374,8 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
      * safe, and also since we will use some of it in here.
      */
     arosmb = (struct arosmb *)0x1000;
-    if (magic == 0x2badb002)
+    if (mbinfo)
     {
-        mbinfo = (struct multiboot *)addr;
 	if (mbinfo->flags & MB_FLAGS_CMDLINE)
 	    arosmb->vbe_palette_width = setupVesa(mbinfo);
         rkprintf("Copying multiboot information into storage\n");
@@ -595,8 +509,8 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
 
     rkprintf("Interrupts redirected\n");
 
-
-//    for(;;);
+    /* Calculate the size of the vector table */
+    while (*fp++ != (VOID *) -1) negsize += LIB_VECTSIZE;
 
     /*
      * Check for valid ExecBase. This is quite important part, because this way
@@ -604,10 +518,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
      * already know everything and may continue further initialisation.
      */
     if (!exec_check_base())
-    {
-        ULONG   negsize = 0;             /* size of vector table */
-        void **fp = (void **)LIBFUNCTABLE;  /* pointer to a function in the table */
-        
+    { 
         rkprintf("Reallocating ExecBase...");
         /*
          * If we managed to reach this point, it means that there was no ExecBase in
@@ -617,12 +528,8 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
          * subtracting from it the offset of lowest vector used by Exec. This way the ExecBase
          * will be placed in the lowest address possible while fitting all functions :)
          */
-        
-        /* Calculate the size of the vector table */
-        while (*fp++ != (VOID *) -1) negsize += LIB_VECTSIZE;
 
         ExecBase = (struct ExecBase *) 0x00002000; /* Got ExecBase at the lowest possible addr */
-        ExecBase += negsize;   /* Subtract lowest vector so jump table would fit */
 
         /* Check whether we have some FAST memory,
          * If not, then use calculated ExecBase */
@@ -631,12 +538,10 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     	    rkprintf("%x Fastmem\n",extmem);
             /* We have found some FAST memory. Let's use it for ExecBase */
             ExecBase = (struct ExecBase *) 0x01000000;
-            ExecBase += negsize;
         }
 
-        /* Clear portion of ExecBase that won't be cleared later */
-        bzero(ExecBase, offsetof(struct ExecBase, IntVects[0]));
-
+        ExecBase += negsize;   /* Subtract lowest vector so jump table would fit */
+	
         /*
          * Now, ExecBase is reserved and partially cleared. We have only to
          * determine how much CHIP memory we have.
@@ -655,37 +560,29 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
         extmem = (ULONG)ExecBase->MaxExtMem;
 
         rkprintf("Got old ExecBase = %p\n",ExecBase);
+
+	/* Store this values as they may point to interesting stuff */
+	KickMemPtr = ExecBase->KickMemPtr;
+	KickTagPtr = ExecBase->KickTagPtr;
+	KickCheckSum = ExecBase->KickCheckSum;
     }
     /*
      * We happen to be here with local ExecBase properly set as well as
      * local locmem and extmem
      */
+     
+    rkprintf("Initializing ExecBase\n");
+    *(struct ExecBase **)4 = ExecBase;
+    
+    memset(ExecBase, 0, sizeof(struct IntExecBase));
+    InitExecBase(ExecBase, negsize, tags);
 
-//    exec_SetColors(0x20,0x20,0x20);
-
-    /* Store this values as they may point to interesting stuff */
-    KickMemPtr = ExecBase->KickMemPtr;
-    KickTagPtr = ExecBase->KickTagPtr;
-    KickCheckSum = ExecBase->KickCheckSum;
-
-    rkprintf("Clearing ExecBase\n");
-
-    /* How about clearing most of ExecBase structure? */
-    bzero(&ExecBase->IntVects[0], sizeof(struct IntExecBase) - offsetof(struct ExecBase, IntVects[0]));
-
+    /* Bring back saved values */
     ExecBase->KickMemPtr = KickMemPtr;
     ExecBase->KickTagPtr = KickTagPtr;
     ExecBase->KickCheckSum = KickCheckSum;
 
-    /*
-     * Now everything is prepared to store ExecBase at the location 4UL and set
-     * it complement in ExecBase structure
-     */
-
     rkprintf("Initializing library...");
-
-    *(struct ExecBase **)4 = ExecBase;
-    ExecBase->ChkBase = ~(ULONG)ExecBase;
 
     /* Set up system stack */
     tss->ssp = (extmem) ? extmem : locmem;  /* Either in FAST or in CHIP */
@@ -696,82 +593,8 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     ExecBase->MaxLocMem = (IPTR)locmem;
     ExecBase->MaxExtMem = (APTR)extmem;
 
-/* TODO: Write first step of alert.hook here!!! */
-
-    /*
-     * Initialize exec lists. This is done through information table which consist
-     * of offset from begining of ExecBase and type of the list.
-     */
-    NEWLIST(&ExecBase->MemList);
-    ExecBase->MemList.lh_Type = NT_MEMORY;
-    NEWLIST(&ExecBase->ResourceList);
-    ExecBase->ResourceList.lh_Type = NT_RESOURCE;
-    NEWLIST(&ExecBase->DeviceList);
-    ExecBase->DeviceList.lh_Type = NT_DEVICE;
-    NEWLIST(&ExecBase->LibList);
-    ExecBase->LibList.lh_Type = NT_LIBRARY;
-    NEWLIST(&ExecBase->PortList);
-    ExecBase->PortList.lh_Type = NT_MSGPORT;
-    NEWLIST(&ExecBase->TaskReady);
-    ExecBase->TaskReady.lh_Type = NT_TASK;
-    NEWLIST(&ExecBase->TaskWait);
-    ExecBase->TaskWait.lh_Type = NT_TASK;
-    NEWLIST(&ExecBase->IntrList);
-    ExecBase->IntrList.lh_Type = NT_INTERRUPT;
-    NEWLIST(&ExecBase->SemaphoreList);
-    ExecBase->SemaphoreList.lh_Type = NT_SIGNALSEM;
-    NEWLIST(&ExecBase->ex_MemHandlers);
-
-    for (i=0; i<5; i++)
-    {
-        NEWLIST(&ExecBase->SoftInts[i].sh_List);
-        ExecBase->SoftInts[i].sh_List.lh_Type = NT_SOFTINT;
-    }
-
-    /*
-     * Exec.library initializer. Prepares exec.library for future use. All
-     * lists have to be initialized, some values from ROM are copied.
-     */
-
+    /* We have own trap handler */
     ExecBase->TaskTrapCode = exec_DefaultTrap;
-    ExecBase->TaskExceptCode = exec_DefaultTrap;
-    ExecBase->TaskExitCode = exec_DefaultTaskExit;
-    ExecBase->TaskSigAlloc = 0x0000ffff;
-    ExecBase->TaskTrapAlloc = 0x8000;
-
-    /* Prepare values for execBase (like name, type, pri and other) */
-
-    ExecBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
-    ExecBase->LibNode.lib_Node.ln_Pri = 0;
-    ExecBase->LibNode.lib_Node.ln_Name = (char *)exec_name;
-    ExecBase->LibNode.lib_Flags = LIBF_CHANGED | LIBF_SUMUSED;
-    ExecBase->LibNode.lib_PosSize = sizeof(struct IntExecBase);
-    ExecBase->LibNode.lib_OpenCnt = 1;
-    ExecBase->LibNode.lib_IdString = (char *)exec_idstring;
-    ExecBase->LibNode.lib_Version = exec_Version;
-    ExecBase->LibNode.lib_Revision = exec_Revision;
-
-    ExecBase->Quantum = 4;
-    ExecBase->VBlankFrequency = 50;
-    ExecBase->PowerSupplyFrequency = 1;
-
-    NEWLIST(&PrivExecBase(ExecBase)->ResetHandlers);
-    NEWLIST(&PrivExecBase(ExecBase)->AllocMemList);
-    
-    rkprintf("OK\nBuilding JumpTable...");
-
-    /* Build the jumptable */
-    ExecBase->LibNode.lib_NegSize =
-        Exec_15_MakeFunctions(ExecBase, (APTR)LIBFUNCTABLE, NULL, ExecBase);
-
-    rkprintf("OK\n");
-
-    InitSemaphore(&PrivExecBase(ExecBase)->MemListSem);
-    InitSemaphore(&PrivExecBase(ExecBase)->LowMemSem);
-
-    /* Enable mungwall before the first allocation call */
-    if (strstr(arosmb->cmdline, "mungwall"))
-	PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
 
     /* Add FAST memory at 0x01000000 to free memory lists */
     if (extmem)
@@ -849,19 +672,14 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
         }
     }
 */
-
-    rkprintf("Kernel protected\n");
-
-
-    rkprintf("Adding \"exec.library\"...");
+    rkprintf("Checksumming \"exec.library\"...");
 
     /* Add exec.library to system library list */
     SumLibrary((struct Library *)SysBase);
-    Enqueue(&SysBase->LibList,&SysBase->LibNode.lib_Node);
 
     rkprintf("OK\n");
 
-    ExecBase->DebugAROSBase = PrepareAROSSupportBase();
+    ExecBase->DebugAROSBase = pc_PrepareAROSSupportBase();
 
 #if SMP_SUPPORT
     /* Early Boot CPU preperation.. */
@@ -932,23 +750,6 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     asm("sti");
     ExecBase->TDNestCnt = -1;
     ExecBase->IDNestCnt = -1;
-
-    /* Now it's time to calculate exec checksum. It will be used
-     * in future to distinguish whether we'd had proper execBase
-     * before restart */
-    {
-        UWORD sum=0, *ptr = &ExecBase->SoftVer;
-        int i=((int)&ExecBase->IntVects[0] - (int)&ExecBase->SoftVer) / 2,
-            j;
-
-        /* Calculate sum for every static part from SoftVer to ChkSum */
-        for (j=0;j < i;j++)
-        {
-            sum+=*(ptr++);
-        }
-
-        ExecBase->ChkSum = ~sum;
-    }
 
     rkprintf("Creating the very first task...");
 
@@ -1150,27 +951,29 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     if (ExecBase->CoolCapture)
     {
         void (*p)() = ExecBase->CoolCapture;
-        (*p)();
+ 
+	rkprintf("Executing CoolCapture at 0x%p\n", p);
+	(*p)();
     }
 
     InitCode(RTF_SINGLETASK, 0);
-    KernelBase = OpenResource("kernel.resource");
-    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
     InitCode(RTF_COLDSTART, 0);
-
+    
     /*
      * We suppose that at this point dos.library has already taken over.
      * The last thing to do is to call WarmCapture vector. After that this
      * task has completely nothing to do so it may execute Debug() in
      * forever loop
      */
-
+/* InitCode(RTF_COLDSTART) never returns!!!
     if (ExecBase->WarmCapture)
     {
         void (*p)() = ExecBase->WarmCapture;
-        (*p)();
-    }
 
+        (*p)();
+    } */
+
+    rkprintf("Failed to start up the system!");
     do { Debug(0); } while(1);
 }
 
@@ -1296,12 +1099,6 @@ int exec_RamCheck_fast(struct arosmb *arosmb)
     return ((int)ptr > 0x01000000) ? (int)ptr : 0;
 }
 
-void exec_DefaultTaskExit()
-{
-    struct ExecBase *SysBase = *(struct ExecBase **)4UL;
-    RemTask(SysBase->ThisTask);
-}
-
 /*
  * Check for valid ExecBase
  */
@@ -1378,10 +1175,6 @@ int exec_check_base()
         }
     }
     return 0;
-}
-
-void _aros_not_implemented()
-{
 }
 
 /*
@@ -1653,7 +1446,7 @@ AROS_LH0I(int, null,
 #define rkprintf(x...)
 #define vkprintf(x...)
 
-struct Library * PrepareAROSSupportBase(void)
+struct Library *pc_PrepareAROSSupportBase(void)
 {
     struct AROSSupportBase *AROSSupportBase = 
 	AllocMem(sizeof(struct AROSSupportBase), MEMF_CLEAR);
@@ -1664,39 +1457,3 @@ struct Library * PrepareAROSSupportBase(void)
 
     return (struct Library *)AROSSupportBase;
 }
-
-/* IntServer:
-    This interrupt handler will send an interrupt to a series of queued
-    interrupt servers. Servers should return D0 != 0 (Z clear) if they
-    believe the interrupt was for them, and no further interrupts will
-    be called. This will only check the value in D0 for non-m68k systems,
-    however it SHOULD check the Z-flag on 68k systems.
-
-    Hmm, in that case I would have to separate it from this file in order
-    to replace it...
-*/
-AROS_UFH5S(void, IntServer,
-    AROS_UFHA(ULONG, intMask, D0),
-    AROS_UFHA(struct Custom *, custom, A0),
-    AROS_UFHA(struct List *, intList, A1),
-    AROS_UFHA(APTR, intCode, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-
-    struct Interrupt * irq;
-
-    ForeachNode(intList, irq)
-    {
-	if( AROS_UFC4(int, irq->is_Code,
-		AROS_UFCA(struct Custom *, custom, A0),
-		AROS_UFCA(APTR, irq->is_Data, A1),
-		AROS_UFCA(APTR, irq->is_Code, A5),
-		AROS_UFCA(struct ExecBase *, SysBase, A6)
-	))
-	    break;
-    }
-
-    AROS_USERFUNC_EXIT
-}
-
