@@ -66,6 +66,7 @@ extern void __AROS_InitExecBase (void);
 
 APTR allocBootMem(struct MemHeader *mh, ULONG size);
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *tags);
+void InitExecBase(struct ExecBase *SysBase, ULONG negsize, struct TagItem *msg);
 struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase);
 BOOL Exec_PreparePlatform(struct Exec_PlatformData *pdata, struct TagItem *tags);
 
