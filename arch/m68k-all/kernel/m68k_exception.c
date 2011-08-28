@@ -253,7 +253,7 @@ asm (
 	"	move.l	%a6,%usp\n"		//   Set USP
 	"	move.l	%sp@+,%a6\n"		//   Restore A6
 	"	addq.l	#4,%sp\n"		//   Pop off A7
-	"	tst	%sp@\n"			// New tasks have a NULL trapcode
+	"	tst.l	%sp@\n"			// New tasks have a NULL trapcode
 	"	beq.s	1f\n"
 	"       rts\n"				// Execute tc_TrapCode
 	"1:\n"
