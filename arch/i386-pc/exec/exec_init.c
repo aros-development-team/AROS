@@ -349,7 +349,6 @@ struct arosmb *arosmb;
 void exec_cinit(struct TagItem *tags, struct multiboot *mbinfo)
 {
     struct ExecBase *ExecBase;
-    char *opts;
     ULONG locmem, extmem;
     ULONG   negsize = 0;             	/* size of vector table */
     void **fp = (void **)LIBFUNCTABLE;  /* pointer to a function in the table */
