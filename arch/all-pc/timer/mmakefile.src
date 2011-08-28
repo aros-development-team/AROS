@@ -5,12 +5,9 @@ USER_INCLUDES := -I$(SRCDIR)/rom/timer
 
 include $(SRCDIR)/$(CURDIR)/make.opts
 
-# Currently this code is used only by x86_64-pc build.
-# However when i386-pc is updated, it can use this code too.
-
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
-  arch=pc-x86_64 modulename=timer \
+  arch=pc modulename=timer \
   files="timer_init beginio ticks"
 
 %common
