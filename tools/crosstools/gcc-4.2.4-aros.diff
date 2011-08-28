@@ -1372,7 +1372,7 @@ diff -ruN gcc-4.2.4/gcc/config/aros.h gcc-4.2.4.aros/gcc/config/aros.h
 +
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
-+  "-lamiga %{!noarosc:-larosc} -larossupport -lm -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -lautoinit"
++  "-lamiga %{!noarosc:-larosc} -larossupport -lm -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -lautoinit -llibinit -lautoinit"
 +
 +#undef STANDARD_INCLUDE_DIR
 +#define STANDARD_INCLUDE_DIR "/include"
