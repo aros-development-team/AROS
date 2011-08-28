@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-BINUTILS_VERSION = 2.20.1
+BINUTILS_VERSION = 2.21.1a
 
 GCC_LANGUAGES = c,c++
 
@@ -57,6 +57,7 @@ tools-crosstools-binutils :
 %fetch_and_build mmake=crosstools-binutils package=binutils version=$(BINUTILS_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/binutils" \
 	patch=yes \
+	srcdir=binutils-2.21.1 \
 	prefix="$(CROSSTOOLSDIR)" \
 	extraoptions="--target=$(AROS_TARGET_CPU)-aros -bindir=$(CROSSTOOLSDIR) --with-sysroot=$(AROS_DEVELOPMENT) --disable-werror"
 
