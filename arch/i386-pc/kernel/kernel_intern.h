@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: kernel_intern.h
     Lang: english
@@ -10,5 +10,9 @@
 #define KERNEL_INTERN_H_
 
 #define kerncall __attribute__((regparm(3)))
+
+#define STACK_SIZE 8192
+
+void core_Kick(struct TagItem *msg, struct multiboot *mb, void *target);
 
 #endif /* KERNEL_INTERN_H_ */

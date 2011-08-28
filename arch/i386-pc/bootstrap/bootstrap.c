@@ -167,6 +167,8 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
      */
     if (mem_upper)
     {
+	void (*kernel_entry)();
+
     	mem_upper = mem_upper & ~4095;
 
     	unsigned long kernel_phys = 0x01000000;
@@ -175,12 +177,9 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     	unsigned long total_size_ro, total_size_rw;
     	uint32_t size_ro, size_rw;
 
-    	/* Calculate total size of kernel and modules */
-
-    	getElfSize(&_binary_kernel_bin_start, &size_rw, &size_ro);
-
-    	total_size_ro = size_ro = (size_ro + 4095) & ~4095;
-    	total_size_rw = size_rw = (size_rw + 4095) & ~4095;
+    	/* Calculate total size of kickstart and modules */
+    	total_size_ro = 0;
+    	total_size_rw = 0;
 
     	if (mb->flags && MB_FLAGS_MODS)
     	{
@@ -216,8 +215,6 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     	tag->ti_Data = kernel_phys + ((total_size_ro + 4095) & ~4095) + ((total_size_rw + 4095) & ~4095);
     	tag++;
 
-    	loadElf(&_binary_kernel_bin_start);
-
     	if (mb->flags && MB_FLAGS_MODS)
     	{
     		int i;
@@ -245,7 +242,8 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     	/* Go to the kernel */
     	kprintf("[BOOT] Jumping to %p\n", kernel_virt);
 
-    	asm volatile("jmp %3"::"a"(magic),"b"(addr),"d"(&tags[0]),"r"(kernel_virt));
+	kernel_entry = (void *)kernel_virt;
+	kernel_entry(tags, AROS_BOOT_MAGIC, addr);
     }
 
     die();

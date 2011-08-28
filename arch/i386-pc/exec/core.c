@@ -322,8 +322,10 @@ int sys_Supervisor(struct pt_regs);
 int sys_None(struct pt_regs regs) { return 0; }
 
 asmlinkage int sys_ColdReboot(struct pt_regs regs)
-{
-    __asm__("jmp kernel_startup");
+{    
+    __asm__("movl	$0x93000, %esp\n\t"
+	    "jmp	kernel_reboot\n\t");
+
     return 0;
 }
 

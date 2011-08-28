@@ -40,12 +40,12 @@ USELIBS	:= hiddstubs amiga arossupport debug rom arosm autoinit libinit
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-KRSRCS  := battclock bootloader dosboot processor lddemon FileSystem
-KLIBS   := aros debug dos graphics utility intuition keymap \
+KRSRCS  := kernel battclock bootloader dosboot processor lddemon FileSystem
+KLIBS   := exec aros debug dos graphics utility intuition keymap \
       	   expansion oop layers
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con amberram
-KHIDDS  := hiddclass serial keyboard mouse graphics kbd ps2mouse vesagfx vgah pci pcipc
+KHIDDS  := hiddclass serial keyboard mouse graphics kbd ps2mouse vesagfx vgah pci pcipc irq
 ##Disabled RSRC cpu isapnp
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \

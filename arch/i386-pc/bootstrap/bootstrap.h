@@ -176,10 +176,6 @@ struct vbe_mode
 #define wrcr(reg, val) \
     do { asm volatile("mov %0,%%" #reg::"r"(val)); } while(0)
 
-extern void *_binary_kernel_bin_start;
-extern long *_binary_kernel_bin_end;
-extern long _binary_kernel_bin_size;
-
 #define _STR(x) # x
 #define STR(x) _STR(x)
 
