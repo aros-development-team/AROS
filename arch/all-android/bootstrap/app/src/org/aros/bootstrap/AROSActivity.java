@@ -21,9 +21,12 @@ public class AROSActivity extends Activity
 	static final int ID_ERROR_DIALOG = 0;
 	static final int ID_ALERT_DIALOG = 1;
 
+	static final int AT_DeadEnd = 0x80000000;
+
     private CharSequence errStr;
+    private int alertCode;
     private DisplayView rootView;
-	
+
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -57,8 +60,9 @@ public class AROSActivity extends Activity
     	showDialog(ID_ERROR_DIALOG);
     }
 
-    public void DisplayAlert(String text)
+    public void DisplayAlert(int code, String text)
     {
+    	alertCode = code;
     	errStr = text;
     	showDialog(ID_ALERT_DIALOG);
     }
@@ -76,8 +80,9 @@ public class AROSActivity extends Activity
     public Dialog onCreateDialog(int id)
     {
 		AlertDialog.Builder b = new AlertDialog.Builder(this);
-		DialogInterface.OnClickListener okEvent; 
-    	
+		DialogInterface.OnClickListener okEvent;
+		int okTitle;
+ 
     	switch (id)
     	{
     	case ID_ERROR_DIALOG:
@@ -90,30 +95,55 @@ public class AROSActivity extends Activity
     				System.exit(0);
     			}
     		};
+    		
+        	okTitle = R.string.ok;
     		break;
 
     	case ID_ALERT_DIALOG:
     		b.setTitle(R.string.guru);
+
     		okEvent = new DialogInterface.OnClickListener()
-        	{
+    		{
     			@Override
     			public void onClick(DialogInterface dialog, int which)
     			{
     				AROSBootstrap app = (AROSBootstrap) getApplication();
 
     				app.Resume();
-    			}
-    		};
+   				}
+   			};
+
+   			if ((alertCode & AT_DeadEnd) != 0)
+   			{   				
+   				DialogInterface.OnClickListener cancelEvent = new DialogInterface.OnClickListener()
+   	    		{
+   	    			@Override
+   	    			public void onClick(DialogInterface dialog, int which)
+   	    			{
+   	    				AROSBootstrap app = (AROSBootstrap) getApplication();
+
+   	    				app.Quit();
+   	   				}
+   	   			};
+
+   	        	b.setNegativeButton(R.string.shutdown, cancelEvent);
+   	        	okTitle = R.string.reboot;
+    		}
+   			else
+   			{
+   				okTitle = R.string.resume;
+   			}
     		break;
 
     	default:
     		return null;
     		
     	}
+
     	b.setMessage(errStr);
     	b.setCancelable(false);
-    	b.setPositiveButton(R.string.ok, okEvent);
-
+    	b.setPositiveButton(okTitle, okEvent);
+    	
     	return b.create();
     }
 }
