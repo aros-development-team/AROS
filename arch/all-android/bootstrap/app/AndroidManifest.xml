@@ -7,13 +7,14 @@
     <uses-permission android:name="android.permission.MOUNT_FORMAT_FILESYSTEMS"></uses-permission>
     <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"></uses-permission>
     <application android:icon="@drawable/icon" android:label="AROS" android:debuggable="true" android:name="AROSBootstrap">
-        <activity android:name=".AROSActivity"
-                  android:label="AROS" android:screenOrientation="portrait">
+        <activity android:name="OrientationDetector">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"></action>
+                <category android:name="android.intent.category.LAUNCHER"></category>
             </intent-filter>
         </activity>
+        <activity android:screenOrientation="portrait" android:name="PortraitActivity"></activity>
+        <activity android:screenOrientation="landscape" android:name="LandscapeActivity"></activity>
     </application>
     <uses-sdk android:minSdkVersion="8"/>
 </manifest> 

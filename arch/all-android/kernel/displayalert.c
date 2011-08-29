@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <aros/atomic.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
@@ -15,6 +16,8 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+
+#define D(x)
 
 /*
  * This version displays an alert in Android GUI
@@ -44,7 +47,7 @@ AROS_LH2(void, KrnDisplayAlert,
      * Enable also SIGTERM - what if AROS will want to kill us...
      */
     sigemptyset(&sigs);
-    sigaddset(&sigs, SIGCONT);
+    sigaddset(&sigs, SIGUSR2);
     sigaddset(&sigs, SIGTERM);
 
     /* Prepare a message to server */    
@@ -53,7 +56,7 @@ AROS_LH2(void, KrnDisplayAlert,
     req.code   = code;
     req.text   = (IPTR)text;
 
-    /* Halt the system */
+    /* Halt the system in order not to interfere with our I/O */
     Disable();
 
     /* Send the packet */
@@ -63,12 +66,18 @@ AROS_LH2(void, KrnDisplayAlert,
     if (res != sizeof(req))
     	ShutdownA(SD_ACTION_POWEROFF);
 
+    D(bug("[KrnDisplayAlert] Request sent, halting...\n"));
+
     /*
-     * Wait for SIGCONT.
-     * Java side will halt us using SIGSTOP. When the alert was closed, it will.
-     * allow us to continue using SIGCONT.
+     * Wait for SIGUSR2. Java side will deliver it to us after the alert was closed.
+     * Normally it's used for KrnCause(), so in order not to execute scheduler and
+     * SoftInts, we artificially raise our virtual privilege level.
      */
+    AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
     KernelIFace.sigwait(&sigs, &res);
+    AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
+
+    D(bug("[KrnDisplayAlert] Resume execution\n"));
 
     /* Recovered... */
     Enable();
