@@ -11,6 +11,33 @@
 
 #include "intuition_intern.h"
 
+static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBase *IntuitionBase)
+{
+    ULONG modeid;
+    struct TagItem modetags[] =
+    {
+	{ BIDTAG_DesiredWidth,  width  }, /* 0 */
+	{ BIDTAG_DesiredHeight, height }, /* 1 */
+	{ BIDTAG_Depth,         depth  }, /* 2 */
+	{ TAG_DONE,             0      }
+    };
+
+    /* Try to find the specified mode */
+    modeid = BestModeIDA(modetags);
+    D(bug("[OpenWorkbench] Size: %dx%d, depth: %d, ModeID 0x%08X\n", width, height, depth, modeid));
+
+    if (modeid == INVALID_ID)
+    {
+    	/* If failed, we can have this resolution, but not this depth. Try 4 colors. */
+	modetags[2].ti_Data = 2;
+
+    	modeid = BestModeIDA(modetags);
+	D(bug("[OpenWorkbench] Size: %dx%d, depth: 2, ModeID 0x%08X\n", width, height, modeid));
+    }
+
+    return modeid;
+}   
+
 /*****************************************************************************
 
     NAME */
@@ -85,17 +112,7 @@
         WORD  height = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height;
         WORD  depth  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth;
 	ULONG modeid = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID;
-
-#ifdef __mc68000
-	/* FIXME: less hacky RTG detection */
-	/* select 640x480 if we appear to have RTG hardware (instead of standard PAL/NTSC mode) */
-    	if (modeid == INVALID_ID && height < 480) {
-    	    ULONG mode = BestModeID(BIDTAG_DesiredWidth, 800, BIDTAG_DesiredHeight, 600,
-		BIDTAG_Depth, 8, TAG_DONE);
-	    if (mode != INVALID_ID) /* we are guaranteed to have RTG hardware */
-		height = 480;
-	}
-#endif
+	APTR disphandle;
 
         struct TagItem screenTags[] =
         {
@@ -111,80 +128,100 @@
             { TAG_END,                 0           	  }
         };
 
-	APTR disphandle = FindDisplayInfo(modeid);
+	D(bug("[OpenWorkbench] Requested size: %dx%d, depth: %d, ModeID: 0x%08lX\n", width, height, depth, modeid));
 
-	D(bug("[OpenWorkbench] Requested size: %dx%d, depth: %d, ModeID: 0x%08lX, Handle: 0x%p\n", width, height, depth, modeid, disphandle));
-        if (!disphandle)
+	/* First check if the specified ModeID exists in the system */
+	disphandle = FindDisplayInfo(modeid);
+	if (!disphandle)
 	{
-    	    struct TagItem modetags[] =
-	    {
-	        { BIDTAG_DesiredWidth,  width  },
-	        { BIDTAG_DesiredHeight, height },
-	        { BIDTAG_Depth,         depth  },
-	        { TAG_DONE,             0  	   }
-	    };
+	    D(bug("[OpenWorkbench] Invalid ModeID given\n"));
+	    modeid = INVALID_ID;
+	}
 
-	    /* Specifying -1's here causes BestModeIDA() to fail,
-	       fix up the values */
-	    if (width == STDSCREENWIDTH) {
+        if (modeid == INVALID_ID)
+	{
+	    /*
+	     * We were unable to find the ModeID specified in our prefs. Need to find a replacement.
+	     * First we'll try to look up a mode corresponding to user-specified width, height and depth.
+	     */
+
+	    /* Specifying -1's here causes BestModeIDA() to fail, fix up the values */
+	    if (width == STDSCREENWIDTH)
+	    {
 	        D(bug("[OpenWorkbench] Using default width %d\n", AROS_DEFAULT_WBWIDTH));
-	        modetags[0].ti_Data = AROS_DEFAULT_WBWIDTH;
+	        width = AROS_DEFAULT_WBWIDTH;
 	    }
-	    if (height == STDSCREENHEIGHT) {
+	    if (height == STDSCREENHEIGHT)
+	    {
 	        D(bug("[OpenWorkbench] Using default height %d\n", AROS_DEFAULT_WBHEIGHT));
-	        modetags[1].ti_Data = AROS_DEFAULT_WBHEIGHT;
+	        height = AROS_DEFAULT_WBHEIGHT;
 	    }
 	    if (depth == -1)
-	        modetags[2].ti_Data = AROS_DEFAULT_WBDEPTH;
+	        depth = AROS_DEFAULT_WBDEPTH;
 
-	    modeid     = BestModeIDA(modetags);
-	    D(bug("[OpenWorkbench] Corrected ModeID: 0x%08lX\n", modeid));
-	    disphandle = FindDisplayInfo(modeid);
+#ifdef __mc68000
+	    /* FIXME: less hacky RTG detection */
+	    /* select 640x480 if we appear to have RTG hardware (instead of standard PAL/NTSC mode) */
+	    if (height < 480)
+    	    {
+    	        modeid = BestModeID(BIDTAG_DesiredWidth, 800, BIDTAG_DesiredHeight, 600,
+				    BIDTAG_Depth, 8, TAG_DONE);
+ 
+		if (modeid != INVALID_ID)
+    	    	{
+    	    	    /* If we have 800x600 or better mode, we assume we have RTG hardware */
+		    height = 480;
+	    	}
+	    }
+#endif
+
+	    modeid = FindMode(width, height, depth, IntuitionBase);
 	}
 
-        if (!disphandle)
+	if (modeid == INVALID_ID)
 	{
-	    /* If we're here, we have no modes with requested depth.
-	       Find anything that just works.
-	       FIXME: We should still take requested size into account,
-	       however BestModeIDA() will fail if there are only modes
-	       smaller then the requested one. */
-    	    struct TagItem modetags[] =
-	    {
-	        { BIDTAG_DesiredWidth,  AROS_DEFAULT_WBWIDTH },
-	        { BIDTAG_DesiredHeight, AROS_DEFAULT_WBHEIGHT},
-	        { BIDTAG_Depth,         AROS_DEFAULT_WBDEPTH },
-	        { TAG_DONE,             0                    }
-	    };
-
-	    modeid     = BestModeIDA(modetags);
-	    D(bug("[OpenWorkbench] Failback ModeID: 0x%08lX\n", modeid));
-	    disphandle = FindDisplayInfo(modeid);
+	    /* We don't have any modes with the specified resolution. Try Amiga default (640x200) */
+	    modeid = FindMode(640, 200, depth, IntuitionBase);
 	}
 
-	if (disphandle)
+	if (modeid == INVALID_ID)
+	{
+	    /*
+	     * There's no even 640x200. Perhaps we are on some mobile device.
+	     * Here we try the smallest known screen. This size was picked up
+	     * from configure's defaults for old PalmPilot port.
+	     */
+	    modeid = FindMode(160, 160, depth, IntuitionBase);
+	}
+
+	if (modeid != INVALID_ID)
 	{
 	    struct DimensionInfo dim;
 
 	    #define BOUND(min, val, max) \
 	        (((val) == -1) ? -1 : ((min) > (val)) ? (min) : ((max) < (val)) ? (max) : (val))
 
-	    if (GetDisplayInfoData(disphandle, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, 0))
+	    /* Now fix up our specified size to fit into mode's limits. */
+	    if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, modeid))
             {
 	        D(bug("[OpenWorkbench] Minimum size: %dx%d\n", dim.MinRasterWidth, dim.MinRasterHeight));
 		D(bug("[OpenWorkbench] Maximum size: %dx%d\n", dim.MaxRasterWidth, dim.MaxRasterHeight));
 		D(bug("[OpenWorkbench] Maximum depth: %d\n", dim.MaxDepth));
+
 	        width  = BOUND(dim.MinRasterWidth,  width,  dim.MaxRasterWidth);
 		height = BOUND(dim.MinRasterHeight, height, dim.MaxRasterHeight);
-		depth = BOUND(0, depth, dim.MaxDepth);
+		depth  = BOUND(0, depth, dim.MaxDepth);
 		D(bug("[OpenWorkbench] Corrected size: %dx%d %dbpp\n", width, height, depth));
-		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width = width;
+
+		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width  = width;
 		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height = height;
-		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth = depth;
+		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth  = depth;
             }
-	    
-	    /* Remember this ModeID because OpenScreen() with SA_LikeWorkbench set to TRUE
-	       looks at this field. We MUST have something valid here. */
+
+	    /*
+	     * Remember this ModeID because OpenScreen() with SA_LikeWorkbench set to TRUE
+	     * looks at this field. We MUST have something valid here.
+	     */
 	    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID = modeid;
 
 	    screenTags[0].ti_Data = width;
