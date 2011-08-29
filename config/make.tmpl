@@ -1866,10 +1866,6 @@ endif
 
 #MM %(mainmmake)-%(arch) : %(mainmmake)-includes
 
-ifeq (%(arch),)
-  $(error argument arch has to be non empty for the rule_compile_archspecific macro)
-endif
-
 BD_OBJDIR$(BDID)  := $(GENDIR)/%(maindir)/arch
 BD_COBJS$(BDID)   := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files))))
 BD_ASMOBJS$(BDID) := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(asmfiles))))
@@ -1880,7 +1876,14 @@ ifneq (%(modulename),)
 BD_DEFLIBDEFSINC$(BDID) := -include $(GENDIR)/%(maindir)/include/%(modulename)_deflibdefs.h
 endif
 
-ifeq ($(TARGET),%(mainmmake)-%(arch))
+ifeq ($(TARGET),%(mainmmake)-%(arch)-quick)
+    BD_TARGET := %(mainmmake)-%(arch)-quick
+else
+    BD_TARGET := %(mainmmake)-%(arch)
+endif
+
+
+ifeq ($(TARGET),$(BD_TARGET))
 TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
 vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(files)))
 vpath %.s $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
@@ -1919,7 +1922,7 @@ $(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags) -I$(GENDIR)/%(maindir) $(BD_DEFLIBDEF
 else
 $(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
 endif
-ifeq ($(TARGET),%(mainmmake)-%(arch))
+ifeq ($(TARGET),$(BD_TARGET))
 $(BD_OBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
 	%compile_q opt=$(TMP_CFLAGS) cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 endif
@@ -1929,21 +1932,21 @@ $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(cflags) $(BD_DEFLIBDEFSINC$(BDID))
 else
 $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
 endif
-ifeq ($(TARGET),%(mainmmake)-%(arch))
+ifeq ($(TARGET),$(BD_TARGET))
 $(BD_OBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
 	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
 endif
 
 $(BD_ASMOBJS$(BDID)) : AFLAGS:=%(aflags)
 
-ifeq ($(TARGET),%(mainmmake)-%(arch))
+ifeq ($(TARGET),$(BD_TARGET))
 $(BD_OBJDIR$(BDID))/%.o : %.s
 	%assemble_q opt=$(AFLAGS)
 $(BD_OBJDIR$(BDID))/%.o : %.S
 	%assemble_q opt=$(AFLAGS)
 endif
 
-%include_deps depstargets=%(mainmmake)-%(arch) deps=$(BD_DEPS$(BDID))
+%include_deps depstargets=$(BD_TARGET) deps=$(BD_DEPS$(BDID))
 %end
 #------------------------------------------------------------------------------
 
