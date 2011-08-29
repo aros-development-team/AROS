@@ -169,7 +169,6 @@ struct HIDDBitMapData
     OOP_Object *friend;	/* Friend bitmap */
     
     OOP_Object *gfxhidd;
-    OOP_Class  *classptr; /* Class pointer specified during creation */
     
     OOP_Object *colmap;
     

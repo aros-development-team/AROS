@@ -536,7 +536,7 @@
         aoHidd_BitMap_ClassPtr
 
     SYNOPSIS
-        [I.G], OOP_Class *
+        [I..], OOP_Class *
 
     LOCATION
         hidd.graphics.bitmap
@@ -544,16 +544,18 @@
     FUNCTION
         Explicitly specify bitmap's class pointer.
 
-	This attribute is simply remembered by bitmap base class. Its main purpose is to let
-	graphics driver base class to select a class on which to call OOP_NewObject() in
-	its moHidd_Gfx_NewBitMap implementation.
-	
+	This attribute is not actually a bitmap's attribute. Your display driver class can
+	supply it to base class' moHidd_Gfx_NewBitMap method in order to select a class on
+	which to call OOP_NewObject().
+
 	If neither this attribute nor aoHidd_BitMap_ClassID attribute is provided for
 	moHidd_Gfx_NewBitMap, graphics base class will do its best in order to find out the
-	correct class based on aoHidd_StdPixFmt attribute value	or aoHidd_BitMap_ClassPtr value
-	of friend bitmap.
+	correct class based on aoHidd_StdPixFmt attribute value	or friend bitmap.
 
     NOTES
+	If a friend bitmap is given, the new bitmap will have the same class, if your driver
+	doesn't override it by supplying explicit class specification (using either
+	aoHidd_BitMap_ClassPtr or aoHidd_BitMap_ClassID attribute).
 
     EXAMPLE
 
@@ -983,7 +985,6 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 	    if (GOT_BM_ATTR(ModeID))
 	    	data->modeid = attrs[AO(ModeID)];
-	    data->classptr = (OOP_Class *)attrs[AO(ClassPtr)];
 
     	#if USE_FAST_PUTPIXEL
 	    data->putpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_PutPixel, &data->putpixel_Class);
@@ -1127,10 +1128,6 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 	    case aoHidd_BitMap_LeftEdge:
 	    case aoHidd_BitMap_TopEdge:
 		*msg->storage = 0;
-		break;
-
-	    case aoHidd_BitMap_ClassPtr:
-		*msg->storage = (IPTR)data->classptr;
 		break;
 
             default:

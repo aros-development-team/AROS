@@ -1205,22 +1205,16 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 
 	    OOP_GetAttr(friend_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
 
-	    /* Try to grab the class from friend bitmap (if not already specified).
-	       We do it because friend bitmap may be a display HIDD bitmap */
+	    /*
+	     * Inherit the class from friend bitmap (if not already specified).
+	     * We do it because friend bitmap may be a display HIDD bitmap
+	     */
 	    if (!gotclass)
 	    {
-		/* Another weirdness is that we have to use this attribute instead of
-		   simple getting OOP_OCLASS(friend_bm). We can't get class directly
-		   from the object, because the framebuffer bitmap object may be a
-		   fakegfx.hidd object, which is even not a bitmap at all. Attempt
-		   to create a bitmap of this class causes system-wide breakage.
-		   Perhaps fakegfx HIDD should be fixed in order to handle this correctly.
-		*/
-		OOP_GetAttr(friend_bm, aHidd_BitMap_ClassPtr, (IPTR *)&classptr);
-		D(bug("[GFX] Friend bitmap is 0x%p has ClassPtr 0x%p\n", friend_bm, classptr));
+	    	classptr = OOP_OCLASS(friend_bm);
+	    	gotclass  = TRUE;
 
-		if (classptr)
-		    gotclass = TRUE;
+		D(bug("[GFX] Friend bitmap is 0x%p has class 0x%p (%s)\n", friend_bm, classptr, classptr->cl_Name));
 	    }
 	}
 	else
