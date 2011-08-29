@@ -31,14 +31,21 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     if (o)
     {
 	struct bitmap_data *data = OOP_INST_DATA(cl, o);
-	HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    	IPTR width  = 0;
-    	IPTR height = 0;
-    	IPTR mod    = 0;
 
+	OOP_Object *gfx	    = NULL;
+	OOP_Object *sync    = NULL;
+	OOP_Object *pixfmt  = NULL;
+	HIDDT_ModeID modeid = vHidd_ModeID_Invalid;
+    	IPTR width 	    = 0;
+    	IPTR height	    = 0;
+    	IPTR mod	    = 0;
+
+	/* For faster operation we cache some data about ourselves */
 	OOP_GetAttr(o, aHidd_BitMap_Width , &width);
 	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
 	OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &mod);
+	OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
+	OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfx);
 	OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, &data->pixels);
 
 	data->bm_width  = width;
@@ -47,29 +54,15 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
 	DNEW(bug("[ABitmap] Created bitmap %ldx%ld\n", width, height));
 	DNEW(bug("[ABitmap] Buffer at 0x%p, %ld bytes per row\n", data->pixels, mod));
+	DNEW(bug("[ABitmap] Display driver object: 0x%p\n", gfx));
 
-	/*
-     	 * We rely on the fact that bitmaps with aHidd_BitMap_Displayable set to TRUE always
-     	 * also get aHidd_BitMap_ModeID with valid value. Currently this seems to be true and
-     	 * i beleive it should stay so.
-     	 */
-    	if (modeid != vHidd_ModeID_Invalid)
-    	{
-	    IPTR win_width  = 0;
-	    IPTR win_height = 0;
-	    OOP_Object *gfx = (OOP_Object *)GetTagData(aHidd_BitMap_GfxHidd, 0, msg->attrList);
-	    OOP_Object *sync, *pixfmt;
+	HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
+	OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+	OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 
-	    DNEW(bug("[ABitmap] Display driver object: 0x%p\n", gfx));
-
-	    HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &win_width);
-	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &win_height);
-
-	    data->win_width  = win_width;
-	    data->win_height = win_height;
-	    DNEW(bug("[ABitmap] Display window size: %dx%d\n", win_width, win_height));
-    	}
+	data->win_width  = width;
+	data->win_height = height;
+	DNEW(bug("[ABitmap] Display window size: %dx%d\n", win_width, win_height));
     }
 
     return o;

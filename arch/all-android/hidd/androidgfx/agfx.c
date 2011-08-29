@@ -123,7 +123,7 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
 OOP_Object *AGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-    HIDDT_ModeID modeid;
+    BOOL displayable;
     struct pHidd_Gfx_NewBitMap p;
     struct TagItem tags[] =
     {
@@ -131,17 +131,28 @@ OOP_Object *AGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 	{TAG_MORE  , (IPTR)msg->attrList}
     };
 
-    /*
-     * Having a valid ModeID means that we are asked to create
-     * either displayable bitmap or a friend of a displayable bitmap.
-     * Create our bitmap only if we have a valid ModeID
-     */
-    modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    if (modeid != vHidd_ModeID_Invalid)
+    /* Here we select a class for the bitmap to create */
+
+    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+    if (displayable)
     {
+    	/* Displayable bitmaps are bitmaps of our class */
         tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
 	tags[0].ti_Data = (IPTR)XSD(cl)->bmclass;
     }
+    else
+    {
+	/* Non-displayable friends of our bitmaps are plain chunky bitmaps */
+    	OOP_Object *friend = GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+
+    	if (friend && (OOP_OCLASS(friend) == XSD(cl)->bmclass))
+    	{
+    	    tags[0].ti_Tag  = aHidd_BitMap_ClassID;
+    	    tags[0].ti_Data = (IPTR)CLID_Hidd_ChunkyBM;
+    	}
+    }
+
+    /* The base class will take care about other cases */
 
     p.mID = msg->mID;
     p.attrList = tags;
