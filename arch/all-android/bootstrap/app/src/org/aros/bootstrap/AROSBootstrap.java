@@ -1,7 +1,6 @@
 package org.aros.bootstrap;
 
 import java.io.FileDescriptor;
-import java.nio.ByteBuffer;
 
 import android.app.Application;
 import android.content.Intent;
@@ -28,6 +27,7 @@ public class AROSBootstrap extends Application
 	public AROSActivity ui;
 	private DisplayServer Server;
 	public Boolean started = false;
+	public Class<?> ActivityClass = null;
 	private Handler handler;
 
 	// Commands sent to us by AROS display driver
@@ -43,8 +43,7 @@ public class AROSBootstrap extends Application
 	static final int cmd_Alert  = 0x00001000;
 
 	// Some Linux signals
-	static final int SIGCONT = 18;
-	static final int SIGSTOP = 19;
+	static final int SIGUSR2 = 12;
 	
 	@Override
 	public void onCreate()
@@ -80,7 +79,7 @@ public class AROSBootstrap extends Application
 	{
 	    FileDescriptor readfd  = new FileDescriptor();
 	    FileDescriptor writefd = new FileDescriptor();
-	    
+
 	    Log.d("AROS", "Starting AROS...");
 
 		int rc = Kick(readfd, writefd);
@@ -104,12 +103,14 @@ public class AROSBootstrap extends Application
 	}
 
 	// Make sure the activity is visible
-	private void Foreground()
+	public void Foreground()
 	{
-    	Intent myIntent = new Intent(this, AROSActivity.class);
+    	Intent myIntent = new Intent(this, ActivityClass);
+
+    	myIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     	startActivity(myIntent);
 	}
-	
+
     public void DisplayError(String text)
     {
     	Foreground();
@@ -197,11 +198,10 @@ public class AROSBootstrap extends Application
 
 		case cmd_Alert:
 			Log.d("AROS", "Alert code " + params[0]);
-			Kill(SIGSTOP);
 
-			ByteBuffer textBuf = MapString(params[1]);
-			String text = new String(textBuf.array());
-			Foreground();
+			byte[] textBuf = GetString(params[1]);
+			String text = new String(textBuf);
+//			Foreground();
 			ui.DisplayAlert(text);
 			break;
 
@@ -230,7 +230,10 @@ public class AROSBootstrap extends Application
 
 	public void Resume()
 	{
-		Kill(SIGCONT);
+		int res = Kill(SIGUSR2);
+
+		Log.d("AROS", "Resuming process, result: " + res);
+
 	}
 
     // This orders processing of a command from server
@@ -280,6 +283,6 @@ public class AROSBootstrap extends Application
     private native int Load(String dir);
     private native int Kick(FileDescriptor rfd, FileDescriptor wfd);
     private native int Kill(int signal);
-    private native ByteBuffer MapString(int addr);
+    private native byte[] GetString(int addr);
     public native int GetBitmap(Bitmap obj, int addr, int x, int y, int width, int height, int bytesPerLine);
 }

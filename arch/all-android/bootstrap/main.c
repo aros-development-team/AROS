@@ -58,18 +58,21 @@ int Java_org_aros_bootstrap_AROSBootstrap_Load(JNIEnv* env, jobject this, jstrin
 }
 
 /*
- * Wrap a string at a given memory address into ByteBuffer object.
+ * Retrieve a string at a given memory address as array of bytes.
  * FIXME: It would be better to pass address as long here, however looks
  * like Android gcc has a bug and misaligns arguments in this case. I got
  * wrong values ('size' was actually 'addr' and 'addr' contained some weird garbage.
  * Since Android is a 32-bit system, i hope ints are ok for now.
  */
 
-jobject Java_org_aros_bootstrap_AROSBootstrap_MapString(JNIEnv* env, jobject this, jint addr)
+jbyteArray Java_org_aros_bootstrap_AROSBootstrap_GetString(JNIEnv* env, jobject this, jint addr)
 {
-    jlong size = strlen((void *)addr);
+    jsize size = strlen((void *)addr);
+    jbyteArray ret = (*env)->NewByteArray(env, size);
 
-    return (*env)->NewDirectByteBuffer(env, (void *)addr, size);
+    (*env)->SetByteArrayRegion(env, ret, 0, size - 1, (const jbyte *)addr);
+
+    return ret;
 }
 
 /*

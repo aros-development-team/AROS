@@ -19,7 +19,7 @@
 #include "kickstart.h"
 #include "platform.h"
 
-#define D(x) x
+#define D(x)
 
 /*
  * This is Android-hosted kicker.
@@ -177,7 +177,10 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
 }
 
 /* A small method which allows display server to send signals to AROS process */
-int Java_org_aros_bootstrap_AROSBootstrap_Kill(jint signal)
+int Java_org_aros_bootstrap_AROSBootstrap_Kill(JNIEnv* env, jobject this, jint signal)
 {
-    return kill(AROS_pid, signal);
+    int res = kill(AROS_pid, signal);
+
+    D(kprintf("[Bootstrap] kill(%d, %d) returned %d, errno %d\n", AROS_pid, signal, res, errno));    
+    return res;
 }
