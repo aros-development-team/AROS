@@ -44,7 +44,8 @@ public class AROSBootstrap extends Application
 
 	// Some Linux signals
 	static final int SIGUSR2 = 12;
-	
+	static final int SIGTERM = 15;
+
 	@Override
 	public void onCreate()
 	{
@@ -202,7 +203,7 @@ public class AROSBootstrap extends Application
 			byte[] textBuf = GetString(params[1]);
 			String text = new String(textBuf);
 //			Foreground();
-			ui.DisplayAlert(text);
+			ui.DisplayAlert(params[0], text);
 			break;
 
 		default:
@@ -234,6 +235,12 @@ public class AROSBootstrap extends Application
 
 		Log.d("AROS", "Resuming process, result: " + res);
 
+	}
+
+	public void Quit()
+	{
+		Kill(SIGTERM);
+		System.exit(0);
 	}
 
     // This orders processing of a command from server
