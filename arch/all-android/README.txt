@@ -132,6 +132,12 @@ and it's unclear how it can be implemented (however it's not impossible).
 
  An intensive development is needed to remove these limitations.
 
+ However, it's actially possible to run AROS in both landscape and portrait orientation. Just hold the device in a
+desired position before running AROS. AROS display driver will autodetect the current orientation and stick to it.
+At the moment you have to completely shut down AROS (select 'Power Off' in Wanderer) and restart it in order to
+change the orientation. One day this will change and you'll be able to select either portrait or landscape screen
+in ScreenMode preferences program.
+
  5. DEBUGGING.
 
  For Java part AROS build system creates a complete Eclipse project. It's located in
