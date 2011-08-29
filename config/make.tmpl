@@ -1851,18 +1851,18 @@ endif
 #MM- %(mainmmake)-kobj :    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
 #MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
 #MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-kobj-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-kobj-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-$(CPU)-quick \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-quick \
+#MM			    %(mainmmake)-$(FAMILY)-quick %(mainmmake)-$(CPU)-quick
 #MM- %(mainmmake)-pkg :     %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
 #MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
 #MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-pkg-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-pkg-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-$(CPU)-quick \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-quick \
+#MM			    %(mainmmake)-$(FAMILY)-quick %(mainmmake)-$(CPU)-quick
+#MM- %(mainmmake)-quick :   %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-$(CPU)-quick \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-quick \
+#MM			    %(mainmmake)-$(FAMILY)-quick %(mainmmake)-$(CPU)-quick
 
 #MM %(mainmmake)-%(arch) : %(mainmmake)-includes
 
@@ -1892,6 +1892,9 @@ GLOB_MKDIRS += $(BD_OBJDIR$(BDID))
 
 #MM
 %(mainmmake)-%(arch) :: $(BD_OBJS$(BDID))
+
+#MM
+%(mainmmake)-%(arch)-quick :: $(BD_OBJS$(BDID))
 
 ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
