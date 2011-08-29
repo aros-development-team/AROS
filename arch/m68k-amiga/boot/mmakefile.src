@@ -9,6 +9,9 @@ Q ?= @
 
 #MM- kernel-link-amiga-m68k : \
 #MM     kernel-objs \
+#MM		kernel-exec-kobj \
+#MM		kernel-expansion-kobj \
+#MM		kernel-processor-kobj \
 #MM     kernel-alerthook-kobj \
 #MM     kernel-amiga-m68k-amigavideo-kobj \
 #MM     kernel-amiga-m68k-audio-kobj \
@@ -21,6 +24,7 @@ Q ?= @
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-c-shellcommands-kobj \
 #MM     kernel-cia-kobj \
+#MM		kernel-battclock-kobj \
 #MM     kernel-timer-kobj \
 #MM     kernel-debug-kobj \
 #MM     kernel-disk-kobj \
