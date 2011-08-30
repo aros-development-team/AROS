@@ -2637,6 +2637,8 @@ PKG_DEPS  := $(addprefix $(PKGDIR)/, $(PKG_FILES))
 	@$(ECHO) Packaging $@...
 	@$(SRCDIR)/tools/package/pkg c $@ $(PKGDIR) $(PKG_FILES)
 
+%compress_file mmake=%(mmake) file=%(file)
+
 GLOB_MKDIRS += $(PKG_DIR)
 
 %end
