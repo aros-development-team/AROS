@@ -348,20 +348,6 @@ void kernel_cstart(const struct TagItem *msg)
         panic();
     }
 
-    /* Setup the 8259 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0xa0)); /* Initialization sequence for 8259A-2 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(0x21)); /* IRQs at 0x20 - 0x27 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x28),"i"(0xa1)); /* IRQs at 0x28 - 0x2f */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x04),"i"(0x21)); /* 8259A-1 is master */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(0xa1)); /* 8259A-2 is slave */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0x21)); /* 8086 mode for both */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0xa1));
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0x21)); /* Enable cascade int */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0xa1)); /* Mask all interrupts */
-
-    D(bug("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n"));
-
     /* Explore memory map and create MemHeaders */
     NEWLIST(&memList);
     mmap_InitMemory(mmap, mmap_len, &memList, klo, khi, PC_Memory);

@@ -435,11 +435,15 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             	break;
 
             case KBL_XTPIC:
-            	core_XTPIC_AckIntr(irq_number, KernelBase->kb_PlatformData);
-            	krnRunIRQHandlers(irq_number);
+            	XTPIC_AckIntr(irq_number, &KernelBase->kb_PlatformData->kb_XTPIC_Mask);
+	 	krnRunIRQHandlers(irq_number);
 
+		/*
+		 * Interrupt acknowledge on XT-PIC also disables this interrupt.
+		 * If we still need it, we need to re-enable it.
+		 */
             	if (!IsListEmpty(&KernelBase->kb_Interrupts[irq_number]))
-                    core_XTPIC_EnableIRQ(irq_number, KernelBase->kb_PlatformData);
+                    XTPIC_EnableIRQ(irq_number, &KernelBase->kb_PlatformData->kb_XTPIC_Mask);
 
                 break;
 
@@ -465,5 +469,5 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
 {
     if (KernelBase->kb_Interrupts[irq].lh_Type == KBL_XTPIC)
-            core_XTPIC_EnableIRQ(irq, KernelBase->kb_PlatformData);
+        XTPIC_EnableIRQ(irq, &KernelBase->kb_PlatformData->kb_XTPIC_Mask);
 }

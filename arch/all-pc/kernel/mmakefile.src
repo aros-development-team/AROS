@@ -1,14 +1,14 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := apic_driver
+FILES := apic_driver xtpic
 APICS := apic_ia32
 
 MAINDIR	      := rom/kernel
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/$(CURDIR) \
 		 -I$(SRCDIR)/$(MAINDIR)
 
-# Currently built only for x86-64 because the following pieces are missing:
+# Currently built only for x86-64 because the following pieces are missing in i386:
 # 1. IN_USER_MODE() macro
 # 2. rdmsr definitions in asm/cpu.h.
 
