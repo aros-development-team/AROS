@@ -48,6 +48,9 @@ int main(void) {
     DEFINE(Elapsed       , offsetof (struct ExecBase, Elapsed));
     DEFINE(SysStkUpper   , offsetof (struct ExecBase, SysStkUpper));
 
+    asm volatile("\n/* DosLibrary */" ::);
+    DEFINE(dl_IntuitionBase, offsetof (struct DosLibrary, dl_IntuitionBase));
+
     asm volatile("\n/* struct Task */" ::);
     DEFINE(tc_State      , offsetof (struct Task, tc_State));
     DEFINE(tc_Flags      , offsetof (struct Task, tc_Flags));
@@ -74,6 +77,7 @@ int main(void) {
     DEFINE(pr_MsgPort    , offsetof (struct Process, pr_MsgPort));
     DEFINE(pr_ReturnAddr , offsetof (struct Process, pr_ReturnAddr));
     DEFINE(pr_SegList    , offsetof (struct Process, pr_SegList));
+    DEFINE(pr_WindowPtr  , offsetof (struct Process, pr_WindowPtr));
 
     asm volatile("\n/* struct DosBase */" ::);
     DEFINE(dl_Root       , offsetof (struct DosLibrary, dl_Root));
