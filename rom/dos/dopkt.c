@@ -89,7 +89,8 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
     {
 	/*
 	 * Make sure that tasks can use DoPkt().
-	 * CHECKME: Is it really needed ?
+	 * This is needed, for example, by Dos/Init()
+	 * when creating the initial Shell.
 	 */
 	replyPort = CreateMsgPort();
 
@@ -121,7 +122,7 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
 
     res = dp->dp_Res1;
     if (res2)
-    	*res2 = dp->dp_Res2;
+    	*res2 = (dp->dp_Res1 ? 0 : dp->dp_Res2);
 
     if (__is_process(me))
 	me->pr_Result2 = dp->dp_Res2;
