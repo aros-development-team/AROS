@@ -126,7 +126,9 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 
         /* start it up */
         process = CreateNewProcTags(
-		NP_Entry, (IPTR)entry,
+		NP_Entry,   (IPTR)entry,
+		NP_Seglist, (IPTR)deviceNode->dn_SegList,
+		NP_FreeSeglist, (IPTR)FALSE,
 		NP_Name,  AROS_BSTR_ADDR(deviceNode->dn_Name), /* GB: always NUL terminated */
 		NP_StackSize, deviceNode->dn_StackSize,
 		NP_Priority,  deviceNode->dn_Priority,
