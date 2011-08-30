@@ -333,6 +333,9 @@ BCPL Open           /* -04, FileHandle ^, &name, mode */
     BRTS
 
                      /* 4, void main */
+BCPL Entry
+    jsr         BCPL_RunHandler
+    /* FALLTHROUGH to BCPL_Exit */
 
 BCPL Exit            /*  08, void, code */
     move.l	SysBase,%a6

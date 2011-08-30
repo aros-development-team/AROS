@@ -88,7 +88,7 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
    	 */
    	 segment[6] = (ULONG)me->pr_GlobVec;
     }
-    D(bug("BCPL_Setup '%s' @%p (%s)\n", me->pr_Task.tc_Node.ln_Name));
+    D(bug("BCPL_Setup '%s' entry @%p\n", me->pr_Task.tc_Node.ln_Name, entry));
 
     return entry;
 }
@@ -176,7 +176,6 @@ void BCPL_RunHandler(void)
 {
     struct DosPacket *dp;
     struct Process *me = (struct Process *)FindTask(NULL);
-    struct DeviceNode *dn;
     APTR entry, globvec;
     int i;
     ULONG *seglist = BADDR(me->pr_SegList);
@@ -184,9 +183,6 @@ void BCPL_RunHandler(void)
     WaitPort(&me->pr_MsgPort);
     dp = (struct DosPacket *)(GetMsg(&me->pr_MsgPort)->mn_Node.ln_Name);
     D(bug("[RunHandlerBCPL] Startup packet = %p\n", dp));
-
-    dn = BADDR(dp->dp_Arg3);
-    entry = BADDR(dn->dn_SegList) + sizeof(IPTR);
 
     globvec = AllocMem(sizeof(BCPL_GlobVec), MEMF_ANY | MEMF_CLEAR);
     if (globvec == NULL) {
@@ -204,6 +200,9 @@ void BCPL_RunHandler(void)
 
     me->pr_GlobVec = globvec;
 
+    /* Get the entry point, as set up by the BCPL segment table */
+    entry = *(APTR *)(me->pr_GlobVec + 4);
+
     /* AOS File Handlers are BCPL programs *without*
      * the standard CLI startup routine, so they have
      * to be called as if they were BCPL subroutines.
@@ -218,7 +217,7 @@ void BCPL_RunHandler(void)
      * frame pointer is an argument, so we're going to call
      * a thunk for the A5/A6 BCPL jsr/rts
      */
-    AROS_UFC9(ULONG, BCPL_thunk,
+    AROS_UFC9(VOID, BCPL_thunk,
             AROS_UFCA(ULONG, 16, D0),
             AROS_UFCA(BPTR, MKBADDR(dp), D1),
             AROS_UFCA(ULONG, 0, D2),
@@ -227,12 +226,10 @@ void BCPL_RunHandler(void)
             AROS_UFCA(APTR, NULL, A0),
             AROS_UFCA(APTR, me->pr_Task.tc_SPLower + 16, A1),
             AROS_UFCA(APTR, me->pr_GlobVec, A2),
-            AROS_UFCA(APTR, entry + sizeof(ULONG), A4));
+            AROS_UFCA(APTR, entry, A4));
 
     globvec -= BCPL_GlobVec_NegSize;
     FreeMem(globvec, sizeof(BCPL_GlobVec));
     me->pr_GlobVec = NULL;
-
-    return;
 }
 
