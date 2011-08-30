@@ -11,4 +11,8 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
            progname=$(EXENAME) targetdir=$(EXEDIR) \
            files=$(FILES) uselibs="oop"
 
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+%copy_includes mmake=includes-composition-copy path=hidd dir=include
+
 %common
