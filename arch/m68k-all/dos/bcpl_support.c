@@ -172,13 +172,12 @@ extern void BCPL_thunk(void);
  *
  * This wrapper is here to support that.
  */
-ULONG RunHandlerBCPL(void)
+void BCPL_RunHandler(void)
 {
     struct DosPacket *dp;
     struct Process *me = (struct Process *)FindTask(NULL);
     struct DeviceNode *dn;
     APTR entry, globvec;
-    ULONG ret;
     int i;
     ULONG *seglist = BADDR(me->pr_SegList);
 
@@ -192,7 +191,7 @@ ULONG RunHandlerBCPL(void)
     globvec = AllocMem(sizeof(BCPL_GlobVec), MEMF_ANY | MEMF_CLEAR);
     if (globvec == NULL) {
         internal_ReplyPkt(dp, &me->pr_MsgPort, DOSFALSE, ERROR_NO_FREE_STORE);
-        return ERROR_NO_FREE_STORE;
+        return;
     }
 
     globvec += BCPL_GlobVec_NegSize;
@@ -219,7 +218,7 @@ ULONG RunHandlerBCPL(void)
      * frame pointer is an argument, so we're going to call
      * a thunk for the A5/A6 BCPL jsr/rts
      */
-    ret = AROS_UFC9(ULONG, BCPL_thunk,
+    AROS_UFC9(ULONG, BCPL_thunk,
             AROS_UFCA(ULONG, 16, D0),
             AROS_UFCA(BPTR, MKBADDR(dp), D1),
             AROS_UFCA(ULONG, 0, D2),
@@ -234,6 +233,6 @@ ULONG RunHandlerBCPL(void)
     FreeMem(globvec, sizeof(BCPL_GlobVec));
     me->pr_GlobVec = NULL;
 
-    return ret;
+    return;
 }
 
