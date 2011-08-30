@@ -61,8 +61,6 @@ struct LDDMsg
     BPTR		 ldd_Return;	    /* Loaded seglist */
 };
 
-#include <libcore/compiler.h>
-
 static const char ldDemonName[] = "Lib & Dev Loader Daemon";
 
 /*
@@ -259,7 +257,7 @@ static struct LDObjectNode *LDNewObjectNode(STRPTR name, struct ExecBase *SysBas
     return NULL;
 }
 
-static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, UBYTE type, STRPTR dir, struct List *list, struct ExecBase *SysBase)
+static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPTR dir, struct List *list, struct ExecBase *SysBase)
 {
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
     /*  We use FilePart() because the liblist is built from resident IDs,
@@ -396,13 +394,15 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, UBYTE
         /* 
          * The library is not on disk so check Resident List.
          * It can be there if it is resident but was flushed.
-         * Check also rt_Type because OpenDevice might hit
-         * resident packet handler instead of IOFS one and this
-         * would cause problems then.
          */
 	struct Resident *resident = FindResident(stripped_libname);
 
-	if (resident && (resident->rt_Type == type) && (resident->rt_Version >= version))
+	/*
+	 * Check if the resident is of required type and version is correct.
+	 * This relies on the fact that lh_Type is set correctly for exec lists.
+	 * In AROS this is true (see rom/exec/prepareexecbase.c).
+	 */
+	if (resident && (resident->rt_Type == list->lh_Type) && (resident->rt_Version >= version))
 	    InitResident(resident, BNULL);
     }
 
@@ -449,7 +449,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 
     struct LDDemonBase *ldBase;
     struct Library *library;
-    struct LDObjectNode *object = LDRequestObject(libname, version, NT_LIBRARY, "libs", &SysBase->LibList, SysBase);
+    struct LDObjectNode *object = LDRequestObject(libname, version, "libs", &SysBase->LibList, SysBase);
 
     if (!object)
     	return NULL;
@@ -476,7 +476,7 @@ AROS_LH4(LONG, OpenDevice,
 
     struct LDObjectNode *object;
 
-    object = LDRequestObject(devname, 0, NT_DEVICE, "devs", &SysBase->DeviceList, SysBase);
+    object = LDRequestObject(devname, 0, "devs", &SysBase->DeviceList, SysBase);
     if (object)
     {
 	struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
