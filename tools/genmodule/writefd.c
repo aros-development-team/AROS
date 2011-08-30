@@ -46,12 +46,26 @@ void writefd(struct config *cfg)
 {
     FILE *out;
     char line[256];
-    struct functionhead *funclistit;
+    struct functionhead *funclistit = cfg->funclist;
     struct functionarg *arglistit;
     unsigned int lvo;
     char *lower;
 
-    if (!cfg->funclist)
+    if (cfg->modtype == DEVICE)
+    {
+        /* Skip BeginIO/EndIO */
+    	unsigned int i;
+
+    	for (i = 0; i < 2; i++)
+    	{
+    	    if (!funclistit)
+    	    	return;
+
+    	    funclistit = funclistit->next;
+    	}
+    }
+
+    if (!funclistit)
     	return;
 
     snprintf(line, 255, "%s/%s_lib.fd", cfg->gendir, cfg->modulename);
@@ -67,16 +81,11 @@ void writefd(struct config *cfg)
     {
         fprintf(out, "##base _%s\n", cfg->libbase);
         
-        if (cfg->modtype == DEVICE)
-        {
-            /* because of BeginIO/EndIO */
-            /* FIXME: do we need special handling for other module types, too? */
-            fprintf(out, "##bias %u\n", (cfg->firstlvo - 2) * 6);
-        }
-        else
-        {
-            fprintf(out, "##bias %u\n", cfg->firstlvo * 6);
-        }
+        /*
+         * This is correct even for devices. cfg->firstlvo holds LVO number for
+         * the first user function.
+         */
+        fprintf(out, "##bias %u\n", cfg->firstlvo * 6);
 
         fprintf(out, "*\n"
                      "* Automatically generated from '%s'.\n"
@@ -87,7 +96,7 @@ void writefd(struct config *cfg)
 
         fprintf(out, "##public\n");
         
-        for (funclistit = cfg->funclist, lvo = cfg->firstlvo - 1;
+        for (lvo = cfg->firstlvo - 1;
              funclistit != NULL;
              funclistit = funclistit->next
         )
