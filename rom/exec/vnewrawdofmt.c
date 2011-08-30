@@ -46,7 +46,9 @@
 		       maxwidth  - maximum width of field (for strings only).
 				   Defaults to no limit.
 
-		       size	 - 'l' means LONG. Defaults to WORD, if nothing is specified.
+		       size	 - 'l' can be used, but effectively ignored for
+		       		   backwards compatibility with original RawDoFmt().
+		       		   In C arguments are always at least int-sized.
 
 		       type	 - 'b' BSTR. It will use the internal representation
                                        of the BSTR defined by the ABI.
@@ -87,8 +89,6 @@
 	Final PutChData value.
 
     NOTES
-	The field size defaults to WORDs which may be different from the
-	default integer size of the compiler.
 
     EXAMPLE
 	Build a sprintf style function:
@@ -103,8 +103,6 @@
             }
 
     BUGS
-	PutChData cannot be modified from the callback hook on non-m68k
-	systems.
 
     SEE ALSO
 
