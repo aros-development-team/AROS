@@ -1,0 +1,14 @@
+# $Id: mmakefile.src 39981 2011-07-10 18:37:26Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+FILES   := compositingclass startup
+EXEDIR  := $(AROSDIR)/Devs/Monitors
+EXENAME := Composer
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+
+%build_prog mmake=devs-monitors-composition \
+           progname=$(EXENAME) targetdir=$(EXEDIR) \
+           files=$(FILES) uselibs="oop"
+
+%common
