@@ -287,24 +287,28 @@ int driver_init(struct GfxBase * GfxBase)
 	/* Init memory driver */
 	CDD(GfxBase)->memorygfx = OOP_NewObject(NULL, CLID_Hidd_Gfx, NULL);
 	DEBUG_INIT(bug("[driver_init] Memory driver object 0x%p\n", CDD(GfxBase)->memorygfx));
-	if (CDD(GfxBase)->memorygfx) {
-	    struct TagItem bm_create_tags[] = {
-		{ aHidd_BitMap_GfxHidd	, (IPTR)CDD(GfxBase)->memorygfx },
-		{ aHidd_PlanarBM_AllocPlanes, FALSE				 },
-		{ TAG_DONE			, 0UL				 }
+
+	if (CDD(GfxBase)->memorygfx)
+	{
+	    struct TagItem bm_create_tags[] =
+	    {
+		{ aHidd_BitMap_GfxHidd , (IPTR)CDD(GfxBase)->memorygfx },
+		{ aHidd_PlanarBM_BitMap, 0			       },
+		{ TAG_DONE	       , 0			       }
 	    };
 
 	    CDD(GfxBase)->planarbm_cache = create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
 	    DEBUG_INIT(bug("[driver_init] Planar bitmap cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
-	    if (CDD(GfxBase)->planarbm_cache) {
-		struct TagItem gc_create_tags[] = { { TAG_DONE, 0UL } };
 
-		CDD(GfxBase)->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, gc_create_tags, GfxBase);
+	    if (CDD(GfxBase)->planarbm_cache)
+	    {
+		CDD(GfxBase)->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, NULL, GfxBase);
 		DEBUG_INIT(bug("[driver_init] GC cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
+
 		if (CDD(GfxBase)->gc_cache)
 		    ReturnInt("driver_init", int, TRUE);
+
 		delete_object_cache(CDD(GfxBase)->planarbm_cache, GfxBase);
-		
 	    }
 	    OOP_DisposeObject(CDD(GfxBase)->memorygfx);
 	}
