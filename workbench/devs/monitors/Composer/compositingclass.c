@@ -22,19 +22,6 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
-
-#undef HiddPixFmtAttrBase
-#undef HiddSyncAttrBase
-#undef HiddBitMapAttrBase
-#undef HiddGCAttrBase
-#undef HiddCompositingAttrBase
-
-#define HiddPixFmtAttrBase      (compdata->pixFmtAttrBase)
-#define HiddSyncAttrBase        (compdata->syncAttrBase)
-#define HiddBitMapAttrBase      (compdata->bitMapAttrBase)
-#define HiddGCAttrBase          (compdata->gcAttrBase)
-#define HiddCompositingAttrBase (compdata->compositingAttrBase)
-
 #define MAX(a,b) a > b ? a : b
 #define MIN(a,b) a < b ? a : b
 
@@ -509,28 +496,16 @@ static VOID HIDDCompositingPurgeBitMapStack(struct HIDDCompositingData * compdat
     NEWLIST(&compdata->bitmapstack);
 }
 
-
-
-
 /* PUBLIC METHODS */
 OOP_Object *METHOD(Compositing, Root, New)
 {
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 
-    if(o)
+    if (o)
     {
-        struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
+        OOP_MethodID disposemid;
+        struct HIDDCompositingData *compdata = OOP_INST_DATA(cl, o);
         
-        struct OOP_ABDescr attrbases[] = 
-        {
-        { IID_Hidd_PixFmt,          &compdata->pixFmtAttrBase },
-        { IID_Hidd_Sync,            &compdata->syncAttrBase },
-        { IID_Hidd_BitMap,          &compdata->bitMapAttrBase },
-        { IID_Hidd_GC,              &compdata->gcAttrBase },
-        { IID_Hidd_Compositing,     &compdata->compositingAttrBase },
-        { NULL, NULL }
-        };
-
         NEWLIST(&compdata->bitmapstack);
         compdata->compositedbitmap  = NULL;
         compdata->topbitmap         = NULL;
@@ -539,29 +514,25 @@ OOP_Object *METHOD(Compositing, Root, New)
         compdata->modeschanged      = FALSE;
         InitSemaphore(&compdata->semaphore);
         
-        /* Obtain Attr bases - make this class self-contained */
-        if (OOP_ObtainAttrBases(attrbases))
+        compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositing_GfxHidd, 0, msg->attrList);
+
+        if (compdata->gfx != NULL)
         {
-            compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositing_GfxHidd, 0, msg->attrList);
-            
-            if (compdata->gfx != NULL)
-            {
-                /* Create GC object that will be used for drawing operations */
-                compdata->gc = HIDD_Gfx_NewGC(compdata->gfx, NULL);
-            }
+            /* Create GC object that will be used for drawing operations */
+            compdata->gc = HIDD_Gfx_NewGC(compdata->gfx, NULL);
+
+            if (compdata->gfx)
+            	return o;
+
         }
-        
-        if ((compdata->gfx == NULL) || (compdata->gc == NULL))
-        {
-            /* Creation failed */
-            OOP_MethodID disposemid;
-            disposemid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-            OOP_CoerceMethod(cl, o, (OOP_Msg)&disposemid);
-            o = NULL;
-        }
+
+        /* Creation failed */
+
+        disposemid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+        OOP_CoerceMethod(cl, o, &disposemid);
     }
 
-    return o;
+    return NULL;
 }
 
 VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
