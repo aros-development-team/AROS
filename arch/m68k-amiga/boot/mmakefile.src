@@ -5,13 +5,10 @@ include $(TOP)/config/make.cfg
 
 Q ?= @
 
-#MM- kernel-link-amiga-m68k : general-setup-amiga-m68k
-
-#MM- kernel-link-amiga-m68k : \
-#MM     kernel-objs \
-#MM		kernel-exec-kobj \
-#MM		kernel-expansion-kobj \
-#MM		kernel-processor-kobj \
+#MM- kernel-link-amiga-m68k :			\
+#MM     general-setup-amiga-m68k		\
+#MM     kernel-bsp-objs				\
+#MM     kernel-objs				\
 #MM     kernel-alerthook-kobj \
 #MM     kernel-amiga-m68k-amigavideo-kobj \
 #MM     kernel-amiga-m68k-audio-kobj \
@@ -24,15 +21,12 @@ Q ?= @
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-c-shellcommands-kobj \
 #MM     kernel-cia-kobj \
-#MM		kernel-battclock-kobj \
-#MM     kernel-timer-kobj \
 #MM     kernel-debug-kobj \
 #MM     kernel-disk-kobj \
 #MM     kernel-filesystem-kobj \
 #MM     kernel-fs-afs-kobj \
 #MM     kernel-fs-cdvdfs-kobj \
 #MM     kernel-fs-con-kobj \
-#MM     kernel-kernel-kobj \
 #MM     kernel-m680x0-kobj \
 #MM     kernel-misc-kobj \
 #MM     kernel-partition-kobj \
