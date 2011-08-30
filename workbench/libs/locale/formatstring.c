@@ -100,21 +100,8 @@ static inline APTR va_addr(va_list args, ULONG len)
 
 #else
 
-static inline APTR _va_addr(va_list *args, ULONG len)
-{
-    va_list ret = *args;
-
-    if (len <= sizeof(int))
-        *args += sizeof(int);
-    else if (len == sizeof(long))
-        *args += sizeof(long);
-    else
-        *args += sizeof(void *);
-
-    return ret;
-}
-
-#define va_addr(args, len) _va_addr(&args, len)
+/* This works for i386 and m68k */
+#define va_addr(args, len) stream_addr((void **)&args, len)
 
 #endif
 
@@ -351,27 +338,28 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
           switch (fmtTemplate[template_pos])
           {
 #if USE_QUADFMT
-            case 'L':
-              datasize = 8;
+          case 'L':
+              datasize = sizeof(UQUAD);
               template_pos++;
               break;
 #endif /* USE_QUADFMT */
 
-            case 'l':
+          case 'l':
               template_pos++;
 #if USE_QUADFMT
               if (fmtTemplate[template_pos] == 'l')
               {
-                datasize = 8;
-                template_pos++;
+                  datasize = sizeof(UQUAD);
+                  template_pos++;
               }
               else
 #endif /* USE_QUADFMT */
-                datasize = sizeof(ULONG);
+                  datasize = sizeof(ULONG);
               break;
 
             default:
-              datasize = 2;
+	      /* For C-style varargs default size is ULONG, single 'l' is effectively ignored */
+              datasize = is_va_list(VaListStream) ? sizeof(ULONG) : sizeof(UWORD);
               break;
           }
 
