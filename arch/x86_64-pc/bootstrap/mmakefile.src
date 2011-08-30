@@ -3,40 +3,26 @@ include $(TOP)/config/make.cfg
 
 FILES	     := bootstrap cpu memory_io multiboot1 multiboot2 support
 USER_CFLAGS  := -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isystem $(SRCDIR)/bootstrap/include -DMULTIBOOT_64BIT
-USER_LDFLAGS := -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/bootstrap-pc-x86_64.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds
-LIBDIR       := $(GENDIR)/lib32
-LIBS         := bootconsole rom bootstrap
-OBJDIR       := $(GENDIR)/$(CURDIR)
+USER_LDFLAGS := -m32 -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstrap-pc-x86_64.map \
+		-Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -L$(GENDIR)/lib32 -nostdlib
 USER_OBJS    := $(OBJDIR)/vesa.bin.o
-
-BOOTSTRAP_NAME := $(BINDIR)/boot/bootstrap-pc-x86_64
+EXEDIR       := $(BINDIR)/boot
+EXENAME      := bootstrap-pc-x86_64
 
 #MM kernel-bootstrap-x86_64: linklibs-clib32 linklibs-bootconsole32 linklibs-bootstrap32
-kernel-bootstrap-x86_64: $(BOOTSTRAP_NAME)
 
-#MM
-kernel-bootstrap-x86_64-quick: $(BOOTSTRAP_NAME)
-
-OBJS      := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(FILES)))
-DEPS      := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(FILES) vesa))
-LIBDEPS   := $(addsuffix .a,$(addprefix $(LIBDIR)/lib,$(LIBS)))
-LDLIBS    := $(addprefix -l,$(LIBS))
-
-$(BOOTSTRAP_NAME): $(OBJS) $(USER_OBJS) $(BINDIR)/boot $(OSGENDIR)/boot $(LIBDEPS)
-	@$(ECHO) Linking $@...
-	@$(KERNEL_LD) $(USER_LDFLAGS) -o $@ $(OBJS) $(USER_OBJS) -L$(LIBDIR) $(LDLIBS)
-	#@strip --strip-unneeded -R .note -R .comment $@
-
-# Switch to the i386 linker mode
-AROS_LD := $(KERNEL_LD) -m elf_i386
+%build_prog mmake=kernel-bootstrap-x86_64 progname=$(EXENAME) \
+	files=$(FILES) targetdir=$(EXEDIR) \
+	uselibs="bootstrap bootconsole rom" usestartup=no linker=kernel
 
 %rule_link_binary file=$(OBJDIR)/vesa.bin.o name=vesa objs=$(OBJDIR)/vesa.o \
 	start=0x1000 ldflags="-m elf_i386"
 
-%rule_compile basename=% targetdir=$(OBJDIR)
+%compress_file mmake=kernel-bootstrap-x86_64 file=$(EXEDIR)/$(EXENAME)
 
--include $(DEPS)
+# Add $(GENDIR)/boot to file's dependencies	
+$(EXEDIR)/$(EXENAME) : $(GENDIR)/boot
 
-GLOB_MKDIRS += $(BINDIR)/boot $(OSGENDIR)/boot
+GLOB_MKDIRS += $(GENDIR)/boot
 
 %common

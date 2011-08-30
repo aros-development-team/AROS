@@ -14,6 +14,7 @@
 #include "kernel_intern.h"
 #include "acpi.h"
 #include "apic.h"
+#include "xtpic.h"
 
 #define D(x) x
 #define DAPIC(x)
@@ -51,7 +52,10 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     LIBBASE->kb_PlatformData = pd;
 
-    pd->kb_XTPIC_Mask = 0xfffb;
+    /* Initialize legacy 8529A PIC */
+    XTPIC_Init(&pd->kb_XTPIC_Mask);
+
+    D(bug("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n"));
 
     pd->kb_APIC_Count   = 1;		/* We already have one running processor */
     pd->kb_APIC_IDMap   = AllocMem(sizeof(UWORD), MEMF_ANY);

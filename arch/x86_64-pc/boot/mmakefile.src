@@ -3,8 +3,8 @@ include $(TOP)/config/make.cfg
 
 # What our port consists of
 
-#MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-x86_64
-#MM- kernel-link-pc-x86_64 : kernel-bsp-x86_64-pc kernel-package-base kernel-package-usb kernel-package-fs
+#MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-x86_64-gz
+#MM- kernel-link-pc-x86_64 : kernel-bsp-x86_64-pc-gz kernel-package-base-gz kernel-package-usb-gz kernel-package-fs-gz
 #MM- workbench-pc-x86_64   : workbench-drivers kernel-pc-i386-trackdisk
 
 # -------- x86_64-pc board support package --------
@@ -40,6 +40,6 @@ USER_LDFLAGS := -L$(GENDIR)/lib
 %link_kickstart mmake=kernel-bsp-x86_64-pc file=$(BINDIR)/boot/aros-bsp-pc-x86_64 \
 	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
 	uselibs="bootconsole autoinit libinit amiga arossupport rom arosm hiddstubs" \
-	map=$(OSGENDIR)/boot/kernel-bsp-x86_64-pc.map
+	map=$(GENDIR)/boot/kernel-bsp-x86_64-pc.map
 
 %common
