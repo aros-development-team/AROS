@@ -1131,6 +1131,13 @@ BCPL rdline         /* 13c, void, @buf, maxlongs  */
 	bne		0b
 	move.b	%d1,%a2@(-1)	/* fix buf BSTR length */
 
+#if BCPLSTRINGDEBUG
+    lea.l	%a2@(-1),%a2
+    move.l      %a2,%d0
+    lsr.l       #2,%d0
+    bsr		bstr_debug
+#endif
+
     movem.l	%sp@+,%d2-%d3/%a0-%a2/%a6
     BRTS
 
@@ -1524,6 +1531,10 @@ BCPL runCommand    /* 1e4, void, @codeseg, stacklongs, @cmdline, cmdlinelength *
 
 BCPL lock_1ec       /* 1ec, FileLock ^, &name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+    bsr		bstr_debug
+#endif
     move.l	%a2@(GV_DOSBase),%a6
     moveq.l	#1, %d0
     bsr		bstr_to_cstr
