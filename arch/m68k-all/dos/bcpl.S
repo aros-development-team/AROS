@@ -712,7 +712,41 @@ BCPL returnPacket   /* c4, void, @DosPacket, res1, res2 */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd openWindow     /* c8, void, leftedge, topedge, width, height, @title */
+#define TAG_END 0
+#define TAG_USER	(1 << 31)
+#define WA_Dummy	(TAG_USER + 99)
+#define WA_Left		(WA_Dummy + 1)
+#define WA_Top		(WA_Dummy + 2)
+#define WA_Width	(WA_Dummy + 3)
+#define WA_Height	(WA_Dummy + 4)
+#define WA_Title	(WA_Dummy + 11)
+#define WA_PubScreen	(WA_Dummy + 22)
+#define WA_AutoAdjust	(WA_Dummy + 45)
+
+BCPL openWindow     /* c8, struct Window *, leftedge, topedge, width, height, @title */
+	movem.l	%a0-%a1/%a6,%sp@-
+	move.l	%a2@(GV_DOSBase),%a6
+	move.l	%a6@(dl_IntuitionBase),%a6
+	move.l	#TAG_END, %sp@-
+	move.l	#-1, %sp@-
+	move.l	#WA_AutoAdjust, %sp@-
+	move.l	%a0, %sp@-
+	move.l	#WA_PubScreen, %sp@-
+	move.l	%a1@(4*4),%sp@-
+	move.l	#WA_Title, %sp@-
+	move.l	%d4, %sp@-
+	move.l	#WA_Height, %sp@-
+	move.l	%d3, %sp@-
+	move.l	#WA_Width, %sp@-
+	move.l	%d2, %sp@-
+	move.l	#WA_Top, %sp@-
+	move.l	%d1, %sp@-
+	move.l	#WA_Left, %sp@-
+	move.l	%sp, %sp@-
+	move.l	%a0, %sp@-			/* a0 is still 0 here */
+	jsr		%a6@(101 * -6)		/* OpenWindowTagList */
+	lea.l	%sp@(17 * 4),%sp
+	movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
     /* If BOOL is DOSTRUE, set current directory
