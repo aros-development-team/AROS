@@ -23,7 +23,7 @@
  *
  * This wrapper is here to support that.
  */
-ULONG RunHandlerBCPL(void);
+void BCPL_RunHandler(void);
 
 struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, struct DosLibrary *DOSBase)
 {
@@ -119,7 +119,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 #ifdef __mc68000
         /* BCPL file-handler support */
         if (deviceNode->dn_GlobalVec != (BPTR)-1 && deviceNode->dn_GlobalVec != (BPTR)-2)
-            entry = RunHandlerBCPL;
+            entry = BCPL_RunHandler;
         else
 #endif
             entry = BADDR(deviceNode->dn_SegList)+sizeof(IPTR);
