@@ -1397,7 +1397,7 @@ BCPLd writeErr		/* 1a0, ??, ?? */
     moveq.l	#-1,%d0
     BRTS
 
-BCPLd findConsoleHandler /* 1a4, MsgPort *,  */
+BCPL findConsoleHandler /* 1a4, MsgPort *,  */
     movem.l     %a0-%a1/%a6,%sp@-
     move.l      SysBase,%a6
     sub.l       %a1,%a1
@@ -1407,7 +1407,7 @@ BCPLd findConsoleHandler /* 1a4, MsgPort *,  */
     movem.l     %sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd findFileHandler    /* 1a8, MsgPort *,  */
+BCPL findFileHandler    /* 1a8, MsgPort *,  */
     movem.l     %a0-%a1/%a6,%sp@-
     move.l      SysBase,%a6
     sub.l       %a1,%a1
