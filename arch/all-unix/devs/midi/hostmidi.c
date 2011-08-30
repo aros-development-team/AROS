@@ -179,7 +179,7 @@ SAVEDS ASM void ActivateXmit(REG(a2) APTR userdata,ULONG REG(d0) portnum)
   
     for(;;)
     {
-    	int written, errno;
+    	int errno;
 	char buf[1];
 	
     	data=(TransmitFunc)(userdata);
@@ -188,7 +188,7 @@ SAVEDS ASM void ActivateXmit(REG(a2) APTR userdata,ULONG REG(d0) portnum)
 
     	buf[0] = data;
 	
-        written = Hidd_UnixIO_WriteFile(unixio, midi_fd, buf, 1, &errno);
+        Hidd_UnixIO_WriteFile(unixio, midi_fd, buf, 1, &errno);
     }
 }
 
