@@ -507,7 +507,7 @@ BCPL openDevice     /*  7c, BOOL, @IORequest, @name, unit, flags */
     move.l	SysBase,%a6
 
 #if BCPLSTRINGDEBUG
-    move.l	%d1,%d0
+    move.l	%d2,%d0
 	bsr		bstr_debug
 #endif
 
