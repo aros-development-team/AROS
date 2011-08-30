@@ -149,6 +149,15 @@ BOOL vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     	return FALSE;
     fhinput = BADDR(fh);
 
+    /* Handle the trivial case, where we have enough room 
+     * in the buffer
+     */
+    if ((fhinput->fh_Flags & FHF_BUF) && fhinput->fh_Pos >= size) {
+        fhinput->fh_Pos -= size;
+        CopyMem(argptr, BADDR(fhinput->fh_Buf) + fhinput->fh_Pos, size);
+        return TRUE;
+    }
+
     /* Check to see if this FileHandle has been mangled
      * by someone else. BCPL programs like to do this,
      * to work around argument injection issues with the
