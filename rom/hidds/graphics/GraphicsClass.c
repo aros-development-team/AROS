@@ -1661,7 +1661,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 	    {
 		case aoHidd_Gfx_PixFmtTags:
 		    def_pixfmt_tags[num_Hidd_PixFmt_Attrs].ti_Data = tag->ti_Data;
-		    mdb->pixfmts[pfidx] = GFX__Hidd_Gfx__RegisterPixFmt(cl, o, def_pixfmt_tags);
+		    mdb->pixfmts[pfidx] = GFX__Hidd_Gfx__RegisterPixFmt(cl, def_pixfmt_tags);
 		    
 		    if (NULL == mdb->pixfmts[pfidx])
 		    {
@@ -2996,9 +2996,12 @@ VOID GFX__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
 
 /****************************************************************************************/
 
-/* The following two methods are private and not virtual */
+/*
+ * The following two methods are private, static, and not virtual.
+ * They operate only on static data and don't need object pointer.
+ */
 
-OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o, struct TagItem *pixFmtTags)
+OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags)
 {
     HIDDT_PixelFormat 	    cmp_pf;
     struct class_static_data *data;
@@ -3045,7 +3048,7 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o, struct T
 
 	    /* Initialize the pixfmt object the "ugly" way */
 	    memcpy(retpf, &cmp_pf, sizeof (HIDDT_PixelFormat));
-		
+
 	    DPF(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 			, PF(&cmp_pf)->red_shift
 			, PF(&cmp_pf)->green_shift

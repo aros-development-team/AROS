@@ -55,21 +55,17 @@ struct pixfmt_data
 
 struct planarbm_data
 {
-    UBYTE   **planes;
-    ULONG   planebuf_size;
-    ULONG   bytesperrow;
-    ULONG   rows;
-    UBYTE   depth;
-    BOOL    planes_alloced;
+    struct BitMap *bitmap;		/* Associated BitMap structure		  */
+    BOOL	   planes_alloced;	/* Whether the BitMap was allocated by us */
 };
 
 struct chunkybm_data
 {
-    OOP_Object *gfxhidd;       /* Cached driver object */
-    UBYTE *buffer;
-    ULONG bytesperrow;
-    ULONG bytesperpixel;
-    BOOL own_buffer;
+    OOP_Object *gfxhidd;       	/* Cached driver object				*/
+    UBYTE      *buffer;		/* Pixelbuffer		  			*/
+    ULONG	bytesperrow;	/* Cached for faster access 			*/
+    ULONG	bytesperpixel;
+    BOOL	own_buffer;	/* Whether the buffer was allocated by us	*/
 };
 
 struct sync_data
@@ -148,11 +144,12 @@ struct HIDDGraphicsData
 };
 
 /* Private gfxhidd methods */
-OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o, struct TagItem *pixFmtTags);
+OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags);
 VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf);
 
 /* Private bitmap methods */
-BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags);
+void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, const struct TagItem *bitMapTags);
+void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf);
 
 struct HIDDBitMapData
 {
