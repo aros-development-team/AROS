@@ -1756,15 +1756,14 @@ struct pHidd_PlanarBM_GetBitMap
 
 enum
 {
-    aoHidd_PlanarBM_AllocPlanes,	/* [I..] BOOL */
-    
+    aoHidd_PlanarBM_AllocPlanes,	/* [I..] BOOL		 */
+    aoHidd_PlanarBM_BitMap,		/* [ISG] struct BitMap * */
+
     num_Hidd_PlanarBM_Attrs
 };
 
 #define aHidd_PlanarBM_AllocPlanes	(HiddPlanarBMAttrBase + aoHidd_PlanarBM_AllocPlanes)
-#define aHidd_PlanarBM_		(HiddPlanarBMAttrBase + aoHidd_PlanarBM_)
-
-
+#define aHidd_PlanarBM_BitMap		(HiddPlanarBMAttrBase + aoHidd_PlanarBM_BitMap)
 
 #define IS_PLANARBM_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddPlanarBMAttrBase) < num_Hidd_PlanarBM_Attrs)

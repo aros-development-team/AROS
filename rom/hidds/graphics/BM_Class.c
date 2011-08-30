@@ -4513,43 +4513,8 @@ ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 
 VOID BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
-    struct HIDDBitMapData   *data = OOP_INST_DATA(cl, obj);
-    struct TagItem  	    *tag;
-    const struct TagItem    *tstate;
-    ULONG   	    	    idx;
-
-/*    EnterFunc(bug("BitMap::Set()\n"));
-*/
-    tstate = msg->attrList;
-    while((tag = NextTagItem(&tstate)))
-    {
-        if(IS_BITMAP_ATTR(tag->ti_Tag, idx))
-        {
-            switch(idx)
-            {
-                case aoHidd_BitMap_Width:
-		    data->width = tag->ti_Data;
-		    break;
-
-                case aoHidd_BitMap_Height:
-		    data->height = tag->ti_Data;
-		    break;
-
-    	    #if 0
-                case aoHidd_BitMap_ColorTab:
-		    data->colorTab = (APTR)tag->ti_Data;
-		    break;
-    	    #endif
-
-		default:
-		    D(bug("!!! TRYING TO SET NONSETTABLE BITMAP ATTR %d !!!\n", idx));
-		    break;
-
-            }
-        }
-    }
-
-    return;
+    /* This is the same. Just we have a little bit faster version for internal usage */
+    BM__Hidd_BitMap__SetBitMapTags(cl, obj, msg->attrList);
 }
 
 /*****************************************************************************************
@@ -5098,46 +5063,56 @@ VOID BM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
  * They are implemented as non-virtual, for speed up.
  */
 
-BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags)
+/* This is a private form of Set method. Doesn't need a standard message. */
+void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, const struct TagItem *bitMapTags)
 {
-    struct HIDDBitMapData   *data;
-    OOP_Object      	    *pf;
-    IPTR    	    	    attrs[num_Hidd_BitMap_Attrs];
-    DECLARE_ATTRCHECK(bitmap);
+    struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
+    struct TagItem *tag;
 
-    data = OOP_INST_DATA(cl, o);
-
-    if (0 != OOP_ParseAttrs(bitMapTags
-    		, attrs, num_Hidd_BitMap_Attrs
-		, &ATTRCHECK(bitmap), HiddBitMapAttrBase))
+    while ((tag = NextTagItem(&bitMapTags)))
     {
-	D(bug("!!! FAILED PARSING IN BitMap::SetBitMapTags !!!\n"));
-	return FALSE;
+        ULONG idx;
+
+    	if (IS_BITMAP_ATTR(tag->ti_Tag, idx))
+    	{
+    	    switch (idx)
+    	    {
+	    case aoHidd_BitMap_Width:
+    		data->width = tag->ti_Data;
+    		break;
+
+	    case aoHidd_BitMap_Height:
+		data->height = tag->ti_Data;
+		break;
+
+    	    case aoHidd_BitMap_BytesPerRow:
+	    	data->bytesPerRow = tag->ti_Data;
+	    	break;
+	    }
+	}
     }
+}
 
-    if (GOT_BM_ATTR(PixFmtTags))
-    {
-    	/* Already a pixfmt registered? */
+/*
+ * Updates bitmap's pixelformat.
+ * Used from within planarbm subclass, and would be extremely dangerous to expose
+ * as setable aHidd_BitMap_PixFmt, so implemented as a separate method.
+ */
+void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf)
+{
+    struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
 
-	pf = GFX__Hidd_Gfx__RegisterPixFmt(CSD(cl)->gfxhiddclass, data->gfxhidd, (struct TagItem *)attrs[AO(PixFmtTags)]);
-	if (NULL == pf)
-	    return FALSE;
+    /* Already a pixfmt registered? */
+    if (data->pf_registered)
+	GFX__Hidd_Gfx__ReleasePixFmt(CSD(cl)->gfxhiddclass, data->prot.pixfmt);
 
-    	if (data->pf_registered)
-	     GFX__Hidd_Gfx__ReleasePixFmt(CSD(cl)->gfxhiddclass, data->prot.pixfmt);
+    /* Remember the new pixelformat */
+    data->prot.pixfmt = pf;
 
-	data->prot.pixfmt = pf;
-    }
-
-
-    if (GOT_BM_ATTR(Width))
-    	data->width = attrs[AO(Width)];
-
-    if (GOT_BM_ATTR(Height))
-    	data->height = attrs[AO(Height)];
-
-    if (GOT_BM_ATTR(BytesPerRow))
-    	data->bytesPerRow = attrs[AO(BytesPerRow)];
-
-    return TRUE;
+    /*
+     * This pixelformat was obtained using GFX__Hidd_Gfx__RegisterPixFmt().
+     * It increases number of pixfmt users, so we'll need to release it when
+     * not used any more.
+     */
+    data->pf_registered = TRUE;
 }
