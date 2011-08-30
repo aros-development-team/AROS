@@ -130,7 +130,7 @@ ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
     	}
 
     	D(bug("BCPL_InstallSeg: Inserting DOSBase global\n"));
-    	globvec[BCPL_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0); 
+    	globvec[GV_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0); 
 
     	return DOSTRUE;
     }

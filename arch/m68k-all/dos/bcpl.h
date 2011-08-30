@@ -11,8 +11,6 @@
 
 /* Our BCPL stub private data */
 
-#define BCPL_DOSBase	-0xb0
+#define GV_DOSBase	-0xb0
 
 /* We can add private data up to -0x88 */
-
-#define BCPL_CLIArgument	0x214
