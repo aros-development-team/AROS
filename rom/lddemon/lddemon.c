@@ -654,11 +654,10 @@ AROS_UFH3(LONG, LDFlush,
     request for a library comes, when it will then find the library
     and hopefully open it.
 */
-AROS_UFH3(void, LDDemon,
-    AROS_UFHA(STRPTR, argstr, A0),
-    AROS_UFHA(ULONG, arglen, D0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+static AROS_ENTRY(VOID, LDDemon,
+        AROS_UFHA(APTR, argptr, A0),
+        AROS_UFHA(APTR, argsize, D0),
+        struct ExecBase *, SysBase)
 {
     AROS_USERFUNC_INIT
 
