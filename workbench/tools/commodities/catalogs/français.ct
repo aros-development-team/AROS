@@ -1,8 +1,7 @@
-## version $VER: Commodities.catalog 3.0 (14.10.2001)
+## version $VER: Commodities.catalog 3.0 (30.08.2001)
 ## language français
 ## codeset 0
 ;
-; FIXME: This file requires updating. When done, bump version to 3
 ;
 MSG_CANT_OPEN_LIB
 Impossible d'ouvrir %s V%ld !\n
@@ -66,7 +65,7 @@ Projet
 ; Project
 ;
 MSG_MEN_PROJECT_HIDE
-C\0Cacher
+H\0Cacher
 ;
 MSG_MEN_PROJECT_ICONIFY
 I\0Iconifier
