@@ -33,6 +33,7 @@ const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
 };
 #undef BCPL
 
+#define BCPL_ENTRY(proc)        (((APTR *)(proc)->pr_GlobVec)[1])
 /*
  * Set up the process's initial global vector
  */
@@ -161,31 +162,17 @@ ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
 
 }
 
-extern void BCPL_thunk(void);
-
-/* Under AOS, BCPL handlers expect the OS to build
- * their GlobalVector, and to receive a pointer to their
- * startup packet in D1.
- *
- * This wrapper is here to support that.
+/* Create the global vector for a process
  */
-void BCPL_RunHandler(void)
+BOOL BCPL_AllocGlobVec(struct Process *me)
 {
-    struct DosPacket *dp;
-    struct Process *me = (struct Process *)FindTask(NULL);
     APTR entry, globvec;
     int i;
     ULONG *seglist = BADDR(me->pr_SegList);
 
-    WaitPort(&me->pr_MsgPort);
-    dp = (struct DosPacket *)(GetMsg(&me->pr_MsgPort)->mn_Node.ln_Name);
-    D(bug("[RunHandlerBCPL] Startup packet = %p\n", dp));
-
     globvec = AllocMem(sizeof(BCPL_GlobVec), MEMF_ANY | MEMF_CLEAR);
-    if (globvec == NULL) {
-        internal_ReplyPkt(dp, &me->pr_MsgPort, DOSFALSE, ERROR_NO_FREE_STORE);
-        return;
-    }
+    if (globvec == NULL)
+        return FALSE;
 
     globvec += BCPL_GlobVec_NegSize;
     ((ULONG *)globvec)[0] = BCPL_GlobVec_PosSize >> 2;
@@ -195,38 +182,71 @@ void BCPL_RunHandler(void)
         BCPL_InstallSeg(seglist[i+1], globvec);
     }
 
+    entry = ((APTR *)globvec)[1];
+
     me->pr_GlobVec = globvec;
 
-    /* Get the entry point, as set up by the BCPL segment table */
-    entry = *(APTR *)(me->pr_GlobVec + 4);
+    return TRUE;
+}
 
-    /* AOS File Handlers are BCPL programs *without*
-     * the standard CLI startup routine, so they have
-     * to be called as if they were BCPL subroutines.
-     *
-     * Instead of cluttering up CallEntry() with yet
-     * another special case, just directly jump here.
-     *
-     * We can do this, especially because we know
-     * that they won't call Dos/Exit() on startup.
-     *
-     * On m68k, AROS_UFC doesn't work well when the
-     * frame pointer is an argument, so we're going to call
-     * a thunk for the A5/A6 BCPL jsr/rts
-     */
-    AROS_UFC9(VOID, BCPL_thunk,
-            AROS_UFCA(ULONG, 16, D0),
-            AROS_UFCA(BPTR, MKBADDR(dp), D1),
-            AROS_UFCA(ULONG, 0, D2),
-            AROS_UFCA(ULONG, 0, D3),
-            AROS_UFCA(ULONG, 0, D4),
-            AROS_UFCA(APTR, NULL, A0),
-            AROS_UFCA(APTR, me->pr_Task.tc_SPLower + 16, A1),
-            AROS_UFCA(APTR, me->pr_GlobVec, A2),
-            AROS_UFCA(APTR, entry, A4));
+void BCPL_FreeGlobVec(struct Process *me)
+{
+    APTR globvec = me->pr_GlobVec;
+    struct DosLibrary *DOSBase;
+
+    DOSBase = *(APTR *)(globvec + GV_DOSBase);
+    D(bug("[BCPL_FreeGlobVec] Freed globvec %p\n", globvec));
 
     globvec -= BCPL_GlobVec_NegSize;
     FreeMem(globvec, sizeof(BCPL_GlobVec));
-    me->pr_GlobVec = NULL;
+
+    me->pr_GlobVec = DOSBase->dl_GV;
 }
 
+extern void BCPL_thunk(void);
+
+/* Under AOS, BCPL handlers expect the OS to build
+ * their GlobalVector, and to receive a pointer to their
+ * startup packet in D1.
+ *
+ * Both filesystem handlers and CLI shells use this routine.
+ *
+ * The 'Shell' shell is C based, and does not go here.
+ *
+ * This wrapper is here to support that.
+ */
+void BCPL_RunHandler(void)
+{
+    struct DosPacket *dp;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    APTR oldGlobVec;
+    APTR oldReturnAddr;
+
+    WaitPort(&me->pr_MsgPort);
+    dp = (struct DosPacket *)(GetMsg(&me->pr_MsgPort)->mn_Node.ln_Name);
+    D(bug("[RunHandlerBCPL] Startup packet = %p\n", dp));
+
+    if (!BCPL_AllocGlobVec(me)) {
+        internal_ReplyPkt(dp, &me->pr_MsgPort, DOSFALSE, ERROR_NO_FREE_STORE);
+        return;
+    }
+
+    D(bug("[RunHandlerBCPL] BCPL_ENTRY = %p\n", BCPL_ENTRY(me)));
+
+    oldReturnAddr = me->pr_ReturnAddr;
+    AROS_UFC10(ULONG, BCPL_thunk,
+            AROS_UFCA(ULONG,  0, D0),
+            AROS_UFCA(ULONG,  MKBADDR(dp), D1),
+            AROS_UFCA(ULONG,  0, D2),
+            AROS_UFCA(ULONG,  0, D3),
+            AROS_UFCA(ULONG,  0, D4),
+            AROS_UFCA(APTR,   0, A0),
+            AROS_UFCA(APTR, me->pr_Task.tc_SPLower, A1),
+            AROS_UFCA(APTR, me->pr_GlobVec, A2),
+            AROS_UFCA(APTR, &me->pr_ReturnAddr, A3),
+            AROS_UFCA(LONG_FUNC, BCPL_ENTRY(me), A4));
+    me->pr_ReturnAddr = oldReturnAddr;
+
+    BCPL_FreeGlobVec(me);
+    oldGlobVec = me->pr_GlobVec;
+}
