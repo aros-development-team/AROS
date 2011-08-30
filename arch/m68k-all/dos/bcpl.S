@@ -696,9 +696,6 @@ BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
     move.l	%a1, %d1
     lsr.l	#2, %d1
     jsr		(%a5)
-    move.l	%a2@(GV_taskwait),%a4
-    move.l	#(DOSPACKET_LEN * 4 + MESSAGE_LEN * 4 + 3 * 4), %d0
-    jsr		(%a5)
     move.l	%a1@(4*4),%d1	/* dp_Res2 */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(GV_DOSBase),%a6
