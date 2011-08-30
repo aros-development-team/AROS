@@ -11,6 +11,9 @@
 
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
+#include <dos/dostags.h>
+
+#include <proto/dos.h>
 #include <proto/exec.h>
 
 #include "dos_intern.h"
@@ -249,4 +252,51 @@ void BCPL_RunHandler(void)
 
     BCPL_FreeGlobVec(me);
     oldGlobVec = me->pr_GlobVec;
+}
+
+/* Create the necessary process wrappings for a BCPL 
+ * segment. Only needed by Workbench's C:Run, C:NewCLI,
+ * C:NewShell, and a few other applications.
+ */
+struct MsgPort *BCPL_CreateProcBCPL(CONST_STRPTR name, BPTR *segarray, ULONG stacksize, LONG pri)
+{
+    struct Process *proc, *me = (struct Process *)FindTask(NULL);
+    APTR DOSBase;
+
+    DOSBase = *(APTR *)(me->pr_GlobVec + GV_DOSBase);
+
+    D(bug("[BCPL_CreateProcBCPL] name=\"%s\", segArray=%p, stacksize=%u, pri=%d\n", name, segarray, stacksize, pri));
+
+    proc = CreateNewProcTags(
+            NP_Name, name,
+            NP_Entry, BCPL_RunHandler,
+            NP_Input, BNULL,
+            NP_Output, BNULL,
+            NP_CloseInput, FALSE,
+            NP_CloseOutput, FALSE,
+            NP_StackSize, stacksize,
+            NP_WindowPtr, me->pr_WindowPtr,
+            NP_CurrentDir, 0,
+            NP_HomeDir, 0,
+            TAG_END);
+
+    /* Fix up the segarray before the first packet gets
+     * to it.
+     */
+    if (proc) {
+        BPTR *oldsegarray;
+
+        oldsegarray = BADDR(proc->pr_SegList);
+        if (oldsegarray[0] < segarray[0]) {
+            FreeVec(oldsegarray);
+            oldsegarray = AllocVec(sizeof(BPTR)*(segarray[0]+1), MEMF_PUBLIC | MEMF_CLEAR);
+            oldsegarray[0] = segarray[0];
+            oldsegarray[1] = (BPTR)-1;
+            oldsegarray[2] = (BPTR)-2;
+        }
+        CopyMem(&segarray[3], &oldsegarray[3], (oldsegarray[0]-2)*sizeof(BPTR));
+
+    }
+
+    return proc ? &proc->pr_MsgPort : NULL;
 }

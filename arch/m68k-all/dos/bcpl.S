@@ -547,22 +547,22 @@ BCPL closeDevice    /*  80, void, @IORequest */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPL createproc     /*  84, MessagePort *, @segarray, lw_stack_size, pri, @name */
-    movem.l	%d2-%d4/%a0-%a1/%a6,%sp@-
+BCPL createProcBCPL     /*  84, MessagePort *, @segarray, lw_stack_size, pri, @name,  */
+    movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(GV_DOSBase),%a6
+
+    move.l	%d3,%sp@-
     lsl.l	#2,%d2
-    lsl.l	#2,%d4
-    addq.l	#1,%d4
-    move.l	%d4,%d0
-    move.l	%d2,%d4
-    move.l	%d3,%d2
-    /* get seglist from segarray */
- 	lsl.l	#2,%d1
- 	move.l	%a0@(16,%d1.l),%d3
-	/* TODO: Is it our or caller's job to free segarray? */
-    move.l	%d0,%d1
-    jsr		%a6@(23 * -6)	/* DOS/CreateProc() */
-    movem.l	%sp@+,%d2-%d4/%a0-%a1/%a6
+    move.l	%d2,%sp@-
+    lsl.l	#2,%d1
+    move.l	%d1,%sp@-
+    move.l	%d4,%d1
+    moveq.l	#4, %d0
+    bsr		bstr_to_cstr
+    move.l	%d1,%sp@-
+    jsr		BCPL_CreateProcBCPL
+    lea.l	%sp@(4 * 4),%sp
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPL remProcess     /*  88, void */
