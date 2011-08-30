@@ -58,7 +58,7 @@
     switch(type)
     {
     case DOS_FILEHANDLE:
-	mem = AllocMem(sizeof(struct FileHandle), MEMF_CLEAR);
+	mem = AllocVec(sizeof(struct FileHandle), MEMF_CLEAR);
 
 	if (mem != NULL)
 	{
