@@ -406,7 +406,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     NEWLIST(&process->pr_MsgPort.mp_MsgList);
 
-    process->pr_SegList = (BPTR)defaults[0].ti_Data;
+    process->pr_SegList = BNULL;
     process->pr_GlobVec = 0;
     process->pr_StackBase = MKBADDR(process->pr_Task.tc_SPUpper);
     process->pr_Result2 = 0;
