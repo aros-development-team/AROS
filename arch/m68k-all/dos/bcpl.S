@@ -1537,9 +1537,16 @@ BCPL DupLock        /* 1c4, FileLock ^, @FileLock */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd makesysreq     /* 1c8, BOOL, count, pkt, proc */
-    moveq.l	#-1,%d0
-    BRTS
+/* Very mysterious function. Called on BPTRs to FileLocks,
+ * and it supplies the msgport that should already be in
+ * the FileLock.
+ *
+ * Workbench C:Dir calls it, when transitioning from
+ * printing out directories to printing files.
+ */
+BCPLd makesysreq     /* 1c8, BOOL, count, @lock, *msgport */
+    moveq.l	#-1, %d0
+    BRTSd
 
 BCPL strcpy         /* 1cc, void, @src, @dest */
     move.l	%d2,%sp@-
