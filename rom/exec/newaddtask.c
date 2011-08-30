@@ -140,11 +140,7 @@
 
     /* Get new stackpointer. */
     if (task->tc_SPReg==NULL)
-#if AROS_STACK_GROWS_DOWNWARDS
         task->tc_SPReg = (UBYTE *)(task->tc_SPUpper) - SP_OFFSET;
-#else
-        task->tc_SPReg = (UBYTE *)(task->tc_SPLower) - SP_OFFSET;
-#endif
 
 #ifdef AROS_STACKALIGN
     if ((IPTR)task->tc_SPReg & (AROS_STACKALIGN - 1))
@@ -159,13 +155,8 @@
     {
         UBYTE *startfill, *endfill;
 
-#if AROS_STACK_GROWS_DOWNWARDS
         startfill = (UBYTE *)task->tc_SPLower;
         endfill   = ((UBYTE *)task->tc_SPReg) - 16;
-#else
-        startfill = ((UBYTE *)task->tc_SPReg) + 16;
-        endfill   = ((UBYTE *)task->tc_SPUpper) - 1; /* FIXME: -1 correct ?? */
-#endif
 
         while(startfill <= endfill)
         {
