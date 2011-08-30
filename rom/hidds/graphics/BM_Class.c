@@ -78,14 +78,6 @@
 
 *****************************************************************************************/
 
-#define GOT_BM_ATTR(code)   GOT_ATTR(code, aoHidd_BitMap, bitmap)
-#define AO(x) 	    	    aoHidd_BitMap_ ## x
-
-#define BMAF(x)     	    (1L << aoHidd_BitMap_ ## x)
-
-#define BM_NONDISP_AF 	    ( BMAF(Width) | BMAF(Height) | BMAF(PixFmt) )
-
-
 #define PIXBUFBYTES 	    (50000*4)
 
 #define PIXBUF_DECLARE_VARS 	\
@@ -295,13 +287,22 @@
         aoHidd_BitMap_BytesPerRow
 
     SYNOPSIS
-        [..G], ULONG
+        [ISG], ULONG
 
     LOCATION
         hidd.graphics.bitmap
 
     FUNCTION
-        Query number of bytes per row in the bitmap storage buffer
+        Specify or query number of bytes per row in the bitmap storage buffer.
+
+	Setting this attribute doesn't actually cause changing buffer layout, just updates
+	the information about it. Use this only from within subclasses and only if you
+	exactly know why you do this.
+
+	Specifying this attribute during object creation overrides the value calculated
+	based on aoHidd_BitMap_Width and aoHidd_BitMap_Align values. Useful for wrapping
+	own buffers into bitmap objects, for example, in conjunction with
+	aoHidd_ChunkyBM_Buffer.
 
     NOTES
     	The returned value includes possible padding needed for alignment.
@@ -610,13 +611,13 @@
         aoHidd_BitMap_PixFmtTags
 
     SYNOPSIS
-        [I..]
+        [...]
 
     LOCATION
         hidd.graphics.bitmap
 
     FUNCTION
-        Only used by subclasses of BitMap class.
+        Private, very obsolete and currently has no function. Considered reserved.
 
     NOTES
 
@@ -766,9 +767,12 @@
     FUNCTION
         Specify number of pixels to align bitmap data width to.
 
-	This attribute can be added in CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap implementation
-	in order to enforce alignment needed for example by blitting hardware. It will
-	have an impact on aoHidd_BitMap_BytesPerRow value.
+	This attribute can be added in order to enforce alignment needed for example by
+	blitting hardware. It will have an impact on default aoHidd_BitMap_BytesPerRow
+	value.
+
+	Direct specification of aoHidd_BitMap_BytesPerRow attribute overrides any value
+	of this attribute.
 
     NOTES
     	Default value of this attribute is 16. This alignment is required by graphics.library
@@ -823,199 +827,211 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
     EnterFunc(bug("BitMap::New()\n"));
 
-    obj  = (OOP_Object *) OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
+    obj  = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
 
     if (NULL != obj)
     {
-	struct TagItem      	colmap_tags[] =
+	struct TagItem colmap_tags[] =
 	{
 	    { aHidd_ColorMap_NumEntries , 16	},
 	    { TAG_DONE	    	    	     	}
 	};
-    	struct HIDDBitMapData 	*data;
-	BOOL 	    	    	ok = TRUE;
+	const struct TagItem *tstate;
+	struct TagItem *tag;
+	BOOL ok = TRUE;
+	ULONG align;
+	struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
 
-    	DECLARE_ATTRCHECK(bitmap);
-    	IPTR attrs[num_Total_BitMap_Attrs] = {0};
+        /* Set some default values */
+	data->modeid = vHidd_ModeID_Invalid;
+	align	     = 16;
 
-        data = OOP_INST_DATA(cl, obj);
-
-        /* clear all data and set some default values */
-        memset(data, 0, sizeof(struct HIDDBitMapData));
-
-	attrs[AO(Align)] = 16;
-
-        data->width         = 320;
-        data->height        = 200;
-        data->displayable   = FALSE;
-	data->pf_registered = FALSE;
-	data->modeid 	    = vHidd_ModeID_Invalid;
-
-	if (0 != OOP_ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs,
-	    	    	    	&ATTRCHECK(bitmap), HiddBitMapAttrBase))
+	tstate = msg->attrList;
+	while ((tag = NextTagItem(&tstate)))
 	{
-	    D(bug("!!! ERROR PARSING ATTRS IN BitMap::New() !!!\n"));
-	    D(bug("!!! NUMBER OF ATTRS IN IF: %d !!!\n", num_Total_BitMap_Attrs));
+	    ULONG idx;
+
+	    if (IS_BITMAP_ATTR(tag->ti_Tag, idx))
+	    {
+	    	switch (idx)
+	    	{
+	    	case aoHidd_BitMap_Width:
+	    	    data->width = tag->ti_Data;
+	    	    break;
+	    	
+	    	case aoHidd_BitMap_Height:
+	    	    data->height = tag->ti_Data;
+	    	    break;
+
+		case aoHidd_BitMap_Align:
+		    align = tag->ti_Data;
+		    break;
+
+		case aoHidd_BitMap_BytesPerRow:
+		    data->bytesPerRow = tag->ti_Data;
+		    break;
+
+	    	case aoHidd_BitMap_GfxHidd:
+	    	    data->gfxhidd = (OOP_Object *)tag->ti_Data;
+	    	    break;
+
+	    	case aoHidd_BitMap_Friend:
+	    	    data->friend = (OOP_Object *)tag->ti_Data;
+	    	    break;
+
+	    	case aoHidd_BitMap_Displayable:
+	    	    data->displayable = tag->ti_Data;
+	    	    break;
+
+		case aoHidd_BitMap_ModeID:
+		    data->modeid = tag->ti_Data;
+		    break;
+
+		case aoHidd_BitMap_PixFmt:
+		    data->prot.pixfmt = (HIDDT_PixelFormat *)tag->ti_Data;
+		    break;
+	    	}
+	    }
+	}
+
+	/* aoHidd_BitMap_GfxHidd is mandatory */
+	if (!data->gfxhidd)
+	{
+    	    D(bug("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n"));
+	    D(bug("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n"));
+	    D(bug("!!!! has not left it to the baseclass to actually create the object,\n"));
+	    D(bug("!!!! but rather done it itself. This MUST be corrected in the gfxhidd subclass\n"));
+
 	    ok = FALSE;
 	}
 
-	if (ok)
+	if (ok && data->displayable)
 	{
-	    if (!GOT_BM_ATTR(GfxHidd))
+	    /* We should allways get modeid, but we check anyway */
+	    if (data->modeid == vHidd_ModeID_Invalid)
 	    {
-    	    	D(bug("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n"));
-	    	D(bug("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n"));
-	    	D(bug("!!!! has not left it to the baseclass to actually create the object,\n"));
-	    	D(bug("!!!! but rather done it itself. This MUST be corrected in the gfxhidd subclass\n"));
-		D(bug("!!!! ATTRCHECK: %p !!!!\n", ATTRCHECK(bitmap)));
-
-	    	ok = FALSE;
+		D(bug("!!! BitMap:New() DID NOT GET MODEID FOR DISPLAYABLE BITMAP !!!\n"));
+		ok = FALSE;
 	    }
 	    else
 	    {
-	    	data->gfxhidd = (OOP_Object *)attrs[AO(GfxHidd)];
-	    }
-	}
+	        OOP_Object *sync, *pf;
 
-	/* Save pointer to friend bitmap */
-	if (GOT_BM_ATTR(Friend))
-	    data->friend = (OOP_Object *)attrs[AO(Friend)];
-
-	if (ok)
-	{
-	    if ( attrs[AO(Displayable)] )
-	    {
-		/* We should allways get modeid, but we check anyway */
-		if (!GOT_BM_ATTR(ModeID))
-		{
-		    D(bug("!!! BitMap:New() DID NOT GET MODEID FOR DISPLAYABLE BITMAP !!!\n"));
-		    ok = FALSE;
-		}
+	        if (!HIDD_Gfx_GetMode(data->gfxhidd, data->modeid, &sync, &pf))
+	        {
+	    	    D(bug("!!! BitMap::New() RECEIVED INVALID MODEID 0x%08X\n", data->modeid));
+	    	    ok = FALSE;
+	    	}
 		else
 		{
-	    	    HIDDT_ModeID    modeid;
-	    	    OOP_Object      *sync, *pf;
+	    	    /* Update the missing bitmap data from the modeid */
+	    	    if (!data->width)
+	    	    {
+	    		IPTR width;
 
-		    modeid = (HIDDT_ModeID)attrs[AO(ModeID)];
-
-	    	    if (!HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pf))
-		    {
-	    		D(bug("!!! BitMap::New() RECEIVED INVALID MODEID %p\n", modeid));
-	    		ok = FALSE;
-	    	    }
-		    else
-		    {
-	    		IPTR width, height;
-
-	    		/* Update the bitmap with data from the modeid */
 			OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-			OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
-
 			data->width = width;
-			data->height = height;
-			data->displayable = TRUE;
+		    }
 
+		    if (!data->height)
+		    {
+			IPTR height;
+
+			OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+			data->height = height;
+		    }
+
+		    if (!data->prot.pixfmt)
+		    {
 		        /* The PixFmt is allready registered and locked in the PixFmt database */
 			data->prot.pixfmt = pf;
 		    }
 	    	}
 	    }
-	    else
-	    {  /* displayable */
-		if (BM_NONDISP_AF != (BM_NONDISP_AF & ATTRCHECK(bitmap)))
-		{
-		    /*
-		     * One of Width, Height and PixFmt is not set.
-		     * This is either a mailformed call, or empty planar BitMap object
-		     * for late initialization.
-		     * In the latter case we'll specify aHidd_PlanarBM_AllocPlanes, FALSE.
-		     */
-		    BOOL planes_alloced = GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
-
-		    if (planes_alloced)
-		    {
-			D(bug("!!! BitMap:New(): NO PIXFMT FOR NONDISPLAYABLE BITMAP !!!\n"));
-			ok = FALSE;
-		    }
-		}
-		else
-		{
-		    data->prot.pixfmt = (OOP_Object *)attrs[AO(PixFmt)];
-		}
-	    } /* displayable */
-
-	    if (GOT_BM_ATTR(Width))
-	        data->width = attrs[AO(Width)];
-	    if (GOT_BM_ATTR(Height))
-	        data->height = attrs[AO(Height)];
 	} /* if (ok) */
 
 	if (ok)
 	{
-    	    /*
-    	     * Calculate suggested bytes per row value based on requested alignment and
-    	     * pixelformat's bytes per pixel value.
-    	     * PixFmt will be NULL in case of late initialization.
-    	     */
 	    if (data->prot.pixfmt)
 	    {
-	    	ULONG align = attrs[AO(Align)] - 1;
-	    	ULONG width = (data->width + align) & ~align;
+    	    	/*
+    	     	 * Calculate suggested bytes per row value based on requested alignment and
+    	     	 * pixelformat's bytes per pixel value.
+    	     	 * PixFmt will be NULL in case of e. g. planarbm late initialization.
+    	     	 */
+    	     	ULONG width, bytesPerRow;
 	    	IPTR bytesperpixel, stdpf;
 
-		OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+    	    	align--;
+	    	width = (data->width + align) & ~align;
+
+	    	OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
 		OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_StdPixFmt, &stdpf);
 
-		if (stdpf == vHidd_StdPixFmt_Plane)
-		{
+	    	if (stdpf == vHidd_StdPixFmt_Plane)
+	    	{
     		    /*
 	    	     * Planar format actually have 8 pixels per one byte.
     		     * However bytesperpixel == 1 for them. Perhaps this should
 	    	     * be changed to 0 ?
     		     */
-	    	    data->bytesPerRow = width >> 3;
-    		}
+	    	     bytesPerRow = width >> 3;
+    	    	}
 	    	else
-    		{
-		    data->bytesPerRow = width * bytesperpixel;
-		}
+    	    	{
+		    bytesPerRow = width * bytesperpixel;
+	    	}
+
+	    	if (data->bytesPerRow)
+	    	{
+		    /* If we have user-supplied BytesPerRow value, make sure it's suitable */
+	    	    if (data->bytesPerRow < bytesPerRow)
+	    	    	ok = FALSE;
+	    	}
+	    	else
+	    	{
+	    	    /* Otherwise we have what we calculated */
+	    	    data->bytesPerRow = bytesPerRow;
+	    	}
 	    }
+	}
 
-	    /* initialize the direct method calling */
+	if (ok)
+	{
+	    /* 
+	     * Initialize the direct method calling.
+	     * We don't check against errors because our base class contains all
+	     * these functions.
+	     */
 
-	    if (GOT_BM_ATTR(ModeID))
-	    	data->modeid = attrs[AO(ModeID)];
-
-    	#if USE_FAST_PUTPIXEL
+#if USE_FAST_PUTPIXEL
 	    data->putpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_PutPixel, &data->putpixel_Class);
-	    if (NULL == data->putpixel)
-		ok = FALSE;
-    	#endif
-
-    	#if USE_FAST_GETPIXEL
+#endif
+#if USE_FAST_GETPIXEL
 	    data->getpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_GetPixel, &data->getpixel_Class);
-	    if (NULL == data->getpixel)
-		ok = FALSE;
-    	#endif
-
-    	#if USE_FAST_DRAWPIXEL
+#endif
+#if USE_FAST_DRAWPIXEL
 	    data->drawpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_DrawPixel, &data->drawpixel_Class);
-	    if (NULL == data->drawpixel)
-		ok = FALSE;
-    	#endif
+#endif
 
-	    /* Try to create the colormap */
-
-    	    /* stegerg: Only add a ColorMap for a visible bitmap (screen). This
-	                is important because one can create for example a bitmap
-			in PIXFMT_LUT8 without friend bitmap and then copy this
-			bitmap to a 16 bit screen. During copy the screen bitmap
-			CLUT must be used, which would not happen if our PIXFMT_LUT8
-			also had a colormap itself because then bltbitmap would use the
-			colormap of the PIXFMT_LUT8 bitmap as lookup, which in this
-			case would just cause everything to become black in the
-			destination (screen) bitmap, because noone ever sets up the
-			colormap of the PIXFMT_LUT8 bitmap */
+	    /*
+	     * Try to create the colormap.
+	     *
+    	     * stegerg: Only add a ColorMap for a visible bitmap (screen). This
+	     *          is important because one can create for example a bitmap
+	     *		in PIXFMT_LUT8 without friend bitmap and then copy this
+	     *		bitmap to a 16 bit screen. During copy the screen bitmap
+	     *		CLUT must be used, which would not happen if our PIXFMT_LUT8
+	     *		also had a colormap itself because then bltbitmap would use the
+	     *		colormap of the PIXFMT_LUT8 bitmap as lookup, which in this
+	     *		case would just cause everything to become black in the
+	     *		destination (screen) bitmap, because noone ever sets up the
+	     *		colormap of the PIXFMT_LUT8 bitmap
+	     *
+	     * sonic: CHECKME: Why does the colormap always have 16 colors? May be calculate this
+	     *        based on depth ? The colormap auto-enlarges itself if SetColors method requests
+	     *	      missing entries, but is it so good?
+	     */
 
     	    if (data->displayable)
 	    {
@@ -1028,12 +1044,9 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 	if (!ok)
 	{
-	    ULONG dispose_mid;
+	    ULONG dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
-	    dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-
-	    OOP_CoerceMethod(cl, obj, (OOP_Msg)&dispose_mid);
-
+	    OOP_CoerceMethod(cl, obj, &dispose_mid);
 	    obj = NULL;
 
     	} /* if(obj) */
