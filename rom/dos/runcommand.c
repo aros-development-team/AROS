@@ -80,6 +80,7 @@
 
     UBYTE *stack;
     LONG ret;
+    BOOL injected;
     struct StackSwapStruct sss;
     struct StackSwapArgs args;
     BPTR oldinput = BNULL;
@@ -105,17 +106,14 @@
     oldargs=me->pr_Arguments;
     me->pr_Arguments=(STRPTR)argptr;
 
-    /* FIXME: should this be (argsize == -1), as documented? Or it's Amiga-compatible quirk? */
-    if (argsize < 0)
-    	argsize = argptr ? strlen(argptr) : 0;
-
     /*
      * Inject command arguments to the beginning of input handle. Guru Book mentions this.
      * This fixes for example AmigaOS' C:Execute
      */
     oldinput = Input();
-    D(bug("RunCommand: segList @%p I=0x%p O=%p Args='%s' Argsize=%u\n", BADDR(segList), oldinput, Output(), argptr, argsize));
-    vbuf_inject(oldinput, argptr, argsize, DOSBase);
+    D(bug("RunCommand: segList @%p I=0x%p O=%p Args='%*s' Argsize=%u\n", BADDR(segList), oldinput, Output(), argsize, argptr, argsize));
+    injected = vbuf_inject(oldinput, argptr, argsize, DOSBase);
+    D(bug("RunCommand: Arguments %sinjected into FileHandle %p\n", injected ? "" : "not ", oldinput));
 
     /* pr_ReturnAddr is set by CallEntry routine */
     oldReturnAddr = me->pr_ReturnAddr;
@@ -138,7 +136,10 @@
 
     /* remove buffered argument stream */
     /* must be original stream, command might have called SelectInput() */
-    Flush(oldinput);
+    if (injected) {
+        D(bug("RunCommand: Flushing %p\n", oldinput));
+        Flush(oldinput);
+    }
 
     FreeMem(stack,stacksize);
     
