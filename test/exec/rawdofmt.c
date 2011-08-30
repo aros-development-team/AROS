@@ -46,5 +46,16 @@ int main(void)
     RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu\n", args, (APTR)RAWFMTFUNC_SERIAL, NULL);
     printf("Serial output done\n");
 
+    /* Now check correct sign interpretation. Specifier is intentionally %d, not %u! */
+    NewRawDoFmt("This should be positive: %d",  (APTR)RAWFMTFUNC_STRING, buf, 40960);
+    printf("NewRawDoFmt sign test: %s\n", buf);
+
+     /* Don't depend on endianess, sign-extend on 64 bits */
+    args[0] = (SIPTR)0xA0A0A0A0;
+
+    /* Intentionally %d with no 'l'! UWORD argument! */
+    RawDoFmt("This should be negative: %d\n", args, (APTR)RAWFMTFUNC_STRING, buf);
+    printf("RawDoFmt sign test: %s\n", buf);
+
     return 0;
 }
