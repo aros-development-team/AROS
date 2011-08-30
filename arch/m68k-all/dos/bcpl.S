@@ -1580,45 +1580,47 @@ BCPLd settime        /* 200, void, @timeval */
     BRTS
 
     /*
-     * DosPacket can be NULL
-     * On error, return DOSFALSE, and put 
-     * @DosPacket in IoErr.
+     * If D1 is NULL, returns an APTR to the CliInit routine,
+     * and the DosPacket to pass to it in IoErr()
+     *
+     * Otherwise, it directly call CliInitRun() or
+     * CliInitNewcli() based on dp_Res1
      */
-BCPL cliInit         /* 214, BOOL, @DosPacket */
-    movem.l     %a0-%a1/%a6,%sp@-
-    move.l      %d1,%d2         /* Save D1 in D2 */
+BCPL findCliInit         /* 214, APTR, @DosPacket */
+    tst.l       %d1
+    beq.s       .L_findCLIInit_getpkt
+
     lsl.l       #2,%d1
+    move.l      %a0@(0xc,%d1),%d2       /* dp_Res1 */
+    tst.l       %d2
+    beq.s       .L_findCLIInit_Run
+
+    /* CliInitNewcli */
+    move.l      #(155*-6),%d2
+    bra.s       .L_findCLIInit_Init
+
+.L_findCLIInit_Run:
+    /* CliInitRun */
+    move.l      #(156*-6),%d2
+
+.L_findCLIInit_Init:
+    movem.l      %a0-%a1/%a6,%sp@-
     move.l      %d1,%a0
-    move.l      %a2@(BCPL_DOSBase),%a6
-    jsr         %a6@(155 * -6)  /* DOS/CliInitNewcli() */
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr         %a6@(%d2)
+    movem.l      %sp@+,%a0-%a1/%a6
+    BRTS
 
-    /* Is bit31 set? */
-    tst.l       %d0
-    ble         .cliInit_done
-
-    /* Check IoErr() against our process base */
-    move.l      SysBase,%a6
-    sub.l       %a1,%a1
-    jsr         %a6@(FindTask)
-    move.l      %d0,%d3
-
-    move.l	%a2@(BCPL_DOSBase),%a6
-    jsr		%a6@(22 * -6)	/* DOS/IoErr() */
-
-    /* Does FindTask(NULL) == IoErr() ? */
-    cmp.l       %d0,%d3
-    bne         .cliInit_ok
-
-    /* Set IoErr to the Dos Packet */
-    move.l      %d2,%d1
-    jsr		%a6@(77 * -6) /* DOS/SetIoErr */
-    moveq.l     #0,%d0
-    bra         .cliInit_done
-
-.cliInit_ok:
-    moveq.l     #-1,%d0
-.cliInit_done:
-    movem.l     %sp@+,%a0-%a1/%a6
+.L_findCLIInit_getpkt:
+    move.l      %a2@(GV_taskwait),%a4
+    move.l      #4,%d0
+    jsr         %a5@
+    move.l      %d1,%d2
+    moveq.l     #-1,%d1
+    move.l      #4,%d0
+    move.l      %a2@(GV_Res2),%a4
+    jsr         %a5@
+    move.l      %a2@(GV_findCliInit),%d0
     BRTS
 
 BCPL findCLI        /* 218, CommandLineInterpreter ^,  */
