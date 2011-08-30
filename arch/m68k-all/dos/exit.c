@@ -28,13 +28,7 @@ AROS_LH1(void, Exit,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_UFP6(ULONG, AOS_CallEntry,
-	AROS_UFPA(STRPTR, argptr, A0),
-	AROS_UFPA(ULONG,  argsize, D0),
-	AROS_UFPA(LONG_FUNC, entry, A3),
-	AROS_UFPA(APTR, globvec, A2),
-	AROS_UFPA(APTR, splower, A1),
-	AROS_UFPA(APTR, returnaddr, A4));
+extern ULONG AOS_CallEntry(void);
 
 /*
  * This entry code is used by CreateNewProc(). It supposes that it calls
@@ -46,10 +40,10 @@ AROS_UFP6(ULONG, AOS_CallEntry,
 ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me)
 {
     return AROS_UFC6(ULONG, AOS_CallEntry,
-            AROS_UFCA(STRPTR, argptr, A0),
             AROS_UFCA(ULONG,  argsize, D0),
-            AROS_UFCA(LONG_FUNC, entry, A3),
-            AROS_UFCA(APTR, me->pr_GlobVec, A2),
+            AROS_UFCA(STRPTR, argptr, A0),
             AROS_UFCA(APTR, me->pr_Task.tc_SPLower, A1),
-            AROS_UFCA(APTR, &me->pr_ReturnAddr, A4));
+            AROS_UFCA(APTR, me->pr_GlobVec, A2),
+            AROS_UFCA(APTR, &me->pr_ReturnAddr, A3),
+            AROS_UFCA(LONG_FUNC, entry, A4));
 }
