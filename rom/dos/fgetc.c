@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 
@@ -59,6 +61,7 @@
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
 
     LONG  size;
+    LONG  bufsize;
 
     if (fh == NULL)
     {
@@ -95,6 +98,7 @@
         /* Check for a pushed back EOF. */
         if(fh->fh_Pos > fh->fh_End)
         {
+            D(bug("FGetC: Weird pos: fh_Pos (%d) > fh_End (%d)\n", fh->fh_Pos, fh->fh_End));
             /* Reinit filehandle and return EOF. */
             fh->fh_Pos = fh->fh_End;
 	    SetIoErr(0);
@@ -107,12 +111,19 @@
         {
             if (NULL == vbuf_alloc(fh, NULL, IOBUFSIZE))
             {
+                D(bug("FGetC: Can't allocate buffer\n"));
                 return(EOF);
             }
         }
 
         /* Fill the buffer. */
-        size = Read(file, BADDR(fh->fh_Buf), fh->fh_BufSize);
+        if (fh->fh_Buf != fh->fh_OrigBuf) {
+            D(bug("FGetC: Can't trust fh_BufSize. Using 208 as the buffer size.\n"));
+            bufsize = 208;
+        } else {
+            bufsize = fh->fh_BufSize;
+        }
+        size = Read(file, BADDR(fh->fh_Buf), bufsize);
 
         /* Prepare filehandle for data. */
         if(size <= 0)
@@ -124,6 +135,7 @@
         /* No data read? Return EOF. */
         if(size == 0)
 	{
+            D(bug("FGetC: Tried to Read() to a %d byte buffer, got 0)\n", bufsiz));
             return EOF;
 	}
     }
