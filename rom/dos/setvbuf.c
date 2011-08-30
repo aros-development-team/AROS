@@ -108,6 +108,7 @@ vbuf_free(FileHandlePtr fh)
         fh->fh_Buf = BNULL;
         fh->fh_Pos = fh->fh_End = 0;
         fh->fh_BufSize = 0;
+        fh->fh_OrigBuf = BNULL;
     }
 
     fh->fh_Flags &= ~(FHF_BUF | FHF_OWNBUF);
@@ -123,6 +124,7 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
     if (!buf)
     {
     	buf = AllocMem(size, MEMF_ANY);
+    	fh->fh_OrigBuf = MKBADDR(buf);
     	flags |= FHF_OWNBUF;
     }
 
@@ -138,14 +140,29 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
     return buf;
 }
 
-void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DOSBase)
+BOOL vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DOSBase)
 {
     FileHandlePtr fhinput;
     STRPTR buf;
 
     if (!fh || !argptr)
-    	return;
+    	return FALSE;
     fhinput = BADDR(fh);
+
+    /* Check to see if this FileHandle has been mangled
+     * by someone else. BCPL programs like to do this,
+     * to work around argument injection issues with the
+     * old BCPL version of RunCommand.
+     */
+    if (fhinput->fh_Flags & FHF_BUF) {
+        if (fhinput->fh_Flags & FHF_OWNBUF) {
+            if (fhinput->fh_Buf != fhinput->fh_OrigBuf) {
+                D(bug("%s: Not injecting to fh %p - nonstandard buffering detected\n", __func__, fhinput));
+                return FALSE;
+            }
+        }
+    }
+
 
     /* Deallocate old filehandle's buffer (if any) */
     vbuf_free(fhinput);
@@ -165,4 +182,6 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
 	}
 	fhinput->fh_End = size;
     }
+
+    return TRUE;
 }
