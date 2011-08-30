@@ -2735,13 +2735,17 @@ GLOB_MKDIRS += $(TMP_DIRS)
 %define rule_link_binary file=/A name=/A objs=/A start=0 ldflags=
 
 BD_OUTDIR := $(dir %(file))
-BD_TMPDIR  := $(GENDIR)/$(CURDIR)
+# This trick removes the trailing '/', otherwise findstring below fails, causing a warning
+BD_OUTDIR := $(subst /*,,$(addsuffix *,$(BD_OUTDIR)))
+BD_TMPDIR := $(GENDIR)/$(CURDIR)
 
 %(file) : %(objs) $(BD_OUTDIR)
 	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
 	@$(KERNEL_LD) %(ldflags) --entry=%(start) --oformat=binary -Ttext=%(start) -o $(BD_TMPDIR)/%(name) %(objs)
-	cd $(BD_TMPDIR) && $(AROS_LD) -r --format binary %(name) -o $@
+	@cd $(BD_TMPDIR) && $(AROS_LD) %(ldflags) -r --format binary %(name) -o $@
 
-GLOB_MKDIRS += $(BD_OUTDIR)
+ifeq ($(findstring $(BD_OUTDIR),$(GLOB_MKDIRS)),)
+    GLOB_MKDIRS += $(BD_OUTDIR)
+endif
 
 %end
