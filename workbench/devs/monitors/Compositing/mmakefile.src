@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES   := compositingclass startup
 EXEDIR  := $(AROSDIR)/Devs/Monitors
-EXENAME := Composer
+EXENAME := Compositing
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
 

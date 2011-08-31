@@ -5,31 +5,22 @@
     $Id: compositing.h 35441 2010-11-13 22:17:39Z deadwood $
 */
 
-#ifndef EXEC_TYPES_H
-#   include <exec/types.h>
-#endif
+#include <oop/oop.h>
+#include <hidd/graphics.h>
 
-#ifndef HIDD_HIDD_H
-#   include <hidd/hidd.h>
-#endif
+/*
+ * Things described here are actually system-internal.
+ * This class has no other use except inside graphics.library.
+ * This include file is even not a part of AROS SDK.
+ */
 
-#ifndef OOP_OOP_H
-#   include <oop/oop.h>
-#endif
-
-#ifndef HIDD_GRAPHICS
-#   include <hidd/graphics.h>
-#endif
-
-/* Compositing interface */
+/*
+ * Compositing interface.
+ * Changing this breaks binary compatibility. graphics.library recognizes
+ * this class by its name.
+ */
 #define CLID_Hidd_Compositing   "hidd.graphics.compositing"
 #define IID_Hidd_Compositing    "hidd.graphics.compositing"
-
-#define HiddCompositingAttrBase __IHidd_Compositing
-
-#ifndef __OOP_NOATTRBASES__
-extern OOP_AttrBase HiddCompositingAttrBase;
-#endif
 
 /* Compositing class methods */
 
@@ -37,8 +28,7 @@ enum
 {
     moHidd_Compositing_BitMapStackChanged = 0,
     moHidd_Compositing_BitMapRectChanged,
-    moHidd_Compositing_BitMapPositionChanged,
-    moHidd_Compositing_ValidateBitMapPositionChange,
+    moHidd_Compositing_BitMapPositionChange,
     moHidd_Compositing_DisplayRectChanged,
 
     NUM_COMPOSITING_METHODS
@@ -46,8 +36,9 @@ enum
 
 enum
 {
-    aoHidd_Compositing_GfxHidd = 0, /* [I..] Gfx driver object connected with this compositing object */
-    
+    aoHidd_Compositing_GfxHidd = 0, 	/* [I..] Gfx driver object connected with this compositing object */
+    aoHidd_Compositing_Capabilities,	/* [G..] Composition capabilities of this implementation	  */
+
     num_Hidd_Compositing_Attrs
 };
 
@@ -72,16 +63,12 @@ struct pHidd_Compositing_BitMapRectChanged
     WORD            height;
 };
 
-struct pHidd_Compositing_BitMapPositionChanged
+struct pHidd_Compositing_BitMapPositionChange
 {
     OOP_MethodID    mID;
     OOP_Object      *bm;
-};
-
-struct pHidd_Compositing_ValidateBitMapPositionChange
-{
-    OOP_MethodID    mID;
-    OOP_Object      *bm;
+    LONG	    oldxoffset;
+    LONG	    oldyoffset;
     LONG            *newxoffset;
     LONG            *newyoffset;
 };
