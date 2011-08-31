@@ -42,6 +42,7 @@
 #include <string.h>
 
 #include "graphics_intern.h"
+#include "compositing_driver.h"
 #include "fakegfxhidd.h"
 #include "intregions.h"
 #include "dispinfo.h"
@@ -363,7 +364,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     struct monitor_driverdata *mdd;
     struct HIDD_ModeProperties props = {0};
 
-    D(bug("[driver_Setup] gfxhidd=0x%p\n", gfxhidd));
+    D(bug("[driver_Setup] gfxhidd=0x%p (%s)\n", gfxhidd, OOP_OCLASS(gfxhidd)->ClassNode.ln_Name));
 
     modes = HIDD_Gfx_QueryModeIDs(gfxhidd, NULL);
     if (!modes)
@@ -441,7 +442,9 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 		if (!comp)
 		{
 		    D(bug("[driver_Setup] Software screen composition required\n"));
+
 		    mdd->flags |= DF_SoftCompose;
+		    composer_Setup(mdd, GfxBase);
 		}
 
 		return mdd;
@@ -475,11 +478,13 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 
 void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
+    /* Notify Intuition */
     if (CDD(GfxBase)->DriverNotify)
 	CDD(GfxBase)->DriverNotify(mdd->userdata, FALSE, CDD(GfxBase)->notify_data);
 
-    if (mdd->framebuffer)
-	OOP_DisposeObject(mdd->framebuffer);
+    /* Dispose associated stuff */
+    OOP_DisposeObject(mdd->composer);
+    OOP_DisposeObject(mdd->framebuffer);
 
     if (mdd->gc_cache)
 	delete_object_cache(mdd->gc_cache, GfxBase );
@@ -488,8 +493,7 @@ void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
         OOP_DisposeObject(mdd->gfxhidd);
 
     /* Dispose driver object. This will take care about syncs etc */
-    if (mdd->gfxhidd_orig)
-	OOP_DisposeObject(mdd->gfxhidd_orig );
+    OOP_DisposeObject(mdd->gfxhidd_orig );
 
     FreeVec(mdd);
 }

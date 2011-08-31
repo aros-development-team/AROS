@@ -12,6 +12,7 @@ FILES	  := \
 	gels_internal \
 	objcache \
 	default_font \
+	compositing_driver \
 	graphics_driver \
 	fakegfxhidd \
 	dispinfo \
