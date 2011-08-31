@@ -34,8 +34,12 @@ static int LinuxFB_Startup(LIBBASETYPEPTR LIBBASE)
 {
     int res = FALSE;
     struct GfxBase *GfxBase;
-    OOP_Object *gfxhidd;
-    int fd;
+    ULONG err;
+    struct TagItem gfx_attrs[] =
+    {
+        {aHidd_LinuxFB_File, 0},
+        {TAG_DONE	   , 0}
+    };
 
     D(bug("[LinuxFB] LinuxFB_Startup()\n"));
 
@@ -45,34 +49,26 @@ static int LinuxFB_Startup(LIBBASETYPEPTR LIBBASE)
         return FALSE;
 
     /* TODO: In future we will support more framebuffers */
-    fd = LIBBASE->lsd.SysIFace->open("/dev/fb0", O_RDWR);
-    if (!fd)
+    gfx_attrs[0].ti_Data = LIBBASE->lsd.SysIFace->open("/dev/fb0", O_RDWR);
+    if (gfx_attrs[0].ti_Data == -1)
     {
 	CloseLibrary(&GfxBase->LibNode);
 	return FALSE;
     }
 
-    /* In future we will be able to call this several times in a loop.
-       This will allow us to create several displays. */
-    gfxhidd = OOP_NewObjectTags(LIBBASE->lsd.gfxclass, NULL, aHidd_LinuxFB_File, fd, TAG_DONE);
-    D(bug("[LinuxFB_Startup] gfxhidd 0x%p\n", gfxhidd));
+    /*
+     * In future we will be able to call this several times in a loop.
+     * This will allow us to create several displays.
+     */
+    err = AddDisplayDriverA(LIBBASE->lsd.gfxclass, gfx_attrs, NULL);
 
-    if (gfxhidd)
+    D(bug("[LinuxFB_Startup] AddDisplayDriver() result: %u\n", err));
+
+    if (!err)
     {
-        ULONG err = AddDisplayDriverA(gfxhidd, NULL);
-
-	D(bug("[LinuxFB_Startup] AddDisplayDriver() result: %u\n", err));
-	if (err)
-	{
-	    OOP_DisposeObject(gfxhidd);
-	    gfxhidd = NULL;
-	}
-	else
-	{
-	    res = TRUE;
-	    /* We use ourselves, and noone else */
-	    LIBBASE->library.lib_OpenCnt = 1;
-	}
+	res = TRUE;
+	/* We use ourselves, and noone else */
+	LIBBASE->library.lib_OpenCnt = 1;
     }
 
     CloseLibrary(&GfxBase->LibNode);

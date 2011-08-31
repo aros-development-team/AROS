@@ -12,10 +12,6 @@
  *
  * Hosted drivers are also responsible for registering own input
  * drivers if needed.
- *
- * When the transition completes, kludges from bootmenu and
- * dosboot will be removed. Noone will care about library
- * open etc.
  */
 
 #include <aros/debug.h>
@@ -30,13 +26,9 @@
 
 #include LC_LIBDEFS_FILE
 
-/* Define this to TRUE in order to simulate boot mode driver. Useful for testing */
-#define BOOT_MODE FALSE
-
 static int gdi_Startup(LIBBASETYPEPTR LIBBASE) 
 {
     struct GfxBase *GfxBase;
-    OOP_Object *gfxhidd;
     OOP_Object *kbd, *ms;
     OOP_Object *kbdriver;
     OOP_Object *msdriver = NULL;
@@ -73,23 +65,11 @@ static int gdi_Startup(LIBBASETYPEPTR LIBBASE)
     /* We use ourselves, and noone else */
     LIBBASE->library.lib_OpenCnt = 1;
 
-    /* Now proceed to adding display modes.
-       In future we will be able to call this several times in a loop.
-       This will allow us to create several displays.
-       In fact we already can do it, however our graphics.library can't
-       handle several displays. */
-    gfxhidd = OOP_NewObject(LIBBASE->xsd.gfxclass, NULL, NULL);
-    D(bug("[gdi_Startup] gfxhidd 0x%p\n", gfxhidd));
-
-    if (gfxhidd) {
-	ULONG err = AddDisplayDriver(gfxhidd, DDRV_BootMode, BOOT_MODE, TAG_DONE);
-
-	D(bug("[gdi_Startup] AddDisplayDriver() result: %u\n", err));
-	if (err) {
-	    OOP_DisposeObject(gfxhidd);
-	    gfxhidd = NULL;
-	}
-    }
+    /*
+     * Now proceed to adding display modes. Install only one instance for the first time.
+     * If needed, more displays are added by disk-based part.
+     */
+    AddDisplayDriver(LIBBASE->xsd.gfxclass, NULL, NULL);
 
     CloseLibrary(&GfxBase->LibNode);
     return TRUE;

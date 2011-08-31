@@ -19,11 +19,12 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(ULONG, AddDisplayDriverA,
+	AROS_LH3(ULONG, AddDisplayDriverA,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, gfxhidd, A0),
-	AROS_LHA(const struct TagItem *, tags, A1),
+	AROS_LHA(APTR, gfxclass, A0),
+	AROS_LHA(struct TagItem *, attrs, A1),
+	AROS_LHA(const struct TagItem *, tags, A2),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 181, Graphics)
@@ -32,8 +33,10 @@
 	Add a display driver to the system.
 
     INPUTS
-	gfxhidd - A newly created driver object
-	tags    - An optional TagList. Valid tags are:
+	gfxhidd - A pointer to an OOP class of the display driver
+	attrs   - Additional attributes to supply to the driver class during object creation
+	tags    - An optional TagList describing how graphics.library should handle the driver.
+		  Valid tags are:
 
 	    DDRV_BootMode     - A boolean value telling that a boot mode driver
 			        is being added. Boot mode drivers will automatically
@@ -91,9 +94,11 @@
     RESULT
     	error - One of following codes:
 
-	    DD_OK        - Operation completed OK.
-	    DD_NO_MEM	 - There is not enough memory to set up internal data.
-	    DD_ID_EXISTS - Attempt to assign monitor IDs that are already used.
+	    DD_OK           - Operation completed OK.
+	    DD_NO_MEM	    - There is not enough memory to set up internal data.
+	    DD_ID_EXISTS    - Attempt to assign monitor IDs that are already used.
+	    DD_IN_USE	    - One of boot-mode drivers is in use and can not be shut down.
+	    DD_DRIVER_ERROR - Failure to create driver object.
 
     NOTES
 	This function is AROS-specific.
@@ -101,11 +106,6 @@
     EXAMPLE
 
     BUGS
-	graphics.library tracks down usage of display drivers. If a driver currently
-	has something on display, it will not be shut down, even if it's boot mode
-	driver. This can cause problems if the new driver attempts to take over
-	the same hardware (for example native mode driver vs VESA driver). So be careful
-	while adding new display drivers on a working system. Know what you do.
 
     SEE ALSO
 
@@ -148,7 +148,7 @@
 	case DDRV_IDMask:
 	    IDMask = tag->ti_Data;
 	    break;
-	
+
 	case DDRV_KeepBootMode:
 	    keep_boot = tag->ti_Data;
 	    break;
@@ -193,8 +193,9 @@
 
 	/*
 	 * Now check if boot mode drivers can really be unloaded.
-	 * Some drivers can start playing with their hardware during
-	 * early init, so we need to check it before driver_Setup().
+	 * Display drivers can start playing with their hardware during
+	 * object creation, so we need to check it before instantiating
+	 * the given class.
 	 */
 	if (!keep_boot)
 	{
@@ -207,73 +208,98 @@
 	}
     }
 
+    /*
+     * Now, if everything is okay, we are ready to instantiate the driver.
+     * A well-behaved driver must touch the hardware only in object, not
+     * in class. This makes this function much safer. If we can't exit boot mode,
+     * the driver will not be instantiated and hardware state will not be clobbered.
+     */
     if (ret == DD_OK)
     {
-	/* Attach system structures to the driver */
-	D(bug("[AddDisplayDriverA] Installing driver\n"));
-	mdd = driver_Setup(gfxhidd, GfxBase);
-	D(bug("[AddDisplayDriverA] monitor_driverdata 0x%p\n", mdd));
+    	OOP_Object *gfxhidd = OOP_NewObject(gfxclass, NULL, attrs);
 
-	if (mdd)
+	if (gfxhidd)
 	{
-	    struct monitor_driverdata *last, *old;
+	    D(bug("[AddDisplayDriverA] Installing driver\n"));
 
-	    mdd->id    =  FirstID;
-	    mdd->mask  =  IDMask;
-	    mdd->flags |= flags;
+	    /* Attach system structures to the driver */
+	    mdd = driver_Setup(gfxhidd, GfxBase);
+	    D(bug("[AddDisplayDriverA] monitor_driverdata 0x%p\n", mdd));
 
-	    if (CDD(GfxBase)->DriverNotify)
-		/* Use mdd->gfxhidd here because it can be substituted by fakegfx object */
-		mdd->userdata = CDD(GfxBase)->DriverNotify(mdd, TRUE, CDD(GfxBase)->notify_data);
-
-	    /* Remove boot mode drivers */
-	    if (!keep_boot)
+	    if (mdd)
 	    {
-		D(bug("[AddDisplayDriverA] Shutting down boot mode drivers\n"));
-		for (last = (struct monitor_driverdata *)CDD(GfxBase);; last = last->next)
+	    	struct monitor_driverdata *last, *old;
+
+	    	mdd->id    =  FirstID;
+	    	mdd->mask  =  IDMask;
+	    	mdd->flags |= flags;
+
+		if (CDD(GfxBase)->DriverNotify)
 		{
-		    D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p\n", last, last->next));
-
-		    while (last->next && (last->next->flags & DF_BootMode))
-		    {
-		        old = last->next;
-			D(bug("[AddDisplayDriverA] Shutting down driver 0x%p (ID 0x%08lX, next 0x%p)\n", old, old->id, old->next));
-			last->next = old->next;
-			driver_Expunge(old, GfxBase);
-			D(bug("[AddDisplayDriverA] Shutdown OK, next 0x%p\n", last->next));
-		    }
-
-		    /* We check this condition here explicitly because last->next is modified inside loop body.
-		       If we check it in for() statement, last = last->next will be executed BEFORE the check,
-		       and NULL pointer may be hit. */
-		    if (!last->next)
-			break;
+		    /* Use mdd->gfxhidd here because it can be substituted by fakegfx object */
+		    mdd->userdata = CDD(GfxBase)->DriverNotify(mdd, TRUE, CDD(GfxBase)->notify_data);
 		}
+
+	    	/* Remove boot mode drivers */
+	    	if (!keep_boot)
+	    	{
+		    D(bug("[AddDisplayDriverA] Shutting down boot mode drivers\n"));
+		    for (last = (struct monitor_driverdata *)CDD(GfxBase);; last = last->next)
+		    {
+		    	D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p\n", last, last->next));
+
+		    	while (last->next && (last->next->flags & DF_BootMode))
+		    	{
+		            old = last->next;
+			    D(bug("[AddDisplayDriverA] Shutting down driver 0x%p (ID 0x%08lX, next 0x%p)\n", old, old->id, old->next));
+
+			    last->next = old->next;
+			    driver_Expunge(old, GfxBase);
+			    D(bug("[AddDisplayDriverA] Shutdown OK, next 0x%p\n", last->next));
+			}
+
+		    	/*
+		    	 * We check this condition here explicitly because last->next is modified inside loop body.
+		         * If we check it in for() statement, last = last->next will be executed BEFORE the check,
+		         * and NULL pointer may be hit.
+		         */
+		    	if (!last->next)
+			    break;
+		    }
+	    	}
+
+	    	/* Insert the driverdata into chain, sorted by ID */
+	    	D(bug("[AddDisplayDriverA] Inserting driver 0x%p, ID 0x%08lX\n", mdd, mdd->id));
+	    	for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next)
+	    	{
+	            D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p, ID 0x%08lX\n", last, last->next, last->next->id));
+		    if (mdd->id < last->next->id)
+		    	break;
+	    	}
+
+	    	D(bug("[AddDisplayDriverA] Inserting after 0x%p\n", last));
+		mdd->next = last->next;
+	    	last->next = mdd;
+
+	    	/* Remember next available ID */
+	    	if (NextID > CDD(GfxBase)->last_id)
+		    CDD(GfxBase)->last_id = NextID;
+
+	    	/* Return the assigned ID if the caller asked to do so */
+	    	if (ResultID)
+	    	    *ResultID = FirstID;
 	    }
-
-	    /* Insert the driverdata into chain, sorted by ID */
-	    D(bug("[AddDisplayDriverA] Inserting driver 0x%p, ID 0x%08lX\n", mdd, mdd->id));
-	    for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next)
-	    {
-	        D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p, ID 0x%08lX\n", last, last->next, last->next->id));
-		if (mdd->id < last->next->id)
-		    break;
+    	    else /* if (mdd) */
+    	    {
+    	    	OOP_DisposeObject(gfxhidd);
+		ret = DD_NO_MEM;
 	    }
-	    D(bug("[AddDisplayDriverA] Inserting after 0x%p\n", last));
-	    mdd->next = last->next;
-	    last->next = mdd;
-
-	    /* Remember next available ID */
-	    if (NextID > CDD(GfxBase)->last_id)
-		CDD(GfxBase)->last_id = NextID;
-
-	    /* Return the assigned ID if the caller asked to do so */
-	    if (ResultID)
-	    	*ResultID = FirstID;
-
-	} else
-	    ret = DD_NO_MEM;
-    }
+	}
+	else /* if (gfxhidd) */
+	{
+	    ret = DD_DRIVER_ERROR;
+	}
+    } /* if (ret == DD_OK) */
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 

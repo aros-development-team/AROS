@@ -58,8 +58,8 @@ struct sdlhidd xsd = {NULL};
 static int sdl_Startup(struct sdlhidd *xsd)
 {
     struct GfxBase *GfxBase;
-    OOP_Object *gfxhidd;
     OOP_Object *kbd, *ms;
+    ULONG err;
 
     xsd->mousehidd = NULL;
     D(bug("[SDL] Class initialization OK, creating objects\n"));
@@ -90,22 +90,14 @@ static int sdl_Startup(struct sdlhidd *xsd)
     if (!GfxBase)
         return FALSE;
 
-    /* SDL is a singletone by design, so we can't create many SDL displays.
-       So only one object! */
-    gfxhidd = OOP_NewObject(xsd->gfxclass, NULL, NULL);
-
-    if (gfxhidd) {
-        ULONG err = AddDisplayDriverA(gfxhidd, NULL);
-
-	if (err) {
-	    OOP_DisposeObject(gfxhidd);
-	    gfxhidd = NULL;
-	}
-    }
+    /*
+     * SDL is a singletone by design, so we can't create many SDL displays.
+     * So only one object!
+     */
+    err = AddDisplayDriverA(xsd->gfxclass, NULL, NULL);
 
     CloseLibrary(&GfxBase->LibNode);
-
-    return gfxhidd ? TRUE : FALSE;
+    return err ? FALSE : TRUE;
 }
 
 extern struct WBStartup *WBenchMsg;

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Backwards compatibility display driver loader.
@@ -69,28 +69,32 @@ int main(void)
     D(Printf("CLASS=%s, LIBRARY=%s\n", args.hidd ? args.hidd : "<none>",
 	     args.lib ? args.lib : "<none>"));
  
-    if (args.hidd) {
+    if (args.hidd)
+    {
         OOP_Class *cl;
 	struct Library *gfxlib = NULL;
-	OOP_Object *gfxhidd;
 
 	cl = OOP_FindClass(args.hidd);
-	if (!cl) {
-	    if (args.lib) {
+	if (!cl)
+	{
+	    if (args.lib)
+	    {
 		gfxlib = OpenLibrary(args.lib, 0);
 	        if (!gfxlib)
 		    res = RETURN_ERROR;
 	    }
 	    
-	    if (res == RETURN_OK) {
-
-		gfxhidd = OOP_NewObject(NULL, args.hidd, NULL);
-		if (gfxhidd) {
-		    if (AddDisplayDriverA(gfxhidd, NULL)) {
-			OOP_DisposeObject(gfxhidd);
+	    if (res == RETURN_OK)
+	    {
+		cl = OOP_FindClass(args.hidd);
+		if (cl)
+		{
+		    if (AddDisplayDriverA(cl, NULL, NULL))
+		    {
 			res = RETURN_FAIL;
 		    }
-		} else
+		}
+		else
 		    res = RETURN_ERROR;
 		
 		if ((res != RETURN_OK) && gfxlib)

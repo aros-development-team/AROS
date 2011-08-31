@@ -80,18 +80,20 @@ struct gdikbd_data
 
 struct gdi_staticdata
 {
-    /* This member should be in the beginning because it's exposed
-       outside (see gdi_class.h) */
+    /*
+     * These two members should be in the beginning because it's exposed
+     * outside (see gdi_class.h)
+     */
     ULONG		     displaynum;
+    OOP_Class 	    	    *gfxclass;
+
+    OOP_Class 	    	    *bmclass;
+    OOP_Class 	    	    *mouseclass;
+    OOP_Class 	    	    *kbdclass;
 
     struct SignalSemaphore   sema;
     struct Task		    *showtask;
     void		    *gfx_int;
-
-    OOP_Class 	    	    *gfxclass;
-    OOP_Class 	    	    *bmclass;
-    OOP_Class 	    	    *mouseclass;
-    OOP_Class 	    	    *kbdclass;
     
     OOP_Object      	    *mousehidd;
     OOP_Object      	    *kbdhidd;

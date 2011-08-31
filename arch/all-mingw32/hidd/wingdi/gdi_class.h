@@ -6,6 +6,7 @@
 
 struct GDIBase
 {
-    struct Library library;	/* Common library header */
+    struct Library library;	/* Common library header	 */
     ULONG	   displaynum;	/* Next available display number */
+    OOP_Class	  *gfxclass;	/* Display driver class		 */
 };

@@ -7,8 +7,8 @@
  *
  * The job of driver startup code is to create all necessary
  * classes (driver class and bitmap class) and create as many
- * driver objects as possible. Every object needs to be given
- * to AddDisplayDriverA() in order to become functional.
+ * driver objects as possible. Display driver objects are created
+ * by AddDisplayDriverA() after some checks.
  *
  * We are hosted, so we register also own input drivers.
  */
@@ -28,10 +28,10 @@
 static int agfx_Startup(LIBBASETYPEPTR LIBBASE) 
 {
     struct GfxBase *GfxBase;
-    OOP_Object *gfxhidd;
     OOP_Object *kbd, *ms;
     OOP_Object *kbdriver;
     OOP_Object *msdriver = NULL;
+    ULONG err;
 
     D(bug("[AGFX.Startup] agfx_Startup()\n"));
 
@@ -69,21 +69,8 @@ static int agfx_Startup(LIBBASETYPEPTR LIBBASE)
     /* We use ourselves, and noone else */
     LIBBASE->library.lib_OpenCnt = 1;
 
-    /* Now proceed to adding display modes */
-    gfxhidd = OOP_NewObject(LIBBASE->xsd.gfxclass, NULL, NULL);
-    D(bug("[gdi_Startup] gfxhidd 0x%p\n", gfxhidd));
-
-    if (gfxhidd)
-    {
-	ULONG err = AddDisplayDriverA(gfxhidd, NULL);
-
-	D(bug("[agfx_Startup] AddDisplayDriver() result: %u\n", err));
-	if (err)
-	{
-	    OOP_DisposeObject(gfxhidd);
-	    gfxhidd = NULL;
-	}
-    }
+    /* Install the driver. At the moment we have only one display. */
+    AddDisplayDriverA(LIBBASE->xsd.gfxclass, NULL, NULL);
 
     CloseLibrary(&GfxBase->LibNode);
     return TRUE;

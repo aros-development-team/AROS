@@ -229,7 +229,6 @@ AROS_UFH3(void, Enumerator,
 
     if (sd->forced || IsCompatible(ProductID))
     {
-	OOP_Object *gfxhidd;
     	UWORD MGCC = HIDD_PCIDevice_ReadConfigWord(pciDevice, G45_MGCC);
 
     	D(ULONG BSM = HIDD_PCIDevice_ReadConfigLong(pciDevice, G45_BSM));
@@ -524,16 +523,18 @@ AROS_UFH3(void, Enumerator,
 
 	} while (count > 0);
 
+	/*
+	 * URGENT FIXME!!!
+	 * The driver must not modify hardware state before it's instantiated.
+	 * AddDisplayDriverA() function intentionally takes class pointer, not an object.
+	 * Before instantiating the driver it performs boot mode drivers check. If at
+	 * least one of them is in use, it can't be shut down. This means the newly
+	 * installed driver can conflict with it, if they ocassionally use the same hardware.
+	 */
 	G45_LoadState(sd, sd->initialState);
 
-	gfxhidd = OOP_NewObject(sd->IntelG45Class, NULL, NULL);
-	if (gfxhidd)
-	{
-	    ULONG err = AddDisplayDriverA(gfxhidd, NULL);
+	AddDisplayDriverA(sd->IntelG45Class, NULL, NULL);
 
-	    if (err)
-		OOP_DisposeObject(gfxhidd);
-	}
 
 	// Z   |\      _,,,---,,_
 	//  z  /,`.-'`'    -.  ;-;;,_

@@ -131,10 +131,18 @@ struct notify_msg
 
 struct x11_staticdata
 {
-    /* These two members MUST be in the beginning of this structure
-       because they are exposed to disk-based part (see x11_class.h) */
+    /*
+     * These three members MUST be in the beginning of this structure
+     * because they are exposed to disk-based part (see x11_class.h)
+     */
     UBYTE	   	     keycode2rawkey[256];
     BOOL	   	     havetable;
+    OOP_Class 	    	    *gfxclass;
+
+    OOP_Class 	    	    *onbmclass;
+    OOP_Class 	    	    *offbmclass;
+    OOP_Class 	    	    *mouseclass;
+    OOP_Class 	    	    *kbdclass;
 
     struct SignalSemaphore   sema; /* Protecting this whole struct */
     
@@ -147,12 +155,6 @@ struct x11_staticdata
     BOOL    	    	     local_display;
     
     ULONG   	    	     refcount;
-
-    OOP_Class 	    	    *gfxclass;
-    OOP_Class 	    	    *onbmclass;
-    OOP_Class 	    	    *offbmclass;
-    OOP_Class 	    	    *mouseclass;
-    OOP_Class 	    	    *kbdclass;
     
     OOP_Object      	    *gfxhidd;
     OOP_Object      	    *mousehidd;
