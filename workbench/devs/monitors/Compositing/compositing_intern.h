@@ -9,48 +9,42 @@
 #include "compositing.h"
 
 #include <exec/lists.h>
-
-struct _Rectangle
-{
-    WORD MinX;
-    WORD MinY;
-    WORD MaxX;
-    WORD MaxY;
-};
+#include <graphics/gfx.h>
 
 struct StackBitMapNode
 {
-    struct Node         n;
-    OOP_Object *        bm;
-    struct _Rectangle   screenvisiblerect;
-    BOOL                isscreenvisible;
-    LONG                displayedwidth;
-    LONG                displayedheight;
+    struct MinNode    n;
+    OOP_Object	     *bm;
+    struct Rectangle  screenvisiblerect;
+    BOOL              isscreenvisible;
+    LONG              displayedwidth;
+    LONG              displayedheight;
+    LONG	      leftedge;
+    LONG	      topedge;
 };
 
 struct HIDDCompositingData
 {
     /* Bitmap to which all screen bitmaps are composited. Height/Width always 
        matches visible mode */
-    OOP_Object              *compositedbitmap;
-    
+    OOP_Object             *compositedbitmap;
+
     /* Pointer to actuall screen bitmap - either compositedbitmap or topbitmap. 
        Can only be set in HIDDCompositingToggleCompositing */
-    OOP_Object              *screenbitmap;
+    OOP_Object             *screenbitmap;
 
     /* Pointer to top bitmap on stack */
-    OOP_Object              *topbitmap;
+    OOP_Object             *topbitmap;
 
     HIDDT_ModeID            screenmodeid;   /* ModeID of currently visible mode */
-    struct _Rectangle       screenrect;     /* Dimensions of currently visible mode */
+    struct Rectangle        screenrect;     /* Dimensions of currently visible mode */
     BOOL                    modeschanged;   /* TRUE if new top bitmap has different mode than current screenmodeid */
 
-    struct List             bitmapstack;
-    
+    struct MinList          bitmapstack;
     struct SignalSemaphore  semaphore;
     
-    OOP_Object              *gfx;           /* GFX driver object */
-    OOP_Object              *gc;            /* GC object used for drawing operations */
+    OOP_Object             *gfx;           /* GFX driver object */
+    OOP_Object             *gc;            /* GC object used for drawing operations */
 };
 
 #define METHOD(base, id, name) \
@@ -60,6 +54,7 @@ struct HIDDCompositingData
 #define LOCK_COMPOSITING_WRITE      { ObtainSemaphore(&compdata->semaphore); }
 #define UNLOCK_COMPOSITING          { ReleaseSemaphore(&compdata->semaphore); }
 
+extern OOP_AttrBase HiddCompositingAttrBase;
 extern const struct OOP_InterfaceDescr Compositing_ifdescr[];
 
 #endif /* _COMPOSITING_INTERN_H */
