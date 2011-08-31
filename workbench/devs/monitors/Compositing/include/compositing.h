@@ -42,7 +42,8 @@ enum
     num_Hidd_Compositing_Attrs
 };
 
-#define aHidd_Compositing_GfxHidd  (HiddCompositingAttrBase + aoHidd_Compositing_GfxHidd)
+#define aHidd_Compositing_GfxHidd  	(HiddCompositingAttrBase + aoHidd_Compositing_GfxHidd)
+#define aHidd_Compositing_Capabilities  (HiddCompositingAttrBase + aoHidd_Compositing_Capabilities)
 
 #define IS_COMPOSITING_ATTR(attr, idx) \
     (((idx) = (attr) - HiddCompositingAttrBase) < num_Hidd_Compositing_Attrs)
