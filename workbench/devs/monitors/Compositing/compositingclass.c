@@ -513,6 +513,17 @@ OOP_Object *METHOD(Compositing, Root, New)
     return NULL;
 }
 
+VOID METHOD(Compositing, Root, Get)
+{
+    if (msg->attrID == aHidd_Compositing_Capabilities)
+    {
+    	*msg->storage = COMPF_ABOVE;
+    	return;
+    }
+    
+    OOP_DoSuperMethod(cl, o, &msg->mID);
+}
+
 VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 {
     struct HIDD_ViewPortData * vpdata;
@@ -702,11 +713,12 @@ VOID METHOD(Compositing, Hidd_Compositing, DisplayRectChanged)
     UNLOCK_COMPOSITING
 }
 
-#define NUM_Compositing_Root_METHODS 1
+#define NUM_Compositing_Root_METHODS 2
 
 static const struct OOP_MethodDescr Compositing_Root_descr[] =
 {
     {(OOP_MethodFunc)Compositing__Root__New, moRoot_New},
+    {(OOP_MethodFunc)Compositing__Root__Get, moRoot_Get},
     {NULL, 0}
 };
 
