@@ -390,21 +390,19 @@ Additional rule:
 */
 static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compdata)
 {
-    /* If the topbitmap covers the complete screen, show it instead of 
-       compositedbitmap. This removes the need for copying 
-       screen bitmap -> composited bitmap. Not copying improves performance */
+    /* 
+     * If the topbitmap covers the complete screen, show it instead of 
+     * compositedbitmap. Remember that screen bitmap -> composited bitmap
+     * has a negative impact on performance.
+     */
+    OOP_Object *oldscreenbitmap = compdata->screenbitmap;
+    OOP_Object *oldcompositedbitmap = compdata->compositedbitmap;
     LONG topedge = ((struct StackBitMapNode *)compdata->bitmapstack.mlh_Head)->topedge;
-    OOP_Object * oldscreenbitmap = compdata->screenbitmap;
-    OOP_Object * oldcompositedbitmap = NULL;
 
-    /* (a) */
-    if ((compdata->compositedbitmap) && (compdata->modeschanged))
-    {
-        oldcompositedbitmap = compdata->compositedbitmap;
+    /* (a) If mode change is needed, enforce opening a new screen */
+    if (compdata->modeschanged)
         compdata->compositedbitmap = NULL;
-    }
 
-    
     /*
      * This condition is enought as compositing allows only dragging screen down
      * and not up/left/right at the moment.
@@ -414,23 +412,51 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
         /* (b) */
         if (compdata->compositedbitmap == NULL)
         {
-            struct TagItem bmtags[5];
-            
-            /* Create a new bitmap that will be used for compositing */
-            bmtags[0].ti_Tag = aHidd_BitMap_Width;          bmtags[0].ti_Data = compdata->screenrect.MaxX + 1;
-            bmtags[1].ti_Tag = aHidd_BitMap_Height;         bmtags[1].ti_Data = compdata->screenrect.MaxY + 1;
-            bmtags[2].ti_Tag = aHidd_BitMap_Displayable;    bmtags[2].ti_Data = TRUE;
-            bmtags[3].ti_Tag = aHidd_BitMap_ModeID;         bmtags[3].ti_Data = compdata->screenmodeid;
-            bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
+	    if (compdata->fb)
+	    {
+	    	/*
+	    	 * If our display driver uses a framebuffer, we can reuse it.
+	    	 * Copy its original contents back into the bitmap which it replaced,
+	    	 * then change framebuffer's video mode.
+	    	 * Framebuffer is the only bitmap which can change its ModeID on the fly.
+	    	 */
+	    	if (oldcompositedbitmap != compdata->fb)
+	    	{
+	    	    /* Don't show the framebuffer twice */
+	    	    HIDD_Gfx_Show(compdata->gfx, compdata->fb, fHidd_Gfx_Show_CopyBack);
+	    	}
+	    	else
+	    	{
+	    	    /* Don't dispose the framebuffer */
+	    	    oldcompositedbitmap = NULL;
+	    	}
 
-            compdata->compositedbitmap = HIDD_Gfx_NewBitMap(compdata->gfx, bmtags);
+	    	OOP_SetAttrsTags(compdata->fb, aHidd_BitMap_ModeID, compdata->screenmodeid, TAG_DONE);
+	    	compdata->compositedbitmap = compdata->fb;
+	    }
+	    else
+	    {
+	        /*
+	         * There's no framebuffer.
+	         * Create a new bitmap that will be used for compositing.
+	         */
+            	struct TagItem bmtags[5];
+
+            	bmtags[0].ti_Tag = aHidd_BitMap_Width;          bmtags[0].ti_Data = compdata->screenrect.MaxX + 1;
+            	bmtags[1].ti_Tag = aHidd_BitMap_Height;         bmtags[1].ti_Data = compdata->screenrect.MaxY + 1;
+            	bmtags[2].ti_Tag = aHidd_BitMap_Displayable;    bmtags[2].ti_Data = TRUE;
+            	bmtags[3].ti_Tag = aHidd_BitMap_ModeID;         bmtags[3].ti_Data = compdata->screenmodeid;
+            	bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
+
+            	compdata->compositedbitmap = HIDD_Gfx_NewBitMap(compdata->gfx, bmtags);
+            }
         }
-        
-        /* (c) */
+
+        /* (c) Set current working bitmap to composited bitmap */
         if (oldscreenbitmap != compdata->compositedbitmap)
         {
             compdata->screenbitmap = compdata->compositedbitmap;
-        
+
             /* Redraw bitmap stack - compensate for changes that happened while
                compositing was not active */
             HIDDCompositingRedrawVisibleScreen(compdata);
@@ -438,7 +464,7 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
     }
     else
     {
-        /* (d) */
+        /* (d) Set passthrough mode */
         compdata->screenbitmap = compdata->topbitmap;
     }
 
@@ -446,9 +472,11 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
         topedge, oldscreenbitmap, compdata->topbitmap, compdata->compositedbitmap, 
         compdata->screenbitmap));
 
-    /* If the screenbitmap changed, show the new screenbitmap */
-    /* (e) */
-    if (oldscreenbitmap != compdata->screenbitmap)
+    /*
+     * (e) If the screenbitmap changed, show the new screenbitmap.
+     * But not if it's a framebuffer. It's already shown.
+     */
+    if ((compdata->fb != compdata->screenbitmap) && (oldscreenbitmap != compdata->screenbitmap))
     	HIDD_Gfx_Show(compdata->gfx, compdata->screenbitmap, fHidd_Gfx_Show_CopyBack);
 
     /* (a) - disposing of oldcompositingbitmap needs to happen after mode switch 
@@ -492,7 +520,9 @@ OOP_Object *METHOD(Compositing, Root, New)
         InitSemaphore(&compdata->semaphore);
 
         compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositing_GfxHidd, 0, msg->attrList);
+        compdata->fb  = (OOP_Object *)GetTagData(aHidd_Compositing_FrameBuffer, 0, msg->attrList);
 
+	/* GfxHidd is mandatory */
         if (compdata->gfx != NULL)
         {
             /* Create GC object that will be used for drawing operations */
@@ -535,14 +565,13 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
         
     /* Free all items which are already on the list */
     HIDDCompositingPurgeBitMapStack(compdata);
-    
-    
+
     if (!msg->data)
     {
         UNLOCK_COMPOSITING
         return; /* TODO: BLANK SCREEN */
     }
-    
+
     /* Switch mode if needed */    
     if (!HIDDCompositingTopBitMapChanged(compdata, msg->data->Bitmap))
     {
