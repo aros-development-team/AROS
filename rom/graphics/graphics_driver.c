@@ -33,6 +33,7 @@
 
 #include <intuition/intuition.h>
 
+#include <hidd/compositing.h>
 #include <hidd/graphics.h>
 
 #include <cybergraphx/cybergraphics.h>
@@ -355,10 +356,12 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     ULONG cnt = 0;
     IPTR hwcursor = 0;
     IPTR noframebuffer = 0;
+    UWORD comp = 0;
     BOOL ok = TRUE;
     ULONG i;
     HIDDT_ModeID *modes, *m;
     struct monitor_driverdata *mdd;
+    struct HIDD_ModeProperties props = {0};
 
     D(bug("[driver_Setup] gfxhidd=0x%p\n", gfxhidd));
 
@@ -372,29 +375,41 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 
     mdd = AllocVec(sizeof(struct monitor_driverdata) + cnt * sizeof(struct DisplayInfoHandle), MEMF_PUBLIC|MEMF_CLEAR);
     D(bug("[driver_Setup] Allocated driverdata at 0x%p\n", mdd));
-    if (!mdd) {
+    if (!mdd)
+    {
         HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
         return NULL;
     }
 
     mdd->gfxhidd_orig = gfxhidd;
 
-    /* Fill in ModeID database in the driverdata */
-    for (i = 0; i <= cnt; i++) {
-        mdd->modes[i].id = modes[i];
+    /*
+     * 1. Fill in ModeID database in the driverdata.
+     * 2. Check if at least one mode supports composition.
+     */
+    for (i = 0; i <= cnt; i++)
+    {
+        mdd->modes[i].id  = modes[i];
 	mdd->modes[i].drv = mdd;
+
+	HIDD_Gfx_ModeProperties(gfxhidd, modes[i], &props, sizeof(props));
+	comp |= props.CompositionFlags;
     }
 
     HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
 
+    /* Query properties of our driver */
 #ifndef FORCE_SOFTWARE_SPRITE
     OOP_GetAttr(gfxhidd, aHidd_Gfx_HWSpriteTypes, &hwcursor);
 #endif
     OOP_GetAttr(gfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
 
-    if (hwcursor) {
+    if (hwcursor)
+    {
         mdd->gfxhidd = gfxhidd;
-    } else {
+    }
+    else
+    {
 	D(bug("[driver_Setup] Hardware mouse cursor is not supported, using fakegfx.hidd\n"));
 
 	mdd->gfxhidd = init_fakegfxhidd(gfxhidd, GfxBase);
@@ -404,14 +419,14 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 	    ok = FALSE;
     }
 
-    if (ok) {
-	struct TagItem gc_create_tags[] = { { TAG_DONE, 0UL } };
-
+    if (ok)
+    {
 	D(bug("[driver_Setup] Ok\n"));
 
         /* FIXME: perhaps driver should be able to supply own GC class? */
-	mdd->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, gc_create_tags, GfxBase);
-	if (mdd->gc_cache) {
+	mdd->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, NULL, GfxBase);
+	if (mdd->gc_cache)
+	{
 	    D(bug("[driver_Setup] GC Cache created\n"));
 
 	    if (!noframebuffer)
@@ -419,8 +434,16 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 		   plugged in */
 		mdd->framebuffer = create_framebuffer(mdd, GfxBase);
 
-	    if (noframebuffer || mdd->framebuffer) {
+	    if (noframebuffer || mdd->framebuffer)
+	    {
 		D(bug("[driver_Setup] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
+
+		if (!comp)
+		{
+		    D(bug("[driver_Setup] Software screen composition required\n"));
+		    mdd->flags |= DF_SoftCompose;
+		}
+
 		return mdd;
 	    }
 
