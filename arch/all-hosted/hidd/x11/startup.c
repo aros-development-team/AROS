@@ -44,39 +44,36 @@ static int X11_Startup(LIBBASETYPEPTR LIBBASE)
 
     /* Add keyboard and mouse driver to the system */
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
-    ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
-    if (kbd && ms) {
+    ms  = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
+
+    if (kbd && ms)
+    {
         kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->xsd.kbdclass, NULL);
 	if (kbdriver)
 	    msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, NULL);
     }
 
     /* If we got no input, we can't work, fail */
-    if (!msdriver) {
+    if (!msdriver)
+    {
 	CloseLibrary(&GfxBase->LibNode);
         return FALSE;
     }
 
+    if (msdriver)
+    {
+        ULONG err = AddDisplayDriverA(LIBBASE->xsd.gfxclass, NULL, NULL);
 
-    if (msdriver) {
-	gfxhidd = OOP_NewObject(LIBBASE->xsd.gfxclass, NULL, NULL);
-	D(bug("[X11_Startup] gfxhidd 0x%p\n", gfxhidd));
-
-	if (gfxhidd) {
-            ULONG err = AddDisplayDriverA(gfxhidd, NULL);
-
-	    D(bug("[X11_Startup] AddDisplayDriver() result: %u\n", err));
-	    if (err) {
-		OOP_DisposeObject(gfxhidd);
-		gfxhidd = NULL;
-	    } else {
-		LIBBASE->library.lib_OpenCnt = 1;
-		res = TRUE;
-	    }
+	D(bug("[X11_Startup] AddDisplayDriver() result: %u\n", err));
+	if (!err)
+	{
+	    LIBBASE->library.lib_OpenCnt = 1;
+	    res = TRUE;
 	}
     }
 
-    if (!res) {
+    if (!res)
+    {
 	if (kbdriver)
 	    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
 	if (msdriver)

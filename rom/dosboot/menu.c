@@ -43,9 +43,14 @@
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 #ifndef mc68000
 
+/*
+ * This is an extremely obsolete kludge.
+ * It's needed for VGA driver on PC and for ATI driver on PowerPC native.
+ */
+
 static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootBase)
 {
-    OOP_Object *gfxhidd;
+    OOP_Class *gfxclass;
     BOOL success = FALSE;
 
     D(bug("[BootMenu] init_gfx('%s')\n", gfxclassname));
@@ -54,11 +59,10 @@ static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootB
     if (!GfxBase)
         return FALSE;
 
-    gfxhidd = OOP_NewObject(NULL, gfxclassname, NULL);
-    if (gfxhidd) {
-        if (AddDisplayDriver(gfxhidd, DDRV_BootMode, bootmode, TAG_DONE))
-	    OOP_DisposeObject(gfxhidd);
-	else
+    gfxclass = OOP_FindClass(gfxclassname);
+    if (gfxclass)
+    {
+        if (!AddDisplayDriver(gfxclass, NULL, DDRV_BootMode, bootmode, TAG_DONE))
 	    success = TRUE;
     }
 

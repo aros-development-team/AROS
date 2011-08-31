@@ -77,7 +77,7 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct VesaGfx_staticdata *xsd = &LIBBASE->vsd;
     struct GfxBase *GfxBase;
-    OOP_Object *gfxhidd;
+    ULONG err;
     int res = FALSE;
 
     if (!GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
@@ -117,27 +117,21 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
     xsd->mid_DisplayRectChanged = OOP_GetMethodID(IID_Hidd_Compositing,
         moHidd_Compositing_DisplayRectChanged);
 
-    gfxhidd = OOP_NewObject(LIBBASE->vsd.vesagfxclass, NULL, NULL);
-    D(bug("[VESA] gfxhidd 0x%p\n", gfxhidd));
+    /* 
+     * It is unknown (and no way to know) what hardware part this driver uses.
+     * In order to avoid conflicts with disk-based native-mode hardware
+     * drivers it needs to be removed from the system when some other driver
+     * is installed.
+     * This is done by graphics.library if DDRV_BootMode is set to TRUE.
+     */
+    err = AddDisplayDriver(LIBBASE->vsd.vesagfxclass, NULL, DDRV_BootMode, TRUE, TAG_DONE);
 
-    if (gfxhidd)
+    D(bug("[VESA] AddDisplayDriver() result: %u\n", err));
+    if (!err)
     {
-        /* 
-         * It is unknown (and no way to know) what hardware part this driver uses.
-         * In order to avoid conflicts with disk-based native-mode hardware
-         * drivers it needs to be removed from the system when some other driver
-         * is installed.
-         * This is done by graphics.library if DDRV_BootMode is set to TRUE.
-         */
-	ULONG err = AddDisplayDriver(gfxhidd, DDRV_BootMode, TRUE, TAG_DONE);
-
-	D(bug("[VESA] AddDisplayDriver() result: %u\n", err));
-	if (!err)
-	{
-	    /* We use ourselves, and no one else does */
-    	    LIBBASE->library.lib_OpenCnt = 1;
-    	    res = TRUE;
-	}
+	/* We use ourselves, and no one else does */
+    	LIBBASE->library.lib_OpenCnt = 1;
+    	res = TRUE;
     }
 
     CloseLibrary(&GfxBase->LibNode);

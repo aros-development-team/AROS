@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Disk-resident part of GDI display driver
@@ -40,7 +40,7 @@ int __nocommandline = 1;
 static ULONG AddDisplays(ULONG num)
 {
     struct GDIBase *GDIBase;
-    OOP_Object *gfxhidd;
+    OOP_Object *gfxclass;
     ULONG old;
     ULONG i;
 
@@ -50,26 +50,23 @@ static ULONG AddDisplays(ULONG num)
     if (!GDIBase)
         return 0;
 
-    old = GDIBase->displaynum - 1;
+    gfxclass = GDIBase->gfxclass;
+    old      = GDIBase->displaynum - 1;
+
     CloseLibrary(&GDIBase->library);
     D(bug("[GDI] Current displays count: %u\n", old));
 
     /* Add displays if needed */
     for (i = old; i < num; i++)
     {
-	gfxhidd = OOP_NewObject(NULL, CLID_Hidd_GDIGfx, NULL);
-	D(bug("[GDI] Created display object 0x%p\n", gfxhidd));
-	if (gfxhidd){
-	    if (AddDisplayDriverA(gfxhidd, NULL)) {
-		D(bug("[GDI] Failed to add display object\n"));
-		OOP_DisposeObject(gfxhidd);
-		gfxhidd = NULL;
-	    }
-	}
+	ULONG err = AddDisplayDriverA(gfxclass, NULL, NULL))
 
-	/* Abort if driver setup failed */
-	if (!gfxhidd)
+	if (err)
+	{
+	    /* Abort if driver setup failed */
+	    D(bug("[GDI] Failed to add display object, error %u\n", err));
 	    break;
+	}
     }
 
     return i;

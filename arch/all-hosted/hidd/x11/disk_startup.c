@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Disk-resident part of X11 display driver
@@ -112,9 +112,8 @@ static ULONG LoadKeyCode2RawKeyTable(STRPTR filename)
 /* This function uses library open count as displays count */
 static ULONG AddDisplays(ULONG num, ULONG old)
 {
-    struct Library *X11Base;
-    OOP_Object *gfxhidd;
-    ULONG i;
+    struct X11Base *X11Base;
+    ULONG i, err;
 
     D(bug("[X11] Making %u displays\n", num));
     D(bug("[X11] Current displays count: %u\n", old));
@@ -123,24 +122,20 @@ static ULONG AddDisplays(ULONG num, ULONG old)
     for (i = old; i < num; i++)
     {
         /* This increments counter */
-	X11Base = OpenLibrary(X11_LIBNAME, X11_VERSION);
-	if (!X11Base) {
+	X11Base = (struct X11Base *)OpenLibrary(X11_LIBNAME, X11_VERSION);
+	if (!X11Base)
+	{
 	    D(bug("[X11] Failed to open X11 library!\n"));
 	    break;
 	}
 
-	gfxhidd = OOP_NewObject(NULL, CLID_Hidd_X11Gfx, NULL);
-	D(bug("[X11] Created display object 0x%p\n", gfxhidd));
-	if (gfxhidd){
-	    if (AddDisplayDriverA(gfxhidd, NULL)) {
-		D(bug("[X11] Failed to add display object\n"));
-		OOP_DisposeObject(gfxhidd);
-		gfxhidd = NULL;
-	    }
-	}
+	err = AddDisplayDriverA(X11Base->gfxclass, NULL, NULL);
 
 	/* If driver setup failed, decrement counter back and abort */
-	if (!gfxhidd) {
+	if (!err)
+	{
+	    D(bug("[X11] Failed to add display object\n"));
+
 	    CloseLibrary(X11Base);
 	    break;
 	}
@@ -186,7 +181,8 @@ int main(void)
     icon = GetDiskObject(myname);
     D(bug("[X11] Icon 0x%p\n", icon));
 
-    if (icon) {
+    if (icon)
+    {
         STRPTR str;
 
 	str = FindToolType(icon->do_ToolTypes, "DISPLAYS");

@@ -9,4 +9,5 @@ struct X11Base
 
     UBYTE	   keycode2rawkey[256];
     BOOL	   havetable;
+    OOP_Class	  *gfxclass;
 };
