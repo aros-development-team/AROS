@@ -8,11 +8,17 @@
 
 #include <aros/debug.h>
 #include <graphics/driver.h>
+#include <hidd/compositing.h>
 #include <oop/oop.h>
+
 #include <proto/utility.h>
 
 #include "graphics_intern.h"
+#include "compositing_driver.h"
 #include "dispinfo.h"
+
+#define CL(x) ((OOP_Class *)x)
+#define IS_CLASS(x, n) (CL(x)->ClassNode.ln_Name && (!strcmp(CL(x)->ClassNode.ln_Name, n)))
 
 /*****************************************************************************
 
@@ -130,7 +136,20 @@
     ULONG *ResultID = NULL;
     ULONG ret = DD_OK;
 
-    EnterFunc(bug("AddDisplayDriverA(0x%p)\n", gfxhidd));
+    EnterFunc(bug("AddDisplayDriverA(0x%p) <%s>\n", gfxclass, ));
+
+    /*
+     * MAGIC: Detect composition HIDD here.
+     * This allows to hotplug it, and even (potentially) replace.
+     */
+    if (IS_CLASS(gfxclass, CLID_Hidd_Compositing))
+    {
+	ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
+    	ret = composer_Install(gfxclass, GfxBase);
+    	ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
+
+    	return ret;
+    }
 
     /* First parse parameters */
     while ((tag = NextTagItem(&tags)))
@@ -306,8 +325,6 @@
     /* Set the first non-boot non-planar driver as default */
     if ((ret == DD_OK) && (!GfxBase->default_monitor) && (!(mdd->flags & DF_BootMode)))
     {
-    	OOP_Class *cl = OOP_OCLASS(mdd->gfxhidd_orig);
-
 	/*
 	 * Amiga(tm) chipset driver does not become a default.
 	 * This is done because RTG modes (if any) are commonly preferred
@@ -316,7 +333,7 @@
 	 * allow the user to describe the physical placement of several displays
 	 * in his environment, and explicitly set the preferred display.
 	 */
-	if (strcmp(cl->ClassNode.ln_Name, "hidd.gfx.amigavideo"))
+	if (!IS_CLASS(gfxclass, "hidd.gfx.amigavideo"))
 	{
 	    /*
 	     * graphics.library uses struct MonitorSpec pointers for historical reasons,

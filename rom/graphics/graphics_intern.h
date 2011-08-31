@@ -164,6 +164,9 @@ struct common_driverdata
     OOP_Class		      *fakegfxclass;
     OOP_Class		      *fakefbclass;
 
+    /* Composer class */
+    OOP_Class		      *composerClass;
+
     /* Attribute bases */
     OOP_AttrBase    	     hiddBitMapAttrBase;
     OOP_AttrBase    	     hiddGCAttrBase;
@@ -173,6 +176,7 @@ struct common_driverdata
     OOP_AttrBase    	     hiddGfxAttrBase;
     OOP_AttrBase    	     hiddFakeGfxHiddAttrBase;
     OOP_AttrBase	     hiddFakeFBAttrBase;
+    OOP_AttrBase	     hiddCompositingAttrBase;
 };
 
 #define CDD(base)   	    ((struct common_driverdata *)&PrivGBase(base)->shared_driverdata)
@@ -185,6 +189,7 @@ struct common_driverdata
 #define __IHidd_Gfx         CDD(GfxBase)->hiddGfxAttrBase
 #define __IHidd_FakeGfxHidd CDD(GfxBase)->hiddFakeGfxHiddAttrBase
 #define __IHidd_FakeFB	    CDD(GfxBase)->hiddFakeFBAttrBase
+#define __IHidd_Compositing CDD(GfxBase)->hiddCompositingAttrBase
 
 /* Hashtable sizes. Must be powers of two */
 #define GFXASSOCIATE_HASHSIZE   8
@@ -233,6 +238,7 @@ struct GfxBase_intern
     OOP_MethodID                HiddGCBase;
     OOP_MethodID                HiddGfxBase;
     OOP_MethodID                HiddPlanarBMBase;
+    OOP_MethodID		HiddCompositingMethodBase;
 };
 
 
@@ -247,6 +253,7 @@ struct GfxBase_intern
 #define HiddGCBase		(PrivGBase(GfxBase)->HiddGCBase)
 #define HiddGfxBase		(PrivGBase(GfxBase)->HiddGfxBase)
 #define HiddPlanarBMBase	(PrivGBase(GfxBase)->HiddPlanarBMBase)
+#define HiddCompositingMethodBase (PrivGBase(GfxBase)->HiddCompositingMethodBase)
 
 /* This must be included before defining OOPBase */
 #include <hidd/graphics_inline.h>
