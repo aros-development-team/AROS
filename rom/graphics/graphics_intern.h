@@ -123,6 +123,9 @@ struct monitor_driverdata
     /* FakeGfx-related */
     OOP_Object      	      *gfxhidd_orig;	/* Real graphics driver object			  */
 
+    /* Composer-related */
+    OOP_Object		      *composer;	/* composition HIDD object			  */
+
     /* Framebuffer stuff */
     struct BitMap   	      *frontbm;		/* Currently shown bitmap			  */
     OOP_Object	    	      *framebuffer;	/* Framebuffer bitmap object			  */
@@ -135,8 +138,9 @@ struct monitor_driverdata
 };
 
 /* Driver flags */
-#define DF_BootMode   0x0001
-#define DF_UseFakeGfx 0x0002
+#define DF_BootMode    0x0001
+#define DF_UseFakeGfx  0x0002
+#define DF_SoftCompose 0x0004
 
 /* Common driver data data to all monitors */
 struct common_driverdata

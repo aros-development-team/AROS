@@ -209,11 +209,6 @@ FUNCTIONS := \
 	xorregionregion \
 	xorregionregionnd
 
-#MM kernel-graphics-linklib : kernel-graphics-$(ARCH)-$(CPU) \
-#MM   hidd-graphics-linklib
-#MM kernel-graphics-kobj : kernel-graphics-$(ARCH)-$(CPU) \
-#MM   hidd-graphics-linklib
-
 #MM kernel-graphics-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-oop-includes \
@@ -222,6 +217,10 @@ FUNCTIONS := \
 #MM     includes-copy
 
 #MM- core-linklibs : linklibs-graphics
+
+#MM kernel-graphics     : includes-composition-copy
+#MM kernel-graphics-kobj: includes-composition-copy
+#MM kernel-graphics-pkg : includes-composition-copy
 
 %build_module mmake=kernel-graphics \
   modname=graphics modtype=library \
