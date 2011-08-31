@@ -28,24 +28,12 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-poseidon-includes \
 #MM      kernel-usb-usbclass-includes
 
-# Platform bindings follow
-#MM- kernel-usb-pc-i386 : \
-#MM         kernel-link-usb
-
-#MM- kernel-usb-pc-x86_64 : \
-#MM         kernel-package-usb
-
+# Platform bindings follow (obsolete)
 #MM- kernel-usb-sam440-ppc : \
 #MM         kernel-usb
 
 #MM- kernel-usb-kobj-sam440-ppc : \
 #MM      kernel-usb-kobj
-
-#MM- kernel-usb-includes-pc-$(CPU) : \
-#MM      kernel-usb-includes
-
-#MM- kernel-usb-includes-sam440-ppc : \
-#MM      kernel-usb-includes
 
 # This is kickstart package contents
 USB_CLASSES := bootkeyboard bootmouse hub hid massstorage
@@ -86,21 +74,5 @@ USB_RES     := usbromstartup
 	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES) \
 	uselibs="amiga arossupport rom debug hiddstubs autoinit libinit" \
 	map=$(GENDIR)/boot/kernel-usb.map deps=kernel-usb-kobj
-
-# -----------------------------
-
-.PHONY: kernel-usb-pc-i386
-.PHONY: kernel-usb-pc-x86_64
-.PHONY: kernel-usb-sam440-ppc
-.PHONY: kernel-usb-kobj-pc-i386
-.PHONY: kernel-usb-kobj-pc-x86_64
-.PHONY: kernel-usb-kobj-sam440-ppc
-.PHONY: kernel-usb-includes-pc-i386
-.PHONY: kernel-usb-includes-pc-x86_64
-.PHONY: kernel-usb-includes-sam440-ppc
-.PHONY: kernel-usb
-.PHONY: kernel-usb-kobj
-.PHONY: kernel-usb-includes
-.PHONY: kernel-usb-clean
 
 %common
