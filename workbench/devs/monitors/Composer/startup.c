@@ -4,6 +4,7 @@
 #include <oop/oop.h>
 
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <proto/oop.h>
 
 #include "compositing_intern.h"
@@ -44,7 +45,7 @@ static OOP_Class *InitClass(void)
     };
 
     if (MetaAttrBase == 0)
-        return FALSE;
+        return NULL;
 
     cl = OOP_NewObject(NULL, CLID_HiddMeta, Compositing_tags);
     if (cl)
@@ -59,11 +60,10 @@ int __nocommandline = 1;
 int main(void)
 {
     int ret = RETURN_FAIL;
-    struct Process *me;
 
     /* 
-     * Open oop.library manually because we don't want it to be
-     * automatically close when we stay resident.
+     * Open these libraries manually because we don't want them to be
+     * automatically closed when we stay resident.
      */
     UtilityBase = OpenLibrary("utility.library", 0);
     if (UtilityBase)
@@ -80,24 +80,34 @@ int main(void)
 	    	}
 	    	else
 	    	{
-    		    if (InitClass())
+	    	    OOP_Class *cl = InitClass();
+
+	    	    if (cl)
     		    {
-		    	/* TODO: Tell graphics.library that we are up and running */
+    		    	/*
+    		    	 * Yes, composer is not a real display driver. It has totally different API.
+    		    	 * AddDisplayDriverA() knows this.
+    		    	 */
+    		    	ULONG err = AddDisplayDriverA(cl, NULL, NULL);
 
-		    	/* Stay resident */
-		    	me = (struct Process *)FindTask(NULL);
-		    	if (me->pr_CLI)
-		    	{
-			    struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+			if (!err)
+			{
+		    	    /* Stay resident */
+		    	    struct Process *me = (struct Process *)FindTask(NULL);
 
-			    cli->cli_Module = BNULL;
+			    if (me->pr_CLI)
+		    	    {
+			    	struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+
+			    	cli->cli_Module = BNULL;
+		    	    }
+		    	    else
+			    	me->pr_SegList = BNULL;
+
+		    	    /* Don't close our libraries and release attrbases. The HIDD needs them. */
+
+		    	    return RETURN_OK;
 		    	}
-		    	else
-			    me->pr_SegList = BNULL;
-
-		    	/* Don't close our libraries. The HIDD needs them. */
-
-		    	return RETURN_OK;
 		    }
 		}
 	    }
