@@ -81,14 +81,12 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
     {
         /*  Stack bitmap bounding boxes equal screen bounding box taking into
             account topedge */
-        IPTR topedge;
         struct Rectangle tmprect;
         
-        OOP_GetAttr(n->bm, aHidd_BitMap_TopEdge, &topedge);
         /* Copy screen rect */
         tmprect = compdata->screenrect;
         /* Set bottom and top values */
-        tmprect.MinY = topedge;
+        tmprect.MinY = n->topedge;
         tmprect.MaxY = lastscreenvisibleline;
         /* Intersect both to make sure values are withint screen limit */
         if (AndRectRect(&tmprect, &compdata->screenrect, &n->screenvisiblerect))
@@ -395,11 +393,9 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
     /* If the topbitmap covers the complete screen, show it instead of 
        compositedbitmap. This removes the need for copying 
        screen bitmap -> composited bitmap. Not copying improves performance */
-    IPTR topedge;
+    LONG topedge = ((struct StackBitMapNode *)compdata->bitmapstack.mlh_Head)->topedge;
     OOP_Object * oldscreenbitmap = compdata->screenbitmap;
     OOP_Object * oldcompositedbitmap = NULL;
-    
-    OOP_GetAttr(compdata->topbitmap, aHidd_BitMap_TopEdge, &topedge);
 
     /* (a) */
     if ((compdata->compositedbitmap) && (compdata->modeschanged))
@@ -409,9 +405,11 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
     }
 
     
-    /* This condition is enought as compositing allows only dragging screen down
-       and not up/left/right */
-    if ((LONG)topedge > (LONG)0) /* Explicitly cast to get signed comparison */
+    /*
+     * This condition is enought as compositing allows only dragging screen down
+     * and not up/left/right at the moment.
+     */
+    if (topedge > 0)
     {
         /* (b) */
         if (compdata->compositedbitmap == NULL)
