@@ -43,7 +43,8 @@ struct HIDDCompositingData
     struct MinList          bitmapstack;
     struct SignalSemaphore  semaphore;
     
-    OOP_Object             *gfx;           /* GFX driver object */
+    OOP_Object             *gfx;           /* GFX driver object			    */
+    OOP_Object		   *fb;		   /* Framebuffer bitmap (if present)	    */
     OOP_Object             *gc;            /* GC object used for drawing operations */
 };
 
