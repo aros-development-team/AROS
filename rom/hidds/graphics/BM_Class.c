@@ -888,7 +888,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 		    break;
 
 		case aoHidd_BitMap_PixFmt:
-		    data->prot.pixfmt = (HIDDT_PixelFormat *)tag->ti_Data;
+		    data->prot.pixfmt = (OOP_Object *)tag->ti_Data;
 		    break;
 	    	}
 	    }
