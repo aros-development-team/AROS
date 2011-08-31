@@ -41,12 +41,14 @@
 
 #include <aros/detach.h>
 
-
 #include "windowdecorclass.h"
 #include "screendecorclass.h"
 #include "menudecorclass.h"
 #include "newimage.h"
 #include "config.h"
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 struct IClass *wndcl, *scrcl, *menucl;
 
@@ -84,17 +86,22 @@ struct NewDecorator *GetDecorator(STRPTR path)
     struct NewDecorator *nd = NULL;
     struct DefaultNewDecorator * dnd = NULL;
 
+    D(bug("GetDecorator: Entering\n"));
+
     STRPTR newpath;
 
     if (path != NULL) newpath = path; else newpath = "Theme:";
 
     dnd = AllocVec(sizeof(struct DefaultNewDecorator), MEMF_CLEAR | MEMF_ANY);
     
+    D(bug("GetDecorator: dnd=%p\n", dnd));
+
     if (dnd)
     {
         nd = (struct NewDecorator *)dnd;
 
         dnd->dc = LoadConfig(newpath);
+	D(bug("GetDecorator: dnd->dc=%p\n", dnd->dc));
         if (!dnd->dc)
         {
             DeleteDecorator(nd);
@@ -102,7 +109,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
         }
         
         dnd->di = LoadImages(dnd->dc);
-        
+	D(bug("GetDecorator: dnd->di=%p\n", dnd->di));
         if (!dnd->di)
         {
             DeleteDecorator(nd);
@@ -120,6 +127,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
             nd->nd_Screen = NewObjectA(scrcl, NULL, ScreenTags);
         }
         
+	D(bug("GetDecorator: nd->nd_Screen=%p\n", nd->nd_Screen));
         if (nd->nd_Screen)
         {
             struct TagItem WindowTags[] = 
@@ -141,6 +149,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
             nd->nd_Window = NewObjectA(wndcl, NULL, WindowTags);
             nd->nd_Menu = NewObjectA(menucl, NULL, MenuTags);
+	    D(bug("GetDecorator: nd->nd_Window=%p, nd->nd_Menu=%p\n", nd->nd_Window, nd->nd_Menu));
             if ((nd->nd_Menu == NULL ) || (nd->nd_Window == NULL) || (nd->nd_Screen == NULL))
             {
                 DeleteDecorator(nd);
@@ -170,7 +179,7 @@ int main(void)
     struct RDArgs *args, *newargs;
 
     /* the 1M $$ Question why "Decoration ?" does not work in the shell? */
-    
+
     newargs = (struct RDArgs*) AllocDosObject(DOS_RDARGS, NULL);
 
     if (newargs == NULL) return 0;
@@ -206,6 +215,8 @@ int main(void)
     }
     Permit();
 
+    D(bug("Decoration: making classes...\n"));
+
     wndcl = MakeWindowDecorClass();
     if (wndcl)
     {
@@ -218,6 +229,8 @@ int main(void)
             menucl = MakeMenuDecorClass();
             if (menucl)
             {
+		D(bug("Decoration: Classes made\n"));
+
                 struct MsgPort *port = CreateMsgPort();
                 ULONG  skinSignal;
                 if (port)
@@ -226,7 +239,11 @@ int main(void)
                     port->mp_Node.ln_Name="DECORATIONS";
                     AddPort(port);
 
+		    D(bug("Decoration: Port created and added\n"));
+
                     struct  NewDecorator *decor = GetDecorator((STRPTR) rd_Args[0]);
+
+		    D(bug("Decoration: Got decorator\n"));
 
                     if (decor != NULL)
                     {
@@ -235,7 +252,11 @@ int main(void)
                         ChangeDecoration(DECORATION_SET, decor);
                     }
 
+		    D(bug("Before Detach()\n"));
+
                     Detach();
+
+		    D(bug("After Detach()\n"));
 
                     BOOL running = TRUE;
 
