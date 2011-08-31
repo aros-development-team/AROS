@@ -41,8 +41,7 @@ FILES := \
         execl \
         chown \
         sscanf \
-        ctype \
-        protoinc
+        ctype
 
 EXEDIR := $(AROS_TESTS)/clib
 
