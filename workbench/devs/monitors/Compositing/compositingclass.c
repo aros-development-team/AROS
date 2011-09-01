@@ -3,6 +3,8 @@
     $Id: compositingclass.c 38905 2011-05-29 06:54:59Z deadwood $
 */
 
+#define DEBUG 1
+
 #include "compositing_intern.h"
 
 #include <aros/debug.h>
@@ -108,18 +110,8 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
 {
     OOP_Object * sync = NULL;
     OOP_Object * pf = NULL;
-    IPTR modeid, hdisp, vdisp, e, depth;
+    IPTR modeid, hdisp, vdisp, depth;
 
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
-
-    /* Sanity check */
-    if (compdata->gfx != (OOP_Object *)e)
-    {
-        /* Provided top bitmap is not using the same driver as compositing. Fail. */
-        D(bug("[Compositing] GfxHidd different than one used by compositing\n"));
-        return FALSE;
-    }
-    
     /* Read display mode properties */
     OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
     if (modeid == vHidd_ModeID_Invalid)
@@ -401,7 +393,10 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
 
     /* (a) If mode change is needed, enforce opening a new screen */
     if (compdata->modeschanged)
+    {
+    	D(bug("[Compositing] Mode changed\n"));
         compdata->compositedbitmap = NULL;
+    }
 
     /*
      * This condition is enought as compositing allows only dragging screen down
@@ -414,6 +409,8 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
         {
 	    if (compdata->fb)
 	    {
+	    	D(bug("[Compositing] Using framebuffer bitmap 0x%p\n", compdata->fb));
+
 	    	/*
 	    	 * If our display driver uses a framebuffer, we can reuse it.
 	    	 * Copy its original contents back into the bitmap which it replaced,
@@ -449,6 +446,7 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
             	bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
 
             	compdata->compositedbitmap = HIDD_Gfx_NewBitMap(compdata->gfx, bmtags);
+            	D(bug("[Compositing] Created working bitmap 0x%p\n", compdata->compositedbitmap));
             }
         }
 
@@ -468,7 +466,7 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
         compdata->screenbitmap = compdata->topbitmap;
     }
 
-    D(bug("[Compositing] Toggle te %d, oldscr 0x%x, top 0x%x, comp 0x%x, scr 0x%x\n",
+    D(bug("[Compositing] Toggle te %d, oldscr 0x%lx, top 0x%lx, comp 0x%lx, scr 0x%lx\n",
         topedge, oldscreenbitmap, compdata->topbitmap, compdata->compositedbitmap, 
         compdata->screenbitmap));
 
@@ -482,7 +480,10 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
     /* (a) - disposing of oldcompositingbitmap needs to happen after mode switch 
        since it could have been the current screenbitmap */
     if (oldcompositedbitmap)
+    {
+    	D(bug("[Compositing] Disposing old working bitmap 0x%p\n", oldcompositedbitmap));
         HIDD_Gfx_DisposeBitMap(compdata->gfx, oldcompositedbitmap);
+    }
 
     /* Handled */
     compdata->modeschanged = FALSE;
@@ -558,7 +559,7 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
     struct StackBitMapNode * n = NULL;
 
-    D(bug("[Compositing] BitMapStackChanged, topbitmap: 0x%x\n", 
+    D(bug("[Compositing] BitMapStackChanged, topbitmap: 0x%lx\n", 
         msg->data->Bitmap));
 
     LOCK_COMPOSITING_WRITE
@@ -589,9 +590,12 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     /* Copy bitmaps pointers to our stack */
     for (vpdata = msg->data; vpdata; vpdata = vpdata->Next)
     {
-        D(bug("Compositing] Testing bitmap: %x\n", vpdata->Bitmap));
-        /* Check if the passed bitmap can be composited together with screen
-           bitmap */
+        D(bug("[Compositing] Testing bitmap: 0x%lx\n", vpdata->Bitmap));
+
+        /*
+         * Check if the passed bitmap can be composited together with screen
+         * bitmap
+         */
         if (HIDDCompositingCanCompositeWithScreenBitMap(compdata, vpdata->Bitmap))
         {
             n = AllocMem(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
