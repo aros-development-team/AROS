@@ -236,7 +236,7 @@ VOID PBM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 	*msg->storage = data->bitmap ? data->bitmap->Depth : 0;
 	return;
     }
-    else if (msg->attrID = aHidd_PlanarBM_BitMap)
+    else if (msg->attrID == aHidd_PlanarBM_BitMap)
     {
     	*msg->storage = (IPTR)data->bitmap;
     	return;
