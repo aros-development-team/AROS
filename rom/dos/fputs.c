@@ -47,6 +47,11 @@
 {
     AROS_LIBFUNC_INIT
 
+    if (file == BNULL) {
+        SetIoErr(ERROR_OBJECT_NOT_FOUND);
+        return EOF;
+    }
+
     ASSERT_VALID_PTR(BADDR(file));
     ASSERT_VALID_PTR(string);
 
