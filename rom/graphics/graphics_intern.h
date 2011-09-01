@@ -253,7 +253,6 @@ struct GfxBase_intern
 #define HiddGCBase		(PrivGBase(GfxBase)->HiddGCBase)
 #define HiddGfxBase		(PrivGBase(GfxBase)->HiddGfxBase)
 #define HiddPlanarBMBase	(PrivGBase(GfxBase)->HiddPlanarBMBase)
-#define HiddCompositingMethodBase (PrivGBase(GfxBase)->HiddCompositingMethodBase)
 
 /* This must be included before defining OOPBase */
 #include <hidd/graphics_inline.h>
