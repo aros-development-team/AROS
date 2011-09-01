@@ -676,39 +676,34 @@ enum
 enum
 {
     /* Attributes for a bitmap */
-    aoHidd_BitMap_Width,         /*  0 [ISG] Bitmap width                         */
-    aoHidd_BitMap_Height,        /*  1 [ISG] Bitmap height                        */
-    aoHidd_BitMap_Displayable,   /*  2 [I.G] BOOL bitmap is displayable (default: FALSE)  */
-    aoHidd_BitMap_Visible,       /*  3 [..G] Check if a bitmap is visible         */
-    aoHidd_BitMap_IsLinearMem,   /*  4 [..G] Is the bitmap memory contiguous      */
-    aoHidd_BitMap_BytesPerRow,   /*  5 [..G] Number of bytes in a row             */
-    aoHidd_BitMap_ColorMap,      /*  6 [..G] Colormap of the bitmap               */
+    aoHidd_BitMap_Width,         /*  0 [ISG] Bitmap width                         	  			*/
+    aoHidd_BitMap_Height,        /*  1 [ISG] Bitmap height                        	  			*/
+    aoHidd_BitMap_Displayable,   /*  2 [I.G] BOOL bitmap is displayable (default: FALSE)  			*/
+    aoHidd_BitMap_Visible,       /*  3 [..G] Check if a bitmap is visible         	  			*/
+    aoHidd_BitMap_IsLinearMem,   /*  4 [..G] Is the bitmap memory contiguous      	  			*/
+    aoHidd_BitMap_BytesPerRow,   /*  5 [..G] Number of bytes in a row             	  			*/
+    aoHidd_BitMap_ColorMap,      /*  6 [..G] Colormap of the bitmap               	  			*/
     aoHidd_BitMap_Friend,	 /*  7 [I.G] Friend bitmap. The bitmap will be allocated so that it
-    				            is optimized for blitting to this bitmap */
-    aoHidd_BitMap_GfxHidd,	 /*  8 [..G] Pointer to the gfxhidd object this bitmap was created with */
+    				            is optimized for blitting to this bitmap	  			*/
+    aoHidd_BitMap_GfxHidd,	 /*  8 [..G] Pointer to the gfxhidd object this bitmap was created with		*/
     aoHidd_BitMap_StdPixFmt,	 /*  9 [I..] (HIDDT_StdPixFmt) What stdpixel format the bitmap should have.
-				             This is a shortcut to create a bitmap with a std pixelformat */
-    aoHidd_BitMap_PixFmt,	 /* 10 [..G] (OOP_Object *) This is complete pixfmt of a bitmap */
+				             This is a shortcut to create a bitmap with a std pixelformat	*/
+    aoHidd_BitMap_PixFmt,	 /* 10 [..G] (OOP_Object *) This is complete pixfmt of a bitmap			*/
     aoHidd_BitMap_ModeID,	 /* 11 [I.G] (HIDDT_ModeID) must be passed on initialization of
 				             aHidd_BitMap_Displayable=TRUE bitmaps. May also be
-				             used with non-displayable bitmaps */
-    aoHidd_BitMap_ClassPtr,	 /* 12 [I.G] Only used by subclasses of the gfx hidd */
-    aoHidd_BitMap_ClassID,	 /* 13 [I..] Only used by subclasses of the gfx hidd */
-    aoHidd_BitMap_PixFmtTags,	 /* 14 [I..] Only used by subclasses of BitMap class */
-    
-#if 0    
-    aoHidd_BitMap_Mode,          /*    [ISG] The display mode of this bitmap      */
-    aoHidd_BitMap_AllocBuffer,   /*    [I..] BOOL allocate buffer (default: TRUE) */
-    
-    aoHidd_BitMap_BestSize,      /*    [..G] Best size for depth                  */
+				             used with non-displayable bitmaps					*/
+    aoHidd_BitMap_ClassPtr,	 /* 12 [I..] Only used by subclasses of the gfx hidd				*/
+    aoHidd_BitMap_ClassID,	 /* 13 [I..] Only used by subclasses of the gfx hidd				*/
+    aoHidd_BitMap_PixFmtTags,	 /* 14 [...] No function, reserved						*/
+#if 0
+    aoHidd_BitMap_BestSize,      /*    [..G] Best size for depth                  				*/
 #endif
-    aoHidd_BitMap_FrameBuffer,	 /* 15 [I.G] BOOL - Allocate framebuffer	  */
-
-    aoHidd_BitMap_LeftEdge,      /* 16 [.SG] Left edge position of the bitmap     */
-    aoHidd_BitMap_TopEdge,       /* 17 [.SG] Top edge position of the bitmap      */
-    aoHidd_BitMap_Align,         /* 18 [I..] Number of pixels to align bitmap data width to */
-
-    aoHidd_BitMap_Depth,         /* 19 [..G] Bitmap depth                         */
+    aoHidd_BitMap_FrameBuffer,	 /* 15 [I..] BOOL - Allocate framebuffer	  				*/
+    aoHidd_BitMap_LeftEdge,      /* 16 [.SG] Left edge position of the bitmap					*/
+    aoHidd_BitMap_TopEdge,       /* 17 [.SG] Top edge position of the bitmap					*/
+    aoHidd_BitMap_Align,         /* 18 [I..] Number of pixels to align bitmap data width to			*/
+    aoHidd_BitMap_Depth,         /* 19 [..G] Bitmap depth                         				*/
+    aoHidd_BitMap_ModeChange,	 /* 20 [I..] BOOL - Supports mode ID change					*/
 
     num_Hidd_BitMap_Attrs
 };    
