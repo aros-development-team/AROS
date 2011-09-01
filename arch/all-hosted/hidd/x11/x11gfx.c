@@ -35,9 +35,9 @@
 
 #include <aros/symbolsets.h>
 
+#include "bitmap_class.h"
 #include "x11gfx_intern.h"
 #include "x11.h"
-#include "bitmap.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -50,7 +50,7 @@
 
 /****************************************************************************************/
 
-#define IS_X11GFX_ATTR(attr, idx) ( ( (idx) = (attr) - HiddX11GfxAB) < num_Hidd_X11Gfx_Attrs)
+#define IS_X11GFX_ATTR(attr, idx) ( ( (idx) = (attr) - HiddX11GfxAB) < num_Hidd_X11BitMap_Attrs)
 
 
 int xshm_major;
@@ -58,18 +58,16 @@ int xshm_major;
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
-static OOP_AttrBase HiddBitMapAttrBase;  
-static OOP_AttrBase HiddX11GfxAB;
-static OOP_AttrBase HiddX11BitMapAB;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddAttrBase;
+OOP_AttrBase HiddBitMapAttrBase;  
+OOP_AttrBase HiddX11BitMapAB;
+OOP_AttrBase HiddSyncAttrBase;
+OOP_AttrBase HiddPixFmtAttrBase;
+OOP_AttrBase HiddGfxAttrBase;
+OOP_AttrBase HiddAttrBase;
 
-static struct OOP_ABDescr attrbases[] =
+static const struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap	, &HiddBitMapAttrBase	},
-    { IID_Hidd_X11Gfx	, &HiddX11GfxAB		},
     { IID_Hidd_X11BitMap, &HiddX11BitMapAB	},
     { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
     { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase	},
@@ -77,7 +75,6 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd  	, &HiddAttrBase		},
     { NULL  	    	, NULL      	    	}
 };
-
 
 static VOID cleanupx11stuff(struct x11_staticdata *xsd);
 static BOOL initx11stuff(struct x11_staticdata *xsd);
@@ -507,7 +504,6 @@ VOID X11Cl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
     BOOL                        framebuffer = FALSE;
-    BOOL                        displayable = FALSE;
     struct pHidd_Gfx_NewBitMap  p;
     OOP_Object                  *newbm;
     IPTR                        drawable;
@@ -515,91 +511,58 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     struct gfx_data             *data;
     struct TagItem              tags[] =
     {
-	{ aHidd_X11Gfx_SysDisplay   , (IPTR) NULL   },	/* 0 */
-	{ aHidd_X11Gfx_SysScreen    , 0UL   	    },	/* 1 */	
-	{ aHidd_X11Gfx_SysCursor    , 0UL   	    },	/* 2 */
-	{ aHidd_X11Gfx_ColorMap     , 0UL   	    },	/* 3 */
-	{ aHidd_X11Gfx_VisualClass  , 0UL   	    },	/* 4 */
-	{ TAG_IGNORE	    	    , 0UL   	    },	/* 5 */
-	{ TAG_MORE  	    	    , (IPTR) NULL   }   /* 6 */
+	{ aHidd_X11BitMap_SysDisplay   , 0 }, /* 0 */
+	{ aHidd_X11BitMap_SysScreen    , 0 }, /* 1 */	
+	{ aHidd_X11BitMap_SysCursor    , 0 }, /* 2 */
+	{ aHidd_X11BitMap_ColorMap     , 0 }, /* 3 */
+	{ aHidd_X11BitMap_VisualClass  , 0 }, /* 4 */
+	{ TAG_IGNORE	    	       , 0 }, /* 5 */
+	{ TAG_MORE  	    	       , 0 }  /* 6 */
     };
     
     EnterFunc(bug("X11Gfx::NewBitMap()\n"));
 
     data = OOP_INST_DATA(cl, o);
-    
+
     tags[0].ti_Data = (IPTR)data->display;
     tags[1].ti_Data = data->screen;
     tags[2].ti_Data = (IPTR)data->cursor;
     tags[3].ti_Data = data->colmap;
     tags[4].ti_Data = XSD(cl)->vi.class;
     tags[6].ti_Data = (IPTR)msg->attrList;
-    
+
     /* Displayable bitmap ? */
 #if USE_FRAMEBUFFER
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 #else
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+    framebuffer = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
 #endif
-    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-		
-    if (framebuffer || displayable)
+    modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+
+    if (modeid != vHidd_ModeID_Invalid)
     {
+    	/* ModeID supplied, it's for sure X11 bitmap */
     	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
-	tags[5].ti_Data	= (IPTR)XSD(cl)->onbmclass;
-    }
-    /* When do we create an x11 offscreen bitmap ?
-	- If the user supplied a modeid.
-	- Bitmaps that have a friend that is an X11 bitmap
-	  and there is no standard pixfmt supplied
-    */
-    else if (modeid != vHidd_ModeID_Invalid)
-    {
-    	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
-	tags[5].ti_Data	= (IPTR)XSD(cl)->offbmclass;
-    }
-    else
-    {
-	OOP_Object  	*friend;
-    	HIDDT_StdPixFmt  stdpf;
-
-	friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
-	stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-
-	if (NULL != friend)
-	{
-	    if (vHidd_StdPixFmt_Unknown == stdpf)
-	    {
-	    	IPTR d = 0;
-
-	    	/* Is the friend an X11 bitmap ? */
-	    	OOP_GetAttr(friend, aHidd_X11BitMap_Drawable, &d);
-	    	if (0 != d)
-		{
-		    tags[5].ti_Tag  = aHidd_BitMap_ClassPtr;
-		    tags[5].ti_Data = (IPTR)XSD(cl)->offbmclass;
-		}
-	    }
-	}
+	tags[5].ti_Data	= (IPTR)XSD(cl)->bmclass;
     }
 
     /* !!! IMPORTANT !!! */
-    
     p.mID = msg->mID;
     p.attrList = tags;
-    
+
     newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
-    
-    if (NULL != newbm && (framebuffer || displayable))
+
+    if (NULL != newbm && framebuffer)
     {
+	/* Framebuffer's underlying object is our window */
     	OOP_GetAttr(newbm, aHidd_X11BitMap_Drawable, &drawable);
 	data->fbwin = (Window)drawable;
-    #if ADJUST_XWIN_SIZE
+#if ADJUST_XWIN_SIZE
     	OOP_GetAttr(newbm, aHidd_X11BitMap_MasterWindow, &drawable);
 	data->masterwin = (Window)drawable;
-    #endif
+#endif
     }
-    
+
     ReturnPtr("X11Gfx::NewBitMap", OOP_Object *, newbm);
 }
 
@@ -607,23 +570,9 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 
 VOID X11Cl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct gfx_data *data = OOP_INST_DATA(cl, o);
-    ULONG   	     idx;
-    
-    if (IS_X11GFX_ATTR(msg->attrID, idx))
-    {
-	switch (idx)
-	{
-	    case aoHidd_X11Gfx_SysDisplay:
-	    	*msg->storage = (IPTR)data->display;
-		return;
-		
-	    case aoHidd_X11Gfx_SysScreen:
-	    	*msg->storage = (IPTR)data->screen;
-		return;
-	}
-    }
-    else if (IS_GFX_ATTR(msg->attrID, idx))
+    ULONG idx;
+
+    if (IS_GFX_ATTR(msg->attrID, idx))
     {
     	switch (idx)
 	{
@@ -752,53 +701,37 @@ OOP_Object *X11Cl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 
 VOID X11Cl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
-    ULONG   	     	 mode;
-    Drawable 	     	 src = 0, dest = 0;
-    struct gfx_data 	*data;
-    struct bitmap_data  *bmdata;
-    
-    data = OOP_INST_DATA(cl, o);
-    
+    ULONG    mode;
+    Drawable src = 0, dest = 0;
+    GC	     gc = 0;
+
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+
     mode = GC_DRMD(msg->gc);
-    
+
     OOP_GetAttr(msg->src,  aHidd_X11BitMap_Drawable, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_X11BitMap_Drawable, (IPTR *)&dest);
-	
+
     if (0 == dest || 0 == src)
     {
-	/* The destination object is no X11 bitmap, onscreen nor offscreen.
-	    Let the superclass do the copying in a more general way
-	*/
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	
+	/*
+	 * One of objects is not an X11 bitmap.
+	 * Let the superclass do the copying in a more general way
+	 */
+	OOP_DoSuperMethod(cl, o, &msg->mID);
 	return;
     }
 
-    LOCK_X11
+    OOP_GetAttr(msg->src, aHidd_X11BitMap_GC, (IPTR *)&gc);
 
-    /* This may seem ugly, but we know nobody has subclassed
-       the x11 class, since it's private
-    */
-    bmdata = OOP_INST_DATA(XSD(cl)->onbmclass, msg->src);
+    HostLib_Lock();
 
-    XCALL(XSetFunction, data->display, bmdata->gc, mode);
-    
-    XCALL(XCopyArea, data->display
-    	, src			/* src	*/
-	, dest			/* dest */
-	, bmdata->gc
-	, msg->srcX
-	, msg->srcY
-	, msg->width
-	, msg->height
-	, msg->destX
-	, msg->destY
-    );
-	
-    XFLUSH(data->display);
-    
-    UNLOCK_X11
-    
+    XCALL(XSetFunction, data->display, gc, mode);
+    XCALL(XCopyArea, data->display, src, dest, gc,
+	  msg->srcX, msg->srcY, msg->width, msg->height,
+	  msg->destX, msg->destY);
+
+    HostLib_Unlock();
 }
 
 /****************************************************************************************/

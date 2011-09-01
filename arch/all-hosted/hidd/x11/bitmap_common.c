@@ -1,27 +1,38 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <exec/alerts.h>
-#include <aros/macros.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/cursorfont.h>
+#include <X11/keysym.h>
 
-#undef DEBUG
-#define DEBUG 0
 #include <aros/debug.h>
+#include <aros/macros.h>
+#include <exec/memory.h>
+#include <exec/lists.h>
+#include <graphics/rastport.h>
+#include <graphics/gfx.h>
+#include <hidd/graphics.h>
+#include <oop/oop.h>
+
+#include <proto/oop.h>
+#include <proto/utility.h>
+
+#include "x11.h"
+#include "bitmap.h"
+#include "x11gfx_intern.h"
 
 /****************************************************************************************/
-
-/* stegerg: maybe more safe, even if Unix malloc is used and not AROS malloc */
-#define NO_MALLOC   	1
 
 #define DO_ENDIAN_FIX 	1 /* fix if X11 server running on remote server with different endianess */
 
 /****************************************************************************************/
 
-#if DO_ENDIAN_FIX
+#define MNAME(x) X11BM__ ## x
 
-/****************************************************************************************/
+#if DO_ENDIAN_FIX
 
 #if AROS_BIG_ENDIAN
 #define NEEDS_ENDIAN_FIX(image) (((image)->bits_per_pixel >= 15) && ((image)->byte_order != MSBFirst))
@@ -41,6 +52,118 @@
 #define SWAP16(x) AROS_WORD2BE(x)
 #define SWAP32(x) AROS_LONG2BE(x)
 #endif
+
+/****************************************************************************************/
+
+OOP_Object *X11BM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+{
+    EnterFunc(bug("X11Gfx.BitMap::New()\n"));
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
+    if (o)
+    {
+    	struct bitmap_data *data = OOP_INST_DATA(cl, o);
+        BOOL ok = TRUE;
+        BOOL framebuffer;
+
+	/* Get some info passed to us by the x11gfxhidd class */
+	data->display = (Display *)GetTagData(aHidd_X11BitMap_SysDisplay, 0, msg->attrList);
+	data->screen  =            GetTagData(aHidd_X11BitMap_SysScreen,  0, msg->attrList);
+	data->cursor  = (Cursor)   GetTagData(aHidd_X11BitMap_SysCursor,  0, msg->attrList);
+	data->colmap  = (Colormap) GetTagData(aHidd_X11BitMap_ColorMap,   0, msg->attrList);
+	framebuffer   =		   GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+
+	D(bug("[X11BM] Display 0x%p, screen %d, cursor 0x%p, colormap 0x%p\n",
+	      data->display, data->screen, data->cursor, data->colmap));
+
+	if (framebuffer)
+	{
+	    /* Framebuffer is X11 window */
+	    data->flags |= BMDF_FRAMEBUFFER;
+	    ok = X11BM_InitFB(cl, o, msg->attrList);
+	}
+	else
+	{
+	    /* Anything else is a pixmap */
+	    ok = X11BM_InitPM(cl, o, msg->attrList);
+	}
+
+	if (ok)
+	{
+	    /* Create an X11 GC. All objects need it. */
+	    XGCValues gcval;
+
+	    gcval.plane_mask = AllPlanes;
+	    gcval.graphics_exposures = False;
+		
+    	    HostLib_Lock();
+
+	    data->gc = XCALL(XCreateGC, data->display, DRAWABLE(data),
+			     GCPlaneMask | GCGraphicsExposures, &gcval);
+    	    HostLib_Unlock();
+
+	    if (!data->gc)
+	    	ok = FALSE;
+#if X11SOFTMOUSE
+	    else if (framebuffer)
+		init_empty_cursor(DRAWABLE(data), data->gc, XSD(cl));
+#endif
+	}
+	
+	if (ok)
+	{
+	    ReturnPtr("X11Gfx.OnBitMap::New()", OOP_Object *, o);
+	}
+	else
+    	{
+            OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+
+    	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+    	}
+    } /* if (object allocated by superclass) */
+
+    ReturnPtr("X11Gfx.OnBitMap::New()", OOP_Object *, NULL);
+}
+
+/****************************************************************************************/
+
+VOID X11BM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
+    EnterFunc(bug("X11Gfx.BitMap::Dispose()\n"));
+
+    if (data->gc)
+    {
+    	HostLib_Lock();
+    	XCALL(XFreeGC, data->display, data->gc);
+    	HostLib_Unlock();
+    }
+
+    if (data->flags & BMDF_FRAMEBUFFER)
+    	X11BM_DisposeFB(data, XSD(cl));
+    else
+    	X11BM_DisposePM(data);
+
+    OOP_DoSuperMethod(cl, o, msg);
+    ReturnVoid("X11Gfx.BitMap::Dispose");
+}
+
+/****************************************************************************************/
+
+VOID X11BM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
+{
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
+    HostLib_Lock();
+    
+    if (data->flags & BMDF_FRAMEBUFFER)
+    	X11BM_ClearFB(data, GC_BG(msg->gc));
+    else
+    	X11BM_ClearPM(data, GC_BG(msg->gc));
+
+    HostLib_Unlock();
+}
 
 /****************************************************************************************/
 
@@ -111,21 +234,21 @@ BOOL MNAME(Hidd_BitMap__SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
     struct bitmap_data  *data = OOP_INST_DATA(cl, o);
     HIDDT_PixelFormat 	*pf;    
     ULONG   	    	 xc_i, col_i;
-        
+
+    if (!OOP_DoSuperMethod(cl, o, &msg->mID))
+    	return FALSE;
+
     pf = BM_PIXFMT(o);
-    
+
     if (vHidd_ColorModel_StaticPalette == HIDD_PF_COLMODEL(pf) ||
-    	vHidd_ColorModel_TrueColor == HIDD_PF_COLMODEL(pf) )
+    	vHidd_ColorModel_TrueColor == HIDD_PF_COLMODEL(pf))
     {	 
-	 /* Superclass takes care of this case */
-	 
-	 return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	 /* Superclass has taken care of this case */
+	 return TRUE;
     }
 
-    /* Ve have a vHidd_GT_Palette bitmap */    
-	
-    if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) return FALSE;
-    
+    /* Ve have a vHidd_GT_Palette bitmap */    	
+
     if (data->flags & BMDF_COLORMAP_ALLOCED)
     {
     	LOCK_X11	
@@ -226,8 +349,8 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     EnterFunc(bug("X11Gfx.BitMap::FillRect(%d,%d,%d,%d)\n",
     	          msg->minX, msg->minY, msg->maxX, msg->maxY));
 	    
-    D(bug("Drawmode: %d\n", mode));
-    
+    D(bug("Drawmode: %d\n", GC_DRMD(msg->gc)));
+
     gcval.function = GC_DRMD(msg->gc);
     gcval.foreground = GC_FG(msg->gc);
     gcval.background = GC_BG(msg->gc);
@@ -1116,13 +1239,8 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
 #endif
 	    
     bperline	= image->bytes_per_line;
-
-#if NO_MALLOC
     image->data = (char *)AllocVec((size_t)height * bperline, MEMF_PUBLIC);
-#else	
-    image->data = (char *)malloc((size_t)height * bperline);
-#endif
-    
+
     if (!image->data)
     {
     	LOCK_X11	
@@ -1139,13 +1257,9 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     XCALL(XPutImage, data->display, DRAWABLE(data), data->gc, image,
     	      0, 0, x, y, width, height);
     UNLOCK_X11 
-    
-#if NO_MALLOC
+
     FreeVec(image->data);
-#else   
-    free(image->data);
-#endif
-    
+
     LOCK_X11    
     XCALL(XFree, image);
     UNLOCK_X11   
@@ -1204,39 +1318,30 @@ VOID MNAME(Hidd_BitMap__PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
-#undef DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
-
-/****************************************************************************************/
-
 VOID MNAME(Root__Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG   	    	idx;
-    
+
     if (IS_X11BM_ATTR(msg->attrID, idx))
     {
 	switch (idx)
 	{
-	    case aoHidd_X11BitMap_Drawable:
-	    	*msg->storage = (IPTR)DRAWABLE(data);
-		break;
+	case aoHidd_X11BitMap_Drawable:
+	    *msg->storage = (IPTR)DRAWABLE(data);
+	    return;
 
-	    case aoHidd_X11BitMap_MasterWindow:
-	        *msg->storage = (IPTR)data->masterxwindow;
-		break;
-		
-	    default:
-	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		break;
+	case aoHidd_X11BitMap_MasterWindow:
+	    *msg->storage = (IPTR)data->masterxwindow;
+	    return;
+
+	case aoHidd_X11BitMap_GC:
+	    *msg->storage = (IPTR)data->gc;
+	    return;
 	}
     }
-    else
-    {
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }
-    
+
+    OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 /****************************************************************************************/

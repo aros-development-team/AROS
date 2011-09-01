@@ -12,6 +12,8 @@
 #include <exec/libraries.h>
 #include <exec/semaphores.h>
 #include <oop/oop.h>
+
+#include <proto/exec.h>
 #include <proto/hostlib.h>
 
 #define timeval sys_timeval
@@ -128,7 +130,6 @@ struct notify_msg
      ULONG  	     height;
 };
 
-
 struct x11_staticdata
 {
     /*
@@ -139,8 +140,7 @@ struct x11_staticdata
     BOOL	   	     havetable;
     OOP_Class 	    	    *gfxclass;
 
-    OOP_Class 	    	    *onbmclass;
-    OOP_Class 	    	    *offbmclass;
+    OOP_Class 	    	    *bmclass;;
     OOP_Class 	    	    *mouseclass;
     OOP_Class 	    	    *kbdclass;
 
@@ -205,6 +205,14 @@ struct x11_staticdata
     Atom    	    	     hostclipboard_writerequest_property;
     ULONG   	    	     hostclipboard_write_chunks;
 };
+
+/* Send the message and wait for the reply */
+static inline void X11DoNotify(struct x11_staticdata *xsd, struct notify_msg *msg)
+{
+    PutMsg(xsd->x11task_notify_port, &msg->execmsg);
+    WaitPort(msg->execmsg.mn_ReplyPort);
+    GetMsg(msg->execmsg.mn_ReplyPort);
+}
 
 struct x11clbase
 {
