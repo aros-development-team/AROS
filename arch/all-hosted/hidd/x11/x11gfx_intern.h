@@ -58,38 +58,8 @@ VOID free_ximage(XImage *image);
 
 #define IID_Hidd_X11Gfx     	"hidd.gfx.x11gfx"
 
-
-#define HiddX11GfxAB  	    	__abHidd_X11Gfx
-
-/* extern OOP_AttrBase HiddX11GfxAB; */
-
-enum
-{
-    aoHidd_X11Gfx_SysDisplay,
-    aoHidd_X11Gfx_SysScreen,
-    aoHidd_X11Gfx_Hidd2X11CMap,
-    aoHidd_X11Gfx_SysCursor,
-    aoHidd_X11Gfx_ColorMap,
-    aoHidd_X11Gfx_VisualClass, /* stegerg */
-    
-    num_Hidd_X11Gfx_Attrs
-    
-};
-
-#define aHidd_X11Gfx_SysDisplay		(HiddX11GfxAB + aoHidd_X11Gfx_SysDisplay)
-#define aHidd_X11Gfx_SysScreen		(HiddX11GfxAB + aoHidd_X11Gfx_SysScreen)
-#define aHidd_X11Gfx_Hidd2X11CMap	(HiddX11GfxAB + aoHidd_X11Gfx_Hidd2X11CMap)
-#define aHidd_X11Gfx_SysCursor		(HiddX11GfxAB + aoHidd_X11Gfx_SysCursor)
-#define aHidd_X11Gfx_ColorMap		(HiddX11GfxAB + aoHidd_X11Gfx_ColorMap)
-#define aHidd_X11Gfx_VisualClass	(HiddX11GfxAB + aoHidd_X11Gfx_VisualClass) /* stegerg */
-
-
 #define PEN_BITS    4
 #define NUM_COLORS  (1L << PEN_BITS)
 #define PEN_MASK    (NUM_COLORS - 1)
-
-
-#define expunge() \
-    AROS_LC0(BPTR, expunge, struct x11gfxbase *, LIBBASE, 3, X11Gfx)
 
 #endif /* X11GFX_INTERN_H */
