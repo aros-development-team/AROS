@@ -417,10 +417,10 @@ BCPL level          /*  44, LONG (or BPTR?) */
     move.l  %a1@(-12),%d0  /* Return caller's BCPL frame */
     BRTS
 
-BCPLd longcall       /*  48, LONG, level, label */
-	move.l	%d1,%a1
-	move.l	%a1@(-4),%a4
-	jmp		%a0@(%d2.l)
+BCPL longcall       /*  48, LONG, level, label */
+    move.l	%d1,%a1
+    move.l	%a1@(-4),%a4
+    jmp		%a0@(%d2.l)
 
 BCPL allocMem       /*  4c, BPTR, lwlength, reqs */
     movem.l	%a0-%a1/%a6,%sp@-
@@ -1400,7 +1400,11 @@ BCPL rename         /* 16c, void, @oldname, @newname */
 
 /*      170 - contains APTR to IntuitionBase */
 
-BCPLd Close          /* 174, void, @FileHandle */
+BCPL Close          /* 174, void, @FileHandle */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr		%a6@(6 * -6)	/* DOS/Close() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd getword        /* 178, void, longaddress, wordnumber */
@@ -1431,7 +1435,15 @@ BCPL deviceproc     /* 198, FileLock ^, @filename */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd libcall        /* 19c, void, libbase, LVOffset, d0, d1, a0, a1 */
+BCPL libcall        /* 19c, void, libbase, LVOffset, d0, d1, a0, a1 */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%d1,%a6
+    move.l	%a1@(0x08),%d0
+    move.l	%a1@(0x0c),%d1
+    move.l	%a1@(0x10),%a0
+    move.l	%a1@(0x14),%a1
+    jsr		%a6@(%d2)
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd writeErr		/* 1a0, ??, ?? */
