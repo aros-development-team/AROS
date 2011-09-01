@@ -29,11 +29,11 @@ ULONG composer_Install(OOP_Class *cl, struct GfxBase *GfxBase)
     if (!HiddCompositingAttrBase)
     	return DD_NO_MEM;
 
-    if (!HiddCompositingMethodBase)
+    if (!PrivGBase(GfxBase)->HiddCompositingMethodBase)
     {
-    	HiddCompositingMethodBase = OOP_GetMethodID(IID_Hidd_Compositing, 0);
+    	PrivGBase(GfxBase)->HiddCompositingMethodBase = OOP_GetMethodID(IID_Hidd_Compositing, 0);
 
-	if (!HiddCompositingMethodBase)
+	if (!PrivGBase(GfxBase)->HiddCompositingMethodBase)
 	{
     	    OOP_ReleaseAttrBase(IID_Hidd_Compositing);
 
