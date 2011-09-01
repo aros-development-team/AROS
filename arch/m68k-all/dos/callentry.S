@@ -122,7 +122,7 @@ cleanup:
          */
         .global BCPL_thunk
 BCPL_thunk:
-	movem.l %a5-%a6,%sp@-
+	movem.l %d2-%d7/%a2-%a6,%sp@-
 	/* Make sure me->pr_ReturnAddr is correct */
 	move.l	%a1,%d7
 	neg.l	%d7			/* D7 = - tc_SPLower */
@@ -130,14 +130,16 @@ BCPL_thunk:
 	move.l	%a5,%sp@-		/* sp+ 4 = stksize */
 	move.l	%sp,%a3@		/* Save address of return address */
 
+	sub.l   %a0,%a0
 	lea.l   BCPL_jsr,%a5
 	lea.l   BCPL_rts,%a6
 	/* Skip past the 3 words we need for the BCPL_jsr */
 	lea.l   %a1@(12),%a1
+	moveq.l #12,%d0
 	pea.l   0f                      /* sp   = return address */
 	jsr     %a5@                    /* The BCPL_jsr will pop the stack ! */
 	addq.l  #4,%sp                  /* Drop the return location */
 0:                                      /* BCPL Exit arrives here */
 	addq.l	#4,%sp                  /* Drop the stacksize off */
-	movem.l %sp@+,%a5-%a6
+	movem.l %sp@+,%d2-%d7/%a2-%a6
 	rts
