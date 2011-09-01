@@ -552,7 +552,7 @@ VOID METHOD(Compositing, Root, Get)
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
-VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
+OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 {
     struct HIDD_ViewPortData * vpdata;
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
@@ -569,18 +569,23 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     if (!msg->data)
     {
         UNLOCK_COMPOSITING
-        return; /* TODO: BLANK SCREEN */
+
+	/* Blank screen */
+        compdata->screenbitmap = NULL;
+        HIDD_Gfx_Show(compdata->gfx, NULL, fHidd_Gfx_Show_CopyBack);
+
+        return NULL;
     }
 
-    /* Switch mode if needed */    
+    /* Switch mode if needed */
     if (!HIDDCompositingTopBitMapChanged(compdata, msg->data->Bitmap))
     {
         /* Something bad happened. Yes, bitmap stack is already erased - that's ok */
         D(bug("[Compositing] Failed to change top bitmap\n"));
         UNLOCK_COMPOSITING
-        return; 
+        return NULL; 
     }
-    
+
     /* Copy bitmaps pointers to our stack */
     for (vpdata = msg->data; vpdata; vpdata = vpdata->Next)
     {
@@ -617,6 +622,9 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     HIDDCompositingRedrawVisibleScreen(compdata);
 
     UNLOCK_COMPOSITING
+
+    /* Return actually displayed bitmap */
+    return compdata->screenbitmap;
 }
 
 VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
