@@ -6,7 +6,7 @@ USER_CFLAGS := -D__DOS_NOLIBBASE__
 
 IMAGE_TYPES := aos elf
 
-FILES	  := bcpl_support bstr_helper errorlist \
+FILES	  := bstr_helper errorlist \
              boot isbootable \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \

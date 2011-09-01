@@ -40,71 +40,6 @@ const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
 /*
  * Set up the process's initial global vector
  */
-#define SEGLIST_SIZE (6)
-
-/* Set DOSBase to non-NULL for a BCPL setup
- * with a valid GlobVec, and NULL for a setup
- * without a GlobVec.
- */
-APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
-{
-    ULONG *segment;
-
-    segment = AllocVec(SEGLIST_SIZE * sizeof(ULONG), MEMF_ANY | MEMF_CLEAR);
-    if (segment == NULL)
-    	return NULL;
-
-    /* create fake seglist if only entrypoint was given.
-     * This fake SegList will be automatically unloaded
-     * when the progam exits.
-     */
-    if (entry && !segList) {
-    	segList = CreateSegList(entry);
-    	D(bug("fakeseglist @%p\n", BADDR(segList)));
-    	entry = NULL;
-
-    	/* Make sure to free the seglist when we're done */
-    	me->pr_Flags |= PRB_FREESEGLIST;
-    }
-    if (!entry)
-    	entry = (APTR)((BPTR*)BADDR(segList) + 1);
-
-    segment[0] = 4;
-    segment[1] = (ULONG)-1;	/* 'system' segment */
-    segment[2] = (ULONG)-2;	/* 'dosbase' segment */
-    segment[3] = segList;
-    segment[4] = 0;
-    segment[5] = segList;
-
-    me->pr_SegList = MKBADDR(segment);
-
-    /* Set default BCPL GlobVec */
-    me->pr_GlobVec = ((struct DosLibrary *)DOSBase)->dl_GV;
-
-    segment = BADDR(segList);
-    if (segment[2] == 0x0000abcd) {
-   	/* overlayed executable, fun..
-   	 * 2 = id
-   	 * 3 = filehandle (BPTR)
-   	 * 4 = overlay table (APTR)
-   	 * 5 = hunk table (BPTR)
-   	 * 6 = global vector (APTR)
-   	 */
-   	 segment[6] = (ULONG)me->pr_GlobVec;
-    }
-    D(bug("BCPL_Setup '%s' entry @%p\n", me->pr_Task.tc_Node.ln_Name, entry));
-
-    return entry;
-}
-
-void BCPL_Cleanup(struct Process *me)
-{
-    FreeVec(BADDR(me->pr_SegList));
-
-    me->pr_SegList = BNULL;
-    me->pr_GlobVec = NULL;
-}
-
 ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
 {
     ULONG *segment;
@@ -204,6 +139,24 @@ void BCPL_FreeGlobVec(struct Process *me)
     FreeMem(globvec, sizeof(BCPL_GlobVec));
 
     me->pr_GlobVec = DOSBase->dl_GV;
+}
+
+void BCPL_Fixup(struct Process *me)
+{
+    BPTR *segment = BADDR(me->pr_SegList);
+
+    if (segment[2] == (BPTR)0x0000abcd) {
+        D(bug("[BCPL_Fixup] Fixing up overlay\n"));
+
+   	/* overlayed executable, fun..
+   	 * 2 = id
+   	 * 3 = filehandle (BPTR)
+   	 * 4 = overlay table (APTR)
+   	 * 5 = hunk table (BPTR)
+   	 * 6 = global vector (APTR)
+   	 */
+   	segment[6] = (ULONG)me->pr_GlobVec;
+    }
 }
 
 extern void BCPL_thunk(void);
