@@ -1537,16 +1537,20 @@ BCPL DupLock        /* 1c4, FileLock ^, @FileLock */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-/* Very mysterious function. Called on BPTRs to FileLocks,
- * and it supplies the msgport that should already be in
- * the FileLock.
- *
- * Workbench C:Dir calls it, when transitioning from
- * printing out directories to printing files.
+/* Calls ErrorReport(IoErr(), ...)
+ * Why this is called 'makesysreq' is a question
+ * for the TripOS guys.
  */
-BCPLd makesysreq     /* 1c8, BOOL, count, @lock, *msgport */
-    moveq.l	#-1, %d0
-    BRTSd
+BCPL makesysreq     /* 1c8, BOOL, type, arg, *msgport */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%d3,%d4
+    move.l	%d2,%d3
+    move.l	%d1,%d2
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr 	%a6@(22 * -6)	/* IoErr */
+    jsr 	%a6@(80 * -6)	/* ErrorReport */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
 
 BCPL strcpy         /* 1cc, void, @src, @dest */
     move.l	%d2,%sp@-
