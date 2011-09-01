@@ -506,7 +506,6 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     BOOL                        framebuffer = FALSE;
     struct pHidd_Gfx_NewBitMap  p;
     OOP_Object                  *newbm;
-    IPTR                        drawable;
     HIDDT_ModeID                modeid;
     struct gfx_data             *data;
     struct TagItem              tags[] =
@@ -551,17 +550,6 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     p.attrList = tags;
 
     newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
-
-    if (NULL != newbm && framebuffer)
-    {
-	/* Framebuffer's underlying object is our window */
-    	OOP_GetAttr(newbm, aHidd_X11BitMap_Drawable, &drawable);
-	data->fbwin = (Window)drawable;
-#if ADJUST_XWIN_SIZE
-    	OOP_GetAttr(newbm, aHidd_X11BitMap_MasterWindow, &drawable);
-	data->masterwin = (Window)drawable;
-#endif
-    }
 
     ReturnPtr("X11Gfx::NewBitMap", OOP_Object *, newbm);
 }
@@ -610,7 +598,8 @@ VOID X11Cl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
-        if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
+        if (IS_GFX_ATTR(tag->ti_Tag, idx))
+        {
 	    switch(idx)
 	    {
 	    case aoHidd_Gfx_ActiveCallBack:
@@ -623,78 +612,7 @@ VOID X11Cl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 	    }
 	}
     }
-    OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
-}
-/****************************************************************************************/
-
-OOP_Object *X11Cl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
-{
-    OOP_Object      *fb = 0;
-    IPTR    	     width, height, modeid;
-    OOP_Object      *pf, *sync;
-    struct gfx_data *data;
-	
-    data = OOP_INST_DATA(cl, o);
-
-    if (!msg->bitMap)
-    {
-#if USE_FRAMEBUFFER    
-    	return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-#else
-    	return msg->bitMap;
-#endif
-    }
-    
-    OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
-    if ( HIDD_Gfx_GetMode(o, (HIDDT_ModeID)modeid, &sync, &pf))
-    {
-    	struct MsgPort *port;
-	
-    #if 1
-    	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Width, &width);
-	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Height, &height);
-    #else
-    	OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-	OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
-    #endif
-
-    #if ADJUST_XWIN_SIZE		
-	/* Send resize message to the x11 task */
-	port = CreateMsgPort();
-	if (NULL != port)
-	{
-	    struct notify_msg *nmsg;
-	    
-	    nmsg = AllocMem(sizeof (*nmsg), MEMF_PUBLIC);
-	    if (NULL != nmsg)
-	    {
-	    	nmsg->notify_type 	= NOTY_RESIZEWINDOW;
-		nmsg->xdisplay	  	= data->display;
-		nmsg->xwindow	 	= data->fbwin;
-		nmsg->masterxwindow	= data->masterwin;
-		nmsg->width	  	= width;
-		nmsg->height	  	= height;
-		nmsg->execmsg.mn_ReplyPort = port;
-		
-		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)nmsg);
-		
-		WaitPort(port);
-		FreeMem(nmsg, sizeof (*nmsg));
-    #endif		
-		#if USE_FRAMEBUFFER        
-		fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		#else
-		fb = msg->bitMap;
-		#endif
-    #if ADJUST_XWIN_SIZE		
-	    }
-	    DeleteMsgPort(port);
-	}
-	
-    #endif
-    }
-    
-    return fb;
+    OOP_DoSuperMethod(cl, obj, &msg->mID);
 }
 
 /****************************************************************************************/

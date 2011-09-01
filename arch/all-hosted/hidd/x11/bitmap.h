@@ -28,6 +28,7 @@ struct bitmap_data
     int		   flags;		/* See below				*/
     IPTR	   width;		/* Cached size, used by Clear method	*/
     IPTR	   height;
+    OOP_Object    *gfxhidd;		/* Cached owner, for ModeID switch	*/
 };
 
 #define BMDF_COLORMAP_ALLOCED 1
@@ -36,6 +37,7 @@ struct bitmap_data
 BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList);
 void init_empty_cursor(Window w, GC gc, struct x11_staticdata *xsd);
 VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd);
+BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid, struct x11_staticdata *xsd);
 VOID X11BM_ClearFB(struct bitmap_data *data, HIDDT_Pixel bg);
 
 BOOL X11BM_InitPM(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList);

@@ -46,7 +46,7 @@ static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth,
 BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 {
     Window rootwin;
-    OOP_Object *gfxhidd, *sync, *pixfmt;
+    OOP_Object *sync, *pixfmt;
     HIDDT_ModeID modeid;
     IPTR depth;
     XSetWindowAttributes winattr;
@@ -77,12 +77,15 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
     }
     /* end stegerg */
 
-    /* Get window size from our ModeID */
+    /*
+     * Get window size from our ModeID.
+     * We can't support scrolling in framebuffer mode.
+     */
     OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-    D(bug("[X11FB] ModeID 0x%08X, driver 0x%p\n", modeid, gfxhidd));
+    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&data->gfxhidd);
+    D(bug("[X11FB] ModeID 0x%08X, driver 0x%p\n", modeid, data->gfxhidd));
 
-    HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pixfmt);
+    HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pixfmt);
 
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &data->width);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &data->height);
@@ -323,8 +326,48 @@ VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd)
 
     HostLib_Unlock();
 
-    ReturnVoid("X11Gfx.BitMap::DisposePM");
+    ReturnVoid("X11Gfx.BitMap::DisposeFB");
 }
+
+/****************************************************************************************/
+
+#if ADJUST_XWIN_SIZE
+
+BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid, struct x11_staticdata *xsd)
+{
+    OOP_Object *sync, *pf;
+
+    if (HIDD_Gfx_GetMode(data->gfxhidd, (HIDDT_ModeID)modeid, &sync, &pf))
+    {
+    	struct MsgPort *port = CreateMsgPort();
+
+	if (port)
+	{
+	    struct notify_msg nmsg;
+
+	    /* Update cached size */
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &data->width);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &data->height);
+
+	    /* Send resize message to the x11 task */
+	    nmsg.notify_type 	= NOTY_RESIZEWINDOW;
+	    nmsg.xdisplay	= data->display;
+	    nmsg.xwindow	= data->drawable;
+	    nmsg.masterxwindow	= data->masterxwindow;
+	    nmsg.width	  	= data->width;
+	    nmsg.height		= data->height;
+	    nmsg.execmsg.mn_ReplyPort = port;
+
+	    X11DoNotify(xsd, &nmsg);
+
+	    DeleteMsgPort(port);
+	    return TRUE;
+	}
+    }
+    return FALSE;
+}
+	
+#endif
 
 /****************************************************************************************/
 

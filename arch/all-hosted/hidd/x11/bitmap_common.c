@@ -1331,10 +1331,6 @@ VOID MNAME(Root__Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    *msg->storage = (IPTR)DRAWABLE(data);
 	    return;
 
-	case aoHidd_X11BitMap_MasterWindow:
-	    *msg->storage = (IPTR)data->masterxwindow;
-	    return;
-
 	case aoHidd_X11BitMap_GC:
 	    *msg->storage = (IPTR)data->gc;
 	    return;
@@ -1342,6 +1338,31 @@ VOID MNAME(Root__Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 
     OOP_DoSuperMethod(cl, o, &msg->mID);
+}
+
+/****************************************************************************************/
+
+BOOL X11BM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+#if ADJUST_XWIN_SIZE
+    /* This provides support for framebuffer display mode switching */
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
+    if (data->flags & BMDF_FRAMEBUFFER)
+    {
+	struct TagItem *tag = FindTagItem(aHidd_BitMap_ModeID, msg->attrList);
+	
+	if (tag)
+	{
+	    if (!X11BM_SetMode(data, tag->ti_Data, XSD(cl)))
+	    {
+	    	/* Bail out if error happened, see aoHidd_BitMap_ModeID documentation */
+	    	return FALSE;
+	    }
+	}
+    }
+#endif
+    return OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 /****************************************************************************************/
