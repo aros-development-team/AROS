@@ -102,8 +102,12 @@ void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, SIPTR re
 #define dopacket1(base, res2, port, action, arg1)			  dopacket(res2, port, action, (SIPTR)(arg1), 0, 0, 0, 0)
 #define dopacket0(base, res2, port, action)				  dopacket(res2, port, action, 0, 0, 0, 0, 0)
 
-extern APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase);
-extern void BCPL_Cleanup(struct Process *me);
+#ifdef __mc68000
+extern void BCPL_Fixup(struct Process *me);
+#else
+#define BCPL_Fixup(p) do { } while (0)
+#endif
+
 ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me);
 
 struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, struct DosLibrary *DOSBase);

@@ -24,6 +24,8 @@
 #include <string.h>
 
 static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLibrary *DOSBase);
+#define SEGARRAY_LENGTH 6       /* Minimum needed for HUNK overlays */
+
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase);
 
 BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct DosLibrary * DOSBase);
@@ -74,13 +76,14 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     /* Allocated resources */
     struct Process  	    	*process = NULL;
-    BPTR            	    	 input = 0, output = 0, ces = 0, curdir = 0, homedir = 0;
+    BPTR            	    	 input = 0, output = 0, ces = 0, curdir = 0, homedir = 0, segList, *segArray;
     STRPTR          	    	 stack = NULL, name = NULL, argptr = NULL;
     ULONG           	    	 namesize = 0, argsize = 0;
     struct MemList  	    	*memlist = NULL;
     struct CommandLineInterface *cli = NULL;
     struct Process  	    	*me = (struct Process *)FindTask(NULL);
     ULONG                        old_sig = 0;
+    APTR                         entry;
 
     /* TODO: NP_CommandName, NP_NotifyOnDeath */
 
@@ -409,7 +412,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     NEWLIST(&process->pr_MsgPort.mp_MsgList);
 
     process->pr_SegList = BNULL;
-    process->pr_GlobVec = 0;
+    process->pr_GlobVec = ((struct DosLibrary *)DOSBase)->dl_GV;
     process->pr_StackBase = MKBADDR(process->pr_Task.tc_SPUpper);
     process->pr_Result2 = 0;
     process->pr_CurrentDir = (BPTR)defaults[8].ti_Data;
@@ -467,6 +470,32 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         old_sig = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE; 
     }
 
+    /*
+     * Allocate and fill in segArray.
+     * Except for m68k, we don't have BCPL ABI, so this is a minimal leftover.
+     * The main thing is 3rd member containing actual segList pointer.
+     * Other values are just for convenience.
+     */
+    segList = (BPTR)defaults[0].ti_Data;
+    entry   = (APTR)defaults[1].ti_Data;
+    if (segList == BNULL) {
+        segList = CreateSegList(entry);
+        process->pr_Flags |= PRF_FREESEGLIST;
+    } else if (entry == NULL) {
+        entry = BADDR(segList) + sizeof(BPTR);
+    }
+
+    segArray = AllocVec(sizeof(BPTR) * (SEGARRAY_LENGTH+1), MEMF_ANY | MEMF_CLEAR);
+    ENOMEM_IF(segArray == NULL);
+
+    D(bug("[createnewproc] Creating SegArray %p, segList=%p\n", segArray, BADDR(segList)));
+    segArray[0] = (BPTR)SEGARRAY_LENGTH;
+    segArray[1] = (BPTR)-1;	/* 'system' segment */
+    segArray[2] = (BPTR)-2;	/* 'dosbase' segment */
+    segArray[3] = segList; 	/* Program segment */
+
+    process->pr_SegList = MKBADDR(segArray);
+
     /* If we have pr_Arguments *and* we have a Input,
      * then inject the arguments into the input stream.
      */
@@ -478,11 +507,14 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     tasktags[0].ti_Data = (IPTR)argptr;
     tasktags[1].ti_Data = argsize;
-    tasktags[2].ti_Data = (IPTR)BCPL_Setup(process, (BPTR)defaults[0].ti_Data, (APTR)defaults[1].ti_Data, DOSBase);
+    tasktags[2].ti_Data = (IPTR)entry;
     if (!tasktags[2].ti_Data)
     	goto enomem;
 
     addprocesstoroot(process, DOSBase);
+
+    /* Do any last-minute SegList fixups */
+    BCPL_Fixup(process);
 
     if (NewAddTask(&process->pr_Task, DosEntry,	NULL, tasktags))
     {
@@ -500,7 +532,8 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* Fall through */
 enomem:
 
-    BCPL_Cleanup(process);
+    if (process->pr_SegList != BNULL)
+        FreeVec(BADDR(process->pr_SegList));
 
     if (__is_process(me))
     {
@@ -747,7 +780,14 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
     	if (segarray && segarray[3])
 	    UnLoadSeg(segarray[3]);
     }
-    BCPL_Cleanup(me);
+
+    if (me->pr_SegList)
+        FreeVec(BADDR(me->pr_SegList));
+
+    if (me->pr_GlobVec && me->pr_GlobVec != ((struct DosLibrary *)DOSBase)->dl_GV) {
+        D(bug("[DosEntry] Looks like someone screwed up %p's pr_GlobVec (%p != dl_GV of %p)\n", me, me->pr_GlobVec, ((struct DosLibrary *)DOSBase)->dl_GV));
+        D(Alert(AT_DeadEnd | AN_FreeVec));
+    }
 
     P(kprintf("Unlocking current dir\n"));
 
