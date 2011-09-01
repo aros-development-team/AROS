@@ -2352,61 +2352,74 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 
 OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
-    struct HIDDGraphicsData *data;
-    OOP_Object      	    *bm;
-    IPTR    	    	    displayable;
-    IPTR		    oldwidth  = 0;
-    IPTR		    oldheight = 0;
-    IPTR		    newwidth  = 0;
-    IPTR		    newheight = 0;
-    struct TagItem  	    gctags[] =
-    {
-    	{ aHidd_GC_DrawMode  , vHidd_GC_DrawMode_Copy},
-	{ aHidd_GC_Foreground, 0		     },
-	{ TAG_DONE  	     , 0UL   	    	     }
-    };
-    
-    data = OOP_INST_DATA(cl, o);
-    bm = msg->bitMap;
-    
-    /* We have to do some consistency checking */
-    if (bm)
-    {
-    	OOP_GetAttr(bm, aHidd_BitMap_Displayable, &displayable);
-    }
-    
-    if (bm && !displayable)
-    	/* We cannot show a non-displayable bitmap */
-	return NULL;
-	
-    if (NULL == data->framebuffer)
-	return NULL;
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+    OOP_Object      	    *bm = msg->bitMap;
+    IPTR oldwidth  = 0;
+    IPTR oldheight = 0;
+    IPTR newwidth  = 0;
+    IPTR newheight = 0;
 
-    OOP_SetAttrs(data->gc, gctags);
-    if (NULL != data->shownbm)
+    if (NULL == data->framebuffer)
     {
+    	/* We require framebuffer. Don't call us otherwise. */
+	return NULL;
+    }
+
+    /* Prepare our GC */
+    OOP_SetAttrsTags(data->gc,
+    		     aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy,
+		     aHidd_GC_Foreground, 0, TAG_DONE);
+
+    if (data->shownbm)
+    {
+    	/* Get size of old bitmap */
 	OOP_GetAttr(data->shownbm, aHidd_BitMap_Width, &oldwidth);
         OOP_GetAttr(data->shownbm, aHidd_BitMap_Height, &oldheight);
-	/* Copy the framebuffer data back into the old shown bitmap */
+
 	if (msg->flags & fHidd_Gfx_Show_CopyBack)
+	{
+	    /* Copy the framebuffer data back into the old shown bitmap */
 	    copy_bm_and_colmap(cl, o, data->framebuffer, data->shownbm, oldwidth, oldheight);
+	}
     }
 
-    if (bm) {
+    if (bm)
+    {
+    	IPTR modeid;
+
+	/*
+	 * Switch framebuffer display mode.
+	 * This operation can fail if the bitmap has inappropriate mode.
+	 */
+    	OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
+    	if (!OOP_SetAttrsTags(data->framebuffer, aHidd_BitMap_ModeID, modeid, TAG_DONE))
+    	    return NULL;
+
+    	/* Get size of new bitmap */
         OOP_GetAttr(bm, aHidd_BitMap_Width, &newwidth);
         OOP_GetAttr(bm, aHidd_BitMap_Height, &newheight);
+
+        /* Copy it into the framebuffer */
     	copy_bm_and_colmap(cl, o, bm, data->framebuffer, newwidth, newheight);
     }
-    /* Clear remaining parts of the framebuffer (if previous bitmap was larger than new one) */
-    if (oldheight) {
+
+    /*
+     * Clear remaining parts of the framebuffer (if previous bitmap was larger than new one)
+     * Note that if the new bitmap is NULL, newwidth and newheight will both be zero.
+     * This will cause clearing the whole display.
+     */
+    if (oldheight) /* width and height can be zero only together, check one of them */
+    {
         if (newwidth < oldwidth)
 	    HIDD_BM_FillRect(data->framebuffer, data->gc, newwidth, 0, oldwidth - 1, oldheight - 1);
         if ((newheight < oldheight) && newwidth)
 	    HIDD_BM_FillRect(data->framebuffer, data->gc, 0, newheight, newwidth - 1, oldheight);
     }
 
+    /* Remember new displayed bitmap */
     data->shownbm = bm;
 
+    /* Return the actual bitmap to perform further operations on */
     return data->framebuffer;
 }
 
