@@ -102,8 +102,9 @@ struct _OOP_Object
 #define OOP_DoSuperMethod(cl, o, msg) ((cl)->cl_DoSuperMethod(cl, o, msg))
 #define OOP_CoerceMethod(cl, o, msg) ((cl)->cl_CoerceMethod(cl, o, msg))
 
-#define OOP_METHODDEF(x) (IPTR (*)())x
+#define OOP_GET(o, attr) ({IPTR _val; OOP_GetAttr(o, attr, &_val); _val;})
 
+#define OOP_METHODDEF(x) (IPTR (*)())x
 
 #define IS_IF_ATTR(attr, idx, attrbase, numifattrs) ( ((idx) = (attr) - (attrbase)) < (numifattrs) )
 
