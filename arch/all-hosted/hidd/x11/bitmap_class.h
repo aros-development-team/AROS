@@ -23,7 +23,6 @@ extern OOP_AttrBase HiddX11BitMapAB;
 enum
 {
     aoHidd_X11BitMap_Drawable,
-    aoHidd_X11BitMap_MasterWindow,
     aoHidd_X11BitMap_SysDisplay,
     aoHidd_X11BitMap_SysScreen,
     aoHidd_X11BitMap_GC,
@@ -35,7 +34,6 @@ enum
 };
 
 #define aHidd_X11BitMap_Drawable	(HiddX11BitMapAB + aoHidd_X11BitMap_Drawable)
-#define aHidd_X11BitMap_MasterWindow	(HiddX11BitMapAB + aoHidd_X11BitMap_MasterWindow)
 #define aHidd_X11BitMap_SysDisplay	(HiddX11BitMapAB + aoHidd_X11BitMap_SysDisplay)
 #define aHidd_X11BitMap_SysScreen	(HiddX11BitMapAB + aoHidd_X11BitMap_SysScreen)
 #define aHidd_X11BitMap_GC		(HiddX11BitMapAB + aoHidd_X11BitMap_GC)
