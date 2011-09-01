@@ -190,13 +190,11 @@ void BCPL_RunHandler(void)
     D(bug("[RunHandlerBCPL] BCPL_ENTRY = %p\n", BCPL_ENTRY(me)));
 
     oldReturnAddr = me->pr_ReturnAddr;
-    AROS_UFC10(ULONG, BCPL_thunk,
-            AROS_UFCA(ULONG,  0, D0),
+    AROS_UFC8(ULONG, BCPL_thunk,
             AROS_UFCA(ULONG,  MKBADDR(dp), D1),
             AROS_UFCA(ULONG,  0, D2),
             AROS_UFCA(ULONG,  0, D3),
             AROS_UFCA(ULONG,  0, D4),
-            AROS_UFCA(APTR,   0, A0),
             AROS_UFCA(APTR, me->pr_Task.tc_SPLower, A1),
             AROS_UFCA(APTR, me->pr_GlobVec, A2),
             AROS_UFCA(APTR, &me->pr_ReturnAddr, A3),
