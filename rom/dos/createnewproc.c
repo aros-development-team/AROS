@@ -23,9 +23,9 @@
 #include LC_LIBDEFS_FILE
 #include <string.h>
 
-static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLibrary *DOSBase);
 #define SEGARRAY_LENGTH 6       /* Minimum needed for HUNK overlays */
 
+static void DosEntry(void);
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase);
 
 BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct DosLibrary * DOSBase);
@@ -85,7 +85,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     ULONG                        old_sig = 0;
     APTR                         entry;
 
-    /* TODO: NP_CommandName, NP_NotifyOnDeath */
+    /* TODO: NP_CommandName */
 
 #define TAGDATA_NOT_SPECIFIED ~0ul
 
@@ -117,15 +117,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /*23 */    { NP_NotifyOnDeath , (IPTR)FALSE                 },
     /*24 */    { NP_ConsoleTask   , TAGDATA_NOT_SPECIFIED       },
 	       { TAG_END    	  , 0           	    	}
-    };
-
-    struct TagItem tasktags[] =
-    {
-    	{TASKTAG_ARG1, 0},
-	{TASKTAG_ARG2, 0},
-	{TASKTAG_ARG3, 0},
-	{TASKTAG_ARG4, (IPTR)DOSBase},
-	{TAG_DONE    , 0}
     };
 
     /* C has no exceptions. This is a simple replacement. */
@@ -505,28 +496,20 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         vbuf_inject(process->pr_CIS, process->pr_Arguments, argsize, DOSBase);
     }
 
-    tasktags[0].ti_Data = (IPTR)argptr;
-    tasktags[1].ti_Data = argsize;
-    tasktags[2].ti_Data = (IPTR)entry;
-    if (!tasktags[2].ti_Data)
-    	goto enomem;
-
     addprocesstoroot(process, DOSBase);
 
     /* Do any last-minute SegList fixups */
     BCPL_Fixup(process);
 
-    if (NewAddTask(&process->pr_Task, DosEntry,	NULL, tasktags))
+    if (NewAddTask(&process->pr_Task, DosEntry,	NULL, NULL))
     {
-	/* NP_Synchronous */
-	if (defaults[19].ti_Data)
-	{
-	    P(kprintf("Calling ChildWait()\n"));
-	    internal_ChildWait(FindTask(NULL), DOSBase);
-	    P(kprintf("Returned from ChildWait()\n"));
-	}
-
-	goto end;
+        SIPTR err;
+        BOOL isAsynch = !defaults[19].ti_Data;
+        
+        D(bug("[createnewproc] Sending process startup packet\n"));
+        err = DoPkt(&process->pr_MsgPort, 0, (IPTR)entry, isAsynch, 0, 0, 0);
+        if (err == DOSTRUE)
+            goto end;
     }
 
     /* Fall through */
@@ -698,13 +681,41 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
     return TRUE;
 }
 
-static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLibrary *DOSBase)
+static void DosEntry(void)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
     LONG result;
+    ULONG argSize = me->pr_Arguments ? strlen(me->pr_Arguments) : 0;
+    struct DosPacket *dp;
+    APTR DOSBase;
+    APTR initialPC;
+    BPTR *segArray;
+    BOOL isAsync;
+
+    /* Wait for our startup packet */
+    WaitPort(&me->pr_MsgPort);
+    dp = (struct DosPacket *)(GetMsg(&me->pr_MsgPort)->mn_Node.ln_Name);
+
+    D(bug("[DosEntry %p] Recevied process startup packet\n", me));
+
+    /* dp_Arg1 contains the entry point, or NULL
+     */
+    initialPC = (APTR)dp->dp_Arg1;
+    isAsync   = (BOOL)dp->dp_Arg2;
+
+    D(bug("[DosEntry %p] is %synchronous\n", me, isAsync ? "As" :"S"));
+
+    if (isAsync) /* Async */
+        internal_ReplyPkt(dp, &me->pr_MsgPort, DOSTRUE, 0);
+
+    segArray = BADDR(me->pr_SegList);
+    if (initialPC == NULL)
+        initialPC = BADDR(segArray[3]) + sizeof(BPTR);
+
+    D(bug("[DosEntry %p] entry=%p, CIS=%p, COS=%p, argsize=%d, arguments=\"%s\"\n", me, initialPC, BADDR(me->pr_CIS), BADDR(me->pr_COS), argSize, me->pr_Arguments));
 
     /* Call entry point of our process, remembering stack in its pr_ReturnAddr */
-    result = CallEntry(argPtr, argSize, initialPC, me);
+    result = CallEntry(me->pr_Arguments, argSize, initialPC, me);
 
     /* Call user defined exit function before shutting down. */
     if (me->pr_ExitCode != NULL)
@@ -828,18 +839,16 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
 
     /* To implement NP_NotifyOnDeath I need Child***()
        here */
-
-    // if(me->pr_Flags & PRF_NOTIFYONDEATH)
-    //     Signal(GetETask(me)->iet_Parent, SIGF_CHILD);
-
-    if (me->pr_Flags & PRF_SYNCHRONOUS)
+    if (me->pr_Flags & PRF_NOTIFYONDEATH)
     {
 	P(kprintf("Calling ChildFree()\n"));
 
-	// ChildStatus(me);
+        /* ChildFree signals the parent */
 	internal_ChildFree(me, DOSBase);
     }
 
+    if (!isAsync) /* Sync */
+        ReplyPkt(dp, DOSTRUE, 0);
 
     CloseLibrary((APTR)DOSBase);
 }
