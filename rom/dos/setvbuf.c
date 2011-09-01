@@ -53,6 +53,9 @@
     AROS_LIBFUNC_INIT
 
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
+
+    if (fh == NULL)
+        return EOF;
         
     ASSERT_VALID_PTR( fh );
     ASSERT_VALID_PTR_OR_NULL(buff);
