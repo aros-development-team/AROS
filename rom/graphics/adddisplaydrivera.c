@@ -136,7 +136,7 @@
     ULONG *ResultID = NULL;
     ULONG ret = DD_OK;
 
-    EnterFunc(bug("AddDisplayDriverA(0x%p) <%s>\n", gfxclass, ));
+    EnterFunc(bug("AddDisplayDriverA(0x%p) <%s>\n", gfxclass, CL(gfxclass)->ClassNode.ln_Name));
 
     /*
      * MAGIC: Detect composition HIDD here.
