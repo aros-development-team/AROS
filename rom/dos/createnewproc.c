@@ -738,6 +738,23 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
 #endif
     }
 
+    /* Get our own private DOSBase. We'll need it for our
+     * cleanup routines.
+     *
+     * We don't want to use the parent's DOSBase, since they
+     * may have closed their handle long ago.
+     *
+     * With the current DOSBase implementation, this isn't a
+     * big deal, but if DOSBase moved to a per-opener library
+     * in the future, this would be a very subtle issue, so
+     * we're going to plan ahead and do it right.
+     */
+    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+    if (DOSBase == NULL) {
+        D(bug("[DosEntry %p] Can't open DOS library\n", me));
+        internal_ReplyPkt(dp, &me->pr_MsgPort, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
+    }
+
     P(kprintf("Deleting local variables\n"));
 
     /* Clean up */
@@ -801,12 +818,15 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
 
     P(kprintf("Freeing cli structure\n"));
 
+    removefromrootnode(me, DOSBase);
+
     if (me->pr_Flags & PRF_FREECLI)
     {
 	FreeDosObject(DOS_CLI, BADDR(me->pr_CLI));
+	me->pr_CLI = BNULL;
     }
 
-    /* To implement NP_Synchronous and NP_NotifyOnDeath I need Child***()
+    /* To implement NP_NotifyOnDeath I need Child***()
        here */
 
     // if(me->pr_Flags & PRF_NOTIFYONDEATH)
@@ -820,5 +840,6 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
 	internal_ChildFree(me, DOSBase);
     }
 
-    removefromrootnode(me, DOSBase);
+
+    CloseLibrary((APTR)DOSBase);
 }
