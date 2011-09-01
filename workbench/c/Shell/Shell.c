@@ -109,16 +109,22 @@ AROS_ENTRY(__startup ULONG, ShellStart,
 {
     AROS_USERFUNC_INIT
 
-    struct Process *me;
     ShellState *ss;
     LONG error;
     BOOL isBootShell;
     BOOL isBannerDone;
     APTR DOSBase;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    BPTR *segArray, mySeg;
 
     D(bug("[Shell] executing\n"));
 
-    me = (struct Process *)FindTask(NULL);
+    segArray = BADDR(me->pr_SegList);
+    mySeg = segArray[3];
+    segArray[4] = segArray[3];
+    segArray[3] = BNULL;
+    segArray[0] = (BPTR)3;
+
     DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
     ss = AllocMem(sizeof(ShellState), MEMF_CLEAR);
@@ -170,6 +176,8 @@ AROS_ENTRY(__startup ULONG, ShellStart,
     CloseLibrary(DOSBase);
 
     FreeMem(ss, sizeof(ShellState));
+
+    segArray[3] = mySeg;
 
     return error ? RETURN_FAIL : RETURN_OK;
 
