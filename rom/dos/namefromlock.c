@@ -65,8 +65,20 @@
      *									Sonic
      */
     BOOL res;
-    BPTR lock2 = DupLock(lock);
+    BPTR lock2;
 
+    if (lock == BNULL) {
+        if (length > 5) {
+            CopyMem("SYS:", buffer, 5);
+            return DOSTRUE;
+        } else {
+            SetIoErr(ERROR_LINE_TOO_LONG);
+            return DOSFALSE;
+        }
+    }
+
+    
+    lock2 = DupLock(lock);
     res = namefrom_internal(DOSBase, lock2, buffer, length);
     UnLock(lock2);
 
