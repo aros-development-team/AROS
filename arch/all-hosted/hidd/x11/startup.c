@@ -29,7 +29,6 @@
 static int X11_Startup(LIBBASETYPEPTR LIBBASE) 
 {
     struct GfxBase *GfxBase;
-    OOP_Object *gfxhidd;
     OOP_Object *kbd, *ms;
     OOP_Object *kbdriver = NULL;
     OOP_Object *msdriver = NULL;
