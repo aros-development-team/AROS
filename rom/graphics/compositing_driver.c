@@ -10,6 +10,8 @@
 #include "graphics_intern.h"
 #include "compositing_driver.h"
 
+#define HiddCompositingAttrBase CDD(GfxBase)->hiddCompositingAttrBase
+
 ULONG composer_Install(OOP_Class *cl, struct GfxBase *GfxBase)
 {
     struct monitor_driverdata *mdd;
