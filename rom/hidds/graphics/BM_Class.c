@@ -506,20 +506,29 @@
         aoHidd_BitMap_ModeID
 
     SYNOPSIS
-        [I.G], HIDDT_ModeID
+        [ISG], HIDDT_ModeID
 
     LOCATION
         hidd.graphics.bitmap
 
     FUNCTION
         Specify display mode ID for displayable bitmap.
-	
+
 	A displayable bitmap must have this attribute supplied with valid value. A nondisplayable
 	one may miss it, however it may remember it if it was created as a friend of displayable
 	one. This way you may create another displayable bitmap as a friend of nondisplayable
 	one which in turn is a friend of displayable one.
 
+	This attribute can be set on a framebuffer bitmap. Doing so means an explicit request
+	for the driver to change current display mode on the hardware. Dependent parameters
+	(width, height and pixelformat) will be automatically adjusted, if not explicitly
+	specified in the attributes list.
+
     NOTES
+    	If the given ModeID is not supported, the operation causes an error. You can check
+    	for this by checking return value of OOP_SetAttrs() function. It will be TRUE in
+    	case of success and FALSE upon failure. In case of failure none of bitmap attributes
+    	will be changed.
 
     EXAMPLE
 
@@ -637,7 +646,7 @@
         aoHidd_BitMap_FrameBuffer
 
     SYNOPSIS
-        [I..], BOOL
+        [I.G], BOOL
 
     LOCATION
         hidd.graphics.bitmap
@@ -648,8 +657,8 @@
 	A detailed description of a framebuffer is given in CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
 	and in CLID_Hidd_Gfx/moHidd_Gfx_Show documentation.
 
-	Specifying this attribute to moHidd_Gfx_NewBitMap method causes also implicit setting
-	of aoHidd_BitMap_Displayable to TRUE.
+	Specifying this attribute causes also implicit setting of aoHidd_BitMap_Displayable
+	to TRUE.
 
     NOTES
 
@@ -759,7 +768,7 @@
         aoHidd_BitMap_Align
 
     SYNOPSIS
-        [I..]
+        [I.G]
 
     LOCATION
         hidd.graphics.bitmap
@@ -823,6 +832,38 @@
 
 /****************************************************************************************/
 
+#undef csd
+
+/*
+ * Calculate suggested bytes per row value based on bitmap's default alignment
+ * and pixelformat's bytes per pixel value.
+ */
+static ULONG GetBytesPerRow(struct HIDDBitMapData *data, struct class_static_data *csd)
+{
+    ULONG align = data->align - 1;
+    ULONG width = (data->width + align) & ~align;
+    IPTR bytesperpixel, stdpf;
+
+    OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+    OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_StdPixFmt, &stdpf);
+
+    if (stdpf == vHidd_StdPixFmt_Plane)
+    {
+    	/*
+	 * Planar format actually have 8 pixels per one byte.
+    	 * However bytesperpixel == 1 for them. Perhaps this should
+	 * be changed to 0 ?
+    	 */
+	return width >> 3;
+    }
+    else
+    {
+	return width * bytesperpixel;
+    }
+}
+
+#define csd CSD(cl)
+
 OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
     EnterFunc(bug("BitMap::New()\n"));
@@ -839,12 +880,11 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	const struct TagItem *tstate;
 	struct TagItem *tag;
 	BOOL ok = TRUE;
-	ULONG align;
 	struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
 
         /* Set some default values */
 	data->modeid = vHidd_ModeID_Invalid;
-	align	     = 16;
+	data->align  = 16;
 
 	tstate = msg->attrList;
 	while ((tag = NextTagItem(&tstate)))
@@ -864,7 +904,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	    	    break;
 
 		case aoHidd_BitMap_Align:
-		    align = tag->ti_Data;
+		    data->align = tag->ti_Data;
 		    break;
 
 		case aoHidd_BitMap_BytesPerRow:
@@ -881,6 +921,10 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 	    	case aoHidd_BitMap_Displayable:
 	    	    data->displayable = tag->ti_Data;
+	    	    break;
+	    	
+	    	case aoHidd_BitMap_FrameBuffer:
+	    	    data->framebuffer = tag->ti_Data;
 	    	    break;
 
 		case aoHidd_BitMap_ModeID:
@@ -904,6 +948,10 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 	    ok = FALSE;
 	}
+
+	/* FrameBuffer implies Displayable */
+	if (data->framebuffer)
+	    data->displayable = TRUE;
 
 	if (ok && data->displayable)
 	{
@@ -952,35 +1000,10 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 	if (ok)
 	{
+	    /* * PixFmt will be NULL in case of e. g. planarbm late initialization. */
 	    if (data->prot.pixfmt)
 	    {
-    	    	/*
-    	     	 * Calculate suggested bytes per row value based on requested alignment and
-    	     	 * pixelformat's bytes per pixel value.
-    	     	 * PixFmt will be NULL in case of e. g. planarbm late initialization.
-    	     	 */
-    	     	ULONG width, bytesPerRow;
-	    	IPTR bytesperpixel, stdpf;
-
-    	    	align--;
-	    	width = (data->width + align) & ~align;
-
-	    	OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
-		OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_StdPixFmt, &stdpf);
-
-	    	if (stdpf == vHidd_StdPixFmt_Plane)
-	    	{
-    		    /*
-	    	     * Planar format actually have 8 pixels per one byte.
-    		     * However bytesperpixel == 1 for them. Perhaps this should
-	    	     * be changed to 0 ?
-    		     */
-	    	     bytesPerRow = width >> 3;
-    	    	}
-	    	else
-    	    	{
-		    bytesPerRow = width * bytesperpixel;
-	    	}
+    	     	ULONG bytesPerRow = GetBytesPerRow(data, CSD(cl));
 
 	    	if (data->bytesPerRow)
 	    	{
@@ -1087,73 +1110,74 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
     EnterFunc(bug("BitMap::Get() attrID: %i  storage: %p\n", msg->attrID, msg->storage));
 
-    if(IS_BITMAP_ATTR(msg->attrID, idx))
+    if (IS_BITMAP_ATTR(msg->attrID, idx))
     {
         switch(idx)
         {
-            case aoHidd_BitMap_Width:
-	    	 *msg->storage = data->width;
-		 D(bug("  width: %i\n", data->width));
-		 break;
+        case aoHidd_BitMap_Width:
+	    *msg->storage = data->width;
+	     D(bug("  width: %i\n", data->width));
+	     return;
 
-            case aoHidd_BitMap_Height:
-	    	*msg->storage = data->height;
-		break;
+        case aoHidd_BitMap_Height:
+	    *msg->storage = data->height;
+	    return;
 
-            case aoHidd_BitMap_Depth:
-            	/*
-            	 * Generally our bitmaps have a fixed depth, which depends on pixelformat.
-            	 * If this is not true for your bitmap, overload aoHidd_BitMap_Depth in your class.
-            	 */
-	    	*msg->storage = ((HIDDT_PixelFormat *)data->prot.pixfmt)->depth;
-		break;
+        case aoHidd_BitMap_Depth:
+            /*
+             * Generally our bitmaps have a fixed depth, which depends on pixelformat.
+             * If this is not true for your bitmap, overload aoHidd_BitMap_Depth in your class.
+             */
+	    *msg->storage = ((HIDDT_PixelFormat *)data->prot.pixfmt)->depth;
+	    return;
 
-            case aoHidd_BitMap_Displayable:
-	    	*msg->storage = (IPTR) data->displayable;
-		break;
+        case aoHidd_BitMap_Displayable:
+	    *msg->storage = data->displayable;
+	    return;
 
-	    case aoHidd_BitMap_PixFmt:
-	    	*msg->storage = (IPTR)data->prot.pixfmt;
-		break;
+	case aoHidd_BitMap_FrameBuffer:
+	    *msg->storage = data->framebuffer;
+	    return;
 
-	    case aoHidd_BitMap_Friend:
-	    	*msg->storage = (IPTR)data->friend;
-		break;
+	case aoHidd_BitMap_PixFmt:
+	    *msg->storage = (IPTR)data->prot.pixfmt;
+	    return;
 
-	    case aoHidd_BitMap_ColorMap:
-	    	*msg->storage = (IPTR)data->colmap;
-		break;
+	case aoHidd_BitMap_Friend:
+	    *msg->storage = (IPTR)data->friend;
+	    return;
 
-	    case aoHidd_BitMap_GfxHidd:
-	    	*msg->storage = (IPTR)data->gfxhidd;
-		break;
+	case aoHidd_BitMap_ColorMap:
+	    *msg->storage = (IPTR)data->colmap;
+	    return;
 
-	    case aoHidd_BitMap_ModeID:
-	    	*msg->storage = data->modeid;
-		break;
+	case aoHidd_BitMap_GfxHidd:
+	    *msg->storage = (IPTR)data->gfxhidd;
+	    return;
 
-	    case aoHidd_BitMap_BytesPerRow:
-	    	*msg->storage = data->bytesPerRow;
-	    	break;
-	    
-	    /* Generic bitmaps don't scroll. This has to be implemented
-	       in the subclass */
-	    case aoHidd_BitMap_LeftEdge:
-	    case aoHidd_BitMap_TopEdge:
-		*msg->storage = 0;
-		break;
+	case aoHidd_BitMap_ModeID:
+	    *msg->storage = data->modeid;
+	    return;
 
-            default:
-	    	D(bug("UNKNOWN ATTR IN BITMAP BASECLASS: %d\n", idx));
-	    	OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
-		break;
+	case aoHidd_BitMap_Align:
+	    *msg->storage = data->align;
+	    return;
+
+	case aoHidd_BitMap_BytesPerRow:
+	    *msg->storage = data->bytesPerRow;
+	    return;
+
+	/* Generic bitmaps don't scroll. This has to be implemented in the subclass. */
+	case aoHidd_BitMap_LeftEdge:
+	case aoHidd_BitMap_TopEdge:
+	    *msg->storage = 0;
+	    return;
+
+        D(default: bug("UNKNOWN ATTR IN BITMAP BASECLASS: %d\n", idx);)
         }
     }
-    else
-    {
-	OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
-    }
 
+    OOP_DoSuperMethod(cl, obj, &msg->mID);
     ReturnVoid("BitMap::Get");
 }
 
@@ -4524,10 +4548,45 @@ ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 
 /****************************************************************************************/
 
-VOID BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
+IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
-    /* This is the same. Just we have a little bit faster version for internal usage */
+    struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
+
+    if (data->framebuffer)
+    {
+	/*
+	 * If this is a framebuffer, we can process ModeID change.
+	 * We do it before parsing the rest of tags, because here we retrieve
+	 * defaults for new bitmap parameters (size and pixelformat).
+	 * They can be overriden by other tags. For example we can imagine
+	 * a hardware scrollable framebuffer whose width and height are larger
+	 * than visible part.
+	 */
+	HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+	OOP_Object *sync, *pixfmt;
+
+	if (HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pixfmt))
+	{
+	    /*
+	     * Set defaults based on the ModeID.
+	     * They can be overriden lated, in SetBitMapTags.
+	     */
+	    data->width       = OOP_GET(sync, aHidd_Sync_HDisp);
+	    data->height      = OOP_GET(sync, aHidd_Sync_VDisp);
+	    data->bytesPerRow = GetBytesPerRow(data, CSD(cl));
+	    data->prot.pixfmt = pixfmt;
+	}
+	else
+	{
+	    /* Bad ModeID given, request rejected */
+	    return FALSE;
+	}
+    }
+    /* Process the rest of tags. */
     BM__Hidd_BitMap__SetBitMapTags(cl, obj, msg->attrList);
+
+    /* There's no superclass above us */
+    return TRUE;
 }
 
 /*****************************************************************************************

@@ -154,66 +154,34 @@ void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf);
 struct HIDDBitMapData
 {
     struct _hidd_bitmap_protected prot;
-    
-    ULONG width;         /* width of the bitmap in pixel  */
-    ULONG height;        /* height of the bitmap in pixel */
-    BOOL  displayable;   /* bitmap displayable?           */
-    BOOL  pf_registered;
-    ULONG flags;         /* see hidd/graphic.h 'flags for */
-    ULONG bytesPerRow;   /* bytes per row                 */
-    /* WARNING: structure could be extented in the future                */
-    
-    OOP_Object *friend;	/* Friend bitmap */
-    
-    OOP_Object *gfxhidd;
-    
-    OOP_Object *colmap;
-    
-    HIDDT_ModeID modeid;
 
-    /* Optimize these two method calls */
-#if USE_FAST_PUTPIXEL    
+    ULONG	 width;         /* width of the bitmap in pixel  */
+    ULONG	 height;        /* height of the bitmap in pixel */
+    ULONG	 align;		/* Default alignment		 */
+    BOOL	 displayable;   /* bitmap displayable?           */
+    BOOL	 framebuffer;	/* is a framebuffer ?		 */
+    BOOL	 pf_registered;	/* Registered own pixelformat ?	 */
+    ULONG	 flags;         /* see hidd/graphic.h 'flags for */
+    ULONG	 bytesPerRow;   /* bytes per row                 */
+    OOP_Object  *friend;	/* Friend bitmap		 */
+    OOP_Object  *gfxhidd;	/* Owning driver		 */
+    OOP_Object  *colmap;	/* Colormap			 */
+    HIDDT_ModeID modeid;	/* Display mode ID		 */
+
+    /* Optimize these method calls */
+#if USE_FAST_PUTPIXEL
     OOP_MethodFunc putpixel;
-    OOP_Class *putpixel_Class;
+    OOP_Class 	  *putpixel_Class;
 #endif
-#if USE_FAST_GETPIXEL    
+#if USE_FAST_GETPIXEL
     OOP_MethodFunc getpixel;
-    OOP_Class *getpixel_Class;
+    OOP_Class	  *getpixel_Class;
 #endif
-#if USE_FAST_DRAWPIXEL    
+#if USE_FAST_DRAWPIXEL
     OOP_MethodFunc drawpixel;
-    OOP_Class *drawpixel_Class;
+    OOP_Class	  *drawpixel_Class;
 #endif
 };
-
-/* Private bitmap attrs */
-
-enum
-{
-    aoHidd_BitMap_Dummy = num_Hidd_BitMap_Attrs,    
-    num_Total_BitMap_Attrs
-};
-
-#if 0
-struct HIDDGCData
-{
-#if 0
-    APTR bitMap;     /* bitmap to which this gc is connected             */
-#endif
-    APTR  userData;  /* pointer to own data                              */
-    ULONG fg;        /* foreground color                                 */
-    ULONG bg;        /* background color                                 */
-    ULONG drMode;    /* drawmode                                         */
-    /* WARNING: type of font could be change */
-    APTR  font;      /* current fonts                                    */
-    ULONG colMask;   /* ColorMask prevents some color bits from changing */
-    UWORD linePat;   /* LinePattern                                      */
-    APTR  planeMask; /* Pointer to a shape bitMap                        */
-    ULONG colExp;
-    
-    /* WARNING: structure could be extented in the future                */
-};
-#endif    
 
 #define NUM_ATTRBASES   9
 #define NUM_METHODBASES 4
