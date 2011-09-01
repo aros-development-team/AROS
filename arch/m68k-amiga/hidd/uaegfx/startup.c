@@ -31,7 +31,7 @@ static int UAEGFX_Init(LIBBASETYPEPTR LIBBASE)
     gfxhidd = OOP_NewObject(LIBBASE->csd.gfxclass, NULL, NULL);
     D(bug("UAEGFX=0x%p\n", gfxhidd));
     if (gfxhidd) {
-	ULONG err = AddDisplayDriver(gfxhidd, DDRV_KeepBootMode, TRUE, DDRV_IDMask, 0xF0000000, TAG_DONE);
+	ULONG err = AddDisplayDriver(gfxhidd, NULL, DDRV_KeepBootMode, TRUE, DDRV_IDMask, 0xF0000000, TAG_DONE);
 	D(bug("UAEGFX AddDisplayDriver() result: %u\n", err));
 	if (err) {
 	    OOP_DisposeObject(gfxhidd);
