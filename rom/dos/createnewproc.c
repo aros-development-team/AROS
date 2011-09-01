@@ -100,7 +100,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* 9 */    { NP_StackSize	  , AROS_STACKSIZE    	        },
     /*10 */    { NP_Name    	  , (IPTR)"New Process" 	},
     /*11 */    { NP_Priority	  , me->pr_Task.tc_Node.ln_Pri 	},
-    /*12 */    { NP_Arguments	  , (IPTR)-1    	    	},
+    /*12 */    { NP_Arguments	  , TAGDATA_NOT_SPECIFIED       },
     /*13 */    { NP_Cli     	  , 0           	    	},
     /*14 */    { NP_UserData	  , (IPTR)NULL  	    	},
     /*15 */    { NP_ExitCode	  , (IPTR)NULL  	    	},
@@ -209,7 +209,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     ENOMEM_IF(name == NULL);
 
     /* NP_Arguments */
-    if (defaults[12].ti_Data != (IPTR)-1)
+    if (defaults[12].ti_Data != TAGDATA_NOT_SPECIFIED)
     {
     	CONST_STRPTR args = (CONST_STRPTR)defaults[12].ti_Data;
 
@@ -226,6 +226,8 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	    ENOMEM_IF(argptr == NULL);
 	    CopyMem(args, argptr, argsize+1);
 	}
+
+	D(bug("[createnewproc] Arguments \"%s\"\n", argptr));
     }
 
     memlist = AllocMem(sizeof(struct MemList) + 2*sizeof(struct MemEntry),
@@ -465,20 +467,17 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         old_sig = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE; 
     }
 
-    if (argptr != NULL) {
-        /*
-         * Inject command arguments to the beginning of input handle. Guru Book mentions this.
-         * This fixes for example AmigaOS' C:Execute.
-         * This applies only to processes that set NP_Arguments,
-         *  (even to NULL!)
-         */
-        D(bug("[createnewproc] argsize: %u argstr: %s\n", argsize, argptr));
-        vbuf_inject(process->pr_CIS, argptr, argsize, DOSBase);
+    /* If we have pr_Arguments *and* we have a Input,
+     * then inject the arguments into the input stream.
+     */
+    if (process->pr_Arguments && process->pr_CIS)
+    {
+        D(bug("[createnewproc] Injecting %d bytes of arguments @%p into FileHandle @%p\n", argsize, process->pr_Arguments, BADDR(process->pr_CIS)));
+        vbuf_inject(process->pr_CIS, process->pr_Arguments, argsize, DOSBase);
     }
 
     tasktags[0].ti_Data = (IPTR)argptr;
     tasktags[1].ti_Data = argsize;
-
     tasktags[2].ti_Data = (IPTR)BCPL_Setup(process, (BPTR)defaults[0].ti_Data, (APTR)defaults[1].ti_Data, DOSBase);
     if (!tasktags[2].ti_Data)
     	goto enomem;
