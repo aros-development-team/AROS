@@ -205,6 +205,7 @@ struct HIDD_ModeProperties
 #define COMPF_BELOW 0x0002 /* ...below ...				  */
 #define COMPF_LEFT  0x0004 /* ... to the left of ...			  */
 #define COMPF_RIGHT 0x0008 /* ... to the right of ...			  */
+#define COMPF_SAME  0x0100 /* We can compose only with the same sync	  */
 
 struct ViewPort;
 struct View;
