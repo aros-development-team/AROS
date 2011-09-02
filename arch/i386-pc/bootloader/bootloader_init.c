@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Bootloader information initialisation.
@@ -15,48 +15,28 @@
 #include <aros/symbolsets.h>
 #include <aros/bootloader.h>
 #include <aros/multiboot.h>
-#include "bootloader_intern.h"
-#include LC_LIBDEFS_FILE
 
-#define DEBUG 1
+#include "bootloader_intern.h"
+
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <string.h>
 
-/*
- * What you see here is a Multiboot-compatible header. We don't need a
- * sophisticated information package from the multiboot loader.
- * 
- * AROS defines only the first three fields as it is now in ELF executable
- * format. All other things like load address or entry point are already
- * in the kernel image.
- */
-
-#define MB_MAGIC    0x1BADB002  /* Magic value */
-#define MB_FLAGS    0x00000003  /* Need 4KB alignment for modules */
-
-const struct
-{
-    ULONG   magic;
-    ULONG   flags;
-    ULONG   chksum;
-} multiboot_header __attribute__((section(".text"))) =
-{
-    MB_MAGIC,
-    MB_FLAGS,
-    -(MB_MAGIC+MB_FLAGS)
-};
-
-static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
+static int bootloader_Init(struct BootLoaderBase *BootLoaderBase)
 {
     struct arosmb *mb = (struct arosmb *)0x1000;
-    
+
+    D(bug("[BootLdr] Init\n"));
+
     NEWLIST(&(BootLoaderBase->Args));
     NEWLIST(&(BootLoaderBase->DriveInfo));
 
     /* Right. Now we extract the data currently placed in 0x1000 by exec */
     if (mb->magic == MBRAM_VALID)
     {
+	D(bug("[BootLdr] Init: Found multiboot data\n"));
+
 	/* Yay. There is data here */
 	if (mb->flags & MB_FLAGS_LDRNAME)
 	{
@@ -67,7 +47,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	    {
 		strcpy(temp,mb->ldrname);
 		BootLoaderBase->LdrName = temp;
-		BootLoaderBase->Flags |= MB_FLAGS_LDRNAME;
 		D(bug("[BootLdr] Init: Loadername = %s\n",BootLoaderBase->LdrName));
 	    }
 	    else
@@ -99,47 +78,46 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 		    cmd = stpblk(cmd+temp);
 		}
 		
-		BootLoaderBase->Flags |= MB_FLAGS_CMDLINE;
+		BootLoaderBase->Flags |= BL_FLAGS_CMDLINE;
 	    }
 	}
 
 	if (mb->flags & MB_FLAGS_GFX)
 	{
-	    ULONG masks [] = { 0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff };
+	    BootLoaderBase->Vesa = AllocMem(sizeof(struct VesaInfo), MEMF_CLEAR);
 
-	    BootLoaderBase->Vesa.FrameBuffer = (APTR)mb->vmi.phys_base;
-	    BootLoaderBase->Vesa.FrameBufferSize = mb->vci.total_memory * 64; /* FrameBufferSize is in KBytes! */
-	    BootLoaderBase->Vesa.XSize = mb->vmi.x_resolution;
-	    BootLoaderBase->Vesa.YSize = mb->vmi.y_resolution;
-	    BootLoaderBase->Vesa.BytesPerLine = mb->vmi.bytes_per_scanline;
-	    BootLoaderBase->Vesa.BitsPerPixel = mb->vmi.bits_per_pixel;
-	    BootLoaderBase->Vesa.ModeNumber = mb->vbe_mode;
-	    BootLoaderBase->Vesa.Masks[VI_Red] = masks[mb->vmi.red_mask_size-1]<<mb->vmi.red_field_position;
-	    BootLoaderBase->Vesa.Masks[VI_Blue] = masks[mb->vmi.blue_mask_size-1]<<mb->vmi.blue_field_position;
-	    BootLoaderBase->Vesa.Masks[VI_Green] = masks[mb->vmi.green_mask_size-1]<<mb->vmi.green_field_position;
-	    BootLoaderBase->Vesa.Masks[VI_Alpha] = masks[mb->vmi.reserved_mask_size-1]<<mb->vmi.reserved_field_position;
-	    BootLoaderBase->Vesa.Shifts[VI_Red] = 32 - mb->vmi.red_field_position - mb->vmi.red_mask_size;
-	    BootLoaderBase->Vesa.Shifts[VI_Blue] = 32 - mb->vmi.blue_field_position - mb->vmi.blue_mask_size;
-	    BootLoaderBase->Vesa.Shifts[VI_Green] = 32 - mb->vmi.green_field_position - mb->vmi.green_mask_size;
-	    BootLoaderBase->Vesa.Shifts[VI_Alpha] = 32 - mb->vmi.reserved_field_position - mb->vmi.reserved_mask_size;
-	    BootLoaderBase->Vesa.PaletteWidth = mb->vbe_palette_width;
-	    BootLoaderBase->Flags |= MB_FLAGS_GFX;
-	    if (BootLoaderBase->Vesa.ModeNumber != 3)
+	    if (BootLoaderBase->Vesa)
 	    {
+		ULONG masks [] = { 0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff };
+
+		BootLoaderBase->Vesa->FrameBuffer = (APTR)mb->vmi.phys_base;
+		BootLoaderBase->Vesa->FrameBufferSize = mb->vci.total_memory * 64; /* FrameBufferSize is in KBytes! */
+		BootLoaderBase->Vesa->XSize = mb->vmi.x_resolution;
+		BootLoaderBase->Vesa->YSize = mb->vmi.y_resolution;
+		BootLoaderBase->Vesa->BytesPerLine = mb->vmi.bytes_per_scanline;
+		BootLoaderBase->Vesa->BitsPerPixel = mb->vmi.bits_per_pixel;
+		BootLoaderBase->Vesa->ModeNumber = mb->vbe_mode;
+		BootLoaderBase->Vesa->Masks[VI_Red] = masks[mb->vmi.red_mask_size-1]<<mb->vmi.red_field_position;
+		BootLoaderBase->Vesa->Masks[VI_Blue] = masks[mb->vmi.blue_mask_size-1]<<mb->vmi.blue_field_position;
+		BootLoaderBase->Vesa->Masks[VI_Green] = masks[mb->vmi.green_mask_size-1]<<mb->vmi.green_field_position;
+		BootLoaderBase->Vesa->Masks[VI_Alpha] = masks[mb->vmi.reserved_mask_size-1]<<mb->vmi.reserved_field_position;
+		BootLoaderBase->Vesa->Shifts[VI_Red] = 32 - mb->vmi.red_field_position - mb->vmi.red_mask_size;
+		BootLoaderBase->Vesa->Shifts[VI_Blue] = 32 - mb->vmi.blue_field_position - mb->vmi.blue_mask_size;
+		BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - mb->vmi.green_field_position - mb->vmi.green_mask_size;
+		BootLoaderBase->Vesa->Shifts[VI_Alpha] = 32 - mb->vmi.reserved_field_position - mb->vmi.reserved_mask_size;
+		BootLoaderBase->Vesa->PaletteWidth = mb->vbe_palette_width;
+		BootLoaderBase->Flags |= MB_FLAGS_GFX;
+
 		D(bug("[BootLdr] Init: Vesa card capability flags: 0x%08lx\n", mb->vci.capabilities));
 	    	D(bug("[BootLdr] Init: Vesa mode %x type (%dx%dx%d)\n",
-				BootLoaderBase->Vesa.ModeNumber,
-				BootLoaderBase->Vesa.XSize,BootLoaderBase->Vesa.YSize,
-				BootLoaderBase->Vesa.BitsPerPixel));
+				BootLoaderBase->Vesa->ModeNumber,
+				BootLoaderBase->Vesa->XSize,BootLoaderBase->Vesa->YSize,
+				BootLoaderBase->Vesa->BitsPerPixel));
 		D(bug("[BootLdr] Init: Vesa FB at 0x%08x size %d kB\n",
-			    	BootLoaderBase->Vesa.FrameBuffer,
-				BootLoaderBase->Vesa.FrameBufferSize));
-		D(bug("[BootLdr] Init: Vesa mode palette width: %d\n", BootLoaderBase->Vesa.PaletteWidth));
+			    	BootLoaderBase->Vesa->FrameBuffer,
+				BootLoaderBase->Vesa->FrameBufferSize));
+		D(bug("[BootLdr] Init: Vesa mode palette width: %d\n", BootLoaderBase->Vesa->PaletteWidth));
 		D(bug("[BootLdr] Init: Vesa mode direct color flags %02x\n", mb->vmi.direct_color_mode_info));
-	    }
-	    else
-	    {
-		D(bug("[BootLdr] Init: Textmode graphics\n"));
 	    }
 	}
 
@@ -165,10 +143,11 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 			curr->cyls,curr->heads,curr->secs,
 			curr->mode?"CHS":"LBA"));
 	    }
-	    BootLoaderBase->Flags |= MB_FLAGS_DRIVES;
+	    BootLoaderBase->Flags |= BL_FLAGS_DRIVES;
 	}
     }
+    
     return TRUE;
 }
 
-ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2INITLIB(bootloader_Init, 0)
