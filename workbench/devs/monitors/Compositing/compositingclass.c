@@ -731,11 +731,18 @@ BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
     	OOP_GetAttr(sync, aHidd_Sync_VDisp, &disp_height);
     }
 
+    D(bug("[Compositing] Validating bitmap 0x%p, position (%ld, %ld), limits %ld x %ld\n",
+    	  msg->bm, *msg->newxoffset, *msg->newyoffset, disp_width, disp_height));
+
     HIDDCompositingValidateBitMapPositionChange(msg->bm, msg->newxoffset, msg->newyoffset,
     						disp_width, disp_height);
 
+    D(bug("[Compositing] Validated position (%ld, %ld)\n", *msg->newxoffset, *msg->newyoffset));
+
     if (n && ((*msg->newxoffset != n->leftedge) || (*msg->newyoffset != n->topedge)))
     {
+    	D(bug("[Compositing] Old position (%ld, %ld)\n", n->leftedge, n->topedge));
+
 	/* Reflect the change if it happened */
     	n->leftedge = *msg->newxoffset;
     	n->topedge  = *msg->newyoffset;
@@ -750,10 +757,10 @@ BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
         }
     }
 
+    UNLOCK_COMPOSITING
+
     /* Return active state */
     return compdata->compositedbitmap ? TRUE : FALSE;
-
-    UNLOCK_COMPOSITING
 }
 
 static VOID RedrawVisibleRect(struct HIDDCompositingData *compdata, WORD x, WORD y, WORD width, WORD height)
