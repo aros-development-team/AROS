@@ -50,6 +50,7 @@ FUNCS := \
         endscreennotify \
 	eraseimage \
 	findclass \
+	findmonitor \
 	freeclass \
 	freeicdata \
 	freeintuimessage \

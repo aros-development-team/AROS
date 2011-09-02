@@ -15,7 +15,9 @@
 #include <proto/oop.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "graphics_intern.h"
+#include "compositing_driver.h"
 #include "dispinfo.h"
 
 /****************************************************************************************/
@@ -81,11 +83,9 @@ static UBYTE popcount(IPTR x);
         FindDisplayInfo(), NextDisplayInfo(), graphics/displayinfo.h
 
     INTERNALS
-	This function provides the following private parameters:
-	  DimensionInfo.reserved[0] - driver user data (intuition's monitorclass object)
-	  DimensionInfo.reserved[1] - pixelformat object
-	Do not rely on this in end user software! This is private to AROS and
-	subject to change at any time!
+	This function provides private data in reserved fields of DimensionInfo.
+	It is required by other AROS components. Please keep this in sync when
+	changing the code.
 
     HISTORY
 
@@ -205,7 +205,7 @@ static UBYTE popcount(IPTR x);
 	    di->RedBits   = popcount(redmask);
 	    di->GreenBits = popcount(greenmask);
 	    di->BlueBits  = popcount(bluemask);
-	    
+
 	    /*
 	     * If number of colors is too large, PaletteRange is set to 65535.
 	     * This is the behavior of original AmigaOS(tm).
@@ -295,7 +295,23 @@ static UBYTE popcount(IPTR x);
 	    di->StdOScan.MaxX	= di->Nominal.MaxX;
 	    di->StdOScan.MaxY	= di->Nominal.MaxY;
 */
-	    di->reserved[0] = (IPTR)DIH(handle)->drv->userdata;
+
+	    /*
+	     * reserved[0] is HIDD composition flags for intuition.library/OpenScreen().
+	     * It can't be done in another way because only we (graphics.library) know about existence
+	     * of software screen composition.
+	     */
+	    if (DIH(handle)->drv->composer)
+	    {
+	    	OOP_GetAttr(DIH(handle)->drv->composer, aHidd_Compositing_Capabilities, &di->reserved[0]);
+	    }
+	    else
+	    {
+		HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+		di->reserved[0] = HIDDProps.CompositionFlags;
+	    }
+
+	    /* This is for cybergraphics.library */
 	    di->reserved[1] = (IPTR)pf;
 
 	    break;

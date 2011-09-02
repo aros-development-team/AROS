@@ -1056,6 +1056,9 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
             	    LONG leftOffset, LONG topOffset, BOOL ignore_attributes,
 		    struct IntuitionBase *IntuitionBase);
 
+/* Private extra functions */
+OOP_Object *FindMonitor(ULONG modeid, struct IntuitionBase *IntuitionBase);
+
 #ifdef __MORPHOS__
 BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx);
 LONG IsLayerVisible(struct Layer *layer);
@@ -1082,8 +1085,6 @@ IPTR Custom_DoMethodA(struct IntuitionBase *, struct Gadget *, Msg);
 #define CreateRastPort()            MyCreateRastPort(IntuitionBase)
 #define CloneRastPort(rp)           MyCloneRastPort(IntuitionBase, rp)
 #define FreeRastPort(rp)            MyFreeRastPort(IntuitionBase, rp)
-#define SetPointerPos(x, y)         MySetPointerPos(IntuitionBase, x, y)
-#define MouseCoordsRelative()       1
 #endif
 
 /* Replacement for dos.library/DisplayError() */
