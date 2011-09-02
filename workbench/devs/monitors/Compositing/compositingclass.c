@@ -409,11 +409,6 @@ static BOOL HIDDCompositingToggleCompositing(struct HIDDCompositingData *compdat
 	    	     */
 	    	    compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, compdata->fb, fHidd_Gfx_Show_CopyBack);
 	    	}
-	    	else
-	    	{
-	    	    /* Don't dispose the framebuffer */
-	    	    oldcompositedbitmap = NULL;
-	    	}
 
 		/* Switch display mode on the framebuffer. */
 	    	OOP_SetAttrsTags(compdata->fb, aHidd_BitMap_ModeID, compdata->screenmodeid, TAG_DONE);
@@ -480,7 +475,7 @@ static BOOL HIDDCompositingToggleCompositing(struct HIDDCompositingData *compdat
      * (a) - disposing of oldcompositingbitmap needs to happen after mode switch 
      * since it could have been the current screenbitmap
      */
-    if (oldcompositedbitmap)
+    if (oldcompositedbitmap && (oldcompositedbitmap != compdata->fb))
     {
     	D(bug("[Compositing] Disposing old working bitmap 0x%p\n", oldcompositedbitmap));
         HIDD_Gfx_DisposeBitMap(compdata->gfx, oldcompositedbitmap);
