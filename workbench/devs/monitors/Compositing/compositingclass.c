@@ -45,7 +45,7 @@ static struct StackBitMapNode * HIDDCompositingIsBitMapOnStack(struct HIDDCompos
     return NULL;
 }
 
-static VOID HIDDCompositingValidateBitMapPositionChange(OOP_Object * bm, LONG *newxoffset, LONG *newyoffset, LONG displayedwidth, LONG displayedheight)
+static VOID HIDDCompositingValidateBitMapPositionChange(OOP_Object * bm, SIPTR *newxoffset, SIPTR *newyoffset, LONG displayedwidth, LONG displayedheight)
 {
     IPTR width, height;
     LONG limit;
@@ -574,22 +574,10 @@ OOP_Object *METHOD(Compositing, Root, New)
 
 VOID METHOD(Compositing, Root, Get)
 {
-    ULONG idx;
-
-    if (IS_COMPOSITING_ATTR(msg->attrID, idx))
+    if (msg->attrID == aHidd_Compositing_Capabilities)
     {
-    	struct HIDDCompositingData *compdata = OOP_INST_DATA(cl, o);
-
-    	switch (idx)
-    	{
-    	case aoHidd_Compositing_Capabilities:
-	    *msg->storage = COMPF_ABOVE;
-	    return;
-
-	case aoHidd_Compositing_Active:
-	    *msg->storage = compdata->compositedbitmap ? TRUE : FALSE;
-	    return;
-	}
+	*msg->storage = COMPF_ABOVE;
+	return;
     }
 
     OOP_DoSuperMethod(cl, o, &msg->mID);
@@ -617,6 +605,8 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 	/* Blank screen */
 	HIDDCompositingShowSingle(compdata, NULL);
 
+	/* We know we are inactive after this */
+	*msg->active = FALSE;
         /* This can return NULL, it's okay */
         return compdata->screenbitmap;
     }
@@ -686,6 +676,8 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 
     UNLOCK_COMPOSITING
 
+    /* Tell if the composition is active */
+    *msg->active = compdata->compositedbitmap ? TRUE : FALSE;
     /* Return actually displayed bitmap */
     return compdata->screenbitmap;
 }
@@ -701,21 +693,7 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
     UNLOCK_COMPOSITING
 }
 
-static void HIDDCompositingBitMapPositionChanged(struct HIDDCompositingData *compdata, OOP_Object *bm)
-{
-    /* If top bitmap position has changed, possibly toggle compositing */
-    if (compdata->topbitmap == bm)
-        HIDDCompositingToggleCompositing(compdata, FALSE);
-
-    /* If compositing is not active and top bitmap has changed, execute scroll */
-    if ((!compdata->compositedbitmap) && (compdata->topbitmap == bm))
-    {
-/* FIXME HERE            
-            HIDDNouveauSwitchToVideoMode(compdata->screenbitmap); */
-    }
-}
-
-VOID METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
+BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
 {
     struct HIDDCompositingData *compdata = OOP_INST_DATA(cl, o);
     struct StackBitMapNode *n;
@@ -739,12 +717,13 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
 
     	if (modeid == vHidd_ModeID_Invalid)
     	{
-    	    /* Nondisplayable bitmaps don't scroll. In fact they simply can't get in here */
-    	    *msg->newxoffset = 0;
-    	    *msg->newyoffset = 0;
-
+    	    /*
+    	     * Nondisplayable bitmaps don't scroll.
+    	     * In fact they simply can't get in here because MakeVPort() performs the validation.
+    	     * But who knows what bug can slip into someone's software...
+    	     */
     	    UNLOCK_COMPOSITING
-    	    return;
+    	    return FALSE;
     	}
 
     	HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
@@ -757,11 +736,22 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
 
     if (n && ((*msg->newxoffset != n->leftedge) || (*msg->newyoffset != n->topedge)))
     {
+	/* Reflect the change if it happened */
     	n->leftedge = *msg->newxoffset;
     	n->topedge  = *msg->newyoffset;
 
-    	HIDDCompositingBitMapPositionChanged(compdata, msg->bm);
+    	if (compdata->topbitmap == msg->bm)
+    	{
+    	    /*
+    	     * If this is the frontmost bitmap, we may want to toggle compositing,
+    	     * if it starts/stops covering the whole screen at one point.
+    	     */
+            HIDDCompositingToggleCompositing(compdata, FALSE);    
+        }
     }
+
+    /* Return active state */
+    return compdata->compositedbitmap ? TRUE : FALSE;
 
     UNLOCK_COMPOSITING
 }
