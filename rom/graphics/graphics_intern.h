@@ -181,15 +181,15 @@ struct common_driverdata
 
 #define CDD(base)   	    ((struct common_driverdata *)&PrivGBase(base)->shared_driverdata)
 
-#define __IHidd_BitMap      CDD(GfxBase)->hiddBitMapAttrBase
-#define __IHidd_GC          CDD(GfxBase)->hiddGCAttrBase
-#define __IHidd_Sync        CDD(GfxBase)->hiddSyncAttrBase
-#define __IHidd_PixFmt      CDD(GfxBase)->hiddPixFmtAttrBase
-#define __IHidd_PlanarBM    CDD(GfxBase)->hiddPlanarBMAttrBase
-#define __IHidd_Gfx         CDD(GfxBase)->hiddGfxAttrBase
-#define __IHidd_FakeGfxHidd CDD(GfxBase)->hiddFakeGfxHiddAttrBase
-#define __IHidd_FakeFB	    CDD(GfxBase)->hiddFakeFBAttrBase
-#define __IHidd_Compositing CDD(GfxBase)->hiddCompositingAttrBase
+#define __IHidd_BitMap      	CDD(GfxBase)->hiddBitMapAttrBase
+#define __IHidd_GC          	CDD(GfxBase)->hiddGCAttrBase
+#define __IHidd_Sync        	CDD(GfxBase)->hiddSyncAttrBase
+#define __IHidd_PixFmt      	CDD(GfxBase)->hiddPixFmtAttrBase
+#define __IHidd_PlanarBM    	CDD(GfxBase)->hiddPlanarBMAttrBase
+#define __IHidd_Gfx         	CDD(GfxBase)->hiddGfxAttrBase
+#define __IHidd_FakeGfxHidd 	CDD(GfxBase)->hiddFakeGfxHiddAttrBase
+#define __IHidd_FakeFB	    	CDD(GfxBase)->hiddFakeFBAttrBase
+#define HiddCompositingAttrBase CDD(GfxBase)->hiddCompositingAttrBase
 
 /* Hashtable sizes. Must be powers of two */
 #define GFXASSOCIATE_HASHSIZE   8

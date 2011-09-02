@@ -4,7 +4,7 @@
 
 /* Inline stubs for calling the driver */
 
-static inline void composer_LoadViewPorts(OOP_Object *o, struct HIDD_ViewPortData *Data, struct GfxBase *GfxBase)
+static inline OOP_Object *composer_LoadViewPorts(OOP_Object *o, struct HIDD_ViewPortData *Data, struct GfxBase *GfxBase)
 {
     struct pHidd_Compositing_BitMapStackChanged bscmsg =
     {
@@ -12,7 +12,7 @@ static inline void composer_LoadViewPorts(OOP_Object *o, struct HIDD_ViewPortDat
         data : Data
     };
 
-    OOP_DoMethod(o, &bscmsg.mID);
+    return (OOP_Object *)OOP_DoMethod(o, &bscmsg.mID);
 }
 
 /* Service functions defined in compositing_driver.c */
