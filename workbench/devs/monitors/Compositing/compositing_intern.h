@@ -19,8 +19,8 @@ struct StackBitMapNode
     BOOL              isscreenvisible;
     LONG              displayedwidth;
     LONG              displayedheight;
-    LONG	      leftedge;
-    LONG	      topedge;
+    SIPTR	      leftedge;
+    SIPTR	      topedge;
 };
 
 struct HIDDCompositingData
