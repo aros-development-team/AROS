@@ -4,15 +4,29 @@
 
 /* Inline stubs for calling the driver */
 
-static inline OOP_Object *composer_LoadViewPorts(OOP_Object *o, struct HIDD_ViewPortData *Data, struct GfxBase *GfxBase)
+static inline OOP_Object *composer_LoadViewPorts(OOP_Object *o, struct HIDD_ViewPortData *Data, BOOL *Active, struct GfxBase *GfxBase)
 {
     struct pHidd_Compositing_BitMapStackChanged bscmsg =
     {
-    	mID  : PrivGBase(GfxBase)->HiddCompositingMethodBase + moHidd_Compositing_BitMapStackChanged,
-        data : Data
+    	mID    : PrivGBase(GfxBase)->HiddCompositingMethodBase + moHidd_Compositing_BitMapStackChanged,
+        data   : Data,
+        active : Active
     };
 
     return (OOP_Object *)OOP_DoMethod(o, &bscmsg.mID);
+}
+
+static inline BOOL composer_ScrollBitMap(OOP_Object *o, OOP_Object *bitmap, SIPTR *x, SIPTR *y, struct GfxBase *GfxBase)
+{
+    struct pHidd_Compositing_BitMapPositionChange msg =
+    {
+        mID	   : PrivGBase(GfxBase)->HiddCompositingMethodBase + moHidd_Compositing_BitMapPositionChange,
+        bm	   : bitmap,
+        newxoffset : x,
+        newyoffset : y
+    };
+
+    return OOP_DoMethod(o, &msg.mID);
 }
 
 /* Service functions defined in compositing_driver.c */

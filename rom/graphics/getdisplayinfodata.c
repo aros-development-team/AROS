@@ -303,11 +303,7 @@ static UBYTE popcount(IPTR x);
 
 	case DTAG_MNTR:
 	{
-	    struct MonitorInfo *mi;
-
-	    HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
-
-	    mi = (struct MonitorInfo *)qh;
+	    struct MonitorInfo *mi = (struct MonitorInfo *)qh;
 
 	    OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&mi->Mspc);
 
@@ -323,14 +319,42 @@ static UBYTE popcount(IPTR x);
 	    mi->DefaultViewPosition.Y = ?;
 	    */
 
-	    if (mi->Mspc) {
+	    if (mi->Mspc)
+	    {
 	        mi->TotalRows         = mi->Mspc->total_rows;
 	        mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
 	        mi->ViewPositionRange = mi->Mspc->ms_LegalView;
 	    }
 
-	    mi->PreferredModeID   = ID;
-	    mi->Compatibility     = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
+	    /*
+	     * FIXME: For now we don't have a concept of preferred ModeID.
+	     * However, see graphics_driver.c/driver_Setup(), it can be useful.
+	     */
+	    mi->PreferredModeID = ID;
+
+	    if (DIH(handle)->drv->composer)
+	    {
+	    	/*
+	    	 * If we have software screen composition, we know we can compose.
+		 * We use MCOMPAT_MIXED here because of changed understanding of what is "monitor".
+		 * In AmigaOS(tm) a "monitor" is actually a sync (video mode). Different "monitors"
+	     	 * are actually different modes of the same display (PAL, NTSC, VGA, etc).
+	     	 * In AROS a "monitor" is a single physical display device. Of course we can do
+	     	 * composition only on a single display, but we can compose together different
+	     	 * syncs.
+	     	 */
+	    	mi->Compatibility = MCOMPAT_MIXED;
+	    }
+	    else
+	    {
+	    	/* Otherwise query the driver */
+		HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+
+		if (HIDDProps.CompositionFlags)
+		    mi->Compatibility = (HIDDProps.CompositionFlags & COMPF_SAME) ? MCOMPAT_SELF : MCOMPAT_MIXED;
+		else
+		    mi->Compatibility = MCOMPAT_NOBODY;
+	    }
 
 	    break;
 	}
