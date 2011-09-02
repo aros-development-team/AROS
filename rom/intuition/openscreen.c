@@ -89,8 +89,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     SEE ALSO
 
     INTERNALS
-	The function relies on display driver object being passed in DimensionInfo.reserved[0]
-	by graphics.library/GetDisplayInfoData()
+	The function relies on private data being passed in DimensionInfo.reserved[0]
+	by graphics.library/GetDisplayInfoData(). Keep this in sync when modifying
+	the code.
 
     HISTORY
     29-10-95    digulla automatically created from
@@ -642,17 +643,19 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     success = FALSE;
 
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
-        GetDisplayInfoData(displayinfo, (APTR)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid)
+        GetDisplayInfoData(displayinfo, (APTR)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid) &&
 #ifdef __MORPHOS__
-        && GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid)
+        GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid)
+#else
+	((screen->MonitorObject = FindMonitor(modeid, IntuitionBase)) != NULL)
 #endif
     )
     {
 #ifdef __MORPHOS__
         screen->Monitor = monitor.Mspc;
 #else
-	screen->MonitorObject = (Object *)dimensions.reserved[0];
-	screen->SpecialFlags = DoMethod(screen->MonitorObject, MM_GetCompositionFlags, modeid) << 8;
+	/* graphics.library supplies HIDD composition flags here, specially for us */
+	screen->SpecialFlags = dimensions.reserved[0] << 8;
 #endif
         success = TRUE;
 
