@@ -29,8 +29,8 @@ struct HIDDCompositingData
        matches visible mode */
     OOP_Object             *compositedbitmap;
 
-    /* Pointer to actuall screen bitmap - either compositedbitmap or topbitmap. 
-       Can only be set in HIDDCompositingToggleCompositing */
+    /* Pointer to actuall screen bitmap, result of last HIDD_Gfx_Show().
+       Needed for graphics.library only. */
     OOP_Object             *screenbitmap;
 
     /* Pointer to top bitmap on stack */

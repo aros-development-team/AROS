@@ -39,6 +39,7 @@ enum
     aoHidd_Compositing_GfxHidd = 0, 	/* [I..] Gfx driver object connected with this compositing object */
     aoHidd_Compositing_Capabilities,	/* [G..] Composition capabilities of this implementation	  */
     aoHidd_Compositing_FrameBuffer,	/* [I..] Driver's framebuffer bitmap				  */
+    aoHidd_Compositing_Active,		/* [G..] Whether the composition is active			  */
 
     num_Hidd_Compositing_Attrs
 };
@@ -46,6 +47,7 @@ enum
 #define aHidd_Compositing_GfxHidd  	(HiddCompositingAttrBase + aoHidd_Compositing_GfxHidd)
 #define aHidd_Compositing_Capabilities  (HiddCompositingAttrBase + aoHidd_Compositing_Capabilities)
 #define aHidd_Compositing_FrameBuffer   (HiddCompositingAttrBase + aoHidd_Compositing_FrameBuffer)
+#define aHidd_Compositing_Active	(HiddCompositingAttrBase + aoHidd_Compositing_Active)
 
 #define IS_COMPOSITING_ATTR(attr, idx) \
     (((idx) = (attr) - HiddCompositingAttrBase) < num_Hidd_Compositing_Attrs)
