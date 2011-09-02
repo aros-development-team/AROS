@@ -10,8 +10,6 @@
 #include "graphics_intern.h"
 #include "compositing_driver.h"
 
-#define HiddCompositingAttrBase CDD(GfxBase)->hiddCompositingAttrBase
-
 ULONG composer_Install(OOP_Class *cl, struct GfxBase *GfxBase)
 {
     struct monitor_driverdata *mdd;
@@ -58,7 +56,9 @@ ULONG composer_Install(OOP_Class *cl, struct GfxBase *GfxBase)
 void composer_Setup(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     /* Note that if we have fakegfx object, we'll actually work on top of it... */
-    mdd->composer = OOP_NewObjectTags(CDD(GfxBase)->composerClass, NULL, aHidd_Compositing_GfxHidd, mdd->gfxhidd, TAG_DONE);
+    mdd->composer = OOP_NewObjectTags(CDD(GfxBase)->composerClass, NULL,
+				      aHidd_Compositing_GfxHidd, mdd->gfxhidd, 
+				      aHidd_Compositing_FrameBuffer, mdd->framebuffer, TAG_DONE);
 
     /* ... but print name of the original driver, to be informative */
     D(bug("[Composer] Added compositing object 0x%p to driver 0x%p (%s)\n", mdd->composer, mdd->gfxhidd,
