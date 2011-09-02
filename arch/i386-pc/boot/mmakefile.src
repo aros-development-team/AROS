@@ -25,7 +25,6 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM- kernel-pc-i386 : general-setup-pc-i386
 
 #MM- kernel-pc-i386 : \
-#MM	kernel-bootloader-pc-i386-kobj \
 #MM	kernel-isapnp-kobj \
 #MM	kernel-pc-i386-drivers \
 #MM     kernel-workbench-devs-pc-i386 \

@@ -78,6 +78,7 @@ BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 
 #MM- kernel-objs : \
 #MM     kernel-aros-kobj \
+#MM	kernel-bootloader-kobj \
 #MM     kernel-dos-kobj \
 #MM	kernel-debug-kobj \
 #MM     kernel-dosboot-kobj \
@@ -96,10 +97,6 @@ BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 #MM     kernel-oop-kobj \
 #MM     kernel-layers-kobj \
 #MM     kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-
-# This is here because poor-man i386-pc port still uses own bootloader.resource implementation.
-# So we don't link generic one in kernel-objs target
-#MM kernel-link-base: kernel-bootloader-kobj
 
 # Workaround: kernel-kernel-includes is built before kernel-exec-kobj, otherwise building exec
 # fails (it needs kernel.resource includes). We still do it here because older ports use
