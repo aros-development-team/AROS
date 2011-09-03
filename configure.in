@@ -1677,7 +1677,7 @@ else
     aros_target_ranlib_ln=$AROS_CROSSTOOLSDIR/$aros_target_ranlib
     aros_target_strip_ln=$AROS_CROSSTOOLSDIR/$aros_target_strip
 
-    if test "$target_tool_prefix" != "${target_cpu}-elf-" ; then
+    if test "$target_tool_prefix" != "${target_cpu}-aros-" ; then
         AROS_TOOL_TARGET(aros_kernel_ld,ld,$aros_kernel_ld)
         AROS_REQUIRED(ld,$aros_kernel_ld)
         AROS_TOOL_TARGET(aros_kernel_ar,ar,$aros_kernel_ar)
