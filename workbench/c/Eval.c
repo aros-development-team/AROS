@@ -191,7 +191,7 @@ int main(void)
                 }
                 else
                 {
-                    Printf("%i\n", g_result);
+                    Printf("%ld\n", g_result);
                 }
         
                 /* Reinstall output stream if we changed it */
@@ -260,7 +260,7 @@ void printLformat(STRPTR format, int value)
 
             /* Integer display */
             case 'n':
-                Printf("%i", value);
+                Printf("%ld", value);
                 break;
 
             /* Character display */
