@@ -18,7 +18,7 @@
 #include <exec/execbase.h>
 #include <exec/libraries.h>
 #include <aros/arossupportbase.h>
-#include <aros/asmcall.h>
+#include <aros/altstack.h>
 
 #include <string.h>
 
@@ -270,6 +270,12 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
     APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
     struct Task *t;
+    struct Task tmptask;
+    APTR stack_base;
+    ULONG stack_size;
+
+    stack_base = (APTR)LibGetTagData(KRN_KernelStackBase, 0, msg);
+    stack_size = (ULONG)LibGetTagData(KRN_KernelStackSize, 0, msg);
 
     /*
      * Copy reset proof pointers if old SysBase is valid.
@@ -295,6 +301,16 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     /* Allocate memory for library base */
     totalsize = negsize + sizeof(struct IntExecBase);
     SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, MEMF_CLEAR, NULL) + negsize);
+
+    /* Initialize placeholder temporary task and stack.
+     * Bottom of stack may be used during function calling
+     *
+     * This will be replaced before this function ends.
+     */
+    tmptask.tc_SPLower = stack_base;
+    tmptask.tc_SPUpper = stack_base + stack_size - 1;
+    aros_init_altstack(&tmptask);
+    SysBase->ThisTask = &tmptask;
 
     /* Set default values */
     InitExecBase(SysBase, negsize, msg);
@@ -338,17 +354,12 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 
     t->tc_Node.ln_Name = "Boot Task";
     t->tc_Node.ln_Type = NT_TASK;
-    t->tc_Node.ln_Pri  = 0;
-    t->tc_State	       = TS_RUN;
-    t->tc_SigAlloc     = 0xFFFF;
-    /*
-     * Boot-time stack can be placed anywhere in memory.
-     * In order to avoid complex platform-dependent mechanism for querying its limits
-     * we simply shut up stack checking in kernel.resource by specifying the whole address
-     * space as limits.
-     */
-    t->tc_SPLower      = NULL;
-    t->tc_SPUpper      = (APTR)~0;
+    t->tc_Node.ln_Pri = 0;
+    t->tc_State = TS_RUN;
+    t->tc_SigAlloc = 0xFFFF;
+    t->tc_SPLower = stack_base;
+    t->tc_SPUpper = stack_base + stack_size - 1;
+    aros_init_altstack(t);
 
     /*
      * Set the current task and elapsed time for it. However, multitasking is

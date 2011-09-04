@@ -355,6 +355,12 @@ void exec_cinit(struct TagItem *tags, struct multiboot *mbinfo)
     APTR KickMemPtr = NULL;
     APTR KickTagPtr = NULL;
     APTR KickCheckSum = NULL;
+    struct Task tmptask;
+    APTR stack_base;
+    ULONG stack_size;
+
+    stack_base = (APTR)LibGetTagData(KRN_KernelStackBase, 0, tags);
+    stack_size = (ULONG)LibGetTagData(KRN_KernelStackSize, 0, tags);
 
     struct _tss *tss = (struct _tss *)0x40; /* Dummy pointer making life easier */
     long long *idt = (long long *)0x100;    /* Ditto */
@@ -574,6 +580,17 @@ void exec_cinit(struct TagItem *tags, struct multiboot *mbinfo)
     *(struct ExecBase **)4 = ExecBase;
     
     memset(ExecBase, 0, sizeof(struct IntExecBase));
+
+    /* Initialize placeholder temporary task and stack.
+     * Bottom of stack may be used during function calling
+     *
+     * This will be replaced before this function ends.
+     */
+    tmptask.tc_SPLower = stack_base;
+    tmptask.tc_SPUpper = stack_base + stack_size - 1;
+    aros_init_altstack(&tmptask);
+    SysBase->ThisTask = &tmptask;
+
     InitExecBase(ExecBase, negsize, tags);
 
     /* Bring back saved values */
@@ -787,9 +804,10 @@ void exec_cinit(struct TagItem *tags, struct multiboot *mbinfo)
         t->tc_Node.ln_Type = NT_TASK;
         t->tc_State = TS_RUN;
         t->tc_SigAlloc = 0xFFFF;
-        t->tc_SPLower = 0;	    /* This is the system's stack */
-        t->tc_SPUpper = (APTR)~0UL;
+        t->tc_SPLower = stack_base;
+        t->tc_SPUpper = stack_base + stack_size - 1;
         t->tc_Flags |= TF_ETASK;
+        aros_init_altstack(t);
 
         if (t->tc_Flags & TF_ETASK)
         {

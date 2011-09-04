@@ -61,13 +61,19 @@
 	The address of the new task or NULL if the operation failed.
 
     NOTES
+        Use of AddTask() is deprecated on AROS; NewAddTask() should be used
+        instead. AddTask() is only retained for backwards compatiblity.
+
+        No proper initialization for alternative stack is done so alternative
+        stack can't be in tasks started with AddTask(). This means that on
+        some archs no shared library functions can be called.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	RemTask()
+	RemTask(), NewAddTask()
 
     INTERNALS
 

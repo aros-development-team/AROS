@@ -365,6 +365,8 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 #ifdef AROS_SERIAL_DEBUG
 	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode" },
 #endif
+            { KRN_KernelStackBase, (IPTR)&_ss },
+            { KRN_KernelStackSize, (IPTR)(&_ss_end - &_ss) },
 	    { TAG_END },
 	};
 	struct TagItem *bootmsgptr = bootmsg;
@@ -728,6 +730,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
 	    SysBase->ThisTask->tc_SPUpper = &usp[size];
 	    SysBase->ThisTask->tc_SPLower = usp;
+	    aros_init_altstack(SysBase->ThisTask);
 
 	    /* Leave supervisor mode, switch power led on */
 	    asm volatile (

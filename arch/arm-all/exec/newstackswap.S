@@ -2,7 +2,7 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
-
+        
 	#include <aros/arm/asm.h>
 
 	.text
@@ -24,12 +24,20 @@ AROS_SLIB_ENTRY(NewStackSwap,Exec,134):
 	mov	r5, r1
 	mov	r6, r2
 	mov	r7, r3
-	
+
+#error implement following (pseudo) C code
+        // oldtop = aros_get_altstack(SysBase->ThisTask)
+        	
 	// Call StackSwap
 	mov	r1, r3
 	ldr	ip, [r1, StackSwap]
 	blx	ip
-	
+
+        // Call aros_init_altstack
+#error implement following (pseudo) C code
+        // aros_init_altstack(SysBase->ThisTask)
+        // aros_set_altstack(SysBase->ThisTask, oldtop)
+        
 	// Prepare first 4 arguments
 	ldr	r0, [r6], #4
 	ldr	r1, [r6], #4
