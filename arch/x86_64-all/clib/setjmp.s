@@ -66,7 +66,6 @@
 	.set	retaddr, 0
 
 AROS_CDEFNAME(setjmp):
-#error store *(SysBase->ThisTask->tc_SPLower)
 	/* Save stack pointer and all registers into env */
 	mov %rbx,8(%rdi) /* %ebx */
 	mov %rcx,16(%rdi) /* %ecx */
@@ -83,6 +82,13 @@ AROS_CDEFNAME(setjmp):
 	mov %r14,104(%rdi)
 	mov %r15,112(%rdi)
 	mov %rsp,120(%rdi) /* %esp */
+
+	/* Save top of altstack */
+	mov SysBase(%rip),%rax
+	mov ThisTask(%rax),%rax
+	mov tc_SPLower(%rax),%rax
+	mov 0(%rax),%rax
+	mov %rax,128(%rdi)
 
 	mov retaddr(%rsp),%rax /* Save return address (%esp has changed) */
 	mov %rax,0(%rdi)
