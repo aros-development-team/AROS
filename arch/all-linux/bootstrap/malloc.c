@@ -3,6 +3,15 @@
  * This does not work with Android's bionic.
  */
 
+/* TODO:
+   This code is compiled with the kernel compiler but calls code
+   from exec.library. This can only work if function calling
+   convention for kernel and target compiler are the same.
+   Up to now this seems to be the case for all linux hosted ports
+   as UNIX calling is often taken as reference for the AROS
+   implementation.
+*/
+
 #ifndef __ANDROID__
 
 #include <proto/exec.h>

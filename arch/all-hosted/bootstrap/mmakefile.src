@@ -20,13 +20,21 @@ else
     LIBS += gcc dl
 endif
 
+ifeq ($(ARCH),linux)
+# We assume that for linux function calling convention between host
+# and AROS is possible.
+# This is needed to support malloc.c in arch/all-linux/bootstrap
+    LIBS += arossupport
+    USER_LDFLAGS += -L$(LIBDIR)
+endif
+
 # Allow to add variant-specific options
 -include $(SRCDIR)/arch/all-$(AROS_TARGET_VARIANT)/bootstrap/make.opts
 
-#MM kernel-bootstrap-hosted: linklibs-bootstrap
+#MM kernel-bootstrap-hosted: linklibs-bootstrap linklibs-arossupport
 
 %build_prog mmake=kernel-bootstrap-hosted \
     progname=$(PROG)$(EXE_SUFFIX) targetdir=$(EXEDIR) \
-    files=$(FILES) compiler=kernel uselibs=$(LIBS)
+    files=$(FILES) compiler=kernel uselibs="$(LIBS)"
 
 %common
