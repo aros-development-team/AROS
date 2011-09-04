@@ -66,6 +66,7 @@
 	.set	retaddr, 0
 
 AROS_CDEFNAME(setjmp):
+#error store *(SysBase->ThisTask->tc_SPLower)
 	/* Save stack pointer and all registers into env */
 	mov %rbx,8(%rdi) /* %ebx */
 	mov %rcx,16(%rdi) /* %ecx */

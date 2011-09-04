@@ -39,7 +39,7 @@
     _ALIGNMENT
     .globl AROS_CDEFNAME(vfork)
     _FUNCTION(AROS_CDEFNAME(vfork))
-    .set    bufsize, 8*4
+    .set    bufsize, 9*4
     .set    retaddr, 0*4
     .set    stack,   7*4
 

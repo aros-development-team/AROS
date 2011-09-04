@@ -72,7 +72,7 @@
 	.set	retaddr, 0
 
 AROS_CDEFNAME(longjmp):
-
+#error restore *(SysBase->ThisTask->tc_SPLower)
     mov %rdi, %rax
 	/* Make sure return value is not 0 */
 	cmp $0,%rsi
