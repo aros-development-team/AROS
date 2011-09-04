@@ -15,15 +15,11 @@ static LONG get_default_stack_size()
 
 int main(int argc, char **argv)
 {
-	struct aros_startup * oldstartup;
 	char *fname = "SYS:Utilities/Clock";
 	char *full = "";
 	int lastresult = RETURN_OK;
 	
-	oldstartup = (struct aros_startup *)GetIntETask(FindTask(NULL))->iet_startup;
-	
 	if(fname) {
-
 		BPTR seglist = LoadSeg(fname);
 		if(seglist)
 		{
@@ -34,6 +30,5 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	printf("current iet_startup: %p, old iet_startup: %p, result: %d\n", (struct aros_startup *)GetIntETask(FindTask(NULL))->iet_startup, oldstartup, lastresult);
 	exit(0);
 }

@@ -79,7 +79,7 @@ LONG launcher()
     udata->child_aroscbase = aroscbase;
     aroscbase->acb_parent_does_upath = pbase->acb_doupath;
 
-    if(setjmp(__aros_startup_jmp_buf) == 0)
+    if(setjmp(aroscbase->acb_acud.acud_startup_jmp_buf) == 0)
     {
         
         /* Setup complete, signal parent */
@@ -193,7 +193,7 @@ pid_t __vfork(jmp_buf env)
                                         
     D(bug("__vfork: backuping startup buffer\n"));
     /* Backup startup buffer */
-    CopyMem(&__aros_startup_jmp_buf, &udata->startup_jmp_buf, sizeof(jmp_buf));
+    CopyMem(&__arosc_startup_jmp_buf, &udata->startup_jmp_buf, sizeof(jmp_buf));
 
     D(bug("__vfork: Allocating parent signal\n"));
     /* Allocate signal for child->parent communication */
@@ -230,8 +230,8 @@ pid_t __vfork(jmp_buf env)
 	longjmp(env, -1);
     }
 
-    D(bug("__vfork: Setting jmp_buf at %p\n", &__aros_startup_jmp_buf));
-    if(setjmp(__aros_startup_jmp_buf))
+    D(bug("__vfork: Setting jmp_buf at %p\n", &__arosc_startup_jmp_buf));
+    if(setjmp(__arosc_startup_jmp_buf))
     {
         ULONG child_id;
 
@@ -248,7 +248,14 @@ pid_t __vfork(jmp_buf env)
 	if(!udata->child_executed)
 	{
 	    D(bug("__vfork: not executed\n"));
-	    ((struct arosc_startup*) GetIntETask(udata->child)->iet_startup)->as_startup_error = __aros_startup_error;
+	    udata->child_aroscbase->acb_acud.acud_startup_error = __arosc_startup_error;
+
+            /* et_Result is normally set in startup code but no exec was performed
+               so we have to mimic the startup code
+            */
+            etask = GetETask(udata->child);
+            if (etask)
+                etask->et_Result1 = __arosc_startup_error;
 
 	    D(bug("__vfork: Signaling child\n"));
 	    Signal(udata->child, 1 << udata->child_signal);
@@ -263,7 +270,7 @@ pid_t __vfork(jmp_buf env)
 
 	D(bug("__vfork: restoring startup buffer\n"));
 	/* Restore parent startup buffer */
-	CopyMem(&udata->startup_jmp_buf, &__aros_startup_jmp_buf, sizeof(jmp_buf));
+	CopyMem(&udata->startup_jmp_buf, &__arosc_startup_jmp_buf, sizeof(jmp_buf));
 
 	D(bug("__vfork: freeing parent signal\n"));
 	FreeSignal(udata->parent_signal);

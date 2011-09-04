@@ -98,10 +98,9 @@
     et = (struct ETask *)ChildWait(0);
     if (et != (struct ETask *)CHILD_NOTNEW)
     {
-	if(status && IntETask(et)->iet_startup)
+	if(status)
 	{
-	    struct arosc_startup *startup = IntETask(et)->iet_startup;
-	    *status = startup->as_startup_error;
+	    *status = et->et_Result1;
 	}
         ret = et->et_UniqueID;
         ChildFree(et->et_UniqueID);

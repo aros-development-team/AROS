@@ -42,7 +42,7 @@ void __callexitfuncs(void)
             break;
 
         case AEN_PTR:
-            aen->func.fptr(__aros_startup_error, aen->ptr);
+            aen->func.fptr(__arosc_startup_error, aen->ptr);
             break;
         }
     }
