@@ -14,6 +14,7 @@
 	.global AROS_CDEFNAME(vfork)
 	.type AROS_CDEFNAME(vfork),%function
 
+#error jmpbuf size has changed !
 AROS_CDEFNAME(vfork):
 	str		lr, [sp, #-4]!		/* Store link register */
 	sub		sp, sp, #260		/* Create space for env structure */

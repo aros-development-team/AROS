@@ -5,7 +5,8 @@
  *      Author: misc
  *  $Id$
  */
-
+#error need to be update to store *(SysBase->ThisTask->tc_SPLower)
+        
 #include "aros/arm/asm.h"
 
 	.text

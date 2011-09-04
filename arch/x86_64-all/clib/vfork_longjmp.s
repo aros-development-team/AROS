@@ -19,6 +19,7 @@
 	.set	retaddr, 0
 
 AROS_CDEFNAME(vfork_longjmp):
+#error restore *(SysBase->ThisTask->tc_SPLower)
     mov %rdi, %rax
 	/* Restore stack pointer and all registers from env */
 	mov 120(%rax),%rsp /* Restore original stack */

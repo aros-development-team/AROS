@@ -55,6 +55,7 @@
     HISTORY
 	12.10.1999 Code rewritten according to glibc
 ******************************************************************************/
+#error need to be update to store *(SysBase->ThisTask->tc_SPLower)
 
 #include "aros/ppc/asm.h"
 

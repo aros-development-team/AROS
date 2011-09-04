@@ -22,4 +22,5 @@ AROS_CDEFNAME(vfork_longjmp):
 	fldmiax ip!, {d8-d15}	/* Restore VFP registers - we assume they are available! */
 	ldr     r1, [ip], #4	/* restore VFP status reg */
   	fmxr    fpscr, r1
+#error restore *(SysBase->ThisTask->tc_SPLower)
 	bx lr			/* Done! */
