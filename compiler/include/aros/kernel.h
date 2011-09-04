@@ -56,6 +56,8 @@ typedef enum
 #define KRN_DebugInfo		(KRN_Dummy + 21) /* Kicksrart debug information, see debug.library	*/
 #define KRN_BootLoader          (KRN_Dummy + 22) /* Pointer to bootloader name string			*/
 #define KRN_EFISystemTable	(KRN_Dummy + 23) /* Pointer to EFI system table				*/
+#define KRN_KernelStackBase     (KRN_Dummy + 26) /* Kickstart Boot Task stack base address */
+#define KRN_KernelStackSize     (KRN_Dummy + 27) /* Kickstart Boot Task stack size */
 
 /* Magic value passed by the bootstrap as second parameter */
 #define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')

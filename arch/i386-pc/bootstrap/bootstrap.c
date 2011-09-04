@@ -58,7 +58,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     unsigned long mem_upper = 0;
 
     kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
-    kprintf("[BOOT] Stack @ %p, [%d bytes]\n",__stack, 65536);
+    kprintf("[BOOT] Stack @ %p, [%d bytes]\n",__stack, BOOT_STACK_SIZE);
 
     /* Disable interrupts on the XT-PIC directly */
     outb(0xff, 0x21);
@@ -66,6 +66,12 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 
     tag->ti_Tag = KRN_BootLoader;
     tag->ti_Data = (IPTR)"Bootstrap/GRUB for x86";
+    tag++;
+    tag->ti_Tag = KRN_KernelStackBase;
+    tag->ti_Data = __stack;
+    tag++;
+    tag->ti_Tag = KRN_KernelStackSize;
+    tag->ti_Data = BOOT_STACK_SIZE;
     tag++;
 
     if (mb->cmdline)

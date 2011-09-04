@@ -92,9 +92,10 @@ COMMONTESTFILES := \
     getcpuinfo \
     printf_f \
     pubscreen \
-	versionlib \
-	runtests \
-	fsresource
+    versionlib \
+    runtests \
+    fsresource \
+    altstack
 
 HOSTEDTESTFILES :=  \
     hostlib

@@ -47,12 +47,21 @@
 	Returning from the function that you call StackSwap() in can have
 	unexpected results.
 
+        Use of StackSwap() is deprecated on AROS; NewStackSwap() should
+        be used instead. StackSwap() is only retained to provide backwards
+        compatibility. On some hosted versions with strict stack checking use
+        of StackSwap() may cause problems.
+
+        No proper initialization for alternative stack is done so alternative
+        stack can't be used after using StackSwap(). This means that on
+        some archs no shared library functions can be called.
+
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	AddTask(), RemTask()
+	AddTask(), RemTask(), NewStackSwap()
 
     INTERNALS
 	This function MUST be replaced in $(KERNEL) or $(ARCH).

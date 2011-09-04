@@ -45,6 +45,10 @@
 #   error unsupported CPU type
 #endif
 
+#if !AROS_STACK_GROWS_DOWNWARDS
+#error Several places in AROS code assume a stack that grows downwards
+#endif
+
 /*
     Under 64-bit MS Windows long is still 32 bits
 */

@@ -208,6 +208,12 @@ void kernel_cstart(const struct TagItem *msg)
     	    dest->ti_Data = tag->ti_Data;
     	    dest++;
     	}
+    	dest->ti_Tag = KRN_KernelStackBase;
+    	dest->ti_Data = (IPTR)boot_stack;
+    	dest++;
+    	dest->ti_Tag = KRN_KernelStackSize;
+    	dest->ti_Data = (IPTR)STACK_SIZE;
+    	dest++;
 	dest->ti_Tag = TAG_DONE;
 	dest++;
 

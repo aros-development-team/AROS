@@ -11,6 +11,7 @@
 #include <utility/tagitem.h>
 #include <aros/debug.h>
 #include <aros/libcall.h>
+#include <aros/altstack.h>
 #include <proto/exec.h>
 
 #include "etask.h"
@@ -141,6 +142,9 @@
     /* Get new stackpointer. */
     if (task->tc_SPReg==NULL)
         task->tc_SPReg = (UBYTE *)(task->tc_SPUpper) - SP_OFFSET;
+
+    /* Initialize alternative stack */
+    aros_init_altstack(task);
 
 #ifdef AROS_STACKALIGN
     if ((IPTR)task->tc_SPReg & (AROS_STACKALIGN - 1))

@@ -86,10 +86,15 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     unsigned int i;
     struct MemHeader *bootmh;
     struct TagItem *tag;
-    const struct TagItem *tstate = msg;
     struct HostInterface *hif = NULL;
     struct mb_mmap *mmap = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
+    struct TagItem boottags[] = {
+        { KRN_KernelStackBase, (IPTR)_stack - AROS_STACKSIZE },
+        { KRN_KernelStackSize, AROS_STACKSIZE },
+        { TAG_MORE, (IPTR)msg }
+    };
+    const struct TagItem *tstate = boottags;
 
     /* This bails out if the user started us from within AROS command line, as common executable */
     if (magic != AROS_BOOT_MAGIC)
@@ -122,7 +127,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     }
 
     /* Set globals only AFTER __clear_bss() */
-    BootMsg = msg;
+    BootMsg = boottags;
     HostIFace = hif;
 
     /* If there's no HostIFace, we can't even say anything */
@@ -180,7 +185,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
     D(bug("[Kernel] calling krnPrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
-    if (!krnPrepareExecBase(ranges, bootmh, msg))
+    if (!krnPrepareExecBase(ranges, bootmh, boottags))
     {
     	bug("[Kernel] Unable to create ExecBase!\n");
     	return -1;
