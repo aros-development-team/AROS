@@ -39,9 +39,8 @@ AROS_UFH2(ULONG, Dos_BCPL_putpkt,
 {
     AROS_USERFUNC_INIT
 
-    struct Process *me   = (struct Process *)FindTask(NULL);
+    D(struct Process *me   = (struct Process *)FindTask(NULL);)
     struct DosPacket *dp = BADDR(bdospacket);
-    struct MsgPort *port;
 
     D(bug("BCPL putPkt: me->pr_MsgPort        = %p\n", &me->pr_MsgPort));
     D(bug("BCPL putPkt: me->pr_FileSystemTask = %p\n", me->pr_FileSystemTask));
@@ -68,16 +67,14 @@ AROS_UFH2(ULONG, Dos_BCPL_putpkt,
     MMP(ReplyPort);
     MMP(Length);
 
-    port = dp->dp_Port;
-
     dp->dp_Link->mn_Node.ln_Name = (char *)dp;
     dp->dp_Link->mn_Length = sizeof(*dp->dp_Link);
 
     D(bug("BCPL putPkt: Send to port %p, reply on port %p, DosPacket %p\n",
-	port, &me->pr_MsgPort, dp));
+	dp->dp_Port, &me->pr_MsgPort, dp));
 
-    SendPkt(dp, port, &me->pr_MsgPort);
-    return (WaitPkt() == dp) ? DOSTRUE : DOSFALSE;
+    PutMsg(dp->dp_Port, dp->dp_Link);
+    return DOSTRUE;
 
     AROS_USERFUNC_EXIT
 }
