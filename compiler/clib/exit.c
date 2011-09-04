@@ -58,9 +58,9 @@
 
 ******************************************************************************/
 {
-    __aros_startup_error = code;
+    __arosc_startup_error = code;
 
-    longjmp (__aros_startup_jmp_buf, 1);
+    longjmp (__arosc_startup_jmp_buf, 1);
 
     /* never reached */
 } /* exit */

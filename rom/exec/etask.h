@@ -37,7 +37,6 @@ struct IntETask
 #endif
     APTR	 	iet_RT;			/* Structure for resource tracking	 */
     APTR	 	iet_Context;		/* Structure to store CPU registers	 */
-    APTR	 	iet_startup;   		/* Structure to store startup code stuff */
     UQUAD	 	iet_CpuTime;
     UQUAD	 	iet_private1;
     ULONG	 	iet_AlertCode;		/* Alert code for crash handler		 */

@@ -71,8 +71,6 @@
     AROS_LIBFUNC_INIT
 
     STRPTR oldargs;
-    LONG oldresult;
-    struct aros_startup * oldstartup;
     volatile APTR oldReturnAddr;
 
     /* Get pointer to process structure */
@@ -95,13 +93,6 @@
     sss.stk_Lower=stack;
     sss.stk_Upper=stack+stacksize;
     sss.stk_Pointer = sss.stk_Upper;
-
-    oldresult=me->pr_Result2;
-    /* we have to save iet_startup field because it's overwritten in 
-       startup code */
-    oldstartup = (struct aros_startup *)GetIntETask(me)->iet_startup;
-    
-    me->pr_Result2=oldresult;
 
     oldargs=me->pr_Arguments;
     me->pr_Arguments=(STRPTR)argptr;
@@ -127,12 +118,6 @@
 
     me->pr_ReturnAddr = oldReturnAddr;
     me->pr_Arguments  = oldargs;
-
-    oldresult=me->pr_Result2;
-    /* restore saved iet_startup */
-    GetIntETask(me)->iet_startup = oldstartup;
-
-    me->pr_Result2=oldresult;
 
     /* remove buffered argument stream */
     /* must be original stream, command might have called SelectInput() */

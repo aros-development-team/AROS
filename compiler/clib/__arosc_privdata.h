@@ -147,15 +147,4 @@ struct aroscbase
 #define __doupath                             (__get_aroscbase()->acb_doupath)
 #define __flocks_list                         (__get_aroscbase()->acb_file_locks)
 
-/* The data stored for arosc startup code */
-struct arosc_startup
-{
-    jmp_buf as_startup_jmp_buf;
-    LONG    as_startup_error;
-};
-
-#define __aros_startup          ((struct arosc_startup *)GetIntETask(FindTask(NULL))->iet_startup)
-#define __aros_startup_jmp_buf  (__aros_startup->as_startup_jmp_buf)
-#define __aros_startup_error    (__aros_startup->as_startup_error)
-
 #endif /* !___AROSC_PRIVDATA_H */

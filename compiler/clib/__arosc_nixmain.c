@@ -71,7 +71,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
         D(bug("__arosc_nixmain: Cloning LocalVars"));
         if (!clone_vars(&old_vars))
 	{
-	    __aros_startup_error = RETURN_FAIL;
+	    __arosc_startup_error = RETURN_FAIL;
 	    goto err_vars;
 	}
     }
@@ -82,9 +82,9 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
         update_PATH();
 
     /* Call the real main.  */
-    if (setjmp(__aros_startup_jmp_buf) == 0)
+    if (setjmp(__arosc_startup_jmp_buf) == 0)
     {
-        __aros_startup_error = (*main)(argc, argv);
+        __arosc_startup_error = (*main)(argc, argv);
     }
 
 
@@ -100,7 +100,7 @@ err_vars:
 	argv[0] = (char *)old_argv0;
     }
 
-    return __aros_startup_error;
+    return __arosc_startup_error;
 }
 
 /* Clone the process' environment variables list. Once this function returns,
