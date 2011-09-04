@@ -1054,7 +1054,10 @@ static void writeopenlib(FILE *out, struct config *cfg)
             fprintf(out,
 		    "\n"
                     "        void *oldbase = AROS_SET_LIBBASE(newlib);\n"
-		    "        if (!set_call_libfuncs(SETNAME(OPENLIB), 1, 1, newlib))\n"
+		    "        if (!(set_open_rellibraries(newlib)\n"
+                    "              && set_call_libfuncs(SETNAME(OPENLIB), 1, 1, newlib)\n"
+                    "             )\n"
+                    "        )\n"
 		    "        {\n"
                     "            (void)AROS_SET_LIBBASE(oldbase);\n"
 		    "            __freebase(newlib);\n"
@@ -1158,6 +1161,7 @@ static void writecloselib(FILE *out, struct config *cfg)
         fprintf(out,
                 "\n"
 		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
+                "    set_close_rellibraries(lh);\n"
                 "    __freebase(lh);\n"
 		"    lh = rootbase;\n"
 		"    ((struct Library *)lh)->lib_OpenCnt--;\n"

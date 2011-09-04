@@ -14,11 +14,20 @@
 #include <exec/execbase.h>
 #include <aros/asmcall.h>
 
+#include <stddef.h>
+
 struct libraryset
 {
     CONST_STRPTR name;
     const LONG *versionptr;
     void  **baseptr;
+};
+
+struct rellibraryset
+{
+    CONST_STRPTR name;
+    const LONG * const versionptr;
+    const IPTR * const baseoffsetptr;
 };
 
 #define SETNAME(set) __##set##_LIST__
@@ -102,6 +111,19 @@ static const struct libraryset __aros_libset_##bname =         \
 };                                                             \
 ADD2SET(__aros_libset_##bname, libs, 0) 
 
+#define AROS_RELLIBSET(name, btype, bname)                     \
+IPTR bname##_offset;                                           \
+extern const LONG __aros_rellibreq_##bname __attribute__((weak)); \
+                                                               \
+AROS_IMPORT_ASM_SYM(int, dummy, __includerellibrarieshandling);   \
+                                                               \
+static const struct rellibraryset __aros_rellibset_##bname =         \
+{                                                              \
+     name, &__aros_rellibreq_##bname, (void *)&bname##_offset     \
+};                                                             \
+ADD2SET(__aros_rellibset_##bname, libs, 0) 
+
+
 #define ADD2LIBS(name, ver, btype, bname) \
 AROS_LIBSET(name, btype, bname)           \
 const LONG __aros_libreq_##bname = ver;
@@ -111,6 +133,14 @@ const LONG __aros_libreq_##bname = ver;
                   ".global __aros_libreq_" #bname "." #ver "\n" \
                   "__aros_libreq_" #bname "." #ver "=" #ver);
 
+#define SETRELLIBOFFSET(bname, libbasetype, fname) \
+extern IPTR bname##_offset;                        \
+static int __ ## bname ## _setoffset(void)         \
+{                                                  \
+    bname##_offset = offsetof(libbasetype, fname); \
+    return 1;                                      \
+}                                                  \
+ADD2INIT(__ ## bname ## _setoffset, 0)
 
 /* Traverse the set from the first element to the last one, or vice versa,
    depending on the value of 'direction': >=0 means first -> last, <0 means
@@ -154,8 +184,13 @@ extern int set_call_devfuncs
 );
 
 DECLARESET(LIBS)
+DECLARESET(RELLIBS)
 
 #define set_open_libraries() set_open_libraries_list(SETNAME(LIBS))
+#define set_open_rellibraries(base) set_open_rellibraries_list(base,SETNAME(RELLIBS))
 #define set_close_libraries() set_close_libraries_list(SETNAME(LIBS))
+#define set_close_rellibraries(base) set_close_rellibraries_list(base,SETNAME(RELLIBS))
 extern int set_open_libraries_list(const void * const list[]);
+extern int set_open_rellibraries_list(APTR base, const void * const list[]);
 extern void set_close_libraries_list(const void * const list[]);
+extern void set_close_rellibraries_list(APTR base, const void * const list[]);

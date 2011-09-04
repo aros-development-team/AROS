@@ -17,9 +17,15 @@ int main(int argc, char **argv)
 	writestart(cfg);
 	writeend(cfg);
 	if (cfg->options & OPTION_AUTOINIT)
-	    writeautoinit(cfg);
+        {
+	    writeautoinit(cfg, 0); /* normal */
+	    writeautoinit(cfg, 1); /* relbase */
+        }
         if (cfg->options & OPTION_STUBS)
-            writestubs(cfg);
+        {
+            writestubs(cfg, 0); /* normal */
+            writestubs(cfg, 1); /* relbase */
+        }
 	break;
 	
     case INCLUDES:
@@ -28,7 +34,8 @@ int main(int argc, char **argv)
             fprintf(stderr, "%s called with writeincludes when no includes are present\n", argv[0]);
             exit(20);
         }
-        writeincproto(cfg);
+        writeincproto(cfg, 0); /* normal */
+        writeincproto(cfg, 1); /* relbase */
         writeincclib(cfg);
         writeincdefines(cfg);
         writeincinline(cfg);

@@ -6,13 +6,13 @@
 */
 #include "genmodule.h"
 
-void writeautoinit(struct config *cfg)
+void writeautoinit(struct config *cfg, int is_rel)
 {
     FILE *out;
     char line[256], *banner;
     struct stringlist *linelistit;
 
-    snprintf(line, 255, "%s/%s_autoinit.c", cfg->gendir, cfg->modulename);
+    snprintf(line, 255, "%s/%s_%sautoinit.c", cfg->gendir, cfg->modulename, is_rel ? "rel" : "");
     out = fopen(line, "w");
 
     if (out==NULL)
@@ -22,9 +22,11 @@ void writeautoinit(struct config *cfg)
     }
 
     /* Write the code to be added to startup provided in the config file */
-    for (linelistit = cfg->startuplines; linelistit != NULL; linelistit = linelistit->next)
-    {
-        fprintf(out, "%s\n", linelistit->s);
+    if (!is_rel) {
+	for (linelistit = cfg->startuplines; linelistit != NULL; linelistit = linelistit->next)
+	{
+	    fprintf(out, "%s\n", linelistit->s);
+	}
     }
 
     banner = getBanner(cfg);
@@ -34,15 +36,16 @@ void writeautoinit(struct config *cfg)
 	    "#include <proto/%s.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "\n"
- 	    "AROS_LIBSET(\"%s.%s\", %s, %s)\n",
-	    banner, cfg->modulename,
+ 	    "AROS_%sLIBSET(\"%s.%s\", %s, %s)\n",
+	    banner, cfg->modulename, is_rel ? "REL" : "",
 	    cfg->modulename, cfg->suffix,
 	    cfg->libbasetypeptrextern, cfg->libbase
     );
     freeBanner(banner);
 
     fprintf(out,
-	    "AROS_IMPORT_ASM_SYM(int, dummy, __includelibrarieshandling);\n"
+	    "AROS_IMPORT_ASM_SYM(int, dummy, __include%slibrarieshandling);\n",
+	    is_rel ? "rel" : ""
     );
 
     if (cfg->forcelist!=NULL)

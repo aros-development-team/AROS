@@ -143,6 +143,37 @@ do                                                       \
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
 
+/* Macro: AROS_RELLIBFUNCSTUB(functionname, libbasename, lvo)
+   Same as AROS_LIBFUNCSTUB but finds libbase at an offset in
+   the current libbase
+*/
+#define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
+    void __ ## fname ## _ ## libbasename ## _relwrapper(IPTR args) \
+    { \
+	asm volatile( \
+            ".weak " #fname "\n" \
+            "\t" #fname " :\n" \
+            "\tjsr	aros_get_relbase\n" \
+            "\tadd.l	" #libbasename "_offset, %%d0\n" \
+            "\tmove.l	%%d0,%%a0\n" \
+            "\tmove.l	%%a0@,%%d0\n" \
+            "\tmove.l   %%d0,%%sp@-\n" /* base */ \
+            "\tjsr	aros_push2_relbase\n" /* save retaddr + base */\
+            "\tmove.l   %%sp@,%%a0\n" \
+            "\taddq.l	#8, %%sp\n" /* original arguments */ \
+	    "\tjsr	%%a0@(%c0)\n" \
+	    "\tmovem.l	%%d0/%%d1,%%sp@-\n" \
+	    "\tjsr	aros_pop2_relbase\n" \
+	    "\tmove.l	%%d0,%%a0\n" \
+	    "\tmovem.l	%%sp@+,%%d0/%%d1\n" \
+	    "\tjmp	%%a0@\n" \
+	    : : "i" ((-lvo*LIB_VECTSIZE)) \
+	    : \
+	); \
+    }
+#define AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
+    __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)
+
 
 /* Macro: AROS_FUNCALIAS(functionname, alias)
    This macro will generate an alias 'alias' for function

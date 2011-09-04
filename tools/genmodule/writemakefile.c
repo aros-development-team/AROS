@@ -42,9 +42,16 @@ void writemakefile(struct config *cfg)
     if (cfg->options & OPTION_AUTOINIT)
         fprintf(out, " %s_autoinit", cfg->modulename);
     fprintf(out, "\n");
+    fprintf(out, "%s_RELLINKLIBFILES :=", cfg->modulename);
+    if (cfg->options & OPTION_STUBS)
+        fprintf(out, " %s_relstubs", cfg->modulename);
+    if (cfg->options & OPTION_AUTOINIT)
+        fprintf(out, " %s_relautoinit", cfg->modulename);
+    fprintf(out, "\n");
 
     /* Currently there are no asm files anymore */
     fprintf(out, "%s_LINKLIBAFILES :=\n", cfg->modulename);
+    fprintf(out, "%s_RELLINKLIBAFILES :=\n", cfg->modulename);
 
     fprintf(out, "%s_INCLUDES := ", cfg->modulename);
     if (cfg->options & OPTION_INCLUDES)
@@ -53,6 +60,8 @@ void writemakefile(struct config *cfg)
 		"clib/%s_protos.h inline/%s.h defines/%s.h proto/%s.h",
 		cfg->modulename, cfg->modulename, cfg->modulename, cfg->modulename
 	);
+        if (cfg->modtype == LIBRARY)
+            fprintf(out, " proto/%s_rel.h", cfg->modulename);
     }
     fprintf(out, "\n");
 

@@ -6,7 +6,7 @@
 */
 #include "genmodule.h"
 
-void writestubs(struct config *cfg)
+void writestubs(struct config *cfg, int is_rel)
 {
     FILE *out;
     char line[256], *type, *name, *banner;
@@ -14,7 +14,7 @@ void writestubs(struct config *cfg)
     struct stringlist *aliasesit;
     struct functionarg *arglistit;
 
-    snprintf(line, 255, "%s/%s_stubs.c", cfg->gendir, cfg->modulename);
+    snprintf(line, 255, "%s/%s_%sstubs.c", cfg->gendir, cfg->modulename, is_rel ? "rel" : "");
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -24,22 +24,39 @@ void writestubs(struct config *cfg)
     }
 
     banner = getBanner(cfg);
-    fprintf
-    (
-        out,
-        "%s"
-        "#define NOLIBDEFINES\n"
-        "#define NOLIBINLINE\n"
-        "/* Be sure that the libbases are included in the stubs file */\n"
-        "#undef __NOLIBBASE__\n"
-        "#undef __%s_NOLIBBASE__\n",
-        banner, cfg->modulenameupper
-    );
+    if (is_rel) {
+	fprintf
+	(
+	    out,
+	    "%s"
+	    "#define NOLIBINLINE\n"
+	    "#define NOLIBDEFINES\n"
+	    "#ifndef __%s_NOLIBBASE__\n"
+	    "/* Do not include the libbase */\n"
+	    "#define __%s_NOLIBBASE__\n"
+	    "#endif\n",
+	    banner, cfg->modulenameupper, cfg->modulenameupper
+	);
+    } else {
+	fprintf
+	(
+	    out,
+	    "%s"
+	    "#define NOLIBINLINE\n"
+	    "#define NOLIBDEFINES\n"
+	    "/* Be sure that the libbases are included in the stubs file */\n"
+	    "#undef __NOLIBBASE__\n"
+	    "#undef __%s_NOLIBBASE__\n",
+	    banner, cfg->modulenameupper
+	);
+    }
     freeBanner(banner);
 
     if (cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
     {
         fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
+        if (is_rel)
+            fprintf(out, "extern IPTR %s_offset;\n", cfg->libbase);
     }
     
     fprintf
@@ -84,11 +101,19 @@ void writestubs(struct config *cfg)
 		    }
 		}
 
-		if (nquad == 0)
-		{
+                fprintf(out,
+                        ")\n"
+                        "{\n"
+                );
+                if (is_rel) {
                     fprintf(out,
-                            ")\n"
-                            "{\n"
+                        "    %s %s = AROS_GET_RELBASE + %s_offset;\n",
+                        cfg->libbasetypeptrextern, cfg->libbase,
+                        cfg->libbase
+                    );
+                }
+		if (nquad == 0) {
+                    fprintf(out,
                             "    %sAROS_LC%d%s(%s, %s,\n",
                             (isvoid) ? "" : "return ",
                             funclistit->argcount, (isvoid) ? "NR" : "",
@@ -115,8 +140,6 @@ void writestubs(struct config *cfg)
                 {
                     if (nargs == 0) {
                         fprintf(out,
-                                ") \\\n"
-                                "{\n"
                                 "    %sAROS_LCQUAD%d%s(%s, %s, \\\n",
                                 (isvoid) ? "" : "return ",
                                 funclistit->argcount, (isvoid) ? "NR" : "",
@@ -126,8 +149,6 @@ void writestubs(struct config *cfg)
                     else
                     {
                         fprintf(out,
-                                ") \\\n"
-                                "{\n"
                                 "    %sAROS_LC%dQUAD%d%s(%s, %s, \\\n",
                                 (isvoid) ? "" : "return ",
                                 nargs, nquad, (isvoid) ? "NR" : "",
@@ -172,7 +193,8 @@ void writestubs(struct config *cfg)
 	    }
 	    else /* libcall==STACK */
 	    {
-		fprintf(out, "AROS_LIBFUNCSTUB(%s, %s, %d)\n",
+		fprintf(out, "AROS_%sLIBFUNCSTUB(%s, %s, %d)\n",
+			is_rel ? "REL" : "",
 			funclistit->name, cfg->libbase,	funclistit->lvo
 		);
 	    }

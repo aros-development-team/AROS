@@ -816,8 +816,9 @@ $(TMP_TARGET) : $(TMP_DEPS)
     conffile=
 
 TMP_TARGETS := $(%(modname)_STARTFILES) $(%(modname)_ENDFILES) \
-	       $(%(modname)_LINKLIBFILES)
-TMP_TARGETS := $(addsuffix .c,$(TMP_TARGETS)) $(addsuffix .S, $(%(modname)_LINKLIBAFILES))
+	       $(%(modname)_LINKLIBFILES) $(%(modname)_RELLINKLIBFILES)
+TMP_TARGETS := $(addsuffix .c,$(TMP_TARGETS)) \
+               $(addsuffix .S, $(%(modname)_LINKLIBAFILES) $(%(modname)_RELLINKLIBAFILES))
 
 TMP_DEPS := $(GENMODULE)
 TMP_OPTS :=
@@ -1359,15 +1360,25 @@ BD_DFLAGS     := %(dflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
 
 BD_LINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
 BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
-ifeq ($(strip $(%(modname)_LINKLIBFILES) %(linklibfiles)),)
+ifeq ($(strip $(%(modname)_LINKLIBFILES) $(%(modname)_LINKLIBAFILES) %(linklibfiles)),)
     BD_LINKLIB :=
 else
     BD_LINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname).a
 endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
+BD_RELLINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBFILES))
+BD_RELLINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBAFILES))
+ifeq ($(strip $(%(modname)_RELLINKLIBFILES) $(%(modname)_RELLINKLIBAFILES) %(linklibfiles)),)
+    BD_RELLINKLIB :=
+else
+    BD_RELLINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)_rel.a
+endif
+BD_RELLINKLIBFILES := $(BD_RELLINKLIBCFILES) $(BD_RELLINKLIBAFILES)
+
 BD_CCFILES := $(BD_NARCHFILES) %(linklibfiles)
-BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) 
+BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) \
+    $(BD_RELLINKLIBCFILES)
 
 %rule_compile_multi \
     basenames=$(BD_CCFILES) targetdir=%(objdir) \
@@ -1380,7 +1391,7 @@ BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES)
 
 ifneq ($(BD_LINKLIBAFILES),)
 %rule_assemble_multi \
-    basenames=$(BD_LINKLIBAFILES) targetdir=%(objdir) suffix=.S
+    basenames="$(BD_LINKLIBAFILES) $(BD_RELLINKLIBAFILES)" targetdir=%(objdir) suffix=.S
 endif
 
 ## Linking
@@ -1402,12 +1413,12 @@ endif
 BD_KOBJ   := $(KOBJSDIR)/%(modname)_$(BD_SUFFIX).o
 
 %(mmake)-quick      : %(mmake)
-%(mmake)            : $(BD_MODULE) $(BD_LINKLIB)
-%(mmake)-pkg        : $(BD_PKGMOD) $(BD_LINKLIB)
-%(mmake)-pkg-quick  : $(BD_PKGMOD) $(BD_LINKLIB)
-%(mmake)-kobj       : $(BD_KOBJ) $(BD_LINKLIB)
-%(mmake)-kobj-quick : $(BD_KOBJ) $(BD_LINKLIB)
-%(mmake)-linklib    : $(BD_LINKLIB)
+%(mmake)            : $(BD_MODULE) $(BD_LINKLIB) $(BD_RELLINKLIB)
+%(mmake)-pkg        : $(BD_PKGMOD) $(BD_LINKLIB) $(BD_RELLINKLIB)
+%(mmake)-pkg-quick  : $(BD_PKGMOD) $(BD_LINKLIB) $(BD_RELLINKLIB)
+%(mmake)-kobj       : $(BD_KOBJ) $(BD_LINKLIB) $(BD_RELLINKLIB)
+%(mmake)-kobj-quick : $(BD_KOBJ) $(BD_LINKLIB) $(BD_RELLINKLIB)
+%(mmake)-linklib    : $(BD_LINKLIB) $(BD_RELLINKLIB)
 
 BD_OBJS       := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
 	     	 $(addsuffix .o, $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES))))
@@ -1421,6 +1432,9 @@ endif
 
 BD_ENDOBJS    := $(addsuffix .o,$(BD_ENDFILES))
 BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))) $(BD_LINKLIBFILES)) \
+                 %(linklibobjs)
+BD_RELLINKLIBOBJS \
+              := $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))) $(BD_RELLINKLIBFILES)) \
                  %(linklibobjs)
 
 # Under Windows con* is a reserved name, it refers to console. Files with such names can't be created.
@@ -1445,6 +1459,13 @@ ifneq ($(BD_LINKLIB),)
 %rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
 
 $(BD_LINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
+GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
+endif
+
+ifneq ($(BD_RELLINKLIB),)
+%rule_link_linklib libname=%(linklibname)_rel objs=$(BD_RELLINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+
+$(BD_RELLINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
 GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
 endif
 
