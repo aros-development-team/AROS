@@ -538,6 +538,9 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 #endif
     modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
 
+    /* Apparently, framebuffer is never used. */
+    (void)framebuffer;
+
     if (modeid != vHidd_ModeID_Invalid)
     {
     	/* ModeID supplied, it's for sure X11 bitmap */
