@@ -26,6 +26,9 @@
 #include "__fdesc.h"
 #include "__upath.h"
 
+static struct SignalSemaphore __fdsem;
+static struct MinList __fdreglist;
+
 int __getfdslots(void)
 {
     return __numslots;
@@ -316,7 +319,6 @@ struct __reg_fdarray {
 };
 
 /* Some local variables for register_init_fdarray */
-static int __fdinit = 0;
 static struct SignalSemaphore __fdsem;
 static struct MinList __fdreglist;
     
@@ -328,7 +330,7 @@ int __init_vars(void)
     return TRUE;
 }
 
-int __register_init_fdarray(struct arosc_privdata *priv)
+int __register_init_fdarray(struct aroscbase *base)
 {
     /* arosc privdata should not be used inside this function,
      * this function is called before aroscbase is initialized
@@ -339,8 +341,8 @@ int __register_init_fdarray(struct arosc_privdata *priv)
         return 0;
 
     regnode->task = FindTask(NULL);
-    regnode->fdarray = priv->acpd_fd_array;
-    regnode->numslots = priv->acpd_numslots;
+    regnode->fdarray = base->acb_fd_array;
+    regnode->numslots = base->acb_numslots;
     
     D(bug("Allocated regnode: %p, fdarray: %p, numslots: %d\n",
           regnode, regnode->fdarray, regnode->numslots
@@ -354,7 +356,7 @@ int __register_init_fdarray(struct arosc_privdata *priv)
 }
 
 /* FIXME: perhaps this has to be handled in a different way...  */
-int __init_stdfiles(void)
+int __init_stdfiles(struct aroscbase *aroscbase)
 {
     struct Process *me;
     fcb *infcb = NULL, *outfcb = NULL, *errfcb = NULL;
@@ -438,16 +440,10 @@ static int __copy_fdarray(fdesc **__src_fd_array, int numslots)
     return 1;
 }
 
-int __init_fd(void)
+int __init_fd(struct aroscbase *aroscbase)
 {
     struct __reg_fdarray *regnodeit, *regnode = NULL;
     struct Task *self = FindTask(NULL);
-
-    if (!__fdinit)
-    {
-        __init_vars();
-        __fdinit = 1;
-    }
 
     __fd_mempool = CreatePool(MEMF_PUBLIC, 16*sizeof(fdesc), 16*sizeof(fdesc));
     
@@ -468,7 +464,7 @@ int __init_fd(void)
     ReleaseSemaphore(&__fdsem);
     
     if (regnode == NULL)
-        return __init_stdfiles();
+        return __init_stdfiles(aroscbase);
     else
     {
         int ok = __copy_fdarray(regnode->fdarray, regnode->numslots);
@@ -479,15 +475,15 @@ int __init_fd(void)
     }
 }
 
-void __exit_fd(void)
+void __exit_fd(struct aroscbase *aroscbase)
 {
-    int i = __numslots;
+    int i = aroscbase->acb_numslots;
     while (i)
     {
-	if (__fd_array[--i])
+	if (aroscbase->acb_fd_array[--i])
 	    close(i);
     }
-    DeletePool(__fd_mempool);
+    DeletePool(aroscbase->acb_fd_mempool);
 }
 
 #include <stdio.h>
@@ -511,5 +507,7 @@ void __updatestdio(void)
         __fd_array[STDERR_FILENO]->fcb->privflags = _FCB_DONTCLOSE_FH;
 }
 
-ADD2INIT(__init_fd, 2);
-ADD2EXIT(__exit_fd, 2);
+ADD2INIT(__init_vars, 0);
+ADD2OPENLIB(__init_fd, 2);
+ADD2CLOSELIB(__exit_fd, 2);
+

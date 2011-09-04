@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function execvp().
@@ -58,7 +58,7 @@
     
     __exec_do(id);
     
-    assert(0);
+    assert(0); /* not reached */
     return -1;
 } /* execvp() */
 

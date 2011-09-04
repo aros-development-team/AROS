@@ -18,7 +18,6 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <sys/syscall.h>
 #include <sys/wait.h>
 
 /*****************************************************************************

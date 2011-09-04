@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: stdio internals
@@ -109,9 +109,9 @@ int __oflags2sflags(int omode)
     return ret;
 }
 
-int __init_stdio(void)
+int __init_stdio(struct aroscbase *aroscbase)
 {
-    NEWLIST(&__stdio_files);
+    NEWLIST(&aroscbase->acb_stdio_files);
 
     if
     (
@@ -127,6 +127,6 @@ int __init_stdio(void)
     return 1;
 }
 
-ADD2INIT(__init_stdio, 5);
+ADD2OPENLIB(__init_stdio, 5);
 
 

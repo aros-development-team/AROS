@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,17 +12,27 @@
 
 int __addexitfunc(struct AtExitNode *aen)
 {
-    ADDHEAD((struct List *)&__atexit_list, (struct Node *)aen);
+    struct aroscbase *aroscbase = __get_aroscbase();
+    
+    ADDHEAD((struct List *)&aroscbase->acb_atexit_list, (struct Node *)aen);
 
     return 0;
 }
 
+int __init_atexit(struct aroscbase *aroscbase)
+{
+    NEWLIST((struct List *)&aroscbase->acb_atexit_list);
+
+    return 1;
+}
+
 void __callexitfuncs(void)
 {
+    struct aroscbase *aroscbase = __get_aroscbase();
     struct AtExitNode *aen;
 
     while (
-        (aen = (struct AtExitNode *) REMHEAD((struct List *) &__atexit_list))
+        (aen = (struct AtExitNode *) REMHEAD((struct List *) &aroscbase->acb_atexit_list))
     )
     {
         switch (aen->node.ln_Type)
@@ -38,11 +48,4 @@ void __callexitfuncs(void)
     }
 }
 
-int __init_atexit(void)
-{
-    NEWLIST((struct List *)&__atexit_list);
-
-    return 1;
-}
-
-ADD2INIT(__init_atexit, 100);
+ADD2OPENLIB(__init_atexit, 100);

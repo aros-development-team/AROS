@@ -1,5 +1,5 @@
 /*
-    Copyright ¦ 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS function sharecontextwithchild().
@@ -61,14 +61,14 @@
 
 ******************************************************************************/
 {
-    struct arosc_privdata *privdata = GetIntETask(FindTask(NULL))->iet_acpd;
+    struct aroscbase *aroscbase = __get_aroscbase();
 
-    if (privdata)
+    if (aroscbase)
     {
         if (share)
-            privdata->acpd_flags |= SHARE_ACPD_WITH_CHILD;
+            aroscbase->acb_flags |= SHARE_ACPD_WITH_CHILD;
         else
-            privdata->acpd_flags &= ~SHARE_ACPD_WITH_CHILD;
+            aroscbase->acb_flags &= ~SHARE_ACPD_WITH_CHILD;
     }
 } /* sharecontextwithchild() */
 

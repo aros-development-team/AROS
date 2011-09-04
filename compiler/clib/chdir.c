@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function chdir().
@@ -108,5 +108,5 @@ void __exit_chdir(void)
     }
 }
 
-ADD2INIT(__init_chdir, -100);
-ADD2EXIT(__exit_chdir, -100);
+ADD2OPENLIB(__init_chdir, -100);
+ADD2CLOSELIB(__exit_chdir, -100);

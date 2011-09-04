@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Returns time passed since start of program.
@@ -73,7 +73,8 @@
 int __init_clock(void)
 {
     DateStamp(&__datestamp);
+
     return 1;
 }
 
-ADD2INIT(__init_clock, 20);
+ADD2OPENLIB(__init_clock, 20);

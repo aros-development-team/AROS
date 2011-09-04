@@ -6,7 +6,8 @@ include $(TOP)/config/make.cfg
 
 #MM- core-linklibs : linklibs-startup
 #MM- linklibs: linklibs-startup
-#MM linklibs-startup : linklibs-startup-setup includes includes-copy
+#MM linklibs-startup : linklibs-startup-setup includes includes-copy \
+#MM     linklibs-clib-shared-includes
 
 FILES :=        \
 	startup \

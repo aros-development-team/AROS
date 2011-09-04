@@ -2,10 +2,10 @@
 #define ___SPAWN_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: stat() internals - header file
+    Desc: spawnv() internals - header file
     Lang: english
 */
 
