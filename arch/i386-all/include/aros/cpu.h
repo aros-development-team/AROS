@@ -136,6 +136,36 @@ struct JumpVec
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
 
+/* Macro: AROS_RELLIBFUNCSTUB(functionname, libbasename, lvo)
+   Same as AROS_LIBFUNCSTUB but finds libbase at an offset in
+   the current libbase
+*/
+#define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
+    void __ ## fname ## _ ## libbasename ## _relwrapper(void) \
+    { \
+	asm volatile( \
+            ".weak " #fname "\n" \
+            "\t" #fname " :\n" \
+            "\tcall aros_get_relbase\n" \
+            "\taddl " #libbasename "_offset, %%eax\n" \
+            "\tmovl (%%eax), %%eax\n" \
+            "\tpushl %%eax\n" \
+            "\tcall aros_push2_relbase\n" \
+            "\tmovl (%%esp), %%eax\n" \
+            "\taddl $8,%%esp\n" \
+            "\tcall *%c0(%%eax)\n" \
+            "\tpushl %%eax\n" \
+            "\tcall aros_pop2_relbase\n" \
+            "\tmovl %%eax, %%ecx\n" \
+            "\tpopl %%eax\n" \
+            "\tmovl %%ecx, (%%esp)\n" \
+            "\tjmp *%%ecx" \
+	    : : "i" ((-lvo*LIB_VECTSIZE)) \
+	); \
+    }
+#define AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
+    __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)
+
 /* Macro: AROS_FUNCALIAS(functionname, alias)
    This macro will generate an alias 'alias' for function
    'functionname'

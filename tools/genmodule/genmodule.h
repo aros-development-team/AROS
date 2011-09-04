@@ -16,15 +16,15 @@
 #include "config.h"
 
 void writemakefile(struct config *);
-void writeincproto(struct config *);
+void writeincproto(struct config *, int);
 void writeincclib(struct config *);
 void writeincdefines(struct config *);
 void writeincinline(struct config *);
 void writeinclibdefs(struct config *);
 void writestart(struct config *);
 void writeend(struct config *);
-void writeautoinit(struct config *);
-void writestubs(struct config *);
+void writeautoinit(struct config *, int);
+void writestubs(struct config *, int);
 void writefunclist(struct config *);
 void writefd(struct config *);
 void writeskel(struct config *cfg);

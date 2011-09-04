@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: autoinit library - automatic library opening/closing handling
@@ -16,7 +16,7 @@
 #include <proto/dos.h>
 #include <stdlib.h>
 
-DECLARESET(LIBS);
+DEFINESET(LIBS);
 
 AROS_MAKE_ASM_SYM(int, dummy, __includelibrarieshandling, 0);
 AROS_EXPORT_ASM_SYM(__includelibrarieshandling);
@@ -59,12 +59,69 @@ void set_close_libraries_list(const void * const list[])
     int pos;
     struct libraryset *set;
     
-    ForeachElementInSet(SETNAME(LIBS), 1, pos, set)
+    ForeachElementInSet(list, 1, pos, set)
     {
 	if (*set->baseptr)
         {
 	    CloseLibrary(*set->baseptr);
             *set->baseptr = NULL;
+        }
+    }
+}
+
+DEFINESET(RELLIBS);
+
+AROS_MAKE_ASM_SYM(int, dummyrel, __includerellibrarieshandling, 0);
+AROS_EXPORT_ASM_SYM(__includerellibrarieshandling);
+
+int set_open_rellibraries_list(APTR base, const void * const list[])
+{
+    int pos;
+    struct rellibraryset *set;
+
+    ForeachElementInSet(list, 1, pos, set)
+    {
+        LONG version = *set->versionptr;
+	BOOL do_not_fail = 0;
+	void **baseptr = (void **)((char *)base + *set->baseoffsetptr);
+
+	if (version < 0)
+	{
+	    version = -(version + 1); 
+	    do_not_fail = 1;
+	}
+	
+        *baseptr = OpenLibrary(set->name, version);
+	
+	if (!do_not_fail && *baseptr == NULL)
+	{
+	    __showerror
+	    (
+	        "Could not open version %ld or higher of library \"%s\".",
+		(const IPTR []){version, (IPTR)set->name}
+	    );
+
+	    return 0;
+	}
+    }
+    
+    return 1;
+}
+
+void set_close_rellibraries_list(APTR base, const void * const list[])
+{
+    int pos;
+    struct rellibraryset *set;
+    struct Library **baseptr;
+    
+    ForeachElementInSet(list, 1, pos, set)
+    {
+        baseptr = (struct Library **)((char *)base + *set->baseoffsetptr);
+        
+	if (*baseptr)
+        {
+	    CloseLibrary(*baseptr);
+            *baseptr = NULL;
         }
     }
 }
