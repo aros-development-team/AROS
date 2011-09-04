@@ -32,6 +32,8 @@ extern struct vbe_mode       *modeinfo;
 
 extern void *_binary_vesa_size, *_binary_vesa_start;
 
+unsigned char setupVesa(char *str, long *modePtr);
+
 #else
 
 struct vesa11Info

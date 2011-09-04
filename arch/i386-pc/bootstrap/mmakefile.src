@@ -3,17 +3,27 @@ include $(TOP)/config/make.cfg
 
 #MM- boot-pc-i386: kernel-bootstrap-i386-gz
 
-EXEDIR       := $(BINDIR)/boot
-EXENAME      := bootstrap-pc-i386
-FILES        := bootstrap screen elf support
-USER_LDFLAGS := -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstrap.map \
-		-Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds
+EXEDIR  := $(BINDIR)/boot
+EXENAME := bootstrap-pc-i386
+FILES   := bootstrap screen elf support memtest vesa_setup
+OBJDIR  := $(GENDIR)/$(CURDIR)
+
+USER_INCLUDES := -I$(SRCDIR)/arch/all-pc/bootstrap \
+		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+USER_LDFLAGS  := -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstrap.map \
+		 -Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -L$(GENDIR)/lib
+USER_OBJS     := $(OBJDIR)/vesa.bin.o
+
+#MM kernel-bootstrap-i386: linklibs-bootconsole
 
 %build_prog mmake=kernel-bootstrap-i386 progname=$(EXENAME) \
 	files=$(FILES) targetdir=$(EXEDIR) \
-	uselibs="rom m" usestartup=no linker=kernel
+	uselibs="bootconsole rom m" usestartup=no linker=kernel
 
 %compress_file mmake=kernel-bootstrap-i386 file=$(EXEDIR)/$(EXENAME)
+
+%rule_link_binary file=$(OBJDIR)/vesa.bin.o name=vesa objs=$(OBJDIR)/vesa.o \
+	start=0x1000 ldflags="-m elf_i386"
 
 # Add $(GENDIR)/boot to file's dependencies	
 $(EXEDIR)/$(EXENAME) : $(GENDIR)/boot

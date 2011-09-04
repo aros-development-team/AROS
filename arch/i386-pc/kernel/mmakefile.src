@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FUNCS   := 
-FILES   := startup
+FILES   := startup boot_utils kernel_bootmem kernel_debug kernel_memory
 MAINDIR := rom/kernel
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(MAINDIR)
