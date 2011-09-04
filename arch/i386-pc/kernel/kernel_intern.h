@@ -13,6 +13,4 @@
 
 #define STACK_SIZE 8192
 
-void core_Kick(struct TagItem *msg, struct multiboot *mb, void *target);
-
 #endif /* KERNEL_INTERN_H_ */

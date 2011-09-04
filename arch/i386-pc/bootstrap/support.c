@@ -30,6 +30,11 @@ void *malloc(size_t size)
 	return ret;
 }
 
+void mem_free(void)
+{
+    first_free = &__tmpspace[0];
+}
+
 size_t mem_avail()
 {
 	return free_memory;

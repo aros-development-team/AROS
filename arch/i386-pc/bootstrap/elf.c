@@ -129,15 +129,22 @@ static uintptr_t ptr_ro;
 static uintptr_t ptr_rw;
 static uintptr_t virtoffset;
 
+__attribute__((section(".bss.aros.tables"))) struct bss_tracker tracker[MAX_BSS_SECTIONS];
+static struct bss_tracker *bss_tracker = &tracker[0];
+
 void initAllocator(uintptr_t addr_ro, uintptr_t addr_rw, uintptr_t virtoff)
 {
 	ptr_ro = addr_ro;
 	ptr_rw = addr_rw;
 	virtoffset = virtoff;
-}
 
-struct bss_tracker tracker[MAX_BSS_SECTIONS];
-static struct bss_tracker *bss_tracker = &tracker[0];
+	/*
+	 * For some reason .bsstables section is not zeroed out
+	 * when the bootstrap is loaded.
+	 * We do it here explicitly.
+	 */
+	bzero(tracker, sizeof(tracker));
+}
 
 /*
  * read_block function copies the range of memory within ELF file to any specified location.
