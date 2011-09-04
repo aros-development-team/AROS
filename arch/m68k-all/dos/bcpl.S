@@ -679,29 +679,23 @@ BCPL Delay          /* bc, void, ticks */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-    /* Due to the way BCPL arguments work, A1 is the fully
-     * synthesized DosPacket. We just need to allocate
-     * some space after our arguments for a struct Message,
-     * and set A1(0) (dp_Link) to the Message, and then use
-     * BCPL putPkt and BCPL taskwait.
+    /* Call the DOS internal 'dopacket' function
      */
-#define DOSPACKET_LEN   12
-#define MESSAGE_LEN     10
 BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
-    lea.l	%a1@(DOSPACKET_LEN*4), %a0
-    move.l 	%a0, %a1@(0)	/* Set Message link */
-    sub.l	%a0,%a0
-    move.l	%a2@(GV_putPkt),%a4
-    move.l	#(DOSPACKET_LEN * 4 + MESSAGE_LEN * 4 + 3 * 4), %d0
-    move.l	%a1, %d1
-    lsr.l	#2, %d1
-    jsr		(%a5)
-    move.l	%a1@(4*4),%d1	/* dp_Res2 */
     movem.l	%a0-%a1/%a6,%sp@-
-    move.l	%a2@(GV_DOSBase),%a6
-    jsr		%a6@(77 * -6) /* DOS/SetIoErr */
+    move.l	%a1@((4 + 7) * 4), %sp@-        /* Arg7 */
+    move.l	%a1@((4 + 6) * 4), %sp@-        /* Arg6 */
+    move.l	%a1@((4 + 5) * 4), %sp@-        /* Arg5 */
+    move.l	%a1@((4 + 4) * 4), %sp@-        /* Arg4 */
+    move.l	%a1@((4 + 3) * 4), %sp@-        /* Arg3 */
+    move.l	%a1@((4 + 2) * 4), %sp@-        /* Arg2 */
+    move.l	%a1@((4 + 1) * 4), %sp@-        /* Arg1 */
+    move.l	%d3, %sp@-                      /* Type */
+    move.l	%d2, %sp@-                      /* Port */
+    move.l	%a0, %sp@-                      /* A0 is still 0 */
+    jsr		dopacket
+    lea.l	%sp@(10 * 4), %sp
     movem.l	%sp@+,%a0-%a1/%a6
-    move.l	%a1@(3*4),%d0	/* dp_Res1 */
     BRTS
 
 BCPL returnPacket   /* c4, void, @DosPacket, res1, res2 */
