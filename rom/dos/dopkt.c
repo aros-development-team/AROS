@@ -55,7 +55,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return dopacket(NULL, port, action, arg1, arg2, arg3, arg4, arg5);
+    return dopacket(NULL, port, action, arg1, arg2, arg3, arg4, arg5, 0, 0);
 
     AROS_LIBFUNC_EXIT
 }
@@ -64,7 +64,7 @@
  * All Amiga kickstart versions accept most dos packet dos calls without dosbase in A6.
  * So we have this internal routine here for compatibility purposes.
  */
-SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5)
+SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5, SIPTR arg6, SIPTR arg7)
 {
     SIPTR res;
     struct Process   *me = (struct Process *)FindTask(NULL);
@@ -101,14 +101,16 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
 	}
     }
     
-    D(bug("dp=0x%p act=%d port=0x%p reply=0x%p proc=%d 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx '%s'\n",
-    	  dp, action, port, replyPort, __is_process(me), arg1, arg2, arg3, arg4, arg5, me->pr_Task.tc_Node.ln_Name));
+    D(bug("dp=0x%p act=%d port=0x%p reply=0x%p proc=%d 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx '%s'\n",
+    	  dp, action, port, replyPort, __is_process(me), arg1, arg2, arg3, arg4, arg5, arg6, arg7, me->pr_Task.tc_Node.ln_Name));
     dp->dp_Type = action;
     dp->dp_Arg1 = arg1;
     dp->dp_Arg2 = arg2;
     dp->dp_Arg3 = arg3;
     dp->dp_Arg4 = arg4;
     dp->dp_Arg5 = arg5;
+    dp->dp_Arg6 = arg6;
+    dp->dp_Arg7 = arg7;
     dp->dp_Res1 = 0;
     dp->dp_Res2 = 0;
 
