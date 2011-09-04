@@ -1145,7 +1145,7 @@ BCPL rdargs         /* 138, ULONG, @template, array, array_size */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPL rdline         /* 13c, void, @buf, maxlongs  */
+BCPL rditem         /* 13c, void, @buf, maxlongs  */
     movem.l	%d2-%d3/%a0-%a2/%a6,%sp@-
     move.l	%a2@(GV_DOSBase),%a6
     lsl.l	#2,%d1
@@ -1159,17 +1159,19 @@ BCPL rdline         /* 13c, void, @buf, maxlongs  */
     jsr		%a6@(135 * -6)	/* DOS/ReadItem() */
 
     move.l	%a2,%a0
-    moveq	#-1,%d1
-0:  addq.w	#1,%d1
+    moveq	#-1,%d2
+0:  addq.w	#1,%d2
     tst.b	%a0@+
 	bne		0b
-	move.b	%d1,%a2@(-1)	/* fix buf BSTR length */
+	move.b	%d2,%a2@(-1)	/* fix buf BSTR length */
 
 #if BCPLSTRINGDEBUG
+    move.l      %d0,%d2
     lea.l	%a2@(-1),%a2
     move.l      %a2,%d0
     lsr.l       #2,%d0
     bsr		bstr_debug
+    move.l      %d2,%d0
 #endif
 
     movem.l	%sp@+,%d2-%d3/%a0-%a2/%a6
