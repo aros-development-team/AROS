@@ -754,6 +754,10 @@ static void writeinitlib(FILE *out, struct config *cfg)
     	}
     }
 
+    fprintf(out,
+            "    void *oldbase = AROS_SET_LIBBASE(lh);\n"
+    );
+
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
 	fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
     if (cfg->options & OPTION_DUPBASE)
@@ -797,6 +801,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "        set_close_libraries();\n");
+    fprintf(out, "        (void)AROS_SET_LIBBASE(oldbase);\n");
 
     if (cfg->modtype != HANDLER)
     {
@@ -848,6 +853,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
         fprintf(out, "        GM_UNIQUENAME(InitHandler)();\n");
 
     fprintf(out,
+            "        (void)AROS_SET_LIBBASE(oldbase);\n"
 	    "        return  lh;\n"
 	    "    }\n"
 	    "\n"
@@ -1047,11 +1053,14 @@ static void writeopenlib(FILE *out, struct config *cfg)
                 );
             fprintf(out,
 		    "\n"
+                    "        void *oldbase = AROS_SET_LIBBASE(newlib);\n"
 		    "        if (!set_call_libfuncs(SETNAME(OPENLIB), 1, 1, newlib))\n"
 		    "        {\n"
+                    "            (void)AROS_SET_LIBBASE(oldbase);\n"
 		    "            __freebase(newlib);\n"
 		    "            return NULL;\n"
 		    "        }\n"
+                    "        (void)AROS_SET_LIBBASE(oldbase);\n"
 		    "\n"
 		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
 		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
@@ -1109,11 +1118,14 @@ static void writecloselib(FILE *out, struct config *cfg)
 	    "{\n"
 	    "    AROS_LIBFUNC_INIT\n"
 	    "\n"
+            "    void *oldbase = AROS_SET_LIBBASE(lh);\n"
+            "\n"
     );
     if (cfg->modtype == DEVICE)
 	fprintf(out,
 		"    if (!set_call_devfuncs(SETNAME(CLOSEDEV), -1, 1, lh, ioreq, 0, 0))\n"
                 "    {\n"
+                "        (void)AROS_SET_LIBBASE(oldbase);\n"
 		"        return BNULL;\n"
                 "    }\n"
 	);
@@ -1160,6 +1172,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 		"        && (((struct Library *)lh)->lib_Flags & LIBF_DELEXP)\n"
 		"    )\n"
 		"    {\n"
+                "        (void)AROS_SET_LIBBASE(oldbase);\n"
 		"        return AROS_LC1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
 		"                   AROS_LCA(LIBBASETYPEPTR, lh, D0),\n"
 		"                   LIBBASETYPEPTR, lh, 3, %s\n"
@@ -1169,6 +1182,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 	);
     fprintf(out,
 	    "\n"
+            "    (void)AROS_SET_LIBBASE(oldbase);\n"
 	    "    return BNULL;\n"
 	    "\n"
 	    "    AROS_LIBFUNC_EXIT\n"
@@ -1200,6 +1214,8 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 		"    {\n"
 		"        BPTR seglist = GM_SEGLIST_FIELD(lh);\n"
 		"\n"
+                "        void *oldbase = AROS_SET_LIBBASE(lh);\n"
+                "\n"
 		"        if(!set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 1, lh))\n"
 		"        {\n"
 		"            ((struct Library *)lh)->lib_Flags |= LIBF_DELEXP;\n"
@@ -1217,6 +1233,7 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 	    fprintf(out, "        set_close_libraries();\n");
 	fprintf(out,
 		"\n"
+                "        (void)AROS_SET_LIBBASE(oldbase);\n"
 		"        __freebase(lh);\n"
 		"\n"
 		"        return seglist;\n"

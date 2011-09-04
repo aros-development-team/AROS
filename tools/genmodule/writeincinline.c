@@ -57,8 +57,7 @@ void writeincinline(struct config *cfg)
             }
             else /* libcall == STACK */
             {
-            	/* This is very straightforward, reuse code from writeincdefines.c */
-            	writedefinestack(out, funclistit, cfg);
+            	/* TODO: inline function with libbase passing */
             }
 
             writealiases(out, funclistit, cfg);
