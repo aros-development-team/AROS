@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Query the current time and/or timezone.
@@ -119,6 +119,9 @@
     return 0;
 } /* gettimeofday */
 
+
+struct Device *TimerBase;
+
 static int __init_timerbase(void)
 {
     __timeport.mp_Node.ln_Type   = NT_MSGPORT;
@@ -173,5 +176,5 @@ static void __exit_timerbase(void)
         CloseDevice((struct IORequest *)&__timereq);
 }
 
-ADD2INIT(__init_timerbase, 0);
-ADD2EXIT(__exit_timerbase, 0);
+ADD2OPENLIB(__init_timerbase, 0);
+ADD2CLOSELIB(__exit_timerbase, 0);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,6 +8,8 @@
 #include <aros/symbolsets.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include LC_LIBDEFS_FILE
 
 /*****************************************************************************
 
@@ -45,16 +47,19 @@
 
 static int __umask_init(void)
 {
-    struct arosc_privdata *privdata = __get_arosc_privdata();
+    struct aroscbase *aroscbase = __get_aroscbase(),
+                     *paroscbase;
+    
+    paroscbase = GM_GETPARENTBASEID2(aroscbase);
 
     /* FIXME: Implement umask() properly */
 
-    if (privdata->acpd_oldprivdata)
-        privdata->acpd_umask = privdata->acpd_oldprivdata->acpd_umask;
+    if (paroscbase && (paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
+        __umask = paroscbase->acb_umask;
     else
-        privdata->acpd_umask = S_IWGRP|S_IWOTH;
+        __umask = S_IWGRP|S_IWOTH;
 
     return 1;
 }
 
-ADD2INIT(__umask_init, 0);
+ADD2OPENLIB(__umask_init, 0);

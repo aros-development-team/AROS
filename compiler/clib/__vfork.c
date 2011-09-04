@@ -47,9 +47,8 @@ LONG launcher()
     struct Task *this = FindTask(NULL);
     struct vfork_data *udata = this->tc_UserData;
     BYTE child_signal;
-    struct Library *aroscbase = NULL;
-
-    GetIntETask(this)->iet_startup = GetETask(this)->et_Result2 = AllocVec(sizeof(struct arosc_startup), MEMF_ANY | MEMF_CLEAR);
+    struct aroscbase *aroscbase = NULL, *pbase = udata->parent_aroscbase;
+    void *oldbase;
 
     /* Allocate signal for parent->child communication */
     child_signal = udata->child_signal = AllocSignal(-1);
@@ -62,8 +61,8 @@ LONG launcher()
 	return -1;
     }
 
-    if(__register_init_fdarray(udata->ppriv))
-        aroscbase = OpenLibrary((STRPTR) "arosc.library", 0);
+    if(__register_init_fdarray(pbase))
+        aroscbase = (struct aroscbase *)OpenLibrary((STRPTR) "arosc.library", 0);
     if(!aroscbase)
     {
 	FreeSignal(child_signal);
@@ -71,13 +70,18 @@ LONG launcher()
 	Signal(udata->parent, 1 << udata->parent_signal);
 	return -1;	
     }
-    
-    udata->cpriv = __get_arosc_privdata();
-    udata->cpriv->acpd_parent_does_upath = udata->ppriv->acpd_doupath;
-    udata->cpriv->acpd_flags |= DO_NOT_CLONE_ENV_VARS;
+    D(bug("launcher: Opened aroscbase: %x\n", aroscbase));
+
+    aroscbase->acb_flags |= VFORK_PARENT;
+      
+    oldbase = AROS_SET_LIBBASE(aroscbase);
+
+    udata->child_aroscbase = aroscbase;
+    aroscbase->acb_parent_does_upath = pbase->acb_doupath;
 
     if(setjmp(__aros_startup_jmp_buf) == 0)
     {
+        
         /* Setup complete, signal parent */
         D(bug("launcher: Signaling parent that we finished setup\n"));
         Signal(udata->parent, 1 << udata->parent_signal);
@@ -93,9 +97,10 @@ LONG launcher()
 
             child_takeover(udata);
 
-            /* Filenames passed from parent obey parent's __doupath */
-            __doupath = udata->cpriv->acpd_parent_does_upath;
-            D(bug("launcher: __doupath == %d for __exec_prepare()\n", __doupath));
+            /* Filenames passed from parent obey parent's acb_doupath */
+	    
+            aroscbase->acb_doupath = udata->child_aroscbase->acb_parent_does_upath;
+            D(bug("launcher: acb_doupath == %d for __exec_prepare()\n", aroscbase->acb_doupath));
             
             exec_id = udata->exec_id = __exec_prepare(
                 udata->exec_filename,
@@ -103,11 +108,10 @@ LONG launcher()
                 udata->exec_argv,
                 udata->exec_envp
             );
-            
-            udata->child_errno = errno;
 
-            /* Clear __doupath again, command will set it if wanted */
-            __doupath = 0;
+	    /* Reset handling of upath */
+	    aroscbase->acb_doupath = 0;
+            udata->child_errno = errno;
             
             D(bug("launcher: informing parent that we have run __exec_prepare\n"));
             /* Inform parent that we have run __exec_prepare */
@@ -147,14 +151,18 @@ LONG launcher()
         FreeSignal(child_signal);
     }
 
-    CloseLibrary(aroscbase);
+    AROS_SET_LIBBASE(oldbase);
+
+    CloseLibrary((struct Library *)aroscbase);
     
     return 0;
 }
 
 pid_t __vfork(jmp_buf env)
 {
+    struct aroscbase *aroscbase = __get_aroscbase();
     struct Task *this = FindTask(NULL);
+    struct ETask *etask = NULL;
     struct vfork_data *udata = AllocMem(sizeof(struct vfork_data), MEMF_ANY | MEMF_CLEAR);
     if(udata == NULL)
     {
@@ -178,16 +186,10 @@ pid_t __vfork(jmp_buf env)
     };
 
     udata->parent = this;
+    udata->prev = aroscbase->acb_vfork_data;
 
-    struct arosc_privdata *ppriv = __get_arosc_privdata();
-
-    D(bug("__vfork: ppriv = %x\n", ppriv));
-
-    udata->ppriv = ppriv;
-    
-    /* Store parent's vfork_data to restore it later */
-    udata->prev = __get_arosc_privdata()->acpd_vfork_data;
     D(bug("__vfork: Saved old parent's vfork_data: %p\n", udata->prev));
+    udata->parent_aroscbase = aroscbase;
                                         
     D(bug("__vfork: backuping startup buffer\n"));
     /* Backup startup buffer */
@@ -227,24 +229,27 @@ pid_t __vfork(jmp_buf env)
 	errno = udata->child_errno;
 	longjmp(env, -1);
     }
-    
-    D(bug("__vfork: Setting jmp_buf at %p in %p\n", __aros_startup, &__aros_startup_jmp_buf));
+
+    D(bug("__vfork: Setting jmp_buf at %p\n", &__aros_startup_jmp_buf));
     if(setjmp(__aros_startup_jmp_buf))
     {
         ULONG child_id;
 
 	D(bug("__vfork: child exited\n or executed\n"));
+  
+        /* Stack may have been overwritten when we return here,
+         * we jump to here from a function lower in the call chain
+         */
+        aroscbase = __get_aroscbase();
+        udata = aroscbase->acb_vfork_data;
 
-        /* Reinitialize variables as they may have been overwritten during setjmp */
-        ppriv = __get_arosc_privdata();
-        udata = ppriv->acpd_vfork_data;
-
-        D(bug("__vfork: ppriv = %x\n", ppriv));
+        D(bug("__vfork: acb_vfork_data = %x\n", udata));
 
 	if(!udata->child_executed)
 	{
 	    D(bug("__vfork: not executed\n"));
 	    ((struct arosc_startup*) GetIntETask(udata->child)->iet_startup)->as_startup_error = __aros_startup_error;
+
 	    D(bug("__vfork: Signaling child\n"));
 	    Signal(udata->child, 1 << udata->child_signal);
 	}
@@ -296,46 +301,48 @@ pid_t __vfork(jmp_buf env)
 
 static void parent_enterpretendchild(struct vfork_data *udata)
 {
+    struct aroscbase *aroscbase = __get_aroscbase();
     D(bug("parent_enterpretendchild(%x): entered\n", udata));
 
-    udata->ppriv->acpd_vfork_data = udata;
+    aroscbase->acb_vfork_data = udata;
 
     /* Remember and switch malloc mempool */
-    udata->parent_mempool = udata->ppriv->acpd_mempool;
-    udata->ppriv->acpd_mempool = udata->cpriv->acpd_mempool;
+    udata->parent_mempool = aroscbase->acb_mempool;
+    aroscbase->acb_mempool = udata->child_aroscbase->acb_mempool;
 
     /* Remember and switch env var list */
-    udata->parent_env_list = udata->ppriv->acpd_env_list;
-    udata->ppriv->acpd_env_list = udata->cpriv->acpd_env_list;
+    udata->parent_env_list = aroscbase->acb_env_list;
+    aroscbase->acb_env_list = udata->child_aroscbase->acb_env_list;
 
     /* Remember and switch fd descriptor table */
-    udata->parent_acpd_fd_mempool = udata->ppriv->acpd_fd_mempool;
-    udata->parent_acpd_numslots = udata->ppriv->acpd_numslots;
-    udata->parent_acpd_fd_array = udata->ppriv->acpd_fd_array;
-    udata->ppriv->acpd_fd_mempool = udata->cpriv->acpd_fd_mempool;
-    udata->ppriv->acpd_numslots = udata->cpriv->acpd_numslots;
-    udata->ppriv->acpd_fd_array = udata->cpriv->acpd_fd_array;
-
+    udata->parent_fd_mempool = aroscbase->acb_fd_mempool;
+    aroscbase->acb_fd_mempool = udata->child_aroscbase->acb_fd_mempool;
+    udata->parent_numslots = aroscbase->acb_numslots;
+    aroscbase->acb_numslots = udata->child_aroscbase->acb_numslots;
+    udata->parent_fd_array = aroscbase->acb_fd_array;
+    aroscbase->acb_fd_array = udata->child_aroscbase->acb_fd_array;
+    
     /* Remember and switch chdir fields */
-    udata->parent_cd_changed = __cd_changed;
-    udata->parent_cd_lock = __cd_lock;
-    __cd_changed = udata->cpriv->acpd_cd_changed;
-    __cd_lock = udata->cpriv->acpd_cd_lock;
+    udata->parent_cd_changed = aroscbase->acb_cd_changed;
+    aroscbase->acb_cd_changed = udata->child_aroscbase->acb_cd_changed;
+    udata->parent_cd_lock = aroscbase->acb_cd_lock;
+    aroscbase->acb_cd_lock = udata->child_aroscbase->acb_cd_lock;
     udata->parent_curdir = CurrentDir(((struct Process *)udata->child)->pr_CurrentDir);
 
     /* Pretend to be running as the child created by vfork */
-    udata->ppriv->acpd_flags |= PRETEND_CHILD;
+    aroscbase->acb_flags |= PRETEND_CHILD;
 
     D(bug("parent_enterpretendchild: leaving\n"));
 }
 
 static void child_takeover(struct vfork_data *udata)
 {
+    struct aroscbase *aroscbase = __get_aroscbase();
     D(bug("child_takeover(%x): entered\n", udata));
 
     /* Set current dir to parent's current dir */
-    __cd_changed = udata->ppriv->acpd_cd_changed;
-    __cd_lock = udata->ppriv->acpd_cd_lock;
+    aroscbase->acb_cd_changed = udata->parent_aroscbase->acb_cd_changed;
+    aroscbase->acb_cd_lock = udata->parent_aroscbase->acb_cd_lock;
     CurrentDir(((struct Process *)udata->parent)->pr_CurrentDir);
 
     D(bug("child_takeover(): leaving\n"));
@@ -343,28 +350,29 @@ static void child_takeover(struct vfork_data *udata)
 
 static void parent_leavepretendchild(struct vfork_data *udata)
 {
+    struct aroscbase *aroscbase = __get_aroscbase();
     D(bug("parent_leavepretendchild(%x): entered\n", udata));
 
     /* Restore parent's malloc mempool */
-    udata->ppriv->acpd_mempool = udata->parent_mempool;
+    aroscbase->acb_mempool = udata->parent_mempool;
 
     /* Restore parent's env var list */
-    udata->ppriv->acpd_env_list = udata->parent_env_list;
+    aroscbase->acb_env_list = udata->parent_env_list;
 
     /* Restore parent's old fd_array */
-    udata->ppriv->acpd_fd_mempool = udata->parent_acpd_fd_mempool;
-    udata->ppriv->acpd_numslots = udata->parent_acpd_numslots;
-    udata->ppriv->acpd_fd_array =  udata->parent_acpd_fd_array;
+    aroscbase->acb_fd_mempool = udata->parent_fd_mempool;
+    aroscbase->acb_numslots = udata->parent_numslots;
+    aroscbase->acb_fd_array =  udata->parent_fd_array;
 
     /* Switch to currentdir from before vfork() call */
-    __cd_changed = udata->parent_cd_changed;
-    __cd_lock = udata->parent_cd_lock;
+    aroscbase->acb_cd_changed = udata->parent_cd_changed;
+    aroscbase->acb_cd_lock = udata->parent_cd_lock;
     CurrentDir(udata->parent_curdir);
 
     /* Switch to previous vfork_data */
-    udata->ppriv->acpd_vfork_data = udata->prev;
-    if(udata->prev == NULL)
-        udata->ppriv->acpd_flags &= ~PRETEND_CHILD;
+    aroscbase->acb_vfork_data = udata->prev;
+    if(aroscbase->acb_vfork_data == NULL)
+        aroscbase->acb_flags &= ~PRETEND_CHILD;
 
     D(bug("parent_leavepretendchild: leaving\n"));
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,13 +41,14 @@
 
 ******************************************************************************/
 {
+  struct aroscbase *aroscbase = __get_aroscbase();
   struct Task *ParentTask;
   struct ETask *eThisTask;
   struct ETask *et;
 
-  if(__get_arosc_privdata()->acpd_flags & PRETEND_CHILD)
+  if(aroscbase->acb_flags & PRETEND_CHILD)
   {
-    struct vfork_data *udata = __get_arosc_privdata()->acpd_vfork_data;
+    struct vfork_data *udata = aroscbase->acb_vfork_data;
     eThisTask = GetETask(udata->child);
   }
   else

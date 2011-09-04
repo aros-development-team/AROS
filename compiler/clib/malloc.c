@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function malloc().
@@ -71,10 +71,10 @@
 } /* malloc */
 
 
-int __init_memstuff(void)
+int __init_memstuff(struct aroscbase *aroscbase)
 {
-    D(bug("__init_memstuff: task(%x), privdata(%x)\n",
-          FindTask(NULL), __get_arosc_privdata()
+    D(bug("__init_memstuff: task(%x), aroscbase(%x)\n",
+          FindTask(NULL), aroscbase
     ));
 
     __mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
@@ -92,8 +92,8 @@ int __init_memstuff(void)
 
 void __exit_memstuff(void)
 {
-    D(bug("__exit_memstuff: task(%x), privdata(%x), __mempool(%x)\n",
-          FindTask(NULL), __get_arosc_privdata(), __mempool
+    D(bug("__exit_memstuff: task(%x), aroscbase(%x), acb_mempool(%x)\n",
+          FindTask(NULL), __get_aroscbase(), __mempool
     ));
 
     if (__mempool)
@@ -102,5 +102,5 @@ void __exit_memstuff(void)
     }
 }
 
-ADD2INIT(__init_memstuff, 0);
-ADD2EXIT(__exit_memstuff, 0);
+ADD2OPENLIB(__init_memstuff, 0);
+ADD2CLOSELIB(__exit_memstuff, 0);

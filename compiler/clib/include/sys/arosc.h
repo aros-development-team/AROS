@@ -42,13 +42,4 @@ void __arosc_program_end(void);
 
 __END_DECLS
 
-enum
-{ 
-    #undef  SYSTEM_CALL
-    #define SYSTEM_CALL(x, y...) __arosc_enum_version_ ## x,
-    #include <sys/syscall.def>
-    AROSC_VERSION
-    #undef SYSTEM_CALL
-};
-
 #endif /* !_SYS_AROSC_H */

@@ -31,8 +31,8 @@ typedef struct _fdesc
     int  fdflags;
 } fdesc;
 
-struct arosc_privdata;
-int __register_init_fdarray(struct arosc_privdata *priv);
+struct aroscbase;
+int __register_init_fdarray(struct aroscbase *base);
 int __getfdslots(void);
 fdesc *__getfdesc(register int fd);
 void __setfdesc(register int fd, fdesc *fdesc);

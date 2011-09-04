@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI C function exit()
@@ -58,7 +58,6 @@
 
 ******************************************************************************/
 {
-
     __aros_startup_error = code;
 
     longjmp (__aros_startup_jmp_buf, 1);

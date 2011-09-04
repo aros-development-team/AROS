@@ -14,31 +14,6 @@ USER_CFLAGS :=  -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/
 # FIXME: temporary fix for local/xxx.c
 USER_CFLAGS += -D__BSD_VISIBLE=1
 
-# We are trying to build:
-#   $(AROS_LIBS)/arosc.library	  from $(SHARED)
-#   $(AROS_LIB)/libarosc.a        from $(COMMON) and $(STUBS)
-#
-#   It turns out that some of $(SHARED) refer to things in $(COMMON), so
-#   I've put that into the arosc.library as well.
-MODULE	    :=	arosc.library
-SHARED_LIB  :=	$(AROS_LIB)/libarosc.a
-
-# New: Also trying to build
-#   $(AROS_LIB)/librom.a	    from $(COMMON) and $(ROMONLY)
-#
-#   This is a library that is allowed to be used inside modules and the
-#   kernel. It must include no code which refers to global variables.
-#
-#   Currently the main difference is that it includes a different __assert()
-#   function to handle asserts in the kernel.
-ROM_LIB	    :=	$(AROS_LIB)/librom.a
-ROM_LIB32   :=  $(GENDIR)/lib32/librom.a
-OBJDIR32    :=  $(OBJDIR)/32bit
-CFLAGS32    := -m32
-
-# All of the above
-LIB	    := $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
-
 TESTDIR := $(BINDIR)/Tests
 
 # Lists of files
@@ -114,6 +89,7 @@ SHARED	:= \
 	__ctype \
 	__get_default_file \
 	__env \
+        __exec \
 	__exitfunc \
         __fdesc \
 	__ioerr2errno \
@@ -165,7 +141,6 @@ SHARED	:= \
         execv \
         execve \
         execvp \
-        __exec \
 	exit \
         _exit \
     fchdir \
@@ -479,6 +454,7 @@ ROM_STATIC := \
 	stcd_l \
 	stch_l \
 	stcl_d \
+	strerror_rom \
 	strtol \
 	strtoll \
 	strtoul \
@@ -487,137 +463,74 @@ ROM_STATIC := \
 	vsprintf \
 	vsscanf
 
-#   - The stubs are generated, and are in the shared link library.
-STUBS    := $(wildcard $(OBJDIR)/stubs/*.o)
 
-# Dependencies
-DEPS := $(foreach f,$(COMMON),$(OBJDIR)/$(f).d) \
-	$(foreach f,$(SHARED),$(OBJDIR)/shared/$(f).d) \
-	$(OBJDIR)/shared/arosc_init.d $(OBJDIR)/shared/arosc_functable.d \
-	$(OBJDIR)/shared/arosc_endtag.d
+#MM- core-linklibs : linklibs-arosc linklibs-rom
+#MM- linklibs : linklibs-clib-shared-linklib linklibs-rom
+#MM- linklibs-clib : linklibs-clib-shared linklibs-rom
+#MM- linklibs-clib-shared : includes linklibs-mlib \
+#MM      linklibs-clib-common linklibs-autoinit
+#MM- linklibs-clib-shared-linklib : includes linklibs-clib-common
+#MM- linklibs-rom : includes linklibs-clib-common
+#MM- linklibs-clib-quick : linklibs-clib-shared-quick \
+#MM      linklibs-clib-common-quick linklibs-rom-quick
+#MM- linklibs-clib-clean : linklibs-clib-shared-clean \
+#MM      linklibs-clib-common-clean linklibs-rom-clean
 
-COMMON_OBJ := 	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
-	   	$(foreach f,$(COMMON_ARCH),$(OBJDIR)/arch/$(f).o) 
- 
-SHARED_OBJ :=	$(COMMON_OBJ) $(STUBS) $(OBJDIR)/arosc_autoinit.o \
-                $(foreach f,$(SHARED_LINKLIB_ARCH),$(OBJDIR)/shared/arch/$(f).o)
+#MM- linklibs-clib-quick : linklibs-clib-shared-quick linklibs-rom-quick
 
-MODULE_OBJ :=	$(foreach f, $(SHARED), $(OBJDIR)/shared/$(f).o) \
-                $(foreach f,$(SHARED_ARCH),$(OBJDIR)/shared/arch/$(f).o)
+%build_linklib mmake=linklibs-clib-common \
+    libname=arosccommon files="$(COMMON) $(add-prefix arch/,$(COMMON_ARCH))" \
+    libdir=$(OBJDIR)
 
-ROM_OBJ	   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR)/rom/$(f).o) \
-		$(foreach f,$(ROM_COMMON),$(OBJDIR)/$(f).o) \
-		$(foreach f,$(ROM_COMMON_ARCH),$(OBJDIR)/arch/$(f).o) \
-		$(foreach f,$(ROM_STATIC),$(OBJDIR)/static/$(f).o)
 
-# 32-bit version built on 64-bit machines is very trimmed down,
-# it does not include arch-specific files (for simplicity).
-ROM_OBJ32   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR32)/rom/$(f).o) \
-		$(foreach f,$(ROM_COMMON),$(OBJDIR32)/$(f).o) \
-		$(foreach f,$(ROM_STATIC),$(OBJDIR32)/static/$(f).o)
+#   Also build $(AROS_LIB)/librom.a
+#
+#   This is a library that is allowed to be used inside modules and the
+#   kernel. It must include no code which refers to global variables.
+#
+#   Currently the main difference is that it includes a different __assert()
+#   function to handle asserts in the kernel.
 
-# These are added to the link step of arosc.library
-LIBS := $(ARCH_LIBS) -L$(AROS_LIB) -larosm -lautoinit -larossupport
-DEP_LIBS := arosm autoinit arossupport
+ROM_COMMON_OBJS := $(addsuffix .o, \
+    $(addprefix $(OBJDIR)/,$(ROM_COMMON)) \
+    $(addprefix $(OBJDIR)/arch/,$(ROM_COMMON_ARCH)) \
+)
+%build_linklib mmake=linklibs-rom \
+    libname=rom files="$(ROM_ONLY) $(ROM_STATIC)" objs=$(ROM_COMMON_OBJS) \
+    cflags="$(CFLAGS) -DAROSC_STATIC -DAROSC_ROM"
+    objdir=$(OBJDIR)/static
 
-#MM- core-linklibs : linklibs-arosc
-#MM- linklibs-arosc : linklibs-clib-linklib
-#MM- linklibs : linklibs-arosc
-#MM linklibs-clib : core-linklibs setup-clib includes clib-stubs
-#MM linklibs-clib-linklib : clib-stubs
-#MM- clib-stubs : setup-clib
 
-#MM linklibs-clib32 : includes
 
-#MM
-linklibs-clib-quick : linklibs-clib
+%rule_compile basename=__arosc_userdata targetdir=$(OBJDIR)/slib
+$(OBJDIR)/slib/__arosc_userdata.o : | $(OBJDIR)/slib
+GLOB_MKDIRS += $(OBJDIR)/slib
 
-#MM
-linklibs-clib32-quick : linklibs-clib32
 
-linklibs-clib : $(AROS_LIBS)/$(MODULE)
+AROSC_LINKLIB_OBJS := $(addsuffix .o, \
+    $(addprefix $(OBJDIR)/,$(COMMON)) \
+    $(addprefix $(OBJDIR)/arch/,$(COMMON_ARCH)) \
+    $(addprefix $(OBJDIR)/shared/arch/,$(SHARED_LINKLIB_ARCH)) \
+    $(OBJDIR)/slib/__arosc_userdata \
+)
+USER_LDFLAGS := -L$(OBJDIR)
+%build_module mmake=linklibs-clib-shared \
+    modname=arosc modtype=library objdir=$(OBJDIR)/shared \
+    cflags="$(CFLAGS) -DAROSC_SHARED" \
+    files="$(SHARED) $(SHARED_ARCH)" linklibobjs=$(AROSC_LINKLIB_OBJS) \
+    uselibs="arosccommon"
 
-linklibs-clib-linklib : $(SHARED_LIB) $(ROM_LIB)
 
-linklibs-clib32 : setup-clib32 $(ROM_LIB32)
+# x86_64 needs a reduced 32bit librom.a lib.
+%rule_compile_multi basenames=$(ROM_COMMON) \
+    cflags="-m32 -DAROSC_LIB32 $(CFLAGS)" targetdir=$(OBJDIR)/32bit
 
-$(OBJDIR)/libarosccommon.a: $(COMMON_OBJ)
-	%mklib_q from=$^
+ROM_COMMON_OBJ32 := $(addsuffix .o, $(addprefix $(OBJDIR)/32bit/,$(ROM_COMMON)))
+%build_linklib mmake=linklibs-clib32 \
+    libname=rom files="$(ROM_ONLY) $(ROM_STATIC)" objs=$(ROM_COMMON_OBJ32) \
+    cflags="-m32 $(CFLAGS) -DAROSC_LIB32 -DAROSC_STATIC -DAROSC_ROM" \
+    objdir=$(OBJDIR)/static libdir=$(GENDIR)/lib32
 
-$(SHARED_LIB) : $(SHARED_OBJ)
-	%mklib_q from=$^
-
-$(ROM_LIB) : $(ROM_OBJ)
-	%mklib_q from=$^
-
-$(ROM_LIB32) : $(ROM_OBJ32)
-	%mklib_q from=$^
-
-$(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ) $(OBJDIR)/libarosccommon.a
-	%link_module_q \
-	    objs="$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(MODULE_OBJ)" \
-	    endtag="$(OBJDIR)/shared/arosc_endtag.o" \
-	    ldflags="$(LDFLAGS) -L$(OBJDIR)" \
-	    libs="$(LIBS) -larosccommon -laros -ldos -llocale -lautoinit"
-
-$(OBJDIR)/static/%.o : %.c
-	%compile_q opt="$(CFLAGS) -DAROSC_STATIC"
-
-$(OBJDIR)/shared/%.o : %.c
-	%compile_q opt="$(CFLAGS) -DAROSC_SHARED"
-
-$(OBJDIR)/rom/%.o : %.c
-	%compile_q opt="$(CFLAGS) -DAROSC_ROM"
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
-
-$(OBJDIR32)/static/%.o : %.c
-	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_STATIC -DAROSC_LIB32"
-
-$(OBJDIR32)/rom/%.o : %.c
-	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_ROM -DAROSC_LIB32"
-
-$(OBJDIR32)/%.o : %.c
-	%compile_q opt="$(CFLAGS32) $(CFLAGS) -DAROSC_LIB32"
-
-# Need to copy these files in from the machine dependant build.
-$(OBJDIR)/shared/%jmp.o : $(OBJDIR)/%jmp.o
-	@$(CP) $< $@
-
-# The rules to create the dependancy files.
-$(OBJDIR)/static/%.d : %.c
-	%mkdepend_q flags=$(CFLAGS)
-
-$(OBJDIR)/shared/%.d : %.c
-	%mkdepend_q flags="$(CFLAGS) -include __arosc_privdata.h"
-
-$(OBJDIR)/rom/%.d : %.c
-	%mkdepend_q flags=$(CFLAGS)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q flags=$(CFLAGS)
-
-$(OBJDIR32)/static/%.d : %.c
-	%mkdepend_q flags=$(CFLAGS)
-
-$(OBJDIR32)/rom/%.d : %.c
-	%mkdepend_q flags=$(CFLAGS)
-
-$(OBJDIR32)/%.d : %.c
-	%mkdepend_q flags=$(CFLAGS)
-
-#MM
-setup-clib :
-	%mkdirs_q $(AROS_INCLUDES)/sys $(OBJDIR)
-	%mkdirs_q $(OBJDIR)/static $(OBJDIR)/shared $(OBJDIR)/rom
-	%mkdirs_q $(AROS_LIB) $(AROS_LIBS)
-
-#MM
-setup-clib32 :
-	%mkdirs_q $(AROS_INCLUDES)/sys $(OBJDIR32)
-	%mkdirs_q $(OBJDIR32)/static $(OBJDIR32)/rom
-	%mkdirs_q $(GENDIR)/lib32
 
 #MM
 check : $(TESTDIR)/snprintf
@@ -629,11 +542,4 @@ $(TESTDIR)/snprintf : snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
 clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB)
 
-%common
-%include_deps
-
-# Fix up the deps, these won't end up in $^, but they'll make it work.
-$(AROS_LIBS)/$(MODULE) : $(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(OBJDIR)/shared/arosc_endtag.o
-$(AROS_LIBS)/$(MODULE) : $(foreach f,$(DEP_LIBS),$(AROS_LIB)/lib$(f).a)
-$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o: $(AROS_INCLUDES)/sys/syscall.def
 

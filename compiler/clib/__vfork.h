@@ -13,6 +13,8 @@
 #include <sys/types.h>
 #include <aros/startup.h>
 
+#include "__fdesc.h"
+
 struct vfork_data
 {
     struct vfork_data *prev;
@@ -23,21 +25,22 @@ struct vfork_data
 
     ULONG child_id;
     BYTE parent_signal;
-    APTR parent_acpd_fd_mempool;
-    void *parent_acpd_fd_array;
-    int parent_acpd_numslots;
+    struct aroscbase *parent_aroscbase;
     APTR parent_mempool;
     int parent_cd_changed;
     BPTR parent_cd_lock;
     BPTR parent_curdir;
     struct __env_item *parent_env_list;
-    struct arosc_privdata *ppriv;
+    APTR parent_fd_mempool;
+    int parent_numslots;
+    fdesc **parent_fd_array;
 
     struct Task *child;
     struct arosc_privdata *cpriv;
     int child_executed;
     int child_errno;
     BYTE child_signal;
+    struct aroscbase *child_aroscbase;
 
     const char *exec_filename;
     char *const *exec_argv;

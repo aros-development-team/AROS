@@ -1,5 +1,5 @@
 /* 
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: special main function for code which has to use special *nix features.
@@ -10,7 +10,7 @@
     Lang: english
 */
 
-#include "__arosc_privdata.h"
+#include LC_LIBDEFS_FILE
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -18,6 +18,7 @@
 #include <dos/dos.h>
 #include <aros/startup.h>
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <setjmp.h>
@@ -25,6 +26,7 @@
 #include <stdlib.h>
 #include <sys/param.h>
 
+#include "__arosc_privdata.h"
 #include "__upath.h"
 
 static BOOL clone_vars(struct MinList *old_vars);
@@ -34,17 +36,18 @@ static void update_PATH(void);
 
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 {
+    struct aroscbase *aroscbase = __get_aroscbase(), *paroscbase;
     char *old_argv0 = NULL;
     char *new_argv0 = NULL;
     struct MinList old_vars;
 
     /* Trigger *nix path handling on.  */
-    __doupath = 1;
+    aroscbase->acb_doupath = 1;
 
     /* argv[0] usually contains the name of the program, possibly with the full
        path to it. Here we translate that path, which is an AmigaDOS-style path,
-       into a unix-style one.  */
-    if (argv && argv[0] && !__get_arosc_privdata()->acpd_parent_does_upath)
+       into an unix-style one.  */
+    if (argv && argv[0] && !aroscbase->acb_parent_does_upath)
     {
 	new_argv0 = strdup(__path_a2u(argv[0]));
 	if (new_argv0 == NULL)
@@ -59,9 +62,13 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
        rather than as a newly created process, then we share our env variables
        with the caller, but we do not want that. It's kind of wasteful to do
        it even if we've been started as a fresh process, though, so if we can
-       we avoid it. */
-    if (!(__get_arosc_privdata()->acpd_flags & DO_NOT_CLONE_ENV_VARS))
+       we avoid it.
+       The cloning does not need to be performed if flags of parent have VFORK_PARENT
+       or EXEC_PARENT flags */
+    paroscbase = GM_GETPARENTBASEID2(aroscbase);
+    if (!paroscbase || !(paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
     {
+        D(bug("__arosc_nixmain: Cloning LocalVars"));
         if (!clone_vars(&old_vars))
 	{
 	    __aros_startup_error = RETURN_FAIL;
@@ -81,7 +88,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     }
 
 
-    if (!(__get_arosc_privdata()->acpd_flags & DO_NOT_CLONE_ENV_VARS))
+    if (!paroscbase || !(paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
         restore_vars(&old_vars);
 
 err_vars:
@@ -226,7 +233,7 @@ static void update_PATH(void)
 
 	D(bug("aname = %s\n", aname));
 
-        uname = __path_a2u(aname);
+        uname = __path_a2u((const char *)aname);
 	if (!uname)
 	    continue;
 	uname_len = strlen(uname);

@@ -85,7 +85,6 @@ COMMONTESTFILES := \
     seektest \
     callhooktest \
     scanvarstest \
-    aroscprivdata \
     convertpixels \
     patchrgbconv \
     joystick \

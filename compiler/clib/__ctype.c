@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/symbolsets.h>
 #include <ctype.h>
+
+#include "__arosc_privdata.h"
 
 const unsigned short int __ctype_b_array[384] =
 {
@@ -504,8 +506,9 @@ const int __ctype_tolower_array[384] =
 };
 
 #ifdef AROSC_SHARED
-
-static int __ctype_init(void)
+static
+#endif
+int __ctype_init(void)
 {
     __ctype_b       = &__ctype_b_array[128];
     __ctype_toupper = &__ctype_toupper_array[128];
@@ -514,8 +517,8 @@ static int __ctype_init(void)
     return 1;
 }
 
+#ifdef AROSC_SHARED
 ADD2INIT(__ctype_init, 20);
-
 #endif
 
 /*****************************************************************************

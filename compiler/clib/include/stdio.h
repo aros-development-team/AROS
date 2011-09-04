@@ -144,9 +144,11 @@ int __vcscan (void * data, int (*getc)(void *),
  */
 void updatestdio(void);
 
+#ifndef _STDIO_H_NOMACRO
 #define putc(c, stream) fputc(c, stream)
 #define getc(stream)    fgetc(stream)
 #define getchar()       getc(stdin)
+#endif
 
 #if !defined(_ANSI_SOURCE)
 /* Unix Specific */
