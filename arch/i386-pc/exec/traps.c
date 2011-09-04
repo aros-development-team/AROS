@@ -103,8 +103,6 @@ void printException(struct pt_regs regs)
 {
     kprintf("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
         regs.eip, regs.eflags, regs.xds, &regs.esp);
-
-    for(;;);
 }
 
 void handleException(ULONG exceptionNo)
