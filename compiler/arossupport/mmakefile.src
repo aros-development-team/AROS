@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 
 FILES	:= \
     aros_altstack \
+    aros_relbase \
     calcchecksum \
     createbstr \
     createseglist \

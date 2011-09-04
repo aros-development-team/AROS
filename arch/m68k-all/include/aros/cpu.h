@@ -102,21 +102,47 @@ do                                                       \
    Internals: a dummy function is used that will generate some
    unused junk code but otherwise we can't pass input arguments
    to the asm statement
+
+   Some asm trickery performed:
+   - function return address is top of stack,
+     leave it there to use as argument for aros_push2_relbase
+   - libbase is other argument to aros_push2_relbase
+   - call aros_push2_relbase
+   - put libbase back in %eax
+   - remove libbase and return address from stack
+   - Call lvo vector
+   - push return value on stack
+   - call aros_pop2_relbase,
+     return value will be old return address
+   - pull return value from stack
+   - jmp to old return address
 */
 #define __AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _wrapper(void) \
     { \
 	asm volatile( \
-	    ".globl " #fname "\n" \
+	    ".weak " #fname "\n" \
 	    "\t" #fname ":\n" \
-	    "\tmovl " #libbasename ",%%a0\n" \
-	    "\tlea.l %c0(%%a0),%%a0\n" \
-	    "\tjmp (%%a0)\n" \
+            /* return address is top of stack */ \
+            /* use as 2nd argument for aros_push2_relbase */ \
+	    "\tmove.l	" #libbasename ",%%a0\n" \
+	    "\tmove.l	%%a0,%%sp@-\n" /* libbase on stack */ \
+            "\tjsr	aros_push2_relbase\n" \
+            "\tmove.l   %%sp@,%%a0\n" \
+            "\taddq.l	#8, %%sp\n" /* original arguments */ \
+	    "\tjsr	%%a0@(%c0)\n" \
+	    "\tmovem.l	%%d0/%%d1,%%sp@-\n" \
+            "\tjsr	aros_pop2_relbase\n" \
+            "\tmove.l	%%d0,%%a0\n" \
+	    "\tmovem.l	%%sp@+,%%d0/%%d1\n" \
+	    "\tjmp      %%a0@\n" \
 	    : : "i" ((-lvo*LIB_VECTSIZE)) \
+	    : \
         ); \
     }
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
+
 
 /* Macro: AROS_FUNCALIAS(functionname, alias)
    This macro will generate an alias 'alias' for function
@@ -245,6 +271,11 @@ extern void aros_not_implemented ();
 
 /* Call a libary function which requires the libbase */
 #include <aros/m68k/libcall.h>
+
+#define AROS_LC_CALL(t,x,bn)	ERROR IN DEFINITIONS - AROS_LC_CALL
+#define AROS_LC_CALLNR(x,bn)	ERROR IN DEFINITIONS - AROS_LC_CALLNR
+#define AROS_LC_CALLI(t,x,bn)	ERROR IN DEFINITIONS - AROS_LC_CALLI
+#define AROS_LC_CALLINR(x,bn)	ERROR IN DEFINITIONS - AROS_LC_CALLNR
 
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
 	AROS_LH2(t,n, \

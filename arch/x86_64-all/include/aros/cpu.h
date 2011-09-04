@@ -120,6 +120,9 @@ struct JumpVec
    unused junk code but otherwise we can't pass input arguments
    to the asm statement
 */
+#ifdef __AROS__
+#error the __AROS_LIBFUNCSTUB needs to be update for RELBASE handling
+#endif
 #define __AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _wrapper(void) \
     { \

@@ -10,6 +10,7 @@
 #include <dos/bptr.h>
 #include <exec/exec.h>
 #include <setjmp.h>
+#include <sys/types.h>
 #include <aros/startup.h>
 
 struct vfork_data
@@ -44,6 +45,7 @@ struct vfork_data
     APTR exec_id;
 };
 
+pid_t __vfork(jmp_buf env);
 void vfork_longjmp (jmp_buf env, int val);
 
 #endif /* __VFORK_H */

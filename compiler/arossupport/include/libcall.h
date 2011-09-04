@@ -82,6 +82,57 @@ typedef int (*LONG_FUNC)();
 typedef unsigned int (*ULONG_FUNC)();
 #endif
 
+/* Declare relbase if asked */
+#if !defined(AROS_GET_RELBASE) || !defined(AROS_SET_RELBASE)
+
+#include <exec/types.h>
+
+/* Uncomment next define to get debug output for relbase calls
+ */
+//#define AROS_RELBASE_DEBUG 1
+
+/* Also use debug version if we may not define global SysBase */
+#if !defined(AROS_RELBASE_DEBUG) && !defined(__NOLIBBASE__) && !defined(__EXEC_NOLIBBASE__)
+
+#include <exec/execbase.h>
+
+#include <aros/altstack.h>
+
+extern struct ExecBase *SysBase;
+
+#define AROS_GET_RELBASE        ((void *)aros_get_altstack(SysBase->ThisTask))
+#define AROS_SET_RELBASE(x)     ((void *)aros_set_altstack(SysBase->ThisTask,(IPTR)x))
+#define AROS_PUSH_RELBASE(x)    aros_push_altstack(SysBase->ThisTask,(IPTR)x)
+#define AROS_POP_RELBASE        ((void *)aros_pop_altstack(SysBase->ThisTask)
+
+#else /* AROS_RELBASE_DEBUG || __NOLIBBASE__ || __EXEC_NOLIBBASE__ */
+
+__BEGIN_DECLS
+void *aros_get_relbase(void);
+void *aros_set_relbase(void *libbase);
+void aros_push_relbase(void *libbase);
+void aros_push2_relbase(void *libbase, void *ptr);
+void *aros_pop_relbase(void);
+void *aros_pop2_relbase(void);
+__END_DECLS
+
+#define AROS_GET_RELBASE	aros_get_relbase()
+#define AROS_SET_RELBASE(x)	aros_set_relbase(x)
+#define AROS_PUSH_RELBASE(x)    aros_push_relbase(x)
+#define AROS_POP_RELBASE        aros_pop_relbase()
+
+#endif  /* !AROS_RELBASE_DEBUG && !__NOLIBBASE__ && !__EXEC_NOLIBBASE__ */
+
+#endif /* !AROS_GET_RELBASE || !AROS_SET_RELBASE */
+
+/* If AROS_GET_LIBBASE/AROS_SET_LIBBASE use relbase by defining them as resp.
+ * AROS_GET_RELBASE/AROS_SET_RELBASE
+ */
+#ifndef AROS_GET_LIBBASE
+#define AROS_GET_LIBBASE AROS_GET_RELBASE
+#define AROS_SET_LIBBASE(x) AROS_SET_RELBASE(x)
+#endif
+
 /* Declare all macros which the systems' libcall didn't */
 #ifndef __AROS_SLIB_ENTRY
 #   define __AROS_SLIB_ENTRY(n,s,o)   s ## _ ## o ## _ ## n
