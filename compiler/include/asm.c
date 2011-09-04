@@ -75,6 +75,7 @@ int main(void) {
     DEFINE(pr_ConsoleTask, offsetof (struct Process, pr_ConsoleTask));
     DEFINE(pr_FileSystemTask, offsetof (struct Process, pr_FileSystemTask));
     DEFINE(pr_MsgPort    , offsetof (struct Process, pr_MsgPort));
+    DEFINE(pr_Result2    , offsetof (struct Process, pr_Result2));
     DEFINE(pr_ReturnAddr , offsetof (struct Process, pr_ReturnAddr));
     DEFINE(pr_SegList    , offsetof (struct Process, pr_SegList));
     DEFINE(pr_WindowPtr  , offsetof (struct Process, pr_WindowPtr));

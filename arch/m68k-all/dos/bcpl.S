@@ -64,7 +64,7 @@ BCPL_rts:
 .LBCPL_format_trace:
     .string  "%s: BCPL %s, D1=%p D2=%p D3=%p D4=%p, GV %p\n"
 .LBCPL_format_ret:
-    .string  "%s: \tD1=%p\n"
+    .string  "%s: \tD1=%p IoErr=%p\n"
 
     /* For dummy functions */
     .macro  BCPLd name
@@ -97,12 +97,14 @@ BCPL_\name:
     movem.l %d0/%a0-%a1,%sp@-
     move.l  SysBase,%a0
     move.l  %a0@(ThisTask),%a0
+    move.l  %a0@(pr_Result2),%a1
+    move.l  %a1,%sp@-
     move.l  %a0@(ln_Name),%a0
     move.l  %d0,%sp@-
     move.l  %a0,%sp@-
     move.l  #.LBCPL_format_ret,%sp@-
     jsr     kprintf
-    lea.l   %sp@(3*4),%sp
+    lea.l   %sp@(4*4),%sp
     movem.l %sp@+,%d0/%a0-%a1
     move.l  %d0,%d1
     jmp     (%a6)
