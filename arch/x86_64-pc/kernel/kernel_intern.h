@@ -19,7 +19,6 @@
  */
 struct KernBootPrivate
 {
-    IPTR	        kbp_PrivateNext;	/* Boot-time memory allocation pointer 			*/
     const struct GenericAPIC *kbp_APIC_Driver;	/* Probed APIC driver		       			*/
     IPTR		_APICBase;		/* Bootstrap APIC base address				*/
     UWORD               kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				*/

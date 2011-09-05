@@ -1,11 +1,18 @@
+/*
+ * Functions for dealing with Multiboot memory map.
+ * This file override basic MemHeader creation functions in rom/kernel,
+ * because if you have memory map you don't need them.
+ * This code builds a fully-functional set of MemHeaders and MemChunks
+ * based on memory map contents and physical breakout described in the array
+ * of MemRegion structures.
+ */
+
 #include <aros/macros.h>
 #include <aros/multiboot.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
-#include <clib/kernel_protos.h>
 
-#include "kernel_intern.h"
-#include "kernel_memory.h"
+#include "kernel_mmap.h"
 
 /*
  * Append a single chunk to a MemHeader.
@@ -13,14 +20,10 @@
  * with the parameters specified in MemRegion structure.
  * Returns the last MemChunk in the chain, for linking.
  */
-struct MemChunk *krnAddMemChunk(struct MemHeader **mhPtr, struct MemChunk *prev, IPTR start, IPTR end,
-				IPTR mh_Start, const struct MemRegion *reg)
+static struct MemChunk *krnAddMemChunk(struct MemHeader **mhPtr, struct MemChunk *prev, IPTR start, IPTR end,
+				       IPTR mh_Start, const struct MemRegion *reg)
 {
     struct MemChunk *mc;
-
-    /* Zero page is always reserved for SysBase pointer and other critical stuff */
-    if (start == 0)
-    	start = PAGE_SIZE;
 
     if (*mhPtr == NULL)
     {
@@ -77,8 +80,8 @@ struct MemChunk *krnAddMemChunk(struct MemHeader **mhPtr, struct MemChunk *prev,
  * klo - Lowest address of the kickstart region
  * khi - Next free address beyond the kickstart (kickstart highest address + 1)
  */
-struct MemChunk *krnAddKickChunk(struct MemHeader **mhPtr, struct MemChunk *prev, IPTR start, IPTR end,
-				IPTR klo, IPTR khi, IPTR mh_Start, const struct MemRegion *reg)
+static struct MemChunk *krnAddKickChunk(struct MemHeader **mhPtr, struct MemChunk *prev, IPTR start, IPTR end,
+					IPTR klo, IPTR khi, IPTR mh_Start, const struct MemRegion *reg)
 {
     /* If the kickstart is placed outside of this region, just add it as it is */
     if ((klo >= end) || (khi <= start))
@@ -108,7 +111,7 @@ struct MemChunk *krnAddKickChunk(struct MemHeader **mhPtr, struct MemChunk *prev
  *    that none of memory map entries will happen to be between two MemRegions).
  */
 void mmap_InitMemory(struct mb_mmap *mmap, unsigned long len, struct MinList *memList,
-		     IPTR klo, IPTR khi, const struct MemRegion *reg)
+		     IPTR klo, IPTR khi, IPTR reserve, const struct MemRegion *reg)
 {
     while (len >= sizeof(struct mb_mmap))
     {
@@ -116,7 +119,8 @@ void mmap_InitMemory(struct mb_mmap *mmap, unsigned long len, struct MinList *me
 	struct MemHeader *mh = NULL;
 	struct MemChunk *mc = NULL;
 	IPTR phys_start = mmap->addr;
-	IPTR addr, end;
+	IPTR end = 0;
+	IPTR addr;
 
 	/* Go to the first matching region */
 	while (reg->end <= phys_start)
@@ -133,11 +137,31 @@ void mmap_InitMemory(struct mb_mmap *mmap, unsigned long len, struct MinList *me
 
     	for (;;)
     	{
-	    addr = mmap->addr;
-	    end  = mmap->addr + mmap->len;
+#ifdef __i386__
+	    /* We are on i386, ignore high memory */
+	    if (mmap->addr_high)
+		break;
 
+	    if (mmap->len_high)
+		end = 0x80000000;
+	    else
+#endif
+		end  = mmap->addr + mmap->len;
+	    addr = mmap->addr;
+	    
     	    if (addr < reg->start)
+	    {
+		/* 
+		 * This region includes space from the previous MemHeader.
+		 * Trim it.
+		 */
     	    	addr = reg->start;
+	    }
+	    else if (addr == 0)
+	    {
+		/* Reserve requested space in zero page */
+		addr = reserve;
+	    }
 
     	    /* Is the limit in the middle of current chunk ? */
 	    if (end > reg->end)
@@ -184,4 +208,51 @@ void mmap_InitMemory(struct mb_mmap *mmap, unsigned long len, struct MinList *me
 	if (reg->name == NULL)
 	    return;
     }
+}
+
+struct mb_mmap *mmap_FindRegion(IPTR addr, struct mb_mmap *mmap, unsigned long len)
+{
+    while (len >= sizeof(struct mb_mmap))
+    {
+	IPTR end;
+
+#ifdef __i386__
+	/* We are on i386, ignore high memory */
+	if (mmap->addr_high)
+	    return NULL;
+
+	if (mmap->len_high)
+	    end = 0x80000000;
+	else
+#endif
+	end = mmap->addr + mmap->len;
+
+	/* Returh chunk pointer if matches */
+	if ((addr >= mmap->addr) && (addr < end))
+	    return mmap;
+
+   	/* Go to the next chunk */
+    	len -= mmap->size + 4;
+    	mmap = (struct mb_mmap *)(mmap->size + (IPTR)mmap + 4);
+    }
+    return NULL;
+}
+
+/* Validate the specified region via memory map */
+BOOL mmap_ValidateRegion(unsigned long addr, unsigned long len, struct mb_mmap *mmap, unsigned long mmap_len)
+{
+    /* Locate a memory region */
+    struct mb_mmap *region = mmap_FindRegion(addr, mmap, mmap_len);
+
+    /* If it exists, and free for usage... */
+    if (region && region->type == MMAP_TYPE_RAM)
+    {
+	IPTR end = region->addr + region->len;
+
+	/* Make sure it covers the whole our specified area */
+	if (addr + len < end)
+	    return TRUE;
+
+    }
+    return FALSE;
 }

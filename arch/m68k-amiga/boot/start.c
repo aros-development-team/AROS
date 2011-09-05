@@ -6,6 +6,7 @@
     Lang: english
  */
 
+#include <aros/altstack.h>
 #include <aros/kernel.h>
 #include <aros/debug.h>
 #include <exec/memory.h>
@@ -562,6 +563,10 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	/* From here on, we can reference SysBase */
 #undef SysBase
 	DEBUGPUTHEX(("[SysBase at]", (ULONG)SysBase));
+
+	SysBase->ThisTask->tc_SPLower = &_ss;
+        SysBase->ThisTask->tc_SPUpprt = &_ss_end;
+        aros_init_altstack(SysBase->ThisTask);
 
     	if (wasvalid) {
     	    SysBase->ColdCapture = ColdCapture;

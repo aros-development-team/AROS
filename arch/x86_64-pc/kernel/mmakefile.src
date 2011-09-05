@@ -8,12 +8,17 @@ ASMFILES := core_interrupts cli sti issuper
 
 MAINDIR	      := rom/kernel
 USER_AFLAGS   := -I$(GENINCDIR)
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-pc/kernel -I$(SRCDIR)/$(MAINDIR) -I$(SRCDIR)/rom/exec \
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-pc/kernel \
+		 -I$(SRCDIR)/arch/all-native/kernel \
+		 -I$(SRCDIR)/$(MAINDIR) -I$(SRCDIR)/rom/exec \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
-#MM kernel-kernel-pc-x86_64 : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole
-#MM kernel-kernel-pc-x86_64-pkg : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole
-#MM kernel-kernel-pc-x86_64-kobj : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole
+#MM kernel-kernel-pc-x86_64 : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole kernel-kernel-native
+#MM kernel-kernel-pc-x86_64-pkg : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole kernel-kernel-native
+#MM kernel-kernel-pc-x86_64-kobj : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole kernel-kernel-native
+#MM kernel-kernel-pc-x86_64-quick : kernel-kernel-native-quick
+#MM kernel-kernel-pc-x86_64-pkg-quick : kernel-kernel-native-quick
+#MM kernel-kernel-pc-x86_64-kobj-quick : kernel-kernel-native-quick
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \

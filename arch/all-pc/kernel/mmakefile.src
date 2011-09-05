@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := apic_driver xtpic
+FILES := apic_driver xtpic kernel_memory
 APICS := apic_ia32
 
 MAINDIR	      := rom/kernel

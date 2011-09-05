@@ -1,3 +1,4 @@
+#include <aros/altstack.h>
 #include <aros/arossupportbase.h>
 #include <aros/debug.h>
 #include <aros/kernel.h>
@@ -21,7 +22,8 @@
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
 
-static const char *kernel_functions[] = {
+static const char *kernel_functions[] =
+{
     "core_init",
     "core_raise",
     "core_protect",
@@ -151,6 +153,21 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	mykprintf("[Kernel] Failed to create ExecBase!\n");
 	return -1;
     }
+
+    /*
+     * Set up correct stack borders and altstack.
+     * Now our boot task can call relbase libraries.
+     * In fact on hosted we don't know real stack limits, but
+     * we know it's at least of AROS_STACKSIZE bytes long. For existing architectures
+     * this seems to be true.
+     * TODO: 1. Under UNIX it's possible to call getrlimits() to learn about stack limits.
+     *       2. The whole altstack thing can prove unfeasible. At least currently it failed
+     *		as a system-wide ABI. Alternative stack is not interrupt-safe, while AROS
+     *		libraries may be (and at least several are).
+     */
+    SysBase->ThisTask->tc_SPLower = (IPTR)_stack - AROS_STACKSIZE;
+    SysBase->ThisTask->tc_SPUpper = _stack;
+    aros_init_altstack(SysBase->ThisTask);
 
     D(mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 

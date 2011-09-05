@@ -1,0 +1,13 @@
+# $Id: mmakefile.src 40987 2011-08-30 09:19:53Z sonic $
+include $(TOP)/config/make.cfg
+
+FILES := boot_utils kernel_bootmem
+
+MAINDIR	      := rom/kernel
+USER_INCLUDES := -I$(SRCDIR)/$(MAINDIR)
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=$(MAINDIR) \
+  arch=native files="$(FILES)"
+
+%common
