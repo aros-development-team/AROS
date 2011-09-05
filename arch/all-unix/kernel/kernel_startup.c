@@ -200,7 +200,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
      *		as a system-wide ABI. Alternative stack is not interrupt-safe, while AROS
      *		libraries may be (and at least several are).
      */
-    SysBase->ThisTask->tc_SPLower = (IPTR)_stack - AROS_STACKSIZE;
+    SysBase->ThisTask->tc_SPLower = _stack - AROS_STACKSIZE;
     SysBase->ThisTask->tc_SPUpper = _stack;
     aros_init_altstack(SysBase->ThisTask);
 
