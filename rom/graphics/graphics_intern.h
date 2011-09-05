@@ -138,9 +138,10 @@ struct monitor_driverdata
 };
 
 /* Driver flags */
-#define DF_BootMode    0x0001
-#define DF_UseFakeGfx  0x0002
-#define DF_SoftCompose 0x0004
+#define DF_BootMode    0x0001	/* Boot mode driver				*/
+#define DF_UseFakeGfx  0x0002	/* Software mouse sprite is in use		*/
+#define DF_SoftCompose 0x0004	/* Software screen composition requested	*/
+#define DF_DirectFB    0x0008	/* Driver uses a direct-mode framebuffer	*/
 
 /* Common driver data data to all monitors */
 struct common_driverdata
@@ -326,6 +327,8 @@ extern struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBa
 extern void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 extern struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 extern ULONG DoViewFunction(struct View *view, VIEW_FUNC fn, struct GfxBase *GfxBase);
+extern void InstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+extern void UninstallFB(struct monitor_driverdata *mdd);
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp

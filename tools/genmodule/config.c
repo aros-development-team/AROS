@@ -756,7 +756,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 			"noautolib", "noexpunge", "noresident", "peropenerbase",
                         "peridbase", "includes", "noincludes", "nostubs",
                         "autoinit", "noautoinit", "resautoinit", "noopenclose",
-                        "selfinit"
+                        "selfinit", "baserel"
 		    };
 		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
 		    int optionnum;
