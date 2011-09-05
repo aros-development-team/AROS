@@ -55,9 +55,3 @@ AROS_LH2(int, KrnBug,
 
     AROS_LIBFUNC_EXIT
 }
-
-/* Support for output when SysBase is not initialized */
-int __KrnBugBoot(const char *format, va_list args)
-{
-    return __vcformat(NULL, (int (*)(int, void *))krnPutC, format, args);
-}
