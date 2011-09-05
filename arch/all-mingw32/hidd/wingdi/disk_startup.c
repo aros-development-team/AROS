@@ -59,7 +59,7 @@ static ULONG AddDisplays(ULONG num)
     /* Add displays if needed */
     for (i = old; i < num; i++)
     {
-	ULONG err = AddDisplayDriverA(gfxclass, NULL, NULL))
+	ULONG err = AddDisplayDriverA(gfxclass, NULL, NULL);
 
 	if (err)
 	{
