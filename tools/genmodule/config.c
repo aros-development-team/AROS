@@ -834,6 +834,9 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 					exitfileerror(20, "option resautoinit and selfinit are incompatible\n");
 			    cfg->options |= OPTION_SELFINIT;
 			    break;
+			case 14:
+			    cfg->options |= OPTION_BASEREL;
+			    break;
 			}
 			while (isspace(*s)) s++;
 		    } while(*s !='\0');
