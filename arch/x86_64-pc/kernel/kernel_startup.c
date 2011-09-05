@@ -1,3 +1,4 @@
+#include <aros/altstack.h>
 #include <aros/multiboot.h>
 #include <asm/cpu.h>
 #include <asm/io.h>
@@ -13,11 +14,12 @@
 #include <inttypes.h>
 #include <string.h>
 
+#include "boot_utils.h"
 #include "kernel_base.h"
 #include "kernel_bootmem.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
-#include "kernel_memory.h"
+#include "kernel_mmap.h"
 #include "kernel_romtags.h"
 #include "acpi.h"
 #include "apic.h"
@@ -97,7 +99,7 @@ static void boot_start(struct TagItem *msg)
     con_InitTagList(msg);
 
     bug("AROS64 - The AROS Research OS, 64-bit version. Compiled %s\n", __DATE__);
-    D(bug("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [stub @ %p].\n", boot_start, start64));
+    D(bug("[Kernel] boot_start: Jumped into kernel.resource @ %p [stub @ %p].\n", boot_start, start64));
 
     kernel_cstart(msg);
 }
@@ -134,19 +136,6 @@ static void panic(void)
     while (1);
 }
 
-static void RelocateTagData(struct TagItem *tag, unsigned long size)
-{
-    char *src = (char *)tag->ti_Data;
-    unsigned char *dest = krnAllocBootMem(size);
-    unsigned int i;
-
-    tag->ti_Data = (IPTR)dest;
-
-    /* Do not use memcpy() because it can rely on CopyMem() which is not available yet */
-    for (i = 0; i < size; i++)
-        *dest++ = *src++;
-}
-
 /*
  * This is the main entry point.
  * We run from here both at first boot and upon reboot.
@@ -160,7 +149,6 @@ void kernel_cstart(const struct TagItem *msg)
     IPTR addr = 0;
     IPTR klo  = 0;
     IPTR khi;
-    const struct TagItem *tstate;
     struct TagItem *tag;
     UBYTE _APICID;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
@@ -173,9 +161,6 @@ void kernel_cstart(const struct TagItem *msg)
     if (__KernBootPrivate == NULL)
     {
     	/* This is our first start. */
-	struct TagItem *dest;
-	unsigned long mlen;
-        IPTR ptr;
         struct vbe_mode *vmode = NULL;
         char *cmdline = NULL;
 
@@ -188,57 +173,36 @@ void kernel_cstart(const struct TagItem *msg)
             panic();
         }
 
-        /* Align kickstart top address (we are going to place a structure after it) */
-        ptr = AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
-
-	memset((void *)ptr, 0, sizeof(struct KernBootPrivate));
-        __KernBootPrivate = (struct KernBootPrivate *)ptr;
+	/*
+	 * Initialize boot-time memory allocator.
+	 * We know the bootstrap has reserved some space right beyond the kickstart.
+	 */
+        BootMemPtr = (void *)AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
 
 	/*
 	 * Our boot taglist is placed by the bootstrap just somewhere in memory.
 	 * The first thing is to move it into some safe place.
 	 */
-        ptr = AROS_ROUNDUP2(ptr + sizeof(struct KernBootPrivate), sizeof(APTR));
-        BootMsg = (struct TagItem *)ptr;
 
-	dest = BootMsg;
-        while ((tag = LibNextTagItem(&msg)))
-    	{
-    	    dest->ti_Tag  = tag->ti_Tag;
-    	    dest->ti_Data = tag->ti_Data;
-    	    dest++;
-    	}
-    	dest->ti_Tag = KRN_KernelStackBase;
-    	dest->ti_Data = (IPTR)boot_stack;
-    	dest++;
-    	dest->ti_Tag = KRN_KernelStackSize;
-    	dest->ti_Data = (IPTR)STACK_SIZE;
-    	dest++;
-	dest->ti_Tag = TAG_DONE;
-	dest++;
-
-	__KernBootPrivate->kbp_PrivateNext = (IPTR)dest;
-
-	/* Now relocate linked data */
-	mlen = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
+	/* This will relocate the taglist itself */
+	RelocateBootMsg(msg);
+	/*
+	 * Now relocate linked data.
+	 * Here we actually process only tags we know about and expect to get.
+	 * For example, we are not going to receive KRN_HostInterface or KRN_OpenfirmwareTree.
+	 */
+	mmap_len = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
 	msg = BootMsg;
 	while ((tag = LibNextTagItem(&msg)))
     	{
-    	    unsigned long l;
-    	    struct KernelBSS *bss;
-
     	    switch (tag->ti_Tag)
     	    {
     	    case KRN_KernelBss:
-    	    	l = sizeof(struct KernelBSS);
-    	    	for (bss = (struct KernelBSS *)tag->ti_Data; bss->addr; bss++)
-    	    	    l += sizeof(struct KernelBSS);
-
-    	    	RelocateTagData(tag, l);
+    	    	RelocateBSSData(tag);
     	    	break;
 
     	    case KRN_MMAPAddress:
-    	    	RelocateTagData(tag, mlen);
+    	    	RelocateTagData(tag, mmap_len);
     	    	break;
 
     	    case KRN_VBEModeInfo:
@@ -251,17 +215,18 @@ void kernel_cstart(const struct TagItem *msg)
     	    	break;
 
 	    case KRN_CmdLine:
-	    	l = strlen((char *)tag->ti_Data) + 1;
-	    	RelocateTagData(tag, l);
+	    	RelocateStringData(tag);
 	    	cmdline = (char *)tag->ti_Data;
 	    	break;
 
 	    case KRN_BootLoader:
-	    	l = strlen((char *)tag->ti_Data) + 1;
-	    	RelocateTagData(tag, l);
+	    	RelocateStringData(tag);
 	    	break;
 	    }
 	}
+
+	/* Now allocate KernBootPrivate */
+	__KernBootPrivate = krnAllocBootMem(sizeof(struct KernBootPrivate));
 
 	if (cmdline && vmode && vmode->phys_base && strstr(cmdline, "vesahack"))
 	{
@@ -280,7 +245,7 @@ void kernel_cstart(const struct TagItem *msg)
 	}
     }
 
-    D(bug("[Kernel] End of kickstart data area: 0x%p\n", __KernBootPrivate->kbp_PrivateNext));
+    D(bug("[Kernel] End of kickstart data area: 0x%p\n", BootMemPtr));
 
     /* Prepare GDT */
     core_SetupGDT(__KernBootPrivate);
@@ -288,7 +253,7 @@ void kernel_cstart(const struct TagItem *msg)
     if (!__KernBootPrivate->SystemStack)
     {
     	/* 
-    	 * Allocate out supervisor stack from boot-time memory.
+    	 * Allocate our supervisor stack from boot-time memory.
     	 * It will be protected from user's intervention.
     	 * Allocate actually three stacks: panic, supervisor, ring1.
     	 * Note that we do the actual allocation only once. The region is kept
@@ -310,12 +275,17 @@ void kernel_cstart(const struct TagItem *msg)
     core_SetupIDT(__KernBootPrivate);
     core_SetupMMU(__KernBootPrivate);
 
-    khi = AROS_ROUNDUP2(__KernBootPrivate->kbp_PrivateNext, PAGE_SIZE);
+    /*
+     * Here we ended all boot-time allocations.
+     * We won't do them again, for example on warm reboot. All our areas are stored in struct KernBootPrivate.
+     * We are going to make this area read-only and reset-proof.
+     */
+    khi = AROS_ROUNDUP2((IPTR)BootMemPtr, PAGE_SIZE);
     D(bug("[Kernel] Boot-time setup complete, end of kickstart area 0x%p\n", khi));
 
     /* Obtain the needed data from the boot taglist */
-    tstate = BootMsg;
-    while ((tag = LibNextTagItem(&tstate)))
+    msg = BootMsg;
+    while ((tag = LibNextTagItem(&msg)))
     {
         switch (tag->ti_Tag)
         {
@@ -333,7 +303,7 @@ void kernel_cstart(const struct TagItem *msg)
         case KRN_KernelLowest:
             klo = AROS_ROUNDDOWN2(tag->ti_Data, PAGE_SIZE);
             break;
-            
+
         case KRN_MMAPAddress:
             mmap = (struct mb_mmap *)tag->ti_Data;
             break;
@@ -354,9 +324,12 @@ void kernel_cstart(const struct TagItem *msg)
         panic();
     }
 
-    /* Explore memory map and create MemHeaders */
+    /*
+     * Explore memory map and create MemHeaders.
+     * We reserve one page (PAGE_SIZE) at zero address. We will protect it.
+     */
     NEWLIST(&memList);
-    mmap_InitMemory(mmap, mmap_len, &memList, klo, khi, PC_Memory);
+    mmap_InitMemory(mmap, mmap_len, &memList, klo, khi, PAGE_SIZE, PC_Memory);
 
     D(bug("[Kernel] kernel_cstart: Booting exec.library...\n"));
 
@@ -368,11 +341,23 @@ void kernel_cstart(const struct TagItem *msg)
     mh = (struct MemHeader *)REMTAIL(&memList);
     D(bug("[Kernel] Initial MemHeader: 0x%p - 0x%p (%s)\n", mh->mh_Lower, mh->mh_Upper, mh->mh_Node.ln_Name));
 
-    /*
-     * TODO: We may have SysBase validation code instead of this.
-     * This will let us to keep KickTags accross reboots.
-     */
-    SysBase = NULL;
+    if (SysBase)
+    {
+    	D(bug("[Kernel] Got old SysBase 0x%p...\n", SysBase));
+    	/*
+    	 * Validate existing SysBase pointer.
+    	 * Here we check that if refers to a valid existing memory region.
+    	 * Checksums etc are checked in arch-independent code in exec.library.
+    	 * It's enough to use only size of public part. Anyway, SysBase will be
+    	 * reallocated by PrepareExecBase(), it will just keep over some data from
+    	 * public part (KickMemPtr, KickTagPtr and capture vectors).
+    	 */
+    	if (!mmap_ValidateRegion((unsigned long)SysBase, sizeof(struct ExecBase), mmap, mmap_len))
+    	{
+    	    D(bug("[Kernel] ... invalidated\n"));
+	    SysBase = NULL;
+	}
+    }
 
     ranges[0] = (UWORD *)klo;
     ranges[1] = (UWORD *)khi;
@@ -384,6 +369,14 @@ void kernel_cstart(const struct TagItem *msg)
     }
 
     D(bug("[Kernel] Created SysBase at 0x%p (pointer at 0x%p), MemHeader 0x%p\n", SysBase, &SysBase, mh));
+
+    /*
+     * Boot task skeleton is created by PrepareExecBase().
+     * Fill in stack limits.
+     */
+    SysBase->ThisTask->tc_SPLower = boot_stack;
+    SysBase->ThisTask->tc_SPUpper = boot_stack + STACK_SIZE;
+    aros_init_altstack(SysBase->ThisTask);
 
     /* Block all user's access to zero page */
     core_ProtKernelArea(0, PAGE_SIZE, 1, 0, 0);

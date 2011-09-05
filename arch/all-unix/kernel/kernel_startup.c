@@ -1,3 +1,4 @@
+#include <aros/altstack.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <aros/symbolsets.h>
@@ -89,12 +90,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     struct HostInterface *hif = NULL;
     struct mb_mmap *mmap = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
-    struct TagItem boottags[] = {
-        { KRN_KernelStackBase, (IPTR)_stack - AROS_STACKSIZE },
-        { KRN_KernelStackSize, AROS_STACKSIZE },
-        { TAG_MORE, (IPTR)msg }
-    };
-    const struct TagItem *tstate = boottags;
+    const struct TagItem *tstate = msg;
 
     /* This bails out if the user started us from within AROS command line, as common executable */
     if (magic != AROS_BOOT_MAGIC)
@@ -127,7 +123,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     }
 
     /* Set globals only AFTER __clear_bss() */
-    BootMsg = boottags;
+    BootMsg = msg;
     HostIFace = hif;
 
     /* If there's no HostIFace, we can't even say anything */
@@ -136,7 +132,8 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     D(bug("[Kernel] Starting up...\n"));
 
-    if ((!ranges[0]) || (!ranges[1]) || (!mmap)) {
+    if ((!ranges[0]) || (!ranges[1]) || (!mmap))
+    {
 	bug("[Kernel] Not enough parameters from bootstrap!\n");
 	return -1;
     }
@@ -157,7 +154,8 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     hostlib = HostIFace->hostlib_Open(LIBC_NAME, &errstr);
     AROS_HOST_BARRIER
-    if (!hostlib) {
+    if (!hostlib)
+    {
 	bug("[Kernel] Failed to load %s: %s\n", LIBC_NAME, errstr);
 	return -1;
     }
@@ -185,11 +183,26 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
     D(bug("[Kernel] calling krnPrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
-    if (!krnPrepareExecBase(ranges, bootmh, boottags))
+    if (!krnPrepareExecBase(ranges, bootmh, msg))
     {
     	bug("[Kernel] Unable to create ExecBase!\n");
     	return -1;
     }
+
+    /*
+     * Set up correct stack borders and altstack.
+     * Now our boot task can call relbase libraries.
+     * In fact on hosted we don't know real stack limits, but
+     * we know it's at least of AROS_STACKSIZE bytes long. For existing architectures
+     * this seems to be true.
+     * TODO: 1. Under UNIX it's possible to call getrlimits() to learn about stack limits.
+     *       2. The whole altstack thing can prove unfeasible. At least currently it failed
+     *		as a system-wide ABI. Alternative stack is not interrupt-safe, while AROS
+     *		libraries may be (and at least several are).
+     */
+    SysBase->ThisTask->tc_SPLower = (IPTR)_stack - AROS_STACKSIZE;
+    SysBase->ThisTask->tc_SPUpper = _stack;
+    aros_init_altstack(SysBase->ThisTask);
 
     D(bug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
 
