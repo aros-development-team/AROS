@@ -151,43 +151,69 @@ void resetmode(struct amigavideo_staticdata *data)
 static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct copper2data *c2d, BOOL odd)
 {
     UWORD *copptr = c2d->copper2_scroll, *copbpl;
-    WORD scroll, yscroll;
-    WORD y = data->starty + (bm->topedge >> data->interlace);
-    WORD x = data->startx + bm->leftedge;
-    WORD ystart, yend, i;
+    WORD xscroll, yscroll;
+    WORD x, y;
+    WORD ystart, yend, i, xdelay;
+    WORD xmaxscroll,  modulo, ddfstrt, fmodewidth, minearly;
+    LONG offset;
+    
+    fmodewidth = 16 << data->fmode_bpl;
+    x = bm->leftedge;
+    y = data->starty + (bm->topedge >> data->interlace);
     
     yscroll = 0;
     if (y < 10) {
     	yscroll = y - 10;
     	y = 10;
     }
-    if (x < 0)
-    	x = 0;
+
+    xmaxscroll = 1 << (1 + data->fmode_bpl);
+    xdelay = x & (fmodewidth - 1);
+    xscroll = -x;
+    
     yend = y + (bm->height >> data->interlace);
     if (yend > 312)
     	yend = 312;
     ystart = y - data->extralines;
     	
+    modulo = (data->interlace ? bm->bytesperrow : 0) + data->modulo;
+    ddfstrt = data->ddfstrt;
+
+    offset = ((xscroll + (xmaxscroll << 3) - 1) >> 3) & ~(xmaxscroll - 1);
+    offset -= (yscroll * bm->bytesperrow) << (data->interlace ? 1 : 0);
+
+    minearly = 1 << fetchunits[data->fmode_bpl * 4 + data->res];
+    if (xdelay) {
+	ddfstrt -= minearly;
+	modulo -= (minearly << data->res) / 4;
+	offset -= (minearly << data->res) / 4;
+    }
+
     copptr[1] = (y << 8) | 0x0081; //(y << 8) + (x + 1);
     copptr[3] = (yend << 8) | 0x0c1; //((y + (bm->rows >> data->interlace)) << 8) + ((x + 1 + (bm->width >> data->res)) & 0x00ff);
     copptr[5] = ((y >> 8) & 7) | (((yend >> 8) & 7) << 8) | 0x2000;
-    copptr[7] = data->ddfstrt;
-    copptr[9] = data->ddfstop;
 
     copbpl = c2d->copper2_bpl;
     for (i = 0; i < bm->depth; i++) {
 	ULONG pptr = (ULONG)(bm->planes[data->bploffsets[i]]);
 	if (data->interlace && odd)
 	    pptr += bm->bytesperrow;
-	pptr -= (bm->leftedge >> (8 << data->fmode_bpl)) & ~((2 << data->fmode_bpl) - 1);
-	pptr -= (yscroll * bm->bytesperrow) << (data->interlace ? 1 : 0);
+	pptr += offset;
 	copbpl[1] = (UWORD)(pptr >> 16);
 	copbpl[3] = (UWORD)(pptr >> 0);
 	copbpl += 4;
     }
 
-    scroll = bm->leftedge & ((16 << data->fmode_bpl) - 1);
-    copptr[11] = (scroll & 0x0f) | ((scroll & 0x0f) << 4) | ((scroll >> 4) << 10) | ((scroll >> 4) << 14);
+    xdelay <<= 2 - data->res;
+    copptr[11] =
+    	  (((xdelay >> 2) & 0x0f) << 0) | (((xdelay >> 2) & 0x0f) << 4)
+    	| ((xdelay >> 6) << 10) | ((xdelay >> 6) << 14)
+    	| ((xdelay & 3) << 8) | ((xdelay & 3) << 12);
+
+    copptr[7] = ddfstrt;
+    copptr[9] = data->ddfstop;
+    copptr[13] = modulo;
+    copptr[15] = modulo;
 
     yend = y + data->height + yscroll;
     if (yend > 312)
@@ -210,7 +236,6 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     copptr[2] = (ystart << 8) | 0x05;
     copptr = c2d->copper2_bplcon0;
     copptr[-2] = (y << 8) | 0x05;
-    
 }
 
 static void setcopperscroll(struct amigavideo_staticdata *data, struct amigabm_data *bm)
@@ -297,9 +322,9 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     *c++ = 0x0102;
     *c++ = 0;
     *c++ = 0x0108;
-    *c++ = 0x0000 + (data->interlace ? bm->bytesperrow : 0) + data->modulo;
+    *c++ = 0;
     *c++ = 0x010a;
-    *c++ = 0x0000 + (data->interlace ? bm->bytesperrow : 0) + data->modulo;
+    *c++ = 0;
     *c++ = 0x0104;
     *c++ = 0x0024 | ((data->aga && !(data->modeid & EXTRAHALFBRITE_KEY)) ? 0x0200 : 0);
 
@@ -386,7 +411,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     UWORD ddfstrt, ddfstop;
     UBYTE fetchunit, fetchstart, maxplanes;
-    UWORD bplwidth;
+    UWORD bplwidth, viewwidth;
     UBYTE i;
     
     resetmode(data);
@@ -405,19 +430,22 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     fetchstart = fetchstarts[data->fmode_bpl * 4 + data->res];
     maxplanes = fm_maxplanes[data->fmode_bpl * 4 + data->res];
 
+    viewwidth = data->width;
+    // use nominal width for now
+    if ((viewwidth << data->res) > 320)
+    	viewwidth = 320 << data->res;
+
     D(bug("setmode bm=%x mode=%08x w=%d h=%d d=%d bpr=%d fu=%d fs=%d\n",
     	bm, data->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow, fetchunit, fetchstart));
     
-    bplwidth = data->width >> (data->res + 1);
+    bplwidth = viewwidth >> (data->res + 1);
     ddfstrt = (data->startx / 2) & ~((1 << fetchunit) - 1);
     ddfstop = ddfstrt + ((bplwidth + ((1 << fetchunit) - 1) - 2 * (1 << fetchunit)) & ~((1 << fetchunit) - 1));
-    if (ddfstop >= 0xd4)
-	ddfstop = 0xd4;
-    data->modulo = (ddfstop + 2 * (1 << fetchunit) - ddfstrt);
-    data->modulo = bplwidth - data->modulo;
-    data->modulo /= 2;
+    data->modulo = ddfstop + 2 * (1 << fetchunit) - ddfstrt;
+    data->modulo = bm->bytesperrow - data->modulo / (4 >> data->res);
     data->modulo &= ~((2 << data->fmode_bpl) - 1);
-    ddfstrt -= (1 << maxplanes);
+    ddfstrt -= 1 << maxplanes;
+
     data->ddfstrt = ddfstrt;
     data->ddfstop = ddfstop;
 
@@ -462,15 +490,12 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
     UWORD bitmapwidth = width;
     UWORD y, *p;
     
-    if (data->aga && width > 16) {
-    	fetchsize = 8;
-    	width = 64;
+    if (data->aga && width > 16)
     	data->fmode_spr = 2;
-    } else {
-    	fetchsize = 2;
-    	width = 16;
+    else
     	data->fmode_spr = 0;
-    }
+    fetchsize = 2 << data->fmode_spr;
+    width = 16 << data->fmode_spr;
 
     if (width != data->sprite_width || height != data->sprite_height) {
     	resetsprite(data);
@@ -509,11 +534,12 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
 void setspritepos(struct amigavideo_staticdata *data, WORD x, WORD y)
 {
     UWORD ctl, pos;
+
     data->spritex = x;
     data->spritey = y;
     if (!data->sprite || data->sprite_height == 0)
     	return;
-    x += (data->startx * 2);
+    x += data->startx << data->res;
     x <<= (2 - data->res); // convert x to shres coordinates
     if (data->interlace)
     	y /= 2; // y is always in nonlaced
@@ -527,8 +553,6 @@ void setspritepos(struct amigavideo_staticdata *data, WORD x, WORD y)
 
 void setspritevisible(struct amigavideo_staticdata *data, BOOL visible)
 {
-    if (data->cursorvisible == visible)
-    	return;
     data->cursorvisible = visible;
     if (visible) {
     	if (data->copper1_spritept) {
@@ -539,7 +563,7 @@ void setspritevisible(struct amigavideo_staticdata *data, BOOL visible)
 }
     } else {
     	setnullsprite(data);
-    }	
+    }
 }
 
 BOOL setcolors(struct amigavideo_staticdata *data, struct pHidd_BitMap_SetColors *msg, BOOL visible)
