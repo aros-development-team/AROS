@@ -12,35 +12,21 @@
 #undef bug
 #endif
 
-AROS_LD2(int, KrnBug,
-	AROS_LDA(const char *, format, A0),
-	AROS_LDA(va_list, args, A1),
-	struct KernelBase *, KernelBase, 12, Kernel);
-
-/*
- * Character output function. All debug output ends up there.
- * This function needs to be implemented for every supported
- * architecture.
- */
 int krnPutC(int chr, struct KernelBase *KernelBase);
+int krnBug(const char *format, va_list args, APTR kernelBase);
 
-static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
+static inline void _bug(APTR kernelBase, const char *format, ...)
 {
     va_list args;
 
     va_start(args, format);
 
     /* 
-     * We use AROS_CALL2 here, since there are files that
-     * include this that cannot tolerate <proto/kernel.h>
-     * Note that this is a direct call, not using an LVO. This is done
-     * in such a manner because this function can be user during early boot,
-     * while KernelBase is NULL.
+     * We use iternal entry here. This is done because this function can be used
+     * during early boot, while KernelBase is NULL. However it's still passed,
+     * just in case.
      */
-    AROS_CALL2(int, AROS_SLIB_ENTRY(KrnBug, Kernel, 12),
-               AROS_LCA(const char *, format, A0),
-               AROS_LCA(va_list, args, A1),
-               struct KernelBase *, KernelBase);
+    krnBug(format, args, kernelBase);
 
     va_end(args);
 }

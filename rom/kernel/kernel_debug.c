@@ -4,6 +4,8 @@
 #include <kernel_debug.h>
 
 /*
+ * Character output function. All debug output ends up there.
+ * This function needs to be implemented for every supported architecture.
  * KernelBase is an optional parameter here. During
  * very early startup it can be NULL.
  */
