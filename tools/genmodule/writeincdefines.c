@@ -35,15 +35,19 @@ void writeincdefines(struct config *cfg)
 	    "/*\n"
 	    "    Desc: Defines for %s\n"
 	    "*/\n"
-	    "\n"
+	    "\n",
+	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename);
+    if (cfg->options & OPTION_BASEREL)
+    	fprintf(out,
+    	    "#define AROS_BASEREL_LIBRARY\n");
+    fprintf(out,
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n"
 	    "__BEGIN_DECLS\n"
-	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
+	    "\n"
     );
     freeBanner(banner);
 

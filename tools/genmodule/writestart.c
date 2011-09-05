@@ -754,9 +754,9 @@ static void writeinitlib(FILE *out, struct config *cfg)
     	}
     }
 
-    fprintf(out,
-            "    void *oldbase = AROS_SET_LIBBASE(lh);\n"
-    );
+    if (cfg->options & OPTION_BASEREL)
+    	fprintf(out,
+            "    void *oldbase = AROS_SET_LIBBASE(lh);\n");
 
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
 	fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
@@ -801,7 +801,8 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "        set_close_libraries();\n");
-    fprintf(out, "        (void)AROS_SET_LIBBASE(oldbase);\n");
+    if (cfg->options & OPTION_BASEREL)
+	fprintf(out, "        (void)AROS_SET_LIBBASE(oldbase);\n");
 
     if (cfg->modtype != HANDLER)
     {
@@ -852,8 +853,10 @@ static void writeinitlib(FILE *out, struct config *cfg)
     if (cfg->handlerlist)
         fprintf(out, "        GM_UNIQUENAME(InitHandler)();\n");
 
+    if (cfg->options & OPTION_BASEREL)
+	fprintf(out,
+            "        (void)AROS_SET_LIBBASE(oldbase);\n");
     fprintf(out,
-            "        (void)AROS_SET_LIBBASE(oldbase);\n"
 	    "        return  lh;\n"
 	    "    }\n"
 	    "\n"
@@ -1051,19 +1054,29 @@ static void writeopenlib(FILE *out, struct config *cfg)
                         "        AddHead((struct List *)&avlnode->id2nodes, (struct Node *)id2node);\n"
                         "#endif\n"
                 );
-            fprintf(out,
+
+	    if (cfg->options & OPTION_BASEREL)
+            	fprintf(out,
 		    "\n"
-                    "        void *oldbase = AROS_SET_LIBBASE(newlib);\n"
+                    "        void *oldbase = AROS_SET_LIBBASE(newlib);");
+	    fprintf(out,
+                    "\n"
 		    "        if (!(set_open_rellibraries(newlib)\n"
                     "              && set_call_libfuncs(SETNAME(OPENLIB), 1, 1, newlib)\n"
                     "             )\n"
                     "        )\n"
-		    "        {\n"
-                    "            (void)AROS_SET_LIBBASE(oldbase);\n"
+		    "        {\n");
+	    if (cfg->options & OPTION_BASEREL)
+	    	fprintf(out,
+                    "            (void)AROS_SET_LIBBASE(oldbase);\n");
+            fprintf(out,
 		    "            __freebase(newlib);\n"
 		    "            return NULL;\n"
-		    "        }\n"
-                    "        (void)AROS_SET_LIBBASE(oldbase);\n"
+		    "        }\n");
+	    if (cfg->options & OPTION_BASEREL)
+	    	fprintf(out,
+                    "        (void)AROS_SET_LIBBASE(oldbase);\n");
+            fprintf(out,
 		    "\n"
 		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
 		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
@@ -1121,17 +1134,25 @@ static void writecloselib(FILE *out, struct config *cfg)
 	    "{\n"
 	    "    AROS_LIBFUNC_INIT\n"
 	    "\n"
+    );
+    if (cfg->options & OPTION_BASEREL)
+    	fprintf(out,
             "    void *oldbase = AROS_SET_LIBBASE(lh);\n"
             "\n"
-    );
+        );
     if (cfg->modtype == DEVICE)
+    {
 	fprintf(out,
 		"    if (!set_call_devfuncs(SETNAME(CLOSEDEV), -1, 1, lh, ioreq, 0, 0))\n"
-                "    {\n"
-                "        (void)AROS_SET_LIBBASE(oldbase);\n"
+                "    {\n");
+    	if (cfg->options & OPTION_BASEREL)
+    	    fprintf(out,
+                "        (void)AROS_SET_LIBBASE(oldbase);\n");
+    	fprintf(out, 
 		"        return BNULL;\n"
                 "    }\n"
 	);
+    }
     if (!(cfg->options & OPTION_DUPBASE))
     {
 	fprintf(out,
@@ -1169,14 +1190,18 @@ static void writecloselib(FILE *out, struct config *cfg)
 	);
     }
     if (!(cfg->options & OPTION_NOEXPUNGE))
+    {
 	fprintf(out,
 		"    if\n"
 		"    (\n"
 		"        (((struct Library *)lh)->lib_OpenCnt == 0)\n"
 		"        && (((struct Library *)lh)->lib_Flags & LIBF_DELEXP)\n"
 		"    )\n"
-		"    {\n"
-                "        (void)AROS_SET_LIBBASE(oldbase);\n"
+		"    {\n");
+	if (cfg->options & OPTION_BASEREL)
+	    fprintf(out,
+                "        (void)AROS_SET_LIBBASE(oldbase);\n");
+        fprintf(out,
 		"        return AROS_LC1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
 		"                   AROS_LCA(LIBBASETYPEPTR, lh, D0),\n"
 		"                   LIBBASETYPEPTR, lh, 3, %s\n"
@@ -1184,9 +1209,13 @@ static void writecloselib(FILE *out, struct config *cfg)
 		"    }\n",
 		cfg->basename
 	);
-    fprintf(out,
+    }
+    if (cfg->options & OPTION_BASEREL)
+    	fprintf(out,
 	    "\n"
-            "    (void)AROS_SET_LIBBASE(oldbase);\n"
+            "    (void)AROS_SET_LIBBASE(oldbase);");
+    fprintf(out,
+    	    "\n"
 	    "    return BNULL;\n"
 	    "\n"
 	    "    AROS_LIBFUNC_EXIT\n"
@@ -1217,9 +1246,12 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 		"    if ( ((struct Library *)lh)->lib_OpenCnt == 0 )\n"
 		"    {\n"
 		"        BPTR seglist = GM_SEGLIST_FIELD(lh);\n"
-		"\n"
+		"\n");
+	if (cfg->options & OPTION_BASEREL)
+	    fprintf(out,
                 "        void *oldbase = AROS_SET_LIBBASE(lh);\n"
-                "\n"
+                "\n");
+        fprintf(out,
 		"        if(!set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 1, lh))\n"
 		"        {\n"
 		"            ((struct Library *)lh)->lib_Flags |= LIBF_DELEXP;\n"
@@ -1235,9 +1267,12 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 	    fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
 	if (!(cfg->options & OPTION_NOAUTOLIB))
 	    fprintf(out, "        set_close_libraries();\n");
-	fprintf(out,
-		"\n"
-                "        (void)AROS_SET_LIBBASE(oldbase);\n"
+	if (cfg->options & OPTION_BASEREL)
+	    fprintf(out,
+	    	"\n"
+                "        (void)AROS_SET_LIBBASE(oldbase);");
+        fprintf(out,
+        	"\n"
 		"        __freebase(lh);\n"
 		"\n"
 		"        return seglist;\n"
