@@ -51,7 +51,7 @@ AROS_LH2(int, KrnBug,
 {
     AROS_LIBFUNC_INIT
 
-    return __vcformat(KernelBase, (int (*)(int, void *))krnPutC, format, args);
+    return krnBug(format, args, KernelBase);
 
     AROS_LIBFUNC_EXIT
 }
