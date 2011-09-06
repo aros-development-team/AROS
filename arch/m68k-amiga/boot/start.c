@@ -565,7 +565,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	DEBUGPUTHEX(("[SysBase at]", (ULONG)SysBase));
 
 	SysBase->ThisTask->tc_SPLower = &_ss;
-        SysBase->ThisTask->tc_SPUpprt = &_ss_end;
+        SysBase->ThisTask->tc_SPUpper = &_ss_end;
         aros_init_altstack(SysBase->ThisTask);
 
     	if (wasvalid) {
