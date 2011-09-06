@@ -233,6 +233,7 @@ BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay,
 BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
     	    	    	    	 struct Rectangle *r, struct GfxBase *GfxBase);
 
+void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height, struct GfxBase *GfxBase);
 
 /****************************************************************************************/
 
