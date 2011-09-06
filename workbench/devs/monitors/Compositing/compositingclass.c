@@ -205,50 +205,47 @@ static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingDa
 static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
     OOP_Object * bm, WORD x, WORD y, WORD width, WORD height)
 {
-    /* We do our work only if composition is active */
-    if (compdata->compositedbitmap)
-    {
-        struct Rectangle srcrect;
-        struct Rectangle srcindstrect;
-        struct Rectangle dstandvisrect;
-    	struct StackBitMapNode *n = HIDDCompositingIsBitMapOnStack(compdata, bm);
+    struct Rectangle srcrect;
+    struct Rectangle srcindstrect;
+    struct Rectangle dstandvisrect;
+    struct StackBitMapNode *n = HIDDCompositingIsBitMapOnStack(compdata, bm);
     
-    	/*
-    	 * Skip the bitmap if:
-    	 * 1. It' not on stack (not displayed at the moment)
-    	 * 2. It's completely covered with another bitmap
-    	 */
-    	if ((!n) || (!n->isscreenvisible))
-            return;
+    /*
+     * Skip the bitmap if:
+     * 1. It' not on stack (not displayed at the moment)
+     * 2. It's completely covered with another bitmap
+     */
+    if ((!n) || (!n->isscreenvisible))
+        return;
 
-        /* Rectangle in source bitmap coord system */
-        srcrect.MinX = x; 
-        srcrect.MinY = y;
-        srcrect.MaxX = x + width - 1; 
-        srcrect.MaxY = y + height - 1;
-        
-        /* Source bitmap rectangle in destination (screen) coord system */
-        srcindstrect.MinX = srcrect.MinX + n->leftedge; 
-        srcindstrect.MaxX = srcrect.MaxX + n->leftedge;
-        srcindstrect.MinY = srcrect.MinY + n->topedge;
-        srcindstrect.MaxY = srcrect.MaxY + n->topedge;
-        
-        /* Find intersection of bitmap visible screen rect and srcindst rect */
-        if (AndRectRect(&srcindstrect, &n->screenvisiblerect, &dstandvisrect))
-        {
-            /* Intersection is valid. Blit. */        
+    /* Rectangle in source bitmap coord system */
+    srcrect.MinX = x; 
+    srcrect.MinY = y;
+    srcrect.MaxX = x + width - 1; 
+    srcrect.MaxY = y + height - 1;
+    
+    /* Source bitmap rectangle in destination (screen) coord system */
+    srcindstrect.MinX = srcrect.MinX + n->leftedge; 
+    srcindstrect.MaxX = srcrect.MaxX + n->leftedge;
+    srcindstrect.MinY = srcrect.MinY + n->topedge;
+    srcindstrect.MaxY = srcrect.MaxY + n->topedge;
 
-            HIDD_Gfx_CopyBox(
-                compdata->gfx,
-                bm,
+    /* Find intersection of bitmap visible screen rect and srcindst rect */
+    if (AndRectRect(&srcindstrect, &n->screenvisiblerect, &dstandvisrect))
+    {
+        /* Intersection is valid. Blit. */
+    	ULONG width  = dstandvisrect.MaxX - dstandvisrect.MinX + 1;
+    	ULONG height = dstandvisrect.MaxY - dstandvisrect.MinY + 1;
+
+        HIDD_Gfx_CopyBox(compdata->gfx, bm,
                 /* Transform back to source bitmap coord system */
                 dstandvisrect.MinX - n->leftedge, dstandvisrect.MinY - n->topedge,
                 compdata->compositedbitmap,
                 dstandvisrect.MinX, dstandvisrect.MinY,
-                dstandvisrect.MaxX - dstandvisrect.MinX + 1,
-                dstandvisrect.MaxY - dstandvisrect.MinY + 1,
+                width, height,
                 compdata->gc);
-        }
+
+	HIDD_BM_UpdateRect(bm, dstandvisrect.MinX,dstandvisrect.MinY, width, height);
     }
 }
 
@@ -285,6 +282,7 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     {
         HIDD_BM_FillRect(compdata->compositedbitmap, 
             compdata->gc, 0, 0, compdata->screenrect.MaxX, lastscreenvisibleline - 1);
+        HIDD_BM_UpdateRect(compdata->compositedbitmap, 0, 0, compdata->screenrect.MaxX, lastscreenvisibleline - 1);
     }
 }
 
@@ -683,8 +681,20 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
 
     LOCK_COMPOSITING_READ
 
-    HIDDCompositingRedrawBitmap(compdata, msg->bm, msg->x, msg->y, msg->width, msg->height);
-    
+    if (compdata->compositedbitmap)
+    {
+    	/* If composition is active, refresh the image */
+    	HIDDCompositingRedrawBitmap(compdata, msg->bm, msg->x, msg->y, msg->width, msg->height);
+    }
+    else
+    {
+	/*
+	 * In order to speed things up, we handle passthrough ourselves here.
+	 * It's not difficult.
+	 */
+    	HIDD_BM_UpdateRect(msg->bm, msg->x, msg->y, msg->width, msg->height);
+    }
+
     UNLOCK_COMPOSITING
 }
 
@@ -758,40 +768,6 @@ BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
     return compdata->compositedbitmap ? TRUE : FALSE;
 }
 
-static VOID RedrawVisibleRect(struct HIDDCompositingData *compdata, WORD x, WORD y, WORD width, WORD height)
-{
-    struct StackBitMapNode *n = NULL;
-    struct Rectangle tmprect = {x, y, x + width - 1, y + height - 1}, slice;
-
-    /* Draw a slice from each bitmap that intersects the redraw region */
-    ForeachNode(&compdata->bitmapstack, n)
-    {
-        if (n->isscreenvisible)
-        {
-            if (AndRectRect(&n->screenvisiblerect, &tmprect, &slice))
-            {
-                HIDDCompositingRedrawBitmap(compdata, n->bm,
-                    slice.MinX - n->leftedge,
-                    slice.MinY - n->topedge,
-                    slice.MaxX - slice.MinX + 1,
-                    slice.MaxY - slice.MinY + 1);
-            }
-        }
-    }
-}
-
-VOID METHOD(Compositing, Hidd_Compositing, DisplayRectChanged)
-{
-    struct HIDDCompositingData *compdata = OOP_INST_DATA(cl, o);
-
-    LOCK_COMPOSITING_READ
-
-    RedrawVisibleRect(compdata, msg->x, msg->y,
-        msg->width, msg->height);
-
-    UNLOCK_COMPOSITING
-}
-
 #define NUM_Compositing_Root_METHODS 2
 
 static const struct OOP_MethodDescr Compositing_Root_descr[] =
@@ -801,14 +777,13 @@ static const struct OOP_MethodDescr Compositing_Root_descr[] =
     {NULL, 0}
 };
 
-#define NUM_Compositing_Hidd_Compositing_METHODS 4
+#define NUM_Compositing_Hidd_Compositing_METHODS 3
 
 static const struct OOP_MethodDescr Compositing_Hidd_Compositing_descr[] =
 {
     {(OOP_MethodFunc)Compositing__Hidd_Compositing__BitMapStackChanged, moHidd_Compositing_BitMapStackChanged},
     {(OOP_MethodFunc)Compositing__Hidd_Compositing__BitMapRectChanged, moHidd_Compositing_BitMapRectChanged},
     {(OOP_MethodFunc)Compositing__Hidd_Compositing__BitMapPositionChange, moHidd_Compositing_BitMapPositionChange},
-    {(OOP_MethodFunc)Compositing__Hidd_Compositing__DisplayRectChanged, moHidd_Compositing_DisplayRectChanged},
     {NULL, 0}
 };
 
