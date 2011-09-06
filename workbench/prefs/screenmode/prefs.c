@@ -156,7 +156,7 @@ BOOL Prefs_ExportFH(BPTR fh)
 
 		if (!error)
 		{
-            	    error = WriteChunkBytes(handle, &header, sizeof(struct PrefHeader));
+            	    WriteChunkBytes(handle, &header, sizeof(struct PrefHeader));
             	    PopChunk(handle);
             	}
 
@@ -165,7 +165,7 @@ BOOL Prefs_ExportFH(BPTR fh)
             	    error = PushChunk(handle, ID_PREF, ID_SCRM, sizeof(struct ScreenModePrefs));
             	    if (!error)
             	    {
-            		error = WriteChunkBytes(handle, &saveprefs, sizeof(struct ScreenModePrefs));
+            		WriteChunkBytes(handle, &saveprefs, sizeof(struct ScreenModePrefs));
 		        PopChunk(handle);
 		    }
 		}
@@ -176,7 +176,10 @@ BOOL Prefs_ExportFH(BPTR fh)
 
             if (error != 0) // TODO: We need some error checking here!
             {
-                printf("Error saving prefs file!\n");
+            	char buf[256];
+
+		NameFromFH(fh, buf, sizeof(buf));
+                printf("Error saving prefs file %s!\n", buf);
             }
         }
         else
