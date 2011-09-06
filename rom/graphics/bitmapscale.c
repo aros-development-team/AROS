@@ -1,14 +1,16 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function BitMapScale()
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <graphics/scale.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
+
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "objcache.h"
@@ -160,14 +162,15 @@
 
         if (success && colmaps_ok)
         {
+            struct monitor_driverdata *driver, *dst_driver;
+            OOP_Object *bm_obj;
             HIDDT_DrawMode old_drmd;
 	    struct TagItem cbtags[] = {
     		{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
     		{ TAG_DONE, 0 }
 	    };
-	    
-	    OOP_GetAttr(tmp_gc, aHidd_GC_DrawMode, &old_drmd);
-	    
+
+	    OOP_GetAttr(tmp_gc, aHidd_GC_DrawMode, &old_drmd);	    
 	    OOP_SetAttrs(tmp_gc, cbtags);
 
             bitScaleArgs->bsa_DestWidth = ScalerDiv(bitScaleArgs->bsa_SrcWidth,
@@ -178,14 +181,28 @@
                                             bitScaleArgs->bsa_YDestFactor,
                                             bitScaleArgs->bsa_YSrcFactor);
 
-    	    HIDD_BM_BitMapScale(srcbm_obj
+	    /*
+	     * Select a driver to call. The same as in BltBitMap(), but select
+	     * bitmap object instead of driver object.
+	     */
+	    driver     = GET_BM_DRIVERDATA(bitScaleArgs->bsa_SrcBitMap);
+	    dst_driver = GET_BM_DRIVERDATA(bitScaleArgs->bsa_DestBitMap);
+
+	    if (driver == (struct monitor_driverdata *)CDD(GfxBase))
+	    	bm_obj = dstbm_obj;
+	    else if (dst_driver->flags & DF_UseFakeGfx)
+	    	bm_obj = dstbm_obj;
+	    else
+	    	bm_obj = srcbm_obj;
+
+    	    HIDD_BM_BitMapScale(bm_obj
 	    	, srcbm_obj
     		, dstbm_obj
     		, bitScaleArgs
 		, tmp_gc
     	    );
             HIDD_BM_UpdateRect(dstbm_obj, bitScaleArgs->bsa_DestX, bitScaleArgs->bsa_DestY, bitScaleArgs->bsa_DestWidth, bitScaleArgs->bsa_DestHeight);
-    	    
+
 	    cbtags[0].ti_Data = old_drmd;
 	    OOP_SetAttrs(tmp_gc, cbtags);
         } /* if () */
