@@ -73,7 +73,7 @@ static ULONG CallRenderFunc(RENDERFUNC render_func, APTR funcdata, ULONG srcx, U
 				   rect->MinX, rect->MinY, rect->MaxX, rect->MaxY, GfxBase);
 
     if (do_update)
-        update_bitmap(bm, bm_obj, rect->MinY, rect->MinY,
+        update_bitmap(bm, bm_obj, rect->MinX, rect->MinY,
             		  rect->MaxX - rect->MinX + 1, rect->MaxY - rect->MinY + 1,
             		  GfxBase);
 
