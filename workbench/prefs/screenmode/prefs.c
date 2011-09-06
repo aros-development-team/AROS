@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -145,34 +145,39 @@ BOOL Prefs_ExportFH(BPTR fh)
 
         if (!(error = OpenIFF(handle, IFFF_WRITE))) /* NULL = successful! */
         {
-            PushChunk(handle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
+            error = PushChunk(handle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
+            
+            if (!error)
+            {
+            	header.ph_Version = PHV_CURRENT;
+            	header.ph_Type    = 0;
 
-            header.ph_Version = PHV_CURRENT;
-            header.ph_Type    = 0;
+            	error = PushChunk(handle, ID_PREF, ID_PRHD, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
 
-            PushChunk(handle, ID_PREF, ID_PRHD, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
+		if (!error)
+		{
+            	    error = WriteChunkBytes(handle, &header, sizeof(struct PrefHeader));
+            	    PopChunk(handle);
+            	}
 
-            WriteChunkBytes(handle, &header, sizeof(struct PrefHeader));
+		if (!error)
+		{
+            	    error = PushChunk(handle, ID_PREF, ID_SCRM, sizeof(struct ScreenModePrefs));
+            	    if (!error)
+            	    {
+            		error = WriteChunkBytes(handle, &saveprefs, sizeof(struct ScreenModePrefs));
+		        PopChunk(handle);
+		    }
+		}
 
-            PopChunk(handle);
-
-            error = PushChunk(handle, ID_PREF, ID_SCRM, sizeof(struct ScreenModePrefs));
+            	// Terminate the FORM
+            	PopChunk(handle);
+            }
 
             if (error != 0) // TODO: We need some error checking here!
             {
-                printf("error: PushChunk() = %d ", (int)error);
+                printf("Error saving prefs file!\n");
             }
-
-            error = WriteChunkBytes(handle, &saveprefs, sizeof(struct ScreenModePrefs));
-            error = PopChunk(handle);
-
-            if (error != 0) // TODO: We need some error checking here!
-            {
-                printf("error: PopChunk() = %d ", (int)error);
-            }
-
-            // Terminate the FORM
-            PopChunk(handle);
         }
         else
         {
