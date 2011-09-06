@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -60,11 +60,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    HIDDT_PixelLUT pixlut;
-
-    pixlut.entries = AROS_PALETTE_SIZE;
-    pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
-
     FIX_GFXCOORD(xstart);
     FIX_GFXCOORD(ystart);
     FIX_GFXCOORD(xstop);
@@ -72,22 +67,9 @@
     
     if ((xstart > xstop) || (ystart > ystop)) return;
 
-    if (!pixlut.pixels)
-    {
-    	if (GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8)
-	{
-	    D(bug("WriteChunkyPixels: can't work on hicolor/truecolor screen without LUT"));
-    	    return;
-	}
-    }
-      
-    write_pixels_8(rp, array
-    	, bytesperrow
-	, xstart, ystart
-	, xstop, ystop
-	, &pixlut
-        , TRUE
-	, GfxBase);
+    write_pixels_8(rp, array , bytesperrow,
+		   xstart, ystart, xstop, ystop,
+		   NULL, TRUE, GfxBase);
 
     AROS_LIBFUNC_EXIT
     
