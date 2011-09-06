@@ -35,7 +35,7 @@ endif
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 $(warning LANG = $(LANG))
 
-$(TARGET_ISO): $(BINDIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/aros-kernel-pc-i386.gz
+$(TARGET_ISO): $(BINDIR)/boot/bootstrap-pc-i386.gz $(BINDIR)/boot/aros-kernel-pc-i386.gz
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(DISTDIR)"
