@@ -357,7 +357,8 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     ULONG cnt = 0;
     IPTR hwcursor = 0;
     IPTR noframebuffer = 0;
-    UWORD comp = 0;
+    UWORD compose = 0;
+    BOOL can_compose = FALSE;
     BOOL ok = TRUE;
     ULONG i;
     HIDDT_ModeID *modes, *m;
@@ -387,14 +388,39 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     /*
      * 1. Fill in ModeID database in the driverdata.
      * 2. Check if at least one mode supports composition.
+     * 3. Check if the driver has at least one non-palettized mode.
+     * (2) and (3) are needed to determine if we need/can use software screen
+     * composition with this driver.
      */
     for (i = 0; i <= cnt; i++)
     {
         mdd->modes[i].id  = modes[i];
 	mdd->modes[i].drv = mdd;
 
-	HIDD_Gfx_ModeProperties(gfxhidd, modes[i], &props, sizeof(props));
-	comp |= props.CompositionFlags;
+	if (!compose)
+	{
+	    HIDD_Gfx_ModeProperties(gfxhidd, modes[i], &props, sizeof(props));
+	    compose |= props.CompositionFlags;
+
+	    if (!can_compose)
+	    {
+		OOP_Object *sync, *pf;
+		IPTR colmod;
+
+		HIDD_Gfx_GetMode(gfxhidd, modes[i], &sync, &pf);
+		OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+
+	    	if (colmod == vHidd_ColorModel_TrueColor)
+	    	{
+		    /*
+		     * At the moment software composer supports only truecolor screens.
+		     * There also definitions for DirectColor, gray, etc, but there is
+		     * no such hardware supported by now.
+		     */
+	    	    can_compose = TRUE;
+	    	}
+	    }
+	}
     }
 
     HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
@@ -431,15 +457,21 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 	    D(bug("[driver_Setup] GC Cache created\n"));
 
 	    if (!noframebuffer)
-	        /* Note that we perform this operation on fakegfx.hidd if it was
-		   plugged in */
+	    {
+	        /*
+	         * Instantiate framebuffer if needed.
+	         * Note that we perform this operation on fakegfx.hidd if it was plugged in.
+	         * This enables software mouse sprite on a framebuffer.
+		 */
 		mdd->framebuffer = create_framebuffer(mdd, GfxBase);
+		mdd->flags |= DF_DirectFB;
+	    }
 
 	    if (noframebuffer || mdd->framebuffer)
 	    {
 		D(bug("[driver_Setup] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
 
-		if (!comp)
+		if ((!compose) && can_compose)
 		{
 		    D(bug("[driver_Setup] Software screen composition required\n"));
 
@@ -557,8 +589,7 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
 {
     struct BitMap *bitmap;
     OOP_Object *bm, *fb;
-    OOP_Object *cmap, *pf;
-    HIDDT_ColorModel colmod;
+    BOOL compositing = FALSE;
 
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Showing ViewPortData 0x%p, BitMap object 0x%p\n", vpd, vpd ? vpd->Bitmap : NULL));
     mdd->display = vpd;
@@ -570,9 +601,11 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
         return 0;
     }
 
-    /* If it failed, we may be working with a framebuffer. First check if the bitmap
-    is already displayed. If so, do nothing (because displaying the same bitmap twice may
-    cause some problems) */
+    /*
+     * ShowViewPorts not supported.
+     * Perhaps we can use software screen composer. But for proper operation
+     * we need to figure out our frontmost bitmap.
+     */
     if (vpd)
     {
         bitmap = vpd->vpe->ViewPort->RasInfo->BitMap;
@@ -585,11 +618,29 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
     }
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Old bitmap 0x%p, New bitmap 0x%p, object 0x%p\n", mdd->frontbm, bitmap, bm));
 
-    if (mdd->frontbm == bitmap)
-        return 0;
+    if (mdd->composer)
+    {
+    	/*
+    	 * Composer present. Give ViewPorts chain to it.
+    	 * For improved visual appearance it will call Show itself and return its result.
+    	 * The composer is expected to handle all possible failures internally. If some
+    	 * internal error happens, it must fail back to single HIDD_Gfx_Show().
+    	 */
+    	fb = composer_LoadViewPorts(mdd->composer, vpd, &compositing, GfxBase);
+    	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Composer returned 0x%p, active: %d\n", fb, compositing));
+    }
+    else
+    {
+    	/*
+     	 * First check if the bitmap is already displayed. If so, do nothing (because
+     	 * displaying the same bitmap twice may cause some problems)
+     	 */
+    	if (mdd->frontbm == bitmap)
+            return 0;
 
-    fb = HIDD_Gfx_Show(mdd->gfxhidd, bm, fHidd_Gfx_Show_CopyBack);
-    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Show() returned 0x%p\n", fb));
+    	fb = HIDD_Gfx_Show(mdd->gfxhidd, bm, fHidd_Gfx_Show_CopyBack);
+    	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Show() returned 0x%p\n", fb));
+    }
 
     /* Summary of possible responses (when no error happened):
        NoFrameBuffer = FALSE: bm = NULL  -> fb != NULL and bm != fb
@@ -599,64 +650,100 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
     */
     if (fb)
     {
+	/* The screen is not empty, 'fb' is on display now. */
         IPTR width, height;
 
-        /* Do not swap bitmaps for NoFrameBuffer drivers */
-        /* Detection: these kind of drivers must return the same bitmap they received */
-        if (fb != bm)
-        {
-            /*
-             * FIXME: THIS IS NOT THREADSAFE
-             * To make this threadsafe we have to lock
-             * all gfx access in all the rendering calls
-             */
+	/* Uninstall the framebuffer from old frontmost BitMap (if present) */
+	UninstallFB(mdd);
 
-            DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Replacing framebuffer\n"));
+    	/*
+     	 * We need to always remember our new frontmost bitmap, even if we do not work
+     	 * with a framebuffer. This is needed for the check against showing the same
+     	 * bitmap twice.
+     	 */
+    	mdd->frontbm = bitmap;
 
-            /* Set this as the active screen */
-            if (NULL != mdd->frontbm)
-            {
-                struct BitMap *oldbm;
-
-                /* Put back the old values into the old bitmap */
-                oldbm = mdd->frontbm;
-                HIDD_BM_OBJ(oldbm)      = mdd->bm_bak;
-                HIDD_BM_COLMOD(oldbm)   = mdd->colmod_bak;
-                HIDD_BM_COLMAP(oldbm)   = mdd->colmap_bak;
-            }
-
-            mdd->bm_bak     = bm;
-            mdd->colmod_bak = bitmap ? HIDD_BM_COLMOD(bitmap) : 0;
-            mdd->colmap_bak = bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
-
-            if (bitmap)
-            {
-                /* Insert the framebuffer in its place */
-                OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
-                OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-                OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
-
-                HIDD_BM_OBJ(bitmap)     = fb;
-                HIDD_BM_COLMOD(bitmap)  = colmod;
-                HIDD_BM_COLMAP(bitmap)  = cmap;
-            }
-        }
-
-        /* We need to always remember our new frontmost bitmap, even if we do not work
-           with a framebuffer */
-        mdd->frontbm = bitmap;
+	/*
+	 * Install the framebuffer into new bitmap. Only if software composition is inactive.
+	 * If it is active, our BitMap is mirrored, not replaced.
+	 */
+	if (!compositing)
+	    InstallFB(mdd, GfxBase);
 
         /* Tell the driver to refresh the screen */
         OOP_GetAttr(fb, aHidd_BitMap_Width, &width);
         OOP_GetAttr(fb, aHidd_BitMap_Height, &height);
-        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Updating framebuffer, new size: %d x %d\n", width, height));
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Updating display, new size: %d x %d\n", width, height));
 
         HIDD_BM_UpdateRect(fb, 0, 0, width, height);
     }
     else
+    {
+    	/*
+    	 * Screen is empty, simply reset the current bitmap.
+    	 * Only framebuffer-less driver can return NULL. So we don't need
+    	 * to call UninstallFB() here.
+    	 */
         mdd->frontbm = NULL;
+    }
 
     return 0;
+}
+
+/*
+ * In-Place framebuffer install/uninstall routines.
+ *
+ * The idea behind: we gave some bitmap to display, the driver *HAS COPIED* it
+ * into the framebuffer. After this we must use a framebuffer bitmap instead of
+ * original one for all rendering operations.
+ * When another bitmap is displayed, the framebuffer contents will be put back
+ * into the original bitmap, and we will swap it back.
+ *
+ * This swap actually happens only of DF_DirectFB is set for the driver.
+ *
+ * FIXME: THIS IS NOT THREADSAFE
+ * To make this threadsafe we have to lock all gfx access in all the rendering
+ * calls.
+ */
+void InstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+{
+    if ((mdd->flags & DF_DirectFB) && mdd->frontbm)
+    {
+	struct BitMap *bitmap = mdd->frontbm;
+    	OOP_Object *pf;
+
+    	/* Backup original data */
+    	mdd->bm_bak     = HIDD_BM_OBJ(bitmap);
+    	mdd->colmod_bak = HIDD_BM_COLMOD(bitmap);
+    	mdd->colmap_bak = HIDD_BM_COLMAP(bitmap);
+
+    	/* Insert the framebuffer in its place */
+    	OOP_GetAttr(mdd->framebuffer, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+
+    	HIDD_BM_OBJ(bitmap)    = mdd->framebuffer;
+    	HIDD_BM_COLMOD(bitmap) = OOP_GET(pf, aHidd_PixFmt_ColorModel);
+    	HIDD_BM_COLMAP(bitmap) = (OOP_Object *)OOP_GET(mdd->framebuffer, aHidd_BitMap_ColorMap);
+
+    	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Installed framebuffer: BitMap 0x%p, object 0x%p\n", mdd->frontbm, mdd->bm_bak));
+    }
+}
+
+void UninstallFB(struct monitor_driverdata *mdd)
+{
+    if (mdd->bm_bak)
+    {
+        /* Put back the old values into the old bitmap */
+        struct BitMap *oldbm = mdd->frontbm;
+
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Uninstalling framebuffer: BitMap 0x%p, object 0x%p\n", mdd->frontbm, mdd->bm_bak));
+
+        HIDD_BM_OBJ(oldbm)    = mdd->bm_bak;
+        HIDD_BM_COLMOD(oldbm) = mdd->colmod_bak;
+        HIDD_BM_COLMAP(oldbm) = mdd->colmap_bak;
+
+	/* No framebuffer installed */
+        mdd->bm_bak = NULL;
+    }
 }
 
 /* Find the first visible ViewPortData for the specified monitor in the View */
