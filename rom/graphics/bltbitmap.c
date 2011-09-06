@@ -240,7 +240,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 			    , driver->gfxhidd
 			    , tmp_gc
 			    , GfxBase);
-                    HIDD_BM_UpdateRect(dstbm_obj, xDest, yDest, xSize, ySize);
+		    update_bitmap(destBitMap, dstbm_obj, xDest, yDest, xSize, ySize, GfxBase);
 
 	    	    RELEASE_HIDD_BM(dstbm_obj, destBitMap);
 		}

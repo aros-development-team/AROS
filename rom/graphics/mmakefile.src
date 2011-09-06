@@ -192,6 +192,7 @@ FUNCTIONS := \
 	textfit \
 	textlength \
 	ucopperlistinit \
+	updatebitmap \
 	unlocklayerrom \
 	vbeampos \
 	videocontrol \
