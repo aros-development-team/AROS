@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include <aros/debug.h>
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
@@ -63,32 +64,16 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-   
-    HIDDT_PixelLUT pixlut;
-    LONG    	   pixwritten;
-    
+
+    LONG pixwritten;
+
     EnterFunc(bug("WritePixelArray8(%p, %d, %d, %d, %d)\n",
     	rp, xstart, ystart, xstop, ystop));
-	
-    pixlut.entries = AROS_PALETTE_SIZE;
-    pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
-        
-    if (!pixlut.pixels)
-    {
-    	if (GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8)
-	{
-	    D(bug("WritePixelArray8: Can't work on hicolor/truecolor screen without LUT"));
-    	    ReturnInt("WritePixelArray8", LONG, 0);
-	}
-    }
-    
+
     pixwritten = write_pixels_8(rp, array
     	, ((xstop - xstart + 1) + 15) & ~15 /* modulo */
-	, xstart, ystart
-	, xstop, ystop
-	, &pixlut
-        , TRUE
-	, GfxBase);
+	, xstart, ystart, xstop, ystop
+	, NULL, TRUE, GfxBase);
 
     ReturnInt("WritePixelArray8", LONG, pixwritten);
 

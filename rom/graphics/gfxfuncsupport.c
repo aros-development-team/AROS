@@ -711,47 +711,59 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
 {
 	
     LONG pixwritten = 0;
-    
     struct wp8_render_data wp8rd;
     struct Rectangle rr;
-    
     OOP_Object *gc;
     HIDDT_DrawMode old_drmd;
-
+    HIDDT_PixelLUT bm_lut;
     struct TagItem gc_tags[] =
     {
 	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
 	{ TAG_DONE, 0}
     };
-    
+
+    /* If we haven't got a LUT, we obtain it from the bitmap */
+    if ((!pixlut) && IS_HIDD_BM(rp->BitMap))
+    {
+    	bm_lut.entries = AROS_PALETTE_SIZE;
+	bm_lut.pixels  = HIDD_BM_PIXTAB(rp->BitMap);
+	pixlut = &bm_lut;
+
+#ifdef RTG_SANITY_CHECK
+    	if ((!bm_lut.pixels) && (HIDD_BM_REALDEPTH(rp->BitMap) > 8))
+    	{
+	    D(bug("write_pixels_8: can't work on hicolor/truecolor screen without LUT"));
+    	    return 0;
+	}
+#endif
+    }
 
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return 0;
-	
+
     gc = GetDriverData(rp)->dd_GC;
-    
+
     OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
     OOP_SetAttrs(gc, gc_tags);
-    
-    wp8rd.modulo	= modulo;
-    wp8rd.array		= array;
-    wp8rd.pixlut	= pixlut;
-    
+
+    wp8rd.modulo = modulo;
+    wp8rd.array	 = array;
+    wp8rd.pixlut = pixlut;
+
     rr.MinX = xstart;
     rr.MinY = ystart;
     rr.MaxX = xstop;
     rr.MaxY = ystop;
-    
+
     pixwritten = do_render_func(rp, NULL, &rr, wp8_render, &wp8rd, do_update, FALSE, GfxBase);
-    
+
     /* Reset to preserved drawmode */
     gc_tags[0].ti_Data = old_drmd;
     OOP_SetAttrs(gc, gc_tags);
-    
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
-    return pixwritten;
 
+    RELEASE_DRIVERDATA(rp, GfxBase);
+
+    return pixwritten;
 }
 
 /****************************************************************************************/
