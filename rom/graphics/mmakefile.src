@@ -184,7 +184,6 @@ FUNCTIONS := \
 	setrpattrsa \
 	setsoftstyle \
 	setwritemask \
-	showimminentreset \
 	sortglist \
 	stripfont \
         swapregions \
