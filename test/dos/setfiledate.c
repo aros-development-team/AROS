@@ -22,7 +22,7 @@ int main(void)
     
     BPTR fh = Open("__TEST__", MODE_NEWFILE);
     
-    if (fh != NULL)
+    if (fh != BNULL)
     {
         struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
         
