@@ -3,7 +3,8 @@
     $Id: compositingclass.c 38905 2011-05-29 06:54:59Z deadwood $
 */
 
-#define DEBUG 1
+#define DEBUG 0
+#define DREDRAW(x)
 
 #include "compositing_intern.h"
 
@@ -13,6 +14,8 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+
+#define _RECT(x) x.MinX, x.MinY, x.MaxX, x.MaxY
 
 #define MAX(a,b) a > b ? a : b
 #define MIN(a,b) a < b ? a : b
@@ -206,10 +209,9 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
     OOP_Object * bm, WORD x, WORD y, WORD width, WORD height)
 {
     struct Rectangle srcrect;
-    struct Rectangle srcindstrect;
     struct Rectangle dstandvisrect;
     struct StackBitMapNode *n = HIDDCompositingIsBitMapOnStack(compdata, bm);
-    
+
     /*
      * Skip the bitmap if:
      * 1. It' not on stack (not displayed at the moment)
@@ -218,34 +220,44 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
     if ((!n) || (!n->isscreenvisible))
         return;
 
+    DREDRAW(bug("[Compositing] Redraw bitmap 0x%p, size %d x %d\n", bm, width, height));
+
     /* Rectangle in source bitmap coord system */
     srcrect.MinX = x; 
     srcrect.MinY = y;
     srcrect.MaxX = x + width - 1; 
     srcrect.MaxY = y + height - 1;
-    
-    /* Source bitmap rectangle in destination (screen) coord system */
-    srcindstrect.MinX = srcrect.MinX + n->leftedge; 
-    srcindstrect.MaxX = srcrect.MaxX + n->leftedge;
-    srcindstrect.MinY = srcrect.MinY + n->topedge;
-    srcindstrect.MaxY = srcrect.MaxY + n->topedge;
+    DREDRAW(bug("[Compositing] Bitmap rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
+
+    /* Transform the rectangle to screen coord system */
+    srcrect.MinX += n->leftedge; 
+    srcrect.MaxX += n->leftedge;
+    srcrect.MinY += n->topedge;
+    srcrect.MaxY += n->topedge;
+    DREDRAW(bug("[Compositing] Screen rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
 
     /* Find intersection of bitmap visible screen rect and srcindst rect */
-    if (AndRectRect(&srcindstrect, &n->screenvisiblerect, &dstandvisrect))
+    if (AndRectRect(&srcrect, &n->screenvisiblerect, &dstandvisrect))
     {
         /* Intersection is valid. Blit. */
-    	ULONG width  = dstandvisrect.MaxX - dstandvisrect.MinX + 1;
-    	ULONG height = dstandvisrect.MaxY - dstandvisrect.MinY + 1;
+    	ULONG blitwidth  = dstandvisrect.MaxX - dstandvisrect.MinX + 1;
+    	ULONG blitheight = dstandvisrect.MaxY - dstandvisrect.MinY + 1;
+
+	DREDRAW(bug("[Compositing] Clipped rect (%d, %d) - (%d, %d)\n", _RECT(dstandvisrect)));
+
+	DREDRAW(bug("[Compositing] Blitting %d x %d from (%d, %d) to (%d, %d)\n", blitwidth, blitheight, 
+		    dstandvisrect.MinX - n->leftedge, dstandvisrect.MinY - n->topedge,
+		    dstandvisrect.MinX, dstandvisrect.MinY));
 
         HIDD_Gfx_CopyBox(compdata->gfx, bm,
                 /* Transform back to source bitmap coord system */
                 dstandvisrect.MinX - n->leftedge, dstandvisrect.MinY - n->topedge,
                 compdata->compositedbitmap,
                 dstandvisrect.MinX, dstandvisrect.MinY,
-                width, height,
+                blitwidth, blitheight,
                 compdata->gc);
 
-	HIDD_BM_UpdateRect(bm, dstandvisrect.MinX,dstandvisrect.MinY, width, height);
+	HIDD_BM_UpdateRect(compdata->compositedbitmap, dstandvisrect.MinX,dstandvisrect.MinY, blitwidth, blitheight);
     }
 }
 
