@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,42 +8,22 @@
 
 /* Include files */
 
-#ifndef EXEC_TYPES_H
-#   include <exec/types.h>
+#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/iffparse.h>
+#include <libraries/iffparse.h>
+#include <exec/memory.h>
+#include <exec/libraries.h>
+#include <aros/libcall.h>
+#include <dos/dos.h>
+#include <utility/hooks.h>
+
+#ifdef __AROS__
+#include <aros/debug.h>
 #endif
-#ifndef CLIB_ALIB_PROTOS_H
-#   include <clib/alib_protos.h>
-#endif
-#ifndef PROTO_EXEC_H
-#   include <proto/exec.h>
-#endif
-#ifndef PROTO_DOS_H
-#   include <proto/dos.h>
-#endif
-#ifndef PROTO_UTILITY_H
-#   include <proto/utility.h>
-#endif
-#ifndef PROTO_IFFPARSE_H
-#   include <proto/iffparse.h>
-#endif
-#ifndef LIBRARIES_IFFPARSE_H
-#   include <libraries/iffparse.h>
-#endif
-#ifndef EXEC_MEMORY_H
-#   include <exec/memory.h>
-#endif
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-#ifndef AROS_LIBCALL_H
-#   include <aros/libcall.h>
-#endif
-#ifndef DOS_DOS_H
-#   include <dos/dos.h>
-#endif
-#ifndef UTILITY_HOOKS_H
-#   include <utility/hooks.h>
-#endif
+
 #include <stdlib.h>
 
 /* Some external stuff (iffparse_init.c) */
@@ -64,7 +44,7 @@ LONG GetChunkHeader  (struct IFFHandle *, struct IFFParseBase_intern *);
 LONG InvokeHandlers  (struct IFFHandle *, LONG, LONG, struct IFFParseBase_intern *);
 LONG SeekStream      (struct IFFHandle *, LONG, struct IFFParseBase_intern *);
 
-/* Some system entry & exit handlers (hook funcs) ß*/
+/* Some system entry & exit handlers (hook funcs) */
 LONG ExitContextFunc(struct Hook *, APTR, APTR);
 LONG StopFunc	    (struct Hook *, APTR, APTR);
 LONG PropFunc	    (struct Hook *, struct IFFHandle *, APTR);
@@ -283,9 +263,11 @@ struct IFFParseBase_intern
 
 #define IPB(ipb)        ((struct IFFParseBase_intern *)ipb)
 
-//void	dprintf(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+#ifdef __AROS__
+#define dprintf kprintf
+#else
 void	dprintf(const char *, ...);
-
+#endif
 
 #define DEBUG_ALLOCIFF(x)		;
 #define DEBUG_ALLOCLOCALITEM(x)		;
