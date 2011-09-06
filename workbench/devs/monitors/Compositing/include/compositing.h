@@ -75,13 +75,4 @@ struct pHidd_Compositing_BitMapPositionChange
     SIPTR           *newyoffset;
 };
 
-struct pHidd_Compositing_DisplayRectChanged
-{
-    OOP_MethodID    mID;
-    WORD            x;
-    WORD            y;
-    WORD            width;
-    WORD            height;
-};
-
 #endif /* HIDD_COMPOSITING_H */
