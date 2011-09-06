@@ -4,7 +4,10 @@
 */
 
 #define DEBUG 0
-#define DREDRAW(x)
+#define DRECALC(x) x
+#define DREDRAWBM(x)
+#define DREDRAWSCR(x) x
+#define DSTACK(x) x
 
 #include "compositing_intern.h"
 
@@ -78,16 +81,19 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
 {
     ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
     struct StackBitMapNode * n = NULL;
-    
-    /* This function assumes bitmapstack is in correct Z order: 
-       from top most to bottom most */
-    
+
+    DRECALC(bug("[Compositing] Screen rect (%d, %d) - (%d, %d)\n", _RECT(compdata->screenrect)));
+
+    /*
+     * This function assumes bitmapstack is in correct Z order: 
+     * from topmost to bottom most
+     */
     ForeachNode(&compdata->bitmapstack, n)
     {
         /*  Stack bitmap bounding boxes equal screen bounding box taking into
             account topedge */
         struct Rectangle tmprect;
-        
+
         /* Copy screen rect */
         tmprect = compdata->screenrect;
         /* Set bottom and top values */
@@ -102,10 +108,8 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
         else
             n->isscreenvisible = FALSE;
 
-        D(bug("[Compositing] Bitmap 0x%x, visible %d, (%d, %d) , (%d, %d)\n", 
-            n->bm, n->isscreenvisible, 
-            n->screenvisiblerect.MinX, n->screenvisiblerect.MinY, 
-            n->screenvisiblerect.MaxX, n->screenvisiblerect.MaxY));
+        DRECALC(bug("[Compositing] Bitmap 0x%x, top %d, visible %d, (%d, %d) - (%d, %d)\n", 
+            	    n->bm, n->topedge, n->isscreenvisible, _RECT(n->screenvisiblerect)));
     }
 }
 
@@ -157,34 +161,16 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData *compdata
 
 static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingData * compdata, OOP_Object * bm)
 {
-    OOP_Object * screenbm = compdata->topbitmap; /* Tread top bitmap as screen bitmap */
-    IPTR screenbmwidth, screenbmheight, screenbmstdpixfmt;
-    IPTR bmmodeid, bmwidth, bmheight, bmstdpixfmt;
+    OOP_Object *screenbm = compdata->topbitmap; /* Tread top bitmap as screen bitmap */
+    IPTR screenbmstdpixfmt;
+    IPTR bmstdpixfmt;
+    IPTR pf;
 
-    {
-        IPTR pf;
-        /* These two values cannot be obtained from topbitmap width/height, because
-           those can be larger than screen mode values and we are interested exaclty
-           in screen mode height/width */
-        screenbmwidth   = compdata->screenrect.MaxX + 1;
-        screenbmheight  = compdata->screenrect.MaxY + 1;
-        OOP_GetAttr(screenbm, aHidd_BitMap_PixFmt, &pf);
-        OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &screenbmstdpixfmt);
-    }
+    OOP_GetAttr(screenbm, aHidd_BitMap_PixFmt, &pf);
+    OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &screenbmstdpixfmt);
 
-    {
-        IPTR pf;
-
-        OOP_GetAttr(bm, aHidd_BitMap_ModeID, &bmmodeid);
-        OOP_GetAttr(bm, aHidd_BitMap_Width, &bmwidth);
-        OOP_GetAttr(bm, aHidd_BitMap_Height, &bmheight);
-        OOP_GetAttr(bm, aHidd_BitMap_PixFmt, &pf);
-        OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &bmstdpixfmt);
-    }
-
-    /* If bitmaps have the same modeid, they can be composited */
-    if (compdata->screenmodeid == bmmodeid)
-        return TRUE;
+    OOP_GetAttr(bm, aHidd_BitMap_PixFmt, &pf);
+    OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &bmstdpixfmt);
 
     /* If bitmaps have different pixel formats, they cannot be composited */
     /* FIXME: actually they can, but CopyBox for different formats is not
@@ -192,17 +178,7 @@ static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingDa
     if (screenbmstdpixfmt != bmstdpixfmt)
         return FALSE;
 
-    /* If screenbm is not bigger than bm, bitmaps can be composited, because
-       bm will start scrolling on smaller resolution of screenbm */
-    /* FIXME: the opposite situation might also work - smaller bitmap on bigger
-       resolution. In such case, left out areas need to be cleared up. Also it
-       needs to be checked if mouse clicks outside of bitmap will not cause
-       problems */
-    if ((screenbmwidth <= bmwidth) && (screenbmheight <= bmheight))
-        return TRUE;
-
-    /* Last decision, bitmaps cannot be composited */
-    return FALSE;
+    return TRUE;
 }
 
 static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
@@ -220,21 +196,21 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
     if ((!n) || (!n->isscreenvisible))
         return;
 
-    DREDRAW(bug("[Compositing] Redraw bitmap 0x%p, size %d x %d\n", bm, width, height));
+    DREDRAWBM(bug("[Compositing] Redraw bitmap 0x%p, size %d x %d\n", bm, width, height));
 
     /* Rectangle in source bitmap coord system */
     srcrect.MinX = x; 
     srcrect.MinY = y;
     srcrect.MaxX = x + width - 1; 
     srcrect.MaxY = y + height - 1;
-    DREDRAW(bug("[Compositing] Bitmap rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
+    DREDRAWBM(bug("[Compositing] Bitmap rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
 
     /* Transform the rectangle to screen coord system */
     srcrect.MinX += n->leftedge; 
     srcrect.MaxX += n->leftedge;
     srcrect.MinY += n->topedge;
     srcrect.MaxY += n->topedge;
-    DREDRAW(bug("[Compositing] Screen rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
+    DREDRAWBM(bug("[Compositing] Screen rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
 
     /* Find intersection of bitmap visible screen rect and srcindst rect */
     if (AndRectRect(&srcrect, &n->screenvisiblerect, &dstandvisrect))
@@ -243,9 +219,9 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
     	ULONG blitwidth  = dstandvisrect.MaxX - dstandvisrect.MinX + 1;
     	ULONG blitheight = dstandvisrect.MaxY - dstandvisrect.MinY + 1;
 
-	DREDRAW(bug("[Compositing] Clipped rect (%d, %d) - (%d, %d)\n", _RECT(dstandvisrect)));
+	DREDRAWBM(bug("[Compositing] Clipped rect (%d, %d) - (%d, %d)\n", _RECT(dstandvisrect)));
 
-	DREDRAW(bug("[Compositing] Blitting %d x %d from (%d, %d) to (%d, %d)\n", blitwidth, blitheight, 
+	DREDRAWBM(bug("[Compositing] Blitting %d x %d from (%d, %d) to (%d, %d)\n", blitwidth, blitheight, 
 		    dstandvisrect.MinX - n->leftedge, dstandvisrect.MinY - n->topedge,
 		    dstandvisrect.MinX, dstandvisrect.MinY));
 
@@ -265,7 +241,9 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
 {
     struct StackBitMapNode * n = NULL;
     ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
-    
+
+    DREDRAWSCR(bug("[Compositing] Redrawing screen\n"));
+
     /* Calculations are performed regardless if compositedbitmap is beeing show.
        Gfx operations are only performed if compositedbitmap is beeing show */
     
@@ -275,6 +253,8 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     /* Refresh all bitmaps on stack */
     ForeachNode(&compdata->bitmapstack, n)
     {
+	DREDRAWSCR(bug("[Compositing] Bitmap 0x%p, visible %d\n", n->bm, n->isscreenvisible));
+
         if (n->isscreenvisible)
         {
             IPTR width, height;
@@ -596,7 +576,7 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     BOOL newtop;
     BOOL ok = TRUE;
 
-    D(bug("[Compositing] BitMapStackChanged, topbitmap: 0x%lx\n", msg->data->Bitmap));
+    DSTACK(bug("[Compositing] BitMapStackChanged, topbitmap: 0x%lx\n", msg->data->Bitmap));
 
     LOCK_COMPOSITING_WRITE
         
@@ -622,7 +602,7 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     /* Copy bitmaps pointers to our stack */
     for (vpdata = msg->data; vpdata; vpdata = vpdata->Next)
     {
-        D(bug("[Compositing] Testing bitmap: 0x%lx\n", vpdata->Bitmap));
+        DSTACK(bug("[Compositing] Testing bitmap: 0x%lx\n", vpdata->Bitmap));
 
         /*
          * Check if the passed bitmap can be composited together with screen
@@ -638,13 +618,13 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 		 * We need to reset own state and return NULL. graphics.library
 		 * falls back to no composition in this case.
 		 */
-	    	D(bug("[Compositing] Error allocating StackBitMapNode!!!\n"));
+	    	DSTACK(bug("[Compositing] Error allocating StackBitMapNode!!!\n"));
 
 		ok = FALSE;
 		break;
 	    }
 
-	    D(bug("[Compositing] ViewPort 0x%p, offset (%d, %d)\n", vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
+	    DSTACK(bug("[Compositing] ViewPort 0x%p, offset (%d, %d)\n", vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
 
             n->bm               = vpdata->Bitmap;
             n->isscreenvisible  = FALSE;
@@ -666,6 +646,8 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 	ForeachNode(&compdata->bitmapstack, n)
     	{
             HIDDCompositingValidateBitMapPositionChange(n->bm, &n->leftedge, &n->topedge, n->displayedwidth, n->displayedheight);
+            DSTACK(bug("[Compositing] Bitmap 0x%p, displayed size %d x %d, validated position (%ld, %ld)\n",
+            	       n->bm, n->displayedwidth, n->displayedheight, n->leftedge, n->topedge));
     	}
 
     	/* Toogle compositing based on screen positions */
