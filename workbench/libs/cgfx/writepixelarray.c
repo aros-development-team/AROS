@@ -8,6 +8,7 @@
 
 #include <aros/debug.h>
 #include <hidd/graphics.h>
+#include <proto/cybergraphics.h>
 
 #include "cybergraphics_intern.h"
 #include "gfxfuncsupport.h"
