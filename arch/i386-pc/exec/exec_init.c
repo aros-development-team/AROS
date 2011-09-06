@@ -510,23 +510,9 @@ void exec_boot(struct TagItem *msg)
         ml->ml_ME[0].me_Length = sizeof(struct Process);
 
         AddHead(&t->tc_MemEntry,&ml->ml_Node);
-<<<<<<< .mine
-=======
 
-        t->tc_Node.ln_Name = (char *)exec_name;
-        t->tc_Node.ln_Pri = 0;
-        t->tc_Node.ln_Type = NT_TASK;
-        t->tc_State = TS_RUN;
-        t->tc_SigAlloc = 0xFFFF;
-        t->tc_SPLower = stack_base;
-        t->tc_SPUpper = stack_base + stack_size - 1;
->>>>>>> .r41117
         t->tc_Flags |= TF_ETASK;
-<<<<<<< .mine
         t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_CLEAR);
-=======
-        aros_init_altstack(t);
->>>>>>> .r41117
 
         if (!t->tc_UnionETask.tc_ETask)
         {
