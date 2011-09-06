@@ -42,7 +42,14 @@ static int cgfx_init(struct IntCGFXBase *CyberGfxBase)
 	__IHidd_Gfx)
     {
 	CyberGfxBase->pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
-	if (CyberGfxBase->pixel_buf) {
+	if (CyberGfxBase->pixel_buf)
+	{
+	    WORD i;
+
+	    for (i = 0; i < 256; i++)
+	    {
+	    	CyberGfxBase->greytab[i] = i * 0x010101;
+	    }
 
 	    ReturnInt("[CGX] cgfx_init", int, TRUE);
 	}

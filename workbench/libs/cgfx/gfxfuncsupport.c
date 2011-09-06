@@ -83,7 +83,6 @@ void hidd2buf_fast(struct BitMap *hidd_bm, LONG x_src , LONG y_src, APTR dest_in
 		, tocopy_w, tocopy_h
 		, (HIDDT_Pixel *)CyberGfxBase->pixel_buf
 		, bm_obj
-		, HIDD_BM_PIXTAB(hidd_bm)
 	);
 	
 	pixels_left_to_process -= (tocopy_w * tocopy_h);

@@ -39,14 +39,16 @@ struct IntCGFXBase
 {
     struct Library libnode;
 
-    struct SignalSemaphore pixbuf_sema;
-    ULONG *pixel_buf;
+    struct SignalSemaphore  pixbuf_sema;
+    ULONG		   *pixel_buf;
 
-    OOP_AttrBase    	     hiddBitMapAttrBase;
-    OOP_AttrBase    	     hiddGCAttrBase;
-    OOP_AttrBase    	     hiddSyncAttrBase;
-    OOP_AttrBase    	     hiddPixFmtAttrBase;
-    OOP_AttrBase    	     hiddGfxAttrBase;
+    OOP_AttrBase    	    hiddBitMapAttrBase;
+    OOP_AttrBase    	    hiddGCAttrBase;
+    OOP_AttrBase    	    hiddSyncAttrBase;
+    OOP_AttrBase    	    hiddPixFmtAttrBase;
+    OOP_AttrBase    	    hiddGfxAttrBase;
+
+    ULONG	 	    greytab[256];	/* Grayscale palette for RECTFMT_GREY8 */
 };
 
 #define GetCGFXBase(base) ((struct IntCGFXBase *)base)
