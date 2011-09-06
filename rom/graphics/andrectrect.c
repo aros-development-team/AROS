@@ -5,6 +5,7 @@
     Desc: (AROS only) Graphics function AndRectRect()
     Lang: english
 */
+
 #include <aros/debug.h>
 #include "graphics_intern.h"
 #include <graphics/regions.h>
@@ -24,7 +25,7 @@
 	AROS_LHA(struct Rectangle *, intersect, A2),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 193, Graphics)
+	struct GfxBase *, GfxBase, 178, Graphics)
 
 /*  FUNCTION
     	Calculate the intersection rectangle between the

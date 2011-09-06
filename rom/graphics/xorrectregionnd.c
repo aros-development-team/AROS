@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Graphics function XorRectRegion()
+    Desc:
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include "intregions.h"
@@ -21,7 +22,7 @@
 	AROS_LHA(struct Rectangle *, Rect, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 152, Graphics)
+	struct GfxBase *, GfxBase, 190, Graphics)
 
 /*  FUNCTION
 	Exclusive-OR the given rectangle to the given

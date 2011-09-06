@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$	$Log
 
     Desc: AROS Graphics function DeinitRastPort()
     Lang: english
 */
+
 #include <aros/debug.h>
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
@@ -23,7 +24,7 @@ void obsolete_DeinitDriverData(struct RastPort *, struct GfxBase *);
 	AROS_LHA(struct RastPort *, rp, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 179, Graphics)
+	struct GfxBase *, GfxBase, 141, Graphics)
 
 /*  FUNCTION
 	Frees the contents of a RastPort structure. The structure itself

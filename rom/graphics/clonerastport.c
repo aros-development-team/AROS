@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function CloneRastPort()
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <exec/memory.h>
 #include <graphics/rastport.h>
@@ -23,7 +24,7 @@
 	AROS_LHA(struct RastPort *, rp, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 178, Graphics)
+	struct GfxBase *, GfxBase, 195, Graphics)
 
 /*  FUNCTION
 	This function creates a copy of a RastPort.
