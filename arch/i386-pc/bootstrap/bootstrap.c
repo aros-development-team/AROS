@@ -70,7 +70,7 @@ static void AllocFB(void)
     {
 	D(kprintf("[BOOT] Allocating %u bytes for console mirror (%ux%u)\n", scr_Width * scr_Height, scr_Width, scr_Height));
 
-    	malloc(scr_Width * scr_Height);
+    	mem_malloc(scr_Width * scr_Height);
     }
 }
 
@@ -92,7 +92,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
      * This will set fb_Mirror address to start of our working memory.
      * We don't know its size yet, we will allocate it later.
      */
-    fb_Mirror = malloc(0);
+    fb_Mirror = mem_malloc(0);
     con_InitMultiboot((struct multiboot *)addr);
     AllocFB();
 
@@ -314,7 +314,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 	    {
 		/* Reinitialize our console */
 		mem_free();
-		fb_Mirror = malloc(0);
+		fb_Mirror = mem_malloc(0);
 		con_InitVESA(controllerinfo->version, modeinfo);
 		AllocFB();
 

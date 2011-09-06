@@ -31,6 +31,7 @@
 
 #define MAX_BSS_SECTIONS	256
 
+void *mem_malloc(size_t size);
 void mem_free();
 size_t mem_avail();
 size_t mem_used();

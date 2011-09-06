@@ -13,7 +13,7 @@ static unsigned char __tmpspace[BOOT_TMP_SIZE];
 static unsigned char *first_free = &__tmpspace[0];
 static unsigned long free_memory = BOOT_TMP_SIZE;
 
-void *malloc(size_t size)
+void *mem_malloc(size_t size)
 {
 	void *ret = NULL;
 
