@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Graphics function AndRegionRegion()
+    Desc:
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include "intregions.h"
@@ -22,7 +23,7 @@
 	AROS_LHA(WORD,            y,   D1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 190, Graphics)
+	struct GfxBase *, GfxBase, 184, Graphics)
 
 /*  FUNCTION
 	Checks if the point (x, y) is contained in the region Reg

@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: (AROS only) Graphics function NewRectRegion()
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include <clib/macros.h>
@@ -24,7 +25,7 @@
 	AROS_LHA(WORD, MaxY, D3),
 		
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 194, Graphics)
+	struct GfxBase *, GfxBase, 179, Graphics)
 
 /*  FUNCTION
     	Creates a new rectangular Region

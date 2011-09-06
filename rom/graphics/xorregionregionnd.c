@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Graphics function XorRegionRegion()
+    Desc:
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include "intregions.h"
@@ -21,7 +22,7 @@
 	AROS_LHA(struct Region *, R2, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 151, Graphics)
+	struct GfxBase *, GfxBase, 191, Graphics)
 
 /*  FUNCTION
 	Exclusive-OR of one region with another region.

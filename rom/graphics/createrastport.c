@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS Graphics function CreateRastPort()
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <exec/memory.h>
 #include <graphics/rastport.h>
@@ -22,7 +23,7 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 177, Graphics)
+	struct GfxBase *, GfxBase, 194, Graphics)
 
 /*  FUNCTION
 	This function creates a new RastPort.

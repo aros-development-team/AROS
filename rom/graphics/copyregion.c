@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: (AROS only) Graphics function CopyRegion()
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include "intregions.h"
@@ -20,7 +21,7 @@
 	AROS_LHA(struct Region *, region, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 188, Graphics)
+	struct GfxBase *, GfxBase, 180, Graphics)
 
 /*  FUNCTION
     	Make a copy of the given Region.

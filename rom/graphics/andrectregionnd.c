@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function AndRectRegion()
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include <proto/exec.h>
@@ -23,7 +24,7 @@
 	AROS_LHA(struct Rectangle *, Rect, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 107, Graphics)
+	struct GfxBase *, GfxBase, 186, Graphics)
 
 /*  FUNCTION
         Remove everything inside 'region' that is outside 'rectangle'

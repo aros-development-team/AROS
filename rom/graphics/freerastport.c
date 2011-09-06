@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS Graphics function FreeRastPort
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include <proto/exec.h>
@@ -21,7 +22,7 @@
 	AROS_LHA(struct RastPort *, rp, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 180, Graphics)
+	struct GfxBase *, GfxBase, 196, Graphics)
 
 /*  FUNCTION
 	This frees a RastPort obtained with CloneRastPort() or

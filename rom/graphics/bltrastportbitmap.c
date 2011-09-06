@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Blit the content of a rastport into a bitmap
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <proto/graphics.h>
 
@@ -30,7 +31,7 @@
 	AROS_LHA(ULONG            , minterm    , D6),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 196, Graphics)
+	struct GfxBase *, GfxBase, 169, Graphics)
 
 /*  FUNCTION
         Copies the content of the rast port into the bitmap.

@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function AndRegionRegion()
     Lang: english
 */
+
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include "intregions.h"
@@ -21,7 +22,7 @@
 	AROS_LHA(struct Region *, R2, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 108, Graphics)
+	struct GfxBase *, GfxBase, 187, Graphics)
 
 /*  FUNCTION
 	AND of one region with another region
