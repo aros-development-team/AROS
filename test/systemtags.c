@@ -40,7 +40,7 @@ int main(void)
     );
     
     fh = Open("S:Startup-Sequence", MODE_OLDFILE);
-    assert(fh!=NULL);
+    assert(fh!=BNULL);
     SystemTags("type in:", SYS_Input, (IPTR) fh, TAG_DONE);
     
     sig = AllocSignal(-1);
