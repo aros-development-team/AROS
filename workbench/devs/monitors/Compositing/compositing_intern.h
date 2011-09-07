@@ -15,11 +15,9 @@ struct StackBitMapNode
 {
     struct MinNode    n;
     OOP_Object	     *bm;
-    struct Rectangle  screenvisiblerect;
-    BOOL              isscreenvisible;
-    LONG              displayedwidth;
-    LONG              displayedheight;
-    SIPTR	      leftedge;
+    struct Rectangle  screenvisiblerect; /* Visible part */
+    BOOL              isscreenvisible;	 /* Visible flag */
+    SIPTR	      leftedge;		 /* Offset */
     SIPTR	      topedge;
 };
 

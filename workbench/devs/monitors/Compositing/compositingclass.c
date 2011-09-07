@@ -4,10 +4,11 @@
 */
 
 #define DEBUG 0
-#define DRECALC(x) x
+#define DRECALC(x)
 #define DREDRAWBM(x)
 #define DREDRAWSCR(x) x
 #define DSTACK(x) x
+#define DUPDATE(x)
 
 #include "compositing_intern.h"
 
@@ -54,28 +55,40 @@ static struct StackBitMapNode * HIDDCompositingIsBitMapOnStack(struct HIDDCompos
 static VOID HIDDCompositingValidateBitMapPositionChange(OOP_Object * bm, SIPTR *newxoffset, SIPTR *newyoffset, LONG displayedwidth, LONG displayedheight)
 {
     IPTR width, height;
-    LONG limit;
+    LONG neglimit, poslimit;
 
     OOP_GetAttr(bm, aHidd_BitMap_Width, &width);
     OOP_GetAttr(bm, aHidd_BitMap_Height, &height);
 
     /* Check x position */
-    limit = displayedwidth - width;
-    if (*(newxoffset) > 0)
-        *(newxoffset) = 0;
+    if (width > displayedwidth)
+    {
+    	neglimit = displayedwidth - width;
+    	poslimit = 0;
+    }
+    else
+    {
+    	neglimit = 0;
+    	poslimit = displayedwidth - width;
+    }
 
-    if (*(newxoffset) < limit)
-        *(newxoffset) = limit;
+    if (*(newxoffset) > poslimit)
+        *(newxoffset) = poslimit;
+    if (*(newxoffset) < neglimit)
+        *(newxoffset) = neglimit;
 
     /* Check y position */
-    limit = displayedheight - height;
-    if (*(newyoffset) > displayedheight - 15) /* Limit for drag */
-        *(newyoffset) = displayedheight - 15;
+    if (height > displayedheight)
+    	neglimit = displayedheight - height; /* Limit for scroll */
+    else
+    	neglimit = 0;
+    poslimit = displayedheight - 15; /* Limit for drag */
 
-    if (*(newyoffset) < limit) /* Limit for scroll */
-        *(newyoffset) = limit;
+    if (*(newyoffset) > poslimit)
+        *(newyoffset) = poslimit;
+    if (*(newyoffset) < neglimit)
+        *(newyoffset) = neglimit;
 }
-
 
 static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * compdata)
 {
@@ -90,15 +103,23 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
      */
     ForeachNode(&compdata->bitmapstack, n)
     {
-        /*  Stack bitmap bounding boxes equal screen bounding box taking into
-            account topedge */
+        /*
+         * Stack bitmap bounding boxes take into account:
+         * - screen size
+         * - topedge
+         * They are in screen coordinates.
+         */
         struct Rectangle tmprect;
 
-        /* Copy screen rect */
-        tmprect = compdata->screenrect;
-        /* Set bottom and top values */
-        tmprect.MinY = n->topedge;
-        tmprect.MaxY = lastscreenvisibleline;
+	tmprect.MinX = 0;
+	tmprect.MaxX = OOP_GET(n->bm, aHidd_BitMap_Width) - 1;
+	tmprect.MinY = n->topedge;
+	tmprect.MaxY = OOP_GET(n->bm, aHidd_BitMap_Height) - 1;
+
+	/* If bitmap's visible portion is smaller, apply this */
+	if (lastscreenvisibleline < tmprect.MaxY)
+	    tmprect.MaxY = lastscreenvisibleline;
+
         /* Intersect both to make sure values are withint screen limit */
         if (AndRectRect(&tmprect, &compdata->screenrect, &n->screenvisiblerect))
         {
@@ -181,66 +202,37 @@ static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingDa
     return TRUE;
 }
 
-static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
-    OOP_Object * bm, WORD x, WORD y, WORD width, WORD height)
+static inline void HIDDCompositingRedrawBitmap(struct HIDDCompositingData *compdata, struct StackBitMapNode *n, struct Rectangle *rect)
 {
-    struct Rectangle srcrect;
-    struct Rectangle dstandvisrect;
-    struct StackBitMapNode *n = HIDDCompositingIsBitMapOnStack(compdata, bm);
+    /* The given rectangle is already in screen coordinate system here */
+    ULONG blitwidth  = rect->MaxX - rect->MinX + 1;
+    ULONG blitheight = rect->MaxY - rect->MinY + 1;
 
-    /*
-     * Skip the bitmap if:
-     * 1. It' not on stack (not displayed at the moment)
-     * 2. It's completely covered with another bitmap
-     */
-    if ((!n) || (!n->isscreenvisible))
-        return;
+    DREDRAWBM(bug("[Compositing] Redraw bitmap 0x%p, rect (%d, %d) - (%d, %d)\n", n->bm, _RECT(srcrect)));
+    DREDRAWBM(bug("[Compositing] Blitting %d x %d from (%d, %d)\n", blitwidth, blitheight, 
+		  rect->MinX - n->leftedge, rect->MinY - n->topedge));
 
-    DREDRAWBM(bug("[Compositing] Redraw bitmap 0x%p, size %d x %d\n", bm, width, height));
+    HIDD_Gfx_CopyBox(compdata->gfx, n->bm,
+                    /* Transform to source bitmap coord system */
+                    rect->MinX - n->leftedge, rect->MinY - n->topedge,
+                    compdata->compositedbitmap,
+                    rect->MinX, rect->MinY, blitwidth, blitheight,
+                    compdata->gc);
+}
 
-    /* Rectangle in source bitmap coord system */
-    srcrect.MinX = x; 
-    srcrect.MinY = y;
-    srcrect.MaxX = x + width - 1; 
-    srcrect.MaxY = y + height - 1;
-    DREDRAWBM(bug("[Compositing] Bitmap rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
+static inline void ClearRect(struct HIDDCompositingData *compdata, ULONG MinX, ULONG MinY, ULONG MaxX, ULONG MaxY)
+{
+    DREDRAWSCR(bug("[Compositing] Clearing area (%d, %d) - (%d, %d)\n",
+		   MinX, MinY, MaxX, MaxY));
 
-    /* Transform the rectangle to screen coord system */
-    srcrect.MinX += n->leftedge; 
-    srcrect.MaxX += n->leftedge;
-    srcrect.MinY += n->topedge;
-    srcrect.MaxY += n->topedge;
-    DREDRAWBM(bug("[Compositing] Screen rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
-
-    /* Find intersection of bitmap visible screen rect and srcindst rect */
-    if (AndRectRect(&srcrect, &n->screenvisiblerect, &dstandvisrect))
-    {
-        /* Intersection is valid. Blit. */
-    	ULONG blitwidth  = dstandvisrect.MaxX - dstandvisrect.MinX + 1;
-    	ULONG blitheight = dstandvisrect.MaxY - dstandvisrect.MinY + 1;
-
-	DREDRAWBM(bug("[Compositing] Clipped rect (%d, %d) - (%d, %d)\n", _RECT(dstandvisrect)));
-
-	DREDRAWBM(bug("[Compositing] Blitting %d x %d from (%d, %d) to (%d, %d)\n", blitwidth, blitheight, 
-		    dstandvisrect.MinX - n->leftedge, dstandvisrect.MinY - n->topedge,
-		    dstandvisrect.MinX, dstandvisrect.MinY));
-
-        HIDD_Gfx_CopyBox(compdata->gfx, bm,
-                /* Transform back to source bitmap coord system */
-                dstandvisrect.MinX - n->leftedge, dstandvisrect.MinY - n->topedge,
-                compdata->compositedbitmap,
-                dstandvisrect.MinX, dstandvisrect.MinY,
-                blitwidth, blitheight,
-                compdata->gc);
-
-	HIDD_BM_UpdateRect(compdata->compositedbitmap, dstandvisrect.MinX,dstandvisrect.MinY, blitwidth, blitheight);
-    }
+    HIDD_BM_FillRect(compdata->compositedbitmap, compdata->gc,
+		     MinX, MinY, MaxX, MaxY);
 }
 
 static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * compdata)
 {
-    struct StackBitMapNode * n = NULL;
-    ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
+    struct StackBitMapNode *n;
+    ULONG lastscreenvisibleline = 0;
 
     DREDRAWSCR(bug("[Compositing] Redrawing screen\n"));
 
@@ -250,31 +242,55 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     /* Recalculate visible rects per screen */
     HIDDCompositingRecalculateVisibleRects(compdata);
     
-    /* Refresh all bitmaps on stack */
-    ForeachNode(&compdata->bitmapstack, n)
+    /*
+     * Refresh all bitmaps on stack.
+     * For simplicity, we traverse the list in reverse order (from bottom to top).
+     * This way we can easy figure out spaces between bitmaps (every time we know
+     * final line of previous bitmap or 0 if there was no one).
+     */
+    for (n = (struct StackBitMapNode *)compdata->bitmapstack.mlh_TailPred;
+    	 n->n.mln_Pred; n = (struct StackBitMapNode *)n->n.mln_Pred)
     {
-	DREDRAWSCR(bug("[Compositing] Bitmap 0x%p, visible %d\n", n->bm, n->isscreenvisible));
+	DREDRAWSCR(bug("[Compositing] Bitmap 0x%p, visible %d, rect (%d, %d) - (%d, %d)\n",
+		       n->bm, n->isscreenvisible, _RECT(n->screenvisiblerect)));
 
         if (n->isscreenvisible)
         {
-            IPTR width, height;
-            OOP_GetAttr(n->bm, aHidd_BitMap_Width, &width);
-            OOP_GetAttr(n->bm, aHidd_BitMap_Height, &height);
+	    /* Redraw the whole visible portion */
+            HIDDCompositingRedrawBitmap(compdata, n, &n->screenvisiblerect);
 
-            HIDDCompositingRedrawBitmap(compdata, n->bm, 0, 0, width, height);
-            if (lastscreenvisibleline > n->screenvisiblerect.MinY)
-                lastscreenvisibleline = n->screenvisiblerect.MinY;
+	    /* Clean up areas revealed by drag */
+	    if (n->screenvisiblerect.MinX > 0)
+	    {
+	    	/* To the left of bitmap */
+	    	ClearRect(compdata,
+	    		  0, n->screenvisiblerect.MinY,
+			  n->screenvisiblerect.MinX, n->screenvisiblerect.MaxY);
+	    }
+
+	    if (n->screenvisiblerect.MaxX < compdata->screenrect.MaxX)
+	    {
+	    	/* To the right of bitmap */
+		ClearRect(compdata,
+			  n->screenvisiblerect.MaxX + 1, n->screenvisiblerect.MinY,
+			  compdata->screenrect.MaxX, n->screenvisiblerect.MaxY);
+	    }
+
+	    if (n->screenvisiblerect.MinY > lastscreenvisibleline)
+	    {
+	    	/* Between this and previous bitmap */
+	    	ClearRect(compdata,
+	    		  0, lastscreenvisibleline,
+			  compdata->screenrect.MaxX, n->screenvisiblerect.MinY - 1);
+	    }
+
+	    /* Update the whole display rectangle (bitmap + space around it) in one operation */
+	    HIDD_BM_UpdateRect(compdata->compositedbitmap,
+	        	       0, lastscreenvisibleline,
+	        	       compdata->screenrect.MaxX + 1, n->screenvisiblerect.MaxY - lastscreenvisibleline + 1);
+
+            lastscreenvisibleline = n->screenvisiblerect.MaxY + 1;
         }
-    }
-
-    /* Clean up area revealed by drag */
-    /* TODO: Find all areas which might have been releaved, not only top - 
-       This will happen when there are bitmaps of different sizes composited */
-    if (lastscreenvisibleline > 1)
-    {
-        HIDD_BM_FillRect(compdata->compositedbitmap, 
-            compdata->gc, 0, 0, compdata->screenrect.MaxX, lastscreenvisibleline - 1);
-        HIDD_BM_UpdateRect(compdata->compositedbitmap, 0, 0, compdata->screenrect.MaxX, lastscreenvisibleline - 1);
     }
 }
 
@@ -626,12 +642,10 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 
 	    DSTACK(bug("[Compositing] ViewPort 0x%p, offset (%d, %d)\n", vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
 
-            n->bm               = vpdata->Bitmap;
-            n->isscreenvisible  = FALSE;
-            n->displayedwidth   = compdata->screenrect.MaxX + 1;
-            n->displayedheight  = compdata->screenrect.MaxY + 1;
-            n->leftedge		= vpdata->vpe->ViewPort->DxOffset;
-            n->topedge		= vpdata->vpe->ViewPort->DyOffset;
+            n->bm              = vpdata->Bitmap;
+            n->isscreenvisible = FALSE;
+            n->leftedge	       = vpdata->vpe->ViewPort->DxOffset;
+            n->topedge	       = vpdata->vpe->ViewPort->DyOffset;
 
             AddTail((struct List *)&compdata->bitmapstack, (struct Node *)n);
         }
@@ -645,9 +659,11 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
        	 */
 	ForeachNode(&compdata->bitmapstack, n)
     	{
-            HIDDCompositingValidateBitMapPositionChange(n->bm, &n->leftedge, &n->topedge, n->displayedwidth, n->displayedheight);
-            DSTACK(bug("[Compositing] Bitmap 0x%p, displayed size %d x %d, validated position (%ld, %ld)\n",
-            	       n->bm, n->displayedwidth, n->displayedheight, n->leftedge, n->topedge));
+            HIDDCompositingValidateBitMapPositionChange(n->bm, &n->leftedge, &n->topedge, 
+            						compdata->screenrect.MaxX + 1, compdata->screenrect.MaxY + 1);
+            DSTACK(bug("[Compositing] Bitmap 0x%p, display size %d x %d, validated position (%ld, %ld)\n",
+            	       n->bm, compdata->screenrect.MaxX + 1, compdata->screenrect.MaxY + 1,
+            	       n->leftedge, n->topedge));
     	}
 
     	/* Toogle compositing based on screen positions */
@@ -677,8 +693,41 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
 
     if (compdata->compositedbitmap)
     {
-    	/* If composition is active, refresh the image */
-    	HIDDCompositingRedrawBitmap(compdata, msg->bm, msg->x, msg->y, msg->width, msg->height);
+    	/* Composition is active, handle redraw if the bitmap is on screen */
+	struct StackBitMapNode *n = HIDDCompositingIsBitMapOnStack(compdata, msg->bm);
+
+	if (n && n->isscreenvisible)
+	{
+	    /* Rectangle in bitmap coord system */
+    	    struct Rectangle srcrect, dstandvisrect;
+
+	    srcrect.MinX = msg->x; 
+	    srcrect.MinY = msg->y;
+	    srcrect.MaxX = msg->x + msg->width - 1; 
+	    srcrect.MaxY = msg->y + msg->height - 1;
+    	    DUPDATE(bug("[Compositing] Updating bitmap 0x%p, rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
+
+	    /* Transform the rectangle to screen coord system */
+	    srcrect.MinX += n->leftedge; 
+	    srcrect.MaxX += n->leftedge;
+	    srcrect.MinY += n->topedge;
+	    srcrect.MaxY += n->topedge;
+	    DUPDATE(bug("[Compositing] Screen-relative rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
+
+    	    /* Find intersection of visible screen rect and bitmap rect */
+    	    if (AndRectRect(&srcrect, &n->screenvisiblerect, &dstandvisrect))
+    	    {
+    	        /* Intersection is valid. Blit. */
+    	    	DUPDATE(bug("[Compositing] Clipped rect (%d, %d) - (%d, %d)\n", _RECT(dstandvisrect)));
+
+    	    	HIDDCompositingRedrawBitmap(compdata, n, &dstandvisrect);
+
+    		HIDD_BM_UpdateRect(compdata->compositedbitmap,
+    				   dstandvisrect.MinX, dstandvisrect.MinY,
+    				   dstandvisrect.MaxX - dstandvisrect.MinX + 1,
+				   dstandvisrect.MaxY - dstandvisrect.MinY + 1);
+    	    }
+    	}
     }
     else
     {
@@ -703,12 +752,13 @@ BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
     n = HIDDCompositingIsBitMapOnStack(compdata, msg->bm);
     if (n)
     {
-        disp_width  = n->displayedwidth;
-        disp_height = n->displayedheight;
+    	/* The bitmap is on display. Validate against screen size */
+        disp_width  = compdata->screenrect.MaxX + 1;
+        disp_height = compdata->screenrect.MaxY + 1;
     }
     else
     {
-	/* The bitmap is not displayed yet. Validate against full size. */
+	/* The bitmap is not displayed yet. Validate against its own ModeID size. */
     	HIDDT_ModeID modeid = vHidd_ModeID_Invalid;
     	OOP_Object *sync, *pf;
 
