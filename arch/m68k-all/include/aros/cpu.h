@@ -90,6 +90,8 @@ do                                                       \
 
 #define SIZEOF_ALL_REGISTERS		(20*4)
 
+#define HALT asm volatile("stop #0x2000");
+#define KERNEL_PANIC_BUFFER (char*)0x800
 
 /* Macros for generating library stub functions and aliases. */
 
