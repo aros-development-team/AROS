@@ -56,6 +56,11 @@
     EXAMPLE
 
     BUGS
+	1. Forgets to unread a separator character (equal sign, whitespace or
+	   tabulation).
+	2. Tries to unread an end-of-line, which actually causes unreading the
+	   last read character of CSource is supplied. Even if it's not a separator,
+	   but belongs to last read item.
 
 	As AOS programs that use ReadItem() depend on this broken behaviour,
 	it will not be fixed.
@@ -67,6 +72,14 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+/*
+ * WARNING!!!
+ * As mentioned above, this code has some intentional (but not ovbious) bugs.
+ * They must not be fixed.
+ * If you change something here, be sure that the code passes unit tests
+ * in test/dos/readitem. Those unit tests are verified to pass on AmigaOS 3.1.
+ */
 
 /* Macro to get a character from the input source */
 #define GET(c) 					\
