@@ -4567,6 +4567,7 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
 	if (HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pixfmt))
 	{
+	    data->modeid = modeid;
 	    /*
 	     * Set defaults based on the ModeID.
 	     * They can be overriden lated, in SetBitMapTags.
