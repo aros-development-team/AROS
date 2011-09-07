@@ -24,7 +24,7 @@ FUNCS :=     addexceptionhandler addirqhandler bug cause cli createcontext delet
 	     switch unmapglobal virtualtophysical obtaininput releaseinput 		    \
 	     putchar maygetchar allocpages freepages getsystemattr setsystemattr	    \
 	     initmemory statmemory _bug _displayalert
-FILES     := kernel_init cpu_init kernel_cpu kernel_debug kernel_intr	\
+FILES     := kernel_init cpu_init kernel_cpu kernel_debug kernel_panic kernel_intr \
 	     kernel_memory kernel_romtags kernel_scheduler kernel_timer
 MMU_FILES := kernel_mm
 # You can replace this with own algorithm

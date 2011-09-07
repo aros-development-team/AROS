@@ -1,4 +1,4 @@
-#define HOSTINTERFACE_VERSION 2
+#define HOSTINTERFACE_VERSION 3
 
 struct HostInterface
 {
@@ -9,6 +9,6 @@ struct HostInterface
     int   (*hostlib_Close)(void *, char **);
     void *(*hostlib_GetPointer)(void *, const char *, char **);
     void  (*hostlib_FreeErrorStr)(char *);
-    int   (*VKPrintF)(const char *, va_list);
+    int   (*KPutC)(int c);
     void  (*Reboot)(unsigned char warm);
 };

@@ -36,11 +36,6 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 
 /*
  * Our own, very simplified down memory allocator.
- * We use it because we should avoid to statically link in functions from other modules.
- * Currently the only linked in function is PrepareExecBase() and at some point it will
- * change. It will be possible to completely separate exec.library and kernel.resource,
- * and load them separately from the bootstrap.
- *
  * It is okay to use this routine because this is one of the first allocations (actually
  * should be the first one) and it is never going to be freed.
  * Additionally, in order to be able to discover exec.library (and its early init function)
@@ -224,12 +219,15 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
     struct ExecBase *sysBase;
     struct Resident **resList = krnRomTagScanner(mh, ranges);
 
-    if (!resList)
-    	return NULL;
+    /* krnRomTagScanner() never fails */
 
     exec = krnFindResident(resList, "exec.library");
     if (!exec)
+    {
+	krnPanic("Failed to create ExecBase\n"
+		 "exec.library is not found");
     	return NULL;
+    }
 
     /* Magic. Described in rom/exec/exec_init.c. */
     sysBase = AROS_UFC3(struct ExecBase *, exec->rt_Init,
@@ -237,25 +235,31 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
                 	AROS_UFCA(struct TagItem *, bootMsg, A0),
  	                AROS_UFCA(struct ExecBase *, NULL, A6));
 
-    if (sysBase)
+    if (!sysBase)
     {
-	sysBase->ResModules = resList;
+	krnPanic("Failed to create ExecBase\n"
+		 "MemHeader 0x%p, First chunk 0x%p, %u bytes free",
+		 mh, mh->mh_First, mh->mh_Free);
+
+	return NULL;
+    }
+
+    sysBase->ResModules = resList;
 
 #ifndef NO_RUNTIME_DEBUG
-	/* Print out modules list if requested by the user */
-	if (SysBase->ex_DebugFlags & EXECDEBUGF_INITCODE)
+    /* Print out modules list if requested by the user */
+    if (SysBase->ex_DebugFlags & EXECDEBUGF_INITCODE)
+    {
+	ULONG i;
+
+	bug("Resident modules (addr: pri flags version name):\n");
+
+	for (i = 0; resList[i]; i++)
 	{
-	    ULONG i;
-
-	    bug("Resident modules (addr: pri flags version name):\n");
-
-	    for (i = 0; resList[i]; i++)
-	    {
-		bug("+ %p: %4d %02x %3d \"%s\"\n", resList[i], resList[i]->rt_Pri,
-		    resList[i]->rt_Flags, resList[i]->rt_Version, resList[i]->rt_Name);
-	    }
+	    bug("+ %p: %4d %02x %3d \"%s\"\n", resList[i], resList[i]->rt_Pri,
+		resList[i]->rt_Flags, resList[i]->rt_Version, resList[i]->rt_Name);
 	}
-#endif
     }
+#endif
     return sysBase;
 }
