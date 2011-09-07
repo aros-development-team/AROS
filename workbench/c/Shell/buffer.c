@@ -3,6 +3,7 @@
     $Id$
  */
 
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -68,7 +69,21 @@ LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in, APTR DOSBase)
 {
     struct CSource tin = { in->buf, in->len, in->cur };
     LONG ret = ReadItem(buf, size, &tin);
+
     in->cur = tin.CS_CurChr;
+
+    /*
+     * Workaround for intentional ReadItem() bug:
+     * If it hits end of buffer, it will push back one character.
+     * This bug replicates OS3.1 behavior, on which many existing
+     * programs rely. They all have own workarounds. We too.
+     */
+    if (in->cur == in->len - 1)
+    {
+    	D(bug("[bufferReadItem] Getting last character\n"));
+    	in->cur++;
+    }
+
     return ret;
 }
 
