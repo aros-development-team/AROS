@@ -105,24 +105,19 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
      */
     ForeachNode(&compdata->bitmapstack, n)
     {
-        /*
-         * Stack bitmap bounding boxes take into account:
-         * - screen size
-         * - topedge
-         * They are in screen coordinates.
-         */
+        /* Get bitmap bounding box in screen coordinates */
         struct Rectangle tmprect;
 
-	tmprect.MinX = 0;
-	tmprect.MaxX = OOP_GET(n->bm, aHidd_BitMap_Width) - 1;
+	tmprect.MinX = n->leftedge;
+	tmprect.MaxX = n->leftedge + OOP_GET(n->bm, aHidd_BitMap_Width) - 1;
 	tmprect.MinY = n->topedge;
-	tmprect.MaxY = OOP_GET(n->bm, aHidd_BitMap_Height) - 1;
+	tmprect.MaxY = n->topedge  + OOP_GET(n->bm, aHidd_BitMap_Height) - 1;
 
 	/* If bitmap's visible portion is smaller, apply this */
 	if (lastscreenvisibleline < tmprect.MaxY)
 	    tmprect.MaxY = lastscreenvisibleline;
 
-        /* Intersect both to make sure values are withint screen limit */
+        /* Intersect the box with screen rectangle to make sure values are within screen limit */
         if (AndRectRect(&tmprect, &compdata->screenrect, &n->screenvisiblerect))
         {
             lastscreenvisibleline = n->screenvisiblerect.MinY - 1;
