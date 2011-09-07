@@ -339,28 +339,40 @@ BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid, struct x11_sta
 
     if (HIDD_Gfx_GetMode(data->gfxhidd, (HIDDT_ModeID)modeid, &sync, &pf))
     {
-    	struct MsgPort *port = CreateMsgPort();
+	struct MsgPort *port;
+    	IPTR new_width, new_height;
 
+	OOP_GetAttr(sync, aHidd_Sync_HDisp, &new_width);
+	OOP_GetAttr(sync, aHidd_Sync_VDisp, &new_height);
+
+	/*
+	 * Don't do anything if the size actually won't change.
+	 * Prevents badly looking flashing, at least on Darwin.
+	 */
+	if ((new_width == data->width) && (new_height == data->height))
+	    return TRUE;
+
+    	port = CreateMsgPort();
 	if (port)
 	{
 	    struct notify_msg nmsg;
-
-	    /* Update cached size */
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &data->width);
-	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &data->height);
 
 	    /* Send resize message to the x11 task */
 	    nmsg.notify_type 	= NOTY_RESIZEWINDOW;
 	    nmsg.xdisplay	= data->display;
 	    nmsg.xwindow	= data->drawable;
 	    nmsg.masterxwindow	= data->masterxwindow;
-	    nmsg.width	  	= data->width;
-	    nmsg.height		= data->height;
+	    nmsg.width	  	= new_width;
+	    nmsg.height		= new_height;
 	    nmsg.execmsg.mn_ReplyPort = port;
 
 	    X11DoNotify(xsd, &nmsg);
-
 	    DeleteMsgPort(port);
+
+	    /* Update cached size */
+	    data->width  = new_width;
+	    data->height = new_height;
+	    
 	    return TRUE;
 	}
     }
