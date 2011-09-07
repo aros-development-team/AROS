@@ -83,8 +83,16 @@ if(input!=NULL)					\
         return ITEM_ERROR;			\
 }
 
-/* Macro to push the character back */
-#define UNGET() {if(input!=NULL) input->CS_CurChr--; else UnGetC(Input(),-1);}
+/*
+ * Macro to push the character back.
+ *
+ * It's not actually possible to unget a EOF. EOF means there were no more characters
+ * in the buffer, so there's nothing to unget.
+ * Without ELF check UNGET(EOF) actually causes ungetting the last read character.
+ * This causes re-interpreting it as a second word on next call.
+ *						Sonic.
+ */
+#define UNGET(c) if ((c) != EOF) {if (input) input->CS_CurChr--; else UnGetC(Input(),-1);}
 
     STRPTR b=buffer;
     LONG c;
@@ -104,8 +112,7 @@ if(input!=NULL)					\
     if(!c||c=='\n'||c==EOF||c==';')
     {
         *b=0;
-        if (c != EOF)
-            UNGET();
+        UNGET(c);
         return ITEM_NOTHING;
     }else if(c=='=')
     {
@@ -131,7 +138,7 @@ if(input!=NULL)					\
                 /* Check for premature end of line. */
                 if(!c||c=='\n'||c==EOF)
                 {
-                    UNGET();
+                    UNGET(c);
                     *b=0;
                     SetIoErr(ERROR_UNMATCHED_QUOTES);
                     return ITEM_ERROR;
@@ -141,7 +148,7 @@ if(input!=NULL)					\
                     c=0x1b;
             }else if(!c||c=='\n'||c==EOF)
             {
-                UNGET();
+                UNGET(c);
                 *b=0;
                 SetIoErr(ERROR_UNMATCHED_QUOTES);
                 return ITEM_ERROR;
@@ -187,7 +194,7 @@ if(input!=NULL)					\
                  * on this behaviour.
                  */
                 if (c != '=' && c != ' ' && c != '\t')
-                    UNGET();
+                    UNGET(c);
                 *b=0;
                 return ITEM_UNQUOTED;
             }
