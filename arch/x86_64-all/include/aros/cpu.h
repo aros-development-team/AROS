@@ -161,7 +161,7 @@ struct JumpVec
             "\t" #fname " :\n" \
             "\tmovq " #libbasename "_offset(%%rip), %%r10\n" \
             "\tmovq $%c0,%%r11\n" \
-            "\tjmp  aros_thunk_relfunc\n" \
+            "\tjmp  aros_thunk_rellibfunc\n" \
 	    : : "i" ((-lvo)*LIB_VECTSIZE) \
 	); \
     }
