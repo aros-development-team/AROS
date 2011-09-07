@@ -2383,6 +2383,13 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	}
     }
 
+    if (bm == data->framebuffer)
+    {
+	/* If showing the framebuffer itself, just detach from old bitmap and that's all. */
+    	data->shownbm = NULL;
+    	return data->framebuffer;
+    }
+
     if (bm)
     {
     	IPTR modeid;
