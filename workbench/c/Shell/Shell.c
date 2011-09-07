@@ -161,7 +161,7 @@ AROS_ENTRY(__startup ULONG, ShellStart,
 
 	if ((error = Redirection_init(ss)) == 0)
 	{
-	    D(bug("[Shell] running command: %s\n", in->buf));
+	    D(bug("[Shell] running command: %s\n", in.buf));
 	    error = checkLine(ss, &in, &out, TRUE, DOSBase);
 	    Redirection_release(ss, DOSBase);
 
@@ -292,9 +292,6 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
 
 	if (echo)
 	    cliEcho(ss, out->buf, DOSBase);
-
-	/* Add terminating linefeed */
-	bufferAppend("\n", 1, out);
 
 	/* OK, we've got a command. Let's execute it! */
 	result = executeLine(ss, out->buf, DOSBase);

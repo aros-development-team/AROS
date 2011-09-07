@@ -101,32 +101,26 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
 		break;
 	    }
 
-	    if (status == ITEM_NOTHING)
-	    {
-	        if (a == ENDSTREAMCH)		
-	            break;
-	        else
-	            continue;
-	    }
+	    if (status != ITEM_NOTHING) {
+		switch (FindArg("LAB,ENDSKIP", buffer))
+		{
+		    case 0:
+			if (SHArg(LABEL) != NULL)
+			{
+			    ReadItem(buffer, sizeof(buffer), NULL);
 
-	    switch (FindArg("LAB,ENDSKIP", buffer))
-	    {
-	        case 0:
-		    if (SHArg(LABEL) != NULL)
-		    {
-		        ReadItem(buffer, sizeof(buffer), NULL);
+			    if (FindArg(SHArg(LABEL), buffer) == 0)
+			    {
+				quit = TRUE;
+				labelFound = TRUE;
+			    }
+			}
+			break;
 
-		        if (FindArg(SHArg(LABEL), buffer) == 0)
-		        {
-			    quit = TRUE;
-			    labelFound = TRUE;
-		        }
-		    }
-		    break;
-
-	        case 1:
-		    quit = TRUE;
-		    break;
+		    case 1:
+			quit = TRUE;
+			break;
+		}
 	    }
 
 	    /* Skip to the next line */
