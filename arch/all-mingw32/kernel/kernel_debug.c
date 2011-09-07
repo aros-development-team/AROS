@@ -6,47 +6,25 @@
 #include "kernel_cpu.h"
 #include "kernel_mingw32.h"
 
-int mykprintf(const char *fmt, ...)
+/*
+ * KernelBase is an optional parameter here. During
+ * very early startup it can be NULL.
+ */
+int krnPutC(int chr, struct KernelBase *KernelBase)
 {
-    va_list args;
     int r;
 
-    va_start(args, fmt);
+    /*
+     * During early boot SysBase may hold some old value (after warm reboot),
+     * but KernelBase is always NULL.
+     */
+    if (KernelBase)
+	Forbid();
 
-    if (SysBase)
-        Forbid();
-    r = HostIFace->VKPrintF(fmt, args);
-    if (SysBase)
-        Permit();
+    r = HostIFace->KPutC(chr);
 
-    va_end(args);
-
-    return r;
-}
-
-int myvkprintf (const char *fmt, va_list args)
-{
-    int res;
-    
-    Forbid();
-    res = HostIFace->VKPrintF(fmt, args);
-    Permit();
-
-    return res;
-}
-
-int myrkprintf(const char *foo, const char *bar, int baz, const char* fmt, ...)
-{
-    va_list args;
-    int r;
-
-    va_start(args, fmt);
-
-    Forbid();
-    r = HostIFace->VKPrintF(fmt, args);
-    Permit();
-
-    va_end(args);
+    if (KernelBase)
+	Permit();
 
     return r;
 }
