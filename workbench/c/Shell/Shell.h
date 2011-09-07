@@ -100,7 +100,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase);
  *
  * Output:   LONG --  DOS error code
  */
-BOOL readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APTR DOSBase);
+LONG readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APTR DOSBase);
 
 /* Function: checkLine
  *

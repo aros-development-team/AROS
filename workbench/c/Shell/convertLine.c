@@ -18,6 +18,7 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, AP
 			LONG a, ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 {
     LONG c, p = 0, error, n = in->len;
+    BOOL quoted = FALSE;
 
     bufferReset(out);
 
@@ -30,12 +31,16 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, AP
 	    c = 0;
 	    bufferCopy(in, out, 1);
 	}
+	else if (c == '"') {
+	    quoted = !quoted;
+	    bufferCopy(in, out, 1);
+	}
 	else if (c == a)
 	{
 	    if ((error = (*convertItem)(ss, in, out, DOSBase)))
 		return error;
 	}
-	else if (c == ';')
+	else if (!quoted && c == ';')
 	{
 	     /* rest of line is comment, ignore it */
 	     break;
@@ -103,12 +108,11 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
 	return bufferCopy(in, out, in->len - in->cur);
     case ITEM_UNQUOTED:
 	break;
+    case ITEM_NOTHING:
+        return 0;
     default:
 	return ERROR_LINE_TOO_LONG; /* invalid argument */
     }
-
-    if (in->cur < in->len)
-	++in->cur; /* skip separator */
 
     /* Is this command an alias ? */
     if ((i = GetVar(command, buf, FILE_MAX, GVF_LOCAL_ONLY | LV_ALIAS)) > 0)
@@ -118,6 +122,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
 	TEXT cmd[FILE_MAX];
 	LONG error;
 
+        D(bug("Handling alias %s\n", command));
 	switch (bufferReadItem(cmd, FILE_MAX, &a, DOSBase))
 	{
 	case ITEM_QUOTED:
@@ -181,6 +186,7 @@ static LONG readCommand(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
     struct List aliased;
 
     NewList(&aliased);
+    bufferReset(out);
 
     return readCommandR(ss, in, out, &aliased, DOSBase);
 }
@@ -221,30 +227,34 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
      */
 
     /* PASS 1: `backticks` substitution */
+    D(bug("[convertLine] Pass 1: on (%s)\n", in->buf));
     if ((error = convertLoop(convertBackTicks, '`', ss, in, out, DOSBase)))
     {
-	D(bug("[convertLine] Error %u parsing aliases\n", error));
+	D(bug("[convertLine] Pass 1: Error %lu parsing aliases\n", error));
 	return error;
     }
 
     /* PASS 2: <args> substitution & CLI# <$$>*/
+    D(bug("[convertLine] Pass 2: on (%s)\n", out->buf));
     if ((error = convertLoop(convertArg, ss->bra, ss, out, in, DOSBase)))
     {
-	D(bug("[convertLine] Error %u parsing aliases\n", error));
+	D(bug("[convertLine] Pass 2: Error %lu parsing aliases\n", error));
 	return error;
     }
 
     /* PASS 3: ${vars} substitution */
+    D(bug("[convertLine] Pass 3: on (%s)\n", in->buf));
     if ((error = convertLoop(convertVar, '$', ss, in, out, DOSBase)))
     {
-	D(bug("[convertLine] Error %u parsing variable\n", error));
+	D(bug("[convertLine] Pass 3: Error %lu parsing variable\n", error));
 	return error;
     }
 
     /* PASS 4: command & aliases */
+    D(bug("[convertLine] Pass 4: on (%s)\n", out->buf));
     if ((error = readCommand(ss, out, in, DOSBase)))
     {
-	D(bug("[convertLine] Error %u parsing aliases\n", error));
+	D(bug("[convertLine] Pass 4: Error %lu parsing aliases\n", error));
 	return error;
     }
 
@@ -252,7 +262,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
 
     /* PASS 5: redirections */
     error = convertLoopRedir(ss, in, out, DOSBase);
-    D(bug("[convertLine] Error %u parsing redirect\n", error));
+    D(bug("[convertLine] Pass 5: Error %lu parsing redirect\n", error));
 
     return error;
 }

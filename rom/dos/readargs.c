@@ -489,45 +489,25 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         }
 
         /* /F takes all the rest */
-        /* TODO: Take care of quoted strings(?) */
         if ((flags[arg] & TYPEMASK) == REST)
         {
-	#if 0
-            /* Skip leading whitespace */
-            while (cs->CS_CurChr < cs->CS_Length
-                && (cs->CS_Buffer[cs->CS_CurChr] == ' '
-                    || cs->CS_Buffer[cs->CS_CurChr] == '\t'))
-            {
-                cs->CS_CurChr++;
-            }
-        #endif
             argbuf[arg] = s1;
 
-    	    /* Copy part already read above by ReadItem() */
-            while (*s1)
-            {
-	    	s1++;
-            }
-
-            /* Find the last non-whitespace character */
-            s2 = s1 - 1;
-
-            while (cs->CS_CurChr < cs->CS_Length
-                && cs->CS_Buffer[cs->CS_CurChr]
-                && cs->CS_Buffer[cs->CS_CurChr] != '\n')
-            {
-                if (cs->CS_Buffer[cs->CS_CurChr] != ' '
-                    && cs->CS_Buffer[cs->CS_CurChr] != '\t')
+            do {
+                /* Skip part already read above by ReadItem() */
+                while (*s1)
                 {
-                    s2 = s1;
+                    s1++;
+                    strbuflen--;
                 }
 
-                /* Copy string by the way. */
-                *s1++ = cs->CS_Buffer[cs->CS_CurChr++];
-            }
+                *s1++ = ' ';
+                strbuflen--;
 
-            /* Add terminator (1 after the character found). */
-            s2[1] = 0;
+                it = ReadItem(s1, strbuflen, cs);
+            } while (it == ITEM_QUOTED || it == ITEM_UNQUOTED);
+
+            s1[-1] = 0;
             it = ITEM_NOTHING;
             break;
         }
@@ -577,6 +557,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
 	    while (*s1++)
 		--strbuflen;
+	    --strbuflen;
         }
 
 	if (cs->CS_CurChr >= cs->CS_Length)

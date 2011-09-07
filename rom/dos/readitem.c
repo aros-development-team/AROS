@@ -50,9 +50,15 @@
     NOTES
 	This function handles conversion of '**', '*"', etc inside quotes.
 
+	This function has well known bugs, and should be avoided
+	in new applications.
+
     EXAMPLE
 
     BUGS
+
+	As AOS programs that use ReadItem() depend on this broken behaviour,
+	it will not be fixed.
 
     SEE ALSO
 
@@ -82,7 +88,13 @@ if(input!=NULL)					\
 
     STRPTR b=buffer;
     LONG c;
-    
+
+    /* No buffer? */
+    if (buffer == NULL || !maxchars) {
+        SetIoErr(ERROR_BUFFER_OVERFLOW);
+        return ITEM_ERROR;
+    }
+
     /* Skip leading whitespace characters */
     do
     {
@@ -92,6 +104,8 @@ if(input!=NULL)					\
     if(!c||c=='\n'||c==EOF||c==';')
     {
         *b=0;
+        if (c != EOF)
+            UNGET();
         return ITEM_NOTHING;
     }else if(c=='=')
     {
@@ -104,7 +118,7 @@ if(input!=NULL)					\
         {
             if(!maxchars)
             {
-                *buffer=0;
+                *b=0;
                 SetIoErr(ERROR_BUFFER_OVERFLOW);
                 return ITEM_ERROR;
             }
@@ -117,9 +131,8 @@ if(input!=NULL)					\
                 /* Check for premature end of line. */
                 if(!c||c=='\n'||c==EOF)
                 {
-                    if(c!=EOF)
-                        UNGET();
-                    *buffer=0;
+                    UNGET();
+                    *b=0;
                     SetIoErr(ERROR_UNMATCHED_QUOTES);
                     return ITEM_ERROR;
                 }else if(c=='n'||c=='N')
@@ -128,9 +141,8 @@ if(input!=NULL)					\
                     c=0x1b;
             }else if(!c||c=='\n'||c==EOF)
             {
-                if(c!=EOF)
-                    UNGET();
-                *buffer=0;
+                UNGET();
+                *b=0;
                 SetIoErr(ERROR_UNMATCHED_QUOTES);
                 return ITEM_ERROR;
             }else if(c=='\"')
@@ -166,7 +178,15 @@ if(input!=NULL)					\
             /* Check for terminator */
             if(!c||c==' '||c=='\t'||c=='\n'||c=='='||c==EOF)
             {
-                if(c!=EOF)
+                /* To be compatible with AOS, we need
+                 * to *not* UNGET() here if we see a space
+                 * or equals sign.
+                 *
+                 * Yes, it's broken, but so are any programs
+                 * that actually used ReadItem(), and relied
+                 * on this behaviour.
+                 */
+                if (c != '=' && c != ' ' && c != '\t')
                     UNGET();
                 *b=0;
                 return ITEM_UNQUOTED;

@@ -13,7 +13,7 @@
 
 #include <aros/debug.h>
 
-BOOL readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APTR DOSBase)
+LONG readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APTR DOSBase)
 {
     BPTR fh = cli->cli_CurrentInput;
     STRPTR buf = out->buf; /* pre-allocated by caller */
@@ -27,37 +27,34 @@ BOOL readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APT
 	if (c == ENDSTREAMCH)
 	    break;
 
-	if (j == 0)
+	if (c == ';') /* comment line */
 	{
-	    if (c == ';') /* comment line */
-	    {
-		comment = TRUE;
-		continue;
-	    }
-	    else if (c == '\n') /* empty line */
-	    {
-		comment = FALSE;
-		if (isInteractive(cli) == FALSE)
-		    continue;
-	    }
-	    else if (comment || c == ' ' || c == '\t') /* leading spaces */
-		continue;
+	    comment = TRUE;
+	    continue;
 	}
+	else if (c == '\n') /* end of line */
+	{
+	    comment = FALSE;
+	}
+	else if (comment)
+	    continue;
+
+	buf[j++] = c;
 
 	if (c == '\n') /* end of line */
 	    break;
-
-	buf[j++] = c;
     }
 
-    if (i >= LINE_MAX)
+    if (i >= LINE_MAX) {
+        D(bug("[Shell] ERROR_LINE_TOO_LONG\n"));
 	return ERROR_LINE_TOO_LONG;
+    }
 
     buf[j] = '\0';
     bufferAppend(buf, j, out);
     *moreLeft = (c != ENDSTREAMCH);
 
-    D(bug("[Shell] readLine %d%s: %s\n", j, *moreLeft ?  "" : "'", buf));
+    D(bug("[Shell] readLine %d%s: %s", j, *moreLeft ?  "" : "'", buf));
     return 0;
 }
 
