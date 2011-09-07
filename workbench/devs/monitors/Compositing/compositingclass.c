@@ -205,7 +205,8 @@ static inline void HIDDCompositingRedrawBitmap(struct HIDDCompositingData *compd
     ULONG blitwidth  = rect->MaxX - rect->MinX + 1;
     ULONG blitheight = rect->MaxY - rect->MinY + 1;
 
-    DREDRAWBM(bug("[Compositing] Redraw bitmap 0x%p, rect (%d, %d) - (%d, %d)\n", n->bm, _RECT(srcrect)));
+    DREDRAWBM(bug("[Compositing] Redraw bitmap 0x%p, rect (%d, %d) - (%d, %d)\n", n->bm,
+    		  rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
     DREDRAWBM(bug("[Compositing] Blitting %d x %d from (%d, %d)\n", blitwidth, blitheight, 
 		  rect->MinX - n->leftedge, rect->MinY - n->topedge));
 
@@ -589,10 +590,10 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     BOOL newtop;
     BOOL ok = TRUE;
 
-    DSTACK(bug("[Compositing] BitMapStackChanged, topbitmap: 0x%lx\n", msg->data->Bitmap));
+    DSTACK(bug("[BitMapStackChanged] Top bitmap: 0x%lx\n", msg->data->Bitmap));
 
     LOCK_COMPOSITING_WRITE
-        
+
     /* Free all items which are already on the list */
     HIDDCompositingPurgeBitMapStack(compdata);
 
@@ -615,7 +616,7 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     /* Copy bitmaps pointers to our stack */
     for (vpdata = msg->data; vpdata; vpdata = vpdata->Next)
     {
-        DSTACK(bug("[Compositing] Testing bitmap: 0x%lx\n", vpdata->Bitmap));
+        DSTACK(bug("[BitMapStackChanged] Testing bitmap: 0x%lx\n", vpdata->Bitmap));
 
         /*
          * Check if the passed bitmap can be composited together with screen
@@ -631,13 +632,13 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 		 * We need to reset own state and return NULL. graphics.library
 		 * falls back to no composition in this case.
 		 */
-	    	DSTACK(bug("[Compositing] Error allocating StackBitMapNode!!!\n"));
+	    	DSTACK(bug("[BitMapStackChanged] Error allocating StackBitMapNode!!!\n"));
 
 		ok = FALSE;
 		break;
 	    }
 
-	    DSTACK(bug("[Compositing] ViewPort 0x%p, offset (%d, %d)\n", vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
+	    DSTACK(bug("[BitMapStackChanged] ViewPort 0x%p, offset (%d, %d)\n", vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
 
             n->bm              = vpdata->Bitmap;
             n->isscreenvisible = FALSE;
@@ -658,7 +659,7 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     	{
             HIDDCompositingValidateBitMapPositionChange(n->bm, &n->leftedge, &n->topedge, 
             						compdata->screenrect.MaxX + 1, compdata->screenrect.MaxY + 1);
-            DSTACK(bug("[Compositing] Bitmap 0x%p, display size %d x %d, validated position (%ld, %ld)\n",
+            DSTACK(bug("[BitMapStackChanged] Bitmap 0x%p, display size %d x %d, validated position (%ld, %ld)\n",
             	       n->bm, compdata->screenrect.MaxX + 1, compdata->screenrect.MaxY + 1,
             	       n->leftedge, n->topedge));
     	}
@@ -676,6 +677,8 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 
     UNLOCK_COMPOSITING
 
+    DSTACK(bug("[BitMapStackChanged] Done, composited bitmap 0x%p\n", compdata->compositedbitmap));
+
     /* Tell if the composition is active */
     *msg->active = compdata->compositedbitmap ? TRUE : FALSE;
     /* Return actually displayed bitmap */
@@ -686,13 +689,16 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
 {
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
 
-    LOCK_COMPOSITING_READ
-
     if (compdata->compositedbitmap)
     {
-    	/* Composition is active, handle redraw if the bitmap is on screen */
-	struct StackBitMapNode *n = HIDDCompositingIsBitMapOnStack(compdata, msg->bm);
+	/* Composition is active, handle redraw if the bitmap is on screen */
+    	struct StackBitMapNode *n;
 
+	DUPDATE(bug("[BitMapRectChanged] Bitmap 0x%p\n", msg->bm));
+
+    	LOCK_COMPOSITING_READ
+
+	n = HIDDCompositingIsBitMapOnStack(compdata, msg->bm);
 	if (n && n->isscreenvisible)
 	{
 	    /* Rectangle in bitmap coord system */
@@ -702,20 +708,20 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
 	    srcrect.MinY = msg->y;
 	    srcrect.MaxX = msg->x + msg->width - 1; 
 	    srcrect.MaxY = msg->y + msg->height - 1;
-    	    DUPDATE(bug("[Compositing] Updating bitmap 0x%p, rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
+    	    DUPDATE(bug("[BitMapRectChanged] Bitmap rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
 
 	    /* Transform the rectangle to screen coord system */
 	    srcrect.MinX += n->leftedge; 
 	    srcrect.MaxX += n->leftedge;
 	    srcrect.MinY += n->topedge;
 	    srcrect.MaxY += n->topedge;
-	    DUPDATE(bug("[Compositing] Screen-relative rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
+	    DUPDATE(bug("[BitMapRectChanged] Screen-relative rect (%d, %d) - (%d, %d)\n", _RECT(srcrect)));
 
     	    /* Find intersection of visible screen rect and bitmap rect */
     	    if (AndRectRect(&srcrect, &n->screenvisiblerect, &dstandvisrect))
     	    {
     	        /* Intersection is valid. Blit. */
-    	    	DUPDATE(bug("[Compositing] Clipped rect (%d, %d) - (%d, %d)\n", _RECT(dstandvisrect)));
+    	    	DUPDATE(bug("[BitMapRectChanged] Clipped rect (%d, %d) - (%d, %d)\n", _RECT(dstandvisrect)));
 
     	    	HIDDCompositingRedrawBitmap(compdata, n, &dstandvisrect);
 
@@ -725,6 +731,10 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
 				   dstandvisrect.MaxY - dstandvisrect.MinY + 1);
     	    }
     	}
+
+    	UNLOCK_COMPOSITING
+    	
+    	DUPDATE(bug("[BitMapRectChanged] Done\n"));
     }
     else
     {
@@ -734,8 +744,6 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
 	 */
     	HIDD_BM_UpdateRect(msg->bm, msg->x, msg->y, msg->width, msg->height);
     }
-
-    UNLOCK_COMPOSITING
 }
 
 BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
@@ -744,7 +752,7 @@ BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
     struct StackBitMapNode *n;
     IPTR disp_width, disp_height;
 
-    LOCK_COMPOSITING_WRITE
+    LOCK_COMPOSITING_READ
 
     n = HIDDCompositingIsBitMapOnStack(compdata, msg->bm);
     if (n)
