@@ -62,7 +62,7 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBa
 
     for (; in->cur < n; p = c)
     {
-	DB2(bug("[convertLoopRedir] cur %u\n", in->cur));
+	DB2(bug("[convertLoopRedir] cur %u (%c)\n", in->cur, in->buf[in->cur]));
 	c = in->buf[in->cur];
 
 	if (p == '*')
@@ -100,7 +100,10 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
     TEXT buf[FILE_MAX];
     LONG i;
 
-    switch (bufferReadItem(command, FILE_MAX, in, DOSBase))
+    i = bufferReadItem(command, FILE_MAX, in, DOSBase);
+    D(bug("[readCommandR] Got item %d: %s\n", i, command));
+
+    switch (i)
     {
     case ITEM_QUOTED: /* no alias expansion */
 	if (in->cur < in->len)
@@ -177,6 +180,8 @@ endReadAlias:
 	bufferFree(&b);
 	return error;
     }
+
+    D(bug("[readCommandR] Copying buffer %s, len %d, pos %d\n", in->buf, in->len, in->cur));
 
     return bufferCopy(in, out, in->len - in->cur);
 }
@@ -261,8 +266,27 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
     *haveCommand = TRUE;
 
     /* PASS 5: redirections */
+    D(bug("[convertLine] Pass 5: cur %d len %d (%s)\n", in->cur, in->len, in->buf));
     error = convertLoopRedir(ss, in, out, DOSBase);
-    D(bug("[convertLine] Pass 5: Error %lu parsing redirect\n", error));
+    if (error)
+    {
+    	D(bug("[convertLine] Pass 5: Error %lu parsing redirect\n", error));
+    	return error;
+    }
+
+    if (out->buf[out->len] != '\n')
+    {
+    	/*
+    	 * Make sure that the output buffer (command arguments) ends with a newline.
+    	 * This is OS 3.1-compatible behavior. RunCommand() injects the supplied line
+    	 * into command's Input(), but doesn't append a newline. And without a newline,
+    	 * ReadArgs() will halt, waiting for it.
+    	 */
+    	D(bug("[convertLine] Appending a newline\n"));
+    	error = bufferAppend("\n", 1, out);
+    }
+
+    D(bug("[convertLine] Result: cur %d len %d (%s)\n", out->cur, out->len, out->buf));
 
     return error;
 }
