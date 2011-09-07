@@ -4,10 +4,12 @@
 */
 
 #define DEBUG 0
+#define DTOGGLE(x)
+#define DMOVE(x)
 #define DRECALC(x)
 #define DREDRAWBM(x)
-#define DREDRAWSCR(x) x
-#define DSTACK(x) x
+#define DREDRAWSCR(x)
+#define DSTACK(x)
 #define DUPDATE(x)
 
 #include "compositing_intern.h"
@@ -467,8 +469,8 @@ static BOOL HIDDCompositingToggleCompositing(struct HIDDCompositingData *compdat
         compdata->compositedbitmap = NULL;
     }
 
-    D(bug("[Compositing] Toggle te %d, oldcomp 0x%lx, top 0x%lx, comp 0x%lx, newscreen %lx\n",
-        topedge, oldcompositedbitmap, compdata->topbitmap, compdata->compositedbitmap, newscreenbitmap));
+    DTOGGLE(bug("[Compositing] Toggle te %d, oldcomp 0x%lx, top 0x%lx, comp 0x%lx, newscreen %lx\n",
+            topedge, oldcompositedbitmap, compdata->topbitmap, compdata->compositedbitmap, newscreenbitmap));
 
     /*
      * (e) If the screenbitmap changed, show the new screenbitmap.
@@ -780,17 +782,17 @@ BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
     	OOP_GetAttr(sync, aHidd_Sync_VDisp, &disp_height);
     }
 
-    D(bug("[Compositing] Validating bitmap 0x%p, position (%ld, %ld), limits %ld x %ld\n",
+    DMOVE(bug("[BitMapPositionChange] Validating bitmap 0x%p, position (%ld, %ld), limits %ld x %ld\n",
     	  msg->bm, *msg->newxoffset, *msg->newyoffset, disp_width, disp_height));
 
     HIDDCompositingValidateBitMapPositionChange(msg->bm, msg->newxoffset, msg->newyoffset,
     						disp_width, disp_height);
 
-    D(bug("[Compositing] Validated position (%ld, %ld)\n", *msg->newxoffset, *msg->newyoffset));
+    DMOVE(bug("[BitMapPositionChange] Validated position (%ld, %ld)\n", *msg->newxoffset, *msg->newyoffset));
 
     if (n && ((*msg->newxoffset != n->leftedge) || (*msg->newyoffset != n->topedge)))
     {
-    	D(bug("[Compositing] Old position (%ld, %ld)\n", n->leftedge, n->topedge));
+    	DMOVE(bug("[BitMapPositionChange] Old position (%ld, %ld)\n", n->leftedge, n->topedge));
 
 	/* Reflect the change if it happened */
     	n->leftedge = *msg->newxoffset;
@@ -801,9 +803,14 @@ BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
     	    /*
     	     * If this is the frontmost bitmap, we may want to toggle compositing,
     	     * if it starts/stops covering the whole screen at one point.
+    	     * We don't need to call HIDDCompositingRedrawVisibleScreen() here because
+    	     * HIDDCompositingToggleCompositing() does this itself, for improved
+    	     * visual appearance.
     	     */
             HIDDCompositingToggleCompositing(compdata, FALSE);    
         }
+        else
+            HIDDCompositingRedrawVisibleScreen(compdata);
     }
 
     UNLOCK_COMPOSITING
