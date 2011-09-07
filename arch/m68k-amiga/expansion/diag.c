@@ -98,7 +98,7 @@ static void diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *confi
 		return;
 
 	size = (getromdata(configDev, buswidth, 2) << 8) | (getromdata(configDev, buswidth, 3) << 0);
-	D(bug("size=%02x\n", size));
+	D(bug("size=%04x\n", size));
 	if (size < sizeof (struct DiagArea))
 		return;
 
