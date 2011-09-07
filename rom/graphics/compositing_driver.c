@@ -1,5 +1,3 @@
-#define DEBUG 1
-
 #include <aros/debug.h>
 #include <graphics/driver.h>
 #include <hidd/compositing.h>
@@ -55,7 +53,10 @@ ULONG composer_Install(OOP_Class *cl, struct GfxBase *GfxBase)
 
 void composer_Setup(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
-    /* Note that if we have fakegfx object, we'll actually work on top of it... */
+    /* 
+     * Note that if we have fakegfx object, we'll actually work on top of it.
+     * This allows us to have transparent software mouse pointer support.
+     */
     mdd->composer = OOP_NewObjectTags(CDD(GfxBase)->composerClass, NULL,
 				      aHidd_Compositing_GfxHidd, mdd->gfxhidd, 
 				      aHidd_Compositing_FrameBuffer, mdd->framebuffer, TAG_DONE);
