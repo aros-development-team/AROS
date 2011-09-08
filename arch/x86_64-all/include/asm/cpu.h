@@ -207,6 +207,8 @@ static inline uint64_t __attribute__((always_inline)) rdmsrq(uint32_t msr_no)
     return ((uint64_t)ret1 | ((uint64_t)ret2 << 32));
 }
 
+#define rdmsri rdmsrq
+
 static inline void __attribute__((always_inline)) wrmsr(uint32_t msr_no, uint32_t val_lo, uint32_t val_hi)
 {
     asm volatile("wrmsr"::"a"(val_lo),"d"(val_hi),"c"(msr_no));
