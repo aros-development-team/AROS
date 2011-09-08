@@ -15,6 +15,7 @@
 #define STUB(cname,name)             		  \
 	.globl	cname		    		; \
 	.type	cname, %function    		; \
+cname:						; \
 	push	{fp, lr}			; \
 	add	fp, sp, #4			; \
 	push	{r0, r1, r2, r3, r9, r12}	; \
