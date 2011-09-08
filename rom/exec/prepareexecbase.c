@@ -338,9 +338,19 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 
     t->tc_Node.ln_Name = "Boot Task";
     t->tc_Node.ln_Type = NT_TASK;
-    t->tc_Node.ln_Pri = 0;
-    t->tc_State = TS_RUN;
-    t->tc_SigAlloc = 0xFFFF;
+    t->tc_Node.ln_Pri  = 0;
+    t->tc_State	       = TS_RUN;
+    t->tc_SigAlloc     = 0xFFFF;
+    /*
+     * Boot-time stack can be placed anywhere in memory.
+     * In order to avoid complex platform-dependent mechanism for querying its limits
+     * we simply shut up stack checking in kernel.resource by specifying the whole address
+     * space as limits.
+     * If needed, real stack size can be set up later, in kernel.resource startup code
+     * after it has called us. It knows where the stack is.
+     */
+    t->tc_SPLower      = NULL;
+    t->tc_SPUpper      = (APTR)~0;
 
     /*
      * Set the current task and elapsed time for it. However, multitasking is

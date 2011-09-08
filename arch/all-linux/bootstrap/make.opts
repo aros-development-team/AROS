@@ -1,0 +1,5 @@
+# We assume that for linux function calling convention between host
+# and AROS is possible.
+# This is needed to support malloc.c in arch/all-linux/bootstrap
+LIBS         += arossupport
+USER_LDFLAGS += -L$(LIBDIR)

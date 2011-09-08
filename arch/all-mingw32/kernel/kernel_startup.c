@@ -136,17 +136,17 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	return -1;
 
     /*
-     * Set up correct stack borders and altstack.
-     * Now our boot task can call relbase libraries.
-     * In fact on hosted we don't know real stack limits, but
-     * we know it's at least of AROS_STACKSIZE bytes long. For existing architectures
-     * this seems to be true.
-     * TODO: 1. Under UNIX it's possible to call getrlimits() to learn about stack limits.
-     *       2. The whole altstack thing can prove unfeasible. At least currently it failed
-     *		as a system-wide ABI. Alternative stack is not interrupt-safe, while AROS
-     *		libraries may be (and at least several are).
+     * Set up correct stack borders and altstack. Now our boot task can call relbase libraries.
+     * Explicit stack allocation in Windows is done by specifying stack size in executable file headers.
+     * For AROSBootstrap.exe we set initially committed size to 65536 (64K) - see bootstrap/make.opts.
+     * The bootstrap may have already used up some of this space, but 40KB should be okay here.
+     * We intentionally don't use AROS_STACKSIZE macro here, just in case if someone changes it.
+     * Attempt to access uncommitted stack space causes instant crash.
+     * TODO: The whole altstack thing can prove unfeasible. At least currently it failed
+     *	     as a system-wide ABI. Alternative stack is not interrupt-safe, while AROS
+     *	     libraries may be (and at least several are).
      */
-    SysBase->ThisTask->tc_SPLower = _stack - AROS_STACKSIZE;
+    SysBase->ThisTask->tc_SPLower = _stack - 40960;
     SysBase->ThisTask->tc_SPUpper = _stack;
     aros_init_altstack(SysBase->ThisTask);
 

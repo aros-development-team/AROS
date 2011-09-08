@@ -14,21 +14,9 @@ USER_LDFLAGS  := -L$(GENDIR)/lib
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR) -isystem $(SRCDIR)/bootstrap/include
 LIBS	      := bootstrap
 
-ifeq ($(ARCH),mingw32)
-    EXE_SUFFIX := .exe
-else
-    LIBS += gcc dl
-endif
-
-ifeq ($(ARCH),linux)
-# We assume that for linux function calling convention between host
-# and AROS is possible.
-# This is needed to support malloc.c in arch/all-linux/bootstrap
-    LIBS += arossupport
-    USER_LDFLAGS += -L$(LIBDIR)
-endif
-
-# Allow to add variant-specific options
+# Allow to add host-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/bootstrap/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/bootstrap/make.opts
 -include $(SRCDIR)/arch/all-$(AROS_TARGET_VARIANT)/bootstrap/make.opts
 
 #MM kernel-bootstrap-hosted: linklibs-bootstrap linklibs-arossupport

@@ -1,0 +1,4 @@
+EXE_SUFFIX   := .exe
+# Reserve 2 MB stack, commit 64K.
+# The latter is needed for the startup code to work (see kernel_startup.c)
+USER_LDFLAGS += -Xlinker --stack -Xlinker 0x2000000,65536
