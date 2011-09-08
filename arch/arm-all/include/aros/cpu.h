@@ -127,10 +127,10 @@ struct JumpVec
             "	ldr	r12, 2f\n"						\
             "	blx	r12\n"							\
             /* Restore original arguments */					\
-            "	pop	{r3, r2, r1, r0}\n"					\
+            "	pop	{r0, r1, r2, r3}\n"					\
             /* Call library function */						\
             "	ldr 	r12, 1f\n"						\
-            "	ldr  	r12, [r12, %0 ]\n"					\
+            "	ldr  	r12, [r12, %0]\n"					\
             "	blx	r12\n"							\
             /* Push return value (possibly 64-bit one) */			\
             "	push	{r0, r1}\n"						\
@@ -139,7 +139,7 @@ struct JumpVec
             "	blx	r12\n"							\            
             "	ldr	lr, r0\n"						\
             /* Pop return value */						\
-            "	pop	{r1, r0}\n"						\
+            "	pop	{r0, r1}\n"						\
             /* Return to the caller */						\
             "	bx	lr\n"							\
             "1:	.word	" #libbasename "\n"					\
@@ -177,7 +177,7 @@ struct JumpVec
             "	ldr	r12, 2f\n"						\
             "	blx	r12\n"							\
             /* Restore original arguments */					\
-            "	pop	{r3, r2, r1, r0}\n"					\
+            "	pop	{r0, r1, r2, r3}\n"					\
             /* Call library function */						\
             "	ldr 	r12, 1f\n"						\
             "	ldr  	r12, [r12, %0]\n"					\
@@ -189,7 +189,7 @@ struct JumpVec
             "	blx	r12\n"							\            
             "	ldr	lr, r0\n"						\
             /* Pop return value */						\
-            "	pop	{r1, r0}\n"						\
+            "	pop	{r0, r1}\n"						\
             /* Return to the caller */						\
             "	bx	lr\n"							\
 	    "1:	.word	" #libbasename "_offset\n"				\
