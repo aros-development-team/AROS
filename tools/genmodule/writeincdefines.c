@@ -63,7 +63,7 @@ void writeincdefines(struct config *cfg)
 	    }
 	    else /* libcall == STACK */
 	    {
-                /* NOP: define can't handle libbase passing */
+		writedefinestack(out, funclistit, cfg);
 	    }
 	    
 	    writealiases(out, funclistit, cfg);
@@ -384,6 +384,28 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 
 	free(varargname);
     }
+}
+
+void
+writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg)
+{
+    struct functionarg *arglistit;
+
+    /* Only if no baserel. define can't handle libbase passing */
+    if (cfg->options & OPTION_BASEREL)
+    	return;
+
+    fprintf(out, "#define %s ((%s (*)(", funclistit->name, funclistit->type);
+    for (arglistit = funclistit->arguments;
+	 arglistit != NULL;
+	 arglistit = arglistit->next
+    )
+    {
+	fprintf(out, "%s", arglistit->arg);
+	if (arglistit->next != NULL)
+	    fprintf(out, ", ");
+    }
+    fprintf(out, "))__AROS_GETVECADDR(%s,%d))\n", cfg->libbase, funclistit->lvo);
 }
 
 void

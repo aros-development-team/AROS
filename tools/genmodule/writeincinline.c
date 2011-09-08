@@ -62,7 +62,8 @@ void writeincinline(struct config *cfg)
             }
             else /* libcall == STACK */
             {
-            	/* TODO: inline function with libbase passing */
+		/* This is the same as in defines */
+		writedefinestack(out, funclistit, cfg);
             }
 
             writealiases(out, funclistit, cfg);
