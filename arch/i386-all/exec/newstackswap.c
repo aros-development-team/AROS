@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NewStackSwap() - Call a function with swapped stack.
@@ -29,13 +29,7 @@ AROS_LH3(IPTR, NewStackSwap,
     IPTR ret, oldtop;
     BYTE i;
 
-    /*
-     * In order to be able to restore the stack after calling the function
-     * we'll need to store original SP on the new stack. So we reserve a
-     * location for it.
-     */
-    _PUSH(sp, 0);
-    /* Then put arguments on stack in appropriate order */
+    /* Put arguments on stack in appropriate order */
     for (i = 7; i >= 0; i--)
     {
 	D(bug("[NewStackSwap] Argument %d value 0x%08lX\n", i, args->Args[i]));
@@ -66,33 +60,38 @@ AROS_LH3(IPTR, NewStackSwap,
     /* Set new top to old top */
     aros_set_altstack((struct Task *)t, oldtop);
 
-    asm volatile(
-    /* Save original ESP to the location reserved before */
-    "movl %%esp, 32(%2)\n\t"
+    asm volatile
+    (
+    /* Save original ESP by setting up a new stack frame */
+    "	push	%%ebp\n"
+    "	movl	%%esp, %%ebp\n"
     /* Actually change the stack */
-    "movl %2, %%esp\n\t"
+    "	movl	%2, %%esp\n\t"
 
-    /* Enable(). It preserves all registers by convention, so no EAX save/restore.
-       Note also that we use global SysBase here  because we are running on the new
-       stack and SysBase is lost. */
-    "movl SysBase, %%ebx\n\t"
-    "push %%ebx\n\t"
-    "call *-84(%%ebx)\n\t"
-    "pop %%ebx\n\t"
+    /* Enable(). It preserves all registers by convention, so no %1 save/restore. */
+    "	push	%3\n"
+    "	call	*-84(%3)\n"
+    "	pop	%3\n"
 
     /* Call our function */
-    "call *%1\n\t"
+    "	call	*%1\n"
 
-    /* Disable(). Also preserves registers. */
-    "movl SysBase, %%ebx\n\t"
-    "push %%ebx\n\t"
-    "call *-80(%%ebx)\n\t"
-    "pop %%ebx\n\t"
+    /*
+     * Disable(). Also preserves registers.
+     * We reload %3 from global SysBase here because we are running on a new stack,
+     * and local SysBase of this function is placed on old one. %3 was
+     * clobbered by the called function.
+     */
+    "	movl	SysBase, %3\n"
+    "	push	%3\n"
+    "	call	*-80(%3)\n"
+    "	pop	%3\n"
 
     /* Restore original ESP. Function's return value is in EAX. */
-    "movl 32(%%esp), %%esp\n\t"
+    "	movl	%%ebp, %%esp\n"
+    "	pop	%%ebp\n"
     : "=a"(ret)
-    : "r"(entry), "r"(sp)
+    : "r"(entry), "r"(sp), "r"(SysBase)
     : "ebx", "ecx", "edx", "cc");
 
     /* Change limits back and return */
