@@ -121,12 +121,6 @@ void InitExecBase(struct ExecBase *SysBase, ULONG negsize, struct TagItem *msg)
 {
     ULONG i;
     char *args;
-
-#ifdef HAVE_PREPAREPLATFORM
-    /* Setup platform-specific data */
-    if (!Exec_PreparePlatform(&PD(SysBase), msg))
-	return NULL;
-#endif
     
     /* Setup function vectors */
     AROS_CALL3(ULONG, AROS_SLIB_ENTRY(MakeFunctions, Exec, 15),
@@ -294,6 +288,12 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     /* Allocate memory for library base */
     totalsize = negsize + sizeof(struct IntExecBase);
     SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, MEMF_CLEAR, NULL) + negsize);
+
+#ifdef HAVE_PREPAREPLATFORM
+    /* Setup platform-specific data */
+    if (!Exec_PreparePlatform(&PD(SysBase), msg))
+	return NULL;
+#endif
 
     /* Set default values */
     InitExecBase(SysBase, negsize, msg);
