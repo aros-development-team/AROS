@@ -213,12 +213,9 @@ struct JumpVec
 #define AROS_FUNCALIAS(fname, alias) \
     __AROS_FUNCALIAS(fname, alias)
 
-/*
-   No, we do not want to preserve the all registers in case of Semaphore and
-   multitasking handling functions. It made sence on m68k native target. On all
-   other targets the standard ABI rules the AROS world anyway...
-*/
+/* Register preservation is still useful. At least for stack swapping functions. */
 #undef UseExecstubs
+#define UseExecstubs 1
 
 /* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \
