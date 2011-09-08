@@ -5,21 +5,26 @@
  *      Author: misc
  *  $Id$
  */
-#error need to be update to store *(SysBase->ThisTask->tc_SPLower)
-        
+
 #include "aros/arm/asm.h"
 
 	.text
-	.align 2
+	.align	2
 	.global AROS_CDEFNAME(setjmp)
-	.type AROS_CDEFNAME(setjmp),%function
+	.type	AROS_CDEFNAME(setjmp),%function
 
 AROS_CDEFNAME(setjmp):
-	mov ip, r0		/* Get the env address */
-	str lr, [ip], #4	/* store return address explicitly */
-	stmia ip!, {r4, r5, r6, r7, r8, r9, sl, fp, sp}	/* store non-scratch regs */
-	fstmiax ip!, {d8-d15}	/* Store VFP registers - we assume they are available! */
-	fmrx r2, fpscr		/* VFP condition codes */
-	str r2, [ip], #4
-	mov r0, #0			/* return zero */
-	bx lr
+	mov	ip, r0						/* Get the env address */
+	str	lr, [ip], #4					/* store return address explicitly */
+	stmia	ip!, {r4, r5, r6, r7, r8, r9, sl, fp, sp}	/* store non-scratch regs */
+	fstmiax	ip!, {d8-d15}					/* Store VFP registers - we assume they are available! */
+	fmrx	r2, fpscr					/* VFP condition codes */
+	str	r2, [ip], #4
+        ldr	r0, 1f						/* Save *(SysBase->ThisTask->tc_SPLower) */
+        ldr	r0, [r0]
+        ldr	r0, [r0, ThisTask]
+        ldr	r0, [r0, tc_SPLower]
+        str	r0, [ip], #4
+	mov	r0, #0						/* return zero */
+	bx	lr
+1:	.word	SysBase

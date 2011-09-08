@@ -10,22 +10,20 @@
 #include "aros/arm/asm.h"
 
 	.text
-	.align 2
+	.align	2
 	.global AROS_CDEFNAME(vfork)
-	.type AROS_CDEFNAME(vfork),%function
+	.type	AROS_CDEFNAME(vfork),%function
 
-#error jmpbuf size has changed !
 AROS_CDEFNAME(vfork):
-	str		lr, [sp, #-4]!		/* Store link register */
-	sub		sp, sp, #260		/* Create space for env structure */
-	mov		r0, sp
-	bl		setjmp				/* Prepare setjmp */
+	str	lr, [sp, #-4]!		/* Store link register */
+	sub	sp, sp, #264		/* Create space for env structure */
+	mov	r0, sp
+	bl	setjmp			/* Prepare setjmp */
 
-	ldr		r0, [sp, #264]		/* restore link register */
-	str		r0, [sp, #0*4]		/* save lr as first argument of env structure */
+	ldr	r0, [sp, #268]		/* restore link register */
+	str	r0, [sp, #0*4]		/* save lr as first argument of env structure */
 
-	add		r0, sp, #264		/* save previous stack pointer into env structure */
-	str		r0, [sp, #9*4]
+	add	r0, sp, #268		/* save previous stack pointer into env structure */
+	str	r0, [sp, #9*4]
 
-	b		__vfork				/* never return... */
-
+	b	__vfork			/* never return... */
