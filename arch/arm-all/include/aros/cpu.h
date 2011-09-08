@@ -95,23 +95,112 @@ struct JumpVec
    Internals: a dummy function is used that will generate some
    unused junk code but otherwise we can't pass input arguments
    to the asm statement
+
+   Some asm trickery performed:
+   - function return address is top of stack,
+     leave it there to use as argument for aros_push2_relbase
+   - libbase is other argument to aros_push2_relbase
+   - call aros_push2_relbase
+   - put libbase back in %eax
+   - remove libbase and return address from stack
+   - Call lvo vector
+   - push return value on stack
+   - call aros_pop2_relbase,
+     return value will be old return address
+   - pull return value from stack
+   - jmp to old return address
 */
-#error the __AROS_LIBFUNCSTUB needs to be update for RELBASE handling
-#define __AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
-    void __ ## fname ## _ ## libbasename ## _wrapper(void) \
-    { \
-	asm volatile( \
-	    ".weak " #fname "\n" \
-	    #fname " :\n" \
-            "\tldr  r12, 1f\n" \
-            "\tldr  r12, [r12]\n" \
-            "\tldr  pc , [r12, %0 ]\n" \
-            "\t1: .word " #libbasename "\n" \
-	    : : "i" ((-lvo*LIB_VECTSIZE)) \
-	); \
+#define __AROS_LIBFUNCSTUB(fname, libbasename, lvo)				\
+    void __ ## fname ## _ ## libbasename ## _wrapper(void)			\
+    {										\
+	asm volatile(								\
+	    "	.weak " #fname "\n"						\
+	    #fname " :\n"							\
+	    /* return address is in lr register */				\
+	    /* Up to four parameters are in r0 - r3 , the rest are on stack */	\
+	    "	push	{r0, r1, r2, r3}\n"					\
+	    /* r0 = libbase, r1 = lr */						\
+	    "	ldr	r12, 1f\n"						\
+            "	ldr	r0, [r12]\n"						\
+	    "	ldr	r1, lr\n"						\
+	    /* aros_push2_relbase(r0, r1) */					\
+            "	ldr	r12, 2f\n"						\
+            "	blx	r12\n"							\
+            /* Restore original arguments */					\
+            "	pop	{r3, r2, r1, r0}\n"					\
+            /* Call library function */						\
+            "	ldr 	r12, 1f\n"						\
+            "	ldr  	r12, [r12, %0 ]\n"					\
+            "	blx	r12\n"							\
+            /* Push return value (possibly 64-bit one) */			\
+            "	push	{r0, r1}\n"						\
+	    /* lr = aros_pop2_relbase() */					\
+            "	ldr	r12, 3f\n"						\
+            "	blx	r12\n"							\            
+            "	ldr	lr, r0\n"						\
+            /* Pop return value */						\
+            "	pop	{r1, r0}\n"						\
+            /* Return to the caller */						\
+            "	bx	lr\n"							\
+            "1:	.word	" #libbasename "\n"					\
+            "2:	.word	aros_push2_relbase\n"					\
+            "3:	.word	aros_pop2_relbase\n"					\
+	    ::"i"((-lvo*LIB_VECTSIZE))						\
+	);									\
     }
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
+
+/* Macro: AROS_RELLIBFUNCSTUB(functionname, libbasename, lvo)
+   Same as AROS_LIBFUNCSTUB but finds libbase at an offset in
+   the current libbase
+*/
+#define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)				\
+    void __ ## fname ## _ ## libbasename ## _relwrapper(void)			\
+    {										\
+	asm volatile(								\
+	    "	.weak " #fname "\n"						\
+	    #fname " :\n"							\
+	    /* return address is in lr register */				\
+	    /* Up to four parameters are in r0 - r3 , the rest are on stack */	\
+	    "	push	{r0, r1, r2, r3}\n"					\
+	    "	push	{lr}\n"							\
+	    /* r0 = aros_get_relbase */						\
+	    "	ldr	r12, 4f\n"						\
+	    "	blx	r12\n"							\
+	    /* r0 = libbase, r1 = lr (was pushed above) */			\
+	    "	ldr	r12, 1f\n"						\
+	    "	ldr	r12, [r12]\n"						\
+	    "	ldr	r0, [r0, r12]\n"					\
+	    "	pop	{r1}\n"							\
+	    /* aros_push2_relbase(r0, r1) */					\
+            "	ldr	r12, 2f\n"						\
+            "	blx	r12\n"							\
+            /* Restore original arguments */					\
+            "	pop	{r3, r2, r1, r0}\n"					\
+            /* Call library function */						\
+            "	ldr 	r12, 1f\n"						\
+            "	ldr  	r12, [r12, %0]\n"					\
+            "	blx	r12\n"							\
+            /* Push return value (possibly 64-bit one) */			\
+            "	push	{r0, r1}\n"						\
+	    /* lr = aros_pop2_relbase() */					\
+            "	ldr	r12, 3f\n"						\
+            "	blx	r12\n"							\            
+            "	ldr	lr, r0\n"						\
+            /* Pop return value */						\
+            "	pop	{r1, r0}\n"						\
+            /* Return to the caller */						\
+            "	bx	lr\n"							\
+	    "1:	.word	" #libbasename "_offset\n"				\
+            "2:	.word	aros_push2_relbase\n"					\
+            "3:	.word	aros_pop2_relbase\n"					\
+            "4: .word	aros_get_relbase\n"					\
+	    ::"i"((-lvo*LIB_VECTSIZE))						\
+	);									\
+    }
+#define AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
+    __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)
 
 /* Macro: AROS_FUNCALIAS(functionname, alias)
    This macro will generate an alias 'alias' for function
