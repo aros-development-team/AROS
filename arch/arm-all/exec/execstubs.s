@@ -44,7 +44,6 @@ cname:				    ; \
 	STUB(name)
 
 	.text
-	_ALIGNMENT
 
 	/* Call functions and preserve registers */
 #ifdef  UseExecstubs
