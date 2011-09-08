@@ -122,7 +122,7 @@ struct JumpVec
 	    /* r0 = libbase, r1 = lr */						\
 	    "	ldr	r12, 1f\n"						\
             "	ldr	r0, [r12]\n"						\
-	    "	ldr	r1, lr\n"						\
+	    "	mov	r1, lr\n"						\
 	    /* aros_push2_relbase(r0, r1) */					\
             "	ldr	r12, 2f\n"						\
             "	blx	r12\n"							\
@@ -137,7 +137,7 @@ struct JumpVec
 	    /* lr = aros_pop2_relbase() */					\
             "	ldr	r12, 3f\n"						\
             "	blx	r12\n"							\            
-            "	ldr	lr, r0\n"						\
+            "	mov	lr, r0\n"						\
             /* Pop return value */						\
             "	pop	{r0, r1}\n"						\
             /* Return to the caller */						\
@@ -187,7 +187,7 @@ struct JumpVec
 	    /* lr = aros_pop2_relbase() */					\
             "	ldr	r12, 3f\n"						\
             "	blx	r12\n"							\            
-            "	ldr	lr, r0\n"						\
+            "	mov	lr, r0\n"						\
             /* Pop return value */						\
             "	pop	{r0, r1}\n"						\
             /* Return to the caller */						\
