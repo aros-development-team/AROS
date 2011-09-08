@@ -9,19 +9,23 @@
 #include "aros/arm/asm.h"
 
 	.text
-	.align 2
-	.global AROS_CDEFNAME(longjmp)
-	.type AROS_CDEFNAME(longjmp),%function
+	.align	2
+	.global	AROS_CDEFNAME(longjmp)
+	.type	AROS_CDEFNAME(longjmp),%function
 
 AROS_CDEFNAME(longjmp):
-	mov ip, r0	/* env into ip register */
-	ldr lr, [ip], #4 /* restore return address */
-	movs r0, r1		/* return value from longjmp into r0 and generate condition code */
-	moveq r0, #1	/* if retval = 0, then retval = 1 */
-	ldmia ip!, {r4, r5, r6, r7, r8, r9, sl, fp, sp}	/* restore non-scratch regs */
-	fldmiax ip!, {d8-d15}	/* Restore VFP registers - we assume they are available! */
-	ldr     r1, [ip], #4	/* restore VFP status reg */
+	mov	ip, r0						/* env into ip register */
+	ldr	lr, [ip], #4					/* restore return address */
+	movs	r0, r1						/* return value from longjmp into r0 and generate condition code */
+	moveq	r0, #1						/* if retval = 0, then retval = 1 */
+	ldmia	ip!, {r4, r5, r6, r7, r8, r9, sl, fp, sp}	/* restore non-scratch regs */
+	fldmiax ip!, {d8-d15}					/* Restore VFP registers - we assume they are available! */
+	ldr     r1, [ip], #4					/* restore VFP status reg */
   	fmxr    fpscr, r1
-#error restore *(SysBase->ThisTask->tc_SPLower)
-	bx lr			/* Done! */
-
+  	ldr	r1, [ip], #4					/* restore *(SysBase->ThisTask->tc_SPLower) */
+        ldr	r2, 1f						/* Save *(SysBase->ThisTask->tc_SPLower) */
+        ldr	r2, [r2]
+        ldr	r2, [r2, ThisTask]
+        str	r1, [r2, tc_SPLower]
+	bx	lr						/* Done! */
+1:	.word	SysBase
