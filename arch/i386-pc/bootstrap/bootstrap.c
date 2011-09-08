@@ -103,15 +103,12 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     outb(0xff, 0x21);
     outb(0xff, 0xa1);
 
-    tag->ti_Tag = KRN_BootLoader;
-    tag->ti_Data = (IPTR)"Bootstrap/GRUB for x86";
-    tag++;
-    tag->ti_Tag = KRN_KernelStackBase;
-    tag->ti_Data = __stack;
-    tag++;
-    tag->ti_Tag = KRN_KernelStackSize;
-    tag->ti_Data = BOOT_STACK_SIZE;
-    tag++;
+    if (mb->flags & MB_FLAGS_LDRNAME)
+    {
+    	tag->ti_Tag  = KRN_BootLoader;
+    	tag->ti_Data = mb->loader_name;
+    	tag++;
+    }
 
     if (mb->cmdline)
     {
