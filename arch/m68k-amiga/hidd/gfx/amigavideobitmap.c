@@ -54,10 +54,9 @@ static void setrtg(struct amigavideo_staticdata *csd, BOOL showrtg)
 OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    IPTR width, height, depth;
-    BOOL  ok = TRUE;      
+    IPTR width, height, depth, disp;
+    BOOL ok = TRUE;      
     struct amigabm_data *data;
-    ULONG		 align, bmadd;
 
     DB2(bug("AmigaVideoBM__Root__New\n"));
 
@@ -68,30 +67,22 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof  (*data));
 
-    /* Get some data about the dimensions of the bitmap */
-    data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
-    align = csd->aga ? 63 : 15; // AGA 64-bit fetchmode needs 8-byte alignment
-    bmadd = csd->aga ? 16 : 0;
-    
-    /* FIXME: Fix this hack */
-    /* Because this class is used to emulate Amiga bitmaps, we
-       have to see if it should have late initalisation
-    */
-    if (!data->planes_alloced)
-	return o; /* Late initialization */
+    data->align = csd->aga ? 64 : 16; // AGA 64-bit fetchmode needs 8-byte alignment
 
-    /* Not late initalization. Get some info on the bitmap */	
+    /* Get some data about the dimensions of the bitmap */
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     OOP_GetAttr(o, aHidd_BitMap_Depth, &depth);
+    OOP_GetAttr(o, aoHidd_BitMap_Displayable, &disp);
 
     DB2(bug("%dx%dx%d\n", width, height, depth));
 
     /* We cache some info */
     data->width = width;
-    data->bytesperrow = ((width + align) & ~align) / 8;
+    data->bytesperrow = ((width + data->align - 1) & ~(data->align - 1)) / 8;
     data->height = height;
     data->depth = depth;
+    data->pixelcacheoffset = -1;
 
     if (ok) {
 	/* Allocate memory for plane array */
@@ -134,19 +125,16 @@ VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (data->disp)
     	DB2(bug("removing displayed bitmap?!\n"));
     
-    if (data->planes_alloced)
+    if (NULL != data->planes)
     {
-	if (NULL != data->planes)
+	for (i = 0; i < data->depth; i ++)
 	{
-	    for (i = 0; i < data->depth; i ++)
+	    if (NULL != data->planes[i])
 	    {
-		if (NULL != data->planes[i])
-		{
-		    FreeMem(data->planes[i], data->bytesperrow * data->height);
-		}
+		FreeMem(data->planes[i], data->bytesperrow * data->height);
 	    }
-	    FreeVec(data->planes);
 	}
+	FreeVec(data->planes);
     }
     
     OOP_DoSuperMethod(cl, o, msg);
@@ -267,6 +255,7 @@ static int AmigaVideoBM_Expunge(LIBBASETYPEPTR LIBBASE)
 ADD2INITLIB(AmigaVideoBM_Init, 0);
 ADD2EXPUNGELIB(AmigaVideoBM_Expunge, 0);
 
+/****************************************************************************************/
 
 BOOL AmigaVideoBM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
@@ -278,39 +267,73 @@ BOOL AmigaVideoBM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     return setcolors(csd, msg, data->disp);
 }
 
+/****************************************************************************************/
+
+#define CLEARCACHE flushpixelcache(data)
+/* Better than nothing but m68k assembly C2P still needed for best performance */
+static void flushpixelcache(struct amigabm_data *data)
+{
+    UBYTE i, x;
+    ULONG offset = data->pixelcacheoffset;
+    UBYTE **plane = data->planes; 
+
+    if (data->writemask) {
+	ULONG tmpplanes[8];
+    	ULONG pixel, notpixel, wmask;
+    	if (~data->writemask) {
+   	    for (i = 0; i < data->depth; i++) {
+ 	    	if (plane[i] == (UBYTE*)-1)
+ 	            tmpplanes[i] = 0xffffffff;
+ 	    	else if (plane[i] == NULL)
+ 	            tmpplanes[i] = 0x00000000;
+ 	    	else
+ 	            tmpplanes[i] = *((ULONG*)(plane[i] + offset));
+  	    }
+ 	}
+ 	pixel = 0x80000000;
+ 	wmask = 1;
+ 	for (x = 0; pixel; x++, pixel >>= 1, wmask <<= 1) {
+	    if (data->writemask & wmask) {
+	    	UBYTE c = data->pixelcache[x];
+	    	UBYTE mask = 1;
+	    	notpixel = ~pixel;
+	    	for (i = 0; i < data->depth; i++, mask <<= 1) {
+	    	    if (plane[i] != NULL && plane[i] != (UBYTE *)-1) {
+	    	    	if (c & mask)
+	    	    	    tmpplanes[i] |= pixel;
+	    	    	else
+	    	    	    tmpplanes[i] &= notpixel;
+		    }
+		}
+	    }
+	}
+	for (i = 0; i < data->depth; i++) {
+	    if (plane[i] != NULL && plane[i] != (UBYTE *)-1)
+		*((ULONG*)(plane[i] + offset)) = tmpplanes[i];
+	}
+    }
+    data->pixelcacheoffset = -1;
+    data->writemask = 0;
+}
+
 VOID AmigaVideoBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutPixel *msg)
 {
-    UBYTE   	    	    **plane;
     struct amigabm_data    *data;
     ULONG   	    	    offset;
-    ULONG   	    	    mask;
-    UBYTE   	    	    pixel, notpixel;
-    UBYTE   	    	    i;
+    UBYTE   	    	    bit;
     
     data = OOP_INST_DATA(cl, o);
-
-    /* bitmap in plane-mode */
-    plane     = data->planes;
-    offset    = msg->x / 8 + msg->y * data->bytesperrow;
-    pixel     = 128 >> (msg->x % 8);
-    notpixel  = ~pixel;
-    mask      = 1;
-
-    for(i = 0; i < data->depth; i++, mask <<=1, plane ++)
-    {  
-    	if ((*plane != NULL) && (*plane != (UBYTE *)-1))
-	{	
-	    if(msg->pixel & mask)
-	    {
-		*(*plane + offset) = *(*plane + offset) | pixel;
-	    }
-	    else
-	    {
-		*(*plane + offset) = *(*plane + offset) & notpixel;
-	    }
-        }
+    
+    offset = msg->x / 8 + msg->y * data->bytesperrow;  
+    if ((offset & ~3) != data->pixelcacheoffset) {
+    	CLEARCACHE;
+    	data->pixelcacheoffset = offset & ~3;
     }
+    bit = (offset - data->pixelcacheoffset) * 8 + (msg->x & 7);
+    data->pixelcache[bit] = msg->pixel;
+    data->writemask |= 1 << bit;
+
     CMDDEBUGPIXEL(bug("PutPixel: %dx%d %x\n", msg->x, msg->y, msg->pixel));
 }
 
@@ -320,36 +343,41 @@ ULONG AmigaVideoBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_GetPixel *msg)
 {
     struct amigabm_data    *data;
-    UBYTE   	    	    **plane;
     ULONG   	    	    offset;
-    ULONG   	    	    i;
-    UBYTE   	    	    pixel;
-    ULONG   	    	    retval;
+    UBYTE   	    	    i, c, bit;
 
     data = OOP_INST_DATA(cl, o);
+    offset = msg->x / 8 + msg->y * data->bytesperrow;
 
-    plane     = data->planes;
-    offset    = msg->x / 8 + msg->y * data->bytesperrow;
-    pixel     = 128 >> (msg->x % 8);
-    retval    = 0;
+    if ((offset & ~3) != data->pixelcacheoffset) {
+ 	ULONG tmpplanes[8], mask;
+ 	UBYTE x;
+	UBYTE **plane = data->planes;
 
-    for(i = 0; i < data->depth; i++, plane ++)
-    {
-    
-        if (*plane == (UBYTE *)-1)
-	{
-	    retval = retval | (1 << i);
-	}
-	else if (*plane != NULL)
-	{	
-	    if(*(*plane + offset) & pixel)
-	    {
-		retval = retval | (1 << i);
+        CLEARCACHE;
+ 	data->pixelcacheoffset = offset & ~3;
+    	for (i = 0; i < data->depth; i++) {
+ 	    if (plane[i] == (UBYTE*)-1)
+ 	        tmpplanes[i] = 0xffffffff;
+ 	    else if (plane[i] == NULL)
+ 	        tmpplanes[i] = 0x00000000;
+ 	    else
+ 	        tmpplanes[i] = *((ULONG*)(plane[i] + data->pixelcacheoffset));
+  	}
+  	mask = 0x80000000;
+ 	for (x = 0; mask; x++, mask >>= 1) {
+ 	    UBYTE c = 0, pixel = 1;
+ 	    for(i = 0; i < data->depth; i++, pixel <<= 1) {
+ 		if (tmpplanes[i] & mask)
+ 		    c |= pixel;
 	    }
+	    data->pixelcache[x] = c;
 	}
     }
-    CMDDEBUGPIXEL(bug("GetPixel: %dx%d=%x\n", msg->x, msg->y, retval));
-    return retval; 
+    bit = (offset - data->pixelcacheoffset) * 8 + (msg->x & 7);
+    c = data->pixelcache[bit];
+    CMDDEBUGPIXEL(bug("GetPixel: %dx%d %x\n", msg->x, msg->y, c));
+    return c;
 }
 
 /****************************************************************************************/
@@ -362,6 +390,7 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
+    CLEARCACHE;
     if (msg->x1 == msg->x2 || msg->y1 == msg->y2) {
     	WORD x1 = msg->x1, x2 = msg->x2;
     	WORD y1 = msg->y1, y2 = msg->y2;
@@ -391,6 +420,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
+    CLEARCACHE;
     D(bug("PutPattern(%dx%d,%dx%d,mask=%x,mod=%d,masksrcx=%d)\n(%x,%dx%d,h=%d,d=%d,lut=%x,inv=%d)(fg=%d,bg=%d,colexp=%d,drmd=%d)\n",
 	msg->x, msg->y, msg->width, msg->height,
 	msg->mask, msg->maskmodulo, msg->masksrcx,
@@ -416,6 +446,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     CMDDEBUGUNIMP(bug("PutImageLUT\n"));
 
     data = OOP_INST_DATA(cl, o);
+    CLEARCACHE;
     
     planeoffset = msg->y * data->bytesperrow + msg->x / 8;
     
@@ -479,6 +510,8 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    **plane;
     ULONG   	    	    planeoffset;
     struct amigabm_data    *data = OOP_INST_DATA(cl, o);
+
+    CLEARCACHE;
 
     if ((msg->pixFmt != vHidd_StdPixFmt_Native) &&
     	(msg->pixFmt != vHidd_StdPixFmt_Native32))
@@ -607,6 +640,7 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
+    CLEARCACHE;
     if (!blit_fillrect(csd, data, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode)) {
  	CMDDEBUGUNIMP(bug("FillRect\n"));
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -620,6 +654,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
+    CLEARCACHE;
     if (!blit_puttemplate(csd, data, msg)) {
 	CMDDEBUGUNIMP(bug("PutTemplate: %x x=%d y=%d w=%d h=%d srcx=%d modulo=%d invert=%d\n",
     	    msg->Template, msg->x, msg->y, msg->width, msg->height, msg->srcx, msg->inverttemplate));
