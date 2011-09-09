@@ -18,12 +18,13 @@ void __arosc_program_end(void);
 
 static void __arosc_startup(void)
 {
-    D(bug("[__arosc_startup] Start\n"));
+    struct arosc_userdata *udata = __get_arosc_userdata();
+
+    D(bug("[__arosc_startup] Start, base 0x%p, userdata 0x%p\n", aroscbase, udata));
 
     __arosc_program_startup();
 
-    struct arosc_userdata *udata = __get_arosc_userdata();
-
+    D(bug("[__arosc_startup] Library startup called, error %d\n", __startup_error));
     udata->acud_startup_error = __startup_error;
 
     if (setjmp(udata->acud_startup_jmp_buf) == 0)
