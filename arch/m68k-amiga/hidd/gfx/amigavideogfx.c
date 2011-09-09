@@ -478,8 +478,8 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 		mode_tags_ecs = tagptr;
 		ADDTAG(aHidd_Sync_HMin,		112);
 		ADDTAG(aHidd_Sync_VMin,		112);
-		ADDTAG(aHidd_Sync_HMax,		1008);
-		ADDTAG(aHidd_Sync_VMax,		1008);
+		ADDTAG(aHidd_Sync_HMax,		csd->ecs_agnus ? 16384 : 1008);
+		ADDTAG(aHidd_Sync_VMax,		csd->ecs_agnus ? 16384 : 1008);
 
 		ADDTAG(aHidd_Gfx_PixFmtTags,	(IPTR)pftags_ecs_lores);
 		for (i = 0; i < cnt; i++) {
