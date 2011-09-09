@@ -207,19 +207,19 @@ void cstart(APTR load_addr, APTR real_addr, ULONG kernel_size,
     */
     mmap[0].size = sizeof(struct mb_mmap) - 4;
     mmap[0].type = MMAP_TYPE_RAM;
-    mmap[0].addr_low = 0x4000;
+    mmap[0].addr      = 0x4000;
     mmap[0].addr_high = 0;
-    mmap[0].len_low = (ULONG)real_addr - 0x4000;
-    mmap[0].len_high = 0;
+    mmap[0].len       = (ULONG)real_addr - 0x4000;
+    mmap[0].len_high  = 0;
 
     if (mem_avail > 16*1024*1024)
     {
 	mmap[1].size = sizeof(struct mb_mmap) - 4;
 	mmap[1].type = MMAP_TYPE_RAM;
-	mmap[1].addr_low = 16*1024*1024;
+	mmap[1].addr      = 16*1024*1024;
 	mmap[1].addr_high = 0;
-	mmap[1].len_low = mem_avail - 16*1024*1024;
-	mmap[1].len_high = 0;
+	mmap[1].len       = mem_avail - 16*1024*1024;
+	mmap[1].len_high  = 0;
     }
 
     
