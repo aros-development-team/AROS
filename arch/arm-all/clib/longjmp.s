@@ -23,9 +23,10 @@ AROS_CDEFNAME(longjmp):
 	ldr     r1, [ip], #4					/* restore VFP status reg */
   	fmxr    fpscr, r1
   	ldr	r1, [ip], #4					/* restore *(SysBase->ThisTask->tc_SPLower) */
-        ldr	r2, 1f						/* Save *(SysBase->ThisTask->tc_SPLower) */
+        ldr	r2, 1f
         ldr	r2, [r2]
         ldr	r2, [r2, ThisTask]
-        str	r1, [r2, tc_SPLower]
+        ldr	r2, [r2, tc_SPLower]
+        str	r1, [r2]
 	bx	lr						/* Done! */
 1:	.word	SysBase

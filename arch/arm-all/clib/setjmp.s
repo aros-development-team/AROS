@@ -24,6 +24,7 @@ AROS_CDEFNAME(setjmp):
         ldr	r0, [r0]
         ldr	r0, [r0, ThisTask]
         ldr	r0, [r0, tc_SPLower]
+        ldr	r0, [r0]
         str	r0, [ip], #4
 	mov	r0, #0						/* return zero */
 	bx	lr

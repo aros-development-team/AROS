@@ -26,6 +26,7 @@ AROS_CDEFNAME(vfork_longjmp):
         ldr	r2, 1f
         ldr	r2, [r2]
         ldr	r2, [r2, ThisTask]
-        str	r1, [r2, tc_SPLower]
+        ldr	r2, [r2, tc_SPLower]
+        str	r1, [r2]
 	bx	lr						/* Done! */
 1:	.word	SysBase
