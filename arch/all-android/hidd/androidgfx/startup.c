@@ -31,7 +31,6 @@ static int agfx_Startup(LIBBASETYPEPTR LIBBASE)
     OOP_Object *kbd, *ms;
     OOP_Object *kbdriver;
     OOP_Object *msdriver = NULL;
-    ULONG err;
 
     D(bug("[AGFX.Startup] agfx_Startup()\n"));
 
