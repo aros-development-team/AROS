@@ -92,28 +92,23 @@ struct JumpVec
    'libbasename' and 'lvo' number of the function in the
    vector table. lvo has to be a constant value (not a variable)
 
-   Internals: a dummy function is used that will generate some
-   unused junk code but otherwise we can't pass input arguments
-   to the asm statement
-
    Some asm trickery performed:
-   - function return address is top of stack,
-     leave it there to use as argument for aros_push2_relbase
-   - libbase is other argument to aros_push2_relbase
-   - call aros_push2_relbase
-   - put libbase back in %eax
-   - remove libbase and return address from stack
+   - Push register arguments on stack
+   - Use aros_push2_relbase to store old return address (LR register)
+     and library base on alternative stack
+   - Pop register arguments back
    - Call lvo vector
    - push return value on stack
    - call aros_pop2_relbase,
      return value will be old return address
    - pull return value from stack
    - jmp to old return address
+   
+   !!! WATCH OUT !!! LIB_VECTSIZE is hardcoded here as 4. C preprocessor
+   can't expand sizeof() into a number.
 */
 #define __AROS_LIBFUNCSTUB(fname, libbasename, lvo)				\
-    void __ ## fname ## _ ## libbasename ## _wrapper(void)			\
-    {										\
-	asm volatile(								\
+asm(										\
 	    "	.weak " #fname "\n"						\
 	    #fname " :\n"							\
 	    /* return address is in lr register */				\
@@ -130,7 +125,8 @@ struct JumpVec
             "	pop	{r0, r1, r2, r3}\n"					\
             /* Call library function */						\
             "	ldr 	r12, 1f\n"						\
-            "	ldr  	r12, [r12, %0]\n"					\
+            "	ldr	r12, [r12]\n"						\
+            "	ldr  	r12, [r12, #-" #lvo "* 4]\n"				\
             "	blx	r12\n"							\
             /* Push return value (possibly 64-bit one) */			\
             "	push	{r0, r1}\n"						\
@@ -145,9 +141,7 @@ struct JumpVec
             "1:	.word	" #libbasename "\n"					\
             "2:	.word	aros_push2_relbase\n"					\
             "3:	.word	aros_pop2_relbase\n"					\
-	    ::"i"((-lvo*LIB_VECTSIZE))						\
-	);									\
-    }
+);
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
 
@@ -156,19 +150,17 @@ struct JumpVec
    the current libbase
 */
 #define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)				\
-    void __ ## fname ## _ ## libbasename ## _relwrapper(void)			\
-    {										\
-	asm volatile(								\
+asm(										\
 	    "	.weak " #fname "\n"						\
 	    #fname " :\n"							\
 	    /* return address is in lr register */				\
 	    /* Up to four parameters are in r0 - r3 , the rest are on stack */	\
 	    "	push	{r0, r1, r2, r3}\n"					\
 	    "	push	{lr}\n"							\
-	    /* r0 = aros_get_relbase */						\
+	    /* r0 = aros_get_relbase() (base of currently running library) */	\
 	    "	ldr	r12, 4f\n"						\
 	    "	blx	r12\n"							\
-	    /* r0 = libbase, r1 = lr (was pushed above) */			\
+	    /* r0 = libbase (we area asked for), r1 = lr (was pushed above) */	\
 	    "	ldr	r12, 1f\n"						\
 	    "	ldr	r12, [r12]\n"						\
 	    "	ldr	r0, [r0, r12]\n"					\
@@ -180,7 +172,8 @@ struct JumpVec
             "	pop	{r0, r1, r2, r3}\n"					\
             /* Call library function */						\
             "	ldr 	r12, 1f\n"						\
-            "	ldr  	r12, [r12, %0]\n"					\
+            "	ldr	r12, [r12]\n"						\
+            "	ldr  	r12, [r12, #-" #lvo " * 4]\n"				\
             "	blx	r12\n"							\
             /* Push return value (possibly 64-bit one) */			\
             "	push	{r0, r1}\n"						\
@@ -196,9 +189,7 @@ struct JumpVec
             "2:	.word	aros_push2_relbase\n"					\
             "3:	.word	aros_pop2_relbase\n"					\
             "4: .word	aros_get_relbase\n"					\
-	    ::"i"((-lvo*LIB_VECTSIZE))						\
-	);									\
-    }
+);
 #define AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)
 
