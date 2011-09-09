@@ -32,12 +32,14 @@ explicitly. This is because Apple provides gcc binaries only with version suffix
 (for example ppc-apple-darwin10-gcc-4.2.1 instead of just ppc-apple-darwin10-gcc).
 This can be done using --with-gcc-version=x.y argument for configure. For example:
 
- ./configure --target=darwin-ppc --with-gcc-version=4.2.1
- 
- Currently only PowerPC and i386 versions are complete. x86_64 version is a work
-in progress. ARM version makes sense only for iOS variant (using
---enable-target-variant=ios switch). iOS port is also a work in progress and is
-described separately.
+ ./configure --target=darwin-x86_64 --with-gcc-version=4.2.1
+
+ Currently only x86_64 and i386 versions are complete. PowerPC version compiles,
+but there is ABI incompatibility between AROS and Darwin. Darwin calls clobber some
+register which is expected to be preserved by AROS. A volunteer is needed to research
+the problem and implement correct AROS_HOST_BARRIER macro (similar to ARM version).
+ ARM version makes sense only for iOS variant (using
+--enable-target-variant=ios switch). iOS port is incomplete and is described separately.
 
  Building on Mac is verified to be succesful using MacOS X v10.6 (Snow 
 Leopard), + gcc 4.2.1 (bundled with Xcode) + aros-binutils v2.20.1
@@ -48,8 +50,8 @@ you get Darwin-targetted crosstoolchain up and running. I haven't tried this.
 
  In order to run AROS open a command line, go to root AROS directory 
 ("AROS"), and run "boot/AROSBootstrap.exe". This port behaves like 
-UNIX-hosted, it uses emul.handler, which makes your current directory 
-to be root of your SYS:.
+any other UNIX-hosted, it uses emul.handler, which makes your current
+directory to be root of your SYS:. X11 server is used for display.
  You can specify some options on the command line for bootstrap and 
 AROS. Enter "boot/AROSBootstrap.exe -h" to learn about bootstrap's 
 options. Also you may check AROSBootstrap.conf file for some settings. 
@@ -65,4 +67,4 @@ in AROSBootstrap.conf file after "arguments" keyword. What you specify there
 will be always appended to the command line you give to the bootstrap in the
 shell.
 
- 25.11.2010, Pavel Fedin <pavel_fedin@mail.ru>
+ 09.09.2011, Pavel Fedin <pavel_fedin@mail.ru>
