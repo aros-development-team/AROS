@@ -143,7 +143,7 @@ OOP_Object *AGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
     else
     {
 	/* Non-displayable friends of our bitmaps are plain chunky bitmaps */
-    	OOP_Object *friend = GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+    	OOP_Object *friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
 
     	if (friend && (OOP_OCLASS(friend) == XSD(cl)->bmclass))
     	{
