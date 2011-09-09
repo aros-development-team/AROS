@@ -84,9 +84,8 @@ struct multiboot
 #ifdef MULTIBOOT_64BIT
     unsigned long long	framebuffer_addr;	/* Framebuffer address, 64-bit pointer		*/
 #else
-    unsigned int   framebuffer_addr_low;
-    unsigned int   framebuffer_addr_high;
-#define framebuffer_addr framebuffer_addr_low
+    unsigned int	framebuffer_addr;
+    unsigned int   	framebuffer_addr_high;
 #endif
     unsigned int   framebuffer_pitch;
     unsigned int   framebuffer_width;
@@ -132,61 +131,28 @@ struct multiboot
 #define MB_FRAMEBUFFER_RGB  1
 #define MB_FRAMEBUFFER_TEXT 2
 
-#ifdef MULTIBOOT_64BIT
-
 struct mb_mmap
 {
-    unsigned int       size;
-    unsigned long long addr;
+    unsigned int       size;	  /* Entry size (not including this field) */
+#ifdef MULTIBOOT_64BIT
+    unsigned long long addr;	  /* Full 64-bit address and length	   */
     unsigned long long len;
-    unsigned int       type;
+#else
+    unsigned int       addr;
+    unsigned int       addr_high;
+    unsigned int       len;
+    unsigned int       len_high;
+#endif
+    unsigned int       type;	 /* Entry type, see below		   */
 } __attribute((packed));
 
-#else
-
-struct mb_mmap
-{
-    unsigned int   size;
-    unsigned int   addr_low;
-    unsigned int   addr_high;
-    unsigned int   len_low;
-    unsigned int   len_high;
-    unsigned int   type;
-};
-
-#define addr addr_low
-#define len  len_low
-
-#endif
-
+/* Memory map entry types */
 #define MMAP_TYPE_RAM	    1	/* General purpose RAM */
 #define MMAP_TYPE_RESERVED  2
 #define MMAP_TYPE_ACPIDATA  3
 #define MMAP_TYPE_ACPINVS   4
 
-
-/* Structure in RAM at 0x1000 */
-struct arosmb {
-    unsigned int   magic;		    /* Indicates if information is valid */
-    unsigned int   flags;		    /* Copy of the multiboot flags */
-    unsigned int   mem_lower;		    /* Amount of lowmem (Sub 1Mb) */
-    unsigned int   mem_upper;		    /* Amount of upper memory */
-    unsigned int   mmap_addr;		    /* Pointer to memory map */
-    unsigned int   mmap_len;		    /* size of memory map */
-    unsigned int   drives_addr;	    	    /* Pointer to drive information */
-    unsigned int   drives_len;		    /* Size of drive information */
-    char    	   ldrname[30];	    	    /* String of loadername */
-    char    	   cmdline[200];	    /* Commandline */
-    unsigned short vbe_mode;		    /* VBE mode */
-    unsigned char  vbe_palette_width;	    /* VBE palette width */
-    struct vbe_mode       vmi;              /* VBE mode information */
-    struct vbe_controller vci;		    /* VBE controller information */
-    unsigned long  acpirsdp;
-    unsigned int   acpilength;
-};
-
-#define MBRAM_VALID	0x1337BABE
-
+/* Disk drive information from PC BIOS */
 struct mb_drive
 {
     unsigned int   size;
@@ -202,7 +168,9 @@ struct mb_drive
 #define MB_MODE_CHS 0
 #define MB_MODE_LBA 1
 
-struct mb_module {	/* multiboot_mod_list - multiboot_module_t */
+/* Modules list */
+struct mb_module
+{
     unsigned int mod_start;	/* from bytes */
     unsigned int mod_end;	/* to 'mod_end-1' inclusive */
     unsigned int cmdline;	/* Module command line */

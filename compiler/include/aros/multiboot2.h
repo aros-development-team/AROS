@@ -117,16 +117,17 @@ struct mb2_header_tag_module_align
 #define MB2_STARTUP_MAGIC 0x36d76289
 
 /*
- * Multiboot v2 data is a UQUAD value representing overall length,
+ * Multiboot v2 data is an UQUAD value representing overall length,
  * followed by a sequence of tags.
  * This is the generalized form of a tag.
  */
 struct mb2_tag
 {
-    unsigned int type;
-    unsigned int size;
+    unsigned int type;	/* ID				*/
+    unsigned int size;	/* Data size (including header)	*/
 };
 
+/* Known tag IDs */
 #define MB2_TAG_END             0
 #define MB2_TAG_CMDLINE         1
 #define MB2_TAG_BOOTLOADER_NAME 2
@@ -181,20 +182,19 @@ struct mb2_tag_bootdev
 struct mb2_mmap
 {
 #ifdef MULTIBOOT_64BIT
-    unsigned long long addr;
+    unsigned long long addr;	  /* Address end length, 64-bit */
     unsigned long long len;
 #else
-    unsigned int addr_low;
-    unsigned int addr_high;
-    unsigned int len_low;
-    unsigned int len_high;
-#define addr addr_low
-#define len  len_low
+    unsigned int       addr;
+    unsigned int       addr_high;
+    unsigned int       len;
+    unsigned int       len_high;
 #endif
-    unsigned int type;
-    unsigned int pad;
+    unsigned int       type;	 /* Entry type, see below	*/
+    unsigned int       pad;	 /* Reserved			*/
 };
 
+/* Memory map entry types */
 #define MMAP2_TYPE_RAM	     1	/* General purpose RAM  */
 #define MMAP2_TYPE_RESERVED  2	/* System private areas */
 #define MMAP2_TYPE_ACPIDATA  3  /* ACPI data structures */
@@ -226,22 +226,20 @@ struct mb2_tag_vbe
 
 struct mb2_tag_framebuffer_common
 {
-    unsigned int   type;
-    unsigned int   size;
-
+    unsigned int       type;			/* Tag ID				*/
+    unsigned int       size;
 #ifdef MULTIBOOT_64BIT
-    unsigned long long framebuffer_addr;	/* Framebuffer address, 64-bit pointer		*/
+    unsigned long long framebuffer_addr;	/* Framebuffer address, 64-bit pointer	*/
 #else
-    unsigned int   framebuffer_addr_low;
-    unsigned int   framebuffer_addr_high;
-#define framebuffer_addr framebuffer_addr_low
+    unsigned int       framebuffer_addr;
+    unsigned int       framebuffer_addr_high;
 #endif
-    unsigned int   framebuffer_pitch;
-    unsigned int   framebuffer_width;
-    unsigned int   framebuffer_height;
-    unsigned char  framebuffer_bpp;
-    unsigned char  framebuffer_type;
-    unsigned short reserved;
+    unsigned int       framebuffer_pitch;	/* Bytes per line			*/
+    unsigned int       framebuffer_width;	/* Size in pixels or characters		*/
+    unsigned int       framebuffer_height;
+    unsigned char      framebuffer_bpp;		/* Bits per pixel			*/
+    unsigned char      framebuffer_type;	/* See below				*/
+    unsigned short     reserved;
 };
 
 /* Framebuffer types */
