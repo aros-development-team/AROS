@@ -96,6 +96,20 @@ static void setcoppercolors(struct amigavideo_staticdata *data)
    	    	data->copper2i.copper2_palette_aga_lo[i * 2 + off] = vallo;
    	    }	
    	}   
+    } else if (data->res == 2 && !data->aga) {
+    	/* ECS "scrambled" superhires */
+    	for (i = 0; i < data->use_colors; i++) {
+    	    UBYTE offset = i < 16 ? 0 : 16;
+	    UBYTE c1 = (i & 3) + offset;
+	    UBYTE c2 = ((i >> 2) & 3) + offset;
+	    UWORD val1 = ((data->palette[c1 * 3 + 0] >> 4) << 8) | ((data->palette[c1 * 3 + 1] >> 4) << 4) | ((data->palette[c1 * 3 + 2] >> 4) << 0);
+	    UWORD val2 = ((data->palette[c2 * 3 + 0] >> 4) << 8) | ((data->palette[c2 * 3 + 1] >> 4) << 4) | ((data->palette[c2 * 3 + 2] >> 4) << 0);
+	    UWORD val = (val1 & 0xccc) | ((val2 & 0xccc) >> 2);
+ 	    data->copper2.copper2_palette[i * 2 + 1] = val;
+ 	    if (data->interlace)
+ 	    	data->copper2i.copper2_palette[i * 2 + 1] = val;
+	}
+    	
     } else {
     	for (i = 0; i < data->use_colors; i++) {
  	    UWORD val = ((data->palette[i * 3 + 0] >> 4) << 8) | ((data->palette[i * 3 + 1] >> 4) << 4) | ((data->palette[i * 3 + 2] >> 4) << 0);
@@ -299,6 +313,9 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     // need to update sprite colors
     if (data->use_colors < 16 + 4)
     	data->use_colors = 16 + 4;
+    if (data->res == 2 && !data->aga)
+    	data->use_colors = 32; /* ECS "scrambled" superhires */
+    
     if (data->use_colors > 32 && (data->modeid & EXTRAHALFBRITE_KEY))
     	data->use_colors = 32;
     if (data->modeid & HAM_KEY) {
