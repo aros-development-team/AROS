@@ -11,7 +11,12 @@
 
 #define APIC_BOOTSTRAP (1 << 8)
 #define APIC_ENABLE    (1 << 11)
+
+#ifdef __x86_64__
 #define APIC_BASE_MASK 0x000FFFFFFFFFF000
+#else
+#define APIC_BASE_MASK 0xFFFFF000
+#endif
 
 /* APIC hardware registers */
 

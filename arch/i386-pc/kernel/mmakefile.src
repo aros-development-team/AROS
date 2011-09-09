@@ -2,10 +2,13 @@
 include $(TOP)/config/make.cfg
 
 FUNCS   := 
-FILES   := startup boot_utils kernel_bootmem kernel_debug kernel_memory
+FILES   := startup kernel_debug
 MAINDIR := rom/kernel
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(MAINDIR)
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
+		 -I$(SRCDIR)/arch/all-pc/kernel \
+		 -I$(SRCDIR)/arch/all-native/kernel \
+		 -I$(SRCDIR)/$(MAINDIR)
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \

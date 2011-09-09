@@ -208,7 +208,7 @@ static IPTR _APIC_IA32_GetMSRAPICBase(void)
     }
     else
     {
-        _apic_base = rdmsrq(MSR_LAPIC_BASE);
+        _apic_base = rdmsri(MSR_LAPIC_BASE);
     }
 
     _apic_base &= APIC_BASE_MASK;
@@ -231,7 +231,7 @@ static IPTR _APIC_IA32_GetID(IPTR _APICBase)
 static void _APIC_IA32_Ack(UBYTE intnum)
 {
     /* Write zero to EOI of current APIC */
-    IPTR apic_base = rdmsrq(MSR_LAPIC_BASE) & APIC_BASE_MASK;
+    IPTR apic_base = rdmsri(MSR_LAPIC_BASE) & APIC_BASE_MASK;
 
     APIC_REG(apic_base, APIC_EOI) = 0;
 }

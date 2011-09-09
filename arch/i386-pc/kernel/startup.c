@@ -141,26 +141,20 @@ void kernel_cstart(const struct TagItem *msg)
     if (!kick_end)
     {
     	/* If kick_end is not set, this is our first start. */
-	void *ptr;
-
 	tag = LibFindTagItem(KRN_KernelHighest, msg);
         if (!tag)
-        {
-            bug("Incomplete information from the bootstrap\n");
-            bug("Highest kickstart address is not supplied\n");
-
-            panic();
-        }
+	    krnPanic("Incomplete information from the bootstrap\n"
+		     "Highest kickstart address is not supplied\n");
 
         /* Align kickstart top address (we are going to place a structure after it) */
-        ptr = (void *)AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
+        BootMemPtr = (void *)AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
 
 	/*
 	 * Our boot taglist is placed by the bootstrap just somewhere in memory.
 	 * The first thing is to move it into some safe place.
 	 * This function also sets global BootMsg pointer.
 	 */
-	BootMemPtr = RelocateBootMsg(msg, ptr);
+	RelocateBootMsg(msg);
 
 	/* Now relocate linked data */
 	mmap_len = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
@@ -229,13 +223,10 @@ void kernel_cstart(const struct TagItem *msg)
 
     /* Sanity check */
     if ((!kick_start) || (!mmap) || (!mmap_len))
-    {
-        bug("Incomplete information from the bootstrap\n");
-	bug("Kickstart address : 0x%P\n", kick_start);
-        bug("Memory map address: 0x%P, length %ld\n", mmap, mmap_len);
-
-        panic();
-    }
+	krnPanic("Incomplete information from the bootstrap\n"
+		 "Kickstart address : 0x%P\n"
+		 "Memory map address: 0x%P, length %ld\n",
+		 kick_start, mmap, mmap_len);
 
     D(bug("[Kernel] Booting exec.library...\n"));
     exec_cinit();
@@ -282,13 +273,7 @@ void kernel_cstart(const struct TagItem *msg)
     ranges[1] = (UWORD *)kick_end;
     ranges[2] = (UWORD *)-1;
 
-    if (!krnPrepareExecBase(ranges, mh, BootMsg))
-    {
-        bug("Failed to create exec.library base\n");
-
-        panic();
-    }
-
+    krnPrepareExecBase(ranges, mh, BootMsg);
     D(bug("[Kernel] Created SysBase at 0x%p, MemHeader 0x%p\n", SysBase, mh));
 
     /*
@@ -310,6 +295,8 @@ void kernel_cstart(const struct TagItem *msg)
     }
 
     exec_boot(BootMsg);
+
+    krnPanic("Failed to start up the system");
 }
 
 /* Our boot-time stack. Safe to be in .bss. */
