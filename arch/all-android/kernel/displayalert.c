@@ -2,7 +2,7 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Display an alert, Android-hosted version
+    Desc: Display an alert in Android GUI if possible
     Lang: english
 */
 
@@ -18,10 +18,6 @@
 #include "kernel_intern.h"
 
 #define D(x)
-
-/*
- * This version displays an alert in Android GUI
- */
 
 struct AlertRequest
 {
@@ -41,6 +37,16 @@ AROS_LH2(void, KrnDisplayAlert,
     struct AlertRequest req;
     int res;
     sigset_t sigs;
+
+    if (KernelBase->kb_PlatformData->alertPipe == -1)
+    {
+	/*
+	 * Early alert. alertPipe is not initialized yet.
+	 * Fail back to debug output.
+	 */
+    	krnDisplayAlert(text, KernelBase);
+    	return;
+    }
 
     /*
      * These two are inlined in Android.

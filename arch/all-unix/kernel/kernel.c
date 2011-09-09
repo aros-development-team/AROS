@@ -212,8 +212,11 @@ static int InitCore(struct KernelBase *KernelBase)
 	return FALSE;
 
     pd->supervisor = 0;
-    pd->errnoPtr = KernelIFace.__error();
+    pd->errnoPtr   = KernelIFace.__error();
     AROS_HOST_BARRIER
+#ifdef HOST_OS_android
+    pd->alertPipe  = -1;
+#endif
     KernelBase->kb_PlatformData = pd;
     
     /* We only want signal that we can handle at the moment */
