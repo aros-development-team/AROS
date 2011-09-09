@@ -16,14 +16,15 @@
 
 AROS_CDEFNAME(vfork):
 	str	lr, [sp, #-4]!		/* Store link register */
-	sub	sp, sp, #272		/* Create space for env structure */
+	sub	sp, sp, #260		/* Create space for env structure */
 	mov	r0, sp
 	bl	setjmp			/* Prepare setjmp */
 
-	ldr	r0, [sp, #272]		/* restore link register */
+	ldr	r0, [sp, #260]		/* restore link register */
 	str	r0, [sp, #0*4]		/* save lr as first argument of env structure */
 
-	add	r0, sp, #276		/* save previous stack pointer into env structure */
+	add	r0, sp, #264		/* save previous stack pointer into env structure */
 	str	r0, [sp, #9*4]
 
+	mov	r0, sp			/* Argument to vfork() */
 	b	__vfork			/* never return... */
