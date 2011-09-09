@@ -130,25 +130,21 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     if (!HostIFace)
 	return -1;
 
+    if (strcmp(HostIFace->System, AROS_ARCHITECTURE))
+	return -1;
+
+    if (HostIFace->Version < HOSTINTERFACE_VERSION)
+	return -1;
+
+    /* Host interface is okay. We have working krnPutC() and can talk now */
     D(bug("[Kernel] Starting up...\n"));
 
     if ((!ranges[0]) || (!ranges[1]) || (!mmap))
     {
-	bug("[Kernel] Not enough parameters from bootstrap!\n");
-	return -1;
-    }
-
-    if (strcmp(HostIFace->System, AROS_ARCHITECTURE))
-    {
-	bug("[Kernel] This kernel is built for %s architecture\n", AROS_ARCHITECTURE);
-	bug("[Kernel] Your bootstrap is running on %s which is incompatible\n", HostIFace->System);
-	return -1;
-    }
-
-    if (HostIFace->Version < HOSTINTERFACE_VERSION)
-    {
-	bug("[Kernel] Obsolete bootstrap interface (found v%u, need v%u)\n",
-		  HostIFace->Version, HOSTINTERFACE_VERSION);
+	krnPanic("Not enough information from the bootstrap\n"
+		 "Kickstart start 0x%p, end 0x%p\n"
+		 "Memory map address: 0x%p",
+		 ranges[0], ranges[1], mmap);
 	return -1;
     }
 
@@ -156,7 +152,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     AROS_HOST_BARRIER
     if (!hostlib)
     {
-	bug("[Kernel] Failed to load %s: %s\n", LIBC_NAME, errstr);
+    	krnPanic("Failed to load %s\n%s", LIBC_NAME, errstr);
 	return -1;
     }
 
@@ -165,8 +161,9 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	void *func = HostIFace->hostlib_GetPointer(hostlib, kernel_functions[i], &errstr);
 
 	AROS_HOST_BARRIER
-        if (!func) {
-	    bug("[Kernel] Failed to find symbol %s in host-side module: %s\n", kernel_functions[i], errstr);
+        if (!func)
+        {
+            krnPanic("Failed to find symbol %s in host-side libc\n%s", kernel_functions[i], errstr);
 	    return -1;
 	}
 	((void **)&KernelIFace)[i] = func;
@@ -176,18 +173,19 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     bootmh = (struct MemHeader *)(IPTR)mmap->addr;
 
     /* Prepare the first mem header */
-    bug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len);
+    D(bug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len));
     krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
 
-    SysBase = NULL;	/* TODO: check SysBase validity here when warm reboot is implemented */
+    /*
+     * SysBase pre-validation after a warm restart.
+     * This makes sure that it points to a valid accessible memory region.
+     */
+    if (((IPTR)SysBase < mmap->addr) || ((IPTR)SysBase + sizeof(struct ExecBase) > mmap->addr + mmap->len))
+    	SysBase = NULL;
 
     /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
     D(bug("[Kernel] calling krnPrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
-    if (!krnPrepareExecBase(ranges, bootmh, msg))
-    {
-    	bug("[Kernel] Unable to create ExecBase!\n");
-    	return -1;
-    }
+    krnPrepareExecBase(ranges, bootmh, msg);
 
     /*
      * Set up correct stack borders and altstack.
@@ -212,18 +210,20 @@ int __startup startup(struct TagItem *msg, ULONG magic)
      */
     krnCreateROMHeader(bootmh, "Kickstart ROM", ranges[0], ranges[1]);
 
-    /* Stack memory header. This special memory header covers a little part of the programs
+    /*
+     * Stack memory header. This special memory header covers a little part of the programs
      * stack so that TypeOfMem() will not return 0 for addresses pointing into the stack
      * during initialization.
      */
     krnCreateROMHeader(bootmh, "Boot stack", _stack - AROS_STACKSIZE, _stack);
 
-    bug("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
+    /* Start up the system */
     InitCode(RTF_SINGLETASK, 0);
-    D(bug("[Kernel] calling InitCode(RTF_COLDSTART,0)\n"));
     InitCode(RTF_COLDSTART, 0);
 
-    bug("[Kernel] leaving startup!\n");
+    /* If we returned here, something went wrong, and dos.library failed to take over */
+    krnPanic("Failed to start up the system");
+
     HostIFace->hostlib_Close(hostlib, NULL);
     AROS_HOST_BARRIER
 
