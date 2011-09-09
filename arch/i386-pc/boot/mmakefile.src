@@ -4,85 +4,39 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES	:= -I$(GENINCDIR)
 
 #
-# Rules to create AROS for pc-i386
+# Rules to create kickstart packages for pc-i386
 #
-
-#MM- AROS-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386
-
-#MM- software-pc-i386 : general-setup binary-pc-i386 \
-#MM	    workbench-pc-i386 demos
-
-#MM- workbench-pc-i386 : workbench-complete workbench
-
-#MM- AROS-complete-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386 contrib
-
-#MM- general-setup-pc-i386: setup-pc-i386 includes compiler
-
-#
-# Kernel modules
-#
-
-#MM- kernel-pc-i386 : general-setup-pc-i386
-
-#MM- kernel-pc-i386 : \
-#MM	kernel-isapnp-kobj \
-#MM	kernel-pc-i386-drivers \
-#MM     kernel-workbench-devs-pc-i386 \
-#MM     kernel-bsp-objs \
-#MM     kernel-objs
-
-#MM- kernel-workbench-devs-pc-i386 : workbench-devs-pc-i386
 
 #MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 
-USELIBS	:= hiddstubs amiga arossupport debug rom arosm autoinit libinit
-LIBS    := $(addprefix -l,$(USELIBS))
-DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
+#MM- kernel-link-pc-i386 :	\
+#MM	kernel-bsp-pc-i386-gz	\
+#MM	kernel-link-base-gz	\
+#MM	kernel-link-usb-gz	\
+#MM	kernel-link-fs-gz
 
-KRSRCS  := kernel battclock bootloader dosboot processor lddemon FileSystem
-KLIBS   := exec aros debug dos graphics utility intuition keymap \
-      	   expansion oop layers
-KDEVS   := timer input keyboard console gameport ata trackdisk
-KHNDLRS := con amberram
-KHIDDS  := hiddclass serial keyboard mouse graphics kbd ps2mouse vesagfx vgah pci pcipc irq
+#
+# Board support package
+#
+
+#MM- kernel-bsp-pc-i386 : \
+#MM	kernel-isapnp-kobj \
+#MM	kernel-pc-i386-drivers \
+#MM     kernel-workbench-devs-pc-i386 \
+#MM     kernel-bsp-objs
+
+EXEDIR  := $(BINDIR)/boot
+USELIBS	:= hiddstubs amiga arossupport debug rom arosm autoinit libinit
+
+KRSRCS  := battclock processor
+KLIBS   := exec expansion
+KDEVS   := timer ata trackdisk
+KHIDDS  := kbd ps2mouse vesagfx vgah pci pcipc irq
 ##Disabled RSRC cpu isapnp
 
-KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
+%link_kickstart mmake=kernel-bsp-pc-i386 file=$(EXEDIR)/aros-bsp-pc-i386 \
+	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) \
+	startup=$(KOBJSDIR)/kernel_resource.o \
+	uselibs=$(USELIBS) map=$(GENDIR)/boot/kernel-i386-pc.map
 
-#MM
-kernel-setup-pc-i386 :
-	%mkdirs_q $(OSGENDIR)/boot
-	%mkdirs_q $(BINDIR)/boot
-	%mkdirs_q $(BINDIR)/boot/grub
-
-#MM kernel-link-pc-i386 : kernel-setup-pc-i386 kernel-pc-i386 kernel-link-usb-gz kernel-link-fs-gz
-kernel-link-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz
-
-#MM
-kernel-link-pc-i386-quick : $(BINDIR)/boot/aros-kernel-pc-i386.gz
-
-#MM kernel-package-pc-i386 : kernel-link-pc-i386
-kernel-package-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz
-
-
-$(BINDIR)/boot/aros-kernel-pc-i386 : $(KOBJS) $(DEPLIBS)
-	@$(TARGET_CC) $(CFLAGS) -Wl,-N \
-	    $(GENMAP) $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $@ $(KOBJS) \
-	    -static $(NOSTARTUP_LDFLAGS) -L$(LIBDIR) $(LIBS)
-	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment \
-	    -R .note.gnu.build-id $@
-
-$(BINDIR)/boot/aros-kernel-pc-i386.gz : $(BINDIR)/boot/aros-kernel-pc-i386
-	@gzip -9 -f $^
-
-#MM
-clean ::
-	-$(RM) $(TESTS)
-
-# %include_deps
 %common

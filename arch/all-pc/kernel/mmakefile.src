@@ -8,12 +8,15 @@ MAINDIR	      := rom/kernel
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/$(CURDIR) \
 		 -I$(SRCDIR)/$(MAINDIR)
 
-# Currently built only for x86-64 because the following pieces are missing in i386:
-# 1. IN_USER_MODE() macro
-# 2. rdmsr definitions in asm/cpu.h.
+#MM kernel-kernel-pc : kernel-kernel-native
+#MM kernel-kernel-pc-kobj : kernel-kernel-native
+#MM kernel-kernel-pc-pkg : kernel-kernel-native
+#MM kernel-kernel-pc-quick : kernel-kernel-native
+#MM kernel-kernel-pc-kobj-quick : kernel-kernel-native
+#MM kernel-kernel-pc-pkg-quick : kernel-kernel-native
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
-  arch=pc-x86_64 files="$(FILES) $(APICS)"
+  arch=pc files="$(FILES) $(APICS)"
 
 %common
