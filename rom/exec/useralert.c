@@ -11,7 +11,7 @@
 
 static const char startstring[] = "Program failed\n";
 static const char endstring[]   = "\nWait for disk activity to finish.";
-static const char deadend_buttons[]     = "More...|Suspend|Reboot";
+static const char deadend_buttons[]     = "More...|Suspend|Reboot|Power off";
 static const char recoverable_buttons[] = "More...|Continue";
 
 #define MORE_SKIP 8
@@ -135,14 +135,19 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
     /* Halt if we need to */
     if (alertNum & AT_DeadEnd)
     {
-        if (res == 0)
-        {
+    	switch (res)
+    	{
+    	case 0:
+    	    ShutdownA(SD_ACTION_POWEROFF);
+    	    break;
+    	
+    	case 1:
 	    ColdReboot();
 	    /* In case if ColdReboot() doesn't work */
             ShutdownA(SD_ACTION_COLDREBOOT);
+            break;
+        }
 
-            D(bug("[UserAlert] Returned from ShutdownA()!\n"));
-	}
         /* Well, stop if the user wants so (or if the reboot didn't work at all) */
         Wait(0);
     }
