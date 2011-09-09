@@ -8,6 +8,7 @@
 
 #include "__arosc_privdata.h"
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <setjmp.h>
 #include <aros/startup.h>
@@ -58,8 +59,9 @@
 
 ******************************************************************************/
 {
-    __arosc_startup_error = code;
+    D(bug("[arosc] exit(%d)\n", code));
 
+    __arosc_startup_error = code;
     longjmp (__arosc_startup_jmp_buf, 1);
 
     /* never reached */

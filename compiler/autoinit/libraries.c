@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include <aros/symbolsets.h>
@@ -25,7 +26,9 @@ int set_open_libraries_list(const void * const list[])
 {
     int pos;
     struct libraryset *set;
-    
+
+    D(bug("[Autoinit] Opening libraries...\n"));
+
     ForeachElementInSet(list, 1, pos, set)
     {
         LONG version = *set->versionptr;
@@ -36,9 +39,11 @@ int set_open_libraries_list(const void * const list[])
 	    version = -(version + 1); 
 	    do_not_fail = 1;
 	}
-	
+
+	D(bug("[Autoinit] %s version %d... ", set->name, version));
         *set->baseptr = OpenLibrary(set->name, version);
-	
+        D(bug("0x%p\n", *set->baseptr));
+
 	if (!do_not_fail && *set->baseptr == NULL)
 	{
 	    __showerror
@@ -51,6 +56,7 @@ int set_open_libraries_list(const void * const list[])
 	}
     }
 
+    D(bug("[Autoinit] Done\n"));
     return 1;
 }
 
@@ -79,6 +85,8 @@ int set_open_rellibraries_list(APTR base, const void * const list[])
     int pos;
     struct rellibraryset *set;
 
+    D(bug("[Autoinit] Opening libraries for %s @ 0x%p...\n", ((struct Node *)base)->ln_Name, base));
+
     ForeachElementInSet(list, 1, pos, set)
     {
         LONG version = *set->versionptr;
@@ -90,9 +98,11 @@ int set_open_rellibraries_list(APTR base, const void * const list[])
 	    version = -(version + 1); 
 	    do_not_fail = 1;
 	}
-	
+
+	D(bug("[Autoinit] Offset %d, %s version %d... ", *set->baseoffsetptr, set->name, version));
         *baseptr = OpenLibrary(set->name, version);
-	
+        D(bug("0x%p\n", *baseptr));
+
 	if (!do_not_fail && *baseptr == NULL)
 	{
 	    __showerror
@@ -104,7 +114,8 @@ int set_open_rellibraries_list(APTR base, const void * const list[])
 	    return 0;
 	}
     }
-    
+
+    D(bug("[Autoinit] %s Done\n", ((struct Node *)base)->ln_Name));
     return 1;
 }
 
@@ -125,5 +136,3 @@ void set_close_rellibraries_list(APTR base, const void * const list[])
         }
     }
 }
-
-
