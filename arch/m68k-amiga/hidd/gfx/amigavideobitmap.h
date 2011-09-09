@@ -31,10 +31,14 @@ struct amigabm_data
     WORD height;
     WORD bytesperrow;
     UBYTE depth;
-    UBYTE planes_alloced;
     UBYTE planebuf_size;
     WORD topedge, leftedge;
     BOOL disp;
+    WORD align;
+    /* pixel read/write cache */
+    ULONG pixelcacheoffset;
+    UBYTE pixelcache[32];
+    ULONG writemask;
 };
 
 #include "chipset.h"
