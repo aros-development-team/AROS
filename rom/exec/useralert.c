@@ -58,7 +58,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 
 		/* Re-post the alert, without 'More...' this time */
 		es.es_GadgetFormat += MORE_SKIP;
-		choice = EasyRequestArgs(NULL, &es, NULL, NULL);
+		choice = EasyRequestArgs(NULL, &es, NULL, NULL) + 1;
 	    }
 
 	    FreeMem(buffer, ALERT_BUFFER_SIZE);
@@ -141,7 +141,7 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
     	    ShutdownA(SD_ACTION_POWEROFF);
     	    break;
     	
-    	case 1:
+    	case 3:
 	    ColdReboot();
 	    /* In case if ColdReboot() doesn't work */
             ShutdownA(SD_ACTION_COLDREBOOT);
