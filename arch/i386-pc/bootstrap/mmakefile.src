@@ -11,7 +11,7 @@ OBJDIR  := $(GENDIR)/$(CURDIR)
 USER_INCLUDES := -I$(SRCDIR)/arch/all-pc/bootstrap \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 USER_LDFLAGS  := -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstrap.map \
-		 -Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -L$(GENDIR)/lib
+		 -Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -L$(GENDIR)/lib -L$(LIBDIR)
 USER_OBJS     := $(OBJDIR)/vesa.bin.o
 
 #MM kernel-bootstrap-i386: linklibs-bootconsole
