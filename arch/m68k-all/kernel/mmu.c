@@ -37,6 +37,10 @@ static ULONG alloc_descriptor(struct KernelBase *kb, UBYTE mmutype, UBYTE bits, 
 	ULONG ps = 1 << PAGE_SIZE;
 	UWORD i;
 
+	while (pd->page_free >= size && (((ULONG)pd->page_ptr) & (size - 1))) {
+		pd->page_ptr += 0x100;
+		pd->page_free -= 0x100;
+	}
 	while (pd->page_free < size) {
 		/* allocate in aligned blocks of PAGE_SIZE */
 		UBYTE *mem = AllocMem(2 * ps, MEMF_PUBLIC);
@@ -50,6 +54,7 @@ static ULONG alloc_descriptor(struct KernelBase *kb, UBYTE mmutype, UBYTE bits, 
 			return 0;
 		pd->page_ptr = mem;
 		pd->page_free = ps;
+		// bug("New chunk %p-%p\n", mem, mem + ps - 1);
 		if (mmutype >= MMU040) {
 			/* 68040+ MMU tables should be serialized */
 			map_region(kb, mem, NULL, ps, FALSE, FALSE, FALSE, CM_SERIALIZED);
@@ -63,7 +68,7 @@ static ULONG alloc_descriptor(struct KernelBase *kb, UBYTE mmutype, UBYTE bits, 
 		dout |= 2; /* Valid 4 byte descriptor */
 	else
 		dout |= 3; /* Resident descriptor */
-	desc += size;
+	// bug("Level%c %p-%p: %08x\n", level + 'A', pd->page_ptr, pd->page_ptr + size - 1, dout);
 	pd->page_ptr += size;
 	pd->page_free -= size;
 	return dout;
