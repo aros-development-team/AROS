@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES    := kernel_startup platform_init kernel_cpu kernel_debug kernel_memory kernel_bootmem \
 	    intr apic acpi_tables acpi_parsers mmu smp
 FUNCS	 := displayalert _displayalert
-ASMFILES := core_interrupts cli sti issuper
+ASMFILES := core_interrupts issuper
 
 MAINDIR	      := rom/kernel
 USER_AFLAGS   := -I$(GENINCDIR)
@@ -13,9 +13,9 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-pc/kernel \
 		 -I$(SRCDIR)/$(MAINDIR) -I$(SRCDIR)/rom/exec \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
-#MM kernel-kernel-pc-x86_64 : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole kernel-kernel-native
-#MM kernel-kernel-pc-x86_64-pkg : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole kernel-kernel-native
-#MM kernel-kernel-pc-x86_64-kobj : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole kernel-kernel-native
+#MM kernel-kernel-pc-x86_64 : includes-asm_h-$(CPU) includes kernel-kernel-includes
+#MM kernel-kernel-pc-x86_64-pkg : includes-asm_h-$(CPU) includes kernel-kernel-includes
+#MM kernel-kernel-pc-x86_64-kobj : includes-asm_h-$(CPU) includes kernel-kernel-includes
 #MM kernel-kernel-pc-x86_64-quick : kernel-kernel-native-quick
 #MM kernel-kernel-pc-x86_64-pkg-quick : kernel-kernel-native-quick
 #MM kernel-kernel-pc-x86_64-kobj-quick : kernel-kernel-native-quick

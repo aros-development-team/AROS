@@ -1,11 +1,20 @@
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: i386-pc kernel startup code
+    Lang: english
+*/
+
 #include <aros/altstack.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
-#include <aros/symbolsets.h>
+#include <asm/cpu.h>
+#include <exec/resident.h>
 #include <proto/arossupport.h>
 
-#include <strings.h>
-#include <inttypes.h>
+#include <asm/segments.h>
+#include <bootconsole.h>
 
 #include "boot_utils.h"
 #include "kernel_base.h"
@@ -14,20 +23,15 @@
 #include "kernel_intern.h"
 #include "kernel_mmap.h"
 #include "kernel_romtags.h"
+#include "exec_extern.h"
 
 #define D(x) x
 
 static char boot_stack[];
 
-kerncall void start32(struct TagItem *msg);
-static void core_Kick(struct TagItem *msg, void *target);
 static void kernel_boot(const struct TagItem *msg);
-static void kernel_cstart(const struct TagItem *msg);
-
-/* Some code is still in exec.library */
-void clr(void);
-void exec_cinit(void);
-void exec_boot(struct TagItem *msg);
+void core_Kick(struct TagItem *msg, void *target);
+void kernel_cstart(const struct TagItem *msg);
 
 /*
  * Here the history starts. We are already in flat, 32bit mode. All protections
@@ -45,28 +49,34 @@ IPTR __startup kernel_entry(struct TagItem *bootMsg, ULONG magic)
     return -1;
 }
 
+/*
+ * The real entry point for initial boot.
+ * Here we initialize debug console and say "hello".
+ * Warm restart skips this since the screen was taken over by display driver.
+ */
 static void kernel_boot(const struct TagItem *msg)
 {
-    clr();
-    bug("AROS - The AROS Research OS\nCompiled %s\n\n",__DATE__);
-    
-    kernel_cstart(msg);
-}
+    /*
+     * Initial framebuffer mirror will be located by default at (1MB + 4KB).
+     * This is done because our bootstrap begins at 1MB, and its .tables
+     * sections are placed in the beginning. We must not ocassionally overwrite
+     * these sections for now because they contain boot-time data for us
+     * (taglist etc).
+     * A well-behaved bootstrap should give us ProtAreaEnd.
+     */
+    fb_Mirror = (void *)LibGetTagData(KRN_ProtAreaEnd, 0x101000, msg);
+    con_InitTagList(msg);
 
-/*
- * The second important place. We come here upon warm restart,
- * with stack pointer set to some safe place.
- */
-void kernel_reboot(void)
-{
-    core_Kick(BootMsg, kernel_cstart);
+    bug("AROS - The AROS Research OS. Compiled %s\n",__DATE__);
+ 
+    kernel_cstart(msg);
 }
 
 /*
  * This function actually runs the kickstart from the specified address.
  * Before doing this it clears .bss sections of all modules.
  */
-static void core_Kick(struct TagItem *msg, void *target)
+void core_Kick(struct TagItem *msg, void *target)
 {
     const struct TagItem *bss = LibFindTagItem(KRN_KernelBss, msg);
 
@@ -91,12 +101,6 @@ static void core_Kick(struct TagItem *msg, void *target)
     		 "call *%2\n"::"r"(msg), "r"(boot_stack + STACK_SIZE), "r"(target));
 }
 
-static void panic(void)
-{
-    bug("*** SYSTEM PANIC ***\n");
-    while (1);
-}
-
 /* Common IBM PC memory layout */
 static const struct MemRegion PC_Memory[] =
 {
@@ -118,7 +122,25 @@ static const struct MemRegion PC_Memory[] =
  * Our transient data.
  * They must survive warm restart, so we put then into .data section.
  */
-__attribute__((section(".data"))) static IPTR kick_end = 0;
+__attribute__((section(".data"))) IPTR kick_end = 0;
+__attribute__((section(".data"))) struct segment_desc *GDT = NULL;
+
+/*
+ * Static read-only copy of prebuilt GDT.
+ * We only need to patch a TSS segment, after TSS has been allocated.
+ */
+static const struct {UWORD l1, l2, l3, l4;}
+    GDT_Table[] = 
+{
+        { 0x0000, 0x0000, 0x0000, 0x0000 },
+        { 0xffff, 0x0000, 0x9a00, 0x00cf },
+        { 0xffff, 0x0000, 0x9200, 0x00cf },
+        { 0xffff, 0x0000, 0xfa00, 0x00cf },
+        { 0xffff, 0x0000, 0xf200, 0x00cf },
+        { 0x0000, 0x0000, 0x0000, 0x0000 },
+        { 0x0067, 0x0000, 0x8900, 0x0000 },
+        { 0x0000, 0x0000, 0x0000, 0x0000 }
+};
 
 /*
  * This is the main entry point.
@@ -130,6 +152,7 @@ void kernel_cstart(const struct TagItem *msg)
     struct mb_mmap *mmap = NULL;
     unsigned long mmap_len = 0;
     IPTR kick_start = 0;
+    struct table_desc gdtr;
     struct MinList memList;
     struct MemHeader *mh, *mh2;
     UWORD *ranges[3];
@@ -189,6 +212,9 @@ void kernel_cstart(const struct TagItem *msg)
 	    }
 	}
 
+	/* Allocate space for GDT */
+	GDT = krnAllocBootMemAligned(sizeof(GDT_Table), 128);
+
 	/*
 	 * Set new kickstart end address.
 	 * Kickstart area now includes boot taglist with all its contents.
@@ -223,20 +249,44 @@ void kernel_cstart(const struct TagItem *msg)
 
     /* Sanity check */
     if ((!kick_start) || (!mmap) || (!mmap_len))
+    {
 	krnPanic("Incomplete information from the bootstrap\n"
 		 "Kickstart address : 0x%P\n"
 		 "Memory map address: 0x%P, length %ld\n",
 		 kick_start, mmap, mmap_len);
+    }
 
-    D(bug("[Kernel] Booting exec.library...\n"));
-    exec_cinit();
+    /* Create global descriptor table */
+    krnCopyMem(GDT_Table, GDT, sizeof(GDT_Table));
+
+    /*
+     * Initial CPU setup. Load the GDT and segment registers.
+     * AROS uses only CS SS DS and ES. FS and GS are set to 0
+     * so we can generate GP if someone uses them.
+     */
+    gdtr.size = sizeof(GDT_Table) - 1;
+    gdtr.base = (unsigned long)GDT;
+    asm
+    (
+	"	lgdt	%0\n"
+	"	mov    	%1,%%ds\n"
+	"	mov    	%1,%%es\n"
+	"	mov    	%1,%%ss\n"
+	"	mov    	%2,%%fs\n"
+	"	mov    	%2,%%gs\n"
+	"	ljmp   	%3,$1f\n"
+	"1:\n"
+	::"m"(gdtr),"r"(KERNEL_DS),"r"(0),"i"(KERNEL_CS)
+    );
+
+    D(bug("[Kernel] GDT @ 0x%p reloaded\n", GDT));
 
     /*
      * Explore memory map and create MemHeaders
-     * 2KB at address 0 are reserved for our needs.
+     * 4KB at address 0 are reserved for our needs.
      */
     NEWLIST(&memList);
-    mmap_InitMemory(mmap, mmap_len, &memList, kick_start, kick_end, 0x00002000, PC_Memory);
+    mmap_InitMemory(mmap, mmap_len, &memList, kick_start, kick_end, 0x00001000, PC_Memory);
 
     /*
      * mmap_InitMemory() adds MemHeaders to the list in the order they were created.
@@ -284,6 +334,18 @@ void kernel_cstart(const struct TagItem *msg)
     SysBase->ThisTask->tc_SPUpper = boot_stack + STACK_SIZE;
     aros_init_altstack(SysBase->ThisTask);
 
+
+    /*
+     * Now we have working exec.library memory allocator.
+     * Move console mirror buffer away from unused memory.
+     */
+    if (scr_Type == SCR_GFX)
+    {
+	char *mirror = AllocMem(scr_Width * scr_Height, MEMF_PUBLIC);
+
+	fb_SetMirror(mirror);
+    }
+
     /* Transfer the rest of memory list into SysBase */
     D(bug("[Kernel] Transferring memory list into SysBase...\n"));
     for (mh = (struct MemHeader *)memList.mlh_Head; mh->mh_Node.ln_Succ; mh = mh2)
@@ -293,7 +355,15 @@ void kernel_cstart(const struct TagItem *msg)
 	D(bug("[Kernel] * 0x%p - 0x%p (%s)\n", mh->mh_Lower, mh->mh_Upper, mh->mh_Node.ln_Name));
 	Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
+    
+    /*
+     * Now we can initialize SINGLETASK residents.
+     * This includes kernel.resource itself. Its platform-specific code
+     * will initialize the rest of hardware.
+     */
+    InitCode(RTF_SINGLETASK, 0);
 
+    /* This is remains of old exec.library code. */
     exec_boot(BootMsg);
 
     krnPanic("Failed to start up the system");

@@ -2,17 +2,19 @@
 include $(TOP)/config/make.cfg
 
 FUNCS   := 
-FILES   := startup kernel_debug
+FILES   := startup kernel_debug platform_init traps utils
+AFILES  := core_interrupts reboot
 MAINDIR := rom/kernel
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
 		 -I$(SRCDIR)/arch/all-pc/kernel \
 		 -I$(SRCDIR)/arch/all-native/kernel \
-		 -I$(SRCDIR)/$(MAINDIR)
+		 -I$(SRCDIR)/$(MAINDIR) \
+		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
-  arch=pc-i386 files="$(FILES) $(FUNCS)"
+  arch=pc-i386 files="$(FILES) $(FUNCS)" asmfiles=$(AFILES)
 
 # Build smpboot.bin.o in $(GENDIR)/$(MAINDIR)/arch, where it will be picked up
 # by the linker automatically (make.tmpl macros link in everything that is found there)
