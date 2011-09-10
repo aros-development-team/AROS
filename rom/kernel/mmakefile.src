@@ -15,6 +15,7 @@ USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
 	       -D__AROS_EXEC_LIBRARY__
 
 # Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/kernel/make.opts
 
