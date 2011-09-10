@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: i386unix version of PrepareContext().
+    Desc: i386 native version of PrepareContext().
     Lang: english
 */
 
@@ -10,7 +10,6 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
-#include <sigcore.h>
 #include "etask.h"
 #include "exec_util.h"
 
