@@ -100,9 +100,6 @@ Mobile Broadband
 MSG_AUTOSTART_STACK (//)
 Start networking during system boot
 ;
-MSG_AUTOSTART_WIRELESS (//)
-Enable wireless networking
-;
 MSG_AUTOSTART_MOBILE (//)
 Start ModemManager during system boot
 ;
@@ -139,11 +136,17 @@ Close
 MSG_ERROR_TITLE (//)
 Error
 ;
+MSG_WARNING_TITLE (//)
+Warning
+;
 MSG_ERR_NOT_SAVED_PREFS (//)
 Network preferences not saved to %s
 ;
 MSG_ERR_NOT_COPIED_FILES (//)
 Additional files not copied to %s
+;
+MSG_WARN_MULTIPLE_IFACES (//)
+DHCP does not work reliably when multiple interfaces are configured
 ;
 MSG_INFO_TITLE (//)
 Information

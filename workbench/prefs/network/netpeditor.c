@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -63,7 +63,6 @@ struct NetPEditor_DATA
             *netped_netAddButton,
             *netped_netEditButton,
             *netped_netRemoveButton,
-            *netped_wirelessAutostart,
             *netped_MBBInitString[MAXATCOMMANDS],
             *netped_MBBAutostart,
             *netped_MBBDeviceString,
@@ -139,7 +138,7 @@ AROS_UFHA(struct Interface *, entry, A1))
         *array++ = entry->up ? "*" : "";
         *array++ = entry->ifDHCP ? (STRPTR)"DHCP" : entry->IP;
         *array++ = entry->ifDHCP ? (STRPTR)"DHCP" : entry->mask;
-        *array++ = entry->device;
+        *array++ = FilePart(entry->device);
         *array   = unitbuffer;
     }
     else
@@ -282,9 +281,6 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
     }
     SetNetworkCount(entries);
 
-    GET(data->netped_wirelessAutostart, MUIA_Selected, &lng);
-    SetWirelessAutostart(lng);
-
     for(i = 0 ; i < MAXATCOMMANDS; i++) SetMobile_atcommand(i,"");
 
     a = 0;
@@ -379,8 +375,6 @@ BOOL NetworkPrefs2Gadgets
 
     SET(data->netped_networkList, MUIA_List_Quiet, FALSE);
 
-    NNSET(data->netped_wirelessAutostart, MUIA_Selected, (IPTR)GetWirelessAutostart());
-
     for(i = 0 ; i < MAXATCOMMANDS; i++)
         NNSET((data->netped_MBBInitString[i]), MUIA_String_Contents, "");
 
@@ -401,6 +395,7 @@ BOOL NetworkPrefs2Gadgets
 
 void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
 {
+    CONST_STRPTR title = _(MSG_ERROR_TITLE);
     CONST_STRPTR errormessage = NULL;
     CONST_STRPTR additionaldata = NULL;
     Object * app = NULL;
@@ -439,11 +434,16 @@ void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
             errormessage = _(MSG_ERR_NOT_COPIED_FILES);
             additionaldata = PREFS_PATH_ENVARC;
             break;
+        case MULTIPLE_IFACES:
+            errormessage = _(MSG_WARN_MULTIPLE_IFACES);
+            title = _(MSG_WARNING_TITLE);
+            break;
         case ALL_OK:
             return;
     }
 
-    MUI_Request(app, wnd, 0, _(MSG_ERROR_TITLE), _(MSG_BUTTON_OK), errormessage, additionaldata);
+    MUI_Request(app, wnd, 0, title, _(MSG_BUTTON_OK), errormessage,
+        additionaldata);
 }
 
 /*** Methods ****************************************************************/
@@ -454,7 +454,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *autostart, *interfaceList, *DHCPState,
             *addButton, *editButton, *removeButton, *inputGroup,
             *networkList, *netAddButton, *netEditButton, *netRemoveButton,
-            *wirelessAutostart,
             *MBBInitString[MAXATCOMMANDS],
             *MBBAutostart,*MBBDeviceString,*MBBUnit,*MBBUsername,*MBBPassword;
 
@@ -589,13 +588,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR)HVSpace,
                     End),
                 End),
-                Child, (IPTR)ColGroup(2),
-                    Child, (IPTR)(wirelessAutostart = MUI_MakeObject(MUIO_Checkmark, NULL)),
-                    Child, (IPTR)HGroup,
-                        Child, (IPTR)Label2(__(MSG_AUTOSTART_WIRELESS)),
-                        Child, (IPTR)HVSpace,
-                    End,
-                End,
             End,
 
             Child, (IPTR)VGroup,
@@ -826,7 +818,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_addButton = addButton;
         data->netped_editButton = editButton;
         data->netped_removeButton = removeButton;
-        data->netped_wirelessAutostart = wirelessAutostart;
         data->netped_networkList = networkList;
         data->netped_netAddButton = netAddButton;
         data->netped_netEditButton = netEditButton;
@@ -930,7 +921,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         DoMethod
         (
             editButton, MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR)self, 1, MUIM_NetPEditor_EditEntry, FALSE
+            (IPTR)self, 2, MUIM_NetPEditor_EditEntry, FALSE
         );
         DoMethod
         (
@@ -963,12 +954,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             netRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)networkList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
-        );
-
-        DoMethod
-        (
-            wirelessAutostart, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
 
         DoMethod
@@ -1326,6 +1311,7 @@ IPTR NetPEditor__MUIM_NetPEditor_EditEntry
         {
             struct Interface iface;
             InitInterface(&iface);
+            iface.name[strlen(iface.name) - 1] += entries;
             SetUp(&iface, TRUE);    // new entries are UP
             DoMethod
             (
@@ -1333,6 +1319,11 @@ IPTR NetPEditor__MUIM_NetPEditor_EditEntry
                 MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
             );
         }
+
+        /* Warn about DHCP limitations with more than one interface */
+        if (entries == 1)
+            DisplayErrorMessage(self, MULTIPLE_IFACES);
+
         SET(data->netped_interfaceList, MUIA_List_Active, entries + 1);
     }
 
