@@ -9,6 +9,17 @@
 #include "kernel_base.h"
 #include "kernel_bootmem.h"
 
+/* Our own block copier, because memcpy() can rely on CopyMem() which is not available yet */
+void krnCopyMem(const void *src, void *dest, unsigned long size)
+{
+    const char *s = src;
+    char *d = dest;
+    unsigned long i;
+
+    for (i = 0; i < size; i++)
+        *d++ = *s++;
+}
+
 void RelocateBootMsg(const struct TagItem *msg)
 {
     struct TagItem *dest;
@@ -42,13 +53,9 @@ void RelocateTagData(struct TagItem *tag, unsigned long size)
 {
     char *src = (char *)tag->ti_Data;
     unsigned char *dest = krnAllocBootMem(size);
-    unsigned int i;
 
     tag->ti_Data = (IPTR)dest;
-
-    /* Do not use memcpy() because it can rely on CopyMem() which is not available yet */
-    for (i = 0; i < size; i++)
-        *dest++ = *src++;
+    krnCopyMem(src, dest, size);
 }
 
 void RelocateStringData(struct TagItem *tag)
