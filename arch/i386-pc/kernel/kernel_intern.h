@@ -10,6 +10,8 @@
 #define KERNEL_INTERN_H_
 
 #include <asm/cpu.h>
+#include <hardware/vbe.h>
+
 #include <inttypes.h>
 
 #define STACK_SIZE 8192
@@ -23,6 +25,7 @@ struct PlatformData
 
 extern struct segment_desc *GDT;
 
+void vesahack_Init(char *cmdline, struct vbe_mode *vmode);
 void core_Unused_Int(void);
 
 #endif /* KERNEL_INTERN_H_ */
