@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,9 +8,12 @@
 #include <asm/ptrace.h>
 #include <exec/alerts.h>
 #include <proto/exec.h>
-#include <aros/debug.h>
 
+#include "kernel_base.h"
+#include "kernel_debug.h"
+#include "kernel_intern.h"
 #include "traps.h"
+#include "exec_extern.h"
 
 #define __text __attribute__((section(".text")))
 
@@ -72,9 +75,6 @@ const trap_type traps[0x14] __text =
 	TRAP0x13_trap
 };
 
-typedef struct { long long a; } dummy_double;
-static const dummy_double *idt_base = (const dummy_double *)0x100;
-
 #define _set_gate(gate_addr,type,dpl,addr) \
 do { \
   int __d0, __d1; \
@@ -88,20 +88,23 @@ do { \
 	 "3" ((char *) (addr)),"2" (KERNEL_CS << 16)); \
 } while (0)
 
-
 void set_intr_gate(unsigned int n, void *addr)
 {
-	_set_gate(idt_base+n,14,0,addr);
+    struct PlatformData *data = KernelBase->kb_PlatformData;
+ 
+    _set_gate(&data->idt[n], 14, 0, addr);
 }
 
 void set_system_gate(unsigned int n, void *addr)
 {
-	_set_gate(idt_base+n,14,3,addr);
+    struct PlatformData *data = KernelBase->kb_PlatformData;
+
+    _set_gate(&data->idt[n], 14, 3, addr);
 }
 
 void printException(struct pt_regs regs)
 {
-    kprintf("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
+    bug("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
         regs.eip, regs.eflags, regs.xds, &regs.esp);
 }
 
@@ -130,11 +133,20 @@ void handleException(ULONG exceptionNo)
     trapHandler(alert, NULL);
 }
 
-void Init_Traps(void) {
-int i;
+void Init_Traps(struct PlatformData *data)
+{
+    int i;
 
-	for (i=0;i<20;i++)
-	{
-		_set_gate(idt_base+i,14,0,traps[i]);
-	}
+    for (i = 0; i < 20; i++)
+    {
+	_set_gate(&data->idt[i], 14, 0, traps[i]);
+    }
+    /* Set all unused vectors to dummy interrupt */
+    for (i = 20; i < 256; i++)
+    {
+	_set_gate(&data->idt[i], 14, 0, core_Unused_Int);
+    }
+
+    /* Create user interrupt used to enter supervisor mode */
+    _set_gate(&data->idt[0x80], 14, 3, Exec_SystemCall);
 }

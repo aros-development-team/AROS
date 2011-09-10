@@ -60,6 +60,9 @@ static void die();
 __attribute__((section(".bss.aros.tables"))) static struct TagItem tags[128];
 __attribute__((section(".bss.aros.tables"))) static struct mb_mmap MemoryMap[2];
 
+/* Used to mark the end of .bss.aros.tables section */
+extern char *_prot_hi;
+
 static struct TagItem *tag = &tags[0];
 extern char _end;
 
@@ -102,6 +105,11 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     /* Disable interrupts on the XT-PIC directly */
     outb(0xff, 0x21);
     outb(0xff, 0xa1);
+
+    /* Specify end of the area where we store stuff passed to the kickstart */
+    tag->ti_Tag  = KRN_ProtAreaEnd;
+    tag->ti_Data = (unsigned long)&_prot_hi;
+    tag++;
 
     if (mb->flags & MB_FLAGS_LDRNAME)
     {

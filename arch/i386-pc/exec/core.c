@@ -320,19 +320,12 @@ void irqSetup()
 int sys_Cause(struct pt_regs);
 int sys_Supervisor(struct pt_regs);
 int sys_None(struct pt_regs regs) { return 0; }
-
-asmlinkage int sys_ColdReboot(struct pt_regs regs)
-{    
-    __asm__("movl	$0x93000, %esp\n\t"
-	    "jmp	kernel_reboot\n\t");
-
-    return 0;
-}
+void core_Reboot(void);
 
 int (*sys_call_table[])(struct pt_regs) __text =
 {
     sys_Cause,
-    sys_ColdReboot,
+    core_Reboot,
     sys_Supervisor,
     sys_None
 };
