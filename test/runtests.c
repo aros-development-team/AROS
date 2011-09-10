@@ -9,6 +9,8 @@ LONG failcnt;
 LONG errorcnt;
 LONG warncnt;
 LONG okcnt;
+LONG noshellcnt;
+LONG rubbishcnt;
 
 int main(int argc, char **argv)
 {
@@ -42,10 +44,14 @@ int main(int argc, char **argv)
         {
             bug("====================================\n");
             bug("Running command: %s", command);
-            error = SystemTags(command, TAG_DONE);
+            error = SystemTagList(command, NULL);
             bug("returns: %d\n", error);
-            
-            if (error >= RETURN_FAIL)
+
+            if (error == -1)
+                noshellcnt++;
+            else if (error > 100 || error < 0)
+                rubbishcnt++;
+            else if (error >= RETURN_FAIL)
                 failcnt++;
             else if (error >= RETURN_ERROR)
                 errorcnt++;
@@ -56,7 +62,8 @@ int main(int argc, char **argv)
         }
     }
     bug("====================================\n");
-    bug("Summary: ok %d warn %d error %d fail %d\n", okcnt, warncnt, errorcnt, failcnt);
+    bug("Summary: ok %d, warn %d, error %d, fail %d, no Shell %d, rubbish %d\n",
+        okcnt, warncnt, errorcnt, failcnt, noshellcnt, rubbishcnt);
 
     Close(scripthandle);
 
