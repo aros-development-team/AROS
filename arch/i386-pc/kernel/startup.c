@@ -10,11 +10,12 @@
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <asm/cpu.h>
+#include <asm/segments.h>
 #include <exec/resident.h>
 #include <proto/arossupport.h>
 
-#include <asm/segments.h>
 #include <bootconsole.h>
+#include <string.h>
 
 #include "boot_utils.h"
 #include "kernel_base.h"
@@ -158,11 +159,14 @@ void kernel_cstart(const struct TagItem *msg)
     UWORD *ranges[3];
     struct mb_mmap *region;
 
-    D(bug("[Kernel] Transient BootMsg: 0x%p\n", BootMsg));
+    D(bug("[Kernel] Transient kickstart end 0x%p, BootMsg 0x%p\n", kick_end, BootMsg));
     D(bug("[Kernel] Boot stack: 0x%p - 0x%p\n", boot_stack, boot_stack + STACK_SIZE));
 
     if (!kick_end)
     {
+        struct vbe_mode *vmode = NULL;
+        char *cmdline = NULL;
+
     	/* If kick_end is not set, this is our first start. */
 	tag = LibFindTagItem(KRN_KernelHighest, msg);
         if (!tag)
@@ -196,6 +200,7 @@ void kernel_cstart(const struct TagItem *msg)
 
     	    case KRN_VBEModeInfo:
     	    	RelocateTagData(tag, sizeof(struct vbe_mode));
+		vmode = (struct vbe_mode *)tag->ti_Data;
     	    	break;
 
     	    case KRN_VBEControllerInfo:
@@ -204,6 +209,7 @@ void kernel_cstart(const struct TagItem *msg)
 
 	    case KRN_CmdLine:
 	    	RelocateStringData(tag);
+		cmdline = (char *)tag->ti_Data;
 	    	break;
 
 	    case KRN_BootLoader:
@@ -214,6 +220,8 @@ void kernel_cstart(const struct TagItem *msg)
 
 	/* Allocate space for GDT */
 	GDT = krnAllocBootMemAligned(sizeof(GDT_Table), 128);
+
+	vesahack_Init(cmdline, vmode);
 
 	/*
 	 * Set new kickstart end address.

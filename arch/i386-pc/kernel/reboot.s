@@ -9,7 +9,6 @@ core_Reboot:
 	cld
 	movl	$0x1000, %esp
 	movl	BootMsg, %eax
-	leal	kernel_cstart, %ebx
-	pushl	%ebx
+	pushl	$kernel_cstart
 	pushl	%eax
-	jmp	core_Kick
+	call	core_Kick
