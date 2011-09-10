@@ -108,7 +108,7 @@ void SetDefaultWirelessPrefsValues()
     }
     SetNetworkCount(0);
 
-    SetWirelessAutostart(FALSE);
+    SetWirelessDevice(NULL);
 }
 
 void SetDefaultMobilePrefsValues()
@@ -131,7 +131,7 @@ void SetDefaultMobilePrefsValues()
 void InitInterface(struct Interface *iface)
 {
     SetName(iface, DEFAULTNAME);
-    SetIfDHCP(iface, FALSE);
+    SetIfDHCP(iface, TRUE);
     SetIP(iface, DEFAULTIP);
     SetMask(iface, DEFAULTMASK);
     SetDevice(iface, DEFAULTDEVICE);
@@ -264,12 +264,6 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
     fclose(ConfFile);
 
-    CombinePath2P(filename, filenamelen, destdir, "WirelessAutoRun");
-    ConfFile = fopen(filename, "w");
-    if (!ConfFile) return FALSE;
-    fprintf(ConfFile, "%s", (GetWirelessAutostart()) ? "True" : "False");
-    fclose(ConfFile);
-
     CombinePath2P(filename, filenamelen, destdir, "MobileAutorun");
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
@@ -305,6 +299,12 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
             GetMask(iface),
             (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
         );
+        if (strstr(GetDevice(iface), "atheros5000.device") != NULL
+            || strstr(GetDevice(iface), "realtek8180.device") != NULL)
+        {
+            SetWirelessDevice(GetDevice(iface));
+            SetWirelessUnit(GetUnit(iface));
+        }
     }
     fclose(ConfFile);
 
@@ -342,6 +342,22 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
     }
     fclose(ConfFile);
+
+    CombinePath2P(filename, filenamelen, destdir, "WirelessAutoRun");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s", (GetWirelessDevice() != NULL) ? "True" : "False");
+    fclose(ConfFile);
+
+    if (GetWirelessDevice() != NULL)
+    {
+        CombinePath2P(filename, filenamelen, destdir, "WirelessDevice");
+        ConfFile = fopen(filename, "w");
+        if (!ConfFile) return FALSE;
+        fprintf(ConfFile, "%s UNIT %ld", GetWirelessDevice(),
+            (long int)GetWirelessUnit());
+        fclose(ConfFile);
+    }
 
     return TRUE;
 }
@@ -567,6 +583,7 @@ BOOL StopWireless()
 BOOL StartWireless()
 {
     ULONG trycount = 0;
+    TEXT command[80];
 
     /* Startup */
     {
@@ -579,7 +596,9 @@ BOOL StartWireless()
             { TAG_DONE,         0                   }
         };
 
-        SystemTagList("C:WirelessManager \"atheros5000.device\"", tags);
+        snprintf(command, 80, "C:WirelessManager \"%s\" UNIT %ld\n",
+            GetWirelessDevice(), (long int)GetWirelessUnit());
+        SystemTagList(command, tags);
     }
 
     /* Check if startup successful */
@@ -713,7 +732,7 @@ enum ErrorCode UseNetworkPrefs()
     if (!WriteWirelessPrefs(WIRELESS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
     if (!WriteMobilePrefs(MOBILEBB_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
     if(StopWireless())
-        if (GetWirelessAutostart())
+        if (GetWirelessDevice() != NULL)
             if (!StartWireless()) return NOT_RESTARTED_WIRELESS;
     if (!RestartStack()) return NOT_RESTARTED_STACK;
     if(StopMobile())
@@ -880,27 +899,6 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
             else
             {
                 SetAutostart(FALSE);
-                break;
-            }
-        }
-    }
-    CloseTokenFile(&tok);
-
-    CombinePath2P(filename, filenamelen, directory, "WirelessAutorun");
-    OpenTokenFile(&tok, filename);
-    while (!tok.fend)
-    {
-        GetNextToken(&tok, " \n");
-        if (tok.token)
-        {
-            if (strncmp(tok.token, "True", 4) == 0)
-            {
-                SetWirelessAutostart(TRUE);
-                break;
-            }
-            else
-            {
-                SetWirelessAutostart(FALSE);
                 break;
             }
         }
@@ -1357,9 +1355,14 @@ LONG GetNetworkCount(void)
     return prefs.networkCount;
 }
 
-BOOL GetWirelessAutostart(void)
+STRPTR GetWirelessDevice(void)
 {
-    return prefs.wirelessAutostart;
+    return prefs.wirelessDevice;
+}
+
+LONG GetWirelessUnit(void)
+{
+    return prefs.wirelessUnit;
 }
 
 BOOL GetMobile_Autostart(void)
@@ -1456,9 +1459,14 @@ void SetNetworkCount(LONG w)
     prefs.networkCount = w;
 }
 
-void SetWirelessAutostart(BOOL w)
+void SetWirelessDevice(STRPTR w)
 {
-    prefs.wirelessAutostart = w;
+    prefs.wirelessDevice = w;
+}
+
+void SetWirelessUnit(LONG w)
+{
+    prefs.wirelessUnit = w;
 }
 
 void SetMobile_Autostart(BOOL w)

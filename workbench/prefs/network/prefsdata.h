@@ -48,7 +48,8 @@ enum ErrorCode
     NOT_COPIED_FILES_ENVARC,
     NOT_RESTARTED_STACK,
     NOT_RESTARTED_WIRELESS,
-    NOT_RESTARTED_MOBILE
+    NOT_RESTARTED_MOBILE,
+    MULTIPLE_IFACES
 };
 
 struct Interface
@@ -96,7 +97,8 @@ struct TCPPrefs
     struct Network networks[MAXNETWORKS];
     LONG networkCount;
     struct MobileBroadBand mobile;
-    BOOL wirelessAutostart;
+    STRPTR wirelessDevice;
+    LONG wirelessUnit;
 };
 
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save);
@@ -152,7 +154,8 @@ BOOL GetHidden(struct Network *net);
 BOOL GetAdHoc(struct Network *net);
 
 LONG GetNetworkCount(void);
-BOOL GetWirelessAutostart(void);
+STRPTR GetWirelessDevice(void);
+LONG GetWirelessUnit(void);
 
 BOOL GetMobile_Autostart(void);
 STRPTR GetMobile_atcommand(ULONG i);
@@ -175,7 +178,8 @@ void SetHidden(struct Network *net, BOOL w);
 void SetAdHoc(struct Network *net, BOOL w);
 
 void SetNetworkCount(LONG w);
-void SetWirelessAutostart(BOOL w);
+void SetWirelessDevice(STRPTR w);
+void SetWirelessUnit(LONG w);
 
 void SetMobile_Autostart(BOOL w);
 void SetMobile_atcommand(ULONG i,STRPTR w);
