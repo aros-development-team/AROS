@@ -196,22 +196,42 @@ static const struct RTGFormat formats[] =
     { RGBFB_CLUT,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
 
     { RGBFB_B8G8R8A8,	0x0000ff00, 0x00ff0000, 0xff000000, 0x000000ff, 16,  8,  0, 24, FALSE },
-    { RGBFB_A8R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000,  8, 16, 24,  0, FALSE },
-    { RGBFB_A8B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000, 24, 16,  8,  0, FALSE },
     { RGBFB_R8G8B8A8,	0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff,  0,  8, 16, 24, FALSE },
+    { RGBFB_A8B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000, 24, 16,  8,  0, FALSE },
+    { RGBFB_A8R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000,  8, 16, 24,  0, FALSE },
 
     { RGBFB_B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000, 24, 16,  8,  0, FALSE },
     { RGBFB_R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
 
-    { RGBFB_R5G5B5,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, FALSE },
-    { RGBFB_R5G6B5,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, FALSE },
     { RGBFB_R5G5B5PC,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, TRUE },
     { RGBFB_R5G6B5PC,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, TRUE },
+    { RGBFB_R5G5B5,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, FALSE },
+    { RGBFB_R5G6B5,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, FALSE },
 /*
     { RGBFB_B5G5R5PC,	0x0000003e, 0x000007c0, 0x0000f800, 0x00000000, 26, 21, 16,  0, TRUE },
     { RGBFB_B5G6R5PC,	0x0000001f, 0x000007e0, 0x0000f800, 0x00000000, 27, 21, 16,  0, TRUE },
 */
     { 0 }
+};
+
+static const UBYTE rgbtypelist[] = {
+    RGBFB_CLUT,
+    
+    RGBFB_R5G6B5PC,
+    RGBFB_R5G5B5PC,
+    RGBFB_B5G6R5PC,
+    RGBFB_B5G5R5PC,
+    RGBFB_R5G6B5,
+    RGBFB_R5G5B5,
+    
+    RGBFB_B8G8R8,
+    RGBFB_R8G8B8,
+    
+    RGBFB_B8G8R8A8,
+    RGBFB_A8B8G8R8,
+    RGBFB_A8R8G8B8,
+    RGBFB_R8G8B8A8,
+    0
 };
 
 OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -222,7 +242,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     struct TagItem *reslist, *restags, *pflist, *modetags;
     struct pRoot_New mymsg;
     struct TagItem mytags[2];
-    UWORD supportedformats;
+    UWORD supportedformats, gotmodes;
 
     if (csd->initialized)
 	return NULL;
@@ -259,17 +279,20 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     restags[i].ti_Tag = TAG_DONE;
     restags[i].ti_Data = 0;
     
+    gotmodes = 0;
     k = 0;
-    for (i = 0, j = 0; i < RGBFB_MaxFormats; i++) {
-   	WORD depth = getrtgdepth(1 << i);
-    	if (!((1 << i) & RGBFB_SUPPORTMASK) || depth == 0 || !((1 << i) & supportedformats)) {
+    j = 0;
+    for (i = 0; rgbtypelist[i]; i++) {
+   	UBYTE rgbtype = rgbtypelist[i];
+   	WORD depth = getrtgdepth(1 << rgbtype);
+    	if (!((1 << rgbtype) & RGBFB_SUPPORTMASK) || depth == 0 || !((1 << rgbtype) & supportedformats)) {
       	    pflist[j].ti_Tag = TAG_DONE;
      	    pflist[j].ti_Data = 0;
     	    j++;
     	    continue;
     	}
     	for (l = 0; formats[l].rgbformat; l++) {
-    	    if (formats[l].rgbformat == i)
+    	    if (formats[l].rgbformat == rgbtype)
     	    	break;
     	}
     	if (formats[l].rgbformat == 0) {
@@ -278,7 +301,17 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     	    j++;
     	    continue;
     	}
-   	D(bug("RTGFORMAT=%d added. Depth=%d\n", i, depth));
+   	D(bug("RTGFORMAT=%d found. Depth=%d\n", rgbtype, depth));
+   	
+   	if (gotmodes & (1 << (depth / 8))) {
+	    D(bug("-> skipped\n"));
+       	    pflist[j].ti_Tag = TAG_DONE;
+     	    pflist[j].ti_Data = 0;
+    	    j++;
+    	    continue;
+    	}
+
+	gotmodes |= 1 << (depth / 8);
 
     	modetags[k].ti_Tag = aHidd_Gfx_PixFmtTags;
     	modetags[k].ti_Data = (IPTR)&pflist[j];
@@ -682,13 +715,13 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
     pb(csd->boardinfo + PSSO_BoardInfo_MouseYOffset, msg->yoffset);
     p = (UWORD*)gp(csd->boardinfo + PSSO_BoardInfo_MouseImage);
     if (p == NULL || width != csd->sprite_width || height != csd->sprite_height) {
-    	FreeVec(gp(csd->boardinfo + PSSO_BoardInfo_MouseImage));
+    	FreeVec(p);
     	p = AllocVec(4 + 4 + ((width + 15) & ~15) / 8 * height * 2, MEMF_CLEAR | MEMF_PUBLIC);
+        pp(csd->boardinfo + PSSO_BoardInfo_MouseImage, p);
     	if (!p) {
     	    Permit();
     	    return FALSE;
     	}
-        pp(csd->boardinfo + PSSO_BoardInfo_MouseImage, p);
         csd->sprite_width = width;
         csd->sprite_height = height;
     }
@@ -1078,6 +1111,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     	return FALSE;
     }
 
+    DRTG(bug("P96RTG done\n"));
     return TRUE;
 }
 
