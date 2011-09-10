@@ -1483,16 +1483,16 @@ void MonitorClass__MM_SetPointerPos(Class *cl, Object *obj, struct msSetPointerP
 
 /************************************************************************************/
 
-BOOL MonitorClass__MM_CheckID(Class *cl, Object *obj, struct msGetCompositionFlags *msg)
+IPTR MonitorClass__MM_CheckID(Class *cl, Object *obj, struct msGetCompositionFlags *msg)
 {
     struct MonitorData *data = INST_DATA(cl, obj);
-    
+
     return ((msg->ModeID & data->handle->mask) == data->handle->id);
 }
 
 /************************************************************************************/
 
-BOOL MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointerShape *msg)
+IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointerShape *msg)
 {
     struct MonitorData *data = INST_DATA(cl, obj);
     struct BitMap *bm;
