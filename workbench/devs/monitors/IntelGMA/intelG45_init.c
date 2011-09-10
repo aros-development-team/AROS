@@ -82,7 +82,7 @@ static BOOL IsCompatible(UWORD product_id)
 //        || product_id == 0x3582
 //        || product_id == 0x358e
 //        || product_id == 0xa001
-//        || product_id == 0xa011
+        || product_id == 0xa011
         ;
 }
 
