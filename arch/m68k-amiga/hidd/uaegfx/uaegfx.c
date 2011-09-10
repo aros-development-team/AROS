@@ -602,10 +602,12 @@ static void doshow(struct uaegfx_staticdata *csd, OOP_Object *bm, struct ViewPor
     if (ib->FirstScreen)
     	vpi = &ib->FirstScreen->ViewPort;
 
+    D(bug("doshow b=%p vp=%p vpi=%p acb=%p acbd=%p\n", bm, vp, vpi, csd->acb, csd->acbdata));
+
     if (bm && vpi == vp) {
     	/* we are topmost screen -> show our display */
     	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
-    	
+
     	if (offonly)
     	    return;
 
@@ -643,17 +645,6 @@ ULONG UAEGFXCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct 
     bug("PrepareViewPorts viewport=%p\n", csd->viewport);
     return MCOP_OK;
 }
-
-OOP_Object *UAEGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
-{
-    struct uaegfx_staticdata *csd = CSD(cl);
-    struct ViewPort *vp = NULL;
-
-    vp = csd->viewport;
-    bug("show %p %p\n", msg->bitMap, vp);
-    //doshow(csd, msg->bitMap, vp, FALSE);
-    return msg->bitMap;
-}    	   
 
 ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
