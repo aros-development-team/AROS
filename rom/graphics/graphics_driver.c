@@ -397,7 +397,8 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
         mdd->modes[i].id  = modes[i];
 	mdd->modes[i].drv = mdd;
 
-	if (!compose)
+	/* Watch out! The last record in the array is terminator (vHidd_ModeID_Invalid) */
+	if ((i < cnt) && (!compose))
 	{
 	    HIDD_Gfx_ModeProperties(gfxhidd, modes[i], &props, sizeof(props));
 	    compose |= props.CompositionFlags;
