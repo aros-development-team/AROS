@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>

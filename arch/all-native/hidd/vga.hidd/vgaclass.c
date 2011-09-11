@@ -6,8 +6,6 @@
     Lang: English.
 */
 
-#define __OOP_NOATTRBASES__
-
 #include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -59,29 +57,6 @@ static AROS_UFH3(void, ResetHandler,
     
     AROS_USERFUNC_EXIT
 }
-
-/* Some attrbases needed as global vars.
-  These are write-once read-many */
-
-/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
-
-static OOP_AttrBase HiddBitMapAttrBase;  
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVGAAB;
-static OOP_AttrBase HiddVGABitMapAB;
-
-static struct OOP_ABDescr attrbases[] =
-{
-    { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
-    { IID_Hidd_VGABitMap,	&HiddVGABitMapAB	},
-    { IID_Hidd_VGAgfx,		&HiddVGAAB		},
-    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
-    { IID_Hidd_Sync,		&HiddSyncAttrBase	},
-    { IID_Hidd_Gfx, 	    	&HiddGfxAttrBase    	},
-    { NULL, NULL }
-};
 
 /* Default graphics modes */
 
@@ -710,31 +685,6 @@ VOID PCVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHid
 }
 
 /* end of stuff added by stegerg */
-
-/********************  init_vgaclass()  *********************************/
-
-static int PCVGA_InitAttrs(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("PCVGA_Init\n"));
-
-    ReturnInt("PCVGA_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-}
-
-/*************** free_vgaclass()  **********************************/
-static int PCVGA_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("PCVGA_Expunge\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-    
-    ReturnInt("PCVGA_Expunge", int, TRUE);
-}
-
-/*******************************************************************/
-
-ADD2INITLIB(PCVGA_InitAttrs, 0)
-ADD2EXPUNGELIB(PCVGA_ExpungeAttrs, 0)
-
 /*******************************************************************/
 	       
 void draw_mouse(struct vga_staticdata *xsd)

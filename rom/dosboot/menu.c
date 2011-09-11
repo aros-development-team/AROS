@@ -41,11 +41,16 @@
 #define EXIT_BOOT_WNSS 6
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
-#ifndef mc68000
+#ifdef __ppc__
+#define INITHIDDS_KLUDGE
+#endif
+#endif
+
+#ifdef INITHIDDS_KLUDGE
 
 /*
  * This is an extremely obsolete kludge.
- * It's needed for VGA driver on PC and for ATI driver on PowerPC native.
+ * It's still needed for ATI driver on PowerPC native.
  */
 
 static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootBase)
@@ -89,7 +94,6 @@ static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
     return TRUE;
 }
 
-#endif
 #endif
 
 static struct Gadget *createGadgetsBoot(LIBBASETYPEPTR DOSBootBase) 
@@ -622,18 +626,15 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu)
 
     D(bug("[BootMenu] bootmenu_Init()\n"));
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
-#ifndef mc68000
+#ifdef INITHIDDS_KLUDGE
    /*
-    * VGA and PCI hardware display drivers still need
-    * external initialization.
+    * PCI hardware display drivers still need external initialization.
     * This urgently needs to be fixed. After fixing this kludge
     * will not be needed any more.
     */
     InitBootConfig(&LIBBASE->bm_BootConfig);
     if (!initHidds(LIBBASE))
 	return FALSE;
-#endif
 #endif
 
     /* check keyboard if needed */

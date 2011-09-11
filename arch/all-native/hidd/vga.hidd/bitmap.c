@@ -10,8 +10,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define __OOP_NOATTRBASES__
-
 #include <proto/oop.h>
 #include <proto/utility.h>
 
@@ -35,29 +33,6 @@
 #include "bitmap.h"
 
 #include LC_LIBDEFS_FILE
-
-/* Don't initialize static variables with "=0", otherwise they go into DATA segment */
-
-static OOP_AttrBase HiddBitMapAttrBase;
-static OOP_AttrBase HiddChunkyBMAttrBase;
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVGAGfxAB;
-static OOP_AttrBase HiddVGABitMapAB;
-
-static struct OOP_ABDescr attrbases[] = 
-{
-    { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
-    { IID_Hidd_ChunkyBM,	&HiddChunkyBMAttrBase },
-    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },
-    { IID_Hidd_Gfx,		&HiddGfxAttrBase },
-    { IID_Hidd_Sync,		&HiddSyncAttrBase },
-    /* Private bases */
-    { IID_Hidd_VGAgfx,		&HiddVGAGfxAB	},
-    { IID_Hidd_VGABitMap,	&HiddVGABitMapAB },
-    { NULL, NULL }
-};
 
 void vgaRestore(struct vgaHWRec *);
 int vgaInitMode(struct vgaModeDesc *, struct vgaHWRec *);
@@ -201,30 +176,6 @@ VOID PCVGABM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     ReturnVoid("VGAGfx.BitMap::Dispose");
 }
-
-/*** init_bmclass *********************************************************/
-
-static int PCVGABM_Init(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("PCVGABM_Init\n"));
-    
-    ReturnInt("PCVGABM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-}
-
-/*** expunge_bmclass *******************************************************/
-
-static int PCVGABM_Expunge(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("PCCVGABM_Expunge\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("PCVGABM_Expunge", int, TRUE);
-}
-
-/*****************************************************************************/
-
-ADD2INITLIB(PCVGABM_Init, 0)
-ADD2EXPUNGELIB(PCVGABM_Expunge, 0)
 
 /*********  BitMap::SetColors()  ***************************/
 

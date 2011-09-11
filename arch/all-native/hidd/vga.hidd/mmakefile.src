@@ -1,8 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	:=	vga_init vgaclass vgahw bitmap
+FILES := vga_init vgaclass vgahw bitmap
 
-%build_module mmake=kernel-pc-i386-vga \
+%build_module mmake=kernel-hidd-vga \
   modname=vgah modtype=hidd \
   files=$(FILES) uselibs="oop rom"
+
+%common
