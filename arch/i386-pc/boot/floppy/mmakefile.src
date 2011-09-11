@@ -164,7 +164,7 @@ bootdisk-pc-i386-quick : bootdisk-pc-i386
 systemdisk-pc-i386-quick : systemdisk-pc-i386
 
 $(DISTDIR)/aros-pc-i386.img: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) \
- $(BINDIR)/boot/aros-kernel-pc-i386.gz \
+ $(BINDIR)/boot/kernel-bootstrap-i386.gz \
  $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	@$(MKDIR) -p "$(DISTDIR)"
 	$(RM) $@
