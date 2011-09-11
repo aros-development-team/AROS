@@ -1,14 +1,12 @@
 /*
-    Copyright © 1995-2004 The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011 The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Memory Dump util functions.
     Lang: english
 */
 
-#define  DEBUG  1
 #include <aros/debug.h>
-
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <dos/exall.h>
@@ -22,10 +20,58 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <memory.h>
+
+int (*outfunc)(const char *, ...);
+
+static int HexDump(const UBYTE *data, ULONG count)
+{
+    ULONG t, end;
+    int   i;
+
+    end = (count + 15) & -16;
+
+    for (t=0; t<end; t++)
+    {
+        if ( SetSignal(0L,0L) & SIGBREAKF_CTRL_C )
+        {
+	    SetIoErr( ERROR_BREAK );
+	    return RETURN_WARN;
+        }
+
+	if ((t&15) == 0)
+	    outfunc("%p:", data + t);
+
+	if ((t&3) == 0)
+	    outfunc(" ");
+
+	if (t < count)
+	    outfunc("%02x", ((UBYTE *)data)[t]);
+	else
+	    outfunc("  ");
+
+	if ((t&15) == 15)
+	{
+	    outfunc(" ");
+
+	    for (i=15; i>=0; i--)
+	    {
+	    	UBYTE c = data[t-i];
+
+	    	if (isprint(c))
+		    outfunc("%c", c);
+		else
+		    outfunc(".");
+	    }
+	    outfunc("\n");
+	}
+    }
+    return RETURN_OK;
+} /* hexdump */
 
 static const char version[] = "$VER: dumpmem.c 45.0 (10.2.2004)\n";
 
@@ -40,22 +86,21 @@ enum
     NOOFARGS
 };
 
-/* unsigned int hextoint( char **value ); */
-void clean_string( char *dirtystring );
-
 int main(int argc, char **argv)
 {
-    IPTR args[NOOFARGS] = { (IPTR) NULL,         // ARG_ADDRESS
-	                    (IPTR) NULL,         // ARG_SIZE
-                                   FALSE,        // ARG_SERIAL
-                                   FALSE         // ARG_QUIET
+    IPTR args[NOOFARGS] =
+    {
+        0,         // ARG_ADDRESS
+	0,         // ARG_SIZE
+        FALSE,     // ARG_SERIAL
+        FALSE      // ARG_QUIET
     };
 
-    struct RDArgs           *rda;
-    char                    outpstring[sizeof(unsigned int)*6];
-    IPTR                    offset,start_address,dump_size = 0;
-    int                     PROGRAM_ERROR = RETURN_OK;
-    char                    *ERROR_TEXT,*HELPTXT;
+    struct RDArgs *rda;
+    IPTR           start_address,dump_size = 0;
+    int            PROGRAM_ERROR = RETURN_OK;
+    char          *ERROR_TEXT = NULL;
+    char          *HELPTXT;
 
     HELPTXT =
         "ADDRESS  The start address to dump from (in hex)\n"
@@ -80,7 +125,6 @@ int main(int argc, char **argv)
                 else PROGRAM_ERROR = RETURN_FAIL;
                 
                 start_address = strtoul((CONST_STRPTR) args[ARG_ADDRESS], &pEnd, 16 );
-                dump_size = ( dump_size / sizeof(unsigned int));
                 
                 if ( dump_size <= 0) 
                 {
@@ -104,48 +148,16 @@ int main(int argc, char **argv)
                         PROGRAM_ERROR = RETURN_FAIL;
                     }
                 }
-                
+
+		outfunc = serial_out ? kprintf : printf;
+		
                 if ( PROGRAM_ERROR != RETURN_FAIL )
                 {
-                    if (serial_out) kprintf("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", (void *)start_address, (dump_size * sizeof(unsigned int))); /* use kprintf so it is output on serial.. */
-                    else printf("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", (void *)start_address, (int)(dump_size * sizeof(unsigned int))); /* use kprintf so it is output on serial.. */
+                    outfunc("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", (void *)start_address, dump_size);
 
-                    for ( offset = 0 ; offset < dump_size ; offset += sizeof(unsigned int) )
-                    {
-                        if ( SetSignal(0L,0L) & SIGBREAKF_CTRL_C )
-                        {
-	                    SetIoErr( ERROR_BREAK );
-	                    PROGRAM_ERROR = RETURN_WARN;
-                            break;
-                        }
-                        
-                        if ( ( (offset/sizeof(unsigned int) ) % 6) == 0 ) 
-                        {
-                            if (serial_out) kprintf("0x%8.8llX        ",(unsigned long long)(start_address+offset));
-                            else printf("0x%8.8llX        ",(unsigned long long)(start_address+offset));
-                        }
-                        
-                        if (serial_out) kprintf("%8.8X", (unsigned int)((IPTR *)start_address+offset)[0]); /* use kprintf so it is output on serial.. */
-                        else printf("%8.8X", (unsigned int)((IPTR *)start_address+offset)[0]); /* use kprintf so it is output on serial.. */
-                        sprintf( (char *) &outpstring + ((((offset/sizeof(unsigned int)) % 6) * 4)) ,"%4.4s", (char *)((IPTR *)start_address+offset)[0]);
+		    PROGRAM_ERROR = HexDump((const UBYTE *)start_address, dump_size);
 
-                        if ( ((offset/sizeof(unsigned int)) % 6) == 5 ) 
-                        {
-                            clean_string( outpstring );
-
-                            if (serial_out) kprintf("       '%24.24s'                         \t\n",outpstring);
-                            else printf("       '%24.24s'                         \t\n",outpstring);
-                        }
-                        else
-                        {   
-                            if (serial_out)  kprintf(" ");
-                            else printf(" ");
-                        }
-
-                    }
-
-                    if (serial_out) kprintf("\n\nDump Complete. ");
-                    else printf("\n\nDump Complete. ");
+                    outfunc("\n\nDump Complete.\n");
                 }
 	    }
             else ERROR_TEXT = HELPTXT;
@@ -157,85 +169,4 @@ int main(int argc, char **argv)
 
     if (ERROR_TEXT) puts( ERROR_TEXT );
     return PROGRAM_ERROR;
-}
-
-/* convert a hex string to an int - deprecated */
-/*
-unsigned int hextoint(char **value)
-{
-    struct CHexMap
-    {
-        char chr;
-        int value;
-    };
-    const int HexMapL = 16;
-    struct CHexMap HiHexMap[] =
-    {
-        {"0", 0},   {"1", 1},
-        {"2", 2},   {"3", 3},
-        {"4", 4},   {"5", 5},
-        {"6", 6},   {"7", 7},
-        {"8", 8},   {"9", 9},
-        {"A", 10},  {"B", 11},
-        {"C", 12},  {"D", 13},
-        {"E", 14},  {"F", 15},
-        {""}
-    };
-    struct CHexMap LoHexMap[] =
-    {
-        {"0", 0},   {"1", 1},
-        {"2", 2},   {"3", 3},
-        {"4", 4},   {"5", 5},
-        {"6", 6},   {"7", 7},
-        {"8", 8},   {"9", 9},
-        {"a", 10},  {"b", 11},
-        {"c", 12},  {"d", 13},
-        {"e", 14},  {"f", 15},
-        {""}
-    };
-    unsigned int result = 0,start=0;
-
-    printf(" converting %s to an int..\n",value);
-
-    if ((char *)value[0] == '0' && (((char *)value[1] == 'X')||((char *)value[1] == 'x') ) ) start = 2;
-
-    BOOL        firsttime = TRUE;
-
-    int vallen;
-
-    for (vallen = start; vallen < strlen(value) ; vallen++)
-    {
-        BOOL        found = FALSE;
-        int         i;
-        
-        printf(" Parsing $s\n",(char *)value[vallen]);
-
-        for ( i = 0 ; i < HexMapL; i++)
-        {
-            if (( (char *)value[vallen] == HiHexMap[i].chr )||( (char *)value[vallen] == LoHexMap[i].chr ))
-            {
-                if (!firsttime) result <<= 4;
-                result |= HiHexMap[i].value;
-                found = TRUE;
-                break;
-            }
-        }
-        if (!found) break;
-        firsttime = FALSE;
-    }
-    return result;
-}*/
-
-/* Replace all non printable characters with a '.' */
-
-void clean_string( char *dirtystring )
-{
-    int             i;
-
-    for (i = 0 ; i < (sizeof(unsigned int) * 6) ; i++)
-    {
-        if ((dirtystring[i] < 32) || (dirtystring[i] > 126)) 
-            dirtystring[i] = '.';
-    }
-
 }
