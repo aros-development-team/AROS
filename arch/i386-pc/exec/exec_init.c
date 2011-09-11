@@ -261,7 +261,7 @@ void exec_boot(struct TagItem *msg)
         }
         ml->ml_NumEntries = 1;
         ml->ml_ME[0].me_Addr = t;
-        ml->ml_ME[0].me_Length = sizeof(struct Process);
+        ml->ml_ME[0].me_Length = sizeof(struct Task);
 
         AddHead(&t->tc_MemEntry,&ml->ml_Node);
 
