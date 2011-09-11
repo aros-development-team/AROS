@@ -104,6 +104,9 @@ void set_system_gate(unsigned int n, void *addr)
 
 void printException(struct pt_regs regs)
 {
+    struct Task *t = SysBase->ThisTask;
+
+    bug("Task 0x%p (%s)\n", t, t ? t->tc_Node.ln_Name : "<none>");
     bug("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
         regs.eip, regs.eflags, regs.xds, &regs.esp);
 }
