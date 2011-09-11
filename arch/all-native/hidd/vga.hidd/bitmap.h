@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,7 +17,7 @@
 #define IID_Hidd_VGABitMap "hidd.bitmap.vgabitmap"
 
 #define HiddVGABitMapAB __abHidd_VGABitMap
-/* extern OOP_AttrBase HiddVGABitMapAB; */
+extern OOP_AttrBase HiddVGABitMapAB;
 
 enum {
     aoHidd_VGABitMap_Drawable,

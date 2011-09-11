@@ -1,13 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I$(GENINCDIR)
+#MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 
 #
 # Rules to create kickstart packages for pc-i386
 #
-
-#MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 
 #MM- kernel-link-pc-i386 :	\
 #MM	kernel-bsp-pc-i386-gz	\
@@ -19,16 +17,19 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 # Board support package
 #
 
-#MM- kernel-bsp-pc-i386 : \
-#MM	kernel-isapnp-kobj \
-#MM	kernel-pc-i386-drivers \
-#MM     kernel-workbench-devs-pc-i386 \
+#MM- kernel-bsp-pc-i386 :		\
+#MM	kernel-pc-acpi-kobj		\
+#MM	kernel-isapnp-kobj 		\
+#MM	kernel-pc-i386-drivers 		\
+#MM     kernel-hidd-vesa-kobj 		\
+#MM     kernel-hidd-vga-kobj		\
+#MM     kernel-workbench-devs-pc-i386	\
 #MM     kernel-bsp-objs
 
 EXEDIR  := $(BINDIR)/boot
 USELIBS	:= hiddstubs amiga arossupport debug rom arosm autoinit libinit
 
-KRSRCS  := battclock processor
+KRSRCS  := acpi battclock processor
 KLIBS   := exec expansion
 KDEVS   := timer ata trackdisk
 KHIDDS  := kbd ps2mouse vesagfx vgah pci pcipc irq
