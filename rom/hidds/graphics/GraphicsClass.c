@@ -1214,7 +1214,7 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 	    	classptr = OOP_OCLASS(friend_bm);
 	    	gotclass  = TRUE;
 
-		D(bug("[GFX] Friend bitmap is 0x%p has class 0x%p (%s)\n", friend_bm, classptr, classptr->cl_Name));
+		D(bug("[GFX] Friend bitmap is 0x%p has class 0x%p (%s)\n", friend_bm, classptr, classptr->ClassNode.ln_Name));
 	    }
 	}
 	else
