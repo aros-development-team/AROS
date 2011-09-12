@@ -188,7 +188,23 @@
 
     /* Default value for monitor ID */
     if (FirstID == INVALID_ID)
-	FirstID = CDD(GfxBase)->last_id;
+    {
+	/*
+	 * The logic here prevents ID clash if specified mask is wider than previous one.
+	 * Example situation:
+	 * 1. Add driver with mask = 0xFFFF0000. FirstID = 0x00100000, NextID = 0x00110000.
+	 * 2. Add driver with mask = 0xF0000000. FirstID = 0x00110000, AND with this mask
+	 *    would give monitor ID = 0.
+	 * In order to prevent this, we make one more increment, so that in (2) FirstID becomes
+	 * 0x10000000. The increment mechanism itself is explained below.
+	 * Note that the adjustments happens only for automatic ID assignment. In case of manual
+	 * one (DDRV_MonitorID specified) we suggest our caller knows what he does.
+	 */
+	FirstID = CDD(GfxBase)->last_id & IDMask;
+
+	if (FirstID < CDD(GfxBase)->last_id)
+	    FirstID += (~(IDMask & AROS_MONITOR_ID_MASK) + 1);
+    }
 
     /*
      * Calculate next free ID.
