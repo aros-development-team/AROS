@@ -25,7 +25,7 @@ static void *core_ACPIRootSystemDescriptionPointerScan(IPTR scan_start, IPTR sca
     {
         scan_ptr = (unsigned char *)scan_start + scan_offset;
 
-	if (!memcmp(scan_ptr, "RSD PTR", 8))
+	if (!memcmp(scan_ptr, "RSD PTR ", 8))
 	{
 	    /* We have the signature, let's check the checksum*/ 
 	    if (!acpi_CheckSum(scan_ptr, (((struct ACPI_TABLE_TYPE_RSDP *)scan_ptr)->revision < 2) ? 20 : 36))
