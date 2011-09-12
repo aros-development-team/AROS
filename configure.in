@@ -787,6 +787,15 @@ ios)
     AC_PATH_PROG(android_tool, $android_tool)
     AROS_REQUIRED(android,$android_tool)
 
+    aros_android_level=android-$aros_sdk_version
+    if test ! -d $aros_android_sdk/platforms/$aros_android_level; then
+    	echo "Platform $aros_android_level is not installed in your SDK"
+	echo "Use --with-sdk-version=<API level number> to select another platform version"
+	echo "You can check what plaform versions are installed in your SDK"
+	echo "by examining contents of $aros_android_sdk/platforms directory"
+    	AC_MSG_ERROR([Android platform $aros_android_level is not installed])
+    fi
+
     AC_PATH_PROG(ant, ant)
     if test "$ant" = ""; then
     	AC_MSG_WARN([Apache Ant is missing, Java bootstrap can't be built automatically])
@@ -887,7 +896,6 @@ case "$target_os" in
 		    AC_MSG_ERROR("Unsupported CPU for Android -- $target_cpu")
 		fi
 
-            	aros_android_level=android-$aros_sdk_version
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
 		if test "$aros_android_ndk" = "none"; then
