@@ -47,9 +47,9 @@ functional difference between ELF and PKG forms.
  lddemon.resource
 
   These modules are not allowed to have machine-specific code because it
-violates portability convention. As of 01.08.2011, the i386-pc
-(bootloader.resource) and m68k-amiga (graphics.library) ports do not
-conform to this rule.
+violates portability convention. As of 12.09.2011, m68k-amiga
+(chipset-specific code in graphics.library) and PowerPC-native (display
+driver setup kludge in dos.library boot code) ports do not conform to this rule.
 
   Of course "machine-specific code" does not include "cpu-specific code".
 It's allowed for any module to have relevant portions in arch/<cpu>-all.
