@@ -1,5 +1,3 @@
-#define DEBUG 1
-
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
@@ -100,7 +98,7 @@ static void *core_ACPIRootSystemDescriptionPointerLocate()
     }
 
     /* Search in BIOS ROM address space */
-    if ((RSDP_PhysAddr = core_ACPIRootSystemDescriptionPointerScan(0x000E0000, 0x000FFFFF)) != NULL)
+    if ((RSDP_PhysAddr = core_ACPIRootSystemDescriptionPointerScan(0x000E0000, 0x00020000)) != NULL)
     {
         D(bug("[ACPI] RSDP found in BIOS ROM space @ %p\n", RSDP_PhysAddr));
         return RSDP_PhysAddr;
