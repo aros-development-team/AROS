@@ -89,7 +89,6 @@ public class AROSActivity extends Activity
     		b.setTitle(R.string.error);
     		okEvent = new DialogInterface.OnClickListener()
         	{	
-    			@Override
     			public void onClick(DialogInterface dialog, int which)
     			{
     				System.exit(0);
@@ -104,7 +103,6 @@ public class AROSActivity extends Activity
 
     		okEvent = new DialogInterface.OnClickListener()
     		{
-    			@Override
     			public void onClick(DialogInterface dialog, int which)
     			{
     				AROSBootstrap app = (AROSBootstrap) getApplication();
@@ -117,7 +115,6 @@ public class AROSActivity extends Activity
    			{   				
    				DialogInterface.OnClickListener cancelEvent = new DialogInterface.OnClickListener()
    	    		{
-   	    			@Override
    	    			public void onClick(DialogInterface dialog, int which)
    	    			{
    	    				AROSBootstrap app = (AROSBootstrap) getApplication();
