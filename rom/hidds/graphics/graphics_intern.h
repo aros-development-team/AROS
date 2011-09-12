@@ -88,7 +88,6 @@ struct sync_data
     ULONG vmax;
 
     OOP_Object	 *gfxhidd;	 /* Graphics driver that owns this sync		*/
-    OOP_MethodID  SetMode_mID;	 /* SetMode method ID, for do_monitor()		*/
     ULONG InternalFlags;	 /* Internal flags, see below			*/
 };
 
