@@ -19,8 +19,7 @@ delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-target-variant=android --with-sdk=/android-sdk-linux_x86 --with-ndk=/android-ndk-r6 --with-gcc-version=4.4.3
-
+execute ./configure --target=$BUILDTARGET --enable-target-variant=android --enable-ccache --enable-build-type=nightly --with-sdk=/android-sdk-linux_x86 --with-ndk=/android-ndk-r6 --with-gcc-version=4.4.3
 make
 
 cd      $BUILD_BASE/AROS/bin/$BUILDTARGET
