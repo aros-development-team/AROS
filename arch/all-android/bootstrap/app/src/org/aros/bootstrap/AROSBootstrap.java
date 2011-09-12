@@ -114,7 +114,7 @@ public class AROSBootstrap extends Application
 
     public void DisplayError(String text)
     {
-    	Foreground();
+//    	Foreground();
     	ui.DisplayError(text);
     }
 
