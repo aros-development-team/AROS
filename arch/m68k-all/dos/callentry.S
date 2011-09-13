@@ -134,8 +134,7 @@ BCPL_thunk:
 	lea.l   BCPL_jsr,%a5
 	lea.l   BCPL_rts,%a6
 	/* Skip past the 3 words we need for the BCPL_jsr */
-	lea.l   %a1@(12),%a1
-	moveq.l #12,%d0
+	moveq.l #(3*4),%d0
 	pea.l   0f                      /* sp   = return address */
 	jsr     %a5@                    /* The BCPL_jsr will pop the stack ! */
 	addq.l  #4,%sp                  /* Drop the return location */
