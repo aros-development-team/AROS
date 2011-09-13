@@ -130,7 +130,7 @@ struct GfxBase
     BYTE    SprMoveDisable;
     UBYTE   WantChips;
     UBYTE   BoardMemType;
-    UBYTE   Bugs;					/* Private flags for AmigaOS(tm) monitor drivers. Unused in AROS. */
+    UBYTE   Bugs;					/* Private flags for AmigaOS monitor drivers. Unused by AROS. */
     ULONG * gb_LayersBase;				/* layers.library base */
     ULONG   ColorMask;
     APTR    IVector;
@@ -147,7 +147,7 @@ struct GfxBase
     APTR  ProgData;					/* NULL, unused by AROS */
     UBYTE ExtSprites;
     UBYTE pad3;
-    UWORD GfxFlags;					/* See below, but do not use!!! PRIVATE!!! */
+    UWORD GfxFlags;					/* Zero, unused by AOS */
     ULONG VBCounter;
 
     struct SignalSemaphore * HashTableSemaphore;	/* Semaphore for hash_table access, private in fact */
@@ -199,8 +199,7 @@ struct GfxBase
 
 #define BLITMSG_FAULT 4
 
-/* GfxFlags. Private, do not rely! Subject to change */
+/* GfxFlags. Private for AmigaOS(tm), unused by AROS. */
 #define NEW_DATABASE   1
-#define NO_COMPOSITION 2
 
 #endif /* GRAPHICS_GFXBASE_H */
