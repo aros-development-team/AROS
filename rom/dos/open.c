@@ -143,8 +143,8 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     	SetIoErr(0);
 
     	handle->fh_Type = BNULL;
-    	/* NIL: is considered interactive */
-    	handle->fh_Interactive = DOSTRUE;
+    	/* NIL: is not considered interactive */
+    	handle->fh_Interactive = DOSFALSE;
         return DOSTRUE;
     }
     else

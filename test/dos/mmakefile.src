@@ -4,6 +4,7 @@
 include $(TOP)/config/make.cfg
 
 FILES           := getenv namefromfh examinefh examinelock \
+		   isinteractive \
 		   notify setfiledate output setenv inhibit doslist \
 		   readitem runcommand
 
