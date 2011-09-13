@@ -11,6 +11,7 @@
 #include <dos/dosextens.h>
 #include <graphics/clip.h>
 
+#include <setjmp.h>
 #include <stddef.h>
 
 #ifdef __mc68000
@@ -144,6 +145,10 @@ int main(void) {
 #ifdef UseExecstubs
     asm volatile("\n#define UseExecstubs 1" ::);
 #endif
+
+    asm volatile("\n/* jmp_buf */" ::);
+    DEFINE(jmpbuf_SIZEOF, sizeof(jmp_buf));
+    DEFINE(retaddr, offsetof(struct __jmp_buf, retaddr));
 
     return 0;
 }
