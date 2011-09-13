@@ -37,12 +37,17 @@ int __initcommandline(void)
 
     if (__argsize)
     {
+        ULONG size;
+
         /* Copy args into buffer */
     	if (!(__args = AllocMem(__argsize+1, MEMF_ANY)))
 	    return 0;
 
     	ptr = __args;
-    	while ((*ptr++ = *__argstr++)) {}
+    	size= __argsize;
+    	while (size--)
+    	    *ptr++ = *__argstr++;
+    	*ptr = 0;
 
     	/* Find out how many arguments we have */
 	process_cmdline(&__argmax, __args, NULL);
