@@ -226,14 +226,17 @@ ULONG handleevents(struct Window *win, struct Screen *screen, WORD x, WORD y)
 	    case IDCMP_CLOSEWINDOW:
 	    	terminated = TRUE;
 	    	break;
+
 	    case IDCMP_INTUITICKS:
 	        y1 = drawtext(win, x, y, "Screen position: (%d, %d)               ", screen->LeftEdge, screen->TopEdge);
 		y1 = drawtext(win, x, y1, "Mouse position: (%d, %d)               ", screen->MouseX, screen->MouseY);
 		y1 = drawtext(win, x, y1, "ViewPort size: %dx%d               ", screen->ViewPort.DWidth, screen->ViewPort.DHeight);
 		y1 = drawtext(win, x, y1, "ViewPort position: (%d, %d)               ", screen->ViewPort.DxOffset, screen->ViewPort.DyOffset);
-		drawtext(win, x, y1, "RasInfo position: (%d, %d)               ", screen->ViewPort.RasInfo->RxOffset, screen->ViewPort.RasInfo->RyOffset);
+		y1 = drawtext(win, x, y1, "RasInfo position: (%d, %d)               ", screen->ViewPort.RasInfo->RxOffset, screen->ViewPort.RasInfo->RyOffset);
+		y1 = drawtext(win, x, y1, "Window position: (%d, %d)               ", win->LeftEdge, win->TopEdge);
+		drawtext(win, x, y1, "Window mouse position: (%d, %d)               ", win->MouseY, win->MouseX);
 		break;
-		    					
+
 	    } /* switch (imsg->Class) */
 	    ReplyMsg((struct Message *)imsg);
 	    
