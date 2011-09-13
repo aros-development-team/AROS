@@ -207,14 +207,11 @@ void BCPL_RunHandler(void)
  * segment. Only needed by Workbench's C:Run, C:NewCLI,
  * C:NewShell, and a few other applications.
  */
-struct MsgPort *BCPL_CreateProcBCPL(CONST_STRPTR name, BPTR *segarray, ULONG stacksize, LONG pri)
+struct MsgPort *BCPL_CreateProcBCPL(struct DosLibrary *DOSBase, CONST_STRPTR name, BPTR *segarray, ULONG stacksize, LONG pri)
 {
     struct Process *proc, *me = (struct Process *)FindTask(NULL);
-    APTR DOSBase;
 
-    DOSBase = *(APTR *)(me->pr_GlobVec + GV_DOSBase);
-
-    D(bug("[BCPL_CreateProcBCPL] name=\"%s\", segArray=%p, stacksize=%u, pri=%d\n", name, segarray, stacksize, pri));
+    D(bug("[BCPL_CreateProcBCPL] Window=%p name=\"%s\", segArray=%p, stacksize=%u, pri=%d\n", me->pr_WindowPtr, name, segarray, stacksize, pri));
 
     proc = CreateNewProcTags(
             NP_Name, name,
@@ -226,6 +223,7 @@ struct MsgPort *BCPL_CreateProcBCPL(CONST_STRPTR name, BPTR *segarray, ULONG sta
             NP_StackSize, stacksize,
             NP_WindowPtr, me->pr_WindowPtr,
             NP_CurrentDir, 0,
+            NP_Cli, FALSE,
             NP_HomeDir, 0,
             TAG_END);
 
