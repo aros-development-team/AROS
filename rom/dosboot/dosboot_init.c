@@ -126,9 +126,17 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
                     D(bug("[BootMenu] bootmenu_Init: Forced with bootloader argument\n"));
                     WantBootMenu = TRUE;
                 }
+                /*
+                 * TODO: The following two flags should have corresponding switches
+                 * in 'display options' page.
+                 */
 		else if (0 == stricmp(node->ln_Name, "nomonitors"))
 		{
 		    LIBBASE->db_BootFlags |= BF_NO_DISPLAY_DRIVERS;
+		}
+		else if (0 == stricmp(node->ln_Name, "nocomposition"))
+		{
+		    LIBBASE->db_BootFlags |= BF_NO_COMPOSITION;
 		}
 		else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
 		{
