@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code for CONU_CHARMAP console units.
@@ -1075,8 +1075,20 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o, struct P_Console_Handle
    */
 
   LONG x,y;
+
+  /*
+   * Take window-relative mouse position.
+   * The original code here failed when the screen was moved away from (0, 0) position.
+   * x and y were unaware of shifted display (ie_X and ie_Y are raw physical coordinates,
+   * and w->LeftEdge and w->TopEdge are screen-relative), and this caused lockups here.
+   * TODO: Verify this intuition's behavior with AmigaOS3.1 using screentest program.
+   *								sonic
+   *
   x = e->ie_X - w->LeftEdge;
   y = e->ie_Y - w->TopEdge;
+   */
+  x = w->MouseX;
+  y = w->MouseY;
 
   /* Active selection */
 
