@@ -158,6 +158,17 @@ LONG launcher()
     return 0;
 }
 
+/* This can be good for debugging */
+#ifdef __arm__
+#define SP 8
+#define ALT 27
+#endif
+
+#ifndef SP
+#define SP  _JMPLEN - 1
+#define ALT _JMPLEN - 1
+#endif
+
 pid_t __vfork(jmp_buf env)
 {
     struct aroscbase *aroscbase = __get_aroscbase();
@@ -184,6 +195,11 @@ pid_t __vfork(jmp_buf env)
         { NP_NotifyOnDeath, (IPTR) TRUE      },
         { TAG_DONE,         0                }
     };
+
+    D(bug("__vfork: initial jmp_buf %p\n", env));
+    D(bug("__vfork: ip: %p, stack: %p, alt: 0x%p\n", env->retaddr, env->regs[SP], env->regs[ALT]));
+    D(bug("__vfork: Current altstack 0x%p\n", *((void **)this->tc_SPLower)));
+    D(hexdump(env, 0, sizeof(jmp_buf) + sizeof(void *) * 4));
 
     udata->parent = this;
     udata->prev = aroscbase->acb_vfork_data;
@@ -230,7 +246,7 @@ pid_t __vfork(jmp_buf env)
 	longjmp(env, -1);
     }
 
-    D(bug("__vfork: Setting jmp_buf at %p\n", &__arosc_startup_jmp_buf));
+    D(bug("__vfork: Setting jmp_buf at %p\n", __arosc_startup_jmp_buf));
     if(setjmp(__arosc_startup_jmp_buf))
     {
         ULONG child_id;
@@ -290,7 +306,7 @@ pid_t __vfork(jmp_buf env)
         FreeMem(udata, sizeof(struct vfork_data));
 
         D(bug("__vfork: Child(%d) jumping to jmp_buf %p\n", child_id, &env));
-        D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[_JMPLEN - 1]));
+        D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[SP]));
         vfork_longjmp(env, child_id);
 	assert(0); /* not reached */
         return (pid_t) 1;
@@ -299,7 +315,9 @@ pid_t __vfork(jmp_buf env)
     parent_enterpretendchild(udata);
 
     D(bug("__vfork: Jumping to jmp_buf %p\n", &udata->vfork_jump));
-    D(bug("__vfork: ip: %p, stack: %p\n", udata->vfork_jump[0].retaddr, udata->vfork_jump[0].regs[_JMPLEN - 1]));
+    D(bug("__vfork: ip: %p, stack: %p alt: %p\n", udata->vfork_jump[0].retaddr, udata->vfork_jump[0].regs[SP],
+    	  udata->vfork_jump[0].regs[ALT]));
+
     vfork_longjmp(udata->vfork_jump, 0);
     assert(0); /* not reached */
     return (pid_t) 0;
