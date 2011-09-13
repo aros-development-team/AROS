@@ -8,7 +8,6 @@ LONG fs_Open(struct FileHandle *fh, struct MsgPort *port, BPTR lock, LONG access
 LONG fs_ReadLink(BPTR parent, struct DevProc *dvp, CONST_STRPTR path, STRPTR buffer, ULONG size, struct DosLibrary *DOSBase);
 LONG fs_ChangeSignal(BPTR handle, struct Process *task, struct DosLibrary *DOSBase);
 LONG fs_AddNotify(struct NotifyRequest *notify, struct DevProc *dvp, BPTR lock, struct DosLibrary *DOSBase);
-BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 BYTE DosDoIO(struct IORequest *iORequest);
 
 #endif

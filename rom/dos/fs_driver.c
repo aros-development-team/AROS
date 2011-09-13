@@ -108,18 +108,3 @@ LONG fs_AddNotify(struct NotifyRequest *notify, struct DevProc *dvp, BPTR lock, 
 
     return status ? 0 : err;
 }
-
-BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary *DOSBase)
-{
-    BPTR nfh;
-    struct MsgPort *old;
-    struct FileHandle *h;
-
-    h = BADDR(fh);
-    if (!h->fh_Type)
-    	return Open("NIL:", mode);
-    old = SetConsoleTask(h->fh_Type);
-    nfh = Open("*", mode);
-    SetConsoleTask(old);
-    return nfh;
-}
