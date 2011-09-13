@@ -169,26 +169,28 @@ extern void BCPL_thunk(void);
  *
  * This wrapper is here to support that.
  */
-void BCPL_RunHandler(void)
+ULONG BCPL_RunHandler(void)
 {
     struct DosPacket *dp;
     struct Process *me = (struct Process *)FindTask(NULL);
     APTR oldGlobVec;
     APTR oldReturnAddr;
+    ULONG ret;
 
     WaitPort(&me->pr_MsgPort);
     dp = (struct DosPacket *)(GetMsg(&me->pr_MsgPort)->mn_Node.ln_Name);
     D(bug("[RunHandlerBCPL] Startup packet = %p\n", dp));
 
     if (!BCPL_AllocGlobVec(me)) {
-        internal_ReplyPkt(dp, &me->pr_MsgPort, DOSFALSE, ERROR_NO_FREE_STORE);
-        return;
+        if (dp != NULL)
+                internal_ReplyPkt(dp, &me->pr_MsgPort, DOSFALSE, ERROR_NO_FREE_STORE);
+        return ERROR_NO_FREE_STORE;
     }
 
     D(bug("[RunHandlerBCPL] BCPL_ENTRY = %p\n", BCPL_ENTRY(me)));
 
     oldReturnAddr = me->pr_ReturnAddr;
-    AROS_UFC8(ULONG, BCPL_thunk,
+    ret = AROS_UFC8(ULONG, BCPL_thunk,
             AROS_UFCA(ULONG,  MKBADDR(dp), D1),
             AROS_UFCA(ULONG,  0, D2),
             AROS_UFCA(ULONG,  0, D3),
@@ -201,6 +203,8 @@ void BCPL_RunHandler(void)
 
     BCPL_FreeGlobVec(me);
     oldGlobVec = me->pr_GlobVec;
+
+    return ret;
 }
 
 /* Create the necessary process wrappings for a BCPL 
