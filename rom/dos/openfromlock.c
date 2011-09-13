@@ -56,6 +56,9 @@
     struct FileLock *fl = BADDR(lock);
     SIPTR err = -2;
 
+    if (lock == BNULL)
+        return BNULL;
+
     fh = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
     if (fh) {
         struct MsgPort *port = fl->fl_Task;
