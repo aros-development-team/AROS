@@ -176,20 +176,26 @@
     else
     if (cis == (BPTR)SYS_DupStream)
     {
-        cis = DupFH(Input(), MODE_OLDFILE, DOSBase);
+        cis = OpenFromLock(DupLockFromFH(Input()));
 	if (!cis) goto end;
 
 	cis_opened = TRUE;
     }
     if (IsInteractive(cis))
     	ct = ((struct FileHandle*)BADDR(cis))->fh_Type;
+    D(bug("CIS: %p\n", cis));
 
     if (!cos)
     {
-        if (IsInteractive(cis))
-	    cos = DupFH(cis, MODE_OLDFILE, DOSBase);
-	else
-	    cos = Open("*", MODE_OLDFILE);
+        if (ct != NULL)
+        {
+            APTR old_ct = GetConsoleTask();
+            SetConsoleTask(ct);
+            cos = Open("*", MODE_NEWFILE);
+            SetConsoleTask(old_ct);
+        } else {
+            cos = Open("NIL:", MODE_NEWFILE);
+        }
 
         if (!cos) goto end;
 
@@ -198,19 +204,16 @@
     else
     if (cos == (BPTR)SYS_DupStream)
     {
-        cos = DupFH(Output(), MODE_OLDFILE, DOSBase);
+        cos = OpenFromLock(DupLockFromFH(Output()));
 	if (!cos) goto end;
 
 	cos_opened = TRUE;
     }
+    D(bug("COS: %p\n", cos));
 
     if (!ces)
     {
-        if (IsInteractive(cis))
-	    ces = DupFH(cos, MODE_OLDFILE, DOSBase);
-	else
-	    ces = Open("*", MODE_OLDFILE);
-
+	ces = OpenFromLock(DupLockFromFH(cos));
         if (!ces) goto end;
 
 	ces_opened = TRUE;
@@ -218,11 +221,13 @@
     else
     if (ces == (BPTR)SYS_DupStream)
     {
-        ces = DupFH(Output(), MODE_OLDFILE, DOSBase);
+        ces = OpenFromLock(DupLockFromFH(Output()));
 	if (!ces) goto end;
 
 	ces_opened = TRUE;
     }
+    D(bug("CES: %p\n", ces));
+
 
     /* Load the shell */
     if (isCustom)
