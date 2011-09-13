@@ -9,6 +9,7 @@ FILES := \
 	arguments \
 	chdir \
 	exit \
+	jmpbuf \
 	strchr \
 	stpblk \
 	spawnv \
