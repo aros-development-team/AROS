@@ -162,15 +162,15 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 		    	switch (c)
 		        {
 		    	case 'b':
-		            l = snprintf(d, dlen, "%u", board);
+		            l = snprintf(d, dlen, "%u", (unsigned)board);
 		            break;
 
 		    	case 'h':
-		            l = snprintf(d, dlen, "%u", data->hdisp);
+		            l = snprintf(d, dlen, "%u", (unsigned)data->hdisp);
 			    break;
 
 		    	case 'v':
-		            l = snprintf(d, dlen, "%u", data->vdisp);
+		            l = snprintf(d, dlen, "%u", (unsigned)data->vdisp);
 			    break;
 
 		    	default:
