@@ -7,6 +7,7 @@
 */
 #include <proto/exec.h>
 #include <dos/dosextens.h>
+#include <dos/stdio.h>
 #include "dos_intern.h"
 
 #define DEBUG 0
@@ -53,19 +54,35 @@
 
     struct FileHandle *fh;
     struct FileLock *fl = BADDR(lock);
-    SIPTR err;
+    SIPTR err = -2;
 
     fh = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
     if (fh) {
-        err = dopacket2(DOSBase, NULL, fl->fl_Task, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
+        struct MsgPort *port = fl->fl_Task;
+
+        if (port == BNULL) {
+            /* Special case for NIL: */
+            fh->fh_Interactive = DOSTRUE;
+            FreeMem(fl, sizeof(*fl));
+            err = DOSTRUE;
+        } else {
+            /* Normal case */
+            err = dopacket2(DOSBase, NULL, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
+        }
+
         if (err != DOSTRUE) {
             FreeDosObject(DOS_FILEHANDLE, fh);
             fh = NULL;
+        } else {
+            fh->fh_Type = port;
+            if (IsInteractive(MKBADDR(fh) && fl->fl_Access == ACCESS_WRITE))
+                SetVBuf(MKBADDR(fh), NULL, BUF_LINE, -1);
         }
     } else {
     	SetIoErr(ERROR_NO_FREE_STORE);
     }
 
+    D(bug("[OpenFromLock] %p => fh = %p (%p), error = %d\n", BADDR(lock), fh, fh->fh_Type, err));
     return fh ? MKBADDR(fh) : BNULL;
 
     AROS_LIBFUNC_EXIT
