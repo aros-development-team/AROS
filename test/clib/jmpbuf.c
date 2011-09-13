@@ -16,7 +16,7 @@ static void HexDump(const UBYTE *data, ULONG count)
     for (t=0; t<end; t++)
     {
 	if ((t&15) == 0)
-	    printf("0x%08X:", t);
+	    printf("0x%08X:", (unsigned)t);
 
 	if ((t&3) == 0)
 	    printf(" ");
