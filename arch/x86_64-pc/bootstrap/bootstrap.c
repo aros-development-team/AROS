@@ -11,10 +11,11 @@
 //#define DEBUG_MEM_TYPE MMAP_TYPE_RAM
 //#define DEBUG_TAGLIST
 
-#include <aros/kernel.h>
-#include <aros/multiboot.h>
-#include <aros/multiboot2.h>
-#include <asm/cpu.h>
+//#include <aros/kernel.h>
+//#include <aros/multiboot.h>
+//#include <aros/multiboot2.h>
+//#include <asm/cpu.h>
+#include <asm/x86_64/cpu.h>
 
 #include <bootconsole.h>
 #include <elfloader.h>
@@ -590,6 +591,11 @@ static void __bootstrap(unsigned int magic, void *mb)
      * We don't know its size yet, we will allocate it later.
      */
     fb_Mirror = __bs_malloc(0);
+
+    /* tell the CPU that we will support SSE */                                                                                    
+    wrcr(cr4, rdcr(cr4) | (3 << 9));                                                                                               
+    /* Clear the EM and MP flags of CR0 */                                                                                         
+    wrcr(cr0, rdcr(cr0) & ~6);
 
     switch(magic)
     {
