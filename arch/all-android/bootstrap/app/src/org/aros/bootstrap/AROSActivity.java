@@ -291,6 +291,7 @@ class BitmapView extends View
 	{
 		if (bm == null)
 		{
+//			Log.d("AROS.UI", "Show(NULL)");
 			// Drop our bitmap object
 			pixbuf = null;
 			// Enforce a redraw. AROS will not call Update() here.
@@ -298,7 +299,13 @@ class BitmapView extends View
 		}
 		else
 		{
+	//		Log.d("AROS.UI", "Show (" + bm.Width + " x " + bm.Height + ")");
 			pixbuf = Bitmap.createBitmap(bm.Width, bm.Height, Bitmap.Config.ARGB_8888);
+			
+			// Sometimes screen invalidation happens between this and first Update method call.
+			// This causes bad visual effect (black screen flashes for a moment.
+			// Here we instantly get initial contents to prevent this.
+			main.GetBitmap(pixbuf, bm.Address, 0, 0, bm.Width, bm.Height, bm.BytesPerRow);
 		}
 	}
 
@@ -318,6 +325,7 @@ class BitmapView extends View
 	@Override
 	protected void onDraw(Canvas c)
 	{
+//		Log.d("AROS.UI", "onDraw( " + pixbuf +" )");
 		if (pixbuf == null)
 		{
 			c.drawColor(0);
