@@ -84,7 +84,7 @@ struct GfxBase
     UWORD   MicrosPerLine;
     UWORD   MinDisplayColumn;
     UBYTE   ChipRevBits0;     				/* see below */
-    UBYTE   MemType;
+    UBYTE   MemType;					/* CHIP memory type, see below */
     UBYTE   crb_reserved[4];
     UWORD   monitor_id;
 
@@ -130,7 +130,7 @@ struct GfxBase
     BYTE    SprMoveDisable;
     UBYTE   WantChips;
     UBYTE   BoardMemType;
-    UBYTE   Bugs;
+    UBYTE   Bugs;					/* Private flags for AmigaOS(tm) monitor drivers. Unused in AROS. */
     ULONG * gb_LayersBase;				/* layers.library base */
     ULONG   ColorMask;
     APTR    IVector;
@@ -147,7 +147,7 @@ struct GfxBase
     APTR  ProgData;					/* NULL, unused by AROS */
     UBYTE ExtSprites;
     UBYTE pad3;
-    UWORD GfxFlags;
+    UWORD GfxFlags;					/* See below, but do not use!!! PRIVATE!!! */
     ULONG VBCounter;
 
     struct SignalSemaphore * HashTableSemaphore;	/* Semaphore for hash_table access, private in fact */
@@ -155,8 +155,8 @@ struct GfxBase
 };
 #define ChunkyToPlanarPtr HWEmul[0]
 
-/* DisplayFlags
- * 
+/*
+ * DisplayFlags
  * Specify some system-wide options for Amiga(tm) chipset
  */
 #define NTSC             (1<<0) /* Default mode is NTSC */
@@ -186,6 +186,7 @@ struct GfxBase
 #define SETCHIPREV_AA   (SETCHIPREV_ECS | GFXF_AA_ALICE | GFXF_AA_LISA)
 #define SETCHIPREV_BEST 0xFFFFFFFF
 
+/* Memory type flags */
 #define BUS_16  0
 #define BUS_32  1
 #define NML_CAS 0
@@ -198,7 +199,8 @@ struct GfxBase
 
 #define BLITMSG_FAULT 4
 
-/* PRIVATE */
-#define NEW_DATABASE 1
+/* GfxFlags. Private, do not rely! Subject to change */
+#define NEW_DATABASE   1
+#define NO_COMPOSITION 2
 
 #endif /* GRAPHICS_GFXBASE_H */
