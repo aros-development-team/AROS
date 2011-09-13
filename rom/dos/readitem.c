@@ -61,9 +61,12 @@
 	2. Tries to unread an end-of-line, which actually causes unreading the
 	   last read character of CSource is supplied. Even if it's not a separator,
 	   but belongs to last read item.
+	3. IoErr() is never modified by this function.
 
 	As AOS programs that use ReadItem() depend on this broken behaviour,
 	it will not be fixed.
+
+	4. If maxchars == 0, buff[0] is set to 0 anyway.
 
     SEE ALSO
 
@@ -92,8 +95,6 @@ if(input!=NULL)					\
 }else						\
 {       					\
     c=FGetC(Input());				\
-    if(c==EOF && IoErr())			\
-        return ITEM_ERROR;			\
 }
 
 /* Macro to push the character back */
@@ -103,9 +104,12 @@ if(input!=NULL)					\
     LONG c;
 
     /* No buffer? */
-    if (buffer == NULL || !maxchars) {
-        SetIoErr(ERROR_BUFFER_OVERFLOW);
-        return ITEM_ERROR;
+    if (buffer == NULL)
+        return ITEM_NOTHING;
+
+    if (!maxchars) {
+        *b = 0;
+        return ITEM_NOTHING;
     }
 
     /* Skip leading whitespace characters */
@@ -132,8 +136,7 @@ if(input!=NULL)					\
             if(!maxchars)
             {
                 *b=0;
-                SetIoErr(ERROR_BUFFER_OVERFLOW);
-                return ITEM_ERROR;
+                return ITEM_NOTHING;
             }
             maxchars--;
             GET(c);
@@ -146,7 +149,6 @@ if(input!=NULL)					\
                 {
                     UNGET();
                     *b=0;
-                    SetIoErr(ERROR_UNMATCHED_QUOTES);
                     return ITEM_ERROR;
                 }else if(c=='n'||c=='N')
                     c='\n';
@@ -156,7 +158,6 @@ if(input!=NULL)					\
             {
                 UNGET();
                 *b=0;
-                SetIoErr(ERROR_UNMATCHED_QUOTES);
                 return ITEM_ERROR;
             }else if(c=='\"')
             {
@@ -172,7 +173,6 @@ if(input!=NULL)					\
         if(!maxchars)
         {
             *buffer=0;
-            SetIoErr(ERROR_BUFFER_OVERFLOW);
             return ITEM_ERROR;
         }
         maxchars--;
@@ -183,7 +183,6 @@ if(input!=NULL)					\
             if(!maxchars)
             {
                 *buffer=0;
-                SetIoErr(ERROR_BUFFER_OVERFLOW);
                 return ITEM_ERROR;
             }
             maxchars--;
