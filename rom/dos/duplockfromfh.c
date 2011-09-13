@@ -51,7 +51,7 @@
     struct FileHandle *fh = BADDR(handle);
     BPTR ret;
 
-    if (fh == BNULL)
+    if (handle == BNULL)
         return BNULL;
 
     /* Special case for NIL: */
