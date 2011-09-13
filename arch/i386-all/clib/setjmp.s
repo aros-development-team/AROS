@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI C function setjmp()
@@ -65,7 +65,6 @@
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg
-	.set	retaddr, 0
 
 AROS_CDEFNAME(setjmp):
 	/* Fetch the address of the env-structure off the stack.

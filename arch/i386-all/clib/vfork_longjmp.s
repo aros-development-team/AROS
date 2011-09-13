@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,7 +16,6 @@
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg
 	.set	val, env+4
-	.set	retaddr, 0
 
 AROS_CDEFNAME(vfork_longjmp):
 	/* Fetch the address of the env-structure off the stack.

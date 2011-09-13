@@ -2,37 +2,9 @@
     Copyright © 2008, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX function vfork()
+    Desc: POSIX function vfork(), i386 version
     Lang: english
 */
-
-/******************************************************************************
-
-    NAME
-#include <unistd.h>
-
-	pid_t vfork ();
-
-    FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-******************************************************************************/
-
     #include "aros/i386/asm.h"
 
     .text
@@ -40,7 +12,6 @@
     .globl AROS_CDEFNAME(vfork)
     _FUNCTION(AROS_CDEFNAME(vfork))
     .set    bufsize, 9*4
-    .set    retaddr, 0*4
     .set    stack,   7*4
 
 AROS_CDEFNAME(vfork):
