@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code that loads and initializes necessary HIDDs.
@@ -19,7 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MONITORS_DIR "DEVS:Monitors"
+#define MONITORS_DIR     "DEVS:Monitors"
+#define COMPOSITING_NAME "Compositor"
 
 /************************************************************************/
 
@@ -83,9 +84,10 @@ static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, 
 
 	    newnode = AllocPooled(poolmem, sizeof(struct MonitorNode) + strlen(ap->ap_Info.fib_FileName));
 	    DB2(bug("[LoadMonDrvs] Monitor node 0x%p\n", newnode));
-	    if (newnode == NULL) {
+	    if (newnode == NULL)
+	    {
 		retvalue = FALSE;
-		goto exit;
+		break;
 	    }
 
 	    strcpy(newnode->Name, ap->ap_Info.fib_FileName);
@@ -97,16 +99,18 @@ static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, 
 
 	    error = MatchNext(ap);
 	}
+
 	if (error != ERROR_NO_MORE_ENTRIES)
 	{
 	    retvalue = FALSE;
-	    goto exit;
+/*	    FIXME: Why no MatchEnd() in this case?
+	    goto exit; */
 	}
 	MatchEnd(ap);
     }
     else
 	retvalue = FALSE;
-exit:
+
     return retvalue;
 }
 
@@ -131,39 +135,63 @@ __startup BOOL _main(void)
     APTR pool;
     struct Library *IconBase;
     APTR DOSBase;
+    struct RDArgs *rda;
     BPTR dir, olddir;
     BOOL res = TRUE;
+    IPTR args[1] = {FALSE};
 
     DOSBase = OpenLibrary("dos.library", 0);
     if (DOSBase == NULL)
-        return ERROR_INVALID_RESIDENT_LIBRARY;
+        return RETURN_FAIL;
 
+    rda = ReadArgs("ONLYCOMPOSITION/S", args, NULL);
+    if (!rda)
+    {
+    	PrintFault(IoErr(), "AROSMonDrvs");
+
+    	CloseLibrary(DOSBase);
+    	return RETURN_FAIL;
+    }
 
     dir = Lock(MONITORS_DIR, SHARED_LOCK);
     D(bug("[LoadMonDrvs] Monitors directory 0x%p\n", dir));
-    if (dir) {
+    if (dir)
+    {
         olddir = CurrentDir(dir);
 
-        pool = CreatePool(MEMF_ANY, sizeof(struct MonitorNode) * 10, sizeof(struct MonitorNode) * 5);
-	DB2(bug("[LoadMonDrvs] Created pool 0x%p\n", pool));
-        if (pool) {
-	    struct List MonitorsList;
+	if (args[0])
+	{
+	    /* Software composition driver is ran first */
+	    D(bug("[LoadMonDrvs] Loading composition driver...\n"));
+	    Execute(COMPOSITING_NAME, BNULL, BNULL);
+	}
+	else
+	{
+            pool = CreatePool(MEMF_ANY, sizeof(struct MonitorNode) * 10, sizeof(struct MonitorNode) * 5);
+	    DB2(bug("[LoadMonDrvs] Created pool 0x%p\n", pool));
+            if (pool)
+            {
+	    	struct List MonitorsList;
 
-	    NewList(&MonitorsList);
-	    IconBase = OpenLibrary("icon.library", 0);
-	    if (IconBase) {
-                findMonitors(&MonitorsList, DOSBase, IconBase, pool);
-                loadMonitors(&MonitorsList, DOSBase);
-		CloseLibrary(IconBase);
-            }
-	    DeletePool(pool);
-	} else
-	    res = FALSE;
+	    	NewList(&MonitorsList);
+	    	IconBase = OpenLibrary("icon.library", 0);
+	    	if (IconBase)
+	    	{
+                    findMonitors(&MonitorsList, DOSBase, IconBase, pool);
+                    loadMonitors(&MonitorsList, DOSBase);
+		    CloseLibrary(IconBase);
+            	}
+	    	DeletePool(pool);
+	    }
+	    else
+	    	res = FALSE;
+	}
 
 	CurrentDir(olddir);
 	UnLock(dir);
     }
-
+    
+    FreeArgs(rda);
     CloseLibrary(DOSBase);
 
     return res;
