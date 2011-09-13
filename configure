@@ -10879,6 +10879,10 @@ $as_echo_n "checking for the kernel compiler's include path... " >&6; }
 	             stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
 		     zutil.h"
 
+	    	    	    	    if test ! -f $aros_target_incl/stdint.h; then
+	    	headers="$headers stdint.h"
+	    fi
+
             dirs=
 	    for h in $headers; do
 	        # Which other headers are needed by each of the above?

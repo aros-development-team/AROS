@@ -1821,6 +1821,13 @@ if test "$aros_kernel_includes" != "" ; then
 	             stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
 		     zutil.h"
 
+	    dnl This is for Darwin.
+	    dnl With XCode4.1 Apple thought it's a nice idea to move stdint.h away
+	    dnl to some very specific location
+	    if test ! -f $aros_target_incl/stdint.h; then
+	    	headers="$headers stdint.h"
+	    fi
+
             dirs=
 	    for h in $headers; do
 	        # Which other headers are needed by each of the above?
