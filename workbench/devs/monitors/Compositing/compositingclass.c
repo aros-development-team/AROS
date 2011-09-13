@@ -482,8 +482,15 @@ static BOOL HIDDCompositingToggleCompositing(struct HIDDCompositingData *compdat
      */
     if (newscreenbitmap)
     {
+    	IPTR w, h;
+
     	compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, newscreenbitmap, fHidd_Gfx_Show_CopyBack);
     	D(bug("[Compositing] Displayed bitmap 0x%p, Show returned 0x%p\n", newscreenbitmap, compdata->screenbitmap));
+
+	/* After Show we need Update for mirroring drivers */
+	OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Width, &w);
+	OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Height, &h);
+    	HIDD_BM_UpdateRect(compdata->screenbitmap, 0, 0, w, h);
     }
 
     /*
