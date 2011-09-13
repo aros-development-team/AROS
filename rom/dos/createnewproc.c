@@ -6,6 +6,8 @@
     Lang: English
 */
 
+#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
@@ -32,9 +34,6 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 /* Temporary macro */
 #define P(x)
@@ -421,6 +420,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     	process->pr_FileSystemTask = me->pr_FileSystemTask;
     else
     	process->pr_FileSystemTask = DOSBase->dl_Root->rn_BootProc;
+    D(bug("[createnewproc] pr_ConsoleTask = %p\n", process->pr_ConsoleTask));
+    D(bug("[createnewproc] pr_FileSystemTask = %p\n", process->pr_FileSystemTask));
+
 
     process->pr_CLI = MKBADDR(cli);
 
