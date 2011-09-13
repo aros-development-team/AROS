@@ -11,9 +11,9 @@
 //#define DEBUG_MEM_TYPE MMAP_TYPE_RAM
 //#define DEBUG_TAGLIST
 
-//#include <aros/kernel.h>
-//#include <aros/multiboot.h>
-//#include <aros/multiboot2.h>
+#include <aros/kernel.h>
+#include <aros/multiboot.h>
+#include <aros/multiboot2.h>
 //#include <asm/cpu.h>
 #include <asm/x86_64/cpu.h>
 
