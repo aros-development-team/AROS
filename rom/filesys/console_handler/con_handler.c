@@ -347,6 +347,7 @@ LONG CONMain(void)
 	struct FileHandle *dosfh;
 	LONG error;
     	struct filehandle *fh;
+    	struct FileLock *fl;
    	struct DosPacket *waitingdp = NULL;
 	
 	D(bug("[CON] started\n"));
@@ -427,17 +428,38 @@ LONG CONMain(void)
 			error = 0;
 			switch (dp->dp_Type)
 			{
+                                case ACTION_FH_FROM_LOCK:
+                                        fl = BADDR(dp->dp_Arg2);
+                                        if (fl->fl_Task != mp ||
+                                            fl->fl_Key != (IPTR)fh) {
+                                            replypkt2(dp, DOSFALSE, ERROR_OBJECT_NOT_FOUND);
+                                            break;
+                                        }
+                                        fh->usecount--;
+                                        FreeMem(fl, sizeof(*fl));
+                                        /* Fallthrough */
 				case ACTION_FINDINPUT:
 				case ACTION_FINDOUTPUT:
 				case ACTION_FINDUPDATE:
 					dosfh = BADDR(dp->dp_Arg1);
 					dosfh->fh_Interactive = DOSTRUE;
-					dosfh->fh_Arg1 = (IPTR)fh;
+					dosfh->fh_Arg1 = (SIPTR)fh;
 					fh->usecount++;
 				 	fh->breaktask = dp->dp_Port->mp_SigTask;
 				 	D(bug("[CON] Find fh=%x. Usecount=%d\n", dosfh, fh->usecount));
 					replypkt(dp, DOSTRUE);
 				break;
+                                case ACTION_COPY_DIR_FH:
+                                        fl = AllocMem(sizeof(*fl), MEMF_CLEAR | MEMF_PUBLIC);
+                                        if (fl == BNULL) {
+                                            replypkt2(dp, (SIPTR)BNULL, ERROR_NO_FREE_STORE);
+                                        } else {
+                                            fh->usecount++;
+                                            fl->fl_Task = mp;
+                                            fl->fl_Key = (IPTR)fh;
+                                            replypkt(dp, (SIPTR)MKBADDR(fl));
+                                        }
+                                break;
 				case ACTION_END:
 					fh->usecount--;
 					D(bug("[CON] usecount=%d\n", fh->usecount));
