@@ -739,10 +739,9 @@ BCPL openWindow     /* c8, struct Window *, leftedge, topedge, width, height, @t
 	move.l	#WA_Top, %sp@-
 	move.l	%d1, %sp@-
 	move.l	#WA_Left, %sp@-
-	move.l	%sp, %sp@-
-	move.l	%a0, %sp@-			/* a0 is still 0 here */
+	move.l	%sp, %a1			/* a0 is still 0 here */
 	jsr		%a6@(101 * -6)		/* OpenWindowTagList */
-	lea.l	%sp@(17 * 4),%sp
+	lea.l	%sp@(15 * 4),%sp
 	movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
