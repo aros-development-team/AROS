@@ -46,7 +46,7 @@ BCPL_writef:
 
 	move.l	%d1, %d6	/* D6 = Format pointer - 1 */
 
-#if 0
+#if DEBUG
 	/* Dump format */
 	moveq	#'\'',%d1
 	move.l	#(3*4 + MAXARGS*4),%d0
@@ -69,11 +69,9 @@ BCPL_writef:
 	clr.l	%d5		/* D5 = Format Length */
 	move.b	%a0@(%d6), %d5
 
-#if 0
-    /* whats this? single number zero output = "done already" */
-	tst	%d2		/* Done already? */
+    /* Zero length format - nothing to do */
+	tst	%d5		/* Done already? */
 	beq	.Lformat_exit
-#endif
 
 	clr.l	%d4		/* D4 = Arg Index */
 .Lformat_loop:
