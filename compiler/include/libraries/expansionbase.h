@@ -2,7 +2,7 @@
 #define LIBRARIES_EXPANSIONBASE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Publicly visible ExpansionBase data.
@@ -57,10 +57,10 @@ struct ExpansionBase
     struct List         MountList;      /* BootNode entries - public */
 };
 
-/* Boot flags - AROS SPECIFIC! */
+/* Boot flags. PRIVATE AND AROS SPECIFIC! Subject to change!!! */
 #define BF_NO_STARTUP_SEQUENCE 0x0001
 #define BF_NO_DISPLAY_DRIVERS  0x0002
-
+#define BF_NO_COMPOSITION      0x0004
 
 /*  The error codes from expansion boards */
 #define EE_OK           0   /* no error */
