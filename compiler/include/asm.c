@@ -84,6 +84,29 @@ int main(void) {
     asm volatile("\n/* struct DosBase */" ::);
     DEFINE(dl_Root       , offsetof (struct DosLibrary, dl_Root));
 
+    asm volatile("\n/* struct DosPacket */" ::);
+    DEFINE(dp_Link       , offsetof (struct DosPacket, dp_Link));
+    DEFINE(dp_Port       , offsetof (struct DosPacket, dp_Port));
+    DEFINE(dp_Type       , offsetof (struct DosPacket, dp_Type));
+    DEFINE(dp_Res1       , offsetof (struct DosPacket, dp_Res1));
+    DEFINE(dp_Res2       , offsetof (struct DosPacket, dp_Res2));
+    DEFINE(dp_Arg1       , offsetof (struct DosPacket, dp_Arg1));
+    DEFINE(dp_Arg2       , offsetof (struct DosPacket, dp_Arg2));
+    DEFINE(dp_Arg3       , offsetof (struct DosPacket, dp_Arg3));
+    DEFINE(dp_Arg4       , offsetof (struct DosPacket, dp_Arg4));
+    DEFINE(dp_Arg5       , offsetof (struct DosPacket, dp_Arg5));
+    DEFINE(dp_Arg6       , offsetof (struct DosPacket, dp_Arg6));
+    DEFINE(dp_Arg7       , offsetof (struct DosPacket, dp_Arg7));
+
+    asm volatile("\n/* struct FileHandle */" ::);
+    DEFINE(fh_Flags      , offsetof (struct FileHandle, fh_Flags));
+    DEFINE(fh_Interactive, offsetof (struct FileHandle, fh_Interactive));
+    DEFINE(fh_Type       , offsetof (struct FileHandle, fh_Type ));
+    DEFINE(fh_Buf        , offsetof (struct FileHandle, fh_Buf  ));
+    DEFINE(fh_Pos        , offsetof (struct FileHandle, fh_Pos  ));
+    DEFINE(fh_End        , offsetof (struct FileHandle, fh_End  ));
+
+
     asm volatile("\n/* struct MsgPort */" ::);
     DEFINE(mp_SigTask    , offsetof (struct MsgPort, mp_SigTask));
 
