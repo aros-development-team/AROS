@@ -1,44 +1,10 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: longjmp
+    Desc: longjmp for vfork(), m68k version
     Lang: english
 */
-
-/******************************************************************************
-
-    NAME
-#include <setjmp.h>
-
-	void vfork_longjmp (jmp_buf env, int val);
-
-    FUNCTION
-	Save the current context so that you can return to it later.
-
-    INPUTS
-	env - The context/environment to restore
-	val - This value is returned by setjmp() when you return to the
-	      saved context. This version can return 0.
-
-    RESULT
-	This function doesn't return.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	setjmp()
-
-    INTERNALS
-
-    HISTORY
-
-******************************************************************************/
-
 	#include "aros/m68k/asm.h"
 
 	.text
@@ -48,7 +14,7 @@
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg
 	.set	val, env+4
-	.set	retaddr, 0
+
 vfork_longjmp:
 	/* New version adapted from libnix instead of ixemul.
          * Note the slightly different register save order.
