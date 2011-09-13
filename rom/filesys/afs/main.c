@@ -24,7 +24,7 @@
 
 #include "baseredef.h"
 
-static void replypkt(struct DosPacket *dp, LONG res1)
+static void replypkt(struct DosPacket *dp, SIPTR res1)
 {
 	struct MsgPort *mp;
 	struct Message *mn;
@@ -37,7 +37,7 @@ static void replypkt(struct DosPacket *dp, LONG res1)
 	PutMsg(mp, mn);
 }
 
-static void replypkt2(struct DosPacket *dp, LONG res1, LONG res2)
+static void replypkt2(struct DosPacket *dp, SIPTR res1, SIPTR res2)
 {
 	dp->dp_Res2 = res2;
 	replypkt(dp, res1);
