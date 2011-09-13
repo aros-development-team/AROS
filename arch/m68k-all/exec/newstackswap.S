@@ -71,7 +71,7 @@ AROS_SLIB_ENTRY(NewStackSwap,Exec,134):
     move.l      %d0,%a5
 
     // Remember old stack top, save in D2
-    move.l      %a2,%sp@-
+    move.l      %a5,%sp@-
     jsr         aros_get_altstack       /* SP: task */
     addq.l      #4,%sp
     move.l      %d0,%d2    
