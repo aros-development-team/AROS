@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Creates generic "hosted" binary packages.
 
-BUILDTARGET=linux-arm
+BUILDTARGET=android-arm-system
 
 source $SP/setup
 # The log-name MUST match the name of the package script
@@ -19,10 +19,11 @@ delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-target-variant=android --enable-ccache --enable-build-type=nightly --with-sdk=/android-sdk-linux_x86 --with-ndk=/android-ndk-r6 --with-gcc-version=4.4.3
+execute ./configure --target=linux-arm --enable-target-variant=android --enable-ccache --enable-build-type=nightly --with-sdk=/home/misc/priv/android-sdk-linux_x86 --with-ndk=/home/misc/priv/android-ndk-r6b --with-gcc-version=4.4.3 --with-sdk-version=13
 make
 
 cd      $BUILD_BASE/AROS/bin/$BUILDTARGET
+mkdir	$PACKAGE
 move    AROS $PACKAGE
 move    AROSBootstrap.apk $PACKAGE
 
