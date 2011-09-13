@@ -82,20 +82,24 @@ static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, 
 
 	    DB2(bug("[LoadMonDrvs] Found monitor name %s\n", ap->ap_Info.fib_FileName));
 
-	    newnode = AllocPooled(poolmem, sizeof(struct MonitorNode) + strlen(ap->ap_Info.fib_FileName));
-	    DB2(bug("[LoadMonDrvs] Monitor node 0x%p\n", newnode));
-	    if (newnode == NULL)
+	    /* Software composition driver was loaded before */
+	    if (strcmp(ap->ap_Info.fib_FileName, COMPOSITING_NAME))
 	    {
-		retvalue = FALSE;
-		break;
-	    }
+	    	newnode = AllocPooled(poolmem, sizeof(struct MonitorNode) + strlen(ap->ap_Info.fib_FileName));
+	    	DB2(bug("[LoadMonDrvs] Monitor node 0x%p\n", newnode));
+	    	if (newnode == NULL)
+	    	{
+		    retvalue = FALSE;
+		    break;
+	    	}
 
-	    strcpy(newnode->Name, ap->ap_Info.fib_FileName);
-	    if (IconBase)
-	        newnode->n.ln_Pri = checkIcon(ap->ap_Info.fib_FileName, IconBase);
-	    else
-	        newnode->n.ln_Pri = 0;
-	    Enqueue(monitorsList, &newnode->n);
+	    	strcpy(newnode->Name, ap->ap_Info.fib_FileName);
+	    	if (IconBase)
+	            newnode->n.ln_Pri = checkIcon(ap->ap_Info.fib_FileName, IconBase);
+	    	else
+	            newnode->n.ln_Pri = 0;
+	    	Enqueue(monitorsList, &newnode->n);
+	    }
 
 	    error = MatchNext(ap);
 	}
@@ -138,13 +142,13 @@ __startup BOOL _main(void)
     struct RDArgs *rda;
     BPTR dir, olddir;
     BOOL res = TRUE;
-    IPTR args[1] = {FALSE};
+    IPTR args[2] = {FALSE, FALSE};
 
     DOSBase = OpenLibrary("dos.library", 0);
     if (DOSBase == NULL)
         return RETURN_FAIL;
 
-    rda = ReadArgs("ONLYCOMPOSITION/S", args, NULL);
+    rda = ReadArgs("NOCOMPOSITION/S,ONLYCOMPOSITION/S", args, NULL);
     if (!rda)
     {
     	PrintFault(IoErr(), "AROSMonDrvs");
@@ -159,13 +163,14 @@ __startup BOOL _main(void)
     {
         olddir = CurrentDir(dir);
 
-	if (args[0])
+	if (!args[0])
 	{
 	    /* Software composition driver is ran first */
 	    D(bug("[LoadMonDrvs] Loading composition driver...\n"));
 	    Execute(COMPOSITING_NAME, BNULL, BNULL);
 	}
-	else
+	
+	if (!args[1])
 	{
             pool = CreatePool(MEMF_ANY, sizeof(struct MonitorNode) * 10, sizeof(struct MonitorNode) * 5);
 	    DB2(bug("[LoadMonDrvs] Created pool 0x%p\n", pool));
