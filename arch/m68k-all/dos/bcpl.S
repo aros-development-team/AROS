@@ -562,8 +562,9 @@ BCPL createProcBCPL     /*  84, MessagePort *, @segarray, lw_stack_size, pri, @n
     moveq.l	#4, %d0
     bsr		bstr_to_cstr
     move.l	%d1,%sp@-
+    move.l	%a6,%sp@-
     jsr		BCPL_CreateProcBCPL
-    lea.l	%sp@(4 * 4),%sp
+    lea.l	%sp@(5 * 4),%sp
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
