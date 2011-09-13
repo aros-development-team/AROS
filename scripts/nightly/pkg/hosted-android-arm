@@ -22,7 +22,7 @@ cd      $BUILD_BASE/AROS
 execute ./configure --target=linux-arm --enable-target-variant=android --enable-ccache --enable-build-type=nightly --with-sdk=/home/misc/priv/android-sdk-linux_x86 --with-ndk=/home/misc/priv/android-ndk-r6b --with-gcc-version=4.4.3 --with-sdk-version=13
 make
 
-cd      $BUILD_BASE/AROS/bin/$BUILDTARGET
+cd      $BUILD_BASE/AROS/bin/linux-arm-android
 mkdir	$PACKAGE
 move    AROS $PACKAGE
 move    AROSBootstrap.apk $PACKAGE
