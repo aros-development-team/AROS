@@ -28,7 +28,7 @@ void *aros_get_relbase(void)
             bug("[aros_get_relbase]: Error! SysBase->ThisTask==NULL\n");
     )
 
-    ret = aros_get_altstack(SysBase->ThisTask);
+    ret = (void *)aros_get_altstack(SysBase->ThisTask);
 
     DB2(bug("0x%p\n", ret));
     return ret;
@@ -87,7 +87,7 @@ void *aros_pop2_relbase(void)
     )
 
     aros_pop_altstack(SysBase->ThisTask);
-    ret = aros_pop_altstack(SysBase->ThisTask);
+    ret = (void *)aros_pop_altstack(SysBase->ThisTask);
 
     DB2(bug("0x%p\n", ret));
     return ret;
