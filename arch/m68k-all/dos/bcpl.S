@@ -903,6 +903,8 @@ BCPL endread        /* fc, void,  */
     jsr		%a6@(9 * -6)	/* DOS/Input() */
     move.l	%d0,%d1
     jsr		%a6@(6 * -6)	/* DOS/Close() */
+    moveq.l	#0,%d1
+    jsr		%a6@(49 * -6)	/* DOS/SelectInput() */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
@@ -912,6 +914,8 @@ BCPL endwrite       /* 100, void,  */
     jsr		%a6@(10 * -6)	/* DOS/Output() */
     move.l	%d0,%d1
     jsr		%a6@(6 * -6)	/* DOS/Close() */
+    moveq.l	#0,%d1
+    jsr		%a6@(50 * -6)	/* DOS/SelectOutput() */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
