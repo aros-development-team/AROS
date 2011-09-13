@@ -757,7 +757,7 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
     }
 }
 
-BOOL METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
+IPTR METHOD(Compositing, Hidd_Compositing, BitMapPositionChange)
 {
     struct HIDDCompositingData *compdata = OOP_INST_DATA(cl, o);
     struct StackBitMapNode *n;
