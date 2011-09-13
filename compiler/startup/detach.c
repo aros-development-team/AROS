@@ -32,6 +32,7 @@
 
 #include <aros/config.h>
 #include <dos/dos.h>
+#include <dos/stdio.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
@@ -72,8 +73,16 @@ static void __startup_detach(void)
         D(bug("Was started from cli.\n"));
         mysegment = cli->cli_Module;
         cli->cli_Module = BNULL;
+        BPTR in, out;
 
         detached_name = __detached_name ? __detached_name : (STRPTR) FindTask(NULL)->tc_Node.ln_Name;
+
+        in  = OpenFromLock(DupLockFromFH(Input()));
+        out = OpenFromLock(DupLockFromFH(Output()));
+        if (IsInteractive(in))
+            SetVBuf(in, NULL, BUF_LINE, -1);
+        if (IsInteractive(out))
+            SetVBuf(out, NULL, BUF_LINE, -1);
     
         {
             struct TagItem tags[] =
@@ -82,6 +91,8 @@ static void __startup_detach(void)
                 { NP_Entry,     (IPTR)&__detach_trampoline },
                 { NP_Name,      (IPTR)detached_name        },
                 { NP_Arguments, (IPTR)__argstr             },
+                { NP_Input,     (IPTR)in                   },
+                { NP_Output,    (IPTR)out                  },
                 { NP_Cli,       TRUE                       },
                 { TAG_DONE,     0                          }
             };
@@ -172,6 +183,11 @@ void __Detach(LONG retval)
         /* Wait for it to say "goodbye" */
         Wait(SIGF_SINGLE);
         __detacher_process = NULL;
+
+        Close(Input());
+        SelectInput(BNULL);
+        Close(Output());
+        SelectOutput(BNULL);
     }
 
     D(bug("Leaving __Detach\n"));
