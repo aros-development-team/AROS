@@ -65,7 +65,7 @@
 
         if (port == BNULL) {
             /* Special case for NIL: */
-            fh->fh_Interactive = DOSTRUE;
+            fh->fh_Interactive = DOSFALSE;
             FreeMem(fl, sizeof(*fl));
             err = DOSTRUE;
         } else {
@@ -78,8 +78,6 @@
             fh = NULL;
         } else {
             fh->fh_Type = port;
-            if (IsInteractive(MKBADDR(fh) && fl->fl_Access == ACCESS_WRITE))
-                SetVBuf(MKBADDR(fh), NULL, BUF_LINE, -1);
         }
     } else {
     	SetIoErr(ERROR_NO_FREE_STORE);
