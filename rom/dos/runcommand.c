@@ -39,9 +39,6 @@
 
 	The return code of the command run will be returned.
 
-	AROS ONLY: RunCommand() automatically computes argsize
-	automatically if you pass -1.
-
 	This call will not return until the command has completed.
 
     INPUTS
