@@ -365,7 +365,7 @@ static BOOL HIDDCompositingToggleCompositing(struct HIDDCompositingData *compdat
     /* 
      * If the topbitmap covers the complete screen, show it instead of 
      * compositedbitmap. Remember that screen bitmap -> composited bitmap
-     * has a negative impact on performance.
+     * mirroring has a negative impact on performance.
      */
     OOP_Object *oldcompositedbitmap = compdata->compositedbitmap;
     OOP_Object *newscreenbitmap = NULL;
@@ -444,6 +444,14 @@ static BOOL HIDDCompositingToggleCompositing(struct HIDDCompositingData *compdat
 		    ok = FALSE;
             }
         }
+        else /* if (compdata->compositedbitmap == NULL) */
+        {
+            /*
+             * We are already in compositing mode and will stay in it.
+             * Do not destroy our working bitmap.
+             */
+            oldcompositedbitmap = NULL;
+        }
 
         /*
          * (c) Here composition is turned on (compositedbitmap != NULL).
@@ -465,7 +473,7 @@ static BOOL HIDDCompositingToggleCompositing(struct HIDDCompositingData *compdat
         compdata->compositedbitmap = NULL;
     }
 
-    DTOGGLE(bug("[Compositing] Toggle te %d, oldcomp 0x%lx, top 0x%lx, comp 0x%lx, newscreen %lx\n",
+    DTOGGLE(bug("[Compositing] Toggle te %d, oldcomp 0x%P, top 0x%P, comp 0x%P, newscreen 0x%P\n",
             topedge, oldcompositedbitmap, compdata->topbitmap, compdata->compositedbitmap, newscreenbitmap));
 
     /*
@@ -473,7 +481,10 @@ static BOOL HIDDCompositingToggleCompositing(struct HIDDCompositingData *compdat
      * We do it after refreshing, for better visual appearance.
      */
     if (newscreenbitmap)
+    {
     	compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, newscreenbitmap, fHidd_Gfx_Show_CopyBack);
+    	D(bug("[Compositing] Displayed bitmap 0x%p, Show returned 0x%p\n", newscreenbitmap, compdata->screenbitmap));
+    }
 
     /*
      * (a) - disposing of oldcompositingbitmap needs to happen after mode switch 
