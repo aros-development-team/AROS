@@ -1331,56 +1331,13 @@ BCPL addDevice      /* 154, void, @name */
     movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
-BCPL datestamp      /* 158, @TimeStamp, @TimeStamp */
-    movem.l	%d2/%a0-%a4/%a6,%sp@-
-    subq.l	#8,%sp
-
-    /* I hate time conversions */
-
+BCPL datestamp      /* 158, @DateStamp, @DateStamp */
+    movem.l	%a0-%a1/%a6,%sp@-
     lsl.l	#2,%d1
-    move.l	%d1,%a3
-    move.l	%a2@(GV_DOSBase),%a1
-    move.l	%a1@(58),%a1	/* dl_TimeReq */
-    move.l	%a1@(20),%a6	/* io_Device */
-    move.l	%sp,%a4
-    move.l	%a4,%a0
-    jsr		%a6@(-0x042)	/* GetSysTime */
-
-    move.l	%a2@(GV_DOSBase),%a1
-    move.l	%a1@(62),%a6	/* dl_UtilityBase */
-
-	move.l	%a4@,%d0		/* total seconds */
-    moveq	#60,%d1
-    jsr		%a6@(-0x09C)	/* UDivMod32 */
-    /* minutes in D0, seconds (0-59) in D1 */
-    move.l	%d0,%d2
-    
-    mulu	#50,%d1			/* secs * ticks */
-    move.l	%d1,%a3@(8)		/* ds_Tick */
-    
-    move.l	%a4@(4),%d0		/* millis */
-    divu	#1000000/50,%d0
-    and.l	#0x0000ffff,%d0
-    add.l	%d0,%a3@(8)		/* add ticks (0-49) */
-    
-    /* total minutes -> minutes and days */
-    move.l	%d2,%d0
-    move.l	#60*24,%d1
-    jsr		%a6@(-0x09C)	/* UDivMod32 */
-    move.l	%d0,%a3@		/* ds_Days */
-    move.l	%d1,%a3@(4)		/* ds_Minute */
-    
-    move.l	%a2@(GV_DOSBase),%a1
-    move.l	%a1@(dl_Root),%a1
-    
-    /* update rn_Time */
-    move.l	%a3@,%a1@(8+0)
-    move.l	%a3@(4),%a1@(8+4)
-    move.l	%a3@(8),%a1@(8+8)
-    
-    addq.l	#8,%sp
-    move.l	%a3,%d0
-    movem.l	%sp@+,%d2/%a0-%a4/%a6
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr.l	%a6@(32 * -6)   /* DOS/DateStamp() */
+    lsr.l	#2,%d0
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd WaitForChar    /* 15c, BOOL , @FileHandle, time */
@@ -1677,12 +1634,50 @@ BCPL createDir      /* 1f4, FileLock^, @name */
     BRTS
 
 BCPLd compareTime    /* 1f8, SIGN , @timeval, @timeval */
+    /* I suspect this is actually Dos/CompareDates(), but
+     * I haven't found a user of this routine yet.
+     */
     BRTS
 
-BCPLd timerIO        /* 1fc, void, command, @IOStdReq, secs, usecs */
+BCPL timerIO        /* 1fc, void, command, @IOStdReq, secs, usecs */
+    movem.l     %a0-%a1/%a6,%sp@-
+    lsl.l       #2,%d2
+    move.l      %d2,%a1
+    move.w      %d1,%a1@(io_Command)
+    move.l      %d3,%a1@(tr_time + 0)
+    move.l      %d4,%a1@(tr_time + 4)
+    move.l      SysBase, %a6
+    jsr.l       %a6@(76 * -6)   /* Exec/DoIO() */
+    moveq.l     #-1,%d0 
+    movem.l     %sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd settime        /* 200, void, @timeval */
+BCPL settime        /* 200, void, @DateStamp */
+    move.l      %a2@(GV_DOSBase),%d0
+    move.l      %a0@(dl_TimeReq,%d0),%d2
+    lsl.l       #2,%d1
+    move.l      %a0@(0,%d1),%d3 /* ds_Days */
+    mulu.w      #(60*24),%d3    /* mulu.w is fine until 2162 AD,  */
+                                /* but tv_secs is too small in 2047 AD */
+    add.l       %a0@(4,%d1),%d3 /* ds_Minute */
+    move.l      %d3,%d4
+    mulu.w      #(60),%d3
+    lsr.l       #8,%d4
+    lsr.l       #8,%d4
+    mulu.w      #(60),%d4
+    lsl.l       #8,%d4
+    lsl.l       #8,%d4
+    add.l       %d4,%d3
+    mov.l       %a0@(8,%d1),%d4 /* ds_Tick */
+    divu.w      #50,%d4
+    ext.l       %d4
+    add.l       %d4,%d3
+    moveq.l     #0,%d4
+    lsr.l       #2,%d2
+    move.l      #11,%d1         /* TR_SETSYSTIME */
+    move.l      #(1*4 + 3*4),%d0
+    move.l      %a2@(GV_timerIO),%a4
+    jsr         %a5@
     BRTS
 
     /*
