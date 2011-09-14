@@ -47,4 +47,6 @@
     bug("[Kernel] r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs->r8, regs->r9, regs->r10, regs->r11);	\
     bug("[Kernel] r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs->r12, regs->r13, regs->r14, regs->r15);
 
+#define SP(regs) regs->rsp
+
 #endif

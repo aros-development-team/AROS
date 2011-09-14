@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES    := apic_driver xtpic kernel_memory
+FILES    := apic_driver xtpic cpu_traps kernel_memory
 APICS    := apic_ia32
 ASMFILES := cli sti
 
