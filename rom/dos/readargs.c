@@ -7,6 +7,8 @@
     Lang: english
 */
 
+#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/rdargs.h>
@@ -14,8 +16,6 @@
 #include <proto/utility.h>
 
 #include "dos_intern.h"
-
-#include <aros/debug.h>
 
 #ifdef TEST
 #    include <stdio.h>
@@ -274,8 +274,13 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
                 do {
 	                /* Read a line in. */
-	                for (;;)
+	                for (c = 0; c != '\n';)
 	                {
+	                    if (c == '\n')
+	                    {
+	                        iline[isize] = '\0'; /* end of string */
+	                        break;
+	                    }
 	                    if (isize >= ibuf)
 	                    {
 	                        /* Buffer too small. Get a new one. */
@@ -306,15 +311,14 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 	                    {
 	                        ERROR(me->pr_Result2);
 	                    }
-	                    
-	                    if (c == EOF || c == '\n' || c == '\0')
-	                    {
-	                        iline[isize] = '\0'; /* end of string */
-	                        break;
-	                    }
+	                
+	                    /* Fix short buffers to have a trailing '\n' */
+	                    if (c == EOF || c == '\0')
+	                        c = '\n';
 	
 	                    iline[isize++] = c;
 	                }
+	                iline[isize] = '\0'; /* end of string */
 
 			D(iline[isize] = 0; bug("[ReadArgs] Size %d, line: '%s'\n", isize, iline));
 
@@ -424,6 +428,8 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     for (arg = 0; arg <= numargs; arg = nextarg)
     {
         nextarg = arg + 1;
+
+        D(bug("[ReadArgs] s1=&strbuf[%d], %d left\n", s1-strbuf, strbuflen));
 
         /* Skip /K options and options that are already done. */
         if (flags[arg] & KEYWORD || argbuf[arg] != NULL)
@@ -540,6 +546,8 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
 	    while (*s1++)
 		--strbuflen;
+	    /* Account for the \000 at the end. */
+	    --strbuflen;
 
             /* /M takes more than one argument, so retry. */
             nextarg = arg;
@@ -556,7 +564,8 @@ AROS_LH3(struct RDArgs *, ReadArgs,
             argbuf[arg] = s1;
 
 	    while (*s1++)
-		--strbuflen;
+	        --strbuflen;
+	    /* Account for the \000 at the end. */
 	    --strbuflen;
         }
 
