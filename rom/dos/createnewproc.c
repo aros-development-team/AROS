@@ -60,6 +60,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	Pointer to the new process or NULL on error.
 
     NOTES
+    	It is possible to supply NP_Input, NP_Output and NP_Error tags
+    	with BNULL values. This is equal to NIL: handle, however if NP_Input
+    	is set to BNULL, NP_Arguments tag will not work. Arguments are
+    	passed to the process via input stream, and the stream needs
+    	to be a valid handle for this. This is original AmigaOS(tm) feature.
 
     EXAMPLE
 
