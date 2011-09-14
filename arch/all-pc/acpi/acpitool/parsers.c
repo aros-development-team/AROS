@@ -201,7 +201,7 @@ static const struct Parser Tables[] =
 {
     {ACPI_MAKE_ID('R','S','D','T'), "System"  , rsdt_parser},
     {ACPI_MAKE_ID('X','S','D','T'), "System"  , rsdt_parser},
-    {ACPI_MAKE_ID('F','A','C','S'), "Hardware", facs_parser},
+    {ACPI_MAKE_ID('F','A','C','P'), "Hardware", facs_parser},
     {0, NULL, NULL}
 };
 
