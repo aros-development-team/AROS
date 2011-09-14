@@ -148,8 +148,9 @@ static HIDDT_ModeID FindBestHiddMode(struct HIDDCompositingData *compdata, ULONG
 
     while ((mode = HIDD_Gfx_NextModeID(compdata->gfx, mode, &sync, &pf)) != vHidd_ModeID_Invalid)
     {
-    	DMODE(bug("[FindBestHiddMode] Checking mode 0x%08X... ", mode));
+    	BOOL match;
 
+    	DMODE(bug("[FindBestHiddMode] Checking mode 0x%08X... ", mode));
 	if (OOP_GET(pf, aHidd_PixFmt_ColorModel) != vHidd_ColorModel_TrueColor)
 	{
 	    DMODE(bug("Skipped (not truecolor)\n"));
@@ -164,26 +165,48 @@ static HIDDT_ModeID FindBestHiddMode(struct HIDDCompositingData *compdata, ULONG
 	dh = h > height ? h - height : height - h;
 	delta = dw * dh;
 
+	match = FALSE;
 	if (delta < found_delta)
 	{
-	    DMODE(bug("Selected (%ld x %ld x %ld, delta = %u)", w, h, delta));
+	    /* If mode resolution is closer to the needed one, we've got a better match */
 	    found_delta  = delta;
 	    found_width  = w;
 	    found_height = h;
-	    found_depth  = d;
-	    found_mode   = mode;
+
+	    match = TRUE;
 	}
-	else if ((delta == found_delta) && (d > found_depth) && (d <= depth))
+	else if (delta == found_delta)
+	{
+	    /* If resolution is the same as that of current candidate mode, we can look at depth. */
+	    if (found_depth > depth)
+	    {
+	    	/*
+	    	 * Candidate mode if deeper than requested. We can supersede it with another mode
+	    	 * of smaller depth, but which still matches our request.
+	    	 */
+	    	if ((d < found_depth) && (d >= depth))
+	    	    match = TRUE;
+	    }
+	    else if (found_depth < depth)
+	    {
+	    	/*
+	    	 * We want better depth than current candidate.
+	    	 * In this case anything deeper will do.
+	    	 */
+	    	if (d > found_depth)
+	    	    match = TRUE;
+	    }
+	}
+
+	if (match)
 	{
 	    /*
 	     * Mode with the same delta, but larger depth, may supersede
 	     * previous mode, if we prefer deeper ones.
 	     */
 	    DMODE(bug("Selected (%ld x %ld x %ld, delta = %u)", w, h, delta));
-	    found_width  = w;
-	    found_height = h;
-	    found_depth  = d;
-	    found_mode   = mode;
+	    found_depth = d;
+	    found_mode  = mode;
 	}
 	DMODE(bug("\n"));
     }
