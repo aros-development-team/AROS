@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal data structures for processor.resource
@@ -22,7 +22,11 @@
 struct ProcessorBase
 {
     struct Node pb_Node;
+    unsigned int cpucount;
+    APTR kernelBase;
     APTR Private1;              /* Pointer to arch-specific implementationd data */
 };
+
+#define KernelBase ProcessorBase->kernelBase
 
 #endif /* PROCESSOR_INTERN_H */

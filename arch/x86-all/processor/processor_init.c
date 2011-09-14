@@ -1,12 +1,13 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <aros/symbolsets.h>
 
 #include "processor_intern.h"
@@ -14,19 +15,26 @@
 
 LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 {
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
+    struct X86ProcessorInformation **sysprocs;
+    unsigned int i;
 
-    struct SystemProcessors * sysprocs = 
-        AllocVec(sizeof(struct SystemProcessors), MEMF_ANY | MEMF_CLEAR);
+    D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
 
+    sysprocs = AllocVec(ProcessorBase->cpucount * sizeof(APTR), MEMF_ANY | MEMF_CLEAR);
     if (sysprocs == NULL)
         return FALSE;
 
+    for (i = 0; i < ProcessorBase->cpucount; i++)
+    {
+    	sysprocs[i] = AllocMem(sizeof(struct X86ProcessorInformation), MEMF_CLEAR);
+    	if (!sysprocs[i])
+    	    return FALSE;
+    }
+
     ProcessorBase->Private1 = sysprocs;
 
-    /* FIXME: Hardcodes for now */
-    sysprocs->count = 1;
-    ReadProcessorInformation(&sysprocs->processor);
+    /* Boot CPU is number 0. Fill in its data. */
+    ReadProcessorInformation(sysprocs[0]);
     
     return TRUE;
 }

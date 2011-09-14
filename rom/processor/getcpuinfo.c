@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetCPUInfo() - Provides information about installed CPUs
@@ -14,6 +14,7 @@
 #include <proto/utility.h>
 #include <resources/processor.h>
 
+#include "defaults.h"
 #include "processor_intern.h"
 
 /*****************************************************************************
@@ -155,7 +156,7 @@
         switch(passedTag->ti_Tag)
         {
         case(GCIT_NumberOfProcessors):
-            *((ULONG *)passedTag->ti_Data) = 1;
+            *((ULONG *)passedTag->ti_Data) = ProcessorBase->cpucount;
             break;
         case(GCIT_ModelString):
             *((CONST_STRPTR *)passedTag->ti_Data) = "Unknown";
@@ -185,10 +186,10 @@
             *((ULONG *)passedTag->ti_Data) = 0;
             break;
         case(GCIT_Architecture):
-            *((ULONG *)passedTag->ti_Data) = PROCESSORARCH_UNKNOWN;
+            *((ULONG *)passedTag->ti_Data) = PROCESSORARCH_DEF;
             break;
         case(GCIT_Endianness):
-            *((ULONG *)passedTag->ti_Data) = ENDIANNESS_UNKNOWN;
+            *((ULONG *)passedTag->ti_Data) = ENDIANNESS_DEF;
             break;
         case(GCIT_ProcessorSpeed):
             *((UQUAD *)passedTag->ti_Data) = 0;
