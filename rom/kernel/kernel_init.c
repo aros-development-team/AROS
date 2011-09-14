@@ -119,6 +119,9 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     for (i=0; i < IRQ_COUNT; i++)
         NEWLIST(&KernelBase->kb_Interrupts[i]);
 
+    /* From now on we have one working CPU */
+    KernelBase->kb_CPUCount = 1;
+
     /* Call platform-specific init code */
     if (!set_call_libfuncs(SETNAME(INITLIB), 1, 1, KernelBase))
     	return NULL;
