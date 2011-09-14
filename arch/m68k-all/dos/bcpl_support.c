@@ -251,3 +251,15 @@ struct MsgPort *BCPL_CreateProcBCPL(struct DosLibrary *DOSBase, CONST_STRPTR nam
 
     return proc ? &proc->pr_MsgPort : NULL;
 }
+
+void bcpl_command_name(void)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+
+    if (cli == NULL || cli->cli_Module == BNULL)
+        bug("%s: ", me->pr_Task.tc_Node.ln_Name);
+    else
+        bug("%b: ", cli->cli_CommandName);
+}
+
