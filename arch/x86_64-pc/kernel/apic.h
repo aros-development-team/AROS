@@ -13,7 +13,7 @@
 
 #include "apic_driver.h"
 
-UBYTE core_APIC_GetNumber(struct PlatformData *pdata, IPTR __APICBase);
+UBYTE core_APIC_GetNumber(struct KernelBase *KernelBase, IPTR __APICBase);
 
 /* Driver call stubs */
 

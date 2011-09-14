@@ -78,7 +78,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_Parse,
 
     if (((pdata->kb_APIC_IDMap[0] & 0xFF) != processor->id) && processor->flags.enabled)
     {
-	UBYTE apic_newno = pdata->kb_APIC_Count++;
+	UBYTE apic_newno = KernelBase->kb_CPUCount++;
 
 	pdata->kb_APIC_IDMap[apic_newno] = (processor->acpi_id << 8) | processor->id;
 	D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registered APIC number %d [ID=0x%04X]\n", apic_newno, pdata->kb_APIC_IDMap[apic_newno]));

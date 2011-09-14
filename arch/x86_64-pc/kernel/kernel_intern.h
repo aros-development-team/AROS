@@ -42,8 +42,7 @@ extern struct KernBootPrivate *__KernBootPrivate;
 struct PlatformData
 {
     APTR                kb_APIC_TrampolineBase;	/* Starting address of secondary core bootstrap code	*/
-    uint16_t            kb_XTPIC_Mask;
-    UBYTE               kb_APIC_Count;		/* How many APICs (CPU cores) we have			*/
+    uint16_t            kb_XTPIC_Mask;		/* Current XT-PIC interrupt mask			*/
     UWORD               *kb_APIC_IDMap;         /* ACPI_ID << 8 | LOGICAL_ID	      			*/
     IPTR                *kb_APIC_BaseMap;
     int                 kb_APIC_IRQ_Model;

@@ -57,7 +57,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     D(bug("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n"));
 
-    pd->kb_APIC_Count   = 1;		/* We already have one running processor */
+    /* We already have one running processor */
     pd->kb_APIC_IDMap   = AllocMem(sizeof(UWORD), MEMF_ANY);
     pd->kb_APIC_BaseMap = AllocMem(sizeof(IPTR), MEMF_ANY);
 
