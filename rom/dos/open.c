@@ -74,7 +74,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     /* Create filehandle */
     ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
 
-    if(ret != NULL)
+    if (ret != NULL)
     {
 	LONG ok = InternalOpen(name, accessMode, ret, MAX_SOFT_LINK_NESTING, DOSBase);
 	D(bug("[Open] = %d Error = %d\n", ok, IoErr()));
@@ -108,12 +108,28 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     LONG error = 0;
     BPTR con, ast;
 
-    D(bug("[Open] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\" FH: 0x%p\n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name, handle));
+    D(bug("[Open] %s: 0x%p \"%s\", Window: 0x%p, Name: \"%s\" FH: 0x%p\n",
+    	  __is_process(me) ? "Process" : "Task", me, me->pr_Task.tc_Node.ln_Name,
+    	  __is_process(me) ? me->pr_WindowPtr : NULL, name, handle));
 
     if(soft_nesting == 0)
     {
 	SetIoErr(ERROR_TOO_MANY_LEVELS);
 	return DOSFALSE;
+    }
+
+    /*
+     * Special case for NIL:. Node that this can be called from a task - needed for CreateNewProcTags().
+     * But *DO NOT RELY* on it in user software!!! This is internal feature for AROS' own needs.
+     */
+    if (!Stricmp(name, "NIL:"))
+    {
+    	SetIoErr(0);
+
+    	handle->fh_Type = BNULL;
+    	/* NIL: is not considered interactive */
+    	handle->fh_Interactive = DOSFALSE;
+        return DOSTRUE;
     }
 
     switch(accessMode)
@@ -122,11 +138,13 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 	case MODE_READWRITE:
 	    con = me->pr_COS;
 	    ast = me->pr_CES ? me->pr_CES : me->pr_COS;
+
 	    break;
 
 	case MODE_OLDFILE:
 	    ast = con = me->pr_CIS;
 	    break;
+
 	default:
 	    SetIoErr(ERROR_NOT_IMPLEMENTED);
 	    return DOSFALSE;
@@ -136,17 +154,6 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     	error = fs_Open(handle, me->pr_ConsoleTask, con, accessMode, name, DOSBase);
     else if (!Stricmp(name, "*"))
     	error = fs_Open(handle, me->pr_ConsoleTask, ast, accessMode, name, DOSBase);
-
-    /* Special case for NIL: */
-    else if (!Stricmp(name, "NIL:"))
-    {
-    	SetIoErr(0);
-
-    	handle->fh_Type = BNULL;
-    	/* NIL: is not considered interactive */
-    	handle->fh_Interactive = DOSFALSE;
-        return DOSTRUE;
-    }
     else
     {
         BPTR cur = BNULL;

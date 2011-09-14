@@ -121,6 +121,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* C has no exceptions. This is a simple replacement. */
 #define ERROR_IF(a)  if(a) goto error  /* Throw a generic error. */
 #define ENOMEM_IF(a) if (a) goto enomem /* Throw out of memory. */
+
+    D(bug("[createnewproc] Called from %s %s\n", __is_process(me) ? "Process" : "Task", me->pr_Task.tc_Node.ln_Name));
+
     /* Inherit the parent process' stacksize if possible */
     if (__is_process(me))
     {
@@ -282,51 +285,35 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     if (defaults[2].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	if (__is_process(me))
-	{
-	    input = Open("NIL:", MODE_OLDFILE);
-	    ERROR_IF(!input);
+    	/*
+    	 * We know that our Open("NIL:") works inside a task.
+    	 * This is private feature, just to provide code reuse.
+    	 * Kids, don't try this at home!!!
+    	 */
+	input = Open("NIL:", MODE_OLDFILE);
+	ERROR_IF(!input);
 
-	    defaults[2].ti_Data = (IPTR)input;
-	}
-	else
-	{
-	    defaults[2].ti_Data = 0;
-	}
+	defaults[2].ti_Data = (IPTR)input;
     }
 
     /* NP_Output */
 
     if (defaults[4].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	if (__is_process(me))
-	{
-	    output = Open("NIL:", MODE_NEWFILE);
-	    ERROR_IF(!output);
+	output = Open("NIL:", MODE_NEWFILE);
+	ERROR_IF(!output);
 
-	    defaults[4].ti_Data = (IPTR)output;
-	}
-	else
-	{
-	    defaults[4].ti_Data = 0;
-	}
+	defaults[4].ti_Data = (IPTR)output;
     }
 
     /* NP_Error */
 
     if (defaults[6].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	if (__is_process(me))
-	{
-	    ces = Open("NIL:", MODE_NEWFILE);
-	    ERROR_IF(!ces);
+	ces = Open("NIL:", MODE_NEWFILE);
+	ERROR_IF(!ces);
 
-	    defaults[6].ti_Data = (IPTR)ces;
-	}
-	else
-	{
-	    defaults[6].ti_Data = 0;
-	}
+	defaults[6].ti_Data = (IPTR)ces;
     }
 
     if (defaults[6].ti_Data)
