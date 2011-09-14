@@ -1,7 +1,8 @@
+
+#include <proto/alib.h>
 #include <dos/rdargs.h>
 #include <proto/dos.h>
 
-#include <stdio.h>
 
 int __nocommandline = 1;
 
@@ -24,10 +25,10 @@ int main(void)
     {
 	res = ReadItem(buf, sizeof(buf), &cs);
 
-	printf("Step %d, result %d, buffer %s, CurChr %d\n", i++, res, buf, cs.CS_CurChr);
+	Printf("Step %ld, result %ld, buffer %s, CurChr %ld\n", i++, res, buf, cs.CS_CurChr);
 	if (i == 10)
 	{
-	    printf("ERROR: Unrecoverable loop detected!\n");
+	    Printf("ERROR: Unrecoverable loop detected!\n");
 	    break;
 	}
     } while (res != ITEM_NOTHING);
