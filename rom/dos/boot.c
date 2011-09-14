@@ -68,7 +68,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. */
 
-    D(bug("[__dos_Boot] generic boot sequence\n"));
+    D(bug("[__dos_Boot] generic boot sequence, flags 0x%08X\n", Flags));
 
     /* m68000 uses this to get the default colors and
      * cursors for Workbench
@@ -81,12 +81,27 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
      * which will be used for bootmenu etc. However, it we somehow happen
      * not to have it, this will be our last chance.
      */
-    if (!(Flags & BF_NO_DISPLAY_DRIVERS))
+    if ((Flags & (BF_NO_DISPLAY_DRIVERS | BF_NO_COMPOSITION)) != (BF_NO_DISPLAY_DRIVERS | BF_NO_COMPOSITION))
     {
         /* Check that it exists first... */
         BPTR seg = LoadSeg("C:AROSMonDrvs");
-        if (seg != BNULL) {
-            RunCommand(seg, AROS_STACKSIZE, "", 0);
+
+        if (seg != BNULL)
+        {
+            STRPTR args = "";
+
+	    /*
+	     * Argument strings MUST contain terminating LF because of ReadItem() bugs.
+	     * Their absence causes ReadArgs() crash.
+	     */
+            if (Flags & BF_NO_COMPOSITION)
+            	args = "NOCOMPOSITION\n";
+            else if (Flags & BF_NO_DISPLAY_DRIVERS)
+            	args = "ONLYCOMPOSITION\n";
+
+	    D(bug("[__dos_Boot] Running AROSMonDrvs %s\n", args));
+
+            RunCommand(seg, AROS_STACKSIZE, args, strlen(args));
             /* We don't care about the return code */
             UnLoadSeg(seg);
         }
