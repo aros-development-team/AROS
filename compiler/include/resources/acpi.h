@@ -90,11 +90,98 @@ struct ACPI_TABLE_TYPE_XSDT                                                 /* E
 
 struct ACPI_TABLE_TYPE_FADT                                                 /* Fixed ACPI Description Table "FADT" structures  */
 {
-    struct ACPI_TABLE_DEF_HEADER            header;
-    unsigned int                            facs_addr;
-    unsigned int                            dsdt_addr;
-    /* ... */
-};
+    struct ACPI_TABLE_DEF_HEADER header;
+    unsigned int                 facs_addr;
+    unsigned int                 dsdt_addr;
+    unsigned char		 reserved0;		/* Obsolete leftover from ACPI v1.0 */
+    unsigned char		 pm_profile;		/* Preferred system profile, see below */
+    unsigned short		 sci_int;
+    unsigned int		 smi_cmd;
+    unsigned char		 acpi_enable;
+    unsigned char		 acpi_disable;
+    unsigned char		 s4bios_req;
+    unsigned char		 pstate_cnt;
+    unsigned int		 pm1a_evt_blk;
+    unsigned int		 pm1b_evt_blk;
+    unsigned int		 pm1a_cnt_blk;
+    unsigned int		 pm1b_cnt_blk;
+    unsigned int		 pm2_cnt_blk;
+    unsigned int		 pm_tmr_blk;
+    unsigned int		 gpe0_blk;
+    unsigned int		 gpe1_blk;
+    unsigned char		 pm1_evt_len;
+    unsigned char		 pm1_cnt_len;
+    unsigned char		 pm2_cnt_len;
+    unsigned char		 pm_tmr_len;
+    unsigned char		 gpe0_blk_len;
+    unsigned char		 gpe1_blk_len;
+    unsigned char		 gpe1_base;
+    unsigned char		 cst_cnt;
+    unsigned short		 p_lvl2_lat;
+    unsigned short		 p_lvl3_lat;
+    unsigned short		 flush_size;		/* Obsolete leftover from ACPI v1.0 */
+    unsigned short		 flush_stride;		/* Obsolete leftover from ACPI v1.0 */
+    unsigned char		 duty_offset;
+    unsigned char		 duty_width;
+    unsigned char		 day_alarm;
+    unsigned char		 mon_alarm;
+    unsigned char		 century;
+    unsigned short		 pc_arch;		/* IA-PC architecture flags, see below */
+    unsigned char		 reserved1;
+    unsigned int		 flags;			/* Fixed feature flags, see below */
+    struct GENERIC_ACPI_ADDR	 reset_reg;
+    unsigned char		 reset_value;
+    unsigned char		 reserved2[3];
+    unsigned long long		 x_firmware_ctrl;
+    unsigned long long		 x_dsdt;
+    struct GENERIC_ACPI_ADDR	 x_pm1a_evt_blk;
+    struct GENERIC_ACPI_ADDR	 x_pm1b_evt_blk;
+    struct GENERIC_ACPI_ADDR	 x_pm1a_cnt_blk;
+    struct GENERIC_ACPI_ADDR	 x_pm1b_cnt_blk;
+    struct GENERIC_ACPI_ADDR	 x_pm2_cnt_blk;
+    struct GENERIC_ACPI_ADDR	 x_pm_tmr_blk;
+    struct GENERIC_ACPI_ADDR	 x_gpe0_blk;
+    struct GENERIC_ACPI_ADDR	 x_gpe1_blk;
+} __attribute__ ((packed));
+
+/* Preferred system profiles */
+#define FACP_PROFILE_UNSPECIFIED	0
+#define FACP_PROFILE_DESKTOP		1
+#define FACP_PROFILE_MOBILE		2
+#define FACP_PROFILE_WORKSTATION	3
+#define FACP_PROFILE_ENTERPRIZE		4
+#define FACP_PROFILE_SOHO		5
+#define FACP_PROFILE_APPLIANCE		6
+#define FACP_PROFILE_PERFORMANCE	7
+
+/* IA-PC architecture flags */
+#define FACP_PC_LEGACY	(1 << 0)
+#define FACP_PC_8042	(1 << 1)
+#define FACP_PC_NO_VGA	(1 << 2)
+#define FACP_PC_NO_MSI	(1 << 3)
+#define FACP_PCIE_ASPM	(1 << 4)
+
+/* Fixed feature flags */
+#define FACP_FF_WBINVD		(1 << 0)
+#define FACP_FF_WBINVD_FLUSH	(1 << 1)
+#define FACP_FF_PROC_C1		(1 << 2)
+#define FACP_FF_P_LVL2_UP	(1 << 3)
+#define	FACP_FF_PWR_BUTTON	(1 << 4)
+#define FACP_FF_SLP_BUTTON	(1 << 5)
+#define FACP_FF_FIX_RTC		(1 << 6)
+#define FACP_FF_RTC_S4		(1 << 7)
+#define FACP_FF_TMR_VAL_EXT	(1 << 8)
+#define FACP_FF_DCK_CAP		(1 << 9)
+#define FACP_FF_RESET_REG_SUP	(1 << 10)
+#define FACP_FF_SEALED_CASE	(1 << 11)
+#define FACP_FF_HEADLESS	(1 << 12)
+#define FACP_FF_CPU_SW_SLP	(1 << 13)
+#define FACP_FF_PCI_EXP_WAK	(1 << 14)
+#define FACP_FF_PLATFORM_CLOCK	(1 << 15)
+#define FACP_FF_S4_RTC_STS_VALID (1 << 16)
+#define FACP_FF_REMOTE_PWRON	(1 << 17)
+#define FACP_FF_APIC_CLUSTER	(1 << 18)
+#define FACP_FF_APIC_PHYS_DEST	(1 << 19)
 
 struct ACPI_TABLE_TYPE_MADT                                                 /* Multiple APIC Description Table "MADT" structures */
 {
@@ -336,22 +423,21 @@ struct ACPI_TABLE_TYPE_ECDT                                                 /* E
 
 /*
  * acpi.resource base.
- * For the user it's actually black box. Use API to access the data.
- * These pointers are provided for diagnostics purposes only. The actual
- * data can be protected against even reading in user mode.
+ * For a casual user it's actually black box. Use API to access the data.
+ * These pointers are provided for diagnostics purposes only.
  */
 struct ACPIBase
 {
     struct  Node                            ACPIB_Node;
 
-    struct ACPI_TABLE_TYPE_RSDP            *ACPIB_RSDP_Addr;
-    struct ACPI_TABLE_DEF_HEADER     	   *ACPIB_SDT_Addr;			/* Raw XSDT or RSDT pointer	   	*/
-    int                                     ACPIB_SDT_Count;			/* Number of entries in the array below */
-    struct ACPI_TABLE_DEF_HEADER    	  **ACPIB_SDT_Entry;			/* Array of pointers to SDT tables 	*/
+    struct ACPI_TABLE_TYPE_RSDP            *ACPIB_RSDP_Addr;		/* Can be read-protected!!! */
+    struct ACPI_TABLE_DEF_HEADER     	   *ACPIB_SDT_Addr;		/* Raw XSDT or RSDT pointer	   	*/
+    int                                     ACPIB_SDT_Count;		/* Number of entries in the array below */
+    struct ACPI_TABLE_DEF_HEADER    	  **ACPIB_SDT_Entry;		/* Array of pointers to SDT tables 	*/
 /*..*/
-    APTR                                    ACPIB_ACPI_Data;                    /* Base address of acpi data block 	*/
+    APTR                                    ACPIB_ACPI_Data;            /* Base address of acpi data block 	*/
     APTR                                    ACPIB_ACPI_Data_End;
-    APTR                                    ACPIB_ACPI_NVM;                     /* Base address of acpi data block */
+    APTR                                    ACPIB_ACPI_NVM;             /* Base address of acpi data block */
 
     int                                     ACPIB_ACPI_IRQ;
 
