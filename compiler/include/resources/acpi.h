@@ -32,6 +32,15 @@ struct GENERIC_ACPI_ADDR
     UQUAD                                   address;                        /* 64-bit address of struct or register */
 };
 
+/* Address spaces */
+#define	ACPI_SPACE_MEM		0
+#define ACPI_SPACE_IO		1
+#define ACPI_SPACE_PCI		2
+#define ACPI_SPACE_EMBEDDED	3
+#define ACPI_SPACE_SMBUS	4
+#define ACPI_SPACE_FIXED	0x7F
+#define ACPI_SPACE_OEM		0xC0
+
 struct ACPI_TABLE_DEF_HEADER                                                /* ACPI common table header */
 {
     unsigned int                            signature;                      /* ACPI signature (4 ASCII characters) */
@@ -308,8 +317,6 @@ enum ACPI_INT_IDS
     ACPI_INTERRUPT_CPEI,
     ACPI_INTERRUPT_COUNT
 };
-
-#define	ACPI_SPACE_MEM		            0
 
 struct ACPI_GEN_REGADDR
 {
