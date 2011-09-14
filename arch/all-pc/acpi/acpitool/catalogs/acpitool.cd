@@ -1,0 +1,109 @@
+;
+MSG_TITLE (//)
+ACPI Tool
+;
+MSG_WINTITLE (//)
+ACPI Tool
+;
+MSG_DESCRIPTION (//)
+ACPI querying and managment
+;
+MSG_ERROR_LOCALE (//)
+Can't open locale
+;
+MSG_ERROR_OK (//)
+Ok
+;
+MSG_ERROR_HEADER (//)
+ERROR
+;
+MSG_ERROR_NO_ACPI (//)
+This machine has no ACPI, or ACPI support has been disabled
+;
+MSG_UNKNOWN (//)
+Unknown
+;
+MSG_TABLE_SIGNATURE (//)
+Table signature
+;
+MSG_REVISION (//)
+Revision
+;
+MSG_OEM_ID (//)
+OEM ID
+;
+MSG_OEM_TABLE_ID (//)
+OEM Table ID
+;
+MSG_CREATOR_ID (//)
+Creator ID
+;
+MSG_PM_PROFILE (//)
+Preferred system profile
+;
+MSG_SCI_INT (//)
+SCI interrupt
+;
+MSG_SMI_CMD (//)
+SMI command register
+;
+MSG_ACPI_ENABLE (//)
+ACPI Enable command
+;
+MSG_ACPI_DISABLE (//)
+ACPI Disable command
+;
+MSG_S4BIOS (//)
+Enter S4BIOS state command
+;
+MSG_PSTATE (//)
+Processor performance state command
+;
+MSG_FLUSH_SIZE (//)
+CPU Cache flush size
+;
+MSG_FLUSH_STRIDE (//)
+CPU Cache flush stride
+;
+MSG_RTC_DAY_ALARM (//)
+RTC alarm day offset
+;
+MSG_RTC_MON_ALARM (//)
+RTC alarm month offset
+;
+MSG_RTC_CENTURY (//)
+RTC century offset
+;
+MSG_RESET_REG (//)
+Reset register address
+;
+MSG_RESET_VAL (//)
+Reset value
+;
+MSG_SPACE_FIXED (//)
+Fixed hardware
+;
+MSG_SPACE_OEM (//)
+OEM space
+;
+MSG_SPACE_UNKNOWN (//)
+Unknown space
+;
+MSG_FMT_UNKNOWN_SPACE (//)
+%s: 0x%llX, %u bits from %u in %s (%u)
+;
+MSG_FMT_KNOWN_SPACE (//)
+%s: 0x%llX, %u bits from %u in %s
+;
+MSG_YES (//)
+Yes
+;
+MSG_NO (//)
+No
+;
+MSG_PC_FLAGS (//)
+PC Architecture flags
+;
+MSG_FF_FLAGS (//)
+Fixed Feature flags
+;
