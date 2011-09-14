@@ -1,5 +1,7 @@
-# $Id: mmakefile.src 39981 2011-07-10 18:37:26Z jmcmullan $
+# $Id$
 include $(TOP)/config/make.cfg
+
+#MM- workbench-devs-monitors: devs-monitors-composition
 
 FILES   := compositingclass startup
 EXEDIR  := $(AROSDIR)/Devs/Monitors
