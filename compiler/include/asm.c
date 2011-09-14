@@ -49,9 +49,6 @@ int main(void) {
     DEFINE(Elapsed       , offsetof (struct ExecBase, Elapsed));
     DEFINE(SysStkUpper   , offsetof (struct ExecBase, SysStkUpper));
 
-    asm volatile("\n/* DosLibrary */" ::);
-    DEFINE(dl_IntuitionBase, offsetof (struct DosLibrary, dl_IntuitionBase));
-
     asm volatile("\n/* struct Task */" ::);
     DEFINE(tc_State      , offsetof (struct Task, tc_State));
     DEFINE(tc_Flags      , offsetof (struct Task, tc_Flags));
@@ -73,6 +70,7 @@ int main(void) {
     DEFINE(pr_CIS        , offsetof (struct Process, pr_CIS));
     DEFINE(pr_CLI        , offsetof (struct Process, pr_CLI));
     DEFINE(pr_COS        , offsetof (struct Process, pr_COS));
+    DEFINE(pr_CurrentDir , offsetof (struct Process, pr_CurrentDir));
     DEFINE(pr_ConsoleTask, offsetof (struct Process, pr_ConsoleTask));
     DEFINE(pr_FileSystemTask, offsetof (struct Process, pr_FileSystemTask));
     DEFINE(pr_MsgPort    , offsetof (struct Process, pr_MsgPort));
@@ -82,7 +80,10 @@ int main(void) {
     DEFINE(pr_WindowPtr  , offsetof (struct Process, pr_WindowPtr));
 
     asm volatile("\n/* struct DosBase */" ::);
-    DEFINE(dl_Root       , offsetof (struct DosLibrary, dl_Root));
+    DEFINE(dl_Root         , offsetof (struct DosLibrary, dl_Root));
+    DEFINE(dl_TimeReq      , offsetof (struct DosLibrary, dl_TimeReq));
+    DEFINE(dl_UtilityBase  , offsetof (struct DosLibrary, dl_UtilityBase));
+    DEFINE(dl_IntuitionBase, offsetof (struct DosLibrary, dl_IntuitionBase));
 
     asm volatile("\n/* struct DosPacket */" ::);
     DEFINE(dp_Link       , offsetof (struct DosPacket, dp_Link));
@@ -106,6 +107,16 @@ int main(void) {
     DEFINE(fh_Pos        , offsetof (struct FileHandle, fh_Pos  ));
     DEFINE(fh_End        , offsetof (struct FileHandle, fh_End  ));
 
+    asm volatile("\n/* struct IORequest */" ::);
+    DEFINE(io_Message    , offsetof (struct IORequest, io_Message));
+    DEFINE(io_Device     , offsetof (struct IORequest, io_Device ));
+    DEFINE(io_Unit       , offsetof (struct IORequest, io_Unit   ));
+    DEFINE(io_Command    , offsetof (struct IORequest, io_Command));
+    DEFINE(io_Flags      , offsetof (struct IORequest, io_Flags  ));
+    DEFINE(io_Error      , offsetof (struct IORequest, io_Error  ));
+
+    asm volatile("\n/* struct timerequest */" ::);
+    DEFINE(tr_time       , offsetof (struct timerequest, tr_time ));
 
     asm volatile("\n/* struct MsgPort */" ::);
     DEFINE(mp_SigTask    , offsetof (struct MsgPort, mp_SigTask));
