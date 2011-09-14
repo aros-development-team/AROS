@@ -62,47 +62,62 @@ BCPL_rts:
  */
     .section .rodata
 .LBCPL_format_trace:
-    .string  "%s: BCPL %s, D1=%p D2=%p D3=%p D4=%p, GV %p\n"
+    .string  "BCPL %s, D1=%p D2=%p D3=%p D4=%p, GV %p\n"
 .LBCPL_format_ret:
-    .string  "%s: \tD1=%p IoErr=%p\n"
+    .string  "     %s, D1=%p\n"
+.LBCPL_format_err:
+    .string  "     %s, D1=%p IoErr=%p\n"
 
     /* For dummy functions */
     .macro  BCPLd name
     .section .rodata
-.LBCPL_func_\name:
+99:
     .string "\name"
     .text
     .balign 4
     .globl  BCPL_\name
 BCPL_\name:
-    movem.l %d1/%a0-%a1,%sp@-
+    /* Stash away pr_Result2 into the GV */
     move.l  SysBase,%a0
     move.l  %a0@(ThisTask),%a0
-    move.l  %a0@(ln_Name),%a0
+    move.l  %a0@(pr_Result2),%d0
+    move.l  %d0,%a2@(GV_DEBUG_Result2)
+    sub.l   %a0,%a0
+
+    movem.l %d1/%a0-%a1,%sp@-
     move.l  %a2,%sp@-
     move.l  %d4,%sp@-
     move.l  %d3,%sp@-
     move.l  %d2,%sp@-
     move.l  %d1,%sp@-
-    move.l  #.LBCPL_func_\name,%sp@-
-    move.l  %a0,%sp@-
+    move.l  #99b,%sp@-
     move.l  #.LBCPL_format_trace,%sp@-
+    jsr     bcpl_command_name
     jsr     kprintf
-    lea.l   %sp@(8*4),%sp
+    lea.l   %sp@(7*4),%sp
     movem.l %sp@+,%d1/%a0-%a1
     clr.l   %d0		/* DOSFALSE */
     .endm
 
     .macro  BRTSd
+    /* Retrieve old pr_Result2 */
+    move.l  %a2@(GV_DEBUG_Result2), %d2
+
     movem.l %d0/%a0-%a1,%sp@-
     move.l  SysBase,%a0
     move.l  %a0@(ThisTask),%a0
     move.l  %a0@(pr_Result2),%a1
     move.l  %a1,%sp@-
-    move.l  %a0@(ln_Name),%a0
     move.l  %d0,%sp@-
-    move.l  %a0,%sp@-
+    move.l  #99b,%sp@-
+    cmp.l   %sp@(8),%d2
+    beq.s   0f
+    move.l  #.LBCPL_format_err,%sp@-
+    bra.s   1f
+0:
     move.l  #.LBCPL_format_ret,%sp@-
+1:
+    jsr     bcpl_command_name
     jsr     kprintf
     lea.l   %sp@(4*4),%sp
     movem.l %sp@+,%d0/%a0-%a1
@@ -861,6 +876,11 @@ BCPL writeoutput_e8 /* e8, void, @buf, lwlength */
 BCPL findinput      /* ec, FileHandle ^, @name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
 
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+    bsr		bstr_debug
+#endif
+
     moveq.l	#1, %d0
     bsr		bstr_to_cstr
 
@@ -873,6 +893,11 @@ BCPL findinput      /* ec, FileHandle ^, @name */
 BCPL findoutput     /* f0, FileHandle ^, @name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
   
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+    bsr		bstr_debug
+#endif
+
     moveq.l	#1, %d0
     bsr		bstr_to_cstr
 
