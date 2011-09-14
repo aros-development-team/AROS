@@ -466,7 +466,15 @@ BCPL doIO           /*  54, LONG, @IORequest */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd sendIO         /*  58, void, @IORequest */
+BCPL sendIO         /*  58, void, @IORequest */
+    movem.l     %a0-%a1/%a6,%sp@-
+    lsl.l       #2,%d1
+    moveq.l     #0,%d2
+    move.l      %d2,%a0@(ln_Name,%d1)    /* NULL dos packet */
+    move.l      %d1, %a1
+    move.l      SysBase,%a6
+    jsr         %a6@(77 * -6)   /* Exec/SendIO */
+    movem.l     %sp@+,%a0-%a1/%a6
     BRTS
 
     /* Coroutine support:
@@ -717,11 +725,14 @@ BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
     BRTS
 
 BCPL returnPacket   /* c4, void, @DosPacket, res1, res2 */
+    tst.l	%d1     /* Don't try to reply NULL Dos Packets */
+    beq.s	0f
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(GV_DOSBase),%a6
     lsl.l	#2, %d1
     jsr		%a6@(43 * -6)	/* DOS/ReplyPkt() */
     movem.l	%sp@+,%a0-%a1/%a6
+0:
     BRTS
 
 #define TAG_END 0
