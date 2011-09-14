@@ -5,6 +5,7 @@
 
 #define DEBUG 0
 #define DTOGGLE(x)
+#define DMODE(x)
 #define DMOVE(x)
 #define DRECALC(x)
 #define DREDRAWBM(x)
@@ -131,72 +132,142 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
     }
 }
 
-static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData *compdata, OOP_Object *bm)
+static HIDDT_ModeID FindBestHiddMode(struct HIDDCompositingData *compdata, ULONG width, ULONG height, ULONG depth, ULONG *res_depth)
 {
-    IPTR modeid;
+    HIDDT_ModeID mode = vHidd_ModeID_Invalid;
+    OOP_Object *sync, *pf;
+    IPTR w, h, d;
+    ULONG dw, dh, delta;
+    ULONG found_delta  = -1;
+    ULONG found_width  = 0;
+    ULONG found_height = 0;
+    ULONG found_depth  = 0;
+    HIDDT_ModeID found_mode = vHidd_ModeID_Invalid;
 
-    if (bm == compdata->topbitmap)
+    DMODE(bug("[FindBestHiddMode] Looking best maching mode for %u x %u x %u\n", width, height, depth));
+
+    while ((mode = HIDD_Gfx_NextModeID(compdata->gfx, mode, &sync, &pf)) != vHidd_ModeID_Invalid)
     {
-    	/* Nothing changed here */
-    	return FALSE;
+    	DMODE(bug("[FindBestHiddMode] Checking mode 0x%08X... ", mode));
+
+	if (OOP_GET(pf, aHidd_PixFmt_ColorModel) != vHidd_ColorModel_TrueColor)
+	{
+	    DMODE(bug("Skipped (not truecolor)\n"));
+	    continue;
+	}
+
+	OOP_GetAttr(sync, aHidd_Sync_HDisp, &w);
+	OOP_GetAttr(sync, aHidd_Sync_VDisp, &h);
+	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &d);
+
+	dw = w > width  ? w - width  : width  - w;
+	dh = h > height ? h - height : height - h;
+	delta = dw * dh;
+
+	if (delta < found_delta)
+	{
+	    DMODE(bug("Selected (%ld x %ld x %ld, delta = %u)", w, h, delta));
+	    found_delta  = delta;
+	    found_width  = w;
+	    found_height = h;
+	    found_depth  = d;
+	    found_mode   = mode;
+	}
+	else if ((delta == found_delta) && (d > found_depth) && (d <= depth))
+	{
+	    /*
+	     * Mode with the same delta, but larger depth, may supersede
+	     * previous mode, if we prefer deeper ones.
+	     */
+	    DMODE(bug("Selected (%ld x %ld x %ld, delta = %u)", w, h, delta));
+	    found_width  = w;
+	    found_height = h;
+	    found_depth  = d;
+	    found_mode   = mode;
+	}
+	DMODE(bug("\n"));
     }
 
-    /* Set the pointer to top bitmap */
-    compdata->topbitmap = bm;
+    /* Store mode information */ 
+    compdata->screenrect.MinX = 0;
+    compdata->screenrect.MinY = 0;
+    compdata->screenrect.MaxX = found_width  - 1;
+    compdata->screenrect.MaxY = found_height - 1;
+    *res_depth = found_depth;
 
-    /* Read display mode properties */
-    OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
+    return found_mode;
+}
+
+static void UpdateDisplayMode(struct HIDDCompositingData *compdata)
+{
+    struct StackBitMapNode *n;
+    IPTR modeid, width, height, depth;
+    OOP_Object *sync, *pf;
+    UBYTE comp_depth = 16;
+    ULONG found_depth;
+
+    /*
+     * Examine all bitmaps in the stack to figure out the needed depth.
+     * We need a maximum depth of all depths in order to keep correct colors.
+     * But not less than 16 bits, because we can't compose on a LUT screen.
+     *
+     * If a LUT bitmap is present in the stack (depth < 9), we request truecolor
+     * screen for better color presentation.
+     *
+     * We examine bitmaps in reverse order, in this case 'sync' will hold
+     * information about the top bitmap when we exit the loop.
+     * Size of our composited mode needs to be as close as possible to that one.
+     */
+    for (n = (struct StackBitMapNode *)compdata->bitmapstack.mlh_TailPred;
+    	 n->n.mln_Pred; n = (struct StackBitMapNode *)n->n.mln_Pred)
+    {
+	OOP_GetAttr(n->bm, aHidd_BitMap_ModeID, &modeid);
+	HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
+
+	if (OOP_GET(pf, aHidd_PixFmt_ColorModel) == vHidd_ColorModel_TrueColor)
+	{
+	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	    if (depth > comp_depth)
+	    	comp_depth = depth;
+	}
+	else
+	{
+	    /*
+	     * If we have a LUT bitmap on stack, we request 24-bit screen
+	     * for better color transfer.
+	     */
+	    comp_depth = 24;
+	}
+    }
+
+    /* Get the needed size */
+    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+
+    DSTACK(bug("[UpdateDisplayMode] Requested mode %ld x %ld x %d\n", width, height, comp_depth));
+
+    modeid = FindBestHiddMode(compdata, width, height, depth, &found_depth);
+    DSTACK(bug("[UpdateDisplayMode] Composition mode 0x%08X, current 0x%08X\n", modeid, compdata->screenmodeid));
 
     if (modeid != compdata->screenmodeid)
     {
     	/* The mode is different. Need to prepare information needed for compositing */
-	OOP_Object *sync, *pf;
         struct TagItem gctags[] =
         {
             { aHidd_GC_Foreground, 0x99999999 }, 
             { TAG_DONE		 , 0	      }
         };
 
-	HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
-
-        /* Store mode information */ 
-        compdata->screenmodeid      = modeid;
-        compdata->screenrect.MinX   = 0;
-        compdata->screenrect.MinY   = 0;
-        compdata->screenrect.MaxX   = OOP_GET(sync, aHidd_Sync_HDisp) - 1;
-        compdata->screenrect.MaxY   = OOP_GET(sync, aHidd_Sync_VDisp) - 1;
-        compdata->modeschanged      = TRUE;
+        /* Signal mode change */ 
+        compdata->screenmodeid = modeid;
+        compdata->modeschanged = TRUE;
 
         /* Get gray foregound */
-        if (OOP_GET(pf, aHidd_PixFmt_Depth) < 24)
+        if (found_depth < 24)
             gctags[0].ti_Data = 0x9492;
 
         OOP_SetAttrs(compdata->gc, gctags);
     }
-
-    return TRUE;
-}
-
-static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingData * compdata, OOP_Object * bm)
-{
-    OOP_Object *screenbm = compdata->topbitmap; /* Tread top bitmap as screen bitmap */
-    IPTR screenbmstdpixfmt;
-    IPTR bmstdpixfmt;
-    IPTR pf;
-
-    OOP_GetAttr(screenbm, aHidd_BitMap_PixFmt, &pf);
-    OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &screenbmstdpixfmt);
-
-    OOP_GetAttr(bm, aHidd_BitMap_PixFmt, &pf);
-    OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &bmstdpixfmt);
-
-    /* If bitmaps have different pixel formats, they cannot be composited */
-    /* FIXME: actually they can, but CopyBox for different formats is not
-       optimized so let's not make user experience worse */
-    if (screenbmstdpixfmt != bmstdpixfmt)
-        return FALSE;
-
-    return TRUE;
 }
 
 static inline void HIDDCompositingRedrawBitmap(struct HIDDCompositingData *compdata, struct StackBitMapNode *n, struct Rectangle *rect)
@@ -605,7 +676,7 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     struct HIDD_ViewPortData *vpdata;
     struct HIDDCompositingData *compdata = OOP_INST_DATA(cl, o);
     struct StackBitMapNode *n;
-    BOOL newtop;
+    BOOL newtop = FALSE;
     BOOL ok = TRUE;
 
     DSTACK(bug("[BitMapStackChanged] Top bitmap: 0x%lx\n", msg->data->Bitmap));
@@ -628,43 +699,41 @@ OOP_Object *METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
         return compdata->screenbitmap;
     }
 
-    /* Switch mode if needed */
-    newtop = HIDDCompositingTopBitMapChanged(compdata, msg->data->Bitmap);
-
     /* Copy bitmaps pointers to our stack */
     for (vpdata = msg->data; vpdata; vpdata = vpdata->Next)
     {
-        DSTACK(bug("[BitMapStackChanged] Testing bitmap: 0x%lx\n", vpdata->Bitmap));
+        n = AllocMem(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
+	if (!n)
+	{
+	    /*
+	     * Error happened.
+	     * We need to reset own state and return NULL. graphics.library
+	     * falls back to no composition in this case.
+	     */
+	    DSTACK(bug("[BitMapStackChanged] Error allocating StackBitMapNode!!!\n"));
 
-        /*
-         * Check if the passed bitmap can be composited together with screen
-         * bitmap
-         */
-        if (HIDDCompositingCanCompositeWithScreenBitMap(compdata, vpdata->Bitmap))
-        {
-            n = AllocMem(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
-	    if (!n)
-	    {
-		/*
-		 * Error happened.
-		 * We need to reset own state and return NULL. graphics.library
-		 * falls back to no composition in this case.
-		 */
-	    	DSTACK(bug("[BitMapStackChanged] Error allocating StackBitMapNode!!!\n"));
+	    ok = FALSE;
+	    break;
+	}
 
-		ok = FALSE;
-		break;
-	    }
+	DSTACK(bug("[BitMapStackChanged] ViewPort 0x%p, offset (%d, %d)\n", vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
 
-	    DSTACK(bug("[BitMapStackChanged] ViewPort 0x%p, offset (%d, %d)\n", vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
+        n->bm              = vpdata->Bitmap;
+        n->isscreenvisible = FALSE;
+        n->leftedge	       = vpdata->vpe->ViewPort->DxOffset;
+        n->topedge	       = vpdata->vpe->ViewPort->DyOffset;
 
-            n->bm              = vpdata->Bitmap;
-            n->isscreenvisible = FALSE;
-            n->leftedge	       = vpdata->vpe->ViewPort->DxOffset;
-            n->topedge	       = vpdata->vpe->ViewPort->DyOffset;
+        AddTail((struct List *)&compdata->bitmapstack, (struct Node *)n);
+    }
 
-            AddTail((struct List *)&compdata->bitmapstack, (struct Node *)n);
-        }
+    /* Switch mode if needed */
+    UpdateDisplayMode(compdata);
+
+    if (msg->data->Bitmap != compdata->topbitmap)
+    {
+    	/* Set the new pointer to top bitmap */
+    	compdata->topbitmap = msg->data->Bitmap;
+    	newtop = TRUE;
     }
 
     if (ok)
