@@ -107,6 +107,7 @@ Object *TablesList;
 Object *InfoList;
 
 struct Hook display_hook;
+struct Hook select_hook;
 
 AROS_UFH3(void, display_function,
     AROS_UFHA(struct Hook *, h,  A0),
@@ -202,8 +203,12 @@ BOOL GUIinit()
     {
 	/* Quit application if the windowclosegadget or the esc key is pressed. */
 	DoMethod(MainWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-		 (IPTR)app, 2, 
+		 app, 2, 
 		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+	DoMethod(TablesList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+		 TablesList, 2,
+		 MUIM_CallHook, &select_hook);
 
 	retval = TRUE;
     }
@@ -216,7 +221,7 @@ int __nocommandline = 1;
 int main(void)
 {
     display_hook.h_Entry = (APTR)display_function;
-//    select_hook.h_Entry = (APTR)select_function;
+    select_hook.h_Entry = (APTR)select_function;
 
     if (!Locale_Initialize())
 	cleanup(_(MSG_ERROR_LOCALE));
