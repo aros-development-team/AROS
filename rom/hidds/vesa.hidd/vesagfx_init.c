@@ -62,14 +62,11 @@ static BOOL GetAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 /* These must stay in the same order as attrBases[] entries assignment in vesagfxclass.h */
 static const STRPTR interfaces[ATTRBASES_NUM] =
 {
-    IID_Hidd_VesaGfxBitMap,
     IID_Hidd_ChunkyBM,
     IID_Hidd_BitMap,
     IID_Hidd_Gfx,
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
-    IID_Hidd_Compositing,
-    IID_Hidd_GC,
     IID_Hidd
 };
 
@@ -83,7 +80,6 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
     if (!GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
     	return FALSE;
 
-    xsd->cursor_visible = TRUE;
     InitSemaphore(&xsd->framebufferlock);
     InitSemaphore(&xsd->HW_acc);
 
@@ -104,18 +100,6 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
 
 	return FALSE;
     }
-
-    xsd->mid_BitMapStackChanged = OOP_GetMethodID(IID_Hidd_Compositing,
-        moHidd_Compositing_BitMapStackChanged);
-    xsd->mid_BitMapPositionChanged = OOP_GetMethodID(IID_Hidd_Compositing,
-        moHidd_Compositing_BitMapPositionChanged);
-    xsd->mid_BitMapRectChanged = OOP_GetMethodID(IID_Hidd_Compositing,
-        moHidd_Compositing_BitMapRectChanged);
-    xsd->mid_ValidateBitMapPositionChange =
-        OOP_GetMethodID(IID_Hidd_Compositing,
-        moHidd_Compositing_ValidateBitMapPositionChange);
-    xsd->mid_DisplayRectChanged = OOP_GetMethodID(IID_Hidd_Compositing,
-        moHidd_Compositing_DisplayRectChanged);
 
     /* 
      * It is unknown (and no way to know) what hardware part this driver uses.
