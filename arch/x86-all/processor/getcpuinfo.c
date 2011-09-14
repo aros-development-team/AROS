@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetCPUInfo() - Provides information about installed CPUs
@@ -55,11 +55,10 @@ static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct Tag
 
     struct TagItem * passedTag = NULL;
     struct X86ProcessorInformation * processor = NULL;
+    struct X86ProcessorInformation **sysprocs = ProcessorBase->Private1;
     ULONG selectedprocessor = 0;
 
-D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
-
-    struct SystemProcessors * sysprocs = (struct SystemProcessors *)ProcessorBase->Private1;
+    D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
 
     /* If processor was not selected, fall back to legacy mode and report on
     first available processor */
@@ -67,12 +66,12 @@ D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
 
     /* If selectedprocessor not in line with number of processors, report on 
     first available processor */
-    if (selectedprocessor >= sysprocs->count)
+    if (selectedprocessor >= ProcessorBase->cpucount)
         selectedprocessor = 0;
-    
+
+    processor = sysprocs[selectedprocessor];
+
     /* Go over each passed tag and fill apprioprate data */
-    processor = &sysprocs->processor;
-        
     while ((passedTag = NextTagItem((const struct TagItem **)&tagList)) != NULL)
     {
         if ((passedTag->ti_Tag > GCIT_FeaturesBase) &&
@@ -85,7 +84,7 @@ D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
         switch(passedTag->ti_Tag)
         {
         case(GCIT_NumberOfProcessors):
-            *((ULONG *)passedTag->ti_Data) = sysprocs->count;
+            *((ULONG *)passedTag->ti_Data) = ProcessorBase->cpucount;
             break;
         case(GCIT_ModelString):
             *((CONST_STRPTR *)passedTag->ti_Data) = processor->BrandString;

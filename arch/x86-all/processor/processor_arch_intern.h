@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,12 +39,6 @@ struct X86ProcessorInformation
     /* Frequency information */
     UQUAD   MaxCPUFrequency;
     UQUAD   MaxFSBFrequency;
-};
-
-struct SystemProcessors
-{
-    struct X86ProcessorInformation processor; /* This should be a list. For now it's ok */
-    ULONG count;
 };
 
 #define cpuid(num) \
