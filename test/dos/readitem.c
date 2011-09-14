@@ -225,8 +225,28 @@ int main(int argc, char **argv)
         failed += lfailed;
     }
 
+    {
+        int lfailed = 0;
+        LONG ioerr;
+        BPTR oldio;
+        BYTE buff[] = { 0x11, 0x22, 0x33, 0x44 };
 
-
+        oldio = Input();
+        SelectInput(BNULL);
+        SetIoErr(IOERR_UNCHANGED);
+        ret = ReadItem(buff, -1, NULL);
+        ioerr = IoErr();
+        SelectInput(oldio);
+        tests++;
+        lfailed |= (ret != ITEM_NOTHING) ? 1 : 0;
+        lfailed |= (ioerr != IOERR_UNCHANGED) ? 1 : 0;
+        lfailed |= (buff[0] != 0x0) ? 1 : 0;
+        if (lfailed) {
+            Printf("Edge5: expected %ld (%ld), buff[0] = 0x00\n", ITEM_NOTHING, IOERR_UNCHANGED);
+            Printf("Edge5: returned %ld (%ld), buff[0] = 0x%02lx\n", ret, ioerr, (LONG)buff[0]);
+        }
+        failed += lfailed;
+    }
 
     if (failed == 0)
         Printf("All %ld tests passed\n", tests);
