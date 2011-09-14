@@ -33,7 +33,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready)
     /* Find out ourselves */
     _APICBase = core_APIC_GetBase();
     _APICID   = core_APIC_GetID(_APICBase);
-    _APICNO   = core_APIC_GetNumber(KernelBase->kb_PlatformData, _APICBase);
+    _APICNO   = core_APIC_GetNumber(KernelBase, _APICBase);
 
     D(bug("[SMP] smp_Entry[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase));
     D(bug("[SMP] smp_Entry[%d]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
@@ -42,7 +42,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready)
     /* Set up GDT and LDT for our core */
     core_CPUSetup(_APICID, stackBase);
 
-    bug("[SMP] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, KernelBase->kb_PlatformData->kb_APIC_Count);
+    bug("[SMP] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, KernelBase->kb_CPUCount);
 
     /* Signal the bootstrap core that we are running */
     *apicready = 1;
@@ -133,7 +133,7 @@ int smp_Wake(void)
     D(bug("[SMP] Ready spinlock at 0x%p\n", &apicready));
 
     /* Core number 0 is our bootstrap core, so we start from No 1 */
-    for (i = 1; i < pdata->kb_APIC_Count; i++)
+    for (i = 1; i < KernelBase->kb_CPUCount; i++)
     {
 	/* Less significant byte of our IDMap entry holds logical ID. */
     	UBYTE apic_id = pdata->kb_APIC_IDMap[i];

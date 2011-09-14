@@ -15,14 +15,15 @@
  ************************************************************************************************/
 /************************************************************************************************/
 
-UBYTE core_APIC_GetNumber(struct PlatformData *pdata, IPTR __APICBase)
+UBYTE core_APIC_GetNumber(struct KernelBase *KernelBase, IPTR __APICBase)
 {
+    struct PlatformData *pdata = KernelBase->kb_PlatformData;
     UBYTE __APICLogicalID;
     UBYTE __APICNo;
 
     __APICLogicalID = __KernBootPrivate->kbp_APIC_Driver->getid(__APICBase);
 
-    for (__APICNo = 0; __APICNo < pdata->kb_APIC_Count; __APICNo++)
+    for (__APICNo = 0; __APICNo < KernelBase->kb_CPUCount; __APICNo++)
     {
         if ((pdata->kb_APIC_IDMap[__APICNo] & 0xFF) == __APICLogicalID)
             return __APICNo;
