@@ -6,9 +6,7 @@
     Lang:
 */
 
-#include <exec/types.h>
 #include <libraries/locale.h>
-#include <libraries/iffparse.h>
 #include <prefs/locale.h>
 
 /* ísland.country: Stefan Haubenthal <polluks@sdf.lonestar.org> */
@@ -33,7 +31,7 @@ struct CountryPrefs islandPrefs =
     "%H:%M",
 
     /* Decimal point, group separator, frac group separator */
-    ".", ",", "",
+    ",", ".", "",
 
     /* For grouping rules, see <libraries/locale.h> */
 
@@ -41,7 +39,7 @@ struct CountryPrefs islandPrefs =
     { 3 }, { 0 },
 
     /* Mon dec pt, mon group sep, mon frac group sep */
-    ".", ",", "",
+    ",", ".", "",
 
     /* Mon Grouping, Mon frac grouping */
     { 3 }, { 0 },
