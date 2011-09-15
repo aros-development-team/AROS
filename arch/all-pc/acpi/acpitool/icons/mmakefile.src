@@ -1,0 +1,6 @@
+include $(TOP)/config/make.cfg
+
+%build_icons mmake=workbench-tools-acpitool-icon icons=ACPITool image=ACPITool_$(AROS_TARGET_ICONSET).png \
+             dir=$(AROS_TOOLS)
+
+%common

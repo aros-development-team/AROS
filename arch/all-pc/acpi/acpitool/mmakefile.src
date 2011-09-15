@@ -9,8 +9,7 @@ EXEDIR      := $(AROSDIR)/Tools
 # Build ACPITool only for PC
 #MM- workbench-pc-$(CPU) : workbench-tools-acpitool
 
-#MM workbench-tools-acpitool : includes symlinks \
-#MM workbench-tools-acpitool-catalogs
+#MM workbench-tools-acpitool : workbench-tools-acpitool-icon workbench-tools-acpitool-catalogs
 
 %build_prog mmake=workbench-tools-acpitool \
     progname=ACPITool targetdir=$(EXEDIR) \
