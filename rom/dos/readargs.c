@@ -125,6 +125,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     ASSERT_VALID_PTR(array);
     ASSERT_VALID_PTR_OR_NULL(rdargs);
 
+    D(bug("[ReadArgs] Template: \"%s\"\n", template));
     /* Get pointer to process structure. */
     struct Process *me = (struct Process *) FindTask(NULL);
 
@@ -176,6 +177,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     if (rdargs->RDA_Source.CS_Buffer)
     {
         cs = &rdargs->RDA_Source;
+        D(bug("[ReadArgs] Buffer: \"%s\"\n", cs->CS_Buffer));
     }
     else
     {
@@ -274,7 +276,8 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
                 do {
 	                /* Read a line in. */
-	                for (c = 0; c != '\n';)
+	                c  = -1;
+	                for (;;)
 	                {
 	                    if (c == '\n')
 	                    {
@@ -425,11 +428,20 @@ AROS_LH3(struct RDArgs *, ReadArgs,
      */
     s1 = strbuf;
 
-    for (arg = 0; arg <= numargs; arg = nextarg)
+    for (arg = 0; arg < numargs ; arg = nextarg)
     {
         nextarg = arg + 1;
 
-        D(bug("[ReadArgs] s1=&strbuf[%d], %d left\n", s1-strbuf, strbuflen));
+        D(bug("[ReadArgs] %d (0x%x) s1=&strbuf[%d], %d left\n", arg, flags[arg], s1-strbuf, strbuflen));
+
+        /* Out of buffer space?
+         * This should not have happened, some internal logic
+         * must have broken.
+         */
+        if (strbuflen == 0) {
+            D(bug("[ReadArgs] %d: INTERNAL ERROR: Ran out of buffer space.\n", arg));
+            break;
+        }
 
         /* Skip /K options and options that are already done. */
         if (flags[arg] & KEYWORD || argbuf[arg] != NULL)
@@ -457,6 +469,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
                 if (item >= 0 && item < numargs && argbuf[item] == NULL)
                 {
+                    D(bug("[ReadArgs] %d: Keyword \"%s\" (%d)\n", arg, s1, item));
                     /*
                      * It's a keyword. Fill it and retry the current option
                      * at the next turn
@@ -494,26 +507,34 @@ AROS_LH3(struct RDArgs *, ReadArgs,
             }
         }
 
-        /* /F takes all the rest */
+        /* /F takes all the rest, including extra spaces, =, and '"' */
         if ((flags[arg] & TYPEMASK) == REST)
         {
             argbuf[arg] = s1;
 
-            do {
-                /* Skip part already read above by ReadItem() */
-                while (*s1)
-                {
-                    s1++;
-                    strbuflen--;
-                }
-
-                *s1++ = ' ';
+            /* Skip past what ReadItem() just read.
+             */
+            while (*s1 && strbuflen > 0) {
+                s1++;
                 strbuflen--;
+            }
 
-                it = ReadItem(s1, strbuflen, cs);
-            } while (it == ITEM_QUOTED || it == ITEM_UNQUOTED);
+            /* Put the rest into the buffer, including the separator */
+            cs->CS_CurChr--;
+            s2 = &cs->CS_Buffer[cs->CS_CurChr];
+           
+            while (cs->CS_CurChr < cs->CS_Length && 
+                   strbuflen > 1 &&
+                   *s2 &&
+                   *s2 != '\n') {
+                *(s1++) = *(s2++);
+                strbuflen--;
+                cs->CS_CurChr++;
+            }
 
-            s1[-1] = 0;
+            *(s1++) = 0;
+            strbuflen--;
+            D(bug("[ReadArgs] /F copy: \"%s\" left=%d, CS_CurChr=%d, CS_Length=%d\n", argbuf[arg], strbuflen, cs->CS_CurChr, cs->CS_Length));
             it = ITEM_NOTHING;
             break;
         }
@@ -544,6 +565,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
             /* Put string into the buffer. */
             multvec[multnum++] = s1;
 
+            D(bug("[ReadArgs] %d: Multiple +\"%s\"\n", arg, s1));
 	    while (*s1++)
 		--strbuflen;
 	    /* Account for the \000 at the end. */
@@ -557,11 +579,13 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         {
             /* /S or /T just set a flag */
             argbuf[arg] = (char *) ~0;
+            D(bug("[ReadArgs] %d: Toggle\n", arg));
         }
         else                    /* NORMAL || NUMERIC */
         {
             /* Put argument into argument buffer. */
             argbuf[arg] = s1;
+            D(bug("[ReadArgs] %d: Normal: \"%s\"\n", arg, s1));
 
 	    while (*s1++)
 	        --strbuflen;
