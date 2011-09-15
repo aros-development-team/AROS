@@ -417,7 +417,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         }
     }
 
-    /* Add a dummy so that the whole line is processed. */
+    /* Add a dummy so that the whole line is processed (see below). */
     *++s2 = MULTIPLE;
 
     /*
@@ -425,14 +425,17 @@ AROS_LH3(struct RDArgs *, ReadArgs,
      * Go from left to right and fill all items that need filling.
      * If an item is given as 'OPTION=VALUE' or 'OPTION VALUE' fill
      * it out of turn.
+     * NOTE: '<=' comparison is intentional here. When we allocated argbuf, we added one
+     * to the number of arguments. And right above we added fictional MULTIPLE flag.
+     * This is actually needed to make /S and /K working.
      */
     s1 = strbuf;
 
-    for (arg = 0; arg < numargs ; arg = nextarg)
+    for (arg = 0; arg <= numargs ; arg = nextarg)
     {
         nextarg = arg + 1;
 
-        D(bug("[ReadArgs] %d (0x%x) s1=&strbuf[%d], %d left\n", arg, flags[arg], s1-strbuf, strbuflen));
+        D(bug("[ReadArgs] Arg %d (0x%x) s1=&strbuf[%d], %d left\n", arg, flags[arg], s1-strbuf, strbuflen));
 
         /* Out of buffer space?
          * This should not have happened, some internal logic
@@ -461,6 +464,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         {
             /* Get item. Quoted items are never keywords. */
             it = ReadItem(s1, strbuflen, cs);
+	    D(bug("[ReadArgs] Item %s type %d\n", s1, it));
 
             if (it == ITEM_UNQUOTED)
             {
@@ -519,8 +523,13 @@ AROS_LH3(struct RDArgs *, ReadArgs,
                 strbuflen--;
             }
 
-            /* Put the rest into the buffer, including the separator */
-            cs->CS_CurChr--;
+            /*
+             * Put the rest into the buffer, including the separator
+             * ReadItem() actually ungets '\n' terminator. So if CurChr points to it,
+             * we don't need to adjust it. Otherwise we duplicate last character of arguments line.
+             */
+            if (cs->CS_Buffer[cs->CS_CurChr] != '\n')
+            	cs->CS_CurChr--;
             s2 = &cs->CS_Buffer[cs->CS_CurChr];
            
             while (cs->CS_CurChr < cs->CS_Length && 
