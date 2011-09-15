@@ -13,4 +13,5 @@ struct BattClockBase
 {
     struct Library bb_LibNode;	/* battclock.resource originally had struct Library in its base */
     struct SignalSemaphore sem;	/* Semaphore used for single-threading hardware access		*/
+    UBYTE century;		/* Century byte offset						*/
 };
