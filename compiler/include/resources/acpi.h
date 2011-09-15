@@ -25,12 +25,12 @@
 
 struct GENERIC_ACPI_ADDR
 {
-    unsigned char                           address_space_id;               /* Address space where struct or register exists. */
-    unsigned char                           register_bit_width;             /* Size in bits of given register */
-    unsigned char                           register_bit_offset;            /* Bit offset within the register */
-    unsigned char                           reserved;                       /* Must be 0 */
-    UQUAD                                   address;                        /* 64-bit address of struct or register */
-};
+    unsigned char                           address_space_id;     /* Address space where struct or register exists. */
+    unsigned char                           register_bit_width;   /* Size in bits of given register */
+    unsigned char                           register_bit_offset;  /* Bit offset within the register */
+    unsigned char                           size;                 /* Acces size (see below) */
+    UQUAD                                   address;              /* 64-bit address of struct or register */
+} __attribute__ ((packed));
 
 /* Address spaces */
 #define	ACPI_SPACE_MEM		0
@@ -40,6 +40,12 @@ struct GENERIC_ACPI_ADDR
 #define ACPI_SPACE_SMBUS	4
 #define ACPI_SPACE_FIXED	0x7F
 #define ACPI_SPACE_OEM		0xC0
+
+/* Access sizes */
+#define ACPI_SIZE_UNDEFINED 0	/* Specified by bit offset and width */
+#define ACPI_SIZE_WORD	    1
+#define ACPI_SIZE_DWORD	    2
+#define ACPI_SIZE_QUAD	    3
 
 struct ACPI_TABLE_DEF_HEADER                                                /* ACPI common table header */
 {
@@ -194,13 +200,14 @@ struct ACPI_TABLE_TYPE_FADT                                                 /* F
 
 struct ACPI_TABLE_TYPE_MADT                                                 /* Multiple APIC Description Table "MADT" structures */
 {
-    struct ACPI_TABLE_DEF_HEADER            header;
-    unsigned int			    lapic_address;
+    struct ACPI_TABLE_DEF_HEADER        header;
+    unsigned int			lapic_address;
     struct
     {
-	unsigned int		            pcat_compat:1;
-	unsigned int		            reserved:31;
+	unsigned int		        pcat_compat:1;
+	unsigned int		        reserved:31;
     }	flags;
+    struct ACPI_TABLE_DEF_ENTRY_HEADER	entries[0];
 };
 
 enum ACPI_MADT_TYPES 
@@ -214,6 +221,8 @@ enum ACPI_MADT_TYPES
     ACPI_MADT_IOSAPIC,
     ACPI_MADT_LSAPIC,
     ACPI_MADT_PLAT_INT_SRC,
+    ACPI_MADT_X2APIC,
+    ACPI_MADT_X2APIC_NMI,
     ACPI_MADT_ENTRY_COUNT
 };
 
@@ -267,14 +276,16 @@ struct ACPI_TABLE_TYPE_LAPIC_NMI
     unsigned char			    acpi_id;
     ACPI_INT_FLAGS	                    flags;
     unsigned char			    lint;
-};
+} __attribute__ ((packed));
+
+#define ACPI_ID_BROADCAST 0xFF
 
 struct ACPI_TABLE_TYPE_LAPIC_ADDROVR 
 {
     struct ACPI_TABLE_DEF_ENTRY_HEADER      header;
     unsigned char			    reserved[2];
     UQUAD			            address;
-};
+} __attribute__ ((packed));
 
 struct ACPI_TABLE_TYPE_IOSAPIC 
 {
@@ -302,14 +313,15 @@ struct ACPI_TABLE_TYPE_PLAT_INTSRC
 {
     struct ACPI_TABLE_DEF_ENTRY_HEADER	    header;
     ACPI_INT_FLAGS	                    flags;
-    unsigned char			    type;	                        /* See acpi_interrupt_type */
+    unsigned char			    type;	        /* See acpi_interrupt_type */
     unsigned char			    id;
     unsigned char			    eid;
     unsigned char			    iosapic_vector;
     unsigned int			    global_irq;
-    unsigned int			    reserved;
+    unsigned int			    srcflags;		/* See below */
 };
 
+/* Interrupt types */
 enum ACPI_INT_IDS 
 {
     ACPI_INTERRUPT_PMI                      = 1,
@@ -317,6 +329,30 @@ enum ACPI_INT_IDS
     ACPI_INTERRUPT_CPEI,
     ACPI_INTERRUPT_COUNT
 };
+
+/* Interrupt source flags */
+#define ACPI_CPEI_PROC_OVERRIDE (1 << 0)
+
+struct ACPI_TABLE_TYPE_X2APIC
+{
+    struct ACPI_TABLE_DEF_ENTRY_HEADER	header;
+    /* 2 bytes of padding here */
+    unsigned int			id;
+    unsigned int			flags;
+    unsigned int			acpi_uid;
+};
+
+#define ACPI_X2APIC_ENABLED (1 << 0)
+    
+struct ACPI_TABLE_TYPE_X2APIC_NMI
+{
+    struct ACPI_TABLE_DEF_ENTRY_HEADER	header;
+    ACPI_INT_FLAGS			flags;
+    unsigned int			acpi_uid;
+    unsigned char			lint;
+};
+
+#define ACPI_UID_BROADCAST 0xFFFFFFFF
 
 struct ACPI_GEN_REGADDR
 {
