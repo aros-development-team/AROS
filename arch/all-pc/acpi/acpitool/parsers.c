@@ -92,7 +92,7 @@ void parse_addr(const char *desc, struct GENERIC_ACPI_ADDR *addr, void (*cb)(con
 	fmt = _(MSG_FMT_KNOWN_SPACE);
 
     MakeString(cb, fmt, desc, addr->address,
-		addr->register_bit_offset, addr->register_bit_width,
+		addr->register_bit_width, addr->register_bit_offset,
 		space, addr->address_space_id);
 }
 
