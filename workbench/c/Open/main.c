@@ -62,6 +62,7 @@ AROS_SH2H
         }
         if (UtilityBase != NULL)
             CloseLibrary(UtilityBase);
+        CloseLibrary(WorkbenchBase);
     }
     else
     {
