@@ -39,12 +39,13 @@ AROS_LH0(ULONG, ReadBattClock,
     date.mday  = ReadCMOSByte(MDAY);
     date.month = ReadCMOSByte(MONTH);
     date.year  = ReadCMOSByte(YEAR);
-    century    = ReadCMOSByte(CENTURY);
+    century    = ReadCMOSByte(BattClockBase->century);
     status_b   = ReadCMOSByte(STATUS_B);
 
     ReleaseSemaphore(&BattClockBase->sem);
 
-    if ((status_b & 0x04) == 0) {
+    if ((status_b & 0x04) == 0)
+    {
 	date.sec   = bcd_to_dec(date.sec);
 	date.min   = bcd_to_dec(date.min);
 	date.hour  = bcd_to_dec(date.hour);

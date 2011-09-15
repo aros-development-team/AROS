@@ -57,7 +57,7 @@ AROS_LH1(void, WriteBattClock,
     WriteCMOSByte(MDAY, date.mday);
     WriteCMOSByte(MONTH, date.month);
     WriteCMOSByte(YEAR, date.year);
-    WriteCMOSByte(CENTURY, century);
+    WriteCMOSByte(BattClockBase->century, century);
 
     ReleaseSemaphore(&BattClockBase->sem);
 
