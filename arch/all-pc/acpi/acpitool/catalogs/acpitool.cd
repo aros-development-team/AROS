@@ -107,3 +107,114 @@ PC Architecture flags
 MSG_FF_FLAGS (//)
 Fixed Feature flags
 ;
+MSG_LAPIC_ADDR (//)
+Local APIC address
+;
+MSG_PCAT_COMPAT (//)
+Has 8259 PC-AT PIC
+;
+MSG_LOCAL_APIC (//)
+Local APIC
+;
+MSG_CPU_ID (//)
+ACPI Processor ID
+;
+MSG_LAPIC_ID (//)
+Local APIC ID
+;
+MSG_ENABLED (//)
+Enabled
+;
+MSG_IOAPIC (//)
+I/O APIC
+;
+MSG_ID (//)
+ID
+;
+MSG_ADDRESS (//)
+Address
+;
+MSG_IRQ_BASE (//)
+Global system IRQ base
+;
+MSG_INT_SRC_OVR (//)
+Interrupt source override
+;
+MSG_BUS (//)
+Bus
+;
+MSG_BUS_IRQ (//)
+Bus IRQ
+;
+MSG_GLOBAL_IRQ (//)
+Global system IRQ
+;
+MSG_POLARITY (//)
+  Polarity
+;
+MSG_TRIGGER (//)
+  Trigger
+;
+MSG_NMI_SRC (//)
+NMI source
+;
+MSG_LAPIC_NMI (//)
+Local APIC NMI
+;
+MSG_DEST_ID (//)
+Destination processor ACPI ID
+;
+MSG_ALL (//)
+All
+;
+MSG_LINT (//)
+Local interrupt input
+;
+MSG_LAPIC_ADDR_OVR (//)
+Local APIC address override
+;
+MSG_IOSAPIC (//)
+I/O SAPIC
+;
+MSG_LSAPIC (//)
+Local SAPIC
+;
+MSG_LSAPIC_ID (//)
+Local SAPIC ID
+;
+MSG_LSAPIC_EID (//)
+Local SAPIC EID
+;
+MSG_PLAT_INT_SRC (//)
+Platform interrupt source
+;
+MSG_PLAT_INT_TYPE (//)
+  Interrupt type
+;
+MSG_DEST_LSAPIC_ID (//)
+Destination LSAPIC ID
+;
+MSG_DEST_EID (//)
+Destination LSAPIC EID
+;
+MSG_IOSAPIC_VECTOR (//)
+I/O SAPIC vector
+;
+MSG_CPEI_PROC_OVR (//)
+CPE interrupt processor override
+;
+MSG_LOCAL_X2APIC (//)
+Local X2APIC
+;
+MSG_X2APIC_ID (//)
+Local X2APIC ID
+;
+MSG_CPU_UID (//)
+ACPI Processor UID
+;
+MSG_X2APIC_NMI (//)
+X2APIC NMI
+;
+MSG_UNKNOWN_ENTRY (//)
+Unknown entry (%u), %u bytes
+;
