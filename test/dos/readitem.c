@@ -141,7 +141,7 @@ int main(int argc, char **argv)
     RITEST("word\"hello \"world",ITEM_UNQUOTED,"word\"hello",11);
     RITEST("",ITEM_NOTHING,"",0);
 
-    /* Explicit tests for edge conditions */
+    /* Edge1: Buffer is NULL */
     {
         int lfailed = 0;
         LONG ioerr;
@@ -158,6 +158,7 @@ int main(int argc, char **argv)
         failed += lfailed;
     }
 
+    /* Edge2: Buffer size is 0 */
     {
         int lfailed = 0;
         LONG ioerr;
@@ -176,6 +177,7 @@ int main(int argc, char **argv)
         failed += lfailed;
     }
 
+    /* Edge3: Input is NIL: */
     {
         int lfailed = 0;
         LONG ioerr;
@@ -202,6 +204,7 @@ int main(int argc, char **argv)
         failed += lfailed;
     }
 
+    /* Edge4: Input is BNULL */
     {
         int lfailed = 0;
         LONG ioerr;
@@ -225,6 +228,7 @@ int main(int argc, char **argv)
         failed += lfailed;
     }
 
+    /* Edge5: Buffer length < 0 */
     {
         int lfailed = 0;
         LONG ioerr;
@@ -244,6 +248,93 @@ int main(int argc, char **argv)
         if (lfailed) {
             Printf("Edge5: expected %ld (%ld), buff[0] = 0x00\n", ITEM_NOTHING, IOERR_UNCHANGED);
             Printf("Edge5: returned %ld (%ld), buff[0] = 0x%02lx\n", ret, ioerr, (LONG)buff[0]);
+        }
+        failed += lfailed;
+    }
+
+    /* Edge6: Buffer size is equal to input length */
+    {
+        int lfailed = 0;
+        LONG ioerr;
+        BYTE buff[] = { 0x11, 0x22, 0x33, 0x44, 0x55 };
+        BYTE input[] = { '1', '2', '3', '4' };
+        struct CSource cs = {
+            .CS_Buffer = input,
+            .CS_Length = 4,
+            .CS_CurChr = 0,
+        };
+        SetIoErr(IOERR_UNCHANGED);
+        ret = ReadItem(buff, 4, &cs);
+        ioerr = IoErr();
+        tests++;
+        lfailed |= (ret != ITEM_ERROR) ? 1 : 0;
+        lfailed |= (ioerr != IOERR_UNCHANGED) ? 1 : 0;
+        lfailed |= (buff[0] != '1') ? 1 : 0;
+        lfailed |= (buff[1] != '2') ? 1 : 0;
+        lfailed |= (buff[2] != '3') ? 1 : 0;
+        lfailed |= (buff[3] != 0) ? 1 : 0;
+        lfailed |= (buff[4] != 0x55) ? 1 : 0;
+        if (lfailed) {
+            Printf("Edge6: expected %ld (%ld), buff[] = \"123\",0x0,0x55\n", ITEM_ERROR, IOERR_UNCHANGED);
+            Printf("Edge6: returned %ld (%ld), buff[] = \"%lc%lc%lc\",0x%lx,0x%lx\n", ret, ioerr, (LONG)buff[0], (LONG)buff[1], (LONG)buff[2], (LONG)buff[3], (LONG)buff[4]);
+        }
+        failed += lfailed;
+    }
+
+    /* Edge7: Buffer size is one less than input length */
+    {
+        int lfailed = 0;
+        LONG ioerr;
+        BYTE buff[] = { 0x11, 0x22, 0x33, 0x44, 0x55 };
+        BYTE input[] = { '1', '2', '3', '4' };
+        struct CSource cs = {
+            .CS_Buffer = input,
+            .CS_Length = 4,
+            .CS_CurChr = 0
+        };
+        SetIoErr(IOERR_UNCHANGED);
+        ret = ReadItem(buff, 3, &cs);
+        ioerr = IoErr();
+        tests++;
+        lfailed |= (ret != ITEM_ERROR) ? 1 : 0;
+        lfailed |= (ioerr != IOERR_UNCHANGED) ? 1 : 0;
+        lfailed |= (buff[0] != '1') ? 1 : 0;
+        lfailed |= (buff[1] != '2') ? 1 : 0;
+        lfailed |= (buff[2] != 0) ? 1 : 0;
+        lfailed |= (buff[3] != 0x44) ? 1 : 0;
+        lfailed |= (buff[4] != 0x55) ? 1 : 0;
+        if (lfailed) {
+            Printf("Edge7: expected %ld (%ld), buff[] = \"12\",0x00,0x44,0x55\n", ITEM_ERROR, IOERR_UNCHANGED);
+            Printf("Edge7: returned %ld (%ld), buff[] = \"%lc%lc\",0x%lx,0x%lx,0x%lx\n", ret, ioerr, (LONG)buff[0], (LONG)buff[1], (LONG)buff[2], (LONG)buff[3], (LONG)buff[4]);
+        }
+        failed += lfailed;
+    }
+
+    /* Edge8: Buffer size is one more than input length */
+    {
+        int lfailed = 0;
+        LONG ioerr;
+        BYTE buff[] = { 0x11, 0x22, 0x33, 0x44, 0x55 };
+        BYTE input[] = { '1', '2', '3', '4' };
+        struct CSource cs = {
+            .CS_Buffer = input,
+            .CS_Length = 4,
+            .CS_CurChr = 0,
+        };
+        SetIoErr(IOERR_UNCHANGED);
+        ret = ReadItem(buff, 5, &cs);
+        ioerr = IoErr();
+        tests++;
+        lfailed |= (ret != ITEM_UNQUOTED) ? 1 : 0;
+        lfailed |= (ioerr != IOERR_UNCHANGED) ? 1 : 0;
+        lfailed |= (buff[0] != '1') ? 1 : 0;
+        lfailed |= (buff[1] != '2') ? 1 : 0;
+        lfailed |= (buff[2] != '3') ? 1 : 0;
+        lfailed |= (buff[3] != '4') ? 1 : 0;
+        lfailed |= (buff[4] != 0) ? 1 : 0;
+        if (lfailed) {
+            Printf("Edge8: expected %ld (%ld), buff[] = \"1234\",0x0\n", 0, IOERR_UNCHANGED);
+            Printf("Edge8: returned %ld (%ld), buff[] = \"%lc%lc%lc%lc\",0x%lx\n", ret, ioerr, (LONG)buff[0], (LONG)buff[1], (LONG)buff[2], (LONG)buff[3], (LONG)buff[4]);
         }
         failed += lfailed;
     }
