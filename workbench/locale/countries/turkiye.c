@@ -29,7 +29,7 @@ struct CountryPrefs turkiyePrefs =
     "%H:%M",
 
     /* Decimal point, group separator, frac group separator */
-    ".", ",", ",",
+    ",", ".", ",",
 
     /* For grouping rules, see <libraries/locale.h> */
 
@@ -37,7 +37,7 @@ struct CountryPrefs turkiyePrefs =
     { 3 }, { 3 },
 
     /* Mon dec pt, mon group sep, mon frac group sep */
-    ".", ",", ",",
+    ",", ".", ",",
 
     /* Mon Grouping, Mon frac grouping */
     { 3 }, { 3 },
