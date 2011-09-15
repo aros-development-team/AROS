@@ -6,7 +6,9 @@ FILES       := main locale parsers
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 EXEDIR      := $(AROSDIR)/Tools
 
-#MM- workbench-tools : workbench-tools-acpitool
+# Build ACPITool only for PC
+#MM- workbench-pc-$(CPU) : workbench-tools-acpitool
+
 #MM workbench-tools-acpitool : includes symlinks \
 #MM workbench-tools-acpitool-catalogs
 
