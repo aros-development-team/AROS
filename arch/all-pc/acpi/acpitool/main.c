@@ -147,16 +147,19 @@ AROS_UFH3(void, select_function,
     const struct Parser *t;
     void (*parser)();
 
+    SetAttrs(InfoList, MUIA_List_Quiet, TRUE, TAG_DONE);
     DoMethod(InfoList, MUIM_List_Clear);
-    
-    GetAttr(MUIA_List_Active, object, &active);
-    if (active == MUIV_List_Active_Off)
-	return;
 
-    DoMethod(object, MUIM_List_GetEntry, active, &table);
-    t = FindParser(table->signature);
-    parser = t ? t->parser : header_parser;
-    parser(table, display_callback);
+    GetAttr(MUIA_List_Active, object, &active);
+    if (active != MUIV_List_Active_Off)
+    {
+	DoMethod(object, MUIM_List_GetEntry, active, &table);
+	t = FindParser(table->signature);
+	parser = t ? t->parser : header_parser;
+	parser(table, display_callback);
+    }
+
+    SetAttrs(InfoList, MUIA_List_Quiet, FALSE, TAG_DONE);
 
     AROS_USERFUNC_EXIT
 }
