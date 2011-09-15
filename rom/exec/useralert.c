@@ -58,7 +58,10 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 
 		/* Re-post the alert, without 'More...' this time */
 		es.es_GadgetFormat += MORE_SKIP;
-		choice = EasyRequestArgs(NULL, &es, NULL, NULL) + 1;
+		choice = EasyRequestArgs(NULL, &es, NULL, NULL);
+		
+		if (choice)
+		    choice++;
 	    }
 
 	    FreeMem(buffer, ALERT_BUFFER_SIZE);
