@@ -46,7 +46,7 @@ VOID SPrintf( char *target, const char *format, ...)
         if (val != (expected)) { \
             static char buff[128]; \
             static struct Node expr_node; \
-            SPrintf(buff, "%s (%ld) != %ld", #retval , (LONG)val, (LONG)expected); \
+            SPrintf(buff, "%s: %s (%ld) != %ld", mname, #retval , (LONG)val, (LONG)expected); \
             expr_node.ln_Name = buff; \
             AddTail(&expr_list, &expr_node); \
             failed |= 1; \
@@ -59,7 +59,7 @@ VOID SPrintf( char *target, const char *format, ...)
         if (strcmp(val,(expected)) != 0) { \
             static char buff[128]; \
             static struct Node expr_node; \
-            SPrintf(buff, "%s (%s) != %s", #retval, val, (LONG)expected); \
+            SPrintf(buff, "%s: %s (%s) != %s", mname, #retval, val, (LONG)expected); \
             expr_node.ln_Name = buff; \
             AddTail(&expr_list, &expr_node); \
             failed |= 1; \
@@ -84,6 +84,25 @@ VOID SPrintf( char *target, const char *format, ...)
         } \
     } \
 } while (0)
+
+static inline SIPTR readargs_buff(CONST_STRPTR format, IPTR *args, CONST_STRPTR input, struct RDArgs **retp)
+{
+    SIPTR retval;
+    struct RDArgs *ret, *in;
+
+    in = AllocDosObject(DOS_RDARGS, NULL);
+    in->RDA_Source.CS_Buffer = (APTR)input;
+    in->RDA_Source.CS_Length = strlen(input);
+    in->RDA_Source.CS_CurChr = 0;
+   
+    SetIoErr(0);
+    ret = ReadArgs(format, args, in);
+
+    *retp = ret;
+    retval = (ret != NULL) ? RETURN_OK : IoErr();
+
+    return retval;
+}
 
 static inline SIPTR readargs_file(CONST_STRPTR format, IPTR *args, CONST_STRPTR input, struct RDArgs **retp)
 {
@@ -119,26 +138,46 @@ static inline SIPTR readargs_file(CONST_STRPTR format, IPTR *args, CONST_STRPTR 
 
 #define TEST_READARGS(format, input) \
     TEST_START(format " '" input "'"); \
-    CONST_STRPTR args[10] = { "inv1", "inv2", "inv3" }; \
-    SIPTR ioerr; \
-    struct RDArgs *ret = NULL; \
-    ioerr = readargs_file(format, (IPTR *)&args[0], input, &ret);
+    int is_buff;\
+    for (is_buff = 0; is_buff < 2; is_buff++) { \
+        CONST_STRPTR mname = is_buff ? "buff" : "file"; \
+        CONST_STRPTR args[10] = { "inv1", "inv2", "inv3" }; \
+        SIPTR ioerr; \
+        struct RDArgs *ret = NULL; \
+        if (is_buff) \
+            ioerr = readargs_buff(format, (IPTR *)&args[0], Need_Implicit_NL ? input "\n" : input, &ret); \
+        else \
+            ioerr = readargs_file(format, (IPTR *)&args[0], input, &ret);
 
 #define TEST_ENDARGS() \
-        if (ret) FreeArgs(ret); \
-        TEST_END();
+        if (ret) FreeDosObject(DOS_RDARGS, ret); \
+    } \
+    TEST_END();
 
 int main(int argc, char **argv)
 {
     int tests = 0, tests_failed = 0;
+    BOOL Need_Implicit_NL;
 
+    /* The following behaviour is versus AOS 3.1,
+     * which should be used as the reference for
+     * the AROS implementation
+     */
+    Need_Implicit_NL = FALSE;
+
+    /* Verify that the buffer version requires a \n
+     * at the end, and the file version does not.
+     */
     TEST_READARGS("KEYA","val1\n");
         VERIFY_EQ(ioerr, RETURN_OK);
         VERIFY_STREQ(args[0], "val1");
     TEST_ENDARGS();
 
     TEST_READARGS("KEYA","val1");
-        VERIFY_EQ(ioerr, RETURN_OK);
+        if (is_buff)
+            VERIFY_EQ(ioerr, ERROR_TOO_MANY_ARGS);
+        else
+            VERIFY_EQ(ioerr, RETURN_OK);
         VERIFY_STREQ(args[0], "val1");
     TEST_ENDARGS();
 
@@ -148,7 +187,10 @@ int main(int argc, char **argv)
     TEST_ENDARGS();
 
     TEST_READARGS("KEYA","?\nval1");
-        VERIFY_EQ(ioerr, RETURN_OK);
+        if (is_buff)
+            VERIFY_EQ(ioerr, ERROR_TOO_MANY_ARGS);
+        else
+            VERIFY_EQ(ioerr, RETURN_OK);
         VERIFY_STREQ(args[0], "val1");
     TEST_ENDARGS();
 
@@ -158,9 +200,14 @@ int main(int argc, char **argv)
     TEST_ENDARGS();
 
     TEST_READARGS("KEYA","keya val1");
-        VERIFY_EQ(ioerr, RETURN_OK);
+        if (is_buff)
+            VERIFY_EQ(ioerr, ERROR_TOO_MANY_ARGS);
+        else
+            VERIFY_EQ(ioerr, RETURN_OK);
         VERIFY_STREQ(args[0], "val1");
     TEST_ENDARGS();
+
+    Need_Implicit_NL = TRUE;
 
     TEST_READARGS("KEYA","keya=val1");
         VERIFY_EQ(ioerr, RETURN_OK);
@@ -221,7 +268,7 @@ int main(int argc, char **argv)
         VERIFY_STREQ(args[1], "val2 val3");
     TEST_ENDARGS();
 
-    TEST_READARGS("KEYA,KEYB/F,KEYc","val1 keyc val4 val2 val3\n");
+    TEST_READARGS("KEYA,KEYB/F,KEYC","val1 keyc val4 val2 val3\n");
         VERIFY_EQ(ioerr, RETURN_OK);
         VERIFY_STREQ(args[0], "val1");
         VERIFY_STREQ(args[1], "val2 val3");
@@ -234,6 +281,23 @@ int main(int argc, char **argv)
         VERIFY_STREQ(((CONST_STRPTR *)args[1])[0], "val2");
         VERIFY_STREQ(((CONST_STRPTR *)args[1])[1], "val3");
         VERIFY_EQ(((CONST_STRPTR *)args[1])[2], NULL);
+    TEST_ENDARGS();
+
+    TEST_READARGS("KEYA,KEYB/M","keyb=val1 keya=val2 keyb=val3");
+        VERIFY_EQ(ioerr, RETURN_OK);
+        VERIFY_STREQ(args[0], "val2");
+        VERIFY_STREQ(((CONST_STRPTR *)args[1])[0], "val1");
+        VERIFY_STREQ(((CONST_STRPTR *)args[1])[1], "val3");
+        VERIFY_EQ(((CONST_STRPTR *)args[1])[2], NULL);
+    TEST_ENDARGS();
+
+    TEST_READARGS("KEYA,KEYB/M,KEYC","keyb=val1 keya=val2 val3 val4");
+        VERIFY_EQ(ioerr, RETURN_OK);
+        VERIFY_STREQ(args[0], "val2");
+        VERIFY_STREQ(((CONST_STRPTR *)args[1])[0], "val1");
+        VERIFY_STREQ(((CONST_STRPTR *)args[1])[1], "val3");
+        VERIFY_STREQ(((CONST_STRPTR *)args[1])[2], "val4");
+        VERIFY_EQ(((CONST_STRPTR *)args[1])[3], NULL);
     TEST_ENDARGS();
 
     if (tests_failed == 0)
