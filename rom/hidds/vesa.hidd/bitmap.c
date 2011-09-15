@@ -175,14 +175,18 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 	}
     }
 
-    if ((xoffset != data->xoffset) || (yoffset != data->yoffset)) {
+    if ((xoffset != data->xoffset) || (yoffset != data->yoffset))
+    {
 	D(bug("[VesaBitMap] Scroll to (%d, %d)\n", xoffset, yoffset));
 	data->xoffset = xoffset;
 	data->yoffset = yoffset;
 
-	LOCK_FRAMEBUFFER(XSD(cl));
-	vesaDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
-	UNLOCK_FRAMEBUFFER(XSD(cl));
+	if (data->disp)
+	{
+	    LOCK_FRAMEBUFFER(XSD(cl));
+	    vesaDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
+	    UNLOCK_FRAMEBUFFER(XSD(cl));
+	}
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
