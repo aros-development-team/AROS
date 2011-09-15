@@ -135,7 +135,7 @@ if(input!=NULL)					\
         {
             if(!maxchars)
             {
-                *b=0;
+                b[-1]=0;
                 return ITEM_NOTHING;
             }
             maxchars--;
@@ -172,7 +172,7 @@ if(input!=NULL)					\
         /* Unquoted item. Store first character. */
         if(!maxchars)
         {
-            *buffer=0;
+            b[-1]=0;
             return ITEM_ERROR;
         }
         maxchars--;
@@ -182,7 +182,7 @@ if(input!=NULL)					\
         {
             if(!maxchars)
             {
-                *buffer=0;
+                b[-1]=0;
                 return ITEM_ERROR;
             }
             maxchars--;
