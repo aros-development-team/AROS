@@ -15,6 +15,7 @@
 #include <exec/lists.h>
 
 /* For compatibility with AOS, our test reference */
+#ifdef __mc68000
 static AROS_UFH2(VOID, _SPutC,
         AROS_UFHA(BYTE, c, D0),
         AROS_UFHA(BYTE **, ptr, A3))
@@ -32,6 +33,9 @@ VOID SPrintf( char *target, const char *format, ...)
 {
     RawDoFmt( format, (APTR)&(((ULONG *)&format)[1]), _SPutC, &target);
 }
+#else
+#define SPrintf(target,format,args...) __sprintf(target,format ,##args )
+#endif
     
 #define TEST_START(name) do { \
     CONST_STRPTR test_name = name ; \
@@ -46,7 +50,7 @@ VOID SPrintf( char *target, const char *format, ...)
         if (val != (expected)) { \
             static char buff[128]; \
             static struct Node expr_node; \
-            SPrintf(buff, "%s: %s (%ld) != %ld", mname, #retval , (LONG)val, (LONG)expected); \
+            SPrintf(buff, "%s: %s (%ld) != %ld", mname, #retval , (LONG)(SIPTR)val, (LONG)(SIPTR)expected); \
             expr_node.ln_Name = buff; \
             AddTail(&expr_list, &expr_node); \
             failed |= 1; \
@@ -59,7 +63,7 @@ VOID SPrintf( char *target, const char *format, ...)
         if (strcmp(val,(expected)) != 0) { \
             static char buff[128]; \
             static struct Node expr_node; \
-            SPrintf(buff, "%s: %s (%s) != %s", mname, #retval, val, (LONG)expected); \
+            SPrintf(buff, "%s: %s (%s) != %s", mname, #retval, val, expected); \
             expr_node.ln_Name = buff; \
             AddTail(&expr_list, &expr_node); \
             failed |= 1; \
