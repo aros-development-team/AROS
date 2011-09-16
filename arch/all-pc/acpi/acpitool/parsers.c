@@ -231,6 +231,10 @@ static void fadt_parser(struct ACPI_TABLE_TYPE_FADT *fadt, void (*cb)(const char
     MakeString(cb, "%s:", _(MSG_FF_FLAGS));
     parse_flags(fadt->flags, facp_flags, cb);
 
+    /* ACPI 1.0 FADT ends here */
+    if (fadt->header.length < offsetof(struct ACPI_TABLE_TYPE_FADT, reset_reg))
+    	return;
+
     parse_addr(_(MSG_RESET_REG), &fadt->reset_reg, cb);
     MakeString(cb, "%s: 0x%02X", _(MSG_RESET_VAL), fadt->reset_value);
 }
