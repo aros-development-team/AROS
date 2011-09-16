@@ -37,6 +37,7 @@ AROS_LH1(APTR, ACPI_FindSDT,
 {
     AROS_LIBFUNC_INIT
 
+    struct ACPI_TABLE_DEF_HEADER *found = NULL;
     struct ACPI_TABLE_DEF_HEADER *header;
     unsigned int i;
 
@@ -49,13 +50,21 @@ AROS_LH1(APTR, ACPI_FindSDT,
 
         if (header->signature == id)
         {
-	    D(bug("[ACPI] acpi_LocateSDT: Table %4.4s pointer 0x%p\n", &header->signature, header));
-            return header;
+	    D(bug("[ACPI] acpi_LocateSDT: Table %4.4s pointer 0x%p rev %u\n", &header->signature, header, header->revision));
+
+	    /*
+	     * Some firmwares have a strange thing - they contain multiple tables with the same signature
+	     * and different revisions. A common example is MADT table.
+	     * Here we select a table with the latest revision. ACPI specs don't say anything clear
+	     * about this.
+	     * Such behavior is exposed for example by MacMini EFI.
+	     */
+	    if ((found == NULL) || (header->revision > found->revision))
+	    	found = header;
         }
     }
 
-    D(bug("[ACPI] acpi_LocateSDT: WARNING - %4.4s not present\n", &id));
-    return NULL;
+    return found;
     
     AROS_LIBFUNC_EXIT
 }
