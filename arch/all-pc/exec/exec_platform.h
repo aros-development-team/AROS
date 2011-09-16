@@ -3,4 +3,5 @@
 struct Exec_PlatformData
 {
     struct EFI_Runtime *efiRT;
+    APTR		acpiBase;
 };
