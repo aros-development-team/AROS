@@ -24,6 +24,9 @@ AROS_LH1(APTR, ACPI_FindSDT,
 	A pointer to a table or NULL if can't be found
 
     NOTES
+    	Some systems may include duplicating tables, often it's MADT.
+    	In this case a table with the latest revision number will
+    	be returned.
 
     EXAMPLE
 
