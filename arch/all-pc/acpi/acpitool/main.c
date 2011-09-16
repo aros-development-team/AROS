@@ -184,7 +184,7 @@ BOOL GUIinit()
 
 		    Child, ListviewObject,
 			MUIA_Listview_List, TablesList = ListObject,
-			    ReadListFrame,
+			    InputListFrame,
 			    MUIA_List_AdjustWidth, TRUE,
 			    MUIA_List_DisplayHook, &display_hook,
 			End, // List
