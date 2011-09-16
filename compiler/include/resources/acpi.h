@@ -91,6 +91,8 @@ struct ACPI_TABLE_DEF_ENTRY_HEADER
     unsigned char			    length;
 };
 
+#define ACPI_ENTRY_TYPE_ALL -1
+
 struct ACPI_TABLE_TYPE_RSDT                                                 /* Root System Description Table "RSDT" structures */
 {
     struct ACPI_TABLE_DEF_HEADER            header;
@@ -462,7 +464,6 @@ struct ACPI_TABLE_TYPE_ECDT                                                 /* E
     unsigned char			    gpe_bit;
     char				    ec_id[0];
 };
-
 
 /*
  * acpi.resource base.
