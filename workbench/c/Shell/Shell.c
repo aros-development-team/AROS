@@ -154,6 +154,13 @@ AROS_ENTRY(__startup ULONG, ShellStart,
 	CloseLibrary((struct Library *)ExpansionBase);
     }
 
+    /* Trim off any trailling \ns
+     * We should be using ReadArgs here.
+     * Sigh.
+     */
+    while (argsize > 0 && argstr[argsize-1] == '\n')
+        argsize--;
+
     if (argsize > 0)
     {
 	Buffer in = { argstr, argsize, 0, 0 };

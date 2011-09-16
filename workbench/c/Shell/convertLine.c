@@ -274,7 +274,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
     	return error;
     }
 
-    if (out->buf[out->len] != '\n')
+    if (out->len == 0 || out->buf[out->len-1] != '\n')
     {
     	/*
     	 * Make sure that the output buffer (command arguments) ends with a newline.
