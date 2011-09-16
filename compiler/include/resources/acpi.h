@@ -43,9 +43,10 @@ struct GENERIC_ACPI_ADDR
 
 /* Access sizes */
 #define ACPI_SIZE_UNDEFINED 0	/* Specified by bit offset and width */
-#define ACPI_SIZE_WORD	    1
-#define ACPI_SIZE_DWORD	    2
-#define ACPI_SIZE_QUAD	    3
+#define ACPI_SIZE_BYTE	    1
+#define ACPI_SIZE_WORD	    2
+#define ACPI_SIZE_DWORD	    3
+#define ACPI_SIZE_QUAD	    4
 
 #define ACPI_PCI_OFFSET(addr) (unsigned short)((addr) & 0x0FFFF)
 #define ACPI_PCI_FUNC(addr)   (unsigned short)(((addr) >> 16) & 0x0FFFF)
