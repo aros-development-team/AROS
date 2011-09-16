@@ -18,36 +18,12 @@
 #include "acpi.h"
 #include "smp.h"
 
-#define D(x)
+#define D(x) x
 #define CONFIG_LAPICS	/* Disabling this disables secondary CPUs startup */
 
 /************************************************************************************************
                                     ACPI RELATED FUNCTIONS
  ************************************************************************************************/
-
-static int core_ACPITableMADTParse(struct ACPI_TABLE_TYPE_MADT *madt, unsigned char entry_id, const struct Hook *entry_handler)
-{
-    /* Get end of the table */
-    unsigned long madt_end = (unsigned long)madt + madt->header.length;
-    /* First entry follows table header */
-    struct ACPI_TABLE_DEF_ENTRY_HEADER *entry = (APTR)madt + sizeof(struct ACPI_TABLE_TYPE_MADT);
-    int count = 0;
-
-    /* Parse all entries looking for a match. */
-    while (((unsigned long)entry) < madt_end)
-    {
-        if (entry->type == entry_id)
-        {
-            count++;
-	    CALLHOOKPKT((struct Hook *)entry_handler, entry, NULL);
-        }
-        entry = (struct ACPI_TABLE_DEF_ENTRY_HEADER *)((unsigned long)entry + entry->length);
-    }
-
-    return count;
-}
-
-/**********************************************************/
 
 static const struct Hook ACPI_TableParse_LAPIC_Addr_Ovr_hook =
 {
@@ -116,14 +92,14 @@ ULONG core_ACPIInitialise(void)
      * Local APIC : The LAPIC address is obtained from the MADT (32-bit value)
      * and (optionally) overriden by a LAPIC_ADDR_OVR entry (64-bit value).
      */
-    core_ACPITableMADTParse(madt, ACPI_MADT_LAPIC_ADDR_OVR, &ACPI_TableParse_LAPIC_Addr_Ovr_hook);
-    core_ACPITableMADTParse(madt, ACPI_MADT_INT_SRC_OVR, &ACPI_TableParse_Int_Src_Ovr_hook);
+    ACPI_ScanEntries(&madt->header, ACPI_MADT_LAPIC_ADDR_OVR, &ACPI_TableParse_LAPIC_Addr_Ovr_hook, NULL);
+    ACPI_ScanEntries(&madt->header, ACPI_MADT_INT_SRC_OVR, &ACPI_TableParse_Int_Src_Ovr_hook, NULL);
 
     /*
      * Now get ready to set up secondary CPUs. First we just want to count number of APICs.
      * This hook function uses h_Data as a counter.
      */
-    core_ACPITableMADTParse(madt, ACPI_MADT_LAPIC, &ACPI_TableParse_LAPIC_count_hook);
+    ACPI_ScanEntries(&madt->header, ACPI_MADT_LAPIC, &ACPI_TableParse_LAPIC_count_hook, NULL);
     D(bug("[Kernel] core_ACPIInitialise: ACPI found %lu enabled APICs\n", ACPI_TableParse_LAPIC_count_hook.h_Data));
 
 #ifdef CONFIG_LAPICS
@@ -134,16 +110,16 @@ ULONG core_ACPIInitialise(void)
     	    D(bug("[Kernel] Succesfully prepared SMP enviromnent\n"));
 
 	    /* This will actually run secondary CPUs */
-	    core_ACPITableMADTParse(madt, ACPI_MADT_LAPIC, &ACPI_TableParse_LAPIC_hook);
-	    D(bug("[Kernel] core_ACPIInitialise: System Total APICs: %d\n", KernelBase->kb_PlatformData->kb_APIC_Count));
+	    ACPI_ScanEntries(&madt->header, ACPI_MADT_LAPIC, &ACPI_TableParse_LAPIC_hook, NULL);
+	    D(bug("[Kernel] core_ACPIInitialise: System Total APICs: %d\n", KernelBase->kb_CPUCount));
 	}
     }
 #endif
 
-    result = core_ACPITableMADTParse(madt, ACPI_MADT_LAPIC_NMI, &ACPI_TableParse_LAPIC_NMI_hook);
+    result = ACPI_ScanEntries(&madt->header, ACPI_MADT_LAPIC_NMI, &ACPI_TableParse_LAPIC_NMI_hook, NULL);
     D(bug("[Kernel] core_ACPIInitialise: core_ACPITableMADTParse(ACPI_MADT_LAPIC_NMI) returned %p\n", result));
 
-    result = core_ACPITableMADTParse(madt, ACPI_MADT_IOAPIC, &ACPI_TableParse_IOAPIC_hook);
+    result = ACPI_ScanEntries(&madt->header, ACPI_MADT_IOAPIC, &ACPI_TableParse_IOAPIC_hook, NULL);
     D(bug("[Kernel] core_ACPIInitialise: core_ACPITableMADTParse(ACPI_MADT_IOAPIC) returned %p\n", result));
     if (result)
     {
@@ -155,7 +131,7 @@ ULONG core_ACPIInitialise(void)
     /* TODO: implement legacy irq config.. */
     D(bug("[Kernel] core_ACPIInitialise: Configuring Legacy IRQs .. Skipped (UNIMPLEMENTED) ..\n"));
 
-    result = core_ACPITableMADTParse(madt, ACPI_MADT_NMI_SRC, &ACPI_TableParse_NMI_Src_hook);
+    result = ACPI_ScanEntries(&madt->header, ACPI_MADT_NMI_SRC, &ACPI_TableParse_NMI_Src_hook, NULL);
     D(bug("[Kernel] core_ACPIInitialise: core_ACPITableMADTParse(ACPI_MADT_NMI_SRC) returned %p\n", result));
 
     /* TODO: implement check for clustered apic's..
