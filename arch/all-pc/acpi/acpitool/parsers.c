@@ -68,42 +68,69 @@ const char *spaces[] =
     NULL
 };
 
+const char *sizes[] =
+{
+    "byte",
+    "word",
+    "double word",
+    "quad word"
+};
+
 static void parse_addr(const char *desc, struct GENERIC_ACPI_ADDR *addr, void (*cb)(const char *))
 {
-    BOOL print_id = FALSE;
+    char *p = buf;
+    int len = sizeof(buf);
     const char *space;
-    const char *fmt;
+    int n;
+
+    n = snprintf(p, len, "%s: ", desc);    
+    p += n;
+    len -= n;
+
+    if ((addr->size > ACPI_SIZE_UNDEFINED) && (addr->size <= ACPI_SIZE_QUAD))
+    	n = snprintf(p, len, "%s %s ", sizes[addr->size - 1], _(MSG_AT));
+    else if (addr->size > ACPI_SIZE_QUAD)
+    	n = snprintf(p, len, "%s (%u) %s ", _(MSG_UNKNOWN_SIZE), addr->size, _(MSG_AT));
+    p += n;
+    len -= n;
+
+    if (addr->address_space_id == ACPI_SPACE_PCI)
+    	n = snprintf(p, len, "0:%u:%u:0x%04X", ACPI_PCI_DEV(addr->address), ACPI_PCI_FUNC(addr->address),
+    		     ACPI_PCI_OFFSET(addr->address));
+    else
+    	n = snprintf(p, len, "0x%llX", (long long)addr->address);
+
+    p += n;
+    len -= n;
+
+    if (addr->register_bit_width)
+    {
+    	n = snprintf(p, len, ", %s %u - %u", _(MSG_BITS), addr->register_bit_offset,
+    		     addr->register_bit_offset + addr->register_bit_width - 1);
+    	p += n;
+    	len -= n;
+    }
 
     if (addr->address_space_id == ACPI_SPACE_FIXED)
 	space = _(MSG_SPACE_FIXED);
     else if (addr->address_space_id >= ACPI_SPACE_OEM)
-    {
 	space = _(MSG_SPACE_OEM);
-	print_id = TRUE;
-    }
     else
     {
 	space = decode_enum(addr->address_space_id, spaces);
-	if (!space)
-	{
-	    space = _(MSG_SPACE_UNKNOWN);
-	    print_id = TRUE;
-	}
     }
 
-    if (print_id)
-	fmt = _(MSG_FMT_UNKNOWN_SPACE);
+    if (space)
+        snprintf(p, len, _(MSG_FMT_KNOWN_SPACE), space);
     else
-	fmt = _(MSG_FMT_KNOWN_SPACE);
+        snprintf(p, len, _(MSG_FMT_UNKNOWN_SPACE), addr->address_space_id);
 
-    MakeString(cb, fmt, desc, addr->address,
-		addr->register_bit_width, addr->register_bit_offset,
-		space, addr->address_space_id);
+    cb(buf);
 }
 
 void header_parser(struct ACPI_TABLE_DEF_HEADER *table, void (*cb)(const char *))
 {
-    MakeString(cb, "%s: %.4s, %s %u, %s 0x%P",
+    MakeString(cb, "%s: %.4s, %s %u, %s 0x%p",
 	       _(MSG_TABLE_SIGNATURE), &table->signature,
 	       _(MSG_REVISION), table->revision, _(MSG_ADDRESS), table);
     MakeString(cb, "%s: %.6s", _(MSG_OEM_ID), &table->oem_id);
