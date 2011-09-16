@@ -112,6 +112,8 @@
     BOOL isBackground  = TRUE;
     BOOL isAsynch      = FALSE;
     BOOL needUnload    = FALSE;
+    STRPTR cmdcopy     = NULL;
+    LONG commandlen;
     LONG rc            = -1;
     LONG *cliNumPtr    = NULL;
     struct RootNode *rn = DOSBase->dl_Root;
@@ -272,6 +274,28 @@
         goto end;
     }
 
+    /* Inject the arguments, adding a trailing '\n'
+     * if the user did not.
+     */
+    if (command == NULL || command[0] == 0)
+        command = "\n";
+
+    commandlen = strlen(command);
+    if (commandlen) {
+        STRPTR cmdcopy = NULL;
+
+        if (command[commandlen-1] != '\n') {
+            cmdcopy = AllocVec(commandlen + 2, MEMF_ANY);
+            if (cmdcopy == NULL)
+                goto end;
+
+            CopyMem(command, cmdcopy, commandlen);
+            cmdcopy[commandlen++] = '\n';
+            cmdcopy[commandlen] = 0;
+            command = cmdcopy;
+        }
+    }
+
     if (!isCustom)
     	rn->rn_ShellSegment = shellseg;
 
@@ -361,6 +385,7 @@
     }
 
 end:
+    if (cmdcopy)       FreeVec(cmdcopy);
     if (needUnload)    UnLoadSeg(shellseg);
     if (script_opened) Close(script);
     if (cis_opened)    Close(cis);
