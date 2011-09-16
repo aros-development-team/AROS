@@ -19,6 +19,9 @@ static int Platform_Init(struct ExecBase *SysBase)
 	PD(SysBase).efiRT = EFIBase->Runtime;
     }
 
+    PD(SysBase).acpiBase = OpenResource("acpi.resource");
+    D(bug("[exec] acpi.resource 0x%p\n", PD(SysBase).acpiBase));
+
     return TRUE;
 }
 
