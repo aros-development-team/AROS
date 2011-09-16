@@ -141,7 +141,7 @@ MSG_INT_SRC_OVR (//)
 Interrupt source override
 ;
 MSG_BUS (//)
-Bus
+  Bus
 ;
 MSG_BUS_IRQ (//)
 Bus IRQ
