@@ -99,10 +99,7 @@
         if(fh->fh_Pos > fh->fh_End)
         {
             D(bug("FGetC: Weird pos: fh_Pos (%d) > fh_End (%d)\n", fh->fh_Pos, fh->fh_End));
-            /* Reinit filehandle and return EOF. */
-            fh->fh_Pos = fh->fh_End;
-	    SetIoErr(0);
-
+            /* Return EOF. */
             return EOF;
         }
 
@@ -135,9 +132,15 @@
         /* No data read? Return EOF. */
         if(size == 0)
 	{
-            D(bug("FGetC: Tried to Read() to a %d byte buffer, got 0)\n", bufsiz));
+            D(bug("FGetC: Tried to Read() to a %d byte buffer, got 0)\n", bufsize));
             return EOF;
 	}
+    }
+
+    /* If fh_End == 0, simulate an EOF */
+    if (fh->fh_End == 0) {
+        D(bug("FGetC: Got an EOF via fh_End == 0\n"));
+        return EOF;
     }
 
     /* All OK. Get data. */
