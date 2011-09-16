@@ -35,18 +35,6 @@
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
 APTR ACPIBase;
-struct ACPI_TABLE_TYPE_RSDP *RSDP;
-
-#define ACPI ((struct ACPIBase *)ACPIBase)
-
-static void GetRSDP(void)
-{
-    /*
-     * TODO: This is a placeholder.
-     * Its job is to check if RSDP is located in zero page and make a copy if so.
-     */
-    RSDP = ACPI->ACPIB_RSDP_Addr;
-}
 
 static void ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL useIOError)
 {
@@ -233,8 +221,6 @@ int main(void)
     if (!ACPIBase)
 	cleanup(_(MSG_ERROR_NO_ACPI));
 
-    GetRSDP();
-	
     if(GUIinit())
     {
 	unsigned int i;
@@ -255,6 +241,7 @@ int main(void)
 	DisposeObject(app);
 
     }
+
     cleanup(NULL);
 
     return 0;

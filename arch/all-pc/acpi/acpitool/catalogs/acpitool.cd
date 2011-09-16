@@ -218,3 +218,12 @@ X2APIC NMI
 MSG_UNKNOWN_ENTRY (//)
 Unknown entry (%u), %u bytes
 ;
+MSG_RSDP_ADDR (//)
+RSDP address
+;
+MSG_SYSTEM_OEM_ID (//)
+System OEM ID
+;
+MSG_ACPI_REVISION (//)
+ACPI Revision
+;

@@ -71,7 +71,7 @@ enum ACPI_IRQ_PICS
 };
 
 /* Root System Description Pointer "RSDP" structure */
-struct ACPI_TABLE_TYPE_RSDP 
+struct ACPI_TABLE_TYPE_RSDP
 {
     char			            signature[8];
     unsigned char			    checksum;
@@ -474,10 +474,12 @@ struct ACPIBase
 {
     struct  Node                            ACPIB_Node;
 
-    struct ACPI_TABLE_TYPE_RSDP            *ACPIB_RSDP_Addr;		/* Can be read-protected!!! */
+    struct ACPI_TABLE_TYPE_RSDP            *ACPIB_RSDP_Addr;		/* Supervisor-only!!!			*/
     struct ACPI_TABLE_DEF_HEADER     	   *ACPIB_SDT_Addr;		/* Raw XSDT or RSDT pointer	   	*/
     int                                     ACPIB_SDT_Count;		/* Number of entries in the array below */
     struct ACPI_TABLE_DEF_HEADER    	  **ACPIB_SDT_Entry;		/* Array of pointers to SDT tables 	*/
+    char			            ACPI_OEM_ID[6];		/* Cached from RSDP			*/
+    unsigned char			    ACPI_Revision;
 /*..*/
     APTR                                    ACPIB_ACPI_Data;            /* Base address of acpi data block 	*/
     APTR                                    ACPIB_ACPI_Data_End;

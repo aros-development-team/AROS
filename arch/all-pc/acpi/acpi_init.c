@@ -26,7 +26,9 @@ static void *core_ACPIRootSystemDescriptionPointerScan(IPTR scan_start, IPTR sca
 	if (!memcmp(scan_ptr, "RSD PTR ", 8))
 	{
 	    /* We have the signature, let's check the checksum*/ 
-	    if (!acpi_CheckSum(scan_ptr, (((struct ACPI_TABLE_TYPE_RSDP *)scan_ptr)->revision < 2) ? 20 : 36))
+	    struct ACPI_TABLE_TYPE_RSDP *rsdp = (struct ACPI_TABLE_TYPE_RSDP *)scan_ptr;
+
+	    if (!acpi_CheckSum(scan_ptr, (rsdp->revision < 2) ? 20 : rsdp->length))
 	    {
 	        /* RSDP located, return its address */
 	        return scan_ptr;
@@ -57,7 +59,7 @@ static void *core_ACPIRootSystemDescriptionPointerLocate()
     	{
     	    D(bug("[ACPI] Got RSDP 2.0 from EFI @ 0x%p\n", RSDP_PhysAddr));
 
-    	    if (!memcmp(RSDP_PhysAddr, "RSD PTR ", 8) && !acpi_CheckSum(RSDP_PhysAddr, 36))
+    	    if (!memcmp(RSDP_PhysAddr, "RSD PTR ", 8) && !acpi_CheckSum(RSDP_PhysAddr, RSDP_PhysAddr->length))
 	 	return RSDP_PhysAddr;
 	 	
 	    D(bug("[ACPI] Broken RSDP\n"));
@@ -275,6 +277,13 @@ static int acpi_Init(struct ACPIBase *ACPIBase)
     	return FALSE;
     }
 
+    /*
+     * Cache OEM and revision for simpler access.
+     * Using memcpy() here allows the compiler to optimize 6 bytes copy.
+     */
+    memcpy(ACPIBase->ACPI_OEM_ID, ACPIBase->ACPIB_RSDP_Addr->oem_id, sizeof(ACPIBase->ACPI_OEM_ID));
+    ACPIBase->ACPI_Revision = ACPIBase->ACPIB_RSDP_Addr->revision;
+
     /* Parse SDT, canonicalize addresses of tables pointed to by it */
     if (!acpi_ParseSDT(ACPIBase))
     {    
@@ -289,11 +298,18 @@ static int acpi_Init(struct ACPIBase *ACPIBase)
     	return FALSE;
     }
 
+#ifdef ENABLE_BLACKLIST
+    /*
+     * Blacklist mainly affects DSDT. Other tables still contain useful information.
+     * Currently blacklist is disabled because we do not interpret ASL at all.
+     * Perhaps it should go back in some other place, but not here.
+     */
     if (acpi_IsBlacklisted(ACPIBase))
     {
     	D(bug("[ACPI] Blacklisted\n"));
     	return FALSE;
     }
+#endif
 
     return TRUE;
 }
