@@ -31,6 +31,18 @@
 #    define AROS_LIBFUNC_EXIT
 #endif
 
+/* Fix the end-of-buffer ReadItem() 'well known' bug
+ * where it "ungets" non-terminator (' ','=','\t','\n')
+ * characters at the end of a non-\n terminated buffer.
+ */
+#define READITEM(buff, bufflen, cs) \
+    ({ LONG ret = ReadItem(buff, bufflen, cs); \
+       if (ret == ITEM_UNQUOTED && (cs->CS_CurChr+1) == cs->CS_Length) \
+         cs->CS_CurChr++; \
+       ret; \
+     })
+
+
 /*****************************************************************************
 
     NAME */
@@ -119,7 +131,8 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     ULONG arg, numargs, nextarg;
     LONG it, item, chars;
     struct CSource lcs, *cs;
-    TEXT argbuff[256];	/* Maximum BCPL string length + ASCIIZ */
+    BOOL is_file_not_buffer;
+    TEXT argbuff[256 + 1];	/* Maximum BCPL string length + injected \n + ASCIIZ */
 
     ASSERT_VALID_PTR(template);
     ASSERT_VALID_PTR(array);
@@ -178,6 +191,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     {
         cs = &rdargs->RDA_Source;
         D(bug("[ReadArgs] Buffer: \"%s\"\n", cs->CS_Buffer));
+        is_file_not_buffer = FALSE;
     }
     else
     {
@@ -185,6 +199,8 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     	BPTR input = Input();
 
     	D(bug("[ReadArgs] Input: 0x%p\n", input));
+    	is_file_not_buffer = TRUE;
+
 	/*
 	 * Take arguments from input stream. They were injected there by either
 	 * runcommand.c or createnewproc.c (see vbuf_inject() routine).
@@ -231,21 +247,26 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     if (!(rdargs->RDA_Flags & RDAF_NOPROMPT))
     {
         /* Check commandline for a single '?' */
-        cs1 = cs->CS_Buffer;
+        cs1 = &cs->CS_Buffer[cs->CS_CurChr];
 
         /* Skip leading whitespace */
-        while (*cs1 == ' ' || *cs1 == '\t')
+        while (cs->CS_CurChr < cs->CS_Length && (*cs1 == ' ' || *cs1 == '\t'))
         {
             cs1++;
+            cs->CS_CurChr++;
         }
 
         /* Check for '?' */
-        if (*cs1++ == '?')
+        if (cs->CS_CurChr < cs->CS_Length && *cs1 == '?')
         {
+            cs1++;
+            cs->CS_CurChr++;
+
             /* Skip whitespace */
-            while (*cs1 == ' ' || *cs1 == '\t')
+            while (cs->CS_CurChr < cs->CS_Length && (*cs1 == ' ' || *cs1 == '\t'))
             {
                 cs1++;
+                cs->CS_CurChr++;
             }
 
             /* Check for EOL */
@@ -257,6 +278,11 @@ AROS_LH3(struct RDArgs *, ReadArgs,
                 ULONG isize = 0, ibuf = 0;
                 LONG c;
                 ULONG helpdisplayed = FALSE;
+
+                if (cs->CS_CurChr < cs->CS_Length && *cs1 == '\n') {
+                    cs1++;
+                    cs->CS_CurChr++;
+                }
 
                 /* Prompt for more input */
 
@@ -307,7 +333,19 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 	                    }
 	
 	                    /* Read character */
-	                    c = FGetC(input);
+	                    if (is_file_not_buffer)
+	                    {
+	                        c = FGetC(input);
+	                    }
+	                    else
+	                    {
+	                        SetIoErr(0);
+	
+	                        if (cs->CS_CurChr >= cs->CS_Length)
+	                            c = EOF;
+	                        else
+	                            c = cs->CS_Buffer[cs->CS_CurChr++];
+	                    }
 	
 	                    /* Check and write it. */
 	                    if (c == EOF && me->pr_Result2)
@@ -356,6 +394,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
                 /* Prepare input source for new line. */
                 cs->CS_Buffer = iline;
                 cs->CS_Length = isize;
+                cs->CS_CurChr = 0;
             }
         }
     }
@@ -463,7 +502,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     	
         {
             /* Get item. Quoted items are never keywords. */
-            it = ReadItem(s1, strbuflen, cs);
+            it = READITEM(s1, strbuflen, cs);
 	    D(bug("[ReadArgs] Item %s type %d\n", s1, it));
 
             if (it == ITEM_UNQUOTED)
@@ -486,11 +525,13 @@ AROS_LH3(struct RDArgs *, ReadArgs,
                         && (flags[item] & TYPEMASK) != TOGGLE)
                     {
                         /* Get value. */
-                        it = ReadItem(s1, strbuflen, cs);
+                        it = READITEM(s1, strbuflen, cs);
 
                         if (it == ITEM_EQUAL)
                         {
-                            it = ReadItem(s1, strbuflen, cs);
+                            it = READITEM(s1, strbuflen, cs);
+                        } else if (it != ITEM_QUOTED && it != ITEM_UNQUOTED) {
+                            ERROR(ERROR_KEY_NEEDS_ARG);
                         }
                     }
                 }
