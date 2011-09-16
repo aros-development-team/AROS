@@ -6,6 +6,8 @@
 
 #include "acpi_intern.h"
 
+#ifdef ENABLE_BLACKLIST
+
 /*
     Everything that doesnt work MUST be put on the OEMBlacklist!!!
     If the problem is critical - mark it as such
@@ -103,3 +105,5 @@ int acpi_IsBlacklisted(struct ACPIBase *ACPIBase)
 
     return 0;
 }
+
+#endif

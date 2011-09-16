@@ -103,20 +103,26 @@ static void parse_addr(const char *desc, struct GENERIC_ACPI_ADDR *addr, void (*
 
 void header_parser(struct ACPI_TABLE_DEF_HEADER *table, void (*cb)(const char *))
 {
-    MakeString(cb, "%s: %.4s %s %u, %s 0x%p",
+    MakeString(cb, "%s: %.4s, %s %u, %s 0x%P",
 	       _(MSG_TABLE_SIGNATURE), &table->signature,
 	       _(MSG_REVISION), table->revision, _(MSG_ADDRESS), table);
     MakeString(cb, "%s: %.6s", _(MSG_OEM_ID), &table->oem_id);
-    MakeString(cb, "%s: %.8s %s %u",
+    MakeString(cb, "%s: %.8s %s 0x%08X",
 	       _(MSG_OEM_TABLE_ID), &table->oem_table_id,
 	       _(MSG_REVISION), table->oem_revision);
-    MakeString(cb, "%s: %.4s %s %u",
+    MakeString(cb, "%s: %.4s %s 0x%08X",
 	       _(MSG_CREATOR_ID), &table->asl_compiler_id,
 	       _(MSG_REVISION), table->asl_compiler_revision);
 }
 
 static void rsdt_parser(struct ACPI_TABLE_DEF_HEADER *rsdt, void (*cb)(const char *))
 {
+    MakeString(cb, "%s: 0x%p", _(MSG_RSDP_ADDR), ACPI->ACPIB_RSDP_Addr);
+    MakeString(cb, "%s: %.6s", _(MSG_SYSTEM_OEM_ID), ACPI->ACPI_OEM_ID);
+    MakeString(cb, "%s: %u", _(MSG_ACPI_REVISION), ACPI->ACPI_Revision);
+
+    cb("");
+
     header_parser(rsdt, cb);
 }
 
