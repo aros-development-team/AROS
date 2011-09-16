@@ -47,6 +47,10 @@ struct GENERIC_ACPI_ADDR
 #define ACPI_SIZE_DWORD	    2
 #define ACPI_SIZE_QUAD	    3
 
+#define ACPI_PCI_OFFSET(addr) (unsigned short)((addr) & 0x0FFFF)
+#define ACPI_PCI_FUNC(addr)   (unsigned short)(((addr) >> 16) & 0x0FFFF)
+#define ACPI_PCI_DEV(addr)    (unsigned short)(((addr) >> 32) & 0x0FFFF)
+
 struct ACPI_TABLE_DEF_HEADER                                                /* ACPI common table header */
 {
     unsigned int                            signature;                      /* ACPI signature (4 ASCII characters) */
