@@ -80,6 +80,15 @@ Reset register address
 MSG_RESET_VAL (//)
 Reset value
 ;
+MSG_UNKNOWN_SIZE (//)
+Unknown size
+;
+MSG_AT (//)
+at
+;
+MSG_BITS (//)
+bits
+;
 MSG_SPACE_FIXED (//)
 Fixed hardware
 ;
@@ -90,10 +99,10 @@ MSG_SPACE_UNKNOWN (//)
 Unknown space
 ;
 MSG_FMT_UNKNOWN_SPACE (//)
-%s: 0x%llX, %u bits from %u in %s (%u)
+in unknown space (%u)
 ;
 MSG_FMT_KNOWN_SPACE (//)
-%s: 0x%llX, %u bits from %u in %s
+in %s
 ;
 MSG_YES (//)
 Yes
