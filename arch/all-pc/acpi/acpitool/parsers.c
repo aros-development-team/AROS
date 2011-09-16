@@ -44,7 +44,7 @@ static void parse_enum(const char *desc, ULONG val, const char **table, void (*c
 	MakeString(cb, "%s: %s", desc, valname);
     else
 	MakeString(cb, "%s: %s (%u)", desc, _(MSG_UNKNOWN), val);
-}    
+}
 
 #define FLAG_VAL(v) ((v) ? _(MSG_YES) : _(MSG_NO))
 
@@ -222,10 +222,8 @@ static const char *irq_trigger[] =
 
 static inline void parse_int_flags(ACPI_INT_FLAGS flags, void (*cb)(const char *))
 {
-/* FIXME: This does not work, deadlocks
     parse_enum(_(MSG_POLARITY), flags.polarity, irq_polarity, cb);
     parse_enum(_(MSG_TRIGGER), flags.trigger, irq_trigger, cb);
-*/
 }
 
 static const char *srcovr_buses[] =
