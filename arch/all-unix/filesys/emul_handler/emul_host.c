@@ -837,7 +837,7 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
 
     switch (mode) {
     case OFFSET_BEGINNING:
-        absolute = offset;
+        absolute = 0;
         break;
 
     case OFFSET_CURRENT:
