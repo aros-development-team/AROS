@@ -54,7 +54,8 @@
 		loffset = 0x100;
 	else
 		loffset = 0x002;
-	v = (p[offset] & 0xf0) | ((p[offset + loffset] & 0xf0) >> 4);
+	v = (p[offset + loffset] & 0xf0) >> 4;
+	v |= p[offset] & 0xf0;
 	return v;
 
     AROS_LIBFUNC_EXIT
