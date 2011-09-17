@@ -1,4 +1,4 @@
-; $VER: AROSTCP-PackageStartup 1.2 (11.11.2010)
+; $VER: AROSTCP-PackageStartup 1.3 (17.9.2011)
 ; AROSTCP-PackageStartup (c) The AROS Dev Team.
 ;
 Path "C" "S" ADD QUIET
@@ -7,13 +7,14 @@ Protect S/startnet s add quiet
 Protect S/stopnet s add quiet
 
 if ${AROSTCP/AutoRun} eq "True"
-  C:Execute S/startnet
-EndIf
 
 if ${AROSTCP/WirelessAutoRun} eq "True"
-  Run <NIL: >NIL: C:WirelessManager atheros5000.device
+  Run <NIL: >NIL: C:WirelessManager ${AROSTCP/WirelessDevice}
 EndIf
 
 if ${AROSTCP/MobileAutorun} eq "True"
   Run <NIL: >NIL: C:ModemManager
+EndIf
+
+  C:Execute S/startnet
 EndIf
