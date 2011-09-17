@@ -3,6 +3,7 @@
 #include <aros/symbolsets.h>
 #include <resources/acpi.h>
 #include <resources/efi.h>
+#include <proto/acpi.h>
 #include <proto/arossupport.h>
 #include <proto/efi.h>
 #include <proto/exec.h>
@@ -44,12 +45,10 @@ static const uuid_t acpi_20_guid = ACPI_20_TABLE_GUID;
 static const uuid_t acpi_10_guid = ACPI_TABLE_GUID;
 
 /* Attempt to locate the ACPI Root System Description Pointer */
-static void *core_ACPIRootSystemDescriptionPointerLocate()
+static void *core_ACPIRootSystemDescriptionPointerLocate(struct EFIBase *EFIBase)
 {
-    struct EFIBase *EFIBase;
     struct ACPI_TABLE_TYPE_RSDP *RSDP_PhysAddr;
 
-    EFIBase = OpenResource("efi.resource");
     D(bug("[ACPI] efi.resource 0x%p\n", EFIBase));
     if (EFIBase)
     {
@@ -250,6 +249,7 @@ static int acpi_CheckSDT(struct ACPIBase *ACPIBase)
 static int acpi_Init(struct ACPIBase *ACPIBase)
 {
     APTR KernelBase;
+    struct EFIBase *EFIBase;
 
     /*
      * We are part of package. To make user's life simpler, we allow to disable ourselves
@@ -270,7 +270,9 @@ static int acpi_Init(struct ACPIBase *ACPIBase)
     	}
     }
 
-    ACPIBase->ACPIB_RSDP_Addr = core_ACPIRootSystemDescriptionPointerLocate();
+    EFIBase = OpenResource("efi.resource");
+
+    ACPIBase->ACPIB_RSDP_Addr = core_ACPIRootSystemDescriptionPointerLocate(EFIBase);
     if (!ACPIBase->ACPIB_RSDP_Addr)
     {
     	D(bug("[ACPI] No RSDP found, giving up...\n"));
@@ -310,6 +312,27 @@ static int acpi_Init(struct ACPIBase *ACPIBase)
     	return FALSE;
     }
 #endif
+
+    /*
+     * Now install own ShutdownA() replacement if needed.
+     * We check EFIBase here because EFI has own shutdown/reboot capabilities,
+     * they are better than our ones, and we allow it to supersede us.
+     */
+    if (!EFIBase)
+    {
+    	struct ACPI_TABLE_TYPE_FADT *fadt = ACPI_FindSDT(ACPI_MAKE_ID('F','A','C','P'));
+
+	D(bug("[ACPI] Replacing ShutdownA(), FADT 0x%p\n", fadt));
+
+	if (fadt && (fadt->header.length > offsetof(struct ACPI_TABLE_TYPE_FADT, reset_value)) &&
+	    (fadt->flags & FACP_FF_RESET_REG_SUP))
+	{
+	    D(bug("[ACPI] Have reset register, installing patch\n"));
+
+	    SetFunction(&SysBase->LibNode, -173 * LIB_VECTSIZE,
+			AROS_SLIB_ENTRY(ShutdownA, Acpi, 173));
+	}
+    }
 
     return TRUE;
 }
