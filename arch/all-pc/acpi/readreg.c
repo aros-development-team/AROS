@@ -8,7 +8,7 @@
     NAME */
 #include <proto/acpi.h>
 
-AROS_LH1I(APTR, ACPI_ReadReg,
+AROS_LH1I(IPTR, ACPI_ReadReg,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct GENERIC_ACPI_ADDR *, reg, A0),
@@ -94,20 +94,20 @@ IPTR ReadRegInt(struct GENERIC_ACPI_ADDR *reg, unsigned char size)
     	switch (size)
     	{
     	case ACPI_SIZE_BYTE:
-    	    val = *((UBYTE *)reg->address);
+    	    val = *((UBYTE *)(IPTR)reg->address);
     	    break;
 
     	case ACPI_SIZE_WORD:
-    	    val = *((UWORD *)reg->address);
+    	    val = *((UWORD *)(IPTR)reg->address);
     	    break;
 
     	case ACPI_SIZE_DWORD:
-    	    val = *((ULONG *)reg->address);
+    	    val = *((ULONG *)(IPTR)reg->address);
     	    break;
 
 #if __WORDSIZE == 64
 	case ACPI_SIZE_QUAD:
-	    val = *((UQUAD *)reg->address);
+	    val = *((UQUAD *)(IPTR)reg->address);
 	    break;
 #endif
     	}

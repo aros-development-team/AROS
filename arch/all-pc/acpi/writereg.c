@@ -65,20 +65,20 @@ AROS_LH2I(void, ACPI_WriteReg,
     	switch (size)
     	{
     	case ACPI_SIZE_BYTE:
-    	    *((UBYTE *)reg->address) = value;
+    	    *((UBYTE *)(IPTR)reg->address) = value;
     	    break;
 
     	case ACPI_SIZE_WORD:
-    	    *((UWORD *)reg->address) = value;
+    	    *((UWORD *)(IPTR)reg->address) = value;
     	    break;
 
     	case ACPI_SIZE_DWORD:
-    	    *((ULONG *)reg->address) = value;
+    	    *((ULONG *)(IPTR)reg->address) = value;
     	    break;
 
 #if __WORDSIZE == 64
 	case ACPI_SIZE_QUAD:
-	    *((UQUAD *)reg->address) = value;
+	    *((UQUAD *)(IPTR)reg->address) = value;
 	    break;
 #endif
     	}
