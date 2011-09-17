@@ -241,7 +241,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     if (!(fh = Open ((char *)pathname, openmode)) )
     {
 	ULONG ioerr = IoErr();
-	D(bug("[clib] Open ioerr=%d\n", ioerr));
+	D(bug("__open: Open ioerr=%d\n", ioerr));
 	errno = IoErr2errno(ioerr);
         goto err;
     }
@@ -251,11 +251,13 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     {
 	if(SetFileSize(fh, 0, OFFSET_BEGINNING) != 0)
 	{
+	    ULONG ioerr = IoErr();
 	    /* Ignore error if ACTION_SET_FILE_SIZE is not implemented */
-	    if(IoErr() != ERROR_NOT_IMPLEMENTED)
+	    if(ioerr != ERROR_NOT_IMPLEMENTED)
 	    {
-	        errno = IoErr2errno(IoErr());
-                goto err;	    
+		D(bug("__open: SetFileSize ioerr=%d\n", ioerr));
+	        errno = IoErr2errno(ioerr);
+                goto err;
 	    }
 	}
     }
