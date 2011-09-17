@@ -22,8 +22,6 @@ AROS_LH1(ULONG, ShutdownA,
 {
     AROS_LIBFUNC_INIT
 
-    APTR ACPIBase = PD(SysBase).acpiBase;
-
     if (PD(SysBase).efiRT)
     {
     	/*
@@ -59,44 +57,6 @@ AROS_LH1(ULONG, ShutdownA,
 	D(bug("[ShutdownA] Trying EFI action %ld...\n", efiAction));
 
     	PD(SysBase).efiRT->ResetSystem(efiAction, 0, 0, NULL);
-    }
-
-    if (ACPIBase)
-    {
-        /* No EFI (or survived somehow). Trying ACPI. */
-	struct ACPI_TABLE_TYPE_FADT *fadt = ACPI_FindSDT(ACPI_MAKE_ID('F','A','C','P'));
-	BOOL acpi20 = FALSE;
-
-	D(bug("[ShutdownA] Trying ACPI, FADT 0x%p\n", fadt));
-
-	if (fadt && fadt->header.length > offsetof(struct ACPI_TABLE_TYPE_FADT, reset_value))
-	{
-	    D(bug("[ShutdownA] ACPI >=2.0 detected\n"));
-	    acpi20 = TRUE;
-	}
-
-        switch (action)
-        {
-        case SD_ACTION_COLDREBOOT:
-	    /* Use reset register */
-            if (acpi20 && (fadt->flags & FACP_FF_RESET_REG_SUP))
-            {
-            	D(bug("[ShutdownA] Reset register 0x%p, value 0x%02X\n", (IPTR)fadt->reset_reg.address, fadt->reset_value));
-
-            	ACPI_WriteReg(&fadt->reset_reg, fadt->reset_value);
-            	/* We really should not return from that */
-            }
-        }
-
-        if (acpi20)
-        {
-            /* If we don't have AT keyboard controller, it won't reset us. Return. */
-            if (!(fadt->pc_arch & FACP_PC_8042))
-            {
-            	D(bug("[ShutdownA] 8042 keyboard controller not present\n"));
-            	return;
-            }
-        }
     }
 
     /* Nothing worked, poor-man fallback */
