@@ -14,6 +14,17 @@
 
 #include <expansion_intern.h>
 
+static void readexprom(APTR board, struct ExpansionRom *rom, struct ExpansionBase *ExpansionBase)
+{
+    WORD cnt;
+
+    for (cnt = 0; cnt < sizeof(struct ExpansionRom); cnt++)
+	((UBYTE*)rom)[cnt] = ~ReadExpansionByte(board, cnt);
+    /* AOS expansion.library appears to have off-by-one bug.. */
+    ReadExpansionByte(board, cnt);
+    rom->er_Type = ~rom->er_Type;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -53,13 +64,12 @@
     AROS_LIBFUNC_INIT
 
 	struct ExpansionRom *rom = &configDev->cd_Rom;
+	struct ExpansionRom tmprom;
 	ULONG size;
 	UBYTE cnt;
 	
-	for (cnt = 0; cnt < sizeof(struct ExpansionRom); cnt++)
-		((UBYTE*)rom)[cnt] = ~ReadExpansionByte(board, cnt);
-	rom->er_Type = ~rom->er_Type;
-	
+	readexprom(board, rom, ExpansionBase);
+
 	if (rom->er_Reserved03 != 0)
 		return FALSE;
 
@@ -68,6 +78,13 @@
 	
 	if ((rom->er_Type & ERT_TYPEMASK) != ERT_ZORROII && (rom->er_Type & ERT_TYPEMASK) != ERT_ZORROIII)
 		return FALSE;
+	
+	/* AOS expansion.library wants to be really really sure... */
+	for (cnt = 0; cnt < 11; cnt++) {
+		readexprom(board, &tmprom, ExpansionBase);
+		if (memcmp(&tmprom, rom, sizeof(struct ExpansionRom)))
+			return FALSE;
+	}		
 	
 	if ((rom->er_Type & ERT_TYPEMASK) == ERT_ZORROIII && (rom->er_Flags & ERFF_EXTENDED)) {
 		size = (16 * 1024 * 1024) << (rom->er_Type & ERT_MEMMASK);

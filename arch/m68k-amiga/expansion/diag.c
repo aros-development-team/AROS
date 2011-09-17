@@ -64,35 +64,46 @@ static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ExecBase *sb
 
 
 // read one byte from expansion autoconfig ROM
-static UBYTE getromdata(struct ConfigDev *configDev, UBYTE buswidth, UWORD offset)
+static void copyromdata(struct ConfigDev *configDev, UBYTE buswidth, UWORD size, UBYTE *out)
 {
 	volatile UBYTE *rom = (UBYTE*)(configDev->cd_BoardAddr + configDev->cd_Rom.er_InitDiagVec);
+	UWORD offset = 0;
 	
 	switch (buswidth)
 	{
 		case DAC_NIBBLEWIDE:
-			return (rom[offset * 2 + 0] & 0xf0) | ((rom[offset * 2 + 1] & 0xf0) >> 4);
+			while (size-- > 0) {
+				*out++ = (rom[offset * 4 + 0] & 0xf0) | ((rom[offset * 4 + 2] & 0xf0) >> 4);
+				offset++;
+			}
+			break;
 		case DAC_BYTEWIDE:
-			return rom[offset * 2];
+			while (size-- > 0) {
+				*out++ = rom[offset * 2];
+				offset++;
+			}
+			break;
 		case DAC_WORDWIDE:
 		default:
-			return rom[offset];
+			/* AOS does it this way */
+			CopyMem((void*)rom, out, size);
+			break;
 	}
 }
 
 static BOOL diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
 {
-	struct DiagArea *da;
+	struct DiagArea *da, datmp;
 	UBYTE da_config, buswidth;
-	UWORD size, i;
 
 	D(bug("Read boot ROM base=%p type=%02x\n", configDev->cd_BoardAddr, configDev->cd_Rom.er_Type));
-	if (!(configDev->cd_Rom.er_Type & ERTF_DIAGVALID)) {
+
+	if (!(configDev->cd_Rom.er_Type & ERTF_DIAGVALID) || !configDev->cd_Rom.er_InitDiagVec) {
 		D(bug("Board without boot ROM\n"));
 		return FALSE;
 	}
 
-	da_config = getromdata(configDev, DAC_BYTEWIDE, 0);
+	copyromdata(configDev, DAC_BYTEWIDE, 1, &da_config);
 	/* NOTE: lower nibble may not be valid if actual bus type is not BYTEWIDE */
 	D(bug("da_Config=%02x\n", da_config & 0xf0));
 	buswidth = da_config & DAC_BUSWIDTH;
@@ -101,23 +112,22 @@ static BOOL diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *confi
 	if ((da_config & DAC_BOOTTIME) != DAC_CONFIGTIME)
 		return FALSE;
 
-	size = (getromdata(configDev, buswidth, 2) << 8) | (getromdata(configDev, buswidth, 3) << 0);
-	D(bug("da_Size=%04x\n", size));
-	if (size < sizeof (struct DiagArea))
+	// read DiagArea only
+	copyromdata(configDev, buswidth, sizeof(struct DiagArea), (UBYTE*)&datmp);
+
+	D(bug("Size=%04x DiagPoint=%04x BootPoint=%04x Name=%04x\n",
+		datmp.da_Size, datmp.da_DiagPoint, datmp.da_BootPoint, datmp.da_Name));
+	if (datmp.da_Size < sizeof (struct DiagArea))
 		return FALSE;
 
-	da = AllocMem(size, MEMF_PUBLIC);
+	da = AllocMem(datmp.da_Size, MEMF_PUBLIC);
 	if (!da)
 		return FALSE;
 
 	configDev->cd_Rom.er_DiagArea = da;
-	// read rom data, including DiagArea
-	for (i = 0; i < size; i++) {
-		UBYTE dat = getromdata(configDev, buswidth, i);
-		((UBYTE*)da)[i] = dat;
-		//D(bug("%02x.", dat));
-	}
-	//D(bug("\n"));
+	// read rom data, DiagArea is also copied again. AOS compatibility!
+	copyromdata(configDev, buswidth, datmp.da_Size, (UBYTE*)da);
+
 	return TRUE;
 }
 
