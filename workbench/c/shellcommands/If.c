@@ -196,7 +196,7 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 		    if (a == ENDSTREAMCH)
 			break;
 		    else
-		        continue;
+		        goto next;
 		}
 
 		switch(FindArg("IF,ELSE,ENDIF", buffer))
@@ -219,7 +219,8 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 		    break;
 		}
 
-		/* Take care of long lines */
+next:
+		/* Take care of long and empty lines */
 		do
 		{
 		    a = FGetC(Input());
