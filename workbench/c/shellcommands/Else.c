@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -85,13 +85,13 @@ AROS_SH0(Else,41.1)
 
 	    if (status == ITEM_ERROR)
 	        break;
-	        
+
 	    if (status == ITEM_NOTHING)
 	    {
 		if (a == ENDSTREAMCH)
 		    break;
 		else
-		    continue;
+		    goto next;
 	    }
 
 	    switch ((temp = FindArg("IF,ENDIF", buffer)))
@@ -111,7 +111,8 @@ AROS_SH0(Else,41.1)
 		break;
 	    }
 
-	    /* Take care of long lines */
+next:
+	    /* Take care of long and empty lines */
 	    do
 	    {
 		a = FGetC(Input());
