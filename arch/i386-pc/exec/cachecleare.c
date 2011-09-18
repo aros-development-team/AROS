@@ -73,12 +73,28 @@ void Exec_Wbinvd();
     invalidate all cache which is out-of-date. It is valid for both
     D and I caches). Even a BM-DMA transfer are perfectly safe here.
 
+    The above statement is not valid (at least) in case of AGP transfers. In
+    such case all operations on GATT table need to be followed by FULL CPU
+    cache flush or they are not visible by the video card.
+
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    if (caches & CACRF_ClearD)
+    /* A full flush has been requested */
+    if (length == 0xFFFFFFFF)
+    {
         Supervisor((ULONG_FUNC)Exec_Wbinvd);
+        return;
+    }
+
+    /* A partial flush requested */
+    if (caches & CACRF_ClearD)
+    {
+        /* TODO: Detect if CPU supports clflush instruction and use it instead
+           of wbinvd to provide more optimized cache flushes */
+        Supervisor((ULONG_FUNC)Exec_Wbinvd);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
