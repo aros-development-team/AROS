@@ -405,7 +405,7 @@ udp_output(void *arg, ...)
 	register struct mbuf *m;
 	struct mbuf *addr, *control;
 	register struct udpiphdr *ui;
-	register int len = m->m_pkthdr.len;
+	register int len;
 	struct in_addr laddr;
 	int s = 0, error = 0;
 	va_list va;
@@ -416,6 +416,7 @@ udp_output(void *arg, ...)
 	control = va_arg(va, struct mbuf *);
 	va_end(va);
 
+	len = m->m_pkthdr.len;
 
 	if (control)
 		m_freem(control);		/* XXX */
