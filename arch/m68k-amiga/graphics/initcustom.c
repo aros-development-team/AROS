@@ -94,8 +94,10 @@ static int InitCustom(struct GfxBase *gfx)
 
    	Enable();
 
-   	if (vposr >= 0x2200)
+   	if (vposr >= 0x2200) {
    		chipflags |= GFXF_AA_ALICE;
+		gfx->MemType = BUS_32 | DBL_CAS;
+	}
 
 	gfx->DisplayFlags = flags;
 	gfx->ChipRevBits0 = chipflags;
