@@ -47,6 +47,7 @@
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include <dos/bptr.h>
+#include <dos/stdio.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <string.h>
@@ -66,10 +67,14 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
     struct CommandLineInterface *cli = Cli();
     STRPTR arguments = SHArg(ARGUMENTS), s;
     BPTR from;
+    LONG len;
     struct Process *me = (struct Process *)FindTask(NULL);
 
     if (!cli)
         return RETURN_ERROR;
+
+    if (! arguments)
+        arguments = "";
 
     from = Open(SHArg(NAME), MODE_OLDFILE);
 
@@ -186,22 +191,38 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	}
     }
 
-    if (arguments)
-    {
-	LONG len = strlen(arguments);
+    /* Update cli_CommandName to be the name of the script */
+    len = strlen(SHArg(NAME));
+    s = AROS_BSTR_ADDR(cli->cli_CommandName);
+    AROS_BSTR_setstrlen(cli->cli_CommandName, len);
+    CopyMem(SHArg(NAME), s, len);
 
-	D(bug("[Execute] args (len: %d): %s\n", len, arguments));
-	if (len >= 255)
-	    return ERROR_LINE_TOO_LONG;
+    if (arguments) {
+        struct FileHandle *fh;
+        TEXT *fh_buff;
 
-	s = AROS_BSTR_ADDR(cli->cli_CommandName);
+        len = strlen(arguments);
 
-	AROS_BSTR_setstrlen(cli->cli_CommandName, len);
-	CopyMem(arguments, s, len);
-	s[len] = '\0';
+        /* Inject the command args into cli->cli_StandardInput 
+         *
+         * It would be nice to have a standard DOS LVO that
+         * could do this for us.
+         */
+        Flush(cli->cli_StandardInput);
+        if (SetVBuf(cli->cli_StandardInput, NULL, BUF_LINE, len + 1) == 0) {
+            fh = BADDR(cli->cli_StandardInput);
+            fh->fh_Pos = 0;
+            fh->fh_End = len + 1;
+            fh_buff = BADDR(fh->fh_Buf);
+            CopyMem(arguments, fh_buff, len);
+            fh_buff[len] = '\n';
+            /* Prevent RunCommand() from flushing cli_StandardInput */
+            SelectInput(BNULL);
+        } else {
+            VFPrintf(me->pr_CES, "EXECUTE: Can't inject command line\n", NULL);
+            return RETURN_FAIL;
+        }
     }
-    else
-	AROS_BSTR_setstrlen(cli->cli_CommandName, 0);
 
     return RETURN_OK;
 

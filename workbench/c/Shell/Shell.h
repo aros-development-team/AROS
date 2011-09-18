@@ -54,6 +54,7 @@ typedef struct _ShellState
     LONG	argcount;	/* script args count */
     struct SArg	args[MAXARGS];	/* args definitions */
     IPTR	arg[MAXARGS];	/* args values */
+    struct RDArgs *arg_rd;	/* Current RDArgs return state */
 
     TEXT	bra, ket, dollar, dot;
 
