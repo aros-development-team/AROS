@@ -118,7 +118,7 @@
 
     /* remove buffered argument stream */
     /* must be original stream, command might have called SelectInput() */
-    if (injected) {
+    if (injected && oldinput == Input()) {
         D(bug("RunCommand: Flushing %p\n", oldinput));
         Flush(oldinput);
     }
