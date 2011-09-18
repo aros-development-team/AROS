@@ -42,6 +42,37 @@
        ret; \
      })
 
+/* Returns 0 if this is not a '?' line, otherwise
+ * returns the length till after '\n' or buffsize
+ */
+static inline LONG is_question(STRPTR buff, LONG buffsize)
+{
+   BOOL seen_question = FALSE;
+   LONG i;
+
+   for (i = 0; i < buffsize; i++) {
+       switch (buff[i]) {
+       case ' ':
+       case '\t':
+           break;
+       case '?':
+           if (!seen_question)
+               seen_question = TRUE;
+           else
+               return 0;
+           break;
+       case '\n':
+           return (seen_question) ? (i + 1) : 0;
+       default:
+           return 0;
+       }
+   }
+
+   return (seen_question) ? buffsize : 0;
+}
+
+
+
 
 /*****************************************************************************
 
@@ -366,8 +397,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 	                /* if user entered single ? again or some string ending
 	                   with space and ? either display template again or
 	                   extended help if it's available */
-	                if ((isize == 1 || (isize > 1 && iline[isize-2] == ' ')) 
-	                		&& iline[isize-1] == '?' ) 
+	                if (is_question(iline, isize))
 	                {
 	                    helpdisplayed = TRUE;
 	                	isize = 0;
