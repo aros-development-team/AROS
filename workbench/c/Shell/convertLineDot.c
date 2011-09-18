@@ -82,21 +82,12 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len, APTR DOSBas
 
 static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in, APTR DOSBase)
 {
-    struct CommandLineInterface *cli = Cli();
     LONG error, i, j, len;
-    struct RDArgs *rd;
     struct SArg *a;
     TEXT t[256];
 
-    if ((rd = AllocDosObject(DOS_RDARGS, NULL)) == NULL)
-	return ERROR_NO_FREE_STORE;
-
-    rd->RDA_Source.CS_Buffer = AROS_BSTR_ADDR(cli->cli_CommandName);
-    rd->RDA_Source.CS_Length = AROS_BSTR_strlen(cli->cli_CommandName);
-    rd->RDA_Source.CS_CurChr = 0;
-
     /* modify the template to read numbers as strings ! */
-    for (i = 0, j = 0; s[j] != '\0' && i < sizeof(t); ++j)
+    for (i = 0, j = 0; s[j] != '\0' && s[j] != '\n' && i < sizeof(t); ++j)
     {
 	if (s[j] == '/' && s[j + 1] == 'N')
 	    ++j;
@@ -109,10 +100,13 @@ static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in, APTR DOSBase)
 
     t[i] = '\0';
 
-    if (ReadArgs(t, ss->arg, rd) == NULL)
+    /* Free the old ReadArgs value */
+    if (ss->arg_rd)
+        FreeDosObject(DOS_RDARGS, ss->arg_rd);
+
+    if ((ss->arg_rd = ReadArgs(t, ss->arg, NULL)) == NULL)
     {
 	error = IoErr();
-	FreeDosObject(DOS_RDARGS, rd);
 	return error;
     }
 
@@ -122,7 +116,7 @@ static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in, APTR DOSBase)
     {
 	STRPTR arg;
 
-	for (len = 0; *s != '/' && *s != ',' && *s != '\0'; ++s)
+	for (len = 0; *s != '/' && *s != ',' && *s != '\n' && *s != '\0'; ++s)
 	    ++len;
 
 	j = getArgumentIdx(ss, s - len, len);

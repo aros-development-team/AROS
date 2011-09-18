@@ -182,6 +182,9 @@ AROS_ENTRY(__startup ULONG, ShellStart,
     
     CloseLibrary(DOSBase);
 
+    if (ss->arg_rd)
+        FreeDosObject(DOS_RDARGS, ss->arg_rd);
+
     FreeMem(ss, sizeof(ShellState));
 
     segArray[3] = mySeg;
