@@ -433,12 +433,40 @@ static void madt_parser(struct ACPI_TABLE_TYPE_MADT *madt, void (*cb)(const char
     ACPI_ScanEntries(&madt->header, ACPI_ENTRY_TYPE_ALL, &madtHook, cb);
 }
 
+static const char *hpet_protect[] =
+{
+    "None",
+    "4KB",
+    "64KB",
+    NULL
+};
+
+static void hpet_parser(struct ACPI_TABLE_TYPE_HPET *hpet, void (*cb)(const char *))
+{
+    header_parser(&hpet->header, cb);
+
+    MakeString(cb, "%s: %u", _(MSG_HW_REVISION), hpet->id & HPET_HW_REV_MASK);
+    MakeString(cb, "%s: %u", _(MSG_NUM_COMPARATORS),
+	       (hpet->id & HPET_NUM_COMPARATORS_MASK) >> HPET_NUM_COMPARATORS_SHIFT);
+    MakeString(cb, "%s: %s", _(MSG_64BIT_COUNTER), FLAG_VAL(hpet->id & HPET_COUNTER_SIZE));
+    MakeString(cb, "%s: %s", _(MSG_LEGACY_REPLACEMENT), FLAG_VAL(hpet->id & HPET_LEGACY_REPLACEMENT));
+    MakeString(cb, "%s: %u", _(MSG_PCI_VENDOR),
+	       (hpet->id & HPET_PCI_VENDOR_MASK) >> HPET_PCI_VENDOR_SHIFT);
+    parse_addr(_(MSG_BASE_ADDRESS), &hpet->addr, cb);
+    MakeString(cb, "%s: %u", _(MSG_NUMBER), hpet->number);
+    MakeString(cb, "%s: %u", _(MSG_MIN_TICK), hpet->min_tick);
+    parse_enum(_(MSG_PAGE_PROTECT), hpet->page_protect & HPET_PAGE_PROTECT_MASK,
+	       hpet_protect, cb);
+    MakeString(cb, "%s: 0x%02X", _(MSG_OEM_ATTRS), hpet->page_protect >> HPET_OEM_ATTR_SHIFT);
+}
+
 static const struct Parser Tables[] =
 {
     {ACPI_MAKE_ID('R','S','D','T'), "System"    , rsdt_parser},
     {ACPI_MAKE_ID('X','S','D','T'), "System"    , rsdt_parser},
     {ACPI_MAKE_ID('F','A','C','P'), "Hardware"  , fadt_parser},
     {ACPI_MAKE_ID('A','P','I','C'), "Interrupts", madt_parser},
+    {ACPI_MAKE_ID('H','P','E','T'), "Timer"	, hpet_parser},
     {0, NULL, NULL}
 };
 
