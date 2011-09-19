@@ -259,6 +259,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
 		CopyMem(BADDR(oldcli->cli_Prompt), BADDR(cli->cli_Prompt), (newlen<oldlen?newlen:oldlen) + 1);
 	    }
+
+	    process->pr_CLI = MKBADDR(cli);
+	    addprocesstoroot(process, DOSBase);
 	}
 
 
@@ -410,8 +413,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     D(bug("[createnewproc] pr_FileSystemTask = %p\n", process->pr_FileSystemTask));
 
 
-    process->pr_CLI = MKBADDR(cli);
-
     /* Set the name of this program */
     internal_SetProgramName(cli, name, DOSBase);
     D(bug("[createnewproc] Calling internal_SetProgramName() with name = %s\n", name));
@@ -483,8 +484,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         D(bug("[createnewproc] Injecting %d bytes of arguments @%p into FileHandle @%p\n", argsize, process->pr_Arguments, BADDR(process->pr_CIS)));
         vbuf_inject(process->pr_CIS, process->pr_Arguments, argsize, DOSBase);
     }
-
-    addprocesstoroot(process, DOSBase);
 
     /* Do any last-minute SegList fixups */
     BCPL_Fixup(process);
@@ -817,11 +816,10 @@ static void DosEntry(void)
 
     P(kprintf("Freeing cli structure\n"));
 
-    removefromrootnode(me, DOSBase);
-
     if (me->pr_Flags & PRF_FREECLI)
     {
 	FreeDosObject(DOS_CLI, BADDR(me->pr_CLI));
+	removefromrootnode(me, DOSBase);
 	me->pr_CLI = BNULL;
     }
 
