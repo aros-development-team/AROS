@@ -63,8 +63,7 @@ static long internalBootCliHandler(void);
 
 /*  FUNCTION
 
-    Set up the first shell process. The DOS Packet can be NULL,
-    in which case defaults are used.
+    Set up the first shell process.
 
     Currently, no DOS Packet arguments are used by this
     routine.

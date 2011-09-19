@@ -57,13 +57,19 @@ AROS_SH0(EndCLI, 41.3)
 
     if (cli)
     {
-        struct FileHandle *fhin = BADDR(cli->cli_CurrentInput);
-        struct FileHandle *fhout = BADDR(cli->cli_StandardOutput);
+        struct FileHandle *fhin = BADDR(cli->cli_StandardInput);
 
-	cli->cli_Background = TRUE;
+        if (cli->cli_CurrentInput && cli->cli_CurrentInput != cli->cli_StandardInput) {
+            Close(cli->cli_CurrentInput);
+            cli->cli_CurrentInput = cli->cli_StandardInput;
+        }
 
-        fhin->fh_Pos  = fhin->fh_End + 1; /* Simulate an EOF */
-        fhout->fh_Pos = 0; /* don't flush cli's standard output on close*/
+	cli->cli_Background = DOSTRUE;
+
+        fhin->fh_End = 0; /* Simulate an EOF */
+
+        if (cli->cli_Interactive)
+            Printf("Task %ld ending\n", ((struct Process *)FindTask(NULL))->pr_TaskNum);
     }
 
     return RETURN_OK;

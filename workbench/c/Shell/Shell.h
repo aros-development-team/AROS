@@ -59,6 +59,8 @@ typedef struct _ShellState
     TEXT	bra, ket, dollar, dot;
 
     struct _ShellState *stack;
+
+    ULONG	flags;		/* DOS/CliInit*() flags cache */
 } ShellState;
 
 /* Function: convertLine
@@ -99,7 +101,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase);
  *
  * Note:     This routine reads a full command line.
  *
- * Output:   LONG --  DOS error code
+ * Output:   SIPTR --  DOS error code
  */
 LONG readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APTR DOSBase);
 
@@ -133,11 +135,10 @@ void releaseFiles(ShellState *ss);
  *           interaction.
  *
  * Input:    ShellState	    *is           --  this state
- *           BOOL	     isBootShell  --  true if boot shell
  *
  * Output:   LONG  --  error code
  */
-LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase);
+LONG interact(ShellState *ss, APTR DOSBase);
 
 
 /* Function: Redirection_release
@@ -201,7 +202,5 @@ void cliEcho(ShellState *ss, CONST_STRPTR args, APTR DOSBase);
 LONG cliLen(CONST_STRPTR s);
 BOOL cliNan(CONST_STRPTR s);
 void cliVarNum(CONST_STRPTR name, LONG value, APTR DOSBase);
-
-BOOL isInteractive(struct CommandLineInterface *cli);
 
 #endif

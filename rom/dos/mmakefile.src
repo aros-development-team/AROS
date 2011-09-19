@@ -10,7 +10,8 @@ FILES	  := bstr_helper errorlist \
              boot isbootable \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
-	     packethelper namefrom internalloadseg_support
+	     packethelper namefrom internalloadseg_support \
+	     shell_helper
 
 LOADSEG_FILES := internalloadseg \
 		 $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))

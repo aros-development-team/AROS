@@ -13,11 +13,9 @@
 
     SYNOPSIS
 
-	COMMAND/K/F,FROM
-
     LOCATION
 
-	C:
+	L:UserShell-Seg
 
     FUNCTION
 
@@ -25,14 +23,11 @@
 
     INPUTS
 
-	COMMAND  --  command line to execute
-
-	FROM     --  script to invoke before user interaction
-
-
     RESULT
 
     HISTORY
+
+    Aug 2011 - Use AOS startup packet mechanisms
 
     Sep 2010 - rewrite of the convertLine function.
 
@@ -44,15 +39,15 @@
 
     EXAMPLE
 
-	Shell FROM S:Startup-Sequence
+	Resident Shell L:UserShell-Seg SYSTEM PURE ADD
 
-	Starts a shell and executes the startup script.
+	Configures the default User Shell to this shell
 
     BUGS
 
     SEE ALSO
 
-    Execute, NewShell
+    Execute, NewShell, Run
 
     INTERNALS
 
@@ -66,8 +61,10 @@
    Break support (and +(0L) before execution) -- CreateNewProc()?
  */
 
+#define DEBUG 0
 #include <dos/dos.h>
 #include <dos/stdio.h>
+#include <dos/cliinit.h>
 #include <exec/libraries.h>
 #include <exec/lists.h>
 #include <libraries/expansionbase.h>
@@ -77,56 +74,42 @@
 
 #include <ctype.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include "Shell.h"
 
-static void PrintBanner(struct DosLibrary *DOSBase)
+#define IS_SYSTEM ((ss->flags & (FNF_VALIDFLAGS | FNF_SYSTEM)) == (FNF_VALIDFLAGS | FNF_SYSTEM))
+#define IS_SCRIPT (cli->cli_CurrentInput != cli->cli_StandardInput)
+
+BOOL setInteractive(struct CommandLineInterface *cli, ShellState *ss)
 {
-    PutStr
-    (
-	"AROS - The AROS Research Operating System\n"
-	"Copyright © 1995-2011, The AROS Development Team. "
-	"All rights reserved.\n"
-	"AROS is licensed under the terms of the "
-	"AROS Public License (APL),\n"
-	"a copy of which you should have received "
-	"with this distribution.\n"
-	"Visit http://www.aros.org/ for more information.\n"
-    );
+    D(bug("Shell %d: Flags = 0x%x\n", ss->cliNumber, ss->flags));
+    D(bug("Shell %d: cli_Interactive = %d\n", ss->cliNumber, cli->cli_Interactive));
+    D(bug("Shell %d: cli_Background = %d\n", ss->cliNumber, cli->cli_Background));
+    D(bug("Shell %d: cli_CurrentInput = %p\n", ss->cliNumber, cli->cli_CurrentInput));
+    D(bug("Shell %d: cli_StandardInput = %p\n", ss->cliNumber, cli->cli_StandardInput));
+    if (!cli->cli_Background && IS_SCRIPT)
+    	cli->cli_Background = DOSTRUE;
+
+    cli->cli_Interactive = (cli->cli_Background || IS_SCRIPT || IS_SYSTEM) ? DOSFALSE : DOSTRUE;
+    D(bug("Shell %d: cli_Interactive => %d\n", ss->cliNumber, cli->cli_Interactive));
+    D(bug("Shell %d: cli_Background => %d\n", ss->cliNumber, cli->cli_Background));
+
+    return cli->cli_Interactive;
 }
 
-BOOL isInteractive(struct CommandLineInterface *cli)
+__startup AROS_CLI(ShellStart)
 {
-    return !cli->cli_Background && cli->cli_CurrentInput == cli->cli_StandardInput;
-}
-
-AROS_ENTRY(__startup ULONG, ShellStart,
-	   AROS_UFHA(char *, argstr, A0),
-	   AROS_UFHA(ULONG, argsize, D0),
-	   struct ExecBase *, SysBase)
-{
-    AROS_USERFUNC_INIT
-
-    ShellState *ss;
     LONG error;
-    BOOL isBootShell;
-    BOOL isBannerDone;
+    ShellState *ss;
     APTR DOSBase;
     struct Process *me = (struct Process *)FindTask(NULL);
-    BPTR *segArray, mySeg;
-
-    D(bug("[Shell] executing\n"));
-
-    segArray = BADDR(me->pr_SegList);
-    mySeg = segArray[3];
-    segArray[4] = segArray[3];
-    segArray[3] = BNULL;
-    segArray[0] = (BPTR)3;
 
     DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+    if (!DOSBase)
+        return RETURN_FAIL;
 
+    D(bug("[Shell] executing\n"));
     ss = AllocMem(sizeof(ShellState), MEMF_CLEAR);
     if (!ss) {
     	SetIoErr(ERROR_NO_FREE_STORE);
@@ -134,87 +117,64 @@ AROS_ENTRY(__startup ULONG, ShellStart,
     	return RETURN_FAIL;
     }
 
+    /* Cache the CLI flags, passed in by the AROS_CLI() macro */
+    ss->flags = AROS_CLI_Flags;
+
+    /* Select the input and output streams.
+     * We don't use CurrentInput here, as it may
+     * contain our script input.
+     *
+     * Note that if CurrentInput contained, for example:
+     * ECHO ?
+     * DIR
+     *
+     * The behaviour would be that ECHO would put its
+     * ReadArgs query onto StandardOutput, and expects
+     * its input on StandardInput, and then execute DIR.
+     *
+     * This is AOS compatible behavior. It would be
+     * incorrect to assume that ECHO would print "DIR" on
+     * StandardOutput
+     */
+    SelectInput(Cli()->cli_StandardInput);
+    SelectOutput(Cli()->cli_StandardOutput);
+
     setPath(BNULL, DOSBase);
 
     ss->cliNumber = me->pr_TaskNum;
     cliVarNum("process", ss->cliNumber, DOSBase);
 
-    isBootShell = (strcmp(me->pr_Task.tc_Node.ln_Name, "Boot Shell") == 0) && ss->cliNumber == 1;
-    isBannerDone = FALSE;
-
     initDefaultInterpreterState(ss);
 
-    if (isBootShell) {
-    	struct ExpansionBase *ExpansionBase = (struct ExpansionBase*)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
-        SetPrompt("%N> ");
-	if (ExpansionBase && !(ExpansionBase->Flags & EBF_SILENTSTART)) {
-	    PrintBanner(DOSBase);
-	    isBannerDone = TRUE;
-	}
-	CloseLibrary((struct Library *)ExpansionBase);
-    }
+    error = interact(ss, DOSBase);
 
-    /* Trim off any trailling \ns
-     * We should be using ReadArgs here.
-     * Sigh.
-     */
-    while (argsize > 0 && argstr[argsize-1] == '\n')
-        argsize--;
-
-    if (argsize > 0)
-    {
-	Buffer in = { argstr, argsize, 0, 0 };
-	Buffer out = {0};
-
-	if ((error = Redirection_init(ss)) == 0)
-	{
-	    D(bug("[Shell] running command: %s\n", in.buf));
-	    error = checkLine(ss, &in, &out, TRUE, DOSBase);
-	    Redirection_release(ss, DOSBase);
-
-	    bufferFree(&in);
-	    bufferFree(&out);
-	}
-    } else
-	error = interact(ss, isBootShell, isBannerDone, DOSBase);
-
-    D(bug("[Shell] exiting, error = %d\n", error));
-    
-    CloseLibrary(DOSBase);
+    D(bug("Shell %d: exiting, error = %ld\n", ss->cliNumber, error));
 
     if (ss->arg_rd)
         FreeDosObject(DOS_RDARGS, ss->arg_rd);
 
     FreeMem(ss, sizeof(ShellState));
 
-    segArray[3] = mySeg;
+    /* Make sure Input() and Output() don't
+     * point to any dangling files.
+     */
+    SelectInput(BNULL);
+    SelectOutput(BNULL);
+
+    CloseLibrary(DOSBase);
 
     return error ? RETURN_FAIL : RETURN_OK;
-
-    AROS_USERFUNC_EXIT
 }
 
 /* First we execute the script, then we interact with the user */
-LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase)
+LONG interact(ShellState *ss, APTR DOSBase)
 {
     struct CommandLineInterface *cli = Cli();
     Buffer in = {0}, out = {0};
     BOOL moreLeft = FALSE;
     LONG error = 0;
 
-    if (!cli->cli_Background)
-    {
-	SetVBuf(Output(), NULL, BUF_FULL, -1);
-	if (isBootShell)
-	{
-	    if (!isBannerDone)
-	        PrintBanner(DOSBase);
-	}
-	else
-	    Printf("New Shell process %ld\n", ss->cliNumber);
-
-	SetVBuf(Output(), NULL, BUF_LINE, -1);
-    }
+    setInteractive(cli, ss);
 
     /* pre-allocate input buffer */
     if ((error = bufferAppend("?", 1, &in))) /* FIXME drop when readLine ok */
@@ -228,12 +188,23 @@ LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase)
 	    bufferReset(&in); /* reuse allocated buffers */
 	    bufferReset(&out);
 
+	    D(bug("Shell %d: Reading in a line of input...\n", ss->cliNumber));
 	    error = readLine(cli, &in, &moreLeft, DOSBase);
+	    D(bug("Shell %d: moreLeft=%ld, error=%ld, Line is: %ld bytes (%s)\n", ss->cliNumber, moreLeft, error, in.len, in.buf));
 
 	    if (error == 0 && in.len > 0)
 		error = checkLine(ss, &in, &out, TRUE, DOSBase);
 
-	    if (!isInteractive(cli)) /* stop script ? */
+            /* The command may have modified cli_Background.
+             * C:Execute does that.
+             */
+	    setInteractive(cli, ss);
+
+	    /* As per AmigaMail Vol 2, "II-65: Writing a UserShell" */
+	    if (IS_SYSTEM && !IS_SCRIPT)
+	    	moreLeft = FALSE;
+
+	    if (!cli->cli_Interactive)
 	    {
 		if (error || (cli->cli_ReturnCode >= cli->cli_FailLevel))
 		    moreLeft = FALSE;
@@ -253,32 +224,43 @@ LONG interact(ShellState *ss, BOOL isBootShell, BOOL isBannerDone, APTR DOSBase)
 
 	popInterpreterState(ss);
 
-	if (isInteractive(cli))
+	if (cli->cli_Interactive)
 	{
 	    Printf("Process %ld ending\n", ss->cliNumber);
 	    Flush(Output());
 	    break;
 	}
 
-	if (AROS_BSTR_strlen(cli->cli_CommandFile))
-	{
-	    DeleteFile(AROS_BSTR_ADDR(cli->cli_CommandFile));
-	    AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);
+	if (IS_SCRIPT) {
+	    D(bug("Shell %d: Closing CLI input 0x%08lx\n", ss->cliNumber, cli->cli_CurrentInput));
+	    Close(cli->cli_CurrentInput);
+
+	    /* Now that we've closed CurrentInput, we can delete
+	     * the CommandFile.
+	     */
+	    if (AROS_BSTR_strlen(cli->cli_CommandFile))
+	    {
+		DeleteFile(AROS_BSTR_ADDR(cli->cli_CommandFile));
+		AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);
+	    }
+
+	    cli->cli_CurrentInput = cli->cli_StandardInput;
+	    cli->cli_Background = IsInteractive(cli->cli_CurrentInput) ? DOSFALSE : DOSTRUE;
+
+	    setInteractive(cli, ss);
 	}
 
-	if (cli->cli_Background)
-	    break;
 
-	D(bug("[Shell] Closing CLI input 0x%p\n", cli->cli_CurrentInput));
-	Close(cli->cli_CurrentInput);
+	/* As per AmigaMail Vol 2, "II-65: Writing a UserShell",
+	 * if we were running a SYSTEM command, we're done now.
+	 */
+	moreLeft = cli->cli_Interactive;
 
-	cli->cli_CurrentInput = cli->cli_StandardInput;
-	cli->cli_Interactive = TRUE;
-	moreLeft = TRUE;
-
-	D(bug("[Shell] Flushing output 0x%p, error 0x%p\n", Output(), ErrorOutput()));
-	Flush(Output());
-	Flush(ErrorOutput());
+        if (cli->cli_Interactive) {
+            D(bug("Shell %d: Flushing output 0x%lx, error 0x%lx\n", ss->cliNumber, Output(), ErrorOutput()));
+            Flush(Output());
+            Flush(ErrorOutput());
+        }
     } while (moreLeft);
 
     bufferFree(&in);
@@ -296,6 +278,7 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
 
     if ((result = convertLine(ss, in, out, &haveCommand, DOSBase)) == 0)
     {
+        D(bug("convertLine: haveCommand = %ld, out->buf=%s\n", haveCommand, out->buf));
 	/* Only a comment or dot command ? */
 	if (haveCommand == FALSE)
 	    goto exit;
@@ -306,11 +289,16 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
 	/* OK, we've got a command. Let's execute it! */
 	result = executeLine(ss, out->buf, DOSBase);
 
+	/* If the command changed the cli's definition
+	 * of cli_StandardInput/StandardOutput, let's
+	 * reflect that.
+	 */
 	SelectInput(cli->cli_StandardInput);
 	SelectOutput(cli->cli_StandardOutput);
     }
     else
     {
+        D(bug("convertLine: error = %ld\n", result));
 	PrintFault(result, haveCommand ? ss->command + 2 : NULL);
 	cli->cli_ReturnCode = RETURN_ERROR;
 	cli->cli_Result2 = result;
@@ -324,9 +312,7 @@ exit:
 
     if (cli->cli_Interactive)
     {
-    	struct Process *me = (struct Process *)FindTask(NULL);
-
-	Flush(me->pr_CES);
+	Flush(ErrorOutput());
 	Flush(Output());
     }
 
@@ -567,7 +553,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 	    *dst = *src;
 	*dst = '\0';
 
-	D(bug("[Shell] command loaded: len=%d, args=%s\n", len, cmd));
+	D(bug("[Shell] command loaded: len=%ld, args=%s\n", len, cmd));
 	SetIoErr(0); /* Clear error before we execute this command */
 	SetSignal(0, SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
 
@@ -576,6 +562,9 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 
 	mem_before = FindVar("__debug_mem", LV_VAR) ? AvailMem(MEMF_ANY) : 0;
 	cli->cli_ReturnCode = RunCommand(seglist, defaultStack, cmd, len);
+
+	/* Update the state of the cli_Interactive field */
+	setInteractive(cli, ss);
 
 	/*
 	    Check if running the command has changed signal bits of the Shell
@@ -609,7 +598,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 	    Printf("Memory leak of %lu bytes\n", mem_before - mem_after);
 	}
 
-	D(bug("[Shell] returned %d: %s\n", cli->cli_ReturnCode, command));
+	D(bug("[Shell] returned %ld: %s\n", cli->cli_ReturnCode, command));
 	pr->pr_Task.tc_Node.ln_Name = oldtaskname;
 	unloadCommand(ss, module, homeDirChanged, residentCommand, DOSBase);
 

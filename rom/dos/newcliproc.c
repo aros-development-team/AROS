@@ -6,81 +6,281 @@
     Lang: english
 */
 
+#include <aros/debug.h>
+
 #include <dos/dos.h>
+#include <dos/cliinit.h>
+#include <dos/stdio.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 
+#include "dos_intern.h"
 #include "dos_newcliproc.h"
 #include "fs_driver.h"
 
-AROS_UFH2(LONG, NewCliProc,
-AROS_UFHA(char *,argstr,A0),
-AROS_UFHA(ULONG,argsize,D0))
+BPTR internal_CopyPath(BPTR boldpath, APTR DOSBase)
 {
-    AROS_USERFUNC_INIT
-    
-    struct Process *me;
-    struct CliStartupMessage *csm;
-    LONG rc = RETURN_FAIL;
-    struct DosLibrary *DOSBase;
+    BPTR *nextpath, path, *newpath, *oldpath;
 
-    BPTR CurrentInput;
-    BOOL Background, Asynch;
+    oldpath = BADDR(boldpath);
 
-    me  = (struct Process *)FindTask(NULL);
-    WaitPort(&me->pr_MsgPort);
-    csm = (struct CliStartupMessage *)GetMsg(&me->pr_MsgPort);
+    for (newpath = &path; oldpath != NULL; newpath = nextpath, oldpath = BADDR(oldpath[0])) {
+        /* NOTE: This memory allocation *must* match that which is
+         *       done in C:Path!!!!
+         */
+        nextpath = AllocVec(2*sizeof(BPTR), MEMF_CLEAR);
+        if (nextpath == NULL)
+            break;
 
-    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
-
-    CurrentInput = csm->csm_CurrentInput;
-    Background   = csm->csm_Background;
-    Asynch       = csm->csm_Asynch;
-
-    csm->csm_CliNumber = me->pr_TaskNum;
-
-    if (Asynch)
-    {
-        csm->csm_ReturnCode = DOSBase ? RETURN_OK : RETURN_FAIL;
-	ReplyMsg((struct Message *)csm);
+        *newpath = MKBADDR(nextpath);
+        nextpath[1] = DupLock(oldpath[1]);
+        if (nextpath[1] == BNULL)
+            break;
     }
 
-    if (DOSBase)
-    {
-	struct CommandLineInterface *cli = Cli();
-	BPTR *ShellSeg = BADDR(me->pr_SegList);
+    *newpath = BNULL;
 
-	cli->cli_StandardInput  = Input();
-        cli->cli_StandardOutput =
-    	cli->cli_CurrentOutput  = Output();
-	cli->cli_StandardError  = me->pr_CES;
-    	cli->cli_CurrentInput   = CurrentInput;
-    	cli->cli_Interactive    = cli->cli_CurrentInput == cli->cli_StandardInput ? DOSTRUE : DOSFALSE;
-    	cli->cli_Background     = Background;
+    return path;
+}
 
-	if (!Background)
-	{
-	    BPTR fhin  = Input();
-	    BPTR fhout = Output();
 
-	    if (fhin != BNULL)
-            	fs_ChangeSignal(fhin, me, DOSBase);
-            if (fhout != BNULL)
-            	fs_ChangeSignal(fhout, me, DOSBase);
+ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
+{
+    ULONG flags = 0;
+    LONG Type;
+    struct CommandLineInterface *oldcli, *cli;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    BPTR cis, cos, cas, olddir, newdir;
+    BOOL inter_in = FALSE, inter_out = FALSE;
+
+    D(bug("CliInit%s packet @%p: Process %p\n", (dp->dp_Type > 1) ? "Custom" : (dp->dp_Res1 ? "Newcli" : "Run"), dp, me));
+    D(bug("\tdp_Type: %p \n", (APTR)(IPTR)dp->dp_Type));
+    D(bug("\tdp_Res1: %p (is NewCli/NewShell?)\n", (APTR)dp->dp_Res1));
+    D(bug("\tdp_Res2: %p (is Invalid?)\n", (APTR)dp->dp_Res2));
+    D(bug("\tdp_Arg1: %p (%s)\n", (APTR)dp->dp_Arg1, dp->dp_Res1 ? "CurrentDir" : "BPTR to old CLI"));
+    D(bug("\tdp_Arg2: %p (StandardInput)\n", (APTR)dp->dp_Arg2));
+    D(bug("\tdp_Arg3: %p (StandardOutput)\n", (APTR)dp->dp_Arg3));
+    D(bug("\tdp_Arg4: %p (CurrentInput)\n", (APTR)dp->dp_Arg4));
+    if (dp->dp_Res1 == DOSFALSE) {
+        D(bug("\tdp_Arg5: %p (CurrentDir)\n", (APTR)dp->dp_Arg5));
+        D(bug("\tdp_Arg6: %p (Flags)\n", (APTR)dp->dp_Arg6));
+    }
+
+    /* Create a new CLI if needed
+     * NOTE m68k: This must be done *before* calling the BCPL
+     *            function pointed to by dp->dp_Type
+     */
+    cli = Cli();
+    if (cli == NULL) {
+        D(bug("%s: Creating a new pr_CLI\n", __func__));
+        cli = AllocDosObject(DOS_CLI, NULL);
+        if (cli == NULL) {
+            if (dp) {
+                ReplyPkt(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                SetIoErr((SIPTR)me);
+            } else {
+                SetIoErr(ERROR_NO_FREE_STORE);
+            }
+            return 0;
         }
-
-	rc = RunCommand(ShellSeg[3], cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
-
-        CloseLibrary((struct Library *)DOSBase);
+        me->pr_CLI = MKBADDR(cli);
+        me->pr_Flags |= PRF_FREECLI;
+        addprocesstoroot(me, DOSBase);
     }
 
-    if (!Asynch)
-    {
-        csm->csm_ReturnCode = Cli()->cli_ReturnCode;
-	ReplyMsg((struct Message *)csm);
+    Type = dp->dp_Type;
+#ifdef __mc68000
+    /* If dp_Type > 1, assume it's the old BCPL style of
+     * packet, where dp->dp_Type pointed to a BCPL callback to run
+     */
+    if (Type > 1) {
+        extern void BCPL_thunk(void);
+        LONG ret;
+        APTR old_RetAddr = me->pr_ReturnAddr;
+        D(bug("%s: Calling custom BCPL CliInit routine @%p\n",__func__, Type));
+        ret = AROS_UFC8(LONG, BCPL_thunk,
+                AROS_UFCA(BPTR,   MKBADDR(dp), D1),
+                AROS_UFCA(ULONG,  0,           D2),
+                AROS_UFCA(ULONG,  0,           D3),
+                AROS_UFCA(ULONG,  0,           D4),
+                AROS_UFCA(APTR, me->pr_Task.tc_SPLower, A1),
+                AROS_UFCA(APTR, me->pr_GlobVec, A2),
+                AROS_UFCA(APTR, &me->pr_ReturnAddr, A3),
+                AROS_UFCA(LONG_FUNC, (IPTR)Type, A4));
+        D(bug("%s: Called custom BCPL CliInit routine @%p => 0x%08x\n",__func__, Type, ret));
+        if (ret > 0) {
+            D(bug("%s: Calling custom BCPL reply routine @%p\n",__func__, Type));
+            ret = AROS_UFC8(ULONG, BCPL_thunk,
+                    AROS_UFCA(BPTR,   IoErr(), D1),
+                    AROS_UFCA(ULONG,  0,       D2),
+                    AROS_UFCA(ULONG,  0,       D3),
+                    AROS_UFCA(ULONG,  0,       D4),
+                    AROS_UFCA(APTR, me->pr_Task.tc_SPLower, A1),
+                    AROS_UFCA(APTR, me->pr_GlobVec, A2),
+                    AROS_UFCA(APTR, &me->pr_ReturnAddr, A3),
+                    AROS_UFCA(LONG_FUNC, (IPTR)ret, A4));
+            ret = 0;
+        }
+        me->pr_ReturnAddr = old_RetAddr;
+        D(bug("%s: Called custom BCPL reply routine @%p => 0x%08x\n",__func__, Type, ret));
+        return ret;
+    }
+#endif
+
+    if (dp->dp_Res1) {
+        /* C:NewCLI =  Res1 = 1, dp_Arg1 = CurrentDir, dp_Arg5 = unused    , dp_Arg6 = unused
+         */
+
+        oldcli = BNULL;
+
+        /* dp_Arg1 a Lock() on the desired directory
+         */
+        newdir = (BPTR)dp->dp_Arg1;
+    } else {
+        /* C:Run    =  Res1 = 0,  dp_Arg1 = OldCLI,     dp_Arg5 = CurrentDir, dp_Arg6 = 0 */
+
+        /* dp_Arg1 a BPTR to the old CommandLineInterface
+         */
+        oldcli = BADDR(dp->dp_Arg1);
+
+        /* dp_Arg5 a Lock() on the desired directory
+         */
+        newdir = (BPTR)dp->dp_Arg5;
     }
 
-    return rc;
+    olddir = CurrentDir(newdir);
+    if (olddir && (me->pr_Flags & PRF_FREECURRDIR)) {
+        UnLock(olddir);
+    }
 
-    AROS_USERFUNC_EXIT
+    /* dp_Arg2 is the StandardInput  */
+    cis = (BPTR)dp->dp_Arg2;
+
+    /* dp_Arg3 is the COS override */
+    cos = (BPTR)dp->dp_Arg3;
+
+    /* dp_Arg4 contains the CurrentInput */
+    cas = (BPTR)dp->dp_Arg4;
+
+    D(bug("%s: Setting cli_StandardInput from dp_Arg2\n", __func__));
+    if (dp->dp_Res1 == 0 && dp->dp_Arg6) {
+        flags |= FNF_USERINPUT;
+    }
+
+    if (cis == BNULL)
+        cis = cas;
+
+    if (cis == BNULL) {
+        SetIoErr((SIPTR)me);
+        goto exit;
+    }
+
+    if (IsInteractive(cis)) {
+        D(bug("%s: Setting ConsoleTask based on cli_StandardInput\n", __func__));
+        SetConsoleTask(((struct FileHandle *)BADDR(cis))->fh_Type);
+    }
+    D(bug("%s: pr_ConsoleTask = %p\n", __func__, GetConsoleTask()));
+
+    if (!cos) {
+        D(bug("%s: No StandardOutput provided. Synthesize one.\n", __func__));
+        if (GetConsoleTask()) {
+            D(bug("%s: StandardOutput based on current console\n", __func__));
+            cos = Open("*", MODE_NEWFILE);
+        } else {
+            D(bug("%s: StandardOutput is NIL:\n", __func__));
+            cos = Open("NIL:", MODE_NEWFILE);
+        }
+        if (cos == BNULL) {
+            SetIoErr((SIPTR)me);
+            goto exit;
+        }
+        flags |= FNF_RUNOUTPUT;
+    }
+
+    cli->cli_CurrentInput   = cas ? cas : cis;
+    cli->cli_StandardInput  = cis;
+
+    cli->cli_StandardOutput =
+    cli->cli_CurrentOutput  =
+    cli->cli_StandardError  = cos;
+    
+    /* AROS specific */
+    if (me->pr_CES)
+        cli->cli_StandardError = me->pr_CES;
+
+    if (IsInteractive(cli->cli_StandardInput)) {
+        D(bug("%s: cli_StandardInput is interactive\n", __func__));
+        fs_ChangeSignal(cli->cli_StandardInput, me, DOSBase);
+        SetVBuf(cli->cli_StandardInput, NULL, BUF_LINE, -1);
+        inter_in = TRUE;
+    }
+    if (IsInteractive(cli->cli_StandardOutput)) {
+        D(bug("%s: cli_StandardOutput is interactive\n", __func__));
+        fs_ChangeSignal(cli->cli_StandardOutput, me, DOSBase);
+        SetVBuf(cli->cli_StandardInput, NULL, BUF_LINE, -1);
+        inter_out = TRUE;
+    }
+
+    if (oldcli) {
+        D(bug("%s: Using old CLI %p\n", __func__, oldcli));
+        SetPrompt(AROS_BSTR_ADDR(oldcli->cli_Prompt));
+        SetCurrentDirName(AROS_BSTR_ADDR(oldcli->cli_SetName));
+        cli->cli_DefaultStack = oldcli->cli_DefaultStack;
+        cli->cli_CommandDir = internal_CopyPath(cli->cli_CommandDir, DOSBase);
+    } else {
+        SetPrompt("%N> ");
+        SetCurrentDirName("SYS:");
+        cli->cli_DefaultStack = AROS_STACKSIZE / CLI_DEFAULTSTACK_UNIT;
+        cli->cli_CommandDir = BNULL;
+    }
+
+    AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);
+    AROS_BSTR_setstrlen(cli->cli_CommandName, 0);
+    cli->cli_FailLevel = 10;
+    cli->cli_Module = BNULL;
+
+    cli->cli_Background = (inter_out && inter_in) ? DOSFALSE : DOSTRUE;
+
+    D(bug("%s: cli_CurrentInput   = %p\n", __func__, cli->cli_CurrentInput));
+    D(bug("%s: cli_StandardInput  = %p\n", __func__, cli->cli_StandardInput));
+    D(bug("%s: cli_StandardOutput = %p\n", __func__, cli->cli_StandardOutput));
+
+    D(bug("%s: cli_Interactive = %p\n", __func__, cli->cli_Interactive));
+    D(bug("%s: cli_Background  = %p\n", __func__, cli->cli_Background));
+
+    SetIoErr(0);
+
+    D(bug("+ flags:%p\n", flags));
+    if (dp->dp_Res1 == 0 || !(inter_in & inter_out))
+        flags |= FNF_VALIDFLAGS;
+
+    D(bug("- flags:%p\n", flags));
+    switch (Type) {
+    case CLI_ASYSTEM: flags |= FNF_ASYNCSYSTEM;
+                      /* Fallthrough */
+    case CLI_SYSTEM:  flags |= FNF_VALIDFLAGS | FNF_SYSTEM;
+                      break;
+    case CLI_RUN:     flags = 0;
+                      { IPTR args[] = { me->pr_TaskNum }; 
+                        VFPrintf(cli->cli_StandardOutput, "[CLI %ld]\n", args);
+                      }
+                      break;
+    case CLI_BOOT:    flags = 0;
+                      break;
+    case CLI_NEWCLI:  flags = 0;
+                      { IPTR args[] = { me->pr_TaskNum }; 
+                        VFPrintf(cli->cli_StandardOutput, "New Shell process %ld\n", args);
+                      }
+                      break;
+    default:          break;
+    }
+    D(bug("= flags:%p\n", flags));
+
+exit:
+    if (!(flags & FNF_VALIDFLAGS))
+        PutMsg(dp->dp_Port, dp->dp_Link);
+
+    D(bug("%s: Flags = 0x%08x\n", __func__, flags));
+
+    return flags;
 }

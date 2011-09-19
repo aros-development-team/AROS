@@ -127,7 +127,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	{
 	    LONG c;
 
-	    if (FPuts(tmpfile, ".pushis\n") != -1)
+	    //if (FPuts(tmpfile, ".pushis\n") != -1)
 		while((c = FGetC(from)) != -1 && FPutC(tmpfile, c) != -1);
 
 	    c = IoErr();
@@ -147,7 +147,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	    c = '\n';
 	    FPutC(tmpfile, c);
 
-	    FPuts(tmpfile, ".popis\n");
+	    //FPuts(tmpfile, ".popis\n");
 
 	    while((c = FGetC(cli->cli_CurrentInput)) != -1 && FPutC(tmpfile, c) != -1);
 

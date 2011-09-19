@@ -6,6 +6,7 @@
     Lang: English
 */
 #include "dos_intern.h"
+#include "dos_newcliproc.h"
 
 /*****************************************************************************
 
@@ -33,8 +34,8 @@
 
     NOTES
 
-    This function is obsolete for the same reasons as CliInitNewCli()
-    and should not be used.
+    Called to initialize CLI private data structures, when
+    the User Shell is not interactive.
 
     EXAMPLE
 
@@ -42,7 +43,7 @@
 
     SEE ALSO
 
-    CliInitNewCli()
+    CliInitNewcli()
 
     INTERNALS
 
@@ -50,7 +51,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return 0;
+    return internal_CliInitAny(dp, DOSBase);
 
     AROS_LIBFUNC_EXIT
 } /* CliInitRun */

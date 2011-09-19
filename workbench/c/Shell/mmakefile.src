@@ -22,8 +22,6 @@ FILES := \
 	redirection \
 	readLine
 
-EXE := Shell
-
 USER_CFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
 	       -D__DOS_NOLIBBASE__
 
@@ -33,8 +31,8 @@ USER_CFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
 
 #MM  workbench-c-shell : includes linklibs workbench-libs-dos-catalogs
 
-%build_prog mmake=workbench-c-shell	progname=$(EXE) \
-    files=$(FILES) targetdir=$(AROS_C)	\
+%build_prog mmake=workbench-c-shell	progname=UserShell-Seg \
+    files=$(FILES) targetdir=$(AROS_FS)	\
     usestartup="no" uselibs="rom"
 
 USER_CFLAGS += -DUSE_EMBEDDED_COMMANDS

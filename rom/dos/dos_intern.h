@@ -311,4 +311,9 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
     	} \
     } while (0);
 
+/* Shell utilities */
+BPTR findseg_cli(BOOL isBoot, struct DosLibrary *DOSBase);
+
+BPTR findseg_shell(BOOL isBoot, struct DosLibrary *DOSBase);
+
 #endif /* DOS_INTERN_H */
