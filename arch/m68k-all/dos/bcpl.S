@@ -1681,48 +1681,75 @@ BCPL settime        /* 200, void, @DateStamp */
     BRTS
 
     /*
-     * If D1 is NULL, returns an APTR to the CliInit routine,
-     * and the DosPacket to pass to it in IoErr()
+     * On AOS, this routine called the internal
+     * CliInit(), which handled setting up the
+     * core SYS: lock, assigns, and paths.
      *
-     * Otherwise, it directly call CliInitRun() or
-     * CliInitNewcli() based on dp_Res1
+     * The (normally NULL) DOS Packet is always ignored.
+     *
+     * Although (for various reasons) this has been done
+     * before this routine has been called, we still need
+     * to call CliInit* to process the inbound AROS packet.
+     *
+     * If the passed in DOS Packet is NULL, then we have
+     * nothing to do, since that's not valid under AROS.
+     *
+     * If the DOS Packet is *not* NULL, then pass it
+     * to the appropriate CliInit* routine.
+     *
      */
-BCPL findCliInit         /* 214, APTR, @DosPacket */
+BCPL CliInit         /* 214, APTR, @DosPacket */
     tst.l       %d1
-    beq.s       .L_findCLIInit_getpkt
+    beq.s       .L_CliInit_exit
 
     lsl.l       #2,%d1
-    move.l      %a0@(0xc,%d1),%d2       /* dp_Res1 */
+    move.l      %a0@(dp_Res1,%d1),%d2
     tst.l       %d2
-    beq.s       .L_findCLIInit_Run
+    beq.s       .L_CliInit_Run
 
+.L_CliInit_Newcli:
     /* CliInitNewcli */
     move.l      #(155*-6),%d2
-    bra.s       .L_findCLIInit_Init
+    bra.s       .L_CliInit_Init
 
-.L_findCLIInit_Run:
+.L_CliInit_Run:
     /* CliInitRun */
     move.l      #(156*-6),%d2
 
-.L_findCLIInit_Init:
+.L_CliInit_Init:
     movem.l      %a0-%a1/%a6,%sp@-
     move.l      %d1,%a0
     move.l	%a2@(GV_DOSBase),%a6
     jsr         %a6@(%d2)
     movem.l      %sp@+,%a0-%a1/%a6
+.L_CliInit_exit:
     BRTS
 
-.L_findCLIInit_getpkt:
-    move.l      %a2@(GV_taskwait),%a4
-    move.l      #4,%d0
-    jsr         %a5@
-    move.l      %d1,%d2
-    moveq.l     #-1,%d1
-    move.l      #4,%d0
-    move.l      %a2@(GV_Res2),%a4
-    jsr         %a5@
-    move.l      %a2@(GV_findCliInit),%d0
-    BRTS
+BCPLnd CliInit_NEWCLI
+    lsl.l       #2, %d1
+    move.l      #1, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Newcli
+
+BCPLnd CliInit_RUN
+    lsl.l       #2, %d1
+    move.l      #-1, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Run
+
+BCPLnd CliInit_SYSTEM
+    lsl.l       #2, %d1
+    move.l      #-2, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Run
+
+BCPLnd CliInit_ASYSTEM
+    lsl.l       #2, %d1
+    move.l      #-3, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Run
+
+BCPLnd CliInit_BOOT
+    lsl.l       #2, %d1
+    move.l      #-4, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Run
+
 
 BCPL findCLI        /* 218, CommandLineInterpreter ^,  */
     movem.l		%a0-%a1/%a6,%sp@-

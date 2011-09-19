@@ -139,6 +139,15 @@
       Cli number of the newly created cli process */
 #define SYS_CliNumPtr   (SYS_Dummy + 13)
 
+  /* (LONG) CLI type (see dos/cliinit.h) override. The defaults are:
+   *             SYS_Asynch  SYS_Background
+   *             ----------  --------------
+   * CLI_SYSTEM     FALSE       TRUE
+   * CLI_ASYSTEM    TRUE        TRUE
+   * CLI_NEWCLI     ---         FALSE
+   */
+#define SYS_CliType		(SYS_Dummy + 13)
+
 /* This is a *TAG VALUE*, not a tag. Use this together with SYS_Input, SYS_Output and
    SYS_Error, to tell SystemTagList to *duplicate* the respective caller's streams.
 

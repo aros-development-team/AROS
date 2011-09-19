@@ -14,6 +14,8 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <dos/dosextens.h>
+#include <dos/cliinit.h>
+#include <dos/stdio.h>
 #include <utility/tagitem.h>
 #include <libraries/expansionbase.h>
 #include <proto/exec.h>
@@ -60,9 +62,10 @@ static void load_system_configuration(struct DosLibrary *DOSBase)
 
 #endif
 
+extern void BCPL_cliInit(void);
+
 void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 {
-    LONG rc = RETURN_FAIL;
     BPTR cis = BNULL;
 
     /*  We have been created as a process by DOS, we should now
@@ -107,49 +110,41 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
         }
     }
 
-    cis = Open("CON:////Boot Shell/AUTO", MODE_OLDFILE);
-    if (cis)
-    {
-        BPTR sseq = BNULL;
-        struct TagItem tags[] =
-        {
-            { SYS_Asynch,      TRUE      }, /* 0 */
-            { SYS_Background,  FALSE     }, /* 1 */
-            { SYS_Input,       (IPTR)cis }, /* 2 */
-            { SYS_Output,      0	 }, /* 3 */
-            { SYS_Error,       0	 }, /* 4 */
-            { TAG_DONE,	       0	 }, /* 5 */
-            { TAG_DONE,        0         }
-        };
+    cis = Open("CON:////Initial CLI/AUTO/CLOSE/SMART", MODE_OLDFILE);
+    if (cis) {
+        BPTR cos = OpenFromLock(DupLockFromFH(cis));
+        BYTE const C[] = "AROS - The AROS Research Operating System\n"
+                         "Copyright © 1995-2011, The AROS Development Team. "
+                         "All rights reserved.\n"
+                         "AROS is licensed under the terms of the "
+                         "AROS Public License (APL),\n"
+                         "a copy of which you should have received "
+                         "with this distribution.\n"
+                         "Visit http://www.aros.org/ for more information.\n";
 
-        SetConsoleTask(((struct FileHandle*)BADDR(cis))->fh_Type);
+        if (cos) {
+            BPTR cas = BNULL;
+            
+            if (!(Flags & BF_NO_STARTUP_SEQUENCE))
+                cas = Open("S:Startup-Sequence", MODE_OLDFILE);
 
-        if (!(Flags & BF_NO_STARTUP_SEQUENCE))
-        {
-            sseq = Open("S:Startup-Sequence", MODE_OLDFILE);
+            /* Inject the banner */
+            if (SetVBuf(cos, NULL, BUF_FULL, sizeof(C)) == 0) {
+                FPuts(cos, C);
+                SetVBuf(cos, NULL, BUF_LINE, -1);
+            }
+            
+            if (SystemTags(NULL,
+                           NP_Name, "Initial CLI",
+                           SYS_Asynch, TRUE,
+                           SYS_CliType, CLI_BOOT,
+                           SYS_Input, cis,
+                           SYS_Output, cos,
+                           SYS_ScriptInput, cas,
+                           TAG_END) == -1) {
+                Alert(AT_DeadEnd | AN_BootStrap);
+            }
         }
-
-	if (sseq)
-	{
-            tags[5].ti_Tag  = SYS_ScriptInput;
-            tags[5].ti_Data = (IPTR)sseq;
-
-            D(bug("[__dos_Boot] Open Startup Sequence = %d\n", sseq));
-        }
-
-        rc = SystemTagList("", tags);
-        if (rc == -1)
-            Alert(AN_BootError);
-
-	/* Don't need to close sseq here. Shell will take care of it. */
-    }
-    else
+    } else
         Alert(AN_NoWindow);
-
-    /* We get here when the Boot Shell Window is left with EndShell/EndCli.
-       There's no RemTask() here, otherwise the process cleanup routines
-       are not called. And that would for example mean, that the
-       Boot Process (having a CLI) is not removed from the rootnode.
-       --> Dead stuff in there -> Crash
-    */
 }

@@ -6,9 +6,11 @@
     Lang: English
 */
 
-#include "dos_intern.h"
+#include <aros/debug.h>
 #include <dos/dosextens.h>
 #include <utility/tagitem.h>
+
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -73,14 +75,24 @@
     LONG           result;
     struct TagItem tags[] =
     {
+        { SYS_Background, TRUE         },
         { SYS_Asynch,     FALSE        },
-	{ SYS_Background, FALSE        },
 	{ SYS_Input,      (IPTR)input  },
 	{ SYS_Output,     (IPTR)output },
 	{ SYS_Error,      (IPTR)NULL   },
 	{ TAG_DONE,       0            }
     };
 
+    D(bug("[Execute] input = %p, output = %p, cmd = \"%s\"\n", input, output, string));
+
+    /* Check for the special cases where we want a new
+     * interactive shell.
+     */
+    if ((!string || string[0] == 0) && IsInteractive(input) && output == BNULL)
+        tags[0].ti_Data = FALSE;
+
+    if ((!string || string[0] == 0) && input == BNULL && output == BNULL)
+        string = "Run NewShell";
 
     result = SystemTagList(string, tags);
 

@@ -7,6 +7,8 @@
 */
 #include "dos_intern.h"
 
+#include "dos_newcliproc.h"
+
 /*****************************************************************************
 
     NAME */
@@ -27,16 +29,15 @@
 
     INPUTS
 
-    packet  --  startup arguments passed as a packet
+    packet  --  startup arguments that were passed to the shell
+                If NULL, defaults will be used
 
     RESULT
 
     NOTES
 
-    This function is obsolete as AROS don't use packets. There is no need
-    for this function as functionality is added in other places to deal
-    with things taken care of by this function. Furthermore, the Amiga
-    startup packet interface was a pile of crap.
+    Called to initialize CLI private data structures, when
+    the User Shell is in interactive mode.
 
     EXAMPLE
 
@@ -52,7 +53,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return 0;
+    return internal_CliInitAny(dp, DOSBase);
 
     AROS_LIBFUNC_EXIT
 } /* CliInitNewcli */
