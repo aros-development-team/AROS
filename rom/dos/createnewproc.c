@@ -321,12 +321,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	defaults[6].ti_Data = (IPTR)ces;
     }
 
-    if (defaults[6].ti_Data)
-    {
-/* unbuffered to conform to widespread clib behavior */
-        SetVBuf((BPTR) defaults[6].ti_Data, NULL, BUF_NONE, -1);
-    }
-
     /* NP_CurrentDir */
 
     if (defaults[8].ti_Data == TAGDATA_NOT_SPECIFIED)
