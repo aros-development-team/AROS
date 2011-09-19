@@ -242,6 +242,13 @@ int main(int argc, char **argv)
 
     Need_Implicit_NL = TRUE;
 
+    /* Verify that \n is treated as part of the key name,
+     * and is not ignored at the end of the ReadArgs template
+     */
+    TEST_READARGS("KEYA\n","keya val1");
+        VERIFY_EQ(ioerr, ERROR_TOO_MANY_ARGS);
+    TEST_ENDARGS();
+
     TEST_READARGS("KEYA","keya=val1");
         VERIFY_EQ(ioerr, RETURN_OK);
         VERIFY_STREQ(args[0], "val1");
