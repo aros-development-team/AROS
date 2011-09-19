@@ -3,6 +3,8 @@
 #include <proto/arossupport.h>
 #include <proto/kernel.h>
 
+#include "efi_intern.h"
+
 static BOOL CheckTable(struct EFI_TableHeader *t, UQUAD sig)
 {
     if (t->Signature != sig)
@@ -50,6 +52,10 @@ static int efi_Init(struct EFIBase *EFIBase)
     {
     	EFIBase->Runtime = EFIBase->System->RuntimeServices;
     	D(bug("[EFI] Valid runtime services table at 0x%p\n", EFIBase->Runtime));
+
+	/* Install ShutdownA() replacement */
+    	SetFunction(&SysBase->LibNode, -173 * LIB_VECTSIZE,
+		    AROS_SLIB_ENTRY(ShutdownA, Efi, 173));
     }
 
     return TRUE;
