@@ -117,8 +117,8 @@ struct ACPI_TABLE_TYPE_FADT                                                 /* F
     struct ACPI_TABLE_DEF_HEADER header;
     unsigned int                 facs_addr;
     unsigned int                 dsdt_addr;
-    unsigned char		 reserved0;		/* Obsolete leftover from ACPI v1.0 */
-    unsigned char		 pm_profile;		/* Preferred system profile, see below */
+    unsigned char		 reserved0;		/* ACPI 1.0: interrupt model. Actually never used. */
+    unsigned char		 pm_profile;		/* ACPI >= 2.0: preferred system profile, see below */
     unsigned short		 sci_int;
     unsigned int		 smi_cmd;
     unsigned char		 acpi_enable;
@@ -150,9 +150,10 @@ struct ACPI_TABLE_TYPE_FADT                                                 /* F
     unsigned char		 day_alarm;
     unsigned char		 mon_alarm;
     unsigned char		 century;
-    unsigned short		 pc_arch;		/* IA-PC architecture flags, see below */
+    unsigned short		 pc_arch;		/* ACPI >= 2.0: IA-PC architecture flags, see below */
     unsigned char		 reserved1;
     unsigned int		 flags;			/* Fixed feature flags, see below */
+    /* The following is present in ACPI >= 2.0 */
     struct GENERIC_ACPI_ADDR	 reset_reg;
     unsigned char		 reset_value;
     unsigned char		 reserved2[3];
