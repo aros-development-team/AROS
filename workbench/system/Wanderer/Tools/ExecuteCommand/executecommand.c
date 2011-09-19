@@ -306,7 +306,6 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                         SYS_Input,      (IPTR) console,
                         SYS_Output,     (IPTR) NULL,
                         SYS_Error,      (IPTR) NULL,
-                        SYS_Background,        FALSE,
                         NP_Path,        (IPTR) searchPath,
                         
                         TAG_DONE

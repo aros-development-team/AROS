@@ -1069,12 +1069,9 @@ VOID wanderer_menufunc_wanderer_execute(STRPTR *cdptr)
 ///wanderer_menufunc_wanderer_shell()
 void wanderer_menufunc_wanderer_shell(STRPTR *cd_ptr)
 {
-    //TODO: remove the STRPTR *cdptr from top
-    //TODO:remove this commented out stuff
-    //BPTR cd = Lock(*cd_ptr,ACCESS_READ);
     Object *win = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Location );
-    BPTR cd;
+    BPTR cd, olddir;
 
     if (!dr)
     {
@@ -1082,10 +1079,10 @@ void wanderer_menufunc_wanderer_shell(STRPTR *cd_ptr)
     }
 
     cd = Lock(dr, ACCESS_READ);
-    if (SystemTags("NewShell", NP_CurrentDir, (IPTR)cd, TAG_DONE) == -1)
-    {
-        UnLock(cd);
-    }
+    olddir = CurrentDir(cd);
+    Execute("", BNULL, BNULL);
+    CurrentDir(olddir);
+    UnLock(cd);
 }
 ///
 
