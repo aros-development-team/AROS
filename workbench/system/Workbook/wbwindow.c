@@ -756,35 +756,18 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
     return 0;
 }
 
-static void NewCLI(struct WorkbookBase *wb, BPTR lock)
+static void NewCLI(Class *cl, Object *obj)
 {
-    BPTR cd, cis, script;
-    IPTR rc;
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
 
-    if (lock == BNULL)
-    	cd = Lock("SYS:", SHARED_LOCK);
-    else
-    	cd = DupLock(lock);
+    BPTR dir;
 
-    cis = Open("CON:20/20/400/60/Workbook/CLOSE", MODE_OLDFILE);
-    script = Open("S:Shell-Startup", MODE_OLDFILE);
-
-    D(bug("Lock=%p\n", BADDR(cd)));
-    rc = SystemTags("",
-    	    SYS_Asynch,    TRUE,
-    	    SYS_Background,FALSE,
-    	    NP_CurrentDir, (IPTR)cd,
-    	    SYS_Input,     (IPTR)cis,
-    	    SYS_Output,    (IPTR)NULL,
-    	    SYS_Error,     (IPTR)NULL,
-    	    SYS_ScriptInput, (IPTR)script,
-    	    SYS_UserShell, TRUE,
-    	    TAG_DONE);
-    if (rc == -1) {
-    	UnLock(cd);
-    	Close(cis);
-    	Close(script);
-    }
+    SetWindowPointer(my->Window, WA_BusyPointer, TRUE, TAG_END);
+    dir = CurrentDir(my->Lock);
+    Execute("", BNULL, BNULL);
+    CurrentDir(dir);
+    SetWindowPointer(my->Window, WA_BusyPointer, FALSE, TAG_END);
 }
 
 static IPTR WBWindowForSelectedIcons(Class *cl, Object *obj, IPTR MethodID)
@@ -825,7 +808,7 @@ static IPTR WBWindowMenuPick(Class *cl, Object *obj, struct wbwm_MenuPick *wbwmp
 	}
     	break;
     case WBMENU_ID(WBMENU_WB_SHELL):
-    	NewCLI(wb, my->Lock);
+    	NewCLI(cl, obj);
     	break;
     case WBMENU_ID(WBMENU_IC_OPEN):
     	rc = WBWindowForSelectedIcons(cl, obj, WBIM_Open);
