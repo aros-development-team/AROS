@@ -55,11 +55,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_Count,
     AROS_USERFUNC_INIT
 
     D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Count: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags));
-
-    if (processor->flags.enabled)
-    	table_hook->h_Data++;
-
-    return 1;
+    return processor->flags.enabled;
 
     AROS_USERFUNC_EXIT
 }
@@ -82,9 +78,11 @@ AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_Parse,
 
 	pdata->kb_APIC_IDMap[apic_newno] = (processor->acpi_id << 8) | processor->id;
 	D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registered APIC number %d [ID=0x%04X]\n", apic_newno, pdata->kb_APIC_IDMap[apic_newno]));
+
+	return TRUE;
     }
 
-    return 1;
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -104,8 +102,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
         D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Local APIC address Override to 0x%p\n", pdata->kb_APIC_BaseMap[0]));
     }
 
-    return 1;
-    
+    return TRUE;
+
     AROS_USERFUNC_EXIT
 }
 
@@ -121,7 +119,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
         D(bug("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_NMI_Parse: APIC ID %d: WARNING - NMI not connected to LINT1!\n", lapic_nmi->acpi_id));
     }
 
-    return 1;
+    return TRUE;
 
     AROS_USERFUNC_EXIT
 }
@@ -135,8 +133,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_IOAPIC_Parse,
 
     bug("[Kernel] (HOOK) ACPI_hook_Table_IOAPIC_Parse: IOAPIC %d @ %p [irq base = %d]\n", ioapic->id, ioapic->address, ioapic->global_irq_base);
 
-    return 1;
-    
+    return TRUE;
+
     AROS_USERFUNC_EXIT
 }
 
@@ -151,7 +149,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
                     //intsrc->flags.polarity,
                     //intsrc->flags.trigger,
 
-    return 1;
+    return TRUE;
 
     AROS_USERFUNC_EXIT
 }
@@ -167,8 +165,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_NMI_Src_Parse,
 
     /* FIXME: Uh... shouldn't we do something with this? */
 
-    return 1;
-    
+    return TRUE;
+
     AROS_USERFUNC_EXIT
 }
 
@@ -178,9 +176,9 @@ int ACPI_Table_HPET_Parse(struct ACPI_TABLE_TYPE_HPET *hpet_tbl)
     if (hpet_tbl->addr.space_id != ACPI_SPACE_MEM) 
     {
         D(bug("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: HPET timers must be located in memory.\n"));
-        return -1;
+        return FALSE;
     }
 
     D(bug("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: INFORMATION - HPET id: %d @ 0x%08X%08X\n", hpet_tbl->id, hpet_tbl->addr.addrh, hpet_tbl->addr.addrl));
-    return 1;
+    return TRUE;
 }

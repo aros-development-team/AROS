@@ -30,17 +30,22 @@ static const struct Hook ACPI_TableParse_LAPIC_Addr_Ovr_hook =
     .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Addr_Ovr_Parse
 };
 
+static const struct Hook ACPI_TableParse_LAPIC_count_hook =
+{
+    .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Count,
+};
+
 static const struct Hook ACPI_TableParse_LAPIC_hook =
 {
     .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Parse
 };
 
-struct Hook ACPI_TableParse_LAPIC_NMI_hook =
+static const struct Hook ACPI_TableParse_LAPIC_NMI_hook =
 {
     .h_Entry = (APTR)ACPI_hook_Table_LAPIC_NMI_Parse
 };
 
-struct Hook ACPI_TableParse_IOAPIC_hook =
+static const struct Hook ACPI_TableParse_IOAPIC_hook =
 {
     .h_Entry = (APTR)ACPI_hook_Table_IOAPIC_Parse
 };
@@ -57,13 +62,7 @@ static const struct Hook ACPI_TableParse_NMI_Src_hook =
 
 ULONG core_ACPIInitialise(void)
 {
-    struct Hook ACPI_TableParse_LAPIC_count_hook =
-    {
-    	.h_Entry = (APTR)ACPI_hook_Table_LAPIC_Count,
-    	.h_Data  = NULL
-    };
-
-    IPTR result;
+    ULONG result;
     struct ACPI_TABLE_TYPE_MADT *madt;
     struct ACPI_TABLE_TYPE_HPET *hpet;
     struct ACPIBase *ACPIBase = OpenResource("acpi.resource");
@@ -99,13 +98,13 @@ ULONG core_ACPIInitialise(void)
      * Now get ready to set up secondary CPUs. First we just want to count number of APICs.
      * This hook function uses h_Data as a counter.
      */
-    ACPI_ScanEntries(&madt->header, ACPI_MADT_LAPIC, &ACPI_TableParse_LAPIC_count_hook, NULL);
-    D(bug("[Kernel] core_ACPIInitialise: ACPI found %lu enabled APICs\n", ACPI_TableParse_LAPIC_count_hook.h_Data));
+    result = ACPI_ScanEntries(&madt->header, ACPI_MADT_LAPIC, &ACPI_TableParse_LAPIC_count_hook, NULL);
+    D(bug("[Kernel] core_ACPIInitialise: ACPI found %u enabled APICs\n", result));
 
 #ifdef CONFIG_LAPICS
-    if ((IPTR)ACPI_TableParse_LAPIC_count_hook.h_Data > 1)
+    if (result > 1)
     { 
-	if (smp_Setup((IPTR)ACPI_TableParse_LAPIC_count_hook.h_Data))
+	if (smp_Setup(result))
     	{
     	    D(bug("[Kernel] Succesfully prepared SMP enviromnent\n"));
 
