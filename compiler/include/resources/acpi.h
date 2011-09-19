@@ -21,6 +21,8 @@
 #define ACPI_MAKE_ID(a, b, c, d) (((ULONG) (d)<<24) | ((ULONG) (c)<<16) | \
                                   ((ULONG) (b)<<8)  | ((ULONG) (a)))
 
+#define ACPI_ID_ALL 0xFFFFFFFF
+
 /* ACPI 2.0 Generic Address Structure (GAS) */
 
 struct GENERIC_ACPI_ADDR
@@ -481,8 +483,8 @@ struct ACPIBase
 
     struct ACPI_TABLE_TYPE_RSDP            *ACPIB_RSDP_Addr;		/* Supervisor-only!!!			*/
     struct ACPI_TABLE_DEF_HEADER     	   *ACPIB_SDT_Addr;		/* Raw XSDT or RSDT pointer	   	*/
-    int                                     ACPIB_SDT_Count;		/* Number of entries in the array below */
-    struct ACPI_TABLE_DEF_HEADER    	  **ACPIB_SDT_Entry;		/* Array of pointers to SDT tables 	*/
+    int                                     ACPIB_SDT_Count;		/* These two are private. Do not use!   */
+    struct ACPI_TABLE_DEF_HEADER    	  **ACPIB_SDT_Entry;
     char			            ACPI_OEM_ID[6];		/* Cached from RSDP			*/
     unsigned char			    ACPI_Revision;
 /*..*/
