@@ -16,23 +16,41 @@
 
 #include LC_LIBDEFS_FILE
 
-struct pci_staticdata {
-    OOP_AttrBase	hiddPCIDriverAB;
-    OOP_AttrBase	hiddAB;
+struct pci_staticdata
+{
+    OOP_AttrBase   hiddPCIDriverAB;
+    OOP_AttrBase   hiddAB;
 
-    OOP_Class		*driverClass;
-    UBYTE		ConfType;
+    OOP_Class	  *driverClass;
+
+    /* Low-level sub-methods */
+    ULONG	 (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg);
+    void	 (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val);
 };
 
-struct pcibase {
+struct pcibase
+{
     struct Library	    LibNode;
     struct pci_staticdata   psd;
 };
 
+/* PCI configuration mechanism 1 registers */
 #define PCI_AddressPort	0x0cf8
-#define PCI_ForwardPort 0x0cfa
-#define PCI_TestPort	0x0cfb
 #define PCI_DataPort	0x0cfc
+
+/*
+ * PCI configuration mechanism 2 registers
+ * This mechanism is obsolete long ago. But AROS runs on old hardware,
+ * and we support this.
+ */
+#define PCI_CSEPort	0x0cf8
+#define PCI_ForwardPort 0x0cfa
+
+/*
+ * PCI configuration mechanism selector register.
+ * Supported by some transition-time chipsets, like Intel Neptune.
+ */
+#define PCI_MechSelect	0x0cfb
 
 #define PCICS_VENDOR	0x00
 #define PCICS_PRODUCT   0x02
@@ -48,5 +66,24 @@ struct pcibase {
 
 #define PSD(cl) (&((struct pcibase*)cl->UserData)->psd)
 
-#endif /* _PCI_H */
+typedef union _pcicfg
+{
+    ULONG   ul;
+    UWORD   uw[2];
+    UBYTE   ub[4];
+} pcicfg;
 
+static inline UWORD ReadConfigWord(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+{
+    pcicfg temp;
+
+    temp.ul = psd->ReadConfigLong(bus, dev, sub, reg);
+    return temp.uw[(reg&2)>>1];
+}
+
+ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg);
+void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val);
+
+void ProbePCI(struct pci_staticdata *psd);
+
+#endif /* _PCI_H */
