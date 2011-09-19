@@ -16,6 +16,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#ifdef __i386__
+/*
+ * On i386 we can support very old Pentium-1 motherboards with PCI
+ * configuration mechanism 2.
+ * x86-64 is much more legacy-free...
+ */
+#define LEGACY_SUPPORT
+#endif
+
 struct pci_staticdata
 {
     OOP_AttrBase   hiddPCIDriverAB;
@@ -84,6 +93,14 @@ static inline UWORD ReadConfigWord(struct pci_staticdata *psd, UBYTE bus, UBYTE 
 ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg);
 void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val);
 
+#ifdef LEGACY_SUPPORT
+
 void ProbePCI(struct pci_staticdata *psd);
+
+#else
+
+#define ProbePCI(x)
+
+#endif
 
 #endif /* _PCI_H */

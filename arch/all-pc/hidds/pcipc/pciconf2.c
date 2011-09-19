@@ -12,6 +12,8 @@
 
 #include "pci.h"
 
+#ifdef LEGACY_SUPPORT
+
 #define CFG2ADD(dev,reg)    \
     (0xc000 | ((dev)<<8) | (reg))
 
@@ -130,3 +132,5 @@ void ProbePCI(struct pci_staticdata *psd)
     psd->ReadConfigLong  = ReadConfig1Long;
     psd->WriteConfigLong = WriteConfig1Long;
 }
+
+#endif
