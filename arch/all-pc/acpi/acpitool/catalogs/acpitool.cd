@@ -236,3 +236,33 @@ System OEM ID
 MSG_ACPI_REVISION (//)
 ACPI Revision
 ;
+MSG_HW_REVISION (//)
+Hardware Revision
+;
+MSG_NUM_COMPARATORS (//)
+Number of comparators
+;
+MSG_64BIT_COUNTER (//)
+64-bit counter
+;
+MSG_LEGACY_REPLACEMENT (//)
+Legacy replacement capable
+;
+MSG_PCI_VENDOR (//)
+PCI Vendor ID
+;
+MSG_BASE_ADDRESS (//)
+Base address
+;
+MSG_NUMBER (//)
+Number
+;
+MSG_MIN_TICK (//)
+Minimum clock tick
+;
+MSG_PAGE_PROTECT (//)
+Page protection
+;
+MSG_OEM_ATTRS (//)
+OEM Attributes
+;
