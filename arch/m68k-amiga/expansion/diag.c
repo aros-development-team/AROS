@@ -127,6 +127,9 @@ static BOOL diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *confi
 	configDev->cd_Rom.er_DiagArea = da;
 	// read rom data, DiagArea is also copied again. AOS compatibility!
 	copyromdata(configDev, buswidth, datmp.da_Size, (UBYTE*)da);
+	
+	D(if (da->da_Name != 0 && da->da_Name != 0xffff && da->da_Name < da->da_Size)
+		bug("Name='%s'\n", (UBYTE*)da + da->da_Name);)
 
 	return TRUE;
 }
