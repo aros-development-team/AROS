@@ -32,7 +32,7 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
 
     struct CLIInfo *ci;
 
-    D(bug("Calling addprocesstoroot() with cli = %p\n", cli));
+    D(bug("Calling addprocesstoroot(%p) with cli = %p\n", process, cli));
 
     if(cli == NULL)
 	return;
@@ -42,21 +42,22 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
     if(ci == NULL)
 	return;
 
-    ci->ci_Process = process;
-  
     ObtainSemaphore(&root->rn_RootLock);
 
+    D(bug("[addprocesstoroot] Adding to CliList\n"));
     /* Set the node's name to the process' name so we may use FindName()
        on the rn_CliList to locate a specific command */
 
     /* This is kind of hacky but doing it another way will be more
        troublesome; we rely here that even BSTR:s have a trailing 0. */
 
+    ci->ci_Process = process;
     ci->ci_Node.ln_Name = AROS_BSTR_ADDR(cli->cli_CommandName);
     
     /* Can't use AddTail() here as it complains about the list pointer */
     ADDTAIL((struct List *)&root->rn_CliList, (struct Node *)ci);
 
+    D(bug("[addprocesstoroot] Adding to TaskArray\n"));
     taskarray = BADDR(root->rn_TaskArray);
     size = taskarray[0];
   
@@ -67,19 +68,14 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
     
     while(i <= size)
     {
-	if(0 == taskarray[i])
-	{
-	    taskarray[i] = (IPTR)&process->pr_MsgPort;
-	    process->pr_TaskNum = i;
-
-	    ReleaseSemaphore(&root->rn_RootLock);
-
-	    D(bug("Returning from addprocesstoroot() -- 1\n"));
-	    
-	    return;
-	}
-	
-	i++;
+        if(0 == taskarray[i])
+        {
+            taskarray[i] = (IPTR)&process->pr_MsgPort;
+            process->pr_TaskNum = i;
+            goto done;
+        }
+        
+        i++;
     }
     
     /*
@@ -92,8 +88,8 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
 
     while(i <= size)
     {
-	newtaskarray[i] = taskarray[i];
-	i++;
+        newtaskarray[i] = taskarray[i];
+        i++;
     }
 
     newtaskarray[size + 1] = (IPTR)&process->pr_MsgPort;
@@ -102,54 +98,41 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
     root->rn_TaskArray = MKBADDR(newtaskarray);
 
     FreeMem(taskarray, sizeof(IPTR) + size*sizeof(APTR));
-    
+   
+done:
+    D(bug("Returning from addprocesstoroot() (%d)\n", process->pr_TaskNum));
     ReleaseSemaphore(&root->rn_RootLock);
 }
 
 
 void removefromrootnode(struct Process *process, struct DosLibrary *DOSBase)
 {
-    ULONG  size;
     IPTR  *taskarray;
-    ULONG  i;
+    struct CLIInfo *ci, *tmp;
 
-    struct Node     *temp;
-    struct CLIInfo  *cliNode;
     struct RootNode *root = DOSBase->dl_Root;
+
+    D(bug("[removefromrootnode] %p, TaskNum %d\n", process, process->pr_TaskNum));
 
     if (!__is_process(process) || process->pr_CLI == BNULL)
     {
+        D(bug("[removefromrootnode] Strange. Doesn't seem be a CLI...\n"));
 	return;
     }
     
     ObtainSemaphore(&root->rn_RootLock);
-  
-    /* Remove node from CliList */
-    ForeachNodeSafe(&root->rn_CliList, cliNode, temp)
-    {
-	if (cliNode->ci_Process == process)
-	{
-	    Remove((struct Node *)cliNode);
-	    FreeVec(cliNode);
-	    break;
-	}
+
+    ForeachNodeSafe(&root->rn_CliList, ci, tmp) {
+        if (ci->ci_Process == process) {
+            D(bug("[removefromrootnode] Removing from CLIList\n"));
+            Remove((struct Node *)ci);
+            FreeVec(ci);
+        }
     }
 
+    D(bug("[removefromrootnode] Removing from TaskArray\n"));
     taskarray = BADDR(root->rn_TaskArray);
-    size = taskarray[0];
-  
-    i = 1;
-
-    while (i <= size)
-    {
-	if (taskarray[i] == (IPTR)&process->pr_MsgPort)
-	{
-	    taskarray[i] = 0;
-	    break;
-	}
-
-	i++;
-    }
-    
+    taskarray[process->pr_TaskNum] = 0;
+        
     ReleaseSemaphore(&root->rn_RootLock);
 }
