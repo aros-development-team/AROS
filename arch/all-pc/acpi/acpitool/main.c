@@ -34,7 +34,7 @@
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
-APTR ACPIBase;
+struct ACPIBase *ACPIBase;
 
 static void ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL useIOError)
 {
@@ -207,6 +207,24 @@ BOOL GUIinit()
     return retval;
 }
 
+AROS_UFH3(static IPTR, tableFunc,
+	  AROS_UFHA(struct Hook *, table_hook, A0),
+	  AROS_UFHA(struct ACPI_TABLE_DEF_HEADER *, table, A2),
+	  AROS_UFHA(void *, unused, A1))
+{
+    AROS_USERFUNC_INIT
+
+    DoMethod(TablesList, MUIM_List_InsertSingle, table, MUIV_List_Insert_Bottom);
+    return TRUE;
+
+    AROS_USERFUNC_EXIT
+}
+
+static const struct Hook tableHook =
+{
+    .h_Entry = (APTR)tableFunc
+};
+
 int __nocommandline = 1;
 
 int main(void)
@@ -221,14 +239,12 @@ int main(void)
     if (!ACPIBase)
 	cleanup(_(MSG_ERROR_NO_ACPI));
 
-    if(GUIinit())
+    if (GUIinit())
     {
-	unsigned int i;
 
 	/* Populate tables list */
-	DoMethod(TablesList, MUIM_List_InsertSingle, ACPI->ACPIB_SDT_Addr, MUIV_List_Insert_Bottom);
-	for (i = 0; i < ACPI->ACPIB_SDT_Count; i++)
-	    DoMethod(TablesList, MUIM_List_InsertSingle, ACPI->ACPIB_SDT_Entry[i], MUIV_List_Insert_Bottom);
+	DoMethod(TablesList, MUIM_List_InsertSingle, ACPIBase->ACPIB_SDT_Addr, MUIV_List_Insert_Bottom);
+	ACPI_ScanSDT(ACPI_ID_ALL, &tableHook, NULL);
 
 	set(MainWindow, MUIA_Window_Open, TRUE);
 

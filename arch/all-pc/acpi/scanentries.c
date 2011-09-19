@@ -44,7 +44,8 @@ AROS_LH4(ULONG, ACPI_ScanEntries,
 	userdata - a user-supplied data to pass to the hook.
 
     RESULT
-	Total number of processed entries.
+	Total number of processed entries. The entry is considered processed if
+	either supplied hook returns nonzero value, or there's no hook supplied.
 
     NOTES
 
@@ -89,9 +90,15 @@ AROS_LH4(ULONG, ACPI_ScanEntries,
     {
         if ((type == ACPI_ENTRY_TYPE_ALL) || (type == entry->type))
         {
-            count++;
             if (hook)
-	    	CALLHOOKPKT((struct Hook *)hook, entry, userdata);
+            {
+            	BOOL res = CALLHOOKPKT((struct Hook *)hook, entry, userdata);
+
+            	if (res)
+	    	    count++;
+	    }
+	    else
+	    	count++;
         }
         entry = (struct ACPI_TABLE_DEF_ENTRY_HEADER *)((unsigned long)entry + entry->length);
     }

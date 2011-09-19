@@ -144,9 +144,9 @@ void header_parser(struct ACPI_TABLE_DEF_HEADER *table, void (*cb)(const char *)
 
 static void rsdt_parser(struct ACPI_TABLE_DEF_HEADER *rsdt, void (*cb)(const char *))
 {
-    MakeString(cb, "%s: 0x%p", _(MSG_RSDP_ADDR), ACPI->ACPIB_RSDP_Addr);
-    MakeString(cb, "%s: %.6s", _(MSG_SYSTEM_OEM_ID), ACPI->ACPI_OEM_ID);
-    MakeString(cb, "%s: %u", _(MSG_ACPI_REVISION), ACPI->ACPI_Revision);
+    MakeString(cb, "%s: 0x%p", _(MSG_RSDP_ADDR), ACPIBase->ACPIB_RSDP_Addr);
+    MakeString(cb, "%s: %.6s", _(MSG_SYSTEM_OEM_ID), ACPIBase->ACPI_OEM_ID);
+    MakeString(cb, "%s: %u", _(MSG_ACPI_REVISION), ACPIBase->ACPI_Revision);
 
     cb("");
 
@@ -231,7 +231,7 @@ static void fadt_parser(struct ACPI_TABLE_TYPE_FADT *fadt, void (*cb)(const char
     MakeString(cb, "%s:", _(MSG_FF_FLAGS));
     parse_flags(fadt->flags, facp_flags, cb);
 
-    /* ACPI 1.0 FADT ends here */
+    /* ACPIBase-> 1.0 FADT ends here */
     if (fadt->header.length < offsetof(struct ACPI_TABLE_TYPE_FADT, reset_reg))
     	return;
 
