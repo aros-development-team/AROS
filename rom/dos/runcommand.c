@@ -78,7 +78,6 @@
     BOOL injected;
     struct StackSwapStruct sss;
     struct StackSwapArgs args;
-    BPTR oldinput = BNULL;
 
     if(stacksize < AROS_STACKSIZE)
 	stacksize = AROS_STACKSIZE;
@@ -98,10 +97,9 @@
      * Inject command arguments to the beginning of input handle. Guru Book mentions this.
      * This fixes for example AmigaOS' C:Execute
      */
-    oldinput = Input();
-    D(bug("RunCommand: segList @%p I=0x%p O=%p Args='%*s' Argsize=%u\n", BADDR(segList), oldinput, Output(), argsize, argptr, argsize));
-    injected = vbuf_inject(oldinput, argptr, argsize, DOSBase);
-    D(bug("RunCommand: Arguments %sinjected into FileHandle %p\n", injected ? "" : "not ", oldinput));
+    D(bug("RunCommand: segList @%p I=0x%p O=%p Args='%*s' Argsize=%u\n", BADDR(segList), Input(), Output(), argsize, argptr, argsize));
+    injected = vbuf_inject(Input(), argptr, argsize, DOSBase);
+    D(bug("RunCommand: Arguments %sinjected into FileHandle %p\n", injected ? "" : "not ", Input()));
 
     /* pr_ReturnAddr is set by CallEntry routine */
     oldReturnAddr = me->pr_ReturnAddr;
@@ -116,12 +114,8 @@
     me->pr_ReturnAddr = oldReturnAddr;
     me->pr_Arguments  = oldargs;
 
-    /* remove buffered argument stream */
-    /* must be original stream, command might have called SelectInput() */
-    if (injected && oldinput == Input()) {
-        D(bug("RunCommand: Flushing %p\n", oldinput));
-        Flush(oldinput);
-    }
+    /* Flush the current input stream */
+    Flush(Input());
 
     FreeMem(stack,stacksize);
     
