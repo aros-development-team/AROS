@@ -141,4 +141,5 @@ BCPL_thunk:
 0:                                      /* BCPL Exit arrives here */
 	addq.l	#4,%sp                  /* Drop the stacksize off */
 	movem.l %sp@+,%d2-%d7/%a2-%a6
+	move.l  %d1,%d0                 /* Duplicate D1 */
 	rts
