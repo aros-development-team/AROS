@@ -108,9 +108,9 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     LONG error = 0;
     BPTR con, ast;
 
-    D(bug("[Open] %s: 0x%p \"%s\", Window: 0x%p, Name: \"%s\" FH: 0x%p\n",
+    D(bug("[Open] %s: 0x%p \"%s\", Name: \"%s\" File: %p\n",
     	  __is_process(me) ? "Process" : "Task", me, me->pr_Task.tc_Node.ln_Name,
-    	  __is_process(me) ? me->pr_WindowPtr : NULL, name, handle));
+    	  name, MKBADDR(handle)));
 
     if(soft_nesting == 0)
     {
