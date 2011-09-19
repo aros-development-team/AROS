@@ -372,7 +372,7 @@ struct ACPI_TABLE_TYPE_HPET
     unsigned char                           number;
     UWORD                                   min_tick;
     unsigned char                           page_protect;
-};
+} __attribute__ ((packed));
 
 /* ID components */
 #define HPET_HW_REV_MASK		0x000000FF
