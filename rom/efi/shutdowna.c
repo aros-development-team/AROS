@@ -25,18 +25,6 @@ AROS_LH1(ULONG, ShutdownA,
     switch (action)
     {
     case SD_ACTION_COLDREBOOT:
-    	/*
-    	 * FIXME: Cold restart doesn't work here. ResetSystem() just returns.
-    	 * I don't know why...
-    	 * In GRUB it seems to work. I tried EFI_Reset_Warm, i tried Disable(),
-    	 * Supervisor()... Nothing helped. Some Mac quirk?
-    	 * UPD: ACPI method fails too. I verified the code flow, it really writes
-    	 * the required value into required register... Still no luck...
-    	 * UPD 2: On AspireOne ACPI code works fine. I tried to write a test resident
-    	 * hook that resets the machine... Reset works before PCI class init, and fails
-    	 * after it. 
-    	 *							Sonic.
-    	 */
     	efiAction = EFI_Reset_Cold;
     	break;
 
