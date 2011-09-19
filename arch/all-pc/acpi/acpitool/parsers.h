@@ -8,9 +8,6 @@ struct Parser
 #define BUFFER_SIZE 256
 
 extern char buf[BUFFER_SIZE];
-extern APTR ACPIBase;
-
-#define ACPI ((struct ACPIBase *)ACPIBase)
 
 typedef void (*out_func)(const char *);
 
