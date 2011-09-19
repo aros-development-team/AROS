@@ -60,6 +60,12 @@
     ASSERT_VALID_PTR( fh );
     ASSERT_VALID_PTR_OR_NULL(buff);
 
+    D(bug("[SetVBuf] file=%p, buff=%p (was %p), mode=%d (flags 0x%x), size %d (was %d)\n", file, buff, BADDR(fh->fh_Buf), type, fh->fh_Flags, size, fh->fh_BufSize));
+
+    /* Ensure that buff is BPTR aligned */
+    if (buff != BADDR(MKBADDR(buff)))
+        return EOF;
+
     switch (type)
     {
         case BUF_LINE: 
@@ -78,20 +84,16 @@
     	    return EOF;
     }
 
-    if (size != -1)
+    if (size >= 0)
     {
-        vbuf_free(fh);
+        if (fh->fh_OrigBuf == fh->fh_Buf) {
+            vbuf_free(fh);
+        } else {
+            /* Not ours, so we're not going to free it. */
+        }
         if (!vbuf_alloc(fh, buff, size))
             return EOF;
     }
-
-    /* Set sentinel to detect if a program
-     * has manually manipulated fh->fh_Buf
-     * instead of using SetVBuf
-     *
-     * (AOS compatability issue)
-     */
-    fh->fh_OrigBuf = fh->fh_Buf;
 
     return 0;
     
