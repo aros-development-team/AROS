@@ -145,6 +145,12 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
       
     D(bug("Entering __detach_trampoline()\n"));
 
+    /* We have a CLI that is not 'attached' to a Shell,
+     * and to get WB 1.3's C:Status to list us properly,
+     * we need to set cli_Module to something.
+     */
+    Cli()->cli_Module =  (BPTR)-1;
+
     /* The program has two options: either take care of telling the detacher
        process when exactly to go away, via the Detach() function, or let this
        startup code take care of it. If __detached_manages_detach is TRUE, then
