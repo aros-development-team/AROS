@@ -488,15 +488,18 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* Do any last-minute SegList fixups */
     BCPL_Fixup(process);
 
+    /* Abuse pr_Result2 to point to the *real* entry point */
+    process->pr_Result2 = (SIPTR)entry;
+
     if (NewAddTask(&process->pr_Task, DosEntry,	NULL, NULL))
     {
-        SIPTR err;
-        BOOL isAsynch = !defaults[19].ti_Data;
-        
-        D(bug("[createnewproc] Sending process startup packet\n"));
-        err = DoPkt(&process->pr_MsgPort, 0, (IPTR)entry, isAsynch, 0, 0, 0);
-        if (err == DOSTRUE)
-            goto end;
+        if (process->pr_Flags & PRF_SYNCHRONOUS)
+        {
+            D(bug("[createnewproc] Waiting for task to die...\n"));
+            internal_ChildWait(&me->pr_Task, DOSBase);
+        }
+
+        goto end;
     }
 
     /* Fall through */
@@ -673,27 +676,16 @@ static void DosEntry(void)
     struct Process *me = (struct Process *)FindTask(NULL);
     LONG result;
     ULONG argSize = me->pr_Arguments ? strlen(me->pr_Arguments) : 0;
-    struct DosPacket *dp;
     APTR DOSBase;
     APTR initialPC;
     BPTR *segArray;
-    BOOL isAsync;
 
-    /* Wait for our startup packet */
-    WaitPort(&me->pr_MsgPort);
-    dp = (struct DosPacket *)(GetMsg(&me->pr_MsgPort)->mn_Node.ln_Name);
-
-    D(bug("[DosEntry %p] Recevied process startup packet\n", me));
-
-    /* dp_Arg1 contains the entry point, or NULL
+    /* me->pr_Result2 contains our real entry point
      */
-    initialPC = (APTR)dp->dp_Arg1;
-    isAsync   = (BOOL)dp->dp_Arg2;
+    initialPC = (APTR)me->pr_Result2;
+    me->pr_Result2 = 0;
 
-    D(bug("[DosEntry %p] is %synchronous\n", me, isAsync ? "As" :"S"));
-
-    if (isAsync) /* Async */
-        internal_ReplyPkt(dp, &me->pr_MsgPort, DOSTRUE, 0);
+    D(bug("[DosEntry %p] is %synchronous\n", me, (me->pr_Flags & PRF_SYNCHRONOUS) ? "S" :"As"));
 
     segArray = BADDR(me->pr_SegList);
     if (initialPC == NULL)
@@ -750,7 +742,7 @@ static void DosEntry(void)
     DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
     if (DOSBase == NULL) {
         D(bug("[DosEntry %p] Can't open DOS library\n", me));
-        internal_ReplyPkt(dp, &me->pr_MsgPort, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
+        Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
     }
 
     P(kprintf("Deleting local variables\n"));
@@ -823,18 +815,22 @@ static void DosEntry(void)
 	me->pr_CLI = BNULL;
     }
 
-    /* To implement NP_NotifyOnDeath I need Child***()
-       here */
-    if (me->pr_Flags & PRF_NOTIFYONDEATH)
-    {
-	P(kprintf("Calling ChildFree()\n"));
-
+    /* Synchronous completion must be before
+     * PRF_NOTIFYONDEATH, in case both were
+     * enabled.
+     */
+    if (me->pr_Flags & PRF_SYNCHRONOUS) {
+        P(kprintf("Calling ChildFree()\n"));
         /* ChildFree signals the parent */
-	internal_ChildFree(me, DOSBase);
+        internal_ChildFree(me, DOSBase);
     }
 
-    if (!isAsync) /* Sync */
-        ReplyPkt(dp, DOSTRUE, 0);
+    /* Notify of the child's death.
+     */
+    if (me->pr_Flags & PRF_NOTIFYONDEATH)
+    {
+        Signal(GetETask(me)->et_Parent, SIGF_CHILD);
+    }
 
     CloseLibrary((APTR)DOSBase);
 }
