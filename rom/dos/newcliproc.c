@@ -256,11 +256,10 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
 
     D(bug("- flags:%p\n", flags));
     switch (Type) {
-    case CLI_ASYSTEM: flags |= FNF_ASYNCSYSTEM;
-                      /* Fallthrough */
-    case CLI_SYSTEM:  flags |= FNF_VALIDFLAGS | FNF_SYSTEM;
+    case CLI_RUN:
+    case CLI_ASYSTEM: flags = FNF_VALIDFLAGS | FNF_SYSTEM | FNF_ASYNCSYSTEM | FNF_RUNOUTPUT;
                       break;
-    case CLI_RUN:     flags = 0;
+    case CLI_SYSTEM:  flags |= FNF_VALIDFLAGS | FNF_SYSTEM;
                       break;
     case CLI_BOOT:    flags = 0;
                       break;
