@@ -78,6 +78,11 @@
             fh = NULL;
         } else {
             fh->fh_Type = port;
+            /* Buffering for interactive filehandes defaults to BUF_LINE */
+            if (fh->fh_Interactive)
+                SetVBuf(BADDR(fh), NULL, BUF_LINE, -1);
+            else
+                SetVBuf(BADDR(fh), NULL, BUF_NONE, -1);
         }
     } else {
     	SetIoErr(ERROR_NO_FREE_STORE);
