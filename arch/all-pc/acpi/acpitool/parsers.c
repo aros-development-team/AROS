@@ -91,6 +91,9 @@ static void parse_addr(const char *desc, struct GENERIC_ACPI_ADDR *addr, void (*
     	n = snprintf(p, len, "%s %s ", sizes[addr->size - 1], _(MSG_AT));
     else if (addr->size > ACPI_SIZE_QUAD)
     	n = snprintf(p, len, "%s (%u) %s ", _(MSG_UNKNOWN_SIZE), addr->size, _(MSG_AT));
+    else
+    	n = 0;
+
     p += n;
     len -= n;
 
@@ -450,7 +453,7 @@ static void hpet_parser(struct ACPI_TABLE_TYPE_HPET *hpet, void (*cb)(const char
 	       (hpet->id & HPET_NUM_COMPARATORS_MASK) >> HPET_NUM_COMPARATORS_SHIFT);
     MakeString(cb, "%s: %s", _(MSG_64BIT_COUNTER), FLAG_VAL(hpet->id & HPET_COUNTER_SIZE));
     MakeString(cb, "%s: %s", _(MSG_LEGACY_REPLACEMENT), FLAG_VAL(hpet->id & HPET_LEGACY_REPLACEMENT));
-    MakeString(cb, "%s: %u", _(MSG_PCI_VENDOR),
+    MakeString(cb, "%s: 0x%04X", _(MSG_PCI_VENDOR),
 	       (hpet->id & HPET_PCI_VENDOR_MASK) >> HPET_PCI_VENDOR_SHIFT);
     parse_addr(_(MSG_BASE_ADDRESS), &hpet->addr, cb);
     MakeString(cb, "%s: %u", _(MSG_NUMBER), hpet->number);
