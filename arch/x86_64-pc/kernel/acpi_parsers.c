@@ -173,7 +173,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_NMI_Src_Parse,
 /* Process the 'High Precision Event Timer' Table */
 int ACPI_Table_HPET_Parse(struct ACPI_TABLE_TYPE_HPET *hpet_tbl)
 {
-    if (hpet_tbl->addr.space_id != ACPI_SPACE_MEM) 
+    if (hpet_tbl->addr.address_space_id != ACPI_SPACE_MEM) 
     {
         D(bug("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: HPET timers must be located in memory.\n"));
         return FALSE;
