@@ -99,7 +99,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 	    { SYS_Input,       (IPTR)cis     },
 	    { SYS_Output,      (IPTR)cos     },
 	    { SYS_Error,       (IPTR)ces     },
-	    { SYS_CliType,     (IPTR)CLI_RUN },
+	    { SYS_CliType,     (IPTR)(SHArg(QUIET) ? CLI_ASYSTEM : CLI_RUN) },
 	    { TAG_DONE,        0             }
         };
 
