@@ -1,0 +1,13 @@
+# $Id: $
+include $(TOP)/config/make.cfg
+
+FILES := hpet_init
+FUNCS := gethpetcount allochpetunit freehpetunit getunitattrsa
+
+#MM- includes-generate : kernel-pc-hpet-includes
+
+%build_module mmake=kernel-pc-hpet \
+  modname=hpet modtype=resource \
+  files="$(FILES) $(FUNCS)" uselibs=rom
+
+%common
