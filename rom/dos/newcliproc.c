@@ -261,16 +261,10 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
     case CLI_SYSTEM:  flags |= FNF_VALIDFLAGS | FNF_SYSTEM;
                       break;
     case CLI_RUN:     flags = 0;
-                      { IPTR args[] = { me->pr_TaskNum }; 
-                        VFPrintf(cli->cli_StandardOutput, "[CLI %ld]\n", args);
-                      }
                       break;
     case CLI_BOOT:    flags = 0;
                       break;
     case CLI_NEWCLI:  flags = 0;
-                      { IPTR args[] = { me->pr_TaskNum }; 
-                        VFPrintf(cli->cli_StandardOutput, "New Shell process %ld\n", args);
-                      }
                       break;
     default:          break;
     }

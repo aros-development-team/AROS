@@ -104,6 +104,7 @@ __startup AROS_CLI(ShellStart)
     ShellState *ss;
     APTR DOSBase;
     struct Process *me = (struct Process *)FindTask(NULL);
+    struct CommandLineInterface *cli;
 
     DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
     if (!DOSBase)
@@ -136,15 +137,23 @@ __startup AROS_CLI(ShellStart)
      * incorrect to assume that ECHO would print "DIR" on
      * StandardOutput
      */
-    SelectInput(Cli()->cli_StandardInput);
-    SelectOutput(Cli()->cli_StandardOutput);
+    cli = Cli();
 
+    SelectInput(cli->cli_StandardInput);
+    SelectOutput(cli->cli_StandardOutput);
     setPath(BNULL, DOSBase);
 
     ss->cliNumber = me->pr_TaskNum;
     cliVarNum("process", ss->cliNumber, DOSBase);
 
     initDefaultInterpreterState(ss);
+
+    if (AROS_CLI_Type == CLI_RUN) {
+        FPrintf(cli->cli_StandardError, "[CLI %ld]\n", me->pr_TaskNum);
+    }
+    if (AROS_CLI_Type == CLI_NEWCLI) {
+        FPrintf(cli->cli_StandardOutput, "New Shell process %ld\n", me->pr_TaskNum);
+    }
 
     error = interact(ss, DOSBase);
 
