@@ -179,7 +179,7 @@
        if (flags & FNF_VALIDFLAGS) { \
            D(bug("AROS_CLI: System Exit\n")); \
            if (!(flags & FNF_USERINPUT)) { \
-               bug("AROS_CLI: Close StandardInput\n"); \
+               D(bug("AROS_CLI: Close StandardInput\n")); \
                Close(cli->cli_StandardInput); \
                cli->cli_StandardInput = BNULL; \
            } \
