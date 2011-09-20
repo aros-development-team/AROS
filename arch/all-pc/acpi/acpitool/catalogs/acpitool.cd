@@ -99,10 +99,10 @@ MSG_SPACE_UNKNOWN (//)
 Unknown space
 ;
 MSG_FMT_UNKNOWN_SPACE (//)
-in unknown space (%u)
+ in unknown space (%u)
 ;
 MSG_FMT_KNOWN_SPACE (//)
-in %s
+ in %s
 ;
 MSG_YES (//)
 Yes
