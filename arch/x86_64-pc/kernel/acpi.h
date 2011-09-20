@@ -11,7 +11,6 @@
 
 /* ACPI Table Parser func protos */
 void ACPI_Table_MADT_Parse(struct ACPI_TABLE_TYPE_MADT *madt);
-int ACPI_Table_HPET_Parse(struct ACPI_TABLE_TYPE_HPET *hpet_tbl);
 
 AROS_UFP2(IPTR, ACPI_hook_Table_LAPIC_Count,
 	  AROS_UFHA(struct Hook *, table_hook, A0),

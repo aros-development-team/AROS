@@ -64,7 +64,6 @@ ULONG core_ACPIInitialise(void)
 {
     ULONG result;
     struct ACPI_TABLE_TYPE_MADT *madt;
-    struct ACPI_TABLE_TYPE_HPET *hpet;
     struct ACPIBase *ACPIBase = OpenResource("acpi.resource");
 
     D(bug("[Kernel] core_ACPIInitialise()\n"));
@@ -140,14 +139,6 @@ ULONG core_ACPIInitialise(void)
 
         core_APICClusteredCheck();
     } */
-
-    hpet = ACPI_FindSDT(ACPI_MAKE_ID('H', 'P', 'E', 'T'));
-    if (hpet)
-    {
-    	D(bug("[Kernel] core_ACPIInitialise: HPET table 0x%p\n", hpet));
-
-	ACPI_Table_HPET_Parse(hpet);
-    }
 
     return 1;
 }
