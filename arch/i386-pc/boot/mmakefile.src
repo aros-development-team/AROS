@@ -20,6 +20,7 @@ include $(TOP)/config/make.cfg
 #MM- kernel-bsp-pc-i386 :		\
 #MM     kernel-bsp-objs			\
 #MM	kernel-pc-acpi-kobj		\
+#MM	kernel-pc-hpet-kobj		\
 #MM	kernel-isapnp-kobj 		\
 #MM	kernel-pc-i386-drivers 		\
 #MM     kernel-hidd-vesa-kobj 		\
@@ -29,7 +30,7 @@ include $(TOP)/config/make.cfg
 EXEDIR  := $(BINDIR)/boot
 USELIBS	:= hiddstubs amiga arossupport debug rom arosm autoinit libinit
 
-KRSRCS  := acpi battclock processor
+KRSRCS  := acpi battclock hpet processor
 KLIBS   := exec expansion
 KDEVS   := timer ata trackdisk
 KHIDDS  := kbd ps2mouse vesagfx vgah pci pcipc irq
