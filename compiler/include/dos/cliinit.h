@@ -121,7 +121,7 @@
  *                        // DOS/CliInitRun() Autodocs
  * LONG  AROS_CLI_Type;   // One of the CLI_* types defined above
  *
- * Input() and Output() will be NULL, as will me->pr_CES
+ * Input() and Output() will be NULL
  *
  * Use the filehandles in Cli() for managing your
  * input, output, and error streams.
