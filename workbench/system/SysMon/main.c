@@ -1,244 +1,16 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <libraries/mui.h>
 #include <proto/muimaster.h>
-#include <proto/intuition.h>
-#include <proto/exec.h>
 #include <dos/dos.h>
-#include <devices/timer.h>
-#include <clib/alib_protos.h>
-#include <proto/dos.h>
-#include <proto/processor.h>
-#include <resources/processor.h>
-#include <exec/tasks.h>
-#include <exec/execbase.h>
+
+#include "sysmon_intern.h"
 
 #include "locale.h"
 
-#define VERSION "$VER: SysMon 1.0 (07.01.2011) ©2011 The AROS Development Team"
-
-/* MUI information */
-static Object * application;
-static Object * mainwindow;
-
-static Object * cpuusagegroup;
-static Object ** cpuusagegauges;
-
-static Object * cpufreqgroup;
-static Object ** cpufreqlabels;
-static Object ** cpufreqvalues;
-static CONST_STRPTR tabs [] = {NULL, NULL, NULL};
-
-static Object * tasklist;
-static Object * tasklistrefreshbutton;
-static Object * tasklistautorefreshcheckmark;
-static struct Hook tasklistdisplayhook;
-static struct Hook tasklistrefreshbuttonhook;
-static IPTR tasklistautorefresh;
-
-/* Processor information */
-static ULONG processorcount;
-APTR ProcessorBase;
-#define SIMULATE_USAGE_FREQ 0
-
-/* Timer information */
-static struct MsgPort *     timerport = NULL;
-static struct timerequest * timermsg = NULL;
-static ULONG                SIG_TIMER = 0;
-
-/* MUI Functions */
-VOID UpdateCPUInformation()
-{
-    ULONG i;
-    TEXT buffer[128];
-
-    for (i = 0; i < processorcount; i++)
-    {
-        UBYTE usage = 0;
-        UQUAD frequency = 0;
-#if SIMULATE_USAGE_FREQ
-        struct DateStamp ds;
-        DateStamp(&ds);
-        usage = (ds.ds_Tick * (i + 1)) % 100;
-        frequency = usage * 10;
-#else
-        struct TagItem tags [] = 
-        {
-            { GCIT_SelectedProcessor, (IPTR)i },
-            { GCIT_ProcessorSpeed, (IPTR)&frequency },
-            { GCIT_ProcessorLoad, (IPTR)&usage },
-            { TAG_DONE, TAG_DONE }
-        };
-        
-        GetCPUInfo(tags);
-        
-        frequency /= 1000000;
-#endif
-        __sprintf(buffer, " CPU %d : %d %% ", i, usage);
-        set(cpuusagegauges[i], MUIA_Gauge_Current, usage);
-        set(cpuusagegauges[i], MUIA_Gauge_InfoText, (IPTR)buffer);
-        __sprintf(buffer, "%d MHz", (ULONG)frequency);
-        set(cpufreqvalues[i], MUIA_Text_Contents, (IPTR)buffer);
-    }
-}
-
-/* Updated information which will not change through life of application */
-VOID UpdateCPUStaticInformation()
-{
-    ULONG i;
-    TEXT buffer[172];
-    CONST_STRPTR modelstring;
-    
-    for (i = 0; i < processorcount; i++)
-    {
-#if SIMULATE_USAGE_FREQ
-        modelstring = _(MSG_SIMULATED_CPU);
-#else
-        struct TagItem tags [] =
-        {
-            { GCIT_SelectedProcessor, (IPTR)i },
-            { GCIT_ModelString, (IPTR)&modelstring },
-            { TAG_DONE, TAG_DONE }
-        };
-        
-        GetCPUInfo(tags);
-#endif
-        __sprintf(buffer, (STRPTR)_(MSG_PROCESSOR), i + 1, modelstring);
-        set(cpufreqlabels[i], MUIA_Text_Contents, buffer);
-    }
-}
-
-/* Task information handling*/
-struct TaskInfo
-{
-    STRPTR Name;
-    WORD Type;
-    WORD Priority;
-    struct TaskInfo * Next;
-    UBYTE Private; /* MUST ALWAYS BE LAST. HERE NAME WILL BE COPIED */
-};
-
-UBYTE taskinfobuffer[16 * 1024]; /* 16 kB buffer */
-
-static LONG AddTaskInfo(struct Task * task, struct TaskInfo * ti)
-{
-    ti->Type = task->tc_Node.ln_Type;
-    ti->Priority = (WORD)task->tc_Node.ln_Pri;
-    ti->Name = (STRPTR)&ti->Private;
-    ULONG namesize = 0;
-    STRPTR src = task->tc_Node.ln_Name;
-    
-    if (src)
-    {
-        while(*src != 0)
-        {
-            ti->Name[namesize++] = *src;
-            src++;
-        }
-    }
-    
-    *(ti->Name + namesize) = 0; /* Terminate */
-
-    /* Calculate next item  */
-    ti->Next = (struct TaskInfo *)(((UBYTE *)ti) + sizeof(struct TaskInfo) + namesize);
-
-    return 1;
-}
-
-static BOOL FillTaskInfoBuffer(UBYTE * buffer)
-{
-    struct TaskInfo * current = (struct TaskInfo *)buffer;
-    struct Task * task;
-
-    Disable();
-    if(!AddTaskInfo(SysBase->ThisTask, current))
-    {
-        Enable();
-        return FALSE;
-    }
-
-    for(task=(struct Task *)SysBase->TaskReady.lh_Head;
-        task->tc_Node.ln_Succ!=NULL;
-        task=(struct Task *)task->tc_Node.ln_Succ)
-    {
-        current = current->Next;
-
-        if(!AddTaskInfo(task, current))
-        {
-            Enable();
-            return FALSE;
-        }
-    }
-
-    for(task=(struct Task *)SysBase->TaskWait.lh_Head;
-        task->tc_Node.ln_Succ!=NULL;
-        task=(struct Task *)task->tc_Node.ln_Succ)
-    {
-        current = current->Next;
-
-        if(!AddTaskInfo(task, current))
-        {
-            Enable();
-            return FALSE;
-        }
-    }
-    
-    current->Next = NULL; /* "stop" list */
-
-    Enable();
-    return TRUE;
-}
-
-VOID UpdateTaskInformation()
-{
-    /* Clear prior to reading information, because list contains items
-    from the taskinfobuffer. Once FillTaskInfoBuffer is executed old items
-    are invalid and could crash list */
-    set(tasklist, MUIA_List_Quiet, TRUE);
-     
-    DoMethod(tasklist, MUIM_List_Clear);
-
-    if (FillTaskInfoBuffer(taskinfobuffer))
-    {
-        struct TaskInfo * ti = (struct TaskInfo *)taskinfobuffer;
-        
-        for (; ti->Next != NULL; ti = ti->Next)
-        {
-            DoMethod(tasklist, MUIM_List_InsertSingle, ti, MUIV_List_Insert_Bottom);
-        }
-    }
-
-    set(tasklist, MUIA_List_Quiet, FALSE);
-}
-
-AROS_UFH3(VOID, tasklistdisplayfunction,
-    AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(STRPTR *, strings, A2),
-    AROS_UFHA(struct TaskInfo *, obj, A1))
-{
-    AROS_USERFUNC_INIT
-
-    static TEXT bufprio[8];
-
-    if (obj)
-    {
-        __sprintf(bufprio, "%d", obj->Priority);
-        strings[0] = obj->Name;
-        strings[1] = bufprio;
-        strings[2] = obj->Type == NT_TASK ? (STRPTR)_(MSG_TASK) : (STRPTR)_(MSG_PROCESS);
-    }
-    else
-    {
-        strings[0] = (STRPTR)_(MSG_TASK_NAME);
-        strings[1] = (STRPTR)_(MSG_TASK_PRIORITY);
-        strings[2] = (STRPTR)_(MSG_TASK_TYPE);
-    }
-
-    AROS_USERFUNC_EXIT
-}
+#define VERSION "$VER: SysMon 1.1 (09.18.2011) ©2011 The AROS Development Team"
 
 AROS_UFH3(VOID, tasklistrefreshbuttonfunction,
     AROS_UFHA(struct Hook *, h, A0),
@@ -247,23 +19,33 @@ AROS_UFH3(VOID, tasklistrefreshbuttonfunction,
 {
     AROS_USERFUNC_INIT
 
-    UpdateTaskInformation();
+    UpdateTasksInformation(h->h_Data);
 
     AROS_USERFUNC_EXIT
 }
 
-BOOL CreateApplication()
+BOOL CreateApplication(struct SysMonData * smdata)
 {
     Object * cpucolgroup;
+    Object * tasklistrefreshbutton;
+    Object * tasklistautorefreshcheckmark;
+    Object * cpuusagegroup;
+    Object * cpufreqgroup;
     ULONG i;
+    LONG processorcount = GetProcessorCount();
 
-    tabs[0] = _(MSG_TAB_TASKS);
-    tabs[1] = _(MSG_TAB_CPU);
+    smdata->tabs[0] = _(MSG_TAB_TASKS);
+    smdata->tabs[1] = _(MSG_TAB_CPU);
+    smdata->tabs[2] = _(MSG_TAB_SYSTEM);
+    smdata->tabs[3] = NULL;
 
-    tasklistdisplayhook.h_Entry = (APTR)tasklistdisplayfunction;
-    tasklistrefreshbuttonhook.h_Entry = (APTR)tasklistrefreshbuttonfunction;
+    smdata->tasklistdisplayhook.h_Entry = (APTR)TasksListDisplayFunction;
+    smdata->tasklistrefreshbuttonhook.h_Entry = (APTR)tasklistrefreshbuttonfunction;
+    smdata->tasklistrefreshbuttonhook.h_Data = (APTR)smdata;
+    
+    smdata->tasklistautorefresh = (IPTR)0;
 
-    application = ApplicationObject,
+    smdata->application = ApplicationObject,
         MUIA_Application_Title, __(MSG_APP_NAME),
         MUIA_Application_Version, (IPTR) VERSION,
         MUIA_Application_Author, (IPTR) "Krzysztof Smiechowicz",
@@ -271,19 +53,19 @@ BOOL CreateApplication()
         MUIA_Application_Base, (IPTR)"SYSMON",
         MUIA_Application_Description, __(MSG_APP_TITLE),
         SubWindow, 
-            mainwindow = WindowObject,
+            smdata->mainwindow = WindowObject,
                 MUIA_Window_Title, __(MSG_WINDOW_TITLE),
                 MUIA_Window_ID, MAKE_ID('S','Y','S','M'),
                 MUIA_Window_Height, MUIV_Window_Height_Visible(45),
                 MUIA_Window_Width, MUIV_Window_Width_Visible(35),
                 WindowContents,
-                    RegisterGroup(tabs),
+                    RegisterGroup(smdata->tabs),
                         Child, VGroup,
                             Child, ListviewObject, 
-                                MUIA_Listview_List, tasklist = ListObject,
+                                MUIA_Listview_List, smdata->tasklist = ListObject,
                                     ReadListFrame,
                                     MUIA_List_Format, "MIW=50 BAR,BAR,",
-                                    MUIA_List_DisplayHook, &tasklistdisplayhook,
+                                    MUIA_List_DisplayHook, &smdata->tasklistdisplayhook,
                                     MUIA_List_Title, (IPTR)TRUE,
                                 End,
                             End,
@@ -306,37 +88,100 @@ BOOL CreateApplication()
                                 End,
                             End,
                         End,
+                        Child, VGroup,
+                            Child, ColGroup(2),
+                                Child, VGroup, GroupFrameT(_(MSG_MEMORY_SIZE)),
+                                        Child, ColGroup(2), 
+                                        Child, Label(_(MSG_TOTAL_RAM)),
+                                        Child, smdata->memorysize[MEMORY_RAM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"2097152 Kb", 
+                                        End,
+                                        Child, Label(_(MSG_CHIP_RAM)),
+                                        Child, smdata->memorysize[MEMORY_CHIP] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                        End,
+                                        Child, Label(_(MSG_FAST_RAM)),
+                                        Child, smdata->memorysize[MEMORY_FAST] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                        End,
+                                    End,
+                                End,
+                                Child, VGroup, GroupFrameT(_(MSG_MEMORY_FREE)),
+                                    Child, ColGroup(2), 
+                                        Child, Label(_(MSG_TOTAL_RAM)),
+                                        Child, smdata->memoryfree[MEMORY_RAM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"2097152 Kb", 
+                                        End,
+                                        Child, Label(_(MSG_CHIP_RAM)),
+                                        Child, smdata->memoryfree[MEMORY_CHIP] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                        End,
+                                        Child, Label(_(MSG_FAST_RAM)),
+                                        Child, smdata->memoryfree[MEMORY_FAST] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                        End,
+                                    End,
+                                End,
+                            End,
+                            Child, ColGroup(2),
+                                Child, VGroup, GroupFrameT(_(MSG_VIDEO_SIZE)),
+                                    Child, ColGroup(2), 
+                                        Child, Label(_(MSG_VIDEO_RAM)),
+                                        Child, smdata->memorysize[MEMORY_VRAM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                        End,
+                                        Child, Label(_(MSG_GART_APER)),
+                                        Child, smdata->memorysize[MEMORY_GART] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                        End,
+                                    End,
+                                End,
+                                Child, VGroup, GroupFrameT(_(MSG_VIDEO_FREE)),
+                                    Child, ColGroup(2), 
+                                        Child, Label(_(MSG_VIDEO_RAM)),
+                                        Child, smdata->memoryfree[MEMORY_VRAM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                        End,
+                                        Child, Label(_(MSG_GART_APER)),
+                                        Child, smdata->memoryfree[MEMORY_GART] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                        End,
+                                    End,
+                                End,
+                            End,
+                            Child, HVSpace,
+                        End,
                     End,
             End,
     End;
     
-    if (!application)
+    if (!smdata->application)
         return FALSE;
 
-    DoMethod(mainwindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-        application, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(smdata->mainwindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+        smdata->application, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     DoMethod(tasklistrefreshbutton, MUIM_Notify, MUIA_Pressed, FALSE,
-        application, 2, MUIM_CallHook, (IPTR)&tasklistrefreshbuttonhook);
+        smdata->application, 2, MUIM_CallHook, (IPTR)&smdata->tasklistrefreshbuttonhook);
 
     DoMethod(tasklistautorefreshcheckmark, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
         tasklistrefreshbutton, 3, MUIM_Set, MUIA_Disabled, MUIV_TriggerValue);
 
     DoMethod(tasklistautorefreshcheckmark, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        tasklistrefreshbutton, 3, MUIM_WriteLong, MUIV_TriggerValue, &tasklistautorefresh);
+        tasklistrefreshbutton, 3, MUIM_WriteLong, MUIV_TriggerValue, &smdata->tasklistautorefresh);
 
     /* Adding cpu usage gauges */
     cpucolgroup = ColGroup(processorcount + 1), End;
     
-    cpuusagegauges = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
+    smdata->cpuusagegauges = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
     
     for (i = 0; i < processorcount; i++)
     {
-        cpuusagegauges[i] = GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, (IPTR) " CPU XX : XXX% ",
+        smdata->cpuusagegauges[i] = GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, (IPTR) " CPU XX : XXX% ",
                         MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
                         MUIA_Gauge_Max, 100, End;
                         
-        DoMethod(cpucolgroup, OM_ADDMEMBER, cpuusagegauges[i]);
+        DoMethod(cpucolgroup, OM_ADDMEMBER, smdata->cpuusagegauges[i]);
     }
     
     DoMethod(cpucolgroup, OM_ADDMEMBER, (IPTR)HVSpace);
@@ -344,158 +189,119 @@ BOOL CreateApplication()
     DoMethod(cpuusagegroup, OM_ADDMEMBER, cpucolgroup);
     
     /* Adding cpu frequency labels */
-    cpufreqlabels = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
-    cpufreqvalues = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
+    smdata->cpufreqlabels = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
+    smdata->cpufreqvalues = AllocVec(sizeof(Object *) * processorcount, MEMF_ANY | MEMF_CLEAR);
     
     for (i = 0; i < processorcount; i++)
     {
-        cpufreqlabels[i] = TextObject, MUIA_Text_PreParse, "\33l",
+        smdata->cpufreqlabels[i] = TextObject, MUIA_Text_PreParse, "\33l",
                         MUIA_Text_Contents, (IPTR)"", End;
-        cpufreqvalues[i] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+        smdata->cpufreqvalues[i] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
                         MUIA_Text_PreParse, (IPTR)"\33l",
 				        MUIA_Text_Contents, (IPTR)"", End;
         
-        DoMethod(cpufreqgroup, OM_ADDMEMBER, cpufreqlabels[i]);
-        DoMethod(cpufreqgroup, OM_ADDMEMBER, cpufreqvalues[i]);
+        DoMethod(cpufreqgroup, OM_ADDMEMBER, smdata->cpufreqlabels[i]);
+        DoMethod(cpufreqgroup, OM_ADDMEMBER, smdata->cpufreqvalues[i]);
         DoMethod(cpufreqgroup, OM_ADDMEMBER, (IPTR)HVSpace);
     }
 
     return TRUE;
 }
 
-VOID DisposeApplication()
+VOID DisposeApplication(struct SysMonData * smdata)
 {
-    MUI_DisposeObject(application);
+    MUI_DisposeObject(smdata->application);
     
-    FreeVec(cpuusagegauges);
-    FreeVec(cpufreqlabels);
-    FreeVec(cpufreqvalues);
+    FreeVec(smdata->cpuusagegauges);
+    FreeVec(smdata->cpufreqlabels);
+    FreeVec(smdata->cpufreqvalues);
 }
 
-/* Timer functions */
-BOOL InitTimer()
+VOID DeInitModules(struct SysMonModule ** modules, LONG lastinitedmodule)
 {
-    if((timerport = CreatePort(0,0)) == NULL)
-        return FALSE;
-
-    if((timermsg = (struct timerequest *) CreateExtIO(timerport, sizeof(struct timerequest))) == NULL)
-    {
-        DeletePort(timerport);
-        timerport = NULL;
-        return FALSE;
-    }
-        
-    if(OpenDevice("timer.device", UNIT_VBLANK, ((struct IORequest *) timermsg), 0) != 0)
-    {
-        DeletePort(timerport);
-        timerport = NULL;
-        DeleteExtIO((struct IORequest *)timermsg);
-        timermsg = NULL;
-        return FALSE;
-    }
-
-    SIG_TIMER = 1 << timerport->mp_SigBit;
-
-    return TRUE;
-}
-
-VOID SignalMeAfter(ULONG msecs)
-{
-    timermsg->tr_node.io_Command = TR_ADDREQUEST;
-    timermsg->tr_time.tv_secs = msecs / 1000;
-    timermsg->tr_time.tv_micro = (msecs % 1000) * 1000;
-    SendIO((struct IORequest *)timermsg);
-}
-
-VOID DeInitTimer()
-{
-    if (timermsg != NULL)
-    {
-	    AbortIO((struct IORequest *)timermsg);
-	    WaitIO((struct IORequest *)timermsg);
-	    CloseDevice((struct IORequest *)timermsg);
-	    DeleteExtIO((struct IORequest *)timermsg);
-    }
-
-	if(timerport != NULL) DeletePort(timerport);
-}
-
-/* Processor functions */
-BOOL InitProcessor()
-{
-    ProcessorBase = OpenResource(PROCESSORNAME);
+    LONG i;
     
-    if (ProcessorBase)
+    for (i = lastinitedmodule; i >= 0; i--)
+        modules[i]->DeInit();
+}
+
+LONG InitModules(struct SysMonModule ** modules)
+{
+    LONG lastinitedmodule = -1;
+
+    while(modules[lastinitedmodule + 1] != NULL)
     {
-        struct TagItem tags [] = 
+        if (modules[lastinitedmodule + 1]->Init())
+            lastinitedmodule++;
+        else
         {
-            { GCIT_NumberOfProcessors, (IPTR)&processorcount },
-            { 0, (IPTR)NULL }
-        };
+            DeInitModules(modules, lastinitedmodule);
+            return -1;
+        }
         
-        GetCPUInfo(tags);
-        
-        return TRUE;
-    }
-
-
-    return FALSE;
-}
-
-VOID DeInitProcessor()
-{
+    }    
+    
+    return lastinitedmodule;
 }
 
 int main()
 {
     ULONG signals = 0;
-    ULONG tasklistcounter = 0;
+    ULONG itercounter = 0;
+    struct SysMonData smdata;
+    struct SysMonModule * modules [] = {&memorymodule, &videomodule, &processormodule, &tasksmodule, &timermodule, NULL};
+    LONG lastinitedmodule = -1;
 
     Locale_Initialize();
 
-#if SIMULATE_USAGE_FREQ
-    processorcount = 4;
-#else
-    if(!InitProcessor())
-        return 1;
-#endif
-
-    if (!InitTimer())
+    if ((lastinitedmodule = InitModules(modules)) == -1)
         return 1;
 
-    if (!CreateApplication())
+    if (!CreateApplication(&smdata))
         return 1;
 
-    UpdateCPUStaticInformation();
-    UpdateCPUInformation();
-    UpdateTaskInformation();
+    UpdateProcessorStaticInformation(&smdata);
+    UpdateProcessorInformation(&smdata);
+    UpdateTasksInformation(&smdata);
+    UpdateMemoryStaticInformation(&smdata);
+    UpdateMemoryInformation(&smdata);
+    UpdateVideoStaticInformation(&smdata);
+    UpdateVideoInformation(&smdata);
     SignalMeAfter(250);
 
-    set(mainwindow, MUIA_Window_Open, TRUE);
+    set(smdata.mainwindow, MUIA_Window_Open, TRUE);
 
-    while (DoMethod(application, MUIM_Application_NewInput, &signals) != MUIV_Application_ReturnID_Quit)
+    while (DoMethod(smdata.application, MUIM_Application_NewInput, &signals) != MUIV_Application_ReturnID_Quit)
     {
         if (signals)
         {
-            signals = Wait(signals | SIGBREAKF_CTRL_C | SIG_TIMER);
+            signals = Wait(signals | SIGBREAKF_CTRL_C | GetSIG_TIMER());
             if (signals & SIGBREAKF_CTRL_C) break;
-            if (signals & SIG_TIMER)
+            if (signals & GetSIG_TIMER())
             {
-                UpdateCPUInformation();
-                if (tasklistautorefresh && ((tasklistcounter++ % 4) == 0)) 
-                    UpdateTaskInformation();
+                UpdateProcessorInformation(&smdata);
+
+                if ((itercounter % 4) == 0)
+                {
+                    UpdateMemoryInformation(&smdata);
+                    UpdateVideoInformation(&smdata);
+                    
+                    if (smdata.tasklistautorefresh)
+                        UpdateTasksInformation(&smdata);
+                }
+
+                itercounter++;
+
                 SignalMeAfter(250);
             }
         }
     }
-    
-    set(mainwindow, MUIA_Window_Open, FALSE);
-    
-    DisposeApplication();
 
-    DeInitTimer();
-    
-    DeInitProcessor();
+    set(smdata.mainwindow, MUIA_Window_Open, FALSE);
+
+    DisposeApplication(&smdata);
+
+    DeInitModules(modules, lastinitedmodule);
 
     Locale_Deinitialize();
 

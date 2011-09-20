@@ -47,3 +47,33 @@ Priority
 MSG_TASK_TYPE (//)
 Type
 ;
+MSG_TAB_SYSTEM (//)
+System
+;
+MSG_MEMORY_SIZE (//)
+Memory Size
+;
+MSG_MEMORY_FREE (//)
+Memory Free
+;
+MSG_VIDEO_SIZE (//)
+Video Size
+;
+MSG_VIDEO_FREE (//)
+Video Free
+;
+MSG_TOTAL_RAM (//)
+Total Memory
+;
+MSG_CHIP_RAM (//)
+Chip Memory
+;
+MSG_FAST_RAM (//)
+Fast Memory
+;
+MSG_VIDEO_RAM (//)
+Video Memory
+;
+MSG_GART_APER (//)
+GART Aperture
+;

@@ -3,12 +3,14 @@
 
 include $(TOP)/config/make.cfg
 
-FILES	:= main locale
+FILES	:= main locale memory video processor tasks timer
 EXEDIR	:= $(AROSDIR)/System
 
 #MM- workbench-system : workbench-system-sysmon
 #MM  workbench-system-sysmon : includes linklibs \
 #MM      workbench-system-sysmon-catalogs
+
+USER_CFLAGS :=
 
 %build_prog mmake=workbench-system-sysmon \
     files=$(FILES) targetdir=$(EXEDIR) \
