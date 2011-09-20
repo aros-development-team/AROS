@@ -344,19 +344,20 @@
 	    { NP_Name       , (IPTR)shellName               }, /* 1  */
 	    { NP_Input      , (IPTR)BNULL                   }, /* 2  */
 	    { NP_Output     , (IPTR)BNULL                   }, /* 3  */
-	    { NP_Error      , (IPTR)ses                     }, /* 11 */
-	    { NP_CloseInput , FALSE                         }, /* 4  */
-	    { NP_CloseOutput, FALSE                         }, /* 5  */
-	    { NP_CloseError , FALSE,                        }, /* 12 */
-	    { NP_Cli        , (IPTR)FALSE                   }, /* 6  */
+	    { NP_Error      , (IPTR)ses                     }, /* 4  */
+	    { NP_CloseInput , FALSE                         }, /* 5  */
+	    { NP_CloseOutput, FALSE                         }, /* 6  */
+	    { NP_CloseError , (isAsynch || ses_opened)
+	                              ? TRUE : FALSE,       }, /* 7  */
+	    { NP_Cli        , (IPTR)FALSE                   }, /* 8  */
 	    { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
-	                      (IPTR)me->pr_WindowPtr        }, /* 7  */
-	    { NP_Seglist    , (IPTR)shellseg                }, /* 8  */
-	    { NP_FreeSeglist, FALSE                         }, /* 9  */
-	    { NP_Synchronous, FALSE                         }, /* 10 */
-	    { NP_Entry      , (IPTR)entry                   }, /* 14 */
-            { NP_CurrentDir , (IPTR)BNULL                   }, /* 15 */
-	    { TAG_END       , 0                             }  /* 16 */
+	                      (IPTR)me->pr_WindowPtr        }, /* 9  */
+	    { NP_Seglist    , (IPTR)shellseg                }, /* 10 */
+	    { NP_FreeSeglist, FALSE                         }, /* 11 */
+	    { NP_Synchronous, FALSE                         }, /* 12 */
+	    { NP_Entry      , (IPTR)entry                   }, /* 13 */
+            { NP_CurrentDir , (IPTR)BNULL                   }, /* 14 */
+	    { TAG_END       , 0                             }  /* 15 */
 	};
 
 	Tag filterList[] =
