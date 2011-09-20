@@ -77,11 +77,11 @@ EndIf
 
 AddDatatypes REFRESH QUIET
 IPrefs
-Run <NIL: >NIL: ConClip
+Run <NIL: >NIL: QUIET ConClip
 
 If EXISTS C:RexxMast
     Assign REXX: S:
-    Run <NIL: >NIL: C:RexxMast
+    Run <NIL: >NIL: QUIET C:RexxMast
 EndIf
 
 If EXISTS C:Decoration
