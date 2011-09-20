@@ -188,7 +188,7 @@ int main()
 	    if (!owner)
 	    	owner = "Available for use";
 
-	    printf("HPET %u:\t%s\n", i++, owner);
+	    printf("HPET %u:\t\t%s\n", ++i, owner);
 	}
     }
 
