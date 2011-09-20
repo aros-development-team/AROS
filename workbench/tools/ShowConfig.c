@@ -1,12 +1,15 @@
-#include <aros/bootloader.h>
+#include <aros/kernel.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <resources/hpet.h>
+#include <resources/processor.h>
+
 #include <proto/aros.h>
-#include <proto/bootloader.h>
+#include <proto/hpet.h>
+#include <proto/kernel.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/processor.h>
-#include <resources/processor.h>
 
 #include <stdio.h>
 
@@ -148,6 +151,8 @@ static VOID PrintProcessorInformation()
             j++;
         }       
 
+	if (!modelstring)
+	    modelstring = "Unknown";
 
         printf("PROCESSOR %d:\t[%s/%s] %s", (int)(i + 1), architecturestring, endiannessstring, modelstring);
         if (cpuspeed)
@@ -162,18 +167,31 @@ char __stdiowin[]="CON://800/400/ShowConfig/AUTO/CLOSE/WAIT";
 int main()
 {
     struct MemHeader *mh;
-    APTR BootLoaderBase;
-    STRPTR bootldr;
-    struct List *args;
-    struct Node *n;
-    
-    ProcessorBase = OpenResource(PROCESSORNAME);
-    if (ProcessorBase)
-        PrintProcessorInformation();        
-    
+    APTR KernelBase;
+    APTR HPETBase;
+
     printf("VERS:\t\tAROS version %d.%d, Exec version %d.%d\n", ArosBase->lib_Version, ArosBase->lib_Revision,
 	   SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision);
-    
+
+    ProcessorBase = OpenResource(PROCESSORNAME);
+    if (ProcessorBase)
+        PrintProcessorInformation();
+
+    HPETBase = OpenResource("hpet.resource");
+    if (HPETBase)
+    {
+    	const char *owner;
+    	ULONG i = 0;
+
+	while (GetUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
+	{
+	    if (!owner)
+	    	owner = "Available for use";
+
+	    printf("HPET %u:\t%s\n", i++, owner);
+	}
+    }
+
     printf("RAM:");
     for (mh = (struct MemHeader *)SysBase->MemList.lh_Head; mh->mh_Node.ln_Succ; mh = (struct MemHeader *)mh->mh_Node.ln_Succ) {
         char *memtype = "ROM";
@@ -187,21 +205,20 @@ int main()
         printf(")\n");
     }
 
-    BootLoaderBase = OpenResource("bootloader.resource");
-    if (BootLoaderBase) {
-	bootldr = GetBootInfo(BL_LoaderName);
+    KernelBase = OpenResource("kernel.resource");
+    if (KernelBase)
+    {
+	struct TagItem *bootinfo = KrnGetBootInfo();
+	struct TagItem *tag;
 
-	if (bootldr)
-    	    printf("BOOTLDR:\t%s\n", bootldr);
+	tag = FindTagItem(KRN_BootLoader, bootinfo);
+	if (tag)
+    	    printf("BOOTLDR:\t%s\n", (char *)tag->ti_Data);
 
-	args = GetBootInfo(BL_Args);
-	if (args) {
-            printf("ARGS:\t\t");
-            for (n = args->lh_Head; n->ln_Succ; n = n->ln_Succ) {
-        	printf("%s ", n->ln_Name);
-            }
-        	printf("\n");
-	}
+	tag = FindTagItem(KRN_CmdLine, bootinfo);
+	if (tag)
+            printf("ARGS:\t\t%s\n", (char *)tag->ti_Data);
+
     }
     return 0;
 }
