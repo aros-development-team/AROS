@@ -79,18 +79,25 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
     cis = Open("NIL:", MODE_OLDFILE);
     cos = OpenFromLock(DupLockFromFH(Output()));
 
-    if (cli)
-    {
-    	struct Process *me = (struct Process *)FindTask(NULL);
+    /* All the 'noise' goes to cli_StandardError
+     */
+    if (!SHArg(QUIET)) {
+        if (cli)
+        {
+            ces = cli->cli_StandardError;
+        } else {
+            struct Process *me = (struct Process *)FindTask(NULL);
 
-	/* This is sort of a hack, needed because the original AmigaOS shell didn't allow
-	   pr_CES redirection, so all the scripts written so far assume that only Input() and
-	   Output() require to be redirected in order to not block the parent console */
-        if (me->pr_CES != cli->cli_StandardError && IsInteractive(me->pr_CES))
-	{
-	    ces = OpenFromLock(DupLockFromFH(me->pr_CES));
-	}
+            ces = me->pr_CES;
+        }
     }
+
+    /* Use a duplicate of the CES lock
+     */
+    if (ces)
+        ces = OpenFromLock(DupLockFromFH(ces));
+    else
+        ces = Open("NIL:", MODE_OLDFILE);
 
     if ( SHArg(COMMAND) )
     {
@@ -99,7 +106,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 	    { SYS_Input,       (IPTR)cis     },
 	    { SYS_Output,      (IPTR)cos     },
 	    { SYS_Error,       (IPTR)ces     },
-	    { SYS_CliType,     (IPTR)(SHArg(QUIET) ? CLI_ASYSTEM : CLI_RUN) },
+	    { SYS_CliType,     (IPTR)CLI_RUN },
 	    { TAG_DONE,        0             }
         };
 
