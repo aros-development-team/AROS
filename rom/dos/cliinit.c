@@ -126,7 +126,7 @@ static long internalBootCliHandler(void);
 
     seg = CreateSegList(internalBootCliHandler);
 
-    mp = CreateProc("Boot Shell", 0, seg, AROS_STACKSIZE);
+    mp = CreateProc("Boot Mount", 0, seg, AROS_STACKSIZE);
     if (mp == NULL) {
         DeleteMsgPort(reply_mp);
         if (my_dp)
