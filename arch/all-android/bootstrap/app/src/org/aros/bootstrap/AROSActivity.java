@@ -299,9 +299,17 @@ class BitmapView extends View
 		}
 		else
 		{
-	//		Log.d("AROS.UI", "Show (" + bm.Width + " x " + bm.Height + ")");
+			Log.d("AROS.UI", "Show (" + bm.Width + " x " + bm.Height + ")");
 			pixbuf = Bitmap.createBitmap(bm.Width, bm.Height, Bitmap.Config.ARGB_8888);
-			
+
+			try
+			{
+				pixbuf.setHasAlpha(false);
+			}
+			catch (Exception e)
+			{
+				Log.d("AROS.UI", "setHasAlpha() not supported");
+			}
 			// Sometimes screen invalidation happens between this and first Update method call.
 			// This causes bad visual effect (black screen flashes for a moment.
 			// Here we instantly get initial contents to prevent this.
