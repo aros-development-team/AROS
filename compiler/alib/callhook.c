@@ -5,6 +5,9 @@
     Desc: amiga.lib function CallHook() which doesn't use utility.library
     Lang: english
 */
+
+#define ALIB_NO_INLINE_STDARG
+
 #include <aros/system.h>
 #include <stdarg.h>
 #include "alib_intern.h"
