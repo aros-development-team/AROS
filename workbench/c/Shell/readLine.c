@@ -3,8 +3,6 @@
     $Id$
  */
 
-/* TODO + line continuations */
-
 #include <dos/stdio.h>
 
 #include <proto/dos.h>
@@ -35,6 +33,12 @@ LONG readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APT
 	else if (c == '\n') /* end of line */
 	{
 	    comment = FALSE;
+
+	    /* '+' continuation */
+	    if (j > 0 && buf[j-1]=='+') {
+	        buf[j-1]=c;
+	        continue;
+            }
 	}
 	else if (comment)
 	    continue;
