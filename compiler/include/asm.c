@@ -175,6 +175,16 @@ int main(void) {
     DEFINE(reg_fs, offsetof(struct ExceptionContext, fs));
     DEFINE(reg_gs, offsetof(struct ExceptionContext, gs));
 #endif
+#ifdef __i386__
+    DEFINE(ECF_SEGMENTS, ECF_SEGMENTS);
+
+    DEFINE(Flags , offsetof(struct ExceptionContext, Flags));
+    DEFINE(reg_ds, offsetof(struct ExceptionContext, ds));
+    DEFINE(reg_es, offsetof(struct ExceptionContext, es));
+    DEFINE(reg_fs, offsetof(struct ExceptionContext, fs));
+    DEFINE(reg_gs, offsetof(struct ExceptionContext, gs));
+#endif
+
 
 #ifdef UseExecstubs
     asm volatile("\n#define UseExecstubs 1" ::);
