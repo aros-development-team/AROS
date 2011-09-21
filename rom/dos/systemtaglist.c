@@ -349,14 +349,15 @@
 	    { NP_CloseOutput, FALSE                         }, /* 6  */
 	    { NP_CloseError , (isAsynch || ses_opened)
 	                              ? TRUE : FALSE,       }, /* 7  */
-	    { NP_Cli        , (IPTR)FALSE                   }, /* 8  */
+	    { NP_Cli        , (cliType == CLI_NEWCLI)
+	                              ?  TRUE : FALSE       }, /* 8  */
 	    { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
 	                      (IPTR)me->pr_WindowPtr        }, /* 9  */
 	    { NP_Seglist    , (IPTR)shellseg                }, /* 10 */
 	    { NP_FreeSeglist, FALSE                         }, /* 11 */
 	    { NP_Synchronous, FALSE                         }, /* 12 */
 	    { NP_Entry      , (IPTR)entry                   }, /* 13 */
-            { NP_CurrentDir , (IPTR)BNULL                   }, /* 14 */
+	    { NP_CurrentDir , (IPTR)BNULL                   }, /* 14 */
 	    { TAG_END       , 0                             }  /* 15 */
 	};
 
@@ -429,7 +430,7 @@
                 } else {
                     /* CliInitRun style */
                     dp->dp_Res1 = 0;
-                    dp->dp_Arg1 = (IPTR)(__is_process(FindTask(NULL)) ? MKBADDR(Cli()) : BNULL);
+                    dp->dp_Arg1 = (IPTR)(__is_process(me) ? MKBADDR(Cli()) : BNULL);
                     dp->dp_Arg5 = (IPTR)(me->pr_CurrentDir ? DupLock(me->pr_CurrentDir) : BNULL);
                     dp->dp_Arg6 = 1;
                 }

@@ -18,32 +18,6 @@
 #include "dos_newcliproc.h"
 #include "fs_driver.h"
 
-BPTR internal_CopyPath(BPTR boldpath, APTR DOSBase)
-{
-    BPTR *nextpath, path, *newpath, *oldpath;
-
-    oldpath = BADDR(boldpath);
-
-    for (newpath = &path; oldpath != NULL; newpath = nextpath, oldpath = BADDR(oldpath[0])) {
-        /* NOTE: This memory allocation *must* match that which is
-         *       done in C:Path!!!!
-         */
-        nextpath = AllocVec(2*sizeof(BPTR), MEMF_CLEAR);
-        if (nextpath == NULL)
-            break;
-
-        *newpath = MKBADDR(nextpath);
-        nextpath[1] = DupLock(oldpath[1]);
-        if (nextpath[1] == BNULL)
-            break;
-    }
-
-    *newpath = BNULL;
-
-    return path;
-}
-
-
 ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
 {
     ULONG flags = 0;
@@ -226,12 +200,12 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
         SetPrompt(AROS_BSTR_ADDR(oldcli->cli_Prompt));
         SetCurrentDirName(AROS_BSTR_ADDR(oldcli->cli_SetName));
         cli->cli_DefaultStack = oldcli->cli_DefaultStack;
-        cli->cli_CommandDir = internal_CopyPath(cli->cli_CommandDir, DOSBase);
+        cli->cli_CommandDir = internal_CopyPath(oldcli->cli_CommandDir, DOSBase);
     } else {
+        D(bug("%s: Initializing CLI\n", __func__));
         SetPrompt("%N> ");
         SetCurrentDirName("SYS:");
         cli->cli_DefaultStack = AROS_STACKSIZE / CLI_DEFAULTSTACK_UNIT;
-        cli->cli_CommandDir = BNULL;
     }
 
     AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);
