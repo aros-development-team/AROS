@@ -92,9 +92,13 @@
     /* Write new one. */
     __AROS_SETVECADDR (library, funcOffset, newFunction);
 
-#if 1
+#if 0
     /* And clear the instruction cache. */
     /* Simply clear the entire cache... */
+    /*
+     * CHECKME: Why CacheClearU()? This was introduced in r1046,
+     * but seems to crash Android on Archos70.
+     */
     CacheClearU();
 #else
     /* ...or clear the vector address range specifically */
