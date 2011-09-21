@@ -148,14 +148,15 @@ static void header_parser(struct ACPI_TABLE_DEF_HEADER *table, void (*cb)(const 
 
 static void dumpData(unsigned char *data, int length, void (*cb)(const char *))
 {
-    char *p = buf;
-    int buflen = sizeof(buf);
     int len;
     int i;
     int left = length;
 
     while (left > 0)
     {
+	char *p = buf;
+	int buflen = sizeof(buf);
+
         len = snprintf(p, buflen, "%p:", data + length - left);
         p += len;
         buflen -= len;

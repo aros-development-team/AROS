@@ -201,6 +201,7 @@ BOOL GUIinit()
 		    	Child, ListviewObject,
 			    MUIA_Listview_List, InfoList = ListObject,
 			    	ReadListFrame,
+				MUIA_Font, MUIV_Font_Fixed,
 			    	MUIA_List_AdjustWidth, TRUE,
 			    	MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
 			    	MUIA_List_DestructHook, MUIV_List_DestructHook_String,
