@@ -356,8 +356,7 @@ static const UBYTE *PARAM =
 #define COPYFLAG_QUIET          (1<<8)
 #define COPYFLAG_VERBOSE        (1<<9)
 #define COPYFLAG_ERRWARN        (1<<10)
-#define COPYFLAG_PROTECTION     (1<<11)
-#define COPYFLAG_NEWER          (1<<12)
+#define COPYFLAG_NEWER          (1<<11)
 
 #define COPYFLAG_SOFTLINK       (1<<20) /* produce softlinks */
 #define COPYFLAG_DEST_FILE      (1<<21) /* one file mode */
@@ -705,11 +704,9 @@ __startup static AROS_ENTRY(int, Start,
                     cd->Flags |= COPYFLAG_ALL;
                 }
 
-                /* 12-jul-03 bugfix: always copy protection flags! -Piru */
-                cd->Flags |= COPYFLAG_PROTECTION;
                 if (args.clone)
                 {
-                    cd->Flags |= COPYFLAG_DATES | COPYFLAG_COMMENT | COPYFLAG_PROTECTION;
+                    cd->Flags |= COPYFLAG_DATES | COPYFLAG_COMMENT;
                 }
 
                 if (args.dates)
@@ -2302,7 +2299,7 @@ void SetData(STRPTR name, struct CopyData *cd)
         /* Is already set! - Piru */
         //SetProtection(name, 0);
     }
-    else if (cd->Flags & COPYFLAG_PROTECTION)
+    else
     {
         SetProtection(name, cd->Fib.fib_Protection & (ULONG) ~FIBF_ARCHIVE);
     }
