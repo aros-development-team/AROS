@@ -66,6 +66,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 
     struct CommandLineInterface *cli = Cli();
     STRPTR arguments = SHArg(ARGUMENTS), s;
+    STRPTR extraargs = NULL;
     BPTR from;
     LONG len;
     struct Process *me = (struct Process *)FindTask(NULL);
@@ -76,6 +77,29 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
     if (! arguments)
         arguments = "";
 
+    /* See if we have extra arguments buffered in Input()
+     */
+    if (Input() != BNULL) {
+        struct FileHandle *fh = BADDR(Input());
+
+        if (fh->fh_Pos > 0 && fh->fh_End > 0) {
+            LONG extraargsize = fh->fh_End - fh->fh_Pos;
+
+            if (extraargsize > 0) {
+                LONG argsize = strlen(arguments);
+                extraargs = AllocVec(argsize + 1 + extraargsize + 1, MEMF_ANY);
+                if (extraargs) {
+                    CopyMem(arguments, extraargs, argsize);
+                    extraargs[argsize++] = '\n';
+                    CopyMem(BADDR(fh->fh_Buf)+fh->fh_Pos, &extraargs[argsize], extraargsize);
+                    argsize += extraargsize;
+                    extraargs[argsize++] = 0;
+                    arguments = extraargs;
+                }
+            }
+        }
+    }
+
     from = Open(SHArg(NAME), MODE_OLDFILE);
 
     if (!from)
@@ -83,6 +107,8 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	IPTR data[] = { (IPTR)SHArg(NAME) };
 	VFPrintf(me->pr_CES, "EXECUTE: can't open %s\n", data);
 	PrintFault(IoErr(), NULL);
+	if (extraargs)
+	    FreeVec(extraargs);
 	return RETURN_FAIL;
     }
 
@@ -140,6 +166,8 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 		PrintFault(c, NULL);
 		Close(tmpfile);
 		DeleteFile(tmpname);
+		if (extraargs)
+		    FreeVec(extraargs);
 
 		return RETURN_FAIL;
 	    }
@@ -159,6 +187,8 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 		PrintFault(c, NULL);
 		Close(tmpfile);
 		DeleteFile(tmpname);
+		if (extraargs)
+		    FreeVec(extraargs);
 
 		return RETURN_FAIL;
 	    }
@@ -186,6 +216,8 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	    FPuts(me->pr_CES, "EXECUTE: error while creating temporary file\n");
 	    PrintFault(c, NULL);
 	    Close(from);
+	    if (extraargs)
+	        FreeVec(extraargs);
 
 	    return RETURN_FAIL;
 	}
