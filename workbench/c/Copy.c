@@ -2200,6 +2200,10 @@ LONG CopyFile(BPTR from, BPTR to, ULONG bufsize, struct CopyData *cd)
             do
             {
                 ULONG brk = CTRL_C;
+                /* AROS: This flush appears to be required if reading from '*'
+                 * Maybe a bug in Read(), or AROS buffering?
+                 */
+                Flush(from);
                 if (brk || (s = Read(from, buffer, bufsize)) == -1 || Write(to, buffer, s) != s)
                 {
                     if (brk)
@@ -2209,7 +2213,7 @@ LONG CopyFile(BPTR from, BPTR to, ULONG bufsize, struct CopyData *cd)
                     err = RETURN_FAIL;
                     break;
                 }
-            } while (s == bufsize);
+            } while (s > 0);
         }
 
         /* Freed at exit to avoid fragmentation */
