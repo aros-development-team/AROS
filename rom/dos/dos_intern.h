@@ -120,6 +120,8 @@ BOOL __dos_IsBootable(struct DosLibrary *DOSBase, BPTR Lock);
 /* Cli dependent SetProgramName() for use in CreateNewProc() */
 BOOL internal_SetProgramName(struct CommandLineInterface *cli,
     CONST_STRPTR name, struct DosLibrary *DOSBase);
+/* Duplicate a cli_CommandDir BPTR list */
+BPTR internal_CopyPath(BPTR boldpath, struct DosLibrary * DOSBase);
 
 
 /* Pattern matching function used by MatchPattern() and MatchPatternNoCase() */

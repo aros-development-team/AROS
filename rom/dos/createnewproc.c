@@ -238,7 +238,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* NP_Cli */
     if (defaults[13].ti_Data != 0)
     {
-        BPTR *oldpath = NULL;
+        BPTR oldpath = NULL;
         
 	/* Don't forget to pass tags to AllocDosObject() */
 	cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, (struct TagItem *)tags);
@@ -255,7 +255,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 		LONG oldlen = AROS_BSTR_strlen(oldcli->cli_Prompt);
 		LONG newlen = GetTagData(ADO_PromptLen, 255, tags);
 
-		oldpath = BADDR(oldcli->cli_CommandDir);
+		oldpath = oldcli->cli_CommandDir;
 
 		CopyMem(BADDR(oldcli->cli_Prompt), BADDR(cli->cli_Prompt), (newlen<oldlen?newlen:oldlen) + 1);
 	    }
@@ -271,21 +271,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         }
         else
         {
-            BPTR *nextpath, 
-                 *newpath = &cli->cli_CommandDir;
-            
-            while (oldpath != NULL)
-            {
-                nextpath = AllocVec(2*sizeof(BPTR), MEMF_CLEAR);
-                ENOMEM_IF(nextpath == NULL);
-                
-                newpath[0]  = MKBADDR(nextpath);
-                nextpath[1] = DupLock(oldpath[1]);
-                ERROR_IF(!nextpath[1]);
-                
-                newpath = nextpath;
-                oldpath = BADDR(oldpath[0]);
-            }
+            cli->cli_CommandDir = internal_CopyPath(oldpath, DOSBase);
         }
     }
 
@@ -603,6 +589,30 @@ static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
     }
 }
 
+BPTR internal_CopyPath(BPTR boldpath, struct DosLibrary * DOSBase)
+{
+    BPTR *nextpath, path, *newpath, *oldpath;
+
+    oldpath = BADDR(boldpath);
+
+    for (newpath = &path; oldpath != NULL; newpath = nextpath, oldpath = BADDR(oldpath[0])) {
+        /* NOTE: This memory allocation *must* match that which is
+         *       done in C:Path!!!!
+         */
+        nextpath = AllocVec(2*sizeof(BPTR), MEMF_CLEAR);
+        if (nextpath == NULL)
+            break;
+
+        *newpath = MKBADDR(nextpath);
+        nextpath[1] = DupLock(oldpath[1]);
+        if (nextpath[1] == BNULL)
+            break;
+    }
+
+    *newpath = BNULL;
+
+    return path;
+}
 
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase)
 {
