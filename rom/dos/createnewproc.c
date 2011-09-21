@@ -238,7 +238,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* NP_Cli */
     if (defaults[13].ti_Data != 0)
     {
-        BPTR oldpath = NULL;
+        BPTR oldpath = BNULL;
         
 	/* Don't forget to pass tags to AllocDosObject() */
 	cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, (struct TagItem *)tags);
