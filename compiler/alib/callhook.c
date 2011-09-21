@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: amiga.lib function CallHook() which doesn't use utility.library
@@ -49,6 +49,8 @@
 } /* CallHookA() */
 
 
+#ifndef NO_LINEAR_VARARGS
+
 /******************************************************************************
 
     NAME */
@@ -82,3 +84,5 @@
     retval = CALLHOOKPKT(hook, object, AROS_SLOWSTACKHOOKS_ARG(object));
     AROS_SLOWSTACKHOOKS_POST
 } /* CallHook() */
+
+#endif

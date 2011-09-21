@@ -20,8 +20,6 @@ EXEDIR := $(AROS_PREFS)
 # *don't* pick up the project's local MUI headers.
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
 
-USER_CFLAGS := -DNO_INLINE_STDARG
-
 FILES := \
         OpenURL \
         locale \

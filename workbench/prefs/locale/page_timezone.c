@@ -16,6 +16,7 @@ Lang: English
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>

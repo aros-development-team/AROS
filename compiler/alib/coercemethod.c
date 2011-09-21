@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define INTUITION_NO_INLINE_STDARG
+#define ALIB_NO_INLINE_STDARG
 
 #include <aros/debug.h>
 #include <intuition/classes.h>
@@ -61,6 +61,12 @@
 	return CALLHOOKPKT((struct Hook *) cl, obj, message);
 } /* CoerceMethodA() */
 
+/*
+ * AROS_SLOWSTACKMETHODS does not work reliably on architectures with non-linear varargs.
+ * It may access random memory and crash.
+ */
+#ifndef NO_LINEAR_VARARGS
+
 IPTR CoerceMethod (Class * cl, Object * obj, IPTR MethodID, ...)
 {
 	ASSERT_VALID_PTR(obj);
@@ -73,3 +79,5 @@ IPTR CoerceMethod (Class * cl, Object * obj, IPTR MethodID, ...)
 	retval = CALLHOOKPKT((struct Hook *) cl, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID));
 	AROS_SLOWSTACKMETHODS_POST
 } /* CoerceMethod() */
+
+#endif

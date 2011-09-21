@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,6 +8,7 @@
 
 #include <libraries/mui.h>
 
+#include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/muimaster.h>

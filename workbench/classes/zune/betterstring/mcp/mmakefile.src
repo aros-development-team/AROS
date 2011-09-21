@@ -7,7 +7,6 @@ include $(TOP)/config/make.cfg
 #MM					    workbench-classes-zune-betterstring-mcp-locale
 
 USER_INCLUDES := -I$(TOP)/$(CURDIR) -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcc
-USER_CFLAGS := -DNO_INLINE_STDARG
 
 FILES := library \
         locale \

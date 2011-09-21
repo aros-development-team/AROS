@@ -42,6 +42,8 @@
 
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
+
+#include <proto/alib.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/exec.h>

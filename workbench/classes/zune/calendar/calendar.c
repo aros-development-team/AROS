@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <exec/types.h>
 #include <utility/date.h>
 #include <libraries/mui.h>
 
+#include <proto/alib.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>

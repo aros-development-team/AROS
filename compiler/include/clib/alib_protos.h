@@ -2,7 +2,7 @@
 #define  CLIB_ALIB_PROTOS_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for amiga.lib
@@ -10,40 +10,20 @@
 */
 
 #if defined(RT_ENABLE) && RT_ENABLE
-#   include <aros/rt.h>
-#endif
-#ifndef  EXEC_TYPES_H
-#   include <exec/types.h>
-#endif
-#ifndef INTUITION_INTUITION_H
-#   include <intuition/intuition.h>
-#endif
-#ifndef INTUITION_SCREENS_H
-#   include <intuition/screens.h>
+#include <aros/rt.h>
 #endif
 
-/* #ifndef INTUITION_CLASSUSR_H
-#   include <intuition/classusr.h>
-#endif
-#ifndef INTUITION_CLASSES_H
-#   include <intuition/classes.h>
-#endif */
-#ifndef LIBRARIES_COMMODITIES_H
-#   include <libraries/commodities.h>
-#endif
-#ifndef AROS_ASMCALL_H
-#   include <aros/asmcall.h>
-#endif
-#ifndef LIBRARIES_GADTOOLS_H
-#   include <libraries/gadtools.h>
-#endif
-#ifndef DEVICES_KEYMAP_H
-#   include <devices/keymap.h>
-#endif
-#ifndef DEVICES_INPUTEVENT_H
-#   include <devices/inputevent.h>
-#endif
+#include <aros/asmcall.h>
+#include <devices/inputevent.h>
+#include <devices/keymap.h>
+#include <intuition/classes.h>
+#include <intuition/classusr.h>
+#include <intuition/intuition.h>
+#include <intuition/screens.h>
+#include <libraries/commodities.h>
+#include <libraries/gadtools.h>
 #include <rexx/storage.h>
+#include <utility/hooks.h>
 
 __BEGIN_DECLS
 
@@ -51,7 +31,6 @@ struct MsgPort;
 struct IORequest;
 struct Task;
 struct InputEvent;
-struct Hook;
 struct Locale;
 /*
     Prototypes
@@ -111,6 +90,17 @@ void GetRPAttrs( struct RastPort * rp, Tag tag1, ...) __stackparm;
 #ifndef SetWindowPointer 
 void SetWindowPointer( struct Window * window, ULONG tag1, ...) __stackparm;
 #endif
+
+/* BOOPSI */
+IPTR DoMethodA (Object * obj, Msg message);
+IPTR DoMethod (Object * obj, STACKULONG MethodID, ...) __stackparm;
+IPTR DoSuperMethodA (Class * cl, Object * obj, Msg message);
+IPTR DoSuperMethod (Class * cl, Object * obj, STACKULONG MethodID, ...) __stackparm;
+IPTR CoerceMethodA (Class * cl, Object * obj, Msg message);
+IPTR CoerceMethod (Class * cl, Object * obj, STACKULONG MethodID, ...) __stackparm;
+IPTR DoSuperNewTagList(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, struct TagItem *tags);
+IPTR DoSuperNewTags(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, Tag tag1, ...) __stackparm;
+IPTR SetSuperAttrs (Class * cl, Object * obj, Tag tag1, ...) __stackparm;
 
 /* Locale */
 #ifndef OpenCatalog
@@ -252,6 +242,105 @@ AROS_UFP3(IPTR, HookEntry,
 BOOL CheckRexxMsg(struct RexxMsg *);
 LONG SetRexxVar(struct RexxMsg *, char *, char *, ULONG length);
 LONG GetRexxVar(struct RexxMsg *, char *, char **value);
+
+/* Inline versions of varargs functions */
+#if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
+
+#    define SetSuperAttrsA(cl, object, attrs)          	  \
+     ({                                                   \
+         struct opSet __ops;                              \
+                                                          \
+         __ops.MethodID     = OM_SET;                     \
+         __ops.ops_AttrList = (attrs);                    \
+         __ops.ops_GInfo    = NULL;                       \
+                                                          \
+         DoSuperMethodA((cl), (object), (Msg) &__ops.MethodID); \
+     })
+#    define SetSuperAttrs(cl, object, args...)                         \
+     ({                                                                \
+         IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(args) };         \
+         SetSuperAttrsA((cl), (object), (struct TagItem *) __args);    \
+     })
+#    define DoMethodA(object, message)                                 \
+     ({                                                                \
+         (object) != NULL ?                                            \
+         ({                                                            \
+             CALLHOOKPKT                                               \
+             (                                                         \
+                 (struct Hook *) OCLASS((object)), (object), (message) \
+             );                                                        \
+         })                                                            \
+         :                                                             \
+             0                                                         \
+         ;                                                             \
+    })
+#   define DoMethod(object, methodid, args...)                        \
+    ({                                                                \
+        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
+        DoMethodA((object), __args);                                  \
+    })
+            
+#   define DoSuperMethodA(cl, object, message)                        \
+    ({                                                                \
+        ((cl) != NULL && (object) != NULL) ?                          \
+            CALLHOOKPKT                                               \
+            (                                                         \
+                (struct Hook *) ((Class *) (cl))->cl_Super,           \
+                (object), (message)                                   \
+            )                                                         \
+        :                                                             \
+            0                                                         \
+        ;                                                             \
+    })
+#   define DoSuperMethod(cl, object, methodid, args...)               \
+    ({                                                                \
+        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
+        DoSuperMethodA((cl), (object), __args);                       \
+    })
+            
+#   define CoerceMethodA(cl, object, message)                         \
+    ({                                                                \
+        ((cl) != NULL && (object) != NULL) ?                          \
+            CALLHOOKPKT((struct Hook *) (cl), (object), (message))    \
+        :                                                             \
+            0                                                         \
+        ;                                                             \
+    })
+#   define CoerceMethod(cl, object, methodid, args...)                 \
+    ({                                                                 \
+         IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
+         CoerceMethodA((cl), (object), __args);                        \
+    })  
+#   define DoSuperNewTagList(cl, object, gadgetinfo, tags)                 \
+    ({                                                                     \
+        struct opSet __ops;                                                \
+                                                                           \
+        __ops.MethodID     = OM_NEW;                                       \
+        __ops.ops_AttrList = (tags);                                       \
+        __ops.ops_GInfo    = (gadgetinfo);                                 \
+                                                                           \
+        (cl) != NULL && (object) != NULL ?                                 \
+            DoSuperMethodA((cl), (object), (Msg)&__ops.MethodID)           \
+        :                                                                  \
+            0                                                              \
+        ;                                                                  \
+    })
+#   define DoSuperNewTags(cl, object, gadgetinfo, args...)                 \
+    ({                                                                     \
+        IPTR __args[] = {AROS_PP_VARIADIC_CAST2IPTR(args)};                \
+        DoSuperNewTagList                                                  \
+        (                                                                  \
+            (cl), (object), (gadgetinfo), (struct TagItem *) __args        \
+        );                                                                 \
+    })
+
+#define CallHook(hook, object, args...)					\
+    ({									\
+    	IPTR __args[] = {AROS_PP_VARIADIC_CAST2IPTR(args)};		\
+    	CallHookA((hook), (object), __args);				\
+    })
+
+#endif /* !ALIB_NO_INLINE_STDARG && !NO_INLINE_STDARG */
 
 __END_DECLS
 

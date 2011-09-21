@@ -1,6 +1,7 @@
 #include <resources/acpi.h>
 #include <proto/acpi.h>
 
+#include <ctype.h>
 #include <stdio.h>
 
 #include "locale.h"
@@ -131,7 +132,7 @@ static void parse_addr(const char *desc, struct GENERIC_ACPI_ADDR *addr, void (*
     cb(buf);
 }
 
-void header_parser(struct ACPI_TABLE_DEF_HEADER *table, void (*cb)(const char *))
+static void header_parser(struct ACPI_TABLE_DEF_HEADER *table, void (*cb)(const char *))
 {
     MakeString(cb, "%s: %.4s, %s %u, %s 0x%p",
 	       _(MSG_TABLE_SIGNATURE), &table->signature,
@@ -143,6 +144,61 @@ void header_parser(struct ACPI_TABLE_DEF_HEADER *table, void (*cb)(const char *)
     MakeString(cb, "%s: %.4s %s 0x%08X",
 	       _(MSG_CREATOR_ID), &table->asl_compiler_id,
 	       _(MSG_REVISION), table->asl_compiler_revision);
+}
+
+static void dumpData(unsigned char *data, int length, void (*cb)(const char *))
+{
+    char *p = buf;
+    int buflen = sizeof(buf);
+    int len;
+    int i;
+    int left = length;
+
+    while (left > 0)
+    {
+        len = snprintf(p, buflen, "%p:", data + length - left);
+        p += len;
+        buflen -= len;
+
+        for (i = 0; i < 16 && i < left; i++)
+        {
+            len = snprintf(p, buflen, " %02x", data[i]);
+            p += len;
+            buflen -= len;
+        }
+
+        if (i != 15)
+        {
+            for (; i < 16; i++)
+            {
+            	*p++ = ' ';
+            	*p++ = ' ';
+            	*p++ = ' ';
+            }
+        }
+
+        *p++ = ' ';
+        *p++ = ' ';
+
+        for (i = 0; i < 16 && i < left; i++)
+        {
+            *p++ = isprint(data[i]) ? data[i] : '.';
+        }
+        
+        cb(buf);
+
+        data += 16;
+        left -= 16;
+    }
+}
+
+void unknown_parser(struct ACPI_TABLE_DEF_HEADER *table, void (*cb)(const char *))
+{
+    header_parser(table, cb);
+
+    cb("");
+
+    dumpData((unsigned char *)table, table->length, cb);
 }
 
 static void rsdt_parser(struct ACPI_TABLE_DEF_HEADER *rsdt, void (*cb)(const char *))

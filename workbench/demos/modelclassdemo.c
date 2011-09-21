@@ -16,6 +16,8 @@
 #include <intuition/classusr.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
+
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 

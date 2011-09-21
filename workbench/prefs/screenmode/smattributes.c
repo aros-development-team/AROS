@@ -7,8 +7,9 @@
 #define DEBUG 0
 
 #include <libraries/mui.h>
-
 #include <exec/rawfmt.h>
+
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>

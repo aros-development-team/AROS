@@ -1,13 +1,15 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English
 */
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <intuition/classusr.h>
+
 #include "datatypes_intern.h"
 
 /*****************************************************************************

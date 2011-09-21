@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <proto/alib.h>
 #include <proto/muimaster.h>
 #include <dos/dos.h>
 

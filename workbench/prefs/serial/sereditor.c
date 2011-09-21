@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,6 +9,7 @@
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 

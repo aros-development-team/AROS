@@ -10,6 +10,7 @@
 #include <utility/hooks.h>
 
 #include <proto/acpi.h>
+#include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/muimaster.h>
@@ -93,11 +94,12 @@ Object *app;
 Object *MainWindow;
 Object *TablesList;
 Object *InfoList;
+Object *ModeCycle;
 
 struct Hook display_hook;
 struct Hook select_hook;
 
-AROS_UFH3(void, display_function,
+AROS_UFH3(static void, display_function,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(char **, strings, A2),
     AROS_UFHA(struct ACPI_TABLE_DEF_HEADER *, table, A1))
@@ -123,17 +125,18 @@ static void display_callback(const char *str)
     DoMethod(InfoList, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
 }
 
-AROS_UFH3(void, select_function,
+AROS_UFH3(static void, select_function,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, object, A2),
     AROS_UFHA(APTR, msg, A1))
 {
     AROS_USERFUNC_INIT
 
-    IPTR active;
+    IPTR mode, active;
     struct ACPI_TABLE_DEF_HEADER *table;
-    const struct Parser *t;
-    void (*parser)();
+    const struct Parser *t;    
+
+    GetAttr(MUIA_Cycle_Active, ModeCycle, &mode);
 
     SetAttrs(InfoList, MUIA_List_Quiet, TRUE, TAG_DONE);
     DoMethod(InfoList, MUIM_List_Clear);
@@ -141,9 +144,17 @@ AROS_UFH3(void, select_function,
     GetAttr(MUIA_List_Active, object, &active);
     if (active != MUIV_List_Active_Off)
     {
+    	void (*parser)() = unknown_parser;
+
 	DoMethod(object, MUIM_List_GetEntry, active, &table);
-	t = FindParser(table->signature);
-	parser = t ? t->parser : header_parser;
+
+	if (mode == 0)
+	{
+	    t = FindParser(table->signature);
+	    if (t)
+	    	parser = t->parser;
+	}
+
 	parser(table, display_callback);
     }
 
@@ -151,6 +162,13 @@ AROS_UFH3(void, select_function,
 
     AROS_USERFUNC_EXIT
 }
+
+static const char *showModes[] =
+{
+    "Parsed data",
+    "Raw dump",
+    NULL
+};
 
 BOOL GUIinit()
 {
@@ -176,16 +194,27 @@ BOOL GUIinit()
 			    MUIA_List_AdjustWidth, TRUE,
 			    MUIA_List_DisplayHook, &display_hook,
 			End, // List
+			MUIA_CycleChain, TRUE,
 		    End, // ListView
 
-		    Child, ListviewObject,
-			MUIA_Listview_List, InfoList = ListObject,
-			    ReadListFrame,
-			    MUIA_List_AdjustWidth, TRUE,
-			    MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
-			    MUIA_List_DestructHook, MUIV_List_DestructHook_String,
-			End, // List
-		    End, // ListView
+		    Child, VGroup,
+		    	Child, ListviewObject,
+			    MUIA_Listview_List, InfoList = ListObject,
+			    	ReadListFrame,
+			    	MUIA_List_AdjustWidth, TRUE,
+			    	MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+			    	MUIA_List_DestructHook, MUIV_List_DestructHook_String,
+			    End, // List
+			    MUIA_CycleChain, TRUE,
+		    	End, // ListView
+		    	Child, HGroup,
+		    	    Child, Label(__(MSG_SHOW_MODE)),
+		    	    Child, ModeCycle = CycleObject,
+		    	    	MUIA_Cycle_Entries, showModes,
+		    	    	MUIA_CycleChain, TRUE,
+		    	    End,
+		    	End,
+		    End,
 		End, // WindowContents
 	    End, // MainWindow
 	End; // ApplicationObject
@@ -198,6 +227,10 @@ BOOL GUIinit()
 		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
 	DoMethod(TablesList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+		 TablesList, 2,
+		 MUIM_CallHook, &select_hook);
+
+	DoMethod(ModeCycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
 		 TablesList, 2,
 		 MUIM_CallHook, &select_hook);
 

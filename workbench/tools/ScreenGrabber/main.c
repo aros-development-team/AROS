@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,6 +14,7 @@
 #include <libraries/mui.h>
 #include <libraries/asl.h>
 
+#include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/datatypes.h>
 #include <proto/intuition.h>

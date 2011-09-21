@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team.
+    Copyright © 2003-2011, The AROS Development Team.
     $Id$
 */
 
@@ -12,6 +12,7 @@
 #include <intuition/screens.h>
 #include <intuition/intuition.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>

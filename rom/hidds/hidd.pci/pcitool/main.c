@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2010, The AROS Development Team.
+    Copyright (C) 2003-2011, The AROS Development Team.
     $Id$
 */
 
@@ -11,6 +11,7 @@
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/muimaster.h>
 #include <proto/oop.h>

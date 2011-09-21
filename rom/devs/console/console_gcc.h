@@ -11,18 +11,12 @@
 #include <aros/libcall.h>
 #include <exec/execbase.h>
 #include <exec/devices.h>
+#include <exec/semaphores.h>
 #include <dos/dos.h>
+#include <devices/conunit.h>
+#include <intuition/classes.h>
 
-#ifndef DEVICES_CONUNIT_H
-#   include <devices/conunit.h>
-#endif
-
-#ifndef INTUITION_CLASSES_H
-#   include <intuition/classes.h>
-#endif
-#ifndef EXEC_SEMAPHORES_H
-#   include <exec/semaphores.h>
-#endif
+#include <proto/alib.h>
 
 /* Predeclaration */
 struct ConsoleBase;

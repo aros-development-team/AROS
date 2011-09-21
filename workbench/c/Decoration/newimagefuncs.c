@@ -1,16 +1,19 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright © 2011, The AROS Development Team.
     $Id$
 */
 
 #include <datatypes/pictureclass.h>
 #include <libraries/cybergraphics.h>
+
+#include <proto/alib.h>
 #include <proto/datatypes.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/cybergraphics.h>
+
 #include <string.h>
 
 #include <aros/debug.h>

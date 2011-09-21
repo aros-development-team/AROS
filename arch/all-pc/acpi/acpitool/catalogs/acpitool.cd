@@ -266,3 +266,6 @@ Page protection
 MSG_OEM_ATTRS (//)
 OEM Attributes
 ;
+MSG_SHOW_MODE (//)
+Show:
+;

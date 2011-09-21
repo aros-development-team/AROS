@@ -11,6 +11,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #undef NO_INLINE_STDARG
+#include <proto/alib.h>
 #include <proto/codesets.h>
 #include <proto/freetype2.h>
 #include <aros/debug.h>

@@ -27,6 +27,8 @@
 #include <datatypes/pictureclass.h>
 #include <libraries/usbclass.h>
 
+#include <proto/alib.h>
+
 /* ANSI C */
 #include <stdlib.h>
 #include <string.h>

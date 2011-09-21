@@ -1,14 +1,15 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+
 #include <exec/memory.h>
 #include <intuition/screens.h>
 #include <intuition/cghooks.h>

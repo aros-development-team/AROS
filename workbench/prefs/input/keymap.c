@@ -1,6 +1,7 @@
 #include <libraries/mui.h>
 #include <zune/customclasses.h>
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 

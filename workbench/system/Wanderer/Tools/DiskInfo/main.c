@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,6 +8,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/workbench.h>

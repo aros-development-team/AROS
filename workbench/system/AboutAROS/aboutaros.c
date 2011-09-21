@@ -15,6 +15,7 @@
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
 
+#include <proto/alib.h>
 #include <proto/aros.h>
 #include <proto/exec.h>
 #include <proto/dos.h>

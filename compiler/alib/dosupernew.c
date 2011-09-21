@@ -1,9 +1,9 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define INTUITION_NO_INLINE_STDARG
+#define ALIB_NO_INLINE_STDARG
 
 #include <intuition/classes.h>
 #include <utility/tagitem.h>
@@ -15,7 +15,7 @@
 
     NAME */
 #include <intuition/classusr.h>
-#include <proto/intuition.h>
+#include <proto/alib.h>
 
 	IPTR DoSuperNewTagList
         (
@@ -50,6 +50,8 @@
     return DoSuperMethod(CLASS, object, OM_NEW, tags, gadgetInfo);
 } /* DoSuperNewTagList() */
 
+#ifndef NO_LINEAR_VARARGS
+
 IPTR DoSuperNewTags
 (
     Class *CLASS,
@@ -66,3 +68,5 @@ IPTR DoSuperNewTags
     retval = DoSuperNewTagList(CLASS, object, gadgetInfo, (struct TagItem *) AROS_SLOWSTACKMETHODS_ARG(tag1));
     AROS_SLOWSTACKMETHODS_POST
 } /* DoSuperNewTags() */
+
+#endif

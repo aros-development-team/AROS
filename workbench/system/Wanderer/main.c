@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include "portable_macros.h"
@@ -11,18 +11,17 @@
 #include <aros/debug.h>
 #endif
 
+#include <dos/dos.h>
 #include <libraries/mui.h>
-
 
 #if defined(__AMIGA__) && !defined(__PPC__)
 #define NO_INLINE_STDARG
 #endif
+
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-#ifdef __AROS__
-#include <proto/workbench.h>
-#endif
-#include <dos/dos.h>
+#include <proto/wb.h>
 #include <proto/dos.h>
 
 #include "locale.h"

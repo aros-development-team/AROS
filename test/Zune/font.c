@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team.
+    Copyright © 2010-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -7,10 +7,11 @@
 
 #include <dos/dosextens.h>
 #include <libraries/mui.h>
+
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-
 
 struct Library *MUIMasterBase;
 

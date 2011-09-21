@@ -1,10 +1,13 @@
 #include <cybergraphx/cybergraphics.h>
 #include <intuition/monitorclass.h>
+
+#include <proto/alib.h>
 #include <proto/intuition.h>
 
 #include <stdio.h>
 
-static STRPTR pfnames[] = {
+static STRPTR pfnames[] =
+{
     "LUT8",
     "RGB15",
     "BGR15",
@@ -29,12 +32,14 @@ int main(void)
     
     monitors = GetMonitorList(NULL);
     
-    if (!monitors) {
+    if (!monitors)
+    {
 	printf("Failed to obtain monitors list!\n");
 	return 0;
     }
     
-    for (mon = monitors; *mon; mon++) {
+    for (mon = monitors; *mon; mon++)
+    {
 	STRPTR name, drvname;
 	ULONG *pfs;
 	UBYTE i;
@@ -49,7 +54,8 @@ int main(void)
 	    printf(" %7s %s\n", pfnames[i], pfs[i] ? "yes" : "no");
 
 	printf("Preferred pixelformats:\n");
-	for (i = 0; depths[i]; i++) {
+	for (i = 0; depths[i]; i++)
+	{
 	    IPTR pf;
 
 	    printf(" %2d ", depths[i]);

@@ -7,8 +7,11 @@
 
 #include <aros/config.h>
 #include <aros/debug.h>
-#include <proto/muimaster.h>
+
 #include <libraries/mui.h>
+
+#include <proto/alib.h>
+#include <proto/muimaster.h>
 #include <proto/intuition.h>
 
 #include "main.h"
