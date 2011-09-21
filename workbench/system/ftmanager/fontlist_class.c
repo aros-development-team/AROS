@@ -1,4 +1,3 @@
-#define NO_INLINE_STDARG
 #include <aros/debug.h>
 #include <proto/alib.h>
 #include <exec/types.h>
@@ -6,6 +5,8 @@
 #include <aros/asmcall.h>
 #include <utility/hooks.h>
 #include <libraries/mui.h>
+
+#define NO_INLINE_STDARG
 
 #include <proto/exec.h>
 #include <proto/intuition.h>

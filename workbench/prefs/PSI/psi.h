@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2010, The AROS Development Team.
+    Copyright © 2009-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -11,6 +11,8 @@
 
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>
+
+#include <proto/alib.h>
 
 #define CATCOMP_NUMBERS
 #define CATCOMP_ARRAY

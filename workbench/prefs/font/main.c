@@ -1,12 +1,14 @@
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+
 #include <libraries/mui.h>
 #include <zune/systemprefswindow.h>
 

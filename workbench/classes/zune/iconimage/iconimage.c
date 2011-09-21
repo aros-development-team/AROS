@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     This file is part of the IconImage class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -14,6 +14,7 @@
 #include <libraries/mui.h>
 #include <dos/dos.h>
 
+#include <proto/alib.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>

@@ -1,3 +1,5 @@
+#include <proto/alib.h>
+
 #define NO_INLINE_STDARG
 
 #include <aros/debug.h>

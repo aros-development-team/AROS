@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -7,6 +7,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 

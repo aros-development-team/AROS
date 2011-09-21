@@ -5,8 +5,10 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+
 #include <libraries/mui.h>
 #include <zune/systemprefswindow.h>
 

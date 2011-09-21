@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -7,6 +7,7 @@
 
 #include <dos/dos.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>

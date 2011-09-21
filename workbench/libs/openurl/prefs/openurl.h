@@ -21,6 +21,12 @@
 #define __NOLIBBASE__
 #define __USE_SYSBASE
 
+#include <clib/alib_protos.h>
+
+#ifndef NO_INLINE_STDARG
+#define NO_INLINE_STDARG
+#endif
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -37,8 +43,6 @@
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 #include <libraries/iffparse.h>
-
-#include <clib/alib_protos.h>
 
 #if !defined(__AROS__)
 #include <clib/debug_protos.h>

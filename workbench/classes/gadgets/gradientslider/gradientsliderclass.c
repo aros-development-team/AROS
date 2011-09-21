@@ -1,37 +1,20 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS gradientslider gadget.
     Lang: english
 */
 
-#include <exec/types.h>
-
 #ifdef __AROS__
-//#define USE_BOOPSI_STUBS
-#include <proto/utility.h>
-#include <proto/intuition.h>
-#include <proto/graphics.h>
-#include <intuition/classes.h>
-#include <intuition/classusr.h>
-#include <intuition/cghooks.h>
-#include <intuition/gadgetclass.h>
-#include <intuition/imageclass.h>
-#include <utility/tagitem.h>
-#include <gadgets/gradientslider.h>
-
-#include <aros/asmcall.h>
-
-#include <stdlib.h> /* abs() */
-#include "gradientslider_intern.h"
 
 #define SDEBUG 0
 #define DEBUG 0
 
+#include <aros/asmcall.h>
 #include <aros/debug.h>
 
-#else /* !AROS */
+#endif
 
 #include <intuition/icclass.h>
 #include <intuition/classes.h>
@@ -42,16 +25,14 @@
 #include <utility/tagitem.h>
 #include <gadgets/gradientslider.h>
 
-#include <inline/graphics.h>
-#include <inline/intuition.h>
-#include <inline/exec.h>
-#include <inline/utility.h>
-#include <inline/cybergraphics.h>
+#include <clib/alib_protos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+
+#include <stdlib.h> /* abs() */
 
 #include "gradientslider_intern.h"
-#include "BoopsiStubs.h"
-
-#endif
 
 #ifndef __AROS__
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,7 @@
 #include <aros/debug.h>
 #include <aros/asmcall.h>
 
+#include <proto/alib.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>

@@ -34,6 +34,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/commodities.h>
 #include <proto/intuition.h>

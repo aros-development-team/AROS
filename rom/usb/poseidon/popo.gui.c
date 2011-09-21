@@ -12,6 +12,7 @@
 #include <datatypes/soundclass.h>
 
 #define __NOLIBBASE__
+#include <proto/alib.h>
 #include <proto/muimaster.h>
 #include <proto/exec.h>
 #include <proto/dos.h>

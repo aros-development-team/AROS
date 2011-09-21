@@ -1,23 +1,24 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Set attributes in a specific class
 */
 
-#define INTUITION_NO_INLINE_STDARG
+#define ALIB_NO_INLINE_STDARG
 
 #define AROS_TAGRETURNTYPE IPTR
 
 #include <intuition/classes.h>
 #include <intuition/intuitionbase.h>
+
 #include "alib_intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <intuition/classusr.h>
-#include <proto/intuition.h>
+#include <proto/alib.h>
 
 	IPTR SetSuperAttrs (
 

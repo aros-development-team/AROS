@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define INTUITION_NO_INLINE_STDARG
+#define ALIB_NO_INLINE_STDARG
 
 #include <intuition/classes.h>
 #include <stdarg.h>
@@ -14,7 +14,7 @@
 
     NAME */
 #include <intuition/classusr.h>
-#include <proto/intuition.h>
+#include <proto/alib.h>
 
 	IPTR DoSuperMethodA (
 
@@ -59,6 +59,8 @@
 } /* DoSuperMethodA() */
 
 
+#ifndef NO_LINEAR_VARARGS
+
 IPTR DoSuperMethod (Class * cl, Object * obj, STACKULONG MethodID, ...)
 {
     if ((!obj) || (!cl))
@@ -67,3 +69,5 @@ IPTR DoSuperMethod (Class * cl, Object * obj, STACKULONG MethodID, ...)
     retval = CALLHOOKPKT((struct Hook *)cl->cl_Super, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID));
     AROS_SLOWSTACKMETHODS_POST
 } /* DoSuperMethod()*/
+
+#endif

@@ -1,15 +1,15 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS specific list class implementation.
 */
 
-#include <exec/types.h>
-
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+
 #include <exec/memory.h>
 #include <intuition/classusr.h>
 #include <aros/asmcall.h>

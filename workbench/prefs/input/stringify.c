@@ -1,11 +1,12 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <libraries/mui.h>
 #include <zune/customclasses.h>
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>

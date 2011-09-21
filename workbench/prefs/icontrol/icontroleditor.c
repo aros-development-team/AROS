@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
    $Id$
 
 Desc:
@@ -13,6 +13,7 @@ Lang: English
 #include <zune/prefseditor.h>
 #include <zune/customclasses.h>
 
+#include <proto/alib.h>
 #include <proto/commodities.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>

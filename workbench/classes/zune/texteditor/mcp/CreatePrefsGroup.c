@@ -23,6 +23,11 @@
 #include <stdio.h>
 
 #include <clib/alib_protos.h>
+
+#ifndef NO_INLINE_STDARG
+#define NO_INLINE_STDARG
+#endif
+
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>

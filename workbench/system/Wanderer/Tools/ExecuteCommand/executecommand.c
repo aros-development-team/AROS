@@ -1,18 +1,17 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
 #include <aros/debug.h>
-
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
 #include <libraries/asl.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>

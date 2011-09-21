@@ -1,20 +1,20 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define INTUITION_NO_INLINE_STDARG
+#define ALIB_NO_INLINE_STDARG
 
 #include <aros/debug.h>
 #include <intuition/classes.h>
-#include <proto/alib.h>
+
 #include "alib_intern.h"
 
 /******************************************************************************
 
     NAME */
 #include <intuition/classusr.h>
-#include <proto/intuition.h>
+#include <proto/alib.h>
 
 	IPTR DoMethodA (
 
@@ -45,8 +45,8 @@
     BUGS
 
     SEE ALSO
-	boopsi.library/NewObjectA(), boopsi.library/SetAttrsA(), boopsi.library/GetAttr(),
-	boopsi.library/DisposeObject(), CoerceMethodA(),
+	intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
+	intuition.library/DisposeObject(), CoerceMethodA(),
         DoSuperMethodA(), <intuition/classusr.h>
 
 ******************************************************************************/
@@ -62,6 +62,8 @@
     return CALLHOOKPKT((struct Hook *) OCLASS(obj), obj, message);
 } /* DoMethodA */
 
+#ifndef NO_LINEAR_VARARGS
+
 IPTR DoMethod (Object * obj, IPTR MethodID, ...)
 {
     ASSERT_VALID_PTR(obj);
@@ -75,3 +77,4 @@ IPTR DoMethod (Object * obj, IPTR MethodID, ...)
     AROS_SLOWSTACKMETHODS_POST
 } /* DoMethod() */
 
+#endif

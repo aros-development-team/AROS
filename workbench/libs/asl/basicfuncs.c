@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic helpfuncs for Asl.
     Lang: english
 */
 
-
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>

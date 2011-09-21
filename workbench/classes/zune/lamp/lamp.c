@@ -5,6 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <proto/alib.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
