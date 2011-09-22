@@ -316,9 +316,19 @@
                 break;
                 
             case ICONCTRLA_SetAspectRatio:
+                if (nativeicon)
+                {
+                    nativeicon->icon35.aspect = (BYTE)tag->ti_Data;
+                }
                 break;
                 
             case ICONCTRLA_GetAspectRatio:
+                if (nativeicon)
+                {
+                    STORE((BYTE *)tag->ti_Data, nativeicon->icon35.aspect);
+                } else {
+                    STORE((BYTE *)tag->ti_Data, ICON_ASPECT_RATIO_UNKNOWN);
+                }
                 break;
                 
             case ICONCTRLA_SetWidth:

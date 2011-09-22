@@ -175,7 +175,7 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     	icon->icon35.width  = width;
 	icon->icon35.height = height;
 	icon->icon35.flags  = ICON35F_FRAMELESS;
-	icon->icon35.aspect = 0x1111; /* ?? */
+	icon->icon35.aspect = PACK_ICON_ASPECT_RATIO(1,1);
     }
     
     img->palette = img->imagedata + width * height;
