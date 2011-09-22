@@ -2,8 +2,11 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <aros/debug.h>
 #include <workbench/icon.h>
 #include <intuition/imageclass.h>
+
 #include "icon_intern.h"
 
 /* Define this in order to simulate LUT screen on hi- and truecolor displays.
@@ -98,53 +101,58 @@
         Text(rp, label, strlen(label));
     }
 
-    /* Already laid out (hopefully for this screen)? */
-    if (nativeicon && nativeicon->iconscr)
+    if (nativeicon && GfxBase)
     {
-        struct BitMap *bm;
-
-        if (nativeicon->iconbm1 && GfxBase) {
-            if ((state == IDS_SELECTED) && nativeicon->iconbm2) {
-                bm = nativeicon->iconbm2;
-            } else {
-                bm = nativeicon->iconbm1;
-            }
-
-            BltBitMapRastPort(bm, 0, 0,
-                              rp, leftEdge + wDelta, topEdge,
-                              iconWidth, iconHeight, 0x00C0);
-            return;
-        }
-    }
-
-    if (nativeicon && GfxBase && CyberGfxBase)
-    {
+#ifndef FORCE_LUT_ICONS
 	ULONG bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
 
-        if (nativeicon->iconPNG.img1 && CyberGfxBase && (bmdepth >= 4))
+	D(bug("[Icon] Target bitmap depth: %d\n", bmdepth));
+
+        if (CyberGfxBase && (bmdepth >= 8))
 	{
+	    /*
+	     * If it's PNG iton, and target is >8bpp, use alpha blending.
+	     * There's actually no sense to layout icon for such screens.
+	     * Layout is basically remapping.
+	     */
 	    APTR img;
-	        
+
 	    if ((state == IDS_SELECTED) && nativeicon->iconPNG.img2)
 	        img = nativeicon->iconPNG.img2;
 	    else
 	        img = nativeicon->iconPNG.img1;
 
-            // OLD MODE
-            WritePixelArrayAlpha(
-                img,
-                0,
-                0,
-                nativeicon->iconPNG.width * sizeof(ULONG),
-                rp,
-                leftEdge + wDelta,
-                topEdge,
-                nativeicon->iconPNG.width,
-                nativeicon->iconPNG.height,
-                0
-            );
-	    return;
+	    D(bug("[Icon] PNG alpha image: 0x%p\n", img));
+
+	    if (img)
+	    {
+            	// OLD MODE
+            	WritePixelArrayAlpha(img, 0, 0, nativeicon->iconPNG.width * sizeof(ULONG),
+                		     rp, leftEdge + wDelta, topEdge,
+                		     iconWidth,  iconHeight, 0);
+
+	    	return;
+	    }
 	}
+#endif
+
+	if (nativeicon->iconscr)
+	{
+	    /* Already laid out (hopefully for this screen) ? */
+            struct BitMap *bm;
+
+            if ((state == IDS_SELECTED) && nativeicon->iconbm2)
+                bm = nativeicon->iconbm2;
+            else
+                bm = nativeicon->iconbm1;
+
+	    if (bm)
+	    {
+            	BltBitMapRastPort(bm, 0, 0, rp, leftEdge + wDelta, topEdge,
+                              	  iconWidth, iconHeight, 0x00C0);
+            	return;
+            }
+        }
 
         if (nativeicon->icon35.img1.imagedata)
 	{
