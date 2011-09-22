@@ -135,6 +135,8 @@ static void writedecl(FILE *out, struct config *cfg)
 	    "\n",
 	    cfg->modulename
     );
+    if (cfg->options & OPTION_BASEREL)
+       fprintf(out, "#include <aros/relbase.h>\n");
 
     /* Write out declaration section provided in the config file */
     for (linelistit = cfg->cdeflines; linelistit != NULL; linelistit = linelistit->next)
