@@ -269,3 +269,21 @@ OEM Attributes
 MSG_SHOW_MODE (//)
 Show:
 ;
+MSG_SAVE_DATA (//)
+Save data
+;
+MSG_MENU_PROJECT (//)
+Project
+;
+MSG_MENU_QUIT (//)
+Quit
+;
+MSG_MENU_DUMP (//)
+Full dump
+;
+MSG_MENU_DUMP_PARSED (//)
+Parsed data
+;
+MSG_MENU_DUMP_RAW (//)
+Raw dump
+;

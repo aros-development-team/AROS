@@ -4,6 +4,7 @@
 */
 
 #include <exec/memory.h>
+#include <libraries/asl.h>
 #include <libraries/mui.h>
 #include <resources/acpi.h>
 #include <utility/tagitem.h>
@@ -28,10 +29,7 @@
 #include "parsers.h"
 
 #define APPNAME "ACPITool"
-#define VERSION "ACPITool 0.1"
-
-#define IDB_SAVE 10001
-#define IDB_SAVEALL 10002
+#define VERSION "ACPITool 1.0"
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -95,9 +93,8 @@ Object *MainWindow;
 Object *TablesList;
 Object *InfoList;
 Object *ModeCycle;
-
-struct Hook display_hook;
-struct Hook select_hook;
+Object *SaveButton;
+Object *menu_quit, *menu_dump_parsed, *menu_dump_raw;
 
 AROS_UFH3(static void, display_function,
     AROS_UFHA(struct Hook *, h,  A0),
@@ -163,6 +160,147 @@ AROS_UFH3(static void, select_function,
     AROS_USERFUNC_EXIT
 }
 
+static BPTR RequestFile(void)
+{
+    BPTR file = BNULL;
+    struct FileRequester *req;
+
+    req = MUI_AllocAslRequestTags(ASL_FileRequest, ASLFR_DoSaveMode, TRUE, TAG_DONE);
+    if (!req)
+    	return BNULL;
+
+    if (MUI_AslRequest(req, NULL))
+    {
+	ULONG len = strlen(req->fr_Drawer) + strlen(req->fr_File) + 2;
+	STRPTR pathname = AllocMem(len, MEMF_ANY);
+
+	if (pathname)
+	{
+	    strcpy(pathname, req->fr_Drawer);
+	    AddPart(pathname, req->fr_File, len);
+
+	    file = Open(pathname, MODE_NEWFILE);
+	    FreeMem(pathname, len);
+	}
+    }
+    MUI_FreeAslRequest(req);
+
+    return file;
+}
+
+AROS_UFH3(static void, save_function,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    BPTR file = RequestFile();
+
+    if (file)
+    {
+	IPTR i, n;
+
+    	GetAttr(MUIA_List_Entries, object, &n);
+
+	for (i = 0; i < n; i++)
+    	{
+    	    APTR text;
+
+    	    DoMethod(object, MUIM_List_GetEntry, i, &text);
+    	    
+    	    FPuts(file, text);
+    	    FPutC(file, '\n');
+    	}
+    	Close(file);
+    }
+
+    AROS_USERFUNC_EXIT
+}    	
+
+BPTR DumpFile;
+
+static void dump_callback(const char *str)
+{
+    FPuts(DumpFile, str);
+    FPutC(DumpFile, '\n');
+}
+
+AROS_UFH3(static IPTR, dumpFunc,
+	  AROS_UFHA(struct Hook *, table_hook, A0),
+	  AROS_UFHA(struct ACPI_TABLE_DEF_HEADER *, table, A2),
+	  AROS_UFHA(BOOL, parsed, A1))
+{
+    AROS_USERFUNC_INIT
+
+    void (*parser)() = unknown_parser;
+
+    if (parsed)
+    {
+	const struct Parser *t = FindParser(table->signature);
+
+	if (t)
+	    parser = t->parser;
+    }
+
+    parser(table, dump_callback);
+    FPutC(DumpFile, '\n');
+    return TRUE;
+
+    AROS_USERFUNC_EXIT
+}
+
+static const struct Hook dumpHook =
+{
+    .h_Entry = (APTR)dumpFunc
+};
+
+AROS_UFH3(static void, dump_function,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(IPTR *, args, A1))
+{
+    AROS_USERFUNC_INIT
+
+    /*
+     * MUIM_CallHook builds an array from its arguments, and gives us a pointer to this array.
+     * We need to explicitly convert to BOOL, otherwise the value can be padded with garbage,
+     * which will be contained in IPTR's upper unused bytes.
+     */
+    BOOL parsed = args[0];
+
+    DumpFile = RequestFile();
+    if (DumpFile)
+    {
+    	CALLHOOKPKT((struct Hook *)&dumpHook, ACPIBase->ACPIB_SDT_Addr, (APTR)(IPTR)parsed);
+	ACPI_ScanSDT(ACPI_ID_ALL, &dumpHook, (APTR)(IPTR)parsed);
+
+	Close(DumpFile);
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+static const struct Hook display_hook =
+{
+    .h_Entry = (APTR)display_function
+};
+
+static const struct Hook select_hook =
+{
+    .h_Entry = (APTR)select_function
+};
+
+static const struct Hook save_hook =
+{
+    .h_Entry = (APTR)save_function
+};
+
+static const struct Hook dump_hook =
+{
+    .h_Entry = (APTR)dump_function
+};
+
 static const char *showModes[] =
 {
     "Parsed data",
@@ -170,7 +308,7 @@ static const char *showModes[] =
     NULL
 };
 
-BOOL GUIinit()
+static BOOL GUIinit()
 {
     BOOL retval = FALSE;
 
@@ -181,6 +319,26 @@ BOOL GUIinit()
 	    MUIA_Application_Author,	    (IPTR)"Pavel Fedin",
 	    MUIA_Application_Base,	    (IPTR)APPNAME,
 	    MUIA_Application_Description,   __(MSG_DESCRIPTION),
+
+            MUIA_Application_Menustrip, MenuitemObject,
+            	MUIA_Family_Child, MenuitemObject,
+                    MUIA_Menuitem_Title, __(MSG_MENU_PROJECT),
+                    MUIA_Family_Child,
+                    	menu_quit = MenuitemObject, MUIA_Menuitem_Title, __(MSG_MENU_QUIT),
+                    End,
+            	End,
+            	MUIA_Family_Child, MenuitemObject,
+                    MUIA_Menuitem_Title, __(MSG_MENU_DUMP),
+                    MUIA_Family_Child,
+                    	menu_dump_parsed = MenuitemObject,
+		    	MUIA_Menuitem_Title, __(MSG_MENU_DUMP_PARSED),
+                    End,
+                    MUIA_Family_Child,
+                    	menu_dump_raw = MenuitemObject,
+		    	MUIA_Menuitem_Title, __(MSG_MENU_DUMP_RAW),
+                    End,
+            	End,
+            End,
 
 	    SubWindow, MainWindow = WindowObject,
 		MUIA_Window_Title,	__(MSG_WINTITLE),
@@ -214,6 +372,7 @@ BOOL GUIinit()
 		    	    	MUIA_Cycle_Entries, showModes,
 		    	    	MUIA_CycleChain, TRUE,
 		    	    End,
+		    	    Child, SaveButton = SimpleButton(__(MSG_SAVE_DATA)),
 		    	End,
 		    End,
 		End, // WindowContents
@@ -227,6 +386,10 @@ BOOL GUIinit()
 		 app, 2, 
 		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
+	DoMethod(menu_quit, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+		 app, 2,
+		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
 	DoMethod(TablesList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
 		 TablesList, 2,
 		 MUIM_CallHook, &select_hook);
@@ -234,6 +397,18 @@ BOOL GUIinit()
 	DoMethod(ModeCycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
 		 TablesList, 2,
 		 MUIM_CallHook, &select_hook);
+
+	DoMethod(SaveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+		 InfoList, 2,
+		 MUIM_CallHook, &save_hook);
+
+	DoMethod(menu_dump_parsed, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+		 app, 3,
+		 MUIM_CallHook, &dump_hook, TRUE);
+
+	DoMethod(menu_dump_raw, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+		 app, 3,
+		 MUIM_CallHook, &dump_hook, FALSE);
 
 	retval = TRUE;
     }
@@ -263,9 +438,6 @@ int __nocommandline = 1;
 
 int main(void)
 {
-    display_hook.h_Entry = (APTR)display_function;
-    select_hook.h_Entry = (APTR)select_function;
-
     if (!Locale_Initialize())
 	cleanup(_(MSG_ERROR_LOCALE));
 
@@ -275,7 +447,6 @@ int main(void)
 
     if (GUIinit())
     {
-
 	/* Populate tables list */
 	DoMethod(TablesList, MUIM_List_InsertSingle, ACPIBase->ACPIB_SDT_Addr, MUIV_List_Insert_Bottom);
 	ACPI_ScanSDT(ACPI_ID_ALL, &tableHook, NULL);
@@ -284,15 +455,25 @@ int main(void)
 
 	if (xget(MainWindow, MUIA_Window_Open))
 	{
-	    DoMethod(app, MUIM_Application_Execute);
+	    ULONG retval = 0;
+	    ULONG signals = 0;
+
+	    while (retval != MUIV_Application_ReturnID_Quit)
+	    {
+		retval = DoMethod(app, MUIM_Application_NewInput, &signals);
+
+		if (signals)
+		    signals = Wait(signals | SIGBREAKF_CTRL_C);
+
+		if (signals & SIGBREAKF_CTRL_C)
+		    retval = MUIV_Application_ReturnID_Quit;
+	    }
 	    set(MainWindow, MUIA_Window_Open, FALSE);
 	}
 
 	DisposeObject(app);
-
     }
 
     cleanup(NULL);
-
     return 0;
 }
