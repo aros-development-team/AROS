@@ -502,16 +502,10 @@ ROM_COMMON_OBJS := $(addsuffix .o, \
 
 
 
-%rule_compile basename=__arosc_userdata targetdir=$(OBJDIR)/slib
-$(OBJDIR)/slib/__arosc_userdata.o : | $(OBJDIR)/slib
-GLOB_MKDIRS += $(OBJDIR)/slib
-
-
 AROSC_LINKLIB_OBJS := $(addsuffix .o, \
     $(addprefix $(OBJDIR)/,$(COMMON)) \
     $(addprefix $(OBJDIR)/arch/,$(COMMON_ARCH)) \
     $(addprefix $(OBJDIR)/shared/arch/,$(SHARED_LINKLIB_ARCH)) \
-    $(OBJDIR)/slib/__arosc_userdata \
 )
 USER_LDFLAGS := -L$(OBJDIR)
 %build_module mmake=linklibs-clib-shared \
