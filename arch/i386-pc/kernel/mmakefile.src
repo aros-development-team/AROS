@@ -11,6 +11,7 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
 		 -I$(SRCDIR)/arch/all-native/kernel \
 		 -I$(SRCDIR)/$(MAINDIR) \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+USER_AFLAGS   := -isystem $(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \

@@ -1,13 +1,14 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES    := apic_driver xtpic cpu_traps kernel_memory
+FUNCS	 := displayalert
+FILES    := apic_driver xtpic cpu_traps kernel_memory _displayalert
 APICS    := apic_ia32
 ASMFILES := cli sti
 
 MAINDIR	      := rom/kernel
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/$(CURDIR) \
-		 -I$(SRCDIR)/$(MAINDIR)
+		 -I$(SRCDIR)/$(MAINDIR) -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
 #MM- kernel-kernel-pc : linklibs-bootconsole kernel-kernel-native
 #MM- kernel-kernel-pc-kobj : linklibs-bootconsole kernel-kernel-native
