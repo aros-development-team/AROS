@@ -287,3 +287,30 @@ Parsed data
 MSG_MENU_DUMP_RAW (//)
 Raw dump
 ;
+MSG_BATT_WARN (//)
+Warning level
+;
+MSG_BATT_LOW (//)
+Low level
+;
+MSG_BATT_CRITICAL (//)
+Critical level
+;
+MSG_MWH (//)
+mWh
+;
+MSG_CMD_REG (//)
+Command/status register
+;
+MSG_DATA_REG (//)
+Data register
+;
+MSG_UID (//)
+Unique ID
+;
+MSG_SCI_GPE_BIT (//)
+SCI GPE bit
+;
+MSG_NAMESPACE_ID (//)
+Namespace ID
+;
