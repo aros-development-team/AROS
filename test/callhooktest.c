@@ -1,9 +1,12 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
     
     Desc: CallHook arguments passing test.
 */
+
+/* Additionally, test vararg stubs. */
+#define NO_INLINE_STDARG
 
 #include <stdio.h>
 #include <proto/alib.h>
