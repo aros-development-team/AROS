@@ -62,8 +62,6 @@
     return CALLHOOKPKT((struct Hook *) OCLASS(obj), obj, message);
 } /* DoMethodA */
 
-#ifndef NO_LINEAR_VARARGS
-
 IPTR DoMethod (Object * obj, IPTR MethodID, ...)
 {
     ASSERT_VALID_PTR(obj);
@@ -76,5 +74,3 @@ IPTR DoMethod (Object * obj, IPTR MethodID, ...)
     retval = CALLHOOKPKT((struct Hook *) OCLASS(obj), obj, AROS_SLOWSTACKMETHODS_ARG(MethodID));
     AROS_SLOWSTACKMETHODS_POST
 } /* DoMethod() */
-
-#endif

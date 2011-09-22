@@ -47,8 +47,8 @@
     BUGS
 
     SEE ALSO
-	boopsi.library/NewObjectA(), boopsi.library/SetAttrsA(),
-	boopsi.library/GetAttr(), boopsi.library/DisposeObject(), DoMethodA(),
+	intuition.library/NewObjectA(), intuition.library/SetAttrsA(),
+	intuition.library/GetAttr(), intuition.library/DisposeObject(), DoMethodA(),
         CoerceMethodA(), <intuition/classes.h>
 
 ******************************************************************************/
@@ -59,8 +59,6 @@
 } /* DoSuperMethodA() */
 
 
-#ifndef NO_LINEAR_VARARGS
-
 IPTR DoSuperMethod (Class * cl, Object * obj, STACKULONG MethodID, ...)
 {
     if ((!obj) || (!cl))
@@ -69,5 +67,3 @@ IPTR DoSuperMethod (Class * cl, Object * obj, STACKULONG MethodID, ...)
     retval = CALLHOOKPKT((struct Hook *)cl->cl_Super, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID));
     AROS_SLOWSTACKMETHODS_POST
 } /* DoSuperMethod()*/
-
-#endif
