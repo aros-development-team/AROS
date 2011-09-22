@@ -68,7 +68,7 @@
     LONG                 *isDefaultIcon     = NULL;
     
     IPTR                  getPaletteMappedIcon = TRUE; // FIXME: not used
-    IPTR                  remapIcon            = TRUE; // FIXME: not used
+    IPTR                  remapIcon            = TRUE;
     IPTR                  generateImageMasks   = TRUE; // FIXME: not used
     struct Screen        *screen               = NULL; // FIXME: not used
     STRPTR                label                = NULL; // FIXME: not used
@@ -255,16 +255,12 @@
         /* TODO: Add the label specified in 'label' to the icon */
     }
 
-    if (screen != NULL) {
-        /* TODO: Render the icon for the specified screen */
+    if (remapIcon || screen != NULL) {
+        LayoutIconA(icon, screen, (struct TagItem *)tags);
     }
 
     if (generateImageMasks) {
         /* TODO: Generate the image masks */
-    }
-
-    if (remapIcon) {
-        /* TODO: Remap the icon */
     }
 
     if (getPaletteMappedIcon) {

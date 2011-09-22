@@ -56,7 +56,14 @@ extern const IPTR IconDesc[];
     struct NativeIcon *nativeicon;
     
     nativeicon = NATIVEICON(diskobj);
-    
+   
+    /* The LayoutIconA() BitMaps are not in our pool.
+     */
+    if (nativeicon->iconbm1)
+        FreeBitMap(nativeicon->iconbm1);
+    if (nativeicon->iconbm2)
+        FreeBitMap(nativeicon->iconbm2);
+
     RemoveIconFromList(nativeicon, LB(IconBase));
     
     /* It's enough to free our pool */

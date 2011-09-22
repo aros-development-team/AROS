@@ -60,8 +60,12 @@
 {
     AROS_LIBFUNC_INIT
     LONG wDelta,textTop,textLeft;
+    LONG iconWidth = 0, iconHeight = 0;
     struct NativeIcon *nativeicon;
 
+    IconControl(icon, ICONCTRLA_GetWidth,  (IPTR)&iconWidth,
+                      ICONCTRLA_GetHeight, (IPTR)&iconHeight,
+                      TAG_DONE);
     nativeicon = GetNativeIcon(icon, LB(IconBase));
 
     wDelta = 0;
@@ -71,13 +75,8 @@
     if (label != NULL) {
         struct TextExtent extent;
 
-        if (nativeicon && nativeicon->icon35.img1.imagedata) {
-            wDelta = nativeicon->icon35.width;
-            textTop = nativeicon->icon35.height;
-        } else {
-            wDelta = icon->do_Gadget.Width;
-            textTop = icon->do_Gadget.Height;
-        }
+        wDelta = iconWidth;
+        textTop = iconHeight;
 
         TextExtent(rp, label, strlen(label), &extent);
 
@@ -99,7 +98,25 @@
         Text(rp, label, strlen(label));
     }
 
-#ifndef FORCE_LUT_ICONS
+    /* Already laid out (hopefully for this screen)? */
+    if (nativeicon && nativeicon->iconscr)
+    {
+        struct BitMap *bm;
+
+        if (nativeicon->iconbm1 && GfxBase) {
+            if ((state == IDS_SELECTED) && nativeicon->iconbm2) {
+                bm = nativeicon->iconbm2;
+            } else {
+                bm = nativeicon->iconbm1;
+            }
+
+            BltBitMapRastPort(bm, 0, 0,
+                              rp, leftEdge + wDelta, topEdge,
+                              iconWidth, iconHeight, 0x00C0);
+            return;
+        }
+    }
+
     if (nativeicon && GfxBase && CyberGfxBase)
     {
 	ULONG bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
@@ -206,7 +223,7 @@
 	    } /* if (bmdepth >= 4) */
 	} /* if (nativeicon->icon35.img1.imagedata) */
     } /* if (nativeicon && GfxBase && CyberGfxBase) */
-#endif
+
     if (state == IDS_SELECTED && icon->do_Gadget.SelectRender)
     {
         DrawImage
