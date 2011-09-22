@@ -196,7 +196,6 @@ static void dumpData(unsigned char *data, int length, void (*cb)(const char *))
 void unknown_parser(struct ACPI_TABLE_DEF_HEADER *table, void (*cb)(const char *))
 {
     header_parser(table, cb);
-
     cb("");
 
     dumpData((unsigned char *)table, table->length, cb);
@@ -262,6 +261,7 @@ static const char *facp_flags[] =
 static void fadt_parser(struct ACPI_TABLE_TYPE_FADT *fadt, void (*cb)(const char *))
 {
     header_parser(&fadt->header, cb);
+    cb("");
     
     parse_enum(_(MSG_PM_PROFILE), fadt->pm_profile, Profiles, cb);
 
@@ -486,6 +486,7 @@ static void madt_parser(struct ACPI_TABLE_TYPE_MADT *madt, void (*cb)(const char
     D(printf("MADT at 0x%p, length %u\n", madt, len));
 
     header_parser(&madt->header, cb);
+    cb("");
 
     MakeString(cb, "%s: 0x%08X", _(MSG_LAPIC_ADDR), madt->lapic_address);
     MakeString(cb, "%s: %s", _(MSG_PCAT_COMPAT), FLAG_VAL(madt->flags.pcat_compat));
@@ -504,6 +505,7 @@ static const char *hpet_protect[] =
 static void hpet_parser(struct ACPI_TABLE_TYPE_HPET *hpet, void (*cb)(const char *))
 {
     header_parser(&hpet->header, cb);
+    cb("");
 
     MakeString(cb, "%s: %u", _(MSG_HW_REVISION), hpet->id & HPET_HW_REV_MASK);
     MakeString(cb, "%s: %u", _(MSG_NUM_COMPARATORS),
