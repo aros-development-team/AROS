@@ -522,6 +522,28 @@ static void hpet_parser(struct ACPI_TABLE_TYPE_HPET *hpet, void (*cb)(const char
     MakeString(cb, "%s: 0x%02X", _(MSG_OEM_ATTRS), hpet->page_protect >> HPET_OEM_ATTR_SHIFT);
 }
 
+static void sbst_parser(struct ACPI_TABLE_TYPE_SBST *sbst, void (*cb)(const char *))
+{
+    header_parser(&sbst->header, cb);
+    cb("");
+
+    MakeString(cb, "%s: %u %s", _(MSG_BATT_WARN), sbst->warning, _(MSG_MWH));
+    MakeString(cb, "%s: %u %s", _(MSG_BATT_LOW), sbst->low, _(MSG_MWH));
+    MakeString(cb, "%s: %u %s", _(MSG_BATT_CRITICAL), sbst->critical, _(MSG_MWH));
+}
+
+static void ecdt_parser(struct ACPI_TABLE_TYPE_ECDT *ecdt, void (*cb)(const char *))
+{
+    header_parser(&ecdt->header, cb);
+    cb("");
+
+    parse_addr(_(MSG_CMD_REG), &ecdt->ec_control, cb);
+    parse_addr(_(MSG_DATA_REG), &ecdt->ec_data, cb);
+    MakeString(cb, "%s: 0x%08X", _(MSG_UID), ecdt->uid);
+    MakeString(cb, "%s: %u", _(MSG_SCI_GPE_BIT), ecdt->gpe_bit);
+    MakeString(cb, "%s: %s", _(MSG_NAMESPACE_ID), ecdt->ec_id);
+}
+
 static const struct Parser Tables[] =
 {
     {ACPI_MAKE_ID('R','S','D','T'), "System"    , rsdt_parser},
@@ -529,6 +551,8 @@ static const struct Parser Tables[] =
     {ACPI_MAKE_ID('F','A','C','P'), "Hardware"  , fadt_parser},
     {ACPI_MAKE_ID('A','P','I','C'), "Interrupts", madt_parser},
     {ACPI_MAKE_ID('H','P','E','T'), "Timer"	, hpet_parser},
+    {ACPI_MAKE_ID('S','B','S','T'), "Battery"   , sbst_parser},
+    {ACPI_MAKE_ID('E','C','D','T'), "Controller", ecdt_parser},
     {0, NULL, NULL}
 };
 
