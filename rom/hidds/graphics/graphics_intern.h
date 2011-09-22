@@ -257,10 +257,13 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrch
 
 static inline ULONG color_distance(UWORD a1, UWORD r1, UWORD g1, UWORD b1, UWORD a2, UWORD r2, UWORD g2, UWORD b2)
 {
-    LONG da = (a1 >> 8) - (a2 >> 8);
-    LONG dr = (r1 >> 8) - (r2 >> 8);
-    LONG dg = (g1 >> 8) - (g2 >> 8);
-    LONG db = (b1 >> 8) - (b2 >> 8);
+    /* NOTE: The use of 'WORD' here and the 'UWORD' casts below are
+     *       important hints to GCC to generate better code on m68k
+     */
+    WORD da = (a1 >> 8) - (a2 >> 8);
+    WORD dr = (r1 >> 8) - (r2 >> 8);
+    WORD dg = (g1 >> 8) - (g2 >> 8);
+    WORD db = (b1 >> 8) - (b2 >> 8);
 
     DB2(bug("[color_distance] a1 = 0x%04X a2 = 0x%04X da = %d\n", a1, a2, da));
     DB2(bug("[color_distance] r1 = 0x%04X r2 = 0x%04X dr = %d\n", r1, r2, dr));
@@ -270,7 +273,7 @@ static inline ULONG color_distance(UWORD a1, UWORD r1, UWORD g1, UWORD b1, UWORD
     /* '4' here is a result of trial and error. The idea behind this is to increase
        the weight of alpha difference in order to make the function prefer colors with
        the same alpha value. This is important for correct mouse pointer remapping. */
-    return da*da*4 + dr*dr + dg*dg + db*db;
+    return (UWORD)(da*da)*4 + (UWORD)(dr*dr) + (UWORD)(dg*dg) + (UWORD)(db*db);
 }
 
 #define CSD(x) (&((struct IntHIDDGraphicsBase *)x->UserData)->hdg_csd)
