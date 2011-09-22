@@ -62,5 +62,6 @@
 #define ERR10_046 46
 #define ERR10_047 47
 #define ERR10_048 48
+#define ERR10_100 100 /* Internal error */
 
 #endif /* REXX_ERRORS_H */
