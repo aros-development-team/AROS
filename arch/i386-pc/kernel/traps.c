@@ -9,15 +9,12 @@
 #include <exec/alerts.h>
 #include <proto/exec.h>
 
+#include "cpu_traps.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "traps.h"
 #include "exec_extern.h"
-
-#define __text __attribute__((section(".text")))
-
-BUILD_COMMON_TRAP()
 
 /* 0,1,5-7,9-17,19:
 		return address of these exceptions is the address of faulting instr
@@ -49,9 +46,9 @@ BUILD_TRAP(0x11)
 BUILD_TRAP(0x12)
 BUILD_TRAP(0x13)
 
-typedef asmlinkage void (*trap_type)(void);
+typedef void (*trap_type)(void);
 
-const trap_type traps[0x14] __text =
+const trap_type traps[0x14] =
 {
 	TRAP0x00_trap,
 	TRAP0x01_trap,
@@ -102,38 +99,10 @@ void set_system_gate(unsigned int n, void *addr)
     _set_gate(&data->idt[n], 14, 3, addr);
 }
 
-void printException(struct pt_regs regs)
+void handleException(struct ExceptionContext *ctx, unsigned long error_code, unsigned long irq_number)
 {
-    struct Task *t = SysBase->ThisTask;
-
-    bug("Task 0x%p (%s)\n", t, t ? t->tc_Node.ln_Name : "<none>");
-    bug("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
-        regs.eip, regs.eflags, regs.xds, &regs.esp);
-}
-
-void handleException(ULONG exceptionNo)
-{
-    ULONG alert;
-    struct Task *task;
-    VOID (*trapHandler)(ULONG, void *);
-
-    // Determine alert number
-    switch (exceptionNo)
-    {
-    case 0:
-        alert = ACPU_DivZero;
-        break;
-    case 6:
-        alert = ACPU_InstErr;
-        break;
-    default:
-        alert = AT_DeadEnd | 0x100 | exceptionNo;
-    }
-
-    // Call task's trap handler
-    task = FindTask(NULL);
-    trapHandler = task->tc_TrapCode;
-    trapHandler(alert, NULL);
+    /* Currently we support only traps here */
+    cpu_Trap(ctx, error_code, irq_number);
 }
 
 void Init_Traps(struct PlatformData *data)

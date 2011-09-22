@@ -17,11 +17,7 @@
 #include "cpu_traps.h"
 
 #define D(x)
-
-#ifndef __i386__
-/* Necessary macros are not implemented for i386 yet */
 #define DUMP_CONTEXT
-#endif
 
 #ifdef DUMP_CONTEXT
 
