@@ -9,6 +9,9 @@
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <hidd/irq.h>
+#include <resources/acpi.h>
+
+#include <proto/acpi.h>
 #include <proto/bootloader.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -19,6 +22,13 @@
 
 #include "uhwcmd.h"
 #include "ohciproto.h"
+
+#ifdef __i386__
+#define HAVE_ACPI
+#endif
+#ifdef __x86_64__
+#define HAVE_ACPI
+#endif
 
 #define NewList NEWLIST
 
@@ -660,8 +670,32 @@ APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)
  */
 static int getArguments(struct PCIDevice *base)
 {
-    APTR BootLoaderBase = OpenResource("bootloader.resource");
+    APTR BootLoaderBase;
+#ifdef HAVE_ACPI
+    struct ACPIBase *ACPIBase;
 
+    ACPIBase = OpenResource("acpi.resource");
+    if (ACPIBase)
+    {
+    	/*
+    	 * Use ACPI IDs to identify known machines which need HDF_FORCEPOWER to work.
+    	 * Currently we know only MacMini.
+    	 */
+    	struct ACPI_TABLE_DEF_HEADER *dsdt = ACPI_FindSDT(ACPI_MAKE_ID('D','S','D','T'));
+
+    	if (dsdt)
+    	{
+	    /* Yes, the last byte in ID is zero */
+    	    if (strcmp(dsdt->oem_table_id, "Macmini") == 0)
+    	    {
+    	    	base->hd_Flags = HDF_FORCEPOWER;
+    	    	return TRUE;
+    	    }
+    	}
+    }
+#endif
+
+    BootLoaderBase = OpenResource("bootloader.resource");
     if (BootLoaderBase)
     {
         struct List *args = GetBootInfo(BL_Args);
