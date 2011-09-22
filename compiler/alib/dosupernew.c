@@ -39,8 +39,8 @@
     BUGS
 
     SEE ALSO
-	boopsi.library/NewObjectA(), boopsi.library/SetAttrsA(), boopsi.library/GetAttr(),
-	boopsi.library/DisposeObject(), DoMethodA(),
+	intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
+	intuition.library/DisposeObject(), DoMethodA(),
         CoerceMethodA(), <intuition/classes.h>
 
 ******************************************************************************/
@@ -49,8 +49,6 @@
     
     return DoSuperMethod(CLASS, object, OM_NEW, tags, gadgetInfo);
 } /* DoSuperNewTagList() */
-
-#ifndef NO_LINEAR_VARARGS
 
 IPTR DoSuperNewTags
 (
@@ -68,5 +66,3 @@ IPTR DoSuperNewTags
     retval = DoSuperNewTagList(CLASS, object, gadgetInfo, (struct TagItem *) AROS_SLOWSTACKMETHODS_ARG(tag1));
     AROS_SLOWSTACKMETHODS_POST
 } /* DoSuperNewTags() */
-
-#endif

@@ -61,12 +61,6 @@
 	return CALLHOOKPKT((struct Hook *) cl, obj, message);
 } /* CoerceMethodA() */
 
-/*
- * AROS_SLOWSTACKMETHODS does not work reliably on architectures with non-linear varargs.
- * It may access random memory and crash.
- */
-#ifndef NO_LINEAR_VARARGS
-
 IPTR CoerceMethod (Class * cl, Object * obj, IPTR MethodID, ...)
 {
 	ASSERT_VALID_PTR(obj);
@@ -79,5 +73,3 @@ IPTR CoerceMethod (Class * cl, Object * obj, IPTR MethodID, ...)
 	retval = CALLHOOKPKT((struct Hook *) cl, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID));
 	AROS_SLOWSTACKMETHODS_POST
 } /* CoerceMethod() */
-
-#endif

@@ -51,9 +51,6 @@
     return CALLHOOKPKT(hook, object, param);
 } /* CallHookA() */
 
-
-#ifndef NO_LINEAR_VARARGS
-
 /******************************************************************************
 
     NAME */
@@ -87,5 +84,3 @@
     retval = CALLHOOKPKT(hook, object, AROS_SLOWSTACKHOOKS_ARG(object));
     AROS_SLOWSTACKHOOKS_POST
 } /* CallHook() */
-
-#endif
