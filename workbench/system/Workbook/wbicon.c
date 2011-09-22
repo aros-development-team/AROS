@@ -31,6 +31,7 @@ struct wbIcon {
     STRPTR             File;
     struct DiskObject *Icon;
     STRPTR             Label;
+    struct Screen     *Screen;
 
     struct timeval LastActive;
 };
@@ -79,6 +80,7 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
     my->File = NULL;
     my->Lock = (BPTR)GetTagData(WBIA_Lock, (IPTR)BNULL, ops->ops_AttrList);
     my->Icon = (struct DiskObject *)GetTagData(WBIA_Icon, (IPTR)NULL, ops->ops_AttrList);
+    my->Screen = (struct Screen *)GetTagData(WBIA_Screen, (IPTR)NULL, ops->ops_AttrList);
     if (my->Icon != NULL) {
     	if (my->Icon->do_Gadget.GadgetText != NULL &&
     	    my->Icon->do_Gadget.GadgetText->IText != NULL)
@@ -102,6 +104,7 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
 	if (my->Icon == NULL)
 	    goto error;
 
+	LayoutIconA(my->Icon, my->Screen, NULL);
 	label = FilePart(my->File);
     }
 

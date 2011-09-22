@@ -246,6 +246,7 @@ static void wbAddFiles(Class *cl, Object *obj)
 				       WBIA_Lock, my->Lock,
 				       WBIA_File, tmp->ed_Name,
 				       WBIA_Label, tmp->ed_Name,
+				       WBIA_Screen, my->Window->WScreen,
 				       TAG_END);
 		    if (iobj != NULL)
 			wbwiAppend(cl, obj, iobj);
@@ -260,6 +261,7 @@ static void wbAddFiles(Class *cl, Object *obj)
 static void wbAddVolumeIcons(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
     struct DosList *dl;
     char text[NAME_MAX];
 
@@ -279,6 +281,7 @@ static void wbAddVolumeIcons(Class *cl, Object *obj)
     	    iobj = NewObject(WBIcon, NULL,
     	    	    WBIA_File, text,
     	    	    WBIA_Label, AROS_BSTR_ADDR(tdl->dol_Name),
+    	    	    WBIA_Screen, my->Window->WScreen,
     	    	    TAG_END);
     	    D(bug("Volume: %s => %p\n", text, iobj));
     	    if (iobj)
@@ -291,15 +294,16 @@ static void wbAddVolumeIcons(Class *cl, Object *obj)
 static void wbAddAppIcons(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
     struct DiskObject *icon;
     char text[NAME_MAX];
-
 
     /* Add all the AppIcons */
     icon = NULL;
     while ((icon = GetNextAppIcon(icon, &text[0]))) {
         Object *iobj = NewObject(WBIcon, NULL,
         	              WBIA_Icon, icon,
+        	              WBIA_Screen, my->Window->WScreen,
         	              TAG_END);
         if (iobj != NULL)
             wbwiAppend(cl, obj, iobj);
