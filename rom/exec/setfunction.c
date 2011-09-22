@@ -92,17 +92,18 @@
     /* Write new one. */
     __AROS_SETVECADDR (library, funcOffset, newFunction);
 
-#if 0
-    /* And clear the instruction cache. */
-    /* Simply clear the entire cache... */
+#ifdef __AROS_USE_FULLJMP
+    /* And clear the instruction cache (only if vectors actually contain instructions) */
+#if 1
     /*
-     * CHECKME: Why CacheClearU()? This was introduced in r1046,
-     * but seems to crash Android on Archos70.
+     * Simply clear the entire cache...
+     * CHECKME: Why? - sonic
      */
     CacheClearU();
 #else
     /* ...or clear the vector address range specifically */
     CacheClearE (__AROS_GETJUMPVEC(library,funcOffset),LIB_VECTSIZE,CACRF_ClearI|CACRF_ClearD);
+#endif
 #endif
 
     /* Arbitration is no longer needed */
