@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES    := kernel_startup platform_init kernel_cpu kernel_debug kernel_memory kernel_bootmem \
 	    intr apic acpi_tables acpi_parsers mmu smp
-FUNCS	 := displayalert _displayalert getcpunumber
+FUNCS	 := getcpunumber
 ASMFILES := core_interrupts issuper
 
 MAINDIR	      := rom/kernel
