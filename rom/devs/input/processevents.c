@@ -305,7 +305,7 @@ void ProcessEvents (struct inputbase *InputDevice)
 		switch (ioreq->io_Command)
 		{
 		case IND_ADDHANDLER:
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
+#ifdef __mc68000
 		    /* Older m68k programs copied input handler code without
 		     * flushing caches, causing crashes on 68040/060.
 		     */
