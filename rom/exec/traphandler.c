@@ -80,21 +80,16 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 	/* Get internal task structure */
         struct IntETask *iet = GetIntETask(task);
 
-	/*
-	 * Protection against double-crash. If the task is already in alert state,  we have
-	 * a second crash during processing the first one. Then we just pick up initial alert code
-	 * and call Alert() with it in supervisor mode.
-	 */
 	if (iet->iet_AlertFlags & AF_Alert)
+	{
+	    /*
+	     * Protection against double-crash. If the task is already in alert state,  we have
+	     * a second crash during processing the first one. Then we just pick up initial alert code
+	     * and call Alert() with it in supervisor mode.
+	     */
 	    trapNum = iet->iet_AlertCode;
-
-	/*
-	 * Workaround for i386-native. There trap handler already runs in user mode (BAD!),
-	 * and it gets NULL as context pointer (this port saves CPU context in own format,
-	 * which is TWICE BAD!!!)
-	 * All this needs to be fixed.
-	 */
-	else if (ctx)
+	}
+	else
 	{
 	    /*
 	     * Otherwise we can try to send the crash to user level.
@@ -127,5 +122,5 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
 	}
     }
 
-    Exec_ExtAlert(trapNum, ctx ? (APTR)ctx->PC : NULL, ctx ? (APTR)ctx->FP : NULL, AT_CPU, ctx, SysBase);
+    Exec_ExtAlert(trapNum, (APTR)ctx->PC, (APTR)ctx->FP, AT_CPU, ctx, SysBase);
 } /* TrapHandler */
