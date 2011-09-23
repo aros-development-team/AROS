@@ -100,8 +100,8 @@
 
     struct Process *me = (struct Process *)FindTask(NULL);
     BPTR   cis = BNULL;
-    BPTR   sis = (BPTR)SYS_DupStream;
-    BPTR   sos = (BPTR)SYS_DupStream;
+    BPTR   sis = Input();
+    BPTR   sos = Output();
     BPTR   ses = BNULL;
     BPTR   shellseg = BNULL;
     STRPTR resShell    = BNULL;
