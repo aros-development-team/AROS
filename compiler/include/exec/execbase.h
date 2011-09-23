@@ -199,16 +199,4 @@ struct ExecBase
 #define RESLIST_NEXT (IPTR)0x00000001
 #endif
 
-/*
- * The following definitions are private!
- */
-
-/* SysFlags */
-#define SFF_SoftInt         (1L<<5)  /* There is a software interrupt */
-#define SFF_QuantumOver     (1L<<13) /* Task's time slice is over     */
-
-/* AttnFlags */
-#define ARF_AttnSwitch      (1L<<7)  /* Delayed Switch() pending   */
-#define ARF_AttnDispatch    (1L<<15) /* Delayed Dispatch() pending */
-
 #endif /* EXEC_EXECBASE_H */

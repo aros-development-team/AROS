@@ -1,6 +1,7 @@
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <exec/lists.h>
+#include <kernel/scheduler.h>
 
 #include "intservers.h"
 
@@ -58,7 +59,7 @@ AROS_UFH5(void, VBlankServer,
     /* First decrease Elapsed time for current task */
     if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
     {
-        SysBase->SysFlags |= SFF_QuantumOver;
+        SysBase->SysFlags    |= SFF_QuantumOver;
         SysBase->AttnResched |= ARF_AttnSwitch;
     }
 

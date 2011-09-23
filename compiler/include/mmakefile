@@ -25,6 +25,7 @@ INCSUBDIRS :=	aros				\
 		hidd \
 		intuition \
 	        irda \
+	        kernel				\
 	        libcore				\
 		libraries \
 		midi \
