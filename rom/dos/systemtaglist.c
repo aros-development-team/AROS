@@ -237,7 +237,7 @@
 
     if (ses == (BPTR)SYS_DupStream)
     {
-        ses = OpenFromLock(DupLockFromFH(Output()));
+        ses = OpenFromLock(DupLockFromFH(me->pr_CES));
 	if (!ses) goto end;
 
 	ses_opened = TRUE;
