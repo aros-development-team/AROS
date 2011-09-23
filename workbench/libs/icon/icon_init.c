@@ -17,7 +17,7 @@
 
 const LONG IFFParseBase_version = 39,
            GfxBase_version      = 39,
-           CyberGfxBase_version = 39;
+           CyberGfxBase_version = 41;
 
 /****************************************************************************************/
 
