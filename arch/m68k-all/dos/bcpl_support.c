@@ -229,7 +229,7 @@ struct MsgPort *BCPL_CreateProcBCPL(struct DosLibrary *DOSBase, CONST_STRPTR nam
             NP_StackSize, stacksize,
             NP_WindowPtr, me->pr_WindowPtr,
             NP_CurrentDir, 0,
-            NP_Cli, FALSE,
+            NP_Cli, TRUE,
             NP_HomeDir, 0,
             TAG_END);
 
