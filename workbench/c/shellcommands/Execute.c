@@ -112,9 +112,8 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	return RETURN_FAIL;
     }
 
-    if (cli->cli_Interactive)
+    if (cli->cli_StandardInput == cli->cli_CurrentInput)
     {
-        cli->cli_Interactive  = FALSE;
         cli->cli_CurrentInput = from;
     }
     else
