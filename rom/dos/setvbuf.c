@@ -155,11 +155,16 @@ BOOL vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     fhinput = BADDR(fh);
 
     /* Handle the trivial case, where we have enough room 
-     * in the buffer
+     * in the minimal buffer.
+     *
+     * For AOS 1.3 C:Run compatabilty, the injected buffer
+     * MUST start at Pos==0. Yes, that stupid command does
+     * not check that fh_Pos is nonzero.
      */
-    if ((fhinput->fh_Flags & FHF_BUF) && fhinput->fh_Pos >= size) {
-        fhinput->fh_Pos -= size;
-        CopyMem(argptr, BADDR(fhinput->fh_Buf) + fhinput->fh_Pos, size);
+    if ((fhinput->fh_Flags & FHF_BUF) && size <= 208) {
+        CopyMem(argptr, BADDR(fhinput->fh_Buf), size);
+        fhinput->fh_Pos = 0;
+        fhinput->fh_End = size;
         return TRUE;
     }
 
