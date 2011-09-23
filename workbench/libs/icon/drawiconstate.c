@@ -154,7 +154,7 @@
             }
         }
 
-        if (nativeicon->icon35.img1.imagedata)
+        if (nativeicon->icon35.img1.imagedata && GfxBase && CyberGfxBase)
 	{
 	    if (bmdepth >= 4)
 	    {
