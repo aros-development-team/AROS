@@ -358,7 +358,8 @@
 	    { NP_Synchronous, FALSE                         }, /* 12 */
 	    { NP_Entry      , (IPTR)entry                   }, /* 13 */
 	    { NP_CurrentDir , (IPTR)BNULL                   }, /* 14 */
-	    { TAG_END       , 0                             }  /* 15 */
+            { NP_ConsoleTask, (IPTR)BNULL,                  }, /* 15 */
+	    { TAG_END       , 0                             }  /* 16 */
 	};
 
 	Tag filterList[] =
