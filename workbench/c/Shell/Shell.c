@@ -347,6 +347,8 @@ static void unloadCommand(ShellState *ss, BPTR commandSeg,
     if (homeDirChanged)
 	UnLock(SetProgramDir(ss->oldHomeDir));
 
+    SetProgramName("");
+
     if (!cli->cli_Module)
 	return;
 
@@ -364,6 +366,8 @@ static void unloadCommand(ShellState *ss, BPTR commandSeg,
     }
     else
 	UnLoadSeg(commandSeg);
+
+    cli->cli_Module = BNULL;
 }
 
 /* Function: loadCommand
