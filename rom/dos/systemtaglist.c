@@ -255,12 +255,6 @@
         STRPTR cmdcopy = NULL;
         BOOL ok;
 
-        if (sis == cis) {
-            cis = Open("NIL:", MODE_OLDFILE);
-            if (!cis) goto end;
-            cis_opened = TRUE;
-        }
-
         if (command[commandlen-1] != '\n') {
             cmdcopy = AllocVec(commandlen + 2, MEMF_ANY);
             CopyMem(command, cmdcopy, commandlen);
