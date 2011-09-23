@@ -145,6 +145,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
     {
         struct TagItem tags[] =
         {
+	    { SYS_ScriptInput, (IPTR)cis     },
 	    { SYS_Input,       (IPTR)cis     },
 	    { SYS_Output,      (IPTR)cos     },
 	    { SYS_Error,       (IPTR)ces     },
