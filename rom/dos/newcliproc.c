@@ -40,28 +40,6 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
         D(bug("\tdp_Arg6: %p (Flags)\n", (APTR)dp->dp_Arg6));
     }
 
-    /* Create a new CLI if needed
-     * NOTE m68k: This must be done *before* calling the BCPL
-     *            function pointed to by dp->dp_Type
-     */
-    cli = Cli();
-    if (cli == NULL) {
-        D(bug("%s: Creating a new pr_CLI\n", __func__));
-        cli = AllocDosObject(DOS_CLI, NULL);
-        if (cli == NULL) {
-            if (dp) {
-                ReplyPkt(dp, DOSFALSE, ERROR_NO_FREE_STORE);
-                SetIoErr((SIPTR)me);
-            } else {
-                SetIoErr(ERROR_NO_FREE_STORE);
-            }
-            return 0;
-        }
-        me->pr_CLI = MKBADDR(cli);
-        me->pr_Flags |= PRF_FREECLI;
-        addprocesstoroot(me, DOSBase);
-    }
-
     Type = dp->dp_Type;
 #ifdef __mc68000
     /* If dp_Type > 1, assume it's the old BCPL style of
@@ -83,7 +61,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
                 AROS_UFCA(LONG_FUNC, (IPTR)Type, A4));
         D(bug("%s: Called custom BCPL CliInit routine @%p => 0x%08x\n",__func__, Type, ret));
         if (ret > 0) {
-            D(bug("%s: Calling custom BCPL reply routine @%p\n",__func__, Type));
+            D(bug("%s: Calling custom BCPL reply routine @%p\n",__func__, ret));
             ret = AROS_UFC8(ULONG, BCPL_thunk,
                     AROS_UFCA(BPTR,   IoErr(), D1),
                     AROS_UFCA(ULONG,  0,       D2),
@@ -100,6 +78,26 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
         return ret;
     }
 #endif
+
+    /* Create a new CLI if needed
+     */
+    cli = Cli();
+    if (cli == NULL) {
+        D(bug("%s: Creating a new pr_CLI\n", __func__));
+        cli = AllocDosObject(DOS_CLI, NULL);
+        if (cli == NULL) {
+            if (dp) {
+                ReplyPkt(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                SetIoErr((SIPTR)me);
+            } else {
+                SetIoErr(ERROR_NO_FREE_STORE);
+            }
+            return 0;
+        }
+        me->pr_CLI = MKBADDR(cli);
+        me->pr_Flags |= PRF_FREECLI;
+        addprocesstoroot(me, DOSBase);
+    }
 
     if (dp->dp_Res1) {
         /* C:NewCLI =  Res1 = 1, dp_Arg1 = CurrentDir, dp_Arg5 = unused    , dp_Arg6 = unused
