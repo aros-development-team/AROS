@@ -48,18 +48,18 @@ static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ExecBase *sb
 	struct DiagArea *diag = configDev->cd_Rom.er_DiagArea;
 	UWORD offset = diag->da_DiagPoint;
 	APTR code = (APTR)(((UBYTE*)diag) + offset);
-	BOOL ret;
-	
+	ULONG ret;
+
 	// call autoconfig ROM da_DiagPoint
 	D(bug("Call boot rom @%p board %p diag %p configdev %p\n",
 		code, configDev->cd_BoardAddr, diag, configDev));
-	ret = AROS_UFC5(BOOL, code,
+	ret = AROS_UFC5(ULONG, code,
 		AROS_UFCA(APTR, configDev->cd_BoardAddr, A0),
 		AROS_UFCA(struct DiagArea*, diag, A2),
 		AROS_UFCA(struct ConfigDev*, configDev, A3),
 		AROS_UFCA(struct ExpansionBase*, ExpansionBase, A5),
 		AROS_UFCA(struct ExecBase*, sb, A6));
-	return ret;
+	return ret != 0;
 }
 
 
