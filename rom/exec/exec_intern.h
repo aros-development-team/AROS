@@ -8,24 +8,15 @@
 #ifndef __EXEC_INTERN_H__
 #define __EXEC_INTERN_H__
 
-/* Needed for aros_print_not_implemented macro */
-#include <aros/debug.h>
-
 /* This is a short file that contains a few things every Exec function
     needs */
 
-#ifndef AROS_SYSTEM_H
-#   include <aros/system.h>
-#endif
-#ifndef AROS_LIBCALL_H
-#   include <aros/libcall.h>
-#endif
-#ifndef EXEC_EXECBASE_H
-#   include <exec/execbase.h>
-#endif
-#ifndef PROTO_EXEC_H
-#   include <proto/exec.h>
-#endif
+#include <aros/debug.h> /* Needed for aros_print_not_implemented macro */
+#include <aros/system.h>
+#include <aros/libcall.h>
+#include <exec/execbase.h>
+#include <kernel/scheduler.h>
+#include <proto/exec.h>
 
 #include <exec_platform.h>
 

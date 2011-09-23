@@ -1,8 +1,6 @@
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
-
-#include "../exec/etask.h"
  
 #include <kernel_base.h>
 #include <kernel_intr.h>
