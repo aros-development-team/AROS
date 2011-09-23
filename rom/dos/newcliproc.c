@@ -189,7 +189,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
     if (IsInteractive(cli->cli_StandardOutput)) {
         D(bug("%s: cli_StandardOutput is interactive\n", __func__));
         fs_ChangeSignal(cli->cli_StandardOutput, me, DOSBase);
-        SetVBuf(cli->cli_StandardInput, NULL, BUF_LINE, -1);
+        SetVBuf(cli->cli_StandardOutput, NULL, BUF_LINE, -1);
         inter_out = TRUE;
     }
 
@@ -228,14 +228,14 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
 
     D(bug("- flags:%p\n", flags));
     switch (Type) {
-    case CLI_ASYSTEM: flags = FNF_VALIDFLAGS | FNF_SYSTEM | FNF_ASYNCSYSTEM | FNF_RUNOUTPUT;
-                      break;
+    case CLI_ASYSTEM: flags = FNF_ASYNCSYSTEM | FNF_RUNOUTPUT;
+                      /* Fallthrough */
     case CLI_SYSTEM:  flags |= FNF_VALIDFLAGS | FNF_SYSTEM;
+                      cli->cli_Background = TRUE;
                       break;
-    case CLI_RUN:     flags = 0;
-                      break;
-    case CLI_BOOT:    flags = 0;
-                      break;
+    case CLI_RUN:     cli->cli_Background = TRUE;
+                      /* Fallthrough */
+    case CLI_BOOT:   
     case CLI_NEWCLI:  flags = 0;
                       break;
     default:          break;
