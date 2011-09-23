@@ -247,8 +247,8 @@
     /* Inject the arguments, adding a trailing '\n'
      * if the user did not.
      */
-    if (command == NULL || command[0] == 0)
-        command = "\n";
+    if (command == NULL)
+        command = "";
 
     commandlen = strlen(command);
     if (commandlen) {
