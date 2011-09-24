@@ -11,13 +11,19 @@ USER_CFLAGS := -Wall -Wunused -O2
 HOST_CC	    ?= $(CC)
 HOST_STRIP  ?= strip
 ILBMTOICON  ?= ilbmtoicon
+INFOINFO    ?= infoinfo  
 MECHO	    ?= echo
 
-all : $(ILBMTOICON)
+all : $(ILBMTOICON) $(INFOINFO)
 
 $(ILBMTOICON) : ilbmtoicon.c
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@ -lpng
+	@$(HOST_STRIP) $@
+
+$(INFOINFO) : infoinfo.c
+	@$(MECHO) "Compiling $(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@ -lpng
 	@$(HOST_STRIP) $@
 
 clean:
