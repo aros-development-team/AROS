@@ -334,7 +334,7 @@ uint32_t iff_copy_chunk(int fd, int ofd, int depth)
                 perror(file_in);
                 exit(EXIT_FAILURE);
             }
-            if (write(fd, buff, err) != err) {
+            if (write(ofd, buff, err) != err) {
                 perror(file_iff);
                 exit(EXIT_FAILURE);
             }
