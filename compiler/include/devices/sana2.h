@@ -113,6 +113,8 @@
 #define S2EVENT_BUFF     (1 << 5)
 #define S2EVENT_HARDWARE (1 << 6)
 #define S2EVENT_SOFTWARE (1 << 7)
+#define S2EVENT_CONNECT  (1 << 9)
+#define S2EVENT_DISCONNECT (1 << 10)
 
 
 /* Structures */
