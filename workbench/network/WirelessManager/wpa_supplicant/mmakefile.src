@@ -1,0 +1,9 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM- workbench-network : workbench-network-wirelessmanager
+
+%build_with_configure mmake=workbench-network-wirelessmanager\
+ install_env="BINDIR=$(AROS_C)" use_build_env=yes
+
+%common
