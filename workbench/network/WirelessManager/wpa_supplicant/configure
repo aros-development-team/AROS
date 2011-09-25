@@ -1,0 +1,3 @@
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+cp -R $DIR/../* ../
+#cp Makefile ../../../../../bin/pc-i386
