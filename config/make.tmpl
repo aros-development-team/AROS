@@ -2153,7 +2153,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 %define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) prefix= \
     aros_prefix= extraoptions= extracflags= nix_dir_layout= nix=no compiler=target \
     install_target=install preconfigure= postconfigure= postinstall= \
-    install_env=
+    install_env= use_build_env=no
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -2238,7 +2238,7 @@ endif
 
 # Set up build environment, and options for configure script
 ifeq (%(compiler),host)
-    COMPILER_ENV := \
+    CONFIG_ENV := \
         CC="$(HOST_CC) $(HOST_CFLAGS)" \
         TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
@@ -2246,7 +2246,7 @@ ifeq (%(compiler),host)
     %(mmake)-config_opts += --target=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (%(compiler),target)
-    COMPILER_ENV := \
+    CONFIG_ENV := \
         CC="$(TARGET_CC) $(TARGET_CFLAGS) %(extracflags) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
         AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" AR="$(AR_PLAIN)"\
         TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)"\
@@ -2259,7 +2259,7 @@ ifeq (%(compiler),target)
         --without-x --without-pic --disable-shared
 endif
 ifeq (%(compiler),kernel)
-    COMPILER_ENV := \
+    CONFIG_ENV := \
         CC="$(KERNEL_CC) $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag)"\
         AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)"\
         TARGET_RANLIB="$(RANLIB)"
@@ -2267,6 +2267,10 @@ ifeq (%(compiler),kernel)
         --host=$(AROS_TARGET_CPU)-aros\
         --target=$(AROS_TARGET_CPU)-aros --disable-nls\
         --without-x --without-pic --disable-shared
+endif
+
+ifeq (%(use_build_env),yes)
+    BUILD_ENV := $(CONFIG_ENV)
 endif
 
 
@@ -2299,7 +2303,7 @@ endif
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
 	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q -C $(%(mmake)-pkgdir); then \
             $(RM)  $(%(mmake)-installflag) && \
-	    $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)"\
+	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)"\
 	     -C $(%(mmake)-pkgdir) && \
 	    $(%(mmake)-install_command) && \
 	    $(TOUCH) $@ -r $^; \
@@ -2323,7 +2327,7 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	$(COMPILER_ENV) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) \
+	$(CONFIG_ENV) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) \
 	    %(extraoptions) && \
 	$(TOUCH) $@
 
