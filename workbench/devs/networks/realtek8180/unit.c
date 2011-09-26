@@ -2319,7 +2319,7 @@ static VOID MgmtTXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
    struct DevBase *base;
    UWORD frame_size, slot, new_slot, i, duration;
-   UBYTE *desc, *frame, *header, *q;
+   UBYTE *desc, *frame, *q;
    struct IOSana2Req *request;
    BOOL proceed = TRUE, has_bssid;
    ULONG control_value;
@@ -2357,8 +2357,6 @@ static VOID MgmtTXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
          q = desc;
          for(i = 0; i < unit->tx_desc_size; i++)
             *q++ = 0;
-         header = q;
-         (void)header; /* unused */
 
          /* Set TX control field */
 
