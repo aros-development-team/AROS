@@ -2358,6 +2358,7 @@ static VOID MgmtTXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
          for(i = 0; i < unit->tx_desc_size; i++)
             *q++ = 0;
          header = q;
+         (void)header; /* unused */
 
          /* Set TX control field */
 
