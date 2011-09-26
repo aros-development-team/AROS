@@ -7,5 +7,11 @@ HALTARGET=$(CPU)-elf
 
 include $(SRCDIR)/$(CURDIR)/amigaos/makefile.inc
 
+oldCC:=$(CC)
+include $(SRCDIR)/$(CURDIR)/public/$(CPU)-elf.inc
+CC:=$(oldCC)
+
+USER_CFLAGS := $(COPTS)
+
 %build_linklib mmake=devs-networks-drivers-atheros5000-hal libname="athhal" \
  files="$(basename $(HAL_SRCS))" cflags="$(CFLAGS) -I$(SRCDIR)/$(CURDIR)"
