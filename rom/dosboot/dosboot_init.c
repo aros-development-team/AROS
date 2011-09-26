@@ -93,8 +93,6 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
         Alert(AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib);
     }
 
-    /* Call the expansion initializations */
-    ConfigChain(NULL);
     ExpansionBase->Flags |= EBF_SILENTSTART;
 
     LIBBASE->bm_ExpansionBase = ExpansionBase;
