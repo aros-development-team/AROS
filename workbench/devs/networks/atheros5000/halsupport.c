@@ -151,9 +151,11 @@ void *ath_hal_memcpy(void *dst, const void *src, size_t n)
 
 int ath_hal_memcmp(const void *a, const void *b, size_t n)
 {
-   while(n != 0 && *(UBYTE *)a == *(UBYTE *)b)
-      (UBYTE *)a++, (UBYTE *)b++;
-   return *(UBYTE *)a - *(UBYTE *)b;
+   const UBYTE *ba = a, *bb = b;
+
+   while(n != 0 && *ba == *bb)
+      ba++, bb++;
+   return *ba - *bb;
 }
 
 
