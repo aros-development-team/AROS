@@ -793,7 +793,10 @@ ar5416ChipReset(struct ath_hal *ah, HAL_CHANNEL *chan)
 /*
  * Determine if calibration is supported by device and channel flags
  */
-static OS_INLINE HAL_BOOL
+/* Disabled OS_INLINE due to GCC 4.6 compaints
+ * Jason McMullan, 2011-9-26
+ */
+static /* OS_INLINE */ HAL_BOOL
 ar5416IsCalSupp(struct ath_hal *ah, HAL_CHANNEL *chan, HAL_CAL_TYPE calType) 
 {
 	struct ath_hal_5416 *ahp = AH5416(ah);
