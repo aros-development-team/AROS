@@ -274,7 +274,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
       /* Get physical addresses of DMA structures */
 
       dma_size = sizeof(struct ath_desc) * TX_SLOT_COUNT;
-      unit->tx_descs_p = (ULONG)CachePreDMA(unit->tx_descs, &dma_size, 0);
+      unit->tx_descs_p = (ULONG)(IPTR)CachePreDMA(unit->tx_descs, &dma_size, 0);
       if(dma_size != sizeof(struct ath_desc) * TX_SLOT_COUNT)
          success = FALSE;
       CachePostDMA(unit->tx_descs, &dma_size, 0);
@@ -283,7 +283,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
       {
          dma_size = FRAME_BUFFER_SIZE;
          unit->tx_buffers_p[i] =
-            (ULONG)CachePreDMA(unit->tx_buffers[i], &dma_size, 0);
+            (ULONG)(IPTR)CachePreDMA(unit->tx_buffers[i], &dma_size, 0);
          if(dma_size != FRAME_BUFFER_SIZE)
             success = FALSE;
          CachePostDMA(unit->tx_buffers[i], &dma_size, 0);
@@ -291,7 +291,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
 
       dma_size = sizeof(struct ath_desc) * MGMT_SLOT_COUNT;
       unit->mgmt_descs_p =
-         (ULONG)CachePreDMA(unit->mgmt_descs, &dma_size, 0);
+         (ULONG)(IPTR)CachePreDMA(unit->mgmt_descs, &dma_size, 0);
       if(dma_size != sizeof(struct ath_desc) * MGMT_SLOT_COUNT)
          success = FALSE;
       CachePostDMA(unit->mgmt_descs, &dma_size, 0);
@@ -300,14 +300,14 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
       {
          dma_size = FRAME_BUFFER_SIZE;
          unit->mgmt_buffers_p[i] =
-            (ULONG)CachePreDMA(unit->mgmt_buffers[i], &dma_size, 0);
+            (ULONG)(IPTR)CachePreDMA(unit->mgmt_buffers[i], &dma_size, 0);
          if(dma_size != FRAME_BUFFER_SIZE)
             success = FALSE;
          CachePostDMA(unit->mgmt_buffers[i], &dma_size, 0);
       }
 
       dma_size = sizeof(struct ath_desc) * RX_SLOT_COUNT;
-      unit->rx_descs_p = (ULONG)CachePreDMA(unit->rx_descs, &dma_size, 0);
+      unit->rx_descs_p = (ULONG)(IPTR)CachePreDMA(unit->rx_descs, &dma_size, 0);
       if(dma_size != sizeof(struct ath_desc) * RX_SLOT_COUNT)
          success = FALSE;
       CachePostDMA(unit->rx_descs, &dma_size, 0);
@@ -316,7 +316,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
       {
          dma_size = FRAME_BUFFER_SIZE;
          unit->rx_buffers_p[i] =
-            (ULONG)CachePreDMA(unit->rx_buffers[i], &dma_size, 0);
+            (ULONG)(IPTR)CachePreDMA(unit->rx_buffers[i], &dma_size, 0);
          if(dma_size != FRAME_BUFFER_SIZE)
             success = FALSE;
          CachePostDMA(unit->rx_buffers[i], &dma_size, 0);
@@ -1668,6 +1668,7 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
                   frame_subtype =
                      (frame_control & WIFI_FRM_CONTROLF_SUBTYPE)
                      >> WIFI_FRM_CONTROLB_SUBTYPE;
+                  (void)frame_subtype; /* unused */
 
                   /* If it's a management frame, process it separately;
                      otherwise distribute it to clients after filtering */
@@ -2326,7 +2327,7 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
             /* Fill in DMA descriptor for packet transmission */
 
             frame_size = WIFI_FRM_DATA + body_size;
-            tx_desc->ds_link = (ULONG)NULL;
+            tx_desc->ds_link = (ULONG)(IPTR)NULL;
             unit->hal->ah_setupTxDesc(unit->hal, tx_desc, frame_size + 4, // + CRC?
                WIFI_FRM_DATA, HAL_PKT_TYPE_NORMAL, TX_POWER,
                ((unit->flags & UNITF_SLOWRETRIES) != 0) ?
@@ -2574,7 +2575,7 @@ static VOID MgmtTXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 
          /* Fill in DMA descriptor for packet transmission */
 
-         desc->ds_link = (ULONG)NULL;
+         desc->ds_link = (ULONG)(IPTR)NULL;
          unit->hal->ah_setupTxDesc(unit->hal, desc, frame_size + 4, // + CRC?
             WIFI_FRM_DATA, HAL_PKT_TYPE_NORMAL, TX_POWER,
             unit->mgmt_rate_code, TX_TRIES, HAL_TXKEYIX_INVALID,
@@ -2713,10 +2714,6 @@ static VOID MgmtTXEndInt(REG(a1, struct DevUnit *unit),
 static VOID ResetHandler(REG(a1, struct DevUnit *unit),
    REG(a6, APTR int_code))
 {
-   struct DevBase *base;
-
-   base = unit->device;
-
    if((unit->flags & UNITF_HAVEADAPTER) != 0)
    {
       /* Disable frame transmission */
