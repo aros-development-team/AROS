@@ -59,11 +59,24 @@ rom_init:
 	lea.l	_ss_end,%sp		/* System stack */
 	lea.l	_ss,%a5	/* Put the memory bank array at the bottom of the stack */
 
+	/* Do we have a Gayle? */
+	sub.l	%a6,%a6
+	jsr	AROS_SLIB_ENTRY(ReadGayle,Exec,136)
+	moveq	#0,%d6
+	tst.b	%d0
+	beq.s	.nopcmcia
+	moveq	#1,%d6
+	/* Disable PCMCIA slot */
+	move.b	#1,0xda8000
+.nopcmcia:
+	swap	%d6
+
 	move.l	%a5,%a4	/* Space for CPU/FPU data array */
 	addq.l	#8,%a5
 	move.l	%a4,%a0
 	bsr		_cpu_detect
-	move.l	%a4@,%d6
+	/* High word = gayle flag, low word = AttnFlags */
+	move.w	%a4@(2),%d6
 
 	/* Memory region array is put into the
 	 * system stack from the bottom up, so
@@ -126,13 +139,11 @@ rom_init:
 .a3000noram:
 
 .skip32bit:
-	/* Do we have a Gayle? */
-	sub.l	%a6,%a6
-	jsr	AROS_SLIB_ENTRY(ReadGayle,Exec,136)
 	/* slow ram */
 	move.l	#0x00c00000,%a0
 	move.l	#0x00d80000,%a1
-	tst.b	%d0
+	/* Limit max size if Gayle */
+	btst #16,%d6
 	bne.s	0f
 	move.l	#0x00dc0000,%a1
 0:	move.l	#0x00040000,%d0
