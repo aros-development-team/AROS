@@ -11,7 +11,7 @@ oldCC:=$(CC)
 include $(SRCDIR)/$(CURDIR)/public/$(CPU)-elf.inc
 CC:=$(oldCC)
 
-USER_CFLAGS := $(COPTS)
+USER_CFLAGS += -I$(SRCDIR)/$(CURDIR)
 
 %build_linklib mmake=devs-networks-drivers-atheros5000-hal libname="athhal" \
- files="$(basename $(HAL_SRCS))" cflags="$(CFLAGS) -I$(SRCDIR)/$(CURDIR)"
+ files="$(basename $(HAL_SRCS))"

@@ -1479,7 +1479,7 @@ VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
 static BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
    struct DevBase *base;
-   ULONG queue_mask;
+   uint32_t queue_mask;
    HAL_INT ints, int_mask;
 
    base = unit->device;

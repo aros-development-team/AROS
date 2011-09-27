@@ -1,4 +1,3 @@
-#
 # Compilation configuration for building m68k-elf.
 #
 
