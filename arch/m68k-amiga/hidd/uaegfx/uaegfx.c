@@ -627,6 +627,14 @@ static void doshow(struct uaegfx_staticdata *csd, OOP_Object *bm, struct ViewPor
     }
 }
 
+OOP_Object *UAEGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *c, struct pHidd_Gfx_Show *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+
+    doshow(csd, msg->bitMap, csd->viewport, FALSE);
+    return msg->bitMap;
+}
+
 ULONG UAEGFXCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
