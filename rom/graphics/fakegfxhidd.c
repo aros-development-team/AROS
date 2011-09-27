@@ -17,13 +17,16 @@
 #include "fakegfxhidd.h"
 
 #define DEBUG 0
+#define DCLIP(x)
 #define DCURS(x)
 #define DPOS(x)
-/* DISABLE_ARGB_POINTER actually makes the software mouse pointer code to always
-   behave like if a LUT framebuffer is used.
-   Useful for debugging if you have only truecolor display modes.
-   If you define this, make sure that ALWAYS_ALLOCATE_SPRITE_COLORS in
-   intuition/intuition_intern.h is also defined.
+/*
+ * DISABLE_ARGB_POINTER actually makes the software mouse pointer code to always
+ * behave like if a LUT framebuffer is used.
+ * Useful for debugging if you have only truecolor display modes.
+ * If you define this, make sure that ALWAYS_ALLOCATE_SPRITE_COLORS in
+ * intuition/intuition_intern.h is also defined.
+ *
 #define DISABLE_ARGB_POINTER */
 
 #include <aros/debug.h>
@@ -624,8 +627,7 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
 
 static ULONG gfx_showviewports(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    /* In future we are going to be able to simulate composition using a framebuffer.
-       For now just return FALSE (not supported). */
+    /* Composition is not supported here */
     return FALSE;
 }
 
@@ -648,6 +650,27 @@ static IPTR gfx_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     data = OOP_INST_DATA(cl, o);
     
     return OOP_DoMethod(data->gfxhidd, msg);
+}
+
+/* Private non-virtual method */
+static BOOL FakeGfx_UpdateFrameBuffer(OOP_Object *o)
+{
+    OOP_Class *cl = OOP_OCLASS(o);
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    BOOL ok;
+
+    LFB(data);
+
+    OOP_GetAttr(data->framebuffer, aHidd_BitMap_Width, &data->fb_width);
+    OOP_GetAttr(data->framebuffer, aHidd_BitMap_Height, &data->fb_height);
+
+    DCURS(bug("[FakeGfx] Changed framebuffer size: %u x %u\n", data->fb_width, data->fb_height));
+
+    ok = rethink_cursor(data, GfxBase);
+    UFB(data);
+
+    draw_cursor(data, TRUE, TRUE, GfxBase);
+    return ok;
 }
 
 struct fakefb_data
@@ -735,6 +758,22 @@ static void fakefb_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
     else
     	OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
+}
+
+/* Intercept framebuffer mode change */
+static IPTR fakefb_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct fakefb_data *data = OOP_INST_DATA(cl, o);
+    IPTR ret = OOP_DoMethod(data->framebuffer, &msg->mID);
+    struct TagItem *modeid = FindTagItem(aHidd_BitMap_ModeID, msg->attrList);
+
+    if (modeid && ret)
+    {
+    	/* Framebuffer mode change succeeded. Update fakegfx' information */
+    	ret = FakeGfx_UpdateFrameBuffer(data->fakegfxhidd);
+    }
+
+    return ret;
 }
 
 static IPTR fakefb_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
@@ -1226,9 +1265,12 @@ static BOOL rethink_cursor(struct gfx_data *data, struct GfxBase *GfxBase)
     /* If we have some good bitmap->bitmap blitting function with alpha channel support,
        we would not need this extra buffer and conversion for truecolor screens. */
     HIDD_BM_GetImage(data->curs_bm, data->curs_pixels, data->curs_width * data->curs_bpp, 0, 0, data->curs_width, data->curs_height, data->curs_pixfmt);
-    D(bug("[FakeGfx] Obtained cursor sprite data\n"));
-    if (data->curs_pixfmt == vHidd_StdPixFmt_LUT8) {
-	for (i = 0; i < data->curs_width * data->curs_height; i++) {
+    D(bug("[FakeGfx] Obtained cursor sprite data @ 0x%p\n", data->curs_pixels));
+
+    if (data->curs_pixfmt == vHidd_StdPixFmt_LUT8)
+    {
+	for (i = 0; i < data->curs_width * data->curs_height; i++)
+	{
 	    if (data->curs_pixels[i])
 	        data->curs_pixels[i] += curs_base;
 	}
@@ -1294,14 +1336,16 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     w2end = data->fb_width - width;
     h2end = data->fb_height - width;
 
-    if (x > w2end) {
+    if (x > w2end)
+    {
 	width -= (x - w2end);
-	DCURS(bug("[FakeGfx] Clipped sprite width to %d\n", width));
+	DCLIP(bug("[FakeGfx] Clipped sprite width to %d\n", width));
     }
 
-    if (y > h2end) {
+    if (y > h2end)
+    {
 	height -= (y - h2end);
-	DCURS(bug("[FakeGfx] Clipped sprite height to %d\n", height));
+	DCLIP(bug("[FakeGfx] Clipped sprite height to %d\n", height));
     }
 
     /* FIXME: clip negative coordinates */
@@ -1487,7 +1531,7 @@ static OOP_Class *init_fakefbclass(struct GfxBase *GfxBase)
         {(IPTR (*)())fakefb_new    , moRoot_New     },
         {(IPTR (*)())fakefb_dispose, moRoot_Dispose },
         {(IPTR (*)())fakefb_get    , moRoot_Get     },
-        {(IPTR (*)())fakefb_fwd	   , moRoot_Set	    },
+        {(IPTR (*)())fakefb_set	   , moRoot_Set	    },
         {NULL	    	    	   , 0UL    	    }
     };
 
