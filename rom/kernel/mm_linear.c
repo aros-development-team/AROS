@@ -6,10 +6,13 @@
     Lang: english
 */
 
+#define __KERNEL_NOLIBBASE__
+
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <proto/arossupport.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <inttypes.h>
 
@@ -397,6 +400,9 @@ void mm_Init(struct MemHeader *mh, struct KernelBase *KernelBase)
 
     /* Set free space counter */
     mh->mh_Free = memsize;
+    
+    /* Disable access to unallocated pages */
+    KrnSetProtection(head->start, memsize, 0);
 }
 
 #define SET_LARGEST(ptr, val)	\
