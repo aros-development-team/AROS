@@ -224,6 +224,7 @@ case "$host_os" in
     darwin*)
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
 	aros_host_arch="darwin"
+	aros_host_ldflags="$aros_host_ldflags -L/opt/local/lib"
 	use_aros_gcc="yes"
 	android_build_os="darwin-x86"
 	android_tool="android"
@@ -754,13 +755,9 @@ ios)
     AC_ARG_WITH(xcode,AC_HELP_STRING([--with-xcode=PATH],[Specify XCode path for iOS targets (default=/Developer).]),aros_xcode_path="$withval",aros_xcode_path="/Developer")
     AC_MSG_RESULT($aros_xcode_path)
 
-    AC_MSG_CHECKING([for minimum supported iOS version])
-    AC_ARG_WITH(ios-version,AC_HELP_STRING([--with-ios-version=VERSION],[Specify minimum supported iOS version (default=3.0).]),aros_ios_version="$withval",aros_ios_version="3.0")
-    AC_MSG_RESULT($aros_ios_version)
-
     AC_MSG_CHECKING([what iOS SDK version to use])
-    AC_ARG_WITH(ios-sdk,AC_HELP_STRING([--with-ios-sdk=VERSION],[Use iOS SDK version VERSION (default=4.1).]),aros_ios_sdk="$withval",aros_ios_sdk="4.1")
-    AC_MSG_RESULT($aros_ios_sdk)
+    AC_ARG_WITH(sdk-version,AC_HELP_STRING([--with-sdk-version=VERSION],[Use iOS SDK version VERSION (default=4.1).]),aros_sdk_version="$withval",aros_sdk_version="4.1")
+    AC_MSG_RESULT($aros_sdk_version)
 
     ;;
 
@@ -1062,9 +1059,10 @@ case "$target_os" in
 	esac
 	case "$aros_target_variant" in
             ios)
+            	aros_ios_version="3.0"
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
-               	aros_ios_sdk="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/SDKs/$aros_ios_platform$aros_ios_sdk.sdk"
+               	aros_ios_sdk="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/SDKs/$aros_ios_platform$aros_sdk_version.sdk"
 		target_tool_flags="$target_tool_flags -isysroot $aros_ios_sdk"
 		aros_kernel_includes="-isystem $aros_ios_sdk/usr/include"
 		need_x11=no
