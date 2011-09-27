@@ -39,7 +39,7 @@ ULONG color_distance(struct ColorMap * cm,
     **   Note that fields below ColorTable are present only if Type > COLORMAP_TYPE_V1_2
     */
 
-    LONG dr,dg,db;
+    WORD dr,dg,db;
 
     UWORD c1 = ((UWORD *)cm->ColorTable)[index];
     LONG r1 = (LONG)(c1 >> 4) & 0x00f0;
@@ -54,11 +54,11 @@ ULONG color_distance(struct ColorMap * cm,
 	b1 |= (c2 >> 0) & 0x000f;
     }
 
-    dr = (LONG)(r >> (32-8)) - r1;
-    dg = (LONG)(g >> (32-8)) - g1;
-    db = (LONG)(b >> (32-8)) - b1;
+    dr = (WORD)(r >> (32-8)) - (WORD)r1;
+    dg = (WORD)(g >> (32-8)) - (WORD)g1;
+    db = (WORD)(b >> (32-8)) - (WORD)b1;
 
-    return dr*dr+dg*dg+db*db;
+    return (UWORD)(dr*dr)+(UWORD)(dg*dg)+(UWORD)(db*db);
 }
 
 
