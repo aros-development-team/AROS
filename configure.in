@@ -774,7 +774,7 @@ ios)
     AC_MSG_RESULT($aros_android_ndk)
 
     AC_MSG_CHECKING([what Android SDK version to use])
-    AC_ARG_WITH(sdk-version,AC_HELP_STRING([--with-sdk-version=LEVEL],[Use Android SDK for API LEVEL (default=8).]),aros_sdk_version="$withval",aros_sdk_version="8")
+    AC_ARG_WITH(sdk-version,AC_HELP_STRING([--with-sdk-version=LEVEL],[Use Android SDK for API LEVEL (default=12).]),aros_sdk_version="$withval",aros_sdk_version="12")
     AC_MSG_RESULT($aros_sdk_version)
 
     if test "$aros_android_ndk" != "none"; then

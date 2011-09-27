@@ -1561,7 +1561,7 @@ Optional Packages:
                           (default=$default_android_sdk).
   --with-ndk=PATH         Specify Android NDK path (default=none).
   --with-sdk-version=LEVEL
-                          Use Android SDK for API LEVEL (default=8).
+                          Use Android SDK for API LEVEL (default=12).
   --with-ndk-version=LEVEL
                           Use Android NDK for API LEVEL (default=9).
   --with-crosstools=DIR   Where to install or search for cross tools binaries
@@ -7216,7 +7216,7 @@ $as_echo_n "checking what Android SDK version to use... " >&6; }
 if test "${with_sdk_version+set}" = set; then :
   withval=$with_sdk_version; aros_sdk_version="$withval"
 else
-  aros_sdk_version="8"
+  aros_sdk_version="12"
 fi
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_sdk_version" >&5
