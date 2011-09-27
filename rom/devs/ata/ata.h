@@ -136,7 +136,7 @@ struct ata_Bus
    BYTE                    ab_SleepySignal; /* Signal used to wake the task up, when it's waiting */
    /* for data requests/DMA */
    UBYTE                   ab_BusNum;  /* bus id - used to calculate device id */
-   LONG                    ab_Timeout; /* in seconds; please note that resolution is low (1sec) */
+   volatile LONG           ab_Timeout; /* in seconds; please note that resolution is low (1sec) */
 
    struct ata_Unit         *ab_Units[MAX_BUSUNITS];    /* Units on the bus */
    struct ata_Unit         *ab_SelectedUnit;    /* Currently selected unit */

@@ -868,6 +868,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
          * check / trigger all buses waiting for an irq
          */
         DB2(bug("[ATA++] Checking timeouts...\n"));
+        Forbid();
         ForeachNode(&LIBBASE->ata_Buses, bus)
         {
             if (bus->ab_Timeout >= 0)
@@ -878,6 +879,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
                 }
             }
         }
+        Permit();
 
         /*
          * And then hide and wait for 1 second
