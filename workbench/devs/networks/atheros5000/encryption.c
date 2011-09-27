@@ -1604,9 +1604,7 @@ static BOOL CCMPDecrypt(struct DevUnit *unit, const UBYTE *header,
    UWORD i, j, block_count;
    ULONG n, mic_block[4], key_block[4];
    BOOL success = TRUE;
-#ifndef __mc68000
    ULONG data_block[4];
-#endif
 
    /* Get key */
 
@@ -1679,7 +1677,6 @@ static BOOL CCMPDecrypt(struct DevUnit *unit, const UBYTE *header,
 
       /* Update MIC */
 
-#ifndef __mc68000
       if(j < 16)
       {
          data_block[0] = 0;
@@ -1694,19 +1691,16 @@ static BOOL CCMPDecrypt(struct DevUnit *unit, const UBYTE *header,
       }
       EOREncrypt(data_block, mic_block, mic_block, base);
       AESEncrypt(mic_block, mic_block, key->stream, base);
-#endif
    }
 
    /* Extract and check MIC */
 
-#ifndef __mc68000
    *(UWORD *)(nonce_block + 14) = 0;
    AESEncrypt((ULONG *)nonce_block, key_block, key->stream, base);
    EOREncrypt(mic_block, mic_block, key_block, base);
    CopyMem(data + size, mic_block + MIC_SIZE / sizeof(ULONG), MIC_SIZE);
    if(mic_block[0] != mic_block[2] || mic_block[1] != mic_block[3])
       success = FALSE;
-#endif
 
    return success;
 }
@@ -1727,7 +1721,6 @@ static BOOL CCMPDecrypt(struct DevUnit *unit, const UBYTE *header,
 *
 */
 
-#ifndef __mc68000
 VOID UpdateMIC(ULONG *left, ULONG *right, const ULONG *data,
    ULONG count)
 {
@@ -1751,7 +1744,6 @@ VOID UpdateMIC(ULONG *left, ULONG *right, const ULONG *data,
 
    return;
 }
-#endif
 
 
 
@@ -1815,7 +1807,6 @@ static VOID TKIPKeyMix1(UWORD *ttak, const UWORD *tk, const UWORD *ta,
 *
 */
 
-#ifndef __mc68000
 VOID TKIPKeyMix2(UBYTE *rc4_seed, const UWORD *ttak, const UWORD *tk,
    UWORD iv16, struct DevBase *base)
 {
@@ -1864,7 +1855,6 @@ VOID TKIPKeyMix2(UBYTE *rc4_seed, const UWORD *ttak, const UWORD *tk,
 
    return;
 }
-#endif
 
 
 
@@ -1886,7 +1876,6 @@ VOID TKIPKeyMix2(UBYTE *rc4_seed, const UWORD *ttak, const UWORD *tk,
 *
 */
 
-#ifndef __mc68000
 VOID RC4Encrypt(struct DevUnit *unit, const UBYTE *data, UWORD size,
    UBYTE *buffer, UBYTE *seed, struct DevBase *base)
 {
@@ -1928,8 +1917,6 @@ VOID RC4Encrypt(struct DevUnit *unit, const UBYTE *data, UWORD size,
 
    return;
 }
-#endif
-
 
 
 /****i* prism2.device/RC4Decrypt *******************************************
@@ -1952,7 +1939,6 @@ VOID RC4Encrypt(struct DevUnit *unit, const UBYTE *data, UWORD size,
 *
 */
 
-#ifndef __mc68000
 BOOL RC4Decrypt(struct DevUnit *unit, const UBYTE *data, UWORD size,
    UBYTE *buffer, UBYTE *seed, struct DevBase *base)
 {
@@ -1993,8 +1979,6 @@ BOOL RC4Decrypt(struct DevUnit *unit, const UBYTE *data, UWORD size,
 
    return ~crc == LELong(*(ULONG *)(q - 4));
 }
-#endif
-
 
 
 /****i* prism2.device/EOREncrypt *******************************************
@@ -2080,7 +2064,6 @@ static VOID AESKeyMix(ULONG *stream, const ULONG *key, struct DevBase *base)
 *
 */
 
-#ifndef __mc68000
 VOID AESEncrypt(const ULONG *data, ULONG *buffer, ULONG *key,
    struct DevBase *base)
 {
@@ -2137,7 +2120,6 @@ VOID AESEncrypt(const ULONG *data, ULONG *buffer, ULONG *key,
 
    return;
 }
-#endif
 
 
 

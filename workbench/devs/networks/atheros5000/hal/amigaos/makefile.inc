@@ -165,7 +165,7 @@ endif
 #OBJDIR=	obj/${HALTARGET}
 
 WARNFLAGS=-Wall -Wredundant-decls -Wnested-externs -Wstrict-prototypes \
-	-Wmissing-prototypes -Winline -Wcast-qual -std=c99
+	-Wmissing-prototypes -Wcast-qual -std=c99
 # NB: can't do this until we fix register r/w macros
 WARNFLAGS_NOTYET=-Wpointer-arith
 COPTS=	-Werror -g -O ${WARNFLAGS}
@@ -174,9 +174,7 @@ CLEANFILES=	${OBJDIR}/.depend
 
 #include ${PUBLIC}/${HALTARGET}.inc
 
-#CFLAGS=	${INCS} ${COPTS}
-#CFLAGS += ${COPTS}
-CFLAGS += ${INCS} ${COPTS}
+USER_CFLAGS += ${INCS} ${COPTS}
 
 HAL_SRCS=${HAL}/ah.c ${HAL}/ah_regdomain.c
 HAL_OBJS=${OBJDIR}/ah.o ${OBJDIR}/ah_regdomain.o
