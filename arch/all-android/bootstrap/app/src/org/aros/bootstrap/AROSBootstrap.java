@@ -4,6 +4,7 @@ import java.io.FileDescriptor;
 
 import android.app.Application;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.os.Environment;
 import android.os.Handler;
@@ -23,11 +24,12 @@ public class AROSBootstrap extends Application
 {
 	public int DisplayWidth;
 	public int DisplayHeight;
+	public int TitlebarSize;
+	public int Orientation;
 	public BitmapData Bitmap;
 	public AROSActivity ui;
 	private DisplayServer Server;
 	public Boolean started = false;
-	public Class<?> ActivityClass = null;
 	private Handler handler;
 
 	// Commands sent to us by AROS display driver
@@ -40,7 +42,11 @@ public class AROSBootstrap extends Application
 	static final int cmd_Touch  = 0x00000006;
 	static final int cmd_Key    = 0x00000007;
 	static final int cmd_Flush  = 0x00000008;
+	static final int cmd_Hello	= 0x80000009;
 	static final int cmd_Alert  = 0x00001000;
+
+	// Current procotol version, must match display driver
+	static final int PROTOCOL_VERSION = 2;
 
 	// Some Linux signals
 	static final int SIGUSR2 = 12;
@@ -103,18 +109,8 @@ public class AROSBootstrap extends Application
 			ui.Show(0, null);
 	}
 
-	// Make sure the activity is visible
-	public void Foreground()
-	{
-    	Intent myIntent = new Intent(this, ActivityClass);
-
-    	myIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-    	startActivity(myIntent);
-	}
-
     public void DisplayError(String text)
     {
-//    	Foreground();
     	ui.DisplayError(text);
     }
 
@@ -149,18 +145,20 @@ public class AROSBootstrap extends Application
 
 	private void DoCommand(int cmd, int[] params)
 	{
+		Class<?> ActivityClass;
+
 		switch (cmd)
 		{
 		case cmd_Query:
 			Log.d("AROS", "cmd_Query(" + params[0] + ")");
 
-			Server.ReplyCommand(cmd, DisplayWidth, DisplayHeight);
+			Server.ReplyCommand(cmd, DisplayWidth, DisplayHeight, TitlebarSize, Orientation);
 			break;
 
 		case cmd_Show:
-			Log.d("AROS", "cmd_Show(" + params[0] + ", " + params[6] + ")");
+			Log.d("AROS", "cmd_Show(" + params[0] + ", " + params[6] + ", " + params[7] + ")");
 
-			if (params[6] == 0)
+			if (params[7] == 0)
 			{
 				// Drop the displayed bitmap (if any)
 				Bitmap = null;
@@ -175,15 +173,58 @@ public class AROSBootstrap extends Application
 				Bitmap.Width	   = params[3];
 				Bitmap.Height	   = params[4];
 				Bitmap.BytesPerRow = params[5];
-				Bitmap.Address     = params[6];
+				Bitmap.Address     = params[7];
 			}
 
-			if (ui != null)
+			switch (params[6])
 			{
-				// Signal the view to update
+				// These two classes have their orientations locked in AndroidManifest.xml.
+				// This way we can prevent unwanted screen rotation. Since AROS currently has no rotation
+				// support, AROS programs can't re-layout them on the fly because of resolution change
+				// (x:y becoming y:x).
+			case Configuration.ORIENTATION_PORTRAIT:
+				ActivityClass = PortraitActivity.class;
+				break;
+
+			case Configuration.ORIENTATION_LANDSCAPE:
+				ActivityClass = LandscapeActivity.class;
+				break;
+
+			default:
+				ActivityClass = null;
+				break;
+			}
+
+			if ((ui != null) && (ActivityClass != null) && (ui.getClass() != ActivityClass))
+			{
+				// If we want to chage the orientation, and the UI is running, we need to finish current activity first.
+				// Setting 'ui' to null wull automatically trigger the part below.
+				Log.d("AROS", "Orientation change needed, closing current activity");
+				ui.finish();
+				ui = null;
+			}
+
+			if (ui == null)
+			{
+				if (ActivityClass != null)
+				{
+					// If we have no interface, we create a new one, with requested orientation.
+					// One more effect of this two-step mechanism: if AROS is hidden in the background,
+					// but some program wants to open a screen, AROS will pop up.
+					Intent myIntent = new Intent(this, ActivityClass);
+
+					myIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+					Log.d("AROS", "Starting up activity "+ ActivityClass);
+					startActivity(myIntent);
+
+					// Activity will pick up our Bitmap when created
+				}
+			}
+			else
+			{
+				// Just signal the view to update
 				ui.Show(params[0], Bitmap);
 			}
-
 			Server.ReplyCommand(cmd);
 			break;
 
@@ -202,9 +243,18 @@ public class AROSBootstrap extends Application
 
 			byte[] textBuf = GetString(params[1]);
 			String text = new String(textBuf);
-//			Foreground();
+
 			ui.DisplayAlert(params[0], text);
 			break;
+
+		case cmd_Hello:
+			Log.d("AROS", "Hello from client version " + params[0]);
+			if (params[0] == PROTOCOL_VERSION)
+			{
+				Server.ReplyCommand(cmd);
+				break;
+			}
+			// Wrong protocol version, fallthrough
 
 		default:
 			Log.d("AROS", "Unknown command " + cmd);

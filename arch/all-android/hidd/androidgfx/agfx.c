@@ -8,6 +8,8 @@
 
 #define __OOP_NOATTRBASES__
 
+#include <sys/types.h>
+#include <android/configuration.h>
 #include <fcntl.h>
 
 #include <aros/debug.h>
@@ -57,10 +59,19 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	{ TAG_DONE  	    	    , 0				   }
     };
 
-    struct TagItem sync_tags[] =
+    struct TagItem p_sync_tags[] =
     {
     	{ aHidd_Sync_HDisp  	, 160 	    	    	 },
 	{ aHidd_Sync_VDisp  	, 160 	    	    	 },
+	{ aHidd_Sync_Description, (IPTR)"Android: %hx%v Portrait"},
+	{ TAG_DONE  	    	, 0UL 	    	    	 }
+    };
+
+    struct TagItem l_sync_tags[] =
+    {
+    	{ aHidd_Sync_HDisp  	, 160 	    	    	 },
+	{ aHidd_Sync_VDisp  	, 160 	    	    	 },
+	{ aHidd_Sync_Description, (IPTR)"Android: %hx%v Landscape"},
 	{ TAG_DONE  	    	, 0UL 	    	    	 }
     };
 
@@ -71,8 +82,8 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	{ aHidd_Sync_HMax	, 16384			},
 	{ aHidd_Sync_VMax	, 16384			},
 #endif
-	{ aHidd_Sync_Description, (IPTR)"Android: %hx%v"},
-	{ aHidd_Gfx_SyncTags	, (IPTR)sync_tags	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)p_sync_tags	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)l_sync_tags	},
 	{ TAG_DONE  	    	, 0UL 	    	    	}
     };
 
@@ -100,10 +111,22 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     	return NULL;
     }
 
-    D(bug("[AGFX] Display size: %ux%u\n", query.width, query.height));
+    D(bug("[AGFX] Display size: %ux%u, Titlebar size: %u, Orientation: %u\n", query.width, query.height, query.titlebar, query.orientation));
 
-    sync_tags[0].ti_Data = query.width;
-    sync_tags[1].ti_Data = query.height;
+    if (query.orientation == ACONFIGURATION_ORIENTATION_PORT)
+    {
+    	p_sync_tags[0].ti_Data = query.width;
+    	p_sync_tags[1].ti_Data = query.height - query.titlebar;
+    	l_sync_tags[0].ti_Data = query.height;
+    	l_sync_tags[1].ti_Data = query.width - query.titlebar;
+    }
+    else
+    {
+    	l_sync_tags[0].ti_Data = query.width;
+    	l_sync_tags[1].ti_Data = query.height - query.titlebar;
+    	p_sync_tags[0].ti_Data = query.height;
+    	p_sync_tags[1].ti_Data = query.width - query.titlebar;
+    }
 
     /* Register gfxmodes */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
@@ -198,13 +221,14 @@ OOP_Object *AGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     	OOP_SetAttrsTags(msg->bitMap, aHidd_BitMap_Visible, TRUE, TAG_DONE);
     else
     {
-    	/* addr == NULL will clear the screen */
+    	/* addr == NULL will clear the screen. Offset and size are ignored. */
 	struct ShowRequest show;
 
-	show.req.cmd   = cmd_Show;
-	show.req.len   = 6;
-	show.displayid = 0;
-	show.addr      = 0;
+	show.req.cmd     = cmd_Show;
+	show.req.len     = 8;
+	show.displayid   = 0;
+	show.orientation = ACONFIGURATION_ORIENTATION_ANY;	/* Do not change the orientation */
+	show.addr        = 0;
 
 	DoRequest(&show.req, XSD(cl));
     }
@@ -287,6 +311,7 @@ static int agfx_init(struct AGFXBase *agfxBase)
     APTR HostLibBase;
     APTR HostLibHandle;
     int res;
+    struct HelloRequest hello;
 
     HostLibBase = OpenResource("hostlib.resource");
     if (!HostLibBase)
@@ -332,7 +357,20 @@ static int agfx_init(struct AGFXBase *agfxBase)
     	return FALSE;
     }
 
+    /* Say hello to our display server */
+    hello.req.cmd = cmd_Hello;
+    hello.req.len = 1;
+    hello.version = PROTOCOL_VERSION;
+    DoRequest(&hello.req, &agfxBase->xsd);
+
+    if (hello.req.status != STATUS_ACK)
+    {
+    	D(bug("[AGFX] Display server version mismatch\n"));
+    	return FALSE;
+    }
+
     D(bug("[AGFX] Init OK\n"));
+
     return TRUE;
 }
 

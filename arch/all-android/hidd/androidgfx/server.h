@@ -7,11 +7,14 @@
 #define cmd_Touch      0x00000006
 #define cmd_Key	       0x00000007
 #define cmd_Flush      0x00000008
+#define cmd_Hello      0x80000009
 
 #define CMD_NEED_REPLY 0x80000000
 
 #define STATUS_ACK	0
 #define STATUS_NAK	1
+
+#define PROTOCOL_VERSION 2	/* Current protocol version */
 
 /*
  * Display server data packets consist of ULONGs. This makes it simpler to parse them in Java code.
@@ -24,6 +27,16 @@
  * versions of some commands (which require a pointer), which use two ULONGs for it.
  * For this purpose we store addresses at the end of packets. It will be possible to determine
  * 64-bit versions just by increased length.
+ *
+ * The general conventions are:
+ * - We send commands and get responses and event notifications from the server.
+ * - Some of commands need responses from the server. We (and server) just know what commands these are.
+ *   CMD_NEED_REPLY flag exists just for simplicity. We can't just add it to some command.
+ * - We never respond somehow on event notifications.
+ * - If the server doesn't recognize some command, it will always send back NAK reply. It's up to us to
+ *   ignore this NAK if we don't wait for any response.
+ * - The first command sent to server must be cmd_Hello. This way we verify protocol version. The server
+ *   will respond with NAK if it doesn't understand us.
  */
 
 /*
@@ -51,21 +64,23 @@ struct WaitRequest
 
 /* Partucilar forms of command requests */
 
-/* Query display size */
+/* Query display size (v2) */
 struct QueryRequest
 {
     struct WaitRequest req;		/* cmd_Query, 1				*/
     /* Request parameters */
     ULONG	       id;		/* Display ID, currently always zero	*/
-    /* Response data (8 bytes) */
-    ULONG	       width;
+    /* Response data (16 bytes) */
+    ULONG	       width;		/* Full display size			*/
     ULONG	       height;
+    ULONG	       titlebar;	/* Android screenbar size		*/
+    ULONG	       orientation;	/* Orientation in which size was taken	*/
 };
 
-/* Show a single bitmap on display */
+/* Show a single bitmap on display (v2) */
 struct ShowRequest
 {
-    struct WaitRequest req;		/* cmd_Show, 7				*/
+    struct WaitRequest req;		/* cmd_Show, 8				*/
     /* Request */
     ULONG	       displayid;	/* DisplayID, currently always zero	*/
     ULONG	       left;		/* Offset				*/
@@ -73,6 +88,7 @@ struct ShowRequest
     ULONG	       width;		/* Size					*/
     ULONG	       height;
     ULONG	       mod;		/* Bytes per line			*/
+    ULONG	       orientation;	/* Orientation				*/
     ULONG	       addr;		/* Start address			*/
     /* Response has no data, only echo */
 };
@@ -102,6 +118,13 @@ struct ScrollRequest
     ULONG	   id;		/* Bitmap ID, reserved			*/
     ULONG	   left;	/* New offset				*/
     ULONG	   top;
+};
+
+/* Initial handshake and protocol version verification */
+struct HelloRequest
+{
+    struct WaitRequest req;	/* cmd_Hello, 1				*/
+    ULONG	       version;	/* Protocol version			*/
 };
 
 /* Mouse/touchscreen event data */
