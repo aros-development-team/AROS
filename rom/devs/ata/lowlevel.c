@@ -502,12 +502,16 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     if (unit->au_Bus->ab_Base->ata_Poll)
         irq = FALSE;
 
+    /* FIXME: This shouldn't happen but it could explain reported random -6 (IOERR_UNITBUSY) problem */
+    if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+    	bug("[ATA%02ld] SIGBREAKF_CTRL_C was already set!?\n", unit->au_UnitNum);
+ 
     /*
      * set up bus timeout
      */
-    Disable();
+    Forbid();
     unit->au_Bus->ab_Timeout = tout;
-    Enable();
+    Permit();
 
     sigs |= (irq ? (1 << unit->au_Bus->ab_SleepySignal) : 0);
     status = ATA_IN(ata_AltStatus, unit->au_Bus->ab_Alt);
@@ -551,7 +555,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
             /*
              * every 16n rounds do some extra stuff
              */
-            if ((step & 16) == 0)
+            if ((step & 15) == 0)
             {
                 /*
                  * huhm. so it's been 16n rounds already. any timeout yet?
@@ -578,9 +582,9 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     /*
      * clear up all our expectations
      */
-    Disable();
+    Forbid();
     unit->au_Bus->ab_Timeout = -1;
-    Enable();
+    Permit();
 
     /*
      * get final status and clear any interrupt (may be neccessary if we
