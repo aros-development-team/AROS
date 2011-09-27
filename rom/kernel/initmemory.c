@@ -45,10 +45,6 @@ AROS_LH1(void, KrnInitMemory,
 
     /* Initialize the MemHeader */
     mm_Init(mh, KernelBase);
-
-    /* Disable access to unallocated pages */
-//  KrnSetProtection(head->start, memsize, 0);
-
 #endif
 
     AROS_LIBFUNC_EXIT
