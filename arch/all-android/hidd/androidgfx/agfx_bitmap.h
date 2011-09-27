@@ -21,4 +21,5 @@ struct bitmap_data
     ULONG    mod;		/* Bytes per line			   */
     IPTR     pixels;		/* Address in memory			   */
     BOOL     visible;
+    UBYTE    orientation;
 };

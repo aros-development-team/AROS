@@ -9,9 +9,11 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.RelativeLayout;
 
 import java.lang.String;
@@ -46,11 +48,17 @@ public class AROSActivity extends Activity
     @Override
     public void onDestroy()
     {
+		AROSBootstrap app = (AROSBootstrap) getApplication();
+
     	Log.d("AROS.UI", "Activity destroyed");
-    	
-    	AROSBootstrap app = (AROSBootstrap) getApplication();
-    	app.ui = null;
-    	
+
+    	// Notify application about our death only if we are current activity.
+    	// This is needed for correct activity instance switch (between PortraitActivity
+    	// and LandscapeActivity). The activity isn't finished instantly when finish() is
+    	//called on it, instead, it's finished with delay, after another activity takes its place.
+    	if (app.ui == this)
+    		app.ui = null;
+
     	super.onDestroy();
     }
 
@@ -188,15 +196,37 @@ class DisplayView extends RelativeLayout
 	{
 		super.onSizeChanged(w, h, oldw, oldh);
 	
-		main.DisplayWidth  = w;
-		main.DisplayHeight = h;
-		Log.d("AROS.UI", "Screen size set: " + w + "x" + h);		
-
-		// The activity may be flushed by Android OS if it's hidden,
-		// in this case it will be recreated from scratch while the AROS is already running.
-		/// Here we detect this and perform booting only when needed.
 		if (!main.started)
+		{
+			// We get here only once, before AROS is booted up.
+			// Here we need to detect three constants:
+			// - Total screen width
+			// - Total screen height
+			// - Size of screen titlebar (Android's one, do not confuse with AROS one)
+			// These three constants allow AROS to determine screen size in both portrait
+			// and landscape variants. This allows us to represent two orientations as two different
+			// screenmodes
+			WindowManager wm = (WindowManager)main.getSystemService(Context.WINDOW_SERVICE);
+			Display d = wm.getDefaultDisplay(); 
+			int displayWidth  = d.getWidth();
+			int displayHeight = d.getHeight();
+			int o = getResources().getConfiguration().orientation;
+
+			// Calculate titlebar size.
+			// This assumes that there are no other system's own elements on the screen except titlebar.
+			// Currently this always seems to be true.
+			// The second assumption is that titlebar has the same height in both orientations.
+			main.TitlebarSize  = displayHeight - h;
+			main.DisplayWidth  = displayWidth;
+			main.DisplayHeight = displayHeight;
+			main.Orientation   = o;
+
+			Log.d("AROS.Boot", "Screen size: " + displayWidth + "x" + displayHeight +
+				  ", Titlebar size: "+ main.TitlebarSize + ", Orientation: " + o);
+
+			// Start up AROS
 			main.ColdBoot();
+		}
 	}
 
 	@Override

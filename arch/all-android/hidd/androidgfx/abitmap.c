@@ -10,6 +10,9 @@
 #define DNEW(x)
 #define DUPD(x)
 
+#include <sys/types.h>
+#include <android/configuration.h>
+
 #include <aros/debug.h>
 #include <hidd/graphics.h>
 #include <oop/oop.h>
@@ -48,9 +51,16 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfx);
 	OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, &data->pixels);
 
-	data->bm_width  = width;
-	data->bm_height = height;
-	data->mod       = mod;
+	data->bm_width	  = width;
+	data->bm_height	  = height;
+	data->mod         = mod;
+	/*
+	 * Orientation currently depend on width:height ratio.
+	 * For all existing devices this seems to be true. However it's not perfect. Perhaps we need to
+	 * add Orientation attribute to sync class. Or introduce ability to subclass syncs.
+	 * In fact would be good to have own support for screen rotation in AROS. This is not designed yet.
+	 */
+	data->orientation = (width > height) ? ACONFIGURATION_ORIENTATION_LAND : ACONFIGURATION_ORIENTATION_PORT;
 
 	DNEW(bug("[ABitmap] Created bitmap %ldx%ld\n", width, height));
 	DNEW(bug("[ABitmap] Buffer at 0x%p, %ld bytes per row\n", data->pixels, mod));
@@ -152,15 +162,16 @@ VOID ABitmap__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     {
 	struct ShowRequest show;
 
-	show.req.cmd   = cmd_Show;
-	show.req.len   = 7;
-	show.displayid = 0;
-	show.left      = data->bm_left;
-	show.top       = data->bm_top;
-	show.width     = data->bm_width;
-	show.height    = data->bm_height;
-	show.mod       = data->mod;
-	show.addr      = data->pixels;
+	show.req.cmd	 = cmd_Show;
+	show.req.len	 = 8;
+	show.displayid	 = 0;
+	show.left	 = data->bm_left;
+	show.top	 = data->bm_top;
+	show.width	 = data->bm_width;
+	show.height	 = data->bm_height;
+	show.mod	 = data->mod;
+	show.orientation = data->orientation;
+	show.addr	 = data->pixels;
 
 	DoRequest(&show.req, XSD(cl));
     }
