@@ -63,10 +63,11 @@ of this port is the same as of a generic Linux-hosted port.
 				   into "toolchains" subdirectory.
 
  --with-sdk-version=<number>     - The value of this parameter is Android API level number (not OS version).
-				   It specifies platform version to use within the SDK. SDK r10 supports
-				   platforms 8 and 11, and value of this parameter defaults to 8 (minimum
-				   requirement for AROS). You'll need to specify this parameter if API level 8
-				   is ever dropped from the SDK.
+				   It specifies platform version to use within the SDK. Current minimum SDK API
+				   level is 12. Please don't confuse it with minimum API version required to
+				   run AROS, these are different. Java code uses some methods declared only
+				   starting from v12 API, however it works correctly if they are missing. High
+				   SDK version is required just to compile this code.
 				   You can easily look up what platform versions are supported by your SDK by
 				   examining its 'platforms' subdirectory.
 
