@@ -104,6 +104,32 @@ static ULONG Check68030MMU(void)
     return ret;
 };
 
+/* Stupid hack.
+ * romtaginit() would initialize WinUAE built-in uaegfx.card which unfortunately also
+ * disables direct RTG uaelib calls that uaegfx needs if uaelib is not called at least once.
+ * We need to do this here because it was wrong to call romtaginit() after uaegfx, there
+ * are RTG boards that are only active after rormtaginit, for example PicassoIV.
+ */
+
+static void uaegfxhack(APTR uaeres, UBYTE *name)
+{
+    asm volatile (
+	"move.l %0,%%a6\n"
+	"move.l %1,%%a0\n"
+	"jsr -6(%%a6)\n"
+	"tst.l %%d0\n"
+	"beq.s 0f\n"
+	"move.l %%d0,%%a0\n"
+	/* 35 = return if RTG enabled, safe function to call */
+	"moveq #35,%%d0\n"
+	"move.l %%d0,-(%%sp)\n"
+	"jsr (%%a0)\n"
+	"addq.l #4,%%sp\n"
+	"0:\n"
+	: : "m" (uaeres), "m" (name) : "d0", "d1", "a0", "a1", "a6"
+   );
+}
+
 static AROS_UFH3 (APTR, Init,
 		  AROS_UFHA(struct Library *, lh, D0),
 		  AROS_UFHA(BPTR, segList, A0),
@@ -113,6 +139,12 @@ static AROS_UFH3 (APTR, Init,
    AROS_USERFUNC_INIT
 
    struct ExpansionBase *eb = (struct ExpansionBase*)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
+   APTR res;
+
+   res = OpenResource("uae.resource");
+   if (res)
+	uaegfxhack(res, "uaelib_demux");
+
    romtaginit(eb);
 
    // enable 68040+ data caches and 68060 superscalar mode
