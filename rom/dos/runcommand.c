@@ -114,8 +114,13 @@
     me->pr_ReturnAddr = oldReturnAddr;
     me->pr_Arguments  = oldargs;
 
-    /* Flush the current input stream */
-    Flush(Input());
+    /* Flush the current CLI input stream
+     * NOTE: AmigaOS 3.1's C:Execute closes Input(),
+     *       so we need to catch that here.
+     */
+    if (Cli() && Cli()->cli_CurrentInput == Input()) {
+        Flush(Input());
+    }
 
     FreeMem(stack,stacksize);
     
