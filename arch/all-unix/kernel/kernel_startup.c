@@ -41,8 +41,12 @@
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
 
+/* Here we use INIT set. THIS_PROGRAM_HANDLES_SYMBOLSETS is declared in kernel_init.c. */
+DEFINESET(INIT);
+
 /* libc functions that we use */
-static const char *kernel_functions[] = {
+static const char *kernel_functions[] =
+{
     "raise",
     "sigprocmask",
     "sigsuspend",
@@ -168,6 +172,10 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	}
 	((void **)&KernelIFace)[i] = func;
     }
+
+    /* Here we can add some variant-specific things. Android and iOS ports use this. */
+    if (!set_call_funcs(SETNAME(INIT), 1, 1))
+    	return -1;
 
     /* We know that memory map has only one RAM element */
     bootmh = (struct MemHeader *)(IPTR)mmap->addr;

@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES   := alert_init displayalert
+FILES   := displayalert _displayalert kernel_panic
 MAINDIR := rom/kernel
 
 USER_CFLAGS := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-linux/kernel \
