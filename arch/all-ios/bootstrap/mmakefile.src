@@ -7,7 +7,7 @@ OBJDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
 FILES         := main appdelegate filesystem kickstart ui
 ICON          := arch/all-hosted/hidd/x11/icon.png
 PACKAGE	      := AROSBootstrap.ipa
-USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap
+USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap -isystem $(SRCDIR)/bootstrap/include -isystem $(GENINCDIR)
 
 #MM- kernel-bootstrap-package-ios: kernel-bootstrap-hosted kernel-bootstrap-package-ios-quick
 #MM- kernel-bootstrap-package-ios-signed: kernel-bootstrap-codesign-ios kernel-bootstrap-package-ios-quick
