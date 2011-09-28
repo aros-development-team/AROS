@@ -1,7 +1,7 @@
 #include <stdarg.h>
+#include <runtime.h>
 
 #include "appdelegate.h"
-#include "ui.h"
 
 void DisplayError(char *fmt, ...)
 {
