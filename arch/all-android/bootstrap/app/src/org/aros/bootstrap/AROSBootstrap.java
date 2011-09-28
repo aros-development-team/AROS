@@ -1,6 +1,7 @@
 package org.aros.bootstrap;
 
 import java.io.FileDescriptor;
+import java.nio.ByteBuffer;
 
 import android.app.Application;
 import android.content.Intent;
@@ -30,6 +31,7 @@ public class AROSBootstrap extends Application
 	public AROSActivity ui;
 	private DisplayServer Server;
 	public Boolean started = false;
+	public Boolean NativeGraphics;
 	private Handler handler;
 
 	// Commands sent to us by AROS display driver
@@ -141,6 +143,26 @@ public class AROSBootstrap extends Application
     	}
 
     	handler.post(cb);
+    }
+
+    public void UpdateBitmap(Bitmap dest, BitmapData src, int x, int y, int width, int height)
+    {
+    	if (HaveNativeGraphics())
+    	{
+    		GetBitmap(dest, src.Address, x, y, width, height, src.BytesPerRow);
+    	}
+    	else
+    	{
+    		// Fallback for poor Android 2.1 and below users...
+    		// It relies on the fact that Bitmap object and AROS bitmap sizes are
+    		// no way different, including "shadow pixels" (padding up to 16).
+    		// This means that - sorry, but no accelerated scrolling here...
+    		// Anyway, this is slow enough even without scrolling... We can't refresh a portion.
+    		// Only the whole bitmap...
+    		ByteBuffer data = MapMemory(src.Address, src.BytesPerRow * src.Height);
+
+    		dest.copyPixelsFromBuffer(data);
+    	}
     }
 
 	private void DoCommand(int cmd, int[] params)
@@ -340,6 +362,8 @@ public class AROSBootstrap extends Application
     private native int Load(String dir);
     private native int Kick(FileDescriptor rfd, FileDescriptor wfd);
     private native int Kill(int signal);
+    private native ByteBuffer MapMemory(int addr, int size);
     private native byte[] GetString(int addr);
-    public native int GetBitmap(Bitmap obj, int addr, int x, int y, int width, int height, int bytesPerLine);
+    private native int GetBitmap(Bitmap obj, int addr, int x, int y, int width, int height, int bytesPerLine);
+    private native boolean HaveNativeGraphics();
 }
