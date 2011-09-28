@@ -11,5 +11,5 @@
 #MM     devs-networks-drivers-prism2 \
 #MM     devs-networks-drivers-rtl8029 \
 #MM     devs-networks-drivers-atheros5000 \
-#MM     devs-networks-drivers-realtek8180 \
+#MM     devs-networks-drivers-realtek8180-$(AROS_TARGET_ARCH) \
 #MM     devs-networks-drivers-ppp
