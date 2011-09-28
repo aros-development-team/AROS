@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM kernel-kernel-darwin-ios: kernel-kernel-ios-native
 
-FILES   := alert_init displayalert
+FILES   := _displayalert
 MAINDIR := rom/kernel
 
 USER_CFLAGS := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-darwin/kernel \
