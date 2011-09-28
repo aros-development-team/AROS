@@ -148,6 +148,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved)
     	bm_Unlock  = dlsym(libjnigraphics, "AndroidBitmap_unlockPixels");
     }
 
+    /* Dalvik wants a minimum of 1.4. Returning 1.1 causes exception. */
     return JNI_VERSION_1_4;
 }
 
