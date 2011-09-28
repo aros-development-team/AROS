@@ -4,7 +4,8 @@ include $(TOP)/config/make.cfg
 EXEDIR := $(TARGETDIR)/Payload/AROSBootstrap.app
 OBJDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
 
-FILES         := main appdelegate filesystem kickstart ui
+FILES	      := kickstart
+OBJCFILES     := main appdelegate filesystem ui
 ICON          := arch/all-hosted/hidd/x11/icon.png
 PACKAGE	      := AROSBootstrap.ipa
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap -isystem $(SRCDIR)/bootstrap/include -isystem $(GENINCDIR)
@@ -13,13 +14,17 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap -isystem $(SRCDIR)/bootst
 #MM- kernel-bootstrap-package-ios-signed: kernel-bootstrap-codesign-ios kernel-bootstrap-package-ios-quick
 #MM kernel-bootstrap-hosted-darwin-ios: kernel-bootstrap-bundle-ios
 
-OBJS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(FILES))))
-DEPS := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(notdir $(FILES))))
+OBJS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(FILES) $(OBJCFILES))))
+DEPS := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(notdir $(FILES) $(OBJCFILES))))
 
 #MM
 kernel-bootstrap-hosted-darwin-ios :: $(OBJS) $(DEPS)
 #MM
 kernel-bootstrap-hosted-darwin-ios-quick :: $(OBJS) $(DEPS)
+
+
+%rule_compile basename=% targetdir=$(OBJDIR) \
+    cflags="$(CFLAGS) $(IOS_CFLAGS)" dflags="$(CFLAGS) $(IOS_CFLAGS)" compiler=kernel
 
 $(OBJDIR$)/%.o : %.m
 	%compile_q cmd=$(KERNEL_CC) opt="$(CFLAGS) $(KERNEL_CFLAGS) $(KERNEL_OBJCFLAGS) $(IOS_CFLAGS)"
@@ -27,7 +32,7 @@ $(OBJDIR$)/%.o : %.m
 $(OBJDIR)/%.d : %.m
 	%mkdepend_q cc=$(KERNEL_CC) flags="$(CFLAGS) $(IOS_CFLAGS)"
 
-%include_deps depstargets="kernel-bootstrap-hosted-darwin-ios" deps=$(DEPS)
+%include_deps depstargets="kernel-bootstrap-hosted-darwin-ios kernel-bootstrap-hosted-darwin-ios-quick" deps=$(DEPS)
 
 #MM
 kernel-bootstrap-bundle-ios:
