@@ -4378,7 +4378,6 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
     darwin*)
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
 	aros_host_arch="darwin"
-	aros_host_ldflags="$aros_host_ldflags -L/opt/local/lib"
 	use_aros_gcc="yes"
 	android_build_os="darwin-x86"
 	android_tool="android"
