@@ -16,5 +16,5 @@
         <activity android:screenOrientation="portrait" android:name="PortraitActivity"></activity>
         <activity android:screenOrientation="landscape" android:name="LandscapeActivity"></activity>
     </application>
-    <uses-sdk android:minSdkVersion="3"/>
+    <uses-sdk android:minSdkVersion="3" android:targetSdkVersion="3"/>
 </manifest> 
