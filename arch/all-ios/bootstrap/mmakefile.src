@@ -18,6 +18,8 @@ DEPS := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(notdir $(FILES))))
 
 #MM
 kernel-bootstrap-hosted-darwin-ios :: $(OBJS) $(DEPS)
+#MM
+kernel-bootstrap-hosted-darwin-ios-quick :: $(OBJS) $(DEPS)
 
 $(OBJDIR$)/%.o : %.m
 	%compile_q cmd=$(KERNEL_CC) opt="$(CFLAGS) $(KERNEL_CFLAGS) $(KERNEL_OBJCFLAGS) $(IOS_CFLAGS)"
