@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+#MM- devs-networks-drivers-realtek8180-pc: devs-networks-drivers-realtek8180
+
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
 %build_prog mmake=devs-networks-drivers-realtek8180 \
