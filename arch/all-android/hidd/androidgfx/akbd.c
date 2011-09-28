@@ -80,6 +80,10 @@ VOID AKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
  * This table can be quite not good. I don't have a device with real keyboard to test it.
  * I just typed this table according to names in android/keycodes.h.
  * Please feel free to modify and improve.
+ *
+ * Note 1: Sony Ericsson XPeria have only Shift and Sym keys on their keyboard.
+ *	   Sym is used by Android to pop up extra virtual keyboard. Mapped to RAmiga in AROS
+ *	   to make hotkeys usable.
  */
 static const UWORD KeyTable[] =
 {
@@ -146,7 +150,7 @@ static const UWORD KeyTable[] =
     RAWKEY_RSHIFT,	/* AKEYCODE_SHIFT_RIGHT 	*/
     RAWKEY_TAB,		/* AKEYCODE_TAB         	*/
     RAWKEY_SPACE,	/* AKEYCODE_SPACE       	*/
-    -1,			/* AKEYCODE_SYM         	- What's 'this ? */
+    RAWKEY_RAMIGA,	/* AKEYCODE_SYM         	- See note 1 */
     -1,			/* AKEYCODE_EXPLORER    	- There's neither adequate Amiga equivalent,     */
     -1,			/* AKEYCODE_ENVELOPE    	  nor adequate reason for these keys to exist :) */
     RAWKEY_RETURN,	/* AKEYCODE_ENTER       	*/
