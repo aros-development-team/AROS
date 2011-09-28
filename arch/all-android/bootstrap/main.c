@@ -1,6 +1,7 @@
 #include <android/bitmap.h>
 #include <sys/stat.h>
 
+#include <dlfcn.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,13 +12,19 @@
 #include "android.h"
 #include "bootstrap.h"
 
-#define D(x) x
+#define D(x)
 
 /* These variables are used by DisplayError() */
 JNIEnv   *Java_Env;
 jobject   Java_Object;
 jmethodID DisplayError_mid;
 jmethodID HandleExit_mid;
+
+/* Dynamically loaded libjnigraphics.so functions */
+void *libjnigraphics;
+static int (*bm_GetInfo)(JNIEnv* env, jobject jbitmap, AndroidBitmapInfo* info);
+static int (*bm_Lock)(JNIEnv* env, jobject jbitmap, void** addrPtr);
+static int (*bm_Unlock)(JNIEnv* env, jobject jbitmap);
 
 /*
  * This is the main bootstrap entry point.
@@ -58,11 +65,23 @@ int Java_org_aros_bootstrap_AROSBootstrap_Load(JNIEnv* env, jobject this, jstrin
 }
 
 /*
- * Retrieve a string at a given memory address as array of bytes.
- * FIXME: It would be better to pass address as long here, however looks
+ * Wrap a given memory region into ByteBuffer object.
+ * Needed for accessing AROS shared RAM.
+ * FIXME: It would be better to pass in longs here, however looks
  * like Android gcc has a bug and misaligns arguments in this case. I got
  * wrong values ('size' was actually 'addr' and 'addr' contained some weird garbage.
  * Since Android is a 32-bit system, i hope ints are ok for now.
+ */
+jobject Java_org_aros_bootstrap_AROSBootstrap_MapMemory(JNIEnv* env, jobject this, jint addr, jint size)
+{
+    D(kprintf("[Bootstrap] Mapping %u bytes at %p\n", size, addr));
+
+    return (*env)->NewDirectByteBuffer(env, (void *)addr, size);
+}
+
+/*
+ * Retrieve a string at a given memory address as array of bytes.
+ * FIXME: See above why srcAddr is jint.
  */
 
 jbyteArray Java_org_aros_bootstrap_AROSBootstrap_GetString(JNIEnv* env, jobject this, jint addr)
@@ -88,14 +107,14 @@ jint Java_org_aros_bootstrap_AROSBootstrap_GetBitmap(JNIEnv* env, jobject this, 
     int yc;
     jint rc;
 
-    rc = AndroidBitmap_getInfo(env, bitmap, &bmdata);
+    rc = bm_GetInfo(env, bitmap, &bmdata);
     if (rc < 0)
     {
     	D(kprintf("[Bootstrap] Failed to obtain information about bitmap %p\n", bitmap));
     	return rc;
     }
 
-    rc = AndroidBitmap_lockPixels(env, bitmap, &dest);
+    rc = bm_Lock(env, bitmap, &dest);
     if (rc < 0)
     {
     	D(kprintf("[Bootstrap] Failed to lock bitmap %p\n", bitmap));
@@ -114,5 +133,25 @@ jint Java_org_aros_bootstrap_AROSBootstrap_GetBitmap(JNIEnv* env, jobject this, 
     	dest += bmdata.stride;
     }
 
-    return AndroidBitmap_unlockPixels(env, bitmap);
+    return bm_Unlock(env, bitmap);
+}
+
+jint JNI_OnLoad(JavaVM *vm, void *reserved)
+{
+    libjnigraphics = dlopen("libjnigraphics.so", RTLD_NOW);
+    D(kprintf("[Bootstrap] libjnigraphics.so handle: %p\n"));
+
+    if (libjnigraphics)
+    {
+    	bm_GetInfo = dlsym(libjnigraphics, "AndroidBitmap_getInfo");
+    	bm_Lock    = dlsym(libjnigraphics, "AndroidBitmap_lockPixels");
+    	bm_Unlock  = dlsym(libjnigraphics, "AndroidBitmap_unlockPixels");
+    }
+
+    return JNI_VERSION_1_4;
+}
+
+jboolean Java_org_aros_bootstrap_AROSBootstrap_HaveNativeGraphics(JNIEnv* env, jobject this)
+{
+    return libjnigraphics ? JNI_TRUE : JNI_FALSE;
 }

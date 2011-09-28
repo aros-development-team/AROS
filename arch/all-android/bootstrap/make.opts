@@ -1,5 +1,5 @@
 KERNEL_LDFLAGS += -shared
-LIBS	       += log jnigraphics
+LIBS	       += log
 PROG	       := lib$(PROG)
 EXE_SUFFIX     := .so
 

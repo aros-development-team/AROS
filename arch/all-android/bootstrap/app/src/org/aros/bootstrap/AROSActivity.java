@@ -313,7 +313,7 @@ class BitmapView extends View
 			// The activity has been recreated after the program was running
 			// in the background for a long time.
 			// Make sure we have the recent bitmap data.
-			main.GetBitmap(pixbuf, bm.Address, 0, 0, bm.Width, bm.Height, bm.BytesPerRow);
+			main.UpdateBitmap(pixbuf, bm, 0, 0, bm.Width, bm.Height);
 		}
 	}
 
@@ -348,7 +348,7 @@ class BitmapView extends View
 			// Sometimes screen invalidation happens between this and first Update method call.
 			// This causes bad visual effect (black screen flashes for a moment.
 			// Here we instantly get initial contents to prevent this.
-			main.GetBitmap(pixbuf, bm.Address, 0, 0, bm.Width, bm.Height, bm.BytesPerRow);
+			main.UpdateBitmap(pixbuf, bm, 0, 0, bm.Width, bm.Height);
 		}
 	}
 
@@ -361,7 +361,7 @@ class BitmapView extends View
 		// a specified memory location, so we can't get around this copy.
 		// Using int[] is even worse, we also can't create a direct int[].
 		// Additionally, using int[] proved to be very slow
-		main.GetBitmap(pixbuf, bm.Address, x, y, width, height, bm.BytesPerRow);
+		main.UpdateBitmap(pixbuf, bm, x, y, width, height);
 		invalidate(x, y, x + width, y + height);
 	}
 
