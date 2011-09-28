@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #MM kernel-kernel-darwin-ios: kernel-kernel-ios-native
+#MM kernel-kernel-darwin-ios-quick: kernel-kernel-ios-native
 
 FILES   := _displayalert
 MAINDIR := rom/kernel
@@ -22,7 +23,8 @@ NATIVE_FILES   := host_alert
 NATIVE_LIBNAME := alert.dylib
 
 NATIVE_LDFLAGS := $(IOS_LDFLAGS) -framework Foundation -framework UIKit -shared
-USER_INCLUDES  :=
+# This cancels -nostdinc (contained in $(KERNEL_INCLUDES))
+USER_CFLAGS    :=
 
 OBJS := $(addsuffix .o,$(addprefix $(NATIVE_OBJDIR)/,$(notdir $(NATIVE_FILES))))
 DEPS := $(addsuffix .d,$(addprefix $(NATIVE_OBJDIR)/,$(notdir $(NATIVE_FILES))))
