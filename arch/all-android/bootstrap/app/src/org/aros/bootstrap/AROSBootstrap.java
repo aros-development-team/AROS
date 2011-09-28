@@ -19,6 +19,7 @@ final class BitmapData
 	int	Height;
 	int BytesPerRow;
 	int Address;
+	ByteBuffer Buffer;
 }
 
 public class AROSBootstrap extends Application
@@ -147,11 +148,7 @@ public class AROSBootstrap extends Application
 
     public void UpdateBitmap(Bitmap dest, BitmapData src, int x, int y, int width, int height)
     {
-    	if (HaveNativeGraphics())
-    	{
-    		GetBitmap(dest, src.Address, x, y, width, height, src.BytesPerRow);
-    	}
-    	else
+    	if (Bitmap.Buffer != null)
     	{
     		// Fallback for poor Android 2.1 and below users...
     		// It relies on the fact that Bitmap object and AROS bitmap sizes are
@@ -159,9 +156,13 @@ public class AROSBootstrap extends Application
     		// This means that - sorry, but no accelerated scrolling here...
     		// Anyway, this is slow enough even without scrolling... We can't refresh a portion.
     		// Only the whole bitmap...
-    		ByteBuffer data = MapMemory(src.Address, src.BytesPerRow * src.Height);
-
-    		dest.copyPixelsFromBuffer(data);
+    		Bitmap.Buffer.rewind();
+    		dest.copyPixelsFromBuffer(Bitmap.Buffer);
+    	}
+    	else
+    	{
+    		// A quick native method, utilizing Android 2.2+ native Bitmap API
+        	GetBitmap(dest, src.Address, x, y, width, height, src.BytesPerRow);
     	}
     }
 
@@ -196,6 +197,9 @@ public class AROSBootstrap extends Application
 				Bitmap.Height	   = params[4];
 				Bitmap.BytesPerRow = params[5];
 				Bitmap.Address     = params[7];
+				
+				if (!HaveNativeGraphics())
+					Bitmap.Buffer = MapMemory(Bitmap.Address, Bitmap.BytesPerRow * Bitmap.Height);
 			}
 
 			switch (params[6])
