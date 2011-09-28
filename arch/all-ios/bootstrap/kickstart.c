@@ -4,9 +4,9 @@
 #include "kickstart.h"
 
 /*
- * TODO: This code is temporarily copied here to shut up the compilation.
- * UNIX kicker won't work with iOS in its current form. UIKit code needs
- * to be reworked.
+ * Unfortunately it's impossible to fork() on iOS. fork()ed program can't register
+ * itself with Springboard and fails to run.
+ * So, well, currently we have no way to reboot AROS... Until we invent something clever. :)
  */
 int kick(int (*addr)(), struct TagItem *msg)
 {
