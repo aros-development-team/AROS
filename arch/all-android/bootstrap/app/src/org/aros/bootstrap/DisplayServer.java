@@ -98,7 +98,7 @@ public class DisplayServer extends Thread
 	
 		if (res != rawlen)
 		{
-			Log.v("AROS.Server", "Error reading pipe (wanted " + len + ", got " + res + ")");
+			Log.d("AROS.Server", "Error reading pipe (wanted " + len + ", got " + res + ")");
 			return null;
 		}
 
