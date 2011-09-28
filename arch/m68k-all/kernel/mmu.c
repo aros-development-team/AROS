@@ -28,6 +28,8 @@
 
 UBYTE *zeropagedescriptor;
 
+static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode);
+
 /* Allocate MMU descriptor page, it needs to be (1 << bits) * sizeof(ULONG) aligned */
 static ULONG alloc_descriptor(struct KernelBase *kb, UBYTE mmutype, UBYTE bits, UBYTE level)
 {
@@ -57,7 +59,7 @@ static ULONG alloc_descriptor(struct KernelBase *kb, UBYTE mmutype, UBYTE bits, 
 		// bug("New chunk %p-%p\n", mem, mem + ps - 1);
 		if (mmutype >= MMU040) {
 			/* 68040+ MMU tables should be serialized */
-			map_region(kb, mem, NULL, ps, FALSE, FALSE, FALSE, CM_SERIALIZED);
+			map_region2(kb, mem, NULL, ps, FALSE, FALSE, FALSE, CM_SERIALIZED);
 		}
 	}
 	desc = (ULONG*)pd->page_ptr;
@@ -281,7 +283,7 @@ void debug_mmu(struct KernelBase *kb)
 	bug("MMU dump end\n");
 }			
 
-BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode)
+static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode)
 {
 	struct PlatformData *pd = kb->kb_PlatformData;
 	ULONG desca, descb, descc, pagedescriptor;
@@ -302,9 +304,6 @@ BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, B
 	if (physaddr == NULL)
 		physaddr = addr;
 
-	bug("map_region(%p, %p, %08x, in=%d, wp=%d, cm=%d\n",
-		addr, physaddr, size, invalid ? 1 : 0, writeprotect ? 1 : 0, cachemode);
-	
 	while (size) {
 		desca = LEVELA(kb->kb_PlatformData->MMU_Level_A, addr);
 		if (ISINVALID(desca))
@@ -364,7 +363,15 @@ BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, B
 	return TRUE;
 }
 
+BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode)
+{
+	bug("map_region(%p, %p, %08x, in=%d, wp=%d, s=%d cm=%d\n",
+		addr, physaddr, size, invalid ? 1 : 0, writeprotect ? 1 : 0, supervisor ? 1 : 0, cachemode);
+	return map_region2(kb, addr, physaddr, size, invalid, writeprotect, supervisor, cachemode);
+}
+
 BOOL unmap_region(struct KernelBase *kb, void *addr, ULONG size)
 {
-	return map_region(kb, addr, NULL, size, TRUE, FALSE, FALSE, 0);
+	bug("unmap_region(%p, %08x)\n", addr, size);
+	return map_region2(kb, addr, NULL, size, TRUE, FALSE, FALSE, 0);
 }
