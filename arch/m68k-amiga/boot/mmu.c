@@ -199,6 +199,12 @@ static AROS_UFH3 (APTR, Init,
 			mmuram(KernelBase, addr, size);
 	}
 	FreeVec(memheaders);
+	if (ReadGayle()) {
+		/* PCMCIA regions */
+		mmuram(KernelBase, 0x00600000, 0x00400000);
+		mmuio(KernelBase, 0x00a00000, 0x00050000);
+	}
+
 	if (ZeroPageInvalid) {
 		/* Mark "zero page" invalid, MMU support handles ExecBase fetches transparently.
 	 	* Special bus error handler checks if access was LONG READ from address 4.
