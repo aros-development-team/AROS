@@ -76,14 +76,21 @@ VOID AKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /****************************************************************************************/
 
 /*
- * Raw key codes conversion table (Android->AROS).
- * This table can be quite not good. I don't have a device with real keyboard to test it.
- * I just typed this table according to names in android/keycodes.h.
+ * Raw key codes conversion table (Android->AROS). Currently tested only with
+ * Sony Ericsson XPeria (running Android 2.1).
  * Please feel free to modify and improve.
  *
- * Note 1: Sony Ericsson XPeria have only Shift and Sym keys on their keyboard.
- *	   Sym is used by Android to pop up extra virtual keyboard. Mapped to RAmiga in AROS
- *	   to make hotkeys usable.
+ * Note 1: Sony Ericsson XPeria have only Alt and Sym keys on their keyboard.
+ *	   Sym is used by Android to pop up extra virtual keyboard. However, under AROS it
+ *	   does not produce any input events, but serves instead as additional modifier.
+ *	   Currently i don't know how to make it generating events. Wound be nice to use it
+ *	   as RAmiga to make hotkeys working.
+ * Note 2: Alt (Blue square) key on XPeria keyboard is meant to produce additional characters,
+ *	   which are marked in blue. An appropriate keymap on AROS side is needed for this. The
+ *	   key itself doesn't produce an input event, instead it triggers a mode when keys generate
+ *	   a sequence of two codes: ALT then key itself.
+ * Note 3: XPeria keyboard doesn't handle autorepeats. Every physical keypress generates two codes:
+ *	   press then release.
  */
 static const UWORD KeyTable[] =
 {
@@ -115,7 +122,7 @@ static const UWORD KeyTable[] =
     -1,			/* AKEYCODE_VOLUME_DOWN 						*/
     -1,			/* AKEYCODE_POWER       						*/
     -1,			/* AKEYCODE_CAMERA      						*/
-    RAWKEY_BACKSPACE,	/* AKEYCODE_CLEAR       	*/
+    RAWKEY_DELETE,	/* AKEYCODE_CLEAR       	*/
     RAWKEY_A,		/* AKEYCODE_A			*/
     RAWKEY_B,		/* AKEYCODE_B			*/
     RAWKEY_C,		/* AKEYCODE_C			*/
@@ -154,7 +161,7 @@ static const UWORD KeyTable[] =
     -1,			/* AKEYCODE_EXPLORER    	- There's neither adequate Amiga equivalent,     */
     -1,			/* AKEYCODE_ENVELOPE    	  nor adequate reason for these keys to exist :) */
     RAWKEY_RETURN,	/* AKEYCODE_ENTER       	*/
-    RAWKEY_DELETE,	/* AKEYCODE_DEL         	*/
+    RAWKEY_BACKSPACE,	/* AKEYCODE_DEL         	- This key is actually marked as Backspace key */
     RAWKEY_TILDE,	/* AKEYCODE_GRAVE       	*/
     RAWKEY_MINUS,	/* AKEYCODE_MINUS       	*/
     RAWKEY_EQUAL,	/* AKEYCODE_EQUALS		*/
