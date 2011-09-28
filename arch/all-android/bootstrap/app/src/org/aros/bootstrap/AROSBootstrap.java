@@ -197,7 +197,7 @@ public class AROSBootstrap extends Application
 				Bitmap.Height	   = params[4];
 				Bitmap.BytesPerRow = params[5];
 				Bitmap.Address     = params[7];
-				
+
 				if (!HaveNativeGraphics())
 					Bitmap.Buffer = MapMemory(Bitmap.Address, Bitmap.BytesPerRow * Bitmap.Height);
 			}
