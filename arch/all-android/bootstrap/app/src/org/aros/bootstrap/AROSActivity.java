@@ -274,7 +274,7 @@ class DisplayView extends RelativeLayout
 	{
 		// Android autorepeats keys if held down. Here we suppress this.
 		if (code != LastKey)
-		{	
+		{
 //			Log.v("AROS.Input", "KeyDown " + code);
 
 			LastKey = code;
@@ -287,8 +287,15 @@ class DisplayView extends RelativeLayout
 	public boolean onKeyUp(int code, KeyEvent e)
 	{
 //		Log.v("AROS.Input", "KeyUp " + code);
-		
-		LastKey = -1;
+
+		if (LastKey == -1)
+		{
+			// XPeria quirk: Backspace doesn't generate KeyDown event, only KeyUp
+			main.ReportKey(code, 0);
+		}
+		else
+			LastKey = -1;
+
 		main.ReportKey(code, IECODE_UP_PREFIX);
 
 		return true;
