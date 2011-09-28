@@ -70,12 +70,6 @@ struct PlatformData
     sigset_t	  sig_int_mask;			   /* Mask of signals that Disable() block */
     unsigned int  supervisor;
     int		 *errnoPtr;
-#ifdef HOST_OS_ios
-    void	(*DisplayAlert)(const char *text);
-#endif
-#ifdef HOST_OS_android
-    int		  alertPipe;
-#endif
 };
 
 struct SignalTranslation

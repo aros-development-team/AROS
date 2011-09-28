@@ -16,16 +16,9 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_android.h"
 
 #define D(x)
-
-struct AlertRequest
-{
-    ULONG cmd;
-    ULONG params;
-    ULONG code;
-    ULONG text;
-};
 
 AROS_LH2(void, KrnDisplayAlert,
 	 AROS_LHA(uint32_t, code, D0),
@@ -34,19 +27,8 @@ AROS_LH2(void, KrnDisplayAlert,
 {
     AROS_LIBFUNC_INIT
 
-    struct AlertRequest req;
     int res;
     sigset_t sigs;
-
-    if (KernelBase->kb_PlatformData->alertPipe == -1)
-    {
-	/*
-	 * Early alert. alertPipe is not initialized yet.
-	 * Fail back to debug output.
-	 */
-    	krnDisplayAlert(text, KernelBase);
-    	return;
-    }
 
     /*
      * These two are inlined in Android.
@@ -56,21 +38,16 @@ AROS_LH2(void, KrnDisplayAlert,
     sigaddset(&sigs, SIGUSR2);
     sigaddset(&sigs, SIGTERM);
 
-    /* Prepare a message to server */    
-    req.cmd    = 0x00001000;	/* cmd_Alert				   */
-    req.params = 2;		/* Two parameters: code and string address */
-    req.code   = code;
-    req.text   = (IPTR)text;
 
     /* Halt the system in order not to interfere with our I/O */
     Disable();
 
-    /* Send the packet */
-    res = KernelIFace.write(KernelBase->kb_PlatformData->alertPipe, &req, sizeof(req));
-
-    /* Standard pipe break reaction, see display driver code */
-    if (res != sizeof(req))
-    	ShutdownA(SD_ACTION_POWEROFF);
+    /* Send alert message to the display server */
+    if (!SendAlert(code, text))
+    {
+    	/* Standard pipe break reaction, see display driver code */
+        ShutdownA(SD_ACTION_POWEROFF);
+    }
 
     D(bug("[KrnDisplayAlert] Request sent, halting...\n"));
 
