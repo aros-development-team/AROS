@@ -80,6 +80,8 @@
 #define DATAPI(a)    do { } while (0)
 #define DINIT(a)     do { } while (0)
 #endif
+/* Errors that shouldn't happen */
+#define DERROR(a) a
 
 #include <aros/debug.h>
 #include <exec/types.h>
@@ -168,29 +170,29 @@ static void ata_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
  */
 static BYTE ata_STUB(struct ata_Unit *au)
 {
-    bug("[ATA%02ld] CALLED STUB FUNCTION (GENERIC). THIS OPERATION IS NOT "
-        "SUPPORTED BY DEVICE\n", au->au_UnitNum);
+    DERROR(bug("[ATA%02ld] CALLED STUB FUNCTION (GENERIC). THIS OPERATION IS NOT "
+        "SUPPORTED BY DEVICE\n", au->au_UnitNum));
     return CDERR_NOCMD;
 }
 
 static BYTE ata_STUB_IO32(struct ata_Unit *au, ULONG blk, ULONG len,
     APTR buf, ULONG* act)
 {
-    bug("[ATA%02ld] CALLED STUB FUNCTION (IO32). THIS OPERATION IS NOT "
-        "SUPPORTED BY DEVICE\n", au->au_UnitNum);
+    DERROR(bug("[ATA%02ld] CALLED STUB FUNCTION (IO32). THIS OPERATION IS NOT "
+        "SUPPORTED BY DEVICE\n", au->au_UnitNum));
     return CDERR_NOCMD;
 }
 
 static BYTE ata_STUB_IO64(struct ata_Unit *au, UQUAD blk, ULONG len,
     APTR buf, ULONG* act)
 {
-    bug("[ATA%02ld] CALLED STUB FUNCTION -- IO ACCESS TO BLOCK %08lx:%08lx, LENGTH %08lx. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum, (blk >> 32), (blk & 0xffffffff), len);
+    DERROR(bug("[ATA%02ld] CALLED STUB FUNCTION -- IO ACCESS TO BLOCK %08lx:%08lx, LENGTH %08lx. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum, (blk >> 32), (blk & 0xffffffff), len));
     return CDERR_NOCMD;
 }
 
 static BYTE ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
 {
-    bug("[ATA%02ld] CALLED STUB FUNCTION. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum);
+    DERROR(bug("[ATA%02ld] CALLED STUB FUNCTION. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum));
     return CDERR_NOCMD;
 }
 
@@ -392,9 +394,9 @@ void ata_IRQDMAReadWrite(struct ata_Unit *unit, UBYTE status)
     if ((status & ATAF_ERROR) || (stat & DMAF_Error))
     {
         /* This is turned on in order to help Phantom - Pavel Fedin <sonic_amiga@rambler.ru> */
-        bug("[ATA%02ld] IRQ: IO status %02lx, DMA status %02lx\n", unit->au_UnitNum, status, stat);
-        bug("[ATA%02ld] IRQ: ERROR %02lx\n", unit->au_UnitNum, ATA_IN(atapi_Error, unit->au_Bus->ab_Port));
-        bug("[ATA  ] IRQ: DMA Failed.\n");
+        DERROR(bug("[ATA%02ld] IRQ: IO status %02lx, DMA status %02lx\n", unit->au_UnitNum, status, stat));
+        DERROR(bug("[ATA%02ld] IRQ: ERROR %02lx\n", unit->au_UnitNum, ATA_IN(atapi_Error, unit->au_Bus->ab_Port)));
+        DERROR(bug("[ATA  ] IRQ: DMA Failed.\n"));
 
         unit->au_cmd_error = HFERR_DMA;
         ata_IRQNoData(unit, status);
@@ -432,7 +434,7 @@ void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
 
     if (size > unit->au_cmd_total)
     {
-        bug("[ATAPI] IRQ: CRITICAL! MORE DATA OFFERED THAN STORAGE CAN TAKE: %ld bytes vs %ld bytes left!\n", size, unit->au_cmd_total);
+        DERROR(bug("[ATAPI] IRQ: CRITICAL! MORE DATA OFFERED THAN STORAGE CAN TAKE: %ld bytes vs %ld bytes left!\n", size, unit->au_cmd_total));
         remainder = size - unit->au_cmd_total;
         size = unit->au_cmd_total;
     }
@@ -475,7 +477,7 @@ void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
 
     if (size > unit->au_cmd_total)
     {
-        bug("[ATAPI] IRQ: CRITICAL! MORE DATA REQUESTED THAN STORAGE CAN GIVE: %ld bytes vs %ld bytes left!\n", size, unit->au_cmd_total);
+        DERROR(bug("[ATAPI] IRQ: CRITICAL! MORE DATA REQUESTED THAN STORAGE CAN GIVE: %ld bytes vs %ld bytes left!\n", size, unit->au_cmd_total));
         size = unit->au_cmd_total;
     }
 
@@ -504,7 +506,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
 
     /* FIXME: This shouldn't happen but it could explain reported random -6 (IOERR_UNITBUSY) problem */
     if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
-    	bug("[ATA%02ld] SIGBREAKF_CTRL_C was already set!?\n", unit->au_UnitNum);
+    	DERROR(bug("[ATA%02ld] SIGBREAKF_CTRL_C was already set!?\n", unit->au_UnitNum));
  
     /*
      * set up bus timeout
@@ -534,8 +536,8 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
          */
         if (SIGBREAKF_CTRL_C & step)
         {
-            bug("[ATA%02ld] Timeout while waiting for device to complete"
-                " operation\n", unit->au_UnitNum);
+            DERROR(bug("[ATA%02ld] Timeout while waiting for device to complete"
+                " operation\n", unit->au_UnitNum));
             res = FALSE;
 
             /*
@@ -562,7 +564,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
                  */
                 if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                 {
-                    DIRQ(bug("[ATA%02ld] Device still busy after timeout."
+                    DERROR(bug("[ATA%02ld] Device still busy after timeout."
                         " Aborting\n", unit->au_UnitNum));
                     res = FALSE;
                     break;
@@ -634,7 +636,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
         case CT_LBA28:
             if (block->sectors > 256)
             {
-                bug("[ATA%02ld] ata_exec_cmd: ERROR: Transfer length (%ld) exceeds 256 sectors. Aborting.\n", unit->au_UnitNum, block->sectors);
+                DERROR(bug("[ATA%02ld] ata_exec_cmd: ERROR: Transfer length (%ld) exceeds 256 sectors. Aborting.\n", unit->au_UnitNum, block->sectors));
                 return IOERR_BADLENGTH;
             }
 
@@ -646,12 +648,12 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
         case CT_LBA48:
             if (block->sectors > 65536)
             {
-                bug("[ATA%02ld] ata_exec_cmd: ERROR: Transfer length (%ld) exceeds 65536 sectors. Aborting.\n", unit->au_UnitNum, block->sectors);
+                DERROR(bug("[ATA%02ld] ata_exec_cmd: ERROR: Transfer length (%ld) exceeds 65536 sectors. Aborting.\n", unit->au_UnitNum, block->sectors));
                 return IOERR_BADLENGTH;
             }
             if (block->secmul == 0)
             {
-                bug("[ATA%02ld] ata_exec_cmd: ERROR: Invalid transfer multiplier. Should be at least set to 1 (correcting)\n", unit->au_UnitNum);
+                DERROR(bug("[ATA%02ld] ata_exec_cmd: ERROR: Invalid transfer multiplier. Should be at least set to 1 (correcting)\n", unit->au_UnitNum));
                 block->secmul = 1;
             }
            break;
@@ -660,7 +662,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
             break;
 
         default:
-            bug("[ATA%02ld] ata_exec_cmd: ERROR: Invalid command type %lx. Aborting.\n", unit->au_UnitNum, block->type);
+            DERROR(bug("[ATA%02ld] ata_exec_cmd: ERROR: Invalid command type %lx. Aborting.\n", unit->au_UnitNum, block->type));
             return IOERR_NOCMD;
     }
 
@@ -756,7 +758,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     if (block->method == CM_PIOWrite)
     {
 	if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, FALSE, &status)) {
-	    D(bug("[ATA%02ld] ata_exec_cmd: PIOWrite - no response from device\n", unit->au_UnitNum));
+	    DERROR(bug("[ATA%02ld] ata_exec_cmd: PIOWrite - no response from device. Status %02X\n", unit->au_UnitNum, status));
 	    return IOERR_UNITBUSY;
 	}
 	if (status & ATAF_DATAREQ) {
@@ -765,7 +767,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
 	}
 	else
 	{
-	    D(bug("[ATA%02ld] ata_exec_cmd: PIOWrite - bad status: %02X\n", status));
+	    DERROR(bug("[ATA%02ld] ata_exec_cmd: PIOWrite - bad status: %02X\n", status));
 	    return HFERR_BadStatus;
 	}
     }
@@ -775,7 +777,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
      */
     if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, TRUE, NULL))
     {
-        bug("[ATA%02ld] ata_exec_cmd: Device is late - no response\n", unit->au_UnitNum);
+        DERROR(bug("[ATA%02ld] ata_exec_cmd: Device is late - no response\n", unit->au_UnitNum));
         err = IOERR_UNITBUSY;
     }
     else
@@ -2284,8 +2286,8 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
                 /* this might still be an (S)ATAPI device, but we correct that in ata_Identify */
                 return DEV_ATA;
             }
-            bug("[ATA  ] ata_ReadSignature: Found signature for ATA "
-                "device, but further validation failed\n");
+            DERROR(bug("[ATA  ] ata_ReadSignature: Found signature for ATA "
+                "device, but further validation failed\n"));
             return DEV_NONE;
     }
 }
